@@ -1,2 +1,6 @@
 *.vo
 *.glob
+.coqdeps.d
+coq.mk
+coq.mk.conf
+html/
