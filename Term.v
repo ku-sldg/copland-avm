@@ -12,7 +12,7 @@ University of California.  See license.txt for details. *)
 (** This module contains the basic definitions for Copland terms,
     events, and annotated terms. *)
 
-Require Import Omega Preamble.
+Require Import Omega Preamble Maps.
 
 (** * Terms and Evidence
 
@@ -27,6 +27,9 @@ Notation ASP_ID := nat (only parsing).
 Notation Arg := nat (only parsing).
 Notation BS := nat (only parsing).
 Notation N_ID := nat (only parsing).
+Notation Address := nat.
+
+Definition NS := Map Plc Address.
 
 (*
 (** An argument to a userspace or kernel measurement. *)

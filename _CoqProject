@@ -1,6 +1,5 @@
 -R . CoplandM
 Preamble.v
-Copland.v
 Maps.v
 Term.v
 Instr.v
