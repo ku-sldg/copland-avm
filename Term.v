@@ -27,7 +27,7 @@ Notation ASP_ID := nat (only parsing).
 Notation Arg := nat (only parsing).
 Notation BS := nat (only parsing).
 Notation N_ID := nat (only parsing).
-Notation Address := nat.
+Notation Address := nat (only parsing).
 
 Definition NS := Map Plc Address.
 
@@ -121,8 +121,8 @@ Inductive Evidence: Set :=
 Fixpoint eval_asp t p e :=
   match t with
   | CPY => e
-  | KIM A => kk p A e
-  | USM A => uu p A e
+  | KIM i q A => kk i q p A e
+  | USM i A => uu i A p A e
   | SIG => gg p e
   | HSH => hh p e
   end.
