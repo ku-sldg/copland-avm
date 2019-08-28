@@ -157,38 +157,59 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
     (pp e1' e2')
   end.
 
-Definition vm_prim (p:Plc) (ep:Evidence*Evidence) (instr:Instr)
-  :(Evidence * Evidence) :=
-  let (e,er) := ep in
+Definition ev_stack := list Evidence.
+Definition empty_stack : ev_stack := [].
+
+Definition push_stack (e:Evidence) (s:ev_stack) : ev_stack :=
+  (e :: s).
+
+Definition pop_stack (s:ev_stack) : (Evidence*ev_stack) :=
+  match s with
+  | e :: s' => (e,s')
+  | _ => (mt,empty_stack) (* TODO: will this be expressive enough? *)
+  end.
+
+
+Definition vm_prim (p:Plc) (ep:Evidence*ev_stack) (instr:Instr)
+  :(Evidence * ev_stack) :=
+  let (e,s) := ep in
     match instr with
-    | copy => (e,er)
+    | copy => (e,s)
     | kmeas i q args =>
       let bs := invokeKIM i q args in
-      ((kk i args q p bs e),er)
+      ((kk i args q p bs e),s)
     | umeas i args =>
       let bs := invokeUSM i args in
-      ((uu i args p bs e),er)
+      ((uu i args p bs e),s)
     | sign =>
       let bs := signEv e in
-      ((gg p e bs),er)
+      ((gg p e bs),s)
     | hash =>
       let bs := hashEv e in
-      ((hh p bs),er)
+      ((hh p bs),s)
     | reqrpy _ pTo t =>
-      (toRemote t pTo e,er)
+      (toRemote t pTo e,s)
     | split sp1 sp2 =>
       let e1 := splitEv sp1 e in
       let e2 := splitEv sp2 e in
-      (e1, e2) (*(sp e1 e2)*)
-    | besr => (er,e)
+      (e1, push_stack e2 s) (*(sp e1 e2)*)
+    | besr =>
+      let (er,s') := pop_stack s in
+      let s'' := push_stack e s' in
+      (er,s'')
                
-    | joins => (ss er e,mt) (* TODO: better choice than mt? *)
+    | joins =>
+      let (er,s') := pop_stack s in
+      (ss er e,s') (* TODO: better choice than mt? *)
                  
-    | joinp => (pp e er,mt) (* TODO: invoke "wait on evidence" commands here? *)
+    | joinp =>
+      let (er,s') := pop_stack s in
+      (pp e er,s') (* TODO: invoke "wait on evidence" commands here? *)
     | bep evs1 evs2 =>
+      let (er,s') := pop_stack s in
       let res1 := parallel_att_vm_thread evs1 e in
       let res2 := parallel_att_vm_thread evs2 er in
-      (res1, res2)  (* TODO: ret some kind of "wait handle" evidence instead? *)
+      (res1, push_stack res2 s)  (* TODO: ret some kind of "wait handle" evidence instead? *)
     end.
 (*
 Definition vm_prim (p:Plc) (ep:Evidence*Evidence) (instr:Instr)
@@ -217,11 +238,11 @@ Defined.
 Set Nested Proofs Allowed.
 
   
-Definition att_vm' (is:list Instr) (p:Plc) (ep:Evidence*Evidence) : (Evidence*Evidence) :=
+Definition att_vm' (is:list Instr) (p:Plc) (ep:Evidence*ev_stack) : (Evidence*ev_stack) :=
   fold_left (vm_prim p) is ep.
 
 Definition att_vm (is:list Instr) (p:Plc) (e:Evidence) : (Evidence) :=
-  fst (att_vm' is p (e,mt)).
+  fst (att_vm' is p (e,[])).
 
 Theorem vm_eval : forall (t:Term) (p:Plc) (e:Evidence),
     eval t p e = att_vm (instr_compiler t p) p e.
