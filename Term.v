@@ -108,7 +108,7 @@ Hint Resolve eq_term_dec.
 
 Inductive Evidence: Set :=
 | mt: Evidence
-| sp: Evidence -> Evidence -> Evidence
+(*| sp: Evidence -> Evidence -> Evidence*)
 | kk: ASP_ID -> (list Arg) -> Plc -> Plc -> BS -> Evidence -> Evidence
 | uu: ASP_ID -> (list Arg) -> Plc -> BS -> Evidence -> Evidence
 | gg: Plc -> Evidence -> BS -> Evidence

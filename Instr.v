@@ -1,12 +1,8 @@
 Require Import Term.
-Require Import MonadCOP.
+(*Require Import MonadCOP.*)
 
 Require Import List.
 Import ListNotations.
-
-Require Import ExtLib.Structures.Monads.
-Import MonadNotation.
-Local Open Scope monad_scope.
 
 
 (** * VM Instructions *)
@@ -19,8 +15,9 @@ Inductive Instr: Set :=
 | hash: Instr
 | reqrpy: Plc -> Plc -> Term -> Instr
 | split: SP -> SP -> Instr
-| besl: Instr -> Instr
-| besr: Instr -> Instr
+(*| besl: Instr -> Instr
+| besr: Instr -> Instr*)
+| besr : Instr
 | bep: (list Instr) -> (list Instr) -> Instr
 | joins: Instr
 | joinp: Instr.
@@ -44,8 +41,9 @@ Proof.
     destruct (eq_sp_dec s s1);
     destruct (eq_sp_dec s0 s2);
     try (left; congruence); try (right; congruence).
+    (*
     destruct (IHx y); try (left; congruence); try (right; congruence).
-    destruct (IHx y); try (left; congruence); try (right; congruence).
+    destruct (IHx y); try (left; congruence); try (right; congruence).*)
     admit.
 Admitted.
 Hint Resolve eq_ev_dec.
@@ -75,12 +73,12 @@ Fixpoint instr_compiler (t:Term) (p:Plc) : (list Instr) :=
     let tr2 := instr_compiler t2 p in
     tr1 ++ tr2
   | bseq (sp1,sp2) t1 t2 =>
-    let splEv := [split sp1 sp2] in
+    let splEv := split sp1 sp2 in
     let tr1 := instr_compiler t1 p in
     let tr2 := instr_compiler t2 p in
-    let evalL := map besl tr1 in
-    let evalR := map besr tr2 in
-    splEv ++ evalL ++ evalR ++ [joins]
+    (*let evalL := map besl tr1 in
+    let evalR := map besr tr2 in *)
+    [splEv] ++ tr1 ++ [besr] ++ tr2 ++ [joins]
   | bpar (sp1,sp2) t1 t2 =>
     let splEv := [split sp1 sp2] in
     let tr1 := instr_compiler t1 p in
@@ -89,34 +87,30 @@ Fixpoint instr_compiler (t:Term) (p:Plc) : (list Instr) :=
     splEv ++ tr ++ [joinp]
   end.
 
-Fixpoint foldM_COP {A B : Type} (f:A -> B -> COP A) (a:A) (bs:list B) : COP A :=
-  match bs with
-  | [] => ret a
-  | (x::xs) => f a x >>= fun fax => foldM_COP f fax xs
-  end.
 
-Definition invokeKIM (i:ASP_ID) (q:Plc) (args:list Arg) : COP BS.
+
+Definition invokeKIM (i:ASP_ID) (q:Plc) (args:list Arg) : BS.
 Admitted.
 
-Definition invokeUSM (i:ASP_ID) (args:list Arg) : COP BS.
+Definition invokeUSM (i:ASP_ID) (args:list Arg) : BS.
 Admitted.
 
-Definition signEv (e:Evidence) : COP BS.
+Definition signEv (e:Evidence) : BS.
 Admitted.
 
-Definition hashEv (e:Evidence) : COP BS.
+Definition hashEv (e:Evidence) : BS.
 Admitted.
 
-Definition toRemote (pTo:Plc) (t:Term) (e:Evidence) : COP Evidence.
+Definition toRemote (t:Term) (pTo:Plc) (e:Evidence) : Evidence.
 Admitted.
 
-Definition parallel_att_vm_thread (li:list Instr) (e:Evidence) : COP Evidence.
+Definition parallel_att_vm_thread (li:list Instr) (e:Evidence) : Evidence.
 Admitted.
 
-Definition vm_prim_thread (i:Instr) (p:Plc) (e:Evidence) : COP Evidence.
+Definition vm_prim_thread (i:Instr) (p:Plc) (e:Evidence) : Evidence.
 Admitted.
 
-Definition parallel_eval_cop_thread (t:Term) (p:Plc) (e:Evidence) : COP Evidence.
+Definition parallel_eval_thread (t:Term) (p:Plc) (e:Evidence) : Evidence.
 Admitted.
 
 Definition splitEv (sp:SP) (e:Evidence) : Evidence :=
@@ -125,103 +119,412 @@ Definition splitEv (sp:SP) (e:Evidence) : Evidence :=
   | NONE => mt
   end.
 
-Definition eval_asp_cop (a:ASP) (p:Plc) (e:Evidence) : COP Evidence :=
+Definition eval_asp (a:ASP) (p:Plc) (e:Evidence) : Evidence :=
   match a with
-  | CPY => ret e
+  | CPY => e
   | KIM i q args =>
-    bs <- invokeKIM i q args ;;
-       ret (kk i args q p bs e)
+    let bs := invokeKIM i q args in
+    (kk i args q p bs e)
   | USM i args =>
-    bs <- invokeUSM i args ;;
-       ret (uu i args p bs e)
+    let bs := invokeUSM i args in
+    (uu i args p bs e)
   | SIG =>
-    bs <- signEv e ;;
-       ret (gg p e bs)
+    let bs := signEv e in
+    (gg p e bs)
   | HSH =>
-    bs <- hashEv e ;;
-       ret (hh p bs)
+    let bs := hashEv e in
+    (hh p bs)
   end.
 
-Fixpoint eval_cop t p e :=
+Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
   match t with
-  | asp a => eval_asp_cop a p e
-  | att q t1 => eval_cop t1 q e
+  | asp a => eval_asp a p e
+  | att q t1 => toRemote t1 q e
   | lseq t1 t2 =>
-    e1 <- eval_cop t1 p e ;;
-       eval_cop t2 p e1
+    let e1 := eval t1 p e in
+    eval t2 p e1
   | bseq (sp1,sp2) t1 t2 =>
     let e1 := splitEv sp1 e in
     let e2 := splitEv sp2 e in
-    e1' <- eval_cop t1 p e1 ;;
-        e2' <- eval_cop t2 p e2 ;;
-        ret (ss e1' e2')
+    let e1' := eval t1 p e1 in
+    let e2' := eval t2 p e2 in
+    (ss e1' e2')
   | bpar (sp1,sp2) t1 t2 =>
     let e1 := splitEv sp1 e in
     let e2 := splitEv sp2 e in
-    e1' <- parallel_eval_cop_thread t1 p e1 ;;
-        e2' <- parallel_eval_cop_thread t2 p e2 ;;
-        ret (pp e1' e2')
+    let e1' := parallel_eval_thread t1 p e1 in
+    let e2' := parallel_eval_thread t2 p e2 in
+    (pp e1' e2')
   end.
 
-Definition vm_prim (p:Plc) (e:Evidence) (instr:Instr) : COP Evidence :=
+Definition vm_prim (p:Plc) (ep:Evidence*Evidence) (instr:Instr)
+  :(Evidence * Evidence) :=
+  let (e,er) := ep in
     match instr with
-    | copy => ret e
+    | copy => (e,er)
     | kmeas i q args =>
-      bs <- invokeKIM i q args ;;
-         ret (kk i args q p bs e)
+      let bs := invokeKIM i q args in
+      ((kk i args q p bs e),er)
     | umeas i args =>
-      bs <- invokeUSM i args ;;
-         ret (uu i args p bs e)
+      let bs := invokeUSM i args in
+      ((uu i args p bs e),er)
     | sign =>
-      bs <- signEv e ;;
-         ret (gg p e bs)
+      let bs := signEv e in
+      ((gg p e bs),er)
     | hash =>
-      bs <- hashEv e ;;
-         ret (hh p bs)
+      let bs := hashEv e in
+      ((hh p bs),er)
     | reqrpy _ pTo t =>
-      toRemote pTo t e
+      (toRemote t pTo e,er)
     | split sp1 sp2 =>
       let e1 := splitEv sp1 e in
       let e2 := splitEv sp2 e in
-      ret (sp e1 e2)
-    | joins =>
-      match e with
-      | sp e1 e2 => ret (ss e1 e2)
-      | _ => ret mt (* TODO: throw "bad stack" error? *)
-      end
-    | joinp =>
-      match e with
-      | sp e1 e2 => ret (pp e1 e2)
-      | _ => ret mt (* TODO: throw "bad stack" error? *)
-      end
-    | besl ev' =>
-      match e with
-      | sp e1 e2 =>
-        e1' <- vm_prim_thread ev' p e1 ;; (*vm_prim p e1 ev' ;; *)
-            ret (sp e1' e2)
-      | _ => ret mt (* TODO: throw "bad stack" error? *)
-      end
-    | besr ev' =>
-      match e with
-      | sp e1 e2 =>
-        e2' <- vm_prim_thread ev' p e2 ;;(*vm_prim p e2 ev' ;; *)
-            ret (sp e1 e2')
-      | _ => ret mt (* TODO: throw "bad stack" error? *)
-      end
+      (e1, e2) (*(sp e1 e2)*)
+    | besr => (er,e)
+               
+    | joins => (ss er e,mt) (* TODO: better choice than mt? *)
+                 
+    | joinp => (pp e er,mt) (* TODO: invoke "wait on evidence" commands here? *)
     | bep evs1 evs2 =>
-      match e with
-      | sp e1 e2 =>
-        res1 <- parallel_att_vm_thread evs1 e1 ;;
-             res2 <- parallel_att_vm_thread evs2 e2 ;;
-             ret (sp res1 res2)
-      | _ => ret mt (* TODO: throw "bad stack" error? *)
-      end
+      let res1 := parallel_att_vm_thread evs1 e in
+      let res2 := parallel_att_vm_thread evs2 er in
+      (res1, res2)  (* TODO: ret some kind of "wait handle" evidence instead? *)
     end.
+(*
+Definition vm_prim (p:Plc) (ep:Evidence*Evidence) (instr:Instr)
+  : (Evidence*Evidence) :=
+  vm_prim' p (fst ep) (snd ep) instr. *)
+(*
+Fixpoint fold {A B : Type} (f:A -> B -> A) (a:A) (bs:list B) : A :=
+  match bs with
+  | [] => a
+  | (x::xs) => fold f (f a x) xs
+  end.*)
 
-Check foldM_COP.
+Lemma fst_inv{A B:Type} : forall (p:A*B) (p':A*B), p = p' -> fst p = fst p'.
+Proof.
+  intros.
+  congruence.
+Defined.
 
-Fixpoint att_vm (is:list Instr) (p:Plc) (e:Evidence) : COP Evidence :=
-  foldM_COP (vm_prim p) e is.
+Lemma fst_val{A B:Type} : forall (a:A) (b:B), fst (a,b) = a.
+Proof.
+  intros. simpl. reflexivity.
+Defined.
+
+  
+
+Set Nested Proofs Allowed.
+
+  
+Definition att_vm' (is:list Instr) (p:Plc) (ep:Evidence*Evidence) : (Evidence*Evidence) :=
+  fold_left (vm_prim p) is ep.
+
+Definition att_vm (is:list Instr) (p:Plc) (e:Evidence) : (Evidence) :=
+  fst (att_vm' is p (e,mt)).
+
+Theorem vm_eval : forall (t:Term) (p:Plc) (e:Evidence),
+    eval t p e = att_vm (instr_compiler t p) p e.
+Proof.
+  intros.
+  generalize dependent p.
+  generalize dependent e.
+  induction t; intros.
+  - destruct a; try reflexivity.
+  - simpl.
+    cbv. reflexivity.
+  - simpl.
+    unfold att_vm.
+    unfold att_vm'.
+    rewrite fold_left_app.
+    unfold att_vm in *.
+    rewrite (IHt1 e p).
+    rewrite (IHt2 (fst (att_vm' (instr_compiler t1 p) p (e, mt)))).
+    apply fst_inv.
+    unfold att_vm'.
+    assert (snd (fold_left (vm_prim p) (instr_compiler t1 p) (e, mt)) = mt).
+    admit.
+    rewrite <- H at 2.
+
+    rewrite <- surjective_pairing. reflexivity.
+
+  - destruct s.
+    simpl.
+    unfold att_vm. simpl.
+    rewrite (IHt1 (splitEv s e) p).
+
+    unfold att_vm'. 
+    rewrite fold_left_app.
+    simpl.
+    rewrite fold_left_app.
+    simpl.
+    unfold vm_prim at 1.
+
+    unfold vm_prim at 2.
+
+    unfold att_vm.
+    unfold att_vm'.
+
+    rewrite (IHt2 (splitEv s0 e) p).
+    unfold att_vm. unfold att_vm'.
+
+    remember (fold_left (vm_prim p) (instr_compiler t1 p) (splitEv s e, splitEv s0 e)) as HH.
+    destruct HH.
+    remember (fold_left (vm_prim p) (instr_compiler t2 p) (e1, e0)) as HHH.
+    destruct HHH.
+    simpl.
+
+    Lemma afsd : forall e p t e2 e2',
+        fold_left (vm_prim p) (instr_compiler t p) (e,e2) =
+        fold_left (vm_prim p) (instr_compiler t p) (e,e2').
+    Admitted.
+
+    assert (fst (fold_left (vm_prim p) (instr_compiler t1 p) (splitEv s e, mt)) = e0). rewrite (afsd (splitEv s e) p t1 (splitEv s0 e) mt) in HeqHH.
+    rewrite <- HeqHH. trivial.
+    rewrite H.
+
+    clear H.
+
+    Lemma fads : forall e0 e1 e e2 p t,
+      (e0,e1) = fold_left (vm_prim p) (instr_compiler t p) (e, e2) ->
+      (e1 = e2).
+    Proof.
+    Admitted.
+
+    assert (e3 = e0). eapply fads. apply HeqHHH. rewrite H.
+
+    assert (e1 = (splitEv s0 e)). eapply fads. apply HeqHH.
+    rewrite <- H.
+    rewrite (afsd e1 p t2 e0 mt) in HeqHHH. rewrite <- H0.
+    rewrite <- HeqHHH. simpl. reflexivity.
+    
+    
+
+    assert (e3 = (fst (fold_left (vm_prim p) (instr_compiler t1 p) (splitEv s e, mt)))).
+
+    assert (splitEv s0 e = e1). admit.
+    subst.
+    assert (e0 = e3). admit. subst.
+    rewrite <- H in HeqHHH.
+    
+    admit.
+
+    assert (e2 = (fst (fold_left (vm_prim p) (instr_compiler t2 p) (splitEv s0 e, mt)))).
+    admit.
+    congruence.
+
+    
+    simpl.
+    destruct (fdsas (instr_compiler t1 p) p (splitEv s e) (splitEv s0 e)).
+    destruct H.
+    rewrite H.
+    destruct (fdsas (instr_compiler t2 p) p x0 x).
+    destruct H0. rewrite H0. simpl.
+    
+    rewrite <- fdsas with (il:=(instr_compiler t1 p)).
+    
+      
+
+    rewrite <- surjective_pairing.
+
+    fold (fold_left (vm_prim p) (instr_compiler t2 p)
+         (vm_prim p
+            ((fix
+              fold_left (l : list Instr) (a0 : Evidence * Evidence) {struct l} :
+                Evidence * Evidence :=
+                match l with
+                | [] => a0
+                | b :: t => fold_left t (vm_prim p a0 b)
+                end) (instr_compiler t1 p) (splitEv s e, splitEv s0 e)) besr)).
+
+    unfold att_vm in IHt2.
+    unfold att_vm' in IHt2.
+    rewrite (IHt2 (splitEv s0 e) p).
+    
+
+    rewrite <- (IHt2 (fst (vm_prim p
+             (fold_left (vm_prim p) (instr_compiler t1 p)
+                (splitEv s e, splitEv s0 e)) besr)) p).
+
+    unfold fold_left at 2.
+
+    fold ((fold_left (vm_prim p) (instr_compiler t2 p)
+          (vm_prim p
+             (fold_left (vm_prim p) (instr_compiler t1 p)
+                (splitEv s e, splitEv s0 e)) besr))).
+    destruct s
+
+    unfold fold_left.
+    fold (fold_left (vm_prim p)
+       (instr_compiler t1 p ++ besr :: instr_compiler t2 p ++ [joins])
+       (splitEv s e, splitEv s0 e)).
+    
+
+    Lemma fdsa{A B:Type} : forall (p:A*B) (a:A) (b:B), (fst p,snd p) = p.
+    rewrite fst_val.
+    unfold fst at 1
+    cbn
+    
+    
+  
+  
+  
+
+
+(*
+Lemma asdf : forall is1 is2 p ep,
+        snd (att_vm' (is1 ++ is2) p ep) =
+        snd
+          (att_vm' is2 p
+                   (snd (att_vm' is1 p ep),mt)).
+Proof.
+  intros.
+  simpl.
+  unfold att_vm'.
+  assert ((fold_left (vm_prim p) (is1 ++ is2) ep) = (fold_left (vm_prim p) is2 (snd (fold_left (vm_prim p) is1 ep), mt))).
+  
+  
+
+  
+  congruence.
+  
+Admitted.
+ *)
+
+Lemma asdf : forall is1 is2 p ep,
+        (att_vm' (is1 ++ is2) p ep) =
+        (att_vm' is2 p
+                 (att_vm' is1 p ep)).
+Proof.
+  intros.
+  unfold att_vm'.
+  apply fold_left_app.
+Defined.
+
+Lemma snd_inv{A B:Type} : forall (p:A*B) (p':A*B), p = p' -> snd p = snd p'.
+Proof.
+  intros.
+  congruence.
+Defined.
+
+Lemma exists_ev : forall t p e er t1 t2 sp t1' t2' sp', exists e',
+      t <> bseq sp t1 t2 ->
+      t <> bpar sp' t1' t2' ->
+      att_vm' (instr_compiler t p) p (e,er) = (e',er).
+Proof.
+  intros.
+  generalize dependent p.
+  generalize dependent e.
+  generalize dependent er.
+  generalize dependent t1'.
+  generalize dependent t2'.
+  generalize dependent t1.
+  generalize dependent t2.
+  generalize dependent sp.
+  generalize dependent sp'.
+  
+  induction t; intros; try (eexists; reflexivity).
+  - destruct a; try (eexists; reflexivity).
+      
+  - destruct (IHt1 sp sp' t2 t3 t2' t1' er e p).
+    destruct (IHt2 sp sp' t2 t3 t2' t1' er x p).
+    eexists.
+    simpl.
+
+    unfold att_vm'.
+    rewrite fold_left_app.
+    assert ((att_vm' (instr_compiler t1 p) p (e,er)) = (fold_left (vm_prim p) (instr_compiler t1 p) (e, er))).
+    unfold att_vm'. reflexivity.
+    intros.
+    rewrite <- H1.
+    rewrite H.
+    assert ((att_vm' (instr_compiler t2 p) p (x,er)) = (fold_left (vm_prim p) (instr_compiler t2 p) (x, er))).
+    unfold att_vm'. reflexivity.
+    rewrite <- H2. rewrite H0. reflexivity.
+  - 
+    (*destruct (IHt2 x p). *)
+    eexists.
+    simpl.
+    unfold att_vm'.
+
+    unfold fold_left at 1. 
+
+
+    destruct s. simpl. fold (fold_left (vm_prim p) (instr_compiler t1 p ++ besr :: instr_compiler t2 p ++ [joins]) (splitEv s e, splitEv s0 e)).
+    fold (att_vm' (instr_compiler t1 p ++ besr :: instr_compiler t2 p ++ [joins]) p (splitEv s e, splitEv s0 e)). unfold att_vm'.  Check fold_left_app.
+
+    pose (l2 := besr :: instr_compiler t2 p ++ [joins]).
+    rewrite fold_left_app.
+    destruct (IHt1 (splitEv s0 e) (splitEv s e) p).
+    unfold att_vm' in H. rewrite H.
+
+    simpl.
+
+    rewrite fold_left_app. simpl. destruct (IHt2 x (splitEv s0 e) p). unfold att_vm' in H0. rewrite H0. simpl. reflexivity.
+
+
+
+    
+    apply fold_left_app with (l' := besr :: instr_compiler t2 p ++ [joins]).
+
+
+                         (  (fix fold_left (l : list Instr) (a0 : Evidence * Evidence) {struct l} :
+     Evidence * Evidence :=
+     match l with
+     | [] => a0
+     | b :: t => fold_left t (vm_prim p a0 b)
+     end) (instr_compiler t1 p ++ besr :: instr_compiler t2 p ++ [joins])
+    (splitEv s e, splitEv s0 e)).
+    
+    
+    + eexists. reflexivity.
+
+Lemma right_mt : forall t p e,
+    snd (att_vm' (instr_compiler t p) p (e,mt)) = mt.
+Proof.
+  intros.
+  destruct (exists_ev t p e).
+  rewrite H.
+  trivial.
+Defined.
+
+  intros.
+  generalize dependent p.
+  generalize dependent e.
+  induction t; intros; try reflexivity.
+  - destruct a; try reflexivity.
+  - simpl.
+    rewrite <- (IHt2 (snd (att_vm' (instr_compiler t1 p) p (e, mt))) p) at 2.
+    rewrite <- (IHt1 e p) at 3.
+    rewrite (IHt1 e p) at 2.
+    apply snd_inv.
+    unfold att_vm' at 1.
+    rewrite fold_left_app.
+    unfold att_vm'.
+    unfold att_vm' in IHt1. rewrite IHt1.
+    assert ((fold_left (vm_prim p) (instr_compiler t1 p) (e, mt)) = (mt,mt)).
+    
+    admit.
+    congruence.
+    
+
+
+
+    apply asdf.
+  - simpl.
+    
+    
+
+
+    
+    
+  
+
+    snd (vm_prim' p e mt instr) = mt.
+Proof.
+  intros.
+  induction instr; try reflexivity.
+  - simpl
 
 (*
 Lemma asdf : forall e,
@@ -230,17 +533,49 @@ IdentityMonad.unIdent
 Proof.
   intros. simpl.
 Admitted. *)
+
+Lemma compile_att_vm : forall il1 il2 p e,
+    att_vm il2 p (att_vm il1 p e) =
+    att_vm (il1 ++ il2) p e.
+Proof.
+Admitted.
+(*
+  att_vm (instr_compiler t2 p) p (att_vm (instr_compiler t1 p) p e) =
+  att_vm (instr_compiler t1 p ++ instr_compiler t2 p) p e *)
   
-Theorem eval_vm : forall (t:Term) (p:Plc) (e:Evidence) env,
-    runCOP (eval_cop t p e) env = runCOP (att_vm (instr_compiler t p) p e) env.
+Theorem eval_vm : forall (t:Term) (p:Plc) (e:Evidence),
+    eval t p e = att_vm (instr_compiler t p) p e.
 Proof.
   intros.
-  generalize dependent p; intros.
-  induction t.
+  generalize dependent p.
+  generalize dependent e.
+                            
+  induction t; intros; try (reflexivity).
+  
   + 
     destruct a; try (cbv; reflexivity).
-  + admit.
-  + unfold eval_cop
+  + simpl. rewrite (IHt2 (eval t1 p e)).
+    rewrite (IHt1 e).
+    apply compile_att_vm.
+  + simpl. destruct s. simpl
+    destruct (instr_compiler t1 p);
+      destruct (instr_compiler t2 p).
+  - admit.
+  - admit.
+
+  - admit.
+  - simpl.
+    
+    
+    
+    
+
+    simpl. rewrite (IHt n).
+
+
+
+    
+  + unfold eval
     
     
   + destruct env. simpl.
@@ -250,7 +585,7 @@ Proof.
     simpl. unfold empty_cop_env.
     assert (p = 0). admit. congruence
     unfold instr_compiler. unfold asp_instr.
-    unfold att_vm. unfold foldM_COP. unfold eval_cop. unfold eval_asp_cop
+    unfold att_vm. unfold foldM_COP. unfold eval. unfold eval_asp_cop
 
 
   simpl.
