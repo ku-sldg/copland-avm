@@ -209,7 +209,7 @@ Definition vm_prim (p:Plc) (ep:Evidence*ev_stack) (instr:Instr)
       let (er,s') := pop_stack s in
       let res1 := parallel_att_vm_thread evs1 e in
       let res2 := parallel_att_vm_thread evs2 er in
-      (res1, push_stack res2 s)  (* TODO: ret some kind of "wait handle" evidence instead? *)
+      (res1, push_stack res2 s')  (* TODO: ret some kind of "wait handle" evidence instead? *)
     end.
 (*
 Definition vm_prim (p:Plc) (ep:Evidence*Evidence) (instr:Instr)
@@ -343,15 +343,22 @@ Proof.
                              (splitEv s e, splitEv s1 e :: s0))).
         destruct p0.
 
+        
+
+        
         assert ((e0, e1) =
       (let (e, s) :=
          fold_left (vm_prim p) (instr_compiler t2 p)
        (
        let (er, s') := pop_stack e3 in (er, e2 :: s')) in (
          let (er, s') := pop_stack s in (ss er e, s')))).
-        admit.
 
         
+        
+        admit.
+        
+        
+          
         (*
 
         assert (e3 = splitEv s1 e :: s0).
@@ -406,10 +413,17 @@ Proof.
                 att_vm (instr_compiler t1 p) p (splitEv s e)).
         apply par_vm_thread.
 
+        assert (parallel_att_vm_thread (instr_compiler t2 p) (splitEv s1 e) = 
+                att_vm (instr_compiler t2 p) p (splitEv s1 e)).
+        apply par_vm_thread.
+
+        rewrite H0 in H.
+        rewrite H1 in H.
+        congruence.
         
 
         
-
+(*
 
         assert ( ((let (e, s) :=
          fold_left (vm_prim p) (instr_compiler t2 p)
@@ -467,10 +481,10 @@ Proof.
         
         
         
+     *) 
       
       
-      
-    Admitted.
+    Admitted. 
     
     Lemma stack_restore : forall s t p e,
         snd (att_vm' (instr_compiler t p) p (e, s)) = s.
