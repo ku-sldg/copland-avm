@@ -259,6 +259,9 @@ Axiom rem_vm : forall t p e s,
 Axiom par_vm_thread : forall t p e,
   parallel_att_vm_thread (instr_compiler t p) e = att_vm (instr_compiler t p) p e.
 
+Axiom par_eval_thread : forall t p e,
+    parallel_eval_thread t p e = eval t p e.
+
 Theorem vm_eval : forall (t:Term) (p:Plc) (e:Evidence),
     eval t p e = att_vm (instr_compiler t p) p e.
 Proof.
@@ -332,16 +335,38 @@ Proof.
         simpl in H.
         rewrite fold_left_app in H.
         simpl in H.
-        unfold push_stack in H.
-        simpl in H.
+       (* unfold push_stack in H. *)
 
-        unfold vm_prim at 3 in H. unfold push_stack in H.
+        unfold vm_prim at 3 in H. (*unfold push_stack in H. *)
         unfold vm_prim at 1 in H.
 
 
+
+
+        remember (fold_left (vm_prim p) (instr_compiler t1 p)
+                            (splitEv s e, push_stack (splitEv s1 e) s0)).
+        destruct p0.
+
+
+        
+(*
+
+        (*
         remember ((fold_left (vm_prim p) (instr_compiler t1 p)
                              (splitEv s e, splitEv s1 e :: s0))).
+        destruct p0. *)
+
+        remember (         fold_left (vm_prim p) (instr_compiler t2 p)
+           (let (e, s) :=
+              fold_left (vm_prim p) (instr_compiler t1 p)
+                (splitEv s e, splitEv s1 e :: s0) in
+            let (er, s') := pop_stack s in (er, e :: s'))).
         destruct p0.
+        rewrite <- Heqp0 in H.
+
+
+        rewrite <- Heqp0 in H.
+
 
         
 
@@ -357,7 +382,7 @@ Proof.
         
         admit.
         
-        
+        *)
           
         (*
 
@@ -390,19 +415,20 @@ Proof.
 
 
         remember ((fold_left (vm_prim p) (instr_compiler t2 p)
-                             (e4, e2 :: e5))).
+                             (e4, push_stack e2 e5))).
         destruct p0.
+
 
         assert (e7 = e2 :: e5).
         apply IHt2 with (e:=e4) (e0:=e6) (p:=p).
         assumption.
-        rewrite H1 in H0. unfold pop_stack in H0.
-        inversion H0. subst.
+        rewrite H0 in H. unfold pop_stack in H.
+        inversion H. subst.
 
         assert (e3 = splitEv s1 e :: s0).
         apply IHt1 with (e:=splitEv s e) (e0:=e2) (p:=p).
         apply Heqp0.
-        rewrite H1 in Heqp1.
+        rewrite H0 in Heqp1.
         unfold pop_stack in Heqp1. inversion Heqp1. reflexivity.
 
       - simpl in H.
@@ -420,6 +446,8 @@ Proof.
         rewrite H0 in H.
         rewrite H1 in H.
         congruence.
+    Defined.
+    
         
 
         
@@ -483,8 +511,6 @@ Proof.
         
      *) 
       
-      
-    Admitted. 
     
     Lemma stack_restore : forall s t p e,
         snd (att_vm' (instr_compiler t p) p (e, s)) = s.
@@ -576,7 +602,21 @@ Proof.
     rewrite <- afsd with (e2:=[e6]).
     rewrite <- HeqHHH. reflexivity.
 
-    -
+  -
+    simpl.
+    destruct s.
+    unfold att_vm.
+    unfold att_vm'.
+    simpl.
+    rewrite par_eval_thread.
+    rewrite par_eval_thread.
+    rewrite par_vm_thread.
+    rewrite par_vm_thread.
+    rewrite IHt1.
+    rewrite IHt2.
+    reflexivity.
+Defined.
+
 
     
     assert ((fold_left (vm_prim p) (instr_compiler t2 p) (splitEv s0 e, [])) = (fold_left (vm_prim p) (instr_compiler t2 p) (splitEv s0 e, [splitEv s0 e]))).
