@@ -228,16 +228,12 @@ Proof.
   congruence.
 Defined.
 
-Lemma fst_val{A B:Type} : forall (a:A) (b:B), fst (a,b) = a.
+Lemma ss_inv : forall e1 e1' e2 e2', e1 = e1' -> e2 = e2' -> ss e1 e2 = ss e1' e2'.
 Proof.
-  intros. simpl. reflexivity.
+  congruence.
 Defined.
 
-Lemma pair_inv{A B:Type} : forall (a a':A) (b b':B), (a,b) = (a',b') -> a = a'.
-Admitted.
 
-Lemma ss_inv : forall e1 e1' e2 e2', e1 = e1' -> e2 = e2' -> ss e1 e2 = ss e1' e2'.
-Admitted.
 
 
 
@@ -262,14 +258,8 @@ Axiom par_vm_thread : forall t p e,
 Axiom par_eval_thread : forall t p e,
     parallel_eval_thread t p e = eval t p e.
 
-(*
-Lemma fads : forall e0 e1 e e2 p t,
-    (e0,e1) = fold_left (vm_prim p) (instr_compiler t p) (e, e2) ->
-    (e1 = e2).
-Proof.
-Admitted. *)
 
-Lemma hi : forall e0 e1 t p s e,
+Lemma stack_restore' : forall e0 e1 t p s e,
     ((e0, e1) = att_vm' (instr_compiler t p) p (e, s)) ->
     e1 = s.
 Proof.
@@ -297,7 +287,6 @@ Proof.
 
     rewrite <- H0.
         
-
     remember (att_vm' (instr_compiler t2 p) p (e2, e3)).
     destruct p0.
 
@@ -321,13 +310,10 @@ Proof.
     simpl in H.
     rewrite fold_left_app in H.
     simpl in H.
-    (* unfold push_stack in H. *)
+    (* unfold push_stack in H. *)  (* TODO:  why does this step of evaluation prohibit destructing the let later on?? *)
     
     unfold vm_prim at 3 in H. (*unfold push_stack in H. *)
     unfold vm_prim at 1 in H.
-
-
-
 
     remember (fold_left (vm_prim p) (instr_compiler t1 p)
                             (splitEv s e, push_stack (splitEv s1 e) s0)).
@@ -336,12 +322,9 @@ Proof.
     remember (pop_stack e3).
     destruct p0.
 
-
-
     remember ((fold_left (vm_prim p) (instr_compiler t2 p)
                              (e4, push_stack e2 e5))).
     destruct p0.
-
 
     assert (e7 = e2 :: e5).
     apply IHt2 with (e:=e4) (e0:=e6) (p:=p).
@@ -378,10 +361,10 @@ Proof.
   intros.
   remember ((att_vm' (instr_compiler t p) p (e, s))).
   destruct p0.
-  simpl. eapply hi. eassumption.
+  simpl. eapply stack_restore'. eassumption.
 Defined.
 
-Lemma afsd : forall e p t e2 e2', (* starting stack irrelevant *)
+Lemma stack_irrel : forall e p t e2 e2', (* starting stack irrelevant *)
     fst (fold_left (vm_prim p) (instr_compiler t p) (e,e2)) =
     fst (fold_left (vm_prim p) (instr_compiler t p) (e,e2')).
 Proof.
@@ -451,20 +434,14 @@ Proof.
     remember (pop_stack e1).
     destruct p0.
     destruct p1.
-    (*assert (e4 = e1).*)
-
-    (* Lemma hi : forall e0 e1 t p s e,
-    ((e0, e1) = att_vm' (instr_compiler t p) p (e, s)) ->
-    e1 = s. *)
 
     assert (e4 = push_stack (splitEv s0 e) e2').
     
-    
-    apply hi with (e0:=e3) (t:=t1) (p:=p) (e:=splitEv s e).
+    apply stack_restore' with (e0:=e3) (t:=t1) (p:=p) (e:=splitEv s e).
     assumption.
 
     assert (e1 =  push_stack (splitEv s0 e) e2).
-    eapply hi. eassumption.
+    eapply stack_restore'. eassumption.
     assert (e8 = e10).
     subst. unfold push_stack in *. unfold pop_stack in *. congruence.
     subst.
@@ -475,44 +452,64 @@ Proof.
 
     rewrite surjective_pairing in Heqp2. inversion Heqp2.
     reflexivity. subst.
-    
-   
-
-(*
-    
-    subst. congruence.
-
-    (*assert (e4 = e1).*)
-    
-
-
-
-
-
-    unfold push_stack in *.
-    assert (e4 = splitEv s0 e :: e2'). admit.
-    subst.
-    assert (e1 = splitEv s0 e :: e2). admit.
-    subst.
-    unfold pop_stack in Heqp2.
-    unfold pop_stack in Heqp3. *)
 
     destruct (pop_stack e1).
     destruct (pop_stack e4).
     unfold push_stack in *.
     assert (e5 = (e3 :: e8)).
 
-    eapply hi. unfold att_vm'. apply Heqp2.
+    eapply stack_restore'. unfold att_vm'. apply Heqp2.
 
     subst.
     assert (e7 = e3 :: e10).
-    eapply hi. apply Heqp3.
+    eapply stack_restore'. apply Heqp3.
     subst. reflexivity.
 
   - simpl.
     destruct s.
     simpl. reflexivity.
-Defined. 
+Defined.
+
+Lemma asdf : forall is1 is2 p ep,
+    (att_vm' (is1 ++ is2) p ep) =
+    (att_vm' is2 p
+             (att_vm' is1 p ep)).
+Proof.
+  intros.
+  unfold att_vm'.
+  apply fold_left_app.
+Defined.
+
+Lemma afsd : forall e p t1 t2,
+    let il1 := (instr_compiler t1 p) in
+    let il2 := (instr_compiler t2 p) in
+    fst (fold_left (vm_prim p) il2 (fst (fold_left (vm_prim p) il1 (e, [])), [])) =
+    fst (fold_left (vm_prim p) il2 (fold_left (vm_prim p) il1 (e, []))).
+Proof.
+  intros.
+  destruct ((fold_left (vm_prim p) il1 (e, []))).
+  simpl.
+  Check stack_irrel.
+  apply stack_irrel.
+Defined.
+
+(*
+Lemma compile_att_vm : forall il1 il2 p e,
+    att_vm il2 p (att_vm il1 p e) =
+    att_vm (il1 ++ il2) p e. *)
+
+Lemma att_vm_distributive : forall t1 t2 p e,
+    let il1 := (instr_compiler t1 p) in
+    let il2 := (instr_compiler t2 p) in
+    att_vm il2 p (att_vm il1 p e) =
+    att_vm (il1 ++ il2) p e.
+Proof.
+  intros.
+  unfold att_vm.
+  unfold att_vm'.
+  rewrite fold_left_app.
+  apply afsd.
+Defined.
 
 Theorem vm_eval : forall (t:Term) (p:Plc) (e:Evidence),
     eval t p e = att_vm (instr_compiler t p) p e.
@@ -531,15 +528,7 @@ Proof.
     unfold att_vm in *.
     rewrite (IHt1 e p).
     rewrite (IHt2 (fst (att_vm' (instr_compiler t1 p) p (e, [])))).
-    apply fst_inv.
-
-    unfold att_vm'.
-    assert (snd (fold_left (vm_prim p) (instr_compiler t1 p) (e, [])) = []).
-      
-    apply stack_restore.
-    rewrite <- H at 2.
-
-    rewrite <- surjective_pairing. reflexivity.
+    apply afsd.
 
   - destruct s.
     simpl.
@@ -575,7 +564,7 @@ Proof.
 
     unfold push_stack in *.
 
-    eapply hi.
+    eapply stack_restore'.
     apply HeqHH.
 
     unfold push_stack in HeqHH.
@@ -586,7 +575,7 @@ Proof.
     subst. clear HeqHHHH.
     unfold push_stack in *.
     assert (e5 = [e0]).
-    eapply hi. apply HeqHHH.
+    eapply stack_restore'. apply HeqHHH.
 
     subst.
     unfold pop_stack in HeqJ.
@@ -594,10 +583,10 @@ Proof.
     clear HeqJ.
 
     apply ss_inv.
-    rewrite <- afsd with (e2:=[(splitEv s0 e)]).
+    rewrite <- stack_irrel with (e2:=[(splitEv s0 e)]).
     rewrite <- HeqHH. reflexivity.
 
-    rewrite <- afsd with (e2:=[e6]).
+    rewrite <- stack_irrel with (e2:=[e6]).
     rewrite <- HeqHHH. reflexivity.
   -
     simpl.
@@ -614,211 +603,15 @@ Proof.
     reflexivity.
 Defined.
 
-Lemma asdf : forall is1 is2 p ep,
-        (att_vm' (is1 ++ is2) p ep) =
-        (att_vm' is2 p
-                 (att_vm' is1 p ep)).
-Proof.
-  intros.
-  unfold att_vm'.
-  apply fold_left_app.
-Defined.
-
 Lemma snd_inv{A B:Type} : forall (p:A*B) (p':A*B), p = p' -> snd p = snd p'.
 Proof.
   intros.
   congruence.
 Defined.
 
-Lemma exists_ev : forall t p e er t1 t2 sp t1' t2' sp', exists e',
-      t <> bseq sp t1 t2 ->
-      t <> bpar sp' t1' t2' ->
-      att_vm' (instr_compiler t p) p (e,er) = (e',er).
-Proof.
-  intros.
-  generalize dependent p.
-  generalize dependent e.
-  generalize dependent er.
-  generalize dependent t1'.
-  generalize dependent t2'.
-  generalize dependent t1.
-  generalize dependent t2.
-  generalize dependent sp.
-  generalize dependent sp'.
-  
-  induction t; intros; try (eexists; reflexivity).
-  - destruct a; try (eexists; reflexivity).
-      
-  - destruct (IHt1 sp sp' t2 t3 t2' t1' er e p).
-    destruct (IHt2 sp sp' t2 t3 t2' t1' er x p).
-    eexists.
-    simpl.
-
-    unfold att_vm'.
-    rewrite fold_left_app.
-    assert ((att_vm' (instr_compiler t1 p) p (e,er)) = (fold_left (vm_prim p) (instr_compiler t1 p) (e, er))).
-    unfold att_vm'. reflexivity.
-    intros.
-    rewrite <- H1.
-    rewrite H.
-    assert ((att_vm' (instr_compiler t2 p) p (x,er)) = (fold_left (vm_prim p) (instr_compiler t2 p) (x, er))).
-    unfold att_vm'. reflexivity.
-    rewrite <- H2. rewrite H0. reflexivity.
-  - 
-    (*destruct (IHt2 x p). *)
-    eexists.
-    simpl.
-    unfold att_vm'.
-
-    unfold fold_left at 1. 
-
-
-    destruct s. simpl. fold (fold_left (vm_prim p) (instr_compiler t1 p ++ besr :: instr_compiler t2 p ++ [joins]) (splitEv s e, splitEv s0 e)).
-    fold (att_vm' (instr_compiler t1 p ++ besr :: instr_compiler t2 p ++ [joins]) p (splitEv s e, splitEv s0 e)). unfold att_vm'.  Check fold_left_app.
-
-    pose (l2 := besr :: instr_compiler t2 p ++ [joins]).
-    rewrite fold_left_app.
-    destruct (IHt1 (splitEv s0 e) (splitEv s e) p).
-    unfold att_vm' in H. rewrite H.
-
-    simpl.
-
-    rewrite fold_left_app. simpl. destruct (IHt2 x (splitEv s0 e) p). unfold att_vm' in H0. rewrite H0. simpl. reflexivity.
-
-
-
-    
-    apply fold_left_app with (l' := besr :: instr_compiler t2 p ++ [joins]).
-
-
-                         (  (fix fold_left (l : list Instr) (a0 : Evidence * Evidence) {struct l} :
-     Evidence * Evidence :=
-     match l with
-     | [] => a0
-     | b :: t => fold_left t (vm_prim p a0 b)
-     end) (instr_compiler t1 p ++ besr :: instr_compiler t2 p ++ [joins])
-    (splitEv s e, splitEv s0 e)).
-    
-    
-    + eexists. reflexivity.
-
 Lemma right_mt : forall t p e,
-    snd (att_vm' (instr_compiler t p) p (e,mt)) = mt.
+    snd (att_vm' (instr_compiler t p) p (e,[])) = [].
 Proof.
   intros.
-  destruct (exists_ev t p e).
-  rewrite H.
-  trivial.
+  apply stack_restore.
 Defined.
-
-  intros.
-  generalize dependent p.
-  generalize dependent e.
-  induction t; intros; try reflexivity.
-  - destruct a; try reflexivity.
-  - simpl.
-    rewrite <- (IHt2 (snd (att_vm' (instr_compiler t1 p) p (e, mt))) p) at 2.
-    rewrite <- (IHt1 e p) at 3.
-    rewrite (IHt1 e p) at 2.
-    apply snd_inv.
-    unfold att_vm' at 1.
-    rewrite fold_left_app.
-    unfold att_vm'.
-    unfold att_vm' in IHt1. rewrite IHt1.
-    assert ((fold_left (vm_prim p) (instr_compiler t1 p) (e, mt)) = (mt,mt)).
-    
-    admit.
-    congruence.
-    
-
-
-
-    apply asdf.
-  - simpl.
-    
-    
-
-
-    
-    
-  
-
-    snd (vm_prim' p e mt instr) = mt.
-Proof.
-  intros.
-  induction instr; try reflexivity.
-  - simpl
-
-(*
-Lemma asdf : forall e,
-IdentityMonad.unIdent
-  (ReaderMonad.runReaderT (vm_prim e copy) empty_cop_env) = e.
-Proof.
-  intros. simpl.
-Admitted. *)
-
-Lemma compile_att_vm : forall il1 il2 p e,
-    att_vm il2 p (att_vm il1 p e) =
-    att_vm (il1 ++ il2) p e.
-Proof.
-Admitted.
-(*
-  att_vm (instr_compiler t2 p) p (att_vm (instr_compiler t1 p) p e) =
-  att_vm (instr_compiler t1 p ++ instr_compiler t2 p) p e *)
-  
-Theorem eval_vm : forall (t:Term) (p:Plc) (e:Evidence),
-    eval t p e = att_vm (instr_compiler t p) p e.
-Proof.
-  intros.
-  generalize dependent p.
-  generalize dependent e.
-                            
-  induction t; intros; try (reflexivity).
-  
-  + 
-    destruct a; try (cbv; reflexivity).
-  + simpl. rewrite (IHt2 (eval t1 p e)).
-    rewrite (IHt1 e).
-    apply compile_att_vm.
-  + simpl. destruct s. simpl
-    destruct (instr_compiler t1 p);
-      destruct (instr_compiler t2 p).
-  - admit.
-  - admit.
-
-  - admit.
-  - simpl.
-    
-    
-    
-    
-
-    simpl. rewrite (IHt n).
-
-
-
-    
-  + unfold eval
-    
-    
-  + destruct env. simpl.
-    
-  - simpl. destruct env.
-
-    simpl. unfold empty_cop_env.
-    assert (p = 0). admit. congruence
-    unfold instr_compiler. unfold asp_instr.
-    unfold att_vm. unfold foldM_COP. unfold eval. unfold eval_asp_cop
-
-
-  simpl.
-  unfold runCOP at 1. simpl. unfold runCOP at 1.
-  simpl.
-  unfold runCOP. simpl. unfold ReaderMonad.runReaderT.
-  unfold vm_prim
-  destruct empty_cop_env. simpl. unfold vm_prim.
-  destruct runReaderT.
-  destruct env
-  simpl. unfold vm_prim
-  
-  
