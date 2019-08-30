@@ -15,36 +15,40 @@ Inductive Instr: Set :=
 | hash: Instr
 | reqrpy: Plc -> Plc -> Term -> Instr
 | split: SP -> SP -> Instr
-(*| besl: Instr -> Instr
-| besr: Instr -> Instr*)
 | besr : Instr
 | bep: (list Instr) -> (list Instr) -> Instr
 | joins: Instr
 | joinp: Instr.
 
-Definition eq_ev_dec:
-  forall x y: Instr, {x = y} + {x <> y}.
+(*
+Scheme mutual_ind_A := Induction for Instr Sort Prop
+  with mutual_ind_B := Induction for nat Sort Prop. *)
+(*
+Fixpoint eq_ev_dec :
+  forall x y: Instr, {x = y} + {x <> y}
+  with asdfdsa :   forall x y: (list Instr), {x = y} + {x <> y}.*)
+Require Import Coq.Program.Equality.
+Theorem eq_ev_dec :   forall x y: Instr, {x = y} + {x <> y}.
 Proof.
   intros.
   generalize dependent y.
-  induction x;
+  dependent induction x;
     intros; destruct y; try (left; reflexivity); try (right; congruence).
   SearchAbout "eq_dec".
+  -
   destruct (PeanoNat.Nat.eq_dec n n1);
     destruct (PeanoNat.Nat.eq_dec n0 n2);
     destruct (eq_ln_dec l l0); try (left; congruence); try (right; congruence).
+  - 
   destruct (PeanoNat.Nat.eq_dec n n0);
     destruct (eq_ln_dec l l0); try (left; congruence); try (right; congruence).
-  destruct (PeanoNat.Nat.eq_dec n n1);
+  - destruct (PeanoNat.Nat.eq_dec n n1);
     destruct (PeanoNat.Nat.eq_dec n0 n2);
     destruct (eq_term_dec t t0); try (left; congruence); try (right; congruence).
-    destruct (eq_sp_dec s s1);
+    - destruct (eq_sp_dec s s1);
     destruct (eq_sp_dec s0 s2);
     try (left; congruence); try (right; congruence).
-    (*
-    destruct (IHx y); try (left; congruence); try (right; congruence).
-    destruct (IHx y); try (left; congruence); try (right; congruence).*)
-    admit.
+    -
 Admitted.
 Hint Resolve eq_ev_dec.
 
@@ -55,6 +59,8 @@ Proof.
 Defined.
 Hint Resolve eq_li_dec.
 
+
+(** * Instruction Compiler *)
 Definition asp_instr (t:ASP) (p:Plc) : Instr :=
   match t with
   | CPY => copy
@@ -76,8 +82,6 @@ Fixpoint instr_compiler (t:Term) (p:Plc) : (list Instr) :=
     let splEv := split sp1 sp2 in
     let tr1 := instr_compiler t1 p in
     let tr2 := instr_compiler t2 p in
-    (*let evalL := map besl tr1 in
-    let evalR := map besr tr2 in *)
     [splEv] ++ tr1 ++ [besr] ++ tr2 ++ [joins]
   | bpar (sp1,sp2) t1 t2 =>
     let splEv := [split sp1 sp2] in
@@ -87,8 +91,7 @@ Fixpoint instr_compiler (t:Term) (p:Plc) : (list Instr) :=
     splEv ++ tr ++ [joinp]
   end.
 
-
-
+(** * Place-holder axioms for IO operations *)
 Definition invokeKIM (i:ASP_ID) (q:Plc) (args:list Arg) : BS.
 Admitted.
 
@@ -113,6 +116,8 @@ Admitted.
 Definition parallel_eval_thread (t:Term) (p:Plc) (e:Evidence) : Evidence.
 Admitted.
 
+
+(** * Eval function definition *)
 Definition splitEv (sp:SP) (e:Evidence) : Evidence :=
   match sp with
   | ALL => e
@@ -157,6 +162,7 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
     (pp e1' e2')
   end.
 
+(** * Evidence Stack *)
 Definition ev_stack := list Evidence.
 Definition empty_stack : ev_stack := [].
 
@@ -169,7 +175,7 @@ Definition pop_stack (s:ev_stack) : (Evidence*ev_stack) :=
   | _ => (mt,empty_stack) (* TODO: will this be expressive enough? *)
   end.
 
-
+(** * Primitive VM Operations *)
 Definition vm_prim (p:Plc) (ep:Evidence*ev_stack) (instr:Instr)
   :(Evidence * ev_stack) :=
   let (e,s) := ep in
@@ -196,12 +202,10 @@ Definition vm_prim (p:Plc) (ep:Evidence*ev_stack) (instr:Instr)
     | besr =>
       let (er,s') := pop_stack s in
       let s'' := push_stack e s' in
-      (er,s'')
-               
+      (er,s'')             
     | joins =>
       let (er,s') := pop_stack s in
-      (ss er e,s') (* TODO: better choice than mt? *)
-                 
+      (ss er e,s')              
     | joinp =>
       let (er,s') := pop_stack s in
       (pp e er,s') (* TODO: invoke "wait on evidence" commands here? *)
@@ -211,18 +215,44 @@ Definition vm_prim (p:Plc) (ep:Evidence*ev_stack) (instr:Instr)
       let res2 := parallel_att_vm_thread evs2 er in
       (res1, push_stack res2 s')  (* TODO: ret some kind of "wait handle" evidence instead? *)
     end.
-(*
-Definition vm_prim (p:Plc) (ep:Evidence*Evidence) (instr:Instr)
-  : (Evidence*Evidence) :=
-  vm_prim' p (fst ep) (snd ep) instr. *)
-(*
-Fixpoint fold {A B : Type} (f:A -> B -> A) (a:A) (bs:list B) : A :=
-  match bs with
-  | [] => a
-  | (x::xs) => fold f (f a x) xs
-  end.*)
+
+
+(** * Attestation VM run function *)
+Definition att_vm' (is:list Instr) (p:Plc) (ep:Evidence*ev_stack) : (Evidence*ev_stack) :=
+  fold_left (vm_prim p) is ep.
+
+Definition att_vm (is:list Instr) (p:Plc) (e:Evidence) : (Evidence) :=
+  fst (att_vm' is p (e,[])).
+
+(** * Reasonable axioms for remote/parallel components *)
+Axiom remote_vm : forall t n e,
+    toRemote t n e = att_vm (instr_compiler t n) n e.
+
+Axiom par_vm_thread : forall t p e,
+  parallel_att_vm_thread (instr_compiler t p) e = att_vm (instr_compiler t p) p e.
+
+Axiom par_eval_thread : forall t p e,
+    parallel_eval_thread t p e = eval t p e.
+
+
+(** * Lemmas *)
+Lemma att_vm'_distributes : forall is1 is2 p ep,
+    (att_vm' (is1 ++ is2) p ep) =
+    (att_vm' is2 p
+             (att_vm' is1 p ep)).
+Proof.
+  intros.
+  unfold att_vm'.
+  apply fold_left_app.
+Defined.
 
 Lemma fst_inv{A B:Type} : forall (p:A*B) (p':A*B), p = p' -> fst p = fst p'.
+Proof.
+  intros.
+  congruence.
+Defined.
+
+Lemma snd_inv{A B:Type} : forall (p:A*B) (p':A*B), p = p' -> snd p = snd p'.
 Proof.
   intros.
   congruence.
@@ -232,32 +262,6 @@ Lemma ss_inv : forall e1 e1' e2 e2', e1 = e1' -> e2 = e2' -> ss e1 e2 = ss e1' e
 Proof.
   congruence.
 Defined.
-
-
-
-
-
-Set Nested Proofs Allowed.
-
-  
-Definition att_vm' (is:list Instr) (p:Plc) (ep:Evidence*ev_stack) : (Evidence*ev_stack) :=
-  fold_left (vm_prim p) is ep.
-
-Definition att_vm (is:list Instr) (p:Plc) (e:Evidence) : (Evidence) :=
-  fst (att_vm' is p (e,[])).
-
-Axiom remote_vm : forall t n e,
-    toRemote t n e = att_vm (instr_compiler t n) n e.
-
-Axiom rem_vm : forall t p e s,
-    (toRemote t p e, s) = att_vm' (instr_compiler t p) p (e, s).
-
-Axiom par_vm_thread : forall t p e,
-  parallel_att_vm_thread (instr_compiler t p) e = att_vm (instr_compiler t p) p e.
-
-Axiom par_eval_thread : forall t p e,
-    parallel_eval_thread t p e = eval t p e.
-
 
 Lemma stack_restore' : forall e0 e1 t p s e,
     ((e0, e1) = att_vm' (instr_compiler t p) p (e, s)) ->
@@ -362,6 +366,13 @@ Proof.
   remember ((att_vm' (instr_compiler t p) p (e, s))).
   destruct p0.
   simpl. eapply stack_restore'. eassumption.
+Defined.
+
+Lemma nil_stack_restore : forall t p e,
+    snd (att_vm' (instr_compiler t p) p (e,[])) = [].
+Proof.
+  intros.
+  apply stack_restore.
 Defined.
 
 Lemma stack_irrel : forall e p t e2 e2', (* starting stack irrelevant *)
@@ -470,17 +481,9 @@ Proof.
     simpl. reflexivity.
 Defined.
 
-Lemma asdf : forall is1 is2 p ep,
-    (att_vm' (is1 ++ is2) p ep) =
-    (att_vm' is2 p
-             (att_vm' is1 p ep)).
-Proof.
-  intros.
-  unfold att_vm'.
-  apply fold_left_app.
-Defined.
 
-Lemma afsd : forall e p t1 t2,
+
+Lemma att_vm_distributive' : forall e p t1 t2,
     let il1 := (instr_compiler t1 p) in
     let il2 := (instr_compiler t2 p) in
     fst (fold_left (vm_prim p) il2 (fst (fold_left (vm_prim p) il1 (e, [])), [])) =
@@ -489,7 +492,6 @@ Proof.
   intros.
   destruct ((fold_left (vm_prim p) il1 (e, []))).
   simpl.
-  Check stack_irrel.
   apply stack_irrel.
 Defined.
 
@@ -508,9 +510,11 @@ Proof.
   unfold att_vm.
   unfold att_vm'.
   rewrite fold_left_app.
-  apply afsd.
+  apply att_vm_distributive'.
 Defined.
 
+
+(** * Theorems *)
 Theorem vm_eval : forall (t:Term) (p:Plc) (e:Evidence),
     eval t p e = att_vm (instr_compiler t p) p e.
 Proof.
@@ -528,7 +532,7 @@ Proof.
     unfold att_vm in *.
     rewrite (IHt1 e p).
     rewrite (IHt2 (fst (att_vm' (instr_compiler t1 p) p (e, [])))).
-    apply afsd.
+    apply att_vm_distributive'.
 
   - destruct s.
     simpl.
@@ -603,15 +607,4 @@ Proof.
     reflexivity.
 Defined.
 
-Lemma snd_inv{A B:Type} : forall (p:A*B) (p':A*B), p = p' -> snd p = snd p'.
-Proof.
-  intros.
-  congruence.
-Defined.
-
-Lemma right_mt : forall t p e,
-    snd (att_vm' (instr_compiler t p) p (e,[])) = [].
-Proof.
-  intros.
-  apply stack_restore.
-Defined.
+(*Set Nested Proofs Allowed.*)
