@@ -262,6 +262,258 @@ Axiom par_vm_thread : forall t p e,
 Axiom par_eval_thread : forall t p e,
     parallel_eval_thread t p e = eval t p e.
 
+(*
+Lemma fads : forall e0 e1 e e2 p t,
+    (e0,e1) = fold_left (vm_prim p) (instr_compiler t p) (e, e2) ->
+    (e1 = e2).
+Proof.
+Admitted. *)
+
+Lemma hi : forall e0 e1 t p s e,
+    ((e0, e1) = att_vm' (instr_compiler t p) p (e, s)) ->
+    e1 = s.
+Proof.
+  intros.
+  generalize dependent p.
+  generalize dependent s.
+  generalize dependent e0.
+  generalize dependent e1.
+  generalize dependent e.
+  
+  induction t; intros.
+  - destruct a; try (cbv in H; congruence).
+  - simpl in H.
+    
+    rewrite remote_vm in H. unfold att_vm in H.
+    congruence.
+  - simpl in H.
+    unfold att_vm' in H.
+    rewrite fold_left_app in H.
+
+    remember (att_vm' (instr_compiler t1 p) p (e, s)).
+    destruct p0.
+    assert (e3 = s). apply IHt1 with (p:=p) (e:=e) (e0:=e2).
+    apply Heqp0.
+
+    rewrite <- H0.
+        
+
+    remember (att_vm' (instr_compiler t2 p) p (e2, e3)).
+    destruct p0.
+
+    unfold att_vm' in Heqp0. 
+
+    rewrite <- Heqp0 in H.
+
+    unfold att_vm' in Heqp1.
+
+    rewrite <- Heqp1 in H.
+
+    apply IHt2 with (e:=e2) (e0:=e4) (p:=p).
+    assert (e1 = e5). congruence. subst.
+    assumption.
+  -
+    simpl in H.
+    unfold att_vm' in H.
+    destruct s.
+    simpl in H.
+    rewrite fold_left_app in H.
+    simpl in H.
+    rewrite fold_left_app in H.
+    simpl in H.
+    (* unfold push_stack in H. *)
+    
+    unfold vm_prim at 3 in H. (*unfold push_stack in H. *)
+    unfold vm_prim at 1 in H.
+
+
+
+
+    remember (fold_left (vm_prim p) (instr_compiler t1 p)
+                            (splitEv s e, push_stack (splitEv s1 e) s0)).
+    destruct p0.
+
+    remember (pop_stack e3).
+    destruct p0.
+
+
+
+    remember ((fold_left (vm_prim p) (instr_compiler t2 p)
+                             (e4, push_stack e2 e5))).
+    destruct p0.
+
+
+    assert (e7 = e2 :: e5).
+    apply IHt2 with (e:=e4) (e0:=e6) (p:=p).
+    assumption.
+    rewrite H0 in H. unfold pop_stack in H.
+    inversion H. subst.
+
+    assert (e3 = splitEv s1 e :: s0).
+    apply IHt1 with (e:=splitEv s e) (e0:=e2) (p:=p).
+    apply Heqp0.
+    rewrite H0 in Heqp1.
+    unfold pop_stack in Heqp1. inversion Heqp1. reflexivity.
+
+  - simpl in H.
+    destruct s in H.
+    simpl in H.
+
+    assert (parallel_att_vm_thread (instr_compiler t1 p) (splitEv s e) = 
+                att_vm (instr_compiler t1 p) p (splitEv s e)).
+    apply par_vm_thread.
+
+    assert (parallel_att_vm_thread (instr_compiler t2 p) (splitEv s1 e) = 
+            att_vm (instr_compiler t2 p) p (splitEv s1 e)).
+    apply par_vm_thread.
+    
+    rewrite H0 in H.
+    rewrite H1 in H.
+    congruence.
+Defined.
+
+Lemma stack_restore : forall s t p e,
+    snd (att_vm' (instr_compiler t p) p (e, s)) = s.
+Proof.
+  intros.
+  remember ((att_vm' (instr_compiler t p) p (e, s))).
+  destruct p0.
+  simpl. eapply hi. eassumption.
+Defined.
+
+Lemma afsd : forall e p t e2 e2', (* starting stack irrelevant *)
+    fst (fold_left (vm_prim p) (instr_compiler t p) (e,e2)) =
+    fst (fold_left (vm_prim p) (instr_compiler t p) (e,e2')).
+Proof.
+  intros.
+  generalize dependent p.
+  generalize dependent e.
+  generalize dependent e2.
+  generalize dependent e2'.
+  induction t; intros; try reflexivity.
+  - destruct a; try reflexivity.
+  - simpl.
+    rewrite fold_left_app.
+    rewrite fold_left_app.
+    remember ((fold_left (vm_prim p) (instr_compiler t1 p) (e, e2))).
+    destruct p0.
+    remember ((fold_left (vm_prim p) (instr_compiler t1 p) (e, e2'))).
+    destruct p0.
+    assert (e0 = e3).
+    
+    remember (IHt1 e2' e2 e p).
+    rewrite surjective_pairing in Heqp0. rewrite e5 in Heqp0.
+    inversion Heqp0.
+    rewrite surjective_pairing in Heqp1. inversion Heqp1.
+    subst. reflexivity.
+
+    subst.
+    apply IHt2.
+  - simpl.
+    destruct s.
+    simpl.
+    rewrite fold_left_app. rewrite fold_left_app. simpl.
+    unfold vm_prim at 5.
+    unfold vm_prim at 2.
+
+    remember (fold_left (vm_prim p) (instr_compiler t1 p)
+                        (splitEv s e, push_stack (splitEv s0 e) e2)).
+    destruct p0.
+
+    remember (fold_left (vm_prim p) (instr_compiler t1 p)
+                        (splitEv s e, push_stack (splitEv s0 e) e2')).
+    destruct p0.
+
+    assert (e0 = e3).
+    rewrite surjective_pairing in Heqp0.
+    inversion Heqp0.
+
+    rewrite surjective_pairing in Heqp1. inversion Heqp1.
+    apply IHt1.
+    subst.
+
+    rewrite fold_left_app.
+    rewrite fold_left_app.
+    simpl.
+    unfold vm_prim at 1.
+    unfold vm_prim at 2.
+
+    remember (fold_left (vm_prim p) (instr_compiler t2 p)
+                        (let (er, s') := pop_stack e1 in (er, push_stack e3 s'))).
+    destruct p0.
+
+    remember (fold_left (vm_prim p) (instr_compiler t2 p)
+                        (let (er, s') := pop_stack e4 in (er, push_stack e3 s'))).
+    destruct p0.
+
+    assert (e0 = e6).
+    remember (pop_stack e4).
+    remember (pop_stack e1).
+    destruct p0.
+    destruct p1.
+    (*assert (e4 = e1).*)
+
+    (* Lemma hi : forall e0 e1 t p s e,
+    ((e0, e1) = att_vm' (instr_compiler t p) p (e, s)) ->
+    e1 = s. *)
+
+    assert (e4 = push_stack (splitEv s0 e) e2').
+    
+    
+    apply hi with (e0:=e3) (t:=t1) (p:=p) (e:=splitEv s e).
+    assumption.
+
+    assert (e1 =  push_stack (splitEv s0 e) e2).
+    eapply hi. eassumption.
+    assert (e8 = e10).
+    subst. unfold push_stack in *. unfold pop_stack in *. congruence.
+    subst.
+
+    rewrite surjective_pairing in Heqp3.
+    inversion Heqp3.
+    rewrite (IHt2 (push_stack e3 e11) (push_stack e3 e9)).
+
+    rewrite surjective_pairing in Heqp2. inversion Heqp2.
+    reflexivity. subst.
+    
+   
+
+(*
+    
+    subst. congruence.
+
+    (*assert (e4 = e1).*)
+    
+
+
+
+
+
+    unfold push_stack in *.
+    assert (e4 = splitEv s0 e :: e2'). admit.
+    subst.
+    assert (e1 = splitEv s0 e :: e2). admit.
+    subst.
+    unfold pop_stack in Heqp2.
+    unfold pop_stack in Heqp3. *)
+
+    destruct (pop_stack e1).
+    destruct (pop_stack e4).
+    unfold push_stack in *.
+    assert (e5 = (e3 :: e8)).
+
+    eapply hi. unfold att_vm'. apply Heqp2.
+
+    subst.
+    assert (e7 = e3 :: e10).
+    eapply hi. apply Heqp3.
+    subst. reflexivity.
+
+  - simpl.
+    destruct s.
+    simpl. reflexivity.
+Defined. 
+
 Theorem vm_eval : forall (t:Term) (p:Plc) (e:Evidence),
     eval t p e = att_vm (instr_compiler t p) p e.
 Proof.
@@ -281,252 +533,8 @@ Proof.
     rewrite (IHt2 (fst (att_vm' (instr_compiler t1 p) p (e, [])))).
     apply fst_inv.
 
-    Lemma hi : forall e0 e1 t p s e,
-        ((e0, e1) =
-          att_vm' (instr_compiler t p) p
-                    (e, s)) ->
-        e1 = s.
-    Proof.
-      intros.
-      generalize dependent p.
-      generalize dependent s.
-      generalize dependent e0.
-      generalize dependent e1.
-      generalize dependent e.
-
-      induction t; intros.
-      - destruct a; try (cbv in H; congruence).
-      - simpl in H.
-
-        rewrite remote_vm in H. unfold att_vm in H.
-        congruence.
-      - simpl in H.
-        unfold att_vm' in H.
-        rewrite fold_left_app in H.
-
-        remember (att_vm' (instr_compiler t1 p) p (e, s)).
-        destruct p0.
-        assert (e3 = s). apply IHt1 with (p:=p) (e:=e) (e0:=e2).
-        apply Heqp0.
-
-        rewrite <- H0.
-        
-
-        remember (att_vm' (instr_compiler t2 p) p (e2, e3)).
-        destruct p0.
-
-        unfold att_vm' in Heqp0. 
-
-        rewrite <- Heqp0 in H.
-
-        unfold att_vm' in Heqp1.
-
-        rewrite <- Heqp1 in H.
-
-        apply IHt2 with (e:=e2) (e0:=e4) (p:=p).
-        assert (e1 = e5). congruence. subst.
-        assumption.
-      -
-        simpl in H.
-        unfold att_vm' in H.
-        destruct s.
-        simpl in H.
-        rewrite fold_left_app in H.
-        simpl in H.
-        rewrite fold_left_app in H.
-        simpl in H.
-       (* unfold push_stack in H. *)
-
-        unfold vm_prim at 3 in H. (*unfold push_stack in H. *)
-        unfold vm_prim at 1 in H.
-
-
-
-
-        remember (fold_left (vm_prim p) (instr_compiler t1 p)
-                            (splitEv s e, push_stack (splitEv s1 e) s0)).
-        destruct p0.
-
-
-        
-(*
-
-        (*
-        remember ((fold_left (vm_prim p) (instr_compiler t1 p)
-                             (splitEv s e, splitEv s1 e :: s0))).
-        destruct p0. *)
-
-        remember (         fold_left (vm_prim p) (instr_compiler t2 p)
-           (let (e, s) :=
-              fold_left (vm_prim p) (instr_compiler t1 p)
-                (splitEv s e, splitEv s1 e :: s0) in
-            let (er, s') := pop_stack s in (er, e :: s'))).
-        destruct p0.
-        rewrite <- Heqp0 in H.
-
-
-        rewrite <- Heqp0 in H.
-
-
-        
-
-        
-        assert ((e0, e1) =
-      (let (e, s) :=
-         fold_left (vm_prim p) (instr_compiler t2 p)
-       (
-       let (er, s') := pop_stack e3 in (er, e2 :: s')) in (
-         let (er, s') := pop_stack s in (ss er e, s')))).
-
-        
-        
-        admit.
-        
-        *)
-          
-        (*
-
-        assert (e3 = splitEv s1 e :: s0).
-        apply IHt1 with (e:=splitEv s e) (e0:=e2) (p:=p).
-        apply Heqp0.
-
-
-
-
-        
-
-        rewrite <- H0 in H.
-        rewrite <- H0 in Heqp0.
-
-       (* destruct (fold_left (vm_prim p) (instr_compiler t1 p) (splitEv s e, e3)).
-        destruct (pop_stack e5). *)
-
-        unfold vm_prim at 1 in H.
-
-
-         *)
-        
-
-        
-
-        remember (pop_stack e3).
-        destruct p0.
-
-
-
-        remember ((fold_left (vm_prim p) (instr_compiler t2 p)
-                             (e4, push_stack e2 e5))).
-        destruct p0.
-
-
-        assert (e7 = e2 :: e5).
-        apply IHt2 with (e:=e4) (e0:=e6) (p:=p).
-        assumption.
-        rewrite H0 in H. unfold pop_stack in H.
-        inversion H. subst.
-
-        assert (e3 = splitEv s1 e :: s0).
-        apply IHt1 with (e:=splitEv s e) (e0:=e2) (p:=p).
-        apply Heqp0.
-        rewrite H0 in Heqp1.
-        unfold pop_stack in Heqp1. inversion Heqp1. reflexivity.
-
-      - simpl in H.
-        destruct s in H.
-        simpl in H.
-
-        assert (parallel_att_vm_thread (instr_compiler t1 p) (splitEv s e) = 
-                att_vm (instr_compiler t1 p) p (splitEv s e)).
-        apply par_vm_thread.
-
-        assert (parallel_att_vm_thread (instr_compiler t2 p) (splitEv s1 e) = 
-                att_vm (instr_compiler t2 p) p (splitEv s1 e)).
-        apply par_vm_thread.
-
-        rewrite H0 in H.
-        rewrite H1 in H.
-        congruence.
-    Defined.
-    
-        
-
-        
-(*
-
-        assert ( ((let (e, s) :=
-         fold_left (vm_prim p) (instr_compiler t2 p)
-           (let (e, s) :=
-              fold_left (vm_prim p) (instr_compiler t1 p) (splitEv s e, e3) in
-            let (er, s') := pop_stack s in (er, e :: s')) in
-       let (er, s') := pop_stack s in (ss er e, s')))
-                      =
-                            (let (e, s) :=
-         fold_left (vm_prim p) (instr_compiler t2 p)
-           (
-            let (er, s') := pop_stack e3 in (er, e2 :: s')) in
-                             let (er, s') := pop_stack e3 in (ss er e2, s'))).
-        admit.
-
-        rewrite H1 in H.
-
-        assert ((e0, e1) =
-      (
-        let (er, s') := pop_stack e9 in (ss er e8, s'))).
-        admit.
-        
-
-
-
-        assert (e9 = e4 :: e7).
-        apply IHt2 with (e:=e6) (e0:=e8) (p:=p).
-        apply Heqp1.
-
-        rewrite H2 in H1.
-        unfold pop_stack in H1.
-        inversion H1. subst.
-
-        rewrite <- H1 in H.
-        rewrite <- H1 in Heqp1.
-        rewrite <- Heqp1 in H.
-        
-
-        rewrite <- Heqp1 in H.
-        
-        rewrite <- Heqp0 in H.
-        
-        
-        
-
-        
-        assert (e5 = s).
-        admit.
-
-        rewrite <- H1.
-        symmetry.
-
-        apply IHt2 with (e:=e2) (e0:=e4) (p:=p). 
-                        
-        
-        
-        
-     *) 
-      
-    
-    Lemma stack_restore : forall s t p e,
-        snd (att_vm' (instr_compiler t p) p (e, s)) = s.
-    Proof.
-      intros.
-      remember ((att_vm' (instr_compiler t p) p (e, s))).
-      destruct p0.
-      simpl. eapply hi. eassumption.
-    Defined.
-    
-      
-
-    
     unfold att_vm'.
     assert (snd (fold_left (vm_prim p) (instr_compiler t1 p) (e, [])) = []).
-    
       
     apply stack_restore.
     rewrite <- H at 2.
@@ -567,8 +575,6 @@ Proof.
 
     unfold push_stack in *.
 
-
-
     eapply hi.
     apply HeqHH.
 
@@ -587,21 +593,12 @@ Proof.
     assert (e0 = e6). congruence. subst.
     clear HeqJ.
 
-    Lemma afsd : forall e p t e2 e2',
-        fold_left (vm_prim p) (instr_compiler t p) (e,e2) =
-        fold_left (vm_prim p) (instr_compiler t p) (e,e2').
-    Admitted.  (* starting stack irrelevant *)
-
     apply ss_inv.
     rewrite <- afsd with (e2:=[(splitEv s0 e)]).
     rewrite <- HeqHH. reflexivity.
 
-
-    
-
     rewrite <- afsd with (e2:=[e6]).
     rewrite <- HeqHHH. reflexivity.
-
   -
     simpl.
     destruct s.
@@ -616,144 +613,6 @@ Proof.
     rewrite IHt2.
     reflexivity.
 Defined.
-
-
-    
-    assert ((fold_left (vm_prim p) (instr_compiler t2 p) (splitEv s0 e, [])) = (fold_left (vm_prim p) (instr_compiler t2 p) (splitEv s0 e, [splitEv s0 e]))).
-    apply afsd.
-    rewrite H.
-
-    assert (e6 = fst (fold_left (vm_prim p) (instr_compiler t1 p)
-                                (splitEv s e, [splitEv s0 e]))).
-    rewrite surjective_pairing in HeqHH.
-    eapply pair_inv. apply HeqHH. rewrite H0.
-
-    assert (e4 = fst (fold_left (vm_prim p) (instr_compiler t2 p)
-                                (splitEv s0 e, [splitEv s0 e]))).
-    rewrite surjective_pairing in H.
-    eapply pair_inv.
-
-    rewrite fst_inv in HeqHH with 
-
-    assert (
-       (fold_left (vm_prim p) (instr_compiler t1 p)
-                  (splitEv s e, [splitEv s e])) = (e6,[splitEv s0 e])).
-    subst.
-
-    rewrite <- surjective_pairing.
-
-    congruence.
-    assert (fst (fold_left (vm_prim p) (instr_compiler t1 p) (splitEv s e, mt)) = e0). rewrite (afsd (splitEv s e) p t1 (splitEv s0 e) mt) in HeqHH.
-    rewrite <- HeqHH. trivial.
-    rewrite H.
-
-    clear H.
-
-    Lemma fads : forall e0 e1 e e2 p t,
-      (e0,e1) = fold_left (vm_prim p) (instr_compiler t p) (e, e2) ->
-      (e1 = e2).
-    Proof.
-    Admitted.
-
-    assert (e3 = e0). eapply fads. apply HeqHHH. rewrite H.
-
-    assert (e1 = (splitEv s0 e)). eapply fads. apply HeqHH.
-    rewrite <- H.
-    rewrite (afsd e1 p t2 e0 mt) in HeqHHH. rewrite <- H0.
-    rewrite <- HeqHHH. simpl. reflexivity.
-    
-    
-
-    assert (e3 = (fst (fold_left (vm_prim p) (instr_compiler t1 p) (splitEv s e, mt)))).
-
-    assert (splitEv s0 e = e1). admit.
-    subst.
-    assert (e0 = e3). admit. subst.
-    rewrite <- H in HeqHHH.
-    
-    admit.
-
-    assert (e2 = (fst (fold_left (vm_prim p) (instr_compiler t2 p) (splitEv s0 e, mt)))).
-    admit.
-    congruence.
-
-    
-    simpl.
-    destruct (fdsas (instr_compiler t1 p) p (splitEv s e) (splitEv s0 e)).
-    destruct H.
-    rewrite H.
-    destruct (fdsas (instr_compiler t2 p) p x0 x).
-    destruct H0. rewrite H0. simpl.
-    
-    rewrite <- fdsas with (il:=(instr_compiler t1 p)).
-    
-      
-
-    rewrite <- surjective_pairing.
-
-    fold (fold_left (vm_prim p) (instr_compiler t2 p)
-         (vm_prim p
-            ((fix
-              fold_left (l : list Instr) (a0 : Evidence * Evidence) {struct l} :
-                Evidence * Evidence :=
-                match l with
-                | [] => a0
-                | b :: t => fold_left t (vm_prim p a0 b)
-                end) (instr_compiler t1 p) (splitEv s e, splitEv s0 e)) besr)).
-
-    unfold att_vm in IHt2.
-    unfold att_vm' in IHt2.
-    rewrite (IHt2 (splitEv s0 e) p).
-    
-
-    rewrite <- (IHt2 (fst (vm_prim p
-             (fold_left (vm_prim p) (instr_compiler t1 p)
-                (splitEv s e, splitEv s0 e)) besr)) p).
-
-    unfold fold_left at 2.
-
-    fold ((fold_left (vm_prim p) (instr_compiler t2 p)
-          (vm_prim p
-             (fold_left (vm_prim p) (instr_compiler t1 p)
-                (splitEv s e, splitEv s0 e)) besr))).
-    destruct s
-
-    unfold fold_left.
-    fold (fold_left (vm_prim p)
-       (instr_compiler t1 p ++ besr :: instr_compiler t2 p ++ [joins])
-       (splitEv s e, splitEv s0 e)).
-    
-
-    Lemma fdsa{A B:Type} : forall (p:A*B) (a:A) (b:B), (fst p,snd p) = p.
-    rewrite fst_val.
-    unfold fst at 1
-    cbn
-    
-    
-  
-  
-  
-
-
-(*
-Lemma asdf : forall is1 is2 p ep,
-        snd (att_vm' (is1 ++ is2) p ep) =
-        snd
-          (att_vm' is2 p
-                   (snd (att_vm' is1 p ep),mt)).
-Proof.
-  intros.
-  simpl.
-  unfold att_vm'.
-  assert ((fold_left (vm_prim p) (is1 ++ is2) ep) = (fold_left (vm_prim p) is2 (snd (fold_left (vm_prim p) is1 ep), mt))).
-  
-  
-
-  
-  congruence.
-  
-Admitted.
- *)
 
 Lemma asdf : forall is1 is2 p ep,
         (att_vm' (is1 ++ is2) p ep) =
