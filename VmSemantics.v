@@ -87,6 +87,7 @@ Inductive att_vm'R : Plc -> (list Instr) -> (list Instr) -> (Evidence*ev_stack) 
     att_vm'R p is is' ep ep' ->
     att_vm'R p is' is'' ep' ep'' ->
     att_vm'R p is is'' ep ep''. *)
+Hint Constructors att_vm'R.
 
 Definition att_vmR (p:Plc) (is:list Instr) (e:Evidence) (e':Evidence) : Prop :=
   att_vm'R p is [] (e,[]) (e',[]).
@@ -126,17 +127,110 @@ Proof.
   generalize dependent e.
   generalize dependent e'.
   induction t; intros; try (destruct a);
-    try (cbv; inversion H; subst; inversion H3; subst; inversion H7; trivial).
+    try (cbv; inversion H; subst; inversion H3; subst; inversion H7; trivial; reflexivity).
   - simpl.
-    inversion H.
-    + subst. trivial.
-    + subst.
-      destruct (instr_compiler t1 p).
+    simpl in H.
+
+    Lemma lema : forall p t1 t2 e e'',
+      att_vm'R p (instr_compiler t1 p ++ instr_compiler t2 p) [] 
+               (e, []) (e'', []) ->
+      exists e', att_vm'R p (instr_compiler t1 p) [] (e,[]) (e',[]) /\
+                att_vm'R p (instr_compiler t2 p) [] (e',[]) (e'',[]).
+    Admitted.
+
+    edestruct lema. apply H.
+    destruct H0.
+    assert (att_vm (instr_compiler t1 p) p e = x). apply IHt1. assumption.
+    assert (att_vm (instr_compiler t2 p) p x = e'). apply IHt2. assumption.
+    rewrite <- att_vm_distributive.
+    rewrite H2. rewrite H3. reflexivity.
+  - simpl. destruct s; subst.
+    (*unfold att_vm.
+    simpl.*)
+    inversion H; subst; clear H.
+    destruct ep'.
+    inversion H3; subst.
+
+    Lemma lemc : forall p t e,
+        exists e',
+          att_vm'R p (instr_compiler t p) [] (e,[]) (e',[]).
+    Proof.
+    Admitted.
+
+    destruct lemc with (p:=p) (t:=t1) (e:=e3).
+    assert (att_vm (instr_compiler t1 p) p e3 = x).
+    apply IHt1. assumption. clear H.
+
+    destruct lemc with (p:=p) (t:=t2) (e:=e4).
+    assert (att_vm (instr_compiler t2 p) p e4 = x0).
+    apply IHt2. assumption. clear H.
+
+    att_vm (instr_compiler t1 p) p (splitEv s e) = x ->
+    att_vm (instr_compiler t2 p) p (splitEv s0 e) = x0 ->
+      att_vm
+    (Instr.split s s0
+     :: instr_compiler t1 p ++ besr :: instr_compiler t2 p ++ [joins]) p e =
+  e'
+
+    unfold att_vm. simpl
+    unfold att_vm in H0
+    
+    
+    (*assert (att_vm (instr_compiler t1 p) p e = *)
+    inversion H7; subst; clear H7.
+    simpl. inversion H3.
+    simpl
+    
+
+    Lemma lemb : forall p e x e' is1 is2,
+      att_vm is1 p e = x ->
+      att_vm is2 p x = e' ->
+      att_vm (is1 ++ is2) p e = e'.
+    Proof.
+      intros.
+      rewrite att_vm_distributive.
+      unfold att_vm.
+      unfold att_vm'.
+      rewrite fold_left_app.
+      assert ((att_vm is1 p e) = fst (fold_left (vm_prim p) is1 (e, []))).
+      unfold att_vm. unfold att_vm'. reflexivity.
+      rewrite <- att_vm_distributive'.
+      rewrite H.
+      
+    
+    inversion H; clear H; subst.
+    + trivial.
+    + 
+
+
+
+      remember (instr_compiler t1 p).
+      destruct l.
       * simpl in H0.
         destruct ep'.
         assert (att_vm (instr_compiler t2 p) p e = e').
         { 
-        inversion H; subst. rewrite <- H0 in H5. admit.
+          (*inversion H; subst. rewrite <- H0 in H5.*)
+          apply IHt2. rewrite <- H0.
+          econstructor; eassumption.
+        }
+        rewrite H0. assumption.
+      * simpl in H0.
+        assert (i = i0). admit. subst.
+        assert (is = (l ++ instr_compiler t2 p)). admit. subst. clear H0.
+        destruct ep'; subst.
+        simpl in H.
+        inversion H; subst.
+        { specialize IHt1 with (p:=p).
+
+
+          rewrite <- Heql in IHt1.
+        assert (att_vm (instr_compiler t1 p) p e = e0). admit.
+        
+        
+          apply H1.
+          apply H3.
+                                      eapply att_vm'R_step.
         apply IHt2. 
       
       
