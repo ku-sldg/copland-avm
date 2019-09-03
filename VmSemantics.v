@@ -1,8 +1,12 @@
 Require Import Term.
 Require Import Instr.
+Require Import Preamble.
 
 Require Import List.
 Import ListNotations.
+
+Require Import Coq.Program.Equality.
+Set Nested Proofs Allowed.
 
 Inductive vm_primR : Plc -> (Evidence*ev_stack) -> Instr -> (Evidence*ev_stack) -> Prop :=
 | vcopy : forall p ep, vm_primR p ep copy ep
@@ -89,11 +93,45 @@ Inductive att_vm'R : Plc -> (list Instr) -> (list Instr) -> (Evidence*ev_stack) 
     att_vm'R p is is'' ep ep''. *)
 Hint Constructors att_vm'R.
 
+Lemma att_vm'R_transitive : forall p is is' is'' ep ep' ep'',
+  att_vm'R p is is' ep ep' ->
+  att_vm'R p is' is'' ep' ep'' ->
+  att_vm'R p is is'' ep ep''.
+Proof.
+  intros.
+  induction H; auto.
+  apply IHatt_vm'R in H0.
+  eapply att_vm'R_step; eauto.
+Defined.
+
 Definition att_vmR (p:Plc) (is:list Instr) (e:Evidence) (e':Evidence) : Prop :=
   att_vm'R p is [] (e,[]) (e',[]).
 
-Require Import Coq.Program.Equality.
-Set Nested Proofs Allowed.
+Theorem att_vmR_transitive : forall p is1 is2 e e' e'',
+  att_vmR p is1 e e' ->
+  att_vmR p is2 e' e'' ->
+  att_vmR p (is1 ++ is2) e e''.
+Proof.
+  intros.
+  unfold att_vmR in *.
+  (*apply att_vm'R_transitive with (is':=is2) (ep':=(e',[])).
+  admit. assumption.*)
+  induction H.
+  - rewrite app_nil_l. assumption.
+  - apply IHatt_vm'R in H0.
+    rewrite <- app_comm_cons.
+    eapply att_vm'R_step; eauto.
+Defined.
+
+
+(*
+Lemma existsIs : forall p t e s, exists e',
+      att_vm'R p (instr_compiler t p) [] (e, s) (e', s).
+Proof.
+  intros.
+  generalize dependent p.
+  generalize dependent e.
+Admitted. *)
 
 Lemma pairf{A B:Type} : forall (p:A*B) e' v,
     p = (e', v) -> fst p = e'.
@@ -130,24 +168,54 @@ Proof.
     try (cbv; inversion H; subst; inversion H3; subst; inversion H7; trivial; reflexivity).
   - simpl.
     simpl in H.
+    assert ((att_vm'R p (instr_compiler t1 p ++ instr_compiler t2 p) [] 
+                      (e, []) (e', [])) = (att_vmR p (instr_compiler t1 p ++ instr_compiler t2 p) e e')). unfold att_vmR. reflexivity.
+    rewrite H0 in H; clear H0.
+    
+    
 
-    Lemma lema : forall p t1 t2 e e'',
-      att_vm'R p (instr_compiler t1 p ++ instr_compiler t2 p) [] 
+
+(*
+    
+    edestruct att_vmR_transitive
+    rewrite <- att_vmR_transitive in H with (e':=(att_vm (instr_compiler t1 p) p e)).
+    eapply IHt1. *)
+    
+
+    Lemma lema : forall p is1 is2 e e'',
+      att_vm'R p (is1 ++ is2) [] 
                (e, []) (e'', []) ->
-      exists e', att_vm'R p (instr_compiler t1 p) [] (e,[]) (e',[]) /\
-                att_vm'R p (instr_compiler t2 p) [] (e',[]) (e'',[]).
+      exists e', att_vm'R p is1 [] (e,[]) (e',[]) /\
+            att_vm'R p is2 [] (e',[]) (e'',[]).
+    Proof.
+      intros.
+      dependent induction H.
+      - exists e''. admit.
+      -          
     Admitted.
+
+   (* edestruct existsIs with (t:=t1) (p:=p).
+    edestruct existsIs with (t:=t2) (e:=x) (p:=p). *)
 
     edestruct lema. apply H.
     destruct H0.
-    assert (att_vm (instr_compiler t1 p) p e = x). apply IHt1. assumption.
-    assert (att_vm (instr_compiler t2 p) p x = e'). apply IHt2. assumption.
+    assert (att_vm (instr_compiler t1 p) p e = x). apply IHt1. eassumption.
+    assert (att_vm (instr_compiler t2 p) p x = e'). apply IHt2. eassumption.
     rewrite <- att_vm_distributive.
     rewrite H2. rewrite H3. reflexivity.
   - simpl. destruct s; subst.
     (*unfold att_vm.
     simpl.*)
     inversion H; subst; clear H.
+    inv H3.
+    destruct ep'; subst.
+    rewrite app_comm_cons in H7.
+    (*rewrite app_assoc in H7.*)
+    edestruct lema.
+    inv H3
+    destruct ep'.
+
+    apply H7.
     destruct ep'.
     inversion H3; subst.
 
