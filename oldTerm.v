@@ -12,7 +12,7 @@ University of California.  See license.txt for details. *)
 (** This module contains the basic definitions for Copland terms,
     events, and annotated terms. *)
 
-Require Import Omega Preamble.
+Require Import Omega Preamble Maps.
 
 (** * Terms and Evidence
 
@@ -23,17 +23,20 @@ Require Import Omega Preamble.
 (** [Plc] represents a place. *)
 
 Notation Plc := nat (only parsing).
+Notation ASP_ID := nat (only parsing).
+Notation Arg := nat (only parsing).
+Notation BS := nat (only parsing).
+Notation N_ID := nat (only parsing).
+Notation Address := nat (only parsing).
 
-(** An argument to a userspace or kernel measurement. *)
+Definition NS := Map Plc Address.
 
 (*
+(** An argument to a userspace or kernel measurement. *)
+
 Inductive Arg: Set :=
 | arg: nat -> Arg
-| pl: Plc -> Arg.*)
-Notation Arg := nat (only parsing).
-Notation ASP_ID := nat (only parsing).
-Notation N_ID := nat (only parsing).
-Notation BS := nat (only parsing).
+| pl: Plc -> Arg. *)
 
 Definition eq_arg_dec:
   forall x y: Arg, {x = y} + {x <> y}.
@@ -43,6 +46,13 @@ Proof.
 Defined.
 Hint Resolve eq_arg_dec.
 
+Definition eq_ln_dec:
+  forall x y: (list nat), {x = y} + {x <> y}.
+Proof.
+  decide equality.
+Defined.
+Hint Resolve eq_ln_dec.
+
 Inductive ASP: Set :=
 | CPY: ASP
 | KIM: ASP_ID -> Plc -> (list Arg) -> ASP
@@ -50,13 +60,35 @@ Inductive ASP: Set :=
 | SIG: ASP
 | HSH: ASP.
 
+Definition eq_asp_dec:
+  forall x y: ASP, {x = y} + {x <> y}.
+Proof.
+  decide equality.
+Defined.
+Hint Resolve eq_asp_dec.
+
 (** The method by which data is split is specified by a natural number. *)
 
 Inductive SP: Set :=
 | ALL
 | NONE.
 
+Definition eq_sp_dec:
+  forall x y: SP, {x = y} + {x <> y}.
+Proof.
+  decide equality.
+Defined.
+Hint Resolve eq_sp_dec.
+    
 Definition Split: Set := (SP * SP).
+
+Definition eq_split_dec:
+  forall x y: Split, {x = y} + {x <> y}.
+Proof.
+  decide equality.
+Defined.
+Hint Resolve eq_split_dec.
+
 
 Inductive Term: Set :=
 | asp: ASP -> Term
@@ -65,24 +97,32 @@ Inductive Term: Set :=
 | bseq: Split -> Term -> Term -> Term
 | bpar: Split -> Term -> Term -> Term.
 
+Definition eq_term_dec:
+  forall x y: Term, {x = y} + {x <> y}.
+Proof.
+  decide equality.
+Defined.
+Hint Resolve eq_term_dec.
+
 (** The structure of evidence. *)
 
 Inductive Evidence: Set :=
 | mt: Evidence
-| sp: SP -> Evidence -> Evidence
-| kk: ASP_ID -> (list Arg) -> Plc -> Plc -> Evidence -> Evidence
-| uu: ASP_ID -> (list Arg) -> Plc -> Evidence -> Evidence
-| gg: Plc -> Evidence -> Evidence
-| hh: Plc -> Evidence -> Evidence
-| nn: Plc -> N_ID -> Evidence -> Evidence
+(*| sp: Evidence -> Evidence -> Evidence*)
+| kk: ASP_ID -> (list Arg) -> Plc -> Plc -> BS -> Evidence -> Evidence
+| uu: ASP_ID -> (list Arg) -> Plc -> BS -> Evidence -> Evidence
+| gg: Plc -> Evidence -> BS -> Evidence
+| hh: Plc -> BS -> Evidence
+| nn: Plc -> N_ID -> BS -> Evidence -> Evidence
 | ss: Evidence -> Evidence -> Evidence
 | pp: Evidence -> Evidence -> Evidence.
 
+(*
 Fixpoint eval_asp t p e :=
   match t with
   | CPY => e
-  | KIM i q A => kk i A p q e
-  | USM i A => uu i A p e
+  | KIM i q A => kk i q p A e
+  | USM i A => uu i A p A e
   | SIG => gg p e
   | HSH => hh p e
   end.
@@ -100,18 +140,6 @@ Fixpoint eval t p e :=
                        (eval t2 p (sp (snd s) e))
   end.
 
-
-(** * Concrete Evidence *)
-Inductive EvidenceC: Set :=
-| mtc: EvidenceC
-(*| sp: EvidenceC -> EvidenceC -> EvidenceC*)
-| kkc: ASP_ID -> (list Arg) -> Plc -> Plc -> BS -> EvidenceC -> EvidenceC
-| uuc: ASP_ID -> (list Arg) -> Plc -> BS -> EvidenceC -> EvidenceC
-| ggc: Plc -> EvidenceC -> BS -> EvidenceC
-| hhc: Plc -> BS -> EvidenceC
-| nnc: Plc -> N_ID -> BS -> EvidenceC -> EvidenceC
-| ssc: EvidenceC -> EvidenceC -> EvidenceC
-| ppc: EvidenceC -> EvidenceC -> EvidenceC.
 (** * Events
 
     There are events for each kind of action. This includes ASP
@@ -124,11 +152,11 @@ Inductive EvidenceC: Set :=
 
 Inductive Ev: Set :=
 | copy: nat -> Plc -> Evidence -> Ev
-| kmeas: nat -> ASP_ID -> Plc -> (list Arg) -> Evidence -> Evidence -> Ev
-| umeas: nat -> ASP_ID -> (*Plc ->*) (list Arg) -> Evidence -> Evidence -> Ev
-| sign: nat -> (*Plc ->*) Evidence -> Evidence -> Ev
-| hash: nat -> (*Plc ->*) Evidence -> Evidence -> Ev
-| req: nat -> Plc -> Plc -> (*Evidence*) Term -> Ev
+| kmeas: nat -> Plc -> (list Arg) -> Evidence -> Evidence -> Ev
+| umeas: nat -> Plc -> (list Arg) -> Evidence -> Evidence -> Ev
+| sign: nat -> Plc -> Evidence -> Evidence -> Ev
+| hash: nat -> Plc -> Evidence -> Evidence -> Ev
+| req: nat -> Plc -> Plc -> Evidence -> Ev
 | rpy: nat -> Plc -> Plc -> Evidence -> Ev
 | split: nat -> Plc -> Evidence -> Evidence -> Evidence -> Ev
 | join: nat -> Plc -> Evidence -> Evidence -> Evidence -> Ev.
@@ -137,7 +165,8 @@ Definition eq_ev_dec:
   forall x y: Ev, {x = y} + {x <> y}.
 Proof.
   intros;
-    repeat decide equality.
+    decide equality; decide equality;
+      decide equality.
 Defined.
 Hint Resolve eq_ev_dec.
 
@@ -146,10 +175,10 @@ Hint Resolve eq_ev_dec.
 Definition ev x :=
   match x with
   | copy i _ _ => i
-  | kmeas i _ _ _ _ _ => i
+  | kmeas i _ _ _ _ => i
   | umeas i _ _ _ _ => i
-  | sign i _ _ => i
-  | hash i _ _ => i
+  | sign i _ _ _ => i
+  | hash i _ _ _ => i
   | req i _ _ _ => i
   | rpy i _ _ _ => i
   | split i _ _ _ _ => i
@@ -166,10 +195,10 @@ See Lemma [events_injective].
 Definition asp_event i x p e :=
   match x with
   | CPY => copy i p e
-  | KIM id q A => kmeas i id q A e (eval_asp (KIM id q A) p e)
-  | USM id A => umeas i id A e (eval_asp (USM id A) p e)
-  | SIG => sign i e (eval_asp SIG p e)
-  | HSH => hash i e (eval_asp HSH p e)
+  | KIM A => kmeas i p A e (eval_asp (KIM A) p e)
+  | USM A => umeas i p A e (eval_asp (USM A) p e)
+  | SIG => sign i p e (eval_asp SIG p e)
+  | HSH => hash i p e (eval_asp HSH p e)
   end.
 
 (** * Annotated Terms
@@ -256,17 +285,6 @@ Qed.
 
 Definition annotated x :=
   snd (anno x 0).
-
-Fixpoint unanno a :=
-  match a with
-  | aasp _ a => asp a
-  | aatt _ p t => att p (unanno t)
-  | alseq _ a1 a2 => lseq (unanno a1) (unanno a2)
-  | abseq _ spl a1 a2 => bseq spl (unanno a1) (unanno a2)
-  | abpar _ spl a1 a2 => bpar spl (unanno a1) (unanno a2)
-  end.
-
-
 
 (** This predicate determines if an annotated term is well formed,
     that is if its ranges correctly capture the relations between a
@@ -389,30 +407,30 @@ Inductive events: AnnoTerm -> Plc -> Evidence -> Ev -> Prop :=
       fst r = i ->
       events (aasp r CPY) p e (copy i p e)
 | evtskim:
-    forall i id r a p q e e',
+    forall i r a p e e',
       fst r = i ->
-      kk id a p q e = e' ->
-      events (aasp r (KIM id q a)) p e (kmeas i id q a e e')
+      kk p a e = e' ->
+      events (aasp r (KIM a)) p e (kmeas i p a e e')
 | evtsusm:
-    forall i id r a p e e',
+    forall i r a p e e',
       fst r = i ->
-      uu id a p e = e' ->
-      events (aasp r (USM id a)) p e (umeas i id a e e')
+      uu p a e = e' ->
+      events (aasp r (USM a)) p e (umeas i p a e e')
 | evtssig:
     forall r i p e e',
       fst r = i ->
       gg p e = e' ->
-      events (aasp r SIG) p e (sign i e e')
+      events (aasp r SIG) p e (sign i p e e')
 | evtshsh:
     forall r i p e e',
       fst r = i ->
       hh p e = e' ->
-      events (aasp r HSH) p e (hash i e e')
+      events (aasp r HSH) p e (hash i p e e')
 
 | evtsattreq:
     forall r p q t e i,
       fst r = i ->
-      events (aatt r q t) p e (req i p q (unanno t))
+      events (aatt r q t) p e (req i p q e)
 | evtsatt:
     forall r p q t e ev,
       events t q e ev ->
@@ -694,3 +712,5 @@ Proof.
     + events_event_range.
     + events_event_range.
 Qed.
+
+*)

@@ -28,8 +28,12 @@ Fixpoint eq_ev_dec :
   forall x y: Instr, {x = y} + {x <> y}
   with asdfdsa :   forall x y: (list Instr), {x = y} + {x <> y}.*)
 Require Import Coq.Program.Equality.
+
+
 Theorem eq_ev_dec :   forall x y: Instr, {x = y} + {x <> y}.
 Proof.
+Admitted.
+(*
   intros.
   generalize dependent y.
   dependent induction x;
@@ -49,7 +53,7 @@ Proof.
     destruct (eq_sp_dec s0 s2);
     try (left; congruence); try (right; congruence).
     -
-Admitted.
+Admitted.*)
 Hint Resolve eq_ev_dec.
 
 Definition eq_li_dec:
@@ -98,50 +102,50 @@ Admitted.
 Definition invokeUSM (i:ASP_ID) (args:list Arg) : BS.
 Admitted.
 
-Definition signEv (e:Evidence) : BS.
+Definition signEv (e:EvidenceC) : BS.
 Admitted.
 
-Definition hashEv (e:Evidence) : BS.
+Definition hashEv (e:EvidenceC) : BS.
 Admitted.
 
-Definition toRemote (t:Term) (pTo:Plc) (e:Evidence) : Evidence.
+Definition toRemote (t:Term) (pTo:Plc) (e:EvidenceC) : EvidenceC.
 Admitted.
 
-Definition parallel_att_vm_thread (li:list Instr) (e:Evidence) : Evidence.
+Definition parallel_att_vm_thread (li:list Instr) (e:EvidenceC) : EvidenceC.
 Admitted.
 
-Definition vm_prim_thread (i:Instr) (p:Plc) (e:Evidence) : Evidence.
+Definition vm_prim_thread (i:Instr) (p:Plc) (e:EvidenceC) : EvidenceC.
 Admitted.
 
-Definition parallel_eval_thread (t:Term) (p:Plc) (e:Evidence) : Evidence.
+Definition parallel_eval_thread (t:Term) (p:Plc) (e:EvidenceC) : EvidenceC.
 Admitted.
 
 
 (** * Eval function definition *)
-Definition splitEv (sp:SP) (e:Evidence) : Evidence :=
+Definition splitEv (sp:SP) (e:EvidenceC) : EvidenceC :=
   match sp with
   | ALL => e
-  | NONE => mt
+  | NONE => mtc
   end.
 
-Definition eval_asp (a:ASP) (p:Plc) (e:Evidence) : Evidence :=
+Definition eval_asp (a:ASP) (p:Plc) (e:EvidenceC) : EvidenceC :=
   match a with
   | CPY => e
   | KIM i q args =>
     let bs := invokeKIM i q args in
-    (kk i args q p bs e)
+    (kkc i args q p bs e)
   | USM i args =>
     let bs := invokeUSM i args in
-    (uu i args p bs e)
+    (uuc i args p bs e)
   | SIG =>
     let bs := signEv e in
-    (gg p e bs)
+    (ggc p e bs)
   | HSH =>
     let bs := hashEv e in
-    (hh p bs)
+    (hhc p bs)
   end.
 
-Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
+Fixpoint eval (t:Term) (p:Plc) (e:EvidenceC) : EvidenceC :=
   match t with
   | asp a => eval_asp a p e
   | att q t1 => toRemote t1 q e
@@ -153,46 +157,46 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
     let e2 := splitEv sp2 e in
     let e1' := eval t1 p e1 in
     let e2' := eval t2 p e2 in
-    (ss e1' e2')
+    (ssc e1' e2')
   | bpar (sp1,sp2) t1 t2 =>
     let e1 := splitEv sp1 e in
     let e2 := splitEv sp2 e in
     let e1' := parallel_eval_thread t1 p e1 in
     let e2' := parallel_eval_thread t2 p e2 in
-    (pp e1' e2')
+    (ppc e1' e2')
   end.
 
-(** * Evidence Stack *)
-Definition ev_stack := list Evidence.
+(** * EvidenceC Stack *)
+Definition ev_stack := list EvidenceC.
 Definition empty_stack : ev_stack := [].
 
-Definition push_stack (e:Evidence) (s:ev_stack) : ev_stack :=
+Definition push_stack (e:EvidenceC) (s:ev_stack) : ev_stack :=
   (e :: s).
 
-Definition pop_stack (s:ev_stack) : (Evidence*ev_stack) :=
+Definition pop_stack (s:ev_stack) : (EvidenceC*ev_stack) :=
   match s with
   | e :: s' => (e,s')
-  | _ => (mt,empty_stack) (* TODO: will this be expressive enough? *)
+  | _ => (mtc,empty_stack) (* TODO: will this be expressive enough? *)
   end.
 
 (** * Primitive VM Operations *)
-Definition vm_prim (p:Plc) (ep:Evidence*ev_stack) (instr:Instr)
-  :(Evidence * ev_stack) :=
+Definition vm_prim (p:Plc) (ep:EvidenceC*ev_stack) (instr:Instr)
+  :(EvidenceC * ev_stack) :=
   let (e,s) := ep in
     match instr with
     | copy => (e,s)
     | kmeas i q args =>
       let bs := invokeKIM i q args in
-      ((kk i args q p bs e),s)
+      ((kkc i args q p bs e),s)
     | umeas i args =>
       let bs := invokeUSM i args in
-      ((uu i args p bs e),s)
+      ((uuc i args p bs e),s)
     | sign =>
       let bs := signEv e in
-      ((gg p e bs),s)
+      ((ggc p e bs),s)
     | hash =>
       let bs := hashEv e in
-      ((hh p bs),s)
+      ((hhc p bs),s)
     | reqrpy _ pTo t =>
       (toRemote t pTo e,s)
     | split sp1 sp2 =>
@@ -205,10 +209,10 @@ Definition vm_prim (p:Plc) (ep:Evidence*ev_stack) (instr:Instr)
       (er,s'')             
     | joins =>
       let (er,s') := pop_stack s in
-      (ss er e,s')              
+      (ssc er e,s')              
     | joinp =>
       let (er,s') := pop_stack s in
-      (pp e er,s') (* TODO: invoke "wait on evidence" commands here? *)
+      (ppc e er,s') (* TODO: invoke "wait on evidence" commands here? *)
     | bep evs1 evs2 =>
       let (er,s') := pop_stack s in
       let res1 := parallel_att_vm_thread evs1 e in
@@ -218,10 +222,10 @@ Definition vm_prim (p:Plc) (ep:Evidence*ev_stack) (instr:Instr)
 
 
 (** * Attestation VM run function *)
-Definition att_vm' (is:list Instr) (p:Plc) (ep:Evidence*ev_stack) : (Evidence*ev_stack) :=
+Definition att_vm' (is:list Instr) (p:Plc) (ep:EvidenceC*ev_stack) : (EvidenceC*ev_stack) :=
   fold_left (vm_prim p) is ep.
 
-Definition att_vm (is:list Instr) (p:Plc) (e:Evidence) : (Evidence) :=
+Definition att_vm (is:list Instr) (p:Plc) (e:EvidenceC) : (EvidenceC) :=
   fst (att_vm' is p (e,[])).
 
 (** * Reasonable axioms for remote/parallel components *)
@@ -258,7 +262,7 @@ Proof.
   congruence.
 Defined.
 
-Lemma ss_inv : forall e1 e1' e2 e2', e1 = e1' -> e2 = e2' -> ss e1 e2 = ss e1' e2'.
+Lemma ssc_inv : forall e1 e1' e2 e2', e1 = e1' -> e2 = e2' -> ssc e1 e2 = ssc e1' e2'.
 Proof.
   congruence.
 Defined.
@@ -515,7 +519,7 @@ Defined.
 
 
 (** * Theorems *)
-Theorem vm_eval : forall (t:Term) (p:Plc) (e:Evidence),
+Theorem vm_eval : forall (t:Term) (p:Plc) (e:EvidenceC),
     eval t p e = att_vm (instr_compiler t p) p e.
 Proof.
   intros.
@@ -586,7 +590,7 @@ Proof.
     assert (e0 = e6). congruence. subst.
     clear HeqJ.
 
-    apply ss_inv.
+    apply ssc_inv.
     rewrite <- stack_irrel with (e2:=[(splitEv s0 e)]).
     rewrite <- HeqHH. reflexivity.
 

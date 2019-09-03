@@ -8,20 +8,20 @@ Import ListNotations.
 Require Import Coq.Program.Equality.
 Set Nested Proofs Allowed.
 
-Inductive vm_primR : Plc -> (Evidence*ev_stack) -> Instr -> (Evidence*ev_stack) -> Prop :=
+Inductive vm_primR : Plc -> (EvidenceC*ev_stack) -> Instr -> (EvidenceC*ev_stack) -> Prop :=
 | vcopy : forall p ep, vm_primR p ep copy ep
 | vkmeas : forall i p q args e s,
     let bs := invokeKIM i q args in
-    vm_primR p (e,s) (kmeas i q args) ((kk i args q p bs e),s)
+    vm_primR p (e,s) (kmeas i q args) ((kkc i args q p bs e),s)
 | vumeas : forall i p args e s,
     let bs := invokeUSM i args in
-    vm_primR p (e,s) (umeas i args) ((uu i args p bs e),s)
+    vm_primR p (e,s) (umeas i args) ((uuc i args p bs e),s)
 | vsign : forall p e s,
     let bs := signEv e in
-    vm_primR p (e,s) sign ((gg p e bs),s)
+    vm_primR p (e,s) sign ((ggc p e bs),s)
 | vhash : forall p e s,
     let bs := hashEv e in
-    vm_primR p (e,s) hash ((hh p bs),s)
+    vm_primR p (e,s) hash ((hhc p bs),s)
 | vreqrpy : forall p e pTo pFrom s t,
     vm_primR p (e,s) (reqrpy pFrom pTo t) (toRemote t pTo e,s)
 | vsplit : forall p sp1 sp2 e s,
@@ -36,10 +36,10 @@ Inductive vm_primR : Plc -> (Evidence*ev_stack) -> Instr -> (Evidence*ev_stack) 
     vm_primR p (e,s) besr ((fst(pop_stack s)), (push_stack e (snd(pop_stack s))))
 | vjoins : forall p e (s:ev_stack),
     (*let (er,s') := pop_stack s in
-    vm_primR p (e,s) joins (ss er e,s')*)
-    vm_primR p (e,s) joins (ss (fst(pop_stack s)) e,snd(pop_stack s))
+    vm_primR p (e,s) joins (ssc er e,s')*)
+    vm_primR p (e,s) joins (ssc (fst(pop_stack s)) e,snd(pop_stack s))
 | vjoinp : forall p e (s:ev_stack),
-    vm_primR p (e,s) joinp (pp e (fst(pop_stack s)), snd(pop_stack s))
+    vm_primR p (e,s) joinp (ppc e (fst(pop_stack s)), snd(pop_stack s))
 | vbep : forall p e s evs1 evs2,
     let res1 := parallel_att_vm_thread evs1 e in
     let res2 := parallel_att_vm_thread evs2 (fst(pop_stack s)) in
@@ -78,7 +78,7 @@ Defined.
 
 
 
-Inductive att_vm'R : Plc -> (list Instr) -> (list Instr) -> (Evidence*ev_stack) -> (Evidence*ev_stack) -> Prop :=
+Inductive att_vm'R : Plc -> (list Instr) -> (list Instr) -> (EvidenceC*ev_stack) -> (EvidenceC*ev_stack) -> Prop :=
 | att_vm'R_nil : forall p ep,
     att_vm'R p [] [] ep ep
 | att_vm'R_step : forall p i is is' ep ep' ep'',
@@ -104,7 +104,7 @@ Proof.
   eapply att_vm'R_step; eauto.
 Defined.
 
-Definition att_vmR (p:Plc) (is:list Instr) (e:Evidence) (e':Evidence) : Prop :=
+Definition att_vmR (p:Plc) (is:list Instr) (e:EvidenceC) (e':EvidenceC) : Prop :=
   att_vm'R p is [] (e,[]) (e',[]).
 
 Theorem att_vmR_transitive : forall p is1 is2 e e' e'',
@@ -335,8 +335,8 @@ Proof.
     destruct is.
     simpl.
     admit.
-    fold ((fix fold_left (l : list Instr) (a0 : Evidence * ev_stack) {struct l} :
-        Evidence * ev_stack :=
+    fold ((fix fold_left (l : list Instr) (a0 : EvidenceC * ev_stack) {struct l} :
+        EvidenceC * ev_stack :=
         match l with
         | [] => a0
         | b :: t => fold_left t (vm_prim p a0 b)
