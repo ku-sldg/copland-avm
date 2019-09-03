@@ -133,16 +133,16 @@ Definition eval_asp (a:ASP) (p:Plc) (e:EvidenceC) : EvidenceC :=
   | CPY => e
   | KIM i q args =>
     let bs := invokeKIM i q args in
-    (kkc i args q p bs e)
+    (kkc i args q bs e)
   | USM i args =>
     let bs := invokeUSM i args in
-    (uuc i args p bs e)
+    (uuc i args bs e)
   | SIG =>
     let bs := signEv e in
-    (ggc p e bs)
+    (ggc e bs)
   | HSH =>
     let bs := hashEv e in
-    (hhc p bs)
+    (hhc bs e)
   end.
 
 Fixpoint eval (t:Term) (p:Plc) (e:EvidenceC) : EvidenceC :=
@@ -166,6 +166,40 @@ Fixpoint eval (t:Term) (p:Plc) (e:EvidenceC) : EvidenceC :=
     (ppc e1' e2')
   end.
 
+Axiom toRemType : forall p n e et t,
+    ET p e et -> 
+    ET p (toRemote t n e) (typeof t n et).
+
+Axiom splitType : forall p e et s0,
+  ET p e et ->
+  ET p (splitEv s0 e) (sp s0 et).
+
+Axiom par_eval_thread : forall t p e,
+    parallel_eval_thread t p e = eval t p e.
+
+Theorem eval_typeof : forall p e et t,
+  ET p e et ->
+  ET p (eval t p e) (typeof t p et).
+Proof.
+  intros.
+  generalize dependent p.
+  generalize dependent e.
+  generalize dependent et.
+  induction t; intros; try (simpl;auto;reflexivity).
+  - destruct a; try simpl; eauto.
+  - simpl. apply toRemType; auto.
+  - simpl. remember s. destruct s0.
+    econstructor.
+    + apply IHt1. simpl.
+      apply splitType. auto.
+    + apply IHt2. simpl. apply splitType. auto.
+  - simpl. remember s. destruct s0.
+    econstructor; rewrite par_eval_thread.
+    + apply IHt1. simpl.
+      apply splitType. auto.
+    + apply IHt2. simpl. apply splitType. auto.
+Defined.
+
 (** * EvidenceC Stack *)
 Definition ev_stack := list EvidenceC.
 Definition empty_stack : ev_stack := [].
@@ -187,16 +221,16 @@ Definition vm_prim (p:Plc) (ep:EvidenceC*ev_stack) (instr:Instr)
     | copy => (e,s)
     | kmeas i q args =>
       let bs := invokeKIM i q args in
-      ((kkc i args q p bs e),s)
+      ((kkc i args q bs e),s)
     | umeas i args =>
       let bs := invokeUSM i args in
-      ((uuc i args p bs e),s)
+      ((uuc i args bs e),s)
     | sign =>
       let bs := signEv e in
-      ((ggc p e bs),s)
+      ((ggc e bs),s)
     | hash =>
       let bs := hashEv e in
-      ((hhc p bs),s)
+      ((hhc bs e),s)
     | reqrpy _ pTo t =>
       (toRemote t pTo e,s)
     | split sp1 sp2 =>
@@ -235,8 +269,7 @@ Axiom remote_vm : forall t n e,
 Axiom par_vm_thread : forall t p e,
   parallel_att_vm_thread (instr_compiler t p) e = att_vm (instr_compiler t p) p e.
 
-Axiom par_eval_thread : forall t p e,
-    parallel_eval_thread t p e = eval t p e.
+
 
 
 (** * Lemmas *)

@@ -12,16 +12,16 @@ Inductive vm_primR : Plc -> (EvidenceC*ev_stack) -> Instr -> (EvidenceC*ev_stack
 | vcopy : forall p ep, vm_primR p ep copy ep
 | vkmeas : forall i p q args e s,
     let bs := invokeKIM i q args in
-    vm_primR p (e,s) (kmeas i q args) ((kkc i args q p bs e),s)
+    vm_primR p (e,s) (kmeas i q args) ((kkc i args q bs e),s)
 | vumeas : forall i p args e s,
     let bs := invokeUSM i args in
-    vm_primR p (e,s) (umeas i args) ((uuc i args p bs e),s)
+    vm_primR p (e,s) (umeas i args) ((uuc i args bs e),s)
 | vsign : forall p e s,
     let bs := signEv e in
-    vm_primR p (e,s) sign ((ggc p e bs),s)
+    vm_primR p (e,s) sign ((ggc e bs),s)
 | vhash : forall p e s,
     let bs := hashEv e in
-    vm_primR p (e,s) hash ((hhc p bs),s)
+    vm_primR p (e,s) hash ((hhc bs e),s)
 | vreqrpy : forall p e pTo pFrom s t,
     vm_primR p (e,s) (reqrpy pFrom pTo t) (toRemote t pTo e,s)
 | vsplit : forall p sp1 sp2 e s,

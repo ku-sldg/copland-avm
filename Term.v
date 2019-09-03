@@ -78,7 +78,48 @@ Inductive Evidence: Set :=
 | ss: Evidence -> Evidence -> Evidence
 | pp: Evidence -> Evidence -> Evidence.
 
-Fixpoint eval_asp t p e :=
+(** * Concrete Evidence *)
+Inductive EvidenceC: Set :=
+| mtc: EvidenceC
+(*| sp: EvidenceC -> EvidenceC -> EvidenceC*)
+| kkc: ASP_ID -> (list Arg) -> (*Plc ->*) Plc -> BS -> EvidenceC -> EvidenceC
+| uuc: ASP_ID -> (list Arg) -> (*Plc ->*) BS -> EvidenceC -> EvidenceC
+| ggc: (*Plc ->*) EvidenceC -> BS -> EvidenceC
+| hhc: (*Plc ->*) BS -> EvidenceC -> EvidenceC
+| nnc: (*Plc ->*) N_ID -> BS -> EvidenceC -> EvidenceC
+| ssc: EvidenceC -> EvidenceC -> EvidenceC
+| ppc: EvidenceC -> EvidenceC -> EvidenceC.
+
+
+(** * Types *)
+Inductive ET: Plc -> EvidenceC -> Evidence -> Prop :=
+| mtt: forall p, ET p mtc mt
+| kkt: forall id A p q bs e et,
+    ET p e et -> 
+    ET p (kkc id A q bs e) (kk id A p q et)
+| uut: forall id A p bs e et,
+    ET p e et -> 
+    ET p (uuc id A bs e) (uu id A p et)
+| ggt: forall p bs e et,
+    ET p e et ->
+    ET p (ggc e bs) (gg p et)
+| hht: forall p bs e et,
+    ET p e et ->
+    ET p (hhc bs e) (hh p et)
+| nnt: forall p bs e et i,
+    ET p e et ->
+    ET p (nnc i bs e) (nn p i et)
+| sst: forall p e1 e2 e1t e2t,
+    ET p e1 e1t ->
+    ET p e2 e2t ->
+    ET p (ssc e1 e2) (ss e1t e2t)
+| ppt: forall p e1 e2 e1t e2t,
+    ET p e1 e1t ->
+    ET p e2 e2t ->
+    ET p (ppc e1 e2) (pp e1t e2t).
+Hint Constructors ET.
+
+Fixpoint typeof_asp t p e :=
   match t with
   | CPY => e
   | KIM i q A => kk i A p q e
@@ -89,29 +130,18 @@ Fixpoint eval_asp t p e :=
 
 (** The evidence associated with a term, a place, and some initial evidence. *)
 
-Fixpoint eval t p e :=
+Fixpoint typeof (t:Term) (p:Plc) (e:Evidence) : Evidence :=
   match t with
-  | asp a => eval_asp a p e
-  | att q t1 => eval t1 q e
-  | lseq t1 t2 => eval t2 p (eval t1 p e)
-  | bseq s t1 t2 => ss (eval t1 p (sp (fst s) e))
-                       (eval t2 p (sp (snd s) e))
-  | bpar s t1 t2 => pp (eval t1 p (sp (fst s) e))
-                       (eval t2 p (sp (snd s) e))
+  | asp a => typeof_asp a p e
+  | att q t1 => typeof t1 q e
+  | lseq t1 t2 => typeof t2 p (typeof t1 p e)
+  | bseq s t1 t2 => ss (typeof t1 p (sp (fst s) e))
+                       (typeof t2 p (sp (snd s) e))
+  | bpar s t1 t2 => pp (typeof t1 p (sp (fst s) e))
+                       (typeof t2 p (sp (snd s) e))
   end.
 
 
-(** * Concrete Evidence *)
-Inductive EvidenceC: Set :=
-| mtc: EvidenceC
-(*| sp: EvidenceC -> EvidenceC -> EvidenceC*)
-| kkc: ASP_ID -> (list Arg) -> Plc -> Plc -> BS -> EvidenceC -> EvidenceC
-| uuc: ASP_ID -> (list Arg) -> Plc -> BS -> EvidenceC -> EvidenceC
-| ggc: Plc -> EvidenceC -> BS -> EvidenceC
-| hhc: Plc -> BS -> EvidenceC
-| nnc: Plc -> N_ID -> BS -> EvidenceC -> EvidenceC
-| ssc: EvidenceC -> EvidenceC -> EvidenceC
-| ppc: EvidenceC -> EvidenceC -> EvidenceC.
 (** * Events
 
     There are events for each kind of action. This includes ASP
@@ -166,10 +196,10 @@ See Lemma [events_injective].
 Definition asp_event i x p e :=
   match x with
   | CPY => copy i p e
-  | KIM id q A => kmeas i id q A e (eval_asp (KIM id q A) p e)
-  | USM id A => umeas i id A e (eval_asp (USM id A) p e)
-  | SIG => sign i e (eval_asp SIG p e)
-  | HSH => hash i e (eval_asp HSH p e)
+  | KIM id q A => kmeas i id q A e (typeof_asp (KIM id q A) p e)
+  | USM id A => umeas i id A e (typeof_asp (USM id A) p e)
+  | SIG => sign i e (typeof_asp SIG p e)
+  | HSH => hash i e (typeof_asp HSH p e)
   end.
 
 (** * Annotated Terms
@@ -348,7 +378,7 @@ Qed.
 
 Fixpoint aeval t p e :=
   match t with
-  | aasp _ x => eval (asp x) p e
+  | aasp _ x => typeof (asp x) p e
   | aatt _ q x => aeval x q e
   | alseq _ t1 t2 => aeval t2 p (aeval t1 p e)
   | abseq _ s t1 t2 => ss (aeval t1 p ((sp (fst s)) e))
@@ -359,7 +389,7 @@ Fixpoint aeval t p e :=
 
 Lemma eval_aeval:
   forall t p e i,
-    eval t p e = aeval (snd (anno t i)) p e.
+    typeof t p e = aeval (snd (anno t i)) p e.
 Proof.
   induction t; intros; simpl; auto.
   - repeat expand_let_pairs; simpl;
