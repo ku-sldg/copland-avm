@@ -8,18 +8,30 @@ Import ListNotations.
 
 (** * VM Instructions *)
 
+Inductive Prim_Instr: Set :=
+| copy: Prim_Instr
+| kmeas: ASP_ID -> Plc -> (list Arg) -> Prim_Instr
+| umeas: ASP_ID -> (list Arg) -> Prim_Instr
+| sign: Prim_Instr
+| hash: Prim_Instr
+| split: SP -> SP -> Prim_Instr
+| joins: Prim_Instr
+| joinp: Prim_Instr.
+
 Inductive Instr: Set :=
-| copy: Instr
-| kmeas: ASP_ID -> Plc -> (list Arg) -> Instr
-| umeas: ASP_ID -> (list Arg) -> Instr
-| sign: Instr
-| hash: Instr
+| primInstr: Prim_Instr -> Instr
 | reqrpy: Plc -> Plc -> Term -> Instr
-| split: SP -> SP -> Instr
 | besr : Instr
-| bep: (list Instr) -> (list Instr) -> Instr
-| joins: Instr
-| joinp: Instr.
+| bep: (list Instr) -> (list Instr) -> Instr.
+
+Inductive AnnoInstr: Set :=
+| aprimInstr: Range -> Prim_Instr -> AnnoInstr
+| areqrpy: Range -> Plc -> Plc -> AnnoTerm -> AnnoInstr
+| abesr : Range -> AnnoInstr
+| abep: Range -> Range -> (list Instr) -> (list Instr) -> AnnoInstr.
+(*
+Inductive AnnoInstr: Set :=
+| annoInstr: Range -> Instr -> AnnoInstr.*)
 
 (* 
 Definition invokeKIM (i:ASP_ID) (q:Plc) (args:list Arg) : BS.
@@ -137,7 +149,7 @@ Hint Resolve eq_li_dec.
 
 
 (** * Instruction Compiler *)
-Definition asp_instr (t:ASP) (p:Plc) : Instr :=
+Definition asp_instr (t:ASP) (p:Plc) : Prim_Instr :=
   match t with
   | CPY => copy
   | KIM i p args => kmeas i p args
@@ -146,14 +158,19 @@ Definition asp_instr (t:ASP) (p:Plc) : Instr :=
   | HSH => hash
   end.
 
-Fixpoint instr_compiler (t:Term) (p:Plc) : (list Instr) :=
+Fixpoint instr_compiler (t:AnnoTerm) (p:Plc) : (list AnnoInstr) :=
   match t with
-  | asp a => [asp_instr a p]
-  | att q t' => [reqrpy p q t']
+  | aasp r a => [aprimInstr r (asp_instr a p)]
+
+    
+  | aatt r q t' => [areqrpy r p q t']
+
+                 (*
   | lseq t1 t2 =>
     let tr1 := instr_compiler t1 p in
     let tr2 := instr_compiler t2 p in
     tr1 ++ tr2
+        
   | bseq (sp1,sp2) t1 t2 =>
     let splEv := split sp1 sp2 in
     let tr1 := instr_compiler t1 p in
@@ -164,7 +181,8 @@ Fixpoint instr_compiler (t:Term) (p:Plc) : (list Instr) :=
     let tr1 := instr_compiler t1 p in
     let tr2 := instr_compiler t2 p in
     let tr := [bep tr1 tr2] in
-    splEv ++ tr ++ [joinp]
+    splEv ++ tr ++ [joinp] *)
+  | _ => []
   end.
 
 (** * Place-holder axioms for IO operations *)
@@ -288,14 +306,34 @@ Record vm_accum : Type := mk_accum
                               vm_stack:ev_stack }.
 
 (** * Primitive VM Operations *)
-Definition vm_prim (p:Plc) (ep:vm_accum) (instr:Instr)
+
+Definition exec_asp (n:nat) (p:Plc) (e:EvidenceC) (a:ASP) : (EvidenceC*Ev) :=
+  match a with
+  | CPY => (e,Term.copy n p (typeof (asp CPY) p e))
+  | _ => (mtc,Term.copy n p (typeof e))
+  end.
+    
+  | kmeas: ASP_ID -> Plc -> (list Arg) -> Prim_Instr
+  | umeas: ASP_ID -> (list Arg) -> Prim_Instr
+  | sign: Prim_Instr
+  | hash: Prim_Instr
+  | split: SP -> SP -> Prim_Instr
+  | joins: Prim_Instr
+  | joinp: Prim_Instr.
+
+
+  Definition vm_prim (p:Plc) (ep:vm_accum) (instr:AnnoInstr)
   :vm_accum :=
   let e := ec ep in
   let s := vm_stack ep in
   let tr := vm_trace ep in
-    match instr with
-    | copy => let new_tr := [] in
-             mk_accum e new_tr s
+  match instr with
+  | aprimInstr r a => 
+
+
+    (*
+    | copy => let new_tr := tr ++ [copy ] in
+             mk_accum e new_tr s *)
 
        (*               
     | kmeas i q args =>
