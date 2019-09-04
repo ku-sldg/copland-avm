@@ -1,5 +1,6 @@
 Require Import Term.
 (*Require Import MonadCOP.*)
+Require Import Event_system.
 
 Require Import List.
 Import ListNotations.
@@ -19,6 +20,77 @@ Inductive Instr: Set :=
 | bep: (list Instr) -> (list Instr) -> Instr
 | joins: Instr
 | joinp: Instr.
+
+(* 
+Definition invokeKIM (i:ASP_ID) (q:Plc) (args:list Arg) : BS.
+Admitted.
+
+Definition invokeUSM (i:ASP_ID) (args:list Arg) : BS.
+Admitted.
+
+Definition signEv (e:EvidenceC) : BS.
+Admitted.
+
+Definition hashEv (e:EvidenceC) : BS.
+Admitted.
+
+Definition toRemote (t:Term) (pTo:Plc) (e:EvidenceC) : EvidenceC.
+Admitted.
+
+Definition parallel_att_vm_thread (li:list Instr) (e:EvidenceC) : EvidenceC.
+Admitted.
+
+Definition parallel_eval_thread (t:Term) (p:Plc) (e:EvidenceC) : EvidenceC.
+Admitted.
+*)
+
+(*
+Inductive Effect: Set :=
+| copye: nat -> EvidenceC -> Effect
+| kmease: nat -> ASP_ID -> Plc -> (list Arg) -> Effect
+| umease: nat -> ASP_ID -> (list Arg) -> Effect
+| signe: nat -> EvidenceC -> Effect
+| hashe: nat -> EvidenceC -> Effect
+| reqe: nat -> Plc -> Term -> Effect
+| rpye: nat -> Plc -> Evidence -> Effect
+| splite: nat -> SP -> SP -> EvidenceC -> Effect
+| vm_threade: nat -> (nat*nat) -> (list Instr) -> EvidenceC -> Effect
+| joine: nat -> EvidenceC -> EvidenceC -> Effect.
+
+Definition EffectTrace := (list Effect).
+Definition EffSys := EvSys Effect.
+
+Fixpoint eff_Sys (t:AnnoTerm) (p:Plc) (e:Evidence) : EffSys.
+
+Definition eve x :=
+  match x with
+  | copye i _  => i
+  | kmease i _ _ _ => i
+  | umease i _ _ => i
+  | signe i _ => i
+  | hashe i _ => i
+  | reqe i _ _ => i
+  | rpye i _ _ => i
+  | splite i _ _ _ => i
+  | vm_threade i _ _ _ => i
+  | joine i _ _ => i
+  end.
+
+Check es_size.
+Print well_structured.
+Print well_structured_range.
+
+Check (ev (copye *)
+
+(*
+Theorem ordered_effects:
+  forall t p effs e effs ev0 ev1,
+    well_formed t ->
+    well_formed_sys t p effs ev_sys ->
+    (*lstar (conf t p e) tr (stop p (aeval t p e)) ->*)
+    (att_vm (instr_compiler t p) p e) effs (aeval t p e) ->
+    prec (ev_sys t p e) ev0 ev1 ->
+    earlier effs effs(ev ev0) effs(ev ev1). *)
 
 (*
 Scheme mutual_ind_A := Induction for Instr Sort Prop
@@ -112,9 +184,6 @@ Definition toRemote (t:Term) (pTo:Plc) (e:EvidenceC) : EvidenceC.
 Admitted.
 
 Definition parallel_att_vm_thread (li:list Instr) (e:EvidenceC) : EvidenceC.
-Admitted.
-
-Definition vm_prim_thread (i:Instr) (p:Plc) (e:EvidenceC) : EvidenceC.
 Admitted.
 
 Definition parallel_eval_thread (t:Term) (p:Plc) (e:EvidenceC) : EvidenceC.
@@ -213,15 +282,26 @@ Definition pop_stack (s:ev_stack) : (EvidenceC*ev_stack) :=
   | _ => (mtc,empty_stack) (* TODO: will this be expressive enough? *)
   end.
 
+Record vm_accum : Type := mk_accum
+                            { ec:EvidenceC ;
+                              vm_trace:(list Ev) ;
+                              vm_stack:ev_stack }.
+
 (** * Primitive VM Operations *)
-Definition vm_prim (p:Plc) (ep:EvidenceC*ev_stack) (instr:Instr)
-  :(EvidenceC * ev_stack) :=
-  let (e,s) := ep in
+Definition vm_prim (p:Plc) (ep:vm_accum) (instr:Instr)
+  :vm_accum :=
+  let e := ec ep in
+  let s := vm_stack ep in
+  let tr := vm_trace ep in
     match instr with
-    | copy => (e,s)
+    | copy => let new_tr := [] in
+             mk_accum e new_tr s
+
+       (*               
     | kmeas i q args =>
       let bs := invokeKIM i q args in
       ((kkc i args q bs e),s)
+        
     | umeas i args =>
       let bs := invokeUSM i args in
       ((uuc i args bs e),s)
@@ -252,6 +332,9 @@ Definition vm_prim (p:Plc) (ep:EvidenceC*ev_stack) (instr:Instr)
       let res1 := parallel_att_vm_thread evs1 e in
       let res2 := parallel_att_vm_thread evs2 er in
       (res1, push_stack res2 s')  (* TODO: ret some kind of "wait handle" evidence instead? *)
+*)
+
+    | _ => mk_accum mtc [] []
     end.
 
 
@@ -643,5 +726,16 @@ Proof.
     rewrite IHt2.
     reflexivity.
 Defined.
+
+Theorem vm_typeof : forall (t:Term) (p:Plc) (e:EvidenceC) et,
+    ET p e et ->
+    ET p (att_vm (instr_compiler t p) p e) (typeof t p et).
+Proof.
+  intros.
+  rewrite <- vm_eval.
+  apply eval_typeof; auto.
+Qed.
+
+  
 
 (*Set Nested Proofs Allowed.*)
