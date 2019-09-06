@@ -3,6 +3,8 @@ Require Import Term.
 Require Import Event_system.
 Require Import Term_system.
 Require Import Trace.
+Require Import LTS.
+Require Import Main.
 Require Import More_lists.
 
 Require Import List.
@@ -30,8 +32,8 @@ Inductive Instr: Set :=
 Inductive AnnoInstr: Set :=
 | aprimInstr: nat -> Prim_Instr -> AnnoInstr
 | asplit: nat -> SP -> SP -> AnnoInstr
-| ajoins: AnnoInstr
-| ajoinp: AnnoInstr
+| ajoins: nat -> AnnoInstr
+| ajoinp: nat -> AnnoInstr
 | abesr : AnnoInstr
 | areqrpy: Range -> Plc -> AnnoTerm -> AnnoInstr
 | abep: Range -> Range -> (list AnnoInstr) -> (list AnnoInstr) -> AnnoInstr.
@@ -180,14 +182,16 @@ Fixpoint instr_compiler (t:AnnoTerm) : (list AnnoInstr) :=
   | abseq r (sp1,sp2) t1 t2 =>
     let tr1 := instr_compiler t1 in
     let tr2 := instr_compiler t2 in
-    [asplit (fst r) sp1 sp2] ++ tr1 ++ [abesr] ++ tr2 ++ [ajoins]
+    let i := Nat.pred (snd r) in
+    [asplit (fst r) sp1 sp2] ++ tr1 ++ [abesr] ++ tr2 ++ [ajoins i]
                              
   | abpar r (sp1,sp2) t1 t2 =>
     (*let splEv := [split sp1 sp2] in*)
     let tr1 := instr_compiler t1 in
     let tr2 := instr_compiler t2 in
     let tr := [abep (range t1) (range t2) tr1 tr2] in
-    [asplit (fst r) sp1 sp2] ++ tr ++ [ajoinp] 
+    let i := Nat.pred (snd r) in
+    [asplit (fst r) sp1 sp2] ++ tr ++ [ajoinp i] 
   end.
 
 Definition termx := (bpar (ALL,ALL) (asp CPY) (asp SIG)).
@@ -211,7 +215,7 @@ Admitted.
 Definition toRemote (t:Term) (pTo:Plc) (e:EvidenceC) : EvidenceC.
 Admitted.
 
-Definition parallel_att_vm_thread (li:list Instr) (e:EvidenceC) : EvidenceC.
+Definition parallel_att_vm_thread (li:list AnnoInstr) (e:EvidenceC) : EvidenceC.
 Admitted.
 
 Definition parallel_eval_thread (t:Term) (p:Plc) (e:EvidenceC) : EvidenceC.
@@ -324,76 +328,102 @@ Definition pop_stack (s:ev_stack) : (Evidence*ev_stack) :=
   end.
 
 Record vm_accum : Type := mk_accum
-                            { ec:Evidence ;
+                            { ec:EvidenceC ;
                               vm_trace:(list Ev) ;
-                              vm_stack:ev_stack }.
+                              vm_stack:ev_stackc }.
 
-Inductive vm_step: vm_accum -> AnnoInstr -> vm_accum -> Prop :=.
+Definition add_trace (el:list Ev) (x:vm_accum) : vm_accum :=
+  let old_trace := vm_trace x in
+  let new_trace := old_trace ++ el in
+  mk_accum (ec x) (new_trace) (vm_stack x).
 
-Inductive vm_lstar: vm_accum -> vm_accum -> list AnnoInstr -> list AnnoInstr -> Prop :=
-| vm_lstar_refl: forall r, vm_lstar r r [] []
-| vm_lstar_tran: forall i l r r' r'',
-    vm_step r i r' -> vm_lstar r' r'' l [] -> vm_lstar r r'' (i::l) [].
+Definition update_ev (e:EvidenceC) (x:vm_accum) : vm_accum :=
+  mk_accum e (vm_trace x) (vm_stack x).
 
-Check annotated. Check vm_trace. Check typeof.
+Definition push_stackr (e:EvidenceC) (x:vm_accum) : vm_accum :=
+  mk_accum (ec x) (vm_trace x) (push_stackc e (vm_stack x)).
 
-Theorem vm_bigstep: forall e e' s t tr,
-  well_formed t ->
-  vm_lstar
-    (mk_accum e [] s)
-    (mk_accum e' tr s)
-    (instr_compiler t)
-    [] ->
-  trace t tr.
-Proof.
+Definition pop_stackr (x:vm_accum) : (EvidenceC*vm_accum) :=
+  let (er,s') := pop_stackc (vm_stack x) in
+  (er,mk_accum (ec x) (vm_trace x) (s')).
+
+Definition prim_trace (i:nat) (a:Prim_Instr) : (list Ev) :=
+  match a with
+  | copy => [Term.copy i]
+  | kmeas asp_id q A => [Term.kmeas i asp_id q A]
+  | umeas asp_id A => [Term.umeas i asp_id A]
+  | sign => [Term.sign i]
+  | hash => [Term.hash i]
+  end.
+(*
+    | reqrpy _ pTo t =>
+      (toRemote t pTo e,s) *)
+
+Definition remote_events (t:AnnoTerm) : (list Ev).
 Admitted.
 
-Theorem vm_ordered : forall t e e' s tr ev0 ev1,
-    well_formed t ->
-    vm_lstar
-    (mk_accum e [] s)
-    (mk_accum e' tr s)
-    (instr_compiler t)
-    [] ->
-    prec (ev_sys t) ev0 ev1 ->
-    earlier tr ev0 ev1.
-Proof.
-  Admitted.
+Inductive vm_step: vm_accum -> AnnoInstr -> vm_accum -> Prop :=
+| prim_step: forall r i a, vm_step r (aprimInstr i a) (add_trace (prim_trace i a) r)
+| split_step: forall r i sp1 sp2,
+    let e1 := splitEv sp1 (ec r) in
+    let e2 := splitEv sp2 (ec r) in
+    let r' := update_ev e1 r in
+    let r'' := push_stackr e2 r' in
+    let r''' := add_trace [Term.split i] r'' in
+    vm_step r (asplit i sp1 sp2) r'''
+| joins_step: forall r i,
+    (*let (er,r') := pop_stackr r in *)
+    let e := (ec r) in
+    let er := (fst (pop_stackr r)) in
+    let r' := (snd (pop_stackr r)) in
+    let r'' := update_ev (ssc er e) r' in
+    let r''' := add_trace [Term.join i] r'' in
+    vm_step r (ajoins i) r'''
+| joinp_step: forall r i,
+    (*let (er,r') := pop_stackr r in *)
+    let e := (ec r) in
+    let er := (fst (pop_stackr r)) in
+    let r' := (snd (pop_stackr r)) in
+    let r'' := update_ev (ppc e er) r' in
+    let r''' := add_trace [Term.join i] r'' in
+    vm_step r (ajoinp i) r'''
+| besr_step: forall r,
+    let e := (ec r) in
+    let er := (fst (pop_stackr r)) in
+    let r' := (snd (pop_stackr r)) in
+    let r'' := push_stackr e r' in
+    vm_step r (abesr) r''
+| reqrpy_step: forall r rg q annt,
+    let e := (ec r) in
+    let r' := update_ev (toRemote (unanno annt) q e) r in
+    let reqi := (fst rg) in
+    let rpyi := Nat.pred (snd rg) in
+    let newTrace :=
+        [req reqi q (unanno annt)] ++ (remote_events annt) ++ [rpy rpyi q] in     
+    let r'' := add_trace newTrace r' in
+    vm_step r (areqrpy rg q annt) r''
 
-
-
-
-
-
-
-(** * Primitive VM Operations *)
-
-Definition exec_asp (n:nat) (p:Plc) (e:EvidenceC) (a:ASP) : (EvidenceC*Ev) :=
-  match a with
-  | CPY => (e,Term.copy n p (typeof (asp CPY) p e))
-  | _ => (mtc,Term.copy n p (typeof e))
-  end.
+ (* | bep evs1 evs2 =>
+      let (er,s') := pop_stack s in
+      let res1 := parallel_att_vm_thread evs1 e in
+      let res2 := parallel_att_vm_thread evs2 er in
+      (res1, push_stack res2 s')  (* TODO: ret some kind of "wait handle" evidence instead? *) *)
+| bep_step: forall r rg1 rg2 il1 il2,
+    let e := (ec r) in
+    let er := (fst (pop_stackr r)) in
+    let r' := (snd (pop_stackr r)) in
+    let res1 := parallel_att_vm_thread il1 e in
+    let res2 := parallel_att_vm_thread il2 er in
+    let r'' := update_ev res1 r' in
+    let r''' := push_stackr res2 r'' in
+    vm_step r (abep rg1 rg2 il1 il2) r'''.
     
-  | kmeas: ASP_ID -> Plc -> (list Arg) -> Prim_Instr
-  | umeas: ASP_ID -> (list Arg) -> Prim_Instr
-  | sign: Prim_Instr
-  | hash: Prim_Instr
-  | split: SP -> SP -> Prim_Instr
-  | joins: Prim_Instr
-  | joinp: Prim_Instr.
-
-
-
-
-
-
-  Definition vm_prim (p:Plc) (ep:vm_accum) (instr:AnnoInstr)
-  :vm_accum :=
+Definition vm_prim (ep:vm_accum) (instr:AnnoInstr) : vm_accum :=
   let e := ec ep in
   let s := vm_stack ep in
   let tr := vm_trace ep in
   match instr with
-  | aprimInstr r a => 
+  (*| aprimInstr r a => 
 
 
     (*
@@ -436,9 +466,79 @@ Definition exec_asp (n:nat) (p:Plc) (e:EvidenceC) (a:ASP) : (EvidenceC*Ev) :=
       let res2 := parallel_att_vm_thread evs2 er in
       (res1, push_stack res2 s')  (* TODO: ret some kind of "wait handle" evidence instead? *)
 *)
-
+ *)
     | _ => mk_accum mtc [] []
-    end.
+  end.
+
+Lemma vm_step_iff_vm_prim : forall r i r',
+    vm_step r i r' <-> vm_prim r i = r'.
+Admitted.
+
+
+Inductive vm_lstar: vm_accum -> vm_accum -> list AnnoInstr -> list AnnoInstr -> Prop :=
+| vm_lstar_refl: forall r, vm_lstar r r [] []
+| vm_lstar_tran: forall i l r r' r'',
+    vm_step r i r' -> vm_lstar r' r'' l [] -> vm_lstar r r'' (i::l) [].
+
+Check annotated. Check vm_trace. Check typeof.
+
+(*
+Theorem vm_bigstep: forall e e' s t tr p,
+  well_formed t ->
+  vm_lstar
+    (mk_accum e [] s)
+    (mk_accum e' tr s)
+    (instr_compiler t)
+    [] ->
+  trace t tr /\ (et_fun p e' = typeof (unanno t) p (et_fun p e)).
+Proof.
+Admitted. *)
+
+Theorem vm_smallstep: forall e e' s t tr p,
+  well_formed t ->
+  vm_lstar
+    (mk_accum e [] s)
+    (mk_accum e' tr s)
+    (instr_compiler t)
+    [] ->
+  lstar (conf t p (et_fun p e)) tr (stop p (aeval t p (et_fun p e)))
+  /\ (et_fun p e' = typeof (unanno t) p (et_fun p e)).
+Proof.
+Admitted.
+
+Theorem vm_ordered : forall t e e' s tr ev0 ev1,
+    well_formed t ->
+    vm_lstar
+    (mk_accum e [] s)
+    (mk_accum e' tr s)
+    (instr_compiler t)
+    [] ->
+    prec (ev_sys t) ev0 ev1 ->
+    earlier tr ev0 ev1.
+Proof.
+  intros.
+  edestruct vm_smallstep with (p:=0); eauto.
+  eapply ordered; eauto.
+Qed.
+
+
+(** * Primitive VM Operations *)
+
+Definition exec_asp (n:nat) (p:Plc) (e:EvidenceC) (a:ASP) : (EvidenceC*Ev) :=
+  match a with
+  | CPY => (e,Term.copy n p (typeof (asp CPY) p e))
+  | _ => (mtc,Term.copy n p (typeof e))
+  end.
+    
+  | kmeas: ASP_ID -> Plc -> (list Arg) -> Prim_Instr
+  | umeas: ASP_ID -> (list Arg) -> Prim_Instr
+  | sign: Prim_Instr
+  | hash: Prim_Instr
+  | split: SP -> SP -> Prim_Instr
+  | joins: Prim_Instr
+  | joinp: Prim_Instr.
+
+
 
 
 (** * Attestation VM run function *)

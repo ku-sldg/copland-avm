@@ -6,6 +6,8 @@ Term.v
 Event_system.v
 Term_system.v
 Trace.v
+LTS.v
+Main.v
 Instr.v
 MonadCOP.v
 MonadAM.v
