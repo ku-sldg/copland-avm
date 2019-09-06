@@ -1,6 +1,9 @@
 Require Import Term.
 (*Require Import MonadCOP.*)
 Require Import Event_system.
+Require Import Term_system.
+Require Import Trace.
+Require Import More_lists.
 
 Require Import List.
 Import ListNotations.
@@ -325,14 +328,37 @@ Record vm_accum : Type := mk_accum
                               vm_trace:(list Ev) ;
                               vm_stack:ev_stack }.
 
-Inductive vm_step: Plc -> AnnoInstr -> list Ev -> Prop :=.
+Inductive vm_step: vm_accum -> AnnoInstr -> vm_accum -> Prop :=.
 
-Inductive vm_lstar: (list AnnoInstr) -> list Ev -> (list AnnoInstr) -> Prop :=
-| vm_lstar_refl: vm_lstar [] [] []
-| vm_lstar_tran: forall p i tr tr' l l',
-    vm_step p i tr -> vm_lstar l tr' l' -> vm_lstar (i::l) (tr ++ tr') l'.
+Inductive vm_lstar: vm_accum -> vm_accum -> list AnnoInstr -> list AnnoInstr -> Prop :=
+| vm_lstar_refl: forall r, vm_lstar r r [] []
+| vm_lstar_tran: forall i l r r' r'',
+    vm_step r i r' -> vm_lstar r' r'' l [] -> vm_lstar r r'' (i::l) [].
 
+Check annotated. Check vm_trace. Check typeof.
 
+Theorem vm_bigstep: forall e e' s t tr,
+  well_formed t ->
+  vm_lstar
+    (mk_accum e [] s)
+    (mk_accum e' tr s)
+    (instr_compiler t)
+    [] ->
+  trace t tr.
+Proof.
+Admitted.
+
+Theorem vm_ordered : forall t e e' s tr ev0 ev1,
+    well_formed t ->
+    vm_lstar
+    (mk_accum e [] s)
+    (mk_accum e' tr s)
+    (instr_compiler t)
+    [] ->
+    prec (ev_sys t) ev0 ev1 ->
+    earlier tr ev0 ev1.
+Proof.
+  Admitted.
 
 
 

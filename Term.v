@@ -171,6 +171,7 @@ Fixpoint typeof (t:Term) (p:Plc) (e:Evidence) : Evidence :=
 
  *)
 
+(*
 Inductive Ev: Set :=
 | copy: nat -> Plc -> Evidence -> Ev
 | kmeas: nat -> ASP_ID -> Plc -> (list Arg) -> Evidence -> Evidence -> Ev
@@ -180,7 +181,18 @@ Inductive Ev: Set :=
 | req: nat -> Plc -> Plc -> (*Evidence*) Term -> Ev
 | rpy: nat -> Plc -> Plc -> Evidence -> Ev
 | split: nat -> Plc -> Evidence -> Evidence -> Evidence -> Ev
-| join: nat -> Plc -> Evidence -> Evidence -> Evidence -> Ev.
+| join: nat -> Plc -> Evidence -> Evidence -> Evidence -> Ev.*)
+
+Inductive Ev: Set :=
+| copy: nat -> (*Plc -> Evidence ->*) Ev
+| kmeas: nat -> ASP_ID -> Plc -> (list Arg) -> (*Evidence -> Evidence ->*) Ev
+| umeas: nat -> ASP_ID -> (*Plc ->*) (list Arg) -> (*Evidence -> Evidence ->*) Ev
+| sign: nat -> (*Plc ->*) (*Evidence -> Evidence ->*) Ev
+| hash: nat -> (*Plc ->*) (*Evidence -> Evidence ->*) Ev
+| req: nat -> (*Plc ->*) Plc -> (*Evidence*) Term -> Ev
+| rpy: nat -> (*Plc ->*) Plc -> (*Evidence ->*) Ev
+| split: nat -> (*Plc -> Evidence -> Evidence -> Evidence ->*) Ev
+| join:  nat -> (*Plc -> Evidence -> Evidence -> Evidence ->*) Ev.
 
 Definition eq_ev_dec:
   forall x y: Ev, {x = y} + {x <> y}.
@@ -194,15 +206,15 @@ Hint Resolve eq_ev_dec.
 
 Definition ev x :=
   match x with
-  | copy i _ _ => i
-  | kmeas i _ _ _ _ _ => i
-  | umeas i _ _ _ _ => i
-  | sign i _ _ => i
-  | hash i _ _ => i
-  | req i _ _ _ => i
-  | rpy i _ _ _ => i
-  | split i _ _ _ _ => i
-  | join i _ _ _ _ => i
+  | copy i => i
+  | kmeas i _ _ _ => i
+  | umeas i _ _ => i
+  | sign i => i
+  | hash i => i
+  | req i _ _ => i
+  | rpy i _ => i
+  | split i => i
+  | join i => i
   end.
 
 (** Events are used in a manner that ensures that
@@ -212,13 +224,13 @@ Definition ev x :=
 See Lemma [events_injective].
 *)
 
-Definition asp_event i x p e :=
+Definition asp_event i x (*p e*) :=
   match x with
-  | CPY => copy i p e
-  | KIM id q A => kmeas i id q A e (typeof_asp (KIM id q A) p e)
-  | USM id A => umeas i id A e (typeof_asp (USM id A) p e)
-  | SIG => sign i e (typeof_asp SIG p e)
-  | HSH => hash i e (typeof_asp HSH p e)
+  | CPY => copy i (* p e *)
+  | KIM id q A => kmeas i id q A (*e (eval_asp (KIM id q A) p e)*)
+  | USM id A => umeas i id A (*e (eval_asp (USM id A) p e)*)
+  | SIG => sign i (*e (eval_asp SIG p e)*)
+  | HSH => hash i (*e (eval_asp HSH p e)*)
   end.
 
 (** * Annotated Terms
@@ -432,102 +444,102 @@ Qed.
     set of events associated with a term, a place, and some initial
     evidence. *)
 
-Inductive events: AnnoTerm -> Plc -> Evidence -> Ev -> Prop :=
+Inductive events: AnnoTerm -> (*Plc -> Evidence ->*) Ev -> Prop :=
 | evtscpy:
-    forall r i p e,
+    forall r i (*p e*),
       fst r = i ->
-      events (aasp r CPY) p e (copy i p e)
+      events (aasp r CPY) (*p e*) (copy i (*p e*))
 | evtskim:
-    forall i id r a p q e e',
+    forall i id r a q,
       fst r = i ->
-      kk id a p q e = e' ->
-      events (aasp r (KIM id q a)) p e (kmeas i id q a e e')
+      (*kk id a p q e = e' -> *)
+      events (aasp r (KIM id q a)) (*p e*) (kmeas i id q a (*e e'*))
 | evtsusm:
-    forall i id r a p e e',
+    forall i id r a,
       fst r = i ->
-      uu id a p e = e' ->
-      events (aasp r (USM id a)) p e (umeas i id a e e')
+      (*uu id a p e = e' ->*)
+      events (aasp r (USM id a)) (*p e*) (umeas i id a (*e e'*))
 | evtssig:
-    forall r i p e e',
+    forall r i,
       fst r = i ->
-      gg p e = e' ->
-      events (aasp r SIG) p e (sign i e e')
+      (*gg p e = e' -> *)
+      events (aasp r SIG) (*p e*) (sign i (*e e'*))
 | evtshsh:
-    forall r i p e e',
+    forall r i,
       fst r = i ->
-      hh p e = e' ->
-      events (aasp r HSH) p e (hash i e e')
+      (*hh p e = e' -> *)
+      events (aasp r HSH) (*p e*) (hash i (*e e'*))
 
 | evtsattreq:
-    forall r p q t e i,
+    forall r q t i,
       fst r = i ->
-      events (aatt r q t) p e (req i p q (unanno t))
+      events (aatt r q t) (*p e*) (req i q (unanno t))
 | evtsatt:
-    forall r p q t e ev,
-      events t q e ev ->
-      events (aatt r q t) p e ev
+    forall r q t ev,
+      events t ev (*q e ev*) ->
+      events (aatt r q t) ev (*p e ev*)
 | evtsattrpy:
-    forall r p q t e e' i,
+    forall r q t i,
       snd r = S i ->
-      aeval t q e = e' ->
-      events (aatt r q t) p e (rpy i p q e')
+      (*aeval t q e = e' -> *)
+      events (aatt r q t) (*p e*) (rpy i q (*e'*))
 
 | evtslseql:
-    forall r t1 t2 p e ev,
-      events t1 p e ev ->
-      events (alseq r t1 t2) p e ev
+    forall r t1 t2 ev,
+      events t1 (*p e*) ev ->
+      events (alseq r t1 t2) (*p e*) ev
 | evtslseqr:
-    forall r t1 t2 p e ev,
-      events t2 p (aeval t1 p e) ev ->
-      events (alseq r t1 t2) p e ev
+    forall r t1 t2 ev,
+      events t2 (*p (aeval t1 p e)*) ev ->
+      events (alseq r t1 t2) (*p e*) ev
 
 | evtsbseqsplit:
-    forall r i s t1 t2 p e,
+    forall r i s t1 t2,
       fst r = i ->
-      events (abseq r s t1 t2) p e
-             (split i p e (sp (fst s) e) (sp (snd s) e))
+      events (abseq r s t1 t2) (*p e*)
+             (split i (*p e (sp (fst s) e) (sp (snd s) e)*))
 | evtsbseql:
-    forall r s t1 t2 p e ev,
-      events t1 p (sp (fst s) e) ev ->
-      events (abseq r s t1 t2) p e ev
+    forall r s t1 t2 ev,
+      events t1 (*p (sp (fst s) e)*) ev ->
+      events (abseq r s t1 t2) (*p e*) ev
 | evtsbseqr:
-    forall r s t1 t2 p e ev,
-      events t2 p (sp (snd s) e) ev ->
-      events (abseq r s t1 t2) p e ev
+    forall r s t1 t2 ev,
+      events t2 (*p (sp (snd s) e)*) ev ->
+      events (abseq r s t1 t2) (*p e*) ev
 | evtsbseqjoin:
-    forall r i s t1 t2 p e e1 e2,
+    forall r i s t1 t2,
       snd r = S i ->
-      aeval t1 p (sp (fst s) e) = e1 ->
-      aeval t2 p (sp (snd s) e) = e2 ->
-      events (abseq r s t1 t2) p e
-             (join i p e1 e2 (ss e1 e2))
+      (*aeval t1 p (sp (fst s) e) = e1 ->
+      aeval t2 p (sp (snd s) e) = e2 -> *)
+      events (abseq r s t1 t2) (*p e*)
+             (join i (*p e1 e2 (ss e1 e2)*))
 
 | evtsbparsplit:
-    forall r i s t1 t2 p e,
+    forall r i s t1 t2,
       fst r = i ->
-      events (abpar r s t1 t2) p e
-             (split i p e (sp (fst s) e) (sp (snd s) e))
+      events (abpar r s t1 t2) (*p e*)
+             (split i (*p e (sp (fst s) e) (sp (snd s) e)*))
 | evtsbparl:
-    forall r s t1 t2 p e ev,
-      events t1 p (sp (fst s) e) ev ->
-      events (abpar r s t1 t2) p e ev
+    forall r s t1 t2 ev,
+      events t1 (*p (sp (fst s) e)*) ev ->
+      events (abpar r s t1 t2) (*p e*) ev
 | evtsbparr:
-    forall r s t1 t2 p e ev,
-      events t2 p (sp (snd s) e) ev ->
-      events (abpar r s t1 t2) p e ev
+    forall r s t1 t2 ev,
+      events t2 (*p (sp (snd s) e)*) ev ->
+      events (abpar r s t1 t2) (*p e*) ev
 | evtsbparjoin:
-    forall r i s t1 t2 p e e1 e2,
+    forall r i s t1 t2,
       snd r = S i ->
-      aeval t1 p (sp (fst s) e) = e1 ->
-      aeval t2 p (sp (snd s) e) = e2 ->
-      events (abpar r s t1 t2) p e
-             (join i p e1 e2 (pp e1 e2)).
+      (*aeval t1 p (sp (fst s) e) = e1 ->
+      aeval t2 p (sp (snd s) e) = e2 ->*)
+      events (abpar r s t1 t2) (*p e*)
+             (join i (*p e1 e2 (pp e1 e2)*)).
 Hint Constructors events.
 
 Lemma events_range:
-  forall t p e v,
+  forall t v,
     well_formed t ->
-    events t p e v ->
+    events t (*p e*) v ->
     fst (range t) <= ev v < snd (range t).
 Proof.
   intros.
@@ -537,7 +549,9 @@ Proof.
   clear G.
   induction H0; inv H; simpl in *; auto; try omega.
   - apply IHevents in H4; omega.
-  - apply well_formed_range in H5; omega.
+  - Check well_formed_range.
+
+    apply well_formed_range in H4; omega.
   - apply IHevents in H4; omega.
   - apply IHevents in H5.
     apply well_formed_range in H4.
@@ -546,15 +560,15 @@ Proof.
   - apply IHevents in H6.
     apply well_formed_range in H5.
     omega.
-  - apply well_formed_range in H7.
-    apply well_formed_range in H8.
+  - apply well_formed_range in H5.
+    apply well_formed_range in H6.
     omega.
   - apply IHevents in H5; omega.
   - apply IHevents in H6.
     apply well_formed_range in H5.
     omega.
-  - apply well_formed_range in H7.
-    apply well_formed_range in H8.
+  - apply well_formed_range in H5.
+    apply well_formed_range in H6.
     omega.
 Qed.
 
@@ -610,19 +624,19 @@ Qed.
 (** Properties of events. *)
 
 Lemma events_range_event:
-  forall t p e i,
+  forall t i,
     well_formed t ->
     fst (range t) <= i < snd (range t) ->
-    exists v, events t p e v /\ ev v = i.
+    exists v, events t v /\ ev v = i.
 Proof.
-  intros t p e i H; revert i; revert e; revert p.
+  intros t i H; revert i;
   induction H; intros; simpl in *.
   - destruct x; eapply ex_intro; split; auto;
       destruct r as [j k]; simpl in *; omega.
   - eapply at_range in H2; eauto.
     repeat destruct_disjunct; subst.
     + eapply ex_intro; split; auto.
-    + apply IHwell_formed with (p:=p) (e:=e) in H2.
+    + apply IHwell_formed in H2.
       destruct H2 as [v].
       destruct H2; subst.
       exists v; split; auto.
@@ -632,20 +646,20 @@ Proof.
       * simpl; auto.
   - apply lin_range with (i:=i) in H2; eauto.
     destruct H2.
-    + apply IHwell_formed1 with (p:=p) (e:=e) in H2; auto.
+    + apply IHwell_formed1 in H2; auto.
       destruct H2 as [v]; destruct H2; subst.
       exists v; split; auto.
-    + apply IHwell_formed2 with (p:=p) (e:=aeval x p e) in H2; auto.
+    + apply IHwell_formed2 in H2; auto.
       destruct H2 as [v]; destruct H2; subst.
       exists v; split; auto.
     + omega.
   - apply bra_range with (i:=i) (r:=r) in H2; eauto.
     repeat destruct_disjunct; subst.
     + eapply ex_intro; split; auto.
-    + apply IHwell_formed1 with (p:=p) (e:=sp (fst s) e) in H2.
+    + apply IHwell_formed1 in H2.
       destruct H2 as [v]; destruct H2; subst.
       exists v; split; auto.
-    + apply IHwell_formed2 with (p:=p) (e:=sp (snd s) e) in H2.
+    + apply IHwell_formed2 in H2.
       destruct H2 as [v]; destruct H2; subst.
       exists v; split; auto.
     + eapply ex_intro; split.
@@ -655,10 +669,10 @@ Proof.
   - apply bra_range with (i:=i) (r:=r) in H2; eauto.
     repeat destruct_disjunct; subst.
     + eapply ex_intro; split; auto.
-    + apply IHwell_formed1 with (p:=p) (e:=sp (fst s) e) in H2.
+    + apply IHwell_formed1 in H2.
       destruct H2 as [v]; destruct H2; subst.
       exists v; split; auto.
-    + apply IHwell_formed2 with (p:=p) (e:=sp (snd s) e) in H2.
+    + apply IHwell_formed2 in H2.
       destruct H2 as [v]; destruct H2; subst.
       exists v; split; auto.
     + eapply ex_intro; split.
@@ -669,56 +683,28 @@ Qed.
 
 Ltac events_event_range :=
   repeat match goal with
-         | [ H: events _ _ _ _ |- _ ] =>
+         | [ H: events _ _ |- _ ] =>
            apply events_range in H; auto
          end; omega.
 
 Lemma events_injective:
-  forall t p e v1 v2,
+  forall t v1 v2,
     well_formed t ->
-    events t p e v1 ->
-    events t p e v2 ->
+    events t v1 ->
+    events t v2 ->
     ev v1 = ev v2 ->
     v1 = v2.
 Proof.
-  intros t p e v1 v2 H; revert v2; revert v1;
-    revert e; revert p.
-  induction H; intros.
+  intros t v1 v2 H.
+  generalize dependent v1.
+  generalize dependent v2.
+    induction H; intros; try (inv v1; inv v2; tauto).
   - inv H0; inv H1; auto.
   - pose proof H as G.
-    apply well_formed_range in G.
-    inv H2; inv H3; simpl in *; subst; auto.
+    apply well_formed_range in H.
+    inv H2; inv H3; simpl in *; auto.
     + events_event_range.
     + events_event_range.
-    + events_event_range.
-    + eapply IHwell_formed in H11; eauto.
-    + events_event_range.
-    + events_event_range.
-    + events_event_range.
-  - pose proof H as G.
-    pose proof H0 as G0.
-    apply well_formed_range in G.
-    apply well_formed_range in G0.
-    inv H4; inv H5; simpl in *; auto.
-    + eapply IHwell_formed1 in H13; eauto.
-    + events_event_range.
-    + events_event_range.
-    + eapply IHwell_formed2 in H13; eauto.
-  - pose proof H as G.
-    pose proof H0 as G0.
-    apply well_formed_range in G.
-    apply well_formed_range in G0.
-    inv H4; inv H5; simpl in *; subst; auto.
-    + events_event_range.
-    + events_event_range.
-    + events_event_range.
-    + events_event_range.
-    + eapply IHwell_formed1 in H13; eauto.
-    + events_event_range.
-    + events_event_range.
-    + events_event_range.
-    + events_event_range.
-    + eapply IHwell_formed2 in H13; eauto.
     + events_event_range.
     + events_event_range.
     + events_event_range.
@@ -727,17 +713,41 @@ Proof.
     pose proof H0 as G0.
     apply well_formed_range in G.
     apply well_formed_range in G0.
-    inv H4; inv H5; simpl in *; subst; auto.
+    inv H4; inv H5; simpl in *.
+    + auto.
+    + events_event_range.
+    + events_event_range.
+    + auto.
+  - pose proof H as G.
+    pose proof H0 as G0.
+    apply well_formed_range in G.
+    apply well_formed_range in G0.
+    inv H4; inv H5; simpl in *; try auto.
     + events_event_range.
     + events_event_range.
     + events_event_range.
     + events_event_range.
-    + eapply IHwell_formed1 in H13; eauto.
     + events_event_range.
     + events_event_range.
     + events_event_range.
     + events_event_range.
-    + eapply IHwell_formed2 in H13; eauto.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+  - pose proof H as G.
+    pose proof H0 as G0.
+    apply well_formed_range in G.
+    apply well_formed_range in G0.
+    inv H4; inv H5; simpl in *; try auto.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
     + events_event_range.
     + events_event_range.
     + events_event_range.

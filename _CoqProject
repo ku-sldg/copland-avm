@@ -1,8 +1,11 @@
 -R . CoplandM
 Preamble.v
 Maps.v
+More_lists.v
 Term.v
-Instr.v
 Event_system.v
+Term_system.v
+Trace.v
+Instr.v
 MonadCOP.v
 MonadAM.v
