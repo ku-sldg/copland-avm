@@ -90,7 +90,18 @@ Inductive EvidenceC: Set :=
 | ssc: EvidenceC -> EvidenceC -> EvidenceC
 | ppc: EvidenceC -> EvidenceC -> EvidenceC.
 
-
+Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=
+  match ec with
+  | mtc => mt
+  | kkc i A q _ ec' => kk i A p q (et_fun p ec')
+  | uuc i A _ ec' => uu i A p (et_fun p ec')
+  | ggc ec' _ => gg p (et_fun p ec')
+  | hhc _ ec' => hh p (et_fun p ec')
+  | nnc n _ ec' => nn p n (et_fun p ec')
+  | ssc ec1 ec2 => ss (et_fun p ec1) (et_fun p ec2)
+  | ppc ec1 ec2 => pp (et_fun p ec1) (et_fun p ec2)
+  end.
+    
 (** * Types *)
 Inductive ET: Plc -> EvidenceC -> Evidence -> Prop :=
 | mtt: forall p, ET p mtc mt
@@ -118,6 +129,14 @@ Inductive ET: Plc -> EvidenceC -> Evidence -> Prop :=
     ET p e2 e2t ->
     ET p (ppc e1 e2) (pp e1t e2t).
 Hint Constructors ET.
+
+Theorem et_et_fun : forall p ec,
+    ET p ec (et_fun p ec).
+Proof.
+  intros.
+  generalize dependent p.
+  induction ec; intros; try (simpl; eauto).
+Defined.
 
 Fixpoint typeof_asp t p e :=
   match t with

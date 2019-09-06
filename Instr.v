@@ -13,25 +13,26 @@ Inductive Prim_Instr: Set :=
 | kmeas: ASP_ID -> Plc -> (list Arg) -> Prim_Instr
 | umeas: ASP_ID -> (list Arg) -> Prim_Instr
 | sign: Prim_Instr
-| hash: Prim_Instr
-| split: SP -> SP -> Prim_Instr
-| joins: Prim_Instr
-| joinp: Prim_Instr.
+| hash: Prim_Instr.
 
 Inductive Instr: Set :=
 | primInstr: Prim_Instr -> Instr
-| reqrpy: Plc -> Plc -> Term -> Instr
+| split: SP -> SP -> Instr
+| joins: Instr
+| joinp: Instr
+| reqrpy: Plc -> Term -> Instr
 | besr : Instr
 | bep: (list Instr) -> (list Instr) -> Instr.
 
 Inductive AnnoInstr: Set :=
-| aprimInstr: Range -> Prim_Instr -> AnnoInstr
-| areqrpy: Range -> Plc -> Plc -> AnnoTerm -> AnnoInstr
-| abesr : Range -> AnnoInstr
-| abep: Range -> Range -> (list Instr) -> (list Instr) -> AnnoInstr.
-(*
-Inductive AnnoInstr: Set :=
-| annoInstr: Range -> Instr -> AnnoInstr.*)
+| aprimInstr: nat -> Prim_Instr -> AnnoInstr
+| asplit: nat -> SP -> SP -> AnnoInstr
+| ajoins: AnnoInstr
+| ajoinp: AnnoInstr
+| abesr : AnnoInstr
+| areqrpy: Range -> Plc -> AnnoTerm -> AnnoInstr
+| abep: Range -> Range -> (list AnnoInstr) -> (list AnnoInstr) -> AnnoInstr.
+
 
 (* 
 Definition invokeKIM (i:ASP_ID) (q:Plc) (args:list Arg) : BS.
@@ -149,8 +150,8 @@ Hint Resolve eq_li_dec.
 
 
 (** * Instruction Compiler *)
-Definition asp_instr (t:ASP) (p:Plc) : Prim_Instr :=
-  match t with
+Definition asp_instr (a:ASP) : Prim_Instr :=
+  match a with
   | CPY => copy
   | KIM i p args => kmeas i p args
   | USM i args => umeas i args
@@ -158,32 +159,38 @@ Definition asp_instr (t:ASP) (p:Plc) : Prim_Instr :=
   | HSH => hash
   end.
 
-Fixpoint instr_compiler (t:AnnoTerm) (p:Plc) : (list AnnoInstr) :=
+Check anno.
+
+Fixpoint instr_compiler (t:AnnoTerm) : (list AnnoInstr) :=
   match t with
-  | aasp r a => [aprimInstr r (asp_instr a p)]
+  | aasp r a => [aprimInstr (fst r) (asp_instr a)]
 
     
-  | aatt r q t' => [areqrpy r p q t']
+  | aatt _ q t' => [areqrpy (range t') q t']
 
-                 (*
-  | lseq t1 t2 =>
-    let tr1 := instr_compiler t1 p in
-    let tr2 := instr_compiler t2 p in
+               
+  | alseq _ t1 t2 =>
+    let tr1 := instr_compiler t1 in
+    let tr2 := instr_compiler t2 in
     tr1 ++ tr2
-        
-  | bseq (sp1,sp2) t1 t2 =>
-    let splEv := split sp1 sp2 in
-    let tr1 := instr_compiler t1 p in
-    let tr2 := instr_compiler t2 p in
-    [splEv] ++ tr1 ++ [besr] ++ tr2 ++ [joins]
-  | bpar (sp1,sp2) t1 t2 =>
-    let splEv := [split sp1 sp2] in
-    let tr1 := instr_compiler t1 p in
-    let tr2 := instr_compiler t2 p in
-    let tr := [bep tr1 tr2] in
-    splEv ++ tr ++ [joinp] *)
-  | _ => []
+      
+  | abseq r (sp1,sp2) t1 t2 =>
+    let tr1 := instr_compiler t1 in
+    let tr2 := instr_compiler t2 in
+    [asplit (fst r) sp1 sp2] ++ tr1 ++ [abesr] ++ tr2 ++ [ajoins]
+                             
+  | abpar r (sp1,sp2) t1 t2 =>
+    (*let splEv := [split sp1 sp2] in*)
+    let tr1 := instr_compiler t1 in
+    let tr2 := instr_compiler t2 in
+    let tr := [abep (range t1) (range t2) tr1 tr2] in
+    [asplit (fst r) sp1 sp2] ++ tr ++ [ajoinp] 
   end.
+
+Definition termx := (bpar (ALL,ALL) (asp CPY) (asp SIG)).
+Definition termy := bpar (NONE,NONE) termx termx.
+
+Compute (instr_compiler (annotated termy)).
 
 (** * Place-holder axioms for IO operations *)
 Definition invokeKIM (i:ASP_ID) (q:Plc) (args:list Arg) : BS.
@@ -288,22 +295,50 @@ Proof.
 Defined.
 
 (** * EvidenceC Stack *)
-Definition ev_stack := list EvidenceC.
-Definition empty_stack : ev_stack := [].
+Definition ev_stackc := list EvidenceC.
+Definition empty_stackc : ev_stackc := [].
 
-Definition push_stack (e:EvidenceC) (s:ev_stack) : ev_stack :=
+Definition push_stackc (e:EvidenceC) (s:ev_stackc) : ev_stackc :=
   (e :: s).
 
-Definition pop_stack (s:ev_stack) : (EvidenceC*ev_stack) :=
+Definition pop_stackc (s:ev_stackc) : (EvidenceC*ev_stackc) :=
   match s with
   | e :: s' => (e,s')
-  | _ => (mtc,empty_stack) (* TODO: will this be expressive enough? *)
+  | _ => (mtc,empty_stackc) (* TODO: will this be expressive enough? *)
+  end.
+
+(** * Evidence Stack *)
+Definition ev_stack := list Evidence.
+Definition empty_stack : ev_stack := [].
+
+Definition push_stack (e:Evidence) (s:ev_stack) : ev_stack :=
+  (e :: s).
+
+Definition pop_stack (s:ev_stack) : (Evidence*ev_stack) :=
+  match s with
+  | e :: s' => (e,s')
+  | _ => (mt,empty_stack) (* TODO: will this be expressive enough? *)
   end.
 
 Record vm_accum : Type := mk_accum
-                            { ec:EvidenceC ;
+                            { ec:Evidence ;
                               vm_trace:(list Ev) ;
                               vm_stack:ev_stack }.
+
+Inductive vm_step: Plc -> AnnoInstr -> list Ev -> Prop :=.
+
+Inductive vm_lstar: (list AnnoInstr) -> list Ev -> (list AnnoInstr) -> Prop :=
+| vm_lstar_refl: vm_lstar [] [] []
+| vm_lstar_tran: forall p i tr tr' l l',
+    vm_step p i tr -> vm_lstar l tr' l' -> vm_lstar (i::l) (tr ++ tr') l'.
+
+
+
+
+
+
+
+
 
 (** * Primitive VM Operations *)
 
@@ -320,6 +355,10 @@ Definition exec_asp (n:nat) (p:Plc) (e:EvidenceC) (a:ASP) : (EvidenceC*Ev) :=
   | split: SP -> SP -> Prim_Instr
   | joins: Prim_Instr
   | joinp: Prim_Instr.
+
+
+
+
 
 
   Definition vm_prim (p:Plc) (ep:vm_accum) (instr:AnnoInstr)
