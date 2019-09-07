@@ -6,9 +6,12 @@ Require Import Trace.
 Require Import LTS.
 Require Import Main.
 Require Import More_lists.
+Require Import Preamble.
 
 Require Import List.
 Import ListNotations.
+
+Set Nested Proofs Allowed.
 
 
 (** * VM Instructions *)
@@ -171,7 +174,7 @@ Fixpoint instr_compiler (t:AnnoTerm) : (list AnnoInstr) :=
   | aasp r a => [aprimInstr (fst r) (asp_instr a)]
 
     
-  | aatt _ q t' => [areqrpy (range t') q t']
+  | aatt r q t' => [areqrpy r q t']
 
                
   | alseq _ t1 t2 =>
@@ -494,16 +497,228 @@ Theorem vm_bigstep: forall e e' s t tr p,
 Proof.
 Admitted. *)
 
-Theorem vm_smallstep: forall e e' s t tr p,
-  well_formed t ->
+Ltac inv_vm_lstar :=
+  repeat (
+      match goal with
+      | [ H: vm_lstar _ _ _ _ |- _ ] => inv H; simpl
+      | [ G: vm_step _ _ _ |- _ ] => inv G; simpl
+      end).
+
+Lemma ffff : forall e e'' s'' s tr3 il1 il2, (* TODO: il1 must be compiled for stack restore *)
+    let r := (mk_accum e [] s) in
+    let r3 := (mk_accum e'' tr3 s'') in
+    vm_lstar r r3
+             (il1 ++ il2) [] ->
+   exists e' tr1 s',
+      let r' := (mk_accum e' tr1 s') in
+      vm_lstar r r'
+               il1 [] /\
+     exists tr2 s'',
+      let r'' := (mk_accum e'' tr2 s'') in
+      vm_lstar (mk_accum e' [] s') r''
+               il2 []  /\
+     tr3 = tr1 ++ tr2.
+Proof.
+    Admitted.
+
+        Lemma lstar_stls :
+      forall st0 st1 t tr,
+        lstar st0 tr st1 -> lstar (ls st0 t) tr (ls st1 t).
+    Proof.
+    Admitted.
+      (*
+Lemma fasd :
+  lstar st (tr1 ++ tr2)
+  lstar (rem (snd r) p (conf t n (et_fun p e)))
+    (remote_events t ++ [rpy rpyi n]) (stop p (aeval t n (et_fun p e)))*)
+      
+Theorem vm_smallstep: forall e e' s t tr n et,
+  (*well_formed t ->*)
   vm_lstar
     (mk_accum e [] s)
     (mk_accum e' tr s)
     (instr_compiler t)
     [] ->
-  lstar (conf t p (et_fun p e)) tr (stop p (aeval t p (et_fun p e)))
-  /\ (et_fun p e' = typeof (unanno t) p (et_fun p e)).
+  lstar (conf t n et) tr (stop n (aeval t n et)).
+  (*/\ (et_fun p e' = typeof (unanno t) p (et_fun p e)).*)
 Proof.
+  intros.
+  (*generalize dependent p.*)
+  generalize dependent tr.
+  generalize dependent et.
+  generalize dependent n.
+  generalize dependent e.
+  generalize dependent e'.
+  generalize dependent s.
+  
+  induction t; intros.
+  - destruct a; try (simpl; inv_vm_lstar; repeat econstructor).
+  - inv_vm_lstar.
+    eapply lstar_tran.
+    econstructor.
+    eapply lstar_transitive.
+
+
+    Lemma fasd : forall st st' tr p r,
+      lstar st tr
+            st' ->
+      lstar (rem r p st) tr (rem r p st').
+    Admitted.
+
+    apply fasd.
+    eapply IHt.
+    admit. (* TODO: make this an axiom? *)
+
+    eapply lstar_tran.
+    apply stattstop.
+    econstructor.
+  - simpl in H.
+
+
+
+    apply ffff in H.
+    destruct H. destruct H. destruct H. destruct H. destruct H0. destruct H0.
+    destruct H0.
+
+    eapply lstar_silent_tran. econstructor.
+    rewrite H1.
+    eapply lstar_transitive. eapply lstar_stls.
+    
+
+    eapply IHt1. assert (x1 = s). admit. (* TODO: stack restore lemma *)
+    subst.
+    eassumption.
+
+    
+
+    Lemma fff : forall st0 st1 st2 tr,
+      step st0 None st1 ->
+      lstar st1 tr st2 ->
+      lstar st0 tr st2.
+    Proof.
+    Admitted.
+
+    eapply fff.
+    apply stlseqstop.
+    eapply IHt2. assert (x1 = x3). admit. subst.
+    apply H0.
+  -
+    
+    
+    
+    subst.
+    
+    apply H.
+
+    edestruct ffff in H.
+    inv H. 
+    admit.
+    inv H4. admit.
+
+    inv_vm_lstar.
+
+    eapply lstar_silent_tran.
+    econstructor.
+
+
+
+    eapply lstar_stls.
+    
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+  - simpl.
+    inv_vm_lstar.
+    econstructor.
+    econstructor.
+    eapply lstar_transitive.
+    + 
+      (*remember (remote_events t) as HH. *)
+      assert ((remote_events t) = (remote_events t) ++ []).
+      admit.
+      rewrite H.
+      eapply lstar_transitive with (st1:=(rem (snd r) p (stop n (aeval t n (et_fun n e))))).
+      specialize IHt with (tr:=remote_events t).
+     assert (lstar (conf t n (et_fun n e)) (remote_events t)
+                   (stop n (aeval t n (et_fun n e)))).
+     {
+       apply IHt.
+       admit. (* TODO: Axiom?? *)
+     }
+
+     Lemma rem_congr : forall t n e p (r:(nat*nat)),
+         lstar (conf t n (et_fun n e)) (remote_events t)
+         (stop n (aeval t n (et_fun n e))) ->
+  lstar (rem (snd r) p (conf t n (et_fun p e))) (remote_events t)
+        (rem (snd r) p (stop n (aeval t n (et_fun n e)))).
+    Admitted.
+
+     apply rem_congr.
+     eauto.
+     econstructor.
+    + eapply lstar_tran.
+      eapply stattstop.
+      apply lstar_refl.
+      
+    
+     
+       
+    destruct HH.
+    * econstructor.
+    * simpl.
+      econstructor
+      
+
+      simpl.
+      eapply lstar_transitive.
+      econstructor.
+    *
+      
+    eapply stattstop.
+    econstructor.
+    econstructor.
+    destruct (remote_events t).
+    + 
+    eapply lstar_tran.
+    remember (et_fun p e).
+    remember (unanno t).
+    subst.
+    remember (range t).
+    eapply statt.
+    econstructor.
+    simpl.
+      
+    
 Admitted.
 
 Theorem vm_ordered : forall t e e' s tr ev0 ev1,
