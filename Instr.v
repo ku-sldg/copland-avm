@@ -504,8 +504,8 @@ Ltac inv_vm_lstar :=
       | [ G: vm_step _ _ _ |- _ ] => inv G; simpl
       end).
 
-Lemma ffff : forall e e'' s'' s tr3 il1 il2, (* TODO: il1 must be compiled for stack restore *)
-    let r := (mk_accum e [] s) in
+Lemma ffff : forall e e'' s'' s tr0 tr3 il1 il2, (* TODO: il1 must be compiled for stack restore *)
+    let r := (mk_accum e tr0 s) in
     let r3 := (mk_accum e'' tr3 s'') in
     vm_lstar r r3
              (il1 ++ il2) [] ->
@@ -513,19 +513,205 @@ Lemma ffff : forall e e'' s'' s tr3 il1 il2, (* TODO: il1 must be compiled for s
       let r' := (mk_accum e' tr1 s') in
       vm_lstar r r'
                il1 [] /\
-     exists tr2 s'',
+     exists tr2,
       let r'' := (mk_accum e'' tr2 s'') in
       vm_lstar (mk_accum e' [] s') r''
                il2 []  /\
-     tr3 = tr1 ++ tr2.
+     skipn (length tr0) tr3 = tr1 ++ tr2.
 Proof.
-    Admitted.
+Admitted.
 
-        Lemma lstar_stls :
-      forall st0 st1 t tr,
-        lstar st0 tr st1 -> lstar (ls st0 t) tr (ls st1 t).
-    Proof.
-    Admitted.
+Lemma lstar_stls :
+  forall st0 st1 t tr,
+    lstar st0 tr st1 -> lstar (ls st0 t) tr (ls st1 t).
+Proof.
+  intros.
+  induction H; auto.
+  eapply lstar_tran; eauto.
+  eapply lstar_silent_tran; eauto.
+Qed.
+
+Lemma fasd : forall st st' tr p r,
+    lstar st tr
+          st' ->
+    lstar (rem r p st) tr (rem r p st').
+Proof.
+  intros.
+  induction H; auto.
+  eapply lstar_tran; eauto.
+  eapply lstar_silent_tran; eauto.
+Defined.
+
+Lemma update_ev_immut_stack : forall s e,
+    vm_stack s = vm_stack (update_ev e s).
+Proof.
+Admitted.
+
+Lemma ssss : forall e tr s r,
+    vm_lstar r {| ec := e; vm_trace := tr; vm_stack := s |} [] [] ->
+    vm_stack r = s.
+Proof.
+Admitted.
+
+Lemma stack_restore_vm : forall e e' l l' s s' t,
+    vm_lstar (mk_accum e l s) (mk_accum e' l' s')
+             (instr_compiler t) [] ->
+    s = s'.
+Proof.
+
+
+  intros.
+  generalize dependent e.
+  generalize dependent e'.
+  generalize dependent l.
+  generalize dependent l'.
+  generalize dependent s.
+  generalize dependent s'.
+  
+  induction t; intros.
+  - destruct a; try (inv_vm_lstar; reflexivity).
+  - inv_vm_lstar. reflexivity.
+
+  - simpl in H.
+    apply ffff in H.
+    destruct H. destruct H. destruct H. destruct H. destruct H0.
+    destruct H0. 
+    assert (s = x1). eapply IHt1; eauto.
+    assert (x1 = s'). eapply IHt2; eauto. congruence.
+
+  -
+    simpl in H.
+    destruct s.
+    inv H.
+    inv H4.
+    apply ffff in H5.
+    destruct H5. destruct H. destruct H. destruct H. destruct H0. destruct H0.
+    assert (vm_stack r'' = x1). eapply IHt1; eauto.
+    assert (
+        (abesr :: instr_compiler t2 ++ [ajoins (Nat.pred (snd r))])
+        = ([abesr] ++ instr_compiler t2 ++ [ajoins (Nat.pred (snd r))])).
+    admit.
+    rewrite H3 in H0.
+    apply ffff in H0.
+    destruct H0. destruct H0. destruct H0. destruct H0. destruct H4. destruct H4.
+    inv H0.
+    apply ffff in H4. destruct H4. destruct H0. destruct H0. destruct H0. destruct H2. destruct H2.
+    assert (x5 = x8). eapply IHt2; eauto. inv H10. inv H2. inv H10.
+    subst.
+    assert (vm_stack r'' = push_stackc e2 s0).
+    assert (vm_stack r'0 = vm_stack {| ec := e; vm_trace := l; vm_stack := s0 |}).
+    apply update_ev_immut_stack. unfold vm_stack at 2 in H2.
+    rewrite <- H2.
+    reflexivity.
+    rewrite H2 in *.
+    assert (vm_stack r'''0 = s').
+
+
+    eapply ssss; eauto.
+    
+    subst.
+    assert (vm_stack r''0 = x8).
+    eapply ssss; eauto.
+    subst. clear H11. clear H0. clear H.
+    clear H12.
+    assert (r'4 = r'5). eauto.
+    subst.
+    assert (vm_stack r'' = e2 :: s0). eauto.
+    rewrite H0 in *.
+    assert (vm_stack r'2 = s0). eauto.
+    assert (vm_stack r''0 = e6::s0). eauto.
+    assert (vm_stack r'5 = s0). assumption.
+    rewrite <- H8.
+    rewrite <- H.
+    assert (vm_stack r''1 = vm_stack r'''0). eauto.
+    rewrite <- H9.
+    
+
+
+
+    apply update_ev_immut_stack.
+
+  -
+    
+    
+    
+
+
+
+
+    
+    unfold att_vm' in H.
+    destruct s.
+    simpl in H.
+    rewrite fold_left_app in H.
+    simpl in H.
+    rewrite fold_left_app in H.
+    simpl in H.
+    (* unfold push_stack in H. *)  (* TODO:  why does this step of evaluation prohibit destructing the let later on?? *)
+    
+    unfold vm_prim at 3 in H. (*unfold push_stack in H. *)
+    unfold vm_prim at 1 in H.
+
+    remember (fold_left (vm_prim p) (instr_compiler t1 p)
+                            (splitEv s e, push_stack (splitEv s1 e) s0)).
+    destruct p0.
+
+    remember (pop_stack e3).
+    destruct p0.
+
+    remember ((fold_left (vm_prim p) (instr_compiler t2 p)
+                             (e4, push_stack e2 e5))).
+    destruct p0.
+
+    assert (e7 = e2 :: e5).
+    apply IHt2 with (e:=e4) (e0:=e6) (p:=p).
+    assumption.
+    rewrite H0 in H. unfold pop_stack in H.
+    inversion H. subst.
+
+    assert (e3 = splitEv s1 e :: s0).
+    apply IHt1 with (e:=splitEv s e) (e0:=e2) (p:=p).
+    apply Heqp0.
+    rewrite H0 in Heqp1.
+    unfold pop_stack in Heqp1. inversion Heqp1. reflexivity.
+
+  - simpl in H.
+    destruct s in H.
+    simpl in H.
+
+    assert (parallel_att_vm_thread (instr_compiler t1 p) (splitEv s e) = 
+                att_vm (instr_compiler t1 p) p (splitEv s e)).
+    apply par_vm_thread.
+
+    assert (parallel_att_vm_thread (instr_compiler t2 p) (splitEv s1 e) = 
+            att_vm (instr_compiler t2 p) p (splitEv s1 e)).
+    apply par_vm_thread.
+    
+    rewrite H0 in H.
+    rewrite H1 in H.
+    congruence.
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
       (*
 Lemma fasd :
   lstar st (tr1 ++ tr2)
@@ -559,11 +745,7 @@ Proof.
     eapply lstar_transitive.
 
 
-    Lemma fasd : forall st st' tr p r,
-      lstar st tr
-            st' ->
-      lstar (rem r p st) tr (rem r p st').
-    Admitted.
+
 
     apply fasd.
     eapply IHt.
@@ -585,22 +767,25 @@ Proof.
     eapply lstar_transitive. eapply lstar_stls.
     
 
-    eapply IHt1. assert (x1 = s). admit. (* TODO: stack restore lemma *)
+    eapply IHt1. assert (s = x1).
+
+
+
+    eapply stack_restore_vm. apply H.
+
+    
     subst.
     eassumption.
 
     
 
-    Lemma fff : forall st0 st1 st2 tr,
-      step st0 None st1 ->
-      lstar st1 tr st2 ->
-      lstar st0 tr st2.
-    Proof.
-    Admitted.
 
-    eapply fff.
+
+    eapply lstar_silent_tran.
     apply stlseqstop.
-    eapply IHt2. assert (x1 = x3). admit. subst.
+    eapply IHt2. assert (x1 = x3).
+    eapply stack_restore_vm. eassumption.
+    subst.
     apply H0.
   -
     
