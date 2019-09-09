@@ -497,23 +497,52 @@ Ltac inv_vm_lstar :=
 
 Inductive wf_instr_seq : list AnnoInstr -> Prop :=
 | compile_wf: forall t, wf_instr_seq (instr_compiler t)
-| concat_wf: forall t1 t2, wf_instr_seq (instr_compiler t1 ++ instr_compiler t2)
-| bseq_wf: forall il1 il2 i j sp1 sp2,
-    wf_instr_seq il1 ->
-    wf_instr_seq il2 ->
-    wf_instr_seq ([asplit i sp1 sp2] ++ il1 ++ [abesr] ++ il2 ++ [ajoins j])
+(*| concat_wf: forall t1 t2, wf_instr_seq (instr_compiler t1 ++ instr_compiler t2)*)
+| bseq_wf: forall j t,
+   (* wf_instr_seq il1 ->
+    wf_instr_seq il2 -> *)
+    wf_instr_seq ([abesr] ++ (instr_compiler t) ++ [ajoins j])
+| joins_wf: forall j,
+    wf_instr_seq [ajoins j].
+(*
+| joinp_wf: forall j,
 | bpar_wf: forall i j sp1 sp2 r1 r2 il1 il2,
     wf_instr_seq il1 ->
     wf_instr_seq il2 ->
-    wf_instr_seq ([asplit i sp1 sp2] ++ [abep r1 r2 il1 il2] ++ [ajoinp j]).
+    wf_instr_seq ([asplit i sp1 sp2] ++ [abep r1 r2 il1 il2] ++ [ajoinp j]).*)
 (*
 | bseq2_wf: forall t2 i,
     wf_instr_seq (instr_compiler t2 ++ [ajoins i])
 | bseq3_wf: forall t2 i,
     wf_instr_seq ([abesr] ++ instr_compiler t2 ++ [ajoins i]).*)
 
-Lemma ffff : forall e e'' s'' s tr0 tr3 il1 il2, (* TODO: il1 must be compiled for stack restore *)
-    wf_instr_seq (il1 ++ il2) -> 
+Lemma t_completes : forall r t, exists r',
+      vm_lstar r r' (instr_compiler t) [].
+Proof.
+Admitted.
+
+ (*
+ 
+Lemma eee : forall il1 il2 r1 r3,
+  vm_lstar r1 r3
+           (il1 ++ il2) [] ->
+  exists r2,
+    vm_lstar r1 r2
+             (il1 ++ il2) il2.
+Proof.
+  intros.
+  dependent induction H
+  - eexists. assert (il1 = []). admit. assert (il2 = []). admit.
+    subst. econstructor.
+  -
+  *)  
+    
+  
+
+
+Lemma ffff : forall e e'' s'' s t tr0 tr3 il2, (* TODO: il1 must be compiled for stack restore *)
+    wf_instr_seq il2 -> 
+    let il1 := (instr_compiler t) in
     let r := (mk_accum e tr0 s) in
     let r3 := (mk_accum e'' tr3 s'') in
     vm_lstar r r3
@@ -528,13 +557,74 @@ Lemma ffff : forall e e'' s'' s tr0 tr3 il1 il2, (* TODO: il1 must be compiled f
                il2 [] /\
      skipn (length tr0) tr3 = tr1 ++ tr2.
 Proof.
+  (*
+  intros.
+  generalize dependent e.
+  generalize dependent e''.
+  generalize dependent s.
+  generalize dependent s''.
+  generalize dependent tr0.
+  generalize dependent tr3.
+  (*generalize dependent il1.
+  generalize dependent t. *)
+  dependent induction H; intros.
+  - edestruct t_completes 
+  eexists. eexists. eexists.
+  destruct t_completes with (r:={| ec := e; vm_trace := tr0; vm_stack := s |}) (t:=t).
+  split.
+  destruct x.
+  apply H.
+  - destruct a.
+    + inv H0. inv H5. simpl in H6.
+      exists e. exists (tr0 ++ [Term.copy (fst r)]). exists s.
+      (*assert (il1 = il1 ++ []). trivial. rewrite H0.*)
+      split.
+      * eapply vm_lstar_tran.
+        econstructor.
+        econstructor.
+      * exists (skipn (S (length tr0)) tr3).
+        split.
+        --
+          inv H6. inv H. admit.
+          econstructor.
+        
+        eapply vm_lstar_tran.
+
+
+
+      inv H5. simpl in H6.
+      eexists. eexists. eexists.
+      split.
+      * econstructor. econstructor. econstructor.
+      * eexists.
+        split.
+        -- simpl. inv H6. simpl. econstructor.
+        
+  - edestruct IHt; eauto.
+  - edestruct IHt2; eauto.
+  - edestruct IHt2; eauto.
+  - edestruct IHt2; eauto.
+    
+    
+    
+  - destruct a.
+    inv H.
+    * repeat eexists.
+      econstructor. econstructor. econstructor.
+      inv H0. inv H4. inv H5
+    + eexists. eexists. eexists. eexists. simpl in il1.
+      econstructor. econstructor. econstructor.
+      eexists. eexists.
+      inv H.
+      *  *)
+  
+  (*
   intros.
   induction H.
   admit.
   admit.
   admit.
-  inv H0.
-  
+  inv H0.*)
 Admitted.
 (*
   - 
@@ -645,8 +735,7 @@ Proof.
   - simpl in H.
 
     eapply ffff in H.
-    destruct H. destruct H. destruct H. destruct H. destruct H0.
-    destruct H0. 
+    destruct H. destruct H. destruct H. destruct H. destruct H0. destruct H0. 
     assert (s = x1). eapply IHt1; eauto.
     assert (x1 = s'). eapply IHt2; eauto. congruence.
     econstructor.
@@ -656,18 +745,30 @@ Proof.
     destruct s.
     inv H.
     inv H4.
-    apply ffff with (il2:= (abesr :: instr_compiler t2 ++ [ajoins (Nat.pred (snd r))])) (il1:=instr_compiler t1) in H5.
+    apply ffff (*with (il2:= (abesr :: instr_compiler t2 ++ [ajoins (Nat.pred (snd r))])) (il1:=instr_compiler t1)*) in H5.
     destruct H5. destruct H. destruct H. destruct H. destruct H0. destruct H0.
     assert (vm_stack r'' = x1). eapply IHt1; eauto.
-    assert (
+    (*assert (
         (abesr :: instr_compiler t2 ++ [ajoins (Nat.pred (snd r))])
         = ([abesr] ++ instr_compiler t2 ++ [ajoins (Nat.pred (snd r))])).
     trivial.
-    rewrite H3 in H0.
-    apply ffff with (il2:= instr_compiler t2 ++ [ajoins (Nat.pred (snd r))]) (il1:=[abesr]) in H0.
-    destruct H0. destruct H0. destruct H0. destruct H0. destruct H4. destruct H4.
+    rewrite H3 in H0. *)
     inv H0.
-    apply ffff with (il2:=[ajoins (Nat.pred (snd r))]) (il1:=instr_compiler t2) in H4.  destruct H4. destruct H0. destruct H0. destruct H0. destruct H2. destruct H2.
+    inv H7.
+   (* inv H8.*)
+    apply ffff (*with (il2:= instr_compiler t2 ++ [ajoins (Nat.pred (snd r))]) (il1:=[abesr])*) in H8.
+    destruct H8. destruct H0. destruct H0. destruct H0. destruct H2. destruct H2.
+    
+    (*apply ffff with (il2:=[ajoins (Nat.pred (snd r))]) (il1:=instr_compiler t2) in H4.  destruct H4. destruct H0. destruct H0. destruct H0. destruct H2. destruct H2.*)
+    inv H2. inv H8. (*inv H10.*)
+    assert (push_stackc e6 (vm_stack r'2) = x4).
+    eapply IHt2; eauto.
+    subst.
+    inv H9.
+    eauto.
+
+    (*
+
     assert (x5 = x8). eapply IHt2; eauto. inv H10. inv H2. inv H10.
     assert (vm_stack r'' = push_stackc e2 s0).
     assert (vm_stack r'0 = vm_stack {| ec := e; vm_trace := l; vm_stack := s0 |}). eauto. eauto. 
@@ -707,6 +808,8 @@ Proof.
 
     apply update_ev_immut_stack. *)
     econstructor.
+    econstructor.
+    econstructor. *)
     econstructor.
     econstructor.
 
@@ -834,7 +937,7 @@ Proof.
     econstructor.
   - simpl in H.
 
-    apply ffff with (il1:= instr_compiler t1) (il2:=instr_compiler t2) in H. 
+    apply ffff with (il2:=instr_compiler t2) in H. 
     destruct H. destruct H. destruct H. destruct H. destruct H0. destruct H0.
     (*destruct H0.*)
 
@@ -859,10 +962,22 @@ Proof.
     inv H. inv H4.
     
 
-    apply ffff with (il1:=instr_compiler t1) (il2:=abesr :: instr_compiler t2 ++ [ajoins (Nat.pred (snd r))]) in H5.
+    apply ffff with (*(il1:=instr_compiler t1)*) (il2:=abesr :: instr_compiler t2 ++ [ajoins (Nat.pred (snd r))]) in H5.
     destruct H5. destruct H. destruct H. destruct H. destruct H0. destruct H0.
 
-    apply ffff with (il1:=[abesr]) (il2:=instr_compiler t2 ++ [ajoins (Nat.pred (snd r))]) in H0. destruct H0. destruct H0. destruct H0. destruct H0. inv H0.
+    (*
+    assert (
+        (abesr :: instr_compiler t2 ++ [ajoins (Nat.pred (snd r))])
+        = ([abesr] ++ instr_compiler t2 ++ [ajoins (Nat.pred (snd r))])).
+    trivial.
+    rewrite H2 in H0. *)
+    inv H0. inv H6.
+
+    apply ffff with (*(il1:=[abesr])*) (il2:=[ajoins (Nat.pred (snd r))]) in H7. destruct H7. destruct H0. destruct H0. destruct H0. destruct H2. destruct H2.
+    inv H2. inv H8.
+    eapply lstar_silent_tran. econstructor.
+
+    inv H0.
     destruct H2. destruct H0.
     apply ffff with (il1:=instr_compiler t2) (il2:=[ajoins (Nat.pred (snd r))]) in H0.
     destruct H0. destruct H0. destruct H0. destruct H0. destruct H3. destruct H3.
