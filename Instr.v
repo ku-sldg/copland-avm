@@ -496,20 +496,28 @@ Ltac inv_vm_lstar :=
       end).
 
 Inductive wf_instr_seq : list AnnoInstr -> Prop :=
+| compile_wf: forall t, wf_instr_seq (instr_compiler t)
 | concat_wf: forall t1 t2, wf_instr_seq (instr_compiler t1 ++ instr_compiler t2)
-| bseq_wf: forall t1 t2 i,
-    wf_instr_seq (instr_compiler t1 ++ abesr :: instr_compiler t2 ++ [ajoins i])
+| bseq_wf: forall il1 il2 i j sp1 sp2,
+    wf_instr_seq il1 ->
+    wf_instr_seq il2 ->
+    wf_instr_seq ([asplit i sp1 sp2] ++ il1 ++ [abesr] ++ il2 ++ [ajoins j])
+| bpar_wf: forall i j sp1 sp2 r1 r2 il1 il2,
+    wf_instr_seq il1 ->
+    wf_instr_seq il2 ->
+    wf_instr_seq ([asplit i sp1 sp2] ++ [abep r1 r2 il1 il2] ++ [ajoinp j]).
+(*
 | bseq2_wf: forall t2 i,
     wf_instr_seq (instr_compiler t2 ++ [ajoins i])
 | bseq3_wf: forall t2 i,
-    wf_instr_seq ([abesr] ++ instr_compiler t2 ++ [ajoins i]).
+    wf_instr_seq ([abesr] ++ instr_compiler t2 ++ [ajoins i]).*)
 
-Lemma ffff : forall e e'' s'' s tr0 tr3 il1 il2 il, (* TODO: il1 must be compiled for stack restore *)
+Lemma ffff : forall e e'' s'' s tr0 tr3 il1 il2, (* TODO: il1 must be compiled for stack restore *)
     wf_instr_seq (il1 ++ il2) -> 
     let r := (mk_accum e tr0 s) in
     let r3 := (mk_accum e'' tr3 s'') in
     vm_lstar r r3
-             il [] ->
+             (il1 ++ il2) [] ->
    exists e' tr1 s',
       let r' := (mk_accum e' tr1 s') in
       vm_lstar r r'
@@ -521,7 +529,14 @@ Lemma ffff : forall e e'' s'' s tr0 tr3 il1 il2 il, (* TODO: il1 must be compile
      skipn (length tr0) tr3 = tr1 ++ tr2.
 Proof.
   intros.
-  dependent induction H0.
+  induction H.
+  admit.
+  admit.
+  admit.
+  inv H0.
+  
+Admitted.
+(*
   - 
   simpl.
   eexists. eexists. eexists.
@@ -570,8 +585,8 @@ Proof.
     
     
 
-    apply vm_lstar_transitive in H.*)
-Admitted.
+    apply vm_lstar_transitive in H.
+Admitted. *) *)
 
 Lemma lstar_stls :
   forall st0 st1 t tr,
