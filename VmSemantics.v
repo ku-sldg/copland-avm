@@ -3,6 +3,8 @@ Require Import More_lists Preamble Term Trace LTS Instr Event_system Term_system
 Require Import List.
 Import ListNotations.
 
+Set Nested Proofs Allowed.
+
 (** * EvidenceC Stack *)
 Definition ev_stackc := list EvidenceC.
 Definition empty_stackc : ev_stackc := [].
@@ -47,6 +49,24 @@ Definition prim_trace (i:nat) (a:Prim_Instr) : (list Ev) :=
   | sign => [Term.sign i]
   | hash => [Term.hash i]
   end.
+Check update_ev.
+
+Definition prim_ev (a:Prim_Instr) (e:EvidenceC) : EvidenceC :=
+  match a with
+  | copy => e
+  | kmeas i q args =>
+    let bs := invokeKIM i q args in
+    (kkc i args q bs e)
+  | umeas i args =>
+    let bs := invokeUSM i args in
+    (uuc i args bs e)
+  | sign =>
+    let bs := signEv e in
+    (ggc e bs)
+  | hash =>
+    let bs := hashEv e in
+    (hhc bs e)
+  end.
 
 Definition parallel_att_vm_thread (li:list AnnoInstr) (e:EvidenceC) : EvidenceC.
 Admitted.
@@ -55,7 +75,7 @@ Definition parallel_vm_events (li:list AnnoInstr) : list Ev.
 Admitted.
 
 Inductive vm_step: vm_accum -> AnnoInstr -> vm_accum -> (list Ev) -> Prop :=
-| prim_step: forall r i a, vm_step r (aprimInstr i a) r (prim_trace i a)
+| prim_step: forall r i a, vm_step r (aprimInstr i a) (update_ev (prim_ev a (ec r)) r) (prim_trace i a)
 | split_step: forall r i sp1 sp2,
     let e1 := splitEv sp1 (ec r) in
     let e2 := splitEv sp2 (ec r) in
@@ -81,10 +101,12 @@ Inductive vm_step: vm_accum -> AnnoInstr -> vm_accum -> (list Ev) -> Prop :=
     vm_step r (ajoinp i) r'' [Term.join i]
 | besr_step: forall r,
     let e := (ec r) in
-    let er := (fst (pop_stackr r)) in
-    let r' := (snd (pop_stackr r)) in
-    let r'' := push_stackr e r' in
-    vm_step r (abesr) r'' []
+    let popped_r := pop_stackr r in
+    let er := fst (popped_r) in (*(fst (pop_stackr r)) in*)
+    let r' := snd (popped_r) (*(snd (pop_stackr r))*) in
+    let r'' := update_ev er r' in
+    let r''' := push_stackr e r'' in
+    vm_step r (abesr) r''' []
 | reqrpy_step: forall r rg q annt,
     let e := (ec r) in
     let r' := update_ev (toRemote (unanno annt) q e) r in
@@ -296,23 +318,27 @@ Proof.
     
   
 
-(*
-Lemma ffff : forall e e'' s'' s t tr0 tr3 il2, (* TODO: il1 must be compiled for stack restore *)
-    wf_instr_seq il2 -> 
+
+Lemma ffff : forall (*e e'' s'' s*)r t tr r3 (*tr0 tr3*) il2, (* TODO: il1 must be compiled for stack restore *)
+    (*wf_instr_seq il2 -> *)
     let il1 := (instr_compiler t) in
-    let r := (mk_accum e tr0 s) in
-    let r3 := (mk_accum e'' tr3 s'') in
+    (*let r := (mk_accum e (*tr0*) s) in *)
+    (*let r3 := (mk_accum e'' (*tr3*) s'') in*)
     vm_lstar r r3
-             (il1 ++ il2) [] ->
-   exists e' tr1 s',
-      let r' := (mk_accum e' tr1 s') in
+             (il1 ++ il2) []
+             tr ->
+   exists (*e' s'*) r' tr1,
+      (*let r' := (mk_accum e' (*tr1*) s') in*)
       vm_lstar r r'
-               il1 [] /\
+               il1 []
+               tr1 /\
      exists tr2,
-      let r'' := (mk_accum e'' tr2 s'') in
-      vm_lstar (mk_accum e' [] s') r''
-               il2 [] /\
-     skipn (length tr0) tr3 = tr1 ++ tr2.
+      (*let r'' := (mk_accum e'' (*tr2*) s'') in *)
+      vm_lstar r' r3 (*(mk_accum e' [] s') r''*)
+               il2 []
+               tr2 /\
+      tr = tr1 ++ tr2.
+     (*skipn (length tr0) tr3 = tr1 ++ tr2*)
 Proof.
   (*
   intros.
@@ -382,7 +408,7 @@ Proof.
   admit.
   admit.
   inv H0.*)
-Admitted. *)
+Admitted.
 (*
   - 
   simpl.
@@ -485,6 +511,16 @@ Proof.
   
 Admitted. *)
 
+(*
+Ltac destruct_conjs :=
+  repeat (
+      match goal with
+      | [ H: vm_lstar _ _ _ _ _ |- _ ] => inv H; simpl
+      | [ G: vm_step _ _ _ _ |- _ ] => inv G; simpl
+      end). *)
+
+Require Import Coq.Program.Tactics.
+
 Lemma vm_config_correct : forall e e' s s' t tr,
     vm_lstar (mk_accum e s) (mk_accum e' s')
              (instr_compiler t) []
@@ -492,6 +528,266 @@ Lemma vm_config_correct : forall e e' s s' t tr,
     e' = (eval (unanno t) e) /\
     s = s'.
 Proof.
+  intros.
+  generalize dependent e.
+  generalize dependent e'.
+  generalize dependent s.
+  generalize dependent s'.
+  generalize dependent tr.
+  induction t; intros.
+  - destruct a; inv_vm_lstar; (split; auto).
+  - simpl.
+    inv H. inv H4.
+    inv H7.
+    split; eauto.
+  - simpl.
+    simpl in H.
+    eapply ffff in H.
+    destruct_conjs.
+    destruct H.
+    
+    edestruct IHt2. eassumption.
+    edestruct IHt1. eassumption.
+    subst. split; reflexivity.
+  -
+    simpl in H. destruct s.
+    inv H.
+    dependent destruction r'.
+    inv H4. simpl in H7. unfold push_stackc in H7.
+    apply ffff in H7.
+    destruct_conjs.
+    dependent destruction H7.
+    unfold ec in *.
+    edestruct IHt1; eauto.
+    inv H2.
+    dependent destruction r'1.
+    inv H10. unfold ec in *. unfold pop_stackr in *. simpl in *.
+
+    apply ffff in H13.
+    destruct_conjs.
+    dependent destruction H13.
+    edestruct IHt2; eauto.
+    inv H4. inv H12. inv H15.
+    split; eauto.
+  -
+    
+
+
+    
+
+    assert ((ec0 = eval (unanno t2) er) /\ (s0 = vm_stack0)).
+    apply IHt2 with (tr:=H1). assumption.
+    destruct H6.
+    assert (er = splitEv s1 e). eauto.
+    rewrite <- H8.
+    rewrite <- H6.
+    rewrite H7.
+    inversion H4. clear H4.
+    inversion H13. clear H13.
+    dependent destruction r'2.
+    inversion H16. clear H16.
+    split.
+    +
+      rewrite <- H21.
+      subst.
+
+
+
+
+
+      
+    dependent destruction r'2.
+    inversion H13. clear H13.
+    inversion H16. clear H16.
+    rewrite <- H22.
+    rewrite <- H19.
+    assert (er0 = (eval (unanno t1) (splitEv s e))).
+    admit.
+    assert (e9 = ec0).
+    admit.
+    congruence.
+    + 
+      
+    
+    +
+      
+    split.
+    + 
+
+    edestruct IHt2; eauto.
+
+    inv H4.
+    dependent destruction r'2.
+    inv H12. inv H15.
+    split.
+    + assert (
+
+
+
+
+    
+    simpl in H0.
+    unfold update_ev in H0. unfold vm_stack in H0. unfold push_stackr in H0.
+    simpl in H0. unfold push_stackc in H0.
+
+    edestruct IHt1; eauto.
+    inv H2.
+    inv H10.
+    apply ffff in H13.
+    destruct_conjs.
+    inv H4. dependent destruction H13.
+    inv H10.
+
+    edestruct IHt2; eauto.
+    simpl.
+    split.
+    inv H14.
+    simpl in *.
+    
+    assert (er0 = (eval (unanno t1) (splitEv s e))). 
+    + 
+
+
+
+
+    
+    remember H5.
+
+    (*clear H0.*)
+
+    inv H2.
+    dependent destruction r'.
+
+    inv H10.
+    dependent destruction r''.
+    unfold ec in *.
+    assert (r'1 = {| ec := eval (unanno t1) e1; vm_stack := s0 |}). eauto.
+    rewrite H1 in H13.
+    unfold push_stackr in H13. unfold ec in H13. unfold push_stackc in H13.
+    simpl in H13.
+    apply ffff in H13.
+    destruct_conjs.
+    dependent destruction H13.
+    inv H4. inv H13.
+
+
+
+
+
+
+
+
+    
+    inv H2.
+    dependent destruction r'.
+
+    inv H8.
+    (*dependent destruction r''. dependent destruction r''0.*)
+    apply ffff in H11.
+    destruct_conjs.
+    dependent destruction H11.
+    (*dependent destruction H12.*)
+    (*inv H9.*)
+    inv H4.
+    (*inv H9.*)
+    dependent destruction r'2.
+    inv H10. inv H13.
+    simpl in *.
+    unfold update_ev in H0.
+    unfold push_stackr in H0. unfold vm_stack in H0.
+    unfold push_stackc in H0. unfold ec in H0.
+    edestruct IHt1; eauto.
+    (*rewrite <- H4 in *.*)
+    (*destruct r'.
+    simpl in H2.
+    unfold push_stackc in H2. *)
+
+    assert (snd (pop_stackr {| ec := ec1; vm_stack := vm_stack1 |}) = {| ec := ec1; vm_stack :=s0 |}). rewrite <- H4. simpl. reflexivity.
+
+    assert (r' =  {| ec := ec1; vm_stack := s0 |}). eauto.
+    rewrite H6 in H2.
+    unfold vm_stack in H2.
+    unfold push_stackc in H2.
+    unfold ec in H2.
+    assert (ec1 = (splitEv s1 e)).
+    admit.
+    rewrite H7 in H2.
+
+
+
+(*
+    
+    subst.
+
+    Lemma aaaaa : forall e v l,
+        snd (pop_stackr {| ec := e; vm_stack := v :: l |}) = {| ec := e; vm_stack := l |}.
+    Proof.
+    Admitted.
+
+    assert (vm_stack r' = s0). admit.
+    rewrite H3 in H2.
+
+    simpl in H2. unfold push_stackc in H2. 
+*)
+    
+    
+(*
+    rewrite H5 in H2.
+    assert (vm_stack r' = 
+
+    rewrite <- H4 in r'.
+
+    *)
+    edestruct IHt2; eauto.
+  (*  subst. *)
+    split; simpl in *; try eauto.
+    + assert (er0 = (eval (unanno t1) (splitEv s e))).
+      simpl in *. eauto.
+      assert (e4 = (eval (unanno t2) (splitEv s1 e))).
+      simpl in *. clear e5. eauto.
+      admit.
+      congruence.
+    +
+      
+    
+    destruct IHt2 with (tr:=H1) (s:=vm_stack3) (s':=vm_stack0) (e:=ec3) (e':=ec0); try (assumption).
+    destruct IHt1 with (tr:=H) (s:=vm_stack2) (s':=vm_stack1) (e:=ec2) (e':=ec1); try (assumption).
+    simpl.
+    
+    split; try eauto.
+    + 
+      assert (er0 = (eval (unanno t1) (splitEv s e))). eauto.
+      rewrite H3.
+      assert (e8 = (eval (unanno t2) (splitEv s1 e))).
+      assert (eval (unanno t1) e1 = splitEv s1 e).
+      clear e3. clear e5. clear er. 
+      
+      admit.
+      rewrite <- H4. eauto.
+      congruence.
+
+
+
+
+
+
+
+
+      simpl in *.
+      (*assert (splitEv s1 e = (eval (unanno t1) e1)).*)
+      simpl in *. clear e4. clear e5. clear e3. clear er.
+      edestruct IHt1; eauto. congruence.
+      assert (e8 = (eval (unanno t2) (ec r'2))). eauto.
+      assert (ec r'2 = (splitEv s1 e)). eauto. congruence. congruence.
+      
+    
+    
+    
+    
+
+
+
+  
 Admitted.
 
 
