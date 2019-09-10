@@ -1,415 +1,890 @@
-Require Import Term.
-Require Import Instr.
-Require Import Preamble.
+Require Import Preamble Term Trace LTS Instr.
 
 Require Import List.
 Import ListNotations.
 
+(** * EvidenceC Stack *)
+Definition ev_stackc := list EvidenceC.
+Definition empty_stackc : ev_stackc := [].
+
+Definition push_stackc (e:EvidenceC) (s:ev_stackc) : ev_stackc :=
+  (e :: s).
+
+Definition pop_stackc (s:ev_stackc) : (EvidenceC*ev_stackc) :=
+  match s with
+  | e :: s' => (e,s')
+  | _ => (mtc,empty_stackc) (* TODO: will this be expressive enough? *)
+  end.
+
+Record vm_accum : Type := mk_accum
+                            { ec:EvidenceC ;
+                              vm_trace:(list Ev) ;
+                              vm_stack:ev_stackc }.
+
+Definition add_trace (el:list Ev) (x:vm_accum) : vm_accum :=
+  let old_trace := vm_trace x in
+  let new_trace := old_trace ++ el in
+  mk_accum (ec x) (new_trace) (vm_stack x).
+
+Definition update_ev (e:EvidenceC) (x:vm_accum) : vm_accum :=
+  mk_accum e (vm_trace x) (vm_stack x).
+
+Definition push_stackr (e:EvidenceC) (x:vm_accum) : vm_accum :=
+  mk_accum (ec x) (vm_trace x) (push_stackc e (vm_stack x)).
+
+Definition pop_stackr (x:vm_accum) : (EvidenceC*vm_accum) :=
+  let (er,s') := pop_stackc (vm_stack x) in
+  (er,mk_accum (ec x) (vm_trace x) (s')).
+
+Definition remote_events (t:AnnoTerm) : (list Ev).
+Admitted.
+
+Definition prim_trace (i:nat) (a:Prim_Instr) : (list Ev) :=
+  match a with
+  | copy => [Term.copy i]
+  | kmeas asp_id q A => [Term.kmeas i asp_id q A]
+  | umeas asp_id A => [Term.umeas i asp_id A]
+  | sign => [Term.sign i]
+  | hash => [Term.hash i]
+  end.
+
+Definition parallel_att_vm_thread (li:list AnnoInstr) (e:EvidenceC) : EvidenceC.
+Admitted.
+
+Inductive vm_step: vm_accum -> AnnoInstr -> vm_accum -> Prop :=
+| prim_step: forall r i a, vm_step r (aprimInstr i a) (add_trace (prim_trace i a) r)
+| split_step: forall r i sp1 sp2,
+    let e1 := splitEv sp1 (ec r) in
+    let e2 := splitEv sp2 (ec r) in
+    let r' := update_ev e1 r in
+    let r'' := push_stackr e2 r' in
+    let r''' := add_trace [Term.split i] r'' in
+    vm_step r (asplit i sp1 sp2) r'''
+| joins_step: forall r i,
+    (*let (er,r') := pop_stackr r in *)
+    let e := (ec r) in
+    let er := (fst (pop_stackr r)) in
+    let r' := (snd (pop_stackr r)) in
+    let r'' := update_ev (ssc er e) r' in
+    let r''' := add_trace [Term.join i] r'' in
+    vm_step r (ajoins i) r'''
+| joinp_step: forall r i,
+    (*let (er,r') := pop_stackr r in *)
+    let e := (ec r) in
+    let er := (fst (pop_stackr r)) in
+    let r' := (snd (pop_stackr r)) in
+    let r'' := update_ev (ppc e er) r' in
+    let r''' := add_trace [Term.join i] r'' in
+    vm_step r (ajoinp i) r'''
+| besr_step: forall r,
+    let e := (ec r) in
+    let er := (fst (pop_stackr r)) in
+    let r' := (snd (pop_stackr r)) in
+    let r'' := push_stackr e r' in
+    vm_step r (abesr) r''
+| reqrpy_step: forall r rg q annt,
+    let e := (ec r) in
+    let r' := update_ev (toRemote (unanno annt) q e) r in
+    let reqi := (fst rg) in
+    let rpyi := Nat.pred (snd rg) in
+    let newTrace :=
+        [req reqi q (unanno annt)] ++ (remote_events annt) ++ [rpy rpyi q] in     
+    let r'' := add_trace newTrace r' in
+    vm_step r (areqrpy rg q annt) r''
+| bep_step: forall r rg1 rg2 il1 il2,
+    let e := (ec r) in
+    let er := (fst (pop_stackr r)) in
+    let r' := (snd (pop_stackr r)) in
+    let res1 := parallel_att_vm_thread il1 e in
+    let res2 := parallel_att_vm_thread il2 er in
+    let r'' := update_ev res1 r' in
+    let r''' := push_stackr res2 r'' in
+    vm_step r (abep rg1 rg2 il1 il2) r'''.
+
+Inductive vm_lstar: vm_accum -> vm_accum -> list AnnoInstr -> list AnnoInstr -> Prop :=
+| vm_lstar_refl: forall r, vm_lstar r r [] []
+| vm_lstar_tran: forall i l l' r r' r'',
+    vm_step r i r' -> vm_lstar r' r'' l l' -> vm_lstar r r'' (i::l) l'.
+Hint Resolve vm_lstar_refl.
+
+Lemma vm_lstar_trans : forall r r' r'' il il' il'',
+  vm_lstar r r' il il' ->
+  vm_lstar r' r'' il' il'' ->
+  vm_lstar r r'' il il''.
+Proof.
+  intros.
+  generalize dependent r''.
+  generalize dependent il''.
+  induction H; intros.
+  - inv H0. econstructor.
+  - eapply vm_lstar_tran.
+    apply H.
+    eauto.
+Defined.
+
+Lemma ha : forall r r' r'' il1 il2 resl,
+  vm_lstar r r' (il1 ++ il2) il2 ->
+  vm_lstar r' r'' il2 resl ->
+  vm_lstar r r'' (il1 ++ il2) resl.
+Proof.
+  intros.
+  eapply vm_lstar_trans; eauto.
+Defined.
+
+
+
+Lemma vm_lstar_transitive:
+  forall (*e s*) r r' r'' il1 il2 resl,
+    (*let r := (mk_accum e [] s) in*)
+    vm_lstar r r' il1 [] ->
+    vm_lstar r' r'' il2 resl -> 
+    vm_lstar r r'' (il1 ++ il2) resl.
+Proof.
+  intros.
+  induction H.
+  - simpl. eauto.
+  - simpl.
+    econstructor. eassumption.
+    eauto.
+Defined.
+
 Require Import Coq.Program.Equality.
-Set Nested Proofs Allowed.
-
-Inductive vm_primR : Plc -> (EvidenceC*ev_stack) -> Instr -> (EvidenceC*ev_stack) -> Prop :=
-| vcopy : forall p ep, vm_primR p ep copy ep
-| vkmeas : forall i p q args e s,
-    let bs := invokeKIM i q args in
-    vm_primR p (e,s) (kmeas i q args) ((kkc i args q bs e),s)
-| vumeas : forall i p args e s,
-    let bs := invokeUSM i args in
-    vm_primR p (e,s) (umeas i args) ((uuc i args bs e),s)
-| vsign : forall p e s,
-    let bs := signEv e in
-    vm_primR p (e,s) sign ((ggc e bs),s)
-| vhash : forall p e s,
-    let bs := hashEv e in
-    vm_primR p (e,s) hash ((hhc bs e),s)
-| vreqrpy : forall p e pTo pFrom s t,
-    vm_primR p (e,s) (reqrpy pFrom pTo t) (toRemote t pTo e,s)
-| vsplit : forall p sp1 sp2 e s,
-    let e1 := splitEv sp1 e in
-    let e2 := splitEv sp2 e in
-    vm_primR p (e,s) (Instr.split sp1 sp2) (e1, push_stack e2 s)
-(*| vbesr : forall p e s,
-    let (er,s') := pop_stack s in
-    let s'' := push_stack e s' in
-    (vm_primR p (e,s) besr (er,s'')).*)
-| vbesr : forall p e s,
-    vm_primR p (e,s) besr ((fst(pop_stack s)), (push_stack e (snd(pop_stack s))))
-| vjoins : forall p e (s:ev_stack),
-    (*let (er,s') := pop_stack s in
-    vm_primR p (e,s) joins (ssc er e,s')*)
-    vm_primR p (e,s) joins (ssc (fst(pop_stack s)) e,snd(pop_stack s))
-| vjoinp : forall p e (s:ev_stack),
-    vm_primR p (e,s) joinp (ppc e (fst(pop_stack s)), snd(pop_stack s))
-| vbep : forall p e s evs1 evs2,
-    let res1 := parallel_att_vm_thread evs1 e in
-    let res2 := parallel_att_vm_thread evs2 (fst(pop_stack s)) in
-    vm_primR p (e,s) (bep evs1 evs2) (res1, push_stack res2 (snd(pop_stack s))).
-Hint Constructors vm_primR.
-
-Lemma vm_primR_implies_vm_prim : forall p i ep1 ep2,
-    vm_primR p ep1 i ep2 -> vm_prim p ep1 i = ep2.
+Lemma vm_lstar_transitive_done:
+  forall (*e s*) r r' r'' il1 il2,
+    (*let r := (mk_accum e [] s) in*)
+    vm_lstar r r' il1 [] ->
+    vm_lstar r' r'' il2 [] -> 
+    vm_lstar r r'' (il1 ++ il2) [].
 Proof.
   intros.
-  induction H; try (destruct ep); try (destruct s); reflexivity.
+  induction H.
+  - simpl. eauto.
+  - simpl.
+    econstructor. eassumption.
+    eauto.
 Defined.
-
-Lemma vm_prim_implies_vm_primR : forall p i ep1 ep2,
-    vm_prim p ep1 i = ep2 -> vm_primR p ep1 i ep2.
-Proof.
-  intros.
-  generalize dependent p.
-  generalize dependent ep1.
-  generalize dependent ep2.
-  induction i; intros;
-    try (cbv in H; 
-         remember ep1 as HH in H; destruct ep1; subst; try (destruct e0); econstructor; reflexivity).
-Defined.
-
-Lemma vm_prim_iff_vm_primR : forall p i ep1 ep2,
-    vm_prim p ep1 i = ep2 <-> vm_primR p ep1 i ep2.
-Proof.
-  intros.
-  split.
-  - apply vm_prim_implies_vm_primR.
-  - apply vm_primR_implies_vm_prim.
-Defined.
-
     
+Inductive vm_rlstar: vm_accum -> vm_accum -> list AnnoInstr -> list AnnoInstr -> Prop :=
+| vm_rlstar_refl: forall r, vm_rlstar r r [] []
+| vm_rlstar_tran: forall r r' r'' i tr,
+    vm_rlstar r r' tr [] -> vm_step r' i r'' ->
+    vm_rlstar r r'' (tr ++ [i]) [].
+Hint Resolve vm_rlstar_refl.
 
 
-
-Inductive att_vm'R : Plc -> (list Instr) -> (list Instr) -> (EvidenceC*ev_stack) -> (EvidenceC*ev_stack) -> Prop :=
-| att_vm'R_nil : forall p ep,
-    att_vm'R p [] [] ep ep
-| att_vm'R_step : forall p i is is' ep ep' ep'',
-    vm_primR p ep i ep' ->
-    att_vm'R p is is' ep' ep'' -> 
-    att_vm'R p (i::is) is' ep ep''.
-    (*att_vm'R p (i::is) is' ep ep''.*)
-
-(*| att_vm'R_trans : forall p is is' is'' ep ep' ep'',
-    att_vm'R p is is' ep ep' ->
-    att_vm'R p is' is'' ep' ep'' ->
-    att_vm'R p is is'' ep ep''. *)
-Hint Constructors att_vm'R.
-
-Lemma att_vm'R_transitive : forall p is is' is'' ep ep' ep'',
-  att_vm'R p is is' ep ep' ->
-  att_vm'R p is' is'' ep' ep'' ->
-  att_vm'R p is is'' ep ep''.
+Lemma vm_rlstar_transitive : forall r r' r'' il1 il2 resl,
+    vm_rlstar r r' il1 [] ->
+    vm_rlstar r' r'' il2 resl -> 
+    vm_rlstar r r'' (il1 ++ il2) resl.
+Proof.
+  intros.
+  induction H0.
+  - rewrite app_nil_r. assumption.
+  - apply IHvm_rlstar in H.
+    
+    rewrite app_assoc.
+    eapply vm_rlstar_tran; eauto.
+Defined.
+  
+Lemma vm_rlstar_lstar : forall r r' l resl,
+    vm_rlstar r r' l resl -> vm_lstar r r' l resl.
 Proof.
   intros.
   induction H; auto.
-  apply IHatt_vm'R in H0.
-  eapply att_vm'R_step; eauto.
+  - eapply vm_lstar_transitive; eauto.
+    econstructor; eauto.
 Defined.
 
-Definition att_vmR (p:Plc) (is:list Instr) (e:EvidenceC) (e':EvidenceC) : Prop :=
-  att_vm'R p is [] (e,[]) (e',[]).
-
-Theorem att_vmR_transitive : forall p is1 is2 e e' e'',
-  att_vmR p is1 e e' ->
-  att_vmR p is2 e' e'' ->
-  att_vmR p (is1 ++ is2) e e''.
+Lemma vm_lstar_rlstar : forall r r' l resl,
+    vm_lstar r r' l resl -> vm_rlstar r r' l resl.
 Proof.
   intros.
-  unfold att_vmR in *.
-  (*apply att_vm'R_transitive with (is':=is2) (ep':=(e',[])).
-  admit. assumption.*)
   induction H.
-  - rewrite app_nil_l. assumption.
-  - apply IHatt_vm'R in H0.
-    rewrite <- app_comm_cons.
-    eapply att_vm'R_step; eauto.
+  - econstructor.
+  - cut (vm_rlstar r r'' ([i] ++ l) l'). simpl; auto.
+    apply vm_rlstar_transitive with (r':=r').
+    cut (vm_rlstar r r' ([] ++ [i]) []). simpl; auto.
+    eapply vm_rlstar_tran; eauto.
+    eauto.
 Defined.
 
-
-(*
-Lemma existsIs : forall p t e s, exists e',
-      att_vm'R p (instr_compiler t p) [] (e, s) (e', s).
+Lemma vm_rlstar_iff_lstar : forall r r' l resl,
+    vm_lstar r r' l resl <-> vm_rlstar r r' l resl.
 Proof.
   intros.
-  generalize dependent p.
-  generalize dependent e.
+  split.
+  - apply vm_lstar_rlstar.
+  - apply vm_rlstar_lstar.
+Defined.
+
+    
+  
+(*
+Theorem vm_bigstep: forall e e' s t tr p,
+  well_formed t ->
+  vm_lstar
+    (mk_accum e [] s)
+    (mk_accum e' tr s)
+    (instr_compiler t)
+    [] ->
+  trace t tr /\ (et_fun p e' = typeof (unanno t) p (et_fun p e)).
+Proof.
 Admitted. *)
 
-Lemma pairf{A B:Type} : forall (p:A*B) e' v,
-    p = (e', v) -> fst p = e'.
-Proof.
-  intros.
-  subst. simpl. reflexivity.
-Defined.
+Ltac inv_vm_lstar :=
+  repeat (
+      match goal with
+      | [ H: vm_lstar _ _ _ _ |- _ ] => inv H; simpl
+      | [ G: vm_step _ _ _ |- _ ] => inv G; simpl
+      end).
 
-Lemma asdf : forall p e i e',
-    vm_primR p (e, []) i (e', []) -> fst (vm_prim p (e, []) i) = e'.
+Inductive wf_instr_seq : list AnnoInstr -> Prop :=
+| compile_wf: forall t, wf_instr_seq (instr_compiler t)
+(*| concat_wf: forall t1 t2, wf_instr_seq (instr_compiler t1 ++ instr_compiler t2)*)
+| bseq_wf: forall j t,
+   (* wf_instr_seq il1 ->
+    wf_instr_seq il2 -> *)
+    wf_instr_seq ([abesr] ++ (instr_compiler t) ++ [ajoins j])
+| joins_wf: forall j,
+    wf_instr_seq [ajoins j].
+(*
+| joinp_wf: forall j,
+| bpar_wf: forall i j sp1 sp2 r1 r2 il1 il2,
+    wf_instr_seq il1 ->
+    wf_instr_seq il2 ->
+    wf_instr_seq ([asplit i sp1 sp2] ++ [abep r1 r2 il1 il2] ++ [ajoinp j]).*)
+(*
+| bseq2_wf: forall t2 i,
+    wf_instr_seq (instr_compiler t2 ++ [ajoins i])
+| bseq3_wf: forall t2 i,
+    wf_instr_seq ([abesr] ++ instr_compiler t2 ++ [ajoins i]).*)
+
+Lemma t_completes : forall r t, exists r',
+      vm_lstar r r' (instr_compiler t) [].
+Proof.
+Admitted.
+
+ (*
+ 
+Lemma eee : forall il1 il2 r1 r3,
+  vm_lstar r1 r3
+           (il1 ++ il2) [] ->
+  exists r2,
+    vm_lstar r1 r2
+             (il1 ++ il2) il2.
 Proof.
   intros.
-  rewrite <- vm_prim_iff_vm_primR in H.
-  eapply pairf. eassumption.
-Defined.
+  dependent induction H
+  - eexists. assert (il1 = []). admit. assert (il2 = []). admit.
+    subst. econstructor.
+  -
+  *)  
+    
+  
+
+
+Lemma ffff : forall e e'' s'' s t tr0 tr3 il2, (* TODO: il1 must be compiled for stack restore *)
+    wf_instr_seq il2 -> 
+    let il1 := (instr_compiler t) in
+    let r := (mk_accum e tr0 s) in
+    let r3 := (mk_accum e'' tr3 s'') in
+    vm_lstar r r3
+             (il1 ++ il2) [] ->
+   exists e' tr1 s',
+      let r' := (mk_accum e' tr1 s') in
+      vm_lstar r r'
+               il1 [] /\
+     exists tr2,
+      let r'' := (mk_accum e'' tr2 s'') in
+      vm_lstar (mk_accum e' [] s') r''
+               il2 [] /\
+     skipn (length tr0) tr3 = tr1 ++ tr2.
+Proof.
+  (*
+  intros.
+  generalize dependent e.
+  generalize dependent e''.
+  generalize dependent s.
+  generalize dependent s''.
+  generalize dependent tr0.
+  generalize dependent tr3.
+  (*generalize dependent il1.
+  generalize dependent t. *)
+  dependent induction H; intros.
+  - edestruct t_completes 
+  eexists. eexists. eexists.
+  destruct t_completes with (r:={| ec := e; vm_trace := tr0; vm_stack := s |}) (t:=t).
+  split.
+  destruct x.
+  apply H.
+  - destruct a.
+    + inv H0. inv H5. simpl in H6.
+      exists e. exists (tr0 ++ [Term.copy (fst r)]). exists s.
+      (*assert (il1 = il1 ++ []). trivial. rewrite H0.*)
+      split.
+      * eapply vm_lstar_tran.
+        econstructor.
+        econstructor.
+      * exists (skipn (S (length tr0)) tr3).
+        split.
+        --
+          inv H6. inv H. admit.
+          econstructor.
+        
+        eapply vm_lstar_tran.
+
+
+
+      inv H5. simpl in H6.
+      eexists. eexists. eexists.
+      split.
+      * econstructor. econstructor. econstructor.
+      * eexists.
+        split.
+        -- simpl. inv H6. simpl. econstructor.
+        
+  - edestruct IHt; eauto.
+  - edestruct IHt2; eauto.
+  - edestruct IHt2; eauto.
+  - edestruct IHt2; eauto.
+    
+    
+    
+  - destruct a.
+    inv H.
+    * repeat eexists.
+      econstructor. econstructor. econstructor.
+      inv H0. inv H4. inv H5
+    + eexists. eexists. eexists. eexists. simpl in il1.
+      econstructor. econstructor. econstructor.
+      eexists. eexists.
+      inv H.
+      *  *)
+  
+  (*
+  intros.
+  induction H.
+  admit.
+  admit.
+  admit.
+  inv H0.*)
+Admitted.
+(*
+  - 
+  simpl.
+  eexists. eexists. eexists.
+  split.
+  + inv H.
+    admit. admit. admit. admit.
+  + inv H.
+    eexists. admit.
+    eexists. admit.
+    eexists. admit.
+    eexists. admit.
+  - inv H.
+    eexists. eexists. eexists.
+    split.
+    + admit.
+    + admit.
+    + eexists. eexists. eexists.
+      split.
+      admit.
+      eexists. admit.
+    + eexists. eexists. eexists.
+      split.
+      admit.
+      eexists. admit.
+    + eexists. eexists. eexists.
+      split.
+      admit.
+      eexists.
+      admit.
 
 (*
-Lemma fdsa : forall p is is' e ep' e',
-    att_vm'R p is is' (e, []) ep' -> 
-    att_vm'R p is' [] ep' (e', []) ->
-    fst (att_vm' is p (e, [])) = e'.
-Proof.
-Admitted.*)
+    assert ((instr_compiler t1) = []).
+    admit.
+    rewrite H.
+    eapply vm_lstar_refl.
+  + eexists.
+    assert ((instr_compiler t2) = []).
+    admit.
+    rewrite H.
+    eapply vm_lstar_refl.
+  - subst.
 
-Theorem att_vmR_implies_att_vm : forall p e e' t,
-    att_vmR p (instr_compiler t p) e e' -> att_vm (instr_compiler t p) p e = e'.
+    eexists. eexists. eexists.
+    split.
+    + edestruct IHvm_lstar.
+    
+    
+
+    apply vm_lstar_transitive in H.
+Admitted. *) *)
+
+Lemma lstar_stls :
+  forall st0 st1 t tr,
+    lstar st0 tr st1 -> lstar (ls st0 t) tr (ls st1 t).
 Proof.
   intros.
-  unfold att_vmR in H.
-  generalize dependent p.
+  induction H; auto.
+  eapply lstar_tran; eauto.
+  eapply lstar_silent_tran; eauto.
+Qed.
+
+Lemma fasd : forall st st' tr p r,
+    lstar st tr
+          st' ->
+    lstar (rem r p st) tr (rem r p st').
+Proof.
+  intros.
+  induction H; auto.
+  eapply lstar_tran; eauto.
+  eapply lstar_silent_tran; eauto.
+Defined.
+
+Lemma update_ev_immut_stack : forall s e,
+    vm_stack s = vm_stack (update_ev e s).
+Proof.
+  intros.
+  simpl. reflexivity.
+Defined.
+
+Lemma ssss : forall e tr s r,
+    vm_lstar r {| ec := e; vm_trace := tr; vm_stack := s |} [] [] ->
+    vm_stack r = s.
+Proof.
+  intros.
+  inv H.
+  simpl. reflexivity.
+Defined.
+
+Lemma vm_config_correct : forall e s t tr tr',
+    vm_lstar (mk_accum e tr s) (mk_accum (eval (unanno t) e) tr' s)
+             (instr_compiler t) [].
+Proof.
+Admitted.
+
+Lemma vm_ev_stack_deterministic : forall r r' r'' il il',
+  vm_lstar r r' il il' ->
+  vm_lstar r r'' il il' ->
+  vm_stack r' = vm_stack r'' /\
+  ec r' = ec r''.
+Proof.
+Admitted.
+
+Lemma vm_trace_correct : forall e e' s s' tr t,
+  vm_lstar (mk_accum e [] s) (mk_accum e' tr s')
+           (instr_compiler t) [] ->
+  trace t tr.
+Admitted.
+  
+  
+
+Lemma stack_restore_vm : forall e e' l l' s s' t,
+    vm_lstar (mk_accum e l s) (mk_accum e' l' s')
+             (instr_compiler t) [] ->
+    s = s'.
+Proof.
+  intros.
+  assert (    vm_lstar (mk_accum e l s) (mk_accum (eval (unanno t) e) l' s)
+                       (instr_compiler t) []).
+  apply vm_config_correct.
+  assert (vm_stack {| ec := eval (unanno t) e; vm_trace := l'; vm_stack := s |} = vm_stack {| ec := e'; vm_trace := l'; vm_stack := s' |} /\ ec {| ec := eval (unanno t) e; vm_trace := l'; vm_stack := s |} = ec {| ec := e'; vm_trace := l'; vm_stack := s' |}).
+  eapply vm_ev_stack_deterministic; eauto.
+  destruct H1. simpl in H1. assumption.
+Defined. 
+  
+  
+  (*
+  intros.
   generalize dependent e.
   generalize dependent e'.
-  induction t; intros; try (destruct a);
-    try (cbv; inversion H; subst; inversion H3; subst; inversion H7; trivial; reflexivity).
-  - simpl.
-    simpl in H.
-    assert ((att_vm'R p (instr_compiler t1 p ++ instr_compiler t2 p) [] 
-                      (e, []) (e', [])) = (att_vmR p (instr_compiler t1 p ++ instr_compiler t2 p) e e')). unfold att_vmR. reflexivity.
-    rewrite H0 in H; clear H0.
-    
-    
+  generalize dependent l.
+  generalize dependent l'.
+  generalize dependent s.
+  generalize dependent s'.
+  
+  induction t; intros.
+  - destruct a; try (inv_vm_lstar; reflexivity).
+  - inv_vm_lstar. reflexivity.
 
+  - simpl in H.
 
-(*
-    
-    edestruct att_vmR_transitive
-    rewrite <- att_vmR_transitive in H with (e':=(att_vm (instr_compiler t1 p) p e)).
-    eapply IHt1. *)
-    
+    eapply ffff in H.
+    destruct H. destruct H. destruct H. destruct H. destruct H0. destruct H0. 
+    assert (s = x1). eapply IHt1; eauto.
+    assert (x1 = s'). eapply IHt2; eauto. congruence.
+    econstructor.
 
-    Lemma lema : forall p is1 is2 e e'',
-      att_vm'R p (is1 ++ is2) [] 
-               (e, []) (e'', []) ->
-      exists e', att_vm'R p is1 [] (e,[]) (e',[]) /\
-            att_vm'R p is2 [] (e',[]) (e'',[]).
-    Proof.
-      intros.
-      dependent induction H.
-      - exists e''. admit.
-      -          
-    Admitted.
-
-   (* edestruct existsIs with (t:=t1) (p:=p).
-    edestruct existsIs with (t:=t2) (e:=x) (p:=p). *)
-
-    edestruct lema. apply H.
-    destruct H0.
-    assert (att_vm (instr_compiler t1 p) p e = x). apply IHt1. eassumption.
-    assert (att_vm (instr_compiler t2 p) p x = e'). apply IHt2. eassumption.
-    rewrite <- att_vm_distributive.
-    rewrite H2. rewrite H3. reflexivity.
-  - simpl. destruct s; subst.
-    (*unfold att_vm.
-    simpl.*)
-    inversion H; subst; clear H.
-    inv H3.
-    destruct ep'; subst.
-    rewrite app_comm_cons in H7.
-    (*rewrite app_assoc in H7.*)
-    edestruct lema.
-    inv H3
-    destruct ep'.
-
-    apply H7.
-    destruct ep'.
-    inversion H3; subst.
-
-    Lemma lemc : forall p t e,
-        exists e',
-          att_vm'R p (instr_compiler t p) [] (e,[]) (e',[]).
-    Proof.
-    Admitted.
-
-    destruct lemc with (p:=p) (t:=t1) (e:=e3).
-    assert (att_vm (instr_compiler t1 p) p e3 = x).
-    apply IHt1. assumption. clear H.
-
-    destruct lemc with (p:=p) (t:=t2) (e:=e4).
-    assert (att_vm (instr_compiler t2 p) p e4 = x0).
-    apply IHt2. assumption. clear H.
-
-    att_vm (instr_compiler t1 p) p (splitEv s e) = x ->
-    att_vm (instr_compiler t2 p) p (splitEv s0 e) = x0 ->
-      att_vm
-    (Instr.split s s0
-     :: instr_compiler t1 p ++ besr :: instr_compiler t2 p ++ [joins]) p e =
-  e'
-
-    unfold att_vm. simpl
-    unfold att_vm in H0
-    
-    
-    (*assert (att_vm (instr_compiler t1 p) p e = *)
-    inversion H7; subst; clear H7.
-    simpl. inversion H3.
-    simpl
-    
-
-    Lemma lemb : forall p e x e' is1 is2,
-      att_vm is1 p e = x ->
-      att_vm is2 p x = e' ->
-      att_vm (is1 ++ is2) p e = e'.
-    Proof.
-      intros.
-      rewrite att_vm_distributive.
-      unfold att_vm.
-      unfold att_vm'.
-      rewrite fold_left_app.
-      assert ((att_vm is1 p e) = fst (fold_left (vm_prim p) is1 (e, []))).
-      unfold att_vm. unfold att_vm'. reflexivity.
-      rewrite <- att_vm_distributive'.
-      rewrite H.
-      
-    
-    inversion H; clear H; subst.
-    + trivial.
-    + 
-
-
-
-      remember (instr_compiler t1 p).
-      destruct l.
-      * simpl in H0.
-        destruct ep'.
-        assert (att_vm (instr_compiler t2 p) p e = e').
-        { 
-          (*inversion H; subst. rewrite <- H0 in H5.*)
-          apply IHt2. rewrite <- H0.
-          econstructor; eassumption.
-        }
-        rewrite H0. assumption.
-      * simpl in H0.
-        assert (i = i0). admit. subst.
-        assert (is = (l ++ instr_compiler t2 p)). admit. subst. clear H0.
-        destruct ep'; subst.
-        simpl in H.
-        inversion H; subst.
-        { specialize IHt1 with (p:=p).
-
-
-          rewrite <- Heql in IHt1.
-        assert (att_vm (instr_compiler t1 p) p e = e0). admit.
-        
-        
-          apply H1.
-          apply H3.
-                                      eapply att_vm'R_step.
-        apply IHt2. 
-      
-      
-      
-    
-  destruct a.
   -
+    simpl in H.
+    destruct s.
+    inv H.
+    inv H4.
+    apply ffff (*with (il2:= (abesr :: instr_compiler t2 ++ [ajoins (Nat.pred (snd r))])) (il1:=instr_compiler t1)*) in H5.
+    destruct H5. destruct H. destruct H. destruct H. destruct H0. destruct H0.
+    assert (vm_stack r'' = x1). eapply IHt1; eauto.
+    (*assert (
+        (abesr :: instr_compiler t2 ++ [ajoins (Nat.pred (snd r))])
+        = ([abesr] ++ instr_compiler t2 ++ [ajoins (Nat.pred (snd r))])).
+    trivial.
+    rewrite H3 in H0. *)
+    inv H0.
+    inv H7.
+   (* inv H8.*)
+    apply ffff (*with (il2:= instr_compiler t2 ++ [ajoins (Nat.pred (snd r))]) (il1:=[abesr])*) in H8.
+    destruct H8. destruct H0. destruct H0. destruct H0. destruct H2. destruct H2.
     
-  dependent induction H.
-  - rewrite <- x. trivial.
-  - rewrite <- x in *.
-
-
-
-
-
-
-
-    dependent destruction ep'.
-    (*assert ([] = e1) admit. subst.*)
-    assert (att_vm is p e0 = e').
-    eapply IHatt_vm'R.
-    + reflexivity.
-    + admit.
-    + reflexivity.  
-    + 
-
-    (*  vm_prim p ep1 i = ep2 <-> vm_primR p ep1 i ep2. *)
-    assert (vm_prim p (e,[]) i = (e0,e1)).
-    apply vm_primR_implies_vm_prim. assumption.
-    unfold att_vm. unfold att_vm'.
-    unfold fold_left.
-    rewrite H2.
-    destruct is.
-    simpl.
-    admit.
-    fold ((fix fold_left (l : list Instr) (a0 : EvidenceC * ev_stack) {struct l} :
-        EvidenceC * ev_stack :=
-        match l with
-        | [] => a0
-        | b :: t => fold_left t (vm_prim p a0 b)
-        end)).
-    
-    + admit.
-
-
-    unfold att_vm. unfold att_vm'.
-    destruct ep'.
-    assert ([] = e1). admit.
+    (*apply ffff with (il2:=[ajoins (Nat.pred (snd r))]) (il1:=instr_compiler t2) in H4.  destruct H4. destruct H0. destruct H0. destruct H0. destruct H2. destruct H2.*)
+    inv H2. inv H8. (*inv H10.*)
+    assert (push_stackc e6 (vm_stack r'2) = x4).
+    eapply IHt2; eauto.
     subst.
-    unfold fold_left.
-    destruct is.
+    inv H9.
+    eauto.
+
+    (*
+
+    assert (x5 = x8). eapply IHt2; eauto. inv H10. inv H2. inv H10.
+    assert (vm_stack r'' = push_stackc e2 s0).
+    assert (vm_stack r'0 = vm_stack {| ec := e; vm_trace := l; vm_stack := s0 |}). eauto. eauto. 
+    
+
+    
+  
+    rewrite H2 in *.
+    assert (vm_stack r'''0 = s').
+
+
+    eapply ssss; eauto.
+    
+    
+    subst.
+    assert (vm_stack r''0 = x8).
+    eapply ssss; eauto.
+    
+    subst. clear H11. clear H0. clear H.
+    clear H12.
+    assert (r'4 = r'5). eauto.
+    eauto.
+    (*
+    subst.
+    assert (vm_stack r'' = e2 :: s0). eauto.
+    rewrite H0 in *.
+    assert (vm_stack r'2 = s0). eauto.
+    assert (vm_stack r''0 = e6::s0). eauto.
+    assert (vm_stack r'5 = s0). assumption.
+    rewrite <- H8.
+    rewrite <- H.
+    assert (vm_stack r''1 = vm_stack r'''0). eauto.
+    rewrite <- H9.
+    
+
+
+
+    apply update_ev_immut_stack. *)
+    econstructor.
+    econstructor.
+    econstructor. *)
+    econstructor.
+    econstructor.
+
+  - simpl in H.
+    destruct s.
+    inv H. inv H5. inv H4.
+    inv H3. inv H6.
+    inv H4. inv H3.
+   (* assert (vm_stack r'0 = vm_stack r''1).
+    eapply update_ev_immut_stack.
+    rewrite H. *)
+    eauto.
+Defined. *)
+
+    (*
+    unfold att_vm' in H.
+    destruct s.
+    simpl in H.
+    rewrite fold_left_app in H.
+    simpl in H.
+    rewrite fold_left_app in H.
+    simpl in H.
+    (* unfold push_stack in H. *)  (* TODO:  why does this step of evaluation prohibit destructing the let later on?? *)
+    
+    unfold vm_prim at 3 in H. (*unfold push_stack in H. *)
+    unfold vm_prim at 1 in H.
+
+    remember (fold_left (vm_prim p) (instr_compiler t1 p)
+                            (splitEv s e, push_stack (splitEv s1 e) s0)).
+    destruct p0.
+
+    remember (pop_stack e3).
+    destruct p0.
+
+    remember ((fold_left (vm_prim p) (instr_compiler t2 p)
+                             (e4, push_stack e2 e5))).
+    destruct p0.
+
+    assert (e7 = e2 :: e5).
+    apply IHt2 with (e:=e4) (e0:=e6) (p:=p).
+    assumption.
+    rewrite H0 in H. unfold pop_stack in H.
+    inversion H. subst.
+
+    assert (e3 = splitEv s1 e :: s0).
+    apply IHt1 with (e:=splitEv s e) (e0:=e2) (p:=p).
+    apply Heqp0.
+    rewrite H0 in Heqp1.
+    unfold pop_stack in Heqp1. inversion Heqp1. reflexivity.
+
+  - simpl in H.
+    destruct s in H.
+    simpl in H.
+
+    assert (parallel_att_vm_thread (instr_compiler t1 p) (splitEv s e) = 
+                att_vm (instr_compiler t1 p) p (splitEv s e)).
+    apply par_vm_thread.
+
+    assert (parallel_att_vm_thread (instr_compiler t2 p) (splitEv s1 e) = 
+            att_vm (instr_compiler t2 p) p (splitEv s1 e)).
+    apply par_vm_thread.
+    
+    rewrite H0 in H.
+    rewrite H1 in H.
+    congruence.
+
+
+*)
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+      (*
+Lemma fasd :
+  lstar st (tr1 ++ tr2)
+  lstar (rem (snd r) p (conf t n (et_fun p e)))
+    (remote_events t ++ [rpy rpyi n]) (stop p (aeval t n (et_fun p e)))*)
+      
+Theorem vm_smallstep: forall e e' s t tr n et,
+  (*well_formed t ->*)
+  vm_lstar
+    (mk_accum e [] s)
+    (mk_accum e' tr s)
+    (instr_compiler t)
+    [] ->
+  lstar (conf t n et) tr (stop n (aeval t n et)).
+  (*/\ (et_fun p e' = typeof (unanno t) p (et_fun p e)).*)
+Proof.
+  intros.
+  (*generalize dependent p.*)
+  generalize dependent tr.
+  generalize dependent et.
+  generalize dependent n.
+  generalize dependent e.
+  generalize dependent e'.
+  generalize dependent s.
+  
+  induction t; intros.
+  - destruct a; try (simpl; inv_vm_lstar; repeat econstructor).
+  - inv_vm_lstar.
+    eapply lstar_tran.
+    econstructor.
+    eapply lstar_transitive.
+    apply fasd.
+    eapply IHt.
+    admit. (* TODO: make this an axiom? *)
+
+    eapply lstar_tran.
+    apply stattstop.
+    econstructor.
+  - simpl in H.
+
+    apply ffff with (il2:=instr_compiler t2) in H. 
+    destruct H. destruct H. destruct H. destruct H. destruct H0. destruct H0.
+    (*destruct H0.*)
+
+    eapply lstar_silent_tran. econstructor. simpl in H1.
+    rewrite H1.
+    eapply lstar_transitive. eapply lstar_stls.
+    
+
+    eapply IHt1. assert (s = x1).
+    eapply stack_restore_vm. apply H.
+    subst.
+    eassumption.
+    
+    eapply lstar_silent_tran.
+    apply stlseqstop.
+    eapply IHt2. assert (x1 = s).
+    eapply stack_restore_vm. eassumption.
+    subst.
+    apply H0.
+    econstructor.
+  - simpl in H. destruct s.
+    inv H. inv H4.
+    
+
+    apply ffff with (*(il1:=instr_compiler t1)*) (il2:=abesr :: instr_compiler t2 ++ [ajoins (Nat.pred (snd r))]) in H5.
+    destruct H5. destruct H. destruct H. destruct H. destruct H0. destruct H0.
+
+    (*
+    assert (
+        (abesr :: instr_compiler t2 ++ [ajoins (Nat.pred (snd r))])
+        = ([abesr] ++ instr_compiler t2 ++ [ajoins (Nat.pred (snd r))])).
+    trivial.
+    rewrite H2 in H0. *)
+    inv H0. inv H6.
+
+    apply ffff with (*(il1:=[abesr])*) (il2:=[ajoins (Nat.pred (snd r))]) in H7. destruct H7. destruct H0. destruct H0. destruct H0. destruct H2. destruct H2.
+    inv H2. inv H8.
+    eapply lstar_silent_tran. econstructor.
+
+    inv H0.
+    destruct H2. destruct H0.
+    apply ffff with (il1:=instr_compiler t2) (il2:=[ajoins (Nat.pred (snd r))]) in H0.
+    destruct H0. destruct H0. destruct H0. destruct H0. destruct H3. destruct H3.
+    inv H3.
+
+    inv H11. inv H7.
+    simpl in *.
+    eapply lstar_transitive.
+    econstructor. econstructor. econstructor.
+
+    
+    admit.
+    inv H4. admit.
+
+    inv_vm_lstar.
+
+    eapply lstar_silent_tran.
+    econstructor.
+
+
+
+    eapply lstar_stls.
+    
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+  - simpl.
+    inv_vm_lstar.
+    econstructor.
+    econstructor.
+    eapply lstar_transitive.
     + 
-
-
-
-
-
-    
-    unfold att_vm. unfold att_vm'.
-    unfold fold_left. 
-    apply asdf; assumption.
-  - subst.
-    dependent induction H0.
-    + subst.
-      Print att_vm.
-      Print att_vm'.
-      eapply IHatt_vm'R1; reflexivity.
-    + destruct ep.
-      assert (is = [i]). admit.
-      subst. eapply IHatt_vm'R2. reflexivity. inversion H. subst. admit.
-      reflexivity.
-    + subst.
-      eapply IHatt_vm'R1; try assumption.
-      * destruct ep; subst.
-      
-      
-      Focus 3.
-      reflexivity.
-      reflexivity.
-      remember (att_vm' is p (e, [])).
-      destruct p0.
+      (*remember (remote_events t) as HH. *)
+      assert ((remote_events t) = (remote_events t) ++ []).
       admit.
-    + subst.
-      
-      * reflexivity.
-        Focus 1.
-      * admit.
-      * reflexivity.
-      
-        
-        
-        
-      * reflexivity.
-      * reflexivity.
-      *
-        
-    +
-      
-      *
-        
-        
-        
-    + subst.
-    
-Defined.
+      rewrite H.
+      eapply lstar_transitive with (st1:=(rem (snd r) p (stop n (aeval t n (et_fun n e))))).
+      specialize IHt with (tr:=remote_events t).
+     assert (lstar (conf t n (et_fun n e)) (remote_events t)
+                   (stop n (aeval t n (et_fun n e)))).
+     {
+       apply IHt.
+       admit. (* TODO: Axiom?? *)
+     }
 
-    
-    
-    
-  
+     Lemma rem_congr : forall t n e p (r:(nat*nat)),
+         lstar (conf t n (et_fun n e)) (remote_events t)
+         (stop n (aeval t n (et_fun n e))) ->
+  lstar (rem (snd r) p (conf t n (et_fun p e))) (remote_events t)
+        (rem (snd r) p (stop n (aeval t n (et_fun n e)))).
+    Admitted.
+
+     apply rem_congr.
+     eauto.
+     econstructor.
+    + eapply lstar_tran.
+      eapply stattstop.
+      apply lstar_refl.
       
     
-  
+     
+       
+    destruct HH.
+    * econstructor.
+    * simpl.
+      econstructor
+      
+
+      simpl.
+      eapply lstar_transitive.
+      econstructor.
+    *
+      
+    eapply stattstop.
+    econstructor.
+    econstructor.
+    destruct (remote_events t).
+    + 
+    eapply lstar_tran.
+    remember (et_fun p e).
+    remember (unanno t).
+    subst.
+    remember (range t).
+    eapply statt.
+    econstructor.
+    simpl.
+      
+    
+Admitted.
+
+Theorem vm_ordered : forall t e e' s tr ev0 ev1,
+    well_formed t ->
+    vm_lstar
+    (mk_accum e [] s)
+    (mk_accum e' tr s)
+    (instr_compiler t)
+    [] ->
+    prec (ev_sys t) ev0 ev1 ->
+    earlier tr ev0 ev1.
+Proof.
+  intros.
+  edestruct vm_smallstep with (p:=0); eauto.
+  eapply ordered; eauto.
+Qed.

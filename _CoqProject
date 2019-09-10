@@ -9,5 +9,4 @@ Trace.v
 LTS.v
 Main.v
 Instr.v
-MonadCOP.v
-MonadAM.v
+VmSemantics.v
