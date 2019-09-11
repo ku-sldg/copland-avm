@@ -2,6 +2,7 @@ Require Import More_lists Preamble Term Trace LTS Instr Event_system Term_system
 
 Require Import List.
 Import ListNotations.
+Require Import Coq.Program.Tactics.
 
 Set Nested Proofs Allowed.
 
@@ -272,16 +273,16 @@ Ltac inv_vm_lstar :=
       | [ H: vm_lstar _ _ _ _ _ |- _ ] => inv H; simpl
       | [ G: vm_step _ _ _ _ |- _ ] => inv G; simpl
       end).
-(*
+
 Inductive wf_instr_seq : list AnnoInstr -> Prop :=
 | compile_wf: forall t, wf_instr_seq (instr_compiler t)
 (*| concat_wf: forall t1 t2, wf_instr_seq (instr_compiler t1 ++ instr_compiler t2)*)
 | bseq_wf: forall j t,
    (* wf_instr_seq il1 ->
     wf_instr_seq il2 -> *)
-    wf_instr_seq ([abesr] ++ (instr_compiler t) ++ [ajoins j])
-| joins_wf: forall j,
-    wf_instr_seq [ajoins j].
+    wf_instr_seq ([abesr] ++ (instr_compiler t) ++ [ajoins j]).
+(*| joins_wf: forall j,
+    wf_instr_seq [ajoins j].*)
 (*
 | joinp_wf: forall j,
 | bpar_wf: forall i j sp1 sp2 r1 r2 il1 il2,
@@ -294,6 +295,7 @@ Inductive wf_instr_seq : list AnnoInstr -> Prop :=
 | bseq3_wf: forall t2 i,
     wf_instr_seq ([abesr] ++ instr_compiler t2 ++ [ajoins i]).*)
 
+(*
 Lemma t_completes : forall r t, exists r',
       vm_lstar r r' (instr_compiler t) [].
 Proof.
@@ -315,12 +317,190 @@ Proof.
     subst. econstructor.
   -
   *)  
+
+Lemma ffff_gen_helper' : forall r r' il1 il2 tr,
+  vm_lstar r r' (il1 ++ il2) il2 tr ->
+  vm_lstar r r' il1 [] tr.
+Proof.
+  intros.
+  rewrite vm_rlstar_iff_lstar in H.
+  dependent induction H.
+  - assert (il1 = []). rewrite app_nil_r in x. auto.
+    subst. auto.
+  - rewrite app_nil_r in x.
+    rewrite <- x.
+    rewrite vm_rlstar_iff_lstar.
+    eapply vm_rlstar_transitive. eassumption.
+    cut (vm_rlstar r' r'' ([] ++ [i]) [] ([] ++ tr2)). simpl; auto.
+    eapply vm_rlstar_tran; eauto.
+Defined.
+
+Lemma ffff_gen_helper'' : forall r r' il1 il2 tr,
+  vm_lstar r r' il1 [] tr ->
+  vm_lstar r r' (il1 ++ il2) il2 tr.
+Proof.
+Admitted.
+
+    Lemma asdd {A:Type} : forall l (v:A) il1 il2,
+      l ++ [v] = il1 ++  il2 ->
+      (il2 = [] /\ l ++ [v] = il1) \/
+      (il2 = [v] /\ l = il1) \/
+      (exists n, (il1 = firstn n l) /\ (il2 = (skipn n l) ++ [v])).
+    Proof.
+    Admitted.
+
+Lemma ffff_another_helper :forall r r3 tr il1 il2 resl,
+        vm_lstar r r3
+           (il1 ++ il2) resl
+           tr ->
+  exists r' tr1,
+    vm_lstar r r'
+             (il1 ++ il2) il2
+             tr1 /\
+    exists tr2,
+      vm_lstar r' r3
+               il2 resl
+               tr2 (*/\
+      tr = tr1 ++ tr2*).
+Proof.
+  intros.
+  rewrite vm_rlstar_iff_lstar in H.
+  dependent induction H.
+  - assert
+  - apply asdd in x.
+    destruct x.
+    + destruct H1. subst.
+      exists r''. exists (tr1 ++ tr2).
+      rewrite vm_rlstar_iff_lstar.
+      split.
+      * rewrite app_nil_r.
+        eapply vm_rlstar_tran.
+        apply H.
+        eassumption.
+      * eexists. econstructor.
+    + destruct H1.
+      * destruct H1.
+        subst.
+        exists r'. exists tr1.
+        split.
+        --
+          rewrite <- vm_rlstar_iff_lstar in H.
+          eapply ffff_gen_helper''. eassumption.
+        -- exists tr2.
+           admit.
+      * destruct H1.
+        destruct H1.
+
+        destruct (IHvm_rlstar il1 (skipn x il)).
+        -- admit.
+        --
+          destruct H3. destruct H3. destruct H4.
+          apply ffff_gen_helper' in H3.
+          exists x0. exists x1.
+          split.
+          apply ffff_gen_helper''. eauto.
+          rewrite H2.
+          exists (x2 ++ tr2).
+          apply ffff_gen_helper' with (il2:=[]).
+          rewrite vm_rlstar_iff_lstar.
+          rewrite app_nil_r.
+          rewrite <- vm_rlstar_iff_lstar.
+          eapply vm_lstar_transitive; eauto.
+          admit.
+          eapply 
+          eapply vm_rlstar_tran. 
+          
+          
+      
+        
+        
+      
+        
+
+
+    eexists. eexists.
+    split.
+    eapply ffff_gen_helper''.
+
+
+
+    destruct 
     
+      
+
+
+    rewrite <- x.
+    exists r''. exists (tr2).
+    split.
+    rewrite vm_rlstar_iff_lstar.
+    eapply vm_rlstar_tran. 
+    
+    
+  eexists. eexists.
+  split.
+  + eapply ffff_gen_helper''.
+    
+  (*rewrite vm_rlstar_iff_lstar in H.*)
+  induction H.
+  - assert (il1 = []). admit.
+    assert (il2 = []). admit.
+    subst.
+    eexists. eexists.
+    split.
+    + econstructor.
+    + eexists. split; eauto.
+  -  *)
+    
+Admitted.
+
   
 
 
+Lemma ffff_gen_helper :forall r r3 tr il1 il2,
+  vm_lstar r r3
+           (il1 ++ il2) []
+           tr ->
+  exists r' tr1,
+    vm_lstar r r'
+             (il1 ++ il2) il2
+             tr1 /\
+    exists tr2,
+      vm_lstar r' r3
+               il2 []
+               tr2 (*/\
+      tr = tr1 ++ tr2*).
+Proof.
+  intros.
+  eapply ffff_another_helper. eauto.
+Defined.
+
+Lemma ffff_gen :forall r r3 tr il1 il2,
+  vm_lstar r r3
+           (il1 ++ il2) []
+           tr ->
+  exists r' tr1,
+    vm_lstar r r'
+             il1 []
+             tr1 /\
+    exists tr2,
+      vm_lstar r' r3
+               il2 []
+               tr2 (*/\
+      tr = tr1 ++ tr2*).
+Proof.
+  intros.
+  apply ffff_gen_helper in H.
+  destruct_conjs.
+  exists H. exists H0.
+  split.
+  - eapply ffff_gen_helper'; eauto.
+  - exists H2.
+    eauto.
+Defined.
+
+
 Lemma ffff : forall (*e e'' s'' s*)r t tr r3 (*tr0 tr3*) il2, (* TODO: il1 must be compiled for stack restore *)
-    (*wf_instr_seq il2 -> *)
+    wf_instr_seq il2 -> 
     let il1 := (instr_compiler t) in
     (*let r := (mk_accum e (*tr0*) s) in *)
     (*let r3 := (mk_accum e'' (*tr3*) s'') in*)
@@ -336,10 +516,27 @@ Lemma ffff : forall (*e e'' s'' s*)r t tr r3 (*tr0 tr3*) il2, (* TODO: il1 must 
       (*let r'' := (mk_accum e'' (*tr2*) s'') in *)
       vm_lstar r' r3 (*(mk_accum e' [] s') r''*)
                il2 []
-               tr2 /\
-      tr = tr1 ++ tr2.
+               tr2 (*/\
+      tr = tr1 ++ tr2*).
      (*skipn (length tr0) tr3 = tr1 ++ tr2*)
 Proof.
+  intros.
+  eapply ffff_gen. eauto.
+Defined.
+
+(*
+
+  intros.
+  dependent induction t.
+  - destruct a.
+    + inv H.
+      * admit.
+Admitted. *)
+(*
+  -
+    
+  exists (mk_accum (eval (unanno t) (ec r)) (vm_stack r)).
+  eexists.*)
   (*
   intros.
   generalize dependent e.
@@ -407,8 +604,8 @@ Proof.
   admit.
   admit.
   admit.
-  inv H0.*)
-Admitted.
+  inv H0.
+Admitted.*)
 (*
   - 
   simpl.
@@ -519,7 +716,6 @@ Ltac destruct_conjs :=
       | [ G: vm_step _ _ _ _ |- _ ] => inv G; simpl
       end). *)
 
-Require Import Coq.Program.Tactics.
 
 Lemma vm_config_correct : forall e e' s s' t tr,
     vm_lstar (mk_accum e s) (mk_accum e' s')
@@ -549,6 +745,7 @@ Proof.
     edestruct IHt2. eassumption.
     edestruct IHt1. eassumption.
     subst. split; reflexivity.
+    econstructor.
   -
     simpl in H. destruct s.
     inv H.
@@ -562,11 +759,35 @@ Proof.
     inv H2.
     dependent destruction r'1.
     inv H10. unfold ec in *. unfold pop_stackr in *. simpl in *.
-
+    rewrite vm_rlstar_iff_lstar in H13.
+    inv H13.
+    + admit.
+    + rewrite <- vm_rlstar_iff_lstar in H2.
+      assert (il = (instr_compiler t2)). admit.
+      rewrite H3 in H2.
+      assert (i = ajoins (Nat.pred (snd r))). admit.
+      rewrite H4 in H5.
+      
+      dependent destruction r'2.
+      
+      
+(*
     apply ffff in H13.
     destruct_conjs.
-    dependent destruction H13.
-    edestruct IHt2; eauto.
+    dependent destruction H13. *)
+      edestruct IHt2; eauto.
+      inv H5.
+      split; eauto.
+    + econstructor.
+      
+  - simpl in H. destruct s.
+    
+    
+      
+
+
+
+      
     inv H4. inv H12. inv H15.
     split; eauto.
   -
