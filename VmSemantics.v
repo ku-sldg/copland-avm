@@ -267,6 +267,8 @@ Theorem vm_bigstep: forall e e' s t tr p,
 Proof.
 Admitted. *)
 
+
+
 Ltac inv_vm_lstar :=
   repeat (
       match goal with
@@ -349,6 +351,33 @@ Admitted.
     Proof.
     Admitted.
 
+    Lemma list_nil_app{A:Type} : forall (l1 l2:list A),
+      [] = l1 ++ l2 ->
+      l1 = [] /\ l2 = [].
+    Proof.
+      intros.
+      destruct l1.
+      - simpl in H.
+        split; eauto.
+      - inv H.
+    Defined.
+
+    Lemma step_implies_lstar : forall r r' i tr,
+        vm_step r i r' tr ->
+        vm_lstar r r' [i] [] tr.
+    Proof.
+      intros.
+      cut (vm_lstar r r' ([i]++[]) [] (tr ++ [])). simpl. rewrite app_nil_r. eauto.
+      eapply vm_lstar_tran; eauto.
+    Defined.
+
+
+    Lemma first_skip{A:Type} :
+      forall n (l:list A),
+        l = (firstn n l) ++ (skipn n l).
+    Proof.
+    Admitted.
+
 Lemma ffff_another_helper :forall r r3 tr il1 il2 resl,
         vm_lstar r r3
            (il1 ++ il2) resl
@@ -366,7 +395,15 @@ Proof.
   intros.
   rewrite vm_rlstar_iff_lstar in H.
   dependent induction H.
-  - assert
+  - 
+
+    apply list_nil_app in x. destruct x.
+    subst.
+    eexists. eexists.
+    split.
+    econstructor.
+    eexists.
+    econstructor.
   - apply asdd in x.
     destruct x.
     + destruct H1. subst.
@@ -387,12 +424,19 @@ Proof.
           rewrite <- vm_rlstar_iff_lstar in H.
           eapply ffff_gen_helper''. eassumption.
         -- exists tr2.
-           admit.
+
+
+           apply step_implies_lstar; eauto.
+
       * destruct H1.
         destruct H1.
 
         destruct (IHvm_rlstar il1 (skipn x il)).
-        -- admit.
+        --
+
+          rewrite H1.
+          eapply first_skip.
+          
         --
           destruct H3. destruct H3. destruct H4.
           apply ffff_gen_helper' in H3.
@@ -406,6 +450,10 @@ Proof.
           rewrite app_nil_r.
           rewrite <- vm_rlstar_iff_lstar.
           eapply vm_lstar_transitive; eauto.
+          eapply step_implies_lstar; eauto.
+Defined.
+
+(*
           admit.
           eapply 
           eapply vm_rlstar_tran. 
@@ -450,8 +498,6 @@ Proof.
     + econstructor.
     + eexists. split; eauto.
   -  *)
-    
-Admitted.
 
   
 
@@ -500,7 +546,7 @@ Defined.
 
 
 Lemma ffff : forall (*e e'' s'' s*)r t tr r3 (*tr0 tr3*) il2, (* TODO: il1 must be compiled for stack restore *)
-    wf_instr_seq il2 -> 
+    (*wf_instr_seq il2 -> *)
     let il1 := (instr_compiler t) in
     (*let r := (mk_accum e (*tr0*) s) in *)
     (*let r3 := (mk_accum e'' (*tr3*) s'') in*)
@@ -716,6 +762,29 @@ Ltac destruct_conjs :=
       | [ G: vm_step _ _ _ _ |- _ ] => inv G; simpl
       end). *)
 
+    Ltac doit :=
+      unfold push_stackr in * ;
+      unfold push_stackc in * ;
+      unfold update_ev in * ;
+      unfold pop_stackr in *;
+      simpl in *.
+    
+    Ltac invv :=
+      repeat (
+      match goal with
+      | [ H: vm_lstar _ _ (_::_) _ _ |- _ ] => inv H; doit
+      | [ G: vm_step _ _ _ _ |- _ ] => inv G; doit
+      end).
+
+            Lemma ssc_inv : forall e1 e1' e2 e2',
+      e1 = e1' ->
+      e2 = e2' ->
+      ssc e1 e2 = ssc e1' e2'.
+    Proof.
+    Admitted.
+
+    Axiom para_eval_vm : forall t e,
+        parallel_eval_thread (unanno t) e = parallel_att_vm_thread (instr_compiler t) e.
 
 Lemma vm_config_correct : forall e e' s s' t tr,
     vm_lstar (mk_accum e s) (mk_accum e' s')
@@ -738,17 +807,134 @@ Proof.
     split; eauto.
   - simpl.
     simpl in H.
-    eapply ffff in H.
+    apply ffff in H.
     destruct_conjs.
     destruct H.
     
     edestruct IHt2. eassumption.
     edestruct IHt1. eassumption.
     subst. split; reflexivity.
-    econstructor.
   -
     simpl in H. destruct s.
-    inv H.
+
+
+    invv.
+    apply ffff in H7.
+    destruct_conjs.
+    dependent destruction r''.
+    dependent destruction H7.
+    unfold push_stackr in *.
+    unfold push_stackc in *.
+    unfold update_ev in *.
+    simpl in *.
+    destruct IHt1 with (tr:=H) (s:=e2 :: s0) (s':=vm_stack0) (e:=splitEv s e) (e':=ec0). apply H0.
+                    
+    invv.
+    unfold push_stackr in *.
+    unfold push_stackc in *.
+    dependent destruction r'''.
+    invv.
+    apply ffff in H12.
+    destruct_conjs.
+    dependent destruction H12.
+    
+    destruct IHt2 with (tr:=H1) (s:=e0 :: s0) (s':=vm_stack0) (e:=splitEv s1 e) (e':=ec0).
+    apply H2.
+
+    invv.
+        unfold push_stackr in *.
+    unfold push_stackc in *.
+    dependent destruction r''1.
+        unfold push_stackr in *.
+        unfold push_stackc in *.
+        invv.
+        inv H14.
+        invv.
+        
+        unfold push_stackr in *.
+    unfold push_stackc in *.
+    
+
+    split.
+    eapply ssc_inv.
+    eauto. eauto. reflexivity.
+  - 
+
+    simpl in H. destruct s.
+    invv.
+    dependent destruction r''.
+    inv H9.
+    split; eauto.
+
+    rewrite para_eval_vm.
+    rewrite para_eval_vm.
+    eauto.
+Defined.
+
+    
+    split; eaut
+
+        inv H4. inv H12. inv H15.
+    split; eauto.
+
+
+
+
+
+
+
+    
+    
+    simpl in *. eauto.
+    subst. eauto.
+    subst.
+    assert (e3 = eval (unanno t2) (ec r'')). eauto.
+    rewrite H3.
+    assert (er = ec r''). eauto.
+    rewrite <- H4. 
+    assert (er0 = e0). admit. eauto.
+    assert (e3 = ec0). admit.
+    rewrite H5.
+    simpl in *. subst.
+    rewrite <- H4 in er0.
+
+    inv H4. inv H10.
+    inv H14.
+
+    dependent destruction r''.
+    dependent destruction H7.
+    edestruct IHt1. apply H0.
+    (*simpl in H2.
+    dependent destruction v0.
+    unfold push_stackr in H2. simpl in H2.*)
+    dependent destruction H11.
+    edestruct IHt2. apply H2.
+    split.
+    simpl.
+
+    apply ssc_inv.
+    simpl in H6.
+    rewrite <- H6.
+    unfold push_stackc.
+    simpl. eauto.
+    rewrite H5.
+    simpl.
+    simpl in H5.
+    simpl in H6.
+    simpl in H2.
+    unfold push_stackr in H2. simpl in H2.
+    
+    dependent destruction v0.
+
+
+
+
+
+
+
+
+
+    
     dependent destruction r'.
     inv H4. simpl in H7. unfold push_stackc in H7.
     apply ffff in H7.
