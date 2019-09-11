@@ -281,22 +281,32 @@ Proof.
   econstructor. eassumption.
   Admitted.
 
-Lemma ffff_gen_helper'' : forall r r' il1 il2 tr,
-  (il1 <> []) ->  (* TODO: this is always non-empty since from compiler? *)
-  vm_lstar r r' il1 [] tr ->
-  vm_lstar r r' (il1 ++ il2) il2 tr.
+Lemma ffff_gen_helperrr : forall r r' il1 il1' il2 tr,
+  (il1 <> []) ->
+  vm_lstar r r' il1 il1' tr ->
+  vm_lstar r r' (il1 ++ il2) (il1' ++ il2) tr.
 Proof.
   intros.
   rewrite vm_rlstar_iff_lstar in H0.
   generalize dependent il2.
   (* generalize dependent H.*)
-  induction H0; intros.
+  inv H0; intros.
   - congruence.
   - rewrite <- app_assoc.
     eapply vm_lstar_transitive.
-    rewrite <- vm_rlstar_iff_lstar in H0.
-    apply H0.
+    rewrite <- vm_rlstar_iff_lstar in H1.
+    eassumption.
     apply fafa. eassumption.
+Defined.
+
+Lemma ffff_gen_helper'' : forall r r' il1 il2 tr,
+  (il1 <> []) ->
+  vm_lstar r r' il1 [] tr ->
+  vm_lstar r r' (il1 ++ il2) il2 tr.
+Proof.
+  intros.
+  cut (vm_lstar r r' (il1 ++ il2) ([] ++ il2) tr). simpl; auto.
+  eapply ffff_gen_helperrr; eauto.
 Defined.
 
 Lemma asdd {A:Type} : forall l (v:A) il1 il2,
