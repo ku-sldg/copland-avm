@@ -144,6 +144,12 @@ Inductive vm_step' : vm_config -> vm_config -> list Ev -> Prop  :=
 Definition vm_1n_multi : step_relation vm_config Ev := refl_trans_1n_trace vm_step'.
 Check vm_1n_multi.
 
+Definition vm_1n_multi' (acc1:vm_accum) (acc2:vm_accum) (el_in:list AnnoInstr) (el_out:list AnnoInstr) (tr:list Ev) :=
+  vm_1n_multi (mk_vm_config (ec acc1) el_in (vm_stack acc1))
+              (mk_vm_config (ec acc2) el_out (vm_stack acc2))
+              tr.
+Check vm_1n_multi'.
+
 Lemma vm_1n_multi_trans : forall x y z tr tr',
   vm_1n_multi x y tr ->
   vm_1n_multi y z tr' ->
@@ -153,45 +159,6 @@ Proof.
 Defined.
 
 Check refl_trans_1n_trace_trans.
-
-
-
-Lemma vm_config_correct : forall e e' s s' t tr,
-    vm_1n_multi (mk_vm_config e (instr_compiler t) s)
-                (mk_vm_config e'[]                 s')
-                tr ->
-    e' = (eval (unanno t) e) /\
-    s = s'.
-Proof.
-  intros.
-  generalize dependent e.
-  generalize dependent e'.
-  generalize dependent s.
-  generalize dependent s'.
-  generalize dependent tr.
-  induction t; intros.
-  - destruct a.
-    + inv H. inv H0.
-    simpl.
-    inv H7.
-    inv H1.
-    split; reflexivity.
-    inv H.
-    + inv H. inv H0.
-    simpl.
-    inv H7.
-    inv H1.
-    split; reflexivity.
-    inv H.
-    + admit.
-    + admit.
-    + admit.
-  - inv H. inv H0. inv H7. inv H1. simpl.
-    split; reflexivity.
-    inv H.
-  - simpl in *.
-
-Admitted.
 
 (*
 Lemma fafa : forall r r' tr i rest,
@@ -224,16 +191,16 @@ Proof.
 Defined. *)
 
 
-Lemma ha : forall e e' e'' s s' s'' il1 il2 resl tr1 tr2,
-  vm_1n_multi (mk_vm_config e (il1 ++ il2) s) (mk_vm_config e' il2 s') tr1 ->
-  vm_1n_multi (mk_vm_config e' il2 s') (mk_vm_config e'' resl s'') tr2  ->
-  vm_1n_multi (mk_vm_config e (il1 ++ il2) s) (mk_vm_config e'' resl s'') (tr1 ++ tr2).
+Lemma ha : forall r r' r'' il1 il2 resl tr1 tr2,
+  vm_1n_multi' r r' (il1 ++ il2) il2 tr1 ->
+  vm_1n_multi' r' r'' il2 resl tr2  ->
+  vm_1n_multi' r r'' (il1 ++ il2) resl (tr1 ++ tr2).
 Proof.
   intros.
   eapply vm_1n_multi_trans; eauto.
 Defined.
 
-Lemma vm_1n_multi_transitive:
+Lemma vm_1n_multi_transitive':
   forall e e' e'' s s' s'' il1 il2 resl tr1 tr2,
     vm_1n_multi (mk_vm_config e il1 s) (mk_vm_config e' [] s') tr1 ->
     vm_1n_multi (mk_vm_config e' il2 s') (mk_vm_config e'' resl s'') tr2 ->
@@ -259,6 +226,31 @@ Proof.
 Defined.
 
 
+Lemma vm_1n_multi_transitive:
+  forall r r' r'' il1 il2 resl tr1 tr2,
+    vm_1n_multi' r r' il1 [] tr1 ->
+    vm_1n_multi' r' r'' il2 resl tr2 ->
+    vm_1n_multi'  r r'' (il1 ++ il2) resl (tr1 ++ tr2).
+Proof.
+  intros.
+  (*unfold vm_1n_multi'. *)
+  eapply vm_1n_multi_transitive'; eauto.
+Defined.
+
+  
+
+
+Lemma vm_1n_multi_transitive_done: forall r r' r'' il1 il2 tr1 tr2,
+    vm_1n_multi' r r' il1 [] tr1 ->
+    vm_1n_multi' r' r'' il2 [] tr2 ->
+    vm_1n_multi' r r'' (il1 ++ il2) [] (tr1 ++ tr2).
+Proof.
+  intros.
+  eapply vm_1n_multi_transitive; eauto.
+Defined.
+
+  
+(*
 Lemma vm_1n_multi_transitive_done: forall e e' e'' s s' s'' il1 il2 tr1 tr2,
     vm_1n_multi (mk_vm_config e il1 s) (mk_vm_config e' [] s') tr1 ->
     vm_1n_multi (mk_vm_config e' il2 s') (mk_vm_config e'' [] s'') tr2 ->
@@ -266,7 +258,7 @@ Lemma vm_1n_multi_transitive_done: forall e e' e'' s s' s'' il1 il2 tr1 tr2,
 Proof.
   intros.
   eapply vm_1n_multi_transitive; eauto.
-Defined.
+Defined. *)
 
 Definition vm_n1_multi : step_relation vm_config Ev := refl_trans_n1_trace vm_step'.
 
@@ -301,15 +293,27 @@ Proof.
   - apply vm_1n_implies_n1.
 Defined.
 
+Definition vm_n1_multi' (acc1:vm_accum) (acc2:vm_accum) (el_in:list AnnoInstr) (el_out:list AnnoInstr) (tr:list Ev) :=
+  vm_n1_multi (mk_vm_config (ec acc1) el_in (vm_stack acc1))
+              (mk_vm_config (ec acc2) el_out (vm_stack acc2))
+              tr.
+
+Lemma vm_n1_multi_transitive:
+  forall r r' r'' il1 il2 resl tr1 tr2,
+    vm_n1_multi' r r' il1 [] tr1 ->
+    vm_n1_multi' r' r'' il2 resl tr2 ->
+    vm_n1_multi' r r'' (il1 ++ il2) resl (tr1 ++ tr2).
+(*
 Lemma vm_n1_multi_transitive:
   forall e e' e'' s s' s'' il1 il2 resl tr1 tr2,
     vm_n1_multi (mk_vm_config e il1 s) (mk_vm_config e' [] s') tr1 ->
     vm_n1_multi (mk_vm_config e' il2 s') (mk_vm_config e'' resl s'') tr2 ->
-    vm_n1_multi (mk_vm_config e (il1 ++ il2) s) (mk_vm_config e'' resl s'') (tr1 ++ tr2).
+    vm_n1_multi (mk_vm_config e (il1 ++ il2) s) (mk_vm_config e'' resl s'') (tr1 ++ tr2). *)
 Proof.
-  intros.
+  intros. unfold vm_n1_multi'.
   rewrite vm_n1_iff_1n in *.
-  eapply vm_1n_multi_transitive; eauto.
+  eapply vm_1n_multi_transitive; unfold vm_1n_multi';
+  rewrite <- vm_n1_iff_1n; eauto.
 Defined.
 
 (*
@@ -382,7 +386,7 @@ Proof.
   econstructor.
 Defined.
 
-
+(*
 Lemma ffff_gen_helperrr : forall r r' il1 il1' il2 tr,
   (il1 <> []) ->
   vm_lstar r r' il1 il1' tr ->
@@ -409,7 +413,7 @@ Proof.
   intros.
   cut (vm_lstar r r' (il1 ++ il2) ([] ++ il2) tr). simpl; auto.
   eapply ffff_gen_helperrr; eauto.
-Defined.
+Defined. *)
 
 Lemma asdd {A:Type} : forall l (v:A) il1 il2,
     l ++ [v] = il1 ++ il2 ->
@@ -429,17 +433,17 @@ Proof.
   - simpl in H.
     split; eauto.
   - inv H.
-Defined.
+Defined. 
 
-Lemma step_implies_lstar : forall r r' i tr,
-    vm_step r i r' tr ->
-    vm_lstar r r' [i] [] tr.
+Lemma step_implies_lstar : forall e e' s s' i tr,
+    vm_step (mk_accum e s) i (mk_accum e' s') tr ->
+    vm_1n_multi (mk_vm_config e [i] s) (mk_vm_config e' [] s') tr.
 Proof.
   intros.
-  cut (vm_lstar r r' ([i]++[]) [] (tr ++ [])). simpl. rewrite app_nil_r. eauto.
-  eapply vm_lstar_tran; eauto.
+  cut ( vm_1n_multi {| cec := e; cvm_list := ([i] ++ []); cvm_stack := s |}
+                    {| cec := e'; cvm_list := []; cvm_stack := s' |} (tr ++ [])). simpl. rewrite app_nil_r. eauto.
+  repeat econstructor; eauto.
 Defined.
-
 
 Lemma first_skip{A:Type} :
   forall n (l:list A),
@@ -447,6 +451,8 @@ Lemma first_skip{A:Type} :
 Proof.
 Admitted.
 
+
+(*
 Lemma ffff_another_helper :forall r r3 tr il1 il2 resl,
     il1 <> [] ->
     vm_lstar r r3
@@ -603,7 +609,7 @@ Proof.
   eapply ffff_gen.
   apply compile_not_empty.
   eauto.
-Defined.
+Defined. *)
 
 Lemma lstar_stls :
   forall st0 st1 t tr,
@@ -639,13 +645,15 @@ Ltac doit :=
   unfold update_ev in * ;
   unfold pop_stackr in *;
   simpl in *.
-    
+
+(*
 Ltac invv :=
   repeat (
       match goal with
       | [ H: vm_lstar _ _ (_::_) _ _ |- _ ] => inv H; doit
       | [ G: vm_step _ _ _ _ |- _ ] => inv G; doit
       end).
+*)
 
 Lemma ssc_inv : forall e1 e1' e2 e2',
     e1 = e1' ->
@@ -658,6 +666,125 @@ Defined.
 
 Axiom para_eval_vm : forall t e,
     parallel_eval_thread (unanno t) e = parallel_att_vm_thread (instr_compiler t) e.
+
+Lemma ffff : forall r t tr r3 il2, (* TODO: il1 must be compiled for stack restore *)
+    let il1 := (instr_compiler t) in
+    vm_1n_multi' r r3
+             (il1 ++ il2) []
+             tr ->
+   exists r' tr1,
+      vm_1n_multi' r r'
+               il1 []
+               tr1 /\
+     exists tr2,
+       vm_1n_multi' r' r3
+               il2 []
+               tr2.
+Admitted.
+
+
+Lemma vm_config_correct : forall e e' s s' t tr,
+    vm_1n_multi (mk_vm_config e (instr_compiler t) s)
+                (mk_vm_config e'[]                 s')
+                tr ->
+    e' = (eval (unanno t) e) /\
+    s = s'.
+Proof with doit.
+  intros.
+  generalize dependent e.
+  generalize dependent e'.
+  generalize dependent s.
+  generalize dependent s'.
+  generalize dependent tr.
+  induction t; intros; simpl in *.
+  - destruct a.
+    + inv H. inv H0.
+    simpl.
+    inv H7.
+    inv H1.
+    split; reflexivity.
+    inv H.
+    + inv H. inv H0.
+    simpl.
+    inv H7.
+    inv H1.
+    split; reflexivity.
+    inv H.
+    + admit.
+    + admit.
+    + admit.
+  - inv H. inv H0. inv H7. inv H1. simpl.
+    split; reflexivity.
+    inv H.
+  - 
+    edestruct ffff with (r:=mk_accum e s) (r3:=mk_accum e' s'). unfold vm_1n_multi'. simpl. apply H.
+    destruct_conjs. unfold vm_1n_multi' in *.
+    doit.
+    dependent destruction x. doit.
+    edestruct IHt1; eauto.
+    doit.
+    edestruct IHt2; eauto.
+    split; simpl in *; congruence.
+  - destruct s. doit.
+    (*rewrite <- vm_n1_iff_1n in H.*)
+    inv H. doit. dependent destruction x'.
+
+
+    inv H0. doit. inv H9. doit.
+    edestruct ffff with (r:=mk_accum e1 (e2::s0)) (r3:=mk_accum e' s'). unfold vm_1n_multi'. apply H1.
+    destruct_conjs.
+    doit.
+    dependent destruction x. doit.
+    edestruct IHt1; eauto. doit.
+    rewrite <- H5 in H3.
+    rewrite H4 in H3.
+    
+    inv H3. doit.
+    dependent destruction x'. doit.
+    inv H6. doit. inv H12. doit.
+
+    
+    edestruct ffff with (r:=mk_accum er (e6::s0)) (r3:= mk_accum e' s').
+    apply H7. doit.
+    destruct_conjs. doit.
+    dependent destruction x. doit.
+    edestruct IHt2; eauto. doit.
+    inv H5. doit.
+    dependent destruction x'. doit.
+    inv H9. doit. inv H15. doit.
+    inv H10. split; eauto.
+    inv H4.
+  -
+    
+
+
+    
+    inv H8. doit. inv H11. inv H15. doit. inv H12. doit.
+    simpl in *.
+    split.
+    apply ssc_inv.
+    dependent destruction x. doit.
+    rewrite <- H10 in *.
+    assert (er0 = e6). admit.
+    rewrite H2.
+    assert (e6 = eval (unanno t1) e1). eauto.
+    rewrite H3. eauto.
+    dependent destruction x. doit.
+    assert (e10 = eval (unanno t2) er). eauto.
+    rewrite H2.
+    rewrite <- H10 in *.
+    assert (er1 = e6). admit.
+    doit. assert (er0 = e6). admit. doit. clear r'3. clear r'2.
+    
+    
+
+Admitted.
+  
+
+
+
+
+
 
 Lemma vm_config_correct : forall e e' s s' t tr,
     vm_lstar (mk_accum e s) (mk_accum e' s')
