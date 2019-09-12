@@ -5,6 +5,8 @@ Import ListNotations.
 Require Import Coq.Program.Tactics.
 Require Import Coq.Program.Equality.
 
+Require Import Verdi.Net.
+
 Set Nested Proofs Allowed.
 
 (** * EvidenceC Stack *)
@@ -126,12 +128,83 @@ Inductive vm_step: vm_accum -> AnnoInstr -> vm_accum -> (list Ev) -> Prop :=
     shuffle el1 el2 tr ->
     vm_step r (abep rg1 rg2 il1 il2) r''' tr.
 
+Check step_relation.
+Print step_relation.
+
+Record vm_config : Type := mk_vm_config
+                            { cec:EvidenceC ;
+                              cvm_list:(list AnnoInstr) ;
+                              cvm_stack:ev_stackc }.
+
+Inductive vm_step' : vm_config -> vm_config -> list Ev -> Prop  :=
+| doStep : forall e e' s s' i l tr,
+    vm_step (mk_accum e s) i (mk_accum e' s') tr ->
+    vm_step' (mk_vm_config e (i::l) s) (mk_vm_config e' l s') tr.
+
+Definition vm_1n_multi : step_relation vm_config Ev := refl_trans_1n_trace vm_step'.
+Check vm_1n_multi.
+
+Lemma vm_1n_multi_trans : forall x y z tr tr',
+  vm_1n_multi x y tr ->
+  vm_1n_multi y z tr' ->
+  vm_1n_multi x z (tr ++ tr').
+Proof.
+  apply refl_trans_1n_trace_trans.
+Defined.
+
+Check refl_trans_1n_trace_trans.
+
+
+
+Lemma vm_config_correct : forall e e' s s' t tr,
+    vm_1n_multi (mk_vm_config e (instr_compiler t) s)
+                (mk_vm_config e'[]                 s')
+                tr ->
+    e' = (eval (unanno t) e) /\
+    s = s'.
+Proof.
+  intros.
+  generalize dependent e.
+  generalize dependent e'.
+  generalize dependent s.
+  generalize dependent s'.
+  generalize dependent tr.
+  induction t; intros.
+  - destruct a.
+    + inv H. inv H0.
+    simpl.
+    inv H7.
+    inv H1.
+    split; reflexivity.
+    inv H.
+    + inv H. inv H0.
+    simpl.
+    inv H7.
+    inv H1.
+    split; reflexivity.
+    inv H.
+    + admit.
+    + admit.
+    + admit.
+  - inv H. inv H0. inv H7. inv H1. simpl.
+    split; reflexivity.
+    inv H.
+  - simpl in *.
+
+Admitted.
+
+(*
+Lemma fafa : forall r r' tr i rest,
+    vm_step' r i r' tr ->
+    vm_lstar r r' ([i] ++ rest) rest tr.
+      
 Inductive vm_lstar: vm_accum -> vm_accum -> list AnnoInstr -> list AnnoInstr -> list Ev -> Prop :=
 | vm_lstar_refl: forall r, vm_lstar r r [] [] []
 | vm_lstar_tran: forall i l l' r r' r'' tr1 tr2,
     vm_step r i r' tr1 -> vm_lstar r' r'' l l' tr2 -> vm_lstar r r'' (i::l) l' (tr1 ++ tr2).
-Hint Resolve vm_lstar_refl.
+Hint Resolve vm_lstar_refl. *)
 
+(*
 Lemma vm_lstar_trans : forall r r' r'' il il' il'' tr1 tr2,
   vm_lstar r r' il il' tr1 ->
   vm_lstar r' r'' il' il'' tr2 ->
@@ -148,112 +221,135 @@ Proof.
     eapply vm_lstar_tran.
     apply H.
     eauto.
-Defined.
+Defined. *)
 
-Lemma ha : forall r r' r'' il1 il2 resl tr1 tr2,
-  vm_lstar r r' (il1 ++ il2) il2 tr1 ->
-  vm_lstar r' r'' il2 resl tr2 ->
-  vm_lstar r r'' (il1 ++ il2) resl (tr1 ++ tr2).
+
+Lemma ha : forall e e' e'' s s' s'' il1 il2 resl tr1 tr2,
+  vm_1n_multi (mk_vm_config e (il1 ++ il2) s) (mk_vm_config e' il2 s') tr1 ->
+  vm_1n_multi (mk_vm_config e' il2 s') (mk_vm_config e'' resl s'') tr2  ->
+  vm_1n_multi (mk_vm_config e (il1 ++ il2) s) (mk_vm_config e'' resl s'') (tr1 ++ tr2).
 Proof.
   intros.
-  eapply vm_lstar_trans; eauto.
+  eapply vm_1n_multi_trans; eauto.
 Defined.
 
-
-
-Lemma vm_lstar_transitive:
-  forall (*e s*) r r' r'' il1 il2 resl tr1 tr2,
-    (*let r := (mk_accum e [] s) in*)
-    vm_lstar r r' il1 [] tr1 ->
-    vm_lstar r' r'' il2 resl tr2 -> 
-    vm_lstar r r'' (il1 ++ il2) resl (tr1 ++ tr2).
+Lemma vm_1n_multi_transitive:
+  forall e e' e'' s s' s'' il1 il2 resl tr1 tr2,
+    vm_1n_multi (mk_vm_config e il1 s) (mk_vm_config e' [] s') tr1 ->
+    vm_1n_multi (mk_vm_config e' il2 s') (mk_vm_config e'' resl s'') tr2 ->
+    vm_1n_multi (mk_vm_config e (il1 ++ il2) s) (mk_vm_config e'' resl s'') (tr1 ++ tr2).     
 Proof.
   intros.
-  dependent induction H.
-  - simpl. eauto.
-  - simpl.
+  generalize dependent e''.
+  generalize dependent s''.
+  generalize dependent resl.
+  generalize dependent tr2.
+  generalize dependent il2.
+  (*eapply vm_1n_multi_trans; eauto.*)
+  dependent induction H; intros.
+  - eauto.
+  - inv H.
     rewrite <- app_assoc.
+    assert ((i :: l) ++ il2 = i :: (l ++ il2)). reflexivity.
+    rewrite H.
+    econstructor.
     econstructor. eassumption.
-    eauto.
+    inv H.
+    eapply IHrefl_trans_1n_trace; eauto.
 Defined.
 
-Require Import Coq.Program.Equality.
-Lemma vm_lstar_transitive_done:
-  forall (*e s*) r r' r'' il1 il2 tr1 tr2,
-    (*let r := (mk_accum e [] s) in*)
-    vm_lstar r r' il1 [] tr1 ->
-    vm_lstar r' r'' il2 [] tr2 -> 
-    vm_lstar r r'' (il1 ++ il2) [] (tr1 ++ tr2).
+
+Lemma vm_1n_multi_transitive_done: forall e e' e'' s s' s'' il1 il2 tr1 tr2,
+    vm_1n_multi (mk_vm_config e il1 s) (mk_vm_config e' [] s') tr1 ->
+    vm_1n_multi (mk_vm_config e' il2 s') (mk_vm_config e'' [] s'') tr2 ->
+    vm_1n_multi (mk_vm_config e (il1 ++ il2) s) (mk_vm_config e'' [] s'') (tr1 ++ tr2).
 Proof.
   intros.
-  dependent induction H.
-  - simpl. eauto.
-  - simpl.
-    rewrite <- app_assoc.
-    econstructor. eassumption.
-    eauto.
+  eapply vm_1n_multi_transitive; eauto.
 Defined.
-    
+
+Definition vm_n1_multi : step_relation vm_config Ev := refl_trans_n1_trace vm_step'.
+
+    (*
 Inductive vm_rlstar: vm_accum -> vm_accum -> list AnnoInstr -> list AnnoInstr -> list Ev -> Prop :=
 | vm_rlstar_refl: forall r, vm_rlstar r r [] [] []
 | vm_rlstar_tran: forall r r' r'' i il tr1 tr2,
     vm_rlstar r r' il [] tr1 -> vm_step r' i r'' tr2 ->
     vm_rlstar r r'' (il ++ [i]) [] (tr1 ++ tr2).
-Hint Resolve vm_rlstar_refl.
+Hint Resolve vm_rlstar_refl. *)
 
-
-Lemma vm_rlstar_transitive : forall r r' r'' il1 il2 resl tr1 tr2,
-    vm_rlstar r r' il1 [] tr1 ->
-    vm_rlstar r' r'' il2 resl tr2 -> 
-    vm_rlstar r r'' (il1 ++ il2) resl (tr1 ++ tr2).
+Lemma vm_n1_implies_1n : forall r r' tr,
+    vm_n1_multi r r' tr -> vm_1n_multi r r' tr.
 Proof.
   intros.
-  dependent induction H0.
-  - rewrite app_nil_r. rewrite app_nil_r. auto.
-  - apply IHvm_rlstar in H. 
-    rewrite app_assoc.
-    rewrite app_assoc.
-    eapply vm_rlstar_tran; eauto.
-Defined.
-  
-Lemma vm_rlstar_lstar : forall r r' l resl tr,
-    vm_rlstar r r' l resl tr -> vm_lstar r r' l resl tr.
-Proof.
-  intros.
-  induction H; auto.
-  - eapply vm_lstar_transitive. eauto.
-    cut (vm_lstar r' r'' [i] [] (tr2 ++ [])). rewrite app_nil_r; eauto.
-    econstructor; eauto.
+  apply refl_trans_n1_1n_trace; eauto.
 Defined.
 
-Lemma vm_lstar_rlstar : forall r r' l resl tr,
-    vm_lstar r r' l resl tr -> vm_rlstar r r' l resl tr.
+Lemma vm_1n_implies_n1 : forall r r' tr,
+    vm_1n_multi r r' tr -> vm_n1_multi r r' tr.
 Proof.
   intros.
-  dependent induction H.
-  - econstructor.
-  - cut (vm_rlstar r r'' ([i] ++ l) l' (tr1 ++ tr2)). simpl; auto.
-    apply vm_rlstar_transitive with (r':=r').
-    cut (vm_rlstar r r' ([] ++ [i]) [] ([] ++ tr1)). simpl; auto.
-    econstructor; eauto.
-    eauto.
+  apply refl_trans_1n_n1_trace; eauto.
 Defined.
 
-Lemma vm_rlstar_iff_lstar : forall r r' l resl tr,
-    vm_lstar r r' l resl tr <-> vm_rlstar r r' l resl tr.
+Lemma vm_n1_iff_1n : forall r r' tr,
+    vm_n1_multi r r' tr <-> vm_1n_multi r r' tr.
 Proof.
   intros.
   split.
-  - apply vm_lstar_rlstar.
-  - apply vm_rlstar_lstar.
+  - apply vm_n1_implies_1n.
+  - apply vm_1n_implies_n1.
 Defined.
 
+Lemma vm_n1_multi_transitive:
+  forall e e' e'' s s' s'' il1 il2 resl tr1 tr2,
+    vm_n1_multi (mk_vm_config e il1 s) (mk_vm_config e' [] s') tr1 ->
+    vm_n1_multi (mk_vm_config e' il2 s') (mk_vm_config e'' resl s'') tr2 ->
+    vm_n1_multi (mk_vm_config e (il1 ++ il2) s) (mk_vm_config e'' resl s'') (tr1 ++ tr2).
+Proof.
+  intros.
+  rewrite vm_n1_iff_1n in *.
+  eapply vm_1n_multi_transitive; eauto.
+Defined.
+
+(*
 Ltac inv_vm_lstar :=
   repeat (
       match goal with
       | [ H: vm_lstar _ _ _ _ _ |- _ ] => inv H; simpl
       | [ G: vm_step _ _ _ _ |- _ ] => inv G; simpl
-      end).  
+      end).  *)
+
+
+Lemma ffff_gen_helper' : forall e e' s s' il1 il2 tr,
+  vm_1n_multi (mk_vm_config e (il1 ++ il2) s) (mk_vm_config e' il2 s') tr ->
+  vm_1n_multi (mk_vm_config e il1 s) (mk_vm_config e' [] s') tr.
+Proof.
+  intros.
+  rewrite <- vm_n1_iff_1n in H.
+  dependent induction H.
+  - assert (il1 = []). admit. subst.
+    econstructor.
+  - destruct x'.
+    inv H0.
+Admitted.
+
+(*
+  intros.
+  rewrite vm_rlstar_iff_lstar in H.
+  dependent induction H.
+  - assert (il1 = []). rewrite app_nil_r in x. auto.
+    subst. auto.
+  - rewrite app_nil_r in x.
+    rewrite <- x.
+    rewrite vm_rlstar_iff_lstar.
+    eapply vm_rlstar_transitive. eassumption.
+    cut (vm_rlstar r' r'' ([] ++ [i]) [] ([] ++ tr2)). simpl; auto.
+    eapply vm_rlstar_tran; eauto.
+Defined.
+
+
+
 
 Lemma ffff_gen_helper' : forall r r' il1 il2 tr,
   vm_lstar r r' (il1 ++ il2) il2 tr ->
@@ -270,16 +366,22 @@ Proof.
     eapply vm_rlstar_transitive. eassumption.
     cut (vm_rlstar r' r'' ([] ++ [i]) [] ([] ++ tr2)). simpl; auto.
     eapply vm_rlstar_tran; eauto.
-Defined.
+Defined. *)
 
-Lemma fafa : forall r r' tr i rest,
-    vm_step r i r' tr ->
-    vm_lstar r r' ([i] ++ rest) rest tr.
+Lemma fafa : forall e e' s s' tr i rest,
+    vm_step (mk_accum e s) i (mk_accum e' s') tr ->
+    vm_1n_multi (mk_vm_config e ([i] ++ rest) s) (mk_vm_config e' rest s') tr.
 Proof.
   intros.
-  cut (vm_lstar r r' ([i] ++ rest) rest (tr++[])). rewrite app_nil_r. auto.
-  econstructor. eassumption.
-  Admitted.
+  cut ( vm_1n_multi {| cec := e; cvm_list := i :: rest; cvm_stack := s |}
+                    {| cec := e'; cvm_list := rest; cvm_stack := s' |} (tr ++ [])).
+  rewrite app_nil_r. auto.
+  econstructor.
+  econstructor.
+  eassumption.
+  econstructor.
+Defined.
+
 
 Lemma ffff_gen_helperrr : forall r r' il1 il1' il2 tr,
   (il1 <> []) ->
