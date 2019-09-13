@@ -1155,11 +1155,34 @@ Lemma destr_app_compile : forall r0 r' t1 t2 tr,
     -> (exists tr1 r_mid,
           vm_1n_multi' r0 r_mid (instr_compiler t1) [] tr1 /\
           exists tr2,
-            vm_1n_multi' r_mid r' (instr_compiler t2) [] tr2).
+            vm_1n_multi' r_mid r' (instr_compiler t2) [] tr2 /\
+            tr = tr1 ++ tr2).
 Proof.
   intros.
   
 Admitted.
+
+Lemma destr_app_compile': forall r0 r' t1 t2 tr n,
+    vm_1n_multi' r0 r' (instr_compiler t1 ++
+                         abesr :: instr_compiler t2 ++ [ajoins n]) [] tr
+    -> (exists tr1 r_mid,
+          vm_1n_multi' r0 r_mid (instr_compiler t1) [] tr1 /\
+          exists tr2,
+            vm_1n_multi' r_mid r' (abesr :: instr_compiler t2 ++ [ajoins n]) [] tr2 /\
+            tr = tr1 ++ tr2).
+Proof.
+  intros.
+Admitted.
+
+    Lemma destr_app_compile'': forall r0 r' t2 tr n,
+    vm_1n_multi' r0 r' (instr_compiler t2 ++ [ajoins n]) [] tr
+    -> (exists tr1 r_mid,
+          vm_1n_multi' r0 r_mid (instr_compiler t2) [] tr1 /\
+          exists tr2,
+            vm_1n_multi' r_mid r' ([ajoins n]) [] tr2 /\
+            tr = tr1 ++ tr2).
+    Proof.
+    Admitted.
 
 Lemma vm_lstar_trace: forall r r' t tr,
     (*well_formed t -> *)
@@ -1216,7 +1239,7 @@ Proof.
     admit.
     admit. (* TODO: are these two axioms?? *)
     inv H.
-  - simpl in H.
+  - (*simpl in H. *)
     edestruct destr_app_compile in H; eauto.
     (*assert
       (exists tr1 r_mid,
@@ -1228,8 +1251,6 @@ Proof.
     eapply destr_app_compile; eauto. *)
 
     destruct_conjs.
-    assert (tr = x ++ H3).
-    admit.
     subst.
     econstructor.
     eapply IHt1.
@@ -1250,9 +1271,81 @@ Proof.
       * admit.
       * admit.
       * eassumption.
+  - simpl in H.
+    destruct s.
+    inv H.
+    inv H1.
+    inv H8. doit.
+
+    assert (
+        refl_trans_1n_trace vm_step'
+         {|
+         cec := e1;
+         cvm_list := instr_compiler t1 ++
+                     abesr :: instr_compiler t2 ++ [ajoins (Nat.pred (snd r))];
+         cvm_stack := e2 :: vm_stack r0 |}
+         {| cec := ec r'; cvm_list := []; cvm_stack := vm_stack r' |} cs'
+        =
+        vm_1n_multi' (mk_accum e1 (e2 :: vm_stack r0)) r'
+                     (instr_compiler t1 ++
+                                     abesr :: instr_compiler t2 ++ [ajoins (Nat.pred (snd r))])
+                     []
+                     cs').
+    auto.
+    rewrite H in H2. clear H.                   
+
+    edestruct destr_app_compile' in H2; eauto. clear H2.
+    destruct_conjs. doit.
+    assert (trace t1 x).
+    eapply IHt1.
+    admit.
+    eassumption.
+    clear H1.
+    inv H3. doit.
+    inv H1. doit.
+    inv H10. doit.
+
+    assert ( refl_trans_1n_trace vm_step'
+         {|
+         cec := er;
+         cvm_list := instr_compiler t2 ++ [ajoins (Nat.pred (snd r))];
+         cvm_stack := e :: vm_stack r'2 |}
+         {| cec := ec r'; cvm_list := []; cvm_stack := vm_stack r' |} cs'0
+             =
+             vm_1n_multi' (mk_accum er (e :: vm_stack r'2))
+                          r'
+                          (instr_compiler t2 ++ [ajoins (Nat.pred (snd r))])
+                          []
+                          cs'0).
+    auto.
+    rewrite H1 in H6. clear H1.
+
+    edestruct destr_app_compile'' in H6; eauto.
+    destruct_conjs.
+    assert (trace t2 x0).
+    eapply IHt2; eauto.
+    admit.
+    rewrite H7.
+    inv H4. doit.
+    inv H9. doit. inv H14. doit. simpl in *.
+    dependent destruction H1. doit.
+    simpl in *.
+    assert (cs' = []).
+    inv H10.
+    + eauto.
+    + inv H1.
+    rewrite H1.
+    econstructor; eauto.
   -
     
-        
+    
+    
+    rewrite <- vm_n1_iff_1n in H6.
+    inv H6.
+    admit.
+    
+    
+
           
       
         
