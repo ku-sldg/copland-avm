@@ -1150,6 +1150,17 @@ Lemma vm_ev_stack_deterministic : forall r r' r'' il il' tr tr',
 Proof.
 Admitted. *)
 
+Lemma destr_app_compile : forall r0 r' t1 t2 tr,
+    vm_1n_multi' r0 r' (instr_compiler t1 ++ instr_compiler t2) [] tr
+    -> (exists tr1 r_mid,
+          vm_1n_multi' r0 r_mid (instr_compiler t1) [] tr1 /\
+          exists tr2,
+            vm_1n_multi' r_mid r' (instr_compiler t2) [] tr2).
+Proof.
+  intros.
+  
+Admitted.
+
 Lemma vm_lstar_trace: forall r r' t tr,
     (*well_formed t -> *)
     vm_1n_multi' r r'
@@ -1157,6 +1168,110 @@ Lemma vm_lstar_trace: forall r r' t tr,
              tr ->
     trace t tr.
 Proof.
+  intros.
+  assert (tr <> []). admit.
+  generalize dependent r.
+  generalize dependent r'.
+  generalize dependent tr.
+  induction t; intros.
+  - destruct a; simpl.
+    + simpl.
+      inv H.
+      inv H1. inv H8.
+      inv H2.
+      * simpl. econstructor.
+      * inv H.
+    + simpl.
+      inv H.
+      inv H1. inv H8.
+      inv H2.
+      * simpl. econstructor.
+      * inv H.
+    + simpl.
+      inv H.
+      inv H1. inv H8.
+      inv H2.
+      * simpl. econstructor.
+      * inv H.
+    + simpl.
+      inv H.
+      inv H1. inv H8.
+      inv H2.
+      * simpl. econstructor.
+      * inv H.
+    + simpl.
+      inv H.
+      inv H1. inv H8.
+      inv H2.
+      * simpl. econstructor.
+      * inv H.
+  - inv H.
+    dependent destruction x'.
+    inv H1. inv H10.
+    inv H2.
+    simpl. rewrite app_nil_r.
+    
+    econstructor.
+    eapply IHt.
+    admit.
+    admit. (* TODO: are these two axioms?? *)
+    inv H.
+  - simpl in H.
+    edestruct destr_app_compile in H; eauto.
+    (*assert
+      (exists tr1 r_mid,
+          vm_1n_multi' r0 r_mid (instr_compiler t1) [] tr1 /\
+          exists tr2,
+            vm_1n_multi' r_mid r' (instr_compiler t2) [] tr2). 
+
+
+    eapply destr_app_compile; eauto. *)
+
+    destruct_conjs.
+    assert (tr = x ++ H3).
+    admit.
+    subst.
+    econstructor.
+    eapply IHt1.
+    unfold not. intros.
+    subst.
+    inv H2.
+    + admit. (* TODO: compile not empty lemma *)
+    + dependent destruction x'.
+      inv H9.
+      * admit.
+      * admit.
+
+    + eassumption.
+    + eapply IHt2.
+      unfold not. intros.
+      subst.
+      inv H4.
+      * admit.
+      * admit.
+      * eassumption.
+  -
+    
+        
+          
+      
+        
+      
+      
+      
+    
+      
+  -
+    
+      
+    
+    
+    + congruence.
+    + dependent destruction H1.
+      
+      
+    
+    
 
 
   
