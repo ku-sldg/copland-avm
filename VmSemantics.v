@@ -40,6 +40,9 @@ Definition pop_stackr (x:vm_accum) : (EvidenceC*vm_accum) :=
 Definition remote_events (t:AnnoTerm) : (list Ev).
 Admitted.
 
+Axiom remote_events_axiom : forall t tr,
+    trace t tr -> remote_events t = tr.
+
 Definition prim_trace (i:nat) (a:Prim_Instr) : (list Ev) :=
   match a with
   | copy => [Term.copy i]
@@ -226,16 +229,23 @@ Proof.
 Defined.
 
 
-Lemma vm_1n_multi_transitive:
+Lemma vm_1n_multi_transitive: 
   forall r r' r'' il1 il2 resl tr1 tr2,
     vm_1n_multi' r r' il1 [] tr1 ->
     vm_1n_multi' r' r'' il2 resl tr2 ->
-    vm_1n_multi'  r r'' (il1 ++ il2) resl (tr1 ++ tr2).
+    vm_1n_multi' r r'' (il1 ++ il2) resl (tr1 ++ tr2).
 Proof.
   intros.
   (*unfold vm_1n_multi'. *)
   eapply vm_1n_multi_transitive'; eauto.
 Defined.
+
+(*
+Lemma vm_1n_multi_transitive': forall e e' e'' s s' s'' il1 il2 tr1 tr2 resl,
+    vm_1n_multi (mk_vm_config e il1 s) (mk_vm_config e' [] s') tr1 ->
+    vm_1n_multi (mk_vm_config e' il2 s') (mk_vm_config e'' resl s'') tr2 ->
+    vm_1n_multi (mk_vm_config e (il1 ++ il2) s) (mk_vm_config e'' resl s'') (tr1 ++ tr2).
+Proof.*)
 
   
 
@@ -250,15 +260,15 @@ Proof.
 Defined.
 
   
-(*
-Lemma vm_1n_multi_transitive_done: forall e e' e'' s s' s'' il1 il2 tr1 tr2,
+
+Lemma vm_1n_multi_transitive_done': forall e e' e'' s s' s'' il1 il2 tr1 tr2,
     vm_1n_multi (mk_vm_config e il1 s) (mk_vm_config e' [] s') tr1 ->
     vm_1n_multi (mk_vm_config e' il2 s') (mk_vm_config e'' [] s'') tr2 ->
     vm_1n_multi (mk_vm_config e (il1 ++ il2) s) (mk_vm_config e'' [] s'') (tr1 ++ tr2).
 Proof.
   intros.
-  eapply vm_1n_multi_transitive; eauto.
-Defined. *)
+  eapply vm_1n_multi_transitive'; eauto.
+Defined.
 
 Definition vm_n1_multi : step_relation vm_config Ev := refl_trans_n1_trace vm_step'.
 
@@ -867,9 +877,117 @@ Proof.
     
   
 Admitted.
-*)
+ *)
 
+Lemma vm_config_correct : forall e s t tr,
+    trace t tr ->
+    vm_1n_multi (mk_vm_config e                  (instr_compiler t) s)
+                (mk_vm_config (eval (unanno t) e)[]                 s)
+                tr.
+Proof with doit.
+  intros.
+  generalize dependent e.
+  generalize dependent s.
+  generalize dependent tr.
+  induction t; intros; simpl in *.
+  - inv H.
+    destruct a; eapply step_implies_lstar; econstructor.
+  - inv H.
+    (* assert  ((req (fst r) n (unanno t) :: tr1 ++ [rpy (Nat.pred (snd r)) n]) =
+             ((req (fst r) n (unanno t) :: tr1) ++ [rpy (Nat.pred (snd r)) n])).
+    simpl. eauto. *)
+    
+    eapply step_implies_lstar.
+    rewrite <- remote_events_axiom with (t:=t) (tr:=tr1).
 
+    eapply reqrpy_step. assumption.
+  - inv H.
+    eapply vm_1n_multi_trans with (y:=mk_vm_config (eval (unanno t1) e) (instr_compiler t2) s).
+    Lemma jj : forall e e' s t rest tr,
+      vm_1n_multi
+           {| cec := e; cvm_list := instr_compiler t; cvm_stack := s |}
+           {| cec := e'; cvm_list := []; cvm_stack := s |} tr ->
+
+      vm_1n_multi
+        {| cec := e;
+           cvm_list := instr_compiler t ++ rest ;
+           cvm_stack := s |}
+        {| cec := e';
+           cvm_list := rest;
+           cvm_stack := s |} tr.
+    Proof.
+      intros.
+      assert (rest = [] ++ rest). simpl. reflexivity.
+      rewrite H0 at 2.
+      assert (tr = tr ++ []). rewrite app_nil_r. auto.
+      rewrite H1.
+      eapply vm_1n_multi_transitive'. apply H.
+      simpl. econstructor.
+    Defined.
+
+    apply jj; eauto.
+    apply IHt2; eauto.
+  - destruct s.
+    inv H.
+    assert ( (Term.split (fst r) :: tr0 ++ tr1 ++ [join (Nat.pred (snd r))]) =
+             ([Term.split (fst r)] ++ tr0 ++ tr1 ++ [join (Nat.pred (snd r))])).
+    auto.
+    rewrite H. clear H.
+    econstructor 2.
+    econstructor.
+    econstructor. doit.
+    eapply vm_1n_multi_transitive'.
+    apply IHt1; eauto.
+    assert ((tr1 ++ [join (Nat.pred (snd r))]) = [] ++ (tr1 ++ [join (Nat.pred (snd r))])). auto.
+    rewrite H.
+    econstructor.
+    econstructor.
+    econstructor.
+    eapply vm_1n_multi_transitive'.
+    apply IHt2; eauto.
+    apply step_implies_lstar.
+    econstructor.
+  - destruct s.
+    (*assert ([asplit (fst r) s s1;
+                abep (range t1) (range t2) (instr_compiler t1)
+                     (instr_compiler t2); ajoinp (Nat.pred (snd r))] =
+            [asplit (fst r) s s1] ++ 
+                [abep (range t1) (range t2) (instr_compiler t1)
+                      (instr_compiler t2)] ++ [ajoinp (Nat.pred (snd r))]).
+    auto.
+    rewrite H0.*)
+    inv H.
+    assert ((Term.split (fst r) :: tr2 ++ [join (Nat.pred (snd r))]) =
+            [(Term.split (fst r))] ++ tr2 ++ [join (Nat.pred (snd r))]). auto.
+    rewrite H.
+    econstructor.
+    econstructor.
+    econstructor.
+    econstructor.
+    econstructor.
+    econstructor.
+    Axiom hihi : forall t tr,
+      trace t tr ->
+      parallel_vm_events (instr_compiler t) = tr.
+
+    rewrite hihi with (t:=t1) (tr:=tr0).
+    rewrite hihi with (t:=t2) (tr:=tr1).
+    assumption.
+    assumption.
+    assumption.
+    doit.
+    apply step_implies_lstar.
+    rewrite para_eval_vm.
+    rewrite para_eval_vm.
+    econstructor.
+Defined.
+
+    
+    
+    
+  
+
+(*
 Lemma vm_config_correct : forall e e' s s' t tr,
     vm_1n_multi (mk_vm_config e (instr_compiler t) s)
                 (mk_vm_config e'[]                 s')
@@ -943,7 +1061,7 @@ Proof with doit.
     inv H4.
   -
 Admitted.
-  
+  *)
 
 
 
@@ -1013,7 +1131,7 @@ Proof.
     rewrite para_eval_vm.
     eauto.
 Defined. *)
-
+(*
 Lemma stack_restore_vm : forall e e' s s' t tr,
     vm_lstar (mk_accum e s) (mk_accum e' s')
              (instr_compiler t) [] tr ->
@@ -1021,23 +1139,27 @@ Lemma stack_restore_vm : forall e e' s s' t tr,
 Proof.
   intros.
   edestruct vm_config_correct; eauto.
-Defined.
+Defined.*)
 
+(*
 Lemma vm_ev_stack_deterministic : forall r r' r'' il il' tr tr',
   vm_lstar r r' il il' tr ->
   vm_lstar r r'' il il' tr' ->
   vm_stack r' = vm_stack r'' /\
   ec r' = ec r''.
 Proof.
-Admitted.
+Admitted. *)
 
 Lemma vm_lstar_trace: forall r r' t tr,
     (*well_formed t -> *)
-    vm_lstar r r'
+    vm_1n_multi' r r'
              (instr_compiler t) []
              tr ->
     trace t tr.
 Proof.
+
+
+  
 Admitted.
 
 Theorem vm_ordered : forall t e e' s tr ev0 ev1,
