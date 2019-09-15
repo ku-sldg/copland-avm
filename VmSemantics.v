@@ -1380,12 +1380,17 @@ Proof.
 Defined.
 
 
-Lemma vm_config_deterministic : forall e e' e'' s s' s'' il il' tr tr',
-  vm_1n_multi (mk_vm_config e il s) (mk_vm_config e' il' s') tr ->
-  vm_1n_multi (mk_vm_config e il s) (mk_vm_config e'' il' s'') tr' ->
-  e' = e'' /\
-  s' = s''.
-Proof.
+Lemma vm_config_deterministic : forall e e' e'' s s' s'' (*r r' r''*) tr tr' t,
+    trace t tr ->
+    trace t tr' ->
+    (*vm_1n_multi' r r' (instr_compiler t) [] tr ->
+    vm_1n_multi' r r'' (instr_compiler t) [] tr' -> 
+    r' = r''. *)
+    vm_1n_multi (mk_vm_config e (instr_compiler t) s) (mk_vm_config e' [] s') tr ->
+    vm_1n_multi (mk_vm_config e (instr_compiler t) s) (mk_vm_config e'' [] s'') tr' ->
+    e' = e'' /\
+    s' = s''.
+Proof.  
 Admitted.
 
 Lemma vm_config_correct' : forall e e' s s' t tr,
@@ -1411,9 +1416,13 @@ Proof.
          {| cec := eval (unanno t) e; cvm_list := []; cvm_stack := s |} tr).
   apply vm_config_correct; eauto.
   unfold vm_1n_multi' in H. doit.
-  edestruct vm_config_deterministic.
-  apply H. apply H1.
-  split; auto.
+  edestruct vm_config_deterministic. {
+    apply H0. }
+  apply H0.
+  unfold vm_1n_multi'.
+  apply H.
+  apply H1.
+  split; eauto.
 Defined.
   
 
