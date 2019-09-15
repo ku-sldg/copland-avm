@@ -6,6 +6,10 @@ Require Import Coq.Program.Tactics.
 Require Import Coq.Program.Equality.
 
 Require Import Verdi.Net.
+Require Import Verdi.LockServ.
+(*Require Import StructTact.Fin.*)
+Require Import Verdi.Verdi.
+
 
 Set Nested Proofs Allowed.
 
@@ -185,7 +189,7 @@ Proof.
   - inv H.
     rewrite <- app_assoc.
     assert ((i :: l) ++ il2 = i :: (l ++ il2)). reflexivity.
-    rewrite H.
+    rewrite H2.
     econstructor.
     econstructor. eassumption.
     inv H.
@@ -417,8 +421,12 @@ Lemma ffff_gen_helperrr : forall r r' il1 il1' il2 tr,
   (il1 <> []) ->
   vm_1n_multi' r r' il1 il1' tr ->
   vm_1n_multi' r r' (il1 ++ il2) (il1' ++ il2) tr.
-Proof.
+Proof. (*
   intros.
+  induction H0 using refl_trans_1n_trace_n1_ind.*)
+
+
+  (*
   inv H0.
   - assert (r = r'). admit. rewrite H0.
     econstructor.
@@ -437,6 +445,8 @@ Proof.
     econstructor.
 
     apply afaf.  rewrite <- record_congr in H9. apply H9. clear H0. clear H9.
+*)
+
     (*
     assert (cs' = [] ++ cs').(* rewrite app_nil_r.*) auto.
 
@@ -1007,6 +1017,13 @@ Lemma destr_app_compile : forall r0 r' t1 t2 tr r,
             tr = tr1 ++ tr2).
 Proof. (*
   intros.
+  induction H using refl_trans_1n_trace_n1_ind.
+  admit. *)
+
+
+
+(*
+  intros.
   dependent induction t1.
   admit.
   apply IHn.*)
@@ -1088,6 +1105,48 @@ Lemma destr_app_compile'': forall r0 r' t2 tr n,
 Proof.
 Admitted.
 
+(*
+Lemma p_prop (x:vm_config) (y:vm_config) (tr:list Ev) : Prop :=
+  vm_list x =  *)
+Check vm_config.
+Print vm_config.
+
+(*Definition init_vm_config (il:list AnnoInstr) := mk_vm_config *)
+Print vm_config.
+Check tail.
+
+Lemma cross_relation e t s :
+  forall (P : vm_config -> list Ev -> Prop),
+    P (mk_vm_config e (instr_compiler t) s) [] ->
+    (forall st st' tr ev i,
+        vm_1n_multi (mk_vm_config e (instr_compiler t) s) st tr ->
+        P st tr ->
+        vm_step (mk_accum (cec st) (cvm_stack st)) i st' ev ->
+        P (mk_vm_config (ec st') (tail (cvm_list st)) (vm_stack st')) (tr ++ ev)) ->
+    forall st tr,
+      vm_1n_multi (mk_vm_config e (instr_compiler t) s) st tr ->
+      P st tr.
+Proof using.
+  intros.
+  find_apply_lem_hyp refl_trans_1n_n1_trace.
+  prep_induction H1.
+  induction H1; intros; subst; eauto.
+  dependent destruction x''.
+  inv H.
+  apply H3.
+  eapply H3; eauto.
+  - apply refl_trans_n1_1n_trace. auto.
+  - apply IHrefl_trans_n1_trace; auto.
+Qed.
+  
+Lemma t_prop e t s :
+  forall st tr,
+    vm_1n_multi (mk_vm_config e (instr_compiler t) s) st tr ->
+    True.
+Proof.
+  apply cross_relation.
+  
+
 Lemma vm_lstar_trace: forall r r' t tr,
     (*well_formed t -> *)
     vm_1n_multi' r r'
@@ -1095,6 +1154,9 @@ Lemma vm_lstar_trace: forall r r' t tr,
              tr ->
     trace t tr.
 Proof.
+  intros.
+  induction H using refl_trans_1n_trace_n1_ind.
+  admit.
   intros.
   (*assert (tr <> []). admit.*)
   generalize dependent r.
