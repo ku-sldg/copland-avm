@@ -52,9 +52,10 @@ Admitted.
 
 Record vm_config : Type :=
   mk_config
-    {vm_ev:EvidenceC ; 
-      vm_stack:ev_stack ;
-     vm_list:list AnnoInstr}.
+    {vm_ev:EvidenceC ;
+     vm_list:list AnnoInstr ;
+      vm_stack:ev_stack
+     }.
 
 Definition build_comp (*(s:ev_stack)*) (i:AnnoInstr): VM unit :=
   match i with
@@ -124,83 +125,15 @@ Inductive vm_step : vm_config -> vm_config -> (list Ev) -> Prop :=
     let e' := st_ev res_st in
     let s' := st_stack res_st in
     let tr' := st_trace res_st in
-    (*let '{| st_ev := e'; st_stack := s'; st_trace := tr' |} := (execSt (mk_st e s []) (build_comp i)) in*)
-    vm_step (mk_config e s ([i]++l)) (mk_config e' s' l) tr'.
-(*
-Inductive vm_step: vm_accum -> AnnoInstr -> vm_accum -> (list Ev) -> Prop :=
-| prim_step: forall r i a, vm_step r (aprimInstr i a) (update_ev (prim_ev a (ec r)) r) (prim_trace i a)
-| split_step: forall r i sp1 sp2,
-    let e1 := splitEv sp1 (ec r) in
-    let e2 := splitEv sp2 (ec r) in
-    let r' := update_ev e1 r in
-    let r'' := push_stackr e2 r' in
-    (*let r''' := add_trace [Term.split i] r'' in *)
-    vm_step r (asplit i sp1 sp2) r'' [Term.split i]
-| joins_step: forall r i,
-    (*let (er,r') := pop_stackr r in *)
-    let e := (ec r) in
-    let er := (fst (pop_stackr r)) in
-    let r' := (snd (pop_stackr r)) in
-    let r'' := update_ev (ssc er e) r' in
-    (*let r''' := add_trace [Term.join i] r'' in*)
-    vm_step r (ajoins i) r'' [Term.join i]
-| joinp_step: forall r i,
-    (*let (er,r') := pop_stackr r in *)
-    let e := (ec r) in
-    let er := (fst (pop_stackr r)) in
-    let r' := (snd (pop_stackr r)) in
-    let r'' := update_ev (ppc e er) r' in
-    (*let r''' := add_trace [Term.join i] r'' in*)
-    vm_step r (ajoinp i) r'' [Term.join i]
-| besr_step: forall r,
-    let e := (ec r) in
-    let popped_r := pop_stackr r in
-    let er := fst (popped_r) in (*(fst (pop_stackr r)) in*)
-    let r' := snd (popped_r) (*(snd (pop_stackr r))*) in
-    let r'' := update_ev er r' in
-    let r''' := push_stackr e r'' in
-    vm_step r (abesr) r''' []
-| reqrpy_step: forall r rg q annt,
-    let e := (ec r) in
-    let r' := update_ev (toRemote (unanno annt) q e) r in
-    let reqi := (fst rg) in
-    let rpyi := Nat.pred (snd rg) in
-    let newTrace :=
-        [req reqi q (unanno annt)] ++ (remote_events annt) ++ [rpy rpyi q] in     
-    (*let r'' := add_trace newTrace r' in*)
-    vm_step r (areqrpy rg q annt) r' newTrace
-| bep_step: forall r rg1 rg2 il1 il2 tr,
-    let e := (ec r) in
-    let er := (fst (pop_stackr r)) in
-    let r' := (snd (pop_stackr r)) in
-    let res1 := parallel_att_vm_thread il1 e in
-    let res2 := parallel_att_vm_thread il2 er in
-    let el1 := parallel_vm_events il1 in
-    let el2 := parallel_vm_events il2 in
-    let r'' := update_ev res1 r' in
-    let r''' := push_stackr res2 r'' in
-    shuffle el1 el2 tr ->
-    vm_step r (abep rg1 rg2 il1 il2) r''' tr.
-
-Check step_relation.
-Print step_relation.
-
-Record vm_config : Type := mk_vm_config
-                            { cec:EvidenceC ;
-                              cvm_list:(list AnnoInstr) ;
-                              cvm_stack:ev_stackc }.
-
-Inductive vm_step' : vm_config -> vm_config -> list Ev -> Prop  :=
-| doStep : forall e e' s s' i l tr,
-    vm_step (mk_accum e s) i (mk_accum e' s') tr ->
-    vm_step' (mk_vm_config e ([i] ++ l) s) (mk_vm_config e' l s') tr.*)
+    vm_step (mk_config e ([i]++l) s) (mk_config e' l s') tr'.
 
 Definition vm_1n_multi : step_relation vm_config Ev := refl_trans_1n_trace vm_step.
 
+(*
 Definition vm_1n_multi' (acc1:vm_accum) (acc2:vm_accum) (el_in:list AnnoInstr) (el_out:list AnnoInstr) (tr:list Ev) :=
   vm_1n_multi (mk_vm_config (ec acc1) el_in (vm_stack acc1))
               (mk_vm_config (ec acc2) el_out (vm_stack acc2))
-              tr.
+              tr.*)
 
 Lemma vm_1n_multi_trans : forall x y z tr tr',
   vm_1n_multi x y tr ->
@@ -210,21 +143,32 @@ Proof.
   apply refl_trans_1n_trace_trans.
 Defined.
 
-Lemma ha : forall r r' r'' il1 il2 resl tr1 tr2,
+Lemma ha : forall e e' e'' s s' s'' il1 il2 resl tr1 tr2,
+  vm_1n_multi (mk_config e  (il1 ++ il2) s) (mk_config e' il2 s') tr1 ->
+  vm_1n_multi (mk_config e' il2 s') (mk_config e'' resl s'') tr2  ->
+  vm_1n_multi (mk_config e  (il1 ++ il2) s) (mk_config e'' resl s'') (tr1 ++ tr2).
+Proof.
+  intros.
+  eapply vm_1n_multi_trans; eauto.
+Defined.
+
+(*
+Lemma ha' : forall r r' r'' il1 il2 resl tr1 tr2,
   vm_1n_multi' r r' (il1 ++ il2) il2 tr1 ->
   vm_1n_multi' r' r'' il2 resl tr2  ->
   vm_1n_multi' r r'' (il1 ++ il2) resl (tr1 ++ tr2).
 Proof.
   intros.
   eapply vm_1n_multi_trans; eauto.
-Defined.
+Defined.*)
 
-Lemma vm_1n_multi_transitive':
+
+Lemma vm_1n_multi_transitive:
   forall e e' e'' s s' s'' il1 il2 resl tr1 tr2,
-    vm_1n_multi (mk_vm_config e il1 s) (mk_vm_config e' [] s') tr1 ->
-    vm_1n_multi (mk_vm_config e' il2 s') (mk_vm_config e'' resl s'') tr2 ->
-    vm_1n_multi (mk_vm_config e (il1 ++ il2) s) (mk_vm_config e'' resl s'') (tr1 ++ tr2).     
-Proof.
+    vm_1n_multi (mk_config e il1 s) (mk_config e' [] s') tr1 ->
+    vm_1n_multi (mk_config e' il2 s') (mk_config e'' resl s'') tr2 ->
+    vm_1n_multi (mk_config e (il1 ++ il2) s) (mk_config e'' resl s'') (tr1 ++ tr2).     
+Proof. (*
   intros.
   generalize dependent e''.
   generalize dependent s''.
@@ -233,17 +177,30 @@ Proof.
   generalize dependent il2.
   dependent induction H; intros.
   - eauto.
-  - inv H.
-    rewrite <- app_assoc.
-    assert ((i :: l) ++ il2 = i :: (l ++ il2)). reflexivity.
-    rewrite H2.
+  - dependent destruction x'.
+    inv H.
+    (*rewrite <- app_assoc.*)
+    assert ([i] ++ vm_list0 ++ il2 = (i :: vm_list0) ++ il2). reflexivity.
+    rewrite <- H2. clear H2. (* TODO: Ltac routine that puts lists in correct normal form *)
+    eapply vm_1n_multi_trans with 
+    apply RT1nTStep with (x':=(mk_config e'0 (l++il2) s'0)).
+    eassumption.
+    apply with .
     econstructor.
+    apply H.
+    econstructor. invc H.
+    subst.
+
+    eassumption.
     econstructor. eassumption.
     inv H.
     eapply IHrefl_trans_1n_trace; eauto.
-Defined.
+Defined. *)
+Admitted.
 
-Lemma vm_1n_multi_transitive: 
+
+(*
+Lemma vm_1n_multi_transitive': 
   forall r r' r'' il1 il2 resl tr1 tr2,
     vm_1n_multi' r r' il1 [] tr1 ->
     vm_1n_multi' r' r'' il2 resl tr2 ->
@@ -252,9 +209,10 @@ Proof.
   intros.
   (*unfold vm_1n_multi'. *)
   eapply vm_1n_multi_transitive'; eauto.
-Defined.
+Defined.*)
 
-Lemma vm_1n_multi_transitive_done: forall r r' r'' il1 il2 tr1 tr2,
+(*
+Lemma vm_1n_multi_transitive'_done: forall r r' r'' il1 il2 tr1 tr2,
     vm_1n_multi' r r' il1 [] tr1 ->
     vm_1n_multi' r' r'' il2 [] tr2 ->
     vm_1n_multi' r r'' (il1 ++ il2) [] (tr1 ++ tr2).
@@ -262,17 +220,18 @@ Proof.
   intros.
   eapply vm_1n_multi_transitive; eauto.
 Defined.
+*)
 
-Lemma vm_1n_multi_transitive_done': forall e e' e'' s s' s'' il1 il2 tr1 tr2,
-    vm_1n_multi (mk_vm_config e il1 s) (mk_vm_config e' [] s') tr1 ->
-    vm_1n_multi (mk_vm_config e' il2 s') (mk_vm_config e'' [] s'') tr2 ->
-    vm_1n_multi (mk_vm_config e (il1 ++ il2) s) (mk_vm_config e'' [] s'') (tr1 ++ tr2).
+Lemma vm_1n_multi_transitive_done: forall e e' e'' s s' s'' il1 il2 tr1 tr2,
+    vm_1n_multi (mk_config e il1 s) (mk_config e' [] s') tr1 ->
+    vm_1n_multi (mk_config e' il2 s') (mk_config e'' [] s'') tr2 ->
+    vm_1n_multi (mk_config e (il1 ++ il2) s) (mk_config e'' [] s'') (tr1 ++ tr2).
 Proof.
   intros.
-  eapply vm_1n_multi_transitive'; eauto.
+  eapply vm_1n_multi_transitive; eauto.
 Defined.
 
-Definition vm_n1_multi : step_relation vm_config Ev := refl_trans_n1_trace vm_step'.
+Definition vm_n1_multi : step_relation vm_config Ev := refl_trans_n1_trace vm_step.
 
 Lemma vm_n1_implies_1n : forall r r' tr,
     vm_n1_multi r r' tr -> vm_1n_multi r r' tr.
@@ -288,13 +247,13 @@ Proof.
   apply refl_trans_1n_n1_trace; eauto.
 Defined.
 
-Lemma vm_n1_iff_1n : forall r r' tr,
-    vm_n1_multi r r' tr <-> vm_1n_multi r r' tr.
+Lemma vm_1n_iff_n1 : forall r r' tr,
+    vm_1n_multi r r' tr <-> vm_n1_multi r r' tr.
 Proof.
   intros.
   split.
-  - apply vm_n1_implies_1n.
   - apply vm_1n_implies_n1.
+  - apply vm_n1_implies_1n.
 Defined.
 
 Definition vm_n1_multi' (acc1:vm_accum) (acc2:vm_accum) (el_in:list AnnoInstr) (el_out:list AnnoInstr) (tr:list Ev) :=
@@ -965,6 +924,83 @@ Defined.
 
 
 (******* ABANDONED PROOFS ********)
+
+(******** Old vm_step: *******)
+
+(*
+Inductive vm_step: vm_accum -> AnnoInstr -> vm_accum -> (list Ev) -> Prop :=
+| prim_step: forall r i a, vm_step r (aprimInstr i a) (update_ev (prim_ev a (ec r)) r) (prim_trace i a)
+| split_step: forall r i sp1 sp2,
+    let e1 := splitEv sp1 (ec r) in
+    let e2 := splitEv sp2 (ec r) in
+    let r' := update_ev e1 r in
+    let r'' := push_stackr e2 r' in
+    (*let r''' := add_trace [Term.split i] r'' in *)
+    vm_step r (asplit i sp1 sp2) r'' [Term.split i]
+| joins_step: forall r i,
+    (*let (er,r') := pop_stackr r in *)
+    let e := (ec r) in
+    let er := (fst (pop_stackr r)) in
+    let r' := (snd (pop_stackr r)) in
+    let r'' := update_ev (ssc er e) r' in
+    (*let r''' := add_trace [Term.join i] r'' in*)
+    vm_step r (ajoins i) r'' [Term.join i]
+| joinp_step: forall r i,
+    (*let (er,r') := pop_stackr r in *)
+    let e := (ec r) in
+    let er := (fst (pop_stackr r)) in
+    let r' := (snd (pop_stackr r)) in
+    let r'' := update_ev (ppc e er) r' in
+    (*let r''' := add_trace [Term.join i] r'' in*)
+    vm_step r (ajoinp i) r'' [Term.join i]
+| besr_step: forall r,
+    let e := (ec r) in
+    let popped_r := pop_stackr r in
+    let er := fst (popped_r) in (*(fst (pop_stackr r)) in*)
+    let r' := snd (popped_r) (*(snd (pop_stackr r))*) in
+    let r'' := update_ev er r' in
+    let r''' := push_stackr e r'' in
+    vm_step r (abesr) r''' []
+| reqrpy_step: forall r rg q annt,
+    let e := (ec r) in
+    let r' := update_ev (toRemote (unanno annt) q e) r in
+    let reqi := (fst rg) in
+    let rpyi := Nat.pred (snd rg) in
+    let newTrace :=
+        [req reqi q (unanno annt)] ++ (remote_events annt) ++ [rpy rpyi q] in     
+    (*let r'' := add_trace newTrace r' in*)
+    vm_step r (areqrpy rg q annt) r' newTrace
+| bep_step: forall r rg1 rg2 il1 il2 tr,
+    let e := (ec r) in
+    let er := (fst (pop_stackr r)) in
+    let r' := (snd (pop_stackr r)) in
+    let res1 := parallel_att_vm_thread il1 e in
+    let res2 := parallel_att_vm_thread il2 er in
+    let el1 := parallel_vm_events il1 in
+    let el2 := parallel_vm_events il2 in
+    let r'' := update_ev res1 r' in
+    let r''' := push_stackr res2 r'' in
+    shuffle el1 el2 tr ->
+    vm_step r (abep rg1 rg2 il1 il2) r''' tr.
+
+Check step_relation.
+Print step_relation.
+
+Record vm_config : Type := mk_vm_config
+                            { cec:EvidenceC ;
+                              cvm_list:(list AnnoInstr) ;
+                              cvm_stack:ev_stackc }.
+
+Inductive vm_step' : vm_config -> vm_config -> list Ev -> Prop  :=
+| doStep : forall e e' s s' i l tr,
+    vm_step (mk_accum e s) i (mk_accum e' s') tr ->
+    vm_step' (mk_vm_config e ([i] ++ l) s) (mk_vm_config e' l s') tr.*)
+
+
+
+
+
+
 
 
 (*
