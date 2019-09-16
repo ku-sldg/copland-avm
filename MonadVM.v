@@ -35,6 +35,12 @@ Definition runSt {S A} (s : S) (h : St S A) :
   (option A) * S % type :=
   h s.
 
+Definition execSt {S A} (s : S) (h : St S A) :
+  S :=
+  snd (h s).
+
+
+
 Definition nop {S : Type} := @ret S _ tt.
 
 Notation "a >> b" := (bind a (fun _ => b)) (at level 50).

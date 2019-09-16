@@ -52,10 +52,11 @@ Admitted.
 
 Record vm_config : Type :=
   mk_config
-    {vm_stack:ev_stack ;
+    {vm_ev:EvidenceC ; 
+      vm_stack:ev_stack ;
      vm_list:list AnnoInstr}.
 
-Definition build_comp (s:ev_stack) (i:AnnoInstr): VM unit :=
+Definition build_comp (*(s:ev_stack)*) (i:AnnoInstr): VM unit :=
   match i with
   | aprimInstr x a =>
     modify_evm (prim_ev a) ;;
@@ -64,43 +65,68 @@ Definition build_comp (s:ev_stack) (i:AnnoInstr): VM unit :=
     e <- get_ev ;;
       p <- split_evm x sp1 sp2 e;;
       let '(e1,e2) := p in
-      push_stackm e2 ;;
-                  push_stackm e1
+      put_ev e1 ;;
+      push_stackm e2
+                  (*push_stackm e1*)
   | ajoins i =>    (*let (er,r') := pop_stackr r in *)
-    e <- pop_stackm ;;
+    (*e <- pop_stackm ;;*)
+    e <- get_ev ;;
       er <- pop_stackm ;;
       push_stackm (ssc er e) ;;
       add_tracem [Term.join i]
   | ajoinp i =>
-    e <- pop_stackm ;;
+    (*e <- pop_stackm ;;*)
+    e <- get_ev ;;
       er <- pop_stackm ;;
       push_stackm (ppc e er) ;;
       add_tracem [Term.join i]
   | abesr =>
-    e <- pop_stackm ;;
+    (*e <- pop_stackm ;;*)
+    e <- get_ev ;;
       er <- pop_stackm ;;
       push_stackm e ;;
-      push_stackm er
+      put_ev er
+  | areqrpy rg q annt =>
+    e <- get_ev ;;
+      put_ev (toRemote (unanno annt) q e) ;;
+      let '(reqi,rpyi_last) := rg in
+      let rpyi := Nat.pred rpyi_last in
+      let newTrace :=
+          [req reqi q (unanno annt)] ++ (remote_events annt) ++ [rpy rpyi q] in
+      add_tracem newTrace
+  | abep rg1 rg2 il1 il2 =>
+    e <- get_ev ;;
+      er <- pop_stackm ;;
+      let res1 := parallel_att_vm_thread il1 e in
+      let res2 := parallel_att_vm_thread il2 er in
+      let el1 := parallel_vm_events il1 in
+      let el2 := parallel_vm_events il2 in
+      put_ev res1 ;;
+             push_stackm res2
+             (* TODO: need to add axioms somehow to capture
+                trace of tr s.t. (shuffle el1 el2 = tr).
 
-      (*
-      let e := (ec r) in
-    let popped_r := pop_stackr r in
-    let er := fst (popped_r) in (*(fst (pop_stackr r)) in*)
-    let r' := snd (popped_r) (*(snd (pop_stackr r))*) in
-    let r'' := update_ev er r' in
-    let r''' := push_stackr e r'' in
-    vm_step r (abesr) r''' [] *)
-
-  | _ => ret tt
+                Perhaps we introduce a "start thread" event, where that event holds the events associated with the instructions executed.  Would require some sort of environment to listen for results from outstanding threads, and axioms asserting we had valid VM threads available to execute them *)
   end.
-    
+
+(* 
+Record vm_config : Type :=
+  mk_config
+    {vm_ev:EvidenceC ; 
+      vm_stack:ev_stack ;
+     vm_list:list AnnoInstr}.
+*)
   
 
 Inductive vm_step : vm_config -> vm_config -> (list Ev) -> Prop :=
-| do_vmStep : forall i l s,
-    
-    vm_step (mk_config ([i]++l) s) (
-
+| do_vmStep : forall i l e s,
+    let res_st := execSt (mk_st e s []) (build_comp i) in
+    let e' := st_ev res_st in
+    let s' := st_stack res_st in
+    let tr' := st_trace res_st in
+    (*let '{| st_ev := e'; st_stack := s'; st_trace := tr' |} := (execSt (mk_st e s []) (build_comp i)) in*)
+    vm_step (mk_config e s ([i]++l)) (mk_config e' s' l) tr'.
+(*
 Inductive vm_step: vm_accum -> AnnoInstr -> vm_accum -> (list Ev) -> Prop :=
 | prim_step: forall r i a, vm_step r (aprimInstr i a) (update_ev (prim_ev a (ec r)) r) (prim_trace i a)
 | split_step: forall r i sp1 sp2,
@@ -167,9 +193,9 @@ Record vm_config : Type := mk_vm_config
 Inductive vm_step' : vm_config -> vm_config -> list Ev -> Prop  :=
 | doStep : forall e e' s s' i l tr,
     vm_step (mk_accum e s) i (mk_accum e' s') tr ->
-    vm_step' (mk_vm_config e ([i] ++ l) s) (mk_vm_config e' l s') tr.
+    vm_step' (mk_vm_config e ([i] ++ l) s) (mk_vm_config e' l s') tr.*)
 
-Definition vm_1n_multi : step_relation vm_config Ev := refl_trans_1n_trace vm_step'.
+Definition vm_1n_multi : step_relation vm_config Ev := refl_trans_1n_trace vm_step.
 
 Definition vm_1n_multi' (acc1:vm_accum) (acc2:vm_accum) (el_in:list AnnoInstr) (el_out:list AnnoInstr) (tr:list Ev) :=
   vm_1n_multi (mk_vm_config (ec acc1) el_in (vm_stack acc1))
