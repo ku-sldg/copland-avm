@@ -1,4 +1,5 @@
-Require Import More_lists Preamble Term Trace LTS Instr Event_system Term_system.
+Require Import More_lists Preamble Term Trace LTS Event_system Term_system.
+Require Import MyStack Instr.
 
 Require Import List.
 Import ListNotations.
@@ -9,12 +10,15 @@ Require Import Verdi.Net.
 Require Import Verdi.LockServ.
 Require Import Verdi.Verdi.
 
-
 Set Nested Proofs Allowed.
 
 (** * EvidenceC Stack *)
-Definition ev_stackc := list EvidenceC.
-Definition empty_stackc : ev_stackc := [].
+Definition ev_stack := gen_stack EvidenceC.
+Check empty_stack.
+
+Compute (pop_stack EvidenceC [mtc]).
+Check pop_stack.
+Check empty_stack.
 
 Definition push_stackc (e:EvidenceC) (s:ev_stackc) : ev_stackc :=
   (e :: s).
