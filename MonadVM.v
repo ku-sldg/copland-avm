@@ -64,8 +64,9 @@ Ltac monad_unfold :=
 
 (* Specific VM monad *)
 Definition ev_stack := gen_stack EvidenceC.
-Record vm_st : Type := mk_vm_st
-                         {st_stack:ev_stack ;
+Record vm_st : Type := mk_st
+                         {st_ev:EvidenceC ;
+                          st_stack:ev_stack ;
                           st_trace:list Ev}.
 
 Definition VM := St vm_st.
@@ -84,28 +85,57 @@ Definition extractVal (r:vm_st) : nat :=
 Definition test_comp : VM unit :=
   v <- get ;;
     let n := extractVal v in
-    put (mk_vm_st [(ggc mtc n)] []) ;;
+    put (mk_st mtc [(ggc mtc n)] []) ;;
         ret tt.
 
-Definition empty_vm_state := mk_vm_st [(ggc mtc 48)] [].
+Definition empty_vm_state := mk_st mtc [(ggc mtc 48)] [].
 
 Compute (runSt empty_vm_state test_comp).
 
 (* VM monad operations *)
-Definition push_stackr (e:EvidenceC) : VM unit :=
+Definition push_stackm (e:EvidenceC) : VM unit :=
   st <- get ;;
-     let oldStack := st_stack st in
+     let '{| st_ev := e; st_stack := oldStack; st_trace := tr |} := st in
      let newStack := push_stack _ e oldStack in
-     put (mk_vm_st newStack (st_trace st)).
+     put (mk_st e newStack tr).
 
-Definition pop_stackr : VM EvidenceC :=
+Definition pop_stackm : VM EvidenceC :=
   st <- get ;;
-     let oldStack := st_stack st in
+     let '{| st_ev := oldE; st_stack := oldStack; st_trace := tr |} := st in
+     (*let oldStack := st_stack st in*)
      let maybePopped := pop_stack _ oldStack in
      match maybePopped with
      | Some (e,s') =>
-       put (mk_vm_st s' (st_trace st)) ;;
+       put (mk_st oldE s' tr) ;;
            ret e
      | None => failm
      end.
+
+Definition put_ev (e:EvidenceC) : VM unit :=
+  st <- get ;;
+  let '{| st_ev := _; st_stack := s; st_trace := tr |} := st in
+    put (mk_st e s tr).
+
+Definition get_ev : VM EvidenceC :=
+  st <- get ;;
+  ret (st_ev st).
+
+Definition modify_evm (f:EvidenceC -> EvidenceC) : VM unit :=
+  st <- get ;;
+  let '{| st_ev := e; st_stack := s; st_trace := tr |} := st in
+  put (mk_st (f e) s tr).
+
+Definition add_trace (tr':list Ev) : vm_st -> vm_st :=
+  fun '{| st_ev := e; st_stack := s; st_trace := tr |} =>
+    mk_st e s (tr ++ tr').
+
+Definition add_tracem (tr:list Ev) : VM unit :=
+  modify (add_trace tr).
+
+Definition split_evm (i:nat) (sp1 sp2:SP) (e:EvidenceC) : VM (EvidenceC*EvidenceC) :=
+    let e1 := splitEv sp1 e in
+    let e2 := splitEv sp2 e in
+    add_tracem [Term.split i] ;;
+               ret (e1,e2).
+
        

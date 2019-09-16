@@ -12,40 +12,6 @@ Require Import Verdi.Verdi.
 
 Set Nested Proofs Allowed.
 
-(** * EvidenceC Stack *)
-Definition ev_stack := gen_stack EvidenceC.
-Check empty_stack.
-(*
-
-Compute (pop_stack EvidenceC [mtc]).
-Check pop_stack.
-Check empty_stack.
-
-Definition push_stackc (e:EvidenceC) (s:ev_stackc) : ev_stackc :=
-  (e :: s).
-
-Definition pop_stackc (s:ev_stackc) : (EvidenceC*ev_stackc) :=
-  match s with
-  | e :: s' => (e,s')
-  | _ => (mtc,empty_stackc) (* TODO: will this be expressive enough? *)
-  end.
-*)
-
-Record vm_accum : Type := mk_accum
-                            { ec:EvidenceC ;
-                              (*vm_trace:(list Ev) ;*)
-                              vm_stack:ev_stackc }.
-
-Definition update_ev (e:EvidenceC) (x:vm_accum) : vm_accum :=
-  mk_accum e (vm_stack x).
-
-Definition push_stackr (e:EvidenceC) (x:vm_accum) : vm_accum :=
-  mk_accum (ec x) (push_stackc e (vm_stack x)).
-
-Definition pop_stackr (x:vm_accum) : (EvidenceC*vm_accum) :=
-  let (er,s') := pop_stackc (vm_stack x) in
-  (er,mk_accum (ec x) (s')).
-
 Definition remote_events (t:AnnoTerm) : (list Ev).
 Admitted.
 
@@ -60,7 +26,6 @@ Definition prim_trace (i:nat) (a:Prim_Instr) : (list Ev) :=
   | sign => [Term.sign i]
   | hash => [Term.hash i]
   end.
-Check update_ev.
 
 Definition prim_ev (a:Prim_Instr) (e:EvidenceC) : EvidenceC :=
   match a with
@@ -77,13 +42,64 @@ Definition prim_ev (a:Prim_Instr) (e:EvidenceC) : EvidenceC :=
   | hash =>
     let bs := hashEv e in
     (hhc bs e)
-  end.
+  end. 
 
 Definition parallel_att_vm_thread (li:list AnnoInstr) (e:EvidenceC) : EvidenceC.
 Admitted.
 
 Definition parallel_vm_events (li:list AnnoInstr) : list Ev.
 Admitted.
+
+Record vm_config : Type :=
+  mk_config
+    {vm_stack:ev_stack ;
+     vm_list:list AnnoInstr}.
+
+Definition build_comp (s:ev_stack) (i:AnnoInstr): VM unit :=
+  match i with
+  | aprimInstr x a =>
+    modify_evm (prim_ev a) ;;
+              add_tracem (prim_trace x a)
+  | asplit x sp1 sp2 =>
+    e <- get_ev ;;
+      p <- split_evm x sp1 sp2 e;;
+      let '(e1,e2) := p in
+      push_stackm e2 ;;
+                  push_stackm e1
+  | ajoins i =>    (*let (er,r') := pop_stackr r in *)
+    e <- pop_stackm ;;
+      er <- pop_stackm ;;
+      push_stackm (ssc er e) ;;
+      add_tracem [Term.join i]
+  | ajoinp i =>
+    e <- pop_stackm ;;
+      er <- pop_stackm ;;
+      push_stackm (ppc e er) ;;
+      add_tracem [Term.join i]
+  | abesr =>
+    e <- pop_stackm ;;
+      er <- pop_stackm ;;
+      push_stackm e ;;
+      push_stackm er
+
+      (*
+      let e := (ec r) in
+    let popped_r := pop_stackr r in
+    let er := fst (popped_r) in (*(fst (pop_stackr r)) in*)
+    let r' := snd (popped_r) (*(snd (pop_stackr r))*) in
+    let r'' := update_ev er r' in
+    let r''' := push_stackr e r'' in
+    vm_step r (abesr) r''' [] *)
+
+  | _ => ret tt
+  end.
+    
+  
+
+Inductive vm_step : vm_config -> vm_config -> (list Ev) -> Prop :=
+| do_vmStep : forall i l s,
+    
+    vm_step (mk_config ([i]++l) s) (
 
 Inductive vm_step: vm_accum -> AnnoInstr -> vm_accum -> (list Ev) -> Prop :=
 | prim_step: forall r i a, vm_step r (aprimInstr i a) (update_ev (prim_ev a (ec r)) r) (prim_trace i a)
