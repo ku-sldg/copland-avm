@@ -4,30 +4,35 @@ Require Import MyStack.
 Require Import List.
 Import ListNotations.
 
-Definition ev_stack := gen_stack EvidenceC.
-
 (* Generalized State Monad *)
-Definition St(S A : Type) : Type := S -> A * S % type.
+Definition St(S A : Type) : Type := S -> (option A) * S % type.
 
-Definition ret {S A : Type} (a : A) : St S A := fun s => (a, s).
+Definition ret {S A : Type} (a : A) : St S A := fun s => (Some a, s).
 
 Definition bind {S A B : Type} (m : St S A) (f : A -> St S B) : St S B :=
   fun s =>
     let '(a, s') := m s in
-    let '(b, s'') := f a s' in
-    (b, s'').
+    match a with
+    | Some v =>
+      let '(b, s'') := f v s' in
+      (b, s'')
+    | _ => (None,s')
+    end.
+
+Definition failm {S A : Type} : St S A := fun s => (None, s).
+      
 
 (* alias for ret *)
 (*Definition write_output {S O} (o : O) : GenHandler1 S O := ret o.*)
 
-Definition modify {S} (f : S -> S) : St S unit := fun s => (tt, f s).
+Definition modify {S} (f : S -> S) : St S unit := fun s => (Some tt, f s).
 
-Definition put {S} (s : S) : St S unit := fun _ => (tt, s).
+Definition put {S} (s : S) : St S unit := fun _ => (Some tt, s).
 
-Definition get {S} : St S S := fun s => (s, s).
+Definition get {S} : St S S := fun s => (Some s, s).
 
 Definition runSt {S A} (s : S) (h : St S A) :
-  A * S % type :=
+  (option A) * S % type :=
   h s.
 
 Definition nop {S : Type} := @ret S _ tt.
@@ -58,19 +63,20 @@ Ltac monad_unfold :=
 
 
 (* Specific VM monad *)
-Record vm_config : Type := mk_vm_config
-                            { cec:EvidenceC ;
-                              cvm_list:(list AnnoInstr) ;
-                              cvm_stack:ev_stack }.
+Definition ev_stack := gen_stack EvidenceC.
+Record vm_st : Type := mk_vm_st
+                         {st_stack:ev_stack ;
+                          st_trace:list Ev}.
 
-Definition VM := St vm_config.
+Definition VM := St vm_st.
 (*Definition runVM{A:Type} := @runSt vm_config A.*)
 
-Definition extractVal (r:vm_config) : nat :=
-  let ev := cec r in
+(* Sanity checks *)
+Definition extractVal (r:vm_st) : nat :=
+  let ev := head (st_stack r) in
   let n :=
       match ev with
-        | ggc _ n => n
+        | Some (ggc _ n) => n
         | _ => 0
       end in
   n + 1.
@@ -78,8 +84,28 @@ Definition extractVal (r:vm_config) : nat :=
 Definition test_comp : VM unit :=
   v <- get ;;
     let n := extractVal v in
-  put (mk_vm_config (ggc mtc n) [] []).
+    put (mk_vm_st [(ggc mtc n)] []) ;;
+        ret tt.
 
-Definition empty_vm_state := mk_vm_config (ggc mtc 46) [] [].
+Definition empty_vm_state := mk_vm_st [(ggc mtc 48)] [].
 
 Compute (runSt empty_vm_state test_comp).
+
+(* VM monad operations *)
+Definition push_stackr (e:EvidenceC) : VM unit :=
+  st <- get ;;
+     let oldStack := st_stack st in
+     let newStack := push_stack _ e oldStack in
+     put (mk_vm_st newStack (st_trace st)).
+
+Definition pop_stackr : VM EvidenceC :=
+  st <- get ;;
+     let oldStack := st_stack st in
+     let maybePopped := pop_stack _ oldStack in
+     match maybePopped with
+     | Some (e,s') =>
+       put (mk_vm_st s' (st_trace st)) ;;
+           ret e
+     | None => failm
+     end.
+       

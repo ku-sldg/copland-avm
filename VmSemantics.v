@@ -1,5 +1,5 @@
 Require Import More_lists Preamble Term Trace LTS Event_system Term_system.
-Require Import MyStack Instr.
+Require Import Instr MyStack MonadVM.
 
 Require Import List.
 Import ListNotations.
@@ -15,6 +15,7 @@ Set Nested Proofs Allowed.
 (** * EvidenceC Stack *)
 Definition ev_stack := gen_stack EvidenceC.
 Check empty_stack.
+(*
 
 Compute (pop_stack EvidenceC [mtc]).
 Check pop_stack.
@@ -28,6 +29,7 @@ Definition pop_stackc (s:ev_stackc) : (EvidenceC*ev_stackc) :=
   | e :: s' => (e,s')
   | _ => (mtc,empty_stackc) (* TODO: will this be expressive enough? *)
   end.
+*)
 
 Record vm_accum : Type := mk_accum
                             { ec:EvidenceC ;
