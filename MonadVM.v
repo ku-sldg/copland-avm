@@ -54,18 +54,6 @@ Notation "e1 ;; e2" := (_ <- e1 ;; e2)
 Definition when {S A} (b : bool) (m : St S A) : St S unit :=
   if b then m ;; ret tt else nop.
 
-Ltac monad_unfold :=
-  repeat unfold
-         runSt,
-         bind,
-         (*write_output,*)
-         get,
-         when,
-         put,
-         nop,
-         modify,
-         ret in *.
-
 
 
 (* Specific VM monad *)
@@ -119,8 +107,10 @@ Definition pop_stackm : VM EvidenceC :=
 
 Definition put_ev (e:EvidenceC) : VM unit :=
   st <- get ;;
-  let '{| st_ev := _; st_stack := s; st_trace := tr |} := st in
-    put (mk_st e s tr).
+     let s' := st_stack st in
+     let tr' := st_trace st in
+  (*let '{| st_ev := _; st_stack := s; st_trace := tr |} := st in*)
+    put (mk_st e s' tr').
 
 Definition get_ev : VM EvidenceC :=
   st <- get ;;
@@ -145,3 +135,15 @@ Definition split_evm (i:nat) (sp1 sp2:SP) (e:EvidenceC) : VM (EvidenceC*Evidence
                ret (e1,e2).
 
        
+Ltac monad_unfold :=
+  repeat unfold
+         runSt,
+         execSt,
+         bind,
+         (*write_output,*)
+         get,
+         when,
+         put,
+         nop,
+         modify,
+         ret in *.

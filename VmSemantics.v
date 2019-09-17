@@ -125,7 +125,7 @@ Inductive vm_step : vm_config -> vm_config -> (list Ev) -> Prop :=
     let e' := st_ev res_st in
     let s' := st_stack res_st in
     let tr' := st_trace res_st in
-    vm_step (mk_config e ([i]++l) s) (mk_config e' l s') tr'.
+    vm_step (mk_config e (i::l) s) (mk_config e' l s') tr'.
 
 Definition vm_1n_multi : step_relation vm_config Ev := refl_trans_1n_trace vm_step.
 
@@ -152,15 +152,18 @@ Proof.
   eapply vm_1n_multi_trans; eauto.
 Defined.
 
-(*
-Lemma ha' : forall r r' r'' il1 il2 resl tr1 tr2,
-  vm_1n_multi' r r' (il1 ++ il2) il2 tr1 ->
-  vm_1n_multi' r' r'' il2 resl tr2  ->
-  vm_1n_multi' r r'' (il1 ++ il2) resl (tr1 ++ tr2).
+Lemma asas : forall e e' i l l' s s' tr,
+    vm_step {| vm_ev := e; vm_list := i :: l; vm_stack := s |}
+            {| vm_ev := e'; vm_list := l; vm_stack := s' |}
+            tr ->
+    vm_step {| vm_ev := e; vm_list := i :: l'; vm_stack := s |}
+            {| vm_ev := e'; vm_list := l'; vm_stack := s' |}
+            tr.
 Proof.
   intros.
-  eapply vm_1n_multi_trans; eauto.
-Defined.*)
+  inv H.
+  apply do_vmStep.
+Defined.
 
 
 Lemma vm_1n_multi_transitive:
@@ -168,59 +171,21 @@ Lemma vm_1n_multi_transitive:
     vm_1n_multi (mk_config e il1 s) (mk_config e' [] s') tr1 ->
     vm_1n_multi (mk_config e' il2 s') (mk_config e'' resl s'') tr2 ->
     vm_1n_multi (mk_config e (il1 ++ il2) s) (mk_config e'' resl s'') (tr1 ++ tr2).     
-Proof. (*
+Proof.
   intros.
-  generalize dependent e''.
-  generalize dependent s''.
-  generalize dependent resl.
-  generalize dependent tr2.
-  generalize dependent il2.
-  dependent induction H; intros.
-  - eauto.
-  - dependent destruction x'.
+  dependent induction H.
+  - simpl. eauto.
+  - simpl.
+    rewrite <- app_assoc.
+    dependent destruction x'.
     inv H.
-    (*rewrite <- app_assoc.*)
-    assert ([i] ++ vm_list0 ++ il2 = (i :: vm_list0) ++ il2). reflexivity.
-    rewrite <- H2. clear H2. (* TODO: Ltac routine that puts lists in correct normal form *)
-    eapply vm_1n_multi_trans with 
-    apply RT1nTStep with (x':=(mk_config e'0 (l++il2) s'0)).
-    eassumption.
-    apply with .
-    econstructor.
-    apply H.
-    econstructor. invc H.
-    subst.
-
-    eassumption.
-    econstructor. eassumption.
-    inv H.
+    monad_unfold.
+    assert ((i :: vm_list0) ++ il2 = (i::(vm_list0 ++ il2))). auto.
+    rewrite H2.
+    constructor 2 with (x':=(mk_config (st_ev res_st) (vm_list0 ++ il2) (st_stack res_st))).    
+    eapply asas; eauto.  
     eapply IHrefl_trans_1n_trace; eauto.
-Defined. *)
-Admitted.
-
-
-(*
-Lemma vm_1n_multi_transitive': 
-  forall r r' r'' il1 il2 resl tr1 tr2,
-    vm_1n_multi' r r' il1 [] tr1 ->
-    vm_1n_multi' r' r'' il2 resl tr2 ->
-    vm_1n_multi' r r'' (il1 ++ il2) resl (tr1 ++ tr2).
-Proof.
-  intros.
-  (*unfold vm_1n_multi'. *)
-  eapply vm_1n_multi_transitive'; eauto.
-Defined.*)
-
-(*
-Lemma vm_1n_multi_transitive'_done: forall r r' r'' il1 il2 tr1 tr2,
-    vm_1n_multi' r r' il1 [] tr1 ->
-    vm_1n_multi' r' r'' il2 [] tr2 ->
-    vm_1n_multi' r r'' (il1 ++ il2) [] (tr1 ++ tr2).
-Proof.
-  intros.
-  eapply vm_1n_multi_transitive; eauto.
 Defined.
-*)
 
 Lemma vm_1n_multi_transitive_done: forall e e' e'' s s' s'' il1 il2 tr1 tr2,
     vm_1n_multi (mk_config e il1 s) (mk_config e' [] s') tr1 ->
@@ -256,91 +221,121 @@ Proof.
   - apply vm_n1_implies_1n.
 Defined.
 
-Definition vm_n1_multi' (acc1:vm_accum) (acc2:vm_accum) (el_in:list AnnoInstr) (el_out:list AnnoInstr) (tr:list Ev) :=
-  vm_n1_multi (mk_vm_config (ec acc1) el_in (vm_stack acc1))
-              (mk_vm_config (ec acc2) el_out (vm_stack acc2))
-              tr.
-
-Lemma vm_n1_multi_transitive:
-  forall r r' r'' il1 il2 resl tr1 tr2,
-    vm_n1_multi' r r' il1 [] tr1 ->
-    vm_n1_multi' r' r'' il2 resl tr2 ->
-    vm_n1_multi' r r'' (il1 ++ il2) resl (tr1 ++ tr2).
-(*
 Lemma vm_n1_multi_transitive:
   forall e e' e'' s s' s'' il1 il2 resl tr1 tr2,
-    vm_n1_multi (mk_vm_config e il1 s) (mk_vm_config e' [] s') tr1 ->
-    vm_n1_multi (mk_vm_config e' il2 s') (mk_vm_config e'' resl s'') tr2 ->
-    vm_n1_multi (mk_vm_config e (il1 ++ il2) s) (mk_vm_config e'' resl s'') (tr1 ++ tr2). *)
-Proof.
-  intros. unfold vm_n1_multi'.
-  rewrite vm_n1_iff_1n in *.
-  eapply vm_1n_multi_transitive; unfold vm_1n_multi';
-  rewrite <- vm_n1_iff_1n; eauto.
-Defined.
-
-Lemma step_implies_lstar : forall e e' s s' i tr,
-    vm_step (mk_accum e s) i (mk_accum e' s') tr ->
-    vm_1n_multi (mk_vm_config e [i] s) (mk_vm_config e' [] s') tr.
+    vm_n1_multi (mk_config e il1 s) (mk_config e' [] s') tr1 ->
+    vm_n1_multi (mk_config e' il2 s') (mk_config e'' resl s'') tr2 ->
+    vm_n1_multi (mk_config e (il1 ++ il2) s) (mk_config e'' resl s'') (tr1 ++ tr2).
 Proof.
   intros.
-  cut ( vm_1n_multi {| cec := e; cvm_list := ([i] ++ []); cvm_stack := s |}
-                    {| cec := e'; cvm_list := []; cvm_stack := s' |} (tr ++ [])). simpl. rewrite app_nil_r. eauto.
-  repeat econstructor; eauto.
+  rewrite <- vm_1n_iff_n1 in *.
+  eapply vm_1n_multi_transitive; eauto.
 Defined.
 
+Lemma step_implies_multi : forall e e' s s' i l tr,
+    vm_step (mk_config e (i::l) s) (mk_config e' l s') tr ->
+    vm_1n_multi (mk_config e (i::l) s) (mk_config e' l s') tr.
+Proof.
+  intros.
+  cut (vm_1n_multi {| vm_ev := e; vm_list := i :: l; vm_stack := s |}
+                   {| vm_ev := e'; vm_list := l; vm_stack := s' |} (tr++[])).
+  rewrite app_nil_r. auto.
+  repeat econstructor; eauto.
+Defined.
+Hint Resolve step_implies_multi.
+
+(* 
+Record vm_config : Type :=
+  mk_config
+    {vm_ev:EvidenceC ; 
+      vm_stack:ev_stack ;
+     vm_list:list AnnoInstr}.
+*)
 Lemma record_congr : forall r,
   r = 
-  {| ec := ec r; vm_stack := vm_stack r |}.
+  {| vm_ev := vm_ev r; vm_stack := vm_stack r; vm_list := vm_list r |}.
 Proof.
   intros.
   destruct r.
   reflexivity.
 Defined.
 
-Lemma restt : forall r r' r'' il il1 tr1 tr2 i,
-  vm_n1_multi' r r' il [] tr1 ->
-  vm_step r' i r'' tr2 ->
+Lemma restt : forall e e' e'' s s' s'' tr1 tr2 il il1 i,
+  vm_n1_multi (mk_config e il s) (mk_config e' [] s') tr1 ->
+  vm_step (mk_config e' [i] s') (mk_config e'' [] s'') tr2 ->
   il1 = il ++ [i] ->
-  vm_1n_multi' r r'' il1 [] (tr1 ++ tr2).
+  vm_1n_multi  (mk_config e il1 s) (mk_config e'' [] s'') (tr1 ++ tr2).
 Proof.
   intros.
-  rewrite H1.
-  eapply vm_1n_multi_transitive'.
-  unfold vm_n1_multi' in H.
-  rewrite vm_n1_iff_1n in H.
+  subst.
+  eapply vm_1n_multi_transitive.
+  rewrite <- vm_1n_iff_n1 in H.
   eapply H.
-  apply step_implies_lstar.
-  cut (vm_step r' i r'' tr2). repeat rewrite <- record_congr. auto.
+  apply step_implies_multi.
   assumption.
 Defined.
 
-Fixpoint shave_r{A} (l: list A) : list A :=
-  match l with
-  | [] => []
-  | [x] => []
-  | x::l => x :: shave_r l
-  end.
+Definition shaver{A} (l: list A) : list A :=
+  skipn ((length l) - 1) l.
 
-(*
-Lemma restl : forall r r' r'' il1 il2 i cs cs',
-    vm_1n_multi' r r' (il1 ++ il2) (i::il2) cs /\
-    vm_step r' i r'' cs' ->
-    vm_1n_multi' r r'' il1 [] (cs ++ cs').
+Lemma listThing{A:Type} : forall (x:A) l1 l2,
+    l1 ++ l2 = x :: l2 ->
+    l1 = [x].
 Proof.
   intros.
-  destruct H.
-  eapply restt with (il:=shave_r il1).
-  unfold vm_1n_multi' in H.
-  rewrite <- vm_n1_iff_1n in H.
-  inv H.
-  admit.
+  assert (x::l2 = [x]++l2). auto.
+  rewrite H0 in H.
+  eapply app_inv_tail; eauto.
+Defined.
+          
+Lemma restl : forall e e' e'' s s' s'' i il1 il2 cs cs',
+  vm_1n_multi  (mk_config e (il1 ++ il2) s) (mk_config e' (i::il2) s') cs ->
+  vm_step (mk_config e' [i] s') (mk_config e'' [] s'') cs' ->
+  vm_1n_multi  (mk_config e il1 s) (mk_config e'' [] s'') (cs ++ cs').
+Proof.
+  intros.
+  dependent induction H.
+  - assert (il1 = [i]).
+    eapply listThing; eauto.
+    rewrite H in *. clear x. clear H.
+    eapply step_implies_multi; eauto.
+  - dependent destruction x'.
+    inv H.
+    monad_unfold.
+    rewrite <- app_assoc.
+    assert (il1 = [i0] ++ (firstn ((length vm_list0) - (length il2) - 1) vm_list0) ++ [i]).
+    assert (vm_list0 = skipn 1 (il1 ++ il2)). admit.
+    rewrite H2. clear H2.
+    simpl.
+    admit.
+    subst.
+    assert (
+        (firstn (length vm_list0 - length il2 - 1) vm_list0 ++ [i] ++ il2) =
+        vm_list0).
+    assert (i0::vm_list0 = [i0]++vm_list0). auto.
+    rewrite H2 in H4.
+    eapply app_inv_head.
+    symmetry.
+    rewrite <- app_assoc in H4.
+    assert (firstn (length vm_list0 - length il2 - 1) vm_list0 ++ [i] ++ il2 =
+            (firstn (length vm_list0 - length il2 - 1) vm_list0 ++ [i]) ++ il2).
+    rewrite app_assoc. auto.
+    rewrite <- H3 in H4.
+    eassumption.
+    
+    rewrite <- app_assoc in H.
+    rewrite <- app_assoc in H.
+    rewrite H2 in H.
+    
+    eapply vm_1n_multi_transitive.
+    eapply step_implies_multi.
+    Check asas.
 
-  dependent destruction x'.
-  inv H2.
+    eapply asas. apply H.
+    eapply IHrefl_trans_1n_trace; eauto.
+    rewrite <- app_assoc.
+    rewrite H2. auto.
 Admitted.
-*)
-
 
 (*
 Ltac inv_vm_lstar :=
@@ -362,80 +357,16 @@ Proof.
   apply H.
 Defined.
 
-Lemma hhh : forall r',
-    {| ec := ec r'; vm_stack := vm_stack r' |} = r'.
-Proof.
-  intros.
-  simpl. auto.
-  destruct r'.
-  auto.
-Defined.
-
 Lemma fafa : forall e e' s s' tr i rest,
-    vm_step (mk_accum e s) i (mk_accum e' s') tr ->
-    vm_1n_multi (mk_vm_config e ([i] ++ rest) s) (mk_vm_config e' rest s') tr.
+    vm_step (mk_config e [i] s) (mk_config e' [] s') tr ->
+    vm_1n_multi (mk_config e ([i] ++ rest) s) (mk_config e' rest s') tr.
 Proof.
   intros.
-  cut ( vm_1n_multi {| cec := e; cvm_list := i :: rest; cvm_stack := s |}
-                    {| cec := e'; cvm_list := rest; cvm_stack := s' |} (tr ++ [])).
-  rewrite app_nil_r. auto.
+  assert (tr = tr ++ []). rewrite app_nil_r. auto. rewrite H0.
   econstructor.
-  econstructor.
-  eassumption.
+  eapply asas. eauto.
   econstructor.
 Defined.
-
-(*
-Lemma ffff_gen_helperrr : forall r r' il1 il1' il2 tr,
-  (il1 <> []) ->
-  vm_1n_multi' r r' il1 il1' tr ->
-  vm_1n_multi' r r' (il1 ++ il2) (il1' ++ il2) tr.
-Proof. (*
-  intros.
-  induction H0 using refl_trans_1n_trace_n1_ind.*)
-
-
-  (*
-  inv H0.
-  - assert (r = r'). admit. rewrite H0.
-    econstructor.
-  - 
-    dependent destruction x'.
-    inv H1.
-    Lemma afaf : forall r r' i l' cs,
-        vm_step r i r' cs -> 
-    vm_step' (mk_vm_config (ec r) (i::l') (vm_stack r))
-             (mk_vm_config (ec r') l'     (vm_stack r'))
-             cs.
-    Proof.
-    Admitted.
-    assert ((i :: cvm_list0) ++ il2 = i :: (cvm_list0 ++ il2)). auto.
-    rewrite H0.
-    econstructor.
-
-    apply afaf.  rewrite <- record_congr in H9. apply H9. clear H0. clear H9.
-*)
-
-    (*
-    assert (cs' = [] ++ cs').(* rewrite app_nil_r.*) auto.
-
-    rewrite H0.
-    eapply vm_1n_multi_transitive.
-    econstructor.
-    
-  ============================
-  vm_step'
-    {|
-    cec := ec r;
-    cvm_list := (i :: cvm_list0) ++ il2;
-    inv H9
-    eapply vm_1n_multi_transitive' *)  
-Admitted.
-*)
-
-
-
-
 
 (*
 Lemma asdd {A:Type} : forall l (v:A) il1 il2,
@@ -460,9 +391,10 @@ Defined.
 
 Lemma first_skip{A:Type} :
   forall n (l:list A),
-    l = (firstn n l) ++ (skipn n l).
+    (firstn n l) ++ (skipn n l) = l.
 Proof.
-Admitted.
+  apply firstn_skipn.
+Defined.
 
 Lemma compile_not_empty :
   forall t,
@@ -480,7 +412,7 @@ Proof.
   eapply lstar_silent_tran; eauto.
 Qed.
 
-Lemma fasd : forall st st' tr p r,
+Lemma lstar_strem : forall st st' tr p r,
     lstar st tr
           st' ->
     lstar (rem r p st) tr (rem r p st').
@@ -491,19 +423,40 @@ Proof.
   eapply lstar_silent_tran; eauto.
 Defined.
 
-Lemma update_ev_immut_stack : forall s e,
-    vm_stack s = vm_stack (update_ev e s).
+Lemma put_ev_after_immut_stack{A:Type} : forall s (h:VM A) e,
+    st_stack (execSt s h) = st_stack (execSt s (h ;; (put_ev e))).
 Proof.
   intros.
-  simpl. reflexivity.
+  unfold put_ev.
+  unfold execSt.
+  destruct s.
+  unfold snd.
+  monad_unfold.
+  destruct (h {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace |}).
+  destruct o; eauto.
 Defined.
 
+(*
+Lemma update_ev_immut_stack'{A:Type} : forall s (h:VM A) e,
+    st_stack (execSt s h) = st_stack (execSt s ((put_ev e);; h)).
+Proof.
+Abort.
+*)  (* NOT true for arbitrary h:  h could match on e to update its stack *)
+
+
+
 Ltac doit :=
+  monad_unfold ;
+  (repeat unfold
+          push_stack,
+   pop_stack in *);
+   simpl in *.
+   (*
   unfold push_stackr in * ;
   unfold push_stackc in * ;
   unfold update_ev in * ;
   unfold pop_stackr in *;
-  simpl in *.
+  simpl in *.*)
 
 (*
 Ltac invv :=
@@ -528,23 +481,23 @@ Axiom para_eval_vm : forall t e,
 
 Lemma jj : forall e e' s t rest tr,
     vm_1n_multi
-      {| cec := e; cvm_list := instr_compiler t; cvm_stack := s |}
-      {| cec := e'; cvm_list := []; cvm_stack := s |} tr ->
+      {| vm_ev := e; vm_list := instr_compiler t; vm_stack := s |}
+      {| vm_ev := e'; vm_list := []; vm_stack := s |} tr ->
     
     vm_1n_multi
-      {| cec := e;
-         cvm_list := instr_compiler t ++ rest ;
-         cvm_stack := s |}
-      {| cec := e';
-         cvm_list := rest;
-         cvm_stack := s |} tr.
+      {| vm_ev := e;
+         vm_list := instr_compiler t ++ rest ;
+         vm_stack := s |}
+      {| vm_ev := e';
+         vm_list := rest;
+         vm_stack := s |} tr.
 Proof.
   intros.
   assert (rest = [] ++ rest). simpl. reflexivity.
   rewrite H0 at 2.
   assert (tr = tr ++ []). rewrite app_nil_r. auto.
   rewrite H1.
-  eapply vm_1n_multi_transitive'. apply H.
+  eapply vm_1n_multi_transitive. apply H.
   simpl. econstructor.
 Defined.
 
@@ -554,6 +507,32 @@ Axiom hihi : forall t tr,
 Axiom hihi' : forall t tr,
     (parallel_vm_events (instr_compiler t) = tr) -> trace t tr.
 
+
+
+Lemma cross_relation e t s :
+  forall (P : vm_config -> list Ev -> Prop),
+    P (mk_config e (instr_compiler t) s) [] ->
+    (forall st st' tr ev,
+        vm_1n_multi (mk_config e (instr_compiler t) s)
+                    st tr ->
+        P st tr ->
+        (*vm_step (mk_accum (cec st) (vm_stack st)) i st' ev ->*)
+        vm_step st st' ev ->
+        P st' (tr ++ ev)) ->
+    forall st tr,
+      vm_1n_multi (mk_config e (instr_compiler t) s) st tr ->
+      P st tr.
+Proof using.
+  intros.
+  find_apply_lem_hyp refl_trans_1n_n1_trace.
+  prep_induction H1.
+  induction H1; intros; subst; eauto.
+  eapply H3; eauto.
+  - apply refl_trans_n1_1n_trace. auto.
+  - eapply IHrefl_trans_n1_trace; auto.
+Defined.
+  
+(*
 Lemma cross_relation e t s :
   forall (P : vm_config -> list Ev -> Prop),
     P (mk_vm_config e (instr_compiler t) s) [] ->
@@ -577,6 +556,7 @@ Proof using.
   - apply refl_trans_n1_1n_trace. auto.
   - apply IHrefl_trans_n1_trace; auto.
 Qed.
+*)
   
 Lemma t_prop e t s :
   forall st tr,
@@ -924,6 +904,139 @@ Defined.
 
 
 (******* ABANDONED PROOFS ********)
+
+
+
+
+(**** multi' proofs *****)
+
+(*
+Lemma restl : forall r r' r'' il1 il2 i cs cs',
+    vm_1n_multi' r r' (il1 ++ il2) (i::il2) cs /\
+    vm_step r' i r'' cs' ->
+    vm_1n_multi' r r'' il1 [] (cs ++ cs').
+Proof.
+  intros.
+  destruct H.
+  eapply restt with (il:=shave_r il1).
+  unfold vm_1n_multi' in H.
+  rewrite <- vm_n1_iff_1n in H.
+  inv H.
+  admit.
+
+  dependent destruction x'.
+  inv H2.
+Admitted.
+ *)
+
+(*
+Lemma restt : forall r r' r'' il il1 tr1 tr2 i,
+  vm_n1_multi' r r' il [] tr1 ->
+  vm_step r' i r'' tr2 ->
+  il1 = il ++ [i] ->
+  vm_1n_multi' r r'' il1 [] (tr1 ++ tr2).
+Proof.
+  intros.
+  rewrite H1.
+  eapply vm_1n_multi_transitive'.
+  unfold vm_n1_multi' in H.
+  rewrite vm_n1_iff_1n in H.
+  eapply H.
+  apply step_implies_lstar.
+  cut (vm_step r' i r'' tr2). repeat rewrite <- record_congr. auto.
+  assumption.
+Defined.*)
+
+(*
+Definition vm_n1_multi' (acc1:vm_accum) (acc2:vm_accum) (el_in:list AnnoInstr) (el_out:list AnnoInstr) (tr:list Ev) :=
+  vm_n1_multi (mk_vm_config (ec acc1) el_in (vm_stack acc1))
+              (mk_vm_config (ec acc2) el_out (vm_stack acc2))
+              tr.
+
+Lemma vm_n1_multi_transitive':
+  forall r r' r'' il1 il2 resl tr1 tr2,
+    vm_n1_multi' r r' il1 [] tr1 ->
+    vm_n1_multi' r' r'' il2 resl tr2 ->
+    vm_n1_multi' r r'' (il1 ++ il2) resl (tr1 ++ tr2).*)
+
+
+
+
+(*
+Lemma vm_1n_multi_transitive': 
+  forall r r' r'' il1 il2 resl tr1 tr2,
+    vm_1n_multi' r r' il1 [] tr1 ->
+    vm_1n_multi' r' r'' il2 resl tr2 ->
+    vm_1n_multi' r r'' (il1 ++ il2) resl (tr1 ++ tr2).
+Proof.
+  intros.
+  (*unfold vm_1n_multi'. *)
+  eapply vm_1n_multi_transitive'; eauto.
+Defined.*)
+
+(*
+Lemma vm_1n_multi_transitive'_done: forall r r' r'' il1 il2 tr1 tr2,
+    vm_1n_multi' r r' il1 [] tr1 ->
+    vm_1n_multi' r' r'' il2 [] tr2 ->
+    vm_1n_multi' r r'' (il1 ++ il2) [] (tr1 ++ tr2).
+Proof.
+  intros.
+  eapply vm_1n_multi_transitive; eauto.
+Defined.
+ *)
+
+
+(*
+Lemma ffff_gen_helperrr : forall r r' il1 il1' il2 tr,
+  (il1 <> []) ->
+  vm_1n_multi' r r' il1 il1' tr ->
+  vm_1n_multi' r r' (il1 ++ il2) (il1' ++ il2) tr.
+Proof. (*
+  intros.
+  induction H0 using refl_trans_1n_trace_n1_ind.*)
+
+
+  (*
+  inv H0.
+  - assert (r = r'). admit. rewrite H0.
+    econstructor.
+  - 
+    dependent destruction x'.
+    inv H1.
+    Lemma afaf : forall r r' i l' cs,
+        vm_step r i r' cs -> 
+    vm_step' (mk_vm_config (ec r) (i::l') (vm_stack r))
+             (mk_vm_config (ec r') l'     (vm_stack r'))
+             cs.
+    Proof.
+    Admitted.
+    assert ((i :: cvm_list0) ++ il2 = i :: (cvm_list0 ++ il2)). auto.
+    rewrite H0.
+    econstructor.
+
+    apply afaf.  rewrite <- record_congr in H9. apply H9. clear H0. clear H9.
+*)
+
+    (*
+    assert (cs' = [] ++ cs').(* rewrite app_nil_r.*) auto.
+
+    rewrite H0.
+    eapply vm_1n_multi_transitive.
+    econstructor.
+    
+  ============================
+  vm_step'
+    {|
+    cec := ec r;
+    cvm_list := (i :: cvm_list0) ++ il2;
+    inv H9
+    eapply vm_1n_multi_transitive' *)  
+Admitted.
+*)
+
+
+
+
 
 (******** Old vm_step: *******)
 
