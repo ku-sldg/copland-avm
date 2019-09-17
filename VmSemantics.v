@@ -560,12 +560,42 @@ Qed.
   
 Lemma t_prop e t s :
   forall st tr,
-    vm_1n_multi (mk_vm_config e (instr_compiler t) s) st tr ->
+    vm_1n_multi (mk_config e (instr_compiler t) s) st tr ->
     True.
 Proof.
-  apply cross_relation.
-  
+  apply cross_relation; trivial.
+Defined.
+Check lstar.
 
+Lemma multi_lstar : forall e e' s s' t tr et p,
+      vm_1n_multi (mk_config e (instr_compiler t) s)
+                  (mk_config e' [] s') tr ->
+      lstar (conf t p et) tr (stop p (aeval t p et)).
+Proof.
+Admitted.
+Require Import Main.
+
+(*
+Lemma vm_lstar_trace: forall e e' s s' t tr,
+    well_formed t -> 
+    vm_1n_multi (mk_config e (instr_compiler t) s)
+                (mk_config e' [] s')
+                tr ->
+    trace t tr.
+Proof.
+  intros.
+  apply lstar_trace with (p:=0) (e:=mt).
+  - eauto.
+  - eapply multi_lstar. apply H0.
+Defined.
+*)
+
+    
+
+
+
+  
+(*
 Lemma vm_lstar_trace: forall r r' t tr,
     (*well_formed t -> *)
     vm_1n_multi' r r'
@@ -768,6 +798,25 @@ Proof.
     econstructor; eauto. 
   -
 Admitted.
+ *)
+
+Theorem vm_ordered : forall t e e' s s' tr ev0 ev1,
+    well_formed t ->
+    vm_1n_multi
+      (mk_config e (instr_compiler t) s)
+      (mk_config e' [] s') tr ->
+    prec (ev_sys t) ev0 ev1 ->
+    earlier tr ev0 ev1.
+Proof.
+  intros.
+  eapply ordered with (p:=0) (e:=mt); eauto.
+  eapply multi_lstar; eauto.
+Defined.
+(*
+  (*apply vm_lstar_trace in H0; auto.*)
+  apply trace_order with (t:=t); auto.
+Defined. *)
+
 
 Theorem vm_ordered : forall t e e' s tr ev0 ev1,
     well_formed t ->
@@ -785,6 +834,9 @@ Proof.
   edestruct vm_smallstep with (p:=0); eauto.
   eapply ordered; eauto. *)
 Defined.
+
+
+
 
 Lemma vm_config_correct : forall e s t tr,
     trace t tr ->
