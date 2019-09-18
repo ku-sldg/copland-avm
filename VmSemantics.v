@@ -567,12 +567,127 @@ Proof.
 Defined.
 Check lstar.
 
+Inductive st_to_instr : LTS.St -> list AnnoInstr -> Prop :=
+| stop_st: forall p e, st_to_instr (stop p e) []
+| conf_st: forall p e annt, st_to_instr (conf annt p e) (instr_compiler annt)
+| rem_st: forall p q st, st_to_instr (rem p q st) []
+| ls_st: forall st il1 annt,
+    st_to_instr st il1 ->
+    st_to_instr (ls st annt) (il1 ++ (instr_compiler annt))
+| bsl_st: forall st il1 annt p n e,
+    st_to_instr st il1 ->
+    st_to_instr (bsl n st annt p e) ((il1 ++ (instr_compiler annt)))
+| bsr_st: forall st il n e,
+    st_to_instr st il ->
+    st_to_instr (bsr n e st) il
+| bp_st: forall n st1 st2,
+    st_to_instr (bp n st1 st2) [].
+
+Lemma trying : forall e e' s s' tr l l' st st',
+  vm_1n_multi (mk_config e l s)
+              (mk_config e' l' s') tr ->
+  st_to_instr st l ->
+  st_to_instr st' l' ->
+  lstar st tr st'.
+Proof.
+  intros.
+  induction st.
+  - inv H0. inv H. inv H1. admit. admit. admit. inv H1. admit. admit. inv H1. admit. admit.
+    
+    
+
+
+Lemma multi_lstar_intermed: forall e e' s s' t tr et p l st,
+  vm_1n_multi (mk_config e (instr_compiler t) s)
+              (mk_config e' l s') tr ->
+  st_to_instr st l ->
+  lstar (conf t p et) tr st.
+Proof.
+  intros.
+  generalize dependent tr.
+  generalize dependent e.
+  generalize dependent e'.
+  generalize dependent s.
+  generalize dependent s'.
+  generalize dependent p.
+  generalize dependent et.
+  generalize dependent l.
+  generalize dependent st.
+  induction t; intros.
+  - admit.
+  - admit.
+  -
+    induction H.
+    econstructor. econstructor. eapply IHt1.
+
+    
+    simpl in *.
+    inv H.
+    admit.
+    econstructor.
+    econstructor.
+    econstructor
+    
+    simpl in *.
+    
+    
+
+
+Lemma multi_lstar: forall e e' s s' t tr et p l,
+      vm_1n_multi (mk_config e (instr_compiler t) s)
+                  (mk_config e' l s') tr ->
+      exists st',
+        lstar (conf t p et) tr st'.
+Proof.
+Admitted.
+
+Lemma multi_lstar' : forall e e' s s' t tr et p,
+      vm_1n_multi (mk_config e (instr_compiler t) s)
+                  (mk_config e' [] s') tr ->
+      lstar (conf t p et) tr (stop p (aeval t p et)).
+Proof.
+  intros.
+  edestruct multi_lstar with (p:=p) (et:=et).
+  apply H.
+
+
+
+  
+
 Lemma multi_lstar : forall e e' s s' t tr et p,
       vm_1n_multi (mk_config e (instr_compiler t) s)
                   (mk_config e' [] s') tr ->
       lstar (conf t p et) tr (stop p (aeval t p et)).
 Proof.
+  intros.
+  generalize dependent tr.
+  generalize dependent e.
+  generalize dependent e'.
+  generalize dependent s.
+  generalize dependent s'.
+  generalize dependent p.
+  generalize dependent et.
+  induction t; intros.
+  - admit.
+  - admit.
+  - simpl.
+    inv H.
+    + admit.
+    + inv H0.
+      inv H0.
+      simpl in *.
+      monad_unfold.
+      
+    econstructor.
+    econstructor.
+    econstructor.   
+  eapply cross_relation.
+  admit.
 Admitted.
+
+
+
+
 Require Import Main.
 
 (*
