@@ -21,21 +21,21 @@ Require Import Omega Preamble Term.
 Inductive St: Set :=
 | stop: Plc -> Evidence -> St
 | conf: AnnoTerm -> Plc -> Evidence -> St
-| rem: Plc -> Plc -> St -> St
+(*| rem: Plc -> Plc -> St -> St *)
 | ls: St -> AnnoTerm -> St
-| bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
+(*| bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
 | bsr: nat -> Evidence -> St -> St
-| bp: nat -> St -> St -> St.
+| bp: nat -> St -> St -> St*).
 
 Fixpoint pl (s:St) :=
   match s with
   | stop p _ => p
   | conf _ p _ => p
-  | rem _ p _ => p
+  (*| rem _ p _ => p*)
   | ls st _ => pl st
-  | bsl _ _ _ p _ => p
+  (*| bsl _ _ _ p _ => p
   | bsr _ _ st => pl st
-  | bp _ _ st => pl st
+  | bp _ _ st => pl st*)
   end.
 
 (** The evidence associated with a state. *)
@@ -44,11 +44,11 @@ Fixpoint seval st :=
   match st with
   | stop _ e => e
   | conf t p e => aeval t p e
-  | rem _ _ st => seval st
+  (*| rem _ _ st => seval st*)
   | ls st t => aeval t (pl st) (seval st)
-  | bsl _ st t p e => ss (seval st) (aeval t p e)
+  (*| bsl _ st t p e => ss (seval st) (aeval t p e)
   | bsr _ e st => ss e (seval st)
-  | bp _ st0 st1 => pp (seval st0) (seval st1)
+  | bp _ st0 st1 => pp (seval st0) (seval st1)*)
 end.
 
 (** * Labeled Transition System
@@ -67,7 +67,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
            (stop p (aeval (aasp r x) p e))
 (** Remote call *)
 
-| statt:
+(*| statt:
     forall r x p q e,
       step (conf (aatt r q x) p e)
            (Some (req (fst r) q (unanno x)))
@@ -80,7 +80,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
     forall j p q e,
       step (rem j p (stop q e))
            (Some (rpy (pred j) q))
-           (stop p e)
+           (stop p e) *)
 (** Linear Sequential Composition *)
 
 | stlseq:
@@ -96,7 +96,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
     forall t p e,
       step (ls (stop p e) t) None (conf t p e)
 (** Branching Sequential Composition *)
-
+(*
 | stbseq:
     forall r s x y p e,
       step (conf (abseq r s x y) p e)
@@ -142,7 +142,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
     forall j p e p' e',
       step (bp j (stop p e) (stop p' e'))
            (Some (join (pred j)))
-           (stop p' (pp e e')).
+           (stop p' (pp e e'))*) .
 Hint Constructors step.
 
 (** A step preserves place. *)
@@ -259,6 +259,7 @@ Qed.
 
 (** * Correct Path Exists *)
 
+(*
 Lemma star_strem:
   forall st0 st1 j p,
     star st0 st1 -> star (rem j p st0) (rem j p st1).
@@ -266,7 +267,7 @@ Proof.
   intros.
   induction H; auto.
   eapply star_tran; eauto.
-Qed.
+Qed.*)
 
 Lemma star_stls:
   forall st0 st1 t,
@@ -277,6 +278,7 @@ Proof.
   eapply star_tran; eauto.
 Qed.
 
+(*
 Lemma star_stbsl:
   forall st0 st1 j t p e,
     star st0 st1 ->
@@ -308,8 +310,9 @@ Proof.
   - induction H0; auto.
     eapply star_tran; eauto.
   - eapply star_tran; eauto.
-Qed.
+Qed.*)
 
+(*
 Theorem correct_path_exists:
   forall t p e,
     star (conf t p e) (stop p (aeval t p e)).
@@ -342,6 +345,7 @@ Proof.
     apply IHt2.
     eapply star_tran; eauto.
 Qed.
+*)
 
 (** * Progress *)
 
@@ -352,7 +356,7 @@ Definition halt st :=
   end.
 
 (** The step relation nevers gets stuck. *)
-
+(*
 Theorem never_stuck:
   forall st0,
     halt st0 \/ exists e st1, step st0 e st1.
@@ -422,6 +426,7 @@ Proof.
       destruct H as [st H].
       exists (bp n st st0_2). auto.
 Qed.
+*)
 
 (** * Termination *)
 
@@ -473,6 +478,7 @@ Qed.
 
 (** Size of a term (number of steps to reduce). *)
 
+(*
 Fixpoint tsize t: nat :=
   match t with
   | aasp _ _ => 1
@@ -725,3 +731,4 @@ Proof.
       eapply rlstar_transitive; eauto.
       eapply rlstar_silent_tran in H; eauto.
 Qed.
+*)

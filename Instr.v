@@ -1,9 +1,9 @@
 Require Import Term.
-Require Import Event_system.
+(*Require Import Event_system.
 Require Import Term_system.
-Require Import Trace.
+Require Import Trace.*)
 Require Import LTS.
-Require Import Main.
+(*Require Import Main.*)
 Require Import More_lists.
 Require Import Preamble.
 
@@ -16,50 +16,51 @@ Set Nested Proofs Allowed.
 (** * VM Instructions *)
 
 Inductive Prim_Instr: Set :=
-| copy: Prim_Instr
+(*| copy: Prim_Instr
 | kmeas: ASP_ID -> Plc -> (list Arg) -> Prim_Instr
 | umeas: ASP_ID -> (list Arg) -> Prim_Instr
-| sign: Prim_Instr
+| sign: Prim_Instr*)
 | hash: Prim_Instr.
 
 Inductive Instr: Set :=
 | primInstr: Prim_Instr -> Instr
-| split: SP -> SP -> Instr
+(*| split: SP -> SP -> Instr
 | joins: Instr
 | joinp: Instr
 | reqrpy: Plc -> Term -> Instr
 | besr : Instr
-| bep: (list Instr) -> (list Instr) -> Instr.
+| bep: (list Instr) -> (list Instr) -> Instr*).
 
 Inductive AnnoInstr: Set :=
 | aprimInstr: nat -> Prim_Instr -> AnnoInstr
-| asplit: nat -> SP -> SP -> AnnoInstr
+(*| asplit: nat -> SP -> SP -> AnnoInstr
 | ajoins: nat -> AnnoInstr
 | ajoinp: nat -> AnnoInstr
 | abesr : AnnoInstr
 | areqrpy: Range -> Plc -> AnnoTerm -> AnnoInstr
-| abep: Range -> Range -> (list AnnoInstr) -> (list AnnoInstr) -> AnnoInstr.
+| abep: Range -> Range -> (list AnnoInstr) -> (list AnnoInstr) -> AnnoInstr*).
 
 
 (** * Instruction Compiler *)
 Definition asp_instr (a:ASP) : Prim_Instr :=
   match a with
-  | CPY => copy
+  (*| CPY => copy
   | KIM i p args => kmeas i p args
   | USM i args => umeas i args
   | SIG => sign
-  | HSH => hash
+  | HSH => hash*)
+  | _ => hash
   end.
 
 Fixpoint instr_compiler (t:AnnoTerm) : (list AnnoInstr) :=
   match t with
   | aasp r a => [aprimInstr (fst r) (asp_instr a)]  
-  | aatt r q t' => [areqrpy r q t']              
+(*  | aatt r q t' => [areqrpy r q t']      *)        
   | alseq _ t1 t2 =>
     let tr1 := instr_compiler t1 in
     let tr2 := instr_compiler t2 in
     tr1 ++ tr2     
-  | abseq r (sp1,sp2) t1 t2 =>
+(*  | abseq r (sp1,sp2) t1 t2 =>
     let tr1 := instr_compiler t1 in
     let tr2 := instr_compiler t2 in
     let i := Nat.pred (snd r) in
@@ -70,12 +71,13 @@ Fixpoint instr_compiler (t:AnnoTerm) : (list AnnoInstr) :=
     let tr2 := instr_compiler t2 in
     let tr := [abep (range t1) (range t2) tr1 tr2] in
     let i := Nat.pred (snd r) in
-    [asplit (fst r) sp1 sp2] ++ tr ++ [ajoinp i] 
+    [asplit (fst r) sp1 sp2] ++ tr ++ [ajoinp i] *)
   end.
 
+(*
 Definition termx := (bpar (ALL,ALL) (asp CPY) (asp SIG)).
 Definition termy := bpar (NONE,NONE) termx termx.
-Compute (instr_compiler (annotated termy)).
+Compute (instr_compiler (annotated termy)). *)
 
 
 (*

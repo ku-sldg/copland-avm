@@ -44,10 +44,10 @@ Defined.
 Hint Resolve eq_arg_dec.
 
 Inductive ASP: Set :=
-| CPY: ASP
+(*| CPY: ASP
 | KIM: ASP_ID -> Plc -> (list Arg) -> ASP
 | USM: ASP_ID -> (list Arg) -> ASP
-| SIG: ASP
+| SIG: ASP*)
 | HSH: ASP.
 
 (** The method by which data is split is specified by a natural number. *)
@@ -60,10 +60,11 @@ Definition Split: Set := (SP * SP).
 
 Inductive Term: Set :=
 | asp: ASP -> Term
-| att: Plc -> Term -> Term
+(*| att: Plc -> Term -> Term*)
 | lseq: Term -> Term -> Term
+                        (*
 | bseq: Split -> Term -> Term -> Term
-| bpar: Split -> Term -> Term -> Term.
+| bpar: Split -> Term -> Term -> Term*).
 
 (** The structure of evidence. *)
 
@@ -154,10 +155,10 @@ Defined.
 
 Fixpoint typeof_asp t p e :=
   match t with
-  | CPY => e
+  (*| CPY => e
   | KIM i q A => kk i A p q e
   | USM i A => uu i A p e
-  | SIG => gg p e
+  | SIG => gg p e*)
   | HSH => hh p e
   end.
 
@@ -166,13 +167,14 @@ Fixpoint typeof_asp t p e :=
 Fixpoint typeof (t:Term) (p:Plc) (e:Evidence) : Evidence :=
   match t with
   | asp a => typeof_asp a p e
-  | att q t1 => typeof t1 q e
+  (*| att q t1 => typeof t1 q e*)
   | lseq t1 t2 => typeof t2 p (typeof t1 p e)
-  | bseq s t1 t2 => ss (typeof t1 p (sp (fst s) e))
+  (*| bseq s t1 t2 => ss (typeof t1 p (sp (fst s) e))
                        (typeof t2 p (sp (snd s) e))
   | bpar s t1 t2 => pp (typeof t1 p (sp (fst s) e))
-                       (typeof t2 p (sp (snd s) e))
+                       (typeof t2 p (sp (snd s) e)) *)
   end.
+
 
 
 (** * Events
@@ -198,15 +200,15 @@ Inductive Ev: Set :=
 | join: nat -> Plc -> Evidence -> Evidence -> Evidence -> Ev.*)
 
 Inductive Ev: Set :=
-| copy: nat -> (*Plc -> Evidence ->*) Ev
+(*| copy: nat -> (*Plc -> Evidence ->*) Ev
 | kmeas: nat -> ASP_ID -> Plc -> (list Arg) -> (*Evidence -> Evidence ->*) Ev
 | umeas: nat -> ASP_ID -> (*Plc ->*) (list Arg) -> (*Evidence -> Evidence ->*) Ev
-| sign: nat -> (*Plc ->*) (*Evidence -> Evidence ->*) Ev
+| sign: nat -> (*Plc ->*) (*Evidence -> Evidence ->*) Ev*)
 | hash: nat -> (*Plc ->*) (*Evidence -> Evidence ->*) Ev
-| req: nat -> (*Plc ->*) Plc -> (*Evidence*) Term -> Ev
+(*| req: nat -> (*Plc ->*) Plc -> (*Evidence*) Term -> Ev
 | rpy: nat -> (*Plc ->*) Plc -> (*Evidence ->*) Ev
 | split: nat -> (*Plc -> Evidence -> Evidence -> Evidence ->*) Ev
-| join:  nat -> (*Plc -> Evidence -> Evidence -> Evidence ->*) Ev.
+| join:  nat -> (*Plc -> Evidence -> Evidence -> Evidence ->*) Ev*).
 
 Definition eq_ev_dec:
   forall x y: Ev, {x = y} + {x <> y}.
@@ -220,15 +222,15 @@ Hint Resolve eq_ev_dec.
 
 Definition ev x :=
   match x with
-  | copy i => i
+  (*| copy i => i
   | kmeas i _ _ _ => i
   | umeas i _ _ => i
-  | sign i => i
+  | sign i => i*)
   | hash i => i
-  | req i _ _ => i
+  (*| req i _ _ => i
   | rpy i _ => i
   | split i => i
-  | join i => i
+  | join i => i*)
   end.
 
 (** Events are used in a manner that ensures that
@@ -240,10 +242,10 @@ See Lemma [events_injective].
 
 Definition asp_event i x (*p e*) :=
   match x with
-  | CPY => copy i (* p e *)
+  (*| CPY => copy i (* p e *)
   | KIM id q A => kmeas i id q A (*e (eval_asp (KIM id q A) p e)*)
   | USM id A => umeas i id A (*e (eval_asp (USM id A) p e)*)
-  | SIG => sign i (*e (eval_asp SIG p e)*)
+  | SIG => sign i*) (*e (eval_asp SIG p e)*)
   | HSH => hash i (*e (eval_asp HSH p e)*)
   end.
 
@@ -268,32 +270,33 @@ Inductive AnnASP: Set :=
 
 Inductive AnnoTerm: Set :=
 | aasp: Range -> ASP -> AnnoTerm
-| aatt: Range -> Plc -> AnnoTerm -> AnnoTerm
+(*| aatt: Range -> Plc -> AnnoTerm -> AnnoTerm*)
 | alseq: Range -> AnnoTerm -> AnnoTerm -> AnnoTerm
-| abseq: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
-| abpar: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm.
+(*| abseq: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
+| abpar: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm*).
 
 (** The number of events associated with a term.  The branching terms
 add a split and a join to the events of their subterms. Similarly, the
 remote calls add a request and receive to the events of their subterm.
 *)
 
+
 Fixpoint esize t :=
   match t with
   | aasp _ _ => 1
-  | aatt _ _ t1 => 2 + esize t1
+  (*| aatt _ _ t1 => 2 + esize t1*)
   | alseq _ t1 t2 => esize t1 + esize t2
-  | abseq _ _ t1 t2 => 2 + esize t1 + esize t2
-  | abpar _ _ t1 t2 => 2 + esize t1 + esize t2
+  (*| abseq _ _ t1 t2 => 2 + esize t1 + esize t2
+  | abpar _ _ t1 t2 => 2 + esize t1 + esize t2*)
   end.
 
 Definition range x :=
   match x with
   | aasp r _ => r
-  | aatt r _ _ => r
+  (*| aatt r _ _ => r*)
   | alseq r _ _ => r
-  | abseq r _ _ _ => r
-  | abpar r _ _ _ => r
+  (*| abseq r _ _ _ => r
+  | abpar r _ _ _ => r*)
   end.
 
 (** This function annotates a term.  It feeds a natural number
@@ -303,13 +306,14 @@ Definition range x :=
 Fixpoint anno (t: Term) i: nat * AnnoTerm :=
   match t with
   | asp x => (S i, aasp (i, S i) x)
-  | att p x =>
+  (*| att p x =>
     let (j, a) := anno x (S i) in
-    (S j, aatt (i, S j) p a)
+    (S j, aatt (i, S j) p a)*)
   | lseq x y =>
     let (j, a) := anno x i in
     let (k, b) := anno y j in
     (k, alseq (i, k) a b)
+      (*
   | bseq s x y =>
     let (j, a) := anno x (S i) in
     let (k, b) := anno y j in
@@ -317,8 +321,9 @@ Fixpoint anno (t: Term) i: nat * AnnoTerm :=
   | bpar s x y =>
     let (j, a) := anno x (S i) in
     let (k, b) := anno y j in
-    (S k, abpar (i, S k) s a b)
+    (S k, abpar (i, S k) s a b) *)
   end.
+
 
 Lemma anno_range:
   forall x i,
@@ -335,10 +340,11 @@ Definition annotated x :=
 Fixpoint unanno a :=
   match a with
   | aasp _ a => asp a
-  | aatt _ p t => att p (unanno t)
+  (*| aatt _ p t => att p (unanno t)*)
   | alseq _ a1 a2 => lseq (unanno a1) (unanno a2)
+                         (*
   | abseq _ spl a1 a2 => bseq spl (unanno a1) (unanno a2)
-  | abpar _ spl a1 a2 => bpar spl (unanno a1) (unanno a2)
+  | abpar _ spl a1 a2 => bpar spl (unanno a1) (unanno a2) *)
   end.
 
 
@@ -351,18 +357,18 @@ Inductive well_formed: AnnoTerm -> Prop :=
 | wf_asp: forall r x,
     snd r = S (fst r) ->
     well_formed (aasp r x)
-| wf_att: forall r p x,
+(*| wf_att: forall r p x,
     well_formed x ->
     S (fst r) = fst (range x) ->
     snd r = S (snd (range x)) ->
-    well_formed (aatt r p x)
+    well_formed (aatt r p x)*)
 | wf_lseq: forall r x y,
     well_formed x -> well_formed y ->
     fst r = fst (range x) ->
     snd (range x) = fst (range y) ->
     snd r = snd (range y) ->
     well_formed (alseq r x y)
-| wf_bseq: forall r s x y,
+(*| wf_bseq: forall r s x y,
     well_formed x -> well_formed y ->
     S (fst r) = fst (range x) ->
     snd (range x) = fst (range y) ->
@@ -373,7 +379,7 @@ Inductive well_formed: AnnoTerm -> Prop :=
     S (fst r) = fst (range x) ->
     snd (range x) = fst (range y) ->
     snd r = S (snd (range y)) ->
-    well_formed (abpar r s x y).
+    well_formed (abpar r s x y)*).
 Hint Constructors well_formed.
 
 Lemma well_formed_range:
@@ -381,6 +387,7 @@ Lemma well_formed_range:
     well_formed t ->
     snd (range t) = fst (range t) + esize t.
 Proof.
+  (*
   induction t; intros; simpl; inv H; simpl.
   - rewrite Nat.add_1_r; auto.
   - apply IHt in H3; omega.
@@ -393,12 +400,15 @@ Proof.
   - apply IHt1 in H4.
     apply IHt2 in H5.
     omega.
-Qed.
+Qed. *)
+Admitted.
+
 
 Lemma anno_well_formed:
   forall t i,
     well_formed (snd (anno t i)).
 Proof.
+  (*
   induction t; intros; simpl; auto.
   - repeat expand_let_pairs.
     simpl.
@@ -417,21 +427,25 @@ Proof.
     apply wf_bpar; simpl; auto;
       repeat rewrite anno_range; simpl;
         reflexivity.
-Qed.
+Qed. *)
+Admitted.
+
 
 (** Eval for annotated terms. *)
+
 
 Fixpoint aeval t p e :=
   match t with
   | aasp _ x => typeof (asp x) p e
-  | aatt _ q x => aeval x q e
+  (*| aatt _ q x => aeval x q e*)
   | alseq _ t1 t2 => aeval t2 p (aeval t1 p e)
-  | abseq _ s t1 t2 => ss (aeval t1 p ((sp (fst s)) e))
+  (*| abseq _ s t1 t2 => ss (aeval t1 p ((sp (fst s)) e))
                           (aeval t2 p ((sp (snd s)) e))
   | abpar _ s t1 t2 => pp (aeval t1 p ((sp (fst s)) e))
-                          (aeval t2 p ((sp (snd s)) e))
-  end.
+                          (aeval t2 p ((sp (snd s)) e)) *)
+  end. 
 
+(*
 Lemma eval_aeval:
   forall t p e i,
     typeof t p e = aeval (snd (anno t i)) p e.
@@ -451,13 +465,14 @@ Proof.
     simpl.
     rewrite <- IHt1.
     rewrite <- IHt2; auto.
-Qed.
+Qed.*)
 
 (** This predicate specifies when a term, a place, and some initial
     evidence is related to an event.  In other words, it specifies the
     set of events associated with a term, a place, and some initial
     evidence. *)
 
+(*
 Inductive events: AnnoTerm -> (*Plc -> Evidence ->*) Ev -> Prop :=
 | evtscpy:
     forall r i (*p e*),
@@ -766,7 +781,7 @@ Proof.
     + events_event_range.
     + events_event_range.
     + events_event_range.
-Qed.
+Qed. *)
 
 
 (** * Eval function definition *)
@@ -778,7 +793,7 @@ Definition splitEv (sp:SP) (e:EvidenceC) : EvidenceC :=
 
 Definition eval_asp (a:ASP) (e:EvidenceC) : EvidenceC :=
   match a with
-  | CPY => e
+  (*| CPY => e
   | KIM i q args =>
     let bs := invokeKIM i q args in
     (kkc i args q bs e)
@@ -787,7 +802,7 @@ Definition eval_asp (a:ASP) (e:EvidenceC) : EvidenceC :=
     (uuc i args bs e)
   | SIG =>
     let bs := signEv e in
-    (ggc e bs)
+    (ggc e bs)*)
   | HSH =>
     let bs := hashEv e in
     (hhc bs e)
@@ -796,10 +811,11 @@ Definition eval_asp (a:ASP) (e:EvidenceC) : EvidenceC :=
 Fixpoint eval (t:Term) (e:EvidenceC) : EvidenceC :=
   match t with
   | asp a => eval_asp a e
-  | att q t1 => toRemote t1 q e
+  (*| att q t1 => toRemote t1 q e *)
   | lseq t1 t2 =>
     let e1 := eval t1 e in
     eval t2 e1
+         (*
   | bseq (sp1,sp2) t1 t2 =>
     let e1 := splitEv sp1 e in
     let e2 := splitEv sp2 e in
@@ -811,5 +827,5 @@ Fixpoint eval (t:Term) (e:EvidenceC) : EvidenceC :=
     let e2 := splitEv sp2 e in
     let e1' := parallel_eval_thread t1 e1 in
     let e2' := parallel_eval_thread t2 e2 in
-    (ppc e1' e2')
+    (ppc e1' e2')*)
   end.

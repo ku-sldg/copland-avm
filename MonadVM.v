@@ -127,12 +127,12 @@ Definition add_trace (tr':list Ev) : vm_st -> vm_st :=
 
 Definition add_tracem (tr:list Ev) : VM unit :=
   modify (add_trace tr).
-
+(*
 Definition split_evm (i:nat) (sp1 sp2:SP) (e:EvidenceC) : VM (EvidenceC*EvidenceC) :=
     let e1 := splitEv sp1 e in
     let e2 := splitEv sp2 e in
     add_tracem [Term.split i] ;;
-               ret (e1,e2).
+               ret (e1,e2).*)
 
        
 Ltac monad_unfold :=
