@@ -59,14 +59,16 @@ Definition when {S A} (b : bool) (m : St S A) : St S unit :=
 (* Specific VM monad *)
 Definition ev_stack := gen_stack EvidenceC.
 Record vm_st : Type := mk_st
-                         {st_ev:EvidenceC ;
-                          st_stack:ev_stack ;
+                         {(*st_ev:EvidenceC ;
+                          st_stack:ev_stack ; *)
                           st_trace:list Ev}.
 
 Definition VM := St vm_st.
 (*Definition runVM{A:Type} := @runSt vm_config A.*)
 
 (* Sanity checks *)
+
+(*
 Definition extractVal (r:vm_st) : nat :=
   let ev := head (st_stack r) in
   let n :=
@@ -85,8 +87,10 @@ Definition test_comp : VM unit :=
 Definition empty_vm_state := mk_st mtc [(ggc mtc 48)] [].
 
 Compute (runSt empty_vm_state test_comp).
+*)
 
 (* VM monad operations *)
+(*
 Definition push_stackm (e:EvidenceC) : VM unit :=
   st <- get ;;
      let '{| st_ev := e; st_stack := oldStack; st_trace := tr |} := st in
@@ -120,10 +124,10 @@ Definition modify_evm (f:EvidenceC -> EvidenceC) : VM unit :=
   st <- get ;;
   let '{| st_ev := e; st_stack := s; st_trace := tr |} := st in
   put (mk_st (f e) s tr).
-
+*)
 Definition add_trace (tr':list Ev) : vm_st -> vm_st :=
-  fun '{| st_ev := e; st_stack := s; st_trace := tr |} =>
-    mk_st e s (tr ++ tr').
+  fun '{| st_trace := tr |} =>
+    mk_st (tr ++ tr').
 
 Definition add_tracem (tr:list Ev) : VM unit :=
   modify (add_trace tr).
