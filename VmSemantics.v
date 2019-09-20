@@ -148,23 +148,70 @@ Proof.
 Defined.
 Hint Resolve step_implies_multi.
 
+Lemma st_congr :
+  forall st tr,
+    (*st_ev st = e ->
+    st_stack st = s -> *)
+    st_trace st = tr ->
+    st =  {| st_trace := tr |}.
+Proof.
+  intros.
+  subst; destruct st; auto.
+Defined.
+
+Lemma foo : forall il m,
+    st_trace (fold_left run_vm_step il
+                        {| st_trace := m |}) =
+    m ++ st_trace (fold_left run_vm_step il
+                             {| st_trace := [] |}).
+Proof.
+  induction il; simpl; intros m.
+  - rewrite app_nil_r. auto.
+  - destruct a.
+    
+    unfold run_vm_step; fold run_vm_step.
+    monad_unfold. simpl. unfold prim_trace. destruct p.
+    rewrite IHil.
+    rewrite IHil. simpl.
+    assert (
+        (st_trace
+           (fold_left run_vm_step il
+                      {|
+                        st_trace := [Term.hash n] |})) =
+        ([Term.hash n] ++
+                       st_trace
+                       (fold_left run_vm_step il
+                                  {| st_trace := [] |}))).
+    { rewrite IHil. auto. }
+    rewrite H.
+    rewrite app_assoc. auto.
+Defined.
+
 
 Lemma multi_implies_run: forall il tr,
   vm_multi (mk_config il) (mk_config []) tr ->
   run_vm il = {| st_trace := tr |}.
-Admitted.
-
-Lemma run_implies_multi: forall il tr,
-    run_vm il = {| st_trace := tr |} ->
-    vm_multi (mk_config il) (mk_config []) tr.
-Admitted.
-
-
-Lemma run_iff_multi: forall il tr,
-run_vm il = {| st_trace := tr |} <->
-vm_multi (mk_config il) (mk_config []) tr.
-Admitted.
-
+Proof.
+  induction il; intros.
+  - inv H; unfold run_vm; simpl.
+    + reflexivity.
+    + inv H0.
+  - inv H.
+    unfold run_vm; simpl.
+    unfold run_vm_step. fold run_vm_step. unfold execSt. destruct a. simpl.
+    destruct p. simpl.
+    dependent destruction x'. inv H0. inv H0. simpl. subst. 
+    Check foo.   
+    assert    ( st_trace (fold_left run_vm_step vm_list0
+                        {| st_trace := [Term.hash n] |}) =
+    [Term.hash n] ++ st_trace (fold_left run_vm_step vm_list0
+                                         {| st_trace := [] |})).
+    apply foo.
+    apply st_congr. rewrite H2.
+   
+    pose (IHil cs'). concludes. unfold run_vm in e. rewrite e. simpl.
+    auto.
+Defined.
 
 Lemma vm_multi_trans : forall x y z tr tr',
   vm_multi x y tr ->
@@ -173,6 +220,66 @@ Lemma vm_multi_trans : forall x y z tr tr',
 Proof.
   apply refl_trans_1n_trace_trans.
 Defined.
+
+Lemma run_implies_multi: forall il tr,
+    run_vm il = {| st_trace := tr |} ->
+    vm_multi (mk_config il) (mk_config []) tr.
+Proof.
+  induction il; intros.
+  - inv H; unfold run_vm; simpl.
+    econstructor.
+  - 
+    unfold run_vm in H.
+    assert (a :: il = [a]++il). auto.
+    rewrite H0 in *.
+    rewrite fold_left_app in H. simpl in H. unfold run_vm_step in H. fold run_vm_step in H. destruct a. destruct p. simpl in H. monad_unfold. simpl in H.
+    unfold run_vm in IHil.
+
+    assert (st_trace (fold_left run_vm_step il {| st_trace := [Term.hash n] |}) =
+            [Term.hash n] ++ st_trace (fold_left run_vm_step il {| st_trace := [] |})).
+    apply foo.
+    assert (st_trace (fold_left run_vm_step il {| st_trace := [Term.hash n] |}) =
+            st_trace ({| st_trace := tr |})). congruence.
+
+    rewrite H1 in H2. simpl in H2.
+    rewrite <- H2.
+    simpl.
+    rewrite H0.
+    assert (Term.hash n :: st_trace (fold_left run_vm_step il {| st_trace := [] |}) =
+            [Term.hash n] ++ st_trace (fold_left run_vm_step il {| st_trace := [] |})).
+    auto.
+    rewrite H3.
+    econstructor.
+    econstructor.
+    simpl.
+    eapply IHil.
+    Check run_vm.
+    Print run_vm.
+    Lemma run_duh : forall il,
+      run_vm il =
+      {| st_trace := st_trace (run_vm il)|}.
+    Proof.
+      intros.
+      destruct (run_vm il). simpl. reflexivity.
+    Defined.
+
+    apply run_duh.
+Defined.
+
+
+Lemma run_iff_multi: forall il tr,
+run_vm il = {| st_trace := tr |} <->
+vm_multi (mk_config il) (mk_config []) tr.
+Proof.
+  intros.
+  split.
+  - apply run_implies_multi.
+  - apply multi_implies_run.
+Defined.
+
+
+
+
 
 (*
 Lemma ha : forall e e' e'' s s' s'' il1 il2 resl tr1 tr2,
@@ -364,6 +471,37 @@ Proof.
     inv H.
     monad_unfold.
     rewrite <- app_assoc.
+
+
+    (*
+    assert (il1 = [i0] ++ (firstn ((length il1) - 1) vm_list0) ++ [i]).
+    admit.
+    rewrite H2.
+
+    Check asas.
+    eapply vm_multi_transitive.
+    eapply step_implies_multi.
+    eapply asas.
+    rewrite H2 in H.
+    assert (([i0] ++ firstn (length il1 - 1) vm_list0 ++ [i]) =
+            (i0 :: firstn (length il1 - 1) vm_list0 ++ [i])). auto.
+    rewrite H4 in H. clear H4.
+    assert (vm_list0 = firstn (length il1 - 1) vm_list0 ++ [i] ++ il2).
+    admit.
+    assert ((i0 :: firstn (length il1 - 1) vm_list0 ++ [i]) ++ il2 =
+            i0 :: (firstn (length il1 - 1) vm_list0) ++ [i] ++ il2).
+    rewrite app_assoc. auto.
+    rewrite H5 in H. clear H5.
+    
+    rewrite <- H4 in H.
+    eassumption.
+    eapply vm_multi_transitive. admit.
+    eapply step_implies_multi. assumption.
+    *)
+    
+
+    
+    
     (*clear IHrefl_trans_1n_trace.*) (* for readability *)
     assert
       (il1 = [i0] ++ (firstn ((length vm_list0) - (length il2) - 1) vm_list0) ++ [i]).
@@ -378,6 +516,7 @@ Proof.
     assert (
         (firstn (length vm_list0 - length il2 - 1) vm_list0 ++ [i] ++ il2) =
         vm_list0).
+    {
     assert (i0::vm_list0 = [i0]++vm_list0). auto.
     rewrite H2 in H3.
     eapply app_inv_head.
@@ -385,9 +524,10 @@ Proof.
     rewrite <- app_assoc in H3.
     assert (firstn (length vm_list0 - length il2 - 1) vm_list0 ++ [i] ++ il2 =
             (firstn (length vm_list0 - length il2 - 1) vm_list0 ++ [i]) ++ il2).
-    rewrite app_assoc. auto.
+    {
+    rewrite app_assoc. auto. }
     rewrite <- H4 in H3.
-    eassumption.
+    eassumption. }
     
     rewrite <- app_assoc in H.
     rewrite <- app_assoc in H.
@@ -469,7 +609,15 @@ Lemma compile_not_empty :
   forall t,
     (instr_compiler t) <> [].
 Proof.
-Admitted.
+  intros.
+  induction t.
+  - destruct a. simpl. congruence.
+  - simpl.
+    Search (_ <> []).
+    destruct (instr_compiler t1).
+    +  simpl. auto.
+    + simpl. congruence.
+Defined.
 
 Lemma lstar_stls :
   forall st0 st1 t tr,
@@ -607,44 +755,9 @@ Proof.
 Defined.
 *)
       
-Lemma st_congr :
-  forall st tr,
-    (*st_ev st = e ->
-    st_stack st = s -> *)
-    st_trace st = tr ->
-    st =  {| st_trace := tr |}.
-Proof.
-  intros.
-  subst; destruct st; auto.
-Defined.
 
-Lemma foo : forall il m,
-    st_trace (fold_left run_vm_step il
-                        {| st_trace := m |}) =
-    m ++ st_trace (fold_left run_vm_step il
-                             {| st_trace := [] |}).
-Proof.
-  induction il; simpl; intros m.
-  - rewrite app_nil_r. auto.
-  - destruct a.
-    
-    unfold run_vm_step; fold run_vm_step.
-    monad_unfold. simpl. unfold prim_trace. destruct p.
-    rewrite IHil.
-    rewrite IHil. simpl.
-    assert (
-        (st_trace
-           (fold_left run_vm_step il
-                      {|
-                        st_trace := [Term.hash n] |})) =
-        ([Term.hash n] ++
-                       st_trace
-                       (fold_left run_vm_step il
-                                  {| st_trace := [] |}))).
-    { rewrite IHil. auto. }
-    rewrite H.
-    rewrite app_assoc. auto.
-Defined.
+
+
 
 Lemma run_vm_monotonic' : forall il x x0,
     st_trace (fold_left run_vm_step il
@@ -902,7 +1015,7 @@ Defined. *)
 
 
 
-  
+(*
 
 
 
@@ -1039,7 +1152,7 @@ Proof.
   split; eauto.
 Defined.
   
-
+*)
 
 
 
