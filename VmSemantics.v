@@ -984,57 +984,205 @@ Proof.
   - assumption.
   - eapply trace_decompose; eauto.
 Defined.
-
-Inductive rest_il : AnnoTerm -> (list AnnoInstr) -> LTS.St -> Prop :=
-| aasp_rest : forall r a p et,
-    rest_il (aasp r a)
+Check aeval.
+Inductive rest_il : AnnoTerm -> Plc -> Evidence -> (list AnnoInstr) -> LTS.St -> Prop :=
+(*| aasp_rest : forall r a p et,
+    rest_il (aasp r a) p et
             [aprimInstr (fst r) (asp_instr a)]
-            (conf (aasp r a) p et)
-| aasp_done: forall r a p et,
-    rest_il (aasp r a)
+            (conf (aasp r a) p et)*)
+| term_rest : forall t p et,
+    rest_il t p et (instr_compiler t) (conf t p et)
+(*| aasp_done: forall r a p et,
+    rest_il (aasp r a) p et
             []
-            (stop p et)
-| lseq_rest : forall r t1 t2 p e,
-    rest_il (alseq r t1 t2)
+            (stop p (aeval (aasp r a) p et))*)
+| done_rest : forall t p et,
+    rest_il t p et [] (stop p (aeval t p et))
+(*| lseq_rest : forall r t1 t2 p e,
+    rest_il (alseq r t1 t2) p e
             (instr_compiler t1 ++ instr_compiler t2)
-            (conf (alseq r t1 t2) p e)
-| lseq_rest_t1 : forall r t1 t2 il st,
-    rest_il t1 il st ->
-    rest_il (alseq r t1 t2)
+            (conf (alseq r t1 t2) p e)*)
+| lseq_rest_t1 : forall r t1 t2 il st p e,
+    rest_il t1 p e il st ->
+    rest_il (alseq r t1 t2) p e
             (il ++ (instr_compiler t2))
             (ls st t2)
 | lseq_rest_t2 : forall r t1 t2 p e,
-    rest_il (alseq r t1 t2)
+    rest_il (alseq r t1 t2) p e
             (instr_compiler t2)
-            (conf t2 p e)
-| lseq_done: forall r t1 t2 p et,
-    rest_il (alseq r t1 t2)
+            (conf t2 p (aeval t1 p e))
+(*| lseq_done: forall r t1 t2 p et,
+    rest_il (alseq r t1 t2) p et
             []
-            (stop p et).
+            (stop p (aeval t2 p (aeval t1 p et)))*).
 
+Lemma multi_lstar' : forall t tr p et il il' st st',
+      vm_multi (mk_config il)
+               (mk_config il') tr ->
+      rest_il t p et il st ->
+      rest_il t p et il' st' ->
+      lstar st tr st'.
+Proof.  
+  induction t; intros.
+  - destruct a.
+    inv H0; inv H1; simpl in *.
+    + 
+      assert (tr = []). admit.
+      rewrite H2.
+      econstructor.
+    + inv H. inv H2.
+      assert (cs' = []). admit.
+      rewrite H4.
+      rewrite app_nil_r. repeat econstructor.
+    + inv H. inv H2.
+    + assert (tr = []). admit.
+      rewrite H2.
+      econstructor.
+  - inv H0; inv H1.
+    Focus 10.
+    assert (il = []). admit.
+    subst.
+    simpl in *.
+    assert (tr = []). admit. subst. clear H.
+    assert (st = (stop p (aeval t1 p et))). admit.
+    subst. inv H1. inv H0. inv H11. admit. 
+
+    
+    + admit.
+    + econstructor. econstructor.
+      eapply lstar_stls.
+      
+
+      eapply IHt1.
+      assert (vm_multi {| vm_list := (instr_compiler t1) |} {| vm_list := il |} tr). admit.
+      apply H2.
+      destruct t1. econstructor.
+      simpl.
+      econstructor. eauto.
+    + econstructor. econstructor.
+      assert (tr = tr ++ []). admit.
+      rewrite H2.
+      eapply lstar_transitive.
+      eapply lstar_stls.
+      eapply IHt1.
+      assert ( vm_multi {| vm_list := instr_compiler t1 |}
+                        {| vm_list := [] |} tr). admit.
+      apply H3.
+      destruct t1. econstructor.
+      simpl. econstructor; eauto.
+      destruct t1; econstructor.
+      econstructor. apply stlseqstop. econstructor.
+    + admit.
+    + admit.
+    + admit.
+    + admit.
+
+    Focus 9.
+      
+      
+      
+      
+      
+    
+      
+      
+      
+    
+Admitted.
+
+
+(*
 Lemma multi_lstar' : forall t tr et p il' st',
       vm_multi (mk_config (instr_compiler t))
                (mk_config il') tr ->
-      rest_il t il' st' ->
+      rest_il t p et il' st' ->
       lstar (conf t p et) tr st'.
 Proof.
+
+  (*
+  intros.
+  generalize dependent et.
+  generalize dependent st'.
+  generalize dependent p.
+  induction H; intros.*)
+
+
+
+
+  intros.
+  generalize dependent tr.
+  induction H0; intros.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - 
+    
+    
   dependent induction t; intros.
   -
+    
     inv H0.
     +  simpl in *.
        assert (tr = []). admit.
        subst.
-       admit.
+       econstructor.
     + inversion H0. subst.
+      destruct a.
+      inv H. inv H1. inv H1.
+      assert (res_st = res_st1). auto.
+      rewrite H3.
+      
+      
+      rewrite H6.
+      eapply lstar_transitive.
+      econstructor. econstructor. econstructor.
+      assert (cs' = []). admit.
+      rewrite H4.
+      econstructor.
+  -
+    inv H0; simpl in *.
+    + 
+      assert (tr = []).
+      admit.
+      rewrite H1.
+      econstructor.
+    + inv H0.
+      econstructor. econstructor.
+      assert (tr = tr ++ []). rewrite app_nil_r. auto.
+      rewrite H1.
+      eapply lstar_transitive.
+      apply lstar_stls. eapply IHt1.
+      assert (vm_multi {| vm_list := instr_compiler t1 |}
+                       {| vm_list := il |} tr). admit.
+      apply H2. eauto.
+      econstructor.
+    +
+      assert (vm_multi {| vm_list := instr_compiler t1 |}
+                       {| vm_list := [] |} tr). admit.
+
+      econstructor. econstructor.
+      assert (tr = tr ++ []). rewrite app_nil_r. auto.
+      rewrite H2.
+      eapply lstar_transitive.
+      eapply lstar_stls.
+      eapply IHt1. eauto. destruct t1; econstructor.
+      econstructor.  eapply stlseqstop.
+      econstructor.
+    +
+      admit
+      
+      
+      
+    
+      
       admit.
   -
     inv H0.
-    
-      
-    
-    
-    
+  
 Admitted.
+*)
 
 Lemma multi_lstar : forall t tr et p,
       vm_multi (mk_config (instr_compiler t))
@@ -1044,6 +1192,7 @@ Proof.
   intros.
   eapply multi_lstar'.
   apply H.
+  destruct t; econstructor.
   destruct t; econstructor.
 Defined.
 
