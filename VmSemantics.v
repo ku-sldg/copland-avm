@@ -495,7 +495,10 @@ Admitted.
 Theorem app_inj_l: forall A (l1 l2 suf : list A),
     l1 ++ suf = l2 ++ suf -> l1 = l2.
 Proof.
-  Admitted.
+  intros.
+  Search (_ ++ _ = _ ++ _).
+  eapply app_inv_tail; eauto.
+Defined.
   
 Lemma headShouldersKneesAndToes : forall A (h : A) t l1 l2,
     h :: t = l1 ++ l2 ->
@@ -513,6 +516,57 @@ Theorem vm_multi_suffix : forall il1 il2 tr,
     vm_multi {| vm_list := il1 |} {| vm_list := il2 |} tr ->
     exists prefix, il1 = prefix ++ il2.
 Proof.
+  dependent induction il1; destruct il2; intros.
+  - exists []. reflexivity.
+  - inv H. inv H0.
+  - exists (a::il1). rewrite app_nil_r. reflexivity.
+  - inv H.
+    + exists []. reflexivity.
+    + dependent destruction x'.
+      assert (vm_list0 = il1).
+      inv H0. reflexivity.
+      
+      edestruct IHil1.
+      rewrite H2 in H1.
+      apply H1.
+      rewrite H3.
+      exists (a::x). reflexivity.
+Defined.
+      
+    
+    
+    (*
+  induction tr; intros.
+  - dependent destruction H.
+    + exists []. reflexivity.
+    + dependent destruction x'.
+      admit.
+  - destruct IHtr.
+    
+      
+
+    inv H.
+    + exists []. reflexivity.
+    + inv H0.
+  - edestruct IHil1.
+
+    inv H.
+    + econstructor.
+    + 
+      
+    
+      
+      
+  inv H.
+  - exists []. reflexivity.
+  - dependent destruction x'.
+    inv H0.
+    
+
+
+
+
+  
 (*  intros il1 il2 tr H. inversion H.
   - exists []. reflexivity.
   - subst. Print refl_trans_1n_trace. Print vm_step.
@@ -523,6 +577,7 @@ Proof.
     + admit.
     + reflexivity.
 Admitted.
+*)
 
 Lemma il1_pieces' : forall i0 vm_list0 il1 il2 i tr,
     i0 :: vm_list0 = il1 ++ il2 ->
