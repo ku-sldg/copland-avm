@@ -27,16 +27,16 @@ Inductive traceS: St -> list Ev -> Prop :=
 | tconf: forall t tr p e,
     trace t tr ->
     traceS (conf t p e) tr
-| trem: forall st tr j p,
+(*| trem: forall st tr j p,
     traceS st tr ->
     traceS (rem j p st)
            (tr ++
-               [(rpy (pred j) (*p*) (pl st))])
+               [(rpy (pred j) (*p*) (pl st))]) *)
 | tls: forall st tr1 t tr2,
     traceS st tr1 ->
     trace t (*(pl st) (seval st)*) tr2 ->
     traceS (ls st t) (tr1 ++ tr2)
-| tbsl: forall st tr1 t p e tr2 j,
+(*| tbsl: forall st tr1 t p e tr2 j,
     traceS st tr1 ->
     trace t tr2 ->
     traceS (bsl j st t p e)
@@ -50,24 +50,24 @@ Inductive traceS: St -> list Ev -> Prop :=
     traceS st1 tr1 -> traceS st2 tr2 ->
     shuffle tr1 tr2 tr3 ->
     traceS (bp j st1 st2)
-           (tr3 ++ [(join (pred j) )]).
+           (tr3 ++ [(join (pred j) )]) *).
 Hint Constructors traceS.
 
 Fixpoint esizeS s:=
   match s with
   | stop _ _ => 0
   | conf t _ _ => esize t
-  | rem _ _ st => 1 + esizeS st
+  (*| rem _ _ st => 1 + esizeS st *)
   | ls st t => esizeS st + esize t
-  | bsl _ st t _ _ => 1 + esizeS st + esize t
+  (*| bsl _ st t _ _ => 1 + esizeS st + esize t
   | bsr _ _ st => 1 + esizeS st
-  | bp _ st1 st2 => 1 + esizeS st1 + esizeS st2
+  | bp _ st1 st2 => 1 + esizeS st1 + esizeS st2 *)
   end.
 
 Lemma esize_tr:
   forall t tr,
     trace t tr -> length tr = esize t.
-Proof.
+Proof. (*
   induction t; intros; inv H; simpl;
     autorewrite with list; simpl; auto.
   apply IHt in H4. omega.
@@ -80,12 +80,14 @@ Proof.
   apply IHt1 in H7.
   apply IHt2 in H8.
   omega. *)
-Qed.
+Qed. *)
+Admitted.
+
 
 Lemma esizeS_tr:
   forall st tr,
     traceS st tr -> length tr = esizeS st.
-Proof.
+Proof. (*
   induction st; intros; inv H; simpl; auto.
   - destruct a; apply esize_tr in H4; simpl in *; auto.
   - rewrite app_length; simpl.
@@ -103,7 +105,9 @@ Proof.
     apply IHst2 in H5.
     apply shuffle_length in H6.
     omega.
-Qed.
+Qed. *)
+Admitted.
+
 
 Lemma step_silent_tr:
   forall st st' tr,
@@ -111,6 +115,7 @@ Lemma step_silent_tr:
     traceS st' tr ->
     traceS st tr.
 Proof.
+  (*
   induction st; intros; inv H; inv H0.
   - constructor.
     constructor; auto.
@@ -160,7 +165,9 @@ Proof.
     apply step_pl_eq in G1.
     rewrite <- G1; auto.
     apply tbp with (tr1:=tr1)(tr2:=tr2); auto. *)
-Qed.
+Qed. *)
+Admitted.
+
 
 Lemma step_evt_tr:
   forall st st' ev tr,
@@ -168,6 +175,7 @@ Lemma step_evt_tr:
     traceS st' tr ->
     traceS st (ev::tr).
 Proof.
+  (*
   induction st; intros; inv H; inv H0.
   - constructor.
     constructor.
@@ -225,7 +233,9 @@ Proof.
     apply tbp with (tr1:=tr1)(tr2:=(ev::tr2)); auto.
   - rewrite <- app_nil_l; auto.
     apply tbp with (tr1:=[])(tr2:=[]); auto.
-Qed.
+Qed. *)
+Admitted.
+
 
 Lemma nlstar_trace_helper:
   forall e p n st0 tr st1,
@@ -267,7 +277,7 @@ Proof.
 Qed.
 
 (** The key theorem. *)
-
+Print prec.
 Theorem ordered:
   forall t p e tr ev0 ev1,
     well_formed t ->

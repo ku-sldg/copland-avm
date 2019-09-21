@@ -478,14 +478,14 @@ Qed.
 
 (** Size of a term (number of steps to reduce). *)
 
-(*
+
 Fixpoint tsize t: nat :=
   match t with
   | aasp _ _ => 1
-  | aatt _ _ x => 2 + tsize x
+  (*| aatt _ _ x => 2 + tsize x *)
   | alseq _ x y => 2 + tsize x + tsize y
-  | abseq _ _ x y => 3 + tsize x + tsize y
-  | abpar _ _ x y => 2 + tsize x + tsize y
+  (*| abseq _ _ x y => 3 + tsize x + tsize y
+  | abpar _ _ x y => 2 + tsize x + tsize y *)
   end.
 
 (** Size of a state (number of steps to reduce). *)
@@ -494,11 +494,11 @@ Fixpoint ssize s: nat :=
   match s with
   | stop _ _ => 0
   | conf t _ _ => tsize t
-  | rem _ _ x => 1 + ssize x
+  (*| rem _ _ x => 1 + ssize x *)
   | ls x t => 1 + ssize x + tsize t
-  | bsl _ x t _ _ => 2 + ssize x + tsize t
+  (*| bsl _ x t _ _ => 2 + ssize x + tsize t
   | bsr _ _ x => 1 + ssize x
-  | bp _ x y => 1 + ssize x + ssize y
+  | bp _ x y => 1 + ssize x + ssize y *)
   end.
 
 (** Halt state has size 0. *)
@@ -552,6 +552,7 @@ Proof.
   apply halt_size.
   omega.
 Qed.
+
 
 (** * Numbered Labeled Transitions *)
 
@@ -731,4 +732,3 @@ Proof.
       eapply rlstar_transitive; eauto.
       eapply rlstar_silent_tran in H; eauto.
 Qed.
-*)

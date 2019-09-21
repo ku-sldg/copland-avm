@@ -472,9 +472,9 @@ Qed.*)
     set of events associated with a term, a place, and some initial
     evidence. *)
 
-(*
+
 Inductive events: AnnoTerm -> (*Plc -> Evidence ->*) Ev -> Prop :=
-| evtscpy:
+(*| evtscpy:
     forall r i (*p e*),
       fst r = i ->
       events (aasp r CPY) (*p e*) (copy i (*p e*))
@@ -492,13 +492,13 @@ Inductive events: AnnoTerm -> (*Plc -> Evidence ->*) Ev -> Prop :=
     forall r i,
       fst r = i ->
       (*gg p e = e' -> *)
-      events (aasp r SIG) (*p e*) (sign i (*e e'*))
+      events (aasp r SIG) (*p e*) (sign i (*e e'*)) *)
 | evtshsh:
     forall r i,
       fst r = i ->
       (*hh p e = e' -> *)
       events (aasp r HSH) (*p e*) (hash i (*e e'*))
-
+(*
 | evtsattreq:
     forall r q t i,
       fst r = i ->
@@ -512,7 +512,7 @@ Inductive events: AnnoTerm -> (*Plc -> Evidence ->*) Ev -> Prop :=
       snd r = S i ->
       (*aeval t q e = e' -> *)
       events (aatt r q t) (*p e*) (rpy i q (*e'*))
-
+*)
 | evtslseql:
     forall r t1 t2 ev,
       events t1 (*p e*) ev ->
@@ -521,7 +521,7 @@ Inductive events: AnnoTerm -> (*Plc -> Evidence ->*) Ev -> Prop :=
     forall r t1 t2 ev,
       events t2 (*p (aeval t1 p e)*) ev ->
       events (alseq r t1 t2) (*p e*) ev
-
+(*
 | evtsbseqsplit:
     forall r i s t1 t2,
       fst r = i ->
@@ -562,7 +562,7 @@ Inductive events: AnnoTerm -> (*Plc -> Evidence ->*) Ev -> Prop :=
       (*aeval t1 p (sp (fst s) e) = e1 ->
       aeval t2 p (sp (snd s) e) = e2 ->*)
       events (abpar r s t1 t2) (*p e*)
-             (join i (*p e1 e2 (pp e1 e2)*)).
+             (join i (*p e1 e2 (pp e1 e2)*))*).
 Hint Constructors events.
 
 Lemma events_range:
@@ -571,6 +571,7 @@ Lemma events_range:
     events t (*p e*) v ->
     fst (range t) <= ev v < snd (range t).
 Proof.
+  (*
   intros.
   pose proof H as G.
   apply well_formed_range in G.
@@ -599,7 +600,9 @@ Proof.
   - apply well_formed_range in H5.
     apply well_formed_range in H6.
     omega.
-Qed.
+Qed. *)
+Admitted.
+
 
 Lemma at_range:
   forall x r i,
@@ -662,6 +665,7 @@ Proof.
   induction H; intros; simpl in *.
   - destruct x; eapply ex_intro; split; auto;
       destruct r as [j k]; simpl in *; omega.
+    (*
   - eapply at_range in H2; eauto.
     repeat destruct_disjunct; subst.
     + eapply ex_intro; split; auto.
@@ -709,6 +713,9 @@ Proof.
         rewrite H3; auto.
       * simpl; auto.
 Qed.
+     *)
+Admitted.
+
 
 Ltac events_event_range :=
   repeat match goal with
@@ -724,6 +731,7 @@ Lemma events_injective:
     ev v1 = ev v2 ->
     v1 = v2.
 Proof.
+  (*
   intros t v1 v2 H.
   generalize dependent v1.
   generalize dependent v2.
@@ -782,6 +790,8 @@ Proof.
     + events_event_range.
     + events_event_range.
 Qed. *)
+Admitted.
+
 
 
 (** * Eval function definition *)

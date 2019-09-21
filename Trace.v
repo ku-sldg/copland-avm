@@ -245,17 +245,17 @@ Inductive trace: AnnoTerm ->
                  list Ev -> Prop :=
 | tasp: forall r x,
     trace (aasp r x) [(asp_event (fst r) x)]
-| tatt: forall r x q tr1,
+(*| tatt: forall r x q tr1,
     trace x tr1 ->
     trace (aatt r q x)
           ((req (fst r) q (unanno x))
              :: tr1 ++
-             [(rpy (pred (snd r)) q)])
+             [(rpy (pred (snd r)) q)]) *)
 | tlseq: forall r x y tr0 tr1,
     trace x tr0 ->
     trace y tr1 ->
     trace (alseq r x y) (tr0 ++ tr1)
-| tbseq: forall r s x y tr0 tr1,
+(*| tbseq: forall r s x y tr0 tr1,
     trace x tr0 ->
     trace y tr1 ->
     trace (abseq r s x y)
@@ -269,7 +269,7 @@ Inductive trace: AnnoTerm ->
     trace (abpar r s x y)
           ((split (fst r) )
              :: tr2 ++
-             [(join (pred (snd r)))]).
+             [(join (pred (snd r)))]) *). 
 Hint Resolve tasp.
 
 Lemma trace_length:
@@ -278,13 +278,14 @@ Lemma trace_length:
 Proof.
   induction t; intros; inv H;
     simpl; auto; rewrite app_length; simpl; auto.
+  (*
   - apply IHt in H4; omega.
   - apply IHt1 in H5.
     apply IHt2 in H6.
     rewrite app_length. simpl in *. omega.
   - apply IHt1 in H5.
     apply IHt2 in H6.
-    apply shuffle_length in H7. omega.
+    apply shuffle_length in H7. omega. *)
 Qed.
 
 (** The events in a trace correspond to the events associated with an
@@ -296,6 +297,7 @@ Lemma trace_events:
     trace t tr ->
     In v tr <-> events t v.
 Proof.
+  (*
   split; intros.
   - induction H0; inv H.
     + inv H1; try inv H.
@@ -357,7 +359,9 @@ Proof.
       * apply IHtrace2 in H11; auto.
         eapply shuffle_in_right in H0; eauto.
       * rewrite H11 in *; auto.
-Qed.
+Qed. *)
+Admitted.
+
 
 Lemma trace_range:
   forall t tr v,
@@ -404,6 +408,7 @@ Lemma nodup_trace:
     trace t tr ->
     NoDup tr.
 Proof.
+  (*
   induction t; intros; inv H; inv H0.
   - constructor; auto; constructor.
   - destruct r as [i j]; simpl in *; subst; simpl.
@@ -514,7 +519,9 @@ Proof.
            omega.
 
         -- inv H1.
-Qed.
+Qed. *)
+Admitted.
+
 
 (** * Event Systems and Traces *)
 
@@ -525,6 +532,7 @@ Lemma evsys_tr_in:
     ev_in ev0 (ev_sys t) ->
     In ev0 tr.
 Proof.
+  (*
   intros.
   induction H0; inv H; simpl in H1;
     try expand_let_pairs; inv H1; simpl; auto.
@@ -560,7 +568,9 @@ Proof.
         rewrite in_app_iff; auto.
     + inv H2.
       apply in_app_iff; right; simpl; auto.
-Qed.
+Qed. *)
+Admitted.
+
 
 (** The traces associated with an annotated term are compatible with
     its event system. *)
@@ -572,6 +582,7 @@ Theorem trace_order:
     prec (ev_sys t) ev0 ev1 ->
     earlier tr ev0 ev1.
 Proof.
+  (*
   intros.
   induction H0; inv H; simpl in H1;
     try expand_let_pairs; inv H1; simpl; auto.
@@ -672,3 +683,6 @@ Proof.
         apply earlier_left; auto.
     + inv H5.
 Qed.
+   *)
+Admitted.
+

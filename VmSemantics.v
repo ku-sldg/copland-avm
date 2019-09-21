@@ -438,6 +438,16 @@ Proof.
   subst. simpl. reflexivity.
 Defined.
 
+Lemma traces_append_gen : forall x y il1 il2,
+    vm_multi {| vm_list := il1 |} {| vm_list := [] |} x ->
+    vm_multi {| vm_list := il2 |} {| vm_list := [] |} y ->
+    vm_multi {| vm_list := il1 ++ il2 |}
+             {| vm_list := [] |} (x ++ y).
+Proof.
+  intros.
+  eapply vm_multi_transitive; eauto.
+Defined.
+
 Lemma traces_append : forall x y t1 t2,
     vm_multi {| vm_list := instr_compiler t1 |} {| vm_list := [] |} x ->
     vm_multi {| vm_list := instr_compiler t2 |} {| vm_list := [] |} y ->
@@ -891,6 +901,28 @@ Defined.
 Axiom para_eval_vm : forall t e,
     parallel_eval_thread (unanno t) e = parallel_att_vm_thread (instr_compiler t) e.
 
+Lemma jj_gen : forall il1 rest tr,
+    vm_multi
+      {| vm_list := il1 |}
+      {| vm_list := [] |} tr ->
+    
+    vm_multi
+      {| 
+         vm_list := il1 ++ rest
+          |}
+      {| 
+         vm_list := rest;
+          |} tr.
+Proof.
+  intros.
+  assert (rest = [] ++ rest). simpl. reflexivity.
+  rewrite H0 at 2.
+  assert (tr = tr ++ []). rewrite app_nil_r. auto.
+  rewrite H1.
+  eapply vm_multi_transitive. apply H.
+  simpl. econstructor.
+Defined.
+
 Lemma jj : forall t rest tr,
     vm_multi
       {| vm_list := instr_compiler t |}
@@ -905,12 +937,7 @@ Lemma jj : forall t rest tr,
           |} tr.
 Proof.
   intros.
-  assert (rest = [] ++ rest). simpl. reflexivity.
-  rewrite H0 at 2.
-  assert (tr = tr ++ []). rewrite app_nil_r. auto.
-  rewrite H1.
-  eapply vm_multi_transitive. apply H.
-  simpl. econstructor.
+  apply jj_gen. auto.
 Defined.
 
 
@@ -992,11 +1019,72 @@ Proof.
   apply st_congr; eauto.
 Defined.
 
+Lemma exists_trace_gen : forall il,
+  exists tr,
+  vm_multi (mk_config il)
+              (mk_config []) tr.
+Proof.
+  induction il; intros.
+  -  
+    repeat eexists.
+    econstructor.
+  -
+    destruct IHil.
+    destruct a.
+    destruct p.
+    eexists.
+    econstructor.
+    econstructor.
+    apply H.
+Defined.
+
+(*
+
+    destruct IHt1.
+    destruct IHt2.
+    destruct_conjs.
+    exists (x ++ x0).
+    repeat eexists.
+
+    rewrite <- run_iff_multi.
+    unfold run_vm. simpl.
+    rewrite fold_left_app.
+
+    subst.
+    assert ({| st_trace := x |} =
+
+        (fold_left run_vm_step (instr_compiler t1)
+                       {| st_trace := [] |})
+            ).
+    {
+      Check run_iff_multi.
+      
+      subst.
+      rewrite <- run_iff_multi in H. unfold run_vm in H.
+     
+      congruence.
+    }
+    rewrite <- H1.
+    Check run_iff_multi.
+    
+    rewrite <- run_iff_multi in H0. unfold run_vm in H0.
+
+    apply run_vm_monotonic; eauto.
+Defined.
+*)
+
 Lemma exists_trace : forall t,
   exists tr,
   vm_multi (mk_config (instr_compiler t))
               (mk_config []) tr.
 Proof.
+  intros.
+  apply exists_trace_gen.
+Defined.
+
+
+
+  (*
   intros.
   induction t; intros.
   - destruct a.  
@@ -1035,6 +1123,7 @@ Proof.
 
     apply run_vm_monotonic; eauto.
 Defined.
+*)
 
 Lemma trace_unique : forall il tr1 tr2,
     vm_multi {| vm_list := il |} {| vm_list := [] |} tr1 ->
@@ -1046,6 +1135,41 @@ Proof.
   rewrite <- run_iff_multi in *.
   simpl in *.
   rewrite H in H0. congruence.
+Defined.
+
+Lemma trace_decompose'_gen :  forall tr il1 il2,
+      vm_multi
+      {| vm_list := (il1 ++ il2) |}
+      {| vm_list := []; |} tr ->
+      exists tr1,
+        vm_multi
+      {| vm_list := (il1 ++ il2) |}
+      {| vm_list := il2 |} tr1 /\
+        exists tr2,
+          vm_multi
+            {| vm_list := il2 |}
+            {| vm_list := [] |} tr2 /\
+          tr = tr1 ++ tr2.
+Proof.
+  intros.
+  destruct exists_trace_gen with (il:=il1).
+  destruct_conjs.
+  exists x.
+  split.
+  Check jj.
+  eapply jj_gen.
+  eauto.
+  destruct exists_trace_gen with (il:=il2).
+  destruct_conjs.
+  exists x0.
+  split.
+  subst.
+  assumption.
+
+  assert (vm_multi {| vm_list := il1 ++ il2 |}
+                   {| vm_list := [] |} (x ++ x0)).
+  apply traces_append_gen; auto.
+  eapply trace_unique; eauto.
 Defined.
 
 Lemma trace_decompose' :  forall tr t1 t2,
@@ -1063,26 +1187,39 @@ Lemma trace_decompose' :  forall tr t1 t2,
           tr = tr1 ++ tr2.
 Proof.
   intros.
-  destruct exists_trace with (t:=t1).
-  destruct_conjs.
-  exists x.
-  split.
-  Check jj.
-  eapply jj.
-  eauto.
-  destruct exists_trace with (t:=t2).
-  destruct_conjs.
-  exists x0.
-  split.
-  subst.
-  assumption.
-
-  assert (vm_multi {| vm_list := instr_compiler t1 ++ instr_compiler t2 |}
-                   {| vm_list := [] |} (x ++ x0)).
-  apply traces_append; auto.
-  eapply trace_unique; eauto.
+  apply trace_decompose'_gen. eauto.
 Defined.
 
+Lemma trace_decompose_gen :
+  forall tr1 tr2 tr il1 il2,
+    vm_multi
+      {| vm_list := il1 |}
+      {| vm_list := [] |} tr1 ->
+    vm_multi
+      {| vm_list := il2 |}
+      {| vm_list := [] |} tr2 ->
+    vm_multi
+      {| vm_list := (il1 ++ il2) |}
+      {| vm_list := [] |} tr ->
+    tr = tr1 ++ tr2.
+Proof.
+  intros.
+  edestruct trace_decompose'_gen. eassumption.
+  destruct_conjs.
+  rewrite H5.
+  assert (x = tr1).
+  Check hh.
+  assert (vm_multi {| vm_list := il1 |} {| vm_list := [] |} x).
+  eapply restl'; eauto.
+
+
+  eapply trace_unique; eauto.
+
+  assert (H3 = tr2).
+  eapply trace_unique; eauto.
+  
+  congruence.
+Defined.
 
 Lemma trace_decompose :
   forall tr1 tr2 tr t1 t2,
@@ -1098,23 +1235,37 @@ Lemma trace_decompose :
     tr = tr1 ++ tr2.
 Proof.
   intros.
-  edestruct trace_decompose'. eassumption.
-  destruct_conjs.
-  rewrite H5.
-  assert (x = tr1).
-  Check hh.
-  assert (vm_multi {| vm_list := instr_compiler t1 |} {| vm_list := [] |} x).
-  eapply restl'; eauto.
-
-
-  eapply trace_unique; eauto.
-
-  assert (H3 = tr2).
-  eapply trace_unique; eauto.
-  
-  congruence.
+  eapply trace_decompose_gen; eauto.
 Defined.
 
+Lemma destruct_compiled_appended_gen : forall il1 il2 tr,
+      vm_multi
+        {| vm_list := il1 ++ il2 |}
+        {| vm_list := [] |} tr ->
+    (exists tr1,
+        vm_multi
+          {| vm_list := il1 |}
+          {| vm_list := [] |} tr1 /\
+        exists tr2,
+          vm_multi
+            {| vm_list := il2 |}
+            {| vm_list := [] |} tr2 /\
+          tr = tr1 ++ tr2).
+Proof.
+  intros.
+  destruct exists_trace_gen with (il:=il1).
+  destruct_conjs.
+  exists x.
+  split.
+  assumption.
+
+  edestruct exists_trace_gen with (il:=il2).
+  destruct_conjs.
+  exists x0.
+  split.
+  - assumption.
+  - eapply trace_decompose_gen; eauto.
+Defined.
 
 Lemma destruct_compiled_appended : forall t1 t2 tr,
       vm_multi
@@ -1131,20 +1282,8 @@ Lemma destruct_compiled_appended : forall t1 t2 tr,
           tr = tr1 ++ tr2).
 Proof.
   intros.
-  destruct exists_trace with (t:=t1).
-  destruct_conjs.
-  exists x.
-  split.
-  assumption.
-
-  edestruct exists_trace with (t:=t2).
-  destruct_conjs.
-  exists x0.
-  split.
-  - assumption.
-  - eapply trace_decompose; eauto.
+  apply destruct_compiled_appended_gen. eauto.
 Defined.
-Check aeval.
 
 (*
 Inductive rest_il : AnnoTerm -> Plc -> Evidence -> (list AnnoInstr) -> LTS.St -> Prop :=
@@ -1384,7 +1523,7 @@ Proof.
   - simpl in *.
     econstructor.
     econstructor.
-    edestruct destruct_compiled_appended; eauto.
+    edestruct destruct_compiled_appended_gen; eauto.
     destruct_conjs.
     subst.
     eapply lstar_transitive.
@@ -1398,12 +1537,14 @@ Defined.
 
 
 Require Import Main.
+Require Import Event_system.
+Require Import Term_system.
 
-Theorem vm_ordered : forall t e e' s s' tr ev0 ev1,
+Theorem vm_ordered : forall t tr ev0 ev1,
     well_formed t ->
     vm_multi
-      (mk_config e (instr_compiler t) s)
-      (mk_config e' [] s') tr ->
+      (mk_config (instr_compiler t))
+      (mk_config []) tr ->
     prec (ev_sys t) ev0 ev1 ->
     earlier tr ev0 ev1.
 Proof.
