@@ -448,6 +448,8 @@ Proof.
   eapply vm_multi_transitive; eauto.
 Defined.
 
+
+(*
 Lemma il1_pieces : forall i0 vm_list0 il1 il2 i tr,
     i0 :: vm_list0 = il1 ++ il2 ->
     vm_multi {| vm_list := vm_list0 |}
@@ -487,6 +489,56 @@ Proof.
     admit.
   - *)
 Admitted.
+*)
+
+
+Theorem app_inj_l: forall A (l1 l2 suf : list A),
+    l1 ++ suf = l2 ++ suf -> l1 = l2.
+Proof.
+  Admitted.
+  
+Lemma headShouldersKneesAndToes : forall A (h : A) t l1 l2,
+    h :: t = l1 ++ l2 ->
+    forall prefix i, t = prefix ++ i :: l2 ->
+    l1 = h :: prefix ++ [i].
+Proof.
+  intros. subst.
+  assert (H0 : i :: l2 = [i] ++ l2). reflexivity.
+  rewrite H0 in H; clear H0.
+  apply app_inj_l with (suf := l2).
+  simpl. rewrite <- app_assoc. auto.
+Qed.
+
+Theorem vm_multi_suffix : forall il1 il2 tr,
+    vm_multi {| vm_list := il1 |} {| vm_list := il2 |} tr ->
+    exists prefix, il1 = prefix ++ il2.
+Proof.
+(*  intros il1 il2 tr H. inversion H.
+  - exists []. reflexivity.
+  - subst. Print refl_trans_1n_trace. Print vm_step.
+*)
+  intros il1 il2 tr H. dependent induction H.
+  - exists []. reflexivity.
+  - apply IHrefl_trans_1n_trace.
+    + admit.
+    + reflexivity.
+Admitted.
+
+Lemma il1_pieces' : forall i0 vm_list0 il1 il2 i tr,
+    i0 :: vm_list0 = il1 ++ il2 ->
+    vm_multi {| vm_list := vm_list0 |} {| vm_list := i :: il2 |} tr ->
+    exists bla, il1 = [i0] ++ bla ++ [i].
+Proof.
+  intros i0 vm_list0 il1 il2 i tr H0 H1.
+  remember (vm_multi_suffix _ _ _ H1) as e. destruct e. exists x.
+  apply headShouldersKneesAndToes with (t := vm_list0) (l2 := il2); try assumption.
+Qed.
+
+
+
+
+
+
 
 Lemma restl : forall i il1 il2 cs cs',
   vm_multi  (mk_config (il1 ++ il2)) (mk_config (i::il2)) cs ->
@@ -529,10 +581,16 @@ Proof.
     eassumption.
     eapply vm_multi_transitive. admit.
     eapply step_implies_multi. assumption.
-    *)
+     *)
+
+    assert (exists bla, il1 = [i0] ++ bla ++ [i]).
+    eapply il1_pieces'; eauto.
+    destruct_conjs.
+    rewrite H4.
+    rewrite H4 in H.
     
 
-    
+    (****
     
     (*clear IHrefl_trans_1n_trace.*) (* for readability *)
     assert
@@ -560,10 +618,46 @@ Proof.
     rewrite app_assoc. auto. }
     rewrite <- H4 in H3.
     eassumption. }
+     *)
+
+
+
+    assert (
+        (H2 ++ [i] ++ il2) =
+        vm_list0). {
+      {
+        assert (i0::vm_list0 = [i0]++vm_list0).
+        { auto. }
+        rewrite H4 in H3.
+        (*
+    eapply app_inv_head.
+    symmetry. *)
+        rewrite <- app_assoc in H3.
+        assert (([i0] ++ (H2 ++ [i]) ++ il2) =
+                i0 :: (H2 ++ [i] ++ il2)). admit.
+        rewrite H6 in H3.
+        congruence. } }
+    rewrite <- H5 in H.
+      
+
+        (*
+    assert (firstn (length vm_list0 - length il2 - 1) vm_list0 ++ [i] ++ il2 =
+            (firstn (length vm_list0 - length il2 - 1) vm_list0 ++ [i]) ++ il2).
+    {
+    rewrite app_assoc. auto. }
+    rewrite <- H4 in H3.
+    eassumption. }
+         } *)
+
+    Check asas.
+    assert (([i0] ++ H2 ++ [i]) ++ il2  = i0 :: (H2 ++ [i] ++ il2)). admit.
+    rewrite H6 in H.
+
     
+    
+   (* rewrite <- app_assoc in H.
     rewrite <- app_assoc in H.
-    rewrite <- app_assoc in H.
-    rewrite H2 in H.
+    rewrite H2 in H.*)
     
     eapply vm_multi_transitive.
     eapply step_implies_multi.
@@ -572,7 +666,7 @@ Proof.
     eapply asas. apply H.
     eapply IHrefl_trans_1n_trace; eauto.
     rewrite <- app_assoc.
-    rewrite H2. auto.
+    rewrite H5. auto.
 Defined.
 
 
