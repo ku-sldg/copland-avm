@@ -634,7 +634,12 @@ Proof.
     symmetry. *)
         rewrite <- app_assoc in H3.
         assert (([i0] ++ (H2 ++ [i]) ++ il2) =
-                i0 :: (H2 ++ [i] ++ il2)). admit.
+                i0 :: (H2 ++ [i] ++ il2)).
+        {
+          rewrite <- app_assoc.
+          simpl. auto.
+        }
+
         rewrite H6 in H3.
         congruence. } }
     rewrite <- H5 in H.
@@ -650,7 +655,13 @@ Proof.
          } *)
 
     Check asas.
-    assert (([i0] ++ H2 ++ [i]) ++ il2  = i0 :: (H2 ++ [i] ++ il2)). admit.
+    assert (([i0] ++ H2 ++ [i]) ++ il2  = i0 :: (H2 ++ [i] ++ il2)).
+    {
+      simpl.
+      rewrite <- app_assoc.
+      assert ([i]++il2 = i::il2). auto.
+      rewrite H6. auto.
+    }
     rewrite H6 in H.
 
     
@@ -1079,6 +1090,8 @@ Proof.
   - eapply trace_decompose; eauto.
 Defined.
 Check aeval.
+
+(*
 Inductive rest_il : AnnoTerm -> Plc -> Evidence -> (list AnnoInstr) -> LTS.St -> Prop :=
 (*| aasp_rest : forall r a p et,
     rest_il (aasp r a) p et
@@ -1109,7 +1122,9 @@ Inductive rest_il : AnnoTerm -> Plc -> Evidence -> (list AnnoInstr) -> LTS.St ->
     rest_il (alseq r t1 t2) p et
             []
             (stop p (aeval t2 p (aeval t1 p et)))*).
+*)
 
+(*
 Lemma multi_lstar' : forall t tr p et il il' st st',
       vm_multi (mk_config il)
                (mk_config il') tr ->
@@ -1183,6 +1198,7 @@ Proof.
       
     
 Admitted.
+*)
 
 
 (*
@@ -1278,6 +1294,7 @@ Proof.
 Admitted.
 *)
 
+(*
 Lemma multi_lstar : forall t tr et p,
       vm_multi (mk_config (instr_compiler t))
                   (mk_config []) tr ->
@@ -1288,7 +1305,7 @@ Proof.
   apply H.
   destruct t; econstructor.
   destruct t; econstructor.
-Defined.
+Defined.*)
 
 
             
