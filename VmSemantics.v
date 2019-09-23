@@ -54,7 +54,7 @@ Definition prim_ev (a:Prim_Instr) (e:EvidenceC) : EvidenceC :=
 Definition build_comp (*(s:ev_stack)*) (i:AnnoInstr): VM unit :=
   match i with
   | aprimInstr x a =>
-    (*modify_evm (prim_ev a) ;;*)
+    modify_evm (prim_ev a) ;;
                add_tracem (prim_trace x a)
                (*
   | asplit x sp1 sp2 =>
@@ -176,15 +176,16 @@ Proof.
     assert (
         (st_trace
            (fold_left run_vm_step il
-                      {| st_ev := e;
+                      {| st_ev := hhc (hashEv e) e;
                         st_trace := [Term.hash n] |})) =
         ([Term.hash n] ++
                        st_trace
                        (fold_left run_vm_step il
-                                  {| st_ev := e; st_trace := [] |}))).
+                                  {| st_ev := hhc (hashEv e) e; st_trace := [] |}))).
     { rewrite IHil. auto. }
-    rewrite H.
-    rewrite app_assoc. auto.
+    rewrite <- app_assoc.
+    rewrite <- H.
+    auto.
 Defined.
 
 Lemma trace_irrel : forall il1 tr1 tr1' tr2 e e',
@@ -222,22 +223,24 @@ Proof.
     unfold run_vm; simpl.
     unfold run_vm_step. fold run_vm_step. unfold execSt. destruct a. simpl.
     destruct p. simpl.
-    dependent destruction x'. inv H0. inv H0. simpl.
+    dependent destruction x'. inv H0. inv H0. simpl in *.
 
-    pose (IHil cs' e e'). concludes.
+    pose (IHil cs' (hhc (hashEv e) e) e'). simpl in *.
+
+    concludes.
     Check foo.   
     assert    ( st_trace (fold_left run_vm_step vm_list0
-                        {| st_ev := e; st_trace := [Term.hash n] |}) =
+                        {| st_ev := hhc (hashEv e) e; st_trace := [Term.hash n] |}) =
     [Term.hash n] ++ st_trace (fold_left run_vm_step vm_list0
-                                         {| st_ev := e; st_trace := [] |})) as H2.
+                                         {| st_ev := hhc (hashEv e) e; st_trace := [] |})) as H2.
     apply foo.
 
     apply st_congr.
     2: {
     
     rewrite H2. simpl.
-    assert ( run_vm vm_list0 {| st_ev := e; st_trace := [] |} =
-             (fold_left run_vm_step vm_list0 {| st_ev := e; st_trace := [] |})) as
+    assert ( run_vm vm_list0 {| st_ev := hhc (hashEv e) e; st_trace := [] |} =
+             (fold_left run_vm_step vm_list0 {| st_ev := hhc (hashEv e) e; st_trace := [] |})) as
         H3.  { auto. }
              rewrite <- H3.
     rewrite e0. simpl. auto.
@@ -261,7 +264,7 @@ Defined.
 Lemma run_implies_multi: forall il tr e e',
     run_vm il {| st_ev := e; st_trace := [] |} = {| st_ev := e'; st_trace := tr |} ->
     vm_multi (mk_config e il) (mk_config e' []) tr.
-Proof.
+Proof. (*
   induction il; intros.
   - inv H; unfold run_vm; simpl.
     econstructor.
@@ -322,6 +325,7 @@ Proof.
     rewrite run_duh.
     simpl.
     unfold run_vm_step in H. fold run_vm_step in H.
+*)
 Admitted.
 
 
@@ -379,8 +383,8 @@ Proof.
     dependent destruction x'.
     inv H.
     monad_unfold.
-    assert ((i :: vm_list0) ++ il2 = (i::(vm_list0 ++ il2))). auto.
-    rewrite H2.
+    (*assert ((i :: vm_list0) ++ il2 = (i::(vm_list0 ++ il2))). auto.
+    rewrite H2.*)
     constructor 2 with (x':=(mk_config (st_ev res_st) (vm_list0 ++ il2))).
     eapply asas.
     eassumption.
@@ -849,6 +853,26 @@ Proof.
   eapply trace_irrel; eauto.
 Defined.
 
+Lemma exists_trace : forall t e,
+  exists tr,
+  vm_multi (mk_config e (instr_compiler t))
+              (mk_config (eval (unanno t) e) []) tr.
+Proof.
+  induction t; intros.
+  - eexists.
+    simpl.
+    destruct a.
+    repeat econstructor.
+  - destruct (IHt1 e).
+    destruct (IHt2 (eval (unanno t1) e)).
+    eexists.
+    simpl.
+    eapply vm_multi_transitive_done.
+    eassumption.
+    eassumption.
+Defined.
+
+(*
 Lemma exists_trace_gen : forall il e,
   exists tr e',
   vm_multi (mk_config e il)
@@ -901,10 +925,11 @@ Defined.
     apply run_vm_monotonic; eauto.
 Defined.
 *)
+*)
 
-Lemma trace_unique : forall il tr1 tr2 e e',
+Lemma trace_unique : forall il tr1 tr2 e e' e'',
     vm_multi {| vm_ev := e; vm_list := il |} {| vm_ev := e'; vm_list := [] |} tr1 ->
-    vm_multi {| vm_ev := e; vm_list := il |} {| vm_ev := e'; vm_list := [] |} tr2 ->
+    vm_multi {| vm_ev := e; vm_list := il |} {| vm_ev := e''; vm_list := [] |} tr2 ->
     tr1 = tr2.
 Proof.
   intros.
@@ -914,6 +939,94 @@ Proof.
   rewrite H in H0. congruence.
 Defined.
 
+Lemma ev_unique : forall il tr1 tr2 e e' e'',
+    vm_multi {| vm_ev := e; vm_list := il |} {| vm_ev := e'; vm_list := [] |} tr1 ->
+    vm_multi {| vm_ev := e; vm_list := il |} {| vm_ev := e''; vm_list := [] |} tr2 ->
+    e' = e''.
+Proof.
+  intros.
+  Check run_iff_multi.
+  rewrite <- run_iff_multi in *.
+  simpl in *.
+  rewrite H in H0. congruence.
+Defined.
+
+(*
+Lemma trace_decompose' :  forall t1 t2 tr e e'',
+      vm_multi
+      {| vm_ev := e; vm_list := (instr_compiler t1 ++ instr_compiler t2) |}
+      {| vm_ev := e''; vm_list := []; |} tr ->
+      exists tr1,
+        vm_multi
+      {| vm_ev := e; vm_list := (instr_compiler t1 ++ instr_compiler t2) |}
+      {| vm_ev := (eval (unanno t1) e); vm_list := instr_compiler t2 |} tr1 /\
+        exists tr2,
+          vm_multi
+            {| vm_ev := (eval (unanno t1) e); vm_list := instr_compiler t2 |}
+            {| vm_ev := e''; vm_list := [] |} tr2 /\
+          tr = tr1 ++ tr2.
+Proof. *)
+
+
+
+Lemma trace_decompose' :  forall t1 t2 tr e e'',
+      vm_multi
+      {| vm_ev := e; vm_list := (instr_compiler t1 ++ instr_compiler t2) |}
+      {| vm_ev := e''; vm_list := []; |} tr ->
+      exists tr1 e',
+        vm_multi
+      {| vm_ev := e; vm_list := (instr_compiler t1 ++ instr_compiler t2) |}
+      {| vm_ev := e'; vm_list := instr_compiler t2 |} tr1 /\
+        exists tr2,
+          vm_multi
+            {| vm_ev := (eval (unanno t1) e); vm_list := instr_compiler t2 |}
+            {| vm_ev := e''; vm_list := [] |} tr2 /\
+          tr = tr1 ++ tr2.
+Proof.
+  Check exists_trace.
+  Check trace_unique.
+  intros.
+  edestruct exists_trace with (t := t1).
+  destruct_conjs.
+  exists x. eexists.
+  split.
+  Check jj_gen.
+  eapply jj_gen.
+  eauto.
+  destruct exists_trace with (t:=t2) (e:=eval (unanno t1) e).
+  destruct_conjs.
+  exists x0.
+ (* assert (H0 = eval (unanno t1) e).
+  eapply multi_ev_eval; eauto.
+  assert (H2 = eval (unanno t2) H0).
+  eapply multi_ev_eval; eauto. *)
+
+    assert (instr_compiler t1 ++ instr_compiler t2 = instr_compiler (alseq (0,0) t1 t2)).
+  auto.
+  rewrite H2 in H.
+  assert (e'' = eval (unanno (alseq (0, 0) t1 t2)) e).
+  {
+    destruct exists_trace with (t:=(alseq (0, 0) t1 t2)) (e:=e).
+    eapply ev_unique; eauto.
+  }
+  
+  (*
+  eapply multi_ev_eval; eauto.*)
+  split; simpl in *; subst.
+  - 
+    auto.
+  -
+    
+  assert (vm_multi {| vm_ev := e; vm_list := (instr_compiler t1 ++ instr_compiler t2) |}
+                   {| vm_ev := eval (unanno t2) (eval (unanno t1) e); vm_list := [] |} (x ++ x0)). {
+  eapply traces_append_gen.
+  eassumption.
+  eassumption. }
+
+  eapply trace_unique; eauto.
+Defined.
+
+(*
 Lemma trace_decompose'_gen :  forall tr il1 il2 e e'',
       vm_multi
       {| vm_ev := e; vm_list := (il1 ++ il2) |}
@@ -941,27 +1054,70 @@ Proof.
   exists x0.
   split.
   subst.
+  (*
   assumption.
 
   assert (vm_multi {| vm_list := il1 ++ il2 |}
                    {| vm_list := [] |} (x ++ x0)).
   apply traces_append_gen; auto.
   eapply trace_unique; eauto.
-Defined.
+Defined. *)
+Admitted.
 
-Lemma trace_decompose_gen :
-  forall tr1 tr2 tr il1 il2,
+*)
+
+Lemma trace_decompose :
+  forall tr1 tr2 tr t1 t2 e e' e'',
     vm_multi
-      {| vm_list := il1 |}
-      {| vm_list := [] |} tr1 ->
+      {| vm_ev := e;  vm_list := instr_compiler t1 |}
+      {| vm_ev := e'; vm_list := [] |} tr1 ->
     vm_multi
-      {| vm_list := il2 |}
-      {| vm_list := [] |} tr2 ->
+      {| vm_ev := e';  vm_list := instr_compiler t2 |}
+      {| vm_ev := e''; vm_list := [] |} tr2 ->
     vm_multi
-      {| vm_list := (il1 ++ il2) |}
-      {| vm_list := [] |} tr ->
+      {| vm_ev := e; vm_list := (instr_compiler t1 ++ instr_compiler t2) |}
+      {| vm_ev := e''; vm_list := [] |} tr ->
     tr = tr1 ++ tr2.
 Proof.
+  intros.
+  edestruct trace_decompose'. eassumption.
+  destruct_conjs.
+  subst.
+  assert (e' = eval (unanno t1) e).
+  {
+    destruct exists_trace with (t:=t1) (e:=e).
+    eapply ev_unique; eauto.
+  }
+  subst. 
+  assert (tr2 = H4).
+  eapply trace_unique; eauto.
+  subst.
+  Check restl'.
+
+  assert (vm_multi {| vm_ev := e; vm_list := instr_compiler t1 |} {| vm_ev := H2; vm_list := [] |} x). {
+    apply restl' with (il2:=instr_compiler t2).
+    eauto. }
+  
+  assert (x = tr1).
+  eapply trace_unique; eauto.
+  congruence.
+Defined.
+
+(*
+Lemma trace_decompose_gen :
+  forall tr1 tr2 tr il1 il2 e e' e'',
+    vm_multi
+      {| vm_ev := e;  vm_list := il1 |}
+      {| vm_ev := e'; vm_list := [] |} tr1 ->
+    vm_multi
+      {| vm_ev := e';  vm_list := il2 |}
+      {| vm_ev := e''; vm_list := [] |} tr2 ->
+    vm_multi
+      {| vm_ev := e; vm_list := (il1 ++ il2) |}
+      {| vm_ev := e''; vm_list := [] |} tr ->
+    tr = tr1 ++ tr2.
+Proof.
+  (*
   intros.
   edestruct trace_decompose'_gen. eassumption.
   destruct_conjs.
@@ -977,22 +1133,75 @@ Proof.
   eapply trace_unique; eauto.
   
   congruence.
-Defined.
+Defined. *)
+Admitted.
+ *)
 
-Lemma destruct_compiled_appended_gen : forall il1 il2 tr,
+
+Lemma destruct_compiled_appended : forall t1 t2 tr e e'',
       vm_multi
-        {| vm_list := il1 ++ il2 |}
-        {| vm_list := [] |} tr ->
-    (exists tr1,
+        {| vm_ev := e;  vm_list := instr_compiler t1 ++ instr_compiler t2 |}
+        {| vm_ev := e''; vm_list := [] |} tr ->
+    (exists tr1 e',
         vm_multi
-          {| vm_list := il1 |}
-          {| vm_list := [] |} tr1 /\
+          {| vm_ev := e; vm_list := instr_compiler t1 |}
+          {| vm_ev := e'; vm_list := [] |} tr1 /\
         exists tr2,
           vm_multi
-            {| vm_list := il2 |}
-            {| vm_list := [] |} tr2 /\
+            {| vm_ev := e'; vm_list := instr_compiler t2 |}
+            {| vm_ev := e''; vm_list := [] |} tr2 /\
           tr = tr1 ++ tr2).
 Proof.
+  intros.
+  edestruct exists_trace with (t:=t1).
+  destruct_conjs.
+  exists x. exists (eval (unanno t1) e).
+  split.
+  eassumption.
+
+  edestruct exists_trace with (t:=t2) (e:= eval (unanno t1) e).
+  destruct_conjs.
+  exists x0.
+  assert (instr_compiler t1 ++ instr_compiler t2 =
+          (instr_compiler (alseq (0,0) t1 t2))). auto.
+  
+
+  assert (e'' = eval (unanno t2) (eval (unanno t1) e)). {
+    destruct exists_trace with (t:= (alseq (0,0) t1 t2)) (e:=e).
+    eapply ev_unique; eauto.
+    }
+
+  split.
+  -
+
+
+    
+    rewrite H2 in H.
+    
+
+    subst. eassumption.
+
+  - eapply trace_decompose; eauto.
+    rewrite H2 in H.
+    subst. eauto.
+Defined.
+
+(*
+Lemma destruct_compiled_appended_gen : forall il1 il2 tr e e'',
+      vm_multi
+        {| vm_ev := e;  vm_list := il1 ++ il2 |}
+        {| vm_ev := e''; vm_list := [] |} tr ->
+    (exists tr1 e',
+        vm_multi
+          {| vm_ev := e; vm_list := il1 |}
+          {| vm_ev := e'; vm_list := [] |} tr1 /\
+        exists tr2,
+          vm_multi
+            {| vm_ev := e'; vm_list := il2 |}
+            {| vm_ev := e''; vm_list := [] |} tr2 /\
+          tr = tr1 ++ tr2).
+Proof.
+  (*
   intros.
   destruct exists_trace_gen with (il:=il1).
   destruct_conjs.
@@ -1006,11 +1215,42 @@ Proof.
   split.
   - assumption.
   - eapply trace_decompose_gen; eauto.
-Defined.
+Defined. *)
+Admitted.
+ *)
 
-Lemma multi_lstar : forall t tr et p,
-      vm_multi (mk_config (instr_compiler t))
-                  (mk_config []) tr ->
+Lemma multi_ev_eval : forall t tr1 e e',
+    vm_multi {| vm_ev := e; vm_list := (instr_compiler t) |}
+             {| vm_ev := e'; vm_list := [] |} tr1 ->
+    e' = eval (unanno t) e.
+Proof.
+  induction t; intros.
+  - destruct a.
+    inv H. inv H0.
+    monad_unfold. simpl in *.
+    inv H0.
+    monad_unfold. simpl in *.
+    inv H1.
+    + inv H1; reflexivity.
+    + inv H1. reflexivity.
+      subst.
+      inv H2.
+  -
+    edestruct destruct_compiled_appended; eauto.
+    destruct_conjs.
+    simpl.
+    eapply IHt2.
+    assert (H0 = (eval (unanno t1) e)).
+    eapply IHt1; eauto.
+    rewrite <- H5.
+    apply H3.
+Defined.
+ 
+
+
+Lemma multi_lstar : forall t tr et p e e',
+      vm_multi (mk_config e (instr_compiler t))
+                  (mk_config e' []) tr ->
       lstar (conf t p et) tr (stop p (aeval t p et)).
 Proof.
   induction t; intros.
@@ -1026,7 +1266,7 @@ Proof.
   - simpl in *.
     econstructor.
     econstructor.
-    edestruct destruct_compiled_appended_gen; eauto.
+    edestruct destruct_compiled_appended; eauto.
     destruct_conjs.
     subst.
     eapply lstar_transitive.
@@ -1043,11 +1283,11 @@ Require Import Main.
 Require Import Event_system.
 Require Import Term_system.
 
-Theorem vm_ordered : forall t tr ev0 ev1,
+Theorem vm_ordered : forall t tr ev0 ev1 e e',
     well_formed t ->
     vm_multi
-      (mk_config (instr_compiler t))
-      (mk_config []) tr ->
+      (mk_config e (instr_compiler t))
+      (mk_config e' []) tr ->
     prec (ev_sys t) ev0 ev1 ->
     earlier tr ev0 ev1.
 Proof.
