@@ -59,8 +59,8 @@ Definition when {S A} (b : bool) (m : St S A) : St S unit :=
 (* Specific VM monad *)
 Definition ev_stack := gen_stack EvidenceC.
 Record vm_st : Type := mk_st
-                         {(*st_ev:EvidenceC ;
-                          st_stack:ev_stack ; *)
+                         {st_ev:EvidenceC ;
+                          (*st_stack:ev_stack ; *)
                           st_trace:list Ev}.
 
 Definition VM := St vm_st.
@@ -108,13 +108,14 @@ Definition pop_stackm : VM EvidenceC :=
            ret e
      | None => failm
      end.
+*)
 
 Definition put_ev (e:EvidenceC) : VM unit :=
   st <- get ;;
-     let s' := st_stack st in
+     (*let s' := st_stack st in*)
      let tr' := st_trace st in
   (*let '{| st_ev := _; st_stack := s; st_trace := tr |} := st in*)
-    put (mk_st e s' tr').
+    put (mk_st e (*s'*) tr').
 
 Definition get_ev : VM EvidenceC :=
   st <- get ;;
@@ -122,12 +123,12 @@ Definition get_ev : VM EvidenceC :=
 
 Definition modify_evm (f:EvidenceC -> EvidenceC) : VM unit :=
   st <- get ;;
-  let '{| st_ev := e; st_stack := s; st_trace := tr |} := st in
-  put (mk_st (f e) s tr).
-*)
+  let '{| st_ev := e; (*st_stack := s;*) st_trace := tr |} := st in
+  put (mk_st (f e) (*s*) tr).
+
 Definition add_trace (tr':list Ev) : vm_st -> vm_st :=
-  fun '{| st_trace := tr |} =>
-    mk_st (tr ++ tr').
+  fun '{| st_ev := e; st_trace := tr |} =>
+    mk_st e (tr ++ tr').
 
 Definition add_tracem (tr:list Ev) : VM unit :=
   modify (add_trace tr).
