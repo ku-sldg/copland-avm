@@ -151,4 +151,5 @@ Ltac monad_unfold :=
          put,
          nop,
          modify,
-         ret in *.
+         ret in *;
+  simpl in *.

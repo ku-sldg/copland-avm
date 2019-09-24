@@ -16,10 +16,10 @@ Set Nested Proofs Allowed.
 (** * VM Instructions *)
 
 Inductive Prim_Instr: Set :=
-(*| copy: Prim_Instr
+| copy: Prim_Instr
 | kmeas: ASP_ID -> Plc -> (list Arg) -> Prim_Instr
 | umeas: ASP_ID -> (list Arg) -> Prim_Instr
-| sign: Prim_Instr*)
+| sign: Prim_Instr
 | hash: Prim_Instr.
 
 Inductive Instr: Set :=
@@ -44,12 +44,11 @@ Inductive AnnoInstr: Set :=
 (** * Instruction Compiler *)
 Definition asp_instr (a:ASP) : Prim_Instr :=
   match a with
-  (*| CPY => copy
+  | CPY => copy
   | KIM i p args => kmeas i p args
   | USM i args => umeas i args
   | SIG => sign
-  | HSH => hash*)
-  | _ => hash
+  | HSH => hash
   end.
 
 Fixpoint instr_compiler (t:AnnoTerm) : (list AnnoInstr) :=

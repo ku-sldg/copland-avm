@@ -44,10 +44,10 @@ Defined.
 Hint Resolve eq_arg_dec.
 
 Inductive ASP: Set :=
-(*| CPY: ASP
+| CPY: ASP
 | KIM: ASP_ID -> Plc -> (list Arg) -> ASP
 | USM: ASP_ID -> (list Arg) -> ASP
-| SIG: ASP*)
+| SIG: ASP
 | HSH: ASP.
 
 (** The method by which data is split is specified by a natural number. *)
@@ -155,10 +155,10 @@ Defined.
 
 Fixpoint typeof_asp t p e :=
   match t with
-  (*| CPY => e
+  | CPY => e
   | KIM i q A => kk i A p q e
   | USM i A => uu i A p e
-  | SIG => gg p e*)
+  | SIG => gg p e
   | HSH => hh p e
   end.
 
@@ -200,10 +200,10 @@ Inductive Ev: Set :=
 | join: nat -> Plc -> Evidence -> Evidence -> Evidence -> Ev.*)
 
 Inductive Ev: Set :=
-(*| copy: nat -> (*Plc -> Evidence ->*) Ev
+| copy: nat -> (*Plc -> Evidence ->*) Ev
 | kmeas: nat -> ASP_ID -> Plc -> (list Arg) -> (*Evidence -> Evidence ->*) Ev
 | umeas: nat -> ASP_ID -> (*Plc ->*) (list Arg) -> (*Evidence -> Evidence ->*) Ev
-| sign: nat -> (*Plc ->*) (*Evidence -> Evidence ->*) Ev*)
+| sign: nat -> (*Plc ->*) (*Evidence -> Evidence ->*) Ev
 | hash: nat -> (*Plc ->*) (*Evidence -> Evidence ->*) Ev
 (*| req: nat -> (*Plc ->*) Plc -> (*Evidence*) Term -> Ev
 | rpy: nat -> (*Plc ->*) Plc -> (*Evidence ->*) Ev
@@ -222,10 +222,10 @@ Hint Resolve eq_ev_dec.
 
 Definition ev x :=
   match x with
-  (*| copy i => i
+  | copy i => i
   | kmeas i _ _ _ => i
   | umeas i _ _ => i
-  | sign i => i*)
+  | sign i => i
   | hash i => i
   (*| req i _ _ => i
   | rpy i _ => i
@@ -242,10 +242,10 @@ See Lemma [events_injective].
 
 Definition asp_event i x (*p e*) :=
   match x with
-  (*| CPY => copy i (* p e *)
+  | CPY => copy i (* p e *)
   | KIM id q A => kmeas i id q A (*e (eval_asp (KIM id q A) p e)*)
   | USM id A => umeas i id A (*e (eval_asp (USM id A) p e)*)
-  | SIG => sign i*) (*e (eval_asp SIG p e)*)
+  | SIG => sign i (*e (eval_asp SIG p e)*)
   | HSH => hash i (*e (eval_asp HSH p e)*)
   end.
 
@@ -474,7 +474,7 @@ Qed.*)
 
 
 Inductive events: AnnoTerm -> (*Plc -> Evidence ->*) Ev -> Prop :=
-(*| evtscpy:
+| evtscpy:
     forall r i (*p e*),
       fst r = i ->
       events (aasp r CPY) (*p e*) (copy i (*p e*))
@@ -492,7 +492,7 @@ Inductive events: AnnoTerm -> (*Plc -> Evidence ->*) Ev -> Prop :=
     forall r i,
       fst r = i ->
       (*gg p e = e' -> *)
-      events (aasp r SIG) (*p e*) (sign i (*e e'*)) *)
+      events (aasp r SIG) (*p e*) (sign i (*e e'*)) 
 | evtshsh:
     forall r i,
       fst r = i ->
@@ -660,12 +660,12 @@ Lemma events_range_event:
     well_formed t ->
     fst (range t) <= i < snd (range t) ->
     exists v, events t v /\ ev v = i.
-Proof.
+Proof.  (*
   intros t i H; revert i;
   induction H; intros; simpl in *.
   - destruct x; eapply ex_intro; split; auto;
       destruct r as [j k]; simpl in *; omega.
-    (*
+    
   - eapply at_range in H2; eauto.
     repeat destruct_disjunct; subst.
     + eapply ex_intro; split; auto.
@@ -803,7 +803,7 @@ Definition splitEv (sp:SP) (e:EvidenceC) : EvidenceC :=
 
 Definition eval_asp (a:ASP) (e:EvidenceC) : EvidenceC :=
   match a with
-  (*| CPY => e
+  | CPY => e
   | KIM i q args =>
     let bs := invokeKIM i q args in
     (kkc i args q bs e)
@@ -812,7 +812,7 @@ Definition eval_asp (a:ASP) (e:EvidenceC) : EvidenceC :=
     (uuc i args bs e)
   | SIG =>
     let bs := signEv e in
-    (ggc e bs)*)
+    (ggc e bs)
   | HSH =>
     let bs := hashEv e in
     (hhc bs e)

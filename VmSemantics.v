@@ -27,16 +27,16 @@ Axiom remote_events_axiom : forall t tr,
 
 Definition prim_trace (i:nat) (a:Prim_Instr) : (list Ev) :=
   match a with
-  (*| copy => [Term.copy i]
+  | copy => [Term.copy i]
   | kmeas asp_id q A => [Term.kmeas i asp_id q A]
   | umeas asp_id A => [Term.umeas i asp_id A]
-  | sign => [Term.sign i]*)
+  | sign => [Term.sign i]
   | hash => [Term.hash i]
   end.
 
 Definition prim_ev (a:Prim_Instr) (e:EvidenceC) : EvidenceC :=
   match a with
-  (*| copy => e
+  | copy => e
   | kmeas i q args =>
     let bs := invokeKIM i q args in
     (kkc i args q bs e)
@@ -45,7 +45,7 @@ Definition prim_ev (a:Prim_Instr) (e:EvidenceC) : EvidenceC :=
     (uuc i args bs e)
   | sign =>
     let bs := signEv e in
-    (ggc e bs)*)
+    (ggc e bs)
   | hash =>
     let bs := hashEv e in
     (hhc bs e)
@@ -159,6 +159,24 @@ Proof.
   subst; destruct st; auto.
 Defined.
 
+    Lemma hihi : forall il (m : list Ev) (e : EvidenceC),
+         st_trace (fold_left run_vm_step il {| st_ev := e; st_trace := m |}) =
+         m ++
+           st_trace (fold_left run_vm_step il {| st_ev := e; st_trace := [] |}) ->
+
+        (st_trace
+           (fold_left run_vm_step il
+                      {| st_ev := e;
+                        st_trace := m |})) =
+        (m ++
+                       st_trace
+                       (fold_left run_vm_step il
+                                  {| st_ev :=  e; st_trace := [] |})).
+    Proof.
+      intros.
+      auto.
+    Defined.
+
 Lemma foo : forall il m e,
     st_trace (fold_left run_vm_step il
                         {| st_ev := e; st_trace := m |}) =
@@ -167,24 +185,31 @@ Lemma foo : forall il m e,
 Proof.
   induction il; simpl; intros m e.
   - rewrite app_nil_r. auto.
-  - destruct a.
-    
-    unfold run_vm_step; fold run_vm_step.
-    monad_unfold. simpl. unfold prim_trace. destruct p.
-    rewrite IHil.
-    rewrite IHil. simpl.
-    assert (
-        (st_trace
-           (fold_left run_vm_step il
-                      {| st_ev := hhc (hashEv e) e;
-                        st_trace := [Term.hash n] |})) =
-        ([Term.hash n] ++
-                       st_trace
-                       (fold_left run_vm_step il
-                                  {| st_ev := hhc (hashEv e) e; st_trace := [] |}))).
-    { rewrite IHil. auto. }
+  - destruct a as [n p];
+      unfold run_vm_step; fold run_vm_step;
+    monad_unfold; destruct p; unfold prim_trace;
+    (*rewrite IHil.
+    rewrite IHil. simpl. *)
+
+
+
+      rewrite IHil.
+    + 
+    erewrite hihi with (m:= [Term.copy n]); auto.
     rewrite <- app_assoc.
-    rewrite <- H.
+    auto.
+    +
+      erewrite hihi with (m:= [Term.kmeas n n0 n1 l]); auto.
+    rewrite <- app_assoc.
+    auto.
+    + erewrite hihi with (m:= [Term.umeas n n0 l]); auto.
+    rewrite <- app_assoc.
+    auto.
+    + erewrite hihi with (m:= [Term.sign n]); auto.
+    rewrite <- app_assoc.
+    auto.
+    + erewrite hihi with (m:= [Term.hash n]); auto.
+    rewrite <- app_assoc.
     auto.
 Defined.
 
@@ -200,16 +225,15 @@ Proof.
   - simpl.
     inversion H. reflexivity.
   -
-    simpl.
-    destruct a. destruct p. simpl.
-    unfold run_vm_step. simpl.
-    monad_unfold. simpl.
-    eapply IHil1.
-    simpl in H.
-    unfold run_vm_step in H. simpl in *. monad_unfold. simpl in H.
-    apply H.
+    simpl;
+    destruct a; destruct p; 
+    unfold run_vm_step;
+    monad_unfold;
+    eapply IHil1;
+    simpl in H;
+    unfold run_vm_step in H; simpl in *; monad_unfold; 
+      apply H.
 Defined.
-
 
 Lemma multi_implies_run: forall il tr e e',
   vm_multi (mk_config e il) (mk_config e' []) tr ->
@@ -221,9 +245,10 @@ Proof.
     + inv H0.
   - inv H.
     unfold run_vm; simpl.
-    unfold run_vm_step. fold run_vm_step. unfold execSt. destruct a. simpl.
-    destruct p. simpl.
-    dependent destruction x'. inv H0. inv H0. simpl in *.
+    unfold run_vm_step. fold run_vm_step. unfold execSt.
+    destruct a; destruct p; dependent destruction x'; inv H0; inv H0; simpl in *.
+
+    5: {
 
     pose (IHil cs' (hhc (hashEv e) e) e'). simpl in *.
 
@@ -234,23 +259,14 @@ Proof.
     [Term.hash n] ++ st_trace (fold_left run_vm_step vm_list0
                                          {| st_ev := hhc (hashEv e) e; st_trace := [] |})) as H2.
     apply foo.
-
-    apply st_congr.
-    2: {
-    
+    apply st_congr; try (eapply trace_irrel; eassumption).  
     rewrite H2. simpl.
     assert ( run_vm vm_list0 {| st_ev := hhc (hashEv e) e; st_trace := [] |} =
-             (fold_left run_vm_step vm_list0 {| st_ev := hhc (hashEv e) e; st_trace := [] |})) as
-        H3.  { auto. }
-             rewrite <- H3.
+             (fold_left run_vm_step vm_list0 {| st_ev := hhc (hashEv e) e; st_trace := [] |})) as H3.
+    { auto. }
+    rewrite <- H3.
     rewrite e0. simpl. auto.
-    }
-
-    Check foo.
-
-    eapply trace_irrel.
-    apply e0.
-Defined.
+Admitted.
 
 
 Lemma vm_multi_trans : forall x y z tr tr',
@@ -682,7 +698,7 @@ Lemma compile_not_empty :
 Proof.
   intros.
   induction t.
-  - destruct a. simpl. congruence.
+  - destruct a; simpl; congruence.
   - simpl.
     Search (_ <> []).
     destruct (instr_compiler t1).
@@ -853,15 +869,30 @@ Proof.
   eapply trace_irrel; eauto.
 Defined.
 
+Ltac heee l :=
+  assert (l = l ++ []) as HH; auto; rewrite HH.
+
+Ltac hee :=
+      match goal with
+      | |- context
+              [  vm_multi
+                   {| vm_ev := _; vm_list := ?x |}
+                   {| vm_ev := _; vm_list := [] |} _
+        ] =>  assert (x = x ++ []) as HH; auto; rewrite HH
+      end.
+
 Lemma exists_trace : forall t e,
   exists tr,
   vm_multi (mk_config e (instr_compiler t))
               (mk_config (eval (unanno t) e) []) tr.
 Proof.
   induction t; intros.
-  - eexists.
-    simpl.
-    destruct a.
+  -
+    (*exists (prim_trace (fst r) (asp_instr a)).*)
+    destruct a; 
+      simpl in *;
+      eexists;
+    hee;
     repeat econstructor.
   - destruct (IHt1 e).
     destruct (IHt2 (eval (unanno t1) e)).
@@ -1225,16 +1256,12 @@ Lemma multi_ev_eval : forall t tr1 e e',
     e' = eval (unanno t) e.
 Proof.
   induction t; intros.
-  - destruct a.
-    inv H. inv H0.
-    monad_unfold. simpl in *.
-    inv H0.
-    monad_unfold. simpl in *.
-    inv H1.
-    + inv H1; reflexivity.
-    + inv H1. reflexivity.
-      subst.
-      inv H2.
+  - destruct a;
+    inv H; inv H0;
+
+    inv H0;
+  
+    inv H1; try (inv H1; reflexivity); inv H2.
   -
     edestruct destruct_compiled_appended; eauto.
     destruct_conjs.
@@ -1242,11 +1269,40 @@ Proof.
     eapply IHt2.
     assert (H0 = (eval (unanno t1) e)).
     eapply IHt1; eauto.
-    rewrite <- H5.
-    apply H3.
+    subst. eassumption.
 Defined.
  
+Lemma yo : forall e'0 e' cs',
+    refl_trans_1n_trace vm_step {| vm_ev := e'0; vm_list := [] |} {| vm_ev := e'; vm_list := [] |}
+                        cs' ->
+    cs' = [].
+Proof.
+  intros.
+  inv H.
+  + reflexivity.
+  + inv H0.
+Defined.
 
+Ltac haa :=
+      match goal with
+      | [H: refl_trans_1n_trace vm_step
+            {| vm_ev := _; vm_list := [] |}
+            {| vm_ev := _; vm_list := [] |}
+            ?cs1 |- 
+        lstar (stop _ _) ?cs1 (stop _ _)]
+        => assert (cs1 = []) as HH by (eapply yo; eauto);
+          rewrite HH
+          
+       (*assert (cs' = cs' ++ []) as HH; auto; rewrite HH*)
+      end.
+
+(*
+  H1 : refl_trans_1n_trace vm_step {| vm_ev := e'0; vm_list := [] |} {| vm_ev := e'; vm_list := [] |}
+         cs'
+
+  lstar (stop p (aeval (aasp r CPY) p et)) cs' (stop p et)
+
+*)
 
 Lemma multi_lstar : forall t tr et p e e',
       vm_multi (mk_config e (instr_compiler t))
@@ -1254,15 +1310,12 @@ Lemma multi_lstar : forall t tr et p e e',
       lstar (conf t p et) tr (stop p (aeval t p et)).
 Proof.
   induction t; intros.
-  - destruct a.
-    + simpl in *.
-      invc H. invc H0.
-      econstructor. econstructor.
-      inv H1.
+  - destruct a;
+     simpl in *; 
+      invc H; invc H0;
+        econstructor; try (econstructor; reflexivity);
+      haa;
       econstructor.
-      inv H1.
-      econstructor.
-      simpl. inv H.
   - simpl in *.
     econstructor.
     econstructor.
