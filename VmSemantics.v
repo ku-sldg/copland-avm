@@ -112,12 +112,13 @@ Definition build_comp (*(s:ev_stack)*) (i:AnnoInstr): VM unit :=
 Definition run_vm_step (a:vm_st) (b:AnnoInstr) : vm_st :=
   execSt a (build_comp b).
 
-Definition run_vm (il:list AnnoInstr) st :=
+Definition run_vm (il:list AnnoInstr) st : vm_st :=
   fold_left run_vm_step il st.
 
-Definition run_vm_t (t:AnnoTerm) st :=
+Definition run_vm_t (t:AnnoTerm) st : vm_st :=
   run_vm (instr_compiler t) st.
 
+(*
 (** Relational-style semantics for VM *)
 Record vm_config : Type :=
   mk_config
@@ -125,6 +126,7 @@ Record vm_config : Type :=
      vm_list:list AnnoInstr ;
       vm_stack:ev_stack
     }.
+
 
 Inductive vm_step : vm_config -> vm_config -> (list Ev) -> Prop :=
 | do_vmStep : forall e i l s,
@@ -147,6 +149,7 @@ Proof.
   repeat econstructor; eauto.
 Defined.
 Hint Resolve step_implies_multi.
+*)
 
 Lemma st_congr :
   forall st tr e s,
@@ -277,6 +280,7 @@ Proof.
       apply H.
 Defined.
 
+(*
 Lemma multi_implies_run: forall il tr e e' s s',
   vm_multi (mk_config e il s) (mk_config e' [] s') tr ->
   run_vm il (mk_st e s []) = {| st_ev := e'; st_trace := tr; st_stack := s' |}.
@@ -400,6 +404,7 @@ Proof.
   - apply run_implies_multi.
   - apply multi_implies_run.
 Defined.
+*)
 
 (*
 Lemma ha : forall e e' e'' s s' s'' il1 il2 resl tr1 tr2,
@@ -412,6 +417,7 @@ Proof.
 Defined.
 *)
 
+(*
 Lemma asas : forall i l l' tr e e' s s',
     vm_step {| vm_ev := e;  vm_list := i :: l; vm_stack := s |}
             {| vm_ev := e'; vm_list := l; vm_stack := s' |}
@@ -424,8 +430,9 @@ Proof.
   inv H.
   apply do_vmStep.
 Defined.
+*)
 
-
+Print vm_st.
 
 Lemma vm_multi_transitive:
   forall il1 il2 resl tr1 tr2 e e' e'' s s' s'',
