@@ -235,6 +235,30 @@ Proof.
       apply H.
 Defined.
 
+Lemma ev_irrel : forall il1 tr1 e1 e2,
+(*
+    run_vm il1 {| st_ev := e; st_trace := tr1 |} =
+    {| st_ev := e'; st_trace := tr1' |} -> *)
+    
+    st_trace (
+        run_vm il1 {| st_ev := e1; st_trace := tr1 |}) =
+    st_trace (
+        run_vm il1 {| st_ev := e2; st_trace := tr1 |}).
+Proof.
+  induction il1; intros.
+  - simpl.
+    reflexivity.
+  -
+    simpl;
+    destruct a; destruct p; 
+    unfold run_vm_step;
+    monad_unfold;
+    eapply IHil1;
+    simpl in H;
+    unfold run_vm_step in H; simpl in *; monad_unfold; 
+      apply H.
+Defined.
+
 Lemma multi_implies_run: forall il tr e e',
   vm_multi (mk_config e il) (mk_config e' []) tr ->
   run_vm il (mk_st e []) = {| st_ev := e'; st_trace := tr |}.
@@ -246,27 +270,30 @@ Proof.
   - inv H.
     unfold run_vm; simpl.
     unfold run_vm_step. fold run_vm_step. unfold execSt.
-    destruct a; destruct p; dependent destruction x'; inv H0; inv H0; simpl in *.
 
-    5: {
+    (*destruct a; destruct p; dependent destruction x'; inv H0; inv H0; simpl in *. *)
+    dependent destruction x'; inv H0; inv H0; simpl in *.
 
-    pose (IHil cs' (hhc (hashEv e) e) e'). simpl in *.
+    (* pose (IHil cs' (hhc (hashEv e) e) e'). simpl in *. *)
+    destruct a.
+    Check prim_ev.
+    pose (IHil cs' (prim_ev p e) e'). simpl in *. 
 
     concludes.
     Check foo.   
     assert    ( st_trace (fold_left run_vm_step vm_list0
-                        {| st_ev := hhc (hashEv e) e; st_trace := [Term.hash n] |}) =
-    [Term.hash n] ++ st_trace (fold_left run_vm_step vm_list0
-                                         {| st_ev := hhc (hashEv e) e; st_trace := [] |})) as H2.
+                        {| st_ev := prim_ev p e; st_trace := prim_trace n p |}) =
+    prim_trace n p ++ st_trace (fold_left run_vm_step vm_list0
+                                         {| st_ev := prim_ev p e; st_trace := [] |})) as H2.
     apply foo.
     apply st_congr; try (eapply trace_irrel; eassumption).  
     rewrite H2. simpl.
-    assert ( run_vm vm_list0 {| st_ev := hhc (hashEv e) e; st_trace := [] |} =
-             (fold_left run_vm_step vm_list0 {| st_ev := hhc (hashEv e) e; st_trace := [] |})) as H3.
+    assert ( run_vm vm_list0 {| st_ev := prim_ev p e; st_trace := [] |} =
+             (fold_left run_vm_step vm_list0 {| st_ev := prim_ev p e; st_trace := [] |})) as H3.
     { auto. }
     rewrite <- H3.
     rewrite e0. simpl. auto.
-Admitted.
+Defined.
 
 
 Lemma vm_multi_trans : forall x y z tr tr',
@@ -280,69 +307,65 @@ Defined.
 Lemma run_implies_multi: forall il tr e e',
     run_vm il {| st_ev := e; st_trace := [] |} = {| st_ev := e'; st_trace := tr |} ->
     vm_multi (mk_config e il) (mk_config e' []) tr.
-Proof. (*
+Proof. 
   induction il; intros.
   - inv H; unfold run_vm; simpl.
     econstructor.
   - 
     unfold run_vm in H.
-    assert (a :: il = [a]++il). auto.
+    assert (a :: il = [a]++il) as H0. auto.
     rewrite H0 in *.
-    rewrite fold_left_app in H. simpl in H. unfold run_vm_step in H. fold run_vm_step in H. destruct a. destruct p. simpl in H. monad_unfold. simpl in H.
-    unfold run_vm in IHil.
+    rewrite fold_left_app in H. simpl in H. unfold run_vm_step in H. fold run_vm_step in H.
 
-    assert (st_trace (fold_left run_vm_step il {| st_ev := e; st_trace := [Term.hash n] |}) =
-            [Term.hash n] ++ st_trace (fold_left run_vm_step il {| st_ev := e; st_trace := [] |})).
+    
+    unfold run_vm in IHil.   
+    destruct a.
+    Check prim_trace.
+    monad_unfold.
+    unfold run_vm_step in H. fold run_vm_step in H.
+
+    assert (
+       st_trace ( fold_left run_vm_step il
+        {| st_ev := prim_ev p e; st_trace := prim_trace n p |}) =
+        st_trace ({| st_ev := e'; st_trace := tr |})
+      ).
+    { congruence. }
+
+    assert (
+      st_ev (fold_left run_vm_step il
+        {| st_ev := prim_ev p e; st_trace := prim_trace n p |}) =
+      st_ev ({| st_ev := e'; st_trace := tr |})).
+    { congruence. }
+
+    simpl in *.
+         
+    assert (st_trace (fold_left run_vm_step il {| st_ev := e; st_trace := prim_trace n p |}) =
+            (prim_trace n p) ++ st_trace (fold_left run_vm_step il {| st_ev := e; st_trace := [] |})).
     apply foo.
 
+    assert (st_trace
+         (fold_left run_vm_step il
+                    {| st_ev := e; st_trace := prim_trace n p |}) =
+            st_trace
+         (fold_left run_vm_step il
+                    {| st_ev := prim_ev p e; st_trace := prim_trace n p |})).
+    eapply ev_irrel.
+    rewrite <- H4 in H1.
+    rewrite H3 in H1.
+    rewrite <- H1.
     
-    assert (st_trace (fold_left run_vm_step il {| st_ev := e; st_trace := [Term.hash n] |}) =
-            st_trace ({| st_ev := e; st_trace := tr |})). {
-      rewrite H1. simpl.
-      admit. }
-
-    rewrite H1 in H2. simpl in H2.
-    rewrite <- H2.
-    simpl.
-    rewrite H0.
-
-    (*
-    
-
-    econstructor.
-    
-
-    rewrite H1 in H2. simpl in H2.
-    rewrite <- H2.
-    simpl.
-    rewrite H0. *)
-    assert (Term.hash n :: st_trace (fold_left run_vm_step il {| st_ev := e; st_trace := [] |}) =
-            [Term.hash n] ++ st_trace (fold_left run_vm_step il {| st_ev := e; st_trace := [] |})).
-    auto.
-    rewrite H3.
     econstructor.
     econstructor.
     simpl.
     eapply IHil.
-    Check run_vm.
-    Print run_vm.
-    Lemma run_duh : forall il s,
-      run_vm il s =
-      {| st_ev := st_ev (run_vm il s); st_trace := st_trace (run_vm il s)|}.
-    Proof.
-      intros.
-      destruct (run_vm il). simpl. reflexivity.
-    Defined.
 
-    assert (fold_left run_vm_step il {| st_ev := e; st_trace := [] |} =
-            run_vm il {| st_ev := e; st_trace := [] |}). auto.
-    rewrite H4.
+    apply st_congr.
+    eapply trace_irrel.
+    monad_unfold.
 
-    rewrite run_duh.
-    simpl.
-    unfold run_vm_step in H. fold run_vm_step in H.
-*)
-Admitted.
+    apply H.
+    eapply ev_irrel.
+Defined.
 
 
 Lemma run_iff_multi: forall il tr e e',
@@ -354,10 +377,6 @@ Proof.
   - apply run_implies_multi.
   - apply multi_implies_run.
 Defined.
-
-
-
-
 
 (*
 Lemma ha : forall e e' e'' s s' s'' il1 il2 resl tr1 tr2,
