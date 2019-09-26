@@ -1741,6 +1741,119 @@ Defined. *)
 Admitted.
  *)
 
+Check exists_trace.
+
+(*
+Lemma restl' : forall il1 il2 tr e e' s s',
+    vm_multi (il1 ++ il2)
+             (mk_st e s [])
+             (mk_st e' s' tr il2 s') tr ->
+    vm_multi  (mk_config e il1 s) (mk_config e' [] s') tr.
+Proof. *)
+
+Lemma restl' : forall il e e' s s' x tr,
+    run_vm il {| st_ev := e; st_stack := s; st_trace := x |} =
+    {| st_ev := e'; st_stack := s'; st_trace := x ++ tr |} ->
+
+    run_vm il {| st_ev := e; st_stack := s; st_trace := [] |} =
+    {| st_ev := e'; st_stack := s'; st_trace := tr |}.
+Proof.
+  induction il; intros.
+  - simpl.
+    inv H.
+    assert (tr = []).
+    { symmetry in H3.
+      rewrite <- app_nil_r in H3.
+      eapply app_inv_head. eauto.
+    }
+
+    congruence.
+  - simpl.
+    destruct a.
+    + monad_unfold.
+      unfold run_vm_step in *. fold run_vm_step in *. monad_unfold.
+      eapply st_congr.
+      eapply trace_irrel; eauto.
+      eapply stack_irrel; eauto.
+      rewrite foo.
+      erewrite IHil.
+      assert (
+          st_trace (
+              run_vm il
+        {|
+        st_ev := prim_ev p e;
+        st_stack := s;
+        st_trace := x ++ prim_trace n p |}) =
+
+          st_trace (
+              {| st_ev := e'; st_stack := s'; st_trace := x ++ tr |})).
+      congruence.
+      rewrite foo in H0. simpl in H0.
+      assert (tr =
+              prim_trace n p ++
+       st_trace
+         (fold_left run_vm_step il
+                    {| st_ev := prim_ev p e; st_stack := s; st_trace := [] |})).
+
+      Search ((_ ++ _) = (_ ++ _)).
+      rewrite <- app_assoc in H0.
+      eapply app_inv_head; eauto.
+      
+     
+      rewrite H1.
+      simpl.
+      reflexivity.
+
+      assert (
+          st_trace (
+              run_vm il
+        {|
+        st_ev := prim_ev p e;
+        st_stack := s;
+        st_trace := x ++ prim_trace n p |}) =
+
+          st_trace (
+              {| st_ev := e'; st_stack := s'; st_trace := x ++ tr |})).
+      congruence.
+      eapply st_congr.
+      reflexivity.
+      reflexivity.
+      rewrite foo.
+      reflexivity.
+      Unshelve.
+      exact [].
+Defined.
+
+
+
+Lemma multi_ev_eval : forall t tr1 e e' s s',
+    run_vm (instr_compiler t)
+           {| st_ev := e; st_stack := s;  st_trace := [] |} =
+           {| st_ev := e'; st_stack := s'; st_trace := tr1 |}  ->
+    e' = eval (unanno t) e.
+Proof.
+  induction t; intros.
+  - destruct a; inv H; reflexivity.
+  -
+    simpl in *.
+    edestruct destruct_compiled_appended; eauto.
+    destruct_conjs.
+    simpl.
+    (*
+     assert (H1 = s).
+     { edestruct exists_trace with (t:=t1) (e:=e) (s:=s).
+       rewrite <- run_iff_multi in *.
+       
+       congruence.
+     } *)
+    eapply IHt2.
+    assert (H0 = eval (unanno t1) e).
+    eauto.
+    rewrite <- H6.
+    eapply restl'; eauto.
+Defined.
+
+
 Lemma multi_ev_eval : forall t tr1 e e' s,
     vm_multi {| vm_ev := e; vm_list := (instr_compiler t); vm_stack := s |}
              {| vm_ev := e'; vm_list := []; vm_stack := s |} tr1 ->
