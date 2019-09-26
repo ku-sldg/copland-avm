@@ -33,10 +33,10 @@ Inductive Instr: Set :=
 
 Inductive AnnoInstr: Set :=
 | aprimInstr: nat -> Prim_Instr -> AnnoInstr
-(*| asplit: nat -> SP -> SP -> AnnoInstr
-| ajoins: nat -> AnnoInstr
-| ajoinp: nat -> AnnoInstr
-| abesr : AnnoInstr
+| asplit: nat -> SP -> SP -> AnnoInstr
+| ajoins: nat -> AnnoInstr (*
+| ajoinp: nat -> AnnoInstr *)
+| abesr : AnnoInstr (*
 | areqrpy: Range -> Plc -> AnnoTerm -> AnnoInstr
 | abep: Range -> Range -> (list AnnoInstr) -> (list AnnoInstr) -> AnnoInstr*).
 
@@ -59,11 +59,12 @@ Fixpoint instr_compiler (t:AnnoTerm) : (list AnnoInstr) :=
     let tr1 := instr_compiler t1 in
     let tr2 := instr_compiler t2 in
     tr1 ++ tr2     
-(*  | abseq r (sp1,sp2) t1 t2 =>
+  | abseq r (sp1,sp2) t1 t2 =>
     let tr1 := instr_compiler t1 in
     let tr2 := instr_compiler t2 in
     let i := Nat.pred (snd r) in
-    [asplit (fst r) sp1 sp2] ++ tr1 ++ [abesr] ++ tr2 ++ [ajoins i]          
+    [asplit (fst r) sp1 sp2] ++ tr1 ++ [abesr] ++ tr2 ++ [ajoins i]
+                             (*
   | abpar r (sp1,sp2) t1 t2 =>
     (*let splEv := [split sp1 sp2] in*)
     let tr1 := instr_compiler t1 in

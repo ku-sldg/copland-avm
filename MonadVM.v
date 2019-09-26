@@ -68,7 +68,7 @@ Definition VM := St vm_st.
 
 (* Sanity checks *)
 
-(*
+
 Definition extractVal (r:vm_st) : nat :=
   let ev := head (st_stack r) in
   let n :=
@@ -87,15 +87,14 @@ Definition test_comp : VM unit :=
 Definition empty_vm_state := mk_st mtc [(ggc mtc 48)] [].
 
 Compute (runSt empty_vm_state test_comp).
-*)
 
 (* VM monad operations *)
-(*
+
 Definition push_stackm (e:EvidenceC) : VM unit :=
   st <- get ;;
-     let '{| st_ev := e; st_stack := oldStack; st_trace := tr |} := st in
+     let '{| st_ev := oldEv; st_stack := oldStack; st_trace := tr |} := st in
      let newStack := push_stack _ e oldStack in
-     put (mk_st e newStack tr).
+     put (mk_st oldEv newStack tr).
 
 Definition pop_stackm : VM EvidenceC :=
   st <- get ;;
@@ -108,7 +107,7 @@ Definition pop_stackm : VM EvidenceC :=
            ret e
      | None => failm
      end.
-*)
+
 
 Definition put_ev (e:EvidenceC) : VM unit :=
   st <- get ;;
@@ -132,12 +131,12 @@ Definition add_trace (tr':list Ev) : vm_st -> vm_st :=
 
 Definition add_tracem (tr:list Ev) : VM unit :=
   modify (add_trace tr).
-(*
+
 Definition split_evm (i:nat) (sp1 sp2:SP) (e:EvidenceC) : VM (EvidenceC*EvidenceC) :=
     let e1 := splitEv sp1 e in
     let e2 := splitEv sp2 e in
     add_tracem [Term.split i] ;;
-               ret (e1,e2).*)
+               ret (e1,e2).
 
        
 Ltac monad_unfold :=

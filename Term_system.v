@@ -27,7 +27,7 @@ Fixpoint ev_sys (t: AnnoTerm) : EvSys Ev :=
               (leaf (pred j, j) (rpy (pred j) q))) *)
   | alseq r x y => before r (ev_sys x)
                           (ev_sys y)
-(*  | abseq (i, j) s x y =>
+  | abseq (i, j) s x y =>
     before (i, j)
            (leaf (i, S i)
                  (split i ))
@@ -36,7 +36,7 @@ Fixpoint ev_sys (t: AnnoTerm) : EvSys Ev :=
                            (ev_sys x)
                            (ev_sys y))
                    (leaf ((pred j), j)
-                   (join (pred j) )))
+                   (join (pred j) ))) (*
   | abpar (i, j) s x y =>
     before (i, j)
            (leaf (i, S i)
@@ -71,8 +71,8 @@ Proof.
     rewrite H4.
     apply ws_before; simpl; auto; rewrite evsys_range; auto. *)
   - apply ws_before; auto; repeat rewrite evsys_range; auto.
-    (*
-  - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto).
+    
+  - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto). (*
   - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto).
     repeat (apply ws_merge; simpl in *; auto; repeat rewrite evsys_range; auto). *)
 Qed.
@@ -84,7 +84,7 @@ Lemma evsys_events:
   forall t ev,
     well_formed t ->
     ev_in ev (ev_sys t) <-> events t ev.
-Proof.
+Proof. (*
   split; induction t; intros; inv H; simpl in *;
     repeat expand_let_pairs; simpl in *.
   - inv H0; auto; destruct a; simpl; auto.
@@ -99,6 +99,7 @@ Proof.
     inv H1; auto.
 
     apply evtsattrpy. simpl. omega.
+*)
     
 
 
@@ -143,8 +144,10 @@ Proof.
     apply ein_beforer.
     apply ein_beforer.
     assert ((Init.Nat.pred (snd r) = i)). omega. subst.
-    apply ein_leaf. *)
-Qed.
+    apply ein_leaf. 
+Qed. *)
+Admitted.
+
 
 (** Maximal events are unique. *)
 

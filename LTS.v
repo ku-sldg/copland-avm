@@ -23,8 +23,8 @@ Inductive St: Set :=
 | conf: AnnoTerm -> Plc -> Evidence -> St
 (*| rem: Plc -> Plc -> St -> St *)
 | ls: St -> AnnoTerm -> St
-(*| bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
-| bsr: nat -> Evidence -> St -> St
+| bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
+| bsr: nat -> Evidence -> St -> St (*
 | bp: nat -> St -> St -> St*).
 
 Fixpoint pl (s:St) :=
@@ -33,8 +33,8 @@ Fixpoint pl (s:St) :=
   | conf _ p _ => p
   (*| rem _ p _ => p*)
   | ls st _ => pl st
-  (*| bsl _ _ _ p _ => p
-  | bsr _ _ st => pl st
+  | bsl _ _ _ p _ => p
+  | bsr _ _ st => pl st (*
   | bp _ _ st => pl st*)
   end.
 
@@ -46,8 +46,8 @@ Fixpoint seval st :=
   | conf t p e => aeval t p e
   (*| rem _ _ st => seval st*)
   | ls st t => aeval t (pl st) (seval st)
-  (*| bsl _ st t p e => ss (seval st) (aeval t p e)
-  | bsr _ e st => ss e (seval st)
+  | bsl _ st t p e => ss (seval st) (aeval t p e)
+  | bsr _ e st => ss e (seval st) (*
   | bp _ st0 st1 => pp (seval st0) (seval st1)*)
 end.
 
@@ -96,7 +96,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
     forall t p e,
       step (ls (stop p e) t) None (conf t p e)
 (** Branching Sequential Composition *)
-(*
+
 | stbseq:
     forall r s x y p e,
       step (conf (abseq r s x y) p e)
@@ -121,6 +121,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
       step (bsr j e (stop p e'))
            (Some (join (pred j)))
            (stop p (ss e e'))
+           (*
 (** Branching Parallel composition *)
 
 | stbpar:
@@ -484,7 +485,7 @@ Fixpoint tsize t: nat :=
   | aasp _ _ => 1
   (*| aatt _ _ x => 2 + tsize x *)
   | alseq _ x y => 2 + tsize x + tsize y
-  (*| abseq _ _ x y => 3 + tsize x + tsize y
+  | abseq _ _ x y => 3 + tsize x + tsize y (*
   | abpar _ _ x y => 2 + tsize x + tsize y *)
   end.
 
@@ -496,8 +497,8 @@ Fixpoint ssize s: nat :=
   | conf t _ _ => tsize t
   (*| rem _ _ x => 1 + ssize x *)
   | ls x t => 1 + ssize x + tsize t
-  (*| bsl _ x t _ _ => 2 + ssize x + tsize t
-  | bsr _ _ x => 1 + ssize x
+  | bsl _ x t _ _ => 2 + ssize x + tsize t
+  | bsr _ _ x => 1 + ssize x (*
   | bp _ x y => 1 + ssize x + ssize y *)
   end.
 
