@@ -1410,6 +1410,42 @@ Proof.
   destruct p; try (simpl; auto).
 Defined.
 
+Lemma st_trace_destruct' :
+  forall il1 il2 e s e' s' m,
+    st_trace
+      (fold_left run_vm_step il2
+                 (fold_left run_vm_step il1
+                            {| st_ev := e; st_stack := s; st_trace := m |})) =
+    m ++ 
+    st_trace
+      (fold_left run_vm_step il1 
+                 {| st_ev := e; st_stack := s; st_trace := [] |}) ++
+      st_trace
+      (fold_left run_vm_step il2
+                 {| st_ev := e';
+                    st_stack := s';
+                    st_trace := [] |}).
+Proof.
+  induction il1; (*destruct il1;*) try reflexivity; intros.
+  - simpl.
+    erewrite foo.
+    erewrite ev_irrel. auto.
+  - simpl.
+    Check foo.
+    destruct a.
+    unfold run_vm_step. fold run_vm_step.
+    monad_unfold.
+    rewrite foo.
+    rewrite <- app_assoc.
+    rewrite <- IHil1.
+    erewrite IHil1.
+    erewrite IHil1.
+    rewrite <- app_assoc.
+    auto.
+    Unshelve. exact mtc. exact [].
+Defined.
+
+
 Lemma st_trace_destruct :
   forall il1 il2 e s e' s',
     st_trace
@@ -1426,9 +1462,48 @@ Lemma st_trace_destruct :
                     st_trace := [] |}).
 Proof.
   intros.
-  induction il2; destruct il1; try reflexivity.
+  erewrite st_trace_destruct'.
+  simpl. auto.
+Defined.
+
+  (*
+  induction il1; (*destruct il1;*) try reflexivity; intros.
   - simpl.
+    apply ev_irrel.
+  - simpl.
+    Check foo.
+    destruct a.
+    unfold run_vm_step. fold run_vm_step.
+    monad_unfold.
+    rewrite foo.
+    rewrite <- app_assoc.
+    rewrite <- IHil1.
+    Check foo.
+    
+    
     rewrite app_nil_r. auto.
+  - simpl.
+    unfold run_vm_step. fold run_vm_step. destruct a. monad_unfold.
+    unfold add_tracem. monad_unfold.
+    destruct (modify_evm (prim_ev p)
+              (fold_left run_vm_step il1
+                         {| st_ev := e; st_stack := s; st_trace := [] |})).
+    destruct o.
+    + simpl.
+      Check foo.
+      assert (
+          st_trace
+            (fold_left run_vm_step il2
+               {| st_ev := prim_ev p e'; st_stack := s'; st_trace := prim_trace n p |}) =
+          prim_trace n p ++
+       st_trace
+         (fold_left run_vm_step il2
+                    {| st_ev := prim_ev p e'; st_stack := s'; st_trace := [] |})).
+      apply foo.
+      rewrite H.
+      rewrite <- foo at 3.
+      rewrite <- IHil2.
+    
 
 
     
@@ -1442,7 +1517,13 @@ Proof.
   - simpl in *.
     Check foo.
     unfold run_vm_step. fold run_vm_step. monad_unfold.
-    destruct a; destruct a0. monad_unfold. unfold add_tracem. monad_unfold.
+    destruct a; destruct a0. monad_unfold. unfold add_tracem.
+    unfold modify. unfold add_trace. fold add_trace.
+    monad_unfold. simpl. unfold modify_evm. monad_unfold. simpl.
+    
+
+
+    monad_unfold.
     destruct (modify_evm (prim_ev p)
               (fold_left run_vm_step il1
                  {|
@@ -1451,6 +1532,10 @@ Proof.
                  st_trace := prim_trace n0 p0 |})).
     destruct o; simpl.
     unfold add_trace. simpl.
+    destruct v.
+    admit.
+    simpl.
+    
     reflexivity.
     admit.
     rewrite <- IHil2.
@@ -1461,12 +1546,10 @@ Proof.
     simpl.
     destruct a; destruct a0.
     simpl.
-    rewrite <- IHil1.
+    rewrite <- IHil1.   
     
     
-    
-    
-Admitted.
+Admitted. *)
 
 Lemma destruct_compiled_appended : forall t1 t2 tr e e'' s s'',
     run_vm
