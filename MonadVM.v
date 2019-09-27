@@ -142,13 +142,24 @@ Definition split_evm (i:nat) (sp1 sp2:SP) (e:EvidenceC) : VM (EvidenceC*Evidence
 Ltac monad_unfold :=
   repeat unfold
          runSt,
-         execSt,
-         bind,
-         (*write_output,*)
-         get,
-         when,
-         put,
-         nop,
-         modify,
-         ret in *;
+  execSt,
+  (*push_stackm,
+  pop_stackm, *)
+  (*push_stack,
+  pop_stack, *)
+  get_ev,
+  add_tracem,
+  modify_evm,
+  split_evm,
+  add_trace,
+  
+  
+  bind,
+  (*write_output,*)
+  get,
+  when,
+  put,
+  nop,
+  modify,
+  ret in *;
   simpl in *.
