@@ -2537,123 +2537,45 @@ Proof.
     }
     congruence.
 
+    Ltac do_stack1 t1 :=
+        match goal with
+        | [H:  run_vm (instr_compiler t1)
+          {| st_ev := _; st_stack := ?s0; st_trace := _ |} =
+               {| st_ev := _; st_stack := ?s1; st_trace := _ |} |- _ ] =>
+          assert (s0 = s1) by (eapply multi_stack_restore; eauto)
+        end; destruct_conjs.
+
+    Ltac do_stack t1 t2 :=
+        match goal with
+        | [H:  run_vm (instr_compiler t1)
+          {| st_ev := _; st_stack := ?s0; st_trace := _ |} =
+               {| st_ev := _; st_stack := ?s1; st_trace := _ |},
+           G:  run_vm (instr_compiler t2)
+          {| st_ev := _; st_stack := ?s; st_trace := _ |} =
+               {| st_ev := _; st_stack := ?s'; st_trace := _ |} |- _ ] =>
+          assert (s0 = s1 /\ s = s') by (split;eapply multi_stack_restore; eauto)
+        end; destruct_conjs.
+
+     do_stack t1 t2.
+   
+(*
     assert (H = (push_stack EvidenceC (splitEv s1 e) s0)). {
+     
+      
       symmetry.
-      eapply multi_stack_restore; eauto. }
+      eapply multi_stack_restore; eauto. } *)
     subst. simpl in *. unfold pop_stackm in Heqp. monad_unfold.
     invc Heqp.
-
+(*
     assert (H4 = push_stack EvidenceC H0 s0). {
       symmetry.
-      eapply multi_stack_restore; eauto. }
-    rewrite H in Heqp0. unfold pop_stackm in *. monad_unfold.
+      eapply multi_stack_restore; eauto. } *)
+    (*rewrite H in Heqp0.*) unfold pop_stackm in *. monad_unfold.
     inv Heqp0.
 
-    pairs.
-    edestruct destruct_compiled_appended. eassumption. clear H6.
-    destruct_conjs.
-    do_run.
-    desp.
-    inv H13.
-    assert (e0 = (eval (unanno t1) (splitEv s e))). {
-      admit. }
-    assert (H7 = (eval (unanno t2) (splitEv s1 e))). {
-      admit. }
-    subst. congruence.
-
-    assert (H6 = push_stack EvidenceC (splitEv s1 e) s0). {
-      assert (st_stack = push_stack EvidenceC (splitEv s1 e) s0). {
-        symmetry.
-        eapply multi_stack_restore; eauto. }
-      assert (H6 = st_stack). {
-        symmetry.
-        eapply multi_stack_restore; eauto. }
-      subst. eauto. }
-    subst. unfold pop_stackm in *. monad_unfold.
-    inv Heqp.
-
-
-
-    
-    pairs. subst.
-
-    inv Heqp4.
-    pairs.
-    inv Heqp3.
-    monad_unfold. inv Heqp1.
-    pairs.
-    pairs.
-    invc H10.
-    monad_unfold.
-    pairs.
-    assert (H0 = push_stack EvidenceC (splitEv s1 e) s0). {
-      symmetry.
-      eapply multi_stack_restore; eauto. }
-    subst. monad_unfold.
-    unfold push_stackm in *. unfold push_stack in *. monad_unfold.
-    pairs.
-   
-    unfold pop_stackm in *. unfold pop_stack in *. simpl in *. monad_unfold.
-    pairs.
-    admit.
-    pairs.
-    pairs.
-    edestruct destruct_compiled_appended; eauto. clear H6.
-    destruct_conjs.
-    unfold run_vm in *. unfold run_vm_step in *. fold run_vm_step in *. simpl in *.
-    monad_unfold.
-    unfold run_vm_step in *. fold run_vm_step in *. simpl in *.
-    monad_unfold.
+    do_stack1 t1.
     subst.
-    assert (H6 = push_stack EvidenceC (splitEv s1 e) s0). {
-      admit.
-    }
-    subst. simpl in *.
-    pairs.
-    invc H10.
-    assert (st_ev = eval (unanno t1) (splitEv s e)). eauto.
-    subst.
-    
-    
-
-
-
-    
-    invc Heqp3. invc H10. invc Heqp0.
-    unfold pop_stack in Heqp4.
-    assert (H4 = push_stack EvidenceC H g1). {
-      symmetry.
-      eapply multi_stack_restore; eauto. }
-    subst. simpl in *.
-    invc Heqp4.
-    assert (H0 = push_stack EvidenceC (splitEv s1 e) s0). {
-      symmetry.
-      eapply multi_stack_restore; eauto. }
-    subst. simpl in *.
-    invc H6.
-    admit.
-
-
-
-    pairs.
-    pairs.
-    pairs.
-    pairs.
-
-    
-    unfold push_stackm in Heqp0. unfold push_stack in Heqp0. monad_unfold.
-    pairs.
-    invc H13.
-    eapply IHt2.
-
-
-    edestruct push_stackm_facts; eauto.
-    
-
-    admit.
-    assert ((eval (unanno t1) (splitEv s e))
-    
-    
+    unfold pop_stackm in *. monad_unfold. inv Heqp.
 Defined.
 
 (*
