@@ -164,6 +164,63 @@ Proof.
   subst; destruct st; auto.
 Defined.
 
+Lemma pop_stackm_fail : forall e e' s s' tr tr',
+    (None, {| st_ev := e'; st_stack := s'; st_trace := tr' |}) =
+    pop_stackm {| st_ev := e; st_stack := s; st_trace := tr |} ->
+    e = e' /\ s = s' /\ tr = tr'.
+Proof.
+    intros.
+  unfold pop_stackm in *. monad_unfold.
+  remember (pop_stack EvidenceC s) as p.
+  destruct p. destruct p.
+  inv H.
+  monad_unfold. inv H.
+  split; eauto.
+Defined.
+
+Lemma push_stackm_succeeds : forall e st st',
+    push_stackm e st = (None, st') -> False.
+Proof.
+  intros.
+  destruct st. destruct st'.
+  
+  unfold push_stackm in *. monad_unfold.
+  inv H.
+Defined.
+
+ Ltac desp :=
+       match goal with
+       | |- context [match pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with | _ => _ end] =>
+         remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as p; 
+         destruct p as [o];
+         destruct o
+         
+       | [ H: context
+                [match pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with |_ => _ end] |- _ ] =>
+         remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as p; 
+         destruct p as [o];
+         destruct o
+      (* | [ H: context
+                [match push_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with |_ => _ end] |- _ ] =>
+         remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as p; 
+         destruct p as [o];
+         destruct o*)
+       end; monad_unfold.
+
+ Ltac pairs :=
+  simpl in *;
+  repeat
+    match goal with
+    | [H: vm_st |- _] => destruct H
+    | [H: (Some _, _) =
+          (Some _, _) |- _ ] => invc H; monad_unfold
+    | [H: (Some _, _) =
+          (None, _) |- _ ] => invc H
+    | [H: (None, _) = push_stackm _ _ |- _] => elimtype (False); eapply push_stackm_succeeds; eauto; contradiction
+    | [H: (None, {| st_ev := _; st_stack := _; st_trace := _|}) =
+          pop_stackm {| st_ev := _; st_stack := _; st_trace := _|} |- _ ] => idtac "hello"; edestruct (pop_stackm_fail); eauto; clear H; destruct_conjs
+    end; monad_unfold.
+
 Lemma trace_irrel : forall il1 tr1 tr1' tr2 e e' s s',
 
     run_vm il1 {| st_ev := e; st_trace := tr1; st_stack := s |} =
@@ -187,31 +244,102 @@ Proof.
     apply H).
 Admitted.
 
+Lemma double_pop : forall e e' e0 e1 st_ev st_ev0 st_stack st_stack0
+                     st_trace st_trace0 m s,
+    (Some e1,
+     {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace |}) =
+    pop_stackm {| st_ev := e'; st_stack := s; st_trace := [] |} ->
+    
+    (Some e0,
+     {| st_ev := st_ev0; st_stack := st_stack0; st_trace := st_trace0 |}) =
+    pop_stackm {| st_ev := e; st_stack := s; st_trace := m |} ->
+
+    (st_stack0 = st_stack /\ e0 = e1).
+Proof.
+Admitted.
+
+(*
+Lemma pop_stackm_facts : forall e e' e0 e1 st_ev st_ev0 st_stack st_stack0
+                     st_trace st_trace0 m s,
+    (Some e1,
+     {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace |}) =
+    pop_stackm {| st_ev := e'; st_stack := s; st_trace := [] |} ->
+ *)
+
+
+Ltac do_double_pop :=
+  match goal with
+  | [H: (Some ?e1,
+         {| st_ev := ?st_ev; st_stack := ?st_stack; st_trace := ?st_trace |}) =
+        pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?trx |},
+        G:  (Some ?e0,
+             {| st_ev := ?st_ev0; st_stack := ?st_stack0; st_trace := ?st_trace0 |}) =
+            pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} |- _ ] =>
+    assert (st_stack0 = st_stack /\ e0 = e1) by (eapply double_pop; eauto)
+  end; destruct_conjs.
+
+
 Lemma ev_irrel : forall il1 tr1 e1 e2 s s',
 (*
     run_vm il1 {| st_ev := e; st_trace := tr1 |} =
     {| st_ev := e'; st_trace := tr1' |} -> *)
     
     st_trace (
-        run_vm il1 {| st_ev := e1; st_trace := tr1; st_stack := s |}) =
+        run_vm il1 {| st_ev := e1; st_stack := s; st_trace := tr1 |}) =
     st_trace (
-        run_vm il1 {| st_ev := e2; st_trace := tr1; st_stack := s' |}).
+        run_vm il1 {| st_ev := e2; st_stack := s'; st_trace := tr1 |}).
 Proof.
   induction il1; intros.
   - simpl.
     reflexivity.
   -
-    (*
-    simpl;
-    destruct a; destruct p; 
+      destruct a; try (
+      try destruct p; 
     unfold run_vm_step;
     monad_unfold;
-    eapply IHil1;
-    simpl in H;
-    unfold run_vm_step in H; simpl in *; monad_unfold; 
-      apply H.
+    try eapply IHil1;
+    simpl in *;
+    unfold run_vm_step in *; simpl in *; monad_unfold; 
+      eassumption).
+      + (* joins case *)
+        simpl.
+        unfold run_vm_step in *. monad_unfold.
+        unfold get_ev.
+        monad_unfold.
+        desp. desp.
+        pairs.
+        (*do_double_pop.*)
+        
+        assert (st_trace = st_trace0). {
+          admit. }
+        rewrite H.
+        eauto.
+        
+        destruct v; destruct v0.
+        (*
+        
+      desp.
+      desp.
+      pairs.
+      unfold pop_stackm in *. monad_unfold.
+      remember (pop_stack EvidenceC s) as p.
+      destruct p. destruct p.
+      remember (pop_stack EvidenceC s') as p.
+      destruct p. destruct p.
+      pairs.
+      eapply IHil1.
+      monad_unfold. inv Heqp0.
+      monad_unfold. inv Heqp.
+      admit.
+      desp.
+      pairs.
+      subst.
+      destruct v0.
+      destruct v.
+      pairs. subst.
 Defined. *)
 Admitted.
+
 
 
 Lemma stack_irrel : forall il1 tr1 tr1' tr2 e e' s s',
@@ -267,19 +395,35 @@ Lemma push_stackm_pure : forall o e st_ev st_ev0 st_stack st_stack0 st_trace st_
                 {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace |} ->
     st_trace0 = st_trace /\ st_ev = st_ev0.
 Proof.
-Admitted.
+  intros.
+  destruct o.
+  - simpl in *.
+    monad_unfold.
+    unfold push_stackm in *. monad_unfold. inv H.
+    split; eauto.
+  - unfold push_stackm in *. monad_unfold. inv H.
+Defined.
 
 Lemma pop_stackm_pure : forall o st_ev st_ev0 st_stack st_stack0 st_trace st_trace0,
     (o, {| st_ev := st_ev0; st_stack := st_stack0; st_trace := st_trace0 |}) =
     pop_stackm {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace |} ->
     st_trace0 = st_trace /\ st_ev = st_ev0.
 Proof.
-Admitted.
+  intros.
+    destruct o.
+  - unfold pop_stackm in *. monad_unfold.
+    remember (pop_stack EvidenceC st_stack) as p.
+    destruct p. destruct p. invc H.
+    split; eauto.
+    monad_unfold. inv H.
+  - unfold pop_stackm in *. monad_unfold.
+    remember (pop_stack EvidenceC st_stack) as p.
+    destruct p. destruct p. invc H. monad_unfold.
+    inv H.
+    split; eauto.
+Defined.
 
-Lemma push_stackm_succeeds : forall e st st',
-    push_stackm e st = (None, st') -> False.
-Proof.
-Admitted.
+
 
 Lemma pop_stackm_determ : forall e0 e0' e e' e2 e2' s s' s2' tr tr' tr2 tr2',
     (Some e0', {| st_ev := e'; st_stack := s'; st_trace := tr' |}) =
@@ -288,7 +432,14 @@ Lemma pop_stackm_determ : forall e0 e0' e e' e2 e2' s s' s2' tr tr' tr2 tr2',
     pop_stackm {| st_ev := e2; st_stack := s; st_trace := tr2 |} ->
     s' = s2'.
 Proof.
-Admitted.
+  intros.
+  unfold pop_stackm in *. monad_unfold.
+  remember (pop_stack EvidenceC s) as p.
+  destruct p. destruct p.
+  invc H. invc H0.
+  reflexivity.
+  monad_unfold. inv H.
+Defined.
 
 Lemma pop_stackm_determ_n : forall e e' e2 e2' s s' s2' tr tr' tr2 tr2',
     (None, {| st_ev := e'; st_stack := s'; st_trace := tr' |}) =
@@ -297,8 +448,13 @@ Lemma pop_stackm_determ_n : forall e e' e2 e2' s s' s2' tr tr' tr2 tr2',
     pop_stackm {| st_ev := e2; st_stack := s; st_trace := tr2 |} ->
     s' = s2'.
 Proof.
-Admitted.
-
+    intros.
+  unfold pop_stackm in *. monad_unfold.
+  remember (pop_stack EvidenceC s) as p.
+  destruct p. destruct p.
+  invc H. invc H0.
+  monad_unfold. invc H. reflexivity.
+Defined.
 
 Lemma pop_stackm_determ_none : forall e0' e e' e2 e2' s s' s2' tr tr' tr2 tr2',
     (Some e0', {| st_ev := e'; st_stack := s'; st_trace := tr' |}) =
@@ -307,29 +463,17 @@ Lemma pop_stackm_determ_none : forall e0' e e' e2 e2' s s' s2' tr tr' tr2 tr2',
     pop_stackm {| st_ev := e2; st_stack := s; st_trace := tr2 |} ->
     False.
 Proof.
-Admitted.
+    intros.
+  unfold pop_stackm in *. monad_unfold.
+  remember (pop_stack EvidenceC s) as p.
+  destruct p. destruct p.
+  invc H. invc H0.
+  monad_unfold. inv H.
+Defined.
 
 
-Lemma pop_stackm_fail : forall e e' s s' tr tr',
-    (None, {| st_ev := e'; st_stack := s'; st_trace := tr' |}) =
-    pop_stackm {| st_ev := e; st_stack := s; st_trace := tr |} ->
-    e = e' /\ s = s' /\ tr = tr'.
-Proof.
-Admitted.
 
-Ltac pairs :=
-  simpl in *;
-  repeat
-    match goal with
-    | [H: vm_st |- _] => destruct H
-    | [H: (Some _, _) =
-          (Some _, _) |- _ ] => invc H; monad_unfold
-    | [H: (Some _, _) =
-          (None, _) |- _ ] => invc H
-    | [H: (None, _) = push_stackm _ _ |- _] => elimtype (False); eapply push_stackm_succeeds; eauto; contradiction
-    | [H: (None, {| st_ev := _; st_stack := _; st_trace := _|}) =
-          pop_stackm {| st_ev := _; st_stack := _; st_trace := _|} |- _ ] => idtac "hello"; edestruct (pop_stackm_fail); eauto; clear H; destruct_conjs
-    end; monad_unfold.
+
 
 Lemma foo : forall il m e s,
     st_trace (fold_left run_vm_step il
@@ -366,24 +510,7 @@ Proof.
       unfold run_vm_step; fold run_vm_step; monad_unfold; monad_unfold.
 
       
-     Ltac desp :=
-       match goal with
-       | |- context [match pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with | _ => _ end] =>
-         remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as p; 
-         destruct p as [o];
-         destruct o
-         
-       | [ H: context
-                [match pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with |_ => _ end] |- _ ] =>
-         remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as p; 
-         destruct p as [o];
-         destruct o
-      (* | [ H: context
-                [match push_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with |_ => _ end] |- _ ] =>
-         remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as p; 
-         destruct p as [o];
-         destruct o*)
-       end; monad_unfold.
+    
 
      desp.
 
@@ -442,8 +569,20 @@ Proof.
       rewrite H.
       rewrite app_assoc at 1.
       rewrite app_assoc at 1.
+
+      do_double_pop.
+        (*
+      assert (e0 = e1). {
+        
+        
+        
+        }
+      assert (st_stack0 = st_stack). admit. *)
+     
+      congruence.
+      (*
       erewrite ev_irrel.
-      reflexivity.
+      reflexivity. *)
       dependent destruction v.
       dependent destruction v0.
       
@@ -535,9 +674,19 @@ Proof.
 
       rewrite H.
       rewrite app_assoc at 1.
-      
+
+      do_double_pop.
+      congruence.
+(*
+      assert (e0 = e1). admit.
+      assert (st_stack0 = st_stack). admit.
+
+
+      congruence. *)
+
+      (*
       erewrite ev_irrel.
-      reflexivity.
+      reflexivity. *)
       
 
 (*
@@ -791,12 +940,14 @@ fun (il : list AnnoInstr) (st : vm_st) => fold_left run_vm_step il st
      : list AnnoInstr -> vm_st -> vm_st
 *)
 
+(*
 Lemma run_transitive_done: forall il1 il2 tr1 tr2 e e' e'' s s' s'',
     run_vm il1 (mk_st e s []) = (mk_st e' s' tr1) ->
     run_vm il2 (mk_st e' s' []) = (mk_st e'' s'' tr2) ->
     run_vm (il1 ++ il2) (mk_st e s []) = (mk_st e'' s'' (tr1 ++ tr2)).
 Proof.
 Admitted.
+*)
 
 (*
 Lemma vm_multi_transitive_done: forall il1 il2 tr1 tr2 e e' e'' s s' s'',
@@ -1811,20 +1962,44 @@ Proof.
   reflexivity.
 Defined.
 
+(*
 Lemma st_trace_run_vm_step : forall e e' s s' a,
     st_trace (run_vm_step {| st_ev := e; st_stack := s; st_trace := [] |} a) =
     st_trace (run_vm_step {| st_ev := e'; st_stack := s'; st_trace := [] |} a).
 Proof.
   destruct a;
-    (try destruct p); simpl; auto.
-  Check ev_irrel.
+    try (
+    (try destruct p; simpl; auto)).
+  - (* joins case *)
+    unfold run_vm_step.
+    fold run_vm_step.
+    monad_unfold.
+    unfold get_ev. monad_unfold.
+    desp.
+    desp.
+    destruct v; destruct v0.
+    simpl.
+    admit.
+    
+    Check ev_irrel.
+    eapply ev_irrel.
   unfold run_vm_step. fold run_vm_step.
   monad_unfold.
   unfold get_ev. monad_unfold.
+  Print desp.
+  desp.
+  desp.
+  pairs.
+  edestruct pop_stackm_pure. apply Heqp.
+  edestruct pop_stackm_pure. apply Heqp0.
+  subst. simpl. reflexivity.
+  pairs. subst.
+  Print pop_stack_facts.
 Admitted.
+*)
 
 Lemma st_trace_destruct' :
-  forall il1 il2 e s e' s' m,
+  forall il1 il2 e s m,
     st_trace
       (fold_left run_vm_step il2
                  (fold_left run_vm_step il1
@@ -1835,40 +2010,177 @@ Lemma st_trace_destruct' :
                  {| st_ev := e; st_stack := s; st_trace := [] |}) ++
       st_trace
       (fold_left run_vm_step il2
-                 {| st_ev := e';
-                    st_stack := s';
+                 {| st_ev := (st_ev (fold_left run_vm_step il1 
+                 {| st_ev := e; st_stack := s; st_trace := [] |}));
+                    st_stack := (st_stack (fold_left run_vm_step il1 
+                 {| st_ev := e; st_stack := s; st_trace := [] |}));
                     st_trace := [] |}).
 Proof.
   induction il1; (*destruct il1;*) try reflexivity; intros.
   - simpl.
     erewrite foo.
-    erewrite ev_irrel. auto.
+    reflexivity.
   - simpl.
     Check foo.
     destruct a.
-    +
+    + 
     unfold run_vm_step. fold run_vm_step.
     monad_unfold.
     rewrite foo.
     rewrite <- app_assoc.
-    rewrite <- IHil1.
-    erewrite IHil1.
-    erewrite IHil1.
-    rewrite <- app_assoc.
-    auto.
-    Unshelve. exact mtc. exact [].
-    +
+    simpl in IHil1.
+    rewrite IHil1.
+    simpl.
+
+    assert (
+       {|
+       st_ev := st_ev
+                  (fold_left run_vm_step il1
+                     {| st_ev := prim_ev p e; st_stack := s; st_trace := [] |});
+       st_stack := st_stack
+                     (fold_left run_vm_step il1
+                        {| st_ev := prim_ev p e; st_stack := s; st_trace := [] |});
+       st_trace := [] |} =
+
+
+
+     
+       {|
+       st_ev := st_ev
+                  (fold_left run_vm_step il1
+                     {|
+                     st_ev := prim_ev p e;
+                     st_stack := s;
+                     st_trace := prim_trace n p |});
+       st_stack := st_stack
+                     (fold_left run_vm_step il1
+                        {|
+                        st_ev := prim_ev p e;
+                        st_stack := s;
+                        st_trace := prim_trace n p |});
+       st_trace := [] |}). {
+      simpl.
+      eapply st_congr; simpl.
+      Check trace_irrel.
+      admit.
+      Check stack_irrel.
+      admit.
+      reflexivity. }
+
+    rewrite H.
+    rewrite <- app_assoc. eauto.
+    + (* asplit case *)
       unfold run_vm_step. fold run_vm_step.
       monad_unfold.
       rewrite foo.
       rewrite <- app_assoc.
-      rewrite <- IHil1.
-      erewrite IHil1.
-      erewrite IHil1.
+      rewrite IHil1.
+      simpl.
+
+      assert (
+          {|
+       st_ev := st_ev
+                  (fold_left run_vm_step il1
+                     {|
+                     st_ev := splitEv s0 e;
+                     st_stack := push_stack EvidenceC (splitEv s1 e) s;
+                     st_trace := [] |});
+       st_stack := st_stack
+                     (fold_left run_vm_step il1
+                        {|
+                        st_ev := splitEv s0 e;
+                        st_stack := push_stack EvidenceC (splitEv s1 e) s;
+                        st_trace := [] |});
+       st_trace := [] |} =
+
+          {|
+          st_ev := st_ev
+                     (fold_left run_vm_step il1
+                        {|
+                        st_ev := splitEv s0 e;
+                        st_stack := push_stack EvidenceC (splitEv s1 e) s;
+                        st_trace := [Term.split n] |});
+          st_stack := st_stack
+                        (fold_left run_vm_step il1
+                           {|
+                           st_ev := splitEv s0 e;
+                           st_stack := push_stack EvidenceC (splitEv s1 e) s;
+                           st_trace := [Term.split n] |});
+          st_trace := [] |}). {
+        eapply st_congr; simpl.
+      Check trace_irrel.
+      admit.
+      Check stack_irrel.
+      admit.
+      reflexivity. }
+      
+      rewrite H.
+      
+     
       rewrite <- app_assoc.
       auto.
-      Unshelve. exact mtc. exact [].
-    +
+     
+    + (* joins case *)
+      unfold run_vm_step. fold run_vm_step.
+      monad_unfold.
+      rewrite foo.
+      simpl.
+      rewrite IHil1.
+      rewrite <- app_assoc.
+      rewrite IHil1.
+      simpl.
+
+      assert (
+          {|
+       st_ev := st_ev
+                  (fold_left run_vm_step il1
+                     {|
+                     st_ev := splitEv s0 e;
+                     st_stack := push_stack EvidenceC (splitEv s1 e) s;
+                     st_trace := [] |});
+       st_stack := st_stack
+                     (fold_left run_vm_step il1
+                        {|
+                        st_ev := splitEv s0 e;
+                        st_stack := push_stack EvidenceC (splitEv s1 e) s;
+                        st_trace := [] |});
+       st_trace := [] |} =
+
+          {|
+          st_ev := st_ev
+                     (fold_left run_vm_step il1
+                        {|
+                        st_ev := splitEv s0 e;
+                        st_stack := push_stack EvidenceC (splitEv s1 e) s;
+                        st_trace := [Term.split n] |});
+          st_stack := st_stack
+                        (fold_left run_vm_step il1
+                           {|
+                           st_ev := splitEv s0 e;
+                           st_stack := push_stack EvidenceC (splitEv s1 e) s;
+                           st_trace := [Term.split n] |});
+          st_trace := [] |}). {
+        eapply st_congr; simpl.
+      Check trace_irrel.
+      admit.
+      Check stack_irrel.
+      admit.
+      reflexivity. }
+      
+      rewrite H.
+      
+     
+      rewrite <- app_assoc.
+      auto.
+
+
+
+
+
+
+
+
+      
       unfold run_vm_step. fold run_vm_step.
       monad_unfold.
       unfold get_ev.
@@ -1887,7 +2199,7 @@ Defined. *)
 Admitted.
 
 
-
+(*
 Lemma st_trace_destruct :
   forall il1 il2 e s e' s',
     st_trace
@@ -1906,7 +2218,7 @@ Proof.
   intros.
   erewrite st_trace_destruct'.
   simpl. auto.
-Defined.
+Defined. *)
 
   (*
   induction il1; (*destruct il1;*) try reflexivity; intros.
