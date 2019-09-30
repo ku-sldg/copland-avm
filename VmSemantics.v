@@ -227,6 +227,7 @@ Proof.
          subst; eauto).
 Defined.
 
+(*
     + (* ajoins case *)
       boom.
       repeat 
@@ -268,6 +269,7 @@ Defined.
         do_pop_stackm_fail.
       subst; eauto.
 Defined.
+*)
 
 (*
       unfoldm.
@@ -305,6 +307,7 @@ Ltac do_run :=
   | [H:  run_vm (_ :: _) _ = _ |- _ ] => invc H; unfold run_vm_step in *; monad_unfold; monad_unfold
   end.
 
+(*
 Lemma ev_irrel : forall il1 tr1 tr1' e e' e1 s s',
     run_vm il1
            {| st_ev := e;  st_stack := s;  st_trace := tr1 |} =
@@ -314,6 +317,45 @@ Lemma ev_irrel : forall il1 tr1 tr1' e e' e1 s s',
         run_vm il1 {| st_ev := e1; st_stack := s; st_trace := tr1 |}) =
     tr1'.
 Proof.
+    induction il1; intros.
+  - simpl.
+    inversion H. reflexivity.   
+  -
+    simpl; destruct a;
+      try
+        (try destruct p; 
+         unfold run_vm_step;
+         monad_unfold;
+         eapply IHil1;
+         simpl in H;
+         unfold run_vm_step in H; simpl in *; monad_unfold; 
+         eassumption);
+      try
+        (boom;
+         repeat 
+           do_pop_stackm_fail;
+         subst; eauto).
+    do_run.
+    assert (
+        {|
+       st_ev := splitEv s0 e1;
+       st_stack := push_stack EvidenceC (splitEv s1 e1) s;
+       st_trace := tr1 ++ [Term.split n] |} =
+
+        {|
+         st_ev := splitEv s0 e;
+         st_stack := push_stack EvidenceC (splitEv s1 e) s;
+         st_trace := tr1 ++ [Term.split n] |}).
+    eapply st_congr.
+    eapply trace_irrel.
+    admit.
+    rewrite H. eauto.
+    boom.
+    
+
+
+
+  
   induction il1; intros.
   - simpl.
     inv H.
@@ -337,7 +379,6 @@ Proof.
         unfold push_stack in *.
         eapply IHil1.
         rewrite <- H1.
-        assert 
 
         (*
         apply H1.
@@ -389,6 +430,7 @@ Proof.
 Defined. *)
 *)
 Admitted.
+*)
 
 (*
 Lemma ev_irrel : forall il1 tr1 e1 e2 s s',
@@ -472,21 +514,25 @@ Lemma stack_irrel : forall il1 tr1 tr1' tr2 e e' s s',
     st_trace (
         run_vm il1 {| st_ev := e1; st_trace := tr2; st_stack := s |}).*)
 Proof.
-  induction il1; intros.
+    induction il1; intros.
   - simpl.
-    inversion H. reflexivity.
+    inversion H. reflexivity.   
   -
-    (*
-    simpl;
-    destruct a; destruct p; 
-    unfold run_vm_step;
-    monad_unfold;
-    eapply IHil1;
-    simpl in H;
-    unfold run_vm_step in H; simpl in *; monad_unfold; 
-      apply H.
-Defined. *)
-Admitted.
+    simpl; destruct a;
+      try
+        (try destruct p; 
+         unfold run_vm_step;
+         monad_unfold;
+         eapply IHil1;
+         simpl in H;
+         unfold run_vm_step in H; simpl in *; monad_unfold; 
+         eassumption);
+      try
+        (boom;
+         repeat 
+           do_pop_stackm_fail;
+         subst; eauto).
+Defined.
 
 Lemma foo : forall il m e s,
     st_trace (fold_left run_vm_step il
@@ -509,7 +555,8 @@ Proof.
     
     
     + (* joins case *)
-      unfold run_vm_step; fold run_vm_step; monad_unfold; monad_unfold.
+      
+      unfold run_vm_step; fold run_vm_step; monad_unfold; monad_unfold.     
       desp.
       desp.
       pairs.
@@ -853,10 +900,12 @@ Proof.
        st_trace := [] |}). {
       simpl.
       eapply st_congr; simpl.
-      Check trace_irrel.
-      admit.
+      erewrite trace_irrel. reflexivity.
+      rewrite <- ya.
+      reflexivity.
       Check stack_irrel.
-      admit.
+      erewrite stack_irrel. reflexivity.
+      erewrite <- ya. reflexivity.
       reflexivity. }
 
     rewrite H.
@@ -900,10 +949,12 @@ Proof.
                            st_trace := [Term.split n] |});
           st_trace := [] |}). {
         eapply st_congr; simpl.
-      Check trace_irrel.
-      admit.
+      erewrite trace_irrel. reflexivity.
+      rewrite <- ya.
+      reflexivity.
       Check stack_irrel.
-      admit.
+      erewrite stack_irrel. reflexivity.
+      erewrite <- ya. reflexivity.
       reflexivity. }
       
       rewrite H.
@@ -966,7 +1017,15 @@ Proof.
                            st_stack := st_stack;
                            st_trace := [join n] |});
           st_trace := [] |}). {
-        admit. }
+        eapply st_congr.
+        erewrite trace_irrel. reflexivity.
+        rewrite <- ya.
+        reflexivity.
+      Check stack_irrel.
+      erewrite stack_irrel. reflexivity.
+      erewrite <- ya. reflexivity.
+      reflexivity.
+      }
       rewrite H.
 
       admit. (* list thing *)
