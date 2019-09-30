@@ -6,18 +6,64 @@ Import ListNotations.
 
 Require Import StructTact.StructTactics.
 
-Lemma pop_stackm_fail : forall e e' s s' tr tr',
-    (None, {| st_ev := e'; st_stack := s'; st_trace := tr' |}) =
+Lemma pop_stackm_fail_facts : forall e e' s s'
+                     tr tr',
+    (None,
+     {| st_ev := e'; st_stack := s'; st_trace := tr' |}) =
     pop_stackm {| st_ev := e; st_stack := s; st_trace := tr |} ->
-    e = e' /\ s = s' /\ tr = tr'.
+    (e = e' /\ tr = tr' /\ s = [] /\ s' = []).
 Proof.
-    intros.
+  intros.
   unfold pop_stackm in *. monad_unfold.
   remember (pop_stack EvidenceC s) as p.
   destruct p. destruct p.
   inv H.
   monad_unfold. inv H.
   split; eauto.
+  split; eauto.
+  invc H.
+  destruct s.
+  eauto.
+  unfold pop_stack in *. inv Heqp.
+Defined.
+
+(*
+Ltac do_pop_stackm_fail:=
+  match goal with
+  | [H: (None,_) =
+    pop_stackm _ |- _ ] =>
+    idtac "invoking do_pop_stackm_fail";
+    edestruct pop_stackm_fail_facts; eapply H; clear H
+  end; destruct_conjs.
+*)
+
+Ltac do_pop_stackm_fail:=
+  match goal with
+  | [H: (None,
+     {| st_ev := ?e'; st_stack := ?s'; st_trace := ?tr' |}) =
+    pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?tr |} |- _ ] =>
+    idtac "invoking do_pop_stackm_fail";
+    assert (e = e' /\ tr = tr' /\ s = [] /\ s' = []) by
+        (eapply pop_stackm_fail_facts; eauto); clear H
+  end; destruct_conjs.
+
+Lemma pop_stackm_facts : forall e' e1 st_ev st_stack
+                     st_trace st_trace' s,
+    (Some e1,
+     {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace |}) =
+    pop_stackm {| st_ev := e'; st_stack := s; st_trace := st_trace' |} ->
+    (e' = st_ev /\ st_trace' = st_trace /\ (exists e, s = e::st_stack)).
+Proof.
+  intros.
+  unfold pop_stackm in *. monad_unfold.
+  remember (pop_stack EvidenceC s) as p.
+  destruct p. destruct p.
+  invc H.
+  split; eauto.
+  split; eauto.
+  exists e.
+  destruct s; unfold pop_stack in *; congruence.
+  simpl in *. inv H.
 Defined.
 
 Lemma push_stackm_succeeds : forall e st st',
@@ -25,7 +71,6 @@ Lemma push_stackm_succeeds : forall e st st',
 Proof.
   intros.
   destruct st. destruct st'.
-  
   unfold push_stackm in *. monad_unfold.
   inv H.
 Defined.
@@ -76,7 +121,14 @@ Lemma double_pop_none :
     pop_stackm {| st_ev := e; st_stack := s; st_trace := st_trace0' |} ->
     st_stack0 = st_stack.
 Proof.
-Admitted.
+  intros.
+  unfold pop_stackm in *. monad_unfold.
+  remember (pop_stack EvidenceC s) as p.
+  destruct p. destruct p.
+  invc H. invc H0.
+  monad_unfold. invc H.
+  auto.
+Defined.
 
 Ltac do_double_pop_none :=
   match goal with
@@ -105,26 +157,6 @@ Ltac try_pop_all :=
   destruct_conjs;
   subst; 
   eauto.
-
-
-
-Lemma pop_stackm_facts : forall e' e1 st_ev st_stack
-                     st_trace st_trace' s,
-    (Some e1,
-     {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace |}) =
-    pop_stackm {| st_ev := e'; st_stack := s; st_trace := st_trace' |} ->
-    (e' = st_ev /\ st_trace' = st_trace /\ (exists e, s = e::st_stack)).
-Proof.
-Admitted.
-
-Lemma pop_stackm_facts_none : forall e' st_ev st_stack
-                     st_trace st_trace' s,
-    (None,
-     {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace |}) =
-    pop_stackm {| st_ev := e'; st_stack := s; st_trace := st_trace' |} ->
-    (e' = st_ev /\ st_trace' = st_trace /\ s = [] /\ st_stack = []).
-Proof.
-Admitted.
 
 Lemma push_stackm_pure : forall o e st_ev st_ev0 st_stack st_stack0 st_trace st_trace0,
     (o, {| st_ev := st_ev0; st_stack := st_stack0; st_trace := st_trace0 |}) =
@@ -181,5 +213,10 @@ Lemma push_stackm_facts : forall st_ev st_ev0 (st_trace:list Ev) (st_trace0:list
     push_stackm H0 {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace |} ->
     st_ev = st_ev0 /\ st_trace = st_trace0 /\ st_stack0 = H0 :: st_stack.
 Proof.
-Admitted.
+  intros.
+  unfold push_stackm in *.
+  monad_unfold.
+  inv H.
+  split; eauto.
+Defined.
 

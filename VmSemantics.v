@@ -155,6 +155,24 @@ Ltac desp :=
     destruct o
   end; monad_unfold; vmsts.
 
+Ltac bogus :=
+  repeat
+    match goal with                                        
+    | [H: (Some _, _) =
+          (None, _) |- _ ] => inv H
+                                 
+    | [H: (None, _) = push_stackm _ _ |- _] =>
+      elimtype (False); eapply push_stackm_succeeds; eauto; contradiction
+
+    | [ H: (Some _,
+            _) =
+           pop_stackm _,
+           G:  (None,
+                _) =
+               pop_stackm _ |- _ ] =>
+      elimtype False; eapply pop_stackm_determ_none; eauto; contradiction                                                      
+    end.
+
 Ltac pairs :=
   simpl in *;
   vmsts;
@@ -162,12 +180,24 @@ Ltac pairs :=
     match goal with
     | [H: (Some _, _) =
           (Some _, _) |- _ ] => invc H; monad_unfold
-    | [H: (Some _, _) =
-          (None, _) |- _ ] => invc H
-    | [H: (None, _) = push_stackm _ _ |- _] => elimtype (False); eapply push_stackm_succeeds; eauto; contradiction
+                                                          
     | [H: (None, {| st_ev := _; st_stack := _; st_trace := _|}) =
-          pop_stackm {| st_ev := _; st_stack := _; st_trace := _|} |- _ ] => idtac "hello"; edestruct (pop_stackm_fail); eauto; clear H; destruct_conjs
-    end; monad_unfold.
+          pop_stackm {| st_ev := _; st_stack := _; st_trace := _|} |- _ ] =>
+      edestruct (pop_stackm_fail_facts); eauto; clear H
+                                                           
+    end; destruct_conjs; monad_unfold.
+
+Ltac unfoldm :=  unfold run_vm_step in *; monad_unfold;
+                 unfold get_ev; monad_unfold.
+
+Ltac boom := repeat
+               unfoldm; desp; vmsts;
+             bogus;
+             unfoldm; desp; vmsts;
+             try_pop_all;
+             bogus.
+           
+             
 
 Lemma trace_irrel : forall il1 tr1 tr1' tr2 e e' s s',
 
@@ -181,52 +211,76 @@ Proof.
   - simpl.
     inversion H. reflexivity.   
   -
-    simpl;
-    destruct a; try (try destruct p; 
-    unfold run_vm_step;
-    monad_unfold;
-    eapply IHil1;
-    simpl in H;
-    unfold run_vm_step in H; simpl in *; monad_unfold; 
-    eassumption).
-    + (* ajoins case *)
+    simpl; destruct a;
+      try
+        (try destruct p; 
+         unfold run_vm_step;
+         monad_unfold;
+         eapply IHil1;
+         simpl in H;
+         unfold run_vm_step in H; simpl in *; monad_unfold; 
+         eassumption);
+      try
+        (boom;
+         repeat 
+           do_pop_stackm_fail;
+         subst; eauto).
+Defined.
 
-      unfold run_vm_step in *. monad_unfold.
-      unfold get_ev. monad_unfold.
+    + (* ajoins case *)
+      boom.
+      repeat 
+        do_pop_stackm_fail.
+      subst; eauto.
+      
+      (*
+      edestruct pop_stackm_fail_facts. apply Heqp. clear Heqp.
+      do_pop_stackm_fail.
+      edestruct pop_stackm_fail_facts. apply Heqp0. clear Heqp0.
+      edestruct pop_stackm_fail_facts. apply Heqp. clear Heqp.
+      destruct_conjs.
+      subst.
+      eauto.
+      
+      
+
+      unfoldm.
       desp; vmsts.
-      unfold run_vm_step in *. monad_unfold.
-      unfold get_ev in *. monad_unfold.
+      unfoldm.
       desp.
       try_pop_all.
       subst.
       eapply IHil1; eauto.
       elimtype False; eapply pop_stackm_determ_none; eauto.
       
-      unfold run_vm_step in *. monad_unfold. unfold get_ev in *.
-      monad_unfold.
+      unfoldm.
       desp.
       elimtype False; eapply pop_stackm_determ_none; eauto.
       
-      edestruct pop_stackm_facts_none. apply Heqp0. clear Heqp0.
-      edestruct pop_stackm_facts_none. apply Heqp. clear Heqp.
+      edestruct pop_stackm_fail_facts. apply Heqp0. clear Heqp0.
+      edestruct pop_stackm_fail_facts. apply Heqp. clear Heqp.
       destruct_conjs.
       subst.
-      eauto.
+      eauto. *)
     + (* abesr case *)
-      unfold run_vm_step in *. monad_unfold.
-      unfold get_ev. monad_unfold.
-      desp.
-      
-      desp.
-      unfold run_vm_step in *. monad_unfold. unfold get_ev in *. monad_unfold.
-      desp.
-      desp.
+      boom.
+      repeat 
+        do_pop_stackm_fail.
+      subst; eauto.
+Defined.
+
+(*
+      unfoldm.
+      repeat desp.
+
+      unfoldm.
+      repeat desp.
       eapply IHil1.
       try_pop_all.
       try_pop_all.
 
       elimtype False; eapply pop_stackm_determ_none. apply Heqp. eassumption.
-      unfold run_vm_step in *. monad_unfold. unfold get_ev in *. monad_unfold.
+      unfoldm.
       desp.
       desp.
       try_pop_all.
@@ -235,16 +289,16 @@ Proof.
       elimtype False; eapply pop_stackm_determ_none; eauto.
       
       
-      unfold run_vm_step in *. monad_unfold. unfold get_ev in *. monad_unfold.
+      unfoldm.
       desp.
       simpl in *.
       elimtype False; eapply pop_stackm_determ_none; eauto.
 
-      edestruct pop_stackm_facts_none. apply Heqp0. clear Heqp0.
-      edestruct pop_stackm_facts_none. apply Heqp. clear Heqp.
+      edestruct pop_stackm_fail_facts. apply Heqp0. clear Heqp0.
+      edestruct pop_stackm_fail_facts. apply Heqp. clear Heqp.
       destruct_conjs. subst. eauto.
       Unshelve. eauto. eauto. eauto.
-Defined.
+Defined. *)
 
 Ltac do_run :=
   match goal with
@@ -273,12 +327,17 @@ Proof.
     simpl in *;
     unfold run_vm_step in *; simpl in *; monad_unfold; 
     eassumption).
-      + (* asplit case *)
+      +
+        
+
+
+        (* asplit case *)
         do_run.
-        unfold run_vm_step. monad_unfold.
+        unfold run_vm_step in *. monad_unfold.
         unfold push_stack in *.
         eapply IHil1.
         rewrite <- H1.
+        assert 
 
         (*
         apply H1.
@@ -534,8 +593,8 @@ Proof.
       destruct_conjs.
       subst.
       assert (st_stack = st_stack0). {       
-        edestruct pop_stackm_facts_none. apply Heqp.
-        edestruct pop_stackm_facts_none. apply Heqp0.
+        edestruct pop_stackm_fail_facts. apply Heqp.
+        edestruct pop_stackm_fail_facts. apply Heqp0.
         destruct_conjs.
         congruence.
         
@@ -929,9 +988,9 @@ Proof.
 
       
 
-      edestruct pop_stackm_facts_none.
+      edestruct pop_stackm_fail_facts.
       apply Heqp.
-      edestruct pop_stackm_facts_none.
+      edestruct pop_stackm_fail_facts.
       apply Heqp0.
       subst.
       rewrite IHil1.
