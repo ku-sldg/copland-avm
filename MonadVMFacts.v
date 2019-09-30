@@ -52,6 +52,17 @@ Proof.
   inv H.
 Defined.
 
+Ltac do_double_pop :=
+  match goal with
+  | [H: (Some ?e1,
+         {| st_ev := ?st_ev; st_stack := ?st_stack; st_trace := ?st_trace |}) =
+        pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?trx |},
+        G:  (Some ?e0,
+             {| st_ev := ?st_ev0; st_stack := ?st_stack0; st_trace := ?st_trace0 |}) =
+            pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} |- _ ] =>
+    assert (st_stack0 = st_stack /\ e0 = e1) by (eapply double_pop; eauto)
+  end; destruct_conjs.
+
 Lemma double_pop_none :
   forall (e e' st_ev st_ev0 : EvidenceC)
     (st_stack st_stack0 : ev_stack)
@@ -67,6 +78,19 @@ Lemma double_pop_none :
 Proof.
 Admitted.
 
+Ltac do_double_pop_none :=
+  match goal with
+  | [H: (None,
+         {| st_ev := ?st_ev; st_stack := ?st_stack; st_trace := ?st_trace |}) =
+        pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?trx |},
+        G:  (None,
+             {| st_ev := ?st_ev0; st_stack := ?st_stack0; st_trace := ?st_trace0 |}) =
+            pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} |- _ ] =>
+    assert (st_stack0 = st_stack) by (eapply double_pop_none; eauto)
+  end; destruct_conjs.
+
+
+
 Ltac vmsts :=
   simpl in *;
   repeat
@@ -74,17 +98,15 @@ Ltac vmsts :=
     | [H: vm_st |- _] => destruct H
     end.
 
-Ltac do_double_pop :=
+Ltac try_pop_all :=
   vmsts;
-  match goal with
-  | [H: (Some ?e1,
-         {| st_ev := ?st_ev; st_stack := ?st_stack; st_trace := ?st_trace |}) =
-        pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?trx |},
-        G:  (Some ?e0,
-             {| st_ev := ?st_ev0; st_stack := ?st_stack0; st_trace := ?st_trace0 |}) =
-            pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} |- _ ] =>
-    assert (st_stack0 = st_stack /\ e0 = e1) by (eapply double_pop; eauto)
-  end; destruct_conjs.
+  try do_double_pop;
+  try do_double_pop_none;
+  destruct_conjs;
+  subst; 
+  eauto.
+
+
 
 Lemma pop_stackm_facts : forall e' e1 st_ev st_stack
                      st_trace st_trace' s,

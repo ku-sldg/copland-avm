@@ -153,7 +153,7 @@ Ltac desp :=
     remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as p; 
     destruct p as [o];
     destruct o
-  end; monad_unfold.
+  end; monad_unfold; vmsts.
 
 Ltac pairs :=
   simpl in *;
@@ -193,94 +193,145 @@ Proof.
 
       unfold run_vm_step in *. monad_unfold.
       unfold get_ev. monad_unfold.
-      desp.
+      desp; vmsts.
       unfold run_vm_step in *. monad_unfold.
       unfold get_ev in *. monad_unfold.
       desp.
-      eapply IHil1.
-      assert (e0 = e1). {
-        do_double_pop; eauto.
-      }
-      assert (st_stack v = st_stack v0). {
-        do_double_pop; eauto. }
-        
-                                         
-      
-      rewrite H0. rewrite H1.
-      eassumption.
-      vmsts.
+      try_pop_all.
+      subst.
+      eapply IHil1; eauto.
       elimtype False; eapply pop_stackm_determ_none; eauto.
       
       unfold run_vm_step in *. monad_unfold. unfold get_ev in *.
       monad_unfold.
       desp.
-      vmsts.
       elimtype False; eapply pop_stackm_determ_none; eauto.
-      vmsts.
+      
       edestruct pop_stackm_facts_none. apply Heqp0. clear Heqp0.
       edestruct pop_stackm_facts_none. apply Heqp. clear Heqp.
       destruct_conjs.
       subst.
-      eapply IHil1. eassumption.
+      eauto.
     + (* abesr case *)
       unfold run_vm_step in *. monad_unfold.
       unfold get_ev. monad_unfold.
       desp.
-      destruct v.
+      
       desp.
       unfold run_vm_step in *. monad_unfold. unfold get_ev in *. monad_unfold.
       desp.
-      destruct v0.
       desp.
-      destruct v; destruct v0.
       eapply IHil1.
-      do_double_pop; eauto.
-      
-      subst. eassumption.
-      vmsts.
-      do_double_pop.
-      subst. eauto.
-      
-      vmsts.
+      try_pop_all.
+      try_pop_all.
+
       elimtype False; eapply pop_stackm_determ_none. apply Heqp. eassumption.
-      destruct v.
       unfold run_vm_step in *. monad_unfold. unfold get_ev in *. monad_unfold.
       desp.
-      vmsts.
       desp.
-      do_double_pop.
-      subst.
-      eauto.
-      do_double_pop.
-      subst. eauto.
-      vmsts.
+      try_pop_all.
+      try_pop_all.
+
       elimtype False; eapply pop_stackm_determ_none; eauto.
       
       
       unfold run_vm_step in *. monad_unfold. unfold get_ev in *. monad_unfold.
       desp.
-      vmsts.
-      desp.
+      simpl in *.
       elimtype False; eapply pop_stackm_determ_none; eauto.
-      elimtype False; eapply pop_stackm_determ_none; eauto.
-     
-      assert (v0 = {| st_ev := e; st_stack := s; st_trace := tr1 |}). {
-        vmsts.
-        edestruct pop_stackm_facts_none. apply Heqp0. clear Heqp0.
-        edestruct pop_stackm_facts_none. apply Heqp. clear Heqp.
-        destruct_conjs.
-        subst.
-        eauto. }
-      rewrite H0 in H.
-      vmsts.
-      eapply IHil1.
+
       edestruct pop_stackm_facts_none. apply Heqp0. clear Heqp0.
       edestruct pop_stackm_facts_none. apply Heqp. clear Heqp.
-      destruct_conjs.
-      subst.
-      eauto.
+      destruct_conjs. subst. eauto.
+      Unshelve. eauto. eauto. eauto.
 Defined.
 
+Ltac do_run :=
+  match goal with
+  | [H:  run_vm (_ :: _) _ = _ |- _ ] => invc H; unfold run_vm_step in *; monad_unfold; monad_unfold
+  end.
+
+Lemma ev_irrel : forall il1 tr1 tr1' e e' e1 s s',
+    run_vm il1
+           {| st_ev := e;  st_stack := s;  st_trace := tr1 |} =
+           {| st_ev := e'; st_stack := s'; st_trace := tr1' |} -> 
+    
+    st_trace (
+        run_vm il1 {| st_ev := e1; st_stack := s; st_trace := tr1 |}) =
+    tr1'.
+Proof.
+  induction il1; intros.
+  - simpl.
+    inv H.
+    reflexivity.
+  -
+      destruct a; try (
+      try destruct p; 
+    unfold run_vm_step;
+    monad_unfold;
+    try eapply IHil1;
+    simpl in *;
+    unfold run_vm_step in *; simpl in *; monad_unfold; 
+    eassumption).
+      + (* asplit case *)
+        do_run.
+        unfold run_vm_step. monad_unfold.
+        unfold push_stack in *.
+        eapply IHil1.
+        rewrite <- H1.
+
+        (*
+        apply H1.
+        
+      + (* ajoins case *)
+        simpl.
+        unfold run_vm_step in *. monad_unfold.
+        unfold get_ev.
+        monad_unfold.
+        desp. desp.
+        try_pop_all.
+        (*pairs.*)
+        (*do_double_pop.*)
+        edestruct (pop_stackm_facts). apply Heqp. clear Heqp.
+        edestruct (pop_stackm_facts). apply Heqp0. clear Heqp0.
+
+        destruct_conjs.
+        subst.
+        eapply IHil1.
+        
+        assert (st_trace = st_trace0). {
+          eapply IHil1.
+          admit. }
+        rewrite H.
+        eauto.
+        
+        destruct v; destruct v0.
+        (*
+        
+      desp.
+      desp.
+      pairs.
+      unfold pop_stackm in *. monad_unfold.
+      remember (pop_stack EvidenceC s) as p.
+      destruct p. destruct p.
+      remember (pop_stack EvidenceC s') as p.
+      destruct p. destruct p.
+      pairs.
+      eapply IHil1.
+      monad_unfold. inv Heqp0.
+      monad_unfold. inv Heqp.
+      admit.
+      desp.
+      pairs.
+      subst.
+      destruct v0.
+      destruct v.
+      pairs. subst.
+Defined. *)
+*)
+Admitted.
+
+(*
 Lemma ev_irrel : forall il1 tr1 e1 e2 s s',
 (*
     run_vm il1 {| st_ev := e; st_trace := tr1 |} =
@@ -309,10 +360,18 @@ Proof.
         unfold get_ev.
         monad_unfold.
         desp. desp.
-        pairs.
+        try_pop_all.
+        (*pairs.*)
         (*do_double_pop.*)
+        edestruct (pop_stackm_facts). apply Heqp. clear Heqp.
+        edestruct (pop_stackm_facts). apply Heqp0. clear Heqp0.
+
+        destruct_conjs.
+        subst.
+        eapply IHil1.
         
         assert (st_trace = st_trace0). {
+          eapply IHil1.
           admit. }
         rewrite H.
         eauto.
@@ -341,6 +400,7 @@ Proof.
       pairs. subst.
 Defined. *)
 Admitted.
+*)
 
 Lemma stack_irrel : forall il1 tr1 tr1' tr2 e e' s s',
     run_vm il1 {| st_ev := e; st_trace := tr1; st_stack := s |} =
@@ -397,11 +457,11 @@ Proof.
       rewrite IHil at 1.
       symmetry.
       rewrite IHil at 1.
-      assert (st_trace0 = m ++ st_trace). {
-        assert (st_trace0 = m). {
+      assert (st_trace = m ++ st_trace0). {
+        assert (st_trace = m). {
           eapply pop_stackm_pure; eauto. 
            }
-        assert (st_trace = []). {
+        assert (st_trace0 = []). {
           eapply pop_stackm_pure; eauto.
         }
         subst.
@@ -414,13 +474,10 @@ Proof.
       rewrite app_assoc at 1.
       congruence.
 
-      destruct v;
-      destruct v0.
   
       elimtype False; eapply pop_stackm_determ_none; eauto.
       desp.
 
-      destruct v; destruct v0.
 
       elimtype False; eapply pop_stackm_determ_none; eauto.
      
@@ -436,9 +493,7 @@ Proof.
       desp.
       desp.
 
-      
-      destruct v;
-      destruct v0.
+
       simpl.
       
       rewrite IHil at 1.
@@ -462,12 +517,12 @@ Proof.
       do_double_pop.
       congruence.
 
-      destruct v; destruct v0.
+      
       elimtype False; eapply pop_stackm_determ_none; eauto.
       desp.
-      destruct v; destruct v0.    
+          
       elimtype False; eapply pop_stackm_determ_none; eauto.
-      destruct v; destruct v0.
+      
       rewrite IHil.
       symmetry.
       rewrite IHil.
@@ -816,24 +871,25 @@ Proof.
       destruct_conjs.
       subst.
       simpl in *.
-      Check double_pop.
+      try_pop_all.
+     (* Check double_pop.
       edestruct double_pop.
       apply Heqp.
       apply Heqp0.
-      subst.
+      subst. *)
       assert (
           {|
        st_ev := MonadVM.st_ev
                   (fold_left run_vm_step il1
                      {|
-                     st_ev := ssc e0 st_ev;
-                     st_stack := st_stack0;
+                     st_ev := ssc e0 st_ev0;
+                     st_stack := st_stack;
                      st_trace := [] |});
-       st_stack := st_stack
+       st_stack := MonadVM.st_stack
                      (fold_left run_vm_step il1
                         {|
-                        st_ev := ssc e0 st_ev;
-                        st_stack := st_stack0;
+                        st_ev := ssc e0 st_ev0;
+                        st_stack := st_stack;
                         st_trace := [] |});
        st_trace := [] |} =
 
@@ -841,14 +897,14 @@ Proof.
           st_ev := MonadVM.st_ev
                      (fold_left run_vm_step il1
                         {|
-                        st_ev := ssc e0 st_ev;
-                        st_stack := st_stack0;
+                        st_ev := ssc e0 st_ev0;
+                        st_stack := st_stack;
                         st_trace := [join n] |});
-          st_stack := st_stack
+          st_stack := MonadVM.st_stack
                         (fold_left run_vm_step il1
                            {|
-                           st_ev := ssc e0 st_ev;
-                           st_stack := st_stack0;
+                           st_ev := ssc e0 st_ev0;
+                           st_stack := st_stack;
                            st_trace := [join n] |});
           st_trace := [] |}). {
         admit. }
@@ -858,12 +914,12 @@ Proof.
 
       Check pop_stackm_determ_none.
 
-      destruct v; destruct v0.
+      
       elimtype False; eapply pop_stackm_determ_none; eauto.
 
       desp.
       
-      destruct v; destruct v0.
+     
       elimtype False; eapply pop_stackm_determ_none; eauto.
 
       Check pop_stackm_facts.
@@ -871,7 +927,7 @@ Proof.
 
 
 
-      destruct v; destruct v0.
+      
 
       edestruct pop_stackm_facts_none.
       apply Heqp.
@@ -879,14 +935,8 @@ Proof.
       apply Heqp0.
       subst.
       rewrite IHil1.
-      assert (st_stack = st_stack0). {
-      Check double_pop.
-      
-      eapply double_pop_none; eauto. }
-      destruct_conjs.
-      
-      
-      congruence.
+      try_pop_all.
+
     + (* abesr case *)
       
       
@@ -1198,10 +1248,7 @@ Proof.
     subst. eassumption.
 Defined. *)
 
-Ltac do_run :=
-  match goal with
-  | [H:  run_vm (_ :: _) _ = _ |- _ ] => invc H; unfold run_vm_step in *; monad_unfold; monad_unfold
-  end.
+
 
 Ltac do_stack1 t1 :=
   match goal with
