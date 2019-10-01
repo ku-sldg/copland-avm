@@ -131,13 +131,94 @@ Proof.
   subst; destruct st; auto.
 Defined.
 
+(* 
+ snd
+          (let
+           '(b, s'') :=
+            match
+              pop_stackm {| st_ev := H3; st_stack := H4; st_trace := x0 |}
+            with
+            | (Some v, s') =>
+                (Some tt,
+                {|
+                st_ev := ssc v H3;
+                st_stack := MonadVM.st_stack s';
+                st_trace := MonadVM.st_trace s' ++
+                            [join (Init.Nat.pred (snd r))] |})
+            | (None, s') => (None, s')
+            end in (b, s'')) =
+        {| st_ev := e'; st_stack := s'; st_trace := x0 ++ H7 |}
+      *)
+
+(*
+run_vm (instr_compiler t2 ++ [ajoins (Init.Nat.pred (snd r))])
+         (snd
+            (let
+             '(b, s'') :=
+              match
+                pop_stackm {| st_ev := H0; st_stack := H; st_trace := x |}
+              with
+              | (Some v, s') =>
+                  let
+                  '(b, s'') :=
+                   match push_stackm H0 s' with
+                   | (Some _, s'0) =>
+                       (Some tt,
+                       {|
+                       st_ev := v;
+                       st_stack := st_stack s'0;
+                       st_trace := st_trace s'0 |})
+                   | (None, s'0) => (None, s'0)
+                   end in (b, s'')
+              | (None, s') => (None, s')
+              end in (b, s''))) =
+       {| st_ev := e'; st_stack := s0; st_trace := x ++ H2 |}
+ *)
+
+(*
 Ltac desp :=
   match goal with
   | [ H: context
-           [match pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with |_ => _ end] |- _ ] =>
+           [pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |}] |- _] =>
     remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as p; 
     destruct p as [o];
     destruct o
+(*  | [ H: context
+           [match pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with | _ => (let _ := _ in _) |(None,_) => _ end] |- _ ] =>
+    remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as p; 
+    destruct p as [o];
+    destruct o *)
+  | |- context [match pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with | _ => _ end] =>
+    remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as p; 
+    destruct p as [o];
+    destruct o        
+           
+  | [ H: context
+           [match push_stackm _ {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with |_ => _ end] |- _ ] =>
+    remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as p; 
+    destruct p as [o];
+    destruct o
+  | |- context
+        [match push_stackm _ {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with |_ => _ end] =>
+    remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as p; 
+    destruct p as [o];
+    destruct o
+  end; monad_unfold; vmsts.
+*)
+
+Ltac desp :=
+  (*expand_let_pairs; *)
+  match goal with
+  | [ H: context
+           [match pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} (*with _ end*) with |_ => _ end] |- _ ] =>
+    remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as p; 
+    destruct p as [o];
+    destruct o
+(*  | [ H: context
+           [match pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with | _ => (let _ := _ in _) |(None,_) => _ end] |- _ ] =>
+    remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as p; 
+    destruct p as [o];
+    destruct o *)
   | |- context [match pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with | _ => _ end] =>
     remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as p; 
     destruct p as [o];
@@ -219,7 +300,7 @@ Proof.
          eapply IHil1;
          simpl in H;
          unfold run_vm_step in H; simpl in *; monad_unfold; 
-         eassumption);
+         eassumption); 
       try
         (boom;
          repeat 
@@ -1257,6 +1338,23 @@ Lemma restl' : forall il e e' s s' x tr,
     run_vm il {| st_ev := e; st_stack := s; st_trace := [] |} =
     {| st_ev := e'; st_stack := s'; st_trace := tr |}.
 Proof.
+  intros.
+  assert (
+      st_trace (run_vm il {| st_ev := e; st_stack := s; st_trace := x |}) =
+      st_trace ({| st_ev := e'; st_stack := s'; st_trace := x ++ tr |})).
+  congruence.
+  eapply st_congr.
+  eapply trace_irrel; eauto.
+  eapply stack_irrel; eauto.
+  rewrite foo in H0.
+  simpl in H0.
+  eapply app_inv_head. eauto.
+Defined.
+
+
+
+(*
+  
   induction il; intros.
   - simpl.
     inv H.
@@ -1326,6 +1424,36 @@ Proof.
       
       
 Admitted.
+*)
+
+Lemma destruct_compiled_appended_fresh : forall trd' il1 il2 e e'' s s'',
+    run_vm
+      (il1 ++ il2)
+        {| st_ev := e;   st_stack := s;   st_trace := [] |} =
+        {| st_ev := e''; st_stack := s''; st_trace := trd'  |} ->
+    (exists tr1 e' s',
+        run_vm
+          (il1)
+          {| st_ev := e;  st_stack := s;  st_trace := []  |} =
+          {| st_ev := e'; st_stack := s'; st_trace := tr1;  |} /\
+        exists tr2,
+          run_vm
+            (il2)
+            {| st_ev := e';  st_stack := s';  st_trace := [] |} =
+            {| st_ev := e''; st_stack := s''; st_trace := tr2;  |} /\
+          trd' = tr1 ++ tr2).
+Proof.
+  intros.
+  edestruct (destruct_compiled_appended); eauto.
+  destruct_conjs.
+  exists x. exists H0. exists H1.
+  split.
+  - eauto.
+  - exists H3.
+    split.
+    + eapply restl'; eauto.
+    + assumption.
+Defined.
 
 
 
@@ -1586,7 +1714,58 @@ Proof.
   eapply ya.
 Defined.
 
+(*
+Theorem vm_multi_suffix : forall il1 il2 tr,
+    vm_multi {| vm_list := il1 |} {| vm_list := il2 |} tr ->
+    exists prefix, il1 = prefix ++ il2.
+Proof.
+  dependent induction il1; destruct il2; intros.
+  - exists []. reflexivity.
+  - inv H. inv H0.
+  - exists (a::il1). rewrite app_nil_r. reflexivity.
+  - inv H.
+    + exists []. reflexivity.
+    + dependent destruction x'.
+      assert (vm_list0 = il1).
+      inv H0. reflexivity.
+      
+      edestruct IHil1.
+      rewrite H2 in H1.
+      apply H1.
+      rewrite H3.
+      exists (a::x). reflexivity.
+Defined. *)
 
+Lemma suffix_prop : forall il e e' s s' tr tr',
+    run_vm il
+           {|
+             st_ev := e;
+             st_stack := s;
+             st_trace := tr |} =
+    {|
+      st_ev := e';
+      st_stack := s';
+      st_trace := tr' |} ->
+    exists l, tr' = tr ++ l.
+Proof.
+  intros.
+  assert (st_trace (run_vm il
+           {|
+             st_ev := e;
+             st_stack := s;
+             st_trace := tr |}) =
+    st_trace ({|
+      st_ev := e';
+      st_stack := s';
+      st_trace := tr' |})).
+  congruence.
+
+  simpl in H0.
+  eexists.
+  rewrite <- H0.
+  rewrite foo.
+  reflexivity.
+Defined.
 
 Lemma multi_lstar : forall t tr et p e e' s s',
     run_vm (instr_compiler t)
@@ -1619,18 +1798,12 @@ Proof.
     simpl in *.
     econstructor.
     econstructor.
-    edestruct destruct_compiled_appended; eauto.
+    edestruct destruct_compiled_appended_fresh; eauto.
     destruct_conjs.
     subst.
-    
-    assert (s = H1).
-    {
-      eapply multi_stack_restore; eauto.
-      (*
-      edestruct exists_trace with (t:=t1) (e:=e) (s:=s).
-       rewrite <- run_iff_multi in *.      
-       congruence. *)
-    }
+
+    do_stack1 t1.
+
     eapply lstar_transitive.
     
     eapply lstar_stls.
@@ -1640,10 +1813,102 @@ Proof.
     eapply lstar_silent_tran.
     apply stlseqstop.
     eapply IHt2.
-    exact [].
-    rewrite H5 in H4.
-    eapply restl'; eauto.
+    eauto.
+    subst; eauto.
+
   - (* abseq case *)
+     destruct s; simpl in *.
+    
+     unfold run_vm_step in *. monad_unfold; monad_unfold.
+
+
+     
+       
+              
+     assert (exists l, tr = [Term.split (fst r)] ++ l).
+     eapply suffix_prop; eauto.
+     destruct_conjs.
+     rewrite H1 in H.
+     assert (run_vm ((instr_compiler t1 ++
+                                     abesr :: instr_compiler t2 ++ [ajoins (Init.Nat.pred (snd r))]))
+                    {| st_ev := splitEv s e;
+                       st_stack := push_stack EvidenceC (splitEv s1 e) s0;
+                       st_trace := [] |} =
+             {| st_ev := e'; st_stack := s0; st_trace := H0 |}).
+     eapply restl'; eauto.
+     rewrite H1.
+     
+    
+     edestruct destruct_compiled_appended_fresh; eauto.
+     destruct_conjs.
+     clear H2.
+     do_stack1 t1.
+     rewrite H8.
+     eapply lstar_tran.
+     econstructor.
+     eapply lstar_transitive.
+     eapply lstar_stbsl.
+     eapply IHt1. eassumption.
+     
+     rewrite H2 in H5.
+     apply H5.
+     simpl.
+     eapply lstar_silent_tran.
+     apply stbslstop.
+     
+     do_run.
+     edestruct destruct_compiled_appended_fresh; eauto.
+     destruct_conjs.
+     rewrite H8.
+     do_stack1 t2.
+     eapply lstar_transitive.
+     eapply lstar_stbsr.
+     eapply IHt2; eauto.
+     rewrite H9 in H2. eauto.
+     do_run.
+     invc H12.
+     eapply lstar_tran.
+     apply stbsrstop.
+     econstructor.
+     
+    (* 
+     desp.
+     Check restl'.
+
+     assert (run_vm ((instr_compiler t1 ++
+         abesr :: instr_compiler t2 ++ [ajoins (Init.Nat.pred (snd r))])) {| st_ev := splitEv s e; st_stack := push_stack EvidenceC (splitEv s1 e) s0; st_trace := [] |} =
+             {| st_ev := e'; st_stack := s0; st_trace := H3 |}).
+     eapply restl'.
+     apply H.
+     
+     erewrite <- restl' in H. Focus 2.
+     rewrite <- H.
+
+     eassumption. clear H.
+     destruct_conjs.
+
+     Print do_run.
+     (*
+       Ltac Top.do_run :=
+       match goal with
+       | H:run_vm (_ :: _) _ = _
+       |- _ => invc H; unfold run_vm_step in *; monad_unfold; monad_unfold
+       end *)
+
+     unfold run_vm in H3. unfold run_vm_step in H3. fold run_vm_step in H3. monad_unfold.
+     unfold run_vm_step in H3. fold run_vm_step in H3. monad_unfold.
+     monad_unfold.
+
+     do_stack1 t1.
+     desp.
+
+     
+
+
+
+
+
+    
     simpl in *.
     destruct s.
     do_run.
@@ -1760,7 +2025,7 @@ Proof.
     eapply lstar_transitive.
     eapply lstar_transitive.
     econstructor. econstructor.
-    do_run.
+    do_run. *)
     
     
 Defined.
