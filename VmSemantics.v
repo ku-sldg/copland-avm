@@ -836,7 +836,12 @@ Lemma lstar_stbsl:
     lstar st0 tr st1 ->
     lstar (bsl j st0 t p e) tr (bsl j st1 t p e).
 Proof.
-Admitted.
+  intros.
+  induction H; auto.
+  eapply lstar_tran; eauto.
+  eapply lstar_silent_tran; eauto.
+Defined.
+
 (*
   intros.
   induction H; auto.
@@ -850,7 +855,12 @@ Lemma lstar_stbsr:
     lstar st0 tr st1 ->
     lstar (bsr j e st0) tr (bsr j e st1).
 Proof.
-Admitted.
+  intros.
+  induction H; auto.
+  eapply lstar_tran; eauto.
+  eapply lstar_silent_tran; eauto.
+Defined.
+
 (*
   intros.
   induction H; auto.
@@ -1457,24 +1467,81 @@ Defined.
 
 
 
+
+
 Lemma multi_stack_restore : forall t tr1 tr1' e e' s s',
     run_vm (instr_compiler t)
            {| st_ev := e; st_stack := s;  st_trace := tr1 |} =
            {| st_ev := e'; st_stack := s'; st_trace := tr1' |}  ->
     s = s'.
-Proof. (*
-    induction t; intros.
-    - destruct a;
-        inv H; try reflexivity.
-    - edestruct destruct_compiled_appended; eauto.
+Proof.
+  induction t; intros; simpl in *.
+  - destruct a;
+      inv H; try reflexivity.
+  - edestruct destruct_compiled_appended; eauto.
       destruct_conjs.
       eapply IHt2.
       assert (s = H1).
       eapply IHt1; eauto.
       subst.
       eapply restl'; eauto.
-Defined. *)
-Admitted.
+  - destruct s.
+    do_run.
+    edestruct destruct_compiled_appended. apply H1.
+    destruct_conjs.
+    clear H1.
+    
+    simpl in *.
+    assert (H0 = push_stack EvidenceC (splitEv s1 e) s0). {
+      symmetry.
+      eauto. }
+    unfoldm.
+    desp.
+    desp.
+    rewrite H1 in Heqp.
+    monad_unfold.
+    unfold pop_stackm in Heqp. monad_unfold.
+    invc Heqp.
+    
+
+    edestruct destruct_compiled_appended.
+    apply H4. clear H4.
+    destruct_conjs.
+    assert (H1 = push_stack EvidenceC H s0). {
+      symmetry.
+      eauto. }
+    do_pop_stackm_facts.
+    subst.
+    monad_unfold.
+    unfold push_stack in *.
+    unfold run_vm_step in *. monad_unfold.
+    invc H6. eauto.
+    edestruct destruct_compiled_appended; eauto.
+    destruct_conjs.
+    
+    rewrite H1 in Heqp.
+    monad_unfold.
+    simpl in *.
+    unfold pop_stackm in Heqp. monad_unfold.
+    invc Heqp.
+
+    assert (H7 = push_stack EvidenceC H s0). {
+      symmetry.
+      eauto. }
+
+    monad_unfold.
+    unfold run_vm_step in H10. monad_unfold.
+    rewrite H0 in H10.
+    monad_unfold.
+    invc H10.
+    reflexivity.
+    rewrite H1 in Heqp.
+    monad_unfold.
+    unfold pop_stackm in Heqp. monad_unfold.
+    inv Heqp.
+Defined.
+
+
 
   
 (*
@@ -1501,7 +1568,6 @@ Proof.
 Defined. *)
 
 
-
 Ltac do_stack1 t1 :=
   match goal with
   | [H:  run_vm (instr_compiler t1)
@@ -1520,6 +1586,9 @@ Ltac do_stack t1 t2 :=
              {| st_ev := _; st_stack := ?s'; st_trace := _ |} |- _ ] =>
     assert (s0 = s1 /\ s = s') by (split;eapply multi_stack_restore; eauto)
   end; destruct_conjs.
+
+
+
 
 Lemma multi_ev_eval : forall t tr tr' e e' s s',
     run_vm (instr_compiler t)
