@@ -323,6 +323,68 @@ Section More_lists.
     simpl; auto.
   Qed.
 
+  Definition shaver{A} (l: list A) : list A :=
+  skipn ((length l) - 1) l.
+
+Lemma listThing: forall (x:A) l1 l2,
+    l1 ++ l2 = x :: l2 ->
+    l1 = [x].
+Proof.
+  intros.
+  assert (x::l2 = [x]++l2). auto.
+  rewrite H0 in H.
+  eapply app_inv_tail; eauto.
+Defined.
+
+Lemma hh:
+  forall (l1:list A) l2,
+    l1 ++ l2 = l2 ->
+    l1 = [].
+Proof.
+  intros.
+  Search (_ ++ _ = _).
+  eapply app_inv_tail.
+  apply H.
+Defined.
+
+Lemma skip1: forall (i:A) l lr,
+    i :: l = lr ->
+    l = skipn 1 lr.
+Proof.
+  intros.
+  subst. simpl. reflexivity.
+Defined.
+
+Lemma headShouldersKneesAndToes : forall A (h : A) t l1 l2,
+    h :: t = l1 ++ l2 ->
+    forall prefix i, t = prefix ++ i :: l2 ->
+    l1 = h :: prefix ++ [i].
+Proof.
+  intros. subst.
+  assert (H0 : i :: l2 = [i] ++ l2). reflexivity.
+  rewrite H0 in H; clear H0.
+  eapply app_inv_tail.
+  simpl. rewrite <- app_assoc. eauto.
+Defined.
+
+Lemma list_nil_app: forall (l1 l2:list A),
+    [] = l1 ++ l2 ->
+    l1 = [] /\ l2 = [].
+Proof.
+  intros.
+  destruct l1.
+  - simpl in H.
+    split; eauto.
+  - inversion H.
+Defined. 
+
+Lemma first_skip:
+  forall n (l:list A),
+    (firstn n l) ++ (skipn n l) = l.
+Proof.
+  apply firstn_skipn.
+Defined.
+
 End More_lists.
 
 Unset Implicit Arguments.
