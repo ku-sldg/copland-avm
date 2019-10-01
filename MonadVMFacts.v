@@ -66,6 +66,15 @@ Proof.
   simpl in *. inv H.
 Defined.
 
+Ltac do_pop_stackm_facts :=
+  match goal with
+  | [H: (Some ?e1,
+         {| st_ev := ?e'; st_stack := ?s'; st_trace := ?tr' |}) =
+        pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?tr |}  |- _ ] =>
+    assert (e = e' /\ tr = tr' /\ exists evd, s = evd::s')
+      by (eapply pop_stackm_facts; eauto); clear H
+  end; destruct_conjs.
+
 Lemma push_stackm_succeeds : forall e st st',
     push_stackm e st = (None, st') -> False.
 Proof.
