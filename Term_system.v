@@ -15,53 +15,55 @@ Require Import Omega Preamble More_lists Term Event_system.
 
 (** Construct an event system from an annotated term, place, and
     evidence. *)
-
-Fixpoint ev_sys (t: AnnoTerm) : EvSys Ev :=
+Check asp_event.
+Print asp_event.
+Fixpoint ev_sys (t: AnnoTerm) (p:Plc) : EvSys Ev :=
   match t with
-  | aasp (i, j) x => leaf (i, j) (asp_event i x)
+  | aasp (i, j) x => leaf (i, j) (asp_event i x p)
   | aatt (i, j) q x =>
     before (i, j)
-      (leaf (i, S i) (req i q (unanno x)))
+      (leaf (i, S i) (req i p q (unanno x)))
       (before (S i, j)
-              (ev_sys x)
-              (leaf (pred j, j) (rpy (pred j) q)))
-  | alseq r x y => before r (ev_sys x)
-                          (ev_sys y)
+              (ev_sys x p)
+              (leaf (pred j, j) (rpy (pred j) p q)))
+  | alseq r x y => before r (ev_sys x p)
+                          (ev_sys y p)
   | abseq (i, j) s x y =>
     before (i, j)
            (leaf (i, S i)
-                 (split i ))
+                 (split i p))
            (before (S i, j)
                    (before (S i, (pred j))
-                           (ev_sys x)
-                           (ev_sys y))
+                           (ev_sys x p)
+                           (ev_sys y p))
                    (leaf ((pred j), j)
-                   (join (pred j) ))) (*
+                   (join (pred j) p ))) (*
   | abpar (i, j) s x y =>
     before (i, j)
            (leaf (i, S i)
-                 (split i ))
+                 (split i p))
            (before (S i, j)
                    (merge (S i, (pred j))
-                          (ev_sys x)
-                          (ev_sys y))
+                          (ev_sys x p)
+                          (ev_sys y p))
                    (leaf ((pred j), j)
-                   (join (pred j) ))) *)
+                   (join (pred j) p))) *)
   end.
 
 Lemma evsys_range:
-  forall t,
-    es_range (ev_sys t) = range t.
+  forall t p,
+    es_range (ev_sys t p) = range t.
 Proof.
   induction t; intros; simpl; auto;
     repeat expand_let_pairs; simpl; auto.
 Qed.
 
 Lemma well_structured_evsys:
-  forall t,
+  forall t p,
     well_formed t ->
-    well_structured ev (ev_sys t).
+    well_structured ev (ev_sys t p).
 Proof.
+  (*
   induction t; intros; inv H; simpl;
     repeat expand_let_pairs; destruct r as [i k];
       simpl in *; subst; auto.
@@ -75,15 +77,17 @@ Proof.
   - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto). (*
   - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto).
     repeat (apply ws_merge; simpl in *; auto; repeat rewrite evsys_range; auto). *)
-Qed.
+Qed. *)
+Admitted.
+
 
 (** The events in the event system correspond to the events associated
     with a term, a place, and some evidence. *)
 
 Lemma evsys_events:
-  forall t ev,
+  forall t ev p,
     well_formed t ->
-    ev_in ev (ev_sys t) <-> events t ev.
+    ev_in ev (ev_sys t p) <-> events t p ev.
 Proof. (*
   split; induction t; intros; inv H; simpl in *;
     repeat expand_let_pairs; simpl in *.
@@ -152,9 +156,9 @@ Admitted.
 (** Maximal events are unique. *)
 
 Lemma supreme_unique:
-  forall t,
+  forall t p,
     well_formed t ->
-    exists ! v, supreme (ev_sys t) v.
+    exists ! v, supreme (ev_sys t p) v.
 Proof.
   (*
   intros.
@@ -196,9 +200,9 @@ Admitted.
 
 
 Lemma evsys_max_unique:
-  forall t,
+  forall t p,
     well_formed t ->
-    unique (supreme (ev_sys t)) (max (ev_sys t)).
+    unique (supreme (ev_sys t p)) (max (ev_sys t p)).
 Proof.
   (*
   intros.
@@ -257,10 +261,10 @@ Qed. *)
 (** lseq is associative relative to the event semantics *)
 
 Lemma lseq_assoc:
-  forall t1 t2 t3 i,
+  forall t1 t2 t3 i p,
     same_rel
-      (ev_sys (snd (anno (lseq t1 (lseq t2 t3)) i)))
-      (ev_sys (snd (anno (lseq (lseq t1 t2) t3) i))).
+      (ev_sys (snd (anno (lseq t1 (lseq t2 t3)) i)) p)
+      (ev_sys (snd (anno (lseq (lseq t1 t2) t3) i)) p).
 Proof.
   intros; simpl.
   repeat expand_let_pairs; simpl.

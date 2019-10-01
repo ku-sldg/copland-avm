@@ -6,17 +6,17 @@ Import ListNotations.
 
 Require Import StructTact.StructTactics.
 
-Lemma pop_stackm_fail_facts : forall e e' s s'
+Lemma pop_stackm_fail_facts : forall e e' s s' p p'
                      tr tr',
     (None,
-     {| st_ev := e'; st_stack := s'; st_trace := tr' |}) =
-    pop_stackm {| st_ev := e; st_stack := s; st_trace := tr |} ->
-    (e = e' /\ tr = tr' /\ s = [] /\ s' = []).
+     {| st_ev := e'; st_stack := s'; st_trace := tr'; st_pl := p' |}) =
+    pop_stackm {| st_ev := e; st_stack := s; st_trace := tr; st_pl := p |} ->
+    (e = e' /\ tr = tr' /\ p = p' /\ s = [] /\ s' = []).
 Proof.
   intros.
   unfold pop_stackm in *. monad_unfold.
-  remember (pop_stack EvidenceC s) as p.
-  destruct p. destruct p.
+  remember (pop_stack EvidenceC s) as pp.
+  destruct pp. destruct p0.
   inv H.
   monad_unfold. inv H.
   split; eauto.
@@ -24,7 +24,7 @@ Proof.
   invc H.
   destruct s.
   eauto.
-  unfold pop_stack in *. inv Heqp.
+  unfold pop_stack in *. inv Heqpp.
 Defined.
 
 Ltac do_pop_stackm_fail:=
@@ -36,17 +36,18 @@ Ltac do_pop_stackm_fail:=
   end; destruct_conjs.
 
 Lemma pop_stackm_facts : forall e' e1 st_ev st_stack
-                     st_trace st_trace' s,
+                     st_trace st_trace' s p p',
     (Some e1,
-     {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace |}) =
-    pop_stackm {| st_ev := e'; st_stack := s; st_trace := st_trace' |} ->
-    (e' = st_ev /\ st_trace' = st_trace /\ (exists e, s = e::st_stack)).
+     {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace; st_pl := p' |}) =
+    pop_stackm {| st_ev := e'; st_stack := s; st_trace := st_trace'; st_pl := p |} ->
+    (e' = st_ev /\ st_trace' = st_trace /\ p = p' /\ (exists e, s = e::st_stack)).
 Proof.
   intros.
   unfold pop_stackm in *. monad_unfold.
-  remember (pop_stack EvidenceC s) as p.
-  destruct p. destruct p.
+  remember (pop_stack EvidenceC s) as pp.
+  destruct pp. destruct p0.
   invc H.
+  split; eauto.
   split; eauto.
   split; eauto.
   exists e.
@@ -56,9 +57,8 @@ Defined.
 
 Ltac do_pop_stackm_facts :=
   match goal with
-  | [H: (Some ?e1,
-         {| st_ev := ?e'; st_stack := ?s'; st_trace := ?tr' |}) =
-        pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?tr |}  |- _ ] =>
+  | [H: (Some ?e1, _) =
+        pop_stackm _ |- _ ] =>
     (*assert (e = e' /\ tr = tr' /\ exists evd, s = evd::s')
       by (eapply pop_stackm_facts; eauto); clear H *)
     apply pop_stackm_facts in H
@@ -296,28 +296,28 @@ Ltac desp :=
   match goal with
   | [ H: context
            [match pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} (*with _ end*) with |_ => _ end] |- _ ] =>
-    remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as p; 
-    destruct p as [o];
+    remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as ppp; 
+    destruct ppp as [o];
     destruct o
 (*  | [ H: context
            [match pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with | _ => (let _ := _ in _) |(None,_) => _ end] |- _ ] =>
-    remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as p; 
-    destruct p as [o];
+    remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as ppp; 
+    destruct ppp as [o];
     destruct o *)
   | |- context [match pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with | _ => _ end] =>
-    remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as p; 
-    destruct p as [o];
+    remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as ppp; 
+    destruct ppp as [o];
     destruct o        
            
   | [ H: context
            [match push_stackm _ {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with |_ => _ end] |- _ ] =>
-    remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as p; 
-    destruct p as [o];
+    remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as ppp; 
+    destruct ppp as [o];
     destruct o
   | |- context
         [match push_stackm _ {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with |_ => _ end] =>
-    remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as p; 
-    destruct p as [o];
+    remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as ppp; 
+    destruct ppp as [o];
     destruct o
   end; monad_unfold; vmsts.
 

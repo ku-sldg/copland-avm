@@ -25,7 +25,7 @@ Inductive traceS: St -> list Ev -> Prop :=
 | tstop: forall p e,
     traceS (stop p e) []
 | tconf: forall t tr p e,
-    trace t tr ->
+    trace t p tr ->
     traceS (conf t p e) tr
 (*| trem: forall st tr j p,
     traceS st tr ->
@@ -34,7 +34,7 @@ Inductive traceS: St -> list Ev -> Prop :=
                [(rpy (pred j) (*p*) (pl st))]) *)
 | tls: forall st tr1 t tr2,
     traceS st tr1 ->
-    trace t (*(pl st) (seval st)*) tr2 ->
+    trace t (pl st) (*(seval st)*) tr2 ->
     traceS (ls st t) (tr1 ++ tr2)
 (*| tbsl: forall st tr1 t p e tr2 j,
     traceS st tr1 ->
@@ -65,8 +65,8 @@ Fixpoint esizeS s:=
   end.
 
 Lemma esize_tr:
-  forall t tr,
-    trace t tr -> length tr = esize t.
+  forall t tr p,
+    trace t p tr -> length tr = esize t.
 Proof. (*
   induction t; intros; inv H; simpl;
     autorewrite with list; simpl; auto.
@@ -267,7 +267,7 @@ Lemma lstar_trace:
   forall t p e tr,
     well_formed t ->
     lstar (conf t p e) tr (stop p (aeval t p e)) ->
-    trace t tr.
+    trace t p tr.
 Proof.
   intros.
   apply lstar_nlstar in H0.
@@ -282,10 +282,10 @@ Theorem ordered:
   forall t p e tr ev0 ev1,
     well_formed t ->
     lstar (conf t p e) tr (stop p (aeval t p e)) ->
-    prec (ev_sys t) ev0 ev1 ->
+    prec (ev_sys t p) ev0 ev1 ->
     earlier tr ev0 ev1.
 Proof.
   intros.
   apply lstar_trace in H0; auto.
-  apply trace_order with (t:=t); auto.
+  apply trace_order with (t:=t) (p:=p); auto.
 Qed.

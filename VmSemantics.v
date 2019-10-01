@@ -25,13 +25,13 @@ Admitted.
 Axiom remote_events_axiom : forall t tr,
     trace t tr -> remote_events t = tr.*)
 
-Definition prim_trace (i:nat) (a:Prim_Instr) : (list Ev) :=
+Definition prim_trace (i:nat) (p:Plc) (a:Prim_Instr) : (list Ev) :=
   match a with
-  | copy => [Term.copy i]
-  | kmeas asp_id q A => [Term.kmeas i asp_id q A]
-  | umeas asp_id A => [Term.umeas i asp_id A]
-  | sign => [Term.sign i]
-  | hash => [Term.hash i]
+  | copy => [Term.copy i p]
+  | kmeas asp_id q A => [Term.kmeas i p asp_id q A]
+  | umeas asp_id A => [Term.umeas i p asp_id A]
+  | sign => [Term.sign i p]
+  | hash => [Term.hash i p]
   end.
 
 Definition prim_ev (a:Prim_Instr) (e:EvidenceC) : EvidenceC :=
@@ -51,15 +51,15 @@ Definition prim_ev (a:Prim_Instr) (e:EvidenceC) : EvidenceC :=
     (hhc bs e)
   end. 
 
-Definition build_comp (*(s:ev_stack)*) (i:AnnoInstr): VM unit :=
+Definition build_comp (*(s:ev_stack)*) (i:AnnoInstr) (p:Plc) : VM unit :=
   match i with
   | aprimInstr x a =>
     modify_evm (prim_ev a) ;;
-               add_tracem (prim_trace x a)
+               add_tracem (prim_trace x p a)
                
   | asplit x sp1 sp2 =>
     e <- get_ev ;;
-      p <- split_evm x sp1 sp2 e;;
+      p <- split_evm x sp1 sp2 e p;;
       let '(e1,e2) := p in
       put_ev e1 ;;
       push_stackm e2
@@ -69,7 +69,7 @@ Definition build_comp (*(s:ev_stack)*) (i:AnnoInstr): VM unit :=
     e <- get_ev ;;
       er <- pop_stackm ;;
       put_ev (ssc er e) ;; (*push_stackm (ssc er e) ;; *)
-      add_tracem [Term.join i]
+      add_tracem [Term.join i p]
       (*
   | ajoinp i =>
     (*e <- pop_stackm ;;*)
@@ -90,7 +90,7 @@ Definition build_comp (*(s:ev_stack)*) (i:AnnoInstr): VM unit :=
       let '(reqi,rpyi_last) := rg in
       let rpyi := Nat.pred rpyi_last in
       let newTrace :=
-          [req reqi q (unanno annt)] ++ (remote_events annt) ++ [rpy rpyi q] in
+          [req reqi p q (unanno annt)] ++ (remote_events annt) ++ [rpy rpyi p q] in
       add_tracem newTrace (*
   | abep rg1 rg2 il1 il2 =>
     e <- get_ev ;;
@@ -111,14 +111,14 @@ Definition build_comp (*(s:ev_stack)*) (i:AnnoInstr): VM unit :=
 (** Function-style semantics for VM *)
 
 (* Transform vm_st for a single instruction (A -> B -> A) function for fold_left *)
-Definition run_vm_step (a:vm_st) (b:AnnoInstr) : vm_st :=
-  execSt a (build_comp b).
+Definition run_vm_step (p:Plc) (a:vm_st) (b:AnnoInstr) : vm_st :=
+  execSt a (build_comp b p).
 
-Definition run_vm (il:list AnnoInstr) st : vm_st :=
-  fold_left run_vm_step il st.
+Definition run_vm (il:list AnnoInstr) (p:Plc) st : vm_st :=
+  fold_left (run_vm_step p) il st.
 
-Definition run_vm_t (t:AnnoTerm) st : vm_st :=
-  run_vm (instr_compiler t) st.
+Definition run_vm_t (t:AnnoTerm) (p:Plc) st : vm_st :=
+  run_vm (instr_compiler t) p st.
 
 Lemma st_congr :
   forall st tr e s,
@@ -141,28 +141,28 @@ Ltac boom := repeat
              try_pop_all;
              bogus.
            
-Lemma trace_irrel : forall il1 tr1 tr1' tr2 e e' s s',
+Lemma trace_irrel : forall il1 tr1 tr1' tr2 e e' s s' p,
 
-    run_vm il1 {| st_ev := e; st_trace := tr1; st_stack := s |} =
+    run_vm il1 p {| st_ev := e; st_trace := tr1; st_stack := s |} =
     {| st_ev := e'; st_trace := tr1'; st_stack := s' |} ->
     
     st_ev (
-        run_vm il1 {| st_ev := e; st_trace := tr2; st_stack := s |}) = e'.
+        run_vm il1 p {| st_ev := e; st_trace := tr2; st_stack := s |}) = e'.
 Proof.
   induction il1; intros.
   - simpl.
     inversion H. reflexivity.   
-  -
+  - 
     simpl; destruct a;
       try
-        (try destruct p;
+        (try destruct p0;
          try destruct r;
          unfold run_vm_step;
          monad_unfold;
          eapply IHil1;
          simpl in H;
          unfold run_vm_step in H; simpl in *; monad_unfold; 
-         eassumption); 
+         eassumption);    
       try
         (boom;
          repeat 
@@ -446,12 +446,12 @@ Defined. *)
 Admitted.
 *)
 
-Lemma stack_irrel : forall il1 tr1 tr1' tr2 e e' s s',
-    run_vm il1 {| st_ev := e; st_trace := tr1; st_stack := s |} =
+Lemma stack_irrel : forall il1 tr1 tr1' tr2 e e' s s' p,
+    run_vm il1 p {| st_ev := e; st_trace := tr1; st_stack := s |} =
     {| st_ev := e'; st_trace := tr1'; st_stack := s' |} ->
     
     st_stack (
-        run_vm il1 {| st_ev := e; st_trace := tr2; st_stack := s |}) =
+        run_vm il1 p {| st_ev := e; st_trace := tr2; st_stack := s |}) =
     s'.
   (*
     st_trace (
@@ -463,7 +463,7 @@ Proof.
   -
     simpl; destruct a;
       try
-        (try destruct p;
+        (try destruct p0;
          try destruct r;
          unfold run_vm_step;
          monad_unfold;
@@ -478,13 +478,13 @@ Proof.
          subst; eauto).
 Defined.
 
-Lemma foo : forall il m e s,
-    st_trace (fold_left run_vm_step il
+Lemma foo : forall il m e s p,
+    st_trace (fold_left (run_vm_step p) il
                         {| st_ev := e; st_trace := m; st_stack := s |}) =
-    m ++ st_trace (fold_left run_vm_step il
+    m ++ st_trace (fold_left (run_vm_step p) il
                              {| st_ev := e; st_trace := []; st_stack := s |}).
 Proof.
-  induction il; simpl; intros m e s.
+  induction il; simpl; intros m e s p.
   - rewrite app_nil_r. auto.
   - destruct a; try ( (* prim, asplit aatt, cases *)
                     try destruct r;

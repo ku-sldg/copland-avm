@@ -200,15 +200,15 @@ Inductive Ev: Set :=
 | join: nat -> Plc -> Evidence -> Evidence -> Evidence -> Ev.*)
 
 Inductive Ev: Set :=
-| copy: nat -> (*Plc -> Evidence ->*) Ev
-| kmeas: nat -> ASP_ID -> Plc -> (list Arg) -> (*Evidence -> Evidence ->*) Ev
-| umeas: nat -> ASP_ID -> (*Plc ->*) (list Arg) -> (*Evidence -> Evidence ->*) Ev
-| sign: nat -> (*Plc ->*) (*Evidence -> Evidence ->*) Ev
-| hash: nat -> (*Plc ->*) (*Evidence -> Evidence ->*) Ev
-| req: nat -> (*Plc ->*) Plc -> (*Evidence*) Term -> Ev
-| rpy: nat -> (*Plc ->*) Plc -> (*Evidence ->*) Ev 
-| split: nat -> (*Plc -> Evidence -> Evidence -> Evidence ->*) Ev
-| join:  nat -> (*Plc -> Evidence -> Evidence -> Evidence ->*) Ev.
+| copy: nat -> Plc -> (*Evidence ->*) Ev
+| kmeas: nat -> Plc -> ASP_ID -> Plc -> (list Arg) -> (*Evidence -> Evidence ->*) Ev
+| umeas: nat -> Plc -> ASP_ID -> (*Plc ->*) (list Arg) -> (*Evidence -> Evidence ->*) Ev
+| sign: nat -> Plc -> (*Evidence -> Evidence ->*) Ev
+| hash: nat -> Plc -> (*Evidence -> Evidence ->*) Ev
+| req: nat -> Plc -> Plc -> (*Evidence*) Term -> Ev
+| rpy: nat -> Plc -> Plc -> (*Evidence ->*) Ev 
+| split: nat -> Plc -> (*Evidence -> Evidence -> Evidence ->*) Ev
+| join:  nat -> Plc -> (*Evidence -> Evidence -> Evidence ->*) Ev.
 
 Definition eq_ev_dec:
   forall x y: Ev, {x = y} + {x <> y}.
@@ -222,15 +222,15 @@ Hint Resolve eq_ev_dec.
 
 Definition ev x :=
   match x with
-  | copy i => i
-  | kmeas i _ _ _ => i
-  | umeas i _ _ => i
-  | sign i => i
-  | hash i => i
-  | req i _ _ => i
-  | rpy i _ => i 
-  | split i => i
-  | join i => i
+  | copy i _ => i
+  | kmeas i _ _ _ _ => i
+  | umeas i _ _ _ => i
+  | sign i _ => i
+  | hash i _ => i
+  | req i _ _ _ => i
+  | rpy i _ _ => i 
+  | split i _ => i
+  | join i _ => i
   end.
 
 (** Events are used in a manner that ensures that
@@ -240,13 +240,13 @@ Definition ev x :=
 See Lemma [events_injective].
 *)
 
-Definition asp_event i x (*p e*) :=
+Definition asp_event i x p (*e*) :=
   match x with
-  | CPY => copy i (* p e *)
-  | KIM id q A => kmeas i id q A (*e (eval_asp (KIM id q A) p e)*)
-  | USM id A => umeas i id A (*e (eval_asp (USM id A) p e)*)
-  | SIG => sign i (*e (eval_asp SIG p e)*)
-  | HSH => hash i (*e (eval_asp HSH p e)*)
+  | CPY => copy i p (* e *)
+  | KIM id q A => kmeas i p id q A (*e (eval_asp (KIM id q A) p e)*)
+  | USM id A => umeas i p id A (*e (eval_asp (USM id A) p e)*)
+  | SIG => sign i p (*e (eval_asp SIG p e)*)
+  | HSH => hash i p(*e (eval_asp HSH p e)*)
   end.
 
 (** * Annotated Terms
@@ -357,11 +357,11 @@ Inductive well_formed: AnnoTerm -> Prop :=
 | wf_asp: forall r x,
     snd r = S (fst r) ->
     well_formed (aasp r x)
-(*| wf_att: forall r p x,
+| wf_att: forall r p x,
     well_formed x ->
     S (fst r) = fst (range x) ->
     snd r = S (snd (range x)) ->
-    well_formed (aatt r p x)*)
+    well_formed (aatt r p x)
 | wf_lseq: forall r x y,
     well_formed x -> well_formed y ->
     fst r = fst (range x) ->
@@ -473,102 +473,102 @@ Qed.*)
     evidence. *)
 
 
-Inductive events: AnnoTerm -> (*Plc -> Evidence ->*) Ev -> Prop :=
+Inductive events: AnnoTerm -> Plc -> (*Evidence ->*) Ev -> Prop :=
 | evtscpy:
-    forall r i (*p e*),
+    forall r i p (*e*),
       fst r = i ->
-      events (aasp r CPY) (*p e*) (copy i (*p e*))
+      events (aasp r CPY) p (*e*) (copy i p (*e*))
 | evtskim:
-    forall i id r a q,
+    forall i id r a q p,
       fst r = i ->
       (*kk id a p q e = e' -> *)
-      events (aasp r (KIM id q a)) (*p e*) (kmeas i id q a (*e e'*))
+      events (aasp r (KIM id q a)) p (*e*) (kmeas i p id q a (*e e'*))
 | evtsusm:
-    forall i id r a,
+    forall i id r a p,
       fst r = i ->
       (*uu id a p e = e' ->*)
-      events (aasp r (USM id a)) (*p e*) (umeas i id a (*e e'*))
+      events (aasp r (USM id a)) p (*e*) (umeas i p id a (*e e'*))
 | evtssig:
-    forall r i,
+    forall r i p,
       fst r = i ->
       (*gg p e = e' -> *)
-      events (aasp r SIG) (*p e*) (sign i (*e e'*)) 
+      events (aasp r SIG) p (*e*) (sign i p (*e e'*)) 
 | evtshsh:
-    forall r i,
+    forall r i p,
       fst r = i ->
       (*hh p e = e' -> *)
-      events (aasp r HSH) (*p e*) (hash i (*e e'*))
+      events (aasp r HSH) p (*e*) (hash i p (*e e'*))
 (*
 | evtsattreq:
     forall r q t i,
       fst r = i ->
-      events (aatt r q t) (*p e*) (req i q (unanno t))
+      events (aatt r q t) p (*e*) (req i q (unanno t))
 | evtsatt:
     forall r q t ev,
       events t ev (*q e ev*) ->
-      events (aatt r q t) ev (*p e ev*)
+      events (aatt r q t) ev p (*e ev*)
 | evtsattrpy:
     forall r q t i,
       snd r = S i ->
       (*aeval t q e = e' -> *)
-      events (aatt r q t) (*p e*) (rpy i q (*e'*))
+      events (aatt r q t) p (*e*) (rpy i q (*e'*))
 *)
 | evtslseql:
-    forall r t1 t2 ev,
-      events t1 (*p e*) ev ->
-      events (alseq r t1 t2) (*p e*) ev
+    forall r t1 t2 ev p,
+      events t1 p (*e*) ev ->
+      events (alseq r t1 t2) p (*e*) ev
 | evtslseqr:
-    forall r t1 t2 ev,
-      events t2 (*p (aeval t1 p e)*) ev ->
-      events (alseq r t1 t2) (*p e*) ev
+    forall r t1 t2 ev p,
+      events t2 p (*(aeval t1 p e)*) ev ->
+      events (alseq r t1 t2) p (*e*) ev
 (*
 | evtsbseqsplit:
     forall r i s t1 t2,
       fst r = i ->
-      events (abseq r s t1 t2) (*p e*)
-             (split i (*p e (sp (fst s) e) (sp (snd s) e)*))
+      events (abseq r s t1 t2) p (*e*)
+             (split i p (*e (sp (fst s) e) (sp (snd s) e)*))
 | evtsbseql:
     forall r s t1 t2 ev,
-      events t1 (*p (sp (fst s) e)*) ev ->
-      events (abseq r s t1 t2) (*p e*) ev
+      events t1 p (*(sp (fst s) e)*) ev ->
+      events (abseq r s t1 t2) p (*e*) ev
 | evtsbseqr:
     forall r s t1 t2 ev,
-      events t2 (*p (sp (snd s) e)*) ev ->
-      events (abseq r s t1 t2) (*p e*) ev
+      events t2 p (*(sp (snd s) e)*) ev ->
+      events (abseq r s t1 t2) p (*e*) ev
 | evtsbseqjoin:
     forall r i s t1 t2,
       snd r = S i ->
       (*aeval t1 p (sp (fst s) e) = e1 ->
       aeval t2 p (sp (snd s) e) = e2 -> *)
-      events (abseq r s t1 t2) (*p e*)
-             (join i (*p e1 e2 (ss e1 e2)*))
+      events (abseq r s t1 t2) p (*e*)
+             (join i p (*e1 e2 (ss e1 e2)*))
 
 | evtsbparsplit:
     forall r i s t1 t2,
       fst r = i ->
-      events (abpar r s t1 t2) (*p e*)
-             (split i (*p e (sp (fst s) e) (sp (snd s) e)*))
+      events (abpar r s t1 t2) p (*e*)
+             (split i p (*e (sp (fst s) e) (sp (snd s) e)*))
 | evtsbparl:
     forall r s t1 t2 ev,
-      events t1 (*p (sp (fst s) e)*) ev ->
-      events (abpar r s t1 t2) (*p e*) ev
+      events t1 p (*(sp (fst s) e)*) ev ->
+      events (abpar r s t1 t2) p (*e*) ev
 | evtsbparr:
     forall r s t1 t2 ev,
-      events t2 (*p (sp (snd s) e)*) ev ->
-      events (abpar r s t1 t2) (*p e*) ev
+      events t2 p (*(sp (snd s) e)*) ev ->
+      events (abpar r s t1 t2) p (*e*) ev
 | evtsbparjoin:
     forall r i s t1 t2,
       snd r = S i ->
       (*aeval t1 p (sp (fst s) e) = e1 ->
       aeval t2 p (sp (snd s) e) = e2 ->*)
-      events (abpar r s t1 t2) (*p e*)
-             (join i (*p e1 e2 (pp e1 e2)*))*).
+      events (abpar r s t1 t2) p (*e*)
+             (join i p (*e1 e2 (pp e1 e2)*))*).
 Hint Constructors events.
 
 Lemma events_range:
-  forall t v,
+  forall t v p,
     well_formed t ->
-    events t (*p e*) v ->
+    events t p (*e*) v ->
     fst (range t) <= ev v < snd (range t).
 Proof.
   (*
@@ -656,10 +656,10 @@ Qed.
 (** Properties of events. *)
 
 Lemma events_range_event:
-  forall t i,
+  forall t i p,
     well_formed t ->
     fst (range t) <= i < snd (range t) ->
-    exists v, events t v /\ ev v = i.
+    exists v, events t p v /\ ev v = i.
 Proof.  (*
   intros t i H; revert i;
   induction H; intros; simpl in *.
@@ -724,10 +724,10 @@ Ltac events_event_range :=
          end; omega.
 
 Lemma events_injective:
-  forall t v1 v2,
+  forall t v1 v2 p,
     well_formed t ->
-    events t v1 ->
-    events t v2 ->
+    events t p v1 ->
+    events t p v2 ->
     ev v1 = ev v2 ->
     v1 = v2.
 Proof.

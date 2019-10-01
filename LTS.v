@@ -63,14 +63,14 @@ Inductive step: St -> option Ev -> St -> Prop :=
 | stasp:
     forall r x p e,
       step (conf (aasp r x) p e)
-           (Some (asp_event (fst r) x))
+           (Some (asp_event (fst r) x p))
            (stop p (aeval (aasp r x) p e))
 (** Remote call *)
 
 | statt:
     forall r x p q e,
       step (conf (aatt r q x) p e)
-           (Some (req (fst r) q (unanno x)))
+           (Some (req (fst r) p q (unanno x)))
            (rem (snd r) p (conf x q e))
 | stattstep:
     forall st0 ev st1 p j,
@@ -79,7 +79,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
 | stattstop:
     forall j p q e,
       step (rem j p (stop q e))
-           (Some (rpy (pred j) q))
+           (Some (rpy (pred j) p q))
            (stop p e)
 (** Linear Sequential Composition *)
 
@@ -100,7 +100,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
 | stbseq:
     forall r s x y p e,
       step (conf (abseq r s x y) p e)
-           (Some (split (fst r)))
+           (Some (split (fst r) p))
            (bsl (snd r) (conf x p (sp (fst s) e))
                 y p (sp (snd s) e))
 | stbslstep:
@@ -119,7 +119,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
 | stbsrstop:
     forall j e p e',
       step (bsr j e (stop p e'))
-           (Some (join (pred j)))
+           (Some (join (pred j) p))
            (stop p (ss e e'))
            (*
 (** Branching Parallel composition *)
@@ -127,7 +127,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
 | stbpar:
     forall r s x y p e,
       step (conf (abpar r s x y) p e)
-           (Some (split (fst r)))
+           (Some (split (fst r) p))
            (bp (snd r)
                (conf x p (sp (fst s) e))
                (conf y p (sp (snd s) e)))
@@ -142,8 +142,8 @@ Inductive step: St -> option Ev -> St -> Prop :=
 | stbpstop:
     forall j p e p' e',
       step (bp j (stop p e) (stop p' e'))
-           (Some (join (pred j)))
-           (stop p' (pp e e'))*) .
+           (Some (join (pred j) p))
+           (stop p' (pp e e'))*) .  (* TODO: p' above? *)
 Hint Constructors step.
 
 (** A step preserves place. *)

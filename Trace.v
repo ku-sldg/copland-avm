@@ -241,27 +241,27 @@ Qed.
     The traces associated with an annotated term are defined
     inductively. *)
 
-Inductive trace: AnnoTerm ->
+Inductive trace: AnnoTerm -> Plc ->
                  list Ev -> Prop :=
-| tasp: forall r x,
-    trace (aasp r x) [(asp_event (fst r) x)]
-(*| tatt: forall r x q tr1,
-    trace x tr1 ->
-    trace (aatt r q x)
-          ((req (fst r) q (unanno x))
+| tasp: forall r x p,
+    trace (aasp r x) p [(asp_event (fst r) x p)]
+| tatt: forall r x q tr1 p,
+    trace x q tr1 ->
+    trace (aatt r q x) p
+          ((req (fst r) p q (unanno x))
              :: tr1 ++
-             [(rpy (pred (snd r)) q)]) *)
-| tlseq: forall r x y tr0 tr1,
-    trace x tr0 ->
-    trace y tr1 ->
-    trace (alseq r x y) (tr0 ++ tr1)
-(*| tbseq: forall r s x y tr0 tr1,
-    trace x tr0 ->
-    trace y tr1 ->
-    trace (abseq r s x y)
-          ((split (fst r))
+             [(rpy (pred (snd r)) p q)])
+| tlseq: forall r x y tr0 tr1 p,
+    trace x p tr0 ->
+    trace y p tr1 ->
+    trace (alseq r x y) p (tr0 ++ tr1)
+| tbseq: forall r s x y tr0 tr1 p,
+    trace x p tr0 ->
+    trace y p tr1 ->
+    trace (abseq r s x y) p
+          ((split (fst r) p)
              :: tr0 ++ tr1 ++
-             [(join (pred (snd r)) )])
+             [(join (pred (snd r)) p )]) (*
 | tbpar: forall r s x y tr0 tr1 tr2,
     trace x tr0 ->
     trace y tr1 ->
@@ -273,8 +273,8 @@ Inductive trace: AnnoTerm ->
 Hint Resolve tasp.
 
 Lemma trace_length:
-  forall t tr,
-    trace t tr -> esize t = length tr.
+  forall t tr p,
+    trace t p tr -> esize t = length tr.
 Proof.
   induction t; intros; inv H;
     simpl; auto; rewrite app_length; simpl; auto.
@@ -286,16 +286,16 @@ Proof.
   - apply IHt1 in H5.
     apply IHt2 in H6.
     apply shuffle_length in H7. omega. *)
-Qed.
+Admitted.
 
 (** The events in a trace correspond to the events associated with an
     annotated term, a place, and some evidence. *)
 
 Lemma trace_events:
-  forall t tr v,
+  forall t tr v p,
     well_formed t ->
-    trace t tr ->
-    In v tr <-> events t v.
+    trace t p tr ->
+    In v tr <-> events t p v.
 Proof.
   (*
   split; intros.
@@ -364,9 +364,9 @@ Admitted.
 
 
 Lemma trace_range:
-  forall t tr v,
+  forall t tr v p,
     well_formed t ->
-    trace t tr ->
+    trace t p tr ->
     In v tr ->
     fst (range t) <= ev v < snd (range t).
 Proof.
@@ -376,9 +376,9 @@ Proof.
 Qed.
 
 Lemma trace_range_event:
-  forall t tr i,
+  forall t tr i p,
     well_formed t ->
-    trace t tr ->
+    trace t p tr ->
     fst (range t) <= i < snd (range t) ->
     exists v, In v tr /\ ev v = i.
 Proof.
@@ -389,9 +389,9 @@ Proof.
 Qed.
 
 Lemma trace_injective_events:
-  forall t tr v0 v1,
+  forall t tr v0 v1 p,
     well_formed t ->
-    trace t tr ->
+    trace t p tr ->
     In v0 tr -> In v1 tr ->
     ev v0 = ev v1 ->
     v0 = v1.
@@ -403,9 +403,9 @@ Proof.
 Qed.
 
 Lemma nodup_trace:
-  forall t tr,
+  forall t tr p,
     well_formed t ->
-    trace t tr ->
+    trace t p tr ->
     NoDup tr.
 Proof.
   (*
@@ -526,10 +526,10 @@ Admitted.
 (** * Event Systems and Traces *)
 
 Lemma evsys_tr_in:
-  forall t tr ev0,
+  forall t tr ev0 p,
     well_formed t ->
-    trace t tr ->
-    ev_in ev0 (ev_sys t) ->
+    trace t p tr ->
+    ev_in ev0 (ev_sys t p) ->
     In ev0 tr.
 Proof.
   (*
@@ -576,10 +576,10 @@ Admitted.
     its event system. *)
 
 Theorem trace_order:
-  forall t tr ev0 ev1,
+  forall t tr ev0 ev1 p,
     well_formed t ->
-    trace t tr ->
-    prec (ev_sys t) ev0 ev1 ->
+    trace t p tr ->
+    prec (ev_sys t p) ev0 ev1 ->
     earlier tr ev0 ev1.
 Proof.
   (*
