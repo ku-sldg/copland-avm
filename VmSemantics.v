@@ -762,7 +762,34 @@ Admitted.
   eapply lstar_tran; eauto.
   econstructor 3.
 Qed.
+ *)
+
+Lemma lstar_stbsr:
+  forall st0 st1 j e tr,
+    lstar st0 tr st1 ->
+    lstar (bsr j e st0) tr (bsr j e st1).
+Proof.
+Admitted.
+(*
+  intros.
+  induction H; auto.
+  eapply star_tran; eauto.
+Qed.
 *)
+
+(*
+Lemma star_stbp:
+  forall st0 st1 st2 st3 j,
+    star st0 st1 ->
+    star st2 st3 ->
+    star (bp j st0 st2) (bp j st1 st3).
+Proof.
+  intros.
+  induction H; auto.
+  - induction H0; auto.
+    eapply star_tran; eauto.
+  - eapply star_tran; eauto.
+Qed.*)
 
 
 Lemma put_ev_after_immut_stack{A:Type} : forall s (h:VM A) e,
@@ -1546,6 +1573,18 @@ Defined.
 
 
 
+Lemma st_stack_restore : forall t e s tr,
+    st_stack
+      (run_vm (instr_compiler t)
+              {| st_ev := e;
+                 st_stack := s;
+                 st_trace := tr |}) = s.
+Proof.
+  intros.
+  erewrite multi_stack_restore.
+  reflexivity.
+  eapply ya.
+Defined.
 
 
 
@@ -1633,18 +1672,78 @@ Proof.
     eapply lstar_stbsl.
     eapply IHt1; eauto.
     eapply st_congr; try reflexivity.
-    Check multi_stack_restore.
-    Lemma st_stack_restore : forall t e s tr,
-      st_stack
-        (run_vm (instr_compiler t)
-       {|
-       st_ev := e;
-       st_stack := s;
-       st_trace := tr |}) = s.
-    Proof.
-    Admitted.
+
 
     eapply st_stack_restore.
+    simpl.
+    econstructor 3.
+    apply stbslstop.
+
+    Print do_run.
+    unfoldm. unfoldm.
+    remember (pop_stackm {| st_ev := H; st_stack := H0; st_trace := x |}) as q.
+    destruct q; destruct o; bogus.
+    remember (push_stackm H v) as q.
+    destruct q; destruct o; bogus.
+    vmsts.
+    edestruct destruct_compiled_appended; eauto.
+    destruct_conjs.
+    do_pop_stackm_facts.
+    edestruct push_stackm_facts; eauto. clear Heqq0.
+    destruct_conjs.
+    subst.
+    clear H1.
+    clear H4.
+    monad_unfold. monad_unfold.
+    do_stack t1 t2.
+    inv H11.
+    unfold run_vm_step in H4. monad_unfold.
+    pairs.
+    invc H4.
+    simpl in H12.
+    fold run_vm_step in H12.
+    Check run_vm.
+    assert ( (fold_left
+                             (fun (a : vm_st) (b : AnnoInstr) =>
+                              snd (build_comp b a)) 
+                             (instr_compiler t1)
+                             {|
+                             st_ev := splitEv s e;
+                             st_stack := push_stack EvidenceC 
+                                           (splitEv s1 e) s0;
+                             st_trace := [] |}) =
+             run_vm (instr_compiler t1) {|
+                             st_ev := splitEv s e;
+                             st_stack := push_stack EvidenceC 
+                                           (splitEv s1 e) s0;
+                             st_trace := [] |}).
+    auto.
+    rewrite H0 in *.
+    clear H0.
+    rewrite <- H6 in H12.
+    eapply lstar_tran.
+    do_push_stackm_facts.
+    unfold run_vm in H4.
+    unfold run_vm_step in H4. simpl in H4. monad_unfold. fold run_vm_step in H4.
+    
+    desp.
+    unfold run_vm_step in H4. fold run_vm_step in H4. monad_unfold.
+    unfold run_vm_step in H4. fold run_vm_step in H4. monad_unfold.
+    unfold get_ev in H4. monad_unfold.
+    Print desp.
+    expand_let_pairs.
+    Print desp.
+    desp.
+    
+    si
+    desp.
+    unfold run_vm_step in H4. fold run_vm_step in H4. monad_unfold.
+    
+
+    
+    simpl in *.
+
+    
     
     
     eapply lstar_transitive.
