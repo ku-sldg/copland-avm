@@ -60,7 +60,7 @@ Definition Split: Set := (SP * SP).
 
 Inductive Term: Set :=
 | asp: ASP -> Term
-(*| att: Plc -> Term -> Term*)
+| att: Plc -> Term -> Term
 | lseq: Term -> Term -> Term
                         
 | bseq: Split -> Term -> Term -> Term (*
@@ -167,7 +167,7 @@ Fixpoint typeof_asp t p e :=
 Fixpoint typeof (t:Term) (p:Plc) (e:Evidence) : Evidence :=
   match t with
   | asp a => typeof_asp a p e
-  (*| att q t1 => typeof t1 q e*)
+  | att q t1 => typeof t1 q e
   | lseq t1 t2 => typeof t2 p (typeof t1 p e)
   | bseq s t1 t2 => ss (typeof t1 p (sp (fst s) e))
                        (typeof t2 p (sp (snd s) e)) (*
@@ -205,8 +205,8 @@ Inductive Ev: Set :=
 | umeas: nat -> ASP_ID -> (*Plc ->*) (list Arg) -> (*Evidence -> Evidence ->*) Ev
 | sign: nat -> (*Plc ->*) (*Evidence -> Evidence ->*) Ev
 | hash: nat -> (*Plc ->*) (*Evidence -> Evidence ->*) Ev
-(*| req: nat -> (*Plc ->*) Plc -> (*Evidence*) Term -> Ev
-| rpy: nat -> (*Plc ->*) Plc -> (*Evidence ->*) Ev *)
+| req: nat -> (*Plc ->*) Plc -> (*Evidence*) Term -> Ev
+| rpy: nat -> (*Plc ->*) Plc -> (*Evidence ->*) Ev 
 | split: nat -> (*Plc -> Evidence -> Evidence -> Evidence ->*) Ev
 | join:  nat -> (*Plc -> Evidence -> Evidence -> Evidence ->*) Ev.
 
@@ -227,8 +227,8 @@ Definition ev x :=
   | umeas i _ _ => i
   | sign i => i
   | hash i => i
-  (*| req i _ _ => i
-  | rpy i _ => i *)
+  | req i _ _ => i
+  | rpy i _ => i 
   | split i => i
   | join i => i
   end.
@@ -270,7 +270,7 @@ Inductive AnnASP: Set :=
 
 Inductive AnnoTerm: Set :=
 | aasp: Range -> ASP -> AnnoTerm
-(*| aatt: Range -> Plc -> AnnoTerm -> AnnoTerm*)
+| aatt: Range -> Plc -> AnnoTerm -> AnnoTerm
 | alseq: Range -> AnnoTerm -> AnnoTerm -> AnnoTerm
 | abseq: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm (*
 | abpar: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm*).
@@ -284,7 +284,7 @@ remote calls add a request and receive to the events of their subterm.
 Fixpoint esize t :=
   match t with
   | aasp _ _ => 1
-  (*| aatt _ _ t1 => 2 + esize t1*)
+  | aatt _ _ t1 => 2 + esize t1
   | alseq _ t1 t2 => esize t1 + esize t2
   | abseq _ _ t1 t2 => 2 + esize t1 + esize t2(*
   | abpar _ _ t1 t2 => 2 + esize t1 + esize t2*)
@@ -293,7 +293,7 @@ Fixpoint esize t :=
 Definition range x :=
   match x with
   | aasp r _ => r
-  (*| aatt r _ _ => r*)
+  | aatt r _ _ => r
   | alseq r _ _ => r
   | abseq r _ _ _ => r (*
   | abpar r _ _ _ => r*)
@@ -306,9 +306,9 @@ Definition range x :=
 Fixpoint anno (t: Term) i: nat * AnnoTerm :=
   match t with
   | asp x => (S i, aasp (i, S i) x)
-  (*| att p x =>
+  | att p x =>
     let (j, a) := anno x (S i) in
-    (S j, aatt (i, S j) p a)*)
+    (S j, aatt (i, S j) p a)
   | lseq x y =>
     let (j, a) := anno x i in
     let (k, b) := anno y j in
@@ -340,7 +340,7 @@ Definition annotated x :=
 Fixpoint unanno a :=
   match a with
   | aasp _ a => asp a
-  (*| aatt _ p t => att p (unanno t)*)
+  | aatt _ p t => att p (unanno t)
   | alseq _ a1 a2 => lseq (unanno a1) (unanno a2)
                          
   | abseq _ spl a1 a2 => bseq spl (unanno a1) (unanno a2) (*
@@ -437,7 +437,7 @@ Admitted.
 Fixpoint aeval t p e :=
   match t with
   | aasp _ x => typeof (asp x) p e
-  (*| aatt _ q x => aeval x q e*)
+  | aatt _ q x => aeval x q e
   | alseq _ t1 t2 => aeval t2 p (aeval t1 p e)
   | abseq _ s t1 t2 => ss (aeval t1 p ((sp (fst s)) e))
                           (aeval t2 p ((sp (snd s)) e)) (*
@@ -821,7 +821,7 @@ Definition eval_asp (a:ASP) (e:EvidenceC) : EvidenceC :=
 Fixpoint eval (t:Term) (e:EvidenceC) : EvidenceC :=
   match t with
   | asp a => eval_asp a e
-  (*| att q t1 => toRemote t1 q e *)
+  | att q t1 => toRemote t1 q e
   | lseq t1 t2 =>
     let e1 := eval t1 e in
     eval t2 e1

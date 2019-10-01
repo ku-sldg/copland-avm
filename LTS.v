@@ -21,7 +21,7 @@ Require Import Omega Preamble Term.
 Inductive St: Set :=
 | stop: Plc -> Evidence -> St
 | conf: AnnoTerm -> Plc -> Evidence -> St
-(*| rem: Plc -> Plc -> St -> St *)
+| rem: Plc -> Plc -> St -> St
 | ls: St -> AnnoTerm -> St
 | bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
 | bsr: nat -> Evidence -> St -> St (*
@@ -31,7 +31,7 @@ Fixpoint pl (s:St) :=
   match s with
   | stop p _ => p
   | conf _ p _ => p
-  (*| rem _ p _ => p*)
+  | rem _ p _ => p
   | ls st _ => pl st
   | bsl _ _ _ p _ => p
   | bsr _ _ st => pl st (*
@@ -44,7 +44,7 @@ Fixpoint seval st :=
   match st with
   | stop _ e => e
   | conf t p e => aeval t p e
-  (*| rem _ _ st => seval st*)
+  | rem _ _ st => seval st
   | ls st t => aeval t (pl st) (seval st)
   | bsl _ st t p e => ss (seval st) (aeval t p e)
   | bsr _ e st => ss e (seval st) (*
@@ -67,7 +67,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
            (stop p (aeval (aasp r x) p e))
 (** Remote call *)
 
-(*| statt:
+| statt:
     forall r x p q e,
       step (conf (aatt r q x) p e)
            (Some (req (fst r) q (unanno x)))
@@ -80,7 +80,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
     forall j p q e,
       step (rem j p (stop q e))
            (Some (rpy (pred j) q))
-           (stop p e) *)
+           (stop p e)
 (** Linear Sequential Composition *)
 
 | stlseq:
@@ -483,7 +483,7 @@ Qed.
 Fixpoint tsize t: nat :=
   match t with
   | aasp _ _ => 1
-  (*| aatt _ _ x => 2 + tsize x *)
+  | aatt _ _ x => 2 + tsize x 
   | alseq _ x y => 2 + tsize x + tsize y
   | abseq _ _ x y => 3 + tsize x + tsize y (*
   | abpar _ _ x y => 2 + tsize x + tsize y *)
@@ -495,7 +495,7 @@ Fixpoint ssize s: nat :=
   match s with
   | stop _ _ => 0
   | conf t _ _ => tsize t
-  (*| rem _ _ x => 1 + ssize x *)
+  | rem _ _ x => 1 + ssize x
   | ls x t => 1 + ssize x + tsize t
   | bsl _ x t _ _ => 2 + ssize x + tsize t
   | bsr _ _ x => 1 + ssize x (*

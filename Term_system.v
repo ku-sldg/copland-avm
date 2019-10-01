@@ -19,12 +19,12 @@ Require Import Omega Preamble More_lists Term Event_system.
 Fixpoint ev_sys (t: AnnoTerm) : EvSys Ev :=
   match t with
   | aasp (i, j) x => leaf (i, j) (asp_event i x)
-(*  | aatt (i, j) q x =>
+  | aatt (i, j) q x =>
     before (i, j)
       (leaf (i, S i) (req i q (unanno x)))
       (before (S i, j)
               (ev_sys x)
-              (leaf (pred j, j) (rpy (pred j) q))) *)
+              (leaf (pred j, j) (rpy (pred j) q)))
   | alseq r x y => before r (ev_sys x)
                           (ev_sys y)
   | abseq (i, j) s x y =>

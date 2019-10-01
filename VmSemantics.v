@@ -83,7 +83,7 @@ Definition build_comp (*(s:ev_stack)*) (i:AnnoInstr): VM unit :=
       er <- pop_stackm ;;
       push_stackm e ;;
       put_ev er
-      (*
+      
   | areqrpy rg q annt =>
     e <- get_ev ;;
       put_ev (toRemote (unanno annt) q e) ;;
@@ -91,7 +91,7 @@ Definition build_comp (*(s:ev_stack)*) (i:AnnoInstr): VM unit :=
       let rpyi := Nat.pred rpyi_last in
       let newTrace :=
           [req reqi q (unanno annt)] ++ (remote_events annt) ++ [rpy rpyi q] in
-      add_tracem newTrace
+      add_tracem newTrace (*
   | abep rg1 rg2 il1 il2 =>
     e <- get_ev ;;
       er <- pop_stackm ;;
@@ -155,7 +155,8 @@ Proof.
   -
     simpl; destruct a;
       try
-        (try destruct p; 
+        (try destruct p;
+         try destruct r;
          unfold run_vm_step;
          monad_unfold;
          eapply IHil1;
@@ -462,7 +463,8 @@ Proof.
   -
     simpl; destruct a;
       try
-        (try destruct p; 
+        (try destruct p;
+         try destruct r;
          unfold run_vm_step;
          monad_unfold;
          eapply IHil1;
@@ -484,7 +486,8 @@ Lemma foo : forall il m e s,
 Proof.
   induction il; simpl; intros m e s.
   - rewrite app_nil_r. auto.
-  - destruct a; try ( (* prim and asplit cases *)
+  - destruct a; try ( (* prim, asplit aatt, cases *)
+                    try destruct r;
     
     unfold run_vm_step; fold run_vm_step; monad_unfold;
     
@@ -578,11 +581,10 @@ Proof.
   intros.
   induction t.
   - destruct a; simpl; congruence.
+  - simpl. congruence. 
   - simpl.
     Search (_ <> []).
-    destruct (instr_compiler t1).
-    +  simpl. auto.
-    + simpl. congruence.
+    destruct (instr_compiler t1); simpl; congruence.
   - simpl. destruct s. congruence.
 Defined.
 
@@ -596,7 +598,7 @@ Proof.
   eapply lstar_silent_tran; eauto.
 Qed.
 
-(*
+
 Lemma lstar_strem : forall st st' tr p r,
     lstar st tr
           st' ->
@@ -607,7 +609,6 @@ Proof.
   eapply lstar_tran; eauto.
   eapply lstar_silent_tran; eauto.
 Defined.
- *)
 
 Lemma lstar_stbsl:
   forall st0 st1 j t p e tr,
@@ -973,6 +974,61 @@ Proof.
       subst.
       rewrite IHil1.
       auto.
+    + (* areqrpy case *)
+      destruct r.
+      unfold run_vm_step. fold run_vm_step.
+      monad_unfold.
+      rewrite foo.
+      rewrite <- app_assoc.
+      rewrite IHil1.
+      simpl.
+
+      assert (
+          {|
+       st_ev := st_ev
+                  (fold_left run_vm_step il1
+                     {|
+                     st_ev := toRemote (unanno a) n e;
+                     st_stack := s;
+                     st_trace := [] |});
+       st_stack := st_stack
+                     (fold_left run_vm_step il1
+                        {|
+                        st_ev := toRemote (unanno a) n e;
+                        st_stack := s;
+                        st_trace := [] |});
+       st_trace := [] |} =
+
+          {|
+          st_ev := st_ev
+                     (fold_left run_vm_step il1
+                        {|
+                        st_ev := toRemote (unanno a) n e;
+                        st_stack := s;
+                        st_trace := req n0 n (unanno a)
+                                    :: remote_events a ++
+                                       [rpy (Nat.pred n1) n] |});
+          st_stack := st_stack
+                        (fold_left run_vm_step il1
+                           {|
+                           st_ev := toRemote (unanno a) n e;
+                           st_stack := s;
+                           st_trace := req n0 n (unanno a)
+                                    :: remote_events a ++
+                                       [rpy (Nat.pred n1) n] |});
+          st_trace := [] |}). {
+        eapply st_congr; simpl.
+      erewrite trace_irrel. reflexivity.
+      rewrite <- ya.
+      reflexivity.
+      Check stack_irrel.
+      erewrite stack_irrel. reflexivity.
+      erewrite <- ya. reflexivity.
+      reflexivity. }
+      
+      rewrite H.    
+      rewrite <- app_assoc.
+      auto.      
 Defined.
 
 (*
@@ -1248,6 +1304,12 @@ Proof.
   - (* asp_instr case *)
     destruct a;
       inv H; try reflexivity.
+
+
+  - (* aatt case *)
+    destruct r.
+    inv H.
+    auto.
   - (* alseq case *)
     edestruct destruct_compiled_appended; eauto.
       destruct_conjs.
@@ -1371,6 +1433,14 @@ Proof.
   induction t; intros.
   - (* aasp case *)
     destruct a; inv H; reflexivity.
+  - (* aatt case *)
+    simpl in *.
+    destruct r.
+    unfoldm.
+    invc H.
+    auto.
+    
+    
   - (* lseq case *)
     simpl in *.
     edestruct destruct_compiled_appended; eauto.
@@ -1636,6 +1706,22 @@ Proof.
         econstructor; try (econstructor; reflexivity).
       (*haa;
       econstructor.*)
+  - (* aatt case *)
+    simpl in *.
+    destruct r.
+    unfoldm.
+    invc H.
+    eapply lstar_tran.
+    econstructor.
+    simpl.
+    eapply lstar_transitive.
+    eapply lstar_strem.
+    eapply IHt; eauto.
+    admit. (* TODO: proper axiom *)
+    econstructor.
+    apply stattstop.
+    econstructor.
+    
   - (* alseq case *)
     simpl in *.
     econstructor.
@@ -1712,6 +1798,7 @@ Proof.
      eapply lstar_tran.
      apply stbsrstop.
      econstructor.
+     Unshelve. eauto. eauto. eauto.
      
     (* 
      desp.
@@ -1868,7 +1955,7 @@ Proof.
     eapply lstar_transitive.
     econstructor. econstructor.
     do_run. *)   
-Defined.
+Admitted.
   
 
 (*

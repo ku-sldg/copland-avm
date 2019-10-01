@@ -57,7 +57,7 @@ Fixpoint esizeS s:=
   match s with
   | stop _ _ => 0
   | conf t _ _ => esize t
-  (*| rem _ _ st => 1 + esizeS st *)
+  | rem _ _ st => 1 + esizeS st
   | ls st t => esizeS st + esize t
   | bsl _ st t _ _ => 1 + esizeS st + esize t
   | bsr _ _ st => 1 + esizeS st (*
