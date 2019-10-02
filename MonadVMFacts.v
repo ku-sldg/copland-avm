@@ -73,22 +73,22 @@ Proof.
   inv H.
 Defined.
 
-Lemma double_pop : forall e e' e0 e1 st_ev st_ev0 st_stack st_stack0
+Lemma double_pop : forall e e' e0 e1 p p' p2 p2' st_ev st_ev0 st_stack st_stack0
                      st_trace st_trace' st_trace0 st_trace0' s,
     (Some e1,
-     {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace |}) =
-    pop_stackm {| st_ev := e'; st_stack := s; st_trace := st_trace' |} ->
+     {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace; st_pl := p' |}) =
+    pop_stackm {| st_ev := e'; st_stack := s; st_trace := st_trace'; st_pl := p |} ->
     
     (Some e0,
-     {| st_ev := st_ev0; st_stack := st_stack0; st_trace := st_trace0 |}) =
-    pop_stackm {| st_ev := e; st_stack := s; st_trace := st_trace0' |} ->
+     {| st_ev := st_ev0; st_stack := st_stack0; st_trace := st_trace0; st_pl := p2' |}) =
+    pop_stackm {| st_ev := e; st_stack := s; st_trace := st_trace0'; st_pl := p2 |} ->
 
     (st_stack0 = st_stack /\ e0 = e1).
 Proof.
   intros.
   unfold pop_stackm in *. monad_unfold.
-  remember (pop_stack EvidenceC s) as p.
-  destruct p. destruct p.
+  remember (pop_stack EvidenceC s) as pp.
+  destruct pp. destruct p0.
   invc H. invc H0.
   split; eauto.
   monad_unfold.
@@ -98,11 +98,11 @@ Defined.
 Ltac do_double_pop :=
   match goal with
   | [H: (Some ?e1,
-         {| st_ev := ?st_ev; st_stack := ?st_stack; st_trace := ?st_trace |}) =
-        pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?trx |},
+         {| st_ev := _; st_stack := ?st_stack; st_trace := _; st_pl := _ |}) =
+        pop_stackm {| st_ev := _; st_stack := ?s; st_trace := _; st_pl := _ |},
         G:  (Some ?e0,
-             {| st_ev := ?st_ev0; st_stack := ?st_stack0; st_trace := ?st_trace0 |}) =
-            pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} |- _ ] =>
+             {| st_ev := _; st_stack := ?st_stack0; st_trace := _; st_pl := _ |}) =
+            pop_stackm {| st_ev := _; st_stack := ?s; st_trace := _; st_pl := _ |} |- _ ] =>
     assert (st_stack0 = st_stack /\ e0 = e1) by (eapply double_pop; eauto)
   end; destruct_conjs.
 
@@ -110,19 +110,19 @@ Lemma double_pop_none :
   forall (e e' st_ev st_ev0 : EvidenceC)
     (st_stack st_stack0 : ev_stack)
     (st_trace st_trace' st_trace0 st_trace0' : list Ev) 
-    (s : ev_stack),
+    (s : ev_stack) p p' p2 p2',
     (None,
-     {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace |}) =
-    pop_stackm {| st_ev := e'; st_stack := s; st_trace := st_trace' |} ->
+     {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace; st_pl := p' |}) =
+    pop_stackm {| st_ev := e'; st_stack := s; st_trace := st_trace'; st_pl := p |} ->
     (None,
-     {| st_ev := st_ev0; st_stack := st_stack0; st_trace := st_trace0 |}) =
-    pop_stackm {| st_ev := e; st_stack := s; st_trace := st_trace0' |} ->
+     {| st_ev := st_ev0; st_stack := st_stack0; st_trace := st_trace0; st_pl := p2' |}) =
+    pop_stackm {| st_ev := e; st_stack := s; st_trace := st_trace0'; st_pl := p2 |} ->
     st_stack0 = st_stack.
 Proof.
   intros.
   unfold pop_stackm in *. monad_unfold.
-  remember (pop_stack EvidenceC s) as p.
-  destruct p. destruct p.
+  remember (pop_stack EvidenceC s) as pp.
+  destruct pp. destruct p0.
   invc H. invc H0.
   monad_unfold. invc H.
   auto.
@@ -131,11 +131,11 @@ Defined.
 Ltac do_double_pop_none :=
   match goal with
   | [H: (None,
-         {| st_ev := ?st_ev; st_stack := ?st_stack; st_trace := ?st_trace |}) =
-        pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?trx |},
+         {| st_ev := ?st_ev; st_stack := ?st_stack; st_trace := ?st_trace; st_pl := _ |}) =
+        pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?trx; st_pl := _ |},
         G:  (None,
-             {| st_ev := ?st_ev0; st_stack := ?st_stack0; st_trace := ?st_trace0 |}) =
-            pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} |- _ ] =>
+             {| st_ev := ?st_ev0; st_stack := ?st_stack0; st_trace := ?st_trace0; st_pl := _ |}) =
+            pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m; st_pl := _ |} |- _ ] =>
     assert (st_stack0 = st_stack) by (eapply double_pop_none; eauto)
   end; destruct_conjs.
 
@@ -154,10 +154,10 @@ Ltac try_pop_all :=
   subst; 
   eauto.
 
-Lemma push_stackm_pure : forall o e st_ev st_ev0 st_stack st_stack0 st_trace st_trace0,
-    (o, {| st_ev := st_ev0; st_stack := st_stack0; st_trace := st_trace0 |}) =
+Lemma push_stackm_pure : forall o e st_ev st_ev0 st_stack st_stack0 st_trace st_trace0 p p',
+    (o, {| st_ev := st_ev0; st_stack := st_stack0; st_trace := st_trace0; st_pl := p' |}) =
     push_stackm e
-                {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace |} ->
+                {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace; st_pl := p |} ->
     st_trace0 = st_trace /\ st_ev = st_ev0.
 Proof.
   intros.
@@ -169,44 +169,44 @@ Proof.
   - unfold push_stackm in *. monad_unfold. inv H.
 Defined.
 
-Lemma pop_stackm_pure : forall o st_ev st_ev0 st_stack st_stack0 st_trace st_trace0,
-    (o, {| st_ev := st_ev0; st_stack := st_stack0; st_trace := st_trace0 |}) =
-    pop_stackm {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace |} ->
+Lemma pop_stackm_pure : forall o st_ev st_ev0 st_stack st_stack0 st_trace st_trace0 p p',
+    (o, {| st_ev := st_ev0; st_stack := st_stack0; st_trace := st_trace0; st_pl := p' |}) =
+    pop_stackm {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace; st_pl := p |} ->
     st_trace0 = st_trace /\ st_ev = st_ev0.
 Proof.
   intros.
     destruct o.
   - unfold pop_stackm in *. monad_unfold.
-    remember (pop_stack EvidenceC st_stack) as p.
-    destruct p. destruct p. invc H.
+    remember (pop_stack EvidenceC st_stack) as pp.
+    destruct pp. destruct p0. invc H.
     split; eauto.
     monad_unfold. inv H.
   - unfold pop_stackm in *. monad_unfold.
-    remember (pop_stack EvidenceC st_stack) as p.
-    destruct p. destruct p. invc H. monad_unfold.
+    remember (pop_stack EvidenceC st_stack) as pp.
+    destruct pp. destruct p0. invc H. monad_unfold.
     inv H.
     split; eauto.
 Defined.
 
-Lemma pop_stackm_determ_none : forall e0' e e' e2 e2' s s' s2' tr tr' tr2 tr2',
-    (Some e0', {| st_ev := e'; st_stack := s'; st_trace := tr' |}) =
-    pop_stackm {| st_ev := e; st_stack := s; st_trace := tr |} ->
-    (None, {| st_ev := e2'; st_stack := s2'; st_trace := tr2' |}) =
-    pop_stackm {| st_ev := e2; st_stack := s; st_trace := tr2 |} ->
+Lemma pop_stackm_determ_none : forall e0' e e' e2 e2' s s' s2' tr tr' tr2 tr2' p p' p2 p2',
+    (Some e0', {| st_ev := e'; st_stack := s'; st_trace := tr'; st_pl := p' |}) =
+    pop_stackm {| st_ev := e; st_stack := s; st_trace := tr; st_pl := p |} ->
+    (None, {| st_ev := e2'; st_stack := s2'; st_trace := tr2'; st_pl := p2' |}) =
+    pop_stackm {| st_ev := e2; st_stack := s; st_trace := tr2; st_pl := p2 |} ->
     False.
 Proof.
     intros.
   unfold pop_stackm in *. monad_unfold.
-  remember (pop_stack EvidenceC s) as p.
-  destruct p. destruct p.
+  remember (pop_stack EvidenceC s) as pp.
+  destruct pp. destruct p0.
   invc H. invc H0.
   monad_unfold. inv H.
 Defined.
 
 Lemma push_stackm_facts : forall st_ev st_ev0 (st_trace:list Ev) (st_trace0:list Ev)
-                            st_stack st_stack0 st_trace st_trace0 H0 u,
-    (Some u, {| st_ev := st_ev0; st_stack := st_stack0; st_trace := st_trace0 |}) =
-    push_stackm H0 {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace |} ->
+                            st_stack st_stack0 st_trace st_trace0 H0 u p p',
+    (Some u, {| st_ev := st_ev0; st_stack := st_stack0; st_trace := st_trace0; st_pl := p' |}) =
+    push_stackm H0 {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace; st_pl := p |} ->
     st_ev = st_ev0 /\ st_trace = st_trace0 /\ st_stack0 = H0 :: st_stack.
 Proof.
   intros.
@@ -295,8 +295,8 @@ Ltac desp :=
   (*expand_let_pairs; *)
   match goal with
   | [ H: context
-           [match pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} (*with _ end*) with |_ => _ end] |- _ ] =>
-    remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as ppp; 
+           [match pop_stackm ?v (*with _ end*) with |_ => _ end] |- _ ] =>
+    remember (pop_stackm v) as ppp; 
     destruct ppp as [o];
     destruct o
 (*  | [ H: context
@@ -304,19 +304,19 @@ Ltac desp :=
     remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as ppp; 
     destruct ppp as [o];
     destruct o *)
-  | |- context [match pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with | _ => _ end] =>
-    remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as ppp; 
+  | |- context [match pop_stackm ?v with | _ => _ end] =>
+    remember (pop_stackm v) as ppp; 
     destruct ppp as [o];
     destruct o        
            
   | [ H: context
-           [match push_stackm _ {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with |_ => _ end] |- _ ] =>
-    remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as ppp; 
+           [match push_stackm ?e' ?v with |_ => _ end] |- _ ] =>
+    remember (push_stackm e' v) as ppp; 
     destruct ppp as [o];
     destruct o
   | |- context
-        [match push_stackm _ {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with |_ => _ end] =>
-    remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as ppp; 
+        [match push_stackm ?e' ?v with |_ => _ end] =>
+    remember (push_stackm e' v) as ppp; 
     destruct ppp as [o];
     destruct o
   end; monad_unfold; vmsts.
@@ -347,17 +347,12 @@ Ltac pairs :=
     | [H: (Some _, _) =
           (Some _, _) |- _ ] => invc H; monad_unfold
                                                           
-    | [H: (None, {| st_ev := _; st_stack := _; st_trace := _|}) =
-          pop_stackm {| st_ev := _; st_stack := _; st_trace := _|} |- _ ] =>
+    | [H: (None, {| st_ev := _; st_stack := _; st_trace := _; st_pl := _|}) =
+          pop_stackm {| st_ev := _; st_stack := _; st_trace := _; st_pl := _|} |- _ ] =>
       edestruct (pop_stackm_fail_facts); eauto; clear H
+                                    (* TODO: simplify record match ^ *)
                                                            
     end; destruct_conjs; monad_unfold.
-
-
-
-
-
-
 
 
 (*

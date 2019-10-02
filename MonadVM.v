@@ -120,7 +120,11 @@ Definition put_ev (e:EvidenceC) : VM unit :=
 
 Definition get_ev : VM EvidenceC :=
   st <- get ;;
-  ret (st_ev st).
+     ret (st_ev st).
+
+Definition get_pl : VM Plc :=
+  st <- get ;;
+  ret (st_pl st).
 
 Definition modify_evm (f:EvidenceC -> EvidenceC) : VM unit :=
   st <- get ;;
@@ -150,6 +154,7 @@ Ltac monad_unfold :=
   (*push_stack,
   pop_stack, *)
   get_ev,
+  get_pl,
   add_tracem,
   modify_evm,
   split_evm,
