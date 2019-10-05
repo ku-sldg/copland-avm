@@ -350,7 +350,10 @@ Ltac pairs :=
     | [H: (None, {| st_ev := _; st_stack := _; st_trace := _; st_pl := _|}) =
           pop_stackm {| st_ev := _; st_stack := _; st_trace := _; st_pl := _|} |- _ ] =>
       edestruct (pop_stackm_fail_facts); eauto; clear H
-                                    (* TODO: simplify record match ^ *)
+                                                      (* TODO: simplify record match ^ *)
+    | [H: {| st_ev := _; st_stack:= _; st_trace := _; st_pl := _ |} =
+          {| st_ev := _; st_stack:= _; st_trace := _; st_pl := _ |} |- _ ] =>
+      invc H; monad_unfold
                                                            
     end; destruct_conjs; monad_unfold.
 
