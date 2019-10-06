@@ -471,14 +471,7 @@ Lemma st_trace_destruct' :
                            {| st_ev := e; st_stack := s; st_trace := [];
                               st_pl := p |}));
                     st_trace := [];
-                    st_pl :=
-                      (*(st_pl
-                         (fold_left run_vm_step il1
-                            {|
-                              st_ev := e;
-                              st_stack := s;
-                              st_trace := [];
-                                 st_pl := p |}))*)p |}).
+                    st_pl := p |}).
 Proof.
   induction il1; try reflexivity; intros.
   - simpl.
@@ -577,30 +570,6 @@ Proof.
       congruence.      
 Defined.
 
-
-(*
-Lemma st_trace_destruct :
-  forall il1 il2 e s,
-    st_trace
-      (fold_left run_vm_step il2
-                 (fold_left run_vm_step il1
-                            {| st_ev := e; st_stack := s; st_trace := [] |})) =
-    st_trace
-      (fold_left run_vm_step il1 
-                 {| st_ev := e; st_stack := s; st_trace := [] |}) ++
-      st_trace
-      (fold_left run_vm_step il2
-                 {| st_ev := st_ev((fold_left run_vm_step il1 
-                 {| st_ev := e; st_stack := s; st_trace := [] |}));
-                    st_stack := st_stack((fold_left run_vm_step il1 
-                 {| st_ev := e; st_stack := s; st_trace := [] |}));
-                    st_trace := [] |}).
-Proof.
-  intros.
-  erewrite st_trace_destruct'; eauto.
-Defined.
- *)
-
 Lemma pl_immut : forall il e s tr p,
     st_pl
       (fold_left run_vm_step il
@@ -677,7 +646,7 @@ Proof.
 
   rewrite <- fold_left_app.
   rewrite foo.
-  
+
   assert (
       {|
         st_ev := st_ev
@@ -695,13 +664,7 @@ Proof.
                                    st_trace := trd;
                                    st_pl := p |});
         st_trace := [];
-        st_pl := (*st_pl
-                   (fold_left run_vm_step il1
-                   {|
-                   st_ev := e;
-                   st_stack := s;
-                   st_trace := trd;
-                   st_pl := p |})*)p |} =
+        st_pl := p |} =
 
       {|
         st_ev := st_ev
@@ -719,14 +682,8 @@ Proof.
                                    st_trace := [];
                                    st_pl := p |});
         st_trace := [];
-        st_pl := (*st_pl
-                   (fold_left run_vm_step il1
-                   {|
-                   st_ev := e;
-                   st_stack := s;
-                   st_trace := [];
-                   st_pl := p |})*) p |}
-    ). {
+        st_pl := p |}
+    ) as HH. {
     eapply st_congr;
       try
         ( destruct A;
@@ -738,45 +695,27 @@ Proof.
             try reflexivity; eauto). }
 
   
-  rewrite H0.
+  rewrite HH.
   split.
   +
-  rewrite <- app_assoc.
-  Check st_trace_destruct'.
-  assert (st_pl
-            (fold_left run_vm_step il1
-                       {|
-                         st_ev := e;
-                         st_stack := s;
-                         st_trace := trd;
-                         st_pl := p |}) =
-          st_pl
-            (fold_left run_vm_step il1
-                       {|
-                         st_ev := e;
-                         st_stack := s;
-                         st_trace := [];
-                         st_pl := p |})). {
-  eapply place_irrel.
-  rewrite <- ya. reflexivity. }
-  
+  rewrite <- app_assoc. 
   rewrite <- st_trace_destruct'.
   rewrite fold_left_app in *.
   rewrite H.
   apply ya.
   +
-    rewrite <- H0.
+    rewrite <- HH.
     symmetry.
     unfold run_vm in H.
-    rewrite fold_left_app in H.
+    rewrite fold_left_app in *.
     repeat 
     rewrite <- foo.
     assert (
         st_trace (fold_left run_vm_step il2
         (fold_left run_vm_step il1
            {| st_ev := e; st_stack := s; st_trace := trd; st_pl := p |})) =
-        st_trace ({| st_ev := e''; st_stack := s''; st_trace := trd'; st_pl := p'' |})) by congruence.
-    simpl in H1. rewrite <- H1.
+        st_trace ({| st_ev := e''; st_stack := s''; st_trace := trd'; st_pl := p'' |})) as H1 by congruence.
+    simpl in *. rewrite <- H1.
 
 
 
@@ -785,7 +724,7 @@ Proof.
                         st_ev := e;
                         st_stack := s;
                         st_trace := trd;
-                        st_pl := p |}) = p) by (apply pl_immut).
+                        st_pl := p |}) = p) as H2 by (apply pl_immut).
     rewrite <- H2 at 4.
     rewrite <- ya. auto.
 Defined.
@@ -830,16 +769,16 @@ Lemma destruct_compiled_appended_fresh : forall trd' il1 il2 e e'' s s'' p p'',
             {| st_ev := e''; st_stack := s''; st_trace := tr2; st_pl := p''  |} /\
           trd' = tr1 ++ tr2).
 Proof.
-  intros.
+  intros trd' il1 il2 e e'' s s'' p p'' H0.
   edestruct (destruct_compiled_appended); eauto.
   destruct_conjs.
-  assert (p = H2). {
+  assert (p = H2) as H7. {
     assert (st_pl (run_vm il1 {| st_ev := e; st_stack := s; st_trace := []; st_pl := p |}) =
-            st_pl {| st_ev := H0; st_stack := H1; st_trace := x; st_pl := H2 |}). {
+            st_pl {| st_ev := H; st_stack := H1; st_trace := x; st_pl := H2 |}). {
     congruence. }
     rewrite pl_immut in H7.
     simpl in *. auto. }
-  exists x. exists H0. exists H1. exists p.
+  exists x. exists H. exists H1. exists p.
   split.
   - 
     congruence.
@@ -1062,7 +1001,7 @@ Proof.
       st_ev := e';
       st_stack := s';
       st_trace := tr';
-      st_pl := p' |})).
+      st_pl := p' |})) as H0.
   congruence.
 
   simpl in H0.
@@ -1083,8 +1022,8 @@ Lemma run_lstar : forall t tr et e e' s s' p p',
            (mk_st e' s' tr p') ->
     lstar (conf t p et) tr (stop p (aeval t p et)).
 Proof.
-  intros.
-  assert (s = s'). {
+  intros  t tr et e e' s s' p p' H.
+  assert (s = s') as H0. {
   eapply multi_stack_restore; eauto. }
   rewrite <- H0 in H.
   clear H0.
@@ -1137,48 +1076,43 @@ Proof.
     eapply lstar_transitive.
     
     eapply lstar_stls.
+    subst.
     
-    rewrite H6 in H3.
     eapply IHt1; eauto.
     eapply lstar_silent_tran.
     apply stlseqstop.
-    eapply IHt2.
-    eauto.
+    eapply IHt2; eauto.
     assert (p = H2). {
       assert (
           st_pl (run_vm (instr_compiler t1) {| st_ev := e; st_stack := s; st_trace := []; st_pl := p |}) =
-          st_pl ({| st_ev := H0; st_stack := H1; st_trace := x; st_pl := H2 |})).
-      congruence.
-      rewrite pl_immut in H7. simpl in *.
+          st_pl ({| st_ev := H0; st_stack := H1; st_trace := x; st_pl := H2 |}))
+        by congruence.
+      rewrite pl_immut in *. simpl in *.
       congruence. }
     subst; eauto.
 
   - (* abseq case *)
-     destruct s; simpl in *.
-    
+     destruct s; simpl in *.  
      unfold run_vm_step in *. monad_unfold; monad_unfold.
-
-
+        
+     assert (exists l, tr = [Term.split (fst r) p] ++ l)
+       as H0 by (eapply suffix_prop; eauto).
+     destruct H0 as [H0 H1].
+     rewrite H1 in *. clear H1.
+     assert (run_vm
+               ((instr_compiler t1 ++ abesr :: instr_compiler t2 ++
+                                [ajoins (Init.Nat.pred (snd r))]))
+               {| st_ev := splitEv s e;
+                  st_stack := push_stack EvidenceC (splitEv s1 e) s0;
+                  st_trace := []; st_pl := p |} =
+             {| st_ev := e'; st_stack := s0; st_trace := H0; st_pl := p' |})
+        as H2 by (eapply restl'; eauto).
      
-       
-              
-     assert (exists l, tr = [Term.split (fst r) p] ++ l).
-     eapply suffix_prop; eauto.
-     destruct_conjs.
-     rewrite H1 in H.
-     assert (run_vm ((instr_compiler t1 ++
-                                     abesr :: instr_compiler t2 ++ [ajoins (Init.Nat.pred (snd r))]))
-                    {| st_ev := splitEv s e;
-                       st_stack := push_stack EvidenceC (splitEv s1 e) s0;
-                       st_trace := []; st_pl := p |} =
-             {| st_ev := e'; st_stack := s0; st_trace := H0; st_pl := p' |}).
-     eapply restl'; eauto.
-     rewrite H1.
      
     
      edestruct destruct_compiled_appended_fresh; eauto.
      destruct_conjs.
-     assert (p = H5). {
+     assert (p = H4). {
        assert (
            st_pl (run_vm (instr_compiler t1)
          {|
@@ -1186,12 +1120,12 @@ Proof.
          st_stack := push_stack EvidenceC (splitEv s1 e) s0;
          st_trace := [];
          st_pl := p |}) =
-           st_pl ({| st_ev := H3; st_stack := H4; st_trace := x; st_pl := H5 |})).
+           st_pl ({| st_ev := H1; st_stack := H3; st_trace := x; st_pl := H4 |})).
        congruence.
-       rewrite pl_immut in H10. simpl in H10. auto. }
+       rewrite pl_immut in *. simpl in *. auto. }
      clear H2.
      do_stack1 t1.
-     rewrite H9.
+     rewrite H8.
      eapply lstar_tran.
      econstructor.
      eapply lstar_transitive.
@@ -1200,7 +1134,7 @@ Proof.
 
           
      
-     rewrite H2 in H6.
+     rewrite H2 in *.
      eassumption.
      simpl.
      eapply lstar_silent_tran.
@@ -1209,28 +1143,28 @@ Proof.
      do_run.
      edestruct destruct_compiled_appended_fresh; eauto.
      destruct_conjs.
-     clear H12. clear H.
+     clear H11. clear H.
      rewrite H10.
      do_stack1 t2.
      eapply lstar_transitive.
      eapply lstar_stbsr.
      eapply IHt2; eauto.
-     rewrite H in H4.
+     rewrite H in *.
      eauto.
 
      do_run.
-     invc H12.
+     pairs.
      eapply lstar_tran.
-     assert (p' = H5). {
+     assert (p' = H4). {
        assert (st_pl (run_vm (instr_compiler t2)
          {|
          st_ev := splitEv s1 e;
-         st_stack := push_stack EvidenceC H3 s0;
+         st_stack := push_stack EvidenceC H1 s0;
          st_trace := [];
-         st_pl := H5 |}) =
-               st_pl ({| st_ev := H0; st_stack := push_stack EvidenceC H3 s0; st_trace := x0; st_pl := p' |})).
+         st_pl := H4 |}) =
+               st_pl ({| st_ev := H0; st_stack := push_stack EvidenceC H1 s0; st_trace := x0; st_pl := p' |})).
        congruence.
-       rewrite pl_immut in H. simpl in H. auto. }
+       rewrite pl_immut in *. simpl in *. auto. }
      subst.
      apply stbsrstop.
      econstructor.
