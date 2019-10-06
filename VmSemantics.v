@@ -220,7 +220,7 @@ Proof.
   - simpl.
     inversion H. reflexivity.   
   - 
-    simpl; destruct a;
+    simpl; destruct a as [n p0 | n sp1 sp2 | n | | r q t];
       try
         (try destruct p0;
          try destruct r;
@@ -246,20 +246,18 @@ Lemma foo : forall il m e s p,
 Proof.
   induction il; simpl; intros m e s p.
   - rewrite app_nil_r. auto.
-  - destruct a; try ( (* prim, asplit aatt, cases *)
-                    try destruct r;
-    
-    unfold run_vm_step; fold run_vm_step; monad_unfold;
-    
-    rewrite IHil at 1;
-    symmetry; 
-    rewrite IHil at 1;
+  - destruct a as [n p0 | n sp1 sp2 | n | | r q t];
+      try ( (* prim, asplit aatt cases *)
+          try destruct r;
+          unfold run_vm_step; fold run_vm_step; monad_unfold;  
+          rewrite IHil at 1;
+          symmetry; 
+          rewrite IHil at 1;
 
-    rewrite <- app_assoc;
-    tauto). 
+          rewrite <- app_assoc;
+          tauto). 
        
-    + (* ajoins case *)
-      
+    + (* ajoins case *)     
       unfold run_vm_step; fold run_vm_step; monad_unfold; monad_unfold.     
       desp.
       simpl.
@@ -426,7 +424,6 @@ Proof.
 Defined.
 
 Ltac st_equiv :=
-
   match goal with
   | |- _ ++ _ ++ _ ++
         st_trace (fold_left run_vm_step _ ?st1) =
@@ -479,59 +476,34 @@ Proof.
     reflexivity.
   - simpl.
     Check foo.
-    destruct a.
-    + (* apriminstr case *)
-    unfold run_vm_step. fold run_vm_step.
-    monad_unfold.
-    rewrite foo.
-    rewrite <- app_assoc.
-    simpl in IHil1.
-    rewrite IHil1.
-
-    rewrite <- app_assoc.
-    st_equiv.
-     
-    rewrite H. 
-    congruence.
-
-    + (* asplit case *)
-      unfold run_vm_step. fold run_vm_step.
-      monad_unfold.
-      rewrite foo.
-      rewrite <- app_assoc.
-      rewrite IHil1.
-
-      rewrite <- app_assoc.
-      st_equiv.
-      congruence.
+    destruct a as [n p0 | n sp1 sp2 | n | | r q t];
+      try (  (* apriminstr, asplit, reqrpy cases *)
+          try destruct r;
+          unfold run_vm_step; fold run_vm_step;
+          monad_unfold;
+          rewrite foo;
+          rewrite <- app_assoc;
+          rewrite IHil1;
+          rewrite <- app_assoc;
+          st_equiv;
+          congruence).
      
     + (* joins case *)
       
       unfold run_vm_step. fold run_vm_step.
       monad_unfold.
       unfold get_ev. monad_unfold.
-      desp.
-      desp.
+      repeat (desp;bogus).
       rewrite foo.
-      pairs.
       simpl.
       rewrite IHil1.
       try_pop_all.
-      repeat 
-      do_pop_stackm_facts.
-      subst.
+      repeat do_pop_stackm_facts; subst.
       rewrite app_nil_l.
-      rewrite <- app_assoc.
-      rewrite <- app_assoc.
+      repeat rewrite <- app_assoc.
       st_equiv.
       congruence.      
-      
-      bogus.   
-      desp.
-      bogus.
-      repeat do_pop_stackm_fail.
-      
-      subst.
+      repeat do_pop_stackm_fail; subst.
       rewrite IHil1.
       auto.
 
@@ -540,34 +512,17 @@ Proof.
       unfold run_vm_step. fold run_vm_step.
       monad_unfold.
       unfold get_ev. monad_unfold.
-      desp.
-      desp.
-      simpl in *.
+      repeat (desp;bogus).
       rewrite foo.
-      pairs.
       simpl.
       rewrite IHil1.
       try_pop_all.
-      repeat do_pop_stackm_facts.
-      subst.
-      simpl in *.
+      repeat do_pop_stackm_facts; subst.
+      unfold push_stackm in *. monad_unfold. pairs.
       auto.
-      bogus.   
-      desp; bogus.
-      repeat do_pop_stackm_fail.   
-      subst.
+      repeat do_pop_stackm_fail; subst.
       rewrite IHil1.
-      auto.
-    + (* areqrpy case *)
-      destruct r.
-      unfold run_vm_step. fold run_vm_step.
-      monad_unfold.
-      rewrite foo.
-      rewrite <- app_assoc.
-      rewrite IHil1.
-      rewrite <- app_assoc.
-      st_equiv.
-      congruence.      
+      auto.     
 Defined.
 
 Lemma pl_immut : forall il e s tr p,
@@ -582,11 +537,18 @@ Proof.
   induction il; intros.
   - simpl. reflexivity.
   -
-    destruct a; try (
-      simpl;
-      try destruct p0;
-      unfold run_vm_step; fold run_vm_step; monad_unfold;
-      eauto; reflexivity).
+    destruct a as [n p0 | n sp1 sp2 | n | | r q t];
+      try (
+          simpl;
+          try destruct p0;
+          try destruct r;
+          unfold run_vm_step; fold run_vm_step; monad_unfold;
+          eauto; tauto).
+   (*   try ( simpl; unfold run_vm_step; fold run_vm_step; monad_unfold;
+            unfold get_ev; monad_unfold;
+            desp;
+            simpl; do_pop_stackm_facts; subst; eauto;
+            do_pop_stackm_fail; subst; eauto). *)                   
     + simpl. unfold run_vm_step. fold run_vm_step. monad_unfold.
       unfold get_ev. monad_unfold.
       desp.
@@ -597,8 +559,6 @@ Proof.
       desp.
       simpl. do_pop_stackm_facts. subst. eauto.
       do_pop_stackm_fail. subst. eauto.
-    + simpl. unfold run_vm_step. fold run_vm_step. monad_unfold.
-      destruct r. monad_unfold. eauto.
 Defined.
 
 
@@ -794,6 +754,14 @@ Ltac do_dca :=
   | [ H: run_vm (_ ++ _) _ = _ |- _] =>
     idtac "ran do_dca";
     apply destruct_compiled_appended in H;
+    destruct_conjs
+  end.
+
+Ltac do_dca_fresh :=
+  match goal with
+  | [ H: run_vm (_ ++ _) _ = _ |- _] =>
+    idtac "ran do_dca";
+    apply destruct_compiled_appended_fresh in H;
     destruct_conjs
   end.
 
@@ -1013,8 +981,14 @@ Defined.
 
 Axiom run_at : forall t e s n,
       run_vm (instr_compiler t)
-             {| st_ev := e; st_stack := s; st_trace := []; st_pl := n |} =
-      {| st_ev := (eval (unanno t) e); st_stack := s; st_trace := remote_events t n; st_pl := n |}.
+             {| st_ev := e;
+                st_stack := s;
+                st_trace := [];
+                st_pl := n |} =
+             {| st_ev := (eval (unanno t) e);
+                st_stack := s;
+                st_trace := remote_events t n;
+                st_pl := n |}.
 
 Lemma run_lstar : forall t tr et e e' s s' p p',
     run_vm (instr_compiler t)
@@ -1042,8 +1016,6 @@ Proof.
      simpl in *; 
       invc H;
         econstructor; try (econstructor; reflexivity).
-      (*haa;
-      econstructor.*)
   - (* aatt case *)
     simpl in *.
     destruct r.
@@ -1066,9 +1038,8 @@ Proof.
     simpl in *.
     econstructor.
     econstructor.
-    
-    edestruct destruct_compiled_appended_fresh; eauto.
-    destruct_conjs.
+
+    do_dca_fresh.
     subst.
 
     do_stack1 t1.
@@ -1084,8 +1055,9 @@ Proof.
     eapply IHt2; eauto.
     assert (p = H2). {
       assert (
-          st_pl (run_vm (instr_compiler t1) {| st_ev := e; st_stack := s; st_trace := []; st_pl := p |}) =
-          st_pl ({| st_ev := H0; st_stack := H1; st_trace := x; st_pl := H2 |}))
+          st_pl (run_vm (instr_compiler t1)
+                        {| st_ev := e; st_stack := s; st_trace := []; st_pl := p |}) =
+          st_pl ({| st_ev := H0; st_stack := H1; st_trace := H; st_pl := H2 |}))
         by congruence.
       rewrite pl_immut in *. simpl in *.
       congruence. }
@@ -1108,10 +1080,7 @@ Proof.
              {| st_ev := e'; st_stack := s0; st_trace := H0; st_pl := p' |})
         as H2 by (eapply restl'; eauto).
      
-     
-    
-     edestruct destruct_compiled_appended_fresh; eauto.
-     destruct_conjs.
+     do_dca_fresh.
      assert (p = H4). {
        assert (
            st_pl (run_vm (instr_compiler t1)
@@ -1120,31 +1089,29 @@ Proof.
          st_stack := push_stack EvidenceC (splitEv s1 e) s0;
          st_trace := [];
          st_pl := p |}) =
-           st_pl ({| st_ev := H1; st_stack := H3; st_trace := x; st_pl := H4 |})).
+           st_pl ({| st_ev := H1; st_stack := H3; st_trace := H2; st_pl := H4 |})).
        congruence.
        rewrite pl_immut in *. simpl in *. auto. }
-     clear H2.
      do_stack1 t1.
      rewrite H8.
      eapply lstar_tran.
      econstructor.
      eapply lstar_transitive.
      eapply lstar_stbsl.
-     eapply IHt1. eassumption.
+     eapply IHt1; eauto.
 
           
      
-     rewrite H2 in *.
+     rewrite H10 in *.
      eassumption.
      simpl.
      eapply lstar_silent_tran.
      apply stbslstop.
      
      do_run.
-     edestruct destruct_compiled_appended_fresh; eauto.
-     destruct_conjs.
-     clear H11. clear H.
-     rewrite H10.
+     do_dca_fresh.
+     clear H.
+     rewrite H11.
      do_stack1 t2.
      eapply lstar_transitive.
      eapply lstar_stbsr.
@@ -1162,7 +1129,11 @@ Proof.
          st_stack := push_stack EvidenceC H1 s0;
          st_trace := [];
          st_pl := H4 |}) =
-               st_pl ({| st_ev := H0; st_stack := push_stack EvidenceC H1 s0; st_trace := x0; st_pl := p' |})).
+               st_pl (
+                   {| st_ev := H0;
+                      st_stack := push_stack EvidenceC H1 s0;
+                      st_trace := H12;
+                      st_pl := p' |})).
        congruence.
        rewrite pl_immut in *. simpl in *. auto. }
      subst.
