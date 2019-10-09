@@ -202,6 +202,24 @@ Proof.
   monad_unfold. inv H.
 Defined.
 
+Lemma get_store_at_determ : forall e0' e e' e2 e2' s s' s2 s2' tr tr' tr2 tr2' p p' p2 p2'
+                              store1 store1' store2' n,
+    get_store_at n {| st_ev := e; st_stack := s; st_trace := tr; st_pl := p; st_store := store1 |} =
+    (Some e0', {| st_ev := e'; st_stack := s'; st_trace := tr'; st_pl := p'; st_store := store1' |})
+    (*pop_stackm {| st_ev := e; st_stack := s; st_trace := tr; st_pl := p; st_store := store1 |}*) ->
+
+    get_store_at n  {| st_ev := e2; st_stack := s2; st_trace := tr2; st_pl := p2; st_store := store1 |} =
+    (None, {| st_ev := e2'; st_stack := s2'; st_trace := tr2'; st_pl := p2'; st_store := store2' |})
+    (*pop_stackm {| st_ev := e2; st_stack := s; st_trace := tr2; st_pl := p2; st_store := store2 |}*) ->
+    False.
+Proof.
+  intros.
+  unfold get_store_at in *. monad_unfold.
+  repeat break_match.
+  invc H. inv Heqp0. invc H0.
+  invc H. invc Heqp1.
+Defined.
+
 Lemma push_stackm_facts : forall st_ev st_ev0 (st_trace:list Ev) (st_trace0:list Ev)
                             st_stack st_stack0 st_trace st_trace0 H0 u p p' o o',
     (Some u, {| st_ev := st_ev0; st_stack := st_stack0; st_trace := st_trace0; st_pl := p'; st_store := o' |}) =
@@ -214,6 +232,54 @@ Proof.
   inv H.
   split; eauto.
 Defined.
+
+Require Import Maps.
+
+Lemma get_store_at_facts : forall st_ev st_ev0 (st_trace:list Ev) (st_trace0:list Ev)
+                             st_stack st_stack0 st_trace st_trace0 st_ev' p p' o o' n,
+    get_store_at n {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace; st_pl := p; st_store := o |} = 
+    (Some st_ev', {| st_ev := st_ev0; st_stack := st_stack0; st_trace := st_trace0; st_pl := p'; st_store := o' |}) (*=
+    push_stackm H0 {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace; st_pl := p; st_store := o |}*) ->
+    st_ev = st_ev0 /\ st_trace = st_trace0 /\ st_stack = st_stack0 /\ p = p' /\ o = o' /\ bound_to o n st_ev'.
+Proof.
+  intros.
+  unfold get_store_at in *.
+  monad_unfold.
+  repeat break_match.
+  invc Heqo1. invc Heqp0. invc H.
+  repeat split; eauto.
+  invc H. invc Heqp0.
+Defined.
+
+Ltac do_get_store_at_facts :=
+  match goal with
+  | [H: get_store_at _ _ = (Some _,_) |- _ ] =>
+    apply get_store_at_facts in H
+  end; destruct_conjs.
+
+Lemma get_store_at_facts_fail : forall st_ev st_ev0 (st_trace:list Ev) (st_trace0:list Ev)
+                             st_stack st_stack0 st_trace st_trace0 p p' o o' n,
+    get_store_at n {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace; st_pl := p; st_store := o |} = 
+    (None, {| st_ev := st_ev0; st_stack := st_stack0; st_trace := st_trace0; st_pl := p'; st_store := o' |}) (*=
+    push_stackm H0 {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace; st_pl := p; st_store := o |}*) ->
+    st_ev = st_ev0 /\ st_trace = st_trace0 /\ st_stack = st_stack0 /\ p = p' /\ o = o'.
+Proof.
+  intros.
+  unfold get_store_at in *.
+  monad_unfold.
+  repeat break_match.
+  invc Heqp0. invc H.
+  invc H. invc Heqp0.
+  repeat split; eauto.
+Defined.
+
+Ltac do_get_store_at_facts_fail :=
+  match goal with
+  | [H: get_store_at _ _ = (None,_) |- _ ] =>
+    apply get_store_at_facts_fail in H
+  end; destruct_conjs.
+
+
 
 (* 
  snd
@@ -321,6 +387,7 @@ Ltac desp :=
   end; monad_unfold; vmsts.
 
 Ltac bogus :=
+  vmsts;
   repeat
     match goal with                                        
     | [H: (Some _, _) =
@@ -335,7 +402,11 @@ Ltac bogus :=
            G:  (None,
                 _) =
                pop_stackm _ |- _ ] =>
-      elimtype False; eapply pop_stackm_determ_none; eauto; contradiction                                                      
+      elimtype False; eapply pop_stackm_determ_none; eauto; contradiction
+    | [ H: get_store_at ?n _ = (Some _,_),
+           G: get_store_at ?n _ = (None,_) |- _ ] =>
+      idtac "matched get_store_at_determ" ;
+      elimtype False; eapply get_store_at_determ; eauto; contradiction                                    
     end.
 
 Ltac pairs :=

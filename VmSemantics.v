@@ -80,6 +80,27 @@ Definition build_comp (*(s:ev_stack)*) (i:AnnoInstr): VM unit :=
       er <- pop_stackm ;;
       push_stackm e ;;
       put_ev er    
+  | areq reqi q annt =>
+    e <- get_ev ;;
+      put_store reqi (toRemote (unanno annt) q e) ;; (* TODO: make this contingent on a good remote setup.  Need to model such a situation *)
+      p <- get_pl ;;
+      (*put_ev (toRemote (unanno annt) q e) ;;
+      let '(reqi,rpyi_last) := rg in
+      let rpyi := Nat.pred rpyi_last in *)
+      let newTrace :=
+          [req reqi p q (unanno annt)] ++ (remote_events annt q) (* ++ [rpy rpyi p q] *) in
+      add_tracem newTrace
+
+  | arpy i rpyi q =>
+    p <- get_pl ;;
+      e <- get_store_at rpyi ;;
+      put_ev e ;;
+      add_tracem [rpy i p q]
+    
+
+
+
+(*
   | areqrpy rg q annt =>
     e <- get_ev ;;
       p <- get_pl ;;
@@ -88,7 +109,7 @@ Definition build_comp (*(s:ev_stack)*) (i:AnnoInstr): VM unit :=
       let rpyi := Nat.pred rpyi_last in
       let newTrace :=
           [req reqi p q (unanno annt)] ++ (remote_events annt q) ++ [rpy rpyi p q] in
-      add_tracem newTrace (*
+      add_tracem newTrace*) (*
   | abep rg1 rg2 il1 il2 =>
     e <- get_ev ;;
       er <- pop_stackm ;;
@@ -148,6 +169,21 @@ Ltac boom := repeat
        {| st_ev := e; st_stack := s; st_trace := []; st_pl := p; st_store := o |})
  *)
 
+Ltac do_run :=
+  match goal with
+  | [H:  run_vm (_ :: _) _ = _ |- _ ] => invc H; unfold run_vm_step in *; monad_unfold; monad_unfold
+  end.
+
+Lemma bound_and_deterministic : forall (s:ev_store) n (e1 e2:EvidenceC),
+    Maps.bound_to s n e1 ->
+    Maps.bound_to s n e2 ->
+    e1 = e2.
+Proof.
+  intros.
+  inv H. inv H0.
+  congruence.
+Defined.
+
 Lemma trace_irrel_store : forall il1 tr1 tr1' tr2 e e' s s' p1' p1 p o' o,
 
     run_vm il1 {| st_ev := e; st_trace := tr1; st_stack := s; st_pl := p1; st_store := o |} =
@@ -176,6 +212,48 @@ Proof.
           repeat do_pop_stackm_facts;
           repeat do_pop_stackm_fail;
           subst; eauto; tauto).
+
+    + (* apry case *)
+      simpl in *.
+      unfold run_vm_step in *. fold run_vm_step in *. 
+      repeat monad_unfold.
+      repeat break_match.
+      simpl.
+      pairs. invc Heqp2.
+      apply get_store_at_facts in Heqp3; eauto. destruct_conjs.
+      apply get_store_at_facts in Heqp1; eauto. destruct_conjs.
+      pairs.
+      invc Heqp0. 
+      simpl.
+      assert (st_ev2 = st_ev0)
+        by (eapply bound_and_deterministic; eauto).
+      
+      assert (st_store
+                (run_vm il1
+                        {|
+                          st_ev := st_ev2;
+                          st_stack := st_stack0;
+                          st_trace := st_trace1 ++ [rpy n st_pl2 n1];
+                          st_pl := st_pl2;
+                          st_store := st_store0 |}) =
+              st_store ({| st_ev := e'; st_stack := s'; st_trace := tr1'; st_pl := p1'; st_store := o' |})) by congruence.
+      simpl in H1. rewrite <- H1.
+      rewrite H0.
+      erewrite IHil1; eauto.
+      rewrite H0 in *.
+      rewrite <- H1 in H.
+      eassumption.
+      invc Heqp0.
+      bogus.
+      bogus.
+      simpl in *.
+      pairs.
+      invc Heqp0.
+      invc Heqp2.
+      do_get_store_at_facts_fail; eauto.
+      do_get_store_at_facts_fail; eauto.
+      subst.
+      erewrite IHil1; eauto.      
 Defined.
            
 Lemma trace_irrel : forall il1 tr1 tr1' tr2 e e' s s' p1' p1 p o1 o1' o,
@@ -238,11 +316,6 @@ Proof.
           repeat do_pop_stackm_fail;
           subst; eauto).
 Defined.
-
-Ltac do_run :=
-  match goal with
-  | [H:  run_vm (_ :: _) _ = _ |- _ ] => invc H; unfold run_vm_step in *; monad_unfold; monad_unfold
-  end.
 
 Lemma stack_irrel : forall il1 tr1 tr1' tr2 e e' s s' p1 p1' p o1 o1' o,
     run_vm il1 {| st_ev := e; st_trace := tr1; st_stack := s; st_pl := p1'; st_store := o1' |} =

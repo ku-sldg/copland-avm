@@ -112,6 +112,24 @@ Definition pop_stackm : VM EvidenceC :=
      | None => failm
      end.
 
+Definition put_store (n:nat) (e:EvidenceC) : VM unit :=
+  st <- get ;;
+     let e' := st_ev st in
+     let s' := st_stack st in
+     let tr' := st_trace st in
+     let p' := st_pl st in
+     let store' := st_store st in
+  (*let '{| st_ev := _; st_stack := s; st_trace := tr |} := st in*)
+     put (mk_st e' s' tr' p' (map_set store' n e)).
+
+Definition get_store_at (n:nat) : VM EvidenceC :=
+  st <- get ;;
+     let store' := st_store st in
+     let maybeEv := map_get store' n in
+     match maybeEv with
+     | Some e => ret e
+     | None => failm
+     end.
 
 Definition put_ev (e:EvidenceC) : VM unit :=
   st <- get ;;

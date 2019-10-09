@@ -37,7 +37,9 @@ Inductive AnnoInstr: Set :=
 | ajoins: nat -> AnnoInstr (*
 | ajoinp: nat -> AnnoInstr *)
 | abesr : AnnoInstr 
-| areqrpy: Range -> Plc -> AnnoTerm -> AnnoInstr (*
+| areq: nat -> Plc -> AnnoTerm -> AnnoInstr
+| arpy: nat -> nat -> Plc -> AnnoInstr
+(*
 | abep: Range -> Range -> (list AnnoInstr) -> (list AnnoInstr) -> AnnoInstr*).
 
 
@@ -54,7 +56,9 @@ Definition asp_instr (a:ASP) : Prim_Instr :=
 Fixpoint instr_compiler (t:AnnoTerm) : (list AnnoInstr) :=
   match t with
   | aasp r a => [aprimInstr (fst r) (asp_instr a)]  
-  | aatt r q t' => [areqrpy r q t']           
+  | aatt r q t' =>
+    let '(reqi,rpyi_last) := r in
+    [areq (fst r) q t'] ++ [arpy (fst r) (Nat.pred rpyi_last) q]           
   | alseq _ t1 t2 =>
     let tr1 := instr_compiler t1 in
     let tr2 := instr_compiler t2 in
