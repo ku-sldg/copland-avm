@@ -252,6 +252,7 @@ Proof.
 Defined.
 
 Ltac do_get_store_at_facts :=
+  vmsts;
   match goal with
   | [H: get_store_at _ _ = (Some _,_) |- _ ] =>
     apply get_store_at_facts in H
@@ -274,6 +275,7 @@ Proof.
 Defined.
 
 Ltac do_get_store_at_facts_fail :=
+  vmsts;
   match goal with
   | [H: get_store_at _ _ = (None,_) |- _ ] =>
     apply get_store_at_facts_fail in H

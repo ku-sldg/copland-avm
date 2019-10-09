@@ -184,6 +184,15 @@ Proof.
   congruence.
 Defined.
 
+      Ltac do_bd :=
+        match goal with
+        | [ H: Maps.bound_to ?s ?n ?e1,
+               G: Maps.bound_to ?s ?n ?e2  |- _ ] =>
+          assert (e1 = e2)
+            by (eapply bound_and_deterministic; eauto);
+          clear H; clear G
+        end.
+
 Lemma trace_irrel_store : forall il1 tr1 tr1' tr2 e e' s s' p1' p1 p o' o,
 
     run_vm il1 {| st_ev := e; st_trace := tr1; st_stack := s; st_pl := p1; st_store := o |} =
@@ -219,50 +228,32 @@ Proof.
       repeat monad_unfold.
       repeat break_match.
       simpl.
-      pairs. invc Heqp2.
-      apply get_store_at_facts in Heqp3; eauto. destruct_conjs.
-      apply get_store_at_facts in Heqp1; eauto. destruct_conjs.
-      pairs.
-      invc Heqp0. 
-      simpl.
-      assert (st_ev2 = st_ev0)
-        by (eapply bound_and_deterministic; eauto).
-      
-      assert (st_store
-                (run_vm il1
-                        {|
-                          st_ev := st_ev2;
-                          st_stack := st_stack0;
-                          st_trace := st_trace1 ++ [rpy n st_pl2 n1];
-                          st_pl := st_pl2;
-                          st_store := st_store0 |}) =
-              st_store ({| st_ev := e'; st_stack := s'; st_trace := tr1'; st_pl := p1'; st_store := o' |})) by congruence.
-      simpl in H1. rewrite <- H1.
-      rewrite H0.
-      erewrite IHil1; eauto.
-      rewrite H0 in *.
-      rewrite <- H1 in H.
-      eassumption.
-      invc Heqp0.
+      repeat find_inversion.
+      do_get_store_at_facts; eauto.
+      do_get_store_at_facts; eauto.
+
+
+      do_bd.
+      subst; eauto.
+      repeat find_inversion.
       bogus.
       bogus.
-      simpl in *.
-      pairs.
-      invc Heqp0.
-      invc Heqp2.
+
       do_get_store_at_facts_fail; eauto.
       do_get_store_at_facts_fail; eauto.
+      repeat find_inversion.
+
       subst.
       erewrite IHil1; eauto.      
 Defined.
            
-Lemma trace_irrel : forall il1 tr1 tr1' tr2 e e' s s' p1' p1 p o1 o1' o,
+Lemma trace_irrel : forall il1 tr1 tr1' tr2 e e' s s' p1' p1 p o1 o1',
 
     run_vm il1 {| st_ev := e; st_trace := tr1; st_stack := s; st_pl := p1; st_store := o1 |} =
     {| st_ev := e'; st_trace := tr1'; st_stack := s'; st_pl := p1'; st_store := o1' |} ->
     
     st_ev (
-        run_vm il1 {| st_ev := e; st_trace := tr2; st_stack := s; st_pl := p; st_store := o |}) = e'.
+        run_vm il1 {| st_ev := e; st_trace := tr2; st_stack := s; st_pl := p; st_store := o1 |}) = e'.
 Proof.
   induction il1; intros.
   - simpl.
@@ -284,15 +275,72 @@ Proof.
           repeat do_pop_stackm_facts;
           repeat do_pop_stackm_fail;
           subst; eauto; tauto).
+
+        + (* apry case *)
+      simpl in *.
+      unfold run_vm_step in *. fold run_vm_step in *. 
+      repeat monad_unfold.
+      repeat break_match.
+      simpl.
+      repeat find_inversion.
+      do_get_store_at_facts; eauto.
+      do_get_store_at_facts; eauto.
+
+
+      do_bd.
+      subst; eauto.
+      repeat find_inversion.
+      bogus.
+      bogus.
+
+      do_get_store_at_facts_fail; eauto.
+      do_get_store_at_facts_fail; eauto.
+      repeat find_inversion.
+
+      subst.
+      erewrite IHil1; eauto.  
+    (*
+    + (* apry case *)
+      simpl in *.
+      unfold run_vm_step in *. fold run_vm_step in *. 
+      repeat monad_unfold.
+      repeat break_match.
+      simpl.
+      repeat find_inversion.
+      do_get_store_at_facts; eauto.
+      do_get_store_at_facts; eauto.
+      admit.
+      repeat find_inversion.
+      simpl in *.
+      erewrite IHil1; eauto.
+      do_get_store_at_facts; eauto.
+      do_get_store_at_facts_fail; eauto.
+      subst.
+      
+
+
+      (*do_bd. *)
+      subst; eauto.
+      repeat find_inversion.
+      bogus.
+      bogus.
+
+      do_get_store_at_facts_fail; eauto.
+      do_get_store_at_facts_fail; eauto.
+      repeat find_inversion.
+
+      subst.
+      erewrite IHil1; eauto.  *)
+    
 Defined.
 
-Lemma place_irrel : forall il1 tr1 tr1' tr2 e e' s s' p p' o o' o2,
+Lemma place_irrel : forall il1 tr1 tr1' tr2 e e' s s' p p' o o',
 
     run_vm il1 {| st_ev := e; st_trace := tr1; st_stack := s; st_pl := p; st_store := o |} =
     {| st_ev := e'; st_trace := tr1'; st_stack := s'; st_pl := p'; st_store := o' |} ->
     
     st_pl (
-        run_vm il1 {| st_ev := e; st_trace := tr2; st_stack := s; st_pl := p; st_store := o2 |}) = p'.
+        run_vm il1 {| st_ev := e; st_trace := tr2; st_stack := s; st_pl := p; st_store := o |}) = p'.
 Proof.
     induction il1; intros.
   - simpl.
@@ -301,7 +349,7 @@ Proof.
     simpl; destruct a;
       try
         (try destruct p0;
-         try destruct r;
+         (*try destruct r; *)
          unfold run_vm_step;
          monad_unfold;
          eapply IHil1;
@@ -315,14 +363,38 @@ Proof.
           repeat do_pop_stackm_facts;
           repeat do_pop_stackm_fail;
           subst; eauto).
+
+            + (* apry case *)
+      simpl in *.
+      unfold run_vm_step in *. fold run_vm_step in *. 
+      repeat monad_unfold.
+      repeat break_match.
+      simpl.
+      repeat find_inversion.
+      do_get_store_at_facts; eauto.
+      do_get_store_at_facts; eauto.
+
+
+      do_bd.
+      subst; eauto.
+      repeat find_inversion.
+      bogus.
+      bogus.
+
+      do_get_store_at_facts_fail; eauto.
+      do_get_store_at_facts_fail; eauto.
+      repeat find_inversion.
+
+      subst.
+      erewrite IHil1; eauto.
 Defined.
 
-Lemma stack_irrel : forall il1 tr1 tr1' tr2 e e' s s' p1 p1' p o1 o1' o,
+Lemma stack_irrel : forall il1 tr1 tr1' tr2 e e' s s' p1 p1' p o1 o1',
     run_vm il1 {| st_ev := e; st_trace := tr1; st_stack := s; st_pl := p1'; st_store := o1' |} =
     {| st_ev := e'; st_trace := tr1'; st_stack := s'; st_pl := p1; st_store := o1 |} ->
     
     st_stack (
-        run_vm il1 {| st_ev := e; st_trace := tr2; st_stack := s; st_pl := p; st_store := o |}) =
+        run_vm il1 {| st_ev := e; st_trace := tr2; st_stack := s; st_pl := p; st_store := o1' |}) =
     s'.
   (*
     st_trace (
@@ -332,10 +404,10 @@ Proof.
   - simpl.
     inversion H. reflexivity.   
   - 
-    simpl; destruct a as [n p0 | n sp1 sp2 | n | | r q t];
+    simpl; destruct a as [n p0 | n sp1 sp2 | n | | i q t | i rpyi q];
       try
         (try destruct p0;
-         try destruct r;
+         (*try destruct r; *)
          unfold run_vm_step;
          monad_unfold;
          eapply IHil1;
@@ -348,6 +420,30 @@ Proof.
           repeat do_pop_stackm_facts;
           repeat do_pop_stackm_fail;
           subst; eauto).
+
+    + (* apry case *)
+      simpl in *.
+      unfold run_vm_step in *. fold run_vm_step in *. 
+      repeat monad_unfold.
+      repeat break_match.
+      simpl.
+      repeat find_inversion.
+      do_get_store_at_facts; eauto.
+      do_get_store_at_facts; eauto.
+
+
+      do_bd.
+      subst; eauto.
+      repeat find_inversion.
+      bogus.
+      bogus.
+
+      do_get_store_at_facts_fail; eauto.
+      do_get_store_at_facts_fail; eauto.
+      repeat find_inversion.
+
+      subst.
+      erewrite IHil1; eauto.
 Defined.
 
 Lemma foo : forall il m e s p o,
@@ -358,9 +454,9 @@ Lemma foo : forall il m e s p o,
 Proof.
   induction il; simpl; intros m e s p o.
   - rewrite app_nil_r. auto.
-  - destruct a as [n p0 | n sp1 sp2 | n | | r q t];
+  - destruct a as [n p0 | n sp1 sp2 | n | | i q t | i rpyi q];
       try ( (* prim, asplit aatt cases *)
-          try destruct r;
+          (*try destruct r; *)
           unfold run_vm_step; fold run_vm_step; monad_unfold;  
           rewrite IHil at 1;
           symmetry; 
@@ -411,6 +507,26 @@ Proof.
       repeat do_pop_stackm_fail.
       subst.
       apply IHil.
+    + (* arpy case *)
+      unfold run_vm_step; fold run_vm_step; monad_unfold; monad_unfold.
+      repeat break_match.
+      repeat find_inversion.
+      do_get_store_at_facts; eauto.
+      do_get_store_at_facts; eauto.
+      subst.
+      rewrite IHil at 1.
+      symmetry.
+      rewrite IHil at 1.
+      rewrite app_nil_l.
+      rewrite app_assoc.
+      do_bd. congruence.
+      bogus.
+      bogus.
+      repeat find_inversion.
+      do_get_store_at_facts_fail; eauto.
+      do_get_store_at_facts_fail; eauto.
+      subst.
+      eauto.
 Defined.
 
 Lemma compile_not_empty :
