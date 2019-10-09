@@ -296,7 +296,7 @@ Ltac desp :=
   | [ H: context
            [match pop_stackm ?v (*with _ end*) with |_ => _ end] |- _ ] =>
     remember (pop_stackm v) as ppp; 
-    destruct ppp as [oo];
+    destruct ppp as [oo]; (* TODO: use fresh tactic (here and throughout) for robustness *)
     destruct oo
 (*  | [ H: context
            [match pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with | _ => (let _ := _ in _) |(None,_) => _ end] |- _ ] =>
