@@ -536,7 +536,9 @@ Proof.
   intros.
   induction t.
   - destruct a; simpl; congruence.
-  - simpl. congruence. 
+  - simpl.
+    destruct r.
+    congruence. 
   - simpl.
     Search (_ <> []).
     destruct (instr_compiler t1); simpl; congruence.
@@ -713,7 +715,7 @@ Proof.
     reflexivity.
   - simpl.
     Check foo.
-    destruct a as [n p0 | n sp1 sp2 | n | | r q t];
+    destruct a as [n p0 | n sp1 sp2 | n | | i q t | i rpyi q];
       try (  (* apriminstr, asplit, reqrpy cases *)
           try destruct r;
           unfold run_vm_step; fold run_vm_step;
@@ -759,7 +761,39 @@ Proof.
       auto.
       repeat do_pop_stackm_fail; subst.
       rewrite IHil1.
-      auto.     
+      auto.
+    + (* arpy case *)
+
+      unfold run_vm_step. fold run_vm_step.
+      monad_unfold.
+      unfold get_store_at.
+      monad_unfold.
+      remember (Maps.map_get o rpyi) as asdf.
+      destruct asdf.
+      simpl.
+      rewrite IHil1.
+      assert (
+          st_trace
+    (fold_left run_vm_step il1
+               {| st_ev := e0; st_stack := s; st_trace := [rpy i p q]; st_pl := p; st_store := o |}) =
+
+          [rpy i p q] ++ st_trace
+    (fold_left run_vm_step il1
+               {| st_ev := e0; st_stack := s; st_trace := []; st_pl := p; st_store := o |})).
+      apply foo.
+      rewrite H.
+      erewrite trace_irrel.
+      erewrite trace_irrel_store.
+      erewrite stack_irrel.
+      rewrite <- app_assoc.
+      rewrite <- app_assoc.
+      auto.
+      eapply st_congr; eauto.
+      eapply st_congr; eauto.
+      eapply st_congr; eauto.
+
+      monad_unfold.
+      rewrite IHil1. auto.
 Defined.
 
 Lemma pl_immut : forall il e s tr p o,
@@ -775,7 +809,7 @@ Proof.
   induction il; intros.
   - simpl. reflexivity.
   -
-    destruct a as [n p0 | n sp1 sp2 | n | | r q t];
+    destruct a as [n p0 | n sp1 sp2 | n | | i q t | i rpyi q];
       try (
           simpl;
           try destruct p0;
@@ -797,8 +831,19 @@ Proof.
       desp.
       simpl. do_pop_stackm_facts. subst. eauto.
       do_pop_stackm_fail. subst. eauto.
+    + simpl. unfold run_vm_step. fold run_vm_step. monad_unfold.
+      unfold get_ev. monad_unfold.
+      repeat break_match.
+      simpl.
+      find_inversion.
+      do_get_store_at_facts; eauto.
+      simpl.
+      subst.
+      eauto.
+      find_inversion.
+      do_get_store_at_facts_fail; eauto.
+      subst. eauto.
 Defined.
-
 
 Lemma destruct_compiled_appended : forall trd trd' il1 il2 e e'' s s'' p p'' o o'',
     run_vm
