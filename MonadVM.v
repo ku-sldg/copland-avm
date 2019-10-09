@@ -1,5 +1,6 @@
 Require Import Term Instr.
 Require Import MyStack.
+Require Import Maps.
 
 Require Import List.
 Import ListNotations.
@@ -58,11 +59,13 @@ Definition when {S A} (b : bool) (m : St S A) : St S unit :=
 
 (* Specific VM monad *)
 Definition ev_stack := gen_stack EvidenceC.
+Definition ev_store := Map nat EvidenceC.
 Record vm_st : Type := mk_st
                          {st_ev:EvidenceC ;
                           st_stack:ev_stack ; 
                           st_trace:list Ev ;
-                          st_pl:Plc}.
+                          st_pl:Plc ;
+                          st_store:ev_store}.
 
 Definition VM := St vm_st.
 (*Definition runVM{A:Type} := @runSt vm_config A.*)
@@ -82,10 +85,10 @@ Definition extractVal (r:vm_st) : nat :=
 Definition test_comp : VM unit :=
   v <- get ;;
     let n := extractVal v in
-    put (mk_st mtc [(ggc mtc n)] [] 0) ;;
+    put (mk_st mtc [(ggc mtc n)] [] 0 []) ;;
         ret tt.
 
-Definition empty_vm_state := mk_st mtc [(ggc mtc 48)] [] 0.
+Definition empty_vm_state := mk_st mtc [(ggc mtc 48)] [] 0 [].
 
 Compute (runSt empty_vm_state test_comp).
 
@@ -93,18 +96,18 @@ Compute (runSt empty_vm_state test_comp).
 
 Definition push_stackm (e:EvidenceC) : VM unit :=
   st <- get ;;
-     let '{| st_ev := oldEv; st_stack := oldStack; st_trace := tr; st_pl := oldP |} := st in
+     let '{| st_ev := oldEv; st_stack := oldStack; st_trace := tr; st_pl := oldP; st_store := oldStore |} := st in
      let newStack := push_stack _ e oldStack in
-     put (mk_st oldEv newStack tr oldP).
+     put (mk_st oldEv newStack tr oldP oldStore).
 
 Definition pop_stackm : VM EvidenceC :=
   st <- get ;;
-     let '{| st_ev := oldE; st_stack := oldStack; st_trace := tr; st_pl := oldP |} := st in
+     let '{| st_ev := oldE; st_stack := oldStack; st_trace := tr; st_pl := oldP; st_store := oldStore |} := st in
      (*let oldStack := st_stack st in*)
      let maybePopped := pop_stack _ oldStack in
      match maybePopped with
      | Some (e,s') =>
-       put (mk_st oldE s' tr oldP) ;;
+       put (mk_st oldE s' tr oldP oldStore) ;;
            ret e
      | None => failm
      end.
@@ -115,8 +118,9 @@ Definition put_ev (e:EvidenceC) : VM unit :=
      let s' := st_stack st in
      let tr' := st_trace st in
      let p' := st_pl st in
+     let store' := st_store st in
   (*let '{| st_ev := _; st_stack := s; st_trace := tr |} := st in*)
-    put (mk_st e s' tr' p').
+    put (mk_st e s' tr' p' store').
 
 Definition get_ev : VM EvidenceC :=
   st <- get ;;
@@ -128,12 +132,12 @@ Definition get_pl : VM Plc :=
 
 Definition modify_evm (f:EvidenceC -> EvidenceC) : VM unit :=
   st <- get ;;
-  let '{| st_ev := e; st_stack := s; st_trace := tr; st_pl := p |} := st in
-  put (mk_st (f e) s tr p).
+  let '{| st_ev := e; st_stack := s; st_trace := tr; st_pl := p; st_store := store |} := st in
+  put (mk_st (f e) s tr p store).
 
 Definition add_trace (tr':list Ev) : vm_st -> vm_st :=
-  fun '{| st_ev := e; st_stack := s; st_trace := tr; st_pl := p |} =>
-    mk_st e s (tr ++ tr') p.
+  fun '{| st_ev := e; st_stack := s; st_trace := tr; st_pl := p; st_store := store |} =>
+    mk_st e s (tr ++ tr') p store.
 
 Definition add_tracem (tr:list Ev) : VM unit :=
   modify (add_trace tr).
