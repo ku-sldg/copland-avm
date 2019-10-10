@@ -58,7 +58,7 @@ Fixpoint instr_compiler (t:AnnoTerm) : (list AnnoInstr) :=
   | aasp r a => [aprimInstr (fst r) (asp_instr a)]  
   | aatt r q t' =>
     let '(reqi,rpyi_last) := r in
-    [areq (fst r) q t'] ++ [arpy (fst r) (Nat.pred rpyi_last) q]           
+    [areq (fst r) q t'] ++ [arpy (Nat.pred rpyi_last) (fst r)  q]           
   | alseq _ t1 t2 =>
     let tr1 := instr_compiler t1 in
     let tr2 := instr_compiler t2 in

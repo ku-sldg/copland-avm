@@ -298,40 +298,7 @@ Proof.
       repeat find_inversion.
 
       subst.
-      erewrite IHil1; eauto.  
-    (*
-    + (* apry case *)
-      simpl in *.
-      unfold run_vm_step in *. fold run_vm_step in *. 
-      repeat monad_unfold.
-      repeat break_match.
-      simpl.
-      repeat find_inversion.
-      do_get_store_at_facts; eauto.
-      do_get_store_at_facts; eauto.
-      admit.
-      repeat find_inversion.
-      simpl in *.
-      erewrite IHil1; eauto.
-      do_get_store_at_facts; eauto.
-      do_get_store_at_facts_fail; eauto.
-      subst.
-      
-
-
-      (*do_bd. *)
-      subst; eauto.
-      repeat find_inversion.
-      bogus.
-      bogus.
-
-      do_get_store_at_facts_fail; eauto.
-      do_get_store_at_facts_fail; eauto.
-      repeat find_inversion.
-
-      subst.
-      erewrite IHil1; eauto.  *)
-    
+      erewrite IHil1; eauto.    
 Defined.
 
 Lemma place_irrel : forall il1 tr1 tr1' tr2 e e' s s' p p' o o',
@@ -1104,8 +1071,38 @@ Proof.
 
   - (* aatt case *)
     destruct r.
-    inv H.
-    auto.
+    invc H.
+    unfold run_vm_step in *.  fold run_vm_step in *.
+    monad_unfold.
+    unfold get_store_at in *.
+    
+    monad_unfold.
+    break_match.
+    break_match.
+    break_match.
+    break_match.
+    break_match.
+    break_match.
+    break_match.
+    repeat find_inversion.
+    simpl in *.
+    invc H1. reflexivity.
+    repeat find_inversion.
+    solve_by_inversion.
+    repeat find_inversion.
+    simpl in *. invc H1.
+    reflexivity.
+    simpl in *.
+    repeat find_inversion.
+    solve_by_inversion.
+    simpl in *.
+    break_match.
+    break_match.
+    repeat find_inversion.
+    repeat find_inversion.
+    monad_unfold.
+    unfold failm in *. invc Heqp2.
+    reflexivity.
   - (* alseq case *)
     do_dca.
     eapply IHt2.
@@ -1179,6 +1176,65 @@ Ltac do_stack t1 t2 :=
     assert (s0 = s1 /\ s = s') by (split;eapply multi_stack_restore; eauto)
   end; destruct_conjs.
 
+Lemma store_get_set : forall e s tr p o n e1 e' v0,
+    get_store_at n
+      {|
+        st_ev := e;
+        st_stack := s;
+        st_trace := tr;
+        st_pl := p;
+        st_store := Maps.map_set o n e1 |} =
+    (Some e', v0) ->
+    e' = e1.
+Proof.
+  intros.
+  unfold get_store_at in *.
+  unfold get in *. simpl in *.
+  cbn in H.
+  break_match. break_match.
+  find_inversion.
+  monad_unfold.
+  find_inversion.
+  monad_unfold.
+  break_match.
+  break_match.
+  congruence.
+  congruence.
+  break_match.
+  congruence.
+  congruence.
+  find_inversion.
+  monad_unfold.
+  unfold failm in *.
+  find_inversion.
+Defined.
+
+Lemma store_get_set_fail_none : forall n e s tr p o e1 v,
+    get_store_at n
+     {|
+       st_ev := e;
+       st_stack := s;
+       st_trace := tr;
+       st_pl := p;
+       st_store := Maps.map_set o n e1 |} =
+    (None, v) ->
+    False.
+Proof.
+  intros.
+  unfold get_store_at in *.
+  cbn in H.
+  break_match. break_match.
+  find_inversion.
+  monad_unfold.
+  find_inversion.
+  break_match. break_match.
+  congruence.
+  congruence.
+  break_match.
+  congruence.
+  congruence.
+Defined.
+
 Lemma multi_ev_eval : forall t tr tr' e e' s s' p p' o o',
     run_vm (instr_compiler t)
            {| st_ev := e; st_stack := s;  st_trace := tr; st_pl := p; st_store := o |} =
@@ -1191,9 +1247,46 @@ Proof.
   - (* aatt case *)
     simpl in *.
     destruct r.
+    simpl in *.
     unfoldm.
+    break_match. break_match. break_match.
+    find_inversion.
+    simpl in *. find_inversion.
+
+
+    
+    eapply store_get_set; eauto.
+
+    find_inversion. simpl in *.
+
+
+
+    elimtype False. eapply store_get_set_fail_none; eauto.
+    
+
+
+    (*
+    find_inversion.
+    unfold get_store_at in *.
+    unfold get in *. simpl in *.
     invc H.
-    auto.   
+    unfold run_vm_step in *.
+    monad_unfold.
+    unfold get_store_at in *.
+    monad_unfold.
+    break_match.
+    break_match.
+    break_match; try solve_by_inversion.
+    find_inversion.
+    simpl in *.
+    find_inversion.
+    break_match. break_match.
+    find_inversion. find_inversion.
+    break_match.
+    congruence.
+    break_match.
+    congruence.
+    auto.   *)
   - (* lseq case *)
     simpl in *.
     do_dca.
@@ -1346,7 +1439,22 @@ Proof.
     simpl in *.
     destruct r.
     unfoldm.
-    invc H.
+    unfold run_vm_step in *.
+    monad_unfold.
+    unfold get_store_at in *.
+    monad_unfold.
+    break_match. break_match.
+    break_match.
+    simpl in *.
+    find_inversion.
+    find_inversion.
+    break_match. break_match.
+    repeat find_inversion.
+    vmsts.
+    find_inversion.
+    break_match.
+    find_inversion.
+    break_match.
     eapply lstar_tran.
     econstructor.
     simpl.
@@ -1359,6 +1467,25 @@ Proof.
     econstructor.
     apply stattstop.
     econstructor.
+    congruence.
+    break_match.
+    congruence.
+    congruence.
+    unfold failm in *.
+    congruence.
+    simpl in *.
+    find_inversion.
+    break_match. break_match.
+    vmsts.
+    find_inversion.
+    find_inversion.
+    break_match.
+    break_match.
+    congruence.
+    congruence.
+    break_match.
+    congruence.
+    congruence.
     
   - (* alseq case *)
     simpl in *.
