@@ -12,6 +12,8 @@ Import ListNotations.
 
 Set Nested Proofs Allowed.
 
+Check range.
+
 
 (** * VM Instructions *)
 
@@ -34,13 +36,13 @@ Inductive Instr: Set :=
 Inductive AnnoInstr: Set :=
 | aprimInstr: nat -> Prim_Instr -> AnnoInstr
 | asplit: nat -> SP -> SP -> AnnoInstr
-| ajoins: nat -> AnnoInstr (*
-| ajoinp: nat -> AnnoInstr *)
+| ajoins: nat -> AnnoInstr
+| ajoinp: nat -> nat -> nat -> AnnoInstr
 | abesr : AnnoInstr 
 | areq: nat -> Plc -> AnnoTerm -> AnnoInstr
 | arpy: nat -> nat -> Plc -> AnnoInstr
-(*
-| abep: Range -> Range -> (list AnnoInstr) -> (list AnnoInstr) -> AnnoInstr*).
+| abep: nat -> nat -> (*Range -> Range ->*)
+        (list AnnoInstr) -> (list AnnoInstr) -> AnnoInstr.
 
 
 (** * Instruction Compiler *)
@@ -68,14 +70,16 @@ Fixpoint instr_compiler (t:AnnoTerm) : (list AnnoInstr) :=
     let tr2 := instr_compiler t2 in
     let i := Nat.pred (snd r) in
     [asplit (fst r) sp1 sp2] ++ tr1 ++ [abesr] ++ tr2 ++ [ajoins i]
-                             (*
+                             
   | abpar r (sp1,sp2) t1 t2 =>
     (*let splEv := [split sp1 sp2] in*)
     let tr1 := instr_compiler t1 in
     let tr2 := instr_compiler t2 in
-    let tr := [abep (range t1) (range t2) tr1 tr2] in
+    let store_loc1 := (fst (range t1)) in
+    let store_loc2 := (fst (range t2)) in
+    let tr := [abep store_loc1 store_loc2 tr1 tr2] in
     let i := Nat.pred (snd r) in
-    [asplit (fst r) sp1 sp2] ++ tr ++ [ajoinp i] *)
+    [asplit (fst r) sp1 sp2] ++ tr ++ [ajoinp i store_loc1 store_loc2 ]
   end.
 
 (*

@@ -24,8 +24,8 @@ Inductive St: Set :=
 | rem: Plc -> Plc -> St -> St
 | ls: St -> AnnoTerm -> St
 | bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
-| bsr: nat -> Evidence -> St -> St (*
-| bp: nat -> St -> St -> St*).
+| bsr: nat -> Evidence -> St -> St 
+| bp: nat -> St -> St -> St.
 
 Fixpoint pl (s:St) :=
   match s with
@@ -34,8 +34,8 @@ Fixpoint pl (s:St) :=
   | rem _ p _ => p
   | ls st _ => pl st
   | bsl _ _ _ p _ => p
-  | bsr _ _ st => pl st (*
-  | bp _ _ st => pl st*)
+  | bsr _ _ st => pl st 
+  | bp _ _ st => pl st
   end.
 
 (** The evidence associated with a state. *)
@@ -47,8 +47,8 @@ Fixpoint seval st :=
   | rem _ _ st => seval st
   | ls st t => aeval t (pl st) (seval st)
   | bsl _ st t p e => ss (seval st) (aeval t p e)
-  | bsr _ e st => ss e (seval st) (*
-  | bp _ st0 st1 => pp (seval st0) (seval st1)*)
+  | bsr _ e st => ss e (seval st)
+  | bp _ st0 st1 => pp (seval st0) (seval st1)
 end.
 
 (** * Labeled Transition System
@@ -121,7 +121,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
       step (bsr j e (stop p e'))
            (Some (join (pred j) p))
            (stop p (ss e e'))
-           (*
+           
 (** Branching Parallel composition *)
 
 | stbpar:
@@ -143,7 +143,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
     forall j p e p' e',
       step (bp j (stop p e) (stop p' e'))
            (Some (join (pred j) p))
-           (stop p' (pp e e'))*) .  (* TODO: p' above? *)
+           (stop p' (pp e e')).  (* TODO: p' above? *)
 Hint Constructors step.
 
 (** A step preserves place. *)
@@ -260,7 +260,7 @@ Qed.
 
 (** * Correct Path Exists *)
 
-(*
+
 Lemma star_strem:
   forall st0 st1 j p,
     star st0 st1 -> star (rem j p st0) (rem j p st1).
@@ -268,7 +268,7 @@ Proof.
   intros.
   induction H; auto.
   eapply star_tran; eauto.
-Qed.*)
+Qed.
 
 Lemma star_stls:
   forall st0 st1 t,
@@ -279,7 +279,7 @@ Proof.
   eapply star_tran; eauto.
 Qed.
 
-(*
+
 Lemma star_stbsl:
   forall st0 st1 j t p e,
     star st0 st1 ->
@@ -311,9 +311,9 @@ Proof.
   - induction H0; auto.
     eapply star_tran; eauto.
   - eapply star_tran; eauto.
-Qed.*)
+Qed.
 
-(*
+
 Theorem correct_path_exists:
   forall t p e,
     star (conf t p e) (stop p (aeval t p e)).
@@ -346,7 +346,6 @@ Proof.
     apply IHt2.
     eapply star_tran; eauto.
 Qed.
-*)
 
 (** * Progress *)
 
@@ -485,8 +484,8 @@ Fixpoint tsize t: nat :=
   | aasp _ _ => 1
   | aatt _ _ x => 2 + tsize x 
   | alseq _ x y => 2 + tsize x + tsize y
-  | abseq _ _ x y => 3 + tsize x + tsize y (*
-  | abpar _ _ x y => 2 + tsize x + tsize y *)
+  | abseq _ _ x y => 3 + tsize x + tsize y 
+  | abpar _ _ x y => 2 + tsize x + tsize y 
   end.
 
 (** Size of a state (number of steps to reduce). *)
@@ -498,8 +497,8 @@ Fixpoint ssize s: nat :=
   | rem _ _ x => 1 + ssize x
   | ls x t => 1 + ssize x + tsize t
   | bsl _ x t _ _ => 2 + ssize x + tsize t
-  | bsr _ _ x => 1 + ssize x (*
-  | bp _ x y => 1 + ssize x + ssize y *)
+  | bsr _ _ x => 1 + ssize x 
+  | bp _ x y => 1 + ssize x + ssize y 
   end.
 
 (** Halt state has size 0. *)

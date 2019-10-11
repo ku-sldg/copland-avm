@@ -23,6 +23,9 @@ Admitted.
 Definition parallel_vm_events (li:list AnnoInstr) : list Ev.
 Admitted.
 
+Definition shuffled_events (el1:list Ev) (el2:list Ev) : list Ev.
+Admitted.
+
 Definition prim_trace (i:nat) (p:Plc) (a:Prim_Instr) : (list Ev) :=
   match a with
   | copy => [Term.copy i p]
@@ -68,7 +71,19 @@ Definition build_comp (*(s:ev_stack)*) (i:AnnoInstr): VM unit :=
       er <- pop_stackm ;;
       put_ev (ssc er e) ;;
       add_tracem [Term.join i p]
-      (*
+
+      (*  | arpy i rpyi q =>
+    p <- get_pl ;;
+      e <- get_store_at rpyi ;;
+      put_ev e ;;
+      add_tracem [rpy i p q] *)
+  
+  | ajoinp i loc1 loc2 =>
+    p <- get_pl ;;
+      e1 <- get_store_at loc1 ;;
+      e2 <- get_store_at loc2 ;;
+      add_tracem [Term.join i p] 
+  (*
   | ajoinp i =>
     (*e <- pop_stackm ;;*)
     e <- get_ev ;;
@@ -109,7 +124,35 @@ Definition build_comp (*(s:ev_stack)*) (i:AnnoInstr): VM unit :=
       let rpyi := Nat.pred rpyi_last in
       let newTrace :=
           [req reqi p q (unanno annt)] ++ (remote_events annt q) ++ [rpy rpyi p q] in
-      add_tracem newTrace*) (*
+      add_tracem newTrace*)
+
+
+      (*
+  | areq reqi q annt =>
+    e <- get_ev ;;
+      put_store reqi (toRemote (unanno annt) q e) ;; (* TODO: make this contingent on a good remote setup.  Need to model such a situation *)
+      p <- get_pl ;;
+      (*put_ev (toRemote (unanno annt) q e) ;;
+      let '(reqi,rpyi_last) := rg in
+      let rpyi := Nat.pred rpyi_last in *)
+      let newTrace :=
+          [req reqi p q (unanno annt)] ++ (remote_events annt q) (* ++ [rpy rpyi p q] *) in
+      add_tracem newTrace
+*)
+
+  | abep loc1 loc2 il1 il2 =>
+    e <- get_ev ;;
+      er <- pop_stackm ;;
+      let res1 := parallel_att_vm_thread il1 e in
+      let res2 := parallel_att_vm_thread il2 er in
+      let el1 := parallel_vm_events il1 in
+      let el2 := parallel_vm_events il2 in
+      put_store loc1 res1 ;;
+      put_store loc2 res2 ;;
+      add_tracem (shuffled_events el1 el2)
+
+
+  (*
   | abep rg1 rg2 il1 il2 =>
     e <- get_ev ;;
       er <- pop_stackm ;;

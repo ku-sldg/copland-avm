@@ -60,8 +60,8 @@ Fixpoint esizeS s:=
   | rem _ _ st => 1 + esizeS st
   | ls st t => esizeS st + esize t
   | bsl _ st t _ _ => 1 + esizeS st + esize t
-  | bsr _ _ st => 1 + esizeS st (*
-  | bp _ st1 st2 => 1 + esizeS st1 + esizeS st2 *)
+  | bsr _ _ st => 1 + esizeS st
+  | bp _ st1 st2 => 1 + esizeS st1 + esizeS st2 
   end.
 
 Lemma esize_tr:

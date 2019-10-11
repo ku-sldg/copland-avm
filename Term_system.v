@@ -37,7 +37,7 @@ Fixpoint ev_sys (t: AnnoTerm) (p:Plc) : EvSys Ev :=
                            (ev_sys x p)
                            (ev_sys y p))
                    (leaf ((pred j), j)
-                   (join (pred j) p ))) (*
+                   (join (pred j) p )))
   | abpar (i, j) s x y =>
     before (i, j)
            (leaf (i, S i)
@@ -47,7 +47,7 @@ Fixpoint ev_sys (t: AnnoTerm) (p:Plc) : EvSys Ev :=
                           (ev_sys x p)
                           (ev_sys y p))
                    (leaf ((pred j), j)
-                   (join (pred j) p))) *)
+                   (join (pred j) p)))
   end.
 
 Lemma evsys_range:
@@ -63,22 +63,22 @@ Lemma well_structured_evsys:
     well_formed t ->
     well_structured ev (ev_sys t p).
 Proof.
-  (*
+  
   induction t; intros; inv H; simpl;
     repeat expand_let_pairs; destruct r as [i k];
       simpl in *; subst; auto.
   - apply ws_leaf_event; auto;
       destruct a; simpl; auto.
-(*  - apply ws_before; simpl; auto.
+  - apply ws_before; simpl; auto.
     rewrite H4.
-    apply ws_before; simpl; auto; rewrite evsys_range; auto. *)
+    apply ws_before; simpl; auto; rewrite evsys_range; auto. 
   - apply ws_before; auto; repeat rewrite evsys_range; auto.
     
-  - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto). (*
+  - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto). 
   - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto).
-    repeat (apply ws_merge; simpl in *; auto; repeat rewrite evsys_range; auto). *)
-Qed. *)
-Admitted.
+    repeat (apply ws_merge; simpl in *; auto; repeat rewrite evsys_range; auto). 
+Qed.
+
 
 
 (** The events in the event system correspond to the events associated
@@ -160,13 +160,13 @@ Lemma supreme_unique:
     well_formed t ->
     exists ! v, supreme (ev_sys t p) v.
 Proof.
-  (*
+  
   intros.
-  assert (G: well_structured ev (ev_sys t)).
+  assert (G: well_structured ev (ev_sys t p)).
   apply well_structured_evsys; auto.
   rewrite <- unique_existence.
   split.
-  - exists (max (ev_sys t)).
+  - exists (max (ev_sys t p)).
     apply supreme_max with (ev:=ev); auto.
   - unfold uniqueness.
     intros.
@@ -195,8 +195,7 @@ Proof.
       repeat apply before_sup in H4.
       repeat apply before_sup in H5.
       inv H4; inv H5; auto.
-Qed. *)
-Admitted.
+Qed.
 
 
 Lemma evsys_max_unique:
@@ -204,9 +203,9 @@ Lemma evsys_max_unique:
     well_formed t ->
     unique (supreme (ev_sys t p)) (max (ev_sys t p)).
 Proof.
-  (*
+  
   intros.
-  assert (G: well_structured ev (ev_sys t)).
+  assert (G: well_structured ev (ev_sys t p)).
   apply well_structured_evsys; auto.
   unfold unique.
   split.
@@ -226,8 +225,7 @@ Proof.
     inv H4; auto.
   - repeat apply before_sup in H4.
     inv H4; auto.
-Qed. *)
-Admitted.
+Qed.
 
 
 (** Maximal event evidence output matches [aeval]. *)

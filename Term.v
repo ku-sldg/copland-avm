@@ -63,8 +63,8 @@ Inductive Term: Set :=
 | att: Plc -> Term -> Term
 | lseq: Term -> Term -> Term
                         
-| bseq: Split -> Term -> Term -> Term (*
-| bpar: Split -> Term -> Term -> Term*).
+| bseq: Split -> Term -> Term -> Term 
+| bpar: Split -> Term -> Term -> Term.
 
 (** The structure of evidence. *)
 
@@ -170,9 +170,9 @@ Fixpoint typeof (t:Term) (p:Plc) (e:Evidence) : Evidence :=
   | att q t1 => typeof t1 q e
   | lseq t1 t2 => typeof t2 p (typeof t1 p e)
   | bseq s t1 t2 => ss (typeof t1 p (sp (fst s) e))
-                       (typeof t2 p (sp (snd s) e)) (*
+                       (typeof t2 p (sp (snd s) e)) 
   | bpar s t1 t2 => pp (typeof t1 p (sp (fst s) e))
-                       (typeof t2 p (sp (snd s) e)) *)
+                       (typeof t2 p (sp (snd s) e))
   end.
 
 
@@ -272,8 +272,8 @@ Inductive AnnoTerm: Set :=
 | aasp: Range -> ASP -> AnnoTerm
 | aatt: Range -> Plc -> AnnoTerm -> AnnoTerm
 | alseq: Range -> AnnoTerm -> AnnoTerm -> AnnoTerm
-| abseq: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm (*
-| abpar: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm*).
+| abseq: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm 
+| abpar: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm.
 
 (** The number of events associated with a term.  The branching terms
 add a split and a join to the events of their subterms. Similarly, the
@@ -286,8 +286,8 @@ Fixpoint esize t :=
   | aasp _ _ => 1
   | aatt _ _ t1 => 2 + esize t1
   | alseq _ t1 t2 => esize t1 + esize t2
-  | abseq _ _ t1 t2 => 2 + esize t1 + esize t2(*
-  | abpar _ _ t1 t2 => 2 + esize t1 + esize t2*)
+  | abseq _ _ t1 t2 => 2 + esize t1 + esize t2
+  | abpar _ _ t1 t2 => 2 + esize t1 + esize t2
   end.
 
 Definition range x :=
@@ -295,8 +295,8 @@ Definition range x :=
   | aasp r _ => r
   | aatt r _ _ => r
   | alseq r _ _ => r
-  | abseq r _ _ _ => r (*
-  | abpar r _ _ _ => r*)
+  | abseq r _ _ _ => r 
+  | abpar r _ _ _ => r
   end.
 
 (** This function annotates a term.  It feeds a natural number
@@ -317,11 +317,11 @@ Fixpoint anno (t: Term) i: nat * AnnoTerm :=
   | bseq s x y =>
     let (j, a) := anno x (S i) in
     let (k, b) := anno y j in
-    (S k, abseq (i, S k) s a b) (*
+    (S k, abseq (i, S k) s a b) 
   | bpar s x y =>
     let (j, a) := anno x (S i) in
     let (k, b) := anno y j in
-    (S k, abpar (i, S k) s a b) *)
+    (S k, abpar (i, S k) s a b)
   end.
 
 
@@ -343,8 +343,8 @@ Fixpoint unanno a :=
   | aatt _ p t => att p (unanno t)
   | alseq _ a1 a2 => lseq (unanno a1) (unanno a2)
                          
-  | abseq _ spl a1 a2 => bseq spl (unanno a1) (unanno a2) (*
-  | abpar _ spl a1 a2 => bpar spl (unanno a1) (unanno a2) *)
+  | abseq _ spl a1 a2 => bseq spl (unanno a1) (unanno a2) 
+  | abpar _ spl a1 a2 => bpar spl (unanno a1) (unanno a2)
   end.
 
 
@@ -373,13 +373,13 @@ Inductive well_formed: AnnoTerm -> Prop :=
     S (fst r) = fst (range x) ->
     snd (range x) = fst (range y) ->
     snd r = S (snd (range y)) ->
-    well_formed (abseq r s x y) (*
+    well_formed (abseq r s x y) 
 | wf_bpar: forall r s x y,
     well_formed x -> well_formed y ->
     S (fst r) = fst (range x) ->
     snd (range x) = fst (range y) ->
     snd r = S (snd (range y)) ->
-    well_formed (abpar r s x y)*).
+    well_formed (abpar r s x y).
 Hint Constructors well_formed.
 
 Lemma well_formed_range:
@@ -387,7 +387,7 @@ Lemma well_formed_range:
     well_formed t ->
     snd (range t) = fst (range t) + esize t.
 Proof.
-  (*
+  
   induction t; intros; simpl; inv H; simpl.
   - rewrite Nat.add_1_r; auto.
   - apply IHt in H3; omega.
@@ -400,15 +400,14 @@ Proof.
   - apply IHt1 in H4.
     apply IHt2 in H5.
     omega.
-Qed. *)
-Admitted.
+Qed.
 
 
 Lemma anno_well_formed:
   forall t i,
     well_formed (snd (anno t i)).
 Proof.
-  (*
+  
   induction t; intros; simpl; auto.
   - repeat expand_let_pairs.
     simpl.
@@ -427,8 +426,7 @@ Proof.
     apply wf_bpar; simpl; auto;
       repeat rewrite anno_range; simpl;
         reflexivity.
-Qed. *)
-Admitted.
+Qed.
 
 
 (** Eval for annotated terms. *)
@@ -440,12 +438,12 @@ Fixpoint aeval t p e :=
   | aatt _ q x => aeval x q e
   | alseq _ t1 t2 => aeval t2 p (aeval t1 p e)
   | abseq _ s t1 t2 => ss (aeval t1 p ((sp (fst s)) e))
-                          (aeval t2 p ((sp (snd s)) e)) (*
+                          (aeval t2 p ((sp (snd s)) e)) 
   | abpar _ s t1 t2 => pp (aeval t1 p ((sp (fst s)) e))
-                          (aeval t2 p ((sp (snd s)) e)) *)
+                          (aeval t2 p ((sp (snd s)) e)) 
   end. 
 
-(*
+
 Lemma eval_aeval:
   forall t p e i,
     typeof t p e = aeval (snd (anno t i)) p e.
@@ -465,7 +463,7 @@ Proof.
     simpl.
     rewrite <- IHt1.
     rewrite <- IHt2; auto.
-Qed.*)
+Qed.
 
 (** This predicate specifies when a term, a place, and some initial
     evidence is related to an event.  In other words, it specifies the
@@ -498,21 +496,20 @@ Inductive events: AnnoTerm -> Plc -> (*Evidence ->*) Ev -> Prop :=
       fst r = i ->
       (*hh p e = e' -> *)
       events (aasp r HSH) p (*e*) (hash i p (*e e'*))
-(*
+
 | evtsattreq:
-    forall r q t i,
+    forall r q t i p,
       fst r = i ->
-      events (aatt r q t) p (*e*) (req i q (unanno t))
+      events (aatt r q t) p (*e*) (req i p q (unanno t))
 | evtsatt:
-    forall r q t ev,
-      events t ev (*q e ev*) ->
-      events (aatt r q t) ev p (*e ev*)
+    forall r q t ev p,
+      events t p ev (*q e ev*) ->
+      events (aatt r q t) p ev (*e ev*)
 | evtsattrpy:
-    forall r q t i,
+    forall r q t i p,
       snd r = S i ->
       (*aeval t q e = e' -> *)
-      events (aatt r q t) p (*e*) (rpy i q (*e'*))
-*)
+      events (aatt r q t) p (*e*) (rpy i p q (*e'*))
 | evtslseql:
     forall r t1 t2 ev p,
       events t1 p (*e*) ev ->
@@ -521,22 +518,22 @@ Inductive events: AnnoTerm -> Plc -> (*Evidence ->*) Ev -> Prop :=
     forall r t1 t2 ev p,
       events t2 p (*(aeval t1 p e)*) ev ->
       events (alseq r t1 t2) p (*e*) ev
-(*
+
 | evtsbseqsplit:
-    forall r i s t1 t2,
+    forall r i s t1 t2 p,
       fst r = i ->
       events (abseq r s t1 t2) p (*e*)
              (split i p (*e (sp (fst s) e) (sp (snd s) e)*))
 | evtsbseql:
-    forall r s t1 t2 ev,
+    forall r s t1 t2 ev p,
       events t1 p (*(sp (fst s) e)*) ev ->
       events (abseq r s t1 t2) p (*e*) ev
 | evtsbseqr:
-    forall r s t1 t2 ev,
+    forall r s t1 t2 ev p,
       events t2 p (*(sp (snd s) e)*) ev ->
       events (abseq r s t1 t2) p (*e*) ev
 | evtsbseqjoin:
-    forall r i s t1 t2,
+    forall r i s t1 t2 p,
       snd r = S i ->
       (*aeval t1 p (sp (fst s) e) = e1 ->
       aeval t2 p (sp (snd s) e) = e2 -> *)
@@ -544,25 +541,25 @@ Inductive events: AnnoTerm -> Plc -> (*Evidence ->*) Ev -> Prop :=
              (join i p (*e1 e2 (ss e1 e2)*))
 
 | evtsbparsplit:
-    forall r i s t1 t2,
+    forall r i s t1 t2 p,
       fst r = i ->
       events (abpar r s t1 t2) p (*e*)
              (split i p (*e (sp (fst s) e) (sp (snd s) e)*))
 | evtsbparl:
-    forall r s t1 t2 ev,
+    forall r s t1 t2 ev p,
       events t1 p (*(sp (fst s) e)*) ev ->
       events (abpar r s t1 t2) p (*e*) ev
 | evtsbparr:
-    forall r s t1 t2 ev,
+    forall r s t1 t2 ev p,
       events t2 p (*(sp (snd s) e)*) ev ->
       events (abpar r s t1 t2) p (*e*) ev
 | evtsbparjoin:
-    forall r i s t1 t2,
+    forall r i s t1 t2 p,
       snd r = S i ->
       (*aeval t1 p (sp (fst s) e) = e1 ->
       aeval t2 p (sp (snd s) e) = e2 ->*)
       events (abpar r s t1 t2) p (*e*)
-             (join i p (*e1 e2 (pp e1 e2)*))*).
+             (join i p (*e1 e2 (pp e1 e2)*)).
 Hint Constructors events.
 
 Lemma events_range:
@@ -571,7 +568,7 @@ Lemma events_range:
     events t p (*e*) v ->
     fst (range t) <= ev v < snd (range t).
 Proof.
-  (*
+  
   intros.
   pose proof H as G.
   apply well_formed_range in G.
@@ -600,9 +597,7 @@ Proof.
   - apply well_formed_range in H5.
     apply well_formed_range in H6.
     omega.
-Qed. *)
-Admitted.
-
+Qed.
 
 Lemma at_range:
   forall x r i,
@@ -660,8 +655,8 @@ Lemma events_range_event:
     well_formed t ->
     fst (range t) <= i < snd (range t) ->
     exists v, events t p v /\ ev v = i.
-Proof.  (*
-  intros t i H; revert i;
+Proof.  
+  intros t i p H; revert i;
   induction H; intros; simpl in *.
   - destruct x; eapply ex_intro; split; auto;
       destruct r as [j k]; simpl in *; omega.
@@ -713,8 +708,6 @@ Proof.  (*
         rewrite H3; auto.
       * simpl; auto.
 Qed.
-     *)
-Admitted.
 
 
 Ltac events_event_range :=
@@ -732,7 +725,7 @@ Lemma events_injective:
     v1 = v2.
 Proof.
   (*
-  intros t v1 v2 H.
+  intros t v1 v2 p H.
   generalize dependent v1.
   generalize dependent v2.
     induction H; intros; try (inv v1; inv v2; tauto).
@@ -831,11 +824,11 @@ Fixpoint eval (t:Term) (e:EvidenceC) : EvidenceC :=
     let e2 := splitEv sp2 e in
     let e1' := eval t1 e1 in
     let e2' := eval t2 e2 in
-    (ssc e1' e2') (*
+    (ssc e1' e2') 
   | bpar (sp1,sp2) t1 t2 =>
     let e1 := splitEv sp1 e in
     let e2 := splitEv sp2 e in
     let e1' := parallel_eval_thread t1 e1 in
     let e2' := parallel_eval_thread t2 e2 in
-    (ppc e1' e2')*)
+    (ppc e1' e2')
   end.
