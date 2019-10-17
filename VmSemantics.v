@@ -265,6 +265,81 @@ Proof.
           repeat do_pop_stackm_fail;
           subst; eauto; tauto).
 
+    + (* joinp case *)
+      simpl in *.
+      unfold run_vm_step in *. fold run_vm_step in *. 
+      repeat monad_unfold.
+      repeat break_match.
+      simpl in *.
+      repeat find_inversion.
+      do_get_store_at_facts; eauto.
+      do_get_store_at_facts; eauto.
+      do_get_store_at_facts; eauto.
+      do_get_store_at_facts; eauto.
+      subst.
+      do_bd.
+      do_bd.
+      eauto.
+      repeat find_inversion.
+      subst.
+      simpl in *.
+      vmsts.
+      apply get_store_at_facts in Heqp5; eauto.
+      apply get_store_at_facts in Heqp1; eauto.
+      destruct_conjs. subst.
+      Check get_store_at_facts_fail.
+      bogus.
+      repeat find_inversion.
+      vmsts.
+      elimtype False. eapply get_store_at_determ. apply Heqp1. apply Heqp5.
+      pairs.
+      repeat find_inversion.
+      do_get_store_at_facts; eauto.
+      
+      
+      do_get_store_at_facts; eauto.
+      do_get_store_at_facts; eauto.
+      do_get_store_at_facts_fail; eauto.
+      subst.
+      eauto.
+      vmsts.
+      repeat find_inversion.
+      do_get_store_at_facts; eauto.
+      do_get_store_at_facts; eauto.
+      do_get_store_at_facts_fail; eauto.
+      do_get_store_at_facts_fail; eauto.
+      subst. eauto.
+      vmsts.
+      do_get_store_at_facts; eauto.
+      do_get_store_at_facts_fail; eauto.
+      do_get_store_at_facts_fail; eauto.
+     
+      
+      vmsts.
+      repeat find_inversion.
+      eauto.
+      vmsts.
+      repeat find_inversion.
+       do_get_store_at_facts; eauto.
+       do_get_store_at_facts_fail; eauto.
+        do_get_store_at_facts; eauto.
+        subst. eauto.
+        vmsts.
+        repeat find_inversion.
+         do_get_store_at_facts; eauto.
+         do_get_store_at_facts_fail; eauto.
+         do_get_store_at_facts_fail; eauto.
+         subst. eauto.
+         vmsts.
+         repeat find_inversion.
+         
+         do_get_store_at_facts_fail; eauto.
+        
+         do_get_store_at_facts_fail; eauto.
+         subst. eauto.
+      
+      
+
     + (* apry case *)
       simpl in *.
       unfold run_vm_step in *. fold run_vm_step in *. 
