@@ -388,6 +388,16 @@ Ltac desp :=
     destruct oo
   end; monad_unfold; vmsts.
 
+Ltac get_store_some :=
+  vmsts;
+    match goal with                                        
+    | [ H: get_store_at ?n _ = (Some _,_),
+           G: get_store_at ?n _ = (Some,_) |- _ ] =>
+      idtac "matched get_store_some" ;
+      rewrite get_store_at_facts in H;
+      rewrite get_store_at_facts in G                                 
+    end; destruct_conjs.
+
 Ltac bogus :=
   vmsts;
   repeat
