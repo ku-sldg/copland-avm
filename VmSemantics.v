@@ -963,7 +963,7 @@ Proof.
   induction il; intros.
   - simpl. reflexivity.
   -
-    destruct a as [n p0 | n sp1 sp2 | n | | i q t | i rpyi q];
+    destruct a as [n p0 | n sp1 sp2 | n | l m n | | | i q t | i rpyi q];
       try (
           simpl;
           try destruct p0;
@@ -975,17 +975,42 @@ Proof.
             desp;
             simpl; do_pop_stackm_facts; subst; eauto;
             do_pop_stackm_fail; subst; eauto). *)                   
-    + simpl. unfold run_vm_step. fold run_vm_step. monad_unfold.
+    + (* ajoins case *)
+      simpl. unfold run_vm_step. fold run_vm_step. monad_unfold.
       unfold get_ev. monad_unfold.
       desp.
       simpl. do_pop_stackm_facts. subst. eauto.
       do_pop_stackm_fail. subst. eauto.
-    + simpl. unfold run_vm_step. fold run_vm_step. monad_unfold.
+    + (* ajoinp case *)
+      
+      
+      simpl. unfold run_vm_step. fold run_vm_step. monad_unfold.
+      unfold get_store_at.
+      monad_unfold.
+      repeat break_match;
+        try eauto;
+        allss; eauto.
+      ++ invc Heqp5.
+      ++ invc Heqp4.
+      ++ invc Heqp5.
+      ++ invc Heqp4.
+         eauto.
+      ++ invc Heqp5.
+      ++ invc Heqp2. eauto.
+        
+        
+        
+        
+        
+        
+    + (* abesr case *)
+      simpl. unfold run_vm_step. fold run_vm_step. monad_unfold.
       unfold get_ev. monad_unfold.
       desp.
       simpl. do_pop_stackm_facts. subst. eauto.
       do_pop_stackm_fail. subst. eauto.
-    + simpl. unfold run_vm_step. fold run_vm_step. monad_unfold.
+    + (* arpy case *)
+      simpl. unfold run_vm_step. fold run_vm_step. monad_unfold.
       unfold get_ev. monad_unfold.
       repeat break_match.
       simpl.
@@ -997,6 +1022,22 @@ Proof.
       find_inversion.
       do_get_store_at_facts_fail; eauto.
       subst. eauto.
+    + (* abep case *)
+      simpl. unfold run_vm_step. fold run_vm_step. monad_unfold.
+      unfold get_store_at.
+      monad_unfold.
+      repeat break_match;
+        try eauto;
+        allss; eauto.
+      ++
+        symmetry in Heqp1.
+        do_pop_stackm_facts.
+        subst.
+        eauto.
+      ++ symmetry in Heqp1.
+         do_pop_stackm_fail.
+         subst.
+         eauto.    
 Defined.
 
 Lemma destruct_compiled_appended : forall trd trd' il1 il2 e e'' s s'' p p'' o o'',
@@ -1342,6 +1383,31 @@ Proof.
     monad_unfold.
     unfold push_stack in *.  
     congruence.
+  - (* abpar case *)
+    destruct s.
+    do_run.
+    repeat break_match.
+    +
+      vmsts.
+      repeat find_inversion.
+      simpl in *.
+      do_get_store_at_facts; eauto.
+      do_get_store_at_facts; eauto.
+      subst.
+      eauto.
+    +
+      vmsts.
+      repeat find_inversion.
+      simpl in *.
+      do_get_store_at_facts; eauto.
+      do_get_store_at_facts_fail; eauto.
+    
+      subst.
+      eauto.
+    + vmsts.
+      repeat find_inversion.
+      simpl in *.
+      do_get_store_at_facts_fail; eauto.
 Defined.
 
 Ltac do_stack1 t1 :=
@@ -1525,6 +1591,32 @@ Proof.
     do_stack1 t1.
     subst.
     unfold pop_stackm in *. monad_unfold. congruence.
+  - (* abpar case *)
+    simpl.
+    destruct s.
+    destruct r.
+    unfold run_vm_step in *. monad_unfold; monad_unfold.
+    simpl in *.
+    unfold run_vm_step in *.
+    monad_unfold.
+    monad_unfold.
+    monad_unfold.
+
+    repeat break_match.
+    +
+      vmsts.
+      repeat find_inversion.
+      unfold Maps.map_set in *.
+      do_get_store_at_facts; eauto.
+      do_get_store_at_facts; eauto.
+      subst.
+      simpl in *.
+      monad_unfold.
+      do_bd.
+    
+    
+    
+    
 Defined.
 
 Lemma st_stack_restore : forall t e s tr p o,
