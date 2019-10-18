@@ -557,32 +557,6 @@ Proof.
         eauto.
 Defined.
 
-        
-        
-        
-      Search "irrel".
-      erewrite trace_irrel_store.
-      rewrite IHil1.
-      do_get_store_at_facts; eauto.
-      do_get_store_at_facts; eauto.
-      subst.
-      rewrite IHil at 1.
-      symmetry.
-      rewrite IHil at 1.
-      rewrite app_nil_l.
-      rewrite app_assoc.
-      do_bd. congruence.
-      bogus.
-      bogus.
-      repeat find_inversion.
-      do_get_store_at_facts_fail; eauto.
-      do_get_store_at_facts_fail; eauto.
-      subst.
-      eauto.
-      
-      
-Defined.
-
 Lemma compile_not_empty :
   forall t,
     (instr_compiler t) <> [].
@@ -597,6 +571,9 @@ Proof.
     Search (_ <> []).
     destruct (instr_compiler t1); simpl; congruence.
   - simpl. destruct s. congruence.
+  - simpl.
+    destruct s. simpl.
+    congruence.
 Defined.
 
 Lemma lstar_stls :
@@ -769,7 +746,7 @@ Proof.
     reflexivity.
   - simpl.
     Check foo.
-    destruct a as [n p0 | n sp1 sp2 | n | | i q t | i rpyi q];
+    destruct a as [n p0 | n sp1 sp2 | n | l m' n | | i q t | i rpyi q | l m' ls1 ls2];
       try (  (* apriminstr, asplit, reqrpy cases *)
           try destruct r;
           unfold run_vm_step; fold run_vm_step;
@@ -799,7 +776,81 @@ Proof.
       repeat do_pop_stackm_fail; subst.
       rewrite IHil1.
       auto.
-
+    + (* ajoinp case *)
+       
+      unfold run_vm_step. fold run_vm_step.
+      monad_unfold.
+      unfold get_ev. monad_unfold.
+      repeat break_match.
+      ++
+      allss.
+      rewrite foo.
+      rewrite IHil1.
+      repeat rewrite <- app_assoc.
+      st_equiv.
+      congruence.
+      ++
+        repeat find_inversion.
+          vmsts.
+          apply get_store_at_facts in Heqp2; eauto.
+          apply get_store_at_facts in Heqp5; eauto.
+          repeat do_bd.
+          destruct_conjs.
+          subst.
+          bogus.
+      ++
+        repeat find_inversion.
+         vmsts.
+         elimtype False; eapply get_store_at_determ.
+         apply Heqp2.
+         apply Heqp5.
+      ++
+        repeat find_inversion.
+          vmsts.
+          apply get_store_at_facts in Heqp2; eauto.
+          apply get_store_at_facts in Heqp5; eauto.
+          repeat do_bd.
+          destruct_conjs.
+          subst.
+          bogus.
+      ++
+        repeat find_inversion.
+          vmsts.
+          apply get_store_at_facts in Heqp2; eauto.
+          apply get_store_at_facts in Heqp5; eauto.
+          repeat do_bd.
+          destruct_conjs.
+          subst.
+          do_get_store_at_facts_fail; eauto.
+          do_get_store_at_facts_fail; eauto.
+          subst.
+          repeat do_bd.
+          subst.
+          eauto.
+      ++
+         repeat find_inversion.
+         vmsts.
+         elimtype False; eapply get_store_at_determ.
+         apply Heqp2.
+         apply Heqp5.
+      ++  repeat find_inversion.
+         vmsts.
+         elimtype False; eapply get_store_at_determ.
+         apply Heqp3.
+         apply Heqp2.
+      ++
+        repeat find_inversion.
+         vmsts.
+         elimtype False; eapply get_store_at_determ.
+         apply Heqp3.
+         apply Heqp2.
+      ++
+        do_get_store_at_facts_fail; eauto.
+        do_get_store_at_facts_fail; eauto.
+        pairs.
+        repeat find_inversion.
+        eauto.
+      
     + (* abesr case *)
 
       unfold run_vm_step. fold run_vm_step.
@@ -848,7 +899,56 @@ Proof.
 
       monad_unfold.
       rewrite IHil1. auto.
+    + (* abep case *)
+      unfold run_vm_step. fold run_vm_step.
+      monad_unfold.
+      unfold get_store_at.
+      monad_unfold.
+      repeat break_match.
+      ++
+        repeat find_inversion.
+        vmsts.
+        symmetry in Heqp3.
+        symmetry in Heqp2.
+        do_double_pop.
+        subst.
+        eauto.
+        repeat do_pop_stackm_facts.
+        subst.
+        repeat find_inversion.
+        eauto.
+        simpl. eauto.
+        rewrite foo.
+        rewrite IHil1.
+        repeat rewrite <- app_assoc.
+        erewrite trace_irrel; eauto.
+        erewrite trace_irrel_store; eauto.
+        erewrite stack_irrel; eauto.
+        eapply st_congr; eauto.
+        eapply st_congr; eauto.
+        eapply st_congr; eauto.
+      ++
+        repeat find_inversion.
+        vmsts.
+        symmetry in Heqp3.
+        symmetry in Heqp2.
+        bogus.
+      ++  repeat find_inversion.
+          vmsts.
+          symmetry in Heqp3.
+        symmetry in Heqp2.
+        bogus.
+      ++
+        repeat find_inversion.
+        vmsts.
+         symmetry in Heqp3.
+         symmetry in Heqp2.
+         do_double_pop_none.
+         repeat do_pop_stackm_fail.
+         subst.
+         eauto.
 Defined.
+
 
 Lemma pl_immut : forall il e s tr p o,
     st_pl
