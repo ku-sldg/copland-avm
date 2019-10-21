@@ -148,7 +148,8 @@ Definition build_comp (*(s:ev_stack)*) (i:AnnoInstr): VM unit :=
       let el1 := parallel_vm_events il1 in
       let el2 := parallel_vm_events il2 in
       put_store loc1 res1 ;;
-      put_store loc2 res2 ;;
+                put_store loc2 res2 ;;
+                put_ev (ppc res1 res2) ;;
       add_tracem (shuffled_events el1 el2)
 
 
@@ -1612,11 +1613,25 @@ Proof.
       subst.
       simpl in *.
       monad_unfold.
-      do_bd.
-    
-    
-    
-    
+      invc H10.
+      invc H4.
+      repeat find_inversion.
+      eauto.
+      repeat rewrite para_eval_vm.
+      eauto.
+    + vmsts.
+      repeat find_inversion.
+      do_get_store_at_facts; eauto.
+      do_get_store_at_facts_fail; eauto.
+      subst.
+      repeat rewrite para_eval_vm.
+      eauto.
+    + vmsts.
+      repeat find_inversion.
+      do_get_store_at_facts_fail; eauto.
+      subst.
+      repeat rewrite para_eval_vm.
+      eauto.
 Defined.
 
 Lemma st_stack_restore : forall t e s tr p o,
