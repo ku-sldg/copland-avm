@@ -1704,21 +1704,84 @@ Lemma get_store_in : forall x st st' o y,
     Maps.map_get o x = (Some y) ->
     False.
 Proof.
-Admitted.
+  intros.
+  destruct st.
+  simpl in *.
+  subst.
+  monad_unfold.
+  unfold get_store_at in *.
+  monad_unfold.
+  rewrite H1 in *.
+  find_inversion.
+Defined.
 
 Lemma map_get_get(*{V:Type}`{forall x y : V, Dec (x = y)}*) :
   forall (k:nat) (v:EvidenceC) l',
     Maps.map_get ((k,v) :: l') k = Some v.
 Proof.
-Admitted.
+  intros.
+  simpl.
+  break_match; eauto.
+  break_match; eauto.
+  congruence.
+  congruence.
+Defined.
 
 Lemma map_get_get_2(*{V:Type}`{forall x y : V, Dec (x = y)}*) :
   forall (k:nat) (v:EvidenceC) k' v' l',
+    k <> k' ->
     Maps.map_get ((k',v') :: (k,v) :: l') k = Some v.
 Proof.
-Admitted.
+  intros.
+  simpl.
+  repeat (
+  break_match; eauto;
+  break_match; eauto;
+  try congruence).
+Defined.
+
+Lemma wf_bpar : forall t r s x y,
+    (*well_formed (abpar r s x y) -> *)
+    (annotated t = (abpar r s x y)) ->
+  range x <> range y.
+Proof.
+  intros.
+  assert (well_formed (annotated t)).
+  unfold annotated. apply anno_well_formed.
+  intros.
+  generalize dependent x.
+  generalize dependent y.
+  generalize dependent r.
+  generalize dependent s.
+  generalize dependent H0.
+  induction t; intros.
+  - inv H.
+  - unfold annotated in *. unfold anno in *. fold anno in *.
+    simpl in *. expand_let_pairs. simpl in *. inv H.
+  - unfold annotated in *. unfold anno in *. fold anno in *.
+    simpl in *. expand_let_pairs. simpl in *. inv H.
+    expand_let_pairs. simpl in *. solve_by_inversion.
+  - unfold annotated in *. unfold anno in *. fold anno in *.
+    simpl in *. expand_let_pairs. simpl in *. inv H.
+    expand_let_pairs. solve_by_inversion.
+  - unfold annotated in *. unfold anno in *. fold anno in *.
+    repeat expand_let_pairs. simpl in *.
+    invc H0.
+    invc H.
+    destruct (anno t1 1).
+    simpl in *.
+    destruct (anno t2 n).
+    simpl in *.
+    destruct (range a).
+    destruct (range a0).
+    simpl in *.
+    subst.
+    find_inversion.
+Abort. 
 
 Lemma run_lstar : forall t tr et e e' s s' p p' o o',
+   (* annotated x = t -> *)
+    (*well_formed t -> *)
     run_vm (instr_compiler t)
            (mk_st e s [] p o) =
            (mk_st e' s' tr p' o') ->
@@ -1740,7 +1803,7 @@ Proof.
   generalize dependent s'.
   generalize dependent o.
   generalize dependent o'.
-  induction t; intros.
+  induction t; intros. (* unfold annotated in *. *)
   - (* aasp case *)
     destruct a;
      simpl in *; 
@@ -1748,6 +1811,7 @@ Proof.
         econstructor; try (econstructor; reflexivity).
   - (* aatt case *)
     simpl in *.
+    expand_let_pairs. simpl.
     destruct r.
     unfoldm.
     unfold run_vm_step in *.
@@ -1772,6 +1836,7 @@ Proof.
     eapply lstar_transitive.
     eapply lstar_strem.
     eapply IHt; eauto.
+   (* inv wft. eauto. *)
 
     apply run_at.
 
@@ -1814,9 +1879,11 @@ Proof.
     subst.
     
     eapply IHt1; eauto.
+    (* inv wft. eauto. *)
     eapply lstar_silent_tran.
     apply stlseqstop.
     eapply IHt2; eauto.
+    (* inv wft. eauto. *)
     assert (p = H2). {
       assert (
           st_pl (run_vm (instr_compiler t1)
@@ -1867,6 +1934,7 @@ Proof.
      eapply lstar_transitive.
      eapply lstar_stbsl.
      eapply IHt1; eauto.
+     (* inv wft; eauto. *)
 
           
      
@@ -1884,6 +1952,7 @@ Proof.
      eapply lstar_transitive.
      eapply lstar_stbsr.
      eapply IHt2; eauto.
+     (* inv wft; eauto. *)
      rewrite H in *.
      eauto.
 
@@ -1962,7 +2031,17 @@ Proof.
       simpl.
       reflexivity.
       eapply map_get_get_2.
-Defined.
+      admit.
+      (*
+      inv wft.
+      Print anno.
+      
+      subst.
+      simpl in *.
+      rewrite <- H5.
+
+      Print instr_compiler. *)    
+Admitted.
 
 Require Import Main.
 Require Import Event_system.
