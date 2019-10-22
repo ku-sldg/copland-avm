@@ -10,6 +10,8 @@ Require Import Verdi.Net.
 Require Import Verdi.LockServ.
 Require Import Verdi.Verdi.
 
+From QuickChick Require Import QuickChick Tactics.
+
 Set Nested Proofs Allowed.
 
 (** IO Axioms *)
@@ -20,7 +22,7 @@ Admitted.
 Definition parallel_att_vm_thread (li:list AnnoInstr) (e:EvidenceC) : EvidenceC.
 Admitted.
 
-Definition parallel_vm_events (li:list AnnoInstr) : list Ev.
+Definition parallel_vm_events (li:list AnnoInstr) (p:Plc) : list Ev.
 Admitted.
 
 Definition shuffled_events (el1:list Ev) (el2:list Ev) : list Ev.
@@ -142,11 +144,12 @@ Definition build_comp (*(s:ev_stack)*) (i:AnnoInstr): VM unit :=
 
   | abep loc1 loc2 il1 il2 =>
     e <- get_ev ;;
+      p <- get_pl ;;
       er <- pop_stackm ;;
       let res1 := parallel_att_vm_thread il1 e in
       let res2 := parallel_att_vm_thread il2 er in
-      let el1 := parallel_vm_events il1 in
-      let el2 := parallel_vm_events il2 in
+      let el1 := parallel_vm_events il1 p in
+      let el2 := parallel_vm_events il2 p in
       put_store loc1 res1 ;;
                 put_store loc2 res2 ;;
                 put_ev (ppc res1 res2) ;;
@@ -396,6 +399,13 @@ Proof.
           allss).
 Defined.
 
+Ltac do_flip :=
+  match goal with
+  | [H: (pop_stackm _ = _) |- _ ] =>
+    idtac "doing pop_stackm flip";
+    symmetry in H
+  end.
+
 Lemma foo : forall il m e s p o,
     st_trace (fold_left (run_vm_step) il
                         {| st_ev := e; st_trace := m; st_stack := s; st_pl := p; st_store := o |}) =
@@ -526,36 +536,27 @@ Proof.
       unfold run_vm_step; fold run_vm_step; monad_unfold; monad_unfold.
       repeat break_match;
         repeat find_inversion.
-      ++
-      vmsts.
-      symmetry in Heqp2.
-      symmetry in Heqp3.
-      do_double_pop.
-      apply pop_stackm_facts in Heqp2.
-      apply pop_stackm_facts in Heqp3.
-      destruct_conjs.
+      ++ vmsts.
+
+         repeat do_flip.
+         do_double_pop.
+         repeat do_pop_stackm_facts.
       subst. eauto.
       find_inversion.
-      simpl.
       erewrite IHil at 1.
       symmetry.
       erewrite IHil at 1.
       rewrite app_assoc. eauto.
-      ++ symmetry in Heqp3.
-         symmetry in Heqp2.
+      ++ repeat do_flip.
          bogus.
-      ++ symmetry in Heqp2.
-         symmetry in Heqp3.
+      ++ repeat do_flip.
          bogus.
       ++
         vmsts.
-        symmetry in Heqp2.
-        symmetry in Heqp3.
+        repeat do_flip.
         do_pop_stackm_fail.
         do_pop_stackm_fail.
-        destruct_conjs.
-        subst.
-        eauto.
+        subst; eauto.
 Defined.
 
 Lemma compile_not_empty :
@@ -909,8 +910,7 @@ Proof.
       ++
         repeat find_inversion.
         vmsts.
-        symmetry in Heqp3.
-        symmetry in Heqp2.
+        repeat do_flip.
         do_double_pop.
         subst.
         eauto.
@@ -931,19 +931,16 @@ Proof.
       ++
         repeat find_inversion.
         vmsts.
-        symmetry in Heqp3.
-        symmetry in Heqp2.
+        repeat do_flip.
         bogus.
       ++  repeat find_inversion.
           vmsts.
-          symmetry in Heqp3.
-        symmetry in Heqp2.
-        bogus.
+          repeat do_flip.
+          bogus.
       ++
         repeat find_inversion.
         vmsts.
-         symmetry in Heqp3.
-         symmetry in Heqp2.
+         repeat do_flip.
          do_double_pop_none.
          repeat do_pop_stackm_fail.
          subst.
@@ -1031,11 +1028,11 @@ Proof.
         try eauto;
         allss; eauto.
       ++
-        symmetry in Heqp1.
+        repeat do_flip.
         do_pop_stackm_facts.
         subst.
         eauto.
-      ++ symmetry in Heqp1.
+      ++ repeat do_flip.
          do_pop_stackm_fail.
          subst.
          eauto.    
@@ -1701,6 +1698,26 @@ Axiom run_at : forall t e s n o,
                 st_pl := n;
                 st_store := o |}.
 
+Lemma get_store_in : forall x st st' o y,
+    get_store_at x st = (None, st') ->
+    st_store st = o ->
+    Maps.map_get o x = (Some y) ->
+    False.
+Proof.
+Admitted.
+
+Lemma map_get_get(*{V:Type}`{forall x y : V, Dec (x = y)}*) :
+  forall (k:nat) (v:EvidenceC) l',
+    Maps.map_get ((k,v) :: l') k = Some v.
+Proof.
+Admitted.
+
+Lemma map_get_get_2(*{V:Type}`{forall x y : V, Dec (x = y)}*) :
+  forall (k:nat) (v:EvidenceC) k' v' l',
+    Maps.map_get ((k',v') :: (k,v) :: l') k = Some v.
+Proof.
+Admitted.
+
 Lemma run_lstar : forall t tr et e e' s s' p p' o o',
     run_vm (instr_compiler t)
            (mk_st e s [] p o) =
@@ -1891,6 +1908,60 @@ Proof.
      apply stbsrstop.
      econstructor.
      Unshelve. eauto. eauto. eauto.
+  - (* abpar case *)
+    destruct s. destruct r.
+    simpl in *.
+    unfold run_vm_step in *. monad_unfold; monad_unfold.
+    repeat break_match.
+    +
+      vmsts.
+      repeat find_inversion.
+      do_get_store_at_facts; eauto.
+      do_get_store_at_facts; eauto.
+      subst.
+      simpl.
+      econstructor.
+      econstructor.
+      eapply lstar_transitive.
+      simpl.
+      Check typeof.
+
+      Axiom bpar_shuffle : forall x p t1 t2 et1 et2,
+        lstar (bp x (conf t1 p et1) (conf t2 p et2))
+              (shuffled_events (parallel_vm_events (instr_compiler t1) p)
+                               (parallel_vm_events (instr_compiler t2) p))
+              (bp x (stop p (aeval t1 p et1)) (stop p (aeval t2 p et2))).
+
+      apply bpar_shuffle.
+      econstructor.
+      apply stbpstop.
+      econstructor.
+    + vmsts.
+      repeat find_inversion.
+      do_get_store_at_facts; eauto.
+      subst.
+      invc H4.
+      unfold Maps.map_set in *.
+      Check In.
+
+      elimtype False. eapply get_store_in.
+      eassumption.
+      simpl.
+      reflexivity.
+
+
+      Check map_get_get.
+
+      eapply map_get_get.
+    + vmsts.
+      repeat find_inversion.
+      subst.
+      unfold Maps.map_set in *.
+      elimtype False. eapply get_store_in.
+      eassumption.
+      simpl.
+      reflexivity.
+      eapply map_get_get_2.
 Defined.
 
 Require Import Main.
