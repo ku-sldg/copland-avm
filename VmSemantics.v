@@ -54,7 +54,7 @@ Definition prim_ev (a:Prim_Instr) (e:EvidenceC) : EvidenceC :=
     (hhc bs e)
   end. 
 
-Definition build_comp (*(s:ev_stack)*) (i:AnnoInstr): VM unit :=
+Definition build_comp (i:AnnoInstr): VM unit :=
   match i with
   | aprimInstr x a =>
     p <- get_pl ;;
@@ -73,25 +73,13 @@ Definition build_comp (*(s:ev_stack)*) (i:AnnoInstr): VM unit :=
       er <- pop_stackm ;;
       put_ev (ssc er e) ;;
       add_tracem [Term.join i p]
-
-      (*  | arpy i rpyi q =>
-    p <- get_pl ;;
-      e <- get_store_at rpyi ;;
-      put_ev e ;;
-      add_tracem [rpy i p q] *)
   
   | ajoinp i loc1 loc2 =>
     p <- get_pl ;;
       e1 <- get_store_at loc1 ;;
       e2 <- get_store_at loc2 ;;
       add_tracem [Term.join i p] 
-  (*
-  | ajoinp i =>
-    (*e <- pop_stackm ;;*)
-    e <- get_ev ;;
-      er <- pop_stackm ;;
-      put_ev (ppc e er) ;; (*push_stackm (ppc e er) ;; *)
-      add_tracem [Term.join i] *)
+
   | abesr =>
     e <- get_ev ;;
       er <- pop_stackm ;;
@@ -101,47 +89,17 @@ Definition build_comp (*(s:ev_stack)*) (i:AnnoInstr): VM unit :=
     e <- get_ev ;;
       put_store reqi (toRemote (unanno annt) q e) ;; (* TODO: make this contingent on a good remote setup.  Need to model such a situation *)
       p <- get_pl ;;
-      (*put_ev (toRemote (unanno annt) q e) ;;
-      let '(reqi,rpyi_last) := rg in
-      let rpyi := Nat.pred rpyi_last in *)
       let newTrace :=
-          [req reqi p q (unanno annt)] ++ (remote_events annt q) (* ++ [rpy rpyi p q] *) in
+          [req reqi p q (unanno annt)] ++ (remote_events annt q) in
+      (* TODO: move remote_events annt q trace to get_store_at, models successful remote execution *)
       add_tracem newTrace
 
   | arpy i rpyi q =>
     p <- get_pl ;;
       e <- get_store_at rpyi ;;
+      (* TODO: add remote_events annt q inside get_store_at, models successful remote execution *)
       put_ev e ;;
       add_tracem [rpy i p q]
-    
-
-
-
-(*
-  | areqrpy rg q annt =>
-    e <- get_ev ;;
-      p <- get_pl ;;
-      put_ev (toRemote (unanno annt) q e) ;;
-      let '(reqi,rpyi_last) := rg in
-      let rpyi := Nat.pred rpyi_last in
-      let newTrace :=
-          [req reqi p q (unanno annt)] ++ (remote_events annt q) ++ [rpy rpyi p q] in
-      add_tracem newTrace*)
-
-
-      (*
-  | areq reqi q annt =>
-    e <- get_ev ;;
-      put_store reqi (toRemote (unanno annt) q e) ;; (* TODO: make this contingent on a good remote setup.  Need to model such a situation *)
-      p <- get_pl ;;
-      (*put_ev (toRemote (unanno annt) q e) ;;
-      let '(reqi,rpyi_last) := rg in
-      let rpyi := Nat.pred rpyi_last in *)
-      let newTrace :=
-          [req reqi p q (unanno annt)] ++ (remote_events annt q) (* ++ [rpy rpyi p q] *) in
-      add_tracem newTrace
-*)
-
   | abep loc1 loc2 il1 il2 =>
     e <- get_ev ;;
       p <- get_pl ;;
@@ -154,23 +112,10 @@ Definition build_comp (*(s:ev_stack)*) (i:AnnoInstr): VM unit :=
                 put_store loc2 res2 ;;
                 put_ev (ppc res1 res2) ;;
       add_tracem (shuffled_events el1 el2)
-
-
-  (*
-  | abep rg1 rg2 il1 il2 =>
-    e <- get_ev ;;
-      er <- pop_stackm ;;
-      let res1 := parallel_att_vm_thread il1 e in
-      let res2 := parallel_att_vm_thread il2 er in
-      let el1 := parallel_vm_events il1 in
-      let el2 := parallel_vm_events il2 in
-      put_ev res1 ;;
-             push_stackm res2
              (* TODO: need to add axioms somehow to capture
                 trace of tr s.t. (shuffle el1 el2 = tr)
 
                 Perhaps we introduce a "start thread" event, where that event holds the events associated with the instructions executed.  Would require some sort of environment to listen for results from outstanding threads, and axioms asserting we had valid VM threads available to execute them *)
-*)
   end.
 
 (** Function-style semantics for VM *)
@@ -207,14 +152,6 @@ Ltac boom := repeat
              unfoldm; desp; vmsts;
              try_pop_all;
              bogus.
-(*
-  MonadVM.st_store
-    (fold_left run_vm_step il1
-       {| st_ev := e; st_stack := s; st_trace := trd; st_pl := p; st_store := o |}) =
-  MonadVM.st_store
-    (fold_left run_vm_step il1
-       {| st_ev := e; st_stack := s; st_trace := []; st_pl := p; st_store := o |})
- *)
 
 Ltac do_run :=
   match goal with
@@ -980,8 +917,6 @@ Proof.
       simpl. do_pop_stackm_facts. subst. eauto.
       do_pop_stackm_fail. subst. eauto.
     + (* ajoinp case *)
-      
-      
       simpl. unfold run_vm_step. fold run_vm_step. monad_unfold.
       unfold get_store_at.
       monad_unfold.
@@ -995,12 +930,7 @@ Proof.
          eauto.
       ++ invc Heqp5.
       ++ invc Heqp2. eauto.
-        
-        
-        
-        
-        
-        
+                
     + (* abesr case *)
       simpl. unfold run_vm_step. fold run_vm_step. monad_unfold.
       unfold get_ev. monad_unfold.
@@ -1195,7 +1125,6 @@ Proof.
     rewrite <- ya. auto.
 Defined.
 
-
 Lemma restl' : forall il e e' s s' x tr p p' o o',
     run_vm il {| st_ev := e; st_stack := s; st_trace := x; st_pl := p; st_store := o |} =
     {| st_ev := e'; st_stack := s'; st_trace := x ++ tr; st_pl := p'; st_store := o' |} ->
@@ -1272,7 +1201,6 @@ Ltac do_dca_fresh :=
     destruct_conjs
   end.
 
-
 Ltac do_stack0 :=                    
   match goal with
   | [H:  run_vm (instr_compiler _)
@@ -1293,8 +1221,6 @@ Proof.
   - (* asp_instr case *)
     destruct a;
       inv H; try reflexivity.
-
-
   - (* aatt case *)
     destruct r.
     invc H.
@@ -1503,41 +1429,12 @@ Proof.
     break_match. break_match. break_match.
     find_inversion.
     simpl in *. find_inversion.
-
-
     
     eapply store_get_set; eauto.
 
     find_inversion. simpl in *.
 
-
-
     elimtype False. eapply store_get_set_fail_none; eauto.
-    
-
-
-    (*
-    find_inversion.
-    unfold get_store_at in *.
-    unfold get in *. simpl in *.
-    invc H.
-    unfold run_vm_step in *.
-    monad_unfold.
-    unfold get_store_at in *.
-    monad_unfold.
-    break_match.
-    break_match.
-    break_match; try solve_by_inversion.
-    find_inversion.
-    simpl in *.
-    find_inversion.
-    break_match. break_match.
-    find_inversion. find_inversion.
-    break_match.
-    congruence.
-    break_match.
-    congruence.
-    auto.   *)
   - (* lseq case *)
     simpl in *.
     do_dca.
@@ -1570,7 +1467,6 @@ Proof.
     apply ssc_inv.
     eauto.
    
-
     eapply IHt2.
     do_stack1 t1.
     subst.
@@ -1610,10 +1506,11 @@ Proof.
       subst.
       simpl in *.
       monad_unfold.
+      (*
       invc H10.
       invc H4.
       repeat find_inversion.
-      eauto.
+      eauto. *)
       repeat rewrite para_eval_vm.
       eauto.
     + vmsts.
@@ -1777,7 +1674,13 @@ Proof.
     simpl in *.
     subst.
     find_inversion.
-Abort. 
+Abort.
+
+Axiom bpar_shuffle : forall x p t1 t2 et1 et2,
+    lstar (bp x (conf t1 p et1) (conf t2 p et2))
+          (shuffled_events (parallel_vm_events (instr_compiler t1) p)
+                           (parallel_vm_events (instr_compiler t2) p))
+          (bp x (stop p (aeval t1 p et1)) (stop p (aeval t2 p et2))).
 
 Lemma run_lstar : forall t tr et e e' s s' p p' o o',
    (* annotated x = t -> *)
@@ -1836,6 +1739,7 @@ Proof.
     eapply lstar_transitive.
     eapply lstar_strem.
     eapply IHt; eauto.
+    Print run_at.
    (* inv wft. eauto. *)
 
     apply run_at.
@@ -1935,9 +1839,7 @@ Proof.
      eapply lstar_stbsl.
      eapply IHt1; eauto.
      (* inv wft; eauto. *)
-
-          
-     
+  
      rewrite H11 in *.
      eassumption.
      simpl.
@@ -1993,13 +1895,6 @@ Proof.
       econstructor.
       eapply lstar_transitive.
       simpl.
-      Check typeof.
-
-      Axiom bpar_shuffle : forall x p t1 t2 et1 et2,
-        lstar (bp x (conf t1 p et1) (conf t2 p et2))
-              (shuffled_events (parallel_vm_events (instr_compiler t1) p)
-                               (parallel_vm_events (instr_compiler t2) p))
-              (bp x (stop p (aeval t1 p et1)) (stop p (aeval t2 p et2))).
 
       apply bpar_shuffle.
       econstructor.
@@ -2017,9 +1912,6 @@ Proof.
       eassumption.
       simpl.
       reflexivity.
-
-
-      Check map_get_get.
 
       eapply map_get_get.
     + vmsts.
