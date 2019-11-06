@@ -397,10 +397,10 @@ Proof.
 
       ++ repeat find_inversion.
          vmsts.
-         do_get_store_at_facts; eauto.
-         do_get_store_at_facts; eauto. subst.
-         do_get_store_at_facts; eauto. subst.
-         do_get_store_at_facts; eauto. subst.
+         do_get_store_at_facts; eauto; subst.
+         do_get_store_at_facts; eauto; subst.
+         do_get_store_at_facts; eauto; subst.
+         do_get_store_at_facts; eauto; subst.
          repeat do_bd.
        
          erewrite IHil at 1.
@@ -415,11 +415,11 @@ Proof.
           destruct_conjs.
           subst.
           bogus.
-      ++ repeat find_inversion.
+    (*  ++ repeat find_inversion.
          vmsts.
          elimtype False; eapply get_store_at_determ.
          apply Heqp2.
-         apply Heqp5.
+         apply Heqp5. *)
       ++ repeat find_inversion.
           vmsts.
           apply get_store_at_facts in Heqp2; eauto.
@@ -428,11 +428,19 @@ Proof.
           destruct_conjs.
           subst.
           bogus.
-      ++ repeat find_inversion.
+   (*   ++ repeat find_inversion.
          vmsts.
-         elimtype False; eapply get_store_at_determ.
-         apply Heqp3.
-         apply Heqp2. 
+         bogus.
+         elimtype False; eapply get_store_at_determ;
+           [try reflexivity | try reflexivity].
+         repeat (try eassumption;
+           try eassumption;
+           reflexivity).
+         
+         
+         apply Heqp3;
+           apply Heqp2.
+         apply Heqp2. *)
     + (* abesr case *)
       boom.
       simpl.
@@ -472,9 +480,14 @@ Proof.
     + (* abep case *)
       unfold run_vm_step; fold run_vm_step; monad_unfold; monad_unfold.
       repeat break_match;
-        repeat find_inversion.
-      ++ vmsts.
+        repeat find_inversion;
+        vmsts;
+        try (repeat do_flip; bogus);
+        try (repeat do_pop_stackm_fail);
+        subst; eauto.
 
+      
+      ++ vmsts.
          repeat do_flip.
          do_double_pop.
          repeat do_pop_stackm_facts.
@@ -484,16 +497,6 @@ Proof.
       symmetry.
       erewrite IHil at 1.
       rewrite app_assoc. eauto.
-      ++ repeat do_flip.
-         bogus.
-      ++ repeat do_flip.
-         bogus.
-      ++
-        vmsts.
-        repeat do_flip.
-        do_pop_stackm_fail.
-        do_pop_stackm_fail.
-        subst; eauto.
 Defined.
 
 Lemma compile_not_empty :
@@ -501,18 +504,18 @@ Lemma compile_not_empty :
     (instr_compiler t) <> [].
 Proof.
   intros.
-  induction t.
-  - destruct a; simpl; congruence.
+  induction t;
+    try destruct a;
+    try destruct r;
+    try destruct s;
+    simpl; try congruence.
+(*  - destruct a; simpl; congruence.
   - simpl.
     destruct r.
-    congruence. 
+    congruence.  *)
   - simpl.
     Search (_ <> []).
     destruct (instr_compiler t1); simpl; congruence.
-  - simpl. destruct s. congruence.
-  - simpl.
-    destruct s. simpl.
-    congruence.
 Defined.
 
 Lemma lstar_stls :
@@ -764,16 +767,15 @@ Proof.
           do_get_store_at_facts_fail; eauto.
           subst.
           repeat do_bd.
-          subst.
-          eauto.
+          subst; eauto.
       ++
          repeat find_inversion.
          vmsts.
-         elimtype False; eapply get_store_at_determ.
-         apply Heqp2.
-         apply Heqp5.
+         bogus.
       ++  repeat find_inversion.
-         vmsts.
+          vmsts.
+          
+         
          elimtype False; eapply get_store_at_determ.
          apply Heqp3.
          apply Heqp2.

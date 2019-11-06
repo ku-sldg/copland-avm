@@ -418,7 +418,8 @@ Ltac bogus :=
     | [ H: get_store_at ?n _ = (Some _,_),
            G: get_store_at ?n _ = (None,_) |- _ ] =>
       idtac "matched get_store_at_determ" ;
-      elimtype False; eapply get_store_at_determ; eauto; contradiction                                    
+      elimtype False; eapply get_store_at_determ;
+      [apply H | apply G]
     end.
 
 Ltac pairs :=
