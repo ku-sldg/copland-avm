@@ -258,6 +258,25 @@ Ltac do_get_store_at_facts :=
     apply get_store_at_facts in H
   end; destruct_conjs.
 
+Lemma bound_and_deterministic : forall (s:ev_store) n (e1 e2:EvidenceC),
+    Maps.bound_to s n e1 ->
+    Maps.bound_to s n e2 ->
+    e1 = e2.
+Proof.
+  intros.
+  inv H. inv H0.
+  congruence.
+Defined.
+
+Ltac do_bd :=
+  match goal with
+  | [ H: Maps.bound_to ?s ?n ?e1,
+         G: Maps.bound_to ?s ?n ?e2  |- _ ] =>
+    assert (e1 = e2)
+      by (eapply bound_and_deterministic; eauto);
+    clear H; clear G
+  end.
+
 Lemma get_store_at_facts_fail : forall st_ev st_ev0 (st_trace:list Ev) (st_trace0:list Ev)
                              st_stack st_stack0 st_trace st_trace0 p p' o o' n,
     get_store_at n {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace; st_pl := p; st_store := o |} = 
@@ -420,6 +439,21 @@ Ltac bogus :=
       idtac "matched get_store_at_determ" ;
       elimtype False; eapply get_store_at_determ;
       [apply H | apply G]
+    end.
+
+Ltac get_store_at_bogus :=
+  vmsts;
+ (* repeat *)
+    match goal with                                        
+    | [ H: get_store_at ?n _ = (Some _,_),
+           G: get_store_at ?n _ = (Some _,_) |- _ ] =>
+      idtac "matched get_store_at_bogus" ;
+      apply get_store_at_facts in H; eauto;
+      apply get_store_at_facts in G; eauto;
+      repeat do_bd;
+      destruct_conjs;
+      subst;
+      bogus; reflexivity
     end.
 
 Ltac pairs :=

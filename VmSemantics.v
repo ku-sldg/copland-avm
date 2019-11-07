@@ -158,24 +158,9 @@ Ltac do_run :=
   | [H:  run_vm (_ :: _) _ = _ |- _ ] => invc H; unfold run_vm_step in *; monad_unfold; monad_unfold
   end.
 
-Lemma bound_and_deterministic : forall (s:ev_store) n (e1 e2:EvidenceC),
-    Maps.bound_to s n e1 ->
-    Maps.bound_to s n e2 ->
-    e1 = e2.
-Proof.
-  intros.
-  inv H. inv H0.
-  congruence.
-Defined.
 
-Ltac do_bd :=
-  match goal with
-  | [ H: Maps.bound_to ?s ?n ?e1,
-         G: Maps.bound_to ?s ?n ?e2  |- _ ] =>
-    assert (e1 = e2)
-      by (eapply bound_and_deterministic; eauto);
-    clear H; clear G
-  end.
+
+
 
 Ltac allss :=
   repeat find_inversion;
@@ -383,7 +368,7 @@ Proof.
       bogus.
       desp.
       bogus.
-     
+
       pairs.
       subst.
       rewrite IHil.
@@ -393,54 +378,23 @@ Proof.
           unfold run_vm_step in *; fold run_vm_step in *;
           repeat monad_unfold;
           repeat break_match;
-          try (allss; tauto).
+          try (allss; tauto);
+          try (repeat find_inversion;
+           vmsts;
+           get_store_at_bogus).
 
-      ++ repeat find_inversion.
-         vmsts.
-         do_get_store_at_facts; eauto; subst.
-         do_get_store_at_facts; eauto; subst.
-         do_get_store_at_facts; eauto; subst.
-         do_get_store_at_facts; eauto; subst.
-         repeat do_bd.
+      repeat find_inversion.
+      vmsts.
+      do_get_store_at_facts; eauto; subst.
+      do_get_store_at_facts; eauto; subst.
+      do_get_store_at_facts; eauto; subst.
+      do_get_store_at_facts; eauto; subst.
+      repeat do_bd.
        
-         erewrite IHil at 1.
-         symmetry.
-         erewrite IHil at 1.
-         rewrite app_assoc. eauto.
-      ++  repeat find_inversion.
-          vmsts.
-          apply get_store_at_facts in Heqp2; eauto.
-          apply get_store_at_facts in Heqp5; eauto.
-          repeat do_bd.
-          destruct_conjs.
-          subst.
-          bogus.
-    (*  ++ repeat find_inversion.
-         vmsts.
-         elimtype False; eapply get_store_at_determ.
-         apply Heqp2.
-         apply Heqp5. *)
-      ++ repeat find_inversion.
-          vmsts.
-          apply get_store_at_facts in Heqp2; eauto.
-          apply get_store_at_facts in Heqp5; eauto.
-          repeat do_bd.
-          destruct_conjs.
-          subst.
-          bogus.
-   (*   ++ repeat find_inversion.
-         vmsts.
-         bogus.
-         elimtype False; eapply get_store_at_determ;
-           [try reflexivity | try reflexivity].
-         repeat (try eassumption;
-           try eassumption;
-           reflexivity).
-         
-         
-         apply Heqp3;
-           apply Heqp2.
-         apply Heqp2. *)
+      erewrite IHil at 1.
+      symmetry.
+      erewrite IHil at 1.
+      rewrite app_assoc. eauto.
     + (* abesr case *)
       boom.
       simpl.
@@ -485,12 +439,11 @@ Proof.
         try (repeat do_flip; bogus);
         try (repeat do_pop_stackm_fail);
         subst; eauto.
-
       
-      ++ vmsts.
-         repeat do_flip.
-         do_double_pop.
-         repeat do_pop_stackm_facts.
+      vmsts.
+      repeat do_flip.
+      do_double_pop.
+      repeat do_pop_stackm_facts.
       subst. eauto.
       find_inversion.
       erewrite IHil at 1.
@@ -509,12 +462,7 @@ Proof.
     try destruct r;
     try destruct s;
     simpl; try congruence.
-(*  - destruct a; simpl; congruence.
   - simpl.
-    destruct r.
-    congruence.  *)
-  - simpl.
-    Search (_ <> []).
     destruct (instr_compiler t1); simpl; congruence.
 Defined.
 
@@ -527,7 +475,6 @@ Proof.
   eapply lstar_tran; eauto.
   eapply lstar_silent_tran; eauto.
 Qed.
-
 
 Lemma lstar_strem : forall st st' tr p r,
     lstar st tr
@@ -723,7 +670,11 @@ Proof.
       unfold run_vm_step. fold run_vm_step.
       monad_unfold.
       unfold get_ev. monad_unfold.
-      repeat break_match.
+      repeat break_match;
+        try (get_store_at_bogus; congruence);
+        try (repeat find_inversion;
+             vmsts;
+             bogus; congruence).
       ++
       allss.
       rewrite foo.
@@ -739,52 +690,11 @@ Proof.
           repeat do_bd.
           destruct_conjs.
           subst.
-          bogus.
-      ++
-        repeat find_inversion.
-         vmsts.
-         elimtype False; eapply get_store_at_determ.
-         apply Heqp2.
-         apply Heqp5.
-      ++
-        repeat find_inversion.
-          vmsts.
-          apply get_store_at_facts in Heqp2; eauto.
-          apply get_store_at_facts in Heqp5; eauto.
-          repeat do_bd.
-          destruct_conjs.
-          subst.
-          bogus.
-      ++
-        repeat find_inversion.
-          vmsts.
-          apply get_store_at_facts in Heqp2; eauto.
-          apply get_store_at_facts in Heqp5; eauto.
-          repeat do_bd.
-          destruct_conjs.
-          subst.
-          do_get_store_at_facts_fail; eauto.
-          do_get_store_at_facts_fail; eauto.
+          try (do_get_store_at_facts_fail; eauto;
+          do_get_store_at_facts_fail; eauto).
           subst.
           repeat do_bd.
           subst; eauto.
-      ++
-         repeat find_inversion.
-         vmsts.
-         bogus.
-      ++  repeat find_inversion.
-          vmsts.
-          
-         
-         elimtype False; eapply get_store_at_determ.
-         apply Heqp3.
-         apply Heqp2.
-      ++
-        repeat find_inversion.
-         vmsts.
-         elimtype False; eapply get_store_at_determ.
-         apply Heqp3.
-         apply Heqp2.
       ++
         do_get_store_at_facts_fail; eauto.
         do_get_store_at_facts_fail; eauto.
