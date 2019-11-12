@@ -33,7 +33,6 @@ Inductive Arg: Set :=
 Notation Arg := nat (only parsing).
 Notation ASP_ID := nat (only parsing).
 Notation N_ID := nat (only parsing).
-Notation BS := nat (only parsing).
 
 Definition eq_arg_dec:
   forall x y: Arg, {x = y} + {x <> y}.
@@ -79,81 +78,7 @@ Inductive Evidence: Set :=
 | ss: Evidence -> Evidence -> Evidence
 | pp: Evidence -> Evidence -> Evidence.
 
-(** * Concrete Evidence *)
-Inductive EvidenceC: Set :=
-| mtc: EvidenceC
-(*| sp: EvidenceC -> EvidenceC -> EvidenceC*)
-| kkc: ASP_ID -> (list Arg) -> (*Plc ->*) Plc -> BS -> EvidenceC -> EvidenceC
-| uuc: ASP_ID -> (list Arg) -> (*Plc ->*) BS -> EvidenceC -> EvidenceC
-| ggc: (*Plc ->*) EvidenceC -> BS -> EvidenceC
-| hhc: (*Plc ->*) BS -> EvidenceC -> EvidenceC
-| nnc: (*Plc ->*) N_ID -> BS -> EvidenceC -> EvidenceC
-| ssc: EvidenceC -> EvidenceC -> EvidenceC
-| ppc: EvidenceC -> EvidenceC -> EvidenceC.
-
-(** * Place-holder axioms for IO operations *)
-Definition invokeKIM (i:ASP_ID) (q:Plc) (args:list Arg) : BS.
-Admitted.
-Definition invokeUSM (i:ASP_ID) (args:list Arg) : BS.
-Admitted.
-Definition signEv (e:EvidenceC) : BS.
-Admitted.
-Definition hashEv (e:EvidenceC) : BS.
-Admitted.
-Definition toRemote (t:Term) (pTo:Plc) (e:EvidenceC) : EvidenceC.
-Admitted.
-Definition parallel_eval_thread (t:Term) (e:EvidenceC) : EvidenceC.
-Admitted.
-
-Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=
-  match ec with
-  | mtc => mt
-  | kkc i A q _ ec' => kk i A p q (et_fun p ec')
-  | uuc i A _ ec' => uu i A p (et_fun p ec')
-  | ggc ec' _ => gg p (et_fun p ec')
-  | hhc _ ec' => hh p (et_fun p ec')
-  | nnc n _ ec' => nn p n (et_fun p ec')
-  | ssc ec1 ec2 => ss (et_fun p ec1) (et_fun p ec2)
-  | ppc ec1 ec2 => pp (et_fun p ec1) (et_fun p ec2)
-  end.
-    
-(** * Types *)
-Inductive ET: Plc -> EvidenceC -> Evidence -> Prop :=
-| mtt: forall p, ET p mtc mt
-| kkt: forall id A p q bs e et,
-    ET p e et -> 
-    ET p (kkc id A q bs e) (kk id A p q et)
-| uut: forall id A p bs e et,
-    ET p e et -> 
-    ET p (uuc id A bs e) (uu id A p et)
-| ggt: forall p bs e et,
-    ET p e et ->
-    ET p (ggc e bs) (gg p et)
-| hht: forall p bs e et,
-    ET p e et ->
-    ET p (hhc bs e) (hh p et)
-| nnt: forall p bs e et i,
-    ET p e et ->
-    ET p (nnc i bs e) (nn p i et)
-| sst: forall p e1 e2 e1t e2t,
-    ET p e1 e1t ->
-    ET p e2 e2t ->
-    ET p (ssc e1 e2) (ss e1t e2t)
-| ppt: forall p e1 e2 e1t e2t,
-    ET p e1 e1t ->
-    ET p e2 e2t ->
-    ET p (ppc e1 e2) (pp e1t e2t).
-Hint Constructors ET.
-
-Theorem et_et_fun : forall p ec,
-    ET p ec (et_fun p ec).
-Proof.
-  intros.
-  generalize dependent p.
-  induction ec; intros; try (simpl; eauto).
-Defined.
-
-Fixpoint typeof_asp t p e :=
+Fixpoint eval_asp t p e :=
   match t with
   | CPY => e
   | KIM i q A => kk i A p q e
@@ -164,15 +89,15 @@ Fixpoint typeof_asp t p e :=
 
 (** The evidence associated with a term, a place, and some initial evidence. *)
 
-Fixpoint typeof (t:Term) (p:Plc) (e:Evidence) : Evidence :=
+Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
   match t with
-  | asp a => typeof_asp a p e
-  | att q t1 => typeof t1 q e
-  | lseq t1 t2 => typeof t2 p (typeof t1 p e)
-  | bseq s t1 t2 => ss (typeof t1 p (sp (fst s) e))
-                       (typeof t2 p (sp (snd s) e)) 
-  | bpar s t1 t2 => pp (typeof t1 p (sp (fst s) e))
-                       (typeof t2 p (sp (snd s) e))
+  | asp a => eval_asp a p e
+  | att q t1 => eval t1 q e
+  | lseq t1 t2 => eval t2 p (eval t1 p e)
+  | bseq s t1 t2 => ss (eval t1 p (sp (fst s) e))
+                       (eval t2 p (sp (snd s) e)) 
+  | bpar s t1 t2 => pp (eval t1 p (sp (fst s) e))
+                       (eval t2 p (sp (snd s) e))
   end.
 
 
@@ -434,7 +359,7 @@ Qed.
 
 Fixpoint aeval t p e :=
   match t with
-  | aasp _ x => typeof (asp x) p e
+  | aasp _ x => eval (asp x) p e
   | aatt _ q x => aeval x q e
   | alseq _ t1 t2 => aeval t2 p (aeval t1 p e)
   | abseq _ s t1 t2 => ss (aeval t1 p ((sp (fst s)) e))
@@ -446,7 +371,7 @@ Fixpoint aeval t p e :=
 
 Lemma eval_aeval:
   forall t p e i,
-    typeof t p e = aeval (snd (anno t i)) p e.
+    eval t p e = aeval (snd (anno t i)) p e.
 Proof.
   induction t; intros; simpl; auto.
   - repeat expand_let_pairs; simpl;
@@ -712,29 +637,56 @@ Qed.
 
 Ltac events_event_range :=
   repeat match goal with
-         | [ H: events _ _ |- _ ] =>
+         | [ H: events _ _ _ |- _ ] =>
            apply events_range in H; auto
          end; omega.
 
 Lemma events_injective:
-  forall t v1 v2 p,
+  forall t p v1 v2,
     well_formed t ->
     events t p v1 ->
     events t p v2 ->
     ev v1 = ev v2 ->
     v1 = v2.
 Proof.
-  (*
-  intros t v1 v2 p H.
-  generalize dependent v1.
-  generalize dependent v2.
-    induction H; intros; try (inv v1; inv v2; tauto).
+  intros t p v1 v2 H; revert v2; revert v1;
+    revert p.
+  induction H; intros.
   - inv H0; inv H1; auto.
   - pose proof H as G.
-    apply well_formed_range in H.
-    inv H2; inv H3; simpl in *; auto.
+    apply well_formed_range in G.
+    inv H2; inv H3; simpl in *; subst; auto.
     + events_event_range.
     + events_event_range.
+    + events_event_range.
+    + eauto.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+  - pose proof H as G.
+    pose proof H0 as G0.
+    apply well_formed_range in G.
+    apply well_formed_range in G0.
+    inv H4; inv H5; simpl in *; auto.
+    + eauto.
+    + events_event_range.
+    + events_event_range.
+    + eauto.
+  - pose proof H as G.
+    pose proof H0 as G0.
+    apply well_formed_range in G.
+    apply well_formed_range in G0.
+    inv H4; inv H5; simpl in *; subst; auto.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+    + eapply IHwell_formed1 in H13; eauto.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+    + eapply IHwell_formed2 in H13; eauto.
     + events_event_range.
     + events_event_range.
     + events_event_range.
@@ -743,92 +695,19 @@ Proof.
     pose proof H0 as G0.
     apply well_formed_range in G.
     apply well_formed_range in G0.
-    inv H4; inv H5; simpl in *.
-    + auto.
-    + events_event_range.
-    + events_event_range.
-    + auto.
-  - pose proof H as G.
-    pose proof H0 as G0.
-    apply well_formed_range in G.
-    apply well_formed_range in G0.
-    inv H4; inv H5; simpl in *; try auto.
+    inv H4; inv H5; simpl in *; subst; auto.
     + events_event_range.
     + events_event_range.
     + events_event_range.
     + events_event_range.
+    + eapply IHwell_formed1 in H13; eauto.
     + events_event_range.
     + events_event_range.
     + events_event_range.
     + events_event_range.
+    + eapply IHwell_formed2 in H13; eauto.
     + events_event_range.
     + events_event_range.
     + events_event_range.
     + events_event_range.
-  - pose proof H as G.
-    pose proof H0 as G0.
-    apply well_formed_range in G.
-    apply well_formed_range in G0.
-    inv H4; inv H5; simpl in *; try auto.
-    + events_event_range.
-    + events_event_range.
-    + events_event_range.
-    + events_event_range.
-    + events_event_range.
-    + events_event_range.
-    + events_event_range.
-    + events_event_range.
-    + events_event_range.
-    + events_event_range.
-    + events_event_range.
-    + events_event_range.
-Qed. *)
-Admitted.
-
-
-
-(** * Eval function definition *)
-Definition splitEv (sp:SP) (e:EvidenceC) : EvidenceC :=
-  match sp with
-  | ALL => e
-  | NONE => mtc
-  end.
-
-Definition eval_asp (a:ASP) (e:EvidenceC) : EvidenceC :=
-  match a with
-  | CPY => e
-  | KIM i q args =>
-    let bs := invokeKIM i q args in
-    (kkc i args q bs e)
-  | USM i args =>
-    let bs := invokeUSM i args in
-    (uuc i args bs e)
-  | SIG =>
-    let bs := signEv e in
-    (ggc e bs)
-  | HSH =>
-    let bs := hashEv e in
-    (hhc bs e)
-  end.
-
-Fixpoint eval (t:Term) (e:EvidenceC) : EvidenceC :=
-  match t with
-  | asp a => eval_asp a e
-  | att q t1 => toRemote t1 q e
-  | lseq t1 t2 =>
-    let e1 := eval t1 e in
-    eval t2 e1
-         
-  | bseq (sp1,sp2) t1 t2 =>
-    let e1 := splitEv sp1 e in
-    let e2 := splitEv sp2 e in
-    let e1' := eval t1 e1 in
-    let e2' := eval t2 e2 in
-    (ssc e1' e2') 
-  | bpar (sp1,sp2) t1 t2 =>
-    let e1 := splitEv sp1 e in
-    let e2 := splitEv sp2 e in
-    let e1' := parallel_eval_thread t1 e1 in
-    let e2' := parallel_eval_thread t2 e2 in
-    (ppc e1' e2')
-  end.
+Qed.
