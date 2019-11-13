@@ -428,7 +428,7 @@ Inductive events: AnnoTerm -> Plc -> (*Evidence ->*) Ev -> Prop :=
       events (aatt r q t) p (*e*) (req i p q (unanno t))
 | evtsatt:
     forall r q t ev p,
-      events t p ev (*q e ev*) ->
+      events t q ev (*q e ev*) ->
       events (aatt r q t) p ev (*e ev*)
 | evtsattrpy:
     forall r q t i p,
@@ -581,7 +581,7 @@ Lemma events_range_event:
     fst (range t) <= i < snd (range t) ->
     exists v, events t p v /\ ev v = i.
 Proof.  
-  intros t i p H; revert i;
+  intros t i p H; revert i; revert p;
   induction H; intros; simpl in *.
   - destruct x; eapply ex_intro; split; auto;
       destruct r as [j k]; simpl in *; omega.
@@ -589,7 +589,7 @@ Proof.
   - eapply at_range in H2; eauto.
     repeat destruct_disjunct; subst.
     + eapply ex_intro; split; auto.
-    + apply IHwell_formed in H2.
+    + apply IHwell_formed with (p:=p) in H2.
       destruct H2 as [v].
       destruct H2; subst.
       exists v; split; auto.
@@ -599,20 +599,20 @@ Proof.
       * simpl; auto.
   - apply lin_range with (i:=i) in H2; eauto.
     destruct H2.
-    + apply IHwell_formed1 in H2; auto.
+    + apply IHwell_formed1 with (p:=p) in H2; auto.
       destruct H2 as [v]; destruct H2; subst.
       exists v; split; auto.
-    + apply IHwell_formed2 in H2; auto.
+    + apply IHwell_formed2 with (p:=p) in H2; auto.
       destruct H2 as [v]; destruct H2; subst.
       exists v; split; auto.
     + omega.
   - apply bra_range with (i:=i) (r:=r) in H2; eauto.
     repeat destruct_disjunct; subst.
     + eapply ex_intro; split; auto.
-    + apply IHwell_formed1 in H2.
+    + apply IHwell_formed1 with (p:=p) in H2.
       destruct H2 as [v]; destruct H2; subst.
       exists v; split; auto.
-    + apply IHwell_formed2 in H2.
+    + apply IHwell_formed2 with (p:=p) in H2.
       destruct H2 as [v]; destruct H2; subst.
       exists v; split; auto.
     + eapply ex_intro; split.
@@ -622,10 +622,10 @@ Proof.
   - apply bra_range with (i:=i) (r:=r) in H2; eauto.
     repeat destruct_disjunct; subst.
     + eapply ex_intro; split; auto.
-    + apply IHwell_formed1 in H2.
+    + apply IHwell_formed1 with (p:=p) in H2.
       destruct H2 as [v]; destruct H2; subst.
       exists v; split; auto.
-    + apply IHwell_formed2 in H2.
+    + apply IHwell_formed2 with (p:=p) in H2.
       destruct H2 as [v]; destruct H2; subst.
       exists v; split; auto.
     + eapply ex_intro; split.

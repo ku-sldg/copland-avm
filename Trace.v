@@ -245,59 +245,59 @@ Inductive trace: AnnoTerm -> Plc ->
                  list Ev -> Prop :=
 | tasp: forall r x p,
     trace (aasp r x) p [(asp_event (fst r) x p)]
-| tatt: forall r x q tr1 p,
+| tatt: forall r x p q tr1,
     trace x q tr1 ->
     trace (aatt r q x) p
           ((req (fst r) p q (unanno x))
              :: tr1 ++
              [(rpy (pred (snd r)) p q)])
-| tlseq: forall r x y tr0 tr1 p,
+| tlseq: forall r x y p tr0 tr1,
     trace x p tr0 ->
     trace y p tr1 ->
     trace (alseq r x y) p (tr0 ++ tr1)
-| tbseq: forall r s x y tr0 tr1 p,
+| tbseq: forall r s x y p tr0 tr1,
     trace x p tr0 ->
     trace y p tr1 ->
     trace (abseq r s x y) p
           ((split (fst r) p)
              :: tr0 ++ tr1 ++
-             [(join (pred (snd r)) p )]) (*
-| tbpar: forall r s x y tr0 tr1 tr2,
-    trace x tr0 ->
-    trace y tr1 ->
+             [(join (pred (snd r)) p)])
+| tbpar: forall r s x y p tr0 tr1 tr2,
+    trace x p tr0 ->
+    trace y p tr1 ->
     shuffle tr0 tr1 tr2 ->
-    trace (abpar r s x y)
-          ((split (fst r) )
+    trace (abpar r s x y) p
+          ((split (fst r) p)
              :: tr2 ++
-             [(join (pred (snd r)))]) *). 
+             [(join (pred (snd r)) p)]).
 Hint Resolve tasp.
 
 Lemma trace_length:
-  forall t tr p,
+  forall t p tr,
     trace t p tr -> esize t = length tr.
 Proof.
   induction t; intros; inv H;
     simpl; auto; rewrite app_length; simpl; auto.
-  (*
-  - apply IHt in H4; omega.
+  - apply IHt in H5. omega.
   - apply IHt1 in H5.
-    apply IHt2 in H6.
+    apply IHt2 in H6. omega.
+  - apply IHt1 in H6.
+    apply IHt2 in H7.
     rewrite app_length. simpl in *. omega.
-  - apply IHt1 in H5.
-    apply IHt2 in H6.
-    apply shuffle_length in H7. omega. *)
-Admitted.
+  - apply IHt1 in H6.
+    apply IHt2 in H7.
+    apply shuffle_length in H8. omega.
+Qed.
 
 (** The events in a trace correspond to the events associated with an
     annotated term, a place, and some evidence. *)
 
 Lemma trace_events:
-  forall t tr v p,
+  forall t p tr v,
     well_formed t ->
     trace t p tr ->
     In v tr <-> events t p v.
 Proof.
-  (*
   split; intros.
   - induction H0; inv H.
     + inv H1; try inv H.
@@ -340,7 +340,7 @@ Proof.
     + simpl; rewrite in_app_iff; simpl.
       inv H1; auto.
       right; right.
-      rewrite H8; simpl; auto.
+      rewrite H9; simpl; auto.
     + rewrite in_app_iff.
       inv H1; auto.
     + simpl.
@@ -348,23 +348,21 @@ Proof.
       rewrite in_app_iff.
       simpl.
       inv H1; auto.
-      rewrite H10 in *.
+      rewrite H11 in *.
       auto.
     + simpl.
       rewrite in_app_iff.
       simpl.
       inv H1; auto.
-      * apply IHtrace1 in H11; auto.
+      * apply IHtrace1 in H12; auto.
         eapply shuffle_in_left in H0; eauto.
-      * apply IHtrace2 in H11; auto.
+      * apply IHtrace2 in H12; auto.
         eapply shuffle_in_right in H0; eauto.
-      * rewrite H11 in *; auto.
-Qed. *)
-Admitted.
-
+      * rewrite H12 in *; auto.
+Qed.
 
 Lemma trace_range:
-  forall t tr v p,
+  forall t p tr v,
     well_formed t ->
     trace t p tr ->
     In v tr ->
@@ -376,7 +374,7 @@ Proof.
 Qed.
 
 Lemma trace_range_event:
-  forall t tr i p,
+  forall t p tr i,
     well_formed t ->
     trace t p tr ->
     fst (range t) <= i < snd (range t) ->
@@ -389,7 +387,7 @@ Proof.
 Qed.
 
 Lemma trace_injective_events:
-  forall t tr v0 v1 p,
+  forall t p tr v0 v1,
     well_formed t ->
     trace t p tr ->
     In v0 tr -> In v1 tr ->
@@ -403,12 +401,11 @@ Proof.
 Qed.
 
 Lemma nodup_trace:
-  forall t tr p,
+  forall t p tr,
     well_formed t ->
     trace t p tr ->
     NoDup tr.
 Proof.
-  (*
   induction t; intros; inv H; inv H0.
   - constructor; auto; constructor.
   - destruct r as [i j]; simpl in *; subst; simpl.
@@ -416,68 +413,60 @@ Proof.
     + intro.
       apply in_app_iff in H.
       destruct H.
-      * eapply trace_range in H7; eauto.
+      * eapply trace_range in H8; eauto.
         simpl in *.
         omega.
       * inv H.
         discriminate H0.
         inv H0.
     + apply nodup_append; unfold disjoint_lists; auto; intros.
-     (* * eapply IHt; eauto.*)
+      * eapply IHt; eauto.
       * constructor; auto; constructor.
       * inv H0.
-        eapply trace_range in H7; eauto.
+        eapply trace_range in H8; eauto.
         simpl in *.
         omega.
         inv H1.
- (* - apply nodup_append; unfold disjoint_lists; auto; intros.
+  - apply nodup_append; unfold disjoint_lists; auto; intros.
     eapply IHt1; eauto.
     eapply IHt2; eauto.
     eapply trace_range in H11; eauto.
-    eapply trace_range in H12; eauto.
-    omega. *)
-  - apply nodup_append; unfold disjoint_lists; auto; intros.
-    + eapply trace_range in H10; eauto.
-      eapply trace_range in H9; eauto.
-        simpl in *.
-        omega.
-    
+    eapply trace_range in H10; eauto.
+    omega.
   - destruct r as [i j]; simpl in *; subst; simpl.
     apply NoDup_cons.
     + intro.
       repeat rewrite in_app_iff in H.
       repeat destruct_disjunct.
-      * eapply trace_range in H10; eauto.
-        simpl in H10.
-        omega.
       * eapply trace_range in H11; eauto.
         simpl in H11.
+        omega.
+      * eapply trace_range in H12; eauto.
+        simpl in H12.
         apply well_formed_range in H5; auto.
         omega.
       * inv H.
         discriminate H0.
         inv H0.
     + apply nodup_append; unfold disjoint_lists; auto; intros.
-     (* * eapply IHt1; eauto.*)
-      * 
-
-        apply nodup_append; unfold disjoint_lists; auto; intros.
-       (* -- eapply IHt2; eauto. *)
+      * eapply IHt1; eauto.
+      * apply nodup_append; unfold disjoint_lists; auto; intros.
+        -- eapply IHt2; eauto.
         -- apply NoDup_cons.
            intro; inv H.
            constructor.
         -- inv H0.
-           eapply trace_range in H11; eauto.
-           simpl in H11.
+           eapply trace_range in H12; eauto.
+           simpl in H12.
            omega.
            inv H1.
       * apply in_app_iff in H0; destruct H0.
-        eapply trace_range in H10; eauto.
         eapply trace_range in H11; eauto.
+        eapply trace_range in H12; eauto.
         omega.
         inv H0.
-        eapply trace_range in H10; eauto.
-        simpl in H10.
+        eapply trace_range in H11; eauto.
+        simpl in H11.
         apply well_formed_range in H6; auto.
         omega.
         inv H1.
@@ -487,21 +476,23 @@ Proof.
       rewrite in_app_iff in H; destruct H.
       * eapply shuffle_in in H; eauto.
         destruct H.
-        -- eapply trace_range in H10; eauto.
-           simpl in H10.
-           omega.
         -- eapply trace_range in H11; eauto.
            simpl in H11.
+           omega.
+        -- eapply trace_range in H12; eauto.
+           simpl in H12.
            apply well_formed_range in H5; auto.
            omega.
       * inv H.
         discriminate H0.
         inv H0.
     + apply nodup_append; unfold disjoint_lists; auto; intros.
-      * apply shuffle_nodup_append in H12;
+      * apply shuffle_nodup_append in H13;
           unfold disjoint_lists; auto; intros.
+        eapply IHt1; eauto.
+        eapply IHt2; eauto.
+        eapply trace_range in H12; eauto.
         eapply trace_range in H11; eauto.
-        eapply trace_range in H10; eauto.
         omega.
       * apply NoDup_cons.
         intro.
@@ -510,35 +501,32 @@ Proof.
       * inv H0.
         -- eapply shuffle_in in H; eauto.
            destruct H.
-           eapply trace_range in H10; eauto.
-           simpl in H10.
-           apply well_formed_range in H6; auto.
-           omega.
            eapply trace_range in H11; eauto.
            simpl in H11.
+           apply well_formed_range in H6; auto.
+           omega.
+           eapply trace_range in H12; eauto.
+           simpl in H12.
            omega.
 
         -- inv H1.
-Qed. *)
-Admitted.
-
+Qed.
 
 (** * Event Systems and Traces *)
 
 Lemma evsys_tr_in:
-  forall t tr ev0 p,
+  forall t p tr ev0,
     well_formed t ->
     trace t p tr ->
     ev_in ev0 (ev_sys t p) ->
     In ev0 tr.
 Proof.
-  (*
   intros.
   induction H0; inv H; simpl in H1;
     try expand_let_pairs; inv H1; simpl; auto.
   - left. inv H3; auto.
   - right. inv H3; auto.
-    + apply IHtrace in H5; auto.
+    + apply IHtrace in H2; auto.
       rewrite in_app_iff; auto.
     + inv H2. rewrite in_app_iff.
       right. simpl. left. auto.
@@ -568,21 +556,18 @@ Proof.
         rewrite in_app_iff; auto.
     + inv H2.
       apply in_app_iff; right; simpl; auto.
-Qed. *)
-Admitted.
-
+Qed.
 
 (** The traces associated with an annotated term are compatible with
     its event system. *)
 
 Theorem trace_order:
-  forall t tr ev0 ev1 p,
+  forall t p tr ev0 ev1,
     well_formed t ->
     trace t p tr ->
     prec (ev_sys t p) ev0 ev1 ->
     earlier tr ev0 ev1.
 Proof.
-  (*
   intros.
   induction H0; inv H; simpl in H1;
     try expand_let_pairs; inv H1; simpl; auto.
@@ -683,6 +668,3 @@ Proof.
         apply earlier_left; auto.
     + inv H5.
 Qed.
-   *)
-Admitted.
-

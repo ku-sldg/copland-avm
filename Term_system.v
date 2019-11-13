@@ -15,16 +15,15 @@ Require Import Omega Preamble More_lists Term Event_system.
 
 (** Construct an event system from an annotated term, place, and
     evidence. *)
-Check asp_event.
-Print asp_event.
-Fixpoint ev_sys (t: AnnoTerm) (p:Plc) : EvSys Ev :=
+
+Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
   match t with
   | aasp (i, j) x => leaf (i, j) (asp_event i x p)
   | aatt (i, j) q x =>
     before (i, j)
       (leaf (i, S i) (req i p q (unanno x)))
       (before (S i, j)
-              (ev_sys x p)
+              (ev_sys x q)
               (leaf (pred j, j) (rpy (pred j) p q)))
   | alseq r x y => before r (ev_sys x p)
                           (ev_sys y p)
@@ -37,7 +36,7 @@ Fixpoint ev_sys (t: AnnoTerm) (p:Plc) : EvSys Ev :=
                            (ev_sys x p)
                            (ev_sys y p))
                    (leaf ((pred j), j)
-                   (join (pred j) p )))
+                   (join (pred j) p)))
   | abpar (i, j) s x y =>
     before (i, j)
            (leaf (i, S i)
@@ -63,7 +62,6 @@ Lemma well_structured_evsys:
     well_formed t ->
     well_structured ev (ev_sys t p).
 Proof.
-  
   induction t; intros; inv H; simpl;
     repeat expand_let_pairs; destruct r as [i k];
       simpl in *; subst; auto.
@@ -71,87 +69,55 @@ Proof.
       destruct a; simpl; auto.
   - apply ws_before; simpl; auto.
     rewrite H4.
-    apply ws_before; simpl; auto; rewrite evsys_range; auto. 
+    apply ws_before; simpl; auto; rewrite evsys_range; auto.
   - apply ws_before; auto; repeat rewrite evsys_range; auto.
-    
-  - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto). 
   - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto).
-    repeat (apply ws_merge; simpl in *; auto; repeat rewrite evsys_range; auto). 
+  - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto).
+    repeat (apply ws_merge; simpl in *; auto; repeat rewrite evsys_range; auto).
 Qed.
-
-
 
 (** The events in the event system correspond to the events associated
     with a term, a place, and some evidence. *)
 
 Lemma evsys_events:
-  forall t ev p,
+  forall t p ev,
     well_formed t ->
     ev_in ev (ev_sys t p) <-> events t p ev.
-Proof. (*
-  split; induction t; intros; inv H; simpl in *;
+Proof.
+  split; revert p; induction t; intros; inv H; simpl in *;
     repeat expand_let_pairs; simpl in *.
   - inv H0; auto; destruct a; simpl; auto.
-  - inv H0; auto.
-
-  - inv H0; auto.
-  - inv H0; auto.
+  -
     (*
+    rewrite H6 in H0; simpl in H0.
+    inv H0; auto.
+    inv H2. auto.
+    inv H2. econstructor.
+    apply IHt; eauto. *)
     
-    inv H2; auto.
-    inv H2; auto.
-    inv H1; auto.
-
-    apply evtsattrpy. simpl. omega.
-*)
     
-
-
-(*
-    rewrite H6 in H0; clear H6; simpl in H0.
-    rewrite H5 in H0; clear H5; simpl in H0.
-    inv H0. inv H2.
-    inv H4; auto.
-    econstructor. 
-
-
-    auto. inv H2; auto.
-    inv H1; auto. *)
+    rewrite H6 in H0; simpl in H0.
+    inv H0; auto; inv H2; auto; inv H1; auto.
   - inv H0; auto.
   - rewrite H9 in H0; simpl in H0.
     inv H0; inv H2; auto; inv H1; auto.
   - rewrite H9 in H0; simpl in H0.
     inv H0; inv H2; auto; inv H1; auto.
   - inv H0; auto.
+  - rewrite H6; simpl.
+    inv H0; auto.
+    rewrite H8 in H6.
+    apply Nat.succ_inj in H6; subst; auto.
   - inv H0; auto.
-
-
-
-
-    rewrite H6; simpl.
-    
-    Print ev_in.
-    apply ein_beforer.
-    apply ein_beforer.
-    assert (snd (range t) = i). omega.
-    subst.
-    apply ein_leaf.
-
-  - inv H0; auto.
-  - inv H0; auto.
-    apply ein_beforer.
-    apply ein_beforer.
-    assert ((Init.Nat.pred (snd r) = i)). omega. subst.
-    apply ein_leaf.
-
- -   inv H0; auto.
-    apply ein_beforer.
-    apply ein_beforer.
-    assert ((Init.Nat.pred (snd r) = i)). omega. subst.
-    apply ein_leaf. 
-Qed. *)
-Admitted.
-
+  - rewrite H9; simpl.
+    inv H0; auto.
+    rewrite H11 in H9.
+    apply Nat.succ_inj in H9; subst; auto.
+  - rewrite H9; simpl.
+    inv H0; auto.
+    rewrite H11 in H9.
+    apply Nat.succ_inj in H9; subst; auto.
+Qed.
 
 (** Maximal events are unique. *)
 
@@ -160,7 +126,6 @@ Lemma supreme_unique:
     well_formed t ->
     exists ! v, supreme (ev_sys t p) v.
 Proof.
-  
   intros.
   assert (G: well_structured ev (ev_sys t p)).
   apply well_structured_evsys; auto.
@@ -175,6 +140,7 @@ Proof.
     revert H1.
     revert H0.
     revert G.
+    revert p.
     induction H; intros.
     + destruct r as [i j]; simpl in *.
       inv H0; inv H1; auto.
@@ -197,13 +163,11 @@ Proof.
       inv H4; inv H5; auto.
 Qed.
 
-
 Lemma evsys_max_unique:
   forall t p,
     well_formed t ->
     unique (supreme (ev_sys t p)) (max (ev_sys t p)).
 Proof.
-  
   intros.
   assert (G: well_structured ev (ev_sys t p)).
   apply well_structured_evsys; auto.
@@ -215,6 +179,7 @@ Proof.
   revert H0.
   revert G.
   revert x'.
+  revert p.
   induction H; intros; destruct r as [i j]; inv G; simpl in *; auto.
   - inv H0; auto.
   - repeat apply before_sup in H2.
@@ -227,21 +192,20 @@ Proof.
     inv H4; auto.
 Qed.
 
-
 (** Maximal event evidence output matches [aeval]. *)
 
 (*
 Definition out_ev v :=
   match v with
-  | copy _ _ e => e
-  | kmeas _ _ _ _ _ e => e
-  | umeas _ _ _ _ e => e
-  | sign _ _ e => e
-  | hash _ _ e => e
-  | req _ _ _ t => mt
-  | rpy _ _ _ e => e
-  | split _ _ _ _ e => e
-  | join _ _ _ _ e => e
+  | copy _ e => e
+  | kmeas _ _ _ _ e => e
+  | umeas _ _ _ e => e
+  | sign _ e => e
+  | hash _ e => e
+  | req _ _ _ e => e
+  | rpy _ _ e => e
+  | split _ e => e
+  | join _ e => e
   end.
 
 Lemma max_eval:
@@ -254,7 +218,8 @@ Proof.
   revert p.
   induction H; intros; simpl; repeat expand_let_pairs; simpl; auto.
   destruct x; simpl; auto.
-Qed. *)
+Qed.
+*)
 
 (** lseq is associative relative to the event semantics *)
 
