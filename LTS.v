@@ -24,7 +24,7 @@ Inductive St: Set :=
 | rem: Plc -> Plc -> St -> St
 | ls: St -> AnnoTerm -> St
 | bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
-| bsr: nat -> Evidence -> St -> St 
+| bsr: nat -> Evidence -> St -> St
 | bp: nat -> St -> St -> St.
 
 Fixpoint pl (s:St) :=
@@ -34,7 +34,7 @@ Fixpoint pl (s:St) :=
   | rem _ p _ => p
   | ls st _ => pl st
   | bsl _ _ _ p _ => p
-  | bsr _ _ st => pl st 
+  | bsr _ _ st => pl st
   | bp _ _ st => pl st
   end.
 
@@ -121,7 +121,6 @@ Inductive step: St -> option Ev -> St -> Prop :=
       step (bsr j e (stop p e'))
            (Some (join (pred j) p))
            (stop p (ss e e'))
-           
 (** Branching Parallel composition *)
 
 | stbpar:
@@ -142,8 +141,8 @@ Inductive step: St -> option Ev -> St -> Prop :=
 | stbpstop:
     forall j p e p' e',
       step (bp j (stop p e) (stop p' e'))
-           (Some (join (pred j) p))
-           (stop p' (pp e e')).  (* TODO: p' above? *)
+           (Some (join (pred j) p'))
+           (stop p' (pp e e')).
 Hint Constructors step.
 
 (** A step preserves place. *)
@@ -260,7 +259,6 @@ Qed.
 
 (** * Correct Path Exists *)
 
-
 Lemma star_strem:
   forall st0 st1 j p,
     star st0 st1 -> star (rem j p st0) (rem j p st1).
@@ -278,7 +276,6 @@ Proof.
   induction H; auto.
   eapply star_tran; eauto.
 Qed.
-
 
 Lemma star_stbsl:
   forall st0 st1 j t p e,
@@ -312,7 +309,6 @@ Proof.
     eapply star_tran; eauto.
   - eapply star_tran; eauto.
 Qed.
-
 
 Theorem correct_path_exists:
   forall t p e,
@@ -356,7 +352,7 @@ Definition halt st :=
   end.
 
 (** The step relation nevers gets stuck. *)
-(*
+
 Theorem never_stuck:
   forall st0,
     halt st0 \/ exists e st1, step st0 e st1.
@@ -365,20 +361,20 @@ Proof.
   - left; simpl; auto.
   - right.
     destruct a.
-    + exists (Some (asp_event (fst r) a)).
+    + exists (Some (asp_event (fst r) a n)).
       eapply ex_intro; eauto.
-    + exists (Some (req (fst r) n0 (unanno a))).
+    + exists (Some (req (fst r) n n0 (unanno a))).
       eapply ex_intro; eauto.
     + exists None.
       eapply ex_intro; eauto.
-    + exists (Some (split (fst r))).
+    + exists (Some (split (fst r) n)).
       eapply ex_intro; eauto.
-    + exists (Some (split (fst r))).
+    + exists (Some (split (fst r) n)).
       eapply ex_intro; eauto.
   - right.
     destruct IHst0.
     + destruct st0; simpl in H; try tauto.
-      exists (Some (rpy (pred n) n1)).
+      exists (Some (rpy (pred n) n0 n1)).
       eapply ex_intro; eauto.
     + destruct H as [e H].
       exists e.
@@ -403,7 +399,7 @@ Proof.
   - right.
     destruct IHst0.
     + destruct st0; simpl in H; try tauto.
-      exists (Some (join (pred n))).
+      exists (Some (join (pred n) n0)).
       eapply ex_intro; eauto.
     + destruct H as [e0 H].
       exists e0.
@@ -415,7 +411,7 @@ Proof.
       clear H.
       destruct IHst0_2.
       * destruct st0_2; simpl in H; try tauto.
-        exists (Some (join (pred n))).
+        exists (Some (join (pred n) n1)).
         eapply ex_intro; eauto.
       * destruct H as [e0 H].
         exists e0.
@@ -426,7 +422,6 @@ Proof.
       destruct H as [st H].
       exists (bp n st st0_2). auto.
 Qed.
-*)
 
 (** * Termination *)
 
@@ -478,14 +473,13 @@ Qed.
 
 (** Size of a term (number of steps to reduce). *)
 
-
 Fixpoint tsize t: nat :=
   match t with
   | aasp _ _ => 1
-  | aatt _ _ x => 2 + tsize x 
+  | aatt _ _ x => 2 + tsize x
   | alseq _ x y => 2 + tsize x + tsize y
-  | abseq _ _ x y => 3 + tsize x + tsize y 
-  | abpar _ _ x y => 2 + tsize x + tsize y 
+  | abseq _ _ x y => 3 + tsize x + tsize y
+  | abpar _ _ x y => 2 + tsize x + tsize y
   end.
 
 (** Size of a state (number of steps to reduce). *)
@@ -497,8 +491,8 @@ Fixpoint ssize s: nat :=
   | rem _ _ x => 1 + ssize x
   | ls x t => 1 + ssize x + tsize t
   | bsl _ x t _ _ => 2 + ssize x + tsize t
-  | bsr _ _ x => 1 + ssize x 
-  | bp _ x y => 1 + ssize x + ssize y 
+  | bsr _ _ x => 1 + ssize x
+  | bp _ x y => 1 + ssize x + ssize y
   end.
 
 (** Halt state has size 0. *)
@@ -552,7 +546,6 @@ Proof.
   apply halt_size.
   omega.
 Qed.
-
 
 (** * Numbered Labeled Transitions *)
 

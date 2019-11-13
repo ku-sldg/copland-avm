@@ -27,30 +27,30 @@ Inductive traceS: St -> list Ev -> Prop :=
 | tconf: forall t tr p e,
     trace t p tr ->
     traceS (conf t p e) tr
-(*| trem: forall st tr j p,
+| trem: forall st tr j p,
     traceS st tr ->
     traceS (rem j p st)
            (tr ++
-               [(rpy (pred j) (*p*) (pl st))]) *)
+               [(rpy (pred j) p (pl st))])
 | tls: forall st tr1 t tr2,
     traceS st tr1 ->
-    trace t (pl st) (*(seval st)*) tr2 ->
+    trace t (pl st) tr2 ->
     traceS (ls st t) (tr1 ++ tr2)
-(*| tbsl: forall st tr1 t p e tr2 j,
+| tbsl: forall st tr1 t p e tr2 j,
     traceS st tr1 ->
-    trace t tr2 ->
+    trace t p tr2 ->
     traceS (bsl j st t p e)
            (tr1 ++ tr2 ++
-                [(join (pred j) )])
+                [(join (pred j) p)])
 | tbsr: forall st tr j e,
     traceS st tr ->
     traceS (bsr j e st)
-           (tr ++ [(join (pred j) )])
+           (tr ++ [(join (pred j) (pl st))])
 | tbp: forall st1 tr1 st2 tr2 tr3 j,
     traceS st1 tr1 -> traceS st2 tr2 ->
     shuffle tr1 tr2 tr3 ->
     traceS (bp j st1 st2)
-           (tr3 ++ [(join (pred j) )]) *).
+           (tr3 ++ [(join (pred j) (pl st2))]).
 Hint Constructors traceS.
 
 Fixpoint esizeS s:=
@@ -61,33 +61,30 @@ Fixpoint esizeS s:=
   | ls st t => esizeS st + esize t
   | bsl _ st t _ _ => 1 + esizeS st + esize t
   | bsr _ _ st => 1 + esizeS st
-  | bp _ st1 st2 => 1 + esizeS st1 + esizeS st2 
+  | bp _ st1 st2 => 1 + esizeS st1 + esizeS st2
   end.
 
 Lemma esize_tr:
-  forall t tr p,
+  forall t p tr,
     trace t p tr -> length tr = esize t.
-Proof. (*
+Proof.
   induction t; intros; inv H; simpl;
     autorewrite with list; simpl; auto.
-  apply IHt in H4. omega.
+  apply IHt in H5. omega.
   apply IHt1 in H5.
   apply IHt2 in H6. omega.
-  apply IHt1 in H5.
-  apply IHt2 in H6. (*omega.*)
-  apply shuffle_length in H7. omega.
-  (*
-  apply IHt1 in H7.
-  apply IHt2 in H8.
-  omega. *)
-Qed. *)
-Admitted.
-
+  apply IHt1 in H6.
+  apply IHt2 in H7. omega.
+  apply shuffle_length in H8.
+  apply IHt1 in H6.
+  apply IHt2 in H7.
+  omega.
+Qed.
 
 Lemma esizeS_tr:
   forall st tr,
     traceS st tr -> length tr = esizeS st.
-Proof. (*
+Proof.
   induction st; intros; inv H; simpl; auto.
   - destruct a; apply esize_tr in H4; simpl in *; auto.
   - rewrite app_length; simpl.
@@ -105,9 +102,7 @@ Proof. (*
     apply IHst2 in H5.
     apply shuffle_length in H6.
     omega.
-Qed. *)
-Admitted.
-
+Qed.
 
 Lemma step_silent_tr:
   forall st st' tr,
@@ -115,7 +110,6 @@ Lemma step_silent_tr:
     traceS st' tr ->
     traceS st tr.
 Proof.
-  (*
   induction st; intros; inv H; inv H0.
   - constructor.
     constructor; auto.
@@ -124,50 +118,37 @@ Proof.
     pose proof H6 as G1.
     apply step_pl_eq in G; auto.
     apply step_seval in G1; auto.
-    rewrite <- G. (*rewrite <- G1.*)
+    rewrite <- G.
     eapply IHst in H6; eauto.
   - constructor; auto.
     eapply IHst in H2; eauto.
-    (*
     pose proof H5 as G.
     apply step_pl_eq in H5.
     rewrite H5; auto.
-    apply step_seval in G.
-    rewrite G; auto. *)
   - rewrite <- app_nil_l with (l:=tr).
     constructor; auto.
   - pose proof H8 as G.
     eapply IHst in H8; eauto.
-    (*
-    apply step_seval in G.
-    rewrite <- G; auto.*)
   - rewrite <- app_nil_l with (l:=tr0).
     rewrite <- app_assoc.
     apply tbsl; auto. simpl; auto.
     inv H4; auto.
   - pose proof H6 as G.
     pose proof H6 as G1.
-    eapply IHst in H6; eauto. (*
+    eapply IHst in H6; eauto.
     apply step_seval in G.
-    rewrite <- G; auto.
-    apply step_pl_eq in G1.
-    rewrite <- G1; auto.*)
-  - pose proof H6 as G.
-    eapply IHst1 in H6; eauto. (*
-    apply step_seval in G.
-    rewrite <- G; auto.
-    apply tbp with (tr1:=tr1)(tr2:=tr2); auto. *)
-  - pose proof H6 as G.
-    pose proof H6 as G1.
-    eapply IHst2 in H6; eauto. (*
-    apply step_seval in G.
-    rewrite <- G; auto.
     apply step_pl_eq in G1.
     rewrite <- G1; auto.
-    apply tbp with (tr1:=tr1)(tr2:=tr2); auto. *)
-Qed. *)
-Admitted.
-
+  - pose proof H6 as G.
+    eapply IHst1 in H6; eauto.
+  - pose proof H6 as G.
+    pose proof H6 as G1.
+    eapply IHst2 in H6; eauto.
+    apply step_seval in G.
+    apply step_pl_eq in G1.
+    rewrite <- G1; auto.
+    apply tbp with (tr1:=tr1)(tr2:=tr2); auto.
+Qed.
 
 Lemma step_evt_tr:
   forall st st' ev tr,
@@ -175,7 +156,6 @@ Lemma step_evt_tr:
     traceS st' tr ->
     traceS st (ev::tr).
 Proof.
-  (*
   induction st; intros; inv H; inv H0.
   - constructor.
     constructor.
@@ -190,7 +170,7 @@ Proof.
     pose proof H6 as G1.
     apply step_pl_eq in G1.
     eapply IHst in H6; eauto.
-    (*rewrite <- G.*) rewrite <- G1.
+    rewrite <- G1.
     rewrite app_comm_cons; auto.
   - rewrite <- app_nil_l; auto.
     apply trem; auto.
@@ -201,11 +181,10 @@ Proof.
     eapply IHst in H5; eauto.
     rewrite app_comm_cons.
     apply tls; auto.
-    (*rewrite G. rewrite G1; auto. *)
+    rewrite G1; auto.
   - pose proof H8 as G.
     apply step_seval in G.
     eapply IHst in H8; eauto.
-    (*rewrite <- G.*)
     rewrite app_comm_cons; auto.
   - pose proof H6 as G.
     apply step_seval in G.
@@ -213,14 +192,14 @@ Proof.
     apply step_pl_eq in G1.
     eapply IHst in H6; eauto.
     rewrite app_comm_cons;
-      (*rewrite <- G; rewrite <- G1;*) auto.
+      rewrite <- G1; auto.
   - rewrite <- app_nil_l; constructor; auto.
   - pose proof H6 as G.
     apply step_seval in G.
     eapply IHst1 in H6; eauto.
     apply shuffle_left with (e:=ev) in H7.
     rewrite app_comm_cons;
-      (*rewrite <- G;*) auto.
+      auto.
     apply tbp with (tr1:=(ev::tr1))(tr2:=tr2); auto.
   - pose proof H6 as G.
     apply step_seval in G.
@@ -229,13 +208,11 @@ Proof.
     apply shuffle_right with (e:=ev) in H7.
     eapply IHst2 in H6; eauto.
     rewrite app_comm_cons;
-      (*rewrite <- G; rewrite <- G1;*) auto.
+      rewrite <- G1; auto.
     apply tbp with (tr1:=tr1)(tr2:=(ev::tr2)); auto.
   - rewrite <- app_nil_l; auto.
     apply tbp with (tr1:=[])(tr2:=[]); auto.
-Qed. *)
-Admitted.
-
+Qed.
 
 Lemma nlstar_trace_helper:
   forall e p n st0 tr st1,
@@ -277,7 +254,7 @@ Proof.
 Qed.
 
 (** The key theorem. *)
-Print prec.
+
 Theorem ordered:
   forall t p e tr ev0 ev1,
     well_formed t ->
@@ -287,5 +264,5 @@ Theorem ordered:
 Proof.
   intros.
   apply lstar_trace in H0; auto.
-  apply trace_order with (t:=t) (p:=p); auto.
+  apply trace_order with (t:=t)(p:=p); auto.
 Qed.
