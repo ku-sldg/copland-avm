@@ -1,4 +1,4 @@
-Require Import Term.
+Require Export Term.
 
 Notation BS := nat (only parsing).
 
@@ -31,8 +31,8 @@ Admitted.
 Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=
   match ec with
   | mtc => mt
-  | kkc i A q _ ec' => kk i A p q (et_fun p ec')
-  | uuc i A _ ec' => uu i A p (et_fun p ec')
+  | kkc i A q _ ec' => kk i p q A (et_fun p ec')
+  | uuc i A _ ec' => uu i p A (et_fun p ec')
   | ggc ec' _ => gg p (et_fun p ec')
   | hhc _ ec' => hh p (et_fun p ec')
   | nnc n _ ec' => nn p n (et_fun p ec')
@@ -45,10 +45,10 @@ Inductive ET: Plc -> EvidenceC -> Evidence -> Prop :=
 | mtt: forall p, ET p mtc mt
 | kkt: forall id A p q bs e et,
     ET p e et -> 
-    ET p (kkc id A q bs e) (kk id A p q et)
+    ET p (kkc id A q bs e) (kk id p q A et)
 | uut: forall id A p bs e et,
     ET p e et -> 
-    ET p (uuc id A bs e) (uu id A p et)
+    ET p (uuc id A bs e) (uu id p A et)
 | ggt: forall p bs e et,
     ET p e et ->
     ET p (ggc e bs) (gg p et)
