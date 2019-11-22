@@ -31,7 +31,7 @@ Admitted.
 Definition prim_trace (i:nat) (p:Plc) (a:Prim_Instr) : (list Ev) :=
   match a with
   | copy => [Term.copy i p]
-  | kmeas asp_id q A => [Term.kmeas i p asp_id q A]
+(*  | kmeas asp_id q A => [Term.kmeas i p asp_id q A] *)
   | umeas asp_id A => [Term.umeas i p asp_id A]
   | sign => [Term.sign i p]
   | hash => [Term.hash i p]
@@ -40,9 +40,9 @@ Definition prim_trace (i:nat) (p:Plc) (a:Prim_Instr) : (list Ev) :=
 Definition prim_ev (a:Prim_Instr) (e:EvidenceC) : EvidenceC :=
   match a with
   | copy => e
-  | kmeas i q args =>
+(*  | kmeas i q args =>
     let bs := invokeKIM i q args in
-    (kkc i args q bs e)
+    (kkc i args q bs e) *)
   | umeas i args =>
     let bs := invokeUSM i args in
     (uuc i args bs e)

@@ -39,8 +39,8 @@ Hint Resolve eq_arg_dec.
 
 Inductive ASP: Set :=
 | CPY: ASP
-| KIM: ASP_ID -> Plc -> (list Arg) -> ASP
-| USM: ASP_ID -> (list Arg) -> ASP
+(* | KIM: ASP_ID -> Plc -> (list Arg) -> ASP *)
+| ASPC: ASP_ID -> (list Arg) -> ASP
 | SIG: ASP
 | HSH: ASP.
 
@@ -65,7 +65,7 @@ Inductive Term: Set :=
 Inductive Evidence: Set :=
 | mt: Evidence
 | sp: SP -> Evidence -> Evidence
-| kk: ASP_ID -> Plc -> Plc -> (list Arg) -> Evidence -> Evidence
+(* | kk: ASP_ID -> Plc -> Plc -> (list Arg) -> Evidence -> Evidence *)
 | uu: ASP_ID -> Plc -> (list Arg) -> Evidence -> Evidence
 | gg: Plc -> Evidence -> Evidence
 | hh: Plc -> Evidence -> Evidence
@@ -76,8 +76,7 @@ Inductive Evidence: Set :=
 Fixpoint eval_asp t p e :=
   match t with
   | CPY => e
-  | KIM i q A => kk i p q A e
-  | USM i A => uu i p A e
+  | ASPC i A => uu i p A e
   | SIG => gg p e
   | HSH => hh p e
   end.
@@ -109,7 +108,7 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
 
 Inductive Ev: Set :=
 | copy: nat -> Plc -> Ev
-| kmeas: nat -> Plc -> ASP_ID -> Plc -> (list Arg) -> Ev
+(* | kmeas: nat -> Plc -> ASP_ID -> Plc -> (list Arg) -> Ev *)
 | umeas: nat -> Plc -> ASP_ID -> (list Arg) -> Ev
 | sign: nat -> Plc -> Ev
 | hash: nat -> Plc -> Ev
@@ -131,7 +130,7 @@ Hint Resolve eq_ev_dec.
 Definition ev x :=
   match x with
   | copy i _ => i
-  | kmeas i _ _ _ _ => i
+(*  | kmeas i _ _ _ _ => i *)
   | umeas i _ _ _ => i
   | sign i _ => i
   | hash i _ => i
@@ -151,8 +150,8 @@ See Lemma [events_injective].
 Definition asp_event i x p :=
   match x with
   | CPY => copy i p
-  | KIM id q A => kmeas i p id q A
-  | USM id A => umeas i p id A
+(*  | KIM id q A => kmeas i p id q A *)
+  | ASPC id A => umeas i p id A
   | SIG => sign i p
   | HSH => hash i p
   end.
@@ -384,14 +383,14 @@ Inductive events: AnnoTerm -> Plc -> (*Evidence ->*) Ev -> Prop :=
     forall r i p,
       fst r = i ->
       events (aasp r CPY) p (copy i p)
-| evtskim:
+(*| evtskim:
     forall i id r a q p,
       fst r = i ->
-      events (aasp r (KIM id q a)) p (kmeas i p id q a)
+      events (aasp r (KIM id q a)) p (kmeas i p id q a) *)
 | evtsusm:
     forall i id r a p,
       fst r = i ->
-      events (aasp r (USM id a)) p (umeas i p id a)
+      events (aasp r (ASPC id a)) p (umeas i p id a)
 | evtssig:
     forall r i p,
       fst r = i ->

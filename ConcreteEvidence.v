@@ -6,7 +6,7 @@ Notation BS := nat (only parsing).
 Inductive EvidenceC: Set :=
 | mtc: EvidenceC
 (*| sp: EvidenceC -> EvidenceC -> EvidenceC*)
-| kkc: ASP_ID -> (list Arg) -> (*Plc ->*) Plc -> BS -> EvidenceC -> EvidenceC
+(* | kkc: ASP_ID -> (list Arg) -> (*Plc ->*) Plc -> BS -> EvidenceC -> EvidenceC *)
 | uuc: ASP_ID -> (list Arg) -> (*Plc ->*) BS -> EvidenceC -> EvidenceC
 | ggc: (*Plc ->*) EvidenceC -> BS -> EvidenceC
 | hhc: (*Plc ->*) BS -> EvidenceC -> EvidenceC
@@ -31,7 +31,7 @@ Admitted.
 Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=
   match ec with
   | mtc => mt
-  | kkc i A q _ ec' => kk i p q A (et_fun p ec')
+(*  | kkc i A q _ ec' => kk i p q A (et_fun p ec') *)
   | uuc i A _ ec' => uu i p A (et_fun p ec')
   | ggc ec' _ => gg p (et_fun p ec')
   | hhc _ ec' => hh p (et_fun p ec')
@@ -43,9 +43,9 @@ Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=
 (** * Types *)
 Inductive ET: Plc -> EvidenceC -> Evidence -> Prop :=
 | mtt: forall p, ET p mtc mt
-| kkt: forall id A p q bs e et,
+(* | kkt: forall id A p q bs e et,
     ET p e et -> 
-    ET p (kkc id A q bs e) (kk id p q A et)
+    ET p (kkc id A q bs e) (kk id p q A et) *)
 | uut: forall id A p bs e et,
     ET p e et -> 
     ET p (uuc id A bs e) (uu id p A et)
@@ -86,10 +86,10 @@ Definition splitEv (sp:SP) (e:EvidenceC) : EvidenceC :=
 Definition eval_asp (a:ASP) (e:EvidenceC) : EvidenceC :=
   match a with
   | CPY => e
-  | KIM i q args =>
+(*  | KIM i q args =>
     let bs := invokeKIM i q args in
-    (kkc i args q bs e)
-  | USM i args =>
+    (kkc i args q bs e) *)
+  | ASPC i args =>
     let bs := invokeUSM i args in
     (uuc i args bs e)
   | SIG =>
