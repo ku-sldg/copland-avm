@@ -8,7 +8,7 @@ Inductive EvidenceC: Set :=
 (*| sp: EvidenceC -> EvidenceC -> EvidenceC*)
 (* | kkc: ASP_ID -> (list Arg) -> (*Plc ->*) Plc -> BS -> EvidenceC -> EvidenceC *)
 | uuc: ASP_ID -> (list Arg) -> (*Plc ->*) BS -> EvidenceC -> EvidenceC
-| ggc: Plc -> EvidenceC -> BS -> EvidenceC
+| ggc: Plc -> BS -> EvidenceC -> EvidenceC
 | hhc: (*Plc ->*) BS -> EvidenceC -> EvidenceC
 | nnc: (*Plc ->*) N_ID -> BS -> EvidenceC -> EvidenceC
 | ssc: EvidenceC -> EvidenceC -> EvidenceC
@@ -33,7 +33,7 @@ Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=
   | mtc => mt
 (*  | kkc i A q _ ec' => kk i p q A (et_fun p ec') *)
   | uuc i A _ ec' => uu i p A (et_fun p ec')
-  | ggc q ec' _ => gg q (et_fun p ec')
+  | ggc q _ ec' => gg q (et_fun p ec')
   | hhc _ ec' => hh p (et_fun p ec')
   | nnc n _ ec' => nn p n (et_fun p ec')
   | ssc ec1 ec2 => ss (et_fun p ec1) (et_fun p ec2)
@@ -51,7 +51,7 @@ Inductive ET: Plc -> EvidenceC -> Evidence -> Prop :=
     ET p (uuc id A bs e) (uu id p A et)
 | ggt: forall n p bs e et,
     ET n e et ->
-    ET n (ggc p e bs) (gg p et)
+    ET n (ggc p bs e) (gg p et)
 | hht: forall p bs e et,
     ET p e et ->
     ET p (hhc bs e) (hh p et)
@@ -94,7 +94,7 @@ Definition eval_asp (a:ASP) (e:EvidenceC) (p:Plc) : EvidenceC :=
     (uuc i args bs e)
   | SIG =>
     let bs := signEv e in
-    (ggc p e bs)
+    (ggc p bs e)
   | HSH =>
     let bs := hashEv e in
     (hhc bs e)

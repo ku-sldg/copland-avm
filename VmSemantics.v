@@ -48,7 +48,7 @@ Definition prim_ev (a:Prim_Instr) (p:Plc) (e:EvidenceC) : EvidenceC :=
     (uuc i args bs e)
   | sign =>
     let bs := signEv e in
-    (ggc p e bs)
+    (ggc p bs e)
   | hash =>
     let bs := hashEv e in
     (hhc bs e)
