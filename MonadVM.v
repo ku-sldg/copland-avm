@@ -77,7 +77,7 @@ Definition extractVal (r:vm_st) : nat :=
   let ev := head (st_stack r) in
   let n :=
       match ev with
-        | Some (ggc _ n) => n
+        | Some (ggc p _ n) => n
         | _ => 0
       end in
   n + 1.
@@ -85,10 +85,10 @@ Definition extractVal (r:vm_st) : nat :=
 Definition test_comp : VM unit :=
   v <- get ;;
     let n := extractVal v in
-    put (mk_st mtc [(ggc mtc n)] [] 0 []) ;;
+    put (mk_st mtc [(ggc 0 mtc n)] [] 0 []) ;;
         ret tt.
 
-Definition empty_vm_state := mk_st mtc [(ggc mtc 48)] [] 0 [].
+Definition empty_vm_state := mk_st mtc [(ggc 0 mtc 48)] [] 0 [].
 
 Compute (runSt empty_vm_state test_comp).
 

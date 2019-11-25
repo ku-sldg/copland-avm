@@ -37,7 +37,7 @@ Definition prim_trace (i:nat) (p:Plc) (a:Prim_Instr) : (list Ev) :=
   | hash => [Term.hash i p]
   end.
 
-Definition prim_ev (a:Prim_Instr) (e:EvidenceC) : EvidenceC :=
+Definition prim_ev (a:Prim_Instr) (p:Plc) (e:EvidenceC) : EvidenceC :=
   match a with
   | copy => e
 (*  | kmeas i q args =>
@@ -48,7 +48,7 @@ Definition prim_ev (a:Prim_Instr) (e:EvidenceC) : EvidenceC :=
     (uuc i args bs e)
   | sign =>
     let bs := signEv e in
-    (ggc e bs)
+    (ggc p e bs)
   | hash =>
     let bs := hashEv e in
     (hhc bs e)
@@ -58,7 +58,7 @@ Definition build_comp (i:AnnoInstr): VM unit :=
   match i with
   | aprimInstr x a =>
     p <- get_pl ;;
-    modify_evm (prim_ev a) ;;
+    modify_evm (prim_ev a p) ;;
                add_tracem (prim_trace x p a)              
   | asplit x sp1 sp2 =>
     e <- get_ev ;;
@@ -173,18 +173,54 @@ Ltac allss :=
   repeat (do_get_store_at_facts_fail; subst; eauto);
   try (do_bd; subst; eauto).
 
-Lemma trace_irrel_store : forall il1 tr1 tr1' tr2 e e' s s' p1' p1 p o' o,
+Lemma trace_irrel_store : forall il1 tr1 tr1' tr2 e e' s s' p1' p1 o' o,
 
     run_vm il1 {| st_ev := e; st_trace := tr1; st_stack := s; st_pl := p1; st_store := o |} =
     {| st_ev := e'; st_trace := tr1'; st_stack := s'; st_pl := p1'; st_store := o' |} ->
     
     st_store (
-        run_vm il1 {| st_ev := e; st_trace := tr2; st_stack := s; st_pl := p; st_store := o |}) = o'.
+        run_vm il1 {| st_ev := e; st_trace := tr2; st_stack := s; st_pl := p1; st_store := o |}) = o'.
 Proof.
+(*  generalize dependent p.
+  generalize dependent p1.
+  generalize dependent p1'. *)
   induction il1; intros.
   - simpl.
     inversion H. reflexivity.   
-  - 
+  -
+    (*
+     simpl; destruct a;
+      try (* apriminstr, asplit, areq cases  *)
+        (try destruct p0;
+         try destruct r;
+         unfold run_vm_step;
+         monad_unfold;
+         eapply IHil1;
+         simpl in H;
+         unfold run_vm_step in H; simpl in *; monad_unfold; 
+         eassumption).
+
+     
+     destruct p0.
+     unfold run_vm_step; monad_unfold.
+     eapply IHil1.
+     simpl in H.
+     unfold run_vm_step in H; simpl in *; monad_unfold.
+     eassumption.
+     unfold run_vm_step; monad_unfold.
+     eapply IHil1.
+     simpl in H.
+     unfold run_vm_step in H; simpl in *; monad_unfold.
+     eassumption.
+     
+     unfold run_vm_step in *; monad_unfold.
+     unfold run_vm_step in *; monad_unfold.
+     eapply IHil1 with (p1:=p1') (p:=p1). (* (e:= ggc p1 e (signEv e)). *)
+    
+     eassumption. *)
+
+
+    
     simpl; destruct a;
       try (* apriminstr, asplit, areq cases  *)
         (try destruct p0;
@@ -195,6 +231,8 @@ Proof.
          simpl in H;
          unfold run_vm_step in H; simpl in *; monad_unfold; 
          eassumption);
+
+     
       try ( (* ajoins, abesr, abep cases *)
           boom;
           try_pop_all;
@@ -209,13 +247,13 @@ Proof.
           allss).
 Defined.
            
-Lemma trace_irrel : forall il1 tr1 tr1' tr2 e e' s s' p1' p1 p o1 o1',
+Lemma trace_irrel : forall il1 tr1 tr1' tr2 e e' s s' p1' p1 o1 o1',
 
     run_vm il1 {| st_ev := e; st_trace := tr1; st_stack := s; st_pl := p1; st_store := o1 |} =
     {| st_ev := e'; st_trace := tr1'; st_stack := s'; st_pl := p1'; st_store := o1' |} ->
     
     st_ev (
-        run_vm il1 {| st_ev := e; st_trace := tr2; st_stack := s; st_pl := p; st_store := o1 |}) = e'.
+        run_vm il1 {| st_ev := e; st_trace := tr2; st_stack := s; st_pl := p1; st_store := o1 |}) = e'.
 Proof.
   induction il1; intros.
   - simpl.
@@ -282,12 +320,12 @@ Proof.
           allss).
 Defined.
 
-Lemma stack_irrel : forall il1 tr1 tr1' tr2 e e' s s' p1 p1' p o1 o1',
+Lemma stack_irrel : forall il1 tr1 tr1' tr2 e e' s s' p1 p1' o1 o1',
     run_vm il1 {| st_ev := e; st_trace := tr1; st_stack := s; st_pl := p1'; st_store := o1' |} =
     {| st_ev := e'; st_trace := tr1'; st_stack := s'; st_pl := p1; st_store := o1 |} ->
     
     st_stack (
-        run_vm il1 {| st_ev := e; st_trace := tr2; st_stack := s; st_pl := p; st_store := o1' |}) =
+        run_vm il1 {| st_ev := e; st_trace := tr2; st_stack := s; st_pl := p1'; st_store := o1' |}) =
     s'.
   (*
     st_trace (
@@ -1328,7 +1366,7 @@ Lemma multi_ev_eval : forall t tr tr' e e' s s' p p' o o',
     run_vm (instr_compiler t)
            {| st_ev := e; st_stack := s;  st_trace := tr; st_pl := p; st_store := o |} =
            {| st_ev := e'; st_stack := s'; st_trace := tr'; st_pl := p'; st_store := o' |}  ->
-    e' = eval (unanno t) e.
+    e' = eval (unanno t) e p.
 Proof.
   induction t; intros.
   - (* aasp case *)
@@ -1352,7 +1390,38 @@ Proof.
     do_dca.
     simpl.
     eapply IHt2.
-    assert (H0 = eval (unanno t1) e).
+    assert (H2 = p).
+    Check pl_immut.
+    assert (st_pl (fold_left run_vm_step (instr_compiler t1)
+                             {|
+                               st_ev := e;
+                               st_stack := s;
+                               st_trace := tr;
+                               st_pl := p;
+                               st_store := o |}) = p).
+    eapply pl_immut.
+    assert (st_pl
+             (run_vm (instr_compiler t1)
+         {|
+         st_ev := e;
+         st_stack := s;
+         st_trace := tr;
+         st_pl := p;
+         st_store := o |}) =
+       st_pl ({|
+       st_ev := H0;
+       st_stack := H1;
+       st_trace := H;
+       st_pl := H2;
+       st_store := H3 |})).
+    congruence.
+    rewrite <- H8 in H9.
+    simpl in H9.
+    rewrite H8 in H9.
+    unfold run_vm in *.
+    congruence.
+    
+    assert (H0 = eval (unanno t1) e p).
     eauto.
     subst.
     eauto.
@@ -1384,6 +1453,25 @@ Proof.
     subst.
     unfold pop_stack in *. monad_unfold.
     pairs.
+    assert (H2 = p). {
+      assert ( st_pl ( run_vm (instr_compiler t1) {|
+         st_ev := splitEv s e;
+         st_stack := push_stack EvidenceC (splitEv s1 e) s0;
+         st_trace := tr ++ [Term.split (fst r) p];
+         st_pl := p;
+         st_store := o |}) =
+     st_pl (  {|
+       st_ev := H0;
+       st_stack := push_stack EvidenceC (splitEv s1 e) s0;
+       st_trace := H;
+       st_pl := H2;
+       st_store := H3 |} )).
+      congruence.
+      simpl in H1.
+      rewrite <- H1.
+      apply pl_immut.
+      }
+    subst.
     eauto.
 
     do_stack t1 t2.
@@ -1501,7 +1589,7 @@ Axiom run_at : forall t e s n o,
                 st_trace := [];
                 st_pl := n;
                 st_store := o |} =
-             {| st_ev := (eval (unanno t) e);
+             {| st_ev := (eval (unanno t) e n);
                 st_stack := s;
                 st_trace := remote_events t n;
                 st_pl := n;

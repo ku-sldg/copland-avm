@@ -12,6 +12,8 @@ Inductive App_Instr: Set :=
 Fixpoint app_compile (e:EvidenceC) : list App_Instr :=
   match e with
   | mtc => []
+  | uuc i args bs e' => [asp_app i args bs] ++ (app_compile e')
+  | ggc e' bs => [g_app e' bs
   | _ => []
   end.
     

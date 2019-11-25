@@ -8,7 +8,7 @@ Inductive EvidenceC: Set :=
 (*| sp: EvidenceC -> EvidenceC -> EvidenceC*)
 (* | kkc: ASP_ID -> (list Arg) -> (*Plc ->*) Plc -> BS -> EvidenceC -> EvidenceC *)
 | uuc: ASP_ID -> (list Arg) -> (*Plc ->*) BS -> EvidenceC -> EvidenceC
-| ggc: (*Plc ->*) EvidenceC -> BS -> EvidenceC
+| ggc: Plc -> EvidenceC -> BS -> EvidenceC
 | hhc: (*Plc ->*) BS -> EvidenceC -> EvidenceC
 | nnc: (*Plc ->*) N_ID -> BS -> EvidenceC -> EvidenceC
 | ssc: EvidenceC -> EvidenceC -> EvidenceC
@@ -33,7 +33,7 @@ Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=
   | mtc => mt
 (*  | kkc i A q _ ec' => kk i p q A (et_fun p ec') *)
   | uuc i A _ ec' => uu i p A (et_fun p ec')
-  | ggc ec' _ => gg p (et_fun p ec')
+  | ggc q ec' _ => gg q (et_fun p ec')
   | hhc _ ec' => hh p (et_fun p ec')
   | nnc n _ ec' => nn p n (et_fun p ec')
   | ssc ec1 ec2 => ss (et_fun p ec1) (et_fun p ec2)
@@ -49,9 +49,9 @@ Inductive ET: Plc -> EvidenceC -> Evidence -> Prop :=
 | uut: forall id A p bs e et,
     ET p e et -> 
     ET p (uuc id A bs e) (uu id p A et)
-| ggt: forall p bs e et,
-    ET p e et ->
-    ET p (ggc e bs) (gg p et)
+| ggt: forall n p bs e et,
+    ET n e et ->
+    ET n (ggc p e bs) (gg p et)
 | hht: forall p bs e et,
     ET p e et ->
     ET p (hhc bs e) (hh p et)
@@ -83,7 +83,7 @@ Definition splitEv (sp:SP) (e:EvidenceC) : EvidenceC :=
   | NONE => mtc
   end.
 
-Definition eval_asp (a:ASP) (e:EvidenceC) : EvidenceC :=
+Definition eval_asp (a:ASP) (e:EvidenceC) (p:Plc) : EvidenceC :=
   match a with
   | CPY => e
 (*  | KIM i q args =>
@@ -94,25 +94,25 @@ Definition eval_asp (a:ASP) (e:EvidenceC) : EvidenceC :=
     (uuc i args bs e)
   | SIG =>
     let bs := signEv e in
-    (ggc e bs)
+    (ggc p e bs)
   | HSH =>
     let bs := hashEv e in
     (hhc bs e)
   end.
 
-Fixpoint eval (t:Term) (e:EvidenceC) : EvidenceC :=
+Fixpoint eval (t:Term) (e:EvidenceC) (p:Plc): EvidenceC :=
   match t with
-  | asp a => eval_asp a e
+  | asp a => eval_asp a e p
   | att q t1 => toRemote t1 q e
   | lseq t1 t2 =>
-    let e1 := eval t1 e in
-    eval t2 e1
+    let e1 := eval t1 e p in
+    eval t2 e1 p
          
   | bseq (sp1,sp2) t1 t2 =>
     let e1 := splitEv sp1 e in
     let e2 := splitEv sp2 e in
-    let e1' := eval t1 e1 in
-    let e2' := eval t2 e2 in
+    let e1' := eval t1 e1 p in
+    let e2' := eval t2 e2 p in
     (ssc e1' e2') 
   | bpar (sp1,sp2) t1 t2 =>
     let e1 := splitEv sp1 e in
