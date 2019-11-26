@@ -25,10 +25,11 @@ Require Import Omega Preamble.
 Notation Plc := nat (only parsing).
 
 (** An argument to a userspace or kernel measurement. *)
-Notation Arg := nat (only parsing).
+(* Notation Arg := nat (only parsing). *)
 Notation ASP_ID := nat (only parsing).
 Notation N_ID := nat (only parsing).
 
+(*
 Definition eq_arg_dec:
   forall x y: Arg, {x = y} + {x <> y}.
 Proof.
@@ -36,11 +37,12 @@ Proof.
   decide equality; decide equality.
 Defined.
 Hint Resolve eq_arg_dec.
+*)
 
 Inductive ASP: Set :=
 | CPY: ASP
 (* | KIM: ASP_ID -> Plc -> (list Arg) -> ASP *)
-| ASPC: ASP_ID -> (list Arg) -> ASP
+| ASPC: ASP_ID (* -> (list Arg) *) -> ASP
 | SIG: ASP
 | HSH: ASP.
 
@@ -66,7 +68,7 @@ Inductive Evidence: Set :=
 | mt: Evidence
 | sp: SP -> Evidence -> Evidence
 (* | kk: ASP_ID -> Plc -> Plc -> (list Arg) -> Evidence -> Evidence *)
-| uu: ASP_ID -> Plc -> (list Arg) -> Evidence -> Evidence
+| uu: ASP_ID -> Plc -> (* (list Arg) -> *) Evidence -> Evidence
 | gg: Plc -> Evidence -> Evidence
 | hh: Plc -> Evidence -> Evidence
 | nn: Plc -> N_ID -> Evidence -> Evidence
@@ -76,7 +78,7 @@ Inductive Evidence: Set :=
 Fixpoint eval_asp t p e :=
   match t with
   | CPY => e
-  | ASPC i A => uu i p A e
+  | ASPC i (*A*) => uu i p (*A*) e
   | SIG => gg p e
   | HSH => hh p e
   end.
@@ -109,7 +111,7 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
 Inductive Ev: Set :=
 | copy: nat -> Plc -> Ev
 (* | kmeas: nat -> Plc -> ASP_ID -> Plc -> (list Arg) -> Ev *)
-| umeas: nat -> Plc -> ASP_ID -> (list Arg) -> Ev
+| umeas: nat -> Plc -> ASP_ID -> (* (list Arg) -> *) Ev
 | sign: nat -> Plc -> Ev
 | hash: nat -> Plc -> Ev
 | req: nat -> Plc -> Plc -> Term -> Ev
@@ -131,7 +133,7 @@ Definition ev x :=
   match x with
   | copy i _ => i
 (*  | kmeas i _ _ _ _ => i *)
-  | umeas i _ _ _ => i
+  | umeas i _ _ (*_*) => i
   | sign i _ => i
   | hash i _ => i
   | req i _ _ _ => i
@@ -151,7 +153,7 @@ Definition asp_event i x p :=
   match x with
   | CPY => copy i p
 (*  | KIM id q A => kmeas i p id q A *)
-  | ASPC id A => umeas i p id A
+  | ASPC id (*A*) => umeas i p id (*A*)
   | SIG => sign i p
   | HSH => hash i p
   end.
@@ -388,9 +390,9 @@ Inductive events: AnnoTerm -> Plc -> (*Evidence ->*) Ev -> Prop :=
       fst r = i ->
       events (aasp r (KIM id q a)) p (kmeas i p id q a) *)
 | evtsusm:
-    forall i id r a p,
+    forall i id r p,
       fst r = i ->
-      events (aasp r (ASPC id a)) p (umeas i p id a)
+      events (aasp r (ASPC id)) p (umeas i p id)
 | evtssig:
     forall r i p,
       fst r = i ->

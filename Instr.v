@@ -20,7 +20,7 @@ Check range.
 Inductive Prim_Instr: Set :=
 | copy: Prim_Instr
 (* | kmeas: ASP_ID -> Plc -> (list Arg) -> Prim_Instr *)
-| umeas: ASP_ID -> (list Arg) -> Prim_Instr
+| umeas: ASP_ID -> Prim_Instr
 | sign: Prim_Instr
 | hash: Prim_Instr.
 
@@ -50,7 +50,7 @@ Definition asp_instr (a:ASP) : Prim_Instr :=
   match a with
   | CPY => copy
 (*  | KIM i p args => kmeas i p args *)
-  | ASPC i args => umeas i args
+  | ASPC i => umeas i
   | SIG => sign
   | HSH => hash
   end.

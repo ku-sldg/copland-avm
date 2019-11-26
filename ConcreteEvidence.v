@@ -7,7 +7,7 @@ Inductive EvidenceC: Set :=
 | mtc: EvidenceC
 (*| sp: EvidenceC -> EvidenceC -> EvidenceC*)
 (* | kkc: ASP_ID -> (list Arg) -> (*Plc ->*) Plc -> BS -> EvidenceC -> EvidenceC *)
-| uuc: ASP_ID -> (list Arg) -> (*Plc ->*) BS -> EvidenceC -> EvidenceC
+| uuc: ASP_ID -> (* Plc -> *) BS -> EvidenceC -> EvidenceC
 | ggc: Plc -> BS -> EvidenceC -> EvidenceC
 | hhc: (*Plc ->*) BS -> EvidenceC -> EvidenceC
 | nnc: (*Plc ->*) N_ID -> BS -> EvidenceC -> EvidenceC
@@ -15,9 +15,9 @@ Inductive EvidenceC: Set :=
 | ppc: EvidenceC -> EvidenceC -> EvidenceC.
 
 (** * Place-holder axioms for IO operations *)
-Definition invokeKIM (i:ASP_ID) (q:Plc) (args:list Arg) : BS.
-Admitted.
-Definition invokeUSM (i:ASP_ID) (args:list Arg) : BS.
+(* Definition invokeKIM (i:ASP_ID) (q:Plc) (*(args:list Arg)*) : BS. 
+Admitted. *)
+Definition invokeUSM (i:ASP_ID) (*(args:list Arg)*) : BS.
 Admitted.
 Definition signEv (e:EvidenceC) : BS.
 Admitted.
@@ -32,7 +32,7 @@ Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=
   match ec with
   | mtc => mt
 (*  | kkc i A q _ ec' => kk i p q A (et_fun p ec') *)
-  | uuc i A _ ec' => uu i p A (et_fun p ec')
+  | uuc i _ ec' => uu i p (et_fun p ec')
   | ggc q _ ec' => gg q (et_fun p ec')
   | hhc _ ec' => hh p (et_fun p ec')
   | nnc n _ ec' => nn p n (et_fun p ec')
@@ -46,9 +46,9 @@ Inductive ET: Plc -> EvidenceC -> Evidence -> Prop :=
 (* | kkt: forall id A p q bs e et,
     ET p e et -> 
     ET p (kkc id A q bs e) (kk id p q A et) *)
-| uut: forall id A p bs e et,
+| uut: forall id p bs e et,
     ET p e et -> 
-    ET p (uuc id A bs e) (uu id p A et)
+    ET p (uuc id bs e) (uu id p et)
 | ggt: forall n p bs e et,
     ET n e et ->
     ET n (ggc p bs e) (gg p et)
@@ -89,9 +89,9 @@ Definition eval_asp (a:ASP) (e:EvidenceC) (p:Plc) : EvidenceC :=
 (*  | KIM i q args =>
     let bs := invokeKIM i q args in
     (kkc i args q bs e) *)
-  | ASPC i args =>
-    let bs := invokeUSM i args in
-    (uuc i args bs e)
+  | ASPC i =>
+    let bs := invokeUSM i in
+    (uuc i bs e)
   | SIG =>
     let bs := signEv e in
     (ggc p bs e)
