@@ -5,7 +5,7 @@ Require Import List.
 Import ListNotations.
 
 Inductive App_Instr: Set :=
-| asp_app: ASP_ID -> (list Arg) -> BS -> App_Instr
+| asp_app: ASP_ID -> BS -> App_Instr
 | g_app: Plc -> BS -> EvidenceC -> App_Instr
 | h_app: BS -> EvidenceC -> App_Instr
 | n_app: N_ID -> BS -> App_Instr.
@@ -13,7 +13,7 @@ Inductive App_Instr: Set :=
 Fixpoint app_compile (e:EvidenceC) : list App_Instr :=
   match e with
   | mtc => []
-  | uuc i args bs e' => [asp_app i args bs] ++ (app_compile e')
+  | uuc i bs e' => [asp_app i bs] ++ (app_compile e')
   | ggc p bs e' => [g_app p bs e'] ++ (app_compile e')                   
   | hhc bs e' => [h_app bs e'] ++ (app_compile e')
   | nnc n_id bs e' => [n_app n_id bs] ++ (app_compile e')
@@ -24,11 +24,11 @@ Fixpoint app_compile (e:EvidenceC) : list App_Instr :=
 Notation Pri_Key := nat (only parsing).
 
 Definition pri_keys : Map Plc Pri_Key. Admitted.
-Definition golden_measurements : Map (ASP_ID*list Arg) BS. Admitted.
+Definition golden_measurements : Map ASP_ID BS. Admitted.
 Definition nonce_map : Map N_ID BS. Admitted.
 
 (* params: id -> golden -> actual *)
-Definition check_measurement : (ASP_ID*list Arg) -> BS -> BS -> bool. Admitted.
+Definition check_measurement : ASP_ID -> BS -> BS -> bool. Admitted.
 Definition encode_ev : EvidenceC -> BS. Admitted.
 (* params: encoded payload -> private key -> signature *)
 Definition check_sig : BS -> Pri_Key -> BS -> bool. Admitted.
@@ -52,15 +52,15 @@ Definition check_nonce (n : N_ID) (bs:BS) : option bool :=
        ret (Nat.eqb bs g_bs).  
 
 
-Definition check_asp (x:ASP_ID*list Arg) (m:BS) : option bool :=
+Definition check_asp (x:ASP_ID) (m:BS) : option bool :=
   g_bs <- (map_get golden_measurements x) ;;
        ret (check_measurement x g_bs m).
 
 Fixpoint appraise (e:EvidenceC) : option bool :=
   match e with
   | mtc => Some true
-  | uuc i args bs e =>
-    b <- check_asp (i,args) bs ;;
+  | uuc i bs e =>
+    b <- check_asp i bs ;;
       res <- appraise e ;;
       ret (andb b res)
   | ggc p sig e =>

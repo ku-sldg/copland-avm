@@ -66,7 +66,7 @@ Inductive Term: Set :=
 
 Inductive Evidence: Set :=
 | mt: Evidence
-| sp: SP -> Evidence -> Evidence
+(*| sp: SP -> Evidence -> Evidence *)
 (* | kk: ASP_ID -> Plc -> Plc -> (list Arg) -> Evidence -> Evidence *)
 | uu: ASP_ID -> Plc -> (* (list Arg) -> *) Evidence -> Evidence
 | gg: Plc -> Evidence -> Evidence
@@ -74,6 +74,12 @@ Inductive Evidence: Set :=
 | nn: Plc -> N_ID -> Evidence -> Evidence
 | ss: Evidence -> Evidence -> Evidence
 | pp: Evidence -> Evidence -> Evidence.
+
+Definition splitEv_T (sp:SP) (e:Evidence) : Evidence :=
+  match sp with
+  | ALL => e
+  | NONE => mt
+  end.
 
 Fixpoint eval_asp t p e :=
   match t with
@@ -90,10 +96,10 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
   | asp a => eval_asp a p e
   | att q t1 => eval t1 q e
   | lseq t1 t2 => eval t2 p (eval t1 p e)
-  | bseq s t1 t2 => ss (eval t1 p (sp (fst s) e))
-                       (eval t2 p (sp (snd s) e)) 
-  | bpar s t1 t2 => pp (eval t1 p (sp (fst s) e))
-                       (eval t2 p (sp (snd s) e))
+  | bseq s t1 t2 => ss (eval t1 p (splitEv_T (fst s) e))
+                       (eval t2 p (splitEv_T (snd s) e)) 
+  | bpar s t1 t2 => pp (eval t1 p (splitEv_T (fst s) e))
+                      (eval t2 p (splitEv_T (snd s) e))
   end.
 
 
@@ -346,10 +352,10 @@ Fixpoint aeval t p e :=
   | aasp _ x => eval (asp x) p e
   | aatt _ q x => aeval x q e
   | alseq _ t1 t2 => aeval t2 p (aeval t1 p e)
-  | abseq _ s t1 t2 => ss (aeval t1 p ((sp (fst s)) e))
-                          (aeval t2 p ((sp (snd s)) e)) 
-  | abpar _ s t1 t2 => pp (aeval t1 p ((sp (fst s)) e))
-                          (aeval t2 p ((sp (snd s)) e)) 
+  | abseq _ s t1 t2 => ss (aeval t1 p ((splitEv_T (fst s)) e))
+                         (aeval t2 p ((splitEv_T (snd s)) e)) 
+  | abpar _ s t1 t2 => pp (aeval t1 p ((splitEv_T (fst s)) e))
+                         (aeval t2 p ((splitEv_T (snd s)) e)) 
   end. 
 
 

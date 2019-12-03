@@ -101,8 +101,8 @@ Inductive step: St -> option Ev -> St -> Prop :=
     forall r s x y p e,
       step (conf (abseq r s x y) p e)
            (Some (split (fst r) p))
-           (bsl (snd r) (conf x p (sp (fst s) e))
-                y p (sp (snd s) e))
+           (bsl (snd r) (conf x p (splitEv_T (fst s) e))
+                y p (splitEv_T (snd s) e))
 | stbslstep:
     forall st0 ev st1 j t p e,
       step st0 ev st1 ->
@@ -128,8 +128,8 @@ Inductive step: St -> option Ev -> St -> Prop :=
       step (conf (abpar r s x y) p e)
            (Some (split (fst r) p))
            (bp (snd r)
-               (conf x p (sp (fst s) e))
-               (conf y p (sp (snd s) e)))
+               (conf x p (splitEv_T (fst s) e))
+               (conf y p (splitEv_T (snd s) e)))
 | stbpstepleft:
     forall st0 st1 st2 ev j,
       step st0 ev st2 ->
