@@ -37,6 +37,10 @@ Definition check_ev_sig (e:EvidenceC) (k:Pri_Key) (sig:BS) : bool :=
   let payload := encode_ev e in
   check_sig payload k sig.
 
+Definition check_ev_pl (e:EvidenceC) (p:Plc) (sig:BS) : option bool :=
+  k <- map_get pri_keys p ;;
+    ret (check_ev_sig e k sig).
+
 (* params: payload -> hash *)
 (* TODO: incorporate hash algorithm choice (policy) here? *)
 Definition check_hash : BS -> BS -> bool. Admitted.
@@ -64,8 +68,7 @@ Fixpoint appraise (e:EvidenceC) : option bool :=
       res <- appraise e ;;
       ret (andb b res)
   | ggc p sig e =>
-    k <- map_get pri_keys p ;;
-      let b := check_ev_sig e k sig in
+    b <- check_ev_pl e p sig ;;
       res <- appraise e ;;
           ret (andb b res)
   | hhc h e =>
@@ -85,6 +88,27 @@ Fixpoint appraise (e:EvidenceC) : option bool :=
          res2 <- appraise e2 ;;
          ret (andb res1 res2)
   end.
+
+Definition appraiseI' (i:App_Instr): option bool :=
+  match i with
+  | asp_app x bs => check_asp x bs
+  | g_app p bs e' => check_ev_pl e' p bs
+  | h_app bs e' => Some (check_ev_hash e' bs)
+  | n_app nid bs => check_nonce nid bs
+  end.
+
+Fixpoint appraiseI (o:option bool) (i:App_Instr): option bool :=
+  b <- o ;;
+    b' <- appraiseI' i ;;
+    ret (andb b b').
     
+Check fold_left.
+Definition run_app (il:list App_Instr) : option bool :=
+  fold_left appraiseI il (Some true).
+    
+
+Theorem app_eq_appI : forall e,
+    let il := app_compile e in
+    appraise e = run_app il.
     
 
