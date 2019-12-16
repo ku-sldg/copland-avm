@@ -107,8 +107,20 @@ Definition run_app (il:list App_Instr) : option bool :=
   fold_left appraiseI il (Some true).
     
 
-Theorem app_eq_appI : forall e,
+Theorem app_eq_appI: forall e,
     let il := app_compile e in
     appraise e = run_app il.
-    
+Abort.
 
+Require Import StVM Instr VmSemantics.
+
+Definition mt_st := mk_st mtc [] [] 0 [].
+
+Theorem can_app: forall t,
+    let att_il := instr_compiler t in
+    let ev_res := run_vm_t t mt_st in
+    let app_il := app_compile (st_ev ev_res) in
+    let optB := run_app app_il in
+    exists b, optB = Some b.
+Abort.
+    

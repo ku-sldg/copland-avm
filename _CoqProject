@@ -5,6 +5,7 @@ OptMonad.v
 More_lists.v
 Term.v
 ConcreteEvidence.v
+StVM.v
 Event_system.v
 Term_system.v
 Trace.v

@@ -56,16 +56,8 @@ Definition when {S A} (b : bool) (m : St S A) : St S unit :=
   if b then m ;; ret tt else nop.
 
 
+Require Export StVM.
 
-(* Specific VM monad *)
-Definition ev_stack := gen_stack EvidenceC.
-Definition ev_store := Map nat EvidenceC.
-Record vm_st : Type := mk_st
-                         {st_ev:EvidenceC ;
-                          st_stack:ev_stack ; 
-                          st_trace:list Ev ;
-                          st_pl:Plc ;
-                          st_store:ev_store}.
 
 Definition VM := St vm_st.
 (*Definition runVM{A:Type} := @runSt vm_config A.*)
