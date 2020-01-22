@@ -6,6 +6,7 @@ More_lists.v
 Term.v
 ConcreteEvidence.v
 StVM.v
+StAM.v
 Event_system.v
 Term_system.v
 Trace.v
@@ -14,6 +15,7 @@ Main.v
 Instr.v
 MyStack.v
 MonadVM.v
+MonadAM.v
 MonadVMFacts.v
 VmSemantics.v
 Appraisal.v

@@ -5,6 +5,10 @@ Require Import Maps.
 Require Import List.
 Import ListNotations.
 
+Require Export StVM.
+
+Print vm_st.
+
 (* Generalized State Monad *)
 Definition St(S A : Type) : Type := S -> (option A) * S % type.
 
@@ -54,9 +58,6 @@ Notation "e1 ;; e2" := (_ <- e1 ;; e2)
 
 Definition when {S A} (b : bool) (m : St S A) : St S unit :=
   if b then m ;; ret tt else nop.
-
-
-Require Export StVM.
 
 
 Definition VM := St vm_st.
