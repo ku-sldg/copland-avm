@@ -1,4 +1,4 @@
-Require Import More_lists Preamble Term ConcreteEvidence LTS.
+Require Import More_lists Preamble Term ConcreteEvidence LTS GenStMonad.
 Require Import Instr MyStack MonadVM MonadVMFacts.
 
 Require Import List.
@@ -85,21 +85,24 @@ Definition build_comp (i:AnnoInstr): VM unit :=
       er <- pop_stackm ;;
       push_stackm e ;;
       put_ev er    
-  | areq reqi q annt =>
+  | areqrpy reqi rpyi q annt =>
     e <- get_ev ;;
-      put_store reqi (toRemote (unanno annt) q e) ;; (* TODO: make this contingent on a good remote setup.  Need to model such a situation *)
+      put_ev (toRemote (unanno annt) q e) ;;
+      (* put_store reqi (toRemote (unanno annt) q e) ;; *) (* TODO: make this contingent on a good remote setup.  Need to model such a situation *)
       p <- get_pl ;;
       let newTrace :=
-          [req reqi p q (unanno annt)] ++ (remote_events annt q) in
+          [req reqi p q (unanno annt)] ++
+                                       (remote_events annt q) ++
+                                       [rpy (Nat.pred rpyi) p q] in
       (* TODO: move remote_events annt q trace to get_store_at, models successful remote execution *)
       add_tracem newTrace
 
-  | arpy i rpyi q =>
+(*  | arpy i rpyi q =>
     p <- get_pl ;;
       e <- get_store_at rpyi ;;
       (* TODO: add remote_events annt q inside get_store_at, models successful remote execution *)
       put_ev e ;;
-      add_tracem [rpy i p q]
+      add_tracem [rpy i p q] *)
   | abep loc1 loc2 il1 il2 =>
     e <- get_ev ;;
       p <- get_pl ;;
@@ -335,7 +338,7 @@ Proof.
   - simpl.
     inversion H. reflexivity.   
   - 
-    simpl; destruct a as [n p0 | n sp1 sp2 | n | l m n | | | i q t | i rpyi q];
+    simpl; destruct a as [n p0 | n sp1 sp2 | n | l m n | | | i q t (*| i rpyi q*)];
       try
         (try destruct p0;
          (*try destruct r; *)
@@ -374,7 +377,7 @@ Lemma foo : forall il m e s p o,
 Proof.
   induction il; simpl; intros m e s p o.
   - rewrite app_nil_r. auto.
-  - destruct a as [n p0 | n sp1 sp2 | n | l m' n | | | i q t | i rpyi q];
+  - destruct a as [n p0 | n sp1 sp2 | n | l m' n | | | i q t (*| i rpyi q*)];
       try ( (* prim, asplit aatt cases *)
           (*try destruct r; *)
           unfold run_vm_step; fold run_vm_step; monad_unfold;  
@@ -449,6 +452,7 @@ Proof.
       repeat do_pop_stackm_fail.
       subst.
       apply IHil.
+      (*
     + (* arpy case *)
       unfold run_vm_step; fold run_vm_step; monad_unfold; monad_unfold.
       repeat break_match.
@@ -468,7 +472,7 @@ Proof.
       do_get_store_at_facts_fail; eauto.
       do_get_store_at_facts_fail; eauto.
       subst.
-      eauto.
+      eauto. *)
     + (* abep case *)
       unfold run_vm_step; fold run_vm_step; monad_unfold; monad_unfold.
       repeat break_match;
@@ -673,7 +677,7 @@ Proof.
     reflexivity.
   - simpl.
     Check foo.
-    destruct a as [n p0 | n sp1 sp2 | n | l m' n | | i q t | i rpyi q | l m' ls1 ls2];
+    destruct a as [n p0 | n sp1 sp2 | n | l m' n | | i q t (*| i rpyi q*) | l m' ls1 ls2];
       try (  (* apriminstr, asplit, reqrpy cases *)
           try destruct r;
           unfold run_vm_step; fold run_vm_step;
@@ -756,7 +760,7 @@ Proof.
       repeat do_pop_stackm_fail; subst.
       rewrite IHil1.
       auto.
-    + (* arpy case *)
+  (*  + (* arpy case *)
 
       unfold run_vm_step. fold run_vm_step.
       monad_unfold.
@@ -787,7 +791,7 @@ Proof.
       eapply st_congr; eauto.
 
       monad_unfold.
-      rewrite IHil1. auto.
+      rewrite IHil1. auto. *)
     + (* abep case *)
       unfold run_vm_step. fold run_vm_step.
       monad_unfold.
@@ -848,7 +852,7 @@ Proof.
   induction il; intros.
   - simpl. reflexivity.
   -
-    destruct a as [n p0 | n sp1 sp2 | n | l m n | | | i q t | i rpyi q];
+    destruct a as [n p0 | n sp1 sp2 | n | l m n | | | i q t (*| i rpyi q*)];
       try (
           simpl;
           try destruct p0;
@@ -887,7 +891,7 @@ Proof.
       desp.
       simpl. do_pop_stackm_facts. subst. eauto.
       do_pop_stackm_fail. subst. eauto.
-    + (* arpy case *)
+ (*   + (* arpy case *)
       simpl. unfold run_vm_step. fold run_vm_step. monad_unfold.
       unfold get_ev. monad_unfold.
       repeat break_match.
@@ -899,7 +903,7 @@ Proof.
       eauto.
       find_inversion.
       do_get_store_at_facts_fail; eauto.
-      subst. eauto.
+      subst. eauto. *)
     + (* abep case *)
       simpl. unfold run_vm_step. fold run_vm_step. monad_unfold.
       unfold get_store_at.
@@ -1174,6 +1178,8 @@ Proof.
   - (* aatt case *)
     destruct r.
     invc H.
+    reflexivity.
+    (*
     unfold run_vm_step in *.  fold run_vm_step in *.
     monad_unfold.
     unfold get_store_at in *.
@@ -1204,7 +1210,7 @@ Proof.
     repeat find_inversion.
     monad_unfold.
     unfold failm in *. invc Heqp2.
-    reflexivity.
+    reflexivity. *)
   - (* alseq case *)
     do_dca.
     eapply IHt2.
@@ -1376,15 +1382,22 @@ Proof.
     destruct r.
     simpl in *.
     unfoldm.
-    break_match. break_match. break_match.
+   (* unfold Maps.map_set in *. *)
+    (*
+    break_match. break_match. break_match. 
     find_inversion.
-    simpl in *. find_inversion.
-    
+    simpl in *. *)
+    (* find_inversion. *)
+
+    (*
     eapply store_get_set; eauto.
 
-    find_inversion. simpl in *.
+    (* find_inversion. *) simpl in *.
 
-    elimtype False. eapply store_get_set_fail_none; eauto.
+    elimtype False. eapply store_get_set_fail_none; eauto. *)
+    
+    find_inversion.
+    auto.
   - (* lseq case *)
     simpl in *.
     do_dca.
@@ -1714,39 +1727,43 @@ Proof.
         econstructor; try (econstructor; reflexivity).
   - (* aatt case *)
     simpl in *.
-    expand_let_pairs. simpl.
     destruct r.
     unfoldm.
     unfold run_vm_step in *.
     monad_unfold.
-    unfold get_store_at in *.
-    monad_unfold.
+    (*
     break_match. break_match.
     break_match.
-    simpl in *.
+    simpl in *. *)
     find_inversion.
-    find_inversion.
+(*
     break_match. break_match.
-    repeat find_inversion.
+    repeat find_inversion. *)
     vmsts.
+    (*
     find_inversion.
     break_match.
     find_inversion.
-    break_match.
+    break_match. *)
     eapply lstar_tran.
     econstructor.
     simpl.
     eapply lstar_transitive.
     eapply lstar_strem.
+    
     eapply IHt; eauto.
     Print run_at.
    (* inv wft. eauto. *)
 
     apply run_at.
+    
 
     econstructor.
+    Print step.
+
     apply stattstop.
     econstructor.
+    (*
     congruence.
     break_match.
     congruence.
@@ -1765,7 +1782,7 @@ Proof.
     congruence.
     break_match.
     congruence.
-    congruence.
+    congruence. *)
     
   - (* alseq case *)
     simpl in *.

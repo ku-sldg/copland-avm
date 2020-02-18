@@ -3,6 +3,8 @@ Require Import More_lists Preamble List.
 Import ListNotations.
 Set Nested Proofs Allowed.
 
+  
+
 (** * VM Instructions *)
 
 Inductive Prim_Instr: Set :=
@@ -18,8 +20,9 @@ Inductive AnnoInstr: Set :=
 | ajoins: nat -> AnnoInstr
 | ajoinp: nat -> nat -> nat -> AnnoInstr
 | abesr : AnnoInstr 
-| areq: nat -> Plc -> AnnoTerm -> AnnoInstr
-| arpy: nat -> nat -> Plc -> AnnoInstr
+(*| areq: nat -> Plc -> AnnoTerm -> AnnoInstr
+| arpy: nat -> nat -> Plc -> AnnoInstr *)
+| areqrpy: nat -> nat -> Plc -> AnnoTerm -> AnnoInstr  (* TODO: update rest of spec *)
 | abep: nat -> nat ->
         (list AnnoInstr) -> (list AnnoInstr) -> AnnoInstr.
 
@@ -38,7 +41,8 @@ Fixpoint instr_compiler (t:AnnoTerm) : (list AnnoInstr) :=
   | aasp r a => [aprimInstr (fst r) (asp_instr a)]  
   | aatt r q t' =>
     let '(reqi,rpyi_last) := r in
-    [areq (fst r) q t'] ++ [arpy (Nat.pred rpyi_last) (fst r)  q]           
+    [areqrpy reqi rpyi_last q t']
+    (*[areq (fst r) q t'] ++ [arpy (Nat.pred rpyi_last) (fst r)  q]*)           
   | alseq _ t1 t2 =>
     let tr1 := instr_compiler t1 in
     let tr2 := instr_compiler t2 in

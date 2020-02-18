@@ -1,4 +1,5 @@
-Require Import Maps Term ConcreteEvidence StVM StAM VmSemantics MonadVM.
+Require Import Maps Term ConcreteEvidence StVM StAM
+        VmSemantics MonadVM GenStMonad.
 (*Require Import Coq.ZArith.ZArith_base Coq.Strings.String Coq.Strings.Ascii. *)
 (* Require Import ExtLib.Data.Monads.StateMonad ExtLib.Data.Monads.ReaderMonad
 ExtLib.Structures.Monads ExtLib.Data.Monads.IdentityMonad. *)
