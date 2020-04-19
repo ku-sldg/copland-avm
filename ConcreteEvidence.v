@@ -52,9 +52,9 @@ Inductive ET: Plc -> EvidenceC -> Evidence -> Prop :=
 | ggt: forall n p bs e et,
     ET n e et ->
     ET n (ggc p bs e) (gg p et)
-| hht: forall p bs e et,
-    ET p e et ->
-    ET p (hhc bs e) (hh p et)
+| hht: forall n p bs e et,
+    ET n e et ->
+    ET n (hhc bs e) (hh p et)
 | nnt: forall p bs e et i,
     ET p e et ->
     ET p (nnc i bs e) (nn p i et)
@@ -100,19 +100,19 @@ Definition eval_asp (a:ASP) (e:EvidenceC) (p:Plc) : EvidenceC :=
     (hhc bs e)
   end.
 
-Fixpoint eval (t:Term) (e:EvidenceC) (p:Plc): EvidenceC :=
+Fixpoint eval (t:Term) (p:Plc) (e:EvidenceC) : EvidenceC :=
   match t with
   | asp a => eval_asp a e p
   | att q t1 => toRemote t1 q e
   | lseq t1 t2 =>
-    let e1 := eval t1 e p in
-    eval t2 e1 p
+    let e1 := eval t1 p e in
+    eval t2 p e1
          
   | bseq (sp1,sp2) t1 t2 =>
     let e1 := splitEv sp1 e in
     let e2 := splitEv sp2 e in
-    let e1' := eval t1 e1 p in
-    let e2' := eval t2 e2 p in
+    let e1' := eval t1 p e1 in
+    let e2' := eval t2 p e2 in
     (ssc e1' e2') 
   | bpar (sp1,sp2) t1 t2 =>
     let e1 := splitEv sp1 e in

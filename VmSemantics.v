@@ -1372,7 +1372,7 @@ Lemma multi_ev_eval : forall t tr tr' e e' s s' p p' o o',
     run_vm (instr_compiler t)
            {| st_ev := e; st_stack := s;  st_trace := tr; st_pl := p; st_store := o |} =
            {| st_ev := e'; st_stack := s'; st_trace := tr'; st_pl := p'; st_store := o' |}  ->
-    e' = eval (unanno t) e p.
+    e' = eval (unanno t) p e.
 Proof.
   induction t; intros.
   - (* aasp case *)
@@ -1434,7 +1434,7 @@ Proof.
     unfold run_vm in *.
     congruence.
     
-    assert (H0 = eval (unanno t1) e p).
+    assert (H0 = eval (unanno t1) p e).
     eauto.
     subst.
     eauto.
@@ -1541,6 +1541,146 @@ Proof.
       eauto.
 Defined.
 
+(* 
+Lemma multi_ev_eval : forall t tr tr' e e' s s' p p' o o',
+    run_vm (instr_compiler t)
+           {| st_ev := e; st_stack := s;  st_trace := tr; st_pl := p; st_store := o |} =
+           {| st_ev := e'; st_stack := s'; st_trace := tr'; st_pl := p'; st_store := o' |}  ->
+    e' = eval (unanno t) e p.
+Proof.
+ *)
+
+Lemma multi_ev_eval_shape_helper : forall t p e e' et e't,
+    ET p e et ->
+    eval t p e = e' ->
+    Term.eval t p et = e't ->
+    ET p e' e't.
+Proof.
+  induction t; intros.
+  invc H; try (destruct a; simpl; eauto).
+  simpl in H0, H1.
+
+  (*
+  Axiom remote_eval : forall t n e, toRemote t n e = eval t e n.
+  eapply IHt.
+  apply H.
+  rewrite remote_eval in H0.
+  Lemma eval_pl_irrel :
+    eval t e n = e' ->
+    eval t e p = e'
+  simpl in H0, H1. *)
+  - (* at case *)
+    admit. 
+
+  - (* ln case *)
+    simpl in H0, H1.
+  eapply IHt2.
+  eapply IHt1.
+  apply H.
+  reflexivity.
+  reflexivity.
+  auto.
+  auto.
+
+  -
+    simpl in H0, H1.
+    destruct s.
+    destruct s; destruct s0; simpl in *; subst.
+    econstructor. eauto.
+    eapply IHt2; eauto.
+    econstructor. eauto.
+    eapply IHt2.
+    assert (ET p mtc mt).
+    econstructor.
+    apply H0.
+    reflexivity.
+    reflexivity.
+
+    econstructor.
+    eapply IHt1.
+    assert (ET p mtc mt). eauto.
+    apply H0.
+    reflexivity.
+    reflexivity.
+    eapply IHt2.
+    eapply H. reflexivity. reflexivity.
+
+    econstructor.
+    eapply IHt1.
+    assert (ET p mtc mt). eauto.
+    apply H0.
+    reflexivity. reflexivity.
+
+    eapply IHt2.
+    assert (ET p mtc mt). eauto.
+    apply H0.
+    reflexivity. reflexivity.
+  -
+     simpl in H0, H1.
+    destruct s.
+    destruct s; destruct s0; simpl in *; subst.
+    Axiom parallel_eval : forall t p e,
+        parallel_eval_thread t e = eval t p e.
+
+    rewrite parallel_eval with (p:=p).
+    
+    econstructor. eauto.
+    eapply IHt2; eauto.
+    erewrite parallel_eval. reflexivity.
+    erewrite parallel_eval. erewrite parallel_eval.
+    econstructor. eauto.
+    eapply IHt2.
+    assert (ET p mtc mt).
+    econstructor.
+    apply H0.
+    reflexivity.
+    reflexivity.
+
+    
+    erewrite parallel_eval. erewrite parallel_eval.
+    econstructor.
+    eapply IHt1.
+    assert (ET p mtc mt). eauto.
+    apply H0.
+    reflexivity.
+    reflexivity.
+    eapply IHt2.
+    eapply H. reflexivity. reflexivity.
+
+    erewrite parallel_eval. erewrite parallel_eval.
+    econstructor.
+    eapply IHt1.
+    assert (ET p mtc mt). eauto.
+    apply H0.
+    reflexivity. reflexivity.
+
+    eapply IHt2.
+    assert (ET p mtc mt). eauto.
+    apply H0.
+    reflexivity. reflexivity.
+Admitted.
+
+
+Lemma multi_ev_eval_shape : forall t tr tr' e e' et e't s s' p p' o o',
+    run_vm (instr_compiler t)
+           {| st_ev := e; st_stack := s;  st_trace := tr; st_pl := p; st_store := o |} =
+    {| st_ev := e'; st_stack := s'; st_trace := tr'; st_pl := p'; st_store := o' |}  ->
+    ET p e et ->
+    Term.eval (unanno t) p et = e't ->
+    ET p e' e't.
+Proof.
+  intros.
+  assert (e' = eval (unanno t) p e).
+  eapply multi_ev_eval; eauto.
+  subst.
+
+  eapply multi_ev_eval_shape_helper.
+  apply H0.
+  reflexivity.
+  reflexivity.
+Defined. 
+  
+
 Lemma st_stack_restore : forall t e s tr p o,
     st_stack
       (run_vm (instr_compiler t)
@@ -1602,7 +1742,7 @@ Axiom run_at : forall t e s n o,
                 st_trace := [];
                 st_pl := n;
                 st_store := o |} =
-             {| st_ev := (eval (unanno t) e n);
+             {| st_ev := (eval (unanno t) n e);
                 st_stack := s;
                 st_trace := remote_events t n;
                 st_pl := n;
