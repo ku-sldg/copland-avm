@@ -121,3 +121,30 @@ Fixpoint eval (t:Term) (p:Plc) (e:EvidenceC) : EvidenceC :=
     let e2' := parallel_eval_thread t2 e2 in
     (ppc e1' e2')
   end.
+
+Inductive EvcT: Term -> EvidenceC -> EvidenceC -> Prop :=
+| mttc: forall e, EvcT (asp CPY) e e
+(* | kkt: forall id A p q bs e et,
+    EvcT p e et -> 
+    EvcT p (kkc id A q bs e) (kk id p q A et) *)
+| uutc: forall i bs e,
+    EvcT (asp (ASPC i)) e (uuc i bs e)
+| ggtc: forall p bs e,
+    EvcT (asp SIG) e (ggc p bs e)
+| hhtc: forall bs e,
+    EvcT (asp HSH) e (hhc bs e)
+| atc: forall q t' e e',
+    EvcT t' e e' ->
+    EvcT (att q t') e e'
+| lseqc: forall t1 t2 e e' e'',
+    EvcT t1 e e' ->
+    EvcT t2 e' e'' ->
+    EvcT (lseq t1 t2) e e''
+| bseqc: forall t1 t2 sp1 sp2 e e1 e2,
+    EvcT t1 (splitEv sp1 e) e1 ->
+    EvcT t2 (splitEv sp2 e) e2 ->
+    EvcT (bseq (sp1,sp2) t1 t2) e (ssc e1 e2)
+| bparc: forall t1 t2 sp1 sp2 e e1 e2,
+    EvcT t1 (splitEv sp1 e) e1 ->
+    EvcT t2 (splitEv sp2 e) e2 ->
+    EvcT (bpar (sp1,sp2) t1 t2) e (ppc e1 e2).
