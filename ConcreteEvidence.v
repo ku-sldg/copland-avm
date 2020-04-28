@@ -8,8 +8,8 @@ Inductive EvidenceC: Set :=
 (*| sp: EvidenceC -> EvidenceC -> EvidenceC*)
 (* | kkc: ASP_ID -> (list Arg) -> (*Plc ->*) Plc -> BS -> EvidenceC -> EvidenceC *)
 | uuc: ASP_ID -> (* Plc -> *) BS -> EvidenceC -> EvidenceC
-| ggc: Plc -> BS -> EvidenceC -> EvidenceC
-| hhc: (*Plc ->*) BS -> EvidenceC -> EvidenceC
+| ggc: (*Plc ->*) BS -> EvidenceC -> EvidenceC
+| hhc: (*Plc ->*) BS -> EvidenceC -> EvidenceC (* TODO: remove Ev param *)
 | nnc: (*Plc ->*) N_ID -> BS -> EvidenceC -> EvidenceC
 | ssc: EvidenceC -> EvidenceC -> EvidenceC
 | ppc: EvidenceC -> EvidenceC -> EvidenceC.
@@ -28,6 +28,7 @@ Admitted.
 Definition parallel_eval_thread (t:Term) (e:EvidenceC) : EvidenceC.
 Admitted.
 
+(*
 Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=
   match ec with
   | mtc => mt
@@ -35,10 +36,13 @@ Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=
   | uuc i _ ec' => uu i p (et_fun p ec')
   | ggc q _ ec' => gg q (et_fun p ec')
   | hhc _ ec' => hh p (et_fun p ec')
-  | nnc n _ ec' => nn p n (et_fun p ec')
+  | nnc n _ ec' => nn n (et_fun p ec')
   | ssc ec1 ec2 => ss (et_fun p ec1) (et_fun p ec2)
   | ppc ec1 ec2 => pp (et_fun p ec1) (et_fun p ec2)
   end.
+ *)
+
+(*
     
 (** * Types *)
 Inductive ET: Plc -> EvidenceC -> Evidence -> Prop :=
@@ -57,7 +61,7 @@ Inductive ET: Plc -> EvidenceC -> Evidence -> Prop :=
     ET n (hhc bs e) (hh p et)
 | nnt: forall p bs e et i,
     ET p e et ->
-    ET p (nnc i bs e) (nn p i et)
+    ET p (nnc i bs e) (nn i et)
 | sst: forall p e1 e2 e1t e2t,
     ET p e1 e1t ->
     ET p e2 e2t ->
@@ -75,6 +79,7 @@ Proof.
   generalize dependent p.
   induction ec; intros; try (simpl; eauto).
 Defined.
+*)
 
 (** * Eval function definition *)
 Definition splitEv (sp:SP) (e:EvidenceC) : EvidenceC :=
@@ -83,7 +88,8 @@ Definition splitEv (sp:SP) (e:EvidenceC) : EvidenceC :=
   | NONE => mtc
   end.
 
-Definition eval_asp (a:ASP) (e:EvidenceC) (p:Plc) : EvidenceC :=
+
+Definition eval_asp (a:ASP) (e:EvidenceC) : EvidenceC :=
   match a with
   | CPY => e
 (*  | KIM i q args =>
@@ -94,25 +100,27 @@ Definition eval_asp (a:ASP) (e:EvidenceC) (p:Plc) : EvidenceC :=
     (uuc i bs e)
   | SIG =>
     let bs := signEv e in
-    (ggc p bs e)
+    (ggc bs e)
   | HSH =>
     let bs := hashEv e in
     (hhc bs e)
   end.
 
-Fixpoint eval (t:Term) (p:Plc) (e:EvidenceC) : EvidenceC :=
+
+
+Fixpoint eval (t:Term) (* (p:Plc) *) (e:EvidenceC) : EvidenceC :=
   match t with
-  | asp a => eval_asp a e p
+  | asp a => eval_asp a e
   | att q t1 => toRemote t1 q e
   | lseq t1 t2 =>
-    let e1 := eval t1 p e in
-    eval t2 p e1
+    let e1 := eval t1 e in
+    eval t2 e1
          
   | bseq (sp1,sp2) t1 t2 =>
     let e1 := splitEv sp1 e in
     let e2 := splitEv sp2 e in
-    let e1' := eval t1 p e1 in
-    let e2' := eval t2 p e2 in
+    let e1' := eval t1 e1 in
+    let e2' := eval t2 e2 in
     (ssc e1' e2') 
   | bpar (sp1,sp2) t1 t2 =>
     let e1 := splitEv sp1 e in
@@ -122,6 +130,8 @@ Fixpoint eval (t:Term) (p:Plc) (e:EvidenceC) : EvidenceC :=
     (ppc e1' e2')
   end.
 
+
+(*
 Inductive EvcT: Term -> EvidenceC -> EvidenceC -> Prop :=
 | mttc: forall e, EvcT (asp CPY) e e
 (* | kkt: forall id A p q bs e et,
@@ -148,3 +158,4 @@ Inductive EvcT: Term -> EvidenceC -> EvidenceC -> Prop :=
     EvcT t1 (splitEv sp1 e) e1 ->
     EvcT t2 (splitEv sp2 e) e2 ->
     EvcT (bpar (sp1,sp2) t1 t2) e (ppc e1 e2).
+*)

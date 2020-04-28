@@ -4,6 +4,7 @@ Require Import Maps (*OptMonad*) MonadAM  StructTact.StructTactics.
 Require Import List.
 Import ListNotations.
 
+(*
 Inductive App_Instr: Set :=
 | asp_app: ASP_ID -> BS -> App_Instr
 | g_app: Plc -> BS -> EvidenceC -> App_Instr
@@ -51,6 +52,7 @@ Definition check_ev_hash (e:EvidenceC) (bs:BS) : bool :=
   check_hash payload bs.
 
 Check Nat.eqb.
+*)
 
 (*
 Definition check_nonce (n : N_ID) (bs:BS) : option bool :=
@@ -149,6 +151,49 @@ Check empty_app_st.
 
 Definition APP := St app_st.
 
+(*
+Definition am_get_asp_asp (p:Plc) (i:ASP_ID) : APP ASP_ID :=
+  m <- gets asp_map ;;
+  let maybeId = M.lookup (p,i) m
+  case maybeId of
+   Just newI -> return newI
+   Nothing -> error $ "appraisal asp for ASP_ID " ++ (show i) ++ " at place " ++ (show p) ++ " not registered."
+*)
+
+Fixpoint gen_appraisal_term (e:EvidenceC) (et:Evidence) : APP Term :=
+  match e with
+  | mtc =>
+    match et with
+    | mt => ret (asp CPY)
+    | _ => failm
+    end
+  | uuc i bs e' =>
+    match et with 
+    | uu i_t p e'_t =>
+      let app_id := 0 in (* app_id <- am_get_asp_asp p i_t *)
+      t2 <- gen_appraisal_term e' e'_t ;;
+      let t1 := (asp (ASPC app_id)) in
+      let res := (bpar (NONE,NONE) t1 t2) in
+                     ret res
+    | _ => failm
+    end
+  | 
+  | _ => failm
+  end.
+    
+
+
+
+
+
+
+
+
+
+
+
+
+(*
 Definition helper_gen_app (a:ASP) (p:Plc) (e:EvidenceC) : APP (Term * EvidenceC) :=
   match a with
   | CPY => ret (asp CPY,e)
@@ -197,6 +242,8 @@ Fixpoint gen_appraisal_term' (t:Term) (p:Plc) (e:EvidenceC) : APP (Term * Eviden
       |_ => failm (* error "evidence mismath on BRP-PP" *)
       end
   end.
+
+*)
 
 Require Import Instr MonadVM VmSemantics.
 

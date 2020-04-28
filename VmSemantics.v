@@ -37,7 +37,7 @@ Definition prim_trace (i:nat) (p:Plc) (a:Prim_Instr) : (list Ev) :=
   | hash => [Term.hash i p]
   end.
 
-Definition prim_ev (a:Prim_Instr) (p:Plc) (e:EvidenceC) : EvidenceC :=
+Definition prim_ev (a:Prim_Instr)(* (p:Plc) *) (e:EvidenceC) : EvidenceC :=
   match a with
   | copy => e
 (*  | kmeas i q args =>
@@ -48,7 +48,7 @@ Definition prim_ev (a:Prim_Instr) (p:Plc) (e:EvidenceC) : EvidenceC :=
     (uuc i bs e)
   | sign =>
     let bs := signEv e in
-    (ggc p bs e)
+    (ggc bs e)
   | hash =>
     let bs := hashEv e in
     (hhc bs e)
@@ -58,7 +58,7 @@ Definition build_comp (i:AnnoInstr): VM unit :=
   match i with
   | aprimInstr x a =>
     p <- get_pl ;;
-    modify_evm (prim_ev a p) ;;
+    modify_evm (prim_ev a) ;;
                add_tracem (prim_trace x p a)              
   | asplit x sp1 sp2 =>
     e <- get_ev ;;
@@ -1372,7 +1372,7 @@ Lemma multi_ev_eval : forall t tr tr' e e' s s' p p' o o',
     run_vm (instr_compiler t)
            {| st_ev := e; st_stack := s;  st_trace := tr; st_pl := p; st_store := o |} =
            {| st_ev := e'; st_stack := s'; st_trace := tr'; st_pl := p'; st_store := o' |}  ->
-    e' = eval (unanno t) p e.
+    e' = eval (unanno t) e.
 Proof.
   induction t; intros.
   - (* aasp case *)
@@ -1434,7 +1434,7 @@ Proof.
     unfold run_vm in *.
     congruence.
     
-    assert (H0 = eval (unanno t1) p e).
+    assert (H0 = eval (unanno t1) e).
     eauto.
     subst.
     eauto.
@@ -1550,6 +1550,8 @@ Lemma multi_ev_eval : forall t tr tr' e e' s s' p p' o o',
 Proof.
  *)
 
+(*
+
 Lemma multi_ev_eval_shape_helper : forall t p e e' et e't,
     ET p e et ->
     eval t p e = e' ->
@@ -1659,7 +1661,9 @@ Proof.
     apply H0.
     reflexivity. reflexivity.
 Admitted.
+ *)
 
+(*
 
 Lemma multi_ev_eval_shape : forall t tr tr' e e' et e't s s' p p' o o',
     run_vm (instr_compiler t)
@@ -1695,6 +1699,7 @@ Proof.
   reflexivity.
   eapply ya.
 Defined.
+*)
 
 Lemma suffix_prop : forall il e e' s s' tr tr' p p' o o',
     run_vm il
@@ -1742,7 +1747,7 @@ Axiom run_at : forall t e s n o,
                 st_trace := [];
                 st_pl := n;
                 st_store := o |} =
-             {| st_ev := (eval (unanno t) n e);
+             {| st_ev := (eval (unanno t) e);
                 st_stack := s;
                 st_trace := remote_events t n;
                 st_pl := n;

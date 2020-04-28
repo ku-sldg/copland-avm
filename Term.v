@@ -71,7 +71,7 @@ Inductive Evidence: Set :=
 | uu: ASP_ID -> Plc -> (* (list Arg) -> *) Evidence -> Evidence
 | gg: Plc -> Evidence -> Evidence
 | hh: Plc -> Evidence -> Evidence
-| nn: Plc -> N_ID -> Evidence -> Evidence
+| nn: N_ID -> Evidence -> Evidence
 | ss: Evidence -> Evidence -> Evidence
 | pp: Evidence -> Evidence -> Evidence.
 
