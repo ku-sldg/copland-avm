@@ -81,6 +81,10 @@ Definition splitEv_T (sp:SP) (e:Evidence) : Evidence :=
   | NONE => mt
   end.
 
+Inductive splitEv_T_R : SP -> Evidence -> Evidence -> Prop :=
+| spAll: forall e, splitEv_T_R ALL e e
+| spNone: forall e, splitEv_T_R NONE e mt.
+
 Fixpoint eval_asp t p e :=
   match t with
   | CPY => e
@@ -102,6 +106,29 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
                       (eval t2 p (splitEv_T (snd s) e))
   end.
 
+
+Inductive evalR : Term -> Plc -> Evidence -> Evidence -> Prop :=
+| evalR_asp: forall a p e,
+    evalR (asp a) p e (eval_asp a p e)
+| evalR_att: forall t1 q e e' p,
+    evalR t1 q e e' ->
+    evalR (att q t1) p e e'
+| evalR_lseq: forall t1 t2 p e e' e'',
+    evalR t1 p e e' ->
+    evalR t2 p e' e'' ->
+    evalR (lseq t1 t2) p e e''
+| evalR_bseq: forall s e e1 e2 e1' e2' p t1 t2,
+    splitEv_T_R (fst s) e e1 ->
+    splitEv_T_R (snd s) e e2 ->
+    evalR t1 p e1 e1' ->
+    evalR t2 p e2 e2' ->
+    evalR (bseq s t1 t2) p e (ss e1' e2')
+| evalR_bpar: forall s e e1 e2 e1' e2' p t1 t2,
+    splitEv_T_R (fst s) e e1 ->
+    splitEv_T_R (snd s) e e2 ->
+    evalR t1 p e1 e1' ->
+    evalR t2 p e2 e2' ->
+    evalR (bpar s t1 t2) p e (pp e1' e2').
 
 
 (** * Events

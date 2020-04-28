@@ -177,8 +177,51 @@ Fixpoint gen_appraisal_term (e:EvidenceC) (et:Evidence) : APP Term :=
                      ret res
     | _ => failm
     end
-  | 
-  | _ => failm
+  | ggc bs e' =>
+    match et with
+    | gg p e'_t =>
+        let sig_id := 0 in      (* sig_id <- am_get_sig_asp p *)
+        (* let evBits = encodeEv e' --BL.toStrict (DA.encode e)
+            evBitsArg = show evBits
+            sigArg = show bs *)
+        t2 <- gen_appraisal_term e' e'_t ;;
+        let t1 := (asp (ASPC sig_id)) in   (* (ASP sig_id [evBitsArg,sigArg]) *)
+        let res := (bpar (NONE,NONE) t1 t2) in   (* BRP (NONE,NONE) t1 t2 *)
+        ret res
+    | _ => failm
+    end
+  | hhc bs e' =>
+    match et with
+    | hh p e'_t =>
+        let hsh_id := 0 in      (* hsh_id <- am_get_hsh_asp p *)
+        (* let evBits = encodeEv e' --BL.toStrict (DA.encode e)
+            evBitsArg = show evBits
+            sigArg = show bs *)
+        t2 <- gen_appraisal_term e' e'_t ;;
+        let t1 := (asp (ASPC hsh_id)) in   (* (ASP sig_id [evBitsArg,sigArg]) *)
+        let res := (bpar (NONE,NONE) t1 t2) in   (* BRP (NONE,NONE) t1 t2 *)
+        ret res
+    | _ => failm
+    end
+  | ssc e1 e2 =>
+    match et with
+    | ss e1_t e2_t => 
+      t1' <- (gen_appraisal_term e1 e1_t) ;;
+          t2' <- (gen_appraisal_term e2 e2_t) ;;
+          let res := (bpar (NONE,NONE) t1' t2') in (* BRP (NONE,NONE) t1' t2' *)
+          ret res
+    | _ => failm
+    end
+  | ppc e1 e2 =>
+    match et with
+    | pp e1_t e2_t => 
+      t1' <- (gen_appraisal_term e1 e1_t) ;;
+          t2' <- (gen_appraisal_term e2 e2_t) ;;
+          let res := (bpar (NONE,NONE) t1' t2') in (* BRP (NONE,NONE) t1' t2' *)
+          ret res
+    | _ => failm
+    end      
+  | _ => failm (* No nonce case for now *)
   end.
     
 
@@ -247,25 +290,215 @@ Fixpoint gen_appraisal_term' (t:Term) (p:Plc) (e:EvidenceC) : APP (Term * Eviden
 
 Require Import Instr MonadVM VmSemantics.
 
+(*
 Lemma run_vm_good_ev : forall t tr tr' e e' s s' p p' o o',
   run_vm (instr_compiler t)
-         {| st_ev := e; st_stack := s;  st_trace := tr; st_pl := p; st_store := o |} =
-  {| st_ev := e'; st_stack := s'; st_trace := tr'; st_pl := p'; st_store := o' |} ->
+         {| st_ev := e;
+            st_stack := s;
+            st_trace := tr;
+            st_pl := p;
+            st_store := o |} =
+  {| st_ev := e';
+     st_stack := s';
+     st_trace := tr';
+     st_pl := p';
+     st_store := o' |} ->
   EvcT (unanno t) e e'.
 Proof.
 Admitted.
+*)
+
+
+Set Nested Proofs Allowed.
+
+
+Axiom remote_eval : forall e p annt,
+    eval annt e = toRemote annt p e.
+
+(*
+Lemma EvcT_iff_eval : forall annt e e',
+    eval annt e = e' <-> EvcT annt e e'.
+Admitted.
+*)
+
+Require Import Coq.Program.Tactics.
+
+Lemma wf_gen: forall e et app_st,
+    ET e et ->
+    exists app_st' v,
+      runSt app_st (gen_appraisal_term e et) = (Some v,app_st').
+Proof.
+Admitted.
+
+Theorem someEv : forall t tr tr' e e' et s s' p p' o o' app_st e't,
+  run_vm (instr_compiler t)
+         {| st_ev := e;
+            st_stack := s;
+            st_trace := tr;
+            st_pl := p;
+            st_store := o |} =
+  {| st_ev := e';
+     st_stack := s';
+     st_trace := tr';
+     st_pl := p';
+     st_store := o' |} ->
+
+  ET e et ->
+  evalR (unanno t) p et e't -> (* e't = Term.eval (unanno t) p mt -> *)
+  exists app_st' v,
+    runSt app_st (gen_appraisal_term e' e't) = (Some v,app_st').
+Proof.
+  intros.
+ (* assert (EvcT (unanno t) mtc e').
+  eapply run_vm_good_ev; eauto. *)
+  generalize dependent p.
+  generalize dependent e'.
+  generalize dependent tr.
+  generalize dependent tr'.
+  generalize dependent o.
+  generalize dependent o'.
+  generalize dependent s.
+  generalize dependent s'.
+  generalize dependent p'.
+  generalize dependent app_st0.
+  generalize dependent e't.
+  generalize dependent e.
+  generalize dependent et.
+  induction t; intros.
+  - 
+
+    (*
+    assert (EvcT  (unanno (aasp r a)) e e').
+    eapply run_vm_good_ev; eauto. *)
+
+    destruct a; simpl;
+      try (invc H1; invc H;
+           eapply wf_gen; (try econstructor); eauto).
+  -
+    (*
+     assert (EvcT (unanno (aatt r n t)) e e').
+     eapply run_vm_good_ev; eauto. *)
+
+    invc H1.
+    eapply IHt.
+    eassumption.
+
+    simpl in H.
+    monad_unfold.
+    unfold run_vm_step in H. monad_unfold.
+
+
+    rewrite run_at.
+
+
+    assert (eval (unanno t) e = e').
+    { erewrite remote_eval.
+      invc H.
+      destruct r.
+      simpl in *.
+      unfold run_vm_step in *. monad_unfold.
+      invc H2.
+      reflexivity. }
+
+    rewrite H1.
+    reflexivity.
+    eassumption.
+  -
+    invc H1.
+
+    edestruct destruct_compiled_appended.
+    eassumption. clear H.
+    destruct_conjs.
+    fold instr_compiler in *.
+
+    assert (H1 = eval (unanno t1) e) as hi.
+    {
+      admit.
+    }    
+    rewrite hi in *. clear hi.
+
+    (* assert (e'1 = eval (unanno t1) mtc). admit.
+    rewrite <- H13 in H6. *)
+
+    (*
+    edestruct IHt1.
+    eassumption.
+    eassumption.
+    eassumption.
+    destruct_conjs. *)
+
+    eapply IHt2.
+    assert (ET (eval (unanno t1) e) e'0) as hi.
+    { 
+      admit.
+    }
+    
+    apply hi.
+    eassumption.
+    assert (p = H2) as hi.
+    {
+      admit.
+    }
+    
+    rewrite <- hi.
+    eassumption.
+  -
+    
+    
+
+
+    apply H10.
 
 
 
     
+    apply H6.
+    eassumption.
 
-Theorem someEv : forall t tr tr' e e' s s' p p' o o' app_st,
-  run_vm (instr_compiler t)
-         {| st_ev := e; st_stack := s;  st_trace := tr; st_pl := p; st_store := o |} =
-  {| st_ev := e'; st_stack := s'; st_trace := tr'; st_pl := p'; st_store := o' |} ->
-  exists app_st' v,
-    runSt app_st (gen_appraisal_term' (unanno t) p e') = (Some v,app_st').
-Proof.
+    eapply IHt2.
+    
+                                        
+    
+
+    
+    eassumption.
+    simpl in H6.
+    
+    
+      
+    reflexivity.
+
+    
+    invc H5
+    
+    
+  
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   intros.
   assert (EvcT (unanno t) e e').
   eapply run_vm_good_ev; eauto.

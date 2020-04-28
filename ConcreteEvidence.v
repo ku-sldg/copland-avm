@@ -42,6 +42,34 @@ Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=
   end.
  *)
 
+
+Inductive ET: EvidenceC -> Evidence -> Prop :=
+| mtt: ET mtc mt
+(* | kkt: forall id A p q bs e et,
+    ET p e et -> 
+    ET p (kkc id A q bs e) (kk id p q A et) *)
+| uut: forall id p bs e et,
+    ET e et ->
+    ET (uuc id bs e) (uu id p et)
+| ggt: forall p bs e et,
+    ET e et ->
+    ET (ggc bs e) (gg p et)
+| hht: forall p bs e et,
+    ET e et ->
+    ET (hhc bs e) (hh p et)
+| nnt: forall bs e et i,
+    ET e et ->
+    ET (nnc i bs e) (nn i et)
+| sst: forall e1 e2 e1t e2t,
+    ET e1 e1t ->
+    ET e2 e2t ->
+    ET (ssc e1 e2) (ss e1t e2t)
+| ppt: forall e1 e2 e1t e2t,
+    ET e1 e1t ->
+    ET e2 e2t ->
+    ET (ppc e1 e2) (pp e1t e2t).
+Hint Constructors ET.
+
 (*
     
 (** * Types *)
@@ -131,7 +159,7 @@ Fixpoint eval (t:Term) (* (p:Plc) *) (e:EvidenceC) : EvidenceC :=
   end.
 
 
-(*
+
 Inductive EvcT: Term -> EvidenceC -> EvidenceC -> Prop :=
 | mttc: forall e, EvcT (asp CPY) e e
 (* | kkt: forall id A p q bs e et,
@@ -139,8 +167,8 @@ Inductive EvcT: Term -> EvidenceC -> EvidenceC -> Prop :=
     EvcT p (kkc id A q bs e) (kk id p q A et) *)
 | uutc: forall i bs e,
     EvcT (asp (ASPC i)) e (uuc i bs e)
-| ggtc: forall p bs e,
-    EvcT (asp SIG) e (ggc p bs e)
+| ggtc: forall bs e,
+    EvcT (asp SIG) e (ggc bs e)
 | hhtc: forall bs e,
     EvcT (asp HSH) e (hhc bs e)
 | atc: forall q t' e e',
@@ -158,4 +186,3 @@ Inductive EvcT: Term -> EvidenceC -> EvidenceC -> Prop :=
     EvcT t1 (splitEv sp1 e) e1 ->
     EvcT t2 (splitEv sp2 e) e2 ->
     EvcT (bpar (sp1,sp2) t1 t2) e (ppc e1 e2).
-*)
