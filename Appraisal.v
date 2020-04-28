@@ -180,7 +180,7 @@ Fixpoint gen_appraisal_term (e:EvidenceC) (et:Evidence) : APP Term :=
   | ggc bs e' =>
     match et with
     | gg p e'_t =>
-        let sig_id := 0 in      (* sig_id <- am_get_sig_asp p *)
+        let sig_id := 42 in      (* sig_id <- am_get_sig_asp p *)
         (* let evBits = encodeEv e' --BL.toStrict (DA.encode e)
             evBitsArg = show evBits
             sigArg = show bs *)
@@ -221,7 +221,7 @@ Fixpoint gen_appraisal_term (e:EvidenceC) (et:Evidence) : APP Term :=
           ret res
     | _ => failm
     end      
-  | _ => failm (* No nonce case for now *)
+  | nnc _ _ _ =>  ret (asp CPY) (* Dummy nonce case for now.  TODO: robustify *)
   end.
     
 
@@ -312,8 +312,7 @@ Admitted.
 Set Nested Proofs Allowed.
 
 
-Axiom remote_eval : forall e p annt,
-    eval annt e = toRemote annt p e.
+
 
 (*
 Lemma EvcT_iff_eval : forall annt e e',
@@ -323,12 +322,197 @@ Admitted.
 
 Require Import Coq.Program.Tactics.
 
-Lemma wf_gen: forall e et app_st,
-    ET e et ->
-    exists app_st' v,
-      runSt app_st (gen_appraisal_term e et) = (Some v,app_st').
+Definition aterm := lseq (asp (ASPC 1)) (asp SIG).
+
+Print anno.
+
+Definition aev := (run_vm (instr_compiler (annotated aterm))
+                          {| st_ev := mtc;
+                             st_stack := [];
+                             st_trace := [];
+                             st_pl := 0;
+                             st_store := [] |}).
+Compute (st_ev aev).
+Print signEv.
+
+Compute (gen_appraisal_term (st_ev aev) (gg 0 (uu 1 0 mt))).
+
+Theorem someEv_if_well_formed : forall e' app_st e't,
+  Ev_Shape e' e't -> 
+  exists app_st' v,
+    runSt app_st (gen_appraisal_term e' e't) = (Some v,app_st').
 Proof.
-Admitted.
+  intros.
+  generalize dependent app_st0.
+  induction H; intros;
+    try (simpl; eexists; eexists; reflexivity).
+  - simpl.
+    edestruct IHEv_Shape.
+    destruct_conjs.
+    eexists; eexists.
+    simpl.
+    monad_unfold.
+    rewrite H1.
+    reflexivity.
+  - simpl.
+    edestruct IHEv_Shape.
+    destruct_conjs.
+    eexists; eexists.
+    monad_unfold.
+    rewrite H1.
+    reflexivity.
+  - simpl.
+    edestruct IHEv_Shape.
+    destruct_conjs.
+    eexists; eexists.
+    monad_unfold.
+    rewrite H1.
+    reflexivity.
+  - simpl.
+    edestruct IHEv_Shape1.
+    edestruct IHEv_Shape2.
+    destruct_conjs.
+    eexists; eexists.
+    monad_unfold.
+    rewrite H4.
+    rewrite H3.
+    reflexivity.
+  - simpl.
+    edestruct IHEv_Shape1.
+    edestruct IHEv_Shape2.
+    destruct_conjs.
+    eexists; eexists.
+    monad_unfold.
+    rewrite H4.
+    rewrite H3.
+    reflexivity.
+Defined.
+
+
+(* 
+Lemma eval_iff_evalR: forall t p e e',
+    evalR t p e e' <-> eval t p e = e'.
+ *)
+
+(*
+Lemma multi_ev_eval : forall t tr tr' e e' s s' p p' o o',
+    run_vm (instr_compiler t)
+           {| st_ev := e; st_stack := s;  st_trace := tr; st_pl := p; st_store := o |} =
+           {| st_ev := e'; st_stack := s'; st_trace := tr'; st_pl := p'; st_store := o' |}  ->
+    e' = eval (unanno t) e.
+ *)
+
+(*
+Theorem someEv_if_well_formed : forall e' app_st e't,
+  Ev_Shape e' e't -> 
+  exists app_st' v,
+    runSt app_st (gen_appraisal_term e' e't) = (Some v,app_st').
+ *)
+
+Axiom para_eval_thread: forall e annt,
+    parallel_eval_thread annt e = eval annt e.
+
+Lemma evShape_eval: forall e et p annt,
+    Ev_Shape e et ->
+    Ev_Shape (eval annt e) (Term.eval annt p et).
+Proof.
+  intros.
+  generalize dependent p.
+  generalize dependent e.
+  generalize dependent et.
+  induction annt; intros.
+  - simpl.
+    destruct a; simpl; eauto.
+  - simpl.
+    rewrite <- remote_eval.
+    eauto.
+  - simpl.
+    eauto.
+  - destruct s.
+    destruct s; destruct s0; simpl; eauto.
+  - destruct s.
+    destruct s; destruct s0; simpl;
+    repeat rewrite para_eval_thread in *;
+    eauto.
+Defined.
+
+
+Lemma someEv' : forall t tr tr' e e' s s' p p' o o' et,
+  run_vm (instr_compiler t)
+         {| st_ev := e;
+            st_stack := s;
+            st_trace := tr;
+            st_pl := p;
+            st_store := o |} =
+  {| st_ev := e';
+     st_stack := s';
+     st_trace := tr';
+     st_pl := p';
+     st_store := o' |} ->
+
+  Ev_Shape e et ->
+  Ev_Shape e' (Term.eval (unanno t) p et).
+Proof.
+  intros.
+  assert (Term.evalR (unanno t) p et (Term.eval (unanno t) p et)).
+  {
+    rewrite Term.eval_iff_evalR. reflexivity.
+  }
+  assert (e' = eval (unanno t) e) as hi.
+  {
+    eapply multi_ev_eval; eauto.
+  }
+  rewrite hi.
+  eapply evShape_eval; eauto.
+Defined.
+
+
+Theorem someEv : forall t tr tr' e e' s s' p p' o o' app_st et,
+  run_vm (instr_compiler t)
+         {| st_ev := e;
+            st_stack := s;
+            st_trace := tr;
+            st_pl := p;
+            st_store := o |} =
+  {| st_ev := e';
+     st_stack := s';
+     st_trace := tr';
+     st_pl := p';
+     st_store := o' |} ->
+
+ Ev_Shape e et ->
+ (* evalR (unanno t) p et e't -> (* e't = Term.eval (unanno t) p mt -> *) *)
+  exists app_st' v,
+    runSt app_st (gen_appraisal_term e' (Term.eval (unanno t) p et)) = (Some v,app_st').
+Proof.
+  intros.
+  assert (Ev_Shape e' (Term.eval (unanno t) p et)).
+  eapply someEv'; eauto.
+  eapply someEv_if_well_formed; eauto.
+Qed.
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+    
+    
+    
+    
+(*    
+    
 
 Theorem someEv : forall t tr tr' e e' et s s' p p' o o' app_st e't,
   run_vm (instr_compiler t)
@@ -611,4 +795,4 @@ Proof.
     admit.
     
   
-  
+  *)

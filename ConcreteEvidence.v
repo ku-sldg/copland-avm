@@ -1,5 +1,7 @@
 Require Export Term.
 
+Require Import StructTact.StructTactics.
+
 Notation BS := nat (only parsing).
 
 (** * Concrete Evidence *)
@@ -43,32 +45,29 @@ Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=
  *)
 
 
-Inductive ET: EvidenceC -> Evidence -> Prop :=
-| mtt: ET mtc mt
-(* | kkt: forall id A p q bs e et,
-    ET p e et -> 
-    ET p (kkc id A q bs e) (kk id p q A et) *)
+Inductive Ev_Shape: EvidenceC -> Evidence -> Prop :=
+| mtt: Ev_Shape mtc mt
 | uut: forall id p bs e et,
-    ET e et ->
-    ET (uuc id bs e) (uu id p et)
+    Ev_Shape e et ->
+    Ev_Shape (uuc id bs e) (uu id p et)
 | ggt: forall p bs e et,
-    ET e et ->
-    ET (ggc bs e) (gg p et)
+    Ev_Shape e et ->
+    Ev_Shape (ggc bs e) (gg p et)
 | hht: forall p bs e et,
-    ET e et ->
-    ET (hhc bs e) (hh p et)
+    Ev_Shape e et ->
+    Ev_Shape (hhc bs e) (hh p et)
 | nnt: forall bs e et i,
-    ET e et ->
-    ET (nnc i bs e) (nn i et)
+    Ev_Shape e et ->
+    Ev_Shape (nnc i bs e) (nn i et)
 | sst: forall e1 e2 e1t e2t,
-    ET e1 e1t ->
-    ET e2 e2t ->
-    ET (ssc e1 e2) (ss e1t e2t)
+    Ev_Shape e1 e1t ->
+    Ev_Shape e2 e2t ->
+    Ev_Shape (ssc e1 e2) (ss e1t e2t)
 | ppt: forall e1 e2 e1t e2t,
-    ET e1 e1t ->
-    ET e2 e2t ->
-    ET (ppc e1 e2) (pp e1t e2t).
-Hint Constructors ET.
+    Ev_Shape e1 e1t ->
+    Ev_Shape e2 e2t ->
+    Ev_Shape (ppc e1 e2) (pp e1t e2t).
+Hint Constructors Ev_Shape.
 
 (*
     
@@ -158,31 +157,94 @@ Fixpoint eval (t:Term) (* (p:Plc) *) (e:EvidenceC) : EvidenceC :=
     (ppc e1' e2')
   end.
 
+Axiom remote_eval : forall e p annt,
+    eval annt e = toRemote annt p e.
+
+Axiom para_eval_thread: forall e annt,
+    parallel_eval_thread annt e = eval annt e.
 
 
-Inductive EvcT: Term -> EvidenceC -> EvidenceC -> Prop :=
-| mttc: forall e, EvcT (asp CPY) e e
-(* | kkt: forall id A p q bs e et,
-    EvcT p e et -> 
-    EvcT p (kkc id A q bs e) (kk id p q A et) *)
-| uutc: forall i bs e,
-    EvcT (asp (ASPC i)) e (uuc i bs e)
-| ggtc: forall bs e,
-    EvcT (asp SIG) e (ggc bs e)
-| hhtc: forall bs e,
-    EvcT (asp HSH) e (hhc bs e)
+
+Inductive evalR: Term -> EvidenceC -> EvidenceC -> Prop :=
+| mttc: forall e, evalR (asp CPY) e e
+| uutc: forall i e,
+    evalR (asp (ASPC i)) e (uuc i (invokeUSM i) e)
+| ggtc: forall e,
+    evalR (asp SIG) e (ggc (signEv e) e)
+| hhtc: forall e,
+    evalR (asp HSH) e (hhc (hashEv e) e)
 | atc: forall q t' e e',
-    EvcT t' e e' ->
-    EvcT (att q t') e e'
+    evalR t' e e' ->
+    evalR (att q t') e e'
 | lseqc: forall t1 t2 e e' e'',
-    EvcT t1 e e' ->
-    EvcT t2 e' e'' ->
-    EvcT (lseq t1 t2) e e''
+    evalR t1 e e' ->
+    evalR t2 e' e'' ->
+    evalR (lseq t1 t2) e e''
 | bseqc: forall t1 t2 sp1 sp2 e e1 e2,
-    EvcT t1 (splitEv sp1 e) e1 ->
-    EvcT t2 (splitEv sp2 e) e2 ->
-    EvcT (bseq (sp1,sp2) t1 t2) e (ssc e1 e2)
+    evalR t1 (splitEv sp1 e) e1 ->
+    evalR t2 (splitEv sp2 e) e2 ->
+    evalR (bseq (sp1,sp2) t1 t2) e (ssc e1 e2)
 | bparc: forall t1 t2 sp1 sp2 e e1 e2,
-    EvcT t1 (splitEv sp1 e) e1 ->
-    EvcT t2 (splitEv sp2 e) e2 ->
-    EvcT (bpar (sp1,sp2) t1 t2) e (ppc e1 e2).
+    evalR t1 (splitEv sp1 e) e1 ->
+    evalR t2 (splitEv sp2 e) e2 ->
+    evalR (bpar (sp1,sp2) t1 t2) e (ppc e1 e2).
+
+
+
+Lemma eval_iff_evalR: forall t e e',
+    evalR t e e' <-> eval t e = e'.
+Proof.
+    split.
+  - (* -> case *)
+    intros.
+    generalize dependent e.
+    generalize dependent e'.
+
+    induction t; intros.
+    + destruct a; try (inv H; reflexivity).
+    + inv H. simpl.
+      rewrite <- remote_eval.
+      eauto.
+    + inv H.
+      assert (eval t1 e = e'0).
+      eauto.
+      subst.
+      simpl.
+      eauto.
+    + inv H.
+      assert (eval t1 (splitEv sp1 e) = e1) by eauto.
+      assert (eval t2 (splitEv sp2 e) = e2) by eauto.
+      simpl.
+      destruct sp1; destruct sp2;
+        simpl; subst; eauto.
+    + inv H.
+      assert (eval t1 (splitEv sp1 e) = e1) by eauto.
+      assert (eval t2 (splitEv sp2 e) = e2) by eauto.
+      simpl.
+      repeat rewrite para_eval_thread in *.
+      destruct sp1; destruct sp2;
+        simpl; subst; eauto.
+  - (* <- case *)
+    intros.
+    generalize dependent e.
+    generalize dependent e'.
+
+    induction t; intros.
+    + inv H.
+      destruct a; try econstructor.
+    + inv H.
+      simpl.
+      econstructor.
+      rewrite <- remote_eval.
+      eauto.
+    + econstructor; eauto.
+    + destruct s.
+      simpl in H.
+      destruct s; destruct s0; simpl in *; subst;
+        econstructor; (try simpl); eauto; try (econstructor).
+    + destruct s.
+      simpl in H.
+      repeat rewrite para_eval_thread in *.
+      destruct s; destruct s0; simpl in *; subst;
+        econstructor; (try simpl); eauto; try (econstructor).
+Defined.

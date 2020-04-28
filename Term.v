@@ -130,6 +130,71 @@ Inductive evalR : Term -> Plc -> Evidence -> Evidence -> Prop :=
     evalR t2 p e2 e2' ->
     evalR (bpar s t1 t2) p e (pp e1' e2').
 
+Lemma eval_iff_evalR: forall t p e e',
+    evalR t p e e' <-> eval t p e = e'.
+Proof.
+  split.
+  - (* -> case *)
+    intros.
+    generalize dependent p.
+    generalize dependent e.
+    generalize dependent e'.
+
+    induction t; intros.
+    + destruct a; try (inv H; reflexivity).
+    + inv H. simpl.
+      eauto.
+    + inv H.
+      assert (eval t1 p e = e'0).
+      eauto.
+      subst.
+      simpl.
+      eauto.
+    + inv H.
+      assert (eval t1 p e1 = e1') by eauto.
+      assert (eval t2 p e2 = e2') by eauto.
+      simpl.
+      destruct s. simpl.
+      destruct s; destruct s0;
+        try (simpl; subst; inv H3; inv H4; reflexivity).
+    + inv H.
+      assert (eval t1 p e1 = e1') by eauto.
+      assert (eval t2 p e2 = e2') by eauto.
+      simpl.
+      destruct s. simpl.
+      destruct s; destruct s0;
+        try (simpl; subst; inv H3; inv H4; reflexivity).
+  - (* <- case *)
+    intros.
+    generalize dependent p.
+    generalize dependent e.
+    generalize dependent e'.
+
+    induction t; intros.
+    + inv H.
+      destruct a; try econstructor.
+    + inv H.
+      simpl.
+      econstructor.
+      eauto.
+    + econstructor; eauto.
+    + destruct s.
+      simpl in H.
+      destruct s; destruct s0; simpl in *; subst;
+        econstructor; (try simpl); eauto; try (econstructor).
+    + destruct s.
+      simpl in H.
+      destruct s; destruct s0; simpl in *; subst;
+        econstructor; (try simpl); eauto; try (econstructor).
+Defined.
+
+
+      
+      
+    
+      
+      
+
 
 (** * Events
 
