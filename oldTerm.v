@@ -60,6 +60,43 @@ Inductive ASP: Set :=
 | SIG: ASP
 | HSH: ASP.
 
+Record rec := mkrec {foo : nat -> ASP}.
+Check {t:ASP | True}.
+
+Inductive daFooR : nat -> ASP -> Prop :=
+| c0 : daFooR 0 CPY
+| c1 : forall n, (n <> 0) -> daFooR n SIG.
+
+Definition daFoo (n:nat) :=
+  match n with
+  | 1 => CPY
+  | 2 => SIG
+  | _ => HSH
+  end.
+    
+Definition term_prop (n:nat) : {t:ASP | daFoo n = t}.
+Proof.
+  econstructor. reflexivity.
+Defined.
+
+Definition term_R_prop := fun n:nat => {t:ASP | daFooR n t}.
+
+Definition derivedFoo (n:nat) : {t:ASP | daFooR n t}.
+Proof.
+  destruct n.
+  - econstructor. econstructor.
+  - econstructor. econstructor. auto.
+Defined.
+
+
+Definition daRecR := mkrec (fun n => proj1_sig (derivedFoo n)).
+
+Compute (daRecR.(foo) 2).
+    
+    
+Definition daRec := mkrec (fun n => proj1_sig (term_prop n)).
+Compute (daRec.(foo) 2).
+
 Definition eq_asp_dec:
   forall x y: ASP, {x = y} + {x <> y}.
 Proof.
