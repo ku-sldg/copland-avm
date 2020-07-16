@@ -31,7 +31,6 @@ Admitted.
 Definition prim_trace (i:nat) (p:Plc) (a:Prim_Instr) : (list Ev) :=
   match a with
   | copy => [Term.copy i p]
-(*  | kmeas asp_id q A => [Term.kmeas i p asp_id q A] *)
   | umeas asp_id => [Term.umeas i p asp_id]
   | sign => [Term.sign i p]
   | hash => [Term.hash i p]
@@ -40,9 +39,6 @@ Definition prim_trace (i:nat) (p:Plc) (a:Prim_Instr) : (list Ev) :=
 Definition prim_ev (a:Prim_Instr)(* (p:Plc) *) (e:EvidenceC) : EvidenceC :=
   match a with
   | copy => e
-(*  | kmeas i q args =>
-    let bs := invokeKIM i q args in
-    (kkc i args q bs e) *)
   | umeas i =>
     let bs := invokeUSM i in
     (uuc i bs e)
@@ -468,27 +464,6 @@ Proof.
       repeat do_pop_stackm_fail.
       subst.
       apply IHil.
-      (*
-    + (* arpy case *)
-      unfold run_vm_step; fold run_vm_step; monad_unfold; monad_unfold.
-      repeat break_match.
-      repeat find_inversion.
-      do_get_store_at_facts; eauto.
-      do_get_store_at_facts; eauto.
-      subst.
-      rewrite IHil at 1.
-      symmetry.
-      rewrite IHil at 1.
-      rewrite app_nil_l.
-      rewrite app_assoc.
-      do_bd. congruence.
-      bogus.
-      bogus.
-      repeat find_inversion.
-      do_get_store_at_facts_fail; eauto.
-      do_get_store_at_facts_fail; eauto.
-      subst.
-      eauto. *)
     + (* abep case *)
       unfold run_vm_step; fold run_vm_step; monad_unfold; monad_unfold.
       repeat break_match;
@@ -628,11 +603,6 @@ Defined.
 
 Axiom para_eval_vm : forall t e,
     parallel_eval_thread (unanno t) e = parallel_att_vm_thread (instr_compiler t) e.
-
-(*
-Ltac heee l :=
-  assert (l = l ++ []) as HH; auto; rewrite HH.
-*)
 
 Lemma record_congr :
   forall A,
@@ -792,38 +762,6 @@ Proof.
       repeat do_pop_stackm_fail; subst.
       rewrite IHil1.
       auto.
-  (*  + (* arpy case *)
-
-      unfold run_vm_step. fold run_vm_step.
-      monad_unfold.
-      unfold get_store_at.
-      monad_unfold.
-      remember (Maps.map_get o rpyi) as asdf.
-      destruct asdf.
-      simpl.
-      rewrite IHil1.
-      assert (
-          st_trace
-    (fold_left run_vm_step il1
-               {| st_ev := e0; st_stack := s; st_trace := [rpy i p q]; st_pl := p; st_store := o |}) =
-
-          [rpy i p q] ++ st_trace
-    (fold_left run_vm_step il1
-               {| st_ev := e0; st_stack := s; st_trace := []; st_pl := p; st_store := o |})).
-      apply foo.
-      rewrite H.
-      erewrite trace_irrel_ev.
-      erewrite trace_irrel_store.
-      erewrite trace_irrel_stack.
-      rewrite <- app_assoc.
-      rewrite <- app_assoc.
-      auto.
-      eapply st_congr; eauto.
-      eapply st_congr; eauto.
-      eapply st_congr; eauto.
-
-      monad_unfold.
-      rewrite IHil1. auto. *)
     + (* abep case *)
       unfold run_vm_step. fold run_vm_step.
       monad_unfold.
@@ -923,19 +861,6 @@ Proof.
       desp.
       simpl. do_pop_stackm_facts. subst. eauto.
       do_pop_stackm_fail. subst. eauto.
- (*   + (* arpy case *)
-      simpl. unfold run_vm_step. fold run_vm_step. monad_unfold.
-      unfold get_ev. monad_unfold.
-      repeat break_match.
-      simpl.
-      find_inversion.
-      do_get_store_at_facts; eauto.
-      simpl.
-      subst.
-      eauto.
-      find_inversion.
-      do_get_store_at_facts_fail; eauto.
-      subst. eauto. *)
     + (* abep case *)
       simpl. unfold run_vm_step. fold run_vm_step. monad_unfold.
       unfold get_store_at.
@@ -1238,38 +1163,6 @@ Proof.
     destruct r.
     invc H.
     reflexivity.
-    (*
-    unfold run_vm_step in *.  fold run_vm_step in *.
-    monad_unfold.
-    unfold get_store_at in *.
-    
-    monad_unfold.
-    break_match.
-    break_match.
-    break_match.
-    break_match.
-    break_match.
-    break_match.
-    break_match.
-    repeat find_inversion.
-    simpl in *.
-    invc H1. reflexivity.
-    repeat find_inversion.
-    solve_by_inversion.
-    repeat find_inversion.
-    simpl in *. invc H1.
-    reflexivity.
-    simpl in *.
-    repeat find_inversion.
-    solve_by_inversion.
-    simpl in *.
-    break_match.
-    break_match.
-    repeat find_inversion.
-    repeat find_inversion.
-    monad_unfold.
-    unfold failm in *. invc Heqp2.
-    reflexivity. *)
   - (* alseq case *)
     do_dca.
     eapply IHt2.
@@ -1599,166 +1492,6 @@ Proof.
       repeat rewrite para_eval_vm.
       eauto.
 Defined.
-
-(* 
-Lemma multi_ev_eval : forall t tr tr' e e' s s' p p' o o',
-    run_vm (instr_compiler t)
-           {| st_ev := e; st_stack := s;  st_trace := tr; st_pl := p; st_store := o |} =
-           {| st_ev := e'; st_stack := s'; st_trace := tr'; st_pl := p'; st_store := o' |}  ->
-    e' = eval (unanno t) e p.
-Proof.
- *)
-
-(*
-
-Lemma multi_ev_eval_shape_helper : forall t p e e' et e't,
-    ET p e et ->
-    eval t p e = e' ->
-    Term.eval t p et = e't ->
-    ET p e' e't.
-Proof.
-  induction t; intros.
-  invc H; try (destruct a; simpl; eauto).
-  simpl in H0, H1.
-
-  (*
-  Axiom remote_eval : forall t n e, toRemote t n e = eval t e n.
-  eapply IHt.
-  apply H.
-  rewrite remote_eval in H0.
-  Lemma eval_pl_irrel :
-    eval t e n = e' ->
-    eval t e p = e'
-  simpl in H0, H1. *)
-  - (* at case *)
-    admit. 
-
-  - (* ln case *)
-    simpl in H0, H1.
-  eapply IHt2.
-  eapply IHt1.
-  apply H.
-  reflexivity.
-  reflexivity.
-  auto.
-  auto.
-
-  -
-    simpl in H0, H1.
-    destruct s.
-    destruct s; destruct s0; simpl in *; subst.
-    econstructor. eauto.
-    eapply IHt2; eauto.
-    econstructor. eauto.
-    eapply IHt2.
-    assert (ET p mtc mt).
-    econstructor.
-    apply H0.
-    reflexivity.
-    reflexivity.
-
-    econstructor.
-    eapply IHt1.
-    assert (ET p mtc mt). eauto.
-    apply H0.
-    reflexivity.
-    reflexivity.
-    eapply IHt2.
-    eapply H. reflexivity. reflexivity.
-
-    econstructor.
-    eapply IHt1.
-    assert (ET p mtc mt). eauto.
-    apply H0.
-    reflexivity. reflexivity.
-
-    eapply IHt2.
-    assert (ET p mtc mt). eauto.
-    apply H0.
-    reflexivity. reflexivity.
-  -
-     simpl in H0, H1.
-    destruct s.
-    destruct s; destruct s0; simpl in *; subst.
-    Axiom parallel_eval : forall t p e,
-        parallel_eval_thread t e = eval t p e.
-
-    rewrite parallel_eval with (p:=p).
-    
-    econstructor. eauto.
-    eapply IHt2; eauto.
-    erewrite parallel_eval. reflexivity.
-    erewrite parallel_eval. erewrite parallel_eval.
-    econstructor. eauto.
-    eapply IHt2.
-    assert (ET p mtc mt).
-    econstructor.
-    apply H0.
-    reflexivity.
-    reflexivity.
-
-    
-    erewrite parallel_eval. erewrite parallel_eval.
-    econstructor.
-    eapply IHt1.
-    assert (ET p mtc mt). eauto.
-    apply H0.
-    reflexivity.
-    reflexivity.
-    eapply IHt2.
-    eapply H. reflexivity. reflexivity.
-
-    erewrite parallel_eval. erewrite parallel_eval.
-    econstructor.
-    eapply IHt1.
-    assert (ET p mtc mt). eauto.
-    apply H0.
-    reflexivity. reflexivity.
-
-    eapply IHt2.
-    assert (ET p mtc mt). eauto.
-    apply H0.
-    reflexivity. reflexivity.
-Admitted.
- *)
-
-(*
-
-Lemma multi_ev_eval_shape : forall t tr tr' e e' et e't s s' p p' o o',
-    run_vm (instr_compiler t)
-           {| st_ev := e; st_stack := s;  st_trace := tr; st_pl := p; st_store := o |} =
-    {| st_ev := e'; st_stack := s'; st_trace := tr'; st_pl := p'; st_store := o' |}  ->
-    ET p e et ->
-    Term.eval (unanno t) p et = e't ->
-    ET p e' e't.
-Proof.
-  intros.
-  assert (e' = eval (unanno t) p e).
-  eapply multi_ev_eval; eauto.
-  subst.
-
-  eapply multi_ev_eval_shape_helper.
-  apply H0.
-  reflexivity.
-  reflexivity.
-Defined. 
-  
-
-Lemma st_stack_restore : forall t e s tr p o,
-    st_stack
-      (run_vm (instr_compiler t)
-              {| st_ev := e;
-                 st_stack := s;
-                 st_trace := tr;
-                 st_pl := p;
-                 st_store := o |}) = s.
-Proof.
-  intros.
-  erewrite multi_stack_restore.
-  reflexivity.
-  eapply record_congr.
-Defined.
-*)
 
 Lemma suffix_prop : forall il e e' s s' tr tr' p p' o o',
     run_vm il
@@ -2155,6 +1888,22 @@ Proof.
 
       Print instr_compiler. *)    
 Admitted.
+
+Lemma run_lstar_corrolary : forall t tr et e s p o,
+   (* annotated x = t -> *)
+    (*well_formed t -> *)
+    st_trace (run_vm (instr_compiler t)
+                     (mk_st e s [] p o)) = tr ->
+    lstar (conf t p et) tr (stop p (aeval t p et)).
+Proof.
+  intros.
+  Check run_lstar.
+  eapply run_lstar with (t:=t) (tr:=tr) (e:=e) (s:=s) (p:=p) (o:=o).
+  Check st_congr.
+  eapply st_congr; try reflexivity.
+  eassumption.
+Defined.
+  
 
 Require Import Main.
 Require Import Event_system.
