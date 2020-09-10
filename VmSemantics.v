@@ -57,8 +57,8 @@ Definition build_comp (i:AnnoInstr): VM unit :=
   | asplit x sp1 sp2 =>
     e <- get_ev ;;
       p <- get_pl ;;
-      p <- split_evm x sp1 sp2 e p;;
-      let '(e1,e2) := p in
+      pr <- split_evm x sp1 sp2 e p;;
+      let '(e1,e2) := pr in
       put_ev e1 ;;
       push_stackm e2
   | ajoins i =>
@@ -135,13 +135,15 @@ Defined.
 Ltac unfoldm :=  repeat unfold run_vm_step in *; monad_unfold.
                  (*unfold get_ev; monad_unfold *)
 
+Print desp.
 Ltac boom :=
+  repeat unfoldm;
   repeat
-    unfoldm; desp; vmsts; unfoldm; desp;
+    (desp; unfoldm); (*unfoldm; desp; *)
     (*bogus; *)
     (*unfoldm; desp; vmsts; *)
-    try_pop_all;
-    bogus.
+    try_pop_all.
+    (*bogus. *)
 
 Ltac do_run :=
   match goal with
@@ -164,13 +166,19 @@ Ltac do_all := repeat (*do_inv*) find_inversion; simpl in *; eauto.
 Ltac allss :=
   repeat find_inversion;
   try bogus;
-  subst;
+  (*subst; *)
   (*vmsts; *)
   repeat (do_get_store_at_facts; subst; eauto);
   
   (*try bogus;*)
   repeat (do_get_store_at_facts_fail; subst; eauto);
-  try (do_bd; subst; eauto).
+  repeat do_pop_stackm_facts;
+  repeat do_pop_stackm_fail;
+  repeat get_store_at_bogus;
+  try do_bd;
+  subst; eauto.
+
+Print do_bd.
 
 (* Starting trace has no effect on store *)
 Lemma trace_irrel_store : forall il1 tr1 tr1' tr2 e e' s s' p1' p1 o' o,
@@ -185,7 +193,30 @@ Proof.
   induction il1; intros.
   - simpl.
     inv H. reflexivity.   
-  - simpl; destruct a;    
+  - simpl; destruct a;
+      try ( (* ajoins, abesr, abep cases *)
+          try destruct p0;
+          try destruct r;
+          (*repeat unfoldm; *)
+          boom;
+          (*eauto; *)
+          (*try_pop_all; *)
+          (*repeat do_pop_stackm_facts;
+          repeat do_pop_stackm_fail; *)
+          subst; eauto;
+          repeat monad_unfold;
+          repeat break_match;
+          allss).
+          
+
+
+
+
+
+
+(*
+
+
       try (* apriminstr, asplit, areqrpy cases  *)
         (try destruct p0;
          try destruct r;
@@ -203,15 +234,30 @@ Proof.
   
       try ( (* ajoins, abesr, abep cases *)
           boom;
-          try_pop_all;
+          (*try_pop_all; *)
           repeat do_pop_stackm_facts;
           repeat do_pop_stackm_fail;
-          subst; eauto; tauto);
+          subst; eauto; tauto).
+
+
+    (*
+    repeat break_match.
+
+    admit.
+    admit.
+    admit.
+    admit.
+
+    repeat (do_get_store_at_facts; subst; eauto).
+    repeat (do_get_store_at_facts; subst; eauto).
+*)
+    
 
       try ( (* ajoinp case *)
           repeat monad_unfold;
           repeat break_match;
           allss).
+*)
 Defined.
 
 (* Starting trace has no effect on evidence *)
@@ -222,6 +268,29 @@ Lemma trace_irrel_ev : forall il1 tr1 tr1' tr2 e e' s s' p1' p1 o1 o1',
     st_ev (
         run_vm il1 {| st_ev := e; st_trace := tr2; st_stack := s; st_pl := p1; st_store := o1 |}) = e'.
 Proof.
+    induction il1; intros.
+  - simpl.
+    inv H. reflexivity.   
+  - simpl; destruct a;
+      try ( (* ajoins, abesr, abep cases *)
+          try destruct p0;
+          try destruct r;
+          (*repeat unfoldm; *)
+          boom;
+          (*eauto; *)
+          (*try_pop_all; *)
+          (*repeat do_pop_stackm_facts;
+          repeat do_pop_stackm_fail; *)
+          subst; eauto;
+          repeat monad_unfold;
+          repeat break_match;
+          allss).
+
+
+
+
+(*
+  
   induction il1; intros.
   - simpl.
     inversion H. reflexivity.   
@@ -248,6 +317,7 @@ Proof.
           repeat monad_unfold;
           repeat break_match;
           allss). 
+*)
 Defined.
 
 (* Starting trace has no effect on place *)
@@ -259,6 +329,27 @@ Lemma trace_irrel_place : forall il1 tr1 tr1' tr2 e e' s s' p p' o o',
     st_pl (
         run_vm il1 {| st_ev := e; st_trace := tr2; st_stack := s; st_pl := p; st_store := o |}) = p'.
 Proof.
+    induction il1; intros.
+  - simpl.
+    inv H. reflexivity.   
+  - simpl; destruct a;
+      try ( (* ajoins, abesr, abep cases *)
+          try destruct p0;
+          try destruct r;
+          (*repeat unfoldm; *)
+          boom;
+          (*eauto; *)
+          (*try_pop_all; *)
+          (*repeat do_pop_stackm_facts;
+          repeat do_pop_stackm_fail; *)
+          subst; eauto;
+          repeat monad_unfold;
+          repeat break_match;
+          allss).
+
+
+
+  (*
     induction il1; intros.
   - simpl.
     inversion H. reflexivity.   
@@ -286,6 +377,7 @@ Proof.
           repeat monad_unfold;
           repeat break_match;
           allss).
+*)
 Defined.
 
 (* Starting trace has no effect on stack *)
@@ -297,6 +389,25 @@ Lemma trace_irrel_stack : forall il1 tr1 tr1' tr2 e e' s s' p1 p1' o1 o1',
         run_vm il1 {| st_ev := e; st_trace := tr2; st_stack := s; st_pl := p1'; st_store := o1' |}) =
     s'.
 Proof.
+    induction il1; intros.
+  - simpl.
+    inv H. reflexivity.   
+  - simpl; destruct a;
+      try ( (* ajoins, abesr, abep cases *)
+          try destruct p0;
+          try destruct r;
+          (*repeat unfoldm; *)
+          boom;
+          (*eauto; *)
+          (*try_pop_all; *)
+          (*repeat do_pop_stackm_facts;
+          repeat do_pop_stackm_fail; *)
+          subst; eauto;
+          repeat monad_unfold;
+          repeat break_match;
+          allss).
+
+  (*
     induction il1; intros.
   - simpl.
     inversion H. reflexivity.   
@@ -323,6 +434,7 @@ Proof.
           repeat monad_unfold;
           repeat break_match;
           allss).
+*)
 Defined.
 
 Ltac do_flip :=
@@ -345,7 +457,7 @@ Proof.
   - auto.
   - destruct a as [n p0 | n sp1 sp2 | n | l m' n | | | i q t (*| i rpyi q*)];
       try ( (* prim, asplit areqrpy cases *)
-          (*try destruct r; *)
+          try destruct r;
           unfold run_vm_step; fold run_vm_step; monad_unfold;  
           rewrite IHil at 1;
           symmetry; 
@@ -381,29 +493,36 @@ Proof.
       rewrite IHil.
       auto.
     + (* ajoinp case *)
-      simpl in *;
-          unfold run_vm_step in *; fold run_vm_step in *;
-          repeat monad_unfold;
-          repeat break_match;
-          try (allss; tauto);
-          try (repeat find_inversion;
-           vmsts;
-           get_store_at_bogus).
 
+      
+      unfold run_vm_step in *; fold run_vm_step in *;
+        repeat monad_unfold;
+        repeat break_match;
+        try (allss; tauto);
+        try (repeat find_inversion;
+             vmsts;
+             get_store_at_bogus).
+
+      allss.
+
+      (*
       repeat find_inversion.
       vmsts.
       do_get_store_at_facts; eauto; subst.
       do_get_store_at_facts; eauto; subst.
       do_get_store_at_facts; eauto; subst.
       do_get_store_at_facts; eauto; subst.
-      repeat do_bd.
+      repeat do_bd. *)
        
       erewrite IHil at 1.
       symmetry.
       erewrite IHil at 1.
       rewrite app_assoc. eauto.
     + (* abesr case *)
-      boom.
+      boom; try allss.
+
+      (*
+      
       simpl.
       
       rewrite <- IHil in *.
@@ -417,10 +536,41 @@ Proof.
       rewrite app_nil_l.
       congruence.*)
 
+      allss.
+      allss.
+      allss.
+
       repeat do_pop_stackm_fail.
+      repeat do_pop_stackm_facts.
       subst.
-      apply IHil.
+      inv H2.
+      repeat do_pop_stackm_fail.
+      repeat do_pop_stackm_facts.
+      subst.
+      inv H10.
+      repeat do_pop_stackm_fail.
+      repeat do_pop_stackm_facts.
+      subst.
+      
+      
+      
+      apply IHil. *)
     + (* abep case *)
+      boom; try allss.
+
+      invc H4.
+      erewrite IHil at 1.
+      symmetry.
+      erewrite IHil at 1.
+      erewrite app_assoc.
+      eauto.
+Defined.
+
+
+
+
+
+      (*
       unfold run_vm_step; fold run_vm_step; monad_unfold; monad_unfold.
       repeat break_match;
         repeat find_inversion;
@@ -439,7 +589,7 @@ Proof.
       symmetry.
       erewrite IHil at 1.
       rewrite app_assoc. eauto.
-Defined.
+Defined. *)
 
 (* Instance of gen_foo where k=[] *)
 Lemma foo : forall il m e s p o,
@@ -1128,6 +1278,7 @@ Proof.
     eapply restl'; eauto.
   - (* abseq case *)
     destruct s.
+    destruct r.
     do_run.
     
     do_dca.
@@ -1176,6 +1327,7 @@ Proof.
     congruence. *)
   - (* abpar case *)
     destruct s.
+    destruct r.
     do_run.
     repeat break_match.
     +
@@ -1351,8 +1503,10 @@ Proof.
     eauto.
   - (* abseq case *)
     destruct s; simpl in *.
+    destruct r.
     
     unfold run_vm_step in *. monad_unfold; monad_unfold.
+    
     do_dca.
 
     do_run.
@@ -1381,7 +1535,7 @@ Proof.
       assert ( st_pl ( run_vm (instr_compiler t1) {|
          st_ev := splitEv s e;
          st_stack := push_stack EvidenceC (splitEv s1 e) s0;
-         st_trace := tr ++ [Term.split (fst r) p];
+         st_trace := tr ++ [Term.split n p];
          st_pl := p;
          st_store := o |}) =
      st_pl (  {|
@@ -1714,17 +1868,18 @@ Proof.
     subst; eauto.
 
   - (* abseq case *)
-     destruct s; simpl in *.  
-     unfold run_vm_step in *. monad_unfold; monad_unfold.
+    destruct s; destruct r; simpl in *.
+    unfold run_vm_step in *. monad_unfold; monad_unfold.
+     
         
-     assert (exists l, tr = [Term.split (fst r) p] ++ l)
-       as H0 by (eapply suffix_prop; eauto).
-     destruct H0 as [H0 H1].
-     rewrite H1 in *. clear H1.
-     assert (run_vm
-               ((instr_compiler t1 ++ abesr :: instr_compiler t2 ++
-                                [ajoins (Init.Nat.pred (snd r))]))
-               {| st_ev := splitEv s e;
+    assert (exists l, tr = [Term.split n p] ++ l)
+      as H0 by (eapply suffix_prop; eauto).
+    destruct H0 as [H0 H1].
+    rewrite H1 in *. clear H1.
+    assert (run_vm
+              ((instr_compiler t1 ++ abesr :: instr_compiler t2 ++
+                               [ajoins (Init.Nat.pred n0)]))
+              {| st_ev := splitEv s e;
                   st_stack := push_stack EvidenceC (splitEv s1 e) s0;
                   st_trace := []; st_pl := p; st_store := o |} =
              {| st_ev := e'; st_stack := s0; st_trace := H0; st_pl := p'; st_store := o' |})

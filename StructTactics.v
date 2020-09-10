@@ -60,6 +60,20 @@ Ltac break_if :=
       end
   end.
 
+Ltac break_if' :=
+  match goal with
+    | [ |- context [ if ?X then _ else _ ] ] =>
+      match type of X with
+        (*| sumbool _ _ => destruct X*)
+        | _ => destruct X eqn:?
+      end
+    | [ H : context [ if ?X then _ else _ ] |- _] =>
+      match type of X with
+        | sumbool _ _ => destruct X
+        | _ => destruct X eqn:?
+      end
+  end.
+
 (** [break_match_hyp] looks for a [match] construct in some
     hypothesis, and destructs the discriminee, while retaining the
     information about the discriminee's value leading to the branch

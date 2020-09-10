@@ -238,8 +238,7 @@ Require Import Maps.
 Lemma get_store_at_facts : forall st_ev st_ev0 (st_trace:list Ev) (st_trace0:list Ev)
                              st_stack st_stack0 st_trace st_trace0 st_ev' p p' o o' n,
     get_store_at n {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace; st_pl := p; st_store := o |} = 
-    (Some st_ev', {| st_ev := st_ev0; st_stack := st_stack0; st_trace := st_trace0; st_pl := p'; st_store := o' |}) (*=
-    push_stackm H0 {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace; st_pl := p; st_store := o |}*) ->
+    (Some st_ev', {| st_ev := st_ev0; st_stack := st_stack0; st_trace := st_trace0; st_pl := p'; st_store := o' |})  ->
     st_ev = st_ev0 /\ st_trace = st_trace0 /\ st_stack = st_stack0 /\ p = p' /\ o = o' /\ bound_to o n st_ev'.
 Proof.
   intros.

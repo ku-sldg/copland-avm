@@ -9,7 +9,6 @@ Set Nested Proofs Allowed.
 
 Inductive Prim_Instr: Set :=
 | copy: Prim_Instr
-(* | kmeas: ASP_ID -> Plc -> (list Arg) -> Prim_Instr *)
 | umeas: ASP_ID -> Prim_Instr
 | sign: Prim_Instr
 | hash: Prim_Instr.
@@ -20,9 +19,7 @@ Inductive AnnoInstr: Set :=
 | ajoins: nat -> AnnoInstr
 | ajoinp: nat -> nat -> nat -> AnnoInstr
 | abesr : AnnoInstr 
-(*| areq: nat -> Plc -> AnnoTerm -> AnnoInstr
-| arpy: nat -> nat -> Plc -> AnnoInstr *)
-| areqrpy: nat -> nat -> Plc -> AnnoTerm -> AnnoInstr  (* TODO: update rest of spec *)
+| areqrpy: nat -> nat -> Plc -> AnnoTerm -> AnnoInstr
 | abep: nat -> nat ->
         (list AnnoInstr) -> (list AnnoInstr) -> AnnoInstr.
 
@@ -30,7 +27,6 @@ Inductive AnnoInstr: Set :=
 Definition asp_instr (a:ASP) : Prim_Instr :=
   match a with
   | CPY => copy
-(*  | KIM i p args => kmeas i p args *)
   | ASPC i => umeas i
   | SIG => sign
   | HSH => hash
@@ -39,26 +35,39 @@ Definition asp_instr (a:ASP) : Prim_Instr :=
 Fixpoint instr_compiler (t:AnnoTerm) : (list AnnoInstr) :=
   match t with
   | aasp r a => [aprimInstr (fst r) (asp_instr a)]  
-  | aatt r q t' =>
-    let '(reqi,rpyi_last) := r in
-    [areqrpy reqi rpyi_last q t']
-    (*[areq (fst r) q t'] ++ [arpy (Nat.pred rpyi_last) (fst r)  q]*)           
-  | alseq _ t1 t2 =>
-    let tr1 := instr_compiler t1 in
-    let tr2 := instr_compiler t2 in
-    tr1 ++ tr2     
-  | abseq r (sp1,sp2) t1 t2 =>
-    let tr1 := instr_compiler t1 in
-    let tr2 := instr_compiler t2 in
-    let i := Nat.pred (snd r) in
-    [asplit (fst r) sp1 sp2] ++ tr1 ++ [abesr] ++ tr2 ++ [ajoins i]
-  | abpar r (sp1,sp2) t1 t2 =>
-    (*let splEv := [split sp1 sp2] in*)
-    let tr1 := instr_compiler t1 in
-    let tr2 := instr_compiler t2 in
+  | aatt (i,j) q t' => [areqrpy i j q t']      
+  | alseq _ t1 t2 => (instr_compiler t1) ++ (instr_compiler t2)     
+  | abseq (i,j) (sp1,sp2) t1 t2 =>
+    [asplit i sp1 sp2] ++
+    (instr_compiler t1) ++ [abesr] ++ (instr_compiler t2) ++
+    [ajoins (Nat.pred j)]
+  | abpar (i,j) (sp1,sp2) t1 t2 =>
     let store_loc1 := (fst (range t1)) in
-    let store_loc2 := (fst (range t2)) in
-    let tr := [abep store_loc1 store_loc2 tr1 tr2] in
-    let i := Nat.pred (snd r) in
-    [asplit (fst r) sp1 sp2] ++ tr ++ [ajoinp i store_loc1 store_loc2 ]
+    let store_loc2 := (fst (range t2)) in  
+    [asplit i sp1 sp2] ++
+    [abep store_loc1 store_loc2 (instr_compiler t1) (instr_compiler t2)] ++
+    [ajoinp (Nat.pred j) store_loc1 store_loc2 ]
   end.
+
+Inductive is_compiled_list : (list AnnoInstr) -> Prop :=
+| primList : forall n i, is_compiled_list [(aprimInstr n i)]
+| atList : forall i j q t, is_compiled_list [(areqrpy i j q t)]
+| linList : forall il1 il2, is_compiled_list il1 -> is_compiled_list il2 -> is_compiled_list (il1 ++ il2)
+| bseqList : forall il1 il2 i sp1 sp2 j, is_compiled_list il1 -> is_compiled_list il2 ->
+                                    is_compiled_list ([asplit i sp1 sp2] ++ il1 ++ [abesr] ++ il2 ++ [ajoins j])
+| brparList : forall il1 il2 i sp1 sp2 j loc1 loc2, is_compiled_list il1 -> is_compiled_list il2 ->
+                                               is_compiled_list ([asplit i sp1 sp2] ++ [abep loc1 loc2 il1 il2] ++ [ajoinp j loc1 loc2]).
+
+Lemma compile_ind : forall t, is_compiled_list (instr_compiler t).
+Proof.
+  intros.
+  induction t;
+    try ( destruct a; simpl; econstructor).
+  - destruct r. simpl. econstructor.
+  - simpl.
+    econstructor; eauto.
+  - destruct r. destruct s. simpl.
+    econstructor; eauto.
+  - destruct r. destruct s. simpl.
+    econstructor; eauto.
+Defined.
