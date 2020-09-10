@@ -8,12 +8,6 @@ Require Import Coq.Program.Equality.
 
 Require Import StructTactics.
 
-(*
-Require Import Verdi.Net.
-Require Import Verdi.LockServ.
-Require Import Verdi.Verdi.
-*)
-
 From QuickChick Require Import QuickChick Tactics.
 
 Set Nested Proofs Allowed.
@@ -79,7 +73,6 @@ Definition build_comp (i:AnnoInstr): VM unit :=
       e1 <- get_store_at loc1 ;;
       e2 <- get_store_at loc2 ;;
       add_tracem [Term.join i p] 
-
   | abesr =>
     e <- get_ev ;;
       er <- pop_stackm ;;
@@ -96,13 +89,6 @@ Definition build_comp (i:AnnoInstr): VM unit :=
                                        [rpy (Nat.pred rpyi) p q] in
       (* TODO: move remote_events annt q trace to get_store_at, models successful remote execution *)
       add_tracem newTrace
-
-(*  | arpy i rpyi q =>
-    p <- get_pl ;;
-      e <- get_store_at rpyi ;;
-      (* TODO: add remote_events annt q inside get_store_at, models successful remote execution *)
-      put_ev e ;;
-      add_tracem [rpy i p q] *)
   | abep loc1 loc2 il1 il2 =>
     e <- get_ev ;;
       p <- get_pl ;;
@@ -146,22 +132,32 @@ Proof.
   subst; destruct st; auto.
 Defined.
 
-Ltac unfoldm :=  unfold run_vm_step in *; monad_unfold;
-                 unfold get_ev; monad_unfold.
+Ltac unfoldm :=  repeat unfold run_vm_step in *; monad_unfold.
+                 (*unfold get_ev; monad_unfold *)
 
-Ltac boom := repeat
-               unfoldm; desp; vmsts;
-             bogus;
-             unfoldm; desp; vmsts;
-             try_pop_all;
-             bogus.
+Ltac boom :=
+  repeat
+    unfoldm; desp; vmsts; unfoldm; desp;
+    (*bogus; *)
+    (*unfoldm; desp; vmsts; *)
+    try_pop_all;
+    bogus.
 
 Ltac do_run :=
   match goal with
-  | [H:  run_vm (_ :: _) _ = _ |- _ ] => invc H; unfold run_vm_step in *; monad_unfold; monad_unfold
+  | [H:  run_vm (_ :: _) _ = _ |- _ ] => invc H; (* unfoldm *) unfold run_vm_step in *; repeat monad_unfold
   end.
 
-
+(*
+(*  find_inversion subsumes do_inv  *)
+(*
+Ltac do_inv :=
+  match goal with
+  | [H: (_, _) = (_,_)  |- _ ] =>
+    invc H
+  end. *)
+Ltac do_all := repeat (*do_inv*) find_inversion; simpl in *; eauto.
+*)
 
 
 
@@ -178,84 +174,41 @@ Ltac allss :=
 
 (* Starting trace has no effect on store *)
 Lemma trace_irrel_store : forall il1 tr1 tr1' tr2 e e' s s' p1' p1 o' o,
-
-    run_vm il1 {| st_ev := e; st_trace := tr1; st_stack := s; st_pl := p1; st_store := o |} =
-    {| st_ev := e'; st_trace := tr1'; st_stack := s'; st_pl := p1'; st_store := o' |} ->
+    run_vm il1
+           {| st_ev := e;  st_trace := tr1;  st_stack := s;  st_pl := p1;  st_store := o  |} =
+           {| st_ev := e'; st_trace := tr1'; st_stack := s'; st_pl := p1'; st_store := o' |} ->
     
     st_store (
-        run_vm il1 {| st_ev := e; st_trace := tr2; st_stack := s; st_pl := p1; st_store := o |}) = o'.
+        run_vm il1
+           {| st_ev := e;  st_trace := tr2;  st_stack := s;  st_pl := p1;  st_store := o  |}) = o'.
 Proof.
-(*  generalize dependent p.
-  generalize dependent p1.
-  generalize dependent p1'. *)
   induction il1; intros.
   - simpl.
-    inversion H. reflexivity.   
-  -
-    (*
-     simpl; destruct a;
-      try (* apriminstr, asplit, areq cases  *)
+    inv H. reflexivity.   
+  - simpl; destruct a;    
+      try (* apriminstr, asplit, areqrpy cases  *)
         (try destruct p0;
          try destruct r;
+         (*
          unfold run_vm_step;
-         monad_unfold;
+         monad_unfold; *)
+         repeat unfoldm;
+         eauto);
+      (*
          eapply IHil1;
-         simpl in H;
-         unfold run_vm_step in H; simpl in *; monad_unfold; 
-         eassumption).
-*)
-
-    (*
-     simpl; destruct a.
-     try destruct p0.
-     unfold run_vm_step; monad_unfold.
-     eapply IHil1.
-     simpl in H.
-     unfold run_vm_step in H; simpl in *; monad_unfold.
-     eassumption.
-     admit.
-     admit.
-     admit.
-     admit.
-
-     simpl; destruct a.
-     try destruct p0;
-       try destruct r.
-     unfold run_vm_step; monad_unfold.
-     eapply IHil1.
-     simpl in H.
-     unfold run_vm_step in H; simpl in *; monad_unfold.
-     eassumption.
-     
-     unfold run_vm_step in *; monad_unfold.
-     unfold run_vm_step in *; monad_unfold.
-     eapply IHil1 with (p1:=p1') (p:=p1). (* (e:= ggc p1 e (signEv e)). *)
-    
-     eassumption. *)
-
-
-    
-    simpl; destruct a;
-      try (* apriminstr, asplit, areq cases  *)
-        (try destruct p0;
-         try destruct r;
-         unfold run_vm_step;
-         monad_unfold;
-         eapply IHil1;
-         simpl in H;
-         unfold run_vm_step in H; simpl in *; monad_unfold; 
-         eassumption);
-
-     
+         (* simpl in H; *)
+         unfoldm;
+         (*unfold run_vm_step in H; simpl in *; monad_unfold; *)
+         eassumption); *)
+  
       try ( (* ajoins, abesr, abep cases *)
           boom;
           try_pop_all;
           repeat do_pop_stackm_facts;
           repeat do_pop_stackm_fail;
           subst; eauto; tauto);
-      try ( (* ajoinp and rpy cases *)
-          simpl in *;
-          unfold run_vm_step in *; fold run_vm_step in *;
+
+      try ( (* ajoinp case *)
           repeat monad_unfold;
           repeat break_match;
           allss).
@@ -263,7 +216,6 @@ Defined.
 
 (* Starting trace has no effect on evidence *)
 Lemma trace_irrel_ev : forall il1 tr1 tr1' tr2 e e' s s' p1' p1 o1 o1',
-
     run_vm il1 {| st_ev := e; st_trace := tr1; st_stack := s; st_pl := p1; st_store := o1 |} =
     {| st_ev := e'; st_trace := tr1'; st_stack := s'; st_pl := p1'; st_store := o1' |} ->
     
@@ -1209,6 +1161,9 @@ Proof.
     do_stack0.
     subst.
     unfold pop_stackm in *. monad_unfold. congruence.
+
+
+(*
     do_stack0.
     subst.
     monad_unfold.
@@ -1218,7 +1173,7 @@ Proof.
     do_dca.
     monad_unfold.
     unfold push_stack in *.  
-    congruence.
+    congruence. *)
   - (* abpar case *)
     destruct s.
     do_run.
@@ -1927,3 +1882,105 @@ Proof.
   eapply ordered with (p:=0) (e:=mt); eauto.
   eapply run_lstar; eauto.
 Defined.
+
+
+
+
+
+
+
+
+Definition run_vm_fold (il:list AnnoInstr) : VM unit :=
+  fold_left (fun (a:VM unit) (b:AnnoInstr) => a ;; (build_comp b)) il (GenStMonad.ret tt).
+
+Definition run_vm' (il:list AnnoInstr) st : vm_st :=
+  let c := run_vm_fold il in
+  execSt st c.
+
+Lemma run_vm_iff : forall il st,
+    run_vm il st = run_vm' il st.
+Proof.
+  intros.
+  simpl.
+  unfold run_vm, run_vm'.
+  unfold execSt.
+  unfold run_vm_fold.
+  unfold snd.
+  monad_unfold.
+  cbn.
+  simpl.
+  unfold run_vm_step.
+  unfold execSt.
+  unfold snd.
+  fold run_vm_step.
+  expand_let_pairs.
+  fold (execSt (S:=vm_st) (A:=unit)).
+  Abort.
+
+
+  (*
+  generalize dependent st.
+  induction il; intros.
+  - simpl.
+    unfold run_vm'. simpl.
+    unfold execSt.
+    unfold run_vm_fold. simpl. reflexivity.
+  - simpl.
+    rewrite IHil.
+    unfold run_vm'. simpl.
+    unfold execSt.
+    simpl.
+    unfold run_vm_fold.
+    simpl.
+    unfold run_vm_step.
+    simpl.
+    unfold execSt.
+    unfold snd.
+    simpl.
+    expand_let_pairs.
+    unfold snd.
+    cbn.
+    unfold GenStMonad.ret.
+    simpl.
+    cbn.
+    expand_let_pairs.
+    expand_let_pairs.
+    expand_let_pairs.
+    unfold snd at 1.
+    unfold snd at 2.
+    unfold fold_left.
+    unfold snd.
+    cbn.
+    simpl.
+    
+
+    assert (
+        (fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
+                   (GenStMonad.ret tt) (snd (build_comp a st))) =
+        (fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
+                   (GenStMonad.ret tt;; build_comp a) st)
+      ).
+    { unfold fold_left at 1. simpl.
+      generalize dependent a.
+      generalize dependent st.
+      induction il; intros.
+      + simpl.
+        unfold GenStMonad.ret.
+        simpl.
+        cbn.
+        simpl.
+        expand_let_pairs.
+        simpl.
+        assert (fst (build_comp a st) = Some tt).
+        admit.
+        congruence.
+      + simpl.
+        unfold GenStMonad.ret in *.
+        simpl.
+        cbn.
+        simpl.
+        admit.
+    }
+    congruence.
+Abort.
+*)
