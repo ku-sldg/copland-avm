@@ -4,7 +4,7 @@ Require Import Coq.Program.Tactics.
 Require Import List.
 Import ListNotations.
 
-Require Import StructTact.StructTactics.
+Require Import StructTactics.
 
 Lemma pop_stackm_fail_facts : forall e e' s s' p p'
                      tr tr' o o',

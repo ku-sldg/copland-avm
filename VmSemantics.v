@@ -6,9 +6,13 @@ Import ListNotations.
 Require Import Coq.Program.Tactics.
 Require Import Coq.Program.Equality.
 
+Require Import StructTactics.
+
+(*
 Require Import Verdi.Net.
 Require Import Verdi.LockServ.
 Require Import Verdi.Verdi.
+*)
 
 From QuickChick Require Import QuickChick Tactics.
 
