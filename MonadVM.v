@@ -124,6 +124,9 @@ Ltac monad_unfold :=
   modify_evm,
   split_evm,
   add_trace,
+
+  failm,
+  (*get_store_at,*)
   
   
   bind,

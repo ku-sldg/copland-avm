@@ -31,7 +31,7 @@ Ltac do_pop_stackm_fail:=
   match goal with
   | [H: (None,_) =
     pop_stackm _ |- _ ] =>
-    idtac "invoking do_pop_stackm_fail";
+    (*idtac "invoking do_pop_stackm_fail"; *)
     apply pop_stackm_fail_facts in H
   end; destruct_conjs.
 
@@ -217,7 +217,7 @@ Proof.
   unfold get_store_at in *. monad_unfold.
   repeat break_match.
   invc H. inv Heqp0. invc H0.
-  invc H. invc Heqp1.
+  invc H. (* invc Heqp1. *)
 Defined.
 
 Lemma push_stackm_facts : forall st_ev st_ev0 (st_trace:list Ev) (st_trace0:list Ev)
@@ -380,15 +380,10 @@ Ltac desp :=
   (*expand_let_pairs; *)
   match goal with
   | [ H: context
-           [match pop_stackm ?v (*with _ end*) with |_ => _ end] |- _ ] =>
+           [match pop_stackm ?v with |_ => _ end] |- _ ] =>
     remember (pop_stackm v) as ppp; 
-    destruct ppp as [oo]; (* TODO: use fresh tactic (here and throughout) for robustness *)
+    destruct ppp as [oo]; (* TODO: use "fresh" tactic here and throughout *)
     destruct oo
-(*  | [ H: context
-           [match pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m |} with | _ => (let _ := _ in _) |(None,_) => _ end] |- _ ] =>
-    remember (pop_stackm {| st_ev := e; st_stack := s; st_trace := m |}) as ppp; 
-    destruct ppp as [o];
-    destruct o *)
   | |- context [match pop_stackm ?v with | _ => _ end] =>
     remember (pop_stackm v) as ppp; 
     destruct ppp as [oo];
@@ -404,14 +399,14 @@ Ltac desp :=
     remember (push_stackm e' v) as ppp; 
     destruct ppp as [oo];
     destruct oo
-  end; monad_unfold; vmsts.
+  end; (*monad_unfold; *) vmsts.
 
 Ltac get_store_some :=
   vmsts;
     match goal with                                        
     | [ H: get_store_at ?n _ = (Some _,_),
            G: get_store_at ?n _ = (Some,_) |- _ ] =>
-      idtac "matched get_store_some" ;
+      (*idtac "matched get_store_some" ; *)
       rewrite get_store_at_facts in H;
       rewrite get_store_at_facts in G                                 
     end; destruct_conjs.
@@ -435,7 +430,7 @@ Ltac bogus :=
       elimtype False; eapply pop_stackm_determ_none; eauto; contradiction
     | [ H: get_store_at ?n _ = (Some _,_),
            G: get_store_at ?n _ = (None,_) |- _ ] =>
-      idtac "matched get_store_at_determ" ;
+      (*idtac "matched get_store_at_determ" ; *)
       elimtype False; eapply get_store_at_determ;
       [apply H | apply G]
     end.
@@ -446,7 +441,7 @@ Ltac get_store_at_bogus :=
     match goal with                                        
     | [ H: get_store_at ?n _ = (Some _,_),
            G: get_store_at ?n _ = (Some _,_) |- _ ] =>
-      idtac "matched get_store_at_bogus" ;
+      (*idtac "matched get_store_at_bogus" ; *)
       apply get_store_at_facts in H; eauto;
       apply get_store_at_facts in G; eauto;
       repeat do_bd;

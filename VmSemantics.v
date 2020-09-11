@@ -67,7 +67,6 @@ Definition build_comp (i:AnnoInstr): VM unit :=
       er <- pop_stackm ;;
       put_ev (ssc er e) ;;
       add_tracem [Term.join i p]
-  
   | ajoinp i loc1 loc2 =>
     p <- get_pl ;;
       e1 <- get_store_at loc1 ;;
@@ -85,8 +84,8 @@ Definition build_comp (i:AnnoInstr): VM unit :=
       p <- get_pl ;;
       let newTrace :=
           [req reqi p q (unanno annt)] ++
-                                       (remote_events annt q) ++
-                                       [rpy (Nat.pred rpyi) p q] in
+          (remote_events annt q) ++
+          [rpy (Nat.pred rpyi) p q] in
       (* TODO: move remote_events annt q trace to get_store_at, models successful remote execution *)
       add_tracem newTrace
   | abep loc1 loc2 il1 il2 =>
@@ -133,45 +132,31 @@ Proof.
 Defined.
 
 Ltac unfoldm :=  repeat unfold run_vm_step in *; monad_unfold.
-                 (*unfold get_ev; monad_unfold *)
 
-Print desp.
 Ltac boom :=
   repeat unfoldm;
-  repeat
-    (desp; unfoldm); (*unfoldm; desp; *)
-    (*bogus; *)
-    (*unfoldm; desp; vmsts; *)
-    try_pop_all.
-    (*bogus. *)
+  repeat (desp; unfoldm);
+  try_pop_all;
+  vmsts.
 
 Ltac do_run :=
   match goal with
-  | [H:  run_vm (_ :: _) _ = _ |- _ ] => invc H; (* unfoldm *) unfold run_vm_step in *; repeat monad_unfold
+  | [H:  run_vm (_ :: _) _ = _ |- _ ] => invc H; unfold run_vm_step in *; repeat monad_unfold
   end.
 
-(*
-(*  find_inversion subsumes do_inv  *)
-(*
-Ltac do_inv :=
+Ltac do_flip :=
   match goal with
-  | [H: (_, _) = (_,_)  |- _ ] =>
-    invc H
-  end. *)
-Ltac do_all := repeat (*do_inv*) find_inversion; simpl in *; eauto.
-*)
-
-
+  | [H: (pop_stackm _ = _) |- _ ] =>
+    (*idtac "doing pop_stackm flip"; *)
+    symmetry in H
+  end.
 
 Ltac allss :=
   repeat find_inversion;
   try bogus;
-  (*subst; *)
-  (*vmsts; *)
   repeat (do_get_store_at_facts; subst; eauto);
-  
-  (*try bogus;*)
   repeat (do_get_store_at_facts_fail; subst; eauto);
+  repeat do_flip;
   repeat do_pop_stackm_facts;
   repeat do_pop_stackm_fail;
   repeat get_store_at_bogus;
@@ -194,71 +179,33 @@ Proof.
   - simpl.
     inv H. reflexivity.   
   - simpl; destruct a;
-      try ( (* ajoins, abesr, abep cases *)
           try destruct p0;
           try destruct r;
-          (*repeat unfoldm; *)
           boom;
-          (*eauto; *)
-          (*try_pop_all; *)
-          (*repeat do_pop_stackm_facts;
-          repeat do_pop_stackm_fail; *)
           subst; eauto;
           repeat monad_unfold;
           repeat break_match;
-          allss).
-          
-
-
-
-
-
+          allss.
+Defined.
 
 (*
 
-
-      try (* apriminstr, asplit, areqrpy cases  *)
-        (try destruct p0;
-         try destruct r;
-         (*
-         unfold run_vm_step;
-         monad_unfold; *)
-         repeat unfoldm;
-         eauto);
-      (*
-         eapply IHil1;
-         (* simpl in H; *)
-         unfoldm;
-         (*unfold run_vm_step in H; simpl in *; monad_unfold; *)
-         eassumption); *)
-  
-      try ( (* ajoins, abesr, abep cases *)
-          boom;
-          (*try_pop_all; *)
-          repeat do_pop_stackm_facts;
-          repeat do_pop_stackm_fail;
-          subst; eauto; tauto).
-
-
-    (*
-    repeat break_match.
-
+          try (unfold failm in *; congruence).
+    unfold failm in *. repeat find_inversion.
+    eauto.
+    unfold failm in *. repeat find_inversion. eauto.
     admit.
     admit.
     admit.
     admit.
-
-    repeat (do_get_store_at_facts; subst; eauto).
-    repeat (do_get_store_at_facts; subst; eauto).
-*)
-    
-
-      try ( (* ajoinp case *)
-          repeat monad_unfold;
-          repeat break_match;
-          allss).
-*)
+    admit.
+    admit.
+    admit.
+    admit.
+    admit.
+      
 Defined.
+*)
 
 (* Starting trace has no effect on evidence *)
 Lemma trace_irrel_ev : forall il1 tr1 tr1' tr2 e e' s s' p1' p1 o1 o1',
@@ -272,57 +219,17 @@ Proof.
   - simpl.
     inv H. reflexivity.   
   - simpl; destruct a;
-      try ( (* ajoins, abesr, abep cases *)
           try destruct p0;
           try destruct r;
-          (*repeat unfoldm; *)
           boom;
-          (*eauto; *)
-          (*try_pop_all; *)
-          (*repeat do_pop_stackm_facts;
-          repeat do_pop_stackm_fail; *)
           subst; eauto;
-          repeat monad_unfold;
-          repeat break_match;
-          allss).
-
-
-
-
-(*
-  
-  induction il1; intros.
-  - simpl.
-    inversion H. reflexivity.   
-  - 
-    simpl; destruct a;
-      try
-        (try destruct p0;
-         try destruct r;
-         unfold run_vm_step;
-         monad_unfold;
-         eapply IHil1;
-         simpl in H;
-         unfold run_vm_step in H; simpl in *; monad_unfold; 
-         eassumption);
-      try (
-          boom;
-          try_pop_all;
-          repeat do_pop_stackm_facts;
-          repeat do_pop_stackm_fail;
-          subst; eauto; tauto);
-      try ( (* ajoinp and rpy cases *)
-          simpl in *;
-          unfold run_vm_step in *; fold run_vm_step in *;
-          repeat monad_unfold;
-          repeat break_match;
-          allss). 
-*)
+            repeat monad_unfold;
+            repeat break_match;
+            allss.
 Defined.
 
 (* Starting trace has no effect on place *)
 Lemma trace_irrel_place : forall il1 tr1 tr1' tr2 e e' s s' p p' o o',
-    
     run_vm il1 {| st_ev := e; st_trace := tr1; st_stack := s; st_pl := p; st_store := o |} =
     {| st_ev := e'; st_trace := tr1'; st_stack := s'; st_pl := p'; st_store := o' |} ->
     
@@ -333,51 +240,13 @@ Proof.
   - simpl.
     inv H. reflexivity.   
   - simpl; destruct a;
-      try ( (* ajoins, abesr, abep cases *)
-          try destruct p0;
-          try destruct r;
-          (*repeat unfoldm; *)
-          boom;
-          (*eauto; *)
-          (*try_pop_all; *)
-          (*repeat do_pop_stackm_facts;
-          repeat do_pop_stackm_fail; *)
-          subst; eauto;
-          repeat monad_unfold;
-          repeat break_match;
-          allss).
-
-
-
-  (*
-    induction il1; intros.
-  - simpl.
-    inversion H. reflexivity.   
-  - 
-    simpl; destruct a;
-      try
-        (try destruct p0;
-         (*try destruct r; *)
-         unfold run_vm_step;
-         monad_unfold;
-         eapply IHil1;
-         simpl in H;
-         unfold run_vm_step in H; simpl in *; monad_unfold; 
-         eassumption);
-
-      try (
-          boom;
-          try_pop_all;
-          repeat do_pop_stackm_facts;
-          repeat do_pop_stackm_fail;
-          subst; eauto);
-      try ( (* ajoinp and rpy cases *)
-          simpl in *;
-          unfold run_vm_step in *; fold run_vm_step in *;
-          repeat monad_unfold;
-          repeat break_match;
-          allss).
-*)
+      try destruct p0;
+      try destruct r;
+      boom;
+      subst; eauto;
+        repeat monad_unfold;
+        repeat break_match;
+        allss.
 Defined.
 
 (* Starting trace has no effect on stack *)
@@ -393,56 +262,16 @@ Proof.
   - simpl.
     inv H. reflexivity.   
   - simpl; destruct a;
-      try ( (* ajoins, abesr, abep cases *)
-          try destruct p0;
-          try destruct r;
-          (*repeat unfoldm; *)
-          boom;
-          (*eauto; *)
-          (*try_pop_all; *)
-          (*repeat do_pop_stackm_facts;
-          repeat do_pop_stackm_fail; *)
-          subst; eauto;
-          repeat monad_unfold;
-          repeat break_match;
-          allss).
-
-  (*
-    induction il1; intros.
-  - simpl.
-    inversion H. reflexivity.   
-  - 
-    simpl; destruct a as [n p0 | n sp1 sp2 | n | l m n | | | i q t (*| i rpyi q*)];
-      try
-        (try destruct p0;
-         (*try destruct r; *)
-         unfold run_vm_step;
-         monad_unfold;
-         eapply IHil1;
-         simpl in H;
-         unfold run_vm_step in H; simpl in *; monad_unfold; 
-         eassumption);
-      try (
-          boom;
-          try_pop_all;
-          repeat do_pop_stackm_facts;
-          repeat do_pop_stackm_fail;
-          subst; eauto);
-      try ( (* ajoinp and rpy cases *)
-          simpl in *;
-          unfold run_vm_step in *; fold run_vm_step in *;
-          repeat monad_unfold;
-          repeat break_match;
-          allss).
-*)
+      try destruct p0;
+      try destruct r;
+      boom;
+      subst; eauto;
+        repeat monad_unfold;
+        repeat break_match;
+        allss.
 Defined.
 
-Ltac do_flip :=
-  match goal with
-  | [H: (pop_stackm _ = _) |- _ ] =>
-    idtac "doing pop_stackm flip";
-    symmetry in H
-  end.
+
 
 
 
@@ -456,7 +285,7 @@ Proof.
   induction il; simpl; intros m k e s p o.
   - auto.
   - destruct a as [n p0 | n sp1 sp2 | n | l m' n | | | i q t (*| i rpyi q*)];
-      try ( (* prim, asplit areqrpy cases *)
+      try ( (* aprim, asplit areqrpy cases *)
           try destruct r;
           unfold run_vm_step; fold run_vm_step; monad_unfold;  
           rewrite IHil at 1;
@@ -466,35 +295,17 @@ Proof.
           rewrite <- app_assoc;
           tauto). 
        
-    + (* ajoins case *)     
-      unfold run_vm_step; fold run_vm_step; monad_unfold; monad_unfold.     
-      desp.
-      simpl.
-      desp.
-      simpl.
-      pairs.
+    + (* ajoins case *)
+
+      boom; allss.
+      allss.
       rewrite IHil at 1.
       symmetry.
       rewrite IHil at 1.
-      do_double_pop.
-      repeat do_pop_stackm_facts.
-      subst.
-      (*rewrite app_nil_l.*)
-
       rewrite app_assoc at 1.
       congruence.
 
-      bogus.
-      desp.
-      bogus.
-
-      pairs.
-      subst.
-      rewrite IHil.
-      auto.
-    + (* ajoinp case *)
-
-      
+    + (* ajoinp case *)   
       unfold run_vm_step in *; fold run_vm_step in *;
         repeat monad_unfold;
         repeat break_match;
@@ -504,57 +315,15 @@ Proof.
              get_store_at_bogus).
 
       allss.
-
-      (*
-      repeat find_inversion.
-      vmsts.
-      do_get_store_at_facts; eauto; subst.
-      do_get_store_at_facts; eauto; subst.
-      do_get_store_at_facts; eauto; subst.
-      do_get_store_at_facts; eauto; subst.
-      repeat do_bd. *)
-       
+    
       erewrite IHil at 1.
       symmetry.
       erewrite IHil at 1.
       rewrite app_assoc. eauto.
+           
     + (* abesr case *)
       boom; try allss.
-
-      (*
       
-      simpl.
-      
-      rewrite <- IHil in *.
-      symmetry.
-      rewrite IHil at 1.
-      do_double_pop.
-      repeat do_pop_stackm_facts.
-      subst.
-      congruence.
-(*
-      rewrite app_nil_l.
-      congruence.*)
-
-      allss.
-      allss.
-      allss.
-
-      repeat do_pop_stackm_fail.
-      repeat do_pop_stackm_facts.
-      subst.
-      inv H2.
-      repeat do_pop_stackm_fail.
-      repeat do_pop_stackm_facts.
-      subst.
-      inv H10.
-      repeat do_pop_stackm_fail.
-      repeat do_pop_stackm_facts.
-      subst.
-      
-      
-      
-      apply IHil. *)
     + (* abep case *)
       boom; try allss.
 
@@ -565,31 +334,6 @@ Proof.
       erewrite app_assoc.
       eauto.
 Defined.
-
-
-
-
-
-      (*
-      unfold run_vm_step; fold run_vm_step; monad_unfold; monad_unfold.
-      repeat break_match;
-        repeat find_inversion;
-        vmsts;
-        try (repeat do_flip; bogus);
-        try (repeat do_pop_stackm_fail);
-        subst; eauto.
-      
-      vmsts.
-      repeat do_flip.
-      do_double_pop.
-      repeat do_pop_stackm_facts.
-      subst. eauto.
-      find_inversion.
-      erewrite IHil at 1.
-      symmetry.
-      erewrite IHil at 1.
-      rewrite app_assoc. eauto.
-Defined. *)
 
 (* Instance of gen_foo where k=[] *)
 Lemma foo : forall il m e s p o,
@@ -727,9 +471,9 @@ Defined.
 Ltac st_equiv :=
   match goal with
   | |- _ ++ _ ++ _ ++
-        st_trace (fold_left run_vm_step _ ?st1) =
+        st_trace (fold_left _ _ ?st1) =
       _ ++ _ ++ _ ++
-        st_trace (fold_left run_vm_step _ ?st2) =>
+        st_trace (fold_left _ _ ?st2) =>
     (*idtac "matched" ;*)
     assert (st1 = st2)
       by (
@@ -798,6 +542,32 @@ Proof.
           congruence).
      
     + (* joins case *)
+      boom; allss.
+      invc H4.
+      rewrite foo.
+      rewrite IHil1.
+
+      rewrite <- app_assoc.
+      rewrite app_nil_l.
+      rewrite <- app_assoc.
+      st_equiv.
+      rewrite H.
+      unfold run_vm_step.
+      eauto.
+
+
+      (*
+      eassumption.
+      congruence.
+      
+      rewrite app_assoc.
+
+
+      st_equiv.
+      simpl.
+      rewrite IHil1.
+      rewrite <- app_assoc.
+      rewrite IHil1.
       
       unfold run_vm_step. fold run_vm_step.
       monad_unfold.
@@ -814,12 +584,16 @@ Proof.
       congruence.      
       repeat do_pop_stackm_fail; subst.
       rewrite IHil1.
-      auto.
+      auto. 
+       *)
+      
     + (* ajoinp case *)
+
+      (*boom; repeat break_match; allss. *)
        
       unfold run_vm_step. fold run_vm_step.
-      monad_unfold.
-      unfold get_ev. monad_unfold.
+      repeat monad_unfold.
+      (*monad_unfold. *)
       repeat break_match;
         try (get_store_at_bogus; congruence);
         try (repeat find_inversion;
@@ -831,8 +605,12 @@ Proof.
       rewrite IHil1.
       repeat rewrite <- app_assoc.
       st_equiv.
-      congruence.
+      rewrite H.
+      eauto.
       ++
+        allss.
+        
+        (*
         repeat find_inversion.
           vmsts.
           apply get_store_at_facts in Heqp2; eauto.
@@ -844,15 +622,20 @@ Proof.
           do_get_store_at_facts_fail; eauto).
           subst.
           repeat do_bd.
-          subst; eauto.
+          subst; eauto. *)
       ++
+        allss.
+        (*
         do_get_store_at_facts_fail; eauto.
         do_get_store_at_facts_fail; eauto.
         pairs.
         repeat find_inversion.
-        eauto.
+        eauto. *)
       
     + (* abesr case *)
+      boom; allss.
+
+      (*
 
       unfold run_vm_step. fold run_vm_step.
       monad_unfold.
@@ -868,52 +651,30 @@ Proof.
       repeat do_pop_stackm_fail; subst.
       rewrite IHil1.
       auto.
+       *)
+      
     + (* abep case *)
+      boom; allss.
+
+
+
+      (*
       unfold run_vm_step. fold run_vm_step.
       monad_unfold.
       unfold get_store_at.
       monad_unfold.
-      repeat break_match.
+      repeat break_match. *)
       ++
-        repeat find_inversion.
-        vmsts.
-        repeat do_flip.
-        do_double_pop.
-        subst.
-        eauto.
-        repeat do_pop_stackm_facts.
-        subst.
-        repeat find_inversion.
-        eauto.
-        simpl. eauto.
+        find_inversion.
+
         rewrite foo.
         rewrite IHil1.
         repeat rewrite <- app_assoc.
-        erewrite trace_irrel_ev; eauto.
-        erewrite trace_irrel_store; eauto.
-        erewrite trace_irrel_stack; eauto.
-        eapply st_congr; eauto.
-        eapply st_congr; eauto.
-        eapply st_congr; eauto.
-      ++
-        repeat find_inversion.
-        vmsts.
-        repeat do_flip.
-        bogus.
-      ++  repeat find_inversion.
-          vmsts.
-          repeat do_flip.
-          bogus.
-      ++
-        repeat find_inversion.
-        vmsts.
-         repeat do_flip.
-         do_double_pop_none.
-         repeat do_pop_stackm_fail.
-         subst.
-         eauto.
+        simpl.
+        st_equiv.
+        rewrite H.
+        eauto.
 Defined.
-
 
 Lemma pl_immut : forall il e s tr p o,
     st_pl
@@ -929,24 +690,37 @@ Proof.
   - simpl. reflexivity.
   -
     destruct a as [n p0 | n sp1 sp2 | n | l m n | | | i q t (*| i rpyi q*)];
+      try (boom; repeat break_match; allss).
+Defined.
+
+(*
+
       try (
           simpl;
           try destruct p0;
           try destruct r;
           unfold run_vm_step; fold run_vm_step; monad_unfold;
-          eauto; tauto).
+          eauto; tauto)
+      try (boom; repeat break_match; allss).
+Defined.
+
    (*   try ( simpl; unfold run_vm_step; fold run_vm_step; monad_unfold;
             unfold get_ev; monad_unfold;
             desp;
             simpl; do_pop_stackm_facts; subst; eauto;
             do_pop_stackm_fail; subst; eauto). *)                   
     + (* ajoins case *)
+      boom; allss.
+      (*
       simpl. unfold run_vm_step. fold run_vm_step. monad_unfold.
       unfold get_ev. monad_unfold.
       desp.
       simpl. do_pop_stackm_facts. subst. eauto.
-      do_pop_stackm_fail. subst. eauto.
+      do_pop_stackm_fail. subst. eauto. *)
     + (* ajoinp case *)
+      boom; repeat break_match; allss.
+
+      (*
       simpl. unfold run_vm_step. fold run_vm_step. monad_unfold.
       unfold get_store_at.
       monad_unfold.
@@ -960,14 +734,19 @@ Proof.
          eauto.
       ++ invc Heqp5.
       ++ invc Heqp2. eauto.
+*)
                 
     + (* abesr case *)
+      boom; allss.
+      (*
       simpl. unfold run_vm_step. fold run_vm_step. monad_unfold.
       unfold get_ev. monad_unfold.
       desp.
       simpl. do_pop_stackm_facts. subst. eauto.
-      do_pop_stackm_fail. subst. eauto.
+      do_pop_stackm_fail. subst. eauto. *)
     + (* abep case *)
+      boom; allss.
+      (*
       simpl. unfold run_vm_step. fold run_vm_step. monad_unfold.
       unfold get_store_at.
       monad_unfold.
@@ -982,8 +761,9 @@ Proof.
       ++ repeat do_flip.
          do_pop_stackm_fail.
          subst.
-         eauto.    
+         eauto.     *)
 Defined.
+*)
 
 Lemma destruct_compiled_appended : forall trd trd' il1 il2 e e'' s s'' p p'' o o'',
     run_vm
@@ -1279,6 +1059,7 @@ Proof.
   - (* abseq case *)
     destruct s.
     destruct r.
+
     do_run.
     
     do_dca.
@@ -1286,23 +1067,17 @@ Proof.
     simpl in *.
     do_stack0.
     unfoldm.
-    repeat desp.
+
     subst.
     (*
     rewrite H1 in Heqppp. *)
     monad_unfold.
-    unfold pop_stackm in *. monad_unfold.
-    pairs.
 
-    destruct_conjs.
-    unfold push_stackm in *. monad_unfold. pairs.
-
-    monad_unfold.
     unfold push_stack in *.
     do_dca.
     do_run.
-    monad_unfold.
     desp.
+    
     pairs.
     do_stack0.
     subst.
@@ -1326,32 +1101,43 @@ Proof.
     unfold push_stack in *.  
     congruence. *)
   - (* abpar case *)
+
+    
     destruct s.
-    destruct r.
-    do_run.
-    repeat break_match.
+    destruct r. 
+ 
+    boom; repeat (break_match; allss).
+Defined.
+
+    (*  
     +
       vmsts.
+      allss.
+      (*
       repeat find_inversion.
       simpl in *.
+      allss.
       do_get_store_at_facts; eauto.
       do_get_store_at_facts; eauto.
       subst.
-      eauto.
+      eauto. *)
     +
       vmsts.
+      allss.
+      (*
       repeat find_inversion.
       simpl in *.
       do_get_store_at_facts; eauto.
       do_get_store_at_facts_fail; eauto.
     
       subst.
-      eauto.
+      eauto. *)
     + vmsts.
       repeat find_inversion.
       simpl in *.
       do_get_store_at_facts_fail; eauto.
 Defined.
+*)
 
 Ltac do_stack1 t1 :=
   match goal with
@@ -1384,9 +1170,18 @@ Lemma store_get_set : forall e s tr p o n e1 e' v0,
     e' = e1.
 Proof.
   intros.
+  boom; repeat (break_match; allss).
   unfold get_store_at in *.
   unfold get in *. simpl in *.
   cbn in H.
+  boom; repeat (break_match; allss); congruence.
+Defined.
+
+(*
+
+  congruence.
+  congruence.
+  congruence.
   break_match. break_match.
   find_inversion.
   monad_unfold.
@@ -1404,6 +1199,7 @@ Proof.
   unfold failm in *.
   find_inversion.
 Defined.
+*)
 
 Lemma store_get_set_fail_none : forall n e s tr p o e1 v,
     get_store_at n
@@ -1419,6 +1215,11 @@ Proof.
   intros.
   unfold get_store_at in *.
   cbn in H.
+  boom; repeat (break_match; allss); congruence.
+Defined.
+
+(*
+
   break_match. break_match.
   find_inversion.
   monad_unfold.
@@ -1430,6 +1231,7 @@ Proof.
   congruence.
   congruence.
 Defined.
+*)
 
 Lemma multi_ev_eval : forall t tr tr' e e' s s' p p' o o',
     run_vm (instr_compiler t)
@@ -1445,22 +1247,7 @@ Proof.
     destruct r.
     simpl in *.
     unfoldm.
-   (* unfold Maps.map_set in *. *)
-    (*
-    break_match. break_match. break_match. 
-    find_inversion.
-    simpl in *. *)
-    (* find_inversion. *)
-
-    (*
-    eapply store_get_set; eauto.
-
-    (* find_inversion. *) simpl in *.
-
-    elimtype False. eapply store_get_set_fail_none; eauto. *)
-    
-    find_inversion.
-    auto.
+    allss.
   - (* lseq case *)
     simpl in *.
     do_dca.
@@ -1567,43 +1354,17 @@ Proof.
     simpl.
     destruct s.
     destruct r.
-    unfold run_vm_step in *. monad_unfold; monad_unfold.
+
+    unfold run_vm_step in *. repeat monad_unfold.
     simpl in *.
     unfold run_vm_step in *.
-    monad_unfold.
-    monad_unfold.
-    monad_unfold.
+    repeat monad_unfold.
 
-    repeat break_match.
-    +
-      vmsts.
-      repeat find_inversion.
-      unfold Maps.map_set in *.
-      do_get_store_at_facts; eauto.
-      do_get_store_at_facts; eauto.
-      subst.
-      simpl in *.
-      monad_unfold.
-      (*
-      invc H10.
-      invc H4.
-      repeat find_inversion.
-      eauto. *)
-      repeat rewrite para_eval_vm.
-      eauto.
-    + vmsts.
-      repeat find_inversion.
-      do_get_store_at_facts; eauto.
-      do_get_store_at_facts_fail; eauto.
-      subst.
-      repeat rewrite para_eval_vm.
-      eauto.
-    + vmsts.
-      repeat find_inversion.
-      do_get_store_at_facts_fail; eauto.
-      subst.
-      repeat rewrite para_eval_vm.
-      eauto.
+    repeat break_match;
+      try
+        (boom; allss;
+         repeat rewrite para_eval_vm;
+         eauto).
 Defined.
 
 Lemma suffix_prop : forall il e e' s s' tr tr' p p' o o',
