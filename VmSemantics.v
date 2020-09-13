@@ -8,7 +8,8 @@ Require Import Coq.Program.Equality.
 
 Require Import StructTactics.
 
-From QuickChick Require Import QuickChick Tactics.
+(*From QuickChick Require Import QuickChick Tactics. *)
+
 
 Set Nested Proofs Allowed.
 
@@ -1800,8 +1801,150 @@ Proof.
 Defined.
 
 
+Lemma monad_left_id : forall S A B (a:A)(f:A -> (GenStMonad.St S) B) (s:S),
+    (bind (ret a) f) s = (f a s).
+Proof.
+  intros.
+  unfold ret.
+  unfold bind.
+  simpl.
+  destruct (f a s).
+  reflexivity.
+Qed.
+
+Lemma monad_right_id : forall S A (m:St S A) (s:S),
+    bind m (ret) s = m s.
+Proof.
+  intros.
+  unfold ret.
+  unfold bind.
+  destruct (m s).
+  destruct o; auto.
+Qed.
+
+Lemma monad_right_id' : forall S (m:St S unit) (s:S),
+    (m ;; (ret tt)) s = m s.
+Proof.
+  intros.
+  unfold ret.
+  unfold bind.
+  destruct (m s).
+  destruct o; auto.
+  destruct u.
+  auto.
+Defined.
+
+Lemma monad_comp : forall A B C S (m: St S A) (k:A -> St S B) (h:B -> St S C) (s:S),
+    bind m (fun x => (bind (k x) h)) s = (bind (bind m k) h) s.
+Proof.
+  intros.
+  unfold bind.
+  destruct (m s).
+  destruct o.
+  - destruct (k a s0).
+    destruct o.
+    + destruct (h b s1).
+      reflexivity.
+    + reflexivity.
+  - reflexivity.
+Qed.
+
+Lemma gasd : forall (act:VM unit) (act2:VM unit) st,
+    (act ;; ret tt ;; act2) st =
+    (act ;; act2) st.
+Proof.
+  intros.
+  unfold ret.
+  cbn.
+  unfold bind.
+  remember (act st) as ooo.
+  destruct ooo.
+  destruct o.
+  - break_let. reflexivity.
+  - reflexivity.
+Defined.
+
+Lemma hfhf : forall (act act2:VM unit) st il,
+    (act;;
+     (fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
+                act2)) st =
+    (act;; (act2 ;;
+            (fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
+                       (ret tt)))) st.
+Proof.
+Admitted.
+
+Lemma fafa : forall (act act2 act3: VM unit) st,
+    ((act;; ret tt;; act2);;
+     act3) st =
+    ((act;; act2);;
+     act3) st.
+Proof.
+Admitted.
+
+Lemma gfds: forall (act:VM unit) (st:vm_st) il,
+    (fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
+               (act)) st =
+    (act ;; 
+     (fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
+                (ret tt))) st.
+Proof.
+  intros.
+  generalize dependent act.
+  generalize dependent st.
+  induction il; intros.
+  - simpl. rewrite monad_right_id'. reflexivity.
+
+  - simpl.
+    erewrite IHil.
+    rewrite <- monad_comp.
+
+    rewrite hfhf.
+    rewrite monad_comp.
+    rewrite monad_comp.
+
+    rewrite fafa.
+    reflexivity.
+Defined.
+
+(*
+    rewrite monad_comp.
+
+    rewrite gasd.
+    
+    
+ 
+    erewrite <- IHil.
+    
+    rewrite <- monad_comp.
+    
+    
+  unfold bind.
+  unfold ret.
+  remember (act st) as ooo.
+  destruct ooo.
+  destruct o.
+  - break_let.
+    
+    rewrite <- Heqp.
+    cbn.
+    unfold ret.
+    cbn.
+    unfold fold_left.
+    fold fold_left.
+Abort.
+*)
 
 
+
+Lemma fads : forall (act1:VM unit) act2 il st o v,
+    act1 st = (o, v) ->
+    fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
+              (act1 ;; act2) st =
+    fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
+              (act2) v.
+Proof.
+Admitted.
 
 
 
@@ -1816,6 +1959,9 @@ Definition run_vm' (il:list AnnoInstr) st : vm_st :=
 Lemma run_vm_iff : forall il st,
     run_vm il st = run_vm' il st.
 Proof.
+
+
+  (*
   intros.
   simpl.
   unfold run_vm, run_vm'.
@@ -1831,10 +1977,14 @@ Proof.
   fold run_vm_step.
   expand_let_pairs.
   fold (execSt (S:=vm_st) (A:=unit)).
+  cbv eta.
   Abort.
+   *)
+  
 
 
-  (*
+
+  intros.
   generalize dependent st.
   induction il; intros.
   - simpl.
@@ -1845,29 +1995,35 @@ Proof.
     rewrite IHil.
     unfold run_vm'. simpl.
     unfold execSt.
+    unfold snd.
     simpl.
     unfold run_vm_fold.
     simpl.
+    cbn.
     unfold run_vm_step.
     simpl.
+    cbn.
     unfold execSt.
     unfold snd.
     simpl.
-    expand_let_pairs.
-    unfold snd.
     cbn.
-    unfold GenStMonad.ret.
+    expand_let_pairs.
+    expand_let_pairs.
+    expand_let_pairs.
+    unfold snd at 2.
+    cbn.
+    (*unfold GenStMonad.ret.*)
     simpl.
     cbn.
-    expand_let_pairs.
-    expand_let_pairs.
     expand_let_pairs.
     unfold snd at 1.
     unfold snd at 2.
-    unfold fold_left.
+    (*unfold fold_left.*)
     unfold snd.
     cbn.
     simpl.
+    repeat expand_let_pairs.
+    fold (GenStMonad.ret (S:=vm_st) (A:=unit)).
     
 
     assert (
@@ -1876,7 +2032,175 @@ Proof.
         (fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
                    (GenStMonad.ret tt;; build_comp a) st)
       ).
-    { unfold fold_left at 1. simpl.
+    {
+      remember (build_comp a st) as aaa.
+      destruct aaa.
+      destruct o.
+      + simpl.
+        cbn.
+        assert (
+        fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
+                  (ret tt;; build_comp a) st =
+        fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
+                  (build_comp a) st
+          ).
+        {
+          Check bind.
+          Print bind.
+          Check tt.
+
+
+         
+
+          erewrite gfds.
+          rewrite <- monad_comp.
+          rewrite monad_left_id.
+          erewrite gfds.
+          reflexivity.
+        }
+        (*
+          symmetry. eassumption.
+          unfold bind.
+          unfold ret. simpl. cbn.
+          destruct v.
+          simpl.
+          cbn.
+          rewrite <- Heqaaa.
+          cbv.
+          
+          rewrite <- monad_comp.
+          rewrite monad_left_id.
+          erewrite gfds.
+          Focus 2.
+          symmetry.
+          eassumption.
+          reflexivity.
+        } *)
+        
+        rewrite H. clear H.
+        simpl.
+        assert (
+        fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
+                  (build_comp a) st =
+        fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
+                  (build_comp a ;; ret tt) st
+          ).
+        {
+          erewrite gfds.
+          erewrite gfds.
+          rewrite <- monad_comp.
+          Check build_comp.
+
+          rewrite gasd.
+          reflexivity.
+        }
+        (*
+        
+          rewrite monad_right_id'.
+          symmetry. eassumption.
+          symmetry. eassumption.
+        } *)
+        
+        rewrite H.
+        clear H.
+
+
+
+        erewrite fads.
+        reflexivity.
+        symmetry. eassumption.
+      +
+        assert (
+        fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
+                  (ret tt;; build_comp a) st =
+        fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
+                  (build_comp a) st
+          ).
+        {
+          
+          erewrite gfds.
+          rewrite <- monad_comp.
+          rewrite monad_left_id.
+          erewrite gfds.
+          reflexivity.
+        }
+        (*
+        
+
+
+
+          
+          Focus 2.
+          rewrite monad_left_id.
+          symmetry. eassumption.
+          rewrite <- monad_comp.
+          rewrite monad_left_id.
+          erewrite gfds.
+          Focus 2.
+          symmetry.
+          eassumption.
+          reflexivity.
+        } *)
+
+        rewrite H. clear H.
+
+        assert (
+        fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
+                  (build_comp a) st =
+        fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
+                  (build_comp a ;; ret tt) st
+          ).
+        {
+          erewrite gfds.
+          erewrite gfds.
+          rewrite <- monad_comp.
+          Check build_comp.
+
+          rewrite gasd.
+          reflexivity.
+        }
+        (*
+        
+          rewrite monad_right_id'.
+          symmetry. eassumption.
+          symmetry. eassumption.
+        } *)
+        rewrite H.
+        clear H.
+        
+        simpl.
+        erewrite fads.
+        reflexivity.
+        symmetry. eassumption. }
+    congruence.
+Defined.
+
+
+        
+        
+        
+        
+           
+         
+        
+          
+
+
+
+        Lemma monad_left_id : forall S A B (a:A)(f:A -> (GenStMonad.St S) B) (s:S),
+            (bind (ret a) f) s = (f a s).
+        Proof.
+
+        rewrite monad_left_id.
+
+
+
+
+
+
+
+
+      unfold fold_left at 1. simpl.
       generalize dependent a.
       generalize dependent st.
       induction il; intros.
@@ -1899,4 +2223,3 @@ Proof.
     }
     congruence.
 Abort.
-*)
