@@ -20,4 +20,5 @@ MonadVM.v
 MonadAM.v
 MonadVMFacts.v
 VmSemantics.v
+RunAlt.v
 Appraisal.v
