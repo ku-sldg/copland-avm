@@ -189,25 +189,6 @@ Proof.
           allss.
 Defined.
 
-(*
-
-          try (unfold failm in *; congruence).
-    unfold failm in *. repeat find_inversion.
-    eauto.
-    unfold failm in *. repeat find_inversion. eauto.
-    admit.
-    admit.
-    admit.
-    admit.
-    admit.
-    admit.
-    admit.
-    admit.
-    admit.
-      
-Defined.
-*)
-
 (* Starting trace has no effect on evidence *)
 Lemma trace_irrel_ev : forall il1 tr1 tr1' tr2 e e' s s' p1' p1 o1 o1',
     run_vm il1 {| st_ev := e; st_trace := tr1; st_stack := s; st_pl := p1; st_store := o1 |} =
@@ -288,52 +269,44 @@ Proof.
   - destruct a as [n p0 | n sp1 sp2 | n | l m' n | | | i q t (*| i rpyi q*)];
       try ( (* aprim, asplit areqrpy cases *)
           try destruct r;
-          unfold run_vm_step; fold run_vm_step; monad_unfold;  
+          try (unfold run_vm_step; fold run_vm_step);
+          repeat monad_unfold; repeat break_match;
+          boom; repeat allss;
           rewrite IHil at 1;
           symmetry; 
+          rewrite IHil at 1);
+      try (rewrite <- app_assoc at 1; congruence)(*;
+      try (rewrite app_assoc at 1; congruence)*);
+
+      try ( (* ajoins, abesr, abep cases *)
+          try destruct r;
+          try (unfold run_vm_step; fold fun_vm_step);
+          repeat monad_unfold; repeat break_match;
+          boom; repeat allss;
           rewrite IHil at 1;
+          symmetry;
+          rewrite IHil at 1;
+          rewrite app_assoc at 1;
+          congruence).
+(*
 
-          rewrite <- app_assoc;
-          tauto). 
-       
-    + (* ajoins case *)
-
-      boom; allss.
-      allss.
-      rewrite IHil at 1.
-      symmetry.
-      rewrite IHil at 1.
-      rewrite app_assoc at 1.
-      congruence.
-
-    + (* ajoinp case *)   
+    + (* ajoinp case *)
+      
       unfold run_vm_step in *; fold run_vm_step in *;
         repeat monad_unfold;
         repeat break_match;
-        try (allss; tauto);
-        try (repeat find_inversion;
-             vmsts;
-             get_store_at_bogus).
+        try (allss; tauto)(*;
+        try ((*repeat find_inversion;*)
+             (*vmsts; *)
+             get_store_at_bogus)*). 
 
-      allss.
-    
+      boom; repeat allss.   
       erewrite IHil at 1.
       symmetry.
       erewrite IHil at 1.
-      rewrite app_assoc. eauto.
-           
-    + (* abesr case *)
-      boom; try allss.
-      
-    + (* abep case *)
-      boom; try allss.
-
-      invc H4.
-      erewrite IHil at 1.
-      symmetry.
-      erewrite IHil at 1.
-      erewrite app_assoc.
-      eauto.
+      rewrite app_assoc.
+      congruence.
+ *)
 Defined.
 
 (* Instance of gen_foo where k=[] *)
@@ -540,20 +513,30 @@ Proof.
           rewrite IHil1;
           rewrite <- app_assoc;
           st_equiv;
-          congruence).
-     
+          congruence);
+      try (boom; allss);
+      try (
+          boom; repeat break_match; allss;
+          rewrite foo;
+          rewrite IHil1;
+          repeat rewrite <- app_assoc;
+          st_equiv;
+          rewrite H;
+          eauto).
+Defined.
+
+ (*    
     + (* joins case *)
       boom; allss.
-      invc H4.
+      (*invc H4. *)
       rewrite foo.
       rewrite IHil1.
 
-      rewrite <- app_assoc.
-      rewrite app_nil_l.
-      rewrite <- app_assoc.
+      repeat rewrite <- app_assoc.
+      (*
+      rewrite app_nil_l. *)
       st_equiv.
       rewrite H.
-      unfold run_vm_step.
       eauto.
 
 
@@ -590,24 +573,29 @@ Proof.
       
     + (* ajoinp case *)
 
-      (*boom; repeat break_match; allss. *)
-       
+      boom; repeat break_match; allss.
+      (* boom; allss. *)
+
+      (*
       unfold run_vm_step. fold run_vm_step.
+      boom; repeat break_match; allss. *)
+      (*
       repeat monad_unfold.
       (*monad_unfold. *)
       repeat break_match;
         try (get_store_at_bogus; congruence);
         try (repeat find_inversion;
              vmsts;
-             bogus; congruence).
+             bogus; congruence). *)
       ++
-      allss.
+      (*allss. *)
       rewrite foo.
       rewrite IHil1.
       repeat rewrite <- app_assoc.
       st_equiv.
       rewrite H.
       eauto.
+      (*
       ++
         allss.
         
@@ -632,7 +620,9 @@ Proof.
         pairs.
         repeat find_inversion.
         eauto. *)
-      
+       *)
+
+      (*
     + (* abesr case *)
       boom; allss.
 
@@ -653,9 +643,12 @@ Proof.
       rewrite IHil1.
       auto.
        *)
+
+       *)
+      
       
     + (* abep case *)
-      boom; allss.
+      boom; repeat break_match; allss.
 
 
 
@@ -666,16 +659,17 @@ Proof.
       monad_unfold.
       repeat break_match. *)
       ++
-        find_inversion.
+        (*find_inversion. *)
 
         rewrite foo.
         rewrite IHil1.
         repeat rewrite <- app_assoc.
-        simpl.
         st_equiv.
         rewrite H.
         eauto.
+
 Defined.
+*)
 
 Lemma pl_immut : forall il e s tr p o,
     st_pl
@@ -764,7 +758,76 @@ Defined.
          subst.
          eauto.     *)
 Defined.
-*)
+ *)
+
+
+Lemma trace_under_st_ev : forall il1 e s trd trd' p o,
+    StVM.st_ev
+      (fold_left run_vm_step il1
+                 {|
+                   st_ev := e;
+                   st_stack := s;
+                   st_trace := trd;
+                   st_pl := p;
+                   st_store := o |}) =
+    StVM.st_ev
+      (fold_left run_vm_step il1
+                 {|
+                   st_ev := e;
+                   st_stack := s;
+                   st_trace := trd';
+                   st_pl := p;
+                   st_store := o |}).
+Proof.
+  intros.
+  erewrite trace_irrel_ev; eauto.
+  eapply st_congr; eauto.
+Defined.
+Lemma trace_under_st_stack : forall il1 e s trd trd' p o,
+    StVM.st_stack
+      (fold_left run_vm_step il1
+                 {|
+                   st_ev := e;
+                   st_stack := s;
+                   st_trace := trd;
+                   st_pl := p;
+                   st_store := o |}) =
+    StVM.st_stack
+      (fold_left run_vm_step il1
+                 {|
+                   st_ev := e;
+                   st_stack := s;
+                   st_trace := trd';
+                   st_pl := p;
+                   st_store := o |}).
+Proof.
+  intros.
+  erewrite trace_irrel_stack; eauto.
+  eapply st_congr; eauto.
+Defined.
+    
+Lemma trace_under_st_store : forall il1 e s trd trd' p o,
+    StVM.st_store
+      (fold_left run_vm_step il1
+                 {|
+                   st_ev := e;
+                   st_stack := s;
+                   st_trace := trd;
+                   st_pl := p;
+                   st_store := o |}) =
+    StVM.st_store
+      (fold_left run_vm_step il1
+                 {|
+                   st_ev := e;
+                   st_stack := s;
+                   st_trace := trd';
+                   st_pl := p;
+                   st_store := o |}).
+Proof.
+  intros.
+  erewrite trace_irrel_store; eauto.
+  eapply st_congr; eauto.
+Defined.
 
 Lemma destruct_compiled_appended : forall trd trd' il1 il2 e e'' s s'' p p'' o o'',
     run_vm
@@ -821,89 +884,6 @@ Proof.
   simpl in HeqB.
   destruct B.
 
-  Lemma trace_under_st_ev : forall il1 e s trd trd' p o,
-    StVM.st_ev
-      (fold_left run_vm_step il1
-                 {|
-                   st_ev := e;
-                   st_stack := s;
-                   st_trace := trd;
-                   st_pl := p;
-                   st_store := o |}) =
-    StVM.st_ev
-      (fold_left run_vm_step il1
-                 {|
-                   st_ev := e;
-                   st_stack := s;
-                   st_trace := trd';
-                   st_pl := p;
-                   st_store := o |}).
-  Proof.
-    intros.
-    erewrite trace_irrel_ev; eauto.
-    eapply st_congr; eauto.
-  Defined.
-
-  (*
-    eapply st_congr;
-      try
-        ( destruct A;
-          erewrite trace_irrel_ev; eauto;
-          erewrite trace_irrel_stack; eauto;
-          erewrite trace_irrel_store; eauto;
-          
-            try erewrite trace_irrel_stack;
-            try erewrite trace_irrel_ev;
-            try erewrite trace_irrel_store;
-            try reflexivity; eauto).
-  Admitted.
-*)
-
-    Lemma trace_under_st_stack : forall il1 e s trd trd' p o,
-    StVM.st_stack
-      (fold_left run_vm_step il1
-                 {|
-                   st_ev := e;
-                   st_stack := s;
-                   st_trace := trd;
-                   st_pl := p;
-                   st_store := o |}) =
-    StVM.st_stack
-      (fold_left run_vm_step il1
-                 {|
-                   st_ev := e;
-                   st_stack := s;
-                   st_trace := trd';
-                   st_pl := p;
-                   st_store := o |}).
-    Proof.
-      intros.
-      erewrite trace_irrel_stack; eauto.
-      eapply st_congr; eauto.
-    Defined.
-    
-  Lemma trace_under_st_store : forall il1 e s trd trd' p o,
-    StVM.st_store
-      (fold_left run_vm_step il1
-                 {|
-                   st_ev := e;
-                   st_stack := s;
-                   st_trace := trd;
-                   st_pl := p;
-                   st_store := o |}) =
-    StVM.st_store
-      (fold_left run_vm_step il1
-                 {|
-                   st_ev := e;
-                   st_stack := s;
-                   st_trace := trd';
-                   st_pl := p;
-                   st_store := o |}).
-  Proof.
-    intros.
-    erewrite trace_irrel_store; eauto.
-    eapply st_congr; eauto.
-  Defined.
 
   erewrite trace_under_st_ev. (*with (trd':=[]).*)
   erewrite trace_under_st_stack.

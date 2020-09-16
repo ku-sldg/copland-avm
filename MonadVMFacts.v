@@ -433,7 +433,17 @@ Ltac bogus :=
       (*idtac "matched get_store_at_determ" ; *)
       elimtype False; eapply get_store_at_determ;
       [apply H | apply G]
+    | [ H: get_store_at ?n _ = (Some _,_),
+           G: get_store_at ?n _ = (Some _,_) |- _ ] =>
+      (*idtac "matched get_store_at_bogus" ; *)
+      apply get_store_at_facts in H; eauto;
+      apply get_store_at_facts in G; eauto;
+      repeat do_bd;
+      destruct_conjs;
+      subst;
+      bogus; reflexivity
     end.
+
 
 Ltac get_store_at_bogus :=
   vmsts;
