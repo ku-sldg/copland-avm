@@ -639,6 +639,7 @@ Proof.
   rewrite HeqB.
   rewrite HeqA.
   unfold run_vm in *.
+  Check record_congr.
   
   rewrite <- record_congr.
 
@@ -648,6 +649,7 @@ Proof.
   Check trace_irrel_ev.
   simpl in HeqB.
   destruct B.
+  Check trace_under_st_ev.
 
 
   erewrite trace_under_st_ev. (*with (trd':=[]).*)
@@ -657,10 +659,11 @@ Proof.
   split.
   +
     rewrite <- app_assoc.
+    Check st_trace_destruct'.
     erewrite <- st_trace_destruct'.
     rewrite fold_left_app in *.
     rewrite H.
-    apply record_congr.
+    reflexivity.
   +
 
     erewrite trace_under_st_ev. (*with (trd':=[]).*)
@@ -669,7 +672,6 @@ Proof.
 
     (*rewrite <- HH.*)
     symmetry.
-    unfold run_vm in H.
     rewrite fold_left_app in *.
     repeat 
     rewrite <- foo.

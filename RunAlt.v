@@ -421,6 +421,59 @@ Lemma fold_destruct : forall il1 il2 st st' st'' x x',
     run_vm_fold il2 st' = (Some x', st'') ->
     run_vm_fold (il1 ++ il2) st = (Some x', st'').
 Proof.
+  induction il1; intros.
+  - simpl.
+    rewrite <- H0.
+    simpl in *.
+    unfold run_vm_fold in H.
+    cbn in H.
+    unfold ret in H.
+    invc H.
+    reflexivity.
+  -
+    cbn in *.
+    unfold run_vm_fold in IHil1.
+    rewrite gfds.
+    cbn.
+    simpl.
+    monad_unfold.
+    break_let.
+    break_match.
+    break_let.
+    break_let.
+    rewrite <- Heqp1.
+    erewrite IHil1.
+    reflexivity.
+    rewrite <- H.
+    rewrite gfds.
+    monad_unfold.
+    break_let.
+    simpl.
+    cbn.
+    rewrite gfds.
+    monad_unfold.
+    break_let.
+    break_match.
+    break_let.
+    break_let.
+    repeat find_inversion.
+    congruence.
+    repeat find_inversion.
+    break_let.
+    congruence.
+    repeat find_inversion.
+    eauto.
+
+    break_let.
+    repeat find_inversion.
+    rewrite gfds in H.
+    monad_unfold.
+    break_let.
+    break_let.
+    repeat break_let.
+    repeat find_inversion.
+Defined.
+  
 (*
   induction il1; intros.
   - simpl in *.
@@ -521,8 +574,80 @@ Proof.
     erewrite <- Heqp.
 
     eapply IHil1.
-*)     
-Admitted.
+ *)
+
+
+Lemma run_vm_iff : forall il st z v,
+    (run_vm_fold il) st = (Some z, v) -> 
+    run_vm il st = run_vm' il st.
+Proof.
+  intros.
+  generalize dependent st.
+  generalize dependent z.
+  generalize dependent v.
+  induction il; intros.
+  - simpl.
+    unfold run_vm'. simpl.
+    unfold execSt.
+    unfold run_vm_fold. simpl. reflexivity.
+  - simpl.
+    destruct runa with (a:=a) (il:=il) (st:=st) (z:=z) (v:=v).
+    apply H.
+    destruct_conjs.
+    erewrite IHil.
+    unfold run_vm'. simpl.
+    unfold execSt.
+    unfold snd.
+    simpl.
+    unfold run_vm_fold.
+    simpl.
+    cbn.
+    unfold run_vm_step.
+    simpl.
+    cbn.
+    unfold execSt.
+    unfold snd.
+    simpl.
+    cbn.
+    expand_let_pairs.
+    expand_let_pairs.
+    expand_let_pairs.
+    unfold snd at 2.
+    cbn.
+    (*unfold GenStMonad.ret.*)
+    simpl.
+    cbn.
+    expand_let_pairs.
+    unfold snd at 1.
+    unfold snd at 2.
+    (*unfold fold_left.*)
+    unfold snd.
+    cbn.
+    simpl.
+    repeat expand_let_pairs.
+    fold (GenStMonad.ret (S:=vm_st) (A:=unit)).
+    assert (
+    (fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
+                   (GenStMonad.ret tt) (snd (build_comp a st))) =
+        (fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
+                   (GenStMonad.ret tt;; build_comp a) st)) as H00.
+    eapply newLem.
+
+    
+    apply H1.
+
+    congruence.
+
+
+    apply vm_fold_step. eassumption.
+Defined.
+
+
+
+
+
+Require Import MonadVMFacts.
+
 
 Lemma run_vm_iff_helper : forall t il st, 
     il = (instr_compiler t) ->
@@ -561,27 +686,29 @@ Proof.
     destruct_conjs. *)
     simpl in *.
     destruct r; destruct s.
-    cbn in *.
-    simpl in *.
     subst.
     cbn.
+    Print fold_destruct.
+    Check fold_destruct.
     (*
     repeat eexists. *)
-    simpl.
-    unfold run_vm_fold.
 
 
 
 
 
-    erewrite gfds.
+    rewrite gfds.
+    monad_unfold.
     cbn.
     break_let.
     rewrite <- Heqp.
     clear Heqp.
+    simpl in *.
+    vmsts.
+    simpl in *.
 
-    erewrite gfds.
-    Print run_vm_fold.
+    
+    rewrite gfds.
 
 
     assert (
@@ -593,7 +720,10 @@ Proof.
           (instr_compiler t1 ++
                           abesr :: instr_compiler t2 ++ [ajoins (Nat.pred n0)])
       ) as HH.
-    admit.
+    {
+      reflexivity.
+    }
+    
     rewrite HH.
     clear HH.
     assert (
@@ -601,12 +731,11 @@ Proof.
                         abesr :: instr_compiler t2 ++ [ajoins (Nat.pred n0)]) =
          (instr_compiler t1 ++
                         [abesr] ++ instr_compiler t2 ++ [ajoins (Nat.pred n0)])
-        ) as HH.
-        
-      
-    admit.
-    rewrite HH.
-    clear HH.
+      ) as HH.
+    {
+      reflexivity.
+    }
+    rewrite HH. clear HH.
     unfold bind.
     unfold ret.
     repeat break_let.
@@ -618,20 +747,602 @@ Proof.
         (instr_compiler t1 ++ ([abesr] ++ (instr_compiler t2 ++
                                                           ([ajoins (Nat.pred n0)]))))
       ) as HH.
-    admit.
-    rewrite HH in Heqp.
-    clear HH.
+    {
+      simpl.
+      repeat rewrite <- app_assoc.
+
+      reflexivity.
+    }
+    
+    rewrite HH in Heqp. clear HH.
     
     destruct IHt1 with (st:={|
-    st_ev := splitEv s (st_ev st);
-    st_stack := push_stack EvidenceC (splitEv s0 (st_ev st))
-                  (st_stack (add_trace [Term.split n (st_pl st)] st));
-    st_trace := st_trace (add_trace [Term.split n (st_pl st)] st);
-    st_pl := st_pl (add_trace [Term.split n (st_pl st)] st);
-    st_store := st_store (add_trace [Term.split n (st_pl st)] st) |}) (il:=instr_compiler t1).
+           st_ev := splitEv s st_ev0;
+           st_stack := push_stack EvidenceC (splitEv s0 st_ev0) st_stack0;
+           st_trace := st_trace0 ++ [Term.split n st_pl0];
+           st_pl := st_pl0;
+           st_store := st_store0 |}) (il:=instr_compiler t1).
     reflexivity.
     destruct_conjs.
-    erewrite fold_destruct in Heqp.
+    Check fold_destruct.
+    vmsts.
+    simpl in *.
+
+
+    (* 
+      Print run_vm'.
+      assert (run_vm' (instr_compiler t2)  {| st_ev := e; st_stack := push_stack EvidenceC st_ev3 st_stack0; st_trace := st_trace3; st_pl := st_pl3; st_store := st_store0 |} =
+              {| st_ev := st_ev0; st_stack := []; st_trace := st_trace0; st_pl := st_pl0; st_store := st_store7 |}).
+      {
+        simpl.
+        cbn.
+        unfold run_vm'.
+        unfold execSt.
+        rewrite Heqp1.
+        simpl.
+        reflexivity.
+      } 
+*)
+
+
+
+
+
+    
+    assert (
+        push_stack EvidenceC (splitEv s0 st_ev0) st_stack0 =
+        st_stack1) as HH.
+    {
+      Print do_stack1.
+      Print run_vm'.
+      admit.
+    }
+    subst.
+    
+    
+    unfold run_vm_fold in Heqp.
+    rewrite fold_left_app in Heqp.
+    rewrite gfds in Heqp.
+    cbn in *.
+    monad_unfold.
+    simpl in *.
+
+    vmsts.
+    simpl in *.
+    assert (
+        fold_left
+             (fun (a : VM unit) (b : AnnoInstr) (s : vm_st) =>
+              match a s with
+              | (Some _, s') => let '(b0, s'') := build_comp b s' in (b0, s'')
+              | (None, s') => (None, s')
+              end) (instr_compiler t1) (fun s : vm_st => (Some tt, s))
+             {|
+             st_ev := splitEv s st_ev0;
+             st_stack := push_stack EvidenceC (splitEv s0 st_ev0) st_stack0;
+             st_trace := st_trace0 ++ [Term.split n st_pl0];
+             st_pl := st_pl0;
+             st_store := st_store0 |} =
+        run_vm_fold (instr_compiler t1)
+         {|
+             st_ev := splitEv s st_ev0;
+             st_stack := push_stack EvidenceC (splitEv s0 st_ev0) st_stack0;
+             st_trace := st_trace0 ++ [Term.split n st_pl0];
+             st_pl := st_pl0;
+             st_store := st_store0 |}) as HHH.
+    {
+      reflexivity.
+    }
+    rewrite HHH in Heqp. clear HHH.
+    rewrite H0 in Heqp. clear H0.
+    repeat break_let.
+    repeat find_inversion.
+
+    rewrite fold_left_app in Heqp0.
+    cbn in *.
+    repeat break_let.
+    monad_unfold.
+    vmsts.
+    rewrite gfds in Heqp.
+    cbn in *.
+    monad_unfold.
+    repeat break_let.
+
+    repeat find_inversion.
+    vmsts.
+
+    destruct IHt2 with
+        (il:= instr_compiler t2)
+        (st:= {|
+            st_ev := splitEv s0 st_ev0;
+            st_stack := push_stack EvidenceC st_ev1 st_stack0;
+            st_trace := st_trace1;
+            st_pl := st_pl1;
+            st_store := st_store1 |}).
+    reflexivity.
+    destruct_conjs.
+    vmsts.
+    assert (
+        run_vm_fold (instr_compiler t2)
+                    {|
+            st_ev := splitEv s0 st_ev0;
+            st_stack := push_stack EvidenceC st_ev1 st_stack0;
+            st_trace := st_trace1;
+            st_pl := st_pl1;
+            st_store := st_store1 |} =
+        fold_left
+            (fun (a0 : VM unit) (b : AnnoInstr) (s : vm_st) =>
+             match a0 s with
+             | (Some _, s') => let '(b0, s'') := build_comp b s' in (b0, s'')
+             | (None, s') => (None, s')
+             end) (instr_compiler t2) (fun s : vm_st => (Some tt, s))
+            {|
+            st_ev := splitEv s0 st_ev0;
+            st_stack := push_stack EvidenceC st_ev1 st_stack0;
+            st_trace := st_trace1;
+            st_pl := st_pl1;
+            st_store := st_store1 |}) as HH.
+    {
+      reflexivity.
+    }
+    
+    
+    rewrite <- HH in Heqp6. clear HH.
+    rewrite H0 in Heqp6.
+    assert (push_stack EvidenceC st_ev1 st_stack0 = st_stack3).
+    {
+      admit.
+    }
+    subst.
+    clear H0.
+    repeat find_inversion.
+    repeat break_match;
+      repeat find_inversion.
+    eauto.
+
+    unfold push_stack in *.
+    unfold pop_stack in *.
+    congruence.
+    
+
+(*
+    
+    unfold pop_stack in *.
+    simpl in *.
+    congruence.
+    congruence.
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    assert (
+        ((fun s : vm_st =>
+           let
+           '(b, s'') :=
+            let
+            '(b, s'') :=
+             match
+               (let
+                '(b, s'') :=
+                 (let
+                  '{| st_ev := oldE; st_stack := oldStack; st_trace := tr; st_pl := oldP; st_store := oldStore |} := s in
+                   match pop_stack EvidenceC oldStack with
+                   | Some (e, s') =>
+                       fun _ : vm_st =>
+                       (Some e, {| st_ev := oldE; st_stack := s'; st_trace := tr; st_pl := oldP; st_store := oldStore |})
+                   | None => fun s0 : vm_st => (None, s0)
+                   end) s in (b, s''))
+             with
+             | (Some v, s') =>
+                 let
+                 '(b, s'') :=
+                  match
+                    (let
+                     '(b, s'') :=
+                      (let
+                       '{| st_ev := oldEv; st_stack := oldStack; st_trace := tr; st_pl := oldP; st_store := oldStore |} := s' in
+                        fun _ : vm_st =>
+                        (Some tt,
+                        {|
+                        st_ev := oldEv;
+                        st_stack := push_stack EvidenceC (StVM.st_ev s) oldStack;
+                        st_trace := tr;
+                        st_pl := oldP;
+                        st_store := oldStore |})) s' in (b, s''))
+                  with
+                  | (Some _, s'0) =>
+                      (Some tt,
+                      {|
+                      st_ev := v;
+                      st_stack := StVM.st_stack s'0;
+                      st_trace := StVM.st_trace s'0;
+                      st_pl := StVM.st_pl s'0;
+                      st_store := StVM.st_store s'0 |})
+                  | (None, s'0) => (None, s'0)
+                  end in (b, s'')
+             | (None, s') => (None, s')
+             end in (b, s'') in (b, s''));;
+          fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) (instr_compiler t2) (ret tt))
+          {| st_ev := st_ev1; st_stack := st_stack1; st_trace := st_trace1; st_pl := st_pl1; st_store := st_store1 |} =
+
+
+        ((fun s : vm_st =>
+           let
+           '(b, s'') :=
+            let
+            '(b, s'') :=
+             match
+               (let
+                '(b, s'') :=
+                 (let
+                  '{| st_ev := oldE; st_stack := oldStack; st_trace := tr; st_pl := oldP; st_store := oldStore |} := s in
+                   match pop_stack EvidenceC oldStack with
+                   | Some (e, s') =>
+                       fun _ : vm_st =>
+                       (Some e, {| st_ev := oldE; st_stack := s'; st_trace := tr; st_pl := oldP; st_store := oldStore |})
+                   | None => fun s0 : vm_st => (None, s0)
+                   end) s in (b, s''))
+             with
+             | (Some v, s') =>
+                 let
+                 '(b, s'') :=
+                  match
+                    (let
+                     '(b, s'') :=
+                      (let
+                       '{| st_ev := oldEv; st_stack := oldStack; st_trace := tr; st_pl := oldP; st_store := oldStore |} := s' in
+                        fun _ : vm_st =>
+                        (Some tt,
+                        {|
+                        st_ev := oldEv;
+                        st_stack := push_stack EvidenceC (StVM.st_ev s) oldStack;
+                        st_trace := tr;
+                        st_pl := oldP;
+                        st_store := oldStore |})) s' in (b, s''))
+                  with
+                  | (Some _, s'0) =>
+                      (Some tt,
+                      {|
+                      st_ev := v;
+                      st_stack := StVM.st_stack s'0;
+                      st_trace := StVM.st_trace s'0;
+                      st_pl := StVM.st_pl s'0;
+                      st_store := StVM.st_store s'0 |})
+                  | (None, s'0) => (None, s'0)
+                  end in (b, s'')
+             | (None, s') => (None, s')
+             end in (b, s'') in (b, s''));;
+          fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) (instr_compiler t2) (ret tt))
+           {| st_ev := st_ev1; st_stack := st_stack1; st_trace := st_trace1; st_pl := st_pl1; st_store := st_store1 |})
+        
+    
+    boom; repeat break_match; allss.
+    rewrite gfds in Heqp.
+    repeat break_let.
+    simpl in *.
+    cbn in *.
+    monad_unfold.
+    repeat break_let.
+    repeat find_inversion.
+    repeat break_match.
+    repeat find_inversion.
+    destruct IHt2 with (il:= instr_compiler t2) (st:={|
+            st_ev := e0;
+            st_stack := push_stack EvidenceC st_ev0 st_stack0;
+            st_trace := st_trace0;
+            st_pl := st_pl0;
+            st_store := st_store0 |}).
+    reflexivity.
+    destruct_conjs.
+    unfold run_vm_fold in H0.
+    rewrite gfds in H0.
+    monad_unfold.
+    repeat break_let.
+    repeat find_inversion.
+    repeat find_inversion.
+    repeat find_inversion.
+    repeat find_inversion.
+    repeat find_inversion.
+    repeat find_inversion.
+    repeat find_inversion.
+    repeat find_inversion.
+    unfold pop_stack in Heqo1.
+    congruence.
+    repeat find_inversion.
+    monad_unfold.
+    rewrite gfds in Heqp.
+    monad_unfold.
+    repeat break_let.
+    repeat break_match;
+      repeat find_inversion.
+    simpl in *.
+    assert (  push_stack EvidenceC st_ev3 st_stack0 = []).
+    Print do_stack1.
+    {
+
+      assert (fold_left
+            (fun (a0 : VM unit) (b : AnnoInstr) (s : vm_st) =>
+             match a0 s with
+             | (Some _, s') => let '(b0, s'') := build_comp b s' in (b0, s'')
+             | (None, s') => (None, s')
+             end) (instr_compiler t2) (fun s : vm_st => (Some tt, s))
+            {| st_ev := e; st_stack := push_stack EvidenceC st_ev3 st_stack0; st_trace := st_trace3; st_pl := st_pl3; st_store := st_store0 |} =
+              run_vm_fold
+                (instr_compiler t2)
+                {| st_ev := e; st_stack := push_stack EvidenceC st_ev3 st_stack0; st_trace := st_trace3; st_pl := st_pl3; st_store := st_store0 |}) as HHH.
+      {
+        reflexivity.
+      }
+      rewrite HHH in Heqp1.
+      Print run_vm'.
+      assert (run_vm' (instr_compiler t2)  {| st_ev := e; st_stack := push_stack EvidenceC st_ev3 st_stack0; st_trace := st_trace3; st_pl := st_pl3; st_store := st_store0 |} =
+              {| st_ev := st_ev0; st_stack := []; st_trace := st_trace0; st_pl := st_pl0; st_store := st_store7 |}).
+      {
+        simpl.
+        cbn.
+        unfold run_vm'.
+        unfold execSt.
+        rewrite Heqp1.
+        simpl.
+        reflexivity.
+      }
+
+      destruct IHt2 with (il:=(instr_compiler t2)) (st:= {| st_ev := e; st_stack := push_stack EvidenceC st_ev3 st_stack0; st_trace := st_trace3; st_pl := st_pl3; st_store := st_store0 |}).
+      reflexivity.
+      destruct_conjs.
+      
+      
+              
+      erewrite <- run_vm_iff in H.
+      do_stack1 t2.
+      auto.
+      
+
+      destruct_conjs.
+      apply H1.
+    }
+
+    inv H.
+    repeat find_inversion.
+    repeat find_inversion.
+    repeat find_inversion.
+    repeat find_inversion.
+    repeat find_inversion.
+    repeat find_inversion.
+    rewrite gfds in Heqp.
+    repeat break_let.
+    cbn.
+    monad_unfold.
+    repeat break_let.
+    repeat break_match; 
+      repeat find_inversion.
+    simpl in *.
+
+    assert (  push_stack EvidenceC st_ev0 st_stack0 = []).
+    Print do_stack1.
+    {
+
+      assert (fold_left
+            (fun (a0 : VM unit) (b : AnnoInstr) (s : vm_st) =>
+             match a0 s with
+             | (Some _, s') => let '(b0, s'') := build_comp b s' in (b0, s'')
+             | (None, s') => (None, s')
+             end) (instr_compiler t2) (fun s : vm_st => (Some tt, s))
+            {| st_ev := e; st_stack := push_stack EvidenceC st_ev0 st_stack0; st_trace := st_trace0; st_pl := st_pl0; st_store := st_store3 |} =
+              run_vm_fold
+                (instr_compiler t2)
+                {| st_ev := e; st_stack := push_stack EvidenceC st_ev0 st_stack0; st_trace := st_trace0; st_pl := st_pl0; st_store := st_store3 |}) as HHH.
+      {
+        reflexivity.
+      }
+      rewrite HHH in Heqp1.
+      Print run_vm'.
+      assert (run_vm' (instr_compiler t2) {| st_ev := e; st_stack := push_stack EvidenceC st_ev0 st_stack0; st_trace := st_trace0; st_pl := st_pl0; st_store := st_store3 |} =
+              {| st_ev := st_ev6; st_stack := []; st_trace := st_trace6; st_pl := st_pl6; st_store := st_store0 |}).
+      {
+        simpl.
+        cbn.
+        unfold run_vm'.
+        unfold execSt.
+        rewrite Heqp1.
+        simpl.
+        reflexivity.
+      }
+
+      destruct IHt2 with (il:=(instr_compiler t2)) (st:= {| st_ev := e; st_stack := push_stack EvidenceC st_ev0 st_stack0; st_trace := st_trace0; st_pl := st_pl0; st_store := st_store3 |}).
+      reflexivity.
+      destruct_conjs.
+      
+      
+              
+      erewrite <- run_vm_iff in H.
+      do_stack1 t2.
+      auto.
+      
+
+      destruct_conjs.
+      apply H1.
+    }
+
+    inv H.
+    admit.
+    *)
+  -
+    subst.
+    unfold run_vm_fold.
+    cbn.
+    monad_unfold.
+    destruct s; destruct r.
+    rewrite gfds.
+    monad_unfold.
+    repeat break_let.
+    subst.
+    monad_unfold.
+    break_let.
+    monad_unfold.
+    simpl in *.
+    vmsts.
+    simpl in *.
+    unfold Maps.map_set in *.
+    
+    unfold get_store_at in *.
+    unfold get in *.
+    simpl in *.
+    assert (
+
+        (st <- (fun s : vm_st => (Some s, s));;
+         match Maps.map_get (StVM.st_store st) (fst (range t1)) with
+         | Some e => ret e
+         | None => failm
+         end)
+          {|
+            st_ev := ppc (parallel_att_vm_thread (instr_compiler t1) (splitEv s st_ev2))
+                         (parallel_att_vm_thread (instr_compiler t2) (splitEv s0 st_ev2));
+            st_stack := st_stack2;
+            st_trace := (st_trace2 ++ [Term.split n st_pl2]) ++
+              shuffled_events (parallel_vm_events (instr_compiler t1) st_pl2)
+                (parallel_vm_events (instr_compiler t2) st_pl2);
+            st_pl := st_pl2;
+            st_store := (fst (range t2), parallel_att_vm_thread (instr_compiler t2) (splitEv s0 st_ev2))
+                          :: (fst (range t1), parallel_att_vm_thread (instr_compiler t1) (splitEv s st_ev2)) :: st_store2 |} =
+        (Some (parallel_att_vm_thread (instr_compiler t1) (splitEv s st_ev2)), {|
+            st_ev := ppc (parallel_att_vm_thread (instr_compiler t1) (splitEv s st_ev2))
+                         (parallel_att_vm_thread (instr_compiler t2) (splitEv s0 st_ev2));
+            st_stack := st_stack2;
+            st_trace := (st_trace2 ++ [Term.split n st_pl2]) ++
+              shuffled_events (parallel_vm_events (instr_compiler t1) st_pl2)
+                (parallel_vm_events (instr_compiler t2) st_pl2);
+            st_pl := st_pl2;
+            st_store := (fst (range t2), parallel_att_vm_thread (instr_compiler t2) (splitEv s0 st_ev2))
+                          :: (fst (range t1), parallel_att_vm_thread (instr_compiler t1) (splitEv s st_ev2)) :: st_store2 |})) as HH.
+    {
+      admit.
+    }
+    rewrite HH in Heqp1. clear HH.
+    break_let.
+
+    assert (
+        (st <- (fun s : vm_st => (Some s, s));;
+             match Maps.map_get (StVM.st_store st) (fst (range t2)) with
+             | Some e => ret e
+             | None => failm
+             end)
+              {|
+              st_ev := ppc (parallel_att_vm_thread (instr_compiler t1) (splitEv s st_ev2))
+                         (parallel_att_vm_thread (instr_compiler t2) (splitEv s0 st_ev2));
+              st_stack := st_stack2;
+              st_trace := (st_trace2 ++ [Term.split n st_pl2]) ++
+                          shuffled_events (parallel_vm_events (instr_compiler t1) st_pl2)
+                            (parallel_vm_events (instr_compiler t2) st_pl2);
+              st_pl := st_pl2;
+              st_store := (fst (range t2), parallel_att_vm_thread (instr_compiler t2) (splitEv s0 st_ev2))
+                            :: (fst (range t1), parallel_att_vm_thread (instr_compiler t1) (splitEv s st_ev2)) :: st_store2 |} =
+
+
+        (Some (parallel_att_vm_thread (instr_compiler t2) (splitEv s0 st_ev2)),
+          {|
+              st_ev := ppc (parallel_att_vm_thread (instr_compiler t1) (splitEv s st_ev2))
+                         (parallel_att_vm_thread (instr_compiler t2) (splitEv s0 st_ev2));
+              st_stack := st_stack2;
+              st_trace := (st_trace2 ++ [Term.split n st_pl2]) ++
+                          shuffled_events (parallel_vm_events (instr_compiler t1) st_pl2)
+                            (parallel_vm_events (instr_compiler t2) st_pl2);
+              st_pl := st_pl2;
+              st_store := (fst (range t2), parallel_att_vm_thread (instr_compiler t2) (splitEv s0 st_ev2))
+                            :: (fst (range t1), parallel_att_vm_thread (instr_compiler t1) (splitEv s st_ev2)) :: st_store2 |})) as HH.
+    {
+      admit.
+    }
+    rewrite HH in Heqp2. clear HH.
+    repeat find_inversion.
+    eauto.
+Admitted.
+
+
+
+
+(*
+    repeat find_inversion.
+    unfold pop_stack in *.
+    clear Heqo1.
+    
+        
+
+
+    
+    repeat break_match.
+    simpl in *.
+
+    rewrite fold_left_app in Heqp1.
+    rewrite gfds in Heqp1.
+    monad_unfold.
+    repeat break_match.
+    monad_unfold.
+    repeat break_let.
+    repeat break_match.
+    repeat find_inversion.
+
+
+
+
+    eauto.
+    repeat find_inversion.
+    repeat break_match.
+    unfold pop_stackm in *.
+    monad_unfold.
+    repeat break_let.
+    repeat break_match.
+    unfold pop_stack in *.
+    monad_unfold.
+    repeat break_match.
+    congruence.
+    congruence.
+    
+    repeat find_inversion.
+    unfold pop_stack in *.
+    repeat break_match.
+    subst
+
+
+    
+
+
+    
+    repeat break_let.
+    monad_unfold.
+    repeat break_let.
+    cbn in *.
+    repeat break_let.
+    repeat break_let.
+    simpl in *.
+
+    admit.
+    simpl in *.
+    repeat find_inversion.
+
+    monad_unfold.
+    rewrite gfds in Heqp0.
+    monad_unfold.
+    break_let.
+    unfold run_vm_fold in H0.
+    rewrite gfds in H0.
+    monad_unfold.
+    break_let.
+    congruence.
+
+
+
+    
+    erewrite fold_destruct with (x:=x) (st':=H) in Heqp.
     eauto.
     apply H0.
     cbn.
@@ -639,10 +1350,117 @@ Proof.
     unfold ret.
     monad_unfold.
     simpl in *.
-    break_let.
-    break_let.
-    break_let.
-    break_let.
+    repeat break_let.
+    boom; repeat break_match; allss.
+    destruct IHt2 with (il:=(instr_compiler t2)) (st:={| st_ev := st_ev5; st_stack := st_stack5; st_trace := st_trace5; st_pl := st_pl5; st_store := st_store5 |}).
+    reflexivity.
+    destruct_conjs.
+    rewrite fold_left_app in Heqp5.
+    cbn in Heqp5.
+
+    assert (
+        fold_left
+              (fun (a0 : VM unit) (b : AnnoInstr) (s : vm_st) =>
+               match a0 s with
+               | (Some _, s') => let '(b0, s'') := build_comp b s' in (b0, s'')
+               | (None, s') => (None, s')
+               end) (instr_compiler t2) (fun s : vm_st => (Some tt, s))
+              {| st_ev := st_ev5; st_stack := st_stack5; st_trace := st_trace5; st_pl := st_pl5; st_store := st_store5 |}
+        =
+        run_vm_fold (instr_compiler t2)
+                    {| st_ev := st_ev5; st_stack := st_stack5; st_trace := st_trace5; st_pl := st_pl5; st_store := st_store5 |}) as HHH.
+    {
+      admit.
+    }
+    
+    rewrite HHH in Heqp5.
+    rewrite H1 in Heqp5.
+    repeat break_let.
+    monad_unfold.
+    unfold push_stackm in *.
+    monad_unfold.
+    repeat find_inversion.
+    unfold pop_stackm in *.
+    monad_unfold.
+    repeat break_let.
+    unfold pop_stack in *.
+    repeat break_match.
+    subst.
+    repeat find_inversion.
+    congruence.
+    repeat find_inversion.
+    reflexivity.
+
+
+
+        
+    break_match.
+    rewrite H1 in Heqp5.
+    erewrite fold_destruct in Heqp5.
+
+
+    admit.
+    unfold push_stackm in *.
+    repeat find_inversion.
+    monad_unfold.
+    repeat find_inversion.
+
+    unfold push_stackm in *.
+    monad_unfold.
+    repeat find_inversion.
+    rewrite gfds in Heqp5.
+    monad_unfold.
+    repeat break_let.
+    cbn in *.
+    eauto.
+    rewrite gfds in *.
+    monad_unfold.
+    repeat break_let.
+    monad_unfold.
+    unfold push_stack in H0.
+    assert (splitEv s0 st_ev :: st_stack = []).
+    Print run_vm.
+    assert (run_vm (instr_compiler t1)
+                   {|
+                     st_ev := splitEv s st_ev;
+                     st_stack := splitEv s0 st_ev :: st_stack;
+                     st_trace := st_trace ++ [Term.split n st_pl];
+                     st_pl := st_pl;
+                     st_store := st_store |} =
+            {| st_ev := st_ev1; st_stack := []; st_trace := st_trace1; st_pl := st_pl1; st_store := st_store1 |}) as HH.
+    {
+      admit.
+    }
+    rewrite <- HH in H0.
+    do_stack1 t1.
+    repeat find_inversion.
+    inv H.
+    inv H.
+
+
+
+    
+    reflexivity.
+    reflexivity.
+    erewrite <- IHt2.
+
+    rewrite <- Heqp5.
+    eauto.
+    clear Heqp.
+    erewrite IHt2.
+
+
+
+
+
+
+
+
+
+
+
+
+    
 
     repeat break_match; simpl in *.
     repeat find_inversion.
@@ -712,6 +1530,7 @@ Proof.
     repeat find_inversion.
     destruct o4.
     repeat find_inversion.
+    reflexivity.
     admit.
     inv H2.
     congruence.
@@ -754,6 +1573,7 @@ Proof.
     destruct st_stack2.
     inv Heqp3.
     repeat find_inversion.
+*)
 
     (*
 
@@ -950,73 +1770,9 @@ Proof.
     
   intros.
 *) 
-Admitted.
 
 
-Lemma run_vm_iff : forall il st z v,
-    (run_vm_fold il) st = (Some z, v) -> 
-    run_vm il st = run_vm' il st.
-Proof.
-  intros.
-  generalize dependent st.
-  generalize dependent z.
-  generalize dependent v.
-  induction il; intros.
-  - simpl.
-    unfold run_vm'. simpl.
-    unfold execSt.
-    unfold run_vm_fold. simpl. reflexivity.
-  - simpl.
-    destruct runa with (a:=a) (il:=il) (st:=st) (z:=z) (v:=v).
-    apply H.
-    destruct_conjs.
-    erewrite IHil.
-    unfold run_vm'. simpl.
-    unfold execSt.
-    unfold snd.
-    simpl.
-    unfold run_vm_fold.
-    simpl.
-    cbn.
-    unfold run_vm_step.
-    simpl.
-    cbn.
-    unfold execSt.
-    unfold snd.
-    simpl.
-    cbn.
-    expand_let_pairs.
-    expand_let_pairs.
-    expand_let_pairs.
-    unfold snd at 2.
-    cbn.
-    (*unfold GenStMonad.ret.*)
-    simpl.
-    cbn.
-    expand_let_pairs.
-    unfold snd at 1.
-    unfold snd at 2.
-    (*unfold fold_left.*)
-    unfold snd.
-    cbn.
-    simpl.
-    repeat expand_let_pairs.
-    fold (GenStMonad.ret (S:=vm_st) (A:=unit)).
-    assert (
-    (fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
-                   (GenStMonad.ret tt) (snd (build_comp a st))) =
-        (fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
-                   (GenStMonad.ret tt;; build_comp a) st)) as H00.
-    eapply newLem.
 
-    
-    apply H1.
-
-    congruence.
-
-
-    apply vm_fold_step. eassumption.
-Defined.
 
 
 (*
