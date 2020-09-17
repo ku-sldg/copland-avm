@@ -331,6 +331,14 @@ Fixpoint anno (t: Term) i: nat * AnnoTerm :=
     (S k, abpar (i, S k) s a b)
   end.
 
+Lemma anno_mono : forall t i j t',
+  anno t i = (j, t') ->
+  j > i.
+Proof.
+  intros.
+Admitted.
+
+
 
 Lemma anno_range:
   forall x i,
@@ -343,6 +351,54 @@ Qed.
 
 Definition annotated x :=
   snd (anno x 0).
+
+Lemma pairsinv : forall (a a' b b':nat),
+    a <> a' -> (a,b) <> (a',b').
+Proof.
+  intros.
+  congruence.
+Defined.
+
+
+
+Lemma afaf : forall i k s a b x y,
+    (abpar (i, S k) s a b) = annotated (bpar s x y) ->
+    range a <> range b.
+Proof.
+  intros.
+  simpl in *.
+  unfold annotated in *.
+  cbn in *.
+  remember (anno x 1) as oo.
+  destruct oo.
+  remember (anno y n) as oo.
+  destruct oo.
+  
+  simpl in *.
+  inv H.
+  assert (n > 1).
+  eapply anno_mono; eauto.
+  assert (n0 > n).
+  eapply anno_mono; eauto.
+  assert ( range (snd (anno x 1)) = (1, fst (anno x 1))).
+  eapply anno_range; eauto.
+  subst.
+  rewrite <- Heqoo in H1.
+  simpl in *.
+
+  assert ( range (snd (anno y n)) = (n, fst (anno y n))).
+  eapply anno_range; eauto.
+  simpl in *.
+  subst.
+  rewrite <- Heqoo0 in H2.
+  simpl in *.
+  subst.
+  intros.
+  rewrite H1.
+  rewrite H2.
+  apply pairsinv.
+  omega.
+Defined.
 
 Fixpoint unanno a :=
   match a with
@@ -388,6 +444,26 @@ Inductive well_formed: AnnoTerm -> Prop :=
     snd r = S (snd (range y)) ->
     well_formed (abpar r s x y).
 Hint Constructors well_formed.
+
+(*
+Lemma afaf' : forall i k s a b,
+    well_formed (abpar (i, S k) s a b) (*= annotated (bpar s x y)*) ->
+    range a <> range b.
+Proof.
+  intros.
+  inv H.
+  simpl in *.
+  assert (range a = (S i, fst (range b))).
+  admit.
+  subst.
+  rewrite H.
+  assert (range b = (fst(range b), k)).
+  admit.
+  rewrite H0.
+  simpl.
+  subst.
+  omega.
+*)
 
 Lemma well_formed_range:
   forall t,

@@ -1,9 +1,6 @@
-Require Import ConcreteEvidence.
-
 Require Import List.
 Import ListNotations.
-Require Import Coq.Arith.EqNat.
-(* From QuickChick Require Import QuickChick Tactics. *)
+From QuickChick Require Import QuickChick Tactics.
 
 (* ================================================================= *)
 (** ** List-Based Maps *)
@@ -30,39 +27,37 @@ Require Import Coq.Arith.EqNat.
     of the key in the map is the one that appears first in the list;
     that is, later bindings can be shadowed. *)
 
-Definition Map := list (nat * EvidenceC).
+Definition Map K V := list (K * V).
 
 (** The [empty] map is the empty list. *)
 
-Definition map_empty : Map := [].
+Definition map_empty {K V} : Map K V := [].
 
 (** To [get] the binding of an identifier [x], we just need to walk 
     through the list and find the first [cons] cell where the key 
     is equal to [x], if any. *)
 
-Fixpoint map_get (m : Map ) x : option EvidenceC :=
+Fixpoint map_get {K V} `{forall x y : K, Dec (x = y)} (m : Map K V) x : option V :=
   match m with
   | [] => None
-  | (k, v) :: m' => if beq_nat x k then Some v else map_get m' x
+  | (k, v) :: m' => if x = k ? then Some v else map_get m' x
   end.
 
 (** To [set] the binding of an identifier, we just need to [cons] 
     it at the front of the list. *) 
 
-Definition map_set (m:Map) (x:nat) (v:EvidenceC) : Map := (x, v) :: m.
+Definition map_set {K V} (m:Map K V) (x:K) (v:V) : Map K V := (x, v) :: m.
 
-(*
 (** Finally, the domain of a map is just the set of its keys. *)
 Fixpoint map_dom {K V} (m:Map K V) : list K :=
   match m with
   | [] => []
   | (k', v) :: m' => k' :: map_dom m'
   end.
-*)
 
 (** We next introduce a simple inductive relation, [bound_to m x a], that 
     holds precisely when the binding of some identifier [x] is equal to [a] in 
     [m] *)
 
-Inductive bound_to : Map -> nat -> EvidenceC -> Prop :=
+Inductive bound_to {K V} `{forall x y : K, Dec (x = y)} : Map K V -> K -> V -> Prop :=
   | Bind : forall x m a, map_get m x = Some a -> bound_to m x a.

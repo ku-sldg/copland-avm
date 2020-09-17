@@ -892,6 +892,8 @@ Proof.
   unfold get_store_at in *.
   unfold get in *. simpl in *.
   cbn in H.
+  break_let.
+  rewrite PeanoNat.Nat.eqb_refl in Heqp0.
   boom; repeat (break_match; allss); congruence.
 Defined.
 
@@ -909,6 +911,8 @@ Proof.
   intros.
   unfold get_store_at in *.
   cbn in H.
+  break_let.
+  rewrite PeanoNat.Nat.eqb_refl in Heqp0.
   boom; repeat (break_match; allss); congruence.
 Defined.
 
@@ -1122,9 +1126,7 @@ Proof.
   intros.
   simpl.
   break_match; eauto.
-  break_match; eauto.
-  congruence.
-  congruence.
+  rewrite PeanoNat.Nat.eqb_refl in Heqb. congruence.
 Defined.
 
 Lemma map_get_get_2(*{V:Type}`{forall x y : V, Dec (x = y)}*) :
@@ -1134,10 +1136,15 @@ Lemma map_get_get_2(*{V:Type}`{forall x y : V, Dec (x = y)}*) :
 Proof.
   intros.
   simpl.
-  repeat (
-  break_match; eauto;
-  break_match; eauto;
-  try congruence).
+  Search PeanoNat.Nat.eqb.
+  remember (PeanoNat.Nat.eqb k k') as oo.
+  
+  destruct oo.
+  Search PeanoNat.Nat.eqb.
+  assert (k = k').
+  apply EqNat.beq_nat_eq. auto.
+  congruence.
+  rewrite PeanoNat.Nat.eqb_refl. reflexivity.
 Defined.
 
 Lemma wf_bpar : forall t r s x y,
