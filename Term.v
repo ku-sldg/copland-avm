@@ -13,6 +13,7 @@ University of California.  See license.txt for details. *)
     events, and annotated terms. *)
 
 Require Import Omega Preamble.
+Require Import StructTactics.
 
 (** * Terms and Evidence
 
@@ -361,42 +362,57 @@ Defined.
 
 
 
-Lemma afaf : forall i k s a b x y,
-    (abpar (i, S k) s a b) = annotated (bpar s x y) ->
-    range a <> range b.
+Lemma afaf : forall i k s a b t' n,
+    (abpar (i, k) s a b) = snd (anno t' n)(*(bpar s x y)*) ->
+    (fst (range a)) <> (fst (range b)).
 Proof.
   intros.
+  destruct t'; try (
+                   unfold annotated in H;
+                   unfold anno in H;
+                   repeat break_let;
+                   simpl in *;
+                   inv H;
+                   tauto).
+
+  (*
+  unfold annotated in H.
+  unfold anno in H.
+  simpl in H.
+  inv H.
   simpl in *.
+*)
   unfold annotated in *.
   cbn in *.
-  remember (anno x 1) as oo.
+  remember (anno t'1 (S n)) as oo.
   destruct oo.
-  remember (anno y n) as oo.
+  remember (anno t'2 n0) as oo.
   destruct oo.
   
   simpl in *.
+  repeat break_let.
   inv H.
-  assert (n > 1).
+  assert (n0 > (S n)).
   eapply anno_mono; eauto.
-  assert (n0 > n).
+  assert (n1 > n0).
   eapply anno_mono; eauto.
-  assert ( range (snd (anno x 1)) = (1, fst (anno x 1))).
+  assert ( range (snd (anno t'1 (S n))) = ((S n), fst (anno t'1 (S n)))).
   eapply anno_range; eauto.
   subst.
-  rewrite <- Heqoo in H1.
+  rewrite <- Heqoo in H2.
   simpl in *.
 
-  assert ( range (snd (anno y n)) = (n, fst (anno y n))).
+  assert ( range (snd (anno t'2 n0)) = (n0, fst (anno t'2 n0))).
   eapply anno_range; eauto.
   simpl in *.
   subst.
-  rewrite <- Heqoo0 in H2.
+  rewrite <- Heqoo0 in H3.
   simpl in *.
   subst.
   intros.
-  rewrite H1.
   rewrite H2.
-  apply pairsinv.
+  rewrite H3.
+  simpl in *.
   omega.
 Defined.
 
@@ -445,6 +461,40 @@ Inductive well_formed: AnnoTerm -> Prop :=
     well_formed (abpar r s x y).
 Hint Constructors well_formed.
 
+
+Inductive well_formedn: AnnoTerm -> nat -> Prop :=
+| wfn_asp: forall r x n,
+    (fst r = n) -> 
+    snd r = S (fst r) ->
+    well_formedn (aasp r x) n
+| wfn_att: forall r p x n,
+    (fst r = n) -> 
+    well_formedn x (S n) ->
+    S (fst r) = fst (range x) ->
+    snd r = S (snd (range x)) ->
+    well_formedn (aatt r p x) n
+| wfn_lseq: forall r x y n,
+    (fst r = n) -> 
+    well_formedn x (n) -> well_formedn y (n + (esize x))->
+    fst r = fst (range x) ->
+    snd (range x) = fst (range y) ->
+    snd r = snd (range y) ->
+    well_formedn (alseq r x y) n
+| wfn_bseq: forall r s x y n,
+    (fst r = n) -> 
+    well_formedn x (S n) -> well_formedn y ((S n) + (esize x)) ->
+    S (fst r) = fst (range x) ->
+    snd (range x) = fst (range y) ->
+    snd r = S (snd (range y)) ->
+    well_formedn (abseq r s x y) n
+| wfn_bpar: forall r s x y n,
+    well_formedn x (S n) -> well_formedn y ((S n) + (esize x)) ->
+    S (fst r) = fst (range x) ->
+    snd (range x) = fst (range y) ->
+    snd r = S (snd (range y)) ->
+    well_formedn (abpar r s x y) n.
+Hint Constructors well_formedn.
+
 (*
 Lemma afaf' : forall i k s a b,
     well_formed (abpar (i, S k) s a b) (*= annotated (bpar s x y)*) ->
@@ -463,27 +513,81 @@ Proof.
   simpl.
   subst.
   omega.
-*)
+ *)
+
+Lemma well_formedn_range:
+  forall t n,
+    well_formedn t n ->
+    snd (range t) = fst (range t) + esize t.
+Proof.
+  
+  induction t; intros; simpl; inv H; simpl.
+  - rewrite Nat.add_1_r; auto.
+  - apply IHt in H4; omega.
+  - erewrite IHt1 in *; eauto.
+    erewrite IHt2 in *; eauto.
+    omega.
+  -  erewrite IHt1 in *; eauto.
+    erewrite IHt2 in *; eauto.
+    omega.
+  -
+     erewrite IHt1 in *; eauto.
+    erewrite IHt2 in *; eauto.
+    omega.
+Defined.
 
 Lemma well_formed_range:
   forall t,
     well_formed t ->
     snd (range t) = fst (range t) + esize t.
 Proof.
-  
-  induction t; intros; simpl; inv H; simpl.
+    induction t; intros; simpl; inv H; simpl.
   - rewrite Nat.add_1_r; auto.
-  - apply IHt in H3; omega.
-  - apply IHt1 in H3.
-    apply IHt2 in H4.
+  -
+    erewrite IHt in *; eauto.
     omega.
-  - apply IHt1 in H4.
-    apply IHt2 in H5.
+  - erewrite IHt1 in *; eauto.
+    erewrite IHt2 in *; eauto.
     omega.
-  - apply IHt1 in H4.
-    apply IHt2 in H5.
+  -  erewrite IHt1 in *; eauto.
+    erewrite IHt2 in *; eauto.
     omega.
-Qed.
+  -
+     erewrite IHt1 in *; eauto.
+    erewrite IHt2 in *; eauto.
+    omega.
+Defined.
+
+(*
+Lemma anno_well_formedn:
+  forall t i,
+    well_formedn (snd (anno t i)) i.
+Proof.
+  induction t; intros; simpl; auto.
+  -
+    repeat expand_let_pairs.
+    simpl.
+    apply wfn_att; simpl; auto;
+      repeat rewrite anno_range; simpl;
+        reflexivity.
+  - repeat expand_let_pairs.
+    simpl.
+    apply wfn_lseq; simpl; auto;
+      repeat rewrite anno_range; simpl.
+    eapply IHt2.
+    apply wfn_lseq; simpl; auto;
+      repeat rewrite anno_range; simpl;
+        reflexivity.
+  - repeat expand_let_pairs; simpl.
+    apply wf_bseq; simpl; auto;
+      repeat rewrite anno_range; simpl;
+        reflexivity.
+  - repeat expand_let_pairs; simpl.
+    apply wf_bpar; simpl; auto;
+      repeat rewrite anno_range; simpl;
+        reflexivity.
+  *)  
+  
 
 
 Lemma anno_well_formed:
