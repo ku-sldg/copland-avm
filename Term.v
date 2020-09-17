@@ -336,8 +336,38 @@ Lemma anno_mono : forall t i j t',
   anno t i = (j, t') ->
   j > i.
 Proof.
-  intros.
-Admitted.
+  induction t; intros.
+  - destruct a;
+      try (unfold anno in *;
+           inv H;
+           omega).
+  - simpl in *.
+    break_let.
+    invc H.
+    assert (n0 > (S i)).
+    eauto.
+    omega.
+  -
+    simpl in *.
+    repeat break_let.
+    invc H.
+    assert (n > i); eauto.
+    assert (j > n); eauto.
+    omega.
+  - simpl in *.
+    repeat break_let.
+    invc H.
+    assert (n > (S i)); eauto.
+    assert (n0 > n); eauto.
+    omega.
+  -
+    simpl in *.
+    repeat break_let.
+    invc H.
+    assert (n > (S i)); eauto.
+    assert (n0 > n); eauto.
+    omega.
+Defined.
 
 
 
