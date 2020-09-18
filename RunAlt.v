@@ -723,7 +723,6 @@ Proof.
     destruct a;
       try (boom; allss; simpl in *; cbn; boom; allss).
   -
-    unfold annotated in *.
     cbn in *.
     simpl in *.
     break_let.

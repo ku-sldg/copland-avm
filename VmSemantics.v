@@ -1192,15 +1192,136 @@ Axiom bpar_shuffle : forall x p t1 t2 et1 et2,
                            (parallel_vm_events (instr_compiler t2) p))
           (bp x (stop p (aeval t1 p et1)) (stop p (aeval t2 p et2))).
 
-Lemma run_lstar : forall t tr et e e' s s' p p' o o',
+Lemma afff : forall t' (n:nat) r s x t n,
+    snd (anno t' n) = aatt (r,s) x t ->
+    exists t'' n', t = snd (anno t'' n').
+Proof.
+  intros.
+  destruct t';
+    try (
+        unfold anno in H;
+        repeat break_let;
+        cbn in *;
+        inv H; tauto).
+  - cbn in *.
+    simpl in *.
+    break_let.
+    simpl in *.
+    inv H.
+    exists t'.
+    exists (S r).
+    rewrite Heqp.
+    simpl.
+    reflexivity.
+Defined.
+
+Lemma afaff : forall t' n r t1 t2,
+    snd (anno t' n) = alseq r t1 t2 ->
+    exists t'' n', t1 = snd (anno t'' n').
+Proof.
+  intros.
+  destruct t';
+    try (
+        unfold anno in H;
+        repeat break_let;
+        simpl in *;
+        inv H;
+        tauto).
+  - cbn in *.
+    simpl in *.
+    repeat break_let.
+    simpl in *.
+    inv H.
+    exists t'1.
+    exists (n).
+    rewrite Heqp.
+    simpl.
+    reflexivity.
+Defined.
+
+Lemma afaff2 : forall t' n r t1 t2,
+    snd (anno t' n) = alseq r t1 t2 ->
+    exists t'' n', t2 = snd (anno t'' n').
+Proof.
+  intros.
+  destruct t';
+    try (
+        unfold anno in H;
+        repeat break_let;
+        simpl in *;
+        inv H;
+        tauto).
+  - cbn in *.
+    simpl in *.
+    repeat break_let.
+    simpl in *.
+    inv H.
+    exists t'2.
+    exists (n0).
+    rewrite Heqp0.
+    simpl.
+    reflexivity.
+Defined.
+
+Lemma afaff3 : forall t' n n0 n1 s s1 t1 t2,
+    snd (anno t' n) =  abseq (n0, n1) (s, s1) t1 t2 ->
+    exists t'' n', t1 = snd (anno t'' n').
+Proof.
+  intros.
+  destruct t';
+    try (
+        unfold anno in H;
+        repeat break_let;
+        simpl in *;
+        inv H;
+        tauto).
+  - cbn in *.
+    simpl in *.
+    repeat break_let.
+    simpl in *.
+    inv H.
+    exists t'1.
+    exists (S n0).
+    rewrite Heqp.
+    simpl.
+    reflexivity.
+Defined.
+
+Lemma afaff4 : forall t' n n0 n1 s s1 t1 t2,
+    snd (anno t' n) =  abseq (n0, n1) (s, s1) t1 t2 ->
+    exists t'' n', t2 = snd (anno t'' n').
+Proof.
+  intros.
+  destruct t';
+    try (
+        unfold anno in H;
+        repeat break_let;
+        simpl in *;
+        inv H;
+        tauto).
+  - cbn in *.
+    simpl in *.
+    repeat break_let.
+    simpl in *.
+    inv H.
+    exists t'2.
+    exists (n2).
+    rewrite Heqp0.
+    simpl.
+    reflexivity.
+Defined.
+
+Lemma run_lstar : forall t tr et e e' s s' p p' o o' t' n,
    (* annotated x = t -> *)
     (*well_formed t -> *)
+    t = snd (anno t' n) -> 
+    (*t = annotated t' ->  *)
     run_vm (instr_compiler t)
            (mk_st e s [] p o) =
            (mk_st e' s' tr p' o') ->
     lstar (conf t p et) tr (stop p (aeval t p et)).
 Proof.
-  intros  t tr et e e' s s' p p' o o' H.
+  intros  t tr et e e' s s' p p' o o' t' n HH H.
   assert (s = s') as H0. {
   eapply multi_stack_restore; eauto. }
   rewrite <- H0 in H.
@@ -1216,6 +1337,8 @@ Proof.
   generalize dependent s'.
   generalize dependent o.
   generalize dependent o'.
+  generalize dependent t'.
+  generalize dependent n.
   induction t; intros. (* unfold annotated in *. *)
   - (* aasp case *)
     destruct a;
@@ -1236,8 +1359,42 @@ Proof.
     simpl.
     eapply lstar_transitive.
     eapply lstar_strem.
+    cbn.
+
+
+    edestruct afff; eauto.
+    destruct_conjs.
     
     eapply IHt; eauto.
+
+
+    
+    (*
+    destruct t';
+      try (
+          unfold annotated in *;
+          unfold anno in HH;
+          repeat break_let;
+          simpl in *;
+          inv HH;
+          tauto).
+    
+    admit.
+    exact []. *)
+
+    apply run_at.
+    econstructor.
+    apply stattstop.
+    econstructor.
+
+    (*
+    cbn.
+    eauto.
+    symmetry.
+    unfold annotated in HH. unfold anno in HH.
+    break_let.
+    simpl in HH.
+    rewrite HH.
     Print run_at.
    (* inv wft. eauto. *)
 
@@ -1249,6 +1406,8 @@ Proof.
 
     apply stattstop.
     econstructor.
+     *)
+    
     
   - (* alseq case *)
     simpl in *.
@@ -1264,11 +1423,28 @@ Proof.
     
     eapply lstar_stls.
     subst.
+
+
+
+    edestruct afaff; eauto.
+    destruct_conjs.
     
     eapply IHt1; eauto.
+
+    
+
+      
     (* inv wft. eauto. *)
     eapply lstar_silent_tran.
     apply stlseqstop.
+
+
+
+    edestruct afaff2; eauto.
+    destruct_conjs.
+
+
+    
     eapply IHt2; eauto.
     (* inv wft. eauto. *)
     assert (p = H2). {
@@ -1288,13 +1464,13 @@ Proof.
     unfold run_vm_step in *. monad_unfold; monad_unfold.
      
         
-    assert (exists l, tr = [Term.split n p] ++ l)
+    assert (exists l, tr = [Term.split n0 p] ++ l)
       as H0 by (eapply suffix_prop; eauto).
     destruct H0 as [H0 H1].
     rewrite H1 in *. clear H1.
     assert (run_vm
               ((instr_compiler t1 ++ abesr :: instr_compiler t2 ++
-                               [ajoins (Init.Nat.pred n0)]))
+                               [ajoins (Init.Nat.pred n1)]))
               {| st_ev := splitEv s e;
                   st_stack := push_stack EvidenceC (splitEv s1 e) s0;
                   st_trace := []; st_pl := p; st_store := o |} =
@@ -1321,6 +1497,14 @@ Proof.
      econstructor.
      eapply lstar_transitive.
      eapply lstar_stbsl.
+
+
+
+    edestruct afaff3; eauto.
+    destruct_conjs.
+
+
+     
      eapply IHt1; eauto.
      (* inv wft; eauto. *)
   
@@ -1337,6 +1521,12 @@ Proof.
      do_stack1 t2.
      eapply lstar_transitive.
      eapply lstar_stbsr.
+
+
+
+    edestruct afaff4; eauto.
+    destruct_conjs.
+     
      eapply IHt2; eauto.
      (* inv wft; eauto. *)
      rewrite H in *.
@@ -1407,28 +1597,21 @@ Proof.
       simpl.
       reflexivity.
       eapply map_get_get_2.
-      admit.
-      (*
-      inv wft.
-      Print anno.
-      
-      subst.
-      simpl in *.
-      rewrite <- H5.
+      eapply afaf; eauto.
+Defined.
 
-      Print instr_compiler. *)    
-Admitted.
 
-Lemma run_lstar_corrolary : forall t tr et e s p o,
+Lemma run_lstar_corrolary : forall t tr et e s p o t' n,
    (* annotated x = t -> *)
     (*well_formed t -> *)
+    t = snd (anno t' n) -> 
     st_trace (run_vm (instr_compiler t)
                      (mk_st e s [] p o)) = tr ->
     lstar (conf t p et) tr (stop p (aeval t p et)).
 Proof.
   intros.
   Check run_lstar.
-  eapply run_lstar with (t:=t) (tr:=tr) (e:=e) (s:=s) (p:=p) (o:=o).
+  eapply run_lstar with (t:=t) (tr:=tr) (e:=e) (s:=s) (p:=p) (o:=o); eauto.
   Check st_congr.
   eapply st_congr; try reflexivity.
   eassumption.
@@ -1439,8 +1622,9 @@ Require Import Main.
 Require Import Event_system.
 Require Import Term_system.
 
-Theorem vm_ordered : forall t tr ev0 ev1 e e' s s' o o',
+Theorem vm_ordered' : forall t tr ev0 ev1 e e' s s' o o' t' n,
     well_formed t ->
+    t = snd (anno t' n) -> 
     run_vm
       (instr_compiler t)
       (mk_st e s [] 0 o) =
@@ -1452,4 +1636,24 @@ Proof.
   Check ordered.
   eapply ordered with (p:=0) (e:=mt); eauto.
   eapply run_lstar; eauto.
+Defined.
+
+Theorem vm_ordered : forall t tr ev0 ev1 e e' s s' o o' t',
+    t = annotated t' -> 
+    run_vm
+      (instr_compiler t)
+      (mk_st e s [] 0 o) =
+      (mk_st e' s' tr 0 o') ->
+    prec (ev_sys t 0) ev0 ev1 ->
+    earlier tr ev0 ev1.
+Proof.
+  intros.
+  Check ordered.
+  eapply ordered with (p:=0) (e:=mt); eauto.
+  -
+    unfold annotated in H.
+    subst.
+    eapply anno_well_formed; eauto.
+  -
+    eapply run_lstar; eauto.
 Defined.
