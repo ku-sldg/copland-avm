@@ -32,9 +32,8 @@ Proof.
   unfold ret.
   unfold bind.
   destruct (m s).
-  destruct o; auto.
-  destruct u.
-  auto.
+  break_match; auto.
+  destruct u; auto.
 Defined.
 
 Lemma monad_comp : forall A B C S (m: St S A) (k:A -> St S B) (h:B -> St S C) (s:S),
@@ -445,12 +444,12 @@ Proof.
     erewrite IHil1.
     reflexivity.
     rewrite <- H.
-    rewrite gfds.
+    repeat rewrite gfds in *.
     monad_unfold.
     break_let.
     simpl.
     cbn.
-    rewrite gfds.
+    (* rewrite gfds. *)
     monad_unfold.
     break_let.
     break_match.
@@ -459,17 +458,17 @@ Proof.
     repeat find_inversion.
     congruence.
     repeat find_inversion.
+    eauto.
+    (*
     break_let.
     congruence.
     repeat find_inversion.
-    eauto.
+    eauto. *)
 
     break_let.
     repeat find_inversion.
     rewrite gfds in H.
     monad_unfold.
-    break_let.
-    break_let.
     repeat break_let.
     repeat find_inversion.
 Defined.

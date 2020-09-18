@@ -318,36 +318,30 @@ Defined.
       
 Ltac monad_unfold :=
   repeat unfold
-         runSt,
-  execSt,
-  
+  execSt,  
   do_prim,
   invokeUSM,
   signEv,
   hashEv,
   copyEv,
-  
-  (*push_stackm,
-  pop_stackm, *)
-  (*push_stack,
-  pop_stack, *)
   get_ev,
   get_pl,
   add_tracem,
   modify_evm,
   split_evm,
   add_trace,
-
   failm,
+  (* Uncommenting these evaluates too much, can't apply lemmas *)
+  (*push_stackm,
+  pop_stackm, *)
+  (*push_stack,
+  pop_stack, *)
   (*get_store_at,*)
-  
-  
-  bind,
-  (*write_output,*)
   get,
   when,
   put,
   nop,
   modify,
+  bind,
   ret in *;
   simpl in *.

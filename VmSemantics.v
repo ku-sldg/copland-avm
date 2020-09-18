@@ -61,7 +61,8 @@ Definition build_comp (i:AnnoInstr): VM unit :=
   | areqrpy reqi rpyi q annt =>
     e <- get_ev ;;
       put_ev (toRemote (unanno annt) q e) ;;
-      (* put_store reqi (toRemote (unanno annt) q e) ;; *) (* TODO: make this contingent on a good remote setup.  Need to model such a situation *)
+      (* put_store reqi (toRemote (unanno annt) q e) ;; *)
+      (* TODO: make this contingent on a good remote setup.  Need to model such a situation *)
       p <- get_pl ;;
       let newTrace :=
           [req reqi p q (unanno annt)] ++
@@ -80,11 +81,8 @@ Definition build_comp (i:AnnoInstr): VM unit :=
       put_store loc1 res1 ;;
                 put_store loc2 res2 ;;
                 put_ev (ppc res1 res2) ;;
-      add_tracem (shuffled_events el1 el2)
-             (* TODO: need to add axioms somehow to capture
-                trace of tr s.t. (shuffle el1 el2 = tr)
-
-                Perhaps we introduce a "start thread" event, where that event holds the events associated with the instructions executed.  Would require some sort of environment to listen for results from outstanding threads, and axioms asserting we had valid VM threads available to execute them *)
+                add_tracem (shuffled_events el1 el2)
+     (* TODO:  axioms asserting we had valid VM threads available to execute them *)
   end.
 
 (** Function-style semantics for VM *)
@@ -782,8 +780,9 @@ Proof.
   - (* abseq case *)
     destruct s.
     destruct r.
+    simpl in *.
 
-    do_run.
+    (* do_run. *)
     
     do_dca.
       
@@ -798,7 +797,8 @@ Proof.
 
     unfold push_stack in *.
     do_dca.
-    do_run.
+
+    do_run. 
     desp.
     
     pairs.
@@ -809,6 +809,7 @@ Proof.
     congruence.
     do_stack0.
     subst.
+    monad_unfold.
     unfold pop_stackm in *. monad_unfold. congruence.
 
   - (* abpar case *)
@@ -1315,7 +1316,7 @@ Proof.
     unfold run_vm_step in *.
     monad_unfold.
 
-    find_inversion.
+    find_inversion.  
 
     eapply lstar_tran.
     econstructor.
