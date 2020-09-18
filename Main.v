@@ -16,7 +16,7 @@ University of California.  See license.txt for details. *)
 Require Import List.
 Import List.ListNotations.
 Open Scope list_scope.
-Require Import Omega.
+Require Import Coq.micromega.Lia.
 Require Import Preamble More_lists Term LTS Event_system Term_system Trace.
 
 (** The traces associated with a state. *)
@@ -70,15 +70,15 @@ Lemma esize_tr:
 Proof.
   induction t; intros; inv H; simpl;
     autorewrite with list; simpl; auto.
-  apply IHt in H5. omega.
+  apply IHt in H5. lia.
   apply IHt1 in H5.
-  apply IHt2 in H6. omega.
+  apply IHt2 in H6. lia.
   apply IHt1 in H6.
-  apply IHt2 in H7. omega.
+  apply IHt2 in H7. lia.
   apply shuffle_length in H8.
   apply IHt1 in H6.
   apply IHt2 in H7.
-  omega.
+  lia.
 Qed.
 
 Lemma esizeS_tr:
@@ -88,20 +88,20 @@ Proof.
   induction st; intros; inv H; simpl; auto.
   - destruct a; apply esize_tr in H4; simpl in *; auto.
   - rewrite app_length; simpl.
-    apply IHst in H4. omega.
+    apply IHst in H4. lia.
   - rewrite app_length; simpl.
     apply IHst in H2. apply esize_tr in H4.
-    omega.
+    lia.
   - repeat (rewrite app_length; simpl).
     apply IHst in H6.
-    apply esize_tr in H7. omega.
+    apply esize_tr in H7. lia.
   - rewrite app_length; simpl.
-    apply IHst in H4. omega.
+    apply IHst in H4. lia.
   - rewrite app_length; simpl.
     apply IHst1 in H3.
     apply IHst2 in H5.
     apply shuffle_length in H6.
-    omega.
+    lia.
 Qed.
 
 Lemma step_silent_tr:

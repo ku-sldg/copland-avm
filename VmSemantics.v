@@ -29,34 +29,15 @@ Admitted.
 Definition shuffled_events (el1:list Ev) (el2:list Ev) : list Ev.
 Admitted.
 
-Definition prim_trace (i:nat) (p:Plc) (a:Prim_Instr) : (list Ev) :=
-  match a with
-  | copy => [Term.copy i p]
-  | umeas asp_id => [Term.umeas i p asp_id]
-  | sign => [Term.sign i p]
-  | hash => [Term.hash i p]
-  end.
-
-Definition prim_ev (a:Prim_Instr)(* (p:Plc) *) (e:EvidenceC) : EvidenceC :=
-  match a with
-  | copy => e
-  | umeas i =>
-    let bs := invokeUSM i in
-    (uuc i bs e)
-  | sign =>
-    let bs := signEv e in
-    (ggc bs e)
-  | hash =>
-    let bs := hashEv e in
-    (hhc bs e)
-  end. 
-
 Definition build_comp (i:AnnoInstr): VM unit :=
   match i with
   | aprimInstr x a =>
     p <- get_pl ;;
+    e <- do_prim x p a ;;
+    put_ev e
+           (*
     modify_evm (prim_ev a) ;;
-               add_tracem (prim_trace x p a)              
+               add_tracem (prim_trace x p a)  *)           
   | asplit x sp1 sp2 =>
     e <- get_ev ;;
       p <- get_pl ;;
@@ -924,7 +905,7 @@ Lemma multi_ev_eval : forall t tr tr' e e' s s' p p' o o',
 Proof.
   induction t; intros.
   - (* aasp case *)
-    destruct a; inv H; reflexivity.
+    destruct a; inv H; try reflexivity.
   - (* aatt case *)
     simpl in *.
     destruct r.

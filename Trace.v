@@ -14,7 +14,8 @@ University of California.  See license.txt for details. *)
 Require Import List.
 Import List.ListNotations.
 Open Scope list_scope.
-Require Import Omega Preamble More_lists Term Event_system Term_system.
+Require Import Preamble More_lists Term Event_system Term_system.
+Require Import Coq.micromega.Lia.
 
 (** * Shuffles
 
@@ -42,7 +43,7 @@ Lemma shuffle_length:
     length es0 + length es1 = length es2.
 Proof.
   intros.
-  induction H; simpl; auto; omega.
+  induction H; simpl; auto; lia.
 Qed.
 
 Lemma shuffle_in_left:
@@ -278,15 +279,15 @@ Lemma trace_length:
 Proof.
   induction t; intros; inv H;
     simpl; auto; rewrite app_length; simpl; auto.
-  - apply IHt in H5. omega.
+  - apply IHt in H5. lia.
   - apply IHt1 in H5.
-    apply IHt2 in H6. omega.
+    apply IHt2 in H6. lia.
   - apply IHt1 in H6.
     apply IHt2 in H7.
-    rewrite app_length. simpl in *. omega.
+    rewrite app_length. simpl in *. lia.
   - apply IHt1 in H6.
     apply IHt2 in H7.
-    apply shuffle_length in H8. omega.
+    apply shuffle_length in H8. lia.
 Qed.
 
 (** The events in a trace correspond to the events associated with an
@@ -415,7 +416,7 @@ Proof.
       destruct H.
       * eapply trace_range in H8; eauto.
         simpl in *.
-        omega.
+        lia.
       * inv H.
         discriminate H0.
         inv H0.
@@ -425,14 +426,14 @@ Proof.
       * inv H0.
         eapply trace_range in H8; eauto.
         simpl in *.
-        omega.
+        lia.
         inv H1.
   - apply nodup_append; unfold disjoint_lists; auto; intros.
     eapply IHt1; eauto.
     eapply IHt2; eauto.
     eapply trace_range in H11; eauto.
     eapply trace_range in H10; eauto.
-    omega.
+    lia.
   - destruct r as [i j]; simpl in *; subst; simpl.
     apply NoDup_cons.
     + intro.
@@ -440,11 +441,11 @@ Proof.
       repeat destruct_disjunct.
       * eapply trace_range in H11; eauto.
         simpl in H11.
-        omega.
+        lia.
       * eapply trace_range in H12; eauto.
         simpl in H12.
         apply well_formed_range in H5; auto.
-        omega.
+        lia.
       * inv H.
         discriminate H0.
         inv H0.
@@ -458,17 +459,17 @@ Proof.
         -- inv H0.
            eapply trace_range in H12; eauto.
            simpl in H12.
-           omega.
+           lia.
            inv H1.
       * apply in_app_iff in H0; destruct H0.
         eapply trace_range in H11; eauto.
         eapply trace_range in H12; eauto.
-        omega.
+        lia.
         inv H0.
         eapply trace_range in H11; eauto.
         simpl in H11.
         apply well_formed_range in H6; auto.
-        omega.
+        lia.
         inv H1.
   - destruct r as [i j]; simpl in *; subst; simpl.
     apply NoDup_cons.
@@ -478,11 +479,11 @@ Proof.
         destruct H.
         -- eapply trace_range in H11; eauto.
            simpl in H11.
-           omega.
+           lia.
         -- eapply trace_range in H12; eauto.
            simpl in H12.
            apply well_formed_range in H5; auto.
-           omega.
+           lia.
       * inv H.
         discriminate H0.
         inv H0.
@@ -493,7 +494,7 @@ Proof.
         eapply IHt2; eauto.
         eapply trace_range in H12; eauto.
         eapply trace_range in H11; eauto.
-        omega.
+        lia.
       * apply NoDup_cons.
         intro.
         inv H.
@@ -504,10 +505,10 @@ Proof.
            eapply trace_range in H11; eauto.
            simpl in H11.
            apply well_formed_range in H6; auto.
-           omega.
+           lia.
            eapply trace_range in H12; eauto.
            simpl in H12.
-           omega.
+           lia.
 
         -- inv H1.
 Qed.

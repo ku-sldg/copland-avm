@@ -11,7 +11,9 @@ University of California.  See license.txt for details. *)
 
 (** Abstract event systems. *)
 
+Require Import Coq.micromega.Lia.
 Require Import Omega Preamble.
+
 
 Set Implicit Arguments.
 
@@ -85,7 +87,7 @@ Section Event_system.
       try rewrite Nat.add_1_r; auto;
         apply IHes1 in H3;
         apply IHes2 in H4;
-        omega.
+        lia.
   Qed.
 
   (** Is an event in an event system? *)
@@ -151,15 +153,15 @@ Section Event_system.
     revert H0.
     revert e.
     induction es; intros; simpl in *; inv H; simpl in *;
-      inv H0; simpl; try omega.
-    - apply IHes1 in H2; auto; omega.
+      inv H0; simpl; try lia.
+    - apply IHes1 in H2; auto; lia.
     - apply IHes2 in H2; auto.
       apply well_structured_range in H4.
-      omega.
-    - apply IHes1 in H2; auto; omega.
+      lia.
+    - apply IHes1 in H2; auto; lia.
     - apply IHes2 in H2; auto.
       apply well_structured_range in H4.
-      omega.
+      lia.
   Qed.
 
   Lemma es_injective_events:
@@ -181,19 +183,19 @@ Section Event_system.
       + eapply IHwell_structured1 in H8; eauto.
       + apply ws_evsys_range in H8; auto.
         apply ws_evsys_range in H6; auto.
-        omega.
+        lia.
       + apply ws_evsys_range in H8; auto.
         apply ws_evsys_range in H6; auto.
-        omega.
+        lia.
       + eapply IHwell_structured2 in H8; eauto.
     - inv H3; inv H4.
       + eapply IHwell_structured1 in H8; eauto.
       + apply ws_evsys_range in H8; auto.
         apply ws_evsys_range in H6; auto.
-        omega.
+        lia.
       + apply ws_evsys_range in H8; auto.
         apply ws_evsys_range in H6; auto.
-        omega.
+        lia.
       + eapply IHwell_structured2 in H8; eauto.
   Qed.
 
@@ -208,7 +210,7 @@ Section Event_system.
     induction es; intros; intro; inv H; inv H0.
     - apply ws_evsys_range in H8; auto.
       apply ws_evsys_range in H9; auto.
-      omega.
+      lia.
     - apply IHes1 in H8; auto.
     - apply IHes2 in H8; auto.
     - apply IHes1 in H8; auto.
@@ -231,7 +233,7 @@ Section Event_system.
         * apply prec_in_left in H7.
           apply ws_evsys_range in H7; auto.
           apply ws_evsys_range in H10; auto.
-          omega.
+          lia.
         * apply prec_in_right in H7; auto.
       + assert (G: ev_in ev0 es1). apply prec_in_left in H9; auto.
         assert (F: ev_in ev1 es1). apply prec_in_right in H9; auto.
@@ -244,11 +246,11 @@ Section Event_system.
         inv H1.
         * apply ws_evsys_range in H7; auto.
           apply ws_evsys_range in F; auto.
-          omega.
+          lia.
         * apply prec_in_left in H7.
           apply ws_evsys_range in H7; auto.
           apply ws_evsys_range in F; auto.
-          omega.
+          lia.
         * eapply IHes2 in H7; eauto.
     - inv H.
       inv H0.
@@ -258,14 +260,14 @@ Section Event_system.
           apply prec_in_right in H9.
           apply ws_evsys_range in H9; auto.
           apply ws_evsys_range in H7; auto.
-          omega.
+          lia.
       + assert (G: ev_in ev0 es2). apply prec_in_left in H9; auto.
         assert (F: ev_in ev1 es2). apply prec_in_right in H9; auto.
         inv H1.
         * apply prec_in_left in H7.
           apply ws_evsys_range in H7; auto.
           apply ws_evsys_range in F; auto.
-          omega.
+          lia.
         * eapply IHes2 in H7; eauto.
   Qed.
 
@@ -283,7 +285,7 @@ Section Event_system.
   Proof.
     intros r s x y z Hr Hs.
     inv Hr; inv Hs.
-    constructor; simpl; auto; omega.
+    constructor; simpl; auto; lia.
   Qed.
 
   Lemma ws_merge2:
@@ -294,7 +296,7 @@ Section Event_system.
   Proof.
     intros r s x y z Hr Hs.
     inv Hr; inv Hs.
-    constructor; simpl; auto; omega.
+    constructor; simpl; auto; lia.
   Qed.
 
   Lemma merge_associative:
@@ -335,7 +337,7 @@ Section Event_system.
   Proof.
     intros r s x y z Hr Hs.
     inv Hr; inv Hs.
-    constructor; simpl; auto; omega.
+    constructor; simpl; auto; lia.
   Qed.
 
   Lemma ws_before2:
@@ -346,7 +348,7 @@ Section Event_system.
   Proof.
     intros r s x y z Hr Hs.
     inv Hr; inv Hs.
-    constructor; simpl; auto; omega.
+    constructor; simpl; auto; lia.
   Qed.
 
   Lemma before_associative:
@@ -447,22 +449,22 @@ Section Event_system.
            inv H4; inv H5.
            -- apply ws_evsys_range in H8; auto.
               apply ws_evsys_range in H12; auto.
-              omega.
+              lia.
            -- apply prec_in_left in H11.
               apply ws_evsys_range in H1; auto.
               apply ws_evsys_range in H11; auto.
-              omega.
+              lia.
            -- apply prec_in_right in H11.
               apply ws_evsys_range in H8; auto.
               apply ws_evsys_range in H11; auto.
-              omega.
+              lia.
            -- apply ws_evsys_range in H1; auto.
               apply ws_evsys_range in H11; auto.
-              omega.
+              lia.
            -- apply prec_in_left in H11.
               apply ws_evsys_range in H1; auto.
               apply ws_evsys_range in H11; auto.
-              omega.
+              lia.
            -- apply H3 in H8.
               tauto.
        + inv H3.
@@ -476,15 +478,15 @@ Section Event_system.
               ++ apply prec_in_right in H11.
                  apply ws_evsys_range in H8; auto.
                  apply ws_evsys_range in H11; auto.
-                 omega.
+                 lia.
               ++ apply prec_in_right in H11.
                  apply ws_evsys_range in H8; auto.
                  apply ws_evsys_range in H11; auto.
-                 omega.
+                 lia.
               ++ apply prec_in_left in H11.
                  apply ws_evsys_range in H1; auto.
                  apply ws_evsys_range in H11; auto.
-                 omega.
+                 lia.
          * apply IHwell_structured2 in H8.
            destruct H8.
            split.
@@ -494,15 +496,15 @@ Section Event_system.
               ++ apply prec_in_left in H11.
                  apply ws_evsys_range in H1; auto.
                  apply ws_evsys_range in H11; auto.
-                 omega.
+                 lia.
               ++ apply prec_in_right in H11.
                  apply ws_evsys_range in H8; auto.
                  apply ws_evsys_range in H11; auto.
-                 omega.
+                 lia.
               ++ apply prec_in_left in H11.
                  apply ws_evsys_range in H1; auto.
                  apply ws_evsys_range in H11; auto.
-                 omega.
+                 lia.
               ++ apply H3 in H8; tauto.
     - intro; destruct H0.
       induction H; intros.

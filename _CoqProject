@@ -17,8 +17,6 @@ Instr.v
 MyStack.v
 GenStMonad.v
 MonadVM.v
-MonadAM.v
 MonadVMFacts.v
 VmSemantics.v
 RunAlt.v
-Appraisal.v
