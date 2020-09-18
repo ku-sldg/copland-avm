@@ -5,6 +5,8 @@ Require Import Maps.
 Require Import List.
 Import ListNotations.
 
+Require Import StructTactics.
+
 Require Export StVM.
 
 Print vm_st.
@@ -165,10 +167,7 @@ Definition copyEv (x:nat) (p:Plc) : VM EvidenceC :=
   add_tracem [Term.copy x p] ;;
   get_ev.
 
-Definition toRemote (t:Term) (pTo:Plc) (e:EvidenceC) : EvidenceC.
-Admitted.
-Definition parallel_eval_thread (t:Term) (e:EvidenceC) : EvidenceC.
-Admitted.
+
 
 Definition do_prim (x:nat) (p:Plc) (a:Prim_Instr) : VM EvidenceC :=
   match a with
@@ -198,7 +197,10 @@ Definition eval_asp (a:ASP) (e:EvidenceC) : EvidenceC :=
     (hhc bs e)
   end.
 
-
+Definition toRemote (t:Term) (pTo:Plc) (e:EvidenceC) : EvidenceC.
+Admitted.
+Definition parallel_eval_thread (t:Term) (e:EvidenceC) : EvidenceC.
+Admitted.
 
 Fixpoint eval (t:Term) (* (p:Plc) *) (e:EvidenceC) : EvidenceC :=
   match t with
@@ -221,8 +223,6 @@ Fixpoint eval (t:Term) (* (p:Plc) *) (e:EvidenceC) : EvidenceC :=
     let e2' := parallel_eval_thread t2 e2 in
     (ppc e1' e2')
   end.
-
-
 
 Axiom remote_eval : forall e p annt,
     eval annt e = toRemote annt p e.
@@ -268,7 +268,6 @@ Proof.
 
     induction t; intros.
 
-    (*
     + destruct a; try (inv H; reflexivity).
     + inv H. simpl.
       rewrite <- remote_eval.
@@ -316,10 +315,7 @@ Proof.
       destruct s; destruct s0; simpl in *; subst;
         econstructor; (try simpl); eauto; try (econstructor).
 Defined.
-     *)
-Admitted.
-
-       
+      
 Ltac monad_unfold :=
   repeat unfold
          runSt,

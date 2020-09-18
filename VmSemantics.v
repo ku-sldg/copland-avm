@@ -34,10 +34,7 @@ Definition build_comp (i:AnnoInstr): VM unit :=
   | aprimInstr x a =>
     p <- get_pl ;;
     e <- do_prim x p a ;;
-    put_ev e
-           (*
-    modify_evm (prim_ev a) ;;
-               add_tracem (prim_trace x p a)  *)           
+    put_ev e           
   | asplit x sp1 sp2 =>
     e <- get_ev ;;
       p <- get_pl ;;
@@ -235,9 +232,6 @@ Proof.
         repeat break_match;
         allss.
 Defined.
-
-
-
 
 
 (* A distributive property of st_trace.  Says we can pull the front of a starting trace (m) outside and prepend it to a st_trace call with the rest of the original starting trace (k) as the starting trace *)
@@ -817,21 +811,7 @@ Proof.
     subst.
     unfold pop_stackm in *. monad_unfold. congruence.
 
-
-(*
-    do_stack0.
-    subst.
-    monad_unfold.
-    bogus.
-    do_pop_stackm_fail.
-    subst.
-    do_dca.
-    monad_unfold.
-    unfold push_stack in *.  
-    congruence. *)
   - (* abpar case *)
-
-    
     destruct s.
     destruct r. 
  
@@ -1128,6 +1108,7 @@ Proof.
   rewrite PeanoNat.Nat.eqb_refl. reflexivity.
 Defined.
 
+(*
 Lemma wf_bpar : forall t r s x y,
     (*well_formed (abpar r s x y) -> *)
     (annotated t = (abpar r s x y)) ->
@@ -1166,6 +1147,7 @@ Proof.
     subst.
     find_inversion.
 Abort.
+*)
 
 Axiom bpar_shuffle : forall x p t1 t2 et1 et2,
     lstar (bp x (conf t1 p et1) (conf t2 p et2))
@@ -1348,47 +1330,10 @@ Proof.
     
     eapply IHt; eauto.
 
-
-    
-    (*
-    destruct t';
-      try (
-          unfold annotated in *;
-          unfold anno in HH;
-          repeat break_let;
-          simpl in *;
-          inv HH;
-          tauto).
-    
-    admit.
-    exact []. *)
-
     apply run_at.
     econstructor.
     apply stattstop.
-    econstructor.
-
-    (*
-    cbn.
-    eauto.
-    symmetry.
-    unfold annotated in HH. unfold anno in HH.
-    break_let.
-    simpl in HH.
-    rewrite HH.
-    Print run_at.
-   (* inv wft. eauto. *)
-
-    apply run_at.
-    
-
-    econstructor.
-    Print step.
-
-    apply stattstop.
-    econstructor.
-     *)
-    
+    econstructor.   
     
   - (* alseq case *)
     simpl in *.
@@ -1405,27 +1350,18 @@ Proof.
     eapply lstar_stls.
     subst.
 
-
-
     edestruct afaff; eauto.
     destruct_conjs.
     
     eapply IHt1; eauto.
-
-    
-
-      
+  
     (* inv wft. eauto. *)
     eapply lstar_silent_tran.
     apply stlseqstop.
 
-
-
     edestruct afaff2; eauto.
     destruct_conjs.
-
-
-    
+ 
     eapply IHt2; eauto.
     (* inv wft. eauto. *)
     assert (p = H2). {
@@ -1479,12 +1415,8 @@ Proof.
      eapply lstar_transitive.
      eapply lstar_stbsl.
 
-
-
-    edestruct afaff3; eauto.
-    destruct_conjs.
-
-
+     edestruct afaff3; eauto.
+     destruct_conjs.
      
      eapply IHt1; eauto.
      (* inv wft; eauto. *)
@@ -1502,8 +1434,6 @@ Proof.
      do_stack1 t2.
      eapply lstar_transitive.
      eapply lstar_stbsr.
-
-
 
     edestruct afaff4; eauto.
     destruct_conjs.
@@ -1583,8 +1513,6 @@ Defined.
 
 
 Lemma run_lstar_corrolary : forall t tr et e s p o t' n,
-   (* annotated x = t -> *)
-    (*well_formed t -> *)
     t = snd (anno t' n) -> 
     st_trace (run_vm (instr_compiler t)
                      (mk_st e s [] p o)) = tr ->
@@ -1598,7 +1526,6 @@ Proof.
   eassumption.
 Defined.
   
-
 Require Import Main.
 Require Import Event_system.
 Require Import Term_system.
