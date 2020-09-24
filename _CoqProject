@@ -19,4 +19,5 @@ GenStMonad.v
 MonadVM.v
 MonadVMFacts.v
 VmSemantics.v
+MonadLaws.v
 RunAlt.v
