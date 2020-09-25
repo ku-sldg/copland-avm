@@ -1,6 +1,8 @@
 Require Import More_lists Preamble Term ConcreteEvidence LTS GenStMonad.
 Require Import Instr MyStack MonadVM MonadVMFacts.
 
+Require Import RunAlt.
+
 Require Import Main.
 Require Import Event_system.
 Require Import Term_system.
@@ -91,6 +93,7 @@ Definition build_comp (i:AnnoInstr): VM unit :=
      (* TODO:  axioms asserting we had valid VM threads available to execute them *)
   end.
 
+(*
 (** Function-style semantics for VM *)
 
 (* Transform vm_st for a single instruction (A -> B -> A) function for fold_left *)
@@ -102,6 +105,7 @@ Definition run_vm (il:list AnnoInstr) st : vm_st :=
 
 Definition run_vm_t (t:AnnoTerm) st : vm_st :=
   run_vm (instr_compiler t) st.
+*)
 
 Lemma st_congr :
   forall st tr e p s o,
@@ -116,7 +120,7 @@ Proof.
   subst; destruct st; auto.
 Defined.
 
-Ltac unfoldm :=  repeat unfold run_vm_step in *; monad_unfold.
+Ltac unfoldm :=  repeat unfold run_vm' in *; monad_unfold.
 
 Ltac boom :=
   repeat unfoldm;
@@ -126,7 +130,7 @@ Ltac boom :=
 
 Ltac do_run :=
   match goal with
-  | [H:  run_vm (_ :: _) _ = _ |- _ ] => invc H; unfold run_vm_step in *; repeat monad_unfold
+  | [H:  run_vm' (_ :: _) _ = _ |- _ ] => invc H; unfold run_vm' in *; repeat monad_unfold
   end.
 
 Ltac do_flip :=
@@ -152,27 +156,149 @@ Print do_bd.
 
 (* Starting trace has no effect on store *)
 Lemma trace_irrel_store : forall il1 tr1 tr1' tr2 e e' s s' p1' p1 o' o,
-    run_vm il1
+    run_vm' il1
            {| st_ev := e;  st_trace := tr1;  st_stack := s;  st_pl := p1;  st_store := o  |} =
            {| st_ev := e'; st_trace := tr1'; st_stack := s'; st_pl := p1'; st_store := o' |} ->
     
     st_store (
-        run_vm il1
+        run_vm' il1
            {| st_ev := e;  st_trace := tr2;  st_stack := s;  st_pl := p1;  st_store := o  |}) = o'.
 Proof.
   induction il1; intros.
   - simpl.
     inv H. reflexivity.   
   - simpl; destruct a;
-          try destruct p0;
+          try destruct p;
           try destruct r;
           boom;
           subst; eauto;
-            repeat monad_unfold;
-            repeat break_match;
-            allss.
-Defined.
+          repeat monad_unfold;
+          repeat break_match;
+          allss.
+    + simpl.
+      erewrite <- IHil1.
+      unfold run_vm_fold in *.
+      cbn in *.
+      monad_unfold.
+      eauto.
+      unfold snd in *.
+      cbn in *.
+      simpl in *.
+      repeat break_let.
+      cbn in *.
+      simpl in *.
+      rewrite gfds in *.
+      simpl in *.
+      cbn in *.
+      repeat break_let.
+      repeat find_inversion.
+      rewrite Heqp2 in Heqp3.
+      congruence.
+      simpl in H.
+      unfold run_vm_fold in *.
+      unfold snd in *.
+      repeat break_let.
+      vmsts.
+      repeat find_inversion.
+      monad_unfold.
+      simpl in *.
+      rewrite gfds in *.
+      simpl in *.
+      cbn in *.
+      repeat break_let.
 
+      repeat find_inversion.
+      rewrite Heqp1 in Heqp2.
+      invc Heqp2.
+      
+      reflexivity.
+    +
+      cbn in *.
+      unfold run_vm_fold in *.
+      erewrite <- IHil1.
+      rewrite gfds in *.
+      monad_unfold.
+      unfold snd in *.
+      repeat break_let.
+      repeat find_inversion.
+      rewrite Heqp3 in *.
+      congruence.
+     
+      rewrite gfds in *.
+      monad_unfold.
+      unfold snd in *.
+      repeat break_let.
+      repeat find_inversion.
+      rewrite Heqp2 in *.
+      repeat find_inversion.
+      reflexivity.
+
+
+    +
+      cbn in *.
+      unfold run_vm_fold in *.
+      erewrite <- IHil1.
+      rewrite gfds in *.
+      monad_unfold.
+      unfold snd in *.
+      repeat break_let.
+      repeat find_inversion.
+      rewrite Heqp3 in *.
+      congruence.
+     
+      rewrite gfds in *.
+      monad_unfold.
+      unfold snd in *.
+      repeat break_let.
+      repeat find_inversion.
+      rewrite Heqp2 in *.
+      repeat find_inversion.
+      reflexivity.
+    +
+      cbn in *.
+      unfold run_vm_fold in *.
+      erewrite <- IHil1.
+      rewrite gfds in *.
+      monad_unfold.
+      unfold snd in *.
+      repeat break_let.
+      repeat find_inversion.
+      rewrite Heqp3 in *.
+      congruence.
+     
+      rewrite gfds in *.
+      monad_unfold.
+      unfold snd in *.
+      repeat break_let.
+      repeat find_inversion.
+      rewrite Heqp2 in *.
+      repeat find_inversion.
+      reflexivity.
+    +
+      cbn in *.
+      unfold run_vm_fold in *.
+      erewrite <- IHil1.
+      rewrite gfds in *.
+      monad_unfold.
+      unfold snd in *.
+      repeat break_let.
+      repeat find_inversion.
+      rewrite Heqp3 in *.
+      congruence.
+     
+      rewrite gfds in *.
+      monad_unfold.
+      unfold snd in *.
+      repeat break_let.
+      repeat find_inversion.
+      rewrite Heqp2 in *.
+      repeat find_inversion.
+      reflexivity.
+    + 
+      
+Abort.
+
+(*
 (* Starting trace has no effect on evidence *)
 Lemma trace_irrel_ev : forall il1 tr1 tr1' tr2 e e' s s' p1' p1 o1 o1',
     run_vm il1 {| st_ev := e; st_trace := tr1; st_stack := s; st_pl := p1; st_store := o1 |} =
@@ -236,14 +362,19 @@ Proof.
         repeat break_match;
         allss.
 Defined.
+*)
 
 
 (* A distributive property of st_trace.  Says we can pull the front of a starting trace (m) outside and prepend it to a st_trace call with the rest of the original starting trace (k) as the starting trace *)
 Lemma gen_foo : forall il m k e s p o,
-    st_trace (fold_left (run_vm_step) il
-                        {| st_ev := e; st_trace := m ++ k;  st_stack := s; st_pl := p; st_store := o |}) =
-    m ++ st_trace (fold_left (run_vm_step) il
-                        {| st_ev := e; st_trace := k; st_stack := s; st_pl := p; st_store := o |}).
+    st_trace (
+        snd (
+            (fold_left  (fun (a0:VM unit) (b:AnnoInstr) => a0 ;; (VmSemantics.build_comp b)) il (ret tt))
+              {| st_ev := e; st_trace := m ++ k;  st_stack := s; st_pl := p; st_store := o |})) =
+    m ++ st_trace (
+        snd (
+            (fold_left  (fun (a0:VM unit) (b:AnnoInstr) => a0 ;; (VmSemantics.build_comp b)) il (ret tt))
+              {| st_ev := e; st_trace := k; st_stack := s; st_pl := p; st_store := o |})).
 Proof.
   induction il; simpl; intros m k e s p o.
   - auto.
@@ -269,7 +400,88 @@ Proof.
           rewrite IHil at 1;
           rewrite app_assoc at 1;
           congruence).
+    + simpl.
+      destruct p0.
+      ++
+        rewrite gfds.
+        rewrite gfds.
+        unfold bind.
+        unfold ret.
+        repeat break_let.
+        repeat find_inversion.
+        unfold get_pl in *.
+        unfold bind in Heqp2.
+        unfold get in Heqp2.
+        cbn in Heqp2.
+        invc Heqp2.
+        cbn in Heqp1.
+        invc Heqp1.
+        simpl.
+        unfold bind in Heqp6.
+        unfold get in Heqp6.
+        cbn in Heqp6.
+        invc Heqp6.
+        cbn in Heqp5.
+        invc Heqp5.
+        simpl.
+        unfold snd in IHil.
+        cbn in IHil.
+Abort.
+
+(*
+
+        rewrite gfds in IHil.
+        erewrite IHil.
+        unfold bind.
+        unfold ret.
+        unfold snd.
+        repeat break_let.
+        simpl in *.
+        repeat find_inversion.
+        monad_unfold.
+        repeat find_inversion.
+
+
+        
+        simpl.
+        cbn.
+        simpl.
+        cbn.
+        unfold snd.
+        simpl.
+        cbn.
+        break_let.
+        break_let.
+        break_let.
+        break_let.
+        repeat find_inversion.
+        vmsts.
+        simpl.
+        unfold snd in IHil.
+        cbn in IHil.
+        pairs.
+        eauto.
+        erewrite <- IHil in *.
+        break_let.
+        monad_unfold.
+        repeat break_let.
+        simpl.
+      unfold snd in *.
+      repeat break_let.
+      cbn in *.
+      simpl in *.
+      rewrite gfds in *.
+      monad_unfold.
+      repeat break_let.
+      rewrite gfds in *.
+      repeat find_inversion.
+      simpl in *.
+      
+      eauto.
+     
+      
 Defined.
+*)
 
 (* Instance of gen_foo where k=[] *)
 Lemma foo : forall il m e s p o,

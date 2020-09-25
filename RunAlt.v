@@ -1,8 +1,11 @@
 Require Import Preamble GenStMonad MonadVM Instr VmSemantics MyStack ConcreteEvidence MonadLaws.
+Require Import Event_system More_lists LTS Term Term_system.
 Require Import StructTactics.
 Require Import List.
 Import ListNotations.
 Require Import Coq.Program.Tactics.
+
+Print execSt.
 
 Lemma hfhf : forall (act1 act2:VM unit) st il,
     (act1;;
@@ -75,6 +78,102 @@ Proof.
     rewrite fafa.
     reflexivity.
 Defined.
+
+(* Not provable, act1 could fail *)
+(*
+Lemma fads : forall (act1:VM unit) act2 il st v o,
+    act1 st = (o, v) ->
+    fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
+              (act1 ;; act2) st =
+    fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
+              (act2) v.
+Proof.
+  intros.
+  rewrite gfds.
+  rewrite <- monad_comp.
+  unfold ret.
+  unfold bind.
+  rewrite H.
+  break_let.
+  break_match.
+  destruct o0.
+  - simpl in *.
+    break_let.
+    invc Heqp.
+    rewrite gfds.
+    unfold ret.
+    unfold bind.
+    destruct o0.
+    + simpl.
+      break_let.
+      repeat find_inversion.
+      rewrite <- Heqp.
+      rewrite gfds.
+      destruct v1.
+      simpl.
+      cbn.
+      break_let.
+      destruct v.
+      cbn.
+      rewrite gfds.
+      unfold bind.
+      rewrite Heqp0.
+      break_let.
+      unfold bind in Heqp1.
+      congruence.
+    + congruence.
+  - repeat find_inversion.
+    break_match.
+    break_match.
+    repeat break_let.
+    repeat find_inversion.
+    rewrite gfds.
+    unfold bind.
+    rewrite Heqp0.
+    repeat break_let.
+    unfold ret in Heqp.
+    congruence.
+    + repeat find_inversion.
+      rewrite gfds.
+      unfold bind.
+      rewrite Heqp0.
+      reflexivity.
+  - break_match.
+    break_match.
+    repeat break_let.
+    repeat find_inversion.
+    rewrite gfds.
+    unfold bind.
+    rewrite Heqp0.
+    repeat break_let.
+    unfold ret in *.
+    rewrite gfds in Heqp.
+    unfold bind in Heqp.
+    repeat break_let.
+    repeat find_inversion.
+    congruence.
+    
+      
+    
+    
+      
+      
+      rewrite <- Heqp0.
+
+
+    
+    rewrite Heqp0.
+    break_let.
+    congruence.
+  - invc Heqp.
+    rewrite <- Heqp0.
+    rewrite gfds.
+    unfold ret.
+    unfold bind.
+    rewrite Heqp0.
+    reflexivity.
+Defined.
+*)
 
 Lemma fads : forall (act1:VM unit) act2 il st v z,
     act1 st = (Some z, v) ->
@@ -198,10 +297,86 @@ Proof.
         
     rewrite H0.
     clear H0.
+
+
+
+    (*
+    assert (build_comp a st = (None, v0)).
+    admit.
+    clear Heqaaa.
+    unfold bind.
+    unfold ret.
+    rewrite gfds.
+    cbn.
+    break_let.
+    simpl.
+
+    destruct st.
+    simpl.
+
+    assert (
+        (fun s : vm_st =>
+     match build_comp a s with
+     | (Some _, s') => (Some tt, s')
+     | (None, s') => (None, s')
+     end)
+    {|
+    st_ev := st_ev;
+    st_stack := st_stack;
+    st_trace := st_trace;
+    st_pl := st_pl;
+    st_store := st_store |}
+
+
+
+        =
+    match build_comp  a {|
+    st_ev := st_ev;
+    st_stack := st_stack;
+    st_trace := st_trace;
+    st_pl := st_pl;
+    st_store := st_store |}  with
+     | (Some _, s') => (Some tt, s')
+     | (None, s') => (None, s')
+    end) as HH by auto.
+    repeat break_let.
+    destruct o1; destruct o0; find_inversion.
+    find_inversion.
+
+    clear Heqp0.
+    simpl.
+    rewrite <- Heqp.
+    rewrite gfds.
+    unfold ret.
+    unfold bind.
+    repeat break_let.
+    repeat find_inversion.
+    rewrite gfds.
+    simpl.
+    cbn.
+    unfold bind.
+    rewrite Heqp1.
+    unfold bind in Heqp.
+    unfold ret in Heqp.
+    rewrite Heqp in Heqp0.
+    repeat find_inversion.
+    rewrite <- HH.
+     *)
+    
+   
+
+
+
+
+
+
+
+    
     
     erewrite fads.
     reflexivity.
-    symmetry. eassumption.
+    symmetry.
+    eassumption.
   +
     assert (
         fold_left (fun (a0 : VM unit) (b : AnnoInstr) => a0;; build_comp b) il
@@ -239,11 +414,7 @@ Proof.
     clear H0.
         
     simpl.
-    erewrite fads.
-    reflexivity.
-    inv H.
-    Unshelve.
-    exact tt.
+    congruence.
 Defined.
 
 Lemma runa : forall a il st z v,
@@ -895,4 +1066,20 @@ Lemma corr_corr : forall il st t,
 Proof.
   intros.
   eapply run_vm_iff_compiled_corrolary; eauto.
+Defined.
+
+Theorem vm_ordered_alt : forall t tr ev0 ev1 e e' s s' o o' t',
+    t = annotated t' -> 
+    run_vm'
+      (instr_compiler t)
+      (mk_st e s [] 0 o) =
+      (mk_st e' s' tr 0 o') ->
+    prec (ev_sys t 0) ev0 ev1 ->
+    earlier tr ev0 ev1.
+Proof.
+  intros.
+  eapply vm_ordered; eauto.
+  erewrite corr_corr; eauto.
+  rewrite H.
+  auto.
 Defined.
