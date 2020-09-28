@@ -1,9 +1,7 @@
 Require Import More_lists Preamble Term ConcreteEvidence LTS GenStMonad.
 Require Import Instr MyStack MonadVM MonadVMFacts.
 
-Require Import Main.
-Require Import Event_system.
-Require Import Term_system.
+Require Import Main Event_system Term_system.
 
 Require Import List.
 Import ListNotations.
@@ -11,12 +9,6 @@ Require Import Coq.Program.Tactics.
 Require Import Coq.Program.Equality.
 
 Require Import StructTactics.
-
-Locate prec.
-
-Locate splitEv.
-
-(*From QuickChick Require Import QuickChick Tactics. *)
 
 
 Set Nested Proofs Allowed.
@@ -148,8 +140,6 @@ Ltac allss :=
   try do_bd;
   subst; eauto.
 
-Print do_bd.
-
 (* Starting trace has no effect on store *)
 Lemma trace_irrel_store : forall il1 tr1 tr1' tr2 e e' s s' p1' p1 o' o,
     run_vm il1
@@ -164,13 +154,9 @@ Proof.
   - simpl.
     inv H. reflexivity.   
   - simpl; destruct a;
-          try destruct p0;
-          try destruct r;
-          boom;
-          subst; eauto;
-            repeat monad_unfold;
-            repeat break_match;
-            allss.
+      boom;
+      repeat break_match;
+      allss.
 Defined.
 
 (* Starting trace has no effect on evidence *)
@@ -181,17 +167,13 @@ Lemma trace_irrel_ev : forall il1 tr1 tr1' tr2 e e' s s' p1' p1 o1 o1',
     st_ev (
         run_vm il1 {| st_ev := e; st_trace := tr2; st_stack := s; st_pl := p1; st_store := o1 |}) = e'.
 Proof.
-    induction il1; intros.
+  induction il1; intros.
   - simpl.
     inv H. reflexivity.   
   - simpl; destruct a;
-          try destruct p0;
-          try destruct r;
-          boom;
-          subst; eauto;
-            repeat monad_unfold;
-            repeat break_match;
-            allss.
+      boom;
+      repeat break_match;
+      allss.
 Defined.
 
 (* Starting trace has no effect on place *)
@@ -202,17 +184,13 @@ Lemma trace_irrel_place : forall il1 tr1 tr1' tr2 e e' s s' p p' o o',
     st_pl (
         run_vm il1 {| st_ev := e; st_trace := tr2; st_stack := s; st_pl := p; st_store := o |}) = p'.
 Proof.
-    induction il1; intros.
+  induction il1; intros.
   - simpl.
     inv H. reflexivity.   
   - simpl; destruct a;
-      try destruct p0;
-      try destruct r;
       boom;
-      subst; eauto;
-        repeat monad_unfold;
-        repeat break_match;
-        allss.
+      repeat break_match;
+      allss.
 Defined.
 
 (* Starting trace has no effect on stack *)
@@ -228,13 +206,9 @@ Proof.
   - simpl.
     inv H. reflexivity.   
   - simpl; destruct a;
-      try destruct p0;
-      try destruct r;
       boom;
-      subst; eauto;
-        repeat monad_unfold;
-        repeat break_match;
-        allss.
+      repeat break_match;
+      allss.
 Defined.
 
 
@@ -248,27 +222,12 @@ Proof.
   induction il; simpl; intros m k e s p o.
   - auto.
   - destruct a as [n p0 | n sp1 sp2 | n | l m' n | | | i q t (*| i rpyi q*)];
-      try ( (* aprim, asplit, areqrpy, ajoinp cases *)
-          try destruct r;
-          try (unfold run_vm_step; fold run_vm_step);
-          repeat monad_unfold; repeat break_match;
-          boom; repeat allss;
-          rewrite IHil at 1;
-          symmetry; 
-          rewrite IHil at 1);
-      try (rewrite <- app_assoc at 1; congruence)(*;
-      try (rewrite app_assoc at 1; congruence)*);
-
-      try ( (* ajoins, abesr, abep, cases *)
-          try destruct r;
-          try (unfold run_vm_step; fold fun_vm_step);
-          repeat monad_unfold; repeat break_match;
-          boom; repeat allss;
-          rewrite IHil at 1;
-          symmetry;
-          rewrite IHil at 1;
-          rewrite app_assoc at 1;
-          congruence).
+          boom;
+          repeat break_match;
+          allss;
+          repeat rewrite IHil;
+          rewrite app_assoc;
+          congruence.
 Defined.
 
 (* Instance of gen_foo where k=[] *)
@@ -279,9 +238,9 @@ Lemma foo : forall il m e s p o,
                         {| st_ev := e; st_trace := []; st_stack := s; st_pl := p; st_store := o |}).
 Proof.
   intros.
-  assert (m = m ++ []) as H. rewrite app_nil_r. auto.
+  assert (m = m ++ []) as H by (rewrite app_nil_r; auto).
   rewrite H at 1.
-  eapply gen_foo.
+  apply gen_foo.
 Defined.
 
 Lemma compile_not_empty :
@@ -361,13 +320,7 @@ Lemma put_ev_after_immut_stack{A:Type} : forall s (h:VM A) e,
     st_stack (execSt s h) = st_stack (execSt s (h ;; (put_ev e))).
 Proof.
   intros.
-  unfold put_ev.
-  unfold execSt.
-  destruct s.
-  unfold snd.
-  monad_unfold.
-  destruct (h {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace |}).
-  destruct o; eauto.
+  boom; repeat break_match; allss.
 Defined.
 
 (*
@@ -461,7 +414,7 @@ Lemma st_trace_destruct' :
 Proof.
   induction il1; try reflexivity; intros.
   - simpl.
-    erewrite foo.
+    rewrite foo.
     reflexivity.
   - simpl.
     Check foo.

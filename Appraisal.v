@@ -1,6 +1,7 @@
 Require Import ConcreteEvidence GenStMonad.
-Require Import Maps (*OptMonad*) MonadAM  StructTact.StructTactics.
+Require Import Maps. (*OptMonad*) (* MonadAM *)  (*StructTact.StructTactics. *)
 
+Require Import StructTactics.
 Require Import List.
 Import ListNotations.
 
