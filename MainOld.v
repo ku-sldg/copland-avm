@@ -16,7 +16,7 @@ University of California.  See license.txt for details. *)
 Require Import List.
 Import List.ListNotations.
 Open Scope list_scope.
-Require Import Lia.
+Require Import Coq.micromega.Lia.
 Require Import Preamble More_lists Term LTS Event_system Term_system Trace.
 
 (** The traces associated with a state. *)
@@ -41,17 +41,17 @@ Inductive traceS: St -> list Ev -> Prop :=
     trace t p tr2 ->
     traceS (bsl j st t p e)
            (tr1 ++ tr2 ++
-                [(join (pred j) p )])
+                [(join (pred j) p)])
 | tbsr: forall st tr j e,
     traceS st tr ->
     traceS (bsr j e st)
-           (tr ++ [(join (pred j) (pl st) )])
+           (tr ++ [(join (pred j) (pl st))])
 | tbp: forall st1 tr1 st2 tr2 tr3 j,
     traceS st1 tr1 -> traceS st2 tr2 ->
     shuffle tr1 tr2 tr3 ->
     traceS (bp j st1 st2)
            (tr3 ++ [(join (pred j) (pl st2))]).
-Hint Constructors traceS : core.
+Hint Constructors traceS.
 
 Fixpoint esizeS s:=
   match s with
@@ -118,21 +118,17 @@ Proof.
     pose proof H6 as G1.
     apply step_pl_eq in G; auto.
     apply step_seval in G1; auto.
-    rewrite <- G. (*rewrite <- G1. *)
+    rewrite <- G.
     eapply IHst in H6; eauto.
   - constructor; auto.
     eapply IHst in H2; eauto.
     pose proof H5 as G.
     apply step_pl_eq in H5.
     rewrite H5; auto.
-    (* apply step_seval in G.
-    rewrite G; auto. *)
   - rewrite <- app_nil_l with (l:=tr).
     constructor; auto.
   - pose proof H8 as G.
     eapply IHst in H8; eauto.
-    (*apply step_seval in G.
-    rewrite <- G; auto. *)
   - rewrite <- app_nil_l with (l:=tr0).
     rewrite <- app_assoc.
     apply tbsl; auto. simpl; auto.
@@ -141,19 +137,14 @@ Proof.
     pose proof H6 as G1.
     eapply IHst in H6; eauto.
     apply step_seval in G.
-    (*rewrite <- G; auto. *)
     apply step_pl_eq in G1.
     rewrite <- G1; auto.
   - pose proof H6 as G.
     eapply IHst1 in H6; eauto.
-    (* apply step_seval in G.
-    rewrite <- G; auto. 
-    apply tbp with (tr1:=tr1)(tr2:=tr2); auto. *)
   - pose proof H6 as G.
     pose proof H6 as G1.
     eapply IHst2 in H6; eauto.
     apply step_seval in G.
-    (* rewrite <- G; auto. *)
     apply step_pl_eq in G1.
     rewrite <- G1; auto.
     apply tbp with (tr1:=tr1)(tr2:=tr2); auto.
@@ -179,7 +170,7 @@ Proof.
     pose proof H6 as G1.
     apply step_pl_eq in G1.
     eapply IHst in H6; eauto.
-    (* rewrite <- G. *) rewrite <- G1.
+    rewrite <- G1.
     rewrite app_comm_cons; auto.
   - rewrite <- app_nil_l; auto.
     apply trem; auto.
@@ -190,11 +181,10 @@ Proof.
     eapply IHst in H5; eauto.
     rewrite app_comm_cons.
     apply tls; auto.
-    (*rewrite G. *) rewrite G1; auto.
+    rewrite G1; auto.
   - pose proof H8 as G.
     apply step_seval in G.
     eapply IHst in H8; eauto.
-    (*rewrite <- G. *)
     rewrite app_comm_cons; auto.
   - pose proof H6 as G.
     apply step_seval in G.
@@ -202,14 +192,14 @@ Proof.
     apply step_pl_eq in G1.
     eapply IHst in H6; eauto.
     rewrite app_comm_cons;
-      (*rewrite <- G; *) rewrite <- G1; auto.
+      rewrite <- G1; auto.
   - rewrite <- app_nil_l; constructor; auto.
   - pose proof H6 as G.
     apply step_seval in G.
     eapply IHst1 in H6; eauto.
     apply shuffle_left with (e:=ev) in H7.
     rewrite app_comm_cons;
-      (*rewrite <- G; *) auto.
+      auto.
     apply tbp with (tr1:=(ev::tr1))(tr2:=tr2); auto.
   - pose proof H6 as G.
     apply step_seval in G.
@@ -218,7 +208,7 @@ Proof.
     apply shuffle_right with (e:=ev) in H7.
     eapply IHst2 in H6; eauto.
     rewrite app_comm_cons;
-      (*rewrite <- G; *) rewrite <- G1; auto.
+      rewrite <- G1; auto.
     apply tbp with (tr1:=tr1)(tr2:=(ev::tr2)); auto.
   - rewrite <- app_nil_l; auto.
     apply tbp with (tr1:=[])(tr2:=[]); auto.

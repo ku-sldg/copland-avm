@@ -11,7 +11,9 @@ University of California.  See license.txt for details. *)
 
 (** Abstract event systems. *)
 
-Require Import PeanoNat Lia Preamble.
+Require Import Coq.micromega.Lia.
+Require Import Omega Preamble.
+
 
 Set Implicit Arguments.
 
@@ -74,7 +76,7 @@ Section Event_system.
         r = (fst (es_range x), snd (es_range y)) ->
         snd (es_range x) = fst (es_range y) ->
         well_structured (merge r x y).
-  Hint Constructors well_structured : core.
+  Hint Constructors well_structured.
 
   Lemma well_structured_range:
     forall es,
@@ -101,7 +103,7 @@ Section Event_system.
       ev_in ev es1 -> ev_in ev (merge r es1 es2)
   | ein_merger: forall r ev es1 es2,
       ev_in ev es2 -> ev_in ev (merge r es1 es2).
-  Hint Constructors ev_in : core.
+  Hint Constructors ev_in.
 
   (** Is one event before another? *)
 
@@ -121,7 +123,7 @@ Section Event_system.
   | prparr: forall r x y e f,
       prec y e f ->
       prec (merge r x y) e f.
-  Hint Constructors prec : core.
+  Hint Constructors prec.
 
   Lemma prec_in_left:
     forall es ev1 ev2,
@@ -415,7 +417,7 @@ Section Event_system.
   | sup_merger:
       forall r es0 es1 e,
         sup es1 e -> sup (merge r es0 es1) e.
-  Hint Constructors sup : core.
+  Hint Constructors sup.
 
   Lemma before_sup:
     forall r x y e,
@@ -561,6 +563,6 @@ Section Event_system.
 
 End Event_system.
 
-Hint Constructors well_structured ev_in prec sup : core.
+Hint Constructors well_structured ev_in prec sup.
 
 Unset Implicit Arguments.

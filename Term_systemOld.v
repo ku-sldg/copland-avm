@@ -87,7 +87,16 @@ Proof.
   split; revert p; induction t; intros; inv H; simpl in *;
     repeat expand_let_pairs; simpl in *.
   - inv H0; auto; destruct a; simpl; auto.
-  - rewrite H6 in H0; simpl in H0.
+  -
+    (*
+    rewrite H6 in H0; simpl in H0.
+    inv H0; auto.
+    inv H2. auto.
+    inv H2. econstructor.
+    apply IHt; eauto. *)
+    
+    
+    rewrite H6 in H0; simpl in H0.
     inv H0; auto; inv H2; auto; inv H1; auto.
   - inv H0; auto.
   - rewrite H9 in H0; simpl in H0.
@@ -183,20 +192,20 @@ Proof.
     inv H4; auto.
 Qed.
 
-(*
 (** Maximal event evidence output matches [aeval]. *)
 
+(*
 Definition out_ev v :=
   match v with
-  | copy _ _ e => e
+  | copy _ e => e
   | kmeas _ _ _ _ e => e
-  | umeas _ _ _ _ e => e
-  | sign _ _ _ e => e
-  | hash _ _ _ e => e
+  | umeas _ _ _ e => e
+  | sign _ e => e
+  | hash _ e => e
   | req _ _ _ e => e
-  | rpy _ _ _ e => e
-  | split _ _ _ _ e => e
-  | join _ _ _ _ e => e
+  | rpy _ _ e => e
+  | split _ e => e
+  | join _ e => e
   end.
 
 Lemma max_eval:

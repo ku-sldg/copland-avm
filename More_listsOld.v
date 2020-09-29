@@ -11,7 +11,7 @@ University of California.  See license.txt for details. *)
 
 (** More facts about lists. *)
 
-Require Import List PeanoNat Compare_dec Lia.
+Require Import List Omega.
 Import List.ListNotations.
 Open Scope list_scope.
 
@@ -74,7 +74,7 @@ Section More_lists.
     - rewrite firstn_nil; auto.
     - destruct n.
       simpl in H.
-      lia.
+      omega.
       simpl in *.
       apply le_S_n in H.
       apply IHl in H.
@@ -89,7 +89,7 @@ Section More_lists.
     induction l; intros; simpl.
     - rewrite skipn_nil; auto.
     - destruct n; simpl in *.
-      lia.
+      omega.
       apply le_S_n in H.
       apply IHl; auto.
   Qed.
@@ -241,7 +241,7 @@ Section More_lists.
     destruct H.
     exists (length p + i).
     assert (G: length p + i - length p = i).
-    lia.
+    omega.
     split.
     - rewrite firstn_app.
       apply in_or_app.
@@ -287,8 +287,8 @@ Section More_lists.
         * right; left; split; auto.
           apply firstn_in in H; auto.
       + right.
-        rewrite firstn_all_n in H; try lia.
-        rewrite skipn_all_n in H0; try lia.
+        rewrite firstn_all_n in H; try omega.
+        rewrite skipn_all_n in H0; try omega.
         rewrite app_nil_l in H0.
         apply in_app_iff in H.
         destruct H.
@@ -322,6 +322,68 @@ Section More_lists.
     exists (S i).
     simpl; auto.
   Qed.
+
+  Definition shaver{A} (l: list A) : list A :=
+  skipn ((length l) - 1) l.
+
+Lemma listThing: forall (x:A) l1 l2,
+    l1 ++ l2 = x :: l2 ->
+    l1 = [x].
+Proof.
+  intros.
+  assert (x::l2 = [x]++l2). auto.
+  rewrite H0 in H.
+  eapply app_inv_tail; eauto.
+Defined.
+
+Lemma hh:
+  forall (l1:list A) l2,
+    l1 ++ l2 = l2 ->
+    l1 = [].
+Proof.
+  intros.
+  Search (_ ++ _ = _).
+  eapply app_inv_tail.
+  apply H.
+Defined.
+
+Lemma skip1: forall (i:A) l lr,
+    i :: l = lr ->
+    l = skipn 1 lr.
+Proof.
+  intros.
+  subst. simpl. reflexivity.
+Defined.
+
+Lemma headShouldersKneesAndToes : forall A (h : A) t l1 l2,
+    h :: t = l1 ++ l2 ->
+    forall prefix i, t = prefix ++ i :: l2 ->
+    l1 = h :: prefix ++ [i].
+Proof.
+  intros. subst.
+  assert (H0 : i :: l2 = [i] ++ l2). reflexivity.
+  rewrite H0 in H; clear H0.
+  eapply app_inv_tail.
+  simpl. rewrite <- app_assoc. eauto.
+Defined.
+
+Lemma list_nil_app: forall (l1 l2:list A),
+    [] = l1 ++ l2 ->
+    l1 = [] /\ l2 = [].
+Proof.
+  intros.
+  destruct l1.
+  - simpl in H.
+    split; eauto.
+  - inversion H.
+Defined. 
+
+Lemma first_skip:
+  forall n (l:list A),
+    (firstn n l) ++ (skipn n l) = l.
+Proof.
+  apply firstn_skipn.
+Defined.
 
 End More_lists.
 

@@ -14,7 +14,7 @@ University of California.  See license.txt for details. *)
 Require Import List.
 Import List.ListNotations.
 Open Scope list_scope.
-Require Import PeanoNat Minus Lia Preamble Term.
+Require Import Omega Preamble Term.
 
 (** * States *)
 
@@ -143,7 +143,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
       step (bp j (stop p e) (stop p' e'))
            (Some (join (pred j) p'))
            (stop p' (pp e e')).
-Hint Constructors step : core.
+Hint Constructors step.
 
 (** A step preserves place. *)
 
@@ -175,7 +175,7 @@ Inductive lstar: St -> list Ev -> St -> Prop :=
     step st0 (Some e) st1 -> lstar st1 tr st2 -> lstar st0 (e :: tr) st2
 | lstar_silent_tran: forall st0 st1 tr st2,
     step st0 None st1 -> lstar st1 tr st2 -> lstar st0 tr st2.
-Hint Resolve lstar_refl : core.
+Hint Resolve lstar_refl.
 
 Lemma lstar_transitive:
   forall st0 tr0 st1 tr1 st2,
@@ -199,7 +199,7 @@ Inductive star: St -> St -> Prop :=
 | star_refl: forall st, star st st
 | star_tran: forall st0 e st1 st2,
     step st0 e st1 -> star st1 st2 -> star st0 st2.
-Hint Resolve star_refl : core.
+Hint Resolve star_refl.
 
 Lemma star_transitive:
   forall st0 st1 st2,
@@ -429,7 +429,7 @@ Inductive nstar: nat -> St -> St -> Prop :=
 | nstar_refl: forall st, nstar 0 st st
 | nstar_tran: forall st0 st1 st2 e n,
     nstar n st0 st1 -> step st1 e st2 -> nstar (S n) st0 st2.
-Hint Resolve nstar_refl : core.
+Hint Resolve nstar_refl.
 
 Lemma nstar_transitive:
   forall m n st0 st1 st2,
@@ -517,7 +517,7 @@ Lemma step_size:
     S (ssize st1) = ssize st0.
 Proof.
   intros.
-  induction H; simpl; auto; lia.
+  induction H; simpl; auto; omega.
 Qed.
 
 Lemma step_count:
@@ -531,7 +531,7 @@ Proof.
     apply IHn in H1.
     rewrite H1.
     apply step_size in H2.
-    lia.
+    omega.
 Qed.
 
 (** Every run terminates. *)
@@ -544,7 +544,7 @@ Proof.
   intros.
   apply step_count in H.
   apply halt_size.
-  lia.
+  omega.
 Qed.
 
 (** * Numbered Labeled Transitions *)
@@ -555,7 +555,7 @@ Inductive nlstar: nat -> St -> list Ev -> St -> Prop :=
     step st0 (Some e) st1 -> nlstar n st1 tr st2 -> nlstar (S n) st0 (e :: tr) st2
 | nlstar_silent_tran: forall n st0 st1 tr st2,
     step st0 None st1 -> nlstar n st1 tr st2 -> nlstar (S n) st0 tr st2.
-Hint Resolve nlstar_refl : core.
+Hint Resolve nlstar_refl.
 
 Lemma nlstar_transitive:
   forall m n st0 tr0 st1 tr1 st2,
@@ -607,7 +607,7 @@ Proof.
   intros.
   induction H; auto;
     apply step_size in H;
-    lia.
+    omega.
 Qed.
 
 Lemma lstar_nlstar_size:
@@ -642,7 +642,7 @@ Inductive rlstar: nat -> St -> list Ev -> St -> Prop :=
 | rlstar_silent_tran: forall n st0 st1 tr st2,
     rlstar n st0 tr st1 -> step st1 None st2 ->
     rlstar (S n) st0 tr st2.
-Hint Resolve rlstar_refl : core.
+Hint Resolve rlstar_refl.
 
 Lemma rlstar_transitive:
   forall m n st0 tr0 st1 tr1 st2,
