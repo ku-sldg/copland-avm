@@ -15,8 +15,7 @@ Set Nested Proofs Allowed.
 
 (** IO Axioms *)
 
-Definition remote_events (t:AnnoTerm) (p:Plc) : (list Ev).
-Admitted.
+
 
 Definition parallel_att_vm_thread (li:list AnnoInstr) (e:EvidenceC) : EvidenceC.
 Admitted.
@@ -26,6 +25,23 @@ Admitted.
 
 Definition shuffled_events (el1:list Ev) (el2:list Ev) : list Ev.
 Admitted.
+
+Locate toRemote.
+
+  
+  (*
+
+        put_ev (toRemote (unanno annt) q e) ;;
+      (* put_store reqi (toRemote (unanno annt) q e) ;; *)
+      (* TODO: make this contingent on a good remote setup.  Need to model such a situation *)
+      p <- get_pl ;;
+      let newTrace :=
+          [req reqi p q (unanno annt)] ++
+          (remote_events annt q) ++
+          [rpy (Nat.pred rpyi) p q] in
+      (* TODO: move remote_events annt q trace to get_store_at, models successful remote execution *)
+      add_tracem newTrace
+*)
 
 Definition build_comp (i:AnnoInstr): VM unit :=
   match i with
@@ -57,6 +73,16 @@ Definition build_comp (i:AnnoInstr): VM unit :=
       push_stackm e ;;
       put_ev er    
   | areqrpy reqi rpyi q annt =>
+    sendReq reqi q annt ;;
+    e <- get_ev ;;
+    doRemote annt q e rpyi ;;
+    e' <- receiveResp rpyi q ;;
+    put_ev e'
+                     
+    
+
+
+    (*
     e <- get_ev ;;
       put_ev (toRemote (unanno annt) q e) ;;
       (* put_store reqi (toRemote (unanno annt) q e) ;; *)
@@ -68,6 +94,8 @@ Definition build_comp (i:AnnoInstr): VM unit :=
           [rpy (Nat.pred rpyi) p q] in
       (* TODO: move remote_events annt q trace to get_store_at, models successful remote execution *)
       add_tracem newTrace
+     *)
+    
   | abep loc1 loc2 il1 il2 =>
     e <- get_ev ;;
       p <- get_pl ;;
@@ -226,7 +254,7 @@ Proof.
           repeat break_match;
           allss;
           repeat rewrite IHil;
-          rewrite app_assoc;
+          repeat rewrite app_assoc;
           congruence.
 Defined.
 
@@ -374,6 +402,18 @@ Ltac st_equiv :=
                rewrite <- record_congr; reflexivity))  
   end.
 
+Lemma haha {A:Type} : forall (m:list A) l req rem rpy,
+    m ++ (req :: rem ++ [rpy]) ++ l =
+    m ++ [req] ++ rem ++ [rpy] ++ l.
+Proof.
+  intros.
+  simpl.
+  repeat rewrite <- app_assoc.
+  simpl.
+  reflexivity.
+Defined.
+
+Require Import Coq.Arith.Peano_dec.
 Lemma st_trace_destruct' :
   forall il1 il2 e s m p o,
     st_trace
@@ -424,9 +464,9 @@ Proof.
           unfold run_vm_step; fold run_vm_step;
           monad_unfold;
           rewrite foo;
-          rewrite <- app_assoc;
+          repeat rewrite <- app_assoc;
           rewrite IHil1;
-          rewrite <- app_assoc;
+          repeat rewrite <- app_assoc;
           st_equiv;
           congruence);
       try (boom; allss);
@@ -437,7 +477,34 @@ Proof.
           repeat rewrite <- app_assoc;
           st_equiv;
           rewrite H;
-          eauto).
+          eauto; congruence).
+
+    unfold get_store_at.
+    monad_unfold.
+    rewrite PeanoNat.Nat.eqb_refl.
+    simpl.
+    rewrite foo.
+    repeat rewrite <- app_assoc.
+    rewrite IHil1.
+    repeat rewrite <- app_assoc.
+    Print st_equiv.
+
+    
+    assert ( forall l,  m ++
+                (req i p t (unanno a) :: remote_events a t ++ [rpy (Nat.pred q) p t]) ++ l =
+        m ++
+  [req i p t (unanno a)] ++
+  remote_events a t ++
+  [rpy (Nat.pred q) p t] ++ l) as HH.
+    { intros.
+      erewrite haha.
+      eauto.
+    }
+    rewrite <- HH.
+
+    st_equiv.
+    rewrite H.
+    eauto.
 Defined.
 
 Lemma pl_immut : forall il e s tr p o,
@@ -728,7 +795,17 @@ Proof.
   - (* aatt case *)
     destruct r.
     invc H.
-    reflexivity.
+    unfold run_vm_step in *.
+    unfold execSt in *.
+    simpl in *.
+    monad_unfold.
+    repeat break_let.
+    allss.
+    repeat find_inversion.
+    unfold get_store_at in *.
+    monad_unfold.
+    rewrite PeanoNat.Nat.eqb_refl in *.
+    allss.
   - (* alseq case *)
     do_dca.
     eapply IHt2.
@@ -851,6 +928,11 @@ Proof.
     destruct r.
     simpl in *.
     unfoldm.
+    monad_unfold.
+    repeat break_let.
+    unfold get_store_at in *.
+    monad_unfold.
+    rewrite PeanoNat.Nat.eqb_refl in *.
     allss.
   - (* lseq case *)
     simpl in *.
@@ -1274,8 +1356,14 @@ Proof.
     unfoldm.
     unfold run_vm_step in *.
     monad_unfold.
+    monad_unfold.
+    repeat break_let.
+    unfold get_store_at in *.
 
-    find_inversion.  
+    find_inversion.
+    monad_unfold.
+    rewrite PeanoNat.Nat.eqb_refl in *.
+    repeat find_inversion.
 
     eapply lstar_tran.
     econstructor.

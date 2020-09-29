@@ -168,6 +168,29 @@ Definition copyEv (x:nat) (p:Plc) : VM EvidenceC :=
   get_ev.
 
 
+Definition remote_events (t:AnnoTerm) (p:Plc) : (list Ev).
+Admitted.
+
+Definition toRemote (t:Term) (pTo:Plc) (e:EvidenceC) : EvidenceC.
+Admitted.
+Definition parallel_eval_thread (t:Term) (e:EvidenceC) : EvidenceC.
+Admitted.
+
+Definition sendReq (reqi:nat) (q:Plc) (t:AnnoTerm) : VM unit :=
+  p <- get_pl ;;
+  add_tracem [req reqi p q (unanno t)].
+
+Definition doRemote (t:AnnoTerm) (q:Plc) (e:EvidenceC) (rpyi:nat) : VM unit :=
+  add_tracem (remote_events t q) ;;
+  put_store rpyi (toRemote (unanno t) q e).
+
+Definition receiveResp (rpyi:nat) (q:Plc) : VM EvidenceC :=
+  e <- get_store_at rpyi ;;
+  p <- get_pl ;;
+  add_tracem [rpy (Nat.pred rpyi) p q] ;;
+  ret e.
+
+
 
 Definition do_prim (x:nat) (p:Plc) (a:Prim_Instr) : VM EvidenceC :=
   match a with
@@ -197,10 +220,7 @@ Definition eval_asp (a:ASP) (e:EvidenceC) : EvidenceC :=
     (hhc bs e)
   end.
 
-Definition toRemote (t:Term) (pTo:Plc) (e:EvidenceC) : EvidenceC.
-Admitted.
-Definition parallel_eval_thread (t:Term) (e:EvidenceC) : EvidenceC.
-Admitted.
+
 
 Fixpoint eval (t:Term) (* (p:Plc) *) (e:EvidenceC) : EvidenceC :=
   match t with
@@ -324,6 +344,12 @@ Ltac monad_unfold :=
   signEv,
   hashEv,
   copyEv,
+
+  sendReq,
+  doRemote,
+  receiveResp,
+
+  
   get_ev,
   get_pl,
   add_tracem,

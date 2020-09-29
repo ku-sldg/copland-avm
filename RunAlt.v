@@ -600,7 +600,12 @@ Proof.
     boom; allss.
     simpl.
     cbn.
-    eauto.
+    repeat break_let.
+    monad_unfold.
+    unfold get_store_at in *.
+    monad_unfold.
+    rewrite PeanoNat.Nat.eqb_refl in *.
+    allss.
   -
     unfold annotated in *.
     cbn in *.
