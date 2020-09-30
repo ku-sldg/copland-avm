@@ -1,4 +1,4 @@
-Require Import GenStMonad MonadVM.
+Require Import GenStMonad.
 
 Require Import StructTactics.
 
@@ -49,7 +49,7 @@ Proof.
   - reflexivity.
 Qed.
 
-Lemma gasd : forall (act:VM unit) (act2:VM unit) st,
+Lemma gasd{A B:Type} : forall (act:St A B) (act2:St A B) st,
     (act ;; ret tt ;; act2) st =
     (act ;; act2) st.
 Proof.
@@ -64,7 +64,7 @@ Proof.
   - reflexivity.
 Defined.
 
-Lemma fafa : forall (act act2 act3: VM unit) st,
+Lemma fafa{A B:Type} : forall (act act2 act3: St A B) st,
     ((act;; ret tt;; act2);;
      act3) st =
     ((act;; act2);;
@@ -78,7 +78,7 @@ Proof.
   remember (act st) as oo.
   destruct oo.
   destruct o.
-  remember (act2 v) as ooo.
+  remember (act2 a) as ooo.
   destruct ooo.
   destruct o.
   break_let.
@@ -87,7 +87,7 @@ Proof.
   reflexivity.
 Defined.
 
-Lemma hlhl : forall (act act2 act3 act4 : VM unit) st,
+Lemma hlhl{A B:Type} : forall (act act2 act3 act4 : St A B) st,
     ((act;; act2;; act3);;
      act4) st =
     (((act;; act2);; act3);;
@@ -98,13 +98,13 @@ Proof.
   remember (act st) as ooo.
   destruct ooo.
   destruct o.
-  - remember (act2 v) as ooo.
+  - remember (act2 a) as ooo.
     destruct ooo.
     destruct o.
-    + remember (act3 v0) as ooo.
+    + remember (act3 a0) as ooo.
       destruct ooo.
       destruct o.
-      ++ remember (act4 v1) as ooo.
+      ++ remember (act4 a1) as ooo.
          destruct ooo.
          reflexivity.
       ++ reflexivity.
@@ -112,7 +112,7 @@ Proof.
   - reflexivity.
 Defined.
 
-Lemma hghg : forall (act act2 act3 act4 act5 : VM unit) st,
+Lemma hghg{A B:Type} : forall (act act2 act3 act4 act5 : St A B) st,
     (((act;; act2;; act3);; act5);;
      act4) st =
     ((act;; act2;; act3);; act5;; act4) st.
@@ -122,17 +122,17 @@ Proof.
   remember (act st) as ooo.
   destruct ooo.
   destruct o.
-  - remember (act2 v) as ooo.
+  - remember (act2 a) as ooo.
     destruct ooo.
     destruct o.
-    + remember (act3 v0) as ooo.
+    + remember (act3 a0) as ooo.
       destruct ooo.
       destruct o.
-      ++ remember (act5 v1) as ooo.
+      ++ remember (act5 a1) as ooo.
          destruct ooo.
          destruct o.
          +++
-           remember (act4 v2) as ooo.
+           remember (act4 a2) as ooo.
            destruct ooo.
            destruct o.
            reflexivity.

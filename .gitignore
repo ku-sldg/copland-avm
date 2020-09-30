@@ -8,3 +8,4 @@ html/
 *.vos
 .coq.mk.d
 .lia.cache
+*.aux

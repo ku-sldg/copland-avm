@@ -1,6 +1,5 @@
 Require Import Term ConcreteEvidence Instr GenStMonad.
-Require Import MyStack.
-Require Import Maps.
+Require Import MyStack Maps.
 
 Require Import List.
 Import ListNotations.

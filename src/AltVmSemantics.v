@@ -1,24 +1,13 @@
 Require Import More_lists Preamble Term ConcreteEvidence LTS GenStMonad.
-Require Import Instr MyStack MonadVM MonadVMFacts.
+Require Import Instr MyStack MonadVM MonadVMFacts RunAlt.
 
-Require Import RunAlt.
-
-Require Import Main.
-Require Import Event_system.
-Require Import Term_system.
+Require Import Main Event_system Term_system.
 
 Require Import List.
 Import ListNotations.
-Require Import Coq.Program.Tactics.
-Require Import Coq.Program.Equality.
+Require Import Coq.Program.Tactics Coq.Program.Equality.
 
 Require Import StructTactics.
-
-Locate prec.
-
-Locate splitEv.
-
-(*From QuickChick Require Import QuickChick Tactics. *)
 
 
 Set Nested Proofs Allowed.

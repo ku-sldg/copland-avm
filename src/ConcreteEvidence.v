@@ -1,6 +1,6 @@
 Require Export Term.
 
-Require Import StructTactics.
+(* Require Import StructTactics. *)
 
 Notation BS := nat (only parsing).
 

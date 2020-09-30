@@ -1,11 +1,10 @@
 Require Import Preamble GenStMonad MonadVM Instr VmSemantics MyStack ConcreteEvidence MonadLaws.
 Require Import Event_system More_lists LTS Term Term_system.
 Require Import StructTactics.
+
 Require Import List.
 Import ListNotations.
 Require Import Coq.Program.Tactics.
-
-Print execSt.
 
 Lemma hfhf : forall (act1 act2:VM unit) st il,
     (act1;;

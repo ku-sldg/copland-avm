@@ -1,10 +1,10 @@
-Require Import Term LTS.
-Require Import More_lists Preamble List.
+Require Import More_lists Preamble Term LTS.
+Require Import List.
 Import ListNotations.
+
 Set Nested Proofs Allowed.
 
   
-
 (** * VM Instructions *)
 
 Inductive Prim_Instr: Set :=

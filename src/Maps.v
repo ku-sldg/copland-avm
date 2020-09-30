@@ -3,7 +3,6 @@ Require Import ConcreteEvidence.
 Require Import List.
 Import ListNotations.
 Require Import Coq.Arith.EqNat.
-(* From QuickChick Require Import QuickChick Tactics. *)
 
 (* ================================================================= *)
 (** ** List-Based Maps *)

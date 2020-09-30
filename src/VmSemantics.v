@@ -1,12 +1,12 @@
 Require Import More_lists Preamble Term ConcreteEvidence LTS GenStMonad.
-Require Import Instr MyStack MonadVM MonadVMFacts.
-
 Require Import Main Event_system Term_system.
+
+Require Import Instr MyStack MonadVM MonadVMFacts.
 
 Require Import List.
 Import ListNotations.
-Require Import Coq.Program.Tactics.
-Require Import Coq.Program.Equality.
+Require Import Coq.Program.Tactics Coq.Program.Equality.
+Require Import Coq.Arith.Peano_dec.
 
 Require Import StructTactics.
 
@@ -14,8 +14,6 @@ Require Import StructTactics.
 Set Nested Proofs Allowed.
 
 (** IO Axioms *)
-
-
 
 Definition parallel_att_vm_thread (li:list AnnoInstr) (e:EvidenceC) : EvidenceC.
 Admitted.
@@ -413,7 +411,6 @@ Proof.
   reflexivity.
 Defined.
 
-Require Import Coq.Arith.Peano_dec.
 Lemma st_trace_destruct' :
   forall il1 il2 e s m p o,
     st_trace
