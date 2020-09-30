@@ -27,22 +27,6 @@ Notation Plc := nat (only parsing).
 Notation ASP_ID := nat (only parsing).
 Notation N_ID := nat (only parsing).
 
-(*
-(** An argument to a userspace or kernel measurement. *)
-
-Inductive Arg: Set :=
-| arg: nat -> Arg
-| pl: Plc -> Arg.
-
-Definition eq_arg_dec:
-  forall x y: Arg, {x = y} + {x <> y}.
-Proof.
-  intros;
-  decide equality; decide equality.
-Defined.
-Hint Resolve eq_arg_dec : core.
-*)
-
 Inductive ASP: Set :=
 | CPY: ASP
 | ASPC: ASP_ID -> ASP
@@ -133,8 +117,7 @@ Hint Resolve eq_ev_dec : core.
 Definition ev x :=
   match x with
   | copy i _ => i
-(*  | kmeas i _ _ _ _ => i *)
-  | umeas i _ _ (*_*) => i
+  | umeas i _ _  => i
   | sign i _ => i
   | hash i _ => i
   | req i _ _ _ => i
@@ -170,14 +153,6 @@ Definition asp_event i x p :=
     its number [j] will be in the range [i <= j < k].  *)
 
 Definition Range: Set := nat * nat.
-
-(* Shouldn't need this. Keeping just in case.
-Inductive AnnASP: Set :=
-| aCPY: Range -> AnnASP
-| aKIM: Range -> (list Arg) -> AnnASP
-| aUSM: Range -> (list Arg) -> AnnASP
-| aSIG: Range -> AnnASP
-| aHSH: Range -> AnnASP.*)
 
 Inductive AnnoTerm: Set :=
 | aasp: Range -> ASP -> AnnoTerm
@@ -302,13 +277,6 @@ Proof.
                    inv H;
                    tauto).
 
-  (*
-  unfold annotated in H.
-  unfold anno in H.
-  simpl in H.
-  inv H.
-  simpl in *.
-*)
   unfold annotated in *.
   cbn in *.
   remember (anno t'1 (S n)) as oo.

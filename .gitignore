@@ -9,3 +9,4 @@ html/
 .coq.mk.d
 .lia.cache
 *.aux
+*~
