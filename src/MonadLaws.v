@@ -1,3 +1,9 @@
+(*
+Proofs of monad laws for the general state monad in GenStMonad.v.
+
+Author:  Adam Petz, ampetz@ku.edu
+*)
+
 Require Import GenStMonad.
 
 Require Import StructTactics.

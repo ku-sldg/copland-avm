@@ -1,3 +1,9 @@
+(*
+
+
+Author:  Adam Petz, ampetz@ku.edu
+*)
+
 Require Import Maps Term ConcreteEvidence StVM StAM
         VmSemantics MonadVM GenStMonad.
 (*Require Import Coq.ZArith.ZArith_base Coq.Strings.String Coq.Strings.Ascii. *)

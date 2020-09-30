@@ -1,3 +1,9 @@
+(*
+
+
+Author:  Adam Petz, ampetz@ku.edu
+*)
+
 Require Export ExtLib.Structures.Monads.
 Export MonadNotation.
 Open Scope monad_scope.

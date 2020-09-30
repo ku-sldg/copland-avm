@@ -1,3 +1,9 @@
+(*
+Implementation of the Attestation Virtual Machine (AVM) + proof that it refines the Copland reference semantics.
+
+Author:  Adam Petz, ampetz@ku.edu
+*)
+
 Require Import More_lists Preamble Term ConcreteEvidence LTS GenStMonad.
 Require Import Main Event_system Term_system.
 

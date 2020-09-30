@@ -1,3 +1,9 @@
+(*
+
+
+Author:  Adam Petz, ampetz@ku.edu
+*)
+
 Require Import More_lists Preamble Term ConcreteEvidence LTS GenStMonad.
 Require Import Instr MyStack MonadVM MonadVMFacts RunAlt.
 

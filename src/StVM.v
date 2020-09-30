@@ -1,3 +1,9 @@
+(*
+Record representing the AVM Monad state structure.
+
+Author:  Adam Petz, ampetz@ku.edu
+*)
+
 Require Import MyStack ConcreteEvidence.
 Require Import Maps.
 

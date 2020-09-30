@@ -1,3 +1,9 @@
+(*
+
+
+Author:  Adam Petz, ampetz@ku.edu
+*)
+
 Theorem app_inj_l: forall A (l1 l2 suf : list A),
     l1 ++ suf = l2 ++ suf -> l1 = l2.
 Proof.

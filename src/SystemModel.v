@@ -1,3 +1,9 @@
+(*
+
+
+Author:  Adam Petz, ampetz@ku.edu
+*)
+
 Require Import Maps Term.
 
 (* An identifier represneting a system component.  This could be logically equivalent to the hash of the component *)

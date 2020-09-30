@@ -1,3 +1,9 @@
+(*
+Alternative ("big-step") definition of run_vm + proof that it corresponds to the one in VmSemantics.v.
+
+Author:  Adam Petz, ampetz@ku.edu
+*)
+
 Require Import Preamble GenStMonad MonadVM Instr VmSemantics MyStack ConcreteEvidence MonadLaws.
 Require Import Event_system More_lists LTS Term Term_system.
 Require Import StructTactics.

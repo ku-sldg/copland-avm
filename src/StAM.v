@@ -1,3 +1,9 @@
+(*
+Record representing the AM Monad state structure.
+
+Author:  Adam Petz, ampetz@ku.edu
+*)
+
 Require Import Maps.
 
 Definition BS := nat.

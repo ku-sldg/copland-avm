@@ -1,3 +1,9 @@
+(*
+AVM instruction set and Copland Compiler implementation.
+
+Author:  Adam Petz, ampetz@ku.edu
+*)
+
 Require Import More_lists Preamble Term LTS.
 Require Import List.
 Import ListNotations.

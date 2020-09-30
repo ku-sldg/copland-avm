@@ -1,3 +1,9 @@
+(*
+Evidence structure that models concrete results of Copland phrase execution.
+
+Author:  Adam Petz, ampetz@ku.edu
+*)
+
 Require Export Term.
 
 (* Require Import StructTactics. *)

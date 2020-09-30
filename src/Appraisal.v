@@ -1,3 +1,9 @@
+(*
+
+
+Author:  Adam Petz, ampetz@ku.edu
+*)
+
 Require Import ConcreteEvidence GenStMonad.
 Require Import Maps. (*OptMonad*) (* MonadAM *)  (*StructTact.StructTactics. *)
 

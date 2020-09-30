@@ -1,3 +1,9 @@
+(*
+Simple, list-based stack implementation.
+
+Author:  Adam Petz, ampetz@ku.edu
+*)
+
 Require Import List.
 Import ListNotations.
 

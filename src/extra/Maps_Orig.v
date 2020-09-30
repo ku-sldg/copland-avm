@@ -1,3 +1,10 @@
+(*
+Simple, list-based implementation of finite maps, borrowed/tweaked from here:
+https://softwarefoundations.cis.upenn.edu/qc-current/TImp.html
+
+Author:  Adam Petz, ampetz@ku.edu
+*)
+
 Require Import List.
 Import ListNotations.
 From QuickChick Require Import QuickChick Tactics.

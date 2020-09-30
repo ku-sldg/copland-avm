@@ -1,3 +1,9 @@
+(*
+General definition of a state monad with error + monadic notations.
+
+Author:  Adam Petz, ampetz@ku.edu
+*)
+
 (* Generalized State Monad *)
 Definition St(S A : Type) : Type := S -> (option A) * S % type.
 

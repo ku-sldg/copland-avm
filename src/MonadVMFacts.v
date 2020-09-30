@@ -1,3 +1,9 @@
+(*
+Lemmas and LTAC scripts to leverage facts about the AVM Monad.
+
+Author:  Adam Petz, ampetz@ku.edu
+*)
+
 Require Import Term ConcreteEvidence MyStack MonadVM.
 Require Import Coq.Program.Tactics.
 
