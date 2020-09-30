@@ -2,7 +2,6 @@
 Copland Attestation Virtual Machine definition and tools
 
 ## Build Instructions
----
 
 Make sure you have [Coq](https://coq.inria.fr/opam-using.html) installed on your system (Tested on version 8.12.0), then type:
 
@@ -11,9 +10,9 @@ Make sure you have [Coq](https://coq.inria.fr/opam-using.html) installed on your
 You should now be able to walk through the proof scripts in the `src/` directory interactively (Tested with [ProofGeneral](https://proofgeneral.github.io/), not CoqIDE).
 
 ## Source File Descriptions
----
 
 ### Original Coq specs/proofs from the ["Orchestrating Layered Attestations" paper](https://ku-sldg.github.io/copland///resources/copland-post-2019.pdf), slightly modified (see modification notes [below](#Modifications-to-Original-Copland-spec/proofs)).  See full original specs/proofs [here](https://ku-sldg.github.io/copland/software.html).
+---
 * Preamble.v:  Helper tactics used throughout the proofs.
 * More_lists.v:  Facts about lists
 * Term.v:  Copland terms, events, and annotated terms
@@ -25,6 +24,7 @@ You should now be able to walk through the proof scripts in the `src/` directory
 
 
 ### Additional Coq specs/proofs
+---
 * StructTactics.v:  Local copy of structural tactics library from:  https://github.com/uwplse/StructTact
 * ConcreteEvidence.v:  Evidence structure that models concrete results of Copland phrase execution.  
 * Maps.v:  Simple, list-based implementation of finite maps
