@@ -1,0 +1,23 @@
+-R . CoplandM
+Preamble.v
+Maps.v
+StructTactics.v
+OptMonad.v
+More_lists.v
+Term.v
+ConcreteEvidence.v
+StVM.v
+StAM.v
+Event_system.v
+Term_system.v
+Trace.v
+LTS.v
+Main.v
+Instr.v
+MyStack.v
+GenStMonad.v
+MonadVM.v
+MonadVMFacts.v
+VmSemantics.v
+MonadLaws.v
+RunAlt.v
