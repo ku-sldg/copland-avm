@@ -208,41 +208,25 @@ Fixpoint anno (t: Term) i: nat * AnnoTerm :=
     (S k, abpar (i, S k) s a b)
   end.
 
+    
+Ltac hihi' tac :=
+  match goal with
+  | [H: anno _ ?x = (?y,_) |- _] => assert (y > x) by tac; clear H
+  end.
+
+Ltac hihi := hihi' eauto.
+
 Lemma anno_mono : forall t i j t',
   anno t i = (j, t') ->
   j > i.
 Proof.
-  induction t; intros.
-  - destruct a;
-      try (unfold anno in *;
-           inv H;
-           lia).
-  - simpl in *.
-    break_let.
-    invc H.
-    assert (n0 > (S i)).
-    eauto.
-    lia.
-  -
-    simpl in *.
-    repeat break_let.
-    invc H.
-    assert (n > i); eauto.
-    assert (j > n); eauto.
-    lia.
-  - simpl in *.
-    repeat break_let.
-    invc H.
-    assert (n > (S i)); eauto.
-    assert (n0 > n); eauto.
-    lia.
-  -
-    simpl in *.
-    repeat break_let.
-    invc H.
-    assert (n > (S i)); eauto.
-    assert (n0 > n); eauto.
-    lia.
+  induction t; intros;
+    try (
+        simpl in *;
+        repeat break_let;
+        find_inversion;
+        repeat hihi;
+        lia).
 Defined.
 
 Lemma anno_range:
@@ -260,52 +244,51 @@ Definition annotated x :=
 Lemma pairsinv : forall (a a' b b':nat),
     a <> a' -> (a,b) <> (a',b').
 Proof.
-  intros.
   congruence.
 Defined.
+
+Ltac asdff := eapply anno_mono; eauto.
+
+Ltac haha := hihi' asdff.
 
 Lemma afaf : forall i k s a b t' n,
     (abpar (i, k) s a b) = snd (anno t' n)(*(bpar s x y)*) ->
     (fst (range a)) <> (fst (range b)).
 Proof.
   intros.
-  destruct t';
-    cbn in *;
-    repeat (break_let);
-    simpl in *;
-    try solve_by_inversion.
+  destruct t'; try (
+                   unfold annotated in H;
+                   unfold anno in H;
+                   repeat break_let;
+                   simpl in *;
+                   solve_by_inversion).
 
-
-(*
-  unfold annotated in *.
   cbn in *.
+  repeat break_let.
+  simpl in *.
+  repeat find_inversion.
+
+  (*
   remember (anno t'1 (S n)) as oo.
   destruct oo.
   remember (anno t'2 n0) as oo.
-  destruct oo.
+  destruct oo. *)
+
+  pose proof anno_range.
   
-  simpl in *.
-  repeat break_let.
- *)
-  
-  inv H.
-  assert (n0 > (S n)).
-  eapply anno_mono; eauto.
-  assert (n1 > n0).
-  eapply anno_mono; eauto.
   assert ( range (snd (anno t'1 (S n))) = ((S n), fst (anno t'1 (S n)))).
+ 
   eapply anno_range; eauto.
-  subst.
-  rewrite Heqp in H2.
+  find_rewrite.
   simpl in *.
 
   assert ( range (snd (anno t'2 n0)) = (n0, fst (anno t'2 n0))).
   eapply anno_range; eauto.
-  rewrite Heqp0 in H3.
+  find_rewrite.
   simpl in *.
-  rewrite H2.
-  rewrite H3.
-  simpl.
+  repeat find_rewrite.
+  simpl in *.
+  repeat haha.
   lia.
 Defined.
 

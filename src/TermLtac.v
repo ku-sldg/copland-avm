@@ -208,42 +208,31 @@ Fixpoint anno (t: Term) i: nat * AnnoTerm :=
     (S k, abpar (i, S k) s a b)
   end.
 
-Lemma anno_mono : forall t i j t',
+(*
+Ltac asdf :=
+  match goal with
+  | [H : 
+  end
+ *)
+
+Ltac asdf :=
+  match goal with
+  | [H: _, H2: _ |- _] => apply H in H2
+  end.
+  
+Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm),
   anno t i = (j, t') ->
   j > i.
 Proof.
-  induction t; intros.
-  - destruct a;
-      try (unfold anno in *;
-           inv H;
-           lia).
-  - simpl in *.
-    break_let.
-    invc H.
-    assert (n0 > (S i)).
-    eauto.
-    lia.
-  -
-    simpl in *.
-    repeat break_let.
-    invc H.
-    assert (n > i); eauto.
-    assert (j > n); eauto.
-    lia.
-  - simpl in *.
-    repeat break_let.
-    invc H.
-    assert (n > (S i)); eauto.
-    assert (n0 > n); eauto.
-    lia.
-  -
-    simpl in *.
-    repeat break_let.
-    invc H.
-    assert (n > (S i)); eauto.
-    assert (n0 > n); eauto.
-    lia.
+  induction t; intros i j t' H;
+    try (
+        simpl in *;
+        repeat break_let;
+        find_inversion;
+        repeat find_apply_hyp_hyp;
+        lia).
 Defined.
+Hint Resolve anno_mono : core.
 
 Lemma anno_range:
   forall x i,
@@ -264,30 +253,126 @@ Proof.
   congruence.
 Defined.
 
+Ltac fail_if_in_hyps H := 
+  let t := type of H in 
+  lazymatch goal with 
+  | [G : t |- _ ] => fail "There is already a hypothesis of this proof"
+  | [_ : _ |- _ ] => idtac
+  end.
+
+Ltac pose_new_proof H := 
+  fail_if_in_hyps H;
+  pose proof H.
+
+Ltac fail_if_in_hyps_type t := 
+  lazymatch goal with 
+  | [G : t |- _ ] => fail "There is already a hypothesis of this type"
+  | [_ : _ |- _ ] => idtac
+  end.
+
+Ltac assert_new_proof_by H tac := 
+  fail_if_in_hyps_type H;
+  assert H by tac.
+
+
+Ltac haha :=
+  let asdff := eapply anno_mono; eauto in
+  match goal with
+  | [H: anno _ ?x = (?y,_) |- _] => assert_new_proof_by (y > x) (asdff)
+  end.
+
+Ltac hehe :=
+  match goal with
+  | [H: anno ?x ?y = (_,_) |- _] => pose_new_proof (anno_range x y)
+  end.
+
+Ltac hehe' :=
+  match goal with
+  | [x: Term, y:nat |- _] => pose_new_proof (anno_range x (S y))
+  end.
+
+Ltac hehe'' :=
+  match goal with
+  | [x: Term, y:nat |- _] => pose_new_proof (anno_range x y)
+  end.
+
+Ltac afa :=
+  match goal with   
+  | [H : forall _, _, H2: Term, H3: nat |- _] => pose_new_proof (H H2 H3)
+  end.
+
+Ltac afa' :=
+  match goal with   
+  | [H : forall _, _, H2: Term, H3: nat |- _] => pose_new_proof (H H2 (S H3))
+  end.
+
+Ltac afa'' :=
+  match goal with   
+  | [H : forall _, _, H2: Term, H3: nat, H4:nat, H5: AnnoTerm |- _] =>
+    pose_new_proof (H H2 (H3)(H4) H5)
+  end.
+
+Ltac find_apply_hyp_hyp' :=
+  match goal with
+  | [ H : _ -> _ , H' : _ |- _ ] =>
+    (*let x := fresh in *)
+    pose_new_proof (H H')
+  end.
+
+Ltac jkjk :=
+  match goal with
+  | [H: ?X = _ |-  context[?X] ] => rewrite H
+  end.
+
 Lemma afaf : forall i k s a b t' n,
-    (abpar (i, k) s a b) = snd (anno t' n)(*(bpar s x y)*) ->
+    (abpar (i, k) s a b) = snd (anno t' n) ->
     (fst (range a)) <> (fst (range b)).
 Proof.
   intros.
   destruct t';
+
+    (* Bogus cases *)
     cbn in *;
     repeat (break_let);
     simpl in *;
     try solve_by_inversion.
 
+  (* Some automation + insight *)
+    repeat find_inversion;
+      repeat hehe'; repeat hehe'';
+      (*repeat hehe;*)
+      repeat haha;
+      repeat (
+          find_rewrite;
+          simpl in * );
+      lia.
+                                   
+(*
+  (* High automation, very little insight (but much slower) *)
+   repeat find_inversion.
+   
+    pose proof anno_range.
+    pose proof anno_mono.
+    cbn in *.
+    repeat break_let.
+    simpl in *.
+    (*repeat afa'. *)
+    repeat afa.
+    repeat afa'.
+    repeat afa''.
+    subst.
+
+    repeat find_apply_hyp_hyp'.
+    repeat find_rewrite.
+    simpl in *.
+
+    repeat jkjk.
+    simpl.
+    lia.
+*)
 
 (*
-  unfold annotated in *.
-  cbn in *.
-  remember (anno t'1 (S n)) as oo.
-  destruct oo.
-  remember (anno t'2 n0) as oo.
-  destruct oo.
-  
-  simpl in *.
-  repeat break_let.
- *)
-  
+  (* Manual *)
   inv H.
   assert (n0 > (S n)).
   eapply anno_mono; eauto.
@@ -307,6 +392,7 @@ Proof.
   rewrite H3.
   simpl.
   lia.
+*)
 Defined.
 
 Fixpoint unanno a :=

@@ -9,6 +9,8 @@ Make sure you have [Coq](https://coq.inria.fr/opam-using.html) installed on your
 
 You should now be able to walk through the proof scripts in the `src/` directory interactively (Tested with [ProofGeneral](https://proofgeneral.github.io/), not CoqIDE).
 
+Alternatively, browse the pretty-printed html generated in `src/html`.
+
 ## Source File Descriptions
 
 ### Original Coq specs/proofs from the ["Orchestrating Layered Attestations" paper](https://ku-sldg.github.io/copland///resources/copland-post-2019.pdf), slightly modified (see modification notes [below](#Modifications-to-Original-Copland-spec/proofs)).  See full original specs/proofs [here](https://ku-sldg.github.io/copland/software.html).
@@ -40,3 +42,4 @@ You should now be able to walk through the proof scripts in the `src/` directory
 * RunAlt.v:  Alternative ("big-step") definition of run\_vm + proof that it corresponds to the one in VmSemantics.v
 
 ## Modifications to Original Copland spec/proofs
+1. 
