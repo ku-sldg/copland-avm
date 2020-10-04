@@ -8,7 +8,7 @@ Require Import More_lists Preamble Term ConcreteEvidence LTS GenStMonad.
 Require Import Main Event_system Term_system.
 
 
-Require Import MyStack MonadVM_noInstr MonadVMFacts.
+Require Import MyStack MonadVM MonadVMFacts.
 
 Require Import List.
 Import ListNotations.

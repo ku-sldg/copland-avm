@@ -4,8 +4,8 @@ Definition of the AVM Monad + monadic helper functions.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term ConcreteEvidence Instr GenStMonad.
-Require Import MyStack Maps.
+Require Import Term ConcreteEvidence GenStMonad.
+Require Import Maps.
 
 Require Import List.
 Import ListNotations.
@@ -22,7 +22,7 @@ Definition VM := St vm_st.
 
 (* Sanity checks *)
 
-
+(*
 Definition extractVal (r:vm_st) : nat :=
   let ev := head (st_stack r) in
   let n :=
@@ -38,12 +38,14 @@ Definition test_comp : VM unit :=
     put (mk_st mtc [(ggc n mtc)] [] 0 []) ;;
         ret tt.
 
-Definition empty_vm_state := mk_st mtc [(ggc 48 mtc)] [] 0 [].
+Definition empty_vm_state := mk_st mtc  [] 0 [].
 
 Compute (runSt empty_vm_state test_comp).
+*)
 
 (* VM monad operations *)
 
+(*
 Definition push_stackm (e:EvidenceC) : VM unit :=
   st <- get ;;
      let '{| st_ev := oldEv; st_stack := oldStack; st_trace := tr; st_pl := oldP; st_store := oldStore |} := st in
@@ -61,16 +63,16 @@ Definition pop_stackm : VM EvidenceC :=
            ret e
      | None => failm
      end.
+*)
 
 Definition put_store (n:nat) (e:EvidenceC) : VM unit :=
   st <- get ;;
      let e' := st_ev st in
-     let s' := st_stack st in
      let tr' := st_trace st in
      let p' := st_pl st in
      let store' := st_store st in
   (*let '{| st_ev := _; st_stack := s; st_trace := tr |} := st in*)
-     put (mk_st e' s' tr' p' (map_set store' n e)).
+     put (mk_st e' tr' p' (map_set store' n e)).
 
 Definition get_store_at (n:nat) : VM EvidenceC :=
   st <- get ;;
@@ -83,12 +85,11 @@ Definition get_store_at (n:nat) : VM EvidenceC :=
 
 Definition put_ev (e:EvidenceC) : VM unit :=
   st <- get ;;
-     let s' := st_stack st in
      let tr' := st_trace st in
      let p' := st_pl st in
      let store' := st_store st in
   (*let '{| st_ev := _; st_stack := s; st_trace := tr |} := st in*)
-    put (mk_st e s' tr' p' store').
+    put (mk_st e tr' p' store').
 
 Definition get_ev : VM EvidenceC :=
   st <- get ;;
@@ -100,17 +101,15 @@ Definition get_pl : VM Plc :=
 
 Definition modify_evm (f:EvidenceC -> EvidenceC) : VM unit :=
   st <- get ;;
-  let '{| st_ev := e; st_stack := s; st_trace := tr; st_pl := p; st_store := store |} := st in
-  put (mk_st (f e) s tr p store).
+  let '{| st_ev := e; st_trace := tr; st_pl := p; st_store := store |} := st in
+  put (mk_st (f e) tr p store).
 
 Definition add_trace (tr':list Ev) : vm_st -> vm_st :=
-  fun '{| st_ev := e; st_stack := s; st_trace := tr; st_pl := p; st_store := store |} =>
-    mk_st e s (tr ++ tr') p store.
+  fun '{| st_ev := e; st_trace := tr; st_pl := p; st_store := store |} =>
+    mk_st e (tr ++ tr') p store.
 
 Definition add_tracem (tr:list Ev) : VM unit :=
   modify (add_trace tr).
-Check modify.
-Print modify.
 
 Definition split_evm (i:nat) (sp1 sp2:SP) (e:EvidenceC) (p:Plc) : VM (EvidenceC*EvidenceC) :=
     let e1 := splitEv sp1 e in
@@ -197,13 +196,13 @@ Definition receiveResp (rpyi:nat) (q:Plc) : VM EvidenceC :=
 
 
 
-Definition do_prim (x:nat) (p:Plc) (a:Prim_Instr) : VM EvidenceC :=
+Definition do_prim (x:nat) (p:Plc) (a:ASP) : VM EvidenceC :=
   match a with
-  | copy => copyEv x p
-  | umeas asp_id =>
+  | CPY => copyEv x p
+  | ASPC asp_id =>
     invokeUSM x asp_id p
-  | sign => signEv x p
-  | hash => hashEv x p
+  | SIG => signEv x p
+  | HSH => hashEv x p
   end.
 
 

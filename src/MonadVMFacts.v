@@ -4,7 +4,7 @@ Lemmas and LTAC scripts to leverage facts about the AVM Monad.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term ConcreteEvidence MyStack MonadVM.
+Require Import Term ConcreteEvidence MonadVM.
 Require Import Coq.Program.Tactics.
 
 Require Import List.
@@ -12,6 +12,7 @@ Import ListNotations.
 
 Require Import StructTactics.
 
+(*
 Lemma pop_stackm_fail_facts : forall e e' s s' p p'
                      tr tr' o o',
     (None,
@@ -142,6 +143,7 @@ Ltac do_double_pop_none :=
             pop_stackm {| st_ev := ?e; st_stack := ?s; st_trace := ?m; st_pl := _; st_store := _ |} |- _ ] =>
     assert (st_stack0 = st_stack) by (eapply double_pop_none; eauto)
   end; destruct_conjs.
+*)
 
 Ltac vmsts :=
   simpl in *;
@@ -150,6 +152,7 @@ Ltac vmsts :=
     | [H: vm_st |- _] => destruct H
     end.
 
+(*
 Ltac try_pop_all :=
   vmsts;
   try do_double_pop;
@@ -207,16 +210,15 @@ Proof.
   invc H. invc H0.
   monad_unfold. inv H.
 Defined.
+*)
 
-Lemma get_store_at_determ : forall e0' e e' e2 e2' s s' s2 s2' tr tr' tr2 tr2' p p' p2 p2'
+Lemma get_store_at_determ : forall e0' e e' e2 e2' tr tr' tr2 tr2' p p' p2 p2'
                               store1 store1' store2' n,
-    get_store_at n {| st_ev := e; st_stack := s; st_trace := tr; st_pl := p; st_store := store1 |} =
-    (Some e0', {| st_ev := e'; st_stack := s'; st_trace := tr'; st_pl := p'; st_store := store1' |})
-    (*pop_stackm {| st_ev := e; st_stack := s; st_trace := tr; st_pl := p; st_store := store1 |}*) ->
+    get_store_at n {| st_ev := e; st_trace := tr; st_pl := p; st_store := store1 |} =
+    (Some e0', {| st_ev := e'; st_trace := tr'; st_pl := p'; st_store := store1' |}) ->
 
-    get_store_at n  {| st_ev := e2; st_stack := s2; st_trace := tr2; st_pl := p2; st_store := store1 |} =
-    (None, {| st_ev := e2'; st_stack := s2'; st_trace := tr2'; st_pl := p2'; st_store := store2' |})
-    (*pop_stackm {| st_ev := e2; st_stack := s; st_trace := tr2; st_pl := p2; st_store := store2 |}*) ->
+    get_store_at n  {| st_ev := e2; st_trace := tr2; st_pl := p2; st_store := store1 |} =
+    (None, {| st_ev := e2'; st_trace := tr2'; st_pl := p2'; st_store := store2' |}) ->
     False.
 Proof.
   intros.
@@ -226,6 +228,7 @@ Proof.
   invc H. (* invc Heqp1. *)
 Defined.
 
+(*
 Lemma push_stackm_facts : forall st_ev st_ev0 (st_trace:list Ev) (st_trace0:list Ev)
                             st_stack st_stack0 st_trace st_trace0 H0 u p p' o o',
     (Some u, {| st_ev := st_ev0; st_stack := st_stack0; st_trace := st_trace0; st_pl := p'; st_store := o' |}) =
@@ -238,14 +241,15 @@ Proof.
   inv H.
   split; eauto.
 Defined.
+*)
 
 Require Import Maps.
 
 Lemma get_store_at_facts : forall st_ev st_ev0 (st_trace:list Ev) (st_trace0:list Ev)
-                             st_stack st_stack0 st_trace st_trace0 st_ev' p p' o o' n,
-    get_store_at n {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace; st_pl := p; st_store := o |} = 
-    (Some st_ev', {| st_ev := st_ev0; st_stack := st_stack0; st_trace := st_trace0; st_pl := p'; st_store := o' |})  ->
-    st_ev = st_ev0 /\ st_trace = st_trace0 /\ st_stack = st_stack0 /\ p = p' /\ o = o' /\ bound_to o n st_ev'.
+                              st_trace st_trace0 st_ev' p p' o o' n,
+    get_store_at n {| st_ev := st_ev; st_trace := st_trace; st_pl := p; st_store := o |} = 
+    (Some st_ev', {| st_ev := st_ev0; st_trace := st_trace0; st_pl := p'; st_store := o' |})  ->
+    st_ev = st_ev0 /\ st_trace = st_trace0 /\ p = p' /\ o = o' /\ bound_to o n st_ev'.
 Proof.
   intros.
   unfold get_store_at in *.
@@ -283,11 +287,10 @@ Ltac do_bd :=
   end.
 
 Lemma get_store_at_facts_fail : forall st_ev st_ev0 (st_trace:list Ev) (st_trace0:list Ev)
-                             st_stack st_stack0 st_trace st_trace0 p p' o o' n,
-    get_store_at n {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace; st_pl := p; st_store := o |} = 
-    (None, {| st_ev := st_ev0; st_stack := st_stack0; st_trace := st_trace0; st_pl := p'; st_store := o' |}) (*=
-    push_stackm H0 {| st_ev := st_ev; st_stack := st_stack; st_trace := st_trace; st_pl := p; st_store := o |}*) ->
-    st_ev = st_ev0 /\ st_trace = st_trace0 /\ st_stack = st_stack0 /\ p = p' /\ o = o'.
+                             st_trace st_trace0 p p' o o' n,
+    get_store_at n {| st_ev := st_ev; st_trace := st_trace; st_pl := p; st_store := o |} = 
+    (None, {| st_ev := st_ev0; st_trace := st_trace0; st_pl := p'; st_store := o' |}) ->
+    st_ev = st_ev0 /\ st_trace = st_trace0 /\ p = p' /\ o = o'.
 Proof.
   intros.
   unfold get_store_at in *.
@@ -382,6 +385,7 @@ Ltac desp :=
   end; monad_unfold; vmsts.
 *)
 
+(*
 Ltac desp :=
   (*expand_let_pairs; *)
   match goal with
@@ -406,6 +410,8 @@ Ltac desp :=
     destruct ppp as [oo];
     destruct oo
   end; (*monad_unfold; *) vmsts.
+ *)
+Ltac desp := vmsts. (* TODO: still need this? *)
 
 Ltac get_store_some :=
   vmsts;
@@ -424,7 +430,7 @@ Ltac bogus :=
     | [H: (Some _, _) =
           (None, _) |- _ ] => inv H
                                  
-    | [H: (None, _) = push_stackm _ _ |- _] =>
+    (*| [H: (None, _) = push_stackm _ _ |- _] =>
       elimtype (False); eapply push_stackm_succeeds; eauto; contradiction
 
     | [ H: (Some _,
@@ -433,7 +439,7 @@ Ltac bogus :=
            G:  (None,
                 _) =
                pop_stackm _ |- _ ] =>
-      elimtype False; eapply pop_stackm_determ_none; eauto; contradiction
+      elimtype False; eapply pop_stackm_determ_none; eauto; contradiction *)
     | [ H: get_store_at ?n _ = (Some _,_),
            G: get_store_at ?n _ = (None,_) |- _ ] =>
       (*idtac "matched get_store_at_determ" ; *)
@@ -474,12 +480,12 @@ Ltac pairs :=
     | [H: (Some _, _) =
           (Some _, _) |- _ ] => invc H; monad_unfold
                                                           
-    | [H: (None, {| st_ev := _; st_stack := _; st_trace := _; st_pl := _; st_store := _|}) =
+   (* | [H: (None, {| st_ev := _; st_stack := _; st_trace := _; st_pl := _; st_store := _|}) =
           pop_stackm {| st_ev := _; st_stack := _; st_trace := _; st_pl := _; st_store := _|} |- _ ] =>
-      edestruct (pop_stackm_fail_facts); eauto; clear H
+      edestruct (pop_stackm_fail_facts); eauto; clear H *)
                                                       (* TODO: simplify record match ^ *)
-    | [H: {| st_ev := _; st_stack:= _; st_trace := _; st_pl := _; st_store := _ |} =
-          {| st_ev := _; st_stack:= _; st_trace := _; st_pl := _; st_store := _ |} |- _ ] =>
+    | [H: {| st_ev := _; st_trace := _; st_pl := _; st_store := _ |} =
+          {| st_ev := _; st_trace := _; st_pl := _; st_store := _ |} |- _ ] =>
       invc H; monad_unfold
                                                            
     end; destruct_conjs; monad_unfold.

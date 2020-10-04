@@ -13,10 +13,9 @@ Trace.v
 LTS.v
 Main.v
 Instr.v
-MyStack.v
 GenStMonad.v
-MonadVM_noInstr.v
+MonadVM.v
 MonadVMFacts.v
-VmSemantics_noInstr.v
+VmSemantics.v
 MonadLaws.v
 RunAlt.v

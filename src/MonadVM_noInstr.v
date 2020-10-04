@@ -4,7 +4,7 @@ Definition of the AVM Monad + monadic helper functions.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term ConcreteEvidence Instr GenStMonad.
+Require Import Term ConcreteEvidence GenStMonad.
 Require Import MyStack Maps.
 
 Require Import List.

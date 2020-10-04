@@ -7,7 +7,8 @@ Author:  Adam Petz, ampetz@ku.edu
 Require Import More_lists Preamble Term ConcreteEvidence LTS GenStMonad.
 Require Import Main Event_system Term_system.
 
-Require Import Instr MyStack MonadVM MonadVMFacts.
+
+Require Import MyStack MonadVM MonadVMFacts.
 
 Require Import List.
 Import ListNotations.
@@ -21,102 +22,86 @@ Set Nested Proofs Allowed.
 
 (** IO Axioms *)
 
-Definition parallel_att_vm_thread (li:list AnnoInstr) (e:EvidenceC) : EvidenceC.
+Definition parallel_att_vm_thread (t:AnnoTerm) (e:EvidenceC) : EvidenceC.
 Admitted.
 
-Definition parallel_vm_events (li:list AnnoInstr) (p:Plc) : list Ev.
+Definition parallel_vm_events (t:AnnoTerm) (p:Plc) : list Ev.
 Admitted.
 
 Definition shuffled_events (el1:list Ev) (el2:list Ev) : list Ev.
 Admitted.
 
-Locate toRemote.
-
-  
-  (*
-
-        put_ev (toRemote (unanno annt) q e) ;;
-      (* put_store reqi (toRemote (unanno annt) q e) ;; *)
-      (* TODO: make this contingent on a good remote setup.  Need to model such a situation *)
-      p <- get_pl ;;
-      let newTrace :=
-          [req reqi p q (unanno annt)] ++
-          (remote_events annt q) ++
-          [rpy (Nat.pred rpyi) p q] in
-      (* TODO: move remote_events annt q trace to get_store_at, models successful remote execution *)
-      add_tracem newTrace
-*)
-
-Definition build_comp (i:AnnoInstr): VM unit :=
-  match i with
-  | aprimInstr x a =>
+Fixpoint build_comp (t:AnnoTerm): VM unit :=
+  match t with
+  | aasp (n,_) a =>
     p <- get_pl ;;
-    e <- do_prim x p a ;;
-    put_ev e           
-  | asplit x sp1 sp2 =>
+    e <- do_prim n p a ;;
+    put_ev e
+  | aatt (reqi,rpyi) q t' =>
+    sendReq reqi q t' ;;
     e <- get_ev ;;
-      p <- get_pl ;;
-      pr <- split_evm x sp1 sp2 e p;;
-      let '(e1,e2) := pr in
-      put_ev e1 ;;
-      push_stackm e2
-  | ajoins i =>
-    e <- get_ev ;;
-      p <- get_pl ;;
-      er <- pop_stackm ;;
-      put_ev (ssc er e) ;;
-      add_tracem [Term.join i p]
-  | ajoinp i loc1 loc2 =>
-    p <- get_pl ;;
-      e1 <- get_store_at loc1 ;;
-      e2 <- get_store_at loc2 ;;
-      add_tracem [Term.join i p] 
-  | abesr =>
-    e <- get_ev ;;
-      er <- pop_stackm ;;
-      push_stackm e ;;
-      put_ev er    
-  | areqrpy reqi rpyi q annt =>
-    sendReq reqi q annt ;;
-    e <- get_ev ;;
-    doRemote annt q e rpyi ;;
+    doRemote t' q e rpyi ;;
     e' <- receiveResp rpyi q ;;
     put_ev e'
-                     
-    
-
-
-    (*
+  | alseq r t1 t2 =>
+    build_comp t1 ;;
+    build_comp t2 (* TODO: does evidence work out ok? *)
+  | abseq (x,y) (sp1,sp2) t1 t2 =>
     e <- get_ev ;;
-      put_ev (toRemote (unanno annt) q e) ;;
-      (* put_store reqi (toRemote (unanno annt) q e) ;; *)
-      (* TODO: make this contingent on a good remote setup.  Need to model such a situation *)
-      p <- get_pl ;;
-      let newTrace :=
-          [req reqi p q (unanno annt)] ++
-          (remote_events annt q) ++
-          [rpy (Nat.pred rpyi) p q] in
-      (* TODO: move remote_events annt q trace to get_store_at, models successful remote execution *)
-      add_tracem newTrace
-     *)
-    
-  | abep loc1 loc2 il1 il2 =>
+    p <- get_pl ;;
+    pr <- split_evm x sp1 sp2 e p ;;
+    let '(e1,e2) := pr in
+    put_ev e1 ;;
+    build_comp t1 ;;
+    e1r <- get_ev ;;
+    put_ev e2 ;;
+    build_comp t2 ;;
+    e2r <- get_ev ;;
+    put_ev (ssc e1r e2r) ;;
+    add_tracem [Term.join (Nat.pred y) p]
+(*
+
+  | abseq (x,y) (sp1,sp2) t1 t2 =>
     e <- get_ev ;;
-      p <- get_pl ;;
-      er <- pop_stackm ;;
-      let res1 := parallel_att_vm_thread il1 e in
-      let res2 := parallel_att_vm_thread il2 er in
-      let el1 := parallel_vm_events il1 p in
-      let el2 := parallel_vm_events il2 p in
-      put_store loc1 res1 ;;
-                put_store loc2 res2 ;;
-                put_ev (ppc res1 res2) ;;
-                add_tracem (shuffled_events el1 el2)
-     (* TODO:  axioms asserting we had valid VM threads available to execute them *)
+    p <- get_pl ;;
+    pr <- split_evm x sp1 sp2 e p ;;
+    let '(e1,e2) := pr in
+    put_ev e1 ;;
+    push_stackm e2 ;;
+    build_comp t1 ;;
+    e <- get_ev ;;
+    er <- pop_stackm ;; (* TODO:  is stack still necessary? *)
+    put_ev er ;;
+    push_stackm e ;;
+    build_comp t2 ;;
+    er' <- pop_stackm ;;
+    er'' <- get_ev ;;
+    put_ev (ssc er' er'') ;;
+    add_tracem [Term.join (Nat.pred y) p]
+*)
+  | abpar (x,_) (sp1,sp2) t1 t2 =>
+    e <- get_ev ;;
+    p <- get_pl ;;
+    pr <- split_evm x sp1 sp2 e p ;;
+    let '(e1,e2) := pr in
+    let res1 := parallel_att_vm_thread t1 e in
+    (* TODO: change this to a monadic function that consults an environment that is aware of the presence (or absence) of parallel avm threads.  Put initial evidence in store, let environment run the parallel thread and place result evidence, then query for result evidence here. *)
+    let res2 := parallel_att_vm_thread t2 e2 in
+    let el1 := parallel_vm_events t1 p in
+    let el2 := parallel_vm_events t2 p in
+    let loc1 := fst (range t1) in
+    let loc2 := fst (range t2) in
+    put_store loc1 res1 ;;
+    put_store loc2 res2 ;;
+    add_tracem (shuffled_events el1 el2) ;;
+    e1r <- get_store_at loc1 ;;
+    e2r <- get_store_at loc2 ;;
+    put_ev (ppc e1r e2r) 
   end.
 
 (** Function-style semantics for VM *)
 
+(*
 (* Transform vm_st for a single instruction (A -> B -> A) function for fold_left *)
 Definition run_vm_step (a:vm_st) (b:AnnoInstr) : vm_st :=
   execSt a (build_comp b).
@@ -126,69 +111,80 @@ Definition run_vm (il:list AnnoInstr) st : vm_st :=
 
 Definition run_vm_t (t:AnnoTerm) st : vm_st :=
   run_vm (instr_compiler t) st.
+ *)
+
+Definition run_vm (t:AnnoTerm) st : vm_st :=
+  execSt st (build_comp t).
 
 Lemma st_congr :
-  forall st tr e p s o,
+  forall st tr e p o,
     st_ev st = e ->
-    st_stack st = s ->
     st_trace st = tr ->
     st_pl st = p ->
     st_store st = o ->
-    st =  {| st_ev := e; st_trace := tr; st_stack := s; st_pl := p; st_store := o |}.
+    st =  {| st_ev := e; st_trace := tr; st_pl := p; st_store := o |}.
 Proof.
   intros.
   subst; destruct st; auto.
 Defined.
 
-Ltac unfoldm :=  repeat unfold run_vm_step in *; monad_unfold.
+Ltac unfoldm :=  (*repeat unfold run_vm_step in *;*) monad_unfold.
 
 Ltac boom :=
   repeat unfoldm;
   repeat (desp; unfoldm);
-  try_pop_all;
+  (*try_pop_all; *)
   vmsts.
 
 Ltac do_run :=
   match goal with
-  | [H:  run_vm (_ :: _) _ = _ |- _ ] => invc H; unfold run_vm_step in *; repeat monad_unfold
+  | [H:  run_vm _ _ = _ |- _ ] => invc H; (*unfold run_vm_step in *;*) repeat monad_unfold
   end.
 
+(*
 Ltac do_flip :=
   match goal with
   | [H: (pop_stackm _ = _) |- _ ] =>
     (*idtac "doing pop_stackm flip"; *)
     symmetry in H
   end.
+*)
 
 Ltac allss :=
   repeat find_inversion;
   try bogus;
   repeat (do_get_store_at_facts; subst; eauto);
   repeat (do_get_store_at_facts_fail; subst; eauto);
-  repeat do_flip;
+ (* repeat do_flip;
   repeat do_pop_stackm_facts;
-  repeat do_pop_stackm_fail;
+  repeat do_pop_stackm_fail; *)
   repeat get_store_at_bogus;
   try do_bd;
   subst; eauto.
 
 (* Starting trace has no effect on store *)
-Lemma trace_irrel_store : forall il1 tr1 tr1' tr2 e e' s s' p1' p1 o' o,
-    run_vm il1
-           {| st_ev := e;  st_trace := tr1;  st_stack := s;  st_pl := p1;  st_store := o  |} =
-           {| st_ev := e'; st_trace := tr1'; st_stack := s'; st_pl := p1'; st_store := o' |} ->
+Lemma trace_irrel_store : forall t1 tr1 tr1' tr2 e e' p1' p1 o' o,
+    run_vm t1
+           {| st_ev := e;  st_trace := tr1; st_pl := p1;  st_store := o  |} =
+           {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_store := o' |} ->
     
     st_store (
-        run_vm il1
-           {| st_ev := e;  st_trace := tr2;  st_stack := s;  st_pl := p1;  st_store := o  |}) = o'.
+        run_vm t1
+           {| st_ev := e;  st_trace := tr2; st_pl := p1;  st_store := o  |}) = o'.
 Proof.
-  induction il1; intros.
+  induction t1; intros.
+  - simpl in *.
+    
+
+  (*
   - simpl.
     inv H. reflexivity.   
   - simpl; destruct a;
       boom;
       repeat break_match;
       allss.
+   *)
+  
 Defined.
 
 (* Starting trace has no effect on evidence *)
