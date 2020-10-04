@@ -15,8 +15,8 @@ Main.v
 Instr.v
 MyStack.v
 GenStMonad.v
-MonadVM.v
+MonadVM_noInstr.v
 MonadVMFacts.v
-VmSemantics.v
+VmSemantics_noInstr.v
 MonadLaws.v
 RunAlt.v
