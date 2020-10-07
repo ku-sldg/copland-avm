@@ -509,121 +509,7 @@ Proof.
      rewrite Heqp0.
      simpl. reflexivity.
      eassumption. eassumption.
-     (*
-  -
-
-    
-    destruct t'; inv H;
-      try (
-          repeat break_let;
-          simpl in *;
-          solve_by_inversion).
-     simpl in *.
-     repeat break_let.
-     inv H.
-     simpl in *.
-     monad_unfold.
-     repeat break_let.
-     unfold get_store_at in *.
-     monad_unfold.
-     repeat break_let.
-     repeat find_inversion.
-     rewrite PeanoNat
-    
      
-     
-     eassumption.
-     
-     simpl in *.
-    
-    
-      *)
-    
-
-
-    (*
-    assert (st_ev2 = st_ev0). admit.
-    assert (st_pl = st_pl0). admit.
-    assert (st_store2 = st_store0). admit.
-    subst.
-    repeat find_inversion.
-    eapply IHt2.
-    eapply Heqp3.
-    assert (st_pl2 = p''). admit.
-    subst.
-    eapply Heqp1.
-    vmsts.
-    repeat find_inversion.
-    assert (e' = st_ev0). admit.
-    assert (p' = st_pl0). admit.
-    assert (o' = st_store0). admit.
-    subst.
-    eapply IHt1. apply Heqp2.
-
-    destruct u.
-
-    apply Heqp0.
-
-    vmsts.
-    destruct u.
-
-    Search trace_irrel_ev.
-    Check trace_irrel_ev.
-
-
-
-    eauto.
-    
-
-    vmsts.
-    invc H.
-    solve_by_inversion. 
-  -
-    simpl in *.
-    repeat break_let.
-    monad_unfold.
-    repeat break_let.
-    repeat find_inversion.
-    repeat break_match; 
-      repeat find_inversion.
-    vmsts.
-    simpl in *.
-
-
-
-    destruct u.
-    destruct u1.
-    destruct u0.
-    Print dohi.
-    edestruct hihi.
-    dohi.
-    dohi.
-    dohi.
-    destruct_conjs; subst.
-    eapply IHt2. apply Heqp17. eassumption.
-    (*
-    dohi.
-    destruct_conjs; subst.
-    eauto.
-     *)
-    
-
-    simpl in *.
-    vmsts.
-    simpl in *.
-
-    repeat dunit.
-    eapply IHt1. eassumption. eassumption.
-    (*
-    repeat dohi.
-    destruct_conjs; subst.
-    eauto. *)
-    vmsts.
-    simpl in *.
-    dunit.
-    dunit.
-    eapply IHt1. eassumption. eassumption.
-*)
   -
     simpl in *.
     repeat break_let.
@@ -1267,6 +1153,201 @@ Proof.
    *)
 Admitted.
 
+Lemma pl_immut : forall t t' n e tr p o,
+    t = snd (anno t' n) ->
+    st_pl
+      (snd
+         (build_comp t
+              {|
+                st_ev := e;
+                st_trace := tr;
+                st_pl := p;
+                st_store := o |})) = p.
+Proof.
+  induction t; intros.
+  -
+    destruct r.
+    destruct a;
+      reflexivity.
+  - simpl in *.
+    repeat break_let.
+    monad_unfold.
+    repeat break_let.
+    repeat find_inversion.
+    unfold get_store_at in *.
+    monad_unfold.
+    repeat break_let.
+    rewrite PeanoNat.Nat.eqb_refl in *.
+    repeat find_inversion.
+    simpl.
+    reflexivity.
+  - simpl in *.
+    monad_unfold.
+    repeat break_match;
+      try solve_by_inversion.
+    simpl.
+    repeat dunit.
+    vmsts.
+    simpl.
+
+    destruct t'; inv H;
+      try (
+          repeat break_let;
+          solve_by_inversion).
+    simpl in *.
+    repeat break_let.
+    inv H.
+    
+    assert (p = st_pl0).
+    {
+      edestruct IHt1.
+      rewrite Heqp2.
+      simpl. reflexivity.
+      rewrite Heqp0.
+      simpl.
+      reflexivity.
+    }
+    assert (st_pl0 = st_pl).
+    {
+      edestruct IHt2.
+      rewrite Heqp3.
+      simpl. reflexivity.
+      rewrite Heqp1.
+      simpl.
+      reflexivity.
+    }
+
+    congruence.
+
+    destruct t'; inv H;
+      try (
+          repeat break_let;
+          solve_by_inversion).
+    simpl in *.
+    repeat break_let.
+    inv H.
+
+    vmsts.
+    simpl in *.
+    symmetry.
+    edestruct IHt1.
+    rewrite Heqp1.
+    simpl. reflexivity.
+    rewrite Heqp0.
+    simpl. reflexivity.
+    
+  -
+    destruct t'; inv H;
+      try (
+          repeat break_let;
+          solve_by_inversion).
+    simpl in *.
+    repeat break_let.
+    inv H.
+    
+    simpl in *.
+    repeat break_let.
+    monad_unfold.
+    repeat break_let.
+    repeat break_match;
+      try solve_by_inversion;
+    repeat find_inversion;
+    repeat dunit;
+    simpl in *; vmsts; simpl in *.
+    +
+    
+
+    assert (p = st_pl0).
+    {
+      edestruct IHt1.
+      rewrite Heqp0.
+      simpl. reflexivity.
+      rewrite Heqp6.
+      simpl.
+      reflexivity.
+    }
+
+    assert (st_pl0 = st_pl).
+    {
+      
+      edestruct IHt2.
+      rewrite Heqp1.
+      simpl. reflexivity.
+      rewrite Heqp10.
+      simpl.
+      reflexivity.
+    }
+    congruence.
+    +
+      assert (p = st_pl).
+      {
+        edestruct IHt1.
+        rewrite Heqp0.
+        simpl. reflexivity.
+        rewrite Heqp6.
+        simpl. reflexivity.
+      }
+
+      assert (st_pl = st_pl0).
+      {
+        edestruct IHt2.
+        rewrite Heqp1.
+        simpl. reflexivity.
+        rewrite Heqp10.
+        simpl. reflexivity.
+      }
+      congruence.
+    +
+      symmetry.
+      edestruct IHt1.
+      rewrite Heqp0.
+      simpl. reflexivity.
+      rewrite Heqp6.
+      simpl. reflexivity.
+    +
+      symmetry.
+      edestruct IHt1.
+      rewrite Heqp0.
+      simpl. reflexivity.
+      rewrite Heqp6.
+      simpl. reflexivity.
+  -
+    simpl in *.
+    monad_unfold.
+    repeat break_let.
+    simpl in *.
+    unfold get_store_at in *.
+    monad_unfold.
+    repeat break_let.
+
+    rewrite PeanoNat.Nat.eqb_refl in *.
+
+    assert (PeanoNat.Nat.eqb (fst (range t1)) (fst (range t2)) = false).
+    {
+      assert ( (fst (range t1)) <> (fst (range t2))).
+      {
+        Check afaf.
+        simpl in *.
+        eapply afaf; eauto.
+      }
+      unfold PeanoNat.Nat.eqb.
+      Search PeanoNat.Nat.eqb.
+      rewrite PeanoNat.Nat.eqb_neq.
+      assumption.
+    }
+    rewrite H0 in *.
+    vmsts.
+    repeat find_inversion.
+    simpl in *.
+
+    rewrite PeanoNat.Nat.eqb_refl in *.
+    repeat find_inversion.
+    reflexivity.
+Defined.
+
+(*
+
+
 Lemma pl_immut : forall t e tr p o,
     st_pl
       (run_vm t
@@ -1276,6 +1357,7 @@ Lemma pl_immut : forall t e tr p o,
                 st_pl := p;
                 st_store := o |}) = p.
 Proof.
+  
   (*
   induction il; intros.
   - simpl. reflexivity.
@@ -1284,6 +1366,8 @@ Proof.
       try (boom; repeat break_match; allss).
    *)
 Admitted.
+ *)
+
 
 (*
 Lemma trace_under_st_ev : forall t t' n e trd trd' p o,
@@ -2172,7 +2256,11 @@ Defined.
   exfalso.
   eapply fafaf; eauto.
 Defined.
-*)
+ *)
+
+Axiom build_comp_at : forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (o : ev_store),
+    build_comp t {| st_ev := e; st_trace := []; st_pl := n; st_store := o |} =
+    (Some tt, {| st_ev := eval (unanno t) e; st_trace := remote_events t n; st_pl := n; st_store := o |}).
 
 Lemma run_lstar : forall t tr et e e' p p' o o' t' n,
    (* annotated x = t -> *)
@@ -2231,11 +2319,7 @@ Proof.
     Check run_at.
     Print run_at.
 
-    Lemma build_comp_at : forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (o : ev_store),
-        build_comp t {| st_ev := e; st_trace := []; st_pl := n; st_store := o |} =
-        (Some tt, {| st_ev := eval (unanno t) e; st_trace := remote_events t n; st_pl := n; st_store := o |}).
-    Proof.
-    Admitted.
+
 
     apply build_comp_at.
 
@@ -2274,6 +2358,10 @@ Proof.
     eapply IHt2; eauto.
     (* inv wft. eauto. *)
     assert (p = H1). {
+      edestruct pl_immut.
+      rewrite H3.
+      simpl. reflexivity.
+      (*
       assert (
           st_pl (run_vm t1
                         {| st_ev := e; st_trace := [];
@@ -2287,7 +2375,8 @@ Proof.
       simpl. reflexivity.
       
       rewrite pl_immut in *. simpl in *.
-      congruence. }
+      congruence.  *)
+    }
     subst; eauto.
 
   -
@@ -2336,11 +2425,7 @@ Proof.
       destruct u.
       rewrite Heqp0.
       reflexivity.
-      assert ( Term.split n p :: H0 =  [Term.split n p] ++ H0).
-      {
-        
-        admit.
-      }
+      assert ( Term.split n p :: H0 =  [Term.split n p] ++ H0) by reflexivity.
       
       rewrite H in *.
       repeat dunit.
@@ -2380,10 +2465,7 @@ Proof.
       rewrite Heqp1.
       reflexivity.
       
-      assert ( Term.split n p :: H0 =  [Term.split n p] ++ H0).
-      {
-        admit.
-      }
+      assert ( Term.split n p :: H0 =  [Term.split n p] ++ H0) by reflexivity.
       
        
       
@@ -2404,14 +2486,30 @@ Proof.
 
     assert (p = st_pl3).
     {
-      admit.
+      edestruct pl_immut.
+      rewrite Heqp4.
+      simpl. reflexivity.
+      (*
+      Check pl_immut.
+      edestruct pl_immut.
+      unfold run_vm.
+      monad_unfold.
+      rewrite Heqp4.
+      simpl. reflexivity.  *)
     }
 
     rewrite H3 in *. clear H3.
 
     assert (st_pl3 = p').
     {
-      admit.
+      edestruct pl_immut.
+      rewrite Heqp8.
+      simpl. reflexivity.
+      (*
+      unfold run_vm.
+      monad_unfold.
+      rewrite Heqp8.
+      simpl. reflexivity. *)
     }
     rewrite H3 in *. clear H3.
     repeat rewrite <- app_assoc.
@@ -2485,12 +2583,9 @@ Proof.
     repeat break_let.
     unfold get_store_at in *.
 
-    destruct t'; inv HH;
-      try (
-          repeat break_let;
-          simpl in *;
-          solve_by_inversion).
-    repeat break_let.
+    
+
+ 
     repeat find_inversion.
     monad_unfold.
     repeat break_let.
@@ -2499,8 +2594,24 @@ Proof.
 
     assert (PeanoNat.Nat.eqb (fst (range t1)) (fst (range t2)) = false).
     {
-      admit.
+      assert ( (fst (range t1)) <> (fst (range t2))).
+      {
+        Check afaf.
+        simpl in *.
+        eapply afaf; eauto.
+      }
+      unfold PeanoNat.Nat.eqb.
+      Search PeanoNat.Nat.eqb.
+      rewrite PeanoNat.Nat.eqb_neq.
+      assumption.
     }
+
+    destruct t'; inv HH;
+      try (
+          repeat break_let;
+          simpl in *;
+          solve_by_inversion).
+    repeat break_let.
 
     rewrite H in *.
     repeat find_inversion.
@@ -2521,11 +2632,10 @@ Proof.
     eauto.
     eauto.
     eauto.
-Admitted.
+Defined.
 
     
-        
-    
+
     
     (*
 
