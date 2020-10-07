@@ -22,6 +22,17 @@ Definition VM := St vm_st.
 
 (* Sanity checks *)
 
+Definition fail_early : VM EvidenceC :=
+  ret mtc ;;
+  put (mk_st (ggc 3 mtc) [] 0 []) ;;
+  failm (A:=nat) ;;
+  put (mk_st (ggc 4 mtc) [] 0 []) ;;
+  failm (A:=nat) ;;
+  ret (ggc 3 mtc).
+
+Compute (runSt (mk_st mtc [] 0 []) fail_early).
+
+
 (*
 Definition extractVal (r:vm_st) : nat :=
   let ev := head (st_stack r) in
