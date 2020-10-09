@@ -180,6 +180,53 @@ Ltac dunit :=
   | [H:unit |- _] => destruct H
   end.
 
+Ltac annogo :=
+  match goal with
+  | [H: _ = snd (anno ?t' _) |- _] =>
+    vmsts; repeat dunit;
+    destruct t';
+    try (inv H; tauto);
+    simpl in *;
+    repeat break_let;
+    simpl in *;
+    inv H
+  end.
+
+Ltac anhl :=
+  match goal with
+  | [H: anno _ _ = (_, ?a),
+     H2: build_comp ?a _ = _,
+     H3: build_comp ?a _ = _,
+     IH: context[?a = _ -> _] |- _] =>
+    edestruct IH;
+    [(rewrite H; reflexivity) |
+     apply H2 | apply H3 | idtac]; clear H2; clear H3;
+    destruct_conjs; subst
+  end.
+
+Lemma h : forall a b t1 t2 t n,
+    abpar a b t1 t2 = snd (anno t n) ->
+    (PeanoNat.Nat.eqb (fst (range t1)) (fst (range t2)) = false).
+Proof.
+  intros.
+  destruct a; destruct b.
+  assert ( (fst (range t1)) <> (fst (range t2))).
+  { eapply afaf; eauto. }
+  rewrite PeanoNat.Nat.eqb_neq.
+  assumption.
+Defined.
+
+Ltac htac :=
+  let tac := eapply h; eauto in
+  match goal with
+  | [H: abpar _ _ ?t1 ?t2 = snd _ |- _] =>
+    assert (PeanoNat.Nat.eqb (fst (range t1)) (fst (range t2)) = false) as HH by tac; [idtac]; rewrite HH in *; clear HH
+  end.
+
+Ltac dohtac := try htac;
+               try rewrite PeanoNat.Nat.eqb_refl in *;
+               try rewrite PeanoNat.Nat.eqb_eq in *.
+
 Lemma hihi : forall t t' n e e' e'' x x' y y' p p' p'' o o' o'',
     t = snd (anno t' n) -> 
     build_comp t {| st_ev := e; st_trace := x; st_pl := p; st_store := o |} =
@@ -202,104 +249,43 @@ Proof.
     repeat find_inversion.
     unfold get_store_at in *.
     monad_unfold.
-    repeat break_let.
-    rewrite PeanoNat.Nat.eqb_refl in *.
+    dohtac.
     repeat find_inversion.
     auto.
-  - simpl in *.
-    monad_unfold.
+  -
+    simpl in *;
+    monad_unfold;
     repeat break_match;
-      try (repeat find_inversion).
+    try (repeat find_inversion);
+    simpl in *.
 
-    + 
-      try dunit; repeat find_inversion; vmsts; repeat dunit.
-    
-      destruct t'; inv H;
-        try (
-          repeat break_let;
-          simpl in *;
-          inv H1).
-      repeat break_let.
-      edestruct IHt1.
-      symmetry.
-      rewrite Heqp6.
-      simpl in *.
-      inv H.
-      reflexivity.
+    annogo.
+    repeat anhl.
+    eauto.
+  -
+    simpl in *.
+    monad_unfold;
+    repeat break_match;
+    try (repeat find_inversion);
+    simpl in *.
 
-      apply Heqp2. apply Heqp0.
-      destruct_conjs; subst.
-      edestruct IHt2.
-      rewrite Heqp7.
-      simpl in *.
-      inv H.
-      reflexivity.
-      apply Heqp3. apply Heqp1.
-      destruct_conjs; subst.
-      eauto.
+    annogo.
+    repeat anhl.
+    eauto.
   -
     simpl in *.
     monad_unfold.
     repeat break_let.
-    simpl in *.
-    repeat find_inversion.
-    repeat break_match;
-      try (repeat find_inversion).
-    vmsts.
-    simpl in *.
-    repeat dunit.
-    
-     destruct t'; inv H;
-        try (
-          repeat break_let;
-          simpl in *;
-          inv H1).
-     repeat break_let.
-     edestruct IHt1.
-     rewrite Heqp2. simpl in *.
-     inv H.
-     reflexivity.
-     
-    
-
-    apply Heqp13. apply Heqp4.
-    destruct_conjs; subst.
-    edestruct IHt2.
-    rewrite Heqp3.
-    simpl in *.
-    inv H.
-    reflexivity.
-
-    apply Heqp8. apply Heqp17.
-    destruct_conjs; subst. eauto.
-  - simpl in *.
-    monad_unfold.
-    repeat break_let.
-    simpl in *.
-    repeat find_inversion.
     unfold get_store_at in *.
     monad_unfold.
-    repeat break_let.
-    rewrite PeanoNat.Nat.eqb_refl in *.
-    assert (PeanoNat.Nat.eqb (fst (range t1)) (fst (range t2)) = false) as H0.
-    { assert ( (fst (range t1)) <> (fst (range t2))).
-      {
-        eapply afaf; eauto.
-      }
-      unfold PeanoNat.Nat.eqb.
-      Search PeanoNat.Nat.eqb.
-      rewrite PeanoNat.Nat.eqb_neq.
-      assumption.
-    }
-   
-    rewrite H0 in *.
+
+    dohtac.
+    
     repeat find_inversion.
-    repeat break_let.
     simpl in *.
-    repeat find_inversion.
-    rewrite PeanoNat.Nat.eqb_refl in *.
-    vmsts.
-    simpl in *.
+
+    dohtac.
+
     repeat find_inversion.
     auto.
 Defined.
@@ -329,17 +315,9 @@ Lemma map_get_get_2(*{V:Type}`{forall x y : V, Dec (x = y)}*) :
     k <> k' ->
     Maps.map_get ((k',v') :: (k,v) :: l') k = Some v.
 Proof.
-  intros.
-  simpl.
-  Search PeanoNat.Nat.eqb.
-  remember (PeanoNat.Nat.eqb k k') as oo.
-  
-  destruct oo.
-  Search PeanoNat.Nat.eqb.
-  assert (k = k').
-  apply EqNat.beq_nat_eq. auto.
-  congruence.
-  rewrite PeanoNat.Nat.eqb_refl. reflexivity.
+  intros; simpl.
+  break_if;
+    dohtac; tauto.
 Defined.
 
 Lemma fafaf : forall t t' n e e' e'' p p' p'' o o' o'' x y r s,
@@ -368,15 +346,12 @@ Proof.
     unfold get_store_at in *.
     monad_unfold.
     repeat break_let.
-    rewrite PeanoNat.Nat.eqb_refl in *.
+    dohtac.
     monad_unfold.
     repeat find_inversion.
-  -
-    
-    simpl in *.
-    
-    repeat monad_unfold.
-      
+  -  
+    simpl in *.   
+    repeat monad_unfold.   
     repeat break_match; try solve_by_inversion.
     + 
     vmsts.
