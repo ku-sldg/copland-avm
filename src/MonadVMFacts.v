@@ -4,7 +4,7 @@ Lemmas and LTAC scripts to leverage facts about the AVM Monad.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term ConcreteEvidence MonadVM.
+Require Import Term ConcreteEvidence MonadVM Maps_Class.
 Require Import Coq.Program.Tactics.
 
 Require Import List.
@@ -268,8 +268,8 @@ Ltac do_get_store_at_facts :=
   end; destruct_conjs.
 
 Lemma bound_and_deterministic : forall (s:ev_store) n (e1 e2:EvidenceC),
-    Maps.bound_to s n e1 ->
-    Maps.bound_to s n e2 ->
+    Maps_Class.bound_to s n e1 ->
+    Maps_Class.bound_to s n e2 ->
     e1 = e2.
 Proof.
   intros.
@@ -279,8 +279,8 @@ Defined.
 
 Ltac do_bd :=
   match goal with
-  | [ H: Maps.bound_to ?s ?n ?e1,
-         G: Maps.bound_to ?s ?n ?e2  |- _ ] =>
+  | [ H: Maps_Class.bound_to ?s ?n ?e1,
+         G: Maps_Class.bound_to ?s ?n ?e2  |- _ ] =>
     assert (e1 = e2)
       by (eapply bound_and_deterministic; eauto);
     clear H; clear G

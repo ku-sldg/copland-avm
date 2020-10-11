@@ -3,9 +3,15 @@
 
 Author:  Adam Petz, ampetz@ku.edu
 *)
+Require Import Maps_Class.
+Require Import Coq.Arith.EqNat.
+Check map_set.
 
-Require Import Maps Term ConcreteEvidence StVM StAM
-        VmSemantics MonadVM GenStMonad.
+Check map_set.
+
+
+Require Import Term StVM StAM
+        MonadVM GenStMonad ConcreteEvidence VmSemantics.
 (*Require Import Coq.ZArith.ZArith_base Coq.Strings.String Coq.Strings.Ascii. *)
 (* Require Import ExtLib.Data.Monads.StateMonad ExtLib.Data.Monads.ReaderMonad
 ExtLib.Structures.Monads ExtLib.Data.Monads.IdentityMonad. *)
@@ -29,15 +35,22 @@ Definition AM := St AM_St.     (* readerT AM_Env (stateT AM_St ident). *)
 Definition empty_am_st := (mkAM_St [] 0 []).
 (*Definition init_env := (mkAM_Env 0). *)
 
+Check Maps_Class.map_set.
+
+Definition mm : MapC nat BS := [].
+Compute (map_set mm 1 2).
+
+Check (map_set mm 1 2).
+
 Definition am_newNonce (bs :BS) : AM EvidenceC :=
   (*let myPol := asks myPolicy in *)
   am_st <- get ;;
-  let m := am_nonceMap am_st in
-  let id := am_nonceId am_st in
-  let newMap := map_set m id bs in
-  let newId := id + 1 in
+  let mm := am_nonceMap am_st in
+  let i := am_nonceId am_st in
+  let newMap := map_set mm i bs in
+  let newId := i + 1 in
   put (mkAM_St newMap newId []) ;;         
-      ret (nnc id bs mtc).
+      ret (nnc i bs mtc).
 
 Definition runAM {A:Type} (k:(AM A)) (* (env:AM_Env) *) (st:AM_St) : (option A) * AM_St :=
   runSt st k.
@@ -50,8 +63,8 @@ Check annotated.
 
 Definition am_run_t (t:Term) (e:EvidenceC) : AM EvidenceC :=
   let annt := annotated t in
-  let start_st := mk_st e [] [] 0 [] in
-  ret (st_ev (run_vm_t annt start_st)).
+  let start_st := mk_st e [] 0 [] in
+  ret (st_ev (run_vm annt start_st)).
 
 Definition t1 := (att 1 (lseq (asp (ASPC 44)) (asp SIG))).
 Definition t2 := (lseq (asp (ASPC 44)) (asp SIG)).

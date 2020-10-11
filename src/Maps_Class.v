@@ -4,8 +4,6 @@ https://softwarefoundations.cis.upenn.edu/qc-current/TImp.html
 
 Author:  Adam Petz, ampetz@ku.edu
 *)
-Require Import Maps_Class.
-Require Import ConcreteEvidence.
 
 Require Import List.
 Import ListNotations.
@@ -33,25 +31,25 @@ Require Import Coq.Arith.EqNat.
 
 (** The implementation of a map is a simple association list.  If a
     list contains multiple tuples with the same key, then the binding
-    of the key in the map is the one that appears first in the list;
+    of the key in the map is
+ the one that appears first in the list;
     that is, later bindings can be shadowed. *)
 
-Instance nat_EqClass : EqClass nat :=
-  { eqb:= PeanoNat.Nat.eqb;
-    eqb_leibniz := beq_nat_true }.
+Class EqClass (A : Type) :=
+  { eqb : A -> A -> bool ;
+    eqb_leibniz : forall x y, eqb x y = true -> x = y }.
 
-Definition Map := MapC nat EvidenceC.
+Definition MapC (A:Type) (B:Type) `{H : EqClass A} := list (A * B).
 
-(*
 (** The [empty] map is the empty list. *)
 
-Definition map_empty : Map := [].
+Definition map_empty{A B:Type} `{H : EqClass A} : MapC A B := [].
 
 (** To [get] the binding of an identifier [x], we just need to walk 
     through the list and find the first [cons] cell where the key 
     is equal to [x], if any. *)
 
-Fixpoint map_get (m : Map ) x : option EvidenceC :=
+Fixpoint map_get{A B:Type} `{H : EqClass A} (m : MapC A B ) x : option B :=
   match m with
   | [] => None
   | (k, v) :: m' => if eqb x k then Some v else map_get m' x
@@ -60,11 +58,13 @@ Fixpoint map_get (m : Map ) x : option EvidenceC :=
 (** To [set] the binding of an identifier, we just need to [cons] 
     it at the front of the list. *) 
 
-Definition map_set (m:Map) (x:nat) (v:EvidenceC) : Map := (x, v) :: m.
+Definition map_set{A B:Type} `{H : EqClass A} (m:MapC A B) (x:A) (v:B) : MapC A B := (x, v) :: m.
+
+Check map_set.
 
 (*
 (** Finally, the domain of a map is just the set of its keys. *)
-Fixpoint map_dom {K V} (m:Map K V) : list K :=
+Fixpoint map_dom {K V} (m:MapC K V) : list K :=
   match m with
   | [] => []
   | (k', v) :: m' => k' :: map_dom m'
@@ -75,6 +75,13 @@ Fixpoint map_dom {K V} (m:Map K V) : list K :=
     holds precisely when the binding of some identifier [x] is equal to [a] in 
     [m] *)
 
-Inductive bound_to : Map -> nat -> EvidenceC -> Prop :=
+Inductive bound_to{A B:Type} `{H : EqClass A} : MapC A B -> A -> B -> Prop :=
   | Bind : forall x m a, map_get m x = Some a -> bound_to m x a.
+
+
+
+(*
+Instance nat_EqClass : EqClass nat :=
+  { eqb:= PeanoNat.Nat.eqb;
+    eqb_leibniz := beq_nat_true }.
 *)

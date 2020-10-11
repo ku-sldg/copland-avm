@@ -5,7 +5,7 @@ Author:  Adam Petz, ampetz@ku.edu
 *)
 
 Require Import Term ConcreteEvidence GenStMonad.
-Require Import Maps.
+Require Import Maps_Class.
 
 Require Import List.
 Import ListNotations.

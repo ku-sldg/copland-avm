@@ -8,7 +8,7 @@ Require Import More_lists Preamble Term ConcreteEvidence LTS GenStMonad.
 Require Import Main Event_system Term_system.
 
 
-Require Import MyStack MonadVM MonadVMFacts.
+Require Import MonadVM MonadVMFacts Maps_Class.
 
 Require Import List.
 Import ListNotations.
@@ -303,7 +303,7 @@ Ltac dohi :=
 
 Lemma map_get_get(*{V:Type}`{forall x y : V, Dec (x = y)}*) :
   forall (k:nat) (v:EvidenceC) l',
-    Maps.map_get ((k,v) :: l') k = Some v.
+    map_get ((k,v) :: l') k = Some v.
 Proof.
   intros.
   simpl.
@@ -314,7 +314,7 @@ Defined.
 Lemma map_get_get_2(*{V:Type}`{forall x y : V, Dec (x = y)}*) :
   forall (k:nat) (v:EvidenceC) k' v' l',
     k <> k' ->
-    Maps.map_get ((k',v') :: (k,v) :: l') k = Some v.
+    map_get ((k',v') :: (k,v) :: l') k = Some v.
 Proof.
   intros; simpl.
   break_if;
@@ -542,12 +542,12 @@ Proof.
     rewrite H0 in *. *)
     repeat find_inversion.
 
-    assert (Maps.map_get
-              (Maps.map_set (Maps.map_set o (fst (range t1)) (parallel_att_vm_thread t1 st_ev1)) (fst (range t2))
+    assert (map_get
+              (map_set (map_set o (fst (range t1)) (parallel_att_vm_thread t1 st_ev1)) (fst (range t2))
                             (parallel_att_vm_thread t2 (splitEv s2 st_ev1))) (fst (range t2)) =
             Some (parallel_att_vm_thread t2 (splitEv s2 st_ev1))) as H1.
     {
-      unfold Maps.map_set in *.
+      unfold map_set in *.
       apply map_get_get.
     }
     rewrite H1 in *.
@@ -1596,7 +1596,7 @@ Lemma store_get_set : forall e tr p o n e1 e' v0,
         st_ev := e;
         st_trace := tr;
         st_pl := p;
-        st_store := Maps.map_set o n e1 |} =
+        st_store := map_set o n e1 |} =
     (Some e', v0) ->
     e' = e1.
 Proof.
@@ -1616,7 +1616,7 @@ Lemma store_get_set_fail_none : forall n e tr p o e1 v,
        st_ev := e;
        st_trace := tr;
        st_pl := p;
-       st_store := Maps.map_set o n e1 |} =
+       st_store := map_set o n e1 |} =
     (None, v) ->
     False.
 Proof.
@@ -1820,7 +1820,7 @@ Axiom run_at : forall t e n o,
 Lemma get_store_in : forall x st st' o y,
     get_store_at x st = (None, st') ->
     st_store st = o ->
-    Maps.map_get o x = (Some y) ->
+    map_get o x = (Some y) ->
     False.
 Proof.
   intros.

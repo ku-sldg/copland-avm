@@ -4,6 +4,7 @@ More_lists.v
 StructTactics.v
 Term.v
 ConcreteEvidence.v
+Maps_Class.v
 Maps.v
 StVM.v
 StAM.v
@@ -12,10 +13,8 @@ Term_system.v
 Trace.v
 LTS.v
 Main.v
-Instr.v
 GenStMonad.v
 MonadVM.v
 MonadVMFacts.v
 VmSemantics.v
 MonadLaws.v
-RunAlt.v
