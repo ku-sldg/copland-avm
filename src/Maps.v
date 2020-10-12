@@ -4,7 +4,7 @@ https://softwarefoundations.cis.upenn.edu/qc-current/TImp.html
 
 Author:  Adam Petz, ampetz@ku.edu
 *)
-Require Import Maps_Class.
+Require Export Maps_Class.
 Require Import ConcreteEvidence.
 
 Require Import List.
@@ -39,8 +39,6 @@ Require Import Coq.Arith.EqNat.
 Instance nat_EqClass : EqClass nat :=
   { eqb:= PeanoNat.Nat.eqb;
     eqb_leibniz := beq_nat_true }.
-
-Definition Map := MapC nat EvidenceC.
 
 (*
 (** The [empty] map is the empty list. *)

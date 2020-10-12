@@ -11,6 +11,8 @@ Require Import StructTactics.
 Require Import List.
 Import ListNotations.
 
+Require Import Coq.Arith.EqNat.
+
 (*
 Inductive App_Instr: Set :=
 | asp_app: ASP_ID -> BS -> App_Instr
@@ -136,16 +138,59 @@ Theorem can_app: forall t,
     let optB := run_app app_il in
     exists b, optB = Some b.
 Abort.
-*)
+ *)
+
+Definition eqbPair{A B:Type}`{H:EqClass A}`{H':EqClass B} (p1:A*B) (p2:A*B) : bool :=
+  match (p1,p2) with
+  | ((a1,b1), (a2,b2)) => andb (eqb a1 a2) (eqb b1 b2)
+  end.
+
+Search beq_nat_true.
+Check beq_nat_true.
+
+Lemma beq_pair_true{A B:Type}`{H:EqClass A}`{H':EqClass B} : forall (p1 p2:(A*B)),
+    eqbPair p1 p2 = true -> p1 = p2.
+Proof.
+  intros.
+  unfold eqbPair in *.
+  repeat break_let.
+  assert (a = a0).
+  {
+    assert (eqb a a0 = true).
+    {
+      destruct (eqb a a0); try solve_by_inversion.
+    }
+    Check beq_nat_true.
+    eapply eqb_leibniz; eauto.
+  }
+  
+  assert (b = b0).
+  {
+        assert (eqb b b0 = true).
+        {
+          destruct (eqb b b0); try reflexivity.
+          cbv in *.
+          repeat break_let.
+          break_if; solve_by_inversion.     
+        }
+    eapply eqb_leibniz; eauto.
+  }
+  subst.
+  reflexivity.
+Defined.
+
+                                                             
 
 
-
+Instance pair_EqClass{A B:Type}`{H:EqClass A}`{H':EqClass B} : EqClass (A*B) :=
+  { eqb:= eqbPair;
+    eqb_leibniz := beq_pair_true }.
 
 
 (* Specific APP monad state *)
-Definition sig_map := Map Plc ASP_ID.
-Definition hsh_map := Map Plc ASP_ID.
-Definition asp_map := Map (Plc * ASP_ID) ASP_ID.
+Definition sig_map := MapC Plc ASP_ID.
+Definition hsh_map := MapC Plc ASP_ID.
+Definition asp_map := MapC (Plc * ASP_ID) ASP_ID.
 Record app_st : Type := mk_app_st
                          {st_sigmap :sig_map;
                           st_hshmap :hsh_map; 
@@ -295,7 +340,7 @@ Fixpoint gen_appraisal_term' (t:Term) (p:Plc) (e:EvidenceC) : APP (Term * Eviden
 
 *)
 
-Require Import Instr MonadVM VmSemantics.
+Require Import MonadVM VmSemantics.
 
 (*
 Lemma run_vm_good_ev : forall t tr tr' e e' s s' p p' o o',
@@ -333,9 +378,8 @@ Definition aterm := lseq (asp (ASPC 1)) (asp SIG).
 
 Print anno.
 
-Definition aev := (run_vm (instr_compiler (annotated aterm))
+Definition aev := (run_vm (annotated aterm)
                           {| st_ev := mtc;
-                             st_stack := [];
                              st_trace := [];
                              st_pl := 0;
                              st_store := [] |}).
@@ -359,6 +403,7 @@ Proof.
     eexists; eexists.
     simpl.
     monad_unfold.
+    unfold runSt in *.
     rewrite H1.
     reflexivity.
   - simpl.
@@ -366,6 +411,7 @@ Proof.
     destruct_conjs.
     eexists; eexists.
     monad_unfold.
+    unfold runSt in *.
     rewrite H1.
     reflexivity.
   - simpl.
@@ -373,6 +419,7 @@ Proof.
     destruct_conjs.
     eexists; eexists.
     monad_unfold.
+    unfold runSt in *.
     rewrite H1.
     reflexivity.
   - simpl.
@@ -381,6 +428,7 @@ Proof.
     destruct_conjs.
     eexists; eexists.
     monad_unfold.
+    unfold runSt in *.
     rewrite H4.
     rewrite H3.
     reflexivity.
@@ -390,6 +438,7 @@ Proof.
     destruct_conjs.
     eexists; eexists.
     monad_unfold.
+    unfold runSt in *.
     rewrite H4.
     rewrite H3.
     reflexivity.
@@ -444,15 +493,13 @@ Proof.
 Defined.
 
 
-Lemma someEv' : forall t tr tr' e e' s s' p p' o o' et,
-  run_vm (instr_compiler t)
+Lemma someEv' : forall t tr tr' e e' p p' o o' et,
+  run_vm (t)
          {| st_ev := e;
-            st_stack := s;
             st_trace := tr;
             st_pl := p;
             st_store := o |} =
   {| st_ev := e';
-     st_stack := s';
      st_trace := tr';
      st_pl := p';
      st_store := o' |} ->
@@ -474,15 +521,13 @@ Proof.
 Defined.
 
 
-Theorem someEv : forall t tr tr' e e' s s' p p' o o' app_st et,
-  run_vm (instr_compiler t)
+Theorem someEv : forall t tr tr' e e' p p' o o' app_st et,
+  run_vm (t)
          {| st_ev := e;
-            st_stack := s;
             st_trace := tr;
             st_pl := p;
             st_store := o |} =
   {| st_ev := e';
-     st_stack := s';
      st_trace := tr';
      st_pl := p';
      st_store := o' |} ->

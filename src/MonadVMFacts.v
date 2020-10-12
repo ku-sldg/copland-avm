@@ -4,7 +4,7 @@ Lemmas and LTAC scripts to leverage facts about the AVM Monad.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term ConcreteEvidence MonadVM Maps_Class.
+Require Import Term ConcreteEvidence MonadVM Maps.
 Require Import Coq.Program.Tactics.
 
 Require Import List.

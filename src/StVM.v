@@ -8,7 +8,7 @@ Require Import ConcreteEvidence.
 Require Import Maps.
 
 (* Specific VM monad state *)
-Definition ev_store := Map.
+Definition ev_store := MapC nat EvidenceC.
 Record vm_st : Type := mk_st
                          {st_ev:EvidenceC ;
                           st_trace:list Ev ;

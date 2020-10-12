@@ -3,7 +3,7 @@
 
 Author:  Adam Petz, ampetz@ku.edu
 *)
-Require Import Maps_Class.
+Require Import Maps.
 Require Import Coq.Arith.EqNat.
 Check map_set.
 
