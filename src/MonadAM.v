@@ -66,8 +66,8 @@ Definition am_run_t (t:Term) (e:EvidenceC) : AM EvidenceC :=
   let start_st := mk_st e [] 0 [] in
   ret (st_ev (run_vm annt start_st)).
 
-Definition t1 := (att 1 (lseq (asp (ASPC 44)) (asp SIG))).
-Definition t2 := (lseq (asp (ASPC 44)) (asp SIG)).
+Definition t1 := (att 1 (lseq (asp (ASPC 44 [])) (asp SIG))).
+Definition t2 := (lseq (asp (ASPC 44 [])) (asp SIG)).
 
 
 Compute (am_run_t t2 mtc empty_am_st).

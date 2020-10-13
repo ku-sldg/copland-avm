@@ -26,10 +26,11 @@ Require Import Preamble StructTactics.
 Notation Plc := nat (only parsing).
 Notation ASP_ID := nat (only parsing).
 Notation N_ID := nat (only parsing).
+Notation Arg := nat (only parsing).
 
 Inductive ASP: Set :=
 | CPY: ASP
-| ASPC: ASP_ID -> ASP
+| ASPC: ASP_ID -> list Arg -> ASP
 | SIG: ASP
 | HSH: ASP.
 
@@ -66,7 +67,7 @@ Definition splitEv_T (sp:SP) (e:Evidence) : Evidence :=
 Fixpoint eval_asp t p e :=
   match t with
   | CPY => e
-  | ASPC i => uu i p e
+  | ASPC i _ => uu i p e
   | SIG => gg p e
   | HSH => hh p e
   end.
@@ -137,7 +138,7 @@ See Lemma [events_injective].
 Definition asp_event i x p :=
   match x with
   | CPY => copy i p
-  | ASPC id => umeas i p id
+  | ASPC id _ => umeas i p id
   | SIG => sign i p
   | HSH => hash i p
   end.
@@ -208,31 +209,42 @@ Fixpoint anno (t: Term) i: nat * AnnoTerm :=
     (S k, abpar (i, S k) s a b)
   end.
 
-(*
-Ltac asdf :=
-  match goal with
-  | [H : 
-  end
- *)
-
-Ltac asdf :=
-  match goal with
-  | [H: _, H2: _ |- _] => apply H in H2
-  end.
-  
-Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm),
+Lemma anno_mono : forall t i j t',
   anno t i = (j, t') ->
   j > i.
 Proof.
-  induction t; intros i j t' H;
-    try (
-        simpl in *;
-        repeat break_let;
-        find_inversion;
-        repeat find_apply_hyp_hyp;
-        lia).
+  induction t; intros.
+  - destruct a;
+      try (unfold anno in *;
+           inv H;
+           lia).
+  - simpl in *.
+    break_let.
+    invc H.
+    assert (n0 > (S i)).
+    eauto.
+    lia.
+  -
+    simpl in *.
+    repeat break_let.
+    invc H.
+    assert (n > i); eauto.
+    assert (j > n); eauto.
+    lia.
+  - simpl in *.
+    repeat break_let.
+    invc H.
+    assert (n > (S i)); eauto.
+    assert (n0 > n); eauto.
+    lia.
+  -
+    simpl in *.
+    repeat break_let.
+    invc H.
+    assert (n > (S i)); eauto.
+    assert (n0 > n); eauto.
+    lia.
 Defined.
-Hint Resolve anno_mono : core.
 
 Lemma anno_range:
   forall x i,
@@ -253,141 +265,30 @@ Proof.
   congruence.
 Defined.
 
-Ltac fail_if_in_hyps H := 
-  let t := type of H in 
-  lazymatch goal with 
-  | [G : t |- _ ] => fail "There is already a hypothesis of this proof"
-  | [_ : _ |- _ ] => idtac
-  end.
-
-Ltac pose_new_proof H := 
-  fail_if_in_hyps H;
-  pose proof H.
-
-Ltac fail_if_in_hyps_type t := 
-  lazymatch goal with 
-  | [G : t |- _ ] => fail "There is already a hypothesis of this type"
-  | [_ : _ |- _ ] => idtac
-  end.
-
-Ltac assert_new_proof_by H tac := 
-  fail_if_in_hyps_type H;
-  assert H by tac.
-
-
-Ltac haha :=
-  let asdff := eapply anno_mono; eauto in
-  match goal with
-  | [H: anno _ ?x = (?y,_) |- _] => assert_new_proof_by (y > x) (asdff)
-  end.
-
-Ltac hehe :=
-  match goal with
-  | [H: anno ?x ?y = (_,_) |- _] => pose_new_proof (anno_range x y)
-  end.
-
-Ltac hehe' :=
-  match goal with
-  | [x: Term, y:nat |- _] => pose_new_proof (anno_range x (S y))
-  end.
-
-Ltac hehe'' :=
-  match goal with
-  | [x: Term, y:nat |- _] => pose_new_proof (anno_range x y)
-  end.
-
-Ltac afa :=
-  match goal with   
-  | [H : forall _, _, H2: Term, H3: nat |- _] => pose_new_proof (H H2 H3)
-  end.
-
-Ltac afa' :=
-  match goal with   
-  | [H : forall _, _, H2: Term, H3: nat |- _] => pose_new_proof (H H2 (S H3))
-  end.
-
-Ltac afa'' :=
-  match goal with   
-  | [H : forall _, _, H2: Term, H3: nat, H4:nat, H5: AnnoTerm |- _] =>
-    pose_new_proof (H H2 (H3)(H4) H5)
-  end.
-
-Ltac find_apply_hyp_hyp' :=
-  match goal with
-  | [ H : _ -> _ , H' : _ |- _ ] =>
-    (*let x := fresh in *)
-    pose_new_proof (H H')
-  end.
-
-Ltac find_apply_lem_hyp lem :=
-  match goal with
-    | [ H : _ |- _ ] => apply lem in H
-  end.
-
-Ltac find_apply_lem_hyp_new lem :=
-  match goal with
-    | [ H : _ |- _ ] => pose_new_proof (lem H) (*apply lem in H *)
-  end.
-
-Ltac jkjk :=
-  match goal with
-  | [H: ?X = _ |-  context[?X] ] => rewrite H
-  end.
-
-Ltac jkjk' :=
-  match goal with
-  | [H: ?X = _ |-  context[?X] ] => rewrite <- H
-  end.
-
 Lemma afaf : forall i k s a b t' n,
-    (abpar (i, k) s a b) = snd (anno t' n) ->
+    (abpar (i, k) s a b) = snd (anno t' n)(*(bpar s x y)*) ->
     (fst (range a)) <> (fst (range b)).
 Proof.
   intros.
   destruct t';
-
-    (* Bogus cases *)
     cbn in *;
     repeat (break_let);
     simpl in *;
     try solve_by_inversion.
 
-  (* Some automation + insight *)
-    repeat find_inversion;
-      repeat hehe'; repeat hehe'';
-      (*repeat hehe;*)
-      repeat haha;
-      repeat (
-          find_rewrite;
-          simpl in * );
-      lia.
-                                   
-(*
-  (* High automation, very little insight (but much slower) *)
-   repeat find_inversion.
-   
-    pose proof anno_range.
-    pose proof anno_mono.
-    cbn in *.
-    repeat break_let.
-    simpl in *.
-    (*repeat afa'. *)
-    repeat afa.
-    repeat afa'.
-    repeat afa''.
-    subst.
-
-    repeat find_apply_hyp_hyp'.
-    repeat find_rewrite.
-    simpl in *.
-
-    repeat jkjk.
-    simpl.
-    lia.
-*)
 
 (*
-  (* Manual *)
+  unfold annotated in *.
+  cbn in *.
+  remember (anno t'1 (S n)) as oo.
+  destruct oo.
+  remember (anno t'2 n0) as oo.
+  destruct oo.
+  
+  simpl in *.
+  repeat break_let.
+ *)
+  
   inv H.
   assert (n0 > (S n)).
   eapply anno_mono; eauto.
@@ -407,7 +308,6 @@ Proof.
   rewrite H3.
   simpl.
   lia.
-*)
 Defined.
 
 Fixpoint unanno a :=
@@ -458,19 +358,43 @@ Lemma well_formed_range:
     well_formed t ->
     snd (range t) = fst (range t) + esize t.
 Proof.
-  induction t; intros H; simpl; inv H; simpl;
-    repeat find_apply_hyp_hyp; lia.
-Defined.
+  induction t; intros; simpl; inv H; simpl.
+  - rewrite Nat.add_1_r; auto.
+  - apply IHt in H3; lia.
+  - apply IHt1 in H3.
+    apply IHt2 in H4.
+    lia.
+  - apply IHt1 in H4.
+    apply IHt2 in H5.
+    lia.
+  - apply IHt1 in H4.
+    apply IHt2 in H5.
+    lia.
+Qed.
 
 Lemma anno_well_formed:
   forall t i,
     well_formed (snd (anno t i)).
 Proof.
-  induction t; intros; simpl; auto;
-    repeat expand_let_pairs;
-    econstructor; simpl; auto;
-      repeat rewrite anno_range; simpl; reflexivity.
-Defined.
+  induction t; intros; simpl; auto.
+  - repeat expand_let_pairs.
+    simpl.
+    apply wf_att; simpl; auto;
+      rewrite anno_range; simpl; reflexivity.
+  - repeat expand_let_pairs.
+    simpl.
+    apply wf_lseq; simpl; auto;
+      repeat rewrite anno_range; simpl;
+        reflexivity.
+  - repeat expand_let_pairs; simpl.
+    apply wf_bseq; simpl; auto;
+      repeat rewrite anno_range; simpl;
+        reflexivity.
+  - repeat expand_let_pairs; simpl.
+    apply wf_bpar; simpl; auto;
+      repeat rewrite anno_range; simpl;
+        reflexivity.
+Qed.
 
 (** Eval for annotated terms. *)
 
@@ -489,11 +413,22 @@ Lemma eval_aeval:
   forall t p e i,
     eval t p e = aeval (snd (anno t i)) p e.
 Proof.
-  induction t; intros; simpl; auto;
-    repeat expand_let_pairs; simpl;
-      try (repeat jkjk; auto;congruence);
-      try (repeat jkjk'; auto).
-Defined.
+  induction t; intros; simpl; auto.
+  - repeat expand_let_pairs; simpl;
+      rewrite <- IHt; auto.
+  - repeat expand_let_pairs.
+    simpl.
+    rewrite <- IHt1.
+    rewrite <- IHt2; auto.
+  - repeat expand_let_pairs.
+    simpl.
+    rewrite <- IHt1.
+    rewrite <- IHt2; auto.
+    - repeat expand_let_pairs.
+    simpl.
+    rewrite <- IHt1.
+    rewrite <- IHt2; auto.
+Qed.
 
 (** This predicate specifies when a term, a place, and some initial
     evidence is related to an event.  In other words, it specifies the
@@ -506,9 +441,9 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
       fst r = i ->
       events (aasp r CPY) p (copy i p)
 | evtsusm:
-    forall i id r p,
+    forall i id args r p,
       fst r = i ->
-      events (aasp r (ASPC id)) p (umeas i p id)
+      events (aasp r (ASPC id args)) p (umeas i p id)
 | evtssig:
     forall r i p,
       fst r = i ->
@@ -583,15 +518,35 @@ Lemma events_range:
     fst (range t) <= ev v < snd (range t).
 Proof.
   
-  intros t v p H H0.
+  intros.
   pose proof H as G.
   apply well_formed_range in G.
   rewrite G.
   clear G.
-  induction H0; inv H; simpl in *; auto;
-    try (repeat find_apply_hyp_hyp;
-         repeat (find_apply_lem_hyp well_formed_range); lia).
-Defined.
+  induction H0; inv H; simpl in *; auto; try lia.
+  - apply IHevents in H4; lia.
+  - Check well_formed_range.
+
+    apply well_formed_range in H4; lia.
+  - apply IHevents in H4; lia.
+  - apply IHevents in H5.
+    apply well_formed_range in H4.
+    lia.
+  - apply IHevents in H5; lia.
+  - apply IHevents in H6.
+    apply well_formed_range in H5.
+    lia.
+  - apply well_formed_range in H5.
+    apply well_formed_range in H6.
+    lia.
+  - apply IHevents in H5; lia.
+  - apply IHevents in H6.
+    apply well_formed_range in H5.
+    lia.
+  - apply well_formed_range in H5.
+    apply well_formed_range in H6.
+    lia.
+Qed.
 
 Lemma at_range:
   forall x r i,
@@ -642,7 +597,6 @@ Proof.
   destruct E; lia.
 Qed.
 
-Require Import Coq.Program.Tactics.
 (** Properties of events. *)
 
 Lemma events_range_event:
@@ -654,80 +608,60 @@ Proof.
   intros t p i H; revert i; revert p.
   induction H; intros; simpl in *.
   - destruct x; eapply ex_intro; split; auto;
-      (*destruct r as [j k];*) simpl in *; lia.
-  - find_eapply_lem_hyp at_range; eauto.
-    (*eapply at_range in H2; eauto. *)
-    repeat destruct_disjunct; subst; eauto.
-    (* + eapply ex_intro; split; auto. *)
-    Ltac find_eapply_hyp_hyp :=
-      match goal with
-      | [ H : forall _, _ -> _,
-            H' : _ |- _ ] =>
-        eapply H in H'; [idtac]
-      | [ H : _ -> _ , H' : _ |- _ ] =>
-        eapply H in H'; auto; [idtac]
-      end.
-    + find_eapply_hyp_hyp.
-      (*apply IHwell_formed with (p:=p) in H2. *)
-      destruct_conjs.
-      eauto.
-      (*
+      destruct r as [j k]; simpl in *; lia.
+  - eapply at_range in H2; eauto.
+    repeat destruct_disjunct; subst.
+    + eapply ex_intro; split; auto.
+    + apply IHwell_formed with (p:=p) in H2.
       destruct H2 as [v].
       destruct H2; subst.
-      exists v; split; eauto. 
+      exists v; split; auto.
     + eapply ex_intro; split.
       apply evtsattrpy; auto.
       * rewrite H1; auto.
       * simpl; auto.
-      *)
-      
-  - eapply lin_range with (i:=i) in H2; eauto;
-    repeat destruct_disjunct;
-      try lia;
-      try (find_eapply_hyp_hyp; eauto;
-        destruct_conjs;
-        eauto).
-
-  - 
-    apply bra_range with (i:=i) (r:=r) in H2; eauto;
-      repeat destruct_disjunct; subst;
-        try lia;
-        try (find_eapply_hyp_hyp; eauto;
-             destruct_conjs;
-             eauto; tauto).
-      
-
-    + eapply ex_intro; split; try (auto; eauto;tauto).
-    + eapply ex_intro; split; try (eauto; auto; tauto).
-
-  -
-    apply bra_range with (i:=i) (r:=r) in H2; eauto;
-      repeat destruct_disjunct; subst;
-        try lia;
-        try (find_eapply_hyp_hyp; eauto;
-             destruct_conjs;
-             eauto; tauto).
-
+  - apply lin_range with (i:=i) in H2; eauto.
+    destruct H2.
+    + apply IHwell_formed1 with (p:=p) in H2; auto.
+      destruct H2 as [v]; destruct H2; subst.
+      exists v; split; auto.
+    + apply IHwell_formed2 with (p:=p) in H2; auto.
+      destruct H2 as [v]; destruct H2; subst.
+      exists v; split; auto.
+    + lia.
+  - apply bra_range with (i:=i) (r:=r) in H2; eauto.
+    repeat destruct_disjunct; subst.
     + eapply ex_intro; split; auto.
-    + eapply ex_intro; split; eauto.
+    + apply IHwell_formed1 with (p:=p) in H2.
+      destruct H2 as [v]; destruct H2; subst.
+      exists v; split; auto.
+    + apply IHwell_formed2 with (p:=p) in H2.
+      destruct H2 as [v]; destruct H2; subst.
+      exists v; split; auto.
+    + eapply ex_intro; split.
+      * apply evtsbseqjoin; auto.
+        rewrite H3; auto.
+      * simpl; auto.
+  - apply bra_range with (i:=i) (r:=r) in H2; eauto.
+    repeat destruct_disjunct; subst.
+    + eapply ex_intro; split; auto.
+    + apply IHwell_formed1 with (p:=p) in H2.
+      destruct H2 as [v]; destruct H2; subst.
+      exists v; split; auto.
+    + apply IHwell_formed2 with (p:=p) in H2.
+      destruct H2 as [v]; destruct H2; subst.
+      exists v; split; auto.
+    + eapply ex_intro; split.
+      * apply evtsbparjoin; auto.
+        rewrite H3; auto.
+      * simpl; auto.
 Qed.
-
 
 Ltac events_event_range :=
   repeat match goal with
          | [ H: events _ _ _ |- _ ] =>
            apply events_range in H; auto
          end; lia.
-
-Ltac aba :=
-  match goal with
-  | [H: events _ _ _, H': events _ _ _ |- _] => inv H; inv H'
-  end.
-
-Ltac wfr :=
-  match goal with
-  | [H: AnnoTerm, H': well_formed ?H |- _] => pose_new_proof (well_formed_range H H')
-  end.
 
 Lemma events_injective:
   forall t p v1 v2,
@@ -739,24 +673,73 @@ Lemma events_injective:
 Proof.
   intros t p v1 v2 H; revert v2; revert v1;
     revert p.
-  induction H; intros;
-    try (
-        repeat wfr;
-        aba; simpl in *; subst; auto;
-        try (events_event_range; tauto);
-        try (find_eapply_hyp_hyp; eauto);
-        eauto).
+  induction H; intros.
+  - inv H0; inv H1; auto.
+  - pose proof H as G.
+    apply well_formed_range in G.
+    inv H2; inv H3; simpl in *; subst; auto.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+    + eapply IHwell_formed in H11; eauto.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+  - pose proof H as G.
+    pose proof H0 as G0.
+    apply well_formed_range in G.
+    apply well_formed_range in G0.
+    inv H4; inv H5; simpl in *; auto.
+    + eapply IHwell_formed1 in H13; eauto.
+    + events_event_range.
+    + events_event_range.
+    + eapply IHwell_formed2 in H13; eauto.
+  - pose proof H as G.
+    pose proof H0 as G0.
+    apply well_formed_range in G.
+    apply well_formed_range in G0.
+    inv H4; inv H5; simpl in *; subst; auto.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+    + eapply IHwell_formed1 in H13; eauto.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+    + eapply IHwell_formed2 in H13; eauto.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+  - pose proof H as G.
+    pose proof H0 as G0.
+    apply well_formed_range in G.
+    apply well_formed_range in G0.
+    inv H4; inv H5; simpl in *; subst; auto.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+    + eapply IHwell_formed1 in H13; eauto.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+    + eapply IHwell_formed2 in H13; eauto.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
+    + events_event_range.
 Qed.
 
-(*
-repeat find_apply_lem_hyp well_formed_range.
 
-find_apply_lem_hyp well_formed_range.
-find_apply_lem_hyp well_formed_range
-apply well_formed_range in G.
-apply well_formed_range in G0.
-Check well_formed_range.
- *)
+
+
+
+
+
 
 Inductive splitEv_T_R : SP -> Evidence -> Evidence -> Prop :=
 | spAll: forall e, splitEv_T_R ALL e e
@@ -785,25 +768,6 @@ Inductive evalR : Term -> Plc -> Evidence -> Evidence -> Prop :=
     evalR t2 p e2 e2' ->
     evalR (bpar s t1 t2) p e (pp e1' e2').
 
-Ltac jkjke :=
-  match goal with
-  | [H: _ |-  _ ] => erewrite H; eauto
-  end.
-Ltac kjkj :=
-  match goal with
-  | [H: evalR ?t ?p ?e ?e' |- _] => assert_new_proof_by (eval t p e = e') eauto
-  end.
-    
-Ltac do_split :=
-  match goal with
-  | [H: Split |- _] => destruct H
-  end.
-      
-Ltac do_sp :=
-  match goal with
-  | [H: SP |- _] => destruct H
-  end.
-
 Lemma eval_iff_evalR: forall t p e e',
     evalR t p e e' <-> eval t p e = e'.
 Proof.
@@ -814,68 +778,50 @@ Proof.
     generalize dependent e.
     generalize dependent e'.
 
-    induction t; intros;
-      try (
-          inv H;
-          simpl;
-          repeat kjkj;
-          
-
-          try (do_split;
-               repeat do_sp);
-          try (inv H3; inv H4; reflexivity);
-          repeat jkjk;
-          eauto).
-
-  (*try (
-    inv H;
-    simpl;
-    repeat kjkj). *)
-    
- (*         
-    + destruct a; solve_by_inversion.
-    + 
-      inv H. simpl.
+    induction t; intros.
+    + destruct a; try (inv H; reflexivity).
+    + inv H. simpl.
       eauto.
     + inv H.
-
-      simpl.
-      repeat kjkj.
+      assert (eval t1 p e = e'0).
       eauto.
-      (*
-      repeat jkjk.
-      eauto. *)
-
-    
-    +
-      inv H.
+      subst.
       simpl.
-      repeat kjkj.
-
-      do_split;
-        do_sp;
-        try (inv H3; inv H4; reflexivity).
-    +
-      inv H.
+      eauto.
+    + inv H.
+      assert (eval t1 p e1 = e1') by eauto.
+      assert (eval t2 p e2 = e2') by eauto.
       simpl.
-      repeat kjkj.
-      
-      do_split;
-        do_sp;
-        try (inv H3; inv H4; reflexivity).
-*)
-    
-
+      destruct s. simpl.
+      destruct s; destruct s0;
+        try (simpl; subst; inv H3; inv H4; reflexivity).
+    + inv H.
+      assert (eval t1 p e1 = e1') by eauto.
+      assert (eval t2 p e2 = e2') by eauto.
+      simpl.
+      destruct s. simpl.
+      destruct s; destruct s0;
+        try (simpl; subst; inv H3; inv H4; reflexivity).
   - (* <- case *)
     intros.
     generalize dependent p.
     generalize dependent e.
     generalize dependent e'.
 
-    induction t; intros;
-      inv H;
-      try (destruct a);
-      try (do_split; repeat do_sp);
-      repeat econstructor; eauto.
+    induction t; intros.
+    + inv H.
+      destruct a; try econstructor.
+    + inv H.
+      simpl.
+      econstructor.
+      eauto.
+    + econstructor; eauto.
+    + destruct s.
+      simpl in H.
+      destruct s; destruct s0; simpl in *; subst;
+        econstructor; (try simpl); eauto; try (econstructor).
+    + destruct s.
+      simpl in H.
+      destruct s; destruct s0; simpl in *; subst;
+        econstructor; (try simpl); eauto; try (econstructor).
 Defined.
-

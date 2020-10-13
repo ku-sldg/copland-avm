@@ -13,14 +13,22 @@ Notation BS := nat (only parsing).
 (** * Concrete Evidence *)
 Inductive EvidenceC: Set :=
 | mtc: EvidenceC
-(*| sp: EvidenceC -> EvidenceC -> EvidenceC*)
-(* | kkc: ASP_ID -> (list Arg) -> (*Plc ->*) Plc -> BS -> EvidenceC -> EvidenceC *)
 | uuc: ASP_ID -> (* Plc -> *) BS -> EvidenceC -> EvidenceC
 | ggc: (*Plc ->*) BS -> EvidenceC -> EvidenceC
 | hhc: (*Plc ->*) BS -> EvidenceC -> EvidenceC (* TODO: remove Ev param *)
 | nnc: (*Plc ->*) N_ID -> BS -> EvidenceC -> EvidenceC
 | ssc: EvidenceC -> EvidenceC -> EvidenceC
 | ppc: EvidenceC -> EvidenceC -> EvidenceC.
+
+(** * Concrete Evidence *)
+Inductive AnnoEvidenceC: Set :=
+| amtc: AnnoEvidenceC
+| auuc: nat -> ASP_ID -> (* Plc -> *) BS -> AnnoEvidenceC -> AnnoEvidenceC
+| aggc: nat -> (*Plc ->*) BS -> AnnoEvidenceC -> AnnoEvidenceC
+| ahhc: nat -> (*Plc ->*) BS -> AnnoEvidenceC -> AnnoEvidenceC (* TODO: remove Ev param *)
+| annc: (*nat ->*) (*Plc ->*) N_ID -> BS -> AnnoEvidenceC -> AnnoEvidenceC
+| assc: AnnoEvidenceC -> AnnoEvidenceC -> AnnoEvidenceC
+| appc: AnnoEvidenceC -> AnnoEvidenceC -> AnnoEvidenceC.
 
 
 

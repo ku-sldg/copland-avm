@@ -16,6 +16,7 @@ Main.v
 GenStMonad.v
 MonadVM.v
 MonadVMFacts.v
+VM_IO_Axioms.v
 VmSemantics.v
 MonadAM.v
 MonadLaws.v

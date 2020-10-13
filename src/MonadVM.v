@@ -128,32 +128,6 @@ Definition split_evm (i:nat) (sp1 sp2:SP) (e:EvidenceC) (p:Plc) : VM (EvidenceC*
     add_tracem [Term.split i p] ;;
                ret (e1,e2).
 
-(*
-Definition prim_trace (i:nat) (p:Plc) (a:Prim_Instr) : (list Ev) :=
-  match a with
-  | copy => [Term.copy i p]
-  | umeas asp_id => [Term.umeas i p asp_id]
-  | sign => [Term.sign i p]
-  | hash => [Term.hash i p]
-  end.
- *)
-
-(*
-Definition prim_ev (a:Prim_Instr)(* (p:Plc) *) (e:EvidenceC) : EvidenceC :=
-  match a with
-  | copy => e
-  | umeas i =>
-    let bs := invokeUSM i in
-    (uuc i bs e)
-  | sign =>
-    let bs := signEv e in
-    (ggc bs e)
-  | hash =>
-    let bs := hashEv e in
-    (hhc bs e)
-  end. 
-*)
-
 (** * Place-holder axioms for IO operations *)
 (* Definition invokeKIM (i:ASP_ID) (q:Plc) (*(args:list Arg)*) : BS. 
 Admitted. *)
@@ -163,7 +137,7 @@ Admitted.
 
 Check put_ev.
 
-Definition invokeUSM (x:nat) (i:ASP_ID) (p:Plc) : VM EvidenceC :=
+Definition invokeUSM (x:nat) (i:ASP_ID) (p:Plc) (l:list Arg) : VM EvidenceC :=
   e <- get_ev ;;
   add_tracem [Term.umeas x p i];;
   ret (uuc i BS_res e).
@@ -210,8 +184,8 @@ Definition receiveResp (rpyi:nat) (q:Plc) : VM EvidenceC :=
 Definition do_prim (x:nat) (p:Plc) (a:ASP) : VM EvidenceC :=
   match a with
   | CPY => copyEv x p
-  | ASPC asp_id =>
-    invokeUSM x asp_id p
+  | ASPC asp_id args =>
+    invokeUSM x asp_id p args
   | SIG => signEv x p
   | HSH => hashEv x p
   end.
@@ -224,7 +198,7 @@ Definition eval_asp (a:ASP) (e:EvidenceC) : EvidenceC :=
 (*  | KIM i q args =>
     let bs := invokeKIM i q args in
     (kkc i args q bs e) *)
-  | ASPC i =>
+  | ASPC i _ =>
     let bs := BS_res in
     (uuc i bs e)
   | SIG =>
@@ -268,8 +242,8 @@ Axiom para_eval_thread: forall e annt,
 
 Inductive evalR: Term -> EvidenceC -> EvidenceC -> Prop :=
 | mttc: forall e, evalR (asp CPY) e e
-| uutc: forall i e,
-    evalR (asp (ASPC i)) e (uuc i (BS_res) e)
+| uutc: forall i args e,
+    evalR (asp (ASPC i args)) e (uuc i (BS_res) e)
 | ggtc: forall e,
     evalR (asp SIG) e (ggc BS_res e)
 | hhtc: forall e,
