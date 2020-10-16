@@ -1,4 +1,5 @@
-Require Import GenStMonad MonadVM MonadAM ConcreteEvidence StAM VM_IO_Axioms Maps VmSemantics.
+Require Import GenStMonad MonadVM MonadAM ConcreteEvidence.
+Require Import StAM VM_IO_Axioms Maps VmSemantics Event_system Term_system.
 
 Require Import Coq.Arith.Peano_dec.
 
@@ -7,6 +8,15 @@ Require Import List.
 Import ListNotations.
 
 Check map_get.
+
+Inductive evidenceEvent: Ev -> Prop :=
+| uev: forall n p i args, evidenceEvent (umeas n p i args)
+| sev: forall n p, evidenceEvent (sign n p)
+| hev: forall n p, evidenceEvent (hash n p).
+
+Definition ioEvent (t:AnnoTerm) (p:Plc) (ev:Ev) : Prop :=
+  let es := ev_sys t p in
+  ev_in ev es /\ evidenceEvent ev.
 
 Definition am_get_app_asp (p:Plc) (i:ASP_ID) : AM ASP_ID :=
   m <- gets st_aspmap ;;
@@ -137,38 +147,7 @@ Compute (st_ev evc).
 Definition newst := mk_st (st_ev evc) [] 0 [].
 
 Compute (runSt newst app_comp).
-
-Lemma temp{A:Type} : forall (a:A), a = a.
-Proof.
-  trivial.
-Defined.
-
-​
-Ltac temp_ltac :=
-  match goal with
-  | [H: ?a = _ |- _] => apply temp with (a:=a); eauto
-  end.
-​
-Ltac temp_ltac' :=
-  match goal with
-  | [H: ?b = _ |- _] => apply temp with (a:=b); eauto
-  end.
-​
-Example temp_ex{A:Type} : forall (c:A),  c = c -> c = c.
-Proof.
-  intros.
-  Fail temp_ltac.
-  (* evaluates to:       apply temp with (c:=c); eauto *)
-  (* should evaluate to: apply temp with (a:=c); eauto *)
-  temp_ltac'.
-
-
-
-Ltac asdfasdf := try (unfold fafafafafafafaf).
   
-
-
-
 
 Fixpoint build_comp (t:AnnoTerm): VM unit :=
   match t with

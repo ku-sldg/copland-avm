@@ -132,25 +132,26 @@ Definition split_evm (i:nat) (sp1 sp2:SP) (e:EvidenceC) (p:Plc) : VM (EvidenceC*
 (* Definition invokeKIM (i:ASP_ID) (q:Plc) (*(args:list Arg)*) : BS. 
 Admitted. *)
 Print BS.
+(*
 Definition BS_res : BS.
-Admitted.
+Admitted. *)
 
 Check put_ev.
 
 Definition invokeUSM (x:nat) (i:ASP_ID) (p:Plc) (l:list Arg) : VM EvidenceC :=
   e <- get_ev ;;
-  add_tracem [Term.umeas x p i];;
-  ret (uuc i BS_res e).
+  add_tracem [Term.umeas x p i l];;
+  ret (uuc i x e).
 
 Definition signEv (x:nat) (p:Plc) : VM EvidenceC :=
   e <- get_ev ;;
   add_tracem [Term.sign x p] ;;
-  ret (ggc BS_res e).
+  ret (ggc x e).
 
 Definition hashEv (x:nat) (p:Plc) : VM EvidenceC :=
   e <- get_ev ;;
   add_tracem [Term.hash x p] ;;
-  ret (hhc BS_res e).
+  ret (hhc x e).
 
 Definition copyEv (x:nat) (p:Plc) : VM EvidenceC :=
   add_tracem [Term.copy x p] ;;
@@ -160,7 +161,7 @@ Definition copyEv (x:nat) (p:Plc) : VM EvidenceC :=
 Definition remote_events (t:AnnoTerm) (p:Plc) : (list Ev).
 Admitted.
 
-Definition toRemote (t:Term) (pTo:Plc) (e:EvidenceC) : EvidenceC.
+Definition toRemote (t:Term) (*(pTo:Plc)*) (e:EvidenceC) : EvidenceC.
 Admitted.
 Definition parallel_eval_thread (t:Term) (e:EvidenceC) : EvidenceC.
 Admitted.
@@ -171,13 +172,27 @@ Definition sendReq (reqi:nat) (q:Plc) (t:AnnoTerm) : VM unit :=
 
 Definition doRemote (t:AnnoTerm) (q:Plc) (e:EvidenceC) (rpyi:nat) : VM unit :=
   add_tracem (remote_events t q) ;;
-  put_store rpyi (toRemote (unanno t) q e).
+  put_store rpyi (toRemote (unanno t) e).
 
 Definition receiveResp (rpyi:nat) (q:Plc) : VM EvidenceC :=
   e <- get_store_at rpyi ;;
   p <- get_pl ;;
   add_tracem [rpy (Nat.pred rpyi) p q] ;;
   ret e.
+
+Require Import VM_IO_Axioms.
+
+Definition runParThread (t:AnnoTerm) (p:Plc) (e:EvidenceC) : VM (list Ev) :=
+  let el := parallel_vm_events t p in
+  let e' := parallel_att_vm_thread t e in
+  let loc := fst (range t) in
+  put_store loc e' ;;
+  ret el.
+
+Definition runParThreads (t1 t2:AnnoTerm) (p:Plc) (e1 e2:EvidenceC) : VM unit :=
+  el1 <- runParThread t1 p e1 ;;
+  el2 <- runParThread t2 p e2 ;;
+  add_tracem (shuffled_events el1 el2).
 
 
 
@@ -199,13 +214,13 @@ Definition eval_asp (a:ASP) (e:EvidenceC) : EvidenceC :=
     let bs := invokeKIM i q args in
     (kkc i args q bs e) *)
   | ASPC i _ =>
-    let bs := BS_res in
+    let bs := 0 in (* TODO: must bs be hardcoded? *)
     (uuc i bs e)
   | SIG =>
-    let bs := BS_res in
+    let bs := 0 in
     (ggc bs e)
   | HSH =>
-    let bs := BS_res in
+    let bs := 0 in
     (hhc bs e)
   end.
 
@@ -214,7 +229,7 @@ Definition eval_asp (a:ASP) (e:EvidenceC) : EvidenceC :=
 Fixpoint eval (t:Term) (* (p:Plc) *) (e:EvidenceC) : EvidenceC :=
   match t with
   | asp a => eval_asp a e
-  | att q t1 => toRemote t1 q e
+  | att q t1 => toRemote t1 e
   | lseq t1 t2 =>
     let e1 := eval t1 e in
     eval t2 e1
@@ -233,8 +248,8 @@ Fixpoint eval (t:Term) (* (p:Plc) *) (e:EvidenceC) : EvidenceC :=
     (ppc e1' e2')
   end.
 
-Axiom remote_eval : forall e p annt,
-    eval annt e = toRemote annt p e.
+Axiom remote_eval : forall e annt,
+    eval annt e = toRemote annt e.
 
 Axiom para_eval_thread: forall e annt,
     parallel_eval_thread annt e = eval annt e.
@@ -243,11 +258,11 @@ Axiom para_eval_thread: forall e annt,
 Inductive evalR: Term -> EvidenceC -> EvidenceC -> Prop :=
 | mttc: forall e, evalR (asp CPY) e e
 | uutc: forall i args e,
-    evalR (asp (ASPC i args)) e (uuc i (BS_res) e)
+    evalR (asp (ASPC i args)) e (uuc i (0) e)
 | ggtc: forall e,
-    evalR (asp SIG) e (ggc BS_res e)
+    evalR (asp SIG) e (ggc 0 e)
 | hhtc: forall e,
-    evalR (asp HSH) e (hhc BS_res e)
+    evalR (asp HSH) e (hhc 0 e)
 | atc: forall q t' e e',
     evalR t' e e' ->
     evalR (att q t') e e'

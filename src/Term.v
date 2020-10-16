@@ -51,7 +51,7 @@ Inductive Term: Set :=
 
 Inductive Evidence: Set :=
 | mt: Evidence
-| uu: ASP_ID -> Plc -> Evidence -> Evidence
+| uu: ASP_ID -> list Arg -> Plc -> Evidence -> Evidence
 | gg: Plc -> Evidence -> Evidence
 | hh: Plc -> Evidence -> Evidence
 | nn: N_ID -> Evidence -> Evidence
@@ -67,7 +67,7 @@ Definition splitEv_T (sp:SP) (e:Evidence) : Evidence :=
 Fixpoint eval_asp t p e :=
   match t with
   | CPY => e
-  | ASPC i args => uu i p e
+  | ASPC i args => uu i args p e
   | SIG => gg p e
   | HSH => hh p e
   end.
@@ -97,7 +97,7 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
 
 Inductive Ev: Set :=
 | copy: nat -> Plc -> Ev
-| umeas: nat -> Plc -> ASP_ID -> Ev
+| umeas: nat -> Plc -> ASP_ID -> list Arg -> Ev
 | sign: nat -> Plc -> Ev
 | hash: nat -> Plc -> Ev
 | req: nat -> Plc -> Plc -> Term -> Ev
@@ -118,7 +118,7 @@ Hint Resolve eq_ev_dec : core.
 Definition ev x :=
   match x with
   | copy i _ => i
-  | umeas i _ _  => i
+  | umeas i _ _ _  => i
   | sign i _ => i
   | hash i _ => i
   | req i _ _ _ => i
@@ -138,7 +138,7 @@ See Lemma [events_injective].
 Definition asp_event i x p :=
   match x with
   | CPY => copy i p
-  | ASPC id args => umeas i p id
+  | ASPC id args => umeas i p id args
   | SIG => sign i p
   | HSH => hash i p
   end.
@@ -162,6 +162,7 @@ Inductive AnnoTerm: Set :=
 | abseq: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
 | abpar: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm.
 
+(*
 Inductive AnnoEvidence: Set :=
 | amt: AnnoEvidence
 | auu: nat -> ASP_ID -> Plc -> AnnoEvidence -> AnnoEvidence
@@ -196,6 +197,7 @@ Fixpoint annoeval t p (e:AnnoEvidence) :=
   | abpar _ s t1 t2 => app (annoeval t1 p ((splitEv_T_i (fst s)) e))
                          (annoeval t2 p ((splitEv_T_i (snd s)) e)) 
   end.
+*)
 
 (** The number of events associated with a term.  The branching terms
 add a split and a join to the events of their subterms. Similarly, the
@@ -544,7 +546,7 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
 | evtsusm:
     forall i id args r p,
       fst r = i ->
-      events (aasp r (ASPC id args)) p (umeas i p id)
+      events (aasp r (ASPC id args)) p (umeas i p id args)
 | evtssig:
     forall r i p,
       fst r = i ->
