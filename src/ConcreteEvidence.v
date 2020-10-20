@@ -50,18 +50,18 @@ Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=
 
 Inductive Ev_Shape: EvidenceC -> Evidence -> Prop :=
 | mtt: Ev_Shape mtc mt
-| uut: forall id args p bs e et,
+| uut: forall id id' args p bs e et,
     Ev_Shape e et ->
-    Ev_Shape (uuc id bs e) (uu id args p et)
+    Ev_Shape (uuc id bs e) (uu id' args p et)
 | ggt: forall p bs e et,
     Ev_Shape e et ->
     Ev_Shape (ggc bs e) (gg p et)
 | hht: forall p bs e et,
     Ev_Shape e et ->
     Ev_Shape (hhc bs e) (hh p et)
-| nnt: forall bs e et i,
+| nnt: forall bs e et i i',
     Ev_Shape e et ->
-    Ev_Shape (nnc i bs e) (nn i et)
+    Ev_Shape (nnc i bs e) (nn i' et)
 | sst: forall e1 e2 e1t e2t,
     Ev_Shape e1 e1t ->
     Ev_Shape e2 e2t ->
