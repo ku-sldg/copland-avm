@@ -422,10 +422,12 @@ Defined.
 Ltac df :=
   repeat (
       cbn in *;
+      unfold runSt in *;
       repeat break_let;
       repeat (monad_unfold; cbn in *; find_inversion);
       monad_unfold;
-      repeat dunit).
+      repeat dunit;
+      unfold snd in *).
 
 Ltac dosome :=
   repeat (
@@ -472,6 +474,67 @@ Ltac do_pl_immut :=
   rewrite H in *; clear H
   end.
  *)
+
+Ltac allMappedFacts :=
+  match goal with
+  | [H: allMapped (aasp _ _) _ _ _ |- _] => invc H
+  | [H: allMapped (aatt _ _ _) _ _ _ |- _] => invc H
+  | [H: allMapped (alseq _ _ _) _ _ _ |- _] => invc H
+  end;
+  destruct_conjs.
+
+Ltac debound :=
+  match goal with
+  | [H: bound_to _ _ _ |- _] => invc H
+  end.
+
+Ltac evMappedFacts :=
+  match goal with
+  | [H: evMapped (uu _ _ _ _) _ |- _] => invc H
+  | [H: evMapped (gg _ _) _ |- _] => invc H
+  | [H: evMapped (hh _ _) _ |- _] => invc H
+  | [H: evMapped (nn _ _) _ |- _] => invc H
+  | [H: evMapped (ss _ _) _ |- _] => invc H
+  | [H: evMapped (pp _ _) _ |- _] => invc H 
+  end;
+  destruct_conjs;
+  try debound.
+
+Ltac subst' :=
+  match goal with
+  | [H: ?A = _,
+        H2: context[?A] |- _] =>
+    rewrite H in *; clear H
+  end.
+
+Ltac gen_st_const :=
+  let tac := (eapply gen_const; eauto) in
+  repeat (
+      match goal with
+      | [H: gen_appraisal_comp ?e ?et ?A = (?o,?B) |- _] =>
+        assert_new_proof_by (A = B) tac
+      (*
+             destruct gen_const with (e:=ee) (et:=?et) (a:=?A) (a':=?B) (o:=?o);
+             try eassumption *)
+      end);
+  subst.
+
+Ltac evShapeFacts :=
+  match goal with
+  | [H: Ev_Shape (uuc _ _ _) _ |- _] => invc H
+  end.
+
+Ltac do_evshape :=
+  let tac := edestruct evshape_et; eauto in
+  match goal with
+  | [H: Ev_Shape ?e ?et,
+        H2: evMapped ?et (st_aspmap ?a) |- _] =>
+    assert_new_proof_by 
+      (exists (res: VM unit), gen_appraisal_comp e et a = (Some res, a))
+      tac ;
+    clear H; clear H2
+  end;
+  destruct_conjs.
 
 Lemma app_some'' : forall t t' p p' e' e et (app_comp: AM (VM unit)) app_comp_res v_st v_st' (*app_comp' app_comp_res'*) a_st,
     t = snd (anno t' p') ->
@@ -536,185 +599,43 @@ Proof.
   
   -
     df.
-    destruct a; simpl in *;
-      repeat find_inversion;
-      subst;
-      vmsts;
-      simpl in *.
+    destruct a;
+      simpl in *; df;
+        allMappedFacts; 
 
-    +
+        try (
+            try (debound; subst');
+            df;
+
+            edestruct evshape_et; eauto;
+            subst';
+            df;
+            eauto;
+            tauto).
+
+    + (* CPY case *) 
+      inv H4;
+      df;
+      try evMappedFacts;
       
-      Ltac allMappedFacts :=
-        match goal with
-        | [H: allMapped (aasp _ _) _ _ _ |- _] => invc H
-        | [H: allMapped (aatt _ _ _) _ _ _ |- _] => invc H
-        | [H: allMapped (alseq _ _ _) _ _ _ |- _] => invc H
-        end.
-
-      Ltac debound :=
-          match goal with
-          | [H: bound_to _ _ _ |- _] => invc H
-          end.
-        
-        Ltac evMappedFacts :=
-          match goal with
-          | [H: evMapped (uu _ _ _ _) _ |- _] => invc H
-          | [H: evMapped (gg _ _) _ |- _] => invc H
-          | [H: evMapped (hh _ _) _ |- _] => invc H
-          | [H: evMapped (nn _ _) _ |- _] => invc H
-          | [H: evMapped (ss _ _) _ |- _] => invc H
-          | [H: evMapped (pp _ _) _ |- _] => invc H 
-          end;
-          destruct_conjs;
-          try debound.
-
-        Ltac subst' :=
-          match goal with
-          | [H: ?A = _,
-                H2: context[?A] |- _] =>
-            rewrite H in *; clear H
-          end.
-
-        Ltac gen_st_const :=
-          let tac := (eapply gen_const; eauto) in
-          repeat (
-              match goal with
-              | [H: gen_appraisal_comp ?e ?et ?A = (?o,?B) |- _] =>
-                assert_new_proof_by (A = B) tac
-              (*
-             destruct gen_const with (e:=ee) (et:=?et) (a:=?A) (a':=?B) (o:=?o);
-             try eassumption *)
-              end);
-          subst.
-
-        Ltac evShapeFacts :=
-          match goal with
-          | [H: Ev_Shape (uuc _ _ _) _ |- _] => invc H
-          end.
-
-        Ltac do_evshape :=
-          let tac := edestruct evshape_et; eauto in
-          match goal with
-          | [H: Ev_Shape ?e ?et,
-                H2: evMapped ?et (st_aspmap ?a) |- _] =>
-            assert_new_proof_by 
-              (exists (res: VM unit), gen_appraisal_comp e et a = (Some res, a))
-              tac ;
-            clear H; clear H2
-          end;
-          destruct_conjs.
-
-
+      try subst';    
+      (* map_get_subst. *)
       
-      allMappedFacts.
-     
-      inv H4.
-      ++
-        df; eauto.
-      ++
-        df.
-        
-        evMappedFacts.
-
-        subst'.       
-        (* map_get_subst. *)
-            
-         df.
+      df;
       
-         gen_st_const.
-         
-         evShapeFacts.
+      try (gen_st_const);
+      
+      try (evShapeFacts);
 
-         edestruct evshape_et;
-           eauto.
-
-         subst'.
-         
-         df.
-         eauto.
-
-      ++
-        df.
-        evMappedFacts.
-        edestruct evshape_et; eauto.
-        subst'.
-        df.
-        eauto.
-      ++
-        df.
-        evMappedFacts.
-        edestruct evshape_et; eauto.
-        subst'.
-        df.
-        eauto.
-      ++
-        df.
-        evMappedFacts.
-        edestruct evshape_et; eauto.
-        subst'.
-        df.
-        eauto.
-      ++
-        df.
-        evMappedFacts.
-         
-        repeat (do_evshape).
-
-        gen_st_const.
-        repeat subst'.
-        df.
-        eauto.
-
-      ++
-        df.
-        evMappedFacts.
-
-        repeat (do_evshape).
-
-        gen_st_const.
-        repeat subst'.
-        df.
-        eauto.
-    +
-      df.
-      allMappedFacts.
-      destruct_conjs.
-      unfold runSt.
-      df.
-      try (debound; subst').
-      df.
-
-      edestruct evshape_et; eauto.
-      subst'.
-      df.
-      eauto.
-    +
-      df.
-      allMappedFacts.
-      destruct_conjs.
-      unfold runSt.
-      df.
-      try (debound; subst').
-      df.
-
-      edestruct evshape_et; eauto.
-      subst'.
-      df.
-      eauto.
-
-    +
-      df.
-      allMappedFacts.
-      destruct_conjs.
-      unfold runSt.
-      df.
-      try (debound; subst').
-      df.
-
-      edestruct evshape_et; eauto.
-      subst'.
-      df.
-      eauto.
+      try (edestruct evshape_et;
+           eauto);
+      
+      try (    
+          repeat do_evshape;
+          gen_st_const
+        );
+      
+      repeat subst'; df; eauto.
 
   -
     df.
@@ -722,24 +643,19 @@ Proof.
 
     df.
     allMappedFacts.
-    unfold runSt in *.
-
 
     eapply IHt'.
 
     jkjke.
     
-    simpl. 
     apply build_comp_at.
     eassumption.
-    simpl.
     jkjke.
 
   -
     (* df does too much here! *)
     cbn in *.
     repeat break_let.
-    
     unfold snd in *.
     
     assert (alseq (p', n0) a a0 = snd (anno (lseq t'1 t'2) p')) as H.
@@ -761,8 +677,10 @@ Proof.
     destruct_conjs.
 
     Check alseq_decomp.
-    edestruct alseq_decomp with (r:=(p',n0)).
+    edestruct alseq_decomp. (* with (r:=(p',n0)). *)
+    eassumption.
 
+    (*
     
     cbn.
     repeat break_let.
@@ -771,7 +689,7 @@ Proof.
     df.
     rewrite Heqp0 in *.
     df.
-    reflexivity.
+    reflexivity. *)
 
     rewrite H2 in *.
     eapply restl'_2.
@@ -786,22 +704,17 @@ Proof.
 
     destruct (gen_appraisal_comp x (eval t'1 st_pl0 et) a_st) eqn:hi.
 
-    repeat gen_st_const.
+    gen_st_const.
 
-
-    destruct IHt'1 with (a_st:=a1) (st_trace:=H3) (et:=et) (st_ev0:=st_ev0) (st_ev:=x) (st_pl0:=st_pl0) (st_trace0:=nil (A:=Ev)) (st_pl:=H) (st_store:=H6) (st_store0:=st_store0) (p':=p').
-
-    jkjke.
-
-    eassumption.
-    unfold runSt in *.
+    (*
+    destruct IHt'1 with (a_st:=a1) (st_trace:=H3) (et:=et) (st_ev0:=st_ev0) (st_ev:=x) (st_pl0:=st_pl0) (st_trace0:=nil (A:=Ev)) (st_pl:=H) (st_store:=H6) (st_store0:=st_store0) (p':=p'). *)
 
     allMappedFacts.
-    jkjke.
-    
+    edestruct IHt'1;
+      [jkjke | eassumption | jkjke| idtac].  
 
     subst.
-    eapply IHt'2 with (st_ev0:=x) (p':=n).
+    eapply IHt'2. (*with (st_ev0:=x) (p':=n). *)
     jkjke.
     Print do_pl_immut.
     Check pl_immut.
@@ -824,7 +737,6 @@ Proof.
 
     jkjke.
 
-    allMappedFacts.
    
     assert (unanno a = t'1).
     erewrite <- announ'.
@@ -832,13 +744,9 @@ Proof.
     subst.
     eassumption.
     
-    
   -
-
-    gen_st_const.
     df.
-    
-    unfold snd in *.
+
     (*
     assert (abseq (p', (S n0)) s a a0 = snd (anno (bseq s t'1 t'2) p')).
       {
@@ -856,129 +764,40 @@ Proof.
      *)
     
     dosome.
- 
+    
     vmsts.
     df.
 
-    invc H5.
-    +
-      df.
-      unfold runSt in *.
-      
-      destruct (gen_appraisal_comp st_ev0 (eval t'1  st_pl0 mt) a_st) eqn:ghi.
-      destruct (gen_appraisal_comp st_ev  (eval t'2  st_pl0 mt) a_st) eqn:hhi.
-      
-      edestruct IHt'1.
-      jkjke.
-      eapply mtt.
-      jkjke.
+    Ltac find_IHt' :=
+      match goal with
+      | [H1: (forall _, _),
+             H2: (forall _,_) |- _] =>
+          
+          df;
+          gen_st_const;
+          
+          edestruct H1;
+          [jkjke | try (apply mtt); eassumption |  jkjke | idtac];
+          
+          subst';
+          
+          df;
+          do_pl_immut;
+          
+          edestruct H2;
+          [ jkjke | try (apply mtt); eassumption | jkjke | idtac];
+          
+          subst';
+          simpl in *; subst;
+          
+          df;
+          eauto
+      end.
 
-      subst.
-      
-      df.
-      do_pl_immut.
-      
-      edestruct IHt'2.
-      jkjke.
-      eapply mtt.
-      jkjke.
-
-      gen_st_const.
-
-      subst'.
-      df.
-      eauto.
-
-    +
-
-      df.
-      unfold runSt in *.
-      
-      destruct (gen_appraisal_comp st_ev0 (eval t'1  st_pl0 mt) a_st) eqn:ghi.
-      destruct (gen_appraisal_comp st_ev  (eval t'2  st_pl0 et) a_st) eqn:hhi.
-      
-      edestruct IHt'1.
-      jkjke.
-      eapply mtt.
-      jkjke.
-
-      subst.     
-      
-      df.
-      do_pl_immut.
-      
-      edestruct IHt'2.
-      jkjke.
-      eassumption.
-      jkjke.
-
-      gen_st_const.
-
-      subst'.
-      df.
-      eauto.
-
-    +
-      
-      df.
-      unfold runSt in *.
-      
-      destruct (gen_appraisal_comp st_ev0 (eval t'1  st_pl0 et) a_st) eqn:ghi.
-      destruct (gen_appraisal_comp st_ev  (eval t'2  st_pl0 mt) a_st) eqn:hhi.
-      
-      edestruct IHt'1.
-      jkjke.
-      eassumption.
-      jkjke.
-
-      subst.     
-      
-      df.
-      do_pl_immut.
-      
-      edestruct IHt'2.
-      jkjke.
-      apply mtt.
-      jkjke.
-
-      gen_st_const.
-
-      subst'.
-      df.
-      eauto.
-
-    +
-      
-      df.
-      unfold runSt in *.
-      
-      destruct (gen_appraisal_comp st_ev0 (eval t'1  st_pl0 et) a_st) eqn:ghi.
-      destruct (gen_appraisal_comp st_ev  (eval t'2  st_pl0 et) a_st) eqn:hhi.
-      
-      edestruct IHt'1.
-      jkjke.
-      eassumption.
-      jkjke.
-
-      subst.     
-      
-      df.
-      do_pl_immut.
-      
-      edestruct IHt'2.
-      jkjke.
-      eassumption.
-      jkjke.
-
-      gen_st_const.
-
-      subst'.
-      df.
-      eauto.
+    invc H5;
+      try find_IHt'.
   -
     df.
-       
-    unfold snd in *.
     (*
     assert (abseq (p', (S n0)) s a a0 = snd (anno (bseq s t'1 t'2) p')).
       {
@@ -997,132 +816,84 @@ Proof.
 
     dosome.
 
-    unfold get_store_at in *.
-    monad_unfold.
-    assert (PeanoNat.Nat.eqb (fst (range a)) (fst (range a0)) = false).
-    {
-      assert (
-          exists r b,
-            abpar r b a a0 = snd(anno (bpar (s0,s1) t'1 t'2) p')).
-      {
-        eexists.
-        eexists.
-        cbn.
-        repeat break_let.
-        simpl.
-        repeat find_inversion.
-        subst'.
-        df.
-        reflexivity.
-      }
-      destruct_conjs.
-      eapply h; eauto.
-    }
-    subst'.
-    dohtac.
-    df. 
-    dohtac.
-    df.   
-  
+    Ltac dooit :=
+      repeat eexists;
+      cbn;
+      repeat break_let;
+      simpl;
+      repeat find_inversion;
+      subst';
+      df;
+      reflexivity.
+
+
+    
+    Ltac abpar_restore_htac :=
+      let G := fresh in
+      let HH := fresh in
+      let HHH := fresh in
+      let blah := fresh in
+      let blah' := fresh in
+      match goal with
+      | [H2: context[abpar (?p', _) (?s0, ?s1) ?a ?a0],
+             H: anno ?t'1 (S ?p') = (_,?a),
+                H': anno ?t'2 _ = (_,?a0) |- _] =>
+        assert ( exists r b,
+                   abpar r b a a0 = snd(anno (bpar (s0,s1) t'1 t'2) p')) as G by dooit
+      end;
+      destruct G as [blah HH];
+      destruct HH as [blah' HHH];
+      dohtac;
+      clear HHH;
+      clear blah;
+      clear blah';
+      df;
+      dohtac;
+      df.
+
+    abpar_restore_htac.
+    
+    Ltac mttac := apply mtt.
+    Ltac etac := eassumption.
+
+    Ltac datac tac1 tac2 IHt1 IHt2 :=
+      df;
+      gen_st_const;     
+      
+      edestruct IHt1;
+      [jkjke; apply build_comp_par | tac1 | jkjke | idtac];
+      
+      subst;
+      df;
+      
+      edestruct IHt2;
+      [ jkjke; apply build_comp_par | tac2 | jkjke | idtac];
+
+      repeat (subst'; df; subst; simpl); eauto.
+
+
+    Ltac find_IHt :=
+      match goal with
+      | [H1: (forall _, _),
+             H2: (forall _,_) |- _] =>
+        try (datac mttac mttac H1 H2; tauto);
+        try (datac mttac etac H1 H2; tauto);
+        try (datac etac mttac H1 H2; tauto);
+        try (datac etac etac H1 H2; tauto)
+      end.
+    
+    invc H5;
+      find_IHt.
+
+    (*  Maybe a hair faster...but less robust to name changes in context
     invc H5.
-    +
-      df.
-      unfold runSt in *.
-
-      destruct (gen_appraisal_comp (parallel_att_vm_thread a  mtc) (eval t'1  st_pl0 mt) a_st) eqn:ghi.
-      destruct (gen_appraisal_comp (parallel_att_vm_thread a0 mtc) (eval t'2  st_pl0  mt) a_st) eqn:hhi.
-      
-      edestruct IHt'1.
-      jkjke.
-      apply build_comp_par.
-      eapply mtt.
-      jkjke.
-      
-      subst.
-      df.
-      
-      edestruct IHt'2.
-      jkjke.
-      apply build_comp_par.
-      eapply mtt.
-      jkjke.
-
-      gen_st_const.
-
-      repeat (subst'; df; subst; simpl); eauto.
-    +
-      df.
-
-      unfold runSt in *.
-
-      destruct (gen_appraisal_comp (parallel_att_vm_thread a  mtc) (eval t'1  st_pl0 mt) a_st) eqn:ghi.
-      destruct (gen_appraisal_comp (parallel_att_vm_thread a0 st_ev0) (eval t'2  st_pl0 et) a_st) eqn:hhi.
-      
-      edestruct IHt'1.
-      jkjke.
-      apply build_comp_par.
-      eapply mtt.
-      jkjke.
-      
-      df.
-      
-      edestruct IHt'2.
-      jkjke.
-      apply build_comp_par.
-      eassumption.
-      jkjke.
-
-      gen_st_const.
-
-      repeat (subst'; df; subst; simpl); eauto.
-    +
-      df.
-
-      unfold runSt in *.
-
-      destruct (gen_appraisal_comp (parallel_att_vm_thread a  st_ev0) (eval t'1  st_pl0 et) a_st) eqn:ghi.
-      destruct (gen_appraisal_comp (parallel_att_vm_thread a0 mtc) (eval t'2  st_pl0 mt) a_st) eqn:hhi.
-      
-      edestruct IHt'1.
-      jkjke.
-      apply build_comp_par.
-      eassumption.
-      jkjke.
-      
-      df.
-      
-      edestruct IHt'2.
-      jkjke.
-      apply build_comp_par.
-      apply mtt.
-      jkjke.
-
-      gen_st_const.
-      repeat (subst'; df; subst; simpl); eauto.
-    +
-      df.
-
-      unfold runSt in *.
-
-      destruct (gen_appraisal_comp (parallel_att_vm_thread a  st_ev0) (eval t'1  st_pl0 et) a_st) eqn:ghi.
-      destruct (gen_appraisal_comp (parallel_att_vm_thread a0 st_ev0) (eval t'2  st_pl0 et) a_st) eqn:hhi.
-      
-      edestruct IHt'1.
-      jkjke.
-      apply build_comp_par.
-      eassumption.
-      jkjke.
-      
-      df.
-      
-      edestruct IHt'2.
-      jkjke.
-      apply build_comp_par.
-      eassumption.
-      jkjke.
-
-      gen_st_const.
-      repeat (subst'; df; subst; simpl); eauto.
+           
+    + datac mttac mttac IHt'1 IHt'2.
+    + datac mttac etac  IHt'1 IHt'2.
+    + datac etac  mttac IHt'1 IHt'2.
+    + datac etac  etac  IHt'1 IHt'2.
+     *)
+    
       
       Unshelve.
       eauto.
