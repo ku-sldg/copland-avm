@@ -473,10 +473,12 @@ Ltac do_pl_immut :=
   end.
  *)
 
-Lemma app_some'' : forall t t' p p' p'' tr tr' o o' e' e et (app_comp: AM (VM unit)) app_comp_res (*app_comp' app_comp_res'*) a_st,
+Lemma app_some'' : forall t t' p p' e' e et (app_comp: AM (VM unit)) app_comp_res v_st v_st' (*app_comp' app_comp_res'*) a_st,
     t = snd (anno t' p') ->
-    build_comp t {| st_ev:=e; st_trace:=tr; st_pl:=p; st_store:=o|} =
-    (Some tt, {| st_ev:=e'; st_trace:=tr'; st_pl:=p''; st_store:=o'|}) ->
+    build_comp t v_st = (Some tt, v_st') ->
+    e =  st_ev v_st ->
+    p =  st_pl v_st ->
+    e' = st_ev v_st' ->
     Ev_Shape e et ->  (* TODO: maybe don't need this *)
     allMapped t p a_st et ->
     app_comp = gen_appraisal_comp e' (eval t' p et) ->
@@ -527,6 +529,7 @@ Proof.
   (*
   clear HH. clear blah. *)
   (*erewrite announ' in *. *)
+  vmsts; simpl in *.
   generalizeEverythingElse t'.
 
   induction t'; intros; subst.
@@ -535,7 +538,9 @@ Proof.
     df.
     destruct a; simpl in *;
       repeat find_inversion;
-      subst.
+      subst;
+      vmsts;
+      simpl in *.
 
     +
       
@@ -603,7 +608,7 @@ Proof.
       
       allMappedFacts.
      
-      inv H1.
+      inv H4.
       ++
         df; eauto.
       ++
@@ -674,8 +679,9 @@ Proof.
       df.
       allMappedFacts.
       destruct_conjs.
-      try (debound;
-           subst').
+      unfold runSt.
+      df.
+      try (debound; subst').
       df.
 
       edestruct evshape_et; eauto.
@@ -686,8 +692,9 @@ Proof.
       df.
       allMappedFacts.
       destruct_conjs.
-      try (debound;
-           subst').
+      unfold runSt.
+      df.
+      try (debound; subst').
       df.
 
       edestruct evshape_et; eauto.
@@ -696,11 +703,12 @@ Proof.
       eauto.
 
     +
-            df.
+      df.
       allMappedFacts.
       destruct_conjs.
-      try (debound;
-           subst').
+      unfold runSt.
+      df.
+      try (debound; subst').
       df.
 
       edestruct evshape_et; eauto.
@@ -714,13 +722,15 @@ Proof.
 
     df.
     allMappedFacts.
+    unfold runSt in *.
+
 
     eapply IHt'.
 
     jkjke.
     
     simpl. 
-    eapply build_comp_at.
+    apply build_comp_at.
     eassumption.
     simpl.
     jkjke.
@@ -743,7 +753,7 @@ Proof.
         eauto.
       } 
     
-    assert (exists l, tr' = tr ++ l).
+    assert (exists l, st_trace = st_trace0 ++ l).
     {
       eapply suffix_prop;
         eauto.
@@ -757,13 +767,13 @@ Proof.
     cbn.
     repeat break_let.
     simpl.
-    rewrite Heqp0 in *.
+    rewrite Heqp in *.
     df.
-    rewrite Heqp1 in *.
+    rewrite Heqp0 in *.
     df.
     reflexivity.
 
-    rewrite H4 in *.
+    rewrite H2 in *.
     eapply restl'_2.
 
     eassumption.
@@ -774,12 +784,12 @@ Proof.
     destruct_conjs.
     
 
-    destruct (gen_appraisal_comp x (eval t'1 p et) a_st) eqn:hi.
+    destruct (gen_appraisal_comp x (eval t'1 st_pl0 et) a_st) eqn:hi.
 
     repeat gen_st_const.
 
 
-    destruct IHt'1 with (a_st:=a1) (tr':=H5) (et:=et) (e:=e) (e':=x) (p:=p) (tr:=nil (A:=Ev)) (p'':=H) (o':=H6) (o:=o) (p':=p').
+    destruct IHt'1 with (a_st:=a1) (st_trace:=H3) (et:=et) (st_ev0:=st_ev0) (st_ev:=x) (st_pl0:=st_pl0) (st_trace0:=nil (A:=Ev)) (st_pl:=H) (st_store:=H6) (st_store0:=st_store0) (p':=p').
 
     jkjke.
 
@@ -791,8 +801,10 @@ Proof.
     
 
     subst.
-    eapply IHt'2 with (e:=x) (p':=n).
+    eapply IHt'2 with (st_ev0:=x) (p':=n).
     jkjke.
+    Print do_pl_immut.
+    Check pl_immut.
     do_pl_immut.
     
     eassumption.
@@ -848,13 +860,13 @@ Proof.
     vmsts.
     df.
 
-    invc H2.
+    invc H5.
     +
       df.
       unfold runSt in *.
       
-      destruct (gen_appraisal_comp st_ev0 (eval t'1  p mt) a_st) eqn:ghi.
-      destruct (gen_appraisal_comp st_ev  (eval t'2  p mt) a_st) eqn:hhi.
+      destruct (gen_appraisal_comp st_ev0 (eval t'1  st_pl0 mt) a_st) eqn:ghi.
+      destruct (gen_appraisal_comp st_ev  (eval t'2  st_pl0 mt) a_st) eqn:hhi.
       
       edestruct IHt'1.
       jkjke.
@@ -875,10 +887,6 @@ Proof.
 
       subst'.
       df.
-      subst'.
-      df.
-      subst.
-      df.
       eauto.
 
     +
@@ -886,8 +894,8 @@ Proof.
       df.
       unfold runSt in *.
       
-      destruct (gen_appraisal_comp st_ev0 (eval t'1  p mt) a_st) eqn:ghi.
-      destruct (gen_appraisal_comp st_ev  (eval t'2  p et) a_st) eqn:hhi.
+      destruct (gen_appraisal_comp st_ev0 (eval t'1  st_pl0 mt) a_st) eqn:ghi.
+      destruct (gen_appraisal_comp st_ev  (eval t'2  st_pl0 et) a_st) eqn:hhi.
       
       edestruct IHt'1.
       jkjke.
@@ -908,20 +916,15 @@ Proof.
 
       subst'.
       df.
-      subst'.
-      df.
-      subst.
-      df.
       eauto.
-
 
     +
       
       df.
       unfold runSt in *.
       
-      destruct (gen_appraisal_comp st_ev0 (eval t'1  p et) a_st) eqn:ghi.
-      destruct (gen_appraisal_comp st_ev  (eval t'2  p mt) a_st) eqn:hhi.
+      destruct (gen_appraisal_comp st_ev0 (eval t'1  st_pl0 et) a_st) eqn:ghi.
+      destruct (gen_appraisal_comp st_ev  (eval t'2  st_pl0 mt) a_st) eqn:hhi.
       
       edestruct IHt'1.
       jkjke.
@@ -942,10 +945,6 @@ Proof.
 
       subst'.
       df.
-      subst'.
-      df.
-      subst.
-      df.
       eauto.
 
     +
@@ -953,8 +952,8 @@ Proof.
       df.
       unfold runSt in *.
       
-      destruct (gen_appraisal_comp st_ev0 (eval t'1  p et) a_st) eqn:ghi.
-      destruct (gen_appraisal_comp st_ev  (eval t'2  p et) a_st) eqn:hhi.
+      destruct (gen_appraisal_comp st_ev0 (eval t'1  st_pl0 et) a_st) eqn:ghi.
+      destruct (gen_appraisal_comp st_ev  (eval t'2  st_pl0 et) a_st) eqn:hhi.
       
       edestruct IHt'1.
       jkjke.
@@ -974,10 +973,6 @@ Proof.
       gen_st_const.
 
       subst'.
-      df.
-      subst'.
-      df.
-      subst.
       df.
       eauto.
   -
@@ -1029,13 +1024,13 @@ Proof.
     dohtac.
     df.   
   
-    invc H2.
+    invc H5.
     +
       df.
       unfold runSt in *.
 
-      destruct (gen_appraisal_comp (parallel_att_vm_thread a  mtc) (eval t'1  p mt) a_st) eqn:ghi.
-      destruct (gen_appraisal_comp (parallel_att_vm_thread a0 mtc) (eval t'2  p mt) a_st) eqn:hhi.
+      destruct (gen_appraisal_comp (parallel_att_vm_thread a  mtc) (eval t'1  st_pl0 mt) a_st) eqn:ghi.
+      destruct (gen_appraisal_comp (parallel_att_vm_thread a0 mtc) (eval t'2  st_pl0  mt) a_st) eqn:hhi.
       
       edestruct IHt'1.
       jkjke.
@@ -1060,8 +1055,8 @@ Proof.
 
       unfold runSt in *.
 
-      destruct (gen_appraisal_comp (parallel_att_vm_thread a  mtc) (eval t'1  p mt) a_st) eqn:ghi.
-      destruct (gen_appraisal_comp (parallel_att_vm_thread a0 e) (eval t'2  p et) a_st) eqn:hhi.
+      destruct (gen_appraisal_comp (parallel_att_vm_thread a  mtc) (eval t'1  st_pl0 mt) a_st) eqn:ghi.
+      destruct (gen_appraisal_comp (parallel_att_vm_thread a0 st_ev0) (eval t'2  st_pl0 et) a_st) eqn:hhi.
       
       edestruct IHt'1.
       jkjke.
@@ -1085,8 +1080,8 @@ Proof.
 
       unfold runSt in *.
 
-      destruct (gen_appraisal_comp (parallel_att_vm_thread a  e) (eval t'1  p et) a_st) eqn:ghi.
-      destruct (gen_appraisal_comp (parallel_att_vm_thread a0 mtc) (eval t'2  p mt) a_st) eqn:hhi.
+      destruct (gen_appraisal_comp (parallel_att_vm_thread a  st_ev0) (eval t'1  st_pl0 et) a_st) eqn:ghi.
+      destruct (gen_appraisal_comp (parallel_att_vm_thread a0 mtc) (eval t'2  st_pl0 mt) a_st) eqn:hhi.
       
       edestruct IHt'1.
       jkjke.
@@ -1109,8 +1104,8 @@ Proof.
 
       unfold runSt in *.
 
-      destruct (gen_appraisal_comp (parallel_att_vm_thread a  e) (eval t'1  p et) a_st) eqn:ghi.
-      destruct (gen_appraisal_comp (parallel_att_vm_thread a0 e) (eval t'2  p et) a_st) eqn:hhi.
+      destruct (gen_appraisal_comp (parallel_att_vm_thread a  st_ev0) (eval t'1  st_pl0 et) a_st) eqn:ghi.
+      destruct (gen_appraisal_comp (parallel_att_vm_thread a0 st_ev0) (eval t'2  st_pl0 et) a_st) eqn:hhi.
       
       edestruct IHt'1.
       jkjke.
@@ -1204,7 +1199,6 @@ Lemma app_some : forall t t' p' res a_st v_st v_st' e e' et p,
     exists (st:vm_st), res = Some st.
 Proof.
   intros.
-  vmsts.
   simpl in *.
   edestruct app_some'';
     try (subst; eassumption);
@@ -1216,10 +1210,9 @@ Proof.
   unfold runSt in *.
   rewrite announ' in *.
   repeat break_let.
-  simpl in *.
+  df.
   subst.
-  repeat break_let.
-  repeat find_inversion.
+  df.
   eauto.
 Defined.
 
