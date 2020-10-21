@@ -59,14 +59,16 @@ Instance pair_EqClass{A B:Type}`{H:EqClass A}`{H':EqClass B} : EqClass (A*B) :=
     eqb_leibniz := beq_pair_true }.
 
 Definition asp_map := MapC (Plc * ASP_ID) ASP_ID.
+Definition sig_map := MapC Plc ASP_ID.
 
 (* Specific AM monad state *)
 Record AM_St : Type := mkAM_St
                          { am_nonceMap : MapC nat BS;
                            am_nonceId : nat;
-                           st_aspmap :asp_map(*;
+                           st_aspmap : asp_map;
+                           st_sigmap : sig_map(*;
                            checked : list nat*) }.
 
 Definition empty_amst :=
-  mkAM_St [] 0 [].
+  mkAM_St [] 0 [] [].
                                          

@@ -21,6 +21,14 @@ Definition am_get_app_asp (p:Plc) (i:ASP_ID) : AM ASP_ID :=
   | None => failm
   end.
 
+Definition am_get_sig_asp (p:Plc) : AM ASP_ID :=
+  m <- gets st_sigmap ;;
+  let maybeId := map_get m p in
+  match maybeId with
+  | Some i' => ret i'
+  | None => failm
+  end.
+  
 Fixpoint gen_appraisal_comp (e:EvidenceC) (et:Evidence) : AM (VM unit) :=
   match e with
   | mtc =>
@@ -33,8 +41,9 @@ Fixpoint gen_appraisal_comp (e:EvidenceC) (et:Evidence) : AM (VM unit) :=
     | uu i_t args_t p e'_t =>
       app_id <- am_get_app_asp p i_t ;;
       let c1 :=
-          e <- invokeUSM 0 app_id p (args_t ++ [bs]) ;;  (* TODO: is bogus event id ok here? *)
-          put_ev e in
+          e <- invokeUSM 0 app_id p (args_t ++ [bs]) ;; put_ev e in
+          (* TODO: is bogus event id ok here? *)
+          (* TODO: do we need an accurate Plc here?  p is from evidence, not invoking principal *)
       c2 <- gen_appraisal_comp e' e'_t ;;
       ret (c1 ;; c2)
     | _ => failm
@@ -42,8 +51,14 @@ Fixpoint gen_appraisal_comp (e:EvidenceC) (et:Evidence) : AM (VM unit) :=
   | ggc bs e' =>
     match et with
     | gg p e'_t =>
-      c1 <- gen_appraisal_comp e' e'_t ;;
-      ret (c1)
+      (* TODO: should gg have an ID to show what event generated it?  To use in encodeEv? *)
+      app_id <- am_get_sig_asp p ;;
+      let c1 :=
+          e <- invokeUSM 0 app_id p ([encodeEv e'] ++ [bs]) ;; put_ev e in
+      (* TODO: additional args with encoded evidence? *)
+      (* TODO: Plc p ok? *)
+      c2 <- gen_appraisal_comp e' e'_t ;;
+      ret (c1 ;; c2)
     | _ => failm
     end
   | hhc bs e' =>
@@ -152,56 +167,61 @@ Definition fromOpt{A:Type} (o:option A) (a:A) : A :=
   | None => a
   end.
 
-Inductive evMapped : Evidence -> asp_map -> Prop :=
+Inductive evMapped : Evidence -> AM_St -> Prop :=
 | evMappedMt : forall m, evMapped mt m
-| evMappedU : forall p i args e' m,
-    evMapped e' m -> 
+| evMappedU : forall p i args e' m st,
+    m = st_aspmap st ->
+    evMapped e' st -> 
     (exists j, bound_to m (p,i) j) -> 
-    evMapped (uu i args p e') m
-| evMappedG : forall e' m p,
-    evMapped e' m ->
-    evMapped (gg p e') m
-| evMappedH : forall e' m p,
-    evMapped e' m ->
-    evMapped (hh p e') m
-| evMappedN : forall e' m nid,
-    evMapped e' m ->
-    evMapped (nn nid e') m
-| evMappedS : forall e1 e2 m,
-    evMapped e1 m ->
-    evMapped e2 m ->
-    evMapped (ss e1 e2) m
-| evMappedP : forall e1 e2 m,
-    evMapped e1 m ->
-    evMapped e2 m ->
-    evMapped (pp e1 e2) m.
+    evMapped (uu i args p e') st
+| evMappedG : forall e' m p st,
+    m = st_sigmap st ->
+    evMapped e' st ->
+    (exists j, bound_to m p j) ->
+    evMapped (gg p e') st
+| evMappedH : forall e' p st,
+    (*m = st_sigmap st -> *)
+    evMapped e' st ->
+    evMapped (hh p e') st
+| evMappedN : forall e' m nid st,
+    m = st_aspmap st ->
+    evMapped e' st ->
+    evMapped (nn nid e') st
+| evMappedS : forall e1 e2 st,
+    evMapped e1 st ->
+    evMapped e2 st ->
+    evMapped (ss e1 e2) st
+| evMappedP : forall e1 e2 st,
+    evMapped e1 st ->
+    evMapped e2 st ->
+    evMapped (pp e1 e2) st.
 
 Inductive allMapped : AnnoTerm -> Plc -> AM_St -> Evidence -> Prop :=
-| allMapped_cpy : forall r p st e m,
-    m = st_aspmap st ->
-    evMapped e m ->
+| allMapped_cpy : forall r p st e,
+    (*m = st_aspmap st -> *)
+    evMapped e st ->
     allMapped (aasp r (CPY)) p st e
 | allMapped_asp : forall m st p i r args e,
+    evMapped e st ->
     m = st_aspmap st ->
-    evMapped e m ->
     (exists j, bound_to m (p,i) j) ->
     allMapped (aasp r (ASPC i args)) p st e
 | allMapped_sig : forall r p st m e,
-    m = st_aspmap st ->
-    evMapped e m ->
+    evMapped e st ->
+    m = st_sigmap st ->
+    (exists j, bound_to m p j) ->
     allMapped (aasp r (SIG)) p st e
-| allMapped_hsh : forall r p st m e,
-    m = st_aspmap st ->
-    evMapped e m ->
+| allMapped_hsh : forall r p st e,
+    evMapped e st ->
     allMapped (aasp r (HSH)) p st e
 | allMapped_at : forall t' p q r st e m,
     m = st_aspmap st ->
     (*evMapped e m -> *) (* TODO: need this? *)
     allMapped t' q st e ->
     allMapped (aatt r q t') p st e
-| allMapped_lseq : forall t1 t2 p st r m e,
-    m = st_aspmap st ->
-    (* evMapped e m -> *)  (* TODO: need this? *)
+| allMapped_lseq : forall t1 t2 p st r e,
+    (* m = st_aspmap st ->
+       evMapped e m -> *)  (* TODO: need this? *)
     allMapped t1 p st e ->
     allMapped t2 p st (eval (unanno t1) p e) ->
     allMapped (alseq r t1 t2) p st e
@@ -239,7 +259,7 @@ Inductive allMapped : AnnoTerm -> Plc -> AM_St -> Evidence -> Prop :=
     allMapped (abpar r (ALL,ALL) t1 t2) p st e.
 
 
-
+(*
 Lemma atgentrace : forall t p e n v1 v a b am_nonceMap am_nonceId st_aspmap ev,
     gen_appraisal_comp
       (st_ev (snd (build_comp (annotated t) empty_vmst))) (eval t p e)
@@ -262,6 +282,7 @@ Lemma fifi : forall t p e n v a b am_nonceMap am_nonceId st_aspmap,
     False.
 Proof.
 Admitted.
+*)
 
 
 Lemma announ' : forall t p,
@@ -309,114 +330,6 @@ Proof.
   intros.
   inv H.
   eauto.
-Defined.
-
-Lemma evshape_et : forall e et st,
-    Ev_Shape e et ->
-    evMapped et (st_aspmap st) ->
-    exists res, gen_appraisal_comp e et st = (Some res, st).
-Proof.
-  induction e; intros.
-  -
-    inv H.
-    cbv.
-    eauto.
-  -
-    inv H.
-    cbn.
-    monad_unfold.
-    cbn.
-    repeat break_let.
-    invc H0.
-    destruct_conjs.
-    invc H0.
-    rewrite H1 in *.
-    monad_unfold.
-    repeat find_inversion.
-    repeat break_let.
-    edestruct IHe.
-    apply H5.
-    eassumption.
-    rewrite H0 in *.
-    repeat find_inversion.
-    eauto.
-  -
-    inv H.
-    cbn.
-    monad_unfold.
-    edestruct IHe.
-    eassumption.
-    inv H0.
-    eassumption.
-    rewrite H1.
-    eauto.
-  -
-    inv H.
-    cbn.
-    monad_unfold.
-    eauto.
-    edestruct IHe.
-    eassumption.
-    inv H0.
-    eassumption.
-    rewrite H1.
-    eauto.
-  -
-    inv H.
-    cbn.
-    monad_unfold.
-    eauto.
-    edestruct IHe.
-    eassumption.
-    inv H0.
-    eassumption.
-    rewrite H1.
-    eauto.
-  -
-    cbn.
-    invc H.
-    invc H0.
-    monad_unfold.
-    edestruct IHe1.
-    apply H3.
-    eassumption.
-    rewrite H in *.
-    repeat break_let.
-    edestruct IHe2.
-    apply H5.
-    eassumption.
-    rewrite H0 in *.
-    repeat find_inversion.
-    eauto.
-  -
-    cbn.
-    invc H.
-    invc H0.
-    monad_unfold.
-    edestruct IHe1.
-    apply H3.
-    eassumption.
-    rewrite H in *.
-    repeat break_let.
-    edestruct IHe2.
-    apply H5.
-    eassumption.
-    rewrite H0 in *.
-    repeat find_inversion.
-    eauto.
-Defined.
-
-Lemma gen_const : forall e et a o a',
-    gen_appraisal_comp e et a = (o,a') ->
-    a = a'.
-Proof.
-  induction e; intros;
-    cbn in *;
-    destruct et;
-    try (monad_unfold; cbn in *; repeat break_match;
-         repeat (find_inversion; monad_unfold);
-         try (assert (a = a0) by eauto);
-         subst; eauto; tauto).
 Defined.
 
 Ltac df :=
@@ -507,6 +420,137 @@ Ltac subst' :=
     rewrite H in *; clear H
   end.
 
+Ltac evShapeFacts :=
+  match goal with
+  | [H: Ev_Shape (uuc _ _ _) _ |- _] => invc H
+  | [H: Ev_Shape (ggc _ _ ) _ |- _] => invc H
+  end.
+
+Lemma evshape_et : forall e et st,
+    Ev_Shape e et ->
+    evMapped et st ->
+    exists res, gen_appraisal_comp e et st = (Some res, st).
+Proof.
+  induction e; intros.
+  -
+    inv H.
+    cbv.
+    eauto.
+  -
+    inv H.
+    cbn.
+    monad_unfold.
+    cbn.
+    repeat break_let.
+    invc H0.
+    destruct_conjs.
+    invc H0.
+    rewrite H1 in *.
+    monad_unfold.
+    repeat find_inversion.
+    repeat break_let.
+    edestruct IHe.
+    apply H5.
+    eassumption.
+    rewrite H0 in *.
+    repeat find_inversion.
+    eauto.
+  -
+    invc H.
+    cbn.
+    monad_unfold.
+    invc H0.
+    destruct_conjs.
+    invc H.
+    edestruct IHe.
+    eassumption.
+    eassumption.
+    repeat break_let.
+    cbn in *.
+    repeat break_let.
+    rewrite H0 in *.
+    df.
+    subst'.
+    df.
+    eauto.
+    (*
+    invc H0.
+    eassumption.
+    repeat break_let.
+    invc H0.
+    
+    eauto. *)
+  -
+    inv H.
+    cbn.
+    monad_unfold.
+    eauto.
+    edestruct IHe.
+    eassumption.
+    inv H0.
+    eassumption.
+    rewrite H1.
+    eauto.
+  -
+    inv H.
+    cbn.
+    monad_unfold.
+    eauto.
+    edestruct IHe.
+    eassumption.
+    inv H0.
+    eassumption.
+    rewrite H1.
+    eauto.
+  -
+    cbn.
+    invc H.
+    invc H0.
+    monad_unfold.
+    edestruct IHe1.
+    apply H3.
+    eassumption.
+    rewrite H in *.
+    repeat break_let.
+    edestruct IHe2.
+    apply H5.
+    eassumption.
+    rewrite H0 in *.
+    repeat find_inversion.
+    eauto.
+  -
+    cbn.
+    invc H.
+    invc H0.
+    monad_unfold.
+    edestruct IHe1.
+    apply H3.
+    eassumption.
+    rewrite H in *.
+    repeat break_let.
+    edestruct IHe2.
+    apply H5.
+    eassumption.
+    rewrite H0 in *.
+    repeat find_inversion.
+    eauto.
+Defined.
+
+Lemma gen_const : forall e et a o a',
+    gen_appraisal_comp e et a = (o,a') ->
+    a = a'.
+Proof.
+  induction e; intros;
+    cbn in *;
+    destruct et;
+    try (monad_unfold; cbn in *; repeat break_match;
+         repeat (find_inversion; monad_unfold);
+         try (assert (a = a0) by eauto);
+         subst; eauto; tauto).
+Defined.
+
+
+
 Ltac gen_st_const :=
   let tac := (eapply gen_const; eauto) in
   repeat (
@@ -519,18 +563,16 @@ Ltac gen_st_const :=
       end);
   subst.
 
-Ltac evShapeFacts :=
-  match goal with
-  | [H: Ev_Shape (uuc _ _ _) _ |- _] => invc H
-  end.
+
 
 Ltac do_evshape :=
   let tac := edestruct evshape_et; eauto in
   match goal with
   | [H: Ev_Shape ?e ?et,
-        H2: evMapped ?et (st_aspmap ?a) |- _] =>
+        H2: evMapped ?et _ (*(st_aspmap ?a)*),
+            H': AM_St |- _] =>
     assert_new_proof_by 
-      (exists (res: VM unit), gen_appraisal_comp e et a = (Some res, a))
+      (exists (res: VM unit), gen_appraisal_comp e et H' = (Some res, H'))
       tac ;
     clear H; clear H2
   end;
@@ -1323,23 +1365,27 @@ Proof.
           inv H.
           inv H0.
   -
+    df.
+    (*
     cbn in *.
     repeat break_let.
     monad_unfold.
     monad_unfold.
     repeat break_let.
     repeat find_inversion.
-    unfold run_vm in *.
+    unfold run_vm in *. *)
     unfold get_store_at in *.
     monad_unfold.
     dohtac.
+    df.
+    (*
     repeat find_inversion.
     monad_unfold.
     cbn in *.
     monad_unfold.
     monad_unfold.
     repeat break_let.
-    repeat find_inversion.
+    repeat find_inversion. *)
     dohtac.
     repeat find_inversion.
     simpl in *.
@@ -1354,16 +1400,26 @@ Proof.
     edestruct IHt'.
     apply build_comp_at.
     eassumption.
+    jkjke.
+    (*
     
     rewrite Heqp.
     simpl.
-    eassumption.
+    eassumption. *)
+    jkjke.
+    econstructor; eauto.
+
+    (*
     rewrite Heqp.
     simpl.
     econstructor; eauto.
+     *)
+    jkjke.
+    (*
     rewrite Heqp.
     simpl.
-    eassumption.
+    eassumption. *)
+    
     eassumption.
     eauto.
   -
@@ -1372,30 +1428,44 @@ Proof.
     repeat break_let.
     simpl in *.
     monad_unfold.
+    Print dosome.
+
+    
     repeat break_match;
       try solve_by_inversion.
     repeat find_inversion.
     unfold run_vm in *.
     monad_unfold.
     monad_unfold.
+    (*
     rewrite Heqp3 in *.
     repeat break_let.
     repeat find_inversion.
     simpl in *.
     vmsts.
     repeat find_inversion.
-    simpl in *.
+    simpl in *. *)
 
-    invc H7.
+    invc H8.
     (*invc H.
     + *)
       edestruct app_some''.
       reflexivity.
+      jkjke.
+
+      (*
       rewrite Heqp0.
       simpl.
       dunit.
       apply Heqp3.
-      eassumption.
+      eassumption. *)
+      reflexivity.
+      reflexivity.
+      reflexivity.
+
+      reflexivity; tauto; tauto.
+
+      
       rewrite Heqp0.
       simpl.
       invc H6.

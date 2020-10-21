@@ -32,7 +32,8 @@ Record AM_Env : Type := mkAM_Env
    TODO:  eventually we need this to be IO (or something that models IO) *)
 Definition AM := St AM_St.     (* readerT AM_Env (stateT AM_St ident). *)
 
-Definition empty_am_st := (mkAM_St [] 0 []).
+(*
+Definition empty_am_st := (mkAM_St [] 0 []). *)
 (*Definition init_env := (mkAM_Env 0). *)
 
 Check Maps_Class.map_set.
@@ -47,15 +48,18 @@ Definition am_newNonce (bs :BS) : AM EvidenceC :=
   am_st <- get ;;
   let mm := am_nonceMap am_st in
   let i := am_nonceId am_st in
+  let appm := st_aspmap am_st in
+  let sigm := st_sigmap am_st in
+              
   let newMap := map_set mm i bs in
   let newId := i + 1 in
-  put (mkAM_St newMap newId []) ;;         
+  put (mkAM_St newMap newId appm sigm) ;;         
       ret (nnc i bs mtc).
 
 Definition runAM {A:Type} (k:(AM A)) (* (env:AM_Env) *) (st:AM_St) : (option A) * AM_St :=
   runSt st k.
 
-Definition incNonce := runAM (am_newNonce 42) empty_am_st.
+Definition incNonce := runAM (am_newNonce 42) empty_amst.
 Check incNonce.
 Compute (incNonce).
 
@@ -70,14 +74,14 @@ Definition t1 := (att 1 (lseq (asp (ASPC 44 [])) (asp SIG))).
 Definition t2 := (lseq (asp (ASPC 44 [])) (asp SIG)).
 
 
-Compute (am_run_t t2 mtc empty_am_st).
+Compute (am_run_t t2 mtc empty_amst).
 
 Definition am_proto_1 :=
   n2 <- am_newNonce 42 ;;
     n <- am_newNonce 43 ;;
     am_run_t t2 n.
 
-Compute (runAM am_proto_1 empty_am_st).
+Compute (runAM am_proto_1 empty_amst).
 
 Check fold_left.
 Check cons.

@@ -143,6 +143,9 @@ Definition invokeUSM (x:nat) (i:ASP_ID) (p:Plc) (l:list Arg) : VM EvidenceC :=
   add_tracem [Term.umeas x p i l];;
   ret (uuc i x e).
 
+Definition encodeEv (e:EvidenceC) : BS.
+Admitted.
+
 Definition signEv (x:nat) (p:Plc) : VM EvidenceC :=
   e <- get_ev ;;
   add_tracem [Term.sign x p] ;;
