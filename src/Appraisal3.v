@@ -1,4 +1,4 @@
-Require Import GenStMonad MonadVM MonadAM ConcreteEvidence.
+Require Import GenStMonad MonadVM MonadAM ConcreteEvidence MonadVMFacts.
 Require Import StAM VM_IO_Axioms Maps VmSemantics Event_system Term_system.
 
 Require Import Coq.Arith.Peano_dec.
@@ -12,29 +12,6 @@ Import ListNotations.
 
 Set Nested Proofs Allowed.
 
-
-(*
-Inductive evidenceEvent: Ev -> Prop :=
-| uev: forall n p i args, evidenceEvent (umeas n p i args)
-(*| sev: forall n p, evidenceEvent (sign n p)
-| hev: forall n p, evidenceEvent (hash n p)*) .
-
-(*
-Definition measEvent (t:AnnoTerm) (p:Plc) (ev:Ev) : Prop :=
-  let es := ev_sys t p in
-  ev_in ev es /\ evidenceEvent ev.
- *)
-
-Definition measEvent (t:AnnoTerm) (p:Plc) (ev:Ev) : Prop :=
-  events t p ev /\ evidenceEvent ev.
-
-Check bound_to.
-
-Inductive appEvent : Ev -> AM_St -> Ev -> Prop :=
-| aeu : forall p q i i' n m args nmap nid amap,
-    bound_to amap (p,i) i' ->
-    appEvent (umeas n p i args) (mkAM_St nmap nid amap) (umeas m q i' (args ++ [n])).
-*)
 
 Definition am_get_app_asp (p:Plc) (i:ASP_ID) : AM ASP_ID :=
   m <- gets st_aspmap ;;
@@ -117,30 +94,30 @@ Definition run_vm_fresh_t (t:Term) :=
 Check run_vm_fresh_t.
 *)
 
-Definition build_app_comp (t: AnnoTerm) (p:Plc) (st:vm_st) (et:Evidence) : AM (VM unit) :=
+Definition build_app_comp (t: AnnoTerm) (*(p:Plc)*) (st:vm_st) (et:Evidence) : AM (VM unit) :=
   let vm_res_st := run_vm t st in
   let evc := st_ev vm_res_st in
-  let evt := eval (unanno t) p et in
+  let evt := eval (unanno t) (st_pl st) et in
   app_comp <- gen_appraisal_comp evc evt ;;
   ret (app_comp).
 
-Definition build_app_comp_t (t:Term) (p:Plc) (st:vm_st) (et:Evidence) : AM (VM unit) :=
-  build_app_comp (annotated t) p st et.
+Definition build_app_comp_t (t:Term) (*(p:Plc)*) (st:vm_st) (et:Evidence) : AM (VM unit) :=
+  build_app_comp (annotated t) st et.
 
-Definition exec_app_comp (t: AnnoTerm) (p:Plc) (st:vm_st) (et:Evidence) : AM vm_st :=
-  app_comp <- build_app_comp t p st et ;;
+Definition exec_app_comp (t: AnnoTerm) (*(p:Plc)*) (st:vm_st) (et:Evidence) : AM vm_st :=
+  app_comp <- build_app_comp t st et ;;
   let app_res := runSt empty_vmst app_comp in
   ret ((snd (app_res))).
 
-Definition exec_app_comp_t (t: Term) (p:Plc) (p':nat) (st:vm_st) (et:Evidence) : AM vm_st :=
-  exec_app_comp (snd (anno t p')) p st et.
+Definition exec_app_comp_t (t: Term) (*(p:Plc)*) (p':nat) (st:vm_st) (et:Evidence) : AM vm_st :=
+  exec_app_comp (snd (anno t p')) st et.
 
-Definition run_app_comp_ev (t: AnnoTerm) (p:Plc) (st:vm_st) (et:Evidence) : AM EvidenceC :=
-  app_st <- exec_app_comp t p st et ;;
+Definition run_app_comp_ev (t: AnnoTerm) (*(p:Plc)*) (st:vm_st) (et:Evidence) : AM EvidenceC :=
+  app_st <- exec_app_comp t st et ;;
   ret (st_ev app_st).
 
-Definition run_app_comp_ev_t (t: Term) (p:Plc) (st:vm_st) (et:Evidence) : AM EvidenceC :=
-  run_app_comp_ev (annotated t) p st et.
+Definition run_app_comp_ev_t (t: Term) (*(p:Plc)*) (st:vm_st) (et:Evidence) : AM EvidenceC :=
+  run_app_comp_ev (annotated t) st et.
   
 
 (*
@@ -263,93 +240,6 @@ Inductive allMapped : AnnoTerm -> Plc -> AM_St -> Evidence -> Prop :=
 
 
 
-(* NOT true for bseq case, but that's probably ok.. *)
-(*
-Lemma evMappedSub' : forall t p m e st,
-    allMapped t p st e ->
-    m = st_aspmap st ->
-    evMapped e m.
-  (*
-    evMapped (eval t p e) m ->
-    evMapped e m. *)
-Proof.
-  induction t; intros.
-  -
-    destruct a;
-      try( cbn in *; inv H; eauto; tauto).
-  -
-    cbn in *.
-    inv H.
-    eauto.
-  -
-    cbn in *.
-    inv H.
-    eauto.
-  -
-    cbn in *.
-    inv H.
-    +
-      
-    
-    
-    
-    +
-      cbn in *.
-      inv H.
-      eauto.
-    +
-      
-      
-    admit.
-  -
-    cbn in *.
-    eauto.
-  -
-    cbn in *.
-    eauto.
-       -
-         cbn in *.
-         inv H.
-         destruct s.
-         simpl in *.
-         destruct s eqn:hi;
-           destruct s0 eqn:hey.
-         +
-           cbn in *.
-           eauto.
-         +
-           cbn in *.
-           eauto.
-         +
-           cbn in *.
-           eauto.
-         +
-           cbn in *.
-           Print eval.
-           
-           
-           
-         
-         
-         
-     Admitted.
-*)
-
-(*
-  forall m,
-    m = st_aspmap st ->
-    evMapped (eval (unanno t) p e) m. 
-*)
-
-(*
-Definition allMapped (t:AnnoTerm) (p:Plc) (st: AM_St) : Prop :=
-  forall aspmap n q i l ,
-    measEvent t p (umeas n q i l) -> (* TODO: generalize once measEvent is richer *)
-    aspmap = st_aspmap st ->
-    exists j,
-      bound_to aspmap (q,i) j.
-*)
-
 Lemma atgentrace : forall t p e n v1 v a b am_nonceMap am_nonceId st_aspmap ev,
     gen_appraisal_comp
       (st_ev (snd (build_comp (annotated t) empty_vmst))) (eval t p e)
@@ -372,113 +262,6 @@ Lemma fifi : forall t p e n v a b am_nonceMap am_nonceId st_aspmap,
     False.
 Proof.
 Admitted.
-
-
-(*
-Lemma measEventAt' : forall t n p q ev,
-    measEvent (snd (anno (att n t) q)) p ev ->
-    measEvent (snd (anno t (S q))) n ev.
-Proof.
-
-  induction t; intros.
-  - inv H.
-    invc H1.
-    destruct a;
-      try (inv H; inv H1; solve_by_inversion).
-    +
-      simpl in *.
-      invc H0.
-      invc H6.
-      invc H.
-      invc H0.
-      simpl.
-      econstructor.
-      eauto.
-      eauto.
-  -
-    simpl in *.
-    repeat break_let.
-    simpl in *.
-    repeat find_inversion.
-    simpl in *.
-    invc H.
-    invc H1.
-    repeat find_inversion.
-    invc H0.
-    invc H5.
-    econstructor.
-    +
-    econstructor.
-    assumption.
-    +
-      econstructor.
-  - simpl in *.
-    repeat break_let.
-    simpl in *.
-    repeat find_inversion.
-    simpl in *.
-    invc H.
-    invc H1.
-    repeat find_inversion.
-    invc H0.
-    invc H5.
-    econstructor.
-    econstructor.
-    eassumption.
-    econstructor.
-    econstructor.
-    apply evtslseqr.
-    assumption.
-    econstructor.
-  - simpl in *.
-    repeat break_let.
-    simpl in *.
-    repeat find_inversion.
-    simpl in *.
-    invc H.
-    invc H1.
-    repeat find_inversion.
-    invc H0.
-    invc H5.
-    econstructor.
-    econstructor.
-    eassumption.
-    econstructor.
-    econstructor.
-    apply evtsbseqr.
-    assumption.
-    econstructor.
-  - simpl in *.
-    repeat break_let.
-    simpl in *.
-    repeat find_inversion.
-    simpl in *.
-    invc H.
-    invc H1.
-    repeat find_inversion.
-    invc H0.
-    invc H5.
-    econstructor.
-    econstructor.
-    eassumption.
-    econstructor.
-    econstructor.
-    apply evtsbparr.
-    assumption.
-    econstructor.
-Defined.
-*)
-
-(*
-Lemma measEventAt : forall t n p ev,
-    measEvent (annotated (att n t)) p ev ->
-    measEvent (annotated t) n ev.
-Proof.
-  intros.
-  eapply measEventAt'.
-  eapply measEventAt'; eauto.
-Defined.
-*)
 
 
 Lemma announ' : forall t p,
@@ -519,8 +302,6 @@ Proof.
   eapply announ'; eauto.
 Defined.
 
-Check allMapped.
-
 Lemma allMappedAt : forall r n a p st e,
     allMapped (aatt r n a) p st e ->
     allMapped a n st e.
@@ -529,37 +310,6 @@ Proof.
   inv H.
   eauto.
 Defined.
-
-Check exec_app_comp_t.
-Check runSt.
-
-Require Import MonadVMFacts.
-Check Term.eval.
-Check gen_appraisal_comp.
-
-(*
-Lemma app_some' : forall t t' p' e' tr p'' o a_st (app_comp:AM (VM unit)) app_comp_res,
-  t = snd (anno t' p') ->
-  build_comp t {| st_ev:=mtc; st_trace:=[]; st_pl:=0; st_store:=[]|} =
-  (Some tt, {| st_ev:=e'; st_trace:=tr; st_pl:=p''; st_store:=o|}) ->
-  allMapped t 0 a_st ->
-  app_comp = gen_appraisal_comp e' (Term.eval t' 0 mt) ->
-  app_comp_res = runSt a_st app_comp ->
-  exists st, (fst app_comp_res = (Some st)).
-Proof.
-  intros.
-  assert (Ev_Shape e' (Term.eval t' 0 mt)).
-  eapply multi_ev_eval; eauto.
-  rewrite H.
-  Check announ'.
-  rewrite announ'.
-  reflexivity.
-Admitted.
- *)
-
-Check allMapped.
-Print allMapped.
-Check evMapped.
 
 Lemma evshape_et : forall e et st,
     Ev_Shape e et ->
@@ -656,19 +406,125 @@ Proof.
     eauto.
 Defined.
 
+Lemma gen_const : forall e et a o a',
+    gen_appraisal_comp e et a = (o,a') ->
+    a = a'.
+Proof.
+  induction e; intros.
+  -
+    cbn in *.
+    destruct et;
+      try (monad_unfold; repeat find_inversion; reflexivity).
+  -
+    cbn in *.
+    destruct et;
+      try (monad_unfold; repeat find_inversion; reflexivity).
+    monad_unfold.
+    cbn in *.
+    repeat break_let.
+    repeat find_inversion.
+    repeat break_match;
+      try solve_by_inversion.
+    +
+      repeat find_inversion.
+      monad_unfold.
+      repeat find_inversion.
+      eauto.
+    +
+      monad_unfold.
+      repeat find_inversion.
+      eauto.
+    +
+      repeat find_inversion.
+      monad_unfold.
+      repeat find_inversion.
+      eauto.
+  -
+    cbn in *.
+    destruct et;
+      try (monad_unfold; repeat find_inversion; reflexivity).
+    monad_unfold.
+    break_match.
+    break_match.
+    repeat find_inversion.
+    eauto.
+    repeat find_inversion.
+    eauto.
+              
+  -
+    cbn in *.
+    destruct et;
+      try (monad_unfold; repeat find_inversion; reflexivity).
+    monad_unfold.
+    break_match.
+    break_match.
+    repeat find_inversion.
+    eauto.
+    repeat find_inversion.
+    eauto.
+  -
+    cbn in *.
+    destruct et;
+      try (monad_unfold; repeat find_inversion; reflexivity).
+    monad_unfold.
+    break_match.
+    break_match.
+    repeat find_inversion.
+    eauto.
+    repeat find_inversion.
+    eauto.
+  -
+    cbn in *.
+    destruct et;
+      try (monad_unfold; repeat find_inversion; reflexivity).
+    monad_unfold.
+    repeat break_match;
+      try solve_by_inversion.
+    +
+      repeat find_inversion.
+      assert (a = a0).
+      eauto.
+      subst.
+      eauto.
+    +
+      repeat find_inversion.
+      assert (a = a0) by eauto.
+      subst.
+      eauto.
+    +
+      repeat find_inversion.
+      eauto.
+  -
+    cbn in *.
+    destruct et;
+      try (monad_unfold; repeat find_inversion; reflexivity).
+    monad_unfold.
+    repeat break_match;
+      try solve_by_inversion.
+    +
+      repeat find_inversion.
+      assert (a = a0).
+      eauto.
+      subst.
+      eauto.
+    +
+      repeat find_inversion.
+      assert (a = a0) by eauto.
+      subst.
+      eauto.
+    +
+      repeat find_inversion.
+      eauto.
+Defined.
+
 Lemma app_some'' : forall t t' p p' p'' tr tr' o o' e' e et (app_comp: AM (VM unit)) app_comp_res (*app_comp' app_comp_res'*) a_st,
     t = snd (anno t' p') ->
     build_comp t {| st_ev:=e; st_trace:=tr; st_pl:=p; st_store:=o|} =
     (Some tt, {| st_ev:=e'; st_trace:=tr'; st_pl:=p''; st_store:=o'|}) ->
     Ev_Shape e et ->  (* TODO: maybe don't need this *)
     allMapped t p a_st et ->
-    (*evMapped et (st_aspmap a_st) -> *)
-    (*app_comp' = gen_appraisal_comp e et ->
-    app_comp_res' = runSt a_st app_comp' ->
-    (exists st, (fst app_comp_res' = (Some st))) ->  *)
     app_comp = gen_appraisal_comp e' (eval t' p et) ->
     app_comp_res = runSt a_st app_comp ->
-    (*Ev_Shape e' (eval t' p mt) -> *)
     exists st, (fst app_comp_res = (Some st)).
 Proof.
   intros.
@@ -761,116 +617,6 @@ Proof.
         vmsts.
         assert (a = a1).
         {
-          Lemma gen_const : forall e et a o a',
-            gen_appraisal_comp e et a = (o,a') ->
-            a = a'.
-          Proof.
-            induction e; intros.
-            -
-              cbn in *.
-              destruct et;
-                try (monad_unfold; repeat find_inversion; reflexivity).
-            -
-              cbn in *.
-              destruct et;
-                try (monad_unfold; repeat find_inversion; reflexivity).
-              monad_unfold.
-              cbn in *.
-              repeat break_let.
-              repeat find_inversion.
-              repeat break_match;
-                try solve_by_inversion.
-              +
-                repeat find_inversion.
-                monad_unfold.
-                repeat find_inversion.
-                eauto.
-              +
-                monad_unfold.
-                repeat find_inversion.
-                eauto.
-              +
-                repeat find_inversion.
-                monad_unfold.
-                repeat find_inversion.
-                eauto.
-            -
-              cbn in *.
-              destruct et;
-                try (monad_unfold; repeat find_inversion; reflexivity).
-              monad_unfold.
-              break_match.
-              break_match.
-              repeat find_inversion.
-              eauto.
-              repeat find_inversion.
-              eauto.
-              
-            -
-              cbn in *.
-              destruct et;
-                try (monad_unfold; repeat find_inversion; reflexivity).
-              monad_unfold.
-              break_match.
-              break_match.
-              repeat find_inversion.
-              eauto.
-              repeat find_inversion.
-              eauto.
-            -
-              cbn in *.
-              destruct et;
-                try (monad_unfold; repeat find_inversion; reflexivity).
-              monad_unfold.
-              break_match.
-              break_match.
-              repeat find_inversion.
-              eauto.
-              repeat find_inversion.
-              eauto.
-            -
-              cbn in *.
-              destruct et;
-                try (monad_unfold; repeat find_inversion; reflexivity).
-              monad_unfold.
-              repeat break_match;
-                try solve_by_inversion.
-              +
-                repeat find_inversion.
-                assert (a = a0).
-                eauto.
-                subst.
-                eauto.
-              +
-                repeat find_inversion.
-                assert (a = a0) by eauto.
-                subst.
-                eauto.
-              +
-                repeat find_inversion.
-                eauto.
-            -
-               cbn in *.
-              destruct et;
-                try (monad_unfold; repeat find_inversion; reflexivity).
-              monad_unfold.
-              repeat break_match;
-                try solve_by_inversion.
-              +
-                repeat find_inversion.
-                assert (a = a0).
-                eauto.
-                subst.
-                eauto.
-              +
-                repeat find_inversion.
-                assert (a = a0) by eauto.
-                subst.
-                eauto.
-              +
-                repeat find_inversion.
-                eauto.
-          Defined.
 
           eapply gen_const; eauto.
 
@@ -988,51 +734,36 @@ Proof.
     cbn in *.
     repeat break_let.
     simpl in *.
-
+   
+    monad_unfold.
+    cbn in *.
+    dohtac.
     
-      
-      
-      
-      monad_unfold.
-      cbn in *.
-      dohtac.
-      
-      repeat break_let.
-      monad_unfold.
-      repeat find_inversion.
+    repeat break_let.
+    monad_unfold.
+    repeat find_inversion.
 
-      eapply IHt'.
-      eassumption.
-      apply H4.
-      rewrite Heqp0.
-      simpl.
-      eapply build_comp_at.
-      invc H2.
-      rewrite Heqp0.
-      simpl.
-      eassumption.
+    eapply IHt'.
+    eassumption.
+    apply H4.
+    rewrite Heqp0.
+    simpl.
+    eapply build_comp_at.
+    invc H2.
+    rewrite Heqp0.
+    simpl.
+    eassumption.
   -
     Check alseq_decomp.
     assert (a_st = a).
     {
-     
       eapply gen_const; eauto.
     }
     subst.
     cbn in *.
     repeat break_let.
-    (*
-    assert (unanno a = t'1).
-    {
-      erewrite <- announ'.
-      rewrite Heqp0.
-      simpl.
-      reflexivity.
-    }
-*)
     
     unfold snd in *.
-
     
     assert (alseq (p', n0) a0 a1 = snd (anno (lseq t'1 t'2) p')).
       {
@@ -1056,11 +787,6 @@ Proof.
     }
     destruct_conjs.
 
-    
-
-
-
-    
     Check alseq_decomp.
     edestruct alseq_decomp with (r:=(p',n0)).
     cbn.
@@ -1091,94 +817,6 @@ Proof.
 
     Print allMapped.
 
-
-
-     (*
-
-    Lemma evMappedSub' : forall t1 t2 p m et,
-        evMapped (eval t2 p (eval t1 p et)) m ->
-        evMapped et m -> 
-        evMapped (eval t1 p et) m.
-    Proof.
-      induction t1;
-        destruct t2; intros.
-      -
-        destruct a;
-          try (cbn in *; try (econstructor); eauto; tauto).
-        +
-          cbn in *.
-          econstructor.
-          eauto.
-          cbn in *.
-          destruct a0;
-            try (cbn in *; eauto; tauto).
-          ++
-            cbn in *.
-            inv H.
-            eauto.
-          ++
-            cbn in *.
-            inv H.
-            inv H6.
-            destruct_conjs.
-            eauto.
-          ++
-            inv H.
-            inv H4.
-            eauto.
-          ++
-            inv H.
-            inv H4.
-            eauto.
-      -
-        cbn in *.
-        destruct a;
-          try (cbn in *; try (econstructor); eauto; tauto).
-        + cbn in *.
-          econstructor.
-          eauto.
-          cbn in *.
-          
-          
-        +
-          cbn in *.
-        
-          cbn in *.
-          econstructor.
-          eauto.
-        +
-          cbn in *.
-          econstructor.
-          eauto.
-        +
-          
-          cbn in *.
-          destruct a0;
-            try (cbn in *; eauto; tauto).
-          
-          
-            
-            
-            
-            
-            destruct_conjs
-              eauto.
-        + cbn in *.
-          eauto.
-        +
-          cbn in *.
-          econstructor.
-          eauto.
-          inv H
-          
-          
-        
-    Admitted.
-      *)
-     
-(*
-    eapply evMappedSub'; eauto. *)
-
     eassumption.
     unfold runSt in *.
 
@@ -1190,14 +828,6 @@ Proof.
     congruence.
 
     rewrite Heqp0.
-    (*
-    inv H1.
-
-    repeat break_let.
-    repeat find_inversion.
-    eassumption.
-    repeat break_let.
-    repeat find_inversion. *)
     
     assert (H = p'').
     {
@@ -1218,242 +848,9 @@ Proof.
     }
     subst.
     eassumption.
-
-
-    Check multi_ev_eval.
-    (*
-multi_ev_eval
-     : forall (t : AnnoTerm) (t' : Term) (n : nat) (tr : list Ev) (e e' : EvidenceC) (p p' : nat)
-         (o o' : ev_store) (es e's : Evidence),
-       t = snd (anno t' n) ->
-       build_comp t {| st_ev := e; st_trace := []; st_pl := p; st_store := o |} =
-       (Some tt, {| st_ev := e'; st_trace := tr; st_pl := p'; st_store := o' |}) ->
-       Ev_Shape e es -> eval (unanno t) p es = e's -> Ev_Shape e' e's
-     *)
-
-
-    (*
-
-
-
-
     
-    
-    apply multi_ev_eval with (t:=a) (t':=t'1) (n:=p') (tr:=H10) (e:=e) (e':=x) (p:=p) (p':= H11) (o:=o) (o':=H12) (es:=et).
-                                                                                            
-    rewrite Heqp0.
-    reflexivity. *)
-
-
-    (*
-    simpl.
-    eassumption.
-    eassumption.
-    simpl.
-
-    rewrite Heqp0.
-    assert (H10 = p'').
-    {
-      admit.
-    }
-    rewrite H16 in *.
-    
-    eassumption.
-     *)
-    
-
-    (*
-    subst.
-    repeat find_inversion.
-    reflexivity.
-
-    (*
-    Lemma evMappedSub : forall t1 t2 p m et,
-      evMapped (eval t2 p (eval t1 p et)) m ->
-      evMapped (eval t1 p et) m.
-    Proof.
-      induction t1;
-        induction t2; 
-        intros.
-      -
-        destruct a;
-          destruct a0;
-          try (cbn in *; try (inv H); eassumption).
-      -
-        cbn in *.
-        eapply IHt2.
-        eassumption.
-        
-        + cbn in *.
-          inv H.
-          
-        +
-          cbn in *.
-          eassumption.
-        + cbn in *.
-          inv H
-          eassumption.
-        +
-          cbn in *.
-          inv H.
-          eassumption.
-        + cbn in *.
-          inv H.
-          eassumption.
-        + cbn in *.
-          inv H.
-          eassumption.
-      -
-        cbn in *.
-        eapply IHt.
-        eauto.
-      -
-        cbn in *.
-        assert (evMapped (eval t1 p e) m).
-        eapply IHt2.
-        eassumption.
-        eapply IHt1.
-        eassumption.
-      -
-        cbn in *.
-        inv H.
-        destruct s.
-        simpl in *.
-        destruct s;
-          destruct s0;
-          cbn in *; try eauto.
-        +
-          (*
-          eapply IH
-        +
-          eauto.
-    Admitted.
-*)
-*)
-
-    
-    
-    Lemma evMappedSub : forall t p e m,
-      evMapped (eval t p e) m ->
-      evMapped e m.
-    Proof.
-      induction t; intros.
-      -
-        destruct a.
-        + cbn in *.
-          eassumption.
-        +
-          cbn in *.
-          inv H.
-          eassumption.
-        + cbn in *.
-          inv H.
-          eassumption.
-        + cbn in *.
-          inv H.
-          eassumption.
-      -
-        cbn in *.
-        eapply IHt.
-        eauto.
-      -
-        cbn in *.
-        assert (evMapped (eval t1 p e) m).
-        eapply IHt2.
-        eassumption.
-        eapply IHt1.
-        eassumption.
-      -
-        cbn in *.
-        inv H.
-        destruct s.
-        simpl in *.
-        destruct s;
-          destruct s0;
-          cbn in *.
-        +
-          eauto.
-        +
-          eauto.
-        +
-          eauto.
-        +
-          assert (evMapped mt m).
-          eauto.
-          inversion H0.
-          
-          
-          
-          (*
-          eapply IH
-        +
-          eauto.
-          
-        
-        eassumption
-        assert (evMapped (eval t1 p e) m).
-        eapply IHt1
-        eapply 
-        
-        
-          
-          
-          
-          
-          
-        
-      inv H.
-      -
-        admit.
-      -
-        
-        *)
-        
-    Admitted.
-
-    eapply evMappedSub; eauto.
-     
-    
-    unfold runSt.
-    rewrite hi.
-    assert (a2 = a_st).
-    {
-      admit.
-    }
-    rewrite H17.
-    reflexivity.
-    repeat break_let.
-    
-    
-    repeat find_inversion.
-    eassumption.
-     *)
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-    
-
-
-
 
     subst.
-    
     eapply IHt'2 with (e:=x) (p':=n).
 
     eapply multi_ev_eval.
@@ -1489,81 +886,6 @@ multi_ev_eval
     eassumption.
     
     
-
-
-(*
-    
-    unfold runSt.
-    symmetry.
-    
-    apply hi.
-    eassumption.
-    repeat break_let.
-    repeat find_inversion.
-    
-    inv H1.
-    eassumption.
-    repeat break_let.
-    repeat find_inversion.
-    assert (p = H9).
-    {
-      admit.
-    }
-    subst.
-    eassumption.
-
-*)
-  
-    (*
-    
-    (*
-    eapply evMappedSub'; eauto. *)
-
-    (*
-
-
-
-
-
-
-    
-    eapply multi_ev_eval.
-    rewrite Heqp0.
-    reflexivity.
-    simpl.
-    eassumption.
-    eassumption.
-    reflexivity.
-    simpl.
-    rewrite H.
-    eassumption.
-    simpl.
-    rewrite H.
-    eassumption.
-    simpl.
-    rewrite H.
-     *)
-    
-
-    unfold runSt.
-    rewrite hi.
-    rewrite H16.
-    reflexivity.
-    simpl.
-    rewrite H7.
-    reflexivity.
-    repeat break_let.
-    rewrite Heqp2 in *.
-    repeat find_inversion.
-    assert (p = H10).
-    {
-      admit.
-    }
-    rewrite H.
-    eassumption.
-     *)
-    
-    
   -
 
     assert (a = a_st).
@@ -1574,21 +896,271 @@ multi_ev_eval
     subst.
     cbn in *.
     repeat break_let.
+    
+    unfold snd in *.
     (*
-    assert (unanno a = t'1).
-    {
-      admit.
-    }
-
-    assert (unanno a0 = t'2).
-    {
-      admit.
-    }
+    assert (abseq (p', (S n0)) s a a0 = snd (anno (bseq s t'1 t'2) p')).
+      {
+        cbn.
+        repeat break_let.
+        simpl.
+        repeat find_inversion.
+        subst.
+        repeat find_inversion.
+      
+        rewrite Heqp3 in *.
+        repeat find_inversion.
+        reflexivity.
+      }
      *)
+    cbn in *.
+    monad_unfold.
+    repeat break_let.
+    repeat find_inversion.
+    (*
+      inversion Heqp6.
+      rewrite H10 in *. clear H10.
+      rewrite H11 in *. clear H11.
+
+      repeat find_inversion. *)
+    simpl in *.
+    (*
+      rewrite Heqp3 in *.
+      repeat find_inversion. *)
+    destruct o5; try solve_by_inversion.
+    repeat find_inversion.
+    destruct o9; try solve_by_inversion.
+    repeat find_inversion.
+    
+    simpl in *.
+    cbn in *.
+    monad_unfold.
+    
+    vmsts.
+
+    simpl in *.
+    invc H2.
+    +
+      cbn in *.
+      repeat dunit.
+      vmsts.
+      simpl in *.
+      unfold runSt in *.
+
+      destruct (gen_appraisal_comp st_ev0 (eval t'1  p mt) a_st) eqn:ghi.
+      destruct (gen_appraisal_comp st_ev  (eval t'2  p mt) a_st) eqn:hhi.
+      
+      edestruct IHt'1.
+      eapply mtt.
+      symmetry.
+      eassumption.
+      rewrite Heqp0.
+      eassumption.
+      rewrite Heqp0.
+      eassumption.        
+      subst.
+      
+      
+      repeat break_let.
+      repeat find_inversion.
+
+      edestruct IHt'2.
+      eapply mtt.
+      symmetry.
+      eassumption.
+      rewrite Heqp1.
+
+      assert (p = st_pl0).
+      {
+        symmetry.
+        erewrite <- pl_immut in *.
+        rewrite Heqp6.
+        simpl.
+        reflexivity.
+      }
+      subst.
+      eassumption.
+      rewrite Heqp1.
+      eassumption.
+
+      assert (a1 = a3).
+      {
+        symmetry.
+        eapply gen_const; eauto.
+      }
+      subst.
+      rewrite hhi in *.
+      repeat find_inversion.
+      eauto.
+
+    +
+      cbn in *.
+      repeat dunit.
+      vmsts.
+      simpl in *.
+      unfold runSt in *.
+
+      destruct (gen_appraisal_comp st_ev0 (eval t'1  p mt) a_st) eqn:ghi.
+      destruct (gen_appraisal_comp st_ev  (eval t'2  p et) a_st) eqn:hhi.
+      
+      edestruct IHt'1.
+      eapply mtt.
+      symmetry.
+      eassumption.
+      rewrite Heqp0.
+      eassumption.
+      rewrite Heqp0.
+      eassumption.
+      
+      subst.
+      
+      repeat break_let.
+      repeat find_inversion.
+
+      edestruct IHt'2.
+      apply H1.
+      symmetry.
+      eassumption.
+      rewrite Heqp1.
+
+      assert (p = st_pl0).
+      {
+        symmetry.
+        erewrite <- pl_immut in *.
+        rewrite Heqp6.
+        simpl.
+        reflexivity.
+      }
+      subst.
+      eassumption.
+      rewrite Heqp1.
+      eassumption.
+
+      assert (a1 = a3).
+      {
+        symmetry.
+        eapply gen_const; eauto.
+      }
+      subst.
+      rewrite hhi in *.
+      repeat find_inversion.
+      eauto.
+    +
+      cbn in *.
+      repeat dunit.
+      vmsts.
+      simpl in *.
+      unfold runSt in *.
+
+      destruct (gen_appraisal_comp st_ev0 (eval t'1  p et) a_st) eqn:ghi.
+      destruct (gen_appraisal_comp st_ev  (eval t'2  p mt) a_st) eqn:hhi.
+      
+      edestruct IHt'1.
+      apply H1.
+      symmetry.
+      eassumption.
+      rewrite Heqp0.
+      eassumption.
+      rewrite Heqp0.
+      eassumption.
+      
+      subst.
+      
+      repeat break_let.
+      repeat find_inversion.
+
+      edestruct IHt'2.
+      apply mtt.
+      symmetry.
+      eassumption.
+      rewrite Heqp1.
+
+      assert (p = st_pl0).
+      {
+        symmetry.
+        erewrite <- pl_immut in *.
+        rewrite Heqp6.
+        simpl.
+        reflexivity.
+      }
+      subst.
+      eassumption.
+      rewrite Heqp1.
+      eassumption.
+
+      assert (a1 = a3).
+      {
+        symmetry.
+        eapply gen_const; eauto.
+      }
+      subst.
+      rewrite hhi in *.
+      repeat find_inversion.
+      eauto.
+    +
+      cbn in *.
+      repeat dunit.
+      vmsts.
+      simpl in *.
+      unfold runSt in *.
+
+      destruct (gen_appraisal_comp st_ev0 (eval t'1  p et) a_st) eqn:ghi.
+      destruct (gen_appraisal_comp st_ev  (eval t'2  p et) a_st) eqn:hhi.
+      
+      edestruct IHt'1.
+      apply H1.
+      symmetry.
+      eassumption.
+      rewrite Heqp0.
+      eassumption.
+      rewrite Heqp0.
+      eassumption.
+      
+      subst.
+      
+      repeat break_let.
+      repeat find_inversion.
+
+      edestruct IHt'2.
+      apply H1.
+      symmetry.
+      eassumption.
+      rewrite Heqp1.
+
+      assert (p = st_pl0).
+      {
+        symmetry.
+        erewrite <- pl_immut in *.
+        rewrite Heqp6.
+        simpl.
+        reflexivity.
+      }
+      subst.
+      eassumption.
+      rewrite Heqp1.
+      eassumption.
+
+      assert (a1 = a3).
+      {
+        symmetry.
+        eapply gen_const; eauto.
+      }
+      subst.
+      rewrite hhi in *.
+      repeat find_inversion.
+      eauto.
+  -
+    assert (a = a_st).
+    {
+      symmetry.
+      eapply gen_const; eauto.
+    }
+    subst.
+    cbn in *.
+    repeat break_let.
     
     
     unfold snd in *.
-
     (*
     assert (abseq (p', (S n0)) s a a0 = snd (anno (bseq s t'1 t'2) p')).
       {
@@ -1608,939 +1180,313 @@ multi_ev_eval
 
 
 
-      cbn in *.
-      monad_unfold.
-      repeat break_let.
-      repeat find_inversion.
-      (*
-      inversion Heqp6.
-      rewrite H10 in *. clear H10.
-      rewrite H11 in *. clear H11.
-
-      repeat find_inversion. *)
-      simpl in *.
-      (*
-      rewrite Heqp3 in *.
-      repeat find_inversion. *)
-      destruct o5; try solve_by_inversion.
-      repeat find_inversion.
-      destruct o9; try solve_by_inversion.
-      repeat find_inversion.
-   
-      simpl in *.
-      cbn in *.
-      monad_unfold.
-      
-(*
-      Lemma annoAll :
-        forall a,
-          well_formed a ->
-        exists n t', a = snd (anno t' n).
-      Proof.
-        induction a; intros.
-        -
-          destruct a; destruct r.
-          + 
-            exists n.
-            exists (asp CPY).
-            cbn.
-            inv H.
-            simpl in *.
-            congruence.
-          + exists n0.
-            exists (asp (ASPC n l)).
-            cbn.
-            inv H.
-            repeat find_inversion.
-            simpl in *.
-            subst.
-            reflexivity.
-          +
-            exists n.
-            exists (asp SIG).
-            cbn.
-            inv H.
-            simpl in *.
-            subst.
-            reflexivity.
-          +
-            exists n.
-            exists (asp HSH).
-            cbn.
-            inv H.
-            simpl in *.
-            subst.
-            reflexivity.
-        -
-          inv H.
-          destruct r.
-          simpl in *.
-          edestruct IHa.
-          eassumption.
-          destruct_conjs.
-          eexists n0.
-          exists (att n (unanno a)).
-          cbn.
-          repeat break_let.
-          simpl.
-          subst.
-          simpl.
-          rewrite announ' in *.
-          eexists (S n0).
-          eexists (unanno a).
-          edestruct IHa.
-          eassumption.
-          destruct_conjs.
-          rewrite H1.
-          rewrite announ'.
-          rewrite <- H1.
-          eexists x.
-          eexists (unanno a).
-          rewrite H1.
-          rewrite announ'.
-          rewrite <- H1.
-          exists (fst r).
-          exists (unanno a).
-
-          edestruct IHa.
-          eassumption.
-          destruct_conjs.
-          rewrite H1.
-          rewrite announ'.
-          
-            
-            
-            
-            
-            eexists.
-            exists n.
-            eexists.
-            unfold anno.
-*)
-            
-          (*
-      assert (exists t' n, a = snd (anno t' n)).
-      {
-        repeat eexists.
-        cbn.
-          admit.
-        }
-      destruct_conjs.
-           *)
-      
-      vmsts.
-       
-      
-        (*
-        assert (exists l, st_trace1 = (tr ++ [Term.split p' p]) ++ l).
-        {
-          admit.
-        }
-        destruct_conjs.
-        rewrite H11 in Heqp8.
-        clear H11.
-         *)
-      simpl in *.
-      invc H2.
-      +
-    
-      
-
-        
-
-        
-    
-
-      (*
-      destruct s0 eqn:hi;
-        destruct s1 eqn:he. *)
-        cbn in *.
-        repeat dunit.
-        vmsts.
-        simpl in *.
-        unfold runSt in *.
-
-        destruct (gen_appraisal_comp st_ev0 (eval t'1  p mt) a_st) eqn:ghi.
-        destruct (gen_appraisal_comp st_ev  (eval t'2  p mt) a_st) eqn:hhi.
-        
-        edestruct IHt'1.
-        eapply mtt.
-        symmetry.
-        eassumption.
-        rewrite Heqp0.
-        eassumption.
-        rewrite Heqp0.
-        eassumption.
-        (*
-        repeat break_let.
-        repeat find_inversion.
-        erewrite announ' in *.
-        repeat find_inversion.
-        rewrite Heqp3 in *.
-        simpl in *.
-        eassumption.
-        repeat break_let.
-        erewrite announ' in *.
-        rewrite Heqp3 in *.
-        simpl in *.
-        eassumption.
-         *)
-        
-
-        (*
-        (*
-        eapply mtt. *)
-        unfold runSt in *.
-        
-        eassumption.
-        unfold runSt.
-        symmetry.
-        eassumption.
-        cbv.
-        reflexivity.
-        unfold runSt.
-        symmetry.
-        eassumption.
-        repeat break_let.
-        repeat find_inversion.
-        rewrite announ' in *.
-        rewrite Heqp0 in *.
-        simpl in *.
-        repeat find_inversion.
-        eassumption.
-         *)
-
-
-        
-        subst.
-       
-        repeat break_let.
-        repeat find_inversion.
-
-        edestruct IHt'2.
-        eapply mtt.
-        symmetry.
-        eassumption.
-        rewrite Heqp1.
-        (*
-        eassumption.
-        repeat break_let.
-        erewrite announ' in *.
-        rewrite Heqp4 in *.
-        simpl in *.
-        repeat find_inversion. *)
-        assert (p = st_pl0).
-        {
-          symmetry.
-          erewrite <- pl_immut in *.
-          rewrite Heqp6.
-          simpl.
-          reflexivity.
-        }
-        subst.
-        eassumption.
-        rewrite Heqp1.
-        eassumption.
-        (*
-
-        
-        repeat break_let.
-        erewrite announ' in *.
-        repeat find_inversion.
-        eassumption. *)
-
-        (*
-        
-        eassumption.
-        eassumption.
-        cbv.
-        reflexivity.
-        unfold runSt.
-        symmetry.
-        assert (a2 = a_st).
-        {
-          admit.
-        }
-        rewrite H2 in *. clear H2.
-        
-        eassumption.
-        Check announ'.
-        rewrite Heqp3.
-        assert (p = st_pl1).
-        {
-          admit.
-        }
-        rewrite H2 in *. clear H2.
-        
-        apply Heqp12.
-         *)
-        assert (a1 = a3).
-        {
-          symmetry.
-          eapply gen_const; eauto.
-        }
-        subst.
-        rewrite hhi in *.
-        repeat find_inversion.
-        eauto.
-
-
-
-      +
-        cbn in *.
-        repeat dunit.
-        vmsts.
-        simpl in *.
-        unfold runSt in *.
-
-        destruct (gen_appraisal_comp st_ev0 (eval t'1  p mt) a_st) eqn:ghi.
-        destruct (gen_appraisal_comp st_ev  (eval t'2  p et) a_st) eqn:hhi.
-        
-        edestruct IHt'1.
-        eapply mtt.
-        symmetry.
-        eassumption.
-        rewrite Heqp0.
-        eassumption.
-        rewrite Heqp0.
-        eassumption.
-        
-        subst.
-       
-        repeat break_let.
-        repeat find_inversion.
-
-        edestruct IHt'2.
-        apply H1.
-        symmetry.
-        eassumption.
-        rewrite Heqp1.
-
-        assert (p = st_pl0).
-        {
-          symmetry.
-          erewrite <- pl_immut in *.
-          rewrite Heqp6.
-          simpl.
-          reflexivity.
-        }
-        subst.
-        eassumption.
-        rewrite Heqp1.
-        eassumption.
-
-        assert (a1 = a3).
-        {
-          symmetry.
-          eapply gen_const; eauto.
-        }
-        subst.
-        rewrite hhi in *.
-        repeat find_inversion.
-        eauto.
-      +
-                cbn in *.
-        repeat dunit.
-        vmsts.
-        simpl in *.
-        unfold runSt in *.
-
-        destruct (gen_appraisal_comp st_ev0 (eval t'1  p et) a_st) eqn:ghi.
-        destruct (gen_appraisal_comp st_ev  (eval t'2  p mt) a_st) eqn:hhi.
-        
-        edestruct IHt'1.
-        apply H1.
-        symmetry.
-        eassumption.
-        rewrite Heqp0.
-        eassumption.
-        rewrite Heqp0.
-        eassumption.
-        
-        subst.
-       
-        repeat break_let.
-        repeat find_inversion.
-
-        edestruct IHt'2.
-        apply mtt.
-        symmetry.
-        eassumption.
-        rewrite Heqp1.
-
-        assert (p = st_pl0).
-        {
-          symmetry.
-          erewrite <- pl_immut in *.
-          rewrite Heqp6.
-          simpl.
-          reflexivity.
-        }
-        subst.
-        eassumption.
-        rewrite Heqp1.
-        eassumption.
-
-        assert (a1 = a3).
-        {
-          symmetry.
-          eapply gen_const; eauto.
-        }
-        subst.
-        rewrite hhi in *.
-        repeat find_inversion.
-        eauto.
-      +
-        cbn in *.
-        repeat dunit.
-        vmsts.
-        simpl in *.
-        unfold runSt in *.
-
-        destruct (gen_appraisal_comp st_ev0 (eval t'1  p et) a_st) eqn:ghi.
-        destruct (gen_appraisal_comp st_ev  (eval t'2  p et) a_st) eqn:hhi.
-        
-        edestruct IHt'1.
-        apply H1.
-        symmetry.
-        eassumption.
-        rewrite Heqp0.
-        eassumption.
-        rewrite Heqp0.
-        eassumption.
-        
-        subst.
-       
-        repeat break_let.
-        repeat find_inversion.
-
-        edestruct IHt'2.
-        apply H1.
-        symmetry.
-        eassumption.
-        rewrite Heqp1.
-
-        assert (p = st_pl0).
-        {
-          symmetry.
-          erewrite <- pl_immut in *.
-          rewrite Heqp6.
-          simpl.
-          reflexivity.
-        }
-        subst.
-        eassumption.
-        rewrite Heqp1.
-        eassumption.
-
-        assert (a1 = a3).
-        {
-          symmetry.
-          eapply gen_const; eauto.
-        }
-        subst.
-        rewrite hhi in *.
-        repeat find_inversion.
-        eauto.
-  -
-    assert (a = a_st).
-    {
-      symmetry.
-      eapply gen_const; eauto.
-    }
-    subst.
     cbn in *.
+    monad_unfold.
     repeat break_let.
-    (*
-    assert (unanno a = t'1).
-    {
-      admit.
-    }
+    repeat find_inversion.
+    simpl in *.
 
-    assert (unanno a0 = t'2).
+    destruct o5; try solve_by_inversion.
+    repeat find_inversion.
+    repeat break_let.
+    repeat find_inversion.
+    unfold get_store_at in *.
+    monad_unfold.
+    assert (PeanoNat.Nat.eqb (fst (range a)) (fst (range a0)) = false).
     {
-      admit.
-    }
-     *)
-    
-    
-    unfold snd in *.
-
-    (*
-    assert (abseq (p', (S n0)) s a a0 = snd (anno (bseq s t'1 t'2) p')).
+      assert (
+          exists r b,
+            abpar r b a a0 = snd(anno (bpar (s0,s1) t'1 t'2) p')).
       {
+        eexists.
+        eexists.
         cbn.
         repeat break_let.
         simpl.
         repeat find_inversion.
-        subst.
-        repeat find_inversion.
-      
-        rewrite Heqp3 in *.
+        rewrite Heqp8 in *.
         repeat find_inversion.
         reflexivity.
       }
-     *)
-    
-
-
-
-      cbn in *.
-      monad_unfold.
-      repeat break_let.
-      repeat find_inversion.
-      (*
-      inversion Heqp6.
-      rewrite H10 in *. clear H10.
-      rewrite H11 in *. clear H11.
-
-      repeat find_inversion. *)
-      simpl in *.
-      (*
-      rewrite Heqp3 in *.
-      repeat find_inversion. *)
-      destruct o5; try solve_by_inversion.
-      repeat find_inversion.
-      repeat break_let.
-      repeat find_inversion.
-      unfold get_store_at in *.
-      monad_unfold.
-      assert (PeanoNat.Nat.eqb (fst (range a)) (fst (range a0)) = false).
-      {
-        assert (
-            exists r b,
-              abpar r b a a0 = snd(anno (bpar (s0,s1) t'1 t'2) p')).
-        {
-          eexists.
-          eexists.
-          cbn.
-          repeat break_let.
-          simpl.
-          repeat find_inversion.
-          rewrite Heqp8 in *.
-          repeat find_inversion.
-          reflexivity.
-        }
-        destruct_conjs.
-        eapply h; eauto.
-      }
-      rewrite H in *.
-      dohtac.
-      repeat find_inversion.
-      repeat break_let.
-      simpl in *.
-      dohtac.
-      repeat find_inversion.
-      
-   
-      simpl in *.
-      cbn in *.
-      monad_unfold.
-      
-(*
-      Lemma annoAll :
-        forall a,
-          well_formed a ->
-        exists n t', a = snd (anno t' n).
-      Proof.
-        induction a; intros.
-        -
-          destruct a; destruct r.
-          + 
-            exists n.
-            exists (asp CPY).
-            cbn.
-            inv H.
-            simpl in *.
-            congruence.
-          + exists n0.
-            exists (asp (ASPC n l)).
-            cbn.
-            inv H.
-            repeat find_inversion.
-            simpl in *.
-            subst.
-            reflexivity.
-          +
-            exists n.
-            exists (asp SIG).
-            cbn.
-            inv H.
-            simpl in *.
-            subst.
-            reflexivity.
-          +
-            exists n.
-            exists (asp HSH).
-            cbn.
-            inv H.
-            simpl in *.
-            subst.
-            reflexivity.
-        -
-          inv H.
-          destruct r.
-          simpl in *.
-          edestruct IHa.
-          eassumption.
-          destruct_conjs.
-          eexists n0.
-          exists (att n (unanno a)).
-          cbn.
-          repeat break_let.
-          simpl.
-          subst.
-          simpl.
-          rewrite announ' in *.
-          eexists (S n0).
-          eexists (unanno a).
-          edestruct IHa.
-          eassumption.
-          destruct_conjs.
-          rewrite H1.
-          rewrite announ'.
-          rewrite <- H1.
-          eexists x.
-          eexists (unanno a).
-          rewrite H1.
-          rewrite announ'.
-          rewrite <- H1.
-          exists (fst r).
-          exists (unanno a).
-
-          edestruct IHa.
-          eassumption.
-          destruct_conjs.
-          rewrite H1.
-          rewrite announ'.
-          
-            
-            
-            
-            
-            eexists.
-            exists n.
-            eexists.
-            unfold anno.
-*)
-            
-          (*
-      assert (exists t' n, a = snd (anno t' n)).
-      {
-        repeat eexists.
-        cbn.
-          admit.
-        }
       destruct_conjs.
-           *)
-      
+      eapply h; eauto.
+    }
+    rewrite H in *.
+    dohtac.
+    repeat find_inversion.
+    repeat break_let.
+    simpl in *.
+    dohtac.
+    repeat find_inversion.
+    
+    
+    simpl in *.
+    cbn in *.
+    monad_unfold.
+    
+    vmsts.
+    simpl in *.
+    invc H2.
+    +
+      cbn in *.
+      repeat dunit.
       vmsts.
-       
-      
-        (*
-        assert (exists l, st_trace1 = (tr ++ [Term.split p' p]) ++ l).
-        {
-          admit.
-        }
-        destruct_conjs.
-        rewrite H11 in Heqp8.
-        clear H11.
-         *)
       simpl in *.
-      invc H2.
+      unfold runSt in *.
 
+      destruct (gen_appraisal_comp (parallel_att_vm_thread a  mtc) (eval t'1  p'' mt) a_st) eqn:ghi.
+      destruct (gen_appraisal_comp (parallel_att_vm_thread a0 mtc) (eval t'2  p'' mt) a_st) eqn:hhi.
+      
+      edestruct IHt'1.
+      eapply mtt.
+      symmetry.
+      eassumption.
+      rewrite Heqp0.
+      eapply build_comp_par.
+      
+      rewrite Heqp0.
+      eassumption.
+      
+      subst.
+      
+      repeat break_let.
+      repeat find_inversion.
+
+      edestruct IHt'2.
+      apply mtt.
+      symmetry.
+      eassumption.
+      rewrite Heqp1.
+      apply build_comp_par.
+      rewrite Heqp1.
+      eassumption.
+      
+
+      assert (a1 = a3).
+      {
+        symmetry.
+        eapply gen_const; eauto.
+      }
+      
+      
+      subst.
+      rewrite hhi in *.
+      repeat find_inversion.
+      eauto.
 
     +
-        cbn in *.
-        repeat dunit.
-        vmsts.
-        simpl in *.
-        unfold runSt in *.
+      cbn in *.
+      repeat dunit.
+      vmsts.
+      simpl in *.
+      unfold runSt in *.
 
-        destruct (gen_appraisal_comp (parallel_att_vm_thread a  mtc) (eval t'1  p'' mt) a_st) eqn:ghi.
-        destruct (gen_appraisal_comp (parallel_att_vm_thread a0 mtc) (eval t'2  p'' mt) a_st) eqn:hhi.
-        
-        edestruct IHt'1.
-        eapply mtt.
+      destruct (gen_appraisal_comp (parallel_att_vm_thread a  mtc) (eval t'1  p'' mt) a_st) eqn:ghi.
+      destruct (gen_appraisal_comp (parallel_att_vm_thread a0 e) (eval t'2  p'' et) a_st) eqn:hhi.
+      
+      edestruct IHt'1.
+      eapply mtt.
+      symmetry.
+      eassumption.
+      rewrite Heqp0.
+      eapply build_comp_par.
+      
+      rewrite Heqp0.
+      eassumption.
+      
+      subst.
+      
+      repeat break_let.
+      repeat find_inversion.
+
+      edestruct IHt'2.
+      apply H1.
+      symmetry.
+      eassumption.
+      rewrite Heqp1.
+      apply build_comp_par.
+      rewrite Heqp1.
+      eassumption.
+      
+
+      assert (a1 = a3).
+      {
         symmetry.
-        eassumption.
-        rewrite Heqp0.
-        eapply build_comp_par.
-       
-        rewrite Heqp0.
-        eassumption.
-        
-        subst.
-       
-        repeat break_let.
-        repeat find_inversion.
-
-        edestruct IHt'2.
-        apply mtt.
-        symmetry.
-        eassumption.
-        rewrite Heqp1.
-        apply build_comp_par.
-        rewrite Heqp1.
-        eassumption.
-
-        (*
-
-        assert (p = st_pl0).
-        {
-          admit.
-        }
-        subst.
-        eassumption.
-        rewrite Heqp1.
-        eassumption.
-         *)
-        
-
-        assert (a1 = a3).
-        {
-          symmetry.
-          eapply gen_const; eauto.
-        }
-         
-        
-        subst.
-        rewrite hhi in *.
-        repeat find_inversion.
-        eauto.
-
+        eapply gen_const; eauto.
+      }
+      
+      
+      subst.
+      rewrite hhi in *.
+      repeat find_inversion.
+      eauto.
     +
-              cbn in *.
-        repeat dunit.
-        vmsts.
-        simpl in *.
-        unfold runSt in *.
+      cbn in *.
+      repeat dunit.
+      vmsts.
+      simpl in *.
+      unfold runSt in *.
 
-        destruct (gen_appraisal_comp (parallel_att_vm_thread a  mtc) (eval t'1  p'' mt) a_st) eqn:ghi.
-        destruct (gen_appraisal_comp (parallel_att_vm_thread a0 e) (eval t'2  p'' et) a_st) eqn:hhi.
-        
-        edestruct IHt'1.
-        eapply mtt.
+      destruct (gen_appraisal_comp (parallel_att_vm_thread a  e) (eval t'1  p'' et) a_st) eqn:ghi.
+      destruct (gen_appraisal_comp (parallel_att_vm_thread a0 mtc) (eval t'2  p'' mt) a_st) eqn:hhi.
+      
+      edestruct IHt'1.
+      apply H1.
+      symmetry.
+      eassumption.
+      rewrite Heqp0.
+      eapply build_comp_par.
+      
+      rewrite Heqp0.
+      eassumption.
+      
+      subst.
+      
+      repeat break_let.
+      repeat find_inversion.
+
+      edestruct IHt'2.
+      apply mtt.
+      symmetry.
+      eassumption.
+      rewrite Heqp1.
+      apply build_comp_par.
+      rewrite Heqp1.
+      eassumption.
+      
+      assert (a1 = a3).
+      {
         symmetry.
-        eassumption.
-        rewrite Heqp0.
-        eapply build_comp_par.
-       
-        rewrite Heqp0.
-        eassumption.
-        
-        subst.
-       
-        repeat break_let.
-        repeat find_inversion.
-
-        edestruct IHt'2.
-        apply H1.
-        symmetry.
-        eassumption.
-        rewrite Heqp1.
-        apply build_comp_par.
-        rewrite Heqp1.
-        eassumption.
-
-        (*
-
-        assert (p = st_pl0).
-        {
-          admit.
-        }
-        subst.
-        eassumption.
-        rewrite Heqp1.
-        eassumption.
-         *)
-        
-
-        assert (a1 = a3).
-        {
-          symmetry.
-          eapply gen_const; eauto.
-        }
-         
-        
-        subst.
-        rewrite hhi in *.
-        repeat find_inversion.
-        eauto.
+        eapply gen_const; eauto.
+      }
+      
+      
+      subst.
+      rewrite hhi in *.
+      repeat find_inversion.
+      eauto.
     +
-        cbn in *.
-        repeat dunit.
-        vmsts.
-        simpl in *.
-        unfold runSt in *.
+      cbn in *.
+      repeat dunit.
+      vmsts.
+      simpl in *.
+      unfold runSt in *.
 
-        destruct (gen_appraisal_comp (parallel_att_vm_thread a  e) (eval t'1  p'' et) a_st) eqn:ghi.
-        destruct (gen_appraisal_comp (parallel_att_vm_thread a0 mtc) (eval t'2  p'' mt) a_st) eqn:hhi.
-        
-        edestruct IHt'1.
-        apply H1.
+      destruct (gen_appraisal_comp (parallel_att_vm_thread a e) (eval t'1  p'' et) a_st) eqn:ghi.
+      destruct (gen_appraisal_comp (parallel_att_vm_thread a0 e) (eval t'2  p'' et) a_st) eqn:hhi.
+      
+      edestruct IHt'1.
+      apply H1.
+      symmetry.
+      eassumption.
+      rewrite Heqp0.
+      eapply build_comp_par.
+      
+      rewrite Heqp0.
+      eassumption.
+      
+      subst.
+      
+      repeat break_let.
+      repeat find_inversion.
+
+      edestruct IHt'2.
+      apply H1.
+      symmetry.
+      eassumption.
+      rewrite Heqp1.
+      apply build_comp_par.
+      rewrite Heqp1.
+      eassumption.
+      
+
+      assert (a1 = a3).
+      {
         symmetry.
-        eassumption.
-        rewrite Heqp0.
-        eapply build_comp_par.
-       
-        rewrite Heqp0.
-        eassumption.
-        
-        subst.
-       
-        repeat break_let.
-        repeat find_inversion.
-
-        edestruct IHt'2.
-        apply mtt.
-        symmetry.
-        eassumption.
-        rewrite Heqp1.
-        apply build_comp_par.
-        rewrite Heqp1.
-        eassumption.
-
-        (*
-
-        assert (p = st_pl0).
-        {
-          admit.
-        }
-        subst.
-        eassumption.
-        rewrite Heqp1.
-        eassumption.
-         *)
-        
-
-        assert (a1 = a3).
-        {
-          symmetry.
-          eapply gen_const; eauto.
-        }
-         
-        
-        subst.
-        rewrite hhi in *.
-        repeat find_inversion.
-        eauto.
-    +
-        cbn in *.
-        repeat dunit.
-        vmsts.
-        simpl in *.
-        unfold runSt in *.
-
-        destruct (gen_appraisal_comp (parallel_att_vm_thread a e) (eval t'1  p'' et) a_st) eqn:ghi.
-        destruct (gen_appraisal_comp (parallel_att_vm_thread a0 e) (eval t'2  p'' et) a_st) eqn:hhi.
-        
-        edestruct IHt'1.
-        apply H1.
-        symmetry.
-        eassumption.
-        rewrite Heqp0.
-        eapply build_comp_par.
-       
-        rewrite Heqp0.
-        eassumption.
-        
-        subst.
-       
-        repeat break_let.
-        repeat find_inversion.
-
-        edestruct IHt'2.
-        apply H1.
-        symmetry.
-        eassumption.
-        rewrite Heqp1.
-        apply build_comp_par.
-        rewrite Heqp1.
-        eassumption.
-
-        (*
-
-        assert (p = st_pl0).
-        {
-          admit.
-        }
-        subst.
-        eassumption.
-        rewrite Heqp1.
-        eassumption.
-         *)
-        
-
-        assert (a1 = a3).
-        {
-          symmetry.
-          eapply gen_const; eauto.
-        }
-         
-        
-        subst.
-        rewrite hhi in *.
-        repeat find_inversion.
-        eauto.
-        Unshelve.
-        eauto.
-        eauto.
-        eauto.
-        eauto.
-        eauto.
-        eauto.
-        eauto.
-        eauto.
-        eauto.
+        eapply gen_const; eauto.
+      }
+          
+      subst.
+      rewrite hhi in *.
+      repeat find_inversion.
+      eauto.
+      Unshelve.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
 Defined.
 
-Print allMapped.
-
 (*
-Lemma app_some : forall t t' p' vm_st' (app_comp: AM vm_st) app_comp_res a_st (*e e' tr tr' p p'' o o' et*),
+Lemma app_some'' : forall t t' p p' p'' tr tr' o o' e' e et (app_comp: AM (VM unit)) app_comp_res (*app_comp' app_comp_res'*) a_st,
     t = snd (anno t' p') ->
-    (*build_comp t {| st_ev:=e; st_trace:=tr; st_pl:=p; st_store:=o|} =
-    (Some tt, {| st_ev:=e'; st_trace:=tr'; st_pl:=p''; st_store:=o'|}) -> *)
-    build_comp t empty_vmst = (Some tt, vm_st') ->
-    (*Ev_Shape e et -> *)
-    allMapped t 0 a_st mt ->
-    app_comp = exec_app_comp_t t' 0 p' empty_vmst ->
+    build_comp t {| st_ev:=e; st_trace:=tr; st_pl:=p; st_store:=o|} =
+    (Some tt, {| st_ev:=e'; st_trace:=tr'; st_pl:=p''; st_store:=o'|}) ->
+    Ev_Shape e et ->  (* TODO: maybe don't need this *)
+    allMapped t p a_st et ->
+    app_comp = gen_appraisal_comp e' (eval t' p et) ->
     app_comp_res = runSt a_st app_comp ->
     exists st, (fst app_comp_res = (Some st)).
+ *)
+
+Print gen_appraisal_comp.
+Print exec_app_comp_t.
+Print exec_app_comp.
+Check gen_appraisal_comp.
+Check runSt.
+
+Definition run_appraisal_ev' (t:AnnoTerm) (p:Plc) (e:Evidence) (evc:EvidenceC) : AM vm_st :=
+  let evt := eval (unanno t) p e in
+  app_comp <- gen_appraisal_comp evc evt ;; (* AM (VM unit) *)
+  let (_, res) := runSt empty_vmst app_comp in  (* ( option () * vm_st ) *)
+  ret res.
+
+Definition run_appraisal_ev (t:AnnoTerm) (p:Plc) (e:Evidence)
+           (evc:EvidenceC) (a_st:AM_St) : (option vm_st) :=
+  let app_comp := run_appraisal_ev' t p e evc in
+  let (o,_) := runSt a_st app_comp in
+  o.
+
+Definition run_appraisal (t:AnnoTerm) (v_st:vm_st) (et:Evidence) (a_st:AM_St) : (option vm_st) :=
+  let app_comp := exec_app_comp t v_st et in
+  fst (runSt a_st app_comp).
+
+Lemma app_some : forall t t' p' res a_st v_st v_st' e e' et p,
+    t = snd (anno t' p') ->
+    build_comp t v_st = (Some tt, v_st') ->
+    e = st_ev v_st ->
+    p  = st_pl v_st ->
+    e' = st_ev v_st' ->
+    Ev_Shape e et ->
+    allMapped t p a_st et ->
+    res = run_appraisal_ev t p et e' a_st ->
+    (*res = run_appraisal t v_st et a_st -> *)
+    exists (st:vm_st), res = Some st.
 Proof.
-  Print exec_app_comp_t.
-  Print exec_app_comp.
   intros.
   vmsts.
-  unfold empty_vmst in *.
-  edestruct app_some'' with (t:=t) (t':=t') (p':=p') (e':=st_ev).
-  eassumption.
-  eassumption.
-  econstructor.
-  eassumption.
-  reflexivity.
-  reflexivity.
+  simpl in *.
+  edestruct app_some'';
+    try (subst; eassumption);
+    try reflexivity.
   subst.
-  unfold exec_app_comp_t.
-  unfold exec_app_comp.
+  unfold run_appraisal_ev.
+  unfold run_appraisal_ev'.
   monad_unfold.
   unfold runSt in *.
-  unfold build_app_comp.
-  monad_unfold.
-  unfold run_vm.
-  monad_unfold.
-  simpl in *.
-  rewrite H0.
-  simpl in *.
-  rewrite announ'.
-  destruct ((gen_appraisal_comp st_ev (eval t' 0 mt) a_st)) eqn:hi.
+  rewrite announ' in *.
+  repeat break_let.
   simpl in *.
   subst.
-  simpl.
+  repeat break_let.
+  repeat find_inversion.
   eauto.
 Defined.
-*)
 
 
 (*
@@ -2678,26 +1624,123 @@ Print exec_app_comp.
 Print build_app_comp.
 Print allMapped.
 
-
-Lemma app_some' : forall t t' p' vm_st' (app_comp: AM vm_st) app_comp_res a_st e tr p o et (*e e' tr tr' p p'' o o' et*),
-    t = snd (anno t' p') ->
-    build_comp t {| st_ev:=e; st_trace:=tr; st_pl:=p; st_store:=o|} =
-    (Some tt, (*{| st_ev:=e'; st_trace:=tr'; st_pl:=p''; st_store:=o'|}*) vm_st') ->
-    (*build_comp t empty_vmst = (Some tt, vm_st') ->*)
-    Ev_Shape e et ->
-    allMapped t p a_st et ->
-    app_comp = exec_app_comp_t t' p p' {| st_ev:=e; st_trace:=tr; st_pl:=p; st_store:=o|} et ->
-    app_comp_res = runSt a_st app_comp ->
-    exists st, (fst app_comp_res = (Some st)).
+Lemma measEventAt' : forall t n p q ev,
+    measEvent (snd (anno (att n t) q)) p ev ->
+    measEvent (snd (anno t (S q))) n ev.
 Proof.
-Admitted.
 
+  induction t; intros.
+  - inv H.
+    invc H1.
+    destruct a;
+      try (inv H; inv H1; solve_by_inversion).
+    +
+      simpl in *.
+      invc H0.
+      invc H6.
+      invc H.
+      invc H0.
+      simpl.
+      econstructor.
+      eauto.
+      eauto.
+  -
+    simpl in *.
+    repeat break_let.
+    simpl in *.
+    repeat find_inversion.
+    simpl in *.
+    invc H.
+    invc H1.
+    repeat find_inversion.
+    invc H0.
+    invc H5.
+    econstructor.
+    +
+    econstructor.
+    assumption.
+    +
+      econstructor.
+  - simpl in *.
+    repeat break_let.
+    simpl in *.
+    repeat find_inversion.
+    simpl in *.
+    invc H.
+    invc H1.
+    repeat find_inversion.
+    invc H0.
+    invc H5.
+    econstructor.
+    econstructor.
+    eassumption.
+    econstructor.
+    econstructor.
+    apply evtslseqr.
+    assumption.
+    econstructor.
+  - simpl in *.
+    repeat break_let.
+    simpl in *.
+    repeat find_inversion.
+    simpl in *.
+    invc H.
+    invc H1.
+    repeat find_inversion.
+    invc H0.
+    invc H5.
+    econstructor.
+    econstructor.
+    eassumption.
+    econstructor.
+    econstructor.
+    apply evtsbseqr.
+    assumption.
+    econstructor.
+  - simpl in *.
+    repeat break_let.
+    simpl in *.
+    repeat find_inversion.
+    simpl in *.
+    invc H.
+    invc H1.
+    repeat find_inversion.
+    invc H0.
+    invc H5.
+    econstructor.
+    econstructor.
+    eassumption.
+    econstructor.
+    econstructor.
+    apply evtsbparr.
+    assumption.
+    econstructor.
+Defined.
+
+(*
+Lemma measEventAt : forall t n p ev,
+    measEvent (annotated (att n t)) p ev ->
+    measEvent (annotated t) n ev.
+Proof.
+  intros.
+  unfold annotated in *.
+  Check measEventAt'.
+  eapply measEventAt'.
+  split
+  unfold annotated in *.
+  eapply measEventAt'.
+  eapply measEventAt'; eauto.
+Defined.
+ *)
+
+
+(*
 Lemma app_correct' :
   forall t t' p' app_comp app_comp_res app_comp_st tr_app_comp ev a_st vm_st' e tr p o et,
 
     t = snd (anno t' p') ->
     build_comp t {| st_ev:=e; st_trace:=tr; st_pl:=p; st_store:=o|} = (Some tt, vm_st') ->
-    app_comp = exec_app_comp_t t' p p' {| st_ev:=e; st_trace:=tr; st_pl:=p; st_store:=o|} et  (* AM vm_st *) ->
+    app_comp = exec_app_comp_t t' p' {| st_ev:=e; st_trace:=tr; st_pl:=p; st_store:=o|} et  (* AM vm_st *) ->
     Ev_Shape e et ->
     app_comp_res = runSt a_st app_comp (* ((option vm_st) * AM_St) *)  -> 
     app_comp_st = fromOpt (fst app_comp_res) empty_vmst (* vm_st *)  ->
@@ -2706,42 +1749,136 @@ Lemma app_correct' :
     measEvent t p ev ->
 
     exists ev', In ev' tr_app_comp /\ appEvent ev a_st ev'.
+ *)
+
+
+Lemma trace_cumul : forall e st st' v tr tr' p p' o o' e' o0 ev evt,
+    gen_appraisal_comp ev evt st = (Some v, st') ->
+    v    {| st_ev := e;  st_trace := tr;  st_pl := p;  st_store := o |} =
+    (o0, {| st_ev := e'; st_trace := tr'; st_pl := p'; st_store := o'|}) ->
+    exists tr'', tr' = tr ++ tr''.
+Proof.
+Admitted.
+
+Lemma gen_ev_shape : forall ev evt st st' v,
+    gen_appraisal_comp ev evt st = (Some v, st') ->
+    Ev_Shape ev evt.
+Proof.
+  induction ev; destruct evt; intros;
+    try (econstructor; eauto; tauto);
+    try (cbn in *; monad_unfold; solve_by_inversion).
+  -
+    econstructor.
+    cbn in *.
+    monad_unfold.
+    cbn in *.
+    repeat break_let.
+    repeat find_inversion.
+    repeat break_match;
+      try solve_by_inversion.
+    repeat find_inversion.
+    monad_unfold.
+    repeat find_inversion.
+    eauto.
+    repeat find_inversion.
+  -
+    econstructor.
+    cbn in *.
+    monad_unfold.
+    repeat break_match; try solve_by_inversion.
+    repeat find_inversion.
+    eauto.
+  -
+    econstructor.
+    cbn in *.
+    monad_unfold.
+    repeat break_match; try solve_by_inversion.
+    repeat find_inversion.
+    eauto.
+  -
+    
+    econstructor.
+    cbn in *.
+    monad_unfold.
+    repeat break_match; try solve_by_inversion.
+    repeat find_inversion.
+    eauto.
+  -
+    econstructor.
+    cbn in *.
+    monad_unfold.
+    repeat break_match; try solve_by_inversion.
+    repeat find_inversion.
+    eauto.
+    repeat find_inversion.
+
+    cbn in *.
+    monad_unfold.
+    repeat break_match; try solve_by_inversion.
+    repeat find_inversion.
+    eauto.
+    repeat find_inversion.
+  -
+    econstructor.
+    cbn in *.
+    monad_unfold.
+    repeat break_match; try solve_by_inversion.
+    repeat find_inversion.
+    eauto.
+    repeat find_inversion.
+
+    cbn in *.
+    monad_unfold.
+    repeat break_match; try solve_by_inversion.
+    repeat find_inversion.
+    eauto.
+    repeat find_inversion.
+Defined.
+
+
+Lemma app_correct' :
+  forall t t' p' v_st v_st' app_comp_res_opt app_comp_res_st tr_app ev a_st e e' p et,
+
+    t = snd (anno t' p') ->
+    build_comp t v_st = (Some tt, v_st') ->
+    e = st_ev v_st ->
+    p = st_pl v_st ->
+    e' = st_ev v_st' ->
+    Ev_Shape e et ->
+    app_comp_res_opt = run_appraisal_ev t p et e' a_st ->
+    app_comp_res_st = fromOpt app_comp_res_opt empty_vmst ->
+    tr_app = st_trace app_comp_res_st ->
+    allMapped t p a_st et ->
+    measEvent t p ev ->
+    exists ev', In ev' tr_app /\ appEvent ev a_st ev'.
 Proof.
   intros.
-  edestruct app_some'.
-  eassumption.
-  eassumption.
-  eassumption.
-  eassumption.
-  eassumption.
-  eassumption.
+  edestruct app_some; try eassumption.
   subst.
+  rewrite H10.
+  cbn.
+  unfold run_appraisal_ev in *.
+  unfold run_appraisal_ev' in *.
   unfold runSt in *.
-  unfold exec_app_comp_t in *.
-  unfold exec_app_comp in *.
   monad_unfold.
-  unfold build_app_comp in *.
-  monad_unfold.
+  repeat break_let.
+  repeat find_inversion.
+  subst.
   repeat break_match; try solve_by_inversion.
   repeat find_inversion.
   rewrite announ' in *.
   simpl in *.
+  unfold empty_vmst in *.
+  vmsts.
+  simpl in *.
+  repeat find_inversion.
+
+  (*
   assert (snd (runSt empty_vmst v) = x).
   congruence.
   clear H8.
-  rewrite H.
-  generalize dependent p'.
-  generalize dependent ev.
-  generalize dependent a_st.
-  generalize dependent e.
-  generalize dependent x.
-  generalize dependent a.
-  generalize dependent v.
-  generalize dependent vm_st'.
-  generalize dependent p.
-  generalize dependent tr.
-  generalize dependent o.
-  generalize dependent et.
+  rewrite H. *)
+  generalizeEverythingElse t'.
   
 
   induction t'; intros.
@@ -2755,23 +1892,36 @@ Proof.
       repeat find_inversion;
       monad_unfold;
       repeat find_inversion. *)
-        +
-          repeat (monad_unfold; repeat find_inversion).
+    +
+      repeat (monad_unfold; repeat find_inversion).
       
-          cbn in *.
-          inv H7.
-          inv H0.
-          inv H.
+      cbn in *.
+      inv H9.
+      inv H0.
+      inv H.
     +
       cbn in *.
       repeat break_let.
       repeat find_inversion.
       monad_unfold.
+      monad_unfold.
       repeat find_inversion.
-      inv H7.
+      cbn in *.
+      repeat break_let.
+      destruct o;
+        try solve_by_inversion.
+      repeat break_let.
+      repeat find_inversion.
+      destruct o0;
+        try solve_by_inversion.
+      repeat find_inversion.
+      repeat break_let.
+      repeat find_inversion.
+      simpl in *.
+      invc H9.
       invc H.
       invc H0.
-      invc H6.
+      invc H8.
       destruct_conjs.
       inv H.
       cbn in *.
@@ -2780,9 +1930,10 @@ Proof.
       repeat find_inversion.
       repeat break_let.
       repeat find_inversion.
+      (*
       destruct o1;
         try solve_by_inversion.
-      repeat find_inversion.
+      repeat find_inversion. *)
       unfold runSt.
       repeat find_inversion.
       repeat break_let.
@@ -2793,100 +1944,10 @@ Proof.
       unfold empty_vmst in *.
       repeat find_inversion.
       simpl in *.
-      exists (umeas 0 p H10(l ++ [p'])).
+      exists (umeas 0 st_pl0 n0 (l ++ [p'])).
       split.
-      invc H7.
-      inv H.
-      invc H1.
-      clear H11.
-      2: {
-        econstructor.
-        reflexivity.
-        eassumption.
-      }
 
-      Lemma gen_ev_shape : forall ev evt st st' v,
-        gen_appraisal_comp ev evt st = (Some v, st') ->
-        Ev_Shape ev evt.
-      Proof.
-        induction ev; destruct evt; intros;
-          try (econstructor; eauto; tauto);
-          try (cbn in *; monad_unfold; solve_by_inversion).
-        -
-          econstructor.
-          cbn in *.
-          monad_unfold.
-          cbn in *.
-          repeat break_let.
-          repeat find_inversion.
-          repeat break_match;
-            try solve_by_inversion.
-          repeat find_inversion.
-          monad_unfold.
-          repeat find_inversion.
-          eauto.
-          repeat find_inversion.
-        -
-          econstructor.
-          cbn in *.
-          monad_unfold.
-          repeat break_match; try solve_by_inversion.
-          repeat find_inversion.
-          eauto.
-        -
-          econstructor.
-          cbn in *.
-          monad_unfold.
-          repeat break_match; try solve_by_inversion.
-          repeat find_inversion.
-          eauto.
-        -
-          
-          econstructor.
-          cbn in *.
-          monad_unfold.
-          repeat break_match; try solve_by_inversion.
-          repeat find_inversion.
-          eauto.
-        -
-          econstructor.
-          cbn in *.
-          monad_unfold.
-          repeat break_match; try solve_by_inversion.
-          repeat find_inversion.
-          eauto.
-          repeat find_inversion.
 
-          cbn in *.
-          monad_unfold.
-          repeat break_match; try solve_by_inversion.
-          repeat find_inversion.
-          eauto.
-          repeat find_inversion.
-        -
-          econstructor.
-          cbn in *.
-          monad_unfold.
-          repeat break_match; try solve_by_inversion.
-          repeat find_inversion.
-          eauto.
-          repeat find_inversion.
-
-          cbn in *.
-          monad_unfold.
-          repeat break_match; try solve_by_inversion.
-          repeat find_inversion.
-          eauto.
-          repeat find_inversion.
-      Defined.
-
-      Lemma trace_cumul : forall e st st' v tr tr' p p' o o' e' o0 ev evt,
-        gen_appraisal_comp ev evt st = (Some v, st') ->
-        v    {| st_ev := e;  st_trace := tr;  st_pl := p;  st_store := o |} =
-        (o0, {| st_ev := e'; st_trace := tr'; st_pl := p'; st_store := o'|}) ->
-        exists tr'', tr' = tr ++ tr''.
-      Proof.
-      Admitted.
 
       edestruct trace_cumul.
       eassumption.
@@ -2894,20 +1955,38 @@ Proof.
       subst.
       econstructor.
       reflexivity.
+      econstructor.
+      reflexivity.
+      eassumption.
+
+
+      (*
+    +
+
+
+
+
+
+      edestruct trace_cumul.
+      eassumption.
+      eassumption.
+      subst.
+      econstructor.
+      reflexivity. *)
     +
       repeat (monad_unfold; repeat find_inversion).
       
           cbn in *.
-          inv H7.
-          inv H0.
+          inv H9.
           inv H.
+          inv H0.
     +
       repeat (monad_unfold; repeat find_inversion).
       
           cbn in *.
-          inv H7.
-          inv H0.
+          inv H9.
           inv H.
+          inv H0.
   -
     cbn in *.
     repeat break_let.
@@ -2930,30 +2009,28 @@ Proof.
     repeat find_inversion.
     simpl in *.
 
+    invc H8.
+    invc H9.
+
+    invc H;
+      try solve_by_inversion.
+    
+
     edestruct IHt'.
-    reflexivity.
-    eassumption.
     apply build_comp_at.
-    invc H7.
-    invc H6.
-    invc H; try solve_by_inversion.
-    econstructor.
-    rewrite Heqp0.
+    eassumption.
+    
+    rewrite Heqp.
+    simpl.
+    eassumption.
+    rewrite Heqp.
+    simpl.
+    econstructor; eauto.
+    rewrite Heqp.
     simpl.
     eassumption.
     eassumption.
-    invc H6.
-    rewrite Heqp0.
-    simpl.
-    eassumption.
-    monad_unfold.
-    rewrite Heqp0.
-    simpl.
-    erewrite build_comp_at.
-    simpl.
-    eassumption.
-    exists x.
-    eassumption.
+    eauto.
   -
     cbn in *.
 
