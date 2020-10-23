@@ -492,6 +492,12 @@ Lemma gen_foo : forall t t' n m k e p o v,
     m ++ st_trace (snd (build_comp t
                        {| st_ev := e; st_trace := k; st_pl := p; st_store := o |})).
 Proof.
+  (*
+  intros.
+  rewrite H0.
+  simpl.
+  vmsts.
+  simpl in *. *)
   induction t; intros.
   -
     destruct r.
