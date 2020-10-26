@@ -1055,6 +1055,140 @@ Proof.
         reflexivity.
 Defined.
 
+Lemma restl' : forall t t' n e e' x tr p p' o o' e2 e2' p2 p2' o2 o2' tr',
+    t = snd (anno t' n) -> 
+    build_comp t {| st_ev := e; st_trace := x; st_pl := p; st_store := o |} =
+    (Some tt, {| st_ev := e'; st_trace := x ++ tr; st_pl := p'; st_store := o' |}) ->
+
+    build_comp t {| st_ev := e2; st_trace := []; st_pl := p2; st_store := o2 |} =
+    (Some tt, {| st_ev := e2'; st_trace := tr'; st_pl := p2'; st_store := o2' |}) ->
+    tr = tr'.
+Proof.
+  intros.
+  
+  assert (
+      st_trace (run_vm t {| st_ev := e; st_trace := x; st_pl := p; st_store := o |}) =
+      st_trace ({| st_ev := e'; st_trace := x ++ tr; st_pl := p'; st_store := o' |})).
+  {
+  unfold run_vm.
+  monad_unfold.
+  rewrite H0.
+  simpl.
+  reflexivity.
+  }
+
+  assert (
+      st_trace (run_vm t {| st_ev := e2; st_trace := []; st_pl := p2; st_store := o2 |}) =
+      st_trace ({| st_ev := e2'; st_trace := tr'; st_pl := p2'; st_store := o2' |})).
+  {
+  unfold run_vm.
+  monad_unfold.
+  rewrite H1.
+  simpl.
+  reflexivity.
+  }
+  Check foo.
+  Check trace_irrel_ev'.
+  unfold run_vm in *.
+  monad_unfold.
+  Check trace_irrel_ev'.
+  assert (
+   st_ev
+         (snd
+            (build_comp t
+               {| st_ev := e; st_trace := []; st_pl := p; st_store := o |})) = e').
+  eapply trace_irrel_ev'; eauto.
+
+  assert (
+   st_ev
+         (snd
+            (build_comp t
+               {| st_ev := e2; st_trace := []; st_pl := p2; st_store := o2 |})) = e2').
+  eapply trace_irrel_ev'; eauto.
+
+  
+
+  assert (
+   st_pl
+         (snd
+            (build_comp t
+               {| st_ev := e; st_trace := []; st_pl := p; st_store := o |})) = p').
+  eapply trace_irrel_pl'; eauto.
+
+  assert (
+   st_pl
+         (snd
+            (build_comp t
+               {| st_ev := e2; st_trace := []; st_pl := p2; st_store := o2 |})) = p2').
+  eapply trace_irrel_pl'; eauto.
+
+  assert (
+   st_store
+         (snd
+            (build_comp t
+               {| st_ev := e; st_trace := []; st_pl := p; st_store := o |})) = o').
+  eapply trace_irrel_store'; eauto.
+
+  assert (
+   st_store
+         (snd
+            (build_comp t
+               {| st_ev := e2; st_trace := []; st_pl := p2; st_store := o2 |})) = o2').
+  eapply trace_irrel_store'; eauto.
+  Check st_congr.
+
+  assert (
+      (snd
+         (build_comp t
+                     {| st_ev := e; st_trace := []; st_pl := p; st_store := o |})) =
+      {| st_ev := e'; st_trace := tr; st_pl := p'; st_store := o' |}).
+  {
+    eapply st_congr; eauto.
+    Check foo.
+    erewrite foo in H2; eauto.
+    eapply app_inv_head.
+    eauto.
+
+  }
+
+  assert (
+      (snd
+         (build_comp t
+                     {| st_ev := e2; st_trace := []; st_pl := p2; st_store := o2 |})) =
+      {| st_ev := e2'; st_trace := tr'; st_pl := p2'; st_store := o2' |}).
+  {
+    eapply st_congr; eauto.
+  }
+
+  (*
+  
+    Check foo.
+    erewrite foo in H2; eauto.
+    eapply app_inv_head.
+    eauto.
+
+  } *)
+  
+  destruct (build_comp t {| st_ev := e; st_trace := x; st_pl := p; st_store := o |}) eqn:aa.
+  destruct (build_comp t {| st_ev := e2; st_trace := []; st_pl := p2; st_store := o2 |}) eqn:aaa.
+  simpl in *.
+  vmsts.
+  simpl in *.
+  repeat find_inversion.
+  destruct o0.
+  destruct u.
+  rewrite H0 in *.
+  simpl in *.
+  clear H2.
+  subst.
+  reflexivity.
+  exfalso.
+  eapply fafaf; eauto.
+Defined.
+
+
+
+
 Lemma restl' : forall t t' n e e' x tr p p' o o',
     t = snd (anno t' n) -> 
     build_comp t {| st_ev := e; st_trace := x; st_pl := p; st_store := o |} =

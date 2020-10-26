@@ -1150,13 +1150,143 @@ Lemma app_correct' :
  *)
 
 
-Lemma trace_cumul : forall e st st' v tr tr' p p' o o' e' o0 ev evt,
+Lemma trace_cumul : forall ev evt e st st' v tr tr' p p' o o' e' o0,
     gen_appraisal_comp ev evt st = (Some v, st') ->
     v    {| st_ev := e;  st_trace := tr;  st_pl := p;  st_store := o |} =
     (o0, {| st_ev := e'; st_trace := tr'; st_pl := p'; st_store := o'|}) ->
     exists tr'', tr' = tr ++ tr''.
 Proof.
-Admitted.
+  induction ev;
+    destruct evt;
+    intros;
+    try (df; tauto).
+  -
+    df.
+    exists [].
+    simpl.
+    rewrite app_nil_r.
+    eauto.
+  -
+    df.
+    dosome.
+    repeat break_match;
+      try solve_by_inversion.
+    df.
+
+    edestruct IHev.
+    eassumption.
+    eassumption.
+    subst.
+    eexists.
+    rewrite app_assoc.
+    reflexivity.
+  -
+     df.
+    dosome.
+    repeat break_match;
+      try solve_by_inversion.
+    df.
+
+    edestruct IHev.
+    eassumption.
+    eassumption.
+    subst.
+    eexists.
+    rewrite app_assoc.
+    reflexivity.
+  -
+     df.
+    dosome.
+    repeat break_match;
+      try solve_by_inversion.
+    df.
+
+    edestruct IHev.
+    eassumption.
+    eassumption.
+    subst.
+    eexists.
+    reflexivity.
+  -
+     df.
+    dosome.
+    repeat break_match;
+      try solve_by_inversion.
+    df.
+
+    edestruct IHev.
+    eassumption.
+    eassumption.
+    subst.
+    eexists.
+    reflexivity.
+  -
+    df.
+    dosome.
+    vmsts.
+    edestruct IHev1.
+    eassumption.
+    apply Heqp2.
+    
+
+    edestruct IHev2.
+    eassumption.
+    apply Heqp3.
+    
+
+    destruct_conjs.
+    subst.
+    (*
+    rewrite H4 in *.
+    df.
+    rewrite H7 in *.
+    df.
+     *)
+    df.
+
+    destruct o1.
+    +
+      df.
+      eexists.
+      rewrite app_assoc.
+      eauto.
+    +
+      df.
+      eauto.
+  -
+        df.
+    dosome.
+    vmsts.
+    edestruct IHev1.
+    eassumption.
+    apply Heqp2.
+    
+
+    edestruct IHev2.
+    eassumption.
+    apply Heqp3.
+    
+
+    destruct_conjs.
+    subst.
+    (*
+    rewrite H4 in *.
+    df.
+    rewrite H7 in *.
+    df.
+     *)
+    df.
+
+    destruct o1.
+    +
+      df.
+      eexists.
+      rewrite app_assoc.
+      eauto.
+    +
+      df.
+      eauto.
+Defined.
 
 Lemma gen_ev_shape : forall ev evt st st' v,
     gen_appraisal_comp ev evt st = (Some v, st') ->
@@ -1165,6 +1295,1075 @@ Proof.
   induction ev; destruct evt; intros;
     try (df; try econstructor; try(dosome); try solve_by_inversion; eauto; tauto).
 Defined.
+
+
+Lemma foofoo : forall e et e_n tr_n p_n o_n a0 a' v val e' tr' p' o' e'' tr'' p'' o'',
+    gen_appraisal_comp e et a0 = (Some v, a') ->
+    v {| st_ev := e'; st_trace := tr'; st_pl := p'; st_store := o' |} =
+    (val, {| st_ev := e''; st_trace := tr''; st_pl := p''; st_store := o'' |}) ->
+    (exists e3 tr3 p3 o3,
+        v {| st_ev := e_n; st_trace := tr_n; st_pl := p_n; st_store := o_n |} =
+        (val, {| st_ev := e3; st_trace := tr3; st_pl := p3; st_store := o3 |})).
+Proof.
+  induction e;
+    destruct et; intros;
+      try (df; eauto).
+
+  -
+    dosome.
+    edestruct IHe.
+    eassumption.
+    eassumption.
+    destruct_conjs.
+    repeat eexists.
+    rewrite <- H2.
+    rewrite Heqp2.
+    reflexivity.
+
+  -
+    dosome.
+    edestruct IHe.
+    eassumption.
+    eassumption.
+    destruct_conjs.
+    repeat eexists.
+    rewrite <- H2.
+    rewrite Heqp2.
+    reflexivity.
+  -
+    dosome.
+    edestruct IHe.
+    eassumption.
+    eassumption.
+    destruct_conjs.
+    repeat eexists.
+    eassumption.
+  -
+    dosome.
+    edestruct IHe.
+    eassumption.
+    eassumption.
+    destruct_conjs.
+    repeat eexists.
+    eassumption.
+  -
+    dosome.
+    vmsts.
+    edestruct IHe1.
+    eassumption.
+    apply Heqp1.
+    
+
+    edestruct IHe2.
+    eassumption.
+    apply Heqp2.
+    
+
+    destruct_conjs.
+    rewrite H4 in *.
+    df.
+    rewrite H7 in *.
+    df.
+
+    destruct o1.
+    +
+      df.
+      eauto.
+    +
+      df.
+      eauto.
+      
+  -
+    dosome.
+    vmsts.
+    edestruct IHe1.
+    eassumption.
+    apply Heqp1.
+    
+
+    edestruct IHe2.
+    eassumption.
+    apply Heqp2.
+    
+
+    destruct_conjs.
+    rewrite H4 in *.
+    df.
+    rewrite H7 in *.
+    df.
+
+    destruct o1.
+    +
+      df.
+      eauto.
+    +
+      df.
+      eauto.
+Defined.
+
+Lemma dodo : forall e e' e'' p' p'' o' o'' tr' tr'' et v0 a a' val, 
+    (* build_comp a0
+            {|
+            st_ev := splitEv s0 e;
+            st_trace := tr;
+            st_pl := p;
+            st_store := o |} =
+      (Some tt, {| st_ev := e'; st_trace := tr'; st_pl := p'; st_store := o' |}) -> *)
+
+    gen_appraisal_comp e et a = (Some v0, a') ->
+    (*Ev_Shape e et -> *)
+    
+    v0 {| st_ev := e'; st_trace := tr'; st_pl := p'; st_store := o' |} =
+    (val, {| st_ev := e''; st_trace := tr''; st_pl := p''; st_store := o'' |}) ->
+    val = Some tt.
+Proof.
+  induction e; 
+    destruct et; intros;
+      df;
+      try tauto.
+  -
+    
+    
+    dosome.
+    df.
+    break_match; try solve_by_inversion.
+    df.
+
+
+
+    edestruct foofoo.
+    eassumption.
+    eassumption.
+    destruct_conjs.
+    
+    
+    eapply IHe.
+    eassumption.
+    inv H0.
+    eassumption.
+    
+    eassumption.
+  -
+    dosome.
+    df.
+    break_match; try solve_by_inversion.
+    df.
+
+    edestruct foofoo.
+    eassumption.
+    eassumption.
+    destruct_conjs.
+
+    eapply IHe.
+    eassumption.
+    inv H0.
+    eassumption.
+
+    eassumption.
+  -
+    dosome.
+    df.
+
+    edestruct foofoo.
+    eassumption.
+    eassumption.
+    destruct_conjs.
+
+    eapply IHe.
+    eassumption.
+    inv H0.
+    eassumption.
+
+  -
+    dosome.
+    df.
+
+
+    edestruct foofoo.
+    eassumption.
+    eassumption.
+    destruct_conjs.
+
+    eapply IHe.
+    eassumption.
+    inv H0.
+    eassumption.
+
+  -
+    dosome.
+    df.
+
+    vmsts.
+    edestruct foofoo.
+    apply Heqp.
+    eassumption.
+
+    edestruct foofoo.
+    apply Heqp0.
+    eassumption.
+
+    destruct_conjs.
+
+    rewrite H4 in *.
+    df.
+    rewrite H7 in *.
+    df.
+
+    (*inv H0. *)
+
+    assert (o = Some tt).
+    eapply IHe1.
+    eassumption.
+    eassumption.
+
+    subst.
+    df.
+
+    eapply IHe2.
+    eassumption.
+    eassumption.
+  -
+    dosome.
+    df.
+
+    vmsts.
+    edestruct foofoo.
+    apply Heqp.
+    eassumption.
+
+    edestruct foofoo.
+    apply Heqp0.
+    eassumption.
+
+    destruct_conjs.
+
+    rewrite H4 in *.
+    df.
+    rewrite H7 in *.
+    df.
+
+    (*
+
+    inv H0.
+     *)
+    
+
+    assert (o = Some tt).
+    eapply IHe1.
+    eassumption.
+    eassumption.
+    subst.
+    df.
+
+    eapply IHe2.
+    eassumption.
+    eassumption.
+    Unshelve.
+    eauto.
+    eauto.
+    eauto.
+    eauto.
+    eauto.
+    eauto.
+    eauto.
+    eauto.
+    eauto.
+    eauto.
+    eauto.
+    eauto.
+    eauto.
+    eauto.
+    eauto.
+    eauto.
+Defined.
+
+Lemma gen_lseq_decomp :
+  forall a1 e e' ee eee  st_trace3 st_trace4 o p p' tr tr' o' pp ppp oo ooo et a_st a a2 x0 x o0 o1,
+    build_comp a1 {| st_ev := e; st_trace := tr; st_pl := p; st_store := o |} =
+    (Some tt, {| st_ev := e'; st_trace := tr'; st_pl := p'; st_store := o' |}) -> 
+    (*build_comp a1 {| st_ev := e'; st_trace := tr'; st_pl := p'; st_store := o' |} =
+    (Some tt, {| st_ev := e''; st_trace := tr''; st_pl := p''; st_store := o'' |}) -> *)
+    gen_appraisal_comp e' (eval (unanno a1) p' et (*(eval (unanno a0) p et)*)) a_st = (Some x0, a) ->
+   (* Ev_Shape e et -> (* TODO: need this? *) *)
+    x0 {| st_ev := mtc; st_trace := []; st_pl := 0; st_store := [] |} =
+    (o0, {| st_ev := ee; st_trace := st_trace3; st_pl := pp; st_store := oo |}) ->
+    gen_appraisal_comp e et (*(eval (unanno a0) p et)*) a_st = (Some x, a2) ->
+    x {| st_ev := mtc; st_trace := []; st_pl := 0; st_store := [] |} =
+    (o1, {| st_ev := eee; st_trace := st_trace4; st_pl := ppp; st_store := ooo |}) ->
+    exists l, st_trace3 = st_trace4 ++ l.
+Proof.
+  
+  intros.
+  assert (Ev_Shape e' (eval (unanno a1) p' et)).
+  eapply gen_ev_shape; eauto.
+  assert (Ev_Shape e et).
+  eapply gen_ev_shape; eauto.
+  generalizeEverythingElse a1.
+  induction a1; destruct et; intros.
+  -
+    destruct a;
+      try (df; repeat evShapeFacts; df; eauto).
+  -
+    assert (o1 = Some tt).
+    eapply dodo; eauto.
+    assert (o0 = Some tt).
+    eapply dodo. apply H0. apply H1.
+    subst.
+    Check trace_cumul.
+
+    
+    edestruct trace_cumul.
+    apply H0.
+    apply H1.
+    edestruct trace_cumul.
+    apply H2.
+    apply H3.
+    simpl in *.
+    invc H5.
+    cbn in H2.
+    monad_unfold.
+    repeat break_let.
+    df.
+    dosome.
+    df.
+    eexists.
+    
+    eassumption.
+    edestruct trace_cumul.
+    eassumption.
+    eassumption.
+     destruct a;
+       try (df; repeat evShapeFacts; df; eauto).
+     +
+       
+       dosome.
+       repeat break_match; try solve_by_inversion.
+       df.
+       eexists.
+       rewrite app_nil_r.
+       reflexivity.
+     +
+       dosome.
+       repeat break_match; try solve_by_inversion.
+       df.
+       rewrite Heqp5 in *.
+       df.
+       subst'.
+       df.
+
+       edestruct trace_cumul.
+
+       
+       eexists.
+       rewrite app_nil_r.
+       reflexivity.
+       
+       
+    df
+    
+    +
+      df.
+      repeat evShapeFacts.
+      df.
+      eauto.
+    +
+      df.
+      repeat evShapeFacts.
+      df.
+      eauto.
+      
+      invc H4.
+      invc H3.
+      
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  induction e''; intros.
+  -
+    assert (Ev_Shape mtc (eval (unanno a1) p' et)).
+    
+    eapply gen_ev_shape; eauto.
+    inv H3.
+    cbn in *.
+    subst.
+    rewrite <- H4 in *.
+    monad_unfold.
+    df.
+    Lemma hfhf : forall a1 p' et,
+      mt = eval (unanno a1) p' et ->
+      et = mt.
+    Proof.
+      induction a1; intros.
+      -
+        destruct a;
+          cbn in *;
+          try solve_by_inversion.
+      -
+        cbn in *.
+        eauto.
+      -
+        cbn in *.
+        assert ((eval (unanno a1_1) p' et) = mt).
+        eauto.
+        subst.
+        rewrite H0 in *.
+        eauto.
+
+      -
+        cbn in *.
+        inv H.
+      -
+        cbn in *.
+        inv H.
+    Defined.
+
+    assert (et = mt).
+    eapply hfhf. eauto.
+    subst.
+    assert (Ev_Shape e' mt).
+    eapply gen_ev_shape; eauto.
+    invc H.
+    cbn in *.
+    monad_unfold.
+    df.
+    eauto.
+  -
+
+    assert (Ev_Shape (uuc n n0 e'') (eval (unanno a1) p' et)).
+    eapply gen_ev_shape; eauto.
+    invc H3.
+    rewrite <- H8 in *.
+    df.
+    dosome.
+    repeat break_match;
+      try solve_by_inversion.
+    df.
+    assert (et = et0).
+    {
+      admit.
+    }
+    subst.
+    
+
+    edestruct IHe''.
+    eassumption.
+    
+    
+    *)
+ 
+    
+    
+  
+Admitted.
+
+
+
+(*
+Lemma gen_lseq_decomp :
+  forall e e' e'' ee eee tr tr' tr'' st_trace3 st_trace4 p p' p'' pp ppp o o' o'' oo ooo a0 a1 et a_st a a2 x0 x o0 o1,
+    build_comp a0 {| st_ev := e; st_trace := tr; st_pl := p; st_store := o |} =
+    (Some tt, {| st_ev := e'; st_trace := tr'; st_pl := p'; st_store := o' |}) ->
+    build_comp a1 {| st_ev := e'; st_trace := tr'; st_pl := p'; st_store := o' |} =
+    (Some tt, {| st_ev := e''; st_trace := tr''; st_pl := p''; st_store := o'' |}) ->
+    gen_appraisal_comp e'' (eval (unanno a1) p' (eval (unanno a0) p et)) a_st = (Some x0, a) ->
+    Ev_Shape e et -> (* TODO: need this? *)
+    x0 {| st_ev := mtc; st_trace := []; st_pl := 0; st_store := [] |} =
+    (o0, {| st_ev := ee; st_trace := st_trace3; st_pl := pp; st_store := oo |}) ->
+    gen_appraisal_comp e' (eval (unanno a0) p et) a_st = (Some x, a2) ->
+    x {| st_ev := mtc; st_trace := []; st_pl := 0; st_store := [] |} =
+    (o1, {| st_ev := eee; st_trace := st_trace4; st_pl := ppp; st_store := ooo |}) ->
+    exists l, st_trace3 = st_trace4 ++ l.
+Proof.
+  intros.
+  Check gen_ev_shape.
+  assert (Ev_Shape e'  (eval (unanno a0) p et)).
+  eapply gen_ev_shape; eauto.
+  assert (Ev_Shape e''  (eval (unanno a1) p' (eval (unanno a0) p et))).
+  eapply gen_ev_shape; eauto.
+  generalize dependent ee.
+  generalize dependent eee.
+  generalize dependent e.
+  generalize dependent tr.
+  generalize dependent tr'.
+  generalize dependent tr''.
+  generalize dependent st_trace3.
+  generalize dependent st_trace4.
+  generalize dependent p''.
+  generalize dependent pp.
+  generalize dependent ppp.
+  generalize dependent o.
+  generalize dependent o'.
+  generalize dependent o''.
+  generalize dependent oo.
+  generalize dependent ooo.
+  generalize dependent a_st.
+  generalize dependent a.
+  generalize dependent a2.
+  generalize dependent o1.
+  generalize dependent o0.
+  generalize dependent x0.
+  generalize dependent x.
+  generalize dependent e'.
+  generalize dependent e''.
+  generalize dependent p.
+  generalize dependent p'.
+  generalize dependent et.
+
+  induction a0;
+    destruct a1;
+    intros.
+
+(*
+          
+          induction e'';
+            destruct  (eval (unanno a1) p' (eval (unanno a0) p et));
+            try solve_by_inversion;
+            intros.
+          -
+            
+
+          evShapeFacts.
+
+          cbn in *.
+          monad_unfold.
+          inv H1.
+          inv H1.
+          df.
+          eexists
+          invc H4.
+          invc H5.
+          exists st_trace3.
+          simpl.
+          reflexivity.
+          -
+            
+
+
+          evShapeFacts.
+          cbn in *.
+          unfold bind in H4.
+          repeat break_let.
+          dosome.
+          destruct (map_get (st_aspmap a_st) (n2, n1)); try solve_by_inversion.
+          repeat find_inversion.
+
+          eapply IHe'.
+ *)        
+  
+Admitted.
+*)
+
+
+
+Lemma lista{A:Type} : forall (x y: list A),
+    x = x ++ y ->
+    y = [].
+Proof.
+Admitted.
+
+Check restl'.
+(*
+restl'
+     : forall (t : AnnoTerm) (t' : Term) (n : nat) (e e' : EvidenceC) (x tr : list Ev) (p p' : nat) (o o' : ev_store),
+       t = snd (anno t' n) ->
+       build_comp t {| st_ev := e; st_trace := x; st_pl := p; st_store := o |} =
+       (Some tt, {| st_ev := e'; st_trace := x ++ tr; st_pl := p'; st_store := o' |}) ->
+       build_comp t {| st_ev := e; st_trace := []; st_pl := p; st_store := o |} =
+       (Some tt, {| st_ev := e'; st_trace := tr; st_pl := p'; st_store := o' |})
+*)
+Check restl'_2.
+
+Lemma gogo' : forall e et a a' v1 e1 e1' p1 p1' o1 o1' e2 e2' tr2 p2 p2' o2 o2' tr1 x0 x1,
+    gen_appraisal_comp e et a = (Some v1, a') ->
+    v1 {| st_ev := e1; st_trace := tr1; st_pl := p1; st_store := o1 |} =
+    (Some tt, {| st_ev := e1'; st_trace := tr1 ++ x1; st_pl := p1'; st_store := o1' |}) ->
+    v1 {| st_ev := e2; st_trace := tr2; st_pl := p2; st_store := o2 |} =
+    (Some tt, {| st_ev := e2'; st_trace := tr2 ++ x0; st_pl := p2'; st_store := o2' |}) ->
+    x0 = x1.
+Proof.
+  
+  induction e;
+    destruct et;
+    intros;
+    try (df;
+         eapply lista; eauto; tauto).
+  -
+    df.
+    assert (x0 = []).
+    eapply lista; eauto.
+    assert (x1 = []).
+    eapply lista; eauto.
+    congruence.
+    
+  -
+
+    
+    df.
+    dosome.
+    repeat break_match; try solve_by_inversion.
+    df.
+
+    edestruct trace_cumul.
+    eassumption.
+    apply Heqp.
+    rewrite H in *.
+    
+
+    edestruct trace_cumul.
+    eassumption.
+    apply Heqp2.
+    rewrite H0 in *.
+
+    assert (x0 = [umeas 0 n2 n3 (l ++ [n0])] ++ x2).
+    {
+      eapply app_inv_head.
+      rewrite <- app_assoc in H0.
+      eauto.
+    }
+    subst.
+
+    assert (x1 = [umeas 0 n2 n3 (l ++ [n0])] ++ x).
+    {
+      eapply app_inv_head.
+      rewrite <- app_assoc in H.
+      eauto.
+    }
+    subst.
+
+    assert (x2 = x).
+    eapply IHe.
+    eassumption.
+    eassumption.
+    eassumption.
+    subst.
+    reflexivity.
+  -
+        df.
+    dosome.
+    repeat break_match; try solve_by_inversion.
+    df.
+
+    edestruct trace_cumul.
+    eassumption.
+    apply Heqp.
+    rewrite H in *.
+    
+
+    edestruct trace_cumul.
+    eassumption.
+    apply Heqp2.
+    rewrite H0 in *.
+
+    assert (x0 = [umeas 0 n0 n1 [encodeEv e; n]] ++ x2).
+    {
+      eapply app_inv_head.
+      rewrite <- app_assoc in H0.
+      eauto.
+    }
+    subst.
+
+    assert (x1 = [umeas 0 n0 n1 [encodeEv e; n]] ++ x).
+    {
+      eapply app_inv_head.
+      rewrite <- app_assoc in H.
+      eauto.
+    }
+    subst.
+
+    assert (x2 = x).
+    eapply IHe.
+    eassumption.
+    eassumption.
+    eassumption.
+    subst.
+    reflexivity.
+  -
+    df.
+    dosome.
+    repeat break_match; try solve_by_inversion.
+    df.
+
+    eauto.
+  -
+     df.
+    dosome.
+    repeat break_match; try solve_by_inversion.
+    df.
+
+    eauto.
+  -
+    df.
+    dosome.
+    repeat break_match; try solve_by_inversion.
+    vmsts.
+
+
+    edestruct trace_cumul.
+    apply Heqp.
+    apply Heqp1.
+    subst.
+
+    edestruct trace_cumul.
+    apply Heqp.
+    apply Heqp3.
+    subst.
+
+    
+
+    assert (x = x2).
+    eauto.
+    subst.
+
+    edestruct trace_cumul.
+    apply Heqp0.
+    apply Heqp4.
+    rewrite H in *.
+
+    edestruct trace_cumul.
+    apply Heqp0.
+    apply Heqp2.
+    rewrite H0 in *.
+
+    assert (x = x3).
+    eauto.
+    subst.
+
+    assert (x0 = x2 ++ x3).
+    {
+      assert ((tr2 ++ x2) ++ x3 = tr2 ++ (x2 ++ x3)).
+      {
+        rewrite app_assoc.
+        reflexivity.
+      }
+      rewrite H1 in H.
+      eapply app_inv_head.
+      eassumption.
+    }
+
+    assert (x1 = x2 ++ x3).
+    {
+      assert ((tr1 ++ x2) ++ x3 = tr1 ++ (x2 ++ x3)).
+      {
+        rewrite app_assoc.
+        reflexivity.
+      }
+      rewrite H2 in H0.
+      eapply app_inv_head.
+      eassumption.
+    }
+    congruence.
+    
+
+  -
+        df.
+    dosome.
+    repeat break_match; try solve_by_inversion.
+    vmsts.
+
+
+    edestruct trace_cumul.
+    apply Heqp.
+    apply Heqp1.
+    subst.
+
+    edestruct trace_cumul.
+    apply Heqp.
+    apply Heqp3.
+    subst.
+
+    
+
+    assert (x = x2).
+    eauto.
+    subst.
+
+    edestruct trace_cumul.
+    apply Heqp0.
+    apply Heqp4.
+    rewrite H in *.
+
+    edestruct trace_cumul.
+    apply Heqp0.
+    apply Heqp2.
+    rewrite H0 in *.
+
+    assert (x = x3).
+    eauto.
+    subst.
+
+    assert (x0 = x2 ++ x3).
+    {
+      assert ((tr2 ++ x2) ++ x3 = tr2 ++ (x2 ++ x3)).
+      {
+        rewrite app_assoc.
+        reflexivity.
+      }
+      rewrite H1 in H.
+      eapply app_inv_head.
+      eassumption.
+    }
+
+    assert (x1 = x2 ++ x3).
+    {
+      assert ((tr1 ++ x2) ++ x3 = tr1 ++ (x2 ++ x3)).
+      {
+        rewrite app_assoc.
+        reflexivity.
+      }
+      rewrite H2 in H0.
+      eapply app_inv_head.
+      eassumption.
+    }
+    congruence.
+Defined.
+
+
+(*
+
+
+
+
+
+    
+    assert (tr2 ++ x0 = tr1 ++ x1).
+    {
+      rewrite H.
+      rewrite H0.
+    
+
+    edestruct IHe1.
+    eassumption.
+    eassumption.
+    eassumption.
+
+    edestruct IHe2.
+    eassumption.
+    
+  -
+    
+    
+    
+
+    edestruct trace_cumul.
+    eassumption.
+    apply H0.
+    rewrite H in *.
+    
+
+    edestruct trace_cumul.
+    eassumption.
+    apply H1.
+    rewrite H2 in *.
+    eapply IHe.
+    eassumption.
+    eassumption.
+
+    assert (x0 = [umeas 0 n0 n1 [encodeEv e; n]] ++ x2).
+    admit.
+    subst.
+
+    assert (x1 = [umeas 0 n0 n1 [encodeEv e; n]] ++ x).
+    admit.
+    subst.
+
+    assert (x2 = x).
+    eapply IHe.
+    eassumption.
+    eassumption.
+    eassumption.
+    subst.
+    reflexivity.
+
+    
+    
+    
+    
+    
+    edestruct IHe with (x0:=x2) (x1:=x).
+    eassumption.
+    eassumption.
+    eassumption.
+
+    eapply IHe.
+    eassumption.
+    assert ( tr1 ++ [umeas 0 n2 n3 (l ++ [n0])] ++ x = 
+    rewrite <- app_assoc in Heqp.
+    apply Heqp.
+
+    assert (x1 = [umeas 0 n2 n3 (l ++ [n0])] ++ x).
+    admit.
+    subst.
+
+    eapply IHe.
+    eassumption.
+    repeat rewrite <- app_assoc in Heqp.
+    apply Heqp.
+    eassumption.
+
+    eapply IHe.
+    eassumption.
+
+    
+
+    Check restl'.
+
+
+    assert (
+         v {| st_ev := uuc n3 0 e1; st_trace := []; st_pl := p1; st_store := o1 |} =
+         (Some tt, {| st_ev := e1'; st_trace := x; st_pl := p1'; st_store := o1' |})).
+    admit.
+
+    eapply IHe.
+    eassumption.
+    
+
+    edestruct foofoo with (tr_n:= nil (A:=Ev)).
+    eassumption.
+    eassumption.
+    destruct_conjs.
+
+    Check restl'.
+
+    eapply IHe.
+    eassumption.
+    rewrite H2.
+    eassumption.
+
+    
+
+    edestruct foofoo with (tr_n:= tr2).
+    eassumption.
+    apply Heqp2.
+    destruct_conjs.
+
+    edestruct trace_cumul.
+    eassumption.
+    apply Heqp.
+    subst.
+
+    eapply IHe.
+    eassumption.
+    
+
+    assert (x2 = H).
+    eapply IHe.
+    eassumption.
+    eassumption.
+    eassumption.
+    subst.
+
+    eapply IHe.
+    eassumption.
+    
+    eassumption.
+    apply H2.
+    eassumption.
+
+    Check trace_cumul.
+
+    
+
+    
+    eapply IHe.
+    eassumption.
+
+    Check restl'.
+
+
+    apply H2.
+
+    
+    Check restl'.
+    (*
+    edestruct foofoo.
+    eassumption.
+    apply H0.
+    destruct_conjs.  *)
+
+
+
+    
+    df.
+    dosome.
+    repeat break_match; try solve_by_inversion.
+    df.
+    cbn in *.
+    monad_unfold.
+    break_match; try solve_by_inversion.
+    break_match; try solve_by_inversion.
+    repeat break_let.
+    break_match; try solve_by_inversion.
+    invc H.
+    invc Heqp0.
+    repeat break_let.
+    simpl in *.
+    invc H5.
+    eapply IHe.
+    eassumption.
+    apply Heqp0.
+    
+
+
+    
+    df.
+    dosome.
+    repeat break_match; try solve_by_inversion.
+    df.
+    eapply IHe.
+    eassumption.
+    rewrite <- Heqp.
+    
+   *)
+        
+
+Check restl'.
+(*
+restl'
+     : forall (t : AnnoTerm) (t' : Term) (n : nat) (e e' : EvidenceC) (x tr : list Ev) (p p' : nat) (o o' : ev_store),
+       t = snd (anno t' n) ->
+       build_comp t {| st_ev := e; st_trace := x; st_pl := p; st_store := o |} =
+       (Some tt, {| st_ev := e'; st_trace := x ++ tr; st_pl := p'; st_store := o' |}) ->
+       build_comp t {| st_ev := e; st_trace := []; st_pl := p; st_store := o |} =
+       (Some tt, {| st_ev := e'; st_trace := tr; st_pl := p'; st_store := o' |})
+*)
+
+Lemma gogo : forall e et a a' v1 e1 e1' p1 p1' o1 o1' e2 e2' tr2 p2 p2' o2 o2' tr1 x0,
+    gen_appraisal_comp e et a = (Some v1, a') ->
+    v1 {| st_ev := e1; st_trace := []; st_pl := p1; st_store := o1 |} =
+    (Some tt, {| st_ev := e1'; st_trace := tr1; st_pl := p1'; st_store := o1' |}) ->
+    v1 {| st_ev := e2; st_trace := tr2; st_pl := p2; st_store := o2 |} =
+    (Some tt, {| st_ev := e2'; st_trace := tr2 ++ x0; st_pl := p2'; st_store := o2' |}) ->
+    x0 = tr1.
+Proof.
+  intros.
+  eapply gogo'.
+  eassumption.
+  assert (tr1 = [] ++ tr1).
+  simpl.
+  reflexivity.
+  subst.
+  rewrite H2 in H0.
+  eassumption.
+  eassumption.
+Defined.
+
+    
+
+
+
+
 
 Lemma app_correct' :
   forall t t' p' v_st v_st' app_comp_res_opt app_comp_res_st tr_app ev a_st e e' p et,
@@ -1219,23 +2418,13 @@ Proof.
     cbn in *.
     repeat break_let.
     repeat find_inversion.
-    destruct a.
-    df.
-    (*
-      monad_unfold;
-      repeat find_inversion;
-      monad_unfold;
-      repeat find_inversion. *)
-    +
-      
-      
-      (*
-      repeat (monad_unfold; repeat find_inversion).
-      
-      cbn in *. *)
-      measEventFacts.
-      evEventFacts.
-      invEvents.
+    destruct a;
+      df;
+      try (
+          measEventFacts;
+          invEvents;
+          evEventFacts; tauto).
+
     +
       df.
       dosome.
@@ -1296,6 +2485,7 @@ Proof.
       simpl in *.
       exists (umeas 0 st_pl0 n0 (l ++ [p'])).
       split.
+      ++
 
 
 
@@ -1306,6 +2496,8 @@ Proof.
       subst.
       econstructor.
       reflexivity.
+      ++
+        
       econstructor.
       reflexivity.
       eassumption.
@@ -1324,32 +2516,7 @@ Proof.
       subst.
       econstructor.
       reflexivity. *)
-    +
-      df.
-      dosome.
-      measEventFacts.
-      invEvents.
-      evEventFacts.
-      (*
-      repeat (monad_unfold; repeat find_inversion).
-      
-          cbn in *.
-          inv H9.
-          inv H.
-          inv H0. *)
-    +
-       df.
-      dosome.
-      measEventFacts.
-      invEvents.
-      evEventFacts.
-      (*
-      repeat (monad_unfold; repeat find_inversion).
-      
-          cbn in *.
-          inv H9.
-          inv H.
-          inv H0. *)
+
   -
     df.
     (*
@@ -1451,265 +2618,248 @@ Proof.
     + *)
     vmsts.
 
+    (*
+    edestruct suffix_prop.
+    rewrite Heqp.
+    reflexivity.
+    simpl.
+    eassumption. *)
+
     assert (exists l, st_trace2 = st_trace1 ++ l) as HHH.
-      {
-        eapply suffix_prop.
-        rewrite Heqp.
-        reflexivity.
-        simpl.
-        eassumption.
-      }
-      destruct HHH as [H HH].
-      rewrite HH in *.
-      clear HH.
-
-      assert (exists l, st_trace0 = (st_trace1 ++ H) ++ l) as HHH.
-      {
-        eapply suffix_prop.
-        rewrite Heqp1.
-        reflexivity.
-        simpl.
-        eassumption.
-      }
-      destruct HHH as [H' HH].
-      rewrite HH in *.
-      clear HH.
-
-
-    
-      edestruct app_some''.
+    {
+      eapply suffix_prop.
       rewrite Heqp.
       reflexivity.
       simpl.
       eassumption.
-      reflexivity.
-      reflexivity.
-      reflexivity.
-      simpl in *.
-      eassumption.
-      simpl.
-      eassumption.
-      reflexivity.
-      reflexivity.
-      simpl in *.
-      unfold runSt in *.
+    }
+    destruct HHH as [H HH].
+    rewrite HH in *.
+    clear HH.
 
-      edestruct app_some''.
+    assert (exists l, st_trace0 = (st_trace1 ++ H) ++ l) as HHH.
+    {
+      eapply suffix_prop.
       rewrite Heqp1.
       reflexivity.
       simpl.
       eassumption.
+    }
+    destruct HHH as [H' HH].
+    rewrite HH in *.
+    clear HH.
+
+
+    
+    edestruct app_some'';
+      try (rewrite Heqp; eauto);
+      try (simpl; eauto).
+
+    (*
+      +
+      rewrite Heqp.
       reflexivity.
+      +
+        
+      simpl.
+      eassumption.
+      +
+        reflexivity.
+      +
+        
+        reflexivity.
+      +
+        
+        reflexivity.
+      +
+        
+      simpl in *.
+      eassumption.
+      +
+        
+      simpl.
+      eassumption.
+      +
+        
+        reflexivity.
+      +
+        
+        reflexivity.
+      + *)
+    
+    simpl in *.
+    unfold runSt in *.
+
+    edestruct app_some''.
+    +
+      rewrite Heqp1.
       reflexivity.
+    +
+      simpl.
+      eassumption.
+    +
       reflexivity.
+    +     
+      reflexivity.
+    +    
+      reflexivity.
+    +  
       simpl in *.
       eapply multi_ev_eval.
-    ++
-      rewrite Heqp.
-      reflexivity.
-    ++
-      simpl.
-      eapply restl'.
-      rewrite Heqp.
-      reflexivity.
-      
-      
-      
-      eassumption.
-    ++
-      eassumption.
-    ++
-      simpl.
-      reflexivity.
-    ++
+      ++
+        rewrite Heqp.
+        reflexivity.
+      ++
+        simpl.
+        eapply restl'.
+        rewrite Heqp.
+        reflexivity.
+        eassumption.
+      ++
+        eassumption.
+      ++
+        simpl.
+        reflexivity.
+    +
       simpl.
       do_pl_immut.
       eassumption.
-    ++
+    +
       reflexivity.
-    ++
+    +
       reflexivity.
-    ++
+    +
       simpl in *.
       unfold runSt in *.
       do_pl_immut.
 
+      measEventFacts.
 
 
-      invc H9.
-      invc H2.
-    +
-      assert (unanno a0 = t'1) as HHHH.
-      {
-        erewrite <- announ'.
-        rewrite Heqp.
-        simpl.
-        reflexivity.
-      }
-      rewrite HHHH in H1.
-      clear HHHH.
-
-      destruct (x {| st_ev := mtc; st_trace := []; st_pl := 0; st_store := [] |}) eqn:hey.
-      destruct (x0 {| st_ev := mtc; st_trace := []; st_pl := 0; st_store := [] |}) eqn:hey'.
-      vmsts.
-      rewrite Heqp0 in *.
-      simpl in H1.
-      invc H1.
-      rewrite Heqp2 in *.
-      invc hey'.
-
-      destruct (gen_appraisal_comp st_ev2 (eval t'1 st_pl0 et) a_st) eqn:hihihi.
-      simpl in *.
-      rewrite H0 in *.
-
-      assert (exists l, st_trace3 = st_trace4 ++ l).
-      {
-        Lemma gen_lseq_decomp :
-          forall e e' e'' ee eee tr tr' tr'' st_trace3 st_trace4 p p' p'' pp ppp o o' o'' oo ooo a0 a1 et a_st a a2 x0 x o0 o1,
-          build_comp a0 {| st_ev := e; st_trace := tr; st_pl := p; st_store := o |} =
-          (Some tt,
-           {| st_ev := e'; st_trace := tr'; st_pl := p'; st_store := o' |}) ->
-          build_comp a1
-            {| st_ev := e'; st_trace := tr'; st_pl := p'; st_store := o' |} =
-          (Some tt,
-           {| st_ev := e''; st_trace := tr''; st_pl := p''; st_store := o'' |}) ->
-          gen_appraisal_comp e'' (eval (unanno a1) p' (eval (unanno a0) p et)) a_st = (Some x0, a) ->
-          Ev_Shape e et -> (* TODO: need this? *)
-          x0 {| st_ev := mtc; st_trace := []; st_pl := 0; st_store := [] |} =
-          (o0, {| st_ev := ee; st_trace := st_trace3; st_pl := pp; st_store := oo |}) ->
-          gen_appraisal_comp e' (eval (unanno a0) p et) a_st = (Some x, a2) ->
-          x {| st_ev := mtc; st_trace := []; st_pl := 0; st_store := [] |} =
-          (o1, {| st_ev := eee; st_trace := st_trace4; st_pl := ppp; st_store := ooo |}) ->
-          exists l, st_trace3 = st_trace4 ++ l.
-        Proof.
-          intros.
-          Check gen_ev_shape.
-          assert (Ev_Shape e'  (eval (unanno a0) p et)).
-          eapply gen_ev_shape; eauto.
-          assert (Ev_Shape e''  (eval (unanno a1) p' (eval (unanno a0) p et))).
-          eapply gen_ev_shape; eauto.
-          generalize dependent ee.
-          generalize dependent eee.
-          generalize dependent e.
-          generalize dependent tr.
-          generalize dependent tr'.
-          generalize dependent tr''.
-          generalize dependent st_trace3.
-          generalize dependent st_trace4.
-          generalize dependent p''.
-          generalize dependent pp.
-          generalize dependent ppp.
-          generalize dependent o.
-          generalize dependent o'.
-          generalize dependent o''.
-          generalize dependent oo.
-          generalize dependent ooo.
-          generalize dependent a_st.
-          generalize dependent a.
-          generalize dependent a2.
-          generalize dependent o1.
-          generalize dependent o0.
-          generalize dependent x0.
-          generalize dependent x.
-          generalize dependent e'.
-          generalize dependent e''.
-          generalize dependent p.
-          generalize dependent p'.
-          generalize dependent et.
-
-          induction a0;
-            destruct a1;
-            intros.
-
-          (*
-          
-          induction e'';
-            destruct  (eval (unanno a1) p' (eval (unanno a0) p et));
-            try solve_by_inversion;
-            intros.
-          -
-            
-
-          evShapeFacts.
-
-          cbn in *.
-          monad_unfold.
-          inv H1.
-          inv H1.
-          df.
-          eexists
-          invc H4.
-          invc H5.
-          exists st_trace3.
-          simpl.
-          reflexivity.
-          -
-            
-
-
-          evShapeFacts.
-          cbn in *.
-          unfold bind in H4.
-          repeat break_let.
-          dosome.
-          destruct (map_get (st_aspmap a_st) (n2, n1)); try solve_by_inversion.
-          repeat find_inversion.
-
-          eapply IHe'.
-           *)        
-          
-        Admitted.
-
-        assert (unanno a1 = t'2) as GG.
-        {
-          erewrite <- announ'.
-          rewrite Heqp1.
-          reflexivity.
-        } 
-        rewrite <- GG in *.
-        clear GG.
-
-        assert (unanno a0 = t'1) as GG.
+      invEvents.
+      ++
+        
+        assert (unanno a0 = t'1) as HHHH.
         {
           erewrite <- announ'.
           rewrite Heqp.
+          simpl.
           reflexivity.
-        } 
-        rewrite <- GG in *.
-        clear GG.
+        }
+        rewrite HHHH in H1.
+        clear HHHH.
 
-        eapply gen_lseq_decomp.
-        apply Heqp3.
-        apply Heqp4.
+        destruct (x {| st_ev := mtc; st_trace := []; st_pl := 0; st_store := [] |}) eqn:hey.
+        destruct (x0 {| st_ev := mtc; st_trace := []; st_pl := 0; st_store := [] |}) eqn:hey'.
+        vmsts.
+        rewrite Heqp0 in *.
+        simpl in H1.
+        invc H1.
+        rewrite Heqp2 in *.
+        invc hey'.
 
-        eassumption.
-        eassumption.
-        eassumption.
-        eassumption.
-        eassumption.
-      }
-      destruct_conjs.
-      rewrite H2.
-      clear H2.
+        destruct (gen_appraisal_comp st_ev2 (eval t'1 st_pl0 et) a_st) eqn:hihihi.
+        simpl in *.
+        rewrite H0 in *.
 
-      (*
+        assert (exists l, st_trace3 = st_trace4 ++ l).
+        {
+
+
+          assert (unanno a1 = t'2) as GG.
+          {
+            erewrite <- announ'.
+            rewrite Heqp1.
+            reflexivity.
+          } 
+          rewrite <- GG in *.
+          clear GG.
+
+          assert (unanno a0 = t'1) as GG.
+          {
+            erewrite <- announ'.
+            rewrite Heqp.
+            reflexivity.
+          } 
+          rewrite <- GG in *.
+          clear GG.
+
+          eapply gen_lseq_decomp.
+          +
+            eassumption.
+          + eassumption.
+          + eassumption.
+          + eassumption.
+          + eassumption.
+        }
+
+        (*
+        
+            
+            
+            
+            
+
+
+
+
+          
+          +
+            apply Heqp3.
+          +
+            
+            apply Heqp4.
+          +
+            
+
+            eassumption.
+          +
+            
+            
+            eassumption.
+          +
+            
+            eassumption.
+          +
+            
+            
+            eassumption.
+          +
+            eassumption.
+        } *)
+        destruct_conjs.
+        rewrite H2.
+        clear H2.
+
+        (*
       destruct (gen_appraisal_comp st_ev2 (eval t'1 st_pl0 et) a_st) eqn:hii.
       simpl in *.
       subst. *)
-     
+        
 
-      edestruct IHt'1 with (st_trace := st_trace4).
-      
-      rewrite Heqp.
-      eassumption.
-      eassumption.
-      rewrite Heqp.
-      eassumption.
-      rewrite Heqp.
-      econstructor.
-      eassumption.
-      eassumption.
-      (*
+        edestruct IHt'1 with (st_trace := st_trace4);
+          try (try rewrite Heqp; try econstructor; eauto; tauto).
+        (*
+        +++
+          
+          rewrite Heqp.
+          eassumption.
+        +++
+          
+          eassumption.
+        +++
+          
+          rewrite Heqp.
+          eassumption.
+        +++
+          
+          rewrite Heqp.
+          econstructor.
+          eassumption.
+          eassumption.
+        +++
+          
+          (*
       assert (unanno a0 = t'1) as GG.
         {
           erewrite <- announ'.
@@ -1718,50 +2868,64 @@ Proof.
         }
         rewrite GG in *.
         clear GG. *)
-      eassumption.
-      eassumption.
-      invc H2.
-      exists x1.
-      split.
-      Search In.
-      eapply in_or_app.
-      left.
-      eauto.
-      eassumption.
-    +
-      assert (unanno a0 = t'1).
-      {
-        erewrite <- announ'.
-        rewrite Heqp.
-        reflexivity.
-      }
-      rewrite H2 in H1.
-      rewrite Heqp0 in *.
-      simpl in H1.
-      invc H1.
+          eassumption.
+        +++
+          
+          eassumption. *)
+        +++
+          
+          invc H2.
+          exists x1.
+          split.
+          Search In.
+          eapply in_or_app.
+          left.
+          eauto.
+          eassumption.
+      ++
+        
+        
+        assert (unanno a0 = t'1).
+        {
+          erewrite <- announ'.
+          rewrite Heqp.
+          reflexivity.
+        }
+        rewrite H2 in H1.
+        rewrite Heqp0 in *.
+        simpl in H1.
+        invc H1.
 
-      eapply IHt'2.
-      rewrite Heqp1.
-      eassumption.
-      eapply multi_ev_eval.
-      rewrite Heqp.
-      reflexivity.
-      simpl.
-      eapply restl'.
-      rewrite Heqp.
-      reflexivity.
-      eassumption.
-      eassumption.
-      simpl.
-      reflexivity.
-      rewrite Heqp1.
-      eassumption.
-      rewrite Heqp1.
-      econstructor.
-      eassumption.
-      eassumption.
-      eassumption.
-      eassumption.
+        eapply IHt'2;
+          try (try rewrite Heqp1; try econstructor; eauto; tauto).
+        
+
+        (*
+        +++
+          
+          rewrite Heqp1.
+          eassumption.
+        +++ *)
+          
+        eapply multi_ev_eval.
+          
+          ++++
+            rewrite Heqp.
+            reflexivity.
+          ++++
+            simpl.
+            eapply restl'.
+            +++++
+              rewrite Heqp.
+            reflexivity.
+            +++++
+              eassumption.
+          ++++
+            eassumption.
+          ++++
+            simpl.
+            reflexivity.
+
   -
 
 
@@ -1774,14 +2938,30 @@ Proof.
     do_pl_immut.
     measEventFacts.
 
+
+    
+
+   
+
     assert (o = Some tt).
     {
+      Check app_some''.
+      eapply dodo.
+      apply Heqp3.
+      eassumption.
+      (*
+      assert (t'1 = unanno a0).
       admit.
-    } 
+      rewrite H1 in Heqp3.
+      apply Heqp3.
+      eassumption.
+      eassumption. *)
+    }
+
     subst.
     df.
 
-
+(*
     destruct (v1 {| st_ev := mtc; st_trace := []; st_pl := 0; st_store := [] |}) eqn:heyhey.
       vmsts.
       assert (o = Some tt).
@@ -1789,12 +2969,14 @@ Proof.
         admit.
       }
       subst.
-      df.
+      df. *)
+
+      (*
       assert (o1 = Some tt).
       {
         admit.
       }
-      subst.
+      subst. *)
 
 
     
@@ -1810,17 +2992,29 @@ Proof.
         cbn in *.
 
         edestruct IHt'1.
+        (*
+          [rewrite Heqp; eassumption | econstructor |
+           rewrite Heqp; eassumption | rewrite Heqp; econstructor; eassumption | eassumption | eassumption]. *)
+        +++
         rewrite Heqp.
         eassumption.
+        +++
+          econstructor.
+        +++
+          
+        rewrite Heqp.
+        eassumption.
+        +++
+        rewrite Heqp.
         econstructor.
-        rewrite Heqp.
-        eassumption.
-        rewrite Heqp.
-        econstructor.
         eassumption.
         eassumption.
-        eassumption.
-        eassumption.
+        +++
+          eassumption.
+        +++
+            eassumption.
+        +++
+            
 
         (*
         edestruct app_some''.
@@ -1841,9 +3035,12 @@ Proof.
         unfold runSt in *. *)
 
 
-        edestruct trace_cumul.
-        apply Heqp4.
-        apply Heqp5.
+          edestruct trace_cumul.
+            ++++
+              apply Heqp4.
+              ++++
+                apply Heqp5.
+              ++++
         rewrite H1.
         destruct_conjs.
         exists x.
@@ -1857,17 +3054,33 @@ Proof.
         cbn in *.
 
         edestruct IHt'1.
+        (*
+          try (rewrite Heqp; eassumption);
+          try (econstructor; tauto);
+          try eassumption;
+          try (rewrite Heqp; econstructor; eassumption). *)
+        +++
         rewrite Heqp.
         eassumption.
-        econstructor.
+        +++
+          econstructor.
+        +++
+          
         rewrite Heqp.
         eassumption.
-        rewrite Heqp.
-        econstructor.
+        +++
+          
+        rewrite Heqp;
+        econstructor;
         eassumption.
-        eassumption.
-        eassumption.
-        eassumption.
+       
+        +++
+          eassumption.
+        +++
+          
+          eassumption.
+      +++
+        
         destruct_conjs.
 
         edestruct trace_cumul.
@@ -1885,17 +3098,26 @@ Proof.
         cbn in *.
 
         edestruct IHt'1.
+        +++
         rewrite Heqp.
         eassumption.
-        eassumption.
+        +++
+          eassumption.
+        +++
+          
         rewrite Heqp.
         eassumption.
+        +++
         rewrite Heqp.
-        econstructor.
-        eassumption.
-        eassumption.
-        eassumption.
-        eassumption.
+        econstructor;
+          eassumption.
+        +++
+          eassumption.
+        +++
+          
+          eassumption.
+        +++
+          
         destruct_conjs.
 
         edestruct trace_cumul.
@@ -1913,17 +3135,29 @@ Proof.
         cbn in *.
 
         edestruct IHt'1.
+        +++
         rewrite Heqp.
         eassumption.
-        eassumption.
+        +++
+          eassumption.
+        +++
+          
         rewrite Heqp.
         eassumption.
+        +++
+          
         rewrite Heqp.
-        econstructor.
-        eassumption.
-        eassumption.
-        eassumption.
-        eassumption.
+        econstructor;
+          eassumption.
+        +++
+        
+        
+          eassumption.
+        +++
+          
+          eassumption.
+        +++
+          
         destruct_conjs.
 
         edestruct trace_cumul.
@@ -1933,38 +3167,61 @@ Proof.
 
         exists x.
         split.
+        ++++
         eapply in_or_app.
         left.
         eassumption.
+        ++++
         eassumption.
     + (* a1  case *)
+
+      
+      destruct (v1 {| st_ev := mtc; st_trace := []; st_pl := 0; st_store := [] |}) eqn:heyhey.
+      vmsts.
+      assert (o = Some tt).
+      {
+        Check app_some''.
+        eapply dodo.
+        apply Heqp4.
+        eassumption.
+      }
+      subst.
+      df.
+
+      (*
+      assert (o1 = Some tt).
+      {
+        admit.
+      }
+      subst. *)
+
+      
 
       invc H8.
       ++
         cbn in *.
 
-
-
-
-        
-
-
-        
-        
-
         edestruct IHt'2.
+        +++
         rewrite Heqp1.
         eassumption.
-        econstructor.
+        +++
+          econstructor.
+        +++
+          
         rewrite Heqp1.
         eassumption.
+        +++
         rewrite Heqp1.
-        econstructor.
-        eassumption.
-        eassumption.
+        econstructor;
+          eassumption.
+        +++
         gen_st_const.
         eassumption.
-        eassumption.
+        +++
+          eassumption.
+        +++
+          
 
         edestruct trace_cumul.
         apply Heqp4.
@@ -1973,14 +3230,28 @@ Proof.
         destruct_conjs.
         exists x.
         split.
+        ++++
         assert (x0 = st_trace0).
         {
-          admit.
+          assert (o1 = Some tt).
+          {
+            eapply dodo.
+            apply Heqp4.
+            eassumption.
+          }
+
+          subst.
+
+
+
+          eapply gogo; eauto.
         }
+
         subst.
         eapply in_or_app.
         right.
         eassumption.
+        ++++
         eassumption.
       ++
 
@@ -2009,7 +3280,20 @@ Proof.
         split.
         assert (x0 = st_trace0).
         {
-          admit.
+
+          assert (o1 = Some tt).
+          {
+            eapply dodo.
+            apply Heqp4.
+            eassumption.
+          }
+
+          subst.
+
+
+
+          eapply gogo; eauto.
+
         }
         subst.
         eapply in_or_app.
@@ -2042,7 +3326,18 @@ Proof.
         split.
         assert (x0 = st_trace0).
         {
-          admit.
+          assert (o1 = Some tt).
+          {
+            eapply dodo.
+            apply Heqp4.
+            eassumption.
+          }
+
+          subst.
+
+
+
+          eapply gogo; eauto.
         }
         subst.
         eapply in_or_app.
@@ -2075,7 +3370,18 @@ Proof.
         split.
         assert (x0 = st_trace0).
         {
-          admit.
+          assert (o1 = Some tt).
+          {
+            eapply dodo.
+            apply Heqp4.
+            eassumption.
+          }
+
+          subst.
+
+
+
+          eapply gogo; eauto.
         }
         subst.
         eapply in_or_app.
@@ -2083,6 +3389,8 @@ Proof.
         eassumption.
         eassumption.
   -
+
+    reflexivity; tauto; tauto.
     
         
 
