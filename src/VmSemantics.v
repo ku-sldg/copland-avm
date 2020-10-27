@@ -1055,6 +1055,7 @@ Proof.
         reflexivity.
 Defined.
 
+(*
 Lemma restl' : forall t t' n e e' x tr p p' o o' e2 e2' p2 p2' o2 o2' tr',
     t = snd (anno t' n) -> 
     build_comp t {| st_ev := e; st_trace := x; st_pl := p; st_store := o |} =
@@ -1185,6 +1186,7 @@ Proof.
   exfalso.
   eapply fafaf; eauto.
 Defined.
+*)
 
 
 
@@ -2821,6 +2823,225 @@ Proof.
   eapply ordered with (p:=0) (e:=mt); eauto.
   eapply run_lstar; eauto.
 Defined.
+
+Lemma always_some : forall t' t n vm_st vm_st' op,
+    t = snd (anno t' n) ->
+    build_comp 
+      t
+      vm_st =
+    (op, vm_st') ->
+    op = Some tt.
+Proof.
+  induction t'; intros.
+  -
+    destruct a.
+    +
+      cbn in *.
+      subst.
+      cbn in *.
+      repeat find_inversion.
+      reflexivity.
+    +
+      cbn in *.
+      subst.
+      cbn in *.
+      repeat find_inversion.
+      reflexivity.
+    +
+      cbn in *.
+      subst.
+      cbn in *.
+      repeat find_inversion.
+      reflexivity.
+    +
+      cbn in *.
+      subst.
+      cbn in *.
+      repeat find_inversion.
+      reflexivity.
+  -
+    cbn in *.
+    repeat break_let.
+    simpl in *.
+    subst.
+    cbn in *.
+    repeat break_let.
+    monad_unfold.
+    repeat break_let.
+    cbn in *.
+    dohtac.
+    repeat find_inversion.
+    repeat break_let.
+    monad_unfold.
+    repeat find_inversion.
+    reflexivity.
+  -
+    subst.
+    cbn in *.
+    repeat break_let.
+    simpl in *.
+    monad_unfold.
+    destruct (build_comp a vm_st) eqn:hi.
+    destruct o eqn:hhh.
+    repeat break_let.
+    repeat find_inversion.
+    eapply IHt'2.
+    reflexivity.
+    rewrite Heqp0.
+    simpl.
+    eassumption.
+    repeat find_inversion.
+    edestruct IHt'1.
+    reflexivity.
+    rewrite Heqp.
+    simpl.
+    eassumption.
+    reflexivity.
+  -
+    cbn in *.
+    repeat break_let.
+    simpl in *.
+    subst.
+    cbn in *.
+    monad_unfold.
+    repeat break_let.
+    repeat find_inversion.
+    simpl in *.
+
+    repeat break_match;
+      repeat find_inversion;
+      try eauto.
+    +
+      edestruct IHt'2.
+      reflexivity.
+      rewrite Heqp0.
+      simpl.
+      eassumption.
+      reflexivity.
+    +
+      edestruct IHt'1.
+      reflexivity.
+      rewrite Heqp.
+      simpl.
+      eassumption.
+      reflexivity.
+    +
+      edestruct IHt'1.
+      reflexivity.
+      rewrite Heqp.
+      simpl.
+      eassumption.
+      reflexivity.
+  -
+    cbn in *.
+    repeat break_let.
+    simpl in *.
+    subst.
+    cbn in *.
+    monad_unfold.
+    repeat break_let.
+    repeat find_inversion.
+    simpl in *.
+
+    repeat break_match;
+      repeat find_inversion;
+      try eauto.
+
+    Ltac df :=
+      repeat (
+          cbn in *;
+          unfold runSt in *;
+          repeat break_let;
+          repeat (monad_unfold; cbn in *; find_inversion);
+          monad_unfold;
+          repeat dunit;
+          unfold snd in *).
+
+          Ltac subst' :=
+            match goal with
+            | [H: ?A = _,
+                  H2: context[?A] |- _] =>
+              rewrite H in *; clear H
+            | [H: ?A = _ |- context[?A]] =>
+              rewrite H in *; clear H
+            end.
+
+          Ltac dooit :=
+            repeat eexists;
+            cbn;
+            repeat break_let;
+            simpl;
+            repeat find_inversion;
+            subst';
+            df;
+            reflexivity.
+
+          
+          assert (abpar (n, (S n1)) (s0,s1) a a0 = snd (anno (bpar (s0,s1) t'1 t'2) n)).
+          {
+            cbn.
+            repeat break_let.
+            simpl.
+            repeat find_inversion.
+            subst.
+            repeat find_inversion.
+            
+            rewrite Heqp2 in *.
+            repeat find_inversion.
+            reflexivity.
+          }
+          
+          
+          Ltac abpar_restore_htac :=
+            let G := fresh in
+            let HH := fresh in
+            let HHH := fresh in
+            let blah := fresh in
+            let blah' := fresh in
+            match goal with
+            | [H2: context[abpar (?p', _) (?s0, ?s1) ?a ?a0],
+                   H: anno ?t'1 (S ?p') = (_,?a),
+                      H': anno ?t'2 _ = (_,?a0) |- _] =>
+              assert ( exists r b,
+                         abpar r b a a0 = snd(anno (bpar (s0,s1) t'1 t'2) p')) as G by dooit
+            end;
+            destruct G as [blah HH];
+            destruct HH as [blah' HHH];
+            dohtac;
+            clear HHH;
+            clear blah;
+            clear blah';
+            df;
+            dohtac;
+            df.
+          unfold get_store_at in *.
+          monad_unfold.
+
+          abpar_restore_htac.
+          repeat break_let.
+          unfold get_store_at in *.
+          monad_unfold.
+          repeat break_let.
+          df.
+          assert (abpar (n, (S n1)) (s0,s1) a a0 = snd (anno (bpar (s0,s1) t'1 t'2) n)).
+          {
+            cbn.
+            repeat break_let.
+            simpl.
+            repeat find_inversion.
+            subst.
+            repeat find_inversion.
+            
+            rewrite Heqp4 in *.
+            repeat find_inversion.
+            reflexivity.
+          }
+          abpar_restore_htac.
+          Defined.
+
+Check always_some.
+    
+  
 
 Theorem vm_ordered : forall t tr ev0 ev1 e e' o o' t',
     t = annotated t' -> 

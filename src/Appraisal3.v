@@ -1577,8 +1577,1926 @@ Proof.
     eauto.
 Defined.
 
+Ltac haaa :=
+  let x:= fresh in
+  match goal with
+  | [H: context[match ?ee with | Some _ => _ | _ => _ end] |- _] =>
+    destruct ee eqn:x;
+    try solve_by_inversion
+  end; df; eauto.
+
+Ltac stt :=
+  cbn in *;
+  monad_unfold;
+  try solve_by_inversion;
+  repeat break_let;
+  dosome;
+  try haaa.
+
+Lemma gen_ev_mapped : forall e et a x a',
+    gen_appraisal_comp e et a = (Some x,a') ->
+    evMapped et a.
+Proof.
+  induction e; destruct et; intros;
+    try (df; econstructor; tauto).
+  -
+    df.
+    dosome.
+    haaa.
+    econstructor.
+    reflexivity.
+    eauto.
+    eexists.
+    econstructor.
+    eauto.
+  -
+    df.
+    dosome.
+    haaa.
+    econstructor.
+    reflexivity.
+    eauto.
+    eexists.
+    econstructor.
+    eauto.
+  -
+        df.
+        dosome.
+        econstructor.
+        eauto.
+  -
+    df.
+    dosome.
+    econstructor.
+    reflexivity.
+    eauto.
+  -
+    econstructor.
+    cbn in *.
+    monad_unfold.
+    dosome.
+    destruct (gen_appraisal_comp e1 et1 a) eqn:hi;
+      try solve_by_inversion.
+    dosome.
+    eauto.
+    cbn in *.
+    monad_unfold.
+     destruct (gen_appraisal_comp e1 et1 a) eqn:hi;
+       try solve_by_inversion.
+     dosome.
+     gen_st_const.
+     eauto.
+  -
+        econstructor.
+    cbn in *.
+    monad_unfold.
+    dosome.
+    destruct (gen_appraisal_comp e1 et1 a) eqn:hi;
+      try solve_by_inversion.
+    dosome.
+    eauto.
+    cbn in *.
+    monad_unfold.
+     destruct (gen_appraisal_comp e1 et1 a) eqn:hi;
+       try solve_by_inversion.
+     dosome.
+     gen_st_const.
+     eauto.
+Defined.
+
+Ltac ff := repeat break_match; try solve_by_inversion; df.
+
+Lemma asas : forall e' a2 p' et a_st' x0,
+    gen_appraisal_comp e' (eval (unanno a2) p' et) a_st' = (Some x0, a_st') ->
+    evMapped et a_st'.
+Proof.
+  intros.
+  Check evshape_et.
+  Check gen_ev_mapped.
+  eapply gen_ev_mapped.
+Abort.
+
+
+
+Lemma asdd : forall a e' p' et a_st a_st' x0,
+    gen_appraisal_comp e' (eval (unanno a) p' et) a_st = (Some x0, a_st') ->
+    allMapped a p' a_st et.
+Proof.
+  induction a; destruct et;
+    intros.
+  -
+    destruct a;
+      try (
+          df;
+          destruct e';
+          stt;
+          df;
+          econstructor;
+          econstructor; tauto);
+      try (
+          df;
+          destruct e';
+          stt;
+          df;
+          econstructor;
+          [econstructor | reflexivity | eexists; econstructor; eauto];
+          tauto).
+
+  -
+    destruct a;
+      try (
+    
+      df;
+      destruct e';
+      stt;
+      econstructor;
+      econstructor;
+      [reflexivity | eapply gen_ev_mapped; eauto | eexists; econstructor; eauto];
+      tauto);
+      try (
+          df;
+      destruct e';
+        stt;
+      destruct e';
+      stt;
+      try (
+        econstructor;
+        [reflexivity | eapply gen_ev_mapped; eauto | eexists; econstructor; eauto]));
+      try (
+          econstructor; 
+          [econstructor; [reflexivity | eapply gen_ev_mapped; eauto | eexists; econstructor; eauto] | reflexivity |
+         eexists; econstructor; eauto];
+          tauto).
+      
+
+    +
+      df.
+      econstructor.
+      econstructor.
+      reflexivity.
+      eapply gen_ev_mapped.
+      eauto.
+      eexists.
+      econstructor.
+      eauto.
+
+  -
+        destruct a;
+      try (
+    
+      df;
+      destruct e';
+      stt;
+      econstructor;
+      econstructor;
+      [reflexivity | eapply gen_ev_mapped; eauto | eexists; econstructor; eauto];
+      tauto);
+      try (
+          df;
+      destruct e';
+        stt;
+      destruct e';
+      stt;
+      try (
+        econstructor;
+        [reflexivity | eapply gen_ev_mapped; eauto | eexists; econstructor; eauto]));
+      try (
+          econstructor; 
+          [econstructor; [reflexivity | eapply gen_ev_mapped; eauto | eexists; econstructor; eauto] | reflexivity |
+         eexists; econstructor; eauto];
+          tauto).
+      
+
+    +
+      df.
+      econstructor.
+      econstructor.
+      reflexivity.
+      eapply gen_ev_mapped.
+      eauto.
+      eexists.
+      econstructor.
+      eauto.
+  -
+
+    destruct a.
+    +
+      df.
+      destruct e';
+        stt.
+      econstructor.
+      econstructor.
+      eapply gen_ev_mapped; eauto.
+    +
+      df.
+      destruct e';
+        stt.
+      destruct e'; stt.
+      econstructor.
+      econstructor.
+      eapply gen_ev_mapped; eauto.
+      reflexivity.
+      eexists; econstructor; eauto.
+    +
+        df.
+      destruct e';
+        stt.
+      destruct e'; stt.
+      econstructor.
+      econstructor.
+      eapply gen_ev_mapped; eauto.
+      reflexivity.
+      eexists; econstructor; eauto.
+    +
+        df.
+      destruct e';
+        stt.
+      destruct e'; stt.
+      econstructor.
+      econstructor.
+      eapply gen_ev_mapped; eauto.
+  -
+        destruct a.
+    +
+      df.
+      destruct e';
+        stt.
+      econstructor.
+      econstructor.
+      reflexivity.
+      eapply gen_ev_mapped; eauto.
+    +
+      df.
+      destruct e';
+        stt.
+      destruct e'; stt.
+      econstructor.
+      econstructor.
+      reflexivity.
+      eapply gen_ev_mapped; eauto.
+      reflexivity.
+      eexists; econstructor; eauto.
+    +
+        df.
+      destruct e';
+        stt.
+      destruct e'; stt.
+      econstructor.
+      econstructor.
+      reflexivity.
+      eapply gen_ev_mapped; eauto.
+      reflexivity.
+      eexists; econstructor; eauto.
+    +
+        df.
+      destruct e';
+        stt.
+      destruct e'; stt.
+      econstructor.
+      econstructor.
+      reflexivity.
+      eapply gen_ev_mapped; eauto.
+  -
+
+    destruct a.
+    +
+      df.
+      destruct e';
+        stt.
+      gen_st_const.
+      econstructor.
+      econstructor.
+      
+      
+      eapply gen_ev_mapped; eauto.
+      eapply gen_ev_mapped; eauto.
+    +
+      df.
+      destruct e';
+        stt.
+      gen_st_const.
+       destruct e';
+         stt.
+       gen_st_const.
+       econstructor.
+       econstructor.
+         eapply gen_ev_mapped; eauto.
+         eapply gen_ev_mapped; eauto.
+         reflexivity.
+         eexists; econstructor; eauto.
+    +
+        df.
+      destruct e';
+        stt.
+      gen_st_const.
+       destruct e';
+         stt.
+       gen_st_const.
+       econstructor.
+       econstructor.
+         eapply gen_ev_mapped; eauto.
+         eapply gen_ev_mapped; eauto.
+         reflexivity.
+         eexists; econstructor; eauto.
+    +
+        df.
+      destruct e';
+        stt.
+      gen_st_const.
+       destruct e';
+         stt.
+       gen_st_const.
+       econstructor.
+       econstructor.
+         eapply gen_ev_mapped; eauto.
+         eapply gen_ev_mapped; eauto.
+         
+  -
+        destruct a.
+    +
+      df.
+      destruct e';
+        stt.
+      gen_st_const.
+      econstructor.
+      econstructor.
+      
+      
+      eapply gen_ev_mapped; eauto.
+      eapply gen_ev_mapped; eauto.
+    +
+      df.
+      destruct e';
+        stt.
+      gen_st_const.
+       destruct e';
+         stt.
+       gen_st_const.
+       econstructor.
+       econstructor.
+         eapply gen_ev_mapped; eauto.
+         eapply gen_ev_mapped; eauto.
+         reflexivity.
+         eexists; econstructor; eauto.
+    +
+        df.
+      destruct e';
+        stt.
+      gen_st_const.
+       destruct e';
+         stt.
+       gen_st_const.
+       econstructor.
+       econstructor.
+         eapply gen_ev_mapped; eauto.
+         eapply gen_ev_mapped; eauto.
+         reflexivity.
+         eexists; econstructor; eauto.
+    +
+        df.
+      destruct e';
+        stt.
+      gen_st_const.
+       destruct e';
+         stt.
+       gen_st_const.
+       econstructor.
+       econstructor.
+         eapply gen_ev_mapped; eauto.
+         eapply gen_ev_mapped; eauto.
+  -
+    cbn in *.
+    econstructor.
+    reflexivity.
+    eauto.
+  -
+    cbn in *.
+    econstructor.
+    reflexivity.
+    eauto.
+  -
+    cbn in *.
+    econstructor.
+    reflexivity.
+    eauto.
+  -
+    cbn in *.
+    econstructor.
+    reflexivity.
+    eauto.
+  -
+    cbn in *.
+    econstructor.
+    reflexivity.
+    eauto.
+  -
+    cbn in *.
+    econstructor.
+    reflexivity.
+    eauto.
+  -
+    cbn in *.
+    econstructor.
+    reflexivity.
+    eauto.
+  -
+    cbn in *.
+    assert (exists t' p', a1 = snd (anno t' p')).
+    {
+      admit.
+    }
+    destruct_conjs.
+    
+    destruct (build_comp a1 {| st_ev := mtc; st_trace := []; st_pl := p'; st_store := [] |}) eqn:hoho.
+    vmsts.
+    unfold empty_vmst in *.
+
+    destruct ( gen_appraisal_comp st_ev (eval (unanno a1) p' mt) a_st) eqn:hohoho.
+    Print gen_st_const.
+    Ltac gen_st_const' :=
+      let tac := eapply gen_const; eauto in
+      repeat match goal with
+             | H:gen_appraisal_comp ?e ?et ?A = (?o, ?B) |- _ => assert_new_proof_by (A = B) tac
+             end.
+    
+    gen_st_const'.
+    rewrite H4 in *.
+    rewrite H3 in *.
+    clear H3; clear H4.
+    Check evshape_et.
+    edestruct evshape_et with (e:=st_ev) (et:=(eval (unanno a1) p' mt)).
+    eapply multi_ev_eval.
+    eassumption.
+
+    assert (o = Some tt).
+    {
+      eapply always_some.
+      reflexivity.
+      rewrite <- H2.
+      eassumption.
+    }
+    rewrite H3 in *. clear H3.
+    eassumption.
+    econstructor.
+    reflexivity.
+
+
+
+    (*
+      eapply asas. eassumption.
+      rewrite H3 in *.
+      df.
+    
+    
+
+
+    (*
+    assert (exists hh, o0 = Some hh).
+    {
+      Lemma gen_some''' : forall e et a_st a_st' o,
+        gen_appraisal_comp e et a_st = (o,a_st') ->
+        evMapped et a_st ->
+        (exists hh, o = Some hh).
+      Proof.
+      Admitted.
+
+      Check evshape_et.
+      Check gen_ev_mapped.
+
+
+
+      eapply gen_some'''.
+      eassumption.
+
+      eapply asas.
+      eassumption.
+      
+    }
+    
+    destruct_conjs.
+    subst. *)
+    
+    econstructor.
+    eapply IHa1.
+    eassumption.
+    
+    eapply IHa2; eauto.
+  -
+
+    cbn in *.
+    assert (exists t' p', a1 = snd (anno t' p')).
+    {
+      admit.
+    }
+    destruct_conjs.
+
+    assert (exists e vm_st',
+               build_comp a1 {| st_ev := e; st_trace := []; st_pl := p'; st_store := [] |} =
+               (Some tt, vm_st')).
+    admit.
+    destruct_conjs.
+    vmsts.
+    unfold empty_vmst in *.
+
+    destruct ( gen_appraisal_comp st_ev (eval (unanno a1) p'  (uu n l n0 et)) a_st) eqn:hohoho.
+    Print gen_st_const.
+   
+    
+    gen_st_const'.
+    rewrite H4 in *.
+    rewrite H6 in *.
+    clear H6; clear H4.
+    Check evshape_et.
+    edestruct evshape_et with (e:=st_ev) (et:=(eval (unanno a1) p'  (uu n l n0 et))).
+    eapply multi_ev_eval.
+    eassumption.
+    eassumption.
+
+    (*
+
+    assert (o = Some tt).
+    {
+      eapply always_some.
+      reflexivity.
+      rewrite <- H2.
+      eassumption.
+    }
+    rewrite H3 in *. clear H3. *)
+
+    assert (Ev_Shape H3 (uu n l n0 et)).
+    admit.
+    eassumption.
+    reflexivity.
+   
+
+
+      
+      eapply asas. eassumption.
+      rewrite H4 in *.
+      df.
+    
+    
+
+
+    (*
+    assert (exists hh, o0 = Some hh).
+    {
+      Lemma gen_some''' : forall e et a_st a_st' o,
+        gen_appraisal_comp e et a_st = (o,a_st') ->
+        evMapped et a_st ->
+        (exists hh, o = Some hh).
+      Proof.
+      Admitted.
+
+      Check evshape_et.
+      Check gen_ev_mapped.
+
+
+
+      eapply gen_some'''.
+      eassumption.
+
+      eapply asas.
+      eassumption.
+      
+    }
+    
+    destruct_conjs.
+    subst. *)
+    
+    econstructor.
+    eapply IHa1.
+    eassumption.
+    
+    eapply IHa2; eauto.
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+(*
+    
+    cbn in *.
+    assert (exists t' p', a1 = snd (anno t' p')).
+    {
+      admit.
+    }
+    destruct_conjs.
+    destruct (build_comp a1 {| st_ev := mtc; st_trace := []; st_pl := p'; st_store := [] |}) eqn:hoho.
+    vmsts.
+    unfold empty_vmst in *.
+
+    destruct ( gen_appraisal_comp st_ev (eval (unanno a1) p' (uu n l n0 mt)) a_st) eqn:hohoho.
+    gen_st_const'.
+    rewrite H4 in *.
+    rewrite H3 in *.
+    clear H4; clear H3.
+
+        assert (o = Some tt).
+    {
+      eapply always_some.
+      reflexivity.
+      rewrite <- H2.
+      eassumption.
+    }
+    rewrite H3 in *. clear H3.
+
+
+    edestruct evshape_et with (e:=st_ev) (et:=(eval (unanno a1) p' mt)).
+    eapply multi_ev_eval.
+    eassumption.
+    eassumption.
+    econstructor.
+    reflexivity.
+    
+
+    eapply asas.
+    eassumption.
+    rewrite H3 in *.
+    eassumption.
+    
+
+
+    
+    
+
+
+    
+    assert (exists hh, o0 = Some hh).
+    {
+      admit.
+    }
+    
+    destruct_conjs.
+    subst.
+
+    econstructor.
+    eapply IHa1.
+    eapply hohoho.
+    eapply IHa2; eauto. *)
+  -
+    cbn in *.
+    destruct (build_comp a1 empty_vmst) eqn:hoho.
+    vmsts.
+    unfold empty_vmst in *.
+
+    destruct ( gen_appraisal_comp st_ev (eval (unanno a1) p' (gg n et)) a_st) eqn:hohoho.
+    gen_st_const.
+    assert (exists hh, o0 = Some hh).
+    {
+      admit.
+    }
+    
+    destruct_conjs.
+    subst.
+
+    econstructor.
+    eapply IHa1.
+    eapply hohoho.
+    eapply IHa2; eauto.
+  -
+    cbn in *.
+    destruct (build_comp a1 empty_vmst) eqn:hoho.
+    vmsts.
+    unfold empty_vmst in *.
+
+    destruct ( gen_appraisal_comp st_ev (eval (unanno a1) p' (hh n et)) a_st) eqn:hohoho.
+    gen_st_const.
+    assert (exists hh, o0 = Some hh).
+    {
+      admit.
+    }
+    
+    destruct_conjs.
+    subst.
+
+    econstructor.
+    eapply IHa1.
+    eapply hohoho.
+    eapply IHa2; eauto.
+  -
+    cbn in *.
+    destruct (build_comp a1 empty_vmst) eqn:hoho.
+    vmsts.
+    unfold empty_vmst in *.
+
+    destruct ( gen_appraisal_comp st_ev (eval (unanno a1) p' (nn n et)) a_st) eqn:hohoho.
+    gen_st_const.
+    assert (exists hh, o0 = Some hh).
+    {
+      admit.
+    }
+    
+    destruct_conjs.
+    subst.
+
+    econstructor.
+    eapply IHa1.
+    eapply hohoho.
+    eapply IHa2; eauto.
+  -
+    cbn in *.
+    destruct (build_comp a1 empty_vmst) eqn:hoho.
+    vmsts.
+    unfold empty_vmst in *.
+
+    destruct ( gen_appraisal_comp st_ev (eval (unanno a1) p' (ss et1 et2)) a_st) eqn:hohoho.
+    gen_st_const.
+    assert (exists hh, o0 = Some hh).
+    {
+      admit.
+    }
+    
+    destruct_conjs.
+    subst.
+
+    econstructor.
+    eapply IHa1.
+    eapply hohoho.
+    eapply IHa2; eauto.
+  -
+        cbn in *.
+    destruct (build_comp a1 empty_vmst) eqn:hoho.
+    vmsts.
+    unfold empty_vmst in *.
+
+    destruct ( gen_appraisal_comp st_ev (eval (unanno a1) p' (pp et1 et2)) a_st) eqn:hohoho.
+    gen_st_const.
+    assert (exists hh, o0 = Some hh).
+    {
+      admit.
+    }
+    
+    destruct_conjs.
+    subst.
+
+    econstructor.
+    eapply IHa1.
+    eapply hohoho.
+    eapply IHa2; eauto.
+  -
+    cbn in *.
+    destruct e'; stt.
+    destruct s0;
+      destruct s1;
+      cbn in *;
+      try (
+    
+          gen_st_const;
+     
+          econstructor;
+          eauto).
+  -
+        cbn in *.
+    destruct e'; stt.
+    destruct s0;
+      destruct s1;
+      cbn in *;
+      try (
+    
+          gen_st_const;
+     
+          econstructor;
+          eauto).
+  -
+        cbn in *.
+    destruct e'; stt.
+    destruct s0;
+      destruct s1;
+      cbn in *;
+      try (
+    
+          gen_st_const;
+     
+          econstructor;
+          eauto).
+  -
+        cbn in *.
+    destruct e'; stt.
+    destruct s0;
+      destruct s1;
+      cbn in *;
+      try (
+    
+          gen_st_const;
+     
+          econstructor;
+          eauto).
+  -
+        cbn in *.
+    destruct e'; stt.
+    destruct s0;
+      destruct s1;
+      cbn in *;
+      try (
+    
+          gen_st_const;
+     
+          econstructor;
+          eauto).
+  -
+        cbn in *.
+    destruct e'; stt.
+    destruct s0;
+      destruct s1;
+      cbn in *;
+      try (
+    
+          gen_st_const;
+     
+          econstructor;
+          eauto).
+  -
+        cbn in *.
+    destruct e'; stt.
+    destruct s0;
+      destruct s1;
+      cbn in *;
+      try (
+    
+          gen_st_const;
+     
+          econstructor;
+          eauto).
+  -
+        cbn in *.
+    destruct e'; stt.
+    destruct s0;
+      destruct s1;
+      cbn in *;
+      try (
+    
+          gen_st_const;
+     
+          econstructor;
+          eauto).
+  -
+        cbn in *.
+    destruct e'; stt.
+    destruct s0;
+      destruct s1;
+      cbn in *;
+      try (
+    
+          gen_st_const;
+     
+          econstructor;
+          eauto).
+  -
+        cbn in *.
+    destruct e'; stt.
+    destruct s0;
+      destruct s1;
+      cbn in *;
+      try (
+    
+          gen_st_const;
+     
+          econstructor;
+          eauto).
+  -
+        cbn in *.
+    destruct e'; stt.
+    destruct s0;
+      destruct s1;
+      cbn in *;
+      try (
+    
+          gen_st_const;
+     
+          econstructor;
+          eauto).
+  -
+        cbn in *.
+    destruct e'; stt.
+    destruct s0;
+      destruct s1;
+      cbn in *;
+      try (
+    
+          gen_st_const;
+     
+          econstructor;
+          eauto).
+  -
+        cbn in *.
+    destruct e'; stt.
+    destruct s0;
+      destruct s1;
+      cbn in *;
+      try (
+    
+          gen_st_const;
+     
+          econstructor;
+          eauto).
+  -
+        cbn in *.
+    destruct e'; stt.
+    destruct s0;
+      destruct s1;
+      cbn in *;
+      try (
+    
+          gen_st_const;
+     
+          econstructor;
+          eauto).
+
+Admitted. 
+*)  
+
+(*
+Lemma asddd : forall a1 a2 e' p' et a_st x0 a,
+    gen_appraisal_comp e' (eval (unanno a2) p' (eval (unanno a1) p' et)) a_st = (Some x0, a) ->
+    allMapped a1 p' a_st et.
+Proof.
+  intros.
+  Check asdd.
+  assert (allMapped a2 p' a_st (eval (unanno a1) p' et)).
+  eapply asdd; eauto.
+  assert (evMapped (eval (unanno a1) p' et) a_st).
+
+  Check gen_ev_mapped.
+  Check asas.
+  eapply asas.
+  gen_st_const.
+  eauto.
+  Lemma ev_imp_all : forall a p et a_st,
+    evMapped (eval (unanno a) p et) a_st ->
+    allMapped a p a_st et.
+  Proof.
+  Admitted.
+  eapply ev_imp_all; eauto.
+Defined.
+*)
+
+      
+    
+(*
+
+Lemma asdd : forall a1 a2 e' p' et a_st x0 a,
+    gen_appraisal_comp e' (eval (unanno a2) p' (eval (unanno a1) p' et)) a_st = (Some x0, a) ->
+    allMapped a1 p' a_st et.
+Proof.
+  induction a1; destruct a2; intros.
+  -
+    destruct a; destruct a0; 
+      cbn in *;
+      try (econstructor; eapply gen_ev_mapped; eauto; tauto);
+    try (destruct e';
+         stt;
+         econstructor;
+         eapply gen_ev_mapped; eauto ;tauto);
+    try (destruct e';
+         stt;
+         try (destruct e'; stt);
+         econstructor;
+         [eapply gen_ev_mapped; eauto; tauto | reflexivity | eexists; econstructor; eauto];
+         tauto);
+    try (destruct e';
+         stt;
+         econstructor;
+         [eapply gen_ev_mapped; eauto; tauto | reflexivity | eexists; econstructor; eauto];
+         tauto);
+    try (
+        destruct e';
+        stt;
+        destruct e';
+        stt;
+        econstructor;
+        eapply gen_ev_mapped; eauto;
+        tauto).
+  -
+    destruct a; destruct a2.
+    +
+      cbn in *.
+      destruct a;
+        try (
+            destruct e';
+            stt;
+            econstructor;
+            eapply gen_ev_mapped; eauto;
+            tauto).
+      ++
+        destruct e';
+          stt.
+        break_match; try solve_by_inversion.
+        df.
+        econstructor.
+        econstructor.
+        stt.
+        break_match; try solve_by_inversion.
+        repeat break_let.
+        dosome.
+        stt.
+        econstructor.
+        econstructor.
+        reflexivity.
+        eapply gen_ev_mapped; eauto.
+        eexists.
+        econstructor.
+        eauto.
+        repeat break_let.
+        repeat break_match; try solve_by_inversion.
+        df.
+        stt.
+        econstructor.
+        econstructor.
+        reflexivity.
+        eapply gen_ev_mapped; eauto.
+        eexists.
+        econstructor.
+        eauto.
+        df.
+
+
+        ff.
+        econstructor.
+        econstructor.
+        eapply gen_ev_mapped; eauto.
+        ff.
+        econstructor.
+        econstructor.
+        reflexivity.
+        eapply gen_ev_mapped; eauto.
+        ff.
+        econstructor.
+        econstructor.
+        eapply gen_ev_mapped; eauto.
+        gen_st_const.
+        eapply gen_ev_mapped; eauto.
+        ff.
+        econstructor.
+        econstructor.
+        eapply gen_ev_mapped; eauto.
+        gen_st_const.
+        eapply gen_ev_mapped; eauto.
+    +
+      cbn in *.
+       destruct a2;
+        try (
+            destruct e';
+            stt;
+            econstructor;
+            eapply gen_ev_mapped; eauto;
+            tauto).
+       admit.
+       cbn in *.
+       econstructor.
+       eapply gen_ev_mapped.
+       admit.
+
+       ++
+
+         cbn in *.
+          destruct a2;
+        try (
+            destruct e';
+            stt;
+            econstructor;
+            eapply gen_ev_mapped; eauto;
+            tauto).
+         
+
+
+
+      
+      
+      ++
+
+        destruct e';
+          stt.
+        econstructor.
+        eapply gen_ev_mapped; eauto.
+      ++
+        destruct e';
+          stt.
+        econstructor.
+        eapply gen_ev_mapped; eauto.
+      ++
+        
+        
+                
+        break_match; try solve_by_inversion.
+        df.
+        econstructor.
+        econstructor.
+        stt.
+        break_match; try solve_by_inversion.
+        repeat break_let.
+        dosome.
+        stt.
+        econstructor.
+        econstructor.
+        reflexivity.
+        eapply gen_ev_mapped; eauto.
+        eexists.
+        econstructor.
+        eauto.
+        repeat break_let.
+        repeat break_match; try solve_by_inversion.
+        df.
+        stt.
+        econstructor.
+        econstructor.
+        reflexivity.
+        eapply gen_ev_mapped; eauto.
+        eexists.
+        econstructor.
+        eauto.
+        df.
+
+        Ltac ff := repeat break_match; try solve_by_inversion; df.
+        ff.
+        econstructor.
+        econstructor.
+        eapply gen_ev_mapped; eauto.
+        ff.
+        econstructor.
+        econstructor.
+        reflexivity.
+        eapply gen_ev_mapped; eauto.
+        ff.
+        econstructor.
+        econstructor.
+        eapply gen_ev_mapped; eauto.
+        gen_st_const.
+        eapply gen_ev_mapped; eauto.
+        ff.
+        econstructor.
+        econstructor.
+        eapply gen_ev_mapped; eauto.
+        gen_st_const.
+        eapply gen_ev_mapped; eauto.
+
+
+
+
+
+
+        
+        
+      
+        df.
+      
+      cbn in *;
+      try (econstructor; eapply gen_ev_mapped; eauto; tauto);
+    try (destruct e';
+         stt;
+         econstructor;
+         eapply gen_ev_mapped; eauto ;tauto);
+    try (destruct e';
+         stt;
+         try (destruct e'; stt);
+         econstructor;
+         [eapply gen_ev_mapped; eauto; tauto | reflexivity | eexists; econstructor; eauto];
+         tauto);
+    try (destruct e';
+         stt;
+         econstructor;
+         [eapply gen_ev_mapped; eauto; tauto | reflexivity | eexists; econstructor; eauto];
+         tauto);
+    try (
+        destruct e';
+        stt;
+        destruct e';
+        stt;
+        econstructor;
+        eapply gen_ev_mapped; eauto;
+        tauto).
+    
+         
+      
+
+    +
+      destruct e';
+        stt.
+      destruct e';
+        stt.
+      econstructor.
+      eapply gen_ev_mapped; eauto
+      
+
+      
+
+
+    (*
+    +
+      destruct e';
+        stt.
+      econstructor.
+      eapply gen_ev_mapped; eauto.
+    +
+      destruct e';
+        stt.
+      econstructor.
+      eapply gen_ev_mapped; eauto.
+      
+
+      destruct e';
+        try (
+            cbn in *;
+            monad_unfold;
+            solve_by_inversion).
+      ++
+        cbn in *.
+        monad_unfold.
+        repeat break_let.
+        dosome.
+        try haaa.
+        econstructor.
+        eapply gen_ev_mapped; eauto.
+        (*
+        repeat break_let.
+        destruct (map_get (st_sigmap a_st) p');
+          try solve_by_inversion.
+        df.
+        eassumption. *)
+    +
+     
+
+      destruct e';
+        try (
+            cbn in *;
+            monad_unfold;
+            solve_by_inversion).
+      ++
+        cbn in *.
+        monad_unfold.
+        repeat break_let.
+        dosome.
+        try haaa.
+         econstructor.
+        eapply gen_ev_mapped; eauto.
+    (*
+                destruct (map_get (st_aspmap a_st) (p', n));
+                  try solve_by_inversion.
+                df.
+                eassumption. *)
+     *)
+
+
+
+
+    (*
+    +
+     
+
+      destruct e';
+        try (
+            cbn in *;
+            monad_unfold;
+            solve_by_inversion).
+      ++
+        cbn in *.
+        monad_unfold.
+        repeat break_let.
+        dosome.
+        try haaa.
+        (*
+        destruct (map_get (st_aspmap a_st) (p', n));
+          try solve_by_inversion.
+        df. *)
+        econstructor.
+      +++
+        
+        eapply gen_ev_mapped; eauto.
+      +++
+        reflexivity.
+      +++
+        eexists.
+        econstructor.
+        eauto.
+        (*
+        destruct e';
+          try (
+              cbn in *;
+              monad_unfold;
+              solve_by_inversion).
+        cbn in *.
+        monad_unfold.
+        repeat break_let.
+        dosome.
+        try haaa.
+        (*
+        destruct (map_get (st_aspmap a_st) (p', n)) eqn:hi.
+        df. *)
+        
+        eexists.
+        econstructor.
+        eauto. *)
+     *)
+    (*
+    +
+     
+      destruct e';
+        try (
+            cbn in *;
+            monad_unfold;
+            solve_by_inversion).
+      ++
+        cbn in *.
+        monad_unfold.
+        repeat break_let.
+        dosome.
+
+        try haaa.
+        (*
+        destruct (map_get (st_aspmap a_st) (p', n0));
+          try solve_by_inversion.
+        df. *)
+        destruct e';
+          try (
+              cbn in *;
+              monad_unfold;
+              solve_by_inversion).
+        cbn in *.
+        monad_unfold.
+        repeat break_let.
+        dosome.
+        try haaa.
+        econstructor.
+        +++
+        (*
+        destruct (map_get (st_aspmap a) (p', n)) eqn:hey;
+          try solve_by_inversion.
+        df. *)
+        eapply gen_ev_mapped; eauto.
+      +++
+        reflexivity.
+      +++
+        eexists.
+        econstructor.
+        eauto.
+
+        (*
+        destruct e';
+          try (
+              cbn in *;
+              monad_unfold;
+              solve_by_inversion).
+        cbn in *.
+        monad_unfold.
+        repeat break_let.
+        dosome.
+        try haaa.
+        (*
+        destruct (map_get (st_aspmap a_st) (p', n0)) eqn:hi;
+          try solve_by_inversion.
+        df. *)
+
+        destruct e';
+          try (
+              cbn in *;
+              monad_unfold;
+              solve_by_inversion).
+
+        cbn in *.
+        monad_unfold.
+        repeat break_let.
+        dosome.
+        try haaa.
+        (*
+
+        destruct (map_get (st_aspmap a) (p', n)) eqn:ho;
+          try solve_by_inversion.
+         *)
+        
+        eexists.
+        econstructor.
+        eauto. *)
+     *)
+    (*
+    +
+     
+      destruct e';
+        try (
+            cbn in *;
+            monad_unfold;
+            solve_by_inversion).
+      ++
+        cbn in *.
+        monad_unfold.
+        repeat break_let.
+        dosome.
+        try haaa.
+        (*
+        destruct (map_get (st_sigmap a_st) p');
+          try solve_by_inversion.
+        df. *)
+        destruct e';
+          try (
+              cbn in *;
+              monad_unfold;
+              solve_by_inversion).
+        cbn in *.
+        monad_unfold.
+        repeat break_let.
+        dosome.
+        try haaa.
+        (*
+        destruct (map_get (st_aspmap a) (p', n)) eqn:hey;
+          try solve_by_inversion.
+        df. *)
+        econstructor.
+        +++
+        eapply gen_ev_mapped; eauto.
+      +++
+        reflexivity.
+      +++
+        (*
+        destruct e';
+          try (
+              cbn in *;
+              monad_unfold;
+              solve_by_inversion).
+        cbn in *.
+        monad_unfold.
+        repeat break_let.
+        dosome.
+        try haaa.
+        (*
+        destruct (map_get (st_sigmap a_st) p') eqn:hi;
+          try solve_by_inversion.
+        df. *)
+
+        destruct e';
+          try (
+              cbn in *;
+              monad_unfold;
+              solve_by_inversion).
+
+        cbn in *.
+        monad_unfold.
+        repeat break_let.
+        dosome.
+        try haaa. *)
+        (*
+
+        destruct (map_get (st_aspmap a) (p', n)) eqn:ho;
+          try solve_by_inversion.
+         *)
+        
+        eexists.
+        econstructor.
+        eauto.
+     *)
+
+    (*
+    +
+     
+      destruct e';
+        try (
+            cbn in *;
+            monad_unfold;
+            solve_by_inversion).
+      ++
+        cbn in *.
+        monad_unfold.
+        repeat break_let.
+        dosome.
+
+        destruct e';
+          try (
+              cbn in *;
+              monad_unfold;
+              solve_by_inversion).
+        cbn in *.
+        monad_unfold.
+        repeat break_let.
+        dosome.
+        try haaa.
+        (*
+        destruct (map_get (st_aspmap a_st) (p', n));
+          try solve_by_inversion.
+        df. *)
+        econstructor.
+        +++
+        eapply gen_ev_mapped; eauto.
+      +++
+        reflexivity.
+      +++
+        (*
+        destruct e';
+          try (
+              cbn in *;
+              monad_unfold;
+              solve_by_inversion).
+        cbn in *.
+        monad_unfold.
+        repeat break_let.
+        dosome.
+
+        destruct e';
+          try (
+              cbn in *;
+              monad_unfold;
+              solve_by_inversion).
+        cbn in *.
+        monad_unfold.
+        repeat break_let.
+        dosome.
+        try haaa. *)
+        (*
+        destruct (map_get (st_aspmap a_st) (p', n)) eqn:hey;
+          try solve_by_inversion.
+        df. *)
+        eexists.
+        econstructor.
+        eauto.
+     *)
+
+    (*
+    +
+      destruct e';
+        try (
+            cbn in *;
+            monad_unfold;
+            solve_by_inversion).
+      cbn in *.
+      monad_unfold.
+      repeat break_let.
+      dosome.
+      try haaa.
+      (*
+      destruct ( map_get (st_sigmap a_st) p') eqn:hi;
+        try solve_by_inversion. *)
+      
+      
+      econstructor.
+      ++
+      
+        eapply gen_ev_mapped; eauto.
+      ++
+        
+        reflexivity.
+      ++
+        
+      eexists.
+      econstructor.
+      eassumption.
+     *)
+
+    (*
+    +
+            destruct e';
+        try (
+            cbn in *;
+            monad_unfold;
+            solve_by_inversion).
+      cbn in *.
+      monad_unfold.
+      repeat break_let.
+      dosome.
+      try haaa.
+      (*
+      destruct ( map_get (st_sigmap a_st) p') eqn:hi;
+        try solve_by_inversion. *)
+
+       destruct e';
+        try (
+            cbn in *;
+            monad_unfold;
+            solve_by_inversion).
+       cbn in *.
+       monad_unfold.
+       repeat break_let.
+       dosome.
+       try haaa.
+      
+      econstructor.
+      ++
+      
+        eapply gen_ev_mapped; eauto.
+      ++
+        
+        reflexivity.
+      ++
+        
+      eexists.
+      econstructor.
+      eassumption.
+     *)
+    (*
+    +
+                  destruct e';
+        try (
+            cbn in *;
+            monad_unfold;
+            solve_by_inversion).
+      cbn in *.
+      monad_unfold.
+      repeat break_let.
+      dosome.
+      try haaa.
+      (*
+      destruct ( map_get (st_sigmap a_st) p') eqn:hi;
+        try solve_by_inversion. *)
+
+       destruct e';
+        try (
+            cbn in *;
+            monad_unfold;
+            solve_by_inversion).
+       cbn in *.
+       monad_unfold.
+       repeat break_let.
+       dosome.
+       try haaa.
+      
+      econstructor.
+      ++
+      
+        eapply gen_ev_mapped; eauto.
+      ++
+        
+        reflexivity.
+      ++
+        
+      eexists.
+      econstructor.
+      eassumption.
+     *)
+    (*
+    +
+                  destruct e';
+        try (
+            cbn in *;
+            monad_unfold;
+            solve_by_inversion).
+      cbn in *.
+      monad_unfold.
+      repeat break_let.
+      dosome.
+      try haaa.
+      (*
+      destruct ( map_get (st_sigmap a_st) p') eqn:hi;
+        try solve_by_inversion. *)
+
+       destruct e';
+        try (
+            cbn in *;
+            monad_unfold;
+            solve_by_inversion).
+       cbn in *.
+       monad_unfold.
+       repeat break_let.
+       dosome.
+       try haaa.
+      
+      econstructor.
+      ++
+      
+        eapply gen_ev_mapped; eauto.
+      ++
+        
+        reflexivity.
+      ++
+        
+      eexists.
+      econstructor.
+      eassumption.
+     *)
+    
+    +
+      destruct e';
+        stt.
+      econstructor.
+      eapply gen_ev_mapped; eauto.
+      reflexivity.
+      eexists.
+      econstructor.
+      eauto.
+    +
+      
+      
+
+
+      
+        try (
+            cbn in *;
+            monad_unfold;
+            solve_by_inversion).
+      cbn in *.
+      monad_unfold.
+      repeat break_let.
+      dosome.
+
+
+      econstructor.
+      eapply gen_ev_mapped; eauto.
+    +
+                        destruct e';
+        try (
+            cbn in *;
+            monad_unfold;
+            solve_by_inversion).
+      cbn in *.
+      monad_unfold.
+      repeat break_let.
+      dosome.
+      try haaa.
+      (*
+      destruct ( map_get (st_sigmap a_st) p') eqn:hi;
+        try solve_by_inversion. *)
+
+       destruct e';
+        try (
+            cbn in *;
+            monad_unfold;
+            solve_by_inversion).
+       cbn in *.
+       monad_unfold.
+       repeat break_let.
+       dosome.
+       econstructor.
+       eapply gen_ev_mapped; eauto.
+
+    +
+                        destruct e';
+        try (
+            cbn in *;
+            monad_unfold;
+            solve_by_inversion).
+      cbn in *.
+      monad_unfold.
+      repeat break_let.
+      dosome.
+      try haaa.
+      (*
+      destruct ( map_get (st_sigmap a_st) p') eqn:hi;
+        try solve_by_inversion. *)
+
+       destruct e';
+        try (
+            cbn in *;
+            monad_unfold;
+            solve_by_inversion).
+       cbn in *.
+       monad_unfold.
+       repeat break_let.
+       dosome.
+       econstructor.
+       eapply gen_ev_mapped; eauto.
+
+    +
+                              destruct e';
+        try (
+            cbn in *;
+            monad_unfold;
+            solve_by_inversion).
+      cbn in *.
+      monad_unfold.
+      repeat break_let.
+      dosome.
+      try haaa.
+      (*
+      destruct ( map_get (st_sigmap a_st) p') eqn:hi;
+        try solve_by_inversion. *)
+
+       destruct e';
+        try (
+            cbn in *;
+            monad_unfold;
+            solve_by_inversion).
+       cbn in *.
+       monad_unfold.
+       repeat break_let.
+       dosome.
+       econstructor.
+       eapply gen_ev_mapped; eauto.
+  -
+    
+      
+      
+      
+      
+      
+      
+
+      
+      
+      
+  -
+    
+      
+      
+      
+      
+      
+      
+
+      
+      
+      
+      
+
+
+
+
+      
+      destruct (map_get (st_aspmap a_st) (p', n0));
+        try solve_by_inversion.
+      df.
+      destruct e';
+        try (
+            cbn in *;
+            monad_unfold;
+            solve_by_inversion).
+      cbn in *.
+      monad_unfold.
+      repeat break_let.
+      dosome.
+      destruct (map_get (st_aspmap a) (p', n)) eqn:hey;
+        try solve_by_inversion.
+      df.
+      eapply gen_ev_mapped; eauto.
+      ++
+        reflexivity.
+      ++
+        destruct e';
+          try (
+              cbn in *;
+              monad_unfold;
+              solve_by_inversion).
+        cbn in *.
+        monad_unfold.
+        repeat break_let.
+        dosome.
+        destruct (map_get (st_aspmap a_st) (p', n0)) eqn:hi;
+          try solve_by_inversion.
+        df.
+
+        destruct e';
+          try (
+              cbn in *;
+              monad_unfold;
+              solve_by_inversion).
+
+        cbn in *.
+        monad_unfold.
+        repeat break_let.
+        dosome.
+
+        destruct (map_get (st_aspmap a) (p', n)) eqn:ho;
+          try solve_by_inversion.
+        eexists.
+        df.
+        econstructor.
+        eassumption.
+        
+        
+        
+        
+        
+
+        
+        eexists.
+        econstructor.
+        eassumption.
+        
+        
+        
+        
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+Admitted.
+*)
+
+
+
 Lemma gen_lseq_decomp :
-  forall a1 e e' ee eee  st_trace3 st_trace4 o p p' tr tr' o' pp ppp oo ooo et a_st a a2 x0 x o0 o1,
+  forall a1 et e e' ee eee  st_trace3 st_trace4 o p p' tr tr' o' pp ppp oo ooo a_st a a2 x0 x ev',
     build_comp a1 {| st_ev := e; st_trace := tr; st_pl := p; st_store := o |} =
     (Some tt, {| st_ev := e'; st_trace := tr'; st_pl := p'; st_store := o' |}) -> 
     (*build_comp a1 {| st_ev := e'; st_trace := tr'; st_pl := p'; st_store := o' |} =
@@ -1586,12 +3504,16 @@ Lemma gen_lseq_decomp :
     gen_appraisal_comp e' (eval (unanno a1) p' et (*(eval (unanno a0) p et)*)) a_st = (Some x0, a) ->
    (* Ev_Shape e et -> (* TODO: need this? *) *)
     x0 {| st_ev := mtc; st_trace := []; st_pl := 0; st_store := [] |} =
-    (o0, {| st_ev := ee; st_trace := st_trace3; st_pl := pp; st_store := oo |}) ->
+    (Some tt, {| st_ev := ee; st_trace := st_trace3; st_pl := pp; st_store := oo |}) ->
     gen_appraisal_comp e et (*(eval (unanno a0) p et)*) a_st = (Some x, a2) ->
     x {| st_ev := mtc; st_trace := []; st_pl := 0; st_store := [] |} =
-    (o1, {| st_ev := eee; st_trace := st_trace4; st_pl := ppp; st_store := ooo |}) ->
-    exists l, st_trace3 = st_trace4 ++ l.
+    (Some tt, {| st_ev := eee; st_trace := st_trace4; st_pl := ppp; st_store := ooo |}) ->
+    In ev' st_trace4 -> In ev' st_trace3.
 Proof.
+
+  
+
+
   
   intros.
   assert (Ev_Shape e' (eval (unanno a1) p' et)).
@@ -1603,26 +3525,1882 @@ Proof.
   -
     destruct a;
       try (df; repeat evShapeFacts; df; eauto).
+    solve_by_inversion.
+    solve_by_inversion.
   -
-    assert (o1 = Some tt).
-    eapply dodo; eauto.
-    assert (o0 = Some tt).
-    eapply dodo. apply H0. apply H1.
-    subst.
-    Check trace_cumul.
-
     
+
+    (*
     edestruct trace_cumul.
     apply H0.
     apply H1.
     edestruct trace_cumul.
     apply H2.
     apply H3.
-    simpl in *.
-    invc H5.
+    simpl in *. *)
+
+    (*
+    invc H5. *)
     cbn in H2.
     monad_unfold.
     repeat break_let.
+    monad_unfold.
+    df.
+    dosome.
+    df.
+
+    (*
+    repeat break_let.
+    invc H2.
+    destruct o1;
+      try solve_by_inversion.
+    invc Heqp2.
+    repeat break_let.
+    invc H3.
+    simpl in *. *)
+
+    (*
+    edestruct trace_cumul.
+    apply Heqp1.
+    apply Heqp2.
+    subst. *)
+
+    
+    Lemma inEvApp{A:Type} : forall (ev:A) l1 l2,
+        In ev (l1 ++ l2) ->
+        In ev l1 \/ In ev l2.
+    Proof.
+    Admitted.
+
+    destruct a.
+    +
+      monad_unfold.
+      df.
+      rewrite H0 in *.
+      df.
+      rewrite H1 in *.
+      df.
+      eassumption.
+      (*
+      exists [].
+      rewrite app_nil_r.
+      reflexivity.
+      (*
+      dosome.
+      destruct (map_get (st_aspmap a_st) (n0, n));
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      rewrite Heqp in *.
+      df.
+      eexists.
+      rewrite app_nil_r.
+      reflexivity. *)
+       *)
+      
+    +
+      cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      destruct (map_get (st_aspmap a_st) (st_pl, n3));
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      invc H5.
+      invc H6.
+      invc H0.
+      cbn in *.
+      monad_unfold.
+
+      destruct (am_get_app_asp n0 n a);
+        try solve_by_inversion.
+      dosome.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp1.
+      subst.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp0.
+      subst.
+
+      assert (x = x0).
+      {
+        admit.
+      }
+      subst.
+
+
+      edestruct (inEvApp (A:=Ev)).
+      eassumption.
+      ++
+        Search In.
+        apply in_or_app.
+        left.
+        Print In.
+        unfold In.
+        inv H.
+        right.
+        left.
+        reflexivity.
+        inv H0.
+      ++
+        apply in_or_app.
+        right.
+        eassumption.
+    +
+
+      cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      destruct (map_get (st_sigmap a_st) st_pl);
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      invc H5.
+      invc H6.
+      invc H0.
+      cbn in *.
+      monad_unfold.
+
+      destruct (am_get_app_asp n0 n a);
+        try solve_by_inversion.
+      dosome.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp1.
+      subst.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp0.
+      subst.
+
+      assert (x = x0).
+      {
+        admit.
+      }
+      subst.
+
+
+      edestruct (inEvApp (A:=Ev)).
+      eassumption.
+      ++
+        Search In.
+        apply in_or_app.
+        left.
+        Print In.
+        unfold In.
+        inv H.
+        right.
+        left.
+        reflexivity.
+        inv H0.
+      ++
+        apply in_or_app.
+        right.
+        eassumption.
+    +
+            cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      rewrite H1 in *.
+      df.
+      eassumption.
+  -
+    destruct a.
+
+    +
+      monad_unfold.
+      df.
+      rewrite H0 in *.
+      df.
+      rewrite H1 in *.
+      df.
+     
+      eassumption.
+      (*
+      exists [].
+      rewrite app_nil_r.
+      reflexivity.
+      (*
+      dosome.
+      destruct (map_get (st_aspmap a_st) (n0, n));
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      rewrite Heqp in *.
+      df.
+      eexists.
+      rewrite app_nil_r.
+      reflexivity. *)
+       *)
+      
+    +
+      cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      destruct (map_get (st_aspmap a_st) (p', n0));
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      invc H5.
+      invc H6.
+      invc H0.
+      cbn in *.
+      monad_unfold.
+
+      destruct (am_get_sig_asp n a);
+        try solve_by_inversion.
+      dosome.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp1.
+      subst.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp0.
+      subst.
+
+      assert (x = x0).
+      {
+        admit.
+      }
+      subst.
+
+
+      edestruct (inEvApp (A:=Ev)).
+      eassumption.
+      ++
+        Search In.
+        apply in_or_app.
+        left.
+        Print In.
+        unfold In.
+        inv H.
+        right.
+        left.
+        reflexivity.
+        inv H0.
+      ++
+        apply in_or_app.
+        right.
+        eassumption.
+    +
+
+      cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      destruct (map_get (st_sigmap a_st) p');
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      invc H5.
+      invc H6.
+      invc H0.
+      cbn in *.
+      monad_unfold.
+
+      destruct (am_get_sig_asp n a);
+        try solve_by_inversion.
+      dosome.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp1.
+      subst.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp0.
+      subst.
+
+      assert (x = x0).
+      {
+        admit.
+      }
+      subst.
+
+
+      edestruct (inEvApp (A:=Ev)).
+      eassumption.
+      ++
+        Search In.
+        apply in_or_app.
+        left.
+        Print In.
+        unfold In.
+        inv H.
+        right.
+        left.
+        reflexivity.
+        inv H0.
+      ++
+        apply in_or_app.
+        right.
+        eassumption.
+    +
+            cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      rewrite H1 in *.
+      df.
+      eassumption.
+  -
+
+        destruct a.
+
+    +
+      monad_unfold.
+      df.
+      rewrite H0 in *.
+      df.
+      rewrite H1 in *.
+      df.
+     
+      eassumption.
+      (*
+      exists [].
+      rewrite app_nil_r.
+      reflexivity.
+      (*
+      dosome.
+      destruct (map_get (st_aspmap a_st) (n0, n));
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      rewrite Heqp in *.
+      df.
+      eexists.
+      rewrite app_nil_r.
+      reflexivity. *)
+       *)
+      
+    +
+      cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      destruct (map_get (st_aspmap a_st) (p', n0));
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      invc H5.
+      invc H6.
+      invc H0.
+      cbn in *.
+      monad_unfold.
+
+      destruct (gen_appraisal_comp e0 et a) eqn:hehe;
+        try solve_by_inversion.
+      dosome.
+
+      edestruct trace_cumul.
+      apply hehe.
+      apply Heqp.
+      subst.
+      (*
+
+      edestruct trace_cumul.
+      apply hehe.
+      apply H3.
+      subst. *)
+
+      
+
+      assert (x0 = st_trace4).
+      {
+        admit.
+      }
+      subst.
+
+      apply in_or_app.
+      right.
+      eassumption.
+    
+
+      (*
+      
+
+
+      edestruct (inEvApp (A:=Ev)).
+      eassumption.
+      ++
+        Search In.
+        apply in_or_app.
+        left.
+        Print In.
+        unfold In.
+        inv H.
+        right.
+        left.
+        reflexivity.
+        inv H0.
+      ++
+        apply in_or_app.
+        right.
+        eassumption.  *)
+    +
+
+            cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      destruct (map_get (st_sigmap a_st) p');
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      invc H5.
+      invc H6.
+      invc H0.
+      cbn in *.
+      monad_unfold.
+
+      destruct (gen_appraisal_comp e0 et a) eqn:hehe;
+        try solve_by_inversion.
+      dosome.
+
+      edestruct trace_cumul.
+      apply hehe.
+      apply Heqp.
+      subst.
+      (*
+
+      edestruct trace_cumul.
+      apply hehe.
+      apply H3.
+      subst. *)
+
+      
+
+      assert (x0 = st_trace4).
+      {
+        admit.
+      }
+      subst.
+
+      apply in_or_app.
+      right.
+      eassumption.
+
+
+      
+(*
+      cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      destruct (map_get (st_sigmap a_st) p');
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      invc H5.
+      invc H6.
+      invc H0.
+      cbn in *.
+      monad_unfold.
+
+      destruct (am_get_sig_asp n a);
+        try solve_by_inversion.
+      dosome.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp1.
+      subst.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp0.
+      subst.
+
+      assert (x = x0).
+      {
+        admit.
+      }
+      subst.
+
+
+      edestruct (inEvApp (A:=Ev)).
+      eassumption.
+      ++
+        Search In.
+        apply in_or_app.
+        left.
+        Print In.
+        unfold In.
+        inv H.
+        right.
+        left.
+        reflexivity.
+        inv H0.
+      ++
+        apply in_or_app.
+        right.
+        eassumption. *)
+    +
+            cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      rewrite H1 in *.
+      df.
+      eassumption.
+  -
+
+    
+        destruct a.
+
+    +
+      monad_unfold.
+      df.
+      rewrite H0 in *.
+      df.
+      rewrite H1 in *.
+      df.
+     
+      eassumption.
+      (*
+      exists [].
+      rewrite app_nil_r.
+      reflexivity.
+      (*
+      dosome.
+      destruct (map_get (st_aspmap a_st) (n0, n));
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      rewrite Heqp in *.
+      df.
+      eexists.
+      rewrite app_nil_r.
+      reflexivity. *)
+       *)
+      
+    +
+      cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      destruct (map_get (st_aspmap a_st) (p', n0));
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      invc H5.
+      invc H6.
+      invc H0.
+      cbn in *.
+      monad_unfold.
+
+      destruct (gen_appraisal_comp e0 et a) eqn:hehe;
+        try solve_by_inversion.
+      dosome.
+
+      edestruct trace_cumul.
+      apply hehe.
+      apply Heqp.
+      subst.
+      (*
+
+      edestruct trace_cumul.
+      apply hehe.
+      apply H3.
+      subst. *)
+
+      
+
+      assert (x0 = st_trace4).
+      {
+        admit.
+      }
+      subst.
+
+      apply in_or_app.
+      right.
+      eassumption.
+    
+
+      (*
+      
+
+
+      edestruct (inEvApp (A:=Ev)).
+      eassumption.
+      ++
+        Search In.
+        apply in_or_app.
+        left.
+        Print In.
+        unfold In.
+        inv H.
+        right.
+        left.
+        reflexivity.
+        inv H0.
+      ++
+        apply in_or_app.
+        right.
+        eassumption.  *)
+    +
+
+            cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      destruct (map_get (st_sigmap a_st) p');
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      invc H5.
+      invc H6.
+      invc H0.
+      cbn in *.
+      monad_unfold.
+
+      destruct (gen_appraisal_comp e0 et a) eqn:hehe;
+        try solve_by_inversion.
+      dosome.
+
+      edestruct trace_cumul.
+      apply hehe.
+      apply Heqp.
+      subst.
+      (*
+
+      edestruct trace_cumul.
+      apply hehe.
+      apply H3.
+      subst. *)
+
+      
+
+      assert (x0 = st_trace4).
+      {
+        admit.
+      }
+      subst.
+
+      apply in_or_app.
+      right.
+      eassumption.
+
+
+      
+(*
+      cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      destruct (map_get (st_sigmap a_st) p');
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      invc H5.
+      invc H6.
+      invc H0.
+      cbn in *.
+      monad_unfold.
+
+      destruct (am_get_sig_asp n a);
+        try solve_by_inversion.
+      dosome.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp1.
+      subst.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp0.
+      subst.
+
+      assert (x = x0).
+      {
+        admit.
+      }
+      subst.
+
+
+      edestruct (inEvApp (A:=Ev)).
+      eassumption.
+      ++
+        Search In.
+        apply in_or_app.
+        left.
+        Print In.
+        unfold In.
+        inv H.
+        right.
+        left.
+        reflexivity.
+        inv H0.
+      ++
+        apply in_or_app.
+        right.
+        eassumption. *)
+    +
+            cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      rewrite H1 in *.
+      df.
+      eassumption.
+  -
+
+
+
+    
+        destruct a.
+
+    +
+      monad_unfold.
+      df.
+      rewrite H0 in *.
+      df.
+      rewrite H1 in *.
+      df.
+     
+      eassumption.
+      (*
+      exists [].
+      rewrite app_nil_r.
+      reflexivity.
+      (*
+      dosome.
+      destruct (map_get (st_aspmap a_st) (n0, n));
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      rewrite Heqp in *.
+      df.
+      eexists.
+      rewrite app_nil_r.
+      reflexivity. *)
+       *)
+      
+    +
+      cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      destruct (map_get (st_aspmap a_st) (p', n));
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      invc H5.
+      invc H6.
+      cbn in *.
+      monad_unfold.
+
+      destruct (gen_appraisal_comp e1 et1 a) eqn:hehe;
+        try solve_by_inversion.
+      dosome.
+      vmsts.
+
+      edestruct trace_cumul.
+      apply hehe.
+      apply Heqp3.
+      subst.
+      assert (st_trace = x).
+      {
+        admit.
+      }
+      subst.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp1.
+      subst.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp4.
+      subst.
+
+      assert (x0 = x1).
+      {
+        admit.
+      }
+      subst.
+      edestruct (inEvApp (A:=Ev)).
+      eassumption.
+      ++
+        eapply in_or_app.
+        left.
+        eapply in_or_app.
+        right.
+        eassumption.
+      ++
+        right.
+        eapply in_or_app.
+        right.
+        eassumption.
+    +
+      cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      destruct (map_get (st_sigmap a_st) p');
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      invc H5.
+      invc H6.
+      cbn in *.
+      monad_unfold.
+
+      destruct (gen_appraisal_comp e1 et1 a) eqn:hehe;
+        try solve_by_inversion.
+      dosome.
+      vmsts.
+
+      edestruct trace_cumul.
+      apply hehe.
+      apply Heqp0.
+      subst.
+      assert (st_trace0 = x).
+      {
+        admit.
+      }
+      subst.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp1.
+      subst.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp4.
+      subst.
+
+      assert (x0 = x1).
+      {
+        admit.
+      }
+      subst.
+      edestruct (inEvApp (A:=Ev)).
+      eassumption.
+      ++
+        eapply in_or_app.
+        left.
+        eapply in_or_app.
+        right.
+        eassumption.
+      ++
+        right.
+        eapply in_or_app.
+        right.
+        eassumption.
+    +
+            cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      rewrite H1 in *.
+      df.
+      eassumption.
+  -
+
+    
+
+
+    
+        destruct a.
+
+    +
+      monad_unfold.
+      df.
+      rewrite H0 in *.
+      df.
+      rewrite H1 in *.
+      df.
+     
+      eassumption.
+      (*
+      exists [].
+      rewrite app_nil_r.
+      reflexivity.
+      (*
+      dosome.
+      destruct (map_get (st_aspmap a_st) (n0, n));
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      rewrite Heqp in *.
+      df.
+      eexists.
+      rewrite app_nil_r.
+      reflexivity. *)
+       *)
+      
+    +
+      cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      destruct (map_get (st_aspmap a_st) (p', n));
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      invc H5.
+      invc H6.
+      cbn in *.
+      monad_unfold.
+
+      destruct (gen_appraisal_comp e1 et1 a) eqn:hehe;
+        try solve_by_inversion.
+      dosome.
+      vmsts.
+
+      edestruct trace_cumul.
+      apply hehe.
+      apply Heqp3.
+      subst.
+      assert (st_trace = x).
+      {
+        admit.
+      }
+      subst.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp1.
+      subst.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp4.
+      subst.
+
+      assert (x0 = x1).
+      {
+        admit.
+      }
+      subst.
+      edestruct (inEvApp (A:=Ev)).
+      eassumption.
+      ++
+        eapply in_or_app.
+        left.
+        eapply in_or_app.
+        right.
+        eassumption.
+      ++
+        right.
+        eapply in_or_app.
+        right.
+        eassumption.
+    +
+      cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      destruct (map_get (st_sigmap a_st) p');
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      invc H5.
+      invc H6.
+      cbn in *.
+      monad_unfold.
+
+      destruct (gen_appraisal_comp e1 et1 a) eqn:hehe;
+        try solve_by_inversion.
+      dosome.
+      vmsts.
+
+      edestruct trace_cumul.
+      apply hehe.
+      apply Heqp0.
+      subst.
+      assert (st_trace0 = x).
+      {
+        admit.
+      }
+      subst.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp1.
+      subst.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp4.
+      subst.
+
+      assert (x0 = x1).
+      {
+        admit.
+      }
+      subst.
+      edestruct (inEvApp (A:=Ev)).
+      eassumption.
+      ++
+        eapply in_or_app.
+        left.
+        eapply in_or_app.
+        right.
+        eassumption.
+      ++
+        right.
+        eapply in_or_app.
+        right.
+        eassumption.
+    +
+            cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      rewrite H1 in *.
+      df.
+      eassumption.
+
+  -
+
+    cbn in *.
+    monad_unfold.
+    repeat break_let.
+    df.
+    dohtac.
+    df.
+
+    eapply IHa1.
+    apply build_comp_at.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+  -
+    cbn in *.
+    monad_unfold.
+    repeat break_let.
+    df.
+    dohtac.
+    df.
+
+    eapply IHa1.
+    apply build_comp_at.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+  -
+    cbn in *.
+    monad_unfold.
+    repeat break_let.
+    df.
+    dohtac.
+    df.
+
+    eapply IHa1.
+    apply build_comp_at.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+  -
+    cbn in *.
+    monad_unfold.
+    repeat break_let.
+    df.
+    dohtac.
+    df.
+
+    eapply IHa1.
+    apply build_comp_at.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+  -
+    cbn in *.
+    monad_unfold.
+    repeat break_let.
+    df.
+    dohtac.
+    df.
+
+    eapply IHa1.
+    apply build_comp_at.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+  -
+    cbn in *.
+    monad_unfold.
+    repeat break_let.
+    df.
+    dohtac.
+    df.
+
+    eapply IHa1.
+    apply build_comp_at.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+  -
+    cbn in *.
+    monad_unfold.
+    repeat break_let.
+    df.
+    dohtac.
+    df.
+
+    eapply IHa1.
+    apply build_comp_at.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+  -
+
+    cbn in *.
+    monad_unfold.
+    repeat break_let.
+    df.
+    dosome.
+    df.
+    vmsts.
+
+    invc H6.
+    cbn in *.
+    monad_unfold.
+    df.
+    inv H4.
+  -
+    cbn in *.
+    monad_unfold.
+    repeat break_let.
+    df.
+    dosome.
+    df.
+    vmsts.
+
+    assert (exists t' p', a1_1 = snd (anno t' p')). admit.
+    destruct_conjs.
+
+    destruct (gen_appraisal_comp st_ev (eval (unanno a1_1) p' (uu n l n0 et)) a_st) eqn:hoho.
+    assert (exists vv, o0 = Some vv).
+    {
+      edestruct app_some''.
+      eassumption.
+      eassumption.
+      reflexivity.
+      reflexivity.
+      reflexivity.
+      simpl.
+      eassumption.
+      simpl.
+      Print do_pl_immut.
+      assert (allMapped a1_1 p a_st (uu n l n0 et)).
+      {
+
+        edestruct suffix_prop.
+        rewrite <- H8. reflexivity.
+        eassumption.
+        rewrite H9 in *; clear H9.
+        edestruct evshape_et with (e:=st_ev) (et:=(eval (unanno a1_1) p'  (uu n l n0 et))).
+        eapply multi_ev_eval.
+        rewrite <- H8.
+        reflexivity.
+        eapply restl'.
+        eassumption.
+        eassumption.
+        eassumption.
+        do_pl_immut.
+        reflexivity.
+
+        (*eapply asas.
+        gen_st_const.
+        apply H0. *)
+        admit.
+        gen_st_const.
+        rewrite H9 in *.
+        df.
+        
+
+        (*
+        eapply asdd.
+        do_pl_immut.
+        
+        eassumption. *)
+        admit.
+      }
+      
+      apply H9.
+     
+      reflexivity.
+      reflexivity.
+      simpl in *.
+      unfold runSt in *.
+      do_pl_immut.
+      rewrite announ' in *.
+      rewrite hoho in *.
+      simpl in *.
+      subst.
+      eauto.
+    }
+    
+    destruct_conjs.
+    subst.
+
+    destruct (H9 {| st_ev := mtc; st_trace := []; st_pl := 0; st_store := [] |}) eqn:hei.
+    assert (o0 = Some tt).
+    {
+      vmsts.
+      Check app_some''.
+      eapply dodo.
+      eapply hoho.
+      apply hei.
+    }
+    
+    
+    subst.
+    vmsts.
+    
+
+    
+
+    eapply IHa1_2.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+
+    eapply IHa1_1.
+    eassumption.
+    do_pl_immut.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+
+    edestruct suffix_prop.
+    reflexivity.
+    apply Heqp0.
+    Check evshape_et.
+    Check gen_ev_shape.
+    eapply gen_ev_shape.
+    do_pl_immut.
+    eassumption.
+    eassumption.
+    eassumption.
+    eapply gen_ev_shape.
+    eassumption.
+  -
+
+    (*
+    
+    eassumption.
+    eassumption.
+
+    eapply multi_ev_eval.
+    reflexivity.
+    eapply restl'.
+    reflexivity. 
+   
+
+
+    
+   
+
+    
+(*
+    edestruct app_some''.
+    reflexivity.
+    rewrite <- H8.
+    eassumption.
+    reflexivity.
+    reflexivity.
+    reflexivity.
+    simpl.
+    eassumption.
+    simpl.
+    rewrite <- H8.
+    Check allMapped. *)
+
+    invc H6.
+    cbn in *.
+    monad_unfold.
+    destruct (am_get_app_asp n0 n a_st);
+      try solve_by_inversion.
+    dosome.
+    df.
+    repeat break_let.
+     *)
+    
+
+    (*
+
+    eapply IHa1_2.
+    eassumption.
+    eassumption.
+    eassumption.
+    eapply app_some''.
+    
+    admit.
+    eassumption.
+    eassumption.
+    eassumption.
+    assert (exists t' p', a1_1 = snd (anno t' p')). admit.
+    destruct_conjs.
+    edestruct suffix_prop.
+    eassumption.
+    eassumption.
+    rewrite H9 in *. clear H9.
+    
+     destruct_conjs.
+     eapply multi_ev_eval.
+     eassumption.
+    
+    eapply restl'.
+    eassumption.
+    
+    eassumption.
+    eassumption.
+    do_pl_immut.
+    reflexivity.
+  -
+    
+    
+    rewrite <- H8.
+    apply Heqp0.
+    eassumption.
+
+    invc H6.
+    cbn in *.
+    monad_unfold.
+
+    destruct (am_get_app_asp n0 n a_st);
+      try solve_by_inversion.
+    dosome.
+    df.
+
+    edestruct trace_cumul.
+    apply Heqp3.
+    apply Heqp2.
+    subst.
+
+
+    eapply IHa1_2.
+    eassumption.
+    eassumption.
+    eassumption.
+
+    
+    df.
+    inv H4.
+    
+    
+
+    eapply IHa1_2.
+    eassumption.
+    eassumption.
+    eassumption.
+
+    eapply IHa1_1.
+
+    eapply IHa1.
+    apply build_comp_at.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      
+      
+    
+      
+        
+        
+      
+        
+      
+      (*
+
+      edestruct trace_cumul.
+      apply hehe.
+      apply H3.
+      subst. *)
+
+      
+
+      assert (x0 = st_trace4).
+      {
+        admit.
+      }
+      subst.
+
+      apply in_or_app.
+      right.
+      eassumption.
+    
+
+      (*
+      
+
+
+      edestruct (inEvApp (A:=Ev)).
+      eassumption.
+      ++
+        Search In.
+        apply in_or_app.
+        left.
+        Print In.
+        unfold In.
+        inv H.
+        right.
+        left.
+        reflexivity.
+        inv H0.
+      ++
+        apply in_or_app.
+        right.
+        eassumption.  *)
+    +
+
+            cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      destruct (map_get (st_sigmap a_st) p');
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      invc H5.
+      invc H6.
+      invc H0.
+      cbn in *.
+      monad_unfold.
+
+      destruct (gen_appraisal_comp e0 et a) eqn:hehe;
+        try solve_by_inversion.
+      dosome.
+
+      edestruct trace_cumul.
+      apply hehe.
+      apply Heqp.
+      subst.
+      (*
+
+      edestruct trace_cumul.
+      apply hehe.
+      apply H3.
+      subst. *)
+
+      
+
+      assert (x0 = st_trace4).
+      {
+        admit.
+      }
+      subst.
+
+      apply in_or_app.
+      right.
+      eassumption.
+
+
+      
+(*
+      cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      destruct (map_get (st_sigmap a_st) p');
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      invc H5.
+      invc H6.
+      invc H0.
+      cbn in *.
+      monad_unfold.
+
+      destruct (am_get_sig_asp n a);
+        try solve_by_inversion.
+      dosome.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp1.
+      subst.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp0.
+      subst.
+
+      assert (x = x0).
+      {
+        admit.
+      }
+      subst.
+
+
+      edestruct (inEvApp (A:=Ev)).
+      eassumption.
+      ++
+        Search In.
+        apply in_or_app.
+        left.
+        Print In.
+        unfold In.
+        inv H.
+        right.
+        left.
+        reflexivity.
+        inv H0.
+      ++
+        apply in_or_app.
+        right.
+        eassumption. *)
+    +
+            cbn in *.
+      vmsts.
+      
+      (*
+      invc H4.
+      invc H5.
+       *)
+      
+      df.
+      dosome.
+      rewrite H1 in *.
+      df.
+      eassumption.
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    
+    
+      
+    
+
+
+
+
+
+
+
+    
+    
+    
+      
+      destruct (map_get (st_aspmap a_st) (st_pl, n3));
+        try solve_by_inversion.
+      df.
+      rewrite Heqp0 in *.
+      df.
+      invc H5.
+      invc H6.
+      invc H0.
+      cbn in *.
+      monad_unfold.
+
+      destruct (am_get_app_asp n0 n a);
+        try solve_by_inversion.
+      dosome.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp1.
+      subst.
+
+      edestruct trace_cumul.
+      apply Heqp2.
+      apply Heqp0.
+      subst.
+
+      assert (x = x0).
+      {
+        admit.
+      }
+      subst.
+
+
+      edestruct (inEvApp (A:=Ev)).
+      eassumption.
+      ++
+        Search In.
+        apply in_or_app.
+        left.
+        Print In.
+        unfold In.
+        inv H.
+        right.
+        left.
+        reflexivity.
+        inv H0.
+      ++
+        apply in_or_app.
+        right.
+        eassumption.
+      
+      
+        
+        
+      
+        econstructor.
+        inv H
+        
+      
+      
+
+
+      
+      eexists.
+      
+
+      destruct (map_get (st_aspmap a) (n0, n));
+        try solve_by_inversion.
+      df.
+
+      destruct (map_get (st_aspmap a1) (p', id0));
+        try solve_by_inversion.
+      df.
+      rewrite Heqp5 in *.
+      df.
+      invc H4.
+      invc H0.
+
+
+      
+      rewrite Heqp0 in *.
+      df.
+      rewrite Heqp in *.
+      df.
+      eexists.
+      rewrite app_nil_r.
+      reflexivity.
+      
+    
+      
+
+
+
+
+
+    
+    df.
+    destruct (map_get (st_aspmap a_st) (n0, n));
+      try solve_by_inversion.
     df.
     dosome.
     df.
@@ -1761,12 +5539,14 @@ Proof.
     eassumption.
     
     
-    *)
- 
     
+ 
+   *) 
     
   
-Admitted.
+      Admitted.
+      
+        
 
 
 
@@ -2762,6 +6542,45 @@ Proof.
         simpl in *.
         rewrite H0 in *.
 
+        assert (forall ev', In ev' st_trace4 -> In ev' st_trace3).
+        {
+          intros.
+          Check gen_lseq_decomp.
+          eapply gen_lseq_decomp.
+          apply Heqp4.
+          assert (unanno a1 = t'2).
+          {
+            erewrite <- announ'.
+            rewrite Heqp1.
+            simpl.
+            reflexivity.
+          }
+          
+          rewrite H2.
+          eassumption.
+          assert (o0 = Some tt).
+          {
+            eapply dodo.
+            apply Heqp0.
+            apply Heqp2.
+          }
+          subst.
+          
+          eassumption.
+          eassumption.
+          assert (o = Some tt).
+          {
+            eapply dodo; eauto.
+          }
+          subst.
+          eassumption.
+          eassumption.
+        }
+
+
+        (*
+        
+
         assert (exists l, st_trace3 = st_trace4 ++ l).
         {
 
@@ -2830,6 +6649,8 @@ Proof.
         destruct_conjs.
         rewrite H2.
         clear H2.
+         *)
+        
 
         (*
       destruct (gen_appraisal_comp st_ev2 (eval t'1 st_pl0 et) a_st) eqn:hii.
@@ -2878,10 +6699,48 @@ Proof.
           exists x1.
           split.
           Search In.
+          assert (forall ev', In ev' st_trace4 -> In ev' st_trace3).
+          {
+            intros.
+            eapply gen_lseq_decomp.
+            apply Heqp4.
+            assert (unanno a1 = t'2).
+            {
+              erewrite <- announ'.
+              rewrite Heqp1.
+              simpl.
+              reflexivity.
+            }
+            
+            
+            rewrite H2.
+            eassumption.
+            assert (o0 = Some tt).
+            {
+              eapply dodo.
+              apply Heqp0.
+              apply Heqp2.
+            }
+            subst.
+            
+            eassumption.
+            eassumption.
+          assert (o = Some tt).
+          {
+            eapply dodo; eauto.
+          }
+          subst.
+          eassumption.
+          eassumption.
+          }
+          apply H0.
+          eassumption.
+          eassumption.
+          (*
           eapply in_or_app.
           left.
           eauto.
-          eassumption.
+          eassumption. *)
       ++
         
         
@@ -3571,6 +7430,10 @@ Proof.
         do_pl_immut.
         assert (t'1 = unanno a0).
         {
+          erewrite <- announ'.
+            rewrite Heqp1.
+            simpl.
+            reflexivity.
           admit.
         }
         subst.
