@@ -24,6 +24,12 @@ Definition extractSig (e:EvidenceC) : VM (BS * EvidenceC) :=
   | _ => failm
   end.
 
+Definition extractHsh (e:EvidenceC) : VM (BS * EvidenceC) :=
+  match e with
+  | hhc bs e' => ret (bs, e')
+  | _ => failm
+  end.
+
 Definition extractComp (e:EvidenceC) : VM (EvidenceC * EvidenceC) :=
   match e with
   | ssc e1 e2 => ret (e1,e2)
@@ -69,9 +75,11 @@ Definition checkSig (x:nat) (i:ASP_ID) (l:list Arg) : VM BS :=
   add_tracem [Term.umeas x 0 i l];;
   ret 78.
 
+Print EvidenceC.
+
 Definition extractUev (e:EvidenceC) : VM (BS * EvidenceC) :=
   match e with
-  | uuc _ bs e' => ret (bs,e')
+  | uuc i bs e' => ret (bs,e')
   | _ => failm
   end.
 
@@ -96,9 +104,25 @@ Fixpoint build_app_comp (t:AnnoTerm) : AM (VM EvidenceC) :=
         put_ev e' ;;
         e_res <- d ;;
         ret (ggc res e_res)) in
-
-
     ret c
+
+  | alseq (n,n') t1 t2 =>
+    c <- build_app_comp t1 ;;
+    d <- build_app_comp t2 ;;
+    let cc :=
+        (
+          d ;; c
+          (*
+        e <- get_ev ;;
+        pr <- extractComp e ;;
+        let '(e1,e2) := pr in
+        put_ev e1 ;;
+        e1_res <- c ;;
+        put_ev e2 ;;
+        e2_res <- d ;;
+        ret (ssc e1_res e2_res)*)) in
+    ret cc
+        
   | aasp (n,n') (ASPC i args) =>
     p <- gets am_pl ;;
     app_id <- am_get_app_asp p i ;;
@@ -110,7 +134,54 @@ Fixpoint build_app_comp (t:AnnoTerm) : AM (VM EvidenceC) :=
         res <- checkUSM n app_id args bs ;;
         ret (uuc n res e') ) in
     ret c
+  | aasp (n,n') (SIG) =>
+    p <- gets am_pl ;;
+    app_id <- am_get_sig_asp p ;;
+    let c :=
+        e <- get_ev ;;
+        pr <- extractSig e ;;
+        let '(bs,e') := pr in
+        res <- checkSig n app_id ([encodeEv e'] ++ [bs] (* ++ args*) ) ;;
+        put_ev e' ;; (* TODO: does this have any effect? *)
+        ret (ggc res e') in
         
+    ret c
+
+  | aasp (n,n') (HSH) =>
+    
+    p <- gets am_pl ;;
+   (* app_id <- am_get_sig_asp p ;; *) (* TODO: get_hsh_asp impl *) 
+    let c :=
+        e <- get_ev ;;
+        pr <- extractHsh e ;;
+        let '(bs,e') := pr in
+        (*
+        res <- checkSig n app_id ([encodeEv e'] ++ [bs] (* ++ args*) ) ;;
+        put_ev e' ;; (* TODO: does this have any effect? *) 
+        ret (ggc res e') *)
+        put_ev e' ;;
+        ret (hhc 0 mtc) in
+        
+    ret c
+
+  | aasp (n,n') (CPY) =>
+    
+    p <- gets am_pl ;;
+   (* app_id <- am_get_sig_asp p ;; *) (* TODO: get_hsh_asp impl *) 
+    let c :=
+        e <- get_ev ;;
+        (*
+        pr <- extractHsh e ;;
+        let '(bs,e') := pr in
+        (*
+        res <- checkSig n app_id ([encodeEv e'] ++ [bs] (* ++ args*) ) ;;
+        put_ev e' ;; (* TODO: does this have any effect? *) 
+        ret (ggc res e') *)
+        put_ev e' ;;
+        ret (hhc 0 mtc) *)
+        ret e in
+        
+    ret c
         
   | aatt r q t' =>
     modify_plc q ;;
@@ -181,106 +252,6 @@ Compute evc_st.
 Definition evc := st_ev evc_st.
 Compute evc.
 *)
-    
-      
-    
-
-Fixpoint build_app_comp (t:AnnoAppTerm) : VM EvidenceC :=
-  match t with
-  | acheck_bpar (n,n') t1 t2 =>
-    e <- get_ev ;;
-    pr <- extractComp e ;;
-    let '(e1,e2) := pr in
-    put_ev e1 ;;
-    e1_res <- build_app_comp t1 ;;
-    put_ev e2 ;;
-    e2_res <- build_app_comp t2 ;;
-    ret (ppc e1_res e2_res)
-  | acheck_sig (n,n') app_id  =>
-    e <- get_ev ;;
-    pl <- get_pl ;;
-    pr <- extractSig e ;;
-    let '(bs,e') := pr in
-    res <- invokeUSM n app_id pl ([encodeEv e'] ++ [bs] (* ++ args*) ) ;;
-    ret res
-      
-    
-    
-  | _ => ret mtc
-  end.
-    
-
-
-
-  
-Fixpoint gen_appraisal_comp (e:EvidenceC) (et:Evidence) : AM (VM unit) :=
-  match e with
-  | mtc =>
-    match et with
-    | mt => ret (ret tt)
-    | _ => failm
-    end   
-  | uuc i bs e' =>
-    match et with 
-    | uu i_t args_t p e'_t =>
-      app_id <- am_get_app_asp p i_t ;;
-      let c1 :=
-          e <- invokeUSM 0 app_id p (args_t ++ [bs]) ;; put_ev e in
-          (* TODO: is bogus event id ok here? *)
-          (* TODO: do we need an accurate Plc here?  p is from evidence, not invoking principal *)
-      c2 <- gen_appraisal_comp e' e'_t ;;
-      ret (c1 ;; c2)
-    | _ => failm
-    end
-  | ggc bs e' =>
-    match et with
-    | gg p e'_t =>
-      (* TODO: should gg have an ID to show what event generated it?  To use in encodeEv? *)
-      app_id <- am_get_sig_asp p ;;
-      let c1 :=
-          e <- invokeUSM 0 app_id p ([encodeEv e'] ++ [bs]) ;; put_ev e in
-      (* TODO: additional args with encoded evidence? *)
-      (* TODO: Plc p ok? *)
-      c2 <- gen_appraisal_comp e' e'_t ;;
-      ret (c1 ;; c2)
-    | _ => failm
-    end
-  | hhc bs e' =>
-    match et with
-    | hh p e'_t =>
-      c1 <- gen_appraisal_comp e' e'_t ;;
-      ret (c1)
-    | _ => failm
-    end
-  | nnc nid bs e' =>
-    match et with
-    | nn nid_t e'_t =>
-      c1 <- gen_appraisal_comp e' e'_t ;;
-      ret (c1)
-    | _ => failm
-    end
-  | ssc e1 e2 =>
-    match et with
-    | ss e1_t e2_t => 
-      c1 <- gen_appraisal_comp e1 e1_t ;;
-          c2 <- gen_appraisal_comp e2 e2_t ;;
-          ret (c1 ;; c2)
-    | _ => failm
-    end
-  | ppc e1 e2 =>
-    match et with
-    | pp e1_t e2_t => 
-      c1 <- gen_appraisal_comp e1 e1_t ;;
-          c2 <- gen_appraisal_comp e2 e2_t ;;
-          ret (c1 ;; c2)
-    | _ => failm
-    end
-  end.
-
-Check build_comp.
-Check runSt.
-Check run_vm.
-Check eval.
 
 (*
 Definition run_vm_fresh (t:AnnoTerm) :=
@@ -293,6 +264,8 @@ Definition run_vm_fresh_t (t:Term) :=
 Check run_vm_fresh_t.
 *)
 
+
+(*
 Definition build_app_comp (t: AnnoTerm) (*(p:Plc)*) (st:vm_st) (et:Evidence) : AM (VM unit) :=
   let vm_res_st := run_vm t st in
   let evc := st_ev vm_res_st in
@@ -317,6 +290,7 @@ Definition run_app_comp_ev (t: AnnoTerm) (*(p:Plc)*) (st:vm_st) (et:Evidence) : 
 
 Definition run_app_comp_ev_t (t: Term) (*(p:Plc)*) (st:vm_st) (et:Evidence) : AM EvidenceC :=
   run_app_comp_ev (annotated t) st et.
+*)
   
 
 (*
@@ -344,12 +318,6 @@ Compute evc_st.
 Definition evc := st_ev evc_st.
 Compute evc.
 *)
-
-Definition fromOpt{A:Type} (o:option A) (a:A) : A :=
-  match o with
-  | Some t => t
-  | None => a
-  end.
 
 Inductive evMapped : Evidence -> AM_St -> Prop :=
 | evMappedMt : forall m, evMapped mt m
@@ -380,67 +348,81 @@ Inductive evMapped : Evidence -> AM_St -> Prop :=
     evMapped e2 st ->
     evMapped (pp e1 e2) st.
 
-Inductive allMapped : AnnoTerm -> Plc -> AM_St -> Evidence -> Prop :=
+Inductive allMapped : AnnoTerm -> AM_St -> Evidence -> Prop :=
 | allMapped_cpy : forall r p st e,
     (*m = st_aspmap st -> *)
+    p = am_pl st ->
     evMapped e st ->
-    allMapped (aasp r (CPY)) p st e
+    allMapped (aasp r (CPY)) st e
 | allMapped_asp : forall m st p i r args e,
+    p = am_pl st ->
     evMapped e st ->
     m = st_aspmap st ->
     (exists j, bound_to m (p,i) j) ->
-    allMapped (aasp r (ASPC i args)) p st e
+    allMapped (aasp r (ASPC i args)) st e
 | allMapped_sig : forall r p st m e,
     evMapped e st ->
+    p = am_pl st ->
     m = st_sigmap st ->
     (exists j, bound_to m p j) ->
-    allMapped (aasp r (SIG)) p st e
+    allMapped (aasp r (SIG)) st e
 | allMapped_hsh : forall r p st e,
     evMapped e st ->
-    allMapped (aasp r (HSH)) p st e
-| allMapped_at : forall t' p q r st e m,
+    p = am_pl st ->
+    allMapped (aasp r (HSH)) st e
+| allMapped_at : forall t' p q r st e m x y z z',
     m = st_aspmap st ->
     (*evMapped e m -> *) (* TODO: need this? *)
-    allMapped t' q st e ->
-    allMapped (aatt r q t') p st e
+    st = (mkAM_St x y z z' p) ->
+    allMapped t' (mkAM_St x y z z' q) e ->
+    allMapped (aatt r q t') st e
 | allMapped_lseq : forall t1 t2 p st r e,
     (* m = st_aspmap st ->
        evMapped e m -> *)  (* TODO: need this? *)
-    allMapped t1 p st e ->
-    allMapped t2 p st (eval (unanno t1) p e) ->
-    allMapped (alseq r t1 t2) p st e
+    p = am_pl st ->
+    allMapped t1 st e ->
+    allMapped t2 st mt (*(eval (unanno t1) p e)*) -> (* TODO: is mt ok here? *)
+    allMapped (alseq r t1 t2) st e
 | allMapped_bseq_nn : forall t1 t2 p st e r,
-    allMapped t1 p st mt ->
-    allMapped t2 p st mt ->
-    allMapped (abseq r (NONE,NONE) t1 t2) p st e
+    p = am_pl st ->
+    allMapped t1 st mt ->
+    allMapped t2 st mt ->
+    allMapped (abseq r (NONE,NONE) t1 t2) st e
 | allMapped_bseq_na : forall t1 t2 p st e r,
-    allMapped t1 p st mt ->
-    allMapped t2 p st e ->
-    allMapped (abseq r (NONE,ALL) t1 t2) p st e
+    p = am_pl st ->
+    allMapped t1 st mt ->
+    allMapped t2 st e ->
+    allMapped (abseq r (NONE,ALL) t1 t2) st e
 | allMapped_bseq_an : forall t1 t2 p st e r,
-    allMapped t1 p st e ->
-    allMapped t2 p st mt ->
-    allMapped (abseq r (ALL,NONE) t1 t2) p st e
+    p = am_pl st ->
+    allMapped t1 st e ->
+    allMapped t2 st mt ->
+    allMapped (abseq r (ALL,NONE) t1 t2) st e
 | allMapped_bseq_aa : forall t1 t2 p st e r,
-    allMapped t1 p st e ->
-    allMapped t2 p st e ->
-    allMapped (abseq r (ALL,ALL) t1 t2) p st e
+    p = am_pl st ->
+    allMapped t1 st e ->
+    allMapped t2 st e ->
+    allMapped (abseq r (ALL,ALL) t1 t2) st e
 | allMapped_bpar_nn : forall t1 t2 p st e r,
-    allMapped t1 p st mt ->
-    allMapped t2 p st mt ->
-    allMapped (abpar r (NONE,NONE) t1 t2) p st e
+    p = am_pl st ->
+    allMapped t1 st mt ->
+    allMapped t2 st mt ->
+    allMapped (abpar r (NONE,NONE) t1 t2) st e
 | allMapped_bpar_na : forall t1 t2 p st e r,
-    allMapped t1 p st mt ->
-    allMapped t2 p st e ->
-    allMapped (abpar r (NONE,ALL) t1 t2) p st e
+    p = am_pl st ->
+    allMapped t1 st mt ->
+    allMapped t2 st e ->
+    allMapped (abpar r (NONE,ALL) t1 t2) st e
 | allMapped_bpar_an : forall t1 t2 p st e r,
-    allMapped t1 p st e ->
-    allMapped t2 p st mt ->
-    allMapped (abpar r (ALL,NONE) t1 t2) p st e
+    p = am_pl st ->
+    allMapped t1 st e ->
+    allMapped t2 st mt ->
+    allMapped (abpar r (ALL,NONE) t1 t2) st e
 | allMapped_bpar_aa : forall t1 t2 p st e r,
-    allMapped t1 p st e ->
-    allMapped t2 p st e ->
-    allMapped (abpar r (ALL,ALL) t1 t2) p st e.
+    p = am_pl st ->
+    allMapped t1 st e ->
+    allMapped t2 st e ->
+    allMapped (abpar r (ALL,ALL) t1 t2) st e.
 
 Lemma announ' : forall t p,
     unanno (snd (anno t p)) = t.
@@ -480,12 +462,16 @@ Proof.
   eapply announ'; eauto.
 Defined.
 
-Lemma allMappedAt : forall r n a p st e,
-    allMapped (aatt r n a) p st e ->
-    allMapped a n st e.
+Lemma allMappedAt : forall r n a p st e x y z z',
+    st = mkAM_St x y z z' p ->
+    allMapped (aatt r n a) st e ->
+    allMapped a (mkAM_St x y z z' n) e.
 Proof.
   intros.
   inv H.
+  df.
+  inv H0.
+  df.
   eauto.
 Defined.
 
@@ -547,11 +533,11 @@ Ltac do_pl_immut :=
 
 Ltac allMappedFacts :=
   match goal with
-  | [H: allMapped (aasp _ _) _ _ _ |- _] => invc H
-  | [H: allMapped (aatt _ _ _) _ _ _ |- _] => invc H
-  | [H: allMapped (alseq _ _ _) _ _ _ |- _] => invc H
-  | [H: allMapped (abseq _ _ _ _) _ _ _ |- _] => invc H
-  | [H: allMapped (abpar _ _ _ _) _ _ _ |- _] => invc H
+  | [H: allMapped (aasp _ _) _ _ |- _] => invc H
+  | [H: allMapped (aatt _ _ _) _ _ |- _] => invc H
+  | [H: allMapped (alseq _ _ _) _ _ |- _] => invc H
+  | [H: allMapped (abseq _ _ _ _) _ _ |- _] => invc H
+  | [H: allMapped (abpar _ _ _ _) _ _ |- _] => invc H
   end;
   destruct_conjs.
 
@@ -598,6 +584,1196 @@ Ltac evShapeFacts :=
   | [H: Ev_Shape (ppc _ _) _ |- _] => invc H
   | [H: Ev_Shape _ (pp _ _) |- _] => invc H
   end.
+
+Check build_app_comp.
+Check run_app_comp.
+Check eval.
+Check run_app_comp'.
+
+Check allMapped.
+Check run_vm.
+
+Ltac haaa :=
+  let x:= fresh in
+  match goal with
+  | [H: context[match ?ee with | Some _ => _ | _ => _ end] |- _] =>
+    destruct ee eqn:x;
+    try solve_by_inversion
+  end; df; eauto.
+
+Ltac stt :=
+  cbn in *;
+  monad_unfold;
+  try solve_by_inversion;
+  repeat break_let;
+  dosome;
+  try haaa.
+
+Ltac ff := repeat break_match; try solve_by_inversion; df.
+
+Ltac subst'' :=
+  match goal with
+  | H:?A = _, H2:context [ ?A ] |- _ => rewrite H in *
+  | H:?A = _ |- context [ ?A ] => rewrite H in *
+  end.
+
+Lemma ba_const : forall a a_st a_st' v,
+    build_app_comp a a_st = (Some v, a_st') ->
+    am_nonceMap a_st = am_nonceMap a_st' /\
+    am_nonceId a_st = am_nonceId a_st' /\
+    st_aspmap a_st = st_aspmap a_st' /\
+    st_sigmap a_st = st_sigmap a_st'.
+Proof.
+  intros.
+  generalizeEverythingElse a.
+  induction a; intros.
+  -
+    destruct a;
+      try (df; tauto).
+    +
+      df.
+      dosome.
+      haaa.
+    +
+      df.
+      dosome.
+      haaa.
+  -
+    df.
+    destruct a_st'.
+    edestruct IHa.
+    eassumption.
+    destruct_conjs.
+    simpl in *.
+    subst.
+    tauto.
+  -
+    df.
+    subst.
+    df.
+    destruct a2.
+    +
+      destruct a.
+      ++
+        df.
+        dosome.
+        simpl.
+        edestruct IHa1.
+        eassumption.
+        destruct_conjs.
+        simpl in *.
+        subst.
+        tauto.
+      ++
+        df.
+        dosome.
+        simpl in *.
+        haaa.
+      ++
+        df.
+        dosome.
+        simpl in *.
+        haaa.
+      ++
+        
+        destruct (build_app_comp a1 a_st) eqn:hey;
+          try solve_by_inversion.
+        destruct o; try solve_by_inversion.
+        destruct (build_app_comp (aasp r HSH) a) eqn:hi;
+          try solve_by_inversion.
+        destruct o;
+          try solve_by_inversion.
+
+        specialize IHa1 with (a_st := a_st) (a_st' := a) (v := v0).
+        concludes.
+        destruct_conjs.
+        subst.
+        specialize IHa2 with (a_st := a) (a_st' := a0) (v := v1).
+        concludes.
+        destruct_conjs.
+        destruct a.
+        destruct a0.
+        df.
+        tauto.
+    +
+       destruct (build_app_comp a1 a_st) eqn:hey;
+         try solve_by_inversion.
+       destruct o; try solve_by_inversion.
+       destruct (build_app_comp (aatt r n1 a2) a) eqn:hi;
+         try solve_by_inversion.
+       destruct o;
+         try solve_by_inversion.
+       specialize IHa1 with (a_st:=a_st) (a_st':=a) (v:=v0).
+       concludes.
+       destruct_conjs.
+       specialize IHa2 with (a_st := a) (a_st':=a0) (v:=v1).
+       concludes.
+       destruct_conjs.
+       destruct a.
+       destruct a0.
+       df.
+       tauto.
+    +
+      destruct (build_app_comp a1 a_st) eqn:hey;
+         try solve_by_inversion.
+       destruct o; try solve_by_inversion.
+       destruct (build_app_comp (alseq r a2_1 a2_2) a) eqn:hi;
+         try solve_by_inversion.
+       destruct o;
+         try solve_by_inversion.
+       specialize IHa1 with (a_st:=a_st) (a_st':=a) (v:=v0).
+       concludes.
+       destruct_conjs.
+       specialize IHa2 with (a_st := a) (a_st':=a0) (v:=v1).
+       concludes.
+       destruct_conjs.
+       destruct a.
+       destruct a0.
+       df.
+       tauto.
+    +
+      destruct (build_app_comp a1 a_st) eqn:hey;
+         try solve_by_inversion.
+       destruct o; try solve_by_inversion.
+       destruct (build_app_comp (abseq r s a2_1 a2_2) a) eqn:hi;
+         try solve_by_inversion.
+       destruct o;
+         try solve_by_inversion.
+       specialize IHa1 with (a_st:=a_st) (a_st':=a) (v:=v0).
+       concludes.
+       destruct_conjs.
+       specialize IHa2 with (a_st := a) (a_st':=a0) (v:=v1).
+       concludes.
+       destruct_conjs.
+       destruct a.
+       destruct a0.
+       df.
+       tauto.
+    +
+      destruct (build_app_comp a1 a_st) eqn:hey;
+         try solve_by_inversion.
+       destruct o; try solve_by_inversion.
+       destruct (build_app_comp (abpar r s a2_1 a2_2) a) eqn:hi;
+         try solve_by_inversion.
+       destruct o;
+         try solve_by_inversion.
+       specialize IHa1 with (a_st:=a_st) (a_st':=a) (v:=v0).
+       concludes.
+       destruct_conjs.
+       specialize IHa2 with (a_st := a) (a_st':=a0) (v:=v1).
+       concludes.
+       destruct_conjs.
+       destruct a.
+       destruct a0.
+       df.
+       tauto.
+  -
+    df.
+    tauto.
+  -
+    df.
+    tauto.
+Defined.
+
+Lemma atMapped : forall r n a a_st e,
+    allMapped (aatt r n a) a_st e ->
+    allMapped (aatt r n a) a_st mt.
+Proof.
+  intros.
+  generalizeEverythingElse a.
+  induction a; intros.
+  -
+    allMappedFacts.
+    destruct a.
+    +
+      allMappedFacts.
+      econstructor.
+      reflexivity.
+      reflexivity.
+      econstructor.
+      reflexivity.
+      econstructor.
+    +
+      allMappedFacts.
+      econstructor.
+      reflexivity.
+      reflexivity.
+      econstructor.
+      reflexivity.
+      econstructor.
+      reflexivity.
+      eauto.
+    +
+      allMappedFacts.
+      econstructor.
+      reflexivity.
+      reflexivity.
+      econstructor.
+      econstructor.
+      reflexivity.
+      reflexivity.
+      eauto.
+    +
+      allMappedFacts.
+      econstructor.
+      reflexivity.
+      reflexivity.
+      econstructor.
+      econstructor.
+      reflexivity.
+  -
+    destruct a_st.
+    econstructor.
+    reflexivity.
+    reflexivity.
+    eapply IHa.
+    econstructor.
+    reflexivity.
+    reflexivity.
+    allMappedFacts.
+    df.
+    allMappedFacts.
+    df.
+    eassumption.
+  -
+    df.
+    allMappedFacts.
+    df.
+    allMappedFacts.
+    econstructor.
+    reflexivity.
+    reflexivity.
+    econstructor.
+    reflexivity.
+    specialize IHa1 with (r:=r) (n:=n) (a_st:={| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z'; am_pl := n |})
+                         (e:=e).
+    assert (allMapped (aatt r n a1)
+                      {| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z'; am_pl := n |} mt).
+    eapply IHa1.
+    econstructor.
+    reflexivity.
+    reflexivity.
+    eassumption.
+    allMappedFacts.
+    df.
+    eassumption.
+    df.
+
+    specialize IHa2 with (r:=r0) (n:=n) (a_st:={| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z'; am_pl := n |}) (e:=mt).
+    assert ( allMapped (aatt r0 n a2) {| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z'; am_pl := n |} mt).
+    eapply IHa2.
+    econstructor.
+    reflexivity.
+    reflexivity.
+    simpl in *.
+    eassumption.
+    allMappedFacts.
+    df.
+    eassumption.
+  -
+    specialize IHa1 with (r:=r) (n:=n) (a_st:=a_st) (e:=e).
+    
+    allMappedFacts.
+    allMappedFacts.
+    +
+      df.
+      econstructor.
+      reflexivity.
+      reflexivity.
+      econstructor.
+      reflexivity.
+      eassumption.
+      eassumption.
+    +
+      
+      econstructor.
+      reflexivity.
+      reflexivity.
+      econstructor.
+      reflexivity.
+      eassumption.
+      specialize IHa2 with (r:=r0) (n:=n) (a_st:= {| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z'; am_pl := n |}) (e:= e).
+      assert (allMapped (aatt r0 n a2) {| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z'; am_pl := n |} mt).
+      eapply IHa2.
+      econstructor.
+      reflexivity.
+      reflexivity.
+      eassumption.
+      allMappedFacts.
+      df.
+      eassumption.
+    +
+      econstructor.
+      reflexivity.
+      reflexivity.
+      econstructor.
+      reflexivity.
+      assert (allMapped (aatt r n a1) {| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z'; am_pl := p |} mt).
+      eapply IHa1.
+      
+      econstructor.
+      reflexivity.
+      reflexivity.
+      eassumption.
+      allMappedFacts.
+      df.
+      eassumption.
+      eassumption.
+    +
+      econstructor.
+      reflexivity.
+      reflexivity.
+      econstructor.
+      reflexivity.
+      assert (allMapped (aatt r n a1) {| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z'; am_pl := p |} mt).
+      eapply IHa1.
+      econstructor.
+      reflexivity.
+      reflexivity.
+      eassumption.
+      allMappedFacts.
+      df.
+      eassumption.
+
+      specialize IHa2 with (r:=r0) (n:=n) (a_st:={| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z'; am_pl := n |}) (e:=e).
+      assert (allMapped (aatt r0 n a2) {| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z'; am_pl := n |} mt).
+      eapply IHa2.
+      econstructor.
+      reflexivity.
+      reflexivity.
+      eassumption.
+      allMappedFacts.
+      df.
+      eassumption.
+  -
+    specialize IHa1 with (r:=r) (n:=n) (a_st:=a_st) (e:=e).
+    
+    allMappedFacts.
+    allMappedFacts.
+    +
+      df.
+      econstructor.
+      reflexivity.
+      reflexivity.
+      econstructor.
+      reflexivity.
+      eassumption.
+      eassumption.
+    +
+      
+      econstructor.
+      reflexivity.
+      reflexivity.
+      econstructor.
+      reflexivity.
+      eassumption.
+      specialize IHa2 with (r:=r0) (n:=n) (a_st:= {| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z'; am_pl := n |}) (e:= e).
+      assert (allMapped (aatt r0 n a2) {| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z'; am_pl := n |} mt).
+      eapply IHa2.
+      econstructor.
+      reflexivity.
+      reflexivity.
+      eassumption.
+      allMappedFacts.
+      df.
+      eassumption.
+    +
+      econstructor.
+      reflexivity.
+      reflexivity.
+      econstructor.
+      reflexivity.
+      assert (allMapped (aatt r n a1) {| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z'; am_pl := p |} mt).
+      eapply IHa1.
+      
+      econstructor.
+      reflexivity.
+      reflexivity.
+      eassumption.
+      allMappedFacts.
+      df.
+      eassumption.
+      eassumption.
+    +
+      econstructor.
+      reflexivity.
+      reflexivity.
+      econstructor.
+      reflexivity.
+      assert (allMapped (aatt r n a1) {| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z'; am_pl := p |} mt).
+      eapply IHa1.
+      econstructor.
+      reflexivity.
+      reflexivity.
+      eassumption.
+      allMappedFacts.
+      df.
+      eassumption.
+
+      specialize IHa2 with (r:=r0) (n:=n) (a_st:={| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z'; am_pl := n |}) (e:=e).
+      assert (allMapped (aatt r0 n a2) {| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z'; am_pl := n |} mt).
+      eapply IHa2.
+      econstructor.
+      reflexivity.
+      reflexivity.
+      eassumption.
+      allMappedFacts.
+      df.
+      eassumption.
+Defined.
+
+Lemma allMappedSub' : forall a a_st e,
+    allMapped a a_st e ->
+    allMapped a a_st mt.
+Proof.
+Admitted.
+
+
+
+
+Lemma allMappedSub : forall a a_st t p,
+    allMapped a a_st (eval t p mt) ->
+    allMapped a a_st mt.
+Proof.
+  intros.
+  eapply allMappedSub'; eauto.
+Defined.
+
+
+(*
+
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    df.
+    +
+      destruct a.
+      ++
+        df.
+        eassumption.
+      ++
+        df.
+        destruct a0.
+        +++
+          destruct a;
+            try (
+                 allMappedFacts;
+            econstructor;
+              try reflexivity;
+              try econstructor;
+              eauto).
+        +++
+
+
+
+          eapply atMapped; eauto.
+        +++
+          
+          
+          
+
+            
+          allMappedFacts.
+          df.
+          econstructor.
+          reflexivity.
+          reflexivity.
+
+          destruct a0.
+          ++++
+            destruct a;
+              try (
+              allMappedFacts;
+              econstructor; econstructor;
+              eauto; tauto).
+          ++++
+            destruct a0.
+            +++++
+              destruct a.
+            ++++++
+              allMappedFacts.
+            df.
+            allMappedFacts.
+            econstructor.
+            reflexivity.
+            reflexivity.
+            econstructor.
+            reflexivity.
+            econstructor.
+            ++++++
+              allMappedFacts.
+            df.
+            allMappedFacts.
+            econstructor.
+            reflexivity.
+            reflexivity.
+            econstructor.
+            reflexivity.
+            econstructor.
+            reflexivity.
+            eauto.
+            ++++++
+              allMappedFacts.
+            df.
+            allMappedFacts.
+            econstructor.
+            reflexivity.
+            reflexivity.
+            econstructor.
+            econstructor.
+            reflexivity.
+            reflexivity.
+            eauto.
+            ++++++
+                allMappedFacts.
+            df.
+            allMappedFacts.
+            econstructor.
+            reflexivity.
+            reflexivity.
+            econstructor.
+            econstructor.
+            reflexivity.
+            +++++
+              df.
+            destruct a0.
+            ++++++
+              allMappedFacts.
+            df.
+            allMappedFacts.
+            econstructor.
+            reflexivity.
+            reflexivity.
+            econstructor.
+            reflexivity.
+            econstructor.
+            df.
+
+            destruct a.
+            +++++++
+              allMappedFacts.
+            econstructor.
+            reflexivity.
+            econstructor.
+            +++++++
+              econstructor.
+            reflexivity.
+            econstructor.
+            reflexivity.
+            allMappedFacts.
+            eauto.
+            +++++++
+              econstructor.
+            econstructor.
+            reflexivity.
+            reflexivity.
+            
+            allMappedFacts.
+            eauto.
+            +++++++
+              econstructor.
+            econstructor.
+            reflexivity.
+            ++++++
+              
+            
+            econstructor.
+            reflexivity.
+            reflexivity.
+            econstructor.
+            reflexivity.
+            econstructor.
+
+
+            
+            reflexivity.
+            eauto.
+              
+              try (
+              allMappedFacts;
+              econstructor; econstructor;
+              eauto; tauto).
+              
+              try (
+              allMappedFacts;
+              econstructor; econstructor;
+              eauto; tauto).
+            
+            
+            +++++
+              allMappedFacts;
+              econstructor; econstructor.
+            eauto.
+            +++++
+              allMappedFacts;
+              econstructor; econstructor.
+            eauto.
+            +++++
+              allMappedFacts;
+              econstructor; econstructor;
+                eauto.
+            econstructor.
+            econstructor.
+            econstructor.
+            reflexivity.
+            reflexivity.
+            eauto.
+            
+          
+            
+            
+            
+            
+        
+      
+      eassumption.
+    +
+      
+
+
+    
+    
+Admitted.
+
+*)
+
+
+Lemma build_app_some : forall a a_st,
+    allMapped a a_st mt ->
+    exists o a2, build_app_comp a a_st = (Some o, a2).
+Proof.
+  intros.
+  generalizeEverythingElse a.
+  induction a; intros.
+  -
+    destruct a;
+      try (cbn; df; eauto; tauto).
+    +
+      cbn.
+      df.
+      allMappedFacts.
+      debound.
+      subst'.
+      df.
+      eauto.
+    +
+      cbn.
+      df.
+      allMappedFacts.
+      debound.
+      subst'.
+      df.
+      eauto.
+  -
+    cbn.
+    df.
+    allMappedFacts.
+    edestruct IHa.
+    eassumption.
+    destruct_conjs.
+    simpl in *.
+    df.
+    subst'.
+    df.
+    eauto.
+  -
+    allMappedFacts.
+    specialize IHa1 with (a_st:=a_st).
+    specialize IHa2 with (a_st:=a_st).
+    concludes.
+    concludes.
+    destruct_conjs.
+    df.
+
+    destruct a2.
+    +
+      destruct a.
+      ++
+        subst'.
+        (*destruct a_st. *)
+        allMappedFacts.
+        df.
+        eauto.
+      ++
+        rewrite H2 in *.
+        cbn in H0.
+        unfold bind in H0.
+        cbn in H0.
+        break_let.
+        break_let.
+        break_let.
+        break_let.
+        invc H0.
+        allMappedFacts.
+        debound.
+        rewrite H3 in *.
+        invc Heqp0.
+        unfold ret in Heqp1.
+        invc Heqp1.
+
+        destruct (build_app_comp (aasp (n2, n3) (ASPC n1 l)) H1) eqn:hey.
+        cbn in hey.
+        unfold bind in hey.
+        cbn in hey.
+        break_let.
+        Check ba_const.
+        edestruct ba_const.
+        eassumption.
+        destruct_conjs.
+        destruct a0.
+        destruct H.
+        cbn in *.
+        clear H8.
+        invc Heqp.
+
+        invc hey.
+
+        destruct H1.
+        cbn in *.
+
+        destruct (map_get st_aspmap (am_pl, n1)) eqn:hi.
+        +++
+        df.
+        eauto.
+        +++
+          df.
+
+
+        
+        subst'.
+        destruct a_st.
+        
+        
+        allMappedFacts.
+        df.
+        
+        dosome.
+        debound.
+        rewrite H0 in *.
+        invc Heqp6.
+        clear H8.
+        subst'.
+        dosome.
+        
+        
+        assert (a_st = H).
+        {
+          Check ba_const.
+          eapply ba_const.
+
+
+    assert (allMapped a2 a_st mt).
+    eapply allMappedSub; eauto.
+    concludes.
+    destruct_conjs.
+    df.
+
+    
+
+
+      
+    assert (a_st = H2).
+    {
+      eapply ba_const; eauto.
+    }
+    
+    assert (a_st = H0).
+    {
+      eapply ba_const; eauto.
+    }
+    subst.
+    destruct a2;
+      try (
+          repeat subst';
+          eauto; tauto).
+    +
+
+      destruct a;
+        try (
+        repeat subst';
+        eauto; tauto).
+      ++
+        repeat allMappedFacts.
+        debound.
+        clear H.
+        clear H9.
+        df.
+        subst'.
+        df.
+        subst'.
+        df.
+        eauto.
+  -
+    df.
+    eauto.
+  -
+    df.
+    eauto.
+Defined.
+
+    
+      
+    
+    
+
+
+
+
+
+
+      
+Admitted.
+
+Lemma same_ev_shape : forall a p a_st e e_res vm_st,
+    allMapped a a_st mt ->
+    p = am_pl a_st ->
+    vm_st = run_vm a empty_vmst ->
+    e_res = st_ev vm_st -> 
+    e = run_app_comp a a_st e_res ->
+    Ev_Shape e (eval (unanno a) p mt).
+Proof.
+  intros.
+  subst.
+  generalizeEverythingElse a.
+  induction a; intros.
+  -
+    destruct a;
+      try
+        ( df;
+          unfold empty_vmst;
+          unfold run_vm;
+          df;
+          try (eauto);
+          unfold run_app_comp;
+          df;
+          allMappedFacts;
+          debound;
+          subst';
+          df;
+          eauto;
+          tauto).
+
+  -
+    df.
+    unfold empty_vmst.
+    unfold run_vm.
+    df.
+    dohtac.
+    df.    
+    try (eauto);
+    unfold run_app_comp.
+    df.
+    allMappedFacts.
+
+    assert (n = StAM.am_pl {|
+            am_nonceMap := am_nonceMap;
+            am_nonceId := am_nonceId;
+            st_aspmap := st_aspmap;
+            st_sigmap := st_sigmap;
+            am_pl := n |}) by reflexivity.
+    unfold run_vm in *.
+    unfold execSt in *.
+    unfold empty_vmst in *.
+    rewrite build_comp_at in *.
+    simpl in IHa.
+    unfold fst.
+    repeat break_let.
+    simpl in Heqp0.
+    unfold fromOpt in *.
+
+    df.
+
+
+    edestruct build_app_some.
+    eassumption.
+    destruct_conjs.
+    rewrite H1 in *.
+    df.
+    Check always_some.
+
+    assert (Ev_Shape (run_app_comp a {| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z'; am_pl := n |} (toRemote (unanno a) mtc)) (eval (unanno a) (am_pl {| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z'; am_pl := n |}) mt)).
+
+    {
+
+
+
+
+
+    
+    eapply IHa.
+    eassumption.
+    }
+
+    unfold run_app_comp in *.
+    monad_unfold.
+    unfold runSt in *.
+    rewrite H1 in *.
+    simpl in H0.
+    rewrite Heqp0 in *.
+    simpl in H0.
+
+    destruct o.
+    +
+      simpl in H0.
+      eassumption.
+    +
+      simpl in H0.
+      inv H0.
+      econstructor.
+  -
+    df.
+    unfold run_app_comp.
+    monad_unfold.
+    unfold runSt.
+    df.
+    allMappedFacts.
+    destruct a2.
+    +
+      specialize IHa1 with (a_st:=a_st).
+      concludes.
+      destruct a eqn:a_eq.
+      ++
+      admit. (* Fix CPY case *)
+      ++
+        df.
+        allMappedFacts.
+        debound.
+        assert (a_st = a). admit.
+        subst.
+        rewrite H0 in *.
+        df.
+
+        (*
+        haaa.
+        haaa. *)
+        
+        edestruct build_app_some.
+        eassumption.
+        destruct_conjs.
+        rewrite H1 in *.
+        df.
+        Print subst''.
+        unfold run_vm in *.
+        df.
+        vmsts.
+        simpl in *.
+        df.
+        repeat break_let.
+        
+        ff.
+
+        specialize IHa1 with (a_st:=a0).
+        concludes.
+        unfold run_app_comp in *.
+        monad_unfold.
+        unfold runSt in *.
+        df.
+        rewrite H1 in *.
+        df.
+        specialize IHa2 with (a_st:=a0).
+        
+        
+        
+        admit.
+        admit.
+        Check always_some.
+        (*
+        repeat break_match;
+          try solve_by_inversion. *)
+        +++
+          df.
+          econstructor.
+
+          destruct (extractUev st_ev3 {| st_ev := st_ev3; st_trace := st_trace3; st_pl := st_pl3; st_store := st_store3 |}) eqn: hey; try solve_by_inversion.
+          df.
+
+          
+
+          
+          destruct st_ev3 eqn:heyy;
+            try (df; solve_by_inversion). 
+          unfold extractUev in *.
+          unfold ret in hey.
+          invc hey.
+          assert (st_ev = e0). admit.
+          rewrite <- H.
+          unfold run_app_comp in *.
+          monad_unfold.
+          unfold runSt in *.
+          monad_unfold.
+          repeat break_let.
+          df.
+          repeat break_let.
+          specialize IHa2 with (a_st:=a0).
+          rewrite H0 in *.
+          unfold empty_vmst in *.
+          df.
+
+          specialize IHa1 with (a_st:=a0).
+          rewrite H1 in *.
+          simpl in *.
+
+          assert (Ev_Shape (fromOpt (fst (x {| st_ev := st_ev; st_trace := []; st_pl := 0; st_store := [] |})) mtc) (eval (unanno a1) (am_pl a0) mt)).
+          eauto.
+
+
+
+
+          
+          rewrite Heqp in *.
+
+          assert (Ev_Shape (run_app_comp a1 H st_ev) (eval (unanno a1) (am_pl H) mt)).
+          eauto.
+          
+
+
+          
+          ++++
+            monad_unfold.
+            solve_by_inversion.
+        
+        rewrite H0 in *.
+        df.
+        unfold run_vm in *.
+        df.
+        monad_unfold.
+        monad_unfold.
+        Check always_some.
+        repeat break_match;
+          try solve_by_inversion;
+          df.
+        +++
+          df.
+          simpl in *.
+          vmsts.
+          df.
+        rewrite always_some in *.
+    
+      
+
+    
+    
+
+
+    
+
+    
+
+    assert (Ev_Shape (run_app_comp a {| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z'; am_pl := n |} (st_ev (run_vm a empty_vmst))) (eval (unanno a) (StAM.am_pl {| am_nonceMap := am_nonceMap; am_nonceId := am_nonceId; st_aspmap := st_aspmap; st_sigmap := st_sigmap; am_pl := n |}) mt)).
+    {
+      simpl.
+      unfold run_vm.
+      unfold execSt.
+      vmsts.
+      unfold empty_vmst.
+      rewrite build_comp_at.
+      simpl.
+      eapply IHa.
+      simpl.
+      eassumption.
+
+    
+    edestruct IHa.
+    rewrite <- H.
+    admit.
+    admit.
+
+
+    
+    eassumption.
+    eassumption.
+    debound;
+    subst';
+    df;
+    eauto.
+
+      
+      
+      
+      
+      
+      
+    
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Lemma gen_const : forall e et a o a',
     gen_appraisal_comp e et a = (o,a') ->
@@ -1296,23 +2472,7 @@ Proof.
     eauto.
 Defined.
 
-Ltac haaa :=
-  let x:= fresh in
-  match goal with
-  | [H: context[match ?ee with | Some _ => _ | _ => _ end] |- _] =>
-    destruct ee eqn:x;
-    try solve_by_inversion
-  end; df; eauto.
 
-Ltac stt :=
-  cbn in *;
-  monad_unfold;
-  try solve_by_inversion;
-  repeat break_let;
-  dosome;
-  try haaa.
-
-Ltac ff := repeat break_match; try solve_by_inversion; df.
 
 Lemma gen_ev_mapped : forall e et a x a',
     gen_appraisal_comp e et a = (Some x,a') ->
@@ -1371,11 +2531,7 @@ Ltac do_cumul :=
     end;
   destruct_conjs.
 
-Ltac subst'' :=
-  match goal with
-  | H:?A = _, H2:context [ ?A ] |- _ => rewrite H in *
-  | H:?A = _ |- context [ ?A ] => rewrite H in *
-  end.
+
 
 Ltac dof :=
   let tac t := (eapply app_inv_head; rewrite <- app_assoc in t; eauto) in
