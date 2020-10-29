@@ -12,18 +12,6 @@ Import ListNotations.
 
 Set Nested Proofs Allowed.
 
-Inductive AppTerm: Set :=
-| check_skip : AppTerm
-| check_asp: ASP_ID -> list Arg -> AppTerm
-| check_sig: ASP_ID -> AppTerm
-(* TODO: consider @ term for appraisal:  delegated appraisal *)
-| check_bpar: AppTerm -> AppTerm -> AppTerm.
-
-Inductive AnnoAppTerm: Set :=
-| askip: AnnoAppTerm
-| acheck_asp: Range -> ASP_ID -> list Arg -> AnnoAppTerm
-| acheck_sig: Range -> ASP_ID -> AnnoAppTerm
-| acheck_bpar: Range -> AnnoAppTerm -> AnnoAppTerm -> AnnoAppTerm.
 (*
 | att: Plc -> Term -> Term
 | lseq: Term -> Term -> Term
@@ -70,56 +58,131 @@ Definition modify_plc (p:Plc) : AM unit :=
   let '{| am_nonceMap := nm; am_nonceId := ni; st_aspmap := aspm; st_sigmap := sigm; am_pl := _ |} := st in
   put (mkAM_St nm ni aspm sigm p).
 
+Definition invokeUSM' (x:nat) (i:ASP_ID) (l:list Arg) : VM EvidenceC :=
+  e <- get_ev ;;
+  p <- get_pl ;;
+  add_tracem [Term.umeas x p i l];;
+  ret (uuc i x e).
+
+Definition checkSig (x:nat) (i:ASP_ID) (l:list Arg) : VM BS :=
+  (*p <- get_pl ;; *)
+  add_tracem [Term.umeas x 0 i l];;
+  ret 78.
+
+Definition extractUev (e:EvidenceC) : VM (BS * EvidenceC) :=
+  match e with
+  | uuc _ bs e' => ret (bs,e')
+  | _ => failm
+  end.
+
+
+Definition checkUSM (x:nat) (i:ASP_ID) (l:list Arg) (bs:BS) : VM BS :=
+  (* p <- get_pl ;; *)
+  add_tracem [Term.umeas x 0 i ([bs] ++ l)] ;;
+  ret 56.
+
 Fixpoint build_app_comp (t:AnnoTerm) : AM (VM EvidenceC) :=
   match t with
-  | alseq r t (aasp r' SIG) =>
+  | alseq (n,n') t' (aasp r' SIG) =>
     p <- gets am_pl ;;
     app_id <- am_get_sig_asp p ;;
+    d <- build_app_comp t' ;;
     let c :=
+        (
         e <- get_ev ;;
         pr <- extractSig e ;;
-        ret mtc in
+        let '(bs,e') := pr in
+        res <- checkSig n app_id ([encodeEv e'] ++ [bs] (* ++ args*) ) ;;
+        put_ev e' ;;
+        e_res <- d ;;
+        ret (ggc res e_res)) in
+
+
     ret c
+  | aasp (n,n') (ASPC i args) =>
+    p <- gets am_pl ;;
+    app_id <- am_get_app_asp p i ;;
+    let c :=
+        (
+        e <- get_ev ;;
+        pr <- extractUev e ;;
+        let '(bs,e') := pr in
+        res <- checkUSM n app_id args bs ;;
+        ret (uuc n res e') ) in
+    ret c
+        
+        
   | aatt r q t' =>
     modify_plc q ;;
     build_app_comp t'
   | _ => ret (ret mtc)
   end.
-    
-    
 
-Fixpoint gen_app_term (et:Evidence) : AM AppTerm :=
-  match et with
-  | mt => ret check_skip
-  | uu i args p et' =>
-    app_id <- am_get_app_asp p i ;;
-    let t1:= check_asp app_id args in
-    t2 <- gen_app_term et' ;;
-    ret (check_bpar t1 t2)
-  | gg p et' =>
-    app_id <- am_get_sig_asp p ;;
-    let t1:= check_sig app_id in
-    t2 <- gen_app_term et' ;;
-    ret (check_bpar t1 t2)
-  | hh p et' =>
-    let t1 := check_skip in
-    t2 <- gen_app_term et' ;;
-    ret (check_bpar t1 t2)
-  | nn nid et' =>
-    let t1 := check_skip in
-    t2 <- gen_app_term et' ;;
-    ret (check_bpar t1 t2)
-  | ss et1 et2 => 
-    t1 <- gen_app_term et1 ;;
-    t2 <- gen_app_term et2 ;;
-    ret (check_bpar t1 t2)
-  | pp et1 et2 => 
-    t1 <- gen_app_term et1 ;;
-    t2 <- gen_app_term et2 ;;
-    ret (check_bpar t1 t2)
+Definition fromOpt{A:Type} (o:option A) (a:A) : A :=
+  match o with
+  | Some t => t
+  | None => a
   end.
+
+Definition run_app_comp (t:AnnoTerm) (a_st:AM_St) (e_in:EvidenceC) : EvidenceC :=
+  let acomp := build_app_comp t in
+  let vcomp_opt := runSt a_st acomp in
+  let vcomp := fromOpt (fst vcomp_opt) (ret mtc) in
+  let vres_opt := runSt (mk_st e_in [] 0 []) vcomp in
+  fromOpt (fst vres_opt) mtc.
+
+Definition run_app_comp' (t:AnnoTerm) (st:AM_St) (e_in:EvidenceC) : ((option EvidenceC) * vm_st) :=
+  let acomp := build_app_comp t in
+  let vcomp_opt := runSt st acomp in
+  let vcomp := fromOpt (fst vcomp_opt) (ret mtc) in
+  let vres_opt := runSt (mk_st e_in [] 0 []) vcomp in
+  vres_opt.
+
+Definition at1 := (asp (ASPC 11 [])).
+(*Definition at2 := (asp (ASPC 22 [])). *)
+Definition term := lseq at1 (asp SIG).
+Definition aterm := annotated term.
+Compute aterm.
+
+Check run_vm.
+
+Definition aterm_vm_st := run_vm aterm empty_vmst.
+Compute aterm_vm_st.
+Definition aterm_ev := st_ev aterm_vm_st.
+Compute aterm_ev.
+
+Definition ast :=
+  mkAM_St [] 0 [((0,11),34); ((0,22),45)] [(0,42)] 0.
+
+Compute run_app_comp' aterm ast aterm_ev.
+
+Compute run_app_comp aterm ast aterm_ev.
+
+
+
+(*
+
+Definition aterm_ev_comp := run_app_comp_ev_t aterm 0.
+
+Definition ast :=
+  mkAM_St [] 0 [((0,11),34); ((0,22),45)].
+
+Definition aterm_res : ((option EvidenceC) * AM_St) := runSt ast aterm_ev_comp.
+Compute aterm_res.
+
+Definition aterm_st : AM vm_st := exec_app_comp_t aterm 0 0.
+Compute (runSt ast aterm_st).
+
+Definition aet := eval aterm 0 mt.
+Compute aet.
+
+Definition evc_st := (run_vm_fresh_t aterm).
+Compute evc_st.
+Definition evc := st_ev evc_st.
+Compute evc.
+*)
     
-Definition invokeSigAsp (x:nat) (i:ASP_ID)    
+      
     
 
 Fixpoint build_app_comp (t:AnnoAppTerm) : VM EvidenceC :=
