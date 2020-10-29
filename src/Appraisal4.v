@@ -12,6 +12,36 @@ Import ListNotations.
 
 Set Nested Proofs Allowed.
 
+Inductive AppTerm: Set :=
+| check_skip : AppTerm
+| check_asp: ASP_ID -> list Arg -> AppTerm
+| check_sig: ASP_ID -> AppTerm
+(* TODO: consider @ term for appraisal:  delegated appraisal *)
+| check_bpar: AppTerm -> AppTerm -> AppTerm.
+
+Inductive AnnoAppTerm: Set :=
+| askip: AnnoAppTerm
+| acheck_asp: Range -> ASP_ID -> list Arg -> AnnoAppTerm
+| acheck_sig: Range -> ASP_ID -> AnnoAppTerm
+| acheck_bpar: Range -> AnnoAppTerm -> AnnoAppTerm -> AnnoAppTerm.
+(*
+| att: Plc -> Term -> Term
+| lseq: Term -> Term -> Term
+| bseq: Split -> Term -> Term -> Term
+| bpar: Split -> Term -> Term -> Term. *)
+
+Definition extractSig (e:EvidenceC) : VM (BS * EvidenceC) :=
+  match e with
+  | ggc bs e' => ret (bs, e')
+  | _ => failm
+  end.
+
+Definition extractComp (e:EvidenceC) : VM (EvidenceC * EvidenceC) :=
+  match e with
+  | ssc e1 e2 => ret (e1,e2)
+  | ppc e1 e2 => ret (e1,e2)
+  | _ => failm
+  end.
 
 Definition am_get_app_asp (p:Plc) (i:ASP_ID) : AM ASP_ID :=
   m <- gets st_aspmap ;;
@@ -28,6 +58,97 @@ Definition am_get_sig_asp (p:Plc) : AM ASP_ID :=
   | Some i' => ret i'
   | None => failm
   end.
+
+Definition test_phrase_match (t:Term) : nat :=
+  match t with
+  | lseq t (asp SIG) => 3
+  | _ => 3
+  end.
+
+Definition modify_plc (p:Plc) : AM unit :=
+  st <- get ;;
+  let '{| am_nonceMap := nm; am_nonceId := ni; st_aspmap := aspm; st_sigmap := sigm; am_pl := _ |} := st in
+  put (mkAM_St nm ni aspm sigm p).
+
+Fixpoint build_app_comp (t:AnnoTerm) : AM (VM EvidenceC) :=
+  match t with
+  | alseq r t (aasp r' SIG) =>
+    p <- gets am_pl ;;
+    app_id <- am_get_sig_asp p ;;
+    let c :=
+        e <- get_ev ;;
+        pr <- extractSig e ;;
+        ret mtc in
+    ret c
+  | aatt r q t' =>
+    modify_plc q ;;
+    build_app_comp t'
+  | _ => ret (ret mtc)
+  end.
+    
+    
+
+Fixpoint gen_app_term (et:Evidence) : AM AppTerm :=
+  match et with
+  | mt => ret check_skip
+  | uu i args p et' =>
+    app_id <- am_get_app_asp p i ;;
+    let t1:= check_asp app_id args in
+    t2 <- gen_app_term et' ;;
+    ret (check_bpar t1 t2)
+  | gg p et' =>
+    app_id <- am_get_sig_asp p ;;
+    let t1:= check_sig app_id in
+    t2 <- gen_app_term et' ;;
+    ret (check_bpar t1 t2)
+  | hh p et' =>
+    let t1 := check_skip in
+    t2 <- gen_app_term et' ;;
+    ret (check_bpar t1 t2)
+  | nn nid et' =>
+    let t1 := check_skip in
+    t2 <- gen_app_term et' ;;
+    ret (check_bpar t1 t2)
+  | ss et1 et2 => 
+    t1 <- gen_app_term et1 ;;
+    t2 <- gen_app_term et2 ;;
+    ret (check_bpar t1 t2)
+  | pp et1 et2 => 
+    t1 <- gen_app_term et1 ;;
+    t2 <- gen_app_term et2 ;;
+    ret (check_bpar t1 t2)
+  end.
+    
+Definition invokeSigAsp (x:nat) (i:ASP_ID)    
+    
+
+Fixpoint build_app_comp (t:AnnoAppTerm) : VM EvidenceC :=
+  match t with
+  | acheck_bpar (n,n') t1 t2 =>
+    e <- get_ev ;;
+    pr <- extractComp e ;;
+    let '(e1,e2) := pr in
+    put_ev e1 ;;
+    e1_res <- build_app_comp t1 ;;
+    put_ev e2 ;;
+    e2_res <- build_app_comp t2 ;;
+    ret (ppc e1_res e2_res)
+  | acheck_sig (n,n') app_id  =>
+    e <- get_ev ;;
+    pl <- get_pl ;;
+    pr <- extractSig e ;;
+    let '(bs,e') := pr in
+    res <- invokeUSM n app_id pl ([encodeEv e'] ++ [bs] (* ++ args*) ) ;;
+    ret res
+      
+    
+    
+  | _ => ret mtc
+  end.
+    
+
+
+
   
 Fixpoint gen_appraisal_comp (e:EvidenceC) (et:Evidence) : AM (VM unit) :=
   match e with
