@@ -50,11 +50,11 @@ Definition am_newNonce (bs :BS) : AM EvidenceC :=
   let i := am_nonceId am_st in
   let appm := st_aspmap am_st in
   let sigm := st_sigmap am_st in
-  let plm := am_pl am_st in
+  (*let plm := am_pl am_st in *)
               
   let newMap := map_set mm i bs in
   let newId := i + 1 in
-  put (mkAM_St newMap newId appm sigm plm) ;;         
+  put (mkAM_St newMap newId appm sigm (*plm*)) ;;         
       ret (nnc i bs mtc).
 
 Definition runAM {A:Type} (k:(AM A)) (* (env:AM_Env) *) (st:AM_St) : (option A) * AM_St :=
