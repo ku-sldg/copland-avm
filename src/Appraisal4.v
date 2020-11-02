@@ -858,7 +858,7 @@ Ltac df :=
       repeat (monad_unfold; cbn in *; find_inversion);
       monad_unfold;
       repeat dunit;
-      unfold snd in *).
+      unfold snd in * ).
 
 Ltac dosome :=
   repeat (
@@ -879,23 +879,7 @@ Ltac tacc H :=
    eauto ).
 
 
-Ltac do_pl_immut :=
-  let tac :=
-      (symmetry;
-       erewrite <- pl_immut in *;
-       jkjk'
-      ) in
-  repeat (
-      match goal with
-      | [H: build_comp _ {| st_ev := _; st_trace := _;
-                                                    st_pl := ?p;
-                                                             st_store := _ |} =
-            (_,
-             {| st_ev := _; st_trace := _;
-                                        st_pl := ?p';
-                                                 st_store := _ |}) |- _] =>
-        assert_new_proof_by (p = p') (tac)     
-      end); subst.
+
 
 (*
   Ltac map_get_subst :=
@@ -1652,6 +1636,27 @@ Lemma same_ev_shape : forall a a_st e e_res vm_st p et e' t q,
     e = (run_app_comp a p a_st e_res) e''  (*TODO: remove func, just add extra lseq term for initial appraising initial evidence *) ->
     Ev_Shape e e_res_t.
  *)
+
+Lemma ev_shape_transitive : forall e e' et et',
+    Ev_Shape e et ->
+    Ev_Shape e' et ->
+    Ev_Shape e et' ->
+    Ev_Shape e' et'.
+Proof.
+Admitted.
+
+Lemma dood : forall t vm_st vm_st' e e' e'' p a_st x0 x1 new_vmst new_vmst',
+    build_comp t vm_st = (Some tt, vm_st') ->
+    e = st_ev vm_st ->
+    e' = st_ev vm_st' ->
+    build_app_comp t p a_st = (Some x0, a_st) ->
+    x0 new_vmst = (Some x1, new_vmst') ->
+    e' = st_ev new_vmst ->
+    e'' = st_ev new_vmst' ->
+    e = e''.
+Proof.
+Admitted.
+
 Lemma same_ev_shape : forall a a_st p et vm_st vm_st' e_res e_res_t e' e'' e,
     allMapped a a_st p et ->
     vm_st' = run_vm a vm_st ->
@@ -1701,13 +1706,7 @@ Proof.
       df.
       evShapeFacts.
       econstructor.
-      Lemma ev_shape_transitive : forall e e' et et',
-        Ev_Shape e et ->
-        Ev_Shape e' et ->
-        Ev_Shape e et' ->
-        Ev_Shape e' et'.
-      Proof.
-      Admitted.
+
 
       eapply ev_shape_transitive.
       apply H5.
@@ -1795,14 +1794,34 @@ Proof.
     subst.
     assert (Ev_Shape (st_ev v) (eval (unanno a) n et)).
     Check multi_ev_eval.
+    destruct v.
     eapply multi_ev_eval.
     admit. (* TODO: anno term restore *)
-    admit. (* TODO: multi_ev_eval more general for trace*)
+    eassumption.
+
+
+    
+   (* admit. (* TODO: multi_ev_eval more general for trace*) *)
     apply H5.
     reflexivity.
     repeat concludes.
-    assert (toRemote (unanno a) st_ev0 = st_ev v).
-    admit. (* TODO: more general build_comp_at for evidence, maybe need to add place as param to toRemote?  *)
+    destruct v.
+    Check build_comp_at.
+    simpl in IHa.
+    Axiom build_comp_at_ev : forall t vm_st vm_st' e e',
+        build_comp t vm_st = (Some tt, vm_st') ->
+        e = st_ev vm_st ->
+        e' = st_ev vm_st' ->
+        e' = toRemote (unanno t) e.
+    assert (toRemote (unanno a) st_ev0 = st_ev).
+    {
+      symmetry.
+      eapply build_comp_at_ev.
+      eassumption.
+      tauto.
+      tauto.
+    }
+
     rewrite H4 in H1.
     rewrite H1 in *.
     df.
@@ -1957,7 +1976,16 @@ Proof.
         df.
 
         assert (Ev_Shape st_ev0 (eval (unanno a1) st_pl et)).
-        admit.
+        {
+          eapply multi_ev_eval.
+          admit. (* TODO: anno restore *)
+          eassumption.
+          (*
+          admit. (* TODO: general multi_ev *) *)
+          apply H5.
+          reflexivity.
+        }
+        
         repeat concludes.
         rewrite Heqp in *.
         df.
@@ -2028,7 +2056,16 @@ Proof.
         df.
 
         assert (Ev_Shape st_ev0 (eval (unanno a1) st_pl et)).
-        admit.
+         {
+          eapply multi_ev_eval.
+          admit. (* TODO: anno restore *)
+          eassumption.
+          (*
+          admit. (* TODO: general multi_ev *) *)
+          apply H5.
+          reflexivity.
+        }
+        
         repeat concludes.
         rewrite Heqp3 in *.
         df.
@@ -2078,7 +2115,9 @@ Proof.
       eassumption.
       eapply multi_ev_eval.
       admit. (* TODO: anno restore *)
-      admit.
+      eassumption.
+      (*
+      admit. (* TODO: general multi_ev_eval *) *)
       apply H5.
       reflexivity.
       
@@ -2102,24 +2141,19 @@ Proof.
       rewrite H in *.
       df.
       assert (Ev_Shape st_ev6 (eval (unanno a1) st_pl1 et)).
-      eapply multi_ev_eval.
-      admit. (* TODO: anno restore *)
-      admit.
-      apply H5.
-      reflexivity.
+       {
+          eapply multi_ev_eval.
+          admit. (* TODO: anno restore *)
+          eassumption.
+          (*
+          admit. (* TODO: general multi_ev *) *)
+          apply H5.
+          reflexivity.
+        }
+      
       repeat concludes.
 
-            Lemma dood : forall t vm_st vm_st' e e' e'' p a_st x0 x1 new_vmst new_vmst',
-        build_comp t vm_st = (Some tt, vm_st') ->
-        e = st_ev vm_st ->
-        e' = st_ev vm_st' ->
-        build_app_comp t p a_st = (Some x0, a_st) ->
-        x0 new_vmst = (Some x1, new_vmst') ->
-        e' = st_ev new_vmst ->
-        e'' = st_ev new_vmst' ->
-        e = e''.
-      Proof.
-      Admitted.
+
 
       Check build_comp_at.
 
@@ -2200,11 +2234,15 @@ Proof.
       repeat concludes.
 
       assert (Ev_Shape st_ev0 (eval (unanno a1) st_pl1 et)).
-      eapply multi_ev_eval.
-      admit.
-      admit.
-      apply H5.
-      reflexivity.
+      {
+          eapply multi_ev_eval.
+          admit. (* TODO: anno restore *)
+          eassumption.
+          (*
+          admit. (* TODO: general multi_ev *) *)
+          apply H5.
+          reflexivity.
+      }
       concludes.
       destruct v1.
       destruct v0.
@@ -2283,8 +2321,10 @@ Proof.
       eauto.
       eauto.
       eauto.
-      exact (aasp (0,0) (ASPC 1 [])).
-      exact mtc.
+      exact (asp (ASPC 1 [])).
+      eauto.
+      eauto.
+      eauto.
       eauto.
       eauto.
       exact (asp (ASPC 1 [])).
@@ -2292,6 +2332,8 @@ Proof.
       eauto.
       eauto.
       eauto.
+      eauto.
+      exact (asp (ASPC 1 [])).
       eauto.
 
 
