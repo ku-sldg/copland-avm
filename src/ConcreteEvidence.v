@@ -15,10 +15,10 @@ Inductive EvidenceC: Set :=
 | mtc: EvidenceC
 | uuc: ASP_ID -> BS -> EvidenceC -> EvidenceC
 | ggc: BS -> EvidenceC -> EvidenceC
-| hhc: BS -> EvidenceC -> EvidenceC (* TODO: remove Ev param *)
+(*| hhc: BS -> EvidenceC -> EvidenceC (* TODO: remove Ev param *)
 | nnc: N_ID -> BS -> EvidenceC -> EvidenceC
 | ssc: EvidenceC -> EvidenceC -> EvidenceC
-| ppc: EvidenceC -> EvidenceC -> EvidenceC.
+| ppc: EvidenceC -> EvidenceC -> EvidenceC*).
 
 (*
 (** * Concrete Evidence *)
@@ -56,12 +56,12 @@ Inductive Ev_Shape: EvidenceC -> Evidence -> Prop :=
 | ggt: forall p bs e et,
     Ev_Shape e et ->
     Ev_Shape (ggc bs e) (gg p et)
-| hht: forall p bs e et,
+(*| hht: forall p bs e et,
     Ev_Shape e et ->
     Ev_Shape (hhc bs e) (hh p et)
 | nnt: forall bs e et i i',
     Ev_Shape e et ->
-    Ev_Shape (nnc i bs e) (nn i' et)
+    Ev_Shape (nnc i bs e) (nn i' et) 
 | sst: forall e1 e2 e1t e2t,
     Ev_Shape e1 e1t ->
     Ev_Shape e2 e2t ->
@@ -69,8 +69,8 @@ Inductive Ev_Shape: EvidenceC -> Evidence -> Prop :=
 | ppt: forall e1 e2 e1t e2t,
     Ev_Shape e1 e1t ->
     Ev_Shape e2 e2t ->
-    Ev_Shape (ppc e1 e2) (pp e1t e2t).
-Hint Constructors Ev_Shape.
+    Ev_Shape (ppc e1 e2) (pp e1t e2t)*).
+Hint Constructors Ev_Shape : core.
 
 (*
     
@@ -111,11 +111,13 @@ Proof.
 Defined.
 *)
 
+
+(*
 (** * Eval function definition *)
 Definition splitEv (sp:SP) (e:EvidenceC) : EvidenceC :=
   match sp with
   | ALL => e
   | NONE => mtc
   end.
-
+*)
 

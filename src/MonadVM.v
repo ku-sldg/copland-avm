@@ -122,11 +122,13 @@ Definition add_trace (tr':list Ev) : vm_st -> vm_st :=
 Definition add_tracem (tr:list Ev) : VM unit :=
   modify (add_trace tr).
 
+(*
 Definition split_evm (i:nat) (sp1 sp2:SP) (e:EvidenceC) (p:Plc) : VM (EvidenceC*EvidenceC) :=
     let e1 := splitEv sp1 e in
     let e2 := splitEv sp2 e in
     add_tracem [Term.split i p] ;;
                ret (e1,e2).
+*)
 
 (** * Place-holder axioms for IO operations *)
 (* Definition invokeKIM (i:ASP_ID) (q:Plc) (*(args:list Arg)*) : BS. 
@@ -151,6 +153,7 @@ Definition signEv (x:nat) (p:Plc) : VM EvidenceC :=
   add_tracem [Term.sign x p] ;;
   ret (ggc x e).
 
+(*
 Definition hashEv (x:nat) (p:Plc) : VM EvidenceC :=
   e <- get_ev ;;
   add_tracem [Term.hash x p] ;;
@@ -159,6 +162,7 @@ Definition hashEv (x:nat) (p:Plc) : VM EvidenceC :=
 Definition copyEv (x:nat) (p:Plc) : VM EvidenceC :=
   add_tracem [Term.copy x p] ;;
   get_ev.
+*)
 
 
 Definition remote_events (t:AnnoTerm) (p:Plc) : (list Ev).
@@ -201,30 +205,27 @@ Definition runParThreads (t1 t2:AnnoTerm) (p:Plc) (e1 e2:EvidenceC) : VM unit :=
 
 Definition do_prim (x:nat) (p:Plc) (a:ASP) : VM EvidenceC :=
   match a with
-  | CPY => copyEv x p
+  (*| CPY => copyEv x p *)
   | ASPC asp_id args =>
     invokeUSM x asp_id p args
   | SIG => signEv x p
-  | HSH => hashEv x p
+  (*| HSH => hashEv x p *)
   end.
 
 
 
 Definition eval_asp (a:ASP) (e:EvidenceC) : EvidenceC :=
   match a with
-  | CPY => e
-(*  | KIM i q args =>
-    let bs := invokeKIM i q args in
-    (kkc i args q bs e) *)
+  (*| CPY => e *)
   | ASPC i _ =>
     let bs := 0 in (* TODO: must bs be hardcoded? *)
     (uuc i bs e)
   | SIG =>
     let bs := 0 in
     (ggc bs e)
-  | HSH =>
+  (*| HSH =>
     let bs := 0 in
-    (hhc bs e)
+    (hhc bs e) *)
   end.
 
 
@@ -237,7 +238,7 @@ Fixpoint eval (t:Term) (* (p:Plc) *) (e:EvidenceC) : EvidenceC :=
     let e1 := eval t1 e in
     eval t2 e1
          
-  | bseq (sp1,sp2) t1 t2 =>
+  (*| bseq (sp1,sp2) t1 t2 =>
     let e1 := splitEv sp1 e in
     let e2 := splitEv sp2 e in
     let e1' := eval t1 e1 in
@@ -248,7 +249,7 @@ Fixpoint eval (t:Term) (* (p:Plc) *) (e:EvidenceC) : EvidenceC :=
     let e2 := splitEv sp2 e in
     let e1' := parallel_eval_thread t1 e1 in
     let e2' := parallel_eval_thread t2 e2 in
-    (ppc e1' e2')
+    (ppc e1' e2') *)
   end.
 
 Axiom remote_eval : forall e annt,
@@ -259,13 +260,13 @@ Axiom para_eval_thread: forall e annt,
 
 
 Inductive evalR: Term -> EvidenceC -> EvidenceC -> Prop :=
-| mttc: forall e, evalR (asp CPY) e e
+(*| mttc: forall e, evalR (asp CPY) e e *)
 | uutc: forall i args e,
     evalR (asp (ASPC i args)) e (uuc i (0) e)
 | ggtc: forall e,
     evalR (asp SIG) e (ggc 0 e)
-| hhtc: forall e,
-    evalR (asp HSH) e (hhc 0 e)
+(*| hhtc: forall e,
+    evalR (asp HSH) e (hhc 0 e) *)
 | atc: forall q t' e e',
     evalR t' e e' ->
     evalR (att q t') e e'
@@ -273,14 +274,14 @@ Inductive evalR: Term -> EvidenceC -> EvidenceC -> Prop :=
     evalR t1 e e' ->
     evalR t2 e' e'' ->
     evalR (lseq t1 t2) e e''
-| bseqc: forall t1 t2 sp1 sp2 e e1 e2,
+(*| bseqc: forall t1 t2 sp1 sp2 e e1 e2,
     evalR t1 (splitEv sp1 e) e1 ->
     evalR t2 (splitEv sp2 e) e2 ->
     evalR (bseq (sp1,sp2) t1 t2) e (ssc e1 e2)
 | bparc: forall t1 t2 sp1 sp2 e e1 e2,
     evalR t1 (splitEv sp1 e) e1 ->
     evalR t2 (splitEv sp2 e) e2 ->
-    evalR (bpar (sp1,sp2) t1 t2) e (ppc e1 e2).
+    evalR (bpar (sp1,sp2) t1 t2) e (ppc e1 e2) *).
 
 
 
@@ -305,6 +306,7 @@ Proof.
       subst.
       simpl.
       eauto.
+      (*
     + inv H.
       assert (eval t1 (splitEv sp1 e) = e1) by eauto.
       assert (eval t2 (splitEv sp2 e) = e2) by eauto.
@@ -317,7 +319,7 @@ Proof.
       simpl.
       repeat rewrite para_eval_thread in *.
       destruct sp1; destruct sp2;
-        simpl; subst; eauto.
+        simpl; subst; eauto. *)
   - (* <- case *)
     intros.
     generalize dependent e.
@@ -332,6 +334,7 @@ Proof.
       rewrite <- remote_eval.
       eauto.
     + econstructor; eauto.
+      (*
     + destruct s.
       simpl in H.
       destruct s; destruct s0; simpl in *; subst;
@@ -340,7 +343,7 @@ Proof.
       simpl in H.
       repeat rewrite para_eval_thread in *.
       destruct s; destruct s0; simpl in *; subst;
-        econstructor; (try simpl); eauto; try (econstructor).
+        econstructor; (try simpl); eauto; try (econstructor) . *)
 Defined.
       
 Ltac monad_unfold :=
@@ -349,8 +352,8 @@ Ltac monad_unfold :=
   do_prim,
   invokeUSM,
   signEv,
-  hashEv,
-  copyEv,
+  (*hashEv,
+  copyEv, *)
 
   sendReq,
   doRemote,
@@ -361,7 +364,7 @@ Ltac monad_unfold :=
   get_pl,
   add_tracem,
   modify_evm,
-  split_evm,
+  (*split_evm,*)
   add_trace,
   failm,
   (* Uncommenting these evaluates too much, can't apply lemmas *)

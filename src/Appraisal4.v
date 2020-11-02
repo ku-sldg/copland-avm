@@ -24,6 +24,7 @@ Definition extractSig (e:EvidenceC) : VM (BS * EvidenceC) :=
   | _ => failm
   end.
 
+(*
 Definition extractHsh (e:EvidenceC) : VM (BS * EvidenceC) :=
   match e with
   | hhc bs e' => ret (bs, e')
@@ -36,6 +37,7 @@ Definition extractComp (e:EvidenceC) : VM (EvidenceC * EvidenceC) :=
   | ppc e1 e2 => ret (e1,e2)
   | _ => failm
   end.
+*)
 
 Definition am_get_app_asp (p:Plc) (i:ASP_ID) : AM ASP_ID :=
   m <- gets st_aspmap ;;
@@ -91,11 +93,13 @@ Definition checkUSM (x:nat) (i:ASP_ID) (l:list Arg) (bs:BS) : VM BS :=
   add_tracem [Term.umeas x 0 i ([bs] ++ l)] ;;
   ret 56.
 
-Compute (eval (lseq (asp (ASPC 42 [42;42])) (asp CPY)) 0 (uu 1 [2;3] 0 mt)).
+Compute (eval (lseq (asp (ASPC 42 [42;42])) (asp (ASPC 43 [43;43]))) 0 (uu 1 [2;3] 0 mt)).
 
-Compute (eval (lseq (asp CPY) (asp (ASPC 42 [42;42]))) 0 (uu 1 [2;3] 0 mt)).
+Compute (eval (lseq (asp (ASPC 43 [43;43])) (asp (ASPC 42 [42;42]))) 0 (uu 1 [2;3] 0 mt)).
 
+(*
 Compute (eval (bseq (ALL,NONE) (asp (ASPC 1 [1;1])) (asp (ASPC 2 [2;2]))) 0 (uu 1 [2;3] 0 mt)).
+*)
 
 
 
@@ -474,7 +478,7 @@ Fixpoint build_app_comp (t:AnnoTerm) (p:Plc) : AM (VM (EvidenceC -> EvidenceC)) 
         
     ret c
         
-
+(*
   | aasp (n,n') (HSH) =>
     
     (*p <- gets am_pl ;; *)
@@ -510,11 +514,12 @@ Fixpoint build_app_comp (t:AnnoTerm) (p:Plc) : AM (VM (EvidenceC -> EvidenceC)) 
         ret (fun x => x) in
         
     ret c
+*)
         
   | aatt r q t' =>
     (*modify_plc q ;; *)
     build_app_comp t' q
-  | _ => ret (ret (fun _ => mtc))
+  (*| _ => ret (ret (fun _ => mtc)) *)
   end.
 
 Definition fromOpt{A:Type} (o:option A) (a:A) : A :=
@@ -663,14 +668,14 @@ Inductive evMapped : Evidence -> AM_St -> Prop :=
     evMapped e' st ->
     (exists j, bound_to m p j) ->
     evMapped (gg p e') st
-| evMappedH : forall e' p st,
+(*| evMappedH : forall e' p st,
     (*m = st_sigmap st -> *)
     evMapped e' st ->
     evMapped (hh p e') st
 | evMappedN : forall e' m nid st,
     m = st_aspmap st ->
     evMapped e' st ->
-    evMapped (nn nid e') st
+    evMapped (nn nid e') st 
 | evMappedS : forall e1 e2 st,
     evMapped e1 st ->
     evMapped e2 st ->
@@ -678,7 +683,7 @@ Inductive evMapped : Evidence -> AM_St -> Prop :=
 | evMappedP : forall e1 e2 st,
     evMapped e1 st ->
     evMapped e2 st ->
-    evMapped (pp e1 e2) st.
+    evMapped (pp e1 e2) st*).
 Print eval.
 Print eval_asp.
 
@@ -694,11 +699,11 @@ Inductive allMapped : AnnoTerm -> AM_St -> Evidence -> Prop :=
 
               
 Inductive allMapped : AnnoTerm -> AM_St -> Plc -> Evidence -> Prop :=
-| allMapped_cpy : forall r p st e,
+(*| allMapped_cpy : forall r p st e,
     (*m = st_aspmap st -> *)
     (*p = am_pl st -> *)
     evMapped e st ->
-    allMapped (aasp r (CPY)) st p e
+    allMapped (aasp r (CPY)) st p e *)
 | allMapped_asp : forall m st p i r args e,
     (*p = am_pl st -> *)
     evMapped e st ->
@@ -711,10 +716,10 @@ Inductive allMapped : AnnoTerm -> AM_St -> Plc -> Evidence -> Prop :=
     m = st_sigmap st ->
     (exists j, bound_to m p j) ->
     allMapped (aasp r (SIG)) st p e
-| allMapped_hsh : forall r p st e,
+(*| allMapped_hsh : forall r p st e,
     evMapped e st ->
     (*p = am_pl st -> *)
-    allMapped (aasp r (HSH)) st p e
+    allMapped (aasp r (HSH)) st p e *)
 | allMapped_at : forall t' p q r st e m x y z z',
     m = st_aspmap st ->
     (*evMapped e m -> *) (* TODO: need this? *)
@@ -726,9 +731,9 @@ Inductive allMapped : AnnoTerm -> AM_St -> Plc -> Evidence -> Prop :=
        evMapped e m -> *)  (* TODO: need this? *)
     (*p = am_pl st -> *)
     allMapped t1 st p e ->
-    allMapped t2 st p mt (*(eval (unanno t1) p e)*) -> (* TODO: is mt ok here? *)
+    allMapped t2 st p (eval (unanno t1) p e) -> (* TODO: is mt ok here? *)
     allMapped (alseq r t1 t2) st p e
-| allMapped_bseq_nn : forall t1 t2 p st e r,
+(*| allMapped_bseq_nn : forall t1 t2 p st e r,
     (*p = am_pl st -> *)
     allMapped t1 st p mt ->
     allMapped t2 st p mt ->
@@ -767,15 +772,15 @@ Inductive allMapped : AnnoTerm -> AM_St -> Plc -> Evidence -> Prop :=
     (*p = am_pl st ->*)
     allMapped t1 st p e ->
     allMapped t2 st p e ->
-    allMapped (abpar r (ALL,ALL) t1 t2) st p e.
+    allMapped (abpar r (ALL,ALL) t1 t2) st p e*).
 
 Ltac allMappedFacts :=
   match goal with
   | [H: allMapped (aasp _ _) _ _ _ |- _] => invc H
   | [H: allMapped (aatt _ _ _) _ _ _ |- _] => invc H
   | [H: allMapped (alseq _ _ _) _ _ _ |- _] => invc H
-  | [H: allMapped (abseq _ _ _ _) _ _ _ |- _] => invc H
-  | [H: allMapped (abpar _ _ _ _) _ _ _ |- _] => invc H
+ (* | [H: allMapped (abseq _ _ _ _) _ _ _ |- _] => invc H
+  | [H: allMapped (abpar _ _ _ _) _ _ _ |- _] => invc H *)
   end;
   destruct_conjs.
 
@@ -788,10 +793,10 @@ Ltac evMappedFacts :=
   match goal with
   | [H: evMapped (uu _ _ _ _) _ |- _] => invc H
   | [H: evMapped (gg _ _) _ |- _] => invc H
-  | [H: evMapped (hh _ _) _ |- _] => invc H
+  (*| [H: evMapped (hh _ _) _ |- _] => invc H
   | [H: evMapped (nn _ _) _ |- _] => invc H
   | [H: evMapped (ss _ _) _ |- _] => invc H
-  | [H: evMapped (pp _ _) _ |- _] => invc H 
+  | [H: evMapped (pp _ _) _ |- _] => invc H  *)
   end;
   destruct_conjs;
   try debound.
@@ -813,6 +818,7 @@ Proof.
     rewrite Heqp0. simpl.
     edestruct IHt2 with (p:=n).
     rewrite Heqp1. simpl. eauto.
+    (*
   - repeat break_let.
     simpl.
     edestruct IHt1 with (p:=S p).
@@ -824,7 +830,7 @@ Proof.
     edestruct IHt1 with (p:=S p).
     rewrite Heqp0. simpl.
     edestruct IHt2 with (p:=n).
-    rewrite Heqp1. simpl. eauto.
+    rewrite Heqp1. simpl. eauto. *)
 Defined.
 
 Lemma announ : forall t,
@@ -919,14 +925,14 @@ Ltac evShapeFacts :=
   | [H: Ev_Shape _ (uu _ _ _ _) |- _] => invc H
   | [H: Ev_Shape (ggc _ _) _ |- _] => invc H
   | [H: Ev_Shape _ (gg _ _) |- _] => invc H
-  | [H: Ev_Shape (hhc _ _) _ |- _] => invc H
+  (*| [H: Ev_Shape (hhc _ _) _ |- _] => invc H
   | [H: Ev_Shape _ (hh _ _) |- _] => invc H
   | [H: Ev_Shape (nnc _ _ _) _ |- _] => invc H
   | [H: Ev_Shape _ (nn _ _) |- _] => invc H
   | [H: Ev_Shape (ssc _ _) _ |- _] => invc H
   | [H: Ev_Shape _ (ss _ _) |- _] => invc H
   | [H: Ev_Shape (ppc _ _) _ |- _] => invc H
-  | [H: Ev_Shape _ (pp _ _) |- _] => invc H
+  | [H: Ev_Shape _ (pp _ _) |- _] => invc H *)
   end.
 
 Check build_app_comp.
@@ -1020,6 +1026,9 @@ Proof.
         dosome.
         simpl in *.
         haaa. *)
+
+(*
+        
       ++
         df.
         ff; eauto.
@@ -1029,6 +1038,8 @@ Proof.
         haaa. *)
       ++
         ff; eauto.
+ *)
+        
         (*
         
         destruct (build_app_comp a1 p a_st) eqn:hey;
@@ -1074,6 +1085,8 @@ Proof.
        concludes.
        subst.
        ff; eauto.
+
+       (*
     +
             destruct (build_app_comp a1 p a_st) eqn:hey;
          try solve_by_inversion.
@@ -1097,14 +1110,23 @@ Proof.
        specialize IHa2 with (a_st := a) (a_st':=a0) (o:=o1) (p:=p).
        concludes.
        subst.
-       ff; eauto.
+       ff; eauto. 
   -
     df.
     tauto.
   -
     df.
-    tauto.
+    tauto. 
+
+        *)
+       
 Defined.
+
+Lemma allMappedExtra : forall a a_st p b e,
+    allMapped a a_st p (eval (unanno b) p e) ->
+    allMapped a a_st p (eval (unanno b) p mt).
+Proof.
+Admitted.
 
 Lemma atMapped : forall r n a a_st e p,
     allMapped (aatt r n a) a_st p e ->
@@ -1118,52 +1140,42 @@ Proof.
     destruct a.
     +
       allMappedFacts.
-      econstructor.
-      reflexivity.
-      reflexivity.
-      econstructor.
-      econstructor.
+      econstructor;
+        try reflexivity.
+        
+      ++      
+        econstructor.
+        econstructor.
+        reflexivity.
+        eauto.
+      
     +
       allMappedFacts.
-      econstructor.
-      reflexivity.
-      reflexivity.
-      econstructor.
-      econstructor.
-      reflexivity.
-      econstructor.
-      eauto.
-    +
-      allMappedFacts.
-      econstructor.
-      reflexivity.
-      reflexivity.
-      econstructor.
-      econstructor.
-      reflexivity.
-      eauto.
-    +
-      allMappedFacts.
-      econstructor.
-      reflexivity.
-      reflexivity.
-      econstructor.
-      econstructor.
+      econstructor;
+        try reflexivity.
+        
+      ++      
+        econstructor.
+        econstructor.
+        reflexivity.
+        eauto.
+
   -
     destruct a_st.
-    econstructor.
-    reflexivity.
-    reflexivity.
+    econstructor; try reflexivity.
+    +
     eapply IHa.
-    econstructor.
-    reflexivity.
-    reflexivity.
-    allMappedFacts.
-    df.
-    allMappedFacts.
-    df.
-    eassumption.
+    econstructor; try reflexivity.
+    ++
+      repeat (allMappedFacts; df).
+      eauto.
   -
+    repeat (allMappedFacts;df).
+    econstructor; try reflexivity.
+    econstructor.
+    
+
+    (*
     df.
     allMappedFacts.
     df.
@@ -1171,22 +1183,24 @@ Proof.
     econstructor.
     reflexivity.
     reflexivity.
-    econstructor.
+    econstructor. *)
     specialize IHa1 with (r:=r) (n:=n) (a_st:={| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z' |})
                          (e:=e) (p:=n).
     assert (allMapped (aatt r n a1)
-                      {| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z'|} n mt).
+                      {| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z'|} n mt). {
     eapply IHa1.
     econstructor.
     reflexivity.
     reflexivity.
     eassumption.
+    }
+    
     allMappedFacts.
     df.
     eassumption.
-    df.
+    
 
-    specialize IHa2 with (r:=r0) (n:=n) (a_st:={| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z' |}) (e:=mt) (p:=n).
+    specialize IHa2 with (r:=r0) (n:=n) (a_st:={| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z' |}) (e:=(eval (unanno a1) n e)) (p:=n).
     assert ( allMapped (aatt r0 n a2) {| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z' |} n mt).
     eapply IHa2.
     econstructor.
@@ -1194,9 +1208,9 @@ Proof.
     reflexivity.
     simpl in *.
     eassumption.
-    allMappedFacts.
-    df.
-    eassumption.
+    eapply allMappedExtra; eauto.
+
+    (*
   -
     specialize IHa1 with (r:=r) (n:=n) (a_st:=a_st) (e:=e) (p:=p).
     
@@ -1339,13 +1353,45 @@ Proof.
       allMappedFacts.
       df.
       eassumption.
+*)
 Defined.
+
+
 
 Lemma allMappedSub' : forall a a_st e p,
     allMapped a a_st p e ->
     allMapped a a_st p mt.
 Proof.
-Admitted.
+  intros.
+  generalizeEverythingElse a.
+  induction a; intros;
+    allMappedFacts.
+  -
+    try debound.
+      econstructor.
+      econstructor.
+      reflexivity.
+      eexists.
+      econstructor.
+      eauto.
+  -
+      econstructor.
+      econstructor.
+      reflexivity.
+      eauto.
+  -
+    econstructor.
+    reflexivity.
+    reflexivity.
+    eapply IHa.
+    eassumption.
+  -
+    econstructor.
+    eauto.
+
+
+    eapply allMappedExtra; eauto.
+Defined.
 
 
 
@@ -1357,208 +1403,6 @@ Proof.
   intros.
   eapply allMappedSub'; eauto.
 Defined.
-
-
-(*
-
-  intros.
-  generalizeEverythingElse t.
-  induction t; intros.
-  -
-    df.
-    +
-      destruct a.
-      ++
-        df.
-        eassumption.
-      ++
-        df.
-        destruct a0.
-        +++
-          destruct a;
-            try (
-                 allMappedFacts;
-            econstructor;
-              try reflexivity;
-              try econstructor;
-              eauto).
-        +++
-
-
-
-          eapply atMapped; eauto.
-        +++
-          
-          
-          
-
-            
-          allMappedFacts.
-          df.
-          econstructor.
-          reflexivity.
-          reflexivity.
-
-          destruct a0.
-          ++++
-            destruct a;
-              try (
-              allMappedFacts;
-              econstructor; econstructor;
-              eauto; tauto).
-          ++++
-            destruct a0.
-            +++++
-              destruct a.
-            ++++++
-              allMappedFacts.
-            df.
-            allMappedFacts.
-            econstructor.
-            reflexivity.
-            reflexivity.
-            econstructor.
-            reflexivity.
-            econstructor.
-            ++++++
-              allMappedFacts.
-            df.
-            allMappedFacts.
-            econstructor.
-            reflexivity.
-            reflexivity.
-            econstructor.
-            reflexivity.
-            econstructor.
-            reflexivity.
-            eauto.
-            ++++++
-              allMappedFacts.
-            df.
-            allMappedFacts.
-            econstructor.
-            reflexivity.
-            reflexivity.
-            econstructor.
-            econstructor.
-            reflexivity.
-            reflexivity.
-            eauto.
-            ++++++
-                allMappedFacts.
-            df.
-            allMappedFacts.
-            econstructor.
-            reflexivity.
-            reflexivity.
-            econstructor.
-            econstructor.
-            reflexivity.
-            +++++
-              df.
-            destruct a0.
-            ++++++
-              allMappedFacts.
-            df.
-            allMappedFacts.
-            econstructor.
-            reflexivity.
-            reflexivity.
-            econstructor.
-            reflexivity.
-            econstructor.
-            df.
-
-            destruct a.
-            +++++++
-              allMappedFacts.
-            econstructor.
-            reflexivity.
-            econstructor.
-            +++++++
-              econstructor.
-            reflexivity.
-            econstructor.
-            reflexivity.
-            allMappedFacts.
-            eauto.
-            +++++++
-              econstructor.
-            econstructor.
-            reflexivity.
-            reflexivity.
-            
-            allMappedFacts.
-            eauto.
-            +++++++
-              econstructor.
-            econstructor.
-            reflexivity.
-            ++++++
-              
-            
-            econstructor.
-            reflexivity.
-            reflexivity.
-            econstructor.
-            reflexivity.
-            econstructor.
-
-
-            
-            reflexivity.
-            eauto.
-              
-              try (
-              allMappedFacts;
-              econstructor; econstructor;
-              eauto; tauto).
-              
-              try (
-              allMappedFacts;
-              econstructor; econstructor;
-              eauto; tauto).
-            
-            
-            +++++
-              allMappedFacts;
-              econstructor; econstructor.
-            eauto.
-            +++++
-              allMappedFacts;
-              econstructor; econstructor.
-            eauto.
-            +++++
-              allMappedFacts;
-              econstructor; econstructor;
-                eauto.
-            econstructor.
-            econstructor.
-            econstructor.
-            reflexivity.
-            reflexivity.
-            eauto.
-            
-          
-            
-            
-            
-            
-        
-      
-      eassumption.
-    +
-      
-
-
-    
-    
-Admitted.
-
- *)
-
-Check build_app_comp.
-Check allMapped.
 
 
 Lemma build_app_some : forall a a_st p,
@@ -1603,20 +1447,22 @@ Proof.
     allMappedFacts.
     specialize IHa1 with (a_st:=a_st) (p:=p).
     specialize IHa2 with (a_st:=a_st) (p:=p).
-    concludes.
-    concludes.
+    assert (allMapped a2 a_st p mt).
+    Check allMappedExtra.
+    eapply allMappedSub'; eauto.
+    repeat concludes.
     destruct_conjs.
     df.
 
-    destruct a2.
+    destruct a2;
+      try (subst';
+           df;
+           eauto).
     +
-      destruct a.
-      ++
-        subst'.
-        (*destruct a_st. *)
-        allMappedFacts.
-        df.
-        eauto.
+      destruct a;
+        try (subst'; df; eauto).
+
+        (*
       ++
         subst'.
         df.
@@ -1631,7 +1477,7 @@ Proof.
         invc H0. *)
         allMappedFacts.
         debound.
-        haaa.
+        haaa. *)
       ++
         df.
         allMappedFacts.
@@ -1649,32 +1495,14 @@ Proof.
         subst'.
         df.
         eauto.
-      ++
-        subst'.
-        df.
-        eauto.
-    +
-      subst'.
-      df.
-      eauto.
-    +
-      subst'.
-      df.
-      eauto.
-    +
-      subst'.
-      df.
-      eauto.
-    +
-      subst'.
-      df.
-      eauto.
+
+(*
   -
     df.
     eauto.
   -
     df.
-    eauto.
+    eauto. *)
 Defined.
 
 (*
@@ -1793,23 +1621,62 @@ Defined.
 Check run_app_comp.
 Check allMapped.
 
-Lemma same_ev_shape : forall a a_st e e_res vm_st p,
-    allMapped a a_st p mt ->
+Lemma build_app_run_some : forall a p a_st x v_st,
+    build_app_comp a p a_st = (Some x, a_st) ->
+    exists y v, (x v_st = (Some y, v)).
+Proof.
+Admitted.
+
+Lemma fafafaf : forall e tr p o tr' (x:VM (EvidenceC -> EvidenceC)) a a_st p' p'' o'',
+    build_app_comp a p' a_st = (Some x, a_st) -> 
+    fst (x {| st_ev := e; st_trace := tr; st_pl := p; st_store := o |}) =
+    fst (x {| st_ev := e; st_trace := tr'; st_pl := p''; st_store := o'' |}).
+Proof.
+Admitted.
+Print AnnoTerm.
+
+(*
+Lemma same_ev_shape : forall a a_st e e_res vm_st p et e' t q,
+    allMapped a a_st p et ->
     (*p = am_pl a_st -> *)
-    vm_st = run_vm a empty_vmst ->
+    (*Ev_Shape e' (eval (unanno t) q mt) -> *)
+
+    Ev_Shape e'' (eval (unano t) q mt) ->
+    e'' = (run_app_comp t q a_st e') mtc
+
+    vm_st = run_vm a {| st_ev := e'; st_trace := []; st_pl := 0; st_store := [] |} ->
     e_res = st_ev vm_st ->
-    e = run_app_comp a p a_st e_res mtc ->
-    Ev_Shape e (eval (unanno a) p mt).
+    Ev_Shape e_res e_res_t ->
+    (*e_res_t = eval (unanno a) 0 et ->*)
+    (*Ev_Shape e'' et ->*)
+    e = (run_app_comp a p a_st e_res) e''  (*TODO: remove func, just add extra lseq term for initial appraising initial evidence *) ->
+    Ev_Shape e e_res_t.
+ *)
+Lemma same_ev_shape : forall a a_st p et vm_st vm_st' e_res e_res_t e' e'' e,
+    allMapped a a_st p et ->
+    vm_st' = run_vm a vm_st ->
+    p = st_pl vm_st ->
+    e_res = st_ev vm_st' ->
+    Ev_Shape e_res e_res_t ->
+    e' = st_ev vm_st ->
+    Ev_Shape e' et ->
+    Ev_Shape e'' et ->
+    (*e_res_t = eval (unanno a) 0 et ->*)
+    e = (run_app_comp a p a_st e_res) e''
+    (*TODO: remove func, just add extra lseq term for initial appraising initial evidence *) ->
+    Ev_Shape e e_res_t.
 Proof.
   intros.
   subst.
+  vmsts.
+  df.
   generalizeEverythingElse a.
   induction a; intros.
   -
     destruct a;
       try
         ( df;
-          unfold empty_vmst;
+          unfold empty_vmst in *;
           unfold run_vm;
           df;
           try (eauto);
@@ -1821,16 +1688,59 @@ Proof.
           df;
           eauto;
           tauto).
+    +
+      df.
+      unfold run_vm in *.
+      df.
+      allMappedFacts.
+      debound.
+      unfold run_app_comp in *.
+      unfold runSt in *.
+      df.
+      subst'.
+      df.
+      evShapeFacts.
+      econstructor.
+      Lemma ev_shape_transitive : forall e e' et et',
+        Ev_Shape e et ->
+        Ev_Shape e' et ->
+        Ev_Shape e et' ->
+        Ev_Shape e' et'.
+      Proof.
+      Admitted.
 
+      eapply ev_shape_transitive.
+      apply H5.
+      eassumption.
+      eassumption.
+    +
+      df.
+      unfold run_vm in *.
+      df.
+      allMappedFacts.
+      debound.
+      unfold run_app_comp in *.
+      unfold runSt in *.
+      df.
+      subst'.
+      df.
+      evShapeFacts.
+      econstructor.
+
+      eapply ev_shape_transitive.
+      apply H5.
+      eassumption.
+      eassumption.
+  
   -
     df.
     unfold empty_vmst.
-    unfold run_vm.
+    unfold run_vm in *.
     df.
     dohtac.
     df.    
     try (eauto);
-    unfold run_app_comp.
+    unfold run_app_comp in *.
     df.
     allMappedFacts.
 
@@ -1844,6 +1754,10 @@ Proof.
     unfold run_vm in *.
     unfold execSt in *.
     unfold empty_vmst in *.
+    Check build_comp_at.
+    df.
+
+    (*
     rewrite build_comp_at in *.
     simpl in IHa.
     unfold fst.
@@ -1852,17 +1766,62 @@ Proof.
     unfold fromOpt in *.
 
     df.
+     *)
+    
 
 
     edestruct build_app_some.
+    eapply allMappedSub'.
     eassumption.
     destruct_conjs.
     rewrite H in *.
     df.
-    Check always_some.
+    (*Check always_some. *)
 
-    assert (Ev_Shape (run_app_comp a n {| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z' |} (toRemote (unanno a) mtc) mtc) (eval (unanno a) n mt)).
+    edestruct build_app_run_some.
+    apply H.
+    destruct_conjs.
+    rewrite H1 in *.
+    df.
+
+    specialize IHa with (a_st:={| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z' |}) (et:=et) (st_ev0:=st_ev0) (st_trace:=st_trace) (st_pl := n) (st_store:=st_store) (e_res_t := eval (unanno a) n et) (e'':=e'').
+    rewrite H in IHa.
+    df.
+    repeat concludes.
+    assert (o = Some tt).
+    eapply always_some.
+    admit. (* TODO: anno term restore *)
+    eassumption.
+    subst.
+    assert (Ev_Shape (st_ev v) (eval (unanno a) n et)).
+    Check multi_ev_eval.
+    eapply multi_ev_eval.
+    admit. (* TODO: anno term restore *)
+    admit. (* TODO: multi_ev_eval more general for trace*)
+    apply H5.
+    reflexivity.
+    repeat concludes.
+    assert (toRemote (unanno a) st_ev0 = st_ev v).
+    admit. (* TODO: more general build_comp_at for evidence, maybe need to add place as param to toRemote?  *)
+    rewrite H4 in H1.
+    rewrite H1 in *.
+    df.
+    rewrite H4 in H3.
+    eapply ev_shape_transitive.
+    apply H2.
+    eassumption.
+    eassumption.
+
+
+    (*
+   
+
+
+    (*
+    assert (Ev_Shape (run_app_comp a n {| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z' |} (toRemote (unanno a) mtc) e') (eval (unanno a) n et)).
     eauto.
+     *)
+    
     (*
    
 
@@ -1885,49 +1844,719 @@ Proof.
     monad_unfold.
     unfold runSt in *.
     rewrite H in *.
-    simpl in H0.
-    rewrite Heqp0 in *.
-    simpl in H0.
+    simpl in *.
+    rewrite H1 in *.
+    simpl in *.
+    eassumption.
+
+    (*
 
     destruct o.
     +
-      simpl in H0.
+      simpl in *.
       eassumption.
     +
-      simpl in H0.
-      inv H0.
-      econstructor.
+      simpl in *.
+      eassumption. *)
+*)
   -
     df.
-    unfold run_app_comp in *.
-    monad_unfold.
-    unfold runSt in *.
+    unfold empty_vmst.
+    unfold run_vm in *.
     df.
+
+    Check build_app_some.
+    Check always_some.
+    assert (o0 = Some tt).
+    eapply always_some.
+    admit. (* TODO: anno restore *)
+    eassumption.
+    subst.
+    df.
+
+    assert (o = Some tt).
+    eapply always_some.
+    admit. (* TODO: anno restore *)
+    eassumption.
+    subst.
+
+    vmsts.
+    df.
+
+    
+(*
+    destruct ( build_comp a2 {| st_ev := mtc; st_trace := []; st_pl := 0; st_store := [] |}) eqn:hi.
+    assert (o = Some tt).
+    eapply always_some.
+    admit.
+    eassumption.
+    subst.
+*)
+    
+
+
+
+
+
+    (*
+    vmsts.
     allMappedFacts.
+    specialize IHa1 with (a_st:=a_st) (p:=p) (e:=e) (et:=et).
+    specialize IHa2 with (a_st:=a_st) (p:=p) (e:=st_ev) (et:=(eval (unanno a2) p et)).
+    repeat concludes.
+     *)
+
+    allMappedFacts.
+    
+
+    
+    unfold run_app_comp in *.
+    df.
+    Check build_app_some.
+    edestruct build_app_some.
+    eapply allMappedSub'.
+    apply H9.
+
+    (*
+    rewrite H in IHa1.
+    df. *)
+   
+    
+    edestruct build_app_some.
+    eapply allMappedSub'.
+    apply H10.
+
+    (*
+    rewrite H1 in *.
+    df. *)
+    
+    df.
     destruct a2 eqn:a2_eq.
     +
-      specialize IHa1 with (a_st:=a_st) (p:=p).
-      concludes.
+      
       destruct a eqn:a_eq.
       ++
-        edestruct build_app_some.
-        apply H6.
-        rewrite H in *.
-        edestruct build_app_some.
-        apply H7.
-        rewrite H0 in *. simpl in *.
+        simpl in *.
+        df.
+        dosome.
+        allMappedFacts.
+        debound.
+        rewrite H0 in *.
+        df.
+
+        edestruct build_app_run_some.
+        apply Heqp.
+        destruct_conjs.
+        rewrite H1 in *.
+        df.
+        invc H3.
+        econstructor.
+        specialize IHa1 with (a_st:=a_st) (*(e':=e')*) (et:=et) (st_ev0 := st_ev) (st_trace := st_trace) (st_pl:=st_pl) (st_store:=st_store) (e_res_t:=(eval (unanno a1) st_pl et)) (e'':=e'').
+        concludes.
+        rewrite Heqp0 in *.
+        df.
+
+        assert (Ev_Shape st_ev0 (eval (unanno a1) st_pl et)).
+        admit.
+        repeat concludes.
+        rewrite Heqp in *.
+        df.
+        erewrite fafafaf in IHa1.
+        rewrite H1 in IHa1.
+        df.
+        eapply ev_shape_transitive.
+        apply H.
+        eassumption.
+        eassumption.
+        eassumption.
+
+        
+
+
+        (*
+        rewrite Heqp0 in *.
         df.
         unfold run_vm in *.
         df.
-        assert (exists t' n, a1 = snd (anno t' n)). admit. destruct_conjs.
-        assert (o2 = Some tt).
-        Check always_some.
+        unfold empty_vmst in *.
+        vmsts.
+        df.
+        repeat concludes.
+        assert (o = Some tt).
         eapply always_some.
-        eassumption.
+        admit.
         eassumption.
         subst.
         df.
-        destruct o0.
+        rewrite Heqp1 in *.
+        df.
+        erewrite fafafaf in IHa1.
+
+        rewrite H1 in IHa1.
+        df.
+        eassumption.
+        eassumption. *)
+
+
+
+
+      ++
+        simpl in *.
+        df.
+        dosome.
+        allMappedFacts.
+        debound.
+        rewrite H2 in *.
+        df.
+
+        rewrite Heqp3 in *.
+        df.
+
+        
+
+        edestruct build_app_run_some.
+        apply Heqp3.
+        destruct_conjs.
+        rewrite H0 in *.
+        df. 
+      
+        evShapeFacts.
+        econstructor.
+        specialize IHa1 with (a_st:=a0) (*(e':=e')*) (et:=et) (st_ev0 := st_ev) (st_trace := st_trace) (st_pl:=st_pl) (st_store:=st_store) (e_res_t:=(eval (unanno a1) st_pl et)) (e'':=e'').
+        concludes.
+        rewrite Heqp0 in *.
+        df.
+
+        assert (Ev_Shape st_ev0 (eval (unanno a1) st_pl et)).
+        admit.
+        repeat concludes.
+        rewrite Heqp3 in *.
+        df.
+        erewrite fafafaf in IHa1.
+        rewrite H0 in IHa1.
+        df.
+        eapply ev_shape_transitive.
+        apply H.
+        eassumption.
+        eassumption.
+        eassumption.
+
+    +
+      rewrite H.
+      rewrite H0.
+      df.
+
+      edestruct build_app_run_some.
+      apply H0.
+      destruct_conjs.
+
+      rewrite H2 in *.
+      df.
+      vmsts.
+
+      edestruct build_app_run_some.
+      apply H.
+      destruct_conjs.
+
+      rewrite H4 in *.
+      df.
+      Print dohtac.
+      dohtac.
+      invc Heqp8.
+      invc Heqp6.
+      invc Heqp5.
+      do_pl_immut.
+      cbn in *.
+      pose (IHa2 a_st (eval (unanno a1) st_pl1 et) st_ev6 st_trace0 st_pl1 st_store0 e_res_t (x2 e'')) as hhey.
+      rewrite H0 in *.
+      df.
+      rewrite H2 in *.
+      df.
+
+      eapply hhey.
+      eassumption.
+      eassumption.
+      eapply multi_ev_eval.
+      admit. (* TODO: anno restore *)
+      admit.
+      apply H5.
+      reflexivity.
+      
+      
+
+      (*
+      specialize IHa2 with (a_st:=a_st) (*(e':=st_ev5)*) (et:=(eval (unanno a1) p et)) (st_ev0:=st_ev6) (st_trace0:=st_trace0) (st_pl0 := st_pl1) (st_store0:=st_store0) (e'':=(x2 e'')) (e_res_t:=e_res_t).
+
+      rewrite H0 in *.
+      df.
+
+
+      unfold empty_vmst in *.
+      unfold run_vm in *.
+      df.
+      dohtac.
+      df. *)
+      
+      specialize IHa1 with (a_st:=a_st) (et:=et) (st_ev0:=st_ev) (st_trace:=st_trace) (st_pl:=st_pl1) (st_store:=st_store) (e_res_t:=(eval (unanno a1) st_pl1 et)) (e'':=e'').
+      repeat concludes.
+      rewrite H in *.
+      df.
+      assert (Ev_Shape st_ev6 (eval (unanno a1) st_pl1 et)).
+      eapply multi_ev_eval.
+      admit. (* TODO: anno restore *)
+      admit.
+      apply H5.
+      reflexivity.
+      repeat concludes.
+
+            Lemma dood : forall t vm_st vm_st' e e' e'' p a_st x0 x1 new_vmst new_vmst',
+        build_comp t vm_st = (Some tt, vm_st') ->
+        e = st_ev vm_st ->
+        e' = st_ev vm_st' ->
+        build_app_comp t p a_st = (Some x0, a_st) ->
+        x0 new_vmst = (Some x1, new_vmst') ->
+        e' = st_ev new_vmst ->
+        e'' = st_ev new_vmst' ->
+        e = e''.
+      Proof.
+      Admitted.
+
+      Check build_comp_at.
+
+      assert
+        (
+          build_comp a {| st_ev := st_ev6; st_trace := []; st_pl := n1; st_store := [] |} =
+       (Some tt,
+       {|
+       st_ev := toRemote (unanno a) st_ev6;
+       st_trace := remote_events a n1;
+       st_pl := n1;
+       st_store := StVM.st_store
+                     (snd
+                        (build_comp a
+                                    {| st_ev := st_ev6; st_trace := []; st_pl := n1; st_store := [] |}))
+       |})).
+      eapply build_comp_at.
+         
+(*
+
+      edestruct (build_comp a {| st_ev := st_ev6; st_pl:=n1; st_store := []; st_trace:=[]|}) eqn:hi.
+      edestruct (build_comp a {| st_ev := st_ev6; st_pl:=n1; st_store := []; st_trace:=[]|}) eqn:hey.
+      Check build_comp_at.
+      rewrite build_comp_at in hey. *)
+      
+      
+      
+      assert (st_ev6 = st_ev5). {
+
+        eapply dood.
+        apply H7.
+        tauto.
+        tauto.
+        eassumption.
+        eassumption.
+        tauto.
+        tauto.
+
+      }
+      
+      subst.
+      erewrite fafafaf in IHa1.
+      rewrite H4 in *.
+      df.
+      eassumption.
+      eassumption.
+    +
+
+      rewrite H.
+      rewrite H0.
+      unfold fromOpt.
+      unfold fst.
+      repeat break_let.
+
+      edestruct build_app_run_some.
+      apply H0.
+      destruct_conjs.
+      rewrite H2 in Heqp2.
+      inversion Heqp2.
+      subst.
+
+      edestruct build_app_run_some.
+      apply H.
+      destruct_conjs.
+      rewrite H4 in Heqp3.
+      inversion Heqp3.
+      subst.
+
+      assert (o = Some (fun x : EvidenceC => x1 (x2 x))).
+      congruence.
+      subst.
+      do_pl_immut.
+
+      specialize IHa2 with (a_st:=a_st) (et:=(eval (unanno a1) st_pl1 et)) (st_ev0:=st_ev0) (st_trace:=st_trace0) (st_pl:=st_pl1) (st_store:=st_store0) (e_res_t:=e_res_t) (e'':=x2 e'').
+      concludes.
+      rewrite Heqp1 in *.
+      unfold StVM.st_ev in IHa2.
+      repeat concludes.
+
+      assert (Ev_Shape st_ev0 (eval (unanno a1) st_pl1 et)).
+      eapply multi_ev_eval.
+      admit.
+      admit.
+      apply H5.
+      reflexivity.
+      concludes.
+      destruct v1.
+      destruct v0.
+      destruct v.
+
+      specialize IHa1 with (a_st:=a_st) (et:=et) (st_ev0:=st_ev) (st_trace:=st_trace) (st_pl:=st_pl1) (st_store:=st_store) (e_res_t:=(eval (unanno a1) st_pl1 et))(e'':=e'').
+      concludes.
+      rewrite Heqp0 in *.
+      simpl in IHa1.
+      repeat concludes.
+      rewrite H in *.
+      simpl in IHa1.
+      clear Heqp.
+      clear Heqp2.
+      clear Heqp3.
+
+      
+        
+      (* st_ev1 = eval alseq st_ev0 *)
+      
+      assert (st_ev3 = st_ev0).
+      {
+        symmetry.
+        eapply dood.
+        apply Heqp1.
+        tauto.
+        reflexivity.
+        eassumption.
+        eassumption.
+        tauto.
+        tauto.
+
+      }
+      
+      subst.
+      erewrite fafafaf in IHa1.
+
+      rewrite H4 in *.
+      simpl in IHa1.
+     
+
+      concludes.
+
+      rewrite H0 in *.
+      simpl in IHa2.
+
+      erewrite fafafaf in IHa2.
+      rewrite H2 in *.
+      simpl in IHa2.
+      eassumption.
+      eassumption.
+      eassumption.
+
+      Unshelve.
+      exact (asp (ASPC 1 [])).
+      eauto.
+      exact (asp (ASPC 1 [])).
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      exact (asp (ASPC 1 [])).
+      eauto.
+      exact (asp (ASPC 1 [])).
+      eauto.
+      exact (asp (ASPC 1 [])).
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      exact (asp (ASPC 1 [])).
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      exact (aasp (0,0) (ASPC 1 [])).
+      exact mtc.
+      eauto.
+      eauto.
+      exact (asp (ASPC 1 [])).
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+
+
+
+
+
+
+      
+      
+      rewrite H3 in *.
+      df.
+
+      eapply IHa2.
+      admit.
+      rewrite H in *.
+      df.
+      erewrite fafafaf in IHa1.
+      df.
+      
+
+
+
+      
+      rewrite H in *.
+      df.
+      assert (
+      
+      assert (allMapped (aatt (n2, n3) n1 a) a_st p (eval (unanno a1) p mt)).
+      admit.
+
+      assert (st_ev5 = st_ev8). admit.
+      subst.
+      erewrite fafafaf in IHa1.
+      rewrite H3 in *.
+      df.
+
+
+      
+      pose (IHa2 H2).
+      assert ( Ev_Shape st_ev5 (eval (unanno a1) p et)).
+      admit.
+      pose (e H5).
+      allMappedFacts.
+
+      assert (
+          allMapped (aatt (n2, n3) n1 a)
+                    {| am_nonceMap := x3; am_nonceId := y; st_aspmap := z; st_sigmap := z' |} p mt).
+
+      econstructor.
+      reflexivity.
+      reflexivity.
+      eassumption.
+
+      pose (IHa2 H2).
+      
+
+      
+      
+      
+        
+        
+
+
+
+        
+        
+        rewrite H2 in *.
+        eapply IHa1.
+        rewrite H in *.
+        df.
+
+
+        
+        specizlie IHa2 with (a_st:=a_st) (e:=
+        rewrite H1 in *.
+        subst'.
+        df.
+        unfold run_vm in *.
+        df.
+
+        Check fafafaf.
+
+        unfold empty_vmst in *.
+        df.
+        rewrite Heqp4 in *.
+        df.
+
+        Check build_app_run_some.
+
+        edestruct build_app_run_some.
+        eassumption.
+        destruct_conjs.
+
+        erewrite fafafaf in IHa1.
+        rewrite Heqp3 in *.
+        df.
+        econstructor.
+        eauto.
+        eassumption.
+      ++
+
+        allMappedFacts.
+        debound.
+        df.
+        rewrite H4 in *.
+        df.
+        rewrite H in *.
+        df.
+
+        
+        unfold empty_vmst in *.
+        unfold run_vm in *.
+        df.
+
+        edestruct build_app_run_some.
+        apply H.
+        destruct_conjs.
+        rewrite H2 in *.
+        df.
+        econstructor.
+
+
+        erewrite fafafaf in IHa1.
+        rewrite H2 in *.
+        df.
+        eassumption.
+        eassumption.
+    +
+      rewrite H in *.
+      df.
+      dohtac.
+      df.
+
+      edestruct build_app_run_some.
+      apply Heqp3.
+      destruct_conjs.
+
+      rewrite H2 in Heqp9.
+      df.
+      vmsts.
+
+      edestruct build_app_run_some.
+      apply Heqp3.
+      destruct_conjs.
+      rewrite H3 in IHa2.
+      df.
+      
+
+      edestruct build_app_run_some.
+      apply H.
+      destruct_conjs.
+      rewrite H5 in Heqp10.
+      df.
+
+      edestruct build_app_run_some.
+      apply H.
+      destruct_conjs.
+      rewrite H6 in IHa1.
+      df.
+
+      unfold run_vm in *.
+      df.
+      dohtac.
+      df.
+
+      allMappedFacts.
+
+      edestruct build_app_run_some.
+      apply Heqp3.
+      destruct_conjs.
+      rewrite H9 in IHa2.
+      df.
+
+      edestruct build_app_run_some.
+      apply H.
+      destruct_conjs.
+      rewrite H5 in IHa1.
+      df.
+      
+      
+        
+
+        
+        
+
+        erewrite fafafaf in IHa1.
+        rewrite Heqp5 in *.
+        df.
+        
+      
+
+
+
+        assert (fst (x {| st_ev := st_ev v0; st_trace := []; st_pl := 0; st_store := [] |}) =
+                fst( x
+            {|
+            st_ev := st_ev v0;
+            st_trace := [umeas n2 0 n4 (n2 :: l)];
+            st_pl := 0;
+            st_store := [] |})).
+
+        eapply fafafaf.
+        eassumption.
+
+        rewrite Heqp3 in H.
+        df.
+                
+
+
+        
+        assert (exists t' n, a1 = snd (anno t' n)). admit. destruct_conjs.
+        assert (o3 = Some tt).
+        eapply always_some.
+        eauto.
+        eauto.
+        subst.
+        df.
+
+
+
+          edestruct build_app_run_some.
+          eassumption.
+          destruct_conjs.
+          rewrite H4 in *.
+
+
+
+          erewrite fafafaf in IHa1.
+          rewrite Heqp1 in *.
+          simpl in *.
+          df.
+
+          rewrite H4 in *.
+          df.
+          econstructor.
+          eauto.
+          eassumption.
+      ++
+        df.
+        allMappedFacts.
+        debound.
+        subst'.
+        df.
+
+        edestruct build_app_comp
+        
+      
+
+          destruct o0.
+        +++
+          df.
+          econstructor.
+          eauto.
+        +++
+          df.
+          df.
+
+
+
+          solve_by_inversion.
+        +++
+          
+
+
+        
         +++
           invc Heqp0.
           simpl.

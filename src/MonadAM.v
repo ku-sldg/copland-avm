@@ -43,6 +43,8 @@ Compute (map_set mm 1 2).
 
 Check (map_set mm 1 2).
 
+(*
+
 Definition am_newNonce (bs :BS) : AM EvidenceC :=
   (*let myPol := asks myPolicy in *)
   am_st <- get ;;
@@ -56,15 +58,18 @@ Definition am_newNonce (bs :BS) : AM EvidenceC :=
   let newId := i + 1 in
   put (mkAM_St newMap newId appm sigm (*plm*)) ;;         
       ret (nnc i bs mtc).
+*)
 
 Definition runAM {A:Type} (k:(AM A)) (* (env:AM_Env) *) (st:AM_St) : (option A) * AM_St :=
   runSt st k.
 
+(*
 Definition incNonce := runAM (am_newNonce 42) empty_amst.
 Check incNonce.
 Compute (incNonce).
 
 Check annotated.
+*)
 
 Definition am_run_t (t:Term) (e:EvidenceC) : AM EvidenceC :=
   let annt := annotated t in
@@ -77,21 +82,25 @@ Definition t2 := (lseq (asp (ASPC 44 [])) (asp SIG)).
 
 Compute (am_run_t t2 mtc empty_amst).
 
+(*
 Definition am_proto_1 :=
   n2 <- am_newNonce 42 ;;
     n <- am_newNonce 43 ;;
     am_run_t t2 n.
 
 Compute (runAM am_proto_1 empty_amst).
+*)
 
 Check fold_left.
 Check cons.
 
+(*
 Fixpoint nonces (e:EvidenceC) (l:list nat) : list nat :=
   match e with
   | nnc i _ e' => nonces e' ([i] ++ l)
   | _ => l
   end.
+*)
 
 
     
