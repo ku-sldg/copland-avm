@@ -1659,6 +1659,7 @@ Admitted.
 
 Lemma same_ev_shape : forall a a_st p et vm_st vm_st' e_res e_res_t e' e'' e,
     allMapped a a_st p et ->
+    well_formed a ->
     vm_st' = run_vm a vm_st ->
     p = st_pl vm_st ->
     e_res = st_ev vm_st' ->
@@ -1676,7 +1677,8 @@ Proof.
   vmsts.
   df.
   generalizeEverythingElse a.
-  induction a; intros.
+  induction a; intros;
+    try do_wf_pieces.
   -
     destruct a;
       try
@@ -1709,7 +1711,7 @@ Proof.
 
 
       eapply ev_shape_transitive.
-      apply H5.
+      apply H6.
       eassumption.
       eassumption.
     +
@@ -1727,7 +1729,7 @@ Proof.
       econstructor.
 
       eapply ev_shape_transitive.
-      apply H5.
+      apply H6.
       eassumption.
       eassumption.
   
@@ -1780,7 +1782,7 @@ Proof.
     edestruct build_app_run_some.
     apply H.
     destruct_conjs.
-    rewrite H1 in *.
+    rewrite H3 in *.
     df.
 
     specialize IHa with (a_st:={| am_nonceMap := x; am_nonceId := y; st_aspmap := z; st_sigmap := z' |}) (et:=et) (st_ev0:=st_ev0) (st_trace:=st_trace) (st_pl := n) (st_store:=st_store) (e_res_t := eval (unanno a) n et) (e'':=e'').
@@ -1789,20 +1791,21 @@ Proof.
     repeat concludes.
     assert (o = Some tt).
     eapply always_some.
-    admit. (* TODO: anno term restore *)
+    (*admit. *) (* TODO: anno term restore *)
     eassumption.
     subst.
     assert (Ev_Shape (st_ev v) (eval (unanno a) n et)).
     Check multi_ev_eval.
     destruct v.
     eapply multi_ev_eval.
-    admit. (* TODO: anno term restore *)
+    (*admit.*) (* TODO: anno term restore *)
+    eassumption.
     eassumption.
 
 
     
    (* admit. (* TODO: multi_ev_eval more general for trace*) *)
-    apply H5.
+    eassumption.
     reflexivity.
     repeat concludes.
     destruct v.
@@ -1822,12 +1825,16 @@ Proof.
       tauto.
     }
 
+    subst'.
+    subst'.
+    (*
     rewrite H4 in H1.
-    rewrite H1 in *.
+    rewrite H1 in *. *)
     df.
-    rewrite H4 in H3.
+    (*
+    rewrite H4 in H3. *)
     eapply ev_shape_transitive.
-    apply H2.
+    apply H5.
     eassumption.
     eassumption.
 
@@ -1888,14 +1895,14 @@ Proof.
     Check always_some.
     assert (o0 = Some tt).
     eapply always_some.
-    admit. (* TODO: anno restore *)
+    (*admit. *) (* TODO: anno restore *)
     eassumption.
     subst.
     df.
 
     assert (o = Some tt).
     eapply always_some.
-    admit. (* TODO: anno restore *)
+    (*admit.*) (* TODO: anno restore *)
     eassumption.
     subst.
 
@@ -1934,7 +1941,8 @@ Proof.
     Check build_app_some.
     edestruct build_app_some.
     eapply allMappedSub'.
-    apply H9.
+    
+    apply H12.
 
     (*
     rewrite H in IHa1.
@@ -1943,11 +1951,23 @@ Proof.
     
     edestruct build_app_some.
     eapply allMappedSub'.
-    apply H10.
+    apply H13.
 
     (*
     rewrite H1 in *.
     df. *)
+
+    Ltac do_ba_st_const :=
+      let tac := (eapply ba_const; eauto) in
+      repeat (
+          match goal with
+          | [H: build_app_comp _ _ ?a_st = (_, ?a0) |- _] =>
+            assert_new_proof_by (a_st = a0) tac
+          (*
+             destruct gen_const with (e:=ee) (et:=?et) (a:=?A) (a':=?B) (o:=?o);
+             try eassumption *)
+          end);
+      subst.
     
     df.
     destruct a2 eqn:a2_eq.
@@ -1960,29 +1980,41 @@ Proof.
         dosome.
         allMappedFacts.
         debound.
-        rewrite H0 in *.
+        do_ba_st_const.
+        
+        rewrite H3 in *.
         df.
 
+        Check build_app_run_some.
+
         edestruct build_app_run_some.
-        apply Heqp.
+        eassumption.
+        (*
+        apply Heqp. *)
         destruct_conjs.
-        rewrite H1 in *.
+        rewrite H9 in *.
         df.
-        invc H3.
+        evShapeFacts.
+        (*
+        invc H3. *)
         econstructor.
         specialize IHa1 with (a_st:=a_st) (*(e':=e')*) (et:=et) (st_ev0 := st_ev) (st_trace := st_trace) (st_pl:=st_pl) (st_store:=st_store) (e_res_t:=(eval (unanno a1) st_pl et)) (e'':=e'').
         concludes.
-        rewrite Heqp0 in *.
+        subst''.
+        (*
+        rewrite Heqp0 in *. *)
         df.
 
         assert (Ev_Shape st_ev0 (eval (unanno a1) st_pl et)).
         {
           eapply multi_ev_eval.
-          admit. (* TODO: anno restore *)
-          eassumption.
+          apply H1.
+          (*admit.*) (* TODO: anno restore *)
+         
           (*
           admit. (* TODO: general multi_ev *) *)
-          apply H5.
+          eassumption.
+          apply H6.
           reflexivity.
         }
         
@@ -1990,10 +2022,11 @@ Proof.
         rewrite Heqp in *.
         df.
         erewrite fafafaf in IHa1.
-        rewrite H1 in IHa1.
+        
+        rewrite H9 in IHa1.
         df.
         eapply ev_shape_transitive.
-        apply H.
+        apply H4.
         eassumption.
         eassumption.
         eassumption.
@@ -2034,18 +2067,25 @@ Proof.
         dosome.
         allMappedFacts.
         debound.
-        rewrite H2 in *.
+        subst''.
+        (*
+        rewrite H2 in *. *)
         df.
 
-        rewrite Heqp3 in *.
+        subst''.
+        (*
+
+        rewrite Heqp3 in *. *)
         df.
 
         
 
         edestruct build_app_run_some.
-        apply Heqp3.
+        eassumption.
+        (*
+        apply Heqp3. *)
         destruct_conjs.
-        rewrite H0 in *.
+        rewrite H9 in *.
         df. 
       
         evShapeFacts.
@@ -2058,36 +2098,46 @@ Proof.
         assert (Ev_Shape st_ev0 (eval (unanno a1) st_pl et)).
          {
           eapply multi_ev_eval.
-          admit. (* TODO: anno restore *)
+          (*admit.*) (* TODO: anno restore *)
+          apply H1.
           eassumption.
           (*
           admit. (* TODO: general multi_ev *) *)
-          apply H5.
+          apply H6.
           reflexivity.
         }
         
-        repeat concludes.
-        rewrite Heqp3 in *.
+         repeat concludes.
+         subst''.
+         (*
+        rewrite Heqp3 in *. *)
         df.
         erewrite fafafaf in IHa1.
-        rewrite H0 in IHa1.
+       
+        rewrite H9 in IHa1.
         df.
         eapply ev_shape_transitive.
-        apply H.
+        apply H3.
         eassumption.
         eassumption.
         eassumption.
 
     +
+      subst''.
+      subst''.
+      (*
       rewrite H.
-      rewrite H0.
+      rewrite H0. *)
       df.
 
       edestruct build_app_run_some.
-      apply H0.
+      (*
+      apply H0. *)
+      eassumption.
       destruct_conjs.
+    
 
-      rewrite H2 in *.
+      rewrite H8 in *.
       df.
       vmsts.
 
@@ -2095,30 +2145,45 @@ Proof.
       apply H.
       destruct_conjs.
 
-      rewrite H4 in *.
+      rewrite H9 in *.
       df.
       Print dohtac.
       dohtac.
+      (*
       invc Heqp8.
       invc Heqp6.
-      invc Heqp5.
+      invc Heqp5. *)
+      df.
       do_pl_immut.
       cbn in *.
       pose (IHa2 a_st (eval (unanno a1) st_pl1 et) st_ev6 st_trace0 st_pl1 st_store0 e_res_t (x2 e'')) as hhey.
+      subst''.
+      df.
+      subst''.
+      df.
+      (*
       rewrite H0 in *.
       df.
       rewrite H2 in *.
-      df.
+      df. *)
 
       eapply hhey.
       eassumption.
       eassumption.
+      eassumption.
+      
+      
       eapply multi_ev_eval.
-      admit. (* TODO: anno restore *)
+      apply H1.
+     
+      
+      (*admit.*) (* TODO: anno restore *)
+       
+      eassumption.
       eassumption.
       (*
       admit. (* TODO: general multi_ev_eval *) *)
-      apply H5.
+      (*apply H5. *)
       reflexivity.
       
       
@@ -2138,16 +2203,21 @@ Proof.
       
       specialize IHa1 with (a_st:=a_st) (et:=et) (st_ev0:=st_ev) (st_trace:=st_trace) (st_pl:=st_pl1) (st_store:=st_store) (e_res_t:=(eval (unanno a1) st_pl1 et)) (e'':=e'').
       repeat concludes.
-      rewrite H in *.
+      subst''.
+      (*
+      rewrite H8 in *. *)
       df.
       assert (Ev_Shape st_ev6 (eval (unanno a1) st_pl1 et)).
        {
           eapply multi_ev_eval.
-          admit. (* TODO: anno restore *)
+          (*admit.*) (* TODO: anno restore *)
+          apply H1.
           eassumption.
           (*
           admit. (* TODO: general multi_ev *) *)
-          apply H5.
+          eassumption.
+          (*
+          apply H5. *)
           reflexivity.
         }
       
@@ -2184,7 +2254,8 @@ Proof.
       assert (st_ev6 = st_ev5). {
 
         eapply dood.
-        apply H7.
+        eassumption.
+        (*apply H7. *)
         tauto.
         tauto.
         eassumption.
@@ -2196,31 +2267,43 @@ Proof.
       
       subst.
       erewrite fafafaf in IHa1.
-      rewrite H4 in *.
+      rewrite H in *.
+      (*
+      subst''. *)
+      (*
+      rewrite H4 in *. *)
+      df.
+      rewrite H9 in *.
       df.
       eassumption.
-      eassumption.
+      subst''.
+      df.
+      tauto.
     +
 
+      subst''.
+      subst''.
+      (*
       rewrite H.
-      rewrite H0.
+      rewrite H0. *)
       unfold fromOpt.
       unfold fst.
       repeat break_let.
 
       edestruct build_app_run_some.
-      apply H0.
+      apply H3.
       destruct_conjs.
-      rewrite H2 in Heqp2.
+      rewrite H8 in Heqp2.
       inversion Heqp2.
       subst.
 
       edestruct build_app_run_some.
       apply H.
       destruct_conjs.
-      rewrite H4 in Heqp3.
+      rewrite H9 in Heqp3.
       inversion Heqp3.
       subst.
+      inversion Heqp2.
 
       assert (o = Some (fun x : EvidenceC => x1 (x2 x))).
       congruence.
@@ -2236,11 +2319,13 @@ Proof.
       assert (Ev_Shape st_ev0 (eval (unanno a1) st_pl1 et)).
       {
           eapply multi_ev_eval.
-          admit. (* TODO: anno restore *)
+          (*admit.*) (* TODO: anno restore *)
+          apply H1.
+          eassumption.
           eassumption.
           (*
           admit. (* TODO: general multi_ev *) *)
-          apply H5.
+          (*apply H5. *)
           reflexivity.
       }
       concludes.
@@ -2279,24 +2364,33 @@ Proof.
       
       subst.
       erewrite fafafaf in IHa1.
+      
 
-      rewrite H4 in *.
+      rewrite H9 in *.
       simpl in IHa1.
      
 
       concludes.
 
-      rewrite H0 in *.
+      rewrite H3 in *.
       simpl in IHa2.
 
       erewrite fafafaf in IHa2.
-      rewrite H2 in *.
+      rewrite H8 in *.
       simpl in IHa2.
       eassumption.
       eassumption.
       eassumption.
 
       Unshelve.
+      exact (aasp (0,0) (ASPC 1 [])).
+      exact mtc.
+      eauto.
+      eauto.
+Defined.
+
+
+(*
       exact (asp (ASPC 1 [])).
       eauto.
       exact (asp (ASPC 1 [])).
@@ -3084,7 +3178,8 @@ Proof.
 
       
       
-      
+ *)
+
       
       
       
