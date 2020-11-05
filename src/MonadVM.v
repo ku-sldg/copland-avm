@@ -160,12 +160,11 @@ Definition hashEv (x:nat) (p:Plc) : VM EvidenceC :=
   ret (hhc x e).
 *)
 
-(*
+
 
 Definition copyEv (x:nat) (p:Plc) : VM EvidenceC :=
   add_tracem [Term.copy x p] ;;
   get_ev.
-*)
 
 
 Definition remote_events (t:AnnoTerm) (p:Plc) : (list Ev).
@@ -208,7 +207,7 @@ Definition runParThreads (t1 t2:AnnoTerm) (p:Plc) (e1 e2:EvidenceC) : VM unit :=
 
 Definition do_prim (x:nat) (p:Plc) (a:ASP) : VM EvidenceC :=
   match a with
-  (*| CPY => copyEv x p *)
+  | CPY => copyEv x p
   | ASPC asp_id args =>
     invokeUSM x asp_id p args
   | SIG => signEv x p
@@ -219,7 +218,7 @@ Definition do_prim (x:nat) (p:Plc) (a:ASP) : VM EvidenceC :=
 
 Definition eval_asp (a:ASP) (e:EvidenceC) : EvidenceC :=
   match a with
-  (*| CPY => e *)
+  | CPY => e 
   | ASPC i _ =>
     let bs := 0 in (* TODO: must bs be hardcoded? *)
     (uuc i bs e)
@@ -263,7 +262,7 @@ Axiom para_eval_thread: forall e annt,
 
 
 Inductive evalR: Term -> EvidenceC -> EvidenceC -> Prop :=
-(*| mttc: forall e, evalR (asp CPY) e e *)
+| mttc: forall e, evalR (asp CPY) e e
 | uutc: forall i args e,
     evalR (asp (ASPC i args)) e (uuc i (0) e)
 | ggtc: forall e,

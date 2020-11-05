@@ -29,7 +29,7 @@ Notation N_ID := nat (only parsing).
 Notation Arg := nat (only parsing).
 
 Inductive ASP: Set :=
-(*| CPY: ASP *)
+| CPY: ASP
 | ASPC: ASP_ID -> list Arg -> ASP
 | SIG: ASP
 (*| HSH: ASP*) .
@@ -71,7 +71,7 @@ Definition splitEv_T (sp:SP) (e:Evidence) : Evidence :=
 
 Fixpoint eval_asp t p e :=
   match t with
-  (*| CPY => e *)
+  | CPY => e 
   | ASPC i args => uu i args p e
   | SIG => gg p e
   (*| HSH => hh p e *)
@@ -101,7 +101,7 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
  *)
 
 Inductive Ev: Set :=
-(*| copy: nat -> Plc -> Ev *)
+| copy: nat -> Plc -> Ev 
 | umeas: nat -> Plc -> ASP_ID -> list Arg -> Ev
 | sign: nat -> Plc -> Ev
 (*| hash: nat -> Plc -> Ev *)
@@ -122,7 +122,7 @@ Hint Resolve eq_ev_dec : core.
 
 Definition ev x :=
   match x with
-  (*| copy i _ => i *)
+  | copy i _ => i
   | umeas i _ _ _  => i
   | sign i _ => i
   (*| hash i _ => i  *)
@@ -142,7 +142,7 @@ See Lemma [events_injective].
 
 Definition asp_event i x p :=
   match x with
-  (*| CPY => copy i p *)
+  | CPY => copy i p
   | ASPC id args => umeas i p id args
   | SIG => sign i p
   (*| HSH => hash i p  *)
@@ -547,10 +547,10 @@ Defined.
     evidence. *)
 
 Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
-(*| evtscpy:
+| evtscpy:
     forall r i p,
       fst r = i ->
-      events (aasp r CPY) p (copy i p) *)
+      events (aasp r CPY) p (copy i p)
 | evtsusm:
     forall i id args r p,
       fst r = i ->
