@@ -2449,8 +2449,8 @@ Ltac evShapeFacts :=
   | [H: Ev_Shape _ (uu _ _ _ _) |- _] => invc H
   | [H: Ev_Shape (ggc _ _) _ |- _] => invc H
   | [H: Ev_Shape _ (gg _ _) |- _] => invc H
-  | [H: Ev_Shape (hhc _ _) _ |- _] => invc H
-  | [H: Ev_Shape _ (hh _ _) |- _] => invc H
+ (* | [H: Ev_Shape (hhc _ _) _ |- _] => invc H
+  | [H: Ev_Shape _ (hh _ _) |- _] => invc H *)
                                         (*
   | [H: Ev_Shape (nnc _ _ _) _ |- _] => invc H
   | [H: Ev_Shape _ (nn _ _) |- _] => invc H

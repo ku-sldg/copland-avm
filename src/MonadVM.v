@@ -153,11 +153,12 @@ Definition signEv (x:nat) (p:Plc) : VM EvidenceC :=
   add_tracem [Term.sign x p] ;;
   ret (ggc x e).
 
-
+(*
 Definition hashEv (x:nat) (p:Plc) : VM EvidenceC :=
   e <- get_ev ;;
   add_tracem [Term.hash x p] ;;
   ret (hhc x e).
+*)
 
 (*
 
@@ -211,7 +212,7 @@ Definition do_prim (x:nat) (p:Plc) (a:ASP) : VM EvidenceC :=
   | ASPC asp_id args =>
     invokeUSM x asp_id p args
   | SIG => signEv x p
-  | HSH => hashEv x p 
+ (* | HSH => hashEv x p  *)
   end.
 
 
@@ -225,9 +226,9 @@ Definition eval_asp (a:ASP) (e:EvidenceC) : EvidenceC :=
   | SIG =>
     let bs := 0 in
     (ggc bs e)
-  | HSH =>
+(*  | HSH =>
     let bs := 0 in
-    (hhc bs e)
+    (hhc bs e) *)
   end.
 
 
@@ -267,8 +268,8 @@ Inductive evalR: Term -> EvidenceC -> EvidenceC -> Prop :=
     evalR (asp (ASPC i args)) e (uuc i (0) e)
 | ggtc: forall e,
     evalR (asp SIG) e (ggc 0 e)
-| hhtc: forall e,
-    evalR (asp HSH) e (hhc 0 e) 
+(*| hhtc: forall e,
+    evalR (asp HSH) e (hhc 0 e)  *)
 | atc: forall q t' e e',
     evalR t' e e' ->
     evalR (att q t') e e'
@@ -354,7 +355,7 @@ Ltac monad_unfold :=
   do_prim,
   invokeUSM,
   signEv,
-  hashEv, (*
+  (*hashEv, *) (*
   copyEv, *)
 
   sendReq,
