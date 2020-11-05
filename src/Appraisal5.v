@@ -271,7 +271,7 @@ Inductive evMapped : Evidence -> AM_St -> Prop :=
 Print eval.
 Print eval_asp.
 
-(*
+
 Inductive allMapped : AnnoTerm -> AM_St -> Plc -> Evidence -> Prop :=
 (*| allMapped_cpy : forall r p st e,
     (*m = st_aspmap st -> *)
@@ -305,7 +305,7 @@ Inductive allMapped : AnnoTerm -> AM_St -> Plc -> Evidence -> Prop :=
        evMapped e m -> *)  (* TODO: need this? *)
     (*p = am_pl st -> *)
     allMapped t1 st p e ->
-    allMapped t2 st p (eval (unanno t1) p e) -> (* TODO: is mt ok here? *)
+    allMapped t2 st p mt (*(eval (unanno t1) p e)*) -> (* TODO: is mt ok here? *)
     allMapped (alseq r t1 t2) st p e
 (*| allMapped_bseq_nn : forall t1 t2 p st e r,
     (*p = am_pl st -> *)
@@ -347,10 +347,11 @@ Inductive allMapped : AnnoTerm -> AM_St -> Plc -> Evidence -> Prop :=
     allMapped t1 st p e ->
     allMapped t2 st p e ->
     allMapped (abpar r (ALL,ALL) t1 t2) st p e*).
- *)
 
+(*
 Definition allMapped (t:AnnoTerm) (a_st:AM_St) (p:Plc) (e:Evidence) : Prop :=
   evMapped (eval (unanno t) p e) a_st.
+*)
 
 Ltac debound :=
   match goal with
@@ -371,11 +372,12 @@ Ltac evMappedFacts :=
   try debound.
 
 Ltac allMappedFacts :=
+  (*
   unfold allMapped in *;
   df;
-  try evMappedFacts.
+  try evMappedFacts. *)
 
-  (*
+  
   match goal with
   | [H: allMapped (aasp _ _) _ _ _ |- _] => invc H
   | [H: allMapped (aatt _ _ _) _ _ _ |- _] => invc H
@@ -384,7 +386,6 @@ Ltac allMappedFacts :=
   | [H: allMapped (abpar _ _ _ _) _ _ _ |- _] => invc H *)
   end;
   destruct_conjs.
-*)
 
 
 
@@ -394,10 +395,17 @@ Lemma allMappedAt : forall r n a p st e (*x y z z'*),
     allMapped a (*(mkAM_St x y z z')*) st n e.
 Proof.
   intros.
+  allMappedFacts.
+  df.
+  eauto.
+Defined.
+
+(*
+
   unfold allMapped in *.
   df.
   eassumption.
-Defined.
+Defined. *)
 
 Ltac df :=
   repeat (
@@ -672,6 +680,19 @@ Proof.
        
 Defined.
 
+Ltac do_ba_st_const :=
+  let tac := (eapply ba_const; eauto) in
+  repeat (
+      match goal with
+      | [H: build_app_comp _ _ ?a_st = (_, ?a0) |- _] =>
+        assert_new_proof_by (a_st = a0) tac
+      (*
+             destruct gen_const with (e:=ee) (et:=?et) (a:=?A) (a':=?B) (o:=?o);
+             try eassumption *)
+      end);
+  subst.
+
+(*
 Lemma mt_not_mt : forall e t p,
     e <> mt ->
     eval t p e <> mt.
@@ -683,16 +704,44 @@ Lemma evMappedExtra : forall a p e a_st,
     evMapped (eval (unanno a) p mt) a_st.
 Proof.
 Admitted.
+*)
 
 Lemma allMappedSub' : forall a a_st e p,
     allMapped a a_st p e ->
     allMapped a a_st p mt.
 Proof.
-  intros.
-  unfold allMapped in *.
-  Check evMappedExtra.
-  eapply evMappedExtra; eauto.
+  induction a; intros.
+  -
+    destruct a.
+    +
+      allMappedFacts.
+      econstructor.
+      econstructor.
+      reflexivity.
+      eexists.
+      eauto.
+    +
+      allMappedFacts.
+      econstructor.
+      econstructor.
+      reflexivity.
+      eexists.
+      eauto.
+  -
+    allMappedFacts.
+    df.
+    econstructor.
+    reflexivity.
+    reflexivity.
+    eauto.
+  -
+    allMappedFacts.
+    assert (allMapped a1 a_st p mt) by eauto.
+    econstructor.
+    eassumption.
+    eassumption.
 Defined.
+
 
 Lemma allMappedSub : forall a a_st t p n,
     allMapped a a_st p (eval t n mt) ->
@@ -716,6 +765,7 @@ Proof.
       cbn.
       df.
       allMappedFacts.
+      debound.
       subst'.
       df.
       eauto.
@@ -723,6 +773,7 @@ Proof.
       cbn.
       df.
       allMappedFacts.
+      debound.
       subst'.
       df.
       eauto.
@@ -776,36 +827,19 @@ Proof.
       ++
         df.
         allMappedFacts.
-        evMappedFacts.
-        subst''.
+        debound.
+        subst'.
         df.
+        do_ba_st_const.
+        (*
         assert (a4 = a).
         {
           eapply ba_const; eauto.
-        }
+        } *)
         subst.
-        concludes.
-        destruct_conjs.
-        df.
-        subst''.
-        df.
-        eauto.
-      ++
-        df.
-        evMappedFacts.
-        subst'.
-        df.
-        concludes.
-        destruct_conjs.
         subst'.
         df.
         eauto.
-    +
-      allMappedFacts.
-
-      assert (evMapped (eval (unanno a1) p mt) a_st).
-      eapply allMappedSub.
-      unfold allMapped.
       
         
       
@@ -931,18 +965,6 @@ Defined.
     eauto.
 Defined.
  *)
-
-Ltac do_ba_st_const :=
-  let tac := (eapply ba_const; eauto) in
-  repeat (
-      match goal with
-      | [H: build_app_comp _ _ ?a_st = (_, ?a0) |- _] =>
-        assert_new_proof_by (a_st = a0) tac
-      (*
-             destruct gen_const with (e:=ee) (et:=?et) (a:=?A) (a':=?B) (o:=?o);
-             try eassumption *)
-      end);
-  subst.
 
 Lemma ev_shape_transitive : forall e e' et et',
     Ev_Shape e et ->
