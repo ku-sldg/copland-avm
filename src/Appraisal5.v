@@ -2253,17 +2253,55 @@ Proof.
         eexists.
         eauto.
 Defined.
-
-Ltac do_cumul :=
-  let tac := (eapply trace_cumul; eauto) in
-  repeat
+Check trace_cumul.
+Ltac do_cumul2 :=
+  (*let tac x y := (eapply trace_cumul; [apply x | apply y]) in *)
     match goal with
     | [
-      H: _ {| st_ev := _; st_trace := ?tr1; st_pl := _; st_store := _ |} =
-         (_, {| st_ev := _; st_trace := ?tr1'; st_pl := _; st_store := _ |}) |- _] =>
-      assert_new_proof_by (exists tr'' : list Ev, tr1' = tr1 ++ tr'') tac
-    end;
-  destruct_conjs.
+      H: ?v {| st_ev := _; st_trace := ?tr1; st_pl := _; st_store := _ |} =
+         (_, {| st_ev := _; st_trace := ?tr1'; st_pl := _; st_store := _ |}),
+         H2: build_app_comp _ _ _ = (Some ?v, _),
+       H': ?v2 {| st_ev := _; st_trace := ?tr2; st_pl := _; st_store := _ |} =
+         (_, {| st_ev := _; st_trace := ?tr2'; st_pl := _; st_store := _ |}),
+           H'2: build_app_comp _ _ _ = (Some ?v2, _) |- _] =>
+
+      (*
+      assert_new_proof_by (exists tr'' : list Ev, tr1' = tr1 ++ tr'') (tac H2 H) ;
+      assert_new_proof_by (exists tr'' : list Ev, tr2' = tr2 ++ tr'') (tac H'2 H') *)
+      assert (exists tr'' : list Ev, tr1' = tr1 ++ tr'')by (eapply trace_cumul; [apply H2 | apply H]) ;
+      assert (exists tr'' : list Ev, tr2' = tr2 ++ tr'')by (eapply trace_cumul; [apply H'2 | apply H'])
+    end.
+
+Ltac do_cumul2' :=
+ (* let tac x y := (eapply trace_cumul; [apply x | apply y]) in *)
+    match goal with
+    | [
+      H: ?v {| st_ev := _; st_trace := ?tr1; st_pl := _; st_store := _ |} =
+         (_, {| st_ev := _; st_trace := ?tr1'; st_pl := _; st_store := _ |}),
+         H2: build_app_comp _ _ _ = (Some ?v, _),
+       H': ?v {| st_ev := _; st_trace := ?tr2; st_pl := _; st_store := _ |} =
+           (_, {| st_ev := _; st_trace := ?tr2'; st_pl := _; st_store := _ |}) |- _] =>
+      (*
+      assert_new_proof_by (exists tr'' : list Ev, tr1' = tr1 ++ tr'') (tac H2 H) ;
+      assert_new_proof_by (exists tr'' : list Ev, tr2' = tr2 ++ tr'') (tac H2 H') *)
+      assert (exists tr'' : list Ev, tr1' = tr1 ++ tr'')by (eapply trace_cumul; [apply H2 | apply H]) ;
+      assert (exists tr'' : list Ev, tr2' = tr2 ++ tr'')by (eapply trace_cumul; [apply H2 | apply H'])
+    end.
+
+Ltac do_cumul1 :=
+  (*let tac x y := (eapply trace_cumul; [apply x | apply y]) in *)
+    match goal with
+    | [
+      H: ?v {| st_ev := _; st_trace := ?tr1; st_pl := _; st_store := _ |} =
+         (_, {| st_ev := _; st_trace := ?tr1'; st_pl := _; st_store := _ |}),
+         H2: build_app_comp _ _ _ = (Some ?v, _) |- _] =>
+      (*
+      assert_new_proof_by (exists tr'' : list Ev, tr1' = tr1 ++ tr'') (tac H2 H)
+       *)
+      assert (exists tr'' : list Ev, tr1' = tr1 ++ tr'')by (eapply trace_cumul; [apply H2 | apply H])
+    end.
+
+Ltac do_cumul := first [do_cumul2 | do_cumul2' | do_cumul1]; destruct_conjs.
 
 Lemma gogo' : forall t p a a' o_res o_res' v1 e1 e1' p1 p1' o1 o1' e2 e2' tr2 p2 p2' o2 o2' tr1 x0 x1,
     build_app_comp t p a = (Some v1, a') ->
@@ -2456,21 +2494,207 @@ Lemma foofoo : forall t f p tr_n p_n o_n a0 a' v e' tr' p' o' e'' tr'' p'' o'',
 Proof.
 Admitted.
 
-    
+Lemma dood : forall t vm_st vm_st' e e'' e' p a_st x0 x1 new_vmst new_vmst',
+    build_comp t vm_st = (Some tt, vm_st') ->
+    e = st_ev vm_st ->
+    e' = st_ev vm_st' ->
+    build_app_comp t p a_st = (Some x0, a_st) ->
+    x0 new_vmst = (Some x1, new_vmst') ->
+    e' = st_ev new_vmst -> 
+    e'' = st_ev new_vmst' ->
+    e = e''.
+Proof.
+  induction t; intros.
+  -
+    destruct a.
+    +
+      subst.
+      amsts.
+      df.
+      reflexivity.
+    +
+      subst.
+      amsts.
+      df.
+      dosome.
+      reflexivity.
+    +
+      subst.
+      amsts.
+      df.
+      dosome.
+      reflexivity.
+  -
+    subst.
+    amsts.
+    df.
+    dohtac.
+    df.
+    eapply IHt.
+    apply build_comp_at.
+    reflexivity.
+    reflexivity.
+    eassumption.
+    eassumption.
+    tauto.
+    tauto.
+  -
+    subst.
+    amsts.
+    df.
+    dosome.
+    destruct t2.
+    +
+      destruct a eqn:aeq.
+      ++
+        dosome_eq hi.
+        dosome_eq hey.
+        repeat break_let.
+        do_pair.
+        dosome_eq hey.
+        do_pair.
+        dosome_eq hey.
+        dosome_eq heyy.
+        repeat break_let.
+        do_pair.
+        dosome_eq heey.
+        do_pair.
+        cbn in Heqp3.
+        repeat break_let.
+        unfold ret in *.
+        do_pair.
+        do_pair.
+        amsts.
+        cbn in Heqp1.
+        do_pair.
+        eauto.
+      ++
+        dosome_eq hi.
+        dosome_eq hey.
+        repeat break_let.
+        do_pair.
+        dosome_eq hey.
+        do_pair.
+        dosome_eq hey.
+        dosome_eq heyy.
+        repeat break_let.
+        do_pair.
+        dosome_eq heey.
+        do_pair.
+        amsts.
+        cbn in Heqp1.
+        clear IHt2. df.
+        dosome.
+        haaa.
+      ++
+        clear IHt2.
+        df.
+        dosome.
+
+        haaa.
+    +
+      do_ba_st_const.
+      dosome_eq hi.
+      dosome_eq hey.
+      repeat break_let.
+      do_pair.
+      dosome_eq hii.
+      do_pair.
+      dosome_eq heey.
+      dosome_eq hii.
+      repeat break_let.
+      do_pair.
+      dosome_eq hee.
+      do_pair.
+
+      amsts.
+      do_ba_st_const.
+      do_pl_immut.
+
+      assert (st_ev3 = st_ev1).
+      eapply IHt2.
+      eassumption.
+      tauto.
+      tauto.
+      eassumption.
+      eassumption.
+      tauto.
+      tauto.
+      subst.
+
+      eapply IHt1.
+      eassumption.
+      tauto.
+      tauto.
+      eassumption.
+      eassumption.
+      tauto.
+      tauto.
+    +
+      do_ba_st_const.
+      dosome_eq hi.
+      dosome_eq hey.
+      repeat break_let.
+      do_pair.
+      dosome_eq hii.
+      do_pair.
+      dosome_eq heey.
+      dosome_eq hii.
+      repeat break_let.
+      do_pair.
+      dosome_eq hee.
+      do_pair.
+
+      amsts.
+      do_ba_st_const.
+      do_pl_immut.
+
+      assert (st_ev3 = st_ev1).
+      eapply IHt2.
+      eassumption.
+      tauto.
+      tauto.
+      eassumption.
+      eassumption.
+      tauto.
+      tauto.
+      subst.
+
+      eapply IHt1.
+      eassumption.
+      tauto.
+      tauto.
+      eassumption.
+      eassumption.
+      tauto.
+      tauto.
+      Unshelve.
+      eauto.
+      eauto.
+      exact (aasp (0,0) (ASPC 1 [])).
+      exact mtc.
+      eauto.
+      eauto.
+      exact (aasp (0,0) (ASPC 1 [])).
+      exact mtc.
+      eauto.
+      eauto.
+Defined.
+
 Lemma appraisal_correct : forall t vmst vmst' p e_res new_vmst new_vmst' a_st x f tr_app ev,
 
-  (*well_formed t -> *)
-  build_comp t vmst = (Some tt, vmst') ->
-  (*e = st_ev vmst ->
+    (*well_formed t -> *)
+    build_comp t vmst = (Some tt, vmst') ->
+    (*e = st_ev vmst ->
   Ev_Shape e et -> *)
-  p = st_pl vmst ->
-  e_res = st_ev vmst' ->
-  e_res = st_ev new_vmst ->
-  build_app_comp t p a_st = (Some x, a_st) -> (* x : VM (EvidenceC -> EvidenceC) *)
-  runSt new_vmst x = (Some f, new_vmst') ->
-  tr_app = st_trace new_vmst' ->
-  measEvent t p ev ->
-  exists ev', In ev' tr_app /\ appEvent ev a_st ev'.
+    p = st_pl vmst ->
+    e_res = st_ev vmst' ->
+    e_res = st_ev new_vmst ->
+    build_app_comp t p a_st = (Some x, a_st) -> (* x : VM (EvidenceC -> EvidenceC) *)
+    runSt new_vmst x = (Some f, new_vmst') ->
+    tr_app = st_trace new_vmst' ->
+    measEvent t p ev ->
+    exists ev', In ev' tr_app /\ appEvent ev a_st ev'.
 Proof.
   induction t; intros.
   -
@@ -2504,11 +2728,11 @@ Proof.
       exists (umeas b 0 n1 (b :: args)).
       split.
       ++
-      Print In.
-      Search In.
-      eapply in_or_app.
-      right.
-      econstructor. reflexivity.
+        Print In.
+        Search In.
+        eapply in_or_app.
+        right.
+        econstructor. reflexivity.
       ++
         assert (b::args = [b] ++ args).
         reflexivity.
@@ -2522,123 +2746,6 @@ Proof.
       invc H8.
       solve_by_inversion.
   -
-    
-(*
-    
-    amsts.
-    unfold build_comp in H.
-    repeat break_let.
-    unfold bind in H.
-    dosome_eq hey.
-    dosome_eq hi.
-    repeat break_let.
-    do_pair.
-    simpl in H2.
-    subst.
-    dosome_eq hi.
-    repeat break_let.
-    do_pair.
-    dosome_eq heyy.
-    do_pair.
-    dosome_eq he.
-    repeat break_let.
-    do_pair.
-    unfold put_ev in *.
-    unfold bind in *.
-    dosome_eq hee.
-    dosome_eq heee.
-    repeat break_let.
-    subst.
-    unfold put in *.
-    do_pair.
-    do_pair.
-    unfold get in *.
-    do_pair.
-    simpl in *.
-   
-    annogo.
-    unfold get_ev in *.
-    unfold bind in *.
-    dosome_eq he.
-    dosome_eq hee.
-    repeat break_let.
-    do_pair.
-    unfold ret in *.
-    do_pair.
-    unfold get in *.
-    do_pair.
-    simpl in *.
-    unfold sendReq in *.
-    unfold bind in *.
-    unfold get_pl in *.
-    unfold bind in *.
-    unfold get in *.
-    repeat break_let.
-    invc Heqp.
-    dosome_eq hi.
-    subst.
-    repeat break_let.
-    unfold ret in *.
-    do_pair.
-    do_pair.
-    unfold add_tracem in *.
-    unfold modify in *.
-    do_pair.
-    unfold receiveResp in *.
-    unfold bind in *.
-    dosome_eq hi.
-    dosome_eq hey.
-    repeat break_let.
-    do_pair.
-    dosome_eq hii.
-    repeat break_let.
-    do_pair.
-    dosome_eq hii.
-    subst.
-    do_pair.
-    unfold ret in *.
-    do_pair.
-    unfold add_tracem in *.
-    unfold modify in *.
-    do_pair.
-    unfold add_trace in *.
-    repeat break_let.
-    amsts.
-    invc Heqv0.
-    unfold get_pl in *.
-    unfold bind in *.
-    dosome_eq hiii.
-    unfold get in *.
-    dosome_eq hee.
-    do_pair.
-    repeat break_let.
-    unfold ret in *.
-    do_pair.
-    do_pair.
-    unfold get_store_at in *.
-    unfold bind in *.
-    dosome_eq heee.
-    unfold get in *.
-    invc heee.
-    repeat break_let.
-    do_pair.
-    simpl in *.
-    destruct (map_get st_store3 n1) eqn:ff; try solve_by_inversion.
-    subst.
-    unfold ret in *.
-    do_pair.
-    invc H1.
-    Print doRemote.
-    unfold doRemote in *.
-    measEventFacts.
-    invc H0.
-    invc H.
-    (*assert (In (umeas n2 p i args) (remote_events t n)).
-    admit. *)
-    df.
-    dohtac.
-    df.
- *)
     amsts.
     subst.
     df.
@@ -2648,11 +2755,7 @@ Proof.
     measEventFacts.
     evEventFacts.
     invc H.
-    
-
-
-
-    
+     
     edestruct foofoo.
     eassumption.
     eassumption.
@@ -2675,12 +2778,16 @@ Proof.
     econstructor.
     eassumption.
     econstructor.
+
+
     
     assert (st_trace = st_trace0 ++ H0).
     {
+      Print do_cumul2'.
       do_cumul.
+      
       subst.
-      assert (H9 = H8).
+      assert (H8 = H9).
       {
         eapply gogo; eauto.
       }
@@ -2698,7 +2805,703 @@ Proof.
     +
       eauto.
   - (* alseq case *)
-    reflexivity.
+
+    df.
+    dosome_eq hi.
+    do_pair.
+    amsts.
+    df.
+    subst.
+    destruct t2.
+    +
+      destruct a eqn:aeq.
+      ++
+        dosome_eq hi.
+        dosome_eq hey.
+        subst.
+        repeat break_let.
+        do_pair.
+        dosome_eq hii.
+        subst.
+        do_pair.
+        dosome_eq hii.
+        dosome_eq hey.
+        subst.
+        repeat break_let.
+        do_pair.
+        dosome_eq hiii.
+        do_pair.
+        amsts.
+        repeat dunit.
+        simpl.
+        simpl in hi.
+        simpl in Heqp2.
+        repeat break_let.
+        subst.
+        unfold ret in *.
+        do_pair.
+        do_pair.
+        measEventFacts.
+        invc H0.
+        invc H.
+        +++
+          do_pl_immut.
+          cbn in Heqp1.
+          do_pair.
+
+          eapply IHt1 with (vmst:= {| st_ev := st_ev3; st_trace := st_trace3; st_pl := st_pl2; st_store := st_store3 |}) (new_vmst := {| st_ev := st_ev2; st_trace := st_trace4; st_pl := st_pl4; st_store := st_store4 |}).
+          eassumption.
+          tauto.
+          tauto.
+          tauto.
+          eassumption.
+          eassumption.
+          tauto.
+          econstructor.
+          eassumption.
+          econstructor.
+        +++
+          solve_by_inversion.
+      ++
+
+        dosome_eq hi.
+        dosome_eq hey.
+        subst.
+        repeat break_let.
+        do_pair.
+        dosome_eq hii.
+        subst.
+        do_pair.
+        dosome_eq hii.
+        dosome_eq hey.
+        subst.
+        repeat break_let.
+        do_pair.
+        dosome_eq hiii.
+        do_pair.
+        amsts.
+        repeat dunit.
+        simpl.
+        simpl in hi.
+        (*
+        simpl in Heqp2.
+        repeat break_let.
+        subst.
+        unfold ret in *.
+        do_pair.
+        do_pair. *)
+        measEventFacts.
+        invc H0.
+        invc H.
+        +++
+          do_pl_immut.
+          do_ba_st_const.
+          df.
+          dosome.
+          haaa.
+          
+          eapply IHt1 with (vmst:={| st_ev := st_ev3; st_trace := st_trace3; st_pl := st_pl2; st_store := st_store3 |}) (new_vmst:= {|
+                                                                                                                            st_ev := st_ev2;
+                                                                                                                            st_trace := st_trace1 ++ [umeas n3 0 n5 (n3 :: l)];
+                                                                                                                            st_pl := st_pl4;
+                                                                                                                            st_store := st_store4 |}).
+          eassumption.
+          tauto.
+          tauto.
+          tauto.
+          eassumption.
+          eassumption.
+          tauto.
+          econstructor.
+          eassumption.
+          econstructor.
+        +++
+          do_pl_immut.
+          do_ba_st_const.
+          invc H5.
+          edestruct IHt2 with (vmst:={| st_ev := st_ev; st_trace := st_trace; st_pl := p; st_store := st_store |}) (new_vmst:={| st_ev := st_ev1; st_trace := st_trace1; st_pl := st_pl1; st_store := st_store1 |}).
+          eassumption.
+          tauto.
+          tauto.
+          tauto.
+          eassumption.
+          eassumption.
+          tauto.
+          econstructor.
+          econstructor.
+          reflexivity.
+          econstructor.
+          simpl in H.
+          destruct_conjs.
+          destruct r.
+          simpl in H1.
+          simpl.
+          exists x.
+          Print do_cumul2.
+          do_cumul.
+          subst.
+          split.
+          apply in_or_app.
+          eauto.
+          eauto.
+      ++
+        dosome_eq hi.
+        dosome_eq hey.
+        subst.
+        repeat break_let.
+        do_pair.
+        do_pair.
+        dosome_eq hii.
+        subst.
+        do_pair.
+        dosome_eq hii.
+        do_pair.
+        dosome_eq hey.
+        subst.
+        repeat break_let.
+        dosome_eq hiii.
+        subst.
+        repeat break_let.
+        repeat 
+          do_pair.
+        dosome_eq hhhh.
+        subst.
+        do_pair.
+        unfold extractSig in *. simpl in hey.
+        destruct st_ev1; try solve_by_inversion.
+        unfold ret in *.
+        do_pair.
+        simpl in Heqp8.
+        break_match; try solve_by_inversion.
+        amsts.
+        do_ba_st_const.
+        do_pl_immut.
+        repeat dunit.
+        simpl.
+        
+        (*
+        simpl in Heqp2.
+        repeat break_let.
+        subst.
+        unfold ret in *.
+        do_pair.
+        do_pair. *)
+        measEventFacts.
+        invc H0.
+        invc H.
+        +++
+          do_pl_immut.
+          do_ba_st_const.
+          (*
+          df.
+          dosome.
+          haaa. *)
+          do_pair.
+          df.
+          clear IHt2.
+          
+          eapply IHt1 with (vmst:={| st_ev := st_ev3; st_trace := st_trace3; st_pl := st_pl2; st_store := st_store3 |}) (new_vmst:= {|
+                                                                                                                            st_ev := e;
+                                                                                                                            st_trace := st_trace4 ++ [umeas n 0 n1 [encodeEv e; b]];
+                                                                                                                            st_pl := st_pl4;
+                                                                                                                            st_store := st_store4 |}).
+          eassumption.
+          tauto.
+          tauto.
+          tauto.
+          eassumption.
+          eassumption.
+          tauto.
+          econstructor.
+          eassumption.
+          econstructor.
+        +++
+          invc H5.
+
+    +
+      dosome_eq hi.
+      dosome_eq hey.
+      subst.
+      repeat break_let.
+      do_pair.
+      dosome_eq hii.
+      subst.
+      do_pair.
+      dosome_eq hii.
+      dosome_eq hey.
+      subst.
+      repeat break_let.
+      do_pair.
+      dosome_eq hiii.
+      do_pair.
+      amsts.
+      repeat dunit.
+      simpl.
+      simpl in hi.
+      simpl in Heqp2.
+      repeat break_let.
+      subst.
+      unfold ret in *.
+      measEventFacts.
+      invc H0.
+      invc H.
+      ++
+
+        clear IHt2.
+        df.
+        dohtac.
+        df.
+        do_pl_immut.
+        do_ba_st_const.
+        eapply IHt1 with (vmst:={| st_ev := st_ev3; st_trace := st_trace3; st_pl := st_pl2; st_store := st_store3 |}) (new_vmst:={| st_ev := st_ev2; st_trace := st_trace4; st_pl := st_pl4; st_store := st_store4 |}).
+        eassumption.
+        tauto.
+        tauto.
+
+
+        assert (st_ev4 = st_ev2).
+        {
+          Check dood.
+          eapply dood with (vm_st0 := {| st_ev := st_ev4; st_trace := []; st_pl := n1; st_store := [] |}).
+          apply build_comp_at.
+          tauto.
+          tauto.
+          apply Heqp2.
+          eassumption.
+          tauto.
+          tauto.
+        }
+        subst.
+        tauto.
+        eassumption.
+        eassumption.
+        tauto.
+        econstructor.
+        eassumption.
+        econstructor.
+      ++
+        do_pl_immut.
+        do_ba_st_const.
+        cbn in Heqp1.
+        repeat break_let.
+        df.
+        dohtac.
+        dosome.
+        do_pl_immut.
+        do_ba_st_const.
+        amsts.
+        df.
+        invc H5.
+        edestruct IHt2 with (vmst:={| st_ev := st_ev; st_trace := []; st_pl := n1; st_store := [] |}) (new_vmst:={| st_ev := toRemote (unanno t2) st_ev; st_trace := st_trace1; st_pl := st_pl1; st_store := st_store1 |}).
+        tauto.
+        tauto.
+
+        tauto.
+        tauto.
+        eassumption.
+        eassumption.
+        tauto.
+        econstructor.
+        apply evtsatt.
+        eassumption.
+        econstructor.
+
+        
+        destruct_conjs.
+        simpl in H1.
+        do_cumul.
+        subst.
+
+        exists x.
+        split.
+        +++
+          eapply in_or_app.
+          eauto.
+        +++
+          eauto.
+    +
+
+      dosome_eq hi.
+      dosome_eq hey.
+      subst.
+      repeat break_let.
+      do_pair.
+      dosome_eq hii.
+      subst.
+      do_pair.
+      dosome_eq hii.
+      dosome_eq hey.
+      subst.
+      repeat break_let.
+      do_pair.
+      dosome_eq hiii.
+      do_pair.
+      amsts.
+      repeat dunit.
+      simpl.
+      simpl in hi.
+
+      repeat break_let.
+      subst.
+      unfold ret in *.
+      measEventFacts.
+      invc H0.
+      invc H.
+      ++
+
+        clear IHt2.
+        (*
+        df.
+        dohtac.
+        df. *)
+        do_pl_immut.
+        do_ba_st_const.
+        eapply IHt1 with (vmst:={| st_ev := st_ev3; st_trace := st_trace3; st_pl := st_pl2; st_store := st_store3 |}) (new_vmst:={| st_ev := st_ev2; st_trace := st_trace4; st_pl := st_pl4; st_store := st_store4 |}).
+        eassumption.
+        tauto.
+        tauto.
+
+
+        assert (st_ev = st_ev2).
+        {
+          Check dood.
+          eapply dood.
+          apply Heqp1.
+          tauto.
+          tauto.
+          eassumption.
+          eassumption.
+          tauto.
+          tauto.
+        }
+        subst.
+        tauto.
+        eassumption.
+        eassumption.
+        tauto.
+        econstructor.
+        eassumption.
+        econstructor.
+      ++
+        do_pl_immut.
+        do_ba_st_const.
+        (*
+        cbn in Heqp1.
+        repeat break_let.
+        df.
+        dohtac.
+        dosome.
+        do_pl_immut.
+        do_ba_st_const. 
+        amsts.
+        df. *)
+
+        (*invc H5. *)
+        edestruct IHt2 with (vmst:={| st_ev := st_ev; st_trace := st_trace; st_pl := st_pl2; st_store := st_store |}) (new_vmst:={| st_ev := st_ev1; st_trace := st_trace1; st_pl := st_pl1; st_store := st_store1 |}).
+        eassumption.
+        tauto.
+        tauto.
+        tauto.
+        eassumption.
+        eassumption.
+        tauto.
+        econstructor.
+        eassumption.
+        econstructor.
+        destruct_conjs.
+
+        do_cumul.
+        subst.
+        simpl in H.
+        exists x.
+        split.
+        +++
+          apply in_or_app.
+          eauto.
+        +++
+          eauto.
+          Unshelve.
+          exact (aasp (0,0) (ASPC 1 [])).
+          exact mtc.
+          eauto.
+          eauto.
+          exact (aasp (0,0) (ASPC 1 [])).
+          exact mtc.
+          eauto.
+          eauto.
+          exact (aasp (0,0) (ASPC 1 [])).
+          exact mtc.
+          eauto.
+          eauto.
+          exact (aasp (0,0) (ASPC 1 [])).
+          exact mtc.
+          eauto.
+          eauto.
+          exact (aasp (0,0) (ASPC 1 [])).
+          exact mtc.
+          eauto.
+          eauto.
+          exact (aasp (0,0) (ASPC 1 [])).
+          exact mtc.
+          eauto.
+          eauto.
+          exact (aasp (0,0) (ASPC 1 [])).
+          exact mtc.
+          eauto.
+          eauto.
+Defined.
+
+          
+
+
+        
+        tauto.
+        tauto.
+
+        tauto.
+        tauto.
+        eassumption.
+        eassumption.
+        tauto.
+        econstructor.
+        apply evtsatt.
+        eassumption.
+        econstructor.
+
+        
+        destruct_conjs.
+        simpl in H1.
+        do_cumul.
+        subst.
+
+        exists x.
+        split.
+        +++
+          eapply in_or_app.
+          eauto.
+        +++
+          eauto.
+
+
+
+
+
+
+
+
+      
+      
+                  
+
+
+
+                
+                econstructor.
+                reflexivity.
+                eassumption.
+                tauto.
+                tauto.
+                tauto.
+                eassumption.
+                eassumption.
+                tauto.
+                econstructor.
+                econstructor.
+                reflexivity.
+                destruct r.
+                simpl.
+                econstructor.
+                simpl in H.
+                destruct_conjs.
+                destruct r.
+                simpl in H1.
+                simpl.
+                exists x.
+                Print do_cumul2.
+                do_cumul.
+                subst.
+                split.
+                apply in_or_app.
+                eauto.
+                eauto.
+                
+                
+                
+                
+
+
+
+
+      
+    + admit.
+      
+      
+      
+        
+        
+          
+          
+          cbn in Heqp1.
+          do_pair.
+
+          eapply IHt1 with (vmst:= {| st_ev := st_ev3; st_trace := st_trace3; st_pl := st_pl2; st_store := st_store3 |}) (new_vmst := {| st_ev := st_ev2; st_trace := st_trace4; st_pl := st_pl4; st_store := st_store4 |}).
+          eassumption.
+          tauto.
+          tauto.
+          tauto.
+          eassumption.
+          eassumption.
+          tauto.
+          econstructor.
+          eassumption.
+          econstructor.
+          
+
+
+
+
+
+
+
+
+        
+        invc H6.
+        invc H0.
+        invc H.
+        +++
+
+        
+         dosome_eq hi.
+        dosome_eq hey.
+        subst.
+        repeat break_let.
+        do_pair.
+        dosome_eq hii.
+        subst.
+        do_pair.
+        dosome_eq hii.
+        dosome_eq hey.
+        subst.
+        repeat break_let.
+        do_pair.
+        dosome_eq hiii.
+        do_pair.
+        amsts.
+        repeat dunit.
+        invc H2.
+        simpl in H.
+        subst.
+        simpl in H6.
+        unfold StVM.st_pl in *.
+        do_pl_immut.
+        (*
+        simpl.
+        simpl in hi.
+        simpl in Heqp2.
+        repeat break_let.
+        invc H2.
+        simpl in H6.
+        simpl in H.
+        subst.
+        unfold ret in *.
+        unfold bind in Heqp2.
+        dosome_eq hee.
+        dosome_eq he.
+        do_pair.
+        repeat break_let.
+        do_pair.
+        dosome_eq h.
+        repeat break_let.
+        do_pair.
+        do_pair.
+        simpl in Heqp2. *)
+        (*
+        df.
+        haaa.
+        measEventFacts.
+        invc H1.
+        invc H0.
+        do_pl_immut. *)
+
+
+        (*
+       
+        unfold extractUev in *.
+        destruct st_ev2; try solve_by_inversion.
+        unfold ret in *.
+        do_pair.
+        simpl in Heqp3. *)
+        invc H6.
+        invc H0.
+        do_ba_st_const.
+        invc H.
+
+         +++
+           df. clear IHt2.
+           dosome_eq hiii.
+           do_pair.
+           dosome_eq hee.
+           do_pair.
+           dosome_eq hel.
+           dosome_eq hl.
+           repeat break_let.
+           do_pair.
+           do_pair.
+           df.
+           haaa.
+ 
+           eapply IHt1 with (vmst:={| st_ev := st_ev4; st_trace := st_trace4; st_pl := st_pl3; st_store := st_store4 |}) (new_vmst:= {| st_ev := st_ev; st_trace := st_trace3 ++ [umeas b 0 n5 (b :: l)]; st_pl := st_pl; st_store := st_store |}).
+           eassumption.
+           tauto.
+           tauto.
+           tauto.
+           simpl.
+           eassumption.
+           eassumption.
+           tauto.
+           simpl.
+           econstructor.
+           eassumption.
+           econstructor.
+         +++
+           df.
+           dosome.
+           df.
+           haaa.
+           
+
+
+           
+           do_pl_immut.
+
+
+
+
+           
+           destruct r.
+           subst.
+
+           simpl.
+           do_pl_immut.
+           eapply IHt2 with (new_vmst:={| st_ev := st_ev2; st_trace := st_trace2; st_pl := st_pl2; st_store := st_store2 |}) (vmst:= {| st_ev := st_ev0; st_trace := st_trace0; st_pl := st_pl3; st_store := st_store0 |}).
+           eassumption.
+           tauto.
+           tauto.
+           tauto.
+           eassumption.
+           eassumption.
+           df.
+           clear IHt2.
+           dosome_eq hihihi.
+           do_pair.
+           repeat break_let.
+           df.
+           tauto.
+           repeat break_let.
+           eassumption.
+           invc Heqp1.
+           rewrite H in *.
+           
     
 
 
