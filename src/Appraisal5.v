@@ -434,6 +434,45 @@ Ltac tacc H :=
    rewrite H;
    eauto ).
 
+Ltac ff := repeat break_match; try solve_by_inversion; df.
+
+Ltac dosome_eq y :=
+  match goal with
+  | [H: match ?x with _ => _ end = (Some _, _)  |- _] =>
+    destruct x eqn:y; try solve_by_inversion
+  end.
+Ltac do_pair :=
+  match goal with
+  | [H: (_,_) = (Some _,_) |- _] => invc H
+  | [H: (Some _,_) = (_,_) |- _] => invc H
+  end.
+
+Ltac amsts :=
+  repeat match goal with
+         | H:vm_st |- _ => destruct H
+         end.
+
+Ltac dosome_eqj :=
+  let y := fresh in 
+  match goal with
+  | [H: match ?x with _ => _ end = (Some _, _)  |- _] =>
+    destruct x eqn:y; try solve_by_inversion
+  end.
+
+Ltac dosome'' :=
+  match goal with
+  | [H: (_,_) = (Some _, _) |- _] => invc H
+  end.
+
+
+Ltac doit' := repeat dosome_eqj;
+              repeat break_let;
+              repeat do_pair;
+              repeat break_let;
+              repeat do_pair;
+              repeat dosome''.
+
+Ltac doit := repeat doit'.
 
 
 
@@ -492,7 +531,8 @@ Ltac stt :=
   dosome;
   try haaa.
 
-Ltac ff := repeat break_match; try solve_by_inversion; df.
+
+
 
 (*
 Definition run_app_comp (t:AnnoTerm) (p:Plc) (a_st:AM_St) (e_in:EvidenceC) : (EvidenceC -> EvidenceC) :=
@@ -530,14 +570,7 @@ Proof.
   induction a; intros.
   -
     destruct a;
-      try (df; tauto).
-    +
-      df.
-      ff;
-        eauto.
-    +
-      ff; eauto.
-      ff; eauto.
+      repeat (ff; eauto).
   -
     eauto.
     (*
@@ -548,100 +581,35 @@ Proof.
     subst.
     tauto. *)
   -
+    
     df.
     subst.
-    df.
     destruct a2.
     +
       destruct a;
-        try (df; ff; eauto; tauto).
-
-      (*
-      ++
-        df.
-        ff; eauto.
-        (*
-        dosome.
-        simpl.
-        eauto. *)
-        (*
-        edestruct IHa1.
-        eassumption.
-        destruct_conjs.
-        simpl in *.
-        subst.
-        tauto. *)
-      ++
-        df.
-        ff; eauto.
-        (*
-        dosome.
-        simpl in *.
-        haaa. *)
-
-(*
-        
-      ++
-        df.
-        ff; eauto.
-        (*
-        dosome.
-        simpl in *.
-        haaa. *)
-      ++
-        ff; eauto.
- *)
-        
-        (*
-        
-        destruct (build_app_comp a1 p a_st) eqn:hey;
-          try solve_by_inversion.
-        destruct o; try solve_by_inversion.
-        destruct (build_app_comp (aasp r HSH) p a) eqn:hi;
-          try solve_by_inversion.
-        destruct o;
-          try solve_by_inversion.
-
-        specialize IHa1 with (a_st := a_st) (a_st' := a) (v := v0) (p:=p).
-        concludes.
-        destruct_conjs.
-        subst.
-        specialize IHa2 with (a_st := a) (a_st' := a0) (v := v1) (p:=p).
-        concludes.
-        destruct_conjs.
-        df.
-        tauto. *)
-      ++
-        df.
-        ff; eauto.
-       *)
+        repeat (ff;eauto).
       
-    +
-       destruct (build_app_comp a1 p a_st) eqn:hey;
-         try solve_by_inversion.
-       destruct (build_app_comp (aatt r n1 a2) p a) eqn:hi;
-         try solve_by_inversion.
-       specialize IHa1 with (a_st:=a_st) (a_st':=a) (o:=o0) (p:=p).
-       concludes.
-       destruct_conjs.
-       specialize IHa2 with (a_st := a) (a_st':=a0) (o:=o1) (p:=p).
-       concludes.
-       subst.
-       ff; eauto.
-
-    +
+    + (* aatt case *)
+      doit.
+      specialize IHa1 with (a_st:=a_st) (a_st':=a) (o:=o0) (p:=p).
+      concludes.
+      destruct_conjs.
+      specialize IHa2 with (a_st := a) (a_st':=a0) (o:=o1) (p:=p).
+      concludes.
+      subst.
       
-      destruct (build_app_comp a1 p a_st) eqn:hey;
-         try solve_by_inversion.
-       destruct (build_app_comp (alseq r a2_1 a2_2) p a) eqn:hi;
-         try solve_by_inversion.
-       specialize IHa1 with (a_st:=a_st) (a_st':=a) (o:=o0) (p:=p).
-       concludes.
-       destruct_conjs.
-       specialize IHa2 with (a_st := a) (a_st':=a0) (o:=o1) (p:=p).
-       concludes.
-       subst.
-       ff; eauto.
+      ff; eauto.
+
+    + (* alseq case *)
+
+      doit.
+      specialize IHa1 with (a_st:=a_st) (a_st':=a) (o:=o0) (p:=p).
+      concludes.
+      destruct_conjs.
+      specialize IHa2 with (a_st := a) (a_st':=a0) (o:=o1) (p:=p).
+      concludes.
+      subst.
+      ff; eauto.
 
        (*
     +
@@ -856,119 +824,6 @@ Proof.
     eauto. *)
 Defined.
 
-(*
-        
-        rewrite H3 in *.
-        invc Heqp0.
-        unfold ret in Heqp1.
-        invc Heqp1.
-
-        destruct (build_app_comp (aasp (n2, n3) (ASPC n1 l)) H1) eqn:hey.
-        cbn in hey.
-        unfold bind in hey.
-        cbn in hey.
-        break_let.
-        Check ba_const.
-        edestruct ba_const.
-        eassumption.
-        destruct_conjs.
-        destruct a0.
-        destruct H.
-        cbn in *.
-        clear H8.
-        invc Heqp.
-
-        invc hey.
-
-        destruct H1.
-        cbn in *.
-
-        destruct (map_get st_aspmap (am_pl, n1)) eqn:hi.
-        +++
-        df.
-        eauto.
-        +++
-          df.
-          edestruct ba_const.
-          eassumption.
-          df.
-          destruct_conjs.
-          subst.
-
-
-        
-        subst'.
-        destruct a_st.
-        
-        
-        allMappedFacts.
-        df.
-        
-        dosome.
-        debound.
-        rewrite H0 in *.
-        invc Heqp6.
-        clear H8.
-        subst'.
-        dosome.
-        
-        
-        assert (a_st = H).
-        {
-          Check ba_const.
-          eapply ba_const.
-
-
-    assert (allMapped a2 a_st mt).
-    eapply allMappedSub; eauto.
-    concludes.
-    destruct_conjs.
-    df.
-
-    
-
-
-      
-    assert (a_st = H2).
-    {
-      eapply ba_const; eauto.
-    }
-    
-    assert (a_st = H0).
-    {
-      eapply ba_const; eauto.
-    }
-    subst.
-    destruct a2;
-      try (
-          repeat subst';
-          eauto; tauto).
-    +
-
-      destruct a;
-        try (
-        repeat subst';
-        eauto; tauto).
-      ++
-        repeat allMappedFacts.
-        debound.
-        clear H.
-        clear H9.
-        df.
-        subst'.
-        df.
-        subst'.
-        df.
-        eauto.
-  -
-    df.
-    eauto.
-  -
-    df.
-    eauto.
-Defined.
- *)
-
 Lemma ev_shape_transitive : forall e e' et et',
     Ev_Shape e et ->
     Ev_Shape e' et ->
@@ -980,6 +835,13 @@ Proof.
   induction e; destruct et; intros;
     try repeat evShapeFacts; eauto; tauto.
 Defined.
+
+Ltac domap :=
+  let n := fresh in
+  match goal with
+  | [H: match ?X with _ => _ end _ = (Some _, _) |- _] =>
+    destruct X eqn:n; try solve_by_inversion
+  end.
 
 Lemma evShape_sub : forall a e1 e2 n1 et a_st v0 x vm_st vm_st',
     Ev_Shape e2 (eval (unanno a) n1 et) ->
@@ -995,16 +857,11 @@ Proof.
   -
     destruct a.
     +
-      df.
-      dosome.
-      df.
-      repeat break_match; try solve_by_inversion.
+      ff; eauto.
     +
       df.
       dosome.
-      df.
-      repeat break_match; try solve_by_inversion.
-      df.
+      ff.
       vmsts.
       df.
       evShapeFacts.
@@ -1013,24 +870,12 @@ Proof.
     +
       df.
       dosome.
-      repeat break_match; try solve_by_inversion.
-      df.
+      ff.
       vmsts.
       df.
       evShapeFacts.
       df.
       eassumption.
-      (*
-    +
-      df.
-      dosome.
-      repeat break_match; try solve_by_inversion.
-      df.
-      vmsts.
-      df.
-      evShapeFacts.
-      df.
-      eassumption. *)
   -
     df.
     eauto.
@@ -1040,75 +885,43 @@ Proof.
     +
       destruct a eqn:a2_eq.
       ++
-        destruct (build_app_comp a1 n1 a_st) eqn:hi; try solve_by_inversion.
-        destruct (build_app_comp (aasp r0 CPY) n1 a0) eqn:hey; try solve_by_inversion.
-        destruct o; try solve_by_inversion.
-        repeat break_let.
-        invc H0.
-        destruct o0; try solve_by_inversion.
-        invc Heqp.
-        destruct (v1 vm_st) eqn:heey; try solve_by_inversion.
-        destruct o; try solve_by_inversion.
-        repeat break_let.
-        invc H1.
-        destruct o0; try solve_by_inversion.
-        invc Heqp.
+        doit.
+
         destruct v0.
         destruct vm_st.
         destruct vm_st'.
+        
+        
+        simpl.
+        simpl in H.  
+        (*simpl in *. *)
+        
+        do_ba_st_const.
+        eapply IHa1;
+          [ eapply IHa2;
+            try (simpl; eassumption);
+            try tauto | eassumption | eassumption | tauto | tauto].
+
+      ++
+        doit.
+        amsts.
+
         simpl.
         simpl in H.
         do_ba_st_const.
-        eapply IHa1.
-        eapply IHa2.
-        simpl.
-        eassumption.
-        eassumption.
-        eassumption.
-        tauto.
-        tauto.
-        eassumption.
-        eassumption.
-        tauto.
-        tauto.
+
+        eapply IHa1;
+          [ eapply IHa2;
+            try (simpl; eassumption);
+            try tauto | eassumption | eassumption | tauto | tauto].
+
       ++
-        destruct (build_app_comp a1 n1 a_st) eqn:hi; try solve_by_inversion.
-        destruct (build_app_comp (aasp r0 (ASPC n2 l)) n1 a0) eqn:hey; try solve_by_inversion.
-        destruct o; try solve_by_inversion.
-        repeat break_let.
-        invc H0.
-        destruct o0; try solve_by_inversion.
-        invc Heqp.
-        destruct (v1 vm_st) eqn:heey; try solve_by_inversion.
-        destruct o; try solve_by_inversion.
-        repeat break_let.
-        invc H1.
-        destruct o0; try solve_by_inversion.
-        invc Heqp.
-        destruct v0.
-        destruct vm_st.
-        destruct vm_st'.
-        simpl.
-        simpl in H.
-        do_ba_st_const.
-        eapply IHa1.
-        eapply IHa2.
-        simpl.
-        eassumption.
-        eassumption.
-        eassumption.
-        tauto.
-        tauto.
-        eassumption.
-        eassumption.
-        tauto.
-        tauto.
-      ++
-        repeat break_let.
-        invc Heqp.
-        destruct o; try solve_by_inversion.
-        destruct (map_get (st_sigmap a_st) n1) eqn:mhi; try solve_by_inversion.
-        invc Heqp1.
+
+        doit.
+
+        domap.
+        do_pair.
+            
         assert (exists o, build_app_comp (aasp r0 SIG) n1 a0 = (Some o, a0)).
         { eapply build_app_some.
           econstructor.
@@ -1121,83 +934,15 @@ Proof.
         destruct_conjs.
         
         do_ba_st_const.
-        
-        repeat break_let.
-        invc H0.
-        destruct o0; try solve_by_inversion.
-        assert (v0 = (fun s : StVM.vm_st =>
-             let
-             '(b, s'') :=
-              match extractSig (st_ev s) s with
-              | (Some v0, s') =>
-                  let
-                  '(b, s'') :=
-                   (let
-                    '(bs, e') := v0 in
-                     fun s0 : StVM.vm_st =>
-                     let
-                     '(b, s'') :=
-                      let
-                      '(b, s'') :=
-                       match
-                         v
-                           {|
-                           st_ev := e';
-                           st_trace := st_trace
-                                         (let
-                                          '{| st_ev := e; st_trace := tr; st_pl := p; st_store := store |} := s0 in
-                                           {|
-                                           st_ev := e;
-                                           st_trace := tr ++ [umeas n 0 n2 [encodeEv e'; bs]];
-                                           st_pl := p;
-                                           st_store := store |});
-                           st_pl := st_pl
-                                      (let
-                                       '{| st_ev := e; st_trace := tr; st_pl := p; st_store := store |} := s0 in
-                                        {|
-                                        st_ev := e;
-                                        st_trace := tr ++ [umeas n 0 n2 [encodeEv e'; bs]];
-                                        st_pl := p;
-                                        st_store := store |});
-                           st_store := st_store
-                                         (let
-                                          '{| st_ev := e; st_trace := tr; st_pl := p; st_store := store |} := s0 in
-                                           {|
-                                           st_ev := e;
-                                           st_trace := tr ++ [umeas n 0 n2 [encodeEv e'; bs]];
-                                           st_pl := p;
-                                           st_store := store |}) |}
-                       with
-                       | (Some v, s'0) => (Some (fun x : EvidenceC => ggc 78 (v x)), s'0)
-                       | (None, s'0) => (None, s'0)
-                       end in (b, s'') in (b, s'')) s' in (b, s'')
-              | (None, s') => (None, s')
-              end in (b, s''))).
-        {
-          inversion Heqp.
-          reflexivity.
-        }
-        rewrite H0 in H1. clear H0.
-        repeat break_let.
-        clear Heqp.
-        invc H1.
-         
-        destruct o0; try solve_by_inversion.
-        repeat break_let.
-        invc Heqp5.
-        simpl in Heqp7.
-        invc Heqp3.
-        invc Heqp1.
-        clear H4.
-        destruct o2; try solve_by_inversion.
-        invc Heqp6.
-      
+
+        doit.
+            
         subst.
         cbn in H.
 
-        assert (exists x y, H2 vm_st = (Some x, y)).
+        assert (exists x y, H1 vm_st = (Some x, y)).
         {
-          cbn in H3.
+          cbn in H2.
           df.
           dosome.
           eauto.
@@ -1215,139 +960,31 @@ Proof.
         eassumption.
         simpl.
         destruct vm_st.
-        simpl in Heqp2.
-        destruct H1.
+        simpl in Heqp5.
+        destruct H5.
         simpl.
-        cbn in H3.
+        cbn in H2.
         repeat break_let.
-        unfold bind in H3.
-        simpl in H3.
-        cbn in H3.
+        unfold bind in H2.
+        simpl in H2.
+        cbn in H2.
         repeat break_let.
-        invc Heqp.
-        rewrite mhi in *.
+              
+        invc Heqp0.
+        subst''.
+        
         unfold ret in *.
-        invc Heqp1.
-        simpl in H3.
-        assert (H2 =
-                (fun s : vm_st =>
-           let
-           '(b, s'') :=
-            match extractSig (StVM.st_ev s) s with
-            | (Some v, s') =>
-                let
-                '(b, s'') :=
-                 (let
-                  '(bs, e') := v in
-                   fun s0 : vm_st =>
-                   (Some (fun x : EvidenceC => ggc 78 x),
-                   {|
-                   st_ev := e';
-                   st_trace := StVM.st_trace (add_trace [umeas n3 0 n2 [encodeEv e'; bs]] s0);
-                   st_pl := StVM.st_pl (add_trace [umeas n3 0 n2 [encodeEv e'; bs]] s0);
-                   st_store := StVM.st_store (add_trace [umeas n3 0 n2 [encodeEv e'; bs]] s0) |})) s' in 
-                 (b, s'')
-            | (None, s') => (None, s')
-            end in (b, s''))).
-        invc H3.
-        reflexivity.
-        rewrite H1 in H4. clear H1.
-        repeat break_let.
-        invc H4.
-        destruct o0; try solve_by_inversion.
-        repeat break_let.
-        invc Heqp.
-        invc Heqp3.
-        simpl in Heqp1.
-        rewrite Heqp2 in *.
-        invc Heqp1.
+        Print do_pair.
+        do_pair.
+        do_pair.
+        doit.
         reflexivity.
         reflexivity.
-        (*
-      ++
-
-        destruct (build_app_comp a1 n1 a_st) eqn:hi; try solve_by_inversion.
-        destruct (build_app_comp (aasp r0 HSH) n1 a0) eqn:hey; try solve_by_inversion.
-        destruct o; try solve_by_inversion.
-        repeat break_let.
-        invc H0.
-        destruct o0; try solve_by_inversion.
-        invc Heqp.
-        destruct (v1 vm_st) eqn:heey; try solve_by_inversion.
-        destruct o; try solve_by_inversion.
-        repeat break_let.
-        invc H1.
-        destruct o0; try solve_by_inversion.
-        invc Heqp.
-        destruct v0.
-        destruct vm_st.
-        destruct vm_st'.
-        simpl.
-        simpl in H.
-        do_ba_st_const.
-        eapply IHa1.
-        eapply IHa2.
-        simpl.
-        eassumption.
-        eassumption.
-        eassumption.
-        tauto.
-        tauto.
-        eassumption.
-        eassumption.
-        tauto.
-        tauto. *)
 
     +
-      destruct (build_app_comp a1 n1 a_st) eqn:hi; try solve_by_inversion.
-        destruct (build_app_comp (aatt r0 n2 a) n1 a0) eqn:hey; try solve_by_inversion.
-        destruct o; try solve_by_inversion.
-        repeat break_let.
-        invc H0.
-        destruct o0; try solve_by_inversion.
-        invc Heqp.
-        destruct (v1 vm_st) eqn:heey; try solve_by_inversion.
-        destruct o; try solve_by_inversion.
-        repeat break_let.
-        invc H1.
-        destruct o0; try solve_by_inversion.
-        invc Heqp.
-        destruct v0.
-        destruct vm_st.
-        destruct vm_st'.
-        simpl.
-        simpl in H.
-        do_ba_st_const.
-        eapply IHa1.
-        eapply IHa2.
-        simpl.
-        eassumption.
-        eassumption.
-        eassumption.
-        tauto.
-        tauto.
-        eassumption.
-        eassumption.
-        tauto.
-        tauto.
+      doit.
 
-    +
-      destruct (build_app_comp a1 n1 a_st) eqn:hi; try solve_by_inversion.
-      destruct (build_app_comp (alseq r0 a3 a4) n1 a_st) eqn:hey; try solve_by_inversion.
-      destruct o; try solve_by_inversion.
-      repeat break_let.
-      invc H0.
-      destruct o1; try solve_by_inversion.
-      invc Heqp.
-      destruct (v1 vm_st) eqn:heey; try solve_by_inversion.
-      destruct o; try solve_by_inversion.
-      repeat break_let.
-      invc H1.
-      destruct o1; try solve_by_inversion.
-      invc Heqp.
-      destruct v0.
-      destruct vm_st.
-      destruct vm_st'.
+      amsts.
       simpl.
       simpl in H.
       do_ba_st_const.
@@ -1363,22 +1000,31 @@ Proof.
       eassumption.
       tauto.
       tauto.
+
+    +
+
+      doit.
+
+      amsts.
+      simpl.
+      simpl in H.
+      do_ba_st_const.
+      eapply IHa1.
+      eapply IHa2.
+      simpl.
+      eassumption.
+      eassumption.
+      eassumption.
+      tauto.
+      tauto.
+      eassumption.
+      eassumption.
+      tauto.
+      tauto.
+
+      Unshelve.
+      eauto.
 Defined.
-
-Ltac dosome_eq y :=
-  match goal with
-  | [H: match ?x with _ => _ end = (Some _, _)  |- _] =>
-    destruct x eqn:y; try solve_by_inversion
-  end.
-Ltac do_pair :=
-  match goal with
-  | [H: (_,_) = (Some _,_) |- _] => invc H
-  end.
-
-Ltac amsts :=
-  repeat match goal with
-         | H:vm_st |- _ => destruct H
-         end.
 
 Lemma build_app_run_some : forall a p a_st x v_st et e,
     e = st_ev v_st ->
@@ -1391,40 +1037,38 @@ Proof.
   generalizeEverythingElse a.
   induction a; intros.
   -
-    destruct a.
+    destruct a;
+      try evShapeFacts.
     +
       df.
       eauto.    
     +
       df.
+      doit.
+      (*
       dosome.
-      df.
+      df. *)
+      ff.
 
-      repeat break_match; try solve_by_inversion.
       ++
-        df.
         eauto.
       ++
-        df.
         vmsts.
         df.
         evShapeFacts.
-        df.
+        solve_by_inversion.
     +
       df.
-      dosome.
-      df.
+      doit.
 
-      repeat break_match; try solve_by_inversion.
+      ff.
       ++
-        df.
         eauto.
       ++
-        df.
         vmsts.
         df.
         evShapeFacts.
-        df.
+        solve_by_inversion.
         (*
     +
       df.
@@ -1454,14 +1098,27 @@ Proof.
     +
       destruct a eqn:a_eq.
       ++
-                dosome_eq hi.
-        dosome_eq hey.
+        
+
+
+        
+(*
+        doit. *)
+
+
+        (*doit. *)
+        
+        
+        dosome_eqj.
+        dosome_eqj.
         repeat break_let.
 
         do_pair.
 
-        dosome_eq hey.
+        dosome_eqj.
         do_pair.
+        
+        
         do_ba_st_const.
 
         edestruct IHa2 with
@@ -1477,9 +1134,7 @@ Proof.
         destruct_conjs.
         subst''.
         repeat break_let.
-        Print vmsts.
-
-
+        
         amsts.
 
         edestruct IHa1 (*with
@@ -1499,8 +1154,7 @@ Proof.
         eassumption.
         destruct_conjs.
         subst''.
-        do_pair.
-        inversion Heqp0.
+        repeat do_pair.
         eauto.
 
       ++
@@ -1741,12 +1395,6 @@ Lemma dood : forall t vm_st vm_st' e e'' e' p a_st x0 x1 new_vmst new_vmst',
 Proof.
 Admitted.
 *)
-
-Check build_app_comp.
-Check runSt.
-Check run_vm.
-Print run_vm.
-Print execSt.
 
 (*
 Lemma evShapeAt : forall e et a n,
@@ -2117,18 +1765,7 @@ Proof.
     +
       destruct a.
       ++
-        dosome_eq hi.
-        dosome_eq hey.
-        repeat break_let.
-        do_pair.
-        dosome_eq hey.
-        do_pair.
-        dosome_eq hey.
-        dosome_eq heyy.
-        repeat break_let.
-        do_pair.
-        dosome_eq heyy.
-        do_pair.
+        doit.
         amsts.
         edestruct IHt1.
         eassumption.
@@ -2142,18 +1779,7 @@ Proof.
         eexists.
         eauto.
       ++
-         dosome_eq hi.
-        dosome_eq hey.
-        repeat break_let.
-        do_pair.
-        dosome_eq hey.
-        do_pair.
-        dosome_eq hey.
-        dosome_eq heyy.
-        repeat break_let.
-        do_pair.
-        dosome_eq heyy.
-        do_pair.
+        doit.
         amsts.
         edestruct IHt1.
         eassumption.
@@ -2167,34 +1793,20 @@ Proof.
         eexists.
         eauto.
       ++
-         dosome_eq hi.
-        dosome_eq hey.
-        repeat break_let.
-        do_pair.
-        dosome_eq hey.
-        do_pair.
-        dosome_eq hey.
-        do_pair.
-        do_pair.
-        dosome_eq heyyyy.
-        (*
-        destruct ( extractSig (st_ev {| st_ev := e; st_trace := tr; st_pl := n; st_store := o |})
-                              {| st_ev := e; st_trace := tr; st_pl := n; st_store := o |}) eqn:heyy; try solve_by_inversion. *)
-        dosome_eq hee.
-        (*
-        destruct o1 eqn:hi; try solve_by_inversion. *)
-        repeat break_let.
-        repeat do_pair.
-        dosome_eq hi.
-        do_pair.
+
+        doit.
+
+        
         simpl in Heqp6.
         dosome_eq' hihihihi.
         do_pair.
-        simpl in heyyyy.
+        (*
+        simpl in heyyyy. *)
         unfold extractSig in *.
         dosome_eq' ho.
         unfold ret in *.
         do_pair.
+
         edestruct IHt1.
         eassumption.
         eassumption.
@@ -2203,57 +1815,36 @@ Proof.
         rewrite app_assoc.
         reflexivity.
     +
-             dosome_eq hi.
-        dosome_eq hey.
-        repeat break_let.
-        do_pair.
-        dosome_eq hey.
-        do_pair.
-        dosome_eq hey.
-        dosome_eq heyy.
-        repeat break_let.
-        do_pair.
-        dosome_eq heyy.
-        do_pair.
-        amsts.
-        edestruct IHt1.
-        eassumption.
-        eassumption.
-        subst.
-        edestruct IHt2.
-        eassumption.
-        eassumption.
-        subst.
-        rewrite <- app_assoc.
-        eexists.
-        eauto.
+      doit.
+      amsts.
+      edestruct IHt1.
+      eassumption.
+      eassumption.
+      subst.
+      edestruct IHt2.
+      eassumption.
+      eassumption.
+      subst.
+      rewrite <- app_assoc.
+      eexists.
+      eauto.
     +
-             dosome_eq hi.
-        dosome_eq hey.
-        repeat break_let.
-        do_pair.
-        dosome_eq hey.
-        do_pair.
-        dosome_eq hey.
-        dosome_eq heyy.
-        repeat break_let.
-        do_pair.
-        dosome_eq heyy.
-        do_pair.
-        amsts.
-        edestruct IHt1.
-        eassumption.
-        eassumption.
-        subst.
-        edestruct IHt2.
-        eassumption.
-        eassumption.
-        subst.
-        rewrite <- app_assoc.
-        eexists.
-        eauto.
+      doit.
+      amsts.
+      edestruct IHt1.
+      eassumption.
+      eassumption.
+      subst.
+      edestruct IHt2.
+      eassumption.
+      eassumption.
+      subst.
+      rewrite <- app_assoc.
+      eexists.
+      eauto.
 Defined.
-Check trace_cumul.
+
+
 Ltac do_cumul2 :=
   (*let tac x y := (eapply trace_cumul; [apply x | apply y]) in *)
     match goal with
@@ -3251,256 +2842,6 @@ Proof.
           eauto.
 Defined.
 
-          
-
-
-        
-        tauto.
-        tauto.
-
-        tauto.
-        tauto.
-        eassumption.
-        eassumption.
-        tauto.
-        econstructor.
-        apply evtsatt.
-        eassumption.
-        econstructor.
-
-        
-        destruct_conjs.
-        simpl in H1.
-        do_cumul.
-        subst.
-
-        exists x.
-        split.
-        +++
-          eapply in_or_app.
-          eauto.
-        +++
-          eauto.
-
-
-
-
-
-
-
-
-      
-      
-                  
-
-
-
-                
-                econstructor.
-                reflexivity.
-                eassumption.
-                tauto.
-                tauto.
-                tauto.
-                eassumption.
-                eassumption.
-                tauto.
-                econstructor.
-                econstructor.
-                reflexivity.
-                destruct r.
-                simpl.
-                econstructor.
-                simpl in H.
-                destruct_conjs.
-                destruct r.
-                simpl in H1.
-                simpl.
-                exists x.
-                Print do_cumul2.
-                do_cumul.
-                subst.
-                split.
-                apply in_or_app.
-                eauto.
-                eauto.
-                
-                
-                
-                
-
-
-
-
-      
-    + admit.
-      
-      
-      
-        
-        
-          
-          
-          cbn in Heqp1.
-          do_pair.
-
-          eapply IHt1 with (vmst:= {| st_ev := st_ev3; st_trace := st_trace3; st_pl := st_pl2; st_store := st_store3 |}) (new_vmst := {| st_ev := st_ev2; st_trace := st_trace4; st_pl := st_pl4; st_store := st_store4 |}).
-          eassumption.
-          tauto.
-          tauto.
-          tauto.
-          eassumption.
-          eassumption.
-          tauto.
-          econstructor.
-          eassumption.
-          econstructor.
-          
-
-
-
-
-
-
-
-
-        
-        invc H6.
-        invc H0.
-        invc H.
-        +++
-
-        
-         dosome_eq hi.
-        dosome_eq hey.
-        subst.
-        repeat break_let.
-        do_pair.
-        dosome_eq hii.
-        subst.
-        do_pair.
-        dosome_eq hii.
-        dosome_eq hey.
-        subst.
-        repeat break_let.
-        do_pair.
-        dosome_eq hiii.
-        do_pair.
-        amsts.
-        repeat dunit.
-        invc H2.
-        simpl in H.
-        subst.
-        simpl in H6.
-        unfold StVM.st_pl in *.
-        do_pl_immut.
-        (*
-        simpl.
-        simpl in hi.
-        simpl in Heqp2.
-        repeat break_let.
-        invc H2.
-        simpl in H6.
-        simpl in H.
-        subst.
-        unfold ret in *.
-        unfold bind in Heqp2.
-        dosome_eq hee.
-        dosome_eq he.
-        do_pair.
-        repeat break_let.
-        do_pair.
-        dosome_eq h.
-        repeat break_let.
-        do_pair.
-        do_pair.
-        simpl in Heqp2. *)
-        (*
-        df.
-        haaa.
-        measEventFacts.
-        invc H1.
-        invc H0.
-        do_pl_immut. *)
-
-
-        (*
-       
-        unfold extractUev in *.
-        destruct st_ev2; try solve_by_inversion.
-        unfold ret in *.
-        do_pair.
-        simpl in Heqp3. *)
-        invc H6.
-        invc H0.
-        do_ba_st_const.
-        invc H.
-
-         +++
-           df. clear IHt2.
-           dosome_eq hiii.
-           do_pair.
-           dosome_eq hee.
-           do_pair.
-           dosome_eq hel.
-           dosome_eq hl.
-           repeat break_let.
-           do_pair.
-           do_pair.
-           df.
-           haaa.
- 
-           eapply IHt1 with (vmst:={| st_ev := st_ev4; st_trace := st_trace4; st_pl := st_pl3; st_store := st_store4 |}) (new_vmst:= {| st_ev := st_ev; st_trace := st_trace3 ++ [umeas b 0 n5 (b :: l)]; st_pl := st_pl; st_store := st_store |}).
-           eassumption.
-           tauto.
-           tauto.
-           tauto.
-           simpl.
-           eassumption.
-           eassumption.
-           tauto.
-           simpl.
-           econstructor.
-           eassumption.
-           econstructor.
-         +++
-           df.
-           dosome.
-           df.
-           haaa.
-           
-
-
-           
-           do_pl_immut.
-
-
-
-
-           
-           destruct r.
-           subst.
-
-           simpl.
-           do_pl_immut.
-           eapply IHt2 with (new_vmst:={| st_ev := st_ev2; st_trace := st_trace2; st_pl := st_pl2; st_store := st_store2 |}) (vmst:= {| st_ev := st_ev0; st_trace := st_trace0; st_pl := st_pl3; st_store := st_store0 |}).
-           eassumption.
-           tauto.
-           tauto.
-           tauto.
-           eassumption.
-           eassumption.
-           df.
-           clear IHt2.
-           dosome_eq hihihi.
-           do_pair.
-           repeat break_let.
-           df.
-           tauto.
-           repeat break_let.
-           eassumption.
-           invc Heqp1.
-           rewrite H in *.
            
     
 
