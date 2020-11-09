@@ -464,6 +464,13 @@ Ltac dosome'' :=
   | [H: (_,_) = (Some _, _) |- _] => invc H
   end.
 
+Ltac domap :=
+  let n := fresh in
+  match goal with
+  | [H: match ?X with _ => _ end _ = (Some _, _) |- _] =>
+    destruct X eqn:n; try solve_by_inversion
+  end.
+
 
 Ltac doit' := repeat dosome_eqj;
               repeat break_let;
@@ -835,13 +842,6 @@ Proof.
   induction e; destruct et; intros;
     try repeat evShapeFacts; eauto; tauto.
 Defined.
-
-Ltac domap :=
-  let n := fresh in
-  match goal with
-  | [H: match ?X with _ => _ end _ = (Some _, _) |- _] =>
-    destruct X eqn:n; try solve_by_inversion
-  end.
 
 Lemma evShape_sub : forall a e1 e2 n1 et a_st v0 x vm_st vm_st',
     Ev_Shape e2 (eval (unanno a) n1 et) ->
@@ -1852,19 +1852,42 @@ Proof.
       eauto.
 Defined.
 
-
 Ltac do_cumul2 :=
     match goal with
     | [
       H: ?v {| st_ev := _; st_trace := ?tr1; st_pl := _; st_store := _ |} =
          (_, {| st_ev := _; st_trace := ?tr1'; st_pl := _; st_store := _ |}),
      H2: build_app_comp _ _ _ = (Some ?v, _),
+
      H': ?v2 {| st_ev := _; st_trace := ?tr2; st_pl := _; st_store := _ |} =
          (_, {| st_ev := _; st_trace := ?tr2'; st_pl := _; st_store := _ |}),
     H'2: build_app_comp _ _ _ = (Some ?v2, _) |- _] =>
 
       assert (exists tr'' : list Ev, tr1' = tr1 ++ tr'')by (eapply trace_cumul; [apply H2 | apply H]) ;
       assert (exists tr'' : list Ev, tr2' = tr2 ++ tr'')by (eapply trace_cumul; [apply H'2 | apply H'])
+    end.
+
+
+Ltac do_cumul4 :=
+    match goal with
+    | [
+      H: ?v {| st_ev := _; st_trace := ?tr1; st_pl := _; st_store := _ |} =
+         (_, {| st_ev := _; st_trace := ?tr1'; st_pl := _; st_store := _ |}),
+     H2: build_app_comp _ _ _ = (Some ?v, _),
+             
+     H'': ?v {| st_ev := _; st_trace := ?tr3; st_pl := _; st_store := _ |} =
+         (_, {| st_ev := _; st_trace := ?tr3'; st_pl := _; st_store := _ |}),
+     H''': ?v2 {| st_ev := _; st_trace := ?tr31; st_pl := _; st_store := _ |} =
+         (_, {| st_ev := _; st_trace := ?tr31'; st_pl := _; st_store := _ |}),
+
+     H': ?v2 {| st_ev := _; st_trace := ?tr2; st_pl := _; st_store := _ |} =
+         (_, {| st_ev := _; st_trace := ?tr2'; st_pl := _; st_store := _ |}),
+    H'2: build_app_comp _ _ _ = (Some ?v2, _) |- _] =>
+
+      assert (exists tr'' : list Ev, tr1' = tr1 ++ tr'')by (eapply trace_cumul; [apply H2 | apply H]) ;
+      assert (exists tr'' : list Ev, tr2' = tr2 ++ tr'')by (eapply trace_cumul; [apply H'2 | apply H']);
+      assert (exists tr'' : list Ev, tr3' = tr3 ++ tr'')by (eapply trace_cumul; [apply H2 | apply H'']) ;
+      assert (exists tr'' : list Ev, tr31' = tr31 ++ tr'')by (eapply trace_cumul; [apply H'2 | apply H'''])
     end.
 
 Ltac do_cumul2' :=
@@ -1890,18 +1913,248 @@ Ltac do_cumul1 :=
       assert (exists tr'' : list Ev, tr1' = tr1 ++ tr'')by (eapply trace_cumul; [apply H2 | apply H])
     end.
 
-Ltac do_cumul := first [do_cumul2 | do_cumul2' | do_cumul1]; destruct_conjs.
+Ltac do_cumul := first [do_cumul4 | do_cumul2 | do_cumul2' | do_cumul1]; destruct_conjs.
 
-Lemma gogo' : forall t p a a' o_res o_res' v1 e1 e1' p1 p1' o1 o1' e2 e2' tr2 p2 p2' o2 o2' tr1 x0 x1,
+Lemma isnil{A:Type} : forall (ls xs : list A),
+    ls = ls ++ xs ->
+    xs = [].
+Proof.
+  intros.
+  assert (ls = ls ++ []).
+  {
+    rewrite app_nil_r.
+    tauto.
+  }
+  rewrite H0 in H at 1.
+  eapply app_inv_head; eauto.
+Defined.
+
+Ltac dothat :=
+  unfold StVM.st_ev, StVM.st_pl, StVM.st_trace, StVM.st_store in *;
+  try unfold st_ev in *;
+  try unfold st_pl in *;
+  try unfold st_trace in *;
+  try unfold st_store in *.
+
+Ltac ff' :=
+  repeat break_match; try solve_by_inversion.
+
+Ltac doex := 
+  unfold extractUev, extractSig in *;
+  ff';
+  unfold ret in *; doit.
+
+Ltac do_inv_head :=
+  let tac := (eapply app_inv_head; eauto) in
+  repeat
+    match goal with
+    | [H: ?ls ++ ?xs = ?ls ++ ?ys |- _] => assert_new_proof_by (xs = ys) tac
+    end.
+
+
+(*
+Lemma gogo' : forall t p a a' o_res o_res' v1 e1' p1 p1' o1 o1' e2 e2' tr2 p2 p2' o2 o2' tr1 x0 x1,
     build_app_comp t p a = (Some v1, a') ->
-    v1 {| st_ev := e1; st_trace := tr1; st_pl := p1; st_store := o1 |} =
+    v1 {| st_ev := e2; st_trace := tr1; st_pl := p1; st_store := o1 |} =
     (Some o_res, {| st_ev := e1'; st_trace := tr1 ++ x1; st_pl := p1'; st_store := o1' |}) ->
     v1 {| st_ev := e2; st_trace := tr2; st_pl := p2; st_store := o2 |} =
     (Some o_res', {| st_ev := e2'; st_trace := tr2 ++ x0; st_pl := p2'; st_store := o2' |}) ->
     x0 = x1.
 Proof.
-  (*
-  intros.
+  induction t; intros.
+  -
+    destruct r; destruct a.
+    +
+      df. 
+      assert (x1 = []) by (eapply isnil; eauto).
+      assert (x0 = []) by (eapply isnil; eauto).
+      congruence.
+    +
+      df.
+      doit.
+      domap.
+      doit.
+      dothat.
+      doex.
+      do_inv_head.
+      congruence.
+    +
+      df.
+      doit.
+      domap.
+      doit.
+      dothat.
+      doex.
+      do_inv_head.
+      congruence.
+  -
+    df.
+    eauto.
+  -
+    df.
+    destruct r.
+    subst.
+    destruct t2.
+    +
+      doit.
+      destruct a0.
+      ++
+        doit.
+
+        cbn in Heqp0.
+        repeat break_let.
+        doex.
+        eauto.
+      ++
+        doit.
+        cbn in Heqp0.
+        df.
+        doit.
+        domap.
+        doit.
+        doex.
+        
+        repeat break_let.
+        doex.
+        doit.
+        df.
+        doit.
+        subst.
+        invc Heqe.
+        eauto.
+        do_cumul.
+        assert (x0 = [umeas n4 0 n1 (b :: l)] ++ H0).
+        {
+          admit.
+        }
+
+        assert (x1 = [umeas n4 0 n1 (b :: l)] ++ H1).
+        {
+          admit.
+        }
+        assert (H0 = H1).
+        {
+          admit.
+        }
+        subst.
+        congruence.
+      ++
+        doit.
+        doex.
+        dothat.
+        subst.
+        invc Heqe4.
+
+        do_cumul.
+        assert (x0 = [umeas n 0 n3 [encodeEv e; b]] ++ H).
+        {
+          admit.
+        }
+
+        assert (x1 = [umeas n 0 n3 [encodeEv e; b]] ++ H0).
+        {
+          admit.
+        }
+        assert (H = H0).
+        {
+          admit.
+        }
+        subst.
+        congruence.
+    +
+      doit.
+      cbn in Heqp0.
+      amsts.
+      do_cumul.
+      subst.
+      assert (x0 = H3 ++ H).
+      {
+        admit.
+      }
+      subst.
+      assert (x1 = H0 ++ H4).
+      {
+        admit.
+      }
+      subst.
+      assert (H = H4).
+      eapply IHt1.
+      eassumption.
+      rewrite app_assoc in *.
+      eassumption.
+      repeat rewrite app_assoc in *.
+      assert (st_ev = st_ev0).
+      {
+        admit.
+      }
+      subst.
+      eassumption.
+      subst.
+      assert (H3 = H0) by eauto.
+      subst.
+      reflexivity.
+   +
+      doit.
+      
+      (*cbn in Heqp0. *)
+      amsts.
+      do_cumul.
+      subst.
+      assert (x0 = H3 ++ H).
+      {
+        admit.
+      }
+      subst.
+      assert (x1 = H0 ++ H4).
+      {
+        admit.
+      }
+      subst.
+      assert (H = H4).
+      eapply IHt1.
+      eassumption.
+      rewrite app_assoc in *.
+      eassumption.
+      repeat rewrite app_assoc in *.
+      assert (st_ev = st_ev0).
+      {
+        admit.
+      }
+      subst.
+      eassumption.
+      subst.
+      assert (H3 = H0) by eauto.
+      subst.
+      reflexivity.
+      Unshelve.
+      eauto.
+        
+    
+    
+      
+      
+      
+
+      
+      
+      
+
+      
+      
+
+
+
+
+
+
+
+
+
+
+
+(*
+
+  
   assert (Ev_Shape e et).
   eapply gen_ev_shape; eauto.
   generalizeEverythingElse e.
@@ -2053,9 +2306,9 @@ Defined.
 Admitted.
 
 
-Lemma gogo : forall t p a a' o_res o_res' v1 e1 e1' p1 p1' o1 o1' e2 e2' tr2 p2 p2' o2 o2' tr1 x0,
+Lemma gogo : forall t p a a' o_res o_res' v1 e1' p1 p1' o1 o1' e2 e2' tr2 p2 p2' o2 o2' tr1 x0,
     build_app_comp t p a = (Some v1, a') ->
-    v1 {| st_ev := e1; st_trace := []; st_pl := p1; st_store := o1 |} =
+    v1 {| st_ev := e2; st_trace := []; st_pl := p1; st_store := o1 |} =
     (Some o_res, {| st_ev := e1'; st_trace := tr1; st_pl := p1'; st_store := o1' |}) ->
     v1 {| st_ev := e2; st_trace := tr2; st_pl := p2; st_store := o2 |} =
     (Some o_res', {| st_ev := e2'; st_trace := tr2 ++ x0; st_pl := p2'; st_store := o2' |}) ->
@@ -2083,8 +2336,9 @@ Ltac do_gogo :=
 
       assert (tr2' = tr1')by (eapply gogo; [apply H2 | apply H | apply H'])
     end.
+*)
 
-
+(*
 Lemma foofoo : forall t f p tr_n p_n o_n a0 a' v e' tr' p' o' e'' tr'' p'' o'',
     build_app_comp t p a0 = (Some v, a') ->
     v {| st_ev := e'; st_trace := tr'; st_pl := p'; st_store := o' |} =
@@ -2094,6 +2348,7 @@ Lemma foofoo : forall t f p tr_n p_n o_n a0 a' v e' tr' p' o' e'' tr'' p'' o'',
         (Some g, {| st_ev := e3; st_trace := tr3; st_pl := p3; st_store := o3 |})).
 Proof.
 Admitted.
+*)
 
 Lemma dood : forall t vm_st vm_st' e e'' e' p a_st x0 x1 new_vmst new_vmst',
     build_comp t vm_st = (Some tt, vm_st') ->
@@ -2370,13 +2625,21 @@ Proof.
     measEventFacts.
     evEventFacts.
     invEvents.
-     
+   
+
+    (*
+    Check foofoo.     
     edestruct foofoo.
     eassumption.
     eassumption.
-    destruct_conjs.
+    destruct_conjs. *)
 
-    edestruct IHt with (vmst:={| st_ev := st_ev3; st_trace := []; st_pl := n; st_store := [] |}) (new_vmst:={| st_ev := toRemote (unanno t) st_ev3; st_trace := []; st_pl := 0; st_store := [] |}).
+    Locate build_comp_at.
+    Print build_comp_at.
+
+    edestruct IHt with (vmst:={| st_ev := st_ev3; st_trace := []; st_pl := n; st_store := [] |})
+                       (new_vmst:= {| st_ev := toRemote (unanno t) st_ev3; st_trace := st_trace0; st_pl := st_pl0; st_store := st_store0 |})
+                       (*(new_vmst:={| st_ev := toRemote (unanno t) st_ev3; st_trace := []; st_pl := 0; st_store := [] |})*).
     
     apply build_comp_at.
     simpl.
@@ -2412,24 +2675,35 @@ Proof.
       simpl.
       reflexivity.
     } *)
-    do_cumul.
+
+    (*
+    do_cumul. *)
+
+    (* 
     simpl in H11.
     subst.
-    do_gogo.
+    do_gogo. *)
     (*
     assert (H8 = H9).
     { eapply gogo; eauto.
     } *)
+
+    (*
     subst.
+     *)
+    
     
     destruct_conjs.
-    exists x1.
-    split.
+    exists x0.
+    split; eauto.
+    (*
     +
+      eauto.
+      (*
       eapply in_or_app.
-      eauto.
+      eauto. *)
     +
-      eauto.
+      eauto. *)
   - (* alseq case *)
 
     df.

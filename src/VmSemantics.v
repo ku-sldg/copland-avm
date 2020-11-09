@@ -2347,7 +2347,30 @@ Admitted.
 
 Check pl_immut.
 
-Axiom build_comp_external : forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (o : ev_store),
+Axiom build_comp_external' : forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (o : ev_store) (tr:list Ev),
+    build_comp t {| st_ev := e; st_trace := tr; st_pl := n; st_store := o |} =
+    (Some tt,
+     {| st_ev := remote_evidence t e;
+        st_trace := tr ++ (remote_trace t n);
+        st_pl :=
+          st_pl
+            (snd 
+               (build_comp t
+                           {| st_ev := e;
+                              st_trace := [];
+                              st_pl := n;
+                              st_store := o |}));
+        st_store :=
+          st_store
+            (snd 
+               (build_comp t
+                           {| st_ev := e;
+                              st_trace := [];
+                              st_pl := n;
+                              st_store := o |}));
+     |}).
+
+Lemma build_comp_external : forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (o : ev_store),
     build_comp t {| st_ev := e; st_trace := []; st_pl := n; st_store := o |} =
     (Some tt,
      {| st_ev := remote_evidence t e;
@@ -2369,6 +2392,13 @@ Axiom build_comp_external : forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (o :
                               st_pl := n;
                               st_store := o |}));
      |}).
+Proof.
+  intros.
+  assert ([] ++ (remote_trace t n) = (remote_trace t n)) by eauto.
+  eapply build_comp_external'.
+Defined.
+
+  
 
 Axiom at_evidence : forall t e,
     toRemote (unanno t) e = remote_evidence t e.
@@ -2382,6 +2412,33 @@ Axiom par_evidence : forall t e,
 Axiom par_events : forall t p,
   parallel_vm_events t p = remote_trace t p.
 
+
+Lemma build_comp_at' : forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (o : ev_store) (tr: list Ev),
+    build_comp t {| st_ev := e; st_trace := tr; st_pl := n; st_store := o |} =
+    (Some tt,
+     {| st_ev := toRemote (unanno t) e;
+        st_trace := tr ++ remote_events t n;
+        st_pl := n;
+        st_store :=
+          st_store
+            (snd 
+               (build_comp t
+                           {| st_ev := e;
+                              st_trace := [];
+                              st_pl := n;
+                              st_store := o |}));
+     |}).
+Proof.
+  intros.
+  rewrite at_evidence.
+  rewrite at_events.
+  Check pl_immut.
+  assert (st_pl (snd (build_comp t {| st_ev := e; st_trace := []; st_pl := n; st_store := o |})) = n).
+  eapply pl_immut.
+  rewrite <- H at 3.
+
+  eapply build_comp_external'.
+Defined.
 
 
 Lemma build_comp_at : forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (o : ev_store),
@@ -2409,6 +2466,35 @@ Proof.
   rewrite <- H at 3.
 
   eapply build_comp_external.
+Defined.
+
+Lemma build_comp_par' :
+  forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (o : ev_store) (tr:list Ev),
+    build_comp t {| st_ev := e; st_trace := tr; st_pl := n; st_store := o |} =
+    (Some tt,
+     {|
+       st_ev := parallel_att_vm_thread t e;
+       st_trace := tr ++ parallel_vm_events t n;
+       st_pl := n;
+       st_store :=
+         st_store
+           (snd
+              (build_comp t
+                          {| st_ev := e;
+                             st_trace := [];
+                             st_pl := n;
+                             st_store := o |}))
+     |}).
+Proof.
+  intros.
+  rewrite par_evidence.
+  rewrite par_events.
+  Check pl_immut.
+  assert (st_pl (snd (build_comp t {| st_ev := e; st_trace := []; st_pl := n; st_store := o |})) = n).
+  eapply pl_immut.
+  rewrite <- H at 3.
+
+  eapply build_comp_external'.
 Defined.
 
 
