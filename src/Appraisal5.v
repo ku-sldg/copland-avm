@@ -1735,20 +1735,28 @@ Proof.
       rewrite app_nil_r.
       eauto.
     +
+      
       df.
+      doit.
+      (*
       dosome.
       dosome_eq' hey.
-      df.
+      df. *)
       unfold extractUev in *.
+
+      
+      
       dosome_eq' hi.
       df.
       eexists.
       reflexivity.
     +
       df.
+      doit.
+      (*
       dosome.
       dosome_eq' hey.
-      df.
+      df. *)
       unfold extractSig in *.
       dosome_eq' hi.
       df.
@@ -1846,49 +1854,39 @@ Defined.
 
 
 Ltac do_cumul2 :=
-  (*let tac x y := (eapply trace_cumul; [apply x | apply y]) in *)
     match goal with
     | [
       H: ?v {| st_ev := _; st_trace := ?tr1; st_pl := _; st_store := _ |} =
          (_, {| st_ev := _; st_trace := ?tr1'; st_pl := _; st_store := _ |}),
-         H2: build_app_comp _ _ _ = (Some ?v, _),
-       H': ?v2 {| st_ev := _; st_trace := ?tr2; st_pl := _; st_store := _ |} =
+     H2: build_app_comp _ _ _ = (Some ?v, _),
+     H': ?v2 {| st_ev := _; st_trace := ?tr2; st_pl := _; st_store := _ |} =
          (_, {| st_ev := _; st_trace := ?tr2'; st_pl := _; st_store := _ |}),
-           H'2: build_app_comp _ _ _ = (Some ?v2, _) |- _] =>
+    H'2: build_app_comp _ _ _ = (Some ?v2, _) |- _] =>
 
-      (*
-      assert_new_proof_by (exists tr'' : list Ev, tr1' = tr1 ++ tr'') (tac H2 H) ;
-      assert_new_proof_by (exists tr'' : list Ev, tr2' = tr2 ++ tr'') (tac H'2 H') *)
       assert (exists tr'' : list Ev, tr1' = tr1 ++ tr'')by (eapply trace_cumul; [apply H2 | apply H]) ;
       assert (exists tr'' : list Ev, tr2' = tr2 ++ tr'')by (eapply trace_cumul; [apply H'2 | apply H'])
     end.
 
 Ltac do_cumul2' :=
- (* let tac x y := (eapply trace_cumul; [apply x | apply y]) in *)
     match goal with
     | [
       H: ?v {| st_ev := _; st_trace := ?tr1; st_pl := _; st_store := _ |} =
          (_, {| st_ev := _; st_trace := ?tr1'; st_pl := _; st_store := _ |}),
-         H2: build_app_comp _ _ _ = (Some ?v, _),
-       H': ?v {| st_ev := _; st_trace := ?tr2; st_pl := _; st_store := _ |} =
+     H2: build_app_comp _ _ _ = (Some ?v, _),
+     H': ?v {| st_ev := _; st_trace := ?tr2; st_pl := _; st_store := _ |} =
            (_, {| st_ev := _; st_trace := ?tr2'; st_pl := _; st_store := _ |}) |- _] =>
-      (*
-      assert_new_proof_by (exists tr'' : list Ev, tr1' = tr1 ++ tr'') (tac H2 H) ;
-      assert_new_proof_by (exists tr'' : list Ev, tr2' = tr2 ++ tr'') (tac H2 H') *)
+
       assert (exists tr'' : list Ev, tr1' = tr1 ++ tr'')by (eapply trace_cumul; [apply H2 | apply H]) ;
       assert (exists tr'' : list Ev, tr2' = tr2 ++ tr'')by (eapply trace_cumul; [apply H2 | apply H'])
     end.
 
 Ltac do_cumul1 :=
-  (*let tac x y := (eapply trace_cumul; [apply x | apply y]) in *)
     match goal with
     | [
       H: ?v {| st_ev := _; st_trace := ?tr1; st_pl := _; st_store := _ |} =
          (_, {| st_ev := _; st_trace := ?tr1'; st_pl := _; st_store := _ |}),
-         H2: build_app_comp _ _ _ = (Some ?v, _) |- _] =>
-      (*
-      assert_new_proof_by (exists tr'' : list Ev, tr1' = tr1 ++ tr'') (tac H2 H)
-       *)
+     H2: build_app_comp _ _ _ = (Some ?v, _) |- _] =>
+
       assert (exists tr'' : list Ev, tr1' = tr1 ++ tr'')by (eapply trace_cumul; [apply H2 | apply H])
     end.
 
@@ -2074,6 +2072,18 @@ Proof.
   eassumption.
 Defined.
 
+Ltac do_gogo :=
+    match goal with
+    | [
+      H: ?v {| st_ev := _; st_trace := []; st_pl := _; st_store := _ |} =
+         (Some _, {| st_ev := _; st_trace := ?tr1'; st_pl := _; st_store := _ |}),
+     H2: build_app_comp _ _ _ = (Some ?v, _),
+     H': ?v {| st_ev := _; st_trace := ?tr2; st_pl := _; st_store := _ |} =
+           (Some _, {| st_ev := _; st_trace := ?tr2 ++ ?tr2'; st_pl := _; st_store := _ |}) |- _] =>
+
+      assert (tr2' = tr1')by (eapply gogo; [apply H2 | apply H | apply H'])
+    end.
+
 
 Lemma foofoo : forall t f p tr_n p_n o_n a0 a' v e' tr' p' o' e'' tr'' p'' o'',
     build_app_comp t p a0 = (Some v, a') ->
@@ -2132,12 +2142,17 @@ Proof.
   -
     subst.
     amsts.
-    df.
-    dosome.
+    df.    
+    dosome. 
     destruct t2.
     +
       destruct a eqn:aeq.
       ++
+        doit.
+        (*
+        doit. *)
+        
+        (*
         dosome_eq hi.
         dosome_eq hey.
         repeat break_let.
@@ -2149,17 +2164,20 @@ Proof.
         repeat break_let.
         do_pair.
         dosome_eq heey.
-        do_pair.
-        cbn in Heqp3.
+        do_pair. *)
+        cbn in Heqp2.
         repeat break_let.
         unfold ret in *.
+        
         do_pair.
-        do_pair.
+        do_pair. 
         amsts.
         cbn in Heqp1.
-        do_pair.
+        do_pair. 
         eauto.
       ++
+        doit.
+        (*
         dosome_eq hi.
         dosome_eq hey.
         repeat break_let.
@@ -2171,9 +2189,9 @@ Proof.
         repeat break_let.
         do_pair.
         dosome_eq heey.
-        do_pair.
+        do_pair. *)
         amsts.
-        cbn in Heqp1.
+        cbn in Heqp2.
         clear IHt2. df.
         dosome.
         haaa.
@@ -2181,10 +2199,10 @@ Proof.
         clear IHt2.
         df.
         dosome.
-
         haaa.
     +
-      do_ba_st_const.
+      doit.
+      (*
       dosome_eq hi.
       dosome_eq hey.
       repeat break_let.
@@ -2196,7 +2214,7 @@ Proof.
       repeat break_let.
       do_pair.
       dosome_eq hee.
-      do_pair.
+      do_pair. *)
 
       amsts.
       do_ba_st_const.
@@ -2222,7 +2240,8 @@ Proof.
       tauto.
       tauto.
     +
-      do_ba_st_const.
+      doit.
+      (*
       dosome_eq hi.
       dosome_eq hey.
       repeat break_let.
@@ -2234,7 +2253,7 @@ Proof.
       repeat break_let.
       do_pair.
       dosome_eq hee.
-      do_pair.
+      do_pair. *)
 
       amsts.
       do_ba_st_const.
@@ -2272,6 +2291,8 @@ Proof.
       eauto.
 Defined.
 
+
+
 Lemma appraisal_correct : forall t vmst vmst' p e_res new_vmst new_vmst' a_st x f tr_app ev,
 
     (*well_formed t -> *)
@@ -2291,13 +2312,13 @@ Proof.
   -
     destruct a.
     +
-      invc H6.
-      invc H8.
+      measEventFacts.
+      evEventFacts.
       solve_by_inversion.
     +
       measEventFacts.
-      invc H8.
-      invc H7.
+      evEventFacts.
+      invEvents.
       destruct r.
       simpl.
       
@@ -2308,12 +2329,15 @@ Proof.
       unfold StVM.st_trace in *.
       subst.
       df.
+      doit.
+      (*
+      
       dosome_eq hey.
       do_pair.
       repeat break_let.
       do_pair.
       dosome_eq hey.
-      df.
+      df. *)
       dosome_eq' heyy.
       df.
       exists (umeas b 0 n1 (b :: args)).
@@ -2334,7 +2358,7 @@ Proof.
         eassumption.
     +
       measEventFacts.
-      invc H8.
+      evEventFacts.
       solve_by_inversion.
   -
     amsts.
@@ -2345,7 +2369,7 @@ Proof.
 
     measEventFacts.
     evEventFacts.
-    invc H.
+    invEvents.
      
     edestruct foofoo.
     eassumption.
@@ -2362,7 +2386,9 @@ Proof.
     tauto.
     simpl.
     eassumption.
-    apply H5.
+    eassumption.
+    (*
+    apply H5. *)
     simpl.
     reflexivity.
     simpl.
@@ -2371,7 +2397,7 @@ Proof.
     econstructor.
 
 
-    
+    (*
     assert (st_trace = st_trace0 ++ H0).
     {
       Print do_cumul2'.
@@ -2385,8 +2411,17 @@ Proof.
       subst.
       simpl.
       reflexivity.
-    }
+    } *)
+    do_cumul.
+    simpl in H11.
     subst.
+    do_gogo.
+    (*
+    assert (H8 = H9).
+    { eapply gogo; eauto.
+    } *)
+    subst.
+    
     destruct_conjs.
     exists x1.
     split.
@@ -2407,6 +2442,9 @@ Proof.
     +
       destruct a eqn:aeq.
       ++
+        doit.
+        
+        (*
         dosome_eq hi.
         dosome_eq hey.
         subst.
@@ -2421,20 +2459,25 @@ Proof.
         repeat break_let.
         do_pair.
         dosome_eq hiii.
-        do_pair.
+        do_pair. *)
         amsts.
+        (*
         repeat dunit.
         simpl.
         simpl in hi.
-        simpl in Heqp2.
+        simpl in Heqp2. *)
+        simpl in Heqp.
         repeat break_let.
         subst.
         unfold ret in *.
         do_pair.
         do_pair.
         measEventFacts.
+        evEventFacts.
+        invEvents.
+        (*
         invc H0.
-        invc H.
+        invc H. *)
         +++
           do_pl_immut.
           cbn in Heqp1.
@@ -2455,6 +2498,9 @@ Proof.
           solve_by_inversion.
       ++
 
+        doit.
+        (*
+
         dosome_eq hi.
         dosome_eq hey.
         subst.
@@ -2469,11 +2515,13 @@ Proof.
         repeat break_let.
         do_pair.
         dosome_eq hiii.
-        do_pair.
+        do_pair. *)
         amsts.
+        (*
         repeat dunit.
         simpl.
-        simpl in hi.
+        simpl in hi. *)
+        
         (*
         simpl in Heqp2.
         repeat break_let.
@@ -2482,8 +2530,11 @@ Proof.
         do_pair.
         do_pair. *)
         measEventFacts.
+        evEventFacts.
+        invEvents.
+        (*
         invc H0.
-        invc H.
+        invc H. *)
         +++
           do_pl_immut.
           do_ba_st_const.
@@ -2509,7 +2560,9 @@ Proof.
         +++
           do_pl_immut.
           do_ba_st_const.
-          invc H5.
+          invEvents.
+          (*
+          invc H5. *)
           edestruct IHt2 with (vmst:={| st_ev := st_ev; st_trace := st_trace; st_pl := p; st_store := st_store |}) (new_vmst:={| st_ev := st_ev1; st_trace := st_trace1; st_pl := st_pl1; st_store := st_store1 |}).
           eassumption.
           tauto.
@@ -2536,6 +2589,8 @@ Proof.
           eauto.
           eauto.
       ++
+        doit.
+        (*
         dosome_eq hi.
         dosome_eq hey.
         subst.
@@ -2557,12 +2612,13 @@ Proof.
           do_pair.
         dosome_eq hhhh.
         subst.
-        do_pair.
-        unfold extractSig in *. simpl in hey.
+        do_pair. *)
+        unfold extractSig in *. simpl in Heqp7.
+        simpl in Heqp3.
         destruct st_ev1; try solve_by_inversion.
         unfold ret in *.
         do_pair.
-        simpl in Heqp8.
+        (*simpl in Heqp8. *)
         break_match; try solve_by_inversion.
         amsts.
         do_ba_st_const.
@@ -2578,8 +2634,11 @@ Proof.
         do_pair.
         do_pair. *)
         measEventFacts.
+        evEventFacts.
+        invEvents.
+        (*
         invc H0.
-        invc H.
+        invc H. *)
         +++
           do_pl_immut.
           do_ba_st_const.
@@ -2607,9 +2666,11 @@ Proof.
           eassumption.
           econstructor.
         +++
-          invc H5.
+          invEvents.
 
     +
+      doit.
+      (*
       dosome_eq hi.
       dosome_eq hey.
       subst.
@@ -2624,18 +2685,22 @@ Proof.
       repeat break_let.
       do_pair.
       dosome_eq hiii.
-      do_pair.
+      do_pair. *)
       amsts.
+      (*
       repeat dunit.
       simpl.
-      simpl in hi.
-      simpl in Heqp2.
+      simpl in hi. *)
+      simpl in Heqp.
       repeat break_let.
       subst.
       unfold ret in *.
       measEventFacts.
+      evEventFacts.
+      invEvents.
+      (*
       invc H0.
-      invc H.
+      invc H. *)
       ++
 
         clear IHt2.
@@ -2649,15 +2714,19 @@ Proof.
         tauto.
         tauto.
 
+        simpl.
+
+        
+
 
         assert (st_ev4 = st_ev2).
-        {
+        { 
           Check dood.
           eapply dood with (vm_st0 := {| st_ev := st_ev4; st_trace := []; st_pl := n1; st_store := [] |}).
           apply build_comp_at.
           tauto.
           tauto.
-          apply Heqp2.
+          apply Heqp.
           eassumption.
           tauto.
           tauto.
@@ -2682,7 +2751,7 @@ Proof.
         do_ba_st_const.
         amsts.
         df.
-        invc H5.
+        invEvents.
         edestruct IHt2 with (vmst:={| st_ev := st_ev; st_trace := []; st_pl := n1; st_store := [] |}) (new_vmst:={| st_ev := toRemote (unanno t2) st_ev; st_trace := st_trace1; st_pl := st_pl1; st_store := st_store1 |}).
         tauto.
         tauto.
@@ -2711,6 +2780,8 @@ Proof.
         +++
           eauto.
     +
+      doit.
+      (*
 
       dosome_eq hi.
       dosome_eq hey.
@@ -2726,18 +2797,22 @@ Proof.
       repeat break_let.
       do_pair.
       dosome_eq hiii.
-      do_pair.
+      do_pair. *)
       amsts.
+      (*
       repeat dunit.
       simpl.
-      simpl in hi.
+      simpl in hi. *)
 
       repeat break_let.
       subst.
       unfold ret in *.
       measEventFacts.
+      evEventFacts.
+      invEvents.
+      (*
       invc H0.
-      invc H.
+      invc H. *)
       ++
 
         clear IHt2.
