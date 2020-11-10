@@ -24,8 +24,8 @@ Set Nested Proofs Allowed.
 Fixpoint build_comp (t:AnnoTerm): VM unit :=
   match t with
   | aasp (n,_) a =>
-    p <- get_pl ;;
-    e <- do_prim n p a ;;
+    (*p <- get_pl ;; *)
+    e <- do_prim n a ;;
     put_ev e
   | aatt (reqi,rpyi) q t' =>
     sendReq reqi q t' ;;

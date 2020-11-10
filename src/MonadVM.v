@@ -140,18 +140,22 @@ Admitted. *)
 
 Check put_ev.
 
-Definition invokeUSM (x:nat) (i:ASP_ID) (p:Plc) (l:list Arg) : VM EvidenceC :=
-  e <- get_ev ;;
+Definition invokeUSM (x:nat) (i:ASP_ID) (l:list Arg) (e:EvidenceC) : VM BS :=
+  (*e <- get_ev ;; *)
+  p <- get_pl ;;
   add_tracem [Term.umeas x p i l];;
-  ret (uuc i x e).
+  ret x 
+  (*ret (uuc i x e)*).
 
 Definition encodeEv (e:EvidenceC) : BS.
 Admitted.
 
-Definition signEv (x:nat) (p:Plc) : VM EvidenceC :=
-  e <- get_ev ;;
+Definition signEv (x:nat) (e:EvidenceC) : VM BS :=
+  (* e <- get_ev ;; *)
+  p <- get_pl ;;
   add_tracem [Term.sign x p] ;;
-  ret (ggc x e).
+  ret x
+  (*ret (ggc x e)*).
 
 (*
 Definition hashEv (x:nat) (p:Plc) : VM EvidenceC :=
@@ -162,7 +166,8 @@ Definition hashEv (x:nat) (p:Plc) : VM EvidenceC :=
 
 
 
-Definition copyEv (x:nat) (p:Plc) : VM EvidenceC :=
+Definition copyEv (x:nat) : VM EvidenceC :=
+  p <- get_pl ;;
   add_tracem [Term.copy x p] ;;
   get_ev.
 
@@ -205,12 +210,18 @@ Definition runParThreads (t1 t2:AnnoTerm) (p:Plc) (e1 e2:EvidenceC) : VM unit :=
 
 
 
-Definition do_prim (x:nat) (p:Plc) (a:ASP) : VM EvidenceC :=
+Definition do_prim (x:nat) (a:ASP) : VM EvidenceC :=
   match a with
-  | CPY => copyEv x p
+  | CPY => copyEv x
   | ASPC asp_id args =>
-    invokeUSM x asp_id p args
-  | SIG => signEv x p
+    e <- get_ev ;;
+    bs <- invokeUSM x asp_id args e ;;
+    ret (uuc asp_id bs e)
+                   
+  | SIG =>
+    e<- get_ev ;;
+    bs <- signEv x e ;;
+    ret (ggc x e)
  (* | HSH => hashEv x p  *)
   end.
 
