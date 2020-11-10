@@ -4,9 +4,7 @@ Evidence structure that models concrete results of Copland phrase execution.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Export Term.
-
-(* Require Import StructTactics. *)
+Require Export Term StructTactics.
 
 Notation BS := nat (only parsing).
 
@@ -16,22 +14,11 @@ Inductive EvidenceC: Set :=
 | uuc: ASP_ID -> BS -> EvidenceC -> EvidenceC
 | ggc: BS -> EvidenceC -> EvidenceC
 (*| hhc: BS -> EvidenceC -> EvidenceC *) (* TODO: remove Ev param *)
-                          (*
+(*
 | nnc: N_ID -> BS -> EvidenceC -> EvidenceC
 | ssc: EvidenceC -> EvidenceC -> EvidenceC
-| ppc: EvidenceC -> EvidenceC -> EvidenceC *).
-
-(*
-(** * Concrete Evidence *)
-Inductive AnnoEvidenceC: Set :=
-| amtc: AnnoEvidenceC
-| auuc: nat -> ASP_ID -> (* Plc -> *) BS -> AnnoEvidenceC -> AnnoEvidenceC
-| aggc: nat -> (*Plc ->*) BS -> AnnoEvidenceC -> AnnoEvidenceC
-| ahhc: nat -> (*Plc ->*) BS -> AnnoEvidenceC -> AnnoEvidenceC (* TODO: remove Ev param *)
-| annc: (*nat ->*) (*Plc ->*) N_ID -> BS -> AnnoEvidenceC -> AnnoEvidenceC
-| assc: AnnoEvidenceC -> AnnoEvidenceC -> AnnoEvidenceC
-| appc: AnnoEvidenceC -> AnnoEvidenceC -> AnnoEvidenceC.
-*)
+| ppc: EvidenceC -> EvidenceC -> EvidenceC 
+*).
 
 
 (*
@@ -60,7 +47,7 @@ Inductive Ev_Shape: EvidenceC -> Evidence -> Prop :=
 (*| hht: forall p bs e et,
     Ev_Shape e et ->
     Ev_Shape (hhc bs e) (hh p et) *)
-             (*
+(*
 | nnt: forall bs e et i i',
     Ev_Shape e et ->
     Ev_Shape (nnc i bs e) (nn i' et) 
@@ -71,8 +58,45 @@ Inductive Ev_Shape: EvidenceC -> Evidence -> Prop :=
 | ppt: forall e1 e2 e1t e2t,
     Ev_Shape e1 e1t ->
     Ev_Shape e2 e2t ->
-    Ev_Shape (ppc e1 e2) (pp e1t e2t)*).
+    Ev_Shape (ppc e1 e2) (pp e1t e2t)
+*).
 Hint Constructors Ev_Shape : core.
+
+Ltac evShapeFacts :=
+  match goal with
+  | [H: Ev_Shape mtc _ |- _] => invc H
+  | [H: Ev_Shape _ mt |- _] => invc H
+  | [H: Ev_Shape (uuc _ _ _) _ |- _] => invc H
+  | [H: Ev_Shape _ (uu _ _ _ _) |- _] => invc H
+  | [H: Ev_Shape (ggc _ _) _ |- _] => invc H
+  | [H: Ev_Shape _ (gg _ _) |- _] => invc H
+  (*
+  | [H: Ev_Shape (hhc _ _) _ |- _] => invc H
+  | [H: Ev_Shape _ (hh _ _) |- _] => invc H
+  | [H: Ev_Shape (nnc _ _ _) _ |- _] => invc H
+  | [H: Ev_Shape _ (nn _ _) |- _] => invc H
+  | [H: Ev_Shape (ssc _ _) _ |- _] => invc H
+  | [H: Ev_Shape _ (ss _ _) |- _] => invc H
+  | [H: Ev_Shape (ppc _ _) _ |- _] => invc H
+  | [H: Ev_Shape _ (pp _ _) |- _] => invc H 
+   *)
+  end.
+
+
+Lemma ev_shape_transitive : forall e e' et et',
+    Ev_Shape e et ->
+    Ev_Shape e' et ->
+    Ev_Shape e et' ->
+    Ev_Shape e' et'.
+Proof.
+  intros.
+  generalizeEverythingElse e.
+  induction e; destruct et; intros;
+    try repeat evShapeFacts; eauto; tauto.
+Defined.
+
+
+
 
 (*
     

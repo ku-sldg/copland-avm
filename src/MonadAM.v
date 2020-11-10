@@ -3,13 +3,8 @@
 
 Author:  Adam Petz, ampetz@ku.edu
 *)
-Require Import Maps.
+Require Import Maps Impl_vm.
 Require Import Coq.Arith.EqNat.
-Check map_set.
-
-Check map_set.
-
-
 Require Import Term StVM StAM
         MonadVM GenStMonad ConcreteEvidence VmSemantics.
 (*Require Import Coq.ZArith.ZArith_base Coq.Strings.String Coq.Strings.Ascii. *)
@@ -21,30 +16,23 @@ Require Import List.
 Import ListNotations.
 (* Local Open Scope monad_scope. *)
 
+
 (*
 Definition Policy := nat.
 
 Record AM_Env : Type := mkAM_Env
                           { myPolicy : Policy}.
-*)
+
+Definition init_env := (mkAM_Env 0).
+ *)
+
+
 
 (* ident is the identity monad, acting as a place-holder for the base monad.
    TODO:  eventually we need this to be IO (or something that models IO) *)
 Definition AM := St AM_St.     (* readerT AM_Env (stateT AM_St ident). *)
 
 (*
-Definition empty_am_st := (mkAM_St [] 0 []). *)
-(*Definition init_env := (mkAM_Env 0). *)
-
-Check Maps_Class.map_set.
-
-Definition mm : MapC nat BS := [].
-Compute (map_set mm 1 2).
-
-Check (map_set mm 1 2).
-
-(*
-
 Definition am_newNonce (bs :BS) : AM EvidenceC :=
   (*let myPol := asks myPolicy in *)
   am_st <- get ;;
@@ -100,8 +88,25 @@ Fixpoint nonces (e:EvidenceC) (l:list nat) : list nat :=
   | nnc i _ e' => nonces e' ([i] ++ l)
   | _ => l
   end.
-*)
+ *)
 
+(** * Helper functions for Appraisal *)
+
+Definition am_get_app_asp (p:Plc) (i:ASP_ID) : AM ASP_ID :=
+  m <- gets st_aspmap ;;
+  let maybeId := map_get m (p,i) in
+  match maybeId with
+  | Some i' => ret i'
+  | None => failm
+  end.
+
+Definition am_get_sig_asp (p:Plc) : AM ASP_ID :=
+  m <- gets st_sigmap ;;
+  let maybeId := map_get m p in
+  match maybeId with
+  | Some i' => ret i'
+  | None => failm
+  end.
 
     
 

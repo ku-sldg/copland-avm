@@ -499,6 +499,60 @@ Inductive well_formed: AnnoTerm -> Prop :=
     well_formed (abpar r s x y)*).
 Hint Constructors well_formed : core.
 
+Lemma wf_lseq_pieces: forall r t1 t2,
+    well_formed (alseq r t1 t2) ->
+    well_formed t1 /\ well_formed t2.
+Proof.
+  intros.
+  inversion H.
+  tauto.
+Defined.
+
+Lemma wf_at_pieces: forall t r p,
+    well_formed (aatt r p t) ->
+    well_formed t.
+Proof.
+  intros.
+  inversion H.
+  tauto.
+Defined.
+
+(*
+Lemma wf_bseq_pieces: forall r s t1 t2,
+    well_formed (abseq r s t1 t2) ->
+    well_formed t1 /\ well_formed t2.
+Proof.
+  intros.
+  inversion H.
+  tauto.
+Defined.
+
+
+Lemma wf_bpar_pieces: forall r s t1 t2,
+    well_formed (abpar r s t1 t2) ->
+    well_formed t1 /\ well_formed t2.
+Proof.
+  intros.
+  inversion H.
+  tauto.
+Defined.
+*)
+
+
+Ltac do_wf_pieces :=
+  match goal with
+  | [H: well_formed (alseq _ _ _) |- _] =>
+    (edestruct wf_lseq_pieces; eauto)
+  | [H: well_formed (aatt _ _ ?t) |- _] =>   
+    assert (well_formed t)
+      by (eapply wf_at_pieces; eauto)
+  (*| [H: well_formed (abseq _ _ _ _ ) |- _] =>
+    (edestruct wf_bseq_pieces; eauto)
+  | [H: well_formed (abpar _ _ _ _ ) |- _] =>
+    (edestruct wf_bpar_pieces; eauto) *)
+      
+  end.
+
 Lemma well_formed_range:
   forall t,
     well_formed t ->

@@ -6,9 +6,10 @@ Author:  Adam Petz, ampetz@ku.edu
 
 Require Import More_lists Preamble Term ConcreteEvidence LTS GenStMonad.
 Require Import Main Event_system Term_system.
+Require Import Auto.
 
 
-Require Import MonadVM MonadVMFacts Maps VM_IO_Axioms.
+Require Import MonadVM MonadVMFacts Maps Axioms_Io Impl_vm. (*VM_IO_Axioms VM_Impl*)
 
 Require Import List.
 Import ListNotations.
@@ -19,88 +20,6 @@ Require Import StructTactics.
 
 
 Set Nested Proofs Allowed.
-
-
-Fixpoint build_comp (t:AnnoTerm): VM unit :=
-  match t with
-  | aasp (n,_) a =>
-    (*p <- get_pl ;; *)
-    e <- do_prim n a ;;
-    put_ev e
-  | aatt (reqi,rpyi) q t' =>
-    sendReq reqi q t' ;;
-    e <- get_ev ;;
-    doRemote t' q e rpyi ;;
-    e' <- receiveResp rpyi q ;;
-    put_ev e'
-  | alseq r t1 t2 =>
-    build_comp t1 ;;
-    build_comp t2 (* TODO: does evidence work out ok? *)
-(*  | abseq (x,y) (sp1,sp2) t1 t2 =>
-    e <- get_ev ;;
-    p <- get_pl ;;
-    pr <- split_evm x sp1 sp2 e p ;;
-    let '(e1,e2) := pr in
-    put_ev e1 ;;
-    build_comp t1 ;;
-    e1r <- get_ev ;;
-    put_ev e2 ;;
-    build_comp t2 ;;
-    e2r <- get_ev ;;
-    put_ev (ssc e1r e2r) ;;
-    add_tracem [Term.join (Nat.pred y) p]
-(*
-
-  | abseq (x,y) (sp1,sp2) t1 t2 =>
-    e <- get_ev ;;
-    p <- get_pl ;;
-    pr <- split_evm x sp1 sp2 e p ;;
-    let '(e1,e2) := pr in
-    put_ev e1 ;;
-    push_stackm e2 ;;
-    build_comp t1 ;;
-    e <- get_ev ;;
-    er <- pop_stackm ;; (* TODO:  is stack still necessary? *)
-    put_ev er ;;
-    push_stackm e ;;
-    build_comp t2 ;;
-    er' <- pop_stackm ;;
-    er'' <- get_ev ;;
-    put_ev (ssc er' er'') ;;
-    add_tracem [Term.join (Nat.pred y) p]
-*)
-  | abpar (x,y) (sp1,sp2) t1 t2 =>
-    e <- get_ev ;;
-    p <- get_pl ;;
-    pr <- split_evm x sp1 sp2 e p ;;
-    let '(e1,e2) := pr in
-    (*
-    let res1 := parallel_att_vm_thread t1 e in
-    (* TODO: change this to a monadic function that consults an environment that is aware of the presence (or absence) of parallel avm threads.  Put initial evidence in store, let environment run the parallel thread and place result evidence, then query for result evidence here. *)
-    let res2 := parallel_att_vm_thread t2 e2 in
-    let el1 := parallel_vm_events t1 p in
-    let el2 := parallel_vm_events t2 p in
-    let loc1 := fst (range t1) in
-    let loc2 := fst (range t2) in
-    put_store loc1 res1 ;;
-    put_store loc2 res2 ;;
-    add_tracem (shuffled_events el1 el2) ;; *)
-
-    runParThreads t1 t2 p e1 e2 ;;
-    let loc1 := fst (range t1) in
-    let loc2 := fst (range t2) in
-       
-    e1r <- get_store_at loc1 ;;
-    e2r <- get_store_at loc2 ;;
-    put_ev (ppc e1r e2r) ;;
-    add_tracem [Term.join (Nat.pred y) p]
-*)
-  end.
-
-(** Function-style semantics for VM *)
-
-Definition run_vm (t:AnnoTerm) st : vm_st :=
-  execSt st (build_comp t).
 
 Lemma st_congr :
   forall st tr e p o,
@@ -114,19 +33,6 @@ Proof.
   subst; destruct st; auto.
 Defined.
 
-Ltac unfoldm :=  (*repeat unfold run_vm_step in *;*) monad_unfold.
-
-Ltac boom :=
-  repeat unfoldm;
-  repeat (desp; unfoldm);
-  (*try_pop_all; *)
-  vmsts.
-
-Ltac do_run :=
-  match goal with
-  | [H:  run_vm _ _ = _ |- _ ] => invc H; (*unfold run_vm_step in *;*) repeat monad_unfold
-  end.
-
 Ltac allss :=
   repeat find_inversion;
   try bogus;
@@ -135,46 +41,6 @@ Ltac allss :=
   repeat get_store_at_bogus;
   try do_bd;
   subst; eauto.
-
-Ltac fail_if_in_hyps H := 
-  let t := type of H in 
-  lazymatch goal with 
-  | [G : t |- _ ] => fail "There is already a hypothesis of this proof"
-  | [_ : _ |- _ ] => idtac
-  end.
-
-Ltac pose_new_proof H := 
-  fail_if_in_hyps H;
-  pose proof H.
-
-Ltac fail_if_in_hyps_type t := 
-  lazymatch goal with 
-  | [G : t |- _ ] => fail "There is already a hypothesis of this type"
-  | [_ : _ |- _ ] => idtac
-  end.
-
-Ltac assert_new_proof_by H tac := 
-  fail_if_in_hyps_type H;
-  assert H by tac.
-    
-Ltac dunit :=
-  match goal with
-  | [H:unit |- _] => destruct H
-  end.
-
-(*
-Ltac annogo :=
-  match goal with
-  | [H: _ = snd (anno ?t' _) |- _] =>
-    vmsts; repeat dunit;
-    destruct t';
-    try (inv H; tauto);
-    simpl in *;
-    repeat break_let;
-    simpl in *;
-    inv H
-  end.
- *)
 
 Ltac annogo := vmsts; repeat dunit.
 
@@ -189,60 +55,6 @@ Ltac anhl :=
     [(*(rewrite H; reflexivity)*) (*apply H | *)
      apply H2 | apply H3 | idtac]; clear H2; clear H3;
     destruct_conjs; subst
-  end.
-
-Lemma wf_lseq_pieces: forall r t1 t2,
-    well_formed (alseq r t1 t2) ->
-    well_formed t1 /\ well_formed t2.
-Proof.
-  intros.
-  inversion H.
-  tauto.
-Defined.
-
-Lemma wf_at_pieces: forall t r p,
-    well_formed (aatt r p t) ->
-    well_formed t.
-Proof.
-  intros.
-  inversion H.
-  tauto.
-Defined.
-
-(*
-Lemma wf_bseq_pieces: forall r s t1 t2,
-    well_formed (abseq r s t1 t2) ->
-    well_formed t1 /\ well_formed t2.
-Proof.
-  intros.
-  inversion H.
-  tauto.
-Defined.
-
-
-Lemma wf_bpar_pieces: forall r s t1 t2,
-    well_formed (abpar r s t1 t2) ->
-    well_formed t1 /\ well_formed t2.
-Proof.
-  intros.
-  inversion H.
-  tauto.
-Defined.
-*)
-
-
-Ltac do_wf_pieces :=
-  match goal with
-  | [H: well_formed (alseq _ _ _) |- _] =>
-    (edestruct wf_lseq_pieces; eauto)
-  | [H: well_formed (aatt _ _ ?t) |- _] =>   
-    assert (well_formed t)
-      by (eapply wf_at_pieces; eauto)
-  (*| [H: well_formed (abseq _ _ _ _ ) |- _] =>
-    (edestruct wf_bseq_pieces; eauto)
-  | [H: well_formed (abpar _ _ _ _ ) |- _] =>
-    (edestruct wf_bpar_pieces; eauto) *)
-      
   end.
 
 (*
@@ -269,51 +81,7 @@ Ltac htac :=
   end.
 *)
 
-Ltac dohtac := (*try htac; *)
-               try rewrite PeanoNat.Nat.eqb_refl in *;
-               try rewrite PeanoNat.Nat.eqb_eq in *.
 
-
-Ltac df :=
-  repeat (
-      cbn in *;
-      unfold runSt in *;
-      repeat break_let;
-      repeat (monad_unfold; cbn in *; find_inversion);
-      monad_unfold;
-      repeat dunit;
-      unfold snd in * ).
-
-Ltac dosome :=
-  repeat (
-      match goal with
-      | [H: match ?o with
-            | Some _ => _
-            | _ => _
-            end
-            =
-            (Some _, _) |- _] =>
-        destruct o; try solve_by_inversion
-      end; df).
-
-Ltac subst' :=
-  match goal with
-  | [H: ?A = _,
-        H2: context[?A] |- _] =>
-    rewrite H in *; clear H
-  | [H: ?A = _ |- context[?A]] =>
-    rewrite H in *; clear H
-  end.
-
-Ltac dooit :=
-  repeat eexists;
-  cbn;
-  repeat break_let;
-  simpl;
-  repeat find_inversion;
-  subst';
-  df;
-  reflexivity.
 
 Lemma hihi : forall t (*t' n*) e e' e'' x x' y y' p p' p'' o o' o'',
     (*t = snd (anno t' n) -> *)
@@ -536,10 +304,7 @@ Ltac dohi' :=
     destruct_conjs; subst
   end.
 
-Ltac jkjk :=
-  match goal with
-  | [H: context[?X] |- ?X = _] => rewrite H
-  end.
+
 
 Lemma fafaf : forall t (*t' n*) e e' e'' p p' p'' o o' o'' x y r s,
     (*t = snd (anno t' n) -> *)
@@ -1801,11 +1566,6 @@ Proof.
   reflexivity.
 Defined.
 
-Ltac jkjk' :=
-  match goal with
-  | H: _ |- _ => rewrite H; reflexivity
-  end.
-
 Lemma pl_immut : forall t e tr p o,
     (*t = snd (anno t' n) -> *)
     st_pl
@@ -2251,13 +2011,13 @@ Lemma store_get_set : forall e tr p o n e1 e' v0,
     e' = e1.
 Proof.
   intros.
-  boom; repeat (break_match; allss).
+  monad_unfold; repeat (break_match; allss).
   unfold get_store_at in *.
   unfold get in *. simpl in *.
   cbn in H.
   break_let.
   rewrite PeanoNat.Nat.eqb_refl in Heqp0.
-  boom; repeat (break_match; allss); congruence.
+  monad_unfold; repeat (break_match; allss); congruence.
 Defined.
 
 Lemma store_get_set_fail_none : forall n e tr p o e1 v,
@@ -2275,7 +2035,7 @@ Proof.
   cbn in H.
   break_let.
   rewrite PeanoNat.Nat.eqb_refl in Heqp0.
-  boom; repeat (break_match; allss); congruence.
+  monad_unfold; repeat (break_match; allss); congruence.
 Defined.
 
 Check eval.
@@ -2322,13 +2082,13 @@ Proof.
   erewrite foo; eauto.
 Defined.
 
+(*
 Lemma evshape_at : forall e es t n,
     Ev_Shape e es ->
     Ev_Shape (toRemote (unanno t) e) (Term.eval (unanno t) n es).
 Proof.
 Admitted.
-
-
+*)
 
 Lemma evshape_par : forall e es a p,
     Ev_Shape e es ->
@@ -2337,38 +2097,6 @@ Lemma evshape_par : forall e es a p,
 Proof.
 Admitted.
 
-Check toRemote.
-
-Definition remote_evidence (t:AnnoTerm) (e:EvidenceC) : EvidenceC.
-Admitted.
-
-Definition remote_trace (t:AnnoTerm) (p:Plc) : list Ev.
-Admitted.
-
-Check pl_immut.
-
-Axiom build_comp_external' : forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (o : ev_store) (tr:list Ev),
-    build_comp t {| st_ev := e; st_trace := tr; st_pl := n; st_store := o |} =
-    (Some tt,
-     {| st_ev := remote_evidence t e;
-        st_trace := tr ++ (remote_trace t n);
-        st_pl :=
-          st_pl
-            (snd 
-               (build_comp t
-                           {| st_ev := e;
-                              st_trace := [];
-                              st_pl := n;
-                              st_store := o |}));
-        st_store :=
-          st_store
-            (snd 
-               (build_comp t
-                           {| st_ev := e;
-                              st_trace := [];
-                              st_pl := n;
-                              st_store := o |}));
-     |}).
 
 Lemma build_comp_external : forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (o : ev_store),
     build_comp t {| st_ev := e; st_trace := []; st_pl := n; st_store := o |} =
@@ -2397,20 +2125,6 @@ Proof.
   assert ([] ++ (remote_trace t n) = (remote_trace t n)) by eauto.
   eapply build_comp_external'.
 Defined.
-
-  
-
-Axiom at_evidence : forall t e,
-    toRemote (unanno t) e = remote_evidence t e.
-
-Axiom at_events : forall t p,
-  remote_events t p = remote_trace t p.
-
-Axiom par_evidence : forall t e,
-    parallel_att_vm_thread t e = remote_evidence t e.
-
-Axiom par_events : forall t p,
-  parallel_vm_events t p = remote_trace t p.
 
 
 Lemma build_comp_at' : forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (o : ev_store) (tr: list Ev),
@@ -2525,30 +2239,7 @@ Proof.
   rewrite <- H at 3.
 
   eapply build_comp_external.
-Defined.
-
-Ltac evShapeFacts :=
-  match goal with
-  | [H: Ev_Shape mtc _ |- _] => invc H
-  | [H: Ev_Shape _ mt |- _] => invc H
-  | [H: Ev_Shape (uuc _ _ _) _ |- _] => invc H
-  | [H: Ev_Shape _ (uu _ _ _ _) |- _] => invc H
-  | [H: Ev_Shape (ggc _ _) _ |- _] => invc H
-  | [H: Ev_Shape _ (gg _ _) |- _] => invc H
- (* | [H: Ev_Shape (hhc _ _) _ |- _] => invc H
-  | [H: Ev_Shape _ (hh _ _) |- _] => invc H *)
-                                        (*
-  | [H: Ev_Shape (nnc _ _ _) _ |- _] => invc H
-  | [H: Ev_Shape _ (nn _ _) |- _] => invc H
-  | [H: Ev_Shape (ssc _ _) _ |- _] => invc H
-  | [H: Ev_Shape _ (ss _ _) |- _] => invc H
-  | [H: Ev_Shape (ppc _ _) _ |- _] => invc H
-  | [H: Ev_Shape _ (pp _ _) |- _] => invc H *)
-  end.
-
-
-
-  
+Defined. 
 
 Lemma multi_ev_eval : forall t (*t' n*) tr tr' e e' p p' o o' es e's,
     (*t = snd (anno t' n) -> *)

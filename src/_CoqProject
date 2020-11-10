@@ -6,6 +6,7 @@ Term.v
 ConcreteEvidence.v
 Maps_Class.v
 Maps.v
+EqbPair.v
 StVM.v
 StAM.v
 Event_system.v
@@ -14,10 +15,14 @@ Trace.v
 LTS.v
 Main.v
 GenStMonad.v
+Axioms_Io.v
+Impl_vm.v
 MonadVM.v
 MonadVMFacts.v
-VM_IO_Axioms.v
+Auto.v
+AllMapped.v
 VmSemantics.v
 MonadAM.v
 MonadLaws.v
+AutoApp.v
 Appraisal.v

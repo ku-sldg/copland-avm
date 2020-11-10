@@ -1,5 +1,6 @@
 Require Import GenStMonad MonadVM MonadAM ConcreteEvidence MonadVMFacts.
-Require Import StAM VM_IO_Axioms Maps VmSemantics Event_system Term_system.
+Require Import StAM Axioms_Io Impl_vm (*VM_IO_Axioms*) Maps VmSemantics Event_system Term_system.
+Require Import Auto AutoApp AllMapped.
 
 Require Import Coq.Arith.Peano_dec.
 
@@ -11,56 +12,6 @@ Require Import List.
 Import ListNotations.
 
 Set Nested Proofs Allowed.
-
-Definition extractSig (e:EvidenceC) : VM (BS * EvidenceC) :=
-  match e with
-  | ggc bs e' => ret (bs, e')
-  | _ => failm
-  end.
-
-(*
-Definition extractHsh (e:EvidenceC) : VM (BS * EvidenceC) :=
-  match e with
-  | hhc bs e' => ret (bs, e')
-  | _ => failm
-  end. *)
-
-(*
-Definition extractComp (e:EvidenceC) : VM (EvidenceC * EvidenceC) :=
-  match e with
-  | ssc e1 e2 => ret (e1,e2)
-  | ppc e1 e2 => ret (e1,e2)
-  | _ => failm
-  end.
- *)
-
-Definition am_get_app_asp (p:Plc) (i:ASP_ID) : AM ASP_ID :=
-  m <- gets st_aspmap ;;
-  let maybeId := map_get m (p,i) in
-  match maybeId with
-  | Some i' => ret i'
-  | None => failm
-  end.
-
-Definition am_get_sig_asp (p:Plc) : AM ASP_ID :=
-  m <- gets st_sigmap ;;
-  let maybeId := map_get m p in
-  match maybeId with
-  | Some i' => ret i'
-  | None => failm
-  end.
-
-Definition checkSig (x:nat) (i:ASP_ID) (e':EvidenceC) (sig:BS) : VM BS :=
-  invokeUSM x i ([encodeEv e'] ++ [sig] (* ++ args*) ) mtc.
-
-Definition extractUev (e:EvidenceC) : VM (BS * EvidenceC) :=
-  match e with
-  | uuc i bs e' => ret (bs,e')
-  | _ => failm
-  end.
-
-Definition checkUSM (x:nat) (i:ASP_ID) (l:list Arg) (bs:BS) : VM BS :=
-  invokeUSM x i ([bs] ++ l) mtc.
 
 
 Fixpoint build_app_comp (t:AnnoTerm) (p:Plc) : AM (VM (EvidenceC -> EvidenceC)) :=
@@ -139,7 +90,7 @@ Fixpoint build_app_comp (t:AnnoTerm) (p:Plc) : AM (VM (EvidenceC -> EvidenceC)) 
         
   | aatt r q t' =>
     build_app_comp t' q
-                   (*| _ => ret (ret (fun _ => mtc)) *)
+(*| _ => ret (ret (fun _ => mtc)) *)
   end.
 
 (*
@@ -152,301 +103,6 @@ Fixpoint build_app_comp (t:AnnoTerm) (p:Plc) : AM (VM (EvidenceC -> EvidenceC)) 
   e2_res <- d ;;
   ret (ssc e1_res e2_res)
  *)
-
-
-Inductive evMapped : Evidence -> AM_St -> Prop :=
-| evMappedMt : forall m, evMapped mt m
-| evMappedU : forall p i args e' m st,
-    m = st_aspmap st ->
-    evMapped e' st -> 
-    (exists j, bound_to m (p,i) j) -> 
-    evMapped (uu i args p e') st
-| evMappedG : forall e' m p st,
-    m = st_sigmap st ->
-    evMapped e' st ->
-    (exists j, bound_to m p j) ->
-    evMapped (gg p e') st
-(*| evMappedH : forall e' p st,
-    (*m = st_sigmap st -> *)
-    evMapped e' st ->
-    evMapped (hh p e') st    
-| evMappedN : forall e' m nid st,
-    m = st_aspmap st ->
-    evMapped e' st ->
-    evMapped (nn nid e') st 
-| evMappedS : forall e1 e2 st,
-    evMapped e1 st ->
-    evMapped e2 st ->
-    evMapped (ss e1 e2) st
-| evMappedP : forall e1 e2 st,
-    evMapped e1 st ->
-    evMapped e2 st ->
-    evMapped (pp e1 e2) st 
- *).
-
-
-Inductive allMapped : AnnoTerm -> AM_St -> Plc -> Evidence -> Prop :=
-| allMapped_cpy : forall r p st e,
-    (*m = st_aspmap st -> *)
-    (*p = am_pl st -> *)
-    evMapped e st ->
-    allMapped (aasp r (CPY)) st p e
-| allMapped_asp : forall m st p i r args e,
-    (*p = am_pl st -> *)
-    evMapped e st ->
-    m = st_aspmap st ->
-    (exists j, bound_to m (p,i) j) ->
-    allMapped (aasp r (ASPC i args)) st p e
-| allMapped_sig : forall r p st m e,
-    evMapped e st ->
-    (*p = am_pl st -> *)
-    m = st_sigmap st ->
-    (exists j, bound_to m p j) ->
-    allMapped (aasp r (SIG)) st p e
-(*| allMapped_hsh : forall r p st e,
-    evMapped e st ->
-    (*p = am_pl st -> *)
-    allMapped (aasp r (HSH)) st p e *)
-| allMapped_at : forall t' p q r st e m x y z z',
-    m = st_aspmap st ->
-    (*evMapped e m -> *) (* TODO: need this? *)
-    st = (mkAM_St x y z z') ->
-    allMapped t' (mkAM_St x y z z') q e ->
-    allMapped (aatt r q t') st p e
-| allMapped_lseq : forall t1 t2 p st r e,
-    (* m = st_aspmap st ->
-       evMapped e m -> *)  (* TODO: need this? *)
-    (*p = am_pl st -> *)
-    allMapped t1 st p e ->
-    allMapped t2 st p mt (*(eval (unanno t1) p e)*) -> (* TODO: is mt ok here? *)
-    allMapped (alseq r t1 t2) st p e
-(*| allMapped_bseq_nn : forall t1 t2 p st e r,
-    (*p = am_pl st -> *)
-    allMapped t1 st p mt ->
-    allMapped t2 st p mt ->
-    allMapped (abseq r (NONE,NONE) t1 t2) st p e
-| allMapped_bseq_na : forall t1 t2 p st e r,
-    (*p = am_pl st -> *)
-    allMapped t1 st p mt ->
-    allMapped t2 st p e ->
-    allMapped (abseq r (NONE,ALL) t1 t2) st p e
-| allMapped_bseq_an : forall t1 t2 p st e r,
-    (*p = am_pl st -> *)
-    allMapped t1 st p e ->
-    allMapped t2 st p mt ->
-    allMapped (abseq r (ALL,NONE) t1 t2) st p e
-| allMapped_bseq_aa : forall t1 t2 p st e r,
-    (*p = am_pl st -> *)
-    allMapped t1 st p e ->
-    allMapped t2 st p e ->
-    allMapped (abseq r (ALL,ALL) t1 t2) st p e
-| allMapped_bpar_nn : forall t1 t2 p st e r,
-    (*p = am_pl st -> *)
-    allMapped t1 st p mt ->
-    allMapped t2 st p mt ->
-    allMapped (abpar r (NONE,NONE) t1 t2) st p e
-| allMapped_bpar_na : forall t1 t2 p st e r,
-    (*p = am_pl st -> *)
-    allMapped t1 st p mt ->
-    allMapped t2 st p e ->
-    allMapped (abpar r (NONE,ALL) t1 t2) st p e
-| allMapped_bpar_an : forall t1 t2 p st e r,
-   (* p = am_pl st -> *)
-    allMapped t1 st p e ->
-    allMapped t2 st p mt ->
-    allMapped (abpar r (ALL,NONE) t1 t2) st p e
-| allMapped_bpar_aa : forall t1 t2 p st e r,
-    (*p = am_pl st ->*)
-    allMapped t1 st p e ->
-    allMapped t2 st p e ->
-    allMapped (abpar r (ALL,ALL) t1 t2) st p e*).
-
-(*
-Definition allMapped (t:AnnoTerm) (a_st:AM_St) (p:Plc) (e:Evidence) : Prop :=
-  evMapped (eval (unanno t) p e) a_st.
- *)
-
-Ltac debound :=
-  match goal with
-  | [H: bound_to _ _ _ |- _] => invc H
-  end.
-
-Ltac evMappedFacts :=
-  match goal with
-  | [H: evMapped (uu _ _ _ _) _ |- _] => invc H
-  | [H: evMapped (gg _ _) _ |- _] => invc H
-  (* 
-  | [H: evMapped (hh _ _) _ |- _] => invc H 
-  | [H: evMapped (nn _ _) _ |- _] => invc H
-  | [H: evMapped (ss _ _) _ |- _] => invc H
-  | [H: evMapped (pp _ _) _ |- _] => invc H  
-   *)
-  end;
-  destruct_conjs;
-  try debound.
-
-Ltac allMappedFacts := 
-  match goal with
-  | [H: allMapped (aasp _ _) _ _ _ |- _] => invc H
-  | [H: allMapped (aatt _ _ _) _ _ _ |- _] => invc H
-  | [H: allMapped (alseq _ _ _) _ _ _ |- _] => invc H
-  (* 
-  | [H: allMapped (abseq _ _ _ _) _ _ _ |- _] => invc H
-  | [H: allMapped (abpar _ _ _ _) _ _ _ |- _] => invc H 
-   *)
-  end;
-  destruct_conjs.
-
-
-
-Lemma allMappedAt : forall r n a p st e,
-    allMapped (aatt r n a) st p e ->
-    allMapped a st n e.
-Proof.
-  intros.
-  allMappedFacts.
-  df.
-  eauto.
-Defined.
-
-Ltac df :=
-  repeat (
-      cbn in *;
-      unfold runSt in *;
-      repeat break_let;
-      repeat (monad_unfold; cbn in *; find_inversion);
-      monad_unfold;
-      repeat dunit;
-      unfold snd in * ).
-
-Ltac dosome :=
-  repeat (
-      match goal with
-      | [H: match ?o with
-            | Some _ => _
-            | _ => _
-            end
-            =
-            (Some _, _) |- _] =>
-        destruct o; try solve_by_inversion
-      end; df).
-
-Ltac tacc H :=
-  (symmetry;
-   erewrite <- pl_immut in *;
-   rewrite H;
-   eauto ).
-
-Ltac ff := repeat break_match; try solve_by_inversion; df.
-
-Ltac dosome_eq y :=
-  match goal with
-  | [H: match ?x with _ => _ end = (Some _, _)  |- _] =>
-    destruct x eqn:y; try solve_by_inversion
-  end.
-Ltac do_pair :=
-  match goal with
-  | [H: (_,_) = (Some _,_) |- _] => invc H
-  | [H: (Some _,_) = (_,_) |- _] => invc H
-  end.
-
-Ltac amsts :=
-  repeat match goal with
-         | H:vm_st |- _ => destruct H
-         end.
-
-Ltac dosome_eqj :=
-  let y := fresh in 
-  match goal with
-  | [H: match ?x with _ => _ end = (Some _, _)  |- _] =>
-    destruct x eqn:y; try solve_by_inversion
-  end.
-
-Ltac dosome'' :=
-  match goal with
-  | [H: (_,_) = (Some _, _) |- _] => invc H
-  end.
-
-Ltac domap :=
-  let n := fresh in
-  match goal with
-  | [H: match ?X with _ => _ end _ = (Some _, _) |- _] =>
-    destruct X eqn:n; try solve_by_inversion
-  end.
-
-
-Ltac doit' := repeat dosome_eqj;
-              repeat break_let;
-              repeat do_pair;
-              repeat break_let;
-              repeat do_pair;
-              repeat dosome''.
-
-Ltac doit := repeat doit'.
-
-
-
-(*
-  Ltac map_get_subst :=
-  match goal with
-  | [H: map_get ?A ?B = _,
-  H2: context[map_get ?A ?B] |- _] =>
-  rewrite H in *; clear H
-  end.
- *)
-
-
-
-Ltac subst' :=
-  match goal with
-  | [H: ?A = _,
-        H2: context[?A] |- _] =>
-    rewrite H in *; clear H
-  | [H: ?A = _ |- context[?A]] =>
-    rewrite H in *; clear H
-  end.
-
-Ltac evShapeFacts :=
-  match goal with
-  | [H: Ev_Shape mtc _ |- _] => invc H
-  | [H: Ev_Shape _ mt |- _] => invc H
-  | [H: Ev_Shape (uuc _ _ _) _ |- _] => invc H
-  | [H: Ev_Shape _ (uu _ _ _ _) |- _] => invc H
-  | [H: Ev_Shape (ggc _ _) _ |- _] => invc H
-  | [H: Ev_Shape _ (gg _ _) |- _] => invc H
-  (*
-  | [H: Ev_Shape (hhc _ _) _ |- _] => invc H
-  | [H: Ev_Shape _ (hh _ _) |- _] => invc H
-  | [H: Ev_Shape (nnc _ _ _) _ |- _] => invc H
-  | [H: Ev_Shape _ (nn _ _) |- _] => invc H
-  | [H: Ev_Shape (ssc _ _) _ |- _] => invc H
-  | [H: Ev_Shape _ (ss _ _) |- _] => invc H
-  | [H: Ev_Shape (ppc _ _) _ |- _] => invc H
-  | [H: Ev_Shape _ (pp _ _) |- _] => invc H 
-   *)
-  end.
-
-Ltac haaa :=
-  let x:= fresh in
-  match goal with
-  | [H: context[match ?ee with | Some _ => _ | _ => _ end] |- _] =>
-    destruct ee eqn:x;
-    try solve_by_inversion
-  end; df; eauto.
-
-Ltac stt :=
-  cbn in *;
-  monad_unfold;
-  try solve_by_inversion;
-  repeat break_let;
-  dosome;
-  try haaa.
-
-Ltac subst'' :=
-  match goal with
-  | H:?A = _, H2:context [ ?A ] |- _ => rewrite H in *
-  | H:?A = _ |- context [ ?A ] => rewrite H in *
-  end.
 
 Lemma ba_const : forall a a_st a_st' o p,
     build_app_comp a p a_st = (o, a_st') ->
@@ -543,55 +199,6 @@ Ltac do_ba_st_const :=
       end);
   subst.
 
-Lemma allMappedSub' : forall a a_st e p,
-    allMapped a a_st p e ->
-    allMapped a a_st p mt.
-Proof.
-  induction a; intros.
-  -
-    destruct a.
-    +
-      allMappedFacts.
-      econstructor.
-      econstructor.
-    +
-      allMappedFacts.
-      econstructor.
-      econstructor.
-      reflexivity.
-      eexists.
-      eauto.
-    +
-      allMappedFacts.
-      econstructor.
-      econstructor.
-      reflexivity.
-      eexists.
-      eauto.
-  -
-    allMappedFacts.
-    df.
-    econstructor.
-    reflexivity.
-    reflexivity.
-    eauto.
-  -
-    allMappedFacts.
-    assert (allMapped a1 a_st p mt) by eauto.
-    econstructor.
-    eassumption.
-    eassumption.
-Defined.
-
-
-Lemma allMappedSub : forall a a_st t p n,
-    allMapped a a_st p (eval t n mt) ->
-    allMapped a a_st p mt.
-Proof.
-  intros.
-  eapply allMappedSub'; eauto.
-Defined.
-
 Lemma build_app_some : forall a a_st p,
     allMapped a a_st p mt ->
     exists o, build_app_comp a p a_st = (Some o, a_st).
@@ -658,18 +265,6 @@ Proof.
         subst'.
         df.
         eauto.
-Defined.
-
-Lemma ev_shape_transitive : forall e e' et et',
-    Ev_Shape e et ->
-    Ev_Shape e' et ->
-    Ev_Shape e et' ->
-    Ev_Shape e' et'.
-Proof.
-  intros.
-  generalizeEverythingElse e.
-  induction e; destruct et; intros;
-    try repeat evShapeFacts; eauto; tauto.
 Defined.
 
 Lemma evShape_sub : forall a e1 e2 n1 et a_st v0 x vm_st vm_st',
@@ -803,7 +398,7 @@ Proof.
         subst''.
         
         unfold ret in *.
-        Print do_pair.
+        
         do_pair.
         do_pair.
         doit.
@@ -995,7 +590,7 @@ Proof.
         destruct_conjs.
         subst''.
         repeat break_let.
-        Print vmsts.
+        
 
 
         amsts.
@@ -1080,7 +675,7 @@ Proof.
         destruct_conjs.
         subst''.
         repeat break_let.
-        Print vmsts.
+        
 
 
         amsts.
@@ -1129,7 +724,7 @@ Proof.
         destruct_conjs.
         subst''.
         repeat break_let.
-        Print vmsts.
+        
 
 
         amsts.
@@ -1414,49 +1009,6 @@ Ltac invEvents :=
   match goal with
   | [H: events _ _ _  |- _] => invc H
   end.
-    
-Ltac dosome_eq' y :=
-  match goal with
-  | H:match ?x with
-      | _ => _
-      end _ = (Some _, _) |- _ => destruct x eqn:y; try solve_by_inversion
-  end.
-
-Lemma isnil{A:Type} : forall (ls xs : list A),
-    ls = ls ++ xs ->
-    xs = [].
-Proof.
-  intros.
-  assert (ls = ls ++ []).
-  {
-    rewrite app_nil_r.
-    tauto.
-  }
-  rewrite H0 in H at 1.
-  eapply app_inv_head; eauto.
-Defined.
-
-Ltac dothat :=
-  unfold StVM.st_ev, StVM.st_pl, StVM.st_trace, StVM.st_store in *;
-  try unfold st_ev in *;
-  try unfold st_pl in *;
-  try unfold st_trace in *;
-  try unfold st_store in *.
-
-Ltac ff' :=
-  repeat break_match; try solve_by_inversion.
-
-Ltac doex := 
-  unfold extractUev, extractSig in *;
-  ff';
-  unfold ret in *; doit.
-
-Ltac do_inv_head :=
-  let tac := (eapply app_inv_head; eauto) in
-  repeat
-    match goal with
-    | [H: ?ls ++ ?xs = ?ls ++ ?ys |- _] => assert_new_proof_by (xs = ys) tac
-    end.
 
 Lemma trace_cumul : forall  t e a_st a_st' v tr tr' p n n' o o' e' o0,
     build_app_comp t p a_st = (Some v, a_st') ->
@@ -1801,16 +1353,14 @@ Proof.
       doex.
       df.
 
-      exists (umeas b st_pl n1 (b :: args)).
+      exists (umeas n2 st_pl n1 (n2 :: args)).
       split.
       ++
-        Print In.
-        Search In.
         eapply in_or_app.
         right.
         econstructor. reflexivity.
       ++
-        assert (b::args = [b] ++ args).
+        assert (n2::args = [n2] ++ args).
         reflexivity.
         rewrite H.
         econstructor.
@@ -1953,7 +1503,6 @@ Proof.
           simpl in H1.
           simpl.
           exists x.
-          Print do_cumul2.
           do_cumul.
           subst.
           split.
@@ -1980,7 +1529,7 @@ Proof.
                  {| st_ev := st_ev3; st_trace := st_trace3; st_pl := st_pl2; st_store := st_store3 |})
               (new_vmst:= {|
                   st_ev := e;
-                  st_trace := st_trace4 ++ [umeas n st_pl4 n1 [encodeEv e; b]];
+                  st_trace := st_trace4 ++ [umeas n st_pl4 n1 [encodeEv e; n2]];
                   st_pl := st_pl4;
                   st_store := st_store4 |}).
           eassumption.
@@ -2017,7 +1566,6 @@ Proof.
         simpl.
         assert (st_ev4 = st_ev2).
         { 
-          Check dood.
           eapply dood with (vm_st0 := {| st_ev := st_ev4; st_trace := []; st_pl := n1; st_store := [] |}).
           apply build_comp_at.
           tauto.
@@ -2094,7 +1642,6 @@ Proof.
         simpl.
         assert (st_ev = st_ev2).
         {
-          Check dood.
           eapply dood.
           apply Heqp1.
           tauto.
@@ -2270,6 +1817,20 @@ Defined.
 
 (*
 (***** Old Proofs, potentially-failing appraisal *****)
+
+Lemma isnil{A:Type} : forall (ls xs : list A),
+    ls = ls ++ xs ->
+    xs = [].
+Proof.
+  intros.
+  assert (ls = ls ++ []).
+  {
+    rewrite app_nil_r.
+    tauto.
+  }
+  rewrite H0 in H at 1.
+  eapply app_inv_head; eauto.
+Defined.
 
 Lemma gogo' : forall t p a a' o_res o_res' v1 e1' p1 p1' o1 o1' e2 e2' tr2 p2 p2' o2 o2' tr1 x0 x1,
     build_app_comp t p a = (Some v1, a') ->
