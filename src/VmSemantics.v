@@ -9,7 +9,7 @@ Require Import Main Event_system Term_system.
 Require Import Auto.
 
 
-Require Import MonadVM MonadVMFacts Maps Axioms_Io Impl_vm. (*VM_IO_Axioms VM_Impl*)
+Require Import MonadVM MonadVMFacts Maps Axioms_Io Impl_vm External_Facts.
 
 Require Import List.
 Import ListNotations.
@@ -1341,7 +1341,6 @@ Proof.
   annogo.
 
   exists st_trace0.
-  Check hihi.
   dohi'.
   
   split.
@@ -1356,8 +1355,6 @@ Proof.
   repeat dunit.
   
   repeat find_inversion. *)
-
-  Check foo.
 
   pose foo.
   specialize foo with (t:= t2') (m:=st_trace) (e:=st_ev) (p:= st_pl) (o:=st_store) (*(t':=t2) (n:=n0)*) (v:={| st_ev := st_ev0; st_trace := tr; st_pl := st_pl0; st_store := st_store0 |}).
@@ -1923,11 +1920,8 @@ Proof.
   reflexivity.
   }
   
-  Check foo.
-  Check trace_irrel_ev'.
   unfold run_vm in *.
   monad_unfold.
-  Check trace_irrel_ev'.
   assert (
    st_ev
          (snd
@@ -1948,7 +1942,6 @@ Proof.
             (build_comp t
                {| st_ev := e; st_trace := []; st_pl := p; st_store := o |})) = o').
   eapply trace_irrel_store'; eauto.
-  Check st_congr.
 
   assert (
       (snd
@@ -1957,7 +1950,6 @@ Proof.
       {| st_ev := e'; st_trace := tr; st_pl := p'; st_store := o' |}).
   {
     eapply st_congr; eauto.
-    Check foo.
     erewrite foo in H0; eauto.
     eapply app_inv_head.
     eauto.
@@ -1996,7 +1988,6 @@ Lemma restl'_2
     (Some tt, {| st_ev := e'; st_trace := tr; st_pl := p'; st_store := o' |}).
 Proof.
   intros.
-  Check restl'.
   eapply restl'; eauto.
 Defined.
 
@@ -2037,11 +2028,6 @@ Proof.
   rewrite PeanoNat.Nat.eqb_refl in Heqp0.
   monad_unfold; repeat (break_match; allss); congruence.
 Defined.
-
-Check eval.
-Print eval.
-Print eval_asp.
-Check build_comp.
 
 Lemma suffix_prop : forall t (*t' n*) e e' tr tr' p p' o o',
     (*t = snd (anno t' n) -> *)
@@ -2146,7 +2132,6 @@ Proof.
   intros.
   rewrite at_evidence.
   rewrite at_events.
-  Check pl_immut.
   assert (st_pl (snd (build_comp t {| st_ev := e; st_trace := []; st_pl := n; st_store := o |})) = n).
   eapply pl_immut.
   rewrite <- H at 3.
@@ -2174,7 +2159,6 @@ Proof.
   intros.
   rewrite at_evidence.
   rewrite at_events.
-  Check pl_immut.
   assert (st_pl (snd (build_comp t {| st_ev := e; st_trace := []; st_pl := n; st_store := o |})) = n).
   eapply pl_immut.
   rewrite <- H at 3.
@@ -2203,7 +2187,6 @@ Proof.
   intros.
   rewrite par_evidence.
   rewrite par_events.
-  Check pl_immut.
   assert (st_pl (snd (build_comp t {| st_ev := e; st_trace := []; st_pl := n; st_store := o |})) = n).
   eapply pl_immut.
   rewrite <- H at 3.
@@ -2233,7 +2216,6 @@ Proof.
   intros.
   rewrite par_evidence.
   rewrite par_events.
-  Check pl_immut.
   assert (st_pl (snd (build_comp t {| st_ev := e; st_trace := []; st_pl := n; st_store := o |})) = n).
   eapply pl_immut.
   rewrite <- H at 3.
@@ -2294,7 +2276,6 @@ Proof.
       subst'.
       rewrite Heqp.
       reflexivity. *)
-      Check build_comp_at. 
       eapply build_comp_at.
       eassumption.
       reflexivity.
@@ -3870,7 +3851,6 @@ Theorem vm_ordered' : forall t tr ev0 ev1 e e' o o' t' n,
     earlier tr ev0 ev1.
 Proof.
   intros.
-  Check ordered.
   eapply ordered with (p:=0) (e:=mt); eauto.
   eapply run_lstar. eauto.
 Defined.
@@ -3889,7 +3869,6 @@ Theorem vm_ordered : forall t tr ev0 ev1 e e' o o' t',
     earlier tr ev0 ev1.
 Proof.
   intros.
-  Check ordered.
   eapply ordered with (p:=0) (e:=mt); eauto.
   - unfold annotated in H.
     subst.

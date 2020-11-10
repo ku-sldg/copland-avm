@@ -9,9 +9,6 @@ Definition eqbPair{A B:Type}`{H:EqClass A}`{H':EqClass B} (p1:A*B) (p2:A*B) : bo
   | ((a1,b1), (a2,b2)) => andb (eqb a1 a2) (eqb b1 b2)
   end.
 
-Search beq_nat_true.
-Check beq_nat_true.
-
 Lemma beq_pair_true{A B:Type}`{H:EqClass A}`{H':EqClass B} : forall (p1 p2:(A*B)),
     eqbPair p1 p2 = true -> p1 = p2.
 Proof.
@@ -24,7 +21,6 @@ Proof.
     {
       destruct (eqb a a0); try solve_by_inversion.
     }
-    Check beq_nat_true.
     eapply eqb_leibniz; eauto.
   }
   

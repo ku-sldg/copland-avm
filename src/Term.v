@@ -69,7 +69,7 @@ Definition splitEv_T (sp:SP) (e:Evidence) : Evidence :=
   end.
 *)
 
-Fixpoint eval_asp t p e :=
+Definition eval_asp t p e :=
   match t with
   | CPY => e 
   | ASPC i args => uu i args p e

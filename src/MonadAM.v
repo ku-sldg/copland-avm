@@ -68,7 +68,9 @@ Definition t1 := (att 1 (lseq (asp (ASPC 44 [])) (asp SIG))).
 Definition t2 := (lseq (asp (ASPC 44 [])) (asp SIG)).
 
 
+(*
 Compute (am_run_t t2 mtc empty_amst).
+*)
 
 (*
 Definition am_proto_1 :=
@@ -78,9 +80,6 @@ Definition am_proto_1 :=
 
 Compute (runAM am_proto_1 empty_amst).
 *)
-
-Check fold_left.
-Check cons.
 
 (*
 Fixpoint nonces (e:EvidenceC) (l:list nat) : list nat :=

@@ -21,8 +21,10 @@ MonadVM.v
 MonadVMFacts.v
 Auto.v
 AllMapped.v
+External_Facts.v
 VmSemantics.v
 MonadAM.v
 MonadLaws.v
 AutoApp.v
+Impl_appraisal.v
 Appraisal.v

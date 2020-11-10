@@ -110,8 +110,7 @@ Definition do_prim (x:nat) (a:ASP) : VM EvidenceC :=
   | ASPC asp_id args =>
     e <- get_ev ;;
     bs <- invokeUSM x asp_id args e ;;
-    ret (uuc asp_id bs e)
-                   
+    ret (uuc asp_id bs e)               
   | SIG =>
     e<- get_ev ;;
     bs <- signEv x e ;;

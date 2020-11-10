@@ -60,8 +60,6 @@ Fixpoint map_get{A B:Type} `{H : EqClass A} (m : MapC A B ) x : option B :=
 
 Definition map_set{A B:Type} `{H : EqClass A} (m:MapC A B) (x:A) (v:B) : MapC A B := (x, v) :: m.
 
-Check map_set.
-
 (*
 (** Finally, the domain of a map is just the set of its keys. *)
 Fixpoint map_dom {K V} (m:MapC K V) : list K :=
