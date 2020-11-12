@@ -112,6 +112,6 @@ Ltac do_inv_head :=
     end.
 
 Ltac doex := 
-  unfold extractUev, extractSig in *;
+  unfold extractUev, extractSig, extractComp in *;
   ff';
   unfold ret in *; doit.

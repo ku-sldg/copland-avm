@@ -256,14 +256,14 @@ Inductive trace: AnnoTerm -> Plc ->
     trace x p tr0 ->
     trace y p tr1 ->
     trace (alseq r x y) p (tr0 ++ tr1)
-(*| tbseq: forall r s x y p tr0 tr1,
+| tbseq: forall r s x y p tr0 tr1,
     trace x p tr0 ->
     trace y p tr1 ->
     trace (abseq r s x y) p
           ((split (fst r) p)
              :: tr0 ++ tr1 ++
              [(join (pred (snd r)) p)])
-| tbpar: forall r s x y p tr0 tr1 tr2,
+(*| tbpar: forall r s x y p tr0 tr1 tr2,
     trace x p tr0 ->
     trace y p tr1 ->
     shuffle tr0 tr1 tr2 ->
@@ -282,10 +282,11 @@ Proof.
   - apply IHt in H5; lia.
   - apply IHt1 in H5.
     apply IHt2 in H6. lia.
-    (*
+    
   - apply IHt1 in H6.
     apply IHt2 in H7.
     rewrite app_length. simpl in *. lia.
+    (*
   - apply IHt1 in H6.
     apply IHt2 in H7.
     apply shuffle_length in H8. lia. *)
@@ -316,7 +317,7 @@ Proof.
       destruct H1.
       * apply evtslseql; auto.
       * apply evtslseqr; auto.
-        (*
+        
     + destruct H1; subst.
       apply evtsbseqsplit; auto.
       apply in_app_iff in H; destruct H.
@@ -327,7 +328,7 @@ Proof.
       rewrite H9.
       apply evtsbseqjoin; auto.
       inv H.
-    + destruct H1; subst.
+  (*  + destruct H1; subst.
       apply evtsbparsplit; auto.
       apply in_app_iff in H; destruct H.
       apply shuffle_in with (e:=v) in H0.
@@ -347,7 +348,7 @@ Proof.
       repeat find_rewrite; simpl; auto.
     + rewrite in_app_iff.
       inv H1; auto.
-      (*
+      
     + simpl.
       rewrite in_app_iff.
       rewrite in_app_iff.
@@ -355,6 +356,7 @@ Proof.
       inv H1; auto.
       rewrite H11 in *.
       auto.
+      (*
     + simpl.
       rewrite in_app_iff.
       simpl.
@@ -438,7 +440,7 @@ Proof.
     eapply trace_range in H11; eauto.
     eapply trace_range in H12; eauto.
     lia.
-    (*
+    
   - destruct r as [i j]; simpl in *; subst; simpl.
     apply NoDup_cons.
     + intro.
@@ -476,6 +478,7 @@ Proof.
         apply well_formed_range in H6; auto.
         lia.
         solve_by_inversion.
+        (*
   - destruct r as [i j]; simpl in *; subst; simpl.
     apply NoDup_cons.
     + intro HH.
@@ -549,7 +552,7 @@ Proof.
     rewrite in_app_iff; auto.
   - apply IHtrace2 in H5; auto.
     rewrite in_app_iff; auto.
-    (*
+    
   - left. solve_by_inversion.
   - right. inv H3; auto.
     + inv H4; auto.
@@ -561,6 +564,7 @@ Proof.
     + inv H4; auto.
       repeat (rewrite in_app_iff; right).
       simpl; left; auto.
+      (*
   - left. solve_by_inversion.
   - right. inv H4; auto.
     + inv H5; auto.
@@ -611,7 +615,7 @@ Proof.
     apply earlier_left; auto.
   - apply IHtrace2 in H11; auto.
     apply earlier_right; auto.
-    (*
+    
   - inv H12; inv H11.
     + inv H3.
       * eapply evsys_tr_in in H4; eauto.
@@ -626,6 +630,7 @@ Proof.
       repeat (apply in_app_iff; right).
       simpl; auto.
   - solve_by_inversion.
+    
   - inv H11.
     + inv H13. inv H12.
       * eapply evsys_tr_in in H3; eauto.
@@ -650,6 +655,7 @@ Proof.
         apply earlier_right; auto.
         apply earlier_left; auto.
     + solve_by_inversion.
+      (*
   - inv H12. inv H13.
     + inv H4; eapply evsys_tr_in in H5; eauto.
       * apply earlier_cons; auto.

@@ -15,9 +15,9 @@ Inductive EvidenceC: Set :=
 | ggc: BS -> EvidenceC -> EvidenceC
 (*| hhc: BS -> EvidenceC -> EvidenceC *) (* TODO: remove Ev param *)
 (*
-| nnc: N_ID -> BS -> EvidenceC -> EvidenceC
+| nnc: N_ID -> BS -> EvidenceC -> EvidenceC *)
 | ssc: EvidenceC -> EvidenceC -> EvidenceC
-| ppc: EvidenceC -> EvidenceC -> EvidenceC 
+(*| ppc: EvidenceC -> EvidenceC -> EvidenceC 
 *).
 
 
@@ -51,10 +51,12 @@ Inductive Ev_Shape: EvidenceC -> Evidence -> Prop :=
 | nnt: forall bs e et i i',
     Ev_Shape e et ->
     Ev_Shape (nnc i bs e) (nn i' et) 
+*)
 | sst: forall e1 e2 e1t e2t,
     Ev_Shape e1 e1t ->
     Ev_Shape e2 e2t ->
     Ev_Shape (ssc e1 e2) (ss e1t e2t)
+             (*
 | ppt: forall e1 e2 e1t e2t,
     Ev_Shape e1 e1t ->
     Ev_Shape e2 e2t ->
@@ -74,10 +76,10 @@ Ltac evShapeFacts :=
   | [H: Ev_Shape (hhc _ _) _ |- _] => invc H
   | [H: Ev_Shape _ (hh _ _) |- _] => invc H
   | [H: Ev_Shape (nnc _ _ _) _ |- _] => invc H
-  | [H: Ev_Shape _ (nn _ _) |- _] => invc H
+  | [H: Ev_Shape _ (nn _ _) |- _] => invc H *)
   | [H: Ev_Shape (ssc _ _) _ |- _] => invc H
   | [H: Ev_Shape _ (ss _ _) |- _] => invc H
-  | [H: Ev_Shape (ppc _ _) _ |- _] => invc H
+  (*| [H: Ev_Shape (ppc _ _) _ |- _] => invc H
   | [H: Ev_Shape _ (pp _ _) |- _] => invc H 
    *)
   end.
@@ -138,12 +140,11 @@ Defined.
 *)
 
 
-(*
+
 (** * Eval function definition *)
 Definition splitEv (sp:SP) (e:EvidenceC) : EvidenceC :=
   match sp with
   | ALL => e
   | NONE => mtc
   end.
-*)
 

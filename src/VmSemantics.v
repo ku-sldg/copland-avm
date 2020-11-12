@@ -175,7 +175,7 @@ Proof.
     
     repeat anhl.
     eauto. *)
-    (*
+    
   -
     df;
       (*
@@ -222,6 +222,8 @@ Proof.
     annogo.
     repeat anhl.
     eauto. *)
+
+    (*
   -
     df.
     (*
@@ -402,7 +404,7 @@ Proof.
       eapply IHt1; eauto. *)
       (*
       try jkjk; eauto. *)
-      (*
+      
   -
     (*
     inversion H.
@@ -419,7 +421,7 @@ Proof.
     repeat find_inversion. *)
     df.
     repeat break_match;
-      boom; allss;
+      monad_unfold; allss;
         annogo;
         try dohi';
         eauto.
@@ -448,7 +450,7 @@ Proof.
     
     (*
     jkjk; eauto.  *)    
-     
+    (* 
   -
     (*
     simpl in *.
@@ -687,7 +689,7 @@ Proof.
     simpl.
     eassumption.
     reflexivity. *)
-    (*
+    
   -
     df.
     (*
@@ -733,6 +735,7 @@ Proof.
       simpl.
       eassumption.
       reflexivity. *)
+    (*
   -
     df.
     Print dohtac.
@@ -1003,7 +1006,7 @@ Proof.
     simpl.
     reflexivity.   *)
 
-    (*
+    
 
   - (* abseq case *)
     Ltac df' :=
@@ -1232,6 +1235,7 @@ Proof.
     reflexivity.
 *)
 
+    (*
   -
     repeat (df; dohtac).
     repeat break_match; df;
@@ -1484,7 +1488,7 @@ Proof.
   eapply lstar_silent_tran; eauto.
 Defined.
 
-(*
+
 Lemma lstar_stbsl:
   forall st0 st1 j t p e tr,
     lstar st0 tr st1 ->
@@ -1506,7 +1510,6 @@ Proof.
   eapply lstar_tran; eauto.
   eapply lstar_silent_tran; eauto.
 Defined.
-*)
 
 (*
 Lemma star_stbp:
@@ -1522,7 +1525,7 @@ Proof.
   - eapply star_tran; eauto.
 Qed.*)
 
-(*
+
 Lemma ssc_inv : forall e1 e1' e2 e2',
     e1 = e1' ->
     e2 = e2' ->
@@ -1531,10 +1534,6 @@ Proof.
   intros.
   congruence.
 Defined.
-
-Check parallel_eval_thread.
-Check parallel_att_vm_thread.
-*)
 
 Axiom para_eval_vm : forall t e,
     parallel_eval_thread (unanno t) e = parallel_att_vm_thread t e.
@@ -1649,7 +1648,7 @@ Proof.
     jkjk; eauto.
     jkjk'; eauto. *)
 
-    (*
+    
   -
     annogo.
     (*
@@ -1710,7 +1709,8 @@ Proof.
     +
       symmetry.
       edestruct IHt1;
-      jkjk'; eauto.
+        jkjk'; eauto.
+      (*
   -
     df.
     (*
@@ -2074,7 +2074,6 @@ Lemma evshape_at : forall e es t n,
     Ev_Shape (toRemote (unanno t) e) (Term.eval (unanno t) n es).
 Proof.
 Admitted.
-*)
 
 Lemma evshape_par : forall e es a p,
     Ev_Shape e es ->
@@ -2082,6 +2081,7 @@ Lemma evshape_par : forall e es a p,
              (Term.eval (unanno a) p es).
 Proof.
 Admitted.
+*)
 
 
 Lemma build_comp_external : forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (o : ev_store),
@@ -2357,7 +2357,7 @@ Proof.
         reflexivity. *)
       } *)
       congruence.
-      (*
+      
   -
     do_wf_pieces.
 
@@ -2387,7 +2387,7 @@ Proof.
       vmsts. *)
       annogo.
       simpl in *.
-      assert (exists l, st_trace0 = [Term.split n p] ++ l) as H00.
+      assert (exists l, st_trace0 = (tr ++ [Term.split n p]) ++ l) as H00.
       {
         
         eapply suffix_prop.
@@ -2397,7 +2397,7 @@ Proof.
       }
       destruct_conjs.
       subst.
-      assert (exists l, st_trace = ([Term.split n p] ++ H00) ++ l) as H00'.
+      assert (exists l, st_trace = ((tr ++ [Term.split n p]) ++ H00) ++ l) as H00'.
       {
         
         
@@ -2421,7 +2421,7 @@ Proof.
           st_pl := st_pl0;
           st_store := st_store0 |})).
       {
-        eapply restl'_2 with (x:= [Term.split n p]) (*(t':=t'1) (n:=(S n))*).
+        eapply restl'_2 with (x:= (tr ++ [Term.split n p])) (*(t':=t'1) (n:=(S n))*).
         (*
         rewrite Heqp0.
         reflexivity. *)
@@ -2441,7 +2441,7 @@ Proof.
           st_pl := st_pl;
           st_store := st_store |})).
       {
-        eapply restl'_2 with (x:= ([Term.split n p] ++ H00)) (*(t':=t'2) (n:=n2)*).
+        eapply restl'_2 with (x:= ((tr ++ [Term.split n p]) ++ H00)) (*(t':=t'2) (n:=n2)*).
         (* rewrite Heqp1.
         reflexivity. *)
         eassumption.
@@ -2533,6 +2533,7 @@ Proof.
           congruence.
     +
       repeat find_inversion.
+      (*
   -
     do_wf_pieces.
 
@@ -2666,15 +2667,16 @@ Proof.
         exact mtc.
         eauto.
         eauto.
+        
+        exact (aasp (0,0) (ASPC 1 [])).
+        exact mtc.
+        eauto.
+        eauto.
+        exact (aasp (0,0) (ASPC 1 [])).
+        exact mtc.
+        eauto.
+        eauto.
         (*
-        exact (aasp (0,0) (ASPC 1 [])).
-        exact mtc.
-        eauto.
-        eauto.
-        exact (aasp (0,0) (ASPC 1 [])).
-        exact mtc.
-        eauto.
-        eauto.
         eauto.
         eauto.
         eauto.
@@ -3501,7 +3503,7 @@ Proof.
     (*
       jkjk'; eauto. *)
 
-    (*
+    
   -
     (*
     do_wf_pieces. *)
@@ -3675,6 +3677,7 @@ Proof.
     eapply stbsrstop.
     econstructor.
 
+(*
   -
     destruct s; destruct r.
     df.
@@ -3802,13 +3805,11 @@ Proof.
     exact mtc.
     eauto.
     eauto.
-    (*
+    
     exact (aasp (0,0) (ASPC 1 [])).
     exact mtc.
     eauto.
-    eauto.
-     *)
-    
+    eauto.   
 Defined.
 
 Lemma run_lstar_corrolary : forall t tr et e e' p p' o o' (*t' n*),

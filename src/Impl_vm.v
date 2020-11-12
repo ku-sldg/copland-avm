@@ -1,5 +1,8 @@
 Require Import MonadVM GenStMonad Term ConcreteEvidence Axioms_Io.
 
+Require Import List.
+Import ListNotations.
+
 (** Monadic VM implementation *)
 
 Fixpoint build_comp (t:AnnoTerm): VM unit :=
@@ -16,7 +19,7 @@ Fixpoint build_comp (t:AnnoTerm): VM unit :=
   | alseq r t1 t2 =>
     build_comp t1 ;;
     build_comp t2
-(*  
+
   | abseq (x,y) (sp1,sp2) t1 t2 =>
     e <- get_ev ;;
     p <- get_pl ;;
@@ -30,7 +33,7 @@ Fixpoint build_comp (t:AnnoTerm): VM unit :=
     e2r <- get_ev ;;
     put_ev (ssc e1r e2r) ;;
     add_tracem [Term.join (Nat.pred y) p]
-
+(*
   | abpar (x,y) (sp1,sp2) t1 t2 =>
     e <- get_ev ;;
     p <- get_pl ;;
@@ -56,7 +59,7 @@ Fixpoint build_comp (t:AnnoTerm): VM unit :=
     e2r <- get_store_at loc2 ;;
     put_ev (ppc e1r e2r) ;;
     add_tracem [Term.join (Nat.pred y) p]
-*)
+ *)
   end.
 
 Definition run_vm (t:AnnoTerm) st : vm_st :=

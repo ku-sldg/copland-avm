@@ -22,10 +22,12 @@ Inductive evMapped : Evidence -> AM_St -> Prop :=
     m = st_aspmap st ->
     evMapped e' st ->
     evMapped (nn nid e') st 
+*)
 | evMappedS : forall e1 e2 st,
     evMapped e1 st ->
     evMapped e2 st ->
     evMapped (ss e1 e2) st
+             (*
 | evMappedP : forall e1 e2 st,
     evMapped e1 st ->
     evMapped e2 st ->
@@ -68,7 +70,7 @@ Inductive allMapped : AnnoTerm -> AM_St -> Plc -> Evidence -> Prop :=
     allMapped t1 st p e ->
     allMapped t2 st p mt (*(eval (unanno t1) p e)*) -> (* TODO: is mt ok here? *)
     allMapped (alseq r t1 t2) st p e
-(*| allMapped_bseq_nn : forall t1 t2 p st e r,
+| allMapped_bseq_nn : forall t1 t2 p st e r,
     (*p = am_pl st -> *)
     allMapped t1 st p mt ->
     allMapped t2 st p mt ->
@@ -88,6 +90,7 @@ Inductive allMapped : AnnoTerm -> AM_St -> Plc -> Evidence -> Prop :=
     allMapped t1 st p e ->
     allMapped t2 st p e ->
     allMapped (abseq r (ALL,ALL) t1 t2) st p e
+              (*
 | allMapped_bpar_nn : forall t1 t2 p st e r,
     (*p = am_pl st -> *)
     allMapped t1 st p mt ->
@@ -125,9 +128,9 @@ Ltac evMappedFacts :=
   | [H: evMapped (gg _ _) _ |- _] => invc H
   (* 
   | [H: evMapped (hh _ _) _ |- _] => invc H 
-  | [H: evMapped (nn _ _) _ |- _] => invc H
+  | [H: evMapped (nn _ _) _ |- _] => invc H *)
   | [H: evMapped (ss _ _) _ |- _] => invc H
-  | [H: evMapped (pp _ _) _ |- _] => invc H  
+(*  | [H: evMapped (pp _ _) _ |- _] => invc H  
    *)
   end;
   destruct_conjs;
@@ -138,9 +141,9 @@ Ltac allMappedFacts :=
   | [H: allMapped (aasp _ _) _ _ _ |- _] => invc H
   | [H: allMapped (aatt _ _ _) _ _ _ |- _] => invc H
   | [H: allMapped (alseq _ _ _) _ _ _ |- _] => invc H
-  (* 
+  
   | [H: allMapped (abseq _ _ _ _) _ _ _ |- _] => invc H
-  | [H: allMapped (abpar _ _ _ _) _ _ _ |- _] => invc H 
+(*  | [H: allMapped (abpar _ _ _ _) _ _ _ |- _] => invc H 
    *)
   end;
   destruct_conjs.
@@ -205,6 +208,9 @@ Proof.
     econstructor.
     eassumption.
     eassumption.
+  -
+    allMappedFacts;
+      try (econstructor; eauto).
 Defined.
 
 Lemma allMappedSub : forall a a_st t p n,

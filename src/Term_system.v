@@ -27,7 +27,7 @@ Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
               (leaf (pred j, j) (rpy (pred j) p q)))
   | alseq r x y => before r (ev_sys x p)
                           (ev_sys y p)
-  (*| abseq (i, j) s x y =>
+  | abseq (i, j) s x y =>
     before (i, j)
            (leaf (i, S i)
                  (split i p))
@@ -37,7 +37,7 @@ Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
                            (ev_sys y p))
                    (leaf ((pred j), j)
                    (join (pred j) p)))
-  | abpar (i, j) s x y =>
+  (*| abpar (i, j) s x y =>
     before (i, j)
            (leaf (i, S i)
                  (split i p))
@@ -71,8 +71,9 @@ Proof.
     rewrite H4.
     apply ws_before; simpl; auto; rewrite evsys_range; auto.
   - apply ws_before; auto; repeat rewrite evsys_range; auto.
-    (*
+    
   - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto).
+    (*
   - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto).
     repeat (apply ws_merge; simpl in *; auto; repeat rewrite evsys_range; auto). *)
 Qed.
@@ -91,9 +92,10 @@ Proof.
   - rewrite H6 in H0; simpl in H0.
     inv H0; auto; inv H2; auto; inv H1; auto.
   - inv H0; auto.
-    (*
+    
   - rewrite H9 in H0; simpl in H0.
     inv H0; inv H2; auto; inv H1; auto.
+    (*
   - rewrite H9 in H0; simpl in H0.
     inv H0; inv H2; auto; inv H1; auto. *)
   - inv H0; auto.
@@ -102,12 +104,11 @@ Proof.
     rewrite H8 in H6.
     apply Nat.succ_inj in H6; subst; auto.
   - inv H0; auto.
-
-    (*
   - rewrite H9; simpl.
     inv H0; auto.
     rewrite H11 in H9.
     apply Nat.succ_inj in H9; subst; auto.
+    (*
   - rewrite H9; simpl.
     inv H0; auto.
     rewrite H11 in H9.
@@ -148,11 +149,12 @@ Proof.
       repeat apply before_sup in H5.
       eapply IHwell_formed2 in H4; eauto.
       inv G; auto.
-      (*
+      
     + destruct r as [i j]; simpl in *.
       repeat apply before_sup in H4.
       repeat apply before_sup in H5.
       inv H4; inv H5; auto.
+      (*
     + destruct r as [i j]; simpl in *.
       repeat apply before_sup in H4.
       repeat apply before_sup in H5.
@@ -182,9 +184,10 @@ Proof.
     inv H2; auto.
   - repeat apply before_sup in H4.
     apply IHwell_formed2 in H4; auto.
-    (*
+    
   - repeat apply before_sup in H4.
     inv H4; auto.
+    (*
   - repeat apply before_sup in H4.
     inv H4; auto. *)
 Qed.

@@ -63,7 +63,37 @@ Proof.
       subst.
       ff; eauto.
 
-(*
+    + (* abseq case *)
+
+      doit.
+      specialize IHa1 with (a_st:=a_st) (a_st':=a) (o:=o0) (p:=p).
+      concludes.
+      subst.
+      specialize IHa2 with (a_st := a) (a_st':=a0) (o:=o1) (p:=p).
+      concludes.
+      subst.
+      ff; eauto.
+  -
+    df.
+    subst.
+    doit.
+    ff; eauto.
+    +
+      specialize IHa1 with (a_st:=a_st) (a_st':=a) (o:=Some v) (p:=p).
+      concludes.
+      subst.
+      eauto.
+    +
+      specialize IHa1 with (a_st:=a_st) (a_st':=a) (o:=Some v) (p:=p).
+      concludes.
+      subst.
+      eauto.
+      
+      
+    
+    
+
+(* (* old abseq case *)
     +
     destruct (build_app_comp a1 p a_st) eqn:hey;
          try solve_by_inversion.
@@ -174,15 +204,39 @@ Proof.
         subst'.
         df.
         eauto.
+  - (* abseq case *)
+    specialize IHa1 with (a_st:=a_st) (p:=p).
+    specialize IHa2 with (a_st:=a_st) (p:=p).
+    allMappedFacts;
+      repeat concludes;
+      destruct_conjs;
+      df;
+      ff; eauto;
+        subst' ;
+        try (do_pair; eauto; tauto) ;
+        try solve_by_inversion.
 Defined.
 
-Lemma evShape_sub : forall a e1 e2 n1 et a_st v0 x vm_st vm_st',
+(*
+  H0 : build_app_comp (abseq r s a1 a2) n1 a_st = (Some v0, a_st)
+ *)
+
+(*
+Inductive pickEv : AnnoTerm -> Evidence -> Evidence -> Prop :=
+| pickEv_asp : forall r a e, pickEv (aasp r a) e e
+| pickEv_aatt : forall r p t e,  pickEv (aatt r p t) e e
+| pickEv_alseq : forall r t1 t2 e, pickEv (alseq r t1 t2) e e
+| pickEv_abseq : forall r sp1 sp2 t1 t2 e, pickEv (abseq r (sp1,sp2) t1 t2) e (splitEv_T sp2 e).
+*)
+
+Lemma evShape_sub : forall a e1 e2 n1 et (*et'*) a_st v0 x vm_st vm_st',
     Ev_Shape e2 (eval (unanno a) n1 et) ->
     build_app_comp a n1 a_st = (Some v0, a_st) ->
     v0 vm_st = (Some x, vm_st') ->
     e2 = st_ev vm_st ->
     e1 = st_ev vm_st' ->
-    Ev_Shape e1 et.
+    (*pickEv a et et' -> *)
+    Ev_Shape e1 et(*et'*).
 Proof.
   intros.
   generalizeEverythingElse a.
@@ -354,10 +408,62 @@ Proof.
       eassumption.
       tauto.
       tauto.
+    +
+      doit.
+      
+      amsts.
+      simpl.
+      simpl in H.
+      do_ba_st_const.
+      eapply IHa1.
+      eapply IHa2.
+      simpl.
+      eassumption.
+      eassumption.
+      eassumption.
+      tauto.
+      tauto.
+      eassumption.
+      eassumption.
+      tauto.
+      tauto.
+      
 
       Unshelve.
       eauto.
+  -
+    simpl in H.
+    evShapeFacts.
+    amsts.
+    dothat.
+    subst.
+    df.
+    doit.
+    amsts.
+    simpl.
+    simpl in *.
+    do_ba_st_const.
+    doex.
+    destruct s0;
+      destruct s1; simpl in *.
+    +
+      eauto.
+    +
+      assert (Ev_Shape st_ev mt).
+      {
+        eapply IHa2.
+      eassumption.
+      eassumption.
+      eassumption.
+      tauto.
+      tauto.
+      }
+    
 Defined.
+(*
+Admitted.
+*)
+
 
 Lemma contratra : forall x (f:EvidenceC -> EvidenceC) (vmst vmst':vm_st),
     x = (None, vmst) ->
@@ -454,14 +560,16 @@ Proof.
         
         amsts.
 
-        edestruct IHa1 (*with
+        edestruct IHa1 with
             (v_st:=
                 {|
                 st_ev := st_ev2;
                 st_trace := st_trace2;
                 st_pl := st_pl2;
-                st_store := st_store2 |})*).
+                st_store := st_store2 |}).
         reflexivity.
+        simpl.
+        
         eapply evShape_sub.
         eassumption.
         eassumption.
@@ -658,6 +766,7 @@ Proof.
         do_pair.
         inversion Heqp0.
         eauto.
+    
 Defined.
 
 Lemma same_ev_shape: forall t vmst vmst' e e_res et e_res_t p a_st x new_vmst new_vmst' f e'' app_ev,

@@ -34,20 +34,19 @@ Inductive ASP: Set :=
 | SIG: ASP
 (*| HSH: ASP*) .
 
-(*
+
 Inductive SP: Set :=
 | ALL
 | NONE.
 
 Definition Split: Set := (SP * SP).
-*)
 
 Inductive Term: Set :=
 | asp: ASP -> Term
 | att: Plc -> Term -> Term
 | lseq: Term -> Term -> Term
-(*| bseq: Split -> Term -> Term -> Term
-| bpar: Split -> Term -> Term -> Term*).
+| bseq: Split -> Term -> Term -> Term
+(*| bpar: Split -> Term -> Term -> Term*).
 
 (** The structure of evidence. *)
 
@@ -57,17 +56,16 @@ Inductive Evidence: Set :=
 | gg: Plc -> Evidence -> Evidence
 (*| hh: Plc -> Evidence -> Evidence *)
                          (*
-| nn: N_ID -> Evidence -> Evidence
+| nn: N_ID -> Evidence -> Evidence *)
 | ss: Evidence -> Evidence -> Evidence
-| pp: Evidence -> Evidence -> Evidence*).
+(*| pp: Evidence -> Evidence -> Evidence*).
 
-(*
+
 Definition splitEv_T (sp:SP) (e:Evidence) : Evidence :=
   match sp with
   | ALL => e
   | NONE => mt
   end.
-*)
 
 Definition eval_asp t p e :=
   match t with
@@ -84,9 +82,9 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
   | asp a => eval_asp a p e
   | att q t1 => eval t1 q e
   | lseq t1 t2 => eval t2 p (eval t1 p e)
-  (*| bseq s t1 t2 => ss (eval t1 p (splitEv_T (fst s) e))
+  | bseq s t1 t2 => ss (eval t1 p (splitEv_T (fst s) e))
                        (eval t2 p (splitEv_T (snd s) e)) 
-  | bpar s t1 t2 => pp (eval t1 p (splitEv_T (fst s) e))
+  (*| bpar s t1 t2 => pp (eval t1 p (splitEv_T (fst s) e))
                       (eval t2 p (splitEv_T (snd s) e)) *)
   end.
 
@@ -107,8 +105,8 @@ Inductive Ev: Set :=
 (*| hash: nat -> Plc -> Ev *)
 | req: nat -> Plc -> Plc -> Term -> Ev
 | rpy: nat -> Plc -> Plc -> Ev 
-(*| split: nat -> Plc -> Ev
-| join:  nat -> Plc -> Ev *).
+| split: nat -> Plc -> Ev
+| join:  nat -> Plc -> Ev.
 
 Definition eq_ev_dec:
   forall x y: Ev, {x = y} + {x <> y}.
@@ -128,8 +126,8 @@ Definition ev x :=
   (*| hash i _ => i  *)
   | req i _ _ _ => i
   | rpy i _ _ => i 
-  (*| split i _ => i
-  | join i _ => i *)
+  | split i _ => i
+  | join i _ => i
   end.
 
 (** Events are used in a manner that ensures that
@@ -164,7 +162,7 @@ Inductive AnnoTerm: Set :=
 | aasp: Range -> ASP -> AnnoTerm
 | aatt: Range -> Plc -> AnnoTerm -> AnnoTerm
 | alseq: Range -> AnnoTerm -> AnnoTerm -> AnnoTerm
-(*| abseq: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
+| abseq: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm (*
 | abpar: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm*).
 
 (*
@@ -214,8 +212,8 @@ Fixpoint esize t :=
   | aasp _ _ => 1
   | aatt _ _ t1 => 2 + esize t1
   | alseq _ t1 t2 => esize t1 + esize t2
-  (*| abseq _ _ t1 t2 => 2 + esize t1 + esize t2
-  | abpar _ _ t1 t2 => 2 + esize t1 + esize t2 *)
+  | abseq _ _ t1 t2 => 2 + esize t1 + esize t2
+  (*| abpar _ _ t1 t2 => 2 + esize t1 + esize t2 *)
   end.
 
 Definition range x :=
@@ -223,8 +221,8 @@ Definition range x :=
   | aasp r _ => r
   | aatt r _ _ => r
   | alseq r _ _ => r
-  (*| abseq r _ _ _ => r
-  | abpar r _ _ _ => r*)
+  | abseq r _ _ _ => r
+  (*| abpar r _ _ _ => r*)
   end.
 
 (** This function annotates a term.  It feeds a natural number
@@ -241,11 +239,11 @@ Fixpoint anno (t: Term) i: nat * AnnoTerm :=
     let (j, a) := anno x i in
     let (k, b) := anno y j in
     (k, alseq (i, k) a b)
-  (*| bseq s x y =>
+  | bseq s x y =>
     let (j, a) := anno x (S i) in
     let (k, b) := anno y j in
     (S k, abseq (i, S k) s a b)
-  | bpar s x y =>
+  (*| bpar s x y =>
     let (j, a) := anno x (S i) in
     let (k, b) := anno y j in
     (S k, abpar (i, S k) s a b) *)
@@ -462,8 +460,8 @@ Fixpoint unanno a :=
   | aatt _ p t => att p (unanno t)
   | alseq _ a1 a2 => lseq (unanno a1) (unanno a2)
                          
-  (*| abseq _ spl a1 a2 => bseq spl (unanno a1) (unanno a2) 
-  | abpar _ spl a1 a2 => bpar spl (unanno a1) (unanno a2) *)
+  | abseq _ spl a1 a2 => bseq spl (unanno a1) (unanno a2) 
+  (*| abpar _ spl a1 a2 => bpar spl (unanno a1) (unanno a2) *)
   end.
 
 (** This predicate determines if an annotated term is well formed,
@@ -485,12 +483,12 @@ Inductive well_formed: AnnoTerm -> Prop :=
     snd (range x) = fst (range y) ->
     snd r = snd (range y) ->
     well_formed (alseq r x y)
-(*| wf_bseq: forall r s x y,
+| wf_bseq: forall r s x y,
     well_formed x -> well_formed y ->
     S (fst r) = fst (range x) ->
     snd (range x) = fst (range y) ->
     snd r = S (snd (range y)) ->
-    well_formed (abseq r s x y)
+    well_formed (abseq r s x y) (*
 | wf_bpar: forall r s x y,
     well_formed x -> well_formed y ->
     S (fst r) = fst (range x) ->
@@ -517,7 +515,7 @@ Proof.
   tauto.
 Defined.
 
-(*
+
 Lemma wf_bseq_pieces: forall r s t1 t2,
     well_formed (abseq r s t1 t2) ->
     well_formed t1 /\ well_formed t2.
@@ -527,7 +525,7 @@ Proof.
   tauto.
 Defined.
 
-
+(*
 Lemma wf_bpar_pieces: forall r s t1 t2,
     well_formed (abpar r s t1 t2) ->
     well_formed t1 /\ well_formed t2.
@@ -546,9 +544,9 @@ Ltac do_wf_pieces :=
   | [H: well_formed (aatt _ _ ?t) |- _] =>   
     assert (well_formed t)
       by (eapply wf_at_pieces; eauto)
-  (*| [H: well_formed (abseq _ _ _ _ ) |- _] =>
+  | [H: well_formed (abseq _ _ _ _ ) |- _] =>
     (edestruct wf_bseq_pieces; eauto)
-  | [H: well_formed (abpar _ _ _ _ ) |- _] =>
+  (*| [H: well_formed (abpar _ _ _ _ ) |- _] =>
     (edestruct wf_bpar_pieces; eauto) *)
       
   end.
@@ -579,9 +577,9 @@ Fixpoint aeval t p e :=
   | aasp _ x => eval (asp x) p e
   | aatt _ q x => aeval x q e
   | alseq _ t1 t2 => aeval t2 p (aeval t1 p e)
-  (*| abseq _ s t1 t2 => ss (aeval t1 p ((splitEv_T (fst s)) e))
+  | abseq _ s t1 t2 => ss (aeval t1 p ((splitEv_T (fst s)) e))
                          (aeval t2 p ((splitEv_T (snd s)) e)) 
-  | abpar _ s t1 t2 => pp (aeval t1 p ((splitEv_T (fst s)) e))
+  (*| abpar _ s t1 t2 => pp (aeval t1 p ((splitEv_T (fst s)) e))
                          (aeval t2 p ((splitEv_T (snd s)) e)) *)
   end. 
 
@@ -638,7 +636,7 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
     forall r t1 t2 ev p,
       events t2 p ev ->
       events (alseq r t1 t2) p ev
-(*| evtsbseqsplit:
+| evtsbseqsplit:
     forall r i s t1 t2 p,
       fst r = i ->
       events (abseq r s t1 t2) p
@@ -656,6 +654,7 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
       snd r = S i ->
       events (abseq r s t1 t2) p
              (join i p)
+(*
 | evtsbparsplit:
     forall r i s t1 t2 p,
       fst r = i ->
@@ -788,7 +787,7 @@ Proof.
         destruct_conjs;
         eauto).
 
-    (*
+    
 
   - 
     apply bra_range with (i:=i) (r:=r) in H2; eauto;
@@ -801,7 +800,7 @@ Proof.
 
     + eapply ex_intro; split; try (auto; eauto;tauto).
     + eapply ex_intro; split; try (eauto; auto; tauto).
-
+(*
   -
     apply bra_range with (i:=i) (r:=r) in H2; eauto;
       repeat destruct_disjunct; subst;
@@ -860,11 +859,10 @@ apply well_formed_range in G0.
 Check well_formed_range.
  *)
 
-(*
+
 Inductive splitEv_T_R : SP -> Evidence -> Evidence -> Prop :=
 | spAll: forall e, splitEv_T_R ALL e e
 | spNone: forall e, splitEv_T_R NONE e mt.
-*)
 
 Inductive evalR : Term -> Plc -> Evidence -> Evidence -> Prop :=
 | evalR_asp: forall a p e,
@@ -876,13 +874,13 @@ Inductive evalR : Term -> Plc -> Evidence -> Evidence -> Prop :=
     evalR t1 p e e' ->
     evalR t2 p e' e'' ->
     evalR (lseq t1 t2) p e e''
-(*| evalR_bseq: forall s e e1 e2 e1' e2' p t1 t2,
+| evalR_bseq: forall s e e1 e2 e1' e2' p t1 t2,
     splitEv_T_R (fst s) e e1 ->
     splitEv_T_R (snd s) e e2 ->
     evalR t1 p e1 e1' ->
     evalR t2 p e2 e2' ->
     evalR (bseq s t1 t2) p e (ss e1' e2')
-| evalR_bpar: forall s e e1 e2 e1' e2' p t1 t2,
+(*| evalR_bpar: forall s e e1 e2 e1' e2' p t1 t2,
     splitEv_T_R (fst s) e e1 ->
     splitEv_T_R (snd s) e e2 ->
     evalR t1 p e1 e1' ->
@@ -898,7 +896,7 @@ Ltac kjkj :=
   | [H: evalR ?t ?p ?e ?e' |- _] => assert_new_proof_by (eval t p e = e') eauto
   end.
 
-(*
+
 Ltac do_split :=
   match goal with
   | [H: Split |- _] => destruct H
@@ -908,7 +906,6 @@ Ltac do_sp :=
   match goal with
   | [H: SP |- _] => destruct H
   end.
-*)
 
 Lemma eval_iff_evalR: forall t p e e',
     evalR t p e e' <-> eval t p e = e'.
@@ -927,8 +924,8 @@ Proof.
           repeat kjkj;
           
 
-          (*try (do_split;
-               repeat do_sp);*)
+          try (do_split;
+               repeat do_sp);
           try (inv H3; inv H4; reflexivity);
           repeat jkjk;
           eauto).
@@ -981,7 +978,7 @@ Proof.
     induction t; intros;
       inv H;
       try (destruct a);
-      (*try (do_split; repeat do_sp);*)
+      try (do_split; repeat do_sp);
       repeat econstructor; eauto.
 Defined.
 

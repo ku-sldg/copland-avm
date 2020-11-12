@@ -65,13 +65,12 @@ Definition add_trace (tr':list Ev) : vm_st -> vm_st :=
 Definition add_tracem (tr:list Ev) : VM unit :=
   modify (add_trace tr).
 
-(*
+
 Definition split_evm (i:nat) (sp1 sp2:SP) (e:EvidenceC) (p:Plc) : VM (EvidenceC*EvidenceC) :=
     let e1 := splitEv sp1 e in
     let e2 := splitEv sp2 e in
     add_tracem [Term.split i p] ;;
                ret (e1,e2).
-*)
 
 (** * Partially-symbolic implementations of IO operations *)
 
@@ -166,14 +165,13 @@ Definition extractHsh (e:EvidenceC) : VM (BS * EvidenceC) :=
   | _ => failm
   end. *)
 
-(*
+
 Definition extractComp (e:EvidenceC) : VM (EvidenceC * EvidenceC) :=
   match e with
   | ssc e1 e2 => ret (e1,e2)
-  | ppc e1 e2 => ret (e1,e2)
+  (*| ppc e1 e2 => ret (e1,e2) *)
   | _ => failm
   end.
- *)
 
 Definition checkSig (x:nat) (i:ASP_ID) (e':EvidenceC) (sig:BS) : VM BS :=
   invokeUSM x i ([encodeEv e'] ++ [sig] (* ++ args*) ) mtc.
@@ -198,7 +196,7 @@ Ltac monad_unfold :=
   get_pl,
   add_tracem,
   modify_evm,
-  (*split_evm,*)
+  split_evm,
   add_trace,
   failm,
   (* Uncommenting these evaluates too much, can't apply lemmas *)
