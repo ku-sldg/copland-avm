@@ -87,13 +87,15 @@ Fixpoint build_app_comp (t:AnnoTerm) (p:Plc) : AM (VM (EvidenceC -> EvidenceC)) 
         e <- get_ev ;;
         pr <- extractComp e ;;
         let '(e1,e2) := pr in
-        let e1' := splitEv sp1 e1 in
-        let e2' := splitEv sp2 e2 in
+        (*let e1' := splitEv sp1 e1 in
+        let e2' := splitEv sp2 e2 in *)
         put_ev e1 ;;
         f <- c' ;;
         put_ev e2 ;;
-        g <- d' ;; 
-        ret (fun x => ssc (f e1') (g e2')) in
+        g <- d' ;;
+        new_ev <- get_ev ;;
+        put_ev (splitEv sp2 new_ev) ;;
+        ret (fun x => ssc (f x(*(splitEv sp1 x)*)) (g x(*(splitEv sp2 x)*))) in
     ret c
         
 
