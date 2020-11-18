@@ -11,9 +11,8 @@ Fixpoint build_comp (t:AnnoTerm): VM unit :=
     e <- do_prim n a ;;
     put_ev e
   | aatt (reqi,rpyi) q t' =>
-    sendReq reqi q t' ;;
-    e <- get_ev ;;
-    doRemote t' q e rpyi ;;
+    sendReq t' q reqi rpyi ;;
+    doRemote t' q reqi rpyi ;;
     e' <- receiveResp rpyi q ;;
     put_ev e'
   | alseq r t1 t2 =>

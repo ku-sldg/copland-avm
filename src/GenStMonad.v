@@ -31,12 +31,10 @@ Definition put {S} (s : S) : St S unit := fun _ => (Some tt, s).
 
 Definition get {S} : St S S := fun s => (Some s, s).
 
-Definition runSt {S A} (s : S) (h : St S A) :
-  (option A) * S % type :=
+Definition runSt {S A} (s : S) (h : St S A) : (option A) * S % type :=
   h s.
 
-Definition execSt {S A} (s : S) (h : St S A) :
-  S :=
+Definition execSt {S A} (s : S) (h : St S A) : S :=
   snd (h s).
 
 

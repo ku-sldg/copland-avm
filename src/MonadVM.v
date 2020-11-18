@@ -19,7 +19,7 @@ Definition VM := St vm_st.
 
 (* VM monad operations *)
 
-Definition put_store (n:nat) (e:EvidenceC) : VM unit :=
+Definition put_store_at (n:nat) (e:EvidenceC) : VM unit :=
   st <- get ;;
      let e' := st_ev st in
      let tr' := st_trace st in
@@ -117,8 +117,10 @@ Definition do_prim (x:nat) (a:ASP) : VM EvidenceC :=
  (* | HSH => hashEv x p  *)
   end.
 
-Definition sendReq (reqi:nat) (q:Plc) (t:AnnoTerm) : VM unit :=
+Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) (rpyi:nat)  : VM unit :=
   p <- get_pl ;;
+  e <- get_ev ;;
+  put_store_at reqi e ;;
   add_tracem [req reqi p q (unanno t)].
 
 Definition receiveResp (rpyi:nat) (q:Plc) : VM EvidenceC :=
@@ -128,15 +130,16 @@ Definition receiveResp (rpyi:nat) (q:Plc) : VM EvidenceC :=
   ret e.
 
 (* Primitive VM Monad operations that require IO Axioms *)
-Definition doRemote (t:AnnoTerm) (q:Plc) (e:EvidenceC) (rpyi:nat) : VM unit :=
+Definition doRemote (t:AnnoTerm) (q:Plc) (reqi:nat) (rpyi:nat) : VM unit :=
+  e <- get_store_at reqi ;;
   add_tracem (remote_events t q) ;;
-  put_store rpyi (toRemote (unanno t) e).
+  put_store_at rpyi (toRemote (unanno t) e).
 
 Definition runParThread (t:AnnoTerm) (p:Plc) (e:EvidenceC) : VM (list Ev) :=
   let el := parallel_vm_events t p in
   let e' := parallel_att_vm_thread t e in
   let loc := fst (range t) in
-  put_store loc e' ;;
+  put_store_at loc e' ;;
   ret el.
 
 Definition runParThreads (t1 t2:AnnoTerm) (p:Plc) (e1 e2:EvidenceC) : VM unit :=

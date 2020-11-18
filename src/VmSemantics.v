@@ -102,7 +102,8 @@ Proof.
       repeat find_inversion;
       auto. *)
   -
-    df.
+    repeat (df; dohtac).
+    tauto.
     (*
 
     simpl in *.
@@ -113,8 +114,10 @@ Proof.
     unfold get_store_at in *.
     monad_unfold.
     df. *)
+
+    (*
     repeat break_match; try solve_by_inversion;
-      repeat (df; tauto).
+      repeat (df; tauto). *)
     (*
     df.
     tauto.
@@ -337,9 +340,7 @@ Proof.
     unfold get_store_at in *.
     monad_unfold.
     repeat break_let. *)
-    df.
-    dohtac.
-    df.
+    repeat (df; dohtac).
     (*
     monad_unfold.
     repeat find_inversion. *)
@@ -618,9 +619,7 @@ Proof.
       repeat find_inversion.
       reflexivity. *)
   -
-    df.
-    dohtac.
-    df.
+    repeat (df; dohtac).
     tauto.
     (*
 
@@ -898,7 +897,7 @@ Proof.
       repeat rewrite app_assoc;
       reflexivity.
   -
-    df.
+    repeat (df; dohtac).
     (*
     simpl in *.
     repeat break_let.
@@ -1579,7 +1578,7 @@ Proof.
     destruct a;
       reflexivity.
   -
-    df.
+    repeat (df; dohtac).
     (*
 
     simpl in *.
@@ -1590,9 +1589,6 @@ Proof.
     unfold get_store_at in *.
     monad_unfold.
     repeat break_let. *)
-    
-    dohtac.
-    df.
     reflexivity.
     (*
     repeat find_inversion.
@@ -2248,7 +2244,7 @@ Proof.
       
   -
     do_wf_pieces.
-    df.
+    repeat (df; dohtac).
     (*
      simpl in *.
       cbn in *.
@@ -2262,8 +2258,7 @@ Proof.
       unfold get_store_at in *.
       monad_unfold.
       repeat break_let. *)
-    dohtac.
-    df.
+    
     (*
       repeat find_inversion. *)
 
@@ -3401,12 +3396,10 @@ Proof.
     find_inversion.
     find_inversion.
     monad_unfold. *)
-    df.
-    dohtac.
+    repeat (df; dohtac).
     (*
     rewrite PeanoNat.Nat.eqb_refl in *.
     repeat find_inversion. *)
-    df.
     eapply lstar_tran.
     econstructor.
     simpl.
