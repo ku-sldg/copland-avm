@@ -62,7 +62,7 @@ Fixpoint build_comp (t:AnnoTerm): VM unit :=
   end.
 
 Definition run_vm (t:AnnoTerm) st : vm_st :=
-  execSt st (build_comp t).
+  execSt (build_comp t) st.
 
 
 

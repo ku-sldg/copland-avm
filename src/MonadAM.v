@@ -49,7 +49,7 @@ Definition am_newNonce (bs :BS) : AM EvidenceC :=
 *)
 
 Definition runAM {A:Type} (k:(AM A)) (* (env:AM_Env) *) (st:AM_St) : (option A) * AM_St :=
-  runSt st k.
+  runSt k st.
 
 (*
 Definition incNonce := runAM (am_newNonce 42) empty_amst.

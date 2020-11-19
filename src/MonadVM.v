@@ -133,11 +133,11 @@ Definition receiveResp (rpyi:nat) (q:Plc) : VM EvidenceC :=
 Definition doRemote (t:AnnoTerm) (q:Plc) (reqi:nat) (rpyi:nat) : VM unit :=
   e <- get_store_at reqi ;;
   add_tracem (remote_events t q) ;;
-  put_store_at rpyi (toRemote (unanno t) e).
+  put_store_at rpyi (toRemote t q e).
 
 Definition runParThread (t:AnnoTerm) (p:Plc) (e:EvidenceC) : VM (list Ev) :=
   let el := parallel_vm_events t p in
-  let e' := parallel_att_vm_thread t e in
+  let e' := parallel_vm_thread t p e in
   let loc := fst (range t) in
   put_store_at loc e' ;;
   ret el.
