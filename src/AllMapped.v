@@ -27,12 +27,10 @@ Inductive evMapped : Evidence -> AM_St -> Prop :=
     evMapped e1 st ->
     evMapped e2 st ->
     evMapped (ss e1 e2) st
-             (*
 | evMappedP : forall e1 e2 st,
     evMapped e1 st ->
     evMapped e2 st ->
-    evMapped (pp e1 e2) st 
- *).
+    evMapped (pp e1 e2) st.
 
 
 Inductive allMapped : AnnoTerm -> AM_St -> Plc -> Evidence -> Prop :=
@@ -90,7 +88,7 @@ Inductive allMapped : AnnoTerm -> AM_St -> Plc -> Evidence -> Prop :=
     allMapped t1 st p e ->
     allMapped t2 st p e ->
     allMapped (abseq r (ALL,ALL) t1 t2) st p e
-              (*
+              
 | allMapped_bpar_nn : forall t1 t2 p st e r,
     (*p = am_pl st -> *)
     allMapped t1 st p mt ->
@@ -110,7 +108,7 @@ Inductive allMapped : AnnoTerm -> AM_St -> Plc -> Evidence -> Prop :=
     (*p = am_pl st ->*)
     allMapped t1 st p e ->
     allMapped t2 st p e ->
-    allMapped (abpar r (ALL,ALL) t1 t2) st p e*).
+    allMapped (abpar r (ALL,ALL) t1 t2) st p e.
 
 (*
 Definition allMapped (t:AnnoTerm) (a_st:AM_St) (p:Plc) (e:Evidence) : Prop :=
@@ -130,8 +128,7 @@ Ltac evMappedFacts :=
   | [H: evMapped (hh _ _) _ |- _] => invc H 
   | [H: evMapped (nn _ _) _ |- _] => invc H *)
   | [H: evMapped (ss _ _) _ |- _] => invc H
-(*  | [H: evMapped (pp _ _) _ |- _] => invc H  
-   *)
+  | [H: evMapped (pp _ _) _ |- _] => invc H  
   end;
   destruct_conjs;
   try debound.
@@ -143,8 +140,7 @@ Ltac allMappedFacts :=
   | [H: allMapped (alseq _ _ _) _ _ _ |- _] => invc H
   
   | [H: allMapped (abseq _ _ _ _) _ _ _ |- _] => invc H
-(*  | [H: allMapped (abpar _ _ _ _) _ _ _ |- _] => invc H 
-   *)
+  | [H: allMapped (abpar _ _ _ _) _ _ _ |- _] => invc H 
   end;
   destruct_conjs.
 
@@ -208,6 +204,9 @@ Proof.
     econstructor.
     eassumption.
     eassumption.
+  -
+    allMappedFacts;
+      try (econstructor; eauto).
   -
     allMappedFacts;
       try (econstructor; eauto).

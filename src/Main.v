@@ -46,11 +46,11 @@ Inductive traceS: St -> list Ev -> Prop :=
     traceS st tr ->
     traceS (bsr j e st)
            (tr ++ [(join (pred j) (pl st) )])
-(* | tbp: forall st1 tr1 st2 tr2 tr3 j,
+ | tbp: forall st1 tr1 st2 tr2 tr3 j,
     traceS st1 tr1 -> traceS st2 tr2 ->
     shuffle tr1 tr2 tr3 ->
     traceS (bp j st1 st2)
-           (tr3 ++ [(join (pred j) (pl st2))]) *).
+           (tr3 ++ [(join (pred j) (pl st2))]).
 Hint Constructors traceS : core.
 
 Fixpoint esizeS s:=
@@ -61,7 +61,7 @@ Fixpoint esizeS s:=
   | ls st t => esizeS st + esize t
   | bsl _ st t _ _ => 1 + esizeS st + esize t
   | bsr _ _ st => 1 + esizeS st
-  (*| bp _ st1 st2 => 1 + esizeS st1 + esizeS st2 *)
+  | bp _ st1 st2 => 1 + esizeS st1 + esizeS st2
   end.
 
 Lemma esize_tr:
@@ -76,11 +76,11 @@ Proof.
   
   apply IHt1 in H6.
   apply IHt2 in H7. lia.
-  (*
+  
   apply shuffle_length in H8.
   apply IHt1 in H6.
   apply IHt2 in H7. 
-  lia. *)
+  lia.
 Qed.
 
 Lemma esizeS_tr:
@@ -100,12 +100,12 @@ Proof.
     apply esize_tr in H7. lia.
   - rewrite app_length; simpl.
     apply IHst in H4. lia.
-    (*
+    
   - rewrite app_length; simpl.
     apply IHst1 in H3.
     apply IHst2 in H5.
     apply shuffle_length in H6.
-    lia. *)
+    lia.
 Qed.
 
 Lemma step_silent_tr:
@@ -149,7 +149,7 @@ Proof.
     (*rewrite <- G; auto. *)
     apply step_pl_eq in G1.
     rewrite <- G1; auto.
-    (*
+    
   - pose proof H6 as G.
     eapply IHst1 in H6; eauto.
     (* apply step_seval in G.
@@ -162,7 +162,7 @@ Proof.
     (* rewrite <- G; auto. *)
     apply step_pl_eq in G1.
     rewrite <- G1; auto.
-    apply tbp with (tr1:=tr1)(tr2:=tr2); auto. *)
+    apply tbp with (tr1:=tr1)(tr2:=tr2); auto.
 Qed.
 
 Lemma step_evt_tr:
@@ -179,9 +179,9 @@ Proof.
     
   - constructor. apply tbseq; auto.
     inv H6; auto.
-    (*
+    
   - constructor. eapply tbpar; eauto.
-    inv H3; auto. inv H5; auto. *)
+    inv H3; auto. inv H5; auto.
   - pose proof H6 as G.
     apply step_seval in G.
     pose proof H6 as G1.
@@ -213,7 +213,7 @@ Proof.
     rewrite app_comm_cons;
       (*rewrite <- G; *) rewrite <- G1; auto.
   - rewrite <- app_nil_l; constructor; auto.
-    (*
+    
   - pose proof H6 as G.
     apply step_seval in G.
     eapply IHst1 in H6; eauto.
@@ -231,7 +231,7 @@ Proof.
       (*rewrite <- G; *) rewrite <- G1; auto.
     apply tbp with (tr1:=tr1)(tr2:=(ev::tr2)); auto.
   - rewrite <- app_nil_l; auto.
-    apply tbp with (tr1:=[])(tr2:=[]); auto. *)
+    apply tbp with (tr1:=[])(tr2:=[]); auto.
 Qed.
 
 Lemma nlstar_trace_helper:

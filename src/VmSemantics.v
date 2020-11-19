@@ -226,7 +226,7 @@ Proof.
     repeat anhl.
     eauto. *)
 
-    (*
+    
   -
     df.
     (*
@@ -240,7 +240,6 @@ Proof.
       try (
           repeat (df; try tauto; subst'; try tauto);
           tauto).
-*)
 Defined.
 (*
     df.
@@ -451,7 +450,7 @@ Proof.
     
     (*
     jkjk; eauto.  *)    
-    (* 
+    
   -
     (*
     simpl in *.
@@ -512,7 +511,6 @@ Proof.
     dohtac.
 
     repeat find_inversion. *)
-*)
 Defined.
 
 Lemma fals : forall a (*t'1 n n0*) e x y p o u v v' P,
@@ -734,11 +732,10 @@ Proof.
       simpl.
       eassumption.
       reflexivity. *)
-    (*
+    
   -
     df.
     Print dohtac.
-    Print htac.
     dohtac.
     df.
     dohtac.
@@ -794,7 +791,6 @@ Proof.
     dohtac.
     df.
     eauto. *)
-*)
 Defined.
 
 
@@ -1234,7 +1230,7 @@ Proof.
     reflexivity.
 *)
 
-    (*
+    
   -
     repeat (df; dohtac).
     repeat break_match; df;
@@ -1273,7 +1269,6 @@ Proof.
       repeat find_inversion.
     +
       repeat find_inversion.  *) 
-*)
 Defined.
 
 (* Instance of gen_foo where k=[] *)
@@ -1487,7 +1482,6 @@ Proof.
   eapply lstar_silent_tran; eauto.
 Defined.
 
-
 Lemma lstar_stbsl:
   forall st0 st1 j t p e tr,
     lstar st0 tr st1 ->
@@ -1510,7 +1504,7 @@ Proof.
   eapply lstar_silent_tran; eauto.
 Defined.
 
-(*
+
 Lemma star_stbp:
   forall st0 st1 st2 st3 j,
     star st0 st1 ->
@@ -1522,7 +1516,7 @@ Proof.
   - induction H0; auto.
     eapply star_tran; eauto.
   - eapply star_tran; eauto.
-Qed.*)
+Qed.
 
 
 Lemma ssc_inv : forall e1 e1' e2 e2',
@@ -1708,7 +1702,7 @@ Proof.
       symmetry.
       edestruct IHt1;
         jkjk'; eauto.
-      (*
+      
   -
     df.
     (*
@@ -1736,7 +1730,6 @@ Proof.
     simpl in *;
       try
         reflexivity.
-*)
 Defined.
 
 Ltac do_pl_immut :=
@@ -2585,7 +2578,7 @@ Proof.
           congruence.
     +
       repeat find_inversion.
-      (*
+      
   -
     do_wf_pieces.
 
@@ -2712,7 +2705,6 @@ Proof.
         eapply build_comp_par.
         econstructor.
         eauto.
-*)
         Unshelve.
         eauto.
         exact (aasp (0,0) (ASPC 1 [])).
@@ -2728,12 +2720,10 @@ Proof.
         exact mtc.
         eauto.
         eauto.
-        (*
         eauto.
         eauto.
         eauto.
         eauto.
- *)
 
 Defined.
 
@@ -3276,13 +3266,12 @@ Proof.
   find_inversion.
 Defined.
 
-(*
+
 Axiom bpar_shuffle : forall x p t1 t2 et1 et2,
     lstar (bp x (conf t1 p et1) (conf t2 p et2))
           (shuffled_events (parallel_vm_events t1 p)
                            (parallel_vm_events t2 p))
           (bp x (stop p (aeval t1 p et1)) (stop p (aeval t2 p et2))).
- *)
 
 (*
 Lemma afff : forall t' (n:nat) r s x t n,
@@ -3727,7 +3716,6 @@ Proof.
     eapply stbsrstop.
     econstructor.
 
-(*
   -
     destruct s; destruct r.
     df.
@@ -3847,7 +3835,8 @@ Proof.
     econstructor.
     apply stbpstop.
     econstructor. *)
-*)
+
+        
     Unshelve.
     exact mtc.
     eauto.
@@ -3905,10 +3894,6 @@ Proof.
   eapply ordered with (p:=0) (e:=mt); eauto.
   eapply run_lstar. eauto.
 Defined.
-
-
-    
-  
 
 Theorem vm_ordered : forall t tr ev0 ev1 e e' o o' t',
     t = annotated t' -> 

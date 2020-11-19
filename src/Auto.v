@@ -1,4 +1,4 @@
-Require Import GenStMonad StructTactics MonadVM.
+Require Import GenStMonad StructTactics MonadVM Term.
 Require Import Coq.Arith.Peano_dec.
 
 Ltac fail_if_in_hyps H := 
@@ -37,7 +37,28 @@ Ltac dunit :=
   | [H:unit |- _] => destruct H
   end.
 
-Ltac dohtac := (*try htac; *)
+Lemma h : forall a b t1 t2 (*t n *),
+    (*abpar a b t1 t2 = snd (anno t n) -> *)
+    well_formed (abpar a b t1 t2) -> 
+    (PeanoNat.Nat.eqb (fst (range t1)) (fst (range t2)) = false).
+Proof.
+  intros.
+  destruct a; destruct b.
+  assert ( (fst (range t1)) <> (fst (range t2))).
+  { eapply afaf; eauto. }
+  rewrite PeanoNat.Nat.eqb_neq.
+  assumption.
+Defined.
+
+Ltac htac :=
+  let tac := eapply h; eauto in
+  match goal with
+  | [H: well_formed (abpar _ _ ?t1 ?t2) (*(abpar _ _ ?t1 ?t2 = snd _*) |- _] =>
+    let X := fresh in
+    assert (PeanoNat.Nat.eqb (fst (range t1)) (fst (range t2)) = false) as X by tac; rewrite X in *; clear X
+  end.
+
+Ltac dohtac := try htac; 
                try rewrite PeanoNat.Nat.eqb_refl in *;
                try rewrite PeanoNat.Nat.eqb_eq in *.
 

@@ -46,7 +46,7 @@ Inductive Term: Set :=
 | att: Plc -> Term -> Term
 | lseq: Term -> Term -> Term
 | bseq: Split -> Term -> Term -> Term
-(*| bpar: Split -> Term -> Term -> Term*).
+| bpar: Split -> Term -> Term -> Term.
 
 (** The structure of evidence. *)
 
@@ -58,7 +58,7 @@ Inductive Evidence: Set :=
                          (*
 | nn: N_ID -> Evidence -> Evidence *)
 | ss: Evidence -> Evidence -> Evidence
-(*| pp: Evidence -> Evidence -> Evidence*).
+| pp: Evidence -> Evidence -> Evidence.
 
 
 Definition splitEv_T (sp:SP) (e:Evidence) : Evidence :=
@@ -84,8 +84,8 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
   | lseq t1 t2 => eval t2 p (eval t1 p e)
   | bseq s t1 t2 => ss (eval t1 p (splitEv_T (fst s) e))
                        (eval t2 p (splitEv_T (snd s) e)) 
-  (*| bpar s t1 t2 => pp (eval t1 p (splitEv_T (fst s) e))
-                      (eval t2 p (splitEv_T (snd s) e)) *)
+  | bpar s t1 t2 => pp (eval t1 p (splitEv_T (fst s) e))
+                      (eval t2 p (splitEv_T (snd s) e))
   end.
 
 (** * Events
@@ -162,8 +162,8 @@ Inductive AnnoTerm: Set :=
 | aasp: Range -> ASP -> AnnoTerm
 | aatt: Range -> Plc -> AnnoTerm -> AnnoTerm
 | alseq: Range -> AnnoTerm -> AnnoTerm -> AnnoTerm
-| abseq: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm (*
-| abpar: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm*).
+| abseq: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
+| abpar: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm.
 
 (*
 Inductive AnnoEvidence: Set :=
@@ -213,7 +213,7 @@ Fixpoint esize t :=
   | aatt _ _ t1 => 2 + esize t1
   | alseq _ t1 t2 => esize t1 + esize t2
   | abseq _ _ t1 t2 => 2 + esize t1 + esize t2
-  (*| abpar _ _ t1 t2 => 2 + esize t1 + esize t2 *)
+  | abpar _ _ t1 t2 => 2 + esize t1 + esize t2
   end.
 
 Definition range x :=
@@ -222,7 +222,7 @@ Definition range x :=
   | aatt r _ _ => r
   | alseq r _ _ => r
   | abseq r _ _ _ => r
-  (*| abpar r _ _ _ => r*)
+  | abpar r _ _ _ => r
   end.
 
 (** This function annotates a term.  It feeds a natural number
@@ -243,10 +243,10 @@ Fixpoint anno (t: Term) i: nat * AnnoTerm :=
     let (j, a) := anno x (S i) in
     let (k, b) := anno y j in
     (S k, abseq (i, S k) s a b)
-  (*| bpar s x y =>
+  | bpar s x y =>
     let (j, a) := anno x (S i) in
     let (k, b) := anno y j in
-    (S k, abpar (i, S k) s a b) *)
+    (S k, abpar (i, S k) s a b)
   end.
 
 (*
@@ -380,9 +380,249 @@ Ltac jkjk' :=
   | [H: ?X = _ |-  context[?X] ] => rewrite <- H
   end.
 
+Fixpoint unanno a :=
+  match a with
+  | aasp _ a => asp a
+  | aatt _ p t => att p (unanno t)
+  | alseq _ a1 a2 => lseq (unanno a1) (unanno a2)
+                         
+  | abseq _ spl a1 a2 => bseq spl (unanno a1) (unanno a2) 
+  | abpar _ spl a1 a2 => bpar spl (unanno a1) (unanno a2)
+  end.
+
+(** This predicate determines if an annotated term is well formed,
+    that is if its ranges correctly capture the relations between a
+    term and its associated events. *)
+
+Inductive well_formed: AnnoTerm -> Prop :=
+| wf_asp: forall r x,
+    snd r = S (fst r) ->
+    well_formed (aasp r x)
+| wf_att: forall r p x,
+    well_formed x ->
+    S (fst r) = fst (range x) ->
+    snd r = S (snd (range x)) ->
+    well_formed (aatt r p x)
+| wf_lseq: forall r x y,
+    well_formed x -> well_formed y ->
+    fst r = fst (range x) ->
+    snd (range x) = fst (range y) ->
+    snd r = snd (range y) ->
+    well_formed (alseq r x y)
+| wf_bseq: forall r s x y,
+    well_formed x -> well_formed y ->
+    S (fst r) = fst (range x) ->
+    snd (range x) = fst (range y) ->
+    snd r = S (snd (range y)) ->
+    well_formed (abseq r s x y)
+| wf_bpar: forall r s x y,
+    well_formed x -> well_formed y ->
+    (*(rx1,rx2) = (range x) ->
+    (ry1,ry2) = (range y) -> *)
+    
+    S (fst r) = fst (range x) ->
+    snd (range x) = fst (range y) ->
+    (snd r) = S (snd (range y)) ->
+    fst (range y) > fst (range x) ->
+
+    
+    (*r2 > r1 -> *)
+    well_formed (abpar r s x y).
+
+                (*
+| wf_bpar: forall r s x y,
+    well_formed x -> well_formed y ->
+    S (fst r) = fst (range x) ->
+    snd (range x) = fst (range y) ->
+    snd r = S (snd (range y)) ->
+    well_formed (abpar r s x y). *)
+Hint Constructors well_formed : core.
+
+Lemma wf_lseq_pieces: forall r t1 t2,
+    well_formed (alseq r t1 t2) ->
+    well_formed t1 /\ well_formed t2.
+Proof.
+  intros.
+  inversion H.
+  tauto.
+Defined.
+
+Lemma wf_at_pieces: forall t r p,
+    well_formed (aatt r p t) ->
+    well_formed t.
+Proof.
+  intros.
+  inversion H.
+  tauto.
+Defined.
+
+
+Lemma wf_bseq_pieces: forall r s t1 t2,
+    well_formed (abseq r s t1 t2) ->
+    well_formed t1 /\ well_formed t2.
+Proof.
+  intros.
+  inversion H.
+  tauto.
+Defined.
+
+
+Lemma wf_bpar_pieces: forall r s t1 t2,
+    well_formed (abpar r s t1 t2) ->
+    well_formed t1 /\ well_formed t2.
+Proof.
+  intros.
+  inversion H.
+  tauto.
+Defined.
+
+
+
+Ltac do_wf_pieces :=
+  match goal with
+  | [H: well_formed (alseq _ _ _) |- _] =>
+    (edestruct wf_lseq_pieces; eauto)
+  | [H: well_formed (aatt _ _ ?t) |- _] =>   
+    assert (well_formed t)
+      by (eapply wf_at_pieces; eauto)
+  | [H: well_formed (abseq _ _ _ _ ) |- _] =>
+    (edestruct wf_bseq_pieces; eauto)
+  | [H: well_formed (abpar _ _ _ _ ) |- _] =>
+    (edestruct wf_bpar_pieces; eauto)
+      
+  end.
+
+Lemma well_formed_range:
+  forall t,
+    well_formed t ->
+    snd (range t) = fst (range t) + esize t.
+Proof.
+  induction t; intros H; simpl; inv H; simpl;
+    repeat find_apply_hyp_hyp; lia.
+Defined.
+
+Lemma anno_well_formed:
+  forall t i,
+    well_formed (snd (anno t i)).
+Proof.
+  induction t; intros; simpl;
+    try (auto;
+    repeat expand_let_pairs;
+    econstructor; simpl; auto;
+    repeat rewrite anno_range; simpl; reflexivity).
+  -
+    Check anno_range.
+    (*
+      anno_range
+      : forall (x : Term) (i : nat), range (snd (anno x i)) = (i, fst (anno x i))
+     *)
+    
+    auto.
+    repeat expand_let_pairs.
+    simpl.
+    destruct (anno t1 (S i)) eqn:hey.
+    
+    econstructor.
+    +
+    pose (IHt1 (S i)).
+    rewrite hey in *. eassumption.
+    +
+      eauto.
+    +
+      simpl.
+      assert (a = snd (anno t1 (S i))) by (rewrite hey; tauto).
+      subst.
+      
+      rewrite anno_range.
+      simpl.
+      reflexivity.
+    +
+      rewrite anno_range.
+      simpl.
+      assert (a = snd (anno t1 (S i))) by (rewrite hey; tauto).
+      subst.
+      rewrite anno_range.
+      rewrite hey.
+      simpl.
+      tauto.
+    +
+      simpl.
+      rewrite anno_range.
+      simpl.
+      reflexivity.
+    +
+      
+      
+      
+      (*
+      pose (IHt1 (S i)).
+      rewrite hey in *.
+      eauto.
+      simpl.
+    rewrite anno_range.
+    reflexivity.
+    rewrite anno_range.
+    simpl.
+    rewrite anno_range.
+    reflexivity.
+    simpl.
+    rewrite anno_range.
+    reflexivity.
+    simpl.
+    rewrite anno_range.
+    simpl.
+    eapply anno_mono.
+    rewrite anno_range.
+    simpl. 
+
+    rewrite hey.
+    simpl.
+    reflexivity. *)
+    Check anno_mono.
+    rewrite anno_range.
+    simpl.
+    assert (a = snd (anno t1 (S i))) by (rewrite hey; tauto).
+    subst.
+    eapply anno_mono.
+    rewrite hey.
+    simpl.
+    rewrite anno_range.
+    simpl.
+    eassumption.
+Defined.
+
 (*
-Lemma afaf : forall i k s a b t' n,
-    (abpar (i, k) s a b) = snd (anno t' n) ->
+Lemma anno_well_formed:
+  forall t i,
+    well_formed (snd (anno t i)).
+Proof.
+  induction t; intros; simpl; auto;
+    repeat expand_let_pairs;
+    econstructor; simpl; auto;
+      repeat rewrite anno_range; simpl; reflexivity.
+Defined.
+ *)
+
+
+Lemma afaf : forall r s a b,
+    well_formed (abpar r s a b) -> 
+    (*(abpar (i, k) s a b) = snd (anno t' n) -> *)
+    (fst (range a)) <> (fst (range b)).
+Proof.
+  intros.
+  inversion H.
+  subst.
+  rewrite <- H6.
+  rewrite <- H7.
+  simpl.
+  lia.
+Defined.
+
+
+(*
+Lemma afaf : forall i k s a b,
+    well_formed (abpar (i,k) s a b) -> 
+    (*(abpar (i, k) s a b) = snd (anno t' n) -> *)
     (fst (range a)) <> (fst (range b)).
 Proof.
   intros.
@@ -454,121 +694,13 @@ Proof.
 Defined.
 *)
 
-Fixpoint unanno a :=
-  match a with
-  | aasp _ a => asp a
-  | aatt _ p t => att p (unanno t)
-  | alseq _ a1 a2 => lseq (unanno a1) (unanno a2)
-                         
-  | abseq _ spl a1 a2 => bseq spl (unanno a1) (unanno a2) 
-  (*| abpar _ spl a1 a2 => bpar spl (unanno a1) (unanno a2) *)
-  end.
-
-(** This predicate determines if an annotated term is well formed,
-    that is if its ranges correctly capture the relations between a
-    term and its associated events. *)
-
-Inductive well_formed: AnnoTerm -> Prop :=
-| wf_asp: forall r x,
-    snd r = S (fst r) ->
-    well_formed (aasp r x)
-| wf_att: forall r p x,
-    well_formed x ->
-    S (fst r) = fst (range x) ->
-    snd r = S (snd (range x)) ->
-    well_formed (aatt r p x)
-| wf_lseq: forall r x y,
-    well_formed x -> well_formed y ->
-    fst r = fst (range x) ->
-    snd (range x) = fst (range y) ->
-    snd r = snd (range y) ->
-    well_formed (alseq r x y)
-| wf_bseq: forall r s x y,
-    well_formed x -> well_formed y ->
-    S (fst r) = fst (range x) ->
-    snd (range x) = fst (range y) ->
-    snd r = S (snd (range y)) ->
-    well_formed (abseq r s x y) (*
-| wf_bpar: forall r s x y,
-    well_formed x -> well_formed y ->
-    S (fst r) = fst (range x) ->
-    snd (range x) = fst (range y) ->
-    snd r = S (snd (range y)) ->
-    well_formed (abpar r s x y)*).
-Hint Constructors well_formed : core.
-
-Lemma wf_lseq_pieces: forall r t1 t2,
-    well_formed (alseq r t1 t2) ->
-    well_formed t1 /\ well_formed t2.
-Proof.
-  intros.
-  inversion H.
-  tauto.
-Defined.
-
-Lemma wf_at_pieces: forall t r p,
-    well_formed (aatt r p t) ->
-    well_formed t.
-Proof.
-  intros.
-  inversion H.
-  tauto.
-Defined.
 
 
-Lemma wf_bseq_pieces: forall r s t1 t2,
-    well_formed (abseq r s t1 t2) ->
-    well_formed t1 /\ well_formed t2.
-Proof.
-  intros.
-  inversion H.
-  tauto.
-Defined.
-
-(*
-Lemma wf_bpar_pieces: forall r s t1 t2,
-    well_formed (abpar r s t1 t2) ->
-    well_formed t1 /\ well_formed t2.
-Proof.
-  intros.
-  inversion H.
-  tauto.
-Defined.
-*)
 
 
-Ltac do_wf_pieces :=
-  match goal with
-  | [H: well_formed (alseq _ _ _) |- _] =>
-    (edestruct wf_lseq_pieces; eauto)
-  | [H: well_formed (aatt _ _ ?t) |- _] =>   
-    assert (well_formed t)
-      by (eapply wf_at_pieces; eauto)
-  | [H: well_formed (abseq _ _ _ _ ) |- _] =>
-    (edestruct wf_bseq_pieces; eauto)
-  (*| [H: well_formed (abpar _ _ _ _ ) |- _] =>
-    (edestruct wf_bpar_pieces; eauto) *)
-      
-  end.
 
-Lemma well_formed_range:
-  forall t,
-    well_formed t ->
-    snd (range t) = fst (range t) + esize t.
-Proof.
-  induction t; intros H; simpl; inv H; simpl;
-    repeat find_apply_hyp_hyp; lia.
-Defined.
 
-Lemma anno_well_formed:
-  forall t i,
-    well_formed (snd (anno t i)).
-Proof.
-  induction t; intros; simpl; auto;
-    repeat expand_let_pairs;
-    econstructor; simpl; auto;
-      repeat rewrite anno_range; simpl; reflexivity.
-Defined.
+
 
 (** Eval for annotated terms. *)
 
@@ -579,8 +711,8 @@ Fixpoint aeval t p e :=
   | alseq _ t1 t2 => aeval t2 p (aeval t1 p e)
   | abseq _ s t1 t2 => ss (aeval t1 p ((splitEv_T (fst s)) e))
                          (aeval t2 p ((splitEv_T (snd s)) e)) 
-  (*| abpar _ s t1 t2 => pp (aeval t1 p ((splitEv_T (fst s)) e))
-                         (aeval t2 p ((splitEv_T (snd s)) e)) *)
+  | abpar _ s t1 t2 => pp (aeval t1 p ((splitEv_T (fst s)) e))
+                         (aeval t2 p ((splitEv_T (snd s)) e))
   end. 
 
 Lemma eval_aeval:
@@ -654,7 +786,7 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
       snd r = S i ->
       events (abseq r s t1 t2) p
              (join i p)
-(*
+
 | evtsbparsplit:
     forall r i s t1 t2 p,
       fst r = i ->
@@ -672,7 +804,7 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
     forall r i s t1 t2 p,
       snd r = S i ->
       events (abpar r s t1 t2) p
-             (join i p)*).
+             (join i p).
 Hint Constructors events : core.
 
 Lemma events_range:
@@ -800,7 +932,7 @@ Proof.
 
     + eapply ex_intro; split; try (auto; eauto;tauto).
     + eapply ex_intro; split; try (eauto; auto; tauto).
-(*
+
   -
     apply bra_range with (i:=i) (r:=r) in H2; eauto;
       repeat destruct_disjunct; subst;
@@ -810,7 +942,7 @@ Proof.
              eauto; tauto).
 
     + eapply ex_intro; split; auto.
-    + eapply ex_intro; split; eauto. *)
+    + eapply ex_intro; split; eauto.
 Qed.
 
 
@@ -880,12 +1012,12 @@ Inductive evalR : Term -> Plc -> Evidence -> Evidence -> Prop :=
     evalR t1 p e1 e1' ->
     evalR t2 p e2 e2' ->
     evalR (bseq s t1 t2) p e (ss e1' e2')
-(*| evalR_bpar: forall s e e1 e2 e1' e2' p t1 t2,
+| evalR_bpar: forall s e e1 e2 e1' e2' p t1 t2,
     splitEv_T_R (fst s) e e1 ->
     splitEv_T_R (snd s) e e2 ->
     evalR t1 p e1 e1' ->
     evalR t2 p e2 e2' ->
-    evalR (bpar s t1 t2) p e (pp e1' e2') *).
+    evalR (bpar s t1 t2) p e (pp e1' e2').
 
 Ltac jkjke :=
   match goal with

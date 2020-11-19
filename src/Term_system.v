@@ -37,7 +37,7 @@ Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
                            (ev_sys y p))
                    (leaf ((pred j), j)
                    (join (pred j) p)))
-  (*| abpar (i, j) s x y =>
+  | abpar (i, j) s x y =>
     before (i, j)
            (leaf (i, S i)
                  (split i p))
@@ -46,7 +46,7 @@ Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
                           (ev_sys x p)
                           (ev_sys y p))
                    (leaf ((pred j), j)
-                   (join (pred j) p))) *)
+                   (join (pred j) p)))
   end.
 
 Lemma evsys_range:
@@ -73,9 +73,9 @@ Proof.
   - apply ws_before; auto; repeat rewrite evsys_range; auto.
     
   - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto).
-    (*
+    
   - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto).
-    repeat (apply ws_merge; simpl in *; auto; repeat rewrite evsys_range; auto). *)
+    repeat (apply ws_merge; simpl in *; auto; repeat rewrite evsys_range; auto).
 Qed.
 
 (** The events in the event system correspond to the events associated
@@ -95,9 +95,9 @@ Proof.
     
   - rewrite H9 in H0; simpl in H0.
     inv H0; inv H2; auto; inv H1; auto.
-    (*
+    
   - rewrite H9 in H0; simpl in H0.
-    inv H0; inv H2; auto; inv H1; auto. *)
+    inv H0; inv H2; auto; inv H1; auto.
   - inv H0; auto.
   - rewrite H6; simpl.
     inv H0; auto.
@@ -108,11 +108,11 @@ Proof.
     inv H0; auto.
     rewrite H11 in H9.
     apply Nat.succ_inj in H9; subst; auto.
-    (*
+    
   - rewrite H9; simpl.
     inv H0; auto.
-    rewrite H11 in H9.
-    apply Nat.succ_inj in H9; subst; auto. *)
+    rewrite H12 in H9.
+    apply Nat.succ_inj in H9; subst; auto.
 Qed.
 
 (** Maximal events are unique. *)
@@ -154,11 +154,11 @@ Proof.
       repeat apply before_sup in H4.
       repeat apply before_sup in H5.
       inv H4; inv H5; auto.
-      (*
+      
     + destruct r as [i j]; simpl in *.
-      repeat apply before_sup in H4.
       repeat apply before_sup in H5.
-      inv H4; inv H5; auto. *)
+      repeat apply before_sup in H6.
+      inv H5; inv H6; auto.
 Qed.
 
 Lemma evsys_max_unique:
@@ -187,9 +187,9 @@ Proof.
     
   - repeat apply before_sup in H4.
     inv H4; auto.
-    (*
-  - repeat apply before_sup in H4.
-    inv H4; auto. *)
+    
+  - repeat apply before_sup in H5.
+    inv H5; auto.
 Qed.
 
 (*

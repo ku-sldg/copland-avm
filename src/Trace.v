@@ -263,14 +263,14 @@ Inductive trace: AnnoTerm -> Plc ->
           ((split (fst r) p)
              :: tr0 ++ tr1 ++
              [(join (pred (snd r)) p)])
-(*| tbpar: forall r s x y p tr0 tr1 tr2,
+| tbpar: forall r s x y p tr0 tr1 tr2,
     trace x p tr0 ->
     trace y p tr1 ->
     shuffle tr0 tr1 tr2 ->
     trace (abpar r s x y) p
           ((split (fst r) p)
              :: tr2 ++
-             [(join (pred (snd r)) p)])*).
+             [(join (pred (snd r)) p)]).
 Hint Resolve tasp : core.
 
 Lemma trace_length:
@@ -286,10 +286,10 @@ Proof.
   - apply IHt1 in H6.
     apply IHt2 in H7.
     rewrite app_length. simpl in *. lia.
-    (*
+    
   - apply IHt1 in H6.
     apply IHt2 in H7.
-    apply shuffle_length in H8. lia. *)
+    apply shuffle_length in H8. lia. 
 Qed.
 
 (** The events in a trace correspond to the events associated with an
@@ -328,7 +328,7 @@ Proof.
       rewrite H9.
       apply evtsbseqjoin; auto.
       inv H.
-  (*  + destruct H1; subst.
+    + destruct H1; subst.
       apply evtsbparsplit; auto.
       apply in_app_iff in H; destruct H.
       apply shuffle_in with (e:=v) in H0.
@@ -338,7 +338,7 @@ Proof.
       apply evtsbparr; auto.
       rewrite H10 in H; simpl in H.
       destruct H; try tauto; subst.
-      apply evtsbparjoin; auto. *)
+      apply evtsbparjoin; auto.
   - induction H0; inv H.
     + inv H1; destruct r as [i j]; simpl in *; auto.
     + simpl; rewrite in_app_iff; simpl.
@@ -356,16 +356,16 @@ Proof.
       inv H1; auto.
       rewrite H11 in *.
       auto.
-      (*
+      
     + simpl.
       rewrite in_app_iff.
       simpl.
       inv H1; auto.
-      * apply IHtrace1 in H12; auto.
+      * apply IHtrace1 in H13; auto.
         eapply shuffle_in_left in H0; eauto.
-      * apply IHtrace2 in H12; auto.
+      * apply IHtrace2 in H13; auto.
         eapply shuffle_in_right in H0; eauto.
-      * repeat find_rewrite; simpl; auto. *)
+      * repeat find_rewrite; simpl; auto.
 Qed.
 
 Lemma trace_range:
@@ -478,30 +478,30 @@ Proof.
         apply well_formed_range in H6; auto.
         lia.
         solve_by_inversion.
-        (*
+        
   - destruct r as [i j]; simpl in *; subst; simpl.
     apply NoDup_cons.
     + intro HH.
       rewrite in_app_iff in HH; destruct HH.
       * eapply shuffle_in in H1; eauto.
         destruct H1.
-        -- eapply trace_range in H12; eauto.
-           simpl in H12.
-           lia.
         -- eapply trace_range in H13; eauto.
            simpl in H13.
-           apply well_formed_range in H5; auto.
+           lia.
+        -- eapply trace_range in H14; eauto.
+           simpl in H14.
+           apply well_formed_range in H6; auto.
            lia.
       * inv H1.
         discriminate H2.
         solve_by_inversion.
     + apply nodup_append; unfold disjoint_lists; auto; intros.
-      * apply shuffle_nodup_append in H14;
+      * apply shuffle_nodup_append in H15;
           unfold disjoint_lists; auto; intros.
         eapply IHt1; eauto.
         eapply IHt2; eauto.
-        eapply trace_range in H12; eauto.
         eapply trace_range in H13; eauto.
+        eapply trace_range in H14; eauto.
         lia.
       * apply NoDup_cons.
         intro HH.
@@ -510,17 +510,17 @@ Proof.
       * inv H2.
         -- eapply shuffle_in in H1; eauto.
            destruct H1.
-           eapply trace_range in H12; eauto.
-           simpl in H12.
-           apply well_formed_range in H6; auto.
-           lia.
            eapply trace_range in H13; eauto.
            simpl in H13.
+           apply well_formed_range in H6; auto.
+           lia.
+           eapply trace_range in H14; eauto.
+           simpl in H14.
            lia.
      
     
 
-        -- solve_by_inversion. *)
+        -- solve_by_inversion.
 Qed.
 
 (** * Event Systems and Traces *)
@@ -564,7 +564,7 @@ Proof.
     + inv H4; auto.
       repeat (rewrite in_app_iff; right).
       simpl; left; auto.
-      (*
+      
   - left. solve_by_inversion.
   - right. inv H4; auto.
     + inv H5; auto.
@@ -575,7 +575,7 @@ Proof.
         eapply shuffle_in_right in H0; eauto.
         rewrite in_app_iff; auto.
     + inv H5.
-      apply in_app_iff; right; simpl; auto. *)
+      apply in_app_iff; right; simpl; auto.
 Qed.
 
 (** The traces associated with an annotated term are compatible with
@@ -655,8 +655,8 @@ Proof.
         apply earlier_right; auto.
         apply earlier_left; auto.
     + solve_by_inversion.
-      (*
-  - inv H12. inv H13.
+      
+  - inv H13. inv H14.
     + inv H4; eapply evsys_tr_in in H5; eauto.
       * apply earlier_cons; auto.
         apply shuffle_in_left with (es1:=tr1)(es2:=tr2) in H5; auto.
@@ -668,8 +668,8 @@ Proof.
       apply earlier_cons; auto.
       apply in_app_iff; right; simpl; auto.
   - solve_by_inversion.
-  - inv H12.
-    + inv H14. inv H13.
+  - inv H13.
+    + inv H15. inv H14.
       * eapply evsys_tr_in in H4; eauto.
         apply shuffle_in_left with (e:= ev0) in H0; auto.
         apply earlier_cons_shift; auto.
@@ -678,7 +678,7 @@ Proof.
         apply shuffle_in_right with (e:=ev0) in H0; auto.
         apply earlier_cons_shift; auto.
         apply earlier_append; simpl; auto.
-    + inv H13.
+    + inv H14.
       * apply IHtrace1 in H6; auto.
         apply shuffle_earlier_left
           with (e0:=ev0)(e1:=ev1) in H0; auto.
@@ -689,5 +689,5 @@ Proof.
           with (e0:=ev0)(e1:=ev1) in H0; auto.
         apply earlier_cons_shift; auto.
         apply earlier_left; auto.
-    + solve_by_inversion. *)
+    + solve_by_inversion.
 Qed.
