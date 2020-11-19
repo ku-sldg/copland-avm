@@ -135,16 +135,17 @@ Definition doRemote (t:AnnoTerm) (q:Plc) (reqi:nat) (rpyi:nat) : VM unit :=
   add_tracem (remote_events t q) ;;
   put_store_at rpyi (toRemote t q e).
 
-Definition runParThread (t:AnnoTerm) (p:Plc) (e:EvidenceC) : VM (list Ev) :=
+Definition runParThread (t:AnnoTerm) (p:Plc) (loc1:nat) (loc2:nat) : VM (list Ev) :=
+  e <- get_store_at loc1 ;;
   let el := parallel_vm_events t p in
   let e' := parallel_vm_thread t p e in
-  let loc := fst (range t) in
-  put_store_at loc e' ;;
+  (*let loc := fst (range t) in *)
+  put_store_at loc2 e' ;;
   ret el.
 
-Definition runParThreads (t1 t2:AnnoTerm) (p:Plc) (e1 e2:EvidenceC) : VM unit :=
-  el1 <- runParThread t1 p e1 ;;
-  el2 <- runParThread t2 p e2 ;;
+Definition runParThreads (t1 t2:AnnoTerm) (p:Plc) (loc_e1 loc_e1' loc_e2 loc_e2':nat) : VM unit :=
+  el1 <- runParThread t1 p loc_e1 loc_e1' ;;
+  el2 <- runParThread t2 p loc_e2 loc_e2' ;;
   add_tracem (shuffled_events el1 el2).
 
 (** * Helper functions for Appraisal *)

@@ -618,6 +618,24 @@ Proof.
   lia.
 Defined.
 
+(*
+(*TODO: not true, pick different index for st_store in bpar case *)
+Lemma afaf2 : forall r s a b,
+    well_formed (abpar r s a b) -> 
+    (*(abpar (i, k) s a b) = snd (anno t' n) -> *)
+    (fst (range b)) <> (snd (range a)).
+Proof.
+  intros.
+  inversion H.
+  subst.
+  rewrite <- H7
+  rewrite <- H6.
+  rewrite <- H7.
+  simpl.
+  lia.
+Defined.
+*)
+
 
 (*
 Lemma afaf : forall i k s a b,

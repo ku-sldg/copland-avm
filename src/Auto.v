@@ -50,6 +50,58 @@ Proof.
   assumption.
 Defined.
 
+Lemma h' : forall a b t1 t2 (*t n *),
+    (*abpar a b t1 t2 = snd (anno t n) -> *)
+    well_formed (abpar a b t1 t2) -> 
+    (PeanoNat.Nat.eqb (fst (range t2)) (fst (range t1)) = false).
+Proof.
+  intros.
+  destruct a; destruct b.
+  assert ( (fst (range t1)) <> (fst (range t2))).
+  { eapply afaf; eauto. }
+  rewrite PeanoNat.Nat.eqb_neq.
+  congruence.
+Defined.
+
+(*
+Lemma h'' : forall a b t1 t2 c d e f (*t n *),
+    (*abpar a b t1 t2 = snd (anno t n) -> *)
+    well_formed (abpar a b t1 t2) ->
+    range t1 = (c,d) ->
+    range t2 = (e,f) ->
+    (PeanoNat.Nat.eqb (c) (e) = false).
+Proof.
+  intros.
+  destruct a; destruct b.
+  assert ( (fst (range t1)) <> (fst (range t2))).
+  { eapply afaf; eauto. }
+  rewrite PeanoNat.Nat.eqb_neq.
+  rewrite H0 in *.
+  rewrite H1 in *.
+  simpl in *.
+  assumption.
+Defined.
+
+Lemma h''' : forall a b t1 t2 c d e f (*t n *),
+    (*abpar a b t1 t2 = snd (anno t n) -> *)
+    well_formed (abpar a b t1 t2) ->
+    range t1 = (c,d) ->
+    range t2 = (e,f) ->
+    (PeanoNat.Nat.eqb (e) (d) = false).
+Proof.
+  intros.
+  destruct a; destruct b.
+  assert ( (fst (range t1)) <> (fst (range t2))).
+  { eapply afaf; eauto. }
+  rewrite PeanoNat.Nat.eqb_neq.
+  rewrite H0 in *.
+  rewrite H1 in *.
+  simpl in *.
+  Locate afaf.
+  assumption.
+Defined.
+*)
+
 Ltac htac :=
   let tac := eapply h; eauto in
   match goal with
@@ -58,7 +110,33 @@ Ltac htac :=
     assert (PeanoNat.Nat.eqb (fst (range t1)) (fst (range t2)) = false) as X by tac; rewrite X in *; clear X
   end.
 
-Ltac dohtac := try htac; 
+Ltac htac' :=
+  let tac := eapply h'; eauto in
+  match goal with
+  | [H: well_formed (abpar _ _ ?t1 ?t2) (*(abpar _ _ ?t1 ?t2 = snd _*) |- _] =>
+    let X := fresh in
+    assert (PeanoNat.Nat.eqb (fst (range t2)) (fst (range t1)) = false) as X by tac; rewrite X in *; clear X
+  end.
+
+(*
+Ltac htac'' :=
+  (*let tac := eapply h''; eauto in *)
+  match goal with
+  | [H: well_formed (abpar _ _ ?t1 ?t2) (*(abpar _ _ ?t1 ?t2 = snd _*),
+        H2: range ?t1 = (?c,_),
+            H3: range ?t2 = (?e,_)
+
+     |- _] =>
+    let X := fresh in
+    assert (PeanoNat.Nat.eqb (c) (e) = false) as X by (eapply h''; [apply H | apply H2 | apply H3]); rewrite X in *; clear X
+  end.
+*)
+
+
+
+Ltac dohtac := try htac;
+               try htac';
+               (*try htac''; *)
                try rewrite PeanoNat.Nat.eqb_refl in *;
                try rewrite PeanoNat.Nat.eqb_eq in *.
 
