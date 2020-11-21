@@ -1,7 +1,4 @@
-Require Import MonadVM GenStMonad Term ConcreteEvidence Axioms_Io.
-
-Require Import List.
-Import ListNotations.
+Require Import Term GenStMonad MonadVM.
 
 (** Monadic VM implementation *)
 
