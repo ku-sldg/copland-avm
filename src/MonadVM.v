@@ -47,7 +47,7 @@ Definition put_ev (e:EvidenceC) : VM unit :=
 
 Definition get_ev : VM EvidenceC :=
   st <- get ;;
-     ret (st_ev st).
+  ret (st_ev st).
 
 Definition get_pl : VM Plc :=
   st <- get ;;

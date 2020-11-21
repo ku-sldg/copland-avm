@@ -34,8 +34,12 @@ Definition get {S} : St S S := fun s => (Some s, s).
 Definition runSt {S A} (h : St S A) (s : S)  : (option A) * S % type :=
   h s.
 
+Definition evalSt {S A} (h : St S A) (s : S) : option A :=
+ fst (runSt h s).
+
 Definition execSt {S A} (h : St S A) (s : S) : S :=
-  snd (h s).
+  snd ((*runSt*) h s).
+
 
 
 
