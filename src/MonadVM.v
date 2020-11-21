@@ -148,6 +148,15 @@ Definition runParThreads (t1 t2:AnnoTerm) (p:Plc) (loc_e1 loc_e1' loc_e2 loc_e2'
   el2 <- runParThread t2 p loc_e2 loc_e2' ;;
   add_tracem (shuffled_events el1 el2).
 
+Definition join_seq (n:nat) (p:Plc) (e1:EvidenceC) (e2:EvidenceC) : VM unit :=
+  put_ev (ssc e1 e2) ;;
+  add_tracem [Term.join n p].
+
+Definition join_par (n:nat) (p:Plc) (e1:EvidenceC) (e2:EvidenceC) : VM unit :=
+  put_ev (ppc e1 e2) ;;
+  add_tracem [Term.join n p].
+  
+
 (** * Helper functions for Appraisal *)
 
 Definition extractUev (e:EvidenceC) : VM (BS * EvidenceC) :=
