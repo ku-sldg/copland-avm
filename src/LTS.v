@@ -299,6 +299,49 @@ Proof.
   eapply star_tran; eauto.
 Qed.
 
+(* Congruence lemmas for Copland LTS semantics *)
+Lemma lstar_stls :
+  forall st0 st1 t tr,
+    lstar st0 tr st1 -> lstar (ls st0 t) tr (ls st1 t).
+Proof.
+  intros.
+  induction H; auto.
+  eapply lstar_tran; eauto.
+  eapply lstar_silent_tran; eauto.
+Qed.
+
+Lemma lstar_strem : forall st st' tr p r,
+    lstar st tr
+          st' ->
+    lstar (rem r p st) tr (rem r p st').
+Proof.
+  intros.
+  induction H; auto.
+  eapply lstar_tran; eauto.
+  eapply lstar_silent_tran; eauto.
+Defined.
+
+Lemma lstar_stbsl:
+  forall st0 st1 j t p e tr,
+    lstar st0 tr st1 ->
+    lstar (bsl j st0 t p e) tr (bsl j st1 t p e).
+Proof.
+  intros.
+  induction H; auto.
+  eapply lstar_tran; eauto.
+  eapply lstar_silent_tran; eauto.
+Defined.
+
+Lemma lstar_stbsr:
+  forall st0 st1 j e tr,
+    lstar st0 tr st1 ->
+    lstar (bsr j e st0) tr (bsr j e st1).
+Proof.
+  intros.
+  induction H; auto.
+  eapply lstar_tran; eauto.
+  eapply lstar_silent_tran; eauto.
+Defined.
 
 Lemma star_stbp:
   forall st0 st1 st2 st3 j,

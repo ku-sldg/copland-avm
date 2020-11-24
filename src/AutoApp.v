@@ -1,4 +1,5 @@
 Require Import StructTactics Auto VmSemantics StVM MonadVM GenStMonad.
+Require Import Helpers_VmSemantics.
 Require Import List.
 
 Ltac dosome :=

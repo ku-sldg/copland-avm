@@ -1,4 +1,4 @@
-Require Import GenStMonad StructTactics MonadVM Term.
+Require Import GenStMonad StructTactics MonadVM MonadVMFacts Term.
 Require Import Coq.Arith.Peano_dec.
 
 Ltac fail_if_in_hyps H := 
@@ -36,6 +36,8 @@ Ltac dunit :=
   match goal with
   | [H:unit |- _] => destruct H
   end.
+
+Ltac annogo := vmsts; repeat dunit.
 
 Lemma h : forall a b t1 t2 (*t n *),
     (*abpar a b t1 t2 = snd (anno t n) -> *)

@@ -4,12 +4,12 @@ Implementation of the Attestation Virtual Machine (AVM) + proof that it refines 
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import More_lists Preamble Term ConcreteEvidence LTS GenStMonad.
+Require Import More_lists (*Preamble*) Term ConcreteEvidence LTS GenStMonad.
 Require Import Main Event_system Term_system.
 Require Import Auto.
 
 
-Require Import MonadVM MonadVMFacts Maps Axioms_Io Impl_vm External_Facts.
+Require Import MonadVM MonadVMFacts Maps Axioms_Io Impl_vm External_Facts Helpers_VmSemantics.
 
 Require Import List.
 Import ListNotations.
@@ -18,212 +18,7 @@ Require Import Coq.Arith.Peano_dec.
 
 Require Import StructTactics.
 
-
 Set Nested Proofs Allowed.
-
-Lemma st_congr :
-  forall st tr e p o,
-    st_ev st = e ->
-    st_trace st = tr ->
-    st_pl st = p ->
-    st_store st = o ->
-    st =  {| st_ev := e; st_trace := tr; st_pl := p; st_store := o |}.
-Proof.
-  intros.
-  subst; destruct st; auto.
-Defined.
-
-Ltac allss :=
-  repeat find_inversion;
-  try bogus;
-  repeat (do_get_store_at_facts; subst; eauto);
-  repeat (do_get_store_at_facts_fail; subst; eauto);
-  repeat get_store_at_bogus;
-  try do_bd;
-  subst; eauto.
-
-Ltac annogo := vmsts; repeat dunit.
-
-Ltac anhl :=
-  annogo;
-  match goal with
-  | [H: well_formed ?a, (*anno _ _ = (_, ?a), *)
-     H2: build_comp ?a _ = _,
-     H3: build_comp ?a _ = _,
-     IH: context[(*well_formed ?a*) build_comp ?a _ = _ -> _] |- _] =>
-    edestruct IH;
-    [(*(rewrite H; reflexivity)*) apply H | 
-     apply H2 | apply H3 | idtac]; clear H2; clear H3;
-    destruct_conjs; subst
-  end.
-
-Lemma hihi : forall t e e' e'' x x' y y' p p' p'' o o' o'',
-    well_formed t ->
-    build_comp t {| st_ev := e; st_trace := x; st_pl := p; st_store := o |} =
-    (Some tt, {| st_ev := e'; st_trace := x'; st_pl := p'; st_store := o' |}) ->
-    build_comp t {| st_ev := e; st_trace := y; st_pl := p; st_store := o |} =
-    (Some tt, {| st_ev := e''; st_trace := y'; st_pl := p''; st_store := o'' |}) ->
-    (e' = e'' /\ p' = p'' /\ o' = o'').
-Proof.
-  induction t; intros.
-  - destruct a;
-      df; eauto.
-  -
-    do_wf_pieces.
-    repeat (df; dohtac).
-    tauto.
-  -
-    do_wf_pieces.
-    df;
-    repeat break_match;
-    try (repeat find_inversion);
-    simpl in *.
-    anhl.
-    eauto.   
-  -
-    do_wf_pieces.
-    df;
-    repeat break_match;
-    try (repeat find_inversion);
-    simpl in *.
-    df.
-    repeat anhl.
-    eauto.   
-  -
-    do_wf_pieces.
-    df.
-    repeat (
-        df;
-        dohtac).
-    tauto.
-Defined.
-
-(*
-Ltac tacc Hwf H H' := (eapply hihi; [apply Hwf | apply H | apply H']).
-*)
-
-Ltac dohi :=
-  annogo;
-  let tac := (eapply hihi; eauto) in
-  match goal with
-  | [H : build_comp ?t1 {| st_ev := ?e; st_trace := _; st_pl := ?p; st_store := ?o |} =
-         (?opt, {| st_ev := ?e'; st_trace := _; st_pl := ?p'; st_store := ?o' |}),
-         H' : build_comp ?t1 {| st_ev := ?e; st_trace := _; st_pl := ?p; st_store := ?o |} =
-              (?opt, {| st_ev := ?e''; st_trace := _; st_pl := ?p''; st_store := ?o'' |}) (*,
-                Hwf : well_formed ?t1*)  |- _] =>
-    assert_new_proof_by (e' = e'' /\ p' = p'' /\ o' = o'') tac
-  end.
-
-(*
-Lemma map_get_get : forall (k:nat) (v:EvidenceC) l',
-    map_get ((k,v) :: l') k = Some v.
-Proof.
-  intros.
-  simpl.
-  break_match; eauto.
-  rewrite PeanoNat.Nat.eqb_refl in Heqb. congruence.
-Defined.
-
-Lemma map_get_get_2 : forall (k:nat) (v:EvidenceC) k' v' l',
-    k <> k' ->
-    map_get ((k',v') :: (k,v) :: l') k = Some v.
-Proof.
-  intros; simpl.
-  break_if;
-    dohtac; tauto.
-Defined.
-*)
-
-Ltac dohi' :=
-  annogo;
-  match goal with
-  | [H: well_formed ?a, 
-        H2: build_comp ?a _ = _,
-            H3: build_comp ?a _ = _ |- _] =>
-    edestruct hihi;
-    [ (apply H) | 
-      repeat dunit; apply H2 |
-      repeat dunit; apply H3 |
-      idtac]; (*clear H2; clear H3;*)
-    destruct_conjs; subst
-  end.
-
-Lemma fafaf : forall t (*t' n*) e e' e'' p p' p'' o o' o'' x y r s,
-    (*t = snd (anno t' n) -> *)
-    well_formed t ->
-    build_comp t {| st_ev := e; st_trace := x; st_pl := p; st_store := o |} =
-    (None, {| st_ev := e'; st_trace := y; st_pl := p'; st_store := o' |}) ->
-    build_comp t {| st_ev := e; st_trace := r; st_pl := p; st_store := o |} =
-    (Some tt, {| st_ev := e''; st_trace := s; st_pl := p''; st_store := o'' |}) ->
-    False.
-Proof.
-  
-  induction t; intros.
-  - destruct a;
-      df;
-      solve_by_inversion.
-  -
-    repeat (df; dohtac).
-  -
-    df.
-    repeat break_match; try solve_by_inversion.
-    +
-      do_wf_pieces.       
-      dohi'.
-      df.
-      eauto.
-    +
-      do_wf_pieces.  
-      annogo.
-      eauto.    
-  -
-    do_wf_pieces.
-    df.
-    repeat break_match;
-      monad_unfold; allss;
-        annogo;
-        try dohi';
-        eauto.        
-  -
-    do_wf_pieces.
-    repeat (df; dohtac).
-Defined.
-
-Lemma fals : forall a e x y p o u v v' P,
-    well_formed a ->
-    build_comp a
-               {|
-                 st_ev := e;
-                 st_trace := x;
-                 st_pl := p;
-                 st_store := o |} = (None, v) ->
-    build_comp a
-               {|
-                 st_ev := e;
-                 st_trace := y;
-                 st_pl := p;
-                 st_store := o |} = (Some u, v') ->
-    P.
-Proof.
-  intros.
-  exfalso.
-  annogo.
-  eapply fafaf; eauto.
-Defined.
-
-Ltac build_contra :=
-  match goal with
-  | [H: build_comp ?b {|
-             st_ev := ?e;
-             st_trace := _;
-             st_pl := ?p;
-             st_store := ?o |} = (Some _,_),
-        H2: build_comp ?b {|
-             st_ev := ?e;
-             st_trace := _;
-             st_pl := ?p;
-             st_store := ?o |} = (None,_) |- _] => eapply fals with (a:=b); eauto
-  end.
 
 Lemma always_some : forall t vm_st vm_st' op,
     well_formed t ->
@@ -265,11 +60,14 @@ Lemma gen_foo : forall t m k e p o v,
                {| st_ev := e; st_trace := m ++ k; st_pl := p; st_store := o |} =
     (Some tt, v) -> 
     st_trace
-      (snd (build_comp t
-                       {| st_ev := e; st_trace := m ++ k; st_pl := p; st_store := o |})) =
-    m ++ st_trace (snd (build_comp t
-                       {| st_ev := e; st_trace := k; st_pl := p; st_store := o |})).
+      ( execSt (build_comp t)
+               {| st_ev := e; st_trace := m ++ k; st_pl := p; st_store := o |}) =
+    m ++
+      st_trace
+          (execSt (build_comp t)
+                  {| st_ev := e; st_trace := k; st_pl := p; st_store := o |}).
 Proof.
+  
   induction t; intros.
   -
     destruct r.
@@ -301,6 +99,7 @@ Proof.
     subst.
     df.
     dohi'.
+
     assert (StVM.st_trace (
                 snd (build_comp t1 {| st_ev := e; st_trace := m ++ k; st_pl := p; st_store := o |}
               )) =
@@ -384,10 +183,13 @@ Lemma foo : forall t m e p o v,
                {| st_ev := e; st_trace := m; st_pl := p; st_store := o |} =
     (Some tt, v) -> 
     
-    st_trace (snd (build_comp t
-                     {| st_ev := e; st_trace := m; st_pl := p; st_store := o |})) =
-    m ++ st_trace (snd (build_comp t
-                     {| st_ev := e; st_trace := []; st_pl := p; st_store := o |})).
+    st_trace
+      (execSt (build_comp t)
+              {| st_ev := e; st_trace := m; st_pl := p; st_store := o |}) =
+    m ++
+      st_trace
+      (execSt (build_comp t)
+                     {| st_ev := e; st_trace := []; st_pl := p; st_store := o |}).
 Proof.
   intros.
   assert (m = m ++ []) as HH by (rewrite app_nil_r; auto).
@@ -408,8 +210,7 @@ Lemma alseq_decomp : forall r t1' t2' e e'' p p'' o o'' tr,
       exists tr'',
         build_comp t2' {| st_ev := e'; st_trace := []; st_pl := p'; st_store := o' |} =
         (Some tt, {| st_ev := e''; st_trace := tr''; st_pl := p''; st_store := o'' |}) /\
-        tr = tr' ++ tr''.
-      
+        tr = tr' ++ tr''.     
 Proof.
   intros.  
   do_wf_pieces.
@@ -419,9 +220,18 @@ Proof.
   exists st_ev. exists st_trace. exists st_pl. exists st_store.
   split.
   reflexivity.
-  destruct (build_comp t2' {| st_ev := st_ev; st_trace := []; st_pl := st_pl; st_store := st_store |}) eqn:hey.
+  destruct (build_comp t2'
+                       {| st_ev := st_ev; st_trace := []; st_pl := st_pl; st_store := st_store |}) eqn:hey.
   vmsts.
-  destruct o0; try build_contra.
+  assert (o0 = Some tt).
+  {
+    eapply always_some; eauto.
+  }
+  subst.
+
+  (*
+  
+  destruct o0; try build_contra. *)
   annogo.
 
   exists st_trace0.
@@ -434,6 +244,7 @@ Proof.
   specialize foo with (t:= t2') (m:=st_trace) (e:=st_ev) (p:= st_pl) (o:=st_store) (v:={| st_ev := st_ev0; st_trace := tr; st_pl := st_pl0; st_store := st_store0 |}).
   intros.
   repeat concludes.
+  df.
   subst'.
   df.
   tauto. 
@@ -450,18 +261,32 @@ Lemma trace_irrel_store' : forall t tr1 tr1' tr2 e e' p1' p1 o' o,
            {| st_ev := e;  st_trace := tr1; st_pl := p1;  st_store := o  |} =
     (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_store := o' |}) ->
     
-    st_store (
-        snd(
-        build_comp t
-           {| st_ev := e;  st_trace := tr2; st_pl := p1;  st_store := o  |})) = o'.
+    st_store
+      (execSt (build_comp t)
+           {| st_ev := e;  st_trace := tr2; st_pl := p1;  st_store := o  |}) = o'.
 Proof.
   intros.
   destruct (build_comp t {| st_ev := e; st_trace := tr2; st_pl := p1; st_store := o |}) eqn:ff.
   simpl.
   vmsts.
   simpl.
+  assert (o0 = Some tt).
+  eapply always_some; eauto.
+  subst.
+  repeat dohi.
+  df.
+  tauto.
+
+
+
+
+
+  (*
   destruct o0; repeat dunit.
-  -
+  - *)
+
+
+  
     
 (*
     assert (e' = st_ev /\ p1' = st_pl /\ o' = st_store).
@@ -490,12 +315,13 @@ Proof.
     (eapply hihi; [apply H | apply H0 | apply ff]).
 *)
     
-
+(*
     repeat dohi.
+    df.
     tauto.
   -
     exfalso.
-    eapply fafaf; eauto.
+    eapply fafaf; eauto. *)
 Defined.
 
 Lemma trace_irrel_pl' : forall t tr1 tr1' tr2 e e' p1' p1 o' o,
@@ -504,22 +330,21 @@ Lemma trace_irrel_pl' : forall t tr1 tr1' tr2 e e' p1' p1 o' o,
            {| st_ev := e;  st_trace := tr1; st_pl := p1;  st_store := o  |} =
     (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_store := o' |}) ->
     
-    st_pl (
-        snd(
-        build_comp t
-           {| st_ev := e;  st_trace := tr2; st_pl := p1;  st_store := o  |})) = p1'.
+    st_pl
+      (execSt (build_comp t)
+           {| st_ev := e;  st_trace := tr2; st_pl := p1;  st_store := o  |}) = p1'.
 Proof.
   intros.
   destruct (build_comp t {| st_ev := e; st_trace := tr2; st_pl := p1; st_store := o |}) eqn:ff.
   simpl.
   vmsts.
   simpl.
-  destruct o0; repeat dunit.
-  - repeat dohi.
-    tauto.
-  -
-    exfalso.
-    eapply fafaf; eauto.
+  assert (o0 = Some tt).
+  eapply always_some; eauto.
+  subst.
+  repeat dohi.
+  df.
+  tauto.
 Defined.
 
 Lemma trace_irrel_ev' : forall t tr1 tr1' tr2 e e' p1' p1 o' o,
@@ -528,243 +353,22 @@ Lemma trace_irrel_ev' : forall t tr1 tr1' tr2 e e' p1' p1 o' o,
            {| st_ev := e;  st_trace := tr1; st_pl := p1;  st_store := o  |} =
     (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_store := o' |}) ->
     
-    st_ev (
-        snd(
-        build_comp t
-           {| st_ev := e;  st_trace := tr2; st_pl := p1;  st_store := o  |})) = e'.
+    st_ev
+      (execSt (build_comp t)
+           {| st_ev := e;  st_trace := tr2; st_pl := p1;  st_store := o  |}) = e'.
 Proof.
   intros.
   destruct (build_comp t {| st_ev := e; st_trace := tr2; st_pl := p1; st_store := o |}) eqn:ff.
   simpl.
   vmsts.
   simpl.
-  destruct o0; repeat dunit.
-  - repeat dohi.
-    subst.
-    destruct_conjs.
-    eauto.
-  -
-    exfalso.
-    eapply fafaf; eauto.
+  assert (o0 = Some tt).
+  eapply always_some; eauto.
+  subst.
+  repeat dohi.
+  df.
+  tauto.
 Defined.
-
-(* Congruence lemmas for Copland LTS semantics *)
-Lemma lstar_stls :
-  forall st0 st1 t tr,
-    lstar st0 tr st1 -> lstar (ls st0 t) tr (ls st1 t).
-Proof.
-  intros.
-  induction H; auto.
-  eapply lstar_tran; eauto.
-  eapply lstar_silent_tran; eauto.
-Qed.
-
-Lemma lstar_strem : forall st st' tr p r,
-    lstar st tr
-          st' ->
-    lstar (rem r p st) tr (rem r p st').
-Proof.
-  intros.
-  induction H; auto.
-  eapply lstar_tran; eauto.
-  eapply lstar_silent_tran; eauto.
-Defined.
-
-Lemma lstar_stbsl:
-  forall st0 st1 j t p e tr,
-    lstar st0 tr st1 ->
-    lstar (bsl j st0 t p e) tr (bsl j st1 t p e).
-Proof.
-  intros.
-  induction H; auto.
-  eapply lstar_tran; eauto.
-  eapply lstar_silent_tran; eauto.
-Defined.
-
-Lemma lstar_stbsr:
-  forall st0 st1 j e tr,
-    lstar st0 tr st1 ->
-    lstar (bsr j e st0) tr (bsr j e st1).
-Proof.
-  intros.
-  induction H; auto.
-  eapply lstar_tran; eauto.
-  eapply lstar_silent_tran; eauto.
-Defined.
-
-
-Lemma star_stbp:
-  forall st0 st1 st2 st3 j,
-    star st0 st1 ->
-    star st2 st3 ->
-    star (bp j st0 st2) (bp j st1 st3).
-Proof.
-  intros.
-  induction H; auto.
-  - induction H0; auto.
-    eapply star_tran; eauto.
-  - eapply star_tran; eauto.
-Qed.
-
-Lemma ssc_inv : forall e1 e1' e2 e2',
-    e1 = e1' ->
-    e2 = e2' ->
-    ssc e1 e2 = ssc e1' e2'.
-Proof.
-  intros.
-  congruence.
-Defined.
-
-(*
-Axiom para_eval_vm : forall t e,
-    parallel_eval_thread (unanno t) e = parallel_att_vm_thread t e.
-*)
-
-Lemma record_congr :
-  forall A,
-    A =
-    {| st_ev := st_ev A;
-       st_trace := st_trace A;
-       st_pl := st_pl A;
-       st_store := st_store A|}.
-Proof.
-  intros A.
-  destruct A.
-  reflexivity.
-Defined.
-
-Lemma haha {A:Type} : forall (m:list A) l req rem rpy,
-    m ++ (req :: rem ++ [rpy]) ++ l =
-    m ++ [req] ++ rem ++ [rpy] ++ l.
-Proof.
-  intros.
-  simpl.
-  repeat rewrite <- app_assoc.
-  simpl.
-  reflexivity.
-Defined.
-
-Lemma pl_immut : forall t e tr p o,
-    well_formed t ->
-    st_pl
-      (snd
-         (build_comp t
-              {|
-                st_ev := e;
-                st_trace := tr;
-                st_pl := p;
-                st_store := o |})) = p.
-Proof.
-  induction t; intros.
-  -
-    destruct r.
-    destruct a;
-      reflexivity.
-  -
-    repeat (df; dohtac).
-    reflexivity.
-  -
-    do_wf_pieces.
-    
-    simpl in *.
-    monad_unfold.
-    repeat break_match;
-      try solve_by_inversion.
-    df.
-    annogo.
-    simpl.
-         
-    assert (p = st_pl0).
-    {
-      edestruct IHt1.
-      eassumption.
-      jkjk'.
-    }
-
-    assert (st_pl0 = st_pl).
-    {
-      edestruct IHt2.
-      eassumption.
-      jkjk'.
-    }
-
-    congruence.   
-  -
-    do_wf_pieces.
-    annogo.
-    df.
-    
-    repeat break_match;
-      try solve_by_inversion;
-    repeat find_inversion;
-    repeat dunit;
-    simpl in *; vmsts; simpl in *.
-    +
-    assert (p = st_pl0).
-    {
-      edestruct IHt1.
-      eassumption.
-      jkjk'; eauto.     
-    }
-
-    assert (st_pl0 = st_pl).
-    {     
-      edestruct IHt2.
-      eassumption.
-      jkjk'; eauto.
-    }
-
-    congruence.
-    +
-      assert (p = st_pl).
-      {
-        edestruct IHt1.
-        eassumption.
-          jkjk'; eauto.
-      }
-
-      assert (st_pl = st_pl0).
-      {
-        edestruct IHt2.
-        eassumption.
-          jkjk'; eauto.
-      }
-
-      congruence.
-    +
-      symmetry.
-      edestruct IHt1.
-      eassumption.
-      jkjk'; eauto.
-    +
-      symmetry.
-      edestruct IHt1.
-      eassumption.
-        jkjk'; eauto.     
-  -
-    df.
-    unfold runParThreads, runParThread in *.
-    repeat (df; dohtac).
-    reflexivity.
-Defined.
-
-Ltac do_pl_immut :=
-  let tac :=
-      (symmetry;
-       erewrite <- pl_immut in *;
-       jkjk'
-      ) in
-  repeat (
-      match goal with
-      | [H: build_comp _ {| st_ev := _; st_trace := _;
-                                                    st_pl := ?p;
-                                                             st_store := _ |} =
-            (_,
-             {| st_ev := _; st_trace := _;
-                                        st_pl := ?p';
-                                                 st_store := _ |}) |- _] =>
-        assert_new_proof_by (p = p') (tac)     
-      end); subst.
 
 Lemma restl' : forall t e e' x tr p p' o o',
     well_formed t ->
@@ -788,36 +392,34 @@ Proof.
   }
   
   unfold run_vm in *.
-  monad_unfold.
   assert (
    st_ev
-         (snd
-            (build_comp t
-               {| st_ev := e; st_trace := []; st_pl := p; st_store := o |})) = e').
+     (execSt
+        (build_comp t)
+               {| st_ev := e; st_trace := []; st_pl := p; st_store := o |}) = e').
   eapply trace_irrel_ev'; eauto.
 
   assert (
    st_pl
-         (snd
-            (build_comp t
-               {| st_ev := e; st_trace := []; st_pl := p; st_store := o |})) = p').
+     (execSt
+        (build_comp t)
+               {| st_ev := e; st_trace := []; st_pl := p; st_store := o |}) = p').
   eapply trace_irrel_pl'; eauto.
 
   assert (
    st_store
-         (snd
-            (build_comp t
-               {| st_ev := e; st_trace := []; st_pl := p; st_store := o |})) = o').
+     (execSt
+        (build_comp t)
+               {| st_ev := e; st_trace := []; st_pl := p; st_store := o |}) = o').
   eapply trace_irrel_store'; eauto.
 
   assert (
-      (snd
-         (build_comp t
-                     {| st_ev := e; st_trace := []; st_pl := p; st_store := o |})) =
+      (execSt
+         (build_comp t)
+         {| st_ev := e; st_trace := []; st_pl := p; st_store := o |}) =
       {| st_ev := e'; st_trace := tr; st_pl := p'; st_store := o' |}).
   {
     eapply st_congr; eauto.
-    Check foo.
     erewrite foo in H1.
     eapply app_inv_head.
     eauto.
@@ -834,58 +436,8 @@ Proof.
   {
     eapply always_some; eauto.
   }
-  subst.
+  df.
   tauto.
-Defined.
-
-Lemma restl'_2
-  : forall (t : AnnoTerm) (e e' : EvidenceC) (x tr : list Ev) (p p' : nat) (o o' : ev_store),
-    well_formed t ->
-    build_comp t {| st_ev := e; st_trace := x; st_pl := p; st_store := o |} =
-    (Some tt, {| st_ev := e'; st_trace := x ++ tr; st_pl := p'; st_store := o' |}) ->
-    build_comp t {| st_ev := e; st_trace := []; st_pl := p; st_store := o |} =
-    (Some tt, {| st_ev := e'; st_trace := tr; st_pl := p'; st_store := o' |}).
-Proof.
-  intros.
-  eapply restl'; eauto.
-Defined.
-
-Lemma store_get_set : forall e tr p o n e1 e' v0,
-    get_store_at n
-      {|
-        st_ev := e;
-        st_trace := tr;
-        st_pl := p;
-        st_store := map_set o n e1 |} =
-    (Some e', v0) ->
-    e' = e1.
-Proof.
-  intros.
-  monad_unfold; repeat (break_match; allss).
-  unfold get_store_at in *.
-  unfold get in *. simpl in *.
-  cbn in H.
-  break_let.
-  rewrite PeanoNat.Nat.eqb_refl in Heqp0.
-  monad_unfold; repeat (break_match; allss); congruence.
-Defined.
-
-Lemma store_get_set_fail_none : forall n e tr p o e1 v,
-    get_store_at n
-     {|
-       st_ev := e;
-       st_trace := tr;
-       st_pl := p;
-       st_store := map_set o n e1 |} =
-    (None, v) ->
-    False.
-Proof.
-  intros.
-  unfold get_store_at in *.
-  cbn in H.
-  break_let.
-  rewrite PeanoNat.Nat.eqb_refl in Heqp0.
-  monad_unfold; repeat (break_match; allss); congruence.
 Defined.
 
 Lemma suffix_prop : forall t e e' tr tr' p p' o o',
@@ -904,17 +456,19 @@ Lemma suffix_prop : forall t e e' tr tr' p p' o o',
     exists l, tr' = tr ++ l.
 Proof.
   intros.
-  assert (st_trace (snd (build_comp t
+  assert (st_trace
+            (execSt (build_comp t)
            {|
              st_ev := e;
              st_trace := tr;
              st_pl := p;
-             st_store := o |})) =
+             st_store := o |}) =
     st_trace ({|
       st_ev := e';
       st_trace := tr';
       st_pl := p';
       st_store := o' |})) as H00.
+  unfold execSt.
   subst'.
   simpl.
   reflexivity.
@@ -923,172 +477,6 @@ Proof.
   rewrite <- H00.
   erewrite foo; eauto.
 Defined.
-
-(*
-Lemma evshape_at : forall e es t n,
-    Ev_Shape e es ->
-    Ev_Shape (toRemote (unanno t) e) (Term.eval (unanno t) n es).
-Proof.
-Admitted.
-
-Lemma evshape_par : forall e es a p,
-    Ev_Shape e es ->
-    Ev_Shape (parallel_att_vm_thread a e)
-             (Term.eval (unanno a) p es).
-Proof.
-Admitted.
-*)
-
-
-Lemma build_comp_external : forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (o : ev_store),
-    well_formed t ->
-    build_comp t {| st_ev := e; st_trace := []; st_pl := n; st_store := o |} =
-    (Some tt,
-     {| st_ev := remote_evidence t n e;
-        st_trace := remote_trace t n;
-        st_pl := n;
-        st_store :=
-          st_store
-            (
-              execSt
-                (build_comp t)
-                  {| st_ev := e;
-                     st_trace := [];
-                     st_pl := n;
-                     st_store := o |});
-     |}).
-Proof.
-  intros.
-  assert ([] ++ (remote_trace t n) = (remote_trace t n)) by eauto.
-  assert (n = st_pl
-            (
-              execSt
-                (build_comp t)
-                  {| st_ev := e;
-                     st_trace := [];
-                     st_pl := n;
-                     st_store := o |})) as H0'.
-  {
-    unfold execSt.
-    rewrite pl_immut;
-    tauto. 
-  }
-  rewrite H0' at 4.
-  eapply build_comp_external'.
-Defined.
-
-
-Lemma build_comp_at' : forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (o : ev_store) (tr: list Ev),
-    well_formed t ->
-    build_comp t {| st_ev := e; st_trace := tr; st_pl := n; st_store := o |} =
-    (Some tt,
-     {| st_ev := toRemote t n e;
-        st_trace := tr ++ remote_events t n;
-        st_pl := n;
-        st_store :=
-          st_store
-            (
-              execSt
-                (build_comp t)
-                {| st_ev := e;
-                   st_trace := [];
-                   st_pl := n;
-                   st_store := o |});
-     |}).
-Proof.
-  intros.
-  rewrite at_evidence.
-  rewrite at_events.
-  
-  assert (st_pl (snd (build_comp t {| st_ev := e; st_trace := []; st_pl := n; st_store := o |})) = n) as H0.
-  eapply pl_immut.
-  eauto.
-  rewrite <- H0 at 4.
-
-  eapply build_comp_external'.
-Defined.
-
-
-Lemma build_comp_at : forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (o : ev_store),
-    well_formed t ->
-    build_comp t {| st_ev := e; st_trace := []; st_pl := n; st_store := o |} =
-    (Some tt,
-     {| st_ev := toRemote t n e;
-        st_trace := remote_events t n;
-        st_pl := n;
-        st_store :=
-          st_store
-            (
-              execSt
-                (build_comp t)
-                {| st_ev := e;
-                              st_trace := [];
-                              st_pl := n;
-                              st_store := o |});
-     |}).
-Proof.
-  intros.
-  rewrite at_evidence.
-  rewrite at_events.
-  eapply build_comp_external; eauto.
-Defined.
-
-Lemma build_comp_par' :
-  forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (o : ev_store) (tr:list Ev),
-    well_formed t ->
-    build_comp t {| st_ev := e; st_trace := tr; st_pl := n; st_store := o |} =
-    (Some tt,
-     {|
-       st_ev := parallel_vm_thread t n e;
-       st_trace := tr ++ parallel_vm_events t n;
-       st_pl := n;
-       st_store :=
-         st_store
-           (snd
-              (build_comp t
-                          {| st_ev := e;
-                             st_trace := [];
-                             st_pl := n;
-                             st_store := o |}))
-     |}).
-Proof.
-  intros.
-  rewrite par_evidence.
-  rewrite par_events.
-  assert (st_pl
-            (snd
-               (build_comp t
-                           {| st_ev := e; st_trace := []; st_pl := n; st_store := o |})) = n) as H0.
-  eapply pl_immut.
-  eauto.
-  rewrite <- H0 at 4.
-  eapply build_comp_external'.
-Defined.
-
-Lemma build_comp_par :
-  forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (o : ev_store),
-    well_formed t ->
-    build_comp t {| st_ev := e; st_trace := []; st_pl := n; st_store := o |} =
-    (Some tt,
-     {|
-       st_ev := parallel_vm_thread t n e;
-       st_trace := parallel_vm_events t n;
-       st_pl := n;
-       st_store :=
-         st_store
-           ( execSt
-               (build_comp t)
-                {| st_ev := e;
-                   st_trace := [];
-                   st_pl := n;
-                   st_store := o |})
-     |}).
-Proof.
-  intros.
-  rewrite par_evidence.
-  rewrite par_events.
-  eapply build_comp_external; eauto.
-Defined. 
 
 Lemma multi_ev_eval : forall t tr tr' e e' p p' o o' es e's,
     well_formed t ->
@@ -1140,6 +528,7 @@ Proof.
       do_pl_immut.
       assert (H5 = p).
       erewrite <- pl_immut.
+      unfold execSt.
       rewrite H7.
       simpl. reflexivity.
       eassumption.
@@ -1185,7 +574,7 @@ Proof.
           st_pl := st_pl0;
           st_store := st_store0 |})).
       {
-        eapply restl'_2 with (x:= (tr ++ [Term.split n p])).
+        eapply restl' with (x:= (tr ++ [Term.split n p])).
         eassumption.
         eassumption.
       }
@@ -1203,7 +592,7 @@ Proof.
           st_pl := st_pl;
           st_store := st_store |})).
       {
-        eapply restl'_2 with (x:= ((tr ++ [Term.split n p]) ++ H00)).
+        eapply restl' with (x:= ((tr ++ [Term.split n p]) ++ H00)).
         eassumption.
         eassumption.
       }
@@ -1244,6 +633,7 @@ Proof.
           assert (st_pl0 = p).
           {
             erewrite <- pl_immut.
+            unfold execSt.
             rewrite H0.
             simpl. reflexivity.
             eassumption.
@@ -1259,6 +649,7 @@ Proof.
            assert (st_pl0 = p).
           {
             erewrite <- pl_immut.
+            unfold execSt.
             rewrite H0.
             simpl. reflexivity.
             eassumption.
@@ -1316,29 +707,6 @@ Proof.
         eauto.
         eauto.
 Defined.
-
-Lemma get_store_in : forall x st st' o y,
-    get_store_at x st = (None, st') ->
-    st_store st = o ->
-    map_get o x = (Some y) ->
-    False.
-Proof.
-  intros.
-  destruct st.
-  simpl in *.
-  subst.
-  monad_unfold.
-  unfold get_store_at in *.
-  monad_unfold.
-  rewrite H1 in *.
-  find_inversion.
-Defined.
-
-Axiom bpar_shuffle : forall x p t1 t2 et1 et2,
-    lstar (bp x (conf t1 p et1) (conf t2 p et2))
-          (shuffled_events (parallel_vm_events t1 p)
-                           (parallel_vm_events t2 p))
-          (bp x (stop p (aeval t1 p et1)) (stop p (aeval t2 p et2))).
    
 Lemma run_lstar : forall t tr et e e' p p' o o',
     well_formed t ->
@@ -1387,6 +755,7 @@ Proof.
     assert (H4 = p).
     {
       erewrite <- pl_immut.
+      unfold execSt.
       rewrite Heqp0.
       tauto.
       eassumption.
@@ -1411,7 +780,7 @@ Proof.
                        {| st_ev := splitEv s e; st_trace := []; st_pl := p; st_store := o |} =
             (Some tt, {| st_ev := st_ev1; st_trace := H00; st_pl := st_pl1; st_store := st_store1 |})).
     {
-      eapply restl'_2.    
+      eapply restl'.    
       repeat dunit.
       eassumption.
       eassumption.
@@ -1430,7 +799,7 @@ Proof.
         (Some tt, {| st_ev := st_ev; st_trace := H000; st_pl := p'; st_store := o' |})).
     {
       repeat dunit.
-      eapply restl'_2.
+      eapply restl'.
       repeat dunit.
       eassumption.
       eassumption.
@@ -1439,6 +808,7 @@ Proof.
     assert (st_pl1 = p).
     {
       erewrite <- pl_immut.
+      unfold execSt.
       rewrite H0.
       tauto.
       eassumption.
@@ -1448,6 +818,7 @@ Proof.
     assert (p' = p).
     {
       erewrite <- pl_immut.
+      unfold execSt.
       rewrite H3.
       tauto.
       eassumption.
@@ -1462,7 +833,6 @@ Proof.
 
     eapply lstar_transitive.
     simpl.
-    Check lstar_stbsl.
 
     eapply lstar_stbsl.  
      
@@ -1527,9 +897,8 @@ Proof.
   solve_by_inversion.
 Defined.
 
-Theorem vm_ordered' : forall t tr ev0 ev1 e e' o o' t' n,
+Theorem vm_ordered' : forall t tr ev0 ev1 e e' o o',
     well_formed t -> 
-    t = snd (anno t' n) -> 
     build_comp 
       t
       (mk_st e [] 0 o) =

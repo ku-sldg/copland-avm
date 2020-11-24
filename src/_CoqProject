@@ -21,6 +21,7 @@ MonadVM.v
 MonadVMFacts.v
 Auto.v
 AllMapped.v
+Helpers_VmSemantics.v
 External_Facts.v
 VmSemantics.v
 MonadAM.v
