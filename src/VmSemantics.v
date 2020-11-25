@@ -54,12 +54,13 @@ Proof.
     subst.
     df.
     dohi.
-    assert (StVM.st_trace (
-                snd (build_comp t1 {| st_ev := e; st_trace := m ++ k; st_pl := p; st_store := o |}
-              )) =
-            m ++
-              StVM.st_trace
-              (snd (build_comp t1 {| st_ev := e; st_trace := k; st_pl := p; st_store := o |}))).
+    assert (
+        StVM.st_trace
+          (snd (build_comp t1 {| st_ev := e; st_trace := m ++ k; st_pl := p; st_store := o |}))
+        =
+        m ++
+          StVM.st_trace
+          (snd (build_comp t1 {| st_ev := e; st_trace := k; st_pl := p; st_store := o |}))).
     eapply IHt1; eauto.
     repeat subst'.
     simpl in *.
@@ -67,19 +68,18 @@ Proof.
     assert (
         StVM.st_trace
           (snd (build_comp t2
-                {| st_ev := st_ev0; st_trace := m ++ st_trace0; st_pl := st_pl0; st_store := st_store0 |})) =
-         m ++
-           StVM.st_trace (snd (build_comp t2 {| st_ev := st_ev0; st_trace := st_trace0; st_pl := st_pl0; st_store := st_store0 |}))) as HH.
+           {| st_ev := st_ev0; st_trace := m ++ st_trace0; st_pl := st_pl0; st_store := st_store0 |})) =
+        m ++
+          StVM.st_trace
+          (snd (build_comp t2
+           {| st_ev := st_ev0; st_trace := st_trace0; st_pl := st_pl0; st_store := st_store0 |}))) as HH.
     eapply IHt2; eauto.
     repeat (subst'; simpl in * ).
     eauto.
   - (* abseq case *)
-    Ltac df' :=
-      repeat (cbn in *; unfold runSt in *; repeat break_let; repeat (monad_unfold; cbn in *; find_inversion); monad_unfold; repeat dunit).
     annogo.
         
     do_wf_pieces.
-    df'.
     df.
     dosome.
 
@@ -97,7 +97,7 @@ Proof.
          StVM.st_trace
          (snd (build_comp t1 {| st_ev := splitEv s0 e; st_trace := k ++ [Term.split n p]; st_pl := p; st_store := o |}))).
     {
-      rewrite <- app_assoc in Heqp4.
+      rewrite <- app_assoc in *. (*Heqp4. *)
       eapply IHt1; eauto.
     }
     subst'.
@@ -165,8 +165,9 @@ Proof.
   exists st_ev. exists st_trace. exists st_pl. exists st_store.
   split.
   reflexivity.
-  destruct (build_comp t2'
-                       {| st_ev := st_ev; st_trace := []; st_pl := st_pl; st_store := st_store |}) eqn:hey.
+  destruct
+    (build_comp t2'
+                {| st_ev := st_ev; st_trace := []; st_pl := st_pl; st_store := st_store |}) eqn:hey.
   vmsts.
   do_asome.
   subst.
@@ -210,22 +211,22 @@ Proof.
   subst''.
   simpl in *.
 
-    assert (st_pl
-      (execSt (build_comp t)
-              {| st_ev := e;  st_trace := tr2; st_pl := p;  st_store := o  |}) = p').
-    eapply trace_irrel_pl'; eauto.
-    unfold execSt in *.
-    subst''.
-    simpl in *.
+  assert (st_pl
+            (execSt (build_comp t)
+                    {| st_ev := e;  st_trace := tr2; st_pl := p;  st_store := o  |}) = p').
+  eapply trace_irrel_pl'; eauto.
+  unfold execSt in *.
+  subst''.
+  simpl in *.
 
-    assert (st_store
-      (execSt (build_comp t)
-              {| st_ev := e;  st_trace := tr2; st_pl := p;  st_store := o  |}) = o').
-    eapply trace_irrel_store'; eauto.
-    unfold execSt in *.
-    subst''.
-    simpl in *.
-    repeat split; congruence.
+  assert (st_store
+            (execSt (build_comp t)
+                    {| st_ev := e;  st_trace := tr2; st_pl := p;  st_store := o  |}) = o').
+  eapply trace_irrel_store'; eauto.
+  unfold execSt in *.
+  subst''.
+  simpl in *.
+  repeat split; congruence.
 Defined.
 
 Lemma restl' : forall t e e' x tr p p' o o',
@@ -295,6 +296,20 @@ Proof.
   tauto.
 Defined.
 
+Ltac do_restl :=
+  match goal with
+  | [H: build_comp ?t
+        {| st_ev := ?e; st_trace := ?tr; st_pl := ?p; st_store := ?o |} =
+        (Some tt,
+         {| st_ev := ?e'; st_trace := ?tr ++ ?x; st_pl := ?p'; st_store := ?o' |}),
+        H2: well_formed ?t |- _] =>
+    assert_new_proof_by
+      (build_comp t {| st_ev := e; st_trace := []; st_pl := p; st_store := o |} =
+       (Some tt,
+        {| st_ev := e'; st_trace := x; st_pl := p'; st_store := o' |}))
+      ltac:(eapply restl'; [apply H2 | apply H])
+  end.
+
 Lemma suffix_prop : forall t e e' tr tr' p p' o o',
     well_formed t ->
     build_comp t
@@ -332,6 +347,19 @@ Proof.
   rewrite <- H00.
   erewrite foo; eauto.
 Defined.
+
+Ltac do_suffix name :=
+  match goal with
+  | [H': build_comp ?t
+         {| st_ev := _;st_trace := ?tr; st_pl := _; st_store := _ |} =
+         (Some tt,
+          {| st_ev := _; st_trace := ?tr'; st_pl := _; st_store := _ |}),
+         H2: well_formed ?t |- _] =>
+    assert_new_proof_as_by
+      (exists l, tr' = tr ++ l)
+      ltac:(eapply suffix_prop; [apply H2 | apply H'])
+             name
+  end.
 
 Lemma multi_ev_eval : forall t tr tr' e e' p p' o o' es e's,
     well_formed t ->
@@ -387,120 +415,40 @@ Proof.
     do_wf_pieces.
     df.
     repeat break_match;
-      try solve_by_inversion.
+      try solve_by_inversion;
+      try (df; tauto).
     +
       df.
       annogo.
       simpl in *.
-           
-      
-      assert (exists l, st_trace0 = (tr ++ [Term.split n p]) ++ l) as H00.
-      { 
-        eapply suffix_prop.
-        apply H3.
-        simpl.
-        eassumption.
-      }
-      destruct_conjs.
-      subst.
-      assert (exists l, st_trace = ((tr ++ [Term.split n p]) ++ H00) ++ l) as H00'.
-      {
-        eapply suffix_prop.
-        simpl.
-        eassumption.
-        eassumption.
-      }
+      do_suffix H00.
+      do_suffix H00'.
       destruct_conjs; subst.
-      assert (
-           build_comp t1
-            {|
-            st_ev := splitEv s0 e;
-            st_trace := [];
-            st_pl := p;
-            st_store := o |} =
-          (Some tt,
-          {|
-          st_ev := st_ev0;
-          st_trace := H00;
-          st_pl := st_pl0;
-          st_store := st_store0 |})).
-      {
-        eapply restl' with (x:= (tr ++ [Term.split n p])).
-        eassumption.
-        eassumption.
-      }
-      assert (
-           build_comp t2
-            {|
-            st_ev := splitEv s1 e;
-            st_trace := [];
-            st_pl := st_pl0;
-            st_store := st_store0 |} =
-          (Some tt,
-          {|
-          st_ev := st_ev;
-          st_trace := H00';
-          st_pl := st_pl;
-          st_store := st_store |})).
-      {
-        eapply restl' with (x:= ((tr ++ [Term.split n p]) ++ H00)).
-        eassumption.
-        eassumption.
-      }
+      repeat do_restl.
       
       econstructor.
       destruct s0.
       ++
-        eapply IHt1.
-      +++
-        eassumption.
-      +++
-        eassumption.      
-      +++     
-        destruct e;  
-          try (
-              evShapeFacts;
-             econstructor; eauto).
-      +++
-        simpl.
-        eauto.
+        eapply IHt1; eauto.
       ++
         simpl in *.
-        eapply IHt1.
-        eassumption.
-        eassumption.
-        econstructor.
-        reflexivity.
+        eapply IHt1; eauto.
       ++
         destruct s1.
         +++
           simpl.
-          eapply IHt2.
-          eassumption.
-          eassumption.
-          destruct e;
-            try (evShapeFacts;
-                 econstructor; eauto).
           repeat do_pl_immut.
           subst.
-          congruence.
+          eapply IHt2; eauto.
         +++
           simpl.
-          eapply IHt2.
-          eassumption.
-          eassumption.
-          econstructor.
           repeat do_pl_immut.
           subst.
-          congruence.       
-    +
-      repeat find_inversion. 
+          eapply IHt2; eauto.      
   -
     do_wf_pieces.
     df.
-    unfold runParThreads, runParThread in *.
     repeat (df; dohtac).
-    
     econstructor.
     destruct s0.
     +
@@ -599,41 +547,12 @@ Proof.
     vmsts.
     dosome.
     df.
-    assert (exists l, st_trace1 = [Term.split n p] ++ l) as H00.
-    eapply suffix_prop.
-    apply H1.
-    eassumption.
-    destruct H00 as [H00 H11].
-    subst'.
-    
-    assert (build_comp t1
-                       {| st_ev := splitEv s e; st_trace := []; st_pl := p; st_store := o |} =
-            (Some tt, {| st_ev := st_ev1; st_trace := H00; st_pl := st_pl1; st_store := st_store1 |})).
-    {
-      eapply restl'.    
-      repeat dunit.
-      eassumption.
-      eassumption.
-    }
-    
-    assert (exists l, st_trace = ([Term.split n p] ++ H00) ++ l) as H000.
-    eapply suffix_prop.
-    eassumption.
-    eassumption.
-    destruct H000 as [H000 HHH].
-    subst'.
 
-    assert (
-        build_comp t2
-                   {| st_ev := splitEv s0 e; st_trace := []; st_pl := st_pl1; st_store := st_store1 |} =
-        (Some tt, {| st_ev := st_ev; st_trace := H000; st_pl := p'; st_store := o' |})).
-    {
-      repeat dunit.
-      eapply restl'.
-      repeat dunit.
-      eassumption.
-      eassumption.
-    }
+    do_suffix blah.
+    do_suffix blah'.
+    destruct_conjs; subst.
+    repeat do_restl.
+    
     repeat do_pl_immut.
     subst.
     repeat rewrite <- app_assoc.

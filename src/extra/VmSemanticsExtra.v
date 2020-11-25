@@ -166,3 +166,10 @@ Proof.
   intros.
   congruence.
 Defined.
+
+
+
+(*
+  Ltac df' :=
+  repeat (cbn in *; unfold runSt in *; repeat break_let; repeat (monad_unfold; cbn in *; find_inversion); monad_unfold; repeat dunit). 
+*)

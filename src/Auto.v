@@ -22,6 +22,10 @@ Ltac assert_new_proof_by H tac :=
   fail_if_in_hyps_type H;
   assert H by tac.
 
+Ltac assert_new_proof_as_by H tac n := 
+  fail_if_in_hyps_type H;
+  assert H as n by tac.
+
 Ltac jkjk :=
   match goal with
   | [H: context[?X] |- ?X = _] => rewrite H
