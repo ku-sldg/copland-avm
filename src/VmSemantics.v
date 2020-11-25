@@ -20,40 +20,6 @@ Require Import StructTactics.
 
 Set Nested Proofs Allowed.
 
-Lemma always_some : forall t vm_st vm_st' op,
-    well_formed t ->
-    build_comp 
-      t
-      vm_st =
-    (op, vm_st') ->
-    op = Some tt.
-Proof.
-  induction t; intros.
-  -
-    destruct a;
-      try (df; tauto).
-  -
-    repeat (df; dohtac).
-    tauto.
-  -
-    df. 
-    do_wf_pieces.
-    
-    destruct o eqn:hhh;
-      try (df; eauto). 
-  -
-    df.   
-    do_wf_pieces.
-
-    repeat break_match;
-      try (
-          df; eauto). 
-  -
-    do_wf_pieces.
-    repeat (df; dohtac).
-    tauto.
-Defined.
-
 Lemma gen_foo : forall t m k e p o v,
     well_formed t ->
     build_comp t
@@ -84,22 +50,10 @@ Proof.
     annogo.
     do_wf_pieces.
     dosome.
-    assert (o4 = Some tt).
-    {
-      eapply always_some.
-      apply H0.
-      eauto.
-    }
+    do_asome.
     subst.
     df.
-    assert (o3 = Some tt).
-    {
-      eapply always_some; eauto.
-    }
-    subst.
-    df.
-    dohi'.
-
+    dohi.
     assert (StVM.st_trace (
                 snd (build_comp t1 {| st_ev := e; st_trace := m ++ k; st_pl := p; st_store := o |}
               )) =
@@ -128,22 +82,13 @@ Proof.
     df'.
     df.
     dosome.
-    
-    assert (o17 = Some tt).
-    { eapply always_some; eauto. }
-    subst.
-    df.
-    assert (o13 = Some tt).
-    {
-      eapply always_some.
-      apply H1.
-      eauto.
-    }
+
+    do_asome.
     subst.
     df.
     annogo.
     df.
-    dohi'.
+    dohi.
 
     assert (
         StVM.st_trace
@@ -223,19 +168,12 @@ Proof.
   destruct (build_comp t2'
                        {| st_ev := st_ev; st_trace := []; st_pl := st_pl; st_store := st_store |}) eqn:hey.
   vmsts.
-  assert (o0 = Some tt).
-  {
-    eapply always_some; eauto.
-  }
+  do_asome.
   subst.
-
-  (*
-  
-  destruct o0; try build_contra. *)
   annogo.
 
   exists st_trace0.
-  dohi'.
+  dohi.
   
   split.
   reflexivity.
@@ -250,124 +188,44 @@ Proof.
   tauto. 
 Defined.
 
-(*
-Ltac tacky H H0 ff := (eapply hihi; [apply H | apply H0 | apply ff]).
-Print tacky.
-*)
-
-Lemma trace_irrel_store' : forall t tr1 tr1' tr2 e e' p1' p1 o' o,
+Lemma trace_irrel : forall t tr1 tr1' tr2 tr2' e e' e'' p p' p'' o o' o'',
     well_formed t ->
     build_comp t
-           {| st_ev := e;  st_trace := tr1; st_pl := p1;  st_store := o  |} =
-    (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_store := o' |}) ->
-    
-    st_store
-      (execSt (build_comp t)
-           {| st_ev := e;  st_trace := tr2; st_pl := p1;  st_store := o  |}) = o'.
-Proof.
-  intros.
-  destruct (build_comp t {| st_ev := e; st_trace := tr2; st_pl := p1; st_store := o |}) eqn:ff.
-  simpl.
-  vmsts.
-  simpl.
-  assert (o0 = Some tt).
-  eapply always_some; eauto.
-  subst.
-  repeat dohi.
-  df.
-  tauto.
+           {| st_ev := e;  st_trace := tr1; st_pl := p;  st_store := o  |} =
+    (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p'; st_store := o' |}) ->
 
-
-
-
-
-  (*
-  destruct o0; repeat dunit.
-  - *)
-
-
-  
-    
-(*
-    assert (e' = st_ev /\ p1' = st_pl /\ o' = st_store).
-    (eapply hihi; [apply H | apply H0 | apply ff]).
-    my_tac (eapply hihi; [apply H | apply H0 | apply ff]).
-    eapply hihi.
-    apply H.
-    apply H0.
-    apply ff.
- *)
-
-    (*
-     assert (e' = st_ev /\ p1' = st_pl /\ o' = st_store) by
-    (eapply hihi; [apply H | apply H0 | apply ff]). *)
-     
-
-
-    
-(*
-    assert_new_proof_by' (e' = st_ev /\ p1' = st_pl /\ o' = st_store) (eapply hihi; [apply H | apply H0 | apply ff]).
-
-    
-    Ltac tacky H H0 ff := (eapply hihi; [apply H | apply H0 | apply ff]).
-    Print tacky.
-    assert_new_proof_by (e' = st_ev /\ p1' = st_pl /\ o' = st_store) (tacky H H0 ff).
-    (eapply hihi; [apply H | apply H0 | apply ff]).
-*)
-    
-(*
-    repeat dohi.
-    df.
-    tauto.
-  -
-    exfalso.
-    eapply fafaf; eauto. *)
-Defined.
-
-Lemma trace_irrel_pl' : forall t tr1 tr1' tr2 e e' p1' p1 o' o,
-    well_formed t ->
     build_comp t
-           {| st_ev := e;  st_trace := tr1; st_pl := p1;  st_store := o  |} =
-    (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_store := o' |}) ->
+           {| st_ev := e;  st_trace := tr2; st_pl := p;  st_store := o  |} =
+    (Some tt, {| st_ev := e''; st_trace := tr2'; st_pl := p''; st_store := o'' |}) ->
     
-    st_pl
-      (execSt (build_comp t)
-           {| st_ev := e;  st_trace := tr2; st_pl := p1;  st_store := o  |}) = p1'.
+    e' = e'' /\ p' = p'' /\ o' = o''.
 Proof.
   intros.
-  destruct (build_comp t {| st_ev := e; st_trace := tr2; st_pl := p1; st_store := o |}) eqn:ff.
-  simpl.
-  vmsts.
-  simpl.
-  assert (o0 = Some tt).
-  eapply always_some; eauto.
-  subst.
-  repeat dohi.
-  df.
-  tauto.
-Defined.
 
-Lemma trace_irrel_ev' : forall t tr1 tr1' tr2 e e' p1' p1 o' o,
-    well_formed t ->
-    build_comp t
-           {| st_ev := e;  st_trace := tr1; st_pl := p1;  st_store := o  |} =
-    (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_store := o' |}) ->
-    
-    st_ev
+  assert (st_ev
       (execSt (build_comp t)
-           {| st_ev := e;  st_trace := tr2; st_pl := p1;  st_store := o  |}) = e'.
-Proof.
-  intros.
-  destruct (build_comp t {| st_ev := e; st_trace := tr2; st_pl := p1; st_store := o |}) eqn:ff.
-  simpl.
-  vmsts.
-  simpl.
-  assert (o0 = Some tt).
-  eapply always_some; eauto.
-  subst.
-  repeat dohi.
-  df.
-  tauto.
+              {| st_ev := e;  st_trace := tr2; st_pl := p;  st_store := o  |}) = e').
+  eapply trace_irrel_ev'; eauto.
+  unfold execSt in *.
+  subst''.
+  simpl in *.
+
+    assert (st_pl
+      (execSt (build_comp t)
+              {| st_ev := e;  st_trace := tr2; st_pl := p;  st_store := o  |}) = p').
+    eapply trace_irrel_pl'; eauto.
+    unfold execSt in *.
+    subst''.
+    simpl in *.
+
+    assert (st_store
+      (execSt (build_comp t)
+              {| st_ev := e;  st_trace := tr2; st_pl := p;  st_store := o  |}) = o').
+    eapply trace_irrel_store'; eauto.
+    unfold execSt in *.
+    subst''.
+    simpl in *.
+    repeat split; congruence.
 Defined.
 
 Lemma restl' : forall t e e' x tr p p' o o',
@@ -432,10 +290,7 @@ Proof.
   vmsts.
   simpl in *.
   repeat find_inversion.
-  assert (o0 = Some tt).
-  {
-    eapply always_some; eauto.
-  }
+  do_asome.
   df.
   tauto.
 Defined.
@@ -523,15 +378,9 @@ Proof.
       ++ eassumption.
       ++ eassumption.      
       ++ reflexivity.
-    + do_pl_immut.
+    +
       dosome.
-      do_pl_immut.
-      assert (H5 = p).
-      erewrite <- pl_immut.
-      unfold execSt.
-      rewrite H7.
-      simpl. reflexivity.
-      eassumption.
+      repeat do_pl_immut.
       subst.
       congruence.     
   -
@@ -543,6 +392,8 @@ Proof.
       df.
       annogo.
       simpl in *.
+           
+      
       assert (exists l, st_trace0 = (tr ++ [Term.split n p]) ++ l) as H00.
       { 
         eapply suffix_prop.
@@ -630,14 +481,7 @@ Proof.
           destruct e;
             try (evShapeFacts;
                  econstructor; eauto).
-          assert (st_pl0 = p).
-          {
-            erewrite <- pl_immut.
-            unfold execSt.
-            rewrite H0.
-            simpl. reflexivity.
-            eassumption.
-          }
+          repeat do_pl_immut.
           subst.
           congruence.
         +++
@@ -646,16 +490,9 @@ Proof.
           eassumption.
           eassumption.
           econstructor.
-           assert (st_pl0 = p).
-          {
-            erewrite <- pl_immut.
-            unfold execSt.
-            rewrite H0.
-            simpl. reflexivity.
-            eassumption.
-          }
+          repeat do_pl_immut.
           subst.
-          congruence.        
+          congruence.       
     +
       repeat find_inversion. 
   -
@@ -752,14 +589,7 @@ Proof.
     eapply lstar_silent_tran.
     apply stlseqstop.
     df.
-    assert (H4 = p).
-    {
-      erewrite <- pl_immut.
-      unfold execSt.
-      rewrite Heqp0.
-      tauto.
-      eassumption.
-    }
+    repeat do_pl_immut.
     subst.   
     eapply IHt2; eauto.    
   -    
@@ -804,27 +634,8 @@ Proof.
       eassumption.
       eassumption.
     }
-
-    assert (st_pl1 = p).
-    {
-      erewrite <- pl_immut.
-      unfold execSt.
-      rewrite H0.
-      tauto.
-      eassumption.
-    }
+    repeat do_pl_immut.
     subst.
-
-    assert (p' = p).
-    {
-      erewrite <- pl_immut.
-      unfold execSt.
-      rewrite H3.
-      tauto.
-      eassumption.
-    }
-    subst.
-
     repeat rewrite <- app_assoc.
 
     eapply lstar_tran.

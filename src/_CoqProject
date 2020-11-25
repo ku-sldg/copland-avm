@@ -27,5 +27,3 @@ VmSemantics.v
 MonadAM.v
 MonadLaws.v
 AutoApp.v
-Impl_appraisal.v
-Appraisal.v

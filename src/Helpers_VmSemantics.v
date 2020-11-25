@@ -107,22 +107,26 @@ Proof.
 Defined.
 
 Ltac do_pl_immut :=
-  let tac :=
-      (symmetry;
-       erewrite <- pl_immut in *;
-       jkjk'
-      ) in
-  repeat (
+  let tac H H2 :=
+       erewrite <- pl_immut;
+        [ unfold execSt;
+          rewrite H;
+          reflexivity | 
+          apply H2] in
       match goal with
-      | [H: build_comp _ {| st_ev := _; st_trace := _;
-                                                    st_pl := ?p;
-                                                             st_store := _ |} =
+      | [H: build_comp ?t
+            {| st_ev := _;
+                        st_trace := _;
+                        st_pl := ?p;
+                        st_store := _ |} =
             (_,
-             {| st_ev := _; st_trace := _;
-                                        st_pl := ?p';
-                                                 st_store := _ |}) |- _] =>
-        assert_new_proof_by (p = p') (tac)     
-      end); subst.
+             {| st_ev := _;
+                         st_trace := _;
+                         st_pl := ?p';
+                                  st_store := _ |}),
+         H2: well_formed ?t |- _] =>
+        assert_new_proof_by (p' = p) ltac:(tac H H2)  
+      end.
 
 
 Lemma st_congr :
@@ -137,6 +141,7 @@ Proof.
   subst; destruct st; auto.
 Defined.
 
+(*
 Ltac allss :=
   repeat find_inversion;
   try bogus;
@@ -145,6 +150,7 @@ Ltac allss :=
   repeat get_store_at_bogus;
   try do_bd;
   subst; eauto.
+*)
 
 
 
@@ -203,22 +209,28 @@ Proof.
     tauto.
 Defined.
 
-(*
-Ltac tacc Hwf H H' := (eapply hihi; [apply Hwf | apply H | apply H']).
-*)
+Ltac clear_triv :=
+  match goal with
+  | [H: ?x = ?x |- _] => clear H
+  end.
 
-Ltac dohi :=
+Ltac dohi'' :=
   annogo;
-  let tac := (eapply hihi; eauto) in
+  let tac Hwf H H' := eapply hihi; [apply Hwf | apply H | apply H'] in
   match goal with
   | [H : build_comp ?t1 {| st_ev := ?e; st_trace := _; st_pl := ?p; st_store := ?o |} =
          (?opt, {| st_ev := ?e'; st_trace := _; st_pl := ?p'; st_store := ?o' |}),
          H' : build_comp ?t1 {| st_ev := ?e; st_trace := _; st_pl := ?p; st_store := ?o |} =
-              (?opt, {| st_ev := ?e''; st_trace := _; st_pl := ?p''; st_store := ?o'' |}) (*,
-                Hwf : well_formed ?t1*)  |- _] =>
-    assert_new_proof_by (e' = e'' /\ p' = p'' /\ o' = o'') tac
+              (?opt, {| st_ev := ?e''; st_trace := _; st_pl := ?p''; st_store := ?o'' |}),
+                Hwf : well_formed ?t1  |- _] =>
+    assert_new_proof_by (e' = e'' /\ p' = p'' /\ o' = o'') ltac:(tac Hwf H H')
   end.
 
+Ltac dohi :=
+  do 2 (repeat dohi''; destruct_conjs; subst);
+      clear_triv.
+
+(*
 Ltac dohi' :=
   annogo;
   match goal with
@@ -232,7 +244,9 @@ Ltac dohi' :=
       idtac]; (*clear H2; clear H3;*)
     destruct_conjs; subst
   end.
+*)
 
+(*
 Lemma get_store_in : forall x st st' o y,
     get_store_at x st = (None, st') ->
     st_store st = o ->
@@ -248,4 +262,116 @@ Proof.
   monad_unfold.
   rewrite H1 in *.
   find_inversion.
+Defined.
+ *)
+
+
+Lemma always_some : forall t vm_st vm_st' op,
+    well_formed t ->
+    build_comp 
+      t
+      vm_st =
+    (op, vm_st') ->
+    op = Some tt.
+Proof.
+  induction t; intros.
+  -
+    destruct a;
+      try (df; tauto).
+  -
+    repeat (df; dohtac).
+    tauto.
+  -
+    df. 
+    do_wf_pieces.
+    
+    destruct o eqn:hhh;
+      try (df; eauto). 
+  -
+    df.   
+    do_wf_pieces.
+
+    repeat break_match;
+      try (
+          df; eauto). 
+  -
+    do_wf_pieces.
+    repeat (df; dohtac).
+    tauto.
+Defined.
+
+Ltac do_somett :=
+  match goal with
+  | [H: build_comp ?t _ = (?o, _),
+        H2: well_formed ?t |- _] =>
+    assert_new_proof_by (o = Some tt) ltac:(eapply always_some; [apply H2 | apply H])
+  end.
+
+
+Ltac do_asome := repeat do_somett; clear_triv.
+
+Lemma trace_irrel_store' : forall t tr1 tr1' tr2 e e' p1' p1 o' o,
+    well_formed t ->
+    build_comp t
+           {| st_ev := e;  st_trace := tr1; st_pl := p1;  st_store := o  |} =
+    (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_store := o' |}) ->
+    
+    st_store
+      (execSt (build_comp t)
+           {| st_ev := e;  st_trace := tr2; st_pl := p1;  st_store := o  |}) = o'.
+Proof.
+  intros.
+  destruct (build_comp t {| st_ev := e; st_trace := tr2; st_pl := p1; st_store := o |}) eqn:ff.
+  simpl.
+  vmsts.
+  simpl.
+  do_asome.
+  subst.
+  dohi.
+  df.
+  tauto.
+Defined.
+
+Lemma trace_irrel_pl' : forall t tr1 tr1' tr2 e e' p1' p1 o' o,
+    well_formed t ->
+    build_comp t
+           {| st_ev := e;  st_trace := tr1; st_pl := p1;  st_store := o  |} =
+    (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_store := o' |}) ->
+    
+    st_pl
+      (execSt (build_comp t)
+           {| st_ev := e;  st_trace := tr2; st_pl := p1;  st_store := o  |}) = p1'.
+Proof.
+  intros.
+  destruct (build_comp t {| st_ev := e; st_trace := tr2; st_pl := p1; st_store := o |}) eqn:ff.
+  simpl.
+  vmsts.
+  simpl.
+  do_asome.
+  subst.
+  dohi.
+  df.
+  tauto.
+Defined.
+
+Lemma trace_irrel_ev' : forall t tr1 tr1' tr2 e e' p1' p1 o' o,
+    well_formed t ->
+    build_comp t
+           {| st_ev := e;  st_trace := tr1; st_pl := p1;  st_store := o  |} =
+    (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_store := o' |}) ->
+    
+    st_ev
+      (execSt (build_comp t)
+           {| st_ev := e;  st_trace := tr2; st_pl := p1;  st_store := o  |}) = e'.
+Proof.
+  intros.
+  destruct (build_comp t {| st_ev := e; st_trace := tr2; st_pl := p1; st_store := o |}) eqn:ff.
+  simpl.
+  vmsts.
+  simpl.
+  do_asome.
+  subst.
+  dohi.
+  df.
+  tauto.
 Defined.

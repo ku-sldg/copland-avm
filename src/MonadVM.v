@@ -204,6 +204,8 @@ Ltac monad_unfold :=
   sendReq,
   doRemote,
   receiveResp,
+  runParThreads,
+  runParThread,
 
   get_ev,
   get_pl,

@@ -151,8 +151,8 @@ Ltac df :=
       repeat (monad_unfold; cbn in *; find_inversion);
       monad_unfold;
       repeat dunit;
-      unfold snd in *;
-      unfold runParThreads, runParThread in * ).
+      unfold snd in * 
+      (*unfold runParThreads, runParThread in * *) ).
 
 Ltac dosome :=
   repeat (

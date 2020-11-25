@@ -23,7 +23,7 @@ Ltac amsts :=
   repeat match goal with
          | H:vm_st |- _ => destruct H
          end.
-
+(*
 Lemma get_store_at_determ : forall e0' e e' e2 e2' tr tr' tr2 tr2' p p' p2 p2'
                               store1 store1' store2' n,
     get_store_at n {| st_ev := e; st_trace := tr; st_pl := p; st_store := store1 |} =
@@ -113,6 +113,7 @@ Ltac get_store_some :=
       rewrite get_store_at_facts in G                                 
     end; destruct_conjs.
 
+
 Ltac bogus :=
   vmsts;
   repeat
@@ -150,6 +151,7 @@ Ltac get_store_at_bogus :=
       subst;
       bogus; reflexivity
     end.
+*)
 
 Ltac pairs :=
   simpl in *;
