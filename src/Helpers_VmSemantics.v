@@ -2,6 +2,41 @@ Require Import MonadVM Impl_vm Term Auto StructTactics MonadVMFacts Maps GenStMo
 
 Require Import Coq.Program.Tactics Coq.Program.Equality.
 
+Set Nested Proofs Allowed.
+
+Lemma hhh : forall t1 t2 a b c d r s,
+    well_formed (abpar r s t1 t2) -> 
+    range t1 = (a,b) ->
+    range t2 = (c,d) ->
+    PeanoNat.Nat.eqb a c = false.
+Proof.
+  intros.
+  assert (fst (range t1) <> fst (range t2)).
+  eapply afaf; eauto.
+  subst''.
+  subst''.
+  simpl in *.
+  Search (_ = false).
+  rewrite PeanoNat.Nat.eqb_neq in *.
+  tauto.
+Defined.
+
+Lemma hhhh : forall t1 t2 a b c d r s,
+    well_formed (abpar r s t1 t2) ->
+    range t1 = (a,b) ->
+    range t2 = (c,d) ->
+    PeanoNat.Nat.eqb c (b - 1) = false.
+Proof.
+Admitted.
+
+Lemma hhhhh : forall t1 t2 a b c d r s,
+    well_formed (abpar r s t1 t2) ->
+    range t1 = (a,b) ->
+    range t2 = (c,d) ->
+    PeanoNat.Nat.eqb (b - 1) (d - 1) = false.
+Proof.
+Admitted.
+
 Lemma pl_immut : forall t e tr p o,
     well_formed t ->
     st_pl
@@ -100,8 +135,33 @@ Proof.
       eassumption.
         jkjk'; eauto.     
   -
+    repeat (df; dohtac).
+
+    
+      
+    assert (PeanoNat.Nat.eqb n3 n1 = false).
+    {
+      eapply hhh; eauto.
+    }
+    subst''.
     df.
-    unfold runParThreads, runParThread in *.
+
+
+
+    assert (PeanoNat.Nat.eqb n1 (n4 - 1) = false).
+    {
+      eapply hhhh; eauto.
+    }
+    subst''.
+    repeat (df; dohtac).
+
+
+
+    assert (PeanoNat.Nat.eqb (n4 - 1) (n2 - 1) = false).
+    {
+      eapply hhhhh; eauto.
+    }
+    subst''.
     repeat (df; dohtac).
     reflexivity.
 Defined.
@@ -202,10 +262,35 @@ Proof.
     eauto.   
   -
     do_wf_pieces.
-    df.
     repeat (
         df;
         dohtac).
+
+        assert (PeanoNat.Nat.eqb n3 n1 = false).
+    {
+      eapply hhh; eauto.
+    }
+    subst''.
+    df.
+
+
+
+    assert (PeanoNat.Nat.eqb n1 (n4 - 1) = false).
+    {
+      eapply hhhh; eauto.
+    }
+    subst''.
+    repeat (df; dohtac).
+
+
+
+    assert (PeanoNat.Nat.eqb (n4 - 1) (n2 - 1) = false).
+    {
+      eapply hhhhh; eauto.
+    }
+    subst''.
+    repeat (df; dohtac).
+    
     tauto.
 Defined.
 
@@ -296,6 +381,30 @@ Proof.
           df; eauto). 
   -
     do_wf_pieces.
+    repeat (df; dohtac).
+        assert (PeanoNat.Nat.eqb n3 n1 = false).
+    {
+      eapply hhh; eauto.
+    }
+    subst''.
+    df.
+
+
+
+    assert (PeanoNat.Nat.eqb n1 (n4 - 1) = false).
+    {
+      eapply hhhh; eauto.
+    }
+    subst''.
+    repeat (df; dohtac).
+
+
+
+    assert (PeanoNat.Nat.eqb (n4 - 1) (n2 - 1) = false).
+    {
+      eapply hhhhh; eauto.
+    }
+    subst''.
     repeat (df; dohtac).
     tauto.
 Defined.

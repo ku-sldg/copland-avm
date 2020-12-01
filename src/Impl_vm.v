@@ -33,9 +33,9 @@ Fixpoint build_comp (t:AnnoTerm): VM unit :=
       pr <- split_evm x sp1 sp2 e p ;;
       let '(e1,e2) := pr in
       let loc_e1 := fst (range t1) in
-      let loc_e1' := fst (range t1) in  (* TODO: different loc? *)
+      let loc_e1' := snd (range t1) - 1 in  (* TODO: different loc? *)
       let loc_e2 := fst (range t2) in
-      let loc_e2':= fst (range t2) in   (* TODO: different loc? *)
+      let loc_e2':= snd (range t2) - 1 in   (* TODO: different loc? *)
       put_store_at loc_e1 e1 ;;
       put_store_at loc_e2 e2 ;;
       runParThreads t1 t2 p loc_e1 loc_e1' loc_e2 loc_e2'  ;;     

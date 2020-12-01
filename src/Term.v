@@ -418,14 +418,11 @@ Inductive well_formed: AnnoTerm -> Prop :=
 | wf_bpar: forall r s x y,
     well_formed x -> well_formed y ->
     (*(rx1,rx2) = (range x) ->
-    (ry1,ry2) = (range y) -> *)
-    
+    (ry1,ry2) = (range y) -> *)  
     S (fst r) = fst (range x) ->
     snd (range x) = fst (range y) ->
     (snd r) = S (snd (range y)) ->
-    fst (range y) > fst (range x) ->
-
-    
+    fst (range y) > fst (range x) -> 
     (*r2 > r1 -> *)
     well_formed (abpar r s x y).
 
@@ -617,6 +614,19 @@ Proof.
   simpl.
   lia.
 Defined.
+
+Lemma afaf2' : forall r s a b,
+    well_formed (abpar r s a b) -> 
+    (*(abpar (i, k) s a b) = snd (anno t' n) -> *)
+    (fst (range b)) <> (snd (range a)) - 1.
+Proof.
+  intros.
+  inversion H.
+  subst.
+  rewrite <- H7.
+  lia.
+Defined.
+
 
 (*
 (*TODO: not true, pick different index for st_store in bpar case *)

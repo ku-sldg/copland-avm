@@ -20,6 +20,46 @@ Require Import StructTactics.
 
 Set Nested Proofs Allowed.
 
+Lemma trace_irrel : forall t tr1 tr1' tr2 tr2' e e' e'' p p' p'' o o' o'',
+    well_formed t ->
+    build_comp t
+           {| st_ev := e;  st_trace := tr1; st_pl := p;  st_store := o  |} =
+    (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p'; st_store := o' |}) ->
+
+    build_comp t
+           {| st_ev := e;  st_trace := tr2; st_pl := p;  st_store := o  |} =
+    (Some tt, {| st_ev := e''; st_trace := tr2'; st_pl := p''; st_store := o'' |}) ->
+    
+    e' = e'' /\ p' = p'' /\ o' = o''.
+Proof.
+  intros.
+
+  assert (st_ev
+      (execSt (build_comp t)
+              {| st_ev := e;  st_trace := tr2; st_pl := p;  st_store := o  |}) = e').
+  eapply trace_irrel_ev'; eauto.
+  unfold execSt in *.
+  subst''.
+  simpl in *.
+
+  assert (st_pl
+            (execSt (build_comp t)
+                    {| st_ev := e;  st_trace := tr2; st_pl := p;  st_store := o  |}) = p').
+  eapply trace_irrel_pl'; eauto.
+  unfold execSt in *.
+  subst''.
+  simpl in *.
+
+  assert (st_store
+            (execSt (build_comp t)
+                    {| st_ev := e;  st_trace := tr2; st_pl := p;  st_store := o  |}) = o').
+  eapply trace_irrel_store'; eauto.
+  unfold execSt in *.
+  subst''.
+  simpl in *.
+  repeat split; congruence.
+Defined.
+
 Lemma gen_foo : forall t m k e p o v,
     well_formed t ->
     build_comp t
@@ -118,6 +158,30 @@ Proof.
   -
     do_wf_pieces.
     repeat (df; dohtac).
+        assert (PeanoNat.Nat.eqb n3 n1 = false).
+    {
+      eapply hhh; eauto.
+    }
+    subst''.
+    df.
+
+
+
+    assert (PeanoNat.Nat.eqb n1 (n4 - 1) = false).
+    {
+      eapply hhhh; eauto.
+    }
+    subst''.
+    repeat (df; dohtac).
+
+
+
+    assert (PeanoNat.Nat.eqb (n4 - 1) (n2 - 1) = false).
+    {
+      eapply hhhhh; eauto.
+    }
+    subst''.
+    repeat (df; dohtac).
     repeat (rewrite app_assoc); tauto.
 Defined.
 
@@ -143,6 +207,58 @@ Proof.
   rewrite app_nil_r.
   eauto.
 Defined.
+
+Lemma suffix_prop : forall t e e' tr tr' p p' o o',
+    well_formed t ->
+    build_comp t
+           {|
+             st_ev := e;
+             st_trace := tr;
+             st_pl := p;
+             st_store := o |} =
+    (Some tt, {|
+      st_ev := e';
+      st_trace := tr';
+      st_pl := p';
+      st_store := o' |}) ->
+    exists l, tr' = tr ++ l.
+Proof.
+  intros.
+  assert (st_trace
+            (execSt (build_comp t)
+           {|
+             st_ev := e;
+             st_trace := tr;
+             st_pl := p;
+             st_store := o |}) =
+    st_trace ({|
+      st_ev := e';
+      st_trace := tr';
+      st_pl := p';
+      st_store := o' |})) as H00.
+  df.
+  congruence.
+  simpl in H00.
+  eexists.
+  rewrite <- H00.
+  erewrite foo.
+  eauto.
+  eauto.
+  eauto.
+Defined.
+
+Ltac do_suffix name :=
+  match goal with
+  | [H': build_comp ?t
+         {| st_ev := _;st_trace := ?tr; st_pl := _; st_store := _ |} =
+         (Some tt,
+          {| st_ev := _; st_trace := ?tr'; st_pl := _; st_store := _ |}),
+         H2: well_formed ?t |- _] =>
+    assert_new_proof_as_by
+      (exists l, tr' = tr ++ l)
+      ltac:(eapply suffix_prop; [apply H2 | apply H'])
+             name
+  end.
 
 Lemma alseq_decomp : forall r t1' t2' e e'' p p'' o o'' tr,
     well_formed (alseq r t1' t2') ->
@@ -180,7 +296,9 @@ Proof.
   reflexivity.
 
   pose foo.
-  specialize foo with (t:= t2') (m:=st_trace) (e:=st_ev) (p:= st_pl) (o:=st_store) (v:={| st_ev := st_ev0; st_trace := tr; st_pl := st_pl0; st_store := st_store0 |}).
+  specialize foo with (t:= t2') (m:=st_trace) (e:=st_ev) (p:= st_pl)
+                      (o:=st_store)
+                      (v:={| st_ev := st_ev0; st_trace := tr; st_pl := st_pl0; st_store := st_store0 |}).
   intros.
   repeat concludes.
   df.
@@ -189,47 +307,7 @@ Proof.
   tauto. 
 Defined.
 
-Lemma trace_irrel : forall t tr1 tr1' tr2 tr2' e e' e'' p p' p'' o o' o'',
-    well_formed t ->
-    build_comp t
-           {| st_ev := e;  st_trace := tr1; st_pl := p;  st_store := o  |} =
-    (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p'; st_store := o' |}) ->
-
-    build_comp t
-           {| st_ev := e;  st_trace := tr2; st_pl := p;  st_store := o  |} =
-    (Some tt, {| st_ev := e''; st_trace := tr2'; st_pl := p''; st_store := o'' |}) ->
-    
-    e' = e'' /\ p' = p'' /\ o' = o''.
-Proof.
-  intros.
-
-  assert (st_ev
-      (execSt (build_comp t)
-              {| st_ev := e;  st_trace := tr2; st_pl := p;  st_store := o  |}) = e').
-  eapply trace_irrel_ev'; eauto.
-  unfold execSt in *.
-  subst''.
-  simpl in *.
-
-  assert (st_pl
-            (execSt (build_comp t)
-                    {| st_ev := e;  st_trace := tr2; st_pl := p;  st_store := o  |}) = p').
-  eapply trace_irrel_pl'; eauto.
-  unfold execSt in *.
-  subst''.
-  simpl in *.
-
-  assert (st_store
-            (execSt (build_comp t)
-                    {| st_ev := e;  st_trace := tr2; st_pl := p;  st_store := o  |}) = o').
-  eapply trace_irrel_store'; eauto.
-  unfold execSt in *.
-  subst''.
-  simpl in *.
-  repeat split; congruence.
-Defined.
-
-Lemma restl' : forall t e e' x tr p p' o o',
+Lemma restl : forall t e e' x tr p p' o o',
     well_formed t ->
     build_comp t {| st_ev := e; st_trace := x; st_pl := p; st_store := o |} =
     (Some tt, {| st_ev := e'; st_trace := x ++ tr; st_pl := p'; st_store := o' |}) ->
@@ -307,58 +385,7 @@ Ltac do_restl :=
       (build_comp t {| st_ev := e; st_trace := []; st_pl := p; st_store := o |} =
        (Some tt,
         {| st_ev := e'; st_trace := x; st_pl := p'; st_store := o' |}))
-      ltac:(eapply restl'; [apply H2 | apply H])
-  end.
-
-Lemma suffix_prop : forall t e e' tr tr' p p' o o',
-    well_formed t ->
-    build_comp t
-           {|
-             st_ev := e;
-             st_trace := tr;
-             st_pl := p;
-             st_store := o |} =
-    (Some tt, {|
-      st_ev := e';
-      st_trace := tr';
-      st_pl := p';
-      st_store := o' |}) ->
-    exists l, tr' = tr ++ l.
-Proof.
-  intros.
-  assert (st_trace
-            (execSt (build_comp t)
-           {|
-             st_ev := e;
-             st_trace := tr;
-             st_pl := p;
-             st_store := o |}) =
-    st_trace ({|
-      st_ev := e';
-      st_trace := tr';
-      st_pl := p';
-      st_store := o' |})) as H00.
-  unfold execSt.
-  subst'.
-  simpl.
-  reflexivity.
-  simpl in H00.
-  eexists.
-  rewrite <- H00.
-  erewrite foo; eauto.
-Defined.
-
-Ltac do_suffix name :=
-  match goal with
-  | [H': build_comp ?t
-         {| st_ev := _;st_trace := ?tr; st_pl := _; st_store := _ |} =
-         (Some tt,
-          {| st_ev := _; st_trace := ?tr'; st_pl := _; st_store := _ |}),
-         H2: well_formed ?t |- _] =>
-    assert_new_proof_as_by
-      (exists l, tr' = tr ++ l)
-      ltac:(eapply suffix_prop; [apply H2 | apply H'])
-             name
+      ltac:(eapply restl; [apply H2 | apply H])
   end.
 
 Lemma multi_ev_eval : forall t tr tr' e e' p p' o o' es e's,
@@ -385,18 +412,18 @@ Proof.
     reflexivity.
   -
     do_wf_pieces.
-    edestruct suffix_prop.
-    apply H.
-    eassumption.
+    do_suffix blah.
+    destruct_conjs.
     subst.
 
     edestruct alseq_decomp.
     eassumption.
-    eapply restl'.
+    eapply restl.
     eassumption.
     eassumption.
     destruct_conjs.
     df.
+    dosome.
     
     eapply IHt2.
     + eassumption.
@@ -407,7 +434,6 @@ Proof.
       ++ eassumption.      
       ++ reflexivity.
     +
-      dosome.
       repeat do_pl_immut.
       subst.
       congruence.     
@@ -421,8 +447,8 @@ Proof.
       df.
       annogo.
       simpl in *.
-      do_suffix H00.
-      do_suffix H00'.
+      do_suffix blah.
+      do_suffix blah'.
       destruct_conjs; subst.
       repeat do_restl.
       
@@ -448,6 +474,30 @@ Proof.
   -
     do_wf_pieces.
     df.
+    repeat (df; dohtac).
+        assert (PeanoNat.Nat.eqb n3 n1 = false).
+    {
+      eapply hhh; eauto.
+    }
+    subst''.
+    df.
+
+
+
+    assert (PeanoNat.Nat.eqb n1 (n4 - 1) = false).
+    {
+      eapply hhhh; eauto.
+    }
+    subst''.
+    repeat (df; dohtac).
+
+
+
+    assert (PeanoNat.Nat.eqb (n4 - 1) (n2 - 1) = false).
+    {
+      eapply hhhhh; eauto.
+    }
+    subst''.
     repeat (df; dohtac).
     econstructor.
     destruct s0.
@@ -588,6 +638,30 @@ Proof.
     econstructor.
   -
     destruct s; destruct r.
+    repeat (df; dohtac).
+        assert (PeanoNat.Nat.eqb n3 n1 = false).
+    {
+      eapply hhh; eauto.
+    }
+    subst''.
+    df.
+
+
+
+    assert (PeanoNat.Nat.eqb n1 (n4 - 1) = false).
+    {
+      eapply hhhh; eauto.
+    }
+    subst''.
+    repeat (df; dohtac).
+
+
+
+    assert (PeanoNat.Nat.eqb (n4 - 1) (n2 - 1) = false).
+    {
+      eapply hhhhh; eauto.
+    }
+    subst''.
     repeat (df; dohtac).
     econstructor.
     econstructor.
