@@ -587,6 +587,17 @@ Proof.
     simpl.
     eassumption.
 Defined.
+Check annotated.
+
+Lemma anno_well_formed':
+  forall t,
+    well_formed (annotated t).
+Proof.
+  intros.
+  unfold annotated.
+  eapply anno_well_formed.
+Defined.
+
 
 (*
 Lemma anno_well_formed:

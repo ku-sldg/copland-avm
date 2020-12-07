@@ -117,7 +117,7 @@ Definition do_prim (x:nat) (a:ASP) : VM EvidenceC :=
  (* | HSH => hashEv x p  *)
   end.
 
-Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) (rpyi:nat)  : VM unit :=
+Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) : VM unit :=
   p <- get_pl ;;
   e <- get_ev ;;
   put_store_at reqi e ;;

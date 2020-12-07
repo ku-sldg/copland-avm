@@ -1,6 +1,6 @@
 Require Import MonadVM Impl_vm Term Auto StructTactics MonadVMFacts Maps GenStMonad.
 
-Require Import Coq.Program.Tactics Coq.Program.Equality.
+Require Import Coq.Program.Tactics Coq.Program.Equality Lia.
 
 Set Nested Proofs Allowed.
 
@@ -16,9 +16,16 @@ Proof.
   subst''.
   subst''.
   simpl in *.
-  Search (_ = false).
   rewrite PeanoNat.Nat.eqb_neq in *.
   tauto.
+Defined.
+
+Lemma faf : forall n,
+    n > 0 -> 
+    n <> n - 1.
+Proof.
+  intros.
+  lia.
 Defined.
 
 Lemma hhhh : forall t1 t2 a b c d r s,
@@ -27,7 +34,142 @@ Lemma hhhh : forall t1 t2 a b c d r s,
     range t2 = (c,d) ->
     PeanoNat.Nat.eqb c (b - 1) = false.
 Proof.
-Admitted.
+  intros.
+  inversion H.
+  subst.
+  assert (c = fst (range t2)).
+  {
+    jkjke.
+  }
+
+  assert (a = fst (range t1)).
+  {
+    jkjke.
+  }
+
+  assert (b = snd (range t1)).
+  {
+    jkjk.
+    tauto.
+  }
+
+  assert (d = snd (range t2)).
+  {
+    jkjke.
+  }
+  
+  rewrite H2.
+  rewrite H4.
+  rewrite H9.
+
+  assert (fst (range t2) > 0).
+  {
+    lia.
+  }
+  
+    
+  assert ((fst (range t2)) <> (fst (range t2) - 1)).
+  {
+    eapply faf; eauto.
+  }
+  eapply PeanoNat.Nat.eqb_neq; eauto.
+Defined.
+
+Lemma ppp{A:Type} : forall x:(A*A),
+    x = (fst x, snd x).
+Proof.
+  intros.
+  destruct x.
+  simpl.
+  tauto.
+Defined.
+
+Lemma wf_term_greater : forall t a b,
+    well_formed t ->
+    range t = (a,b) ->
+    b > a.
+Proof.
+  induction t; intros.
+  -
+    destruct a.
+    +
+      simpl in *.
+      inv H.
+      simpl in *.
+      lia.
+    +
+      simpl in *.
+      inv H.
+      simpl in *.
+      lia.
+    +
+      simpl in *.
+      inv H.
+      simpl in *.
+      lia.
+  -
+    simpl in *.
+    subst.
+    inv H.
+    simpl in *.
+    assert (snd (range t) > fst (range t)).
+    eapply IHt.
+    eauto.
+    
+    apply ppp.
+    lia.
+  -
+    inv H.
+    assert (snd (range t1) > fst (range t1)).
+    eapply IHt1.
+    eauto.
+    apply ppp.
+
+    assert (snd (range t2) > fst (range t2)).
+    eapply IHt2.
+    eauto.
+    apply ppp.
+
+    simpl in *.
+    subst.
+
+    simpl in *.
+    lia.
+  -
+    inv H.
+    assert (snd (range t1) > fst (range t1)).
+    eapply IHt1.
+    eauto.
+    apply ppp.
+
+    assert (snd (range t2) > fst (range t2)).
+    eapply IHt2.
+    eauto.
+    apply ppp.
+
+    simpl in *.
+    subst.
+
+    simpl in *.
+    lia.
+  -
+    inv H.
+    assert (snd (range t1) > fst (range t1)).
+    eapply IHt1.
+    eauto.
+    apply ppp.
+
+    assert (snd (range t2) > fst (range t2)).
+    eapply IHt2.
+    eauto.
+    apply ppp.
+
+    simpl in *.
+    subst.
+
+    simpl in *.
+    lia.
+Defined.
 
 Lemma hhhhh : forall t1 t2 a b c d r s,
     well_formed (abpar r s t1 t2) ->
@@ -35,7 +177,74 @@ Lemma hhhhh : forall t1 t2 a b c d r s,
     range t2 = (c,d) ->
     PeanoNat.Nat.eqb (b - 1) (d - 1) = false.
 Proof.
-Admitted.
+  intros.
+  inversion H.
+  subst.
+  assert (c = fst (range t2)).
+  {
+    jkjke.
+  }
+
+  assert (a = fst (range t1)).
+  {
+    jkjke.
+  }
+
+  assert (b = snd (range t1)).
+  {
+    jkjk.
+    tauto.
+  }
+
+  assert (d = snd (range t2)).
+  {
+    jkjke.
+  }
+
+
+
+  assert (b <> d).
+  {
+    assert (b = c).
+    {
+      lia.
+    }
+    
+    assert (b > a).
+    {
+      eapply wf_term_greater.
+      apply H6.
+      eauto.
+    }
+
+    assert (d > c).
+    {
+      eapply wf_term_greater; eauto.
+    }
+
+    lia.
+  }
+
+  assert (b > 0).
+  {
+    lia.
+  }
+
+
+  
+
+  assert (d > 0).
+  {
+    assert (d > c).
+    {
+      eapply wf_term_greater; eauto.
+    }
+    lia.
+  }
+
+  eapply PeanoNat.Nat.eqb_neq.
+  lia.
+Defined.
 
 Lemma pl_immut : forall t e tr p o,
     well_formed t ->
