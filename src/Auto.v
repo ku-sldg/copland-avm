@@ -1,5 +1,59 @@
 Require Import GenStMonad StructTactics MonadVM MonadVMFacts Term.
-Require Import Coq.Arith.Peano_dec.
+Require Import Coq.Arith.Peano_dec Lia.
+
+Ltac dunit :=
+  match goal with
+  | [H:unit |- _] => destruct H
+  end.
+
+Ltac annogo := vmsts; repeat dunit.
+
+Ltac df :=
+  repeat (
+      cbn in *;
+      unfold runSt in *;
+      repeat break_let;
+      repeat (monad_unfold; cbn in *; find_inversion);
+      monad_unfold;
+      repeat dunit;
+      unfold snd in * 
+      (*unfold runParThreads, runParThread in * *) ).
+
+Ltac dosome :=
+  repeat (
+      match goal with
+      | [H: match ?o with
+            | Some _ => _
+            | _ => _
+            end
+            =
+            (Some _, _) |- _] =>
+        destruct o; try solve_by_inversion
+      end; df).
+
+Ltac subst' :=
+  match goal with
+  | [H: ?A = _, H2: context[?A] |- _] => rewrite H in *; clear H
+  | [H: ?A = _ |- context[?A]] => rewrite H in *; clear H
+  end.
+
+Ltac subst'' :=
+  match goal with
+  | [H:?A = _, H2: context [?A] |- _] => rewrite H in *
+  | [H:?A = _ |- context [?A]] => rewrite H in *
+  end.
+
+(*
+Ltac dooit :=
+  repeat eexists;
+  cbn;
+  repeat break_let;
+  simpl;
+  repeat find_inversion;
+  subst';
+  df;
+  reflexivity.
+*)
 
 Ltac fail_if_in_hyps H := 
   let t := type of H in 
@@ -36,13 +90,7 @@ Ltac jkjk' :=
   | H: _ |- _ => rewrite H; reflexivity
   end.
 
-Ltac dunit :=
-  match goal with
-  | [H:unit |- _] => destruct H
-  end.
-
-Ltac annogo := vmsts; repeat dunit.
-
+(*
 Lemma h : forall a b t1 t2 (*t n *),
     (*abpar a b t1 t2 = snd (anno t n) -> *)
     well_formed (abpar a b t1 t2) -> 
@@ -68,6 +116,7 @@ Proof.
   rewrite PeanoNat.Nat.eqb_neq.
   congruence.
 Defined.
+*)
 
 (*
 Lemma h'' : forall a b t1 t2 c d e f (*t n *),
@@ -106,8 +155,267 @@ Proof.
   Locate afaf.
   assumption.
 Defined.
-*)
+ *)
 
+
+Lemma hhh : forall t1 t2 a b c d r s,
+    well_formed (abpar r s t1 t2) -> 
+    range t1 = (a,b) ->
+    range t2 = (c,d) ->
+    PeanoNat.Nat.eqb a c = false.
+Proof.
+  intros.
+  assert (fst (range t1) <> fst (range t2)).
+  eapply afaf; eauto.
+  subst''.
+  subst''.
+  simpl in *.
+  rewrite PeanoNat.Nat.eqb_neq in *.
+  tauto.
+Defined.
+
+Lemma faf : forall n,
+    n > 0 -> 
+    n <> n - 1.
+Proof.
+  intros.
+  lia.
+Defined.
+
+Lemma hhhh : forall t1 t2 a b c d r s,
+    well_formed (abpar r s t1 t2) ->
+    range t1 = (a,b) ->
+    range t2 = (c,d) ->
+    PeanoNat.Nat.eqb c (b - 1) = false.
+Proof.
+  intros.
+  inversion H.
+  subst.
+  assert (c = fst (range t2)).
+  {
+    jkjke.
+  }
+
+  assert (a = fst (range t1)).
+  {
+    jkjke.
+  }
+
+  assert (b = snd (range t1)).
+  {
+    jkjk.
+    tauto.
+  }
+
+  assert (d = snd (range t2)).
+  {
+    jkjke.
+  }
+  
+  rewrite H2.
+  rewrite H4.
+  rewrite H9.
+
+  assert (fst (range t2) > 0).
+  {
+    lia.
+  }
+  
+    
+  assert ((fst (range t2)) <> (fst (range t2) - 1)).
+  {
+    eapply faf; eauto.
+  }
+  eapply PeanoNat.Nat.eqb_neq; eauto.
+Defined.
+
+Lemma ppp{A:Type} : forall x:(A*A),
+    x = (fst x, snd x).
+Proof.
+  intros.
+  destruct x.
+  simpl.
+  tauto.
+Defined.
+
+Lemma wf_term_greater : forall t a b,
+    well_formed t ->
+    range t = (a,b) ->
+    b > a.
+Proof.
+  induction t; intros.
+  -
+    destruct a.
+    +
+      simpl in *.
+      inv H.
+      simpl in *.
+      lia.
+    +
+      simpl in *.
+      inv H.
+      simpl in *.
+      lia.
+    +
+      simpl in *.
+      inv H.
+      simpl in *.
+      lia.
+  -
+    simpl in *.
+    subst.
+    inv H.
+    simpl in *.
+    assert (snd (range t) > fst (range t)).
+    eapply IHt.
+    eauto.
+    
+    apply ppp.
+    lia.
+  -
+    inv H.
+    assert (snd (range t1) > fst (range t1)).
+    eapply IHt1.
+    eauto.
+    apply ppp.
+
+    assert (snd (range t2) > fst (range t2)).
+    eapply IHt2.
+    eauto.
+    apply ppp.
+
+    simpl in *.
+    subst.
+
+    simpl in *.
+    lia.
+  -
+    inv H.
+    assert (snd (range t1) > fst (range t1)).
+    eapply IHt1.
+    eauto.
+    apply ppp.
+
+    assert (snd (range t2) > fst (range t2)).
+    eapply IHt2.
+    eauto.
+    apply ppp.
+
+    simpl in *.
+    subst.
+
+    simpl in *.
+    lia.
+  -
+    inv H.
+    assert (snd (range t1) > fst (range t1)).
+    eapply IHt1.
+    eauto.
+    apply ppp.
+
+    assert (snd (range t2) > fst (range t2)).
+    eapply IHt2.
+    eauto.
+    apply ppp.
+
+    simpl in *.
+    subst.
+
+    simpl in *.
+    lia.
+Defined.
+
+Lemma hhhhh : forall t1 t2 a b c d r s,
+    well_formed (abpar r s t1 t2) ->
+    range t1 = (a,b) ->
+    range t2 = (c,d) ->
+    PeanoNat.Nat.eqb (b - 1) (d - 1) = false.
+Proof.
+  intros.
+  inversion H.
+  subst.
+  assert (c = fst (range t2)).
+  {
+    jkjke.
+  }
+
+  assert (a = fst (range t1)).
+  {
+    jkjke.
+  }
+
+  assert (b = snd (range t1)).
+  {
+    jkjk.
+    tauto.
+  }
+
+  assert (d = snd (range t2)).
+  {
+    jkjke.
+  }
+
+
+
+  assert (b <> d).
+  {
+    assert (b = c).
+    {
+      lia.
+    }
+    
+    assert (b > a).
+    {
+      eapply wf_term_greater.
+      apply H6.
+      eauto.
+    }
+
+    assert (d > c).
+    {
+      eapply wf_term_greater; eauto.
+    }
+
+    lia.
+  }
+
+  assert (b > 0).
+  {
+    lia.
+  }
+
+
+  
+
+  assert (d > 0).
+  {
+    assert (d > c).
+    {
+      eapply wf_term_greater; eauto.
+    }
+    lia.
+  }
+
+  eapply PeanoNat.Nat.eqb_neq.
+  lia.
+Defined.
+
+Lemma abpar_store_non_overlap : forall t1 t2 a b c d r s,
+    well_formed (abpar r s t1 t2) ->
+    range t1 = (a,b) ->
+    range t2 = (c,d) ->
+    PeanoNat.Nat.eqb a c = false /\
+    PeanoNat.Nat.eqb c (b - 1) = false /\
+    PeanoNat.Nat.eqb (b - 1) (d - 1) = false.
+Proof.
+  intros.
+  repeat split.
+  eapply hhh; eauto.
+  eapply hhhh; eauto.
+  eapply hhhhh; eauto.
+Defined.
+
+(*
 Ltac htac :=
   let tac := eapply h; eauto in
   match goal with
@@ -123,71 +431,57 @@ Ltac htac' :=
     let X := fresh in
     assert (PeanoNat.Nat.eqb (fst (range t2)) (fst (range t1)) = false) as X by tac; rewrite X in *; clear X
   end.
+ *)
 
-(*
+Lemma jaj : 1 = 1 /\ 2 = 2 /\ 3 = 3 -> 4 = 4.
+Proof.
+  intros.
+  destruct H as [a [b c]].
+  trivial.
+Defined.
+
+Ltac fail_no_match :=
+  match goal with
+  | [H: context [match _ with _ => _ end] |- _] => idtac
+  | [ |- context [match _ with _ => _ end]] => idtac
+  | _ => fail
+  end.
+
+Ltac fail_no_match_some :=
+  match goal with
+  | [H: context [match _ with | Some _ => _ | None => _ end] |- _] => idtac
+  | [ |- context [match _ with | Some _ => _ | None => _ end] ] => idtac
+  | _ => fail
+  end.
+    
+
+  
+
 Ltac htac'' :=
   (*let tac := eapply h''; eauto in *)
   match goal with
-  | [H: well_formed (abpar _ _ ?t1 ?t2) (*(abpar _ _ ?t1 ?t2 = snd _*),
-        H2: range ?t1 = (?c,_),
-            H3: range ?t2 = (?e,_)
-
-     |- _] =>
+  | [H: well_formed (abpar _ _ ?t1 ?t2),
+        H2: range ?t1 = (?a,?b),
+            H3: range ?t2 = (?c,?d) |- _] =>
+    let W := fresh in
     let X := fresh in
-    assert (PeanoNat.Nat.eqb (c) (e) = false) as X by (eapply h''; [apply H | apply H2 | apply H3]); rewrite X in *; clear X
+    let Y := fresh in
+    let Z := fresh in
+    assert (PeanoNat.Nat.eqb a c = false /\
+            PeanoNat.Nat.eqb c (b - 1) = false /\
+            PeanoNat.Nat.eqb (b - 1) (d - 1) = false) as W
+        by (eapply abpar_store_non_overlap; [apply H | apply H2 | apply H3]);
+    destruct W as [X [Y Z]];
+    try (rewrite X in *; clear X);
+    try (rewrite Y in *; clear Y);
+    try (rewrite Z in *; clear Z)
   end.
-*)
 
 
 
-Ltac dohtac := try htac;
-               try htac';
-               (*try htac''; *)
+Ltac dohtac := (*try htac;
+               try htac'; *)
+               fail_no_match_some;
+               try htac'';
                try rewrite PeanoNat.Nat.eqb_refl in *;
                try rewrite PeanoNat.Nat.eqb_eq in *.
-
-
-Ltac df :=
-  repeat (
-      cbn in *;
-      unfold runSt in *;
-      repeat break_let;
-      repeat (monad_unfold; cbn in *; find_inversion);
-      monad_unfold;
-      repeat dunit;
-      unfold snd in * 
-      (*unfold runParThreads, runParThread in * *) ).
-
-Ltac dosome :=
-  repeat (
-      match goal with
-      | [H: match ?o with
-            | Some _ => _
-            | _ => _
-            end
-            =
-            (Some _, _) |- _] =>
-        destruct o; try solve_by_inversion
-      end; df).
-
-Ltac subst' :=
-  match goal with
-  | [H: ?A = _, H2: context[?A] |- _] => rewrite H in *; clear H
-  | [H: ?A = _ |- context[?A]] => rewrite H in *; clear H
-  end.
-
-Ltac subst'' :=
-  match goal with
-  | [H:?A = _, H2: context [?A] |- _] => rewrite H in *
-  | [H:?A = _ |- context [?A]] => rewrite H in *
-  end.
-
-Ltac dooit :=
-  repeat eexists;
-  cbn;
-  repeat break_let;
-  simpl;
-  repeat find_inversion;
-  subst';
-  df;
-  reflexivity.

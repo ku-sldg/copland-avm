@@ -2,7 +2,7 @@ Require Import Term GenStMonad MonadVM.
 
 (** Monadic VM implementation *)
 
-Fixpoint build_comp (t:AnnoTerm): VM unit :=
+Fixpoint copland_compile (t:AnnoTerm): CVM unit :=
   match t with
   | aasp (n,_) a =>
       e <- do_prim n a ;;
@@ -13,18 +13,18 @@ Fixpoint build_comp (t:AnnoTerm): VM unit :=
       e' <- receiveResp rpyi q ;;
       put_ev e'
   | alseq r t1 t2 =>
-      build_comp t1 ;;
-      build_comp t2
+      copland_compile t1 ;;
+      copland_compile t2
   | abseq (x,y) (sp1,sp2) t1 t2 =>
       e <- get_ev ;;
       p <- get_pl ;;
       pr <- split_evm x sp1 sp2 e p ;;
       let '(e1,e2) := pr in
       put_ev e1 ;;
-      build_comp t1 ;;
+      copland_compile t1 ;;
       e1r <- get_ev ;;
       put_ev e2 ;;
-      build_comp t2 ;;
+      copland_compile t2 ;;
       e2r <- get_ev ;;
       join_seq (Nat.pred y) p e1r e2r
   | abpar (x,y) (sp1,sp2) t1 t2 =>
@@ -44,8 +44,8 @@ Fixpoint build_comp (t:AnnoTerm): VM unit :=
       join_par (Nat.pred y) p e1r e2r
   end.
 
-Definition run_vm (t:AnnoTerm) st : vm_st :=
-  execSt (build_comp t) st.
+Definition run_vm (t:AnnoTerm) st : cvm_st :=
+  execSt (copland_compile t) st.
 
 
 

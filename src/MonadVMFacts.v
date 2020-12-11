@@ -16,12 +16,12 @@ Ltac vmsts :=
   simpl in *;
   repeat
     match goal with
-    | [H: vm_st |- _] => destruct H
+    | [H: cvm_st |- _] => destruct H
     end.
 
 Ltac amsts :=
   repeat match goal with
-         | H:vm_st |- _ => destruct H
+         | H:cvm_st |- _ => destruct H
          end.
 (*
 Lemma get_store_at_determ : forall e0' e e' e2 e2' tr tr' tr2 tr2' p p' p2 p2'

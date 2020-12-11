@@ -508,7 +508,7 @@ Proof.
     econstructor; simpl; auto;
     repeat rewrite anno_range; simpl; reflexivity).
   -
-    Check anno_range.
+    (* Check anno_range. *)
     (*
       anno_range
       : forall (x : Term) (i : nat), range (snd (anno x i)) = (i, fst (anno x i))
@@ -575,7 +575,7 @@ Proof.
     rewrite hey.
     simpl.
     reflexivity. *)
-    Check anno_mono.
+    (*Check anno_mono. *)
     rewrite anno_range.
     simpl.
     assert (a = snd (anno t1 (S i))) by (rewrite hey; tauto).
@@ -587,7 +587,6 @@ Proof.
     simpl.
     eassumption.
 Defined.
-Check annotated.
 
 Lemma anno_well_formed':
   forall t,
