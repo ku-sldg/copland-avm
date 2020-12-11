@@ -158,121 +158,8 @@ Proof.
   -
     do_wf_pieces.
     repeat (df; dohtac; df).
-    
-
-(*
-
-    fail_no_match_some.
-
-
-    
-    (df; fail_no_match_some; dohtac;  df).
-    (df; fail_no_match_some; dohtac;  df).
-    (df; fail_no_match_some; dohtac;  df).
-    (df; fail_no_match_some; dohtac;  df).
-    (df; dohtac; fail_no_match_some; df).
-    (df; dohtac; fail_no_match_some; df).
-    (df; dohtac; fail_no_match_some; df).
-    (df; dohtac; df;  fail_no_match_some).
-    (df; dohtac; df;  fail_no_match_some).
-    (df; dohtac; df).
-    (df; dohtac; df).
-    fail_no_match.
-
-    Ltac fail_on_match :=
-      match goal with
-      | [H: context [match _ with _ => _ end] |- _] => fail
-      | [ |- context [match _ with _ => _ end]] => fail
-      | _ => idtac
-      end.
-
-    Ltac fail_no_match' :=
-      lazymatch goal with
-      | [H: context [match _ with _ => _ end] |- _] => idtac
-      | [ |- context [match _ with _ => _ end]] => idtac
-      | _ => fail
-      end.
-
-    Ltac fail_no_match'' :=
-      match goal with
-        (*
-      | [H: context [match _ with _ => _ end] |- _] => idtac
-      | [ |- context [match _ with _ => _ end]] => idtac *)
-      | _ => fail
-      end.
-
-    Definition hellothere (n:nat) : nat :=
-      let m := 0 in
-      match n with
-      | O => 0
-      | S n' => match m with | O => n | S n'' => n end
-      end.
-        
-
-    Lemma triv : hellothere 3 = 2 -> 1 = 1.
-    Proof.
-      intros.
-      cbv in *.
-      unfold hellothere in *.
-      fail_on_match.
-      Fail fail_no_match.
-    Admitted.
-    
-
-    repeat break_let.
-    clear IHt1. clear IHt2.
-
-
-
-    fail_on_match.
-
-    fail_no_match.
-
-     fail_no_match''.
-
-    
-
-
-    
-    (df; dohtac; df). 
-
- *)
     repeat (rewrite app_assoc).
     tauto.
-
-    (*
-
-
-    
-    repeat (df; dohtac; repeat(rewrite app_assoc); try tauto).
-    (*
-        assert (PeanoNat.Nat.eqb n3 n1 = false).
-    {
-      eapply hhh; eauto.
-    }
-    subst''.
-    df.
-
-
-
-    assert (PeanoNat.Nat.eqb n1 (n4 - 1) = false).
-    {
-      eapply hhhh; eauto.
-    }
-    subst''.
-    repeat (df; dohtac).
-
-
-
-    assert (PeanoNat.Nat.eqb (n4 - 1) (n2 - 1) = false).
-    {
-      eapply hhhhh; eauto.
-    }
-    subst''.
-    repeat (df; dohtac).
-    repeat (rewrite app_assoc); tauto. *)
-
-*)
 Defined.
 
 (* Instance of st_trace_cumul' where k=[] *)
@@ -564,32 +451,6 @@ Proof.
   -
     do_wf_pieces.
     repeat (df; dohtac; df).
-
-    (*
-        assert (PeanoNat.Nat.eqb n3 n1 = false).
-    {
-      eapply hhh; eauto.
-    }
-    subst''.
-    df.
-
-
-
-    assert (PeanoNat.Nat.eqb n1 (n4 - 1) = false).
-    {
-      eapply hhhh; eauto.
-    }
-    subst''.
-    repeat (df; dohtac).
-
-
-
-    assert (PeanoNat.Nat.eqb (n4 - 1) (n2 - 1) = false).
-    {
-      eapply hhhhh; eauto.
-    }
-    subst''.
-    repeat (df; dohtac). *)
     econstructor.
     destruct s0.
     +
@@ -730,32 +591,6 @@ Proof.
   -
     destruct s; destruct r.
     repeat (df; dohtac; df).
-    (*
-    repeat (df; dohtac).
-        assert (PeanoNat.Nat.eqb n3 n1 = false).
-    {
-      eapply hhh; eauto.
-    }
-    subst''.
-    df.
-
-
-
-    assert (PeanoNat.Nat.eqb n1 (n4 - 1) = false).
-    {
-      eapply hhhh; eauto.
-    }
-    subst''.
-    repeat (df; dohtac).
-
-
-
-    assert (PeanoNat.Nat.eqb (n4 - 1) (n2 - 1) = false).
-    {
-      eapply hhhhh; eauto.
-    }
-    subst''.
-    repeat (df; dohtac). *)
     econstructor.
     econstructor.
     eapply lstar_transitive.

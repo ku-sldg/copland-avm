@@ -580,6 +580,135 @@ Proof.
   eapply anno_well_formed.
 Defined.
 
+(*
+Lemma afaf : forall r s a b,
+    well_formed (abpar r s a b) -> 
+    (fst (range a)) <> (fst (range b)).
+Proof.
+  intros.
+  inversion H.
+  subst.
+  rewrite <- H6.
+  rewrite <- H7.
+  simpl.
+  lia.
+Defined.
+
+Lemma afaf2' : forall r s a b,
+    well_formed (abpar r s a b) -> 
+    (fst (range b)) <> (snd (range a)) - 1.
+Proof.
+  intros.
+  inversion H.
+  subst.
+  rewrite <- H7.
+  lia.
+Defined.
+*)
+
+
+(*
+(*TODO: not true, pick different index for st_store in bpar case *)
+Lemma afaf2 : forall r s a b,
+    well_formed (abpar r s a b) -> 
+    (*(abpar (i, k) s a b) = snd (anno t' n) -> *)
+    (fst (range b)) <> (snd (range a)).
+Proof.
+  intros.
+  inversion H.
+  subst.
+  rewrite <- H7
+  rewrite <- H6.
+  rewrite <- H7.
+  simpl.
+  lia.
+Defined.
+*)
+
+
+(*
+Lemma afaf : forall i k s a b,
+    well_formed (abpar (i,k) s a b) -> 
+    (*(abpar (i, k) s a b) = snd (anno t' n) -> *)
+    (fst (range a)) <> (fst (range b)).
+Proof.
+  intros.
+  destruct t';
+
+    (* Bogus cases *)
+    cbn in *;
+    repeat (break_let);
+    simpl in *;
+    try solve_by_inversion.
+
+  (* Some automation + insight *)
+    repeat find_inversion;
+      repeat hehe'; repeat hehe'';
+      (*repeat hehe;*)
+      repeat haha;
+      repeat (
+          find_rewrite;
+          simpl in * );
+      lia.
+
+                                   
+(*
+  (* High automation, very little insight (but much slower) *)
+   repeat find_inversion.
+   
+    pose proof anno_range.
+    pose proof anno_mono.
+    cbn in *.
+    repeat break_let.
+    simpl in *.
+    (*repeat afa'. *)
+    repeat afa.
+    repeat afa'.
+    repeat afa''.
+    subst.
+
+    repeat find_apply_hyp_hyp'.
+    repeat find_rewrite.
+    simpl in *.
+
+    repeat jkjk.
+    simpl.
+    lia.
+*)
+
+(*
+  (* Manual *)
+  inv H.
+  assert (n0 > (S n)).
+  eapply anno_mono; eauto.
+  assert (n1 > n0).
+  eapply anno_mono; eauto.
+  assert ( range (snd (anno t'1 (S n))) = ((S n), fst (anno t'1 (S n)))).
+  eapply anno_range; eauto.
+  subst.
+  rewrite Heqp in H2.
+  simpl in *.
+
+  assert ( range (snd (anno t'2 n0)) = (n0, fst (anno t'2 n0))).
+  eapply anno_range; eauto.
+  rewrite Heqp0 in H3.
+  simpl in *.
+  rewrite H2.
+  rewrite H3.
+  simpl.
+  lia.
+*)
+Defined.
+*)
+
+
+
+
+
+
+
+
+
 (** Eval for annotated terms. *)
 
 Fixpoint aeval t p e :=

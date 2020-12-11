@@ -103,52 +103,6 @@ Proof.
         jkjk'; eauto. 
   -
     repeat (df; dohtac; df; try tauto).
-
-    (*
-
-    (*
-    assert (PeanoNat.Nat.eqb n3 n1 = false /\
-            PeanoNat.Nat.eqb n1 (n4 - 1) = false /\
-            PeanoNat.Nat.eqb (n4 - 1) (n2 - 1) = false) as W by
-          (eapply abpar_store_non_overlap; [apply H | apply Heqr2 | apply Heqr1]);
-      destruct W as [X [Y Z]].
-    rewrite X in *; clear X.
-      rewrite Y in *; clear Y.
-     *)
-    
-
-    htac''.
-
-    
-
-    
-      
-    assert (PeanoNat.Nat.eqb n3 n1 = false).
-    {
-      eapply hhh; eauto.
-    }
-    subst''.
-    df.
-
-    
-
-
-
-    assert (PeanoNat.Nat.eqb n1 (n4 - 1) = false).
-    {
-      eapply hhhh; eauto.
-    }
-    subst''.
-    repeat (df; dohtac; try tauto).
-    reflexivity.
-
-
-
-    assert (PeanoNat.Nat.eqb (n4 - 1) (n2 - 1) = false).
-    {
-      eapply hhhhh; eauto.
-    }
-    reflexivity. *)
 Defined.
 
 Ltac do_pl_immut :=
@@ -196,8 +150,6 @@ Ltac allss :=
   try do_bd;
   subst; eauto.
 *)
-
-
 
 Ltac anhl :=
   annogo;
@@ -249,35 +201,6 @@ Proof.
     do_wf_pieces.
     repeat (df; dohtac; df).
     tauto.
-
-    (*
-
-        assert (PeanoNat.Nat.eqb n3 n1 = false).
-    {
-      eapply hhh; eauto.
-    }
-    subst''.
-    df.
-
-
-
-    assert (PeanoNat.Nat.eqb n1 (n4 - 1) = false).
-    {
-      eapply hhhh; eauto.
-    }
-    subst''.
-    repeat (df; dohtac).
-
-
-
-    assert (PeanoNat.Nat.eqb (n4 - 1) (n2 - 1) = false).
-    {
-      eapply hhhhh; eauto.
-    }
-    subst''.
-    repeat (df; dohtac).
-    
-    tauto. *)
 Defined.
 
 Ltac clear_triv :=
@@ -300,42 +223,6 @@ Ltac dohi'' :=
 Ltac dohi :=
   do 2 (repeat dohi''; destruct_conjs; subst);
       clear_triv.
-
-(*
-Ltac dohi' :=
-  annogo;
-  match goal with
-  | [H: well_formed ?a, 
-        H2: copland_compile ?a _ = _,
-            H3: copland_compile ?a _ = _ |- _] =>
-    edestruct hihi;
-    [ (apply H) | 
-      repeat dunit; apply H2 |
-      repeat dunit; apply H3 |
-      idtac]; (*clear H2; clear H3;*)
-    destruct_conjs; subst
-  end.
-*)
-
-(*
-Lemma get_store_in : forall x st st' o y,
-    get_store_at x st = (None, st') ->
-    st_store st = o ->
-    map_get o x = (Some y) ->
-    False.
-Proof.
-  intros.
-  destruct st.
-  simpl in *.
-  subst.
-  monad_unfold.
-  unfold get_store_at in *.
-  monad_unfold.
-  rewrite H1 in *.
-  find_inversion.
-Defined.
- *)
-
 
 Lemma always_some : forall t vm_st vm_st' op,
     well_formed t ->
@@ -369,32 +256,6 @@ Proof.
     do_wf_pieces.
     repeat (df; dohtac; df).
     tauto.
-    (*
-        assert (PeanoNat.Nat.eqb n3 n1 = false).
-    {
-      eapply hhh; eauto.
-    }
-    subst''.
-    df.
-
-
-
-    assert (PeanoNat.Nat.eqb n1 (n4 - 1) = false).
-    {
-      eapply hhhh; eauto.
-    }
-    subst''.
-    repeat (df; dohtac).
-
-
-
-    assert (PeanoNat.Nat.eqb (n4 - 1) (n2 - 1) = false).
-    {
-      eapply hhhhh; eauto.
-    }
-    subst''.
-    repeat (df; dohtac).
-    tauto. *)
 Defined.
 
 Ltac do_somett :=
