@@ -32,7 +32,7 @@ Inductive ASP: Set :=
 | CPY: ASP
 | ASPC: ASP_ID -> list Arg -> ASP
 | SIG: ASP
-(*| HSH: ASP*) .
+| HSH: ASP.
 
 
 Inductive SP: Set :=
@@ -54,9 +54,8 @@ Inductive Evidence: Set :=
 | mt: Evidence
 | uu: ASP_ID -> list Arg -> Plc -> Evidence -> Evidence
 | gg: Plc -> Evidence -> Evidence
-(*| hh: Plc -> Evidence -> Evidence *)
-                         (*
-| nn: N_ID -> Evidence -> Evidence *)
+| hh: Plc -> Evidence -> Evidence
+| nn: N_ID -> Evidence -> Evidence
 | ss: Evidence -> Evidence -> Evidence
 | pp: Evidence -> Evidence -> Evidence.
 
@@ -72,7 +71,7 @@ Definition eval_asp t p e :=
   | CPY => e 
   | ASPC i args => uu i args p e
   | SIG => gg p e
-  (*| HSH => hh p e *)
+  | HSH => hh p e
   end.
 
 (** The evidence associated with a term, a place, and some initial evidence. *)
@@ -102,7 +101,7 @@ Inductive Ev: Set :=
 | copy: nat -> Plc -> Ev 
 | umeas: nat -> Plc -> ASP_ID -> list Arg -> Ev
 | sign: nat -> Plc -> Ev
-(*| hash: nat -> Plc -> Ev *)
+| hash: nat -> Plc -> Ev
 | req: nat -> Plc -> Plc -> Term -> Ev
 | rpy: nat -> Plc -> Plc -> Ev 
 | split: nat -> Plc -> Ev
@@ -123,7 +122,7 @@ Definition ev x :=
   | copy i _ => i
   | umeas i _ _ _  => i
   | sign i _ => i
-  (*| hash i _ => i  *)
+  | hash i _ => i
   | req i _ _ _ => i
   | rpy i _ _ => i 
   | split i _ => i
@@ -143,7 +142,7 @@ Definition asp_event i x p :=
   | CPY => copy i p
   | ASPC id args => umeas i p id args
   | SIG => sign i p
-  (*| HSH => hash i p  *)
+  | HSH => hash i p
   end.
 
 
@@ -621,11 +620,10 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
     forall r i p,
       fst r = i ->
       events (aasp r SIG) p (sign i p) 
-(*| evtshsh:
+| evtshsh:
     forall r i p,
       fst r = i ->
-      events (aasp r HSH) p (hash i p) *)
-
+      events (aasp r HSH) p (hash i p)
 | evtsattreq:
     forall r q t i p,
       fst r = i ->

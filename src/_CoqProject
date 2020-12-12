@@ -8,7 +8,6 @@ Maps_Class.v
 Maps.v
 EqbPair.v
 StVM.v
-StAM.v
 Event_system.v
 Term_system.v
 Trace.v
@@ -20,10 +19,7 @@ Impl_vm.v
 MonadVM.v
 MonadVMFacts.v
 Auto.v
-AllMapped.v
 Helpers_VmSemantics.v
 External_Facts.v
 VmSemantics.v
-MonadAM.v
 MonadLaws.v
-AutoApp.v

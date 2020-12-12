@@ -89,12 +89,12 @@ Definition signEv (x:nat) (e:EvidenceC) : CVM BS :=
   ret x
   (*ret (ggc x e)*).
 
-(*
-Definition hashEv (x:nat) (p:Plc) : CVM EvidenceC :=
-  e <- get_ev ;;
+
+Definition hashEv (x:nat) (e:EvidenceC) : CVM BS :=
+  (* e <- get_ev ;; *)
+  p <- get_pl ;;
   add_tracem [Term.hash x p] ;;
-  ret (hhc x e).
-*)
+  ret x.
 
 Definition copyEv (x:nat) : CVM EvidenceC :=
   p <- get_pl ;;
@@ -111,8 +111,11 @@ Definition do_prim (x:nat) (a:ASP) : CVM EvidenceC :=
   | SIG =>
     e<- get_ev ;;
     bs <- signEv x e ;;
-    ret (ggc x e)
- (* | HSH => hashEv x p  *)
+    ret (ggc bs e)
+  | HSH =>
+    e <- get_ev ;;
+    bs <- hashEv x e ;;
+    ret (hhc bs e)
   end.
 
 Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) : CVM unit :=
@@ -196,7 +199,7 @@ Ltac monad_unfold :=
   do_prim,
   invokeUSM,
   signEv,
-  (*hashEv, *)
+  hashEv,
   copyEv,
 
   sendReq,

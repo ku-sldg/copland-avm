@@ -14,7 +14,7 @@ Inductive evMapped : Evidence -> AM_St -> Prop :=
     evMapped e' st ->
     (exists j, bound_to m p j) ->
     evMapped (gg p e') st
-(*| evMappedH : forall e' p st,
+| evMappedH : forall e' p st,
     (*m = st_sigmap st -> *)
     evMapped e' st ->
     evMapped (hh p e') st    
@@ -22,7 +22,6 @@ Inductive evMapped : Evidence -> AM_St -> Prop :=
     m = st_aspmap st ->
     evMapped e' st ->
     evMapped (nn nid e') st 
-*)
 | evMappedS : forall e1 e2 st,
     evMapped e1 st ->
     evMapped e2 st ->
@@ -51,10 +50,10 @@ Inductive allMapped : AnnoTerm -> AM_St -> Plc -> Evidence -> Prop :=
     m = st_sigmap st ->
     (exists j, bound_to m p j) ->
     allMapped (aasp r (SIG)) st p e
-(*| allMapped_hsh : forall r p st e,
+| allMapped_hsh : forall r p st e,
     evMapped e st ->
     (*p = am_pl st -> *)
-    allMapped (aasp r (HSH)) st p e *)
+    allMapped (aasp r (HSH)) st p e
 | allMapped_at : forall t' p q r st e m x y z z',
     m = st_aspmap st ->
     (*evMapped e m -> *) (* TODO: need this? *)
@@ -123,10 +122,9 @@ Ltac debound :=
 Ltac evMappedFacts :=
   match goal with
   | [H: evMapped (uu _ _ _ _) _ |- _] => invc H
-  | [H: evMapped (gg _ _) _ |- _] => invc H
-  (* 
+  | [H: evMapped (gg _ _) _ |- _] => invc H 
   | [H: evMapped (hh _ _) _ |- _] => invc H 
-  | [H: evMapped (nn _ _) _ |- _] => invc H *)
+  | [H: evMapped (nn _ _) _ |- _] => invc H
   | [H: evMapped (ss _ _) _ |- _] => invc H
   | [H: evMapped (pp _ _) _ |- _] => invc H  
   end;
@@ -191,6 +189,11 @@ Proof.
       reflexivity.
       eexists.
       eauto.
+
+    +
+      allMappedFacts.
+      econstructor.
+      econstructor.
   -
     allMappedFacts.
     df.
