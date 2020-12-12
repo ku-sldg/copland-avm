@@ -1,22 +1,17 @@
 (*
-Implementation of the Attestation Virtual Machine (AVM) + proof that it refines the Copland reference semantics.
+Proofs about the Copland Virtual Machine implementation, linking it to the Copland reference semantics.
 
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import More_lists (*Preamble*) Term ConcreteEvidence LTS GenStMonad.
-Require Import Main Event_system Term_system.
-Require Import Auto.
-
-
-Require Import MonadVM MonadVMFacts Maps Axioms_Io Impl_vm External_Facts Helpers_VmSemantics.
+Require Import More_lists Term ConcreteEvidence LTS Event_system Term_system Main.
+Require Import GenStMonad MonadVM MonadVMFacts Maps StructTactics Auto.
+Require Import Axioms_Io Impl_vm External_Facts Helpers_VmSemantics.
 
 Require Import List.
 Import ListNotations.
 Require Import Coq.Program.Tactics Coq.Program.Equality.
 Require Import Coq.Arith.Peano_dec.
-
-Require Import StructTactics.
 
 Set Nested Proofs Allowed.
 

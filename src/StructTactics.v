@@ -1,3 +1,6 @@
+(* Local copy of structural tactics library from:  https://github.com/uwplse/StructTact *)
+
+
 (** [subst_max] performs as many [subst] as possible, clearing all
     trivial equalities from the context. *)
 Ltac subst_max :=

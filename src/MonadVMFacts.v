@@ -1,5 +1,5 @@
 (*
-Lemmas and LTAC scripts to leverage facts about the AVM Monad.
+Lemmas and LTAC scripts to leverage facts about the CVM Monad.
 
 Author:  Adam Petz, ampetz@ku.edu
 *)

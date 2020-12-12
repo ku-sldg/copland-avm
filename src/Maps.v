@@ -1,5 +1,5 @@
 (*
-Simple, list-based implementation of finite maps, borrowed/tweaked from here:
+Polymorphic, list-based implementation of finite maps, borrowed/tweaked from here:
 https://softwarefoundations.cis.upenn.edu/qc-current/TImp.html
 
 Author:  Adam Petz, ampetz@ku.edu
@@ -73,11 +73,3 @@ Fixpoint map_dom {K V} (m:MapC K V) : list K :=
 
 Inductive bound_to{A B:Type} `{H : EqClass A} : MapC A B -> A -> B -> Prop :=
   | Bind : forall x m a, map_get m x = Some a -> bound_to m x a.
-
-
-
-(*
-Instance nat_EqClass : EqClass nat :=
-  { eqb:= PeanoNat.Nat.eqb;
-    eqb_leibniz := beq_nat_true }.
-*)

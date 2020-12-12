@@ -1,14 +1,9 @@
 (*
+Generic Typeclass for equality, plus some instances.
 
 Author:  Adam Petz, ampetz@ku.edu
  *)
 
-(*
-Require Export Maps_Class.
-Require Import ConcreteEvidence. 
-
-Require Import List.
-Import ListNotations. *)
 Require Import StructTactics.
 
 Require Import Coq.Arith.EqNat.

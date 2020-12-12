@@ -1,3 +1,9 @@
+(*
+Helper lemmas for proofs about the VM semantics.
+
+Author:  Adam Petz, ampetz@ku.edu
+*)
+
 Require Import MonadVM Impl_vm Term Auto StructTactics MonadVMFacts Maps GenStMonad.
 
 Require Import Coq.Program.Tactics Coq.Program.Equality.

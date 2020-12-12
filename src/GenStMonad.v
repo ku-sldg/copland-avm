@@ -1,5 +1,5 @@
 (*
-General definition of a state monad with error + monadic notations.
+General definition of a state monad with error + monadic notations, borrowed/tweaked from:  https://github.com/uwplse/verdi/blob/master/core/StateMachineHandlerMonad.v
 
 Author:  Adam Petz, ampetz@ku.edu
 *)

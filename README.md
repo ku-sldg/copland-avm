@@ -34,7 +34,7 @@ Then open the desired `.v` file to step through its definitions and proofs (`mak
 * Axioms_Io.v:  Uninterpreted functions and rewrite rules that model external (remote and local parallel) components that interpret Copland phrases
 * EqClass.v:  Generic Typeclass for equality, plus some instances
 * Maps.v:  Polymorphic, list-based implementation of finite maps
-* GenStMonad.v:  General definition of a state monad with error + monadic notations
+* GenStMonad.v:  General definition of a state monad with error + monadic notations, borrowed/tweaked from:  https://github.com/uwplse/verdi/blob/master/core/StateMachineHandlerMonad.v
 * MonadLaws.v:  Proofs of monad laws for the general state monad in GenStMonad.v
 * StVM.v:  Record representing the CVM Monad state structure
 * MonadVM.v:  Definition of the CVM Monad + monadic helper functions
@@ -43,7 +43,7 @@ Then open the desired `.v` file to step through its definitions and proofs (`mak
 * Auto.v:  Automation scripts.  Some generic, but most specific to this development
 * Helpers_VmSemantics.v:  Helper lemmas for proofs about the VM semantics
 * External_Facts.v:  Axioms and lemmas that capture the semantics of external CVM instances
-* VmSemantics.v:  Proofs about the Copland Virtual Machine implementation 
+* VmSemantics.v:  Proofs about the Copland Virtual Machine implementation, linking it to the Copland reference semantics. 
 
 
 ## Modifications to Original Copland spec/proofs

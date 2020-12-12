@@ -1,5 +1,5 @@
 (*
-Definition of the AVM Monad + monadic helper functions.
+Definition of the CVM Monad + monadic helper functions.
 
 Author:  Adam Petz, ampetz@ku.edu
 *)

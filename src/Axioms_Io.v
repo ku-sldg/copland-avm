@@ -1,3 +1,9 @@
+(*
+Uninterpreted functions and rewrite rules that model external (remote and local parallel) components that interpret Copland phrases.
+
+Author:  Adam Petz, ampetz@ku.edu
+*)
+
 Require Import Term ConcreteEvidence LTS.
 
 (** IO Axioms *)

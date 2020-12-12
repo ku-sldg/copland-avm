@@ -1,3 +1,9 @@
+(*
+Axioms and lemmas that capture the semantics of external CVM instances.
+
+Author:  Adam Petz, ampetz@ku.edu
+*)
+
 Require Import Term ConcreteEvidence StVM Impl_vm Axioms_Io GenStMonad Helpers_VmSemantics.
 
 Require Import List.

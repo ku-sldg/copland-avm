@@ -1,5 +1,5 @@
 (*
-Record representing the AVM Monad state structure.
+Record representing the CVM Monad state structure.
 
 Author:  Adam Petz, ampetz@ku.edu
 *)
