@@ -33,7 +33,7 @@ Then open the desired `.v` file to step through its definitions and proofs (`mak
 * ConcreteEvidence.v:  Evidence structure that models concrete results of Copland phrase execution 
 * Axioms_Io.v:  Uninterpreted functions and rewrite rules that model external (remote and local parallel) components that interpret Copland phrases
 * EqClass.v:  Generic Typeclass for equality, plus some instances
-* Maps.v:  Polymorphic, list-based implementation of finite maps
+* Maps.v:  Polymorphic, list-based implementation of finite maps, borrowed/tweaked from: https://softwarefoundations.cis.upenn.edu/qc-current/TImp.html
 * GenStMonad.v:  General definition of a state monad with error + monadic notations, borrowed/tweaked from:  https://github.com/uwplse/verdi/blob/master/core/StateMachineHandlerMonad.v
 * MonadLaws.v:  Proofs of monad laws for the general state monad in GenStMonad.v
 * StVM.v:  Record representing the CVM Monad state structure
