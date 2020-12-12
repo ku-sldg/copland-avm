@@ -7,11 +7,11 @@ Using any browser, open the html files in `src/html` to browse all definitions a
 
 ## Build Instructions
 
-Make sure you have [Coq](https://coq.inria.fr/opam-using.html) and [ProofGeneral](https://proofgeneral.github.io/) installed on your system (Tested on Coq version 8.12.0), then type:
+To step through the proof scripts in `src/` interactively, make sure you have [Coq](https://coq.inria.fr/opam-using.html) and [ProofGeneral](https://proofgeneral.github.io/) installed on your system (Tested on Coq version 8.12.0), then type:
 
 `cd src ; make`
 
-You can now walk through the proof scripts in `src/` interactively.  This will also re-generate the pretty-printed html in `src/html`.
+Then open the desired `.v` file to step through its definitions and proofs (`make` will also re-generate the pretty-printed html in `src/html`).
 
 ## Source File Descriptions
 
@@ -30,21 +30,21 @@ You can now walk through the proof scripts in `src/` interactively.  This will a
 ### Copland Compiler and VM specs/proofs
 ---
 * StructTactics.v:  Local copy of structural tactics library from:  https://github.com/uwplse/StructTact
-* ConcreteEvidence.v:  Evidence structure that models concrete results of Copland phrase execution.  
-* Maps.v:  Simple, list-based implementation of finite maps
-* StVM.v:  Record representing the AVM Monad state structure
+* ConcreteEvidence.v:  Evidence structure that models concrete results of Copland phrase execution 
+* Axioms_Io.v:  Uninterpreted functions and rewrite rules that model external (remote and local parallel) components that interpret Copland phrases
+* EqClass.v:  Generic Typeclass for equality, plus some instances
+* Maps.v:  Polymorphic, list-based implementation of finite maps
 * GenStMonad.v:  General definition of a state monad with error + monadic notations
-* MonadVM.v:  Definition of the AVM Monad + monadic helper functions
-* MonadVMFacts.v:  Lemmas and LTAC scripts to leverage facts about the AVM Monad
-* VmSemantics.v:  Implementation of the Attestation Virtual Machine (AVM) + proof that it refines the Copland reference semantics
 * MonadLaws.v:  Proofs of monad laws for the general state monad in GenStMonad.v
-* Maps_Class.v:  
-* EqbPair.v 
-* Axioms_Io.v
-* Impl_vm.v
-* Helpers_VmSemantics.v
-* External_Facts.v
-* Auto.v
+* StVM.v:  Record representing the CVM Monad state structure
+* MonadVM.v:  Definition of the CVM Monad + monadic helper functions
+* MonadVMFacts.v:  Lemmas and LTAC scripts to leverage facts about the CVM Monad
+* Impl_vm.v:  Implementation of the Copland Compiler and Virtual Machine
+* Auto.v:  Automation scripts.  Some generic, but most specific to this development
+* Helpers_VmSemantics.v:  Helper lemmas for proofs about the VM semantics
+* External_Facts.v:  Axioms and lemmas that capture the semantics of external CVM instances
+* VmSemantics.v:  Proofs about the Copland Virtual Machine implementation 
+
 
 ## Modifications to Original Copland spec/proofs
 1. 

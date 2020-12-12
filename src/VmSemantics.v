@@ -295,17 +295,17 @@ Proof.
   intros.
   
   assert (
-      st_trace (run_vm t {| st_ev := e; st_trace := x; st_pl := p; st_store := o |}) =
+      st_trace (run_cvm t {| st_ev := e; st_trace := x; st_pl := p; st_store := o |}) =
       st_trace ({| st_ev := e'; st_trace := x ++ tr; st_pl := p'; st_store := o' |})).
   {
-    unfold run_vm. 
+    unfold run_cvm. 
     monad_unfold.
     subst'.
     simpl.
     reflexivity.
   }
   
-  unfold run_vm in *.
+  unfold run_cvm in *.
   assert (
    st_ev
      (execSt
@@ -572,7 +572,7 @@ Proof.
     eassumption.
     eassumption.
   
-    unfold run_vm in *.
+    unfold run_cvm in *.
     monad_unfold.
 
     eapply lstar_silent_tran.
@@ -607,7 +607,7 @@ Defined.
 Lemma cvm_refines_lts_event_ordering_corrolary : forall t tr et e e' p p' o o',
     well_formed t -> 
     copland_compile t (mk_st e [] p o) = (Some tt, (mk_st e' tr p' o')) ->
-    st_trace (run_vm t
+    st_trace (run_cvm t
                      (mk_st e [] p o)) = tr ->
     lstar (conf t p et) tr (stop p (aeval t p et)).
 Proof.
@@ -620,7 +620,7 @@ Proof.
   destruct o0.
   dunit.
   rewrite hi.
-  unfold run_vm in *.
+  unfold run_cvm in *.
   monad_unfold.
   rewrite hi in *.
   simpl in *.

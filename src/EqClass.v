@@ -1,8 +1,25 @@
-Require Import Maps StructTactics.
+(*
+
+Author:  Adam Petz, ampetz@ku.edu
+ *)
+
+(*
+Require Export Maps_Class.
+Require Import ConcreteEvidence. 
+
+Require Import List.
+Import ListNotations. *)
+Require Import StructTactics.
 
 Require Import Coq.Arith.EqNat.
 
+Class EqClass (A : Type) :=
+  { eqb : A -> A -> bool ;
+    eqb_leibniz : forall x y, eqb x y = true -> x = y }.
 
+Instance nat_EqClass : EqClass nat :=
+  { eqb:= PeanoNat.Nat.eqb;
+    eqb_leibniz := beq_nat_true }.
 
 Definition eqbPair{A B:Type}`{H:EqClass A}`{H':EqClass B} (p1:A*B) (p2:A*B) : bool :=
   match (p1,p2) with

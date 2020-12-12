@@ -44,7 +44,7 @@ Fixpoint copland_compile (t:AnnoTerm): CVM unit :=
       join_par (Nat.pred y) p e1r e2r
   end.
 
-Definition run_vm (t:AnnoTerm) st : cvm_st :=
+Definition run_cvm (t:AnnoTerm) st : cvm_st :=
   execSt (copland_compile t) st.
 
 
