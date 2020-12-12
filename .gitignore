@@ -3,7 +3,6 @@
 .coqdeps.d
 coq.mk
 coq.mk.conf
-html/
 *.vok
 *.vos
 .coq.mk.d
