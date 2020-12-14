@@ -360,7 +360,7 @@ Ltac do_restl :=
       ltac:(eapply restl; [apply H2 | apply H])
   end.
 
-Lemma multi_ev_eval : forall t tr tr' e e' p p' o o' es e's,
+Lemma cvm_refines_lts_evidence : forall t tr tr' e e' p p' o o' es e's,
     well_formed t ->
     copland_compile t (mk_st e tr p o) = (Some tt, (mk_st e' tr' p' o')) ->
     Ev_Shape e es ->
