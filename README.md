@@ -46,3 +46,6 @@ Then open the desired `.v` file to step through its definitions and proofs (`mak
 * VmSemantics.v:  Proofs about the Copland Virtual Machine implementation, linking it to the Copland reference semantics. 
 * StAM.v:  Record representing the AM Monad state structure
 * MonadAM.v:  Definition of the AM Monad + monadic helper functions
+
+## Questions?
+Contact author/maintainer (Adam Petz) at: ampetz@ku.edu
