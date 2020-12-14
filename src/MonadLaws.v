@@ -20,7 +20,7 @@ Proof.
 Qed.
 
 Lemma monad_right_id : forall S A (m:St S A) (s:S),
-    bind m (ret) s = m s.
+    (bind m ret) s = m s.
 Proof.
   intros.
   unfold ret.
@@ -29,7 +29,17 @@ Proof.
   destruct o; auto.
 Qed.
 
-Lemma monad_right_id' : forall S (m:St S unit) (s:S),
+Lemma monad_right_id'{S A:Type} : forall (m:St S A) (s:S),
+    (v <- m ;; (ret v)) s = m s.
+Proof.
+  intros.
+  unfold ret.
+  unfold bind.
+  destruct (m s).
+  break_match; auto.
+Qed.
+
+Lemma monad_right_id''{S:Type} : forall (m:St S unit) (s:S),
     (m ;; (ret tt)) s = m s.
 Proof.
   intros.
@@ -40,7 +50,7 @@ Proof.
   destruct u; auto.
 Defined.
 
-Lemma monad_comp : forall A B C S (m: St S A) (k:A -> St S B) (h:B -> St S C) (s:S),
+Lemma monad_comp{S A B C:Type} : forall (m: St S A) (k:A -> St S B) (h:B -> St S C) (s:S),
     bind m (fun x => (bind (k x) h)) s = (bind (bind m k) h) s.
 Proof.
   intros.
@@ -53,6 +63,44 @@ Proof.
       reflexivity.
     + reflexivity.
   - reflexivity.
+Qed.
+
+Lemma monad_get_get{S A:Type} : forall (k: St S A) (st:S),
+    (get ;; get ;; k) st = (get ;; k) st.
+Proof.
+  intros.
+  unfold bind in *.
+  cbn.
+  repeat break_let.
+  reflexivity.
+Qed.
+
+Lemma monad_get_put{A:Type} : forall (st: A),
+    (s <- get ;; put s) st = (ret tt) st.
+Proof.
+  intros.
+  unfold bind in *.
+  cbn.
+  reflexivity.
+Qed.
+
+Lemma monad_put_put{S:Type} : forall (st s s':S),
+    (put s ;; put s') st = (put s') st.
+Proof.
+  intros.
+  unfold bind in *.
+  cbn.
+  reflexivity.
+Qed.
+
+Lemma monad_put_get{S A:Type} : forall (st s: S) (k:St S A),
+    (put s;; get ;; k) st = (put s ;; k) st.
+Proof.
+  intros.
+  unfold bind in *.
+  cbn.
+  repeat break_let.
+  reflexivity.
 Qed.
 
 Lemma gasd{A B:Type} : forall (act:St A B) (act2:St A B) st,

@@ -7,7 +7,7 @@ Using any browser, open the html files in `src/html` to browse all definitions a
 
 ## Build Instructions
 
-To step through the proof scripts in `src/` interactively, make sure you have [Coq](https://coq.inria.fr/opam-using.html) and [ProofGeneral](https://proofgeneral.github.io/) installed on your system (Tested on Coq version 8.12.0), then type:
+To step through the proof scripts in `src/` interactively, make sure you have [Coq](https://coq.inria.fr/opam-using.html) and [ProofGeneral](https://proofgeneral.github.io/) installed on your system (Tested on Coq versions 8.11 and 8.12), then type:
 
 `cd src ; make`
 
@@ -15,7 +15,7 @@ Then open the desired `.v` file to step through its definitions and proofs (`mak
 
 ## Source File Descriptions
 
-### Original Coq source files from the "Orchestrating Layered Attestations" paper [(link)](https://ku-sldg.github.io/copland///resources/copland-post-2019.pdf), slightly modified (see modification notes [below](#Modifications-to-Original-Copland-spec/proofs)).  See full original specs/proofs [here](https://ku-sldg.github.io/copland/software.html).
+### Original Coq source files from the "Orchestrating Layered Attestations" paper [(link)](https://ku-sldg.github.io/copland///resources/copland-post-2019.pdf), with minor modifications.  See full original specs/proofs [here](https://ku-sldg.github.io/copland/software.html).
 ---
 * Preamble.v:  Helper tactics used throughout the proofs.
 * More_lists.v:  Facts about lists
@@ -44,7 +44,5 @@ Then open the desired `.v` file to step through its definitions and proofs (`mak
 * Helpers_VmSemantics.v:  Helper lemmas for proofs about the VM semantics
 * External_Facts.v:  Axioms and lemmas that capture the semantics of external CVM instances
 * VmSemantics.v:  Proofs about the Copland Virtual Machine implementation, linking it to the Copland reference semantics. 
-
-
-## Modifications to Original Copland spec/proofs
-1. 
+* StAM.v:  Record representing the AM Monad state structure
+* MonadAM.v:  Definition of the AM Monad + monadic helper functions
