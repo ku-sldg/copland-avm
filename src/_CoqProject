@@ -5,8 +5,10 @@ StructTactics.v
 Term.v
 Event_system.v
 Term_system.v
+Store_system.v
 Trace.v
 LTS.v
+LTS_Store.v
 Main.v
 ConcreteEvidence.v
 Axioms_Io.v

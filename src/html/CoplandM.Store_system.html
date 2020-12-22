@@ -1,0 +1,108 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>CoplandM.Store_system</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library CoplandM.Store_system</h1>
+
+<div class="code">
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Copland specific event systems. 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.omega.Omega.html#"><span class="id" title="library">Omega</span></a> <a class="idref" href="CoplandM.Preamble.html#"><span class="id" title="library">Preamble</span></a> <a class="idref" href="CoplandM.More_lists.html#"><span class="id" title="library">More_lists</span></a> <a class="idref" href="CoplandM.Term.html#"><span class="id" title="library">Term</span></a> <a class="idref" href="CoplandM.Event_system.html#"><span class="id" title="library">Event_system</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Construct an event system from an annotated term, place, and
+    evidence. 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Inductive</span> <a id="PutPoll" class="idref" href="#PutPoll"><span class="id" title="inductive">PutPoll</span></a>: <span class="id" title="keyword">Set</span> :=<br/>
+| <a id="putpoll" class="idref" href="#putpoll"><span class="id" title="constructor">putpoll</span></a>: <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Logic.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="CoplandM.Store_system.html#PutPoll:1"><span class="id" title="inductive">PutPoll</span></a><br/>
+| <a id="none_putpoll" class="idref" href="#none_putpoll"><span class="id" title="constructor">none_putpoll</span></a>: <a class="idref" href="CoplandM.Store_system.html#PutPoll:1"><span class="id" title="inductive">PutPoll</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Fixpoint</span> <a id="store_sys" class="idref" href="#store_sys"><span class="id" title="definition">store_sys</span></a> (<a id="t:3" class="idref" href="#t:3"><span class="id" title="binder">t</span></a>: <a class="idref" href="CoplandM.Term.html#AnnoTerm"><span class="id" title="inductive">AnnoTerm</span></a>) : <a class="idref" href="CoplandM.Event_system.html#EvSys"><span class="id" title="inductive">EvSys</span></a> <a class="idref" href="CoplandM.Store_system.html#PutPoll"><span class="id" title="inductive">PutPoll</span></a> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="CoplandM.Store_system.html#t:3"><span class="id" title="variable">t</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="CoplandM.Term.html#aasp"><span class="id" title="constructor">aasp</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><span class="id" title="var">i</span><a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <span class="id" title="var">j</span><a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> <span class="id" title="var">x</span> ⇒ <a class="idref" href="CoplandM.Event_system.html#leaf"><span class="id" title="constructor">leaf</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><span class="id" title="var">i</span><a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <span class="id" title="var">j</span><a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> <a class="idref" href="CoplandM.Store_system.html#none_putpoll"><span class="id" title="constructor">none_putpoll</span></a><br/>
+&nbsp;&nbsp;| <a class="idref" href="CoplandM.Term.html#aatt"><span class="id" title="constructor">aatt</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><span class="id" title="var">i</span><a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <span class="id" title="var">j</span><a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> <span class="id" title="var">q</span> <span class="id" title="var">x</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="CoplandM.Event_system.html#leaf"><span class="id" title="constructor">leaf</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><span class="id" title="var">i</span><a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <span class="id" title="var">j</span><a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> (<a class="idref" href="CoplandM.Store_system.html#putpoll"><span class="id" title="constructor">putpoll</span></a> <span class="id" title="var">i</span> <span class="id" title="var">i</span> <span class="id" title="var">j</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;| <a class="idref" href="CoplandM.Term.html#alseq"><span class="id" title="constructor">alseq</span></a> <span class="id" title="var">r</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> ⇒ <a class="idref" href="CoplandM.Event_system.html#before"><span class="id" title="constructor">before</span></a> <span class="id" title="var">r</span> (<a class="idref" href="CoplandM.Store_system.html#store_sys:4"><span class="id" title="definition">store_sys</span></a> <span class="id" title="var">x</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="CoplandM.Store_system.html#store_sys:4"><span class="id" title="definition">store_sys</span></a> <span class="id" title="var">y</span>)<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;| <a class="idref" href="CoplandM.Term.html#abseq"><span class="id" title="constructor">abseq</span></a> <span class="id" title="var">r</span> <span class="id" title="var">s</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> ⇒  <a class="idref" href="CoplandM.Event_system.html#before"><span class="id" title="constructor">before</span></a> <span class="id" title="var">r</span> (<a class="idref" href="CoplandM.Store_system.html#store_sys:4"><span class="id" title="definition">store_sys</span></a> <span class="id" title="var">x</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="CoplandM.Store_system.html#store_sys:4"><span class="id" title="definition">store_sys</span></a> <span class="id" title="var">y</span>)<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;| <a class="idref" href="CoplandM.Term.html#abpar"><span class="id" title="constructor">abpar</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><span class="id" title="var">i</span><a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <span class="id" title="var">j</span><a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> <span class="id" title="var">s</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="CoplandM.Event_system.html#merge"><span class="id" title="constructor">merge</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#S"><span class="id" title="constructor">S</span></a> <span class="id" title="var">i</span><a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Peano.html#pred"><span class="id" title="abbreviation">pred</span></a> <span class="id" title="var">j</span><a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">))</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="CoplandM.Event_system.html#before"><span class="id" title="constructor">before</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#S"><span class="id" title="constructor">S</span></a> <span class="id" title="var">i</span><a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Peano.html#pred"><span class="id" title="abbreviation">pred</span></a> <span class="id" title="var">j</span><a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">))</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="CoplandM.Event_system.html#leaf"><span class="id" title="constructor">leaf</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a>0<a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a>0<a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> (<a class="idref" href="CoplandM.Store_system.html#putpoll"><span class="id" title="constructor">putpoll</span></a> (<a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#fst"><span class="id" title="definition">fst</span></a> (<a class="idref" href="CoplandM.Term.html#range"><span class="id" title="definition">range</span></a> <span class="id" title="var">x</span>)) (<a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#fst"><span class="id" title="definition">fst</span></a> (<a class="idref" href="CoplandM.Term.html#range"><span class="id" title="definition">range</span></a> <span class="id" title="var">x</span>)) (<a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#snd"><span class="id" title="definition">snd</span></a> (<a class="idref" href="CoplandM.Term.html#range"><span class="id" title="definition">range</span></a> <span class="id" title="var">x</span>) <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Peano.html#::nat_scope:x_'-'_x"><span class="id" title="notation">-</span></a> 1)))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="CoplandM.Store_system.html#store_sys:4"><span class="id" title="definition">store_sys</span></a> <span class="id" title="var">x</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="CoplandM.Event_system.html#before"><span class="id" title="constructor">before</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a>0<a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> 0<a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="CoplandM.Event_system.html#leaf"><span class="id" title="constructor">leaf</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a>0<a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a>0<a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> (<a class="idref" href="CoplandM.Store_system.html#putpoll"><span class="id" title="constructor">putpoll</span></a> (<a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#fst"><span class="id" title="definition">fst</span></a> (<a class="idref" href="CoplandM.Term.html#range"><span class="id" title="definition">range</span></a> <span class="id" title="var">y</span>)) (<a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#fst"><span class="id" title="definition">fst</span></a> (<a class="idref" href="CoplandM.Term.html#range"><span class="id" title="definition">range</span></a> <span class="id" title="var">y</span>)) (<a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#snd"><span class="id" title="definition">snd</span></a> (<a class="idref" href="CoplandM.Term.html#range"><span class="id" title="definition">range</span></a> <span class="id" title="var">y</span>) <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Peano.html#::nat_scope:x_'-'_x"><span class="id" title="notation">-</span></a> 1)))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="CoplandM.Store_system.html#store_sys:4"><span class="id" title="definition">store_sys</span></a> <span class="id" title="var">x</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+lseq is associative relative to the event semantics 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <a id="lseq_assoc" class="idref" href="#lseq_assoc"><span class="id" title="lemma">lseq_assoc</span></a>:<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="t1:6" class="idref" href="#t1:6"><span class="id" title="binder">t1</span></a> <a id="t2:7" class="idref" href="#t2:7"><span class="id" title="binder">t2</span></a> <a id="t3:8" class="idref" href="#t3:8"><span class="id" title="binder">t3</span></a> <a id="i:9" class="idref" href="#i:9"><span class="id" title="binder">i</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="CoplandM.Event_system.html#same_rel"><span class="id" title="definition">same_rel</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="CoplandM.Store_system.html#store_sys"><span class="id" title="definition">store_sys</span></a> (<a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#snd"><span class="id" title="definition">snd</span></a> (<a class="idref" href="CoplandM.Term.html#anno"><span class="id" title="definition">anno</span></a> (<a class="idref" href="CoplandM.Term.html#lseq"><span class="id" title="constructor">lseq</span></a> <a class="idref" href="CoplandM.Store_system.html#t1:6"><span class="id" title="variable">t1</span></a> (<a class="idref" href="CoplandM.Term.html#lseq"><span class="id" title="constructor">lseq</span></a> <a class="idref" href="CoplandM.Store_system.html#t2:7"><span class="id" title="variable">t2</span></a> <a class="idref" href="CoplandM.Store_system.html#t3:8"><span class="id" title="variable">t3</span></a>)) <a class="idref" href="CoplandM.Store_system.html#i:9"><span class="id" title="variable">i</span></a>)))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="CoplandM.Store_system.html#store_sys"><span class="id" title="definition">store_sys</span></a> (<a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#snd"><span class="id" title="definition">snd</span></a> (<a class="idref" href="CoplandM.Term.html#anno"><span class="id" title="definition">anno</span></a> (<a class="idref" href="CoplandM.Term.html#lseq"><span class="id" title="constructor">lseq</span></a> (<a class="idref" href="CoplandM.Term.html#lseq"><span class="id" title="constructor">lseq</span></a> <a class="idref" href="CoplandM.Store_system.html#t1:6"><span class="id" title="variable">t1</span></a> <a class="idref" href="CoplandM.Store_system.html#t2:7"><span class="id" title="variable">t2</span></a>) <a class="idref" href="CoplandM.Store_system.html#t3:8"><span class="id" title="variable">t3</span></a>) <a class="idref" href="CoplandM.Store_system.html#i:9"><span class="id" title="variable">i</span></a>))).<br/>
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index.html">Index</a><hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>
