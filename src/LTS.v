@@ -22,6 +22,7 @@ Inductive St: Set :=
 | stop: Plc -> Evidence -> St
 | conf: AnnoTerm -> Plc -> Evidence -> St
 | rem: Plc -> Plc -> St -> St
+| remm: Range -> Plc -> AnnoTerm -> Plc -> Evidence -> St -> St
 | ls: St -> AnnoTerm -> St
 | bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
 | bsr: nat -> Evidence -> St -> St
@@ -32,6 +33,7 @@ Fixpoint pl (s:St) :=
   | stop p _ => p
   | conf _ p _ => p
   | rem _ p _ => p
+  | remm _ p _ _ _ _ => p
   | ls st _ => pl st
   | bsl _ _ _ p _ => p
   | bsr _ _ st => pl st
@@ -45,6 +47,7 @@ Fixpoint seval st :=
   | stop _ e => e
   | conf t p e => aeval t p e
   | rem _ _ st => seval st
+  | remm _ _ _ _ _ st => seval st
   | ls st t => aeval t (pl st) (seval st)
   | bsl _ st t p e => ss (seval st) (aeval t p e)
   | bsr _ e st => ss e (seval st)
@@ -66,10 +69,14 @@ Inductive step: St -> option Ev -> St -> Prop :=
            (Some (asp_event (fst r) x p))
            (stop p (aeval (aasp r x) p e))
 (** Remote call *)
-
-| statt:
+| stattt:
     forall r x p q e,
       step (conf (aatt r q x) p e)
+           (Some (putget (fst r) (S (fst r)) (snd r)))
+           (remm r p x q e (conf x q e) )
+| statt:
+    forall r x p q e,
+      step (remm r p x q e (* (conf (aatt r q x) p e) *) )
            (Some (req (fst r) p q (unanno x)))
            (rem (snd r) p (conf x q e))
 | stattstep:

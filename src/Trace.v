@@ -249,8 +249,9 @@ Inductive trace: AnnoTerm -> Plc ->
 | tatt: forall r x p q tr1,
     trace x q tr1 ->
     trace (aatt r q x) p
-          ((req (fst r) p q (unanno x) )
-             :: tr1 ++
+          ( ((putget (fst r) (S (fst r)) (snd r))
+            :: [(req (S (fst r)) p q (unanno x) )])
+             ++ tr1 ++
              [(rpy (pred (snd r)) p q)])
 | tlseq: forall r x y p tr0 tr1,
     trace x p tr0 ->
@@ -295,6 +296,8 @@ Qed.
 (** The events in a trace correspond to the events associated with an
     annotated term, a place, and some evidence. *)
 
+Set Nested Proofs Allowed.
+
 Lemma trace_events:
   forall t p tr v,
     well_formed t ->
@@ -305,11 +308,33 @@ Proof.
   - induction H0; inv H.
     + inv H1; try inv H.
       destruct x; constructor; auto.
-    + inv H1.
-      constructor; auto.
+    +
+      rewrite in_app_iff in H1.
+
+      inv H1.
+      ++
+        Search In.
+        Lemma incons{A:Type} : forall v {a b:A},
+          In v [a;b] ->
+          v = a \/ v = b.
+        Proof.
+        Admitted.
+        
+        apply incons in H.
+        destruct H; subst.
+        +++
+        constructor; auto.
+        +++
+          constructor; auto.
+      ++
+        
       rewrite in_app_iff in H.
       destruct H.
-      apply evtsatt; auto.
+        +++
+          
+          apply evtsatt; auto.
+        +++
+          
       inv H; try inv H1.
       rewrite H7; simpl.
       apply evtsattrpy; auto.
@@ -418,6 +443,10 @@ Proof.
   - destruct r as [i j]; simpl in *; subst; simpl.
     apply NoDup_cons.
     + intro.
+      (*
+      apply in_app_iff in H1. *)
+      destruct H1.
+      inversion H1.
       apply in_app_iff in H1.
       destruct H1.
       * eapply trace_range in H9; eauto.
@@ -426,7 +455,23 @@ Proof.
       * inv H1.
         discriminate H2.
         inv H2.
-    + apply nodup_append; unfold disjoint_lists; auto; intros.
+    +
+      apply NoDup_cons.
+      ++
+        intro.
+        apply in_app_iff in H1.
+        destruct H1.
+      *
+        eapply trace_range in H9; eauto.
+        simpl in *.
+        lia.
+      *
+        inv H1.
+        discriminate H2.
+        inv H2.
+      ++
+
+      apply nodup_append; unfold disjoint_lists; auto; intros.
       * eapply IHt; eauto.
       * constructor; auto; constructor.
       * inv H2.
@@ -543,11 +588,24 @@ Proof.
   induction H0; inv H; simpl in H1;
     try expand_let_pairs; inv H1; simpl; auto.
   - left. solve_by_inversion.
+  - right.
+    inv H4.
+    inv H8.
+    left. auto.
+    inv H8.
+    rewrite in_app_iff.
+    right. simpl. left. auto.
+    inv H9.
+    right. rewrite in_app_iff.
+    right.
+    constructor. auto.
+    (*
+    
   - right. inv H4; auto.
     + apply IHtrace in H8; auto.
       rewrite in_app_iff; auto.
     + inv H8. rewrite in_app_iff.
-      right. simpl. left. auto.
+      right. simpl. left. auto. *)
   - apply IHtrace1 in H4; auto.
     rewrite in_app_iff; auto.
   - apply IHtrace2 in H5; auto.
@@ -592,22 +650,129 @@ Proof.
   induction H0; inv H; simpl in H1;
     try expand_let_pairs; inv H1; simpl; auto.
   - inv H11; inv H10.
+    +
+      Check evsys_tr_in.
+      inv H4.
+      apply earlier_cons; auto.
+      econstructor. auto.
+    +
+      inv H4.
+      ++
+        apply earlier_cons; auto.
+        right.
+        eapply in_app_iff.
+        left.
+        eapply evsys_tr_in in H8; eauto.
+      ++
+        apply earlier_cons; auto.
+        right.
+        apply in_app_iff.
+        right.
+        inv H8.
+        econstructor. auto.
+        
+        
+      
+
+(*
+    
     + eapply evsys_tr_in in H4; eauto.
       apply earlier_cons; auto.
       apply in_app_iff; auto.
     + inv H4.
       apply earlier_cons; auto.
-      apply in_app_iff; auto. right; simpl; auto.
+      apply in_app_iff; auto. right; simpl; auto. *)
   - solve_by_inversion.
   - inv H10.
+
+
+
+
+    
     + inv H12.
+      Check evsys_tr_in.
+      (*
+evsys_tr_in
+     : forall (t : AnnoTerm) (p : nat) (tr : list Ev) (ev0 : Ev),
+       well_formed t -> trace t p tr -> ev_in ev0 (ev_sys t p) -> In ev0 tr
+       *)
+      
+      Check earlier_cons_shift.
+      apply earlier_cons_shift; auto.
+
+      Print earlier.
+      Check earlier_left.
+      Check earlier_right.
+
+      Check earlier_cons.
+
+      
+
+      assert ((req (S (fst r)) p q (unanno x) :: tr1 ++ [rpy (Nat.pred (snd r)) p q]) =
+              (req (S (fst r)) p q (unanno x) :: (tr1 ++ [rpy (Nat.pred (snd r)) p q]))).
+      auto.
+
+      inv H11.
+      
+
+      apply earlier_cons.
+      apply in_app_iff.
+      left.
+      
+
+      eapply evsys_tr_in; eauto.
+
+      inv H11.
+      inv H4.
+      eapply earlier_cons_shift.
+      eapply earlier_cons.
+      eapply in_app_iff.
+      right.
+      econstructor. auto.
+      (*
+      
+
+
+      
       eapply evsys_tr_in in H11; eauto.
       apply earlier_cons_shift; auto.
-      apply earlier_append; auto; simpl; auto.
-    + eapply IHtrace in H5; eauto.
+      apply earlier_append; auto; simpl; auto. *)
+    + eapply earlier_cons_shift.
+      eapply IHtrace in H5; eauto.
       apply earlier_cons_shift; auto.
       apply earlier_left; auto.
-    + solve_by_inversion.
+      inv H10.
+      ++
+        solve_by_inversion.
+      ++
+        solve_by_inversion.
+      ++
+        solve_by_inversion.
+    +
+      eapply earlier_cons_shift.
+      inv H11.
+      ++
+        inv H13.
+        eapply earlier_cons_shift.
+        eapply earlier_append.
+        eapply evsys_tr_in; eauto.
+        econstructor. auto.
+      ++
+        inv H11.
+        +++
+          inv H14.
+          eapply earlier_cons_shift.
+          eapply earlier_append.
+          eapply evsys_tr_in; eauto.
+          econstructor. auto.
+        +++
+          eapply earlier_cons_shift.
+          eapply earlier_left.
+          eauto.
+        +++
+          solve_by_inversion.
+      ++
+        solve_by_inversion.
   - eapply evsys_tr_in in H11; eauto.
     eapply evsys_tr_in in H12; eauto.
     apply earlier_append; auto.

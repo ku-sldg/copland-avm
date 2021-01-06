@@ -105,7 +105,8 @@ Inductive Ev: Set :=
 | req: nat -> Plc -> Plc -> Term -> Ev
 | rpy: nat -> Plc -> Plc -> Ev 
 | split: nat -> Plc -> Ev
-| join:  nat -> Plc -> Ev.
+| join:  nat -> Plc -> Ev
+| putget: nat -> nat -> nat -> Ev.
 
 Definition eq_ev_dec:
   forall x y: Ev, {x = y} + {x <> y}.
@@ -127,6 +128,7 @@ Definition ev x :=
   | rpy i _ _ => i 
   | split i _ => i
   | join i _ => i
+  | putget i _ _ => i
   end.
 
 (** Events are used in a manner that ensures that
@@ -209,7 +211,7 @@ remote calls add a request and receive to the events of their subterm.
 Fixpoint esize t :=
   match t with
   | aasp _ _ => 1
-  | aatt _ _ t1 => 2 + esize t1
+  | aatt _ _ t1 => 3 + esize t1
   | alseq _ t1 t2 => esize t1 + esize t2
   | abseq _ _ t1 t2 => 2 + esize t1 + esize t2
   | abpar _ _ t1 t2 => 2 + esize t1 + esize t2
@@ -232,7 +234,7 @@ Fixpoint anno (t: Term) i: nat * AnnoTerm :=
   match t with
   | asp x => (S i, aasp (i, S i) x)
   | att p x =>
-    let (j, a) := anno x (S i) in
+    let (j, a) := anno x (S (S i)) in
     (S j, aatt (i, S j) p a)
   | lseq x y =>
     let (j, a) := anno x i in
@@ -392,7 +394,7 @@ Inductive well_formed: AnnoTerm -> Prop :=
     well_formed (aasp r x)
 | wf_att: forall r p x,
     well_formed x ->
-    S (fst r) = fst (range x) ->
+    S (S (fst r)) = fst (range x) ->
     snd r = S (snd (range x)) ->
     well_formed (aatt r p x)
 | wf_lseq: forall r x y,
@@ -624,10 +626,15 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
     forall r i p,
       fst r = i ->
       events (aasp r HSH) p (hash i p)
+| evtsattputget:
+    forall r q t i j p,
+      fst r = i ->
+      snd r = j ->
+      events (aatt r q t) p (putget i (S i) j)
 | evtsattreq:
     forall r q t i p,
       fst r = i ->
-      events (aatt r q t) p (req i p q (unanno t))
+      events (aatt r q t) p (req (S i) p q (unanno t))
 | evtsatt:
     forall r q t ev p,
       events t q ev ->
@@ -702,19 +709,32 @@ Defined.
 
 Lemma at_range:
   forall x r i,
-    S (fst r) = fst x ->
+    S (S (fst r)) = fst x ->
     snd r = S (snd x) ->
     fst r <= i < snd r ->
     i = fst r \/
+    i = S (fst r) \/
     fst x <= i < snd x \/
     i = snd x.
 Proof.
   intros.
-  pose proof lt_dec i (S (fst r)) as G.
-  destruct G as [G|G]; [left; lia| right].
+  pose proof lt_dec i (S (S (fst r))) as G.
+  destruct G as [G|G].
+  +
+    pose proof lt_dec i (S (fst r)) as GG.
+    destruct GG as [GG|GG].
+    ++
+      left. lia.
+    ++
+      right. left. lia.
+  +
   pose proof lt_dec i (snd x) as F.
-  destruct F as [F|F]; [left; lia| right].
-  lia.
+  destruct F as [F|F].
+  ++
+    right. right.
+    left. lia.
+  ++
+    right. right. right. lia.
 Qed.
 
 Lemma lin_range:
@@ -762,7 +782,9 @@ Proof.
   induction H; intros; simpl in *.
   - destruct x; eapply ex_intro; split; auto;
       (*destruct r as [j k];*) simpl in *; lia.
-  - find_eapply_lem_hyp at_range; eauto.
+  - Check at_range.
+
+    find_eapply_lem_hyp at_range; eauto.
     (*eapply at_range in H2; eauto. *)
     repeat destruct_disjunct; subst; eauto.
     (* + eapply ex_intro; split; auto. *)
@@ -787,6 +809,7 @@ Proof.
       * rewrite H1; auto.
       * simpl; auto.
       *)
+      
       
   - eapply lin_range with (i:=i) in H2; eauto;
     repeat destruct_disjunct;

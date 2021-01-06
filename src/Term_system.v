@@ -21,10 +21,12 @@ Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
   | aasp (i, j) x => leaf (i, j) (asp_event i x p)
   | aatt (i, j) q x =>
     before (i, j)
-      (leaf (i, S i) (req i p q (unanno x)))
-      (before (S i, j)
-              (ev_sys x q)
-              (leaf (pred j, j) (rpy (pred j) p q)))
+           (leaf (i, S i) (putget i (S i) j))
+           (before (S i, j)
+                   (leaf (S i, S (S i)) (req (S i) p q (unanno x)))
+                   (before (S (S i), j)
+                           (ev_sys x q)
+                           (leaf (pred j, j) (rpy (pred j) p q))))
   | alseq r x y => before r (ev_sys x p)
                           (ev_sys y p)
   | abseq (i, j) s x y =>
@@ -69,7 +71,10 @@ Proof.
       destruct a; simpl; auto.
   - apply ws_before; simpl; auto.
     rewrite H4.
-    apply ws_before; simpl; auto; rewrite evsys_range; auto.
+    apply ws_before; try simpl; auto.
+    erewrite <- evsys_range; auto.
+    (*
+    apply ws_before; simpl; auto; rewrite evsys_range; auto. *)
   - apply ws_before; auto; repeat rewrite evsys_range; auto.
     
   - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto).
@@ -90,7 +95,9 @@ Proof.
     repeat expand_let_pairs; simpl in *.
   - inv H0; auto; destruct a; simpl; auto.
   - rewrite H6 in H0; simpl in H0.
+    rewrite H5 in *. simpl in *.
     inv H0; auto; inv H2; auto; inv H1; auto.
+    inv H2; auto.
   - inv H0; auto.
     
   - rewrite H9 in H0; simpl in H0.
@@ -100,8 +107,14 @@ Proof.
     inv H0; inv H2; auto; inv H1; auto.
   - inv H0; auto.
   - rewrite H6; simpl.
+    rewrite H5; simpl.
     inv H0; auto.
+    (*
+    rewrite H8 in H6. *)
+    rewrite H6.
+    auto.
     rewrite H8 in H6.
+    
     apply Nat.succ_inj in H6; subst; auto.
   - inv H0; auto.
   - rewrite H9; simpl.
