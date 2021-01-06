@@ -21,13 +21,13 @@ Require Import PeanoNat Minus Lia Preamble Term Store_system.
 Inductive St: Set :=
 | stop: (*Plc -> Evidence ->*) St
 | conf: AnnoTerm -> (*Plc -> Evidence ->*) St
-| rem: (*Plc -> Plc ->*) St -> St
+(*| rem: (*Plc -> Plc ->*) St -> St *)
 | ls: St -> AnnoTerm -> St
-| bsl: nat -> St -> AnnoTerm -> (*Plc -> Evidence ->*) St
-| bsr: nat -> (*Evidence ->*) St -> St
+| bs: nat -> St -> AnnoTerm -> (*Plc -> Evidence ->*) St
+(*| bsr: nat -> (*Evidence ->*) St -> St *)
 | bp: nat -> St -> St -> St
-| bpl: St -> St
-| bpr: St -> St.
+| bpl: AnnoTerm -> St
+| bpr: AnnoTerm -> St.
 
 (*
 Fixpoint pl (s:St) :=
@@ -67,7 +67,8 @@ Inductive step: St -> option PutPoll -> St -> Prop :=
 | stasp:
     forall r x,
       step (conf (aasp r x))
-           (Some none_putpoll)
+           (* (Some (none_putpoll (fst r))) *)
+           None
            (stop)
 (** Remote call *)
 
@@ -75,7 +76,9 @@ Inductive step: St -> option PutPoll -> St -> Prop :=
     forall r x q,
       step (conf (aatt r q x))
            (Some (putpoll (fst r) (fst r) (snd r)))
-           (rem (conf x))
+           stop
+
+(*
 | stattstep:
     forall st0 st1 ev,
       step st0 ev st1 ->
@@ -84,7 +87,7 @@ Inductive step: St -> option PutPoll -> St -> Prop :=
    
       step (rem (stop))
            None
-           (stop)
+           (stop) *)
 (** Linear Sequential Composition *)
 
 | stlseq:
@@ -105,17 +108,19 @@ Inductive step: St -> option PutPoll -> St -> Prop :=
     forall r s x y,
       step (conf (abseq r s x y))
            None
-           (bsl (snd r) (conf x)
+           (bs (snd r) (conf x)
                 y)
 | stbslstep:
     forall st0 ev st1 j t,
       step st0 ev st1 ->
-      step (bsl j st0 t) ev (bsl j st1 t)
+      step (bs j st0 t) ev (bs j st1 t)
 | stbslstop:
     forall j t,
-      step (bsl j (stop) t)
+      step (bs j (stop) t)
            None
-           (bsr j (conf t))
+           (conf t)
+
+           (*
 | stbsrstep:
     forall st0 ev st1 j,
       step st0 ev st1 ->
@@ -124,7 +129,7 @@ Inductive step: St -> option PutPoll -> St -> Prop :=
     forall j,
       step (bsr j (stop))
            None
-           (stop)
+           (stop) *)
 
 (** Branching Parallel composition *)
 
@@ -134,17 +139,18 @@ Inductive step: St -> option PutPoll -> St -> Prop :=
            (*(Some (putpoll (fst (range x)) (fst (range x)) (snd (range x) - 1))) *)
            None
            (bp (snd r)
-               (bpl (conf x))
-               (bpr (conf y)))
+              (bpl x)
+              (bpr y))
 | stbparl: forall x,
-    step (bpl (conf x))
+    step (bpl x)
          (Some (putpoll (fst (range x)) (fst (range x)) (snd (range x) - 1)))
-         (conf x)
+(*(conf x) *)
+         stop
 | stbparr: forall y,
-    step (bpr (conf y))
+    step (bpr y)
          (Some (putpoll (fst (range y)) (fst (range y)) (snd (range y) - 1)))
-         (conf y)
-                             
+         (*(conf y) *)
+         stop                            
 | stbpstepleft:
     forall st0 st1 st2 ev j,
       step st0 ev st2 ->
@@ -278,6 +284,7 @@ Qed.
 
 (** * Correct Path Exists *)
 
+(*
 Lemma star_strem:
   forall st0 st1,
     star st0 st1 -> star (rem st0) (rem st1).
@@ -286,6 +293,7 @@ Proof.
   induction H; auto.
   eapply star_tran; eauto.
 Qed.
+*)
 
 Lemma star_stls:
   forall st0 st1 t,
@@ -297,16 +305,17 @@ Proof.
 Qed.
 
 
-Lemma star_stbsl:
+Lemma star_stbs:
   forall st0 st1 j t,
     star st0 st1 ->
-    star (bsl j st0 t) (bsl j st1 t).
+    star (bs j st0 t) (bs j st1 t).
 Proof.
   intros.
   induction H; auto.
   eapply star_tran; eauto.
 Qed.
 
+(*
 Lemma star_stbsr:
   forall st0 st1 j,
     star st0 st1 ->
@@ -315,7 +324,7 @@ Proof.
   intros.
   induction H; auto.
   eapply star_tran; eauto.
-Qed.
+Qed. *)
 
 (* Congruence lemmas for Copland LTS semantics *)
 Lemma lstar_stls :
@@ -328,6 +337,7 @@ Proof.
   eapply lstar_silent_tran; eauto.
 Qed.
 
+(*
 Lemma lstar_strem : forall st st' tr,
     lstar st tr
           st' ->
@@ -338,11 +348,12 @@ Proof.
   eapply lstar_tran; eauto.
   eapply lstar_silent_tran; eauto.
 Defined.
+*)
 
-Lemma lstar_stbsl:
+Lemma lstar_stbs:
   forall st0 st1 j t tr,
     lstar st0 tr st1 ->
-    lstar (bsl j st0 t) tr (bsl j st1 t).
+    lstar (bs j st0 t) tr (bs j st1 t).
 Proof.
   intros.
   induction H; auto.
@@ -350,6 +361,7 @@ Proof.
   eapply lstar_silent_tran; eauto.
 Defined.
 
+(*
 Lemma lstar_stbsr:
   forall st0 st1 j tr,
     lstar st0 tr st1 ->
@@ -360,6 +372,7 @@ Proof.
   eapply lstar_tran; eauto.
   eapply lstar_silent_tran; eauto.
 Defined.
+*)
 
 Lemma star_stbp:
   forall st0 st1 st2 st3 j,
@@ -381,10 +394,11 @@ Proof.
   induction t; intros; simpl; eauto.
   - eapply star_tran; eauto.
   - eapply star_tran; eauto.
+    (*
     eapply star_transitive.
     apply star_strem.
     apply IHt.
-    eapply star_tran; eauto.
+    eapply star_tran; eauto. *)
   - eapply star_tran; eauto.
     eapply star_transitive.
     apply star_stls.
@@ -393,13 +407,14 @@ Proof.
     
   - eapply star_tran; eauto.
     eapply star_transitive.
-    apply star_stbsl.
+    apply star_stbs.
     apply IHt1.
     eapply star_tran; eauto.
+    (*
     eapply star_transitive.
     apply star_stbsr.
     apply IHt2.
-    eapply star_tran; eauto.
+    eapply star_tran; eauto. *)
   - eapply star_tran.
     apply stbpar.
     eapply star_tran.
@@ -408,6 +423,11 @@ Proof.
     eapply star_tran.
     eapply stbpstepright.
     eauto.
+    eapply star_tran; eauto.
+
+
+
+    (*
     
     eapply star_transitive.
     (*
@@ -418,7 +438,7 @@ Proof.
     apply star_stbp.
     apply IHt1.
     apply IHt2.
-    eapply star_tran; eauto.
+    eapply star_tran; eauto. *)
 Qed.
 
 
@@ -568,13 +588,15 @@ Qed.
 
 (** Size of a term (number of steps to reduce). *)
 
+asdf
+
 Fixpoint tsize t: nat :=
   match t with
   | aasp _ _ => 1
-  | aatt _ _ x => 2 + tsize x
+  | aatt _ _ x => 1 (*2 + tsize x*)
   | alseq _ x y => 2 + tsize x + tsize y
-  | abseq _ _ x y => 3 + tsize x + tsize y
-  | abpar _ _ x y => 4 + tsize x + tsize y
+  | abseq _ _ x y => 2 + tsize x + tsize y
+  | abpar _ _ x y => 2 + tsize x + tsize y
   end.
 
 (** Size of a state (number of steps to reduce). *)
@@ -583,13 +605,13 @@ Fixpoint ssize s: nat :=
   match s with
   | stop => 0
   | conf t => tsize t
-  | rem x => 1 + ssize x
+  (*| rem x => 1 + ssize x *)
   | ls x t => 1 + ssize x + tsize t
-  | bsl _ x t => 2 + ssize x + tsize t
-  | bsr _ x => 1 + ssize x
+  | bs _ x t => 1 + ssize x + tsize t
+  (*| bsr _ x => 1 + ssize x *)
   | bp _ x y => 1 + ssize x + ssize y
-  | bpl x => 1 + ssize x
-  | bpr y => 1 + ssize y
+  | bpl x => 1 + tsize x
+  | bpr y => 1 + tsize y
   end.
 
 (** Halt state has size 0. *)
@@ -615,6 +637,9 @@ Lemma step_size:
 Proof.
   intros.
   induction H; try (simpl; auto; lia).
+  -
+    simpl.
+   
 Qed.
 
 Lemma step_count:

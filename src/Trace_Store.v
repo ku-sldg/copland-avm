@@ -24,7 +24,7 @@ Require Import Preamble More_lists Term Event_system Store_system.
     be merged does not change, but all other interleavings are
     allowed.  *)
 
-Inductive shuffle: list Ev -> list Ev -> list Ev -> Prop :=
+Inductive shuffle: list PutPoll -> list PutPoll -> list PutPoll -> Prop :=
 | shuffle_nil_left: forall es, shuffle [] es es
 | shuffle_nil_right: forall es, shuffle es [] es
 | shuffle_left:
@@ -244,40 +244,43 @@ Qed.
 
 Inductive trace: AnnoTerm -> (*Plc -> *)
                  list PutPoll -> Prop :=
-| tasp: forall r x p,
-    trace (aasp r x) p [(asp_event (fst r) x p)]
-| tatt: forall r x p q tr1,
-    trace x q tr1 ->
-    trace (aatt r q x) p
-          ((req (fst r) p q (unanno x) )
-             :: tr1 ++
-             [(rpy (pred (snd r)) p q)])
-| tlseq: forall r x y p tr0 tr1,
-    trace x p tr0 ->
-    trace y p tr1 ->
-    trace (alseq r x y) p (tr0 ++ tr1)
-| tbseq: forall r s x y p tr0 tr1,
-    trace x p tr0 ->
-    trace y p tr1 ->
-    trace (abseq r s x y) p
-          ((split (fst r) p)
-             :: tr0 ++ tr1 ++
-             [(join (pred (snd r)) p)])
-| tbpar: forall r s x y p tr0 tr1 tr2,
-    trace x p tr0 ->
-    trace y p tr1 ->
-    shuffle tr0 tr1 tr2 ->
-    trace (abpar r s x y) p
-          ((split (fst r) p)
-             :: tr2 ++
-             [(join (pred (snd r)) p)]).
+| tasp: forall r x,
+    trace (aasp r x) [none_putpoll (fst r)]
+| tatt: forall r x q,
+    trace (aatt r q x)
+          [(putpoll (fst r) (fst r) (snd r))]
+| tlseq: forall r x y tr0 tr1,
+    trace x tr0 ->
+    trace y tr1 ->
+    trace (alseq r x y) (tr0 ++ tr1)
+| tbseq: forall r s x y tr0 tr1,
+    trace x tr0 ->
+    trace y tr1 ->
+    trace (abseq r s x y) (tr0 ++ tr1)
+| tbpar: forall r s x y tr2,
+    shuffle ([putpoll (fst (range x)) (fst (range x)) (snd (range x) - 1)])
+            ([putpoll (fst (range y)) (fst (range y)) (snd (range y) - 1)])
+            tr2 ->
+    trace (abpar r s x y)
+          tr2.
+(*
+| tbpar: forall r s x y tr0 tr1 tr2,
+    trace x tr0 ->
+    trace y tr1 ->
+    shuffle ((putpoll (fst (range x)) (fst (range x)) (snd (range x) - 1)) :: tr0)
+            ((putpoll (fst (range y)) (fst (range y)) (snd (range y) - 1)) :: tr1)
+            tr2 ->
+    trace (abpar r s x y)
+          tr2.
+*)
 Hint Resolve tasp : core.
 
+(*
 Lemma trace_length:
-  forall t p tr,
-    trace t p tr -> esize t = length tr.
+  forall t tr,
+    trace t tr -> esize t = length tr.
 Proof.
-  induction t; intros; inv H;
+  induction t; intros; inv H.
     simpl; auto; rewrite app_length; simpl; auto.
   - apply IHt in H5; lia.
   - apply IHt1 in H5.
@@ -291,15 +294,128 @@ Proof.
     apply IHt2 in H7.
     apply shuffle_length in H8. lia. 
 Qed.
+ *)
+
+
+Inductive store_events: AnnoTerm -> PutPoll -> Prop :=
+(*| evtscpy:
+    forall r i p,
+      fst r = i ->
+      events (aasp r CPY) p (copy i p)
+| evtsusm:
+    forall i id args r p,
+      fst r = i ->
+      events (aasp r (ASPC id args)) p (umeas i p id args)
+| evtssig:
+    forall r i p,
+      fst r = i ->
+      events (aasp r SIG) p (sign i p) 
+| evtshsh:
+    forall r i p,
+      fst r = i ->
+      events (aasp r HSH) p (hash i p)
+ *)
+| evtsasp:
+    forall r a,
+      (*fst r = i -> *)
+      store_events (aasp r a) (none_putpoll (fst r))
+| evtsattreq:
+    forall r q t,
+      (*fst r = i -> *)
+      store_events (aatt r q t) (putpoll (fst r) (fst r) (snd r))
+
+                   (*
+| evtsatt:
+    forall r q t ev p,
+      store_events t q ev ->
+      store_events (aatt r q t) p ev
+| evtsattrpy:
+    forall r q t i p,
+      snd r = S i ->
+      store_events (aatt r q t) p (rpy i p q)
+*)
+| evtslseql:
+    forall r t1 t2 ev,
+      store_events t1 ev ->
+      store_events (alseq r t1 t2) ev
+| evtslseqr:
+    forall r t1 t2 ev,
+      store_events t2 ev ->
+      store_events (alseq r t1 t2) ev
+
+                   
+| evtsbseql:
+    forall r s t1 t2 ev,
+      store_events t1 ev ->
+      store_events (abseq r s t1 t2) ev
+| evtsbseqr:
+    forall r s t1 t2 ev,
+      store_events t2 ev ->
+      store_events (abseq r s t1 t2) ev
+
+
+                   
+(*
+| evtsbseqsplit:
+    forall r i s t1 t2 p,
+      fst r = i ->
+      store_events (abseq r s t1 t2) p
+             (split i p)
+| evtsbseql:
+    forall r s t1 t2 ev p,
+      store_events t1 p ev ->
+      store_events (abseq r s t1 t2) p ev
+| evtsbseqr:
+    forall r s t1 t2 ev p,
+      store_events t2 p ev ->
+      store_events (abseq r s t1 t2) p ev
+| evtsbseqjoin:
+    forall r i s t1 t2 p,
+      snd r = S i ->
+      store_events (abseq r s t1 t2) p
+             (join i p)
+ *)
+
+| evtsbparsplit:
+    forall r s t1 t2,
+      store_events (abpar r s t1 t2)
+             (putpoll (fst (range t1)) (fst (range t1)) (snd (range t1) - 1))
+
+| evtsbparjoin:
+    forall r s t1 t2,
+      store_events (abpar r s t1 t2)
+             (putpoll (fst (range t2)) (fst (range t2)) (snd (range t2) - 1)).
+
+(*
+| evtsbparsplit:
+    forall r i s t1 t2 p,
+      fst r = i ->
+      store_events (abpar r s t1 t2) p
+             (split i p)
+| evtsbparl:
+    forall r s t1 t2 ev p,
+      store_events t1 p ev ->
+      store_events (abpar r s t1 t2) p ev
+| evtsbparr:
+    forall r s t1 t2 ev p,
+      store_events t2 p ev ->
+      store_events (abpar r s t1 t2) p ev
+| evtsbparjoin:
+    forall r i s t1 t2 p,
+      snd r = S i ->
+      store_events (abpar r s t1 t2) p
+             (join i p).
+*)
+Hint Constructors store_events : core.
 
 (** The events in a trace correspond to the events associated with an
     annotated term, a place, and some evidence. *)
 
 Lemma trace_events:
-  forall t p tr v,
+  forall t tr v,
     well_formed t ->
-    trace t p tr ->
-    In v tr <-> events t p v.
+    trace t tr ->
+    In v tr <-> store_events t v.
 Proof.
   split; intros.
   - induction H0; inv H.
@@ -307,18 +423,25 @@ Proof.
       destruct x; constructor; auto.
     + inv H1.
       constructor; auto.
+      inv H.
+      (*
       rewrite in_app_iff in H.
       destruct H.
       apply evtsatt; auto.
       inv H; try inv H1.
       rewrite H7; simpl.
-      apply evtsattrpy; auto.
+      apply evtsattrpy; auto. *)
     + rewrite in_app_iff in H1.
       destruct H1.
       * apply evtslseql; auto.
       * apply evtslseqr; auto.
         
-    + destruct H1; subst.
+    + rewrite in_app_iff in H1.
+
+      destruct H1; subst.
+      apply evtsbseql; auto.
+      apply evtsbseqr; auto.
+      (*
       apply evtsbseqsplit; auto.
       apply in_app_iff in H; destruct H.
       apply evtsbseql; auto.
@@ -327,78 +450,120 @@ Proof.
       destruct H; subst.
       rewrite H9.
       apply evtsbseqjoin; auto.
-      inv H.
-    + destruct H1; subst.
-      apply evtsbparsplit; auto.
-      apply in_app_iff in H; destruct H.
+      inv H. *)
+    +
       apply shuffle_in with (e:=v) in H0.
-      apply H0 in H.
-      destruct H.
-      apply evtsbparl; auto.
-      apply evtsbparr; auto.
-      rewrite H10 in H; simpl in H.
-      destruct H; try tauto; subst.
-      apply evtsbparjoin; auto.
-  - induction H0; inv H.
-    + inv H1; destruct r as [i j]; simpl in *; auto.
-    + simpl; rewrite in_app_iff; simpl.
+      apply H0 in H1.
+      destruct H1.
+      ++
+        unfold In in H.
+        destruct H; try contradiction.
+        subst.
+        eauto.
+      ++
+        unfold In in H.
+        destruct H; try contradiction.
+        subst.
+        eauto.
+  - induction H0; inv H1.
+    + inv H; destruct r as [i j]; simpl in *; auto.
+    +
+      simpl. auto.
+
+      (*
+      inv H1; eauto.
+      right.
+
+
+      simpl; rewrite in_app_iff; simpl.
       inv H1; auto.
       right; right.
       Require Import StructTactics.
-      repeat find_rewrite; simpl; auto.
+      repeat find_rewrite; simpl; auto. *)
     + rewrite in_app_iff.
-      inv H1; auto.
+      
+      inv H; auto.
       
     + simpl.
       rewrite in_app_iff.
+      inv H; auto.
+      (*
       rewrite in_app_iff.
       simpl.
       inv H1; auto.
       rewrite H11 in *.
-      auto.
+      auto. *)
       
     + simpl.
       rewrite in_app_iff.
+      inv H; auto.
+      (*
       simpl.
       inv H1; auto.
       * apply IHtrace1 in H13; auto.
         eapply shuffle_in_left in H0; eauto.
       * apply IHtrace2 in H13; auto.
         eapply shuffle_in_right in H0; eauto.
-      * repeat find_rewrite; simpl; auto.
+      * repeat find_rewrite; simpl; auto. *)
+    +
+      simpl.
+      rewrite in_app_iff.
+      inv H; auto.
+    +
+      eapply shuffle_in_left; eauto.
+      simpl.
+      auto.
+    +
+      eapply shuffle_in_right; eauto.
+      simpl.
+      auto.   
 Qed.
 
+Definition ev_store x :=
+  match x with
+  | putpoll i _ _ => i
+  | none_putpoll i => i
+  end.
+
+
+(*
 Lemma trace_range:
-  forall t p tr v,
+  forall t tr v,
     well_formed t ->
-    trace t p tr ->
+    trace t tr ->
     In v tr ->
-    fst (range t) <= ev v < snd (range t).
+    fst (range t) <= ev_store v < snd (range t).
 Proof.
   intros.
   rewrite trace_events in H1; eauto.
+  
   eapply events_range; eauto.
 Qed.
+*)
 
+(*
 Lemma trace_range_event:
   forall t p tr i,
     well_formed t ->
     trace t p tr ->
     fst (range t) <= i < snd (range t) ->
-    exists v, In v tr /\ ev v = i.
+    exists v, In v tr /\ ev_store v = i.
 Proof.
   intros.
   eapply events_range_event in H1; eauto.
   destruct H1 as [v G]; destruct G as [G]; subst.
   rewrite <- trace_events in G; eauto.
 Qed.
+ *)
+
+(*
 
 Lemma trace_injective_events:
   forall t p tr v0 v1,
     well_formed t ->
     trace t p tr ->
     In v0 tr -> In v1 tr ->
-    ev v0 = ev v1 ->
+    ev_store v0 = ev_store v1 ->
     v0 = v1.
 Proof.
   intros.
@@ -406,6 +571,9 @@ Proof.
   rewrite trace_events in H2; eauto.
   eapply events_injective; eauto.
 Qed.
+ *)
+
+(*
 
 Lemma nodup_trace:
   forall t p tr,
@@ -522,14 +690,15 @@ Proof.
 
         -- solve_by_inversion.
 Qed.
+*)
 
 (** * Event Systems and Traces *)
 
 Lemma evsys_tr_in:
-  forall t p tr ev0,
+  forall t tr ev0,
     well_formed t ->
-    trace t p tr ->
-    ev_in ev0 (store_sys t p) ->
+    trace t tr ->
+    ev_in ev0 (store_sys t) ->
     In ev0 tr.
 Proof.
   intros.
@@ -538,6 +707,65 @@ Proof.
   inv H.
   simpl in H1.
   expand_let_pairs. inv H1. simpl. auto. *)
+
+
+
+
+  induction H0.
+  -
+    inv H; simpl in H1;
+      expand_let_pairs; inv H1; simpl; auto.
+  -
+    inv H; simpl in H1;
+      expand_let_pairs; inv H1; simpl; auto.
+  -
+    inv H. simpl in H1.
+    inv H1.
+    + rewrite in_app_iff.
+      eauto.
+    +
+      rewrite in_app_iff.
+      eauto.
+  -
+    inv H. simpl in H1.
+    inv H1.
+    +
+      rewrite in_app_iff.
+      eauto.
+    +
+      rewrite in_app_iff.
+      eauto.
+  -
+    inv H. simpl in H1.
+    expand_let_pairs.
+    inv H1.
+    +
+      inv H3.
+      eapply shuffle_in_left; eauto.
+      simpl. auto.
+    +
+      inv H3.
+      eapply shuffle_in_right; eauto.
+      simpl. auto.
+Qed.
+
+  (*    
+      ++
+        inv H2.
+        eapply shuffle_in_left; eauto.
+        simpl.
+        auto.
+      ++
+        
+      
+        
+    
+      
+    
+      
+    
+    
+    
   
  
   induction H0; inv H; simpl in H1;
@@ -577,17 +805,19 @@ Proof.
     + inv H5.
       apply in_app_iff; right; simpl; auto.
 Qed.
+*)
 
 (** The traces associated with an annotated term are compatible with
     its event system. *)
 
 Theorem trace_order:
-  forall t p tr ev0 ev1,
+  forall t tr ev0 ev1,
     well_formed t ->
-    trace t p tr ->
-    prec (store_sys t p) ev0 ev1 ->
+    trace t tr ->
+    prec (store_sys t) ev0 ev1 ->
     earlier tr ev0 ev1.
 Proof.
+  (*
   intros.
   induction H0; inv H; simpl in H1;
     try expand_let_pairs; inv H1; simpl; auto.
@@ -691,3 +921,6 @@ Proof.
         apply earlier_left; auto.
     + solve_by_inversion.
 Qed.
+   *)
+Admitted.
+

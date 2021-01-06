@@ -18,11 +18,11 @@ Require Import Omega Preamble More_lists Term Event_system.
 
 Inductive PutPoll: Set :=
 | putpoll: nat -> nat -> nat -> PutPoll
-| none_putpoll: PutPoll.
+| none_putpoll: nat -> PutPoll.
 
 Fixpoint store_sys (t: AnnoTerm) : EvSys PutPoll :=
   match t with
-  | aasp (i, j) x => leaf (i, j) none_putpoll
+  | aasp (i, j) x => leaf (i, j) (none_putpoll i)
   | aatt (i, j) q x =>
     leaf (i, j) (putpoll i i j)
          (*
@@ -52,7 +52,14 @@ Fixpoint store_sys (t: AnnoTerm) : EvSys PutPoll :=
                          (join (pred j) p)))
      *)
     
-           
+
+  | abpar (i, j) s x y =>
+    merge (S i, (pred j))
+          (leaf (0,0) (putpoll (fst (range x)) (fst (range x)) (snd (range x) - 1)))
+          (leaf (0,0) (putpoll (fst (range y)) (fst (range y)) (snd (range y) - 1)))
+
+
+   (*                      
   | abpar (i, j) s x y =>
     merge (S i, (pred j))
           (before (S i, (pred j))
@@ -61,7 +68,17 @@ Fixpoint store_sys (t: AnnoTerm) : EvSys PutPoll :=
           (before (0, 0)
                   (leaf (0,0) (putpoll (fst (range y)) (fst (range y)) (snd (range y) - 1)))
                   (store_sys x))
-    
+    *)
+                         
+
+
+
+
+
+
+
+
+          
 
     (*
     before (i, j)

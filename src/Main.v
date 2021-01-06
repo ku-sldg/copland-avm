@@ -17,16 +17,16 @@ Require Import List.
 Import List.ListNotations.
 Open Scope list_scope.
 Require Import Lia.
-Require Import Preamble More_lists Term LTS Event_system Term_system Trace.
+Require Import Preamble More_lists Term LTS_Store Event_system Store_system Trace_Store.
 
 (** The traces associated with a state. *)
 
-Inductive traceS: St -> list Ev -> Prop :=
-| tstop: forall p e,
-    traceS (stop p e) []
-| tconf: forall t tr p e,
-    trace t p tr ->
-    traceS (conf t p e) tr
+Inductive traceS: St -> list PutPoll -> Prop :=
+| tstop:
+    traceS (stop) []
+| tconf: forall t tr,
+    trace t tr ->
+    traceS (conf t) tr
 | trem: forall st tr j p,
     traceS st tr ->
     traceS (rem j p st)

@@ -7,6 +7,7 @@ Event_system.v
 Term_system.v
 Store_system.v
 Trace.v
+Trace_Store.v
 LTS.v
 LTS_Store.v
 Main.v
