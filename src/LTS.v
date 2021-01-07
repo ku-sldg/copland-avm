@@ -70,7 +70,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
 | statt:
     forall r x p q e,
       step (conf (aatt r q x) p e)
-           (Some (req (fst r) p q (unanno x)))
+           (Some (req (fst r) (fst r) p q (unanno x)))
            (rem (snd r) p (conf x q e))
 | stattstep:
     forall st0 ev st1 p j,
@@ -79,7 +79,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
 | stattstop:
     forall j p q e,
       step (rem j p (stop q e))
-           (Some (rpy (pred j) p q))
+           (Some (rpy (pred j) (pred j) p q))
            (stop p e)
 (** Linear Sequential Composition *)
 
@@ -410,7 +410,7 @@ Proof.
     destruct a.
     + exists (Some (asp_event (fst r) a n)).
       eapply ex_intro; eauto.
-    + exists (Some (req (fst r) n n0 (unanno a))).
+    + exists (Some (req (fst r) (fst r) n n0 (unanno a))).
       eapply ex_intro; eauto.
     + exists None.
       eapply ex_intro; eauto.
@@ -423,7 +423,7 @@ Proof.
   - right.
     destruct IHst0.
     + destruct st0; simpl in H; try tauto.
-      exists (Some (rpy (pred n) n0 n1)).
+      exists (Some (rpy (pred n) (pred n) n0 n1)).
       eapply ex_intro; eauto.
     + destruct H as [e H].
       exists e.

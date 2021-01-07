@@ -249,9 +249,9 @@ Inductive trace: AnnoTerm -> Plc ->
 | tatt: forall r x p q tr1,
     trace x q tr1 ->
     trace (aatt r q x) p
-          ((req (fst r) p q (unanno x) )
+          ((req (fst r) (fst r) p q (unanno x) )
              :: tr1 ++
-             [(rpy (pred (snd r)) p q)])
+             [(rpy (pred (snd r)) (pred (snd r)) p q)])
 | tlseq: forall r x y p tr0 tr1,
     trace x p tr0 ->
     trace y p tr1 ->

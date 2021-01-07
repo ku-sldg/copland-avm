@@ -24,6 +24,7 @@ Require Import Preamble StructTactics.
 (** [Plc] represents a place. *)
 
 Notation Plc := nat (only parsing).
+Notation Loc := nat (only parsing).
 Notation ASP_ID := nat (only parsing).
 Notation N_ID := nat (only parsing).
 Notation Arg := nat (only parsing).
@@ -102,8 +103,8 @@ Inductive Ev: Set :=
 | umeas: nat -> Plc -> ASP_ID -> list Arg -> Ev
 | sign: nat -> Plc -> Ev
 | hash: nat -> Plc -> Ev
-| req: nat -> Plc -> Plc -> Term -> Ev
-| rpy: nat -> Plc -> Plc -> Ev 
+| req: nat -> Loc -> Plc -> Plc -> Term -> Ev
+| rpy: nat -> Loc -> Plc -> Plc -> Ev 
 | split: nat -> Plc -> Ev
 | join:  nat -> Plc -> Ev.
 
@@ -123,8 +124,8 @@ Definition ev x :=
   | umeas i _ _ _  => i
   | sign i _ => i
   | hash i _ => i
-  | req i _ _ _ => i
-  | rpy i _ _ => i 
+  | req i _ _ _ _ => i
+  | rpy i _ _ _ => i 
   | split i _ => i
   | join i _ => i
   end.
@@ -627,7 +628,7 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
 | evtsattreq:
     forall r q t i p,
       fst r = i ->
-      events (aatt r q t) p (req i p q (unanno t))
+      events (aatt r q t) p (req i i p q (unanno t))
 | evtsatt:
     forall r q t ev p,
       events t q ev ->
@@ -635,7 +636,7 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
 | evtsattrpy:
     forall r q t i p,
       snd r = S i ->
-      events (aatt r q t) p (rpy i p q)
+      events (aatt r q t) p (rpy i i p q)
 | evtslseql:
     forall r t1 t2 ev p,
       events t1 p ev ->

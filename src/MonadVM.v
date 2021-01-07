@@ -122,12 +122,12 @@ Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) : CVM unit :=
   p <- get_pl ;;
   e <- get_ev ;;
   put_store_at reqi e ;;
-  add_tracem [req reqi p q (unanno t)].
+  add_tracem [req reqi reqi p q (unanno t)].
 
 Definition receiveResp (rpyi:nat) (q:Plc) : CVM EvidenceC :=
   e <- get_store_at rpyi ;;
   p <- get_pl ;;
-  add_tracem [rpy (Nat.pred rpyi) p q] ;;
+  add_tracem [rpy (Nat.pred rpyi) (Nat.pred rpyi) p q] ;;
   ret e.
 
 (* Primitive CVM Monad operations that require IO Axioms *)

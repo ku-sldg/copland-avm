@@ -15,6 +15,256 @@ Require Import Coq.Arith.Peano_dec.
 
 Set Nested Proofs Allowed.
 
+Inductive store_event: Ev -> Plc -> Loc -> Prop :=
+| put_event: forall i x p q t, store_event (req i x p q t) p x
+| get_event: forall i x p q, store_event (rpy i x p q) p x.
+
+Inductive store_event_evsys: EvSys Ev -> Plc -> Loc -> Prop :=
+| inevsys_leaf: forall r ev p loc,
+    store_event ev p loc ->
+    store_event_evsys (leaf r ev) p loc
+| inevsys_before_l: forall r es1 es2 p loc,
+    store_event_evsys es1 p loc ->
+    store_event_evsys (before r es1 es2) p loc
+| inevsys_before_r: forall r es1 es2 p loc,
+    store_event_evsys es2 p loc ->
+    store_event_evsys (before r es1 es2) p loc
+| inevsys_merge_l: forall r es1 es2 p loc,
+    store_event_evsys es1 p loc ->
+    store_event_evsys (merge r es1 es2) p loc
+| inevsys_merge_r: forall r es1 es2 p loc,
+    store_event_evsys es2 p loc ->
+    store_event_evsys (merge r es1 es2) p loc.
+
+(*
+Inductive merge_conflict: EvSys Ev -> Prop :=
+| merge_conflictc: forall r es1 es2 loc,
+    store_event_evsys es1 loc ->
+    store_event_evsys es2 loc ->
+    merge_conflict (merge r es1 es2).
+*)
+
+Inductive store_conflict: EvSys Ev -> Prop :=
+| store_conflict_merge: forall r es1 es2 p loc,
+    store_event_evsys es1 p loc ->
+    store_event_evsys es2 p loc ->
+    store_conflict (merge r es1 es2)
+| store_conflict_before_l: forall r es1 es2,
+    store_conflict es1 ->
+    store_conflict (before r es1 es2)
+| store_conflict_before_r: forall r es1 es2,
+    store_conflict es2 ->
+    store_conflict (before r es1 es2).
+
+                   (*
+| store_conflict_merge_l: forall r es1 es2,
+    merge_conflict es1 ->
+    store_conflict (merge r es1 es2)
+| store_conflict_merge_r: forall r es1 es2,
+    merge_conflict es2 ->
+    store_conflict (merge r es1 es2). *)
+
+Theorem no_store_conflicts: forall t p,
+    well_formed t ->
+    not (store_conflict (ev_sys t p)).
+Proof.
+  unfold not; intros.
+
+  generalize dependent p.
+  induction t; intros.
+  -
+    destruct a;
+      try (inv H0; repeat break_let; solve_by_inversion).
+  -
+    inv H0;
+    repeat break_let;
+    try solve_by_inversion.
+    +
+      inv H1.
+      inv H2.
+    +
+      inv H1.
+      inv H2.
+      ++
+        inv H.
+        eauto.
+      ++
+        inv H4.
+  -
+    inv H.
+    inv H0.
+    +
+      eauto.
+    +
+      eauto.
+  -
+    inv H.
+    inv H0;
+      repeat break_let;
+      try solve_by_inversion.
+    +
+      inv H1.
+      inv H2.
+    +
+      invc H1.
+      invc H2.
+      ++
+        invc H3; eauto.
+      ++
+        invc H3.
+  -
+    inv H.
+    inv H0;
+      repeat break_let;
+      try solve_by_inversion.
+    +
+      inv H1.
+      inv H2.
+    +
+      invc H1.
+      invc H2; try solve_by_inversion.
+      invc H3.
+
+      Inductive top_level_at: Plc -> Loc -> AnnoTerm -> Prop :=
+      | top_at_rec: forall r p q loc t',
+          top_level_at q loc t' ->
+          top_level_at p loc (aatt r q t')
+      | top_at_l: forall p q t' loc loc2,
+          top_level_at p loc (aatt (loc,loc2) q t')
+      | top_at_r: forall p q t' loc loc2,
+          top_level_at p loc2 (aatt (loc,loc2) q t')
+      | top_lseq_l: forall r p loc t1 t2,
+          top_level_at p loc t1 ->
+          top_level_at p loc (alseq r t1 t2)
+      | top_lseq_r: forall r p loc t1 t2,
+          top_level_at p loc t2 ->
+          top_level_at p loc (alseq r t1 t2)
+      | top_bseq_l: forall r s p loc t1 t2,
+          top_level_at p loc t1 ->
+          top_level_at p loc (abseq r s t1 t2)
+      | top_bseq_r: forall r s p loc t1 t2,
+          top_level_at p loc t2 ->
+          top_level_at p loc (abseq r s t1 t2)
+      | top_bpar_l: forall r s p loc t1 t2,
+          top_level_at p loc t1 ->
+          top_level_at p loc (abpar r s t1 t2)
+      | top_bpar_r: forall r s p loc t1 t2,
+          top_level_at p loc t2 ->
+          top_level_at p loc (abpar r s t1 t2).
+
+      
+
+      Lemma store_event_facts: forall p p0 loc t,
+        store_event_evsys (ev_sys t p) p0 loc ->
+        top_level_at p0 loc t.
+      Proof.
+      Admitted.
+      
+        
+        
+
+      Lemma good_par : forall r s p p0 t1 t2 loc,
+        well_formed (abpar r s t1 t2) ->
+        store_event_evsys (ev_sys t1 p) p0 loc ->
+        store_event_evsys (ev_sys t2 p) p0 loc ->
+        False.
+      Proof.
+      Admitted.
+
+      eapply store_event_facts in H4.
+      eapply store_event_facts in H12.
+
+      invc H4;
+        invc H12.
+      
+
+      eapply good_par; eauto.
+Defined.
+
+      
+
+
+      
+      ++
+        invc H2
+        invc H3; eauto.
+      ++
+        invc H3.
+    
+      
+        
+      
+      
+      
+    
+      
+      
+    
+      
+        
+      
+        eapply IHt.
+        
+      
+      
+  -
+    inv H.
+    inv H0.
+    +
+      eapply IHt1.
+      eassumption.
+
+
+
+      
+      inv H2.
+      subst.
+      rewrite <- H1 in *; clear H1.
+      
+      
+      inv H2.
+    inv H; inv H0;
+    repeat break_let;
+    try solve_by_inversion.
+    eapply IHt1.
+    eassumption.
+    inv H2.
+    rewrite <- H1.
+    eapply store_conflict_merge_l.
+    
+    
+    +
+    inv H.
+    
+    inv 
+    solve_by_inversion.
+  -
+    inv H0.
+    repeat break_let.
+    solve_by_inversion.
+  -
+    
+    
+    
+    
+    
+    +
+      
+      inv H0.
+      repeat break_let.
+      solve_by_inversion.
+    +
+      
+      
+      
+  
+  
+  Admitted.
+  
+  
+
+
+
 Lemma st_trace_irrel : forall t tr1 tr1' tr2 tr2' e e' e'' p p' p'' o o' o'',
     well_formed t ->
     copland_compile t

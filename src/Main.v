@@ -31,7 +31,7 @@ Inductive traceS: St -> list Ev -> Prop :=
     traceS st tr ->
     traceS (rem j p st)
            (tr ++
-               [(rpy (pred j) p (pl st))])
+               [(rpy (pred j) (pred j) p (pl st))])
 | tls: forall st tr1 t tr2,
     traceS st tr1 ->
     trace t (pl st) tr2 ->

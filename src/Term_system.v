@@ -21,10 +21,10 @@ Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
   | aasp (i, j) x => leaf (i, j) (asp_event i x p)
   | aatt (i, j) q x =>
     before (i, j)
-      (leaf (i, S i) (req i p q (unanno x)))
+      (leaf (i, S i) (req i i p q (unanno x)))
       (before (S i, j)
               (ev_sys x q)
-              (leaf (pred j, j) (rpy (pred j) p q)))
+              (leaf (pred j, j) (rpy (pred j) (pred j) p q)))
   | alseq r x y => before r (ev_sys x p)
                           (ev_sys y p)
   | abseq (i, j) s x y =>
