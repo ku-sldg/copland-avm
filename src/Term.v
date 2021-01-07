@@ -395,6 +395,7 @@ Inductive well_formed: AnnoTerm -> Prop :=
     well_formed x ->
     S (fst r) = fst (range x) ->
     snd r = S (snd (range x)) ->
+    Nat.pred (snd r) > fst r ->
     well_formed (aatt r p x)
 | wf_lseq: forall r x y,
     well_formed x -> well_formed y ->
@@ -486,6 +487,27 @@ Proof.
     repeat find_apply_hyp_hyp; lia.
 Defined.
 
+Print esize.
+
+Lemma esize_nonempty: forall t, esize t > 0.
+Proof.
+  intros.
+  induction t; intros;
+    try (destruct a);
+    (cbn; lia).
+Defined.
+
+Lemma wf_mono: forall t,
+    well_formed t ->
+    snd (range t) > fst (range t).
+Proof.
+  intros.
+  rewrite well_formed_range.
+  pose (esize_nonempty t).
+  lia.
+  eauto.
+Defined.
+
 Lemma anno_well_formed:
   forall t i,
     well_formed (snd (anno t i)).
@@ -495,6 +517,42 @@ Proof.
     repeat expand_let_pairs;
     econstructor; simpl; auto;
     repeat rewrite anno_range; simpl; reflexivity).
+  -
+    auto.
+    repeat break_let.
+    simpl.
+    econstructor.
+    +
+      pose (IHt (S i)).
+      rewrite Heqp in *. eassumption.
+    +
+      simpl.
+      assert (a = snd (anno t (S i))) by (rewrite Heqp; tauto).
+      subst.
+      rewrite anno_range.
+      tauto.
+    +
+      simpl.
+      assert (a = snd (anno t (S i))) by (rewrite Heqp; tauto).
+      subst.
+      rewrite anno_range.
+      simpl.
+      rewrite Heqp.
+      tauto.
+    +
+      Check anno_mono.
+      simpl.
+      Check anno_mono.
+      assert (n0 > (S i)).
+      eapply anno_mono; eauto.
+      lia.
+    
+      
+      
+      
+      
+      
+    
   - 
     auto.
     repeat expand_let_pairs.

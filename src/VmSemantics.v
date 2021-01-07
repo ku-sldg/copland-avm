@@ -11,9 +11,46 @@ Require Import Axioms_Io Impl_vm External_Facts Helpers_VmSemantics.
 Require Import List.
 Import ListNotations.
 Require Import Coq.Program.Tactics Coq.Program.Equality.
-Require Import Coq.Arith.Peano_dec.
+Require Import Coq.Arith.Peano_dec Lia.
 
 Set Nested Proofs Allowed.
+
+Check split.
+
+Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
+  match t with
+  | aasp (i, j) x => leaf (i, j) (asp_event i x p)
+  | aatt (i, j) q x =>
+    before (i, j)
+      (leaf (i, S i) (req i i p q (unanno x)))
+      (*(before (S i, j)
+              (ev_sys x q) *)
+      (leaf (pred j, j) (rpy (pred j) (pred j) p q))
+  | alseq r x y => before r (ev_sys x p)
+                          (ev_sys y p)
+  | abseq (i, j) s x y =>
+    before (i, j)
+           (leaf (i, S i)
+                 (Term.split i p))
+           (before (S i, j)
+                   (before (S i, (pred j))
+                           (ev_sys x p)
+                           (ev_sys y p))
+                   (leaf ((pred j), j)
+                   (join (pred j) p)))
+  | abpar (i, j) s x y =>
+    before (i, j)
+           (leaf (i, S i)
+                 (Term.split i p))
+           (before (S i, j)
+                   (merge (S i, (pred j))
+                          (ev_sys x p)
+                          (ev_sys y p))
+                   (leaf ((pred j), j)
+                   (join (pred j) p)))
+  end.
+
+Locate ev_sys.
 
 Inductive store_event: Ev -> Plc -> Loc -> Prop :=
 | put_event: forall i x p q t, store_event (req i x p q t) p x
@@ -44,222 +81,257 @@ Inductive merge_conflict: EvSys Ev -> Prop :=
     merge_conflict (merge r es1 es2).
 *)
 
-Inductive store_conflict: EvSys Ev -> Prop :=
+Inductive store_conflict: Plc -> EvSys Ev -> Prop :=
 | store_conflict_merge: forall r es1 es2 p loc,
     store_event_evsys es1 p loc ->
     store_event_evsys es2 p loc ->
-    store_conflict (merge r es1 es2)
-| store_conflict_before_l: forall r es1 es2,
-    store_conflict es1 ->
-    store_conflict (before r es1 es2)
-| store_conflict_before_r: forall r es1 es2,
-    store_conflict es2 ->
-    store_conflict (before r es1 es2).
+    store_conflict p (merge r es1 es2)
+| store_conflict_before_l: forall r p es1 es2,
+    store_conflict p es1 ->
+    store_conflict p (before r es1 es2)
+| store_conflict_before_r: forall r p es1 es2,
+    store_conflict p es2 ->
+    store_conflict p (before r es1 es2).
 
-                   (*
-| store_conflict_merge_l: forall r es1 es2,
-    merge_conflict es1 ->
-    store_conflict (merge r es1 es2)
-| store_conflict_merge_r: forall r es1 es2,
-    merge_conflict es2 ->
-    store_conflict (merge r es1 es2). *)
+Inductive top_level_at: (*Plc ->*) Loc -> AnnoTerm -> Prop :=
+(*| top_at_rec: forall r p q loc t',
+          top_level_at q loc t' ->
+          top_level_at p loc (aatt r q t') *)
+| top_at_l: forall q t' loc loc2,
+    top_level_at loc (aatt (loc,loc2) q t')
+| top_at_r: forall q t' loc loc2,
+    top_level_at (pred loc2) (aatt (loc,loc2) q t')
+| top_lseq_l: forall r loc t1 t2,
+    top_level_at loc t1 ->
+    top_level_at loc (alseq r t1 t2)
+| top_lseq_r: forall r loc t1 t2,
+    top_level_at loc t2 ->
+    top_level_at loc (alseq r t1 t2)
+| top_bseq_l: forall r s loc t1 t2,
+    top_level_at loc t1 ->
+    top_level_at loc (abseq r s t1 t2)
+| top_bseq_r: forall r s loc t1 t2,
+    top_level_at loc t2 ->
+    top_level_at loc (abseq r s t1 t2)
+| top_bpar_l: forall r s loc t1 t2,
+    top_level_at loc t1 ->
+    top_level_at loc (abpar r s t1 t2)
+| top_bpar_r: forall r s loc t1 t2,
+    top_level_at loc t2 ->
+    top_level_at loc (abpar r s t1 t2).
+
+Lemma store_event_facts: forall p loc t,
+    store_event_evsys (ev_sys t p) p loc ->
+    top_level_at loc t.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a;
+    
+      inv H;
+        repeat break_let;
+        try solve_by_inversion;
+        inv H0; inv H1.
+  -
+    cbn in *.
+    repeat break_let.
+    invc H.
+    +
+      invc H5.
+      invc H3.
+      econstructor.
+    +
+      invc H5.
+      invc H3.
+      econstructor.
+  -
+    cbn in *.
+    invc H.
+    +
+      econstructor.
+      eauto.
+    +
+      eapply top_lseq_r.
+      eauto.
+  -
+    cbn in *.
+    repeat break_let.
+    invc H.
+    +
+      invc H5.
+      invc H3.
+    +
+      invc H5.
+      ++
+        invc H4.
+        +++
+          econstructor.
+          eauto.
+        +++
+          eapply top_bseq_r.
+          eauto.
+      ++
+        invc H4.
+        invc H3.
+  -
+    cbn in *.
+    repeat break_let.
+    invc H.
+    +
+      invc H5.
+      invc H3.
+    +
+      invc H5.
+      ++
+        invc H4.
+        +++
+          econstructor.
+          eauto.
+        +++
+          eapply top_bpar_r.
+          eauto.
+      ++
+        invc H4.
+        invc H3.
+Defined.
+
+Lemma wf_att_fact: forall x y q t',
+    well_formed (aatt (x, y) q t') ->
+    x > (Nat.pred y) ->
+    False.
+Proof.
+  intros.
+  inv H.
+  simpl in *.
+  lia.
+Defined.
+
+Lemma good_par : forall r s p t1 t2 loc,
+    well_formed (abpar r s t1 t2) ->
+    store_event_evsys (ev_sys t1 p) p loc ->
+    store_event_evsys (ev_sys t2 p) p loc ->
+    False.
+Proof.
+  intros.
+  eapply store_event_facts in H0.
+  eapply store_event_facts in H1.
+  inv H.
+  Check anno_mono.
+  inv H0; inv H1; cbn in *.
+
+  invc H0; invc H1;
+    try lia.
+
+  invc H0; invc H1;
+    try lia.
+
+  eapply wf_att_fact.
+  apply H7.
+  lia.
+
+  rewrite <- H3 in *.
+  subst.
+  invc H7.
+  simpl in *.
+  lia.
+
+
+  
+
+  invc H6.
+  simpl in *.
+  subst.
+
+  invc H0; try lia.
+  pose (wf_mono t' H12).
+  simpl in *.
+  subst.
+  rewrite <- H13 in *.
+  rewrite H14 in *.
+  simpl in *.
+  destruct (range t') eqn:hey.
+  simpl in *.
+  subst.
+  destruct r.
+  simpl in *.
+  subst.
+  destruct r0.
+  simpl in *.
+  subst.
+  clear H1.
+  invc H7.
+  subst.
+
+  simpl in *.
+  subst.
+  pose (wf_mono t1 H4).
+  subst.
+  rewrite H8 in *.
+  subst.
+  rewrite <- H6 in *; clear H6.
+  rewrite <- H8 in *; clear H8.
+  
+  subst.
+  admit.
+  
+Admitted.
 
 Theorem no_store_conflicts: forall t p,
     well_formed t ->
-    not (store_conflict (ev_sys t p)).
+    not (store_conflict p (ev_sys t p)).
 Proof.
+  Print ev_sys.
   unfold not; intros.
-
   generalize dependent p.
   induction t; intros.
   -
     destruct a;
       try (inv H0; repeat break_let; solve_by_inversion).
   -
-    inv H0;
-    repeat break_let;
-    try solve_by_inversion.
+    cbn in *.
+    repeat break_let.
+    invc H0.
     +
-      inv H1.
-      inv H2.
+      solve_by_inversion.
     +
-      inv H1.
-      inv H2.
-      ++
-        inv H.
-        eauto.
-      ++
-        inv H4.
+      solve_by_inversion.
   -
     inv H.
-    inv H0.
-    +
-      eauto.
-    +
-      eauto.
+    invc H0; eauto.
   -
     inv H.
-    inv H0;
+    invc H0;
       repeat break_let;
       try solve_by_inversion.
     +
-      inv H1.
-      inv H2.
+      invc H1.
+      solve_by_inversion.
     +
       invc H1.
-      invc H2.
-      ++
-        invc H3; eauto.
-      ++
-        invc H3.
-  -
-    inv H.
-    inv H0;
-      repeat break_let;
-      try solve_by_inversion.
-    +
-      inv H1.
-      inv H2.
-    +
-      invc H1.
-      invc H2; try solve_by_inversion.
       invc H3.
+      ++
+        invc H2; eauto.
+      ++
+        solve_by_inversion.
+  -
+    inv H.
+    invc H0;
+      repeat break_let;
+      try solve_by_inversion.
+    +
+      invc H1.
+      solve_by_inversion.
+    +
+      invc H1.
+      invc H3; try solve_by_inversion.
+      invc H2.
 
-      Inductive top_level_at: Plc -> Loc -> AnnoTerm -> Prop :=
-      | top_at_rec: forall r p q loc t',
-          top_level_at q loc t' ->
-          top_level_at p loc (aatt r q t')
-      | top_at_l: forall p q t' loc loc2,
-          top_level_at p loc (aatt (loc,loc2) q t')
-      | top_at_r: forall p q t' loc loc2,
-          top_level_at p loc2 (aatt (loc,loc2) q t')
-      | top_lseq_l: forall r p loc t1 t2,
-          top_level_at p loc t1 ->
-          top_level_at p loc (alseq r t1 t2)
-      | top_lseq_r: forall r p loc t1 t2,
-          top_level_at p loc t2 ->
-          top_level_at p loc (alseq r t1 t2)
-      | top_bseq_l: forall r s p loc t1 t2,
-          top_level_at p loc t1 ->
-          top_level_at p loc (abseq r s t1 t2)
-      | top_bseq_r: forall r s p loc t1 t2,
-          top_level_at p loc t2 ->
-          top_level_at p loc (abseq r s t1 t2)
-      | top_bpar_l: forall r s p loc t1 t2,
-          top_level_at p loc t1 ->
-          top_level_at p loc (abpar r s t1 t2)
-      | top_bpar_r: forall r s p loc t1 t2,
-          top_level_at p loc t2 ->
-          top_level_at p loc (abpar r s t1 t2).
 
-      
-
-      Lemma store_event_facts: forall p p0 loc t,
-        store_event_evsys (ev_sys t p) p0 loc ->
-        top_level_at p0 loc t.
-      Proof.
-      Admitted.
-      
-        
-        
-
-      Lemma good_par : forall r s p p0 t1 t2 loc,
-        well_formed (abpar r s t1 t2) ->
-        store_event_evsys (ev_sys t1 p) p0 loc ->
-        store_event_evsys (ev_sys t2 p) p0 loc ->
-        False.
-      Proof.
-      Admitted.
-
-      eapply store_event_facts in H4.
-      eapply store_event_facts in H12.
-
-      invc H4;
-        invc H12.
-      
 
       eapply good_par; eauto.
 Defined.
-
-      
-
-
-      
-      ++
-        invc H2
-        invc H3; eauto.
-      ++
-        invc H3.
-    
-      
-        
-      
-      
-      
-    
-      
-      
-    
-      
-        
-      
-        eapply IHt.
-        
-      
-      
-  -
-    inv H.
-    inv H0.
-    +
-      eapply IHt1.
-      eassumption.
-
-
-
-      
-      inv H2.
-      subst.
-      rewrite <- H1 in *; clear H1.
-      
-      
-      inv H2.
-    inv H; inv H0;
-    repeat break_let;
-    try solve_by_inversion.
-    eapply IHt1.
-    eassumption.
-    inv H2.
-    rewrite <- H1.
-    eapply store_conflict_merge_l.
-    
-    
-    +
-    inv H.
-    
-    inv 
-    solve_by_inversion.
-  -
-    inv H0.
-    repeat break_let.
-    solve_by_inversion.
-  -
-    
-    
-    
-    
-    
-    +
-      
-      inv H0.
-      repeat break_let.
-      solve_by_inversion.
-    +
-      
-      
-      
-  
-  
-  Admitted.
   
   
 
@@ -880,7 +952,7 @@ Theorem cvm_respects_event_system' : forall t tr ev0 ev1 e e' o o',
       t
       (mk_st e [] 0 o) =
       (Some tt, (mk_st e' tr 0 o')) ->
-    prec (ev_sys t 0) ev0 ev1 ->
+    prec (Term_system.ev_sys t 0) ev0 ev1 ->
     earlier tr ev0 ev1.
 Proof.
   intros.
@@ -894,7 +966,7 @@ Theorem cvm_respects_event_system : forall t tr ev0 ev1 e e' o o' t',
       t
       (mk_st e [] 0 o) =
       (Some tt, (mk_st e' tr 0 o')) ->
-    prec (ev_sys t 0) ev0 ev1 ->
+    prec (Term_system.ev_sys t 0) ev0 ev1 ->
     earlier tr ev0 ev1.
 Proof.
   intros.

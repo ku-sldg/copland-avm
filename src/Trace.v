@@ -420,7 +420,7 @@ Proof.
     + intro.
       apply in_app_iff in H1.
       destruct H1.
-      * eapply trace_range in H9; eauto.
+      * eapply trace_range in H10; eauto.
         simpl in *.
         lia.
       * inv H1.
@@ -430,7 +430,7 @@ Proof.
       * eapply IHt; eauto.
       * constructor; auto; constructor.
       * inv H2.
-        eapply trace_range in H9; eauto.
+        eapply trace_range in H10; eauto.
         simpl in *.
         lia.
         solve_by_inversion.
@@ -544,9 +544,9 @@ Proof.
     try expand_let_pairs; inv H1; simpl; auto.
   - left. solve_by_inversion.
   - right. inv H4; auto.
-    + apply IHtrace in H8; auto.
+    + apply IHtrace in H9; auto.
       rewrite in_app_iff; auto.
-    + inv H8. rewrite in_app_iff.
+    + inv H9. rewrite in_app_iff.
       right. simpl. left. auto.
   - apply IHtrace1 in H4; auto.
     rewrite in_app_iff; auto.
@@ -591,7 +591,7 @@ Proof.
   intros.
   induction H0; inv H; simpl in H1;
     try expand_let_pairs; inv H1; simpl; auto.
-  - inv H11; inv H10.
+  - inv H12; inv H11.
     + eapply evsys_tr_in in H4; eauto.
       apply earlier_cons; auto.
       apply in_app_iff; auto.
@@ -599,9 +599,9 @@ Proof.
       apply earlier_cons; auto.
       apply in_app_iff; auto. right; simpl; auto.
   - solve_by_inversion.
-  - inv H10.
-    + inv H12.
-      eapply evsys_tr_in in H11; eauto.
+  - inv H11.
+    + inv H13.
+      eapply evsys_tr_in in H12; eauto.
       apply earlier_cons_shift; auto.
       apply earlier_append; auto; simpl; auto.
     + eapply IHtrace in H5; eauto.

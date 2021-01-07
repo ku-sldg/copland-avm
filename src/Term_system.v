@@ -101,7 +101,7 @@ Proof.
   - inv H0; auto.
   - rewrite H6; simpl.
     inv H0; auto.
-    rewrite H8 in H6.
+    rewrite H9 in H6.
     apply Nat.succ_inj in H6; subst; auto.
   - inv H0; auto.
   - rewrite H9; simpl.
@@ -141,9 +141,9 @@ Proof.
     + destruct r as [i j]; simpl in *.
       inv H0; inv H1; auto.
     + destruct r as [i j]; simpl in *.
-      repeat apply before_sup in H2.
       repeat apply before_sup in H3.
-      inv H2; inv H3; auto.
+      repeat apply before_sup in H4.
+      inv H3; inv H4; auto.
     + destruct r as [i j]; simpl in *.
       repeat apply before_sup in H4.
       repeat apply before_sup in H5.
@@ -180,8 +180,8 @@ Proof.
   revert p.
   induction H; intros; destruct r as [i j]; inv G; simpl in *; auto.
   - inv H0; auto.
-  - repeat apply before_sup in H2.
-    inv H2; auto.
+  - repeat apply before_sup in H3.
+    inv H3; auto.
   - repeat apply before_sup in H4.
     apply IHwell_formed2 in H4; auto.
     
