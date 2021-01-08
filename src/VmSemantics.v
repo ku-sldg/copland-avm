@@ -52,26 +52,267 @@ Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
 
 Locate ev_sys.
 
-Inductive store_event: Ev -> Plc -> Loc -> Prop :=
-| put_event: forall i x p q t, store_event (req i x p q t) p x
-| get_event: forall i x p q, store_event (rpy i x p q) p x.
+Lemma same_pl: forall t ev p,
+  ev_in ev (ev_sys t p) ->
+  Term.pl ev = p.
+Proof.
+  induction t; intros.
+  -
+    destruct a;
+    
+      cbn in *;
+        repeat break_let;
+      inv H;
+      tauto.
+  -
+    cbn in *;
+      repeat break_let.
+    invc H.
+    +
+      invc H2.
+      tauto.
+    +
+      invc H2.
+      tauto.
+  -
+    cbn in *.
+    invc H; eauto.
+  -
+    cbn in *;
+      repeat break_let.
+    invc H.
+    +
+      invc H2.
+      tauto.
+    +
+      invc H2.
+      ++
+        invc H1; eauto.
+      ++
+        invc H1.
+        tauto.
+  -
+    cbn in *;
+      repeat break_let.
+    invc H.
+    +
+      invc H2.
+      tauto.
+    +
+      invc H2.
+      ++
+        invc H1; eauto.
+      ++
+        invc H1; eauto.
+Defined.
 
-Inductive store_event_evsys: EvSys Ev -> Plc -> Loc -> Prop :=
-| inevsys_leaf: forall r ev p loc,
-    store_event ev p loc ->
-    store_event_evsys (leaf r ev) p loc
-| inevsys_before_l: forall r es1 es2 p loc,
-    store_event_evsys es1 p loc ->
-    store_event_evsys (before r es1 es2) p loc
-| inevsys_before_r: forall r es1 es2 p loc,
-    store_event_evsys es2 p loc ->
-    store_event_evsys (before r es1 es2) p loc
-| inevsys_merge_l: forall r es1 es2 p loc,
-    store_event_evsys es1 p loc ->
-    store_event_evsys (merge r es1 es2) p loc
-| inevsys_merge_r: forall r es1 es2 p loc,
-    store_event_evsys es2 p loc ->
-    store_event_evsys (merge r es1 es2) p loc.
+Inductive store_event: Ev -> Loc -> Prop :=
+| put_event: forall i x p q t, store_event (req i x p q t) x
+| get_event: forall i x p q, store_event (rpy i x p q) x.
+
+Lemma store_events_same_pl: forall t p loc ev,
+  ev_in ev (ev_sys t p) ->
+  store_event ev loc ->
+  Term.pl ev = p.
+Proof.
+  intros.
+  eapply same_pl.
+  eauto.
+Defined.
+
+Lemma req_same_as_evid: forall t p p' i loc q t',
+    events t p (req i loc p' q t') ->
+    i = loc.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+    inv H; eauto.
+Defined.
+
+Lemma rpy_same_as_evid: forall t p p' i loc q,
+    events t p (rpy i loc p' q) ->
+    i = loc.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+    inv H; eauto.
+Defined.
+
+Lemma store_event_is_event: forall ev t p loc,
+  events t p ev ->
+  store_event ev loc ->
+  Term.ev ev = loc.
+Proof.
+  intros.
+  inv H0.
+  -
+    assert (i = loc).
+    {
+      eapply req_same_as_evid; eauto.
+    }
+    subst.
+    simpl.
+    reflexivity.
+  -
+    assert (i = loc).
+    {
+      eapply rpy_same_as_evid; eauto.
+    }
+    subst.
+    simpl.
+    reflexivity.
+Defined.
+
+Check NoDup.
+Print NoDup.
+
+Lemma store_events_injective: forall t p ev1 ev2 loc,
+  well_formed t ->
+  events t p ev1 ->
+  events t p ev2 ->
+  store_event ev1 loc ->
+  store_event ev2 loc ->
+  ev1 = ev2.
+Proof.
+  intros.
+  eapply events_injective; eauto.
+  inv H2;
+    inv H3.
+  -
+    assert (i = loc).
+    {
+      eapply req_same_as_evid; eauto.
+    }
+
+    assert (i0 = loc).
+    {
+      eapply req_same_as_evid; eauto.
+    }
+
+    subst.
+    simpl.
+    tauto.
+  -
+    assert (i = loc).
+    {
+      eapply req_same_as_evid; eauto.
+    }
+
+    assert (i0 = loc).
+    {
+      eapply rpy_same_as_evid; eauto.
+    }
+
+    subst.
+    simpl.
+    tauto.
+  -
+    assert (i = loc).
+    {
+      eapply rpy_same_as_evid; eauto.
+    }
+
+    assert (i0 = loc).
+    {
+      eapply req_same_as_evid; eauto.
+    }
+
+    subst.
+    simpl.
+    tauto.
+  -
+    assert (i = loc).
+    {
+      eapply rpy_same_as_evid; eauto.
+    }
+
+    assert (i0 = loc).
+    {
+      eapply rpy_same_as_evid; eauto.
+    }
+
+    subst.
+    simpl.
+    tauto.
+Defined.
+  
+
+Lemma unique_store_events: forall t p tr ev1 ev2 loc,
+  well_formed t ->
+  Trace.trace t p tr ->
+  In ev1 tr ->
+  In ev2 tr ->
+  store_event ev1 loc ->
+  store_event ev2 loc ->
+  ev1 <> ev2 ->
+  False.
+Proof.
+  intros.
+  assert (ev1 = ev2).
+  {
+    eapply store_events_injective;
+      try eassumption;
+      try (eapply Trace.trace_events; eassumption).
+  }
+  congruence.
+Defined.
+
+Lemma unique_store_events': forall t p ev1 ev2 loc,
+    well_formed t ->
+    (*
+  Trace.trace t p tr ->
+  In ev1 tr ->
+  In ev2 tr -> 
+  *)
+  ev_in ev1 (Term_system.ev_sys t p) ->
+  ev_in ev2 (Term_system.ev_sys t p) -> 
+  store_event ev1 loc ->
+  store_event ev2 loc ->
+  ev1 <> ev2 ->
+  False.
+Proof.
+  intros.
+  assert (ev1 = ev2).
+  {
+    eapply store_events_injective;
+      try eassumption.
+    eapply evsys_events; eauto.
+    eapply evsys_events; eauto.
+  }
+  congruence.
+Defined.
+
+
+(*
+Lemma noDup_store_events: forall t p ev loc tr,
+  well_formed t ->
+  store_event ev loc ->
+  Trace.trace t p tr ->
+  In ev tr ->
+  NoDup ev.
+*)
+
+  
+
+
+Inductive store_event_evsys: EvSys Ev -> Loc -> Prop :=
+| inevsys_leaf: forall r ev loc,
+    store_event ev loc ->
+    store_event_evsys (leaf r ev) loc
+| inevsys_before_l: forall r es1 es2 loc,
+    store_event_evsys es1 loc ->
+    store_event_evsys (before r es1 es2) loc
+| inevsys_before_r: forall r es1 es2 loc,
+    store_event_evsys es2 loc ->
+    store_event_evsys (before r es1 es2) loc
+| inevsys_merge_l: forall r es1 es2 loc,
+    store_event_evsys es1 loc ->
+    store_event_evsys (merge r es1 es2) loc
+| inevsys_merge_r: forall r es1 es2 loc,
+    store_event_evsys es2 loc ->
+    store_event_evsys (merge r es1 es2) loc.
 
 (*
 Inductive merge_conflict: EvSys Ev -> Prop :=
@@ -81,17 +322,249 @@ Inductive merge_conflict: EvSys Ev -> Prop :=
     merge_conflict (merge r es1 es2).
 *)
 
-Inductive store_conflict: Plc -> EvSys Ev -> Prop :=
-| store_conflict_merge: forall r es1 es2 p loc,
-    store_event_evsys es1 p loc ->
-    store_event_evsys es2 p loc ->
-    store_conflict p (merge r es1 es2)
-| store_conflict_before_l: forall r p es1 es2,
-    store_conflict p es1 ->
-    store_conflict p (before r es1 es2)
-| store_conflict_before_r: forall r p es1 es2,
-    store_conflict p es2 ->
-    store_conflict p (before r es1 es2).
+Inductive store_conflict: EvSys Ev -> Prop :=
+| store_conflict_merge: forall r es1 es2 loc,
+    store_event_evsys es1 loc ->
+    store_event_evsys es2 loc ->
+    store_conflict (merge r es1 es2)
+| store_conflict_before_l: forall r es1 es2,
+    store_conflict es1 ->
+    store_conflict (before r es1 es2)
+| store_conflict_before_r: forall r es1 es2,
+    store_conflict es2 ->
+    store_conflict (before r es1 es2).
+
+Lemma unique_events': forall r es1 es2 ev1 ev2,
+    well_structured ev (merge r es1 es2) ->
+    ev_in ev1 es1 ->
+    ev_in ev2 es2 ->
+    ev ev1 <> ev ev2.
+Proof.
+  intros.
+  inv H.
+  assert (fst (es_range es1) <= ev ev1 < snd (es_range es1)).
+  {
+    eapply ws_evsys_range; eauto.
+  }
+
+  assert (fst (es_range es2) <= ev ev2 < snd (es_range es2)).
+  {
+    eapply ws_evsys_range; eauto.
+  }
+
+  lia.
+Defined.
+
+Lemma unqev: forall ev1 ev2,
+  ev ev1 <> ev ev2 ->
+  ev1 <> ev2.
+Proof.
+  intros.
+  Check ev.
+  unfold not; intros.
+  subst.
+  solve_by_inversion.
+Defined.
+
+Lemma unique_events: forall r es1 es2 ev1 ev2,
+    well_structured ev (merge r es1 es2) ->
+    ev_in ev1 es1 ->
+    ev_in ev2 es2 ->
+    ev1 <> ev2.
+Proof.
+  intros.
+  eapply unqev.
+  eapply unique_events';
+    eauto.
+Defined.
+
+Axiom evsys_reps: (ev_sys = Term_system.ev_sys).
+
+Lemma evsys_tr_in:
+  forall t p tr ev0,
+    well_formed t ->
+    Trace.trace t p tr ->
+    ev_in ev0 (VmSemantics.ev_sys t p) ->
+    In ev0 tr.
+Proof.
+  intros.
+  rewrite evsys_reps in *.
+  eapply Trace.evsys_tr_in; eauto.
+Defined.
+
+Lemma aff: forall es1 loc,
+    store_event_evsys es1 loc ->
+    exists ev, store_event ev loc /\ ev_in ev es1.
+Proof.
+  intros.
+  induction H.
+  -
+    exists ev.
+    split; eauto.
+  -
+    edestruct IHstore_event_evsys.
+    destruct_conjs.
+    exists x.
+    split; eauto.
+  -
+    edestruct IHstore_event_evsys.
+    destruct_conjs.
+    exists x.
+    split; eauto.
+  -
+    edestruct IHstore_event_evsys.
+    destruct_conjs.
+    exists x.
+    split; eauto.
+  -
+    edestruct IHstore_event_evsys.
+    destruct_conjs.
+    exists x.
+    split; eauto.
+Defined.
+
+Theorem no_store_conflicts: forall t p sys,
+    well_formed t ->
+    sys = ev_sys t p ->
+    not (store_conflict sys).
+Proof.
+  Print ev_sys.
+  unfold not; intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a;
+      cbn in *;
+      repeat break_let;
+      subst;
+      solve_by_inversion.
+  -
+    cbn in *;
+      repeat break_let.
+    inv H0.
+    inv H1.
+    +
+      solve_by_inversion.
+    +
+      solve_by_inversion.
+  -
+    cbn in *.
+    inv H0.
+    inv H1.
+    +
+      inv H.
+      eauto.
+    +
+      inv H.
+      eauto.
+  -
+    cbn in *;
+      repeat break_let.
+    inv H0.
+    inv H1.
+    +
+      solve_by_inversion.
+    +
+      inv H3.
+      ++
+        inv H4;
+          inv H; eauto.
+      ++
+        solve_by_inversion.
+  -
+    rewrite evsys_reps in *.
+    
+    
+    assert (well_structured ev sys).
+    {
+      rewrite H0.
+      eapply well_structured_evsys.
+      eassumption.
+    }
+    
+    
+    cbn in H0.
+    repeat break_let.
+    inv H0.
+    inv H1.
+    +
+      solve_by_inversion.
+    +
+      inv H4.
+      ++
+        
+        remember ((merge (S n, Nat.pred n0) (ev_sys t1 p) (ev_sys t2 p))) as xxx.
+         
+        
+        
+        inv H5;
+          try solve_by_inversion.
+
+        assert (exists ev, store_event ev loc /\ ev_in ev (Term_system.ev_sys t1 p)).
+        {
+          eapply aff; eauto.
+        }
+        assert (exists ev, store_event ev loc /\ ev_in ev (Term_system.ev_sys t2 p)).
+        {
+          eapply aff; eauto.
+        }
+        destruct_conjs.
+
+        
+        assert (ev_in H0 (merge (S n, Nat.pred n0) (Term_system.ev_sys t1 p) (Term_system.ev_sys t2 p))).
+        {
+          apply ein_mergel.
+          eauto.
+        }
+        
+          
+
+        assert (ev_in H6 (merge (S n, Nat.pred n0) (Term_system.ev_sys t1 p) (Term_system.ev_sys t2 p))).
+        {
+          apply ein_merger.
+          eauto.
+        }
+
+        
+
+        
+
+        eapply unique_store_events' with (ev1:=H0) (ev2:=H6) (t:=(abpar (n, n0) s t1 t2)) (p:=p) (loc:=loc).
+        eassumption.
+        cbn.
+        apply ein_beforer.
+        apply ein_beforel.
+        apply ein_mergel.
+        inv H5.
+        eassumption.
+        
+        cbn.
+        apply ein_beforer.
+        apply ein_beforel.
+        apply ein_merger.
+        inv H5.
+        eassumption.
+
+        eassumption.
+        eassumption.
+
+        inv H2.
+        inv H19.
+
+
+
+        eapply unique_events; eauto.
+      ++
+        solve_by_inversion.
+Defined.
+
+      
+      
+      
+    
+
+
+(*
 
 Inductive top_level_at: (*Plc ->*) Loc -> AnnoTerm -> Prop :=
 (*| top_at_rec: forall r p q loc t',
@@ -120,8 +593,8 @@ Inductive top_level_at: (*Plc ->*) Loc -> AnnoTerm -> Prop :=
     top_level_at loc t2 ->
     top_level_at loc (abpar r s t1 t2).
 
-Lemma store_event_facts: forall p loc t,
-    store_event_evsys (ev_sys t p) p loc ->
+Lemma store_event_facts: forall loc t p,
+    store_event_evsys (ev_sys t p) loc ->
     top_level_at loc t.
 Proof.
   intros.
@@ -139,12 +612,12 @@ Proof.
     repeat break_let.
     invc H.
     +
-      invc H5.
-      invc H3.
+      invc H4.
+      invc H2.
       econstructor.
     +
-      invc H5.
-      invc H3.
+      invc H4.
+      invc H2.
       econstructor.
   -
     cbn in *.
@@ -160,12 +633,12 @@ Proof.
     repeat break_let.
     invc H.
     +
-      invc H5.
-      invc H3.
+      invc H4.
+      invc H2.
     +
-      invc H5.
+      invc H4.
       ++
-        invc H4.
+        invc H3.
         +++
           econstructor.
           eauto.
@@ -173,19 +646,19 @@ Proof.
           eapply top_bseq_r.
           eauto.
       ++
-        invc H4.
         invc H3.
+        invc H2.
   -
     cbn in *.
     repeat break_let.
     invc H.
     +
-      invc H5.
-      invc H3.
+      invc H4.
+      invc H2.
     +
-      invc H5.
+      invc H4.
       ++
-        invc H4.
+        invc H3.
         +++
           econstructor.
           eauto.
@@ -193,8 +666,8 @@ Proof.
           eapply top_bpar_r.
           eauto.
       ++
-        invc H4.
         invc H3.
+        invc H2.
 Defined.
 
 Lemma wf_att_fact: forall x y q t',
@@ -210,8 +683,8 @@ Defined.
 
 Lemma good_par : forall r s p t1 t2 loc,
     well_formed (abpar r s t1 t2) ->
-    store_event_evsys (ev_sys t1 p) p loc ->
-    store_event_evsys (ev_sys t2 p) p loc ->
+    store_event_evsys (ev_sys t1 p) loc ->
+    store_event_evsys (ev_sys t2 p) loc ->
     False.
 Proof.
   intros.
@@ -278,9 +751,17 @@ Proof.
   
 Admitted.
 
+ *)
+
+
+
+
+
+
+
 Theorem no_store_conflicts: forall t p,
     well_formed t ->
-    not (store_conflict p (ev_sys t p)).
+    not (store_conflict (ev_sys t p)).
 Proof.
   Print ev_sys.
   unfold not; intros.
@@ -310,9 +791,9 @@ Proof.
       solve_by_inversion.
     +
       invc H1.
-      invc H3.
+      invc H2.
       ++
-        invc H2; eauto.
+        invc H1; eauto.
       ++
         solve_by_inversion.
   -
@@ -325,11 +806,9 @@ Proof.
       solve_by_inversion.
     +
       invc H1.
-      invc H3; try solve_by_inversion.
-      invc H2.
-
-
-
+      invc H2; try solve_by_inversion.
+      invc H1.
+      
       eapply good_par; eauto.
 Defined.
   

@@ -35,7 +35,6 @@ Inductive ASP: Set :=
 | SIG: ASP
 | HSH: ASP.
 
-
 Inductive SP: Set :=
 | ALL
 | NONE.
@@ -59,7 +58,6 @@ Inductive Evidence: Set :=
 | nn: N_ID -> Evidence -> Evidence
 | ss: Evidence -> Evidence -> Evidence
 | pp: Evidence -> Evidence -> Evidence.
-
 
 Definition splitEv_T (sp:SP) (e:Evidence) : Evidence :=
   match sp with
@@ -99,7 +97,7 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
  *)
 
 Inductive Ev: Set :=
-| copy: nat -> Plc -> Ev 
+| copy:  nat -> Plc -> Ev 
 | umeas: nat -> Plc -> ASP_ID -> list Arg -> Ev
 | sign: nat -> Plc -> Ev
 | hash: nat -> Plc -> Ev
@@ -116,9 +114,9 @@ Proof.
 Defined.
 Hint Resolve eq_ev_dec : core.
 
-(** The natural number used to distinguish evidence. *)
+(** The natural number used to distinguish events. *)
 
-Definition ev x :=
+Definition ev x : nat :=
   match x with
   | copy i _ => i
   | umeas i _ _ _  => i
@@ -128,6 +126,20 @@ Definition ev x :=
   | rpy i _ _ _ => i 
   | split i _ => i
   | join i _ => i
+  end.
+
+
+(** The natural number indicating the place where an event occured. *)
+Definition pl x : Loc :=
+  match x with
+  | copy _ p => p
+  | umeas _ p _ _  => p
+  | sign _ p => p
+  | hash _ p => p
+  | req _ _ p _ _ => p
+  | rpy _ _ p _ => p
+  | split _ p => p
+  | join _ p => p
   end.
 
 (** Events are used in a manner that ensures that
