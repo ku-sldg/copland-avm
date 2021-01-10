@@ -104,7 +104,9 @@ Inductive Ev: Set :=
 | req: nat -> Loc -> Plc -> Plc -> Term -> Ev
 | rpy: nat -> Loc -> Plc -> Plc -> Ev 
 | split: nat -> Plc -> Ev
-| join:  nat -> Plc -> Ev.
+| splitp: nat -> Loc -> Loc -> Plc -> Ev
+| join:  nat -> Plc -> Ev
+| joinp: nat -> Loc -> Loc -> Plc -> Ev.
 
 Definition eq_ev_dec:
   forall x y: Ev, {x = y} + {x <> y}.
@@ -125,7 +127,9 @@ Definition ev x : nat :=
   | req i _ _ _ _ => i
   | rpy i _ _ _ => i 
   | split i _ => i
+  | splitp i _ _ _ => i
   | join i _ => i
+  | joinp i _ _ _ => i
   end.
 
 
@@ -139,7 +143,9 @@ Definition pl x : Loc :=
   | req _ _ p _ _ => p
   | rpy _ _ p _ => p
   | split _ p => p
+  | splitp _ _ _ p => p
   | join _ p => p
+  | joinp _ _ _ p => p
   end.
 
 (** Events are used in a manner that ensures that
@@ -738,7 +744,7 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
     forall r i s t1 t2 p,
       fst r = i ->
       events (abpar r s t1 t2) p
-             (split i p)
+             (splitp i (fst (range t1)) (fst (range t2)) p)
 | evtsbparl:
     forall r s t1 t2 ev p,
       events t1 p ev ->
@@ -751,7 +757,7 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
     forall r i s t1 t2 p,
       snd r = S i ->
       events (abpar r s t1 t2) p
-             (join i p).
+             (joinp i (snd (range t1) - 1) (snd (range t2) - 1) p).
 Hint Constructors events : core.
 
 Lemma events_range:

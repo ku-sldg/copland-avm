@@ -268,9 +268,9 @@ Inductive trace: AnnoTerm -> Plc ->
     trace y p tr1 ->
     shuffle tr0 tr1 tr2 ->
     trace (abpar r s x y) p
-          ((split (fst r) p)
+          ((splitp (fst r) (fst (range x)) (fst (range y)) p)
              :: tr2 ++
-             [(join (pred (snd r)) p)]).
+             [(joinp (pred (snd r)) (snd (range x) - 1) (snd (range y) - 1) p)]).
 Hint Resolve tasp : core.
 
 Lemma trace_length:

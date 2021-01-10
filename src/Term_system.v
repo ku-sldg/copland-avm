@@ -40,13 +40,13 @@ Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
   | abpar (i, j) s x y =>
     before (i, j)
            (leaf (i, S i)
-                 (split i p))
+                 (splitp i (fst (range x)) (fst (range y)) p))
            (before (S i, j)
                    (merge (S i, (pred j))
                           (ev_sys x p)
                           (ev_sys y p))
                    (leaf ((pred j), j)
-                   (join (pred j) p)))
+                   (joinp (pred j) (snd (range x) - 1) (snd (range y) - 1) p)))
   end.
 
 Lemma evsys_range:

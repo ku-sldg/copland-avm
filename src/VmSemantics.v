@@ -52,6 +52,7 @@ Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
 
 Locate ev_sys.
 
+(*
 Lemma same_pl: forall t ev p,
   ev_in ev (ev_sys t p) ->
   Term.pl ev = p.
@@ -105,11 +106,16 @@ Proof.
       ++
         invc H1; eauto.
 Defined.
+*)
 
 Inductive store_event: Ev -> Loc -> Prop :=
 | put_event: forall i x p q t, store_event (req i x p q t) x
+| put_event_spl: forall i xi yi p, store_event (splitp i xi yi p) xi
+| put_event_spr: forall i xi yi p, store_event (splitp i xi yi p) yi
 | get_event: forall i x p q, store_event (rpy i x p q) x.
 
+
+(*
 Lemma store_events_same_pl: forall t p loc ev,
   ev_in ev (ev_sys t p) ->
   store_event ev loc ->
@@ -119,6 +125,9 @@ Proof.
   eapply same_pl.
   eauto.
 Defined.
+*)
+
+
 
 Lemma req_same_as_evid: forall t p p' i loc q t',
     events t p (req i loc p' q t') ->
@@ -139,6 +148,8 @@ Proof.
   induction t; intros;
     inv H; eauto.
 Defined.
+
+(*
 
 Lemma store_event_is_event: forall ev t p loc,
   events t p ev ->
@@ -164,9 +175,9 @@ Proof.
     simpl.
     reflexivity.
 Defined.
+ *)
 
-Check NoDup.
-Print NoDup.
+
 
 Lemma store_events_injective: forall t p ev1 ev2 loc,
   well_formed t ->
@@ -176,6 +187,7 @@ Lemma store_events_injective: forall t p ev1 ev2 loc,
   store_event ev2 loc ->
   ev1 = ev2.
 Proof.
+
   intros.
   eapply events_injective; eauto.
   inv H2;
@@ -237,8 +249,12 @@ Proof.
     simpl.
     tauto.
 Defined.
-  
+ *)
 
+
+
+  
+(*
 Lemma unique_store_events: forall t p tr ev1 ev2 loc,
   well_formed t ->
   Trace.trace t p tr ->
@@ -258,6 +274,7 @@ Proof.
   }
   congruence.
 Defined.
+*)
 
 Lemma unique_store_events': forall t p ev1 ev2 loc,
     well_formed t ->
@@ -313,14 +330,6 @@ Inductive store_event_evsys: EvSys Ev -> Loc -> Prop :=
 | inevsys_merge_r: forall r es1 es2 loc,
     store_event_evsys es2 loc ->
     store_event_evsys (merge r es1 es2) loc.
-
-(*
-Inductive merge_conflict: EvSys Ev -> Prop :=
-| merge_conflictc: forall r es1 es2 loc,
-    store_event_evsys es1 loc ->
-    store_event_evsys es2 loc ->
-    merge_conflict (merge r es1 es2).
-*)
 
 Inductive store_conflict: EvSys Ev -> Prop :=
 | store_conflict_merge: forall r es1 es2 loc,
@@ -378,8 +387,60 @@ Proof.
     eauto.
 Defined.
 
-Axiom evsys_reps: (ev_sys = Term_system.ev_sys).
+(*
 
+Lemma evsys_reps_refine: forall ev t p,
+  ev_in ev (VmSemantics.ev_sys t p) ->
+  ev_in ev (Term_system.ev_sys t p).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a;
+      cbn in *;
+        repeat break_let;
+      inv H;
+      eauto.
+  -
+    cbn in *;
+      repeat break_let.
+    inv H; eauto.
+  -
+    cbn in *.
+    inv H; eauto.
+  -
+    cbn in *;
+      repeat break_let.
+    inv H.
+    +
+      eauto.
+    +
+      inv H2.
+      ++
+        inv H3; eauto.
+      ++
+        inv H3; eauto.
+  -
+    cbn in *;
+      repeat break_let.
+    inv H.
+    +
+      eauto.
+    +
+      inv H2.
+      ++
+        inv H3; eauto.
+      ++
+        inv H3; eauto.
+Defined.
+*)
+  
+(*
+Axiom evsys_reps: (ev_sys = Term_system.ev_sys).
+*)
+
+(*
 Lemma evsys_tr_in:
   forall t p tr ev0,
     well_formed t ->
@@ -388,9 +449,12 @@ Lemma evsys_tr_in:
     In ev0 tr.
 Proof.
   intros.
-  rewrite evsys_reps in *.
-  eapply Trace.evsys_tr_in; eauto.
+  (*
+  rewrite evsys_reps in *. *)
+  eapply Trace.evsys_tr_in; try eauto.
+  eapply evsys_reps_refine; eauto.
 Defined.
+*)
 
 Lemma aff: forall es1 loc,
     store_event_evsys es1 loc ->
@@ -425,7 +489,7 @@ Defined.
 
 Theorem no_store_conflicts: forall t p sys,
     well_formed t ->
-    sys = ev_sys t p ->
+    sys = Term_system.ev_sys t p ->
     not (store_conflict sys).
 Proof.
   Print ev_sys.
@@ -446,7 +510,13 @@ Proof.
     +
       solve_by_inversion.
     +
-      solve_by_inversion.
+      inv H3.
+      ++
+        inv H.
+        eauto.
+      ++
+        solve_by_inversion.
+        
   -
     cbn in *.
     inv H0.
@@ -472,7 +542,8 @@ Proof.
       ++
         solve_by_inversion.
   -
-    rewrite evsys_reps in *.
+    (*
+    rewrite evsys_reps in *. *)
     
     
     assert (well_structured ev sys).
@@ -492,8 +563,11 @@ Proof.
     +
       inv H4.
       ++
-        
+
+        (*
         remember ((merge (S n, Nat.pred n0) (ev_sys t1 p) (ev_sys t2 p))) as xxx.
+         *)
+        
          
         
         
@@ -756,7 +830,7 @@ Admitted.
 
 
 
-
+(*
 
 
 Theorem no_store_conflicts: forall t p,
@@ -812,7 +886,7 @@ Proof.
       eapply good_par; eauto.
 Defined.
   
-  
+  *)
 
 
 
@@ -1388,11 +1462,34 @@ Proof.
     destruct s; destruct r.
     repeat (df; dohtac; df).
     econstructor.
+    assert (n1 = fst (range t1)).
+    {
+      rewrite Heqr.
+      eauto.
+    }
+    assert (n3 = fst (range t2)).
+    {
+      rewrite Heqr0.
+      eauto.
+    }
+    subst.
     econstructor.
     eapply lstar_transitive.
     simpl.
     apply bpar_shuffle.
     econstructor.
+    assert (n2 = snd (range t1)).
+    {
+      rewrite Heqr.
+      eauto.
+    }
+    assert (n4 = snd (range t2)).
+    {
+      rewrite Heqr0.
+      eauto.
+    }
+    subst.
+    
     apply stbpstop.
     econstructor.     
     Unshelve.

@@ -25,7 +25,7 @@ Inductive St: Set :=
 | ls: St -> AnnoTerm -> St
 | bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
 | bsr: nat -> Evidence -> St -> St
-| bp: nat -> St -> St -> St.
+| bp: nat -> Loc -> Loc -> St -> St -> St.
 
 Fixpoint pl (s:St) :=
   match s with
@@ -35,7 +35,7 @@ Fixpoint pl (s:St) :=
   | ls st _ => pl st
   | bsl _ _ _ p _ => p
   | bsr _ _ st => pl st
-  | bp _ _ st => pl st
+  | bp _ _ _ _ st => pl st
   end.
 
 (** The evidence associated with a state. *)
@@ -48,7 +48,7 @@ Fixpoint seval st :=
   | ls st t => aeval t (pl st) (seval st)
   | bsl _ st t p e => ss (seval st) (aeval t p e)
   | bsr _ e st => ss e (seval st)
-  | bp _ st0 st1 => pp (seval st0) (seval st1)
+  | bp _ _ _ st0 st1 => pp (seval st0) (seval st1)
 end.
 
 (** * Labeled Transition System
@@ -127,22 +127,22 @@ Inductive step: St -> option Ev -> St -> Prop :=
 | stbpar:
     forall r s x y p e,
       step (conf (abpar r s x y) p e)
-           (Some (split (fst r) p))
-           (bp (snd r)
+           (Some (splitp (fst r) (fst (range x)) (fst (range y)) p))
+           (bp (snd r) (snd (range x) - 1) (snd (range y) - 1)
                (conf x p (splitEv_T (fst s) e))
                (conf y p (splitEv_T (snd s) e)))
 | stbpstepleft:
-    forall st0 st1 st2 ev j,
+    forall st0 st1 st2 ev j xi yi,
       step st0 ev st2 ->
-      step (bp j st0 st1) ev (bp j st2 st1)
+      step (bp j xi yi st0 st1) ev (bp j xi yi st2 st1)
 | stbpstepright:
-    forall st0 st1 st2 ev j,
+    forall st0 st1 st2 ev j xi yi,
       step st1 ev st2 ->
-      step (bp j st0 st1) ev (bp j st0 st2)
+      step (bp j xi yi st0 st1) ev (bp j xi yi st0 st2)
 | stbpstop:
-    forall j p e p' e',
-      step (bp j (stop p e) (stop p' e'))
-           (Some (join (pred j) p'))
+    forall j p e p' e' xi yi,
+      step (bp j xi yi (stop p e) (stop p' e'))
+           (Some (joinp (pred j) xi yi p'))
            (stop p' (pp e e')).
 Hint Constructors step : core.
 
@@ -344,10 +344,10 @@ Proof.
 Defined.
 
 Lemma star_stbp:
-  forall st0 st1 st2 st3 j,
+  forall st0 st1 st2 st3 j xi yi,
     star st0 st1 ->
     star st2 st3 ->
-    star (bp j st0 st2) (bp j st1 st3).
+    star (bp j xi yi st0 st2) (bp j xi yi st1 st3).
 Proof.
   intros.
   induction H; auto.
@@ -418,7 +418,7 @@ Proof.
     + exists (Some (split (fst r) n)).
       eapply ex_intro; eauto.
       
-    + exists (Some (split (fst r) n)).
+    + exists (Some (splitp (fst r) (fst (range a1)) (fst (range a2)) n)).
       eapply ex_intro; eauto.
   - right.
     destruct IHst0.
@@ -462,16 +462,16 @@ Proof.
       clear H.
       destruct IHst0_2.
       * destruct st0_2; simpl in H; try tauto.
-        exists (Some (join (pred n) n1)).
+        exists (Some (joinp (pred n) n0 n1 n3)).
         eapply ex_intro; eauto.
       * destruct H as [e0 H].
         exists e0.
         destruct H as [st H].
-        exists (bp n (stop n0 e) st). auto.
+        exists (bp n n0 n1 (stop n2 e) st). auto.
     + destruct H as [e0 H].
       exists e0.
       destruct H as [st H].
-      exists (bp n st st0_2). auto.
+      exists (bp n n0 n1 st st0_2). auto.
 Qed.
 
 (** * Termination *)
@@ -543,7 +543,7 @@ Fixpoint ssize s: nat :=
   | ls x t => 1 + ssize x + tsize t
   | bsl _ x t _ _ => 2 + ssize x + tsize t
   | bsr _ _ x => 1 + ssize x
-  | bp _ x y => 1 + ssize x + ssize y
+  | bp _ _ _ x y => 1 + ssize x + ssize y
   end.
 
 (** Halt state has size 0. *)

@@ -46,11 +46,11 @@ Inductive traceS: St -> list Ev -> Prop :=
     traceS st tr ->
     traceS (bsr j e st)
            (tr ++ [(join (pred j) (pl st) )])
- | tbp: forall st1 tr1 st2 tr2 tr3 j,
+ | tbp: forall st1 tr1 st2 tr2 tr3 j xi yi,
     traceS st1 tr1 -> traceS st2 tr2 ->
     shuffle tr1 tr2 tr3 ->
-    traceS (bp j st1 st2)
-           (tr3 ++ [(join (pred j) (pl st2))]).
+    traceS (bp j xi yi st1 st2)
+           (tr3 ++ [(joinp (pred j) xi yi (pl st2))]).
 Hint Constructors traceS : core.
 
 Fixpoint esizeS s:=
@@ -61,7 +61,7 @@ Fixpoint esizeS s:=
   | ls st t => esizeS st + esize t
   | bsl _ st t _ _ => 1 + esizeS st + esize t
   | bsr _ _ st => 1 + esizeS st
-  | bp _ st1 st2 => 1 + esizeS st1 + esizeS st2
+  | bp _ _ _ st1 st2 => 1 + esizeS st1 + esizeS st2
   end.
 
 Lemma esize_tr:
@@ -102,9 +102,9 @@ Proof.
     apply IHst in H4. lia.
     
   - rewrite app_length; simpl.
-    apply IHst1 in H3.
-    apply IHst2 in H5.
-    apply shuffle_length in H6.
+    apply IHst1 in H6.
+    apply IHst2 in H7.
+    apply shuffle_length in H8.
     lia.
 Qed.
 
@@ -155,9 +155,9 @@ Proof.
     (* apply step_seval in G.
     rewrite <- G; auto. 
     apply tbp with (tr1:=tr1)(tr2:=tr2); auto. *)
-  - pose proof H6 as G.
-    pose proof H6 as G1.
-    eapply IHst2 in H6; eauto.
+  - pose proof H8 as G.
+    pose proof H8 as G1.
+    eapply IHst2 in H8; eauto.
     apply step_seval in G.
     (* rewrite <- G; auto. *)
     apply step_pl_eq in G1.
@@ -181,7 +181,7 @@ Proof.
     inv H6; auto.
     
   - constructor. eapply tbpar; eauto.
-    inv H3; auto. inv H5; auto.
+    inv H6; auto. inv H7; auto.
   - pose proof H6 as G.
     apply step_seval in G.
     pose proof H6 as G1.
@@ -214,19 +214,19 @@ Proof.
       (*rewrite <- G; *) rewrite <- G1; auto.
   - rewrite <- app_nil_l; constructor; auto.
     
-  - pose proof H6 as G.
+  - pose proof H8 as G.
     apply step_seval in G.
-    eapply IHst1 in H6; eauto.
-    apply shuffle_left with (e:=ev) in H7.
+    eapply IHst1 in H8; eauto.
+    apply shuffle_left with (e:=ev) in H9.
     rewrite app_comm_cons;
       (*rewrite <- G; *) auto.
     apply tbp with (tr1:=(ev::tr1))(tr2:=tr2); auto.
-  - pose proof H6 as G.
+  - pose proof H8 as G.
     apply step_seval in G.
-    pose proof H6 as G1.
+    pose proof H8 as G1.
     apply step_pl_eq in G1.
-    apply shuffle_right with (e:=ev) in H7.
-    eapply IHst2 in H6; eauto.
+    apply shuffle_right with (e:=ev) in H9.
+    eapply IHst2 in H8; eauto.
     rewrite app_comm_cons;
       (*rewrite <- G; *) rewrite <- G1; auto.
     apply tbp with (tr1:=tr1)(tr2:=(ev::tr2)); auto.

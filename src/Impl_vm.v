@@ -24,7 +24,7 @@ Fixpoint copland_compile (t:AnnoTerm): CVM unit :=
   | abseq (x,y) (sp1,sp2) t1 t2 =>
       e <- get_ev ;;
       p <- get_pl ;;
-      pr <- split_evm x sp1 sp2 e p ;;
+      pr <- split_ev_seq x sp1 sp2 e p ;;
       let '(e1,e2) := pr in
       put_ev e1 ;;
       copland_compile t1 ;;
@@ -36,18 +36,29 @@ Fixpoint copland_compile (t:AnnoTerm): CVM unit :=
   | abpar (x,y) (sp1,sp2) t1 t2 =>
       e <- get_ev ;;
       p <- get_pl ;;
-      pr <- split_evm x sp1 sp2 e p ;;
-      let '(e1,e2) := pr in
+      pr <- split_ev_par x sp1 sp2 t1 t2 e p ;;
+      let '(loc_e1,loc_e2) := pr in
+      (*let loc_e1 := fst (range t1) in *)
+      let loc_e1' := snd (range t1)  - 1 in  (* TODO: different loc? *)
+      (*let loc_e2 := fst (range t2) in *)
+      let loc_e2' := snd (range t2) - 1 in   (* TODO: different loc? *)
+      (*
       let loc_e1 := fst (range t1) in
       let loc_e1' := snd (range t1) - 1 in  (* TODO: different loc? *)
       let loc_e2 := fst (range t2) in
       let loc_e2':= snd (range t2) - 1 in   (* TODO: different loc? *)
+       
+      
       put_store_at loc_e1 e1 ;;
       put_store_at loc_e2 e2 ;;
-      runParThreads t1 t2 p loc_e1 loc_e1' loc_e2 loc_e2'  ;;     
+       *)
+      
+      runParThreads t1 t2 p loc_e1 loc_e1' loc_e2 loc_e2'  ;;
+      join_par (Nat.pred y) p loc_e1' loc_e2'
+      (*
       e1r <- get_store_at loc_e1' ;;
       e2r <- get_store_at loc_e2' ;;
-      join_par (Nat.pred y) p e1r e2r
+      join_par (Nat.pred y) p e1r e2r *)
   end.
 
 Definition run_cvm (t:AnnoTerm) st : cvm_st :=
