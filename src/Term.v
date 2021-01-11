@@ -13,7 +13,29 @@ University of California.  See license.txt for details. *)
     events, and annotated terms. *)
 
 Require Import PeanoNat Compare_dec Lia.
-Require Import Preamble StructTactics.
+Require Import Preamble StructTactics Term_Facts.
+
+Require Import List.
+Import List.ListNotations.
+
+Require Import Coq.Arith.Even Coq.Program.Tactics Coq.Program.Equality.
+
+Require Export ExtLib.Structures.Monads.
+Export MonadNotation.
+Open Scope monad_scope.
+
+Instance optionMonad : Monad option :=
+  {
+    ret T x :=
+      Some x ;
+    bind T U m f :=
+      match m with
+        None => None
+      | Some x => f x
+      end
+  }.
+
+Set Nested Proofs Allowed.
 
 (** * Terms and Evidence
 
@@ -178,10 +200,10 @@ Definition Range: Set := nat * nat.
 
 Inductive AnnoTerm: Set :=
 | aasp: Range -> ASP -> AnnoTerm
-| aatt: Range -> Plc -> AnnoTerm -> AnnoTerm
+| aatt: Range -> (Loc*Loc) -> Plc -> AnnoTerm -> AnnoTerm
 | alseq: Range -> AnnoTerm -> AnnoTerm -> AnnoTerm
 | abseq: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
-| abpar: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm.
+| abpar: Range -> (Loc*Loc) -> (Loc*Loc) -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm.
 
 (*
 Inductive AnnoEvidence: Set :=
@@ -228,44 +250,160 @@ remote calls add a request and receive to the events of their subterm.
 Fixpoint esize t :=
   match t with
   | aasp _ _ => 1
-  | aatt _ _ t1 => 2 + esize t1
+  | aatt _ _ _ t1 => 2 + esize t1
   | alseq _ t1 t2 => esize t1 + esize t2
   | abseq _ _ t1 t2 => 2 + esize t1 + esize t2
-  | abpar _ _ t1 t2 => 2 + esize t1 + esize t2
+  | abpar _ _ _ _ t1 t2 => 2 + esize t1 + esize t2
   end.
 
 Definition range x :=
   match x with
   | aasp r _ => r
-  | aatt r _ _ => r
+  | aatt r _ _ _  => r
   | alseq r _ _ => r
   | abseq r _ _ _ => r
-  | abpar r _ _ _ => r
+  | abpar r _ _ _ _ _ => r
   end.
+
+(* nss = "num store slots" *)
+Fixpoint nss (t:Term) :=
+  match t with
+  | asp _ => 0
+  | att _ _ => 2
+  | lseq t1 t2 => nss t1 + nss t2
+  | bseq _ t1 t2 => nss t1 + nss t2
+  | bpar  _ t1 t2 => 4 + nss t1 + nss t2
+  end.
+
+Lemma nss_even: forall t n,
+    nss t = n ->
+    Nat.even n = true.
+Proof.
+  induction t; intros.
+  -
+    destruct a;
+    
+      cbn in *;
+      subst;
+      tauto.
+  -
+    cbn in *.
+    subst.
+    tauto.
+  -
+    cbn in *.
+    subst.
+    assert (Nat.even (nss t1) = true) by eauto.
+    assert (Nat.even (nss t2) = true) by eauto.
+    eapply both_args_even; eauto.
+  -
+    cbn in *.
+    subst.
+    assert (Nat.even (nss t1) = true) by eauto.
+    assert (Nat.even (nss t2) = true) by eauto.
+    eapply both_args_even; eauto.
+  -
+    cbn in *.
+    subst.
+    assert (Nat.even (nss t1) = true) by eauto.
+    assert (Nat.even (nss t2) = true) by eauto.
+    eapply both_args_even; eauto.
+Defined.
+   
 
 (** This function annotates a term.  It feeds a natural number
     throughout the computation so as to ensure each event has a unique
     natural number. *)
 
-Fixpoint anno (t: Term) i: nat * AnnoTerm :=
+Fixpoint anno (t: Term) (i:nat) (l:list (Loc*Loc)) : option (nat * (list (Loc*Loc) * AnnoTerm)) :=
   match t with
-  | asp x => (S i, aasp (i, S i) x)
+  | asp x => Some (S i, (l,aasp (i, S i) x))
   | att p x =>
-    let (j, a) := anno x (S i) in
-    (S j, aatt (i, S j) p a)
+    '(req_loc,rpy_loc) <- hd_error l ;;
+    (*let '(req_loc,rpy_loc) (req_loc:Loc) (rpy_loc:Loc) (locs:(Loc*Loc)) := locs in *)
+   (* match opt_locs with
+    | None => None
+    | Some (req_loc,rpy_loc) => *)
+    (*let restl := tl l in *)
+    '(j, (l',a)) <- anno x (S i) (tl l) ;;
+    (*let (j, pr) := res in *)
+     (* match maybeRes with
+      | None => None
+      | Some (j, pr) => *)
+    (*let (l',a) := pr in *)
+    ret (S j, (tl l, aatt (i, S j) (req_loc, rpy_loc) p a))
   | lseq x y =>
-    let (j, a) := anno x i in
-    let (k, b) := anno y j in
-    (k, alseq (i, k) a b)
+    '(j, (l',a)) <- anno x i l ;;
+    (* let (l',a) := pr1 in *)
+    '(k, (l'',b)) <- anno y j l' ;;
+    (* let (l'',b) := pr2 in *)
+    ret (k, (l'', alseq (i, k) a b))
   | bseq s x y =>
-    let (j, a) := anno x (S i) in
-    let (k, b) := anno y j in
-    (S k, abseq (i, S k) s a b)
+    '(j, (l',a)) <- anno x i l ;;
+    (* let (l',a) := pr1 in *)
+    '(k, (l'',b)) <- anno y j l' ;;
+    (* let (l'',b) := pr2 in *)
+    ret (S k, (l'',abseq (i, S k) s a b))
   | bpar s x y =>
-    let (j, a) := anno x (S i) in
-    let (k, b) := anno y j in
-    (S k, abpar (i, S k) s a b)
+    '(req_loc,rpy_loc) <- hd_error l ;;
+    let restl := tl l in
+    '(req_loc',rpy_loc') <- hd_error restl ;;
+    let restl' := tl restl in
+    '(j, (l',a)) <- anno x (S i) restl' ;;
+    (* let (l',a) := pr1 in *)
+    '(k, (l'',b)) <- anno y j l' ;;
+    (* let (l'',b) := pr2 in *)
+    ret (S k, (l'',abpar (i, S k) (req_loc,rpy_loc) (req_loc',rpy_loc') s a b)) 
+   (* ret (1,([], aasp (0,0) CPY)) *)
   end.
+
+Lemma anno_some: forall t i l,
+  length l = nss t ->
+  exists res,
+    anno t i l = Some res.
+Proof.
+Admitted.
+
+Definition fromSome{A:Type} (default:A) (opt:option A): A :=
+  match opt with
+  | Some x => x
+  | None => default
+  end.
+
+
+    
+
+  
+  
+    
+
+(*    
+      
+  | lseq x y =>
+    let (j, pr1) := anno x i l in
+    let (l',a) := pr1 in
+    let (k, pr2) := anno y j l' in
+    let (l'',b) := pr2 in
+    (k, (l'',alseq (i, k) a b))
+  | bseq s x y =>
+    let (j, pr1) := anno x (S i) l in
+    let (l',a) := pr1 in
+    let (k, pr2) := anno y j l' in
+    let (l'',b) := pr2 in
+    (S k, (l'',abseq (i, S k) s a b))
+  | bpar s x y =>
+    let (req_loc,rpy_loc) := hd (0,0) l in
+    let restl := tl l in
+    let (req_loc',rpy_loc') := hd (0,0) restl in
+    let restl' := tl restl in
+    let (j, pr1) := anno x (S i) restl' in
+    let (l',a) := pr1 in
+    let (k, pr2) := anno y j l' in
+    let (l'',b) := pr2 in
+    (S k, (l'',abpar (i, S k) (req_loc,rpy_loc) (req_loc',rpy_loc') s a b))
+  end.
+ *)
+
 
 Ltac asdf :=
   match goal with
