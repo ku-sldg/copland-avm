@@ -84,6 +84,17 @@ Ltac jkjk' :=
   end.
 
 Lemma hhh : forall t1 t2 a b c d r s,
+    well_formed (abpar r (a,b) (c,d) s t1 t2) -> 
+    (*range t1 = (a,b) ->
+    range t2 = (c,d) -> *)
+    PeanoNat.Nat.eqb a c = false.
+Proof.
+Admitted.
+
+
+(*
+
+Lemma hhh : forall t1 t2 a b c d r s,
     well_formed (abpar r s t1 t2) -> 
     range t1 = (a,b) ->
     range t2 = (c,d) ->
@@ -115,6 +126,18 @@ Proof.
   intros.
   lia.
 Defined.
+ *)
+
+
+Lemma hhhh : forall t1 t2 a b c d r s,
+    well_formed (abpar r (a,b) (c,d) s t1 t2) ->
+    (*range t1 = (a,b) ->
+    range t2 = (c,d) -> *)
+    PeanoNat.Nat.eqb c b (*(b - 1)*) = false.
+Proof.
+Admitted.
+
+(*
 
 Lemma hhhh : forall t1 t2 a b c d r s,
     well_formed (abpar r s t1 t2) ->
@@ -162,6 +185,10 @@ Proof.
   eapply PeanoNat.Nat.eqb_neq; eauto.
 Defined.
 
+*)
+
+
+(*
 Lemma ppp{A:Type} : forall x:(A*A),
     x = (fst x, snd x).
 Proof.
@@ -244,7 +271,21 @@ Proof.
     simpl in *.
     lia.
 Defined.
+ *)
 
+Lemma hhhhh : forall t1 t2 a b c d r s,
+    well_formed (abpar r (a,b) (c,d) s t1 t2) ->
+    (*range t1 = (a,b) ->
+    range t2 = (c,d) -> *)
+    PeanoNat.Nat.eqb b d (* (b - 1) (d - 1) *) = false.
+Proof.
+Admitted.
+
+
+
+
+
+(*
 Lemma hhhhh : forall t1 t2 a b c d r s,
     well_formed (abpar r s t1 t2) ->
     range t1 = (a,b) ->
@@ -314,14 +355,15 @@ Proof.
   eapply PeanoNat.Nat.eqb_neq.
   lia.
 Defined.
+*)
 
 Lemma abpar_store_non_overlap : forall t1 t2 a b c d r s,
-    well_formed (abpar r s t1 t2) ->
-    range t1 = (a,b) ->
-    range t2 = (c,d) ->
+    well_formed (abpar r (a,b) (c,d) s t1 t2) ->
+    (*range t1 = (a,b) ->
+    range t2 = (c,d) -> *)
     PeanoNat.Nat.eqb a c = false /\
-    PeanoNat.Nat.eqb c (b - 1) = false /\
-    PeanoNat.Nat.eqb (b - 1) (d - 1) = false.
+    PeanoNat.Nat.eqb c b (* (b - 1) *) = false /\
+    PeanoNat.Nat.eqb b d (* (b - 1) (d - 1) *) = false.
 Proof.
   intros.
   repeat split.
@@ -343,21 +385,21 @@ Ltac fail_no_match_some :=
   | [ |- context [match _ with | Some _ => _ | None => _ end] ] => idtac
   | _ => fail
   end.
-    
+
 Ltac htac'' :=
   (*let tac := eapply h''; eauto in *)
   match goal with
-  | [H: well_formed (abpar _ _ ?t1 ?t2),
+  | [H: well_formed (abpar _ (?a,?b) (?c,?d) _ ?t1 ?t2) (*,
         H2: range ?t1 = (?a,?b),
-            H3: range ?t2 = (?c,?d) |- _] =>
+            H3: range ?t2 = (?c,?d) *) |- _] =>
     let W := fresh in
     let X := fresh in
     let Y := fresh in
     let Z := fresh in
     assert (PeanoNat.Nat.eqb a c = false /\
-            PeanoNat.Nat.eqb c (b - 1) = false /\
-            PeanoNat.Nat.eqb (b - 1) (d - 1) = false) as W
-        by (eapply abpar_store_non_overlap; [apply H | apply H2 | apply H3]);
+            PeanoNat.Nat.eqb c b (* (b - 1) *) = false /\
+            PeanoNat.Nat.eqb b d (* (b - 1) (d - 1) *) = false) as W
+        by (eapply abpar_store_non_overlap; [apply H (* | apply H2 | apply H3 *)]);
     destruct W as [X [Y Z]];
     try (rewrite X in *; clear X);
     try (rewrite Y in *; clear Y);

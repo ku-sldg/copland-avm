@@ -15,8 +15,7 @@ Require Import Coq.Arith.Peano_dec Lia.
 
 Set Nested Proofs Allowed.
 
-Check split.
-
+(*
 Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
   match t with
   | aasp (i, j) x => leaf (i, j) (asp_event i x p)
@@ -49,8 +48,7 @@ Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
                    (leaf ((pred j), j)
                    (join (pred j) p)))
   end.
-
-Locate ev_sys.
+*)
 
 (*
 Lemma same_pl: forall t ev p,
@@ -128,7 +126,7 @@ Defined.
 *)
 
 
-
+(*
 Lemma req_same_as_evid: forall t p p' i loc q t',
     events t p (req i loc p' q t') ->
     i = loc.
@@ -148,6 +146,8 @@ Proof.
   induction t; intros;
     inv H; eauto.
 Defined.
+ *)
+
 
 (*
 
@@ -177,6 +177,137 @@ Proof.
 Defined.
  *)
 
+Lemma unique_req_events (t:AnnoTerm) : forall p i i0 p1 p2 q q0 t0 t1 loc,
+          events t p (req i  loc p1 q  t0) ->
+       not (events t p (req i0 loc p2 q0 t1)).
+Proof.
+Admitted.
+
+
+Lemma unique_req_locs: forall t p i i0 loc p0 p1 q q0 t0 t1,
+    well_formed t ->
+    events t p (req i loc p0 q t0) ->
+    events t p (req i0 loc p1 q0 t1) ->
+    i = i0.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a;
+      try solve_by_inversion.
+  -
+
+
+    
+    inv H.
+
+
+    (*
+    invc H0;
+      invc H1;
+      try eauto. *)
+
+
+
+
+
+
+
+
+
+
+
+
+    invc H0.
+    +
+      invc H1.
+      ++
+        tauto.
+      ++
+        admit.
+        (*
+        eapply IHt.
+        +++
+          eassumption.
+        +++
+          assert (events (aatt r (loc, rpy_loc) q t) 0 (req (fst r) loc 0 q (unanno t))).
+          {
+            econstructor.
+            tauto.
+          }
+          invc H0.
+          ++++
+            admit.
+          ++++
+            eassumption.
+
+        +++
+          eassumption.
+         *)
+        
+    +
+      invc H1.
+      ++
+        admit.
+
+        (*
+        eapply IHt.
+        +++
+          eassumption.
+        +++
+          eassumption.
+        +++
+          admit. *)
+      ++
+        eauto.
+  -
+    inv H.
+    invc H0;
+      invc H1;
+      try eauto.
+    +
+      admit.
+    +
+      admit.
+  -
+    inv H.
+    invc H0;
+      invc H1;
+      try eauto.
+    +
+      admit.
+    +
+      admit.
+  -
+    inv H.
+    invc H0;
+      invc H1;
+      try eauto.
+    +
+      admit.
+    +
+      admit.
+      Unshelve.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+Admitted.
+
+      
+      
+      
+    
+      
+    
+      
+
+
+  
+Admitted.
 
 
 Lemma store_events_injective: forall t p ev1 ev2 loc,
@@ -189,9 +320,29 @@ Lemma store_events_injective: forall t p ev1 ev2 loc,
 Proof.
 
   intros.
+  Locate events_injective.
   eapply events_injective; eauto.
   inv H2;
     inv H3.
+
+  -
+    assert (i = i0).
+    {
+      eapply unique_req_locs; eauto.
+    }
+
+    tauto.
+  -
+    
+    
+    
+
+
+
+
+
+
+  
   -
     assert (i = loc).
     {

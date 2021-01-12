@@ -20,9 +20,11 @@ Import List.ListNotations.
 
 Require Import Coq.Arith.Even Coq.Program.Tactics Coq.Program.Equality.
 
+(*
 Require Export ExtLib.Structures.Monads.
 Export MonadNotation.
 Open Scope monad_scope.
+
 
 Instance optionMonad : Monad option :=
   {
@@ -34,6 +36,7 @@ Instance optionMonad : Monad option :=
       | Some x => f x
       end
   }.
+*)
 
 Set Nested Proofs Allowed.
 
@@ -197,13 +200,14 @@ Definition asp_event i x p :=
     its number [j] will be in the range [i <= j < k].  *)
 
 Definition Range: Set := nat * nat.
+Definition LocRange: Set := Loc * Loc.
 
 Inductive AnnoTerm: Set :=
-| aasp: Range -> ASP -> AnnoTerm
-| aatt: Range -> (Loc*Loc) -> Plc -> AnnoTerm -> AnnoTerm
-| alseq: Range -> AnnoTerm -> AnnoTerm -> AnnoTerm
-| abseq: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
-| abpar: Range -> (Loc*Loc) -> (Loc*Loc) -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm.
+| aasp: Range -> LocRange -> ASP -> AnnoTerm
+| aatt: Range -> LocRange -> (Loc*Loc) -> Plc -> AnnoTerm -> AnnoTerm
+| alseq: Range -> LocRange -> AnnoTerm -> AnnoTerm -> AnnoTerm
+| abseq: Range -> LocRange -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
+| abpar: Range -> LocRange -> (Loc*Loc) -> (Loc*Loc) -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm.
 
 (*
 Inductive AnnoEvidence: Set :=
@@ -249,20 +253,20 @@ remote calls add a request and receive to the events of their subterm.
 
 Fixpoint esize t :=
   match t with
-  | aasp _ _ => 1
-  | aatt _ _ _ t1 => 2 + esize t1
-  | alseq _ t1 t2 => esize t1 + esize t2
-  | abseq _ _ t1 t2 => 2 + esize t1 + esize t2
-  | abpar _ _ _ _ t1 t2 => 2 + esize t1 + esize t2
+  | aasp _ _ _ => 1
+  | aatt _ _ _ _ t1 => 2 + esize t1
+  | alseq _ _ t1 t2 => esize t1 + esize t2
+  | abseq _ _ _ t1 t2 => 2 + esize t1 + esize t2
+  | abpar _ _ _ _ _ t1 t2 => 2 + esize t1 + esize t2
   end.
 
 Definition range x :=
   match x with
-  | aasp r _ => r
-  | aatt r _ _ _  => r
-  | alseq r _ _ => r
-  | abseq r _ _ _ => r
-  | abpar r _ _ _ _ _ => r
+  | aasp r _ _ => r
+  | aatt r _ _ _ _ => r
+  | alseq r _ _ _ => r
+  | abseq r _ _ _ _ => r
+  | abpar r _ _ _ _ _ _ => r
   end.
 
 (* nss = "num store slots" *)
@@ -315,48 +319,103 @@ Defined.
     throughout the computation so as to ensure each event has a unique
     natural number. *)
 
-Fixpoint anno (t: Term) (i:nat) (l:list (Loc*Loc)) : option (nat * (list (Loc*Loc) * AnnoTerm)) :=
+Fixpoint anno (t: Term) (i:nat) (loc:Loc) : (nat * (nat * AnnoTerm)) :=
   match t with
-  | asp x => Some (S i, (l,aasp (i, S i) x))
+  | asp x => (S i, (loc,aasp (i, S i) (loc,loc) x))
   | att p x =>
-    '(req_loc,rpy_loc) <- hd_error l ;;
+    let req_loc := loc in
+    let rpy_loc := S loc in
+    (*
+    '(req_loc,rpy_loc) <- hd_error l ;; *)
     (*let '(req_loc,rpy_loc) (req_loc:Loc) (rpy_loc:Loc) (locs:(Loc*Loc)) := locs in *)
    (* match opt_locs with
     | None => None
     | Some (req_loc,rpy_loc) => *)
     (*let restl := tl l in *)
-    '(j, (l',a)) <- anno x (S i) (tl l) ;;
+    let '(j, (l',a)) := anno x (S i) (S rpy_loc) in  (* TODO: 0 ok here?  arg irrelevant? *)
     (*let (j, pr) := res in *)
      (* match maybeRes with
       | None => None
       | Some (j, pr) => *)
     (*let (l',a) := pr in *)
-    ret (S j, (tl l, aatt (i, S j) (req_loc, rpy_loc) p a))
+    (S j, (S rpy_loc, aatt (i, S j) (req_loc, rpy_loc) (loc,S rpy_loc) p a))
   | lseq x y =>
-    '(j, (l',a)) <- anno x i l ;;
+    let '(j, (l',a)) := anno x i loc in
     (* let (l',a) := pr1 in *)
-    '(k, (l'',b)) <- anno y j l' ;;
+    let '(k, (l'',b)) := anno y j l' in
     (* let (l'',b) := pr2 in *)
-    ret (k, (l'', alseq (i, k) a b))
+    (k, (l'', alseq (i, k) (loc,l'') a b))
   | bseq s x y =>
-    '(j, (l',a)) <- anno x i l ;;
+    let '(j, (l',a)) := anno x (S i) loc in
     (* let (l',a) := pr1 in *)
-    '(k, (l'',b)) <- anno y j l' ;;
+    let '(k, (l'',b)) := anno y j l' in
     (* let (l'',b) := pr2 in *)
-    ret (S k, (l'',abseq (i, S k) s a b))
+    (S k, (l'',abseq (i, S k) (loc, l'') s a b))
   | bpar s x y =>
-    '(req_loc,rpy_loc) <- hd_error l ;;
+    let req_loc := loc in
+    let rpy_loc := S loc in
+    let req_loc' := S (S loc) in
+    let rpy_loc' := S (S (S loc)) in
+    (* let '(req_loc,rpy_loc) := hd_error l ;;
     let restl := tl l in
     '(req_loc',rpy_loc') <- hd_error restl ;;
-    let restl' := tl restl in
-    '(j, (l',a)) <- anno x (S i) restl' ;;
+    let restl' := tl restl in *)
+    let '(j, (l',a)) := anno x (S i) (S rpy_loc') in
     (* let (l',a) := pr1 in *)
-    '(k, (l'',b)) <- anno y j l' ;;
+    let '(k, (l'',b)) := anno y j l' in
     (* let (l'',b) := pr2 in *)
-    ret (S k, (l'',abpar (i, S k) (req_loc,rpy_loc) (req_loc',rpy_loc') s a b)) 
+    (S k, (l'',abpar (i, S k) (req_loc,rpy_loc) (req_loc',rpy_loc') (loc, l'') s a b)) 
    (* ret (1,([], aasp (0,0) CPY)) *)
   end.
 
+
+Lemma loc_size: forall t i i' loc loc' annt,
+  anno t i loc = (i', (loc', annt)) ->
+  loc' = loc + nss t.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a;
+      cbn in *;
+      inv H;
+      lia.
+  -
+    cbn in *.
+    repeat break_let.
+    subst.
+    inv H.
+    lia.
+  -
+    cbn in *;
+      repeat break_let.
+    subst.
+    inv H.
+    assert (n0 = loc + (nss t1)) by eauto.
+    assert (loc' = n0 + (nss t2)) by eauto.
+
+    lia.
+  -
+    cbn in *;
+      repeat break_let.
+    subst.
+    inv H.
+    assert (n0 = loc + (nss t1)) by eauto.
+    assert (loc' = n0 + (nss t2)) by eauto.
+
+    lia.
+  -
+    cbn in *;
+      repeat break_let.
+    subst.
+    invc H.
+    assert (n0 = (S (S (S (S loc)))) + (nss t1)) by eauto.
+    assert (loc' = n0 + (nss t2)) by eauto.
+    lia.
+Defined.
+
+(*
 Lemma anno_some: forall t i l,
   length l = nss t ->
   exists res,
@@ -369,6 +428,7 @@ Definition fromSome{A:Type} (default:A) (opt:option A): A :=
   | Some x => x
   | None => default
   end.
+*)
 
 
     
@@ -410,11 +470,11 @@ Ltac asdf :=
   | [H: _, H2: _ |- _] => apply H in H2
   end.
   
-Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm),
-  anno t i = (j, t') ->
+Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm) (loc loc':Loc),
+  anno t i loc = (j, (loc',t')) ->
   j > i.
 Proof.
-  induction t; intros i j t' H;
+  induction t; intros i j t' loc loc' H;
     try (
         simpl in *;
         repeat break_let;
@@ -425,8 +485,8 @@ Defined.
 Hint Resolve anno_mono : core.
 
 Lemma anno_range:
-  forall x i,
-    range (snd (anno x i)) = (i, fst (anno x i)).
+  forall x i loc,
+    range (snd (snd (anno x i loc))) = (i, fst (anno x i loc)).
 Proof.
   induction x; intros; simpl; auto;
     repeat expand_let_pairs;
@@ -434,7 +494,7 @@ Proof.
 Qed.
 
 Definition annotated x :=
-  snd (anno x 0).
+  snd (snd (anno x 0 0)).
 
 Lemma pairsinv : forall (a a' b b':nat),
     a <> a' -> (a,b) <> (a',b').
@@ -531,41 +591,47 @@ Ltac jkjk' :=
 
 Fixpoint unanno a :=
   match a with
-  | aasp _ a => asp a
-  | aatt _ p t => att p (unanno t)
-  | alseq _ a1 a2 => lseq (unanno a1) (unanno a2)
+  | aasp _ _ a => asp a
+  | aatt _ _ _ p t => att p (unanno t)
+  | alseq _ _ a1 a2 => lseq (unanno a1) (unanno a2)
                          
-  | abseq _ spl a1 a2 => bseq spl (unanno a1) (unanno a2) 
-  | abpar _ spl a1 a2 => bpar spl (unanno a1) (unanno a2)
+  | abseq _ _ spl a1 a2 => bseq spl (unanno a1) (unanno a2) 
+  | abpar _ _ _ _ spl a1 a2 => bpar spl (unanno a1) (unanno a2)
   end.
 
 (** This predicate determines if an annotated term is well formed,
     that is if its ranges correctly capture the relations between a
     term and its associated events. *)
 
+(*
+Lemma unique_req_events (t:AnnoTerm) : forall p i i0 p1 p2 q q0 t0 t1,
+       events t p (req i  loc p1 q  t0) ->
+    not (events t p (req i0 loc p2 q0 t1)).
+*)
+
 Inductive well_formed: AnnoTerm -> Prop :=
-| wf_asp: forall r x,
+| wf_asp: forall r lr x,
     snd r = S (fst r) ->
-    well_formed (aasp r x)
-| wf_att: forall r p x,
+    well_formed (aasp r lr x)
+| wf_att: forall r lr locs p x,
     well_formed x ->
     S (fst r) = fst (range x) ->
     snd r = S (snd (range x)) ->
     Nat.pred (snd r) > fst r ->
-    well_formed (aatt r p x)
-| wf_lseq: forall r x y,
+    well_formed (aatt r lr locs p x)
+| wf_lseq: forall r lr x y,
     well_formed x -> well_formed y ->
     fst r = fst (range x) ->
     snd (range x) = fst (range y) ->
     snd r = snd (range y) ->
-    well_formed (alseq r x y)
-| wf_bseq: forall r s x y,
+    well_formed (alseq r lr x y)
+| wf_bseq: forall r lr s x y,
     well_formed x -> well_formed y ->
     S (fst r) = fst (range x) ->
     snd (range x) = fst (range y) ->
     snd r = S (snd (range y)) ->
-    well_formed (abseq r s x y)
-| wf_bpar: forall r s x y,
+    well_formed (abseq r lr s x y)
+| wf_bpar: forall r lr xlocs ylocs s x y,
     well_formed x -> well_formed y ->
     (*(rx1,rx2) = (range x) ->
     (ry1,ry2) = (range y) -> *)  
@@ -574,7 +640,7 @@ Inductive well_formed: AnnoTerm -> Prop :=
     (snd r) = S (snd (range y)) ->
     fst (range y) > fst (range x) -> 
     (*r2 > r1 -> *)
-    well_formed (abpar r s x y).
+    well_formed (abpar r lr xlocs ylocs s x y).
 
                 (*
 | wf_bpar: forall r s x y,
@@ -585,8 +651,8 @@ Inductive well_formed: AnnoTerm -> Prop :=
     well_formed (abpar r s x y). *)
 Hint Constructors well_formed : core.
 
-Lemma wf_lseq_pieces: forall r t1 t2,
-    well_formed (alseq r t1 t2) ->
+Lemma wf_lseq_pieces: forall r lr t1 t2,
+    well_formed (alseq r lr t1 t2) ->
     well_formed t1 /\ well_formed t2.
 Proof.
   intros.
@@ -594,8 +660,8 @@ Proof.
   tauto.
 Defined.
 
-Lemma wf_at_pieces: forall t r p,
-    well_formed (aatt r p t) ->
+Lemma wf_at_pieces: forall t r lr locs p,
+    well_formed (aatt locs r lr p t) ->
     well_formed t.
 Proof.
   intros.
@@ -603,8 +669,8 @@ Proof.
   tauto.
 Defined.
 
-Lemma wf_bseq_pieces: forall r s t1 t2,
-    well_formed (abseq r s t1 t2) ->
+Lemma wf_bseq_pieces: forall r lr s t1 t2,
+    well_formed (abseq r lr s t1 t2) ->
     well_formed t1 /\ well_formed t2.
 Proof.
   intros.
@@ -612,8 +678,8 @@ Proof.
   tauto.
 Defined.
 
-Lemma wf_bpar_pieces: forall r s t1 t2,
-    well_formed (abpar r s t1 t2) ->
+Lemma wf_bpar_pieces: forall r lr xlocs ylocs s t1 t2,
+    well_formed (abpar r lr xlocs ylocs s t1 t2) ->
     well_formed t1 /\ well_formed t2.
 Proof.
   intros.
@@ -623,14 +689,14 @@ Defined.
 
 Ltac do_wf_pieces :=
   match goal with
-  | [H: well_formed (alseq _ _ _) |- _] =>
+  | [H: well_formed (alseq _ _ _ _) |- _] =>
     (edestruct wf_lseq_pieces; eauto)
-  | [H: well_formed (aatt _ _ ?t) |- _] =>   
+  | [H: well_formed (aatt _ _ _ _ ?t) |- _] =>   
     assert (well_formed t)
       by (eapply wf_at_pieces; eauto)
-  | [H: well_formed (abseq _ _ _ _ ) |- _] =>
+  | [H: well_formed (abseq _ _ _ _ _) |- _] =>
     (edestruct wf_bseq_pieces; eauto)
-  | [H: well_formed (abpar _ _ _ _ ) |- _] =>
+  | [H: well_formed (abpar _ _ _ _ _ _ _) |- _] =>
     (edestruct wf_bpar_pieces; eauto)     
   end.
 
@@ -665,8 +731,8 @@ Proof.
 Defined.
 
 Lemma anno_well_formed:
-  forall t i,
-    well_formed (snd (anno t i)).
+  forall t i loc,
+    well_formed (snd (snd (anno t i loc))).
 Proof.
   induction t; intros; simpl;
     try (auto;
@@ -679,17 +745,17 @@ Proof.
     simpl.
     econstructor.
     +
-      pose (IHt (S i)).
+      pose (IHt (S i) (S (S loc))).
       rewrite Heqp in *. eassumption.
     +
       simpl.
-      assert (a = snd (anno t (S i))) by (rewrite Heqp; tauto).
+      assert (a = snd (snd (anno t (S i) (S (S loc))))) by (rewrite Heqp; tauto).
       subst.
       rewrite anno_range.
       tauto.
     +
       simpl.
-      assert (a = snd (anno t (S i))) by (rewrite Heqp; tauto).
+      assert (a = snd (snd (anno t (S i) (S (S loc))))) by (rewrite Heqp; tauto).
       subst.
       rewrite anno_range.
       simpl.
@@ -709,79 +775,56 @@ Proof.
       
       
     
-  - 
-    auto.
-    repeat expand_let_pairs.
-    simpl.
-    destruct (anno t1 (S i)) eqn:hey.
-    
+  -
+    repeat break_let.
+    simpl in *.
     econstructor.
     +
-    pose (IHt1 (S i)).
-    rewrite hey in *. eassumption.
+      pose (IHt1 (S i) (S (S (S (S loc))))).
+      rewrite Heqp in *. eassumption.
     +
-      eauto.
+      pose (IHt2 n n0).
+      rewrite Heqp1 in *. eassumption.
     +
       simpl.
-      assert (a = snd (anno t1 (S i))) by (rewrite hey; tauto).
-      subst.
-      
-      rewrite anno_range.
-      simpl.
-      reflexivity.
-    +
-      rewrite anno_range.
-      simpl.
-      assert (a = snd (anno t1 (S i))) by (rewrite hey; tauto).
+      assert (a = snd (snd (anno t1 (S i) (S (S (S (S loc))))))) by (rewrite Heqp; tauto).
       subst.
       rewrite anno_range.
-      rewrite hey.
       simpl.
       tauto.
     +
+      assert (a = snd (snd (anno t1 (S i) (S (S (S (S loc))))))) by (rewrite Heqp; tauto).
+      assert (a0 = snd (snd (anno t2 n n0))) by (rewrite Heqp1; tauto).
+      subst.
+      rewrite anno_range.
+      rewrite anno_range.
+      simpl.
+      rewrite Heqp.
+      simpl.
+      tauto.
+    +
+      assert (a0 = snd (snd (anno t2 n n0))) by (rewrite Heqp1; tauto).
+      subst.
+      simpl.
+      rewrite Heqp1.
       simpl.
       rewrite anno_range.
       simpl.
-      reflexivity.
-    +
-      
-      
-      
-      (*
-      pose (IHt1 (S i)).
-      rewrite hey in *.
-      eauto.
+      rewrite Heqp1.
       simpl.
-    rewrite anno_range.
-    reflexivity.
-    rewrite anno_range.
-    simpl.
-    rewrite anno_range.
-    reflexivity.
-    simpl.
-    rewrite anno_range.
-    reflexivity.
-    simpl.
-    rewrite anno_range.
-    simpl.
-    eapply anno_mono.
-    rewrite anno_range.
-    simpl. 
-
-    rewrite hey.
-    simpl.
-    reflexivity. *)
-    (*Check anno_mono. *)
-    rewrite anno_range.
-    simpl.
-    assert (a = snd (anno t1 (S i))) by (rewrite hey; tauto).
-    subst.
-    eapply anno_mono.
-    rewrite hey.
-    simpl.
-    rewrite anno_range.
-    simpl.
-    eassumption.
+      tauto.
+    +
+      assert (n1 > n).
+      eapply anno_mono; eauto.
+      assert (n > (S i)).
+      eapply anno_mono; eauto.
+      assert (a = snd (snd (anno t1 (S i) (S (S (S (S loc))))))) by (rewrite Heqp; tauto).
+      assert (a0 = snd (snd (anno t2 n n0))) by (rewrite Heqp1; tauto).
+      subst.
+      rewrite anno_range.
+      rewrite anno_range.
+      simpl.
+      lia.
 Defined.
 
 
@@ -798,18 +841,18 @@ Defined.
 
 Fixpoint aeval t p e :=
   match t with
-  | aasp _ x => eval (asp x) p e
-  | aatt _ q x => aeval x q e
-  | alseq _ t1 t2 => aeval t2 p (aeval t1 p e)
-  | abseq _ s t1 t2 => ss (aeval t1 p ((splitEv_T (fst s)) e))
+  | aasp _ _ x => eval (asp x) p e
+  | aatt _ _ _ q x => aeval x q e
+  | alseq _ _ t1 t2 => aeval t2 p (aeval t1 p e)
+  | abseq _ _ s t1 t2 => ss (aeval t1 p ((splitEv_T (fst s)) e))
                          (aeval t2 p ((splitEv_T (snd s)) e)) 
-  | abpar _ s t1 t2 => pp (aeval t1 p ((splitEv_T (fst s)) e))
+  | abpar _ _ _ _ s t1 t2 => pp (aeval t1 p ((splitEv_T (fst s)) e))
                          (aeval t2 p ((splitEv_T (snd s)) e))
   end. 
 
 Lemma eval_aeval:
-  forall t p e i,
-    eval t p e = aeval (snd (anno t i)) p e.
+  forall t p e i loc,
+    eval t p e = aeval (snd (snd ((anno t i loc)))) p e.
 Proof.
   induction t; intros; simpl; auto;
     repeat expand_let_pairs; simpl;
@@ -824,78 +867,78 @@ Defined.
 
 Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
 | evtscpy:
-    forall r i p,
+    forall r lr i p,
       fst r = i ->
-      events (aasp r CPY) p (copy i p)
+      events (aasp r lr CPY) p (copy i p)
 | evtsusm:
-    forall i id args r p,
+    forall i id args r lr p,
       fst r = i ->
-      events (aasp r (ASPC id args)) p (umeas i p id args)
+      events (aasp r lr (ASPC id args)) p (umeas i p id args)
 | evtssig:
-    forall r i p,
+    forall r lr i p,
       fst r = i ->
-      events (aasp r SIG) p (sign i p) 
+      events (aasp r lr SIG) p (sign i p) 
 | evtshsh:
-    forall r i p,
+    forall r lr i p,
       fst r = i ->
-      events (aasp r HSH) p (hash i p)
+      events (aasp r lr HSH) p (hash i p)
 | evtsattreq:
-    forall r q t i p,
+    forall r lr q t i p req_loc rpy_loc,
       fst r = i ->
-      events (aatt r q t) p (req i i p q (unanno t))
+      events (aatt r lr (req_loc, rpy_loc) q t) p (req i req_loc p q (unanno t))
 | evtsatt:
-    forall r q t ev p,
+    forall r lr q t ev p locs,
       events t q ev ->
-      events (aatt r q t) p ev
+      events (aatt r lr locs q t) p ev
 | evtsattrpy:
-    forall r q t i p,
+    forall r lr q t i p req_loc rpy_loc,
       snd r = S i ->
-      events (aatt r q t) p (rpy i i p q)
+      events (aatt r lr (req_loc, rpy_loc) q t) p (rpy i rpy_loc p q)
 | evtslseql:
-    forall r t1 t2 ev p,
+    forall r lr t1 t2 ev p,
       events t1 p ev ->
-      events (alseq r t1 t2) p ev
+      events (alseq r lr t1 t2) p ev
 | evtslseqr:
-    forall r t1 t2 ev p,
+    forall r lr t1 t2 ev p,
       events t2 p ev ->
-      events (alseq r t1 t2) p ev
+      events (alseq r lr t1 t2) p ev
 | evtsbseqsplit:
-    forall r i s t1 t2 p,
+    forall r lr i s t1 t2 p,
       fst r = i ->
-      events (abseq r s t1 t2) p
+      events (abseq r lr s t1 t2) p
              (split i p)
 | evtsbseql:
-    forall r s t1 t2 ev p,
+    forall r lr s t1 t2 ev p,
       events t1 p ev ->
-      events (abseq r s t1 t2) p ev
+      events (abseq r lr s t1 t2) p ev
 | evtsbseqr:
-    forall r s t1 t2 ev p,
+    forall r lr s t1 t2 ev p,
       events t2 p ev ->
-      events (abseq r s t1 t2) p ev
+      events (abseq r lr s t1 t2) p ev
 | evtsbseqjoin:
-    forall r i s t1 t2 p,
+    forall r lr i s t1 t2 p,
       snd r = S i ->
-      events (abseq r s t1 t2) p
+      events (abseq r lr s t1 t2) p
              (join i p)
 
 | evtsbparsplit:
-    forall r i s t1 t2 p,
+    forall r lr i s t1 t2 p xi xi' yi yi',
       fst r = i ->
-      events (abpar r s t1 t2) p
-             (splitp i (fst (range t1)) (fst (range t2)) p)
+      events (abpar r lr (xi,xi') (yi,yi') s t1 t2) p
+             (splitp i xi yi p)
 | evtsbparl:
-    forall r s t1 t2 ev p,
+    forall r lr s t1 t2 ev p xlocs ylocs,
       events t1 p ev ->
-      events (abpar r s t1 t2) p ev
+      events (abpar r lr xlocs ylocs s t1 t2) p ev
 | evtsbparr:
-    forall r s t1 t2 ev p,
+    forall r lr s t1 t2 ev p xlocs ylocs,
       events t2 p ev ->
-      events (abpar r s t1 t2) p ev
+      events (abpar r lr xlocs ylocs s t1 t2) p ev
 | evtsbparjoin:
-    forall r i s t1 t2 p,
+    forall r lr i s t1 t2 p xi xi' yi yi',
       snd r = S i ->
-      events (abpar r s t1 t2) p
-             (joinp i (snd (range t1) - 1) (snd (range t2) - 1) p).
+      events (abpar r lr (xi,xi') (yi,yi') s t1 t2) p
+             (joinp i (xi') (yi') p).
 Hint Constructors events : core.
 
 Lemma events_range:
@@ -979,6 +1022,7 @@ Proof.
       (*destruct r as [j k];*) simpl in *; lia.
   - find_eapply_lem_hyp at_range; eauto.
     (*eapply at_range in H2; eauto. *)
+    destruct r; destruct locs.
     repeat destruct_disjunct; subst; eauto.
     (* + eapply ex_intro; split; auto. *)
     Ltac find_eapply_hyp_hyp :=
@@ -989,7 +1033,8 @@ Proof.
       | [ H : _ -> _ , H' : _ |- _ ] =>
         eapply H in H'; auto; [idtac]
       end.
-    + find_eapply_hyp_hyp.
+    + 
+      find_eapply_hyp_hyp.
       (*apply IHwell_formed with (p:=p) in H2. *)
       destruct_conjs.
       eauto.
@@ -1025,6 +1070,7 @@ Proof.
     + eapply ex_intro; split; try (eauto; auto; tauto).
 
   -
+    destruct xlocs; destruct ylocs.
     apply bra_range with (i:=i) (r:=r) in H2; eauto;
       repeat destruct_disjunct; subst;
         try lia;

@@ -69,15 +69,14 @@ Definition split_ev_seq (i:nat) (sp1 sp2:SP) (e:EvidenceC) (p:Plc) : CVM (Eviden
     add_tracem [Term.split i p] ;;
                ret (e1,e2).
 
-Definition split_ev_par (i:nat) (sp1 sp2:SP) (t1 t2:AnnoTerm) (e:EvidenceC) (p:Plc) : CVM (Loc*Loc) :=
+Definition split_ev_par (i:nat) (sp1 sp2:SP) (loc_e1 loc_e2:Loc) (t1 t2:AnnoTerm) (e:EvidenceC) (p:Plc) : CVM unit :=
     let e1 := splitEv sp1 e in
     let e2 := splitEv sp2 e in
-    let loc_e1 := fst (range t1) in
-    let loc_e2 := fst (range t2) in
+    (*let loc_e1 := fst (range t1) in
+    let loc_e2 := fst (range t2) in *)
     put_store_at loc_e1 e1 ;;
     put_store_at loc_e2 e2 ;;
-    add_tracem [Term.splitp i loc_e1 loc_e2 p] ;;
-    ret (loc_e1,loc_e2).
+    add_tracem [Term.splitp i loc_e1 loc_e2 p].
 
 (** * Partially-symbolic implementations of IO operations *)
 
@@ -127,16 +126,16 @@ Definition do_prim (x:nat) (a:ASP) : CVM EvidenceC :=
     ret (hhc bs e)
   end.
 
-Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) : CVM unit :=
+Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) (req_loc:Loc) : CVM unit :=
   p <- get_pl ;;
   e <- get_ev ;;
-  put_store_at reqi e ;;
-  add_tracem [req reqi reqi p q (unanno t)].
+  put_store_at req_loc e ;;
+  add_tracem [req reqi req_loc p q (unanno t)].
 
-Definition receiveResp (rpyi:nat) (q:Plc) : CVM EvidenceC :=
-  e <- get_store_at rpyi ;;
+Definition receiveResp (rpyi:nat) (rpy_loc:Loc) (q:Plc) : CVM EvidenceC :=
+  e <- get_store_at rpy_loc ;;
   p <- get_pl ;;
-  add_tracem [rpy (Nat.pred rpyi) (Nat.pred rpyi) p q] ;;
+  add_tracem [rpy (Nat.pred rpyi) rpy_loc p q] ;;
   ret e.
 
 (* Primitive CVM Monad operations that require IO Axioms *)
@@ -145,7 +144,7 @@ Definition doRemote (t:AnnoTerm) (q:Plc) (reqi:nat) (rpyi:nat) : CVM unit :=
   add_tracem (remote_events t q) ;;
   put_store_at rpyi (toRemote t q e).
 
-Definition runParThread (t:AnnoTerm) (p:Plc) (loc1:nat) (loc2:nat) : CVM (list Ev) :=
+Definition runParThread (t:AnnoTerm) (p:Plc) (loc1:Loc) (loc2:Loc) : CVM (list Ev) :=
   e <- get_store_at loc1 ;;
   let el := parallel_vm_events t p in
   let e' := parallel_vm_thread t p e in
@@ -153,7 +152,7 @@ Definition runParThread (t:AnnoTerm) (p:Plc) (loc1:nat) (loc2:nat) : CVM (list E
   put_store_at loc2 e' ;;
   ret el.
 
-Definition runParThreads (t1 t2:AnnoTerm) (p:Plc) (loc_e1 loc_e1' loc_e2 loc_e2':nat) : CVM unit :=
+Definition runParThreads (t1 t2:AnnoTerm) (p:Plc) (loc_e1 loc_e1' loc_e2 loc_e2':Loc) : CVM unit :=
   el1 <- runParThread t1 p loc_e1 loc_e1' ;;
   el2 <- runParThread t2 p loc_e2 loc_e2' ;;
   add_tracem (shuffled_events el1 el2).

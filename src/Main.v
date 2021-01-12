@@ -27,11 +27,11 @@ Inductive traceS: St -> list Ev -> Prop :=
 | tconf: forall t tr p e,
     trace t p tr ->
     traceS (conf t p e) tr
-| trem: forall st tr j p,
+| trem: forall st tr j loc p,
     traceS st tr ->
-    traceS (rem j p st)
+    traceS (rem j loc p st)
            (tr ++
-               [(rpy (pred j) (pred j) p (pl st))])
+               [(rpy (pred j) loc p (pl st))])
 | tls: forall st tr1 t tr2,
     traceS st tr1 ->
     trace t (pl st) tr2 ->
@@ -57,7 +57,7 @@ Fixpoint esizeS s:=
   match s with
   | stop _ _ => 0
   | conf t _ _ => esize t
-  | rem _ _ st => 1 + esizeS st
+  | rem _ _ _ st => 1 + esizeS st
   | ls st t => esizeS st + esize t
   | bsl _ st t _ _ => 1 + esizeS st + esize t
   | bsr _ _ st => 1 + esizeS st
@@ -70,16 +70,21 @@ Lemma esize_tr:
 Proof.
   induction t; intros; inv H; simpl;
     autorewrite with list; simpl; auto.
-  apply IHt in H5. lia.
+  -
+    apply IHt in H6; lia.
+  -
+    
   apply IHt1 in H5.
   apply IHt2 in H6. lia.
-  
+  -
+    
   apply IHt1 in H6.
   apply IHt2 in H7. lia.
   
-  apply shuffle_length in H8.
-  apply IHt1 in H6.
-  apply IHt2 in H7. 
+  -
+  apply shuffle_length in H10.
+  apply IHt1 in H8.
+  apply IHt2 in H9. 
   lia.
 Qed.
 
@@ -90,7 +95,7 @@ Proof.
   induction st; intros; inv H; simpl; auto.
   - destruct a; apply esize_tr in H4; simpl in *; auto.
   - rewrite app_length; simpl.
-    apply IHst in H4. lia.
+    apply IHst in H5; lia.
   - rewrite app_length; simpl.
     apply IHst in H2. apply esize_tr in H4.
     lia.
@@ -118,12 +123,12 @@ Proof.
   - constructor.
     constructor; auto.
     inv H2; auto.
-  - pose proof H6 as G.
-    pose proof H6 as G1.
+  - pose proof H7 as G.
+    pose proof H7 as G1.
     apply step_pl_eq in G; auto.
     apply step_seval in G1; auto.
     rewrite <- G. (*rewrite <- G1. *)
-    eapply IHst in H6; eauto.
+    eapply IHst in H7; eauto.
   - constructor; auto.
     eapply IHst in H2; eauto.
     pose proof H5 as G.
@@ -175,18 +180,18 @@ Proof.
   - constructor.
     constructor.
   - constructor. apply tatt. simpl.
-    inv H4; auto.
+    inv H5; auto.
     
   - constructor. apply tbseq; auto.
     inv H6; auto.
     
   - constructor. eapply tbpar; eauto.
     inv H6; auto. inv H7; auto.
-  - pose proof H6 as G.
+  - pose proof H7 as G.
     apply step_seval in G.
-    pose proof H6 as G1.
+    pose proof H7 as G1.
     apply step_pl_eq in G1.
-    eapply IHst in H6; eauto.
+    eapply IHst in H7; eauto.
     (* rewrite <- G. *) rewrite <- G1.
     rewrite app_comm_cons; auto.
   - rewrite <- app_nil_l; auto.

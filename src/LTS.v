@@ -21,7 +21,7 @@ Require Import PeanoNat Minus Lia Preamble Term.
 Inductive St: Set :=
 | stop: Plc -> Evidence -> St
 | conf: AnnoTerm -> Plc -> Evidence -> St
-| rem: Plc -> Plc -> St -> St
+| rem: nat -> Loc -> Plc -> St -> St
 | ls: St -> AnnoTerm -> St
 | bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
 | bsr: nat -> Evidence -> St -> St
@@ -31,7 +31,7 @@ Fixpoint pl (s:St) :=
   match s with
   | stop p _ => p
   | conf _ p _ => p
-  | rem _ p _ => p
+  | rem _ _ p _ => p
   | ls st _ => pl st
   | bsl _ _ _ p _ => p
   | bsr _ _ st => pl st
@@ -44,7 +44,7 @@ Fixpoint seval st :=
   match st with
   | stop _ e => e
   | conf t p e => aeval t p e
-  | rem _ _ st => seval st
+  | rem _ _ _ st => seval st
   | ls st t => aeval t (pl st) (seval st)
   | bsl _ st t p e => ss (seval st) (aeval t p e)
   | bsr _ e st => ss e (seval st)
@@ -68,18 +68,18 @@ Inductive step: St -> option Ev -> St -> Prop :=
 (** Remote call *)
 
 | statt:
-    forall r x p q e,
-      step (conf (aatt r q x) p e)
-           (Some (req (fst r) (fst r) p q (unanno x)))
-           (rem (snd r) p (conf x q e))
+    forall r x p q e req_loc rpy_loc,
+      step (conf (aatt r (req_loc, rpy_loc) q x) p e)
+           (Some (req (fst r) req_loc p q (unanno x)))
+           (rem (snd r) rpy_loc p (conf x q e))
 | stattstep:
-    forall st0 ev st1 p j,
+    forall st0 ev st1 p j loc,
       step st0 ev st1 ->
-      step (rem j p st0) ev (rem j p st1)
+      step (rem j loc p st0) ev (rem j loc p st1)
 | stattstop:
-    forall j p q e,
-      step (rem j p (stop q e))
-           (Some (rpy (pred j) (pred j) p q))
+    forall j p q e loc,
+      step (rem j loc p (stop q e))
+           (Some (rpy (pred j) loc p q))
            (stop p e)
 (** Linear Sequential Composition *)
 
@@ -125,10 +125,10 @@ Inductive step: St -> option Ev -> St -> Prop :=
 (** Branching Parallel composition *)
 
 | stbpar:
-    forall r s x y p e,
-      step (conf (abpar r s x y) p e)
-           (Some (splitp (fst r) (fst (range x)) (fst (range y)) p))
-           (bp (snd r) (snd (range x) - 1) (snd (range y) - 1)
+    forall r s x y p e xi xi' yi yi',
+      step (conf (abpar r (xi,xi') (yi,yi') s x y) p e)
+           (Some (splitp (fst r) xi yi p))
+           (bp (snd r) xi' yi'
                (conf x p (splitEv_T (fst s) e))
                (conf y p (splitEv_T (snd s) e)))
 | stbpstepleft:
@@ -261,8 +261,8 @@ Qed.
 (** * Correct Path Exists *)
 
 Lemma star_strem:
-  forall st0 st1 j p,
-    star st0 st1 -> star (rem j p st0) (rem j p st1).
+  forall st0 st1 j p loc,
+    star st0 st1 -> star (rem j loc p st0) (rem j loc p st1).
 Proof.
   intros.
   induction H; auto.
@@ -310,10 +310,10 @@ Proof.
   eapply lstar_silent_tran; eauto.
 Qed.
 
-Lemma lstar_strem : forall st st' tr p r,
+Lemma lstar_strem : forall st st' tr p r loc,
     lstar st tr
           st' ->
-    lstar (rem r p st) tr (rem r p st').
+    lstar (rem r loc p st) tr (rem r loc p st').
 Proof.
   intros.
   induction H; auto.
@@ -362,7 +362,8 @@ Theorem correct_path_exists:
 Proof.
   induction t; intros; simpl; eauto.
   - eapply star_tran; eauto.
-  - eapply star_tran; eauto.
+  - destruct p.
+    eapply star_tran; eauto.
     eapply star_transitive.
     apply star_strem.
     apply IHt.
@@ -382,7 +383,8 @@ Proof.
     apply star_stbsr.
     apply IHt2.
     eapply star_tran; eauto.
-  - eapply star_tran; eauto.
+  - destruct p; destruct p0.
+    eapply star_tran; eauto.
     eapply star_transitive.
     apply star_stbp.
     apply IHt1.
@@ -410,7 +412,8 @@ Proof.
     destruct a.
     + exists (Some (asp_event (fst r) a n)).
       eapply ex_intro; eauto.
-    + exists (Some (req (fst r) (fst r) n n0 (unanno a))).
+    + exists (Some (req (fst r) (fst p) n n0 (unanno a))).
+      destruct p.
       eapply ex_intro; eauto.
     + exists None.
       eapply ex_intro; eauto.
@@ -418,17 +421,18 @@ Proof.
     + exists (Some (split (fst r) n)).
       eapply ex_intro; eauto.
       
-    + exists (Some (splitp (fst r) (fst (range a1)) (fst (range a2)) n)).
+    + exists (Some (splitp (fst r) (fst p) (fst p0) n)).
+      destruct p; destruct p0.
       eapply ex_intro; eauto.
   - right.
     destruct IHst0.
     + destruct st0; simpl in H; try tauto.
-      exists (Some (rpy (pred n) (pred n) n0 n1)).
+      exists (Some (rpy (pred n) n0 n1 n2)).
       eapply ex_intro; eauto.
     + destruct H as [e H].
       exists e.
       destruct H as [st1 H].
-      exists (rem n n0 st1). auto.
+      exists (rem n n0 n1 st1). auto.
   - right.
     destruct IHst0.
     + destruct st0; simpl in H; try tauto.
@@ -527,10 +531,10 @@ Qed.
 Fixpoint tsize t: nat :=
   match t with
   | aasp _ _ => 1
-  | aatt _ _ x => 2 + tsize x
+  | aatt _ _ _ x => 2 + tsize x
   | alseq _ x y => 2 + tsize x + tsize y
   | abseq _ _ x y => 3 + tsize x + tsize y
-  | abpar _ _ x y => 2 + tsize x + tsize y
+  | abpar _ _ _ _ x y => 2 + tsize x + tsize y
   end.
 
 (** Size of a state (number of steps to reduce). *)
@@ -539,7 +543,7 @@ Fixpoint ssize s: nat :=
   match s with
   | stop _ _ => 0
   | conf t _ _ => tsize t
-  | rem _ _ x => 1 + ssize x
+  | rem _ _ _ x => 1 + ssize x
   | ls x t => 1 + ssize x + tsize t
   | bsl _ x t _ _ => 2 + ssize x + tsize t
   | bsr _ _ x => 1 + ssize x

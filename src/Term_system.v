@@ -18,16 +18,16 @@ Require Import Omega Preamble More_lists Term Event_system.
 
 Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
   match t with
-  | aasp (i, j) x => leaf (i, j) (asp_event i x p)
-  | aatt (i, j) q x =>
+  | aasp (i, j) lr x => leaf (i, j) (asp_event i x p)
+  | aatt (i, j) lr (req_loc,rpy_loc) q x =>
     before (i, j)
-      (leaf (i, S i) (req i i p q (unanno x)))
+      (leaf (i, S i) (req i req_loc p q (unanno x)))
       (before (S i, j)
               (ev_sys x q)
-              (leaf (pred j, j) (rpy (pred j) (pred j) p q)))
-  | alseq r x y => before r (ev_sys x p)
+              (leaf (pred j, j) (rpy (pred j) rpy_loc p q)))
+  | alseq r lr x y => before r (ev_sys x p)
                           (ev_sys y p)
-  | abseq (i, j) s x y =>
+  | abseq (i, j) lr s x y =>
     before (i, j)
            (leaf (i, S i)
                  (split i p))
@@ -37,16 +37,16 @@ Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
                            (ev_sys y p))
                    (leaf ((pred j), j)
                    (join (pred j) p)))
-  | abpar (i, j) s x y =>
+  | abpar (i, j) lr (xi,xi') (yi,yi') s x y =>
     before (i, j)
            (leaf (i, S i)
-                 (splitp i (fst (range x)) (fst (range y)) p))
+                 (splitp i xi yi p))
            (before (S i, j)
                    (merge (S i, (pred j))
                           (ev_sys x p)
                           (ev_sys y p))
                    (leaf ((pred j), j)
-                   (joinp (pred j) (snd (range x) - 1) (snd (range y) - 1) p)))
+                   (joinp (pred j) xi' yi' p)))
   end.
 
 Lemma evsys_range:
@@ -68,7 +68,7 @@ Proof.
   - apply ws_leaf_event; auto;
       destruct a; simpl; auto.
   - apply ws_before; simpl; auto.
-    rewrite H4.
+    rewrite H6.
     apply ws_before; simpl; auto; rewrite evsys_range; auto.
   - apply ws_before; auto; repeat rewrite evsys_range; auto.
     
@@ -89,30 +89,32 @@ Proof.
   split; revert p; induction t; intros; inv H; simpl in *;
     repeat expand_let_pairs; simpl in *.
   - inv H0; auto; destruct a; simpl; auto.
-  - rewrite H6 in H0; simpl in H0.
-    inv H0; auto; inv H2; auto; inv H1; auto.
+  - destruct p.
+    rewrite H8 in H0; simpl in H0.
+    inv H0; auto. inv H2; auto. inv H2; auto. inv H1; auto.
   - inv H0; auto.
     
-  - rewrite H9 in H0; simpl in H0.
+  - rewrite H10 in H0; simpl in H0.
     inv H0; inv H2; auto; inv H1; auto.
     
-  - rewrite H9 in H0; simpl in H0.
-    inv H0; inv H2; auto; inv H1; auto.
+  - destruct p; destruct p0.
+    rewrite H12 in H0; simpl in H0.
+    inv H0; auto. inv H2; auto. inv H2; auto. inv H1; auto. inv H1; auto.
   - inv H0; auto.
-  - rewrite H6; simpl.
+  - rewrite H8; simpl.
     inv H0; auto.
-    rewrite H9 in H6.
-    apply Nat.succ_inj in H6; subst; auto.
+    rewrite H11 in H8.
+    apply Nat.succ_inj in H8; subst; auto.
   - inv H0; auto.
-  - rewrite H9; simpl.
+  - rewrite H10; simpl.
     inv H0; auto.
-    rewrite H11 in H9.
-    apply Nat.succ_inj in H9; subst; auto.
+    rewrite H12 in H10.
+    apply Nat.succ_inj in H10; subst; auto.
     
-  - rewrite H9; simpl.
+  - rewrite H12; simpl.
     inv H0; auto.
-    rewrite H12 in H9.
-    apply Nat.succ_inj in H9; subst; auto.
+    rewrite H15 in H12.
+    apply Nat.succ_inj in H12; subst; auto.
 Qed.
 
 (** Maximal events are unique. *)
@@ -141,6 +143,7 @@ Proof.
     + destruct r as [i j]; simpl in *.
       inv H0; inv H1; auto.
     + destruct r as [i j]; simpl in *.
+      repeat expand_let_pairs.
       repeat apply before_sup in H3.
       repeat apply before_sup in H4.
       inv H3; inv H4; auto.
@@ -156,6 +159,7 @@ Proof.
       inv H4; inv H5; auto.
       
     + destruct r as [i j]; simpl in *.
+      repeat expand_let_pairs.
       repeat apply before_sup in H5.
       repeat apply before_sup in H6.
       inv H5; inv H6; auto.
@@ -178,18 +182,32 @@ Proof.
   revert G.
   revert x'.
   revert p.
-  induction H; intros; destruct r as [i j]; inv G; simpl in *; auto.
+  induction H; intros; destruct r as [i j]; repeat expand_let_pairs; try destruct locs; inv G; try destruct locs;
+
+
+  repeat expand_let_pairs; simpl in *; auto.
   - inv H0; auto.
-  - repeat apply before_sup in H3.
+  - repeat expand_let_pairs.
+    repeat apply before_sup in H3.
     inv H3; auto.
-  - repeat apply before_sup in H4.
+  - 
+    repeat apply before_sup in H4.
+    
     apply IHwell_formed2 in H4; auto.
     
   - repeat apply before_sup in H4.
     inv H4; auto.
     
-  - repeat apply before_sup in H5.
+  - repeat expand_let_pairs.
+    repeat apply before_sup in H5.
     inv H5; auto.
+  -
+    repeat expand_let_pairs.
+    repeat apply before_sup in H5.
+    inv H5; auto.
+  -
+    repeat expand_let_pairs.
+    inv H6; eauto.
 Qed.
 
 (*
@@ -224,10 +242,10 @@ Qed.
 (** lseq is associative relative to the event semantics *)
 
 Lemma lseq_assoc:
-  forall t1 t2 t3 i p,
+  forall t1 t2 t3 i p loc,
     same_rel
-      (ev_sys (snd (anno (lseq t1 (lseq t2 t3)) i)) p)
-      (ev_sys (snd (anno (lseq (lseq t1 t2) t3) i)) p).
+      (ev_sys (snd (snd (anno (lseq t1 (lseq t2 t3)) i loc))) p)
+      (ev_sys (snd (snd (anno (lseq (lseq t1 t2) t3) i loc))) p).
 Proof.
   intros; simpl.
   repeat expand_let_pairs; simpl.
