@@ -177,12 +177,257 @@ Proof.
 Defined.
  *)
 
-Lemma unique_req_events (t:AnnoTerm) : forall p i i0 p1 p2 q q0 t0 t1 loc,
-          events t p (req i  loc p1 q  t0) ->
-       not (events t p (req i0 loc p2 q0 t1)).
+Lemma wf_mono_locs: forall t,
+    well_formed t ->
+    fst (lrange t) <= snd (lrange t).
 Proof.
-Admitted.
+  intros.
+  rewrite Term.well_formed_lrange; eauto.
+  lia.
+Defined.
 
+Lemma unique_req_events (t:AnnoTerm) : forall p i p1 q t0 loc,
+    well_formed t ->
+    events t p (req i loc p1 q  t0) ->
+    fst (lrange t) <= loc < snd (lrange t).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a;
+      cbn in *;
+      try solve_by_inversion.
+  -
+    cbn in *.
+    inv H.
+    inv H0.
+    +
+      simpl in *.
+      subst.
+      lia.
+    +
+      assert (fst (lrange t) <= loc < snd (lrange t)).
+      {
+        eauto.
+      }
+
+      (*
+      rewrite H11 in *; clear H11.
+       *)
+      
+
+      assert (snd (lrange t) <= snd l).
+      {
+        lia.
+        
+        (*
+        assert (snd (lrange t) > fst l).
+        {
+          lia.
+        }
+        simpl in *.
+        subst.
+         *)
+      }
+      lia.
+  -
+    inv H.
+    inv H0.
+    +
+      simpl in *.
+      (*
+      rewrite H10 in *.
+      rewrite H12 in *. *)
+      assert (fst (lrange t1) <= loc < snd (lrange t1)) by eauto.
+      subst.
+      assert (fst (lrange t2) <= snd (lrange t2)).
+      {
+        eapply wf_mono_locs; eauto.
+      }
+      lia.
+
+      (*
+      
+      assert (snd (lrange t1) <= snd (lrange t2)).
+      {
+        (*
+        rewrite H11 in *.
+         *)
+
+        assert (fst (lrange t2) <= snd (lrange t2)).
+        {
+          rewrite <- H11 in *; clear H11.
+          
+          admit.
+        }
+        lia.
+      }
+      lia. *)
+    +
+      simpl in *.
+      
+      assert (fst (lrange t2) <= loc < snd (lrange t2)) by eauto.
+      (*
+      rewrite H10 in *.
+      rewrite H12 in *. *)
+
+      assert (fst (lrange t1) <= snd (lrange t1)).
+      {
+        eapply wf_mono_locs; eauto.
+      }
+      lia.
+
+      (*
+
+      
+      assert (fst (lrange t1) <= fst (lrange t2)).
+      { 
+        admit.
+      }
+      lia. *)
+  -
+    inv H.
+    inv H0.
+    +
+      simpl in *.
+      (*
+      rewrite H11 in *.
+      rewrite H13 in *.
+       *)
+      
+      assert (fst (lrange t1) <= loc < snd (lrange t1)) by eauto.
+      subst.
+      assert (fst (lrange t2) <= snd (lrange t2)).
+      {
+        eapply wf_mono_locs; eauto.
+      }
+      lia.
+      (*
+      assert (snd (lrange t1) <= snd (lrange t2)).
+      {
+        admit.
+      }
+      lia. *)
+    +
+      simpl in *.
+      assert (fst (lrange t2) <= loc < snd (lrange t2)) by eauto.
+      (*
+      rewrite H11 in *.
+      rewrite H13 in *.
+       *)
+
+      assert (fst (lrange t1) <= snd (lrange t1)).
+      {
+        eapply wf_mono_locs; eauto.
+      }
+      lia.
+
+      (*
+      
+      assert (fst (lrange t1) <= fst (lrange t2)).
+      {
+        admit.
+      }
+      lia. *)
+  -
+    inv H.
+    inv H0.
+    +
+      simpl in *.
+      (*
+      rewrite H18 in *.
+      rewrite H19 in *.
+       *)
+      
+      assert (fst (lrange t1) <= loc < snd (lrange t1)) by eauto.
+      subst.
+
+      assert (fst (lrange t2) <= snd (lrange t2)).
+      {
+        eapply wf_mono_locs; eauto.
+      }
+      lia.
+
+      (*
+
+      
+      assert (snd (lrange t1) <= snd (lrange t2)).
+      {
+        admit.
+      }
+      lia. *)
+    +
+      simpl in *.
+      assert (fst (lrange t2) <= loc < snd (lrange t2)) by eauto.
+      (*
+      rewrite H18 in *.
+      rewrite H19 in *.
+       *)
+
+      assert (fst (lrange t1) <= snd (lrange t1)).
+      {
+       eapply wf_mono_locs; eauto.
+      }
+      lia.
+Defined.
+(*
+
+      (*
+      
+      assert (fst (lrange t1) <= fst (lrange t2)).
+      {
+        admit.
+      }
+      lia.
+       *)
+      
+    
+    
+    
+      
+      
+      
+      
+      eapply IHt1.
+    simpl in *.
+    
+    
+
+      (*
+      
+      
+      rewrite H11 in *; clear H11.
+
+      
+
+      
+      destruct p; destruct l; destruct r.
+      simpl in *.
+      subst.
+      l
+      eapply IHt.
+      simpl in *.
+      subst.
+      
+      
+    
+    +
+      cbn in *.
+      inv H.
+      inv H0.
+      simpl in *.
+       *)
+      
+      
+    
+
+  
+Admitted.   
+    (*
+       not (events t p (req i0 loc p2 q0 t1)). *)
+
+*)
 
 Lemma unique_req_locs: forall t p i i0 loc p0 p1 q q0 t0 t1,
     well_formed t ->
@@ -228,24 +473,53 @@ Proof.
         repeat concludes.
          *)
 
+        simpl in *.
+        subst.
+
+
+        
         assert (fst (lrange t) <= loc < snd (lrange t)).
         {
-          admit.
-        }
+          eapply unique_req_events; eauto.
+
+            (*
+          simpl in *.
+          subst.
+          assert (loc < snd (lrange t)).
+          {
+            admit.
+          }
+         
+        
+          
+
         
 
         assert (loc = n).
         {
-          admit.
+          simpl in *.
+          lia.
         }
 
         subst.
 
         assert (fst (lrange t) > n).
         {
-          admit.
+          simpl in *.
+          lia.
         }
+        simpl in *.
         lia.
+             *)
+            
+          }
+          lia.
+          
+
+
+
+
+        
         (*
         eapply IHt.
         +++
@@ -272,13 +546,18 @@ Proof.
         destruct l.
          assert (fst (lrange t) <= loc < snd (lrange t)).
         {
-          admit.
+         eapply unique_req_events; eauto.
         }
+        simpl in *.
+        lia.
+
+        (*
         
 
         assert (loc = n).
         {
-          admit.
+          simpl in *.
+          lia.
         }
 
         subst.
@@ -288,6 +567,8 @@ Proof.
           admit.
         }
         lia.
+         *)
+        
 
         (*
         eapply IHt.
@@ -309,37 +590,48 @@ Proof.
 
       assert (fst (lrange t1) <= loc < snd (lrange t1)).
       {
-        admit.
+        eapply unique_req_events; eauto.
       }
 
       assert (fst (lrange t2) <= loc < snd (lrange t2)).
       {
-        admit.
+        eapply unique_req_events; eauto.
       }
+
+      simpl in *.
+      lia.
+
+      (*
 
       assert (fst (lrange t2) >= snd (lrange t1)).
       {
         admit.
       }
-      lia.
+      lia. *)
     +
        destruct l.
 
       assert (fst (lrange t1) <= loc < snd (lrange t1)).
       {
-        admit.
+        eapply unique_req_events; eauto.
       }
+      simpl in *.
 
       assert (fst (lrange t2) <= loc < snd (lrange t2)).
       {
-        admit.
+        eapply unique_req_events; eauto.
       }
+      simpl in *.
+      lia.
 
+      (*
       assert (fst (lrange t2) >= snd (lrange t1)).
       {
         admit.
       }
       lia.
+       *)
+      
 
   -
     inv H.
@@ -351,37 +643,44 @@ Proof.
 
       assert (fst (lrange t1) <= loc < snd (lrange t1)).
       {
-        admit.
+        eapply unique_req_events; eauto.
       }
 
       assert (fst (lrange t2) <= loc < snd (lrange t2)).
       {
-        admit.
+        eapply unique_req_events; eauto.
       }
+      simpl in *; lia.
+
+      (*
 
       assert (fst (lrange t2) >= snd (lrange t1)).
       {
         admit.
       }
-      lia.
+      lia. *)
     +
        destruct l.
 
       assert (fst (lrange t1) <= loc < snd (lrange t1)).
       {
-        admit.
+        eapply unique_req_events; eauto.
       }
 
       assert (fst (lrange t2) <= loc < snd (lrange t2)).
       {
-        admit.
+        eapply unique_req_events; eauto.
       }
+
+      simpl in *; lia.
+
+      (*
 
       assert (fst (lrange t2) >= snd (lrange t1)).
       {
         admit.
       }
-      lia.
+      lia. *)
   -
     inv H.
     invc H0;
@@ -392,38 +691,38 @@ Proof.
 
       assert (fst (lrange t1) <= loc < snd (lrange t1)).
       {
-        admit.
+        eapply unique_req_events; eauto.
       }
 
       assert (fst (lrange t2) <= loc < snd (lrange t2)).
       {
-        admit.
+        eapply unique_req_events; eauto.
       }
+
+      simpl in *; lia.
+
+      (*
 
       assert (fst (lrange t2) >= snd (lrange t1)).
       {
         admit.
       }
-      lia.
+      lia. *)
     +
        destruct l.
 
       assert (fst (lrange t1) <= loc < snd (lrange t1)).
       {
-        admit.
+        eapply unique_req_events; eauto.
       }
 
       assert (fst (lrange t2) <= loc < snd (lrange t2)).
       {
-        admit.
+        eapply unique_req_events; eauto.
       }
 
-      assert (fst (lrange t2) >= snd (lrange t1)).
-      {
-        admit.
-      }
-      lia.
-Admitted.
+      simpl in *; lia.
+Defined.
 
 Lemma store_events_injective: forall t p ev1 ev2 loc,
   well_formed t ->
@@ -447,6 +746,7 @@ Proof.
     }
 
     tauto.
+
   -
 
 Admitted.

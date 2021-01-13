@@ -281,7 +281,7 @@ Definition lrange x :=
 Fixpoint anss (t:AnnoTerm) :=
   match t with
   | aasp _ _ _ => 0
-  | aatt _ _ _ _ _ => 2
+  | aatt _ _ _ _ t => (anss t) + 2
   | alseq _ _ t1 t2 => anss t1 + anss t2
   | abseq _ _ _ t1 t2 => anss t1 + anss t2
   | abpar _ _ _ _ _ t1 t2 => 4 + anss t1 + anss t2
@@ -291,7 +291,7 @@ Fixpoint anss (t:AnnoTerm) :=
 Fixpoint nss (t:Term) :=
   match t with
   | asp _ => 0
-  | att _ _ => 2
+  | att _ t => nss t + 2
   | lseq t1 t2 => nss t1 + nss t2
   | bseq _ t1 t2 => nss t1 + nss t2
   | bpar  _ t1 t2 => 4 + nss t1 + nss t2
@@ -311,7 +311,8 @@ Proof.
   -
     cbn in *.
     subst.
-    tauto.
+    assert (Nat.even (nss t) = true) by eauto.
+    eapply both_args_even; eauto.
   -
     cbn in *.
     subst.
@@ -356,7 +357,7 @@ Fixpoint anno (t: Term) (i:nat) (loc:Loc) : (nat * (nat * AnnoTerm)) :=
       | None => None
       | Some (j, pr) => *)
     (*let (l',a) := pr in *)
-    (S j, (S rpy_loc, aatt (i, S j) (loc,S rpy_loc) (req_loc, rpy_loc)  p a))
+    (S j, (l'(*S rpy_loc*), aatt (i, S j) (loc,(*S rpy_loc*)l') (req_loc, rpy_loc)  p a))
   | lseq x y =>
     let '(j, (l',a)) := anno x i loc in
     (* let (l',a) := pr1 in *)
@@ -404,6 +405,7 @@ Proof.
     repeat break_let.
     subst.
     inv H.
+    assert (loc' = S (S loc) + (nss t)) by eauto.
     lia.
   -
     cbn in *;
@@ -519,6 +521,12 @@ Proof.
     try (simpl; auto;
     repeat expand_let_pairs;
     simpl; tauto).
+  (*
+  -
+    simpl;
+      repeat expand_let_pairs;
+      simpl. *)
+    
 Qed.
 
 Definition annotated x :=
@@ -646,9 +654,12 @@ Inductive well_formed: AnnoTerm -> Prop :=
     S (fst r) = fst (range x) ->
     snd r = S (snd (range x)) ->
     Nat.pred (snd r) > fst r ->
+    
     fst lr = fst locs ->
-    fst (lrange x) > fst lr ->
-    snd lr = (fst lr) + 2 ->
+    fst (lrange x) = (fst lr) + 2 ->
+    snd lr > fst lr ->
+    snd (lrange x) = snd lr ->
+    (*snd lr = (fst lr) + 2 -> *)
     well_formed (aatt r lr locs p x)
 | wf_lseq: forall r lr x y,
     well_formed x -> well_formed y ->
@@ -766,6 +777,30 @@ Lemma well_formed_lrange:
 Proof.
   induction t; intros H;
     try (simpl; inv H; simpl; repeat concludes; lia).
+
+  (*
+  -
+    inv H.
+    simpl in *.
+    assert (snd l = snd (lrange t)).
+    {
+      
+      admit.
+    }
+    repeat concludes.
+    lia.
+    
+    inv H.
+    repeat concludes.
+    subst.
+    simpl in *.
+    rewrite IHt in *.
+*)
+    
+    
+    
+Defined.
+
 
   (*
   -
@@ -913,7 +948,25 @@ Proof.
       eapply anno_mono; eauto.
       lia.
     +
+       simpl.
+      assert (a = snd (snd (anno t (S i) (S (S loc))))) by (rewrite Heqp; tauto).
+      subst.
+      rewrite anno_lrange.
+      simpl.
+      lia.
+
+      (*
+      rewrite Heqp.
+      tauto.
+
+
+
+      
       simpl in *.
+      Check lrange_anno_mono.
+      Check anno_lrange.
+
+      assert (
       
       assert (fst (lrange a) >= (S (S loc))).
       {
@@ -924,7 +977,7 @@ Proof.
       {
         eapply lrange_anno_mono; eauto.
       }
-      lia.
+      lia. *)
       
       
       (*
@@ -942,6 +995,32 @@ Proof.
     +
       simpl.
        *)
+    
+      
+    +
+      simpl.
+      assert (n1 >= S (S loc)).
+      {
+        Check lrange_anno_mono.
+        
+        eapply lrange_anno_mono; eauto.
+        
+      }
+      lia.
+    +
+      simpl in *.
+
+      simpl.
+      assert (a = snd (snd (anno t (S i) (S (S loc))))) by (rewrite Heqp; tauto).
+      subst.
+      rewrite anno_lrange.
+      simpl.
+      rewrite Heqp.
+      simpl.
+      lia.
+      
+      
+      
     
   -
     repeat break_let.

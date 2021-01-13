@@ -591,7 +591,7 @@ Proof.
   intros.
   induction H0; inv H; simpl in H1;
     try expand_let_pairs; inv H1; simpl; auto.
-  - inv H15; inv H14.
+  - inv H16; inv H15.
     + eapply evsys_tr_in in H4; eauto.
       apply earlier_cons; auto.
       apply in_app_iff; auto.
@@ -599,9 +599,9 @@ Proof.
       apply earlier_cons; auto.
       apply in_app_iff; auto. right; simpl; auto.
   - solve_by_inversion.
-  - inv H14.
-    + inv H16.
-      eapply evsys_tr_in in H15; eauto.
+  - inv H15.
+    + inv H17.
+      eapply evsys_tr_in in H16; eauto.
       apply earlier_cons_shift; auto.
       apply earlier_append; auto; simpl; auto.
     + eapply IHtrace in H7; eauto.
