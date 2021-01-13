@@ -269,6 +269,24 @@ Definition range x :=
   | abpar r _ _ _ _ _ _ => r
   end.
 
+Definition lrange x :=
+  match x with
+  | aasp _ lr _ => lr
+  | aatt _ lr _ _ _ => lr
+  | alseq _ lr _ _ => lr
+  | abseq _ lr _ _ _ => lr
+  | abpar _ lr _ _ _ _ _ => lr
+  end.
+
+Fixpoint anss (t:AnnoTerm) :=
+  match t with
+  | aasp _ _ _ => 0
+  | aatt _ _ _ _ _ => 2
+  | alseq _ _ t1 t2 => anss t1 + anss t2
+  | abseq _ _ _ t1 t2 => anss t1 + anss t2
+  | abpar _ _ _ _ _ t1 t2 => 4 + anss t1 + anss t2
+  end.
+
 (* nss = "num store slots" *)
 Fixpoint nss (t:Term) :=
   match t with
@@ -338,7 +356,7 @@ Fixpoint anno (t: Term) (i:nat) (loc:Loc) : (nat * (nat * AnnoTerm)) :=
       | None => None
       | Some (j, pr) => *)
     (*let (l',a) := pr in *)
-    (S j, (S rpy_loc, aatt (i, S j) (req_loc, rpy_loc) (loc,S rpy_loc) p a))
+    (S j, (S rpy_loc, aatt (i, S j) (loc,S rpy_loc) (req_loc, rpy_loc)  p a))
   | lseq x y =>
     let '(j, (l',a)) := anno x i loc in
     (* let (l',a) := pr1 in *)
@@ -364,7 +382,7 @@ Fixpoint anno (t: Term) (i:nat) (loc:Loc) : (nat * (nat * AnnoTerm)) :=
     (* let (l',a) := pr1 in *)
     let '(k, (l'',b)) := anno y j l' in
     (* let (l'',b) := pr2 in *)
-    (S k, (l'',abpar (i, S k) (req_loc,rpy_loc) (req_loc',rpy_loc') (loc, l'') s a b)) 
+    (S k, (l'',abpar (i, S k) (loc, l'') (req_loc,rpy_loc) (req_loc',rpy_loc') s a b)) 
    (* ret (1,([], aasp (0,0) CPY)) *)
   end.
 
@@ -493,6 +511,16 @@ Proof.
     simpl; auto.
 Qed.
 
+Lemma anno_lrange:
+  forall x i loc,
+    lrange (snd (snd (anno x i loc))) = (loc, fst (snd ((anno x i loc)))).
+Proof.
+  induction x; intros;
+    try (simpl; auto;
+    repeat expand_let_pairs;
+    simpl; tauto).
+Qed.
+
 Definition annotated x :=
   snd (snd (anno x 0 0)).
 
@@ -610,26 +638,38 @@ Lemma unique_req_events (t:AnnoTerm) : forall p i i0 p1 p2 q q0 t0 t1,
 *)
 
 Inductive well_formed: AnnoTerm -> Prop :=
-| wf_asp: forall r lr x,
+| wf_asp: forall r lri x,
     snd r = S (fst r) ->
-    well_formed (aasp r lr x)
+    well_formed (aasp r (lri,lri) x)
 | wf_att: forall r lr locs p x,
     well_formed x ->
     S (fst r) = fst (range x) ->
     snd r = S (snd (range x)) ->
     Nat.pred (snd r) > fst r ->
+    fst lr = fst locs ->
+    fst (lrange x) > fst lr ->
+    snd lr = (fst lr) + 2 ->
     well_formed (aatt r lr locs p x)
 | wf_lseq: forall r lr x y,
     well_formed x -> well_formed y ->
     fst r = fst (range x) ->
     snd (range x) = fst (range y) ->
     snd r = snd (range y) ->
+    
+    fst lr = fst (lrange x) ->
+    snd (lrange x) = fst (lrange y) ->
+    snd lr = snd (lrange y) ->
     well_formed (alseq r lr x y)
 | wf_bseq: forall r lr s x y,
     well_formed x -> well_formed y ->
     S (fst r) = fst (range x) ->
     snd (range x) = fst (range y) ->
     snd r = S (snd (range y)) ->
+
+    fst lr = fst (lrange x) ->
+    snd (lrange x) = fst (lrange y) ->
+    snd lr = snd (lrange y) ->
+    
     well_formed (abseq r lr s x y)
 | wf_bpar: forall r lr xlocs ylocs s x y,
     well_formed x -> well_formed y ->
@@ -640,6 +680,16 @@ Inductive well_formed: AnnoTerm -> Prop :=
     (snd r) = S (snd (range y)) ->
     fst (range y) > fst (range x) -> 
     (*r2 > r1 -> *)
+
+
+    fst (lrange x) = S (S (S (S (fst lr)))) ->
+    snd xlocs = S (fst xlocs) ->
+    fst ylocs = S (snd xlocs) ->
+    snd ylocs = S (fst ylocs) ->
+    fst lr = fst xlocs ->
+    snd lr = snd (lrange y) ->
+    S (snd ylocs) = fst (lrange x) ->
+    snd (lrange x) = fst (lrange y) ->
     well_formed (abpar r lr xlocs ylocs s x y).
 
                 (*
@@ -709,7 +759,53 @@ Proof.
     repeat find_apply_hyp_hyp; lia.
 Defined.
 
-Print esize.
+Lemma well_formed_lrange:
+  forall t,
+    well_formed t ->
+    snd (lrange t) = fst (lrange t) + anss t.
+Proof.
+  induction t; intros H;
+    try (simpl; inv H; simpl; repeat concludes; lia).
+
+  (*
+  -
+    simpl; inv H; simpl.
+    repeat concludes.
+    
+    destruct p; destruct p0; destruct l; destruct r.
+    simpl in *.
+    subst.
+    rewrite <- H9 in *; clear H9.
+    rewrite <- H18 in *; clear H18.
+    rewrite H19 in *; clear H19.
+    rewrite <- H10 in *; clear H10.
+*)
+    
+    
+
+  (*
+  -
+    cbn.
+    inv H.
+    rewrite H11.
+
+    repeat concludes.
+    lia.
+  -
+    
+    
+    
+    
+
+
+  
+  -
+    destruct p.
+    simpl in *.
+    subst.
+    
+    repeat find_apply_hyp_hyp; lia.
+*)
 
 Lemma esize_nonempty: forall t, esize t > 0.
 Proof.
@@ -730,6 +826,52 @@ Proof.
   eauto.
 Defined.
 
+Lemma lrange_anno_mono': forall (t:Term) (i j:nat) (t':AnnoTerm) (loc loc':Loc),
+    anno t i loc = (j, (loc', t')) ->
+    fst (lrange t') >= loc.
+Proof.
+  induction t; intros i j t' loc loc' H;
+    try (
+        simpl in *;
+        repeat break_let;
+        find_inversion;
+        repeat find_apply_hyp_hyp;
+        simpl;
+        lia).
+Defined.
+
+Lemma lrange_anno_mono: forall (t:Term) (i j:nat) (t':AnnoTerm) (loc loc':Loc),
+    anno t i loc = (j, (loc', t')) ->
+    loc' >= loc.
+Proof.
+    induction t; intros i j t' loc loc' H;
+    try (
+        simpl in *;
+        repeat break_let;
+        find_inversion;
+        repeat find_apply_hyp_hyp;
+        simpl;
+        lia).
+Defined.
+
+
+
+(*
+Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm) (loc loc':Loc),
+  anno t i loc = (j, (loc',t')) ->
+  j > i.
+Proof.
+  induction t; intros i j t' loc loc' H;
+    try (
+        simpl in *;
+        repeat break_let;
+        find_inversion;
+        repeat find_apply_hyp_hyp;
+        lia).
+Defined.
+Hint Resolve anno_mono : core.
+*)
+
 Lemma anno_well_formed:
   forall t i loc,
     well_formed (snd (snd (anno t i loc))).
@@ -738,12 +880,14 @@ Proof.
     try (auto;
     repeat expand_let_pairs;
     econstructor; simpl; auto;
+    repeat rewrite anno_lrange;
     repeat rewrite anno_range; simpl; reflexivity).
   -
     auto.
     repeat break_let.
     simpl.
-    econstructor.
+    econstructor;
+      try (simpl; lia).
     +
       pose (IHt (S i) (S (S loc))).
       rewrite Heqp in *. eassumption.
@@ -768,18 +912,44 @@ Proof.
       assert (n0 > (S i)).
       eapply anno_mono; eauto.
       lia.
-    
+    +
+      simpl in *.
+      
+      assert (fst (lrange a) >= (S (S loc))).
+      {
+        eapply lrange_anno_mono'; eauto.
+      }
+      
+      assert (n1 >= (S (S loc))).
+      {
+        eapply lrange_anno_mono; eauto.
+      }
+      lia.
       
       
-      
-      
-      
+      (*
+  -
+    repeat break_let.
+    simpl in *.
+    econstructor;
+      try (simpl; lia).
+    +
+      pose (IHt1 i loc).
+      rewrite Heqp in *. eassumption.
+    +
+      pose (IHt2 n n0).
+      rewrite Heqp1 in *. eassumption.
+    +
+      simpl.
+       *)
     
   -
     repeat break_let.
     simpl in *.
-    econstructor.
-    +
+    econstructor;
+      try (simpl; lia).
+
+    +  
       pose (IHt1 (S i) (S (S (S (S loc))))).
       rewrite Heqp in *. eassumption.
     +
@@ -825,6 +995,42 @@ Proof.
       rewrite anno_range.
       simpl.
       lia.
+    +
+      simpl.
+      assert (a = snd (snd (anno t1 (S i) (S (S (S (S loc))))))) by (rewrite Heqp; tauto).
+      subst.
+      rewrite anno_lrange.
+      
+      simpl.
+      lia.
+    +
+      simpl.
+      assert (a0 = snd (snd (anno t2 n n0))) by (rewrite Heqp1; tauto).
+     
+      subst.
+      rewrite anno_lrange.
+      
+      simpl.
+      rewrite Heqp1.
+      simpl.
+      lia.
+    +
+      simpl.
+      assert (a = snd (snd (anno t1 (S i) (S (S (S (S loc))))))) by (rewrite Heqp; tauto).
+      subst.
+      rewrite anno_lrange.
+      
+      simpl.
+      lia.
+    +
+      assert (a = snd (snd (anno t1 (S i) (S (S (S (S loc))))))) by (rewrite Heqp; tauto).
+      assert (a0 = snd (snd (anno t2 n n0))) by (rewrite Heqp1; tauto).
+      subst.
+      repeat (rewrite anno_lrange).
+      simpl.
+      rewrite Heqp.
+      simpl.
+      lia.      
 Defined.
 
 

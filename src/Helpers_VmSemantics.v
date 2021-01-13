@@ -108,6 +108,7 @@ Proof.
       eassumption.
         jkjk'; eauto. 
   -
+    (* destruct l; destruct r; destruct p; destruct p0. *)
     repeat (df; dohtac; df; try tauto).
     
 Defined.

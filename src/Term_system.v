@@ -103,17 +103,17 @@ Proof.
   - inv H0; auto.
   - rewrite H8; simpl.
     inv H0; auto.
-    rewrite H11 in H8.
+    rewrite H14 in H8.
     apply Nat.succ_inj in H8; subst; auto.
   - inv H0; auto.
   - rewrite H10; simpl.
     inv H0; auto.
-    rewrite H12 in H10.
+    rewrite H15 in H10.
     apply Nat.succ_inj in H10; subst; auto.
     
   - rewrite H12; simpl.
     inv H0; auto.
-    rewrite H15 in H12.
+    rewrite H23 in H12.
     apply Nat.succ_inj in H12; subst; auto.
 Qed.
 
@@ -144,25 +144,25 @@ Proof.
       inv H0; inv H1; auto.
     + destruct r as [i j]; simpl in *.
       repeat expand_let_pairs.
-      repeat apply before_sup in H3.
-      repeat apply before_sup in H4.
-      inv H3; inv H4; auto.
+      repeat apply before_sup in H6.
+      repeat apply before_sup in H7.
+      inv H6; inv H7; auto.
     + destruct r as [i j]; simpl in *.
-      repeat apply before_sup in H4.
-      repeat apply before_sup in H5.
-      eapply IHwell_formed2 in H4; eauto.
+      repeat apply before_sup in H7.
+      repeat apply before_sup in H8.
+      eapply IHwell_formed2 in H7; eauto.
       inv G; auto.
       
     + destruct r as [i j]; simpl in *.
-      repeat apply before_sup in H4.
-      repeat apply before_sup in H5.
-      inv H4; inv H5; auto.
+      repeat apply before_sup in H7.
+      repeat apply before_sup in H8.
+      inv H7; inv H8; auto.
       
     + destruct r as [i j]; simpl in *.
       repeat expand_let_pairs.
-      repeat apply before_sup in H5.
-      repeat apply before_sup in H6.
-      inv H5; inv H6; auto.
+      repeat apply before_sup in H13.
+      repeat apply before_sup in H14.
+      inv H13; inv H14; auto.
 Qed.
 
 Lemma evsys_max_unique:
@@ -188,26 +188,26 @@ Proof.
   repeat expand_let_pairs; simpl in *; auto.
   - inv H0; auto.
   - repeat expand_let_pairs.
-    repeat apply before_sup in H3.
-    inv H3; auto.
+    repeat apply before_sup in H6.
+    inv H6; auto.
   - 
-    repeat apply before_sup in H4.
+    repeat apply before_sup in H7.
     
-    apply IHwell_formed2 in H4; auto.
+    apply IHwell_formed2 in H7; auto.
     
-  - repeat apply before_sup in H4.
-    inv H4; auto.
+  - repeat apply before_sup in H7.
+    inv H7; auto.
     
   - repeat expand_let_pairs.
-    repeat apply before_sup in H5.
-    inv H5; auto.
+    repeat apply before_sup in H13.
+    inv H13; auto.
   -
     repeat expand_let_pairs.
-    repeat apply before_sup in H5.
-    inv H5; auto.
+    repeat apply before_sup in H13.
+    inv H13; auto.
   -
     repeat expand_let_pairs.
-    inv H6; eauto.
+    inv H14; eauto.
 Qed.
 
 (*

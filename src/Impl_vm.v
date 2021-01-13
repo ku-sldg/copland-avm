@@ -10,18 +10,18 @@ Require Import Term GenStMonad MonadVM.
 
 Fixpoint copland_compile (t:AnnoTerm): CVM unit :=
   match t with
-  | aasp (n,_) a =>
+  | aasp (n,_) _ a =>
       e <- do_prim n a ;;
       put_ev e
-  | aatt (i,j) (req_loc,rpy_loc) q t' =>
+  | aatt (i,j) _ (req_loc,rpy_loc) q t' =>
       sendReq t' q i req_loc ;;
       doRemote t' q req_loc rpy_loc ;;
       e' <- receiveResp j rpy_loc q ;;
       put_ev e'
-  | alseq r t1 t2 =>
+  | alseq r _ t1 t2 =>
       copland_compile t1 ;;
       copland_compile t2
-  | abseq (x,y) (sp1,sp2) t1 t2 =>
+  | abseq (x,y) _ (sp1,sp2) t1 t2 =>
       e <- get_ev ;;
       p <- get_pl ;;
       pr <- split_ev_seq x sp1 sp2 e p ;;
@@ -33,7 +33,7 @@ Fixpoint copland_compile (t:AnnoTerm): CVM unit :=
       copland_compile t2 ;;
       e2r <- get_ev ;;
       join_seq (Nat.pred y) p e1r e2r
-  | abpar (x,y) (loc_e1,loc_e1') (loc_e2,loc_e2') (sp1,sp2) t1 t2 =>
+  | abpar (x,y) _ (loc_e1,loc_e1') (loc_e2,loc_e2') (sp1,sp2) t1 t2 =>
       e <- get_ev ;;
       p <- get_pl ;;
       split_ev_par x sp1 sp2 loc_e1 loc_e2 t1 t2 e p ;;

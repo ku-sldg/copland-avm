@@ -71,21 +71,20 @@ Proof.
   induction t; intros; inv H; simpl;
     autorewrite with list; simpl; auto.
   -
-    apply IHt in H6; lia.
-  -
-    
-  apply IHt1 in H5.
-  apply IHt2 in H6. lia.
+    apply IHt in H7; lia.
   -
     
   apply IHt1 in H6.
-  apply IHt2 in H7. lia.
+  apply IHt2 in H7; lia.
+  -
+    
+  apply IHt1 in H7.
+  apply IHt2 in H8; lia.
   
   -
-  apply shuffle_length in H10.
-  apply IHt1 in H8.
-  apply IHt2 in H9. 
-  lia.
+  apply shuffle_length in H11.
+  apply IHt1 in H9.
+  apply IHt2 in H10; lia.
 Qed.
 
 Lemma esizeS_tr:

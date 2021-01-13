@@ -61,15 +61,15 @@ Inductive step: St -> option Ev -> St -> Prop :=
 (** Measurement *)
 
 | stasp:
-    forall r x p e,
-      step (conf (aasp r x) p e)
+    forall r lr x p e,
+      step (conf (aasp r lr x) p e)
            (Some (asp_event (fst r) x p))
-           (stop p (aeval (aasp r x) p e))
+           (stop p (aeval (aasp r lr x) p e))
 (** Remote call *)
 
 | statt:
-    forall r x p q e req_loc rpy_loc,
-      step (conf (aatt r (req_loc, rpy_loc) q x) p e)
+    forall r lr x p q e req_loc rpy_loc,
+      step (conf (aatt r lr (req_loc, rpy_loc) q x) p e)
            (Some (req (fst r) req_loc p q (unanno x)))
            (rem (snd r) rpy_loc p (conf x q e))
 | stattstep:
@@ -84,8 +84,8 @@ Inductive step: St -> option Ev -> St -> Prop :=
 (** Linear Sequential Composition *)
 
 | stlseq:
-    forall r x y p e,
-      step (conf (alseq r x y) p e)
+    forall r lr x y p e,
+      step (conf (alseq r lr x y) p e)
            None
            (ls (conf x p e) y)
 | stlseqstep:
@@ -98,8 +98,8 @@ Inductive step: St -> option Ev -> St -> Prop :=
 (** Branching Sequential Composition *)
 
 | stbseq:
-    forall r s x y p e,
-      step (conf (abseq r s x y) p e)
+    forall r lr s x y p e,
+      step (conf (abseq r lr s x y) p e)
            (Some (split (fst r) p))
            (bsl (snd r) (conf x p (splitEv_T (fst s) e))
                 y p (splitEv_T (snd s) e))
@@ -125,8 +125,8 @@ Inductive step: St -> option Ev -> St -> Prop :=
 (** Branching Parallel composition *)
 
 | stbpar:
-    forall r s x y p e xi xi' yi yi',
-      step (conf (abpar r (xi,xi') (yi,yi') s x y) p e)
+    forall r lr s x y p e xi xi' yi yi',
+      step (conf (abpar r lr (xi,xi') (yi,yi') s x y) p e)
            (Some (splitp (fst r) xi yi p))
            (bp (snd r) xi' yi'
                (conf x p (splitEv_T (fst s) e))
@@ -530,11 +530,11 @@ Qed.
 
 Fixpoint tsize t: nat :=
   match t with
-  | aasp _ _ => 1
-  | aatt _ _ _ x => 2 + tsize x
-  | alseq _ x y => 2 + tsize x + tsize y
-  | abseq _ _ x y => 3 + tsize x + tsize y
-  | abpar _ _ _ _ x y => 2 + tsize x + tsize y
+  | aasp _ _ _ => 1
+  | aatt _ _ _ _ x => 2 + tsize x
+  | alseq _ _ x y => 2 + tsize x + tsize y
+  | abseq _ _ _ x y => 3 + tsize x + tsize y
+  | abpar _ _ _ _ _ x y => 2 + tsize x + tsize y
   end.
 
 (** Size of a state (number of steps to reduce). *)

@@ -197,27 +197,11 @@ Proof.
     destruct a;
       try solve_by_inversion.
   -
-
-
-    
     inv H.
-
-
     (*
     invc H0;
       invc H1;
       try eauto. *)
-
-
-
-
-
-
-
-
-
-
-
 
     invc H0.
     +
@@ -225,7 +209,43 @@ Proof.
       ++
         tauto.
       ++
-        admit.
+        destruct l.
+
+        (*
+        assert (forall ev, events t q ev ->
+                         store_event ev loc ->
+                         fst (lrange t) <= loc < snd (lrange t)).
+        {
+          admit.
+        }
+        pose (H0 (req i0 loc p2 q0 t1)).
+        repeat concludes.
+        assert (store_event (req i0 loc p2 q0 t1) loc).
+        {
+          econstructor.
+        }
+
+        repeat concludes.
+         *)
+
+        assert (fst (lrange t) <= loc < snd (lrange t)).
+        {
+          admit.
+        }
+        
+
+        assert (loc = n).
+        {
+          admit.
+        }
+
+        subst.
+
+        assert (fst (lrange t) > n).
+        {
+          admit.
+        }
+        lia.
         (*
         eapply IHt.
         +++
@@ -249,7 +269,25 @@ Proof.
     +
       invc H1.
       ++
-        admit.
+        destruct l.
+         assert (fst (lrange t) <= loc < snd (lrange t)).
+        {
+          admit.
+        }
+        
+
+        assert (loc = n).
+        {
+          admit.
+        }
+
+        subst.
+
+        assert (fst (lrange t) > n).
+        {
+          admit.
+        }
+        lia.
 
         (*
         eapply IHt.
@@ -267,48 +305,125 @@ Proof.
       invc H1;
       try eauto.
     +
-      admit.
+      destruct l.
+
+      assert (fst (lrange t1) <= loc < snd (lrange t1)).
+      {
+        admit.
+      }
+
+      assert (fst (lrange t2) <= loc < snd (lrange t2)).
+      {
+        admit.
+      }
+
+      assert (fst (lrange t2) >= snd (lrange t1)).
+      {
+        admit.
+      }
+      lia.
     +
-      admit.
+       destruct l.
+
+      assert (fst (lrange t1) <= loc < snd (lrange t1)).
+      {
+        admit.
+      }
+
+      assert (fst (lrange t2) <= loc < snd (lrange t2)).
+      {
+        admit.
+      }
+
+      assert (fst (lrange t2) >= snd (lrange t1)).
+      {
+        admit.
+      }
+      lia.
+
   -
     inv H.
     invc H0;
       invc H1;
       try eauto.
     +
-      admit.
+       destruct l.
+
+      assert (fst (lrange t1) <= loc < snd (lrange t1)).
+      {
+        admit.
+      }
+
+      assert (fst (lrange t2) <= loc < snd (lrange t2)).
+      {
+        admit.
+      }
+
+      assert (fst (lrange t2) >= snd (lrange t1)).
+      {
+        admit.
+      }
+      lia.
     +
-      admit.
+       destruct l.
+
+      assert (fst (lrange t1) <= loc < snd (lrange t1)).
+      {
+        admit.
+      }
+
+      assert (fst (lrange t2) <= loc < snd (lrange t2)).
+      {
+        admit.
+      }
+
+      assert (fst (lrange t2) >= snd (lrange t1)).
+      {
+        admit.
+      }
+      lia.
   -
     inv H.
     invc H0;
       invc H1;
       try eauto.
     +
-      admit.
+       destruct l.
+
+      assert (fst (lrange t1) <= loc < snd (lrange t1)).
+      {
+        admit.
+      }
+
+      assert (fst (lrange t2) <= loc < snd (lrange t2)).
+      {
+        admit.
+      }
+
+      assert (fst (lrange t2) >= snd (lrange t1)).
+      {
+        admit.
+      }
+      lia.
     +
-      admit.
-      Unshelve.
-      eauto.
-      eauto.
-      eauto.
-      eauto.
-      eauto.
-      eauto.
+       destruct l.
+
+      assert (fst (lrange t1) <= loc < snd (lrange t1)).
+      {
+        admit.
+      }
+
+      assert (fst (lrange t2) <= loc < snd (lrange t2)).
+      {
+        admit.
+      }
+
+      assert (fst (lrange t2) >= snd (lrange t1)).
+      {
+        admit.
+      }
+      lia.
 Admitted.
-
-      
-      
-      
-    
-      
-    
-      
-
-
-  
-Admitted.
-
 
 Lemma store_events_injective: forall t p ev1 ev2 loc,
   well_formed t ->
@@ -333,6 +448,9 @@ Proof.
 
     tauto.
   -
+
+Admitted.
+
     
     
     
@@ -340,7 +458,7 @@ Proof.
 
 
 
-
+(*
 
   
   -
@@ -725,18 +843,18 @@ Proof.
         inv H5;
           try solve_by_inversion.
 
-        assert (exists ev, store_event ev loc /\ ev_in ev (Term_system.ev_sys t1 p)).
+        assert (exists ev, store_event ev loc /\ ev_in ev (Term_system.ev_sys t1 p1)).
         {
           eapply aff; eauto.
         }
-        assert (exists ev, store_event ev loc /\ ev_in ev (Term_system.ev_sys t2 p)).
+        assert (exists ev, store_event ev loc /\ ev_in ev (Term_system.ev_sys t2 p1)).
         {
           eapply aff; eauto.
         }
         destruct_conjs.
 
         
-        assert (ev_in H0 (merge (S n, Nat.pred n0) (Term_system.ev_sys t1 p) (Term_system.ev_sys t2 p))).
+        assert (ev_in H0 (merge (S n, Nat.pred n0) (Term_system.ev_sys t1 p1) (Term_system.ev_sys t2 p1))).
         {
           apply ein_mergel.
           eauto.
@@ -744,7 +862,7 @@ Proof.
         
           
 
-        assert (ev_in H6 (merge (S n, Nat.pred n0) (Term_system.ev_sys t1 p) (Term_system.ev_sys t2 p))).
+        assert (ev_in H6 (merge (S n, Nat.pred n0) (Term_system.ev_sys t1 p1) (Term_system.ev_sys t2 p1))).
         {
           apply ein_merger.
           eauto.
@@ -754,7 +872,7 @@ Proof.
 
         
 
-        eapply unique_store_events' with (ev1:=H0) (ev2:=H6) (t:=(abpar (n, n0) s t1 t2)) (p:=p) (loc:=loc).
+        eapply unique_store_events' with (ev1:=H0) (ev2:=H6) (t:=(abpar (n, n0) l (n1,n2) (n3,n4) s t1 t2)) (p:=p1) (loc:=loc).
         eassumption.
         cbn.
         apply ein_beforer.
@@ -1258,9 +1376,9 @@ Ltac do_suffix name :=
              name
   end.
 
-Lemma alseq_decomp : forall r t1' t2' e e'' p p'' o o'' tr,
-    well_formed (alseq r t1' t2') ->
-    copland_compile (alseq r t1' t2') {| st_ev := e; st_trace := []; st_pl := p; st_store := o |} =
+Lemma alseq_decomp : forall r lr t1' t2' e e'' p p'' o o'' tr,
+    well_formed (alseq r lr t1' t2') ->
+    copland_compile (alseq r lr t1' t2') {| st_ev := e; st_trace := []; st_pl := p; st_store := o |} =
     (Some tt, {| st_ev := e''; st_trace := tr; st_pl := p''; st_store := o'' |}) ->
 
     exists e' tr' p' o',
@@ -1610,9 +1728,10 @@ Proof.
     eapply stbsrstop.
     econstructor.
   -
-    destruct s; destruct r.
+    destruct s; destruct r; destruct l.
     repeat (df; dohtac; df).
     econstructor.
+    (*
     assert (n1 = fst (range t1)).
     {
       rewrite Heqr.
@@ -1623,12 +1742,13 @@ Proof.
       rewrite Heqr0.
       eauto.
     }
-    subst.
+    subst. *)
     econstructor.
     eapply lstar_transitive.
     simpl.
     apply bpar_shuffle.
     econstructor.
+    (*
     assert (n2 = snd (range t1)).
     {
       rewrite Heqr.
@@ -1640,6 +1760,8 @@ Proof.
       eauto.
     }
     subst.
+     *)
+    
     
     apply stbpstop.
     econstructor.     
