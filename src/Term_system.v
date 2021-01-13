@@ -103,7 +103,7 @@ Proof.
   - inv H0; auto.
   - rewrite H8; simpl.
     inv H0; auto.
-    rewrite H15 in H8.
+    rewrite H16 in H8.
     apply Nat.succ_inj in H8; subst; auto.
   - inv H0; auto.
   - rewrite H10; simpl.
@@ -144,9 +144,9 @@ Proof.
       inv H0; inv H1; auto.
     + destruct r as [i j]; simpl in *.
       repeat expand_let_pairs.
-      repeat apply before_sup in H7.
       repeat apply before_sup in H8.
-      inv H7; inv H8; auto.
+      repeat apply before_sup in H9.
+      inv H8; inv H9; auto.
     + destruct r as [i j]; simpl in *.
       repeat apply before_sup in H7.
       repeat apply before_sup in H8.
@@ -188,8 +188,8 @@ Proof.
   repeat expand_let_pairs; simpl in *; auto.
   - inv H0; auto.
   - repeat expand_let_pairs.
-    repeat apply before_sup in H7.
-    inv H7; auto.
+    repeat apply before_sup in H8.
+    inv H8; auto.
   - 
     repeat apply before_sup in H7.
     

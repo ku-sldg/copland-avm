@@ -186,6 +186,186 @@ Proof.
   lia.
 Defined.
 
+Lemma unique_rpy_events (t:AnnoTerm) : forall p i p1 q loc,
+    well_formed t ->
+    events t p (rpy i loc p1 q) ->
+    fst (lrange t) <= loc < snd (lrange t).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a;
+      cbn in *;
+      try solve_by_inversion.
+  -
+    cbn in *.
+    inv H.
+    inv H0.
+    +
+    clear H7.
+    clear H8.
+
+     assert (fst (lrange t) <= loc < snd (lrange t)).
+      {
+        eauto.
+      }
+      lia.
+    +
+      simpl in *.
+      subst.
+      
+      assert (fst (lrange t) <= snd (lrange t)).
+      {
+        eapply wf_mono_locs; eauto.
+      }
+      lia.
+
+  -
+    inv H.
+    inv H0.
+    +
+      simpl in *.
+      (*
+      rewrite H10 in *.
+      rewrite H12 in *. *)
+      assert (fst (lrange t1) <= loc < snd (lrange t1)) by eauto.
+      subst.
+      assert (fst (lrange t2) <= snd (lrange t2)).
+      {
+        eapply wf_mono_locs; eauto.
+      }
+      lia.
+
+      (*
+      
+      assert (snd (lrange t1) <= snd (lrange t2)).
+      {
+        (*
+        rewrite H11 in *.
+         *)
+
+        assert (fst (lrange t2) <= snd (lrange t2)).
+        {
+          rewrite <- H11 in *; clear H11.
+          
+          admit.
+        }
+        lia.
+      }
+      lia. *)
+    +
+      simpl in *.
+      
+      assert (fst (lrange t2) <= loc < snd (lrange t2)) by eauto.
+      (*
+      rewrite H10 in *.
+      rewrite H12 in *. *)
+
+      assert (fst (lrange t1) <= snd (lrange t1)).
+      {
+        eapply wf_mono_locs; eauto.
+      }
+      lia.
+
+      (*
+
+      
+      assert (fst (lrange t1) <= fst (lrange t2)).
+      { 
+        admit.
+      }
+      lia. *)
+  -
+    inv H.
+    inv H0.
+    +
+      simpl in *.
+      (*
+      rewrite H11 in *.
+      rewrite H13 in *.
+       *)
+      
+      assert (fst (lrange t1) <= loc < snd (lrange t1)) by eauto.
+      subst.
+      assert (fst (lrange t2) <= snd (lrange t2)).
+      {
+        eapply wf_mono_locs; eauto.
+      }
+      lia.
+      (*
+      assert (snd (lrange t1) <= snd (lrange t2)).
+      {
+        admit.
+      }
+      lia. *)
+    +
+      simpl in *.
+      assert (fst (lrange t2) <= loc < snd (lrange t2)) by eauto.
+      (*
+      rewrite H11 in *.
+      rewrite H13 in *.
+       *)
+
+      assert (fst (lrange t1) <= snd (lrange t1)).
+      {
+        eapply wf_mono_locs; eauto.
+      }
+      lia.
+
+      (*
+      
+      assert (fst (lrange t1) <= fst (lrange t2)).
+      {
+        admit.
+      }
+      lia. *)
+  -
+    inv H.
+    inv H0.
+    +
+      simpl in *.
+      (*
+      rewrite H18 in *.
+      rewrite H19 in *.
+       *)
+      
+      assert (fst (lrange t1) <= loc < snd (lrange t1)) by eauto.
+      subst.
+
+      assert (fst (lrange t2) <= snd (lrange t2)).
+      {
+        eapply wf_mono_locs; eauto.
+      }
+      lia.
+
+      (*
+
+      
+      assert (snd (lrange t1) <= snd (lrange t2)).
+      {
+        admit.
+      }
+      lia. *)
+    +
+      simpl in *.
+      assert (fst (lrange t2) <= loc < snd (lrange t2)) by eauto.
+      (*
+      rewrite H18 in *.
+      rewrite H19 in *.
+       *)
+
+      assert (fst (lrange t1) <= snd (lrange t1)).
+      {
+       eapply wf_mono_locs; eauto.
+      }
+      lia.
+Defined.
+
+
+
+
+
 Lemma unique_req_events (t:AnnoTerm) : forall p i p1 q t0 loc,
     well_formed t ->
     events t p (req i loc p1 q  t0) ->
@@ -724,6 +904,79 @@ Proof.
       simpl in *; lia.
 Defined.
 
+Lemma unique_req_splitp_l_locs:
+  forall (t : AnnoTerm) (p i i0 loc p0 p1 q yi : nat) (t0: Term),
+    well_formed t ->
+    events t p (req i loc p0 q t0) ->
+    events t p (splitp i0 loc yi p1) -> i = i0.
+Proof.
+Admitted.
+
+Lemma unique_req_splitp_r_locs:
+    forall (t : AnnoTerm) (p i i0 loc p0 p1 q xi : nat) (t0: Term),
+      well_formed t ->
+      events t p (req i loc p0 q t0) ->
+      events t p (splitp i0 xi loc p1) -> i = i0.
+Proof.
+Admitted.
+
+Lemma unique_req_rpy_locs
+  : forall (t : AnnoTerm) (p i i0 loc p0 p1 q q0 : nat) (t0: Term),
+    well_formed t ->
+    events t p (req i loc p0 q t0) ->
+    events t p (rpy i0 loc p1 q0) -> i = i0.
+Proof.
+Admitted.
+
+Lemma unique_splitp_splitp_ll_locs:
+  forall (t : AnnoTerm) (p i i0 loc p0 p1 yi yi0 : nat),
+    well_formed t ->
+    events t p (splitp i  loc yi  p0) ->
+    events t p (splitp i0 loc yi0 p1) -> i = i0.
+Proof.
+Admitted.
+
+Lemma unique_splitp_splitp_rl_locs:
+  forall (t : AnnoTerm) (p i i0 loc p0 p1 yi yi0 : nat),
+    well_formed t ->
+    events t p (splitp i0 loc yi0 p1) ->
+    events t p (splitp i  yi loc  p0) ->
+    i = i0.
+Proof.
+Admitted.
+
+Lemma unique_rpy_splitp_l_locs:
+  forall (t : AnnoTerm) (p i i0 loc p0 p1 q yi : nat),
+    well_formed t ->
+    events t p (rpy i loc p0 q) ->
+    events t p (splitp i0 loc yi p1) -> i = i0.
+Proof.
+Admitted.
+
+Lemma unique_splitp_splitp_rr_locs:
+  forall (t : AnnoTerm) (p i i0 loc p0 p1 xi xi0 : nat),
+    well_formed t ->
+    events t p (splitp i  xi loc  p0) ->
+    events t p (splitp i0 xi0 loc p1) -> i = i0.
+Proof.
+Admitted.
+
+Lemma unique_rpy_splitp_r_locs:
+  forall (t : AnnoTerm) (p i i0 loc p0 p1 q xi : nat),
+    well_formed t ->
+    events t p (rpy i loc p0 q) ->
+    events t p (splitp i0 xi loc p1) -> i = i0.
+Proof.
+Admitted.
+
+Lemma unique_rpy_locs
+  : forall (t : AnnoTerm) (p i i0 loc p0 p1 q q0 : nat),
+    well_formed t ->
+    events t p (rpy i  loc p0 q) ->
+    events t p (rpy i0 loc p1 q0) -> i = i0.
+Proof.
+Admitted.
+
 Lemma store_events_injective: forall t p ev1 ev2 loc,
   well_formed t ->
   events t p ev1 ->
@@ -736,20 +989,49 @@ Proof.
   intros.
   Locate events_injective.
   eapply events_injective; eauto.
-  inv H2;
-    inv H3.
-
+  invc H2;
+    invc H3;
+    simpl.
   -
-    assert (i = i0).
-    {
-      eapply unique_req_locs; eauto.
-    }
-
-    tauto.
-
+    eapply unique_req_locs; eauto.
   -
+    eapply unique_req_splitp_l_locs; eauto.
+  - 
+    eapply unique_req_splitp_r_locs; eauto.
+  -
+    eapply unique_req_rpy_locs; eauto.
+  -
+    symmetry.
+    eapply unique_req_splitp_l_locs; eauto.
+  -
+    eapply unique_splitp_splitp_ll_locs; eauto.
+  -
+    symmetry.
+    eapply unique_splitp_splitp_rl_locs; eauto.
+  -
+    symmetry.
+    eapply unique_rpy_splitp_l_locs; eauto.
+  -
+    symmetry.
+    eapply unique_req_splitp_r_locs; eauto.
+  -
+    eapply unique_splitp_splitp_rl_locs; eauto.
+  -
+    eapply unique_splitp_splitp_rr_locs; eauto.
+  -
+    symmetry.
+    eapply unique_rpy_splitp_r_locs; eauto.
+  -
+    symmetry.
+    eapply unique_req_rpy_locs; eauto.
+  -
+    eapply unique_rpy_splitp_l_locs; eauto.
+  -
+    eapply unique_rpy_splitp_r_locs; eauto.
+  -                                           
+    eapply unique_rpy_locs; eauto.
+Defined.
 
-Admitted.
 
     
     

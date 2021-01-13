@@ -656,6 +656,7 @@ Inductive well_formed: AnnoTerm -> Prop :=
     Nat.pred (snd r) > fst r ->
     
     fst lr = fst locs ->
+    snd locs = S (fst locs) ->
     fst (lrange x) = (fst lr) + 2 ->
     snd lr > fst lr ->
     snd (lrange x) = snd lr ->
