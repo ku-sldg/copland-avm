@@ -19,7 +19,8 @@ Inductive store_event: Ev -> Loc -> Prop :=
 | put_event: forall i x p q t, store_event (req i x p q t) x
 | put_event_spl: forall i xi yi p, store_event (splitp i xi yi p) xi
 | put_event_spr: forall i xi yi p, store_event (splitp i xi yi p) yi
-| get_event: forall i x p q, store_event (rpy i x p q) x.
+| get_event: forall i x p q, store_event (rpy i x p q) x
+| get_event_joinpl: forall i xi yi p, store_event (joinp i xi yi p) xi.
 
 Lemma wf_mono_locs: forall t,
     well_formed t ->
@@ -66,6 +67,20 @@ Ltac inv_ev :=
     inv H
   end.
 
+Ltac inv_ev' :=
+  match goal with
+  | [H: events (aasp _ _ _) _ _ |- _] =>
+    inv H
+  | [H: events (alseq _ _ _ _) _ _ |- _] =>
+    inv H
+  | [H: events (aatt _ _ _ _ _) _ _ |- _] =>   
+    inv H
+  | [H: events (abseq _ _ _ _ _) _ _ |- _] =>
+    inv H
+  | [H: events (abpar _ _ _ _ _ _ _) _ _ |- _] =>
+    inv H
+  end.
+
 
 Ltac inv_ev2 :=
   match goal with
@@ -80,6 +95,13 @@ Ltac inv_ev2' :=
      H': events _ _ _ |- _] =>
     inv H; inv H'
   end.
+
+Create HintDb lr.
+
+Print HintDb lr.
+(*
+Hint Resolve aff : coree.
+*)
 
 Lemma rpy_events_lrange (t:AnnoTerm) : forall p i p1 q loc,
     well_formed t ->
@@ -99,6 +121,7 @@ Proof.
         repeat find_eapply_lem_hyp wf_mono_locs;
         lia).
 Defined.
+Hint Resolve rpy_events_lrange : lr.
 
 (*
 
@@ -254,6 +277,7 @@ Proof.
         repeat find_eapply_lem_hyp wf_mono_locs;
         lia).
 Defined.
+Hint Resolve req_events_lrange : lr.
 
 Lemma splitp_l_events_lrange (t:AnnoTerm) : forall p i p0 yi loc,
     well_formed t ->
@@ -273,6 +297,7 @@ Proof.
         repeat find_eapply_lem_hyp wf_mono_locs;
         lia).
 Defined.
+Hint Resolve splitp_l_events_lrange : lr.
 
 Lemma splitp_r_events_lrange (t:AnnoTerm) : forall p i p0 xi loc,
     well_formed t ->
@@ -292,6 +317,28 @@ Proof.
         repeat find_eapply_lem_hyp wf_mono_locs;
         lia).
 Defined.
+Hint Resolve splitp_r_events_lrange : lr.
+
+Lemma joinp_l_events_lrange (t:AnnoTerm) : forall p p0 i yi loc,
+    well_formed t ->
+    events t p (joinp i loc yi p0) ->
+    fst (lrange t) <= loc < snd (lrange t).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+    try (
+        cbn in *;
+        inv_wf;
+        inv_ev;
+        simpl in *; subst;
+        try lia;
+        repeat (find_eapply_hyp_hyp);
+        repeat find_eapply_lem_hyp wf_mono_locs;
+        lia).
+Defined.
+Hint Resolve joinp_l_events_lrange : lr.
+
 
 Lemma store_events_lrange (t:AnnoTerm) : forall p ev loc,
     well_formed t ->
@@ -300,25 +347,16 @@ Lemma store_events_lrange (t:AnnoTerm) : forall p ev loc,
     fst (lrange t) <= loc < snd (lrange t).
 Proof.
   intros.
-  inv H1.
-  -
-    eapply req_events_lrange; eauto.
-  -
-    eapply splitp_l_events_lrange; eauto.
-  -
-    eapply splitp_r_events_lrange; eauto.
-  -
-    eapply rpy_events_lrange; eauto.
+  inv H1;
+    eauto with lr.
 Defined.
 
-    
 Ltac pose_store_events :=
   match goal with
   | [H: events _ _ ?ev,
         H': Loc |- _] =>
     assert_new_proof_by (store_event ev H') econstructor
   end.
-
 
 Ltac pose_new_lrange :=
   match goal with
@@ -477,7 +515,7 @@ Lemma unique_req_locs: forall t p i i0 loc p0 p1 q q0 t0 t1,
     events t p (req i0 loc p1 q0 t1) ->
     i = i0.
 Proof.
-    intros.
+  intros.
   generalizeEverythingElse t.
   induction t; intros;
         inv_wf;
@@ -1368,6 +1406,112 @@ Proof.
           lia).
 Defined.
 
+Lemma unique_splitpl_joinpl_locs
+  : forall (t : AnnoTerm) (p i i0 loc p1 q0 yi yi' : nat),
+    well_formed t ->
+    events t p (splitp i loc yi p1) ->
+    events t p (joinp i0 loc yi' q0) ->
+    i = i0.
+Proof.
+      intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+        inv_wf;
+    inv_ev2;
+    try eauto;
+    destruct l; simpl in *;
+      try (
+          repeat pose_store_events;
+          repeat pose_new_lrange;
+          repeat find_eapply_lem_hyp wf_mono_locs;    
+          lia).
+Defined.
+
+
+Lemma unique_req_joinpl_locs
+  : forall (t : AnnoTerm) (p i i0 loc p0 q q0 yi : nat) t0,
+    well_formed t ->
+    events t p (req i loc p0 q t0) ->
+    events t p (joinp i0 loc yi q0) ->
+    i = i0.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+    inv_wf;
+    inv_ev2;
+    try eauto;
+    destruct l; simpl in *;
+      try (
+          repeat pose_store_events;
+          repeat pose_new_lrange;
+          repeat find_eapply_lem_hyp wf_mono_locs;    
+          lia).
+Defined.
+
+Lemma unique_splitpr_joinpl_locs
+  : forall (t : AnnoTerm) (p i i0 loc p1 q0 xi yi : nat),
+    well_formed t ->
+    events t p (splitp i xi loc p1) ->
+    events t p (joinp i0 loc yi q0) ->
+    i = i0.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+    inv_wf;
+    inv_ev2;
+    try eauto;
+    destruct l; simpl in *;
+      try (
+          repeat pose_store_events;
+          repeat pose_new_lrange;
+          repeat find_eapply_lem_hyp wf_mono_locs;    
+          lia).
+Defined.
+
+Lemma unique_rpy_joinpl_locs
+  : forall (t : AnnoTerm) (p i i0 loc p0 q q0 yi : nat),
+    well_formed t ->
+    events t p (rpy i loc p0 q) ->
+    events t p (joinp i0 loc yi q0) ->
+    i = i0.
+Proof.
+    intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+    inv_wf;
+    inv_ev2;
+    try eauto;
+    destruct l; simpl in *;
+      try (
+          repeat pose_store_events;
+          repeat pose_new_lrange;
+          repeat find_eapply_lem_hyp wf_mono_locs;    
+          lia).
+Defined.
+
+Lemma unique_joinpl_joinpl_locs
+  : forall (t : AnnoTerm) (p i i0 loc p1 q0 yi yi' : nat),
+    well_formed t ->
+    events t p (joinp i  loc yi p1) ->
+    events t p (joinp i0 loc yi' q0) ->
+    i = i0.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+    inv_wf;
+    inv_ev2;
+    try eauto;
+    destruct l; simpl in *;
+      try (
+          repeat pose_store_events;
+          repeat pose_new_lrange;
+          repeat find_eapply_lem_hyp wf_mono_locs;    
+          lia).
+Defined.
+
 Lemma store_events_injective: forall t p ev1 ev2 loc,
   well_formed t ->
   events t p ev1 ->
@@ -1376,7 +1520,6 @@ Lemma store_events_injective: forall t p ev1 ev2 loc,
   store_event ev2 loc ->
   ev1 = ev2.
 Proof.
-
   intros.
   Locate events_injective.
   eapply events_injective; eauto.
@@ -1392,6 +1535,8 @@ Proof.
   -
     eapply unique_req_rpy_locs; eauto.
   -
+    eapply unique_req_joinpl_locs; eauto.
+  -
     symmetry.
     eapply unique_req_splitp_l_locs; eauto.
   -
@@ -1403,6 +1548,8 @@ Proof.
     symmetry.
     eapply unique_rpy_splitp_l_locs; eauto.
   -
+    eapply unique_splitpl_joinpl_locs; eauto. 
+  -
     symmetry.
     eapply unique_req_splitp_r_locs; eauto.
   -
@@ -1413,6 +1560,8 @@ Proof.
     symmetry.
     eapply unique_rpy_splitp_r_locs; eauto.
   -
+    eapply unique_splitpr_joinpl_locs; eauto.
+  -
     symmetry.
     eapply unique_req_rpy_locs; eauto.
   -
@@ -1421,6 +1570,24 @@ Proof.
     eapply unique_rpy_splitp_r_locs; eauto.
   -                                           
     eapply unique_rpy_locs; eauto.
+  -
+    eapply unique_rpy_joinpl_locs; eauto.
+  -
+    symmetry.
+    eapply unique_req_joinpl_locs; eauto.
+  -
+    symmetry.
+    eapply unique_splitpl_joinpl_locs; eauto.
+  -
+    symmetry.
+    eapply unique_splitpr_joinpl_locs; eauto.
+  -
+    symmetry.
+    eapply unique_rpy_joinpl_locs; eauto.
+  -
+    eapply unique_joinpl_joinpl_locs; eauto.
+    
+
 Defined.
 
 
@@ -1696,6 +1863,13 @@ Proof.
   eapply Trace.evsys_tr_in; try eauto.
   eapply evsys_reps_refine; eauto.
 Defined.
+ *)
+
+Create HintDb coree.
+
+Print HintDb coree.
+(*
+Hint Resolve aff : coree.
 *)
 
 Lemma aff: forall es1 loc,
@@ -1728,12 +1902,19 @@ Proof.
     exists x.
     split; eauto.
 Defined.
+Hint Resolve aff : coree.
+
+Print HintDb coree.
+
+Ltac eautoo := eauto with coree.
 
 Theorem no_store_conflicts: forall t p sys,
     well_formed t ->
     sys = Term_system.ev_sys t p ->
     not (store_conflict sys).
-Proof.
+Proof. (* with eautoo. *)
+  Print Hint.
+  Print HintDb core.
   Print ev_sys.
   unfold not; intros.
   generalizeEverythingElse t.
@@ -1818,7 +1999,12 @@ Proof.
 
         assert (exists ev, store_event ev loc /\ ev_in ev (Term_system.ev_sys t1 p1)).
         {
+          eauto...
+          eautoo.
+          (*
           eapply aff; eauto.
+           *)
+          
         }
         assert (exists ev, store_event ev loc /\ ev_in ev (Term_system.ev_sys t2 p1)).
         {
@@ -1829,16 +2015,20 @@ Proof.
         
         assert (ev_in H0 (merge (S n, Nat.pred n0) (Term_system.ev_sys t1 p1) (Term_system.ev_sys t2 p1))).
         {
-          apply ein_mergel.
           eauto.
+          (*
+          apply ein_mergel.
+          eauto. *)
         }
         
           
 
         assert (ev_in H6 (merge (S n, Nat.pred n0) (Term_system.ev_sys t1 p1) (Term_system.ev_sys t2 p1))).
         {
-          apply ein_merger.
           eauto.
+          (*
+          apply ein_merger.
+          eauto. *)
         }
 
         
@@ -1864,6 +2054,8 @@ Proof.
         eassumption.
         eassumption.
 
+       
+
         inv H2.
         inv H19.
 
@@ -1872,10 +2064,8 @@ Proof.
         eapply unique_events; eauto.
       ++
         solve_by_inversion.
-Defined.
 
-      
-      
+Defined.     
       
     
 
