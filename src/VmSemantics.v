@@ -15,167 +15,11 @@ Require Import Coq.Arith.Peano_dec Lia.
 
 Set Nested Proofs Allowed.
 
-(*
-Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
-  match t with
-  | aasp (i, j) x => leaf (i, j) (asp_event i x p)
-  | aatt (i, j) q x =>
-    before (i, j)
-      (leaf (i, S i) (req i i p q (unanno x)))
-      (*(before (S i, j)
-              (ev_sys x q) *)
-      (leaf (pred j, j) (rpy (pred j) (pred j) p q))
-  | alseq r x y => before r (ev_sys x p)
-                          (ev_sys y p)
-  | abseq (i, j) s x y =>
-    before (i, j)
-           (leaf (i, S i)
-                 (Term.split i p))
-           (before (S i, j)
-                   (before (S i, (pred j))
-                           (ev_sys x p)
-                           (ev_sys y p))
-                   (leaf ((pred j), j)
-                   (join (pred j) p)))
-  | abpar (i, j) s x y =>
-    before (i, j)
-           (leaf (i, S i)
-                 (Term.split i p))
-           (before (S i, j)
-                   (merge (S i, (pred j))
-                          (ev_sys x p)
-                          (ev_sys y p))
-                   (leaf ((pred j), j)
-                   (join (pred j) p)))
-  end.
-*)
-
-(*
-Lemma same_pl: forall t ev p,
-  ev_in ev (ev_sys t p) ->
-  Term.pl ev = p.
-Proof.
-  induction t; intros.
-  -
-    destruct a;
-    
-      cbn in *;
-        repeat break_let;
-      inv H;
-      tauto.
-  -
-    cbn in *;
-      repeat break_let.
-    invc H.
-    +
-      invc H2.
-      tauto.
-    +
-      invc H2.
-      tauto.
-  -
-    cbn in *.
-    invc H; eauto.
-  -
-    cbn in *;
-      repeat break_let.
-    invc H.
-    +
-      invc H2.
-      tauto.
-    +
-      invc H2.
-      ++
-        invc H1; eauto.
-      ++
-        invc H1.
-        tauto.
-  -
-    cbn in *;
-      repeat break_let.
-    invc H.
-    +
-      invc H2.
-      tauto.
-    +
-      invc H2.
-      ++
-        invc H1; eauto.
-      ++
-        invc H1; eauto.
-Defined.
-*)
-
 Inductive store_event: Ev -> Loc -> Prop :=
 | put_event: forall i x p q t, store_event (req i x p q t) x
 | put_event_spl: forall i xi yi p, store_event (splitp i xi yi p) xi
 | put_event_spr: forall i xi yi p, store_event (splitp i xi yi p) yi
 | get_event: forall i x p q, store_event (rpy i x p q) x.
-
-
-(*
-Lemma store_events_same_pl: forall t p loc ev,
-  ev_in ev (ev_sys t p) ->
-  store_event ev loc ->
-  Term.pl ev = p.
-Proof.
-  intros.
-  eapply same_pl.
-  eauto.
-Defined.
-*)
-
-
-(*
-Lemma req_same_as_evid: forall t p p' i loc q t',
-    events t p (req i loc p' q t') ->
-    i = loc.
-Proof.
-  intros.
-  generalizeEverythingElse t.
-  induction t; intros;
-    inv H; eauto.
-Defined.
-
-Lemma rpy_same_as_evid: forall t p p' i loc q,
-    events t p (rpy i loc p' q) ->
-    i = loc.
-Proof.
-  intros.
-  generalizeEverythingElse t.
-  induction t; intros;
-    inv H; eauto.
-Defined.
- *)
-
-
-(*
-
-Lemma store_event_is_event: forall ev t p loc,
-  events t p ev ->
-  store_event ev loc ->
-  Term.ev ev = loc.
-Proof.
-  intros.
-  inv H0.
-  -
-    assert (i = loc).
-    {
-      eapply req_same_as_evid; eauto.
-    }
-    subst.
-    simpl.
-    reflexivity.
-  -
-    assert (i = loc).
-    {
-      eapply rpy_same_as_evid; eauto.
-    }
-    subst.
-    simpl.
-    reflexivity.
-Defined.
- *)
 
 Lemma wf_mono_locs: forall t,
     well_formed t ->
@@ -186,105 +30,169 @@ Proof.
   lia.
 Defined.
 
-Lemma unique_rpy_events (t:AnnoTerm) : forall p i p1 q loc,
+Ltac inv_wf :=
+  match goal with
+  | [H: well_formed (aasp _ _ _) |- _] =>
+    invc H
+  | [H: well_formed (alseq _ _ _ _) |- _] =>
+    invc H
+  | [H: well_formed (aatt _ _ _ _ ?t) |- _] =>   
+    invc H
+  | [H: well_formed (abseq _ _ _ _ _) |- _] =>
+    invc H
+  | [H: well_formed (abpar _ _ _ _ _ _ _) |- _] =>
+    invc H
+  end.
+(*
+Ltac inv_wf :=
+  match goal with
+  | [H: well_formed _ |- _] =>
+    invc H
+  end.
+ *)
+
+
+Ltac inv_ev :=
+  match goal with
+  | [H: events (aasp _ _ _) _ _ |- _] =>
+    invc H
+  | [H: events (alseq _ _ _ _) _ _ |- _] =>
+    invc H
+  | [H: events (aatt _ _ _ _ _) _ _ |- _] =>   
+    invc H
+  | [H: events (abseq _ _ _ _ _) _ _ |- _] =>
+    invc H
+  | [H: events (abpar _ _ _ _ _ _ _) _ _ |- _] =>
+    inv H
+  end.
+
+
+Ltac inv_ev2 :=
+  match goal with
+  | [H: events _ _ _,
+     H': events _ _ _ |- _] =>
+    invc H; invc H'
+  end.
+
+Ltac inv_ev2' :=
+  match goal with
+  | [H: events _ _ _,
+     H': events _ _ _ |- _] =>
+    inv H; inv H'
+  end.
+
+Lemma rpy_events_lrange (t:AnnoTerm) : forall p i p1 q loc,
     well_formed t ->
     events t p (rpy i loc p1 q) ->
     fst (lrange t) <= loc < snd (lrange t).
 Proof.
   intros.
   generalizeEverythingElse t.
-  induction t; intros.
+  induction t; intros;
+      try (
+        cbn in *;
+        inv_wf;
+        inv_ev;
+        simpl in *; subst;
+        try lia;
+        repeat (find_eapply_hyp_hyp);
+        repeat find_eapply_lem_hyp wf_mono_locs;
+        lia).
+Defined.
+
+(*
+
   -
     destruct a;
       cbn in *;
       try solve_by_inversion.
   -
-    cbn in *.
-    inv H.
-    inv H0.
-    +
-    clear H7.
-    clear H8.
-
-     assert (fst (lrange t) <= loc < snd (lrange t)).
-      {
-        eauto.
-      }
-      lia.
-    +
-      simpl in *.
-      subst.
-      
-      assert (fst (lrange t) <= snd (lrange t)).
-      {
-        eapply wf_mono_locs; eauto.
-      }
-      lia.
-
-  -
-    inv H.
-    inv H0.
-    +
-      simpl in *.
-      (*
-      rewrite H10 in *.
-      rewrite H12 in *. *)
-      assert (fst (lrange t1) <= loc < snd (lrange t1)) by eauto.
-      subst.
-      assert (fst (lrange t2) <= snd (lrange t2)).
-      {
-        eapply wf_mono_locs; eauto.
-      }
-      lia.
-
-      (*
-      
-      assert (snd (lrange t1) <= snd (lrange t2)).
-      {
-        (*
-        rewrite H11 in *.
-         *)
-
-        assert (fst (lrange t2) <= snd (lrange t2)).
-        {
-          rewrite <- H11 in *; clear H11.
-          
-          admit.
-        }
+    
+    inv_wf;
+      inv_ev;
+      simpl in *; subst;
+        repeat (find_eapply_hyp_hyp);
+        repeat find_eapply_lem_hyp wf_mono_locs;
         lia.
+  -
+    inv_wf;
+      inv_ev;
+      simpl in *; subst;
+        repeat (find_eapply_hyp_hyp);
+        repeat find_eapply_lem_hyp wf_mono_locs;
+        lia.
+  -
+    inv_wf;
+      inv_ev;
+      simpl in *; subst;
+        repeat (find_eapply_hyp_hyp);
+        repeat find_eapply_lem_hyp wf_mono_locs;
+        lia.
+  -
+    inv_wf;
+      inv_ev;
+      simpl in *; subst;
+        repeat (find_eapply_hyp_hyp);
+        repeat find_eapply_lem_hyp wf_mono_locs;
+        lia.
+    
+    
+    
+
+  -
+    cbn in *.
+    
+    inv_wf;
+      inv_ev;
+      try (
+    
+      simpl in *;
+      repeat find_eapply_hyp_hyp;
+      subst;
+      repeat (find_eapply_lem_hyp wf_mono_locs);
+      lia).
+
+    simpl in *.
+    find_eapply_hyp_hyp.
+    repeat find_eapply_lem_hyp wf_mono_locs.
+    lia.
+
+    
+      
+      simpl in *; (* subst; *)
+      try (find_eapply_hyp_hyp);
+      subst;
+        try find_eapply_lem_hyp wf_mono_locs;
+        lia.
+    
+
+  -
+    inv H.
+    inv H0.
+    +
+      simpl in *.
+      assert (fst (lrange t1) <= loc < snd (lrange t1)) by eauto.
+      subst.
+      assert (fst (lrange t2) <= snd (lrange t2)).
+      {
+        eapply wf_mono_locs; eauto.
       }
-      lia. *)
+      lia.
     +
       simpl in *.
       
       assert (fst (lrange t2) <= loc < snd (lrange t2)) by eauto.
-      (*
-      rewrite H10 in *.
-      rewrite H12 in *. *)
 
       assert (fst (lrange t1) <= snd (lrange t1)).
       {
         eapply wf_mono_locs; eauto.
       }
       lia.
-
-      (*
-
-      
-      assert (fst (lrange t1) <= fst (lrange t2)).
-      { 
-        admit.
-      }
-      lia. *)
   -
     inv H.
     inv H0.
     +
       simpl in *.
-      (*
-      rewrite H11 in *.
-      rewrite H13 in *.
-       *)
       
       assert (fst (lrange t1) <= loc < snd (lrange t1)) by eauto.
       subst.
@@ -293,42 +201,20 @@ Proof.
         eapply wf_mono_locs; eauto.
       }
       lia.
-      (*
-      assert (snd (lrange t1) <= snd (lrange t2)).
-      {
-        admit.
-      }
-      lia. *)
     +
       simpl in *.
       assert (fst (lrange t2) <= loc < snd (lrange t2)) by eauto.
-      (*
-      rewrite H11 in *.
-      rewrite H13 in *.
-       *)
 
       assert (fst (lrange t1) <= snd (lrange t1)).
       {
         eapply wf_mono_locs; eauto.
       }
       lia.
-
-      (*
-      
-      assert (fst (lrange t1) <= fst (lrange t2)).
-      {
-        admit.
-      }
-      lia. *)
   -
     inv H.
     inv H0.
     +
       simpl in *.
-      (*
-      rewrite H18 in *.
-      rewrite H19 in *.
-       *)
       
       assert (fst (lrange t1) <= loc < snd (lrange t1)) by eauto.
       subst.
@@ -338,22 +224,9 @@ Proof.
         eapply wf_mono_locs; eauto.
       }
       lia.
-
-      (*
-
-      
-      assert (snd (lrange t1) <= snd (lrange t2)).
-      {
-        admit.
-      }
-      lia. *)
     +
       simpl in *.
       assert (fst (lrange t2) <= loc < snd (lrange t2)) by eauto.
-      (*
-      rewrite H18 in *.
-      rewrite H19 in *.
-       *)
 
       assert (fst (lrange t1) <= snd (lrange t1)).
       {
@@ -361,19 +234,150 @@ Proof.
       }
       lia.
 Defined.
+*)
 
-
-
-
-
-Lemma unique_req_events (t:AnnoTerm) : forall p i p1 q t0 loc,
+Lemma req_events_lrange (t:AnnoTerm) : forall p i p1 q t0 loc,
     well_formed t ->
     events t p (req i loc p1 q  t0) ->
     fst (lrange t) <= loc < snd (lrange t).
 Proof.
   intros.
   generalizeEverythingElse t.
-  induction t; intros.
+  induction t; intros;
+    try (
+        cbn in *;
+        inv_wf;
+        inv_ev;
+        simpl in *; subst;
+        try lia;
+        repeat (find_eapply_hyp_hyp);
+        repeat find_eapply_lem_hyp wf_mono_locs;
+        lia).
+Defined.
+
+Lemma splitp_l_events_lrange (t:AnnoTerm) : forall p i p0 yi loc,
+    well_formed t ->
+    events t p (splitp i loc yi p0) ->
+    fst (lrange t) <= loc < snd (lrange t).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+    try (
+        cbn in *;
+        inv_wf;
+        inv_ev;
+        simpl in *; subst;
+        try lia;
+        repeat (find_eapply_hyp_hyp);
+        repeat find_eapply_lem_hyp wf_mono_locs;
+        lia).
+Defined.
+
+Lemma splitp_r_events_lrange (t:AnnoTerm) : forall p i p0 xi loc,
+    well_formed t ->
+    events t p (splitp i xi loc p0) ->
+    fst (lrange t) <= loc < snd (lrange t).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+    try (
+        cbn in *;
+        inv_wf;
+        inv_ev;
+        simpl in *; subst;
+        try lia;
+        repeat (find_eapply_hyp_hyp);
+        repeat find_eapply_lem_hyp wf_mono_locs;
+        lia).
+Defined.
+
+Lemma store_events_lrange (t:AnnoTerm) : forall p ev loc,
+    well_formed t ->
+    events t p ev ->
+    store_event ev loc ->
+    fst (lrange t) <= loc < snd (lrange t).
+Proof.
+  intros.
+  inv H1.
+  -
+    eapply req_events_lrange; eauto.
+  -
+    eapply splitp_l_events_lrange; eauto.
+  -
+    eapply splitp_r_events_lrange; eauto.
+  -
+    eapply rpy_events_lrange; eauto.
+Defined.
+
+    
+Ltac pose_store_events :=
+  match goal with
+  | [H: events _ _ ?ev,
+        H': Loc |- _] =>
+    assert_new_proof_by (store_event ev H') econstructor
+  end.
+
+
+Ltac pose_new_lrange :=
+  match goal with
+  | [H: well_formed ?t,
+        H': events ?t ?p ?ev,
+            H'': store_event ?ev ?loc
+     |- _] =>
+    pose_new_proof (store_events_lrange t p ev loc H H' H'')
+  end. 
+    
+
+
+(*
+
+  -
+    cbn in *.
+    inv_wf;
+    inv_ev.
+    +
+      simpl in *.
+      subst.
+      lia.
+    +
+      assert (fst (lrange t) <= loc < snd (lrange t)).
+      {
+        eauto.
+      }
+      
+      assert (snd (lrange t) <= snd l).
+      {
+        lia.
+      }
+      lia.
+
+
+    
+    inv_wf;
+      inv_ev;
+      simpl in *; subst;
+        repeat (find_eapply_hyp_hyp);
+        repeat find_eapply_lem_hyp wf_mono_locs.
+    +
+      assert (snd (lrange t) <= snd l).
+      {
+        lia.
+      }
+      simpl in *; subst;
+        repeat (find_eapply_hyp_hyp);
+        repeat find_eapply_lem_hyp wf_mono_locs.
+      
+      
+      
+      admit.
+    +
+      lia.
+      
+     
+    
+    
   -
     destruct a;
       cbn in *;
@@ -391,24 +395,10 @@ Proof.
       {
         eauto.
       }
-
-      (*
-      rewrite H11 in *; clear H11.
-       *)
       
-
       assert (snd (lrange t) <= snd l).
       {
         lia.
-        
-        (*
-        assert (snd (lrange t) > fst l).
-        {
-          lia.
-        }
-        simpl in *.
-        subst.
-         *)
       }
       lia.
   -
@@ -416,9 +406,6 @@ Proof.
     inv H0.
     +
       simpl in *.
-      (*
-      rewrite H10 in *.
-      rewrite H12 in *. *)
       assert (fst (lrange t1) <= loc < snd (lrange t1)) by eauto.
       subst.
       assert (fst (lrange t2) <= snd (lrange t2)).
@@ -426,55 +413,21 @@ Proof.
         eapply wf_mono_locs; eauto.
       }
       lia.
-
-      (*
-      
-      assert (snd (lrange t1) <= snd (lrange t2)).
-      {
-        (*
-        rewrite H11 in *.
-         *)
-
-        assert (fst (lrange t2) <= snd (lrange t2)).
-        {
-          rewrite <- H11 in *; clear H11.
-          
-          admit.
-        }
-        lia.
-      }
-      lia. *)
     +
       simpl in *.
       
       assert (fst (lrange t2) <= loc < snd (lrange t2)) by eauto.
-      (*
-      rewrite H10 in *.
-      rewrite H12 in *. *)
 
       assert (fst (lrange t1) <= snd (lrange t1)).
       {
         eapply wf_mono_locs; eauto.
       }
       lia.
-
-      (*
-
-      
-      assert (fst (lrange t1) <= fst (lrange t2)).
-      { 
-        admit.
-      }
-      lia. *)
   -
     inv H.
     inv H0.
     +
       simpl in *.
-      (*
-      rewrite H11 in *.
-      rewrite H13 in *.
-       *)
       
       assert (fst (lrange t1) <= loc < snd (lrange t1)) by eauto.
       subst.
@@ -483,42 +436,20 @@ Proof.
         eapply wf_mono_locs; eauto.
       }
       lia.
-      (*
-      assert (snd (lrange t1) <= snd (lrange t2)).
-      {
-        admit.
-      }
-      lia. *)
     +
       simpl in *.
       assert (fst (lrange t2) <= loc < snd (lrange t2)) by eauto.
-      (*
-      rewrite H11 in *.
-      rewrite H13 in *.
-       *)
 
       assert (fst (lrange t1) <= snd (lrange t1)).
       {
         eapply wf_mono_locs; eauto.
       }
       lia.
-
-      (*
-      
-      assert (fst (lrange t1) <= fst (lrange t2)).
-      {
-        admit.
-      }
-      lia. *)
   -
     inv H.
     inv H0.
     +
       simpl in *.
-      (*
-      rewrite H18 in *.
-      rewrite H19 in *.
-       *)
       
       assert (fst (lrange t1) <= loc < snd (lrange t1)) by eauto.
       subst.
@@ -528,22 +459,9 @@ Proof.
         eapply wf_mono_locs; eauto.
       }
       lia.
-
-      (*
-
-      
-      assert (snd (lrange t1) <= snd (lrange t2)).
-      {
-        admit.
-      }
-      lia. *)
     +
       simpl in *.
       assert (fst (lrange t2) <= loc < snd (lrange t2)) by eauto.
-      (*
-      rewrite H18 in *.
-      rewrite H19 in *.
-       *)
 
       assert (fst (lrange t1) <= snd (lrange t1)).
       {
@@ -551,62 +469,6 @@ Proof.
       }
       lia.
 Defined.
-(*
-
-      (*
-      
-      assert (fst (lrange t1) <= fst (lrange t2)).
-      {
-        admit.
-      }
-      lia.
-       *)
-      
-    
-    
-    
-      
-      
-      
-      
-      eapply IHt1.
-    simpl in *.
-    
-    
-
-      (*
-      
-      
-      rewrite H11 in *; clear H11.
-
-      
-
-      
-      destruct p; destruct l; destruct r.
-      simpl in *.
-      subst.
-      l
-      eapply IHt.
-      simpl in *.
-      subst.
-      
-      
-    
-    +
-      cbn in *.
-      inv H.
-      inv H0.
-      simpl in *.
-       *)
-      
-      
-    
-
-  
-Admitted.   
-    (*
-       not (events t p (req i0 loc p2 q0 t1)). *)
-
 *)
 
 Lemma unique_req_locs: forall t p i i0 loc p0 p1 q q0 t0 t1,
@@ -615,149 +477,123 @@ Lemma unique_req_locs: forall t p i i0 loc p0 p1 q q0 t0 t1,
     events t p (req i0 loc p1 q0 t1) ->
     i = i0.
 Proof.
+    intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+        inv_wf;
+    inv_ev2;
+    try eauto;
+    destruct l; simpl in *;
+      try (
+          repeat pose_store_events;
+          repeat pose_new_lrange;
+          repeat find_eapply_lem_hyp wf_mono_locs;    
+          lia).
+Defined.
+
+
+(*
+  
   intros.
   generalizeEverythingElse t.
-  induction t; intros.
+  induction t; intros;
+    try(
+    inv_wf;
+    inv_ev2;
+    (* inv_ev; *)
+    try eauto;
+        destruct l; simpl in *;
+        do 2 (find_eapply_lem_hyp store_events_lrange);
+        try econstructor;
+        eauto;
+        repeat find_eapply_lem_hyp wf_mono_locs;
+        lia).
+  Unshelve.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+Defined.
+*)
+
+(*
+
   -
     destruct a;
       try solve_by_inversion.
+
   -
-    inv H.
-    (*
-    invc H0;
-      invc H1;
-      try eauto. *)
-
-    invc H0.
+    inv_wf;
+      inv_ev;
+      inv_ev;
+      try eauto;
+      try (
+          destruct l; simpl in *;
+          find_eapply_lem_hyp req_events_lrange;
+          eauto;
+          lia).
+  -
+    
     +
-      invc H1.
+      inv_ev.
       ++
-        tauto.
+        eauto.
       ++
-        destruct l.
+        destruct l; simpl in *.
 
+        find_eapply_lem_hyp req_events_lrange;
+          eauto;
+          lia.
+  
+    
+    
+
+
+
+
+    
+  -
+    inv_wf.
+    inv_ev.
+    +
+      inv_ev.
+      ++
+        eauto.
+      ++
+        destruct l; simpl in *.
+
+        find_eapply_lem_hyp req_events_lrange;
+          eauto;
+          lia.
         (*
-        assert (forall ev, events t q ev ->
-                         store_event ev loc ->
-                         fst (lrange t) <= loc < snd (lrange t)).
-        {
-          admit.
-        }
-        pose (H0 (req i0 loc p2 q0 t1)).
-        repeat concludes.
-        assert (store_event (req i0 loc p2 q0 t1) loc).
-        {
-          econstructor.
-        }
 
-        repeat concludes.
-         *)
-
-        simpl in *.
-        subst.
-
-
-        
         assert (fst (lrange t) <= loc < snd (lrange t)).
         {
-          eapply unique_req_events; eauto.
-
-            (*
-          simpl in *.
-          subst.
-          assert (loc < snd (lrange t)).
-          {
-            admit.
-          }
-         
-        
-          
-
-        
-
-        assert (loc = n).
-        {
-          simpl in *.
-          lia.
+          eapply req_events_lrange; eauto.    
         }
-
-        subst.
-
-        assert (fst (lrange t) > n).
-        {
-          simpl in *.
-          lia.
-        }
-        simpl in *.
-        lia.
-             *)
-            
-          }
-          lia.
-          
-
-
-
-
-        
-        (*
-        eapply IHt.
-        +++
-          eassumption.
-        +++
-          assert (events (aatt r (loc, rpy_loc) q t) 0 (req (fst r) loc 0 q (unanno t))).
-          {
-            econstructor.
-            tauto.
-          }
-          invc H0.
-          ++++
-            admit.
-          ++++
-            eassumption.
-
-        +++
-          eassumption.
-         *)
+        lia. *)
         
     +
-      invc H1.
+      inv_ev.
       ++
-        destruct l.
+        destruct l; simpl in *.
+        do 2 (find_eapply_lem_hyp req_events_lrange);
+          eauto;
+          lia.
+        (*
          assert (fst (lrange t) <= loc < snd (lrange t)).
         {
-         eapply unique_req_events; eauto.
+         eapply req_events_lrange; eauto.
         }
-        simpl in *.
-        lia.
-
-        (*
-        
-
-        assert (loc = n).
-        {
-          simpl in *.
-          lia.
-        }
-
-        subst.
-
-        assert (fst (lrange t) > n).
-        {
-          admit.
-        }
-        lia.
-         *)
-        
-
-        (*
-        eapply IHt.
-        +++
-          eassumption.
-        +++
-          eassumption.
-        +++
-          admit. *)
+        lia. *)
       ++
         eauto.
   -
@@ -766,20 +602,10 @@ Proof.
       invc H1;
       try eauto.
     +
-      destruct l.
+      destruct l; simpl in *.
 
-      assert (fst (lrange t1) <= loc < snd (lrange t1)).
-      {
-        eapply unique_req_events; eauto.
-      }
-
-      assert (fst (lrange t2) <= loc < snd (lrange t2)).
-      {
-        eapply unique_req_events; eauto.
-      }
-
-      simpl in *.
-      lia.
+      do 2 (find_eapply_lem_hyp req_events_lrange; eauto);
+        eauto; lia.
 
       (*
 
@@ -789,120 +615,43 @@ Proof.
       }
       lia. *)
     +
-       destruct l.
+       destruct l; simpl in *.
 
-      assert (fst (lrange t1) <= loc < snd (lrange t1)).
-      {
-        eapply unique_req_events; eauto.
-      }
-      simpl in *.
-
-      assert (fst (lrange t2) <= loc < snd (lrange t2)).
-      {
-        eapply unique_req_events; eauto.
-      }
-      simpl in *.
-      lia.
-
-      (*
-      assert (fst (lrange t2) >= snd (lrange t1)).
-      {
-        admit.
-      }
-      lia.
-       *)
+      do 2 (find_eapply_lem_hyp req_events_lrange; eauto);
+        eauto; lia.
       
-
   -
     inv H.
     invc H0;
       invc H1;
       try eauto.
     +
-       destruct l.
+       destruct l; simpl in *.
 
-      assert (fst (lrange t1) <= loc < snd (lrange t1)).
-      {
-        eapply unique_req_events; eauto.
-      }
-
-      assert (fst (lrange t2) <= loc < snd (lrange t2)).
-      {
-        eapply unique_req_events; eauto.
-      }
-      simpl in *; lia.
-
-      (*
-
-      assert (fst (lrange t2) >= snd (lrange t1)).
-      {
-        admit.
-      }
-      lia. *)
+      do 2 (find_eapply_lem_hyp req_events_lrange; eauto);
+        eauto; lia.
     +
-       destruct l.
+       destruct l; simpl in *.
 
-      assert (fst (lrange t1) <= loc < snd (lrange t1)).
-      {
-        eapply unique_req_events; eauto.
-      }
-
-      assert (fst (lrange t2) <= loc < snd (lrange t2)).
-      {
-        eapply unique_req_events; eauto.
-      }
-
-      simpl in *; lia.
-
-      (*
-
-      assert (fst (lrange t2) >= snd (lrange t1)).
-      {
-        admit.
-      }
-      lia. *)
+      do 2 (find_eapply_lem_hyp req_events_lrange; eauto);
+        eauto; lia.
   -
     inv H.
     invc H0;
       invc H1;
       try eauto.
     +
-       destruct l.
+       destruct l; simpl in *.
 
-      assert (fst (lrange t1) <= loc < snd (lrange t1)).
-      {
-        eapply unique_req_events; eauto.
-      }
-
-      assert (fst (lrange t2) <= loc < snd (lrange t2)).
-      {
-        eapply unique_req_events; eauto.
-      }
-
-      simpl in *; lia.
-
-      (*
-
-      assert (fst (lrange t2) >= snd (lrange t1)).
-      {
-        admit.
-      }
-      lia. *)
+      do 2 (find_eapply_lem_hyp req_events_lrange; eauto);
+        eauto; lia.
     +
-       destruct l.
+       destruct l; simpl in *.
 
-      assert (fst (lrange t1) <= loc < snd (lrange t1)).
-      {
-        eapply unique_req_events; eauto.
-      }
-
-      assert (fst (lrange t2) <= loc < snd (lrange t2)).
-      {
-        eapply unique_req_events; eauto.
-      }
-
-      simpl in *; lia.
+      do 2 (find_eapply_lem_hyp req_events_lrange; eauto);
+        eauto; lia.
 Defined.
+*)
 
 Lemma unique_req_splitp_l_locs:
   forall (t : AnnoTerm) (p i i0 loc p0 p1 q yi : nat) (t0: Term),
@@ -910,7 +659,287 @@ Lemma unique_req_splitp_l_locs:
     events t p (req i loc p0 q t0) ->
     events t p (splitp i0 loc yi p1) -> i = i0.
 Proof.
+    intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+        inv_wf;
+    inv_ev2;
+    try eauto;
+    destruct l; simpl in *;
+      try (
+          repeat pose_store_events;
+          repeat pose_new_lrange;
+          repeat find_eapply_lem_hyp wf_mono_locs;    
+          lia).
+Defined.
+
+
+
+(*
+  
+  intros.
+  generalizeEverythingElse t.
+
+  induction t; intros;
+    try(
+        inv_wf;
+        inv_ev2;
+        (*inv_ev; *)
+        try eauto;
+        destruct l; simpl in *;
+
+        do 2(
+             find_eapply_lem_hyp store_events_lrange;
+             try econstructor;
+             eauto);
+        repeat find_eapply_lem_hyp wf_mono_locs;
+        lia).
+  Unshelve.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  exact (asp CPY).
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+Defined.
+*)
+
+    (*
+  -
+    inv_wf;
+      inv_ev2;
+      try eauto;
+      destruct l; simpl in *;
+        do 2(
+      find_eapply_lem_hyp store_events_lrange;
+      try econstructor;
+      eauto);
+        repeat find_eapply_lem_hyp wf_mono_locs;
+        lia.
+
+    +
+      do 2 (
+      find_eapply_lem_hyp store_events_lrange;
+      try econstructor;
+      eauto);
+      lia.
+      
+    +
+      do 2(
+      find_eapply_lem_hyp store_events_lrange;
+      try econstructor;
+      eauto);
+      lia.
+    +
+      do 2(
+      find_eapply_lem_hyp store_events_lrange;
+      try econstructor;
+      eauto);
+        repeat find_eapply_lem_hyp wf_mono_locs;
+        lia.
+      
+      find_eapply_lem_hyp store_events_lrange;
+        try econstructor;
+        eauto.
+      repeat find_eapply_lem_hyp wf_mono_locs.
+      lia.
+    +
+      do 2(
+      find_eapply_lem_hyp store_events_lrange;
+      try econstructor;
+      eauto).
+      lia.
+      
+      
+    
+
+      
+      clear H11.
+      clear H12.
+      clear H13.
+      clear H14.
+      rewrite <- H22 in *; clear H22.
+      admit.
+    +
+      find_eapply_lem_hyp store_events_lrange;
+      try econstructor;
+      eauto.
+      find_eapply_lem_hyp store_events_lrange;
+      try econstructor;
+      eauto.
+      lia.
+      
+
+      
+      lia.
+      
+      
+      
+
+    
+
+
+
+
+    
+    lia.
+    lia.
+
+     do 2(
+         find_eapply_lem_hyp store_events_lrange;
+         try econstructor;
+         eauto).
+     lia.
+      do 2(
+         find_eapply_lem_hyp store_events_lrange;
+         try econstructor;
+         eauto).
+      lia.
+
+       do 2(
+         find_eapply_lem_hyp store_events_lrange;
+         try econstructor;
+         eauto).
+       lia.
+        do 2(
+         find_eapply_lem_hyp store_events_lrange;
+         try econstructor;
+         eauto).
+        lia.
+         do 2(
+         find_eapply_lem_hyp store_events_lrange;
+         try econstructor;
+         eauto).
+         lia.
+
+
+          do 2(
+         find_eapply_lem_hyp store_events_lrange;
+         try econstructor;
+         eauto).
+          lia.
+          lia.
+          lia.
+          lia.
+
+           do 2(
+         find_eapply_lem_hyp store_events_lrange;
+         try econstructor;
+         eauto).
+           lia.
+
+           find_eapply_lem_hyp store_events_lrange;
+             try eauto;
+             try econstructor.
+           find_eapply_lem_hyp store_events_lrange
+             try eauto;
+             try econstructor
+
+            do 2(
+         find_eapply_lem_hyp store_events_lrange;
+         try econstructor;
+         eauto).
+
+            subst.
+            simpl in *.
+            
+
+      try eauto.
+    econstructor.
+    lia.
+
+    find_eapply_lem_hyp store_events_lrange;
+      try eauto.
+    Focus 2.
+    econstructor.
+
+    find_eapply_lem_hyp store_events_lrange;
+      try eauto.
+    Focus 2.
+    econstructor.
+    lia.
+
+    
+    
+    
+    eassumption.
+    Focus 2.
+    Print store_event.
+    apply put_event_spl.
+    
+    econstructor
+      eauto
+    
+
+
+
+
+
+
+
+
+
+  
+  induction t; intros;
+    try(
+    inv_wf;
+    inv_ev2;
+    (*inv_ev; *)
+    try eauto;
+    destruct l; simpl in *;
+    do 2 (find_eapply_lem_hyp store_events_lrange);
+    try econstructor;
+    eauto;
+    lia).
+  
+    - inv_wf;
+      inv_ev;
+      inv_ev;
+      try eauto;
+      destruct l; simpl in *.
+      +
+         do 1 (find_eapply_lem_hyp store_events_lrange;
+           try econstructor;
+           eauto).
+         lia.
+      +
+        do 1 (find_eapply_lem_hyp store_events_lrange;
+           try econstructor;
+           eauto).
+        subst.
+        simpl in *.
+        
+        do 1 (find_eapply_lem_hyp store_events_lrange;
+           try econstructor;
+           eauto).
+         lia.
+         lia.
+        
+        
+      
+      
+      
+      
+
+Defined.
+
+
+
+  
 Admitted.
+*)
 
 Lemma unique_req_splitp_r_locs:
     forall (t : AnnoTerm) (p i i0 loc p0 p1 q xi : nat) (t0: Term),
@@ -918,7 +947,63 @@ Lemma unique_req_splitp_r_locs:
       events t p (req i loc p0 q t0) ->
       events t p (splitp i0 xi loc p1) -> i = i0.
 Proof.
-Admitted.
+
+    intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+        inv_wf;
+    inv_ev2;
+    try eauto;
+    destruct l; simpl in *;
+      try (
+          repeat pose_store_events;
+          repeat pose_new_lrange;
+          repeat find_eapply_lem_hyp wf_mono_locs;    
+          lia).
+Defined.
+
+
+
+(*
+  
+    intros.
+  generalizeEverythingElse t.
+
+  induction t; intros;
+    try(
+        inv_wf;
+        inv_ev2;
+        (*inv_ev; *)
+        try eauto;
+        destruct l; simpl in *;
+
+        do 2(
+             find_eapply_lem_hyp store_events_lrange;
+             try econstructor;
+             eauto);
+        repeat find_eapply_lem_hyp wf_mono_locs;
+        lia).
+  Unshelve.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  exact (asp CPY).
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+Defined.
+*)
 
 Lemma unique_req_rpy_locs
   : forall (t : AnnoTerm) (p i i0 loc p0 p1 q q0 : nat) (t0: Term),
@@ -926,7 +1011,69 @@ Lemma unique_req_rpy_locs
     events t p (req i loc p0 q t0) ->
     events t p (rpy i0 loc p1 q0) -> i = i0.
 Proof.
-Admitted.
+    intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+        inv_wf;
+    inv_ev2;
+    try eauto;
+    destruct l; simpl in *;
+      try (
+          repeat pose_store_events;
+          repeat pose_new_lrange;
+          repeat find_eapply_lem_hyp wf_mono_locs;    
+          lia).
+Defined.
+
+
+
+(*
+
+  
+  intros.
+  generalizeEverythingElse t.
+
+  induction t; intros;
+    try(
+        inv_wf;
+        inv_ev2';
+        (*inv_ev; *)
+        try eauto;
+        destruct l; simpl in *;
+
+        do 2(
+             find_eapply_lem_hyp store_events_lrange;
+             try econstructor;
+             eauto);
+        repeat find_eapply_lem_hyp wf_mono_locs;
+        lia).
+  Unshelve.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  exact (asp CPY).
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  exact (asp CPY).
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  exact (asp CPY).
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+Defined.
+*)
 
 Lemma unique_splitp_splitp_ll_locs:
   forall (t : AnnoTerm) (p i i0 loc p0 p1 yi yi0 : nat),
@@ -934,7 +1081,59 @@ Lemma unique_splitp_splitp_ll_locs:
     events t p (splitp i  loc yi  p0) ->
     events t p (splitp i0 loc yi0 p1) -> i = i0.
 Proof.
-Admitted.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+        inv_wf;
+    inv_ev2;
+    try eauto;
+    destruct l; simpl in *;
+      try (
+          repeat pose_store_events;
+          repeat pose_new_lrange;
+          repeat find_eapply_lem_hyp wf_mono_locs;    
+          lia).
+ (*
+    try(
+        inv_wf;
+        inv_ev2;
+        (*inv_ev; *)
+        try eauto;
+        destruct l; simpl in *;
+
+        do 2(
+             find_eapply_lem_hyp store_events_lrange;
+             try econstructor;
+             eauto);
+        repeat find_eapply_lem_hyp wf_mono_locs;
+        lia).
+  Unshelve.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  exact (asp CPY).
+    eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  exact (asp CPY).
+    eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  exact (asp CPY).
+    eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  exact (asp CPY). *)
+Defined.
+
 
 Lemma unique_splitp_splitp_rl_locs:
   forall (t : AnnoTerm) (p i i0 loc p0 p1 yi yi0 : nat),
@@ -943,7 +1142,151 @@ Lemma unique_splitp_splitp_rl_locs:
     events t p (splitp i  yi loc  p0) ->
     i = i0.
 Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+    inv_wf;
+    inv_ev2;
+    try eauto;
+    destruct l; simpl in *;
+      try (
+          repeat pose_store_events;
+          repeat pose_new_lrange;
+          repeat find_eapply_lem_hyp wf_mono_locs;    
+          lia).
+Defined.
+
+          
+(*
+
+
+
+
+
+  -
+    (*
+    assert (fst (lrange t1) <= i0 < snd (lrange t1)).
+    {
+      admit.
+    }
+     *)
+
+    Check store_events_lrange.
+    (*
+store_events_lrange
+     : forall (t : AnnoTerm) (p : nat) (ev : Ev) (loc : nat),
+       well_formed t -> 
+       events t p ev -> 
+       store_event ev loc -> 
+       fst (lrange t) <= loc < snd (lrange t)
+     *)
+
+
+
+    repeat pose_store_events.
+
+    
+        
+
+
+    repeat pose_new_lrange.
+    lia.
+
+    pose_new_proof (store_events_lrange H7).
+    pose_new_lrange.
+        
+
+    find_apply_lem_hyp_new store_events_lrange.
+
+    edestruct H;
+      try eauto;
+      try econstructor.
+    
+    econstructor.
+    eassumption.
+    eassumption.
+    econstructor.
+      try econstructor;
+      eauto.
+    eassumption.
+
+    pose (H p (splitp i yi loc p0) loc).
+    repeat concludes.
+
+    destruct a.
+    
+
+    assert (fst (lrange t1) <= loc < snd (lrange t1)).
+    {
+      admit.
+    }
+
+    (*
+    assert (fst (lrange t2) <= i < snd (lrange t2)).
+    {
+      admit.
+    }
+     *)
+    
+
+    assert (fst (lrange t2) <= loc < snd (lrange t2)).
+    {
+      admit.
+    }
+    lia.
+
+    
+    
+    do 2(
+         find_eapply_lem_hyp store_events_lrange;
+         try econstructor;
+         eauto).
+    repeat find_eapply_lem_hyp wf_mono_locs.
+    assert (n <= n0).
+    lia.
+    subst.
+    
+    
+    
+    
+
+    
+    
+  
+
+
+
+  
+
+  induction t; intros;
+    try(
+        inv_wf;
+        inv_ev2;
+        (*inv_ev; *)
+        try eauto;
+        destruct l; simpl in *;
+
+        do 2(
+             find_eapply_lem_hyp store_events_lrange;
+             try econstructor;
+             eauto);
+        repeat find_eapply_lem_hyp wf_mono_locs;
+        lia).
+  Unshelve.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  exact (asp CPY).
+    eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  exact (asp CPY).
 Admitted.
+*)
 
 Lemma unique_rpy_splitp_l_locs:
   forall (t : AnnoTerm) (p i i0 loc p0 p1 q yi : nat),
@@ -951,7 +1294,19 @@ Lemma unique_rpy_splitp_l_locs:
     events t p (rpy i loc p0 q) ->
     events t p (splitp i0 loc yi p1) -> i = i0.
 Proof.
-Admitted.
+    intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+        inv_wf;
+    inv_ev2;
+    try eauto;
+    destruct l; simpl in *;
+      try (
+          repeat pose_store_events;
+          repeat pose_new_lrange;
+          repeat find_eapply_lem_hyp wf_mono_locs;    
+          lia).
+Defined.
 
 Lemma unique_splitp_splitp_rr_locs:
   forall (t : AnnoTerm) (p i i0 loc p0 p1 xi xi0 : nat),
@@ -959,7 +1314,19 @@ Lemma unique_splitp_splitp_rr_locs:
     events t p (splitp i  xi loc  p0) ->
     events t p (splitp i0 xi0 loc p1) -> i = i0.
 Proof.
-Admitted.
+    intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+        inv_wf;
+    inv_ev2;
+    try eauto;
+    destruct l; simpl in *;
+      try (
+          repeat pose_store_events;
+          repeat pose_new_lrange;
+          repeat find_eapply_lem_hyp wf_mono_locs;    
+          lia).
+Defined.
 
 Lemma unique_rpy_splitp_r_locs:
   forall (t : AnnoTerm) (p i i0 loc p0 p1 q xi : nat),
@@ -967,7 +1334,19 @@ Lemma unique_rpy_splitp_r_locs:
     events t p (rpy i loc p0 q) ->
     events t p (splitp i0 xi loc p1) -> i = i0.
 Proof.
-Admitted.
+    intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+        inv_wf;
+    inv_ev2;
+    try eauto;
+    destruct l; simpl in *;
+      try (
+          repeat pose_store_events;
+          repeat pose_new_lrange;
+          repeat find_eapply_lem_hyp wf_mono_locs;    
+          lia).
+Defined.
 
 Lemma unique_rpy_locs
   : forall (t : AnnoTerm) (p i i0 loc p0 p1 q q0 : nat),
@@ -975,7 +1354,19 @@ Lemma unique_rpy_locs
     events t p (rpy i  loc p0 q) ->
     events t p (rpy i0 loc p1 q0) -> i = i0.
 Proof.
-Admitted.
+    intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+        inv_wf;
+    inv_ev2;
+    try eauto;
+    destruct l; simpl in *;
+      try (
+          repeat pose_store_events;
+          repeat pose_new_lrange;
+          repeat find_eapply_lem_hyp wf_mono_locs;    
+          lia).
+Defined.
 
 Lemma store_events_injective: forall t p ev1 ev2 loc,
   well_formed t ->
