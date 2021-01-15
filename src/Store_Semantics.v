@@ -33,14 +33,6 @@ Ltac inv_wf :=
   | [H: well_formed (abpar _ _ _ _ _ _ _) |- _] =>
     invc H
   end.
-(*
-Ltac inv_wf :=
-  match goal with
-  | [H: well_formed _ |- _] =>
-    invc H
-  end.
- *)
-
 
 Ltac inv_ev :=
   match goal with
@@ -233,6 +225,16 @@ Ltac pose_new_lrange :=
     pose_new_proof (store_events_lrange t p ev loc H H' H'')
   end.
 
+Ltac pose_lrange_facts :=
+  repeat pose_store_events;
+  repeat pose_new_lrange;
+  repeat find_eapply_lem_hyp wf_mono_locs.
+
+Ltac dest_lrange :=
+  match goal with
+  | [H: LocRange |- _] => destruct H
+  end.
+
 Create HintDb rl.
 
 Lemma unique_req_locs: forall t p i i0 loc p0 p1 q q0 t0 t1,
@@ -247,12 +249,9 @@ Proof.
     inv_wf;
     inv_ev2;
     try eauto;
-    destruct l; simpl in *;
-      try (
-          repeat pose_store_events;
-          repeat pose_new_lrange;
-          repeat find_eapply_lem_hyp wf_mono_locs;    
-          lia).
+    dest_lrange; simpl in *;
+      try (pose_lrange_facts;    
+           lia).
 Defined.
 Hint Resolve unique_req_locs : rl.
 
@@ -268,12 +267,9 @@ Proof.
     inv_wf;
     inv_ev2;
     try eauto;
-    destruct l; simpl in *;
-      try (
-          repeat pose_store_events;
-          repeat pose_new_lrange;
-          repeat find_eapply_lem_hyp wf_mono_locs;    
-          lia).
+    dest_lrange; simpl in *;
+      try (pose_lrange_facts;    
+           lia).
 Defined.
 Hint Resolve unique_req_splitp_l_locs : rl.
 
@@ -289,12 +285,9 @@ Proof.
     inv_wf;
     inv_ev2;
     try eauto;
-    destruct l; simpl in *;
-      try (
-          repeat pose_store_events;
-          repeat pose_new_lrange;
-          repeat find_eapply_lem_hyp wf_mono_locs;    
-          lia).
+    dest_lrange; simpl in *;
+      try (pose_lrange_facts;    
+           lia).
 Defined.
 Hint Resolve unique_req_splitp_r_locs: rl.
 
@@ -310,12 +303,9 @@ Proof.
     inv_wf;
     inv_ev2;
     try eauto;
-    destruct l; simpl in *;
-      try (
-          repeat pose_store_events;
-          repeat pose_new_lrange;
-          repeat find_eapply_lem_hyp wf_mono_locs;    
-          lia).
+    dest_lrange; simpl in *;
+      try (pose_lrange_facts;    
+           lia).
 Defined.
 Hint Resolve unique_req_rpy_locs: rl.
 
@@ -331,12 +321,9 @@ Proof.
     inv_wf;
     inv_ev2;
     try eauto;
-    destruct l; simpl in *;
-      try (
-          repeat pose_store_events;
-          repeat pose_new_lrange;
-          repeat find_eapply_lem_hyp wf_mono_locs;    
-          lia).
+    dest_lrange; simpl in *;
+      try (pose_lrange_facts;    
+           lia).
 Defined.
 Hint Resolve unique_splitp_splitp_ll_locs: rl.
 
@@ -353,12 +340,9 @@ Proof.
     inv_wf;
     inv_ev2;
     try eauto;
-    destruct l; simpl in *;
-      try (
-          repeat pose_store_events;
-          repeat pose_new_lrange;
-          repeat find_eapply_lem_hyp wf_mono_locs;    
-          lia).
+    dest_lrange; simpl in *;
+      try (pose_lrange_facts;    
+           lia).
 Defined.
 Hint Resolve unique_splitp_splitp_rl_locs: rl.
 
@@ -374,12 +358,9 @@ Proof.
     inv_wf;
     inv_ev2;
     try eauto;
-    destruct l; simpl in *;
-      try (
-          repeat pose_store_events;
-          repeat pose_new_lrange;
-          repeat find_eapply_lem_hyp wf_mono_locs;    
-          lia).
+    dest_lrange; simpl in *;
+      try (pose_lrange_facts;    
+           lia).
 Defined.
 Hint Resolve unique_rpy_splitp_l_locs: rl.
 
@@ -395,12 +376,9 @@ Proof.
     inv_wf;
     inv_ev2;
     try eauto;
-    destruct l; simpl in *;
-      try (
-          repeat pose_store_events;
-          repeat pose_new_lrange;
-          repeat find_eapply_lem_hyp wf_mono_locs;    
-          lia).
+    dest_lrange; simpl in *;
+      try (pose_lrange_facts;    
+           lia).
 Defined.
 Hint Resolve unique_splitp_splitp_rr_locs: rl.
 
@@ -416,12 +394,9 @@ Proof.
     inv_wf;
     inv_ev2;
     try eauto;
-    destruct l; simpl in *;
-      try (
-          repeat pose_store_events;
-          repeat pose_new_lrange;
-          repeat find_eapply_lem_hyp wf_mono_locs;    
-          lia).
+    dest_lrange; simpl in *;
+      try (pose_lrange_facts;    
+           lia).
 Defined.
 Hint Resolve unique_rpy_splitp_r_locs: rl.
 
@@ -437,12 +412,9 @@ Proof.
     inv_wf;
     inv_ev2;
     try eauto;
-    destruct l; simpl in *;
-      try (
-          repeat pose_store_events;
-          repeat pose_new_lrange;
-          repeat find_eapply_lem_hyp wf_mono_locs;    
-          lia).
+    dest_lrange; simpl in *;
+      try (pose_lrange_facts;    
+           lia).
 Defined.
 Hint Resolve unique_rpy_locs: rl.
 
@@ -459,12 +431,9 @@ Proof.
     inv_wf;
     inv_ev2;
     try eauto;
-    destruct l; simpl in *;
-      try (
-          repeat pose_store_events;
-          repeat pose_new_lrange;
-          repeat find_eapply_lem_hyp wf_mono_locs;    
-          lia).
+    dest_lrange; simpl in *;
+      try (pose_lrange_facts;    
+           lia).
 Defined.
 Hint Resolve unique_splitpl_joinpl_locs: rl.
 
@@ -481,12 +450,9 @@ Proof.
     inv_wf;
     inv_ev2;
     try eauto;
-    destruct l; simpl in *;
-      try (
-          repeat pose_store_events;
-          repeat pose_new_lrange;
-          repeat find_eapply_lem_hyp wf_mono_locs;    
-          lia).
+    dest_lrange; simpl in *;
+      try (pose_lrange_facts;    
+           lia).
 Defined.
 Hint Resolve unique_req_joinpl_locs: rl.
 
@@ -503,12 +469,9 @@ Proof.
     inv_wf;
     inv_ev2;
     try eauto;
-    destruct l; simpl in *;
-      try (
-          repeat pose_store_events;
-          repeat pose_new_lrange;
-          repeat find_eapply_lem_hyp wf_mono_locs;    
-          lia).
+    dest_lrange; simpl in *;
+      try (pose_lrange_facts;    
+           lia).
 Defined.
 Hint Resolve unique_splitpr_joinpl_locs: rl.
 
@@ -525,12 +488,9 @@ Proof.
     inv_wf;
     inv_ev2;
     try eauto;
-    destruct l; simpl in *;
-      try (
-          repeat pose_store_events;
-          repeat pose_new_lrange;
-          repeat find_eapply_lem_hyp wf_mono_locs;    
-          lia).
+    dest_lrange; simpl in *;
+      try (pose_lrange_facts;    
+           lia).
 Defined.
 Hint Resolve unique_rpy_joinpl_locs: rl.
 
@@ -547,12 +507,9 @@ Proof.
     inv_wf;
     inv_ev2;
     try eauto;
-    destruct l; simpl in *;
-      try (
-          repeat pose_store_events;
-          repeat pose_new_lrange;
-          repeat find_eapply_lem_hyp wf_mono_locs;    
-          lia).
+    dest_lrange; simpl in *;
+      try (pose_lrange_facts;    
+           lia).
 Defined.
 Hint Resolve unique_joinpl_joinpl_locs: rl.
 
@@ -569,12 +526,9 @@ Proof.
     inv_wf;
     inv_ev2;
     try eauto;
-    destruct l; simpl in *;
-      try (
-          repeat pose_store_events;
-          repeat pose_new_lrange;
-          repeat find_eapply_lem_hyp wf_mono_locs;    
-          lia).
+    dest_lrange; simpl in *;
+      try (pose_lrange_facts;    
+           lia).
 Defined.
 Hint Resolve unique_req_joinpr_locs: rl.
 
@@ -591,12 +545,9 @@ Proof.
     inv_wf;
     inv_ev2;
     try eauto;
-    destruct l; simpl in *;
-      try (
-          repeat pose_store_events;
-          repeat pose_new_lrange;
-          repeat find_eapply_lem_hyp wf_mono_locs;    
-          lia).
+    dest_lrange; simpl in *;
+      try (pose_lrange_facts;    
+           lia).
 Defined.
 Hint Resolve unique_splitpl_joinpr_locs: rl.
 
@@ -613,12 +564,9 @@ Proof.
     inv_wf;
     inv_ev2;
     try eauto;
-    destruct l; simpl in *;
-      try (
-          repeat pose_store_events;
-          repeat pose_new_lrange;
-          repeat find_eapply_lem_hyp wf_mono_locs;    
-          lia).
+    dest_lrange; simpl in *;
+      try (pose_lrange_facts;    
+           lia).
 Defined.
 Hint Resolve unique_splitpr_joinpr_locs: rl.
 
@@ -635,12 +583,9 @@ Proof.
     inv_wf;
     inv_ev2;
     try eauto;
-    destruct l; simpl in *;
-      try (
-          repeat pose_store_events;
-          repeat pose_new_lrange;
-          repeat find_eapply_lem_hyp wf_mono_locs;    
-          lia).
+    dest_lrange; simpl in *;
+      try (pose_lrange_facts;    
+           lia).
 Defined.
 Hint Resolve unique_rpy_joinpr_locs: rl.
 
@@ -657,12 +602,9 @@ Proof.
     inv_wf;
     inv_ev2;
     try eauto;
-    destruct l; simpl in *;
-      try (
-          repeat pose_store_events;
-          repeat pose_new_lrange;
-          repeat find_eapply_lem_hyp wf_mono_locs;    
-          lia).
+    dest_lrange; simpl in *;
+      try (pose_lrange_facts;    
+           lia).
 Defined.
 Hint Resolve unique_joinpl_joinpr_locs: rl.
 
@@ -679,12 +621,9 @@ Proof.
     inv_wf;
     inv_ev2;
     try eauto;
-    destruct l; simpl in *;
-      try (
-          repeat pose_store_events;
-          repeat pose_new_lrange;
-          repeat find_eapply_lem_hyp wf_mono_locs;    
-          lia).
+    dest_lrange; simpl in *;
+      try (pose_lrange_facts;    
+           lia).
 Defined.
 Hint Resolve unique_joinpr_joinpr_locs: rl.
 
@@ -722,35 +661,6 @@ Ltac dorl' a b c d e f g h i j k l m n o p q r s t u :=
       | flip u
       ].
 
-(*
-Ltac dorl' a b c d e f g h i j k l:=
-    first
-      [ flip a
-      | ( eapply b;
-          eauto; tauto)
-      | ( eapply c;
-          eauto; tauto)
-      | ( eapply d;
-          eauto; tauto)
-      | ( eapply e;
-          eauto; tauto)
-      | ( eapply f;
-          eauto; tauto)
-      | ( eapply g;
-          eauto; tauto)
-      | ( eapply h;
-          eauto; tauto)
-      | ( eapply i;
-          eauto; tauto)
-      | ( eapply j;
-          eauto; tauto)
-      | ( eapply k;
-          eauto; tauto)
-      | ( eapply l;
-          eauto; tauto)
-      ].
-*)
-
 Ltac dorl :=
   dorl'
     unique_req_locs
@@ -775,7 +685,6 @@ Ltac dorl :=
     unique_joinpl_joinpr_locs
     unique_joinpr_joinpr_locs.
     
-
 Lemma unique_store_events: forall t p ev1 ev2 loc,
   well_formed t ->
   events t p ev1 ->
@@ -812,12 +721,12 @@ Proof.
   congruence.
 Defined.
 
-Definition store_event_evsys' es loc := exists ev, store_event ev loc /\ ev_in ev es.
+Definition store_event_evsys es loc := exists ev, store_event ev loc /\ ev_in ev es.
 
 Inductive store_conflict: EvSys Ev -> Prop :=
 | store_conflict_merge: forall r es1 es2 loc,
-    store_event_evsys' es1 loc ->
-    store_event_evsys' es2 loc ->
+    store_event_evsys es1 loc ->
+    store_event_evsys es2 loc ->
     store_conflict (merge r es1 es2)
 | store_conflict_before_l: forall r es1 es2,
     store_conflict es1 ->
@@ -885,44 +794,38 @@ Proof.
       solve_by_inversion.
   -
     cbn in *;
-      repeat break_let.
-    inv H0.
+      repeat break_let;
+      subst.
     inv H1.
     +
       solve_by_inversion.
     +
-      inv H3.
-      ++
-        inv H.
-        eauto.
-      ++
-        solve_by_inversion.
-        
-  -
-    cbn in *.
-    inv H0.
-    inv H1.
-    +
-      inv H.
-      eauto.
-    +
-      inv H.
-      eauto.
+      inv H2;
+        try solve_by_inversion;
+        try inv_wf; eauto.
+      
   -
     cbn in *;
-      repeat break_let.
-    inv H0.
+      repeat break_let;
+      subst.
+    inv H1;
+      do_wf_pieces.
+  -
+    cbn in *;
+      repeat break_let;
+      subst.
     inv H1.
     +
       solve_by_inversion.
     +
-      inv H3.
+      inv H2.
       ++
-        inv H4;
-          inv H; eauto.
+        inv H3;
+          do_wf_pieces.
       ++
         solve_by_inversion.
   -
+    
     assert (well_structured ev sys).
     {
       rewrite H0.
@@ -930,442 +833,36 @@ Proof.
       eassumption.
     }
     
-    
-    cbn in H0.
-    repeat break_let.
-    inv H0.
-    inv H1.
+    cbn in *;
+      repeat break_let;
+      subst.
+    inv H1;
+      try solve_by_inversion.
     +
-      solve_by_inversion.
-    +
-      inv H4.
-      ++
-
-        (*
-        remember ((merge (S n, Nat.pred n0) (ev_sys t1 p) (ev_sys t2 p))) as xxx.
-         *)
-        
-         
-        
-        
-        inv H5;
+      inv H3;
+        try solve_by_inversion.
+      ++       
+        inv H4;
           try solve_by_inversion.
+        +++
+          unfold store_event_evsys in *.
+          destruct_conjs.
 
-        unfold store_event_evsys' in *.
-        destruct_conjs.
-
-        (*
-        assert (exists ev, store_event ev loc /\ ev_in ev (ev_sys t1 p1)).
-        {
-          unfold store_event_evsys' in *.
-          eauto
-          eapply aff; eauto.
-        }
-        assert (exists ev, store_event ev loc /\ ev_in ev (ev_sys t2 p1)).
-        {
-          eapply aff; eauto.
-        }
-        destruct_conjs.
-         *)
-
-        
-
-        
-        assert (ev_in H7 (merge (S n, Nat.pred n0) (ev_sys t1 p1) (ev_sys t2 p1))).
-        {
-          eauto.
-        }
-        
+          assert (ev_in H6 (merge (S n, Nat.pred n0) (ev_sys t1 p1) (ev_sys t2 p1))).
+          {
+            eauto.
+          }
           
+          assert (ev_in H8 (merge (S n, Nat.pred n0) (ev_sys t1 p1) (ev_sys t2 p1))).
+          {
+            eauto.
+          }
 
-        assert (ev_in H9 (merge (S n, Nat.pred n0) (ev_sys t1 p1) (ev_sys t2 p1))).
-        {
-          eauto.
-        }
-
-        
-
-        
-
-        eapply unique_store_events' with (ev1:=H7) (ev2:=H9) (t:=(abpar (n, n0) l (n1,n2) (n3,n4) s t1 t2)) (p:=p1) (loc:=loc).
-        eassumption.
-        cbn.
-        apply ein_beforer.
-        apply ein_beforel.
-        apply ein_mergel.
-        inv H5.
-        eassumption.
-        
-        cbn.
-        apply ein_beforer.
-        apply ein_beforel.
-        apply ein_merger.
-        inv H5.
-        eassumption.
-
-        eassumption.
-        eassumption.
-
-        
-
-       
-
-        inv H2.
-        inv H17.
-
-        eapply unique_events; eauto.
-      ++
-        solve_by_inversion.
-Defined.     
-
-
-
-
-
-
-
-
-
-
-(* Extra Lemmas not needed at present *)
-(*
-Lemma unique_store_events: forall t p tr ev1 ev2 loc,
-  well_formed t ->
-  Trace.trace t p tr ->
-  In ev1 tr ->
-  In ev2 tr ->
-  store_event ev1 loc ->
-  store_event ev2 loc ->
-  ev1 <> ev2 ->
-  False.
-Proof.
-  intros.
-  assert (ev1 = ev2).
-  {
-    eapply store_events_injective;
-      try eassumption;
-      try (eapply Trace.trace_events; eassumption).
-  }
-  congruence.
+          eapply unique_store_events' with (ev1:=H6) (ev2:=H8) (t:=(abpar (n, n0) l (n1,n2) (n3,n4) s t1 t2)) (p:=p1) (loc:=loc);
+            try eassumption;
+            try (simpl; eauto; tauto).
+          ++++  
+            inv H2.
+            inv H16.
+            eapply unique_events; eauto.
 Defined.
- *)
-
-(*
-Lemma noDup_store_events: forall t p ev loc tr,
-  well_formed t ->
-  store_event ev loc ->
-  Trace.trace t p tr ->
-  In ev tr ->
-  NoDup ev.
- *)
-
-(*
-Inductive store_event_evsys: EvSys Ev -> Loc -> Prop :=
-| inevsys_leaf: forall r ev loc,
-    store_event ev loc ->
-    store_event_evsys (leaf r ev) loc
-| inevsys_before_l: forall r es1 es2 loc,
-    store_event_evsys es1 loc ->
-    store_event_evsys (before r es1 es2) loc
-| inevsys_before_r: forall r es1 es2 loc,
-    store_event_evsys es2 loc ->
-    store_event_evsys (before r es1 es2) loc
-| inevsys_merge_l: forall r es1 es2 loc,
-    store_event_evsys es1 loc ->
-    store_event_evsys (merge r es1 es2) loc
-| inevsys_merge_r: forall r es1 es2 loc,
-    store_event_evsys es2 loc ->
-    store_event_evsys (merge r es1 es2) loc.
-Hint Constructors store_event_evsys: core.
- *)
-
-(*
-Lemma alt_store_event_evsys: forall es loc,
-    store_event_evsys es loc <-> store_event_evsys' es loc.
-Proof.
-  intros.
-  unfold store_event_evsys'.
-  split.
-  -
-    generalizeEverythingElse es.
-    induction es; intros loc H;
-      inv H;
-      try (eauto; tauto);
-      try ( try (edestruct IHes1; [eauto | destruct_conjs; eauto]; tauto);
-            try (edestruct IHes2; [eauto | destruct_conjs; eauto]; tauto)
-          ).
-  -
-    generalizeEverythingElse es.
-    induction es; intros loc H;
-      destruct H as [x [xx H1]];
-      inv H1; eauto.
-Defined.
-*)
-
-(*
-Lemma aff: forall es1 loc,
-    store_event_evsys' es1 loc ->
-    exists ev, store_event ev loc /\ ev_in ev es1.
-Proof.
-  intros.
-  unfold store_event_evsys' in *.
-  eauto.
-Defined.
-
-  intros.
-  induction H;
-    try eauto;
-    try (
-        edestruct IHstore_event_evsys;
-        destruct_conjs;
-        exists x;
-        split; eauto).
-Defined.
- *)
-    
-(*
-
-Inductive top_level_at: (*Plc ->*) Loc -> AnnoTerm -> Prop :=
-(*| top_at_rec: forall r p q loc t',
-          top_level_at q loc t' ->
-          top_level_at p loc (aatt r q t') *)
-| top_at_l: forall q t' loc loc2,
-    top_level_at loc (aatt (loc,loc2) q t')
-| top_at_r: forall q t' loc loc2,
-    top_level_at (pred loc2) (aatt (loc,loc2) q t')
-| top_lseq_l: forall r loc t1 t2,
-    top_level_at loc t1 ->
-    top_level_at loc (alseq r t1 t2)
-| top_lseq_r: forall r loc t1 t2,
-    top_level_at loc t2 ->
-    top_level_at loc (alseq r t1 t2)
-| top_bseq_l: forall r s loc t1 t2,
-    top_level_at loc t1 ->
-    top_level_at loc (abseq r s t1 t2)
-| top_bseq_r: forall r s loc t1 t2,
-    top_level_at loc t2 ->
-    top_level_at loc (abseq r s t1 t2)
-| top_bpar_l: forall r s loc t1 t2,
-    top_level_at loc t1 ->
-    top_level_at loc (abpar r s t1 t2)
-| top_bpar_r: forall r s loc t1 t2,
-    top_level_at loc t2 ->
-    top_level_at loc (abpar r s t1 t2).
-
-Lemma store_event_facts: forall loc t p,
-    store_event_evsys (ev_sys t p) loc ->
-    top_level_at loc t.
-Proof.
-  intros.
-  generalizeEverythingElse t.
-  induction t; intros.
-  -
-    destruct a;
-    
-      inv H;
-        repeat break_let;
-        try solve_by_inversion;
-        inv H0; inv H1.
-  -
-    cbn in *.
-    repeat break_let.
-    invc H.
-    +
-      invc H4.
-      invc H2.
-      econstructor.
-    +
-      invc H4.
-      invc H2.
-      econstructor.
-  -
-    cbn in *.
-    invc H.
-    +
-      econstructor.
-      eauto.
-    +
-      eapply top_lseq_r.
-      eauto.
-  -
-    cbn in *.
-    repeat break_let.
-    invc H.
-    +
-      invc H4.
-      invc H2.
-    +
-      invc H4.
-      ++
-        invc H3.
-        +++
-          econstructor.
-          eauto.
-        +++
-          eapply top_bseq_r.
-          eauto.
-      ++
-        invc H3.
-        invc H2.
-  -
-    cbn in *.
-    repeat break_let.
-    invc H.
-    +
-      invc H4.
-      invc H2.
-    +
-      invc H4.
-      ++
-        invc H3.
-        +++
-          econstructor.
-          eauto.
-        +++
-          eapply top_bpar_r.
-          eauto.
-      ++
-        invc H3.
-        invc H2.
-Defined.
-
-Lemma wf_att_fact: forall x y q t',
-    well_formed (aatt (x, y) q t') ->
-    x > (Nat.pred y) ->
-    False.
-Proof.
-  intros.
-  inv H.
-  simpl in *.
-  lia.
-Defined.
-
-Lemma good_par : forall r s p t1 t2 loc,
-    well_formed (abpar r s t1 t2) ->
-    store_event_evsys (ev_sys t1 p) loc ->
-    store_event_evsys (ev_sys t2 p) loc ->
-    False.
-Proof.
-  intros.
-  eapply store_event_facts in H0.
-  eapply store_event_facts in H1.
-  inv H.
-  Check anno_mono.
-  inv H0; inv H1; cbn in *.
-
-  invc H0; invc H1;
-    try lia.
-
-  invc H0; invc H1;
-    try lia.
-
-  eapply wf_att_fact.
-  apply H7.
-  lia.
-
-  rewrite <- H3 in *.
-  subst.
-  invc H7.
-  simpl in *.
-  lia.
-
-
-  
-
-  invc H6.
-  simpl in *.
-  subst.
-
-  invc H0; try lia.
-  pose (wf_mono t' H12).
-  simpl in *.
-  subst.
-  rewrite <- H13 in *.
-  rewrite H14 in *.
-  simpl in *.
-  destruct (range t') eqn:hey.
-  simpl in *.
-  subst.
-  destruct r.
-  simpl in *.
-  subst.
-  destruct r0.
-  simpl in *.
-  subst.
-  clear H1.
-  invc H7.
-  subst.
-
-  simpl in *.
-  subst.
-  pose (wf_mono t1 H4).
-  subst.
-  rewrite H8 in *.
-  subst.
-  rewrite <- H6 in *; clear H6.
-  rewrite <- H8 in *; clear H8.
-  
-  subst.
-  admit.
-  
-Admitted.
-
- *)
-
-(*
-
-
-Theorem no_store_conflicts: forall t p,
-    well_formed t ->
-    not (store_conflict (ev_sys t p)).
-Proof.
-  Print ev_sys.
-  unfold not; intros.
-  generalize dependent p.
-  induction t; intros.
-  -
-    destruct a;
-      try (inv H0; repeat break_let; solve_by_inversion).
-  -
-    cbn in *.
-    repeat break_let.
-    invc H0.
-    +
-      solve_by_inversion.
-    +
-      solve_by_inversion.
-  -
-    inv H.
-    invc H0; eauto.
-  -
-    inv H.
-    invc H0;
-      repeat break_let;
-      try solve_by_inversion.
-    +
-      invc H1.
-      solve_by_inversion.
-    +
-      invc H1.
-      invc H2.
-      ++
-        invc H1; eauto.
-      ++
-        solve_by_inversion.
-  -
-    inv H.
-    invc H0;
-      repeat break_let;
-      try solve_by_inversion.
-    +
-      invc H1.
-      solve_by_inversion.
-    +
-      invc H1.
-      invc H2; try solve_by_inversion.
-      invc H1.
-      
-      eapply good_par; eauto.
-Defined.
-  
-  *)
