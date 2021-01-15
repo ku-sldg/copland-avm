@@ -20,7 +20,8 @@ Inductive store_event: Ev -> Loc -> Prop :=
 | put_event_spl: forall i xi yi p, store_event (splitp i xi yi p) xi
 | put_event_spr: forall i xi yi p, store_event (splitp i xi yi p) yi
 | get_event: forall i x p q, store_event (rpy i x p q) x
-| get_event_joinpl: forall i xi yi p, store_event (joinp i xi yi p) xi.
+| get_event_joinpl: forall i xi yi p, store_event (joinp i xi yi p) xi
+| get_event_joinpr: forall i xi yi p, store_event (joinp i xi yi p) yi.
 
 Lemma wf_mono_locs: forall t,
     well_formed t ->
@@ -197,6 +198,25 @@ Proof.
 Defined.
 Hint Resolve joinp_l_events_lrange : lr.
 
+Lemma joinp_r_events_lrange (t:AnnoTerm) : forall p p0 i xi loc,
+    well_formed t ->
+    events t p (joinp i xi loc p0) ->
+    fst (lrange t) <= loc < snd (lrange t).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+    try (
+        cbn in *;
+        inv_wf;
+        inv_ev;
+        simpl in *; subst;
+        try lia;
+        repeat (find_eapply_hyp_hyp);
+        repeat find_eapply_lem_hyp wf_mono_locs;
+        lia).
+Defined.
+Hint Resolve joinp_r_events_lrange : lr.
 
 Lemma store_events_lrange (t:AnnoTerm) : forall p ev loc,
     well_formed t ->
@@ -548,6 +568,139 @@ Proof.
 Defined.
 Hint Resolve unique_joinpl_joinpl_locs: rl.
 
+Lemma unique_req_joinpr_locs
+  : forall (t : AnnoTerm) (p i i0 loc p0 q q0 xi : nat) t0,
+    well_formed t ->
+    events t p (req i loc p0 q t0) ->
+    events t p (joinp i0 xi loc q0) ->
+    i = i0.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+    inv_wf;
+    inv_ev2;
+    try eauto;
+    destruct l; simpl in *;
+      try (
+          repeat pose_store_events;
+          repeat pose_new_lrange;
+          repeat find_eapply_lem_hyp wf_mono_locs;    
+          lia).
+Defined.
+Hint Resolve unique_req_joinpr_locs: rl.
+
+Lemma unique_splitpl_joinpr_locs
+  : forall (t : AnnoTerm) (p i i0 loc p1 q0 yi xi : nat),
+    well_formed t ->
+    events t p (splitp i loc yi p1) ->
+    events t p (joinp i0 xi loc q0) ->
+    i = i0.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+    inv_wf;
+    inv_ev2;
+    try eauto;
+    destruct l; simpl in *;
+      try (
+          repeat pose_store_events;
+          repeat pose_new_lrange;
+          repeat find_eapply_lem_hyp wf_mono_locs;    
+          lia).
+Defined.
+Hint Resolve unique_splitpl_joinpr_locs: rl.
+
+Lemma unique_splitpr_joinpr_locs
+  : forall (t : AnnoTerm) (p i i0 loc p1 q0 xi xi' : nat),
+    well_formed t ->
+    events t p (splitp i xi loc p1) ->
+    events t p (joinp i0 xi' loc q0) ->
+    i = i0.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+    inv_wf;
+    inv_ev2;
+    try eauto;
+    destruct l; simpl in *;
+      try (
+          repeat pose_store_events;
+          repeat pose_new_lrange;
+          repeat find_eapply_lem_hyp wf_mono_locs;    
+          lia).
+Defined.
+Hint Resolve unique_splitpr_joinpr_locs: rl.
+
+Lemma unique_rpy_joinpr_locs
+  : forall (t : AnnoTerm) (p i i0 loc p0 q q0 xi : nat),
+    well_formed t ->
+    events t p (rpy i loc p0 q) ->
+    events t p (joinp i0 xi loc q0) ->
+    i = i0.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+    inv_wf;
+    inv_ev2;
+    try eauto;
+    destruct l; simpl in *;
+      try (
+          repeat pose_store_events;
+          repeat pose_new_lrange;
+          repeat find_eapply_lem_hyp wf_mono_locs;    
+          lia).
+Defined.
+Hint Resolve unique_rpy_joinpr_locs: rl.
+
+Lemma unique_joinpl_joinpr_locs
+  : forall (t : AnnoTerm) (p i i0 loc p1 q0 xi yi : nat),
+    well_formed t ->
+    events t p (joinp i  xi loc p1) ->
+    events t p (joinp i0 loc yi q0) ->
+    i = i0.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+    inv_wf;
+    inv_ev2;
+    try eauto;
+    destruct l; simpl in *;
+      try (
+          repeat pose_store_events;
+          repeat pose_new_lrange;
+          repeat find_eapply_lem_hyp wf_mono_locs;    
+          lia).
+Defined.
+Hint Resolve unique_joinpl_joinpr_locs: rl.
+
+Lemma unique_joinpr_joinpr_locs
+  : forall (t : AnnoTerm) (p i i0 loc p1 q0 xi xi' : nat),
+    well_formed t ->
+    events t p (joinp i  xi  loc p1) ->
+    events t p (joinp i0 xi' loc q0) ->
+    i = i0.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+    inv_wf;
+    inv_ev2;
+    try eauto;
+    destruct l; simpl in *;
+      try (
+          repeat pose_store_events;
+          repeat pose_new_lrange;
+          repeat find_eapply_lem_hyp wf_mono_locs;    
+          lia).
+Defined.
+Hint Resolve unique_joinpr_joinpr_locs: rl.
+
+
 Ltac flip a :=
   try (eapply a;
        eauto; tauto);
@@ -556,7 +709,7 @@ Ltac flip a :=
        eauto; tauto);
   tauto.
 
-Ltac dorl' a b c d e f g h i j k l m n o :=
+Ltac dorl' a b c d e f g h i j k l m n o p q r s t u :=
     first
       [ flip a
       | flip b
@@ -573,6 +726,12 @@ Ltac dorl' a b c d e f g h i j k l m n o :=
       | flip m
       | flip n
       | flip o
+      | flip p
+      | flip q
+      | flip r
+      | flip s
+      | flip t
+      | flip u
       ].
 
 (*
@@ -620,7 +779,14 @@ Ltac dorl :=
     unique_splitpr_joinpl_locs
     unique_rpy_locs
     unique_rpy_joinpl_locs
-    unique_joinpl_joinpl_locs.
+    unique_joinpl_joinpl_locs
+    unique_req_joinpr_locs
+    unique_splitpl_joinpr_locs
+    unique_splitpr_joinpr_locs
+    unique_rpy_joinpr_locs
+    unique_joinpl_joinpr_locs
+    unique_joinpr_joinpr_locs.
+    
 
 Lemma store_events_injective: forall t p ev1 ev2 loc,
   well_formed t ->
@@ -631,7 +797,6 @@ Lemma store_events_injective: forall t p ev1 ev2 loc,
   ev1 = ev2.
 Proof.
   intros.
-  Locate events_injective.
   eapply events_injective; eauto.
   invc H2;
     invc H3;
@@ -748,7 +913,6 @@ Lemma unqev: forall ev1 ev2,
   ev1 <> ev2.
 Proof.
   intros.
-  Check ev.
   unfold not; intros.
   subst.
   solve_by_inversion.
@@ -771,30 +935,13 @@ Lemma aff: forall es1 loc,
     exists ev, store_event ev loc /\ ev_in ev es1.
 Proof.
   intros.
-  induction H.
-  -
-    exists ev.
-    split; eauto.
-  -
-    edestruct IHstore_event_evsys.
-    destruct_conjs.
-    exists x.
-    split; eauto.
-  -
-    edestruct IHstore_event_evsys.
-    destruct_conjs.
-    exists x.
-    split; eauto.
-  -
-    edestruct IHstore_event_evsys.
-    destruct_conjs.
-    exists x.
-    split; eauto.
-  -
-    edestruct IHstore_event_evsys.
-    destruct_conjs.
-    exists x.
-    split; eauto.
+  induction H;
+    try eauto;
+    try (
+        edestruct IHstore_event_evsys;
+        destruct_conjs;
+        exists x;
+        split; eauto).
 Defined.
 
 Theorem no_store_conflicts: forall t p sys,

@@ -942,9 +942,7 @@ Proof.
       rewrite Heqp.
       tauto.
     +
-      Check anno_mono.
       simpl.
-      Check anno_mono.
       assert (n0 > (S i)).
       eapply anno_mono; eauto.
       lia.
@@ -1001,11 +999,8 @@ Proof.
     +
       simpl.
       assert (n1 >= S (S loc)).
-      {
-        Check lrange_anno_mono.
-        
-        eapply lrange_anno_mono; eauto.
-        
+      {  
+        eapply lrange_anno_mono; eauto.   
       }
       lia.
     +

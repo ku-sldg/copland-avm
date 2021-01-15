@@ -31,8 +31,10 @@ Fixpoint make_pairs' (l:list nat) (pl:list (nat*nat)): option (list (nat*nat)) :
 Definition make_pairs (l:list nat): option (list (nat*nat)) :=
   make_pairs' l [].
 
+(*
 Compute (make_pairs [1; 2; 3; 4]).
 Compute (make_pairs' [7;8;9;10] [(1,2); (3,4)]).
+*)
 
 Lemma even_list_struc{A:Type}: forall n (ls:list A),
     length ls = n ->
@@ -41,13 +43,13 @@ Lemma even_list_struc{A:Type}: forall n (ls:list A),
 Proof.
 Admitted.
 
+(*
 Check even_ind.
 (*
 even_ind
      : forall P : nat -> Prop, P 0 -> (forall n : nat, odd n -> P (S n)) -> forall n : nat, even n -> P n
  *)
-
-Print even_ind.
+*)
 
 Definition even_list_ind{A:Type}
   : forall P : list A -> Prop, P [] ->
@@ -63,8 +65,6 @@ Lemma start_irrel: forall ls ls' ls'' H0,
 Proof.
 Admitted.
  *)
-
-Check even_ind.
 
 (*
 Theorem even_ind :
