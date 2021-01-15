@@ -96,9 +96,6 @@ Ltac inv_ev2' :=
   end.
 
 Create HintDb lr.
-(*
-Hint Resolve aff : coree.
-*)
 
 Lemma rpy_events_lrange (t:AnnoTerm) : forall p i p1 q loc,
     well_formed t ->
@@ -608,23 +605,22 @@ Ltac dorl' a b c d e f g h i j k l:=
 *)
 
 Ltac dorl :=
-  dorl' unique_req_splitp_l_locs
-        unique_req_locs
-        unique_req_splitp_r_locs
-        unique_req_rpy_locs
-        unique_req_joinpl_locs
-        unique_splitp_splitp_ll_locs
-        unique_splitp_splitp_rl_locs
-        unique_rpy_splitp_l_locs
-        unique_splitpl_joinpl_locs
-        unique_splitp_splitp_rr_locs
-        unique_rpy_splitp_r_locs
-        unique_splitpr_joinpl_locs
-        unique_rpy_locs
-        unique_rpy_joinpl_locs
-        unique_joinpl_joinpl_locs.
-        
-        
+  dorl'
+    unique_req_locs
+    unique_req_splitp_l_locs
+    unique_req_splitp_r_locs
+    unique_req_rpy_locs
+    unique_req_joinpl_locs
+    unique_splitp_splitp_ll_locs
+    unique_splitp_splitp_rl_locs
+    unique_rpy_splitp_l_locs
+    unique_splitpl_joinpl_locs
+    unique_splitp_splitp_rr_locs
+    unique_rpy_splitp_r_locs
+    unique_splitpr_joinpl_locs
+    unique_rpy_locs
+    unique_rpy_joinpl_locs
+    unique_joinpl_joinpl_locs.
 
 Lemma store_events_injective: forall t p ev1 ev2 loc,
   well_formed t ->
@@ -643,129 +639,9 @@ Proof.
     try dorl.
 Defined.
 
-(*
-
-  -
-    eauto with rl.
-    (*
-    eapply unique_req_locs; eauto. *)
-  -
-    eauto with rl.
-    (*
-    eapply unique_req_splitp_l_locs; eauto. *)
-  -
-    eauto with rl.
-    (*
-    eapply unique_req_splitp_r_locs; eauto.
-     *)
-    
-  -
-    eauto with rl.
-    (*
-    eapply unique_req_rpy_locs; eauto.
-     *)
-    
-  -
-    eauto with rl; tauto.
-    (*
-    eapply unique_req_joinpl_locs; eauto. *)
-  -
-    (*
-    symmetry.
-    eapply unique_req_splitp_l_locs; eauto.
-     *)
 
 
-      
-    
-    -
-    (*
-    eapply unique_splitp_splitp_ll_locs; eauto.
-     *)
-    
-    -
-    (*
-    symmetry.
-    eapply unique_splitp_splitp_rl_locs; eauto.
-     *)
-    
-    -
-    (*
-    symmetry.
-    eapply unique_rpy_splitp_l_locs; eauto.
-     *)
-    
-      -
-      (*
-    eapply unique_splitpl_joinpl_locs; eauto. 
-       *)
-      
-      -
-      (*
-    symmetry.
-    eapply unique_req_splitp_r_locs; eauto.
-       *)
-      
-      -
-        (*
-    eapply unique_splitp_splitp_rl_locs; eauto.
-         *)
-
-        
-        -
-        (*
-    eapply unique_splitp_splitp_rr_locs; eauto.
-*)
-        -
-        (*
-    symmetry.
-    eapply unique_rpy_splitp_r_locs; eauto. *)
-
-        
-
-
-     (*     
-  -
-    eapply unique_splitpr_joinpl_locs; eauto.
-  -
-    symmetry.
-    eapply unique_req_rpy_locs; eauto.
-  -
-    eapply unique_rpy_splitp_l_locs; eauto.
-  -
-    eapply unique_rpy_splitp_r_locs; eauto.
-  -                                           
-    eapply unique_rpy_locs; eauto.
-      *)
-
-          
-
-             (*
-  -
-    eapply unique_rpy_joinpl_locs; eauto.
-  -
-    symmetry.
-    eapply unique_req_joinpl_locs; eauto.
-  -
-    symmetry.
-    eapply unique_splitpl_joinpl_locs; eauto.
-  -
-    symmetry.
-    eapply unique_splitpr_joinpl_locs; eauto.
-  -
-    symmetry.
-    eapply unique_rpy_joinpl_locs; eauto.
-  -
-    eapply unique_joinpl_joinpl_locs; eauto.
-*)
-    
-
-Defined.
-*)
-
-
-
-  
+(* Extra Lemmas not needed at present *)
 (*
 Lemma unique_store_events: forall t p tr ev1 ev2 loc,
   well_formed t ->
@@ -786,21 +662,25 @@ Proof.
   }
   congruence.
 Defined.
+ *)
+
+(*
+Lemma noDup_store_events: forall t p ev loc tr,
+  well_formed t ->
+  store_event ev loc ->
+  Trace.trace t p tr ->
+  In ev tr ->
+  NoDup ev.
 *)
 
 Lemma unique_store_events': forall t p ev1 ev2 loc,
     well_formed t ->
-    (*
-  Trace.trace t p tr ->
-  In ev1 tr ->
-  In ev2 tr -> 
-  *)
-  ev_in ev1 (Term_system.ev_sys t p) ->
-  ev_in ev2 (Term_system.ev_sys t p) -> 
-  store_event ev1 loc ->
-  store_event ev2 loc ->
-  ev1 <> ev2 ->
-  False.
+    ev_in ev1 (Term_system.ev_sys t p) ->
+    ev_in ev2 (Term_system.ev_sys t p) -> 
+    store_event ev1 loc ->
+    store_event ev2 loc ->
+    ev1 <> ev2 ->
+    False.
 Proof.
   intros.
   assert (ev1 = ev2).
@@ -812,19 +692,6 @@ Proof.
   }
   congruence.
 Defined.
-
-
-(*
-Lemma noDup_store_events: forall t p ev loc tr,
-  well_formed t ->
-  store_event ev loc ->
-  Trace.trace t p tr ->
-  In ev tr ->
-  NoDup ev.
-*)
-
-  
-
 
 Inductive store_event_evsys: EvSys Ev -> Loc -> Prop :=
 | inevsys_leaf: forall r ev loc,
@@ -899,82 +766,6 @@ Proof.
     eauto.
 Defined.
 
-(*
-
-Lemma evsys_reps_refine: forall ev t p,
-  ev_in ev (VmSemantics.ev_sys t p) ->
-  ev_in ev (Term_system.ev_sys t p).
-Proof.
-  intros.
-  generalizeEverythingElse t.
-  induction t; intros.
-  -
-    destruct a;
-      cbn in *;
-        repeat break_let;
-      inv H;
-      eauto.
-  -
-    cbn in *;
-      repeat break_let.
-    inv H; eauto.
-  -
-    cbn in *.
-    inv H; eauto.
-  -
-    cbn in *;
-      repeat break_let.
-    inv H.
-    +
-      eauto.
-    +
-      inv H2.
-      ++
-        inv H3; eauto.
-      ++
-        inv H3; eauto.
-  -
-    cbn in *;
-      repeat break_let.
-    inv H.
-    +
-      eauto.
-    +
-      inv H2.
-      ++
-        inv H3; eauto.
-      ++
-        inv H3; eauto.
-Defined.
-*)
-  
-(*
-Axiom evsys_reps: (ev_sys = Term_system.ev_sys).
-*)
-
-(*
-Lemma evsys_tr_in:
-  forall t p tr ev0,
-    well_formed t ->
-    Trace.trace t p tr ->
-    ev_in ev0 (VmSemantics.ev_sys t p) ->
-    In ev0 tr.
-Proof.
-  intros.
-  (*
-  rewrite evsys_reps in *. *)
-  eapply Trace.evsys_tr_in; try eauto.
-  eapply evsys_reps_refine; eauto.
-Defined.
- *)
-
-Create HintDb coree.
-
-Print HintDb coree.
-(*
-Hint Resolve aff : coree.
-*)
-
 Lemma aff: forall es1 loc,
     store_event_evsys es1 loc ->
     exists ev, store_event ev loc /\ ev_in ev es1.
@@ -1005,20 +796,12 @@ Proof.
     exists x.
     split; eauto.
 Defined.
-Hint Resolve aff : coree.
-
-Print HintDb coree.
-
-Ltac eautoo := eauto with coree.
 
 Theorem no_store_conflicts: forall t p sys,
     well_formed t ->
     sys = Term_system.ev_sys t p ->
     not (store_conflict sys).
-Proof. (* with eautoo. *)
-  Print Hint.
-  Print HintDb core.
-  Print ev_sys.
+Proof.
   unfold not; intros.
   generalizeEverythingElse t.
   induction t; intros.
@@ -1068,10 +851,6 @@ Proof. (* with eautoo. *)
       ++
         solve_by_inversion.
   -
-    (*
-    rewrite evsys_reps in *. *)
-    
-    
     assert (well_structured ev sys).
     {
       rewrite H0.
@@ -1102,12 +881,7 @@ Proof. (* with eautoo. *)
 
         assert (exists ev, store_event ev loc /\ ev_in ev (Term_system.ev_sys t1 p1)).
         {
-          eauto...
-          eautoo.
-          (*
           eapply aff; eauto.
-           *)
-          
         }
         assert (exists ev, store_event ev loc /\ ev_in ev (Term_system.ev_sys t2 p1)).
         {
@@ -1119,9 +893,6 @@ Proof. (* with eautoo. *)
         assert (ev_in H0 (merge (S n, Nat.pred n0) (Term_system.ev_sys t1 p1) (Term_system.ev_sys t2 p1))).
         {
           eauto.
-          (*
-          apply ein_mergel.
-          eauto. *)
         }
         
           
@@ -1129,9 +900,6 @@ Proof. (* with eautoo. *)
         assert (ev_in H6 (merge (S n, Nat.pred n0) (Term_system.ev_sys t1 p1) (Term_system.ev_sys t2 p1))).
         {
           eauto.
-          (*
-          apply ein_merger.
-          eauto. *)
         }
 
         
