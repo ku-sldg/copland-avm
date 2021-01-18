@@ -3,6 +3,7 @@ Preamble.v
 More_lists.v
 StructTactics.v
 Term_Facts.v
+OptMonad.v
 Term.v
 Event_system.v
 Term_system.v
@@ -23,6 +24,6 @@ Auto.v
 Helpers_VmSemantics.v
 External_Facts.v
 VmSemantics.v
-Store_Semantics.v
+Store_Semantics_alt.v
 StAM.v
 MonadAM.v

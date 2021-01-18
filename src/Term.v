@@ -20,23 +20,9 @@ Import List.ListNotations.
 
 Require Import Coq.Arith.Even Coq.Program.Tactics Coq.Program.Equality.
 
-(*
-Require Export ExtLib.Structures.Monads.
-Export MonadNotation.
-Open Scope monad_scope.
+Require Import OptMonad.
 
 
-Instance optionMonad : Monad option :=
-  {
-    ret T x :=
-      Some x ;
-    bind T U m f :=
-      match m with
-        None => None
-      | Some x => f x
-      end
-  }.
-*)
 
 Set Nested Proofs Allowed.
 
@@ -72,6 +58,95 @@ Inductive Term: Set :=
 | lseq: Term -> Term -> Term
 | bseq: Split -> Term -> Term -> Term
 | bpar: Split -> Term -> Term -> Term.
+
+Definition LocRange: Set := list Loc.
+
+Definition getTwoLocs (ls:list Loc): option (Loc*Loc) :=
+  match ls with
+  | [x ; y ; ls'] => ret (x,y)
+  | _ => None
+  end.
+
+
+(*
+
+Inductive TermLoc: Set :=
+| lasp: LocRange -> ASP -> TermLoc
+| latt: LocRange  -> (Loc*Loc) -> Plc -> Term -> TermLoc
+| llseq: LocRange -> TermLoc -> TermLoc -> TermLoc
+| lbseq: LocRange -> Split -> TermLoc -> TermLoc -> TermLoc
+| lbpar: LocRange -> (Loc*Loc) -> (Loc*Loc) -> Split -> TermLoc -> TermLoc -> TermLoc.
+
+Definition getTwoLocs (ls:list Loc): option (Loc*Loc) :=
+  match ls with
+  | [x ; y ; ls'] => ret (x,y)
+  | _ => None
+  end.
+
+Fixpoint annoloc (t: Term) (ls: LocRange) : option (LocRange * TermLoc) :=
+  match t with
+  | asp x => ret (ls,lasp [] x)
+
+
+                
+  | att p x =>
+    (*
+    let req_loc := loc in
+    let rpy_loc := S loc in
+     *)
+    '(req_loc,rpy_loc) <- getTwoLocs ls ;;
+
+    ret (skipn 2 ls, latt (firstn 2 ls) (req_loc,rpy_loc) p x)
+      
+
+  | lseq x y =>
+    '(l',a) <- annoloc x ls ;;
+    (* let (l',a) := pr1 in *)
+    '(l'',b) <- annoloc y l' ;;
+    (* let (l'',b) := pr2 in *)
+    ret (l'', llseq ls a b)
+      
+  | bseq s x y =>
+    '(l',a) <- annoloc x ls ;;
+    (* let (l',a) := pr1 in *)
+    '(l'',b) <- annoloc y l' ;;
+    (* let (l'',b) := pr2 in *)
+    ret (l'',lbseq ls s a b)
+
+      
+  | bpar s x y =>
+
+    '(req_loc,rpy_loc) <- getTwoLocs ls ;;
+    '(req_loc',rpy_loc') <- getTwoLocs (skipn 2 ls) ;;
+
+    (*
+    let req_loc := loc in
+    let rpy_loc := S loc in
+    let req_loc' := S (S loc) in
+    let rpy_loc' := S (S (S loc)) in
+     *)
+    
+    (* let '(req_loc,rpy_loc) := hd_error l ;;
+    let restl := tl l in
+    '(req_loc',rpy_loc') <- hd_error restl ;;
+    let restl' := tl restl in *)
+    '(l',a) <- annoloc x (skipn 4 ls) ;;
+    (* let (l',a) := pr1 in *)
+    '(l'',b) <- annoloc y l' ;;
+    (* let (l'',b) := pr2 in *)
+    ret (l'',lbpar ls (req_loc,rpy_loc) (req_loc',rpy_loc') s a b) 
+      (* ret (1,([], aasp (0,0) CPY)) *)
+
+     
+                
+  end.
+
+*)
+
+
+
+
+
 
 (** The structure of evidence. *)
 
@@ -200,11 +275,10 @@ Definition asp_event i x p :=
     its number [j] will be in the range [i <= j < k].  *)
 
 Definition Range: Set := nat * nat.
-Definition LocRange: Set := Loc * Loc.
 
 Inductive AnnoTerm: Set :=
 | aasp: Range -> LocRange -> ASP -> AnnoTerm
-| aatt: Range -> LocRange -> (Loc*Loc) -> Plc -> AnnoTerm -> AnnoTerm
+| aatt: Range -> LocRange -> (Loc*Loc) -> Plc -> Term -> AnnoTerm
 | alseq: Range -> LocRange -> AnnoTerm -> AnnoTerm -> AnnoTerm
 | abseq: Range -> LocRange -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
 | abpar: Range -> LocRange -> (Loc*Loc) -> (Loc*Loc) -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm.
@@ -249,12 +323,15 @@ Fixpoint annoeval t p (e:AnnoEvidence) :=
 (** The number of events associated with a term.  The branching terms
 add a split and a join to the events of their subterms. Similarly, the
 remote calls add a request and receive to the events of their subterm.
-*)
+ *)
+
+Definition remote_esize (t:Term) : nat.
+Admitted.
 
 Fixpoint esize t :=
   match t with
   | aasp _ _ _ => 1
-  | aatt _ _ _ _ t1 => 2 + esize t1
+  | aatt _ _ _ _ t1 => 2 + remote_esize t1 (*esize t1*)
   | alseq _ _ t1 t2 => esize t1 + esize t2
   | abseq _ _ _ t1 t2 => 2 + esize t1 + esize t2
   | abpar _ _ _ _ _ t1 t2 => 2 + esize t1 + esize t2
@@ -278,10 +355,13 @@ Definition lrange x :=
   | abpar _ lr _ _ _ _ _ => lr
   end.
 
+Definition remote_anss (t:Term): nat.
+Admitted.
+
 Fixpoint anss (t:AnnoTerm) :=
   match t with
   | aasp _ _ _ => 0
-  | aatt _ _ _ _ t => (anss t) + 2
+  | aatt _ _ _ _ t => 2 (* + (remote_anss t) (*(anss t) + 2*) *)
   | alseq _ _ t1 t2 => anss t1 + anss t2
   | abseq _ _ _ t1 t2 => anss t1 + anss t2
   | abpar _ _ _ _ _ t1 t2 => 4 + anss t1 + anss t2
@@ -291,7 +371,7 @@ Fixpoint anss (t:AnnoTerm) :=
 Fixpoint nss (t:Term) :=
   match t with
   | asp _ => 0
-  | att _ t => nss t + 2
+  | att _ t => (*nss t +*) 2
   | lseq t1 t2 => nss t1 + nss t2
   | bseq _ t1 t2 => nss t1 + nss t2
   | bpar  _ t1 t2 => 4 + nss t1 + nss t2
@@ -310,9 +390,11 @@ Proof.
       tauto.
   -
     cbn in *.
+    eauto.
+    (*
     subst.
     assert (Nat.even (nss t) = true) by eauto.
-    eapply both_args_even; eauto.
+    eapply both_args_even; eauto. *)
   -
     cbn in *.
     subst.
@@ -332,18 +414,33 @@ Proof.
     assert (Nat.even (nss t2) = true) by eauto.
     eapply both_args_even; eauto.
 Defined.
-   
 
-(** This function annotates a term.  It feeds a natural number
-    throughout the computation so as to ensure each event has a unique
-    natural number. *)
-
-Fixpoint anno (t: Term) (i:nat) (loc:Loc) : (nat * (nat * AnnoTerm)) :=
+Fixpoint anno (t: Term) (i:nat) (ls:LocRange) : option (nat * (LocRange * AnnoTerm)):=
   match t with
-  | asp x => (S i, (loc,aasp (i, S i) (loc,loc) x))
+  | asp x => ret (S i, (ls, (aasp (i, S i) [] x)))
+
   | att p x =>
+    (*
     let req_loc := loc in
     let rpy_loc := S loc in
+     *)
+
+    '(req_loc,rpy_loc) <- getTwoLocs ls ;;
+
+    ret (S (S i), (skipn 2 ls, aatt (i, S (S i)) (firstn 2 ls) (req_loc,rpy_loc) p x))
+     
+    
+
+    (*
+    '(req_loc,rpy_loc) <- getTwoLocs ls ;; *)
+    
+
+
+
+
+
+
+    
     (*
     '(req_loc,rpy_loc) <- hd_error l ;; *)
     (*let '(req_loc,rpy_loc) (req_loc:Loc) (rpy_loc:Loc) (locs:(Loc*Loc)) := locs in *)
@@ -351,41 +448,168 @@ Fixpoint anno (t: Term) (i:nat) (loc:Loc) : (nat * (nat * AnnoTerm)) :=
     | None => None
     | Some (req_loc,rpy_loc) => *)
     (*let restl := tl l in *)
-    let '(j, (l',a)) := anno x (S i) (S rpy_loc) in  (* TODO: 0 ok here?  arg irrelevant? *)
+
+    (*
+    let '(j, a) := anno x (S i) in  (* TODO: 0 ok here?  arg irrelevant? *)
+     *)
+    
+    (*let (j, pr) := res in *)
+     (* match maybeRes with
+      | None => None
+      | Some (j, pr) => *)
+        (*let (l',a) := pr in *)
+        (*
+    (S (S i), aatt (i, S (S i)) ls locs p x) *)
+
+  | lseq x y =>
+    '(j,(l',a)) <- anno x i ls ;;
+    (* let (l',a) := pr1 in *)
+    '(k,(l'',b)) <- anno y j l' ;;
+    (* let (l'',b) := pr2 in *)
+    ret (k, (l'', alseq (i, k) ls a b))
+ 
+  | bseq s x y =>
+    '(j,(l',a)) <- anno x (S i) ls ;;
+    (* let (l',a) := pr1 in *)
+    '(k,(l'',b)) <- anno y j ls ;;
+    (* let (l'',b) := pr2 in *)
+    ret (S k, (l'',abseq (i, S k) ls s a b))
+        
+
+  | bpar s x y =>
+    (*
+    let req_loc := loc in
+    let rpy_loc := S loc in
+    let req_loc' := S (S loc) in
+    let rpy_loc' := S (S (S loc)) in *)
+    (* let '(req_loc,rpy_loc) := hd_error l ;;
+    let restl := tl l in
+    '(req_loc',rpy_loc') <- hd_error restl ;;
+    let restl' := tl restl in *)
+
+    (* '(req_loc,rpy_loc) *)  xlocs <- getTwoLocs ls ;;
+    (* '(req_loc',rpy_loc')*) ylocs <- getTwoLocs (skipn 2 ls) ;;
+
+
+    
+    '(j,(l',a)) <- anno x (S i) (skipn 4 ls) ;;
+    (* let (l',a) := pr1 in *)
+    '(k,(l'',b)) <- anno y j l' ;;
+    (* let (l'',b) := pr2 in *)
+    ret (S k, (l'', abpar (i, S k) ls xlocs ylocs s a b))
+      (* ret (1,([], aasp (0,0) CPY)) *)
+
+
+           
+                
+     
+       (*         
+  | _ => ret (0, ([], aasp (0,0) [] CPY))
+        *)
+        
+      
+      
+  end.
+
+
+
+        
+   
+
+
+(*
+(** This function annotates a term.  It feeds a natural number
+    throughout the computation so as to ensure each event has a unique
+    natural number. *)
+
+
+    
+
+Fixpoint anno (t: TermLoc) (i:nat) : (nat * AnnoTerm):=
+  match t with
+  | lasp ls x => (S i, (aasp (i, S i) ls x))
+
+
+                
+
+  | latt ls locs p x =>
+    (*
+    let req_loc := loc in
+    let rpy_loc := S loc in
+     *)
+
+    (*
+    '(req_loc,rpy_loc) <- getTwoLocs ls ;; *)
+    
+
+
+
+
+
+
+    
+    (*
+    '(req_loc,rpy_loc) <- hd_error l ;; *)
+    (*let '(req_loc,rpy_loc) (req_loc:Loc) (rpy_loc:Loc) (locs:(Loc*Loc)) := locs in *)
+   (* match opt_locs with
+    | None => None
+    | Some (req_loc,rpy_loc) => *)
+    (*let restl := tl l in *)
+
+    (*
+    let '(j, a) := anno x (S i) in  (* TODO: 0 ok here?  arg irrelevant? *)
+     *)
+    
     (*let (j, pr) := res in *)
      (* match maybeRes with
       | None => None
       | Some (j, pr) => *)
     (*let (l',a) := pr in *)
-    (S j, (l'(*S rpy_loc*), aatt (i, S j) (loc,(*S rpy_loc*)l') (req_loc, rpy_loc)  p a))
-  | lseq x y =>
-    let '(j, (l',a)) := anno x i loc in
+    (S (S i), aatt (i, S (S i)) ls locs p x)
+
+
+
+      
+
+  | llseq ls x y =>
+    let '(j,a) := anno x i in
     (* let (l',a) := pr1 in *)
-    let '(k, (l'',b)) := anno y j l' in
+    let '(k,b) := anno y j in
     (* let (l'',b) := pr2 in *)
-    (k, (l'', alseq (i, k) (loc,l'') a b))
-  | bseq s x y =>
-    let '(j, (l',a)) := anno x (S i) loc in
+    (k, alseq (i, k) ls a b)
+
+      
+  | lbseq ls s x y =>
+    let '(j,a) := anno x (S i) in
     (* let (l',a) := pr1 in *)
-    let '(k, (l'',b)) := anno y j l' in
+    let '(k,b) := anno y j in
     (* let (l'',b) := pr2 in *)
-    (S k, (l'',abseq (i, S k) (loc, l'') s a b))
-  | bpar s x y =>
+    (S k, abseq (i, S k) ls s a b)
+
+  | lbpar ls xlocs ylocs s x y =>
+    (*
     let req_loc := loc in
     let rpy_loc := S loc in
     let req_loc' := S (S loc) in
-    let rpy_loc' := S (S (S loc)) in
+    let rpy_loc' := S (S (S loc)) in *)
     (* let '(req_loc,rpy_loc) := hd_error l ;;
     let restl := tl l in
     '(req_loc',rpy_loc') <- hd_error restl ;;
     let restl' := tl restl in *)
-    let '(j, (l',a)) := anno x (S i) (S rpy_loc') in
+    let '(j,a) := anno x (S i) in
     (* let (l',a) := pr1 in *)
-    let '(k, (l'',b)) := anno y j l' in
+    let '(k,b) := anno y j in
     (* let (l'',b) := pr2 in *)
-    (S k, (l'',abpar (i, S k) (loc, l'') (req_loc,rpy_loc) (req_loc',rpy_loc') s a b)) 
-   (* ret (1,([], aasp (0,0) CPY)) *)
+    (S k, abpar (i, S k) ls xlocs ylocs s a b)
+      (* ret (1,([], aasp (0,0) CPY)) *)
+
+     
+     (*           
+  | _ => (0, aasp (0,0) [] CPY)
+      *)
+      
   end.
+*)
 
 
 Lemma loc_size: forall t i i' loc loc' annt,
