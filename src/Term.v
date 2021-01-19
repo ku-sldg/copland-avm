@@ -61,12 +61,15 @@ Inductive Term: Set :=
 
 Definition LocRange: Set := list Loc.
 
-Definition getTwoLocs (ls:list Loc): option (Loc*Loc) :=
-  match ls with
-  | [x ; y ; ls'] => ret (x,y)
-  | _ => None
+Definition getTwoLocs (ls:list Loc) (b:bool): option (Loc*Loc) :=
+  match b with
+  | true => 
+    match ls with
+    | x :: y :: ls' => ret (x,y)
+    | _ => None
+    end
+  | false => ret (0,0)
   end.
-
 
 (*
 
@@ -415,9 +418,9 @@ Proof.
     eapply both_args_even; eauto.
 Defined.
 
-Fixpoint anno (t: Term) (i:nat) (ls:LocRange) : option (nat * (LocRange * AnnoTerm)):=
+Fixpoint anno (t: Term) (i:nat) (ls:LocRange) (b:bool) : option (nat * (LocRange * AnnoTerm)):=
   match t with
-  | asp x => ret (S i, (ls, (aasp (i, S i) ls x)))
+  | asp x => ret (S i, (ls, (aasp (i, S i) [] x)))
 
   | att p x =>
     (*
@@ -425,9 +428,9 @@ Fixpoint anno (t: Term) (i:nat) (ls:LocRange) : option (nat * (LocRange * AnnoTe
     let rpy_loc := S loc in
      *)
 
-    '(req_loc,rpy_loc) <- getTwoLocs ls ;;
+    '(req_loc,rpy_loc) <- getTwoLocs ls b ;;
 
-    '(j,(l',a)) <- anno x (S i) []  ;;  (* TODO: does ls matter here?  Should it be []? *)
+    '(j,(l',a)) <- anno x (S i) [] false  ;;  (* TODO: does ls matter here?  Should it be []? *)
     
 
     ret (S j, (skipn 2 ls, aatt (i, S j) (firstn 2 ls) (req_loc,rpy_loc) p a))
@@ -465,16 +468,16 @@ Fixpoint anno (t: Term) (i:nat) (ls:LocRange) : option (nat * (LocRange * AnnoTe
     (S (S i), aatt (i, S (S i)) ls locs p x) *)
 
   | lseq x y =>
-    '(j,(l',a)) <- anno x i ls  ;;
+    '(j,(l',a)) <- anno x i ls b  ;;
     (* let (l',a) := pr1 in *)
-    '(k,(l'',b)) <- anno y j l'  ;;
+    '(k,(l'',b)) <- anno y j l' b  ;;
     (* let (l'',b) := pr2 in *)
     ret (k, (l'', alseq (i, k) ls a b))
  
   | bseq s x y =>
-    '(j,(l',a)) <- anno x (S i) ls  ;;
+    '(j,(l',a)) <- anno x (S i) ls b  ;;
     (* let (l',a) := pr1 in *)
-    '(k,(l'',b)) <- anno y j ls  ;;
+    '(k,(l'',b)) <- anno y j l' b  ;;
     (* let (l'',b) := pr2 in *)
     ret (S k, (l'',abseq (i, S k) ls s a b))
         
@@ -490,14 +493,14 @@ Fixpoint anno (t: Term) (i:nat) (ls:LocRange) : option (nat * (LocRange * AnnoTe
     '(req_loc',rpy_loc') <- hd_error restl ;;
     let restl' := tl restl in *)
 
-    (* '(req_loc,rpy_loc) *)  xlocs <- getTwoLocs ls ;;
-    (* '(req_loc',rpy_loc')*) ylocs <- getTwoLocs (skipn 2 ls) ;;
+    (* '(req_loc,rpy_loc) *)  xlocs <- getTwoLocs ls b ;;
+    (* '(req_loc',rpy_loc')*) ylocs <- getTwoLocs (skipn 2 ls) b ;;
 
 
     
-    '(j,(l',a)) <- anno x (S i) (skipn 4 ls)  ;;
+    '(j,(l',a)) <- anno x (S i) (skipn 4 ls) b  ;;
     (* let (l',a) := pr1 in *)
-    '(k,(l'',b)) <- anno y j l'  ;;
+    '(k,(l'',b)) <- anno y j l' b  ;;
     (* let (l'',b) := pr2 in *)
     ret (S k, (l'', abpar (i, S k) ls xlocs ylocs s a b))
       (* ret (1,([], aasp (0,0) CPY)) *)
@@ -614,15 +617,10 @@ Fixpoint anno (t: TermLoc) (i:nat) : (nat * AnnoTerm):=
   end.
  *)
 
-Definition anno' t i ls := fromSome (0, ([], aasp (0,0) [] CPY)) (anno t i ls).
+Definition anno' t i ls := fromSome (0, ([], aasp (0,0) [] CPY)) (anno t i ls true).
 
 
-Lemma loc_size: forall t i i' ls ls' annt res,
-    anno t i ls = Some (i', (ls', annt)) ->
-    res = length (lrange annt) ->
-    res = nss t.
-Proof.
-Admitted.
+
 
 (*
   intros.
@@ -723,14 +721,27 @@ Ltac asdf :=
   match goal with
   | [H: _, H2: _ |- _] => apply H in H2
   end.
+
+Ltac ff :=
+  repeat (cbn in *;
+    repeat break_match; try solve_by_inversion;
+    repeat find_inversion).
+
+Lemma same_anno_range: forall t i l l' l2 l2' a b n n' bo bo',
+    anno t i l bo = Some (n, (l',a)) ->
+    anno t i l2 bo' = Some (n', (l2',b)) ->
+    n = n'.
+Proof.
+Admitted.
   
-Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm) (ls ls':LocRange),
-  anno t i ls = Some (j, (ls',t')) ->
+Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm) (ls ls':LocRange) b,
+  anno t i ls b = Some (j, (ls',t')) ->
   j > i.
 Proof.
-  induction t; intros i j t' ls ls' H;
+  induction t; intros i j t' ls ls' b H;
     try (
         simpl in *;
+        try destruct b;
         repeat break_let;
         repeat break_match;
         try solve_by_inversion;
@@ -741,8 +752,8 @@ Defined.
 Hint Resolve anno_mono : core.
 
 Lemma anno_range:
-  forall x i j ls ls' t',
-     anno x i ls = Some (j, (ls',t')) ->
+  forall x i j ls ls' t' b,
+     anno x i ls b = Some (j, (ls',t')) ->
     
     range (t') = (i, j).
 Proof.
@@ -759,9 +770,9 @@ Definition list_subset{A:Type} (l1:list A) (l2:list A) : Prop :=
     In x l2.
 
 Lemma anno_lrange:
-  forall x i j ls ls' t',
+  forall x i j ls ls' t' b,
     length ls = nss x ->
-    anno x i ls = Some (j, (ls',t')) ->
+    anno x i ls b = Some (j, (ls',t')) ->
 
     list_subset ls (lrange t').
   (*
@@ -778,7 +789,7 @@ Proof.
         try unfold list_subset;
         simpl in *; tauto).
 
-  (*
+ (* 
   -
     cbn in *.
     repeat break_match; try solve_by_inversion.
@@ -789,7 +800,7 @@ Proof.
 *)
       
     
-  (*
+  
   -
     destruct a;
       simpl in *;
@@ -798,10 +809,12 @@ Proof.
       find_inversion;
       simpl;
       assert (ls' = []) by (destruct ls'; solve_by_inversion);
-      congruence.   
-Qed.
-   *)
-Qed.
+      congruence.
+  -
+    ff.
+    assert (ls' = []) by (destruct ls'; solve_by_inversion);
+      congruence.
+Defined.
 
 
 Definition annotated x ls :=
@@ -1322,11 +1335,212 @@ Defined.
 Hint Resolve anno_mono : core.
  *)
 
+
+
+(*
+  induction t; intros H;
+    try (simpl; inv H; simpl; repeat concludes; lia).
+ *)
+
 Lemma anno_len:
   forall t i j ls ls' t',
-    anno t i ls = Some (j, (ls', t')) ->
+    anno t i ls true = Some (j, (ls', t')) ->
     length ls = anss t' + length ls'.
 Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a;
+      ff.
+  -
+    ff.
+      
+  -
+    ff.
+    assert (length ls = anss a + length l) by eauto.
+    assert (length l = anss a0 + length ls') by eauto.
+    lia.
+  -
+    ff.
+    assert (length ls = anss a + length l) by eauto.
+    assert (length l = anss a0 + length ls') by eauto.
+    lia.
+  -
+    ff.
+    assert (length l4 = anss a + length l) by eauto.
+    assert (length l = anss a0 + length ls') by eauto.
+    lia.
+Defined.
+
+Lemma false_succeeds: forall t i ls,
+    anno t i ls false = None ->
+    False.
+Proof.
+Admitted.
+
+Lemma nss_iff_anss: forall t i ls n l a b,
+    anno t i ls b = Some (n, (l, a)) ->
+    nss t = anss a.
+Proof.
+Admitted.
+
+
+
+Lemma anno_some: forall t i l b,
+  length l = nss t ->
+  exists res,
+    anno t i l b = Some res.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a;
+      ff;
+      eauto.
+  -
+    cbn in *.
+    assert (exists x y, l = [x; y]).
+    {
+      admit.
+    }
+    destruct_conjs.
+    subst.
+    ff.
+    +
+      eauto.
+    +
+      exfalso.
+      eapply false_succeeds; eauto.
+    +
+      destruct b;
+        ff.
+        
+  -
+    ff.
+    eauto.
+    destruct b.
+    +
+      assert (length l0 < nss t2).
+      {
+        admit.
+      }
+
+      assert (length l = anss a + length l0).
+      {
+        eapply anno_len; eauto.
+      }
+
+      assert (nss t1 = anss a).
+      {
+        eapply nss_iff_anss; eauto.
+      }
+      lia.
+    +
+      exfalso.
+      eapply false_succeeds; eauto.
+    +
+      destruct b.
+      ++
+        assert (length l < nss t1).
+        {
+          admit.
+        }
+        lia.
+      ++
+        exfalso.
+        eapply false_succeeds; eauto.
+  -
+        ff.
+    eauto.
+    destruct b.
+    +
+      assert (length l0 < nss t2).
+      {
+        admit.
+      }
+
+      assert (length l = anss a + length l0).
+      {
+        eapply anno_len; eauto.
+      }
+
+      assert (nss t1 = anss a).
+      {
+        eapply nss_iff_anss; eauto.
+      }
+      lia.
+    +
+      exfalso.
+      eapply false_succeeds; eauto.
+    +
+      destruct b.
+      ++
+        assert (length l < nss t1).
+        {
+          admit.
+        }
+        lia.
+      ++
+        exfalso.
+        eapply false_succeeds; eauto.
+  -
+    ff;
+      try (eauto; tauto).
+    +
+      destruct b.
+      ++
+        assert (length l0 < nss t2).
+        {
+          admit.
+        }
+
+        assert (length l4 = anss a + length l0).
+        {
+          eapply anno_len; eauto.
+        }
+        assert (nss t1 = anss a).
+        {
+          eapply nss_iff_anss; eauto.
+        }
+        lia.
+      ++
+        exfalso.
+        eapply false_succeeds; eauto.
+    +
+      destruct b.
+      ++
+        assert (length l3 < nss t1).
+        {
+          admit.
+        }
+
+        lia.
+      ++
+        exfalso.
+        eapply false_succeeds; eauto.
+    +
+      destruct b.
+      ++
+        assert (length l1 < nss t1).
+        {
+          admit.
+        }
+        lia.
+      ++
+        ff.
+
+    +
+      destruct b.
+      ++
+        assert (length l < 2).
+        {
+          admit.
+        }
+        lia.
+      ++
+        ff.
 Admitted.
 
 Lemma anno_len_exact:
@@ -1343,11 +1557,14 @@ Proof.
   lia.
 Defined.
 
-Lemma anno_sub: forall t i n ls l a,
-    anno t i ls = Some (n, (l, a)) ->
-    anno t i (lrange a) = Some (n, ([],a)).
+(*
+Lemma loc_size: forall t i i' ls ls' annt res,
+    anno t i ls = Some (i', (ls', annt)) ->
+    res = length (lrange annt) ->
+    res = nss t.
 Proof.
 Admitted.
+*)
 
 Lemma lrange_nss: forall t i ls n l a,
     anno t i ls = Some (n, (l, a)) ->
@@ -1355,36 +1572,343 @@ Lemma lrange_nss: forall t i ls n l a,
 Proof.
 Admitted.
 
+Lemma asp_lrange_irrel: forall a i l l' l2 l2' a0 a1 n n',
+    anno (asp a) i l = Some (n, (l',a0)) ->
+    anno (asp a) i l2 = Some(n', (l2',a1)) ->
+    a0 = a1.
+Proof.
+Admitted.
+
+Lemma anno_sub: forall t i n ls l a,
+    anno t i ls = Some (n, (l, a)) ->
+    anno t i (lrange a) = Some (n, ([],a)).
+Proof.
+  intros.
+  edestruct anno_some with (l:=(lrange a)) (t:=t) (i:=i).
+  eapply lrange_nss; eauto.
+  destruct x; destruct p.
+  assert (length (lrange a) = anss a0 + length l0).
+  eapply anno_len; eauto.
+  assert (length ls = anss a + length l).
+  eapply anno_len; eauto.
+
+  (*
+  assert (length ls = nss t + (length l)).
+  {
+    assert (nss t = anss a).
+    {
+      eapply nss_iff_anss; eauto.
+    }
+    rewrite H3; clear H3.
+    eauto.
+  }
+
+  assert (length (lrange a) = nss t + (length l0)).
+  {
+    assert (nss t = anss a0).
+    {
+      eapply nss_iff_anss; eauto.
+    }
+    rewrite H4; clear H4.
+    eauto. 
+  }
+   *)
+  
+
+
+  assert (anss a = nss t).
+  {
+    symmetry.
+    eapply nss_iff_anss; eauto.
+  }
+  rewrite H3 in *; clear H3.
+
+  assert (anss a0 = nss t).
+  {
+    symmetry.
+    eapply nss_iff_anss; eauto.
+  }
+  rewrite H3 in *; clear H3.
+  
+  
+
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a.
+    +
+      assert (ls = l) by ff.
+      subst.
+      assert (lrange a0 = l0) by ff.
+      subst.
+      assert (lrange a0 = []) by ff.
+      
+      rewrite H3 in *. clear H3.
+      ff.
+    +
+       assert (ls = l) by ff.
+      subst.
+      assert (lrange a0 = l0) by ff.
+      subst.
+      assert (lrange a0 = []) by ff.
+      
+      rewrite H3 in *. clear H3.
+      ff.
+    +
+       assert (ls = l) by ff.
+      subst.
+      assert (lrange a0 = l0) by ff.
+      subst.
+      assert (lrange a0 = []) by ff.
+      
+      rewrite H3 in *. clear H3.
+      ff.
+    +
+       assert (ls = l) by ff.
+      subst.
+      assert (lrange a0 = l0) by ff.
+      subst.
+      assert (lrange a0 = []) by ff.
+      
+      rewrite H3 in *. clear H3.
+      ff.
+  -
+    ff.
+  -
+
+    assert (length l0 = 0).
+    {
+      assert (length (lrange a) = nss (lseq t1 t2)).
+      {
+        eapply lrange_nss; eauto.
+      }
+      ff.
+      lia.
+    }
+    assert (l0 = []) by (destruct l0; try solve_by_inversion).
+    subst.
+    clear H3.
+    
+    
+      
+
+
+    
+    ff.
+
+    assert (n3 = n1).
+    {
+      eapply same_anno_range; eauto.
+    }
+    subst.
+    
+    
+
+    assert (n0 = n).
+    {
+      eapply same_anno_range; eauto.
+    }
+    subst.
+
+    assert (l2 = l0) by congruence.
+    assert (a3 = a1) by congruence.
+
+    assert (l = []) by congruence.
+    assert (a4 = a2) by congruence.
+    subst.
+    eauto.
+  -
+
+
+    assert (length l0 = 0).
+    {
+      assert (length (lrange a) = nss (bseq s t1 t2)).
+      {
+        eapply lrange_nss; eauto.
+      }
+      ff.
+      lia.
+    }
+    assert (l0 = []) by (destruct l0; try solve_by_inversion).
+    subst.
+    clear H3.
+
+        ff.
+
+    assert (n3 = n1).
+    {
+      eapply same_anno_range; eauto.
+    }
+    subst.
+    
+    
+
+    
+
+    assert (l2 = l0) by congruence.
+    assert (a3 = a1) by congruence.
+
+    assert (l = []) by congruence.
+    assert (a4 = a2) by congruence.
+    subst.
+    assert (n2 = n4) by congruence.
+    subst.
+    eauto.
+  -
+
+    assert (length l0 = 0).
+    {
+      assert (length (lrange a) = nss (bpar s t1 t2)).
+      {
+        eapply lrange_nss; eauto.
+      }
+      ff.
+     
+    }
+    assert (l0 = []) by (destruct l0; try solve_by_inversion).
+    subst.
+    clear H3.
+
+    ff.
+Defined.
+
 Lemma anno_lrange'
   : forall (x : Term) (i j : nat) (ls : list nat) 
       (ls' : LocRange) (t' : AnnoTerm),
     (*length ls = nss x -> *)
     anno x i ls = Some (j, (ls', t')) -> list_subset (lrange t') ls.
 Proof.
+  intros.
+  generalizeEverythingElse x.
+  induction x; intros.
+  -
+    destruct a;
+    
+      ff;
+      unfold list_subset;
+      intros;
+      solve_by_inversion.
+  -
+    ff.
+    unfold list_subset.
+    intros.
+    invc H.
+    econstructor.
+    eauto.
+    invc H0.
+    right.
+    left.
+    eauto.
+    solve_by_inversion.
+  -
+    ff.
+    unfold list_subset.
+    eauto.
+  -
+    ff.
+    unfold list_subset.
+    eauto.
+  -
+    ff.
+Defined.
+
+(*
+Lemma anno_len:
+  forall t i j ls ls' t',
+    anno t i ls = Some (j, (ls', t')) ->
+    length ls = anss t' + length ls'.
+ *)
+
+(*
+Lemma lrange_nss: forall t i ls n l a,
+    anno t i ls = Some (n, (l, a)) ->
+    length (lrange a) = nss t.
+ *)
+
+(*
+Lemma nss_iff_anss: forall t i ls n l a,
+    anno t i ls = Some (n, (l, a)) ->
+    nss t = anss a.
+Proof.
 Admitted.
+*)
+
 
 Lemma lrange_len: forall t i ls n l a,
     anno t i ls = Some (n, (l,a)) ->
     length ls = length (lrange a) + (length l).
 Proof.
-Admitted.
+  intros.
+  erewrite lrange_nss.
+  Focus 2.
+  eassumption.
+  erewrite nss_iff_anss.
+  Focus 2.
+  eassumption.
+  eapply anno_len; eauto.
+Defined.
 
 Lemma anno_sub': forall t i ls n l a,
     anno t i ls = Some (n, (l, a)) ->
     list_subset l ls.
 Proof.
-Admitted.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a;
+    
+      ff;
+      unfold list_subset; eauto.
+  -
+    ff.
+    unfold list_subset.
+    intros.
+    invc H.
+    right.
+    right.
+    econstructor. eauto.
+    solve_by_inversion.
+  -
+    ff.
+    unfold list_subset.
+    intros.
+
+    assert (list_subset l l0) by eauto.
+
+    unfold list_subset in *.
+    specialize H0 with (x:=x).
+    concludes.
+
+    assert (forall x:nat, In x l0 -> In x ls).
+    {
+      eapply IHt1; eauto.
+    }
+    eauto.
+  -
+    ff.
+    unfold list_subset.
+    intros.
+
+    assert (list_subset l l0) by eauto.
+
+    unfold list_subset in *.
+    specialize H0 with (x:=x).
+    concludes.
+
+    assert (forall x:nat, In x l0 -> In x ls).
+    {
+      eapply IHt1; eauto.
+    }
+    eauto.
+  -
+    ff.
+Defined.
 
 Lemma nodup_sub{A:Type}: forall ls ls':list A,
     NoDup ls ->
     list_subset ls' ls ->
     NoDup ls'.
-Proof.
-Admitted.
-
-Lemma nss_iff_anss: forall t i ls n l a,
-    anno t i ls = Some (n, (l, a)) ->
-    nss t = anss a.
 Proof.
 Admitted.
 
@@ -1500,11 +2024,43 @@ Proof.
 
     eapply nodup_sub; eauto.
 
-    eapply anno_sub; eauto. 
+    eapply anno_sub; eauto.
 
-    admit.
-    admit.
-    admit.
+        simpl.
+
+    erewrite anno_range.
+    Focus 2.
+    eassumption.
+    tauto.
+
+    erewrite anno_range.
+    Focus 2.
+    eassumption.
+
+    simpl.
+
+    erewrite anno_range.
+    Focus 2.
+    eassumption.
+    tauto.
+
+    simpl.
+    erewrite anno_range.
+    Focus 2.
+    eassumption.
+    tauto.
+
+(*
+    assert (n0 = snd (range a0)).
+    {
+      erewrite anno_range.
+      Focus 2.
+      eassumption.
+      tauto.
+    }
+    congruence. *)
+
+
 
   
 
@@ -1576,6 +2132,249 @@ Proof.
 
     lia.
   -
+
+
+
+
+
+
+    cbn in *.
+    repeat break_match; try solve_by_inversion.
+    repeat find_inversion.
+    
+    econstructor;
+      try tauto;
+      try solve_by_inversion.
+
+    assert (length ls = anss a + length l).
+    {
+      eapply anno_len; eauto.
+    }
+
+    assert (length l = anss a0 + length ls').
+    {
+      eapply anno_len; eauto.
+    }
+    rewrite H2 in H1.
+
+    assert (nss t1 = anss a).
+    {
+      eapply nss_iff_anss; eauto.
+    }
+
+    assert (nss t2 = anss a0).
+    {
+      eapply nss_iff_anss; eauto.
+    }
+
+    rewrite <- H3 in *; clear H3.
+    rewrite H4 in *; clear H4.
+    
+    
+
+
+
+    assert (length ls' = 0).
+    {
+      lia.
+    }
+
+    rewrite H3 in *.
+
+    eapply IHt1 with (ls:=(lrange a)).
+    eapply lrange_nss; eauto.
+
+    assert (list_subset (lrange a) ls).
+    {
+      eapply anno_lrange'; eauto.
+    }
+
+    eapply nodup_sub; eauto.
+    
+    
+
+
+
+    eapply anno_sub; eauto.
+
+    eapply IHt2 with (ls:=(lrange a0)).   
+    eapply lrange_nss; eauto.
+
+    assert (list_subset (lrange a0) ls).
+    {
+      assert (list_subset (lrange a0) l).
+      {
+        eapply anno_lrange'; eauto.
+      }
+
+      assert (list_subset l ls).
+      {
+        eapply anno_sub'; eauto.
+      }
+
+      unfold list_subset in *; eauto.
+    }
+
+    eapply nodup_sub; eauto.
+
+    eapply anno_sub; eauto.
+
+    simpl.
+
+    erewrite anno_range.
+    Focus 2.
+    eassumption.
+    tauto.
+
+    erewrite anno_range.
+    Focus 2.
+    eassumption.
+
+    simpl.
+
+    erewrite anno_range.
+    Focus 2.
+    eassumption.
+    tauto.
+
+    simpl.
+
+
+    assert (n0 = snd (range a0)).
+    {
+      erewrite anno_range.
+      Focus 2.
+      eassumption.
+      tauto.
+    }
+    congruence.
+
+  
+
+
+
+
+    eapply anno_lrange'.
+    apply Heqo.
+
+    assert (list_subset l ls).
+    {
+      eapply anno_sub'; eauto.
+    }
+
+    assert (list_subset (lrange a0) l).
+    {
+      eapply anno_lrange'; eauto.
+    }
+
+    unfold list_subset in *.
+    eauto.
+
+    assert (length ls = anss a + length l).
+    {
+      eapply anno_len; eauto.
+    }
+
+    assert (nss t1 = anss a).
+    {
+      eapply nss_iff_anss; eauto.
+    }
+
+    assert (nss t2 = anss a0).
+    {
+      eapply nss_iff_anss; eauto.
+    }
+
+    (*
+    rewrite <- H3 in *; clear H3.
+    rewrite H4 in *; clear H4. *)
+    assert (nss t2 = length l) by lia.
+
+    assert (length l = anss a0 + length ls').
+    {
+      eapply anno_len; eauto.
+    }
+
+    rewrite H5 in H4.
+    assert (length ls' = 0) by lia.
+
+    
+
+    rewrite H1.
+
+    rewrite <- H2 in *; clear H2.
+    rewrite <- H3 in *; clear H3.
+
+    rewrite H5.
+
+    assert (length ls = length (lrange a) + (length l)).
+    {
+      eapply lrange_len; eauto.
+    }
+
+    assert (length l = length (lrange a0) + (length ls')).
+    {
+      eapply lrange_len; eauto.
+    }
+
+    lia.
+  -
+    ff.
+Defined.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    ff.
+
+    econstructor.
     
     
 
@@ -1586,7 +2385,14 @@ Proof.
 
     assert (length (lrange a) = nss t1).
     {
-      eapply 
+      eapply lrange_nss; eauto.
+    }
+
+    eapply IHt1.
+    eassumption.
+
+    
+    
 
     erewrite anno_len.
     Focus 2.
@@ -1949,13 +2755,6 @@ Proof.
       lia.      
 Defined.
    *)
-Admitted.
-
-Lemma anno_some: forall t i l,
-  length l = nss t ->
-  exists res,
-    anno t i l = Some res.
-Proof.
 Admitted.
 
 
