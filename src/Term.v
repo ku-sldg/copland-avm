@@ -1320,15 +1320,82 @@ Proof.
         lia).
 Defined.
 Hint Resolve anno_mono : core.
-*)
+ *)
+
+Lemma anno_len:
+  forall t i j ls ls' t',
+    anno t i ls = Some (j, (ls', t')) ->
+    length ls = anss t' + length ls'.
+Proof.
+Admitted.
+
+Lemma anno_len_exact:
+  forall t i j ls t',
+    anno t i ls = Some (j, ([], t')) ->
+    length ls = anss t'.
+Proof.
+  intros.
+  assert (length ls = anss t' + (length ([]:list nat))).
+  {
+    eapply anno_len; eauto.
+  }
+  simpl in *.
+  lia.
+Defined.
+
+Lemma anno_sub: forall t i n ls l a,
+    anno t i ls = Some (n, (l, a)) ->
+    anno t i (lrange a) = Some (n, ([],a)).
+Proof.
+Admitted.
+
+Lemma lrange_nss: forall t i ls n l a,
+    anno t i ls = Some (n, (l, a)) ->
+    length (lrange a) = nss t.
+Proof.
+Admitted.
+
+Lemma anno_lrange'
+  : forall (x : Term) (i j : nat) (ls : list nat) 
+      (ls' : LocRange) (t' : AnnoTerm),
+    (*length ls = nss x -> *)
+    anno x i ls = Some (j, (ls', t')) -> list_subset (lrange t') ls.
+Proof.
+Admitted.
+
+Lemma lrange_len: forall t i ls n l a,
+    anno t i ls = Some (n, (l,a)) ->
+    length ls = length (lrange a) + (length l).
+Proof.
+Admitted.
+
+Lemma anno_sub': forall t i ls n l a,
+    anno t i ls = Some (n, (l, a)) ->
+    list_subset l ls.
+Proof.
+Admitted.
+
+Lemma nodup_sub{A:Type}: forall ls ls':list A,
+    NoDup ls ->
+    list_subset ls' ls ->
+    NoDup ls'.
+Proof.
+Admitted.
+
+Lemma nss_iff_anss: forall t i ls n l a,
+    anno t i ls = Some (n, (l, a)) ->
+    nss t = anss a.
+Proof.
+Admitted.
 
 Lemma anno_well_formed:
   forall t i j ls ls' t',
     length ls = nss t ->
+    NoDup ls ->
     anno t i ls = Some (j, (ls', t')) ->
     well_formed t'.
 Proof.
-  (*
+  
   induction t; intros; simpl;
     try (auto;
     repeat expand_let_pairs;
@@ -1336,24 +1403,271 @@ Proof.
     repeat rewrite anno_lrange;
     repeat rewrite anno_range; simpl; reflexivity).
   -
+   
     destruct a;
     
       cbn in *;
       find_inversion;
-      assert (ls' = []) by (destruct ls'; try solve_by_inversion);
-      subst;
-      eauto.
+      eauto;
+    
+      assert (ls' = []) by (destruct ls'; solve_by_inversion);
+      solve_by_inversion.
   -
     cbn in *.
     repeat break_match; try solve_by_inversion.
     repeat find_inversion.
+    assert (ls' = []) by (destruct ls'; try solve_by_inversion).
+    
+    subst.
+    solve_by_inversion.
+  -
+    cbn in *.
+    repeat break_match; try solve_by_inversion.
+    repeat find_inversion.
+    
     econstructor;
-      try tauto.
+      try tauto;
+      try solve_by_inversion.
 
+    assert (length ls = anss a + length l).
+    {
+      eapply anno_len; eauto.
+    }
+
+    assert (length l = anss a0 + length ls').
+    {
+      eapply anno_len; eauto.
+    }
+    rewrite H2 in H1.
+
+    assert (nss t1 = anss a).
+    {
+      eapply nss_iff_anss; eauto.
+    }
+
+    assert (nss t2 = anss a0).
+    {
+      eapply nss_iff_anss; eauto.
+    }
+
+    rewrite <- H3 in *; clear H3.
+    rewrite H4 in *; clear H4.
+    
+    
+
+
+
+    assert (length ls' = 0).
+    {
+      lia.
+    }
+
+    rewrite H3 in *.
+
+    eapply IHt1 with (ls:=(lrange a)).
+    eapply lrange_nss; eauto.
+
+    assert (list_subset (lrange a) ls).
+    {
+      eapply anno_lrange'; eauto.
+    }
+
+    eapply nodup_sub; eauto.
+    
+    
+
+
+
+    eapply anno_sub; eauto.
+
+    eapply IHt2 with (ls:=(lrange a0)).   
+    eapply lrange_nss; eauto.
+
+    assert (list_subset (lrange a0) ls).
+    {
+      assert (list_subset (lrange a0) l).
+      {
+        eapply anno_lrange'; eauto.
+      }
+
+      assert (list_subset l ls).
+      {
+        eapply anno_sub'; eauto.
+      }
+
+      unfold list_subset in *; eauto.
+    }
+
+    eapply nodup_sub; eauto.
+
+    eapply anno_sub; eauto. 
+
+    admit.
+    admit.
+    admit.
+
+  
+
+
+
+
+    eapply anno_lrange'.
+    apply Heqo.
+
+    assert (list_subset l ls).
+    {
+      eapply anno_sub'; eauto.
+    }
+
+    assert (list_subset (lrange a0) l).
+    {
+      eapply anno_lrange'; eauto.
+    }
+
+    unfold list_subset in *.
+    eauto.
+
+    assert (length ls = anss a + length l).
+    {
+      eapply anno_len; eauto.
+    }
+
+    assert (nss t1 = anss a).
+    {
+      eapply nss_iff_anss; eauto.
+    }
+
+    assert (nss t2 = anss a0).
+    {
+      eapply nss_iff_anss; eauto.
+    }
+
+    (*
+    rewrite <- H3 in *; clear H3.
+    rewrite H4 in *; clear H4. *)
+    assert (nss t2 = length l) by lia.
+
+    assert (length l = anss a0 + length ls').
+    {
+      eapply anno_len; eauto.
+    }
+
+    rewrite H5 in H4.
+    assert (length ls' = 0) by lia.
+
+    
+
+    rewrite H1.
+
+    rewrite <- H2 in *; clear H2.
+    rewrite <- H3 in *; clear H3.
+
+    rewrite H5.
+
+    assert (length ls = length (lrange a) + (length l)).
+    {
+      eapply lrange_len; eauto.
+    }
+
+    assert (length l = length (lrange a0) + (length ls')).
+    {
+      eapply lrange_len; eauto.
+    }
+
+    lia.
+  -
+    
+    
+
+    
+    
+    
+    
+
+    assert (length (lrange a) = nss t1).
+    {
+      eapply 
+
+    erewrite anno_len.
+    Focus 2.
+    apply Heqo.
+
+    erewrite anno_len.
+    Focus 2.
+    apply Heqo0.
+
+    assert (length ls = length (lrange a) + (length l)).
+    {
+      admit.
+    }
+
+    assert (length l = length (lrange a0) + (length ls')).
+    {
+      admit.
+    }
+
+    assert (nss t1 + (nss t2 + length ls') = length ls + length ls').
+    {
+      lia.
+    }
+
+    rewrite H2; clear H2.
+
+    rewrite H0; clear H0.
+
+    rewrite H1; clear H1.
+    
+    
+
+    assert (nss t1 + (nss t2 + length ls') = length (lrange a) + length l + length ls').
+    {
+      admit.
+    }
+
+    rewrite H2.
+
+    rewrite H1.
+    
+
+    lia.
+    
+    
+    
+    
+
+    eapply anno_lrange'.
+    apply Heqo0.
+
+
+    
+
+    eapply IHt1.
+    Focus 2.
+    eassumption.
+    
+
+    Lemma anno_subterm:
+      anno t1 i ls = Some (n, (l,a)) ->
+      exists ls' l' a',
+        anno t1 i ls' = Some(n, (l',a'))
+      well_formed a
+    
+    
+
+    
+
+    eapply IHt1.
+    eassumption.
+    
+
+    (*
     assert (ls' = []).
     {
       admit.
     }
+     *)
+
+    (*
     subst.
     eapply IHt.
     Focus 2.
@@ -1369,8 +1683,12 @@ Proof.
       
       admit.
     }
+     *)
+    
 
     solve_by_inversion.
+    solve_by_inversion.
+    
     
     simpl.
     erewrite anno_range; simpl; try reflexivity.
@@ -1397,6 +1715,29 @@ Proof.
     repeat break_match; try solve_by_inversion.
     repeat find_inversion.
     econstructor.
+    
+    admit.
+    admit.
+    
+    admit.
+    admit.
+    admit.
+
+    admit.
+
+    admit.
+    admit.
+
+    
+
+    Check anno_lrange.
+
+    
+
+
+
+
+    
     eapply IHt1.
     Focus 2.
     eassumption.
@@ -1411,9 +1752,7 @@ Proof.
     Check anno_lrange.
 
     simpl.
-    
-    
-          try solve_by_inversion.
+    try solve_by_inversion.
       
 
 
