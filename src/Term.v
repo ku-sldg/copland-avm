@@ -609,13 +609,19 @@ Fixpoint anno (t: TermLoc) (i:nat) : (nat * AnnoTerm):=
       *)
       
   end.
-*)
+ *)
+
+Definition anno' t i ls := fromSome (0, ([], aasp (0,0) [] CPY)) (anno t i ls).
 
 
-Lemma loc_size: forall t i i' loc loc' annt,
-  anno t i loc = (i', (loc', annt)) ->
-  loc' = loc + nss t.
+Lemma loc_size: forall t i i' ls ls' annt res,
+    anno t i ls = Some (i', (ls', annt)) ->
+    res = length (lrange annt) ->
+    res = nss t.
 Proof.
+Admitted.
+
+(*
   intros.
   generalizeEverythingElse t.
   induction t; intros.
@@ -658,6 +664,7 @@ Proof.
     assert (loc' = n0 + (nss t2)) by eauto.
     lia.
 Defined.
+*)
 
 (*
 Lemma anno_some: forall t i l,
@@ -714,14 +721,16 @@ Ltac asdf :=
   | [H: _, H2: _ |- _] => apply H in H2
   end.
   
-Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm) (loc loc':Loc),
-  anno t i loc = (j, (loc',t')) ->
+Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm) (ls ls':LocRange),
+  anno t i ls = Some (j, (ls',t')) ->
   j > i.
 Proof.
-  induction t; intros i j t' loc loc' H;
+  induction t; intros i j t' ls ls' H;
     try (
         simpl in *;
         repeat break_let;
+        repeat break_match;
+        try solve_by_inversion;
         find_inversion;
         repeat find_apply_hyp_hyp;
         lia).
@@ -729,32 +738,48 @@ Defined.
 Hint Resolve anno_mono : core.
 
 Lemma anno_range:
-  forall x i loc,
-    range (snd (snd (anno x i loc))) = (i, fst (anno x i loc)).
+  forall x i j ls ls' t',
+     anno x i ls = Some (j, (ls',t')) ->
+    
+    range (t') = (i, j).
 Proof.
-  induction x; intros; simpl; auto;
+  induction x; intros; simpl in *; auto;
     repeat expand_let_pairs;
+    repeat break_match;
+    try solve_by_inversion;
     simpl; auto.
-Qed.
+Defined.
 
 Lemma anno_lrange:
-  forall x i loc,
-    lrange (snd (snd (anno x i loc))) = (loc, fst (snd ((anno x i loc)))).
+  forall x i j ls ls' t',
+    length ls = nss x ->
+    anno x i ls = Some (j, (ls',t')) ->
+
+    
+    lrange (t') = ls. (* (loc, fst (snd ((anno x i loc)))). *)
 Proof.
   induction x; intros;
-    try (simpl; auto;
-    repeat expand_let_pairs;
-    simpl; tauto).
-  (*
+    try (
+        simpl in *; auto;
+        repeat break_match; try solve_by_inversion;
+        repeat find_inversion;
+        simpl in *;
+        repeat expand_let_pairs;
+        repeat break_match; try solve_by_inversion;
+         simpl in *; tauto).
   -
-    simpl;
+    destruct a;
+      simpl in *;
       repeat expand_let_pairs;
-      simpl. *)
-    
+      repeat break_match;
+      find_inversion;
+      simpl;
+      assert (ls' = []) by (destruct ls'; solve_by_inversion);
+      congruence.   
 Qed.
 
-Definition annotated x :=
-  snd (snd (anno x 0 0)).
+Definition annotated x ls :=
+  snd (snd (anno' x 0 ls)).
 
 Lemma pairsinv : forall (a a' b b':nat),
     a <> a' -> (a,b) <> (a',b').
@@ -852,7 +877,7 @@ Ltac jkjk' :=
 Fixpoint unanno a :=
   match a with
   | aasp _ _ a => asp a
-  | aatt _ _ _ p t => att p (unanno t)
+  | aatt _ _ _ p t => att p t (* (unanno t) *)
   | alseq _ _ a1 a2 => lseq (unanno a1) (unanno a2)
                          
   | abseq _ _ spl a1 a2 => bseq spl (unanno a1) (unanno a2) 

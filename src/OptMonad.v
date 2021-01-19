@@ -18,3 +18,10 @@ Instance optionMonad : Monad option :=
       | Some x => f x
       end
   }.
+
+Definition fromSome{A:Type} (default:A) (opt:option A): A :=
+  match opt with
+  | Some x => x
+  | _ => default
+  end.
+    
