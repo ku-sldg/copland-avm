@@ -278,7 +278,7 @@ Definition Range: Set := nat * nat.
 
 Inductive AnnoTerm: Set :=
 | aasp: Range -> LocRange -> ASP -> AnnoTerm
-| aatt: Range -> LocRange -> (Loc*Loc) -> Plc -> Term -> AnnoTerm
+| aatt: Range -> LocRange -> (Loc*Loc) -> Plc -> AnnoTerm -> AnnoTerm
 | alseq: Range -> LocRange -> AnnoTerm -> AnnoTerm -> AnnoTerm
 | abseq: Range -> LocRange -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
 | abpar: Range -> LocRange -> (Loc*Loc) -> (Loc*Loc) -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm.
@@ -331,7 +331,7 @@ Admitted.
 Fixpoint esize t :=
   match t with
   | aasp _ _ _ => 1
-  | aatt _ _ _ _ t1 => 2 + remote_esize t1 (*esize t1*)
+  | aatt _ _ _ _ t1 => 2 + (*remote_esize t1*) esize t1
   | alseq _ _ t1 t2 => esize t1 + esize t2
   | abseq _ _ _ t1 t2 => 2 + esize t1 + esize t2
   | abpar _ _ _ _ _ t1 t2 => 2 + esize t1 + esize t2
@@ -417,7 +417,7 @@ Defined.
 
 Fixpoint anno (t: Term) (i:nat) (ls:LocRange) : option (nat * (LocRange * AnnoTerm)):=
   match t with
-  | asp x => ret (S i, (ls, (aasp (i, S i) [] x)))
+  | asp x => ret (S i, (ls, (aasp (i, S i) ls x)))
 
   | att p x =>
     (*
@@ -427,7 +427,10 @@ Fixpoint anno (t: Term) (i:nat) (ls:LocRange) : option (nat * (LocRange * AnnoTe
 
     '(req_loc,rpy_loc) <- getTwoLocs ls ;;
 
-    ret (S (S i), (skipn 2 ls, aatt (i, S (S i)) (firstn 2 ls) (req_loc,rpy_loc) p x))
+    '(j,(l',a)) <- anno x (S i) []  ;;  (* TODO: does ls matter here?  Should it be []? *)
+    
+
+    ret (S j, (skipn 2 ls, aatt (i, S j) (firstn 2 ls) (req_loc,rpy_loc) p a))
      
     
 
@@ -462,16 +465,16 @@ Fixpoint anno (t: Term) (i:nat) (ls:LocRange) : option (nat * (LocRange * AnnoTe
     (S (S i), aatt (i, S (S i)) ls locs p x) *)
 
   | lseq x y =>
-    '(j,(l',a)) <- anno x i ls ;;
+    '(j,(l',a)) <- anno x i ls  ;;
     (* let (l',a) := pr1 in *)
-    '(k,(l'',b)) <- anno y j l' ;;
+    '(k,(l'',b)) <- anno y j l'  ;;
     (* let (l'',b) := pr2 in *)
     ret (k, (l'', alseq (i, k) ls a b))
  
   | bseq s x y =>
-    '(j,(l',a)) <- anno x (S i) ls ;;
+    '(j,(l',a)) <- anno x (S i) ls  ;;
     (* let (l',a) := pr1 in *)
-    '(k,(l'',b)) <- anno y j ls ;;
+    '(k,(l'',b)) <- anno y j ls  ;;
     (* let (l'',b) := pr2 in *)
     ret (S k, (l'',abseq (i, S k) ls s a b))
         
@@ -492,9 +495,9 @@ Fixpoint anno (t: Term) (i:nat) (ls:LocRange) : option (nat * (LocRange * AnnoTe
 
 
     
-    '(j,(l',a)) <- anno x (S i) (skipn 4 ls) ;;
+    '(j,(l',a)) <- anno x (S i) (skipn 4 ls)  ;;
     (* let (l',a) := pr1 in *)
-    '(k,(l'',b)) <- anno y j l' ;;
+    '(k,(l'',b)) <- anno y j l'  ;;
     (* let (l'',b) := pr2 in *)
     ret (S k, (l'', abpar (i, S k) ls xlocs ylocs s a b))
       (* ret (1,([], aasp (0,0) CPY)) *)
@@ -750,13 +753,19 @@ Proof.
     simpl; auto.
 Defined.
 
+Definition list_subset{A:Type} (l1:list A) (l2:list A) : Prop :=
+  forall x,
+    In x l1 ->
+    In x l2.
+
 Lemma anno_lrange:
   forall x i j ls ls' t',
     length ls = nss x ->
     anno x i ls = Some (j, (ls',t')) ->
 
-    
-    lrange (t') = ls. (* (loc, fst (snd ((anno x i loc)))). *)
+    list_subset ls (lrange t').
+  (*
+    lrange (t') = ls. (* (loc, fst (snd ((anno x i loc)))). *) *)
 Proof.
   induction x; intros;
     try (
@@ -766,7 +775,21 @@ Proof.
         simpl in *;
         repeat expand_let_pairs;
         repeat break_match; try solve_by_inversion;
-         simpl in *; tauto).
+        try unfold list_subset;
+        simpl in *; tauto).
+
+  (*
+  -
+    cbn in *.
+    repeat break_match; try solve_by_inversion.
+    repeat find_inversion.
+    cbn in *.
+    repeat break_match; try solve_by_inversion.
+    repeat find_inversion.
+*)
+      
+    
+  (*
   -
     destruct a;
       simpl in *;
@@ -777,6 +800,9 @@ Proof.
       assert (ls' = []) by (destruct ls'; solve_by_inversion);
       congruence.   
 Qed.
+   *)
+Qed.
+
 
 Definition annotated x ls :=
   snd (snd (anno' x 0 ls)).
@@ -877,7 +903,7 @@ Ltac jkjk' :=
 Fixpoint unanno a :=
   match a with
   | aasp _ _ a => asp a
-  | aatt _ _ _ p t => att p t (* (unanno t) *)
+  | aatt _ _ _ p t => att p (unanno t)
   | alseq _ _ a1 a2 => lseq (unanno a1) (unanno a2)
                          
   | abseq _ _ spl a1 a2 => bseq spl (unanno a1) (unanno a2) 
@@ -892,47 +918,76 @@ Fixpoint unanno a :=
 Lemma unique_req_events (t:AnnoTerm) : forall p i i0 p1 p2 q q0 t0 t1,
        events t p (req i  loc p1 q  t0) ->
     not (events t p (req i0 loc p2 q0 t1)).
-*)
+ *)
 
 Inductive well_formed: AnnoTerm -> Prop :=
-| wf_asp: forall r lri x,
+| wf_asp: forall r x,
     snd r = S (fst r) ->
-    well_formed (aasp r (lri,lri) x)
-| wf_att: forall r lr locs p x,
+    well_formed (aasp r [] x)
+| wf_att: forall r ls locs p x,
     well_formed x ->
     S (fst r) = fst (range x) ->
     snd r = S (snd (range x)) ->
     Nat.pred (snd r) > fst r ->
+
+    In (fst locs) ls ->
+    In (snd locs) ls ->
+    NoDup ls ->
+
+    length ls = 2 ->
+
     
+    (*
     fst lr = fst locs ->
     snd locs = S (fst locs) ->
     fst (lrange x) = (fst lr) + 2 ->
     snd lr > fst lr ->
     snd (lrange x) = snd lr ->
     (*snd lr = (fst lr) + 2 -> *)
-    well_formed (aatt r lr locs p x)
-| wf_lseq: forall r lr x y,
+     *)
+    
+    well_formed (aatt r ls locs p x)
+| wf_lseq: forall r ls x y,
     well_formed x -> well_formed y ->
     fst r = fst (range x) ->
     snd (range x) = fst (range y) ->
     snd r = snd (range y) ->
+
+    NoDup ls ->
+    list_subset (lrange x) ls ->
+    list_subset (lrange y) ls ->
+
+    length ls = length (lrange x) + length (lrange y) ->
     
+    (*
     fst lr = fst (lrange x) ->
     snd (lrange x) = fst (lrange y) ->
     snd lr = snd (lrange y) ->
-    well_formed (alseq r lr x y)
-| wf_bseq: forall r lr s x y,
+     *)
+    
+    well_formed (alseq r ls x y)
+| wf_bseq: forall r ls s x y,
     well_formed x -> well_formed y ->
     S (fst r) = fst (range x) ->
     snd (range x) = fst (range y) ->
     snd r = S (snd (range y)) ->
 
+    NoDup ls ->
+    list_subset (lrange x) ls ->
+    list_subset (lrange y) ls ->
+
+    length ls = length (lrange x) + length (lrange y) ->
+    
+
+    (*
     fst lr = fst (lrange x) ->
     snd (lrange x) = fst (lrange y) ->
     snd lr = snd (lrange y) ->
+     *)
     
-    well_formed (abseq r lr s x y)
-| wf_bpar: forall r lr xlocs ylocs s x y,
+    
+    well_formed (abseq r ls s x y)
+| wf_bpar: forall r ls xlocs ylocs s x y,
     well_formed x -> well_formed y ->
     (*(rx1,rx2) = (range x) ->
     (ry1,ry2) = (range y) -> *)  
@@ -942,6 +997,21 @@ Inductive well_formed: AnnoTerm -> Prop :=
     fst (range y) > fst (range x) -> 
     (*r2 > r1 -> *)
 
+    NoDup ls ->
+    list_subset (lrange x) ls ->
+    list_subset (lrange y) ls ->
+
+    In (fst xlocs) ls ->
+    In (snd xlocs) ls ->
+
+    In (fst ylocs) ls ->
+    In (snd ylocs) ls ->
+
+    length ls = 4 + length (lrange x) + length (lrange y) ->
+    
+    
+
+    (*
 
     fst (lrange x) = S (S (S (S (fst lr)))) ->
     snd xlocs = S (fst xlocs) ->
@@ -951,7 +1021,9 @@ Inductive well_formed: AnnoTerm -> Prop :=
     snd lr = snd (lrange y) ->
     S (snd ylocs) = fst (lrange x) ->
     snd (lrange x) = fst (lrange y) ->
-    well_formed (abpar r lr xlocs ylocs s x y).
+     *)
+    
+    well_formed (abpar r ls xlocs ylocs s x y).
 
                 (*
 | wf_bpar: forall r s x y,
@@ -1023,7 +1095,9 @@ Defined.
 Lemma well_formed_lrange:
   forall t,
     well_formed t ->
-    snd (lrange t) = fst (lrange t) + anss t.
+    length (lrange t) = anss t.
+  (*
+    snd (lrange t) = fst (lrange t) + anss t. *)
 Proof.
   induction t; intros H;
     try (simpl; inv H; simpl; repeat concludes; lia).
@@ -1111,10 +1185,95 @@ Proof.
   eauto.
 Defined.
 
-Lemma lrange_anno_mono': forall (t:Term) (i j:nat) (t':AnnoTerm) (loc loc':Loc),
-    anno t i loc = (j, (loc', t')) ->
-    fst (lrange t') >= loc.
+
+(*
+Lemma lrange_anno_mono': forall (t:Term) (i j:nat) (t':AnnoTerm) (ls ls':LocRange),
+    length ls = nss t ->
+    anno t i ls = Some (j, (ls', t')) ->
+    length ls = length (lrange t') /\ list_subset ls' ls.
+    (* fst (lrange t') >= loc. *)
 Proof.
+  intros.
+  rewrite H in *.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    simpl in *.
+    destruct a;
+      simpl in *;
+      repeat find_inversion;
+            split;
+      try unfold list_subset;
+      eauto.    
+
+  -
+    cbn in *.
+    repeat break_match; try solve_by_inversion.
+    repeat find_inversion.
+    simpl in *.
+    repeat break_match; try solve_by_inversion.
+  -
+    cbn in *.
+    repeat break_match; try solve_by_inversion.
+    repeat find_inversion.
+    simpl in *.
+    split; try eauto.
+
+    assert (list_subset ls' l).
+    {
+      eapply IHt2.
+      Focus 2.
+      eassumption.
+      destruct t2.
+      +
+        cbn in *.
+          repeat find_inversion
+      
+
+    
+
+    assert 
+
+
+    
+    destruct t; cbn in *; repeat break_match; try solve_by_inversion.
+    repeat find_inversion.
+    rewrite H in *.
+    split; try auto.
+
+
+
+    assert (length l = length (lrange t'1) /\ length l0 <= length l).
+    {
+      eapply IHt'1.
+
+
+    
+    auto.
+    
+    edestruct IHt1.
+    Focus 2.
+    eassumption.
+    cbn in *.
+
+    edestruct IHt2.
+    admit.
+    eassumption.
+    lia.
+    +
+      
+      
+    simpl in *.
+    repeat break_match; try solve_by_inversion.
+    split.
+    
+    
+      simpl in *.
+      lia.
+      rewrite H in *.
+      lia.
+      tauto.
+  (*
   induction t; intros i j t' loc loc' H;
     try (
         simpl in *;
@@ -1124,7 +1283,12 @@ Proof.
         simpl;
         lia).
 Defined.
+   *)
+Admitted.
+*)
 
+
+(*
 Lemma lrange_anno_mono: forall (t:Term) (i j:nat) (t':AnnoTerm) (loc loc':Loc),
     anno t i loc = (j, (loc', t')) ->
     loc' >= loc.
@@ -1138,6 +1302,7 @@ Proof.
         simpl;
         lia).
 Defined.
+*)
 
 
 
@@ -1158,15 +1323,103 @@ Hint Resolve anno_mono : core.
 *)
 
 Lemma anno_well_formed:
-  forall t i loc,
-    well_formed (snd (snd (anno t i loc))).
+  forall t i j ls ls' t',
+    length ls = nss t ->
+    anno t i ls = Some (j, (ls', t')) ->
+    well_formed t'.
 Proof.
+  (*
   induction t; intros; simpl;
     try (auto;
     repeat expand_let_pairs;
     econstructor; simpl; auto;
     repeat rewrite anno_lrange;
     repeat rewrite anno_range; simpl; reflexivity).
+  -
+    destruct a;
+    
+      cbn in *;
+      find_inversion;
+      assert (ls' = []) by (destruct ls'; try solve_by_inversion);
+      subst;
+      eauto.
+  -
+    cbn in *.
+    repeat break_match; try solve_by_inversion.
+    repeat find_inversion.
+    econstructor;
+      try tauto.
+
+    assert (ls' = []).
+    {
+      admit.
+    }
+    subst.
+    eapply IHt.
+    Focus 2.
+    eassumption.
+    Check anno_lrange.
+    assert (list_subset [] (lrange a)).
+    {
+      eapply anno_lrange.
+      Focus 2.
+      eassumption.
+      
+
+      
+      admit.
+    }
+
+    solve_by_inversion.
+    
+    simpl.
+    erewrite anno_range; simpl; try reflexivity.
+    eassumption.
+    simpl.
+    erewrite anno_range; simpl; try reflexivity.
+    eassumption.
+    simpl.
+    assert (n2 > (S i)).
+    {
+      eapply anno_mono; eauto.
+    }
+    lia.
+    simpl.
+    cbn in *.
+    repeat break_match; try solve_by_inversion.
+    simpl.
+    cbn in *.
+    repeat break_match; try solve_by_inversion.
+    cbn in *.
+    repeat break_match; try solve_by_inversion.
+  -
+    cbn in *.
+    repeat break_match; try solve_by_inversion.
+    repeat find_inversion.
+    econstructor.
+    eapply IHt1.
+    Focus 2.
+    eassumption.
+    
+    
+    
+    
+    
+    eapply IHt.
+    Focus 2.
+    eassumption.
+    Check anno_lrange.
+
+    simpl.
+    
+    
+          try solve_by_inversion.
+      
+
+
+
+
+  
   -
     auto.
     repeat break_let.
@@ -1356,15 +1609,35 @@ Proof.
       simpl.
       lia.      
 Defined.
+   *)
+Admitted.
+
+Lemma anno_some: forall t i l,
+  length l = nss t ->
+  exists res,
+    anno t i l = Some res.
+Proof.
+Admitted.
 
 
 Lemma anno_well_formed':
-  forall t,
-    well_formed (annotated t).
+  forall t ls,
+    length ls = nss t ->
+    well_formed (annotated t ls).
 Proof.
   intros.
+  edestruct anno_some with (t := t) (i:=0).
+  eassumption.
+  destruct x.
+  destruct p.
   unfold annotated.
   eapply anno_well_formed.
+  eassumption.
+  unfold anno'.
+  rewrite H0 at 2.
+  simpl.
+  rewrite H0.
+  reflexivity.
 Defined.
 
 (** Eval for annotated terms. *)
@@ -1380,6 +1653,7 @@ Fixpoint aeval t p e :=
                          (aeval t2 p ((splitEv_T (snd s)) e))
   end. 
 
+(*
 Lemma eval_aeval:
   forall t p e i loc,
     eval t p e = aeval (snd (snd ((anno t i loc)))) p e.
@@ -1389,6 +1663,7 @@ Proof.
       try (repeat jkjk; auto;congruence);
       try (repeat jkjk'; auto).
 Defined.
+*)
 
 (** This predicate specifies when a term, a place, and some initial
     evidence is related to an event.  In other words, it specifies the
