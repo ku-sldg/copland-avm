@@ -198,6 +198,458 @@ Ltac inv_ev2' :=
     inv H; inv H'
   end.
 
+Set Nested Proofs Allowed.
+
+Lemma event_in_lrange: forall t p ev loc,
+    events t p ev ->
+    store_event ev loc ->
+    In loc (lrange t).
+Proof.
+Admitted.
+
+Lemma nodup_contra': forall ls ls' (loc:nat),
+    NoDup (ls ++ ls') ->
+    In loc ls ->
+    In loc ls' ->
+    False.
+Proof.
+Admitted.
+
+Lemma in_app: forall ls ls' (loc:nat),
+    In loc ls ->
+    In loc (ls ++ ls').
+Proof.
+Admitted.
+
+Lemma in_app2: forall ls ls' (loc:nat),
+    In loc ls' ->
+    In loc (ls ++ ls').
+Proof.
+Admitted.
+
+Lemma unique_store_event_locs: forall t p ev ev' loc,
+    well_formed t ->
+    events t p ev ->
+    events t p ev' ->
+    store_event ev loc ->
+    store_event ev' loc ->
+    ev = ev'.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    inv_wf;
+    inv_ev2;
+    ff;
+    eauto.
+  -
+    inv_wf;
+      inv_ev2.
+    +
+      eauto.
+    +
+      assert (req_loc = rpy_loc).
+      {
+        invc H2; invc H3.
+        tauto.
+      }
+      ff.
+      congruence.
+    +
+      assert (req_loc = rpy_loc).
+      {
+        invc H2; invc H3.
+        tauto.
+      }
+      ff.
+      congruence.
+    +
+      ff.
+      invc H2; invc H3.
+      congruence.
+  -
+    inv_wf.
+    inv_ev2.
+    +
+      eauto.
+    +
+      assert (In loc (lrange t1)).
+      {
+        eapply event_in_lrange; eauto.
+      }
+
+      assert (In loc (lrange t2)).
+      {
+        eapply event_in_lrange; eauto.
+      }
+
+      exfalso.
+      eapply nodup_contra'; eauto.
+    +
+       assert (In loc (lrange t1)).
+      {
+        eapply event_in_lrange; eauto.
+      }
+
+      assert (In loc (lrange t2)).
+      {
+        eapply event_in_lrange; eauto.
+      }
+
+      exfalso.
+      eapply nodup_contra'; eauto.
+    +
+      eauto.
+  -
+    inv_wf;
+      inv_ev2;
+      try solve_by_inversion.
+    +
+      eauto.
+    +
+      assert (In loc (lrange t1)).
+      {
+        eapply event_in_lrange; eauto.
+      }
+
+      assert (In loc (lrange t2)).
+      {
+        eapply event_in_lrange; eauto.
+      }
+
+      exfalso.
+      eapply nodup_contra'; eauto.
+    +
+       assert (In loc (lrange t1)).
+      {
+        eapply event_in_lrange; eauto.
+      }
+
+      assert (In loc (lrange t2)).
+      {
+        eapply event_in_lrange; eauto.
+      }
+
+      exfalso.
+      eapply nodup_contra'; eauto.
+    +
+      eauto.
+  -
+     inv_wf;
+      inv_ev2;
+      try solve_by_inversion.
+
+     +
+       
+       inversion H2.
+       ++
+         assert (In loc (lrange t1)).
+         {
+           eapply event_in_lrange; eauto.
+         }
+
+         ff.
+         subst.
+
+         unfold not in H24.
+
+
+         exfalso.
+         eapply H24.
+         right.
+         right.
+         right.
+
+         eapply in_app; eauto.
+       ++
+         assert (In loc (lrange t1)).
+         {
+           eapply event_in_lrange; eauto.
+         }
+
+         ff.
+         subst.
+
+         unfold not in H26.
+         exfalso.
+         apply H26.
+         right.
+         right.
+         right.
+         eapply in_app; eauto.
+     +
+              
+       inversion H2.
+       ++
+         assert (In loc (lrange t2)).
+         {
+           eapply event_in_lrange; eauto.
+         }
+
+         ff.
+         subst.
+
+         unfold not in H24.
+
+
+         exfalso.
+         eapply H24.
+         right.
+         right.
+         right.
+
+         eapply in_app2; eauto.
+       ++
+         assert (In loc (lrange t2)).
+         {
+           eapply event_in_lrange; eauto.
+         }
+
+         ff.
+         subst.
+
+         unfold not in H26.
+         exfalso.
+         apply H26.
+         right.
+         right.
+         right.
+         eapply in_app2; eauto.
+     +
+       inversion H2.
+       ++
+         subst.
+         inversion H3.
+         +++
+           ff; tauto.
+         +++
+           ff; tauto.
+       ++
+         subst.
+         inversion H3.
+         +++
+           ff; tauto.
+         +++
+           ff; tauto.
+     +
+       inversion H3.
+       ++
+         subst.
+
+         assert (In loc (lrange t1)).
+         {
+           eapply event_in_lrange; eauto.
+         }
+
+         ff.
+         unfold not in *.
+         exfalso.
+
+         apply H24.
+         right.
+         right.
+         right.
+         eapply in_app; eauto.
+       ++
+         subst.
+         assert (In loc (lrange t1)).
+         {
+           eapply event_in_lrange; eauto.
+         }
+
+         ff.
+         exfalso.
+
+         apply H26.
+         right.
+         right.
+         right.
+         eapply in_app; eauto.
+     +
+       eauto.
+     +
+       assert (In loc (lrange t1)).
+        {
+           eapply event_in_lrange; eauto.
+        }
+
+        assert (In loc (lrange t2)).
+         {
+           eapply event_in_lrange; eauto.
+         }
+         ff.
+         exfalso.
+         eapply nodup_contra'; eauto.
+     +
+       subst.
+       inversion H3.
+       ++
+         subst.
+         assert (In loc (lrange t1)).
+          {
+           eapply event_in_lrange; eauto.
+          }
+          ff.
+          exfalso.
+          apply H25.
+          right.
+          right.
+          right.
+          eapply in_app; eauto.
+       ++
+         subst.
+          assert (In loc (lrange t1)).
+          {
+           eapply event_in_lrange; eauto.
+          }
+          ff.
+          exfalso.
+          apply H27.
+          right.
+          right.
+          right.
+          eapply in_app; eauto.
+     +
+       inversion H3.
+       ++
+         subst.
+         assert (In loc (lrange t2)).
+          {
+           eapply event_in_lrange; eauto.
+          }
+          ff.
+          exfalso.
+          apply H24.
+          right.
+          right.
+          right.
+          eapply in_app2; eauto.
+       ++
+         subst.
+          assert (In loc (lrange t2)).
+          {
+           eapply event_in_lrange; eauto.
+          }
+          ff.
+          exfalso.
+          apply H26.
+          right.
+          right.
+          right.
+          eapply in_app2; eauto.
+     +
+        assert (In loc (lrange t2)).
+          {
+           eapply event_in_lrange; eauto.
+          }
+           assert (In loc (lrange t1)).
+          {
+           eapply event_in_lrange; eauto.
+          }
+
+          exfalso.
+          eapply nodup_contra'; eauto.
+     +
+       eauto.
+     +
+       subst.
+       inversion H3.
+       ++
+         subst.
+          assert (In loc (lrange t2)).
+          {
+           eapply event_in_lrange; eauto.
+          }
+          ff.
+          exfalso.
+          apply H25.
+          right.
+          right.
+          right.
+          eapply in_app2; eauto.
+       ++
+         subst.
+          assert (In loc (lrange t2)).
+          {
+           eapply event_in_lrange; eauto.
+          }
+           ff.
+          exfalso.
+          apply H27.
+          right.
+          right.
+          right.
+          eapply in_app2; eauto.
+     +
+       inversion H2;
+         inversion H3;
+         subst;
+         try (ff; tauto).
+     +
+       inversion H2; subst.
+       ++
+          assert (In loc (lrange t1)).
+          {
+           eapply event_in_lrange; eauto.
+          }
+          ff.
+          exfalso.
+          apply H25.
+          right.
+          right.
+          right.
+          eapply in_app; eauto.
+       ++
+          assert (In loc (lrange t1)).
+          {
+           eapply event_in_lrange; eauto.
+          }
+          ff.
+          exfalso.
+          apply H27.
+          right.
+          right.
+          right.
+          eapply in_app; eauto.
+     +
+       inversion H2; subst.
+       ++
+          assert (In loc (lrange t2)).
+          {
+           eapply event_in_lrange; eauto.
+          }
+          ff.
+          exfalso.
+          apply H25.
+          right.
+          right.
+          right.
+          eapply in_app2; eauto.
+       ++
+          assert (In loc (lrange t2)).
+          {
+           eapply event_in_lrange; eauto.
+          }
+          ff.
+          exfalso.
+          apply H27.
+          right.
+          right.
+          right.
+          eapply in_app2; eauto.
+     +
+       
+       inversion H2;
+         inversion H3;
+         try congruence.
+Defined.
+             
+      
+    
+    
+  
+
 
 (*
 
