@@ -4,7 +4,7 @@ Helper lemmas for proofs about the VM semantics.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import MonadVM Impl_vm Term Auto StructTactics MonadVMFacts Maps GenStMonad.
+Require Import MonadVM Impl_vm Term_Defs Term Auto StructTactics MonadVMFacts Maps GenStMonad.
 
 Require Import Coq.Program.Tactics Coq.Program.Equality.
 
@@ -184,7 +184,8 @@ Proof.
   - destruct a;
       df; eauto.
   -
-    do_wf_pieces.
+    (*
+    do_wf_pieces. *)
     repeat (df; dohtac; df).
     tauto.
   -

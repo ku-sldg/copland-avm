@@ -4,7 +4,7 @@ Proofs about the Copland Virtual Machine implementation, linking it to the Copla
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import More_lists Term ConcreteEvidence LTS Event_system Term_system Main.
+Require Import More_lists Term_Defs Term ConcreteEvidence LTS Event_system Term_system Main.
 Require Import GenStMonad MonadVM MonadVMFacts Maps StructTactics Auto.
 Require Import Axioms_Io Impl_vm External_Facts Helpers_VmSemantics.
 
@@ -127,10 +127,10 @@ Proof.
 
     assert (
         StVM.st_trace
-           (snd (copland_compile t1 {| st_ev := splitEv s0 e; st_trace := m ++ (k ++ [Term.split n p]); st_pl := p; st_store := o |})) =
+           (snd (copland_compile t1 {| st_ev := splitEv s0 e; st_trace := m ++ (k ++ [Term_Defs.split n p]); st_pl := p; st_store := o |})) =
          m ++
          StVM.st_trace
-         (snd (copland_compile t1 {| st_ev := splitEv s0 e; st_trace := k ++ [Term.split n p]; st_pl := p; st_store := o |}))).
+         (snd (copland_compile t1 {| st_ev := splitEv s0 e; st_trace := k ++ [Term_Defs.split n p]; st_pl := p; st_store := o |}))).
     {
       rewrite <- app_assoc in *. (*Heqp4. *)
       eapply IHt1; eauto.
@@ -360,11 +360,15 @@ Ltac do_restl :=
       ltac:(eapply restl; [apply H2 | apply H])
   end.
 
+Axiom remote_Ev_Shape: forall e es t n,
+    Ev_Shape e es ->
+    Ev_Shape (toRemote t n e) (eval (unanno t) n es).
+
 Lemma cvm_refines_lts_evidence : forall t tr tr' e e' p p' o o' es e's,
     well_formed t ->
     copland_compile t (mk_st e tr p o) = (Some tt, (mk_st e' tr' p' o')) ->
     Ev_Shape e es ->
-    Term.eval (unanno t) p es = e's ->
+    Term_Defs.eval (unanno t) p es = e's ->
     Ev_Shape e' e's.
 Proof.
   induction t; intros.
@@ -374,14 +378,21 @@ Proof.
           df;
           eauto).
   -
-    do_wf_pieces.
+    (*
+    do_wf_pieces. *)
     repeat (df; dohtac; df).    
     annogo.
+
+    (*
     eapply IHt.
     eassumption.
     eapply copland_compile_at; eauto.
     eassumption.
     reflexivity.
+     *)
+
+    apply remote_Ev_Shape; eauto.
+
   -
     do_wf_pieces.
     do_suffix blah.
@@ -487,8 +498,10 @@ Proof.
         eauto.
         eauto.
         eauto.
-        eauto.
 Defined.
+
+Axiom remote_LTS: forall t n et, 
+    lstar (conf t n et) (remote_events t n) (stop n (aeval t n et)).
    
 Lemma cvm_refines_lts_event_ordering : forall t tr et e e' p p' o o',
     well_formed t ->
@@ -503,7 +516,7 @@ Proof.
       df;
       econstructor; try (econstructor; reflexivity).
   - (* aatt case *)
-    do_wf_pieces.
+    (*do_wf_pieces. *)
     destruct r.
     repeat (df; dohtac; df).
     eapply lstar_tran.
@@ -512,9 +525,22 @@ Proof.
     eapply lstar_transitive.
     eapply lstar_strem.
     cbn.
+    
+    assert (lstar (conf t n et) (remote_events t n) (stop n (aeval t n et))).
+    {
+
+      apply remote_LTS.
+    }
+    apply H0.
+    (*
+    
     eapply IHt; eauto.
+    admit.
     apply copland_compile_at.
-    eassumption.
+    admit.
+     *)
+    
+    (* eassumption. *)
     econstructor.
     apply stattstop.
     econstructor.
@@ -584,7 +610,7 @@ Proof.
     eapply stbsrstop.
     econstructor.
   -
-    destruct s; destruct r; destruct l.
+    destruct s; destruct r.
     repeat (df; dohtac; df).
     econstructor.
     (*
@@ -620,10 +646,11 @@ Proof.
     
     
     apply stbpstop.
-    econstructor.     
+    econstructor.
+    (*
     Unshelve.
     exact mtc.
-    eauto. 
+    eauto.  *)
 Defined.
 
 Lemma cvm_refines_lts_event_ordering_corrolary : forall t tr et e e' p p' o o',
@@ -651,6 +678,23 @@ Proof.
   solve_by_inversion.
 Defined.
 
+Lemma wf_implies_wfr: forall t,
+    well_formed t ->
+    well_formed_r t.
+Proof.
+  induction t; intros.
+  -
+    destruct a; ff.
+  -
+    ff.
+  -
+    ff.
+  -
+    ff.
+  -
+    ff.
+Defined.
+
 Theorem cvm_respects_event_system' : forall t tr ev0 ev1 e e' o o',
     well_formed t -> 
     copland_compile 
@@ -662,11 +706,14 @@ Theorem cvm_respects_event_system' : forall t tr ev0 ev1 e e' o o',
 Proof.
   intros.
   eapply ordered with (p:=0) (e:=mt); eauto.
+  eapply wf_implies_wfr; eauto.
   eapply cvm_refines_lts_event_ordering; eauto.
 Defined.
 
-Theorem cvm_respects_event_system : forall t tr ev0 ev1 e e' o o' t',
-    t = annotated t' -> 
+Theorem cvm_respects_event_system : forall t tr ev0 ev1 e e' o o' t' ls ls' i n,
+    NoDup ls ->
+    (*t = annotated t' ls -> *)
+    anno t' i ls true = Some (n, (ls', t)) ->
     copland_compile
       t
       (mk_st e [] 0 o) =
@@ -680,5 +727,6 @@ Proof.
     subst.
     eapply anno_well_formed; eauto.
     eapply ordered with (p:=0) (e:=mt); eauto.
+    eapply wf_implies_wfr; eauto.
     eapply cvm_refines_lts_event_ordering; eauto.
 Defined.

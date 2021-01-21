@@ -15,7 +15,7 @@ Require Import List.
 Import List.ListNotations.
 Open Scope list_scope.
 Require Import Lia.
-Require Import Preamble More_lists Term Event_system Term_system.
+Require Import Preamble More_lists Term_Defs Term Event_system Term_system.
 
 (** * Shuffles
 
@@ -297,7 +297,7 @@ Qed.
 
 Lemma trace_events:
   forall t p tr v,
-    well_formed t ->
+    well_formed_r t ->
     trace t p tr ->
     In v tr <-> events t p v.
 Proof.
@@ -354,14 +354,14 @@ Proof.
       rewrite in_app_iff.
       simpl.
       inv H1; auto.
-      rewrite H15 in *.
+      rewrite H12 in *.
       auto.
       
     + simpl.
       rewrite in_app_iff.
       simpl.
       inv H1; auto.
-      * apply IHtrace1 in H9; auto.
+      * apply IHtrace1 in H8; auto.
         eapply shuffle_in_left in H0; eauto.
       * apply IHtrace2 in H10; auto.
         eapply shuffle_in_right in H0; eauto.
@@ -370,7 +370,7 @@ Qed.
 
 Lemma trace_range:
   forall t p tr v,
-    well_formed t ->
+    well_formed_r t ->
     trace t p tr ->
     In v tr ->
     fst (range t) <= ev v < snd (range t).
@@ -382,7 +382,7 @@ Qed.
 
 Lemma trace_range_event:
   forall t p tr i,
-    well_formed t ->
+    well_formed_r t ->
     trace t p tr ->
     fst (range t) <= i < snd (range t) ->
     exists v, In v tr /\ ev v = i.
@@ -395,7 +395,7 @@ Qed.
 
 Lemma trace_injective_events:
   forall t p tr v0 v1,
-    well_formed t ->
+    well_formed_r t ->
     trace t p tr ->
     In v0 tr -> In v1 tr ->
     ev v0 = ev v1 ->
@@ -409,7 +409,7 @@ Qed.
 
 Lemma nodup_trace:
   forall t p tr,
-    well_formed t ->
+    well_formed_r t ->
     trace t p tr ->
     NoDup tr.
 Proof.
@@ -420,7 +420,7 @@ Proof.
     + intro.
       apply in_app_iff in H1.
       destruct H1.
-      * eapply trace_range in H6; eauto.
+      * eapply trace_range in H12; eauto.
         simpl in *.
         lia.
       * inv H1.
@@ -430,7 +430,7 @@ Proof.
       * eapply IHt; eauto.
       * constructor; auto; constructor.
       * inv H2.
-        eapply trace_range in H6; eauto.
+        eapply trace_range in H12; eauto.
         simpl in *.
         lia.
         solve_by_inversion.
@@ -446,12 +446,13 @@ Proof.
     + intro.
       repeat rewrite in_app_iff in H1.
       repeat destruct_disjunct.
-      * eapply trace_range in H16; eauto.
-        simpl in H16.
+      * eapply trace_range in H13; eauto.
+        simpl in H13.
         lia.
-      * eapply trace_range in H17; eauto.
-        simpl in H17.
-        apply well_formed_range in H6; auto.
+      * eapply trace_range in H14; eauto.
+        simpl in H14.
+        Locate well_formed_range.
+        apply well_formed_range_r in H6; auto.
         lia.
       * inv H1.
         discriminate H2.
@@ -464,18 +465,18 @@ Proof.
            intro HH; inv HH.
            constructor.
         -- inv H2.
-           eapply trace_range in H17; eauto.
-           simpl in H17.
+           eapply trace_range in H14; eauto.
+           simpl in H14.
            lia.
            solve_by_inversion.
       * apply in_app_iff in H2; destruct H2.
-        eapply trace_range in H16; eauto.
-        eapply trace_range in H17; eauto.
+        eapply trace_range in H13; eauto.
+        eapply trace_range in H14; eauto.
         lia.
         inv H2.
-        eapply trace_range in H16; eauto.
-        simpl in H16.
-        apply well_formed_range in H7; auto.
+        eapply trace_range in H13; eauto.
+        simpl in H13.
+        apply well_formed_range_r in H7; auto.
         lia.
         solve_by_inversion.
         
@@ -485,23 +486,23 @@ Proof.
       rewrite in_app_iff in HH; destruct HH.
       * eapply shuffle_in in H1; eauto.
         destruct H1.
-        -- eapply trace_range in H24; eauto.
-           simpl in H24.
+        -- eapply trace_range in H16; eauto.
+           simpl in H16.
            lia.
-        -- eapply trace_range in H25; eauto.
-           simpl in H25.
-           apply well_formed_range in H9; auto.
+        -- eapply trace_range in H17; eauto.
+           simpl in H17.
+           apply well_formed_range_r in H9; auto.
            lia.
       * inv H1.
         discriminate H2.
         solve_by_inversion.
     + apply nodup_append; unfold disjoint_lists; auto; intros.
-      * apply shuffle_nodup_append in H26;
+      * apply shuffle_nodup_append in H18;
           unfold disjoint_lists; auto; intros.
         eapply IHt1; eauto.
         eapply IHt2; eauto.
-        eapply trace_range in H24; eauto.
-        eapply trace_range in H25; eauto.
+        eapply trace_range in H16; eauto.
+        eapply trace_range in H17; eauto.
         lia.
       * apply NoDup_cons.
         intro HH.
@@ -510,12 +511,12 @@ Proof.
       * inv H2.
         -- eapply shuffle_in in H1; eauto.
            destruct H1.
-           eapply trace_range in H24; eauto.
-           simpl in H24.
-           apply well_formed_range in H9; auto.
+           eapply trace_range in H16; eauto.
+           simpl in H16.
+           apply well_formed_range_r in H9; auto.
            lia.
-           eapply trace_range in H25; eauto.
-           simpl in H25.
+           eapply trace_range in H17; eauto.
+           simpl in H17.
            lia.
      
     
@@ -527,7 +528,7 @@ Qed.
 
 Lemma evsys_tr_in:
   forall t p tr ev0,
-    well_formed t ->
+    well_formed_r t ->
     trace t p tr ->
     ev_in ev0 (ev_sys t p) ->
     In ev0 tr.
@@ -583,7 +584,7 @@ Qed.
 
 Theorem trace_order:
   forall t p tr ev0 ev1,
-    well_formed t ->
+    well_formed_r t ->
     trace t p tr ->
     prec (ev_sys t p) ev0 ev1 ->
     earlier tr ev0 ev1.
@@ -591,7 +592,7 @@ Proof.
   intros.
   induction H0; inv H; simpl in H1;
     try expand_let_pairs; inv H1; simpl; auto.
-  - inv H17; inv H16.
+  - inv H12; inv H11.
     + eapply evsys_tr_in in H4; eauto.
       apply earlier_cons; auto.
       apply in_app_iff; auto.
@@ -599,24 +600,24 @@ Proof.
       apply earlier_cons; auto.
       apply in_app_iff; auto. right; simpl; auto.
   - solve_by_inversion.
-  - inv H16.
-    + inv H18.
-      eapply evsys_tr_in in H17; eauto.
+  - inv H11.
+    + inv H13.
+      eapply evsys_tr_in in H12; eauto.
       apply earlier_cons_shift; auto.
       apply earlier_append; auto; simpl; auto.
-    + eapply IHtrace in H7; eauto.
+    + eapply IHtrace in H6; eauto.
       apply earlier_cons_shift; auto.
       apply earlier_left; auto.
     + solve_by_inversion.
-  - eapply evsys_tr_in in H14; eauto.
-    eapply evsys_tr_in in H15; eauto.
+  - eapply evsys_tr_in in H5; eauto.
+    eapply evsys_tr_in in H6; eauto.
     apply earlier_append; auto.
   - apply IHtrace1 in H5; auto.
     apply earlier_left; auto.
   - apply IHtrace2 in H6; auto.
     apply earlier_right; auto.
     
-  - inv H15; inv H14.
+  - inv H12; inv H11.
     + inv H3.
       * eapply evsys_tr_in in H4; eauto.
         apply earlier_cons; auto.
@@ -631,8 +632,8 @@ Proof.
       simpl; auto.
   - solve_by_inversion.
     
-  - inv H14.
-    + inv H16. inv H15.
+  - inv H11.
+    + inv H13. inv H12.
       * eapply evsys_tr_in in H3; eauto.
         apply earlier_cons_shift; auto.
         apply earlier_append; auto.
@@ -641,22 +642,22 @@ Proof.
         apply earlier_cons_shift; auto.
         apply earlier_right; auto.
         apply earlier_append; simpl; auto.
-    + inv H15.
-      * eapply evsys_tr_in in H17; eauto.
-        eapply evsys_tr_in in H16; eauto.
+    + inv H12.
+      * eapply evsys_tr_in in H14; eauto.
+        eapply evsys_tr_in in H13; eauto.
         apply earlier_cons_shift; auto.
         apply earlier_append; auto.
         apply in_app_iff; left; auto.
-      * apply IHtrace1 in H16; auto.
+      * apply IHtrace1 in H6; auto.
         apply earlier_cons_shift; auto.
         apply earlier_left; auto.
-      * apply IHtrace2 in H16; auto.
+      * apply IHtrace2 in H7; auto.
         apply earlier_cons_shift; auto.
         apply earlier_right; auto.
         apply earlier_left; auto.
     + solve_by_inversion.
       
-  - inv H7. inv H8.
+  - inv H7. inv H9.
     + inv H4; eapply evsys_tr_in in H5; eauto.
       * apply earlier_cons; auto.
         apply shuffle_in_left with (es1:=tr1)(es2:=tr2) in H5; auto.
@@ -669,7 +670,7 @@ Proof.
       apply in_app_iff; right; simpl; auto.
   - solve_by_inversion.
   - inv H7.
-    + inv H23. inv H8.
+    + inv H15. inv H9.
       * eapply evsys_tr_in in H4; eauto.
         apply shuffle_in_left with (e:= ev0) in H0; auto.
         apply earlier_cons_shift; auto.
@@ -678,8 +679,8 @@ Proof.
         apply shuffle_in_right with (e:=ev0) in H0; auto.
         apply earlier_cons_shift; auto.
         apply earlier_append; simpl; auto.
-    + inv H8.
-      * apply IHtrace1 in H9; auto.
+    + inv H9.
+      * apply IHtrace1 in H8; auto.
         apply shuffle_earlier_left
           with (e0:=ev0)(e1:=ev1) in H0; auto.
         apply earlier_cons_shift; auto.

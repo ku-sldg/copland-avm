@@ -1,6 +1,126 @@
-Require Import Term StructTactics Event_system Term_system.
+Require Import Term_Defs Term StructTactics Event_system Term_system.
 
 Require Import Lia Coq.Program.Tactics.
+
+Require Import List.
+Import List.ListNotations.
+
+
+Definition ev_sys_remote: AnnoTerm -> Plc -> EvSys Ev.
+Admitted.
+
+           
+Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
+  match t with
+  | aasp (i, j) lr x => leaf (i, j) (asp_event i x p)
+  | aatt (i, j) lr (req_loc,rpy_loc) q x =>
+    before (i, j)
+      (leaf (i, S i) (req i req_loc p q (unanno x)))
+      (before (S i, j)
+              (* (ev_sys x q) *)
+              (ev_sys_remote x q)
+              (leaf (pred j, j) (rpy (pred j) rpy_loc p q)))
+  | alseq r lr x y => before r (ev_sys x p)
+                          (ev_sys y p)
+  | abseq (i, j) lr s x y =>
+    before (i, j)
+           (leaf (i, S i)
+                 (Term_Defs.split i p))
+           (before (S i, j)
+                   (before (S i, (pred j))
+                           (ev_sys x p)
+                           (ev_sys y p))
+                   (leaf ((pred j), j)
+                   (join (pred j) p)))
+  | abpar (i, j) lr (xi,xi') (yi,yi') s x y =>
+    before (i, j)
+           (leaf (i, S i)
+                 (splitp i xi yi p))
+           (before (S i, j)
+                   (merge (S i, (pred j))
+                          (ev_sys x p)
+                          (ev_sys y p))
+                   (leaf ((pred j), j)
+                   (joinp (pred j) xi' yi' p)))
+  end.
+
+Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
+| evtscpy:
+    forall r lr i p,
+      fst r = i ->
+      events (aasp r lr CPY) p (copy i p)
+| evtsusm:
+    forall i id args r lr p,
+      fst r = i ->
+      events (aasp r lr (ASPC id args)) p (umeas i p id args)
+| evtssig:
+    forall r lr i p,
+      fst r = i ->
+      events (aasp r lr SIG) p (sign i p) 
+| evtshsh:
+    forall r lr i p,
+      fst r = i ->
+      events (aasp r lr HSH) p (hash i p)
+| evtsattreq:
+    forall r lr q t i p req_loc rpy_loc,
+      fst r = i ->
+      events (aatt r lr (req_loc, rpy_loc) q t) p (req i req_loc p q (unanno t))
+(* | evtsatt:
+    forall r lr q t ev p locs,
+      events t q ev ->
+      events (aatt r lr locs q t) p ev *)
+| evtsattrpy:
+    forall r lr q t i p req_loc rpy_loc,
+      snd r = S i ->
+      events (aatt r lr (req_loc, rpy_loc) q t) p (rpy i rpy_loc p q)
+| evtslseql:
+    forall r lr t1 t2 ev p,
+      events t1 p ev ->
+      events (alseq r lr t1 t2) p ev
+| evtslseqr:
+    forall r lr t1 t2 ev p,
+      events t2 p ev ->
+      events (alseq r lr t1 t2) p ev
+| evtsbseqsplit:
+    forall r lr i s t1 t2 p,
+      fst r = i ->
+      events (abseq r lr s t1 t2) p
+             (Term_Defs.split i p)
+| evtsbseql:
+    forall r lr s t1 t2 ev p,
+      events t1 p ev ->
+      events (abseq r lr s t1 t2) p ev
+| evtsbseqr:
+    forall r lr s t1 t2 ev p,
+      events t2 p ev ->
+      events (abseq r lr s t1 t2) p ev
+| evtsbseqjoin:
+    forall r lr i s t1 t2 p,
+      snd r = S i ->
+      events (abseq r lr s t1 t2) p
+             (join i p)
+
+| evtsbparsplit:
+    forall r lr i s t1 t2 p xi xi' yi yi',
+      fst r = i ->
+      events (abpar r lr (xi,xi') (yi,yi') s t1 t2) p
+             (splitp i xi yi p)
+| evtsbparl:
+    forall r lr s t1 t2 ev p xlocs ylocs,
+      events t1 p ev ->
+      events (abpar r lr xlocs ylocs s t1 t2) p ev
+| evtsbparr:
+    forall r lr s t1 t2 ev p xlocs ylocs,
+      events t2 p ev ->
+      events (abpar r lr xlocs ylocs s t1 t2) p ev
+| evtsbparjoin:
+    forall r lr i s t1 t2 p xi xi' yi yi',
+      snd r = S i ->
+      events (abpar r lr (xi,xi') (yi,yi') s t1 t2) p
+             (joinp i (xi') (yi') p).
+Hint Constructors events : core.
+
+Locate events.
 
 
 Inductive store_event: Ev -> Loc -> Prop :=
@@ -11,6 +131,7 @@ Inductive store_event: Ev -> Loc -> Prop :=
 | get_event_joinpl: forall i xi yi p, store_event (joinp i xi yi p) xi
 | get_event_joinpr: forall i xi yi p, store_event (joinp i xi yi p) yi.
 
+(*
 Lemma wf_mono_locs: forall t,
     well_formed t ->
     fst (lrange t) <= snd (lrange t).
@@ -19,6 +140,7 @@ Proof.
   rewrite Term.well_formed_lrange; eauto.
   lia.
 Defined.
+*)
 
 Ltac inv_wf :=
   match goal with
@@ -75,6 +197,9 @@ Ltac inv_ev2' :=
      H': events _ _ _ |- _] =>
     inv H; inv H'
   end.
+
+
+(*
 
 Create HintDb lr.
 
@@ -208,6 +333,7 @@ Proof.
   inv H1;
     eauto with lr.
 Defined.
+*)
 
 Ltac pose_store_events :=
   match goal with
@@ -216,6 +342,7 @@ Ltac pose_store_events :=
     assert_new_proof_by (store_event ev H') econstructor
   end.
 
+(*
 Ltac pose_new_lrange :=
   match goal with
   | [H: well_formed ?t,
@@ -224,11 +351,12 @@ Ltac pose_new_lrange :=
      |- _] =>
     pose_new_proof (store_events_lrange t p ev loc H H' H'')
   end.
+*)
 
 Ltac pose_lrange_facts :=
-  repeat pose_store_events;
-  repeat pose_new_lrange;
-  repeat find_eapply_lem_hyp wf_mono_locs.
+  repeat pose_store_events
+  (*repeat pose_new_lrange; 
+  repeat find_eapply_lem_hyp wf_mono_locs*) .
 
 Ltac dest_lrange :=
   match goal with
@@ -237,15 +365,168 @@ Ltac dest_lrange :=
 
 Create HintDb rl.
 
-Lemma unique_req_locs: forall t p i i0 loc p0 p1 q q0 t0 t1,
+Set Nested Proofs Allowed.
+
+Lemma store_event_locs: forall t p ev loc,
+    store_event ev loc ->
+    events t p ev ->
     well_formed t ->
-    events t p (req i loc p0 q t0) ->
-    events t p (req i0 loc p1 q0 t1) ->
+    In loc (lrange t).
+Proof.
+Admitted.
+
+Lemma nodup_contra: forall (x y: nat) ls ls',
+    In x ls  ->
+    In y ls' ->
+    NoDup (ls ++ ls') ->
+    False.
+Proof.
+Admitted.
+
+Lemma unique_req_locs: forall t p i i0 loc q q0 t0 t1,
+    well_formed t ->
+    events t p (req i  loc p q t0) ->
+    events t p (req i0 loc p q0 t1) ->
     i = i0.
 Proof.
   intros.
   generalizeEverythingElse t.
-  induction t; intros;
+  induction t; intros.
+  -
+    inv_wf.
+    inv_ev2.
+  -
+
+    invc H.
+
+    invc H0.
+    invc H1.
+
+    ff.
+  -
+    ff.
+
+    inv H.
+
+    invc H0.
+    +
+      invc H1.
+      ++
+        eauto.
+      ++
+        eauto.
+
+
+
+        assert (In loc (lrange t1)).
+        {
+          eapply store_event_locs; eauto.
+          econstructor.
+        }
+
+        assert (In loc (lrange t2)).
+        {
+          eapply store_event_locs; eauto.
+          econstructor.
+        }
+
+        (* TODO:  NoDup ((lrange t1) ++ (lrange t2)) as part of well_formed? *)
+        assert (NoDup ((lrange t1) ++ (lrange t2))).
+        {
+          admit.
+        }
+
+        eauto.
+
+        exfalso.
+        eapply nodup_contra.
+        apply H0.
+        apply H1.
+        eassumption.
+    +
+      invc H1.
+      ++
+                assert (In loc (lrange t1)).
+        {
+          eapply store_event_locs; eauto.
+          econstructor.
+        }
+
+        assert (In loc (lrange t2)).
+        {
+          eapply store_event_locs; eauto.
+          econstructor.
+        }
+
+        (* TODO:  NoDup ((lrange t1) ++ (lrange t2)) as part of well_formed? *)
+        assert (NoDup ((lrange t1) ++ (lrange t2))).
+        {
+          admit.
+        }
+
+        eauto.
+
+        exfalso.
+        eapply nodup_contra.
+        apply H0.
+        apply H1.
+        eassumption.
+
+      ++
+
+        assert (In loc t2
+        
+        
+        
+        
+      
+      
+          
+        
+        
+        
+        
+
+        ff.
+        
+
+        
+      ff.
+
+    
+    
+
+    
+
+    ff.
+
+    invc H0.
+    ff.
+    +
+      ff.
+      invc H1.
+      ++
+        eauto.
+      ++
+        
+        
+        
+    
+
+
+    
+    inv_wf.
+    inv_ev2; try eauto.
+
+    admit.
+
+    
+    inv_ev2;
+      try eauto.
+
+    ff.
+    
+    
     inv_wf;
     inv_ev2;
     try eauto;

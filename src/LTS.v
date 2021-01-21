@@ -14,7 +14,7 @@ University of California.  See license.txt for details. *)
 Require Import List.
 Import List.ListNotations.
 Open Scope list_scope.
-Require Import PeanoNat Minus Lia Preamble Term.
+Require Import PeanoNat Minus Lia Preamble Term_Defs Term.
 
 (** * States *)
 

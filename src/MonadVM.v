@@ -4,7 +4,7 @@ Definition of the CVM Monad + monadic helper functions.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term ConcreteEvidence GenStMonad Axioms_Io.
+Require Import Term_Defs Term ConcreteEvidence GenStMonad Axioms_Io.
 Require Import Maps StructTactics.
 
 Require Import List.
@@ -66,7 +66,7 @@ Definition add_tracem (tr:list Ev) : CVM unit :=
 Definition split_ev_seq (i:nat) (sp1 sp2:SP) (e:EvidenceC) (p:Plc) : CVM (EvidenceC*EvidenceC) :=
     let e1 := splitEv sp1 e in
     let e2 := splitEv sp2 e in
-    add_tracem [Term.split i p] ;;
+    add_tracem [Term_Defs.split i p] ;;
                ret (e1,e2).
 
 Definition split_ev_par (i:nat) (sp1 sp2:SP) (loc_e1 loc_e2:Loc) (t1 t2:AnnoTerm) (e:EvidenceC) (p:Plc) : CVM unit :=
@@ -76,14 +76,14 @@ Definition split_ev_par (i:nat) (sp1 sp2:SP) (loc_e1 loc_e2:Loc) (t1 t2:AnnoTerm
     let loc_e2 := fst (range t2) in *)
     put_store_at loc_e1 e1 ;;
     put_store_at loc_e2 e2 ;;
-    add_tracem [Term.splitp i loc_e1 loc_e2 p].
+    add_tracem [splitp i loc_e1 loc_e2 p].
 
 (** * Partially-symbolic implementations of IO operations *)
 
 Definition invokeUSM (x:nat) (i:ASP_ID) (l:list Arg) (e:EvidenceC) : CVM BS :=
   (*e <- get_ev ;; *)
   p <- get_pl ;;
-  add_tracem [Term.umeas x p i l];;
+  add_tracem [umeas x p i l];;
   ret x 
   (*ret (uuc i x e)*).
 
@@ -93,7 +93,7 @@ Admitted.
 Definition signEv (x:nat) (e:EvidenceC) : CVM BS :=
   (* e <- get_ev ;; *)
   p <- get_pl ;;
-  add_tracem [Term.sign x p] ;;
+  add_tracem [sign x p] ;;
   ret x
   (*ret (ggc x e)*).
 
@@ -101,12 +101,12 @@ Definition signEv (x:nat) (e:EvidenceC) : CVM BS :=
 Definition hashEv (x:nat) (e:EvidenceC) : CVM BS :=
   (* e <- get_ev ;; *)
   p <- get_pl ;;
-  add_tracem [Term.hash x p] ;;
+  add_tracem [hash x p] ;;
   ret x.
 
 Definition copyEv (x:nat) : CVM EvidenceC :=
   p <- get_pl ;;
-  add_tracem [Term.copy x p] ;;
+  add_tracem [copy x p] ;;
   get_ev.
 
 Definition do_prim (x:nat) (a:ASP) : CVM EvidenceC :=
@@ -159,13 +159,13 @@ Definition runParThreads (t1 t2:AnnoTerm) (p:Plc) (loc_e1 loc_e1' loc_e2 loc_e2'
 
 Definition join_seq (n:nat) (p:Plc) (e1:EvidenceC) (e2:EvidenceC) : CVM unit :=
   put_ev (ssc e1 e2) ;;
-  add_tracem [Term.join n p].
+  add_tracem [join n p].
 
 Definition join_par (n:nat) (p:Plc) (xi:Loc) (yi:Loc) (*(e1:EvidenceC) (e2:EvidenceC)*) : CVM unit :=
   e1r <- get_store_at xi ;;
   e2r <- get_store_at yi ;;
   put_ev (ppc e1r e2r) ;;
-  add_tracem [Term.joinp n xi yi p].
+  add_tracem [joinp n xi yi p].
   
 
 (** * Helper functions for Appraisal *)

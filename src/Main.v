@@ -17,7 +17,7 @@ Require Import List.
 Import List.ListNotations.
 Open Scope list_scope.
 Require Import Lia.
-Require Import Preamble More_lists Term LTS Event_system Term_system Trace.
+Require Import Preamble More_lists Term_Defs Term LTS Event_system Term_system Trace.
 
 (** The traces associated with a state. *)
 
@@ -266,7 +266,7 @@ Qed.
 
 Lemma lstar_trace:
   forall t p e tr,
-    well_formed t ->
+    well_formed_r t ->
     lstar (conf t p e) tr (stop p (aeval t p e)) ->
     trace t p tr.
 Proof.
@@ -281,7 +281,7 @@ Qed.
 
 Theorem ordered:
   forall t p e tr ev0 ev1,
-    well_formed t ->
+    well_formed_r t ->
     lstar (conf t p e) tr (stop p (aeval t p e)) ->
     prec (ev_sys t p) ev0 ev1 ->
     earlier tr ev0 ev1.
