@@ -11,7 +11,7 @@ University of California.  See license.txt for details. *)
 
 (** Copland specific event systems. *)
 
-Require Import Omega Preamble More_lists Term Event_system.
+Require Import Omega Preamble More_lists Term_Defs Term Event_system.
 
 (** Construct an event system from an annotated term, place, and
     evidence. *)
@@ -59,7 +59,7 @@ Qed.
 
 Lemma well_structured_evsys:
   forall t p,
-    well_formed t ->
+    well_formed_r t ->
     well_structured ev (ev_sys t p).
 Proof.
   induction t; intros; inv H; simpl;
@@ -83,7 +83,7 @@ Qed.
 
 Lemma evsys_events:
   forall t p ev,
-    well_formed t ->
+    well_formed_r t ->
     ev_in ev (ev_sys t p) <-> events t p ev.
 Proof.
   split; revert p; induction t; intros; inv H; simpl in *;
@@ -103,17 +103,17 @@ Proof.
   - inv H0; auto.
   - rewrite H8; simpl.
     inv H0; auto.
-    rewrite H16 in H8.
+    rewrite H11 in H8.
     apply Nat.succ_inj in H8; subst; auto.
   - inv H0; auto.
   - rewrite H10; simpl.
     inv H0; auto.
-    rewrite H15 in H10.
+    rewrite H12 in H10.
     apply Nat.succ_inj in H10; subst; auto.
     
   - rewrite H12; simpl.
     inv H0; auto.
-    rewrite H23 in H12.
+    rewrite H15 in H12.
     apply Nat.succ_inj in H12; subst; auto.
 Qed.
 
@@ -121,7 +121,7 @@ Qed.
 
 Lemma supreme_unique:
   forall t p,
-    well_formed t ->
+    well_formed_r t ->
     exists ! v, supreme (ev_sys t p) v.
 Proof.
   intros.
@@ -144,30 +144,30 @@ Proof.
       inv H0; inv H1; auto.
     + destruct r as [i j]; simpl in *.
       repeat expand_let_pairs.
-      repeat apply before_sup in H8.
-      repeat apply before_sup in H9.
-      inv H8; inv H9; auto.
+      repeat apply before_sup in H3.
+      repeat apply before_sup in H4.
+      inv H3; inv H4; auto.
     + destruct r as [i j]; simpl in *.
-      repeat apply before_sup in H7.
-      repeat apply before_sup in H8.
-      eapply IHwell_formed2 in H7; eauto.
+      repeat apply before_sup in H4.
+      repeat apply before_sup in H5.
+      eapply IHwell_formed_r2 in H4; eauto.
       inv G; auto.
       
     + destruct r as [i j]; simpl in *.
-      repeat apply before_sup in H7.
-      repeat apply before_sup in H8.
-      inv H7; inv H8; auto.
+      repeat apply before_sup in H4.
+      repeat apply before_sup in H5.
+      inv H4; inv H5; auto.
       
     + destruct r as [i j]; simpl in *.
       repeat expand_let_pairs.
-      repeat apply before_sup in H13.
-      repeat apply before_sup in H14.
-      inv H13; inv H14; auto.
+      repeat apply before_sup in H5.
+      repeat apply before_sup in H6.
+      inv H5; inv H6; auto.
 Qed.
 
 Lemma evsys_max_unique:
   forall t p,
-    well_formed t ->
+    well_formed_r t ->
     unique (supreme (ev_sys t p)) (max (ev_sys t p)).
 Proof.
   intros.
@@ -188,26 +188,26 @@ Proof.
   repeat expand_let_pairs; simpl in *; auto.
   - inv H0; auto.
   - repeat expand_let_pairs.
-    repeat apply before_sup in H8.
-    inv H8; auto.
+    repeat apply before_sup in H3.
+    inv H3; auto.
   - 
-    repeat apply before_sup in H7.
+    repeat apply before_sup in H4.
     
-    apply IHwell_formed2 in H7; auto.
+    apply IHwell_formed_r2 in H4; auto.
     
-  - repeat apply before_sup in H7.
-    inv H7; auto.
+  - repeat apply before_sup in H4.
+    inv H4; auto.
     
   - repeat expand_let_pairs.
-    repeat apply before_sup in H13.
-    inv H13; auto.
+    repeat apply before_sup in H5.
+    inv H5; auto.
   -
     repeat expand_let_pairs.
-    repeat apply before_sup in H13.
-    inv H13; auto.
+    repeat apply before_sup in H5.
+    inv H5; auto.
   -
     repeat expand_let_pairs.
-    inv H14; eauto.
+    inv H6; eauto.
 Qed.
 
 (*
@@ -242,12 +242,21 @@ Qed.
 (** lseq is associative relative to the event semantics *)
 
 Lemma lseq_assoc:
-  forall t1 t2 t3 i p loc,
+  forall t1 t2 t3 i p ls b n n' l' l'' t' t'',
+    anno (lseq t1 (lseq t2 t3)) i ls b = Some (n, (l', t')) ->
+    anno (lseq (lseq t1 t2) t3) i ls b = Some (n', (l'',t'')) ->
+
+
+      
     same_rel
-      (ev_sys (snd (snd (anno (lseq t1 (lseq t2 t3)) i loc))) p)
-      (ev_sys (snd (snd (anno (lseq (lseq t1 t2) t3) i loc))) p).
+      (ev_sys t' p)
+      (ev_sys t'' p).
 Proof.
   intros; simpl.
   repeat expand_let_pairs; simpl.
+  ff.
+  Check before_associative_pairs.
+  rewrite Heqo0 in *.
+  inv Heqo4.
   apply before_associative_pairs.
 Qed.
