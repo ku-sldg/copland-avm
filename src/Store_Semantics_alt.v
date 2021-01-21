@@ -198,6 +198,13 @@ Ltac inv_ev2' :=
     inv H; inv H'
   end.
 
+Ltac inv_store_ev2 :=
+  match goal with
+  | [H: store_event _ _,
+     H': store_event _ _ |- _] =>
+    invc H; invc H'
+  end.
+
 Set Nested Proofs Allowed.
 
 Lemma event_in_lrange: forall t p ev loc,
@@ -227,6 +234,13 @@ Lemma in_app2: forall ls ls' (loc:nat),
 Proof.
 Admitted.
 
+Ltac t_in_lrange :=
+  match goal with
+  | [H: events ?t ?p ?ev,
+        H': store_event ?ev ?loc |- _] =>
+    assert_new_proof_by (In loc (lrange t)) ltac:(eapply event_in_lrange; eauto)
+  end.
+
 Lemma unique_store_event_locs: forall t p ev ev' loc,
     well_formed t ->
     events t p ev ->
@@ -245,96 +259,29 @@ Proof.
     eauto.
   -
     inv_wf;
-      inv_ev2.
-    +
-      eauto.
-    +
-      assert (req_loc = rpy_loc).
-      {
-        invc H2; invc H3.
-        tauto.
-      }
-      ff.
-      congruence.
-    +
-      assert (req_loc = rpy_loc).
-      {
-        invc H2; invc H3.
-        tauto.
-      }
-      ff.
-      congruence.
-    +
-      ff.
-      invc H2; invc H3.
+      inv_ev2;
+      ff;
+      try (assert (req_loc = rpy_loc)
+            by (inv_store_ev2; congruence));
       congruence.
   -
     inv_wf.
-    inv_ev2.
-    +
-      eauto.
-    +
-      assert (In loc (lrange t1)).
-      {
-        eapply event_in_lrange; eauto.
-      }
-
-      assert (In loc (lrange t2)).
-      {
-        eapply event_in_lrange; eauto.
-      }
-
-      exfalso.
-      eapply nodup_contra'; eauto.
-    +
-       assert (In loc (lrange t1)).
-      {
-        eapply event_in_lrange; eauto.
-      }
-
-      assert (In loc (lrange t2)).
-      {
-        eapply event_in_lrange; eauto.
-      }
-
-      exfalso.
-      eapply nodup_contra'; eauto.
-    +
-      eauto.
+    inv_ev2;
+      try solve_by_inversion;
+      try eauto;
+      try (
+          repeat t_in_lrange;
+          exfalso;
+          eapply nodup_contra'; eauto).
   -
-    inv_wf;
-      inv_ev2;
-      try solve_by_inversion.
-    +
-      eauto.
-    +
-      assert (In loc (lrange t1)).
-      {
-        eapply event_in_lrange; eauto.
-      }
-
-      assert (In loc (lrange t2)).
-      {
-        eapply event_in_lrange; eauto.
-      }
-
-      exfalso.
-      eapply nodup_contra'; eauto.
-    +
-       assert (In loc (lrange t1)).
-      {
-        eapply event_in_lrange; eauto.
-      }
-
-      assert (In loc (lrange t2)).
-      {
-        eapply event_in_lrange; eauto.
-      }
-
-      exfalso.
-      eapply nodup_contra'; eauto.
-    +
-      eauto.
+    inv_wf.
+    inv_ev2;
+      try solve_by_inversion;
+      try eauto;
+      try (
+          repeat t_in_lrange;
+          exfalso;
+          eapply nodup_contra'; eauto).
   -
      inv_wf;
       inv_ev2;
