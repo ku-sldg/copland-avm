@@ -198,6 +198,21 @@ Ltac inv_ev2' :=
     inv H; inv H'
   end.
 
+Ltac inv_se :=
+  match goal with
+  | [H: store_event (?C _) (*(req _ _ _ _ _)*) _ |- _] =>
+    invc H
+         (*
+  | [H: events (alseq _ _ _ _) _ _ |- _] =>
+    invc H
+  | [H: events (aatt _ _ _ _ _) _ _ |- _] =>   
+    invc H
+  | [H: events (abseq _ _ _ _ _) _ _ |- _] =>
+    invc H
+  | [H: events (abpar _ _ _ _ _ _ _) _ _ |- _] =>
+    invc H *)
+  end.
+
 Ltac inv_store_ev2 :=
   match goal with
   | [H: store_event _ _,
@@ -241,6 +256,28 @@ Ltac t_in_lrange :=
     assert_new_proof_by (In loc (lrange t)) ltac:(eapply event_in_lrange; eauto)
   end.
 
+Ltac in_app_facts :=
+  match goal with
+  | [H: In ?loc (lrange ?t1),
+        H': well_formed ?t1,
+            H'': well_formed ?t2 |- _] =>
+    try
+      (assert_new_proof_by
+         (In loc ((lrange t1) ++ (lrange t2)))
+         ltac:(eapply in_app; eauto));
+    try (assert_new_proof_by
+           (In loc ((lrange t2) ++ (lrange t1)))
+           ltac:(eapply in_app2; eauto))
+  end.
+
+Ltac nodup_contra_auto :=
+  match goal with
+  | [H: In ?loc ?ls,
+        H': In ?loc ?ls',
+            H'': NoDup (?ls ++ ?ls') |- _] =>
+    exfalso; eapply nodup_contra'; eauto
+  end.
+
 Lemma unique_store_event_locs: forall t p ev ev' loc,
     well_formed t ->
     events t p ev ->
@@ -254,15 +291,14 @@ Proof.
   induction t; intros.
   -
     inv_wf;
-    inv_ev2;
-    ff;
-    eauto.
+      inv_ev2;
+      eauto.
   -
     inv_wf;
       inv_ev2;
       ff;
       try (assert (req_loc = rpy_loc)
-            by (inv_store_ev2; congruence));
+            by (repeat inv_se; congruence));
       congruence.
   -
     inv_wf.
@@ -271,8 +307,7 @@ Proof.
       try eauto;
       try (
           repeat t_in_lrange;
-          exfalso;
-          eapply nodup_contra'; eauto).
+          nodup_contra_auto; tauto).
   -
     inv_wf.
     inv_ev2;
@@ -280,318 +315,281 @@ Proof.
       try eauto;
       try (
           repeat t_in_lrange;
-          exfalso;
-          eapply nodup_contra'; eauto).
+          nodup_contra_auto; tauto).
   -
      inv_wf;
       inv_ev2;
-      try solve_by_inversion.
-
-     +
-       
-       inversion H2.
-       ++
-         assert (In loc (lrange t1)).
-         {
-           eapply event_in_lrange; eauto.
-         }
-
-         ff.
-         subst.
-
-         unfold not in H24.
-
-
-         exfalso.
-         eapply H24.
-         right.
-         right.
-         right.
-
-         eapply in_app; eauto.
-       ++
-         assert (In loc (lrange t1)).
-         {
-           eapply event_in_lrange; eauto.
-         }
-
-         ff.
-         subst.
-
-         unfold not in H26.
-         exfalso.
-         apply H26.
-         right.
-         right.
-         right.
-         eapply in_app; eauto.
-     +
-              
-       inversion H2.
-       ++
-         assert (In loc (lrange t2)).
-         {
-           eapply event_in_lrange; eauto.
-         }
-
-         ff.
-         subst.
-
-         unfold not in H24.
-
-
-         exfalso.
-         eapply H24.
-         right.
-         right.
-         right.
-
-         eapply in_app2; eauto.
-       ++
-         assert (In loc (lrange t2)).
-         {
-           eapply event_in_lrange; eauto.
-         }
-
-         ff.
-         subst.
-
-         unfold not in H26.
-         exfalso.
-         apply H26.
-         right.
-         right.
-         right.
-         eapply in_app2; eauto.
-     +
-       inversion H2.
-       ++
-         subst.
-         inversion H3.
-         +++
-           ff; tauto.
-         +++
-           ff; tauto.
-       ++
-         subst.
-         inversion H3.
-         +++
-           ff; tauto.
-         +++
-           ff; tauto.
-     +
-       inversion H3.
-       ++
-         subst.
-
-         assert (In loc (lrange t1)).
-         {
-           eapply event_in_lrange; eauto.
-         }
-
-         ff.
-         unfold not in *.
-         exfalso.
-
-         apply H24.
-         right.
-         right.
-         right.
-         eapply in_app; eauto.
-       ++
-         subst.
-         assert (In loc (lrange t1)).
-         {
-           eapply event_in_lrange; eauto.
-         }
-
-         ff.
-         exfalso.
-
-         apply H26.
-         right.
-         right.
-         right.
-         eapply in_app; eauto.
-     +
-       eauto.
-     +
-       assert (In loc (lrange t1)).
-        {
-           eapply event_in_lrange; eauto.
-        }
-
-        assert (In loc (lrange t2)).
-         {
-           eapply event_in_lrange; eauto.
-         }
-         ff.
-         exfalso.
-         eapply nodup_contra'; eauto.
-     +
-       subst.
-       inversion H3.
-       ++
-         subst.
-         assert (In loc (lrange t1)).
-          {
-           eapply event_in_lrange; eauto.
-          }
-          ff.
-          exfalso.
-          apply H25.
-          right.
-          right.
-          right.
-          eapply in_app; eauto.
-       ++
-         subst.
-          assert (In loc (lrange t1)).
-          {
-           eapply event_in_lrange; eauto.
-          }
-          ff.
-          exfalso.
-          apply H27.
-          right.
-          right.
-          right.
-          eapply in_app; eauto.
-     +
-       inversion H3.
-       ++
-         subst.
-         assert (In loc (lrange t2)).
-          {
-           eapply event_in_lrange; eauto.
-          }
-          ff.
-          exfalso.
-          apply H24.
-          right.
-          right.
-          right.
-          eapply in_app2; eauto.
-       ++
-         subst.
-          assert (In loc (lrange t2)).
-          {
-           eapply event_in_lrange; eauto.
-          }
-          ff.
-          exfalso.
-          apply H26.
-          right.
-          right.
-          right.
-          eapply in_app2; eauto.
-     +
-        assert (In loc (lrange t2)).
-          {
-           eapply event_in_lrange; eauto.
-          }
-           assert (In loc (lrange t1)).
-          {
-           eapply event_in_lrange; eauto.
-          }
-
-          exfalso.
-          eapply nodup_contra'; eauto.
-     +
-       eauto.
-     +
-       subst.
-       inversion H3.
-       ++
-         subst.
-          assert (In loc (lrange t2)).
-          {
-           eapply event_in_lrange; eauto.
-          }
-          ff.
-          exfalso.
-          apply H25.
-          right.
-          right.
-          right.
-          eapply in_app2; eauto.
-       ++
-         subst.
-          assert (In loc (lrange t2)).
-          {
-           eapply event_in_lrange; eauto.
-          }
-           ff.
-          exfalso.
-          apply H27.
-          right.
-          right.
-          right.
-          eapply in_app2; eauto.
-     +
-       inversion H2;
-         inversion H3;
-         subst;
-         try (ff; tauto).
-     +
-       inversion H2; subst.
-       ++
-          assert (In loc (lrange t1)).
-          {
-           eapply event_in_lrange; eauto.
-          }
-          ff.
-          exfalso.
-          apply H25.
-          right.
-          right.
-          right.
-          eapply in_app; eauto.
-       ++
-          assert (In loc (lrange t1)).
-          {
-           eapply event_in_lrange; eauto.
-          }
-          ff.
-          exfalso.
-          apply H27.
-          right.
-          right.
-          right.
-          eapply in_app; eauto.
-     +
-       inversion H2; subst.
-       ++
-          assert (In loc (lrange t2)).
-          {
-           eapply event_in_lrange; eauto.
-          }
-          ff.
-          exfalso.
-          apply H25.
-          right.
-          right.
-          right.
-          eapply in_app2; eauto.
-       ++
-          assert (In loc (lrange t2)).
-          {
-           eapply event_in_lrange; eauto.
-          }
-          ff.
-          exfalso.
-          apply H27.
-          right.
-          right.
-          right.
-          eapply in_app2; eauto.
-     +
-       
-       inversion H2;
-         inversion H3;
-         try congruence.
+      try solve_by_inversion;
+      try (ff; congruence);
+      try (eauto; tauto);
+      try (
+          repeat inv_se;
+          try (
+              repeat t_in_lrange;
+              try (nodup_contra_auto; tauto);
+              ff;
+              subst;
+              repeat in_app_facts;
+              tauto)
+        ).
 Defined.
-             
+
+Lemma evsys_events:
+  forall t p ev,
+    well_formed_r t ->
+    ev_in ev (ev_sys t p) <-> events t p ev.
+Proof.
+  (*
+  split; revert p; induction t; intros; inv H; simpl in *;
+    repeat expand_let_pairs; simpl in *.
+  - inv H0; auto; destruct a; simpl; auto.
+  - destruct p.
+    rewrite H8 in H0; simpl in H0.
+    inv H0; auto. inv H2; auto. inv H2; auto. inv H1; auto.
+  - inv H0; auto.
+    
+  - rewrite H10 in H0; simpl in H0.
+    inv H0; inv H2; auto; inv H1; auto.
+    
+  - destruct p; destruct p0.
+    rewrite H12 in H0; simpl in H0.
+    inv H0; auto. inv H2; auto. inv H2; auto. inv H1; auto. inv H1; auto.
+  - inv H0; auto.
+  - rewrite H8; simpl.
+    inv H0; auto.
+    rewrite H11 in H8.
+    apply Nat.succ_inj in H8; subst; auto.
+  - inv H0; auto.
+  - rewrite H10; simpl.
+    inv H0; auto.
+    rewrite H12 in H10.
+    apply Nat.succ_inj in H10; subst; auto.
+    
+  - rewrite H12; simpl.
+    inv H0; auto.
+    rewrite H15 in H12.
+    apply Nat.succ_inj in H12; subst; auto.
+Qed.
+   *)
+Admitted.
+
+
+Definition store_event_evsys es loc := exists ev, store_event ev loc /\ ev_in ev es.
+
+Inductive store_conflict: EvSys Ev -> Prop :=
+| store_conflict_merge: forall r es1 es2 loc,
+    store_event_evsys es1 loc ->
+    store_event_evsys es2 loc ->
+    store_conflict (merge r es1 es2)
+| store_conflict_before_l: forall r es1 es2,
+    store_conflict es1 ->
+    store_conflict (before r es1 es2)
+| store_conflict_before_r: forall r es1 es2,
+    store_conflict es2 ->
+    store_conflict (before r es1 es2).
+
+Lemma wf_implies_wfr: forall t,
+    well_formed t ->
+    well_formed_r t.
+Proof.
+  induction t; intros.
+  -
+    destruct a; ff.
+  -
+    ff.
+  -
+    ff.
+  -
+    ff.
+  -
+    ff.
+Defined.
+
+Lemma unique_store_events': forall t p ev1 ev2 loc,
+    well_formed t ->
+    ev_in ev1 (ev_sys t p) ->
+    ev_in ev2 (ev_sys t p) -> 
+    store_event ev1 loc ->
+    store_event ev2 loc ->
+    ev1 <> ev2 ->
+    False.
+Proof.
+  intros.
+  assert (ev1 = ev2).
+  {
+    eapply unique_store_event_locs;
+      try eassumption.
+    Locate evsys_events.
+    eapply evsys_events; eauto.
+    eapply wf_implies_wfr; eauto.
+    eapply evsys_events; eauto.
+    eapply wf_implies_wfr; eauto.
+  }
+  congruence.
+Defined.
+
+Lemma unique_store_events_corollary: forall t p ev1 ev2 loc,
+    well_formed t ->
+    ev_in ev1 (ev_sys t p) -> 
+    store_event ev1 loc ->
+    store_event ev2 loc ->
+    ev1 <> ev2 ->
+    not (ev_in ev2 (ev_sys t p)).
+Proof.
+  intros.
+  unfold not; intros.
+  eapply unique_store_events'.
+  eassumption.
+  apply H0.
+  apply H4.
+  eassumption.
+  eassumption.
+  eassumption.
+Defined.
+
+Lemma unique_events': forall r es1 es2 ev1 ev2,
+    well_structured ev (merge r es1 es2) ->
+    ev_in ev1 es1 ->
+    ev_in ev2 es2 ->
+    ev ev1 <> ev ev2.
+Proof.
+  intros.
+  inv H.
+  assert (fst (es_range es1) <= ev ev1 < snd (es_range es1)).
+  {
+    eapply ws_evsys_range; eauto.
+  }
+
+  assert (fst (es_range es2) <= ev ev2 < snd (es_range es2)).
+  {
+    eapply ws_evsys_range; eauto.
+  }
+
+  lia.
+Defined.
+
+Lemma unqev: forall ev1 ev2,
+  ev ev1 <> ev ev2 ->
+  ev1 <> ev2.
+Proof.
+  intros.
+  unfold not; intros.
+  subst.
+  solve_by_inversion.
+Defined.
+
+Lemma unique_events: forall r es1 es2 ev1 ev2,
+    well_structured ev (merge r es1 es2) ->
+    ev_in ev1 es1 ->
+    ev_in ev2 es2 ->
+    ev1 <> ev2.
+Proof.
+  intros.
+  eapply unqev.
+  eapply unique_events';
+    eauto.
+Defined.
+
+Theorem no_store_conflicts: forall t p sys,
+    well_formed t ->
+    sys = ev_sys t p ->
+    not (store_conflict sys).
+Proof.
+  unfold not; intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a;
+      cbn in *;
+      repeat break_let;
+      subst;
+      solve_by_inversion.
+  -
+    ff.
+    subst.
+    invc H1;
+      ff.
+    invc H2; ff.
+    admit.
+  -
+    ff.
+    subst.
+    invc H1;
+      do_wf_pieces.
+  -
+
+      cbn in *;
+      repeat break_let;
+      subst.
+    inv H1.
+    +
+      solve_by_inversion.
+    +
+      inv H2.
+      ++
+        inv H3;
+          do_wf_pieces.
+      ++
+        solve_by_inversion.
+  - assert (well_structured ev sys).
+    {
+      (*
+      rewrite H0.
+      eapply well_structured_evsys.
+      eassumption. *)
+      admit.
+    }
+    
+    cbn in *;
+      repeat break_let;
+      subst.
+    inv H1;
+      try solve_by_inversion.
+    +
+      inv H3;
+        try solve_by_inversion.
+      ++       
+        inv H4;
+          try solve_by_inversion.
+        +++
+          unfold store_event_evsys in *.
+          destruct_conjs.
+
+          assert (ev_in H6 (merge (S n, Nat.pred n0) (ev_sys t1 p1) (ev_sys t2 p1))).
+          {
+            eauto.
+          }
+          
+          assert (ev_in H8 (merge (S n, Nat.pred n0) (ev_sys t1 p1) (ev_sys t2 p1))).
+          {
+            eauto.
+          }
+
+          eapply unique_store_events' with (ev1:=H6) (ev2:=H8) (t:=(abpar (n, n0) l (n1,n2) (n3,n4) s t1 t2)) (p:=p1) (loc:=loc);
+            try eassumption;
+            try (simpl; eauto; tauto).
+          ++++  
+            inv H2.
+            inv H16.
+            eapply unique_events; eauto.
+Defined.
+
+    
+    
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
       
     
     
@@ -1457,6 +1455,22 @@ Proof.
   eapply unique_events';
     eauto.
 Defined.
+
+
+
+Definition store_event_evsys es loc := exists ev, store_event ev loc /\ ev_in ev es.
+
+Inductive store_conflict: EvSys Ev -> Prop :=
+| store_conflict_merge: forall r es1 es2 loc,
+    store_event_evsys es1 loc ->
+    store_event_evsys es2 loc ->
+    store_conflict (merge r es1 es2)
+| store_conflict_before_l: forall r es1 es2,
+    store_conflict es1 ->
+    store_conflict (before r es1 es2)
+| store_conflict_before_r: forall r es1 es2,
+    store_conflict es2 ->
+    store_conflict (before r es1 es2).
 
 Theorem no_store_conflicts: forall t p sys,
     well_formed t ->
