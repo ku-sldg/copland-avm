@@ -220,25 +220,88 @@ Ltac inv_store_ev2 :=
 
 Set Nested Proofs Allowed.
 
+Require Import Coq.Program.Equality Coq.Arith.EqNat.
+
 Lemma nodup_contra': forall ls ls' (loc:nat),
     NoDup (ls ++ ls') ->
     In loc ls ->
     In loc ls' ->
     False.
 Proof.
-Admitted.
+  intros.
+  generalizeEverythingElse ls.
+
+  (*
+  generalize dependent H0.
+  generalize dependent H1.
+  generalize dependent loc.
+  dependent induction H; intros.
+   *)
+  induction ls; destruct ls'; intros.
+  -
+    solve_by_inversion.
+  -
+    solve_by_inversion.
+  -
+    solve_by_inversion.
+  -
+    invc H0;
+      invc H1;
+      try solve_by_inversion.
+    +
+      invc H.
+      unfold not in *.
+      eapply H2.
+      assert (ls ++ loc :: ls' = ls ++ (loc :: ls')).
+      tauto.
+      
+      eapply in_or_app.
+      right.
+      simpl.
+      tauto.
+    +
+      invc H.
+      unfold not in *.
+      eapply H3.
+      eapply in_or_app.
+      right.
+      right.
+      eassumption.
+    +
+      eapply IHls with (ls' := (loc :: ls')).
+
+      invc H.
+      eassumption.
+      eassumption.
+      econstructor.
+      tauto.
+    +
+      invc H.
+      unfold not in *.
+
+      assert (NoDup (ls ++ ls')).
+      {
+        eapply NoDup_remove_1; eauto.
+      }
+
+      eauto.
+Defined.
 
 Lemma in_app: forall ls ls' (loc:nat),
     In loc ls ->
     In loc (ls ++ ls').
 Proof.
-Admitted.
+  intros.
+  eapply in_or_app; eauto.
+Defined.
 
 Lemma in_app2: forall ls ls' (loc:nat),
     In loc ls' ->
     In loc (ls ++ ls').
 Proof.
-Admitted.
+  intros.
+  eapply in_or_app; eauto.
+Defined.
 
 Ltac in_app_facts :=
   match goal with
