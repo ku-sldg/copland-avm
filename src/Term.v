@@ -122,6 +122,7 @@ Lemma anno_full: forall t i l l' n a,
   anno t i l true = Some (n, (l',a)) ->
   l' = [].
 Proof.
+  (*
   intros.
   generalizeEverythingElse t.
   induction t; intros.
@@ -240,6 +241,8 @@ Proof.
 
     eauto.
 Defined.
+   *)
+  Admitted.
 
     
 
@@ -387,6 +390,7 @@ Lemma anno_full_ex: forall t i l,
   exists n a,
     anno t i l true = Some (n, ([],a)).
 Proof.
+  (*
   intros.
   edestruct anno_some; eauto.
   destruct_conjs.
@@ -402,6 +406,9 @@ Proof.
 
   eassumption.
 Defined.
+   *)
+Admitted.
+
 
 (*
 Lemma anno_full_ex_full: forall t i l l' l'' n a,
@@ -434,6 +441,7 @@ Lemma anno_sub: forall t i n ls l a,
     anno t i ls true = Some (n, (l, a)) ->
     anno t i (lrange a) true = Some (n, ([],a)).
 Proof.
+  (*
 
   intros.
   assert (l = []).
@@ -449,6 +457,9 @@ Proof.
   subst.
   eauto.
 Defined.
+   *)
+Admitted.
+
 
 (*
   intros.
@@ -770,9 +781,13 @@ Example ls_ex: list_subset [5;5] [5].
 Proof.
   intros.
   unfold list_subset.
+  unfold incl.
   intros.
-  invc H; eauto.
   econstructor; eauto.
+  
+  invc H; eauto.
+  invc H0; eauto.
+  solve_by_inversion.
 Qed.
 
 
@@ -909,17 +924,496 @@ Lemma anno_has_enough:
 Proof.
 Admitted.
 
+Lemma nodup_extra_app
+  : forall ls ls' ls'' : list nat, NoDup (ls ++ ls') -> NoDup ls.
+Proof.
+Admitted.
 
 
+(*
+Lemma nodup_extra_app: forall (ls ls' ls'':list nat),
+    NoDup (ls ++ ls' ++ ls'') ->
+    NoDup (ls ++ ls').
+Proof.
+  intros.
+  rewrite app_assoc in *.
+  eapply nodup_extra_app_2; eauto.
+Defined.
+ *)
 
+Lemma nodup_anno: forall t i ls l n a,
+    NoDup ls ->
+    anno t i ls true = Some (n, (l, a)) ->
+    NoDup l.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+
+  -
+    destruct a; ff.
+  -
+    ff.
+    
+
+
+  
+Admitted.
+
+Lemma anno_step: forall t i ls l n a,
+    anno t i ls true = Some (n, (l, a)) ->
+    ls = (lrange a) ++ l.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+
+  -
+    destruct a; ff.
+  -
+    ff.
+  -
+    assert (l = []). admit.
+    subst.
+    rewrite app_nil_r.
+    cbn in *.
+    repeat break_match; try solve_by_inversion.
+
+    (*
+    subst.
+    inv H.
+    ff.
+    admit.
+     *)
+    
+  -
+     cbn in *.
+    repeat break_match; try solve_by_inversion.
+    subst.
+    inv H.
+    ff.
+    admit.
+  -
+    ff.
+    
+    
+    
+    
+    
+    
+
+
+  
+Admitted.
 
 Lemma anno_well_formed:
   forall t i j ls ls' t',
-    (*length ls >= nss t -> *)
+    length ls = nss t ->
     NoDup ls ->
     anno t i ls true = Some (j, (ls', t')) ->
     well_formed t'.
 Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    ff.
+  -
+    ff.
+    econstructor.
+    eapply anno_well_formed_r; eauto.
+
+    simpl.
+
+    erewrite anno_range.
+    tauto.
+    eassumption.
+    simpl.
+
+    erewrite anno_range.
+    tauto.
+    eassumption.
+    simpl.
+
+    assert (n2 > S i).
+    {
+      eapply anno_mono; eauto.
+    }
+    lia.
+
+    simpl.
+    invc H0.
+    unfold not in *.
+    intros.
+    eapply H3.
+    subst.
+    econstructor; eauto.
+    simpl.
+    tauto.
+    simpl.
+    tauto.
+  -
+    ff.
+    econstructor.
+    eapply IHt1; try eauto.
+
+    lia.
+
+
+
+    assert (NoDup l).
+    {
+      eapply nodup_anno; eauto.
+    }
+    assert (length l >= nss t2).
+    {
+      admit.
+    }
+    
+
+    eapply IHt2.
+    eassumption.
+    eassumption.
+    eassumption.
+
+    simpl.
+    erewrite anno_range.
+    tauto.
+    eassumption.
+
+    repeat erewrite anno_range.
+    tauto.
+    eassumption.
+    eassumption.
+
+    simpl.
+    erewrite anno_range.
+    tauto.
+    eassumption.
+
+    eapply anno_lrange'; eauto.
+
+    assert (list_subset (lrange a0) l).
+    eapply anno_lrange'; eauto.
+
+    assert (list_subset l ls).
+    {
+      eapply anno_sub'; eauto.
+    }
+
+    unfold list_subset in *.
+    eapply incl_tran; eauto.
+
+
+    assert (ls = (lrange a) ++ l).
+    {
+      eapply anno_step; eauto.
+    }
+    subst.
+
+    assert (l = (lrange a0) ++ ls').
+    {
+      eapply anno_step; eauto.
+    }
+    subst.
+
+    rewrite app_assoc in *.
+
+
+
+    eapply nodup_extra_app; eauto.
+  -
+
+        ff.
+    econstructor.
+    eauto.
+
+    assert (NoDup l).
+    {
+      eapply nodup_anno; eauto.
+    }
+
+    eapply IHt2.
+    apply H0.
+    eassumption.
+
+    simpl.
+    erewrite anno_range.
+    tauto.
+    eassumption.
+
+    repeat erewrite anno_range.
+    tauto.
+    eassumption.
+    eassumption.
+
+    simpl.
+    erewrite anno_range.
+    tauto.
+    eassumption.
+
+    eapply anno_lrange'; eauto.
+
+    assert (list_subset (lrange a0) l).
+    eapply anno_lrange'; eauto.
+
+    assert (list_subset l ls).
+    {
+      eapply anno_sub'; eauto.
+    }
+
+    unfold list_subset in *.
+    eapply incl_tran; eauto.
+
+
+    assert (ls = (lrange a) ++ l).
+    {
+      eapply anno_step; eauto.
+    }
+    subst.
+
+    assert (l = (lrange a0) ++ ls').
+    {
+      eapply anno_step; eauto.
+    }
+    subst.
+
+
+
+    rewrite app_assoc in *.
+    eapply nodup_extra_app; eauto.
+  -
+
+
+    
+    ff.
+    econstructor.
+
+    assert (NoDup l4).
+    {
+      invc H.
+      invc H3.
+      invc H4.
+      invc H5.
+      eauto.
+    }
+    eauto.
+
+    assert (NoDup l4).
+    {
+      invc H.
+      invc H3.
+      invc H4.
+      invc H5.
+      eauto.
+    }
+
+    
+    assert (NoDup l).
+    {
+      
+      eapply nodup_anno; eauto.
+    }
+
+    eauto.
+
+    (*
+
+    eapply IHt2.
+    apply H0.
+    eassumption. *)
+
+    simpl.
+    erewrite anno_range.
+    tauto.
+    eassumption.
+
+    repeat erewrite anno_range.
+    tauto.
+    eassumption.
+    eassumption.
+
+    simpl.
+    erewrite anno_range.
+    tauto.
+    eassumption.
+
+    repeat erewrite anno_range.
+    Focus 2.
+    eassumption.
+    Focus 2.
+    eassumption.
+    simpl.
+    eapply anno_mono; eauto.
+
+    assert (list_subset (lrange a) l4).
+    {
+      eapply anno_lrange'; eauto.
+    }
+    unfold list_subset in *.
+    eapply incl_tran; eauto.
+    right.
+    right.
+    right.
+    right.
+    eauto.
+
+    assert (list_subset (lrange a0) l).
+    {
+      eapply anno_lrange'; eauto.
+    }
+    assert (list_subset l l4).
+    {
+      eapply anno_sub'; eauto.
+    }
+    
+
+    
+    unfold list_subset in *.
+    eapply incl_tran; eauto.
+    right.
+    right.
+    right.
+    right.
+    eauto.
+
+    ff.
+    unfold list_subset.
+    unfold incl.
+    intros.
+    invc H0.
+    ++
+      econstructor; tauto.
+    ++
+      invc H1.
+      +++
+        right.
+        econstructor; eauto.
+      +++
+        invc H0.
+        ++++
+          right.
+          right.
+          econstructor; eauto.
+        ++++
+          invc H1.
+          +++++
+            right.
+          right.
+          right.
+          econstructor; eauto.
+          +++++
+            solve_by_inversion.
+    ++
+      ff.
+
+      assert (l4 = (lrange a) ++ l).
+      {
+        eapply anno_step; eauto.
+      }
+      subst.
+
+      assert (l = (lrange a0) ++ ls').
+      {
+        eapply anno_step; eauto.
+      }
+      subst.
+
+      assert (n1 :: n2 :: n3 :: n4 :: lrange a ++ lrange a0 ++ ls' = (n1 :: n2 :: n3 :: n4 :: lrange a ++ lrange a0) ++ ls').
+      rewrite app_assoc.
+      tauto.
+      rewrite H0 in *.
+
+      Check nodup_extra_app.
+
+      eapply nodup_extra_app; eauto.
+Defined.
+
+      
+
+
+
+      
+
+      
+      
+          
+       (*   
+          
+        
+      
+
+    
+    
+    
+
+    
+
+    eapply anno_lrange'; eauto.
+
+    assert (list_subset (lrange a0) l).
+    eapply anno_lrange'; eauto.
+
+    assert (list_subset l ls).
+    {
+      eapply anno_sub'; eauto.
+    }
+
+    unfold list_subset in *.
+    eapply incl_tran; eauto.
+
+
+    assert (ls = (lrange a) ++ l).
+    {
+      admit.
+    }
+    subst.
+
+    assert (l = (lrange a0) ++ ls').
+    {
+      admit.
+    }
+    subst.
+
+
+
+    eapply nodup_extra_app; eauto.
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    
+
+    eapply anno_lrange'.
+
+    
+
+    
+
+    
+    
+    
+
+    
+    eapply IHt2.
+
+    
+    
+    *)
+    
+    
+
+
+
+
+
+  
   (*
 
 

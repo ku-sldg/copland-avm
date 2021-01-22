@@ -334,10 +334,15 @@ Fixpoint unanno a :=
   | abpar _ _ _ _ spl a1 a2 => bpar spl (unanno a1) (unanno a2)
   end.
 
-Definition list_subset{A:Type} (l1:list A) (l2:list A) : Prop :=
+Definition list_subset{A:Type} :=
+  incl (A:=A).
+
+
+  (*
   forall x,
     In x l1 ->
     In x l2.
+*)
 
 (** This predicate determines if an annotated term is well formed,
     that is if its ranges correctly capture the relations between a
@@ -536,7 +541,14 @@ Ltac asdf :=
 Ltac ff :=
   repeat (cbn in *;
     repeat break_match; try solve_by_inversion;
-    repeat find_inversion).
+    repeat find_inversion ).
+
+Ltac ff' :=
+  repeat (cbn in *;
+    repeat break_match; try solve_by_inversion;
+    repeat find_inversion;
+    unfold list_subset in *;
+    unfold incl in * ).
 
 Ltac fail_if_in_hyps H := 
   let t := type of H in 

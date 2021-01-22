@@ -89,11 +89,309 @@ Ltac hehe'' :=
   | [x: Term, y:nat |- _] => pose_new_proof (anno_range x y)
   end.
 
-Lemma both_subsets{A:Type}: forall (ls ls': list A),
-  list_subset ls ls' ->
-  list_subset ls' ls ->
-  ls = ls'.
+Set Nested Proofs Allowed.
+
+Lemma both_subsets: forall (ls ls': list nat),
+    NoDup ls ->
+    NoDup ls' ->
+    list_subset ls ls' ->
+    list_subset ls' ls ->
+    ls = ls'.
 Proof.
+
+(*
+
+  intros.
+  generalizeEverythingElse ls.
+  induction ls; destruct ls'; intros.
+  -
+    eauto.
+  -
+    ff.
+    unfold list_subset in *.
+
+    assert (In n []).
+    eapply H0.
+    econstructor; tauto.
+    solve_by_inversion.
+  -
+    ff.
+    unfold list_subset in *.
+    assert (In a []).
+    eapply H.
+    econstructor; tauto.
+    solve_by_inversion.
+  -
+    unfold list_subset in *.
+    edestruct incl_cons_inv.
+    apply H.
+
+    edestruct incl_cons_inv.
+    apply H0.
+
+    clear H; clear H0.
+
+    invc H1;
+      invc H3;
+      try solve_by_inversion.
+    +
+      assert (ls = ls').
+      {
+      eapply IHls.
+
+      Search (forall x y : nat, {x = y} + {x <> y}).
+      ++
+        eapply IHls.
+
+
+        
+        destruct (in_dec PeanoNat.Nat.eq_dec a ls).
+        +++
+          
+
+
+          
+          Lemma in_incl: forall (a:nat) ls ls',
+            In a ls ->
+            incl ls  (a :: ls') ->
+            incl ls' (a :: ls) ->
+            incl ls ls'.
+          Proof.
+            intros.
+            generalizeEverythingElse ls.
+            induction ls; destruct ls'; intros;
+
+              unfold incl in *; intros.
+            -
+              eauto.
+            -
+              
+              solve_by_inversion.
+            -
+              edestruct H0.
+              +
+                eassumption.
+              +
+                
+              subst.
+              
+              
+              
+            intros.
+            destruct (in_dec PeanoNat.Nat.eq_dec a ls');
+              destruct (in_dec PeanoNat.Nat.eq_dec a0 ls');
+              destruct (in_dec PeanoNat.Nat.eq_dec a ls);
+              destruct (in_dec PeanoNat.Nat.eq_dec a0 ls);
+              
+              destruct (PeanoNat.Nat.eq_dec a a0);
+              try (subst; tauto).
+            +
+              unfold not in *.
+
+              assert (In a0 (a :: ls')) by eauto.
+
+              invc H3;
+                try solve_by_inversion.
+            +
+              assert (In a0 (a :: ls')) by eauto.
+              assert (In a0 (a :: ls)) by eauto.
+
+
+              invc H3.
+              ++
+                subst.
+                admit.
+              ++
+                eauto.
+            +
+              unfold not in *.
+              assert (In a0 (a :: ls')) by eauto.
+
+              invc H3.
+              ++
+                tauto.
+              ++
+                eauto.
+                
+              
+                
+
+              
+              unfold not in *.
+              subst.
+
+              assert (In 
+              
+              
+              solve_by_inversion.
+              
+
+              
+              subst.
+              eauto.
+              
+            +
+              
+
+              
+            destruct (PeanoNat.Nat.eq_dec a a0).
+            -
+              subst.
+              specialize H0 with (a:=a0).
+              concludes.
+              invc H0.
+              admit.
+              eassumption.
+
+            
+            specialize H0 with (a0:=a0).
+            concludes.
+            inv H0.
+
+            
+          Admitted.
+          
+
+            eapply in_incl; eauto.
+
+      +++
+        unfold not in *.
+        admit.
+      ++
+        destruct (in_dec PeanoNat.Nat.eq_dec a ls').
+        +++
+          admit.
+        +++
+          unfold not in *.
+          admit.
+      ++
+        congruence.
+    +
+      assert (ls = ls').
+      eapply IHls.
+      ++
+        admit.
+      ++
+        admit.
+      ++
+        subst.
+        congruence.
+    +
+      assert (ls = ls').
+      eapply IHls.
+      ++
+        admit.
+      ++
+        admit.
+      ++
+        congruence.
+    +
+      assert (a = n).
+      {
+        admit.
+      }
+      subst.
+
+      assert (ls = ls').
+      {
+        eapply IHls.
+        +
+          admit.
+        +
+          admit.
+      }
+      congruence.
+      
+          
+          
+      
+      
+        
+        
+      
+        
+        
+        
+        
+
+      
+      
+
+      
+      admit.
+    +
+      admit.
+    +
+      admit.
+      
+      
+  -
+    
+      
+    
+      
+          
+        
+        
+      
+        
+
+    
+    assert (ls = ls').
+    eapply IHls.
+
+    edestruct incl_cons_inv.
+    apply H.
+
+    edestruct incl_cons_inv.
+    apply H0.
+
+    
+
+    eapply incl_cons.
+
+
+    
+
+    assert (a = n /\ list_subset ls ls'
+
+
+    
+    ff.
+    eauto.
+
+    unfold list_subset in *.
+
+    assert (In a (a0 :: ls')).
+    eapply H.
+    econstructor; tauto.
+
+    assert (In a0 (a :: ls)).
+    eapply H0.
+    econstructor; tauto.
+
+    assert (ls = ls').
+    eapply IHls.
+    intros.
+
+    
+
+    assert (In x (a :: ls)).
+    eapply H0.
+    
+    
+
+    assert (ls = ls').
+
+    unfold list_subset in *.
+    eauto.
+    
+    
+    
+    solve_by_inversion.
+    
+  unfold list_subset in *.
+*)
 Admitted.
 
 
@@ -112,6 +410,7 @@ Proof.
         repeat expand_let_pairs;
         repeat break_match; try solve_by_inversion;
         try unfold list_subset;
+        try unfold incl;
         simpl in *; tauto).
   -
     destruct a;
@@ -143,11 +442,13 @@ Proof.
     
       ff;
       unfold list_subset;
+      unfold incl;
       intros;
       solve_by_inversion.
   -
     ff.
-    unfold list_subset.
+    unfold list_subset;
+      unfold incl;
     intros.
     invc H.
     econstructor.
@@ -160,14 +461,17 @@ Proof.
   -
     ff.
     unfold list_subset.
+    unfold incl.
     eauto.
   -
     ff.
     unfold list_subset.
+    unfold incl.
     eauto.
   -
     ff.
     unfold list_subset.
+    unfold incl.
     eauto.
 Defined.
 
@@ -183,6 +487,7 @@ Proof.
   - eapply anno_lrange; eauto.
 Defined.
 
+(*
 Lemma anno_lrange_eq
   : forall (x : Term) (i j : nat) (ls : list nat) 
       (ls' : LocRange) (t' : AnnoTerm),
@@ -194,6 +499,7 @@ Proof.
   edestruct both_anno_lrange; eauto.
   eapply both_subsets; eauto.
 Defined.
+*)
 
 (*
 Lemma lrange_anno_mono': forall (t:Term) (i j:nat) (t':AnnoTerm) (ls ls':LocRange),
@@ -215,15 +521,18 @@ Proof.
   -
     destruct a;
     
-      ff;
-      unfold list_subset; eauto.
+      ff';
+       eauto.
   -
-    ff.
-    unfold list_subset.
+    ff'.
+    (*
     intros.
     right.
     right.
     eauto.
+     *)
+
+    
     (*
     invc H.
     right.
@@ -232,13 +541,17 @@ Proof.
     solve_by_inversion. *)
   -
     ff.
-    unfold list_subset.
+
+    
+      
+    unfold list_subset;
+      unfold incl.
     intros.
 
     assert (list_subset l l0) by eauto.
 
-    unfold list_subset in *.
-    specialize H0 with (x:=x).
+    unfold list_subset in *; unfold incl in *.
+    specialize H0 with (a:=a).
     concludes.
 
     assert (forall x:nat, In x l0 -> In x ls).
@@ -248,13 +561,16 @@ Proof.
     eauto.
   -
     ff.
-    unfold list_subset.
+    unfold list_subset;
+      unfold incl.
     intros.
 
     assert (list_subset l l0) by eauto.
 
-    unfold list_subset in *.
-    specialize H0 with (x:=x).
+    unfold list_subset in *;
+      unfold incl in *.
+    
+    specialize H0 with (a:=a).
     concludes.
 
     assert (forall x:nat, In x l0 -> In x ls).
@@ -265,13 +581,15 @@ Proof.
   -
 
     ff.
-    unfold list_subset.
+    unfold list_subset;
+      unfold incl.
     intros.
 
     assert (list_subset l l0) by eauto.
 
-    unfold list_subset in *.
-    specialize H0 with (x:=x).
+    unfold list_subset in *;
+      unfold incl in *.
+    specialize H0 with (a:=a).
     concludes.
 
     assert (forall x:nat, In x l0 -> In x l5).
