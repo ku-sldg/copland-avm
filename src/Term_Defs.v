@@ -393,11 +393,22 @@ Inductive well_formed: AnnoTerm -> Prop :=
     snd r = S (snd (range x)) ->
     Nat.pred (snd r) > fst r ->
 
+    
     fst locs <> snd locs ->
+     
+    
+    
     In (fst locs) ls ->
     In (snd locs) ls ->
+
+    (*
     NoDup ls ->
+     *)
+    
+    (*
     length ls = 2 ->
+     *)
+    
     
     well_formed (aatt r ls locs p x)
                 
@@ -407,14 +418,28 @@ Inductive well_formed: AnnoTerm -> Prop :=
     snd (range x) = fst (range y) ->
     snd r = snd (range y) ->
 
+    (*
     NoDup ls ->
+     *)
+    
+     
+    
     list_subset (lrange x) ls ->
     list_subset (lrange y) ls ->
-
+    
+    
+     
+    
+    (*
     NoDup (lrange x) ->
     NoDup (lrange y) ->
+     *)
+    
 
+    
     NoDup ((lrange x) ++ (lrange y)) ->
+     
+    
 
     (*length ls >= length (lrange x) + length (lrange y) ->  *)
     well_formed (alseq r ls x y)
@@ -425,14 +450,24 @@ Inductive well_formed: AnnoTerm -> Prop :=
     snd (range x) = fst (range y) ->
     snd r = S (snd (range y)) ->
 
+    (*
     NoDup ls ->
+     *)
+    
+     
+    
     list_subset (lrange x) ls ->
     list_subset (lrange y) ls ->
 
+    (*
     NoDup (lrange x) ->
     NoDup (lrange y) ->
-
+     *)
+    
+    
     NoDup ((lrange x) ++ (lrange y)) ->
+     
+    
 
     (*length ls >= length (lrange x) + length (lrange y) ->*)
     well_formed (abseq r ls s x y)
@@ -444,23 +479,44 @@ Inductive well_formed: AnnoTerm -> Prop :=
     (snd r) = S (snd (range y)) ->
     fst (range y) > fst (range x) -> 
 
+    (*
     NoDup ls ->
+     *)
+    
+     
+    
     list_subset (lrange x) ls ->
     list_subset (lrange y) ls ->
+
+    list_subset [fst xlocs; snd xlocs; fst ylocs; snd ylocs] ls ->
+    (*
     In (fst xlocs) ls ->
     In (snd xlocs) ls ->
     In (fst ylocs) ls ->
     In (snd ylocs) ls ->
-
+     *)
+    
+(*
     ~ In (fst xlocs) ([(snd xlocs); (fst ylocs); (snd ylocs)] ++ (lrange x) ++ (lrange y)) ->
-    ~ In (snd xlocs) ([(fst xlocs); (fst ylocs); (snd ylocs)] ++ (lrange x) ++ (lrange y)) ->
-    ~ In (fst ylocs) ([(fst xlocs); (snd xlocs); (snd ylocs)] ++ (lrange x) ++ (lrange y)) ->
-    ~ In (snd ylocs) ([(fst xlocs); (snd xlocs); (fst ylocs)] ++ (lrange x) ++ (lrange y)) ->
+    ~ In (snd xlocs) ([(*(fst xlocs);*) (fst ylocs); (snd ylocs)] ++ (lrange x) ++ (lrange y)) ->
+    ~ In (fst ylocs) ([(*(fst xlocs); (snd xlocs);*) (snd ylocs)] ++ (lrange x) ++ (lrange y)) ->
+    ~ In (snd ylocs) ((*[(fst xlocs); (snd xlocs); (fst ylocs)] ++ *) (lrange x) ++ (lrange y)) ->
+ *)
+    
 
+    (*
     NoDup (lrange x) ->
     NoDup (lrange y) ->
+     *)
 
+
+    NoDup ([(fst xlocs); (snd xlocs); (fst ylocs); (snd ylocs)] ++ (lrange x) ++ (lrange y)) ->
+    
+
+                (*
     NoDup ((lrange x) ++ (lrange y)) ->
+                 *)
+                
     (*length ls >= 4 + length (lrange x) + length (lrange y) ->*)
     well_formed (abpar r ls xlocs ylocs s x y).
 Hint Constructors well_formed : core.

@@ -120,8 +120,6 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
              (joinp i (xi') (yi') p).
 Hint Constructors events : core.
 
-Locate events.
-
 
 Inductive store_event: Ev -> Loc -> Prop :=
 | put_event: forall i x p q t, store_event (req i x p q t) x
@@ -222,13 +220,6 @@ Ltac inv_store_ev2 :=
 
 Set Nested Proofs Allowed.
 
-Lemma event_in_lrange: forall t p ev loc,
-    events t p ev ->
-    store_event ev loc ->
-    In loc (lrange t).
-Proof.
-Admitted.
-
 Lemma nodup_contra': forall ls ls' (loc:nat),
     NoDup (ls ++ ls') ->
     In loc ls ->
@@ -248,13 +239,6 @@ Lemma in_app2: forall ls ls' (loc:nat),
     In loc (ls ++ ls').
 Proof.
 Admitted.
-
-Ltac t_in_lrange :=
-  match goal with
-  | [H: events ?t ?p ?ev,
-        H': store_event ?ev ?loc |- _] =>
-    assert_new_proof_by (In loc (lrange t)) ltac:(eapply event_in_lrange; eauto)
-  end.
 
 Ltac in_app_facts :=
   match goal with
@@ -278,6 +262,219 @@ Ltac nodup_contra_auto :=
     exfalso; eapply nodup_contra'; eauto
   end.
 
+
+Lemma event_in_lrange: forall t p ev loc,
+    well_formed t ->
+    events t p ev ->
+    store_event ev loc ->
+    In loc (lrange t).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a;
+      inv_ev;
+      ff.
+  -
+    
+    inv_wf.
+
+    (*
+    clear H12.
+    clear H11.
+     *)
+    
+    
+
+    inv_ev; ff.
+
+    (*
+    ff;
+      inv_ev.
+    +
+      ff.
+      (*
+      assert (In req_loc l). admit.
+      ff.
+       *)
+      
+      (*
+      inv H1.
+      admit. *)
+    +
+      ff.
+      (*
+      assert (In rpy_loc l). admit.
+      ff.
+       *)
+      
+      (*
+      ff.
+      inv H1. *)
+     *)
+    
+  -
+    ff.
+    inv_wf.
+    (*
+    clear H11.
+    clear H12. *)
+    inv_ev.
+    +
+
+      assert (In loc (lrange t1)) by eauto.
+
+      (*
+
+      assert (list_subset (lrange t1) l). admit.
+       *)
+      
+      unfold list_subset in *.
+      eauto.
+
+      (*
+
+      assert (l = (lrange t1) ++ (lrange t2)).
+      admit.
+
+      subst;
+      in_app_facts; eauto. *)
+    +
+      assert (In loc (lrange t2)) by eauto.
+
+      (*
+
+      assert (list_subset (lrange t2) l). admit. *)
+      unfold list_subset in *.
+      eauto.
+
+      
+      (*
+
+      assert (l = (lrange t1) ++ (lrange t2)).
+      admit.
+
+      subst;
+        in_app_facts; eauto.
+       *)
+      
+
+  -
+    ff.
+    inv_wf.
+    (*
+    clear H12. *)
+    inv_ev;
+      try solve_by_inversion.
+    +
+      assert (In loc (lrange t1)) by eauto.
+
+      (*
+
+      assert (list_subset (lrange t1) l). admit. *)
+      unfold list_subset in *.
+      eauto.
+
+      (*
+
+      assert (l = (lrange t1) ++ (lrange t2)).
+      admit.
+
+      subst;
+      in_app_facts; eauto. *)
+    +
+      assert (In loc (lrange t2)) by eauto.
+
+      (*
+
+      assert (list_subset (lrange t2) l). admit.
+       *)
+      
+      unfold list_subset in *.
+      eauto.
+
+      
+      (*
+      assert (l = (lrange t1) ++ (lrange t2)).
+      admit.
+
+      subst;
+        in_app_facts; eauto.
+       *)
+      
+  -
+    ff.
+    inv_wf.
+
+    (*
+    clear H19.
+    clear H15.
+    clear H16.
+    clear H17.
+    clear H18.
+     *)
+    
+    
+
+    
+    inv_ev';
+      try solve_by_inversion;
+      try (eauto; tauto);
+      try (ff; congruence).
+    +
+      ff.
+      unfold list_subset in *.
+      ff.
+      (*
+      
+      assert (list_subset [xi; xi'; yi; yi'] l). admit.
+      unfold list_subset in *.
+
+      ff.
+       *)
+
+      (*
+    +
+      
+      assert (list_subset (lrange t1) l). admit.
+       
+      
+      unfold list_subset in *.
+      eauto.
+
+    +
+      assert (list_subset (lrange t2) l). admit.
+      unfold list_subset in *.
+      eauto.
+*)
+    +
+
+      (*
+      assert (list_subset [xi; xi'; yi; yi'] l). admit.
+       *)
+      
+      unfold list_subset in *.
+      ff.
+
+      inv H1.
+      ++
+        ff.
+      ++
+        ff.
+        repeat (find_apply_hyp_hyp').
+        tauto.
+Defined.
+
+Ltac t_in_lrange :=
+  match goal with
+  | [H: events ?t ?p ?ev,
+        H': store_event ?ev ?loc |- _] =>
+    assert_new_proof_by (In loc (lrange t)) ltac:(eapply event_in_lrange; eauto)
+  end.
+
+
+
 Lemma unique_store_event_locs: forall t p ev ev' loc,
     well_formed t ->
     events t p ev ->
@@ -296,10 +493,26 @@ Proof.
   -
     inv_wf;
       inv_ev2;
-      ff;
-      try (assert (req_loc = rpy_loc)
-            by (repeat inv_se; congruence));
-      congruence.
+       try (assert (req_loc = rpy_loc) by 
+               (repeat inv_se; congruence));
+          repeat inv_se;
+          ff; congruence.
+ 
+  -
+    inv_wf.
+    (*
+    clear H13.
+    clear H14.
+     *)
+    
+    inv_ev2;
+      try solve_by_inversion;
+      try eauto;
+      try (
+           (* unfold list_subset in *;  *)
+           repeat t_in_lrange;
+           nodup_contra_auto; tauto).
+ 
   -
     inv_wf.
     inv_ev2;
@@ -309,29 +522,27 @@ Proof.
           repeat t_in_lrange;
           nodup_contra_auto; tauto).
   -
+          Ltac nodup_inv :=
+        repeat 
+        match goal with
+        | [H: NoDup (_::_) |- _] => invc H
+        end.
     inv_wf.
+    
+    (* clear H21. *)
+    (*clear H17; clear H18; clear H19; clear H20. *)
     inv_ev2;
-      try solve_by_inversion;
-      try eauto;
-      try (
-          repeat t_in_lrange;
-          nodup_contra_auto; tauto).
-  -
-     inv_wf;
-      inv_ev2;
       try solve_by_inversion;
       try (ff; congruence);
       try (eauto; tauto);
-      try (
-          repeat inv_se;
-          try (
-              repeat t_in_lrange;
-              try (nodup_contra_auto; tauto);
-              ff;
-              subst;
-              repeat in_app_facts;
-              tauto)
-        ).
+      try (repeat inv_se;
+           repeat t_in_lrange;
+           try in_app_facts;
+           ff;
+           nodup_inv;
+           ff;
+           try nodup_contra_auto;
+           tauto).
 Defined.
 
 Lemma evsys_events:
