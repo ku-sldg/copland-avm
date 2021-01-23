@@ -1046,6 +1046,24 @@ Lemma skipn_subset: forall (ls:list nat) n,
 Proof.
 Admitted.
 
+Lemma nodup_firstn: forall (ls:list nat) n,
+    NoDup ls ->
+    NoDup (firstn n ls).
+Proof.
+Admitted.
+
+Lemma nodup_skipn: forall (ls:list nat) n,
+    NoDup ls ->
+    NoDup (skipn n ls).
+Proof.
+Admitted.
+
+Ltac nodup_inv :=
+  repeat 
+    match goal with
+    | [H: NoDup (_::_) |- _] => invc H
+    end.
+
 Lemma anno_well_formed:
   forall t i j ls t',
     length ls = nss t ->
@@ -1108,12 +1126,6 @@ Proof.
     eapply IHt1.
     eassumption.
 
-    Lemma nodup_firstn: forall (ls:list nat) n,
-        NoDup ls ->
-        NoDup (firstn n ls).
-    Proof.
-    Admitted.
-
     eapply nodup_firstn; eauto.
 
     eassumption.
@@ -1132,7 +1144,8 @@ Proof.
     eapply IHt2.
     eassumption.
 
-    admit.
+    eapply nodup_skipn; eauto.
+    
     eassumption.
 
     
@@ -1217,7 +1230,7 @@ Proof.
 
     assert (NoDup (firstn (nss t1) ls)).
     {
-      admit.
+      eapply nodup_firstn; eauto.
     }
     
     
@@ -1228,7 +1241,7 @@ Proof.
 
     assert (NoDup (skipn (nss t1) ls)).
     {
-      admit.
+      eapply nodup_skipn; eauto.
     }
 
     eapply nodup_lrange.
@@ -1237,8 +1250,6 @@ Proof.
 
     unfold disjoint_lists.
     intros.
-
-    Check firstn_skipn.
 
     assert (ls = (firstn (nss t1) ls) ++ (skipn (nss t1) ls)).
     {
@@ -1262,10 +1273,725 @@ Proof.
     apply H3.
     eauto.
   -
+
+        ff.
+
+    assert (length (firstn (nss t1) ls) = nss t1).
+    {
+      assert (length (firstn (nss t1) ls) >= nss t1).
+      {
+        eapply anno_some_fact; eauto.
+      }
+      eapply firstn_factt; eauto.
+    }
+    econstructor.
+
+    eapply IHt1.
+    eassumption.
+
+    eapply nodup_firstn; eauto.
+
+    eassumption.
+
+    assert (length (skipn (nss t1) ls) = nss t2).
+    {
+
+       assert (length ls = length (firstn (nss t1) ls) + length (skipn (nss t1) ls)).
+       {
+        eapply AnnoFacts.firstn_skipn.
+       }
+
+       lia.
+    }
+
+    eapply IHt2.
+    eassumption.
+
+    eapply nodup_skipn; eauto.
+    
+    eassumption.
+
+    
+
+    (*
+    eapply IHt1; try eauto.
+
+    lia.
+
+
+
+    assert (NoDup l).
+    {
+      eapply nodup_anno; eauto.
+    }
+    assert (length l >= nss t2).
+    {
+      admit.
+    }
+    
+
+    eapply IHt2.
+    eassumption.
+    eassumption.
+    eassumption.
+     *)
+    
+
+    simpl.
+    erewrite anno_range.
+    tauto.
+    eassumption.
+
+    repeat erewrite anno_range.
+    tauto.
+    eassumption.
+    eassumption.
+
+    simpl.
+    erewrite anno_range.
+    tauto.
+    eassumption.
+
+    (*
+
+    eapply anno_lrange'; eauto.
+     *)
+
+    assert (list_subset (firstn (nss t1) ls) ls).
+    {
+      eapply firstn_subset; eauto.
+    }
+
+    unfold list_subset in *.
+    eapply incl_tran; eauto.
+    
+
+    eapply anno_lrange'; eauto.
+
+     assert (list_subset (skipn (nss t1) ls) ls).
+     {
+       eapply skipn_subset; eauto.
+    }
+
+    unfold list_subset in *.
+    eapply incl_tran; eauto.
+    
+
+    eapply anno_lrange'; eauto.
+
+    assert (list_subset (lrange a) (firstn (nss t1) ls)).
+    {
+      eapply anno_lrange'; eauto.
+    }
+
+    assert (list_subset (lrange a0) (skipn (nss t1) ls)).
+    {
+      eapply anno_lrange'; eauto.
+    }
+
+    eapply nodup_append.
+
+    assert (NoDup (firstn (nss t1) ls)).
+    {
+      eapply nodup_firstn; eauto.
+    }
     
     
 
-    Check nodup_contra.
+    eapply nodup_lrange.
+    eapply H4.
+    eassumption.
+
+    assert (NoDup (skipn (nss t1) ls)).
+    {
+      eapply nodup_skipn; eauto.
+    }
+
+    eapply nodup_lrange.
+    eapply H4.
+    eassumption.
+
+    unfold disjoint_lists.
+    intros.
+
+    assert (ls = (firstn (nss t1) ls) ++ (skipn (nss t1) ls)).
+    {
+      symmetry.
+      eapply firstn_skipn.
+    }
+    assert (NoDup (firstn (nss t1) ls ++ skipn (nss t1) ls)).
+    {
+      rewrite <- H6.
+      eauto.
+    }
+
+    ff'.
+    specialize H2 with (a0:=x).
+    specialize H3 with (a:= x).
+
+    repeat concludes.
+
+    eapply nodup_contra.
+    apply H2.
+    apply H3.
+    eauto.
+  -
+
+    ff.
+    econstructor.
+
+    assert (NoDup (firstn (nss t1) l2)).
+    {
+      assert (NoDup l2) by (nodup_inv; eauto).
+
+      eapply nodup_firstn; eauto.
+    }
+
+    assert (length (firstn (nss t1) l2) = nss t1).
+    {
+      Lemma anno_firstn_nss: forall t i ls n a,
+        anno t i (firstn (nss t) ls) true = Some (n, a) ->
+        (length (firstn (nss t) ls) = nss t).
+      Proof.
+        intros.
+        eapply firstn_factt.
+        eapply anno_some_fact; eauto.
+      Defined.
+
+      eapply anno_firstn_nss; eauto.
+    }
+    eauto.
+
+    assert (NoDup (skipn (nss t1) l2)).
+    {
+      assert (NoDup l2) by (nodup_inv; eauto).
+      eapply nodup_skipn; eauto.
+    }
+
+    assert (length (skipn (nss t1) l2) = nss t2).
+    {
+      assert (length (firstn (nss t1) l2) = nss t1).
+      {
+        eapply anno_firstn_nss; eauto.
+      }
+
+       assert (length l2 = length (firstn (nss t1) l2) + length (skipn (nss t1) l2)).
+      {
+        eapply AnnoFacts.firstn_skipn.
+      }
+      lia.
+    }
+    eauto.
+
+    (*
+
+    assert (NoDup l4).
+    {
+      invc H.
+      invc H3.
+      invc H4.
+      invc H5.
+      eauto.
+    }
+    eauto.
+
+    assert (NoDup l4).
+    {
+      invc H.
+      invc H3.
+      invc H4.
+      invc H5.
+      eauto.
+    }
+
+    
+    assert (NoDup l).
+    {
+      
+      eapply nodup_anno; eauto.
+    }
+
+    eauto.
+
+    (*
+
+    eapply IHt2.
+    apply H0.
+    eassumption. *)
+
+     *)
+    
+
+    simpl.
+    erewrite anno_range.
+    tauto.
+    eassumption.
+
+    repeat erewrite anno_range.
+    tauto.
+    eassumption.
+    eassumption.
+
+    simpl.
+    erewrite anno_range.
+    tauto.
+    eassumption.
+
+    repeat erewrite anno_range.
+    Focus 2.
+    eassumption.
+    Focus 2.
+    eassumption.
+    simpl.
+    eapply anno_mono; eauto.
+
+    Require Import More_lists.
+
+    assert (list_subset (firstn (nss t1) l2) l2).
+    {
+      eapply firstn_subset; eauto.
+    }
+
+    unfold list_subset in *.
+    eapply incl_tran; eauto.
+    
+
+    eapply anno_lrange'; eauto.
+    right.
+    right.
+    right.
+    right.
+
+    eapply More_lists.firstn_in;
+      eauto.
+
+    
+
+    assert (list_subset (skipn (nss t1) l2) l2).
+    {
+      eapply skipn_subset; eauto.
+    }
+
+    unfold list_subset in *.
+    eapply incl_tran; eauto.
+    
+
+    eapply anno_lrange'; eauto.
+    right.
+    right.
+    right.
+    right.
+
+
+
+    eapply More_lists.skipn_in;
+      eauto.
+
+    simpl.
+
+    ff'.
+    tauto.
+
+    simpl.
+
+    Check nodup_append.
+
+    assert ( (n1 :: n2 :: n3 :: n4 :: lrange a ++ lrange a0) =
+             [n1 ; n2 ; n3 ; n4] ++ (lrange a ++ lrange a0)).
+    tauto.
+    rewrite H; clear H.
+
+    
+    eapply nodup_append.
+    +
+      nodup_inv.
+      econstructor.
+      ++
+        unfold not in *.
+        intros.
+        invc H.
+        +++
+          unfold not in *.
+          apply H3.
+          econstructor; eauto.
+        +++
+          invc H0.
+          ++++
+            apply H3.
+            right.
+            econstructor; eauto.
+          ++++
+            invc H.
+            +++++
+              apply H3.
+            right.
+            right.
+            econstructor; eauto.
+            +++++
+              solve_by_inversion.
+      ++
+        econstructor.
+        +++
+          unfold not in *.
+          intros.
+          invc H.
+          ++++
+            apply H1.
+            econstructor; eauto.
+          ++++
+            invc H0.
+            +++++
+              apply H1.
+            right.
+            econstructor; eauto.
+            +++++
+              solve_by_inversion.
+        +++
+          econstructor.
+          ++++
+            unfold not in *.
+            intros.
+            invc H.
+            +++++
+              apply H4.
+            econstructor; eauto.
+            +++++
+              solve_by_inversion.
+          ++++
+            econstructor; eauto.
+            econstructor.
+
+    +
+      
+
+      eapply nodup_append.
+      ++
+
+        assert (NoDup (firstn (nss t1) l2)).
+        {
+          eapply nodup_firstn; eauto.
+          nodup_inv.
+          eauto.
+        }
+    
+    
+
+    eapply nodup_lrange.
+    eapply H.
+    eassumption.
+
+      ++
+
+    assert (NoDup (skipn (nss t1) l2)).
+    {
+      eapply nodup_skipn; eauto.
+      nodup_inv.
+      eauto.
+    }
+
+    eapply nodup_lrange.
+    eapply H.
+    eassumption.
+    ++
+      unfold disjoint_lists.
+      intros.
+
+      assert (l2 = (firstn (nss t1) l2) ++ (skipn (nss t1) l2)).
+      {
+        symmetry.
+        eapply firstn_skipn.
+      }
+      assert (NoDup (firstn (nss t1) l2 ++ skipn (nss t1) l2)).
+      {
+        rewrite <- H3.
+        nodup_inv.
+        eauto.
+      }
+
+      assert (list_subset (lrange a) (firstn (nss t1) l2)).
+      {
+        eapply anno_lrange'; eauto.
+      }
+
+      assert (list_subset (lrange a0) (skipn (nss t1) l2)).
+      {
+        eapply anno_lrange'; eauto.
+      }
+
+      ff'.
+      
+
+      
+      
+
+
+      
+
+      ff'.
+      specialize H5 with (a0:=x).
+      specialize H6 with (a:= x).
+
+      repeat concludes.
+
+      eapply nodup_contra.
+      apply H5.
+      apply H6.
+      eauto.
+    +
+      unfold disjoint_lists.
+      intros.
+
+      
+
+      assert (list_subset (lrange a) l2).
+      {
+        
+        
+        assert (list_subset (firstn (nss t1) l2) l2).
+        {
+          eapply firstn_subset.
+        }
+
+        assert (list_subset (lrange a) (firstn (nss t1) l2)).
+        {
+          eapply anno_lrange'; eauto.
+        }
+        
+
+        unfold list_subset in *.
+        eapply incl_tran; eauto.
+      }
+
+      assert (list_subset (lrange a0) l2).
+      {
+
+        assert (list_subset (skipn (nss t1) l2) l2).
+        {
+          eapply skipn_subset.
+        }
+
+        assert (list_subset (lrange a0) (skipn (nss t1) l2)).
+        {
+          eapply anno_lrange'; eauto.
+        }
+        
+
+        unfold list_subset in *.
+        eapply incl_tran; eauto.
+      }
+
+      assert (list_subset ((lrange a) ++ (lrange a0)) l2).
+      {
+        eapply list_subset_app; eauto.
+      }
+
+      assert (In x l2).
+      {
+        ff'.
+      }
+
+      invc H.
+      ++
+        nodup_inv.
+        unfold not in *.
+        eapply H8.
+        right.
+        right.
+        right.
+        eauto.
+      ++
+        invc H7.
+        +++
+          nodup_inv.
+          unfold not in *.
+          eapply H7.
+          
+        right.
+        right.
+        eauto.
+        +++
+          invc H.
+          ++++
+            nodup_inv.
+            unfold not in *.
+            apply H9.
+            right.
+            eauto.
+          ++++
+            invc H7.
+            +++++
+            nodup_inv.
+            eauto.
+            +++++
+              solve_by_inversion.
+    Defined.
+            
+            
+          
+          
+        
+      tauto.
+      tauto.
+      +
+      
+      
+      ff'.
+
+      
+      
+      
+      
+      
+      
+        
+
+    
+
+    
+
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+    assert (list_subset (lrange a) l4).
+    {
+      eapply anno_lrange'; eauto.
+    }
+    unfold list_subset in *.
+    eapply incl_tran; eauto.
+    right.
+    right.
+    right.
+    right.
+    eauto.
+
+    assert (list_subset (lrange a0) l).
+    {
+      eapply anno_lrange'; eauto.
+    }
+    assert (list_subset l l4).
+    {
+      eapply anno_sub'; eauto.
+    }
+    
+
+    
+    unfold list_subset in *.
+    eapply incl_tran; eauto.
+    right.
+    right.
+    right.
+    right.
+    eauto.
+
+    ff.
+    unfold list_subset.
+    unfold incl.
+    intros.
+    invc H0.
+    ++
+      econstructor; tauto.
+    ++
+      invc H1.
+      +++
+        right.
+        econstructor; eauto.
+      +++
+        invc H0.
+        ++++
+          right.
+          right.
+          econstructor; eauto.
+        ++++
+          invc H1.
+          +++++
+            right.
+          right.
+          right.
+          econstructor; eauto.
+          +++++
+            solve_by_inversion.
+    ++
+      ff.
+
+      assert (l4 = (lrange a) ++ l).
+      {
+        eapply anno_step; eauto.
+      }
+      subst.
+
+      assert (l = (lrange a0) ++ ls').
+      {
+        eapply anno_step; eauto.
+      }
+      subst.
+
+      assert (n1 :: n2 :: n3 :: n4 :: lrange a ++ lrange a0 ++ ls' = (n1 :: n2 :: n3 :: n4 :: lrange a ++ lrange a0) ++ ls').
+      rewrite app_assoc.
+      tauto.
+      rewrite H0 in *.
+
+      Check nodup_extra_app.
+
+      eapply nodup_extra_app; eauto.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    
     
       
     
