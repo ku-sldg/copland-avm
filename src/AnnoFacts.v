@@ -5,6 +5,11 @@ Require Import Lia.
 Require Import List.
 Import List.ListNotations.
 
+(*
+
+Require Import Lists.List.
+*)
+
 Set Nested Proofs Allowed.
 
 Lemma same_anno_range: forall t i l l2 a b n n' bo bo',
@@ -675,30 +680,102 @@ Lemma firstn_fact: forall (ls: list nat) n,
     length ls >= n ->
     length (firstn n ls) = n.
 Proof.
-Admitted.
+  apply firstn_length_le.
+Defined.
 
 Lemma firstn_fact': forall (ls:list nat) n,
     length (firstn n ls) < n ->
     length ls < n.
 Proof.
-Admitted.
+  induction ls; intros; simpl.
+  -
+    rewrite firstn_nil in *.
+    tauto.
+  -
+    destruct n;
+      ff;
+      try (assert (length (firstn n ls) < n) by lia);
+      eauto.
+    +
+      assert (length ls < n) by eauto.
+      lia.
+Defined.
 
 Lemma firstn_factt: forall (ls:list nat) n,
     length (firstn n ls) >= n ->
     length (firstn n ls) = n.
 Proof.
-Admitted.
+  intros.
+  assert (length (firstn n ls) <= n).
+  {
+    eapply firstn_le_length.
+  }
+  lia.
+Defined.
+
+Lemma firstn_skipn: forall (ls:list nat) n,
+    length ls = length (firstn n ls) + length (skipn n ls).
+Proof.
+  intros.
+  assert ( ls = 
+           (firstn n ls) ++ (skipn n ls)).
+  {
+    symmetry.
+    eapply firstn_skipn.
+  }
+
+  rewrite H at 1.
+  eapply app_length; eauto.
+Defined.
 
 Lemma anno_some_fact: forall t i ls n a,
     anno t i ls true = Some (n, a) ->
     length ls >= nss t.
 Proof.
-Admitted.
+  induction t; intros.
+  -
+    ff.
+    destruct ls; ff; lia.
+  -
+    ff.
+    lia.
+  -
+    ff.
+    assert (length ((firstn (nss t1) ls)) >= nss t1) by eauto.
 
-Lemma firstn_skipn: forall (ls:list nat) n,
-    length ls = length (firstn n ls) + length (skipn n ls).
-Proof.
-Admitted.
+    assert (length (skipn (nss t1) ls) >= nss t2) by eauto.
+
+    assert (length ls = length (firstn (nss t1) ls) +
+                        length (skipn (nss t1) ls)).
+    {
+      eapply firstn_skipn.
+    }
+    lia.
+  -
+     ff.
+    assert (length ((firstn (nss t1) ls)) >= nss t1) by eauto.
+
+    assert (length (skipn (nss t1) ls) >= nss t2) by eauto.
+
+    assert (length ls = length (firstn (nss t1) ls) +
+                        length (skipn (nss t1) ls)).
+    {
+      eapply firstn_skipn.
+    }
+    lia.
+  -
+     ff.
+    assert (length ((firstn (nss t1) l2)) >= nss t1) by eauto.
+
+    assert (length (skipn (nss t1) l2) >= nss t2) by eauto.
+
+    assert (length l2 = length (firstn (nss t1) l2) +
+                        length (skipn (nss t1) l2)).
+    {
+      eapply firstn_skipn.
+    }
+    lia.
+Defined.
 
 Lemma list_too_short: forall t i ls,
       anno t i ls true = None ->

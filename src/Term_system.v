@@ -241,13 +241,58 @@ Qed.
 
 (** lseq is associative relative to the event semantics *)
 
+Set Nested Proofs Allowed.
+
+Require Import List.
+Require Import Lia.
+
+Lemma firstn_gt: forall (ls: list nat) m n,
+    m >= n ->
+    firstn n (firstn m ls) = firstn n ls.
+Proof.
+  Search (firstn _ (firstn _ _)).
+
+  intros.
+  pose firstn_firstn.
+  pose (e nat ls n m).
+  assert (Init.Nat.min n m = n).
+  {
+    lia.
+  }
+  congruence.
+Defined.
+
+Lemma skipn_firstn_len: forall (ls:list nat) n m,
+    (firstn n (skipn m ls)) =
+    (skipn m (firstn (m + n) ls)).
+Proof.
+  intros.
+  Search (firstn (_ + _)).
+  eapply firstn_skipn_comm.
+Defined.
+
+Lemma skipn_assoc: forall (ls:list nat) n m,
+    (skipn n (skipn m ls)) =
+    (skipn (m + n) ls).
+Proof.
+  induction ls; intros.
+  -
+    repeat rewrite skipn_nil.
+    tauto.
+  -
+    ff'.
+    destruct m.
+    +
+      ff'.
+    +
+      ff'.
+Defined.
+
 Lemma lseq_assoc:
-  forall t1 t2 t3 i p ls b n n' l' l'' t' t'',
-    anno (lseq t1 (lseq t2 t3)) i ls b = Some (n, (l', t')) ->
-    anno (lseq (lseq t1 t2) t3) i ls b = Some (n', (l'',t'')) ->
-
-
-      
+  forall t1 t2 t3 i p ls b n n' t' t'',
+    anno (lseq t1 (lseq t2 t3)) i ls b = Some (n, t') ->
+    anno (lseq (lseq t1 t2) t3) i ls b = Some (n',t'') ->
+  
     same_rel
       (ev_sys t' p)
       (ev_sys t'' p).
@@ -256,7 +301,45 @@ Proof.
   repeat expand_let_pairs; simpl.
   ff.
   Check before_associative_pairs.
-  rewrite Heqo0 in *.
-  inv Heqo4.
+  ff'.
+  assert ((List.firstn (nss t1) (List.firstn (nss t1 + nss t2) ls)) =
+          (List.firstn (nss t1) ls)) as HH.
+  {
+    eapply firstn_gt; lia.
+  }
+  
+  rewrite HH in *; clear HH.
+
+  rewrite Heqo3 in *; clear Heqo3.
+
+  ff.
+
+  assert (
+      (List.firstn (nss t2) (List.skipn (nss t1) ls)) =
+      (List.skipn (nss t1) (List.firstn (nss t1 + nss t2) ls))) as HH.
+  {
+    eapply skipn_firstn_len.
+  }
+  
+  rewrite HH in *; clear HH.
+
+  rewrite Heqo2 in *; clear Heqo2.
+  ff.
+
+  assert (
+      (List.skipn (nss t2) (List.skipn (nss t1) ls)) =
+      (List.skipn (nss t1 + nss t2) ls)) as HH.
+  {
+    eapply skipn_assoc.
+  }
+
+  rewrite HH in *; clear HH.
+
+  rewrite Heqo0 in *; clear Heqo0.
+  ff.     
+  (*
+  rewrite Heqo0 in *. *)
+  (*
+  inv Heqo4. *)
   apply before_associative_pairs.
 Qed.
