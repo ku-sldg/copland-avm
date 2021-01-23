@@ -5,9 +5,11 @@ Require Import Lia.
 Require Import List.
 Import List.ListNotations.
 
-Lemma same_anno_range: forall t i l l' l2 l2' a b n n' bo bo',
-    anno t i l bo = Some (n, (l',a)) ->
-    anno t i l2 bo' = Some (n', (l2',b)) ->
+Set Nested Proofs Allowed.
+
+Lemma same_anno_range: forall t i l l2 a b n n' bo bo',
+    anno t i l bo = Some (n,a) ->
+    anno t i l2 bo' = Some (n',b) ->
     n = n'.
 Proof.
   intros.
@@ -32,17 +34,23 @@ Proof.
     assert (n3 = n1) by eauto.
     congruence.
   -
-     ff;
-       try (
-           repeat (new_anno_eq; subst);
-           congruence).
-  Defined.
+    ff;
+      repeat (new_anno_eq; subst);
+      congruence.
+ Defined.
   
-Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm) (ls ls':LocRange) b,
-  anno t i ls b = Some (j, (ls',t')) ->
+Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm) (ls:LocRange) b,
+  anno t i ls b = Some (j,t') ->
   j > i.
 Proof.
-  induction t; intros i j t' ls ls' b H;
+  induction t; intros i j t' ls b H;
+    ff;
+    try destruct b;
+    ff;
+    repeat find_apply_hyp_hyp;
+    lia.
+Defined.
+(*
     try (
         simpl in *;
         try destruct b;
@@ -53,19 +61,24 @@ Proof.
         repeat find_apply_hyp_hyp;
         lia).
 Defined.
+*)
 Hint Resolve anno_mono : core.
 
 Lemma anno_range:
-  forall x i j ls ls' t' b,
-     anno x i ls b = Some (j, (ls',t')) ->
+  forall x i j ls t' b,
+     anno x i ls b = Some (j,t') ->
     
     range (t') = (i, j).
 Proof.
-  induction x; intros; simpl in *; auto;
+  induction x; intros; ff.
+
+  (*
+    ff.
     repeat expand_let_pairs;
     repeat break_match;
     try solve_by_inversion;
     simpl; auto.
+*)
 Defined.
 
 Ltac haha :=
@@ -89,8 +102,7 @@ Ltac hehe'' :=
   | [x: Term, y:nat |- _] => pose_new_proof (anno_range x y)
   end.
 
-Set Nested Proofs Allowed.
-
+(*
 Lemma both_subsets: forall (ls ls': list nat),
     NoDup ls ->
     NoDup ls' ->
@@ -393,12 +405,13 @@ Proof.
   unfold list_subset in *.
 *)
 Admitted.
+*)
 
 
 Lemma anno_lrange:
-  forall x i j ls ls' t' b,
+  forall x i j ls t' b,
     length ls = nss x ->
-    anno x i ls b = Some (j, (ls',t')) ->
+    anno x i ls b = Some (j,t') ->
     list_subset ls (lrange t').
 Proof.
   induction x; intros;
@@ -419,67 +432,32 @@ Proof.
       repeat break_match;
       find_inversion;
       simpl;
-      assert (ls' = []) by (destruct ls'; solve_by_inversion);
+      assert (ls = []) by (destruct ls; solve_by_inversion);
       congruence.
   -
     ff.
-    assert (ls' = []) by (destruct ls'; solve_by_inversion);
+    assert (l0 = []) by (destruct l0; solve_by_inversion);
       congruence.
 Defined.
 
 Lemma anno_lrange'
   : forall (x : Term) (i j : nat) (ls : list nat) 
-      (ls' : LocRange) (t' : AnnoTerm),
+      (t' : AnnoTerm),
     (*length ls = nss x -> *)
-    anno x i ls true = Some (j, (ls', t')) ->
+    anno x i ls true = Some (j, t') ->
     list_subset (lrange t') ls.
 Proof.
   intros.
   generalizeEverythingElse x.
-  induction x; intros.
-  -
-    destruct a;
-    
-      ff;
-      unfold list_subset;
-      unfold incl;
-      intros;
-      solve_by_inversion.
-  -
-    ff.
-    unfold list_subset;
-      unfold incl;
-    intros.
-    invc H.
-    econstructor.
-    eauto.
-    invc H0.
-    right.
-    left.
-    eauto.
-    solve_by_inversion.
-  -
-    ff.
-    unfold list_subset.
-    unfold incl.
-    eauto.
-  -
-    ff.
-    unfold list_subset.
-    unfold incl.
-    eauto.
-  -
-    ff.
-    unfold list_subset.
-    unfold incl.
-    eauto.
+  induction x; intros;
+    try (ff'; tauto).
 Defined.
 
 Lemma both_anno_lrange
   : forall (x : Term) (i j : nat) (ls : list nat) 
       (ls' : LocRange) (t' : AnnoTerm),
     length ls = nss x ->
-    anno x i ls true = Some (j, (ls', t')) ->
+    anno x i ls true = Some (j,t') ->
     list_subset (lrange t') ls /\ list_subset ls (lrange t').
 Proof.
   split.
@@ -511,6 +489,7 @@ Proof.
 *)
 
 
+(*
 Lemma anno_sub': forall t i ls n l a,
     anno t i ls true = Some (n, (l, a)) ->
     list_subset l ls.
@@ -602,7 +581,10 @@ Proof.
     right.
     eauto.
 Defined.
+*)
 
+
+(*
 Lemma anno_len:
   forall t i j ls ls' t',
     anno t i ls true = Some (j, (ls', t')) ->
@@ -633,6 +615,7 @@ Proof.
     assert (length l = anss a0 + length ls') by eauto.
     lia.
 Defined.
+*)
 
 Lemma false_succeeds: forall t i ls,
     anno t i ls false = None ->
@@ -646,8 +629,8 @@ Proof.
     eauto.
 Defined.
 
-Lemma nss_iff_anss: forall t i ls n l a b,
-    anno t i ls b = Some (n, (l, a)) ->
+Lemma nss_iff_anss: forall t i ls n a b,
+    anno t i ls b = Some (n,a) ->
     nss t = anss a.
 Proof.
     intros.
@@ -688,6 +671,35 @@ Proof.
       lia.
 Defined.
 
+Lemma firstn_fact: forall (ls: list nat) n,
+    length ls >= n ->
+    length (firstn n ls) = n.
+Proof.
+Admitted.
+
+Lemma firstn_fact': forall (ls:list nat) n,
+    length (firstn n ls) < n ->
+    length ls < n.
+Proof.
+Admitted.
+
+Lemma firstn_factt: forall (ls:list nat) n,
+    length (firstn n ls) >= n ->
+    length (firstn n ls) = n.
+Proof.
+Admitted.
+
+Lemma anno_some_fact: forall t i ls n a,
+    anno t i ls true = Some (n, a) ->
+    length ls >= nss t.
+Proof.
+Admitted.
+
+Lemma firstn_skipn: forall (ls:list nat) n,
+    length ls = length (firstn n ls) + length (skipn n ls).
+Proof.
+Admitted.
+
 Lemma list_too_short: forall t i ls,
       anno t i ls true = None ->
       length ls < nss t.
@@ -703,60 +715,97 @@ Proof.
     eapply false_succeeds; eauto.
   -
     ff.
+    +    
+      assert (length (skipn (nss t1) ls) < nss t2) by eauto.
 
-    assert (length l < nss t2) by eauto.
+      assert (length (firstn (nss t1) ls) >= nss t1).
+      {
+        eapply anno_some_fact; eauto.
+      }
 
-    assert (length ls = nss t1 + length l).
-    {
-      erewrite nss_iff_anss.
-      Focus 2.
-      eassumption.
-      eapply anno_len; eauto.
-    }
-    lia.
+      assert (length (firstn (nss t1) ls) = nss t1).
+      {
+        eapply firstn_factt; eauto.
+      }
 
-    assert (length ls < nss t1) by eauto.
-    lia.
+      assert (length ls = length (firstn (nss t1) ls) + length (skipn (nss t1) ls)).
+      {
+        eapply firstn_skipn; eauto.
+      }
+      lia.
+
+    +
+      assert (length (firstn (nss t1) ls) < nss t1) by eauto.
+
+      assert (length ls < (nss t1)).
+      {
+        eapply firstn_fact'; eauto.
+      }
+
+      lia.
   -
-    ff.
+        ff.
+    +    
+      assert (length (skipn (nss t1) ls) < nss t2) by eauto.
 
-    assert (length l < nss t2) by eauto.
+      assert (length (firstn (nss t1) ls) >= nss t1).
+      {
+        eapply anno_some_fact; eauto.
+      }
 
-    assert (length ls = nss t1 + length l).
-    {
-      erewrite nss_iff_anss.
-      Focus 2.
-      eassumption.
-      eapply anno_len; eauto.
-    }
-    lia.
+      assert (length (firstn (nss t1) ls) = nss t1).
+      {
+        eapply firstn_factt; eauto.
+      }
 
-    assert (length ls < nss t1) by eauto.
-    lia.
+      assert (length ls = length (firstn (nss t1) ls) + length (skipn (nss t1) ls)).
+      {
+        eapply firstn_skipn; eauto.
+      }
+      lia.
+
+    +
+      assert (length (firstn (nss t1) ls) < nss t1) by eauto.
+
+      assert (length ls < (nss t1)).
+      {
+        eapply firstn_fact'; eauto.
+      }
+
+      lia.
   -
-    
     ff;
       try lia.
     +
-      
+      assert (length (skipn (nss t1) l2) < nss t2) by eauto.
 
-    assert (length l < nss t2) by eauto.
+      assert (length (firstn (nss t1) l2) = (nss t1)).
+      {
+        assert (length (firstn (nss t1) l2) >= (nss t1)).
+        {
+          eapply anno_some_fact; eauto.
+        }
 
-    assert (length l3 = nss t1 + length l).
-    {
-      erewrite nss_iff_anss.
-      Focus 2.
-      eassumption.
-      eapply anno_len; eauto.
-    }
-    lia.
+        eapply firstn_factt; eauto.
+      }
+
+      assert (length l2 = length (firstn (nss t1) l2) + length (skipn (nss t1) l2)).
+      {
+        eapply firstn_skipn; eauto.
+      }
+      lia.
     +
-      assert (length l2 < nss t1) by eauto.
 
+      assert (length (firstn (nss t1) l2) < nss t1) by eauto.
+
+      assert (length l2 < nss t1).
+      {
+        eapply firstn_fact'; eauto.
+      }
       lia.
 Defined.
 
- Require Import Coq.Program.Tactics.
+Require Import Coq.Program.Tactics.
 
 Lemma anno_some: forall t i l b,
   length l = nss t ->
@@ -796,116 +845,183 @@ Proof.
         
   -
     ff.
-    eauto.
-    destruct b.
     +
-      assert (length l0 < nss t2).
+      eauto.
+    +
+      
+      destruct b;
+        try (exfalso;
+             eapply false_succeeds;
+             eauto).
+    ++
+      assert (length ((skipn (nss t1) l)) < nss t2).
       {
         eapply list_too_short; eauto.
       }
 
-      assert (length l = anss a + length l0).
+      assert (length (firstn (nss t1) l) = nss t1).
       {
-        eapply anno_len; eauto.
+        assert (length (firstn (nss t1) l) >= nss t1).
+        {
+          eapply anno_some_fact; eauto.
+        }
+        eapply firstn_factt; eauto.
       }
 
-      assert (nss t1 = anss a).
+      assert (length l = length (firstn (nss t1) l) + length (skipn (nss t1) l)).
       {
-        eapply nss_iff_anss; eauto.
+        eapply firstn_skipn; eauto.
       }
       lia.
     +
-      exfalso.
-      eapply false_succeeds; eauto.
-    +
-      destruct b.
+      destruct b;
+        try (exfalso;
+             eapply false_succeeds;
+             eauto).
       ++
-        assert (length l < nss t1).
+        
+        assert (length ((firstn (nss t1) l)) < nss t1).
         {
           eapply list_too_short; eauto.
         }
+        (*
+         assert (length l = length (firstn (nss t1) l) + length (skipn (nss t1) l)).
+        {
+          eapply firstn_skipn; eauto.
+        }
+         *)
+        assert (length l < nss t1).
+        {
+          eapply firstn_fact'; eauto.
+        }
         lia.
-      ++
-        exfalso.
-        eapply false_succeeds; eauto.
+
   -
-        ff.
-    eauto.
-    destruct b.
+    ff.
     +
-      assert (length l0 < nss t2).
-      {
-        eapply list_too_short; eauto.
-      }
-
-      assert (length l = anss a + length l0).
-      {
-        eapply anno_len; eauto.
-      }
-
-      assert (nss t1 = anss a).
-      {
-        eapply nss_iff_anss; eauto.
-      }
-      lia.
+      eauto.
     +
-      exfalso.
-      eapply false_succeeds; eauto.
-    +
-      destruct b.
+      
+      destruct b;
+        try (exfalso;
+             eapply false_succeeds;
+             eauto).
       ++
-        assert (length l < nss t1).
+        assert (length ((skipn (nss t1) l)) < nss t2).
         {
           eapply list_too_short; eauto.
         }
+
+        assert (length (firstn (nss t1) l) = nss t1).
+        {
+          assert (length (firstn (nss t1) l) >= nss t1).
+          {
+            eapply anno_some_fact; eauto.
+          }
+          eapply firstn_factt; eauto.
+        }
+
+        assert (length l = length (firstn (nss t1) l) + length (skipn (nss t1) l)).
+        {
+          eapply firstn_skipn; eauto.
+        }
         lia.
+    +
+      destruct b;
+        try (exfalso;
+             eapply false_succeeds;
+             eauto).
       ++
-        exfalso.
-        eapply false_succeeds; eauto.
+        
+        assert (length ((firstn (nss t1) l)) < nss t1).
+        {
+          eapply list_too_short; eauto.
+        }
+        (*
+         assert (length l = length (firstn (nss t1) l) + length (skipn (nss t1) l)).
+        {
+          eapply firstn_skipn; eauto.
+        }
+         *)
+        assert (length l < nss t1).
+        {
+          eapply firstn_fact'; eauto.
+        }
+        lia.
   -
     ff;
-      try (eauto; tauto).
+      try (eauto; tauto);
+      try lia.
+    +
+      destruct b;
+        try (exfalso;
+             eapply false_succeeds;
+             eauto; tauto).
+      ++
+      
+      assert (length (skipn (nss t1) l3) < nss t2).
+      {
+        eapply list_too_short; eauto.
+      }
+
+      assert (length (firstn (nss t1) l3) = nss t1).
+      {
+
+        assert (length (firstn (nss t1) l3) >= nss t1).
+        {
+          eapply anno_some_fact; eauto.
+        }
+
+        eapply firstn_factt; eauto.
+      }
+
+      assert (length l3 = length (firstn (nss t1) l3) + length (skipn (nss t1) l3)).
+        {
+          eapply firstn_skipn; eauto.
+        }
+        lia.
+    +
+       destruct b;
+        try (exfalso;
+             eapply false_succeeds;
+             eauto; tauto).
+       ++
+         assert (length (firstn (nss t1) l3) < nss t1).
+         {
+           eapply list_too_short; eauto.
+         }
+
+         assert (length l3 < nss t1).
+         {
+           eapply firstn_fact'; eauto.
+         }
+
+         lia.
     +
       destruct b.
       ++
-        assert (length l0 < nss t2).
-        {
-          eapply list_too_short; eauto.
-        }
-
-        assert (length l4 = anss a + length l0).
-        {
-          eapply anno_len; eauto.
-        }
-        assert (nss t1 = anss a).
-        {
-          eapply nss_iff_anss; eauto.
-        }
-        lia.
+        ff.
       ++
-        exfalso.
-        eapply false_succeeds; eauto.
-    +
-      destruct b.
-      ++
-        assert (length l3 < nss t1).
-        {
-          eapply list_too_short; eauto.
-        }
-
-        lia.
-      ++
-        exfalso.
-        eapply false_succeeds; eauto.
+        ff.
     +
       destruct b;
         ff.
-
-    +
-      destruct b;
-        ff.
+      Unshelve.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
 Defined.
 
+(*
 Lemma anno_len_exact:
   forall t i j ls t',
     anno t i ls true = Some (j, ([], t')) ->
@@ -919,26 +1035,68 @@ Proof.
   simpl in *.
   lia.
 Defined.
+*)
+
+
 
 Lemma lrange_nss: forall t i ls  n a,
-    anno t i ls true = Some (n, ([], a)) ->
+    length ls = nss t ->
+    anno t i ls true = Some (n, a) ->
     length (lrange a) = nss t. (* + length ls'. *)
 Proof.
 
   intros.
   generalizeEverythingElse t.
-  induction t; intros.
-  -
-    cbn in H.
-    cbn.
-    destruct a; ff.
-  -
-    ff; eauto.
-  -
+  induction t; intros;
     ff.
+Defined.
+
+(*
+
+    
+    
     ff; eauto.
 
+    assert (length (lrange a0) = nss t1) by eauto.
+
     assert (length (lrange a1) = nss t2) by eauto.
+
+    assert (length (firstn (nss t1) ls) = nss t1).
+    {
+      assert (length (firstn (nss t1) ls) >= nss t1).
+      {
+        eapply anno_some_fact; eauto.
+      }
+
+      eapply firstn_factt; eauto.
+    }
+
+    (*
+    assert (length (skipn (nss t1) ls) = nss t2).
+    {
+      assert (length (skipn (nss t1) ls) >= nss t2).
+      {
+        eapply anno_some_fact; eauto.
+      }
+
+      
+      
+      admit.
+    }
+     *)
+    
+
+     assert (length ls = length (firstn (nss t1) ls) + length (skipn (nss t1) ls)).
+        {
+          eapply firstn_skipn; eauto.
+        }
+    
+        lia.
+  -
+    
+    
+      
+    
 
     (*assert (length (lrange a0) = nss t1) by eauto. *)
 
@@ -1043,8 +1201,7 @@ Proof.
 
     lia.
 Defined.
-
-
+*)
 
 
 
@@ -1056,10 +1213,10 @@ Defined.
 
 
 Lemma anno_well_formed_r:
-  forall t i j ls ls' t',
+  forall t i j ls t',
     (* length ls = nss t ->
     NoDup ls -> *)
-    anno t i ls false = Some (j, (ls', t')) ->
+    anno t i ls false = Some (j, t') ->
     well_formed_r t'.
 Proof.
   intros.
@@ -1255,7 +1412,7 @@ Proof.
       simpl.
       lia.
 
-            econstructor.
+      econstructor.
       eauto.
       eauto.
 

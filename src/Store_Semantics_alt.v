@@ -1046,9 +1046,10 @@ Lemma store_event_locs: forall t p ev loc,
 Proof.
 Admitted.
 
-Lemma nodup_contra: forall (x y: nat) ls ls',
+(* TODO:  check nodup_contra call sites *)
+Lemma nodup_contra: forall (x (*y*): nat) ls ls',
     In x ls  ->
-    In y ls' ->
+    In x (* y *) ls' ->
     NoDup (ls ++ ls') ->
     False.
 Proof.

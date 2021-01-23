@@ -1,5 +1,5 @@
 Require Import Term_Defs AnnoFacts.
-Require Import Preamble StructTactics Term_Facts.
+Require Import Preamble More_lists StructTactics Term_Facts.
 
 Require Import Coq.Program.Tactics.
 
@@ -111,12 +111,16 @@ Proof.
   eauto.
 Defined.
 
+(*
 Lemma anno_subtract: forall t i ls n l0 a,
     anno t i ls true = Some (n, (l0, a)) ->
     length l0 = length ls - (nss t).
 Proof.
 Admitted.
+*)
 
+
+(*
 Lemma anno_full: forall t i l l' n a,
   length l = nss t ->
   anno t i l true = Some (n, (l',a)) ->
@@ -243,6 +247,7 @@ Proof.
 Defined.
    *)
   Admitted.
+*)
 
     
 
@@ -384,7 +389,7 @@ Defined.
 
 
 
-
+(*
 Lemma anno_full_ex: forall t i l,
   length l = nss t ->
   exists n a,
@@ -408,6 +413,7 @@ Proof.
 Defined.
    *)
 Admitted.
+*)
 
 
 (*
@@ -419,9 +425,9 @@ Proof.
 Admitted.
 *)
 
-Lemma asp_lrange_irrel: forall a i l l' l2 l2' a0 a1 n n' b,
-    anno (asp a) i l b = Some (n, (l',a0)) ->
-    anno (asp a) i l2 b= Some(n', (l2',a1)) ->
+Lemma asp_lrange_irrel: forall a i l l2 a0 a1 n n' b,
+    anno (asp a) i l b = Some (n, a0) ->
+    anno (asp a) i l2 b= Some(n',a1) ->
     a0 = a1.
 Proof.
   intros.
@@ -436,6 +442,7 @@ Proof.
 Admitted.
 *)
 
+(*
 Lemma anno_sub: forall t i n ls l a,
     length ls = nss t ->
     anno t i ls true = Some (n, (l, a)) ->
@@ -459,6 +466,7 @@ Proof.
 Defined.
    *)
 Admitted.
+*)
 
 
 (*
@@ -775,8 +783,6 @@ Proof.
 Defined.
  *)
 
-Print list_subset.
-
 Example ls_ex: list_subset [5;5] [5].
 Proof.
   intros.
@@ -916,18 +922,22 @@ Admitted.
 
 
 
-
+(*
+SEE anno_some_fact in AnnoFact.v
 Lemma anno_has_enough:
   forall t i j ls ls' t',
     anno t i ls true = Some (j, (ls', t')) ->
     length ls >= nss t.
 Proof.
 Admitted.
+*)
 
+(*
 Lemma nodup_extra_app
   : forall ls ls' ls'' : list nat, NoDup (ls ++ ls') -> NoDup ls.
 Proof.
 Admitted.
+*)
 
 
 (*
@@ -941,6 +951,7 @@ Proof.
 Defined.
  *)
 
+(*
 Lemma nodup_anno: forall t i ls l n a,
     NoDup ls ->
     anno t i ls true = Some (n, (l, a)) ->
@@ -959,7 +970,10 @@ Proof.
 
   
 Admitted.
+*)
 
+
+(*
 Lemma anno_step: forall t i ls l n a,
     anno t i ls true = Some (n, (l, a)) ->
     ls = (lrange a) ++ l.
@@ -1005,12 +1019,38 @@ Proof.
 
   
 Admitted.
+ *)
+
+Lemma nodup_lrange: forall t i ls n a,
+    NoDup ls ->
+    anno t i ls true = Some (n, a) ->
+    NoDup (lrange a).
+Proof.
+Admitted.
+
+Lemma nodup_contra: forall (x: nat) ls ls',
+    In x ls  ->
+    In x (* y *) ls' ->
+    NoDup (ls ++ ls') ->
+    False.
+Proof.
+Admitted.
+
+Lemma firstn_subset: forall (ls:list nat) n,
+    list_subset (firstn n ls) ls.
+Proof.
+Admitted.
+
+Lemma skipn_subset: forall (ls:list nat) n,
+    list_subset (skipn n ls) ls.
+Proof.
+Admitted.
 
 Lemma anno_well_formed:
-  forall t i j ls ls' t',
+  forall t i j ls t',
     length ls = nss t ->
     NoDup ls ->
-    anno t i ls true = Some (j, (ls', t')) ->
+    anno t i ls true = Some (j, t') ->
     well_formed t'.
 Proof.
   intros.
@@ -1054,7 +1094,50 @@ Proof.
     tauto.
   -
     ff.
+
+    assert (length (firstn (nss t1) ls) = nss t1).
+    {
+      assert (length (firstn (nss t1) ls) >= nss t1).
+      {
+        eapply anno_some_fact; eauto.
+      }
+      eapply firstn_factt; eauto.
+    }
     econstructor.
+
+    eapply IHt1.
+    eassumption.
+
+    Lemma nodup_firstn: forall (ls:list nat) n,
+        NoDup ls ->
+        NoDup (firstn n ls).
+    Proof.
+    Admitted.
+
+    eapply nodup_firstn; eauto.
+
+    eassumption.
+
+    assert (length (skipn (nss t1) ls) = nss t2).
+    {
+
+       assert (length ls = length (firstn (nss t1) ls) + length (skipn (nss t1) ls)).
+       {
+        eapply AnnoFacts.firstn_skipn.
+       }
+
+       lia.
+    }
+
+    eapply IHt2.
+    eassumption.
+
+    admit.
+    eassumption.
+
+    
+
+    (*
     eapply IHt1; try eauto.
 
     lia.
@@ -1075,6 +1158,8 @@ Proof.
     eassumption.
     eassumption.
     eassumption.
+     *)
+    
 
     simpl.
     erewrite anno_range.
@@ -1091,7 +1176,130 @@ Proof.
     tauto.
     eassumption.
 
+    (*
+
     eapply anno_lrange'; eauto.
+     *)
+
+    assert (list_subset (firstn (nss t1) ls) ls).
+    {
+      eapply firstn_subset; eauto.
+    }
+
+    unfold list_subset in *.
+    eapply incl_tran; eauto.
+    
+
+    eapply anno_lrange'; eauto.
+
+     assert (list_subset (skipn (nss t1) ls) ls).
+     {
+       eapply skipn_subset; eauto.
+    }
+
+    unfold list_subset in *.
+    eapply incl_tran; eauto.
+    
+
+    eapply anno_lrange'; eauto.
+
+    assert (list_subset (lrange a) (firstn (nss t1) ls)).
+    {
+      eapply anno_lrange'; eauto.
+    }
+
+    assert (list_subset (lrange a0) (skipn (nss t1) ls)).
+    {
+      eapply anno_lrange'; eauto.
+    }
+
+    eapply nodup_append.
+
+    assert (NoDup (firstn (nss t1) ls)).
+    {
+      admit.
+    }
+    
+    
+
+    eapply nodup_lrange.
+    eapply H4.
+    eassumption.
+
+    assert (NoDup (skipn (nss t1) ls)).
+    {
+      admit.
+    }
+
+    eapply nodup_lrange.
+    eapply H4.
+    eassumption.
+
+    unfold disjoint_lists.
+    intros.
+
+    Check firstn_skipn.
+
+    assert (ls = (firstn (nss t1) ls) ++ (skipn (nss t1) ls)).
+    {
+      symmetry.
+      eapply firstn_skipn.
+    }
+    assert (NoDup (firstn (nss t1) ls ++ skipn (nss t1) ls)).
+    {
+      rewrite <- H6.
+      eauto.
+    }
+
+    ff'.
+    specialize H2 with (a0:=x).
+    specialize H3 with (a:= x).
+
+    repeat concludes.
+
+    eapply nodup_contra.
+    apply H2.
+    apply H3.
+    eauto.
+  -
+    
+    
+
+    Check nodup_contra.
+    
+      
+    
+    
+      
+    
+
+    
+
+    (*
+Lemma nodup_anno: forall t i ls l n a,
+    NoDup ls ->
+    anno t i ls true = Some (n, (l, a)) ->
+    NoDup l.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+
+  -
+    destruct a; ff.
+  -
+    ff.
+     *)
+    
+
+    
+
+    
+    
+
+
+    
+    
 
     assert (list_subset (lrange a0) l).
     eapply anno_lrange'; eauto.

@@ -290,39 +290,39 @@ Defined.
     throughout the computation so as to ensure each event has a unique
     natural number. *) *)
 
-Fixpoint anno (t: Term) (i:nat) (ls:LocRange) (b:bool) : option (nat * (LocRange * AnnoTerm)):=
+Fixpoint anno (t: Term) (i:nat) (ls:LocRange) (b:bool) : option (nat * (* (LocRange **) AnnoTerm)(* ) *) :=
   match t with
-  | asp x => ret (S i, (ls, (aasp (i, S i) [] x)))
+  | asp x => ret (S i, (aasp (i, S i) [] x))
 
   | att p x =>
     '(req_loc,rpy_loc) <- getTwoLocs ls b ;;
-    '(j,(l',a)) <- anno x (S i) [] false  ;;
+    '(j,a) <- anno x (S i) [] false  ;;
     (* TODO: does ls matter here?  Should it be []? *)
-    ret (S j, (skipn 2 ls, aatt (i, S j) (firstn 2 ls) (req_loc,rpy_loc) p a))
+    ret (S j, aatt (i, S j) (firstn 2 ls) (req_loc,rpy_loc) p a)
 
   | lseq x y =>
-    '(j,(l',a)) <- anno x i ls b  ;;
-    '(k,(l'',bt)) <- anno y j l' b  ;;
-    ret (k, (l'', alseq (i, k) ls (*(lrange a ++ lrange bt)*) a bt))
+    '(j,a) <- anno x i (firstn (nss x) ls) b  ;;
+    '(k,bt) <- anno y j (skipn (nss x) ls ) b  ;;
+    ret (k, alseq (i, k) ls (*(lrange a ++ lrange bt)*) a bt)
  
   | bseq s x y =>
-    '(j,(l',a)) <- anno x (S i) ls b  ;;
-    '(k,(l'',bt)) <- anno y j l' b  ;;
-    ret (S k, (l'',abseq (i, S k) ls (*(lrange a ++ lrange bt)*) s a bt))
+    '(j,a) <- anno x (S i) (firstn (nss x) ls) b  ;;
+    '(k,bt) <- anno y j (skipn (nss x) ls ) b  ;;
+    ret (S k, abseq (i, S k) ls (*(lrange a ++ lrange bt)*) s a bt)
         
   | bpar s x y =>
     xlocs <- getTwoLocs ls b ;;
     ylocs <- getTwoLocs (skipn 2 ls) b ;;
-    '(j,(l',a)) <- anno x (S i) (skipn 4 ls) b  ;;
-    '(k,(l'',bt)) <- anno y j l' b  ;;
-    ret (S k, (l'', abpar (i, S k) ls xlocs ylocs s a bt))
+    '(j,a) <- anno x (S i) (firstn (nss x) (skipn 4 ls)) b  ;;
+    '(k,bt) <- anno y j (skipn (nss x) (skipn 4 ls)) b  ;;
+    ret (S k, abpar (i, S k) ls xlocs ylocs s a bt)
     (*(fst xlocs :: snd xlocs :: fst ylocs :: snd ylocs :: (lrange a) ++ (lrange bt))*)
   end.
 
-Definition anno' t i ls := fromSome (0, ([], aasp (0,0) [] CPY)) (anno t i ls true).
+Definition anno' t i ls := fromSome (0, aasp (0,0) [] CPY) (anno t i ls true).
 
 Definition annotated x ls :=
-  snd (snd (anno' x 0 ls)).
+  snd (anno' x 0 ls).
 
 Fixpoint unanno a :=
   match a with
@@ -540,8 +540,11 @@ Ltac asdf :=
 
 Ltac ff :=
   repeat (cbn in *;
-    repeat break_match; try solve_by_inversion;
-    repeat find_inversion ).
+          repeat break_match;
+          repeat find_inversion;
+          try solve_by_inversion).
+(*
+    repeat find_inversion ). *)
 
 Ltac ff' :=
   repeat (cbn in *;
@@ -616,7 +619,7 @@ Ltac jkjk' :=
 
 Ltac new_anno_eq :=
   match goal with
-  | [H: anno ?t ?i ?ls ?b = Some (?n, (?ls', ?a)),
-        H': anno ?t ?i ?ls2 ?b' = Some (?m, (?ls2', ?a')) |- _] =>
+  | [H: anno ?t ?i ?ls ?b = Some (?n, ?a) (* (?n, (?ls', ?a))*),
+        H': anno ?t ?i ?ls2 ?b' = Some (?m, ?a') (* (?m, (?ls2', ?a'))*) |- _] =>
     assert_new_proof_by (n = m) eauto
   end.
