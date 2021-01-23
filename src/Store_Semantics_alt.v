@@ -489,6 +489,13 @@ Proof.
       ff.
       unfold list_subset in *.
       ff.
+      repeat inv_se.
+      ++
+        ff'.
+      ++
+        ff'.
+        
+      
       (*
       
       assert (list_subset [xi; xi'; yi; yi'] l). admit.
@@ -520,11 +527,10 @@ Proof.
       unfold list_subset in *.
       ff.
 
-      inv H1.
+      repeat inv_se;
+        ff'.
+          
       ++
-        ff.
-      ++
-        ff.
         repeat (find_apply_hyp_hyp').
         tauto.
 Defined.

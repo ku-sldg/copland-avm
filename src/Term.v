@@ -1885,6 +1885,11 @@ Proof.
         invc H.
         +++
           unfold not in *.
+          (*
+          repeat (find_apply_hyp_hyp';
+                  try (econstructor; eauto; tauto)).
+           *)
+          
           apply H3.
           econstructor; eauto.
         +++

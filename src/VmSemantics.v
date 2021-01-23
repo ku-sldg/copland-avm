@@ -710,10 +710,11 @@ Proof.
   eapply cvm_refines_lts_event_ordering; eauto.
 Defined.
 
-Theorem cvm_respects_event_system : forall t tr ev0 ev1 e e' o o' t' ls ls' i n,
+Theorem cvm_respects_event_system : forall t tr ev0 ev1 e e' o o' t' ls i n,
     NoDup ls ->
+    length ls = nss t' ->
     (*t = annotated t' ls -> *)
-    anno t' i ls true = Some (n, (ls', t)) ->
+    anno t' i ls true = Some (n, t) ->
     copland_compile
       t
       (mk_st e [] 0 o) =
