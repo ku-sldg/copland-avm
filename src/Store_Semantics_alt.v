@@ -1,15 +1,18 @@
 Require Import Term_Defs Term StructTactics Event_system Term_system.
 
-Require Import Lia Coq.Program.Tactics.
+Require Import Lia Coq.Program.Tactics Coq.Program.Equality Coq.Arith.EqNat.
 
 Require Import List.
 Import List.ListNotations.
 
+Set Nested Proofs Allowed.
 
-Definition ev_sys_remote: AnnoTerm -> Plc -> EvSys Ev.
+(* 
+(ev_sys_remote t p q) represents (abstractly) the events that occur 
+at place q, originated by a request from place p for q to execute t *)
+Definition ev_sys_remote (t:Term) (p:Plc) (q:Plc): EvSys Ev.
 Admitted.
-
-           
+        
 Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
   match t with
   | aasp (i, j) lr x => leaf (i, j) (asp_event i x p)
@@ -18,7 +21,7 @@ Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
       (leaf (i, S i) (req i req_loc p q (unanno x)))
       (before (S i, j)
               (* (ev_sys x q) *)
-              (ev_sys_remote x q)
+              (ev_sys_remote (unanno x) p q)
               (leaf (pred j, j) (rpy (pred j) rpy_loc p q)))
   | alseq r lr x y => before r (ev_sys x p)
                           (ev_sys y p)
@@ -44,6 +47,12 @@ Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
                    (joinp (pred j) xi' yi' p)))
   end.
 
+(*
+Definition remote_event: Term -> Plc -> Ev.
+Admitted.
+*)
+
+
 Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
 | evtscpy:
     forall r lr i p,
@@ -65,10 +74,15 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
     forall r lr q t i p req_loc rpy_loc,
       fst r = i ->
       events (aatt r lr (req_loc, rpy_loc) q t) p (req i req_loc p q (unanno t))
-(* | evtsatt:
-    forall r lr q t ev p locs,
-      events t q ev ->
-      events (aatt r lr locs q t) p ev *)
+             (*
+| evtsatt:
+    forall r lr q t (*ev*) p locs,
+      events (aatt r lr locs q t) p (remote_event (unanno t) p)
+      (*events t q ev -> 
+      events (aatt r lr locs q t) p ev
+       *)
+*)
+      
 | evtsattrpy:
     forall r lr q t i p req_loc rpy_loc,
       snd r = S i ->
@@ -121,13 +135,13 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
 Hint Constructors events : core.
 
 
-Inductive store_event: Ev -> Loc -> Prop :=
-| put_event: forall i x p q t, store_event (req i x p q t) x
-| put_event_spl: forall i xi yi p, store_event (splitp i xi yi p) xi
-| put_event_spr: forall i xi yi p, store_event (splitp i xi yi p) yi
-| get_event: forall i x p q, store_event (rpy i x p q) x
-| get_event_joinpl: forall i xi yi p, store_event (joinp i xi yi p) xi
-| get_event_joinpr: forall i xi yi p, store_event (joinp i xi yi p) yi.
+Inductive store_event: Ev -> Plc -> Loc -> Prop :=
+| put_event: forall i x p q t, store_event (req i x p q t) p x
+| put_event_spl: forall i xi yi p, store_event (splitp i xi yi p) p xi
+| put_event_spr: forall i xi yi p, store_event (splitp i xi yi p) p yi
+| get_event: forall i x p q, store_event (rpy i x p q) p x
+| get_event_joinpl: forall i xi yi p, store_event (joinp i xi yi p) p xi
+| get_event_joinpr: forall i xi yi p, store_event (joinp i xi yi p) p yi.
 
 (*
 Lemma wf_mono_locs: forall t,
@@ -198,7 +212,7 @@ Ltac inv_ev2' :=
 
 Ltac inv_se :=
   match goal with
-  | [H: store_event (?C _) (*(req _ _ _ _ _)*) _ |- _] =>
+  | [H: store_event (?C _) (*(req _ _ _ _ _)*) _ _ |- _] =>
     invc H
          (*
   | [H: events (alseq _ _ _ _) _ _ |- _] =>
@@ -213,14 +227,10 @@ Ltac inv_se :=
 
 Ltac inv_store_ev2 :=
   match goal with
-  | [H: store_event _ _,
-     H': store_event _ _ |- _] =>
+  | [H: store_event _ _ _,
+     H': store_event _ _ _ |- _] =>
     invc H; invc H'
   end.
-
-Set Nested Proofs Allowed.
-
-Require Import Coq.Program.Equality Coq.Arith.EqNat.
 
 Lemma nodup_contra': forall ls ls' (loc:nat),
     NoDup (ls ++ ls') ->
@@ -329,7 +339,7 @@ Ltac nodup_contra_auto :=
 Lemma event_in_lrange: forall t p ev loc,
     well_formed t ->
     events t p ev ->
-    store_event ev loc ->
+    store_event ev p loc ->
     In loc (lrange t).
 Proof.
   intros.
@@ -350,7 +360,10 @@ Proof.
     
     
 
-    inv_ev; ff.
+    inv_ev'; ff.
+
+
+    
 
     (*
     ff;
@@ -489,10 +502,7 @@ Proof.
       ff.
       unfold list_subset in *.
       ff.
-      repeat inv_se.
-      ++
-        ff'.
-      ++
+      repeat inv_se;
         ff'.
         
       
@@ -538,18 +548,16 @@ Defined.
 Ltac t_in_lrange :=
   match goal with
   | [H: events ?t ?p ?ev,
-        H': store_event ?ev ?loc |- _] =>
+        H': store_event ?ev ?p ?loc |- _] =>
     assert_new_proof_by (In loc (lrange t)) ltac:(eapply event_in_lrange; eauto)
   end.
-
-
 
 Lemma unique_store_event_locs: forall t p ev ev' loc,
     well_formed t ->
     events t p ev ->
     events t p ev' ->
-    store_event ev loc ->
-    store_event ev' loc ->
+    store_event ev p loc ->
+    store_event ev' p loc ->
     ev = ev'.
 Proof.
   intros.
@@ -573,6 +581,7 @@ Proof.
     clear H13.
     clear H14.
      *)
+    
     
     inv_ev2;
       try solve_by_inversion;
@@ -614,59 +623,139 @@ Proof.
            tauto).
 Defined.
 
+(*
+Lemma evsys_reps: forall t p ev,
+  ev_in ev (ev_sys t p) ->
+  ev_in ev (Term_system.ev_sys t p).
+Proof.
+Admitted.
+
+Lemma events_reps: forall t p ev,
+  events t p ev ->
+  Term.events t p ev.
+Proof.
+Admitted.
+*)
+
+Definition store_event_evsys es p loc := exists ev, store_event ev p loc /\ ev_in ev es.
+
+Inductive store_conflict: Plc -> EvSys Ev -> Prop :=
+| store_conflict_merge: forall r p es1 es2 loc,
+    store_event_evsys es1 p loc ->
+    store_event_evsys es2 p loc ->
+    store_conflict p (merge r es1 es2)
+| store_conflict_before_l: forall r p es1 es2,
+    store_conflict p es1 ->
+    store_conflict p (before r es1 es2)
+| store_conflict_before_r: forall r p es1 es2,
+    store_conflict p es2 ->
+    store_conflict p (before r es1 es2).
+
+
+Axiom ev_sys_iff_remote: forall t n p0,
+    (ev_sys t n = ev_sys_remote (unanno t) p0 n).
+
+Axiom no_nested_at_store_conflict: forall t p q,
+    not (store_conflict p (ev_sys_remote t p q)).
+
+Axiom events_remote: forall t p q ev n n' l loc loc',
+    ev_in ev (ev_sys_remote (unanno t) p q) ->
+    events (aatt (n, n') l (loc, loc') q t) p ev.
+
 Lemma evsys_events:
   forall t p ev,
     well_formed_r t ->
     ev_in ev (ev_sys t p) <-> events t p ev.
 Proof.
-  (*
-  split; revert p; induction t; intros; inv H; simpl in *;
-    repeat expand_let_pairs; simpl in *.
+    split; revert p; induction t; intros; inv H; simpl in *;
+    repeat break_let; simpl in *.
   - inv H0; auto; destruct a; simpl; auto.
   - destruct p.
     rewrite H8 in H0; simpl in H0.
-    inv H0; auto. inv H2; auto. inv H2; auto. inv H1; auto.
+    repeat find_inversion.
+    inv H0; auto.
+
+    inv H3; auto. inv H3; auto.
+    +
+      apply events_remote; eauto.
+    +
+      inv H4; auto.
   - inv H0; auto.
     
   - rewrite H10 in H0; simpl in H0.
-    inv H0; inv H2; auto; inv H1; auto.
+
+    inv H0.
+
+    inv H3.
+    auto.
+
+    inv H3.
+
+    inv H3.
+
+    auto.
+
+    inv H4.
+    auto.
+
+   
+
+    inv H5.
+
+    auto.
+    auto.
+
+    inv H5.
+
+    inv H5.
+
+    auto.
+
+    inv H4.
+    inv H4.
+
+    auto.
     
   - destruct p; destruct p0.
     rewrite H12 in H0; simpl in H0.
-    inv H0; auto. inv H2; auto. inv H2; auto. inv H1; auto. inv H1; auto.
+    inv H0; auto. inv H3; auto. inv H3; auto. inv H4; auto. inv H4; auto.
   - inv H0; auto.
   - rewrite H8; simpl.
     inv H0; auto.
-    rewrite H11 in H8.
-    apply Nat.succ_inj in H8; subst; auto.
+    simpl in *.
+    (*
+    rewrite H11 in H8. *)
+    assert (snd (range t) = i) by lia.
+    subst.
+    auto.
+    (*
+    apply Nat.succ_inj in H13; subst; auto. *)
   - inv H0; auto.
   - rewrite H10; simpl.
     inv H0; auto.
-    rewrite H12 in H10.
-    apply Nat.succ_inj in H10; subst; auto.
+    simpl in H13.
+
+    assert (snd (range t2) = i) by lia.
+    subst.
+    auto.
+
+    
+    (*
+    rewrite H12 in H10. 
+    apply Nat.succ_inj in H10; subst; auto. *)
     
   - rewrite H12; simpl.
     inv H0; auto.
+    simpl in *.
+    assert (snd (range t2) = i) by lia.
+    subst.
+    auto.
+
+    (*
     rewrite H15 in H12.
-    apply Nat.succ_inj in H12; subst; auto.
+    apply Nat.succ_inj in H12; subst; auto. *)
+
 Qed.
-   *)
-Admitted.
-
-
-Definition store_event_evsys es loc := exists ev, store_event ev loc /\ ev_in ev es.
-
-Inductive store_conflict: EvSys Ev -> Prop :=
-| store_conflict_merge: forall r es1 es2 loc,
-    store_event_evsys es1 loc ->
-    store_event_evsys es2 loc ->
-    store_conflict (merge r es1 es2)
-| store_conflict_before_l: forall r es1 es2,
-    store_conflict es1 ->
-    store_conflict (before r es1 es2)
-| store_conflict_before_r: forall r es1 es2,
-    store_conflict es2 ->
-    store_conflict (before r es1 es2).
 
 Lemma wf_implies_wfr: forall t,
     well_formed t ->
@@ -689,8 +778,8 @@ Lemma unique_store_events': forall t p ev1 ev2 loc,
     well_formed t ->
     ev_in ev1 (ev_sys t p) ->
     ev_in ev2 (ev_sys t p) -> 
-    store_event ev1 loc ->
-    store_event ev2 loc ->
+    store_event ev1 p loc ->
+    store_event ev2 p loc ->
     ev1 <> ev2 ->
     False.
 Proof.
@@ -711,8 +800,8 @@ Defined.
 Lemma unique_store_events_corollary: forall t p ev1 ev2 loc,
     well_formed t ->
     ev_in ev1 (ev_sys t p) -> 
-    store_event ev1 loc ->
-    store_event ev2 loc ->
+    store_event ev1 p loc ->
+    store_event ev2 p loc ->
     ev1 <> ev2 ->
     not (ev_in ev2 (ev_sys t p)).
 Proof.
@@ -770,10 +859,54 @@ Proof.
     eauto.
 Defined.
 
+Lemma  evsys_range
+  : forall (t : AnnoTerm) (p : nat), es_range (ev_sys t p) = range t.
+Proof.
+  induction t; intros; simpl; auto;
+    repeat break_let; simpl; auto.
+Qed.
+
+(*
+Lemma ws_remote: forall t p0 ev n,
+    well_structured ev (ev_sys t p0) ->
+    well_structured ev (ev_sys_remote (unanno t) p0 n).
+Proof.
+Admitted.
+*)
+
+Lemma well_structured_evsys:
+  forall t p,
+    well_formed_r t ->
+    well_structured ev (ev_sys t p).
+Proof.
+  induction t; intros; inv H; simpl;
+    repeat break_let; destruct r as [i k];
+      simpl in *; subst; auto.
+  - apply ws_leaf_event; auto;
+      destruct a; simpl; auto.
+  - apply ws_before; simpl; auto.
+    rewrite H6.
+
+    assert (ev_sys t n = ev_sys_remote (unanno t) p0 n) as HH.
+    {
+      eapply ev_sys_iff_remote.
+    }
+    rewrite <- HH.
+
+    apply ws_before; simpl; auto; rewrite evsys_range; auto.
+    
+  - apply ws_before; auto; repeat rewrite evsys_range; auto.
+    
+  - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto).
+    
+  - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto).
+    repeat (apply ws_merge; simpl in *; auto; repeat rewrite evsys_range; auto).
+Qed.
+
 Theorem no_store_conflicts: forall t p sys,
     well_formed t ->
     sys = ev_sys t p ->
-    not (store_conflict sys).
+    not (store_conflict p sys).
 Proof.
   unfold not; intros.
   generalizeEverythingElse t.
@@ -785,12 +918,29 @@ Proof.
       subst;
       solve_by_inversion.
   -
+    destruct p.
+    destruct r.
+
+    (*
+    assert (p0 <> n). admit.
+     *)
+    
+
+    
+
+
+    
     ff.
     subst.
-    invc H1;
-      ff.
-    invc H2; ff.
-    admit.
+    invc H1; ff.
+    invc H3; ff.
+
+    
+
+    pose
+      no_nested_at_store_conflict.
+    unfold not in *.
+    eauto.
   -
     ff.
     subst.
@@ -805,19 +955,21 @@ Proof.
     +
       solve_by_inversion.
     +
-      inv H2.
+      inv H3.
       ++
-        inv H3;
+        inv H4;
           do_wf_pieces.
       ++
         solve_by_inversion.
   - assert (well_structured ev sys).
     {
+      rewrite H0.
+      eapply well_structured_evsys; eauto.
+      eapply wf_implies_wfr; eauto.
       (*
       rewrite H0.
       eapply well_structured_evsys.
       eassumption. *)
-      admit.
     }
     
     cbn in *;
@@ -826,26 +978,26 @@ Proof.
     inv H1;
       try solve_by_inversion.
     +
-      inv H3;
+      inv H4;
         try solve_by_inversion.
       ++       
-        inv H4;
+        inv H5;
           try solve_by_inversion.
         +++
           unfold store_event_evsys in *.
           destruct_conjs.
 
-          assert (ev_in H6 (merge (S n, Nat.pred n0) (ev_sys t1 p1) (ev_sys t2 p1))).
+          assert (ev_in H7 (merge (S n, Nat.pred n0) (ev_sys t1 p1) (ev_sys t2 p1))).
           {
             eauto.
           }
           
-          assert (ev_in H8 (merge (S n, Nat.pred n0) (ev_sys t1 p1) (ev_sys t2 p1))).
+          assert (ev_in H9 (merge (S n, Nat.pred n0) (ev_sys t1 p1) (ev_sys t2 p1))).
           {
             eauto.
           }
 
-          eapply unique_store_events' with (ev1:=H6) (ev2:=H8) (t:=(abpar (n, n0) l (n1,n2) (n3,n4) s t1 t2)) (p:=p1) (loc:=loc);
+          eapply unique_store_events' with (ev1:=H7) (ev2:=H9) (t:=(abpar (n, n0) l (n1,n2) (n3,n4) s t1 t2)) (p:=p1) (loc:=loc);
             try eassumption;
             try (simpl; eauto; tauto).
           ++++  
