@@ -11,7 +11,7 @@ University of California.  See license.txt for details. *)
 
 (** Copland specific event systems. *)
 
-Require Import Omega Preamble More_lists Term_Defs Term Event_system.
+Require Import Omega Preamble More_lists Defs Term_Defs Term Event_system.
 
 (** Construct an event system from an annotated term, place, and
     evidence. *)

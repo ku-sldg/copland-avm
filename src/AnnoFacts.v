@@ -1,4 +1,4 @@
-Require Import Term_Defs StructTactics Preamble Term_Facts.
+Require Import Defs List_Facts Term_Defs StructTactics Preamble Term_Facts.
 
 Require Import Lia.
 
@@ -12,6 +12,13 @@ Require Import Lists.List.
 
 Set Nested Proofs Allowed.
 
+Ltac same_index :=
+  match goal with
+  | [H: anno ?t _ _ _ = Some (?n, _),
+        H': anno ?t _ _ _ = Some (?n', _) |- _] =>
+    assert_new_proof_by (n = n') eauto
+  end.
+
 Lemma same_anno_range: forall t i l l2 a b n n' bo bo',
     anno t i l bo = Some (n,a) ->
     anno t i l2 bo' = Some (n',b) ->
@@ -20,27 +27,32 @@ Proof.
   intros.
   generalizeEverythingElse t.
   induction t; intros.
+    (* Full automation causes proof to take ~3x longer *)
+    (*
+    try
+      (destruct a;
+       ff; tauto);
+    try (ff; tauto);
+    try (
+        ff;
+        repeat (same_index; subst);
+        congruence).
+     *)
   -
-    destruct a;
-      ff.
+    destruct a; ff.
   -
     ff.
   -
     ff.
-    assert (n0 = n2) by eauto.
-    subst.
-    assert (n = n') by eauto.
-    tauto.
-  -
-     ff.
-
-    assert (n0 = n2) by eauto.
-    subst.
-    assert (n3 = n1) by eauto.
+    repeat (same_index; subst);
     congruence.
   -
     ff;
-      repeat (new_anno_eq; subst);
+    repeat (same_index; subst);
+    congruence.
+  -
+    ff;
+      repeat (same_index; subst);
       congruence.
  Defined.
   
@@ -48,42 +60,19 @@ Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm) (ls:LocRange) b,
   anno t i ls b = Some (j,t') ->
   j > i.
 Proof.
-  induction t; intros i j t' ls b H;
-    ff;
-    try destruct b;
+  induction t; intros; (*i j t' ls b H; *)
     ff;
     repeat find_apply_hyp_hyp;
     lia.
 Defined.
-(*
-    try (
-        simpl in *;
-        try destruct b;
-        repeat break_let;
-        repeat break_match;
-        try solve_by_inversion;
-        find_inversion;
-        repeat find_apply_hyp_hyp;
-        lia).
-Defined.
-*)
 Hint Resolve anno_mono : core.
 
 Lemma anno_range:
   forall x i j ls t' b,
      anno x i ls b = Some (j,t') ->
-    
     range (t') = (i, j).
 Proof.
   induction x; intros; ff.
-
-  (*
-    ff.
-    repeat expand_let_pairs;
-    repeat break_match;
-    try solve_by_inversion;
-    simpl; auto.
-*)
 Defined.
 
 Ltac haha :=
@@ -107,311 +96,11 @@ Ltac hehe'' :=
   | [x: Term, y:nat |- _] => pose_new_proof (anno_range x y)
   end.
 
-(*
-Lemma both_subsets: forall (ls ls': list nat),
-    NoDup ls ->
-    NoDup ls' ->
-    list_subset ls ls' ->
-    list_subset ls' ls ->
-    ls = ls'.
-Proof.
-
-(*
-
-  intros.
-  generalizeEverythingElse ls.
-  induction ls; destruct ls'; intros.
-  -
-    eauto.
-  -
-    ff.
-    unfold list_subset in *.
-
-    assert (In n []).
-    eapply H0.
-    econstructor; tauto.
-    solve_by_inversion.
-  -
-    ff.
-    unfold list_subset in *.
-    assert (In a []).
-    eapply H.
-    econstructor; tauto.
-    solve_by_inversion.
-  -
-    unfold list_subset in *.
-    edestruct incl_cons_inv.
-    apply H.
-
-    edestruct incl_cons_inv.
-    apply H0.
-
-    clear H; clear H0.
-
-    invc H1;
-      invc H3;
-      try solve_by_inversion.
-    +
-      assert (ls = ls').
-      {
-      eapply IHls.
-
-      Search (forall x y : nat, {x = y} + {x <> y}).
-      ++
-        eapply IHls.
-
-
-        
-        destruct (in_dec PeanoNat.Nat.eq_dec a ls).
-        +++
-          
-
-
-          
-          Lemma in_incl: forall (a:nat) ls ls',
-            In a ls ->
-            incl ls  (a :: ls') ->
-            incl ls' (a :: ls) ->
-            incl ls ls'.
-          Proof.
-            intros.
-            generalizeEverythingElse ls.
-            induction ls; destruct ls'; intros;
-
-              unfold incl in *; intros.
-            -
-              eauto.
-            -
-              
-              solve_by_inversion.
-            -
-              edestruct H0.
-              +
-                eassumption.
-              +
-                
-              subst.
-              
-              
-              
-            intros.
-            destruct (in_dec PeanoNat.Nat.eq_dec a ls');
-              destruct (in_dec PeanoNat.Nat.eq_dec a0 ls');
-              destruct (in_dec PeanoNat.Nat.eq_dec a ls);
-              destruct (in_dec PeanoNat.Nat.eq_dec a0 ls);
-              
-              destruct (PeanoNat.Nat.eq_dec a a0);
-              try (subst; tauto).
-            +
-              unfold not in *.
-
-              assert (In a0 (a :: ls')) by eauto.
-
-              invc H3;
-                try solve_by_inversion.
-            +
-              assert (In a0 (a :: ls')) by eauto.
-              assert (In a0 (a :: ls)) by eauto.
-
-
-              invc H3.
-              ++
-                subst.
-                admit.
-              ++
-                eauto.
-            +
-              unfold not in *.
-              assert (In a0 (a :: ls')) by eauto.
-
-              invc H3.
-              ++
-                tauto.
-              ++
-                eauto.
-                
-              
-                
-
-              
-              unfold not in *.
-              subst.
-
-              assert (In 
-              
-              
-              solve_by_inversion.
-              
-
-              
-              subst.
-              eauto.
-              
-            +
-              
-
-              
-            destruct (PeanoNat.Nat.eq_dec a a0).
-            -
-              subst.
-              specialize H0 with (a:=a0).
-              concludes.
-              invc H0.
-              admit.
-              eassumption.
-
-            
-            specialize H0 with (a0:=a0).
-            concludes.
-            inv H0.
-
-            
-          Admitted.
-          
-
-            eapply in_incl; eauto.
-
-      +++
-        unfold not in *.
-        admit.
-      ++
-        destruct (in_dec PeanoNat.Nat.eq_dec a ls').
-        +++
-          admit.
-        +++
-          unfold not in *.
-          admit.
-      ++
-        congruence.
-    +
-      assert (ls = ls').
-      eapply IHls.
-      ++
-        admit.
-      ++
-        admit.
-      ++
-        subst.
-        congruence.
-    +
-      assert (ls = ls').
-      eapply IHls.
-      ++
-        admit.
-      ++
-        admit.
-      ++
-        congruence.
-    +
-      assert (a = n).
-      {
-        admit.
-      }
-      subst.
-
-      assert (ls = ls').
-      {
-        eapply IHls.
-        +
-          admit.
-        +
-          admit.
-      }
-      congruence.
-      
-          
-          
-      
-      
-        
-        
-      
-        
-        
-        
-        
-
-      
-      
-
-      
-      admit.
-    +
-      admit.
-    +
-      admit.
-      
-      
-  -
-    
-      
-    
-      
-          
-        
-        
-      
-        
-
-    
-    assert (ls = ls').
-    eapply IHls.
-
-    edestruct incl_cons_inv.
-    apply H.
-
-    edestruct incl_cons_inv.
-    apply H0.
-
-    
-
-    eapply incl_cons.
-
-
-    
-
-    assert (a = n /\ list_subset ls ls'
-
-
-    
-    ff.
-    eauto.
-
-    unfold list_subset in *.
-
-    assert (In a (a0 :: ls')).
-    eapply H.
-    econstructor; tauto.
-
-    assert (In a0 (a :: ls)).
-    eapply H0.
-    econstructor; tauto.
-
-    assert (ls = ls').
-    eapply IHls.
-    intros.
-
-    
-
-    assert (In x (a :: ls)).
-    eapply H0.
-    
-    
-
-    assert (ls = ls').
-
-    unfold list_subset in *.
-    eauto.
-    
-    
-    
-    solve_by_inversion.
-    
-  unfold list_subset in *.
-*)
-Admitted.
-*)
-
+Ltac do_list_empty :=
+  match goal with
+    [H: length ?ls = 0 |- _] =>
+    assert_new_proof_by (ls = []) ltac:(destruct ls; solve_by_inversion)
+  end.
 
 Lemma anno_lrange:
   forall x i j ls t' b,
@@ -420,29 +109,11 @@ Lemma anno_lrange:
     list_subset ls (lrange t').
 Proof.
   induction x; intros;
-    try (
-        simpl in *; auto;
-        repeat break_match; try solve_by_inversion;
-        repeat find_inversion;
-        simpl in *;
-        repeat expand_let_pairs;
-        repeat break_match; try solve_by_inversion;
-        try unfold list_subset;
-        try unfold incl;
-        simpl in *; tauto).
-  -
-    destruct a;
-      simpl in *;
-      repeat expand_let_pairs;
-      repeat break_match;
-      find_inversion;
-      simpl;
-      assert (ls = []) by (destruct ls; solve_by_inversion);
-      congruence.
-  -
-    ff.
-    assert (l0 = []) by (destruct l0; solve_by_inversion);
-      congruence.
+    try (ff';
+         try do_list_empty;
+         ff';
+         try tauto;
+         congruence).
 Defined.
 
 Lemma anno_lrange'
@@ -470,158 +141,6 @@ Proof.
   - eapply anno_lrange; eauto.
 Defined.
 
-(*
-Lemma anno_lrange_eq
-  : forall (x : Term) (i j : nat) (ls : list nat) 
-      (ls' : LocRange) (t' : AnnoTerm),
-    length ls = nss x ->
-    anno x i ls true = Some (j, (ls', t')) ->
-    ls = (lrange t').
-Proof.
-  intros.
-  edestruct both_anno_lrange; eauto.
-  eapply both_subsets; eauto.
-Defined.
-*)
-
-(*
-Lemma lrange_anno_mono': forall (t:Term) (i j:nat) (t':AnnoTerm) (ls ls':LocRange),
-    length ls = nss t ->
-    anno t i ls = Some (j, (ls', t')) ->
-    length ls = length (lrange t') /\ list_subset ls' ls.
-    (* fst (lrange t') >= loc. *)
-Proof.
-*)
-
-
-(*
-Lemma anno_sub': forall t i ls n l a,
-    anno t i ls true = Some (n, (l, a)) ->
-    list_subset l ls.
-Proof.
-  intros.
-  generalizeEverythingElse t.
-  induction t; intros.
-  -
-    destruct a;
-    
-      ff';
-       eauto.
-  -
-    ff'.
-    (*
-    intros.
-    right.
-    right.
-    eauto.
-     *)
-
-    
-    (*
-    invc H.
-    right.
-    right.
-    econstructor. eauto.
-    solve_by_inversion. *)
-  -
-    ff.
-
-    
-      
-    unfold list_subset;
-      unfold incl.
-    intros.
-
-    assert (list_subset l l0) by eauto.
-
-    unfold list_subset in *; unfold incl in *.
-    specialize H0 with (a:=a).
-    concludes.
-
-    assert (forall x:nat, In x l0 -> In x ls).
-    {
-      eapply IHt1; eauto.
-    }
-    eauto.
-  -
-    ff.
-    unfold list_subset;
-      unfold incl.
-    intros.
-
-    assert (list_subset l l0) by eauto.
-
-    unfold list_subset in *;
-      unfold incl in *.
-    
-    specialize H0 with (a:=a).
-    concludes.
-
-    assert (forall x:nat, In x l0 -> In x ls).
-    {
-      eapply IHt1; eauto.
-    }
-    eauto.
-  -
-
-    ff.
-    unfold list_subset;
-      unfold incl.
-    intros.
-
-    assert (list_subset l l0) by eauto.
-
-    unfold list_subset in *;
-      unfold incl in *.
-    specialize H0 with (a:=a).
-    concludes.
-
-    assert (forall x:nat, In x l0 -> In x l5).
-    {
-      eapply IHt1; eauto.
-    }
-    right.
-    right.
-    right.
-    right.
-    eauto.
-Defined.
-*)
-
-
-(*
-Lemma anno_len:
-  forall t i j ls ls' t',
-    anno t i ls true = Some (j, (ls', t')) ->
-    length ls = anss t' + length ls'.
-Proof.
-  intros.
-  generalizeEverythingElse t.
-  induction t; intros.
-  -
-    destruct a;
-      ff.
-  -
-    ff.
-      
-  -
-    ff.
-    assert (length ls = anss a + length l) by eauto.
-    assert (length l = anss a0 + length ls') by eauto.
-    lia.
-  -
-    ff.
-    assert (length ls = anss a + length l) by eauto.
-    assert (length l = anss a0 + length ls') by eauto.
-    lia.
-  -
-    ff.
-    assert (length l4 = anss a + length l) by eauto.
-    assert (length l = anss a0 + length ls') by eauto.
-    lia.
-Defined.
-*)
-
 Lemma false_succeeds: forall t i ls,
     anno t i ls false = None ->
     False.
@@ -638,95 +157,17 @@ Lemma nss_iff_anss: forall t i ls n a b,
     anno t i ls b = Some (n,a) ->
     nss t = anss a.
 Proof.
-    intros.
+  intros.
   generalizeEverythingElse t.
-  induction t; intros.
-    -
-      destruct a;
-        ff.
-    -
-      ff.
-    -
-      ff.
-      eauto.
-    -
-      ff.
-      eauto.
-    -
-      ff.
+  induction t; intros;
+    try destruct a;
+    ff;
+    try eauto;
+    try (
+        repeat find_apply_hyp_hyp;
+        lia).
 
-      assert (nss t1 = anss a0) by eauto.
-      assert (nss t2 = anss a1) by eauto.
-      lia.
 
-      assert (nss t1 = anss a0) by eauto.
-      assert (nss t2 = anss a1) by eauto.
-      lia.
-
-      assert (nss t1 = anss a0) by eauto.
-      assert (nss t2 = anss a1) by eauto.
-      lia.
-
-      assert (nss t1 = anss a0) by eauto.
-      assert (nss t2 = anss a1) by eauto.
-      lia.
-
-      assert (nss t1 = anss a0) by eauto.
-      assert (nss t2 = anss a1) by eauto.
-      lia.
-Defined.
-
-Lemma firstn_fact: forall (ls: list nat) n,
-    length ls >= n ->
-    length (firstn n ls) = n.
-Proof.
-  apply firstn_length_le.
-Defined.
-
-Lemma firstn_fact': forall (ls:list nat) n,
-    length (firstn n ls) < n ->
-    length ls < n.
-Proof.
-  induction ls; intros; simpl.
-  -
-    rewrite firstn_nil in *.
-    tauto.
-  -
-    destruct n;
-      ff;
-      try (assert (length (firstn n ls) < n) by lia);
-      eauto.
-    +
-      assert (length ls < n) by eauto.
-      lia.
-Defined.
-
-Lemma firstn_factt: forall (ls:list nat) n,
-    length (firstn n ls) >= n ->
-    length (firstn n ls) = n.
-Proof.
-  intros.
-  assert (length (firstn n ls) <= n).
-  {
-    eapply firstn_le_length.
-  }
-  lia.
-Defined.
-
-Lemma firstn_skipn: forall (ls:list nat) n,
-    length ls = length (firstn n ls) + length (skipn n ls).
-Proof.
-  intros.
-  assert ( ls = 
-           (firstn n ls) ++ (skipn n ls)).
-  {
-    symmetry.
-    eapply firstn_skipn.
-  }
-
-  rewrite H at 1.
-  eapply app_length; eauto.
-Defined.
 
 Lemma anno_some_fact: forall t i ls n a,
     anno t i ls true = Some (n, a) ->
@@ -748,7 +189,7 @@ Proof.
     assert (length ls = length (firstn (nss t1) ls) +
                         length (skipn (nss t1) ls)).
     {
-      eapply firstn_skipn.
+      eapply firstn_skipn_len.
     }
     lia.
   -
@@ -760,7 +201,7 @@ Proof.
     assert (length ls = length (firstn (nss t1) ls) +
                         length (skipn (nss t1) ls)).
     {
-      eapply firstn_skipn.
+      eapply firstn_skipn_len.
     }
     lia.
   -
@@ -772,7 +213,7 @@ Proof.
     assert (length l2 = length (firstn (nss t1) l2) +
                         length (skipn (nss t1) l2)).
     {
-      eapply firstn_skipn.
+      eapply firstn_skipn_len.
     }
     lia.
 Defined.
@@ -807,7 +248,7 @@ Proof.
 
       assert (length ls = length (firstn (nss t1) ls) + length (skipn (nss t1) ls)).
       {
-        eapply firstn_skipn; eauto.
+        eapply firstn_skipn_len; eauto.
       }
       lia.
 
@@ -837,7 +278,7 @@ Proof.
 
       assert (length ls = length (firstn (nss t1) ls) + length (skipn (nss t1) ls)).
       {
-        eapply firstn_skipn; eauto.
+        eapply firstn_skipn_len; eauto.
       }
       lia.
 
@@ -868,7 +309,7 @@ Proof.
 
       assert (length l2 = length (firstn (nss t1) l2) + length (skipn (nss t1) l2)).
       {
-        eapply firstn_skipn; eauto.
+        eapply firstn_skipn_len; eauto.
       }
       lia.
     +
@@ -947,7 +388,7 @@ Proof.
 
       assert (length l = length (firstn (nss t1) l) + length (skipn (nss t1) l)).
       {
-        eapply firstn_skipn; eauto.
+        eapply firstn_skipn_len; eauto.
       }
       lia.
     +
@@ -964,7 +405,7 @@ Proof.
         (*
          assert (length l = length (firstn (nss t1) l) + length (skipn (nss t1) l)).
         {
-          eapply firstn_skipn; eauto.
+          eapply firstn_skipn_len; eauto.
         }
          *)
         assert (length l < nss t1).
@@ -1000,7 +441,7 @@ Proof.
 
         assert (length l = length (firstn (nss t1) l) + length (skipn (nss t1) l)).
         {
-          eapply firstn_skipn; eauto.
+          eapply firstn_skipn_len; eauto.
         }
         lia.
     +
@@ -1017,7 +458,7 @@ Proof.
         (*
          assert (length l = length (firstn (nss t1) l) + length (skipn (nss t1) l)).
         {
-          eapply firstn_skipn; eauto.
+          eapply firstn_skipn_len; eauto.
         }
          *)
         assert (length l < nss t1).
@@ -1054,7 +495,7 @@ Proof.
 
       assert (length l3 = length (firstn (nss t1) l3) + length (skipn (nss t1) l3)).
         {
-          eapply firstn_skipn; eauto.
+          eapply firstn_skipn_len; eauto.
         }
         lia.
     +
@@ -1165,7 +606,7 @@ Defined.
 
      assert (length ls = length (firstn (nss t1) ls) + length (skipn (nss t1) ls)).
         {
-          eapply firstn_skipn; eauto.
+          eapply firstn_skipn_len; eauto.
         }
     
         lia.
