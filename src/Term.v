@@ -1,4 +1,4 @@
-Require Import Defs Term_Defs AnnoFacts.
+Require Import Defs Term_Defs List_Facts AnnoFacts.
 Require Import Preamble More_lists StructTactics Term_Facts.
 
 Require Import Compare_dec Coq.Program.Tactics.
@@ -139,11 +139,31 @@ Ltac nodup_inv :=
     | [H: NoDup (_::_) |- _] => invc H
     end.
 
+(*
 Ltac inv_in :=
   match goal with
   | [H: In _ [_] |- _] =>
     invc H
   end.
+*)
+
+Ltac inv_in :=
+  repeat
+  match goal with
+  | [H: In _ (?C _) |- _] =>
+    invc H
+  end.
+
+Ltac do_nodup :=
+  repeat (
+      nodup_inv; inv_in;
+      ff;
+      nodup_inv; inv_in;
+      unfold not in *; try intro;
+      econstructor;
+      try intro;
+      inv_in;
+      try (conclude_using ltac:(econstructor; eauto))).
 
 Lemma nodup_lrange: forall t i ls n a,
     NoDup ls ->
@@ -151,25 +171,8 @@ Lemma nodup_lrange: forall t i ls n a,
     NoDup (lrange a).
 Proof.
   induction t; intros;
-    try (ff; try (econstructor); tauto).
-  -
-    ff.
-    nodup_inv.
-    unfold not in *; try intro.
-    econstructor;
-      try intro;
-      try inv_in;
-      try solve_by_inversion;
-      try (conclude_using ltac:(econstructor; eauto);
-           contradiction);
-        
-      try (
-          econstructor;
-          try solve_by_inversion;
-          try(econstructor; eauto; tauto)).
+    do_nodup.
 Defined.
-
-Require Import List_Facts.
 
 Lemma anno_firstn_nss: forall t i ls n a,
     anno t i (firstn (nss t) ls) true = Some (n, a) ->
@@ -711,6 +714,10 @@ Proof.
     
     eapply nodup_append.
     +
+      do_nodup.
+
+(*
+      
       nodup_inv.
       econstructor.
       ++
@@ -772,10 +779,10 @@ Proof.
           ++++
             econstructor; eauto.
             econstructor.
-
-    +
+ *)
       
 
+    +
       eapply nodup_append.
       ++
 
@@ -786,14 +793,8 @@ Proof.
           eauto.
         }
         
-        
-
-        eapply nodup_lrange.
-        eapply H.
-        eassumption.
-
+        eapply nodup_lrange; eauto.
       ++
-
         assert (NoDup (skipn (nss t1) l2)).
         {
           eapply nodup_skipn; eauto.
@@ -801,10 +802,8 @@ Proof.
           eauto.
         }
 
-        eapply nodup_lrange.
-        eapply H.
-        eassumption.
-      ++
+        eapply nodup_lrange; eauto.
+      ++  
         unfold disjoint_lists.
         intros.
 
@@ -831,15 +830,7 @@ Proof.
         }
 
         ff'.
-        
 
-        
-        
-
-
-        
-
-        ff'.
         specialize H5 with (a0:=x).
         specialize H6 with (a:= x).
 
@@ -853,12 +844,8 @@ Proof.
       unfold disjoint_lists.
       intros.
 
-      
-
       assert (list_subset (lrange a) l2).
-      {
-        
-        
+      {  
         assert (list_subset (firstn (nss t1) l2) l2).
         {
           eapply firstn_subset.
@@ -869,7 +856,6 @@ Proof.
           eapply anno_lrange'; eauto.
         }
         
-
         unfold list_subset in *.
         eapply incl_tran; eauto.
       }
@@ -886,8 +872,6 @@ Proof.
         {
           eapply anno_lrange'; eauto.
         }
-        
-
         unfold list_subset in *.
         eapply incl_tran; eauto.
       }
@@ -897,32 +881,55 @@ Proof.
         eapply list_subset_app; eauto.
       }
 
-      assert (In x l2).
-      {
-        ff'.
-      }
+      (*
+      ff'.
+
+      do 5 find_apply_hyp_hyp'; eauto.
+
+      do_nodup. *)
+
+      assert (In x l2) by ff'.
+      
+      do_nodup.
+
+      (*
 
       invc H.
+      
       ++
+        do_nodup.
+
+        (*
+        Print nodup_inv.
+        Check nodup_inv.
+        Locate nodup_inv.
         nodup_inv.
+        do_nodup.
+        Print do_nodup.
         unfold not in *.
         eapply H8.
         right.
         right.
         right.
-        eauto.
+        eauto. *)
       ++
+        do_nodup.
+
+        (*
         invc H7.
         +++
+          do_nodup.
+          (*
           nodup_inv.
           unfold not in *.
           eapply H7.
           
           right.
           right.
-          eauto.
+          eauto. *)
         +++
-          invc H.
+          invc H; do_nodup.
+          (*
           ++++
             nodup_inv.
             unfold not in *.
@@ -935,7 +942,11 @@ Proof.
               nodup_inv.
             eauto.
             +++++
-              solve_by_inversion.
+              solve_by_inversion. *)
+         *)
+         *)
+      
+        
 Defined.
 
 Lemma anno_well_formed':
