@@ -154,6 +154,85 @@ Ltac inv_in :=
     invc H
   end.
 
+
+
+
+
+Ltac do_mono :=
+  (* let asdff := eapply anno_mono; eauto in *)
+  match goal with
+  | [H: anno _ ?x _ _ = Some (?y,_) |- _] => assert_new_proof_by (y > x) ltac:(eapply anno_mono; eauto)
+  end.
+
+Ltac do_firstn_skipn_len :=
+  repeat
+    match goal with
+    | [H: context[firstn ?n ?ls],
+          H': context[skipn ?n' ?ls] |- _] =>
+      assert_new_proof_by (length ls = length (firstn n ls) + length (skipn n' ls)) ltac:(eapply firstn_skipn_len)
+    end.
+
+Ltac do_anno_some_fact :=
+  repeat
+    match goal with
+    | [H: anno ?t _ ?ls _ = Some (_,_) |- _] =>
+      assert_new_proof_by (length ls >= nss t) ltac:(eapply anno_some_fact; apply H)
+    end.
+
+Ltac do_firstn_factt :=
+  repeat
+    match goal with
+    | [H: length ?ls (*(firstn ?n ?ls)*) >= ?n |- _] =>
+      assert_new_proof_by (length ls (*(firstn n ls)*) = n)
+                          ltac:(try (eapply firstn_factt; apply H);
+                                try lia)
+    end.
+
+Ltac do_firstn_skipn :=
+  repeat
+    match goal with
+    | H:context [ firstn ?n ?ls ], H':context [ skipn ?n ?ls ]
+      |- _ =>
+      assert_new_proof_by (ls = firstn n ls ++ (skipn n ls))
+                          ltac:(try symmetry; eapply firstn_skipn)
+    end.
+
+Ltac do_nodup_firstn :=
+  repeat
+  match goal with
+  |[H: NoDup ?ls,
+       H': context [firstn ?n ?ls] |- _] =>
+   assert_new_proof_by (NoDup (firstn n ls))
+                       ltac:(eapply nodup_firstn; eauto)
+  end.
+
+Ltac do_nodup_skipn :=
+  repeat
+  match goal with
+  |[H: NoDup ?ls,
+       H': context [skipn ?n ?ls] |- _] =>
+   assert_new_proof_by (NoDup (skipn n ls))
+                       ltac:(eapply nodup_skipn; eauto)
+  end.
+
+Ltac do_nodup_contra :=
+  try
+  match goal with
+  |[H: In ?x ?ls,
+       H': In ?x ?ls',
+           H'': NoDup (?ls ++ ?ls') |- _] =>
+   exfalso; (eapply nodup_contra; [apply H | apply H' | apply H'']); tauto
+  end.
+
+Ltac list_facts :=
+  do_firstn_skipn_len;
+  do_anno_some_fact;
+  do_firstn_factt;
+  do_firstn_skipn;
+  do_nodup_firstn;
+  do_nodup_skipn;
+  do_nodup_contra.
+
 Ltac do_nodup :=
   repeat (
       nodup_inv; inv_in;
@@ -164,6 +243,16 @@ Ltac do_nodup :=
       try intro;
       inv_in;
       try (conclude_using ltac:(econstructor; eauto))).
+
+Ltac wf_hammer :=
+  ff;
+  do_nodup;
+  try (eapply anno_well_formed_r; eauto; tauto);
+  repeat do_mono;
+  repeat erewrite anno_range;
+  try tauto;
+  try lia;
+  eauto.
 
 Lemma nodup_lrange: forall t i ls n a,
     NoDup ls ->
@@ -183,6 +272,8 @@ Proof.
   eapply anno_some_fact; eauto.
 Defined.
 
+
+
 Lemma anno_well_formed:
   forall t i j ls t',
     length ls = nss t ->
@@ -197,75 +288,37 @@ Proof.
     ff.
   -
     ff.
-    econstructor.
-    eapply anno_well_formed_r; eauto.
-
-    simpl.
-
-    erewrite anno_range.
-    tauto.
-    eassumption.
-    simpl.
-
-    erewrite anno_range.
-    tauto.
-    eassumption.
-    simpl.
-
-    assert (n2 > S i).
-    {
-      eapply anno_mono; eauto.
-    }
-    lia.
-
-    simpl.
-    invc H0.
-    unfold not in *.
-    intros.
-    eapply H3.
-    subst.
-    econstructor; eauto.
-    simpl.
-    tauto.
-    simpl.
-    tauto.
+    econstructor;
+      wf_hammer.
   -
     ff.
 
-    assert (length (firstn (nss t1) ls) = nss t1).
-    {
-      assert (length (firstn (nss t1) ls) >= nss t1).
-      {
-        eapply anno_some_fact; eauto.
-      }
-      eapply firstn_factt; eauto.
-    }
-    econstructor.
+    list_facts.
 
-    eapply IHt1.
-    eassumption.
+    (*
 
-    eapply nodup_firstn; eauto.
-
-    eassumption.
-
-    assert (length (skipn (nss t1) ls) = nss t2).
-    {
-
-      assert (length ls = length (firstn (nss t1) ls) + length (skipn (nss t1) ls)).
-      {
-        eapply firstn_skipn_len.
-      }
-
-      lia.
-    }
-
-    eapply IHt2.
-    eassumption.
-
-    eapply nodup_skipn; eauto.
     
-    eassumption.
+
+    do_firstn_skipn_len;
+    do_anno_some_fact;
+    do_firstn_factt.
+
+
+
+    do_nodup_firstn;
+      do_nodup_skipn. *)
+
+    econstructor;
+      try (wf_hammer);
+      try (eauto; tauto).
+
+    (*
+
+    eapply IHt1; eassumption.
+
+    eapply IHt2;  eassumption.
+     *)
+    
 
     
 
@@ -291,27 +344,23 @@ Proof.
     eassumption.
     eassumption.
      *)
+
+
+    (*
+    wf_hammer.
+    wf_hammer.
+    wf_hammer.
+     *)
+
+
     
-
-    simpl.
-    erewrite anno_range.
-    tauto.
-    eassumption.
-
-    repeat erewrite anno_range.
-    tauto.
-    eassumption.
-    eassumption.
-
-    simpl.
-    erewrite anno_range.
-    tauto.
-    eassumption.
 
     (*
 
     eapply anno_lrange'; eauto.
      *)
+
+    
 
     assert (list_subset (firstn (nss t1) ls) ls).
     {
@@ -319,10 +368,75 @@ Proof.
     }
 
     unfold list_subset in *.
-    eapply incl_tran; eauto.
+
+    (*
+    Ltac copy_eapply lem H :=
+      let x := fresh in
+      pose proof H as x;
+      eapply lem in x.
+
+    Ltac find_eapply_lem_hyp lem :=
+      match goal with
+      | [ H : _ |- _ ] =>
+        let x := fresh in
+        pose proof H as x;
+        eapply lem in x
+      end.
+     *)
     
 
+
+        eapply incl_tran; [ try (*(find_eapply_lem_hyp anno_lrange';*) eassumption | eassumption];
+      eapply anno_lrange'; eauto.
+
+
+        (*
     eapply anno_lrange'; eauto.
+
+
+    eapply incl_tran.
+
+    
+
+
+
+    
+        try find_eapply_lem_hyp anno_lrange';
+        eapply incl_tran; [try eassumption | try eassumption]).
+
+    
+
+
+    
+
+    eapply incl_tran;
+      try eauto;
+      repeat (
+
+    find_eapply_lem_hyp anno_lrange';
+      try (eauto; tauto)).
+    
+
+    eapply incl_tran;
+      repeat (
+        find_eapply_lem_hyp anno_lrange';
+        try eassumption;
+       try (eauto; tauto)
+      ).
+      
+    find_eapply_lem_hyp anno_lrange'.
+
+    Ltac do_anno_lrange
+
+    eapply incl_tran; [eapply anno_lrange'; eauto | eauto].
+
+    
+    eapply incl_tran; eauto.
+    eapply anno_lrange'; eauto.
+*)
+
+
+    
 
     assert (list_subset (skipn (nss t1) ls) ls).
     {
@@ -330,10 +444,12 @@ Proof.
     }
 
     unfold list_subset in *.
-    eapply incl_tran; eauto.
-    
 
-    eapply anno_lrange'; eauto.
+    eapply incl_tran; try eassumption;
+      eapply anno_lrange'; eauto.
+
+
+    
 
     assert (list_subset (lrange a) (firstn (nss t1) ls)).
     {
@@ -352,45 +468,301 @@ Proof.
       eapply nodup_firstn; eauto.
     }
     
-    
-
-    eapply nodup_lrange.
-    eapply H4.
-    eassumption.
+    eapply nodup_lrange; eassumption.
 
     assert (NoDup (skipn (nss t1) ls)).
     {
       eapply nodup_skipn; eauto.
     }
 
-    eapply nodup_lrange.
-    eapply H4.
-    eassumption.
+    eapply nodup_lrange; eassumption.
 
     unfold disjoint_lists.
     intros.
+
+    ff.
+
+    (*
+
+    do_firstn_skipn;
+
+    do_anno_some_fact;
+    
+    do_firstn_factt. *)
+
+    (*
 
     assert (ls = (firstn (nss t1) ls) ++ (skipn (nss t1) ls)).
     {
       symmetry.
       eapply firstn_skipn.
     }
-    assert (NoDup (firstn (nss t1) ls ++ skipn (nss t1) ls)).
-    {
-      rewrite <- H6.
-      eauto.
-    }
+     *)
+
+    assert (NoDup (firstn (nss t1) ls ++ skipn (nss t1) ls)) by congruence.
 
     ff'.
-    specialize H2 with (a0:=x).
-    specialize H3 with (a:= x).
+    repeat find_apply_hyp_hyp.
+    list_facts.
+    (*
+    specialize H6 with (a0:=x).
+    specialize H7 with (a:= x). *)
 
-    repeat concludes.
 
-    eapply nodup_contra.
-    apply H2.
-    apply H3.
-    eauto.
+
+
+
+
+
+
+
+
+
+
+  -
+    ff.
+
+    list_facts.
+
+    (*
+
+    
+
+    do_firstn_skipn_len;
+    do_anno_some_fact;
+    do_firstn_factt.
+
+
+
+    do_nodup_firstn;
+      do_nodup_skipn. *)
+
+    econstructor;
+      try (wf_hammer);
+      try (eauto; tauto).
+
+    (*
+
+    eapply IHt1; eassumption.
+
+    eapply IHt2;  eassumption.
+     *)
+    
+
+    
+
+    (*
+    eapply IHt1; try eauto.
+
+    lia.
+
+
+
+    assert (NoDup l).
+    {
+      eapply nodup_anno; eauto.
+    }
+    assert (length l >= nss t2).
+    {
+      admit.
+    }
+    
+
+    eapply IHt2.
+    eassumption.
+    eassumption.
+    eassumption.
+     *)
+
+
+    (*
+    wf_hammer.
+    wf_hammer.
+    wf_hammer.
+     *)
+
+
+    
+
+    (*
+
+    eapply anno_lrange'; eauto.
+     *)
+
+    
+
+    assert (list_subset (firstn (nss t1) ls) ls).
+    {
+      eapply firstn_subset; eauto.
+    }
+
+    unfold list_subset in *.
+
+    (*
+    Ltac copy_eapply lem H :=
+      let x := fresh in
+      pose proof H as x;
+      eapply lem in x.
+
+    Ltac find_eapply_lem_hyp lem :=
+      match goal with
+      | [ H : _ |- _ ] =>
+        let x := fresh in
+        pose proof H as x;
+        eapply lem in x
+      end.
+     *)
+    
+
+
+        eapply incl_tran; [ try (*(find_eapply_lem_hyp anno_lrange';*) eassumption | eassumption];
+      eapply anno_lrange'; eauto.
+
+
+        (*
+    eapply anno_lrange'; eauto.
+
+
+    eapply incl_tran.
+
+    
+
+
+
+    
+        try find_eapply_lem_hyp anno_lrange';
+        eapply incl_tran; [try eassumption | try eassumption]).
+
+    
+
+
+    
+
+    eapply incl_tran;
+      try eauto;
+      repeat (
+
+    find_eapply_lem_hyp anno_lrange';
+      try (eauto; tauto)).
+    
+
+    eapply incl_tran;
+      repeat (
+        find_eapply_lem_hyp anno_lrange';
+        try eassumption;
+       try (eauto; tauto)
+      ).
+      
+    find_eapply_lem_hyp anno_lrange'.
+
+    Ltac do_anno_lrange
+
+    eapply incl_tran; [eapply anno_lrange'; eauto | eauto].
+
+    
+    eapply incl_tran; eauto.
+    eapply anno_lrange'; eauto.
+*)
+
+
+    
+
+    assert (list_subset (skipn (nss t1) ls) ls).
+    {
+      eapply skipn_subset; eauto.
+    }
+
+    unfold list_subset in *.
+
+    eapply incl_tran; try eassumption;
+      eapply anno_lrange'; eauto.
+
+
+    
+
+    assert (list_subset (lrange a) (firstn (nss t1) ls)).
+    {
+      eapply anno_lrange'; eauto.
+    }
+
+    assert (list_subset (lrange a0) (skipn (nss t1) ls)).
+    {
+      eapply anno_lrange'; eauto.
+    }
+
+    eapply nodup_append.
+
+    assert (NoDup (firstn (nss t1) ls)).
+    {
+      eapply nodup_firstn; eauto.
+    }
+    
+    eapply nodup_lrange; eassumption.
+
+    assert (NoDup (skipn (nss t1) ls)).
+    {
+      eapply nodup_skipn; eauto.
+    }
+
+    eapply nodup_lrange; eassumption.
+
+    unfold disjoint_lists.
+    intros.
+
+    ff.
+
+    (*
+
+    do_firstn_skipn;
+
+    do_anno_some_fact;
+    
+    do_firstn_factt. *)
+
+    (*
+
+    assert (ls = (firstn (nss t1) ls) ++ (skipn (nss t1) ls)).
+    {
+      symmetry.
+      eapply firstn_skipn.
+    }
+     *)
+
+    assert (NoDup (firstn (nss t1) ls ++ skipn (nss t1) ls)) by congruence.
+
+    ff'.
+    repeat find_apply_hyp_hyp.
+    list_facts.
+    (*
+    specialize H6 with (a0:=x).
+    specialize H7 with (a:= x). *)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
   -
 
     ff.
