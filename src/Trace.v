@@ -333,17 +333,20 @@ Proof.
       inv H1; try inv H.
       destruct x; constructor; auto. *)
     +
-      
+      inv_in.
+      (*
       
 
-      inv H1.
+      inv H1. *)
       constructor; auto.
       rewrite in_app_iff in *.
       destruct_disjunct.
       eauto.
-      
 
-      invc H2; try solve_by_inversion.
+      inv_in; try solve_by_inversion.
+      
+(*
+      invc H2; try solve_by_inversion. *)
       apply evtsattrpy.
       lia.
 
@@ -927,7 +930,10 @@ Proof.
       * apply IHtrace2 in H7; auto.
         rewrite in_app_iff.
         right; rewrite in_app_iff; auto. *)
-    + inv H4; auto.
+    +
+      do_evin; auto.
+      (*
+      inv H4; auto. *)
       (repeat rewrite in_app_iff; right).
       right.
       left.
@@ -991,6 +997,20 @@ Proof.
       (*
       apply in_app_iff; right; simpl; auto. *)
 Qed.
+
+
+(*
+Ltac inv_step :=
+  match goal with
+  | H:step (?C _) _ _ |- _ => inv H
+  end.
+
+
+Ltac inv_traceS' :=
+  match goal with
+  | H:traceS _ _ |- _ => inv H
+  end.
+*)
 
 Ltac inv_prec :=
   match goal with
@@ -1089,7 +1109,11 @@ Proof.
     (*
 
     inv H12; inv H11. *)
-    + inv H3.
+    +
+      do_evin.
+      (*
+
+      inv H3. *)
       *
         find_eapply_lem_hyp evsys_tr_in; eauto.
         (*
