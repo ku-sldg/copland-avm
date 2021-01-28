@@ -267,14 +267,14 @@ Inductive trace: AnnoTerm -> Plc ->
           ((Term_Defs.split (fst r) p)
              :: tr0 ++ tr1 ++
              [(join (pred (snd r)) p)])
-| tbpar: forall r lr s x y p tr0 tr1 tr2 xi xi' yi yi',
+| tbpar: forall r lr s x y p tr0 tr1 tr2 (*xi xi'*) yi yi',
     trace x p tr0 ->
     trace y p tr1 ->
     shuffle tr0 tr1 tr2 ->
-    trace (abpar r lr (xi,xi') (yi,yi') s x y) p
-          ((splitp (fst r) xi yi p)
+    trace (abpar r lr (*(xi,xi')*) (yi,yi') s x y) p
+          ((splitp (fst r) (*xi*) yi p)
              :: tr2 ++
-             [(joinp (pred (snd r)) xi' yi' p)]).
+             [(joinp (pred (snd r)) (*xi'*) yi' yi' p)]).
 Hint Resolve tasp : core.
 
 Lemma trace_length:

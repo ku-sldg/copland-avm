@@ -125,10 +125,10 @@ Inductive step: St -> option Ev -> St -> Prop :=
 (** Branching Parallel composition *)
 
 | stbpar:
-    forall r lr s x y p e xi xi' yi yi',
-      step (conf (abpar r lr (xi,xi') (yi,yi') s x y) p e)
-           (Some (splitp (fst r) xi yi p))
-           (bp (snd r) xi' yi'
+    forall r lr s x y p e (*xi xi'*) yi yi',
+      step (conf (abpar r lr (*(xi,xi')*) (yi,yi') s x y) p e)
+           (Some (splitp (fst r) (*xi*) yi p))
+           (bp (snd r) (*xi'*) yi' yi'
                (conf x p (splitEv_T (fst s) e))
                (conf y p (splitEv_T (snd s) e)))
 | stbpstepleft:
@@ -383,7 +383,9 @@ Proof.
     apply star_stbsr.
     apply IHt2.
     eapply star_tran; eauto.
-  - destruct p; destruct p0.
+  -
+    repeat dest_range.
+    (*destruct p; destruct p0. *)
     eapply star_tran; eauto.
     eapply star_transitive.
     apply star_stbp.
@@ -413,7 +415,7 @@ Proof.
     + exists (Some (asp_event (fst r) a n)).
       eapply ex_intro; eauto.
     + exists (Some (req (fst r) (fst p) n n0 (unanno a))).
-      destruct p.
+      repeat dest_range.
       eapply ex_intro; eauto.
     + exists None.
       eapply ex_intro; eauto.
@@ -421,8 +423,9 @@ Proof.
     + exists (Some (split (fst r) n)).
       eapply ex_intro; eauto.
       
-    + exists (Some (splitp (fst r) (fst p) (fst p0) n)).
-      destruct p; destruct p0.
+    + exists (Some (splitp (fst r) (fst p) (*(fst p0)*) n)).
+      (*destruct p; destruct p0. *)
+      repeat dest_range.
       eapply ex_intro; eauto.
   - right.
     destruct IHst0.
@@ -534,7 +537,7 @@ Fixpoint tsize t: nat :=
   | aatt _ _ _ _ x => 2 + tsize x
   | alseq _ _ x y => 2 + tsize x + tsize y
   | abseq _ _ _ x y => 3 + tsize x + tsize y
-  | abpar _ _ _ _ _ x y => 2 + tsize x + tsize y
+  | abpar _ _ _ _ x y => 2 + tsize x + tsize y
   end.
 
 (** Size of a state (number of steps to reduce). *)

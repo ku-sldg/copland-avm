@@ -44,16 +44,16 @@ Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
                            (ev_sys y p))
                    (leaf ((pred j), j)
                    (join (pred j) p)))
-  | abpar (i, j) lr (xi,xi') (yi,yi') s x y =>
+  | abpar (i, j) lr (*(xi,xi')*) (yi,yi') s x y =>
     before (i, j)
            (leaf (i, S i)
-                 (splitp i xi yi p))
+                 (splitp i (*xi*) yi p))
            (before (S i, j)
                    (merge (S i, (pred j))
                           (ev_sys x p)
                           (ev_sys y p))
                    (leaf ((pred j), j)
-                   (joinp (pred j) xi' yi' p)))
+                   (joinp (pred j) (*xi'*) yi' yi' p)))
   end.
 
 Lemma evsys_range:

@@ -1,6 +1,6 @@
 Require Import Defs List_Facts Term_Defs StructTactics Preamble Term_Facts.
 
-Require Import Lia.
+Require Import Lia Coq.Program.Tactics.
 
 Require Import List.
 Import List.ListNotations.
@@ -166,8 +166,18 @@ Proof.
     try (
         repeat find_apply_hyp_hyp;
         lia).
+Defined.
 
-
+Ltac list_facts' :=
+  do_firstn_skipn_len;
+  (*do_anno_some_fact; *)
+  do_firstn_factt;
+  do_firstn_skipn;
+  nodup_list_firstn;
+  nodup_list_skipn;
+  do_nodup_firstn;
+  do_nodup_skipn;
+  do_nodup_contra.
 
 Lemma anno_some_fact: forall t i ls n a,
     anno t i ls true = Some (n, a) ->
@@ -182,41 +192,77 @@ Proof.
     lia.
   -
     ff.
+    list_facts'.
+    
     assert (length ((firstn (nss t1) ls)) >= nss t1) by eauto.
-
     assert (length (skipn (nss t1) ls) >= nss t2) by eauto.
+
+    (*
+
+    assert (length ls = length (firstn (nss t1) ls) +
+                        length (skipn (nss t1) ls)).
+    {
+      eapply firstn_skipn_len.
+    } *)
+    lia.
+  -
+    ff.
+    list_facts'.
+    assert (length ((firstn (nss t1) ls)) >= nss t1) by eauto.
+    assert (length (skipn (nss t1) ls) >= nss t2) by eauto.
+    lia.
+
+  (*
 
     assert (length ls = length (firstn (nss t1) ls) +
                         length (skipn (nss t1) ls)).
     {
       eapply firstn_skipn_len.
     }
-    lia.
+    lia. *)
   -
-     ff.
-    assert (length ((firstn (nss t1) ls)) >= nss t1) by eauto.
+    ff.
+    +
+      
+      list_facts'.
+      assert (length ((firstn (nss t1) l0)) >= nss t1) by eauto.
+      assert (length (skipn (nss t1) l0) >= nss t2) by eauto.
+      ff.
+      lia.
 
-    assert (length (skipn (nss t1) ls) >= nss t2) by eauto.
+      (*
 
-    assert (length ls = length (firstn (nss t1) ls) +
-                        length (skipn (nss t1) ls)).
-    {
-      eapply firstn_skipn_len.
-    }
-    lia.
-  -
-     ff.
-    assert (length ((firstn (nss t1) l2)) >= nss t1) by eauto.
-
-    assert (length (skipn (nss t1) l2) >= nss t2) by eauto.
-
-    assert (length l2 = length (firstn (nss t1) l2) +
-                        length (skipn (nss t1) l2)).
-    {
-      eapply firstn_skipn_len.
-    }
-    lia.
+    +
+      list_facts'.
+      assert (length ((firstn (nss t1) [])) >= nss t1) by eauto.
+      assert (length (skipn (nss t1) []) >= nss t2) by eauto.
+      ff.
+      lia.
+    +
+      list_facts'.
+      assert (length ((firstn (nss t1) l2)) >= nss t1) by eauto.
+      assert (length (skipn (nss t1) l2) >= nss t2) by eauto.
+      ff.
+      lia. *)
 Defined.
+
+Ltac do_anno_some_fact :=
+  repeat
+    match goal with
+    | [H: anno ?t _ ?ls _ = Some (_,_) |- _] =>
+      assert_new_proof_by (length ls >= nss t) ltac:(eapply anno_some_fact; apply H)
+    end.
+
+Ltac list_facts :=
+  do_firstn_skipn_len;
+  do_anno_some_fact;
+  do_firstn_factt;
+  do_firstn_skipn;
+  nodup_list_firstn;
+  nodup_list_skipn;
+  do_nodup_firstn;
+  do_nodup_skipn;
+  do_nodup_contra.
 
 Lemma list_too_short: forall t i ls,
       anno t i ls true = None ->
@@ -233,8 +279,15 @@ Proof.
     eapply false_succeeds; eauto.
   -
     ff.
-    +    
+    list_facts.
+    
+    +
+
+      
       assert (length (skipn (nss t1) ls) < nss t2) by eauto.
+      lia.
+
+      (*
 
       assert (length (firstn (nss t1) ls) >= nss t1).
       {
@@ -250,10 +303,11 @@ Proof.
       {
         eapply firstn_skipn_len; eauto.
       }
-      lia.
+      lia. *)
 
     +
       assert (length (firstn (nss t1) ls) < nss t1) by eauto.
+      
 
       assert (length ls < (nss t1)).
       {
@@ -262,9 +316,12 @@ Proof.
 
       lia.
   -
-        ff.
+    ff.
+    list_facts.
     +    
       assert (length (skipn (nss t1) ls) < nss t2) by eauto.
+      lia.
+      (*
 
       assert (length (firstn (nss t1) ls) >= nss t1).
       {
@@ -280,7 +337,7 @@ Proof.
       {
         eapply firstn_skipn_len; eauto.
       }
-      lia.
+      lia. *)
 
     +
       assert (length (firstn (nss t1) ls) < nss t1) by eauto.
@@ -293,11 +350,20 @@ Proof.
       lia.
   -
     ff;
-      try lia.
-    +
-      assert (length (skipn (nss t1) l2) < nss t2) by eauto.
+      try (
+      list_facts;
+      lia).
 
-      assert (length (firstn (nss t1) l2) = (nss t1)).
+      
+    +
+      list_facts.
+      assert (length (skipn (nss t1) l0) < nss t2) by eauto.
+      ff.
+      lia.
+
+      (*
+
+      assert (length (firstn (nss t1) []) = (nss t1)).
       {
         assert (length (firstn (nss t1) l2) >= (nss t1)).
         {
@@ -311,19 +377,18 @@ Proof.
       {
         eapply firstn_skipn_len; eauto.
       }
-      lia.
+      lia. *)
     +
 
-      assert (length (firstn (nss t1) l2) < nss t1) by eauto.
-
-      assert (length l2 < nss t1).
+      assert (length (firstn (nss t1) l0) < nss t1) by eauto.
+      ff.
+      assert (nss t1 > length l0).
       {
         eapply firstn_fact'; eauto.
       }
+      
       lia.
 Defined.
-
-Require Import Coq.Program.Tactics.
 
 Lemma anno_some: forall t i l b,
   length l = nss t ->
@@ -477,39 +542,44 @@ Proof.
              eauto; tauto).
       ++
       
-      assert (length (skipn (nss t1) l3) < nss t2).
+      assert (length (skipn (nss t1) l1) < nss t2).
       {
         eapply list_too_short; eauto.
       }
 
-      assert (length (firstn (nss t1) l3) = nss t1).
+      assert (length (firstn (nss t1) l1) = nss t1).
       {
 
-        assert (length (firstn (nss t1) l3) >= nss t1).
+        assert (length (firstn (nss t1) l1) >= nss t1).
         {
           eapply anno_some_fact; eauto.
         }
 
         eapply firstn_factt; eauto.
       }
+      list_facts.
+
+      lia.
+
+      (*
 
       assert (length l3 = length (firstn (nss t1) l3) + length (skipn (nss t1) l3)).
         {
           eapply firstn_skipn_len; eauto.
         }
-        lia.
+        lia. *)
     +
        destruct b;
         try (exfalso;
              eapply false_succeeds;
              eauto; tauto).
        ++
-         assert (length (firstn (nss t1) l3) < nss t1).
+         assert (length (firstn (nss t1) l1) < nss t1).
          {
            eapply list_too_short; eauto.
          }
 
-         assert (length l3 < nss t1).
+         assert (length l1 < nss t1).
          {
            eapply firstn_fact'; eauto.
          }
@@ -521,9 +591,10 @@ Proof.
         ff.
       ++
         ff.
+        (*
     +
       destruct b;
-        ff.
+        ff. *)
       Unshelve.
       eauto.
       eauto.
@@ -562,7 +633,6 @@ Lemma lrange_nss: forall t i ls  n a,
     anno t i ls true = Some (n, a) ->
     length (lrange a) = nss t. (* + length ls'. *)
 Proof.
-
   intros.
   generalizeEverythingElse t.
   induction t; intros;
@@ -969,45 +1039,7 @@ Proof.
       simpl.
       lia.
 
-            econstructor.
-      eauto.
-      eauto.
-
-      simpl.
-      erewrite anno_range.
-      Focus 2.
-      eassumption.
-      tauto.
-
-      simpl.
-      erewrite anno_range.
-      Focus 2.
-      eassumption.
-      simpl.
-      erewrite anno_range.
-      Focus 2.
-      eassumption.
-      tauto.
-
-      simpl.
-      erewrite anno_range.
-      Focus 2.
-      eassumption.
-      tauto.
-
-       assert (n > (S i)) by (eapply anno_mono; eauto).
-
-      assert (n0 > n) by (eapply anno_mono; eauto).
-
-      repeat erewrite anno_range.
-      Focus 2.
-      eassumption.
-      Focus 2.
-      eassumption.
-
-      simpl.
-      lia.
-
+      (*
 
             econstructor.
       eauto.
@@ -1047,4 +1079,44 @@ Proof.
 
       simpl.
       lia.
+
+
+            econstructor.
+      eauto.
+      eauto.
+
+      simpl.
+      erewrite anno_range.
+      Focus 2.
+      eassumption.
+      tauto.
+
+      simpl.
+      erewrite anno_range.
+      Focus 2.
+      eassumption.
+      simpl.
+      erewrite anno_range.
+      Focus 2.
+      eassumption.
+      tauto.
+
+      simpl.
+      erewrite anno_range.
+      Focus 2.
+      eassumption.
+      tauto.
+
+       assert (n > (S i)) by (eapply anno_mono; eauto).
+
+      assert (n0 > n) by (eapply anno_mono; eauto).
+
+      repeat erewrite anno_range.
+      Focus 2.
+      eassumption.
+      Focus 2.
+      eassumption.
+
+      simpl.
+      lia. *)
 Defined.

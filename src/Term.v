@@ -37,8 +37,8 @@ Proof.
   tauto.
 Defined.
 
-Lemma wf_bpar_pieces: forall r lr xlocs ylocs s t1 t2,
-    well_formed (abpar r lr xlocs ylocs s t1 t2) ->
+Lemma wf_bpar_pieces: forall r lr (*xlocs*) ylocs s t1 t2,
+    well_formed (abpar r lr (*xlocs*) ylocs s t1 t2) ->
     well_formed t1 /\ well_formed t2.
 Proof.
   intros.
@@ -55,7 +55,7 @@ Ltac do_wf_pieces :=
       by (eapply wf_at_pieces; eauto)
   | [H: well_formed (abseq _ _ _ _ _) |- _] =>
     (edestruct wf_bseq_pieces; eauto)
-  | [H: well_formed (abpar _ _ _ _ _ _ _) |- _] =>
+  | [H: well_formed (abpar _ _ _ _ _ _) |- _] =>
     (edestruct wf_bpar_pieces; eauto)     
   end.
 
@@ -117,13 +117,6 @@ Ltac do_mono :=
   | [H: anno _ ?x _ _ = Some (?y,_) |- _] => assert_new_proof_by (y > x) ltac:(eapply anno_mono; eauto)
   end.
 
-Ltac do_anno_some_fact :=
-  repeat
-    match goal with
-    | [H: anno ?t _ ?ls _ = Some (_,_) |- _] =>
-      assert_new_proof_by (length ls >= nss t) ltac:(eapply anno_some_fact; apply H)
-    end.
-
 Lemma asp_lrange_irrel: forall a i l l2 a0 a1 n n' b,
     anno (asp a) i l b = Some (n, a0) ->
     anno (asp a) i l2 b= Some (n',a1) ->
@@ -133,6 +126,7 @@ Proof.
   destruct a; ff.
 Defined.
 
+(*
 Ltac list_facts :=
   do_firstn_skipn_len;
   do_anno_some_fact;
@@ -143,6 +137,8 @@ Ltac list_facts :=
   do_nodup_firstn;
   do_nodup_skipn;
   do_nodup_contra.
+ *)
+Locate list_facts.
 
 Ltac wf_hammer :=
   ff;
@@ -325,7 +321,7 @@ Proof.
       try (ff'; eauto; tauto).
 
     +
-    assert (list_subset (firstn (nss t1) l2) l2).
+    assert (list_subset (firstn (nss t1) l0) l0).
     {
       eapply firstn_subset; eauto.
     }
@@ -338,7 +334,7 @@ Proof.
     repeat right; eauto.
 
     +
-    assert (list_subset (skipn (nss t1) l2) l2).
+    assert (list_subset (skipn (nss t1) l0) l0).
     {
       eapply skipn_subset; eauto.
     }
@@ -351,15 +347,15 @@ Proof.
     
     +
       ff'.
-    assert ( (n1 :: n2 :: n3 :: n4 :: lrange a ++ lrange a0) =
-             [n1 ; n2 ; n3 ; n4] ++ (lrange a ++ lrange a0)) as HH.
+    assert ( (n1 :: n2 (*:: n3 :: n4*) :: lrange a ++ lrange a0) =
+             [n1 ; n2 (*; n3 ; n4*)] ++ (lrange a ++ lrange a0)) as HH.
     tauto.
     rewrite HH; clear HH.
 
-    assert (list_subset (lrange a0) (skipn (nss t1) l2))
+    assert (list_subset (lrange a0) (skipn (nss t1) l0))
       by (eapply anno_lrange'; eauto).
 
-    assert (list_subset (lrange a) (firstn (nss t1) l2))
+    assert (list_subset (lrange a) (firstn (nss t1) l0))
           by (eapply anno_lrange'; eauto).
 
     eapply nodup_append.
@@ -378,16 +374,16 @@ Proof.
       +++
         unfold disjoint_lists; intros.
         
-        assert (NoDup (firstn (nss t1) l2 ++ skipn (nss t1) l2)) by congruence.
+        assert (NoDup (firstn (nss t1) l0 ++ skipn (nss t1) l0)) by congruence.
         ff'.
         repeat find_apply_hyp_hyp.
         list_facts.
     ++
       unfold disjoint_lists; intros.
 
-      assert (list_subset (lrange a) l2).
+      assert (list_subset (lrange a) l0).
       {  
-        assert (list_subset (firstn (nss t1) l2) l2).
+        assert (list_subset (firstn (nss t1) l0) l0).
         {
           eapply firstn_subset.
         }
@@ -396,10 +392,10 @@ Proof.
         eapply incl_tran; eauto.
       }
    
-      assert (list_subset (lrange a0) l2).
+      assert (list_subset (lrange a0) l0).
       {
 
-        assert (list_subset (skipn (nss t1) l2) l2).
+        assert (list_subset (skipn (nss t1) l0) l0).
         {
           eapply skipn_subset.
         }
@@ -408,12 +404,12 @@ Proof.
         eapply incl_tran; eauto.
       }
       
-      assert (list_subset ((lrange a) ++ (lrange a0)) l2).
+      assert (list_subset ((lrange a) ++ (lrange a0)) l0).
       {
         eapply list_subset_app; eauto.
       }
 
-      assert (In x l2) by ff'.
+      assert (In x l0) by ff'.
       
       do_nodup.      
 Defined.
@@ -450,7 +446,7 @@ Fixpoint aeval t p e :=
   | alseq _ _ t1 t2 => aeval t2 p (aeval t1 p e)
   | abseq _ _ s t1 t2 => ss (aeval t1 p ((splitEv_T (fst s)) e))
                          (aeval t2 p ((splitEv_T (snd s)) e)) 
-  | abpar _ _ _ _ s t1 t2 => pp (aeval t1 p ((splitEv_T (fst s)) e))
+  | abpar _ _ _ s t1 t2 => pp (aeval t1 p ((splitEv_T (fst s)) e))
                          (aeval t2 p ((splitEv_T (snd s)) e))
   end. 
 
@@ -528,23 +524,24 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
              (join i p)
 
 | evtsbparsplit:
-    forall r lr i s t1 t2 p xi xi' yi yi',
+    forall r lr i s t1 t2 p (*xi xi'*) yi yi',
       fst r = i ->
-      events (abpar r lr (xi,xi') (yi,yi') s t1 t2) p
-             (splitp i xi yi p)
+      events (abpar r lr (*(xi,xi')*) (yi,yi') s t1 t2) p
+             (splitp i (*xi*) yi p)
 | evtsbparl:
-    forall r lr s t1 t2 ev p xlocs ylocs,
+    forall r lr s t1 t2 ev p (*xlocs*) ylocs,
       events t1 p ev ->
-      events (abpar r lr xlocs ylocs s t1 t2) p ev
+      events (abpar r lr (*xlocs*) ylocs s t1 t2) p ev
 | evtsbparr:
-    forall r lr s t1 t2 ev p xlocs ylocs,
+    forall r lr s t1 t2 ev p (*xlocs*) ylocs,
       events t2 p ev ->
-      events (abpar r lr xlocs ylocs s t1 t2) p ev
+      events (abpar r lr (*xlocs*) ylocs s t1 t2) p ev
 | evtsbparjoin:
-    forall r lr i s t1 t2 p xi xi' yi yi',
+    forall r lr i s t1 t2 p (*xi xi'*) yi yi',
       snd r = S i ->
-      events (abpar r lr (xi,xi') (yi,yi') s t1 t2) p
-             (joinp i (xi') (yi') p).
+      events (abpar r lr (*(xi,xi')*) (yi,yi') s t1 t2) p
+             (* TODO: fix joinp event *)
+             (joinp i (*(xi')*) yi' (yi') p).
 Hint Constructors events : core.
 
 (*
