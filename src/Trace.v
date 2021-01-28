@@ -11,11 +11,14 @@ University of California.  See license.txt for details. *)
 
 (** Traces and their relation to event systems. *)
 
+Require Import Preamble More_lists Term_Defs Term Event_system Term_system StructTactics.
+
+Require Import Lia.
+
 Require Import List.
 Import List.ListNotations.
 Open Scope list_scope.
-Require Import Lia.
-Require Import Preamble More_lists Term_Defs Term Event_system Term_system.
+
 
 (** * Shuffles
 
@@ -42,7 +45,7 @@ Lemma shuffle_length:
     shuffle es0 es1 es2 ->
     length es0 + length es1 = length es2.
 Proof.
-  intros.
+  intros es0 es1 es2 H.
   induction H; simpl; auto; lia.
 Qed.
 
@@ -52,7 +55,7 @@ Lemma shuffle_in_left:
     In e es0 ->
     In e es2.
 Proof.
-  intros.
+  intros e es0 es1 es2 H H0.
   induction H; auto.
   - inv H0; tauto.
   - destruct H0.
@@ -68,7 +71,7 @@ Lemma shuffle_in_right:
     In e es1 ->
     In e es2.
 Proof.
-  intros.
+  intros e es0 es1 es2 H H0.
   induction H; auto.
   - inv H0; tauto.
   - apply IHshuffle in H0.
@@ -84,7 +87,8 @@ Lemma shuffle_in:
     shuffle es0 es1 es2 ->
     In e es2 <-> In e es0 \/ In e es1.
 Proof.
-  split; intros.
+  intros e es0 es1 es2 H.
+  split; intros H0.
   - induction H; simpl; auto;
     simpl in H0; destruct H0; auto;
       apply IHshuffle in H0; tauto.
@@ -99,7 +103,7 @@ Lemma shuffle_in_skipn_left:
     In e (skipn i es0) ->
     In e (skipn i es2).
 Proof.
-  intros.
+  intros i e es0 es1 es2 H H0.
   revert H0.
   revert e.
   revert i.
@@ -121,7 +125,7 @@ Lemma shuffle_in_skipn_right:
     In e (skipn i es1) ->
     In e (skipn i es2).
 Proof.
-  intros.
+  intros  i e es0 es1 es2 H H0.
   revert H0.
   revert e.
   revert i.
@@ -142,9 +146,9 @@ Lemma shuffle_earlier_left:
     shuffle es0 es1 es2 ->
     earlier es2 e0 e1.
 Proof.
-  intros.
+  intros es0 es1 es2 e0 e1 H H0.
   destruct H as [i H].
-  destruct H.
+  destruct H as [H H1].
   unfold earlier.
   revert H.
   revert H1.
@@ -260,7 +264,7 @@ Inductive trace: AnnoTerm -> Plc ->
     trace x p tr0 ->
     trace y p tr1 ->
     trace (abseq r lr s x y) p
-          ((split (fst r) p)
+          ((Term_Defs.split (fst r) p)
              :: tr0 ++ tr1 ++
              [(join (pred (snd r)) p)])
 | tbpar: forall r lr s x y p tr0 tr1 tr2 xi xi' yi yi',
@@ -278,7 +282,20 @@ Lemma trace_length:
     trace t p tr -> esize t = length tr.
 Proof.
   induction t; intros; inv H;
-    simpl; auto; rewrite app_length; simpl; auto.
+    simpl; auto; rewrite app_length; simpl; auto;
+      try (repeat find_eapply_hyp_hyp;
+           try rewrite app_length; simpl in *;
+           try find_apply_lem_hyp shuffle_length;
+           lia).
+Defined.
+(*
+  -
+    find_eapply_hyp_hyp.
+    lia.
+    
+
+
+  
   - apply IHt in H7; lia.
   - apply IHt1 in H6.
     apply IHt2 in H7; lia.
@@ -291,9 +308,12 @@ Proof.
     apply IHt2 in H10.
     apply shuffle_length in H11; lia. 
 Qed.
+*)
 
 (** The events in a trace correspond to the events associated with an
     annotated term, a place, and some evidence. *)
+
+Require Import List_Facts Coq.Program.Tactics.
 
 Lemma trace_events:
   forall t p tr v,
@@ -302,49 +322,110 @@ Lemma trace_events:
     In v tr <-> events t p v.
 Proof.
   split; intros.
-  - induction H0; inv H.
-    + inv H1; try inv H.
-      destruct x; constructor; auto.
-    + inv H1.
+  - induction H0; inv_wfr.
+    +
+      destruct x;
+        do_nodup.
+
+      (*
+      nodup_facts
+
+      inv H1; try inv H.
+      destruct x; constructor; auto. *)
+    +
+      
+      
+
+      inv H1.
       constructor; auto.
-      rewrite in_app_iff in H.
-      destruct H.
+      rewrite in_app_iff in *.
+      destruct_disjunct.
+      eauto.
+      
+
+      invc H2; try solve_by_inversion.
+      apply evtsattrpy.
+      lia.
+
+      (*
+      
+      eauto.
+      eapply IHtrace.
+      eassumption.
+      repeat find_rewrite.
+      Print evtsattrpy.
+
+      
+      econstructor.
+      apply evtsattrpy; auto.
+      econstructor.
+      
       apply evtsatt; auto.
       inv H; try inv H1.
       rewrite H9; simpl.
-      apply evtsattrpy; auto.
-    + rewrite in_app_iff in H1.
-      destruct H1.
+      apply evtsattrpy; auto. *)
+    +
+      rewrite in_app_iff in *.
+      destruct_disjunct.
       * apply evtslseql; auto.
       * apply evtslseqr; auto.
         
-    + destruct H1; subst.
-      apply evtsbseqsplit; auto.
-      apply in_app_iff in H; destruct H.
+    +
+      inv_in; subst; try solve_by_inversion.
+      (*
+      
+
+      destruct H1; subst; try solve_by_inversion. *)
+      (*
+      apply evtsbseqsplit; auto. *)
+      rewrite in_app_iff in *; destruct_disjunct.
       apply evtsbseql; auto.
-      apply in_app_iff in H; destruct H.
+      rewrite in_app_iff in *; destruct_disjunct.
       apply evtsbseqr; auto.
-      destruct H; subst.
-      rewrite H10.
+      inv_in; subst; try solve_by_inversion.
+      (*
+      destruct H0; subst; try solve_by_inversion. *)
+      repeat find_rewrite.
+      (*
+      rewrite H10. *)
       apply evtsbseqjoin; auto.
-      inv H.
-    + destruct H1; subst.
-      apply evtsbparsplit; auto.
-      apply in_app_iff in H; destruct H.
+    +
+      
+
+      inv_in; subst; try solve_by_inversion.
+      (*
+      apply evtsbparsplit; auto. *)
+      rewrite in_app_iff in *; destruct_disjunct.
+      (* find_eapply_lem_hyp shuffle_in. *)
+      
       apply shuffle_in with (e:=v) in H0.
+      (* repeat find_apply_hyp_hyp. *)
+      (*apply H0 in H1. *)
+      destruct H0.
+      repeat concludes.
+      destruct_disjunct.
+      
+      (*
       apply H0 in H.
       destruct H.
+       *)
+      
       apply evtsbparl; auto.
       apply evtsbparr; auto.
+      inv_in.
+      repeat find_rewrite.
+      solve_by_inversion.
+
+      (*
+      (*
       rewrite H13 in H; simpl in H.
-      destruct H; try tauto; subst.
-      apply evtsbparjoin; auto.
+      destruct H; try tauto; subst. *)
+      apply evtsbparjoin; auto. *)
   - induction H0; inv H.
     + inv H1; destruct r as [i j]; simpl in *; auto.
     + simpl; rewrite in_app_iff; simpl.
       inv H1; auto.
       right; right.
-      Require Import StructTactics.
       repeat find_rewrite; simpl; auto.
     + rewrite in_app_iff.
       inv H1; auto.
@@ -354,18 +435,37 @@ Proof.
       rewrite in_app_iff.
       simpl.
       inv H1; auto.
-      rewrite H12 in *.
+      repeat find_rewrite.
       auto.
+      (*
+      rewrite H12 in *.
+      auto. *)
       
     + simpl.
       rewrite in_app_iff.
       simpl.
-      inv H1; auto.
-      * apply IHtrace1 in H8; auto.
+      inv_events; auto;
+      (*
+      inv H1; auto. *)
+      
+        try
+          (find_apply_hyp_hyp; auto;
+           try (find_eapply_lem_hyp shuffle_in_left; eauto; tauto);
+           try find_eapply_lem_hyp shuffle_in_right; eauto; tauto);
+        try
+          (repeat find_rewrite; auto; tauto).
+
+      (*
+      *
+        find_apply_hyp_hyp; auto.
+        find_eapply_lem_hyp shuffle_in_right; eauto.
+        
+
+        apply IHtrace1 in H8; auto.
         eapply shuffle_in_left in H0; eauto.
       * apply IHtrace2 in H10; auto.
         eapply shuffle_in_right in H0; eauto.
-      * repeat find_rewrite; simpl; auto.
+      * repeat find_rewrite; simpl; auto. *)
 Qed.
 
 Lemma trace_range:
@@ -407,46 +507,94 @@ Proof.
   eapply events_injective; eauto.
 Qed.
 
+Require Import Defs.
+
+Ltac tr_wf :=
+  match goal with
+  | [H: well_formed_r ?t,
+        H': trace ?t _ ?tr,
+            H'': In ?v ?tr |- _] =>
+    assert_new_proof_by (fst (range t) <= ev v < snd (range t))
+                        ltac:(eapply trace_range; [apply H | apply H' | apply H''])
+  end.
+
 Lemma nodup_trace:
   forall t p tr,
     well_formed_r t ->
     trace t p tr ->
     NoDup tr.
 Proof.
-  induction t; intros; inv H; inv H0.
+  induction t; intros; inv_wfr; inv H0.
   - constructor; auto; constructor.
   - destruct r as [i j]; simpl in *; subst; simpl.
     apply NoDup_cons.
     + intro.
-      apply in_app_iff in H1.
+      rewrite in_app_iff in *.
       destruct H1.
-      * eapply trace_range in H12; eauto.
+      *
+        find_eapply_lem_hyp trace_range; eauto.
         simpl in *.
         lia.
-      * inv H1.
+        (*
+
+        eapply trace_range in H12; eauto.
+        simpl in *.
+        lia. *)
+      *
+        inv_in.
+        solve_by_inversion.
+        (*
+        inv H1.
         discriminate H2.
-        inv H2.
-    + apply nodup_append; unfold disjoint_lists; auto; intros.
+        inv H2. *)
+    +
+      apply nodup_append; unfold disjoint_lists; auto; intros.
       * eapply IHt; eauto.
       * constructor; auto; constructor.
-      * inv H2.
+      *
+        inv_in.
+        find_eapply_lem_hyp trace_range; eauto.
+        simpl in *.
+        lia.
+
+        (*
+
+        inv H2.
         eapply trace_range in H12; eauto.
         simpl in *.
         lia.
-        solve_by_inversion.
-  - apply nodup_append; unfold disjoint_lists; auto; intros.
+        solve_by_inversion. *)
+  - apply nodup_append; unfold disjoint_lists; auto; intros; eauto.
+
+    (*
     eapply IHt1; eauto.
     eapply IHt2; eauto.
-    eapply trace_range in H5; eauto.
-    eapply trace_range in H6; eauto.
+     *)
+    
+    (*
+    find_eapply_lem_hyp trace_range; eauto.
+    find_eapply_lem_hyp trace_range; eauto.
+    lia. *)
+
+    repeat tr_wf.
     lia.
     
-  - destruct r as [i j]; simpl in *; subst; simpl.
+  -
+    dest_range'; simpl in *; subst; simpl.
+    (*
+
+    destruct r as [i j]; simpl in *; subst; simpl. *)
+      
     apply NoDup_cons.
     + intro.
-      repeat rewrite in_app_iff in H1.
+      repeat rewrite in_app_iff in *.
       repeat destruct_disjunct.
-      * eapply trace_range in H13; eauto.
+      *
+        find_eapply_lem_hyp trace_range; eauto.
+        repeat find_rewrite.
+        simpl in *. lia.
+
+        eapply trace_range in H13; eauto.
         simpl in H13.
         lia.
       * eapply trace_range in H14; eauto.

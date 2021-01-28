@@ -409,6 +409,15 @@ Ltac find_apply_hyp_hyp :=
       apply H in H'; auto; [idtac]
   end.
 
+Ltac find_eapply_hyp_hyp :=
+  match goal with
+  | [ H : forall _, _ -> _,
+        H' : _ |- _ ] =>
+    eapply H in H'; [idtac]
+  | [ H : _ -> _ , H' : _ |- _ ] =>
+    eapply H in H'; auto; [idtac]
+  end.
+
 (** [find_copy_apply_hyp_hyp] finds a hypothesis which can be applied
     in another hypothesis, and adds a hypothesis with the application
     performed. *)

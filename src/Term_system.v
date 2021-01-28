@@ -11,10 +11,17 @@ University of California.  See license.txt for details. *)
 
 (** Copland specific event systems. *)
 
-Require Import Omega Preamble More_lists Defs Term_Defs Term Event_system.
+Require Import Preamble More_lists StructTactics Defs Term_Defs Term Event_system.
+
+Require Import Omega Lia List.
+
+Set Nested Proofs Allowed.
 
 (** Construct an event system from an annotated term, place, and
     evidence. *)
+
+Check split.
+Locate split.
 
 Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
   match t with
@@ -30,7 +37,7 @@ Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
   | abseq (i, j) lr s x y =>
     before (i, j)
            (leaf (i, S i)
-                 (split i p))
+                 (Term_Defs.split i p))
            (before (S i, j)
                    (before (S i, (pred j))
                            (ev_sys x p)
@@ -57,26 +64,37 @@ Proof.
     repeat expand_let_pairs; simpl; auto.
 Qed.
 
+Ltac dest_range' :=
+match goal with
+| H:Range |- _ => destruct H
+end.
+
 Lemma well_structured_evsys:
   forall t p,
     well_formed_r t ->
     well_structured ev (ev_sys t p).
 Proof.
-  induction t; intros; inv H; simpl;
-    repeat expand_let_pairs; destruct r as [i k];
-      simpl in *; subst; auto.
-  - apply ws_leaf_event; auto;
-      destruct a; simpl; auto.
-  - apply ws_before; simpl; auto.
-    rewrite H6.
-    apply ws_before; simpl; auto; rewrite evsys_range; auto.
-  - apply ws_before; auto; repeat rewrite evsys_range; auto.
-    
-  - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto).
-    
+  induction t; intros; inv_wfr; simpl;
+    repeat expand_let_pairs; dest_range'; (*destruct r as [i k]; *)
+      simpl in *; subst; auto;
+        try destruct a;
+        repeat (econstructor; repeat rewrite evsys_range; auto).
+Defined.
+(* 
   - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto).
     repeat (apply ws_merge; simpl in *; auto; repeat rewrite evsys_range; auto).
 Qed.
+ *)
+
+Ltac do_evin :=
+  match goal with
+  | [H:ev_in _ (?C _) |- _] => inv H
+  end.
+
+Ltac inv_events :=
+  match goal with
+  | [H:events (?C _) _ _ |- _] => inv H
+  end.
 
 (** The events in the event system correspond to the events associated
     with a term, a place, and some evidence. *)
@@ -86,36 +104,159 @@ Lemma evsys_events:
     well_formed_r t ->
     ev_in ev (ev_sys t p) <-> events t p ev.
 Proof.
-  split; revert p; induction t; intros; inv H; simpl in *;
-    repeat expand_let_pairs; simpl in *.
-  - inv H0; auto; destruct a; simpl; auto.
-  - destruct p.
-    rewrite H8 in H0; simpl in H0.
-    inv H0; auto. inv H2; auto. inv H2; auto. inv H1; auto.
-  - inv H0; auto.
+  split; revert p; induction t; intros; inv_wfr; simpl in *;
+    repeat expand_let_pairs; simpl in *;
+      try (destruct a; auto; do_evin; auto; tauto);
+      try (
+          repeat dest_range;
+          repeat (find_rewrite; simpl in * );
+          repeat (do_evin; auto);
+          inv_events; auto;
+          
+          repeat (find_rewrite; simpl in * );
+          (find_apply_lem_hyp Nat.succ_inj) ; subst; auto;
+          tauto).
+
+  (*
+      try (
+          repeat dest_range;
+          repeat find_rewrite; simpl in *;
+          repeat (do_evin; auto);
+          tauto);
+      try (
+          repeat (find_rewrite; simpl in * );
+          inv_events; auto;
+          repeat (find_rewrite; simpl in * );
+          repeat (do_evin; auto);
+          (find_apply_lem_hyp Nat.succ_inj) ; subst; auto;
+          tauto).
+*)
+Defined.
+(*
+
+  (*
+  -
+    destruct a; simpl; auto; do_evin; auto.
+
+    (*
+    inv H0; auto; destruct a; simpl; auto. *)
+   *)
+
+  (*
+  -
+
+    dest_range.
+    (*
+    destruct p. *)
+    repeat find_rewrite; simpl in *.
+    (*
+    rewrite H8 in H0; simpl in H0. *)
+
+    repeat (do_evin; auto).
+    (*
+    inv H0; auto. inv H2; auto. inv H2; auto. inv H1; auto. *)
+  - repeat (do_evin; auto).
+    (*
+
+    inv H0; auto. *)
     
-  - rewrite H10 in H0; simpl in H0.
-    inv H0; inv H2; auto; inv H1; auto.
+  -
+    repeat find_rewrite; simpl in *;
+      repeat (do_evin; auto).
+    (*
+
+    rewrite H10 in H0; simpl in H0.
+    inv H0; inv H2; auto; inv H1; auto. *)
     
-  - destruct p; destruct p0.
+  -
+
+    repeat dest_range;
+      repeat find_rewrite; simpl in *;
+        repeat (do_evin; auto).
+
+    (*
+
+    destruct p; destruct p0.
     rewrite H12 in H0; simpl in H0.
-    inv H0; auto. inv H2; auto. inv H2; auto. inv H1; auto. inv H1; auto.
-  - inv H0; auto.
-  - rewrite H8; simpl.
+    inv H0; auto. inv H2; auto. inv H2; auto. inv H1; auto. inv H1; auto. *)
+
+*)
+  -
+
+    inv_events; auto.
+
+  -
+    repeat (find_rewrite; simpl in * ).
+    inv_events; auto.
+    repeat (find_rewrite; simpl in * ).
+
+    
+
+    find_apply_lem_hyp Nat.succ_inj; subst; auto.
+
+            (*
+            
+
+    rewrite Nat.succ_inj in *.
+
+    apply Nat.succ_inj in H7; subst; auto.
+
+    rewrite H8; simpl.
     inv H0; auto.
     rewrite H11 in H8.
-    apply Nat.succ_inj in H8; subst; auto.
-  - inv H0; auto.
-  - rewrite H10; simpl.
+    apply Nat.succ_inj in H8; subst; auto. *)
+  -
+    inv_events; auto.
+    (*
+
+    inv H0; auto. *)
+  -
+    repeat (find_rewrite; simpl in * ).
+    inv_events; auto.
+    repeat (find_rewrite; simpl in * ).
+
+    find_apply_lem_hyp Nat.succ_inj; subst; auto.
+    (*
+    
+
+    rewrite H10; simpl.
     inv H0; auto.
     rewrite H12 in H10.
-    apply Nat.succ_inj in H10; subst; auto.
+    apply Nat.succ_inj in H10; subst; auto. *)
     
-  - rewrite H12; simpl.
+  -
+    repeat (find_rewrite; simpl in * );
+    inv_events; auto;
+    repeat (find_rewrite; simpl in * );
+    (find_apply_lem_hyp Nat.succ_inj) ; subst; auto.
+
+    (*
+    rewrite H12; simpl.
     inv H0; auto.
     rewrite H15 in H12.
-    apply Nat.succ_inj in H12; subst; auto.
+    apply Nat.succ_inj in H12; subst; auto. *)
 Qed.
+ *)
+
+Ltac inv_sup :=
+  match goal with
+  | [H:sup (?C _) _ |- _] => inv H
+  end.
+
+Ltac do_before_sup :=
+  match goal with
+  | [H: sup (before _ _ _) _ |- _] =>
+    repeat apply before_sup in H
+  | [H: sup (ev_sys _ _) (* (alseq (n, n0) ls x y) p)*) _
+     |- _] =>
+    repeat apply before_sup in H
+
+  end.
+
+Ltac inv_ws :=
+  match goal with
+  | [H:well_structured _ (?C _) |- _] => inv H
+  end.
 
 (** Maximal events are unique. *)
 
@@ -124,53 +265,171 @@ Lemma supreme_unique:
     well_formed_r t ->
     exists ! v, supreme (ev_sys t p) v.
 Proof.
-  intros.
+  intros t p H.
   assert (G: well_structured ev (ev_sys t p)).
   apply well_structured_evsys; auto.
   rewrite <- unique_existence.
   split.
   - exists (max (ev_sys t p)).
-    apply supreme_max with (ev:=ev); auto.
+    eapply supreme_max (*with (ev:=ev);*); eauto.
   - unfold uniqueness.
-    intros.
-    rewrite <- sup_supreme with (ev:=ev) in H0; auto.
-    rewrite <- sup_supreme with (ev:=ev) in H1; auto.
+    intros x y H0 H1.
+    erewrite <- sup_supreme (*with (ev:=ev)*) in H0; eauto.
+    erewrite <- sup_supreme (*with (ev:=ev)*) in H1; eauto.
     revert H1.
     revert H0.
     revert G.
     revert p.
-    induction H; intros.
-    + destruct r as [i j]; simpl in *.
-      inv H0; inv H1; auto.
-    + destruct r as [i j]; simpl in *.
-      repeat expand_let_pairs.
-      repeat apply before_sup in H3.
-      repeat apply before_sup in H4.
-      inv H3; inv H4; auto.
-    + destruct r as [i j]; simpl in *.
+    induction H; intros;
+      try(
+          repeat dest_range; simpl in *;
+          repeat break_let;
+          repeat do_before_sup;
+
+          try (inv_ws; eauto; tauto);
+
+          repeat inv_sup; auto;
+          tauto).
+Defined.
+(*
+
+    (*
+      try
+        (
+          repeat dest_range; simpl in *;
+          repeat break_let;
+          repeat do_before_sup;
+          repeat inv_sup; auto; tauto).
+*)
+      
+    +
+      repeat dest_range; simpl in *;
+        repeat break_let.
+      repeat do_before_sup;
+      repeat inv_sup; auto.
+
+      (*
+
+
+      destruct r as [i j]; simpl in *.
+      inv H0; inv H1; auto. *)
+    +
+      repeat dest_range; simpl in *;
+        repeat break_let;
+
+
+
+      repeat do_before_sup;
+      repeat inv_sup; auto.
+
+      (*
+          
+
+      (*
+
+      destruct r as [i j]; simpl in *.
+      repeat expand_let_pairs. *)
+      repeat apply before_sup in H3;
+      repeat apply before_sup in H4;
+     
+      repeat inv_sup; auto.
+      (*
+      inv H3; inv H4; auto. *)
+       *)
+      
+    +
+      repeat dest_range; simpl in *;
+        repeat break_let.
+
+      repeat do_before_sup.
+
+      (*
+      (*
+
+      destruct r as [i j]; simpl in *. *)
       repeat apply before_sup in H4.
       repeat apply before_sup in H5.
+       *)
+
+      inv_ws.
+      eauto.
+
+      
+
+      (*
+      invc G.
+      eauto.
+      
+ 
       eapply IHwell_formed_r2 in H4; eauto.
-      inv G; auto.
+      solve_by_inversion.
+       *)
       
-    + destruct r as [i j]; simpl in *.
+      (*
+      inv G; auto. *)
+      
+    +
+
+      repeat dest_range; simpl in *;
+        repeat break_let.
+
+      
+      repeat do_before_sup;
+        repeat inv_sup; auto.
+
+      (*
+
+      (*
+
+      destruct r as [i j]; simpl in *.
+      repeat expand_let_pairs. *)
       repeat apply before_sup in H4.
       repeat apply before_sup in H5.
-      inv H4; inv H5; auto.
+      repeat inv_sup; auto.
+      (*
+      inv H3; inv H4; auto. *)
+*)
+
+
+      (*
+
+      destruct r as [i j]; simpl in *.
+      repeat apply before_sup in H4.
+      repeat apply before_sup in H5.
+      inv H4; inv H5; auto. *)
       
-    + destruct r as [i j]; simpl in *.
+    +
+      repeat dest_range; simpl in *;
+        repeat break_let.
+
+      
+      repeat do_before_sup;
+      repeat inv_sup; auto.
+
+      (*
+
+      destruct r as [i j]; simpl in *.
+      repeat expand_let_pairs. *)
+      repeat apply before_sup in H5.
+      repeat apply before_sup in H6.
+      repeat inv_sup; auto.
+
+
+      (*
+      destruct r as [i j]; simpl in *.
       repeat expand_let_pairs.
       repeat apply before_sup in H5.
       repeat apply before_sup in H6.
-      inv H5; inv H6; auto.
+      inv H5; inv H6; auto. *)
 Qed.
+*)
 
 Lemma evsys_max_unique:
   forall t p,
     well_formed_r t ->
     unique (supreme (ev_sys t p)) (max (ev_sys t p)).
 Proof.
-  intros.
+  intros t p H.
   assert (G: well_structured ev (ev_sys t p)).
   apply well_structured_evsys; auto.
   unfold unique.
@@ -182,32 +441,102 @@ Proof.
   revert G.
   revert x'.
   revert p.
-  induction H; intros; destruct r as [i j]; repeat expand_let_pairs; try destruct locs; inv G; try destruct locs;
+  induction H;
+    intros;
+    repeat dest_range;
+    repeat expand_let_pairs;
+    try destruct locs;
+    inv_ws;
+    try destruct locs.
+   (* repeat find_rewrite; *)
 
+    (*
+    repeat do_before_sup;
+    try (eauto; tauto) *)
+    
 
-  repeat expand_let_pairs; simpl in *; auto.
-  - inv H0; auto.
-  - repeat expand_let_pairs.
-    repeat apply before_sup in H3.
-    inv H3; auto.
-  - 
-    repeat apply before_sup in H4.
-    
-    apply IHwell_formed_r2 in H4; auto.
-    
-  - repeat apply before_sup in H4.
-    inv H4; auto.
-    
-  - repeat expand_let_pairs.
-    repeat apply before_sup in H5.
-    inv H5; auto.
   -
+  repeat inv_sup. auto.
+
+  
+
+(*
+      repeat expand_let_pairs; simpl in *; auto;
+        try(
+          repeat dest_range; simpl in *;
+          repeat break_let;
+          repeat do_before_sup;
+
+          try (inv_ws; eauto; tauto);
+
+          repeat inv_sup; auto;
+          tauto)
+ *)
+  (*
+  -
+
+    inv H0; auto. *)
+  -
+
+    repeat inv_sup. auto.
+
+    (*
+
+    repeat expand_let_pairs.
+    repeat apply before_sup in H3.
+    inv H3; auto. *)
+  -
+    find_apply_hyp_hyp'.
+    
+    repeat do_before_sup.
+    eauto.
+
+    (*
+
+    
+
+   
+    
+    repeat apply before_sup in H4; auto.
+
+    
+    
+    
+    apply IHwell_formed_r2 in H4; auto. *)
+    
+  -
+    repeat do_before_sup.
+    solve_by_inversion.
+
+    (*
+
+    repeat apply before_sup in H4.
+    solve_by_inversion.
+    (*
+    inv H4; auto. *)
+*)
+    
+  -
+    do_before_sup.
+    solve_by_inversion.
+
+    (*
+
+    repeat expand_let_pairs.
+    repeat apply before_sup in H5.
+    inv H5; auto. *)
+
+    (*
+  -
+     do_before_sup.
+    solve_by_inversion.
     repeat expand_let_pairs.
     repeat apply before_sup in H5.
     inv H5; auto.
   -
     repeat expand_let_pairs.
     inv H6; eauto.
+*)
 Qed.
 
 (*
@@ -241,10 +570,7 @@ Qed.
 
 (** lseq is associative relative to the event semantics *)
 
-Set Nested Proofs Allowed.
 
-Require Import List.
-Require Import Lia.
 
 Lemma firstn_gt: forall (ls: list nat) m n,
     m >= n ->
@@ -288,6 +614,8 @@ Proof.
       ff'.
 Defined.
 
+
+(*
 Lemma lseq_assoc:
   forall t1 t2 t3 i p ls b n n' t' t'',
     anno (lseq t1 (lseq t2 t3)) i ls b = Some (n, t') ->
@@ -320,26 +648,49 @@ Proof.
   {
     eapply skipn_firstn_len.
   }
+
+  ff.
+
+  repeat find_rewrite.
+
+  (*
   
   rewrite HH in *; clear HH.
 
-  rewrite Heqo2 in *; clear Heqo2.
+  rewrite Heqo2 in *; clear Heqo2. *)
   ff.
+
+
+  
 
   assert (
       (List.skipn (nss t2) (List.skipn (nss t1) ls)) =
-      (List.skipn (nss t1 + nss t2) ls)) as HH.
+      (List.skipn (nss t1 + nss t2) ls)) as HHH.
   {
     eapply skipn_assoc.
   }
+
+  
+
+  repeat find_rewrite.
+
+  invc Heqo0.
+  
+  (*
+  repeat find_inversion.
+  ff.
 
   rewrite HH in *; clear HH.
 
   rewrite Heqo0 in *; clear Heqo0.
   ff.     
+   *)
+  
   (*
   rewrite Heqo0 in *. *)
   (*
   inv Heqo4. *)
   apply before_associative_pairs.
 Qed.
+
+*)

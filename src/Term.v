@@ -111,66 +111,11 @@ Proof.
   eauto.
 Defined.
 
-Lemma asp_lrange_irrel: forall a i l l2 a0 a1 n n' b,
-    anno (asp a) i l b = Some (n, a0) ->
-    anno (asp a) i l2 b= Some (n',a1) ->
-    a0 = a1.
-Proof.
-  intros.
-  destruct a; ff.
-Defined.
-
-Example ls_ex: list_subset [5;5] [5].
-Proof.
-  intros.
-  unfold list_subset.
-  unfold incl.
-  intros.
-  econstructor; eauto.
-  
-  invc H; eauto.
-  invc H0; eauto.
-  solve_by_inversion.
-Qed.
-
-Ltac nodup_inv :=
-  repeat 
-    match goal with
-    | [H: NoDup (_::_) |- _] => invc H
-    end.
-
-(*
-Ltac inv_in :=
-  match goal with
-  | [H: In _ [_] |- _] =>
-    invc H
-  end.
-*)
-
-Ltac inv_in :=
-  repeat
-  match goal with
-  | [H: In _ (?C _) |- _] =>
-    invc H
-  end.
-
-
-
-
-
 Ltac do_mono :=
   (* let asdff := eapply anno_mono; eauto in *)
   match goal with
   | [H: anno _ ?x _ _ = Some (?y,_) |- _] => assert_new_proof_by (y > x) ltac:(eapply anno_mono; eauto)
   end.
-
-Ltac do_firstn_skipn_len :=
-  repeat
-    match goal with
-    | [H: context[firstn ?n ?ls],
-          H': context[skipn ?n' ?ls] |- _] =>
-      assert_new_proof_by (length ls = length (firstn n ls) + length (skipn n' ls)) ltac:(eapply firstn_skipn_len)
-    end.
 
 Ltac do_anno_some_fact :=
   repeat
@@ -179,75 +124,14 @@ Ltac do_anno_some_fact :=
       assert_new_proof_by (length ls >= nss t) ltac:(eapply anno_some_fact; apply H)
     end.
 
-Ltac do_firstn_factt :=
-  repeat
-    match goal with
-    | [H: length ?ls (*(firstn ?n ?ls)*) >= ?n |- _] =>
-      assert_new_proof_by (length ls (*(firstn n ls)*) = n)
-                          ltac:(try (eapply firstn_factt; apply H);
-                                try lia)
-    end.
-
-Ltac do_firstn_skipn :=
-  repeat
-    match goal with
-    | H:context [ firstn ?n ?ls ], H':context [ skipn ?n ?ls ]
-      |- _ =>
-      assert_new_proof_by (ls = firstn n ls ++ (skipn n ls))
-                          ltac:(try symmetry; eapply firstn_skipn)
-    end.
-
-Ltac do_nodup_firstn :=
-  repeat
-  match goal with
-  |[H: NoDup ?ls,
-       H': context [firstn ?n ?ls] |- _] =>
-   assert_new_proof_by (NoDup (firstn n ls))
-                       ltac:(eapply nodup_firstn; eauto)
-  end.
-
-Ltac do_nodup_skipn :=
-  repeat
-  match goal with
-  |[H: NoDup ?ls,
-       H': context [skipn ?n ?ls] |- _] =>
-   assert_new_proof_by (NoDup (skipn n ls))
-                       ltac:(eapply nodup_skipn; eauto)
-  end.
-
-Ltac do_nodup_contra :=
-  try
-  match goal with
-  |[H: In ?x ?ls,
-       H': In ?x ?ls',
-           H'': NoDup (?ls ++ ?ls') |- _] =>
-   exfalso; (eapply nodup_contra; [apply H | apply H' | apply H'']); tauto
-  end.
-
-Ltac do_nodup :=
-  repeat (
-      nodup_inv; inv_in;
-      ff;
-      nodup_inv; inv_in;
-      unfold not in *; try intro;
-      econstructor;
-      try intro;
-      inv_in;
-      try (conclude_using ltac:(econstructor; eauto))).
-
-Ltac nodup_list_firstn :=
-  repeat
-  match goal with
-    [H: context[firstn _ ?l] |- _ ] =>
-    assert_new_proof_by (NoDup l) do_nodup
-  end.
-
-Ltac nodup_list_skipn :=
-  repeat
-  match goal with
-    [H: context[skipn _ ?l] |- _ ] =>
-    assert_new_proof_by (NoDup l) do_nodup
-  end.
+Lemma asp_lrange_irrel: forall a i l l2 a0 a1 n n' b,
+    anno (asp a) i l b = Some (n, a0) ->
+    anno (asp a) i l2 b= Some (n',a1) ->
+    a0 = a1.
+Proof.
+  intros.
+  destruct a; ff.
+Defined.
 
 Ltac list_facts :=
   do_firstn_skipn_len;
@@ -288,8 +172,6 @@ Proof.
   eapply firstn_factt.
   eapply anno_some_fact; eauto.
 Defined.
-
-
 
 Lemma anno_well_formed:
   forall t i j ls t',
@@ -683,9 +565,13 @@ Proof.
          repeat (find_apply_lem_hyp well_formed_range); lia).
      *)
 Admitted.
-*)
+ *)
 
-  
+Ltac inv_wfr :=
+  match goal with
+  | [H: well_formed_r _ |- _] => inv H
+  end.
+
 Lemma events_range:
   forall t v p,
     well_formed_r t ->
@@ -699,7 +585,7 @@ Proof.
   rewrite G.
   clear G.
   induction H0;
-    try (inv H; simpl in *; auto;
+    try (inv_wfr; simpl in *; auto;
          repeat find_apply_hyp_hyp;
          repeat (find_apply_lem_hyp well_formed_range_r); lia).
 Defined.
@@ -753,7 +639,6 @@ Proof.
   destruct E; lia.
 Qed.
 
-
 (** Properties of events. *)
 
 Lemma events_range_event:
@@ -768,17 +653,40 @@ Proof.
       (*destruct r as [j k];*) simpl in *; lia.
   - find_eapply_lem_hyp at_range; eauto.
     (*eapply at_range in H2; eauto. *)
-    destruct r; destruct locs.
+
+    Ltac dest_range :=
+      match goal with
+      | [H: (nat * nat) |- _] => destruct H
+      end.
+
+     Ltac dest_lrange :=
+       match goal with
+       | [H: LocRange |- _] => destruct H
+       end.
+
+     Ltac do_lin_range :=
+      match goal with
+      | [H: snd _ = fst _,
+            H': fst _ <= ?n < snd _
+         |- _] =>
+        apply lin_range with (i:=n) in H; eauto
+      end.
+
+     Ltac do_bra_range :=
+      match goal with
+      | [H: snd _ = fst _,
+            H': fst ?x <= ?n < snd ?x
+         |- _] =>
+        apply bra_range with (i:=n) (r:=x) in H; eauto
+      end.
+
+     repeat dest_range;
+    
+        
+    (* destruct r; destruct locs. *)
     repeat destruct_disjunct; subst; eauto.
     (* + eapply ex_intro; split; auto. *)
-    Ltac find_eapply_hyp_hyp :=
-      match goal with
-      | [ H : forall _, _ -> _,
-            H' : _ |- _ ] =>
-        eapply H in H'; [idtac]
-      | [ H : _ -> _ , H' : _ |- _ ] =>
-        eapply H in H'; auto; [idtac]
-      end.
+
     + 
       find_eapply_hyp_hyp.
       (*apply IHwell_formed with (p:=p) in H2. *)
@@ -794,17 +702,18 @@ Proof.
       * simpl; auto.
       *)
       
-  - eapply lin_range with (i:=i) in H2; eauto;
+  -
+
+    do_lin_range;       
+    (*eapply lin_range with (i:=i) in H2; *) eauto;
     repeat destruct_disjunct;
       try lia;
       try (find_eapply_hyp_hyp; eauto;
         destruct_conjs;
         eauto).
-
-    
-
-  - 
-    apply bra_range with (i:=i) (r:=r) in H2; eauto;
+  -
+     do_bra_range;
+    (* apply bra_range with (i:=i) (r:=r) in H2; *) eauto;
       repeat destruct_disjunct; subst;
         try lia;
         try (find_eapply_hyp_hyp; eauto;
@@ -816,8 +725,11 @@ Proof.
     + eapply ex_intro; split; try (eauto; auto; tauto).
 
   -
+    repeat dest_range;
+      do_bra_range;
+      (*
     destruct xlocs; destruct ylocs.
-    apply bra_range with (i:=i) (r:=r) in H2; eauto;
+    apply bra_range with (i:=i) (r:=r) in H2; *) eauto;
       repeat destruct_disjunct; subst;
         try lia;
         try (find_eapply_hyp_hyp; eauto;
@@ -827,7 +739,6 @@ Proof.
     + eapply ex_intro; split; auto.
     + eapply ex_intro; split; eauto.
 Qed.
-
 
 Ltac events_event_range :=
   repeat match goal with
@@ -842,7 +753,7 @@ Ltac aba :=
 
 Ltac wfr :=
   match goal with
-  | [H: AnnoTerm, H': well_formed_r ?H |- _] => pose_new_proof (well_formed_range_r H H')
+  | [(*H: AnnoTerm,*) H': well_formed_r ?HH |- _] => pose_new_proof (well_formed_range_r HH H')
   end.
 
 Lemma events_injective:
@@ -853,8 +764,11 @@ Lemma events_injective:
     ev v1 = ev v2 ->
     v1 = v2.
 Proof.
+  intros.
+  generalizeEverythingElse H.
+  (*
   intros t p v1 v2 H; revert v2; revert v1;
-    revert p.
+    revert p. *)
   induction H; intros;
     try (
         repeat wfr;

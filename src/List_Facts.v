@@ -338,6 +338,131 @@ Proof.
     eauto.
 Defined.
 
+Ltac do_firstn_skipn_len :=
+  repeat
+    match goal with
+    | [H: context[firstn ?n ?ls],
+          H': context[skipn ?n' ?ls] |- _] =>
+      assert_new_proof_by (length ls = length (firstn n ls) + length (skipn n' ls)) ltac:(eapply firstn_skipn_len)
+    end.
+
+Ltac do_firstn_factt :=
+  repeat
+    match goal with
+    | [H: length ?ls (*(firstn ?n ?ls)*) >= ?n |- _] =>
+      assert_new_proof_by (length ls (*(firstn n ls)*) = n)
+                          ltac:(try (eapply firstn_factt; apply H);
+                                try lia)
+    end.
+
+(*
+Example ls_ex: list_subset [5;5] [5].
+Proof.
+  intros.
+  unfold list_subset.
+  unfold incl.
+  intros.
+  econstructor; eauto.
+  
+  invc H; eauto.
+  invc H0; eauto.
+  solve_by_inversion.
+Qed.
+*)
+
+Ltac nodup_inv :=
+  repeat 
+    match goal with
+    | [H: NoDup (_::_) |- _] => invc H
+    end.
+
+(*
+Ltac inv_in :=
+  match goal with
+  | [H: In _ [_] |- _] =>
+    invc H
+  end.
+*)
+
+Ltac inv_in :=
+  repeat
+  match goal with
+  | [H: In _ (?C _) |- _] =>
+    invc H
+  end.
+
+
+
+
+
+Ltac do_firstn_skipn :=
+  repeat
+    match goal with
+    | H:context [ firstn ?n ?ls ], H':context [ skipn ?n ?ls ]
+      |- _ =>
+      assert_new_proof_by (ls = firstn n ls ++ (skipn n ls))
+                          ltac:(try symmetry; eapply firstn_skipn)
+    end.
+
+Ltac do_nodup_firstn :=
+  repeat
+  match goal with
+  |[H: NoDup ?ls,
+       H': context [firstn ?n ?ls] |- _] =>
+   assert_new_proof_by (NoDup (firstn n ls))
+                       ltac:(eapply nodup_firstn; eauto)
+  end.
+
+Ltac do_nodup_skipn :=
+  repeat
+  match goal with
+  |[H: NoDup ?ls,
+       H': context [skipn ?n ?ls] |- _] =>
+   assert_new_proof_by (NoDup (skipn n ls))
+                       ltac:(eapply nodup_skipn; eauto)
+  end.
+
+Ltac do_nodup_contra :=
+  try
+  match goal with
+  |[H: In ?x ?ls,
+       H': In ?x ?ls',
+           H'': NoDup (?ls ++ ?ls') |- _] =>
+   exfalso; (eapply nodup_contra; [apply H | apply H' | apply H'']); tauto
+  end.
+
+Ltac do_nodup :=
+  repeat (
+      nodup_inv; inv_in;
+      ff;
+      nodup_inv; inv_in;
+      unfold not in *; try intro;
+      econstructor;
+      try intro;
+      inv_in;
+      try (conclude_using ltac:(econstructor; eauto))).
+
+Ltac nodup_list_firstn :=
+  repeat
+  match goal with
+    [H: context[firstn _ ?l] |- _ ] =>
+    assert_new_proof_by (NoDup l) do_nodup
+  end.
+
+Ltac nodup_list_skipn :=
+  repeat
+  match goal with
+    [H: context[skipn _ ?l] |- _ ] =>
+    assert_new_proof_by (NoDup l) do_nodup
+  end.
+
+
+
+
+
+
+
+
 
 (*
 Lemma nodup_extra_app
