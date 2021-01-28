@@ -518,6 +518,13 @@ Ltac tr_wf :=
                         ltac:(eapply trace_range; [apply H | apply H' | apply H''])
   end.
 
+(*
+Ltac inv_in' :=
+  match goal with
+  | H:In _ _ |- _ => invc H
+  end.
+*)
+
 Lemma nodup_trace:
   forall t p tr,
     well_formed_r t ->
@@ -530,11 +537,7 @@ Proof.
     apply NoDup_cons.
     + intro.
       rewrite in_app_iff in *.
-      Print inv_in.
-      Ltac inv_in' :=
-        match goal with
-        | H:In _ _ |- _ => invc H
-        end.
+      
       destruct_disjunct.
       (*
       destruct H1. *)
@@ -989,6 +992,11 @@ Proof.
       apply in_app_iff; right; simpl; auto. *)
 Qed.
 
+Ltac inv_prec :=
+  match goal with
+  | H:prec (?C _) _ _ |- _ => inv H
+  end.
+
 (** The traces associated with an annotated term are compatible with
     its event system. *)
 
@@ -999,105 +1007,268 @@ Theorem trace_order:
     prec (ev_sys t p) ev0 ev1 ->
     earlier tr ev0 ev1.
 Proof.
-  intros.
+  intros t p tr ev0 ev1 H H0 H1.
   induction H0; inv H; simpl in H1;
-    try expand_let_pairs; inv H1; simpl; auto.
-  - inv H12; inv H11.
-    + eapply evsys_tr_in in H4; eauto.
+    try expand_let_pairs;
+    inv_prec; simpl; auto. 
+
+ (* inv H1; simpl; auto. *)
+  -
+    Print do_evin.
+    Ltac do_evin2 :=
+      match goal with
+      | [H:ev_in _ (?C _),
+           H':ev_in _ (?D _)|- _] =>
+         inv H; inv H'
+      end.
+
+    do_evin2.
+
+    (*
+
+    inv H12; inv H11. *)
+    +
+      find_eapply_lem_hyp evsys_tr_in; eauto.
+      (*
+      eapply evsys_tr_in in H4; eauto. *)
       apply earlier_cons; auto.
       apply in_app_iff; auto.
-    + inv H4.
+    +
+      do_evin.
+      (*
+      inv H4. *)
       apply earlier_cons; auto.
-      apply in_app_iff; auto. right; simpl; auto.
+      apply in_app_iff; auto; right; simpl; auto.
   - solve_by_inversion.
-  - inv H11.
-    + inv H13.
-      eapply evsys_tr_in in H12; eauto.
+  -
+    inv_prec.
+    (*
+
+    inv H11. *)
+    +
+      do_evin.
+      (*
+
+      inv H13. *)
+      find_eapply_lem_hyp evsys_tr_in; eauto.
+      (*
+      eapply evsys_tr_in in H12; eauto. *)
       apply earlier_cons_shift; auto.
       apply earlier_append; auto; simpl; auto.
-    + eapply IHtrace in H6; eauto.
+    +
+      find_eapply_hyp_hyp; eauto.
+      (*
+
+      eapply IHtrace in H6; eauto. *)
       apply earlier_cons_shift; auto.
       apply earlier_left; auto.
     + solve_by_inversion.
-  - eapply evsys_tr_in in H5; eauto.
-    eapply evsys_tr_in in H6; eauto.
+  -
+    find_eapply_lem_hyp evsys_tr_in; eauto.
+    find_eapply_lem_hyp evsys_tr_in; eauto.
+
+    (*
+    eapply evsys_tr_in in H5; eauto.
+    eapply evsys_tr_in in H6; eauto. *)
     apply earlier_append; auto.
-  - apply IHtrace1 in H5; auto.
+  -
+    find_apply_hyp_hyp; auto.
+
+    (*
+    apply IHtrace1 in H5; auto. *)
     apply earlier_left; auto.
-  - apply IHtrace2 in H6; auto.
+  -
+    find_apply_hyp_hyp; auto.
+    (*
+
+    apply IHtrace2 in H6; auto. *)
     apply earlier_right; auto.
     
-  - inv H12; inv H11.
+  -
+    do_evin2.
+    (*
+
+    inv H12; inv H11. *)
     + inv H3.
-      * eapply evsys_tr_in in H4; eauto.
+      *
+        find_eapply_lem_hyp evsys_tr_in; eauto.
+        (*
+
+        eapply evsys_tr_in in H4; eauto. *)
         apply earlier_cons; auto.
         apply in_app_iff; auto.
-      * eapply evsys_tr_in in H4; eauto.
+      *
+        find_eapply_lem_hyp evsys_tr_in; eauto.
+        
         apply earlier_cons; auto.
+        (*
+
+        
+        eapply evsys_tr_in in H4; eauto.
+        apply earlier_cons; auto. *)
         apply in_app_iff; right;
           apply in_app_iff; simpl; auto.
-    + inv H3.
+    +
+      do_evin.
+      (*
+
+      inv H3. *)
       apply earlier_cons; auto.
       repeat (apply in_app_iff; right).
       simpl; auto.
   - solve_by_inversion.
     
-  - inv H11.
-    + inv H13. inv H12.
-      * eapply evsys_tr_in in H3; eauto.
+  -
+    inv_prec.
+    (*
+
+    inv H11. *)
+    +
+      do_evin2.
+      (*
+
+      inv H13. inv H12. *)
+      *
+        find_eapply_lem_hyp evsys_tr_in; eauto.
+        (*
+
+        eapply evsys_tr_in in H3; eauto. *)
         apply earlier_cons_shift; auto.
         apply earlier_append; auto.
         apply in_app_iff; right; simpl; auto.
-      * eapply evsys_tr_in in H3; eauto.
+      *
+        find_eapply_lem_hyp evsys_tr_in; eauto.
+        (*
+
+        eapply evsys_tr_in in H3; eauto. *)
         apply earlier_cons_shift; auto.
         apply earlier_right; auto.
         apply earlier_append; simpl; auto.
-    + inv H12.
-      * eapply evsys_tr_in in H14; eauto.
-        eapply evsys_tr_in in H13; eauto.
+    +
+      inv_prec.
+      (*
+
+      inv H12. *)
+      *
+        find_eapply_lem_hyp evsys_tr_in; eauto.
+        find_eapply_lem_hyp evsys_tr_in; eauto.
+
+        (*
+        eapply evsys_tr_in in H14; eauto.
+        eapply evsys_tr_in in H13; eauto. *)
         apply earlier_cons_shift; auto.
         apply earlier_append; auto.
         apply in_app_iff; left; auto.
-      * apply IHtrace1 in H6; auto.
+      *
+        find_apply_hyp_hyp; auto.
+        (*
+
+        apply IHtrace1 in H6; auto. *)
         apply earlier_cons_shift; auto.
         apply earlier_left; auto.
-      * apply IHtrace2 in H7; auto.
+      *
+        find_apply_hyp_hyp; auto.
+        (*
+        apply IHtrace2 in H7; auto. *)
         apply earlier_cons_shift; auto.
         apply earlier_right; auto.
         apply earlier_left; auto.
     + solve_by_inversion.
       
-  - inv H7. inv H9.
-    + inv H4; eapply evsys_tr_in in H5; eauto.
+  -
+    do_evin2.
+    (*
+
+    inv H7. inv H9. *)
+    +
+      do_evin;
+        find_eapply_lem_hyp evsys_tr_in; eauto.
+      (*
+      
+      inv H4; eapply evsys_tr_in in H5; eauto. *)
       * apply earlier_cons; auto.
-        apply shuffle_in_left with (es1:=tr1)(es2:=tr2) in H5; auto.
-        apply in_app_iff; left; auto.
+        Check shuffle_in_left.
+        find_eapply_lem_hyp shuffle_in_left.
+        Focus 2.
+        eauto.
+
+        (*
+        apply shuffle_in_left with
+            (es1:=tr1)(es2:=tr2) in H5; auto.  *)
+        erewrite in_app_iff; left; auto.
+        (*
+        eapply in_app_iff; left; auto. *)
       * apply earlier_cons; auto.
-        apply shuffle_in_right with (e:=ev1) in H0; auto.
+        find_eapply_lem_hyp shuffle_in_right.
+        Focus 2.
+        eauto.
+        (*
+        apply shuffle_in_right with (e:=ev1) in H0; auto. *)
         apply in_app_iff; left; auto.
-    + inv H4.
+    +
+      do_evin.
+      (*
+
+      inv H4. *)
       apply earlier_cons; auto.
       apply in_app_iff; right; simpl; auto.
   - solve_by_inversion.
-  - inv H7.
-    + inv H15. inv H9.
-      * eapply evsys_tr_in in H4; eauto.
-        apply shuffle_in_left with (e:= ev0) in H0; auto.
+  -
+    inv_prec.
+    (*
+
+    inv H7. *)
+    +
+      do_evin2.
+      (*
+
+      inv H15. inv H9. *)
+      *
+        find_eapply_lem_hyp evsys_tr_in; eauto.
+        (*
+
+        eapply evsys_tr_in in H4; eauto. *)
+        find_eapply_lem_hyp shuffle_in_left; eauto.
+        (*
+        apply shuffle_in_left with (e:= ev0) in H0; auto. *)
         apply earlier_cons_shift; auto.
         apply earlier_append; simpl; auto.
-      * eapply evsys_tr_in in H4; eauto.
-        apply shuffle_in_right with (e:=ev0) in H0; auto.
+      *
+        find_eapply_lem_hyp evsys_tr_in; eauto.
+        find_eapply_lem_hyp shuffle_in_right; eauto.
+        (*
+
+        eapply evsys_tr_in in H4; eauto.
+        apply shuffle_in_right with (e:=ev0) in H0; auto. *)
         apply earlier_cons_shift; auto.
         apply earlier_append; simpl; auto.
-    + inv H9.
-      * apply IHtrace1 in H8; auto.
+    +
+      inv_prec.
+      (*
+      inv H9. *)
+      *
+        find_apply_hyp_hyp; auto.
+        find_eapply_lem_hyp shuffle_earlier_left.
+        Focus 2.
+        eauto.
+        (*
+        apply IHtrace1 in H8; auto.
         apply shuffle_earlier_left
-          with (e0:=ev0)(e1:=ev1) in H0; auto.
+          with (e0:=ev0)(e1:=ev1) in H0; auto. *)
+        
         apply earlier_cons_shift; auto.
         apply earlier_left; auto.
-      * apply IHtrace2 in H10; auto.
+      *
+        find_apply_hyp_hyp; auto.
+        (*
+
+        apply IHtrace2 in H10; auto. *)
+        find_eapply_lem_hyp shuffle_earlier_right.
+        Focus 2.
+        eauto.
+        (*
         apply shuffle_earlier_right
-          with (e0:=ev0)(e1:=ev1) in H0; auto.
+          with (e0:=ev0)(e1:=ev1) in H0; auto. *)
         apply earlier_cons_shift; auto.
         apply earlier_left; auto.
     + solve_by_inversion.
