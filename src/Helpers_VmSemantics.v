@@ -108,9 +108,167 @@ Proof.
       eassumption.
         jkjk'; eauto. 
   -
-    (* destruct l; destruct r; destruct p; destruct p0. *)
-    repeat (df; dohtac; df; try tauto).
+
+    do_wf_pieces.
+    annogo.
+    df.
+
+    repeat break_let.
+
     
+    
+    repeat break_match;
+      try solve_by_inversion;
+    repeat find_inversion;
+    repeat dunit;
+    simpl in *; vmsts; simpl in *.
+    +
+    assert (p0 = st_pl0).
+    {
+      edestruct IHt1.
+      eassumption.
+      jkjk'; eauto.     
+    }
+
+    assert (st_pl0 = st_pl).
+    {
+      edestruct IHt2.
+      eassumption.
+      jkjk'; eauto.
+    }
+
+    congruence.
+
+    +
+    assert (p0 = st_pl0).
+    {
+      edestruct IHt1.
+      eassumption.
+      jkjk'; eauto.     
+    }
+
+    assert (st_pl0 = st_pl).
+    {
+      edestruct IHt2.
+      eassumption.
+      jkjk'; eauto.
+    }
+
+    congruence.
+    
+    +
+    assert (p0 = st_pl0).
+    {
+      edestruct IHt1.
+      eassumption.
+      jkjk'; eauto.     
+    }
+
+    assert (st_pl0 = st_pl).
+    {
+      edestruct IHt2.
+      eassumption.
+      jkjk'; eauto.
+    }
+
+    congruence.
+    +
+
+    assert (p0 = st_pl).
+    {
+      edestruct IHt1.
+      eassumption.
+      jkjk'; eauto.     
+    }
+
+    assert (st_pl = st_pl0).
+    {
+      edestruct IHt2.
+      eassumption.
+      jkjk'; eauto.
+    }
+
+    congruence.
+    +
+       assert (p0 = st_pl).
+    {
+      edestruct IHt1.
+      eassumption.
+      jkjk'; eauto.     
+    }
+    congruence.
+    +
+      assert (p0 = st_pl0).
+    {
+      edestruct IHt1.
+      eassumption.
+      jkjk'; eauto.     
+    }
+
+    assert (st_pl0 = st_pl).
+    {
+      edestruct IHt2.
+      eassumption.
+      jkjk'; eauto.
+    }
+
+    congruence.
+    +
+        assert (p0 = st_pl0).
+    {
+      edestruct IHt1.
+      eassumption.
+      jkjk'; eauto.     
+    }
+
+    assert (st_pl0 = st_pl).
+    {
+      edestruct IHt2.
+      eassumption.
+      jkjk'; eauto.
+    }
+
+    congruence.
+    +
+        assert (p0 = st_pl0).
+    {
+      edestruct IHt1.
+      eassumption.
+      jkjk'; eauto.     
+    }
+
+    assert (st_pl0 = st_pl).
+    {
+      edestruct IHt2.
+      eassumption.
+      jkjk'; eauto.
+    }
+
+    congruence.
+    +
+        assert (p0 = st_pl0).
+    {
+      edestruct IHt1.
+      eassumption.
+      jkjk'; eauto.     
+    }
+
+    assert (st_pl0 = st_pl).
+    {
+      edestruct IHt2.
+      eassumption.
+      jkjk'; eauto.
+    }
+
+    congruence.
+    +
+        assert (p0 = st_pl).
+    {
+      edestruct IHt1.
+      eassumption.
+      jkjk'; eauto.     
+    }
+    congruence.
 Defined.
 
 Ltac do_pl_immut :=
@@ -207,8 +365,42 @@ Proof.
     repeat anhl.
     eauto.   
   -
+    (*
     do_wf_pieces.
-    repeat (df; dohtac; df).
+    df;
+    repeat break_match;
+    try (repeat find_inversion);
+    simpl in *.
+    df.
+    repeat anhl.
+    eauto. *)
+
+    
+    do_wf_pieces.
+
+    cbn in *.
+    unfold split_ev_par in *.
+    monad_unfold.
+    repeat break_let.
+    simpl in *.
+
+    dosome.
+    df.
+    dosome.
+    dohtac.
+    dosome.
+    df.
+
+    annogo.
+    simpl in *.
+
+    repeat anhl.
+    do_pl_immut.
+    subst.
+
+    destruct (map_get st_store1 n1); try solve_by_inversion.
+    df.
+    repeat anhl.
     tauto.
 Defined.
 
@@ -231,7 +423,19 @@ Ltac dohi'' :=
 
 Ltac dohi :=
   do 2 (repeat dohi''; destruct_conjs; subst);
-      clear_triv.
+  clear_triv.
+
+Require Import List_Facts.
+
+Lemma store_untouched : forall t st1 st1' store1 store1' x v,
+    copland_compile t st1 = (Some tt, st1') ->
+    store1 = st_store st1 ->
+    store1' = st_store st1' ->
+    bound_to store1 x v ->
+    ~ List.In x (lrange t) ->
+    map_get store1' x = Some v.
+Proof.
+Admitted.
 
 Lemma always_some : forall t vm_st vm_st' op,
     well_formed t ->
@@ -263,8 +467,49 @@ Proof.
           df; eauto). 
   -
     do_wf_pieces.
-    repeat (df; dohtac; df).
-    tauto.
+    df.
+    dohtac.
+    df.
+
+    assert (o3 = Some tt) by eauto.
+    subst.
+    vmsts.
+    df.
+
+    destruct o6.
+    +
+      destruct (map_get st_store1 n1); try solve_by_inversion.
+      df.
+      assert (o1 = Some tt) by eauto.
+      subst.
+      df.
+      tauto.
+    +
+      df.
+      invc H.
+      df.
+      subst.
+
+      do_nodup.
+      invc H17.
+      invc H4.
+      unfold not in *.
+
+      assert (map_get st_store1 n1 = Some ((ConcreteEvidence.splitEv s1 st_ev3))).
+      {
+        eapply store_untouched; eauto.
+        econstructor.
+        simpl.
+        dohtac.
+        tauto.
+        unfold not. intros.
+        apply H3.
+        right.
+        apply List.in_or_app.
+        eauto.
+      }
+      rewrite H in *.
+      solve_by_inversion.
 Defined.
 
 Ltac do_somett :=

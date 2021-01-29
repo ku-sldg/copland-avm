@@ -69,14 +69,17 @@ Definition split_ev_seq (i:nat) (sp1 sp2:SP) (e:EvidenceC) (p:Plc) : CVM (Eviden
     add_tracem [Term_Defs.split i p] ;;
                ret (e1,e2).
 
-Definition split_ev_par (i:nat) (sp1 sp2:SP) (loc_e1 loc_e2:Loc) (t1 t2:AnnoTerm) (e:EvidenceC) (p:Plc) : CVM unit :=
+Definition split_ev_par (i:nat) (sp1 sp2:SP) ((*loc_e1*) loc_e2:Loc)
+           (*(t1 t2:AnnoTerm)*) (e:EvidenceC) (p:Plc) : CVM EvidenceC :=
     let e1 := splitEv sp1 e in
     let e2 := splitEv sp2 e in
     (*let loc_e1 := fst (range t1) in
     let loc_e2 := fst (range t2) in *)
-    put_store_at loc_e1 e1 ;;
+    (*put_store_at loc_e1 e1 ;; *)
     put_store_at loc_e2 e2 ;;
-    add_tracem [splitp i loc_e1 loc_e2 p].
+    add_tracem [splitp i (*loc_e1*) loc_e2 p] ;;
+    ret e1.
+
 
 (** * Partially-symbolic implementations of IO operations *)
 
@@ -144,28 +147,43 @@ Definition doRemote (t:AnnoTerm) (q:Plc) (reqi:nat) (rpyi:nat) : CVM unit :=
   add_tracem (remote_events t q) ;;
   put_store_at rpyi (toRemote t q e).
 
-Definition runParThread (t:AnnoTerm) (p:Plc) (loc1:Loc) (loc2:Loc) : CVM (list Ev) :=
+
+(*
+Definition runParThread (t:AnnoTerm) (p:Plc) (loc1:Loc) (loc2:Loc) :
+  CVM unit (*(list Ev)*) :=
   e <- get_store_at loc1 ;;
+  put_ev e ;;
+  copland_compile t ;;
+  e' <- get_ev ;;
+  
+
+  (*
   let el := parallel_vm_events t p in
   let e' := parallel_vm_thread t p e in
   (*let loc := fst (range t) in *)
-  put_store_at loc2 e' ;;
-  ret el.
+   *)
+  
+  put_store_at loc2 e' (* ;;
+  ret el*) .
+*)
 
+
+(*
 Definition runParThreads (t1 t2:AnnoTerm) (p:Plc) (loc_e1 loc_e1' loc_e2 loc_e2':Loc) : CVM unit :=
   el1 <- runParThread t1 p loc_e1 loc_e1' ;;
   el2 <- runParThread t2 p loc_e2 loc_e2' ;;
   add_tracem (shuffled_events el1 el2).
+*)
 
 Definition join_seq (n:nat) (p:Plc) (e1:EvidenceC) (e2:EvidenceC) : CVM unit :=
   put_ev (ssc e1 e2) ;;
   add_tracem [join n p].
 
-Definition join_par (n:nat) (p:Plc) (xi:Loc) (yi:Loc) (*(e1:EvidenceC) (e2:EvidenceC)*) : CVM unit :=
-  e1r <- get_store_at xi ;;
+Definition join_par (n:nat) (p:Plc) (*(xi:Loc)*) (e1r:EvidenceC) (yi:Loc) (*(e1:EvidenceC) (e2:EvidenceC)*) : CVM unit :=
+  (*e1r <- get_store_at xi ;; *)
   e2r <- get_store_at yi ;;
   put_ev (ppc e1r e2r) ;;
-  add_tracem [joinp n xi yi p].
+  add_tracem [joinp n (*xi*) yi yi p].
   
 
 (** * Helper functions for Appraisal *)
@@ -215,8 +233,8 @@ Ltac monad_unfold :=
   sendReq,
   doRemote,
   receiveResp,
-  runParThreads,
-  runParThread,
+  (*runParThreads, 
+  runParThread, *)
 
   get_ev,
   get_pl,

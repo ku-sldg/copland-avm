@@ -151,9 +151,191 @@ Proof.
     df.
     tauto.  
   -
+
+
+
+    annogo.
+        
+    do_wf_pieces.
+    df.
+    dosome.
+
+    do_asome.
+    subst.
+    df.
+    annogo.
+    df.
+    dohtac.
+    dosome.
+    df.
+    destruct (map_get st_store5 n1); try solve_by_inversion.
+    df.
+
+    assert (map_get st_store0 n1 = Some (splitEv s1 e)).
+    {
+      eapply store_untouched; eauto.
+      econstructor.
+      df.
+      dohtac.
+      tauto.
+      invc H.
+      unfold not; intros.
+      unfold list_subset in *.
+      unfold incl in *.
+      invc H17.
+      unfold not in H4.
+      invc H5.
+      unfold not in *.
+      apply H4.
+      right.
+      apply in_or_app.
+      eauto.
+    }
+    rewrite H0 in *.
+    df.
+
+    Check always_some.
+    assert (o2 = Some tt).
+    {
+      eapply always_some; eauto.
+    }
+    subst.
+    df.
+
+
+    (*
+    eapply IHt1 in Heqp15.
+    Focus 2.
+    eassumption.
+    df.
+
+    vmsts.
+    df.
+    
+    subst'.
+
+    eapply IHt1 in Heqp5.
+    Focus 2.
+    eassumption.
+    df.
+    vmsts.
+    df.
+
+    subst'.
+    *)
+
+    
+    
+    
+   
+
+    assert (
+        StVM.st_trace
+           (snd (copland_compile t1 {| st_ev := splitEv s0 e; st_trace := m ++ (k ++ [Term_Defs.splitp n n1 p0]); st_pl := p0; st_store := map_set o n1 (splitEv s1 e) |})) =
+         m ++
+         StVM.st_trace
+         (snd (copland_compile t1 {| st_ev := splitEv s0 e; st_trace := k ++ [Term_Defs.splitp n n1 p0]; st_pl := p0; st_store := map_set o n1 (splitEv s1 e) |}))).
+    {
+      rewrite <- app_assoc in *. (*Heqp4. *)
+      eapply IHt1; eauto.
+    }
+    subst'.
+    df.
+    rewrite app_assoc in *.
+    subst'.
+    df.  
+    subst.
+
+    assert (
+         StVM.st_trace (snd (copland_compile t2{| st_ev := e0; st_trace := m ++ st_trace; st_pl := st_pl4; st_store := st_store4 |})) =
+         m ++ StVM.st_trace (snd (copland_compile t2 {| st_ev := e0; st_trace := st_trace; st_pl := st_pl4; st_store := st_store4 |}))
+      ).
+    eapply IHt2; eauto.
+    subst'.
+    df.
+    subst.
+
+    vmsts.
+    df.
+
+    assert (e0 = splitEv s1 e). admit.
+    subst.
+    df.
+
+
+    
+
+
+    
+    tauto.
+    tauto. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     do_wf_pieces.
     repeat (df; dohtac; df).
     repeat (rewrite app_assoc).
+
+    dosome.
+    df.
+    repeat break_match; try solve_by_inversion.
+
+    df.
+
+    vmsts.
+    df.
+
+    repeat (rewrite app_assoc).
+
+    vmsts.
+    df.
+
+    eapply IHt1 in Heqp5.
+    Focus 2.
+    eassumption.
+    df.
+    vmsts.
+    df.subst.
+
+    eapply IHt1 in Heqp15.
+    Focus 2.
+    eassumption.
+    df.
+    vmsts.
+    df.
+    subst.
+
+    eapply IHt2 in Heqp1.
+
+    assert 
+
+    
+    edestruct IHt1; [eassumption | eassumption | idtac].
+
+    
+    eassumption.
+    eassumption.
+
+
+    
     tauto.
 Defined.
 
