@@ -1,4 +1,6 @@
 -R . CoplandM
+StMonad_Hoare.v
+CVM_Hoare.v
 Preamble.v
 More_lists.v
 StructTactics.v
