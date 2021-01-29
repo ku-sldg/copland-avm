@@ -134,6 +134,7 @@ Proof.
   eapply copland_compile_external; eauto.
 Defined.
 
+(*
 Lemma copland_compile_par' :
   forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (o : ev_store) (tr:list Ev),
     well_formed t ->
@@ -193,3 +194,4 @@ Proof.
   rewrite par_events.
   eapply copland_compile_external; eauto.
 Defined. 
+*)

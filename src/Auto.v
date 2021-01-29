@@ -379,6 +379,8 @@ Proof.
 Defined.
  *)
 
+
+(*
 Lemma abpar_store_non_overlap : forall t1 t2 (*a b *) c d r lr s,
     well_formed (abpar r lr (*(a,b)*) (c,d) s t1 t2) ->
     PeanoNat.Nat.eqb c d = false.
@@ -391,6 +393,7 @@ Lemma abpar_store_non_overlap : forall t1 t2 (*a b *) c d r lr s,
      *)
 Proof.
 Admitted.
+*)
 
 
 
@@ -409,6 +412,8 @@ Ltac fail_no_match_some :=
   | _ => fail
   end.
 
+
+(*
 Ltac htac'' :=
   (*let tac := eapply h''; eauto in *)
   match goal with
@@ -435,10 +440,9 @@ Ltac htac'' :=
     try (rewrite Z in *; clear Z)
   end.
 *)
+*)
 
 Ltac dohtac := fail_no_match_some;
                (*try htac''; *)
                try rewrite PeanoNat.Nat.eqb_refl in *;
                try rewrite PeanoNat.Nat.eqb_eq in *.
-
-(* hi *)

@@ -54,7 +54,8 @@ Proof.
       jkjk'.
     }
 
-    congruence.   
+    congruence.
+    (*
   -
     do_wf_pieces.
     annogo.
@@ -269,6 +270,7 @@ Proof.
       jkjk'; eauto.     
     }
     congruence.
+*)
 Defined.
 
 Ltac do_pl_immut :=
@@ -354,7 +356,8 @@ Proof.
     simpl in *.
     df.
     anhl.
-    eauto.   
+    eauto.
+    (*
   -
     do_wf_pieces.
     df;
@@ -402,6 +405,7 @@ Proof.
     df.
     repeat anhl.
     tauto.
+*)
 Defined.
 
 Ltac clear_triv :=
@@ -457,7 +461,8 @@ Proof.
     do_wf_pieces.
     
     destruct o eqn:hhh;
-      try (df; eauto). 
+      try (df; eauto).
+    (*
   -
     df.   
     do_wf_pieces.
@@ -510,6 +515,7 @@ Proof.
       }
       rewrite H in *.
       solve_by_inversion.
+*)
 Defined.
 
 Ltac do_somett :=

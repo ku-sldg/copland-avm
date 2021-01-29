@@ -111,6 +111,7 @@ Proof.
     eapply IHt2; eauto.
     repeat (subst'; simpl in * ).
     eauto.
+    (*
   - (* abseq case *)
     annogo.
         
@@ -337,6 +338,7 @@ Proof.
 
     
     tauto.
+*)
 Defined.
 
 (* Instance of st_trace_cumul' where k=[] *)
@@ -601,7 +603,8 @@ Proof.
     +
       repeat do_pl_immut.
       subst.
-      congruence.     
+      congruence.
+      (*
   -
     do_wf_pieces.
     df.
@@ -680,6 +683,7 @@ Proof.
         eauto.
         eauto.
         eauto.
+*)
 Defined.
 
 Axiom remote_LTS: forall t n et, 
@@ -744,7 +748,8 @@ Proof.
     df.
     repeat do_pl_immut.
     subst.   
-    eapply IHt2; eauto.    
+    eapply IHt2; eauto.
+    (*
   -    
     do_wf_pieces.
     destruct r; destruct s.
@@ -833,6 +838,7 @@ Proof.
     Unshelve.
     exact mtc.
     eauto.  *)
+*)
 Defined.
 
 Lemma cvm_refines_lts_event_ordering_corrolary : forall t tr et e e' p p' o o',
@@ -864,16 +870,8 @@ Lemma wf_implies_wfr: forall t,
     well_formed t ->
     well_formed_r t.
 Proof.
-  induction t; intros.
-  -
-    destruct a; ff.
-  -
-    ff.
-  -
-    ff.
-  -
-    ff.
-  -
+  induction t; intros;
+    try destruct a;
     ff.
 Defined.
 

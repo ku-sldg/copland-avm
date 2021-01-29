@@ -20,9 +20,6 @@ Set Nested Proofs Allowed.
 (** Construct an event system from an annotated term, place, and
     evidence. *)
 
-Check split.
-Locate split.
-
 Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
   match t with
   | aasp (i, j) lr x => leaf (i, j) (asp_event i x p)
@@ -34,7 +31,7 @@ Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
               (leaf (pred j, j) (rpy (pred j) rpy_loc p q)))
   | alseq r lr x y => before r (ev_sys x p)
                           (ev_sys y p)
-  | abseq (i, j) lr s x y =>
+  (*| abseq (i, j) lr s x y =>
     before (i, j)
            (leaf (i, S i)
                  (Term_Defs.split i p))
@@ -54,6 +51,7 @@ Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
                           (ev_sys y p))
                    (leaf ((pred j), j)
                    (joinp (pred j) (*xi'*) yi' yi' p)))
+*)
   end.
 
 Lemma evsys_range:
@@ -503,7 +501,8 @@ Proof.
     
     
     apply IHwell_formed_r2 in H4; auto. *)
-    
+
+    (*
   -
     repeat do_before_sup.
     solve_by_inversion.
@@ -536,6 +535,7 @@ Proof.
   -
     repeat expand_let_pairs.
     inv H6; eauto.
+*)
 *)
 Qed.
 

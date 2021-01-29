@@ -56,8 +56,8 @@ Inductive Term: Set :=
 | asp: ASP -> Term
 | att: Plc -> Term -> Term
 | lseq: Term -> Term -> Term
-| bseq: Split -> Term -> Term -> Term
-| bpar: Split -> Term -> Term -> Term.
+(*| bseq: Split -> Term -> Term -> Term
+| bpar: Split -> Term -> Term -> Term*) .
 
 Definition LocRange: Set := list Loc.
 
@@ -80,7 +80,7 @@ Inductive Evidence: Set :=
 | hh: Plc -> Evidence -> Evidence
 | nn: N_ID -> Evidence -> Evidence
 | ss: Evidence -> Evidence -> Evidence
-| pp: Evidence -> Evidence -> Evidence.
+(*| pp: Evidence -> Evidence -> Evidence*) .
 
 Definition splitEv_T (sp:SP) (e:Evidence) : Evidence :=
   match sp with
@@ -103,10 +103,10 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
   | asp a => eval_asp a p e
   | att q t1 => eval t1 q e
   | lseq t1 t2 => eval t2 p (eval t1 p e)
-  | bseq s t1 t2 => ss (eval t1 p (splitEv_T (fst s) e))
+  (*| bseq s t1 t2 => ss (eval t1 p (splitEv_T (fst s) e))
                        (eval t2 p (splitEv_T (snd s) e)) 
   | bpar s t1 t2 => pp (eval t1 p (splitEv_T (fst s) e))
-                      (eval t2 p (splitEv_T (snd s) e))
+                      (eval t2 p (splitEv_T (snd s) e)) *)
   end.
 
 (** * Events
@@ -127,9 +127,9 @@ Inductive Ev: Set :=
 | req: nat -> Loc -> Plc -> Plc -> Term -> Ev
 | rpy: nat -> Loc -> Plc -> Plc -> Ev 
 | split: nat -> Plc -> Ev
-| splitp: nat -> (*Loc ->*) Loc -> Plc -> Ev
+(*| splitp: nat -> (*Loc ->*) Loc -> Plc -> Ev *)
 | join:  nat -> Plc -> Ev
-| joinp: nat -> Loc -> Loc -> Plc -> Ev.
+(*| joinp: nat -> Loc -> Loc -> Plc -> Ev *).
 
 Definition eq_ev_dec:
   forall x y: Ev, {x = y} + {x <> y}.
@@ -150,9 +150,9 @@ Definition ev x : nat :=
   | req i _ _ _ _ => i
   | rpy i _ _ _ => i 
   | split i _ => i
-  | splitp i _ _ => i
+  (* | splitp i _ _ => i *)
   | join i _ => i
-  | joinp i _ _ _ => i
+  (* | joinp i _ _ _ => i *)
   end.
 
 (** The natural number indicating the place where an event occured. *)
@@ -165,9 +165,9 @@ Definition pl x : Loc :=
   | req _ _ p _ _ => p
   | rpy _ _ p _ => p
   | split _ p => p
-  | splitp _ _ p => p
+  (*| splitp _ _ p => p *)
   | join _ p => p
-  | joinp _ _ _ p => p
+  (* | joinp _ _ _ p => p *)
   end.
 
 (** Events are used in a manner that ensures that
@@ -202,16 +202,16 @@ Inductive AnnoTerm: Set :=
 | aasp: Range -> LocRange -> ASP -> AnnoTerm
 | aatt: Range -> LocRange -> (Loc*Loc) -> Plc -> AnnoTerm -> AnnoTerm
 | alseq: Range -> LocRange -> AnnoTerm -> AnnoTerm -> AnnoTerm
-| abseq: Range -> LocRange -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
-| abpar: Range -> LocRange -> (*(Loc*Loc) ->*) (Loc*Loc) -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm.
+(*| abseq: Range -> LocRange -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
+| abpar: Range -> LocRange -> (*(Loc*Loc) ->*) (Loc*Loc) -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm*) .
 
 Fixpoint esize t :=
   match t with
   | aasp _ _ _ => 1
   | aatt _ _ _ _ t1 => 2 + (*remote_esize t1*) esize t1
   | alseq _ _ t1 t2 => esize t1 + esize t2
-  | abseq _ _ _ t1 t2 => 2 + esize t1 + esize t2
-  | abpar _ _ _ _ t1 t2 => 2 + esize t1 + esize t2
+  (*| abseq _ _ _ t1 t2 => 2 + esize t1 + esize t2
+  | abpar _ _ _ _ t1 t2 => 2 + esize t1 + esize t2 *)
   end.
 
 Definition range x :=
@@ -219,8 +219,8 @@ Definition range x :=
   | aasp r _ _ => r
   | aatt r _ _ _ _ => r
   | alseq r _ _ _ => r
-  | abseq r _ _ _ _ => r
-  | abpar r _ _ _ _ _ => r
+  (*| abseq r _ _ _ _ => r
+  | abpar r _ _ _ _ _ => r *)
   end.
 
 Definition lrange x :=
@@ -228,8 +228,8 @@ Definition lrange x :=
   | aasp _ lr _ => lr
   | aatt _ lr _ _ _ => lr
   | alseq _ lr _ _ => lr
-  | abseq _ lr _ _ _ => lr
-  | abpar _ lr _ _ _ _ => lr
+  (*| abseq _ lr _ _ _ => lr
+  | abpar _ lr _ _ _ _ => lr *)
   end.
 
 Fixpoint anss (t:AnnoTerm) :=
@@ -237,8 +237,8 @@ Fixpoint anss (t:AnnoTerm) :=
   | aasp _ _ _ => 0
   | aatt _ _ _ _ t => 2 (* + (remote_anss t) (*(anss t) + 2*) *)
   | alseq _ _ t1 t2 => anss t1 + anss t2
-  | abseq _ _ _ t1 t2 => anss t1 + anss t2
-  | abpar _ _ _ _ t1 t2 => 2 + anss t1 + anss t2
+  (*| abseq _ _ _ t1 t2 => anss t1 + anss t2
+  | abpar _ _ _ _ t1 t2 => 2 + anss t1 + anss t2 *)
   end.
 
 (* nss = "num store slots" *)
@@ -247,8 +247,8 @@ Fixpoint nss (t:Term) :=
   | asp _ => 0
   | att _ t => (*nss t +*) 2
   | lseq t1 t2 => nss t1 + nss t2
-  | bseq _ t1 t2 => nss t1 + nss t2
-  | bpar  _ t1 t2 => 2 + nss t1 + nss t2
+  (*| bseq _ t1 t2 => nss t1 + nss t2
+  | bpar  _ t1 t2 => 2 + nss t1 + nss t2 *)
   end.
 
 Lemma nss_even: forall t n,
@@ -271,6 +271,7 @@ Proof.
     assert (Nat.even (nss t1) = true) by eauto.
     assert (Nat.even (nss t2) = true) by eauto.
     eapply both_args_even; eauto.
+    (*
   -
     cbn in *.
     subst.
@@ -282,7 +283,7 @@ Proof.
     subst.
     assert (Nat.even (nss t1) = true) by eauto.
     assert (Nat.even (nss t2) = true) by eauto.
-    eapply both_args_even; eauto.
+    eapply both_args_even; eauto. *)
 Defined.
 
 (*
@@ -304,7 +305,8 @@ Fixpoint anno (t: Term) (i:nat) (ls:LocRange) (b:bool) : option (nat * (* (LocRa
     '(j,a) <- anno x i (firstn (nss x) ls) b  ;;
     '(k,bt) <- anno y j (skipn (nss x) ls ) b  ;;
     ret (k, alseq (i, k) ls (*(lrange a ++ lrange bt)*) a bt)
- 
+
+        (*
   | bseq s x y =>
     '(j,a) <- anno x (S i) (firstn (nss x) ls) b  ;;
     '(k,bt) <- anno y j (skipn (nss x) ls ) b  ;;
@@ -317,6 +319,7 @@ Fixpoint anno (t: Term) (i:nat) (ls:LocRange) (b:bool) : option (nat * (* (LocRa
     '(k,bt) <- anno y j (skipn (nss x) (skipn 2 ls)) b  ;;
     ret (S k, abpar (i, S k) ls ylocs (*ylocs*) s a bt)
     (*(fst xlocs :: snd xlocs :: fst ylocs :: snd ylocs :: (lrange a) ++ (lrange bt))*)
+*)
   end.
 
 Definition anno' t i ls := fromSome (0, aasp (0,0) [] CPY) (anno t i ls true).
@@ -330,8 +333,8 @@ Fixpoint unanno a :=
   | aatt _ _ _ p t => att p (unanno t)
   | alseq _ _ a1 a2 => lseq (unanno a1) (unanno a2)
                          
-  | abseq _ _ spl a1 a2 => bseq spl (unanno a1) (unanno a2) 
-  | abpar _ _ _ spl a1 a2 => bpar spl (unanno a1) (unanno a2)
+  (*| abseq _ _ spl a1 a2 => bseq spl (unanno a1) (unanno a2) 
+  | abpar _ _ _ spl a1 a2 => bpar spl (unanno a1) (unanno a2) *)
   end.
 
   (*
@@ -367,7 +370,7 @@ Inductive well_formed_r: AnnoTerm -> Prop :=
     snd (range x) = fst (range y) ->
     snd r = snd (range y) -> 
     well_formed_r (alseq r ls x y)
-                  
+   (*               
 | wf_bseq_r: forall r ls s x y,
     well_formed_r x -> well_formed_r y ->
     S (fst r) = fst (range x) ->
@@ -381,7 +384,7 @@ Inductive well_formed_r: AnnoTerm -> Prop :=
     snd (range x) = fst (range y) ->
     (snd r) = S (snd (range y)) ->
     fst (range y) > fst (range x) ->     
-    well_formed_r (abpar r ls (*xlocs*) ylocs s x y).
+    well_formed_r (abpar r ls (*xlocs*) ylocs s x y) *) .
 Hint Constructors well_formed_r : core.
 
 Inductive well_formed: AnnoTerm -> Prop :=
@@ -444,7 +447,7 @@ Inductive well_formed: AnnoTerm -> Prop :=
 
     (*length ls >= length (lrange x) + length (lrange y) ->  *)
     well_formed (alseq r ls x y)
-                
+     (*           
 | wf_bseq: forall r ls s x y,
     well_formed x -> well_formed y ->
     S (fst r) = fst (range x) ->
@@ -519,7 +522,7 @@ Inductive well_formed: AnnoTerm -> Prop :=
                  *)
                 
     (*length ls >= 4 + length (lrange x) + length (lrange y) ->*)
-    well_formed (abpar r ls (*xlocs*) ylocs s x y).
+    well_formed (abpar r ls (*xlocs*) ylocs s x y) *) .
 Hint Constructors well_formed : core.
 
 Ltac afa :=

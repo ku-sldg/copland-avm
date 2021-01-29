@@ -28,6 +28,7 @@ Proof.
   tauto.
 Defined.
 
+(*
 Lemma wf_bseq_pieces: forall r lr s t1 t2,
     well_formed (abseq r lr s t1 t2) ->
     well_formed t1 /\ well_formed t2.
@@ -45,6 +46,7 @@ Proof.
   inversion H.
   tauto.
 Defined.
+*)
 
 Ltac do_wf_pieces :=
   match goal with
@@ -53,10 +55,10 @@ Ltac do_wf_pieces :=
   | [H: well_formed (aatt _ _ _ _ ?t) |- _] =>   
     assert (well_formed t)
       by (eapply wf_at_pieces; eauto)
-  | [H: well_formed (abseq _ _ _ _ _) |- _] =>
+  (*| [H: well_formed (abseq _ _ _ _ _) |- _] =>
     (edestruct wf_bseq_pieces; eauto)
   | [H: well_formed (abpar _ _ _ _ _ _) |- _] =>
-    (edestruct wf_bpar_pieces; eauto)     
+    (edestruct wf_bpar_pieces; eauto)    *)
   end.
 
 Lemma well_formed_range_r:
@@ -249,6 +251,7 @@ Proof.
     repeat find_apply_hyp_hyp.
     list_facts.
 
+    (*
   -
     ff.
     list_facts.
@@ -411,7 +414,8 @@ Proof.
 
       assert (In x l0) by ff'.
       
-      do_nodup.      
+      do_nodup.   
+*)   
 Defined.
 
 Lemma anno_well_formed':
@@ -444,10 +448,10 @@ Fixpoint aeval t p e :=
   | aasp _ _ x => eval (asp x) p e
   | aatt _ _ _ q x => aeval x q e
   | alseq _ _ t1 t2 => aeval t2 p (aeval t1 p e)
-  | abseq _ _ s t1 t2 => ss (aeval t1 p ((splitEv_T (fst s)) e))
+  (*| abseq _ _ s t1 t2 => ss (aeval t1 p ((splitEv_T (fst s)) e))
                          (aeval t2 p ((splitEv_T (snd s)) e)) 
   | abpar _ _ _ s t1 t2 => pp (aeval t1 p ((splitEv_T (fst s)) e))
-                         (aeval t2 p ((splitEv_T (snd s)) e))
+                         (aeval t2 p ((splitEv_T (snd s)) e)) *)
   end. 
 
 (*
@@ -504,6 +508,7 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
     forall r lr t1 t2 ev p,
       events t2 p ev ->
       events (alseq r lr t1 t2) p ev
+             (*
 | evtsbseqsplit:
     forall r lr i s t1 t2 p,
       fst r = i ->
@@ -541,7 +546,7 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
       snd r = S i ->
       events (abpar r lr (*(xi,xi')*) (yi,yi') s t1 t2) p
              (* TODO: fix joinp event *)
-             (joinp i (*(xi')*) yi' (yi') p).
+             (joinp i (*(xi')*) yi' (yi') p) *) .
 Hint Constructors events : core.
 
 (*
@@ -708,6 +713,7 @@ Proof.
       try (find_eapply_hyp_hyp; eauto;
         destruct_conjs;
         eauto).
+    (*
   -
      do_bra_range;
     (* apply bra_range with (i:=i) (r:=r) in H2; *) eauto;
@@ -735,6 +741,7 @@ Proof.
 
     + eapply ex_intro; split; auto.
     + eapply ex_intro; split; eauto.
+*)
 Qed.
 
 Ltac events_event_range :=
@@ -800,7 +807,7 @@ Inductive evalR : Term -> Plc -> Evidence -> Evidence -> Prop :=
     evalR t1 p e e' ->
     evalR t2 p e' e'' ->
     evalR (lseq t1 t2) p e e''
-| evalR_bseq: forall s e e1 e2 e1' e2' p t1 t2,
+(*| evalR_bseq: forall s e e1 e2 e1' e2' p t1 t2,
     splitEv_T_R (fst s) e e1 ->
     splitEv_T_R (snd s) e e2 ->
     evalR t1 p e1 e1' ->
@@ -811,7 +818,7 @@ Inductive evalR : Term -> Plc -> Evidence -> Evidence -> Prop :=
     splitEv_T_R (snd s) e e2 ->
     evalR t1 p e1 e1' ->
     evalR t2 p e2 e2' ->
-    evalR (bpar s t1 t2) p e (pp e1' e2').
+    evalR (bpar s t1 t2) p e (pp e1' e2') *) .
 
 Ltac jkjke :=
   match goal with

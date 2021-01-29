@@ -260,7 +260,7 @@ Inductive trace: AnnoTerm -> Plc ->
     trace x p tr0 ->
     trace y p tr1 ->
     trace (alseq r lr x y) p (tr0 ++ tr1)
-| tbseq: forall r lr s x y p tr0 tr1,
+(*| tbseq: forall r lr s x y p tr0 tr1,
     trace x p tr0 ->
     trace y p tr1 ->
     trace (abseq r lr s x y) p
@@ -274,7 +274,7 @@ Inductive trace: AnnoTerm -> Plc ->
     trace (abpar r lr (*(xi,xi')*) (yi,yi') s x y) p
           ((splitp (fst r) (*xi*) yi p)
              :: tr2 ++
-             [(joinp (pred (snd r)) (*xi'*) yi' yi' p)]).
+             [(joinp (pred (snd r)) (*xi'*) yi' yi' p)]) *) .
 Hint Resolve tasp : core.
 
 Lemma trace_length:
@@ -372,7 +372,7 @@ Proof.
       destruct_disjunct.
       * apply evtslseql; auto.
       * apply evtslseqr; auto.
-        
+        (*
     +
       inv_in; subst; try solve_by_inversion.
       (*
@@ -424,6 +424,7 @@ Proof.
       rewrite H13 in H; simpl in H.
       destruct H; try tauto; subst. *)
       apply evtsbparjoin; auto. *)
+*)
   - induction H0; inv H.
     + inv H1; destruct r as [i j]; simpl in *; auto.
     + simpl; rewrite in_app_iff; simpl.
@@ -432,7 +433,8 @@ Proof.
       repeat find_rewrite; simpl; auto.
     + rewrite in_app_iff.
       inv H1; auto.
-      
+
+      (*
     + simpl.
       rewrite in_app_iff.
       rewrite in_app_iff.
@@ -469,6 +471,7 @@ Proof.
       * apply IHtrace2 in H10; auto.
         eapply shuffle_in_right in H0; eauto.
       * repeat find_rewrite; simpl; auto. *)
+*)
 Qed.
 
 Lemma trace_range:
@@ -591,7 +594,8 @@ Proof.
 
     repeat tr_wf.
     lia.
-    
+
+    (*
   -
     dest_range'; simpl in *; subst; simpl.
     (*
@@ -823,6 +827,7 @@ Proof.
 
         -- solve_by_inversion.
            *)
+*)
           
 Qed.
 
@@ -906,7 +911,8 @@ Proof.
     
   - left. solve_by_inversion.
      *)
-    
+
+    (*
   - right.
     rewrite in_app_iff in *.
     do_evin; auto.
@@ -996,6 +1002,7 @@ Proof.
       rewrite in_app_iff; right; simpl; auto.
       (*
       apply in_app_iff; right; simpl; auto. *)
+*)
 Qed.
 
 
@@ -1103,7 +1110,8 @@ Proof.
 
     apply IHtrace2 in H6; auto. *)
     apply earlier_right; auto.
-    
+
+    (*
   -
     do_evin2.
     (*
@@ -1296,4 +1304,5 @@ Proof.
         apply earlier_cons_shift; auto.
         apply earlier_left; auto.
     + solve_by_inversion.
+*)
 Qed.

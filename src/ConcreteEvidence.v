@@ -16,7 +16,7 @@ Inductive EvidenceC: Set :=
 | hhc: BS -> EvidenceC -> EvidenceC (* TODO: remove Ev param *)
 | nnc: N_ID -> BS -> EvidenceC -> EvidenceC
 | ssc: EvidenceC -> EvidenceC -> EvidenceC
-| ppc: EvidenceC -> EvidenceC -> EvidenceC.
+(*| ppc: EvidenceC -> EvidenceC -> EvidenceC *) .
 
 
 (*
@@ -52,10 +52,10 @@ Inductive Ev_Shape: EvidenceC -> Evidence -> Prop :=
     Ev_Shape e1 e1t ->
     Ev_Shape e2 e2t ->
     Ev_Shape (ssc e1 e2) (ss e1t e2t)
-| ppt: forall e1 e2 e1t e2t,
+(*| ppt: forall e1 e2 e1t e2t,
     Ev_Shape e1 e1t ->
     Ev_Shape e2 e2t ->
-    Ev_Shape (ppc e1 e2) (pp e1t e2t).
+    Ev_Shape (ppc e1 e2) (pp e1t e2t) *) .
 Hint Constructors Ev_Shape : core.
 
 Ltac evShapeFacts :=
@@ -72,8 +72,8 @@ Ltac evShapeFacts :=
   | [H: Ev_Shape _ (nn _ _) |- _] => invc H
   | [H: Ev_Shape (ssc _ _) _ |- _] => invc H
   | [H: Ev_Shape _ (ss _ _) |- _] => invc H
-  | [H: Ev_Shape (ppc _ _) _ |- _] => invc H
-  | [H: Ev_Shape _ (pp _ _) |- _] => invc H 
+  (*| [H: Ev_Shape (ppc _ _) _ |- _] => invc H
+  | [H: Ev_Shape _ (pp _ _) |- _] => invc H  *)
   end.
 
 Lemma ev_shape_transitive : forall e e' et et',

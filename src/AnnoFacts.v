@@ -45,7 +45,8 @@ Proof.
   -
     ff.
     repeat (same_index; subst);
-    congruence.
+      congruence.
+    (*
   -
     ff;
     repeat (same_index; subst);
@@ -53,7 +54,7 @@ Proof.
   -
     ff;
       repeat (same_index; subst);
-      congruence.
+      congruence. *)
  Defined.
   
 Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm) (ls:LocRange) b,
@@ -205,6 +206,7 @@ Proof.
       eapply firstn_skipn_len.
     } *)
     lia.
+    (*
   -
     ff.
     list_facts'.
@@ -244,6 +246,7 @@ Proof.
       assert (length (skipn (nss t1) l2) >= nss t2) by eauto.
       ff.
       lia. *)
+*)
 Defined.
 
 Ltac do_anno_some_fact :=
@@ -315,6 +318,7 @@ Proof.
       }
 
       lia.
+      (*
   -
     ff.
     list_facts.
@@ -388,6 +392,7 @@ Proof.
       }
       
       lia.
+*)
 Defined.
 
 Lemma anno_some: forall t i l b,
@@ -478,6 +483,7 @@ Proof.
           eapply firstn_fact'; eauto.
         }
         lia.
+        (*
 
   -
     ff.
@@ -595,6 +601,7 @@ Proof.
     +
       destruct b;
         ff. *)
+*)
       Unshelve.
       eauto.
       eauto.
@@ -602,12 +609,13 @@ Proof.
       eauto.
       eauto.
       eauto.
+      (*
       eauto.
       eauto.
       eauto.
       eauto.
       eauto.
-      eauto.
+      eauto. *)
 Defined.
 
 (*
@@ -895,6 +903,7 @@ Proof.
       Focus 2.
       eassumption.
       tauto.
+      (*
   -
         ff.
     econstructor.
@@ -1119,4 +1128,5 @@ Proof.
 
       simpl.
       lia. *)
+*)
 Defined.

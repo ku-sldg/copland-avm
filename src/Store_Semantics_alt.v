@@ -12,7 +12,8 @@ Set Nested Proofs Allowed.
 at place q, originated by a request from place p for q to execute t *)
 Definition ev_sys_remote (t:Term) (p:Plc) (q:Plc): EvSys Ev.
 Admitted.
-        
+
+
 Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
   match t with
   | aasp (i, j) lr x => leaf (i, j) (asp_event i x p)
@@ -25,7 +26,7 @@ Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
               (leaf (pred j, j) (rpy (pred j) rpy_loc p q)))
   | alseq r lr x y => before r (ev_sys x p)
                           (ev_sys y p)
-  | abseq (i, j) lr s x y =>
+ (* | abseq (i, j) lr s x y =>
     before (i, j)
            (leaf (i, S i)
                  (Term_Defs.split i p))
@@ -45,6 +46,7 @@ Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
                           (ev_sys y p))
                    (leaf ((pred j), j)
                    (joinp (pred j) xi' yi' p)))
+*)
   end.
 
 (*
@@ -95,7 +97,7 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
     forall r lr t1 t2 ev p,
       events t2 p ev ->
       events (alseq r lr t1 t2) p ev
-| evtsbseqsplit:
+(* | evtsbseqsplit:
     forall r lr i s t1 t2 p,
       fst r = i ->
       events (abseq r lr s t1 t2) p
@@ -131,17 +133,17 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
     forall r lr i s t1 t2 p xi xi' yi yi',
       snd r = S i ->
       events (abpar r lr (xi,xi') (yi,yi') s t1 t2) p
-             (joinp i (xi') (yi') p).
+             (joinp i (xi') (yi') p) *) .
 Hint Constructors events : core.
 
 
 Inductive store_event: Ev -> Plc -> Loc -> Prop :=
 | put_event: forall i x p q t, store_event (req i x p q t) p x
-| put_event_spl: forall i xi yi p, store_event (splitp i xi yi p) p xi
-| put_event_spr: forall i xi yi p, store_event (splitp i xi yi p) p yi
+(*| put_event_spl: forall i xi yi p, store_event (splitp i xi yi p) p xi
+| put_event_spr: forall i xi yi p, store_event (splitp i xi yi p) p yi *)
 | get_event: forall i x p q, store_event (rpy i x p q) p x
-| get_event_joinpl: forall i xi yi p, store_event (joinp i xi yi p) p xi
-| get_event_joinpr: forall i xi yi p, store_event (joinp i xi yi p) p yi.
+(*| get_event_joinpl: forall i xi yi p, store_event (joinp i xi yi p) p xi
+| get_event_joinpr: forall i xi yi p, store_event (joinp i xi yi p) p yi *) .
 
 (*
 Lemma wf_mono_locs: forall t,
@@ -162,10 +164,10 @@ Ltac inv_wf :=
     invc H
   | [H: well_formed (aatt _ _ _ _ ?t) |- _] =>   
     invc H
-  | [H: well_formed (abseq _ _ _ _ _) |- _] =>
+  (*| [H: well_formed (abseq _ _ _ _ _) |- _] =>
     invc H
   | [H: well_formed (abpar _ _ _ _ _ _ _) |- _] =>
-    invc H
+    invc H *)
   end.
 
 Ltac inv_ev :=
@@ -176,10 +178,10 @@ Ltac inv_ev :=
     invc H
   | [H: events (aatt _ _ _ _ _) _ _ |- _] =>   
     invc H
-  | [H: events (abseq _ _ _ _ _) _ _ |- _] =>
+  (*| [H: events (abseq _ _ _ _ _) _ _ |- _] =>
     invc H
   | [H: events (abpar _ _ _ _ _ _ _) _ _ |- _] =>
-    invc H
+    invc H *)
   end.
 
 Ltac inv_ev' :=
@@ -190,10 +192,10 @@ Ltac inv_ev' :=
     inv H
   | [H: events (aatt _ _ _ _ _) _ _ |- _] =>   
     inv H
-  | [H: events (abseq _ _ _ _ _) _ _ |- _] =>
+  (* | [H: events (abseq _ _ _ _ _) _ _ |- _] =>
     inv H
   | [H: events (abpar _ _ _ _ _ _ _) _ _ |- _] =>
-    inv H
+    inv H *)
   end.
 
 Ltac inv_ev2 :=
@@ -434,7 +436,8 @@ Proof.
       subst;
         in_app_facts; eauto.
        *)
-      
+
+      (*
 
   -
     ff.
@@ -543,6 +546,7 @@ Proof.
       ++
         repeat (find_apply_hyp_hyp').
         tauto.
+*)
 Defined.
 
 Ltac t_in_lrange :=
@@ -590,7 +594,8 @@ Proof.
            (* unfold list_subset in *;  *)
            repeat t_in_lrange;
            nodup_contra_auto; tauto).
- 
+
+    (*
   -
     inv_wf.
     inv_ev2;
@@ -621,6 +626,7 @@ Proof.
            ff;
            try nodup_contra_auto;
            tauto).
+*)
 Defined.
 
 (*
@@ -681,6 +687,8 @@ Proof.
     +
       inv H4; auto.
   - inv H0; auto.
+
+    (*
     
   - rewrite H10 in H0; simpl in H0.
 
@@ -719,6 +727,7 @@ Proof.
   - destruct p; destruct p0.
     rewrite H12 in H0; simpl in H0.
     inv H0; auto. inv H3; auto. inv H3; auto. inv H4; auto. inv H4; auto.
+*)
   - inv H0; auto.
   - rewrite H8; simpl.
     inv H0; auto.
@@ -731,6 +740,8 @@ Proof.
     (*
     apply Nat.succ_inj in H13; subst; auto. *)
   - inv H0; auto.
+
+    (*
   - rewrite H10; simpl.
     inv H0; auto.
     simpl in H13.
@@ -754,6 +765,7 @@ Proof.
     (*
     rewrite H15 in H12.
     apply Nat.succ_inj in H12; subst; auto. *)
+*)
 
 Qed.
 
@@ -761,16 +773,8 @@ Lemma wf_implies_wfr: forall t,
     well_formed t ->
     well_formed_r t.
 Proof.
-  induction t; intros.
-  -
-    destruct a; ff.
-  -
-    ff.
-  -
-    ff.
-  -
-    ff.
-  -
+  induction t; intros;
+    try destruct a;
     ff.
 Defined.
 
@@ -896,11 +900,14 @@ Proof.
     apply ws_before; simpl; auto; rewrite evsys_range; auto.
     
   - apply ws_before; auto; repeat rewrite evsys_range; auto.
+
+    (*
     
   - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto).
     
   - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto).
     repeat (apply ws_merge; simpl in *; auto; repeat rewrite evsys_range; auto).
+*)
 Qed.
 
 Theorem no_store_conflicts: forall t p sys,
@@ -946,6 +953,7 @@ Proof.
     subst.
     invc H1;
       do_wf_pieces.
+    (*
   -
 
       cbn in *;
@@ -1004,6 +1012,7 @@ Proof.
             inv H2.
             inv H16.
             eapply unique_events; eauto.
+*)
 Defined.
 
 FAILHERE

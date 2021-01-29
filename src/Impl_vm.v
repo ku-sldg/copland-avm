@@ -9,6 +9,8 @@ Require Import Term_Defs Term GenStMonad MonadVM.
 Require Import List.
 Import ListNotations.
 
+Require Import Maps.
+
 (** Monadic VM implementation *)
 
 
@@ -31,7 +33,7 @@ Fixpoint copland_compile (t:AnnoTerm): CVM unit :=
   | alseq r _ t1 t2 =>
       copland_compile t1 ;;
       copland_compile t2
-  | abseq (x,y) _ (sp1,sp2) t1 t2 =>
+ (* | abseq (x,y) _ (sp1,sp2) t1 t2 =>
       e <- get_ev ;;
       p <- get_pl ;;
       pr <- split_ev_seq x sp1 sp2 e p ;;
@@ -90,9 +92,8 @@ Fixpoint copland_compile (t:AnnoTerm): CVM unit :=
       e1r <- get_store_at loc_e1' ;;
       e2r <- get_store_at loc_e2' ;;
       join_par (Nat.pred y) p e1r e2r *)
+*)
   end.
-
-Require Import Maps.
 
 Definition setup := MapC Plc (CVM unit).
 
@@ -125,14 +126,6 @@ Fixpoint copland_compliment (t:AnnoTerm) (s:setup): setup :=
     let s2 := copland_compliment t2 s1 in
     s2
   | _ => []
-  end.
-
-Require Import EqClass.
-
-Fixpoint map_vals{A B:Type} `{H : EqClass A} (m : MapC A B ) : list B :=
-  match m with
-  | [] => []
-  | (k', v) :: m' => v :: map_vals m'
   end.
 
 (*

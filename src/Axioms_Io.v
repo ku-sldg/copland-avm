@@ -44,6 +44,7 @@ Axiom at_evidence : forall t (p:Plc) (e:EvidenceC),
 Axiom at_events : forall t p,
   remote_events t p = remote_trace t p.
 
+(*
 Axiom par_evidence : forall t (p:Plc) (e:EvidenceC),
     parallel_vm_thread t p e = remote_evidence t p e.
 
@@ -55,3 +56,4 @@ Axiom bpar_shuffle : forall x p t1 t2 et1 et2 xi yi,
           (shuffled_events (parallel_vm_events t1 p)
                            (parallel_vm_events t2 p))
           (bp x xi yi (stop p (aeval t1 p et1)) (stop p (aeval t2 p et2))).
+*)
