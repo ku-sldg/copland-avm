@@ -241,6 +241,7 @@ Ltac monad_unfold :=
   runParThread, *)
 
   get_ev,
+  put_ev,
   get_pl,
   add_tracem,
   modify_evm,

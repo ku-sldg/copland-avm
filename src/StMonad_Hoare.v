@@ -256,7 +256,7 @@ Module MonadHoare(U : UNIVERSE).
                 | [ H : exists _, _ |- _] => destruct H
                 | [ H : Some ?x = Some ?y |- _ ] => inversion H ; clear H ; subst
                 | _ => assert False ; [ lia | contradiction ]
-              end) ; subst ; simpl in * ; try firstorder ; auto with arith.
+              end) ; subst ; simpl in * ; try firstorder ; repeat find_inversion; auto with arith.
 
   (** A heap [h] always satisfies the predicate [top]. *)
   Definition top : hprop := fun _ => True.
@@ -399,16 +399,17 @@ Module MonadHoare(U : UNIVERSE).
     {{ postcomp Q1 Q2 }}.
   Proof.
     unfold precomp, postcomp ; mysimp ; generalize (H0 _ _ (H2 _ _ H)) ; intros ; mysimp.
-    repeat find_inversion.
-    repeat eexists.
-    eassumption.
-    repeat find_inversion.
+
+    eauto.
+   
+    (*
     rewrite Heqp2 in *.
     repeat find_inversion.
     eassumption.
+    
     repeat find_inversion.
     rewrite Heqp3 in *.
-    solve_by_inversion.
+    solve_by_inversion. *)
   Qed.
 
   Notation "x <-- c ; f" := (bind_tc c (fun x => f))

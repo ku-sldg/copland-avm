@@ -176,9 +176,12 @@ Defined.
   
 
 
-
+(*
 Definition swap_tc x y :
   {{fun h => lookup h x <> None /\ lookup h y <> None}}
   swap x y
   {{fun h _ h' => lookup h' y = lookup h x /\ lookup h' x = lookup h y}}.
 Proof.
+ *)
+
+

@@ -30,6 +30,7 @@ Auto.v
 Helpers_VmSemantics.v
 External_Facts.v
 VmSemantics.v
+VM_Hoare.v
 Store_Semantics_alt.v
 StAM.v
 MonadAM.v

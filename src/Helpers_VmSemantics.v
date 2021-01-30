@@ -10,6 +10,9 @@ Require Import Coq.Program.Tactics Coq.Program.Equality.
 
 Set Nested Proofs Allowed.
 
+Locate vmsts.
+Locate do_asome.
+
 Lemma pl_immut : forall t e tr p o,
     well_formed t ->
     st_pl
@@ -545,6 +548,7 @@ Proof.
   simpl.
   do_asome.
   subst.
+  Locate dohi.
   dohi.
   df.
   tauto.
