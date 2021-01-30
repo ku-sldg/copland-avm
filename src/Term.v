@@ -19,6 +19,8 @@ Proof.
   tauto.
 Defined.
 
+(*
+
 Lemma wf_at_pieces: forall t r lr locs p,
     well_formed (aatt locs r lr p t) ->
     well_formed_r t.
@@ -27,6 +29,7 @@ Proof.
   inversion H.
   tauto.
 Defined.
+*)
 
 (*
 Lemma wf_bseq_pieces: forall r lr s t1 t2,
@@ -52,9 +55,9 @@ Ltac do_wf_pieces :=
   match goal with
   | [H: well_formed (alseq _ _ _ _) |- _] =>
     (edestruct wf_lseq_pieces; eauto)
-  | [H: well_formed (aatt _ _ _ _ ?t) |- _] =>   
+  (*| [H: well_formed (aatt _ _ _ _ ?t) |- _] =>   
     assert (well_formed t)
-      by (eapply wf_at_pieces; eauto)
+      by (eapply wf_at_pieces; eauto) *)
   (*| [H: well_formed (abseq _ _ _ _ _) |- _] =>
     (edestruct wf_bseq_pieces; eauto)
   | [H: well_formed (abpar _ _ _ _ _ _) |- _] =>
@@ -78,12 +81,13 @@ Lemma well_formed_range:
 Proof.
   induction t;
     try (intros H; simpl; inv H; simpl;
-    repeat find_apply_hyp_hyp; lia).
+         repeat find_apply_hyp_hyp; lia).
+  (*
   -
     intros H.
     inv H.
     eapply well_formed_range_r.
-    econstructor; eauto.
+    econstructor; eauto. *)
 Defined.
 
 Lemma well_formed_lrange:
@@ -183,10 +187,12 @@ Proof.
   induction t; intros.
   -
     ff.
+    (*
   -
     ff.
     econstructor;
       wf_hammer.
+*)
   -
     ff.
     list_facts.
@@ -446,7 +452,7 @@ Defined.
 Fixpoint aeval t p e :=
   match t with
   | aasp _ _ x => eval (asp x) p e
-  | aatt _ _ _ q x => aeval x q e
+  (*| aatt _ _ _ q x => aeval x q e *)
   | alseq _ _ t1 t2 => aeval t2 p (aeval t1 p e)
   (*| abseq _ _ s t1 t2 => ss (aeval t1 p ((splitEv_T (fst s)) e))
                          (aeval t2 p ((splitEv_T (snd s)) e)) 
@@ -488,7 +494,7 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
     forall r lr i p,
       fst r = i ->
       events (aasp r lr HSH) p (hash i p)
-| evtsattreq:
+(*| evtsattreq:
     forall r lr q t i p req_loc rpy_loc,
       fst r = i ->
       events (aatt r lr (req_loc, rpy_loc) q t) p (req i req_loc p q (unanno t))
@@ -500,6 +506,7 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
     forall r lr q t i p req_loc rpy_loc,
       snd r = S i ->
       events (aatt r lr (req_loc, rpy_loc) q t) p (rpy i rpy_loc p q)
+*)
 | evtslseql:
     forall r lr t1 t2 ev p,
       events t1 p ev ->
@@ -641,6 +648,32 @@ Proof.
   destruct E; lia.
 Qed.
 
+Ltac dest_range :=
+  match goal with
+  | [H: (nat * nat) |- _] => destruct H
+  end.
+
+Ltac dest_lrange :=
+  match goal with
+  | [H: LocRange |- _] => destruct H
+  end.
+
+Ltac do_lin_range :=
+  match goal with
+  | [H: snd _ = fst _,
+        H': fst _ <= ?n < snd _
+     |- _] =>
+    apply lin_range with (i:=n) in H; eauto
+  end.
+
+Ltac do_bra_range :=
+  match goal with
+  | [H: snd _ = fst _,
+        H': fst ?x <= ?n < snd ?x
+     |- _] =>
+    apply bra_range with (i:=n) (r:=x) in H; eauto
+  end.
+
 (** Properties of events. *)
 
 Lemma events_range_event:
@@ -653,34 +686,10 @@ Proof.
   induction H; intros; simpl in *.
   - destruct x; eapply ex_intro; split; auto;
       (*destruct r as [j k];*) simpl in *; lia.
+    (*
   - find_eapply_lem_hyp at_range; eauto.
     (*eapply at_range in H2; eauto. *)
 
-    Ltac dest_range :=
-      match goal with
-      | [H: (nat * nat) |- _] => destruct H
-      end.
-
-     Ltac dest_lrange :=
-       match goal with
-       | [H: LocRange |- _] => destruct H
-       end.
-
-     Ltac do_lin_range :=
-      match goal with
-      | [H: snd _ = fst _,
-            H': fst _ <= ?n < snd _
-         |- _] =>
-        apply lin_range with (i:=n) in H; eauto
-      end.
-
-     Ltac do_bra_range :=
-      match goal with
-      | [H: snd _ = fst _,
-            H': fst ?x <= ?n < snd ?x
-         |- _] =>
-        apply bra_range with (i:=n) (r:=x) in H; eauto
-      end.
 
      repeat dest_range;
     
@@ -703,6 +712,7 @@ Proof.
       * rewrite H1; auto.
       * simpl; auto.
       *)
+*)
       
   -
 
@@ -800,9 +810,9 @@ Inductive splitEv_T_R : SP -> Evidence -> Evidence -> Prop :=
 Inductive evalR : Term -> Plc -> Evidence -> Evidence -> Prop :=
 | evalR_asp: forall a p e,
     evalR (asp a) p e (eval_asp a p e)
-| evalR_att: forall t1 q e e' p,
+(*| evalR_att: forall t1 q e e' p,
     evalR t1 q e e' ->
-    evalR (att q t1) p e e'
+    evalR (att q t1) p e e' *)
 | evalR_lseq: forall t1 t2 p e e' e'',
     evalR t1 p e e' ->
     evalR t2 p e' e'' ->

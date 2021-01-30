@@ -25,11 +25,11 @@ Fixpoint copland_compile (t:AnnoTerm): CVM unit :=
   | aasp (n,_) _ a =>
       e <- do_prim n a ;;
       put_ev e
-  | aatt (i,j) _ (req_loc,rpy_loc) q t' =>
+ (* | aatt (i,j) _ (req_loc,rpy_loc) q t' =>
       sendReq t' q i req_loc ;;
       doRemote t' q req_loc rpy_loc ;;
       e' <- receiveResp j rpy_loc q ;;
-      put_ev e'
+      put_ev e' *)
   | alseq r _ t1 t2 =>
       copland_compile t1 ;;
       copland_compile t2
@@ -118,9 +118,9 @@ Definition bookend (comp: CVM unit) (req_loc rpy_loc:Loc): CVM unit :=
 
 Fixpoint copland_compliment (t:AnnoTerm) (s:setup): setup :=
   match t with
-  | aatt (i,j) _ (req_loc,rpy_loc) q t' =>
+  (*| aatt (i,j) _ (req_loc,rpy_loc) q t' =>
     let comp := copland_compile t' in (* TODO: annotate terms with the place they execute? *)
-    add_at s q (bookend comp req_loc rpy_loc)
+    add_at s q (bookend comp req_loc rpy_loc) *)
   | alseq r _ t1 t2 =>
     let s1 := copland_compliment t1 s in
     let s2 := copland_compliment t2 s1 in

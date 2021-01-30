@@ -27,11 +27,11 @@ Inductive traceS: St -> list Ev -> Prop :=
 | tconf: forall t tr p e,
     trace t p tr ->
     traceS (conf t p e) tr
-| trem: forall st tr j loc p,
+(*| trem: forall st tr j loc p,
     traceS st tr ->
     traceS (rem j loc p st)
            (tr ++
-               [(rpy (pred j) loc p (pl st))])
+               [(rpy (pred j) loc p (pl st))]) *)
 | tls: forall st tr1 t tr2,
     traceS st tr1 ->
     trace t (pl st) tr2 ->
@@ -57,7 +57,7 @@ Fixpoint esizeS s:=
   match s with
   | stop _ _ => 0
   | conf t _ _ => esize t
-  | rem _ _ _ st => 1 + esizeS st
+  (*| rem _ _ _ st => 1 + esizeS st *)
   | ls st t => esizeS st + esize t
   (*| bsl _ st t _ _ => 1 + esizeS st + esize t
   | bsr _ _ st => 1 + esizeS st
@@ -148,6 +148,13 @@ Defined.
 Qed.
  *)
 
+Require Import Defs.
+
+Ltac jkjk'e :=
+  match goal with
+  | [H: _ = ?X |-  context[?X] ] => erewrite <- H
+  end.
+
 Lemma step_silent_tr:
   forall st st' tr,
     step st None st' ->
@@ -160,6 +167,8 @@ Proof.
     solve_by_inversion.
     (*
     inv H2; auto. *)
+
+    (*
   -
 
     (*
@@ -176,12 +185,7 @@ Proof.
     find_copy_apply_lem_hyp step_pl_eq.
     find_copy_apply_lem_hyp step_seval.
 
-    Require Import Defs.
 
-    Ltac jkjk'e :=
-      match goal with
-      | [H: _ = ?X |-  context[?X] ] => erewrite <- H
-      end.
 
     jkjk'e.
 
@@ -197,6 +201,7 @@ Proof.
      *)
 
     eauto.
+*)
 
   -
 
@@ -311,10 +316,14 @@ Proof.
   induction st; intros; inv H; inv H0.
   - constructor.
     constructor.
+
+    (*
+    
   - constructor. apply tatt. simpl.
     solve_by_inversion.
     (*
     inv H6; auto. *)
+*)
 
     (*
   - constructor. apply tbseq; auto.
@@ -327,7 +336,8 @@ Proof.
 (*
     inv H6; auto. inv H7; auto. *)
 
-*)
+     *)
+    (*
   -
     find_copy_apply_lem_hyp step_seval.
     find_copy_apply_lem_hyp step_pl_eq.
@@ -346,8 +356,10 @@ Proof.
     eapply IHst in H7; eauto.
     (* rewrite <- G. *) rewrite <- G1.
     rewrite app_comm_cons; auto. *)
+     *)
+    (*
   - rewrite <- app_nil_l; auto.
-    apply trem; auto.
+    apply trem; auto. *)
   -
     find_copy_apply_lem_hyp step_seval.
     find_copy_apply_lem_hyp step_pl_eq.

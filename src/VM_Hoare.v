@@ -122,8 +122,9 @@ Proof.
     destruct a;
       df;
       mysimp.
+    (*
   -
-    repeat (df; mysimp; (*unfold get_store_at in *;*) dohtac ).
+    repeat (df; mysimp; (*unfold get_store_at in *;*) dohtac ). *)
   -
     repeat (df; mysimp; (*unfold get_store_at in *;*) dohtac );
     do_wf_pieces.
@@ -289,6 +290,7 @@ Proof.
     solve_by_inversion.
 Defined.
 
+(*
 Definition st_trace_irrel_tc: forall t tr1 tr1' (*tr2*) e e' p1' p1 o' o,
     well_formed t ->
     copland_compile t
@@ -323,4 +325,5 @@ Proof.
   admit.
   mysimp.
   Focus 4.
+*)
     

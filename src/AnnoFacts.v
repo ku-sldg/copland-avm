@@ -40,8 +40,10 @@ Proof.
      *)
   -
     destruct a; ff.
+
+    (*
   -
-    ff.
+    ff. *)
   -
     ff.
     repeat (same_index; subst);
@@ -184,13 +186,17 @@ Lemma anno_some_fact: forall t i ls n a,
     anno t i ls true = Some (n, a) ->
     length ls >= nss t.
 Proof.
-  induction t; intros.
+  induction t; intros;
+    ff;
+    try (destruct ls; ff; lia);
+    try lia.
+  (*
   -
     ff.
     destruct ls; ff; lia.
   -
     ff.
-    lia.
+    lia. *)
   -
     ff.
     list_facts'.
@@ -276,10 +282,11 @@ Proof.
   induction t; intros.
   -
     destruct a; ff.
+    (*
   -
     ff.
     exfalso.
-    eapply false_succeeds; eauto.
+    eapply false_succeeds; eauto. *)
   -
     ff.
     list_facts.
@@ -407,6 +414,7 @@ Proof.
     destruct a;
       ff;
       eauto.
+    (*
   -
     cbn in *.
     assert (exists x y, l = [x; y]).
@@ -429,7 +437,8 @@ Proof.
       eapply false_succeeds; eauto.
     +
       destruct b;
-        ff.
+        ff. 
+*)
         
   -
     ff.
@@ -821,6 +830,7 @@ Proof.
   -
     destruct a;
       ff.
+    (*
   -
     ff.
     +
@@ -877,6 +887,7 @@ Proof.
       simpl.
       assert (n0 > S i) by (eapply anno_mono; eauto).
       lia.
+*)
   -
     ff.
     econstructor.

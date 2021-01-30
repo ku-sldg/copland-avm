@@ -1,185 +1,119 @@
-(* Small-step semantics *)
-
-(* LICENSE NOTICE
-
-Copyright (c) 2018 The MITRE Corporation.
-All Rights Reserved.
-
-This proof script is free software: you can redistribute it and/or
-modify it under the terms of the BSD License as published by the
-University of California.  See license.txt for details. *)
-
-(** A small-step semantics for annotated terms. *)
+Require Import Term_Defs ConcreteEvidence.
 
 Require Import List.
-Import List.ListNotations.
-Open Scope list_scope.
-Require Import PeanoNat Minus Lia Preamble Term_Defs Term.
+Import ListNotations.
 
-(** * States *)
+Require Import RecordSet.
+Import RecordSetNotations.
 
-Inductive St: Set :=
-| stop: Plc -> Evidence -> St
-| conf: AnnoTerm -> Plc -> Evidence -> St
+Inductive Prim_Instr: Set :=
+| copy: Prim_Instr
+| umeas: ASP_ID -> list Arg -> Prim_Instr
+| sign: Prim_Instr
+| hash: Prim_Instr.
+
+Inductive AnnoInstr: Set :=
+| aprimInstr: nat -> Prim_Instr -> AnnoInstr
+| aseq: AnnoInstr -> AnnoInstr -> AnnoInstr.
+
+Definition asp_instr (a:ASP) : Prim_Instr :=
+  match a with
+  | CPY => copy
+  | ASPC i args => umeas i args
+  | SIG => sign
+  | HSH => hash
+  end.
+
+(*
+(*
+Definition ev_store := MapC nat EvidenceC.
+*)
+Record cvm_st : Type := mk_st
+                          {
+                            st_ev:EvidenceC ;
+                            st_pl:Plc ;                 
+                            st_trace:list Ev ;
+                            (* st_store:ev_store *) } .
+
+Definition empty_vmst := mk_st mtc 0 []. (* mtc [] 0 [] *)
+
+Instance eta_r : Settable _ := settable! mk_st <st_ev; st_pl; st_trace>.
+
+Definition setEv a x := x <| st_ev := a|> <|st_pl := 42|>.
+
+Compute (setEv (ggc 0 mtc) empty_vmst).
+*)
+
+Fixpoint instr_compiler (t:AnnoTerm) : AnnoInstr :=
+  match t with
+  | aasp r l a => aprimInstr (fst r) (asp_instr a)
+  (*| aatt (i,j) q t' => [areqrpy i j q t']  *)    
+  | alseq _ _ t1 t2 => aseq (instr_compiler t1) (instr_compiler t2)
+  end.
+
+Definition ev_asp_instr (x:nat) (pi:Prim_Instr) (e:EvidenceC) : EvidenceC :=
+  match pi with
+  | copy => e
+  | umeas asp_id _ => (uuc asp_id x e)
+  | sign => (ggc x e)
+  | hash => (hhc x e)
+  end.
+
+Definition tr_asp_instr (x:nat) (p:Plc) (pi:Prim_Instr) :=
+  match pi with
+  | copy => Term_Defs.copy x p
+  | umeas asp_id args => (Term_Defs.umeas x p asp_id args)
+  | sign => Term_Defs.sign x p
+  | hash => Term_Defs.hash x p
+  end.
+
+(*
+Definition update_ev_st (st:cvm_st) (e:EvidenceC) : cvm_st :=
+  st <| st_ev := e|>.
+*)
+
+
+Inductive InstrSt: Set :=
+| istop: Plc -> EvidenceC -> InstrSt
+| iconf: AnnoInstr -> Plc -> EvidenceC -> InstrSt
 (*| rem: nat -> Loc -> Plc -> St -> St *)
-| ls: St -> AnnoTerm -> St
+| ils: InstrSt -> AnnoInstr -> InstrSt
 (*| bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
 | bsr: nat -> Evidence -> St -> St
 | bp: nat -> Loc -> Loc -> St -> St -> St*) .
 
-Fixpoint pl (s:St) :=
-  match s with
-  | stop p _ => p
-  | conf _ p _ => p
-  (*| rem _ _ p _ => p *)
-  | ls st _ => pl st
-  (*| bsl _ _ _ p _ => p
-  | bsr _ _ st => pl st
-  | bp _ _ _ _ st => pl st *)
-  end.
+Inductive Instr_step: InstrSt -> option Ev -> InstrSt -> Prop :=
+| primStep: forall x pi p e,
+    Instr_step (iconf (aprimInstr x pi) p e)
+               (Some (tr_asp_instr x p pi))
+               (istop p (ev_asp_instr x pi e))
+| seqStart: forall x y p e,
+    Instr_step (iconf (aseq x y) p e)
+               None
+               (ils (iconf x p e) y)
+| seqStep: forall st0 st1 ev x,
+    Instr_step st0 ev st1 ->
+    Instr_step (ils st0 x) ev (ils st1 x)
+| seqStop: forall y p e,
+    Instr_step (ils (istop p e) y) None (iconf y p e).
+Hint Constructors Instr_step : core.
 
-(** The evidence associated with a state. *)
 
-Fixpoint seval st :=
-  match st with
-  | stop _ e => e
-  | conf t p e => aeval t p e
-  (*| rem _ _ _ st => seval st *)
-  | ls st t => aeval t (pl st) (seval st)
-  (*| bsl _ st t p e => ss (seval st) (aeval t p e)
-  | bsr _ e st => ss e (seval st)
-  | bp _ _ _ st0 st1 => pp (seval st0) (seval st1) *)
-end.
 
-(** * Labeled Transition System
 
-    The label in a transition is either an event or [None] when the
-    transition is silent.  Notice the use of annotations to provide
-    the correct number for each event.  *)
 
-Inductive step: St -> option Ev -> St -> Prop :=
-(** Measurement *)
 
-| stasp:
-    forall r lr x p e,
-      step (conf (aasp r lr x) p e)
-           (Some (asp_event (fst r) x p))
-           (stop p (aeval (aasp r lr x) p e))
 
-           (*
-(** Remote call *)
 
-| statt:
-    forall r lr x p q e req_loc rpy_loc,
-      step (conf (aatt r lr (req_loc, rpy_loc) q x) p e)
-           (Some (req (fst r) req_loc p q (unanno x)))
-           (rem (snd r) rpy_loc p (conf x q e))
-| stattstep:
-    forall st0 ev st1 p j loc,
-      step st0 ev st1 ->
-      step (rem j loc p st0) ev (rem j loc p st1)
-| stattstop:
-    forall j p q e loc,
-      step (rem j loc p (stop q e))
-           (Some (rpy (pred j) loc p q))
-           (stop p e)
-*)
-(** Linear Sequential Composition *)
-
-| stlseq:
-    forall r lr x y p e,
-      step (conf (alseq r lr x y) p e)
-           None
-           (ls (conf x p e) y)
-| stlseqstep:
-    forall st0 ev st1 t,
-      step st0 ev st1 ->
-      step (ls st0 t) ev (ls st1 t)
-| stlseqstop:
-    forall t p e,
-      step (ls (stop p e) t) None (conf t p e)
-(** Branching Sequential Composition *)
-
-           (*
-| stbseq:
-    forall r lr s x y p e,
-      step (conf (abseq r lr s x y) p e)
-           (Some (split (fst r) p))
-           (bsl (snd r) (conf x p (splitEv_T (fst s) e))
-                y p (splitEv_T (snd s) e))
-| stbslstep:
-    forall st0 ev st1 j t p e,
-      step st0 ev st1 ->
-      step (bsl j st0 t p e) ev (bsl j st1 t p e)
-| stbslstop:
-    forall j e e' t p p',
-      step (bsl j (stop p e) t p' e')
-           None
-           (bsr j e (conf t p' e'))
-| stbsrstep:
-    forall st0 ev st1 j e,
-      step st0 ev st1 ->
-      step (bsr j e st0) ev (bsr j e st1)
-| stbsrstop:
-    forall j e p e',
-      step (bsr j e (stop p e'))
-           (Some (join (pred j) p))
-           (stop p (ss e e'))
-
-(** Branching Parallel composition *)
-
-| stbpar:
-    forall r lr s x y p e (*xi xi'*) yi yi',
-      step (conf (abpar r lr (*(xi,xi')*) (yi,yi') s x y) p e)
-           (Some (splitp (fst r) (*xi*) yi p))
-           (bp (snd r) (*xi'*) yi' yi'
-               (conf x p (splitEv_T (fst s) e))
-               (conf y p (splitEv_T (snd s) e)))
-| stbpstepleft:
-    forall st0 st1 st2 ev j xi yi,
-      step st0 ev st2 ->
-      step (bp j xi yi st0 st1) ev (bp j xi yi st2 st1)
-| stbpstepright:
-    forall st0 st1 st2 ev j xi yi,
-      step st1 ev st2 ->
-      step (bp j xi yi st0 st1) ev (bp j xi yi st0 st2)
-| stbpstop:
-    forall j p e p' e' xi yi,
-      step (bp j xi yi (stop p e) (stop p' e'))
-           (Some (joinp (pred j) xi yi p'))
-           (stop p' (pp e e')) *) .
-Hint Constructors step : core.
-
-(** A step preserves place. *)
-
-Lemma step_pl_eq:
-  forall st0 ev st1,
-    step st0 ev st1 -> pl st0 = pl st1.
-Proof.
-  intros.
-  induction H; simpl; auto.
-Qed.
-
-(** A step preserves evidence. *)
-
-Lemma step_seval:
-  forall st0 ev st1,
-    step st0 ev st1 ->
-    seval st0 = seval st1.
-Proof.
-  intros.
-  induction H; simpl; auto; try rewrite IHstep; auto.
-  apply step_pl_eq in H. rewrite H; auto.
-Qed.
 
 (** * Transitive Closures *)
 
-Inductive lstar: St -> list Ev -> St -> Prop :=
+Inductive lstar: InstrSt -> list Ev -> InstrSt -> Prop :=
 | lstar_refl: forall st, lstar st [] st
 | lstar_tran: forall st0 e st1 tr st2,
-    step st0 (Some e) st1 -> lstar st1 tr st2 -> lstar st0 (e :: tr) st2
+    Instr_step st0 (Some e) st1 -> lstar st1 tr st2 -> lstar st0 (e :: tr) st2
 | lstar_silent_tran: forall st0 st1 tr st2,
-    step st0 None st1 -> lstar st1 tr st2 -> lstar st0 tr st2.
+    Instr_step st0 None st1 -> lstar st1 tr st2 -> lstar st0 tr st2.
 Hint Resolve lstar_refl : core.
 
 Lemma lstar_transitive:
@@ -200,10 +134,10 @@ Qed.
 
 (** Transitive closure without labels. *)
 
-Inductive star: St -> St -> Prop :=
+Inductive star: InstrSt -> InstrSt -> Prop :=
 | star_refl: forall st, star st st
 | star_tran: forall st0 e st1 st2,
-    step st0 e st1 -> star st1 st2 -> star st0 st2.
+    Instr_step st0 e st1 -> star st1 st2 -> star st0 st2.
 Hint Resolve star_refl : core.
 
 Lemma star_transitive:
@@ -242,6 +176,7 @@ Proof.
       eapply lstar_silent_tran; eauto.
 Qed.
 
+(*
 Lemma star_seval:
   forall st0 st1,
     star st0 st1 -> seval st0 = seval st1.
@@ -261,6 +196,7 @@ Proof.
   apply star_seval in H.
   simpl in H; auto.
 Qed.
+*)
 
 (** * Correct Path Exists *)
 
@@ -277,7 +213,7 @@ Qed.
 
 Lemma star_stls:
   forall st0 st1 t,
-    star st0 st1 -> star (ls st0 t) (ls st1 t).
+    star st0 st1 -> star (ils st0 t) (ils st1 t).
 Proof.
   intros.
   induction H; auto.
@@ -309,7 +245,7 @@ Qed.
 (* Congruence lemmas for Copland LTS semantics *)
 Lemma lstar_stls :
   forall st0 st1 t tr,
-    lstar st0 tr st1 -> lstar (ls st0 t) tr (ls st1 t).
+    lstar st0 tr st1 -> lstar (ils st0 t) tr (ils st1 t).
 Proof.
   intros.
   induction H; auto.
@@ -365,14 +301,30 @@ Proof.
     eapply star_tran; eauto.
   - eapply star_tran; eauto.
 Qed.
+ *)
+
+
+(*
+Inductive InstrSt: Set :=
+| istop: cvm_st -> InstrSt
+| iconf: AnnoInstr -> cvm_st -> InstrSt
+(*| rem: nat -> Loc -> Plc -> St -> St *)
+| ils: InstrSt -> AnnoInstr -> InstrSt
+(*| bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
+| bsr: nat -> Evidence -> St -> St
+| bp: nat -> Loc -> Loc -> St -> St -> St*) .
 *)
 
 Theorem correct_path_exists:
-  forall t p e,
-    star (conf t p e) (stop p (aeval t p e)).
+  forall p e i,
+    exists st',
+    star (iconf i p e) (istop p st').
 Proof.
-  induction t; intros; simpl; eauto.
-  - eapply star_tran; eauto.
+  induction i; intros; simpl; eauto.
+  -
+    eexists.
+
+    eapply star_tran; eauto.
     (*
   - destruct p.
     eapply star_tran; eauto.
@@ -380,11 +332,18 @@ Proof.
     apply star_strem.
     apply IHt.
     eapply star_tran; eauto. *)
-  - eapply star_tran; eauto.
+  -
+    edestruct IHi1.
+    edestruct IHi2.
+    eexists.
+    eapply star_tran.
+    econstructor.
     eapply star_transitive.
     apply star_stls.
-    apply IHt1.
-    eapply star_tran; eauto.
+    eassumption.
+    eapply star_tran.
+    apply seqStop.
+    Abort.
 
     (*
     
@@ -406,29 +365,29 @@ Proof.
     apply IHt1.
     apply IHt2.
     eapply star_tran; eauto.
-*)
 Qed.
+*)
 
 (** * Progress *)
 
 Definition halt st :=
   match st with
-  | stop _ _ => True
+  | istop _ _ => True
   | _ => False
   end.
 
-(** The step relation nevers gets stuck. *)
+(** The Instr_step relation nevers gets stuck. *)
 
 Theorem never_stuck:
   forall st0,
-    halt st0 \/ exists e st1, step st0 e st1.
+    halt st0 \/ exists e st1, Instr_step st0 e st1.
 Proof.
   induction st0.
   - left; simpl; auto.
     
   - right.
     destruct a.
-    + exists (Some (asp_event (fst r) a n)).
+    + exists (Some (tr_asp_instr n0 n p)).
       eapply ex_intro; eauto.
       (*
     + exists (Some (req (fst r) (fst p) n n0 (unanno a))).
@@ -463,7 +422,7 @@ Proof.
     + destruct H as [e H].
       exists e.
       destruct H as [st H].
-      exists (ls st a). auto.
+      exists (ils st a). auto.
       (*
       
   - right.
@@ -505,11 +464,13 @@ Qed.
 
 (** * Termination *)
 
-Inductive nstar: nat -> St -> St -> Prop :=
+Inductive nstar: nat -> InstrSt -> InstrSt -> Prop :=
 | nstar_refl: forall st, nstar 0 st st
 | nstar_tran: forall st0 st1 st2 e n,
-    nstar n st0 st1 -> step st1 e st2 -> nstar (S n) st0 st2.
+    nstar n st0 st1 -> Instr_step st1 e st2 -> nstar (S n) st0 st2.
 Hint Resolve nstar_refl : core.
+
+Require Import PeanoNat.
 
 Lemma nstar_transitive:
   forall m n st0 st1 st2,
@@ -555,9 +516,9 @@ Qed.
 
 Fixpoint tsize t: nat :=
   match t with
-  | aasp _ _ _ => 1
+  | aprimInstr _ _ => 1
   (*| aatt _ _ _ _ x => 2 + tsize x *)
-  | alseq _ _ x y => 2 + tsize x + tsize y
+  | aseq x y => 2 + tsize x + tsize y
   (*| abseq _ _ _ x y => 3 + tsize x + tsize y
   | abpar _ _ _ _ x y => 2 + tsize x + tsize y *)
   end.
@@ -566,10 +527,10 @@ Fixpoint tsize t: nat :=
 
 Fixpoint ssize s: nat :=
   match s with
-  | stop _ _ => 0
-  | conf t _ _ => tsize t
+  | istop _ _ => 0
+  | iconf t _ _ => tsize t
   (*| rem _ _ _ x => 1 + ssize x *)
-  | ls x t => 1 + ssize x + tsize t
+  | ils x t => 1 + ssize x + tsize t
   (*| bsl _ x t _ _ => 2 + ssize x + tsize t
   | bsr _ _ x => 1 + ssize x
   | bp _ _ _ x y => 1 + ssize x + ssize y *)
@@ -589,11 +550,12 @@ Proof.
     + destruct a; simpl in H; discriminate.
 Qed.
 
+Require Import Lia.
 (** A state decreases its size by one. *)
 
 Lemma step_size:
   forall st0 e st1,
-    step st0 e st1 ->
+    Instr_step st0 e st1 ->
     S (ssize st1) = ssize st0.
 Proof.
   intros.
@@ -602,7 +564,7 @@ Qed.
 
 Lemma step_count:
   forall n t p e st,
-    nstar n (conf t p e) st ->
+    nstar n (iconf t p e) st ->
     tsize t = n + ssize st.
 Proof.
   induction n; intros.
@@ -618,7 +580,7 @@ Qed.
 
 Theorem steps_to_stop:
   forall t p e st,
-    nstar (tsize t) (conf t p e) st ->
+    nstar (tsize t) (iconf t p e) st ->
     halt st.
 Proof.
   intros.
@@ -629,12 +591,12 @@ Qed.
 
 (** * Numbered Labeled Transitions *)
 
-Inductive nlstar: nat -> St -> list Ev -> St -> Prop :=
+Inductive nlstar: nat -> InstrSt -> list Ev -> InstrSt -> Prop :=
 | nlstar_refl: forall st, nlstar 0 st [] st
 | nlstar_tran: forall n st0 e st1 tr st2,
-    step st0 (Some e) st1 -> nlstar n st1 tr st2 -> nlstar (S n) st0 (e :: tr) st2
+    Instr_step st0 (Some e) st1 -> nlstar n st1 tr st2 -> nlstar (S n) st0 (e :: tr) st2
 | nlstar_silent_tran: forall n st0 st1 tr st2,
-    step st0 None st1 -> nlstar n st1 tr st2 -> nlstar (S n) st0 tr st2.
+    Instr_step st0 None st1 -> nlstar n st1 tr st2 -> nlstar (S n) st0 tr st2.
 Hint Resolve nlstar_refl : core.
 
 Lemma nlstar_transitive:
@@ -690,6 +652,8 @@ Proof.
     lia.
 Qed.
 
+Require Import Minus.
+
 Lemma lstar_nlstar_size:
   forall st0 tr st1,
     lstar st0 tr st1 ->
@@ -714,13 +678,13 @@ Qed.
 
 (** The reverse version of [nlstar]. *)
 
-Inductive rlstar: nat -> St -> list Ev -> St -> Prop :=
+Inductive rlstar: nat -> InstrSt -> list Ev -> InstrSt -> Prop :=
 | rlstar_refl: forall st, rlstar 0 st [] st
 | rlstar_tran: forall n st0 e st1 tr st2,
-    rlstar n st0 tr st1 -> step st1 (Some e) st2 ->
+    rlstar n st0 tr st1 -> Instr_step st1 (Some e) st2 ->
     rlstar (S n) st0 (tr ++ [e]) st2
 | rlstar_silent_tran: forall n st0 st1 tr st2,
-    rlstar n st0 tr st1 -> step st1 None st2 ->
+    rlstar n st0 tr st1 -> Instr_step st1 None st2 ->
     rlstar (S n) st0 tr st2.
 Hint Resolve rlstar_refl : core.
 
@@ -805,3 +769,6 @@ Proof.
       eapply rlstar_transitive; eauto.
       eapply rlstar_silent_tran in H; eauto.
 Qed.
+
+    
+    

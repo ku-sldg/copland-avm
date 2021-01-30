@@ -54,7 +54,7 @@ Definition Split: Set := (SP * SP).
 
 Inductive Term: Set :=
 | asp: ASP -> Term
-| att: Plc -> Term -> Term
+(*| att: Plc -> Term -> Term *)
 | lseq: Term -> Term -> Term
 (*| bseq: Split -> Term -> Term -> Term
 | bpar: Split -> Term -> Term -> Term*) .
@@ -101,7 +101,7 @@ Definition eval_asp t p e :=
 Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
   match t with
   | asp a => eval_asp a p e
-  | att q t1 => eval t1 q e
+  (*| att q t1 => eval t1 q e *)
   | lseq t1 t2 => eval t2 p (eval t1 p e)
   (*| bseq s t1 t2 => ss (eval t1 p (splitEv_T (fst s) e))
                        (eval t2 p (splitEv_T (snd s) e)) 
@@ -200,7 +200,7 @@ Definition Range: Set := nat * nat.
 
 Inductive AnnoTerm: Set :=
 | aasp: Range -> LocRange -> ASP -> AnnoTerm
-| aatt: Range -> LocRange -> (Loc*Loc) -> Plc -> AnnoTerm -> AnnoTerm
+(*| aatt: Range -> LocRange -> (Loc*Loc) -> Plc -> AnnoTerm -> AnnoTerm *)
 | alseq: Range -> LocRange -> AnnoTerm -> AnnoTerm -> AnnoTerm
 (*| abseq: Range -> LocRange -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
 | abpar: Range -> LocRange -> (*(Loc*Loc) ->*) (Loc*Loc) -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm*) .
@@ -208,7 +208,7 @@ Inductive AnnoTerm: Set :=
 Fixpoint esize t :=
   match t with
   | aasp _ _ _ => 1
-  | aatt _ _ _ _ t1 => 2 + (*remote_esize t1*) esize t1
+  (*| aatt _ _ _ _ t1 => 2 + (*remote_esize t1*) esize t1 *)
   | alseq _ _ t1 t2 => esize t1 + esize t2
   (*| abseq _ _ _ t1 t2 => 2 + esize t1 + esize t2
   | abpar _ _ _ _ t1 t2 => 2 + esize t1 + esize t2 *)
@@ -217,7 +217,7 @@ Fixpoint esize t :=
 Definition range x :=
   match x with
   | aasp r _ _ => r
-  | aatt r _ _ _ _ => r
+  (*| aatt r _ _ _ _ => r *)
   | alseq r _ _ _ => r
   (*| abseq r _ _ _ _ => r
   | abpar r _ _ _ _ _ => r *)
@@ -226,7 +226,7 @@ Definition range x :=
 Definition lrange x :=
   match x with
   | aasp _ lr _ => lr
-  | aatt _ lr _ _ _ => lr
+  (*| aatt _ lr _ _ _ => lr *)
   | alseq _ lr _ _ => lr
   (*| abseq _ lr _ _ _ => lr
   | abpar _ lr _ _ _ _ => lr *)
@@ -235,7 +235,7 @@ Definition lrange x :=
 Fixpoint anss (t:AnnoTerm) :=
   match t with
   | aasp _ _ _ => 0
-  | aatt _ _ _ _ t => 2 (* + (remote_anss t) (*(anss t) + 2*) *)
+  (* | aatt _ _ _ _ t => 2 (* + (remote_anss t) (*(anss t) + 2*) *) *)
   | alseq _ _ t1 t2 => anss t1 + anss t2
   (*| abseq _ _ _ t1 t2 => anss t1 + anss t2
   | abpar _ _ _ _ t1 t2 => 2 + anss t1 + anss t2 *)
@@ -245,7 +245,7 @@ Fixpoint anss (t:AnnoTerm) :=
 Fixpoint nss (t:Term) :=
   match t with
   | asp _ => 0
-  | att _ t => (*nss t +*) 2
+  (*| att _ t => (*nss t +*) 2 *)
   | lseq t1 t2 => nss t1 + nss t2
   (*| bseq _ t1 t2 => nss t1 + nss t2
   | bpar  _ t1 t2 => 2 + nss t1 + nss t2 *)
@@ -262,9 +262,10 @@ Proof.
       cbn in *;
       subst;
       tauto.
+    (*
   -
     cbn in *.
-    eauto.
+    eauto. *)
   -
     cbn in *.
     subst.
@@ -295,11 +296,13 @@ Fixpoint anno (t: Term) (i:nat) (ls:LocRange) (b:bool) : option (nat * (* (LocRa
   match t with
   | asp x => ret (S i, (aasp (i, S i) [] x))
 
-  | att p x =>
+  (*| att p x =>
     '(req_loc,rpy_loc) <- getTwoLocs ls b ;;
     '(j,a) <- anno x (S i) [] false  ;;
     (* TODO: does ls matter here?  Should it be []? *)
-    ret (S j, aatt (i, S j) (firstn 2 ls) (req_loc,rpy_loc) p a)
+    ret (S j, aatt (i, S j) (firstn 2 ls) (req_loc,rpy_loc) p a) 
+   *)
+                
 
   | lseq x y =>
     '(j,a) <- anno x i (firstn (nss x) ls) b  ;;
@@ -330,7 +333,7 @@ Definition annotated x ls :=
 Fixpoint unanno a :=
   match a with
   | aasp _ _ a => asp a
-  | aatt _ _ _ p t => att p (unanno t)
+  (*| aatt _ _ _ p t => att p (unanno t) *)
   | alseq _ _ a1 a2 => lseq (unanno a1) (unanno a2)
                          
   (*| abseq _ _ spl a1 a2 => bseq spl (unanno a1) (unanno a2) 
@@ -357,12 +360,12 @@ Inductive well_formed_r: AnnoTerm -> Prop :=
 | wf_asp_r: forall r x ls,
     snd r = S (fst r) ->
     well_formed_r (aasp r ls x)
-| wf_att_r: forall r ls locs p x,
+(*| wf_att_r: forall r ls locs p x,
     well_formed_r x ->
     S (fst r) = fst (range x) ->
     snd r = S (snd (range x)) ->
     Nat.pred (snd r) > fst r ->
-    well_formed_r (aatt r ls locs p x)
+    well_formed_r (aatt r ls locs p x) *)
                   
 | wf_lseq_r: forall r ls x y,
     well_formed_r x -> well_formed_r y ->
@@ -391,7 +394,7 @@ Inductive well_formed: AnnoTerm -> Prop :=
 | wf_asp: forall r x,
     snd r = S (fst r) ->
     well_formed (aasp r [] x)
-| wf_att: forall r ls locs p x,
+(*| wf_att: forall r ls locs p x,
     well_formed_r x ->
     S (fst r) = fst (range x) ->
     snd r = S (snd (range x)) ->
@@ -414,7 +417,7 @@ Inductive well_formed: AnnoTerm -> Prop :=
      *)
     
     
-    well_formed (aatt r ls locs p x)
+    well_formed (aatt r ls locs p x) *)
                 
 | wf_lseq: forall r ls x y,
     well_formed x -> well_formed y ->

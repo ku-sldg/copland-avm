@@ -29,9 +29,10 @@ Proof.
     destruct r.
     destruct a;
       reflexivity.
+    (*
   -
     repeat (df; dohtac; df).
-    reflexivity.
+    reflexivity. *)
   -
     do_wf_pieces.
     
@@ -346,11 +347,13 @@ Proof.
   induction t; intros.
   - destruct a;
       df; eauto.
+    (*
   -
     (*
     do_wf_pieces. *)
     repeat (df; dohtac; df).
     tauto.
+*)
   -
     do_wf_pieces.
     df;
@@ -456,9 +459,11 @@ Proof.
   -
     destruct a;
       try (df; tauto).
+    (*
   -
     repeat (df; dohtac; df).
     tauto.
+*)
   -
     df. 
     do_wf_pieces.
