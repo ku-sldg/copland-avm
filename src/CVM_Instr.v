@@ -258,8 +258,14 @@ Definition build_world (t:AnnoTerm) (p:Plc)
   build_world' p e codes.
 *)
 
-Definition add_one_at (q:Plc)(s:list InstrSt) (ai:AnnoInstr) : list InstrSt.
-Admitted.
+(*
+Definition build_one' (p:Plc) (x:AnnoInstr) : InstrSt :=
+  iconf x p mtc.
+*)
+
+Definition add_one_at (q:Plc)(s:list InstrSt) (ai:AnnoInstr) : list InstrSt :=
+  let one := build_one' q ai in
+  one :: s.
 
 Fixpoint copland_compliment_l (t:AnnoTerm) (s:list InstrSt): list InstrSt :=
   match t with
@@ -299,10 +305,11 @@ Inductive WorldTerm: Set :=
 Inductive WorldTerm: Set :=
 | onePlat: InstrSt -> WorldTerm
 | parPlats: WorldTerm -> WorldTerm -> WorldTerm
-| donePlat: nat -> WorldTerm.
+| donePlat: nat -> EvidenceC -> WorldTerm.
 
+(* Remember:  Start term remains left-most parallel WorldTerm subterm (to grab final evidence at end *)
 Definition combineInstrSt (wt:WorldTerm) (i:InstrSt)  : WorldTerm :=
-  parPlats (onePlat i) wt.
+  parPlats wt (onePlat i) .
 
 Check fold_left.
 
@@ -325,20 +332,20 @@ Inductive InstrSt: Set :=
 
 Inductive platStep_l : WorldTerm -> heap -> option Ev ->
                        WorldTerm -> heap -> Type :=
-| platStep: forall i i' ev h h',
+| platStepOne: forall i i' ev h h',
     Instr_step i h ev i' h' ->
     platStep_l (onePlat i) h ev (onePlat i') h'
-| doneStep: forall i h h' ev p e,
+| platStepOneDone: forall i h h' ev p e,
     Instr_step i h ev (istop p e) h' ->
-    platStep_l (onePlat i) h ev (donePlat p) h'
-| worldStep_l: forall wt1 wt1' wt2 h h' ev,
+    platStep_l (onePlat i) h ev (donePlat p e) h'
+| platStepPar_l: forall wt1 wt1' wt2 h h' ev,
     platStep_l wt1 h ev wt1' h' ->
     platStep_l (parPlats wt1 wt2) h ev (parPlats wt1' wt2) h'
-| worldStep_r: forall wt1 wt2 wt2' h h' ev,
+| platStepPar_r: forall wt1 wt2 wt2' h h' ev,
     platStep_l wt2 h ev wt2' h' ->
     platStep_l (parPlats wt1 wt2) h ev (parPlats wt1 wt2') h'
-| worldStep_done: forall p q h,
-    platStep_l (parPlats (donePlat p) (donePlat q)) h None (donePlat p) h.
+| platStepDone: forall p q h e e',
+    platStep_l (parPlats (donePlat p e) (donePlat q e')) h None (donePlat p e) h.
 
 (*
 Inductive platStep : InstrSt -> configs -> heap -> option Ev ->
@@ -381,15 +388,31 @@ Inductive lstar_world: world_config -> list Ev -> world_config -> Prop :=
 Hint Resolve lstar_refl : core.
  *)
 
-Require Import LTS.
+Require Import LTS Auto.
 
 Lemma world_refines_lts_event_ordering:
-  forall t p e h h' tr et (wt wt':WorldTerm),
+  forall t p e e' h h' tr et (wt:WorldTerm),
     well_formed t ->
-    let wt := build_world_term t p e in (*(InstrSt*configs)*)
-    lstar_world wt h tr (donePlat p) h' ->
+   (* let wt := build_world_term t p e in (*(InstrSt*configs)*) *)
+    lstar_world (build_world_term t p e) h tr (donePlat p e') h' ->
     LTS.lstar (conf t p et) tr (stop p (aeval t p et)).
 Proof.
+
+  
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a.
+    +
+      df.
+      destruct r.
+      df.
+      invc H0.
+      ++
+        df.
+        invc H1.
+  
 Abort.
 
 
