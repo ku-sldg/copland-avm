@@ -1,10 +1,15 @@
 Require Import Term_Defs ConcreteEvidence.
 
+Require Import Maps.
+Require Import EqClass.
+
 Require Import List.
 Import ListNotations.
 
+(*
 Require Import RecordSet.
 Import RecordSetNotations.
+*)
 
 Inductive Prim_Instr: Set :=
 | copy: Prim_Instr
@@ -14,6 +19,8 @@ Inductive Prim_Instr: Set :=
 
 Inductive AnnoInstr: Set :=
 | aprimInstr: nat -> Prim_Instr -> AnnoInstr
+| aPutStore: nat -> nat -> Plc -> Loc -> Loc -> AnnoInstr
+| aGetStore: nat -> Plc -> Loc -> AnnoInstr
 | aseq: AnnoInstr -> AnnoInstr -> AnnoInstr.
 
 Definition asp_instr (a:ASP) : Prim_Instr :=
@@ -42,14 +49,38 @@ Instance eta_r : Settable _ := settable! mk_st <st_ev; st_pl; st_trace>.
 Definition setEv a x := x <| st_ev := a|> <|st_pl := 42|>.
 
 Compute (setEv (ggc 0 mtc) empty_vmst).
+ *)
+
+Definition setup := MapC Plc AnnoInstr.
+
+(*
+Definition bookend (ai:AnnoInstr) (req_loc rpy_loc:Loc): AnnoInstr :=
+  aseq (aPutStore req_loc) (aseq ai (aGetStore rpy_loc)).
 *)
 
 Fixpoint instr_compiler (t:AnnoTerm) : AnnoInstr :=
   match t with
   | aasp r l a => aprimInstr (fst r) (asp_instr a)
-  (*| aatt (i,j) q t' => [areqrpy i j q t']  *)    
+  | aatt (i,j) _ (req_loc,rpy_loc) q _ =>
+    aseq (aPutStore i j q req_loc rpy_loc)
+         (aGetStore (Nat.pred j) q rpy_loc)     
   | alseq _ _ t1 t2 => aseq (instr_compiler t1) (instr_compiler t2)
   end.
+
+Fixpoint copland_compliment (t:AnnoTerm) (s:setup): setup :=
+  match t with
+  (*| aasp r l a => aprimInstr (fst r) (asp_instr a) *)
+  | aatt (i,j) _ (req_loc,rpy_loc) q t' =>
+    let comp := copland_compile t' in
+    aseq (aPutStore i j q req_loc rpy_loc)
+         (aGetStore (Nat.pred j) q rpy_loc) 
+  | alseq _ _ t1 t2 =>
+    let s1 := copland_compliment t1 s in
+    let s2 := copland_compliment t2 s1 in
+    s2
+  | _ => []
+  end.
+    
 
 Definition ev_asp_instr (x:nat) (pi:Prim_Instr) (e:EvidenceC) : EvidenceC :=
   match pi with
@@ -70,32 +101,68 @@ Definition tr_asp_instr (x:nat) (p:Plc) (pi:Prim_Instr) :=
 (*
 Definition update_ev_st (st:cvm_st) (e:EvidenceC) : cvm_st :=
   st <| st_ev := e|>.
-*)
+ *)
+
+
+Inductive sLoc: Set :=
+| Empty : sLoc
+| Full : EvidenceC -> sLoc.
+
+Definition heap := list (Loc*sLoc). (*MapC Loc sLoc. *)
+Compute map_set map_empty 0 Empty.
+Check (MapC Loc Loc).
+
+Definition put_heap (m:heap) (k:Loc)
+           (e:EvidenceC) (*(there:bound_to m k Empty)*): heap :=
+  map_set m k (Full e).
+
+Definition clear_loc (m:heap) (k:Loc) : heap :=
+  map_set m k Empty.
+
+Definition locEmpty (h:heap) (loc:Loc): Prop :=
+  bound_to h loc Empty.
+
+Definition locContains (h:heap) (loc:Loc) (e:EvidenceC): Prop :=
+  bound_to h loc (Full e).
 
 
 Inductive InstrSt: Set :=
-| istop: Plc -> EvidenceC -> InstrSt
-| iconf: AnnoInstr -> Plc -> EvidenceC -> InstrSt
-(*| rem: nat -> Loc -> Plc -> St -> St *)
+| istop: Plc -> EvidenceC -> heap -> InstrSt
+| iconf: AnnoInstr -> Plc -> EvidenceC -> heap -> InstrSt
+| rem: nat -> nat -> Loc -> Plc -> Plc -> (*InstrSt ->*) heap -> InstrSt
 | ils: InstrSt -> AnnoInstr -> InstrSt
 (*| bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
 | bsr: nat -> Evidence -> St -> St
 | bp: nat -> Loc -> Loc -> St -> St -> St*) .
 
 Inductive Instr_step: InstrSt -> option Ev -> InstrSt -> Prop :=
-| primStep: forall x pi p e,
-    Instr_step (iconf (aprimInstr x pi) p e)
+| primStep: forall x pi p e h,
+    Instr_step (iconf (aprimInstr x pi) p e h)
                (Some (tr_asp_instr x p pi))
-               (istop p (ev_asp_instr x pi e))
-| seqStart: forall x y p e,
-    Instr_step (iconf (aseq x y) p e)
+               (istop p (ev_asp_instr x pi e) h)
+| atReqStep: forall i j p q req_loc rpy_loc e h,
+    Instr_step (iconf (aPutStore i j q req_loc rpy_loc) p e h)
+               (Some (req i req_loc p q (asp CPY)))
+               (rem i j rpy_loc p q (put_heap h req_loc e))
+| atWaitStep: forall h rpy_loc i j p q,
+    locEmpty h rpy_loc ->                
+    Instr_step (rem i j rpy_loc p q h)
                None
-               (ils (iconf x p e) y)
+               (rem i j rpy_loc p q h)
+| atRpyStep: forall h e i j p q rpy_loc,
+    locContains h rpy_loc e ->
+    Instr_step (rem i j rpy_loc p q h)
+               (Some (rpy (Nat.pred j) rpy_loc p q))
+               (istop p e (clear_loc h rpy_loc))
+| seqStart: forall x y p e h,
+    Instr_step (iconf (aseq x y) p e h)
+               None
+               (ils (iconf x p e h) y )
 | seqStep: forall st0 st1 ev x,
     Instr_step st0 ev st1 ->
     Instr_step (ils st0 x) ev (ils st1 x)
-| seqStop: forall y p e,
-    Instr_step (ils (istop p e) y) None (iconf y p e).
+| seqStop: forall y p e h,
+    Instr_step (ils (istop p e h) y) None (iconf y p e h).
 Hint Constructors Instr_step : core.
 
 
@@ -315,6 +382,7 @@ Inductive InstrSt: Set :=
 | bp: nat -> Loc -> Loc -> St -> St -> St*) .
 *)
 
+(*
 Theorem correct_path_exists:
   forall p e i,
     exists st',
@@ -367,15 +435,17 @@ Proof.
     eapply star_tran; eauto.
 Qed.
 *)
+*)
 
 (** * Progress *)
 
 Definition halt st :=
   match st with
-  | istop _ _ => True
+  | istop _ _ _ => True
   | _ => False
   end.
 
+(*
 (** The Instr_step relation nevers gets stuck. *)
 
 Theorem never_stuck:
@@ -389,6 +459,7 @@ Proof.
     destruct a.
     + exists (Some (tr_asp_instr n0 n p)).
       eapply ex_intro; eauto.
+
       (*
     + exists (Some (req (fst r) (fst p) n n0 (unanno a))).
       repeat dest_range.
@@ -461,6 +532,7 @@ Proof.
       exists (bp n n0 n1 st st0_2). auto.
 *)
 Qed.
+*)
 
 (** * Termination *)
 
@@ -511,6 +583,9 @@ Proof.
     eapply nstar_transitive; eauto.
     eapply nstar_tran; eauto.
 Qed.
+
+
+(*
 
 (** Size of a term (number of steps to reduce). *)
 
@@ -770,5 +845,6 @@ Proof.
       eapply rlstar_silent_tran in H; eauto.
 Qed.
 
-    
+ *)
+
     

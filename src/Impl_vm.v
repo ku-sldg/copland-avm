@@ -25,11 +25,11 @@ Fixpoint copland_compile (t:AnnoTerm): CVM unit :=
   | aasp (n,_) _ a =>
       e <- do_prim n a ;;
       put_ev e
- (* | aatt (i,j) _ (req_loc,rpy_loc) q t' =>
+  | aatt (i,j) _ (req_loc,rpy_loc) q t' =>
       sendReq t' q i req_loc ;;
       doRemote t' q req_loc rpy_loc ;;
       e' <- receiveResp j rpy_loc q ;;
-      put_ev e' *)
+      put_ev e' 
   | alseq r _ t1 t2 =>
       copland_compile t1 ;;
       copland_compile t2

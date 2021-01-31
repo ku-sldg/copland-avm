@@ -19,17 +19,14 @@ Proof.
   tauto.
 Defined.
 
-(*
-
 Lemma wf_at_pieces: forall t r lr locs p,
     well_formed (aatt locs r lr p t) ->
-    well_formed_r t.
+    well_formed t.
 Proof.
   intros.
   inversion H.
   tauto.
 Defined.
-*)
 
 (*
 Lemma wf_bseq_pieces: forall r lr s t1 t2,
@@ -55,9 +52,9 @@ Ltac do_wf_pieces :=
   match goal with
   | [H: well_formed (alseq _ _ _ _) |- _] =>
     (edestruct wf_lseq_pieces; eauto)
-  (*| [H: well_formed (aatt _ _ _ _ ?t) |- _] =>   
+  | [H: well_formed (aatt _ _ _ _ ?t) |- _] =>   
     assert (well_formed t)
-      by (eapply wf_at_pieces; eauto) *)
+      by (eapply wf_at_pieces; eauto)
   (*| [H: well_formed (abseq _ _ _ _ _) |- _] =>
     (edestruct wf_bseq_pieces; eauto)
   | [H: well_formed (abpar _ _ _ _ _ _) |- _] =>
@@ -120,12 +117,12 @@ Defined.
 Ltac do_mono :=
   (* let asdff := eapply anno_mono; eauto in *)
   match goal with
-  | [H: anno _ ?x _ _ = Some (?y,_) |- _] => assert_new_proof_by (y > x) ltac:(eapply anno_mono; eauto)
+  | [H: anno _ ?x _ = Some (?y,_) |- _] => assert_new_proof_by (y > x) ltac:(eapply anno_mono; eauto)
   end.
 
-Lemma asp_lrange_irrel: forall a i l l2 a0 a1 n n' b,
-    anno (asp a) i l b = Some (n, a0) ->
-    anno (asp a) i l2 b= Some (n',a1) ->
+Lemma asp_lrange_irrel: forall a i l l2 a0 a1 n n',
+    anno (asp a) i l = Some (n, a0) ->
+    anno (asp a) i l2 = Some (n',a1) ->
     a0 = a1.
 Proof.
   intros.
@@ -159,7 +156,7 @@ Ltac wf_hammer :=
 
 Lemma nodup_lrange: forall t i ls n a,
     NoDup ls ->
-    anno t i ls true = Some (n, a) ->
+    anno t i ls = Some (n, a) ->
     NoDup (lrange a).
 Proof.
   induction t; intros;
@@ -167,7 +164,7 @@ Proof.
 Defined.
 
 Lemma anno_firstn_nss: forall t i ls n a,
-    anno t i (firstn (nss t) ls) true = Some (n, a) ->
+    anno t i (firstn (nss t) ls) = Some (n, a) ->
     (length (firstn (nss t) ls) = nss t).
 Proof.
   intros.
@@ -179,7 +176,7 @@ Lemma anno_well_formed:
   forall t i j ls t',
     length ls = nss t ->
     NoDup ls ->
-    anno t i ls true = Some (j, t') ->
+    anno t i ls = Some (j, t') ->
     well_formed t'.
 Proof.
   intros.
@@ -187,12 +184,11 @@ Proof.
   induction t; intros.
   -
     ff.
-    (*
+    
   -
     ff.
-    econstructor;
-      wf_hammer.
-*)
+    econstructor; try wf_hammer.
+    eapply IHt with (ls:=l0); try wf_hammer.
   -
     ff.
     list_facts.
@@ -452,7 +448,7 @@ Defined.
 Fixpoint aeval t p e :=
   match t with
   | aasp _ _ x => eval (asp x) p e
-  (*| aatt _ _ _ q x => aeval x q e *)
+  | aatt _ _ _ q x => aeval x q e
   | alseq _ _ t1 t2 => aeval t2 p (aeval t1 p e)
   (*| abseq _ _ s t1 t2 => ss (aeval t1 p ((splitEv_T (fst s)) e))
                          (aeval t2 p ((splitEv_T (snd s)) e)) 
@@ -494,7 +490,7 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
     forall r lr i p,
       fst r = i ->
       events (aasp r lr HSH) p (hash i p)
-(*| evtsattreq:
+| evtsattreq:
     forall r lr q t i p req_loc rpy_loc,
       fst r = i ->
       events (aatt r lr (req_loc, rpy_loc) q t) p (req i req_loc p q (unanno t))
@@ -506,7 +502,6 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
     forall r lr q t i p req_loc rpy_loc,
       snd r = S i ->
       events (aatt r lr (req_loc, rpy_loc) q t) p (rpy i rpy_loc p q)
-*)
 | evtslseql:
     forall r lr t1 t2 ev p,
       events t1 p ev ->
@@ -563,7 +558,7 @@ Lemma events_range_r:
     events t p v ->
     fst (range t) <= ev v < snd (range t).
 Proof.
-    (*
+    
   intros t v p H H0.
   pose proof H as G.
   apply well_formed_range_r in G.
@@ -572,9 +567,8 @@ Proof.
   induction H0; inv H; simpl in *; auto;
     try (repeat find_apply_hyp_hyp;
          repeat (find_apply_lem_hyp well_formed_range); lia).
-     *)
 Admitted.
- *)
+*)
 
 Ltac inv_wfr :=
   match goal with
@@ -676,6 +670,31 @@ Ltac do_bra_range :=
 
 (** Properties of events. *)
 
+(*
+Lemma events_range:
+  forall t v p,
+    well_formed_r t ->
+    events t p v ->
+    fst (range t) <= ev v < snd (range t).
+Proof.
+ *)
+
+Lemma range_lt:
+  forall x,
+    well_formed_r x ->
+    fst (range x) < snd (range x).
+Proof.
+Admitted.
+
+Lemma wf_implies_wfr:
+  forall x,
+    well_formed x ->
+    well_formed_r x.
+Proof.
+Admitted.
+
+  
+
 Lemma events_range_event:
   forall t p i,
     well_formed_r t ->
@@ -686,17 +705,178 @@ Proof.
   induction H; intros; simpl in *.
   - destruct x; eapply ex_intro; split; auto;
       (*destruct r as [j k];*) simpl in *; lia.
-    (*
-  - find_eapply_lem_hyp at_range; eauto.
+
+  -
+    destruct locs.
+    eapply at_range in H2; eauto.
+    repeat destruct_disjunct; subst.
+    +
+      
+      
+      eapply ex_intro.
+      split; auto.
+      (*
+      
+      ++
+      
+      eapply evtsattreq with (i:=(fst r)).
+      lia.
+      ++
+      simpl.
+      lia.
+*)
+      
+    + apply IHwell_formed_r with (p:=p) (i:=i) in H2.
+      destruct H2 as [v].
+      destruct H2; subst.
+      exists v; split; auto.
+    + 
+      eapply ex_intro; split.
+      eapply evtsattrpy with (i:=(pred (snd r))).
+      * lia.
+      * simpl; auto.
+        lia.
+
+(*
+
+    
+    Check at_range.
+    find_eapply_lem_hyp at_range.
+    Focus 2.
+    eassumption.
+    Focus 2.
+    eassumption.
     (*eapply at_range in H2; eauto. *)
+    repeat destruct_disjunct; subst; eauto.
+    +
+      admit.
+    +
+      edestruct IHwell_formed_r with (p:=p) (i:=i).
+      eassumption.
+      destruct_conjs.
+      exists x0.
+      econstructor.
+      econstructor.
+      eassumption.
+      eassumption.
+    +
+      exists (rpy (
+      destruct locs.
+      eapply evtsattrpy.
+      
+      
+
+      
+    edestruct IHwell_formed with (p:=p) (i:=pred (snd r)).
+    assert (fst (range x) < snd (range x)).
+    {
+      eapply range_lt; eauto.
+      eapply wf_implies_wfr; eauto.
+    }
+    repeat find_rewrite.
+    ff.
+    lia.
+    destruct_conjs.
+    ff.
+    
+      
+    (* + eapply ex_intro; split; auto. *)
+    Ltac find_eapply_hyp_hyp :=
+      match goal with
+      | [ H : forall _, _ -> _,
+            H' : _ |- _ ] =>
+        eapply H in H'; [idtac]
+      | [ H : _ -> _ , H' : _ |- _ ] =>
+        eapply H in H'; auto; [idtac]
+      end.
+    + find_eapply_hyp_hyp.
+      (*apply IHwell_formed with (p:=p) in H2. *)
+      destruct_conjs.
+      eauto.
+      (*
+      destruct H2 as [v].
+      destruct H2; subst.
+      exists v; split; eauto. 
+    + eapply ex_intro; split.
+      apply evtsattrpy; auto.
+      * rewrite H1; auto.
+      * simpl; auto.
+      *)
+    
+*)
 
 
-     repeat dest_range;
+
+
+
+
+
+    
+
+
+    (*
+  - (*find_eapply_lem_hyp at_range; eauto. *)
+    eapply at_range in H3; eauto.
+
+
+    (*
+     repeat dest_range; *)
     
         
     (* destruct r; destruct locs. *)
     repeat destruct_disjunct; subst; eauto.
     (* + eapply ex_intro; split; auto. *)
+
+
+    +
+      ff.
+      subst.
+      assert (exists v, events x p v /\ ev v = S (fst r)).
+      {
+        eapply IHwell_formed_r.
+        assert (fst r < snd r) by lia.
+        (*
+        assert (S (fst r) < (snd r)) by lia. *)
+        subst.
+        repeat find_rewrite.
+        ff.
+        
+        
+        Lemma range_lt:
+          forall x,
+            well_formed_r x ->
+            fst (range x) < snd (range x).
+        Proof.
+        Admitted.
+
+        assert (fst (range x) < snd (range x)).
+        {
+        eapply range_lt.
+        eassumption.
+        }
+        lia.
+      }
+      destruct_conjs.
+      eexists.
+      split.
+      apply evtsatt.
+      eassumption.
+      econstructor.
+      econstructor.
+      reflexivity.
+      
+          
+        
+
+          
+        rewrite <- H0 in *.
+        
+
+
+        
+      edestruct IHwell_formed_r.
+      lia.
+      lia.
 
     + 
       find_eapply_hyp_hyp.
@@ -712,7 +892,8 @@ Proof.
       * rewrite H1; auto.
       * simpl; auto.
       *)
-*)
+      *)
+    
       
   -
 
@@ -810,9 +991,9 @@ Inductive splitEv_T_R : SP -> Evidence -> Evidence -> Prop :=
 Inductive evalR : Term -> Plc -> Evidence -> Evidence -> Prop :=
 | evalR_asp: forall a p e,
     evalR (asp a) p e (eval_asp a p e)
-(*| evalR_att: forall t1 q e e' p,
+| evalR_att: forall t1 q e e' p,
     evalR t1 q e e' ->
-    evalR (att q t1) p e e' *)
+    evalR (att q t1) p e e'
 | evalR_lseq: forall t1 t2 p e e' e'',
     evalR t1 p e e' ->
     evalR t2 p e' e'' ->
@@ -871,12 +1052,12 @@ Proof.
                repeat do_sp);
           try (inv H3; inv H4; reflexivity);
           repeat jkjk;
-          eauto).
+          eauto);
 
-  (*try (
+  try (
     inv H;
     simpl;
-    repeat kjkj). *)
+    repeat kjkj).
     
  (*         
     + destruct a; solve_by_inversion.

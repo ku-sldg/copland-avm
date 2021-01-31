@@ -14,14 +14,14 @@ Set Nested Proofs Allowed.
 
 Ltac same_index :=
   match goal with
-  | [H: anno ?t _ _ _ = Some (?n, _),
-        H': anno ?t _ _ _ = Some (?n', _) |- _] =>
+  | [H: anno ?t _ _ = Some (?n, _),
+        H': anno ?t _ _ = Some (?n', _) |- _] =>
     assert_new_proof_by (n = n') eauto
   end.
 
-Lemma same_anno_range: forall t i l l2 a b n n' bo bo',
-    anno t i l bo = Some (n,a) ->
-    anno t i l2 bo' = Some (n',b) ->
+Lemma same_anno_range: forall t i l l2 a b n n',
+    anno t i l = Some (n,a) ->
+    anno t i l2 = Some (n',b) ->
     n = n'.
 Proof.
   intros.
@@ -41,12 +41,14 @@ Proof.
   -
     destruct a; ff.
 
-    (*
-  -
-    ff. *)
+    
   -
     ff.
-    repeat (same_index; subst);
+    eauto.
+  -
+    ff.
+    
+    repeat (same_index; subst).
       congruence.
     (*
   -
@@ -59,8 +61,8 @@ Proof.
       congruence. *)
  Defined.
   
-Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm) (ls:LocRange) b,
-  anno t i ls b = Some (j,t') ->
+Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm) (ls:LocRange),
+  anno t i ls = Some (j,t') ->
   j > i.
 Proof.
   induction t; intros; (*i j t' ls b H; *)
@@ -71,13 +73,14 @@ Defined.
 Hint Resolve anno_mono : core.
 
 Lemma anno_range:
-  forall x i j ls t' b,
-     anno x i ls b = Some (j,t') ->
+  forall x i j ls t',
+     anno x i ls = Some (j,t') ->
     range (t') = (i, j).
 Proof.
   induction x; intros; ff.
 Defined.
 
+(*
 Ltac haha :=
   let asdff := eapply anno_mono; eauto in
   match goal with
@@ -98,6 +101,7 @@ Ltac hehe'' :=
   match goal with
   | [x: Term, y:nat |- _] => pose_new_proof (anno_range x y)
   end.
+*)
 
 Ltac do_list_empty :=
   match goal with
@@ -106,9 +110,9 @@ Ltac do_list_empty :=
   end.
 
 Lemma anno_lrange:
-  forall x i j ls t' b,
+  forall x i j ls t',
     length ls = nss x ->
-    anno x i ls b = Some (j,t') ->
+    anno x i ls = Some (j,t') ->
     list_subset ls (lrange t').
 Proof.
   induction x; intros;
@@ -123,7 +127,7 @@ Lemma anno_lrange'
   : forall (x : Term) (i j : nat) (ls : list nat) 
       (t' : AnnoTerm),
     (*length ls = nss x -> *)
-    anno x i ls true = Some (j, t') ->
+    anno x i ls = Some (j, t') ->
     list_subset (lrange t') ls.
 Proof.
   intros.
@@ -136,7 +140,7 @@ Lemma both_anno_lrange
   : forall (x : Term) (i j : nat) (ls : list nat) 
       (ls' : LocRange) (t' : AnnoTerm),
     length ls = nss x ->
-    anno x i ls true = Some (j,t') ->
+    anno x i ls = Some (j,t') ->
     list_subset (lrange t') ls /\ list_subset ls (lrange t').
 Proof.
   split.
@@ -144,6 +148,7 @@ Proof.
   - eapply anno_lrange; eauto.
 Defined.
 
+(*
 Lemma false_succeeds: forall t i ls,
     anno t i ls false = None ->
     False.
@@ -155,9 +160,10 @@ Proof.
     ff;
     eauto.
 Defined.
+*)
 
-Lemma nss_iff_anss: forall t i ls n a b,
-    anno t i ls b = Some (n,a) ->
+Lemma nss_iff_anss: forall t i ls n a,
+    anno t i ls = Some (n,a) ->
     nss t = anss a.
 Proof.
   intros.
@@ -183,17 +189,24 @@ Ltac list_facts' :=
   do_nodup_contra.
 
 Lemma anno_some_fact: forall t i ls n a,
-    anno t i ls true = Some (n, a) ->
+    anno t i ls = Some (n, a) ->
     length ls >= nss t.
 Proof.
   induction t; intros;
     ff;
     try (destruct ls; ff; lia);
     try lia.
-  (*
+  
   -
     ff.
-    destruct ls; ff; lia.
+    destruct l0; ff; try lia.
+    assert (length ([]:list nat) >= nss t) by eauto.
+    ff.
+    lia.
+    assert (length (n0 :: l0) >= nss t) by eauto.
+    ff.
+    lia.
+    (*
   -
     ff.
     lia. *)
@@ -258,7 +271,7 @@ Defined.
 Ltac do_anno_some_fact :=
   repeat
     match goal with
-    | [H: anno ?t _ ?ls _ = Some (_,_) |- _] =>
+    | [H: anno ?t _ ?ls = Some (_,_) |- _] =>
       assert_new_proof_by (length ls >= nss t) ltac:(eapply anno_some_fact; apply H)
     end.
 
@@ -274,7 +287,7 @@ Ltac list_facts :=
   do_nodup_contra.
 
 Lemma list_too_short: forall t i ls,
-      anno t i ls true = None ->
+      anno t i ls = None ->
       length ls < nss t.
 Proof.
   intros.
@@ -282,11 +295,18 @@ Proof.
   induction t; intros.
   -
     destruct a; ff.
-    (*
+    
   -
     ff.
-    exfalso.
-    eapply false_succeeds; eauto. *)
+    assert (length l0 < nss t) by eauto.
+    lia.
+    assert (length ls < 2).
+    {
+      unfold getTwoLocs in *.
+      destruct ls; try solve_by_inversion.
+      destruct ls; try solve_by_inversion.
+    }
+    lia.
   -
     ff.
     list_facts.
@@ -402,10 +422,10 @@ Proof.
 *)
 Defined.
 
-Lemma anno_some: forall t i l b,
+Lemma anno_some: forall t i l,
   length l = nss t ->
   exists res,
-    anno t i l b = Some res.
+    anno t i l = Some res.
 Proof.
   intros.
   generalizeEverythingElse t.
@@ -414,13 +434,72 @@ Proof.
     destruct a;
       ff;
       eauto.
-    (*
+    
   -
     cbn in *.
-    assert (exists x y, l = [x; y]).
+
+    assert (exists x y l', l = x :: y :: l').
     {
       destruct l; try solve_by_inversion.
-      invc H.
+      +
+        ff.
+        lia.
+      +
+        ff.
+        assert (length l = S (nss t)) by lia.
+        assert (exists y l'', l = y :: l'').
+        {
+          destruct l; try solve_by_inversion.
+          ff.
+          repeat eexists.
+        }
+        destruct_conjs.
+        repeat eexists.
+        subst.
+        reflexivity.
+    }
+    destruct_conjs.
+    subst.
+    ff.
+    eauto.
+    assert (length H2 < nss t).
+    {
+      eapply list_too_short; eauto.
+    }
+    lia.
+    
+    
+
+
+    (*
+    assert (exists x y, l = [x; y]).
+    {
+      
+      destruct l; try solve_by_inversion.
+      +
+        invc H.
+        lia.
+      +
+        ff.
+        assert (length l = S (nss t)) by lia.
+        clear H.
+        destruct l; try solve_by_inversion.
+        ff.
+        edestruct IHt.
+        eassumption.
+
+        destruct x.
+        assert (length l >= nss t).
+        {
+          eapply anno_some_fact.
+          eassumption.
+        }
+        
+        
+        assert (length l >
+        
+        lia.
+        
       destruct l; try solve_by_inversion.
       invc H1.
       assert (l = []) by (destruct l; solve_by_inversion).
@@ -445,12 +524,13 @@ Proof.
     +
       eauto.
     +
-      
+
+      (*
       destruct b;
         try (exfalso;
              eapply false_succeeds;
-             eauto).
-    ++
+             eauto). *)
+
       assert (length ((skipn (nss t1) l)) < nss t2).
       {
         eapply list_too_short; eauto.
@@ -471,11 +551,12 @@ Proof.
       }
       lia.
     +
+      (*
       destruct b;
         try (exfalso;
              eapply false_succeeds;
-             eauto).
-      ++
+             eauto). *)
+      
         
         assert (length ((firstn (nss t1) l)) < nss t1).
         {
@@ -610,7 +691,9 @@ Proof.
     +
       destruct b;
         ff. *)
-*)
+         *)
+
+        (*
       Unshelve.
       eauto.
       eauto.
@@ -618,6 +701,8 @@ Proof.
       eauto.
       eauto.
       eauto.
+         *)
+        
       (*
       eauto.
       eauto.
@@ -647,7 +732,7 @@ Defined.
 
 Lemma lrange_nss: forall t i ls  n a,
     length ls = nss t ->
-    anno t i ls true = Some (n, a) ->
+    anno t i ls = Some (n, a) ->
     length (lrange a) = nss t. (* + length ls'. *)
 Proof.
   intros.
@@ -821,7 +906,7 @@ Lemma anno_well_formed_r:
   forall t i j ls t',
     (* length ls = nss t ->
     NoDup ls -> *)
-    anno t i ls false = Some (j, t') ->
+    anno t i ls = Some (j, t') ->
     well_formed_r t'.
 Proof.
   intros.
@@ -830,10 +915,10 @@ Proof.
   -
     destruct a;
       ff.
-    (*
+    
   -
     ff.
-    +
+    
       econstructor.
       eauto.
       simpl.
@@ -847,10 +932,15 @@ Proof.
       Focus 2.
       eassumption.
       tauto.
+      (*
 
       simpl.
-      assert (n0 > S i) by (eapply anno_mono; eauto).
+      assert (n2 > S i) by (eapply anno_mono; eauto).
       lia.
+       *)
+      
+
+      (*
     +
       econstructor.
       eauto.

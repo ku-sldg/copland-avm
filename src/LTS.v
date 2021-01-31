@@ -21,7 +21,7 @@ Require Import PeanoNat Minus Lia Preamble Term_Defs Term.
 Inductive St: Set :=
 | stop: Plc -> Evidence -> St
 | conf: AnnoTerm -> Plc -> Evidence -> St
-(*| rem: nat -> Loc -> Plc -> St -> St *)
+| rem: nat -> Loc -> Plc -> St -> St
 | ls: St -> AnnoTerm -> St
 (*| bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
 | bsr: nat -> Evidence -> St -> St
@@ -31,7 +31,7 @@ Fixpoint pl (s:St) :=
   match s with
   | stop p _ => p
   | conf _ p _ => p
-  (*| rem _ _ p _ => p *)
+  | rem _ _ p _ => p
   | ls st _ => pl st
   (*| bsl _ _ _ p _ => p
   | bsr _ _ st => pl st
@@ -44,7 +44,7 @@ Fixpoint seval st :=
   match st with
   | stop _ e => e
   | conf t p e => aeval t p e
-  (*| rem _ _ _ st => seval st *)
+  | rem _ _ _ st => seval st
   | ls st t => aeval t (pl st) (seval st)
   (*| bsl _ st t p e => ss (seval st) (aeval t p e)
   | bsr _ e st => ss e (seval st)
@@ -66,7 +66,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
            (Some (asp_event (fst r) x p))
            (stop p (aeval (aasp r lr x) p e))
 
-           (*
+           
 (** Remote call *)
 
 | statt:
@@ -83,7 +83,6 @@ Inductive step: St -> option Ev -> St -> Prop :=
       step (rem j loc p (stop q e))
            (Some (rpy (pred j) loc p q))
            (stop p e)
-*)
 (** Linear Sequential Composition *)
 
 | stlseq:
@@ -264,7 +263,7 @@ Qed.
 
 (** * Correct Path Exists *)
 
-(*
+
 Lemma star_strem:
   forall st0 st1 j p loc,
     star st0 st1 -> star (rem j loc p st0) (rem j loc p st1).
@@ -273,7 +272,6 @@ Proof.
   induction H; auto.
   eapply star_tran; eauto.
 Qed.
-*)
 
 Lemma star_stls:
   forall st0 st1 t,
@@ -317,7 +315,7 @@ Proof.
   eapply lstar_silent_tran; eauto.
 Qed.
 
-(*
+
 Lemma lstar_strem : forall st st' tr p r loc,
     lstar st tr
           st' ->
@@ -328,7 +326,6 @@ Proof.
   eapply lstar_tran; eauto.
   eapply lstar_silent_tran; eauto.
 Defined.
-*)
 
 (*
 Lemma lstar_stbsl:
@@ -373,13 +370,13 @@ Theorem correct_path_exists:
 Proof.
   induction t; intros; simpl; eauto.
   - eapply star_tran; eauto.
-    (*
+    
   - destruct p.
     eapply star_tran; eauto.
     eapply star_transitive.
     apply star_strem.
     apply IHt.
-    eapply star_tran; eauto. *)
+    eapply star_tran; eauto.
   - eapply star_tran; eauto.
     eapply star_transitive.
     apply star_stls.
@@ -430,14 +427,14 @@ Proof.
     destruct a.
     + exists (Some (asp_event (fst r) a n)).
       eapply ex_intro; eauto.
-      (*
+      
     + exists (Some (req (fst r) (fst p) n n0 (unanno a))).
       repeat dest_range.
-      eapply ex_intro; eauto. *)
+      eapply ex_intro; eauto.
     + exists None.
       eapply ex_intro; eauto.
-      (*
       
+      (*
     + exists (Some (split (fst r) n)).
       eapply ex_intro; eauto.
       
@@ -446,7 +443,7 @@ Proof.
       repeat dest_range.
       eapply ex_intro; eauto. *)
      
-    (*
+    
   - right.
     destruct IHst0.
     + destruct st0; simpl in H; try tauto.
@@ -455,7 +452,7 @@ Proof.
     + destruct H as [e H].
       exists e.
       destruct H as [st1 H].
-      exists (rem n n0 n1 st1). auto. *)
+      exists (rem n n0 n1 st1). auto.
   - right.
     destruct IHst0.
     + destruct st0; simpl in H; try tauto.
@@ -556,7 +553,7 @@ Qed.
 Fixpoint tsize t: nat :=
   match t with
   | aasp _ _ _ => 1
-  (*| aatt _ _ _ _ x => 2 + tsize x *)
+  | aatt _ _ _ _ x => 2 + tsize x
   | alseq _ _ x y => 2 + tsize x + tsize y
   (*| abseq _ _ _ x y => 3 + tsize x + tsize y
   | abpar _ _ _ _ x y => 2 + tsize x + tsize y *)
@@ -568,7 +565,7 @@ Fixpoint ssize s: nat :=
   match s with
   | stop _ _ => 0
   | conf t _ _ => tsize t
-  (*| rem _ _ _ x => 1 + ssize x *)
+  | rem _ _ _ x => 1 + ssize x
   | ls x t => 1 + ssize x + tsize t
   (*| bsl _ x t _ _ => 2 + ssize x + tsize t
   | bsr _ _ x => 1 + ssize x

@@ -250,12 +250,12 @@ Inductive trace: AnnoTerm -> Plc ->
                  list Ev -> Prop :=
 | tasp: forall r lr x p,
     trace (aasp r lr x) p [(asp_event (fst r) x p)]
-(*| tatt: forall r lr x p q tr1 req_loc rpy_loc,
+| tatt: forall r lr x p q tr1 req_loc rpy_loc,
     trace x q tr1 ->
     trace (aatt r lr (req_loc,rpy_loc) q x) p
           ((req (fst r) req_loc p q (unanno x) )
              :: tr1 ++
-             [(rpy (pred (snd r)) rpy_loc p q)]) *)
+             [(rpy (pred (snd r)) rpy_loc p q)])
 | tlseq: forall r lr x y p tr0 tr1,
     trace x p tr0 ->
     trace y p tr1 ->
@@ -332,7 +332,7 @@ Proof.
 
       inv H1; try inv H.
       destruct x; constructor; auto. *)
-      (*
+      
     +
       inv_in.
       (*
@@ -368,7 +368,7 @@ Proof.
       inv H; try inv H1.
       rewrite H9; simpl.
       apply evtsattrpy; auto. *)
-*)
+
     +
       rewrite in_app_iff in *.
       destruct_disjunct.
@@ -429,11 +429,11 @@ Proof.
 *)
   - induction H0; inv H.
     + inv H1; destruct r as [i j]; simpl in *; auto.
-      (*
+      
     + simpl; rewrite in_app_iff; simpl.
       inv H1; auto.
       right; right.
-      repeat find_rewrite; simpl; auto. *)
+      repeat find_rewrite; simpl; auto.
     + rewrite in_app_iff.
       inv H1; auto.
 
@@ -488,6 +488,7 @@ Proof.
   rewrite trace_events in H1; eauto.
   eapply events_range; eauto.
 Qed.
+Locate events_range_event.
 
 Lemma trace_range_event:
   forall t p tr i,
@@ -542,7 +543,7 @@ Lemma nodup_trace:
 Proof.
   induction t; intros; inv_wfr; inv H0.
   - constructor; auto; constructor.
-    (*
+    
   - destruct r as [i j]; simpl in *; subst; simpl.
     apply NoDup_cons.
     + intro.
@@ -584,7 +585,6 @@ Proof.
         simpl in *.
         lia.
         solve_by_inversion. *)
-*)
   - apply nodup_append; unfold disjoint_lists; auto; intros; eauto.
 
     (*
@@ -874,7 +874,7 @@ Proof.
   (*
   - left. solve_by_inversion. *)
 
-  (*
+  
   -
 
     rewrite in_app_iff in *.
@@ -896,7 +896,7 @@ Proof.
     + inv H5. rewrite in_app_iff.
       right. simpl. left. auto.
      *)
-*)
+
     
   -
     rewrite in_app_iff; auto.
@@ -1055,22 +1055,23 @@ Proof.
     inv_prec; simpl; auto. 
 
   (* inv H1; simpl; auto. *)
-  (*
+  
   -
-
-    do_evin2.
-
     (*
 
-    inv H12; inv H11. *)
-    (*
+    do_evin2. *)
+
+    
+
+    inv H11; inv H10. 
+    
     +
       find_eapply_lem_hyp evsys_tr_in; eauto.
       (*
       eapply evsys_tr_in in H4; eauto. *)
       
       apply earlier_cons; auto.
-      apply in_app_iff; auto. *)
+      apply in_app_iff; auto.
     +
       do_evin.
       (*
@@ -1078,9 +1079,9 @@ Proof.
       apply earlier_cons; auto.
       apply in_app_iff; auto; right; simpl; auto.
   - solve_by_inversion.
-   *)
+   
 
-  (*
+  
   -
     inv_prec.
     (*
@@ -1109,7 +1110,7 @@ Proof.
       apply earlier_cons_shift; auto.
       apply earlier_left; auto.
     + solve_by_inversion.
-*)
+
   -
     find_eapply_lem_hyp evsys_tr_in; eauto.
     find_eapply_lem_hyp evsys_tr_in; eauto.
