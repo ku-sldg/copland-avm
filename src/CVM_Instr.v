@@ -140,48 +140,64 @@ Definition locContains (h:heap) (loc:Loc) (e:EvidenceC): Prop :=
 
 
 Inductive InstrSt: Set :=
-| istop: Plc -> EvidenceC -> heap -> InstrSt
-| iconf: AnnoInstr -> Plc -> EvidenceC -> heap -> InstrSt
-| rem: nat -> nat -> Loc -> Plc -> Plc -> (*InstrSt ->*) heap -> InstrSt
+| istop: Plc -> EvidenceC -> (*heap ->*) InstrSt
+| iconf: AnnoInstr -> Plc -> EvidenceC -> (*heap ->*) InstrSt
+| rem: nat -> nat -> Loc -> Plc -> Plc -> (*InstrSt ->*) (*heap ->*) InstrSt
 | ils: InstrSt -> AnnoInstr -> InstrSt
 (*| bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
 | bsr: nat -> Evidence -> St -> St
 | bp: nat -> Loc -> Loc -> St -> St -> St*) .
 
-Inductive Instr_step: InstrSt -> option Ev -> InstrSt -> Prop :=
+(*
+Fixpoint instr_heap (iSt: InstrSt) : heap :=
+  match iSt with
+  | istop _ _ h => h
+  | iconf _ _ _ h => h
+  | rem _ _ _ _ _ h => h
+  | ils i _ => instr_heap i
+  end.
+*)
+    
+
+Inductive Instr_step: InstrSt -> heap -> option Ev -> (InstrSt) -> heap -> Prop :=
 | primStep: forall x pi p e h,
-    Instr_step (iconf (aprimInstr x pi) p e h)
+    Instr_step (iconf (aprimInstr x pi) p e) h
                (Some (tr_asp_instr x p pi))
-               (istop p (ev_asp_instr x pi e) h)
+               (istop p (ev_asp_instr x pi e)) h
 | atReqStep: forall i j p q req_loc rpy_loc e h,
-    Instr_step (iconf (aPutStore i j q req_loc rpy_loc) p e h)
+    Instr_step (iconf (aPutStore i j q req_loc rpy_loc) p e) h
                (Some (req i req_loc p q (asp CPY)))
-               (rem i j rpy_loc p q (put_heap h req_loc e))
+               (rem i j rpy_loc p q) (put_heap h req_loc e)
 | atWaitStep: forall h rpy_loc i j p q,
     locEmpty h rpy_loc ->                
-    Instr_step (rem i j rpy_loc p q h)
+    Instr_step (rem i j rpy_loc p q) h
                None
-               (rem i j rpy_loc p q h)
+               (rem i j rpy_loc p q) h
 | atRpyStep: forall h e i j p q rpy_loc,
     locContains h rpy_loc e ->
-    Instr_step (rem i j rpy_loc p q h)
+    Instr_step (rem i j rpy_loc p q) h
                (Some (rpy (Nat.pred j) rpy_loc p q))
-               (istop p e (clear_loc h rpy_loc))
+               (istop p e) (clear_loc h rpy_loc)
 | seqStart: forall x y p e h,
-    Instr_step (iconf (aseq x y) p e h)
+    Instr_step (iconf (aseq x y) p e) h
                None
-               (ils (iconf x p e h) y )
-| seqStep: forall st0 st1 ev x,
-    Instr_step st0 ev st1 ->
-    Instr_step (ils st0 x) ev (ils st1 x)
+               (ils (iconf x p e) y) h
+| seqStep: forall st0 st1 ev x h h',
+    Instr_step st0 h ev st1 h' ->
+    Instr_step (ils st0 x) h ev (ils st1 x) h'
 | seqStop: forall y p e h,
-    Instr_step (ils (istop p e h) y) None (iconf y p e h).
+    Instr_step (ils (istop p e) y) h None (iconf y p e) h.
 Hint Constructors Instr_step : core.
 
+
+
+
+(*
 Definition orchestrate (t:AnnoTerm): (AnnoInstr * setup) :=
   let main_thread := instr_compiler t in
   let servers := copland_compliment t map_empty in
   (main_thread, servers).
+*)
 
 
 (*
@@ -192,17 +208,20 @@ Inductive InstrSt: Set :=
 | ils: InstrSt -> AnnoInstr -> InstrSt
  *)
 
+(*
 Definition configs := MapC Plc InstrSt.
 
 Definition code := (AnnoInstr*setup)%type.
+*)
 
-Definition world := (InstrSt*configs)%type.
+(*Definition world := (InstrSt*configs)%type. *)
 
-Definition build_one' (h:heap) (p:Plc) (x:AnnoInstr) : InstrSt :=
-  iconf x p mtc h.
+Definition build_one' (p:Plc) (x:AnnoInstr) : InstrSt :=
+  iconf x p mtc.
 
-Definition build_one (h:heap) (pr:Plc*AnnoInstr) : InstrSt :=
-  build_one' h (fst pr) (snd pr).
+(*
+Definition build_one (pr:Plc*AnnoInstr) : InstrSt :=
+  build_one' (fst pr) (snd pr).
 
 Search (list _ -> list _ -> list (_*_)).
 Print list_prod.
@@ -211,32 +230,169 @@ Print combine.
 Check fold_left.
 Check map.
 Check combine.
+*)
 
-Definition build_world (start_pl:Plc) (init_ev:EvidenceC) (h:heap)
-           (x:code): world :=
+(*
+Definition build_world' (start_pl:Plc) (init_ev:EvidenceC) (*(h:heap)*)
+           (x:code): (InstrSt*configs) :=
   let code_start := (fst x) in
   let env_code := (snd x) in (* :: setup == MapC Plc AnnoInstr *)
-  let a := (iconf code_start start_pl init_ev h) in
+  let a := (iconf code_start start_pl init_ev) in
   let places := map_dom env_code in (* :: list Plc *)
   let codes := map_vals env_code in (* :: list AnnoInstr *)
   let both := combine places codes in (* :: list (Plc*AnnoInstr) *)
-  let configs := map (build_one h) both in (* :: list (InstrSt) *)
+  let configs := map (build_one) both in (* :: list (InstrSt) *)
   let finals := combine places configs in
   
   (a,finals).
+*)
 
 (*
 Definition orchestrate (t:AnnoTerm): (AnnoInstr * setup) :=
  *)
 
-Definition orchestrate_world (t:AnnoTerm) (p:Plc)
-           (e:EvidenceC) (h:heap) : world :=
-  let code := orchestrate t in
-  build_world p e h code.
+(*
+Definition build_world (t:AnnoTerm) (p:Plc)
+           (e:EvidenceC) (*(h:heap)*) : (InstrSt*configs) :=
+  let codes := orchestrate t in
+  build_world' p e codes.
+*)
+
+Definition add_one_at (q:Plc)(s:list InstrSt) (ai:AnnoInstr) : list InstrSt.
+Admitted.
+
+Fixpoint copland_compliment_l (t:AnnoTerm) (s:list InstrSt): list InstrSt :=
+  match t with
+  (*| aasp r l a => aprimInstr (fst r) (asp_instr a) *)
+  | aatt (i,j) _ (req_loc,rpy_loc) q t' =>
+    let comp := instr_compiler t' in
+    add_one_at q s
+               (aseq (aGetStore (Nat.pred j) q rpy_loc)
+                     (aseq comp (aPutStore i (Nat.pred j) q req_loc rpy_loc)))
+(*
+    aseq (aPutStore i j q req_loc rpy_loc)
+         (aGetStore (Nat.pred j) q rpy_loc)  *)
+  | alseq _ _ t1 t2 =>
+    let s1 := copland_compliment_l t1 s in
+    let s2 := copland_compliment_l t2 s1 in
+    s2
+  | _ => []
+  end.
+
+
+
+
+
+Definition orchestrate_l (t:AnnoTerm) (p:Plc) (e:EvidenceC):
+  (InstrSt * list InstrSt) :=
+  let main_instr := instr_compiler t in
+  let servers := copland_compliment_l t [] in
+  (iconf main_instr p e, servers).
+
+(*
+Inductive WorldTerm: Set :=
+| onePlat: InstrSt -> WorldTerm
+| parPlats: WorldTerm -> WorldTerm -> WorldTerm.
+ *)
+
+
+Inductive WorldTerm: Set :=
+| onePlat: InstrSt -> WorldTerm
+| parPlats: WorldTerm -> WorldTerm -> WorldTerm
+| donePlat: nat -> WorldTerm.
+
+Definition combineInstrSt (wt:WorldTerm) (i:InstrSt)  : WorldTerm :=
+  parPlats (onePlat i) wt.
+
+Check fold_left.
+
+Definition build_world_term'' (startTerm: WorldTerm) (ls:list InstrSt) : WorldTerm :=
+  fold_left combineInstrSt ls startTerm.
   
 
-Inductive platStep : Plc -> world -> option Ev -> world -> Type :=
-| doEvent: forall p w ev w', platStep p w ev w'.
+Definition build_world_term' (startInstr:InstrSt) (ls:list InstrSt) : WorldTerm :=
+  build_world_term'' (onePlat startInstr) ls.
+  
+Definition build_world_term (t:AnnoTerm) (p:Plc) (e:EvidenceC) : WorldTerm :=
+  let '(one,rest) := orchestrate_l t p e in
+  build_world_term' one rest.
+
+
+(*
+Inductive InstrSt: Set :=
+| istop: Plc -> EvidenceC -> (*heap ->*) InstrSt
+*)
+
+Inductive platStep_l : WorldTerm -> heap -> option Ev ->
+                       WorldTerm -> heap -> Type :=
+| platStep: forall i i' ev h h',
+    Instr_step i h ev i' h' ->
+    platStep_l (onePlat i) h ev (onePlat i') h'
+| doneStep: forall i h h' ev p e,
+    Instr_step i h ev (istop p e) h' ->
+    platStep_l (onePlat i) h ev (donePlat p) h'
+| worldStep_l: forall wt1 wt1' wt2 h h' ev,
+    platStep_l wt1 h ev wt1' h' ->
+    platStep_l (parPlats wt1 wt2) h ev (parPlats wt1' wt2) h'
+| worldStep_r: forall wt1 wt2 wt2' h h' ev,
+    platStep_l wt2 h ev wt2' h' ->
+    platStep_l (parPlats wt1 wt2) h ev (parPlats wt1 wt2') h'
+| worldStep_done: forall p q h,
+    platStep_l (parPlats (donePlat p) (donePlat q)) h None (donePlat p) h.
+
+(*
+Inductive platStep : InstrSt -> configs -> heap -> option Ev ->
+                     InstrSt -> configs -> heap -> Type :=
+| mainStep: forall i i' ev w h h',
+    Instr_step i h ev i' h' ->
+    platStep i w h ev i' w h'
+| worldStep: forall p w wi wi' ev i h h',
+    bound_to w p wi ->
+    Instr_step wi h ev wi' h' ->
+    platStep i w h ev i (map_set w p wi') h'.
+*)
+
+(*
+Definition world_config := (InstrSt*configs*heap)%type.
+ *)
+
+Inductive lstar_world: WorldTerm -> heap -> list Ev -> WorldTerm -> heap -> Prop :=
+| lstar_refl: forall w h, lstar_world w h [] w h
+| lstar_tran: forall e tr wt wt' wt'' h h' h'',
+    platStep_l wt h (Some e) wt' h' ->
+    lstar_world wt' h' tr wt'' h'' ->
+    lstar_world wt h (e :: tr) wt'' h''
+| lstar_silent_tran: forall wt wt' wt'' h h' h'' tr,
+    platStep_l wt h None wt' h' -> lstar_world wt' h' tr wt'' h'' ->
+    lstar_world wt h tr wt'' h''.
+Hint Resolve lstar_refl : core.
+
+(*
+
+Inductive lstar_world: world_config -> list Ev -> world_config -> Prop :=
+| lstar_refl: forall w, lstar_world w [] w
+| lstar_tran: forall e tr i i' c c' h h' st2,
+    platStep i c h (Some e) i' c' h' ->
+    lstar_world (i',c',h') tr st2 ->
+    lstar_world (i,c,h) (e :: tr) st2
+| lstar_silent_tran: forall tr i i' c c' h h' st2,
+    platStep i c h None i' c' h' -> lstar_world (i',c',h') tr st2 ->
+    lstar_world (i,c,h) tr st2.
+Hint Resolve lstar_refl : core.
+ *)
+
+Require Import LTS.
+
+Lemma world_refines_lts_event_ordering:
+  forall t p e h h' tr et (wt wt':WorldTerm),
+    well_formed t ->
+    let wt := build_world_term t p e in (*(InstrSt*configs)*)
+    lstar_world wt h tr (donePlat p) h' ->
+    LTS.lstar (conf t p et) tr (stop p (aeval t p et)).
+Proof.
+Abort.
+
+
 
 
 HERE
