@@ -64,14 +64,13 @@ Fixpoint map_vals{A B:Type} `{H : EqClass A} (m : MapC A B ) : list B :=
   | (k', v) :: m' => v :: map_vals m'
   end.
 
-(*
+
 (** Finally, the domain of a map is just the set of its keys. *)
-Fixpoint map_dom {K V} (m:MapC K V) : list K :=
+Fixpoint map_dom{A B:Type} `{H : EqClass A} (m:MapC A B) : list A :=
   match m with
   | [] => []
   | (k', v) :: m' => k' :: map_dom m'
   end.
-*)
 
 (** We next introduce a simple inductive relation, [bound_to m x a], that 
     holds precisely when the binding of some identifier [x] is equal to [a] in 

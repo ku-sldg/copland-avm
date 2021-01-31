@@ -56,7 +56,16 @@ Definition setup := MapC Plc AnnoInstr.
 (*
 Definition bookend (ai:AnnoInstr) (req_loc rpy_loc:Loc): AnnoInstr :=
   aseq (aPutStore req_loc) (aseq ai (aGetStore rpy_loc)).
-*)
+ *)
+
+Definition add_at (s:setup) (q:Plc) (comp:AnnoInstr) : setup :=
+  let old_instr := map_get s q in
+  match old_instr with
+  | Some m =>
+      let new_comp := aseq m comp in
+      map_set s q new_comp
+  | _ => map_set s q comp
+  end.
 
 Fixpoint instr_compiler (t:AnnoTerm) : AnnoInstr :=
   match t with
@@ -71,9 +80,13 @@ Fixpoint copland_compliment (t:AnnoTerm) (s:setup): setup :=
   match t with
   (*| aasp r l a => aprimInstr (fst r) (asp_instr a) *)
   | aatt (i,j) _ (req_loc,rpy_loc) q t' =>
-    let comp := copland_compile t' in
+    let comp := instr_compiler t' in
+    add_at s q (
+    aseq (aGetStore (Nat.pred j) q rpy_loc)
+         (aseq comp (aPutStore i (Nat.pred j) q req_loc rpy_loc)))
+(*
     aseq (aPutStore i j q req_loc rpy_loc)
-         (aGetStore (Nat.pred j) q rpy_loc) 
+         (aGetStore (Nat.pred j) q rpy_loc)  *)
   | alseq _ _ t1 t2 =>
     let s1 := copland_compliment t1 s in
     let s2 := copland_compliment t2 s1 in
@@ -164,6 +177,108 @@ Inductive Instr_step: InstrSt -> option Ev -> InstrSt -> Prop :=
 | seqStop: forall y p e h,
     Instr_step (ils (istop p e h) y) None (iconf y p e h).
 Hint Constructors Instr_step : core.
+
+Definition orchestrate (t:AnnoTerm): (AnnoInstr * setup) :=
+  let main_thread := instr_compiler t in
+  let servers := copland_compliment t map_empty in
+  (main_thread, servers).
+
+
+(*
+Inductive InstrSt: Set :=
+| istop: Plc -> EvidenceC -> heap -> InstrSt
+| iconf: AnnoInstr -> Plc -> EvidenceC -> heap -> InstrSt
+| rem: nat -> nat -> Loc -> Plc -> Plc -> (*InstrSt ->*) heap -> InstrSt
+| ils: InstrSt -> AnnoInstr -> InstrSt
+ *)
+
+Definition configs := MapC Plc InstrSt.
+
+Definition code := (AnnoInstr*setup)%type.
+
+Definition world := (InstrSt*configs)%type.
+
+Definition build_one' (h:heap) (p:Plc) (x:AnnoInstr) : InstrSt :=
+  iconf x p mtc h.
+
+Definition build_one (h:heap) (pr:Plc*AnnoInstr) : InstrSt :=
+  build_one' h (fst pr) (snd pr).
+
+Search (list _ -> list _ -> list (_*_)).
+Print list_prod.
+Print combine.
+
+Check fold_left.
+Check map.
+Check combine.
+
+Definition build_world (start_pl:Plc) (init_ev:EvidenceC) (h:heap)
+           (x:code): world :=
+  let code_start := (fst x) in
+  let env_code := (snd x) in (* :: setup == MapC Plc AnnoInstr *)
+  let a := (iconf code_start start_pl init_ev h) in
+  let places := map_dom env_code in (* :: list Plc *)
+  let codes := map_vals env_code in (* :: list AnnoInstr *)
+  let both := combine places codes in (* :: list (Plc*AnnoInstr) *)
+  let configs := map (build_one h) both in (* :: list (InstrSt) *)
+  let finals := combine places configs in
+  
+  (a,finals).
+
+(*
+Definition orchestrate (t:AnnoTerm): (AnnoInstr * setup) :=
+ *)
+
+Definition orchestrate_world (t:AnnoTerm) (p:Plc)
+           (e:EvidenceC) (h:heap) : world :=
+  let code := orchestrate t in
+  build_world p e h code.
+  
+
+Inductive platStep : Plc -> world -> option Ev -> world -> Type :=
+| doEvent: forall p w ev w', platStep p w ev w'.
+
+
+HERE
+
+Inductive PlatSt: Set :=
+| stop: Plc -> Evidence -> St
+| conf: AnnoTerm -> Plc -> Evidence -> St
+| rem: nat -> Loc -> Plc -> St -> St
+| ls: St -> AnnoTerm -> St
+(*| bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
+| bsr: nat -> Evidence -> St -> St
+| bp: nat -> Loc -> Loc -> St -> St -> St*) .
+
+
+
+
+
+Record PlatformState : Type := mk_plat
+                         {plat_pl:Plc ;
+                          plat_trace:list Ev ;
+                          plat_store:heap}.
+
+Definition start (st:PlatformState) (places:(CVM unit) * setup) : PlatformState.
+Admitted.
+
+Definition run_it (me:Plc) (t:AnnoTerm) : PlatformState :=
+  start (mk_plat me [] []) (orchestrate t).
+
+Definition getLocs (t:Term) (m:MapC (Plc*Plc) (list Loc)): list Loc.
+Admitted.
+
+Definition fromSome{A:Type} (default:A) (opt:option A): A :=
+  match opt with
+  | Some x => x
+  | _ => default
+  end.
+
+Definition run_it_term (me:Plc) (t:Term) (m:MapC (Plc*Plc) (list Loc)) : PlatformState :=
+  let annt := snd (anno' t 0 (getLocs t m)) in
+  run_it me annt.
+
+
 
 
 
