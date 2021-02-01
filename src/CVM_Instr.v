@@ -19,8 +19,8 @@ Inductive Prim_Instr: Set :=
 
 Inductive AnnoInstr: Set :=
 | aprimInstr: nat -> Prim_Instr -> AnnoInstr
-| aPutStore: nat -> nat -> Plc -> Loc -> Loc -> AnnoInstr
-| aGetStore: nat -> Plc -> Loc -> AnnoInstr
+| aPutStore: nat -> (*nat ->*) Plc -> Loc -> (*Loc ->*) bool -> AnnoInstr
+| aGetStore: nat -> Plc -> Loc -> bool -> AnnoInstr
 | aseq: AnnoInstr -> AnnoInstr -> AnnoInstr.
 
 Definition asp_instr (a:ASP) : Prim_Instr :=
@@ -71,19 +71,20 @@ Fixpoint instr_compiler (t:AnnoTerm) : AnnoInstr :=
   match t with
   | aasp r l a => aprimInstr (fst r) (asp_instr a)
   | aatt (i,j) _ (req_loc,rpy_loc) q _ =>
-    aseq (aPutStore i j q req_loc rpy_loc)
-         (aGetStore (Nat.pred j) q rpy_loc)     
+    aseq (aPutStore i q req_loc true)
+         (aGetStore (Nat.pred j) q rpy_loc true)     
   | alseq _ _ t1 t2 => aseq (instr_compiler t1) (instr_compiler t2)
   end.
 
+(*
 Fixpoint copland_compliment (t:AnnoTerm) (s:setup): setup :=
   match t with
   (*| aasp r l a => aprimInstr (fst r) (asp_instr a) *)
   | aatt (i,j) _ (req_loc,rpy_loc) q t' =>
     let comp := instr_compiler t' in
     add_at s q (
-    aseq (aGetStore (Nat.pred j) q rpy_loc)
-         (aseq comp (aPutStore i (Nat.pred j) q req_loc rpy_loc)))
+    aseq (aGetStore (Nat.pred j) q rpy_loc false)
+         (aseq comp (aPutStore i q req_loc false)))
 (*
     aseq (aPutStore i j q req_loc rpy_loc)
          (aGetStore (Nat.pred j) q rpy_loc)  *)
@@ -93,6 +94,7 @@ Fixpoint copland_compliment (t:AnnoTerm) (s:setup): setup :=
     s2
   | _ => []
   end.
+*)
     
 
 Definition ev_asp_instr (x:nat) (pi:Prim_Instr) (e:EvidenceC) : EvidenceC :=
@@ -142,7 +144,7 @@ Definition locContains (h:heap) (loc:Loc) (e:EvidenceC): Prop :=
 Inductive InstrSt: Set :=
 | istop: Plc -> EvidenceC -> (*heap ->*) InstrSt
 | iconf: AnnoInstr -> Plc -> EvidenceC -> (*heap ->*) InstrSt
-| rem: nat -> nat -> Loc -> Plc -> Plc -> (*InstrSt ->*) (*heap ->*) InstrSt
+(*| rem: nat -> nat -> Loc -> Plc -> Plc -> (*InstrSt ->*) (*heap ->*) InstrSt *)
 | ils: InstrSt -> AnnoInstr -> InstrSt
 (*| bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
 | bsr: nat -> Evidence -> St -> St
@@ -164,20 +166,38 @@ Inductive Instr_step: InstrSt -> heap -> option Ev -> (InstrSt) -> heap -> Prop 
     Instr_step (iconf (aprimInstr x pi) p e) h
                (Some (tr_asp_instr x p pi))
                (istop p (ev_asp_instr x pi e)) h
-| atReqStep: forall i j p q req_loc rpy_loc e h,
-    Instr_step (iconf (aPutStore i j q req_loc rpy_loc) p e) h
+| atReqStep: forall i p q req_loc e h,
+    Instr_step (iconf (aPutStore i q req_loc true) p e) h
                (Some (req i req_loc p q (*(asp CPY)*)))
-               (rem i j rpy_loc p q) (put_heap h req_loc e)
+               (istop p mtc) (put_heap h req_loc e) (* TODO: clear local ev here? *)
+(*(rem i j rpy_loc p q) (put_heap h req_loc e) *)
+| atReqStep_silent: forall i p q req_loc e h,
+    Instr_step (iconf (aPutStore i q req_loc false) p e) h
+               None
+               (istop p mtc) (put_heap h req_loc e) (* TODO: clear local ev here? *)
+               (*(rem i j rpy_loc p q) (put_heap h req_loc e) *)
 (*| atWaitStep: forall h rpy_loc i j p q,
     locEmpty h rpy_loc ->                
     Instr_step (rem i j rpy_loc p q) h
                None
                (rem i j rpy_loc p q) h *)
+| atRpyStep: forall h e eres i p q rpy_loc,
+    locContains h rpy_loc eres ->
+    Instr_step (iconf (aGetStore i q rpy_loc true) p e) h
+               (Some (rpy i(*(Nat.pred j)*) rpy_loc p q))
+               (istop p eres) (clear_loc h rpy_loc)
+| atRpyStep_silent: forall h e eres i p q rpy_loc,
+    locContains h rpy_loc eres ->
+    Instr_step (iconf (aGetStore i q rpy_loc false) p e) h
+               None
+               (istop p eres) (clear_loc h rpy_loc)
+(*
 | atRpyStep: forall h e i j p q rpy_loc,
     locContains h rpy_loc e ->
     Instr_step (rem i j rpy_loc p q) h
                (Some (rpy (Nat.pred j) rpy_loc p q))
                (istop p e) (clear_loc h rpy_loc)
+*)
 | seqStart: forall x y p e h,
     Instr_step (iconf (aseq x y) p e) h
                None
@@ -273,8 +293,8 @@ Fixpoint copland_compliment_l (t:AnnoTerm) (s:list InstrSt): list InstrSt :=
   | aatt (i,j) _ (req_loc,rpy_loc) q t' =>
     let comp := instr_compiler t' in
     add_one_at q s
-               (aseq (aGetStore (Nat.pred j) q req_loc)
-                     (aseq comp (aPutStore i (Nat.pred j) q rpy_loc req_loc )))
+               (aseq (aGetStore (Nat.pred j) q req_loc false)
+                     (aseq comp (aPutStore i q rpy_loc false)))
 (*
     aseq (aPutStore i j q req_loc rpy_loc)
          (aGetStore (Nat.pred j) q rpy_loc)  *)
@@ -370,7 +390,8 @@ Inductive lstar_world: WorldTerm -> heap -> list Ev -> WorldTerm -> heap -> Prop
     lstar_world wt' h' tr wt'' h'' ->
     lstar_world wt h (e :: tr) wt'' h''
 | lstar_silent_tran: forall wt wt' wt'' h h' h'' tr,
-    platStep_l wt h None wt' h' -> lstar_world wt' h' tr wt'' h'' ->
+    platStep_l wt h None wt' h' ->
+    lstar_world wt' h' tr wt'' h'' ->
     lstar_world wt h tr wt'' h''.
 Hint Resolve lstar_refl : core.
 
@@ -441,6 +462,33 @@ Proof.
   unfold ex1_heap in *.
   df.
   unfold build_one' in *.
+
+  inv_lstar.
+
+
+  inv_lstar.
+
+  inv_lstar.
+  inv_lstar.
+
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+
+  inv_lstar.
+
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+
+  (*
+  
 
   do 4 inv_lstar.
   do 4 inv_lstar.
@@ -518,7 +566,13 @@ Proof.
     eexists.
     Abort.
    
-  
+   *)
+
+
+Abort.
+
+
+HERE
 
 
 
