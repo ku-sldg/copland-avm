@@ -135,7 +135,7 @@ Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) (req_loc:Loc) : CVM unit :=
   p <- get_pl ;;
   e <- get_ev ;;
   put_store_at req_loc e ;;
-  add_tracem [req reqi req_loc p q (unanno t)].
+  add_tracem [req reqi req_loc p q (*(unanno t)*)].
 
 Definition receiveResp (rpyi:nat) (rpy_loc:Loc) (q:Plc) : CVM EvidenceC :=
   e <- get_store_at rpy_loc ;;

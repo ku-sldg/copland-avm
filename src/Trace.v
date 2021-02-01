@@ -253,7 +253,7 @@ Inductive trace: AnnoTerm -> Plc ->
 | tatt: forall r lr x p q tr1 req_loc rpy_loc,
     trace x q tr1 ->
     trace (aatt r lr (req_loc,rpy_loc) q x) p
-          ((req (fst r) req_loc p q (unanno x) )
+          ((req (fst r) req_loc p q (*(unanno x)*) )
              :: tr1 ++
              [(rpy (pred (snd r)) rpy_loc p q)])
 | tlseq: forall r lr x y p tr0 tr1,

@@ -166,13 +166,13 @@ Inductive Instr_step: InstrSt -> heap -> option Ev -> (InstrSt) -> heap -> Prop 
                (istop p (ev_asp_instr x pi e)) h
 | atReqStep: forall i j p q req_loc rpy_loc e h,
     Instr_step (iconf (aPutStore i j q req_loc rpy_loc) p e) h
-               (Some (req i req_loc p q (asp CPY)))
+               (Some (req i req_loc p q (*(asp CPY)*)))
                (rem i j rpy_loc p q) (put_heap h req_loc e)
-| atWaitStep: forall h rpy_loc i j p q,
+(*| atWaitStep: forall h rpy_loc i j p q,
     locEmpty h rpy_loc ->                
     Instr_step (rem i j rpy_loc p q) h
                None
-               (rem i j rpy_loc p q) h
+               (rem i j rpy_loc p q) h *)
 | atRpyStep: forall h e i j p q rpy_loc,
     locContains h rpy_loc e ->
     Instr_step (rem i j rpy_loc p q) h
@@ -269,12 +269,12 @@ Definition add_one_at (q:Plc)(s:list InstrSt) (ai:AnnoInstr) : list InstrSt :=
 
 Fixpoint copland_compliment_l (t:AnnoTerm) (s:list InstrSt): list InstrSt :=
   match t with
-  (*| aasp r l a => aprimInstr (fst r) (asp_instr a) *)
+  | aasp r l a => s (*aprimInstr (fst r) (asp_instr a) *)
   | aatt (i,j) _ (req_loc,rpy_loc) q t' =>
     let comp := instr_compiler t' in
     add_one_at q s
-               (aseq (aGetStore (Nat.pred j) q rpy_loc)
-                     (aseq comp (aPutStore i (Nat.pred j) q req_loc rpy_loc)))
+               (aseq (aGetStore (Nat.pred j) q req_loc)
+                     (aseq comp (aPutStore i (Nat.pred j) q rpy_loc req_loc )))
 (*
     aseq (aPutStore i j q req_loc rpy_loc)
          (aGetStore (Nat.pred j) q rpy_loc)  *)
@@ -282,7 +282,7 @@ Fixpoint copland_compliment_l (t:AnnoTerm) (s:list InstrSt): list InstrSt :=
     let s1 := copland_compliment_l t1 s in
     let s2 := copland_compliment_l t2 s1 in
     s2
-  | _ => []
+ (* | _ => [] *)
   end.
 
 
@@ -389,6 +389,139 @@ Hint Resolve lstar_refl : core.
  *)
 
 Require Import LTS Auto.
+
+Definition asp1 := asp (ASPC 1 []).
+Definition asp2 := asp (ASPC 2 []).
+
+Definition ex1_term :=
+  lseq (att 1 asp1) asp2.
+
+Definition ex1_term_annotated :=
+  snd (anno' ex1_term 2 [42;43]).
+
+Definition ex1_heap := [(42,Empty);(43,Empty)].
+Check ex1_heap.
+
+Compute ex1_term_annotated.
+
+Compute (orchestrate_l ex1_term_annotated 2 mtc).
+
+Compute (build_world_term ex1_term_annotated 2 mtc).
+
+Ltac inv_lstar :=
+  match goal with
+  |[H: locContains (?C) _ _  |- _ ] => invc H
+  | [H: locEmpty (?C) (*(put_heap _ _ _)*) _  |- _ ] => invc H
+  | [H: Instr_step (?C _) _ _ _ _  |- _ ] => invc H
+  | [H: platStep_l
+          (onePlat (?C _)) _ _ _ _ |- _ ] => invc H
+  | [H: platStep_l
+          (parPlats (?C _) _) _ _ _ _ |- _ ] => invc H
+  | [H: lstar_world
+          (parPlats (?C _) _) _ _ _ _ |- _] => invc H
+  end;
+  try solve_by_inversion.
+
+Lemma world_refines_lts_event_ordering_ex1:
+  forall (*t p e*) e' (*h*) h' tr (*et*) (*(wt:WorldTerm)*) ,
+    (*well_formed t -> *)
+    (* let wt := build_world_term t p e in (*(InstrSt*configs)*) *)
+    
+    lstar_world (build_world_term ex1_term_annotated 2 mtc) ex1_heap tr (donePlat 2 e') h' ->
+    LTS.lstar (conf ex1_term_annotated 2 mt) tr (stop 2 (aeval ex1_term_annotated 2 mt)).
+Proof.
+  intros.
+  unfold build_world_term in *.
+  unfold orchestrate_l in *.
+  unfold build_world_term' in *.
+  unfold build_world_term'' in *.
+  unfold ex1_term_annotated in *.
+  cbn in *.
+  unfold combineInstrSt in *.
+  unfold ex1_heap in *.
+  df.
+  unfold build_one' in *.
+
+  do 4 inv_lstar.
+  do 4 inv_lstar.
+  do 4 inv_lstar.
+  do 10 inv_lstar.
+
+  invc H0.
+  invc H7.
+  invc H6.
+  invc H10.
+  solve_by_inversion.
+
+  inv_lstar.
+
+  inv_lstar.
+  inv_lstar.
+
+  inv_lstar.
+
+  inv_lstar.
+  inv_lstar.
+
+  inv_lstar.
+
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+  inv_lstar.
+
+  assert (
+      exists h'', 
+
+      lstar_world
+        (parPlats
+           (onePlat (ils (iconf
+                            (aseq (aPutStore 2 5 1 42 43)
+                                  (aGetStore 4 1 43)) 2 mtc)
+                         (aprimInstr 5 (umeas 2 []))))
+           (onePlat (ils (iconf
+                            (aGetStore 4 1 42) 1 mtc)
+                         (aseq (aprimInstr 3 (umeas 1 [])) (aPutStore 2 4 1 43 42)))))
+        [(42, Empty); (43, Empty)]
+        ((req 2 42 2 1) :: [(Term_Defs.rpy 4 43 2 1)])
+
+        (parPlats (onePlat (ils (iconf ((aGetStore 4 1 43)) 2 mtc) (aprimInstr 5 (umeas 2 []))))
+                  (onePlat (ils (iconf (aprimInstr 3 (umeas 1 [])) 1 mtc) (aPutStore 2 4 1 43 42)))) h'').
+  {
+    eexists.
+    Abort.
+   
+  
+
+
+
 
 Lemma world_refines_lts_event_ordering:
   forall t p e e' h h' tr et (wt:WorldTerm),

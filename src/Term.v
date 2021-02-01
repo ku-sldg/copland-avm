@@ -493,7 +493,7 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
 | evtsattreq:
     forall r lr q t i p req_loc rpy_loc,
       fst r = i ->
-      events (aatt r lr (req_loc, rpy_loc) q t) p (req i req_loc p q (unanno t))
+      events (aatt r lr (req_loc, rpy_loc) q t) p (req i req_loc p q (*(unanno t)*))
 | evtsatt:
     forall r lr q t ev p locs,
       events t q ev ->
