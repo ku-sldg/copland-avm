@@ -416,11 +416,11 @@ Fixpoint copland_compliment_l (t:AnnoTerm) (s:MapC Plc AnnoInstr): MapC Plc Anno
   end.
 
 
-Definition wrap_server_config (pr:AnnoInstr*Plc): InstrSt :=
-  iconf (fst pr) (snd pr) mtc.
+Definition wrap_server_config (pr:Plc*AnnoInstr): InstrSt :=
+  iconf (snd pr) (fst pr) mtc.
 
-Definition init_configs (ls:list AnnoInstr) (ps:list Plc) : list InstrSt :=
-  map wrap_server_config (combine ls ps).
+Definition init_configs (ps:list Plc) (ls:list AnnoInstr)  : list InstrSt :=
+  map wrap_server_config (combine ps ls).
 
 Definition mapify_server_configs (ps: list Plc) (ls:list InstrSt) : MapC Plc InstrSt :=
   combine ps ls.
@@ -429,9 +429,9 @@ Definition orchestrate_l_servers (t:AnnoTerm) (*(p:Plc) (e:EvidenceC)*):
   (MapC Plc InstrSt) :=
   (*let main_code := instr_compiler t in *) (* AnnoInstr *)
   let server_codes := copland_compliment_l t [] in (* Map Plc AnnoInstr *)
-  let codes := map_vals server_codes in (* list AnnoInstr *)
   let server_places := map_dom server_codes in (* list Plc *)
-  let server_configs := init_configs codes server_places in
+  let codes := map_vals server_codes in (* list AnnoInstr *)
+  let server_configs := init_configs server_places codes in
   (mapify_server_configs server_places server_configs).
 
 Definition setup_main_code (t:AnnoTerm) (p:Plc) (e:EvidenceC) : InstrSt :=
@@ -628,6 +628,8 @@ Set Nested Proofs Allowed.
 
   Ltac bound_facts :=
     match goal with
+    | [H: bound_to [] _ _ |- _] =>
+      invc H; unfold map_get in *; solve_by_inversion
     | [H: bound_to _ _ _ |- _] =>
       invc H
     end;
@@ -640,6 +642,25 @@ Set Nested Proofs Allowed.
     df;
     unfold map_set in *;
     df.
+
+
+  
+  (*
+  Ltac bound_facts :=
+    match goal with
+    | [H: bound_to _ _ _ |- _] =>
+      invc H
+    end;
+    unfold map_get in *;
+    break_if; try solve_by_inversion;
+    do_eqb_reflect;
+    unfold map_replace in *;
+    unfold map_remove in *;
+    subst;
+    df;
+    unfold map_set in *;
+    df.
+*)
 
   Ltac inv_lstar :=
   match goal with
@@ -673,6 +694,7 @@ Definition ex1_heap : heap := Empty. (* option (Plc*EvidenceC) := None. *)
 
 Definition ex1_world : WorldTerm := (build_world_term ex1_term_annotated 2 mtc).
 
+(*
 Lemma world_refines_lts_event_ordering_ex1:
   forall (*t p e*) e' (*h*) h' tr servs' (*et*) (*(wt:WorldTerm)*) ,
     (*well_formed t -> *)
@@ -926,11 +948,184 @@ Proof.
   apply lstar_refl.
 *)
 
-HERE
+ *)
+
+(*
+    Ltac bound_facts' :=
+    match goal with
+    | [H: bound_to [] _ _ |- _] =>
+      invc H; unfold map_get in *; solve_by_inversion
+    | [H: bound_to _ _ _ |- _] =>
+      invc H
+    end;
+    unfold map_get in *;
+    break_if; try solve_by_inversion;
+    do_eqb_reflect;
+    unfold map_replace in *;
+    unfold map_remove in *;
+    subst;
+    df;
+    unfold map_set in *;
+    df.
+ *)
+
+
+Lemma combine_lem{A B:Type} `{H : EqClass A} : forall (prs:(list (A*B))),
+    combine (map_dom prs) (map_vals prs) = prs.
+Proof.
+  intros.
+  induction prs.
+  -
+    tauto.
+  -
+    simpl.
+    repeat break_let.
+    subst.
+    simpl.
+    rewrite IHprs.
+    tauto.
+Defined.
+
+Lemma lstar_world_lseq_decomp: forall t1 t2 p e e'' h' servs' tr,
+    lstar_world
+      (worldTermC (iconf (aseq (instr_compiler t1) (instr_compiler t2)) p e)
+                  (combine (map_dom (copland_compliment_l t2 (copland_compliment_l t1 [])))
+                           (map wrap_server_config (copland_compliment_l t2 (copland_compliment_l t1 []))))) Empty tr
+      (worldTermC (istop p e'') servs') h' -> 
+
+    exists (tr1: list Ev) e_mid servs_mid (h_mid:heap),
+      lstar_world
+        (worldTermC (iconf (instr_compiler t1) p e)
+                    (combine (map_dom (copland_compliment_l t1 [])) (map wrap_server_config (copland_compliment_l t1 [])))) Empty tr1
+        (worldTermC (istop p e_mid) servs_mid) h_mid /\
+      exists (tr2: list Ev),
+        lstar_world
+          (worldTermC (iconf (instr_compiler t2) p e_mid)
+                      (combine (map_dom (copland_compliment_l t2 [])) (map wrap_server_config (copland_compliment_l t2 [])))) Empty (*h_mid*) tr2
+          (worldTermC (istop p e'') servs') h' /\
+        tr = tr1 ++ tr2.
+Proof.
+Admitted.
+
+Lemma evshape_trace_irrel : forall t p et et' et2 et2' tr,
+    lstar (conf t p et)  tr (stop p et') ->
+    lstar (conf t p et2) tr (stop p et2').
+Proof.
+Admitted.
+
+Require Import Coq.Program.Tactics.
+
+Lemma world_refines_lts_event_ordering:
+  forall t p e e' (*h*) h' tr servs' (*et*) (*(wt:WorldTerm)*) ,
+    well_formed t ->
+    (*let wt := build_world_term t p e in (*(InstrSt*configs)*) *)
+    
+    lstar_world (build_world_term t p e) Empty tr (worldTermC (istop p e') servs')  h' ->
+    LTS.lstar (conf t p mt) tr (stop p (aeval t p mt)).
+Proof.
+  intros.
+  unfold_world_defs.
+
+  unfold mapify_server_configs in *.
+  unfold init_configs in *.
+  df.
+  assert (
+      (combine (map_dom (copland_compliment_l t [])) (map_vals (copland_compliment_l t []))) =
+      (copland_compliment_l t [])).
+  {
+    eapply combine_lem; eauto.
+  }
+  repeat rewrite H1 in *; clear H1. 
+  (*
+  unfold wrap_server_config in *.
+  unfold map_vals in *.
+  unfold copland_compliment_l in *. 
+   *)
+
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a; df;
+      repeat (inv_lstar; try bound_facts; try (econstructor; econstructor; tauto)).
+  -
+    HEREEEEEE
+    admit.
+  -
+    do_wf_pieces.
+    df.
+
+    (*
+    assert (
+        exists (tr1: list Ev) e' servs_mid (h_mid:heap),
+          lstar_world
+           (worldTermC (iconf (instr_compiler t1) p e)
+              (combine (map_dom (copland_compliment_l t1 [])) (map wrap_server_config (copland_compliment_l t1 [])))) Empty tr1
+           (worldTermC (istop p e') servs_mid) h_mid /\
+          exists (tr2: list Ev) e'',
+            lstar_world
+           (worldTermC (iconf (instr_compiler t2) p e')
+              (combine (map_dom (copland_compliment_l t2 [])) (map wrap_server_config (copland_compliment_l t2 [])))) Empty (*h_mid*) tr2
+           (worldTermC (istop p e'') servs') h' /\
+            tr = tr1 ++ tr2).
+    {
+     *)
+    
+      
+
+
+      edestruct lstar_world_lseq_decomp.
+      eassumption.
+      
+    destruct_conjs.
+
+    subst.
+
+    
+
+    pose (IHt1 p e H3 H5 x H4 H1 H6).
+
+    pose (IHt2 p H3 e' h' H7 servs' H2 H8).
+
+    eapply lstar_silent_tran.
+    econstructor.
+
+    eapply lstar_transitive.
+    Check lstar_stls.
+    eapply lstar_stls.
+    eassumption.
+
+    eapply lstar_silent_tran.
+    apply stlseqstop.
+
+    eapply evshape_trace_irrel; eauto.
+
+    
+    
+    
+    
+    
+
+
+  
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*
 Lemma world_refines_lts_event_ordering:
   forall t p e e' h h' tr et (wt:WorldTerm),
     well_formed t ->
@@ -955,6 +1150,7 @@ Proof.
         invc H1.
   
 Abort.
+*)
 
 
 
