@@ -77,4 +77,14 @@ Fixpoint map_dom{A B:Type} `{H : EqClass A} (m:MapC A B) : list A :=
     [m] *)
 
 Inductive bound_to{A B:Type} `{H : EqClass A} : MapC A B -> A -> B -> Prop :=
-  | Bind : forall x m a, map_get m x = Some a -> bound_to m x a.
+| Bind : forall x m a, map_get m x = Some a -> bound_to m x a.
+
+Fixpoint map_remove{A B:Type} `{H : EqClass A} (k : A) (s : MapC A B) : MapC A B :=
+ match s with
+  | nil => nil
+  | (k',x) :: l =>
+    if (eqb k k') then map_remove k l else (k',x) :: map_remove k l
+ end.
+
+Definition map_replace{A B:Type} `{H : EqClass A} (m:MapC A B) (a:A) (newB:B) :=
+  map_set (map_remove a m) a newB.
