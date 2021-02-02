@@ -27,7 +27,7 @@ MonadVM.v
 MonadVMFacts.v
 Impl_vm.v
 Auto.v
-CVM_Instr.v
+CVM_Instr_Alt.v
 CVM_Semantics.v
 Helpers_VmSemantics.v
 External_Facts.v

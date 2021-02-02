@@ -14,14 +14,14 @@ Set Nested Proofs Allowed.
 
 Ltac same_index :=
   match goal with
-  | [H: anno ?t _ _ = Some (?n, _),
-        H': anno ?t _ _ = Some (?n', _) |- _] =>
+  | [H: anno ?t _ _ _ = Some (?n, _),
+        H': anno ?t _ _ _ = Some (?n', _) |- _] =>
     assert_new_proof_by (n = n') eauto
   end.
 
-Lemma same_anno_range: forall t i l l2 a b n n',
-    anno t i l = Some (n,a) ->
-    anno t i l2 = Some (n',b) ->
+Lemma same_anno_range: forall t i l l2 a b n n' p p',
+    anno t i l p = Some (n,a) ->
+    anno t i l2 p' = Some (n',b) ->
     n = n'.
 Proof.
   intros.
@@ -61,8 +61,8 @@ Proof.
       congruence. *)
  Defined.
   
-Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm) (ls:LocRange),
-  anno t i ls = Some (j,t') ->
+Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm) (ls:LocRange) (p:Plc),
+  anno t i ls p = Some (j,t') ->
   j > i.
 Proof.
   induction t; intros; (*i j t' ls b H; *)
@@ -73,8 +73,8 @@ Defined.
 Hint Resolve anno_mono : core.
 
 Lemma anno_range:
-  forall x i j ls t',
-     anno x i ls = Some (j,t') ->
+  forall x i j ls t' p,
+     anno x i ls p = Some (j,t') ->
     range (t') = (i, j).
 Proof.
   induction x; intros; ff.
@@ -110,9 +110,9 @@ Ltac do_list_empty :=
   end.
 
 Lemma anno_lrange:
-  forall x i j ls t',
+  forall x i j ls t' p,
     length ls = nss x ->
-    anno x i ls = Some (j,t') ->
+    anno x i ls p = Some (j,t') ->
     list_subset ls (lrange t').
 Proof.
   induction x; intros;
@@ -125,9 +125,9 @@ Defined.
 
 Lemma anno_lrange'
   : forall (x : Term) (i j : nat) (ls : list nat) 
-      (t' : AnnoTerm),
+      (t' : AnnoTerm) (p:Plc),
     (*length ls = nss x -> *)
-    anno x i ls = Some (j, t') ->
+    anno x i ls p = Some (j, t') ->
     list_subset (lrange t') ls.
 Proof.
   intros.
@@ -138,9 +138,9 @@ Defined.
 
 Lemma both_anno_lrange
   : forall (x : Term) (i j : nat) (ls : list nat) 
-      (ls' : LocRange) (t' : AnnoTerm),
+      (ls' : LocRange) (t' : AnnoTerm) (p:Plc),
     length ls = nss x ->
-    anno x i ls = Some (j,t') ->
+    anno x i ls p = Some (j,t') ->
     list_subset (lrange t') ls /\ list_subset ls (lrange t').
 Proof.
   split.
@@ -162,8 +162,8 @@ Proof.
 Defined.
 *)
 
-Lemma nss_iff_anss: forall t i ls n a,
-    anno t i ls = Some (n,a) ->
+Lemma nss_iff_anss: forall t i ls n a p,
+    anno t i ls p = Some (n,a) ->
     nss t = anss a.
 Proof.
   intros.
@@ -188,8 +188,8 @@ Ltac list_facts' :=
   do_nodup_skipn;
   do_nodup_contra.
 
-Lemma anno_some_fact: forall t i ls n a,
-    anno t i ls = Some (n, a) ->
+Lemma anno_some_fact: forall t i ls n a p,
+    anno t i ls p = Some (n, a) ->
     length ls >= nss t.
 Proof.
   induction t; intros;
@@ -271,7 +271,7 @@ Defined.
 Ltac do_anno_some_fact :=
   repeat
     match goal with
-    | [H: anno ?t _ ?ls = Some (_,_) |- _] =>
+    | [H: anno ?t _ ?ls _ = Some (_,_) |- _] =>
       assert_new_proof_by (length ls >= nss t) ltac:(eapply anno_some_fact; apply H)
     end.
 
@@ -286,8 +286,8 @@ Ltac list_facts :=
   do_nodup_skipn;
   do_nodup_contra.
 
-Lemma list_too_short: forall t i ls,
-      anno t i ls = None ->
+Lemma list_too_short: forall t i ls p,
+      anno t i ls p = None ->
       length ls < nss t.
 Proof.
   intros.
@@ -422,10 +422,10 @@ Proof.
 *)
 Defined.
 
-Lemma anno_some: forall t i l,
+Lemma anno_some: forall t i l p,
   length l = nss t ->
   exists res,
-    anno t i l = Some res.
+    anno t i l p = Some res.
 Proof.
   intros.
   generalizeEverythingElse t.
@@ -730,9 +730,9 @@ Defined.
 
 
 
-Lemma lrange_nss: forall t i ls  n a,
+Lemma lrange_nss: forall t i ls  n a p,
     length ls = nss t ->
-    anno t i ls = Some (n, a) ->
+    anno t i ls p = Some (n, a) ->
     length (lrange a) = nss t. (* + length ls'. *)
 Proof.
   intros.
@@ -903,10 +903,10 @@ Defined.
 
 
 Lemma anno_well_formed_r:
-  forall t i j ls t',
+  forall t i j ls t' p,
     (* length ls = nss t ->
     NoDup ls -> *)
-    anno t i ls = Some (j, t') ->
+    anno t i ls p = Some (j, t') ->
     well_formed_r t'.
 Proof.
   intros.

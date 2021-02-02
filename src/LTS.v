@@ -70,8 +70,8 @@ Inductive step: St -> option Ev -> St -> Prop :=
 (** Remote call *)
 
 | statt:
-    forall r lr x p q e req_loc rpy_loc,
-      step (conf (aatt r lr (req_loc, rpy_loc) q x) p e)
+    forall r lr x p p' q e req_loc rpy_loc,
+      step (conf (aatt r lr (req_loc, rpy_loc) p' q x) p e)
            (Some (req (fst r) req_loc p q (*(unanno x)*)))
            (rem (snd r) rpy_loc p (conf x q e))
 | stattstep:
@@ -428,7 +428,7 @@ Proof.
     + exists (Some (asp_event (fst r) a n)).
       eapply ex_intro; eauto.
       
-    + exists (Some (req (fst r) (fst p) n n0 (*(unanno a)*))).
+    + exists (Some (req (fst r) (fst p) n n1 (*(unanno a)*))).
       repeat dest_range.
       eapply ex_intro; eauto.
     + exists None.
@@ -553,7 +553,7 @@ Qed.
 Fixpoint tsize t: nat :=
   match t with
   | aasp _ _ _ => 1
-  | aatt _ _ _ _ x => 2 + tsize x
+  | aatt _ _ _ _ _ x => 2 + tsize x
   | alseq _ _ x y => 2 + tsize x + tsize y
   (*| abseq _ _ _ x y => 3 + tsize x + tsize y
   | abpar _ _ _ _ x y => 2 + tsize x + tsize y *)
