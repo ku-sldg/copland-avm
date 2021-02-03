@@ -641,6 +641,7 @@ Set Nested Proofs Allowed.
     subst;
     df;
     unfold map_set in *;
+    repeat rewrite Nat.eqb_refl in *;
     df.
 
 
@@ -679,6 +680,7 @@ Set Nested Proofs Allowed.
   | [H: lstar_world
           (worldTermC (?C _) _) _ _ _ _ |- _] => invc H
   end;
+  (*try unfold wrap_server_config in *; *)
   df;
   try solve_by_inversion.
 
@@ -1015,12 +1017,45 @@ Admitted.
 
 Require Import Coq.Program.Tactics.
 
+Check bound_to.
+
+Definition servers_done (servs:MapC Plc InstrSt) : Prop :=
+  forall p s,
+    bound_to servs p s ->
+    exists e, s = istop p e.
+
+Lemma at_world_decomp :
+  forall t n0 e tr0 n4 n2 st1 servs_res e_res h' h'0 n,
+
+    lstar_world
+      (worldTermC
+         (irpyWait (Init.Nat.pred n2) n4 n0 n0)
+         [(n0, ils st1 (aResp (Nat.pred n2) n))])
+      h'0
+      tr0
+      (worldTermC (istop n0 e_res) servs_res) h' -> 
+    Instr_step (iconf (instr_compiler t) n0 e) Empty None st1 h'0 -> 
+    
+
+    
+    exists tr e' servs' h',
+      lstar_world
+        (worldTermC (iconf (instr_compiler t) n0 e)
+                    (combine (map_dom (copland_compliment_l t [])) (map wrap_server_config (copland_compliment_l t [])))) Empty tr
+        (worldTermC (istop n0 e') servs') h' /\
+      servers_done servs' /\
+      (tr0 = tr ++ [(rpy (Init.Nat.pred n2) n4 n0 n0)]).
+Proof.
+Admitted.
+
+
 Lemma world_refines_lts_event_ordering:
   forall t p e e' (*h*) h' tr servs' (*et*) (*(wt:WorldTerm)*) ,
     well_formed t ->
     (*let wt := build_world_term t p e in (*(InstrSt*configs)*) *)
     
     lstar_world (build_world_term t p e) Empty tr (worldTermC (istop p e') servs')  h' ->
+    servers_done servs' ->
     LTS.lstar (conf t p mt) tr (stop p (aeval t p mt)).
 Proof.
   intros.
@@ -1035,7 +1070,7 @@ Proof.
   {
     eapply combine_lem; eauto.
   }
-  repeat rewrite H1 in *; clear H1. 
+  repeat rewrite H2 in *; clear H2.
   (*
   unfold wrap_server_config in *.
   unfold map_vals in *.
@@ -1048,6 +1083,604 @@ Proof.
     destruct a; df;
       repeat (inv_lstar; try bound_facts; try (econstructor; econstructor; tauto)).
   -
+    df.
+    (*
+    unfold wrap_server_config in *. *)
+    df.
+
+    (*
+    assert (
+        exists ev_res, 
+    lstar_world
+      (worldTermC
+         (iconf (aReq n1 (Init.Nat.pred n2) n3 n4 n0) p0 e)
+         [(n0, iconf
+                 (aseq
+                    (aseq (aWaitReq n1) (instr_compiler t))
+                    (aResp (Nat.pred n2) n))
+                 n0
+                 mtc)])
+      Empty
+      tr
+      (worldTermC
+         (istop p0 ev_res)
+         [n0,
+          ils (ils (iconf (instr_compiler t) n0 e)
+
+      
+
+
+
+      
+      (worldTermC (istop p0 e') servs') h')
+*)
+
+
+
+
+
+           (*
+    lstar_world
+      (worldTermC
+         (iconf (aReq n1 (Init.Nat.pred n2) n3 n4 n0) p0 e)
+         [(n0, iconf
+                 (aseq
+                    (aseq (aWaitReq n1) (instr_compiler t))
+                    (aResp (Nat.pred n2) n))
+                 n0
+                 mtc)])
+      Empty
+      tr
+      (worldTermC (istop p0 e') servs') h') *)
+
+
+    subst.
+    unfold wrap_server_config in H0.
+    df.
+
+
+    Lemma at_world_decomp' : forall t n1 n2 n3 n4 n0 p0 e n tr e' servs' h',
+    lstar_world
+      (worldTermC
+         (iconf (aReq n1 (Init.Nat.pred n2) n3 n4 n0) p0 e)
+         [(n0,
+           (iconf
+              (aseq
+                 (aseq (aWaitReq n1) (instr_compiler t))
+                 (aResp (Nat.pred n2) n)) n0 mtc))])
+         Empty
+         tr
+         (worldTermC (istop p0 e') servs') h' ->
+    exists h_mid,
+      lstar_world
+      (worldTermC
+         (iconf (aReq n1 (Init.Nat.pred n2) n3 n4 n0) p0 e)
+         [(n0,
+           (iconf
+              (aseq
+                 (aseq (aWaitReq n1) (instr_compiler t))
+                 (aResp (Nat.pred n2) n)) n0 mtc))])
+      Empty
+      [(req n1 n3 p0 n0)]
+      (worldTermC
+         (irpyWait (Init.Nat.pred n2) n4 n0 p0)
+         [(n0,
+           ils (iconf (instr_compiler t) n0 e)
+              (aResp (Nat.pred n2) n))])
+         h_mid.
+    Proof.
+    Admitted.
+
+    edestruct at_world_decomp'.
+    eassumption.
+
+    exfalso.
+    eapply at_world_decomp'; eauto.
+
+      
+   
+      
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+    
+
+
+
+
+
+
+    
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+
+    unfold wrap_server_config in H2.
+    df.
+
+    
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+
+    Ltac servers_done_contra :=
+      unfold servers_done in *;
+      (*unfold wrap_server_config in *; *)
+      df;
+      let HH := fresh in
+      match goal with
+      | [(*H: servers_done [(?C _)], *)
+            H: context[
+                    bound_to [(?n0, ?s)] _ _ -> _] |- _] =>
+        pose (H n0 s) as HH;
+        forward HH
+      end;
+      econstructor;
+        df;
+        try rewrite Nat.eqb_refl;
+        try tauto;
+        try (concludes; destruct_conjs; bound_facts).
+
+    servers_done_contra.
+    
+(*
+    concludes.
+    destruct_conjs.
+    bound_facts.
+
+
+
+    forward e.
+        
+
+
+    
+    unfold servers_done in *.
+    unfold wrap_server_config in *.
+    df.
+    specialize H1 with (p:=n0) (s:=(iconf (aseq (aseq (aWaitReq n1) (instr_compiler t)) (aResp (Nat.pred n2) n)) n0 mtc)).
+    destruct_conjs.
+
+    forward H1.
+    econstructor.
+    df.
+    Search (_ =? _).
+    rewrite Nat.eqb_refl.
+    tauto.
+    concludes.
+    destruct_conjs.
+    bound_facts.
+ *)
+    
+
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    servers_done_contra.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    servers_done_contra.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+
+    fold wrap_server_config in IHt.
+    inv_lstar.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.  
+    bound_facts.
+    inv_lstar.
+
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+
+    (*
+    Require Import Coq.Arith.PeanoNat. *)
+
+    destruct (Nat.eq_dec p0 n0).
+    +
+      subst.
+      (*
+      repeat (inv_lstar; try bound_facts; try servers_done_contra; try bound_facts; try servers_done_contra).
+       *)
+      
+      inv_lstar.
+      
+      (* Main thread grabbed evidence *)
+      inv_lstar.
+      inv_lstar.
+      inv_lstar.
+      servers_done_contra.
+      inv_lstar.
+      bound_facts.
+      inv_lstar.
+      inv_lstar.
+      bound_facts.
+      inv_lstar.
+      inv_lstar.
+      inv_lstar.
+      servers_done_contra.
+      inv_lstar.
+      bound_facts.
+      inv_lstar.
+      inv_lstar.
+      inv_lstar.
+      bound_facts.
+      inv_lstar.
+      inv_lstar.
+
+      (* Servers grabbed evidence *)
+      bound_facts.
+      inv_lstar.
+
+      
+      inv_lstar.
+      (* Servers grabbed the evidence *)
+      bound_facts.
+      inv_lstar.
+      inv_lstar.
+
+      (* aseq is peeled off on the server *)
+      inv_lstar.
+      inv_lstar.
+      
+      (* Main thread grabbed evidence again *)
+      inv_lstar.
+      inv_lstar.
+      servers_done_contra.
+      inv_lstar.
+      bound_facts.
+      inv_lstar.
+      inv_lstar.
+
+      (* Server grabbed evidence in correct sequence *)
+      inv_lstar.
+      bound_facts.
+      inv_lstar.
+      inv_lstar.
+      bound_facts.
+      inv_lstar.
+      inv_lstar.
+      inv_lstar.
+      bound_facts.
+      inv_lstar.
+      inv_lstar.
+      inv_lstar.
+
+      (* Server done processing request *)
+      inv_lstar.
+      admit.  (* Cannot be a Some event *)
+
+      (* Now execution must proceed on server *)
+      inv_lstar.
+      bound_facts.
+      inv_lstar.
+      inv_lstar.
+
+      (* Must now start processing t on Server 
+         ils (iconf (instr_compiler t) n0 e) (aResp ...) n *)
+      inv_lstar.
+      admit.  (* Cannot be Some e *)
+    
+      inv_lstar.
+      (* Entered ils on server for evaulating subterm *)
+      bound_facts.
+      inv_lstar.
+
+      assert (well_formed t).
+      {
+        admit.
+      }
+
+
+
+      edestruct at_world_decomp.
+      eassumption.
+      eassumption.
+      destruct_conjs.
+
+      assert (lstar (conf t n0 mt) x (stop n0 (aeval t n0 mt))).
+      {
+        eapply IHt.
+        eassumption.
+        eassumption.
+        eassumption.
+      }
+
+      subst.
+
+      admit. 
+    +
+      admit.
+      
+    +
+
+      
+      bound_facts.
+      inv_lstar.
+    +
+      inv_lstar.
+      bound_facts.
+      inv_lstar.
+
+      inv_lstar.
+      Focus 2.
+
+      inv_lstar.
+      bound_facts.
+      inv_lstar.
+      inv_lstar.
+
+      
+      inv_lstar.
+      inv_lstar.
+      
+      
+      
+
+      
+
+      
+
+      edestruct IHt.
+      eassumption.
+      admit.
+      admit.
+      
+
+      invc H0.
+      admit.
+
+      invc X.
+      inv_lstar.
+
+      invc H4.
+      unfold map_get in *.
+
+      break_if; try solve_by_inversion.
+      find_inversion.
+
+      unfold map_replace in *.
+      unfold map_remove in *.
+      rewrite Heqb in *.
+      unfold map_set in *.
+
+      assert (p4 = n0). admit.
+      subst. clear Heqb.
+
+      assert (
+
+      invc H10.
+     
+      
+      admit.
+    +
+      
+      
+
+
+
+    
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    admit.
+    bound_facts.
+    inv_lstar.
+
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    admit.
+
+    bound_facts.
+    unfold wrap_server_config in *.
+    df.
+    inv_lstar.
+
+    unfold wrap_server_config in *.
+    df.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    servers_done_contra.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    servers_done_contra.
+
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar
+    
+
+
+
+    
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    servers_done_contra.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    servers_done_contra.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    servers_done_contra.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    inv_lstar.
+    bound_facts.
+    inv_lstar.
+    invc H0.
+    invc X.
+    invc H9.
+    invc H2.
+    servers_done_contra.
+    invc X.
+    invc H9.
+    invc H0.
+    df.
+    bound_facts.
+    servers_done_contra.
+    df.
+    bound_facts.
+    inv_lstar.
+    df.
+    invc X.
+    inv_lstar.
+    df.
+    bound_facts.
+    invc H2.
+    servers_done_contra.
+    invc X.
+    solve_by_inversion.
+    df.
+    bound_facts.
+    invc H0.
+    unfold servers_done in *.
+    pose (H1 n0 i'0).
+    forward e2.
+    econstructor.
+    df.
+    try rewrite Nat.eqb_refl in *.
+    tauto.
+    concludes.
+    destruct_conjs.
+    subst. 
+    inv_lstar.
+    
+
+
+
+
+
+    
+
+    admit.
+
+    admit.
+
+    admit.
+
+    admit.
+
+    admit.
+
+    admit.
+
+    admit.
+
+
+    
     HEREEEEEE
     admit.
   -

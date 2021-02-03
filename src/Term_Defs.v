@@ -120,6 +120,11 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
 
  *)
 
+(*
+ H0 : lstar_world (worldTermC (irpyWait (Init.Nat.pred n2) n4 n0 n0) [(n0, ils st1 (aResp (Nat.pred n2) n))]) h'0 
+         (H3 ++ []) (worldTermC (istop n0 e') servs') h'
+*)
+
 Inductive Ev: Set :=
 | copy:  nat -> Plc -> Ev 
 | umeas: nat -> Plc -> ASP_ID -> list Arg -> Ev
