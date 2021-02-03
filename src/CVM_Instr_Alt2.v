@@ -165,10 +165,9 @@ Inductive InstrSt: Set :=
 (*
 Inductive AnnoInstr: Set :=
 | aprimInstr: nat -> Prim_Instr -> AnnoInstr
-| aReq: nat -> nat -> (*nat ->*) Plc -> (*Loc ->*) (*Loc -> *) AnnoInstr
-(*| aWaitReq: nat -> Plc -> AnnoInstr *)
+| aReq: nat -> nat -> Loc -> Loc -> Plc -> AnnoInstr
+| aWaitReq: nat -> (*Plc ->*) AnnoInstr
 | aResp: nat -> Plc -> AnnoInstr 
-(*| aWaitRpy: nat -> Plc -> (*Loc -> bool ->*) AnnoInstr*)
 | aseq: AnnoInstr -> AnnoInstr -> AnnoInstr.
 *)
 
@@ -414,6 +413,72 @@ Fixpoint copland_compliment_l (t:AnnoTerm) (s:MapC Plc AnnoInstr): MapC Plc Anno
     s2
  (* | _ => [] *)
   end.
+
+Definition servers_done (servs:MapC Plc InstrSt) : Prop :=
+  forall p s,
+    bound_to servs p s ->
+    exists e, s = istop p e.
+
+(* Relates an instruction and its servers before executing 
+   it to its servers after 
+
+   Need to map over all destinations of aReq instructions in 
+   the client and clear one 
+   (<noEvents> ... aWaitReq ... aResp) sequence at each.
+
+*)
+Definition trim_servs : AnnoInstr ->
+                        MapC Plc InstrSt ->
+                        MapC Plc InstrSt -> Prop.
+Admitted.
+
+(* Instruction state that Will reach an aWaitReq 
+   instruction before emitting any other (non-silent) events.
+   Ensures a server thread it "waiting"
+*)
+Inductive leading_reqWait : InstrSt -> Prop :=.
+                           
+
+(* well structured world where the client code is at 
+   the given AnnoInstr *)
+Inductive ws_instr: AnnoInstr -> MapC Plc InstrSt -> heap -> Prop :=
+| wsi_prim: forall i p m h, ws_instr (aprimInstr i p) m h
+| wsi_req: forall m toPl i j req_loc rpy_loc iSt,
+    bound_to m toPl iSt(* (iconf (aWaitReq i) toPl mtc)*) ->
+    leading_reqWait iSt -> 
+    ws_instr (aReq i j req_loc rpy_loc toPl) m Empty
+| wsi_seq: forall m m' h a1 a2,
+    ws_instr a1 m h ->
+    trim_servs a1 m m' ->
+    ws_instr a2 m' Empty -> 
+    ws_instr (aseq a1 a2) m h.
+(*| wsi_aWaitReq:
+    ws_instr (aWaitReq i) *)
+(*| wsi_aResp:
+    ws_instr (aResp i toPl) *)
+
+
+
+Inductive ws_world: InstrSt -> MapC Plc InstrSt -> heap -> Prop :=
+| wsw_conf: forall i m h e p,
+    ws_instr i m h -> 
+    ws_world (iconf i p e) m h
+| wsw_stop: forall m p e h,
+    servers_done m ->
+    ws_world (istop p e) m h
+| wsw_rpyWait: forall i m p q loc iSt h,
+    bound_to m q iSt ->
+    leading_reqWait iSt ->
+    
+    ws_world (irpyWait i loc p q) m h.
+
+
+
+
+
+Lemma compliment_assoc:
+  well_formed (alseq r l t1 t2) ->
+  copland_compliment_l (alseq r l t1 t2) ls
 
 
 Definition wrap_server_config (pr:Plc*AnnoInstr): InstrSt :=
@@ -988,23 +1053,30 @@ Proof.
     tauto.
 Defined.
 
-Definition servers_done (servs:MapC Plc InstrSt) : Prop :=
-  forall p s,
-    bound_to servs p s ->
-    exists e, s = istop p e.
+Lemma lstar_world_lseq_decomp: forall t1 t2 p e e'' h' servs' tr l r,
 
-Lemma lstar_world_lseq_decomp: forall t1 t2 p e e'' h' servs' tr,
+    (*
     lstar_world
       (worldTermC (iconf (aseq (instr_compiler t1) (instr_compiler t2)) p e)
                   (combine (map_dom (copland_compliment_l t2 (copland_compliment_l t1 [])))
                            (map wrap_server_config (copland_compliment_l t2 (copland_compliment_l t1 []))))) Empty tr
       (worldTermC (istop p e'') servs') h' -> 
+     *)
 
-    exists (tr1: list Ev) e_mid servs_mid (h_mid:heap),
+    well_formed (alseq r l t1 t2) ->
+
+
+    lstar_world
+         (worldTermC (iconf (instr_compiler (alseq r l t1 t2)) p e)
+            (combine (map_dom (copland_compliment_l (alseq r l t1 t2) []))
+               (map wrap_server_config (copland_compliment_l (alseq r l t1 t2) [])))) Empty tr
+         (worldTermC (istop p e'') servs') h' ->
+
+    exists (tr1: list Ev) e_mid servs_mid (*(h_mid:heap)*),
       lstar_world
         (worldTermC (iconf (instr_compiler t1) p e)
                     (combine (map_dom (copland_compliment_l t1 [])) (map wrap_server_config (copland_compliment_l t1 [])))) Empty tr1
-        (worldTermC (istop p e_mid) servs_mid) h_mid /\
+        (worldTermC (istop p e_mid) servs_mid) Empty /\
       servers_done servs_mid /\
       exists (tr2: list Ev),
         lstar_world
@@ -1014,7 +1086,16 @@ Lemma lstar_world_lseq_decomp: forall t1 t2 p e e'' h' servs' tr,
         servers_done servs' /\
         tr = tr1 ++ tr2.
 Proof.
-Admitted.
+  intros.
+  df.
+  do_wf_pieces.
+  df.
+  repeat eexists.
+  
+  inv_lstar.
+  admit.
+
+Abort.
 
 Lemma evshape_trace_irrel : forall t p et et' et2 et2' tr,
     lstar (conf t p et)  tr (stop p et') ->
@@ -1787,7 +1868,6 @@ Proof.
 *)
   -
     do_wf_pieces.
-    df.
 
     (*
     assert (
@@ -1810,6 +1890,7 @@ Proof.
 
     edestruct lstar_world_lseq_decomp.
     eassumption.
+    eassumption.
       
     destruct_conjs.
 
@@ -1817,9 +1898,9 @@ Proof.
 
     
 
-    pose (IHt1 p e H4 H6 x H5 H2 H7).
+    pose (IHt1 p e H4 Empty x H5 H2 H6).
 
-    pose (IHt2 p H4 e' h' H9 servs' H3 H10).
+    pose (IHt2 p H4 e' h' H8 servs' H3 H9).
     repeat concludes.
 
     eapply lstar_silent_tran.
