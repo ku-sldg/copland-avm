@@ -988,6 +988,11 @@ Proof.
     tauto.
 Defined.
 
+Definition servers_done (servs:MapC Plc InstrSt) : Prop :=
+  forall p s,
+    bound_to servs p s ->
+    exists e, s = istop p e.
+
 Lemma lstar_world_lseq_decomp: forall t1 t2 p e e'' h' servs' tr,
     lstar_world
       (worldTermC (iconf (aseq (instr_compiler t1) (instr_compiler t2)) p e)
@@ -1000,11 +1005,13 @@ Lemma lstar_world_lseq_decomp: forall t1 t2 p e e'' h' servs' tr,
         (worldTermC (iconf (instr_compiler t1) p e)
                     (combine (map_dom (copland_compliment_l t1 [])) (map wrap_server_config (copland_compliment_l t1 [])))) Empty tr1
         (worldTermC (istop p e_mid) servs_mid) h_mid /\
+      servers_done servs_mid /\
       exists (tr2: list Ev),
         lstar_world
           (worldTermC (iconf (instr_compiler t2) p e_mid)
                       (combine (map_dom (copland_compliment_l t2 [])) (map wrap_server_config (copland_compliment_l t2 [])))) Empty (*h_mid*) tr2
           (worldTermC (istop p e'') servs') h' /\
+        servers_done servs' /\
         tr = tr1 ++ tr2.
 Proof.
 Admitted.
@@ -1019,11 +1026,9 @@ Require Import Coq.Program.Tactics.
 
 Check bound_to.
 
-Definition servers_done (servs:MapC Plc InstrSt) : Prop :=
-  forall p s,
-    bound_to servs p s ->
-    exists e, s = istop p e.
 
+
+(*
 Lemma at_world_decomp :
   forall t n0 e tr0 n4 n2 st1 servs_res e_res h' h'0 n,
 
@@ -1045,6 +1050,75 @@ Lemma at_world_decomp :
         (worldTermC (istop n0 e') servs') h' /\
       servers_done servs' /\
       (tr0 = tr ++ [(rpy (Init.Nat.pred n2) n4 n0 n0)]).
+Proof.
+Admitted.
+ *)
+
+Lemma at_world_decomp' : forall t n1 n2 n3 n4 n0 p0 e n tr e' servs' h',
+    lstar_world
+      (worldTermC
+         (iconf (aReq n1 (Init.Nat.pred n2) n3 n4 n0) p0 e)
+         [(n0,
+           (iconf
+              (aseq
+                 (aseq (aWaitReq n1) (instr_compiler t))
+                 (aResp (Nat.pred n2) n)) n0 mtc))])
+      Empty
+      tr
+      (worldTermC (istop p0 e') servs') h' ->
+    lstar_world
+      (worldTermC
+         (iconf (aReq n1 (Init.Nat.pred n2) n3 n4 n0) p0 e)
+         [(n0,
+           (iconf
+              (aseq
+                 (aseq (aWaitReq n1) (instr_compiler t))
+                 (aResp (Nat.pred n2) n)) n0 mtc))])
+      Empty
+      [(req n1 n3 p0 n0)]
+      (worldTermC
+         (irpyWait (Init.Nat.pred n2) n4 n0 p0)
+         [(n0,
+           ils (iconf (instr_compiler t) n0 e)
+               (aResp (Nat.pred n2) n))])
+      Empty /\
+    exists s_ev t_tr,
+      lstar_world
+        (worldTermC
+           (irpyWait (Init.Nat.pred n2) n4 n0 p0)
+           [(n0,
+             ils (iconf (instr_compiler t) n0 e)
+                 (aResp (Nat.pred n2) n))])
+        Empty
+        t_tr
+        (worldTermC
+           (irpyWait (Init.Nat.pred n2) n4 n0 p0)
+           [(n0, (istop n0 s_ev))])
+        (Full (p0,s_ev)) /\
+      tr = [(req n1 n3 p0 n0)] ++ t_tr ++ [(rpy (Init.Nat.pred n2) n4 p0 n0)]. 
+Proof.
+Admitted.
+
+Lemma remote_same: forall n2 n4 n0 p0 e n H4 H3 t,
+    lstar_world
+      (worldTermC
+         (irpyWait (Init.Nat.pred n2) n4 n0 p0)
+         [(n0, ils (iconf (instr_compiler t) n0 e) (aResp (Nat.pred n2) n))])
+      Empty
+      H4
+      (worldTermC
+         (irpyWait (Init.Nat.pred n2) n4 n0 p0)
+         [(n0, istop n0 H3)])
+      (Full (p0, H3)) ->
+    exists servs'' h'',
+      lstar_world
+        (worldTermC
+           (iconf (instr_compiler t) n0 e)
+           (combine (map_dom (copland_compliment_l t [])) (map wrap_server_config (copland_compliment_l t []))))
+        Empty
+        H4
+        (worldTermC (istop n0 H3) servs'') h'' /\
+      servers_done servs''.
 Proof.
 Admitted.
 
@@ -1139,40 +1213,67 @@ Proof.
     df.
 
 
-    Lemma at_world_decomp' : forall t n1 n2 n3 n4 n0 p0 e n tr e' servs' h',
-    lstar_world
-      (worldTermC
-         (iconf (aReq n1 (Init.Nat.pred n2) n3 n4 n0) p0 e)
-         [(n0,
-           (iconf
-              (aseq
-                 (aseq (aWaitReq n1) (instr_compiler t))
-                 (aResp (Nat.pred n2) n)) n0 mtc))])
-         Empty
-         tr
-         (worldTermC (istop p0 e') servs') h' ->
-    exists h_mid,
-      lstar_world
-      (worldTermC
-         (iconf (aReq n1 (Init.Nat.pred n2) n3 n4 n0) p0 e)
-         [(n0,
-           (iconf
-              (aseq
-                 (aseq (aWaitReq n1) (instr_compiler t))
-                 (aResp (Nat.pred n2) n)) n0 mtc))])
-      Empty
-      [(req n1 n3 p0 n0)]
-      (worldTermC
-         (irpyWait (Init.Nat.pred n2) n4 n0 p0)
-         [(n0,
-           ils (iconf (instr_compiler t) n0 e)
-              (aResp (Nat.pred n2) n))])
-         h_mid.
-    Proof.
-    Admitted.
+
 
     edestruct at_world_decomp'.
     eassumption.
+    destruct_conjs.
+    subst.
+
+
+
+    edestruct remote_same.
+    eassumption.
+    destruct_conjs.
+
+    eapply lstar_transitive.
+
+    eapply lstar_tran.
+    apply statt.
+    econstructor.
+
+    eapply lstar_transitive.
+
+    eapply lstar_strem.
+
+    eapply IHt.
+    invc H.
+    eauto.
+
+
+
+    
+    
+
+    eassumption.
+    eassumption.
+
+    eapply lstar_tran.
+    apply stattstop.
+    econstructor.
+
+    (*
+
+        H5 : lstar_world (worldTermC (irpyWait (Init.Nat.pred n2) n4 n0 p0) [(n0, ils (iconf (instr_compiler t) n0 e) (aResp (Nat.pred n2) n))]) Empty H4
+         (worldTermC (irpyWait (Init.Nat.pred n2) n4 n0 p0) [(n0, istop n0 H3)]) (Full (p0, H3))
+  ============================
+  lstar_world
+    (worldTermC (iconf (instr_compiler t) n0 ?e) (combine (map_dom (copland_compliment_l t [])) (map wrap_server_config (copland_compliment_l t []))))
+    Empty H4 (worldTermC (istop n0 ?e') ?servs') ?h'
+     *)
+    
+
+
+    (*
+
+    
+    eassumption.
+
+    
+
+    
+    eassumption.
+    
 
     exfalso.
     eapply at_world_decomp'; eauto.
@@ -1683,6 +1784,7 @@ Proof.
     
     HEREEEEEE
     admit.
+*)
   -
     do_wf_pieces.
     df.
@@ -1706,8 +1808,8 @@ Proof.
       
 
 
-      edestruct lstar_world_lseq_decomp.
-      eassumption.
+    edestruct lstar_world_lseq_decomp.
+    eassumption.
       
     destruct_conjs.
 
@@ -1715,9 +1817,10 @@ Proof.
 
     
 
-    pose (IHt1 p e H3 H5 x H4 H1 H6).
+    pose (IHt1 p e H4 H6 x H5 H2 H7).
 
-    pose (IHt2 p H3 e' h' H7 servs' H2 H8).
+    pose (IHt2 p H4 e' h' H9 servs' H3 H10).
+    repeat concludes.
 
     eapply lstar_silent_tran.
     econstructor.
@@ -1731,6 +1834,7 @@ Proof.
     apply stlseqstop.
 
     eapply evshape_trace_irrel; eauto.
+    Defined.
 
     
     
