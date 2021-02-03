@@ -23,7 +23,7 @@ Inductive Prim_Instr: Set :=
 
 Inductive AnnoInstr: Set :=
 | aprimInstr: nat -> Prim_Instr -> AnnoInstr
-| aReq: nat -> nat -> Loc -> Loc -> Plc -> AnnoInstr
+| aReq: nat -> nat -> Loc -> Loc -> Plc -> Plc -> AnnoInstr
 | aseq: AnnoInstr -> AnnoInstr -> AnnoInstr.
 
 Definition asp_instr (a:ASP) : Prim_Instr :=
@@ -34,76 +34,14 @@ Definition asp_instr (a:ASP) : Prim_Instr :=
   | HSH => hash
   end.
 
-(*
-(*
-Definition ev_store := MapC nat EvidenceC.
-*)
-Record cvm_st : Type := mk_st
-                          {
-                            st_ev:EvidenceC ;
-                            st_pl:Plc ;                 
-                            st_trace:list Ev ;
-                            (* st_store:ev_store *) } .
-
-Definition empty_vmst := mk_st mtc 0 []. (* mtc [] 0 [] *)
-
-Instance eta_r : Settable _ := settable! mk_st <st_ev; st_pl; st_trace>.
-
-Definition setEv a x := x <| st_ev := a|> <|st_pl := 42|>.
-
-Compute (setEv (ggc 0 mtc) empty_vmst).
- *)
-
-(*
-Definition setup := MapC Plc AnnoInstr.
-*)
-
-(*
-Definition bookend (ai:AnnoInstr) (req_loc rpy_loc:Loc): AnnoInstr :=
-  aseq (aPutStore req_loc) (aseq ai (aGetStore rpy_loc)).
- *)
-
-(*
-Definition add_at (s:setup) (q:Plc) (comp:AnnoInstr) : setup :=
-  let old_instr := map_get s q in
-  match old_instr with
-  | Some m =>
-      let new_comp := aseq m comp in
-      map_set s q new_comp
-  | _ => map_set s q comp
-  end.
-*)
-
 Fixpoint instr_compiler (t:AnnoTerm) : AnnoInstr :=
   match t with
   | aasp r l a => aprimInstr (fst r) (asp_instr a)
-  | aatt (i,j) _ (req_loc,rpy_loc) _ q _ =>
-    (aReq i (Nat.pred j) req_loc rpy_loc q)
-         (*(aWaitRpy (Nat.pred j) q)  *)   
+  | aatt (i,j) _ (req_loc,rpy_loc) p q _ =>
+    (aReq i (Nat.pred j) req_loc rpy_loc p q) 
   | alseq _ _ t1 t2 => aseq (instr_compiler t1) (instr_compiler t2)
   end.
-
-(*
-Fixpoint copland_compliment (t:AnnoTerm) (s:setup): setup :=
-  match t with
-  (*| aasp r l a => aprimInstr (fst r) (asp_instr a) *)
-  | aatt (i,j) _ (req_loc,rpy_loc) q t' =>
-    let comp := instr_compiler t' in
-    add_at s q (
-    aseq (aGetStore (Nat.pred j) q rpy_loc false)
-         (aseq comp (aPutStore i q req_loc false)))
-(*
-    aseq (aPutStore i j q req_loc rpy_loc)
-         (aGetStore (Nat.pred j) q rpy_loc)  *)
-  | alseq _ _ t1 t2 =>
-    let s1 := copland_compliment t1 s in
-    let s2 := copland_compliment t2 s1 in
-    s2
-  | _ => []
-  end.
-*)
     
-
 Definition ev_asp_instr (x:nat) (pi:Prim_Instr) (e:EvidenceC) : EvidenceC :=
   match pi with
   | copy => e
@@ -120,59 +58,21 @@ Definition tr_asp_instr (x:nat) (p:Plc) (pi:Prim_Instr) :=
   | hash => Term_Defs.hash x p
   end.
 
-(*
-Definition update_ev_st (st:cvm_st) (e:EvidenceC) : cvm_st :=
-  st <| st_ev := e|>.
- *)
-
-(*
-Inductive sLoc: Set :=
-| Empty : sLoc
-| Full : EvidenceC -> sLoc.
-
-Definition heap := list (Loc*sLoc). (*MapC Loc sLoc. *)
-Compute map_set map_empty 0 Empty.
-Check (MapC Loc Loc).
-
-Definition put_heap (m:heap) (k:Loc)
-           (e:EvidenceC) (*(there:bound_to m k Empty)*): heap :=
-  map_set m k (Full e).
-
-Definition clear_loc (m:heap) (k:Loc) : heap :=
-  map_set m k Empty.
-
-Definition locEmpty (h:heap) (loc:Loc): Prop :=
-  bound_to h loc Empty.
-
-Definition locContains (h:heap) (loc:Loc) (e:EvidenceC): Prop :=
-  bound_to h loc (Full e).
-*)
-
 
 Inductive InstrSt: Set :=
-| istop: Plc -> EvidenceC -> (*heap ->*) InstrSt
-| iconf: AnnoInstr -> Plc -> EvidenceC -> (*heap ->*) InstrSt
+| istop: Plc -> EvidenceC -> InstrSt
+| iconf: AnnoInstr -> Plc -> EvidenceC -> InstrSt
 | iWaitReq: Plc -> Plc -> AnnoInstr -> InstrSt
 | iDoRem: InstrSt -> Plc -> InstrSt
 | iSeqReqWaits: InstrSt -> InstrSt -> InstrSt
 | irpyWait: nat -> Loc -> Plc -> Plc -> InstrSt
-| ils: InstrSt -> AnnoInstr -> InstrSt
-(*| bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
-| bsr: nat -> Evidence -> St -> St
-| bp: nat -> Loc -> Loc -> St -> St -> St*) .
-
-(*
-Inductive AnnoInstr: Set :=
-| aprimInstr: nat -> Prim_Instr -> AnnoInstr
-| aReq: nat -> nat -> Loc -> Loc -> Plc -> AnnoInstr
-| aseq: AnnoInstr -> AnnoInstr -> AnnoInstr.
-*)
+| ils: InstrSt -> AnnoInstr -> InstrSt.
 
 Inductive hLoc : Set :=
 | Empty : hLoc
 | Full: (Plc*EvidenceC) -> hLoc.
     
-Definition heap := hLoc. (*option (Plc*EvidenceC). *)
+Definition heap := hLoc.
 
 Inductive Instr_step: InstrSt -> heap -> option Ev -> InstrSt -> heap -> Prop :=
 | primStep: forall x pi p e h,
@@ -180,14 +80,14 @@ Inductive Instr_step: InstrSt -> heap -> option Ev -> InstrSt -> heap -> Prop :=
                (Some (tr_asp_instr x p pi))
                (istop p (ev_asp_instr x pi e)) h
 | atReqStep: forall i p q e h j req_loc rpy_loc,
-    Instr_step (iconf (aReq i j req_loc rpy_loc q) p e) h
+    Instr_step (iconf (aReq i j req_loc rpy_loc p q) p e) h
                (Some (req i req_loc p q))
-               (irpyWait j rpy_loc q p) (Full (q,e))
-| atWaitReq: forall them me e ai,
-    Instr_step (iWaitReq them me ai) (Full (me,e))
-               None
-               (iDoRem (iconf ai me e) them) Empty
-| atDoRem: forall iSt iSt' h h' ev them,
+               (irpyWait j rpy_loc p q) (Full (q,e))
+| atRpyStep: forall j p q e rpy_loc,
+    Instr_step (irpyWait j rpy_loc p q) (Full (p,e))
+               (Some (rpy j rpy_loc p q))
+               (istop p e) Empty
+| atDoRemStep: forall iSt iSt' h h' ev them,
     Instr_step iSt h ev iSt' h' ->
     Instr_step (iDoRem iSt them) h ev (iDoRem iSt' them) h'
 | atDoRemStop: forall p e them h,
@@ -197,12 +97,8 @@ Inductive Instr_step: InstrSt -> heap -> option Ev -> InstrSt -> heap -> Prop :=
 | atSeqReqStep: forall h ev iSt1 iSt1' iSt2 h', 
     Instr_step iSt1 h ev iSt1' h' ->
     Instr_step (iSeqReqWaits iSt1 iSt2) h ev (iSeqReqWaits iSt1' iSt2) h'
-| atSeqReqStop: forall p e iSt2 h ev,
-    Instr_step (iSeqReqWaits (istop p e) iSt2) h ev iSt2 h
-| atRpyStep: forall j me them e rpy_loc,
-    Instr_step (irpyWait j rpy_loc them me) (Full (me,e))
-               (Some (rpy j rpy_loc me them))
-               (istop me e) Empty
+| atSeqReqStop: forall p e iSt2 h,
+    Instr_step (iSeqReqWaits (istop p e) iSt2) h None iSt2 h
 | seqStart: forall x y p e h,
     Instr_step (iconf (aseq x y) p e) h
                None
@@ -214,138 +110,17 @@ Inductive Instr_step: InstrSt -> heap -> option Ev -> InstrSt -> heap -> Prop :=
     Instr_step (ils (istop p e) y) h None (iconf y p e) h.
 Hint Constructors Instr_step : core.
 
-
-
-
-(*
-Definition orchestrate (t:AnnoTerm): (AnnoInstr * setup) :=
-  let main_thread := instr_compiler t in
-  let servers := copland_compliment t map_empty in
-  (main_thread, servers).
-*)
-
-
-(*
-Inductive InstrSt: Set :=
-| istop: Plc -> EvidenceC -> heap -> InstrSt
-| iconf: AnnoInstr -> Plc -> EvidenceC -> heap -> InstrSt
-| rem: nat -> nat -> Loc -> Plc -> Plc -> (*InstrSt ->*) heap -> InstrSt
-| ils: InstrSt -> AnnoInstr -> InstrSt
- *)
-
-(*
-Definition configs := MapC Plc InstrSt.
-
-Definition code := (AnnoInstr*setup)%type.
-*)
-
-(*Definition world := (InstrSt*configs)%type. *)
-
-(*
-Definition build_one' (p:Plc) (x:AnnoInstr) : InstrSt :=
-  iconf x p mtc.
-*)
-
-(*
-Definition build_one (pr:Plc*AnnoInstr) : InstrSt :=
-  build_one' (fst pr) (snd pr).
-
-Search (list _ -> list _ -> list (_*_)).
-Print list_prod.
-Print combine.
-
-Check fold_left.
-Check map.
-Check combine.
-*)
-
-(*
-Definition build_world' (start_pl:Plc) (init_ev:EvidenceC) (*(h:heap)*)
-           (x:code): (InstrSt*configs) :=
-  let code_start := (fst x) in
-  let env_code := (snd x) in (* :: setup == MapC Plc AnnoInstr *)
-  let a := (iconf code_start start_pl init_ev) in
-  let places := map_dom env_code in (* :: list Plc *)
-  let codes := map_vals env_code in (* :: list AnnoInstr *)
-  let both := combine places codes in (* :: list (Plc*AnnoInstr) *)
-  let configs := map (build_one) both in (* :: list (InstrSt) *)
-  let finals := combine places configs in
-  
-  (a,finals).
-*)
-
-(*
-Definition orchestrate (t:AnnoTerm): (AnnoInstr * setup) :=
- *)
-
-(*
-Definition build_world (t:AnnoTerm) (p:Plc)
-           (e:EvidenceC) (*(h:heap)*) : (InstrSt*configs) :=
-  let codes := orchestrate t in
-  build_world' p e codes.
-*)
-
-(*
-Definition build_one' (p:Plc) (x:AnnoInstr) : InstrSt :=
-  iconf x p mtc.
-*)
-
-(*
-Definition add_one_at (q:Plc)(s:list InstrSt) (ai:AnnoInstr) : list InstrSt :=
-  let one := build_one' q ai in
-  one :: s.
- *)
-
-(*
-Definition configs := MapC Plc InstrSt.
- *)
-
-(*
-Definition codes := MapC Plc AnnoInstr.
-*)
-
-(*
-Definition add_st_at (q:Plc) (s:configs) (i:nat) (j:nat) (p:Plc) (comp:AnnoInstr) : configs :=
-  let currStMaybe := map_get s q in
-  let newComp := (ils (ireqWait i q)
-                          (aseq comp
-                                (aResp j p))) in
-  match currStMaybe with
-  | Some (ils currSt ai) => 
-    let newSt := ils (ils currSt newComp in
-    map_set s q newSt
-  | _ => map_set s q newComp
-  end.
- *)
-
 Require Import Coq.Arith.PeanoNat.
 
-(*
-Fixpoint remove (k : Plc) (s : MapC Plc AnnoInstr) : MapC Plc AnnoInstr :=
- match s with
-  | nil => nil
-  | (k',x) :: l =>
-    if (Nat.eq_dec k k') then remove k l else (k',x) :: remove k l
- end.
-
-Definition map_replace m q (comp:AnnoInstr) :=
-  let cleared_map := remove q m in
-  map_set cleared_map q comp.
- *)
-
-(*
-(iWaitReq them me ai) (Full (me,e))
-*)
-
-Definition append_server_at (them:Plc) (me:Plc) (t:AnnoTerm) (s:MapC Plc InstrSt) :
-  MapC Plc InstrSt :=
-  let newServerSt := (iWaitReq them me (instr_compiler t)) in
-  let currInstrStMaybe := map_get s me in
+Definition append_server_at (fromPl:Plc) (toPl:Plc) (t:AnnoTerm)
+           (s:MapC Plc InstrSt) : MapC Plc InstrSt :=
+  let newServerSt := (iWaitReq fromPl toPl (instr_compiler t)) in
+  let currInstrStMaybe := map_get s toPl in
   match currInstrStMaybe with
   | Some oldSt => 
     let newSt := iSeqReqWaits oldSt newServerSt in
-    map_replace s me newSt (* TODO:  maybe just call map_set here and reply on properties of sets? *)
-  | _ => map_set s me newServerSt
+    map_replace s toPl newSt (* TODO:  maybe just call map_set here and reply on properties of sets? *)
+  | _ => map_set s toPl newServerSt
   end.
     
 
@@ -355,7 +130,7 @@ Fixpoint copland_compliment (t:AnnoTerm) (s:MapC Plc InstrSt): MapC Plc InstrSt 
                    
   | aatt (i,j) _ (_,_) p q t' =>
     append_server_at p q t' s
-                     
+                 
   | alseq _ _ t1 t2 =>
     let s1 := copland_compliment t1 s in
     let s2 := copland_compliment t2 s1 in
@@ -368,162 +143,421 @@ Definition servers_done (servs:MapC Plc InstrSt) : Prop :=
     bound_to servs p s ->
     exists e, s = istop p e.
 
-(* Relates an instruction and its servers before executing 
-   it to its servers after 
+Require Import Coq.Arith.EqNat.
 
-   Need to map over all destinations of aReq instructions in 
-   the client and clear one 
-   (<noEvents> ... aWaitReq ... aResp) sequence at each.
+Open Scope nat_scope.
 
-  TODO:  use a predictable number of new "iWaitReq" instrSts to peel off front of server st code 
+Fixpoint num_server_req_handles (ai:AnnoInstr) (toPl:Plc) : nat :=
+  match ai with
+  | aprimInstr i pi => 0
+  | aReq _ _ _ _ _ pl => if (toPl =? pl) then 1 else 0
+  | aseq ai1 ai2 =>
+    (num_server_req_handles ai1 toPl) +
+    (num_server_req_handles ai2 toPl)
+  end.
+
+Fixpoint num_server_req_handles_ist (iSt:InstrSt) (toPl:Plc) : nat :=
+  match iSt with
+  | istop _ _ => 0
+  | iconf ai _ _ => (num_server_req_handles ai toPl)
+  | iWaitReq _ _ ai => (num_server_req_handles ai toPl)
+  | iDoRem iSt' _ => (num_server_req_handles_ist iSt' toPl)
+  | iSeqReqWaits iSt1 iSt2 =>
+    (num_server_req_handles_ist iSt1 toPl) +
+    (num_server_req_handles_ist iSt2 toPl)
+  | irpyWait _ _ _ _ => 0
+  | ils iSt ai =>
+    (num_server_req_handles_ist iSt toPl) +
+    (num_server_req_handles ai toPl)
+  end.
+
+(* 
+   Relates an AnnoInstr + its servers before executing 
+   that AnnoInstr, to its servers after.
+
+   Need to map over all instances of (aReq _ _ _ _ toPl) instructions in 
+   the client AnnoInstr and skip an iWaitReq at toPl for each. 
+
+   TODO:  use something like num_server_req_handles above to determine a 
+   predictable number of new "iWaitReq" instrSts to peel off front of each server st code 
 *)
-Definition trim_servs : AnnoInstr ->
-                        MapC Plc InstrSt ->
-                        MapC Plc InstrSt -> Prop.
+Definition advance_servers :
+  AnnoInstr ->
+  MapC Plc InstrSt ->
+  MapC Plc InstrSt -> Prop.
 Admitted.
 
-(* Instruction state that Will reach an aWaitReq 
-   instruction before emitting any other (non-silent) events.
-   Ensures a server thread is "waiting"
+(* same as advance_servers, but for InstrSt *)
+Definition advance_servers_ist :
+  InstrSt ->
+  MapC Plc InstrSt ->
+  MapC Plc InstrSt -> Prop.
+Admitted.
 
-   TODO:  does this predicate need to include a Plc?
+
+(*
+(* Instruction state that will reach an aWaitReq 
+   instruction before emitting any other (non-silent) events.
+   Ensures a server thread is "waiting" for request from toPl
 *)
-Inductive leading_reqWait : InstrSt -> Prop :=. 
+Inductive leading_reqWait: (*Plc ->*) InstrSt -> Prop :=
+| oneWait: forall i fromPl(* toPl*) ,
+    leading_reqWait (iWaitReq fromPl i)
+| willWait: forall i fromPl (*toPl*) iSt2,
+    leading_reqWait (iSeqReqWaits (iWaitReq fromPl i) iSt2).
+*)
+
+(* Instruction state that will reach an (iDoRem (istop p e) me) state 
+   by way of AT MOST one (iWaitReq _ me _) state.
+
+   i.e. is either:
+        1) (iWaitReq _ me _) 
+        2) (iDoRem X me) where X reaches istop before an iWaitReq state
+        3) iSeqReqWaits iSt1 iSt2 where
+             iSt1 is either 1) or 2)
+*)
+Inductive will_respond: Plc -> InstrSt -> Prop :=
+| immedWaitReq: forall i p q,
+    will_respond p (iWaitReq p q i)
+| willSeqReqWait: forall p q i iSt2,
+    (*will_respond me iSt1 -> *)
+    will_respond p (iSeqReqWaits (iWaitReq p q i) iSt2)
+| willSeqDo: forall fromPl iSt iSt2,
+    (*will_respond me iSt1 -> *)
+    will_respond fromPl (iSeqReqWaits (iDoRem iSt fromPl) iSt2)
+| willDo: forall fromPl iSt,
+    (* TODO: do we need to recurse on iSt here? *)
+    will_respond fromPl (iDoRem iSt fromPl).
                            
 
 (* well structured world where the client code is at 
    the given AnnoInstr *)
-Inductive ws_instr: AnnoInstr -> MapC Plc InstrSt -> heap -> Prop :=
-| wsi_prim: forall i p m h, ws_instr (aprimInstr i p) m h
-| wsi_req: forall m toPl i j req_loc rpy_loc iSt,
-    bound_to m toPl iSt(* (iconf (aWaitReq i) toPl mtc)*) ->
-    leading_reqWait iSt -> 
-    ws_instr (aReq i j req_loc rpy_loc toPl) m Empty
-| wsi_seq: forall m m' h a1 a2,
-    ws_instr a1 m h ->
-    trim_servs a1 m m' ->
-    ws_instr a2 m' Empty -> 
-    ws_instr (aseq a1 a2) m h.
-(*| wsi_aWaitReq:
-    ws_instr (aWaitReq i) *)
-(*| wsi_aResp:
-    ws_instr (aResp i toPl) *)
-
-
-
-Inductive ws_world: InstrSt -> MapC Plc InstrSt -> heap -> Prop :=
-| wsw_conf: forall i m h e p,
-    ws_instr i m h -> 
-    ws_world (iconf i p e) m h
-| wsw_stop: forall m p e h,
-    servers_done m ->
-    ws_world (istop p e) m h
-| wsw_rpyWait: forall i m p q loc iSt h,
+Inductive ws_instr: AnnoInstr -> MapC Plc InstrSt (*-> heap*) -> Prop :=
+| wsi_prim: forall i p m,
+    ws_instr (aprimInstr i p) m
+| wsi_req: forall m p q i j req_loc rpy_loc iSt,
     bound_to m q iSt ->
-    leading_reqWait iSt ->
+    (*leading_reqWait iSt ->  *)
+    will_respond p iSt ->
+    ws_instr (aReq i j req_loc rpy_loc p q) m
+| wsi_seq: forall m m' a1 a2,
+    ws_instr a1 m ->
+    advance_servers a1 m m' ->
+    ws_instr a2 m' ->  (* TODO: is Empty ok/desirable here? *)
+    servers_done m' ->
+    ws_instr (aseq a1 a2) m.
+
+Inductive ws_world: InstrSt -> MapC Plc InstrSt (*-> heap*) -> Prop :=
+| wsw_stop: forall m e p,
+    (*servers_done m -> *)
+    ws_world (istop p e) m
+| wsw_conf: forall i m e p,
+    ws_instr i m -> 
+    ws_world (iconf i p e) m
+| wsw_rpyWait: forall m p q iSt j rpy_loc,
+    bound_to m q iSt ->
+    will_respond p iSt ->
+    ws_world (irpyWait j rpy_loc p q) m
+| wsw_ls: forall m m' iSt ai,
+    ws_world iSt m ->
+    advance_servers_ist iSt m m' ->
+    ws_instr ai m' -> (* TODO:  pl (iSt)? *)
+    servers_done m' ->
+    ws_world (ils iSt ai) m.
+
+Set Nested Proofs Allowed.
+
+Lemma advance_servers_determ: forall ai m m' m'',
+    advance_servers ai m m' ->
+    advance_servers ai m m'' ->
+    m' = m''.
+Proof.
+Admitted.
+
+Lemma compliment_alseq_skip: forall r l t1 t2 m m',
+    (*well_formed (alseq r l t1 t2) -> *)
+    ws_instr (instr_compiler (alseq r l t1 t2)) m ->
+    advance_servers (instr_compiler t1) m m' ->
+    ws_instr (instr_compiler t1) m /\
+    ws_instr (instr_compiler t2) m'.
+Proof.
+  intros.
+  invc H.
+  split.
+  -
+    eassumption.
+  -
+    assert (m' = m'0).
+    {
+      eapply advance_servers_determ; eauto.
+    }
+    subst.
+    eauto.
+Defined.
+
+Lemma compliment_alseq_skip': forall r l t1 t2 m m',
+    (*well_formed (alseq r l t1 t2) -> *)
+    ws_instr (instr_compiler t1) m ->
+    advance_servers (instr_compiler t1) m m' ->
+    ws_instr (instr_compiler t2) m' ->
+    ws_instr (instr_compiler (alseq r l t1 t2)) m.  
+Proof.
+Admitted.
+
+
+Require Import Auto.
+
+Lemma compliment_focus: forall t1 t2,
+    ws_instr (instr_compiler t1) (copland_compliment t2 (copland_compliment t1 [])).
+Proof.
+Admitted.
+
+Lemma advance_assoc: forall t1 t2 m,
+    advance_servers (instr_compiler t1) (copland_compliment t2 (copland_compliment t1 m))
+                    (copland_compliment t2 m).
+Proof.
+Admitted.
+
+Lemma well_structured_world_init: forall t p e,
+    well_formed t ->
+    ws_world (iconf (instr_compiler t) p e) (copland_compliment t []).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a;
+      df;
+      repeat econstructor.
+  -
+    df.
+    subst.
+    unfold map_set in *.
+    df.
+    apply wsw_conf.
     
-    ws_world (irpyWait i loc p q) m h.
+    econstructor.
+    econstructor.
+    +
+      unfold map_set in *.
+      unfold map_get in *.
 
+    rewrite Nat.eqb_refl in *.
+    eauto.
+    +
+      
+    econstructor.
+  -
+    do_wf_pieces.
+    econstructor.
 
+    assert (ws_world (iconf (instr_compiler t1) p e) (copland_compliment t1 [])) by eauto.
 
+    assert (ws_world (iconf (instr_compiler t2) p e) (copland_compliment t2 [])) by eauto.
 
+    eapply compliment_alseq_skip'.
 
-Lemma compliment_assoc:
-  well_formed (alseq r l t1 t2) ->
-  copland_compliment_l (alseq r l t1 t2) ls
+    repeat find_inversion.
 
+    invc H2.
+    invc H3.
+    df.
+    eapply compliment_focus; eauto.
 
-Definition wrap_server_config (pr:Plc*AnnoInstr): InstrSt :=
-  iconf (snd pr) (fst pr) mtc.
+    df.
+    eapply advance_assoc; eauto.
+    solve_by_inversion.
+Defined.
 
-Definition init_configs (ps:list Plc) (ls:list AnnoInstr)  : list InstrSt :=
-  map wrap_server_config (combine ps ls).
-
-Definition mapify_server_configs (ps: list Plc) (ls:list InstrSt) : MapC Plc InstrSt :=
-  combine ps ls.
-
-Definition orchestrate_l_servers (t:AnnoTerm) (*(p:Plc) (e:EvidenceC)*):
-  (MapC Plc InstrSt) :=
-  (*let main_code := instr_compiler t in *) (* AnnoInstr *)
-  let server_codes := copland_compliment_l t [] in (* Map Plc AnnoInstr *)
-  let server_places := map_dom server_codes in (* list Plc *)
-  let codes := map_vals server_codes in (* list AnnoInstr *)
-  let server_configs := init_configs server_places codes in
-  (mapify_server_configs server_places server_configs).
+Definition orchestrate_servers (t:AnnoTerm) : (MapC Plc InstrSt) :=
+  copland_compliment t [].
 
 Definition setup_main_code (t:AnnoTerm) (p:Plc) (e:EvidenceC) : InstrSt :=
   iconf (instr_compiler t) p e.
 
-(*
-Inductive WorldTerm: Set :=
-| onePlat: InstrSt -> WorldTerm
-| parPlats: WorldTerm -> WorldTerm -> WorldTerm.
- *)
-
 Inductive WorldTerm: Type :=
 | worldTermC: InstrSt -> MapC Plc InstrSt -> WorldTerm.
 
-(*
-Inductive WorldTerm: Set :=
-| onePlat: InstrSt -> WorldTerm
-| parPlats: WorldTerm -> WorldTerm -> WorldTerm
-| donePlat: nat -> EvidenceC -> WorldTerm.
-*)
-
-(* Remember:  Start term remains left-most parallel WorldTerm subterm (to grab final evidence at end *)
-
-(*
-Definition combineInstrSt (wt:WorldTerm) (i:InstrSt)  : WorldTerm :=
-  parPlats wt (onePlat i) .
-
-Check fold_left.
-
-Definition build_world_term'' (startTerm: WorldTerm) (ls:list InstrSt) : WorldTerm :=
-  fold_left combineInstrSt ls startTerm.
-
-  
-
-Definition build_world_term' (startInstr:InstrSt) (ls:list InstrSt) : WorldTerm :=
-  build_world_term'' (onePlat startInstr) ls.
-  
-Definition build_world_term (t:AnnoTerm) (p:Plc) (e:EvidenceC) : WorldTerm :=
-  let '(one,rest) := orchestrate_l t p e in
-  build_world_term' one rest.
- *)
+Definition well_structured_world (wt:WorldTerm) : Prop :=
+  match wt with
+  | worldTermC iSt servers => ws_world iSt servers
+  end.
 
 Definition build_world_term (t:AnnoTerm) (p:Plc) (e:EvidenceC) : WorldTerm :=
-  let servers := orchestrate_l_servers t in
+  let servers := orchestrate_servers t in
   let main := setup_main_code t p e in
   worldTermC main servers.
-
-
-(*
-Inductive InstrSt: Set :=
-| istop: Plc -> EvidenceC -> (*heap ->*) InstrSt
- *)
-
-Definition worldServerMatch (w:WorldTerm) (p:Plc) (iSt:InstrSt) : Prop :=
-  match w with
-  | worldTermC main servers => bound_to servers p iSt
-  end.
-    
 
 Inductive platStep : WorldTerm -> heap -> option Ev ->
                        WorldTerm -> heap -> Type :=
 | platStepMain: forall main i' ev h h' servs,
-    (*worldServerMatch (worldTermC main servs) p i -> *)
     Instr_step main h ev i' h' ->
     platStep (worldTermC main servs)
              h ev
              (worldTermC i' servs)
              h'
+| platStepServerComm: forall p q e main servs ai iStNext,
+    bound_to servs q (iSeqReqWaits (iWaitReq p q ai) iStNext) ->
+    platStep (worldTermC main servs) (Full (q,e))
+             None
+             (worldTermC main
+                (map_replace servs q
+                             (iSeqReqWaits (iDoRem (iconf ai q e) p) iStNext)))
+             Empty
+| platStepServerComm': forall p q e main servs ai,
+    bound_to servs q (iWaitReq p q ai) ->
+    platStep (worldTermC main servs)
+             (Full (q,e))
+             None
+             (worldTermC
+                main
+                (map_replace servs q
+                             (iDoRem (iconf ai q e) p)))
+             Empty
 | platStepServer: forall i i' ev h h' p main servs,
-    worldServerMatch (worldTermC main servs) p i ->
+    bound_to servs p i ->
     Instr_step i h ev i' h' ->
     platStep (worldTermC main servs)
              h ev
              (worldTermC main (map_replace servs p i'))
              h'.
+
+Lemma advance_ist_iff: forall x m m' p e,
+    advance_servers x m m' ->
+    advance_servers_ist (iconf x p e) m m'.
+Proof.
+Admitted.
+
+Lemma platStep_ws: forall wt h ev wt' h',
+  well_structured_world wt ->
+  platStep wt h ev wt' h' ->
+  well_structured_world wt'.
+Proof.
+  intros.
+  destruct wt.
+  destruct wt'.
+
+  invc X.
+  admit.
+  admit.
+  admit.
+
+  generalizeEverythingElse i.
+  induction i; intros.
+  -
+    invc H.
+    invc X; try solve_by_inversion.
+    econstructor.
+    econstructor.
+    econstructor.
+  -
+    invc H.
+    invc X.
+    +
+      invc H7.
+      ++
+        econstructor.
+      ++
+        invc H4.
+        econstructor.
+        eassumption.
+        eassumption.
+      ++
+        invc H4.
+        
+        econstructor.
+        +++
+          econstructor.
+          eassumption.
+        +++
+          eapply advance_ist_iff; eauto.
+        +++
+          eassumption.
+        +++
+          eassumption.
+    +
+      econstructor.
+      admit.
+    +
+      econstructor.
+      admit.
+    +
+      econstructor.
+      
+      
+          
+          
+    
+        
+        
+          
+          
+          
+        
+        invc H4.
+        apply H7.
+    
+
+
+
+
+  
+  generalizeEverythingElse H.
+  induction H; intros.
+  -
+    invc X; try solve_by_inversion.
+    econstructor.
+    econstructor.
+    econstructor.
+    
+  -
+    invc X; try solve_by_inversion.
+    +
+      invc H7; try solve_by_inversion.
+      ++
+        econstructor.
+      ++
+        invc H.
+        econstructor.
+        eassumption.
+        eassumption.
+      ++
+        invc H.
+        econstructor.
+        econstructor.
+        eassumption.
+
+
+
+        eapply advance_ist_iff; eauto.
+
+        eassumption.
+        eassumption.
+        
+        
+    +
+      invc H7.
+      econstructor.
+      admit.
+    +
+      econstructor.
+      admit.
+    +
+      econstructor.
+      
+      
+    
+    
+    inversion H.
+    inversion X; try solve_by_inversion.
+    econstructor.
+    rewrite H10.
+    subst.
+    invc X
+
+  
+
+
 (*
 | platStepOneDone: forall i h h' ev p e,
     Instr_step i h ev (istop p e) h' ->
