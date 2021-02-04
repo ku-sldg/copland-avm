@@ -25,7 +25,7 @@ Fixpoint copland_compile (t:AnnoTerm): CVM unit :=
   | aasp (n,_) _ a =>
       e <- do_prim n a ;;
       put_ev e
-  | aatt (i,j) _ (req_loc,rpy_loc) _ q t' =>
+  | aatt (i,j) _ (req_loc,rpy_loc) _ q m t' =>
       sendReq t' q i req_loc ;;
       doRemote t' q req_loc rpy_loc ;;
       e' <- receiveResp j rpy_loc q ;;
@@ -166,6 +166,7 @@ Definition fromSome{A:Type} (default:A) (opt:option A): A :=
   | _ => default
   end.
 
+(*
 Definition run_it_term (me:Plc) (t:Term) (m:MapC (Plc*Plc) (list Loc)) : PlatformState :=
   let annt := snd (anno' t 0 (getLocs t m) me) in
   run_it me annt.
@@ -175,6 +176,7 @@ Definition run_it_term (me:Plc) (t:Term) (m:MapC (Plc*Plc) (list Loc)) : Platfor
 
 Definition run_cvm (t:AnnoTerm) st : cvm_st :=
   execSt (copland_compile t) st.
+*)
 
 
 

@@ -16,6 +16,18 @@ Import List.ListNotations.
 Open Scope list_scope.
 Require Import PeanoNat Minus Lia Preamble Term_Defs Term.
 
+Require Import Term_system.
+
+Definition t1 := (asp (ASPC 1 [])).
+Definition t2 := (asp (ASPC 2 [])).
+Definition myterm := att 1 (lseq t1 (att 2 (lseq t2 (att 3 t1)))).
+
+Definition annomyterm := annotated myterm [42;43;44;45;46;47] 0.
+
+Compute annomyterm.
+
+Compute (ev_sys annomyterm 0).
+
 (** * States *)
 
 Inductive St: Set :=
@@ -70,8 +82,8 @@ Inductive step: St -> option Ev -> St -> Prop :=
 (** Remote call *)
 
 | statt:
-    forall r lr x p p' q e req_loc rpy_loc,
-      step (conf (aatt r lr (req_loc, rpy_loc) p' q x) p e)
+    forall r lr x p p' q e req_loc rpy_loc m,
+      step (conf (aatt r lr (req_loc, rpy_loc) p' q m x) p e)
            (Some (req (fst r) req_loc p q (*(unanno x)*)))
            (rem (snd r) rpy_loc p (conf x q e))
 | stattstep:
@@ -553,7 +565,7 @@ Qed.
 Fixpoint tsize t: nat :=
   match t with
   | aasp _ _ _ => 1
-  | aatt _ _ _ _ _ x => 2 + tsize x
+  | aatt _ _ _ _ _ _ x => 2 + tsize x
   | alseq _ _ x y => 2 + tsize x + tsize y
   (*| abseq _ _ _ x y => 3 + tsize x + tsize y
   | abpar _ _ _ _ x y => 2 + tsize x + tsize y *)

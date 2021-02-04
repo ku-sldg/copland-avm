@@ -19,8 +19,8 @@ Proof.
   tauto.
 Defined.
 
-Lemma wf_at_pieces: forall t r lr locs p q,
-    well_formed (aatt locs r lr p q t) ->
+Lemma wf_at_pieces: forall t r lr locs p q m,
+    well_formed (aatt locs r lr p q m t) ->
     well_formed t.
 Proof.
   intros.
@@ -52,7 +52,7 @@ Ltac do_wf_pieces :=
   match goal with
   | [H: well_formed (alseq _ _ _ _) |- _] =>
     (edestruct wf_lseq_pieces; eauto)
-  | [H: well_formed (aatt _ _ _ _ ?t) |- _] =>   
+  | [H: well_formed (aatt _ _ _ _ _ ?t) |- _] =>   
     assert (well_formed t)
       by (eapply wf_at_pieces; eauto)
   (*| [H: well_formed (abseq _ _ _ _ _) |- _] =>
@@ -117,12 +117,12 @@ Defined.
 Ltac do_mono :=
   (* let asdff := eapply anno_mono; eauto in *)
   match goal with
-  | [H: anno _ ?x _ = Some (?y,_) |- _] => assert_new_proof_by (y > x) ltac:(eapply anno_mono; eauto)
+  | [H: anno _ ?x _ _ = Some (?y,(_,_)) |- _] => assert_new_proof_by (y > x) ltac:(eapply anno_mono; eauto)
   end.
 
-Lemma asp_lrange_irrel: forall a i l l2 a0 a1 n n' p p',
-    anno (asp a) i l p = Some (n, a0) ->
-    anno (asp a) i l2 p' = Some (n',a1) ->
+Lemma asp_lrange_irrel: forall a i l l2 a0 a1 n n' p p' m m' m'' m''',
+    anno (asp a) i l m p = Some (n, (m',a0)) ->
+    anno (asp a) i l2 m'' p' = Some (n',(m''',a1)) ->
     a0 = a1.
 Proof.
   intros.
@@ -154,17 +154,17 @@ Ltac wf_hammer :=
   eauto;
   tauto.
 
-Lemma nodup_lrange: forall t i ls n a p,
+Lemma nodup_lrange: forall t i ls n a p m m',
     NoDup ls ->
-    anno t i ls p = Some (n, a) ->
+    anno t i ls m p = Some (n, (m',a)) ->
     NoDup (lrange a).
 Proof.
   induction t; intros;
     do_nodup.
 Defined.
 
-Lemma anno_firstn_nss: forall t i ls n a p,
-    anno t i (firstn (nss t) ls) p = Some (n, a) ->
+Lemma anno_firstn_nss: forall t i ls n a p m m',
+    anno t i (firstn (nss t) ls) m p = Some (n, (m',a)) ->
     (length (firstn (nss t) ls) = nss t).
 Proof.
   intros.
@@ -173,10 +173,10 @@ Proof.
 Defined.
 
 Lemma anno_well_formed:
-  forall t i j ls t' p,
+  forall t i j ls t' p m m',
     length ls = nss t ->
     NoDup ls ->
-    anno t i ls p = Some (j, t') ->
+    anno t i ls m p = Some (j, (m',t')) ->
     well_formed t'.
 Proof.
   intros.
@@ -420,6 +420,8 @@ Proof.
 *)   
 Defined.
 
+Check annotated.
+
 Lemma anno_well_formed':
   forall t ls p,
     length ls = nss t ->
@@ -430,8 +432,7 @@ Proof.
   edestruct anno_some with (t := t) (i:=0).
   eassumption.
   destruct x.
-  (*
-  destruct p. *)
+  destruct p0.
   unfold annotated.
   unfold anno'.
   simpl.
@@ -448,7 +449,7 @@ Defined.
 Fixpoint aeval t p e :=
   match t with
   | aasp _ _ x => eval (asp x) p e
-  | aatt _ _ _ _ q x => aeval x q e
+  | aatt _ _ _ _ q _ x => aeval x q e
   | alseq _ _ t1 t2 => aeval t2 p (aeval t1 p e)
   (*| abseq _ _ s t1 t2 => ss (aeval t1 p ((splitEv_T (fst s)) e))
                          (aeval t2 p ((splitEv_T (snd s)) e)) 
@@ -491,17 +492,17 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
       fst r = i ->
       events (aasp r lr HSH) p (hash i p)
 | evtsattreq:
-    forall r lr q t i p p' req_loc rpy_loc,
+    forall r lr q t i p p' req_loc rpy_loc m,
       fst r = i ->
-      events (aatt r lr (req_loc, rpy_loc) p' q t) p (req i req_loc p q (*(unanno t)*))
+      events (aatt r lr (req_loc, rpy_loc) p' q m t) p (req i req_loc p q (*(unanno t)*))
 | evtsatt:
-    forall r lr q t ev p p' locs,
+    forall r lr q t ev p p' locs m,
       events t q ev ->
-      events (aatt r lr locs p' q t) p ev
+      events (aatt r lr locs p' q m t) p ev
 | evtsattrpy:
-    forall r lr q t i p p' req_loc rpy_loc,
+    forall r lr q t i p p' req_loc rpy_loc m,
       snd r = S i ->
-      events (aatt r lr (req_loc, rpy_loc) p' q t) p (rpy i rpy_loc p q)
+      events (aatt r lr (req_loc, rpy_loc) p' q m t) p (rpy i rpy_loc p q)
 | evtslseql:
     forall r lr t1 t2 ev p,
       events t1 p ev ->

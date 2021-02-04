@@ -250,9 +250,9 @@ Inductive trace: AnnoTerm -> Plc ->
                  list Ev -> Prop :=
 | tasp: forall r lr x p,
     trace (aasp r lr x) p [(asp_event (fst r) x p)]
-| tatt: forall r lr x p p' q tr1 req_loc rpy_loc,
+| tatt: forall r lr x p p' q tr1 req_loc rpy_loc m,
     trace x q tr1 ->
-    trace (aatt r lr (req_loc,rpy_loc) p' q x) p
+    trace (aatt r lr (req_loc,rpy_loc) p' q m x) p
           ((req (fst r) req_loc p q (*(unanno x)*) )
              :: tr1 ++
              [(rpy (pred (snd r)) rpy_loc p q)])
@@ -1063,7 +1063,7 @@ Proof.
 
     
 
-    inv H11; inv H8. 
+    inv H9; inv H8. 
     
     +
       find_eapply_lem_hyp evsys_tr_in; eauto.
