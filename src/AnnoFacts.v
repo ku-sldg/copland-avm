@@ -12,6 +12,8 @@ Require Import Lists.List.
 
 Set Nested Proofs Allowed.
 
+(*
+
 Ltac same_index :=
   match goal with
   | [H: anno ?t _ _ _ _ = Some (?n,(_, _)),
@@ -60,9 +62,10 @@ Proof.
       repeat (same_index; subst);
       congruence. *)
  Defined.
+*)
   
-Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm) (ls:LocRange) (p:Plc) m m',
-  anno t i ls m p = Some (j,(m',t')) ->
+Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm) (p:Plc),
+  anno t i p = (j,t') ->
   j > i.
 Proof.
   induction t; intros; (*i j t' ls b H; *)
@@ -73,8 +76,8 @@ Defined.
 Hint Resolve anno_mono : core.
 
 Lemma anno_range:
-  forall x i j ls t' m m' p,
-     anno x i ls m p = Some (j,(m',t')) ->
+  forall x i j t' p,
+     anno x i p = (j,t') ->
     range (t') = (i, j).
 Proof.
   induction x; intros; ff.
@@ -109,6 +112,10 @@ Ltac do_list_empty :=
     assert_new_proof_by (ls = []) ltac:(destruct ls; solve_by_inversion)
   end.
 
+
+
+
+(*
 Lemma anno_lrange:
   forall x i j ls t' p m m',
     length ls = nss x ->
@@ -895,7 +902,7 @@ Defined.
 
 
 
-
+*)
 
 
 
@@ -903,10 +910,10 @@ Defined.
 
 
 Lemma anno_well_formed_r:
-  forall t i j ls t' p m m',
+  forall t i j t' p,
     (* length ls = nss t ->
     NoDup ls -> *)
-    anno t i ls m p = Some (j, (m',t')) ->
+    anno t i p = (j,t') ->
     well_formed_r t'.
 Proof.
   intros.

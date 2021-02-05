@@ -22,14 +22,14 @@ Set Nested Proofs Allowed.
 
 Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
   match t with
-  | aasp (i, j) lr x => leaf (i, j) (asp_event i x p)
-  | aatt (i, j) lr (req_loc,rpy_loc) p' q m x =>
+  | aasp (i, j) x => leaf (i, j) (asp_event i x p)
+  | aatt (i, j) p' q x =>
     before (i, j)
-      (leaf (i, S i) (req i req_loc p q (*(unanno x)*)))
+      (leaf (i, S i) (req i p q))
       (before (S i, j)
               (ev_sys x q)
-              (leaf (pred j, j) (rpy (pred j) rpy_loc p q)))
-  | alseq r lr x y => before r (ev_sys x p)
+              (leaf (pred j, j) (rpy (pred j) p q)))
+  | alseq r x y => before r (ev_sys x p)
                           (ev_sys y p)
   (*| abseq (i, j) lr s x y =>
     before (i, j)

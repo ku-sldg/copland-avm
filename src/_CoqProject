@@ -1,6 +1,4 @@
 -R . CoplandM
-StMonad_Hoare.v
-CVM_Hoare.v
 Preamble.v
 More_lists.v
 StructTactics.v
@@ -8,6 +6,7 @@ Term_Facts.v
 OptMonad.v
 Defs.v
 Term_Defs.v
+Place_Facts.v
 List_Facts.v
 AnnoFacts.v
 Term.v
@@ -23,6 +22,4 @@ Maps.v
 GenStMonad.v
 MonadLaws.v
 StVM.v
-MonadVM.v
-MonadVMFacts.v
 Auto.v

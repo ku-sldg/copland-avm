@@ -22,7 +22,7 @@ Definition t1 := (asp (ASPC 1 [])).
 Definition t2 := (asp (ASPC 2 [])).
 Definition myterm := att 1 (lseq t1 (att 2 (lseq t2 (att 3 t1)))).
 
-Definition annomyterm := annotated myterm [42;43;44;45;46;47] 0.
+Definition annomyterm := annotated myterm 0.
 
 Compute annomyterm.
 
@@ -33,7 +33,7 @@ Compute (ev_sys annomyterm 0).
 Inductive St: Set :=
 | stop: Plc -> Evidence -> St
 | conf: AnnoTerm -> Plc -> Evidence -> St
-| rem: nat -> Loc -> Plc -> St -> St
+| rem: nat -> Plc -> St -> St
 | ls: St -> AnnoTerm -> St
 (*| bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
 | bsr: nat -> Evidence -> St -> St
@@ -43,7 +43,7 @@ Fixpoint pl (s:St) :=
   match s with
   | stop p _ => p
   | conf _ p _ => p
-  | rem _ _ p _ => p
+  | rem _ p _ => p
   | ls st _ => pl st
   (*| bsl _ _ _ p _ => p
   | bsr _ _ st => pl st
@@ -56,7 +56,7 @@ Fixpoint seval st :=
   match st with
   | stop _ e => e
   | conf t p e => aeval t p e
-  | rem _ _ _ st => seval st
+  | rem _ _ st => seval st
   | ls st t => aeval t (pl st) (seval st)
   (*| bsl _ st t p e => ss (seval st) (aeval t p e)
   | bsr _ e st => ss e (seval st)
@@ -73,33 +73,33 @@ Inductive step: St -> option Ev -> St -> Prop :=
 (** Measurement *)
 
 | stasp:
-    forall r lr x p e,
-      step (conf (aasp r lr x) p e)
+    forall r x p e,
+      step (conf (aasp r x) p e)
            (Some (asp_event (fst r) x p))
-           (stop p (aeval (aasp r lr x) p e))
+           (stop p (aeval (aasp r x) p e))
 
            
 (** Remote call *)
 
 | statt:
-    forall r lr x p p' q e req_loc rpy_loc m,
-      step (conf (aatt r lr (req_loc, rpy_loc) p' q m x) p e)
-           (Some (req (fst r) req_loc p q (*(unanno x)*)))
-           (rem (snd r) rpy_loc p (conf x q e))
+    forall r x p p' q e,
+      step (conf (aatt r p' q x) p e)
+           (Some (req (fst r) p q (*(unanno x)*)))
+           (rem (snd r) p (conf x q e))
 | stattstep:
-    forall st0 ev st1 p j loc,
+    forall st0 ev st1 p j,
       step st0 ev st1 ->
-      step (rem j loc p st0) ev (rem j loc p st1)
+      step (rem j p st0) ev (rem j p st1)
 | stattstop:
-    forall j p q e loc,
-      step (rem j loc p (stop q e))
-           (Some (rpy (pred j) loc p q))
+    forall j p q e,
+      step (rem j p (stop q e))
+           (Some (rpy (pred j) p q))
            (stop p e)
 (** Linear Sequential Composition *)
 
 | stlseq:
-    forall r lr x y p e,
-      step (conf (alseq r lr x y) p e)
+    forall r x y p e,
+      step (conf (alseq r x y) p e)
            None
            (ls (conf x p e) y)
 | stlseqstep:
@@ -277,8 +277,8 @@ Qed.
 
 
 Lemma star_strem:
-  forall st0 st1 j p loc,
-    star st0 st1 -> star (rem j loc p st0) (rem j loc p st1).
+  forall st0 st1 j p,
+    star st0 st1 -> star (rem j p st0) (rem j p st1).
 Proof.
   intros.
   induction H; auto.
@@ -328,10 +328,10 @@ Proof.
 Qed.
 
 
-Lemma lstar_strem : forall st st' tr p r loc,
+Lemma lstar_strem : forall st st' tr p r,
     lstar st tr
           st' ->
-    lstar (rem r loc p st) tr (rem r loc p st').
+    lstar (rem r p st) tr (rem r p st').
 Proof.
   intros.
   induction H; auto.
@@ -383,7 +383,7 @@ Proof.
   induction t; intros; simpl; eauto.
   - eapply star_tran; eauto.
     
-  - destruct p.
+  - (* destruct p. *)
     eapply star_tran; eauto.
     eapply star_transitive.
     apply star_strem.
@@ -440,7 +440,7 @@ Proof.
     + exists (Some (asp_event (fst r) a n)).
       eapply ex_intro; eauto.
       
-    + exists (Some (req (fst r) (fst p) n n1 (*(unanno a)*))).
+    + exists (Some (req (fst r) n n1 (*(unanno a)*))).
       repeat dest_range.
       eapply ex_intro; eauto.
     + exists None.
@@ -459,12 +459,12 @@ Proof.
   - right.
     destruct IHst0.
     + destruct st0; simpl in H; try tauto.
-      exists (Some (rpy (pred n) n0 n1 n2)).
+      exists (Some (rpy (pred n) n0 n1)).
       eapply ex_intro; eauto.
     + destruct H as [e H].
       exists e.
       destruct H as [st1 H].
-      exists (rem n n0 n1 st1). auto.
+      exists (rem n n0 st1). auto.
   - right.
     destruct IHst0.
     + destruct st0; simpl in H; try tauto.
@@ -564,9 +564,9 @@ Qed.
 
 Fixpoint tsize t: nat :=
   match t with
-  | aasp _ _ _ => 1
-  | aatt _ _ _ _ _ _ x => 2 + tsize x
-  | alseq _ _ x y => 2 + tsize x + tsize y
+  | aasp _ _ => 1
+  | aatt _ _ _ x => 2 + tsize x
+  | alseq _ x y => 2 + tsize x + tsize y
   (*| abseq _ _ _ x y => 3 + tsize x + tsize y
   | abpar _ _ _ _ x y => 2 + tsize x + tsize y *)
   end.
@@ -577,7 +577,7 @@ Fixpoint ssize s: nat :=
   match s with
   | stop _ _ => 0
   | conf t _ _ => tsize t
-  | rem _ _ _ x => 1 + ssize x
+  | rem _ _ x => 1 + ssize x
   | ls x t => 1 + ssize x + tsize t
   (*| bsl _ x t _ _ => 2 + ssize x + tsize t
   | bsr _ _ x => 1 + ssize x

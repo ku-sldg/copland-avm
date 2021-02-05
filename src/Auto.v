@@ -4,7 +4,7 @@ Automation scripts.  Some generic, but most specific to this development.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import GenStMonad StructTactics MonadVM MonadVMFacts Term_Defs Term.
+Require Import GenStMonad StructTactics (*MonadVM MonadVMFacts*) Term_Defs Term.
 Require Import Coq.Arith.Peano_dec Lia.
 
 Ltac dunit :=
@@ -12,15 +12,17 @@ Ltac dunit :=
   | [H:unit |- _] => destruct H
   end.
 
+(*
 Ltac annogo := vmsts; repeat dunit.
+*)
 
 Ltac df :=
   repeat (
       cbn in *;
       unfold runSt in *;
       repeat break_let;
-      repeat (monad_unfold; cbn in *; find_inversion);
-      monad_unfold;
+      repeat ((*monad_unfold;*) cbn in *; find_inversion);
+      (*monad_unfold;*)
       repeat dunit;
       unfold snd in * ).
 
