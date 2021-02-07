@@ -9,4 +9,4 @@ coq.mk.conf
 .lia.cache
 *.aux
 *~
-./src/html/*
+/src/html/*
