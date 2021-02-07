@@ -32,7 +32,7 @@ Definition asp_instr (a:ASP) : Prim_Instr :=
 
 Fixpoint instr_compiler (t:AnnoTerm) : AnnoInstr :=
   match t with
-  | aasp r a => aprimInstr (fst r) (asp_instr a)
+  | aasp (i,_) a => aprimInstr i (asp_instr a)
   | aatt (i,j) p q _ =>
     (aReq i (Nat.pred j) q)
   | alseq _ t1 t2 => aseq (instr_compiler t1) (instr_compiler t2)
@@ -56,12 +56,37 @@ Definition tr_asp_instr (x:nat) (p:Plc) (pi:Prim_Instr) :=
 
 
 Inductive InstrSt: Set :=
-| istop: Plc -> EvidenceC -> InstrSt
-| iconf: AnnoInstr -> Plc -> EvidenceC -> InstrSt
+| istop: VM_ID -> EvidenceC -> InstrSt
+| iconf: AnnoInstr -> VM_ID -> EvidenceC -> InstrSt
 | iWaitReq: VM_ID -> VM_ID -> AnnoInstr -> InstrSt
 | iDoRem: InstrSt -> VM_ID -> InstrSt
 | irpyWait: nat -> VM_ID -> VM_ID -> InstrSt
 | ils: InstrSt -> AnnoInstr -> InstrSt.
+
+Fixpoint instrStID (iSt: InstrSt): VM_ID :=
+  match iSt with
+  | istop me _ => me
+  | iconf _ me _ => me
+  | iWaitReq _ me _ => me
+  | iDoRem iSt' _ => instrStID iSt'
+  | irpyWait _ me _ => me
+  | ils iSt' _ => instrStID iSt'
+  end.
+
+Fixpoint instrStEvidence (iSt: InstrSt): EvidenceC :=
+  match iSt with
+  | istop _ e => e
+  | iconf _ _ e => e
+  | iWaitReq _ _ _ => mtc
+  | iDoRem iSt' _ => instrStEvidence iSt'
+  | irpyWait _ _ _ => mtc
+  | ils iSt' _ => instrStEvidence iSt'
+  end.
+    
+
+
+
+  
 
 (*
 Inductive AnnoInstr: Set :=
