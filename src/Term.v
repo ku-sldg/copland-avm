@@ -1,5 +1,5 @@
 Require Import Defs Term_Defs List_Facts AnnoFacts.
-Require Import Preamble More_lists StructTactics Term_Facts.
+Require Import Preamble More_lists Term_Facts.
 
 Require Import Compare_dec Coq.Program.Tactics.
 
@@ -7,6 +7,8 @@ Require Import Lia.
 
 Require Import List.
 Import List.ListNotations.
+
+Require Import StructTact.StructTactics.
 
 Set Nested Proofs Allowed.
 

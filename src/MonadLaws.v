@@ -6,7 +6,7 @@ Author:  Adam Petz, ampetz@ku.edu
 
 Require Import GenStMonad.
 
-Require Import StructTactics.
+Require Import StructTact.StructTactics.
 
 Lemma monad_left_id : forall S A B (a:A)(f:A -> (GenStMonad.St S) B) (s:S),
     (bind (ret a) f) s = (f a s).

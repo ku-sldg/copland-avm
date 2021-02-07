@@ -4,7 +4,7 @@ Generic Typeclass for equality, plus some instances.
 Author:  Adam Petz, ampetz@ku.edu
  *)
 
-Require Import StructTactics.
+Require Import StructTact.StructTactics.
 
 Require Import Coq.Arith.EqNat.
 

@@ -13,11 +13,15 @@ University of California.  See license.txt for details. *)
     small-step semantics are compatible with the related event system.
     *)
 
+Require Import Preamble More_lists Term_Defs Term LTS Event_system Term_system Trace.
+
 Require Import List.
 Import List.ListNotations.
 Open Scope list_scope.
+
 Require Import Lia.
-Require Import Preamble More_lists Term_Defs Term LTS Event_system Term_system Trace.
+
+Require Import StructTact.StructTactics.
 
 (** The traces associated with a state. *)
 
@@ -69,8 +73,6 @@ Ltac inv_trace :=
   match goal with
   | H:trace (?C _) _ _ |- _ => inv H
   end.
-
-Require Import StructTactics.
 
 Lemma esize_tr:
   forall t p tr,

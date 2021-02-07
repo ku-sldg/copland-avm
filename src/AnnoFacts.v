@@ -1,9 +1,11 @@
-Require Import Defs List_Facts Term_Defs StructTactics Preamble Term_Facts.
+Require Import Defs List_Facts Term_Defs Preamble Term_Facts.
 
 Require Import Lia Coq.Program.Tactics.
 
 Require Import List.
 Import List.ListNotations.
+
+Require Import StructTact.StructTactics.
 
 (*
 

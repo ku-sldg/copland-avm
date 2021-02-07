@@ -4,8 +4,10 @@ Automation scripts.  Some generic, but most specific to this development.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import GenStMonad StructTactics (*MonadVM MonadVMFacts*) Term_Defs Term.
+Require Import GenStMonad (*MonadVM MonadVMFacts*) Term_Defs Term.
 Require Import Coq.Arith.Peano_dec Lia.
+
+Require Import StructTact.StructTactics.
 
 Ltac dunit :=
   match goal with

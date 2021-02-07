@@ -11,13 +11,15 @@ University of California.  See license.txt for details. *)
 
 (** Traces and their relation to event systems. *)
 
-Require Import Preamble More_lists Term_Defs Term Event_system Term_system StructTactics.
+Require Import Preamble More_lists Defs Term_Defs Term Event_system Term_system.
 
 Require Import Lia.
 
 Require Import List.
 Import List.ListNotations.
 Open Scope list_scope.
+
+Require Import StructTact.StructTactics.
 
 
 (** * Shuffles

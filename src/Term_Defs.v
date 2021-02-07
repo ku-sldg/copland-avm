@@ -13,7 +13,7 @@ University of California.  See license.txt for details. *)
     events, and annotated terms. *)
 
 Require Import PeanoNat Compare_dec Lia.
-Require Import Preamble StructTactics Term_Facts Defs.
+Require Import Preamble Term_Facts Defs.
 
 Require Import List.
 Import List.ListNotations.
@@ -21,6 +21,8 @@ Import List.ListNotations.
 Require Import Coq.Arith.Even Coq.Program.Tactics Coq.Program.Equality.
 
 Require Import OptMonad.
+
+Require Import StructTact.StructTactics.
 
 
 

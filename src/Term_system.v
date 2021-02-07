@@ -11,9 +11,11 @@ University of California.  See license.txt for details. *)
 
 (** Copland specific event systems. *)
 
-Require Import Preamble More_lists StructTactics Defs Term_Defs Term Event_system.
+Require Import Preamble More_lists Defs Term_Defs Term Event_system.
 
 Require Import Omega Lia List.
+
+Require Import StructTact.StructTactics.
 
 Set Nested Proofs Allowed.
 

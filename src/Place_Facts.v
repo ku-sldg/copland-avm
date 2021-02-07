@@ -1,7 +1,9 @@
-Require Import Maps Term_Defs StructTactics.
+Require Import Maps Term_Defs.
 
 Require Import List.
 Import ListNotations.
+
+Require Import StructTact.StructTactics.
 
 (*
 Definition inc_vm_id (m:VMID_Map) (p:Plc) : (VM_ID*VMID_Map) :=

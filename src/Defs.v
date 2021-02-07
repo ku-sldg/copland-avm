@@ -1,4 +1,4 @@
-Require Import StructTactics.
+Require Import StructTact.StructTactics.
 
 Require Import List.
 Import List.ListNotations.
@@ -53,6 +53,15 @@ Ltac fail_if_in_hyps_type t :=
 Ltac assert_new_proof_by H tac := 
   fail_if_in_hyps_type H;
   assert H by tac.
+
+Ltac find_eapply_hyp_hyp :=
+  match goal with
+  | [ H : forall _, _ -> _,
+        H' : _ |- _ ] =>
+    eapply H in H'; [idtac]
+  | [ H : _ -> _ , H' : _ |- _ ] =>
+    eapply H in H'; auto; [idtac]
+  end.
 
 Ltac find_apply_hyp_hyp' :=
   match goal with

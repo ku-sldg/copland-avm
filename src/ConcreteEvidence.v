@@ -4,7 +4,9 @@ Evidence structure that models concrete results of Copland phrase execution.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Export Term_Defs Term StructTactics.
+Require Export Term_Defs Term.
+
+Require Import StructTact.StructTactics.
 
 Notation BS := nat (only parsing).
 

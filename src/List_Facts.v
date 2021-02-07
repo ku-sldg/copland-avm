@@ -1,9 +1,11 @@
-Require Import Defs StructTactics Preamble More_lists.
+Require Import Defs Preamble More_lists.
 
 Require Import Coq.Program.Tactics.
 
 Require Import List Lia.
 Import List.ListNotations.
+
+Require Import StructTact.StructTactics.
 
 
 

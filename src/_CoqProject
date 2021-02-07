@@ -1,7 +1,6 @@
 -R . CoplandM
 Preamble.v
 More_lists.v
-StructTactics.v
 Term_Facts.v
 OptMonad.v
 Defs.v
@@ -23,3 +22,4 @@ GenStMonad.v
 MonadLaws.v
 StVM.v
 Auto.v
+LockServ.v
