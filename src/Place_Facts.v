@@ -1,4 +1,4 @@
-Require Import Maps Term_Defs.
+Require Import Maps Term_Defs Auto.
 
 Require Import List.
 Import ListNotations.
@@ -63,8 +63,6 @@ Fixpoint term_places' (t:Term) (ls:list Plc): list Plc :=
 
 Definition term_places (t:Term): list Plc :=
   term_places' t [].
-
-Require Import Auto.
 
 Inductive term_places_r : Term -> Plc -> Prop :=
 | atPlace: forall q t', term_places_r (att q t') q

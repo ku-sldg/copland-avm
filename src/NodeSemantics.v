@@ -5,7 +5,12 @@ https://github.com/DistributedComponents/verdi-lockserv/blob/master/systems/Lock
 
 Author of tweaks:  Adam Petz, ampetz@ku.edu
 
-*)
+ *)
+
+Require Import Term_Defs.
+
+
+
 Require Import Verdi.Verdi.
 Require Import Verdi.HandlerMonad.
 Require Import StructTact.Fin.
@@ -16,12 +21,21 @@ Require Import Verdi.StatePacketPacketDecomposition.
 
 Set Implicit Arguments.
 
-Section LockServ.
 
+Section NodeSem.
+
+  (* Perhaps this doesn't need to be a Variable? 
+     num_Nodes : nat (* Derived from input AnnoTerm *) *)
   Variable num_Clients : nat.
 
+  (* Node_index := (fin (num_Nodes + 1))   (* Added 1 for top-level node *)  *)
   Definition Client_index := (fin num_Clients).
 
+
+  (* Inductive Name :=
+     | Node : Client_index -> Name  *)
+  (* TODO: necessary to distinguish between top-level and clients?
+           Probably not since they share an execution environment type (InstrSt) *)
   Inductive Name :=
   | Client : Client_index -> Name
   | Server : Name.
@@ -32,8 +46,16 @@ Section LockServ.
     decide equality. apply fin_eq_dec.
   Defined.
 
+  (* No need for this in Attestation messages at present... *)
   Definition Request_index := nat.
 
+  (* This might just be one constructor: (VM_ID * EvidenceC) *)
+  (* Origin node and evidence sent *)
+  (* Could do separate messages for request and response...? 
+     i.e. Req init_ev, Resp final_ev 
+     Any advantage for proofs using one over the other?
+     Separating them seems unecessary since all VM_IDs are unique by construction
+     i.e. No more than one message addressed to node X in flight at a time *)
   Inductive Msg :=
   | Lock   : Request_index -> Msg
   | Unlock : Msg
@@ -42,8 +64,14 @@ Section LockServ.
   Definition Msg_eq_dec : forall a b : Msg, {a = b} + {a <> b}.
     decide equality; auto using Nat.eq_dec.
   Defined.
-    
+
+  (* This might be unit for the attestation nodes...
+     Really just need to take internal steps when not in a ReqWait or RpyWait state.
+     unit input could just be a constant probe:  step if you can, 
+          otherwise keep waiting for network to advance node state, then probe will
+          trigger a network send when state points to a Req instruction *)
   Definition Input := Msg.
+  (* This might be Ev for Copland events *)
   Definition Output := Msg.
 
   Record Data := mkData { queue : list (Client_index * Request_index) ; held : bool }.
@@ -54,8 +82,28 @@ Section LockServ.
   Notation "{[ d 'with' 'queue' := q ]}" := (set_Data_queue d q).
   Notation "{[ d 'with' 'held' := b ]}" := (set_Data_held d b).
 
+  (* This is where we "compile-distribute Copland phrases to nodes" *)
+  (* Need to distinguish between "initiator" node and rest that listen from start *)
+  (* Perhaps:  
+
+     get_node_term': (t:AnnoTerm) (n:Name) : option (VM_ID * VM_ID * AnnoTerm) := ...
+     get_node_term: (t:AnnoTerm) (n:Name) : (VM_ID * VM_ID * AnnoTerm) :=
+       fromSome (get_node_term' t n)  (* proven to return Some _ for valid AnnoTerm *)
+     init_data (t:AnnoTerm) (e:EvidenceC) (n:Name) : Data :=
+     match n with
+     | 0 => iconf (instr_compiler t) 0 e 
+     | node_id => 
+       (p,q,t') <- get_node_term t node_id
+       iWaitReq p q (instr_compiler t')
+     end                                 *)
+  
   Definition init_data (n : Name) : Data := mkData [] false.
 
+  Locate GenHandler.
+
+  Check GenHandler.
+
+  (* GenHandler : network, state, event, ret_type *)
   Definition Handler (S : Type) := GenHandler (Name * Msg) S Output unit.
 
   Definition ClientNetHandler (i : Client_index) (m : Msg) : Handler Data :=
@@ -1281,7 +1329,7 @@ Section LockServ.
     - intuition.
       + red. red. auto.
       + unfold last_holder in *. simpl in *. discriminate.
-      + unfold last_holder in *. simpl in *. discriminate.
+      (* + unfold last_holder in *. simpl in *. discriminate. *)
     - match goal with
         | [ H : step_async _ _ _ |- _ ] => invcs H
       end; monad_unfold; repeat break_let; repeat find_inversion.
@@ -1381,4 +1429,4 @@ Section LockServ.
               auto.
           }
   Qed.
-End LockServ.
+End NodeSem.

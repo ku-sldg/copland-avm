@@ -60,8 +60,8 @@ Inductive InstrSt: Set :=
 | iconf: AnnoInstr -> VM_ID -> EvidenceC -> InstrSt
 | iWaitReq: VM_ID -> VM_ID -> AnnoInstr -> InstrSt
 | iDoRem: InstrSt -> VM_ID -> InstrSt
-| irpyWait: nat -> VM_ID -> VM_ID -> InstrSt
-| ils: InstrSt -> AnnoInstr -> InstrSt.
+| irpyWait: nat -> VM_ID -> VM_ID -> InstrSt.
+(*| ils: InstrSt -> AnnoInstr -> InstrSt. *)
 
 Fixpoint instrStID (iSt: InstrSt): VM_ID :=
   match iSt with
@@ -70,7 +70,7 @@ Fixpoint instrStID (iSt: InstrSt): VM_ID :=
   | iWaitReq _ me _ => me
   | iDoRem iSt' _ => instrStID iSt'
   | irpyWait _ me _ => me
-  | ils iSt' _ => instrStID iSt'
+  (*| ils iSt' _ => instrStID iSt' *)
   end.
 
 Fixpoint instrStEvidence (iSt: InstrSt): EvidenceC :=
@@ -80,7 +80,7 @@ Fixpoint instrStEvidence (iSt: InstrSt): EvidenceC :=
   | iWaitReq _ _ _ => mtc
   | iDoRem iSt' _ => instrStEvidence iSt'
   | irpyWait _ _ _ => mtc
-  | ils iSt' _ => instrStEvidence iSt'
+  (*| ils iSt' _ => instrStEvidence iSt' *)
   end.
     
 
@@ -124,8 +124,8 @@ Inductive Instr_step: InstrSt -> heap -> option Ev -> InstrSt -> heap -> Prop :=
 | atDoRemStop: forall p e them h,
     Instr_step (iDoRem (istop p e) them) h
                None
-               (istop p e) (Full (them,e))
-| seqStart: forall x y p e h,
+               (istop p e) (Full (them,e)).
+(*| seqStart: forall x y p e h,
     Instr_step (iconf (aseq x y) p e) h
                None
                (ils (iconf x p e) y) h
@@ -133,7 +133,7 @@ Inductive Instr_step: InstrSt -> heap -> option Ev -> InstrSt -> heap -> Prop :=
     Instr_step st0 h ev st1 h' ->
     Instr_step (ils st0 x) h ev (ils st1 x) h'
 | seqStop: forall y p e h,
-    Instr_step (ils (istop p e) y) h None (iconf y p e) h.
+    Instr_step (ils (istop p e) y) h None (iconf y p e) h. *)
 Hint Constructors Instr_step : core.
 
 Require Import Coq.Arith.PeanoNat.

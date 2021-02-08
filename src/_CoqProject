@@ -5,10 +5,14 @@ Term_Facts.v
 OptMonad.v
 Defs.v
 Term_Defs.v
-Place_Facts.v
 List_Facts.v
 AnnoFacts.v
 Term.v
+GenStMonad.v
+Auto.v
+EqClass.v
+Maps.v
+Place_Facts.v
 Event_system.v
 Term_system.v
 Trace.v
@@ -16,10 +20,6 @@ LTS.v
 Main.v
 ConcreteEvidence.v
 Axioms_Io.v
-EqClass.v
-Maps.v
-GenStMonad.v
 MonadLaws.v
 StVM.v
-Auto.v
-LockServ.v
+NodeSemantics.v
