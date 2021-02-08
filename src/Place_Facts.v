@@ -1,9 +1,16 @@
-Require Import Maps Term_Defs Auto.
+Require Import EqClass Maps Term_Defs Auto.
 
 Require Import List.
+Require Import Lists.List.
 Import ListNotations.
 
+Require Import Lia Coq.Arith.PeanoNat.
+
 Require Import StructTact.StructTactics.
+
+Set Nested Proofs Allowed.
+
+
 
 (*
 Definition inc_vm_id (m:VMID_Map) (p:Plc) : (VM_ID*VMID_Map) :=
@@ -14,56 +21,307 @@ Definition inc_vm_id (m:VMID_Map) (p:Plc) : (VM_ID*VMID_Map) :=
   end.
  *)
 
+Fixpoint flatten_term' (t:Term) (n:nat) (m:MapC VM_ID Plc): (nat * ((MapC VM_ID Plc) * Term)) :=
+  match t with
+  | asp _ => (n,(m,t))
+  | att q t' =>
+    let '(n',(m',t'')) := flatten_term' t' (n + 1) (map_set m n q) in
+    (n', (m',att n t''))
+  | lseq t1 t2 =>
+    let '(n',(m',t1')) := flatten_term' t1 n m in
+    let '(n'',(m'',t2')) := flatten_term' t2 n' m' in
+    (n'', (m'', lseq t1' t2'))
+  end.
+
+Definition flatten_term_init (t:Term) : (MapC VM_ID Plc * Term) :=
+  let '(n', (m', t')) := flatten_term' t 1 [] in
+  (m',t').
+
+Definition flatten_term (t:Term): Term :=
+  snd (flatten_term_init t).
+
+Definition flatten_term_map (t:Term): MapC VM_ID Plc :=
+  fst (flatten_term_init t).
+
+Fixpoint num_ats (t:Term): nat :=
+  match t with
+  | asp _ => 0
+  | att _ t' => S (num_ats t')
+  | lseq t1 t2 => (num_ats t1) + (num_ats t2)
+  end.
+    
+Fixpoint places (t:Term): list Plc :=
+  match t with
+  | asp _ => []
+  | att q t' => q :: (places t')
+  | lseq t1 t2 => (places t1) ++ (places t2)
+  end.
+          
+Lemma numats_places: forall t,
+    length (places t) = num_ats t.
+Proof.
+  intros.
+  induction t; intros.
+  -
+    df.
+    tauto.
+  -
+    df.
+    eauto.
+  -
+    df.
+    Search (length (_ ++ _)).
+    erewrite app_length.
+    eauto.
+Defined.
+
+Lemma flatten_numats: forall t i i' m m' t',
+    flatten_term' t i m = (i', (m',t')) ->
+    i' = i + (num_ats t).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    df.
+    lia.
+  -
+    df.
+    assert (i' = (i + 1) + num_ats t) by eauto.
+    subst.
+    lia.
+  -
+    df.
+    assert (n = i + num_ats t1) by eauto.
+    assert (i' = n + num_ats t2) by eauto.
+    lia.
+Defined.
+
+Lemma flatten_attnum: forall t n n' m m' t',
+    flatten_term' t n m = (n', (m', t')) ->
+    places t' = seq n (num_ats t).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    df.
+    tauto.
+  -
+    df.
+    
+    assert (places t0 = seq (n0 + 1) (num_ats t)).
+    {
+      eapply IHt.
+      eauto.
+    }
+    find_rewrite.
+
+    assert (n0 + 1 = S n0) by lia.
+    rewrite H0.
+    tauto.
+  -
+    df.
+    assert(places t = seq n (num_ats t1)) by eauto.
+
+    assert (places t0 = seq n0 (num_ats t2)) by eauto.
+
+    repeat find_rewrite.
+
+    repeat erewrite seq_app.
+
+    assert (n0 = n + (num_ats t1)).
+    {
+      eapply flatten_numats; eauto.
+    }
+
+    repeat find_rewrite.
+    tauto.
+Defined.
+
+(*
+Definition map_union{A B:Type} `{H : EqClass A} (m:MapC A B) (n:MapC A B): MapC A B.
+Admitted.
+*)
+
+Definition dom_union{A: Type} (l:list A) (l':list A): list A.
+Admitted.
+
+Axiom dom_union_nil_r: forall A (l:list A), dom_union l [] = l.
+
+Axiom dom_union_nil_l: forall A (l:list A), dom_union [] l = l.
+
+Axiom dom_union_cons: forall A (x:A) l l',
+    dom_union (x::l) l' =
+    dom_union l (x::l').
+
+Axiom dom_union_app: forall A (l1 l2 l3:list A),
+    dom_union l1 (l2 ++ l3) = dom_union (dom_union l1 l2) l3.
+
+Lemma map_dom_places: forall t n m,
+    map_dom (fst (snd (flatten_term' t n m))) = dom_union (map_dom m) (seq n (num_ats t)).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    df.
+    rewrite dom_union_nil_r.
+    tauto.
+  -
+    df.
+    unfold map_set in *.
+    df.
+
+    specialize IHt with(n:=n0 + 1) (m:=  ((n0, n) :: m)).
+    repeat break_let.
+    repeat find_inversion.
+    df.
+    rewrite IHt.
+    simpl.
+
+    assert (S n0 = n0 + 1) by lia.
+    rewrite H.
+
+    rewrite dom_union_cons.
+    tauto.
+  -
+    df.
+    specialize IHt1 with (n:=n) (m:=m).
+
+    specialize IHt2 with (n:= n0) (m:=m0).
+    repeat break_let.
+    repeat find_inversion.
+
+    df.
+    rewrite IHt2.
+    rewrite IHt1.
+
+    rewrite seq_app.
+
+    assert (seq (n + num_ats t1) (num_ats t2) =
+            seq n0 (num_ats t2)).
+    {
+      assert (n0 = n + num_ats t1).
+      {
+        eapply flatten_numats; eauto.
+      }
+      congruence.
+    }
+    rewrite H.
+
+    rewrite dom_union_app.
+    tauto.
+Defined.
+
+Lemma map_dom_places': forall t n,
+    map_dom (fst (snd (flatten_term' t n []))) = (seq n (num_ats t)).
+Proof.
+  intros.
+  assert (seq n (num_ats t) = dom_union [] (seq n (num_ats t))).
+  {
+    rewrite dom_union_nil_l.
+    tauto.
+  }
+  rewrite H.
+  eapply map_dom_places.
+Defined.
+
+Lemma map_dom_places_corr: forall t,
+    (*map_dom (fst (flatten_term_init t)) = seq 1 (num_ats t). *)
+    map_dom (flatten_term_map t) = seq 1 (num_ats t).
+Proof.
+  intros.
+  unfold flatten_term_map.
+  unfold flatten_term_init.
+  repeat break_let.
+  df.
+  assert (m = fst (snd (flatten_term' t 1 []))).
+  {
+    find_rewrite.
+    tauto.
+  }
+  rewrite H.
+  eapply map_dom_places'.
+Defined.
+  
+Lemma seq_places: forall t,
+    places (flatten_term t) = seq 1 (num_ats t).
+Proof.
+  intros.
+  induction t.
+  -
+    df.
+    tauto.
+  -
+    df.
+    unfold flatten_term in *.
+    unfold flatten_term_init in *.
+    repeat break_let.
+    df.
+    unfold map_set in *.
+
+    assert (places t2 = seq 2 (num_ats t)).
+    {
+
+      eapply flatten_attnum; eauto.
+    }
+    congruence.
+  -
+    df.
+    unfold flatten_term in *.
+   
+    repeat erewrite seq_app.
+
+    rewrite <- IHt1.
+
+    unfold flatten_term_init in *.
+
+    repeat break_let.
+    repeat find_inversion.
+    df.
+
+    assert (places t0 = seq 1 (num_ats t1)).
+    {
+      eapply flatten_attnum; eauto.
+    }
+    find_rewrite.
+
+    (*
+
+    unfold flatten_term_init in Heqp0.
+    repeat break_let.
+
+    repeat find_rewrite. *)
+    assert (places t5 = seq n0 (num_ats t2)).
+    {
+      eapply flatten_attnum; eauto.
+    }
+    repeat find_rewrite.
+
+    repeat find_inversion.
+
+    assert (n0 = 1 + (num_ats t1)).
+    {
+      eapply flatten_numats; eauto.
+    }
+    repeat find_rewrite.
+    simpl.
+    tauto.
+Defined.
+
+Lemma map_eq_places: forall t,
+    (*map_dom (fst (flatten_term_init t)) = places (snd (flatten_term_init t)). *)
+    map_dom (flatten_term_map t) = places (flatten_term t).
+Proof.
+  intros.
+  rewrite seq_places.
+  rewrite map_dom_places_corr.
+  tauto.
+Defined.
+
 Definition VMID_Map := (MapC VM_ID Plc).
-
-Fixpoint flatten_places' (t:Term) (n:nat) (m:MapC VM_ID Plc): (nat*(MapC VM_ID Plc)) :=
-  match t with
-  | asp a => (n,m)     
-  | att q t' =>
-    flatten_places' t' (n+1) (map_set m n q)              
-  | lseq t1 t2 =>
-    let '(n',m') := flatten_places' t1 n m in
-    flatten_places' t2 n' m'
-  end.
-
-Definition flatten_places (t:Term) : (MapC Plc VM_ID) :=
-  snd (flatten_places' t 1 []).
-
-
-
-(* TODO: import and use option monad scope/notation *)
-Fixpoint flatten_term (t:Term) (m:MapC Plc VM_ID): option Term :=
-  match t with
-  | asp a => Some (asp a)
-                
-  | att q t' =>
-    let mp := map_get m q in
-    let mt' := flatten_term t' m in
-    match (mp, mt') with
-    | (Some v, Some newTerm) => Some (att v newTerm)
-    | _ => None
-    end              
-  | lseq t1 t2 =>
-    let mt1 := flatten_term t1 m in
-    let mt2 := flatten_term t2 m in
-    match (mt1,mt2) with
-    | (Some new_t1, Some new_t2) => Some (lseq new_t1 new_t2)
-    | _ => None
-    end
-end.
-
-Fixpoint term_places' (t:Term) (ls:list Plc): list Plc :=
-  match t with
-  | asp _ => ls   
-  | att q t' =>
-    term_places' t' (q::ls)              
-  | lseq t1 t2 =>
-    term_places' t2 (term_places' t1 ls)
-  end.
-
-Definition term_places (t:Term): list Plc :=
-  term_places' t [].
-
+    
 Inductive term_places_r : Term -> Plc -> Prop :=
 | atPlace: forall q t', term_places_r (att q t') q
 | atRecPlace: forall x q t',
@@ -76,233 +334,55 @@ Inductive term_places_r : Term -> Plc -> Prop :=
     term_places_r t2 p ->
     term_places_r (lseq t1 t2) p.
 
-Set Nested Proofs Allowed.
-Require Import Coq.Arith.PeanoNat.
-
-Lemma term_places'_cumul: forall t p ls,
-    In p ls ->
-    In p (term_places' t ls).
-Proof.
-  induction t; intros.
-  -
-    df.
-    eassumption.
-  -
-    df.
-    assert (In p (term_places' t (n::ls))).
-    {
-    eapply IHt.
-    right.
-    eassumption.
-    }
-    eassumption.
-  -
-    df.
-    eauto.
-Defined.
-
-Lemma places_input_order: forall t p n n0 ls,
-    In p (term_places' t (n :: n0 :: ls)) ->
-    In p (term_places' t (n0 :: n:: ls)).
-Proof.
-  intros.
-
-  assert (In p (n :: n0 :: ls) \/ In p (term_places' t [])).
-  {
-    admit.
-  }
-  destruct H0.
-  eapply term_places'_cumul.
-  admit.
-Admitted.
-
-Lemma lseq_places_fact: forall t1 t2 p ls,
-    In p (term_places' t2 (term_places' t1 ls)) ->
-    In p (term_places' t1 ls) \/ In p (term_places' t2 []).
-Proof.
-Admitted.
-
-Lemma lseq_places_assoc: forall t1 t2 p n ls,
-    In p (term_places' t2 (term_places' t1 (n :: ls))) ->
-    In p (term_places' t2 (n :: term_places' t1 ls)).
-Proof.
-Admitted.
-
-
-Lemma peel_one: forall t n ls p,
-    In p (term_places' t (n :: ls)) ->
-    p <> n ->
-    In p (term_places' t ls).
-Proof.
-  intros.
-  generalizeEverythingElse t.
-  induction t; intros.
-  -
-    df.
-    destruct H; try eauto.
-    congruence.
-  -
-    df.
-    eapply IHt.
-    Focus 2.
-    eassumption.
-    eapply places_input_order; eauto.
-  -
-    df.
-    assert (In p (term_places' t1 (n::ls)) \/ In p (term_places' t2 [])).
-    {
-      eapply lseq_places_fact; eauto.
-    }
-    destruct H1.
-    +
-      eapply term_places'_cumul.
-      eauto.
-    +
-      eapply IHt2 with (n:=n).
-      eapply lseq_places_assoc; eauto.
-      eassumption.
-Defined.
-
-(*
-Lemma fff: forall p t n,
-    In p (term_places' t []) ->
-    p <> n ->
-    In p (term_places' t [n]).
-Proof.
-Admitted.
-*)
-
-Lemma term_places_weaken: forall t p ls,
-    In p (term_places' t []) ->
-    In p (term_places' t ls).
-Proof.
-  intros.
-  generalizeEverythingElse t.
-  induction t; intros.
-  -
-    solve_by_inversion.
-  -
-    cbn in H.
-    destruct (Nat.eq_dec p n).
-    +
-      subst.
-      df.
-      eapply term_places'_cumul.
-      econstructor.
-      tauto.
-    +
-      assert (In p (term_places' t [])).
-      {
-        eapply peel_one; eauto.
-        (*
-        
-        
-        edestruct singleton_places_fact.
-        eassumption.
-        invc H0.
-        congruence.
-        invc H1.
-        eassumption. *)
-      }
-      df.
-      eauto.
-  -
-    df.
-    edestruct lseq_places_fact.
-    eassumption.
-    assert (In p (term_places' t1 ls)) by eauto.
-    eapply term_places'_cumul.
-    eassumption.
-    eauto.
-Defined.
-
 Lemma term_places_iff_rel: forall t p,
-    term_places_r t p <-> In p (term_places t).
+    term_places_r t p <-> In p (places t).
 Proof.
   split.
   -
-    unfold term_places.
-    induction t; intros; df.
-    +
-      solve_by_inversion.
-    +
-      invc H.
-      ++
-        eapply term_places'_cumul; eauto.
-        econstructor.
-        tauto.
-      ++
-        concludes.
-
-        eapply term_places_weaken; eauto.
-    +
-      invc H.
-      ++
-        concludes.
-        eapply term_places'_cumul; eauto.
-      ++
-        concludes.
-        eapply term_places_weaken.
-        eassumption.
-  -
-    intros.
-    unfold term_places in *.
     generalizeEverythingElse t.
     induction t; intros; df.
     +
       solve_by_inversion.
     +
-      destruct (Nat.eq_dec p n).
+      
+      invc H.
+      ++
+        left.
+        tauto.
+      ++
+        assert (In p (places t)) by eauto.
+        right.
+        eauto.
+    +
+      invc H.
+      ++
+        assert (In p (places t1)) by eauto.
+        eapply in_or_app. eauto.
+      ++
+        assert (In p (places t2)) by eauto.
+        eapply in_or_app. eauto.
+  -
+    intros.
+    generalizeEverythingElse t.
+    induction t; intros; df.
+    +
+      solve_by_inversion.
+    +
+      destruct H.
       ++
         subst.
         econstructor.
       ++
+        assert (term_places_r t p) by eauto.
         econstructor.
-        eapply IHt.
-        eapply peel_one; eauto.
-
-        (*
-
-        edestruct singleton_places_fact.
-        eassumption.
-        invc H0.
-        congruence.
-        invc H1.
-        eassumption. *)
+        eauto.
     +
-      assert (In p (term_places' t1 []) \/ In p (term_places' t2 [])).
-      {       
-        eapply lseq_places_fact; eauto.
-      }
-      destruct H0.
+      apply in_app_or in H.
+      destruct H.
       ++
+        assert (term_places_r t1 p) by eauto.
         econstructor; eauto.
       ++
-        apply atLseqPlacer.
-        eauto.
+        assert (term_places_r t2 p) by eauto.
+        eapply atLseqPlacer; eauto.
 Defined.
-
-(*
-Definition flatten_places (t:Term) : (MapC Plc VM_ID) :=
-  snd (flatten_places' t 1 []).
- *)
-
-Lemma places_match: forall t,
-    map_dom (flatten_places t) = term_places t.
-Proof.
-Admitted.
-
-
-Lemma flatten_some: forall t,
-  (*term_places_r t p ->
-  In p (map_dom m) -> *)
-  (*map_dom m = term_places t -> *)
-  exists t', flatten_term t (flatten_places t) = Some t'.
-Proof.
-Admitted.
-
-Definition t1 := att 1 (asp (ASPC 1 [])).
-Definition t2 := (asp (ASPC 2 [])).
-Definition myterm := att 1 (lseq t1 (att 2 (lseq t2 (att 3 t1)))).
-
-Compute flatten_places myterm.

@@ -9,8 +9,6 @@ Author of tweaks:  Adam Petz, ampetz@ku.edu
 
 Require Import Term_Defs.
 
-
-
 Require Import Verdi.Verdi.
 Require Import Verdi.HandlerMonad.
 Require Import StructTact.Fin.
