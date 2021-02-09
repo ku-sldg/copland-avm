@@ -14,13 +14,10 @@ Set Nested Proofs Allowed.
 
 Section NodeTest.
 
-  Variable num_Servers : nat.
+  Variable num_Nodes : nat.
 
-  Definition Server_index := {n:nat | n < num_Servers}.
+  Definition Name := {n:nat | n < num_Nodes}.
 
-  Definition Name := Server_index.
-
-  
   Definition Name_eq_dec : forall a b : Name, {a = b} + {a <> b}.
     intros.
     unfold Name in *.
@@ -44,77 +41,88 @@ Section NodeTest.
       congruence.
   Defined.
 
-  (* TODO:  I want the equivalent of:  [0; 1; ... (num_Servers - 1)], 
-     but instead a list of dependent pairs, each with an element and a
-     proof saying that "element is less than num_Servers". *)
+  (* NOTE:  I want the equivalent of:  [0; 1; ... (num_Nodes - 1)], a.k.a. (seq 0 num_Nodes), 
+     but instead a list of dependent pairs, where each element has an accompanying
+     proof saying: " this element is less than num_Nodes". *)
 
-
-
-(*
-  Definition sumbool_wrap_nat (n:nat):  (n < num_Servers) + (n >= num_Servers).
+  Definition list_Nodes_dep : {l:list Name | map (@proj1_sig _ _) l = (seq 0 num_Nodes)}.
   Admitted.
 
-  Definition wrap_nat (n:nat): (n < num_Servers).
-  Admitted.
-*)
+  Definition Nodes : list Name := proj1_sig list_Nodes_dep.
 
-  Definition list_Servers_dep : {l:list Name | map (@proj1_sig _ _) l = (seq 0 num_Servers)}.
-  Admitted.
+  Lemma sig_map :
+      forall A (x0:A) (l:list A) (P:A -> Prop) (x: list {n:A | P n}) (pf:P x0),
+        map (proj1_sig (P:=P)) x = l ->
+        In x0 l ->
+        In (exist P x0 pf) x.
+  Proof.
+    intros.
+    rewrite <- H in H0.
+    rewrite in_map_iff in H0.
+    destruct H0.
+    destruct x1.
+    destruct H0.
 
-  Definition list_Servers : list Name := proj1_sig list_Servers_dep.
-
-
-  Definition Nodes := list_Servers.
+    unfold proj1_sig in H0.
+    subst.
+    assert (pf = p).
+    {
+      eapply proof_irrelevance.
+    }
+    subst.
+    eassumption.
+  Defined.
+  
+  Lemma sig_nodup :
+      forall A (*(x0:A)*) (l:list A) (P:A -> Prop) (x: list {n:A | P n}) (*(pf:P x0)*),
+        map (proj1_sig (P:=P)) x = l ->
+        NoDup l ->
+        NoDup x.
+  Proof.
+    intros.
+    rewrite <- H in H0.
+    eapply NoDup_map_inv.
+    eassumption.
+  Defined.
 
   Lemma seq_fact: forall n n',
-    S n < S n' ->
-    In (S n) (seq 1 n').
-  Proof.
+      n < n' ->
+      In n (seq 0 n').
+  Proof.   
   Admitted.
   
-
   Theorem In_n_Nodes :
     forall n : Name, In n Nodes.
   Proof using.
     intros.
-    unfold Nodes, list_Servers.
-    destruct list_Servers_dep.
-    unfold Name in *.
-    unfold Server_index in *. 
+    unfold Nodes, Name in *.
+    destruct list_Nodes_dep.
     simpl.
-    destruct n.
+    unfold Name in *.
 
-    assert (In x0 (seq 0 num_Servers)).
+    destruct n as [x0 pf].
+
+    assert (In x0 (seq 0 num_Nodes)).
     {
-      destruct num_Servers;
-        destruct x0;
-        try lia.
-      +
-        simpl.
-        eauto.
-      +
-        simpl.
-        right.
-        eapply seq_fact; eauto.
+      eapply seq_fact; eauto.
     }
-  (* NOW WHAT?? *)
-  Abort.
+    eapply sig_map; eauto.
+  Defined.
 
   Theorem nodup :
     NoDup Nodes.
   Proof using.
-    unfold Nodes, list_Servers.
-    destruct list_Servers_dep.
+    unfold Nodes, Name in *.
+    destruct list_Nodes_dep.
     simpl.
     unfold Name in *.
-    unfold Server_index in *.
 
-    assert (NoDup (seq 0 num_Servers)).
+    assert (NoDup (seq 0 num_Nodes)).
     {
       eapply seq_NoDup.
     }
-  (* NOW WHAT?? *)
-  Abort.
+    eapply sig_nodup; eauto.
+  Defined.
 
 
 
