@@ -7,7 +7,7 @@ Author of tweaks:  Adam Petz, ampetz@ku.edu
 
  *)
 
-Require Import Term_Defs.
+Require Import Term_Defs ConcreteEvidence Place_Facts NodeSt.
 
 Require Import Verdi.Verdi.
 Require Import Verdi.HandlerMonad.
@@ -17,35 +17,133 @@ Local Arguments update {_} {_} _ _ _ _ _ : simpl never.
 
 Require Import Verdi.StatePacketPacketDecomposition.
 
+Require Import Lia Coq.Logic.ProofIrrelevance.
+
 Set Implicit Arguments.
 
 
 Section NodeSem.
 
+  
+  Variable term : Term.
+
   (* Perhaps this doesn't need to be a Variable? 
      num_Nodes : nat (* Derived from input AnnoTerm *) *)
-  Variable num_Clients : nat.
 
+  (*Variable num_Clients : nat. *)
+  (*Variable num_Clients : nat.
+
+  Axiom right_num_clients: num_Clients =  S (num_ats term).
+   *)
+
+  Definition num_Clients := S (num_ats term).
+  
   (* Node_index := (fin (num_Nodes + 1))   (* Added 1 for top-level node *)  *)
-  Definition Client_index := (fin num_Clients).
+
+  (*Definition Client_index := fin num_Clients. *)
+
+  Definition Client_index := {n:nat | n < num_Clients}.
+
+  Check sig.
+  Print sig.
+
+  (*
+
+Inductive sig (A : Type) (P : A -> Prop) : Type :=  exist : forall x : A, P x -> {x : A | P x}
+
+Arguments sig [A]%type_scope _%type_scope
+Arguments exist [A]%type_scope _%function_scope
+   *)
+  
+  
+
+    (* (fin num_Clients). *)
+
 
 
   (* Inductive Name :=
      | Node : Client_index -> Name  *)
   (* TODO: necessary to distinguish between top-level and clients?
            Probably not since they share an execution environment type (InstrSt) *)
-  Inductive Name :=
-  | Client : Client_index -> Name
-  | Server : Name.
+  Definition Name := Client_index.
+  (*| Client : Client_index -> Name. *)
+  (*| Server : Name. *)
 
-  Definition list_Clients := map Client (all_fin num_Clients).
+  Definition build_a_list (n:nat) : {l:list{m:nat | m < n} | map (@proj1_sig _ _) l = seq 0 n}.
+  Admitted.
+  
+
+  Definition list_Clients := proj1_sig (build_a_list num_Clients).
+
+  (*
+  Definition list_Clients := all_fin num_Clients. *)
+
+  Compute list_Clients.
+  
 
   Definition Name_eq_dec : forall a b : Name, {a = b} + {a <> b}.
-    decide equality. apply fin_eq_dec.
+    intros.
+    auto using Nat.eq_dec.
+    unfold Name in *.
+    destruct a; destruct b.
+    destruct (Nat.eq_dec x x0).
+    -
+      subst.
+      assert (l = l0).
+      {
+        eapply proof_irrelevance.
+      }
+      subst.
+      left.
+      reflexivity.
+    -
+      subst.
+      right.
+      unfold not.
+      intros.
+      invc H.
+      congruence.
   Defined.
 
+
+  Definition Nodes := list_Clients.
+
+  Theorem In_n_Nodes :
+    forall n : Name, In n Nodes.
+  Proof using.
+    intros.
+    unfold Nodes, list_Clients.
+    simpl.
+    destruct n.
+    - right.
+      apply in_map.
+      apply all_fin_all.
+    - left.
+      reflexivity.
+  Qed.
+
+  Theorem nodup :
+    NoDup Nodes.
+  Proof using.
+    unfold Nodes, list_Clients.
+    apply NoDup_cons.
+    - in_crush. discriminate.
+    - apply NoDup_map_injective.
+      + intros. congruence.
+      + apply all_fin_NoDup.
+  Qed.
+
+  
+
+
+
+  
+
+  (*
   (* No need for this in Attestation messages at present... *)
   Definition Request_index := nat.
+   *)
+  
 
   (* This might just be one constructor: (VM_ID * EvidenceC) *)
   (* Origin node and evidence sent *)
@@ -55,12 +153,18 @@ Section NodeSem.
      Separating them seems unecessary since all VM_IDs are unique by construction
      i.e. No more than one message addressed to node X in flight at a time *)
   Inductive Msg :=
+  | Evid : Name -> EvidenceC -> Msg.
+    (*
   | Lock   : Request_index -> Msg
   | Unlock : Msg
   | Locked : Request_index -> Msg.
+     *)
+    
 
   Definition Msg_eq_dec : forall a b : Msg, {a = b} + {a <> b}.
-    decide equality; auto using Nat.eq_dec.
+    decide equality; auto using Nat.eq_dec;
+      auto using EvidenceC_eq_dec.
+    apply fin_eq_dec.
   Defined.
 
   (* This might be unit for the attestation nodes...
@@ -68,10 +172,31 @@ Section NodeSem.
      unit input could just be a constant probe:  step if you can, 
           otherwise keep waiting for network to advance node state, then probe will
           trigger a network send when state points to a Req instruction *)
-  Definition Input := Msg.
+  Definition Input := unit.
   (* This might be Ev for Copland events *)
-  Definition Output := Msg.
+  Definition Output := Ev.
 
+
+  Inductive InstrSt: Type :=
+  | istop: Name -> EvidenceC -> InstrSt
+  | iconf: AnnoInstr -> Name -> EvidenceC -> InstrSt
+  | iWaitReq: Name -> Name -> AnnoInstr -> InstrSt
+  | iDoRem: InstrSt -> Name -> InstrSt
+  | irpyWait: nat -> Name -> Name -> InstrSt.
+
+  (*
+  Inductive InstrSt: Set :=
+  | istop: VM_ID -> EvidenceC -> InstrSt
+  | iconf: AnnoInstr -> VM_ID -> EvidenceC -> InstrSt
+  | iWaitReq: VM_ID -> VM_ID -> AnnoInstr -> InstrSt
+  | iDoRem: InstrSt -> VM_ID -> InstrSt
+  | irpyWait: nat -> VM_ID -> VM_ID -> InstrSt.
+   *)
+  
+
+  Definition Data := InstrSt.
+
+  (*
   Record Data := mkData { queue : list (Client_index * Request_index) ; held : bool }.
 
   Definition set_Data_queue d q := mkData q (held d).
@@ -79,6 +204,8 @@ Section NodeSem.
 
   Notation "{[ d 'with' 'queue' := q ]}" := (set_Data_queue d q).
   Notation "{[ d 'with' 'held' := b ]}" := (set_Data_held d b).
+   *)
+  
 
   (* This is where we "compile-distribute Copland phrases to nodes" *)
   (* Need to distinguish between "initiator" node and rest that listen from start *)
@@ -94,12 +221,70 @@ Section NodeSem.
        (p,q,t') <- get_node_term t node_id
        iWaitReq p q (instr_compiler t')
      end                                 *)
-  
+
+  (*
   Definition init_data (n : Name) : Data := mkData [] false.
+   *)
 
-  Locate GenHandler.
+  Definition annoTerm := (annotated (flatten_term term) 0).
 
-  Check GenHandler.
+  Require Import Maps.
+
+  (*
+   Definition copland_compliment (t:AnnoTerm) (s:Name -> Data): Name -> Data.
+
+    Definition map_to_func (m:MapC VM_ID InstrSt) (pf: map_dom m = places term) : Name -> Data.
+    Proof.
+      pose right_num_clients.
+      intros.
+      destruct X.
+    Abort.
+
+    Check (Client (Client_index None))
+   *)
+  
+      
+      
+
+  Definition add_server_at (fromPl:Name) (toPl:Name) (t:AnnoTerm)
+           (s: Name -> Data) : (Name -> Data) :=
+  let newServerSt := (iWaitReq fromPl toPl (instr_compiler t)) in
+  update Name_eq_dec s toPl newServerSt.
+    
+  Fixpoint copland_compliment (t:AnnoTerm) (*(s:Name -> Data)*) (n:Name): Data.
+    refine (
+  match t with
+  | aasp r a => s
+                   
+  | aatt (i,j) p q t' =>
+    let s' := add_server_at p q t' s in
+    copland_compliment t' s'
+                 
+  | alseq _ t1 t2 =>
+    let s1 := copland_compliment t1 s in
+    copland_compliment t2 s1
+  end).
+
+Definition orchestrate_servers (t:AnnoTerm) (mainPl:Plc) : (MapC VM_ID InstrSt) :=
+  copland_compliment t [].
+
+Definition setup_main_code (t:AnnoTerm) (p:Plc) (e:EvidenceC) : InstrSt :=
+  iconf (instr_compiler t) p e.
+
+
+
+
+
+
+
+
+  
+
+  Definition init_data (n : Name) : Data :=
+    iconf (instr_compiler annoTerm) 0 mtc.
+  
+
+ 
 
   (* GenHandler : network, state, event, ret_type *)
   Definition Handler (S : Type) := GenHandler (Name * Msg) S Output unit.

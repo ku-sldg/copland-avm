@@ -176,7 +176,7 @@ Definition setup_main_code (t:AnnoTerm) (p:Plc) (e:EvidenceC) : InstrSt :=
 Definition WorldTerm := MapC VM_ID InstrSt.
 
 Definition build_world_term_anno (t:AnnoTerm) (p:Plc) (e:EvidenceC) : WorldTerm :=
-  let main := setup_main_code t p e in
+  let main := setup_main_code t 0 e in
   let servers := orchestrate_servers t p in
   map_set servers 0 main.
 

@@ -8,6 +8,8 @@ Require Export Term_Defs Term.
 
 Require Import StructTact.StructTactics.
 
+Require Import Coq.Arith.PeanoNat.
+
 Notation BS := nat (only parsing).
 
 (** * Concrete Evidence *)
@@ -19,6 +21,10 @@ Inductive EvidenceC: Set :=
 | nnc: N_ID -> BS -> EvidenceC -> EvidenceC
 | ssc: EvidenceC -> EvidenceC -> EvidenceC
 (*| ppc: EvidenceC -> EvidenceC -> EvidenceC *) .
+
+ Definition EvidenceC_eq_dec : forall a b : EvidenceC, {a = b} + {a <> b}.
+   decide equality; auto using Nat.eq_dec.
+  Defined.
 
 
 (*
