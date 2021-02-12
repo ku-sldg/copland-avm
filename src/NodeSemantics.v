@@ -24,8 +24,9 @@ Set Implicit Arguments.
 
 Section NodeSem.
 
+  Variable s : SetM.t.
   
-  Variable term : Term.
+  Variable term : TermN s.
 
   (* Perhaps this doesn't need to be a Variable? 
      num_Nodes : nat (* Derived from input AnnoTerm *) *)
@@ -36,13 +37,17 @@ Section NodeSem.
   Axiom right_num_clients: num_Clients =  S (num_ats term).
    *)
 
-  Definition num_Clients := S (num_ats term).
+  (*
+  Definition num_Clients := S (num_ats term). *)
   
   (* Node_index := (fin (num_Nodes + 1))   (* Added 1 for top-level node *)  *)
 
   (*Definition Client_index := fin num_Clients. *)
 
-  Definition Client_index := {n:nat | n < num_Clients}.
+  (*
+  Definition Client_index := {n:nat | SetM.In n s}.
+   *)
+  
 
   Check sig.
   Print sig.
@@ -65,10 +70,12 @@ Arguments exist [A]%type_scope _%function_scope
      | Node : Client_index -> Name  *)
   (* TODO: necessary to distinguish between top-level and clients?
            Probably not since they share an execution environment type (InstrSt) *)
-  Definition Name := Client_index.
+  Definition Name := {n:nat | SetM.In n s}. (*Client_index. *)
   (*| Client : Client_index -> Name. *)
   (*| Server : Name. *)
 
+
+  (*
   Definition build_a_list (n:nat) : {l:list{m:nat | m < n} | map (@proj1_sig _ _) l = seq 0 n}.
   Admitted.
   
@@ -79,6 +86,8 @@ Arguments exist [A]%type_scope _%function_scope
   Definition list_Clients := all_fin num_Clients. *)
 
   Compute list_Clients.
+   *)
+  
   
 
   Definition Name_eq_dec : forall a b : Name, {a = b} + {a <> b}.
@@ -89,7 +98,7 @@ Arguments exist [A]%type_scope _%function_scope
     destruct (Nat.eq_dec x x0).
     -
       subst.
-      assert (l = l0).
+      assert (i = i0).
       {
         eapply proof_irrelevance.
       }
@@ -105,27 +114,132 @@ Arguments exist [A]%type_scope _%function_scope
       congruence.
   Defined.
 
+  Definition elems : list (SetM.elt) := SetM.elements s.
 
-  Definition Nodes := list_Clients.
+  (*
+ Definition Name := {n:nat | SetM.In n s}.
+   *)
+  
+  
+
+  Definition pf_type := fun s n => SetM.In n s.
+  Definition pf_type_spec := pf_type s.
+  Check pf_type_spec.
+  (* pf_type_spec
+     : SetM.elt -> Prop
+   *)
+
+  Compute (list (pf_type_spec 3)).
+  
+  (*
+  Definition tryitt := map pf_type_spec elems.
+  Check tryitt.
+   *)
+
+  Check exist.
+
+  Check map.
+
+  (*
+  Definition (x:Plc) (pf:In x s)
+  
+
+  Check sig.
+  Print sig.
+
+  Fixpoint combine_dep{A:Type} {P: A -> Prop}
+           (l : list A) (l' : (fun (x:A) => P x)) : nat.
+      match l,l' with
+      | x::tl, y::tl' => (x,y)::(combine tl tl')
+      | _, _ => nil
+      end.
+  
+  Definition pfs : list (pf_type s).
+  Check pfs.
+   *)
+
+  Definition combine_dep{A:Type} {P: A -> Prop}
+             (x : A) (x' : P x) : sig P := exist _ x x'.
+
+
+
+  Require Import Program.
+  
+
+  Definition Nodes := getPlaceDeps term.
 
   Theorem In_n_Nodes :
     forall n : Name, In n Nodes.
   Proof using.
     intros.
-    unfold Nodes, list_Clients.
-    simpl.
-    destruct n.
-    - right.
-      apply in_map.
-      apply all_fin_all.
-    - left.
-      reflexivity.
-  Qed.
+    unfold Nodes.
+    unfold Name in *.
+    generalizeEverythingElse term.
+    induction term.
+    -
+      destruct a.
+      +
+        intros.
+        dependent destruction n.
+        invc i.
+      +
+        intros.
+        destruct n.
+        destruct n0.
+        invc i.
+        destruct n0.
+        invc i.
+      +
+        intros.
+        destruct n.
+        invc i.
+      +
+        intros.
+        destruct n.
+        invc i.
+    -
+      intros.
+      dependent destruction n.
+      destruct (Nat.eq_dec x x0).
+      +
+        subst.
+        admit.
+      +
+        assert (SetM.In x0 s).
+        {
+          rewrite SetM.add_spec in i.
+          destruct i.
+          congruence.
+          eassumption.
+        }
+
+        pose (IHt t).
+        pose (i0 (exist _ x0 H)).
+        clear i1.
+        clear i0.
+        clear IHt.
+        clear n.
+        admit.
+    -
+      intros.
+      destruct n.
+      assert (SetM.In x s1 \/ SetM.In x s2). admit.
+      destruct H.
+      +
+        pose (IHt1 t1 (exist _ x H)).
+        admit.
+      +
+        pose (IHt2 t2 (exist _ x H)).
+        admit.
+  Admitted.
 
   Theorem nodup :
     NoDup Nodes.
   Proof using.
-    unfold Nodes, list_Clients.
+    unfold Nodes.
+    Check getPlaceDeps.
+
+    
     apply NoDup_cons.
     - in_crush. discriminate.
     - apply NoDup_map_injective.

@@ -120,6 +120,76 @@ Inductive TermN : SetM.t -> Type :=
 | attN{s:SetM.t} (x:Plc): TermN s -> TermN (SetM.add x s)
 | lseqN{s1 s2:SetM.t}: TermN s1 -> TermN s2 -> TermN (SetM.union s1 s2).
 
+Definition mod_In_pfs (x:Plc) (s:SetM.t)
+           (pr:{n : nat | SetM.In n s}) :
+  {n:nat | SetM.In n (SetM.add x s)}.
+Proof.
+  invc pr.
+  assert (SetM.In x0 (SetM.add x s)).
+  {
+    rewrite SetM.add_spec.
+    right.
+    eassumption.
+  }
+  econstructor.
+  eassumption.
+Defined.
+
+Definition mod_In_unioin_pfsL (s1 s2:SetM.t)
+           (pr:{n:nat | SetM.In n s1}) :
+  {n: nat | SetM.In n (SetM.union s1 s2)}.
+Proof.
+  invc pr.
+  econstructor.
+  rewrite SetM.union_spec.
+  left.
+  eassumption.
+Defined.
+
+Definition mod_In_unioin_pfsR (s1 s2:SetM.t)
+           (pr:{n:nat | SetM.In n s2}) :
+  {n: nat | SetM.In n (SetM.union s1 s2)}.
+Proof.
+  invc pr.
+  econstructor.
+  rewrite SetM.union_spec.
+  right.
+  eassumption.
+Defined.
+
+
+Definition getPlaceDeps{s:SetM.t} (t:TermN s) : list {n:Plc | SetM.In n s}.
+Proof.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a;
+      exact [].
+  -
+    assert (SetM.In x (SetM.add x s)).
+    {
+      rewrite SetM.add_spec.
+      left.
+      tauto.
+    }
+    exact ((exist _ x H) :: map (mod_In_pfs x s) IHt).
+  -
+    exact ((map (mod_In_unioin_pfsL s1 s2) IHt1) ++
+           (map (mod_In_unioin_pfsR s1 s2) IHt2)).
+Defined.
+
+
+
+                                                
+    
+      
+    
+    
+  
+    
+    
+    
+  
 
 Lemma hin: SetM.In 2 (SetM.add 2 SetM.empty).
 Proof.
@@ -518,7 +588,7 @@ Defined.
 
   
 
-HERE
+(*
       
       
 
@@ -879,3 +949,7 @@ Proof.
         assert (term_places_r t2 p) by eauto.
         eapply atLseqPlacer; eauto.
 Defined.
+
+
+
+*)
