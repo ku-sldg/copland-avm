@@ -167,7 +167,7 @@ Require Import Coq.Arith.EqNat.
 
 Open Scope nat_scope.
 
-Definition orchestrate_servers (t:AnnoTerm) (mainPl:Plc) : (MapC VM_ID InstrSt) :=
+Definition orchestrate_servers (t:AnnoTerm) : (MapC VM_ID InstrSt) :=
   copland_compliment t [].
 
 Definition setup_main_code (t:AnnoTerm) (p:Plc) (e:EvidenceC) : InstrSt :=

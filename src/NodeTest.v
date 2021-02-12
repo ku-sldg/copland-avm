@@ -1,10 +1,37 @@
 Require Import Coq.Arith.PeanoNat.
-Require Import Coq.Logic.ProofIrrelevance Coq.Program.Equality.
+Require Import Coq.Logic.ProofIrrelevance Coq.Program.Equality Coq.Program.Tactics.
 
 Require Import List.
 Import ListNotations.
 
 Require Import Lia.
+
+(*
+
+Require Import Ssreflect.ssreflect Ssreflect.ssrfun Ssreflect.ssrbool.
+Require Import Ssreflect.ssrnat Ssreflect.eqtype.
+
+Require Import Ssreflect.ssreflect Ssreflect.ssrfun Ssreflect.ssrbool.
+Require Import Ssreflect.ssrnat Ssreflect.eqtype.
+
+Definition f (n : {n | 2 < n}) : nat :=
+  val n - 3.
+
+Definition finv (m : nat) : {n | 2 < n} :=
+  Sub (3 + m) erefl.
+
+Lemma fK : cancel f finv.
+Proof.
+move=> [n Pn] /=; apply/val_inj=> /=.
+by rewrite /f /= addnC subnK.
+Qed.
+
+Lemma finvK : cancel finv f.
+Proof.
+by move=> n; rewrite /finv /f /= addnC addnK.
+Qed.
+
+*)
 
 (*
 Require Import StructTact.StructTactics.
@@ -41,11 +68,94 @@ Section NodeTest.
       congruence.
   Defined.
 
+  (*
+  Lemma list_Nodes_dep' : exists l: list Name, map (@proj1_sig _ _) l = (seq 0 num_Nodes).
+  Proof.
+  Admitted.
+   *)
+  
+
+  (*
+ Lemma in_seq len start n :
+    In n (seq start len) <-> start <= n < start+len.
+
+   *)
+
+  Definition list_proj_In_seq: {l:list {n:nat | In n (seq 0 num_Nodes)} | length l = num_Nodes /\ NoDup l }.
+  Admitted.
+
+  Definition list_proj2_In_seq: list {n:nat | In n (seq 0 num_Nodes)} :=
+    @proj1_sig _ _ list_proj_In_seq.
+
+  Check list_proj2_In_seq.
+
+  Check @proj2_sig.
+
+  Check map.
+
+  Definition asdff : list (nat -> Prop).
+    refine (map (fun x => @proj2_sig _ _ x) list_proj2_In_seq).
+
+  Definition list_Nodes_dep_fun{n:nat} (p: In n (seq 0 num_Nodes)) : {m:nat | m < num_Nodes}.
+    unfold Name.
+    assert (0 <= n < 0 + num_Nodes).
+    {
+      eapply in_seq; eauto.
+    }
+    assert (n < num_Nodes) by lia.
+    econstructor.
+    eassumption.
+  Defined.
+
+  (*
+Inductive sig (A:Type) (P:A -> Prop) : Type :=
+    exist : forall x:A, P x -> sig P.
+   *)
+  
+    
+  
+
   (* NOTE:  I want the equivalent of:  [0; 1; ... (num_Nodes - 1)], a.k.a. (seq 0 num_Nodes), 
      but instead a list of dependent pairs, where each element has an accompanying
      proof saying: " this element is less than num_Nodes". *)
 
   Definition list_Nodes_dep : {l:list Name | map (@proj1_sig _ _) l = (seq 0 num_Nodes)}.
+    unfold Name in *.
+    refine (exist _ (map (list_Nodes_dep_fun) (_)) _).
+
+    Check in_map_iff.
+
+    
+    exact (exist (map (list_Nodes_dep_fun _) (seq 0 num_Nodes))).
+
+
+
+
+
+
+
+
+
+
+    
+    assert (exists l : list Name, map (proj1_sig (P:=fun n : nat => n < num_Nodes)) l = seq 0 num_Nodes).
+    assert (exists n:nat, n = 0). admit.
+    destruct H as [af afa].
+    
+    eapply list_Nodes_dep'.
+    unfold Name in *.
+    simpl in *.
+
+    destruct H.
+
+    
+    econstructor.
+    
+    
+    dependent destruction H.
+    destruct_conjs.
+    destruct H.
+    
   Admitted.
 
   Definition Nodes : list Name := proj1_sig list_Nodes_dep.

@@ -365,7 +365,7 @@ Fixpoint anno (t: Term) (i:nat) (p:Plc) : (nat * AnnoTerm) :=
 
 Definition anno' t i p := (anno t i p).
 
-Definition annotated x p :=
+Definition annotated (x:Term) (p:VM_ID) : AnnoTerm :=
   snd (anno' x 0 p).
 
 Fixpoint unanno a :=
