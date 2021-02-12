@@ -10,6 +10,88 @@ Require Import StructTact.StructTactics.
 
 Set Nested Proofs Allowed.
 
+Require Import MSets.
+
+Module SetM := Make Nat_as_OT.
+
+
+Definition test := SetM.union (SetM.singleton 42)
+                           (SetM.empty).
+Compute SetM.mem 0 test.
+
+Fixpoint num_ats (t:Term): nat :=
+  match t with
+  | asp _ => 0
+  | att _ t' => S (num_ats t')
+  | lseq t1 t2 => (num_ats t1) + (num_ats t2)
+  end.
+    
+Fixpoint places (t:Term): list Plc :=
+  match t with
+  | asp _ => []
+  | att q t' => q :: (places t')
+  | lseq t1 t2 => (places t1) ++ (places t2)
+  end.
+
+Fixpoint placesM (t:Term): SetM.t :=
+  match t with
+  | asp _ => SetM.empty
+  | att q t' => SetM.add q (placesM t')
+  | lseq t1 t2 => SetM.union (placesM t1) (placesM t2)
+  end.
+
+Lemma places_iff_placesM: forall t x,
+    In x (places t) <-> SetM.In x (placesM t).
+Proof.
+  split.
+  -
+  induction t; intros.
+  +
+    destruct a;
+      df;
+      solve_by_inversion.
+  +
+    df.
+    destruct H.
+    ++
+    subst.
+    rewrite SetM.add_spec.
+    eauto.
+    ++
+      rewrite SetM.add_spec.
+      right.
+      eauto.
+  +
+    df.
+    rewrite SetM.union_spec.
+    apply in_app_or in H.
+    destruct H; eauto.
+  -
+    generalizeEverythingElse t.
+    induction t; intros.
+    +
+      destruct a;
+        df; try solve_by_inversion.
+    +
+      df.
+      rewrite SetM.add_spec in *.
+      destruct H.
+      ++
+      left.
+      lia.
+      ++
+        right.
+        eauto.
+    +
+      df.
+      rewrite SetM.union_spec in *.
+      destruct H;
+        apply in_or_app;
+        eauto.
+Defined.
+
+
+
 
 
 (*
@@ -20,6 +102,431 @@ Definition inc_vm_id (m:VMID_Map) (p:Plc) : (VM_ID*VMID_Map) :=
   | None => (0,map_set m p 1)
   end.
  *)
+
+
+
+
+
+
+(*
+Inductive TermN : SetM.t -> Type :=
+| aspN: forall s, ASP -> TermN s
+| attN: forall s s', {x:Plc | SetM.In x s} -> TermN s' -> SetM.Subset s' s -> TermN s
+| lseqN: forall s1 s2, TermN s1 -> TermN s2 -> TermN (SetM.union s1 s2).
+*)
+
+Inductive TermN : SetM.t -> Type :=
+| aspN: ASP -> TermN SetM.empty
+| attN{s:SetM.t} (x:Plc): TermN s -> TermN (SetM.add x s)
+| lseqN{s1 s2:SetM.t}: TermN s1 -> TermN s2 -> TermN (SetM.union s1 s2).
+
+
+Lemma hin: SetM.In 2 (SetM.add 2 SetM.empty).
+Proof.
+  assert (SetM.mem 2 (SetM.add 2 SetM.empty) = true).
+  {
+    df.
+    tauto.
+  }
+  rewrite <- SetM.mem_spec.
+  eassumption.
+Defined.
+
+(*
+Definition term_hin : (TermN [2;3]) := attN [2;3] (exist _ 2 hin) (aspN [2;3] CPY).
+ *)
+
+(*
+Definition term_hin : (TermN  (SetM.add 2 SetM.empty)).
+  Check attN.
+  refine (attN _ SetM.empty (exist _ 2 _) (aspN _ CPY) _).
+  apply hin.
+  rewrite <- SetM.subset_spec.
+  df.
+  tauto.
+Defined.
+ *)
+
+Definition term_hin_empty : (TermN SetM.empty).
+Proof.
+  refine (aspN _).
+  exact SIG.
+Defined.
+
+
+Definition term_hin : (TermN (SetM.add 2 SetM.empty)).
+  Check attN.
+  Check aspN.
+  refine (attN 2 _).
+  refine (aspN _).
+  exact CPY.
+Defined.
+
+(*
+Print well_founded.
+Print Acc.
+
+Fixpoint tsize (t:Term) :=
+  match t with
+  | asp _ => 1
+  | att _ t => 1 + tsize t
+  | lseq t1 t2 => tsize t1 + tsize t2
+  end.
+
+Lemma tsize_always_gt_zero : forall t, tsize t > 0.
+Proof.
+  intros.
+  induction t; intros;
+    try (df; lia).
+Defined.
+
+Definition lengthOrder (t1 t2 : Term) :=
+  tsize t1 < tsize t2.
+    
+    
+    
+
+
+Lemma lengthOrder_wf : well_founded lengthOrder.
+Proof.
+  unfold well_founded.
+  intros.
+  unfold lengthOrder.
+  econstructor.
+  intros.
+  generalizeEverythingElse a.
+  induction a; intros.
+  -
+    df.
+    destruct a;
+    assert (tsize y > 0) by eapply tsize_always_gt_zero; eauto;
+      lia.
+  -
+    econstructor.
+    intros.
+    df.
+    pose (IHa y0).
+    apply a0.
+    lia.
+  -
+    df.
+    econstructor.
+    intros.
+
+    econstructor.
+    intros.
+Admitted.
+*)
+
+
+(*
+Check Fix.
+
+Definition flatten_term_fixed (t:Term) : TermN (placesM t) :=
+  refine (Fix lengthOrder_wf (fun 
+*)
+
+Definition getPlaces{s:SetM.t} (tn:TermN s) : SetM.t.
+Proof.
+  exact s.
+Defined.
+
+(*
+
+Lemma in_get_places: forall x s1 s2 t1 t2,
+    In x (getPlaces (@lseqN s1 s2 t1 t2)) ->
+    In x (@getPlaces s1 t1) \/ In x (@getPlaces s2 t2).
+Proof.
+  intros.
+  df.
+  cbv in H.
+
+
+  
+Admitted.
+
+Lemma get_places_at: forall x0 s t x,
+    In x0 (getPlaces t) ->
+    In x0 (getPlaces (@attN s x t)).
+Proof.
+Admitted.
+
+Lemma in_get_lseq_unionL: forall s1 s2 t1 t2 x,
+    In x (getPlaces t1) ->
+    In x (getPlaces (@lseqN s1 s2 t1 t2)).
+Proof.
+Admitted.
+
+Lemma in_get_lseq_unionR: forall s1 s2 t1 t2 x,
+    In x (getPlaces t2) ->
+    In x (getPlaces (@lseqN s1 s2 t1 t2)).
+Proof.
+Admitted.
+*)
+
+Lemma places_same_termN{s:SetM.t} : forall (t:TermN s) x,
+    SetM.In x (getPlaces t) <-> SetM.In x s.
+Proof.
+  intros.
+  unfold getPlaces.
+  tauto.
+Defined.
+
+(*
+  intros.
+  split.
+  -
+    generalizeEverythingElse t.
+    induction t; intros.
+    +
+      df.
+      solve_by_inversion.
+    +
+      destruct H.
+      ++
+        subst.
+        rewrite SetM.add_spec.
+        eauto.
+      ++
+        rewrite SetM.add_spec.
+        right.
+        apply IHt.
+        eassumption.
+    +
+      eapply in_get_places in H.
+      destruct H;
+      rewrite SetM.union_spec;
+      eauto.
+  -
+    generalizeEverythingElse t.
+    induction t; intros.
+    +
+      df.
+      invc H.
+    +
+      rewrite SetM.add_spec in *.
+      destruct H.
+      ++
+        subst.
+        df.
+        left.
+        eauto.
+      ++
+        assert (In x0 (getPlaces t)) by eauto.
+
+
+
+        eapply get_places_at; eauto.
+    +
+      rewrite SetM.union_spec in *.
+      destruct H.
+      ++
+        assert (In x (getPlaces t1)) by eauto.
+
+
+        eapply in_get_lseq_unionL; eauto.
+
+      ++
+
+
+        
+        eapply in_get_lseq_unionR; eauto.
+Defined.
+*)
+
+      
+        
+        
+      
+
+    
+    
+
+
+Definition flatten_term_fixed (t:Term) : TermN (placesM t).
+Proof.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a.
+    +
+      df.
+      exact (aspN SIG).
+      (*
+      exact (aspN CPY). *)
+    +
+      df.
+      exact (aspN (ASPC n l)).
+    +
+      df.
+      exact (aspN SIG).
+    +
+      df.
+      exact (aspN HSH).
+  -
+    df.
+    Check attN.
+    
+    (*refine ((attN _ _ _ (flatten_term_fixed t) _)). *)
+    refine ((attN n _)).
+    eassumption.
+    (*
+    refine (exist _ n _).
+    rewrite SetM.add_spec.
+    left.
+    tauto.
+    apply IHt.
+    unfold SetM.Subset.
+    intros.
+    apply SetM.add_spec.
+    right.
+    eassumption. *)
+  -
+    df.
+    Check lseqN.
+
+    refine (lseqN _ _);
+      eassumption.
+Defined.
+
+Check flatten_term_fixed.
+Print flatten_term_fixed.
+
+Compute (flatten_term_fixed (att 1 (asp CPY))).
+
+Check Term_rect.
+Print Term_rect.
+
+Check (flatten_term_fixed (att 3 ((att 4(asp CPY))))).
+
+Print TermN.
+
+
+
+(*
+Inductive term_placesN_r{s:SetM.t} : TermN s -> Plc -> Prop :=
+| atPlaceN: forall q t', term_placesN_r (attN q t') q.
+| atRecPlaceN: forall x q t',
+    term_placesN_r t' x ->
+    term_placesN_r (att q t') x
+| atLseqPlacelN: forall t1 t2 p,
+    term_placesN_r t1 p ->
+    term_placesN_r (lseq t1 t2) p
+| atLseqPlacerN: forall t1 t2 p,
+    term_placesN_r t2 p ->
+    term_placesN_r (lseq t1 t2) p.
+*)
+
+
+Inductive term_places_r : Term -> Plc -> Prop :=
+| atPlace: forall q t', term_places_r (att q t') q
+| atRecPlace: forall x q t',
+    term_places_r t' x ->
+    term_places_r (att q t') x
+| atLseqPlacel: forall t1 t2 p,
+    term_places_r t1 p ->
+    term_places_r (lseq t1 t2) p
+| atLseqPlacer: forall t1 t2 p,
+    term_places_r t2 p ->
+    term_places_r (lseq t1 t2) p.
+
+(*
+Lemma places_iff_placesM: forall t x,
+    In x (places t) <-> SetM.In x (placesM t).
+Proof.
+*)
+  
+
+Lemma term_places_iff_rel: forall t p,
+    term_places_r t p <-> In p (places t).
+Proof.
+  split.
+  -
+    generalizeEverythingElse t.
+    induction t; intros; df.
+    +
+      solve_by_inversion.
+    +
+      
+      invc H.
+      ++
+        left.
+        tauto.
+      ++
+        assert (In p (places t)) by eauto.
+        right.
+        eauto.
+    +
+      invc H.
+      ++
+        assert (In p (places t1)) by eauto.
+        eapply in_or_app. eauto.
+      ++
+        assert (In p (places t2)) by eauto.
+        eapply in_or_app. eauto.
+  -
+    intros.
+    generalizeEverythingElse t.
+    induction t; intros; df.
+    +
+      solve_by_inversion.
+    +
+      destruct H.
+      ++
+        subst.
+        econstructor.
+      ++
+        assert (term_places_r t p) by eauto.
+        econstructor.
+        eauto.
+    +
+      apply in_app_or in H.
+      destruct H.
+      ++
+        assert (term_places_r t1 p) by eauto.
+        econstructor; eauto.
+      ++
+        assert (term_places_r t2 p) by eauto.
+        eapply atLseqPlacer; eauto.
+Defined.
+
+Lemma term_places_set: forall t p,
+    SetM.In p (placesM t) <-> term_places_r t p.
+Proof.
+  intros.
+  rewrite term_places_iff_rel.
+  rewrite places_iff_placesM.
+  tauto.
+Defined.
+
+    
+
+(*
+Definition flatten_term_fixed (t:Term) : TermN (placesM t).
+ *)
+
+Check getPlaces.
+
+Lemma thisone: forall p t,
+    SetM.In p (getPlaces (flatten_term_fixed t)) <-> term_places_r t p.
+Proof.
+  intros.
+  rewrite <- term_places_set.
+  unfold getPlaces.
+  tauto.
+Defined.
+
+  
+
+HERE
+      
+      
+
+
+
+
+
+
 
 Fixpoint flatten_term' (t:Term) (n:nat) (m:MapC VM_ID Plc): (nat * ((MapC VM_ID Plc) * Term)) :=
   match t with
@@ -42,20 +549,6 @@ Definition flatten_term (t:Term): Term :=
 
 Definition flatten_term_map (t:Term): MapC VM_ID Plc :=
   fst (flatten_term_init t).
-
-Fixpoint num_ats (t:Term): nat :=
-  match t with
-  | asp _ => 0
-  | att _ t' => S (num_ats t')
-  | lseq t1 t2 => (num_ats t1) + (num_ats t2)
-  end.
-    
-Fixpoint places (t:Term): list Plc :=
-  match t with
-  | asp _ => []
-  | att q t' => q :: (places t')
-  | lseq t1 t2 => (places t1) ++ (places t2)
-  end.
           
 Lemma numats_places: forall t,
     length (places t) = num_ats t.
