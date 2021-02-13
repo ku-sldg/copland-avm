@@ -7,7 +7,7 @@ Author of tweaks:  Adam Petz, ampetz@ku.edu
 
  *)
 
-Require Import Term_Defs ConcreteEvidence Place_Facts NodeSt.
+Require Import Term_Defs ConcreteEvidence NodeSt.
 
 Require Import Verdi.Verdi.
 Require Import Verdi.HandlerMonad.
@@ -24,234 +24,61 @@ Set Implicit Arguments.
 
 Section NodeSem.
 
-  Variable s : SetM.t.
-  
-  Variable term : TermN s.
-
-  (* Perhaps this doesn't need to be a Variable? 
-     num_Nodes : nat (* Derived from input AnnoTerm *) *)
-
-  (*Variable num_Clients : nat. *)
-  (*Variable num_Clients : nat.
-
-  Axiom right_num_clients: num_Clients =  S (num_ats term).
-   *)
-
-  (*
-  Definition num_Clients := S (num_ats term). *)
-  
-  (* Node_index := (fin (num_Nodes + 1))   (* Added 1 for top-level node *)  *)
-
-  (*Definition Client_index := fin num_Clients. *)
-
-  (*
-  Definition Client_index := {n:nat | SetM.In n s}.
-   *)
-  
-
-  Check sig.
-  Print sig.
-
-  (*
-
-Inductive sig (A : Type) (P : A -> Prop) : Type :=  exist : forall x : A, P x -> {x : A | P x}
-
-Arguments sig [A]%type_scope _%type_scope
-Arguments exist [A]%type_scope _%function_scope
-   *)
-  
-  
-
-    (* (fin num_Clients). *)
-
-
+  Variable n:nat.
+  Variable term: @Term n.
 
   (* Inductive Name :=
      | Node : Client_index -> Name  *)
   (* TODO: necessary to distinguish between top-level and clients?
            Probably not since they share an execution environment type (InstrSt) *)
-  Definition Name := {n:nat | SetM.In n s}. (*Client_index. *)
-  (*| Client : Client_index -> Name. *)
-  (*| Server : Name. *)
-
-
-  (*
-  Definition build_a_list (n:nat) : {l:list{m:nat | m < n} | map (@proj1_sig _ _) l = seq 0 n}.
-  Admitted.
-  
-
-  Definition list_Clients := proj1_sig (build_a_list num_Clients).
-
-  (*
-  Definition list_Clients := all_fin num_Clients. *)
-
-  Compute list_Clients.
-   *)
-  
-  
+  Inductive  Name :=
+  | TopNode
+  | CNode: (fin n) -> Name.
 
   Definition Name_eq_dec : forall a b : Name, {a = b} + {a <> b}.
     intros.
-    auto using Nat.eq_dec.
-    unfold Name in *.
-    destruct a; destruct b.
-    destruct (Nat.eq_dec x x0).
-    -
-      subst.
-      assert (i = i0).
-      {
-        eapply proof_irrelevance.
-      }
-      subst.
-      left.
-      reflexivity.
-    -
-      subst.
-      right.
-      unfold not.
-      intros.
-      invc H.
-      congruence.
+    decide equality.
+    apply fin_eq_dec.
   Defined.
-
-  Definition elems : list (SetM.elt) := SetM.elements s.
-
-  (*
- Definition Name := {n:nat | SetM.In n s}.
-   *)
   
-  
-
-  Definition pf_type := fun s n => SetM.In n s.
-  Definition pf_type_spec := pf_type s.
-  Check pf_type_spec.
-  (* pf_type_spec
-     : SetM.elt -> Prop
-   *)
-
-  Compute (list (pf_type_spec 3)).
-  
-  (*
-  Definition tryitt := map pf_type_spec elems.
-  Check tryitt.
-   *)
-
-  Check exist.
-
-  Check map.
-
-  (*
-  Definition (x:Plc) (pf:In x s)
-  
-
-  Check sig.
-  Print sig.
-
-  Fixpoint combine_dep{A:Type} {P: A -> Prop}
-           (l : list A) (l' : (fun (x:A) => P x)) : nat.
-      match l,l' with
-      | x::tl, y::tl' => (x,y)::(combine tl tl')
-      | _, _ => nil
-      end.
-  
-  Definition pfs : list (pf_type s).
-  Check pfs.
-   *)
-
-  Definition combine_dep{A:Type} {P: A -> Prop}
-             (x : A) (x' : P x) : sig P := exist _ x x'.
-
-
-
-  Require Import Program.
-  
-
-  Definition Nodes := getPlaceDeps term.
+  Definition Nodes := TopNode :: map CNode (all_fin n).
 
   Theorem In_n_Nodes :
     forall n : Name, In n Nodes.
   Proof using.
     intros.
     unfold Nodes.
-    unfold Name in *.
-    generalizeEverythingElse term.
-    induction term.
+    destruct n0.
     -
-      destruct a.
-      +
-        intros.
-        dependent destruction n.
-        invc i.
-      +
-        intros.
-        destruct n.
-        destruct n0.
-        invc i.
-        destruct n0.
-        invc i.
-      +
-        intros.
-        destruct n.
-        invc i.
-      +
-        intros.
-        destruct n.
-        invc i.
+      left.
+      tauto.
     -
-      intros.
-      dependent destruction n.
-      destruct (Nat.eq_dec x x0).
-      +
-        subst.
-        admit.
-      +
-        assert (SetM.In x0 s).
-        {
-          rewrite SetM.add_spec in i.
-          destruct i.
-          congruence.
-          eassumption.
-        }
-
-        pose (IHt t).
-        pose (i0 (exist _ x0 H)).
-        clear i1.
-        clear i0.
-        clear IHt.
-        clear n.
-        admit.
-    -
-      intros.
-      destruct n.
-      assert (SetM.In x s1 \/ SetM.In x s2). admit.
-      destruct H.
-      +
-        pose (IHt1 t1 (exist _ x H)).
-        admit.
-      +
-        pose (IHt2 t2 (exist _ x H)).
-        admit.
-  Admitted.
+      right.
+      Search map.
+      apply in_map.
+      apply all_fin_all.
+  Defined.
 
   Theorem nodup :
     NoDup Nodes.
   Proof using.
     unfold Nodes.
-    Check getPlaceDeps.
+    econstructor.
+    unfold not. intros.
+    Search (In _ (map _ _)).
+    rewrite in_map_iff in H.
+    destruct H.
+    destruct H.
+    solve_by_inversion.
 
-    
-    apply NoDup_cons.
-    - in_crush. discriminate.
-    - apply NoDup_map_injective.
-      + intros. congruence.
-      + apply all_fin_NoDup.
-  Qed.
-
-  
-
-
-
-  
+    apply (FinFun.Injective_map_NoDup).
+    Locate FinFun.Injective_map_NoDup.
+    cbv.
+    intros.
+    inversion H.
+    tauto.   
+    apply all_fin_NoDup.
+  Defined.
 
   (*
   (* No need for this in Attestation messages at present... *)
@@ -278,6 +105,7 @@ Arguments exist [A]%type_scope _%function_scope
   Definition Msg_eq_dec : forall a b : Msg, {a = b} + {a <> b}.
     decide equality; auto using Nat.eq_dec;
       auto using EvidenceC_eq_dec.
+    decide equality.
     apply fin_eq_dec.
   Defined.
 
@@ -288,13 +116,13 @@ Arguments exist [A]%type_scope _%function_scope
           trigger a network send when state points to a Req instruction *)
   Definition Input := unit.
   (* This might be Ev for Copland events *)
-  Definition Output := Ev.
+  Definition Output := (@Ev n).
 
 
-  Inductive InstrSt: Type :=
+  Inductive InstrSt{n:nat}: Type :=
   | istop: Name -> EvidenceC -> InstrSt
-  | iconf: AnnoInstr -> Name -> EvidenceC -> InstrSt
-  | iWaitReq: Name -> Name -> AnnoInstr -> InstrSt
+  | iconf: (@AnnoInstr n) -> Name -> EvidenceC -> InstrSt
+  | iWaitReq: Name -> Name -> (@AnnoInstr n) -> InstrSt
   | iDoRem: InstrSt -> Name -> InstrSt
   | irpyWait: nat -> Name -> Name -> InstrSt.
 
@@ -308,7 +136,7 @@ Arguments exist [A]%type_scope _%function_scope
    *)
   
 
-  Definition Data := InstrSt.
+  Definition Data := (@InstrSt n).
 
   (*
   Record Data := mkData { queue : list (Client_index * Request_index) ; held : bool }.
@@ -340,9 +168,12 @@ Arguments exist [A]%type_scope _%function_scope
   Definition init_data (n : Name) : Data := mkData [] false.
    *)
 
+  (*
   Definition annoTerm := (annotated (flatten_term term) 0).
 
   Require Import Maps.
+   *)
+  
 
   (*
    Definition copland_compliment (t:AnnoTerm) (s:Name -> Data): Name -> Data.
@@ -359,43 +190,58 @@ Arguments exist [A]%type_scope _%function_scope
   
       
       
-
+(*
   Definition add_server_at (fromPl:Name) (toPl:Name) (t:AnnoTerm)
            (s: Name -> Data) : (Name -> Data) :=
   let newServerSt := (iWaitReq fromPl toPl (instr_compiler t)) in
   update Name_eq_dec s toPl newServerSt.
-    
-  Fixpoint copland_compliment (t:AnnoTerm) (*(s:Name -> Data)*) (n:Name): Data.
-    refine (
-  match t with
-  | aasp r a => s
-                   
-  | aatt (i,j) p q t' =>
-    let s' := add_server_at p q t' s in
-    copland_compliment t' s'
-                 
-  | alseq _ t1 t2 =>
-    let s1 := copland_compliment t1 s in
-    copland_compliment t2 s1
-  end).
-
-Definition orchestrate_servers (t:AnnoTerm) (mainPl:Plc) : (MapC VM_ID InstrSt) :=
-  copland_compliment t [].
-
-Definition setup_main_code (t:AnnoTerm) (p:Plc) (e:EvidenceC) : InstrSt :=
-  iconf (instr_compiler t) p e.
-
-
-
-
-
-
-
-
+ *)
   
 
-  Definition init_data (n : Name) : Data :=
-    iconf (instr_compiler annoTerm) 0 mtc.
+   Definition gen_server (fromPl:fin n) (toPl:fin n) (t:AnnoTerm): Data :=
+     (iWaitReq (CNode fromPl) (CNode toPl) (instr_compiler t)).
+    
+  Fixpoint copland_compliment (t:(@AnnoTerm n)) (nm:fin n) : option Data :=
+    match t with
+    | aasp _ _ => None (*Some (istop (CNode nm) mtc) *)
+      
+    | aatt (i,j) p q t' =>
+      if (fin_eq_dec n nm q) then Some (gen_server p q t') else (copland_compliment t' nm)
+    | alseq _ t1 t2 =>
+      let m1 := copland_compliment t1 nm in
+      match m1 with
+      | Some v => Some v
+      | None => copland_compliment t2 nm
+      end
+    end.
+
+  Definition fromSome{A:Type} (default:A) (opt:option A): A :=
+  match opt with
+  | Some x => x
+  | _ => default
+  end.
+
+  Variable def_val : fin n. (* Should never need to compute this *)
+
+  Definition do_compliment (t:(@AnnoTerm n)) (nm:fin n) : Data :=
+    fromSome (istop (CNode def_val) mtc) (copland_compliment t nm).
+
+  Check instr_compiler.
+
+  (*
+Definition orchestrate_servers (t:AnnoTerm) (mainPl:Plc) : (MapC VM_ID InstrSt) :=
+  copland_compliment t []. *)
+
+Definition setup_main_code(t:AnnoTerm) (e:EvidenceC) : (@InstrSt n) :=
+  iconf (instr_compiler t) TopNode e.
+
+Definition init_data (t:AnnoTerm) (e:EvidenceC) (n : Name) : Data :=
+  match n with
+  | TopNode =>
+    setup_main_code t e
+  | CNode nfin =>
+    do_compliment t nfin
+  end.
   
 
  
