@@ -66,7 +66,7 @@ Proof.
  Defined.
 *)
   
-Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm) (p:Plc),
+Lemma anno_mono{n:nat} : forall (t:Term) (i j:nat) (t':AnnoTerm) (p:fin n),
   anno t i p = (j,t') ->
   j > i.
 Proof.
@@ -77,8 +77,8 @@ Proof.
 Defined.
 Hint Resolve anno_mono : core.
 
-Lemma anno_range:
-  forall x i j t' p,
+Lemma anno_range{n:nat}:
+  forall x i j t' (p:fin n),
      anno x i p = (j,t') ->
     range (t') = (i, j).
 Proof.
@@ -911,8 +911,8 @@ Defined.
 
 
 
-Lemma anno_well_formed_r:
-  forall t i j t' p,
+Lemma anno_well_formed_r{n:nat}:
+  forall t i j t' (p: fin n),
     (* length ls = nss t ->
     NoDup ls -> *)
     anno t i p = (j,t') ->

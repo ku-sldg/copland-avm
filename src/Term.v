@@ -12,7 +12,7 @@ Require Import StructTact.StructTactics.
 
 Set Nested Proofs Allowed.
 
-Lemma wf_lseq_pieces: forall r t1 t2,
+Lemma wf_lseq_pieces{n:nat}: forall r (t1:@AnnoTerm n) t2,
     well_formed_r (alseq r t1 t2) ->
     well_formed_r t1 /\ well_formed_r t2.
 Proof.
@@ -21,7 +21,7 @@ Proof.
   tauto.
 Defined.
 
-Lemma wf_at_pieces: forall t r p q,
+Lemma wf_at_pieces{n:nat}: forall t r (p:fin n) q,
     well_formed_r (aatt r p q t) ->
     well_formed_r t.
 Proof.
@@ -63,8 +63,8 @@ Ltac do_wf_pieces :=
     (edestruct wf_bpar_pieces; eauto)    *)
   end.
 
-Lemma well_formed_range_r:
-  forall t,
+Lemma well_formed_range_r{n:nat}:
+  forall (t: @AnnoTerm n),
     well_formed_r t ->
     snd (range t) = fst (range t) + esize t.
 Proof.
@@ -73,8 +73,8 @@ Proof.
          repeat find_apply_hyp_hyp; lia).
 Defined.
 
-Lemma well_formed_range:
-  forall t,
+Lemma well_formed_range{n:nat}:
+  forall (t:@AnnoTerm n),
     well_formed_r t ->
     snd (range t) = fst (range t) + esize t.
 Proof.
@@ -99,7 +99,7 @@ Proof.
     try (simpl; inv H; simpl; repeat concludes; lia).
 *)
 
-Lemma esize_nonempty: forall t, esize t > 0.
+Lemma esize_nonempty{n:nat}: forall (t:@AnnoTerm n), esize t > 0.
 Proof.
   intros.
   induction t; intros;
@@ -107,7 +107,7 @@ Proof.
     (cbn; lia).
 Defined.
 
-Lemma wf_mono: forall t,
+Lemma wf_mono{n:nat}: forall (t:@AnnoTerm n),
     well_formed_r t ->
     snd (range t) > fst (range t).
 Proof.
@@ -457,7 +457,7 @@ Defined.
 
 (** Eval for annotated terms. *)
 
-Fixpoint aeval t p e :=
+Fixpoint aeval{n:nat} t (p: fin n) e :=
   match t with
   | aasp _ x => eval (asp x) p e
   | aatt _ _ q x => aeval x q e
@@ -485,7 +485,7 @@ Defined.
     set of events associated with a term, a place, and some initial
     evidence. *)
 
-Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
+Inductive events{n:nat}: (@AnnoTerm n) -> fin n -> Ev -> Prop :=
 | evtscpy:
     forall r i p,
       fst r = i ->
@@ -587,8 +587,8 @@ Ltac inv_wfr :=
   | [H: well_formed_r _ |- _] => inv H
   end.
 
-Lemma events_range:
-  forall t v p,
+Lemma events_range{n:nat}:
+  forall t v (p: fin n),
     well_formed_r t ->
     events t p v ->
     fst (range t) <= ev v < snd (range t).
@@ -602,7 +602,7 @@ Proof.
   induction H0;
     try (inv_wfr; simpl in *; auto;
          repeat find_apply_hyp_hyp;
-         repeat (find_apply_lem_hyp well_formed_range_r); lia).
+         repeat (find_apply_lem_hyp (well_formed_range_r (n:=n))); lia).
 Defined.
 
 Lemma at_range:
@@ -693,12 +693,16 @@ Lemma events_range:
 Proof.
  *)
 
+
+
+(*
 Lemma range_lt:
   forall x,
     well_formed_r x ->
     fst (range x) < snd (range x).
 Proof.
 Admitted.
+*)
 
 (*
 Lemma wf_implies_wfr:
@@ -711,8 +715,8 @@ Admitted.
 
   
 
-Lemma events_range_event:
-  forall t p i,
+Lemma events_range_event{n:nat}:
+  forall t (p: fin n) i,
     well_formed_r t ->
     fst (range t) <= i < snd (range t) ->
     exists v, events t p v /\ ev v = i.
@@ -968,8 +972,8 @@ Ltac wfr :=
   | [(*H: AnnoTerm,*) H': well_formed_r ?HH |- _] => pose_new_proof (well_formed_range_r HH H')
   end.
 
-Lemma events_injective:
-  forall t p v1 v2,
+Lemma events_injective{n:nat}:
+  forall t (p:fin n) v1 v2,
     well_formed_r t ->
     events t p v1 ->
     events t p v2 ->
@@ -1001,11 +1005,13 @@ Check well_formed_range.
  *)
 
 
+(*
 Inductive splitEv_T_R : SP -> Evidence -> Evidence -> Prop :=
 | spAll: forall e, splitEv_T_R ALL e e
 | spNone: forall e, splitEv_T_R NONE e mt.
+*)
 
-Inductive evalR : Term -> Plc -> Evidence -> Evidence -> Prop :=
+Inductive evalR{n:nat} : Term -> (fin n) -> Evidence -> Evidence -> Prop :=
 | evalR_asp: forall a p e,
     evalR (asp a) p e (eval_asp a p e)
 | evalR_att: forall t1 q e e' p,
@@ -1038,6 +1044,7 @@ Ltac kjkj :=
   end.
 
 
+(*
 Ltac do_split :=
   match goal with
   | [H: Split |- _] => destruct H
@@ -1047,8 +1054,9 @@ Ltac do_sp :=
   match goal with
   | [H: SP |- _] => destruct H
   end.
+*)
 
-Lemma eval_iff_evalR: forall t p e e',
+Lemma eval_iff_evalR{n:nat}: forall t (p: fin n) e e',
     evalR t p e e' <-> eval t p e = e'.
 Proof.
   split.
@@ -1065,8 +1073,8 @@ Proof.
           repeat kjkj;
           
 
-          try (do_split;
-               repeat do_sp);
+          (*try (do_split;
+               repeat do_sp); *)
           try (inv H3; inv H4; reflexivity);
           repeat jkjk;
           eauto);
@@ -1119,7 +1127,6 @@ Proof.
     induction t; intros;
       inv H;
       try (destruct a);
-      try (do_split; repeat do_sp);
+      (*try (do_split; repeat do_sp); *)
       repeat econstructor; eauto.
 Defined.
-

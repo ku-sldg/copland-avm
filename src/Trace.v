@@ -29,7 +29,7 @@ Require Import StructTact.StructTactics.
     be merged does not change, but all other interleavings are
     allowed.  *)
 
-Inductive shuffle: list Ev -> list Ev -> list Ev -> Prop :=
+Inductive shuffle{n:nat}: list (@Ev n) -> list Ev -> list Ev -> Prop :=
 | shuffle_nil_left: forall es, shuffle [] es es
 | shuffle_nil_right: forall es, shuffle es [] es
 | shuffle_left:
@@ -42,8 +42,8 @@ Inductive shuffle: list Ev -> list Ev -> list Ev -> Prop :=
       shuffle es0 (e :: es1) (e :: es2).
 Hint Constructors shuffle : core.
 
-Lemma shuffle_length:
-  forall es0 es1 es2,
+Lemma shuffle_length{n:nat}:
+  forall (es0: list (@Ev n)) es1 es2,
     shuffle es0 es1 es2 ->
     length es0 + length es1 = length es2.
 Proof.
@@ -51,8 +51,8 @@ Proof.
   induction H; simpl; auto; lia.
 Qed.
 
-Lemma shuffle_in_left:
-  forall e es0 es1 es2,
+Lemma shuffle_in_left{n:nat}:
+  forall e (es0: list (@Ev n)) es1 es2,
     shuffle es0 es1 es2 ->
     In e es0 ->
     In e es2.
@@ -67,8 +67,8 @@ Proof.
     simpl; auto.
 Qed.
 
-Lemma shuffle_in_right:
-  forall e es0 es1 es2,
+Lemma shuffle_in_right{n:nat}:
+  forall e (es0: list (@Ev n)) es1 es2,
     shuffle es0 es1 es2 ->
     In e es1 ->
     In e es2.
@@ -84,8 +84,8 @@ Proof.
     simpl; auto.
 Qed.
 
-Lemma shuffle_in:
-  forall e es0 es1 es2,
+Lemma shuffle_in{n:nat}:
+  forall e (es0: list (@Ev n)) es1 es2,
     shuffle es0 es1 es2 ->
     In e es2 <-> In e es0 \/ In e es1.
 Proof.
@@ -99,8 +99,8 @@ Proof.
     + eapply shuffle_in_right in H; eauto.
 Qed.
 
-Lemma shuffle_in_skipn_left:
-  forall i e es0 es1 es2,
+Lemma shuffle_in_skipn_left{n:nat}:
+  forall i e (es0: list (@Ev n)) es1 es2,
     shuffle es0 es1 es2 ->
     In e (skipn i es0) ->
     In e (skipn i es2).
@@ -121,8 +121,8 @@ Proof.
     apply in_skipn_cons; auto.
 Qed.
 
-Lemma shuffle_in_skipn_right:
-  forall i e es0 es1 es2,
+Lemma shuffle_in_skipn_right{n:nat}:
+  forall i e (es0: list (@Ev n)) es1 es2,
     shuffle es0 es1 es2 ->
     In e (skipn i es1) ->
     In e (skipn i es2).
@@ -142,8 +142,8 @@ Proof.
     simpl in *; auto.
 Qed.
 
-Lemma shuffle_earlier_left:
-  forall es0 es1 es2 e0 e1,
+Lemma shuffle_earlier_left{n:nat}:
+  forall (es0: list (@Ev n)) es1 es2 e0 e1,
     earlier es0 e0 e1 ->
     shuffle es0 es1 es2 ->
     earlier es2 e0 e1.
@@ -166,17 +166,17 @@ Proof.
         split; auto.
         eapply shuffle_in_skipn_left; eauto.
       * eapply IHshuffle in H1; eauto.
-        destruct H1 as [n].
+        destruct H1 as [nn].
         destruct H1.
-        exists (S n); simpl; auto.
+        exists (S nn); simpl; auto.
   - eapply IHshuffle in H1; eauto.
-    destruct H1 as [n].
+    destruct H1 as [nn].
     destruct H1.
-    exists (S n); simpl; auto.
+    exists (S nn); simpl; auto.
 Qed.
 
-Lemma shuffle_earlier_right:
-  forall es0 es1 es2 e0 e1,
+Lemma shuffle_earlier_right{n:nat}:
+  forall (es0: list (@Ev n)) es1 es2 e0 e1,
     earlier es1 e0 e1 ->
     shuffle es0 es1 es2 ->
     earlier es2 e0 e1.
@@ -192,9 +192,9 @@ Proof.
   - exists i; auto.
   - rewrite firstn_nil in H; inv H.
   - eapply IHshuffle in H1; eauto.
-    destruct H1 as [n].
+    destruct H1 as [nn].
     destruct H1.
-    exists (S n); simpl; auto.
+    exists (S nn); simpl; auto.
   - destruct i.
     + simpl in *; tauto.
     + simpl in H, H1.
@@ -203,13 +203,13 @@ Proof.
         split; auto.
         eapply shuffle_in_skipn_right; eauto.
       * eapply IHshuffle in H1; eauto.
-        destruct H1 as [n].
+        destruct H1 as [nn].
         destruct H1.
-        exists (S n); simpl; auto.
+        exists (S nn); simpl; auto.
 Qed.
 
-Lemma shuffle_nodup_append:
-  forall tr0 tr1 tr2,
+Lemma shuffle_nodup_append{n:nat}:
+  forall (tr0: list (@Ev n)) tr1 tr2,
     NoDup tr0 -> NoDup tr1 ->
     disjoint_lists tr0 tr1 ->
     shuffle tr0 tr1 tr2 ->
@@ -248,7 +248,7 @@ Qed.
     The traces associated with an annotated term are defined
     inductively. *)
 
-Inductive trace: AnnoTerm -> Plc ->
+Inductive trace{n:nat}: AnnoTerm -> (fin n) ->
                  list Ev -> Prop :=
 | tasp: forall r x p,
     trace (aasp r x) p [(asp_event (fst r) x p)]
@@ -279,8 +279,8 @@ Inductive trace: AnnoTerm -> Plc ->
              [(joinp (pred (snd r)) (*xi'*) yi' yi' p)]) *) .
 Hint Resolve tasp : core.
 
-Lemma trace_length:
-  forall t p tr,
+Lemma trace_length{n:nat}:
+  forall t (p: fin n) tr,
     trace t p tr -> esize t = length tr.
 Proof.
   induction t; intros; inv H;
@@ -317,8 +317,8 @@ Qed.
 
 Require Import List_Facts Coq.Program.Tactics.
 
-Lemma trace_events:
-  forall t p tr v,
+Lemma trace_events{n:nat}:
+  forall t (p: fin n) tr v,
     well_formed_r t ->
     trace t p tr ->
     In v tr <-> events t p v.
@@ -479,8 +479,8 @@ Proof.
 *)
 Qed.
 
-Lemma trace_range:
-  forall t p tr v,
+Lemma trace_range{n:nat}:
+  forall t (p: fin n) tr v,
     well_formed_r t ->
     trace t p tr ->
     In v tr ->
@@ -492,8 +492,8 @@ Proof.
 Qed.
 Locate events_range_event.
 
-Lemma trace_range_event:
-  forall t p tr i,
+Lemma trace_range_event{n:nat}:
+  forall t (p: fin n) tr i,
     well_formed_r t ->
     trace t p tr ->
     fst (range t) <= i < snd (range t) ->
@@ -505,8 +505,8 @@ Proof.
   rewrite <- trace_events in G; eauto.
 Qed.
 
-Lemma trace_injective_events:
-  forall t p tr v0 v1,
+Lemma trace_injective_events{n:nat}:
+  forall t (p: fin n) tr v0 v1,
     well_formed_r t ->
     trace t p tr ->
     In v0 tr -> In v1 tr ->
@@ -537,8 +537,8 @@ Ltac inv_in' :=
   end.
 *)
 
-Lemma nodup_trace:
-  forall t p tr,
+Lemma nodup_trace{n:nat}:
+  forall t (p: fin n) tr,
     well_formed_r t ->
     trace t p tr ->
     NoDup tr.
@@ -555,7 +555,7 @@ Proof.
       (*
       destruct H1. *)
       *
-        find_eapply_lem_hyp trace_range; eauto.
+        find_eapply_lem_hyp (trace_range (n:=n)); eauto.
         simpl in *.
         lia.
         (*
@@ -576,7 +576,7 @@ Proof.
       * constructor; auto; constructor.
       *
         inv_in.
-        find_eapply_lem_hyp trace_range; eauto.
+        find_eapply_lem_hyp (trace_range (n:=n)); eauto.
         simpl in *.
         lia.
 
@@ -854,8 +854,8 @@ Ltac do_shuf_r :=
 
 (** * Event Systems and Traces *)
 
-Lemma evsys_tr_in:
-  forall t p tr ev0,
+Lemma evsys_tr_in{n:nat}:
+  forall t (p: fin n) tr ev0,
     well_formed_r t ->
     trace t p tr ->
     ev_in ev0 (ev_sys t p) ->
@@ -1044,8 +1044,8 @@ Ltac do_evin2 :=
 (** The traces associated with an annotated term are compatible with
     its event system. *)
 
-Theorem trace_order:
-  forall t p tr ev0 ev1,
+Theorem trace_order{n:nat}:
+  forall t (p: fin n) tr ev0 ev1,
     well_formed_r t ->
     trace t p tr ->
     prec (ev_sys t p) ev0 ev1 ->
@@ -1068,7 +1068,7 @@ Proof.
     inv H11; inv H10. 
     
     +
-      find_eapply_lem_hyp evsys_tr_in; eauto.
+      find_eapply_lem_hyp (evsys_tr_in (n:=n)); eauto.
       (*
       eapply evsys_tr_in in H4; eauto. *)
       
@@ -1097,7 +1097,7 @@ Proof.
       (*
 
       inv H13. *)
-      find_eapply_lem_hyp evsys_tr_in; eauto.
+      find_eapply_lem_hyp (evsys_tr_in (n:=n)); eauto.
       (*
       eapply evsys_tr_in in H12; eauto. *)
       apply earlier_cons_shift; auto.
@@ -1114,8 +1114,8 @@ Proof.
     + solve_by_inversion.
 
   -
-    find_eapply_lem_hyp evsys_tr_in; eauto.
-    find_eapply_lem_hyp evsys_tr_in; eauto.
+    find_eapply_lem_hyp (evsys_tr_in (n:=n)); eauto.
+    find_eapply_lem_hyp (evsys_tr_in (n:=n)); eauto.
 
     (*
     eapply evsys_tr_in in H5; eauto.

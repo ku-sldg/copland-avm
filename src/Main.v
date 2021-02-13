@@ -25,7 +25,7 @@ Require Import StructTact.StructTactics.
 
 (** The traces associated with a state. *)
 
-Inductive traceS: St -> list Ev -> Prop :=
+Inductive traceS{n:nat}: St -> list (@Ev n) -> Prop :=
 | tstop: forall p e,
     traceS (stop p e) []
 | tconf: forall t tr p e,
@@ -57,7 +57,7 @@ Inductive traceS: St -> list Ev -> Prop :=
            (tr3 ++ [(joinp (pred j) xi yi (pl st2))]) *) .
 Hint Constructors traceS : core.
 
-Fixpoint esizeS s:=
+Fixpoint esizeS{n:nat} (s:@St n):=
   match s with
   | stop _ _ => 0
   | conf t _ _ => esize t
@@ -74,8 +74,8 @@ Ltac inv_trace :=
   | H:trace (?C _) _ _ |- _ => inv H
   end.
 
-Lemma esize_tr:
-  forall t p tr,
+Lemma esize_tr{n:nat}:
+  forall t (p: fin n) tr,
     trace t p tr -> length tr = esize t.
 Proof.
   induction t; intros; inv_trace; simpl;
@@ -91,17 +91,17 @@ Ltac inv_traceS :=
   | H:traceS (?C _) _ |- _ => inv H
   end.
 
-Lemma esizeS_tr:
-  forall st tr,
+Lemma esizeS_tr{n:nat}:
+  forall (st:@St n) tr,
     traceS st tr -> length tr = esizeS st.
 Proof.
   induction st; intros;
     inv_traceS; simpl; auto;
-      try (destruct a; find_apply_lem_hyp esize_tr; tauto);
-      repeat find_apply_lem_hyp esize_tr;
+      try (destruct a; find_apply_lem_hyp (esize_tr (n:=n)); tauto);
+      repeat find_apply_lem_hyp (esize_tr (n:=n));
       repeat (rewrite app_length; simpl);
       repeat find_apply_hyp_hyp;
-      repeat find_apply_lem_hyp shuffle_length;
+      repeat find_apply_lem_hyp (shuffle_length (n:=n));
       try lia.
 Defined.
 (*
@@ -157,8 +157,8 @@ Ltac jkjk'e :=
   | [H: _ = ?X |-  context[?X] ] => erewrite <- H
   end.
 
-Lemma step_silent_tr:
-  forall st st' tr,
+Lemma step_silent_tr{n:nat}:
+  forall (st:@St n) st' tr,
     step st None st' ->
     traceS st' tr ->
     traceS st tr.
@@ -184,8 +184,8 @@ Proof.
     Check step_seval.
     find_apply_lem_hyp step_seval; auto. *)
 
-    find_copy_apply_lem_hyp step_pl_eq.
-    find_copy_apply_lem_hyp step_seval.
+    find_copy_apply_lem_hyp (step_pl_eq (n:=n)).
+    find_copy_apply_lem_hyp (step_seval (n:=n)).
 
 
 
@@ -209,7 +209,7 @@ Proof.
     constructor; auto.
     eauto.
 
-    find_apply_lem_hyp step_pl_eq.
+    find_apply_lem_hyp (step_pl_eq (n:=n)).
     find_rewrite; auto.
 
     (*
@@ -308,8 +308,8 @@ Proof.
 *)
 Qed.
 
-Lemma step_evt_tr:
-  forall st st' ev tr,
+Lemma step_evt_tr{n:nat}:
+  forall (st:@St n) st' ev tr,
     step st (Some ev) st' ->
     traceS st' tr ->
     traceS st (ev::tr).
@@ -340,8 +340,8 @@ Proof.
      *)
     
   -
-    find_copy_apply_lem_hyp step_seval.
-    find_copy_apply_lem_hyp step_pl_eq.
+    find_copy_apply_lem_hyp (step_seval (n:=n)).
+    find_copy_apply_lem_hyp (step_pl_eq (n:=n)).
 
     jkjk'e.
     rewrite app_comm_cons; eauto.
@@ -362,8 +362,8 @@ Proof.
   - rewrite <- app_nil_l; auto.
     apply trem; auto. 
   -
-    find_copy_apply_lem_hyp step_seval.
-    find_copy_apply_lem_hyp step_pl_eq.
+    find_copy_apply_lem_hyp (step_seval(n:=n)).
+    find_copy_apply_lem_hyp (step_pl_eq (n:=n)).
 
     (*
 
@@ -505,8 +505,8 @@ Proof.
 *)
 Qed.
 
-Lemma nlstar_trace_helper:
-  forall e p n st0 tr st1,
+Lemma nlstar_trace_helper{nn:nat}:
+  forall e (p: fin nn) n st0 tr st1,
     step st0 e st1 ->
     nlstar n st1 tr (stop p (seval st0)) ->
     nlstar n st1 tr (stop p (seval st1)).
@@ -517,8 +517,8 @@ Proof.
   auto.
 Qed.
 
-Lemma nlstar_trace:
-  forall n p st tr,
+Lemma nlstar_trace{nn:nat}:
+  forall n (p: fin nn) st tr,
     nlstar n st tr (stop p (seval st)) ->
     traceS st tr.
 Proof.
@@ -531,8 +531,8 @@ Qed.
 
 (** A trace of the LTS is a trace of the big-step semantics. *)
 
-Lemma lstar_trace:
-  forall t p e tr,
+Lemma lstar_trace{n:nat}:
+  forall t (p: fin n) e tr,
     well_formed_r t ->
     lstar (conf t p e) tr (stop p (aeval t p e)) ->
     trace t p tr.
@@ -540,14 +540,25 @@ Proof.
   intros.
   apply lstar_nlstar in H0.
   destruct H0.
-  apply nlstar_trace in H0.
-  inv H0; auto.
+  (*
+Lemma nlstar_trace{nn:nat}:
+  forall n (p: fin nn) st tr,
+    nlstar n st tr (stop p (seval st)) ->
+    traceS st tr.
+   *)
+  assert (traceS (conf t p e) tr).
+  {
+    eapply nlstar_trace.
+    eassumption.
+  }
+  inv H1.
+  eassumption.
 Qed.
 
 (** The key theorem. *)
 
-Theorem ordered:
-  forall t p e tr ev0 ev1,
+Theorem ordered{n:nat}:
+  forall t (p:fin n) e tr ev0 ev1,
     well_formed_r t ->
     lstar (conf t p e) tr (stop p (aeval t p e)) ->
     prec (ev_sys t p) ev0 ev1 ->
@@ -555,5 +566,6 @@ Theorem ordered:
 Proof.
   intros.
   apply lstar_trace in H0; auto.
-  apply trace_order with (t:=t)(p:=p); auto.
+  Check trace_order.
+  apply trace_order with (t0:=t)(p0:=p); auto.
 Qed.

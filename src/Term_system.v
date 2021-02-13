@@ -22,7 +22,7 @@ Set Nested Proofs Allowed.
 (** Construct an event system from an annotated term, place, and
     evidence. *)
 
-Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
+Fixpoint ev_sys{n:nat} (t: AnnoTerm) (p: fin n) : EvSys (@Ev n) :=
   match t with
   | aasp (i, j) x => leaf (i, j) (asp_event i x p)
   | aatt (i, j) p' q x =>
@@ -56,8 +56,8 @@ Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
 *)
   end.
 
-Lemma evsys_range:
-  forall t p,
+Lemma evsys_range{n:nat}:
+  forall t (p:fin n),
     es_range (ev_sys t p) = range t.
 Proof.
   induction t; intros; simpl; auto;
@@ -69,8 +69,8 @@ match goal with
 | H:Range |- _ => destruct H
 end.
 
-Lemma well_structured_evsys:
-  forall t p,
+Lemma well_structured_evsys{n:nat}:
+  forall t (p:fin n),
     well_formed_r t ->
     well_structured ev (ev_sys t p).
 Proof.
@@ -99,8 +99,8 @@ Ltac inv_events :=
 (** The events in the event system correspond to the events associated
     with a term, a place, and some evidence. *)
 
-Lemma evsys_events:
-  forall t p ev,
+Lemma evsys_events{n:nat}:
+  forall t (p: fin n) ev,
     well_formed_r t ->
     ev_in ev (ev_sys t p) <-> events t p ev.
 Proof.
@@ -260,8 +260,8 @@ Ltac inv_ws :=
 
 (** Maximal events are unique. *)
 
-Lemma supreme_unique:
-  forall t p,
+Lemma supreme_unique{n:nat}:
+  forall t (p:fin n),
     well_formed_r t ->
     exists ! v, supreme (ev_sys t p) v.
 Proof.
@@ -424,8 +424,8 @@ Defined.
 Qed.
 *)
 
-Lemma evsys_max_unique:
-  forall t p,
+Lemma evsys_max_unique{n:nat}:
+  forall t (p:fin n),
     well_formed_r t ->
     unique (supreme (ev_sys t p)) (max (ev_sys t p)).
 Proof.

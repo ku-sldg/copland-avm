@@ -42,7 +42,7 @@ Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=
  *)
 
 
-Inductive Ev_Shape: EvidenceC -> Evidence -> Prop :=
+Inductive Ev_Shape{n:nat}: EvidenceC -> (@Evidence n) -> Prop :=
 | mtt: Ev_Shape mtc mt
 | uut: forall id id' args p bs e et,
     Ev_Shape e et ->
@@ -84,7 +84,7 @@ Ltac evShapeFacts :=
   | [H: Ev_Shape _ (pp _ _) |- _] => invc H  *)
   end.
 
-Lemma ev_shape_transitive : forall e e' et et',
+Lemma ev_shape_transitive{n:nat} : forall e e' (et:@Evidence n) (et':@Evidence n),
     Ev_Shape e et ->
     Ev_Shape e' et ->
     Ev_Shape e et' ->
@@ -136,11 +136,12 @@ Defined.
 *)
 
 
-
+(*
 (** * Eval function definition *)
 Definition splitEv (sp:SP) (e:EvidenceC) : EvidenceC :=
   match sp with
   | ALL => e
   | NONE => mtc
   end.
+*)
 

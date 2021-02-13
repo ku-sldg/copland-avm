@@ -24,6 +24,8 @@ Require Import OptMonad.
 
 Require Import StructTact.StructTactics.
 
+Require Export StructTact.Fin.
+
 
 
 Set Nested Proofs Allowed.
@@ -48,18 +50,20 @@ Inductive ASP: Set :=
 | SIG: ASP
 | HSH: ASP.
 
+(*
 Inductive SP: Set :=
 | ALL
 | NONE.
 
 Definition Split: Set := (SP * SP).
+ *)
 
-Inductive Term: Set :=
+Inductive Term{n:nat} : Type :=
 | asp: ASP -> Term
-| att: Plc -> Term -> Term
-| lseq: Term -> Term -> Term
+| att: (fin n) -> Term -> Term
+| lseq: Term -> Term -> Term.
 (*| bseq: Split -> Term -> Term -> Term
-| bpar: Split -> Term -> Term -> Term*) .
+| bpar: Split -> Term -> Term -> Term*)
 
 (*
 Definition LocRange: Set := list Loc.
@@ -79,22 +83,24 @@ Definition getTwoLocs (ls:list Loc): option (Loc*Loc) :=
 
 (** The structure of evidence. *)
 
-Inductive Evidence: Set :=
+Inductive Evidence{n:nat} : Type :=
 | mt: Evidence
-| uu: ASP_ID -> list Arg -> Plc -> Evidence -> Evidence
-| gg: Plc -> Evidence -> Evidence
-| hh: Plc -> Evidence -> Evidence
+| uu: ASP_ID -> list Arg -> (fin n) -> Evidence -> Evidence
+| gg: (fin n) -> Evidence -> Evidence
+| hh: (fin n) -> Evidence -> Evidence
 | nn: N_ID -> Evidence -> Evidence
-| ss: Evidence -> Evidence -> Evidence
-(*| pp: Evidence -> Evidence -> Evidence*) .
+| ss: Evidence -> Evidence -> Evidence.
+(*| pp: Evidence -> Evidence -> Evidence*)
 
+(*
 Definition splitEv_T (sp:SP) (e:Evidence) : Evidence :=
   match sp with
   | ALL => e
   | NONE => mt
   end.
+*)
 
-Definition eval_asp t p e :=
+Definition eval_asp{n:nat} (t:ASP) (p: fin n) (e:Evidence) :=
   match t with
   | CPY => e 
   | ASPC i args => uu i args p e
@@ -104,7 +110,7 @@ Definition eval_asp t p e :=
 
 (** The evidence associated with a term, a place, and some initial evidence. *)
 
-Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
+Fixpoint eval{n:nat} (t:Term) (p:(fin n)) (e:Evidence) : Evidence :=
   match t with
   | asp a => eval_asp a p e
   | att q t1 => eval t1 q e
@@ -130,29 +136,30 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
          (H3 ++ []) (worldTermC (istop n0 e') servs') h'
 *)
 
-Inductive Ev: Set :=
-| copy:  nat -> Plc -> Ev 
-| umeas: nat -> Plc -> ASP_ID -> list Arg -> Ev
-| sign: nat -> Plc -> Ev
-| hash: nat -> Plc -> Ev
-| req: nat -> (*Loc ->*) Plc -> Plc -> (*Term -> *) Ev
-| rpy: nat -> (*Loc ->*) Plc -> Plc -> Ev 
+Inductive Ev{n:nat}: Type :=
+| copy:  nat -> (fin n) -> Ev
+| umeas: nat -> (fin n) -> ASP_ID -> list Arg -> Ev
+| sign: nat -> (fin n) -> Ev
+| hash: nat -> (fin n) -> Ev
+| req: nat -> (*Loc ->*) (fin n) -> (fin n) -> (*Term -> *) Ev
+| rpy: nat -> (*Loc ->*) (fin n) -> (fin n) -> Ev 
 (*| split: nat -> Plc -> Ev *)
 (*| splitp: nat -> (*Loc ->*) Loc -> Plc -> Ev *)
 (*| join:  nat -> Plc -> Ev *)
 (*| joinp: nat -> Loc -> Loc -> Plc -> Ev *).
 
-Definition eq_ev_dec:
-  forall x y: Ev, {x = y} + {x <> y}.
+Definition eq_ev_dec{n:nat}:
+  forall x y: @Ev n, {x = y} + {x <> y}.
 Proof.
-  intros;
-    repeat decide equality.
+  intros.
+  repeat decide equality;
+  apply fin_eq_dec.
 Defined.
 Hint Resolve eq_ev_dec : core.
 
 (** The natural number used to distinguish events. *)
 
-Definition ev x : nat :=
+Definition ev{n:nat} (x: @Ev n) : nat :=
   match x with
   | copy i _ => i
   | umeas i _ _ _  => i
@@ -167,7 +174,7 @@ Definition ev x : nat :=
   end.
 
 (** The natural number indicating the place where an event occured. *)
-Definition pl x : Plc :=
+Definition pl{n:nat} (x: @Ev n) : fin n :=
   match x with
   | copy _ p => p
   | umeas _ p _ _  => p
@@ -189,7 +196,7 @@ See Lemma [events_injective].
  *)
 
 
-Definition asp_event i x p :=
+Definition asp_event{n:nat} i x (p:fin n) :=
   match x with
   | CPY => copy i p
   | ASPC id args => umeas i p id args
@@ -209,14 +216,14 @@ Definition asp_event i x p :=
 
 Definition Range: Set := nat * nat.
 
-Inductive AnnoTerm: Set :=
+Inductive AnnoTerm{n:nat}: Type :=
 | aasp: Range -> (*LocRange ->*) ASP -> AnnoTerm
-| aatt: Range -> (*LocRange -> (Loc*Loc) -> *) Plc -> Plc -> (*VM_ID ->*) AnnoTerm -> AnnoTerm
+| aatt: Range -> (*LocRange -> (Loc*Loc) -> *) (fin n) -> (fin n) -> (*VM_ID ->*) AnnoTerm -> AnnoTerm
 | alseq: Range -> (*LocRange ->*) AnnoTerm -> AnnoTerm -> AnnoTerm
 (*| abseq: Range -> LocRange -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
 | abpar: Range -> LocRange -> (*(Loc*Loc) ->*) (Loc*Loc) -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm*) .
 
-Fixpoint esize t :=
+Fixpoint esize{n:nat} (t: @AnnoTerm n) :=
   match t with
   | aasp _ _ => 1
   | aatt _ _ _ t1 => 2 + (*remote_esize t1*) esize t1
@@ -225,7 +232,7 @@ Fixpoint esize t :=
   | abpar _ _ _ _ t1 t2 => 2 + esize t1 + esize t2 *)
   end.
 
-Definition range x :=
+Definition range{n:nat} (x: @AnnoTerm n) :=
   match x with
   | aasp r _ => r
   | aatt r _ _ _ => r
@@ -326,7 +333,10 @@ Definition VMID_Map := (MapC Plc VM_ID).
 Require Import Maps.
 *)
 
+
+(*
 Notation VM_ID := nat (only parsing).
+*)
 
 
 (*
@@ -334,7 +344,7 @@ Notation VM_ID := nat (only parsing).
     throughout the computation so as to ensure each event has a unique
     natural number. *) *)
 
-Fixpoint anno (t: Term) (i:nat) (p:Plc) : (nat * AnnoTerm) :=
+Fixpoint anno{n:nat} (t: Term) (i:nat) (p:fin n) : (nat * AnnoTerm) :=
   match t with
   | asp x => (S i, (aasp (i, S i) x))
 
@@ -363,12 +373,12 @@ Fixpoint anno (t: Term) (i:nat) (p:Plc) : (nat * AnnoTerm) :=
 *)
   end.
 
-Definition anno' t i p := (anno t i p).
+Definition anno'{n:nat} t i (p:fin n) := (anno t i p).
 
-Definition annotated (x:Term) (p:VM_ID) : AnnoTerm :=
+Definition annotated{n:nat} (x:Term) (p:fin n) : AnnoTerm :=
   snd (anno' x 0 p).
 
-Fixpoint unanno a :=
+Fixpoint unanno{n:nat} (a: @AnnoTerm n) :=
   match a with
   | aasp _ a => asp a
   | aatt _ _ q t => att q (unanno t)
@@ -452,7 +462,7 @@ Lemma unique_req_events (t:AnnoTerm) : forall p i i0 p1 p2 q q0 t0 t1,
     not (events t p (req i0 loc p2 q0 t1)).
  *)
 
-Inductive well_formed_r: AnnoTerm -> Prop :=
+Inductive well_formed_r{n:nat}: @AnnoTerm n -> Prop :=
 | wf_asp_r: forall r x,
     snd r = S (fst r) ->
     well_formed_r (aasp r x)

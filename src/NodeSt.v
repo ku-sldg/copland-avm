@@ -8,9 +8,9 @@ Inductive Prim_Instr: Set :=
 | sign: Prim_Instr
 | hash: Prim_Instr.
 
-Inductive AnnoInstr: Set :=
+Inductive AnnoInstr{n:nat}: Type :=
 | aprimInstr: nat -> Prim_Instr -> AnnoInstr
-| aReq: nat -> nat -> VM_ID -> AnnoInstr
+| aReq: nat -> nat -> (fin n) -> AnnoInstr
 | aseq: AnnoInstr -> AnnoInstr -> AnnoInstr.
 
 Definition asp_instr (a:ASP) : Prim_Instr :=
@@ -21,7 +21,7 @@ Definition asp_instr (a:ASP) : Prim_Instr :=
   | HSH => hash
   end.
 
-Fixpoint instr_compiler (t:AnnoTerm) : AnnoInstr :=
+Fixpoint instr_compiler{n:nat} (t:@AnnoTerm n) : AnnoInstr :=
   match t with
   | aasp (i,_) a => aprimInstr i (asp_instr a)
   | aatt (i,j) p q _ =>
@@ -29,7 +29,7 @@ Fixpoint instr_compiler (t:AnnoTerm) : AnnoInstr :=
   | alseq _ t1 t2 => aseq (instr_compiler t1) (instr_compiler t2)
   end.
 
-Definition tr_asp_instr (x:nat) (p:Plc) (pi:Prim_Instr) :=
+Definition tr_asp_instr{n:nat} (x:nat) (p:fin n) (pi:Prim_Instr) :=
   match pi with
   | copy => Term_Defs.copy x p
   | umeas asp_id args => (Term_Defs.umeas x p asp_id args)

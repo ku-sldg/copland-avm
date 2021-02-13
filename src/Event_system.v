@@ -23,7 +23,7 @@ Section Event_system.
 
   (** The sort of an event. *)
 
-  Variable A: Set.
+  Variable A: Type.
 
   (** The number associated with an event. *)
 
@@ -33,7 +33,7 @@ Section Event_system.
 
   (** An event system. *)
 
-  Inductive EvSys: Set :=
+  Inductive EvSys: Type :=
   | leaf: ES_Range -> A -> EvSys
   | before: ES_Range -> EvSys -> EvSys -> EvSys
   | merge: ES_Range -> EvSys -> EvSys -> EvSys.

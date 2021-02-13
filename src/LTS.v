@@ -18,6 +18,7 @@ Require Import PeanoNat Minus Lia Preamble Term_Defs Term.
 
 Require Import Term_system.
 
+(*
 Definition t1 := (asp (ASPC 1 [])).
 Definition t2 := (asp (ASPC 2 [])).
 Definition myterm := att 1 (lseq t1 (att 2 (lseq t2 (att 3 t1)))).
@@ -27,19 +28,20 @@ Definition annomyterm := annotated myterm 0.
 Compute annomyterm.
 
 Compute (ev_sys annomyterm 0).
+*)
 
 (** * States *)
 
-Inductive St: Set :=
-| stop: Plc -> Evidence -> St
-| conf: AnnoTerm -> Plc -> Evidence -> St
-| rem: nat -> Plc -> St -> St
-| ls: St -> AnnoTerm -> St
+Inductive St{n:nat}: Type :=
+| stop: (fin n) -> (@Evidence n) -> St
+| conf: (@AnnoTerm n) -> (fin n) -> (@Evidence n) -> St
+| rem: nat -> (fin n) -> St -> St
+| ls: St -> (@AnnoTerm n) -> St
 (*| bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
 | bsr: nat -> Evidence -> St -> St
 | bp: nat -> Loc -> Loc -> St -> St -> St*) .
 
-Fixpoint pl (s:St) :=
+Fixpoint pl{n:nat} (s:(@St n)) :=
   match s with
   | stop p _ => p
   | conf _ p _ => p
@@ -52,7 +54,7 @@ Fixpoint pl (s:St) :=
 
 (** The evidence associated with a state. *)
 
-Fixpoint seval st :=
+Fixpoint seval{n:nat} (st: @St n) :=
   match st with
   | stop _ e => e
   | conf t p e => aeval t p e
@@ -69,7 +71,7 @@ end.
     transition is silent.  Notice the use of annotations to provide
     the correct number for each event.  *)
 
-Inductive step: St -> option Ev -> St -> Prop :=
+Inductive step{n:nat}: St -> option (@Ev n) -> St -> Prop :=
 (** Measurement *)
 
 | stasp:
@@ -163,8 +165,8 @@ Hint Constructors step : core.
 
 (** A step preserves place. *)
 
-Lemma step_pl_eq:
-  forall st0 ev st1,
+Lemma step_pl_eq{n:nat}:
+  forall st0 (ev:option (@Ev n)) st1,
     step st0 ev st1 -> pl st0 = pl st1.
 Proof.
   intros.
@@ -173,8 +175,8 @@ Qed.
 
 (** A step preserves evidence. *)
 
-Lemma step_seval:
-  forall st0 ev st1,
+Lemma step_seval{n:nat}:
+  forall st0 (ev:option (@Ev n)) st1,
     step st0 ev st1 ->
     seval st0 = seval st1.
 Proof.
@@ -185,7 +187,7 @@ Qed.
 
 (** * Transitive Closures *)
 
-Inductive lstar: St -> list Ev -> St -> Prop :=
+Inductive lstar{n:nat}: St -> list (@Ev n) -> St -> Prop :=
 | lstar_refl: forall st, lstar st [] st
 | lstar_tran: forall st0 e st1 tr st2,
     step st0 (Some e) st1 -> lstar st1 tr st2 -> lstar st0 (e :: tr) st2
@@ -193,8 +195,8 @@ Inductive lstar: St -> list Ev -> St -> Prop :=
     step st0 None st1 -> lstar st1 tr st2 -> lstar st0 tr st2.
 Hint Resolve lstar_refl : core.
 
-Lemma lstar_transitive:
-  forall st0 tr0 st1 tr1 st2,
+Lemma lstar_transitive{n:nat}:
+  forall st0 tr0 st1 (tr1: list (@Ev n)) st2,
     lstar st0 tr0 st1 ->
     lstar st1 tr1 st2 ->
     lstar st0 (tr0 ++ tr1) st2.
@@ -211,14 +213,14 @@ Qed.
 
 (** Transitive closure without labels. *)
 
-Inductive star: St -> St -> Prop :=
+Inductive star{n:nat}: (@St n) -> St -> Prop :=
 | star_refl: forall st, star st st
 | star_tran: forall st0 e st1 st2,
     step st0 e st1 -> star st1 st2 -> star st0 st2.
 Hint Resolve star_refl : core.
 
-Lemma star_transitive:
-  forall st0 st1 st2,
+Lemma star_transitive{n:nat}:
+  forall (st0: (@St n)) st1 st2,
     star st0 st1 ->
     star st1 st2 ->
     star st0 st2.
@@ -229,8 +231,8 @@ Proof.
   eapply star_tran; eauto.
 Qed.
 
-Lemma lstar_star:
-  forall st0 tr st1,
+Lemma lstar_star{n:nat}:
+  forall st0 (tr: list (@Ev n)) st1,
     lstar st0 tr st1 -> star st0 st1.
 Proof.
   intros.
@@ -238,8 +240,8 @@ Proof.
     eapply star_tran; eauto.
 Qed.
 
-Lemma star_lstar:
-  forall st0 st1,
+Lemma star_lstar{n:nat}:
+  forall (st0: (@St n)) st1,
     star st0 st1 -> exists tr, lstar st0 tr st1.
 Proof.
   intros.
@@ -253,8 +255,8 @@ Proof.
       eapply lstar_silent_tran; eauto.
 Qed.
 
-Lemma star_seval:
-  forall st0 st1,
+Lemma star_seval{n:nat}:
+  forall (st0: (@St n)) st1,
     star st0 st1 -> seval st0 = seval st1.
 Proof.
   intros.
@@ -263,8 +265,8 @@ Proof.
   rewrite H; auto.
 Qed.
 
-Lemma steps_preserves_eval:
-  forall t p p' e0 e1,
+Lemma steps_preserves_eval{n:nat}:
+  forall t (p: fin n) p' e0 e1,
     star (conf t p e0) (stop p' e1) ->
     aeval t p e0 = e1.
 Proof.
@@ -276,8 +278,8 @@ Qed.
 (** * Correct Path Exists *)
 
 
-Lemma star_strem:
-  forall st0 st1 j p,
+Lemma star_strem{n:nat}:
+  forall st0 st1 j (p: fin n),
     star st0 st1 -> star (rem j p st0) (rem j p st1).
 Proof.
   intros.
@@ -285,8 +287,8 @@ Proof.
   eapply star_tran; eauto.
 Qed.
 
-Lemma star_stls:
-  forall st0 st1 t,
+Lemma star_stls{n:nat}:
+  forall (st0: (@St n)) st1 t,
     star st0 st1 -> star (ls st0 t) (ls st1 t).
 Proof.
   intros.
@@ -317,8 +319,8 @@ Qed.
 *)
 
 (* Congruence lemmas for Copland LTS semantics *)
-Lemma lstar_stls :
-  forall st0 st1 t tr,
+Lemma lstar_stls{n:nat} :
+  forall st0 st1 t (tr: list (@Ev n)),
     lstar st0 tr st1 -> lstar (ls st0 t) tr (ls st1 t).
 Proof.
   intros.
@@ -328,7 +330,7 @@ Proof.
 Qed.
 
 
-Lemma lstar_strem : forall st st' tr p r,
+Lemma lstar_strem{n:nat} : forall st st' tr (p: fin n) r,
     lstar st tr
           st' ->
     lstar (rem r p st) tr (rem r p st').
@@ -376,8 +378,8 @@ Proof.
 Qed.
 *)
 
-Theorem correct_path_exists:
-  forall t p e,
+Theorem correct_path_exists{n:nat}:
+  forall t (p: fin n) e,
     star (conf t p e) (stop p (aeval t p e)).
 Proof.
   induction t; intros; simpl; eauto.
@@ -420,7 +422,7 @@ Qed.
 
 (** * Progress *)
 
-Definition halt st :=
+Definition halt{n:nat} (st:(@St n)) :=
   match st with
   | stop _ _ => True
   | _ => False
@@ -428,8 +430,8 @@ Definition halt st :=
 
 (** The step relation nevers gets stuck. *)
 
-Theorem never_stuck:
-  forall st0,
+Theorem never_stuck{n:nat}:
+  forall (st0: (@St n)),
     halt st0 \/ exists e st1, step st0 e st1.
 Proof.
   induction st0.
@@ -437,10 +439,10 @@ Proof.
     
   - right.
     destruct a.
-    + exists (Some (asp_event (fst r) a n)).
+    + exists (Some (asp_event (fst r) a f)).
       eapply ex_intro; eauto.
       
-    + exists (Some (req (fst r) n n1 (*(unanno a)*))).
+    + exists (Some (req (fst r) f f1 (*(unanno a)*))).
       repeat dest_range.
       eapply ex_intro; eauto.
     + exists None.
@@ -459,12 +461,12 @@ Proof.
   - right.
     destruct IHst0.
     + destruct st0; simpl in H; try tauto.
-      exists (Some (rpy (pred n) n0 n1)).
+      exists (Some (rpy (pred n0) f f0)).
       eapply ex_intro; eauto.
     + destruct H as [e H].
       exists e.
       destruct H as [st1 H].
-      exists (rem n n0 st1). auto.
+      exists (rem n0 f st1). auto.
   - right.
     destruct IHst0.
     + destruct st0; simpl in H; try tauto.
@@ -514,14 +516,14 @@ Qed.
 
 (** * Termination *)
 
-Inductive nstar: nat -> St -> St -> Prop :=
+Inductive nstar{nn:nat}: nat -> (@St nn) -> St -> Prop :=
 | nstar_refl: forall st, nstar 0 st st
 | nstar_tran: forall st0 st1 st2 e n,
     nstar n st0 st1 -> step st1 e st2 -> nstar (S n) st0 st2.
 Hint Resolve nstar_refl : core.
 
-Lemma nstar_transitive:
-  forall m n st0 st1 st2,
+Lemma nstar_transitive{nn:nat}:
+  forall m n (st0: @St nn) st1 st2,
     nstar m st0 st1 ->
     nstar n st1 st2 ->
     nstar (m + n) st0 st2.
@@ -535,8 +537,8 @@ Proof.
   eauto.
 Qed.
 
-Lemma nstar_star:
-  forall n st0 st1,
+Lemma nstar_star{nn:nat}:
+  forall n (st0: @St nn) st1,
     nstar n st0 st1 -> star st0 st1.
 Proof.
   intros.
@@ -545,9 +547,9 @@ Proof.
   eapply star_tran; eauto.
 Qed.
 
-Lemma star_nstar:
+Lemma star_nstar{nn:nat}:
   forall st0 st1,
-    star st0 st1 ->
+    star (st0: @St nn) st1 ->
     exists n, nstar n st0 st1.
 Proof.
   intros.
@@ -562,7 +564,7 @@ Qed.
 
 (** Size of a term (number of steps to reduce). *)
 
-Fixpoint tsize t: nat :=
+Fixpoint tsize{n:nat} (t:@AnnoTerm n): nat :=
   match t with
   | aasp _ _ => 1
   | aatt _ _ _ x => 2 + tsize x
@@ -573,7 +575,7 @@ Fixpoint tsize t: nat :=
 
 (** Size of a state (number of steps to reduce). *)
 
-Fixpoint ssize s: nat :=
+Fixpoint ssize{n:nat} (s:@St n): nat :=
   match s with
   | stop _ _ => 0
   | conf t _ _ => tsize t
@@ -586,8 +588,8 @@ Fixpoint ssize s: nat :=
 
 (** Halt state has size 0. *)
 
-Lemma halt_size:
-  forall st,
+Lemma halt_size{n:nat}:
+  forall (st:@St n),
     halt st <-> ssize st = 0.
 Proof.
   split; intros.
@@ -600,8 +602,8 @@ Qed.
 
 (** A state decreases its size by one. *)
 
-Lemma step_size:
-  forall st0 e st1,
+Lemma step_size{n:nat}:
+  forall (st0:@St n) e st1,
     step st0 e st1 ->
     S (ssize st1) = ssize st0.
 Proof.
@@ -609,8 +611,8 @@ Proof.
   induction H; simpl; auto; lia.
 Qed.
 
-Lemma step_count:
-  forall n t p e st,
+Lemma step_count{nn:nat}:
+  forall n t (p: fin nn) e st,
     nstar n (conf t p e) st ->
     tsize t = n + ssize st.
 Proof.
@@ -625,8 +627,8 @@ Qed.
 
 (** Every run terminates. *)
 
-Theorem steps_to_stop:
-  forall t p e st,
+Theorem steps_to_stop{n:nat}:
+  forall t (p: fin n) e st,
     nstar (tsize t) (conf t p e) st ->
     halt st.
 Proof.
@@ -638,7 +640,7 @@ Qed.
 
 (** * Numbered Labeled Transitions *)
 
-Inductive nlstar: nat -> St -> list Ev -> St -> Prop :=
+Inductive nlstar{nn:nat}: nat -> St -> list (@Ev nn)-> St -> Prop :=
 | nlstar_refl: forall st, nlstar 0 st [] st
 | nlstar_tran: forall n st0 e st1 tr st2,
     step st0 (Some e) st1 -> nlstar n st1 tr st2 -> nlstar (S n) st0 (e :: tr) st2
@@ -646,8 +648,8 @@ Inductive nlstar: nat -> St -> list Ev -> St -> Prop :=
     step st0 None st1 -> nlstar n st1 tr st2 -> nlstar (S n) st0 tr st2.
 Hint Resolve nlstar_refl : core.
 
-Lemma nlstar_transitive:
-  forall m n st0 tr0 st1 tr1 st2,
+Lemma nlstar_transitive{nn:nat}:
+  forall m n (st0:@St nn) tr0 st1 tr1 st2,
     nlstar m st0 tr0 st1 ->
     nlstar n st1 tr1 st2 ->
     nlstar (m + n) st0 (tr0 ++ tr1) st2.
@@ -662,8 +664,8 @@ Proof.
     eapply nlstar_silent_tran; eauto.
 Qed.
 
-Lemma nlstar_lstar:
-  forall n st0 tr st1,
+Lemma nlstar_lstar{nn:nat}:
+  forall n (st0:@St nn) tr st1,
     nlstar n st0 tr st1 -> lstar st0 tr st1.
 Proof.
   intros.
@@ -672,8 +674,8 @@ Proof.
   - eapply lstar_silent_tran; eauto.
 Qed.
 
-Lemma lstar_nlstar:
-  forall st0 tr st1,
+Lemma lstar_nlstar{nn:nat}:
+  forall (st0:@St nn) tr st1,
     lstar st0 tr st1 ->
     exists n, nlstar n st0 tr st1.
 Proof.
@@ -688,8 +690,8 @@ Proof.
     eapply nlstar_silent_tran; eauto.
 Qed.
 
-Lemma nlstar_step_size:
-  forall n st0 tr st1,
+Lemma nlstar_step_size{nn:nat}:
+  forall n (st0:@St nn) tr st1,
     nlstar n st0 tr st1 ->
     ssize st1 <= ssize st0.
 Proof.
@@ -699,8 +701,8 @@ Proof.
     lia.
 Qed.
 
-Lemma lstar_nlstar_size:
-  forall st0 tr st1,
+Lemma lstar_nlstar_size{n:nat}:
+  forall (st0:@St n) tr st1,
     lstar st0 tr st1 ->
     nlstar (ssize st0 - ssize st1) st0 tr st1.
 Proof.
@@ -723,7 +725,7 @@ Qed.
 
 (** The reverse version of [nlstar]. *)
 
-Inductive rlstar: nat -> St -> list Ev -> St -> Prop :=
+Inductive rlstar{nn:nat}: nat -> St -> list (@Ev nn) -> St -> Prop :=
 | rlstar_refl: forall st, rlstar 0 st [] st
 | rlstar_tran: forall n st0 e st1 tr st2,
     rlstar n st0 tr st1 -> step st1 (Some e) st2 ->
@@ -733,8 +735,8 @@ Inductive rlstar: nat -> St -> list Ev -> St -> Prop :=
     rlstar (S n) st0 tr st2.
 Hint Resolve rlstar_refl : core.
 
-Lemma rlstar_transitive:
-  forall m n st0 tr0 st1 tr1 st2,
+Lemma rlstar_transitive{nn:nat}:
+  forall m n (st0:@St nn) tr0 st1 tr1 st2,
     rlstar m st0 tr0 st1 ->
     rlstar n st1 tr1 st2 ->
     rlstar (m + n) st0 (tr0 ++ tr1) st2.
@@ -751,8 +753,8 @@ Proof.
     eapply rlstar_silent_tran; eauto.
 Qed.
 
-Lemma rlstar_lstar:
-  forall n st0 tr st1,
+Lemma rlstar_lstar{nn:nat}:
+  forall n (st0:@St nn) tr st1,
     rlstar n st0 tr st1 -> lstar st0 tr st1.
 Proof.
   intros.
@@ -764,8 +766,8 @@ Proof.
     apply lstar_silent_tran with st2; auto.
 Qed.
 
-Lemma lstar_rlstar:
-  forall st0 tr st1,
+Lemma lstar_rlstar{nn:nat}:
+  forall (st0:@St nn) tr st1,
     lstar st0 tr st1 ->
     exists n, rlstar n st0 tr st1.
 Proof.
@@ -788,8 +790,8 @@ Proof.
     eapply rlstar_silent_tran; eauto.
 Qed.
 
-Lemma rlstar_nlstar:
-  forall n st0 tr st1,
+Lemma rlstar_nlstar{nn:nat}:
+  forall n (st0:@St nn) tr st1,
     rlstar n st0 tr st1 <-> nlstar n st0 tr st1.
 Proof.
   split; intros.

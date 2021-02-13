@@ -12,15 +12,11 @@ GenStMonad.v
 Auto.v
 EqClass.v
 Maps.v
-Place_Facts.v
 Event_system.v
 Term_system.v
 Trace.v
 LTS.v
 Main.v
 ConcreteEvidence.v
-Axioms_Io.v
-MonadLaws.v
-StVM.v
 NodeSt.v
 NodeSemantics.v
