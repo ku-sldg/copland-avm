@@ -31,23 +31,29 @@ Section NodeSem.
      | Node : Client_index -> Name  *)
   (* TODO: necessary to distinguish between top-level and clients?
            Probably not since they share an execution environment type (InstrSt) *)
-  Inductive  Name :=
-  | TopNode
-  | CNode: (fin n) -> Name.
+  Definition  Name := fin n.
+
+  (*
+  (*| TopNode *)
+  | CNode: (fin n) -> Name. *)
 
   Definition Name_eq_dec : forall a b : Name, {a = b} + {a <> b}.
     intros.
-    decide equality.
     apply fin_eq_dec.
+    (*
+    decide equality.
+    apply fin_eq_dec. *)
   Defined.
   
-  Definition Nodes := TopNode :: map CNode (all_fin n).
+  Definition Nodes := (*TopNode :: map CNode *) (all_fin n).
 
   Theorem In_n_Nodes :
     forall n : Name, In n Nodes.
   Proof using.
     intros.
     unfold Nodes.
+    unfold Name.
+    (*
     destruct n0.
     -
       left.
@@ -55,7 +61,7 @@ Section NodeSem.
     -
       right.
       Search map.
-      apply in_map.
+      apply in_map. *)
       apply all_fin_all.
   Defined.
 
@@ -63,6 +69,7 @@ Section NodeSem.
     NoDup Nodes.
   Proof using.
     unfold Nodes.
+    (*
     econstructor.
     unfold not. intros.
     Search (In _ (map _ _)).
@@ -76,7 +83,7 @@ Section NodeSem.
     cbv.
     intros.
     inversion H.
-    tauto.   
+    tauto.    *)
     apply all_fin_NoDup.
   Defined.
 
@@ -93,8 +100,11 @@ Section NodeSem.
      Any advantage for proofs using one over the other?
      Separating them seems unecessary since all VM_IDs are unique by construction
      i.e. No more than one message addressed to node X in flight at a time *)
-  Inductive Msg :=
-  | Evid : Name -> EvidenceC -> Msg.
+
+
+  Definition Msg := EvidenceC.
+  (*Inductive Msg :=
+  | Evid : (*Name ->*) EvidenceC -> Msg. *)
     (*
   | Lock   : Request_index -> Msg
   | Unlock : Msg
@@ -103,10 +113,11 @@ Section NodeSem.
     
 
   Definition Msg_eq_dec : forall a b : Msg, {a = b} + {a <> b}.
-    decide equality; auto using Nat.eq_dec;
+    (*decide equality; (*auto using Nat.eq_dec; *) *)
       auto using EvidenceC_eq_dec.
+    (*
     decide equality.
-    apply fin_eq_dec.
+    apply fin_eq_dec. *)
   Defined.
 
   (* This might be unit for the attestation nodes...
@@ -124,7 +135,7 @@ Section NodeSem.
   | iconf: (@AnnoInstr n) -> Name -> EvidenceC -> InstrSt
   | iWaitReq: Name -> Name -> (@AnnoInstr n) -> InstrSt
   | iDoRem: InstrSt -> Name -> InstrSt
-  | irpyWait: nat -> Name -> Name -> InstrSt.
+  | iWaitRpy: nat -> Name -> Name -> InstrSt.
 
   (*
   Inductive InstrSt: Set :=
@@ -198,7 +209,7 @@ Section NodeSem.
  *)
   
 
-   Definition gen_server (fromPl:fin n) (toPl:fin n) (t:AnnoTerm): Data :=
+  Definition gen_server (fromPl:fin n) (toPl:fin n) (t:AnnoTerm): Data :=
      (iWaitReq (CNode fromPl) (CNode toPl) (instr_compiler t)).
     
   Fixpoint copland_compliment (t:(@AnnoTerm n)) (nm:fin n) : option Data :=
@@ -221,10 +232,13 @@ Section NodeSem.
   | _ => default
   end.
 
-  Variable def_val : fin n. (* Should never need to compute this *)
+  Variable def_val : fin n. (* Should never need to inspect this value *)
+
+  Definition zeroval := hd def_val (all_fin n).
+  Check hd.
 
   Definition do_compliment (t:(@AnnoTerm n)) (nm:fin n) : Data :=
-    fromSome (istop (CNode def_val) mtc) (copland_compliment t nm).
+    fromSome (istop (CNode zeroval) mtc) (copland_compliment t nm).
 
   Check instr_compiler.
 
@@ -244,14 +258,48 @@ Definition init_data (t:AnnoTerm) (e:EvidenceC) (n : Name) : Data :=
   end.
   
 
- 
+Print Msg.
+
+(*
+  Inductive InstrSt{n:nat}: Type :=
+  | istop: Name -> EvidenceC -> InstrSt
+  | iconf: (@AnnoInstr n) -> Name -> EvidenceC -> InstrSt
+  | iWaitReq: Name -> Name -> (@AnnoInstr n) -> InstrSt
+  | iDoRem: InstrSt -> Name -> InstrSt
+  | iWaitRpy: nat -> Name -> Name -> InstrSt.
+ *)
+
 
   (* GenHandler : network, state, event, ret_type *)
-  Definition Handler (S : Type) := GenHandler (Name * Msg) S Output unit.
+Definition Handler (S : Type) := GenHandler (Name * Msg) S Output unit.
 
-  Definition ClientNetHandler (i : Client_index) (m : Msg) : Handler Data :=
+Definition prime_instrs (ai:@AnnoInstr n) (p q:Name) (e:EvidenceC) : Handler Data :=
+  put (iDoRem (iconf ai q e) p).
+  
+
+Definition ClientNetHandler (i : Name) (m : Msg) : Handler Data :=
+
+  match m with
+  | Evid evc => 
     d <- get ;;
+    match d with    
+    | iWaitReq p q instrs =>
+      prime_instrs instrs p q evc
+    | iWaitRpy j p q =>
+      write_output (rpy j p q) ;;
+      put (istop p evc)
+      
+    | _ => ret tt
+    end  
+  end.
+      
+
+    
     match m with
+    | Evid nm evc => 
+
+
+      
       | Locked id =>
         put {[ d with held := true ]} ;;
         write_output (Locked id)
