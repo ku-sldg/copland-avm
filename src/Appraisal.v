@@ -369,11 +369,23 @@ Proof.
   solve_by_inversion.
 Defined.
 
-Lemma build_app_run_some : forall a p a_st x v_st et e,
-    e = st_ev v_st ->
-    Ev_Shape e (eval (unanno a) p et) ->
+Lemma uEvLemma : forall e e' et' n l p n5 v v1,
+    Ev_Shape e (uu n l p et') ->
+    extractUev e v = (Some (n5, e'), v1) ->
+    Ev_Shape e' et'.
+Proof.
+  intros.
+  invc H.
+  invc H0.
+  eassumption.
+Defined.
+
+Lemma build_app_run_some : forall a p a_st x v_st et (*e*),
+    (*e = st_ev v_st -> *)
+    Ev_Shape (st_ev v_st) (eval (unanno a) p et) ->
     (*allMapped a a_st p et -> *)
     build_app_comp a p a_st = (Some x, a_st) ->
+    Ev_Shape (st_ev v_st) (eval (unanno a) p et) ->
     exists y v, (x v_st = (Some y, v)).
 Proof.
   intros.
@@ -444,31 +456,47 @@ Proof.
                 st_ev := st_ev;
                 st_trace := st_trace;
                 st_pl := st_pl;
-                st_store := st_store |}) . 
-        reflexivity.
+                st_store := st_store |}) .
+        simpl.
         eassumption.
         eassumption.
+        simpl.
+        eassumption.
+        
         destruct_conjs.
         subst''.
         repeat break_let.
         
         amsts.
+        cbn in Heqp1.
+        repeat break_let.
+        unfold ret in Heqp1.
+        invc Heqp1.
+        invc H4.
+        cbn in H.
 
-        edestruct IHa1 (*with
+        edestruct IHa1 with
             (v_st:=
                 {|
                 st_ev := st_ev2;
                 st_trace := st_trace2;
                 st_pl := st_pl2;
-                st_store := st_store2 |})*).
-        reflexivity.
+                st_store := st_store2 |}).
+        simpl. eassumption.
+        eassumption.
+        simpl. eassumption.
+        
+
+        
+        (*
         eapply evShape_sub.
         eassumption.
         eassumption.
         eassumption.
         tauto.
         tauto.
-        eassumption.
+        eassumption. *)
+        
         destruct_conjs.
         subst''.
         repeat do_pair.
@@ -493,9 +521,10 @@ Proof.
                 st_trace := st_trace;
                 st_pl := st_pl;
                 st_store := st_store |}) . 
-        reflexivity.
+        
         eassumption.
         eassumption.
+        simpl. eassumption.
         destruct_conjs.
         subst''.
         repeat break_let.
@@ -503,8 +532,65 @@ Proof.
 
 
         amsts.
+        cbn in Heqp1.
+        repeat break_let.
+        unfold ret in Heqp1.
+        unfold bind in Heqp1.
+        repeat break_match_hyp; try solve_by_inversion.
+        +++
+          invc Heqp1.
+          repeat break_let.
+          invc H3.
+          repeat break_match_hyp; try solve_by_inversion.
+          invc Heqp5.
+          invc Heqp1.
+          invc Heqp4.
+          invc Heqp0.
+          eauto.
 
-        edestruct IHa1 (*with
+
+          
+        +++
+        invc Heqp1.
+        repeat break_let.
+        invc H3.
+        repeat break_match_hyp; try solve_by_inversion.
+        invc Heqp5.
+        invc Heqp1.
+        invc Heqp0.
+        cbn in H.
+        simpl in Heqp4.
+        
+        
+
+        edestruct IHa1
+          with (v_st:=
+                  {|
+            st_ev := st_ev2;
+            st_trace := StVM.st_trace
+                          (add_trace [umeas n2 (StVM.st_pl v1) n4 (n5 :: l)]
+                             v1);
+            st_pl := StVM.st_pl
+                       (add_trace [umeas n2 (StVM.st_pl v1) n4 (n5 :: l)] v1);
+            st_store := StVM.st_store
+                          (add_trace [umeas n2 (StVM.st_pl v1) n4 (n5 :: l)]
+                                     v1) |}
+               ).
+        simpl.
+        eapply uEvLemma; eauto.
+        eassumption.
+        simpl.
+        eapply uEvLemma; eauto.
+        
+        
+        
+               
+
+        (*
+
+
+
+        (*with
             (v_st:=
                 {|
                 st_ev := st_ev2;
@@ -512,18 +598,24 @@ Proof.
                 st_pl := st_pl2;
                 st_store := st_store2 |})*).
         reflexivity.
+
+        admit. *)
+        (*
         eapply evShape_sub.
         eassumption.
         eassumption.
         eassumption.
         tauto.
-        tauto.
-        eassumption.
+        tauto. *)
+        
         destruct_conjs.
+        rewrite H3 in *.
+        solve_by_inversion.
+        (*
         subst''.
         do_pair.
         inversion Heqp0.
-        eauto.
+        eauto. *)
       ++
         do_ba_st_const.
         df.
@@ -531,21 +623,25 @@ Proof.
         df.
         dosome_eq hey.
         df.
-        
-        simpl in H0.
+
+        (*
+        simpl in H0. *)
         evShapeFacts.
         df.
         do_ba_st_const.
         vmsts.
+        clear IHa2.
         edestruct IHa1 with
             (v_st:=
                {|
             st_ev := e;
-            st_trace := st_trace ++ [umeas n st_pl n3 [encodeEv e; bs]];
+            st_trace := st_trace ++ [umeas n st_pl n3 [bs; encodeEv e]];
             st_pl := st_pl;
             st_store := st_store |}).
-        reflexivity.
+        
         eassumption.
+        eassumption.
+        simpl.
         eassumption.
         destruct_conjs.
         vmsts.
@@ -557,6 +653,7 @@ Proof.
           df.
 
           exfalso.
+          Check contratra.
           eapply contratra; eauto.
 
     +
@@ -577,10 +674,12 @@ Proof.
                 st_ev := st_ev;
                 st_trace := st_trace;
                 st_pl := st_pl;
-                st_store := st_store |}) . 
-        reflexivity.
+                st_store := st_store |}) .
+        simpl in *.
         eassumption.
         eassumption.
+        simpl. eassumption.
+
         destruct_conjs.
         subst''.
         repeat break_let.
@@ -588,6 +687,8 @@ Proof.
 
 
         amsts.
+        cbn in Heqp1.
+        cbn in H1.
 
         edestruct IHa1 (*with
             (v_st:=
@@ -596,14 +697,15 @@ Proof.
                 st_trace := st_trace2;
                 st_pl := st_pl2;
                 st_store := st_store2 |})*).
-        reflexivity.
-        eapply evShape_sub.
+
+        eapply evShape_sub;
+          try eassumption;
+          try tauto.
+        
         eassumption.
-        eassumption.
-        eassumption.
-        tauto.
-        tauto.
-        eassumption.
+        
+        eapply evShape_sub; try eassumption; try tauto.
+        
         destruct_conjs.
         subst''.
         do_pair.
@@ -626,16 +728,17 @@ Proof.
                 st_ev := st_ev;
                 st_trace := st_trace;
                 st_pl := st_pl;
-                st_store := st_store |}) . 
-        reflexivity.
+                st_store := st_store |}) .
+        simpl.
+        simpl in H.
+
         eassumption.
         eassumption.
+        simpl. eassumption.
         destruct_conjs.
         subst''.
         repeat break_let.
         
-
-
         amsts.
 
         edestruct IHa1 (*with
@@ -645,14 +748,15 @@ Proof.
                 st_trace := st_trace2;
                 st_pl := st_pl2;
                 st_store := st_store2 |})*).
-        reflexivity.
-        eapply evShape_sub.
+       
+        eapply evShape_sub;
+          try eassumption;
+          try tauto.
         eassumption.
-        eassumption.
-        eassumption.
-        tauto.
-        tauto.
-        eassumption.
+        simpl.
+        eapply evShape_sub;
+          try eassumption;
+          try tauto.
         destruct_conjs.
         subst''.
         do_pair.
@@ -660,18 +764,20 @@ Proof.
         eauto.
 Defined.
 
-Lemma same_ev_shape: forall t vmst vmst' e e_res et e_res_t p a_st x new_vmst new_vmst' f e'' app_ev,
+Lemma same_ev_shape:
+  forall t vmst vmst' (*e e_res *) et e_res_t p a_st x new_vmst new_vmst' f e'' (*app_ev*),
+    
   well_formed t ->
   build_comp t vmst = (Some tt, vmst') ->
-  e = st_ev vmst ->
-  Ev_Shape e et ->
-  e_res = st_ev vmst' ->
-  Ev_Shape e_res e_res_t ->
+  (*e = st_ev vmst -> *)
+  Ev_Shape (st_ev vmst) et ->
+  (*e_res = st_ev vmst' -> *)
+  Ev_Shape (st_ev vmst') e_res_t ->
   build_app_comp t p a_st = (Some x, a_st) -> (* x : VM (EvidenceC -> EvidenceC) *)
   runSt new_vmst x = (Some f, new_vmst') ->
   Ev_Shape e'' et ->
-  app_ev = f e'' ->
-  Ev_Shape app_ev e_res_t.
+  (*app_ev = f e'' -> *)
+  Ev_Shape (f e'') e_res_t.
 Proof.
   intros.
   subst.
@@ -688,7 +794,7 @@ Proof.
       df.
       dosome.
       eapply ev_shape_transitive.
-      apply H2.
+      apply H1.
       eassumption.
       eassumption.
     +
@@ -698,7 +804,7 @@ Proof.
       haaa.
       econstructor.
       eapply ev_shape_transitive.
-      apply H2.
+      apply H1.
       eassumption.
       eassumption.
     +
@@ -708,7 +814,7 @@ Proof.
       haaa.
       econstructor.
       eapply ev_shape_transitive.
-      apply H2.
+      apply H1.
       eassumption.
       eassumption.
   (* HSH case
@@ -729,7 +835,7 @@ Proof.
     eapply IHt.
     eassumption.
     apply build_comp_at.
-    apply H2.
+    apply H1.
     eassumption.
     eassumption.
     eassumption.
@@ -746,14 +852,7 @@ Proof.
         dosome.
         do_ba_st_const.
         df.
-        eapply IHt1.
-        eassumption.
-        eassumption.
-        eassumption.
-        eassumption.
-        eassumption.
-        eassumption.
-        eassumption.
+        eapply IHt1; eassumption.
 
       +++
         break_match.
@@ -763,14 +862,7 @@ Proof.
         df.
         evShapeFacts.
         econstructor.
-        eapply IHt1.
-        eassumption.
-        eassumption.
-        eassumption.
-        eassumption.
-        eassumption.
-        eassumption.
-        eassumption.
+        eapply IHt1; eassumption.
       +++
         break_match.
         dosome.
@@ -779,14 +871,7 @@ Proof.
         df.
         evShapeFacts.
         econstructor.
-        eapply IHt1.
-        eassumption.
-        eassumption.
-        eassumption.
-        eassumption.
-        eassumption.
-        eassumption.
-        eassumption.
+        eapply IHt1; eassumption.
     ++
 
       dosome_eq hi.
@@ -812,7 +897,7 @@ Proof.
       eassumption.
       eassumption.
       eapply multi_ev_eval.
-      apply H1.
+      apply H6.
       eassumption.
       eassumption.
       reflexivity.
@@ -825,7 +910,7 @@ Proof.
       eassumption.
       eassumption.
       eapply multi_ev_eval.
-      apply H1.
+      apply H6.
       eassumption.
       eassumption.
       reflexivity.
@@ -856,7 +941,7 @@ Proof.
       eassumption.
       eassumption.
       eapply multi_ev_eval.
-      apply H1.
+      apply H6.
       eassumption.
       eassumption.
       reflexivity.
@@ -869,7 +954,7 @@ Proof.
       eassumption.
       eassumption.
       eapply multi_ev_eval.
-      apply H1.
+      apply H6.
       eassumption.
       eassumption.
       reflexivity.
@@ -888,36 +973,6 @@ Proof.
       eauto.
       eauto.
 Defined.
-
-Inductive evidenceEvent: Ev -> Prop :=
-| uev: forall n p i args, evidenceEvent (umeas n p i args)
-(*| sev: forall n p, evidenceEvent (sign n p)
-| hev: forall n p, evidenceEvent (hash n p)*) .
-
-
-Definition measEvent (t:AnnoTerm) (p:Plc) (ev:Ev) : Prop :=
-  events t p ev /\ evidenceEvent ev.
-
-Inductive appEvent : Ev -> AM_St -> Ev -> Prop :=
-| aeu : forall p q i i' n n' m args st,
-    m = st_aspmap st ->
-    bound_to m (p,i) i' ->
-    appEvent (umeas n p i args) st (umeas n' q i' ([n] ++ args)).
-
-Ltac measEventFacts :=
-  match goal with
-  | [H: measEvent _ _ _ |- _] => invc H
-  end.
-
-Ltac evEventFacts :=
-  match goal with
-  | [H: evidenceEvent _ |- _] => invc H
-  end.
-
-Ltac invEvents :=
-  match goal with
-  | [H: events _ _ _  |- _] => invc H
-  end.
 
 Lemma trace_cumul : forall  t e a_st a_st' v tr tr' p n n' o o' e' o0,
     build_app_comp t p a_st = (Some v, a_st') ->
@@ -1100,7 +1155,7 @@ Lemma dood : forall t vm_st vm_st' e e'' e' p a_st x0 x1 new_vmst new_vmst',
     e' = st_ev vm_st' ->
     build_app_comp t p a_st = (Some x0, a_st) ->
     x0 new_vmst = (Some x1, new_vmst') ->
-    e' = st_ev new_vmst -> 
+    e' = st_ev new_vmst ->  (* repeated e' eqality NOT a typo here *)
     e'' = st_ev new_vmst' ->
     e = e''.
 Proof.
@@ -1229,6 +1284,41 @@ Proof.
       eauto.
 Defined.
 
+Inductive evidenceEvent: Ev -> Prop :=
+| uev: forall n p i args, evidenceEvent (umeas n p i args)
+| sev: forall n p, evidenceEvent (sign n p)
+(*
+| hev: forall n p, evidenceEvent (hash n p)*). 
+
+
+Definition measEvent (t:AnnoTerm) (p:Plc) (ev:Ev) : Prop :=
+  events t p ev /\ evidenceEvent ev.
+
+Inductive appEvent : Ev -> AM_St -> Ev -> Prop :=
+| aeu : forall p q i i' n n' m args st,
+    m = st_aspmap st ->
+    bound_to m (p,i) i' ->
+    appEvent (umeas n p i args) st (umeas n' q i' ([n] ++ args))
+| asu : forall p q i' n n' m  args st,
+    m = st_sigmap st ->
+    bound_to m p i' ->
+    appEvent (sign n p) st (umeas n' q i' ([n] ++ args)).
+
+Ltac measEventFacts :=
+  match goal with
+  | [H: measEvent _ _ _ |- _] => invc H
+  end.
+
+Ltac evEventFacts :=
+  match goal with
+  | [H: evidenceEvent _ |- _] => invc H
+  end.
+
+Ltac invEvents :=
+  match goal with
+  | [H: events _ _ _  |- _] => invc H
+  end.
+
 Lemma appraisal_correct : forall t vmst vmst' p e_res new_vmst new_vmst' a_st x f tr_app ev,
     build_comp t vmst = (Some tt, vmst') ->
     p = st_pl vmst ->
@@ -1245,11 +1335,13 @@ Proof.
     destruct a.
     +
       measEventFacts.
-      evEventFacts.
+      evEventFacts;
+        try
       solve_by_inversion.
     +
       measEventFacts.
-      evEventFacts.
+      evEventFacts;
+        try solve_by_inversion.
       invEvents.
       destruct r.
       simpl.
@@ -1278,8 +1370,36 @@ Proof.
         eassumption.
     +
       measEventFacts.
-      evEventFacts.
-      solve_by_inversion.
+      evEventFacts;
+        try solve_by_inversion.
+
+            invEvents.
+      destruct r.
+      simpl.
+          
+      amsts.
+      dothat.
+      subst.
+      df.
+      doit.
+      doex.
+      df.
+      exists (umeas n2 st_pl n1 [n2 ; encodeEv st_ev]).
+
+      (*
+
+      exists (umeas n2 st_pl n1 (n2 :: args)). *)
+      split.
+      ++
+        eapply in_or_app.
+        right.
+        econstructor. reflexivity.
+      ++
+        econstructor.
+        reflexivity.
+        econstructor.
+        eassumption.
+      
   -
     amsts.
     subst.
@@ -1288,8 +1408,12 @@ Proof.
     df.
 
     measEventFacts.
-    evEventFacts.
-    invEvents.
+
+    (*
+    evEventFacts;
+      try solve_by_inversion. *)
+    invEvents;
+      try solve_by_inversion.
 
     edestruct IHt with
         (vmst:=
@@ -1310,13 +1434,17 @@ Proof.
     simpl.
     econstructor.
     eassumption.
-    econstructor.
-     
-    destruct_conjs.
-    eexists.
-    split; eauto.
+    eassumption.
+
+    simpl in H.
+    
+
+    eexists x0.
+    eassumption.
 
   - (* alseq case *)
+
+    (*
     df.
     dosome_eq hi.
     do_pair.
@@ -1334,8 +1462,9 @@ Proof.
         simpl in Heqp.
         doex. 
         measEventFacts.
-        evEventFacts.
-        invEvents.
+        (*
+        evEventFacts; try solve_by_inversion. *)
+        invEvents; try solve_by_inversion.
         +++
           do_pl_immut.
           cbn in Heqp1.
@@ -1353,15 +1482,16 @@ Proof.
           tauto.
           econstructor.
           eassumption.
-          econstructor.
+          eassumption.
         +++
+          invc H7.
           solve_by_inversion.
       ++
 
         doit.
         amsts.
         measEventFacts.
-        evEventFacts.
+        (* evEventFacts; try solve_by_inversion. *)
         invEvents.
         +++
           do_pl_immut.
@@ -1371,12 +1501,17 @@ Proof.
           haaa.
           
           eapply IHt1 with
+              
+              
+              
               (vmst:={| st_ev := st_ev3; st_trace := st_trace3; st_pl := st_pl2; st_store := st_store3 |})
               (new_vmst:= {|
                   st_ev := st_ev2;
-                  st_trace := st_trace1 ++ [umeas n3 st_pl4 n5 (n3 :: l)];
+                  st_trace := st_trace1 ++ [umeas n2 st_pl4 n4 (n2 :: l)];
                   st_pl := st_pl4;
                   st_store := st_store4 |}).
+               
+              
           eassumption.
           tauto.
           tauto.
@@ -1386,15 +1521,23 @@ Proof.
           tauto.
           econstructor.
           eassumption.
-          econstructor.
+          eassumption.
+          
+          
         +++
           do_pl_immut.
           do_ba_st_const.
           invEvents.
           
           edestruct IHt2 with
+              (vmst := {| st_ev := st_ev; st_trace := st_trace; st_pl := st_pl2; st_store := st_store |})
+              (new_vmst := {| st_ev := st_ev1; st_trace := st_trace1; st_pl := st_pl1; st_store := st_store1 |}).
+                    
+
+
+          (*with
               (vmst:={| st_ev := st_ev; st_trace := st_trace; st_pl := p; st_store := st_store |})
-              (new_vmst:={| st_ev := st_ev1; st_trace := st_trace1; st_pl := st_pl1; st_store := st_store1 |}).
+              (new_vmst:={| st_ev := st_ev1; st_trace := st_trace1; st_pl := st_pl1; st_store := st_store1 |}). *)
           eassumption.
           tauto.
           tauto.
@@ -1406,7 +1549,7 @@ Proof.
           econstructor.
           reflexivity.
           econstructor.
-          simpl in H.
+          simpl in H0.
           destruct_conjs.
           destruct r.
           simpl in H1.
@@ -1427,13 +1570,17 @@ Proof.
         do_ba_st_const.
         do_pl_immut.
         measEventFacts.
-        evEventFacts.
+        (*evEventFacts; try solve_by_inversion. *)
         invEvents.
         +++
           clear IHt2.
           df.
           
           eapply IHt1 with
+              (vmst:= {| st_ev := st_ev3; st_trace := st_trace3; st_pl := st_pl2; st_store := st_store3 |})
+              (new_vmst:= {| st_ev := e; st_trace := st_trace4 ++ [umeas n st_pl4 n1 [n2; encodeEv e]]; st_pl := st_pl4; st_store := st_store4 |}).
+
+            (*with
               (vmst:=
                  {| st_ev := st_ev3; st_trace := st_trace3; st_pl := st_pl2; st_store := st_store3 |})
               (new_vmst:= {|
@@ -1441,6 +1588,7 @@ Proof.
                   st_trace := st_trace4 ++ [umeas n st_pl4 n1 [encodeEv e; n2]];
                   st_pl := st_pl4;
                   st_store := st_store4 |}).
+*)
           eassumption.
           tauto.
           tauto.
@@ -1450,9 +1598,52 @@ Proof.
           tauto.
           econstructor.
           eassumption.
-          econstructor.
+          eassumption.
+          
         +++
           invEvents.
+          clear IHt1.
+          repeat break_let.
+          
+          
+          eapply IHt2. with
+              (vmst:= {| st_ev := st_ev; st_trace := st_trace; st_pl := st_pl2; st_store := st_store |})
+              (new_vmst:= {| st_ev := e; st_trace := st_trace4 ++ [umeas n st_pl4 n1 [n2; encodeEv e]]; st_pl := st_pl4; st_store := st_store4 |} )
+              (vmst':= {| st_ev := ggc n2 e; st_trace := st_trace2; st_pl := st_pl2; st_store := st_store2 |}).
+          eassumption.
+          reflexivity.
+          reflexivity.
+          break_let.
+          reflexivity.
+          tauto.
+          tauto.
+          tauto.
+          
+
+  (*with
+              (vmst:= {| st_ev := st_ev3; st_trace := st_trace3; st_pl := st_pl2; st_store := st_store3 |})
+              (new_vmst:= {| st_ev := e; st_trace := st_trace4 ++ [umeas n st_pl4 n1 [n2; encodeEv e]]; st_pl := st_pl4; st_store := st_store4 |}). *)
+
+            (*with
+              (vmst:=
+                 {| st_ev := st_ev3; st_trace := st_trace3; st_pl := st_pl2; st_store := st_store3 |})
+              (new_vmst:= {|
+                  st_ev := e;
+                  st_trace := st_trace4 ++ [umeas n st_pl4 n1 [encodeEv e; n2]];
+                  st_pl := st_pl4;
+                  st_store := st_store4 |}).
+*)
+          eassumption.
+          tauto.
+          tauto.
+          tauto.
+          eassumption.
+          eassumption.
+          tauto.
+          econstructor.
+          eassumption.
+          eassumption.
+          
 
     +
       doit.
@@ -1626,7 +1817,11 @@ Proof.
           exact mtc.
           eauto.
           eauto.
-Defined.
+          Defined.
+     *)
+Abort.
+
+HERE.
 
 
 

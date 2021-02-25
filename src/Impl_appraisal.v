@@ -1,5 +1,46 @@
 Require Import Term ConcreteEvidence GenStMonad MonadVM MonadAM.
 
+Require Import List.
+Import ListNotations.
+
+
+Fixpoint build_app_comp_ev (e:Evidence) (et:EvidenceC): AM (VM EvidenceC) :=
+  match (e,et) with
+  | (mt, mtc) => ret (ret mtc)
+  | (uu i args pi et', uuc ic bs ec') =>
+    app_id <- am_get_app_asp pi i ;;
+    d <- build_app_comp_ev et' ec' ;;
+    let c :=
+        innerRes <- d ;;
+        res <- checkUSM 0 app_id args bs ;;
+        ret (uuc 0 res innerRes) in
+    ret c
+  | (gg pi et', ggc bs ec') =>
+    app_id <- am_get_sig_asp pi ;;
+    d <- build_app_comp_ev et' ec' ;;
+    let c :=
+        innerRes <- d ;;
+        res <- checkSig 0 app_id ec' bs ;;
+        ret (ggc bs innerRes) in
+    ret c
+                              
+  | _ => failm
+  end.
+    
+(*
+  | aasp (n,n') (ASPC i args) =>
+    app_id <- am_get_app_asp p i ;;
+    let c :=
+        (
+          e <- get_ev ;;
+          pr <- extractUev e ;;
+          let '(bs,e') := pr in
+          res <- checkUSM n app_id args bs ;;
+          put_ev e' ;;
+          ret (fun x => (uuc n res x) )) in
+    ret c
+*)
+                  
 
 Fixpoint build_app_comp (t:AnnoTerm) (p:Plc) : AM (VM (EvidenceC -> EvidenceC)) :=
   match t with

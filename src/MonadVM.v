@@ -176,7 +176,7 @@ Definition extractComp (e:EvidenceC) : VM (EvidenceC * EvidenceC) :=
  *)
 
 Definition checkSig (x:nat) (i:ASP_ID) (e':EvidenceC) (sig:BS) : VM BS :=
-  invokeUSM x i ([encodeEv e'] ++ [sig] (* ++ args*) ) mtc.
+  invokeUSM x i ([sig] ++ [encodeEv e'] (* ++ args*) ) mtc.
 
 Definition checkUSM (x:nat) (i:ASP_ID) (l:list Arg) (bs:BS) : VM BS :=
   invokeUSM x i ([bs] ++ l) mtc.
