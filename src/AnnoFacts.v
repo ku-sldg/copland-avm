@@ -601,8 +601,11 @@ Proof.
     +
       destruct b;
         ff. *)
-*)
-      Unshelve.
+         *)
+
+        Grab Existential Variables.
+        
+     
       eauto.
       eauto.
       eauto.

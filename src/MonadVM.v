@@ -102,12 +102,13 @@ Definition signEv (x:nat) (e:EvidenceC) : CVM BS :=
   ret x
   (*ret (ggc x e)*).
 
-
+(*
 Definition hashEv (x:nat) (e:EvidenceC) : CVM BS :=
   (* e <- get_ev ;; *)
   p <- get_pl ;;
   add_tracem [hash x p] ;;
   ret x.
+*)
 
 Definition copyEv (x:nat) : CVM EvidenceC :=
   p <- get_pl ;;
@@ -119,16 +120,18 @@ Definition do_prim (x:nat) (a:ASP) : CVM EvidenceC :=
   | CPY => copyEv x
   | ASPC asp_id args =>
     e <- get_ev ;;
+    p <- get_pl ;;
     bs <- invokeUSM x asp_id args e ;;
-    ret (uuc asp_id bs e)               
+    ret (uuc asp_id args p bs e)               
   | SIG =>
     e<- get_ev ;;
+    p <- get_pl ;;
     bs <- signEv x e ;;
-    ret (ggc bs e)
-  | HSH =>
+    ret (ggc p bs e)
+  (*| HSH =>
     e <- get_ev ;;
     bs <- hashEv x e ;;
-    ret (hhc bs e)
+    ret (hhc bs e) *)
   end.
 
 Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) (req_loc:Loc) : CVM unit :=
@@ -192,6 +195,7 @@ Definition join_par (n:nat) (p:Plc) (*(xi:Loc)*) (e1r:EvidenceC) (yi:Loc) (*(e1:
 
 (** * Helper functions for Appraisal *)
 
+(*
 Definition extractUev (e:EvidenceC) : CVM (BS * EvidenceC) :=
   match e with
   | uuc i bs e' => ret (bs,e')
@@ -203,6 +207,7 @@ Definition extractSig (e:EvidenceC) : CVM (BS * EvidenceC) :=
   | ggc bs e' => ret (bs, e')
   | _ => failm
   end.
+*)
 
 (*
 Definition extractHsh (e:EvidenceC) : CVM (BS * EvidenceC) :=
@@ -211,13 +216,14 @@ Definition extractHsh (e:EvidenceC) : CVM (BS * EvidenceC) :=
   | _ => failm
   end. *)
 
-
+(*
 Definition extractComp (e:EvidenceC) : CVM (EvidenceC * EvidenceC) :=
   match e with
   | ssc e1 e2 => ret (e1,e2)
   (*| ppc e1 e2 => ret (e1,e2) *)
   | _ => failm
   end.
+*)
 
 Definition checkSig (x:nat) (i:ASP_ID) (e':EvidenceC) (sig:BS) : CVM BS :=
   invokeUSM x i ([encodeEv e'] ++ [sig] (* ++ args*) ) mtc.
@@ -231,7 +237,7 @@ Ltac monad_unfold :=
   do_prim,
   invokeUSM,
   signEv,
-  hashEv,
+  (*hashEv, *)
   copyEv,
 
   sendReq,

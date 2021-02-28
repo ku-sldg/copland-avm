@@ -484,10 +484,10 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
     forall r lr i p,
       fst r = i ->
       events (aasp r lr SIG) p (sign i p) 
-| evtshsh:
+(*| evtshsh:
     forall r lr i p,
       fst r = i ->
-      events (aasp r lr HSH) p (hash i p)
+      events (aasp r lr HSH) p (hash i p) *)
 | evtsattreq:
     forall r lr q t i p req_loc rpy_loc,
       fst r = i ->

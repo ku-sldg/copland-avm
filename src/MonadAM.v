@@ -41,10 +41,12 @@ Definition incNonce := runAM (am_newNonce 42) empty_amst.
 Compute (incNonce).
 *)
 
+(*
 Definition am_run_t (t:Term) (e:EvidenceC) : AM EvidenceC :=
   let annt := annotated t in
   let start_st := mk_st e [] 0 [] in
   ret (st_ev (run_cvm annt start_st)).
+*)
 
 Definition t1 := (att 1 (lseq (asp (ASPC 44 [])) (asp SIG))).
 Definition t2 := (lseq (asp (ASPC 44 [])) (asp SIG)).
@@ -53,10 +55,12 @@ Definition t2 := (lseq (asp (ASPC 44 [])) (asp SIG)).
 Compute (am_run_t t2 mtc empty_amst).
 *)
 
+(*
 Definition am_proto_1 :=
   n2 <- am_newNonce 42 ;;
     n <- am_newNonce 43 ;;
     am_run_t t2 n.
+*)
 
 (*
 Compute (runAM am_proto_1 empty_amst).

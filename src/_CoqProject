@@ -28,6 +28,8 @@ Auto.v
 Helpers_VmSemantics.v
 External_Facts.v
 VmSemantics.v
-Store_Semantics_alt.v
 StAM.v
 MonadAM.v
+Impl_appraisal.v
+AllMapped.v
+AutoApp.v
