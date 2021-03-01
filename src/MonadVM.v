@@ -17,6 +17,7 @@ Definition CVM := St cvm_st.
 
 (* VM monad operations *)
 
+(*
 Definition put_store_at (n:nat) (e:EvidenceC) : CVM unit :=
   st <- get ;;
      let e' := st_ev st in
@@ -34,14 +35,15 @@ Definition get_store_at (n:nat) : CVM EvidenceC :=
      | Some e => ret e
      | None => failm
      end.
+*)
 
 Definition put_ev (e:EvidenceC) : CVM unit :=
   st <- get ;;
      let tr' := st_trace st in
      let p' := st_pl st in
-     let store' := st_store st in
+     (*let store' := st_store st in *)
   (*let '{| st_ev := _; st_stack := s; st_trace := tr |} := st in*)
-    put (mk_st e tr' p' store').
+    put (mk_st e tr' p' (*store'*)).
 
 Definition get_ev : CVM EvidenceC :=
   st <- get ;;
@@ -53,12 +55,12 @@ Definition get_pl : CVM Plc :=
 
 Definition modify_evm (f:EvidenceC -> EvidenceC) : CVM unit :=
   st <- get ;;
-  let '{| st_ev := e; st_trace := tr; st_pl := p; st_store := store |} := st in
-  put (mk_st (f e) tr p store).
+  let '{| st_ev := e; st_trace := tr; st_pl := p(*; st_store := store*) |} := st in
+  put (mk_st (f e) tr p (*store*)).
 
 Definition add_trace (tr':list Ev) : cvm_st -> cvm_st :=
-  fun '{| st_ev := e; st_trace := tr; st_pl := p; st_store := store |} =>
-    mk_st e (tr ++ tr') p store.
+  fun '{| st_ev := e; st_trace := tr; st_pl := p(*; st_store := store*) |} =>
+    mk_st e (tr ++ tr') p (*store*) .
 
 Definition add_tracem (tr:list Ev) : CVM unit :=
   modify (add_trace tr).
@@ -134,23 +136,28 @@ Definition do_prim (x:nat) (a:ASP) : CVM EvidenceC :=
     ret (hhc bs e) *)
   end.
 
-Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) (req_loc:Loc) : CVM unit :=
+Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) (*(req_loc:Loc)*) : CVM unit :=
   p <- get_pl ;;
-  e <- get_ev ;;
-  put_store_at req_loc e ;;
-  add_tracem [req reqi req_loc p q (unanno t)].
-
-Definition receiveResp (rpyi:nat) (rpy_loc:Loc) (q:Plc) : CVM EvidenceC :=
-  e <- get_store_at rpy_loc ;;
-  p <- get_pl ;;
-  add_tracem [rpy (Nat.pred rpyi) rpy_loc p q] ;;
-  ret e.
+  (*e <- get_ev ;; *)
+  (*put_store_at req_loc e ;; *)
+  add_tracem [req reqi p q (unanno t)].
 
 (* Primitive CVM Monad operations that require IO Axioms *)
-Definition doRemote (t:AnnoTerm) (q:Plc) (reqi:nat) (rpyi:nat) : CVM unit :=
-  e <- get_store_at reqi ;;
+Definition doRemote (t:AnnoTerm) (q:Plc) (e:EvidenceC) (*(reqi:nat) (rpyi:nat)*) : CVM EvidenceC :=
+  (*e <- get_store_at reqi ;; *)
   add_tracem (remote_events t q) ;;
-  put_store_at rpyi (toRemote t q e).
+  (*put_store_at rpyi (toRemote t q e) *)
+  ret (toRemote t q e).
+
+Definition receiveResp (*(rpy_loc:Loc)*) (t:AnnoTerm) (q:Plc) (rpyi:nat) : CVM EvidenceC :=
+  (*e <- get_store_at rpy_loc ;; *)
+  p <- get_pl ;;
+  e <- get_ev ;;
+  e' <- doRemote t q e ;;
+  add_tracem [rpy (Nat.pred rpyi) (*rpy_loc*) p q] ;;
+  ret e'. 
+
+
 
 
 (*

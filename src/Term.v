@@ -10,17 +10,17 @@ Import List.ListNotations.
 
 Set Nested Proofs Allowed.
 
-Lemma wf_lseq_pieces: forall r lr t1 t2,
-    well_formed (alseq r lr t1 t2) ->
-    well_formed t1 /\ well_formed t2.
+Lemma wf_lseq_pieces: forall r t1 t2,
+    well_formed_r (alseq r t1 t2) ->
+    well_formed_r t1 /\ well_formed_r t2.
 Proof.
   intros.
   inversion H.
   tauto.
 Defined.
 
-Lemma wf_at_pieces: forall t r lr locs p,
-    well_formed (aatt locs r lr p t) ->
+Lemma wf_at_pieces: forall t r p,
+    well_formed_r (aatt r p t) ->
     well_formed_r t.
 Proof.
   intros.
@@ -50,10 +50,10 @@ Defined.
 
 Ltac do_wf_pieces :=
   match goal with
-  | [H: well_formed (alseq _ _ _ _) |- _] =>
+  | [H: well_formed_r (alseq _ _ _ ) |- _] =>
     (edestruct wf_lseq_pieces; eauto)
-  | [H: well_formed (aatt _ _ _ _ ?t) |- _] =>   
-    assert (well_formed t)
+  | [H: well_formed_r (aatt _ _?t) |- _] =>   
+    assert (well_formed_r t)
       by (eapply wf_at_pieces; eauto)
   (*| [H: well_formed (abseq _ _ _ _ _) |- _] =>
     (edestruct wf_bseq_pieces; eauto)
@@ -73,19 +73,23 @@ Defined.
 
 Lemma well_formed_range:
   forall t,
-    well_formed t ->
+    well_formed_r t ->
     snd (range t) = fst (range t) + esize t.
 Proof.
   induction t;
     try (intros H; simpl; inv H; simpl;
-    repeat find_apply_hyp_hyp; lia).
+         repeat find_apply_hyp_hyp; lia).
+  (*
   -
     intros H.
     inv H.
     eapply well_formed_range_r.
     econstructor; eauto.
+   *)
+  
 Defined.
 
+(*
 Lemma well_formed_lrange:
   forall t,
     well_formed t ->
@@ -93,6 +97,7 @@ Lemma well_formed_lrange:
 Proof.
   induction t; intros H;
     try (simpl; inv H; simpl; repeat concludes; lia).
+ *)
 
 Lemma esize_nonempty: forall t, esize t > 0.
 Proof.
@@ -103,7 +108,7 @@ Proof.
 Defined.
 
 Lemma wf_mono: forall t,
-    well_formed t ->
+    well_formed_r t ->
     snd (range t) > fst (range t).
 Proof.
   intros.
@@ -119,9 +124,9 @@ Ltac do_mono :=
   | [H: anno _ ?x _ _ = Some (?y,_) |- _] => assert_new_proof_by (y > x) ltac:(eapply anno_mono; eauto)
   end.
 
-Lemma asp_lrange_irrel: forall a i l l2 a0 a1 n n' b,
-    anno (asp a) i l b = Some (n, a0) ->
-    anno (asp a) i l2 b= Some (n',a1) ->
+Lemma asp_lrange_irrel: forall a i a0 a1 n n',
+    anno (asp a) i = (n, a0) ->
+    anno (asp a) i = (n',a1) ->
     a0 = a1.
 Proof.
   intros.
@@ -144,7 +149,7 @@ Locate list_facts.
 
 Ltac wf_hammer :=
   ff;
-  do_nodup;
+  (*do_nodup; *)
   try (eapply anno_well_formed_r; eauto; tauto);
   repeat do_mono;
   repeat erewrite anno_range;
@@ -153,6 +158,7 @@ Ltac wf_hammer :=
   eauto;
   tauto.
 
+(*
 Lemma nodup_lrange: forall t i ls n a,
     NoDup ls ->
     anno t i ls true = Some (n, a) ->
@@ -440,14 +446,15 @@ Proof.
   eassumption.
   eassumption.
 Defined.
+*)
 
 (** Eval for annotated terms. *)
 
 Fixpoint aeval t p e :=
   match t with
-  | aasp _ _ x => eval (asp x) p e
-  | aatt _ _ _ q x => aeval x q e
-  | alseq _ _ t1 t2 => aeval t2 p (aeval t1 p e)
+  | aasp _ x => eval (asp x) p e
+  | aatt _ q x => aeval x q e
+  | alseq _ t1 t2 => aeval t2 p (aeval t1 p e)
   (*| abseq _ _ s t1 t2 => ss (aeval t1 p ((splitEv_T (fst s)) e))
                          (aeval t2 p ((splitEv_T (snd s)) e)) 
   | abpar _ _ _ s t1 t2 => pp (aeval t1 p ((splitEv_T (fst s)) e))
@@ -473,41 +480,41 @@ Defined.
 
 Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
 | evtscpy:
-    forall r lr i p,
+    forall r i p,
       fst r = i ->
-      events (aasp r lr CPY) p (copy i p)
+      events (aasp r CPY) p (copy i p)
 | evtsusm:
-    forall i id args r lr p,
+    forall i id args r p,
       fst r = i ->
-      events (aasp r lr (ASPC id args)) p (umeas i p id args)
+      events (aasp r (ASPC id args)) p (umeas i p id args)
 | evtssig:
-    forall r lr i p,
+    forall r i p,
       fst r = i ->
-      events (aasp r lr SIG) p (sign i p) 
+      events (aasp r SIG) p (sign i p) 
 (*| evtshsh:
     forall r lr i p,
       fst r = i ->
       events (aasp r lr HSH) p (hash i p) *)
 | evtsattreq:
-    forall r lr q t i p req_loc rpy_loc,
+    forall r q t i p,
       fst r = i ->
-      events (aatt r lr (req_loc, rpy_loc) q t) p (req i req_loc p q (unanno t))
+      events (aatt r q t) p (req i p q (unanno t))
 | evtsatt:
-    forall r lr q t ev p locs,
+    forall r q t ev p,
       events t q ev ->
-      events (aatt r lr locs q t) p ev
+      events (aatt r q t) p ev
 | evtsattrpy:
-    forall r lr q t i p req_loc rpy_loc,
+    forall r q t i p,
       snd r = S i ->
-      events (aatt r lr (req_loc, rpy_loc) q t) p (rpy i rpy_loc p q)
+      events (aatt r q t) p (rpy i p q)
 | evtslseql:
-    forall r lr t1 t2 ev p,
+    forall r t1 t2 ev p,
       events t1 p ev ->
-      events (alseq r lr t1 t2) p ev
+      events (alseq r t1 t2) p ev
 | evtslseqr:
-    forall r lr t1 t2 ev p,
+    forall r t1 t2 ev p,
       events t2 p ev ->
-      events (alseq r lr t1 t2) p ev
+      events (alseq r t1 t2) p ev
              (*
 | evtsbseqsplit:
     forall r lr i s t1 t2 p,
@@ -580,7 +587,6 @@ Lemma events_range:
     events t p v ->
     fst (range t) <= ev v < snd (range t).
 Proof.
-  
   intros t v p H H0.
   pose proof H as G.
   apply well_formed_range_r in G.
@@ -661,10 +667,14 @@ Proof.
       | [H: (nat * nat) |- _] => destruct H
       end.
 
+    (*
+
      Ltac dest_lrange :=
        match goal with
        | [H: LocRange |- _] => destruct H
        end.
+     *)
+    
 
      Ltac do_lin_range :=
       match goal with

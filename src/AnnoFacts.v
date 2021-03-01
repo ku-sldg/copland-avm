@@ -14,14 +14,14 @@ Set Nested Proofs Allowed.
 
 Ltac same_index :=
   match goal with
-  | [H: anno ?t _ _ _ = Some (?n, _),
-        H': anno ?t _ _ _ = Some (?n', _) |- _] =>
+  | [H: anno ?t _ = (?n, _),
+        H': anno ?t _ = (?n', _) |- _] =>
     assert_new_proof_by (n = n') eauto
   end.
 
-Lemma same_anno_range: forall t i l l2 a b n n' bo bo',
-    anno t i l bo = Some (n,a) ->
-    anno t i l2 bo' = Some (n',b) ->
+Lemma same_anno_range: forall t i a b n n',
+    anno t i = (n,a) ->
+    anno t i = (n',b) ->
     n = n'.
 Proof.
   intros.
@@ -44,8 +44,11 @@ Proof.
     ff.
   -
     ff.
+    (*
     repeat (same_index; subst);
       congruence.
+     *)
+    
     (*
   -
     ff;
@@ -57,8 +60,8 @@ Proof.
       congruence. *)
  Defined.
   
-Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm) (ls:LocRange) b,
-  anno t i ls b = Some (j,t') ->
+Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm),
+  anno t i = (j,t') ->
   j > i.
 Proof.
   induction t; intros; (*i j t' ls b H; *)
@@ -69,8 +72,8 @@ Defined.
 Hint Resolve anno_mono : core.
 
 Lemma anno_range:
-  forall x i j ls t' b,
-     anno x i ls b = Some (j,t') ->
+  forall x i j t',
+     anno x i = (j,t') ->
     range (t') = (i, j).
 Proof.
   induction x; intros; ff.
@@ -103,6 +106,7 @@ Ltac do_list_empty :=
     assert_new_proof_by (ls = []) ltac:(destruct ls; solve_by_inversion)
   end.
 
+(*
 Lemma anno_lrange:
   forall x i j ls t' b,
     length ls = nss x ->
@@ -803,7 +807,7 @@ Defined.
 *)
 
 
-
+*)
 
 
 
@@ -812,10 +816,10 @@ Defined.
 
 
 Lemma anno_well_formed_r:
-  forall t i j ls t',
+  forall t i j t',
     (* length ls = nss t ->
     NoDup ls -> *)
-    anno t i ls false = Some (j, t') ->
+    anno t i = (j, t') ->
     well_formed_r t'.
 Proof.
   intros.
@@ -844,6 +848,7 @@ Proof.
       simpl.
       assert (n0 > S i) by (eapply anno_mono; eauto).
       lia.
+      (*
     +
       econstructor.
       eauto.
@@ -879,7 +884,7 @@ Proof.
 
       simpl.
       assert (n0 > S i) by (eapply anno_mono; eauto).
-      lia.
+      lia. *)
   -
     ff.
     econstructor.

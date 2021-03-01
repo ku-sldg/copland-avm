@@ -22,15 +22,15 @@ Fixpoint copland_compile (t:AnnoTerm): CVM (list (CVM unit)) :=
   
 Fixpoint copland_compile (t:AnnoTerm): CVM unit :=
   match t with
-  | aasp (n,_) _ a =>
+  | aasp (n,_) a =>
       e <- do_prim n a ;;
       put_ev e
-  | aatt (i,j) _ (req_loc,rpy_loc) q t' =>
-      sendReq t' q i req_loc ;;
-      doRemote t' q req_loc rpy_loc ;;
-      e' <- receiveResp j rpy_loc q ;;
+  | aatt (i,j) q t' =>
+      sendReq t' q i ;;
+      (*doRemote t' q ;; *)
+      e' <- receiveResp t' q j ;;
       put_ev e'
-  | alseq r _ t1 t2 =>
+  | alseq _ t1 t2 =>
       copland_compile t1 ;;
       copland_compile t2
  (* | abseq (x,y) _ (sp1,sp2) t1 t2 =>
@@ -109,6 +109,7 @@ Definition add_at (s:setup) (q:Plc) (comp:CVM unit) : setup :=
   | _ => map_set s q comp
   end.
 
+(*
 Definition bookend (comp: CVM unit) (req_loc rpy_loc:Loc): CVM unit :=
   e <- get_store_at req_loc ;;
   put_ev e ;;
@@ -127,6 +128,8 @@ Fixpoint copland_compliment (t:AnnoTerm) (s:setup): setup :=
     s2
   | _ => []
   end.
+
+
 
 (*
 Definition add_before (s:setup) (q:Plc) (comp:CVM unit) : setup :=
@@ -170,7 +173,7 @@ Definition run_it_term (me:Plc) (t:Term) (m:MapC (Plc*Plc) (list Loc)) : Platfor
   let annt := snd (anno' t 0 (getLocs t m)) in
   run_it me annt.
 
-
+*)
 
 
 Definition run_cvm (t:AnnoTerm) st : cvm_st :=
