@@ -1,5 +1,5 @@
 Require Import GenStMonad MonadVM MonadAM ConcreteEvidence MonadVMFacts.
-Require Import StAM Axioms_Io Impl_vm Impl_appraisal Maps VmSemantics Event_system Term_system.
+Require Import StAM Axioms_Io Impl_vm Impl_appraisal Maps VmSemantics Event_system Term_system External_Facts.
 Require Import Auto AutoApp AllMapped.
 
 Require Import Coq.Arith.Peano_dec.
@@ -1449,8 +1449,35 @@ Ltac invEvents :=
   | [H: events _ _ _  |- _] => invc H
   end.
 
-Lemma appraisal_correct : forall t vmst vmst' p e_res new_vmst a_st x app_res tr_app ev,
-    well_formed t ->
+Lemma app_lseq_decomp: forall t1 t2 e1 e2 vmst vmst' vmst'' a_st x
+                         app_res init_vmst new_vmst,
+    copland_compile t1 vmst = (Some tt, vmst') ->
+    e1 = st_ev vmst' ->
+    copland_compile t2 vmst' = (Some tt, vmst'') ->
+    e2 = st_ev vmst'' ->
+    build_app_comp_ev e2 a_st = (Some x, a_st) ->
+    runSt x init_vmst = (Some app_res, new_vmst) ->
+
+
+    
+    exists x' app_ev1 new_vmst1,
+      build_app_comp_ev e1 a_st = (Some x', a_st) /\
+      runSt x' init_vmst = (Some app_ev1, new_vmst1) /\
+
+      (*
+      exists x'' app_ev2 new_vmst2,
+        build_app_comp_ev e2 a_st = (Some x'', a_st) /\
+        runSt x'' init_vmst = (Some app_ev2, new_vmst2) /\ *)
+        (forall ev1, In ev1 (st_trace new_vmst1) -> In ev1 (st_trace new_vmst)) (*/\
+        (forall ev1, In ev1 (st_trace new_vmst2) -> In ev1 (st_trace new_vmst)) *) .
+
+
+Proof.
+  intros.
+Admitted.
+
+Lemma appraisal_correct : forall t vmst vmst' p e_res init_vmst new_vmst a_st x app_res (*tr_app*) ev,
+    well_formed_r t ->
     copland_compile t vmst = (Some tt, vmst') ->
     p = st_pl vmst ->
     (*e = st_ev vmst -> *)
@@ -1462,10 +1489,10 @@ Lemma appraisal_correct : forall t vmst vmst' p e_res new_vmst a_st x app_res tr
     et = Term.eval (unanno t) p etype -> 
      *)
     build_app_comp_ev e_res a_st = (Some x, a_st) ->
-    runSt x empty_vmst = (Some app_res, new_vmst) ->
-    tr_app = st_trace new_vmst ->
+    runSt x init_vmst = (Some app_res, new_vmst) ->
+    (*tr_app = st_trace new_vmst -> *)
     measEvent t p ev ->
-    exists ev', In ev' tr_app /\ appEvent ev a_st ev'.
+    exists ev', In ev' (st_trace new_vmst) /\ appEvent ev a_st ev'.
 Proof.
   intros.
   generalizeEverythingElse t.
@@ -1496,37 +1523,206 @@ Proof.
     amsts.
     vmsts.
     ff.
-    dohtac.
+    try dohtac.
     ff.
     Print dohtac.
     Check PeanoNat.Nat.eqb_eq.
-    rewrite PeanoNat.Nat.eqb_refl in *.
-    ff.
-
+    do_wf_pieces.
     edestruct IHt.
-    Print do_wf_pieces.
-    invc H.
-    
     eassumption.
-    eapply build_comp_at.
-    tauto.
-    tauto.
-    tauto.
-    simpl.
+    eapply copland_compile_at.
     eassumption.
     tauto.
-    simpl.
-    eassumption.
-    eassumption.
     tauto.
+    eassumption.
+    eassumption.
     simpl.
     econstructor.
     eassumption.
     econstructor.
-    eexists; eauto.
+    simpl in *.
+    eauto.
 
-    dohtac.
-    solve_by_inversion.
+  -
+    vmsts.
+    Check alseq_decomp_gen.
+    destruct alseq_decomp_gen with (r:=r) (t1':=t1) (t2':=t2) (e:=st_ev2) (e'':=st_ev1) (p:=st_pl2) (p'':=st_pl1) (init_tr:=st_trace2) (tr:=st_trace1).
+    eassumption.
+    eassumption.
+
+    destruct_conjs.
+    
+    
+    
+
+
+
+    edestruct app_lseq_decomp with
+        (t1:= t1) (t2:=t2) (e1:=x0) (e2:=st_ev1)
+        (vmst:={| st_ev := st_ev2; st_trace := st_trace2; st_pl := st_pl2 |})
+        (vmst':= {| st_ev := x0; st_trace := H6; st_pl := H7 |})
+        (vmst'':={| st_ev := st_ev1; st_trace := st_trace1; st_pl := st_pl1 |})
+        (a_st:=a_st)
+        (x:=x)
+        (app_res:=app_res)
+        (init_vmst:={| st_ev := st_ev0; st_trace := st_trace0; st_pl := st_pl0 |})
+        (new_vmst:={| st_ev := st_ev; st_trace := st_trace; st_pl := st_pl |}).
+        
+                                  
+
+    
+    apply H8.
+    tauto.
+    eassumption.
+    tauto.
+    simpl in *.
+    subst.
+    eassumption.
+    eassumption.
+
+  
+    
+    destruct_conjs.
+
+    vmsts.
+    amsts.
+    simpl in *.
+
+    do_wf_pieces.
+
+    Print measEventFacts.
+
+    inversion H5; clear H5.
+    inversion H17; clear H17.
+
+    (*
+    measEventFacts.
+    evEventFacts. *)
+
+    inversion H16; clear H16.
+
+    (*
+    invEvents. *)
+    +
+      
+      vmsts.
+      assert (st_pl2 = p) by congruence.
+      subst.
+      (*
+      rewrite <- H21 in H27. clear H21.
+      rewrite <- H5 in H27; clear H5. *)
+      (*
+      repeat ff. *)
+
+      edestruct IHt1.
+      eassumption.
+      eassumption.
+      Focus 3.
+      apply H12.
+      tauto.
+      tauto.
+      eassumption.
+      simpl.
+      
+      econstructor.
+      eassumption.
+      econstructor.
+
+      
+      destruct_conjs.
+      simpl in *.
+
+      exists x2.
+      split;
+      eauto.
+
+    +
+      vmsts.
+      subst.
+      Require Import Helpers_VmSemantics.
+      repeat do_pl_immut.
+      subst.
+
+      (*
+      
+      assert (H7 = p).
+      {
+        subst.
+        Require Import Helpers_VmSemantics.
+
+        repeat do_pl_immut.
+        subst.
+        tauto.
+      } *)
+      
+      edestruct IHt2.
+      eassumption.
+      eassumption.
+      Focus 3.
+      apply H3.
+      tauto.
+      tauto.
+      eassumption.
+      simpl.
+      econstructor.
+      subst.
+      eassumption.
+      (*
+      rewrite H21.
+      eassumption.
+      rewrite <- H5. *)
+      econstructor.
+      destruct_conjs.
+      simpl in *.
+      exists x2.
+      split.
+      eauto.
+      subst. eauto.
+Defined.
+
+
+      
+      
+
+
+
+      
+      
+      econstructor.
+      eapply H19.
+      
+
+
+
+
+      
+      eapply IHt1.
+      Focus 6.
+      apply H14.
+      eassumption.
+      eassumption.
+      tauto.
+      tauto.
+      simpl.
+      eassumption.
+      eassumption.
+      
+      Focus 3.
+      
+      apply H10.
+      tauto.
+      tauto.
+      eassumption.
+      repeat ff.
+      vmsts.
+      eapply Heqp0.
+      tauto.
+      tauto.
+      simpl.
+
+     
+    
+    
     
     
 

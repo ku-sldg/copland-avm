@@ -417,6 +417,81 @@ Ltac do_suffix name :=
              name
   end.
 
+Lemma alseq_decomp_gen : forall r t1' t2' e e'' p p'' init_tr tr,
+    well_formed_r (alseq r t1' t2') ->
+    copland_compile (alseq r t1' t2') {| st_ev := e; st_trace := init_tr; st_pl := p(*; st_store := o*) |} =
+    (Some tt, {| st_ev := e''; st_trace := tr; st_pl := p''(*; st_store := o''*) |}) ->
+
+    exists e' tr' p',
+      copland_compile t1' {| st_ev := e; st_trace := init_tr; st_pl := p(*; st_store := o*) |} =
+      (Some  tt, {| st_ev := e'; st_trace := tr'; st_pl := p'(*; st_store := o'*) |}) /\
+      (*exists tr'', *)
+        copland_compile t2' {| st_ev := e'; st_trace := tr'; st_pl := p'(*; st_store := o'*) |} =
+        (Some tt, {| st_ev := e''; st_trace := tr; st_pl := p''(*; st_store := o''*) |}) (*/\
+        tr = tr' ++ tr''.  *).     
+Proof.
+  intros.  
+  do_wf_pieces.
+  df.
+  dosome.
+  annogo.
+  exists st_ev. exists st_trace. exists st_pl. (*exists st_store. *)
+  split.
+  reflexivity.
+
+
+
+  (*
+  destruct
+    (copland_compile t2'
+                {| st_ev := st_ev; st_trace := init_tr; st_pl := st_pl(*; st_store := st_store*) |}) eqn:hey.
+   *)
+  
+  vmsts.
+  do_asome.
+  subst.
+  annogo.
+
+  (*
+  exists st_trace0.
+  dohi.
+  
+  split.
+  reflexivity. *)
+
+  do_suffix hi.
+  do_suffix hey.
+  eassumption.
+Defined.
+
+(*
+
+  destruct_conjs.
+  subst.
+
+  pose st_trace_cumul'.
+
+  exists hi.
+  split.
+
+  
+  specialize e0 with (t:= t2') (m:=st_trace) (e:=st_ev) (p:= st_pl)
+                      (*(o:=st_store) *)
+                      (v:={| st_ev := st_ev0; st_trace := tr; st_pl := st_pl0(*; st_store := st_store0*) |}).
+  intros.
+  repeat concludes.
+  repeat ff.
+  df.
+  subst'.
+  repeat ff.
+  tauto. 
+Defined.
+*)
+
+
+
+
+
 Lemma alseq_decomp : forall r t1' t2' e e'' p p'' tr,
     well_formed_r (alseq r t1' t2') ->
     copland_compile (alseq r t1' t2') {| st_ev := e; st_trace := []; st_pl := p(*; st_store := o*) |} =
