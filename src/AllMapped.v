@@ -20,10 +20,12 @@ Inductive evMapped : EvidenceC -> AM_St -> Prop :=
     (*m = st_sigmap st -> *)
     evMapped e' st ->
     evMapped (hh p e') st    
-| evMappedN : forall e' m nid st,
-    m = st_aspmap st ->
+*)
+| evMappedN : forall e' bs (*m*) nid st,
+    (*m = st_aspmap st -> *)
     evMapped e' st ->
-    evMapped (nn nid e') st 
+    evMapped (nnc nid bs e') st
+(*
 | evMappedS : forall e1 e2 st,
     evMapped e1 st ->
     evMapped e2 st ->

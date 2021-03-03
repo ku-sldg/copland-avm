@@ -56,8 +56,8 @@ Inductive Term: Set :=
 | asp: ASP -> Term
 | att: Plc -> Term -> Term
 | lseq: Term -> Term -> Term
-(*| bseq: Split -> Term -> Term -> Term
-| bpar: Split -> Term -> Term -> Term*) .
+(*| bseq: Split -> Term -> Term -> Term *)
+(*| bpar: Split -> Term -> Term -> Term*) .
 
 (*
 Definition LocRange: Set := list Loc.
@@ -82,7 +82,7 @@ Inductive Evidence: Set :=
 | gg: Plc -> Evidence -> Evidence
 (*| hh: Plc -> Evidence -> Evidence *)
 | nn: N_ID -> Evidence -> Evidence
-(*| ss: Evidence -> Evidence -> Evidence *)
+| ss: Evidence -> Evidence -> Evidence
 (*| pp: Evidence -> Evidence -> Evidence*) .
 
 Definition splitEv_T (sp:SP) (e:Evidence) : Evidence :=
@@ -107,10 +107,25 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
   | att q t1 => eval t1 q e
   | lseq t1 t2 => eval t2 p (eval t1 p e)
   (*| bseq s t1 t2 => ss (eval t1 p (splitEv_T (fst s) e))
-                       (eval t2 p (splitEv_T (snd s) e)) 
-  | bpar s t1 t2 => pp (eval t1 p (splitEv_T (fst s) e))
+                       (eval t2 p (splitEv_T (snd s) e))  *)
+ (* | bpar s t1 t2 => pp (eval t1 p (splitEv_T (fst s) e))
                       (eval t2 p (splitEv_T (snd s) e)) *)
   end.
+
+
+(*
+Definition aterm1 := asp (ASPC 42 []).
+Definition aterm2 := asp (ASPC 43 []).
+Definition kterm := bseq (NONE,NONE) aterm2 aterm2.
+Definition ex_term :=
+  lseq aterm1 kterm.
+
+Compute (eval ex_term 0 mt).
+*)
+
+
+
+
 
 (** * Events
 

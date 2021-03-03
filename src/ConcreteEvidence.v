@@ -18,6 +18,20 @@ Inductive EvidenceC: Set :=
 (*| ssc: EvidenceC -> EvidenceC -> EvidenceC *)
 (*| ppc: EvidenceC -> EvidenceC -> EvidenceC *) .
 
+Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
+| evsub_refl : forall e : EvidenceC, EvSub e e
+| uuSub: forall e e' i l p bs,
+    EvSub e e' ->
+    EvSub e (uuc i l p bs e')
+| ggSub: forall e e' p bs,
+    EvSub e e' ->
+    EvSub e (ggc p bs e')
+| nnSub: forall e e' i bs,
+    EvSub e e' ->
+    EvSub e (nnc i bs e').
+
+
+
 
 (*
 Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=

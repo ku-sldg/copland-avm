@@ -145,6 +145,72 @@ Ltac do_ba_st_const :=
       end);
   subst.
 
+Lemma build_app_some' : forall e a_st,
+    (exists o, build_app_comp_ev e a_st = (Some o, a_st)) ->
+    evMapped e a_st.
+Proof.
+  induction e; intros.
+  -
+    econstructor.
+  -
+    repeat ff.
+    +
+      destruct_conjs.
+      ff.
+      econstructor.
+      tauto.
+      eauto.
+      eexists.
+      econstructor.
+      eassumption.
+    +
+      destruct_conjs.
+      solve_by_inversion.
+    +
+      destruct_conjs.
+      solve_by_inversion.
+  -
+    repeat ff.
+    +
+      destruct_conjs.
+      ff.
+      econstructor.
+      tauto.
+      eauto.
+      eexists.
+      econstructor.
+      eassumption.
+    +
+      destruct_conjs.
+      solve_by_inversion.
+    +
+      destruct_conjs.
+      solve_by_inversion.
+  -
+    repeat ff.
+    +
+      destruct_conjs.
+      ff.
+      econstructor.
+      tauto.
+      eauto.
+      eexists.
+      econstructor.
+      eassumption.
+    +
+      destruct_conjs.
+      solve_by_inversion.
+    +
+      destruct_conjs.
+      solve_by_inversion.
+    
+    
+    
+      
+      
+      
+    
+
 Lemma build_app_some : forall e a_st,
     evMapped e a_st ->
     (*Ev_Shape e -> *)
@@ -1449,8 +1515,110 @@ Ltac invEvents :=
   | [H: events _ _ _  |- _] => invc H
   end.
 
+Lemma mt_sub_all: forall e,
+    EvSub mtc e.
+Proof.
+  induction e; intros;
+    (econstructor; eauto; tauto).
+Defined.
+    
+
+Print EvSub.
+
+Ltac do_evsub :=
+  match goal with
+  | [H: EvSub _ (?C) |- _] => invc H
+  end.
+    
+
+Lemma evSub_trans: forall e' e e'',
+  EvSub e e' ->
+  EvSub e' e'' ->
+  EvSub e e''.
+Proof.
+  induction e''; intros;
+    do_evsub;
+    try solve_by_inversion;
+    try (econstructor; eauto).
+Defined.
+
+Lemma evAccum: forall t vmst vmst' e e',
+  well_formed_r t -> 
+  copland_compile t vmst = (Some tt, vmst') ->
+  e = st_ev vmst ->
+  e' = st_ev vmst' ->
+  EvSub e e'.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a; repeat ff;
+      try (repeat econstructor; eauto; tauto).
+  -
+    do_wf_pieces.
+    repeat ff.
+    eapply IHt.
+    eassumption.
+    eapply copland_compile_at.
+    eassumption.
+    tauto.
+    tauto.
+  -
+    do_wf_pieces.
+    vmsts.
+    edestruct alseq_decomp_gen.
+    eassumption.
+    eassumption.
+    destruct_conjs.
+
+    assert (EvSub st_ev0 x) by eauto.
+    
+    assert (EvSub x st_ev) by eauto.
+    eapply evSub_trans; eauto.
+Defined.
+
+Lemma evMappedSome:
+  EvSub e1 e2 ->
+  build_app_comp_ev e2 a_st = (Some x, a_st) ->
+  
+
+Lemma app_lseq_decomp': forall t1 e1 e2 vmst vmst' a_st x
+                         app_res init_vmst new_vmst,
+    copland_compile t1 vmst = (Some tt, vmst') ->
+    e1 = st_ev vmst' ->
+    EvSub e1 e2 ->
+    (*
+    copland_compile t2 vmst' = (Some tt, vmst'') ->
+    e2 = st_ev vmst'' -> *)
+    build_app_comp_ev e2 a_st = (Some x, a_st) ->
+    runSt x init_vmst = (Some app_res, new_vmst) ->
+
+
+    
+    exists x' app_ev1 new_vmst1,
+      build_app_comp_ev e1 a_st = (Some x', a_st) /\
+      runSt x' init_vmst = (Some app_ev1, new_vmst1) /\
+
+      (*
+      exists x'' app_ev2 new_vmst2,
+        build_app_comp_ev e2 a_st = (Some x'', a_st) /\
+        runSt x'' init_vmst = (Some app_ev2, new_vmst2) /\ *)
+        (forall ev1, In ev1 (st_trace new_vmst1) -> In ev1 (st_trace new_vmst)) (*/\
+        (forall ev1, In ev1 (st_trace new_vmst2) -> In ev1 (st_trace new_vmst)) *) .
+
+
+Proof.
+Admitted.
+
+
+    
+  
+
 Lemma app_lseq_decomp: forall t1 t2 e1 e2 vmst vmst' vmst'' a_st x
                          app_res init_vmst new_vmst,
+    well_formed_r t1 ->
+    well_formed_r t2 ->
     copland_compile t1 vmst = (Some tt, vmst') ->
     e1 = st_ev vmst' ->
     copland_compile t2 vmst' = (Some tt, vmst'') ->
@@ -1474,7 +1642,18 @@ Lemma app_lseq_decomp: forall t1 t2 e1 e2 vmst vmst' vmst'' a_st x
 
 Proof.
   intros.
-Admitted.
+  eapply app_lseq_decomp'.
+  apply H1.
+  eassumption.
+  eapply evAccum.
+  apply H0.
+  eassumption.
+  eassumption.
+  tauto.
+  subst.
+  eassumption.
+  eassumption.
+Defined.
 
 Lemma appraisal_correct : forall t vmst vmst' p e_res init_vmst new_vmst a_st x app_res (*tr_app*) ev,
     well_formed_r t ->
@@ -1546,7 +1725,7 @@ Proof.
   -
     vmsts.
     Check alseq_decomp_gen.
-    destruct alseq_decomp_gen with (r:=r) (t1':=t1) (t2':=t2) (e:=st_ev2) (e'':=st_ev1) (p:=st_pl2) (p'':=st_pl1) (init_tr:=st_trace2) (tr:=st_trace1).
+    edestruct alseq_decomp_gen. (*with (r:=r) (t1':=t1) (t2':=t2) (e:=st_ev2) (e'':=st_ev1) (p:=st_pl2) (p'':=st_pl1) (init_tr:=st_trace2) (tr:=st_trace1). *)
     eassumption.
     eassumption.
 
@@ -1557,7 +1736,7 @@ Proof.
 
 
 
-    edestruct app_lseq_decomp with
+    edestruct app_lseq_decomp. (*with
         (t1:= t1) (t2:=t2) (e1:=x0) (e2:=st_ev1)
         (vmst:={| st_ev := st_ev2; st_trace := st_trace2; st_pl := st_pl2 |})
         (vmst':= {| st_ev := x0; st_trace := H6; st_pl := H7 |})
@@ -1566,7 +1745,7 @@ Proof.
         (x:=x)
         (app_res:=app_res)
         (init_vmst:={| st_ev := st_ev0; st_trace := st_trace0; st_pl := st_pl0 |})
-        (new_vmst:={| st_ev := st_ev; st_trace := st_trace; st_pl := st_pl |}).
+        (new_vmst:={| st_ev := st_ev; st_trace := st_trace; st_pl := st_pl |}). *)
         
                                   
 
@@ -1680,45 +1859,6 @@ Proof.
       subst. eauto.
 Defined.
 
-
-      
-      
-
-
-
-      
-      
-      econstructor.
-      eapply H19.
-      
-
-
-
-
-      
-      eapply IHt1.
-      Focus 6.
-      apply H14.
-      eassumption.
-      eassumption.
-      tauto.
-      tauto.
-      simpl.
-      eassumption.
-      eassumption.
-      
-      Focus 3.
-      
-      apply H10.
-      tauto.
-      tauto.
-      eassumption.
-      repeat ff.
-      vmsts.
-      eapply Heqp0.
-      tauto.
-      tauto.
-      simpl.
 
      
     
