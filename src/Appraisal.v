@@ -38,104 +38,6 @@ Proof.
     
 Defined.
 
-(*
-Lemma ba_const : forall a a_st a_st' o p,
-    build_app_comp a p a_st = (o, a_st') ->
-    a_st = a_st'.
-Proof.
-  intros.
-  generalizeEverythingElse a.
-  induction a; intros.
-  -
-    destruct a;
-      repeat (ff; eauto).
-  -
-    eauto.
-  (*
-    edestruct IHa.
-    eassumption.
-    destruct_conjs.
-    simpl in *.
-    subst.
-    tauto. *)
-  -
-    
-    df.
-    subst.
-    destruct a2.
-    +
-      destruct a;
-        repeat (ff;eauto).
-      
-    + (* aatt case *)
-      doit.
-      specialize IHa1 with (a_st:=a_st) (a_st':=a) (o:=o0) (p:=p).
-      concludes.
-      destruct_conjs.
-      specialize IHa2 with (a_st := a) (a_st':=a0) (o:=o1) (p:=p).
-      concludes.
-      subst.
-      
-      ff; eauto.
-
-    + (* alseq case *)
-
-      doit.
-      specialize IHa1 with (a_st:=a_st) (a_st':=a) (o:=o0) (p:=p).
-      concludes.
-      destruct_conjs.
-      specialize IHa2 with (a_st := a) (a_st':=a0) (o:=o1) (p:=p).
-      concludes.
-      subst.
-      ff; eauto.
-
-(*
-    +
-    destruct (build_app_comp a1 p a_st) eqn:hey;
-         try solve_by_inversion.
-       destruct (build_app_comp (abseq r s a2_1 a2_2) p a) eqn:hi;
-         try solve_by_inversion.
-       specialize IHa1 with (a_st:=a_st) (a_st':=a) (o:=o0) (p:=p).
-       concludes.
-       destruct_conjs.
-       specialize IHa2 with (a_st := a) (a_st':=a0) (o:=o1) (p:=p).
-       concludes.
-       subst.
-       ff; eauto.
-    +
-                  destruct (build_app_comp a1 p a_st) eqn:hey;
-         try solve_by_inversion.
-       destruct (build_app_comp (abpar r s a2_1 a2_2) p a) eqn:hi;
-         try solve_by_inversion.
-       specialize IHa1 with (a_st:=a_st) (a_st':=a) (o:=o0) (p:=p).
-       concludes.
-       destruct_conjs.
-       specialize IHa2 with (a_st := a) (a_st':=a0) (o:=o1) (p:=p).
-       concludes.
-       subst.
-       ff; eauto. 
-  -
-    df.
-    tauto.
-  -
-    df.
-    tauto. 
-
- *)
-      
-Defined.
-
-
-Ltac do_ba_st_const :=
-  let tac := (eapply ba_const; eauto) in
-  repeat (
-      match goal with
-      | [H: build_app_comp _ _ ?a_st = (_, ?a0) |- _] =>
-        assert_new_proof_by (a_st = a0) tac
-      end);
-  subst.
- *)
-
 Ltac do_ba_st_const :=
   let tac := (eapply ba_const; eauto) in
   repeat (
@@ -192,25 +94,12 @@ Proof.
       destruct_conjs.
       ff.
       econstructor.
-      tauto.
       eauto.
-      eexists.
-      econstructor.
-      eassumption.
     +
       destruct_conjs.
       solve_by_inversion.
-    +
-      destruct_conjs.
-      solve_by_inversion.
+Defined.
     
-    
-    
-      
-      
-      
-    
-
 Lemma build_app_some : forall e a_st,
     evMapped e a_st ->
     (*Ev_Shape e -> *)
@@ -255,676 +144,15 @@ Proof.
     eauto.
   -
     cbn.
-    ff.
-Defined.
-
-(*
-Lemma build_app_some : forall a a_st p,
-    allMapped a a_st p mt ->
-    exists o, build_app_comp a p a_st = (Some o, a_st).
-Proof.
-  intros.
-  generalizeEverythingElse a.
-  induction a; intros.
-  -
-    destruct a;
-      try (cbn; df; eauto; tauto).
-    +
-      cbn.
-      df.
-      allMappedFacts.
-      debound.
-      subst'.
-      df.
-      eauto.
-    +
-      cbn.
-      df.
-      allMappedFacts.
-      debound.
-      subst'.
-      df.
-      eauto.
-  -
-    cbn.
+    evMappedFacts.
     df.
-    allMappedFacts.
-    edestruct IHa.
+    
+    edestruct IHe.
     eassumption.
-    destruct_conjs.
-    simpl in *.
-    df.
     subst'.
     df.
     eauto.
-  -
-    allMappedFacts.
-    specialize IHa1 with (a_st:=a_st) (p:=p).
-    specialize IHa2 with (a_st:=a_st) (p:=p).
-    assert (allMapped a2 a_st p mt).
-    eapply allMappedSub'; eauto.
-    repeat concludes.
-    destruct_conjs.
-    df.
-
-    destruct a2;
-      try (subst'';
-           df;
-           eauto). 
-    +
-      destruct a;
-        try (subst'; df; eauto).
-      ++
-        df.
-        allMappedFacts.
-        debound.
-        subst'.
-        df.
-        do_ba_st_const.
-        subst.
-        subst'.
-        df.
-        eauto.
 Defined.
-*)
-
-
-(*
-Lemma evShape_sub : forall a e1 e2 n1 et a_st v0 x vm_st vm_st',
-    Ev_Shape e2 (eval (unanno a) n1 et) ->
-    build_app_comp a n1 a_st = (Some v0, a_st) ->
-    v0 vm_st = (Some x, vm_st') ->
-    e2 = st_ev vm_st ->
-    e1 = st_ev vm_st' ->
-    Ev_Shape e1 et.
-Proof.
-  intros.
-  generalizeEverythingElse a.
-  induction a; intros.
-  -
-    destruct a.
-    +
-      ff; eauto.
-    +
-      df.
-      dosome.
-      ff.
-      vmsts.
-      df.
-      evShapeFacts.
-      df.
-      eassumption.
-    +
-      df.
-      dosome.
-      ff.
-      vmsts.
-      df.
-      evShapeFacts.
-      df.
-      eassumption.
-  -
-    df.
-    eauto.
-  -
-    df.
-    destruct a2 eqn:asp_eq.
-    +
-      destruct a eqn:a2_eq.
-      ++
-        doit.
-
-        destruct v0.
-        destruct vm_st.
-        destruct vm_st'.
-        
-        
-        simpl.
-        simpl in H.  
-        (*simpl in *. *)
-        
-        do_ba_st_const.
-        eapply IHa1;
-          [ eapply IHa2;
-            try (simpl; eassumption);
-            try tauto | eassumption | eassumption | tauto | tauto].
-
-      ++
-        doit.
-        amsts.
-
-        simpl.
-        simpl in H.
-        do_ba_st_const.
-
-        eapply IHa1;
-          [ eapply IHa2;
-            try (simpl; eassumption);
-            try tauto | eassumption | eassumption | tauto | tauto].
-
-      ++
-
-        doit.
-
-        domap.
-        do_pair.
-            
-        assert (exists o, build_app_comp (aasp r0 SIG) n1 a0 = (Some o, a0)).
-        { eapply build_app_some.
-          econstructor.
-          econstructor.
-          reflexivity.
-          eexists.
-          econstructor.
-          eauto.
-        }
-        destruct_conjs.
-        
-        do_ba_st_const.
-
-        doit.
-            
-        subst.
-        cbn in H.
-
-        assert (exists x y, H1 vm_st = (Some x, y)).
-        {
-          cbn in H2.
-          df.
-          dosome.
-          eauto.
-        }
-        destruct_conjs.
-        
-        eapply IHa1.
-        eapply IHa2.
-        eassumption.
-        eassumption.
-        eassumption.
-        reflexivity.
-        reflexivity.
-        eassumption.
-        eassumption.
-        simpl.
-        destruct vm_st.
-        simpl in Heqp5.
-        destruct H5.
-        simpl.
-        cbn in H2.
-        repeat break_let.
-        unfold bind in H2.
-        simpl in H2.
-        cbn in H2.
-        repeat break_let.
-              
-        invc Heqp0.
-        subst''.
-        
-        unfold ret in *.
-        
-        do_pair.
-        do_pair.
-        doit.
-        reflexivity.
-        reflexivity.
-
-    +
-      doit.
-
-      amsts.
-      simpl.
-      simpl in H.
-      do_ba_st_const.
-      eapply IHa1.
-      eapply IHa2.
-      simpl.
-      eassumption.
-      eassumption.
-      eassumption.
-      tauto.
-      tauto.
-      eassumption.
-      eassumption.
-      tauto.
-      tauto.
-
-    +
-
-      doit.
-
-      amsts.
-      simpl.
-      simpl in H.
-      do_ba_st_const.
-      eapply IHa1.
-      eapply IHa2.
-      simpl.
-      eassumption.
-      eassumption.
-      eassumption.
-      tauto.
-      tauto.
-      eassumption.
-      eassumption.
-      tauto.
-      tauto.
-
-      Unshelve.
-      eauto.
-Defined.
-
-Lemma contratra : forall x (f:EvidenceC -> EvidenceC) (vmst vmst':vm_st),
-    x = (None, vmst) ->
-    x = (Some f, vmst') ->
-    False.
-Proof.
-  intros.
-  rewrite H in *.
-  solve_by_inversion.
-Defined.
-
-Lemma uEvLemma : forall e e' et' n l p n5 v v1,
-    Ev_Shape e (uu n l p et') ->
-    extractUev e v = (Some (n5, e'), v1) ->
-    Ev_Shape e' et'.
-Proof.
-  intros.
-  invc H.
-  invc H0.
-  eassumption.
-Defined.
-
-Lemma build_app_run_some : forall a p a_st x v_st et (*e*),
-    (*e = st_ev v_st -> *)
-    Ev_Shape (st_ev v_st) (eval (unanno a) p et) ->
-    (*allMapped a a_st p et -> *)
-    build_app_comp a p a_st = (Some x, a_st) ->
-    Ev_Shape (st_ev v_st) (eval (unanno a) p et) ->
-    exists y v, (x v_st = (Some y, v)).
-Proof.
-  intros.
-  generalizeEverythingElse a.
-  induction a; intros.
-  -
-    destruct a;
-      try evShapeFacts.
-    +
-      df.
-      eauto.    
-    +
-      df.
-      doit.
-      (*
-      dosome.
-      df. *)
-      ff.
-
-      ++
-        eauto.
-      ++
-        vmsts.
-        df.
-        evShapeFacts.
-        solve_by_inversion.
-    +
-      df.
-      doit.
-
-      ff.
-      ++
-        eauto.
-      ++
-        vmsts.
-        df.
-        evShapeFacts.
-        solve_by_inversion.
-  -
-    df.
-    eauto.
-  -
-    vmsts.
-    df.
-    subst.
-    df.
-
-    destruct a2 eqn:a2_eq.
-    +
-      destruct a eqn:a_eq.
-      ++
-        (*doit. *)    
-        dosome_eqj.
-        dosome_eqj.
-        repeat break_let.
-
-        do_pair.
-
-        dosome_eqj.
-        do_pair.
-        
-        
-        do_ba_st_const.
-
-        edestruct IHa2 with
-            (v_st:=
-               {|
-                st_ev := st_ev;
-                st_trace := st_trace;
-                st_pl := st_pl;
-                st_store := st_store |}) .
-        simpl.
-        eassumption.
-        eassumption.
-        simpl.
-        eassumption.
-        
-        destruct_conjs.
-        subst''.
-        repeat break_let.
-        
-        amsts.
-        cbn in Heqp1.
-        repeat break_let.
-        unfold ret in Heqp1.
-        invc Heqp1.
-        invc H4.
-        cbn in H.
-
-        edestruct IHa1 with
-            (v_st:=
-                {|
-                st_ev := st_ev2;
-                st_trace := st_trace2;
-                st_pl := st_pl2;
-                st_store := st_store2 |}).
-        simpl. eassumption.
-        eassumption.
-        simpl. eassumption.
-        
-
-        
-        (*
-        eapply evShape_sub.
-        eassumption.
-        eassumption.
-        eassumption.
-        tauto.
-        tauto.
-        eassumption. *)
-        
-        destruct_conjs.
-        subst''.
-        repeat do_pair.
-        eauto.
-
-      ++
-
-        dosome_eq hi.
-        dosome_eq hey.
-        repeat break_let.
-
-        do_pair.
-
-        dosome_eq hey.
-        do_pair.
-        do_ba_st_const.
-
-        edestruct IHa2 with
-            (v_st:=
-               {|
-                st_ev := st_ev;
-                st_trace := st_trace;
-                st_pl := st_pl;
-                st_store := st_store |}) . 
-        
-        eassumption.
-        eassumption.
-        simpl. eassumption.
-        destruct_conjs.
-        subst''.
-        repeat break_let.
-        
-
-
-        amsts.
-        cbn in Heqp1.
-        repeat break_let.
-        unfold ret in Heqp1.
-        unfold bind in Heqp1.
-        repeat break_match_hyp; try solve_by_inversion.
-        +++
-          invc Heqp1.
-          repeat break_let.
-          invc H3.
-          repeat break_match_hyp; try solve_by_inversion.
-          invc Heqp5.
-          invc Heqp1.
-          invc Heqp4.
-          invc Heqp0.
-          eauto.
-
-
-          
-        +++
-        invc Heqp1.
-        repeat break_let.
-        invc H3.
-        repeat break_match_hyp; try solve_by_inversion.
-        invc Heqp5.
-        invc Heqp1.
-        invc Heqp0.
-        cbn in H.
-        simpl in Heqp4.
-        
-        
-
-        edestruct IHa1
-          with (v_st:=
-                  {|
-            st_ev := st_ev2;
-            st_trace := StVM.st_trace
-                          (add_trace [umeas n2 (StVM.st_pl v1) n4 (n5 :: l)]
-                             v1);
-            st_pl := StVM.st_pl
-                       (add_trace [umeas n2 (StVM.st_pl v1) n4 (n5 :: l)] v1);
-            st_store := StVM.st_store
-                          (add_trace [umeas n2 (StVM.st_pl v1) n4 (n5 :: l)]
-                                     v1) |}
-               ).
-        simpl.
-        eapply uEvLemma; eauto.
-        eassumption.
-        simpl.
-        eapply uEvLemma; eauto.
-        
-        
-        
-               
-
-        (*
-
-
-
-        (*with
-            (v_st:=
-                {|
-                st_ev := st_ev2;
-                st_trace := st_trace2;
-                st_pl := st_pl2;
-                st_store := st_store2 |})*).
-        reflexivity.
-
-        admit. *)
-        (*
-        eapply evShape_sub.
-        eassumption.
-        eassumption.
-        eassumption.
-        tauto.
-        tauto. *)
-        
-        destruct_conjs.
-        rewrite H3 in *.
-        solve_by_inversion.
-        (*
-        subst''.
-        do_pair.
-        inversion Heqp0.
-        eauto. *)
-      ++
-        do_ba_st_const.
-        df.
-        dosome_eq hi.
-        df.
-        dosome_eq hey.
-        df.
-
-        (*
-        simpl in H0. *)
-        evShapeFacts.
-        df.
-        do_ba_st_const.
-        vmsts.
-        clear IHa2.
-        edestruct IHa1 with
-            (v_st:=
-               {|
-            st_ev := e;
-            st_trace := st_trace ++ [umeas n st_pl n3 [bs; encodeEv e]];
-            st_pl := st_pl;
-            st_store := st_store |}).
-        
-        eassumption.
-        eassumption.
-        simpl.
-        eassumption.
-        destruct_conjs.
-        vmsts.
-        destruct o3.
-        +++
-          inversion Heqp5.
-          eauto.
-        +++
-          df.
-
-          exfalso.
-          Check contratra.
-          eapply contratra; eauto.
-
-    +
-
-      dosome_eq hi.
-        dosome_eq hey.
-        repeat break_let.
-
-        do_pair.
-
-        dosome_eq hey.
-        do_pair.
-        do_ba_st_const.
-
-        edestruct IHa2 with
-            (v_st:=
-               {|
-                st_ev := st_ev;
-                st_trace := st_trace;
-                st_pl := st_pl;
-                st_store := st_store |}) .
-        simpl in *.
-        eassumption.
-        eassumption.
-        simpl. eassumption.
-
-        destruct_conjs.
-        subst''.
-        repeat break_let.
-        
-
-
-        amsts.
-        cbn in Heqp1.
-        cbn in H1.
-
-        edestruct IHa1 (*with
-            (v_st:=
-                {|
-                st_ev := st_ev2;
-                st_trace := st_trace2;
-                st_pl := st_pl2;
-                st_store := st_store2 |})*).
-
-        eapply evShape_sub;
-          try eassumption;
-          try tauto.
-        
-        eassumption.
-        
-        eapply evShape_sub; try eassumption; try tauto.
-        
-        destruct_conjs.
-        subst''.
-        do_pair.
-        inversion Heqp0.
-        eauto.
-    +
-      dosome_eq hi.
-        dosome_eq hey.
-        repeat break_let.
-
-        do_pair.
-
-        dosome_eq hey.
-        do_pair.
-        do_ba_st_const.
-
-        edestruct IHa2 with
-            (v_st:=
-               {|
-                st_ev := st_ev;
-                st_trace := st_trace;
-                st_pl := st_pl;
-                st_store := st_store |}) .
-        simpl.
-        simpl in H.
-
-        eassumption.
-        eassumption.
-        simpl. eassumption.
-        destruct_conjs.
-        subst''.
-        repeat break_let.
-        
-        amsts.
-
-        edestruct IHa1 (*with
-            (v_st:=
-                {|
-                st_ev := st_ev2;
-                st_trace := st_trace2;
-                st_pl := st_pl2;
-                st_store := st_store2 |})*).
-       
-        eapply evShape_sub;
-          try eassumption;
-          try tauto.
-        eassumption.
-        simpl.
-        eapply evShape_sub;
-          try eassumption;
-          try tauto.
-        destruct_conjs.
-        subst''.
-        do_pair.
-        inversion Heqp0.
-        eauto.
-Defined.
- *)
-
-Locate empty_vmst.
-Check runSt.
-Locate runSt.
-
-Check build_app_comp_ev.
-
 
 Lemma same_ev_shape: forall e et a_st ecomp new_vmst ec_res,
     Ev_Shape e et -> 
@@ -952,221 +180,8 @@ Proof.
     evShapeFacts.
     repeat ff.
     econstructor.
-    eauto.
-    
+    eauto.  
 Defined.
-
-(*
-Lemma same_ev_shape:
-  forall t vmst vmst' (*e e_res *) et e_res_t p a_st x new_vmst new_vmst' f e'' (*app_ev*),
-    
-  well_formed t ->
-  build_comp t vmst = (Some tt, vmst') ->
-  (*e = st_ev vmst -> *)
-  Ev_Shape (st_ev vmst) et ->
-  (*e_res = st_ev vmst' -> *)
-  Ev_Shape (st_ev vmst') e_res_t ->
-  build_app_comp t p a_st = (Some x, a_st) -> (* x : VM (EvidenceC -> EvidenceC) *)
-  runSt new_vmst x = (Some f, new_vmst') ->
-  Ev_Shape e'' et ->
-  (*app_ev = f e'' -> *)
-  Ev_Shape (f e'') e_res_t.
-Proof.
-  intros.
-  subst.
-  vmsts.
-  simpl in *.
-  df.
-  generalizeEverythingElse t.
-  induction t; intros;
-    try do_wf_pieces.
-  -
-    destruct r.
-    destruct a.
-    +
-      df.
-      dosome.
-      eapply ev_shape_transitive.
-      apply H1.
-      eassumption.
-      eassumption.
-    +
-      df.
-      dosome.
-      evShapeFacts.
-      haaa.
-      econstructor.
-      eapply ev_shape_transitive.
-      apply H1.
-      eassumption.
-      eassumption.
-    +
-      df.
-      dosome.
-      evShapeFacts.
-      haaa.
-      econstructor.
-      eapply ev_shape_transitive.
-      apply H1.
-      eassumption.
-      eassumption.
-  (* HSH case
-    +
-      df.
-      dosome.
-      evShapeFacts.
-     (* haaa. *)
-      econstructor.
-      eapply ev_shape_transitive.
-      apply H1.
-      eassumption.
-      eassumption. *)
-  -
-    df.
-    dohtac.
-    df.
-    eapply IHt.
-    eassumption.
-    apply build_comp_at.
-    apply H1.
-    eassumption.
-    eassumption.
-    eassumption.
-    eassumption.
-  -
-    df.
-    dosome.
-    destruct t2 eqn:t2_eq.
-    ++
-      vmsts.
-      destruct a eqn:a_eq.
-      +++
-        break_match.
-        dosome.
-        do_ba_st_const.
-        df.
-        eapply IHt1; eassumption.
-
-      +++
-        break_match.
-        dosome.
-        do_ba_st_const.
-        break_match; try solve_by_inversion.
-        df.
-        evShapeFacts.
-        econstructor.
-        eapply IHt1; eassumption.
-      +++
-        break_match.
-        dosome.
-        do_ba_st_const.
-        break_match; try solve_by_inversion.
-        df.
-        evShapeFacts.
-        econstructor.
-        eapply IHt1; eassumption.
-    ++
-
-      dosome_eq hi.
-      dosome_eq hey.
-      repeat break_let.
-
-      do_pair.
-
-      dosome_eq hey.
-      do_pair.
-      do_ba_st_const.
-      break_match; try solve_by_inversion.
-      dosome_eq heey.
-      repeat break_let.
-      subst.
-      do_pair.
-      dosome_eq hii.
-      do_pair.
-      amsts.
-      do_pl_immut.
-
-      eapply IHt2.
-      eassumption.
-      eassumption.
-      eapply multi_ev_eval.
-      apply H6.
-      eassumption.
-      eassumption.
-      reflexivity.
-      eassumption.
-      eassumption.
-      eassumption.
-
-      eapply IHt1.
-      eassumption.
-      eassumption.
-      eassumption.
-      eapply multi_ev_eval.
-      apply H6.
-      eassumption.
-      eassumption.
-      reflexivity.
-      eassumption.
-      eassumption.
-      eassumption.
-    ++
-      dosome_eq hi.
-      dosome_eq hey.
-      repeat break_let.
-
-      do_pair.
-
-      dosome_eq hey.
-      do_pair.
-      do_ba_st_const.
-      break_match; try solve_by_inversion.
-      dosome_eq heey.
-      repeat break_let.
-      subst.
-      do_pair.
-      dosome_eq hii.
-      do_pair.
-      amsts.
-      do_pl_immut.
-
-      eapply IHt2.
-      eassumption.
-      eassumption.
-      eapply multi_ev_eval.
-      apply H6.
-      eassumption.
-      eassumption.
-      reflexivity.
-      eassumption.
-      eassumption.
-      eassumption.
-
-      eapply IHt1.
-      eassumption.
-      eassumption.
-      eassumption.
-      eapply multi_ev_eval.
-      apply H6.
-      eassumption.
-      eassumption.
-      reflexivity.
-      eassumption.
-      eassumption.
-      eassumption.
-      Unshelve.
-      eauto.
-      eauto.
-      exact (aasp (0,0) (ASPC 1 [])).
-      exact mtc.
-      eauto.
-      eauto.
-      exact (aasp (0,0) (ASPC 1 [])).
-      exact mtc.
-      eauto.
-      eauto.
-Defined.
-*)
 
 (*
 Lemma trace_cumul : forall  t e a_st a_st' v tr tr' p n n' o o' e' o0,
@@ -1578,15 +593,108 @@ Proof.
     eapply evSub_trans; eauto.
 Defined.
 
-Lemma evMappedSome:
+Lemma evMappedSome: forall e1 e2 a_st,
+  EvSub e1 e2 ->
+  evMapped e2 a_st ->
+  evMapped e1 a_st.
+Proof.
+  induction e2; intros.
+  -
+    invc H.
+    econstructor.
+  -
+    invc H0.
+    destruct_conjs.
+    invc H.
+    +
+      econstructor.
+      tauto.
+      eassumption.
+      eauto.
+    +
+      eauto.
+  -
+    invc H0.
+    destruct_conjs.
+    invc H.
+    +
+      econstructor.
+      tauto.
+      eassumption.
+      eauto.
+    +
+      eauto.
+  -
+    invc H0.
+    destruct_conjs.
+    invc H.
+    +
+      econstructor.
+      tauto.
+    +
+      eauto.
+Defined.
+
+Lemma subSome: forall e1 e2 x a_st,
   EvSub e1 e2 ->
   build_app_comp_ev e2 a_st = (Some x, a_st) ->
-  
+  exists x', build_app_comp_ev e1 a_st = (Some x', a_st).
+Proof.
+  intros.
+  assert (evMapped e1 a_st).
+  {
+    eapply evMappedSome.
+    eassumption.
+    eapply build_app_some'; eauto.
+  }
+  eapply build_app_some; eauto.
+Defined.
 
-Lemma app_lseq_decomp': forall t1 e1 e2 vmst vmst' a_st x
+Lemma app_always_some: forall e a_st x0 vmst,
+    build_app_comp_ev e a_st = (Some x0, a_st) ->
+    exists app_ev vmst',
+      x0 vmst = (Some app_ev, vmst').
+Proof.
+  induction e; intros.
+  -
+    ff.
+    eauto.
+  -
+    ff.
+    ff.
+    edestruct IHe.
+    eassumption.
+    destruct_conjs.
+    rewrite H0 in *.
+    
+    ff.
+    eauto.
+  -
+    ff.
+    ff.
+    edestruct IHe.
+    eassumption.
+    destruct_conjs.
+    rewrite H0 in *.
+    
+    ff.
+    eauto.
+  -
+    ff.
+    ff.
+    edestruct IHe.
+    eassumption.
+    destruct_conjs.
+    rewrite H0 in *.
+    
+    ff.
+    eauto.
+Defined.
+
+Lemma app_lseq_decomp': forall (*t1*) e1 e2 (*vmst vmst'*) a_st x
                          app_res init_vmst new_vmst,
-    copland_compile t1 vmst = (Some tt, vmst') ->
-    e1 = st_ev vmst' ->
+    (*copland_compile t1 vmst = (Some tt, vmst') ->
+    e1 = st_ev vmst' -> *)
     EvSub e1 e2 ->
     (*
     copland_compile t2 vmst' = (Some tt, vmst'') ->
@@ -1609,11 +717,88 @@ Lemma app_lseq_decomp': forall t1 e1 e2 vmst vmst' a_st x
 
 
 Proof.
-Admitted.
+  intros.
+  edestruct subSome.
+  eassumption.
+  eassumption.
+  exists x0.
 
-
-    
-  
+  edestruct app_always_some.
+  apply H2.
+  destruct_conjs.
+  exists x1.
+  exists H3.
+  split.
+  eassumption.
+  split.
+  eassumption.
+  subst.
+  vmsts.
+  amsts.
+  ff.
+  generalizeEverythingElse e2.
+  induction e2; intros.
+  -
+    invc H.
+    ff.
+    eassumption.
+  -
+    invc H.
+    +
+      ff.
+      ff.
+      ff.
+      eassumption.
+    +
+      ff.
+      ff.
+      ff.
+      assert (forall ev1:Ev, In ev1 st_trace -> In ev1 st_trace2).
+      {
+        eauto.
+      }
+      pose (H ev1).
+      concludes.
+      apply in_or_app.
+      eauto.
+  -
+    invc H.
+    +
+      ff.
+      ff.
+      ff.
+      eassumption.
+    +
+      ff.
+      ff.
+      ff.
+      assert (forall ev1:Ev, In ev1 st_trace -> In ev1 st_trace2).
+      {
+        eauto.
+      }
+      pose (H ev1).
+      concludes.
+      apply in_or_app.
+      eauto.
+  -
+    invc H.
+    +
+      ff.
+      ff.
+      ff.
+      eassumption.
+    +
+      ff.
+      ff.
+      ff.
+      assert (forall ev1:Ev, In ev1 st_trace -> In ev1 st_trace0).
+      {
+        eauto.
+      }
+      pose (H ev1).
+      concludes.
+      eassumption.
+Defined.
 
 Lemma app_lseq_decomp: forall t1 t2 e1 e2 vmst vmst' vmst'' a_st x
                          app_res init_vmst new_vmst,
@@ -1643,8 +828,8 @@ Lemma app_lseq_decomp: forall t1 t2 e1 e2 vmst vmst' vmst'' a_st x
 Proof.
   intros.
   eapply app_lseq_decomp'.
-  apply H1.
-  eassumption.
+  (*apply H1.
+  eassumption. *)
   eapply evAccum.
   apply H0.
   eassumption.
@@ -1723,6 +908,7 @@ Proof.
     eauto.
 
   -
+    do_wf_pieces.
     vmsts.
     Check alseq_decomp_gen.
     edestruct alseq_decomp_gen. (*with (r:=r) (t1':=t1) (t2':=t2) (e:=st_ev2) (e'':=st_ev1) (p:=st_pl2) (p'':=st_pl1) (init_tr:=st_trace2) (tr:=st_trace1). *)
@@ -1750,12 +936,15 @@ Proof.
                                   
 
     
-    apply H8.
-    tauto.
+    apply H6.
+    apply H7.
+
     eassumption.
     tauto.
     simpl in *.
     subst.
+    eassumption.
+    tauto.
     eassumption.
     eassumption.
 
@@ -1772,13 +961,13 @@ Proof.
     Print measEventFacts.
 
     inversion H5; clear H5.
-    inversion H17; clear H17.
+    inversion H19; clear H19.
 
     (*
     measEventFacts.
     evEventFacts. *)
 
-    inversion H16; clear H16.
+    inversion H18; clear H18.
 
     (*
     invEvents. *)
@@ -1797,7 +986,7 @@ Proof.
       eassumption.
       eassumption.
       Focus 3.
-      apply H12.
+      apply H14.
       tauto.
       tauto.
       eassumption.
@@ -1854,9 +1043,7 @@ Proof.
       destruct_conjs.
       simpl in *.
       exists x2.
-      split.
-      eauto.
-      subst. eauto.
+      split; eauto.
 Defined.
 
 
@@ -1864,7 +1051,8 @@ Defined.
     
     
     
-    
+HERE
+  
 
 
 
