@@ -25,10 +25,10 @@ Fixpoint build_app_comp_ev (e:EvidenceC): AM (CVM EvidenceC) :=
                               
   | nnc nid bs e' =>
     d <- build_app_comp_ev e' ;;
+    check_res <- am_checkNonce nid bs ;;
     let c :=
         innerRes <- d ;;
-        (* TODO: check nonce *)
-        ret (nnc nid 0 innerRes) in
+        ret (nnc nid check_res innerRes) in
     ret c
   end.
 

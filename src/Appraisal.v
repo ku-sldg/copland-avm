@@ -15,27 +15,19 @@ Set Nested Proofs Allowed.
 
 Lemma ba_const : forall e a_st a_st' o,
     build_app_comp_ev e a_st = (o, a_st') ->
-    a_st = a_st'.
+    am_nonceMap a_st = am_nonceMap a_st' /\
+    am_nonceId a_st = am_nonceId a_st' /\
+    st_aspmap a_st = st_aspmap a_st' /\
+    st_sigmap a_st = st_sigmap a_st'. (*/\
+    checked a_st = checked a_st'. *)
 Proof.
   intros.
   generalizeEverythingElse e.
-  induction e; intros.
-  -
-    ff; eauto.
-  -
+  induction e; intros;
+    repeat ff;
+    try eauto;
+    try (unfold am_checkNonce in * );
     repeat ff; eauto.
-  (*
-    edestruct IHa.
-    eassumption.
-    destruct_conjs.
-    simpl in *.
-    subst.
-    tauto. *)
-  -
-    repeat ff; eauto.
-  -
-    repeat ff; eauto.
-    
 Defined.
 
 Ltac do_ba_st_const :=
@@ -43,12 +35,15 @@ Ltac do_ba_st_const :=
   repeat (
       match goal with
       | [H: build_app_comp_ev _ ?a_st = (_, ?a0) |- _] =>
-        assert_new_proof_by (a_st = a0) tac
+        assert_new_proof_by (am_nonceMap a_st = am_nonceMap a0 /\
+    am_nonceId a_st = am_nonceId a0 /\
+    st_aspmap a_st = st_aspmap a0 /\
+    st_sigmap a_st = st_sigmap a0) tac
       end);
   subst.
 
-Lemma build_app_some' : forall e a_st,
-    (exists o, build_app_comp_ev e a_st = (Some o, a_st)) ->
+Lemma build_app_some' : forall e a_st a_st',
+    (exists o, build_app_comp_ev e a_st = (Some o, a_st')) ->
     evMapped e a_st.
 Proof.
   induction e; intros.
@@ -94,16 +89,42 @@ Proof.
       destruct_conjs.
       ff.
       econstructor.
-      eauto.
+      ++
+        tauto.
+      ++    
+        eauto.
+      ++
+        unfold am_checkNonce in *.
+        repeat ff.
+        +++
+        eexists.
+        econstructor.
+        do_ba_st_const.
+        destruct_conjs.
+        subst'.
+        eassumption.
+        +++
+          eexists.
+          econstructor.
+          do_ba_st_const.
+          destruct_conjs.
+          subst'.
+          eassumption.
+          
+
+        
     +
       destruct_conjs.
       solve_by_inversion.
+    +
+      destruct_conjs.
+      solve_by_inversion.   
 Defined.
     
 Lemma build_app_some : forall e a_st,
     evMapped e a_st ->
     (*Ev_Shape e -> *)
-    exists o, build_app_comp_ev e a_st = (Some o, a_st).
+    exists o a_st', build_app_comp_ev e a_st = (Some o, a_st').
 Proof.
   intros.
   generalizeEverythingElse e.
@@ -128,6 +149,7 @@ Proof.
     df.
     edestruct IHe.
     eassumption.
+    destruct_conjs.
     subst'.
     df.
     eauto.
@@ -139,6 +161,7 @@ Proof.
     df.
     edestruct IHe.
     eassumption.
+    destruct_conjs.
     subst'.
     df.
     eauto.
@@ -146,17 +169,27 @@ Proof.
     cbn.
     evMappedFacts.
     df.
-    
+    unfold am_checkNonce in *.
+    do_ba_st_const.
+    destruct_conjs.
+    subst'.
+    clear H1; clear H2; clear H3.
+    repeat (ff; eauto).
     edestruct IHe.
     eassumption.
+    destruct_conjs.
     subst'.
-    df.
-    eauto.
+    solve_by_inversion.
+    edestruct IHe.
+    eassumption.
+    destruct_conjs.
+    subst'.
+    solve_by_inversion.
 Defined.
 
-Lemma same_ev_shape: forall e et a_st ecomp new_vmst ec_res,
+Lemma same_ev_shape: forall e et a_st a_st' ecomp new_vmst ec_res,
     Ev_Shape e et -> 
-    build_app_comp_ev e a_st = (Some ecomp, a_st) ->
+    build_app_comp_ev e a_st = (Some ecomp, a_st') ->
     runSt ecomp empty_vmst  = (Some ec_res, new_vmst) ->
     Ev_Shape ec_res et.
 Proof.
@@ -180,7 +213,7 @@ Proof.
     evShapeFacts.
     repeat ff.
     econstructor.
-    eauto.  
+    eauto.
 Defined.
 
 (*
@@ -629,16 +662,27 @@ Proof.
     destruct_conjs.
     invc H.
     +
-      econstructor.
-      tauto.
+      econstructor;
+        eauto.
     +
       eauto.
 Defined.
 
-Lemma subSome: forall e1 e2 x a_st,
+(*
+  Lemma evMappedAll: forall e1 a_st a_st',
+    evMapped e1 a_st ->
+    am_nonceMap a_st = am_nonceMap a_st' ->
+    (*am_nonceId a_st = am_nonceId a_st' -> *)
+    st_aspmap a_st = st_aspmap a_st' ->
+    st_sigmap a_st = st_sigmap a_st' ->
+    evMapped e1 a_st'
+ *)
+
+
+Lemma subSome: forall e1 e2 x a_st a_st',
   EvSub e1 e2 ->
-  build_app_comp_ev e2 a_st = (Some x, a_st) ->
-  exists x', build_app_comp_ev e1 a_st = (Some x', a_st).
+  build_app_comp_ev e2 a_st = (Some x, a_st') ->
+  exists x' ab_st', build_app_comp_ev e1 a_st = (Some x', ab_st').
 Proof.
   intros.
   assert (evMapped e1 a_st).
@@ -650,8 +694,8 @@ Proof.
   eapply build_app_some; eauto.
 Defined.
 
-Lemma app_always_some: forall e a_st x0 vmst,
-    build_app_comp_ev e a_st = (Some x0, a_st) ->
+Lemma app_always_some: forall e a_st a_st' x0 vmst,
+    build_app_comp_ev e a_st = (Some x0, a_st') ->
     exists app_ev vmst',
       x0 vmst = (Some app_ev, vmst').
 Proof.
@@ -691,7 +735,7 @@ Proof.
     eauto.
 Defined.
 
-Lemma app_lseq_decomp': forall (*t1*) e1 e2 (*vmst vmst'*) a_st x
+Lemma app_lseq_decomp': forall (*t1*) e1 e2 (*vmst vmst'*) a_st a_st' x
                          app_res init_vmst new_vmst,
     (*copland_compile t1 vmst = (Some tt, vmst') ->
     e1 = st_ev vmst' -> *)
@@ -699,13 +743,13 @@ Lemma app_lseq_decomp': forall (*t1*) e1 e2 (*vmst vmst'*) a_st x
     (*
     copland_compile t2 vmst' = (Some tt, vmst'') ->
     e2 = st_ev vmst'' -> *)
-    build_app_comp_ev e2 a_st = (Some x, a_st) ->
+    build_app_comp_ev e2 a_st = (Some x, a_st') ->
     runSt x init_vmst = (Some app_res, new_vmst) ->
 
 
     
-    exists x' app_ev1 new_vmst1,
-      build_app_comp_ev e1 a_st = (Some x', a_st) /\
+    exists x' app_ev1 new_vmst1 ab_st,
+      build_app_comp_ev e1 a_st = (Some x', ab_st) /\
       runSt x' init_vmst = (Some app_ev1, new_vmst1) /\
 
       (*
@@ -721,13 +765,15 @@ Proof.
   edestruct subSome.
   eassumption.
   eassumption.
+  destruct_conjs.
   exists x0.
 
   edestruct app_always_some.
-  apply H2.
+  apply H3.
   destruct_conjs.
   exists x1.
-  exists H3.
+  exists H4.
+  exists H2.
   split.
   eassumption.
   split.
@@ -800,7 +846,7 @@ Proof.
       eassumption.
 Defined.
 
-Lemma app_lseq_decomp: forall t1 t2 e1 e2 vmst vmst' vmst'' a_st x
+Lemma app_lseq_decomp: forall t1 t2 e1 e2 vmst vmst' vmst'' a_st a_st' x
                          app_res init_vmst new_vmst,
     well_formed_r t1 ->
     well_formed_r t2 ->
@@ -808,13 +854,13 @@ Lemma app_lseq_decomp: forall t1 t2 e1 e2 vmst vmst' vmst'' a_st x
     e1 = st_ev vmst' ->
     copland_compile t2 vmst' = (Some tt, vmst'') ->
     e2 = st_ev vmst'' ->
-    build_app_comp_ev e2 a_st = (Some x, a_st) ->
+    build_app_comp_ev e2 a_st = (Some x, a_st') ->
     runSt x init_vmst = (Some app_res, new_vmst) ->
 
 
     
-    exists x' app_ev1 new_vmst1,
-      build_app_comp_ev e1 a_st = (Some x', a_st) /\
+    exists x' app_ev1 new_vmst1 ab_st,
+      build_app_comp_ev e1 a_st = (Some x', ab_st) /\
       runSt x' init_vmst = (Some app_ev1, new_vmst1) /\
 
       (*
@@ -840,7 +886,7 @@ Proof.
   eassumption.
 Defined.
 
-Lemma appraisal_correct : forall t vmst vmst' p e_res init_vmst new_vmst a_st x app_res (*tr_app*) ev,
+Lemma appraisal_correct : forall t vmst vmst' p e_res init_vmst new_vmst a_st a_st' x app_res (*tr_app*) ev,
     well_formed_r t ->
     copland_compile t vmst = (Some tt, vmst') ->
     p = st_pl vmst ->
@@ -852,7 +898,7 @@ Lemma appraisal_correct : forall t vmst vmst' p e_res init_vmst new_vmst a_st x 
     Ev_Shape e etype ->
     et = Term.eval (unanno t) p etype -> 
      *)
-    build_app_comp_ev e_res a_st = (Some x, a_st) ->
+    build_app_comp_ev e_res a_st = (Some x, a_st') ->
     runSt x init_vmst = (Some app_res, new_vmst) ->
     (*tr_app = st_trace new_vmst -> *)
     measEvent t p ev ->
@@ -961,13 +1007,13 @@ Proof.
     Print measEventFacts.
 
     inversion H5; clear H5.
-    inversion H19; clear H19.
+    inversion H20; clear H20.
 
     (*
     measEventFacts.
     evEventFacts. *)
 
-    inversion H18; clear H18.
+    inversion H19; clear H19.
 
     (*
     invEvents. *)
@@ -986,7 +1032,7 @@ Proof.
       eassumption.
       eassumption.
       Focus 3.
-      apply H14.
+      apply H15.
       tauto.
       tauto.
       eassumption.
@@ -995,6 +1041,10 @@ Proof.
       econstructor.
       eassumption.
       econstructor.
+      (*
+      eassumption. *)
+      (*
+      econstructor. *)
 
       
       destruct_conjs.

@@ -27,11 +27,52 @@ Definition am_newNonce (bs :BS) : AM EvidenceC :=
   let i := am_nonceId am_st in
   let appm := st_aspmap am_st in
   let sigm := st_sigmap am_st in
+  let checkedm := checked am_st in
   (*let plm := am_pl am_st in *)            
   let newMap := map_set mm i bs in
   let newId := i + 1 in
-  put (mkAM_St newMap newId appm sigm (*plm*)) ;;         
-      ret (nnc i bs mtc).
+  put (mkAM_St newMap newId appm sigm checkedm (*plm*)) ;;         
+  ret (nnc i bs mtc).
+
+Definition getNonceVal (nid:nat) : AM BS :=
+  m <- gets am_nonceMap ;;
+  let maybeVal := map_get m nid in
+  match maybeVal with
+  | Some bs => ret bs
+  | None => failm
+  end.
+
+Locate Nat.eq_dec.
+Require Import PeanoNat.
+
+Definition add_checked (nid:nat) : AM unit :=
+  am_st <- get ;;
+  let mm := am_nonceMap am_st in
+  let i := am_nonceId am_st in
+  let appm := st_aspmap am_st in
+  let sigm := st_sigmap am_st in
+  let checkedm := checked am_st in
+  put (mkAM_St mm i appm sigm (checkedm ++ [nid])).
+  
+
+Definition am_checkNonce (nid:nat) (bs:BS) : AM BS :=
+  good_bs <- getNonceVal nid ;;
+  add_checked nid ;;
+  if (Nat.eq_dec bs good_bs) then ret 1 else ret 0.
+
+Definition nonces_checked (nm:MapC nat BS) (l:list nat) : Prop :=
+  forall x, 
+  (exists v, bound_to nm x v) ->
+  In x l.
+
+Definition nonces_checked_st (st:AM_St) : Prop :=
+  match st with
+  | mkAM_St nm i am sm l =>
+    nonces_checked nm l
+  end.
+    
+  
+  
 
 Definition runAM {A:Type} (k:(AM A)) (* (env:AM_Env) *) (st:AM_St) : (option A) * AM_St :=
   runSt k st.

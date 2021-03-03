@@ -21,9 +21,11 @@ Inductive evMapped : EvidenceC -> AM_St -> Prop :=
     evMapped e' st ->
     evMapped (hh p e') st    
 *)
-| evMappedN : forall e' bs (*m*) nid st,
+| evMappedN : forall e' bs (*m*) nid st nm,
     (*m = st_aspmap st -> *)
+    nm = am_nonceMap st ->
     evMapped e' st ->
+    (exists v, bound_to nm nid v) ->
     evMapped (nnc nid bs e') st
 (*
 | evMappedS : forall e1 e2 st,
