@@ -46,9 +46,9 @@ Expand let expressions in both the antecedent and the
 <span class="id" title="keyword">Ltac</span> <span class="id" title="var">expand_let_pairs</span> :=<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
 &nbsp;&nbsp;| |- <span class="id" title="keyword">context</span> [<span class="id" title="keyword">let</span> (<span class="id" title="var">_</span>,<span class="id" title="var">_</span>) := ?<span class="id" title="var">e</span> <span class="id" title="tactic">in</span> <span class="id" title="var">_</span>] ⇒<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#surjective_pairing"><span class="id" title="lemma">surjective_pairing</span></a> <span class="id" title="var">e</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="http://coq.inria.fr/distrib/V8.11.2/stdlib//Coq.Init.Datatypes.html#surjective_pairing"><span class="id" title="lemma">surjective_pairing</span></a> <span class="id" title="var">e</span>)<br/>
 &nbsp;&nbsp;| [ <span class="id" title="var">H</span>: <span class="id" title="keyword">context</span> [<span class="id" title="keyword">let</span> (<span class="id" title="var">_</span>,<span class="id" title="var">_</span>) := ?<span class="id" title="var">e</span> <span class="id" title="tactic">in</span> <span class="id" title="var">_</span>] |- <span class="id" title="var">_</span> ] ⇒<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Datatypes.html#surjective_pairing"><span class="id" title="lemma">surjective_pairing</span></a> <span class="id" title="var">e</span>) <span class="id" title="tactic">in</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> (<a class="idref" href="http://coq.inria.fr/distrib/V8.11.2/stdlib//Coq.Init.Datatypes.html#surjective_pairing"><span class="id" title="lemma">surjective_pairing</span></a> <span class="id" title="var">e</span>) <span class="id" title="tactic">in</span> <span class="id" title="var">H</span><br/>
 &nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
 
 <br/>
@@ -62,7 +62,7 @@ Destruct disjuncts in the antecedent without naming them.
 <br/>
 <span class="id" title="keyword">Ltac</span> <span class="id" title="var">destruct_disjunct</span> :=<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
-&nbsp;&nbsp;| [ <span class="id" title="var">H</span>: <span class="id" title="var">_</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.12.0/stdlib//Coq.Init.Logic.html#f031fe1957c4a4a8e217aa46af2b4e25"><span class="id" title="notation">∨</span></a> <span class="id" title="var">_</span>  |- <span class="id" title="var">_</span> ] ⇒ <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">H</span>|<span class="id" title="var">H</span>]<br/>
+&nbsp;&nbsp;| [ <span class="id" title="var">H</span>: <span class="id" title="var">_</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.11.2/stdlib//Coq.Init.Logic.html#f031fe1957c4a4a8e217aa46af2b4e25"><span class="id" title="notation">∨</span></a> <span class="id" title="var">_</span>  |- <span class="id" title="var">_</span> ] ⇒ <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">H</span>|<span class="id" title="var">H</span>]<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
 </div>
 </div>
