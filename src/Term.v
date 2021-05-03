@@ -484,9 +484,9 @@ Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
       fst r = i ->
       events (aasp r CPY) p (copy i p)
 | evtsusm:
-    forall i id args r p,
+    forall i id l tid r p tpl,
       fst r = i ->
-      events (aasp r (ASPC id args)) p (umeas i p id args)
+      events (aasp r (ASPC id l tpl tid)) p (umeas i p id l tpl tid)
 | evtssig:
     forall r i p,
       fst r = i ->

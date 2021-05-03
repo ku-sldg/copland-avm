@@ -6,13 +6,13 @@ Import ListNotations.
 Fixpoint build_app_comp_ev (e:EvidenceC): AM (CVM EvidenceC) :=
   match e with
   | mtc => ret (ret mtc)
-  | uuc i args pi bs e' =>
-    app_id <- am_get_app_asp pi i ;;
+  | uuc i args tpl tid bs e' =>
+    app_id <- am_get_app_asp tpl i ;;
     d <- build_app_comp_ev e' ;;
     let c :=
         innerRes <- d ;;
-        res <- checkUSM 0 app_id args bs ;;
-        ret (uuc i args pi res innerRes) in
+        res <- checkUSM 0 app_id args tpl tid bs ;;
+        ret (uuc i args tpl tid res innerRes) in
     ret c
   | ggc pi bs e' =>
     app_id <- am_get_sig_asp pi ;;

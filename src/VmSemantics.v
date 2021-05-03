@@ -623,6 +623,8 @@ Ltac do_restl :=
       ltac:(eapply restl; [apply H2 | apply H])
   end.
 
+Locate Ev_Shape.
+
 Axiom remote_Ev_Shape: forall e es t n,
     Ev_Shape e es ->
     Ev_Shape (toRemote t n e) (eval (unanno t) n es).

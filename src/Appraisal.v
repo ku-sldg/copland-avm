@@ -529,7 +529,7 @@ Defined.
 *)
 
 Inductive evidenceEvent: Ev -> Prop :=
-| uev: forall n p i args, evidenceEvent (umeas n p i args)
+| uev: forall n p i args tpl tid, evidenceEvent (umeas n p i args tpl tid)
 (*| sev: forall n p, evidenceEvent (sign n p) *)
 (*
 | hev: forall n p, evidenceEvent (hash n p)*). 
@@ -539,10 +539,10 @@ Definition measEvent (t:AnnoTerm) (p:Plc) (ev:Ev) : Prop :=
   events t p ev /\ evidenceEvent ev.
 
 Inductive appEvent : Ev -> AM_St -> Ev -> Prop :=
-| aeu : forall p p' i i' n n' m args st,
+| aeu : forall p p' i i' n n' m args tpl tid st,
     m = st_aspmap st ->
-    bound_to m (p,i) i' ->
-    appEvent (umeas n p i args) st (umeas n' p' i' ([n] ++ args)).
+    bound_to m (tpl,i) i' ->
+    appEvent (umeas n p i args tpl tid) st (umeas n' p' i' ([n] ++ args) tpl tid).
 (*| asu : forall p q i' n n' m  args st,
     m = st_sigmap st ->
     bound_to m p i' ->

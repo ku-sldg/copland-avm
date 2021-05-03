@@ -6,11 +6,11 @@ Require Import Coq.Program.Tactics. (*Coq.Program.Equality. *)
 
 Inductive evMapped : EvidenceC -> AM_St -> Prop :=
 | evMappedMt : forall m, evMapped mtc m
-| evMappedU : forall p i args e' m st bs,
+| evMappedU : forall p i args tid e' m st bs,
     m = st_aspmap st ->
     evMapped e' st -> 
     (exists j, bound_to m (p,i) j) -> 
-    evMapped (uuc i args p bs e') st
+    evMapped (uuc i args p tid bs e') st
 | evMappedG : forall e' m p st bs,
     m = st_sigmap st ->
     evMapped e' st ->

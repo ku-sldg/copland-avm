@@ -37,12 +37,13 @@ Set Nested Proofs Allowed.
 Notation Plc := nat (only parsing).
 (*Notation Loc := nat (only parsing). *)
 Notation ASP_ID := nat (only parsing).
+Notation TARG_ID := nat (only parsing).
 Notation N_ID := nat (only parsing).
 Notation Arg := nat (only parsing).
 
 Inductive ASP: Set :=
 | CPY: ASP
-| ASPC: ASP_ID -> list Arg -> ASP
+| ASPC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP
 | SIG: ASP
 (*| HSH: ASP*) .
 
@@ -78,7 +79,7 @@ Definition getTwoLocs (ls:list Loc) (b:bool): option (Loc*Loc) :=
 
 Inductive Evidence: Set :=
 | mt: Evidence
-| uu: ASP_ID -> list Arg -> Plc -> Evidence -> Evidence
+| uu: Plc -> ASP_ID -> (list Arg) -> Plc -> TARG_ID -> Evidence -> Evidence
 | gg: Plc -> Evidence -> Evidence
 (*| hh: Plc -> Evidence -> Evidence *)
 | nn: N_ID -> Evidence -> Evidence
@@ -94,7 +95,7 @@ Definition splitEv_T (sp:SP) (e:Evidence) : Evidence :=
 Definition eval_asp t p e :=
   match t with
   | CPY => e 
-  | ASPC i args => uu i args p e
+  | ASPC i l upl targi => uu p i l upl targi e
   | SIG => gg p e
   (*| HSH => hh p e *)
   end.
@@ -139,7 +140,7 @@ Compute (eval ex_term 0 mt).
 
 Inductive Ev: Set :=
 | copy:  nat -> Plc -> Ev 
-| umeas: nat -> Plc -> ASP_ID -> list Arg -> Ev
+| umeas: nat -> Plc -> ASP_ID -> (list Arg) -> Plc -> TARG_ID -> Ev
 | sign: nat -> Plc -> Ev
 (*| hash: nat -> Plc -> Ev *)
 | req: nat -> (*Loc ->*) Plc -> Plc -> Term -> Ev
@@ -162,7 +163,7 @@ Hint Resolve eq_ev_dec : core.
 Definition ev x : nat :=
   match x with
   | copy i _ => i
-  | umeas i _ _ _  => i
+  | umeas i _ _ _ _ _  => i
   | sign i _ => i
   (*| hash i _ => i *)
   | req i _ _ _ => i
@@ -177,7 +178,7 @@ Definition ev x : nat :=
 Definition pl x : Plc :=
   match x with
   | copy _ p => p
-  | umeas _ p _ _  => p
+  | umeas _ p _ _ _ _  => p
   | sign _ p => p
   (*| hash _ p => p *)
   | req _ p _ _ => p
@@ -199,7 +200,7 @@ See Lemma [events_injective].
 Definition asp_event i x p :=
   match x with
   | CPY => copy i p
-  | ASPC id args => umeas i p id args
+  | ASPC id l upl tid => umeas i p id l upl tid
   | SIG => sign i p
   (*| HSH => hash i p *)
   end.

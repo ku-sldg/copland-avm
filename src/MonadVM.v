@@ -87,22 +87,20 @@ Definition split_ev_par (i:nat) (sp1 sp2:SP) ((*loc_e1*) loc_e2:Loc)
 
 (** * Partially-symbolic implementations of IO operations *)
 
-Definition invokeUSM (x:nat) (i:ASP_ID) (l:list Arg) (e:EvidenceC) : CVM BS :=
-  (*e <- get_ev ;; *)
+Definition invokeUSM (x:nat) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID) : CVM EvidenceC :=
+  e <- get_ev ;;
   p <- get_pl ;;
-  add_tracem [umeas x p i l];;
-  ret x 
-  (*ret (uuc i x e)*).
+  add_tracem [umeas x p i l tpl tid];;
+  ret (uuc i l tpl tid x e).
 
 Definition encodeEv (e:EvidenceC) : BS.
 Admitted.
 
-Definition signEv (x:nat) (e:EvidenceC) : CVM BS :=
-  (* e <- get_ev ;; *)
+Definition signEv (x:nat) : CVM EvidenceC :=
+  e <- get_ev ;;
   p <- get_pl ;;
   add_tracem [sign x p] ;;
-  ret x
-  (*ret (ggc x e)*).
+  ret (ggc p x e).
 
 (*
 Definition hashEv (x:nat) (e:EvidenceC) : CVM BS :=
@@ -120,16 +118,10 @@ Definition copyEv (x:nat) : CVM EvidenceC :=
 Definition do_prim (x:nat) (a:ASP) : CVM EvidenceC :=
   match a with
   | CPY => copyEv x
-  | ASPC asp_id args =>
-    e <- get_ev ;;
-    p <- get_pl ;;
-    bs <- invokeUSM x asp_id args e ;;
-    ret (uuc asp_id args p bs e)               
+  | ASPC asp_id l tpl tid =>
+    invokeUSM x asp_id l tpl tid         
   | SIG =>
-    e<- get_ev ;;
-    p <- get_pl ;;
-    bs <- signEv x e ;;
-    ret (ggc p bs e)
+    signEv x
   (*| HSH =>
     e <- get_ev ;;
     bs <- hashEv x e ;;
@@ -233,10 +225,12 @@ Definition extractComp (e:EvidenceC) : CVM (EvidenceC * EvidenceC) :=
 *)
 
 Definition checkSig (x:nat) (i:ASP_ID) (e':EvidenceC) (sig:BS) : CVM BS :=
-  invokeUSM x i ([encodeEv e'] ++ [sig] (* ++ args*) ) mtc.
+  invokeUSM x i ([encodeEv e'] ++ [sig] (* ++ args*) ) 0 0 ;;
+  ret x.
 
-Definition checkUSM (x:nat) (i:ASP_ID) (l:list Arg) (bs:BS) : CVM BS :=
-  invokeUSM x i ([bs] ++ l) mtc.
+Definition checkUSM (x:nat) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID) (bs:BS) : CVM BS :=
+  invokeUSM x i ([bs] ++ l) tpl tid ;;
+  ret x.
    
 Ltac monad_unfold :=
   repeat unfold
