@@ -246,20 +246,20 @@ Qed.
     The traces associated with an annotated term are defined
     inductively. *)
 
-Inductive trace: AnnoTerm -> Plc ->
+Inductive trace: AnnoTerm -> Plc -> Evidence ->
                  list Ev -> Prop :=
-| tasp: forall r x p,
-    trace (aasp r x) p [(asp_event (fst r) x p)]
-| tatt: forall r x p q tr1,
-    trace x q tr1 ->
-    trace (aatt r q x) p
-          ((req (fst r) p q (unanno x) )
+| tasp: forall r x p e,
+    trace (aasp r x) p e [(asp_event (fst r) x p)]
+| tatt: forall r x p q e tr1,
+    trace x q e tr1 ->
+    trace (aatt r q x) p e
+          ((req (fst r) p q (unanno x) e )
              :: tr1 ++
              [(rpy (pred (snd r)) p q)])
-| tlseq: forall r x y p tr0 tr1,
-    trace x p tr0 ->
-    trace y p tr1 ->
-    trace (alseq r x y) p (tr0 ++ tr1)
+| tlseq: forall r x y p e tr0 tr1,
+    trace x p e tr0 ->
+    trace y p (aeval x p e) tr1 ->
+    trace (alseq r x y) p e (tr0 ++ tr1)
 (*| tbseq: forall r lr s x y p tr0 tr1,
     trace x p tr0 ->
     trace y p tr1 ->
@@ -278,8 +278,8 @@ Inductive trace: AnnoTerm -> Plc ->
 Hint Resolve tasp : core.
 
 Lemma trace_length:
-  forall t p tr,
-    trace t p tr -> esize t = length tr.
+  forall t p e tr,
+    trace t p e tr -> esize t = length tr.
 Proof.
   induction t; intros; inv H;
     simpl; auto; rewrite app_length; simpl; auto;
@@ -316,10 +316,10 @@ Qed.
 Require Import List_Facts Coq.Program.Tactics.
 
 Lemma trace_events:
-  forall t p tr v,
+  forall t p e tr v,
     well_formed_r t ->
-    trace t p tr ->
-    In v tr <-> events t p v.
+    trace t p e tr ->
+    In v tr <-> events t p e v.
 Proof.
   split; intros.
   - induction H0; inv_wfr.

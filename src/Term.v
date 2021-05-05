@@ -478,43 +478,43 @@ Defined.
     set of events associated with a term, a place, and some initial
     evidence. *)
 
-Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
+Inductive events: AnnoTerm -> Plc -> Evidence -> Ev -> Prop :=
 | evtscpy:
-    forall r i p,
+    forall r i p e,
       fst r = i ->
-      events (aasp r CPY) p (copy i p)
+      events (aasp r CPY) p e (copy i p)
 | evtsusm:
-    forall i id l tid r p tpl,
+    forall i id l tid r p e tpl,
       fst r = i ->
-      events (aasp r (ASPC id l tpl tid)) p (umeas i p id l tpl tid)
+      events (aasp r (ASPC id l tpl tid)) p e (umeas i p id l tpl tid)
 | evtssig:
-    forall r i p,
+    forall r i p e,
       fst r = i ->
-      events (aasp r SIG) p (sign i p) 
+      events (aasp r SIG) p e (sign i p)
 (*| evtshsh:
     forall r lr i p,
       fst r = i ->
       events (aasp r lr HSH) p (hash i p) *)
 | evtsattreq:
-    forall r q t i p,
+    forall r q t i p e,
       fst r = i ->
-      events (aatt r q t) p (req i p q (unanno t))
+      events (aatt r q t) p e (req i p q (unanno t) e)
 | evtsatt:
-    forall r q t ev p,
-      events t q ev ->
-      events (aatt r q t) p ev
+    forall r q t ev p e,
+      events t q e ev ->
+      events (aatt r q t) p e ev
 | evtsattrpy:
-    forall r q t i p,
+    forall r q t i p e,
       snd r = S i ->
-      events (aatt r q t) p (rpy i p q)
+      events (aatt r q t) p e (rpy i p q)
 | evtslseql:
-    forall r t1 t2 ev p,
-      events t1 p ev ->
-      events (alseq r t1 t2) p ev
+    forall r t1 t2 ev p e,
+      events t1 p e ev ->
+      events (alseq r t1 t2) p e ev
 | evtslseqr:
-    forall r t1 t2 ev p,
-      events t2 p ev ->
-      events (alseq r t1 t2) p ev
+    forall r t1 t2 ev p e,
+      events t2 p (aeval t1 p e) ev ->
+      events (alseq r t1 t2) p e ev
              (*
 | evtsbseqsplit:
     forall r lr i s t1 t2 p,
@@ -582,12 +582,12 @@ Ltac inv_wfr :=
   end.
 
 Lemma events_range:
-  forall t v p,
+  forall t v p e,
     well_formed_r t ->
-    events t p v ->
+    events t p e v ->
     fst (range t) <= ev v < snd (range t).
 Proof.
-  intros t v p H H0.
+  intros t v p e H H0.
   pose proof H as G.
   apply well_formed_range_r in G.
   rewrite G.
@@ -650,12 +650,12 @@ Qed.
 (** Properties of events. *)
 
 Lemma events_range_event:
-  forall t p i,
+  forall t p i e,
     well_formed_r t ->
     fst (range t) <= i < snd (range t) ->
-    exists v, events t p v /\ ev v = i.
+    exists v, events t p e v /\ ev v = i.
 Proof.
-  intros t p i H; revert i; revert p.
+  intros t p i e H; revert i; revert p; revert e.
   induction H; intros; simpl in *.
   - destruct x; eapply ex_intro; split; auto;
       (*destruct r as [j k];*) simpl in *; lia.
@@ -756,13 +756,13 @@ Qed.
 
 Ltac events_event_range :=
   repeat match goal with
-         | [ H: events _ _ _ |- _ ] =>
+         | [ H: events _ _ _ _ |- _ ] =>
            apply events_range in H; auto
          end; lia.
 
 Ltac aba :=
   match goal with
-  | [H: events _ _ _, H': events _ _ _ |- _] => inv H; inv H'
+  | [H: events _ _ _ _, H': events _ _ _ _ |- _] => inv H; inv H'
   end.
 
 Ltac wfr :=
@@ -771,10 +771,10 @@ Ltac wfr :=
   end.
 
 Lemma events_injective:
-  forall t p v1 v2,
+  forall t p e v1 v2,
     well_formed_r t ->
-    events t p v1 ->
-    events t p v2 ->
+    events t p e v1 ->
+    events t p e v2 ->
     ev v1 = ev v2 ->
     v1 = v2.
 Proof.

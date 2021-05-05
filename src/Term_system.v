@@ -20,17 +20,17 @@ Set Nested Proofs Allowed.
 (** Construct an event system from an annotated term, place, and
     evidence. *)
 
-Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
+Fixpoint ev_sys (t: AnnoTerm) p e: EvSys Ev :=
   match t with
   | aasp (i, j) x => leaf (i, j) (asp_event i x p)
   | aatt (i, j) q x =>
     before (i, j)
-      (leaf (i, S i) (req i p q (unanno x)))
+      (leaf (i, S i) (req i p q (unanno x) e))
       (before (S i, j)
-              (ev_sys x q)
+              (ev_sys x q e)
               (leaf (pred j, j) (rpy (pred j) p q)))
-  | alseq r x y => before r (ev_sys x p)
-                          (ev_sys y p)
+  | alseq r x y => before r (ev_sys x p e)
+                          (ev_sys y p (aeval x p e))
   (*| abseq (i, j) lr s x y =>
     before (i, j)
            (leaf (i, S i)
@@ -55,8 +55,8 @@ Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
   end.
 
 Lemma evsys_range:
-  forall t p,
-    es_range (ev_sys t p) = range t.
+  forall t p e,
+    es_range (ev_sys t p e) = range t.
 Proof.
   induction t; intros; simpl; auto;
     repeat expand_let_pairs; simpl; auto.
@@ -68,9 +68,9 @@ match goal with
 end.
 
 Lemma well_structured_evsys:
-  forall t p,
+  forall t p e,
     well_formed_r t ->
-    well_structured ev (ev_sys t p).
+    well_structured ev (ev_sys t p e).
 Proof.
   induction t; intros; inv_wfr; simpl;
     repeat expand_let_pairs; dest_range'; (*destruct r as [i k]; *)
@@ -91,30 +91,32 @@ Ltac do_evin :=
 
 Ltac inv_events :=
   match goal with
-  | [H:events (?C _) _ _ |- _] => inv H
+  | [H:events (?C _) _ _ _ |- _] => inv H
   end.
 
 (** The events in the event system correspond to the events associated
     with a term, a place, and some evidence. *)
 
 Lemma evsys_events:
-  forall t p ev,
+  forall t p e ev,
     well_formed_r t ->
-    ev_in ev (ev_sys t p) <-> events t p ev.
+    ev_in ev (ev_sys t p e) <-> events t p e ev.
 Proof.
-  split; revert p; induction t; intros; inv_wfr; simpl in *;
+  split; revert p; revert e; induction t; intros; inv_wfr; simpl in *;
     repeat expand_let_pairs; simpl in *;
       try (destruct a; auto; do_evin; auto; tauto);
+
+  
       try (
           repeat dest_range;
           repeat (find_rewrite; simpl in * );
           repeat (do_evin; auto);
-          inv_events; auto;
+          inv_events; auto);
           
           repeat (find_rewrite; simpl in * );
           (find_apply_lem_hyp Nat.succ_inj) ; subst; auto;
-          tauto).
-
+            tauto.
+  
   (*
       try (
           repeat dest_range;
@@ -245,7 +247,7 @@ Ltac do_before_sup :=
   match goal with
   | [H: sup (before _ _ _) _ |- _] =>
     repeat apply before_sup in H
-  | [H: sup (ev_sys _ _) (* (alseq (n, n0) ls x y) p)*) _
+  | [H: sup (ev_sys _ _ _) (* (alseq (n, n0) ls x y) p)*) _
      |- _] =>
     repeat apply before_sup in H
 
@@ -259,16 +261,16 @@ Ltac inv_ws :=
 (** Maximal events are unique. *)
 
 Lemma supreme_unique:
-  forall t p,
+  forall t p e,
     well_formed_r t ->
-    exists ! v, supreme (ev_sys t p) v.
+    exists ! v, supreme (ev_sys t p e) v.
 Proof.
-  intros t p H.
-  assert (G: well_structured ev (ev_sys t p)).
+  intros t p e H.
+  assert (G: well_structured ev (ev_sys t p e)).
   apply well_structured_evsys; auto.
   rewrite <- unique_existence.
   split.
-  - exists (max (ev_sys t p)).
+  - exists (max (ev_sys t p e)).
     eapply supreme_max (*with (ev:=ev);*); eauto.
   - unfold uniqueness.
     intros x y H0 H1.
@@ -423,12 +425,12 @@ Qed.
 *)
 
 Lemma evsys_max_unique:
-  forall t p,
+  forall t p e,
     well_formed_r t ->
-    unique (supreme (ev_sys t p)) (max (ev_sys t p)).
+    unique (supreme (ev_sys t p e)) (max (ev_sys t p e)).
 Proof.
-  intros t p H.
-  assert (G: well_structured ev (ev_sys t p)).
+  intros t p e H.
+  assert (G: well_structured ev (ev_sys t p e)).
   apply well_structured_evsys; auto.
   unfold unique.
   split.
@@ -439,6 +441,7 @@ Proof.
   revert G.
   revert x'.
   revert p.
+  revert e.
   induction H;
     intros;
     repeat dest_range;
@@ -484,7 +487,8 @@ Proof.
     repeat apply before_sup in H3.
     inv H3; auto. *)
   -
-    find_apply_hyp_hyp'.
+    repeat find_apply_hyp_hyp'.
+    
     
     repeat do_before_sup.
     eauto.

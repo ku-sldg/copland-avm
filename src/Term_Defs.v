@@ -143,7 +143,7 @@ Inductive Ev: Set :=
 | umeas: nat -> Plc -> ASP_ID -> (list Arg) -> Plc -> TARG_ID -> Ev
 | sign: nat -> Plc -> Ev
 (*| hash: nat -> Plc -> Ev *)
-| req: nat -> (*Loc ->*) Plc -> Plc -> Term -> Ev
+| req: nat -> (*Loc ->*) Plc -> Plc -> Term -> Evidence -> Ev
 | rpy: nat -> (*Loc -> *) Plc -> Plc -> Ev 
 | split: nat -> Plc -> Ev
 (*| splitp: nat -> (*Loc ->*) Loc -> Plc -> Ev *)
@@ -166,7 +166,7 @@ Definition ev x : nat :=
   | umeas i _ _ _ _ _  => i
   | sign i _ => i
   (*| hash i _ => i *)
-  | req i _ _ _ => i
+  | req i _ _ _ _ => i
   | rpy i _ _ => i 
   | split i _ => i
   (* | splitp i _ _ => i *)
@@ -181,7 +181,7 @@ Definition pl x : Plc :=
   | umeas _ p _ _ _ _  => p
   | sign _ p => p
   (*| hash _ p => p *)
-  | req _ p _ _ => p
+  | req _ p _ _ _ => p
   | rpy _ p _ => p
   | split _ p => p
   (*| splitp _ _ p => p *)
