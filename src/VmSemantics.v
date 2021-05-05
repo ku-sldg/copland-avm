@@ -769,13 +769,29 @@ Defined.
 
 Axiom remote_LTS: forall t n et, 
     lstar (conf t n et) (remote_events t n) (stop n (aeval t n et)).
+
+
+Lemma eval_aeval: forall t1 p et,
+    eval (unanno t1) p et = aeval t1 p et.
+Proof.
+  induction t1; intros.
+  -
+    ff.
+  -
+    ff.
+  -
+    ff.
+    erewrite IHt1_1.
+    eauto.
+Defined.
    
 Lemma cvm_refines_lts_event_ordering : forall t tr et e e' p p',
     well_formed_r t ->
+    Ev_Shape e et ->
     copland_compile t (mk_st e [] p) = (Some tt, (mk_st e' tr p')) ->
     lstar (conf t p et) tr (stop p (aeval t p et)).
 Proof.
-  intros t tr et e e' p p' H.
+  intros t tr et e e' p p' H H'.
   generalizeEverythingElse t.
   induction t; intros.
   - (* aasp case *)
@@ -786,6 +802,25 @@ Proof.
     (*do_wf_pieces. *)
     destruct r.
     repeat (df; try dohtac; df).
+    Print remote_LTS.
+    
+    assert (lstar (conf t n et) (remote_events t n) (stop n (aeval t n et))).
+    {
+      apply remote_LTS.
+    }
+    assert (et_fun e = et).
+    {
+      pose ev_evshape.
+      pose (e0 e).
+      eapply evshape_determ.
+      eassumption.
+      eassumption.
+    }
+    rewrite H1.
+    
+
+
+      
     eapply lstar_tran.
     econstructor.
     simpl.
@@ -793,11 +828,7 @@ Proof.
     eapply lstar_strem.
     cbn.
     
-    assert (lstar (conf t n et) (remote_events t n) (stop n (aeval t n et))).
-    {
-
-      apply remote_LTS.
-    }
+    
     apply H0.
     (*
     
@@ -824,12 +855,23 @@ Proof.
     eapply IHt1.
     eassumption.
     eassumption.
+    eassumption.
     eapply lstar_silent_tran.
     apply stlseqstop.
     df.
     repeat do_pl_immut.
     subst.   
-    eapply IHt2; eauto.
+    eapply IHt2 with (e:= x).
+    eassumption.
+    eapply cvm_refines_lts_evidence.
+    apply H1.
+    eassumption.
+    eassumption.
+
+    eapply eval_aeval; eauto.  
+    eassumption.
+    
+    
     (*
   -    
     do_wf_pieces.
@@ -923,7 +965,8 @@ Proof.
 Defined.
 
 Lemma cvm_refines_lts_event_ordering_corrolary : forall t tr et e e' p p',
-    well_formed_r t -> 
+    well_formed_r t ->
+    Ev_Shape e et ->
     copland_compile t (mk_st e [] p) = (Some tt, (mk_st e' tr p')) ->
     st_trace (run_cvm t
                      (mk_st e [] p)) = tr ->
@@ -935,6 +978,7 @@ Proof.
   vmsts.
   simpl in *.
   apply cvm_refines_lts_event_ordering with (t:=t) (tr:=tr) (e:=e) (p:=p) (e':=st_ev) (p':=st_pl); eauto.
+  
   (*destruct o0. *)
   try dunit.
   rewrite hi.
@@ -960,31 +1004,33 @@ Proof.
 Defined.
 *)
 
-Theorem cvm_respects_event_system' : forall t tr ev0 ev1 e e',
-    well_formed_r t -> 
+Theorem cvm_respects_event_system' : forall t tr ev0 ev1 e e' et,
+    well_formed_r t ->
+    Ev_Shape e et ->
     copland_compile 
       t
       (mk_st e [] 0) =
       (Some tt, (mk_st e' tr 0)) ->
-    prec (ev_sys t 0) ev0 ev1 ->
+    prec (ev_sys t 0 et) ev0 ev1 ->
     earlier tr ev0 ev1.
 Proof.
   intros.
-  eapply ordered with (p:=0) (e:=mt); eauto.
+  eapply ordered with (p:=0) (e:=et); eauto.
   (*eapply wf_implies_wfr; eauto. *)
   eapply cvm_refines_lts_event_ordering; eauto.
 Defined.
 
-Theorem cvm_respects_event_system : forall t tr ev0 ev1 e e' t' i n,
+Theorem cvm_respects_event_system : forall t tr ev0 ev1 e e' t' i n et,
     (*NoDup ls ->
     length ls = nss t' -> *)
     (*t = annotated t' ls -> *)
     anno t' i = (n, t) ->
+    Ev_Shape e et ->
     copland_compile
       t
       (mk_st e [] 0) =
       (Some tt, (mk_st e' tr 0)) ->
-    prec (ev_sys t 0) ev0 ev1 ->
+    prec (ev_sys t 0 et) ev0 ev1 ->
     earlier tr ev0 ev1.
 Proof.
   intros.
@@ -992,7 +1038,7 @@ Proof.
   unfold annotated in H.
     subst.
     eapply anno_well_formed_r; eauto.
-    eapply ordered with (p:=0) (e:=mt); eauto.
+    eapply ordered with (p:=0) (e:=et); eauto.
     (*eapply wf_implies_wfr; eauto. *)
     eapply cvm_refines_lts_event_ordering; eauto.
 Defined.

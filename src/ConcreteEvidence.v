@@ -48,18 +48,17 @@ Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=
  *)
 
 
-(*
+
 Fixpoint et_fun (ec:EvidenceC) : Evidence :=
   match ec with
   | mtc => mt
-  | uuc i l p _ ec' => uu i l p (et_fun ec')
+  | uuc i l p tid _ ec' => uu i l p tid (et_fun ec')
   | ggc p _ ec' => gg p (et_fun ec')
   (*| hhc _ ec' => hh p (et_fun p ec') *)
   | nnc ni _ ec' => nn ni (et_fun ec')
   (*| ssc ec1 ec2 => ss (et_fun p ec1) (et_fun p ec2)
   | ppc ec1 ec2 => pp (et_fun p ec1) (et_fun p ec2) *)
   end.
-*)
 
 
 (*
@@ -68,9 +67,9 @@ Fixpoint et_fun (ec:EvidenceC) : Evidence :=
 
 Inductive Ev_Shape: EvidenceC -> Evidence -> Prop :=
 | mtt: Ev_Shape mtc mt
-| uut: forall id l tid tpl p bs e et,
+| uut: forall id l tid tpl bs e et,
     Ev_Shape e et ->
-    Ev_Shape (uuc id l tpl tid bs e) (uu p id l tpl tid et)
+    Ev_Shape (uuc id l tpl tid bs e) (uu id l tpl tid et)
 | ggt: forall p bs e et,
     Ev_Shape e et ->
     Ev_Shape (ggc p bs e) (gg p et)
@@ -95,7 +94,7 @@ Ltac evShapeFacts :=
   | [H: Ev_Shape mtc _ |- _] => invc H
   | [H: Ev_Shape _ mt |- _] => invc H
   | [H: Ev_Shape (uuc _ _ _ _ _ _) _ |- _] => invc H
-  | [H: Ev_Shape _ (uu _ _ _ _ _ _) |- _] => invc H
+  | [H: Ev_Shape _ (uu _ _ _ _ _) |- _] => invc H
   | [H: Ev_Shape (ggc _ _ _) _ |- _] => invc H
   | [H: Ev_Shape _ (gg _ _) |- _] => invc H
   (*| [H: Ev_Shape (hhc _ _) _ |- _] => invc H
@@ -108,7 +107,6 @@ Ltac evShapeFacts :=
   | [H: Ev_Shape _ (pp _ _) |- _] => invc H  *)
   end.
 
-(*
 Lemma ev_evshape: forall ec,
     Ev_Shape ec (et_fun ec).
 Proof.
@@ -123,7 +121,6 @@ Proof.
   -
     econstructor; eauto.
 Defined.
-*)
 
 (* TODO: perhaps an equality modulo "measuring place" *)
 Lemma evshape_determ: forall ec et et',
@@ -138,17 +135,16 @@ Proof.
   -
     repeat evShapeFacts.
     assert (et1 = et0) by eauto.
-  (* congruence. *)
-    admit. (* TODO: perhaps an equality modulo "measuring place" *)
-  -
-    repeat evShapeFacts.
-    assert (et1 = et0) by eauto.
     congruence.
   -
     repeat evShapeFacts.
     assert (et1 = et0) by eauto.
     congruence.
-Abort.
+  -
+    repeat evShapeFacts.
+    assert (et1 = et0) by eauto.
+    congruence.
+Defined.
 
 Lemma ev_shape_transitive : forall e e' et et',
     Ev_Shape e et ->

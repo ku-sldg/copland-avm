@@ -130,9 +130,9 @@ Definition do_prim (x:nat) (a:ASP) : CVM EvidenceC :=
 
 Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) (*(req_loc:Loc)*) : CVM unit :=
   p <- get_pl ;;
-  (*e <- get_ev ;; *)
+  e <- get_ev ;;
   (*put_store_at req_loc e ;; *)
-  add_tracem [req reqi p q (unanno t)].
+  add_tracem [req reqi p q (unanno t) (et_fun e)].
 
 (* Primitive CVM Monad operations that require IO Axioms *)
 Definition doRemote (t:AnnoTerm) (q:Plc) (e:EvidenceC) (*(reqi:nat) (rpyi:nat)*) : CVM EvidenceC :=

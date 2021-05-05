@@ -79,7 +79,7 @@ Definition getTwoLocs (ls:list Loc) (b:bool): option (Loc*Loc) :=
 
 Inductive Evidence: Set :=
 | mt: Evidence
-| uu: Plc -> ASP_ID -> (list Arg) -> Plc -> TARG_ID -> Evidence -> Evidence
+| uu: (*Plc ->*) ASP_ID -> (list Arg) -> Plc -> TARG_ID -> Evidence -> Evidence
 | gg: Plc -> Evidence -> Evidence
 (*| hh: Plc -> Evidence -> Evidence *)
 | nn: N_ID -> Evidence -> Evidence
@@ -95,7 +95,7 @@ Definition splitEv_T (sp:SP) (e:Evidence) : Evidence :=
 Definition eval_asp t p e :=
   match t with
   | CPY => e 
-  | ASPC i l upl targi => uu p i l upl targi e
+  | ASPC i l upl targi => uu i l upl targi e
   | SIG => gg p e
   (*| HSH => hh p e *)
   end.
