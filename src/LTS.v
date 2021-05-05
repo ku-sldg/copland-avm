@@ -70,7 +70,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
 | statt:
     forall r x p q e,
       step (conf (aatt r q x) p e)
-           (Some (req (fst r) p q (unanno x)))
+           (Some (req (fst r) p q (unanno x) e))
            (rem (snd r) p (conf x q e))
 | stattstep:
     forall st0 ev st1 p j,
@@ -421,7 +421,7 @@ Proof.
     destruct a.
     + exists (Some (asp_event (fst r) a n)).
       eapply ex_intro; eauto.
-    + exists (Some (req (fst r) n n0 (unanno a))).
+    + exists (Some (req (fst r) n n0 (unanno a) e)).
       repeat dest_range.
       eapply ex_intro; eauto.
     + exists None.

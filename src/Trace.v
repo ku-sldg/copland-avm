@@ -475,9 +475,9 @@ Proof.
 Qed.
 
 Lemma trace_range:
-  forall t p tr v,
+  forall t p e tr v,
     well_formed_r t ->
-    trace t p tr ->
+    trace t p e tr ->
     In v tr ->
     fst (range t) <= ev v < snd (range t).
 Proof.
@@ -487,9 +487,9 @@ Proof.
 Qed.
 
 Lemma trace_range_event:
-  forall t p tr i,
+  forall t p e tr i,
     well_formed_r t ->
-    trace t p tr ->
+    trace t p e tr ->
     fst (range t) <= i < snd (range t) ->
     exists v, In v tr /\ ev v = i.
 Proof.
@@ -500,9 +500,9 @@ Proof.
 Qed.
 
 Lemma trace_injective_events:
-  forall t p tr v0 v1,
+  forall t p e tr v0 v1,
     well_formed_r t ->
-    trace t p tr ->
+    trace t p e tr ->
     In v0 tr -> In v1 tr ->
     ev v0 = ev v1 ->
     v0 = v1.
@@ -518,7 +518,7 @@ Require Import Defs.
 Ltac tr_wf :=
   match goal with
   | [H: well_formed_r ?t,
-        H': trace ?t _ ?tr,
+        H': trace ?t _ _ ?tr,
             H'': In ?v ?tr |- _] =>
     assert_new_proof_by (fst (range t) <= ev v < snd (range t))
                         ltac:(eapply trace_range; [apply H | apply H' | apply H''])
@@ -532,9 +532,9 @@ Ltac inv_in' :=
 *)
 
 Lemma nodup_trace:
-  forall t p tr,
+  forall t p e tr,
     well_formed_r t ->
-    trace t p tr ->
+    trace t p e tr ->
     NoDup tr.
 Proof.
   induction t; intros; inv_wfr; inv H0.
@@ -848,10 +848,10 @@ Ltac do_shuf_r :=
 (** * Event Systems and Traces *)
 
 Lemma evsys_tr_in:
-  forall t p tr ev0,
+  forall t p e tr ev0,
     well_formed_r t ->
-    trace t p tr ->
-    ev_in ev0 (ev_sys t p) ->
+    trace t p e tr ->
+    ev_in ev0 (ev_sys t p e) ->
     In ev0 tr.
 Proof.
   intros.
@@ -1028,13 +1028,13 @@ Ltac inv_prec :=
     its event system. *)
 
 Theorem trace_order:
-  forall t p tr ev0 ev1,
+  forall t p e tr ev0 ev1,
     well_formed_r t ->
-    trace t p tr ->
-    prec (ev_sys t p) ev0 ev1 ->
+    trace t p e tr ->
+    prec (ev_sys t p e) ev0 ev1 ->
     earlier tr ev0 ev1.
 Proof.
-  intros t p tr ev0 ev1 H H0 H1.
+  intros t p e tr ev0 ev1 H H0 H1.
   induction H0; inv H; simpl in H1;
     try expand_let_pairs;
     inv_prec; simpl; auto. 

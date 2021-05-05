@@ -280,6 +280,7 @@ Proof.
     revert H0.
     revert G.
     revert p.
+    revert e.
     induction H; intros;
       try(
           repeat dest_range; simpl in *;
@@ -457,7 +458,7 @@ Proof.
     
 
   -
-  repeat inv_sup. auto.
+  repeat inv_sup; auto.
 
   
 
@@ -479,7 +480,7 @@ Proof.
     inv H0; auto. *)
   -
 
-    repeat inv_sup. auto.
+    repeat inv_sup; auto.
 
     (*
 
@@ -487,11 +488,12 @@ Proof.
     repeat apply before_sup in H3.
     inv H3; auto. *)
   -
-    repeat find_apply_hyp_hyp'.
-    
-    
-    repeat do_before_sup.
-    eauto.
+    cbn.
+    apply IHwell_formed_r2.
+    eassumption.
+    cbn in *.
+    do_before_sup.
+    eassumption.
 
     (*
 

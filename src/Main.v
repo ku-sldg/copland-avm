@@ -17,15 +17,16 @@ Require Import List.
 Import List.ListNotations.
 Open Scope list_scope.
 Require Import Lia.
-Require Import Preamble More_lists Term_Defs Term LTS Event_system Term_system Trace.
+Require Import Preamble More_lists Term_Defs Term LTS Event_system Term_system Trace Defs.
 
+Set Nested Proofs Allowed.
 (** The traces associated with a state. *)
 
 Inductive traceS: St -> list Ev -> Prop :=
 | tstop: forall p e,
     traceS (stop p e) []
 | tconf: forall t tr p e,
-    trace t p tr ->
+    trace t p e tr ->
     traceS (conf t p e) tr
 | trem: forall st tr j p,
     traceS st tr ->
@@ -34,7 +35,7 @@ Inductive traceS: St -> list Ev -> Prop :=
                [(rpy (pred j) p (pl st))])
 | tls: forall st tr1 t tr2,
     traceS st tr1 ->
-    trace t (pl st) tr2 ->
+    trace t (pl st) (seval st) tr2 ->
     traceS (ls st t) (tr1 ++ tr2)
 (*| tbsl: forall st tr1 t p e tr2 j,
     traceS st tr1 ->
@@ -67,14 +68,14 @@ Fixpoint esizeS s:=
 
 Ltac inv_trace :=
   match goal with
-  | H:trace (?C _) _ _ |- _ => inv H
+  | H:trace (?C _) _ _ _ |- _ => inv H
   end.
 
 Require Import StructTactics.
 
 Lemma esize_tr:
-  forall t p tr,
-    trace t p tr -> length tr = esize t.
+  forall t p e tr,
+    trace t p e tr -> length tr = esize t.
 Proof.
   induction t; intros; inv_trace; simpl;
     autorewrite with list; simpl; auto;
@@ -148,6 +149,33 @@ Defined.
 Qed.
  *)
 
+
+
+
+Ltac jkjk'e :=
+  match goal with
+  | [H: _ = ?X |-  context[?X] ] => erewrite <- H
+  end.
+
+Lemma aeval_ev_determ: forall a p e e',
+    aeval a p e = aeval a p e' ->
+    e = e'.
+Proof.
+  intros.
+  generalizeEverythingElse a.
+  induction a; intros.
+  -
+    destruct a;
+      cbn in *; auto;
+        solve_by_inversion.
+  -
+    cbn in *; auto.
+    eauto.
+  -
+    cbn in *; auto.
+    eauto.
+Defined.
+
 Lemma step_silent_tr:
   forall st st' tr,
     step st None st' ->
@@ -158,6 +186,7 @@ Proof.
   - constructor.
     constructor; auto.
     solve_by_inversion.
+
     (*
     inv H2; auto. *)
   -
@@ -176,12 +205,7 @@ Proof.
     find_copy_apply_lem_hyp step_pl_eq.
     find_copy_apply_lem_hyp step_seval.
 
-    Require Import Defs.
 
-    Ltac jkjk'e :=
-      match goal with
-      | [H: _ = ?X |-  context[?X] ] => erewrite <- H
-      end.
 
     jkjk'e.
 
@@ -200,11 +224,21 @@ Proof.
 
   -
 
-    constructor; auto.
-    eauto.
+    constructor; eauto.
 
     find_apply_lem_hyp step_pl_eq.
-    find_rewrite; auto.
+    find_copy_apply_lem_hyp step_seval.
+    cbn in *.
+    Check step_seval.
+    find_rewrite.
+    find_rewrite.
+    assert (seval st = seval st1) by 
+
+      (eapply aeval_ev_determ; eauto).
+      
+    repeat find_rewrite.
+    eauto.
+    
 
     (*
 
@@ -365,6 +399,9 @@ Proof.
       try jkjk;
       eauto.
 
+    repeat find_rewrite.
+    eauto.
+
     
 (*
     
@@ -522,7 +559,7 @@ Lemma lstar_trace:
   forall t p e tr,
     well_formed_r t ->
     lstar (conf t p e) tr (stop p (aeval t p e)) ->
-    trace t p tr.
+    trace t p e tr.
 Proof.
   intros.
   apply lstar_nlstar in H0.
@@ -537,10 +574,10 @@ Theorem ordered:
   forall t p e tr ev0 ev1,
     well_formed_r t ->
     lstar (conf t p e) tr (stop p (aeval t p e)) ->
-    prec (ev_sys t p) ev0 ev1 ->
+    prec (ev_sys t p e) ev0 ev1 ->
     earlier tr ev0 ev1.
 Proof.
   intros.
   apply lstar_trace in H0; auto.
-  apply trace_order with (t:=t)(p:=p); auto.
+  apply trace_order with (t:=t)(p:=p)(e:=e); auto.
 Qed.
