@@ -535,8 +535,8 @@ Inductive evidenceEvent: Ev -> Prop :=
 | hev: forall n p, evidenceEvent (hash n p)*). 
 
 
-Definition measEvent (t:AnnoTerm) (p:Plc) (ev:Ev) : Prop :=
-  events t p ev /\ evidenceEvent ev.
+Definition measEvent (t:AnnoTerm) (p:Plc) (e:Evidence) (ev:Ev) : Prop :=
+  events t p e ev /\ evidenceEvent ev.
 
 Inductive appEvent : Ev -> AM_St -> Ev -> Prop :=
 | aeu : forall p p' i i' n n' m args tpl tid st,
@@ -550,7 +550,7 @@ Inductive appEvent : Ev -> AM_St -> Ev -> Prop :=
 
 Ltac measEventFacts :=
   match goal with
-  | [H: measEvent _ _ _ |- _] => invc H
+  | [H: measEvent _ _ _ _ |- _] => invc H
   end.
 
 Ltac evEventFacts :=
@@ -560,7 +560,7 @@ Ltac evEventFacts :=
 
 Ltac invEvents :=
   match goal with
-  | [H: events _ _ _  |- _] => invc H
+  | [H: events _ _ _ _  |- _] => invc H
   end.
 
 Lemma mt_sub_all: forall e,
@@ -886,7 +886,7 @@ Proof.
   eassumption.
 Defined.
 
-Lemma appraisal_correct : forall t vmst vmst' p e_res init_vmst new_vmst a_st a_st' x app_res (*tr_app*) ev,
+Lemma appraisal_correct : forall t vmst vmst' p e_res init_vmst new_vmst a_st a_st' x app_res (*tr_app*) e ev,
     well_formed_r t ->
     copland_compile t vmst = (Some tt, vmst') ->
     p = st_pl vmst ->
@@ -901,7 +901,7 @@ Lemma appraisal_correct : forall t vmst vmst' p e_res init_vmst new_vmst a_st a_
     build_app_comp_ev e_res a_st = (Some x, a_st') ->
     runSt x init_vmst = (Some app_res, new_vmst) ->
     (*tr_app = st_trace new_vmst -> *)
-    measEvent t p ev ->
+    measEvent t p e ev ->
     exists ev', In ev' (st_trace new_vmst) /\ appEvent ev a_st ev'.
 Proof.
   intros.
