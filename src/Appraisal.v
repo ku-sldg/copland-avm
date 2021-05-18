@@ -1,5 +1,5 @@
 Require Import GenStMonad MonadVM MonadAM ConcreteEvidence MonadVMFacts.
-Require Import StAM Axioms_Io Impl_vm Impl_appraisal Maps VmSemantics Event_system Term_system External_Facts.
+Require Import StAM Axioms_Io Impl_vm Impl_appraisal Maps VmSemantics Event_system Term_system External_Facts Helpers_VmSemantics.
 Require Import Auto AutoApp AllMapped.
 
 Require Import Coq.Arith.Peano_dec.
@@ -633,37 +633,37 @@ Lemma evMappedSome: forall e1 e2 a_st,
 Proof.
   induction e2; intros.
   -
-    invc H.
+    do_evsub.
     econstructor.
   -
-    invc H0.
-    destruct_conjs.
-    invc H.
+    evMappedFacts.
+    do_evsub.
     +
       econstructor.
       tauto.
       eassumption.
-      eauto.
+      eexists; econstructor; eauto.
     +
       eauto.
   -
-    invc H0.
-    destruct_conjs.
-    invc H.
+    evMappedFacts.
+    do_evsub.
     +
       econstructor.
       tauto.
       eassumption.
-      eauto.
+      eexists; econstructor; eauto.
     +
       eauto.
+
   -
-    invc H0.
-    destruct_conjs.
-    invc H.
+    evMappedFacts.
+    do_evsub.
     +
-      econstructor;
-        eauto.
+      econstructor.
+      tauto.
+      eassumption.
+      eexists; econstructor; eauto.
     +
       eauto.
 Defined.
@@ -709,6 +709,7 @@ Proof.
     edestruct IHe.
     eassumption.
     destruct_conjs.
+    subst.
     rewrite H0 in *.
     
     ff.
@@ -1006,12 +1007,14 @@ Proof.
 
     Print measEventFacts.
 
+    
+(*
     inversion H5; clear H5.
-    inversion H20; clear H20.
+    inversion H20; clear H20.  *)
 
-    (*
+    
     measEventFacts.
-    evEventFacts. *)
+    evEventFacts.
 
     inversion H19; clear H19.
 
@@ -1020,7 +1023,8 @@ Proof.
     +
       
       vmsts.
-      assert (st_pl2 = p) by congruence.
+      (*
+      assert (st_pl2 = p) by congruence. *)
       subst.
       (*
       rewrite <- H21 in H27. clear H21.
@@ -1057,7 +1061,6 @@ Proof.
     +
       vmsts.
       subst.
-      Require Import Helpers_VmSemantics.
       repeat do_pl_immut.
       subst.
 
