@@ -327,7 +327,7 @@ Proof.
   eapply lstar_silent_tran; eauto.
 Defined.
 
-(*
+
 Lemma lstar_stbsl:
   forall st0 st1 j t p e tr,
     lstar st0 tr st1 ->
@@ -349,6 +349,8 @@ Proof.
   eapply lstar_tran; eauto.
   eapply lstar_silent_tran; eauto.
 Defined.
+
+(*
 
 Lemma star_stbp:
   forall st0 st1 st2 st3 j xi yi,

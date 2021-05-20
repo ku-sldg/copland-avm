@@ -29,16 +29,16 @@ Proof.
   tauto.
 Defined.
 
-(*
-Lemma wf_bseq_pieces: forall r lr s t1 t2,
-    well_formed (abseq r lr s t1 t2) ->
-    well_formed t1 /\ well_formed t2.
+Lemma wf_bseq_pieces: forall r s t1 t2,
+    well_formed_r (abseq r s t1 t2) ->
+    well_formed_r t1 /\ well_formed_r t2.
 Proof.
   intros.
   inversion H.
   tauto.
 Defined.
 
+(*
 Lemma wf_bpar_pieces: forall r lr (*xlocs*) ylocs s t1 t2,
     well_formed (abpar r lr (*xlocs*) ylocs s t1 t2) ->
     well_formed t1 /\ well_formed t2.
@@ -56,8 +56,9 @@ Ltac do_wf_pieces :=
   | [H: well_formed_r (aatt _ _?t) |- _] =>   
     assert (well_formed_r t)
       by (eapply wf_at_pieces; eauto)
-  (*| [H: well_formed (abseq _ _ _ _ _) |- _] =>
+  | [H: well_formed_r (abseq _ _ _ _) |- _] =>
     (edestruct wf_bseq_pieces; eauto)
+      (*
   | [H: well_formed (abpar _ _ _ _ _ _) |- _] =>
     (edestruct wf_bpar_pieces; eauto)    *)
   end.

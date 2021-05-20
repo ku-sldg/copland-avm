@@ -28,7 +28,13 @@ Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
     EvSub e (ggc p bs e')
 | nnSub: forall e e' i bs,
     EvSub e e' ->
-    EvSub e (nnc i bs e').
+    EvSub e (nnc i bs e')
+| ssSubl: forall e e' e'',
+    EvSub e e' ->
+    EvSub e (ssc e' e'')
+| ssSubr: forall e e' e'',
+    EvSub e e'' ->
+    EvSub e (ssc e' e'').
 
 
 
@@ -80,10 +86,10 @@ Inductive Ev_Shape: EvidenceC -> Evidence -> Prop :=
 | nnt: forall bs e et i,
     Ev_Shape e et ->
     Ev_Shape (nnc i bs e) (nn i et) 
-(*| sst: forall e1 e2 e1t e2t,
+| sst: forall e1 e2 e1t e2t,
     Ev_Shape e1 e1t ->
     Ev_Shape e2 e2t ->
-    Ev_Shape (ssc e1 e2) (ss e1t e2t) *)
+    Ev_Shape (ssc e1 e2) (ss e1t e2t)
 (*| ppt: forall e1 e2 e1t e2t,
     Ev_Shape e1 e1t ->
     Ev_Shape e2 e2t ->
@@ -102,8 +108,8 @@ Ltac evShapeFacts :=
   | [H: Ev_Shape _ (hh _ _) |- _] => invc H *)
   | [H: Ev_Shape (nnc _ _ _) _ |- _] => invc H
   | [H: Ev_Shape _ (nn _ _) |- _] => invc H
-  (*| [H: Ev_Shape (ssc _ _) _ |- _] => invc H
-  | [H: Ev_Shape _ (ss _ _) |- _] => invc H *)
+  | [H: Ev_Shape (ssc _ _) _ |- _] => invc H
+  | [H: Ev_Shape _ (ss _ _) |- _] => invc H
   (*| [H: Ev_Shape (ppc _ _) _ |- _] => invc H
   | [H: Ev_Shape _ (pp _ _) |- _] => invc H  *)
   end.
@@ -148,6 +154,12 @@ Proof.
     repeat evShapeFacts.
     assert (et1 = et0) by eauto.
     congruence.
+  -
+    repeat evShapeFacts.
+    
+    assert (e1t0 = e1t) by eauto.
+    assert (e2t0 = e2t) by eauto.
+    congruence. 
 Defined.
 
 Lemma ev_shape_transitive : forall e e' et et',

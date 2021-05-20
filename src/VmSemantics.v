@@ -112,7 +112,7 @@ Proof.
     eapply IHt2; eauto.
     repeat (subst'; simpl in * ).
     eauto.
-    (*
+    
   - (* abseq case *)
     annogo.
         
@@ -129,10 +129,10 @@ Proof.
 
     assert (
         StVM.st_trace
-           (snd (copland_compile t1 {| st_ev := splitEv s0 e; st_trace := m ++ (k ++ [Term_Defs.split n p]); st_pl := p; st_store := o |})) =
+           (snd (copland_compile t1 {| st_ev := splitEv s0 e; st_trace := m ++ (k ++ [Term_Defs.split n p]); st_pl := p (*; st_store := o*) |})) =
          m ++
          StVM.st_trace
-         (snd (copland_compile t1 {| st_ev := splitEv s0 e; st_trace := k ++ [Term_Defs.split n p]; st_pl := p; st_store := o |}))).
+         (snd (copland_compile t1 {| st_ev := splitEv s0 e; st_trace := k ++ [Term_Defs.split n p]; st_pl := p; (*st_store := o*) |}))).
     {
       rewrite <- app_assoc in *. (*Heqp4. *)
       eapply IHt1; eauto.
@@ -145,13 +145,14 @@ Proof.
     subst.
 
     assert (
-         StVM.st_trace (snd (copland_compile t2{| st_ev := splitEv s1 e; st_trace := m ++ st_trace0; st_pl := st_pl0; st_store := st_store0 |})) =
-         m ++ StVM.st_trace (snd (copland_compile t2 {| st_ev := splitEv s1 e; st_trace := st_trace0; st_pl := st_pl0; st_store := st_store0 |}))
+         StVM.st_trace (snd (copland_compile t2{| st_ev := splitEv s1 e; st_trace := m ++ st_trace0; st_pl := st_pl0; (*st_store := st_store0*) |})) =
+         m ++ StVM.st_trace (snd (copland_compile t2 {| st_ev := splitEv s1 e; st_trace := st_trace0; st_pl := st_pl0; (*st_store := st_store0*) |}))
       ).
     eapply IHt2; eauto.
     subst'.
     df.
-    tauto.  
+    tauto.
+    (*
   -
 
 
@@ -685,7 +686,7 @@ Proof.
       repeat do_pl_immut.
       subst.
       congruence.
-      (*
+      
   -
     do_wf_pieces.
     df.
@@ -719,7 +720,9 @@ Proof.
           simpl.
           repeat do_pl_immut.
           subst.
-          eapply IHt2; eauto.      
+          eapply IHt2; eauto.
+
+          (*
   -
     do_wf_pieces.
     repeat (df; dohtac; df).
@@ -783,6 +786,40 @@ Proof.
     ff.
     erewrite IHt1_1.
     eauto.
+  -
+    ff.
+    erewrite IHt1_1.
+    erewrite IHt1_2.
+    eauto.
+    
+Defined.
+
+Lemma evshape_split: forall e et s,
+    Ev_Shape e et ->
+    Ev_Shape (splitEv s e) (splitEv_T s et).
+Proof.
+  intros.
+  generalizeEverythingElse e.
+  induction e; intros.
+  -
+    invc H.
+    destruct s.
+    ff.
+    eauto.
+    ff.
+    eauto.
+  -
+    invc H.
+    destruct s; ff.
+  -
+    invc H.
+    destruct s; ff.
+  -
+    invc H.
+    destruct s; ff.
+  -
+    invc H.
+    destruct s; ff.
 Defined.
    
 Lemma cvm_refines_lts_event_ordering : forall t tr et e e' p p',
@@ -872,7 +909,7 @@ Proof.
     eassumption.
     
     
-    (*
+    
   -    
     do_wf_pieces.
     destruct r; destruct s.
@@ -901,7 +938,10 @@ Proof.
      
     eapply IHt1.
     eassumption.
+    Focus 2.
     eassumption.
+
+    eapply evshape_split; eauto.
   
     unfold run_cvm in *.
     monad_unfold.
@@ -914,11 +954,15 @@ Proof.
         
     eapply IHt2.
     eassumption.
+    Focus 2.
     eassumption.
+    eapply evshape_split; eauto.
 
     econstructor.
     eapply stbsrstop.
     econstructor.
+
+    (*
   -
     destruct s; destruct r.
     repeat (df; dohtac; df).

@@ -57,8 +57,9 @@ Proof.
     }
 
     congruence.
-    (*
+    
   -
+    Locate do_wf_pieces.
     do_wf_pieces.
     annogo.
     df.
@@ -109,7 +110,9 @@ Proof.
       symmetry.
       edestruct IHt1.
       eassumption.
-        jkjk'; eauto. 
+      jkjk'; eauto.
+
+      (*
   -
 
     do_wf_pieces.
@@ -359,7 +362,7 @@ Proof.
     df.
     anhl.
     eauto.
-    (*
+    
   -
     do_wf_pieces.
     df;
@@ -368,7 +371,8 @@ Proof.
     simpl in *.
     df.
     repeat anhl.
-    eauto.   
+    eauto.
+    (*
   -
     (*
     do_wf_pieces.
@@ -466,14 +470,15 @@ Proof.
     
     destruct o eqn:hhh;
       try (df; eauto).
-    (*
+    
   -
     df.   
     do_wf_pieces.
 
     repeat break_match;
       try (
-          df; eauto). 
+          df; eauto).
+    (*
   -
     do_wf_pieces.
     df.
