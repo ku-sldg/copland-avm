@@ -260,13 +260,14 @@ Inductive trace: AnnoTerm -> Plc -> Evidence ->
     trace x p e tr0 ->
     trace y p (aeval x p e) tr1 ->
     trace (alseq r x y) p e (tr0 ++ tr1)
-(*| tbseq: forall r lr s x y p tr0 tr1,
-    trace x p tr0 ->
-    trace y p tr1 ->
-    trace (abseq r lr s x y) p
+| tbseq: forall r s x y p e tr0 tr1,
+    trace x p (splitEv_T (fst s) e) tr0 ->
+    trace y p (splitEv_T (snd s) e) tr1 ->
+    trace (abseq r s x y) p e
           ((Term_Defs.split (fst r) p)
              :: tr0 ++ tr1 ++
              [(join (pred (snd r)) p)])
+          (*
 | tbpar: forall r lr s x y p tr0 tr1 tr2 (*xi xi'*) yi yi',
     trace x p tr0 ->
     trace y p tr1 ->
@@ -372,7 +373,7 @@ Proof.
       destruct_disjunct.
       * apply evtslseql; auto.
       * apply evtslseqr; auto.
-        (*
+        
     +
       inv_in; subst; try solve_by_inversion.
       (*
@@ -392,6 +393,7 @@ Proof.
       (*
       rewrite H10. *)
       apply evtsbseqjoin; auto.
+      (*
     +
       
 
@@ -434,7 +436,7 @@ Proof.
     + rewrite in_app_iff.
       inv H1; auto.
 
-      (*
+      
     + simpl.
       rewrite in_app_iff.
       rewrite in_app_iff.
@@ -445,6 +447,8 @@ Proof.
       (*
       rewrite H12 in *.
       auto. *)
+
+      (*
       
     + simpl.
       rewrite in_app_iff.
@@ -595,7 +599,7 @@ Proof.
     repeat tr_wf.
     lia.
 
-    (*
+    
   -
     dest_range'; simpl in *; subst; simpl.
     (*
@@ -718,7 +722,7 @@ Proof.
         solve_by_inversion.
          *)
         
-        
+     (*   
         
   -
     dest_range'; simpl in *; subst; simpl.
@@ -912,7 +916,7 @@ Proof.
   - left. solve_by_inversion.
      *)
 
-    (*
+    
   - right.
     rewrite in_app_iff in *.
     do_evin; auto.
@@ -958,6 +962,8 @@ Proof.
       
   - left. solve_by_inversion.
        *)
+
+      (*
       
   - right.
 
@@ -1111,7 +1117,7 @@ Proof.
     apply IHtrace2 in H6; auto. *)
     apply earlier_right; auto.
 
-    (*
+    
   -
     do_evin2.
     (*
@@ -1206,6 +1212,8 @@ Proof.
         apply earlier_right; auto.
         apply earlier_left; auto.
     + solve_by_inversion.
+
+      (*
       
   -
     do_evin2.

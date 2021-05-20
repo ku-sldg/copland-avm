@@ -12,7 +12,7 @@ University of California.  See license.txt for details. *)
 (** This module contains the basic definitions for Copland terms,
     events, and annotated terms. *)
 
-Require Import PeanoNat Compare_dec Lia.
+Require Import PeanoNat Nat Compare_dec Lia.
 Require Import Preamble StructTactics Term_Facts Defs.
 
 Require Import List.
@@ -57,7 +57,7 @@ Inductive Term: Set :=
 | asp: ASP -> Term
 | att: Plc -> Term -> Term
 | lseq: Term -> Term -> Term
-(*| bseq: Split -> Term -> Term -> Term *)
+| bseq: Split -> Term -> Term -> Term
 (*| bpar: Split -> Term -> Term -> Term*) .
 
 (*
@@ -86,6 +86,140 @@ Inductive Evidence: Set :=
 | ss: Evidence -> Evidence -> Evidence
 (*| pp: Evidence -> Evidence -> Evidence*) .
 
+Definition eq_evidence_dec:
+  forall x y: Evidence, {x = y} + {x <> y}.
+Proof.
+  intros;
+    repeat decide equality.
+Defined.
+Hint Resolve eq_evidence_dec : core.
+
+Search (andb).
+
+Require Import Coq.Lists.List Coq.Bool.Bool.
+
+Import Coq.Lists.List.ListNotations.
+
+Scheme Equality for list.
+Check list_beq.
+Check list_eq_dec.
+
+Lemma eqb_eq_list {A:Type}:
+  forall x y f,
+    list_beq A f x y = true <-> x = y.
+Admitted.
+
+Fixpoint eqb_evidence (e:Evidence) (e':Evidence): bool :=
+  match (e,e') with
+  | (mt,mt) => true
+  | (uu i args p tid e1, uu i' args' p' tid' e2) =>
+    (Nat.eqb i i') && (list_beq nat Nat.eqb args args') && (Nat.eqb p p')
+    && (Nat.eqb tid tid') && (eqb_evidence e1 e2)
+  | (gg p e1, gg p' e2) =>
+    (Nat.eqb p p') && (eqb_evidence e1 e2)
+  | (nn i e1, nn i' e2) =>
+    (Nat.eqb i i') && (eqb_evidence e1 e2)
+  | (ss e1 e2, ss e1' e2') =>
+    (eqb_evidence e1 e1') && (eqb_evidence e2 e2')
+  | _ => false
+  end.
+
+Lemma eqb_eq_evidence: forall e1 e2,
+    eqb_evidence e1 e2 = true <-> e1 = e2.
+Proof.
+  intros.
+  split.
+  -
+    generalizeEverythingElse e1.
+    induction e1; destruct e2; intros;
+      try (ff; eauto; tauto).
+    +
+      ff.
+      rewrite Bool.andb_true_iff in H.
+      rewrite Bool.andb_true_iff in H.
+      rewrite Bool.andb_true_iff in H.
+      rewrite Bool.andb_true_iff in H.
+      destruct_conjs.
+      rewrite eqb_eq_list in H3.
+
+      Search eqb.
+      Locate "=?".
+      Search Nat.eqb.
+      apply EqNat.beq_nat_true in H1.
+      apply EqNat.beq_nat_true in H2.
+      apply EqNat.beq_nat_true in H.
+      subst.
+      specialize IHe1 with e2.
+      concludes.
+      congruence.
+    +
+      ff.
+      rewrite Bool.andb_true_iff in H.
+      destruct_conjs.
+      apply EqNat.beq_nat_true in H.
+      specialize IHe1 with e2.
+      concludes.
+      congruence.
+    +
+      ff.
+      rewrite Bool.andb_true_iff in H.
+      destruct_conjs.
+      apply EqNat.beq_nat_true in H.
+      specialize IHe1 with e2.
+      concludes.
+      congruence.
+    +
+      ff.
+      rewrite Bool.andb_true_iff in H.
+      destruct_conjs.
+      
+      specialize IHe1_1 with e2_1.
+      specialize IHe1_2 with e2_2.
+      concludes.
+      concludes.
+      congruence.
+  -
+    generalizeEverythingElse e1.
+    induction e1; destruct e2; intros;
+      try (ff; eauto; tauto).
+    +
+      ff.
+      repeat rewrite Bool.andb_true_iff.
+      split.
+      split.
+      split.
+      split.
+      Search Nat.eqb.
+      apply Nat.eqb_refl.
+
+      rewrite eqb_eq_list.
+      auto.
+      apply Nat.eqb_refl.
+      apply Nat.eqb_refl.
+      eauto.
+    +
+      ff.
+      repeat rewrite Bool.andb_true_iff.
+      split.
+      Search Nat.eqb.
+      apply Nat.eqb_refl.
+      eauto.
+    +
+      ff.
+      repeat rewrite Bool.andb_true_iff.
+      split.
+      Search Nat.eqb.
+      apply Nat.eqb_refl.
+      eauto.
+    +
+      ff.
+      repeat rewrite Bool.andb_true_iff.
+      split;
+      eauto.   
+Defined.
+  
+    
+
 Definition splitEv_T (sp:SP) (e:Evidence) : Evidence :=
   match sp with
   | ALL => e
@@ -107,8 +241,8 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
   | asp a => eval_asp a p e
   | att q t1 => eval t1 q e
   | lseq t1 t2 => eval t2 p (eval t1 p e)
-  (*| bseq s t1 t2 => ss (eval t1 p (splitEv_T (fst s) e))
-                       (eval t2 p (splitEv_T (snd s) e))  *)
+  | bseq s t1 t2 => ss (eval t1 p (splitEv_T (fst s) e))
+                       (eval t2 p (splitEv_T (snd s) e))
  (* | bpar s t1 t2 => pp (eval t1 p (splitEv_T (fst s) e))
                       (eval t2 p (splitEv_T (snd s) e)) *)
   end.
@@ -221,7 +355,8 @@ Inductive AnnoTerm: Set :=
 | aasp: Range -> (*LocRange ->*) ASP -> AnnoTerm
 | aatt: Range -> (*LocRange -> (Loc*Loc) ->*) Plc -> AnnoTerm -> AnnoTerm
 | alseq: Range -> (*LocRange ->*) AnnoTerm -> AnnoTerm -> AnnoTerm
-(*| abseq: Range -> LocRange -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
+| abseq: Range -> (*LocRange ->*) Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
+(*
 | abpar: Range -> LocRange -> (*(Loc*Loc) ->*) (Loc*Loc) -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm*) .
 
 Fixpoint esize t :=
@@ -229,7 +364,8 @@ Fixpoint esize t :=
   | aasp _ _ => 1
   | aatt _ _ t1 => 2 + (*remote_esize t1*) esize t1
   | alseq _ t1 t2 => esize t1 + esize t2
-  (*| abseq _ _ _ t1 t2 => 2 + esize t1 + esize t2
+  | abseq _ _ t1 t2 => 2 + esize t1 + esize t2
+                                             (*
   | abpar _ _ _ _ t1 t2 => 2 + esize t1 + esize t2 *)
   end.
 
@@ -238,8 +374,8 @@ Definition range x :=
   | aasp r _ => r
   | aatt r _ _ => r
   | alseq r _ _ => r
-  (*| abseq r _ _ _ _ => r
-  | abpar r _ _ _ _ _ => r *)
+  | abseq r _ _ _ => r
+  (*| abpar r _ _ _ _ _ => r *)
   end.
 
 (*
@@ -325,12 +461,11 @@ Fixpoint anno (t: Term) (i:nat) : (nat * AnnoTerm) :=
     let '(k,bt) := anno y j in
     (k, alseq (i, k) a bt)
 
-        (*
   | bseq s x y =>
-    '(j,a) <- anno x (S i) (firstn (nss x) ls) b  ;;
-    '(k,bt) <- anno y j (skipn (nss x) ls ) b  ;;
-    ret (S k, abseq (i, S k) ls (*(lrange a ++ lrange bt)*) s a bt)
-        
+    let '(j,a) := anno x (S i) in
+    let '(k,b) := anno y j in
+    (S k, abseq (i, S k) s a b)
+        (*
   | bpar s x y =>
     ylocs <- getTwoLocs ls b ;;
     (*ylocs <- getTwoLocs (skipn 2 ls) b ;; *)
@@ -354,8 +489,8 @@ Fixpoint unanno a :=
   | aatt _ p t => att p (unanno t)
   | alseq _ a1 a2 => lseq (unanno a1) (unanno a2)
                          
-  (*| abseq _ _ spl a1 a2 => bseq spl (unanno a1) (unanno a2) 
-  | abpar _ _ _ spl a1 a2 => bpar spl (unanno a1) (unanno a2) *)
+  | abseq _ spl a1 a2 => bseq spl (unanno a1) (unanno a2) 
+  (*| abpar _ _ _ spl a1 a2 => bpar spl (unanno a1) (unanno a2) *)
   end.
 
   (*
@@ -390,15 +525,14 @@ Inductive well_formed_r: AnnoTerm -> Prop :=
     fst r = fst (range x) ->
     snd (range x) = fst (range y) ->
     snd r = snd (range y) -> 
-    well_formed_r (alseq r x y)
-   (*               
-| wf_bseq_r: forall r ls s x y,
+    well_formed_r (alseq r x y)               
+| wf_bseq_r: forall r s x y,
     well_formed_r x -> well_formed_r y ->
     S (fst r) = fst (range x) ->
     snd (range x) = fst (range y) ->
     snd r = S (snd (range y)) ->  
-    well_formed_r (abseq r ls s x y)
-                  
+    well_formed_r (abseq r s x y)
+  (*                
 | wf_bpar_r: forall r ls (*xlocs*) ylocs s x y,
     well_formed_r x -> well_formed_r y ->  
     S (fst r) = fst (range x) ->

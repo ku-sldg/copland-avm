@@ -65,12 +65,13 @@ Definition add_trace (tr':list Ev) : cvm_st -> cvm_st :=
 Definition add_tracem (tr:list Ev) : CVM unit :=
   modify (add_trace tr).
 
-(*
+
 Definition split_ev_seq (i:nat) (sp1 sp2:SP) (e:EvidenceC) (p:Plc) : CVM (EvidenceC*EvidenceC) :=
     let e1 := splitEv sp1 e in
     let e2 := splitEv sp2 e in
     add_tracem [Term_Defs.split i p] ;;
-               ret (e1,e2).
+    ret (e1,e2).
+(*
 
 Definition split_ev_par (i:nat) (sp1 sp2:SP) ((*loc_e1*) loc_e2:Loc)
            (*(t1 t2:AnnoTerm)*) (e:EvidenceC) (p:Plc) : CVM EvidenceC :=
@@ -179,10 +180,12 @@ Definition runParThreads (t1 t2:AnnoTerm) (p:Plc) (loc_e1 loc_e1' loc_e2 loc_e2'
   add_tracem (shuffled_events el1 el2).
 *)
 
-(*
+
 Definition join_seq (n:nat) (p:Plc) (e1:EvidenceC) (e2:EvidenceC) : CVM unit :=
   put_ev (ssc e1 e2) ;;
   add_tracem [join n p].
+
+(*
 
 Definition join_par (n:nat) (p:Plc) (*(xi:Loc)*) (e1r:EvidenceC) (yi:Loc) (*(e1:EvidenceC) (e2:EvidenceC)*) : CVM unit :=
   (*e1r <- get_store_at xi ;; *)

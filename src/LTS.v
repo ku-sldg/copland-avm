@@ -23,8 +23,9 @@ Inductive St: Set :=
 | conf: AnnoTerm -> Plc -> Evidence -> St
 | rem: nat -> Plc -> St -> St
 | ls: St -> AnnoTerm -> St
-(*| bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
+| bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
 | bsr: nat -> Evidence -> St -> St
+                             (*
 | bp: nat -> Loc -> Loc -> St -> St -> St*) .
 
 Fixpoint pl (s:St) :=
@@ -33,8 +34,8 @@ Fixpoint pl (s:St) :=
   | conf _ p _ => p
   | rem _ p _ => p
   | ls st _ => pl st
-  (*| bsl _ _ _ p _ => p
-  | bsr _ _ st => pl st
+  | bsl _ _ _ p _ => p
+  | bsr _ _ st => pl st (*
   | bp _ _ _ _ st => pl st *)
   end.
 
@@ -46,8 +47,9 @@ Fixpoint seval st :=
   | conf t p e => aeval t p e
   | rem _ _ st => seval st
   | ls st t => aeval t (pl st) (seval st)
-  (*| bsl _ st t p e => ss (seval st) (aeval t p e)
+  | bsl _ st t p e => ss (seval st) (aeval t p e)
   | bsr _ e st => ss e (seval st)
+                    (*
   | bp _ _ _ st0 st1 => pp (seval st0) (seval st1) *)
 end.
 
@@ -97,10 +99,10 @@ Inductive step: St -> option Ev -> St -> Prop :=
       step (ls (stop p e) t) None (conf t p e)
 (** Branching Sequential Composition *)
 
-           (*
+           
 | stbseq:
-    forall r lr s x y p e,
-      step (conf (abseq r lr s x y) p e)
+    forall r s x y p e,
+      step (conf (abseq r s x y) p e)
            (Some (split (fst r) p))
            (bsl (snd r) (conf x p (splitEv_T (fst s) e))
                 y p (splitEv_T (snd s) e))
@@ -113,6 +115,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
       step (bsl j (stop p e) t p' e')
            None
            (bsr j e (conf t p' e'))
+           
 | stbsrstep:
     forall st0 ev st1 j e,
       step st0 ev st1 ->
@@ -122,6 +125,8 @@ Inductive step: St -> option Ev -> St -> Prop :=
       step (bsr j e (stop p e'))
            (Some (join (pred j) p))
            (stop p (ss e e'))
+
+           (*
 
 (** Branching Parallel composition *)
 
@@ -279,7 +284,7 @@ Proof.
   eapply star_tran; eauto.
 Qed.
 
-(*
+
 Lemma star_stbsl:
   forall st0 st1 j t p e,
     star st0 st1 ->
@@ -299,7 +304,6 @@ Proof.
   induction H; auto.
   eapply star_tran; eauto.
 Qed.
-*)
 
 (* Congruence lemmas for Copland LTS semantics *)
 Lemma lstar_stls :
@@ -378,7 +382,7 @@ Proof.
     apply IHt1.
     eapply star_tran; eauto.
 
-    (*
+    
     
   - eapply star_tran; eauto.
     eapply star_transitive.
@@ -389,6 +393,7 @@ Proof.
     apply star_stbsr.
     apply IHt2.
     eapply star_tran; eauto.
+    (*
   -
     repeat dest_range.
     (*destruct p; destruct p0. *)
@@ -426,10 +431,11 @@ Proof.
       eapply ex_intro; eauto.
     + exists None.
       eapply ex_intro; eauto.
-      (*
+      
       
     + exists (Some (split (fst r) n)).
       eapply ex_intro; eauto.
+      (*
       
     + exists (Some (splitp (fst r) (fst p) (*(fst p0)*) n)).
       (*destruct p; destruct p0. *)
@@ -452,7 +458,7 @@ Proof.
       exists e.
       destruct H as [st H].
       exists (ls st a). auto.
-      (*
+      
       
   - right.
     destruct IHst0.
@@ -471,6 +477,7 @@ Proof.
       exists e0.
       destruct H as [st H].
       exists (bsr n e st). auto.
+      (*
       
   - right.
     destruct IHst0_1 as [H|H].
@@ -546,7 +553,8 @@ Fixpoint tsize t: nat :=
   | aasp _ _ => 1
   | aatt _ _ x => 2 + tsize x
   | alseq _ x y => 2 + tsize x + tsize y
-  (*| abseq _ _ _ x y => 3 + tsize x + tsize y
+  | abseq _ _ x y => 3 + tsize x + tsize y
+                                          (*
   | abpar _ _ _ _ x y => 2 + tsize x + tsize y *)
   end.
 
@@ -558,8 +566,9 @@ Fixpoint ssize s: nat :=
   | conf t _ _ => tsize t
   | rem _ _ x => 1 + ssize x
   | ls x t => 1 + ssize x + tsize t
-  (*| bsl _ x t _ _ => 2 + ssize x + tsize t
+  | bsl _ x t _ _ => 2 + ssize x + tsize t
   | bsr _ _ x => 1 + ssize x
+                          (*
   | bp _ _ _ x y => 1 + ssize x + ssize y *)
   end.
 

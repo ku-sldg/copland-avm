@@ -15,7 +15,7 @@ Inductive EvidenceC: Set :=
 | ggc: Plc -> BS -> EvidenceC -> EvidenceC
 (*| hhc: BS -> EvidenceC -> EvidenceC (* TODO: remove Ev param *) *)
 | nnc: N_ID -> BS -> EvidenceC -> EvidenceC
-(*| ssc: EvidenceC -> EvidenceC -> EvidenceC *)
+| ssc: EvidenceC -> EvidenceC -> EvidenceC
 (*| ppc: EvidenceC -> EvidenceC -> EvidenceC *) .
 
 Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
@@ -56,7 +56,8 @@ Fixpoint et_fun (ec:EvidenceC) : Evidence :=
   | ggc p _ ec' => gg p (et_fun ec')
   (*| hhc _ ec' => hh p (et_fun p ec') *)
   | nnc ni _ ec' => nn ni (et_fun ec')
-  (*| ssc ec1 ec2 => ss (et_fun p ec1) (et_fun p ec2)
+  | ssc ec1 ec2 => ss (et_fun ec1) (et_fun ec2)
+                     (*
   | ppc ec1 ec2 => pp (et_fun p ec1) (et_fun p ec2) *)
   end.
 
@@ -120,6 +121,9 @@ Proof.
     econstructor; eauto.
   -
     econstructor; eauto.
+  -
+     econstructor; eauto.
+    
 Defined.
 
 (* TODO: perhaps an equality modulo "measuring place" *)

@@ -31,16 +31,17 @@ Fixpoint ev_sys (t: AnnoTerm) p e: EvSys Ev :=
               (leaf (pred j, j) (rpy (pred j) p q)))
   | alseq r x y => before r (ev_sys x p e)
                           (ev_sys y p (aeval x p e))
-  (*| abseq (i, j) lr s x y =>
+  | abseq (i, j) s x y =>
     before (i, j)
            (leaf (i, S i)
                  (Term_Defs.split i p))
            (before (S i, j)
                    (before (S i, (pred j))
-                           (ev_sys x p)
-                           (ev_sys y p))
+                           (ev_sys x p (splitEv_T (fst s) e))
+                           (ev_sys y p (splitEv_T (snd s) e)))
                    (leaf ((pred j), j)
-                   (join (pred j) p)))
+                         (join (pred j) p)))
+           (*
   | abpar (i, j) lr (*(xi,xi')*) (yi,yi') s x y =>
     before (i, j)
            (leaf (i, S i)
@@ -508,7 +509,7 @@ Proof.
     
     apply IHwell_formed_r2 in H4; auto. *)
 
-    (*
+    
   -
     repeat do_before_sup.
     solve_by_inversion.
@@ -520,7 +521,7 @@ Proof.
     (*
     inv H4; auto. *)
 *)
-    
+    (*
   -
     do_before_sup.
     solve_by_inversion.

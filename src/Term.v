@@ -2,6 +2,7 @@ Require Import Defs Term_Defs List_Facts AnnoFacts.
 Require Import Preamble More_lists StructTactics Term_Facts.
 
 Require Import Compare_dec Coq.Program.Tactics.
+Require Import PeanoNat.
 
 Require Import Lia.
 
@@ -455,8 +456,9 @@ Fixpoint aeval t p e :=
   | aasp _ x => eval (asp x) p e
   | aatt _ q x => aeval x q e
   | alseq _ t1 t2 => aeval t2 p (aeval t1 p e)
-  (*| abseq _ _ s t1 t2 => ss (aeval t1 p ((splitEv_T (fst s)) e))
-                         (aeval t2 p ((splitEv_T (snd s)) e)) 
+  | abseq _ s t1 t2 => ss (aeval t1 p ((splitEv_T (fst s)) e))
+                         (aeval t2 p ((splitEv_T (snd s)) e))
+                         (*
   | abpar _ _ _ s t1 t2 => pp (aeval t1 p ((splitEv_T (fst s)) e))
                          (aeval t2 p ((splitEv_T (snd s)) e)) *)
   end. 
@@ -515,25 +517,24 @@ Inductive events: AnnoTerm -> Plc -> Evidence -> Ev -> Prop :=
     forall r t1 t2 ev p e,
       events t2 p (aeval t1 p e) ev ->
       events (alseq r t1 t2) p e ev
-             (*
+             
 | evtsbseqsplit:
-    forall r lr i s t1 t2 p,
+    forall r i s e t1 t2 p,
       fst r = i ->
-      events (abseq r lr s t1 t2) p
-             (Term_Defs.split i p)
+      events (abseq r s t1 t2) p e (Term_Defs.split i p)
 | evtsbseql:
-    forall r lr s t1 t2 ev p,
-      events t1 p ev ->
-      events (abseq r lr s t1 t2) p ev
+    forall r s e t1 t2 ev p,
+      events t1 p (splitEv_T (fst s) e) ev ->
+      events (abseq r s t1 t2) p e ev
 | evtsbseqr:
-    forall r lr s t1 t2 ev p,
-      events t2 p ev ->
-      events (abseq r lr s t1 t2) p ev
+    forall r s e t1 t2 ev p,
+      events t2 p (splitEv_T (snd s) e) ev ->
+      events (abseq r s t1 t2) p e ev
 | evtsbseqjoin:
-    forall r lr i s t1 t2 p,
+    forall r i s e t1 t2 p,
       snd r = S i ->
-      events (abseq r lr s t1 t2) p
-             (join i p)
+      events (abseq r s t1 t2) p e (join i p)
+             (*
 
 | evtsbparsplit:
     forall r lr i s t1 t2 p (*xi xi'*) yi yi',
@@ -568,12 +569,162 @@ Inductive EvSubT: Evidence -> Evidence -> Prop :=
     EvSubT e e' ->
     EvSubT e (nn i e').
 
-Inductive req_evidence: AnnoTerm -> Plc -> Evidence -> Plc -> Evidence -> Prop :=
-| is_req_evidence: forall annt t pp p q i e e' es,
-    EvSubT es e ->
-    events annt pp e' (req i p q t e) ->
-    req_evidence annt pp e' q es.
+Inductive req_evidence: AnnoTerm -> Plc -> Plc -> Evidence -> Evidence -> Prop :=
+| is_req_evidence: forall annt t pp p q i e e',
+    events annt pp e (req i p q t e') ->
+    req_evidence annt pp q e e'.
 
+Fixpoint check_req (t:AnnoTerm) (pp:Plc) (q:Plc) (e:Evidence) (e':Evidence): bool :=
+  match t with
+  | aatt r rp t' => (eqb_evidence e e' && (Nat.eqb q rp)) || (check_req t' rp q e e')
+  | alseq r t1 t2 => (check_req t1 pp q e e') || (check_req t2 pp q (aeval t1 pp e) e')
+  | abseq r s t1 t2 =>
+    (check_req t1 pp q (splitEv_T (fst s) e) e') || (check_req t2 pp q (splitEv_T (snd s) e) e')
+  | _ => false
+  end.
+
+Lemma req_implies_check: forall t pp q e e',
+    req_evidence t pp q e e' -> check_req t pp q e e' = true.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a.
+    +
+      ff.
+      inversion H.
+      solve_by_inversion.
+    +
+      ff.
+      inversion H.
+      solve_by_inversion.
+    +     
+      ff.
+      inversion H.
+      solve_by_inversion.
+  -
+    
+    invc H.
+    invc H0; subst; ff.
+    +
+      rewrite Bool.orb_true_iff.
+      left.
+      rewrite Bool.andb_true_iff.
+      split.
+      ++
+        rewrite eqb_eq_evidence.
+        tauto.
+      ++
+        apply Nat.eqb_refl.
+    +
+      rewrite Bool.orb_true_iff.
+      right.
+      eapply IHt.
+      econstructor.
+      eassumption.
+  -
+    ff.
+    invc H.
+    invc H0.
+    +
+      rewrite Bool.orb_true_iff.
+      left.
+      eapply IHt1.
+      econstructor.
+      eassumption.
+    +
+      rewrite Bool.orb_true_iff.
+      right.
+      eapply IHt2.
+      econstructor.
+      eassumption.
+  -
+    ff.
+    invc H.
+    invc H0.
+    +
+      rewrite Bool.orb_true_iff.
+      left.
+      eapply IHt1.
+      econstructor.
+      eassumption.
+    +
+      rewrite Bool.orb_true_iff.
+      right.
+      eapply IHt2.
+      econstructor.
+      eassumption.
+Defined.
+
+Lemma check_implies_req: forall t pp q e e',
+    check_req t pp q e e' = true -> req_evidence t pp q e e'.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a;
+      ff.
+  -
+    ff.
+      rewrite Bool.orb_true_iff in H.
+      destruct H.
+      +
+        rewrite Bool.andb_true_iff in H.
+        destruct_conjs.
+        econstructor.
+        rewrite eqb_eq_evidence in *.
+
+        Check EqNat.beq_nat_true.
+        apply EqNat.beq_nat_true in H0.
+        subst.
+        eauto.
+      +
+        
+        assert (req_evidence t n q e e') by eauto.
+        invc H0.
+        econstructor.
+        econstructor.
+        eassumption.
+  -
+    ff.
+    rewrite Bool.orb_true_iff in H.
+    destruct_conjs.
+    destruct H.
+    +
+      assert (req_evidence t1 pp q e e') by eauto.
+      invc H0.
+      econstructor.
+      apply evtslseql.
+      eassumption.
+    +
+      assert (req_evidence t2 pp q (aeval t1 pp e) e') by eauto.
+      invc H0.
+      econstructor.
+      apply evtslseqr.
+      eassumption.
+  -
+    ff.
+    rewrite Bool.orb_true_iff in H.
+    destruct_conjs.
+    destruct H.
+    +
+      assert (req_evidence t1 pp q (splitEv_T (fst s) e) e') by eauto.
+      invc H0.
+      econstructor.
+      apply evtsbseql.
+      eassumption.
+    +
+      assert (req_evidence t2 pp q (splitEv_T (snd s) e) e') by eauto.
+      invc H0.
+      econstructor.
+      apply evtsbseqr.
+      eassumption.
+Defined.
+
+
+(*
 
 (* priv_pol p e --> allow place p to receive evidence with shape e *)
 Definition priv_pol := Plc -> Evidence -> Prop.
@@ -617,6 +768,7 @@ Proof.
   auto.
   solve_by_inversion.
 Qed.
+*)
 
 
 
@@ -789,7 +941,7 @@ Proof.
       try (find_eapply_hyp_hyp; eauto;
         destruct_conjs;
         eauto).
-    (*
+    
   -
      do_bra_range;
     (* apply bra_range with (i:=i) (r:=r) in H2; *) eauto;
@@ -802,6 +954,7 @@ Proof.
 
     + eapply ex_intro; split; try (auto; eauto;tauto).
     + eapply ex_intro; split; try (eauto; auto; tauto).
+      (*
 
   -
     repeat dest_range;
@@ -883,12 +1036,13 @@ Inductive evalR : Term -> Plc -> Evidence -> Evidence -> Prop :=
     evalR t1 p e e' ->
     evalR t2 p e' e'' ->
     evalR (lseq t1 t2) p e e''
-(*| evalR_bseq: forall s e e1 e2 e1' e2' p t1 t2,
+| evalR_bseq: forall s e e1 e2 e1' e2' p t1 t2,
     splitEv_T_R (fst s) e e1 ->
     splitEv_T_R (snd s) e e2 ->
     evalR t1 p e1 e1' ->
     evalR t2 p e2 e2' ->
     evalR (bseq s t1 t2) p e (ss e1' e2')
+          (*
 | evalR_bpar: forall s e e1 e2 e1' e2' p t1 t2,
     splitEv_T_R (fst s) e e1 ->
     splitEv_T_R (snd s) e e2 ->

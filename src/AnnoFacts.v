@@ -26,7 +26,12 @@ Lemma same_anno_range: forall t i a b n n',
 Proof.
   intros.
   generalizeEverythingElse t.
-  induction t; intros.
+  induction t; intros;
+    try destruct a;
+    ff.
+Defined.
+
+(*
     (* Full automation causes proof to take ~3x longer *)
     (*
     try
@@ -44,6 +49,10 @@ Proof.
     ff.
   -
     ff.
+  -
+    ff.
+Defined.
+  
     (*
     repeat (same_index; subst);
       congruence.
@@ -59,6 +68,7 @@ Proof.
       repeat (same_index; subst);
       congruence. *)
  Defined.
+*)
   
 Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm),
   anno t i = (j,t') ->
@@ -911,7 +921,7 @@ Proof.
       Focus 2.
       eassumption.
       tauto.
-      (*
+      
   -
         ff.
     econstructor.
@@ -938,6 +948,7 @@ Proof.
       Focus 2.
       eassumption.
       tauto.
+      (*
   -  
     ff.
     econstructor.

@@ -37,9 +37,9 @@ Inductive traceS: St -> list Ev -> Prop :=
     traceS st tr1 ->
     trace t (pl st) (seval st) tr2 ->
     traceS (ls st t) (tr1 ++ tr2)
-(*| tbsl: forall st tr1 t p e tr2 j,
+| tbsl: forall st tr1 t p e tr2 j,
     traceS st tr1 ->
-    trace t p tr2 ->
+    trace t p e tr2 ->
     traceS (bsl j st t p e)
            (tr1 ++ tr2 ++
                 [(join (pred j) p )])
@@ -47,6 +47,7 @@ Inductive traceS: St -> list Ev -> Prop :=
     traceS st tr ->
     traceS (bsr j e st)
            (tr ++ [(join (pred j) (pl st) )])
+           (*
  | tbp: forall st1 tr1 st2 tr2 tr3 j xi yi,
     traceS st1 tr1 -> traceS st2 tr2 ->
     shuffle tr1 tr2 tr3 ->
@@ -60,8 +61,9 @@ Fixpoint esizeS s:=
   | conf t _ _ => esize t
   | rem _ _ st => 1 + esizeS st
   | ls st t => esizeS st + esize t
-  (*| bsl _ st t _ _ => 1 + esizeS st + esize t
+  | bsl _ st t _ _ => 1 + esizeS st + esize t
   | bsr _ _ st => 1 + esizeS st
+                            (*
   | bp _ _ _ st1 st2 => 1 + esizeS st1 + esizeS st2 *)
   end.
 
@@ -174,7 +176,27 @@ Proof.
   -
     cbn in *; auto.
     eauto.
-Defined.
+  -
+    cbn in *; auto.
+    invc H.
+    assert ((splitEv_T (fst s) e) = (splitEv_T (fst s) e')) by eauto.
+    destruct s;
+      destruct s0.
+    destruct s.
+    
+    +
+      ff.
+    +
+      simpl in *.
+      eauto.
+    +
+      simpl in *.
+      destruct s.
+      ++
+        ff.
+      ++
+        ff.
+Abort.
 
 Lemma step_silent_tr:
   forall st st' tr,
@@ -223,20 +245,26 @@ Proof.
     eauto.
 
   -
-
-    constructor; eauto.
+    constructor.
+    eauto.
 
     find_apply_lem_hyp step_pl_eq.
     find_copy_apply_lem_hyp step_seval.
+    
     cbn in *.
+    invc H.
     Check step_seval.
     find_rewrite.
     find_rewrite.
-    assert (seval st = seval st1) by 
-
-      (eapply aeval_ev_determ; eauto).
-      
-    repeat find_rewrite.
+    assert (traceS st tr1) by eauto.
+    Check step_seval.
+    assert (seval st = seval st1).
+    {
+      eapply step_seval.
+      eassumption.
+    }
+    find_rewrite.
+    find_rewrite.
     eauto.
     
 
@@ -258,8 +286,19 @@ Proof.
     rewrite <- app_nil_l with (l:=tr).
     constructor; auto. *)
 
-    (*
+    
   -
+    constructor.
+    eauto.
+
+    eauto.
+
+    
+(*
+    find_copy_apply_lem_hyp step_seval.
+    find_rewrite.
+    eauto. *)
+    (*
     eauto.
 
     (*
@@ -267,9 +306,15 @@ Proof.
     pose proof H8 as G.
     eapply IHst in H8; eauto.
     (*apply step_seval in G.
-    rewrite <- G; auto. *) *)
+    rewrite <- G; auto. *) *) *)
   -
+
+    
     erewrite <- app_nil_l.
+    apply tbsl; auto; simpl; auto.
+    invc H.
+    invc H5.
+    eauto.
 
     (*
 
@@ -278,9 +323,12 @@ Proof.
     rewrite app_assoc.
     
     rewrite <- app_assoc. *)
+    (*
    
     apply tbsl; auto; simpl; auto;
     solve_by_inversion.
+     *)
+    
     (*
     inv H; auto. *)
   -
@@ -303,7 +351,8 @@ Proof.
     
     (*
     rewrite <- G1; auto. *)
-    
+
+    (*
   -
     eauto.
 
@@ -350,23 +399,31 @@ Proof.
     (*
     inv H6; auto. *)
 
-    (*
+    
   - constructor. apply tbseq; auto.
     solve_by_inversion.
     (*
     inv H6; auto. *)
+
+    (*
     
   - constructor. eapply tbpar; eauto; solve_by_inversion.
     
 (*
     inv H6; auto. inv H7; auto. *)
 
-*)
+     *)
+
+    
   -
+    
     find_copy_apply_lem_hyp step_seval.
     find_copy_apply_lem_hyp step_pl_eq.
-
     jkjk'e.
+    
+    (*
+
+    jkjk'e. *)
     rewrite app_comm_cons; eauto.
 
     (*
@@ -380,6 +437,8 @@ Proof.
     eapply IHst in H7; eauto.
     (* rewrite <- G. *) rewrite <- G1.
     rewrite app_comm_cons; auto. *)
+     
+    
   - rewrite <- app_nil_l; auto.
     apply trem; auto.
   -
@@ -420,7 +479,7 @@ Proof.
     (*
     (*rewrite G. *) rewrite G1; auto. *)
 
-    (*
+    
     
   -
     find_copy_apply_lem_hyp step_seval.
@@ -459,6 +518,8 @@ Proof.
      *)
     
   - rewrite <- app_nil_l; constructor; auto.
+
+    (*
     
   -
     find_copy_apply_lem_hyp step_seval.
