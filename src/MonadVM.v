@@ -43,7 +43,15 @@ Definition put_ev (e:EvidenceC) : CVM unit :=
      let p' := st_pl st in
      (*let store' := st_store st in *)
   (*let '{| st_ev := _; st_stack := s; st_trace := tr |} := st in*)
-    put (mk_st e tr' p' (*store'*)).
+     put (mk_st e tr' p' (*store'*)).
+
+Definition put_pl (p:Plc) : CVM unit :=
+  st <- get ;;
+     let tr' := st_trace st in
+     let e' := st_ev st in
+     (*let store' := st_store st in *)
+  (*let '{| st_ev := _; st_stack := s; st_trace := tr |} := st in*)
+    put (mk_st e' tr' p (*store'*)).
 
 Definition get_ev : CVM EvidenceC :=
   st <- get ;;

@@ -30,6 +30,16 @@ Fixpoint build_app_comp_ev (e:EvidenceC): AM (CVM EvidenceC) :=
         innerRes <- d ;;
         ret (nnc nid check_res innerRes) in
     ret c
+  | ssc e1 e2 =>
+    c <- build_app_comp_ev e1 ;;
+    d <- build_app_comp_ev e2 ;;
+    let res :=
+        cr <- c ;;
+        put_ev mtc ;;
+        put_pl 0 ;;
+        dr <- d ;;
+        ret (ssc cr dr) in
+    ret res
   end.
 
 

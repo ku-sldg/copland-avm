@@ -28,6 +28,28 @@ Proof.
     try eauto;
     try (unfold am_checkNonce in * );
     repeat ff; eauto.
+  -
+    ff.
+    specialize IHe1 with (a_st:=a_st) (a_st':=a) (o:=Some c).
+    concludes.
+    destruct_conjs.
+
+    specialize IHe2 with (a_st:=a) (a_st':=a_st') (o:=Some c0).
+    concludes.
+    destruct_conjs.
+    repeat find_rewrite.
+    tauto.
+  -
+    ff.
+    specialize IHe1 with (a_st:=a_st) (a_st':=a) (o:=Some c).
+    concludes.
+    destruct_conjs.
+
+    specialize IHe2 with (a_st:=a) (a_st':=a_st') (o:=None).
+    concludes.
+    destruct_conjs.
+    repeat find_rewrite.
+    tauto.   
 Defined.
 
 Ltac do_ba_st_const :=
@@ -41,6 +63,20 @@ Ltac do_ba_st_const :=
     st_sigmap a_st = st_sigmap a0) tac
       end);
   subst.
+
+Lemma evmapped_relevant: forall a_st a e,
+    am_nonceMap a_st = am_nonceMap a /\
+    (*am_nonceId a_st = am_nonceId a /\ *)
+    st_aspmap a_st = st_aspmap a /\
+    st_sigmap a_st = st_sigmap a ->
+    evMapped e a ->
+    evMapped e a_st.
+Proof.
+  intros.
+  generalizeEverythingElse e.
+  induction e; intros.
+  -
+Admitted.
 
 Lemma build_app_some' : forall e a_st a_st',
     (exists o, build_app_comp_ev e a_st = (Some o, a_st')) ->
@@ -118,7 +154,73 @@ Proof.
       solve_by_inversion.
     +
       destruct_conjs.
-      solve_by_inversion.   
+      solve_by_inversion.
+  -
+    repeat ff; 
+      destruct_conjs;
+      ff.
+
+    do_ba_st_const.
+    
+      econstructor.
+      +
+        eauto.
+      +
+        assert (evMapped e2 a) by eauto.
+        
+        destruct_conjs.
+
+        eapply evmapped_relevant.
+        split; eauto.
+        eassumption.
+
+        
+            
+          
+          
+(*
+
+          
+        eapply IHe2.
+        
+        do_ba_st_const.
+        destruct_conjs.
+        subst'.
+        repeat find_rewrite.
+        do_ba_st_const.
+        Check ba_const.
+        destruct_conjs.
+        subst'.
+        repeat find_rewrite.
+        eauto.
+      ++
+        unfold am_checkNonce in *.
+        repeat ff.
+        +++
+        eexists.
+        econstructor.
+        do_ba_st_const.
+        destruct_conjs.
+        subst'.
+        eassumption.
+        +++
+          eexists.
+          econstructor.
+          do_ba_st_const.
+          destruct_conjs.
+          subst'.
+          eassumption.
+          
+
+        
+    +
+      destruct_conjs.
+      solve_by_inversion.
+    +
+      destruct_conjs.
+      solve_by_inversion.
+*)
+    
 Defined.
     
 Lemma build_app_some : forall e a_st,
@@ -185,6 +287,224 @@ Proof.
     destruct_conjs.
     subst'.
     solve_by_inversion.
+  -
+    cbn.
+    evMappedFacts.
+    assert (exists o a_st', build_app_comp_ev e1 a_st = (Some o, a_st')) by eauto.
+    assert (exists o a_st', build_app_comp_ev e2 a_st = (Some o, a_st')) by eauto.
+    destruct_conjs.
+    cbn.
+    df.
+    assert (evMapped e2 H5).
+    {
+      eapply evmapped_relevant.
+      do_ba_st_const.
+      destruct_conjs.
+      split.
+      symmetry.
+      apply H8.
+      
+      split; eauto.
+      eassumption.
+    }
+    assert (exists o a_st', build_app_comp_ev e2 H5 = (Some o, a_st')) by eauto.
+    destruct_conjs.
+    subst'.
+    df.
+    eauto.
+Defined.
+
+Lemma tr_irrel_ev_app: forall e e1 e2 a a_st' c ee pp tr tr' st_ev st_trace st_pl st_ev0 st_trace0 st_pl0,
+    build_app_comp_ev e a = (Some c, a_st') ->
+    
+    c {| st_ev := ee; st_trace := tr; st_pl := pp |} =
+    (Some e1, {| st_ev := st_ev; st_trace := st_trace; st_pl := st_pl |}) ->
+
+    c {| st_ev := ee; st_trace := tr'; st_pl := pp |} =
+    (Some e2,
+     {| st_ev := st_ev0; st_trace := st_trace0; st_pl := st_pl0 |}) ->
+    e1 = e2.
+Proof.
+  intros.
+  generalizeEverythingElse e.
+  induction e; intros.
+  -
+    ff.
+    eauto.
+  -
+    ff.
+    ff.
+    ff.
+    assert (e3 = e0).
+    {
+      eapply IHe.
+      eassumption.
+      eassumption.
+      eassumption.
+    }
+    subst.
+    tauto.
+  -
+    ff.
+    ff.
+    ff.
+    assert (e3 = e0).
+    {
+      eapply IHe.
+      eassumption.
+      eassumption.
+      eassumption.
+    }
+    subst.
+    tauto.
+  -
+    ff.
+    ff.
+    ff.
+    assert (e3 = e0).
+    {
+      eapply IHe.
+      eassumption.
+      eassumption.
+      eassumption.
+    }
+    subst.
+    tauto.
+  -
+    ff.
+    ff.
+    ff.
+    vmsts.
+
+    assert (e5 = e).
+    {
+      eapply IHe1.
+      eassumption.
+      eassumption.
+      eassumption.
+    }
+
+    assert (e6 = e4).
+    {
+      eapply IHe2.
+      eassumption.
+      eassumption.
+      eassumption.
+    }
+    subst.
+    tauto.
+Defined.
+
+Lemma tr_app_irrel: forall e a_st a_st' c0 e0 ee pp tr tr' new_vmst,
+    build_app_comp_ev e a_st = (Some c0, a_st') ->
+    c0 {| st_ev := ee; st_trace := tr; st_pl := pp |} =
+    (Some e0, new_vmst) ->
+    exists new_vmst',
+      c0 {| st_ev := ee; st_trace := tr'; st_pl := pp |} =
+      (Some e0, new_vmst').
+Proof.
+  intros.
+  generalizeEverythingElse e.
+  induction e; intros.
+  -
+    ff.
+    eauto.
+  -
+    ff.
+    ff.
+    ff.
+    assert (e1 = e2).
+    {
+      eapply tr_irrel_ev_app; eauto.
+    }
+    subst.
+    eauto.
+
+    assert (exists new_vmst' : cvm_st,
+          c {| st_ev := ee; st_trace := tr'; st_pl := pp |} =
+          (Some e1, new_vmst')) by eauto.
+    destruct_conjs.
+    subst'.
+    solve_by_inversion.
+  -
+    ff.
+    ff.
+    ff.
+    assert (e1 = e2).
+    {
+      eapply tr_irrel_ev_app; eauto.
+    }
+    subst.
+    eauto.
+
+    assert (exists new_vmst' : cvm_st,
+          c {| st_ev := ee; st_trace := tr'; st_pl := pp |} =
+          (Some e1, new_vmst')) by eauto.
+    destruct_conjs.
+    subst'.
+    solve_by_inversion.
+  -
+    ff.
+    ff.
+    ff.
+    
+    assert (e1 = e2).
+    {
+      vmsts.
+      eapply tr_irrel_ev_app; eauto.
+    }
+    subst.
+    eauto.
+
+    assert (exists new_vmst' : cvm_st,
+          c {| st_ev := ee; st_trace := tr'; st_pl := pp |} =
+          (Some e1, new_vmst')) by eauto.
+    destruct_conjs.
+    subst'.
+    solve_by_inversion.
+  -
+    ff.
+    ff.
+    ff.
+    assert (e = e4).
+    {
+      vmsts.
+      eapply tr_irrel_ev_app.
+      apply Heqp.
+      apply Heqp3.
+      apply Heqp1.
+    }
+    assert (e3 = e5).
+    {
+      vmsts.
+      eapply tr_irrel_ev_app.
+      apply Heqp0.
+      eassumption.
+      eassumption.
+    }
+    subst.
+    eauto.
+    
+    assert (exists new_vmst' : cvm_st,
+          c1 {| st_ev := mtc; st_trace := st_trace c3; st_pl := 0 |} =
+          (Some e4, new_vmst')) by eauto.
+    destruct_conjs.
+    subst'.
+    solve_by_inversion.
+
+     assert (exists new_vmst' : cvm_st,
+          c1 {| st_ev := mtc; st_trace := st_trace c3; st_pl := 0 |} =
+          (Some e3, new_vmst')) by eauto.
+     destruct_conjs.
+     subst'.
+     df.
+
+     assert (exists new_vmst' : cvm_st,
+          c {| st_ev := ee; st_trace := tr'; st_pl := pp |} =
+          (Some e, new_vmst')) by eauto.
+     destruct_conjs.
+     subst'.
+     solve_by_inversion.
 Defined.
 
 Lemma same_ev_shape: forall e et a_st a_st' ecomp new_vmst ec_res,
@@ -214,6 +534,26 @@ Proof.
     repeat ff.
     econstructor.
     eauto.
+  -
+    evShapeFacts.
+    repeat ff.
+    
+    assert (exists new_vmst,
+                 c0 {| st_ev := mtc; st_trace := []; st_pl := 0 |} =
+                 (Some e0, new_vmst)).
+    {
+      eapply tr_app_irrel; eauto.
+    }
+    destruct_conjs.
+    
+    econstructor.
+    eauto.
+    eapply IHe2.
+    eassumption.
+    eassumption.
+
+    unfold empty_vmst.
+    eassumption.  
 Defined.
 
 (*
@@ -587,7 +927,8 @@ Proof.
   induction e''; intros;
     do_evsub;
     try solve_by_inversion;
-    try (econstructor; eauto).
+    try (econstructor; eauto);
+    tauto.
 Defined.
 
 Lemma evAccum: forall t vmst vmst' e e',
@@ -624,7 +965,20 @@ Proof.
     
     assert (EvSub x st_ev) by eauto.
     eapply evSub_trans; eauto.
-Defined.
+  -
+    do_wf_pieces.
+    vmsts.
+    df.
+    ff.
+    ff.
+    econstructor.
+    vmsts.
+    df.
+    eapply IHt1.
+    eassumption.
+    eassumption.
+    df.
+    Abort.
 
 Lemma evMappedSome: forall e1 e2 a_st,
   EvSub e1 e2 ->
@@ -666,6 +1020,19 @@ Proof.
       eexists; econstructor; eauto.
     +
       eauto.
+  -
+    
+   evMappedFacts.
+    do_evsub.
+    +
+      econstructor.
+      tauto.
+      eassumption.
+    +
+      eauto.
+    +
+      eauto.
+      
 Defined.
 
 (*
@@ -734,6 +1101,20 @@ Proof.
     
     ff.
     eauto.
+  -
+    ff.
+    ff.
+    ff.
+    eauto.
+    assert (exists (app_ev : EvidenceC) (vmst' : cvm_st), c0 {| st_ev := mtc; st_trace := st_trace c1; st_pl := 0 |} = (Some app_ev, vmst')) by eauto.
+    destruct_conjs.
+    subst'.
+    solve_by_inversion.
+
+    assert (exists (app_ev : EvidenceC) (vmst' : cvm_st), c vmst = (Some app_ev, vmst')) by eauto.
+    destruct_conjs.
+    subst'.
+    solve_by_inversion.
 Defined.
 
 Lemma app_lseq_decomp': forall (*t1*) e1 e2 (*vmst vmst'*) a_st a_st' x
@@ -838,13 +1219,40 @@ Proof.
       ff.
       ff.
       ff.
-      assert (forall ev1:Ev, In ev1 st_trace -> In ev1 st_trace0).
+      eauto.
+  -
+    invc H.
+    +
+      ff.
+      ff.
+      ff.
+      ff.
+    +
+      ff.
+      ff.
+      ff.
+      vmsts.
+      ff.
+      eapply IHe2_1.
+      eassumption.
+      eassumption.
+      eassumption.
+      assert (forall ev1:Ev, In ev1 st_trace -> In ev1 st_trace2).
       {
-        eauto.
+        eapply IHe2_1.
+        eassumption.
+        apply Heqp.
+        eassumption.
+        eassumption.
+        eassumption.
       }
+      
       pose (H ev1).
       concludes.
+      eapply IHe2_2.
+      
       eassumption.
+    
 Defined.
 
 Lemma app_lseq_decomp: forall t1 t2 e1 e2 vmst vmst' vmst'' a_st a_st' x
