@@ -38,16 +38,14 @@ Proof.
   tauto.
 Defined.
 
-(*
-Lemma wf_bpar_pieces: forall r lr (*xlocs*) ylocs s t1 t2,
-    well_formed (abpar r lr (*xlocs*) ylocs s t1 t2) ->
-    well_formed t1 /\ well_formed t2.
+Lemma wf_bpar_pieces: forall r s t1 t2,
+    well_formed_r (abpar r s t1 t2) ->
+    well_formed_r t1 /\ well_formed_r t2.
 Proof.
   intros.
   inversion H.
   tauto.
 Defined.
-*)
 
 Ltac do_wf_pieces :=
   match goal with
@@ -58,9 +56,8 @@ Ltac do_wf_pieces :=
       by (eapply wf_at_pieces; eauto)
   | [H: well_formed_r (abseq _ _ _ _) |- _] =>
     (edestruct wf_bseq_pieces; eauto)
-      (*
-  | [H: well_formed (abpar _ _ _ _ _ _) |- _] =>
-    (edestruct wf_bpar_pieces; eauto)    *)
+  | [H: well_formed_r (abpar _ _ _ _) |- _] =>
+    (edestruct wf_bpar_pieces; eauto)
   end.
 
 Lemma well_formed_range_r:
@@ -459,9 +456,8 @@ Fixpoint aeval t p e :=
   | alseq _ t1 t2 => aeval t2 p (aeval t1 p e)
   | abseq _ s t1 t2 => ss (aeval t1 p ((splitEv_T (fst s)) e))
                          (aeval t2 p ((splitEv_T (snd s)) e))
-                         (*
-  | abpar _ _ _ s t1 t2 => pp (aeval t1 p ((splitEv_T (fst s)) e))
-                         (aeval t2 p ((splitEv_T (snd s)) e)) *)
+  | abpar _ s t1 t2 => pp (aeval t1 p ((splitEv_T (fst s)) e))
+                         (aeval t2 p ((splitEv_T (snd s)) e))
   end. 
 
 (*
@@ -535,29 +531,28 @@ Inductive events: AnnoTerm -> Plc -> Evidence -> Ev -> Prop :=
     forall r i s e t1 t2 p,
       snd r = S i ->
       events (abseq r s t1 t2) p e (join i p)
-             (*
 
 | evtsbparsplit:
-    forall r lr i s t1 t2 p (*xi xi'*) yi yi',
+    forall r i s e t1 t2 p,
       fst r = i ->
-      events (abpar r lr (*(xi,xi')*) (yi,yi') s t1 t2) p
-             (splitp i (*xi*) yi p)
+      events (abpar r s t1 t2) p e
+             (Term_Defs.split i p)
 | evtsbparl:
-    forall r lr s t1 t2 ev p (*xlocs*) ylocs,
-      events t1 p ev ->
-      events (abpar r lr (*xlocs*) ylocs s t1 t2) p ev
+    forall r s e t1 t2 ev p,
+      events t1 p (splitEv_T (fst s) e) ev ->
+      events (abpar r s t1 t2) p e ev
 | evtsbparr:
-    forall r lr s t1 t2 ev p (*xlocs*) ylocs,
-      events t2 p ev ->
-      events (abpar r lr (*xlocs*) ylocs s t1 t2) p ev
+    forall r s e t1 t2 ev p,
+      events t2 p (splitEv_T (snd s) e) ev ->
+      events (abpar r s t1 t2) p e ev
 | evtsbparjoin:
-    forall r lr i s t1 t2 p (*xi xi'*) yi yi',
+    forall r i s e t1 t2 p,
       snd r = S i ->
-      events (abpar r lr (*(xi,xi')*) (yi,yi') s t1 t2) p
-             (* TODO: fix joinp event *)
-             (joinp i (*(xi')*) yi' (yi') p) *) .
+      events (abpar r s t1 t2) p e
+             (join i  p).
 Hint Constructors events : core.
 
+(*
 Inductive EvSubT: Evidence -> Evidence -> Prop :=
 | evsub_refl_t : forall e : Evidence, EvSubT e e
 | uuSubT: forall e e' i tid l tpl,
@@ -569,6 +564,7 @@ Inductive EvSubT: Evidence -> Evidence -> Prop :=
 | nnSubT: forall e e' i,
     EvSubT e e' ->
     EvSubT e (nn i e').
+*)
 
 Inductive req_evidence: AnnoTerm -> Plc -> Plc -> Evidence -> Evidence -> Prop :=
 | is_req_evidence: forall annt t pp p q i e e',
@@ -580,6 +576,8 @@ Fixpoint check_req (t:AnnoTerm) (pp:Plc) (q:Plc) (e:Evidence) (e':Evidence): boo
   | aatt r rp t' => (eqb_evidence e e' && (Nat.eqb q rp)) || (check_req t' rp q e e')
   | alseq r t1 t2 => (check_req t1 pp q e e') || (check_req t2 pp q (aeval t1 pp e) e')
   | abseq r s t1 t2 =>
+    (check_req t1 pp q (splitEv_T (fst s) e) e') || (check_req t2 pp q (splitEv_T (snd s) e) e')
+  | abpar r s t1 t2 =>
     (check_req t1 pp q (splitEv_T (fst s) e) e') || (check_req t2 pp q (splitEv_T (snd s) e) e')
   | _ => false
   end.
@@ -656,6 +654,22 @@ Proof.
       eapply IHt2.
       econstructor.
       eassumption.
+  -
+    ff.
+    invc H.
+    invc H0.
+    +
+      rewrite Bool.orb_true_iff.
+      left.
+      eapply IHt1.
+      econstructor.
+      eassumption.
+    +
+      rewrite Bool.orb_true_iff.
+      right.
+      eapply IHt2.
+      econstructor.
+      eassumption.  
 Defined.
 
 Lemma check_implies_req: forall t pp q e e',
@@ -721,6 +735,23 @@ Proof.
       invc H0.
       econstructor.
       apply evtsbseqr.
+      eassumption.
+  -
+    ff.
+    rewrite Bool.orb_true_iff in H.
+    destruct_conjs.
+    destruct H.
+    +
+      assert (req_evidence t1 pp q (splitEv_T (fst s) e) e') by eauto.
+      invc H0.
+      econstructor.
+      apply evtsbparl.
+      eassumption.
+    +
+      assert (req_evidence t2 pp q (splitEv_T (snd s) e) e') by eauto.
+      invc H0.
+      econstructor.
+      apply evtsbparr.
       eassumption.
 Defined.
 
@@ -866,6 +897,27 @@ Proof.
   destruct E; lia.
 Qed.
 
+Ltac dest_range :=
+  match goal with
+  | [H: (nat * nat) |- _] => destruct H
+  end.
+
+Ltac do_lin_range :=
+  match goal with
+  | [H: snd _ = fst _,
+        H': fst _ <= ?n < snd _
+     |- _] =>
+    apply lin_range with (i:=n) in H; eauto
+  end.
+
+Ltac do_bra_range :=
+  match goal with
+  | [H: snd _ = fst _,
+        H': fst ?x <= ?n < snd ?x
+     |- _] =>
+    apply bra_range with (i:=n) (r:=x) in H; eauto
+  end.
+
 (** Properties of events. *)
 
 Lemma events_range_event:
@@ -881,10 +933,7 @@ Proof.
   - find_eapply_lem_hyp at_range; eauto.
     (*eapply at_range in H2; eauto. *)
 
-    Ltac dest_range :=
-      match goal with
-      | [H: (nat * nat) |- _] => destruct H
-      end.
+
 
     (*
 
@@ -895,21 +944,7 @@ Proof.
      *)
     
 
-     Ltac do_lin_range :=
-      match goal with
-      | [H: snd _ = fst _,
-            H': fst _ <= ?n < snd _
-         |- _] =>
-        apply lin_range with (i:=n) in H; eauto
-      end.
 
-     Ltac do_bra_range :=
-      match goal with
-      | [H: snd _ = fst _,
-            H': fst ?x <= ?n < snd ?x
-         |- _] =>
-        apply bra_range with (i:=n) (r:=x) in H; eauto
-      end.
 
      repeat dest_range;
     
@@ -955,7 +990,7 @@ Proof.
 
     + eapply ex_intro; split; try (auto; eauto;tauto).
     + eapply ex_intro; split; try (eauto; auto; tauto).
-      (*
+      
 
   -
     repeat dest_range;
@@ -971,7 +1006,6 @@ Proof.
 
     + eapply ex_intro; split; auto.
     + eapply ex_intro; split; eauto.
-*)
 Qed.
 
 Ltac events_event_range :=
@@ -1043,13 +1077,12 @@ Inductive evalR : Term -> Plc -> Evidence -> Evidence -> Prop :=
     evalR t1 p e1 e1' ->
     evalR t2 p e2 e2' ->
     evalR (bseq s t1 t2) p e (ss e1' e2')
-          (*
 | evalR_bpar: forall s e e1 e2 e1' e2' p t1 t2,
     splitEv_T_R (fst s) e e1 ->
     splitEv_T_R (snd s) e e2 ->
     evalR t1 p e1 e1' ->
     evalR t2 p e2 e2' ->
-    evalR (bpar s t1 t2) p e (pp e1' e2') *) .
+    evalR (bpar s t1 t2) p e (pp e1' e2').
 
 Ltac jkjke :=
   match goal with

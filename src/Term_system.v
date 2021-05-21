@@ -41,9 +41,18 @@ Fixpoint ev_sys (t: AnnoTerm) p e: EvSys Ev :=
                            (ev_sys y p (splitEv_T (snd s) e)))
                    (leaf ((pred j), j)
                          (join (pred j) p)))
-           (*
-  | abpar (i, j) lr (*(xi,xi')*) (yi,yi') s x y =>
+  | abpar (i, j) s x y =>
     before (i, j)
+           (leaf (i, S i)
+                 (Term_Defs.split i p))
+           (before (S i, j)
+                   (before (S i, (pred j))
+                           (ev_sys x p (splitEv_T (fst s) e))
+                           (ev_sys y p (splitEv_T (snd s) e)))
+                   (leaf ((pred j), j)
+                         (join (pred j) p)))
+(*
+           before (i, j)
            (leaf (i, S i)
                  (splitp i (*xi*) yi p))
            (before (S i, j)
@@ -521,7 +530,7 @@ Proof.
     (*
     inv H4; auto. *)
 *)
-    (*
+    
   -
     do_before_sup.
     solve_by_inversion.
@@ -542,7 +551,6 @@ Proof.
   -
     repeat expand_let_pairs.
     inv H6; eauto.
-*)
 *)
 Qed.
 

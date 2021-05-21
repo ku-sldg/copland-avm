@@ -923,7 +923,7 @@ Proof.
       tauto.
       
   -
-        ff.
+    ff.
     econstructor.
     eauto.
     eauto.
@@ -948,6 +948,57 @@ Proof.
       Focus 2.
       eassumption.
       tauto.
+
+  -
+    ff.
+    econstructor.
+    eauto.
+    eauto.
+
+     simpl.
+      erewrite anno_range.
+      Focus 2.
+      eassumption.
+      tauto.
+
+      simpl.
+      erewrite anno_range.
+      Focus 2.
+      eassumption.
+      erewrite anno_range.
+      Focus 2.
+      eassumption.
+      tauto.
+
+      simpl.
+      erewrite anno_range.
+      Focus 2.
+      eassumption.
+      tauto.
+
+      (*
+      Check anno_range.
+      Check anno_mono.
+
+      simpl.
+      erewrite anno_range.
+      Focus 2.
+      eassumption.
+
+      simpl.
+      erewrite anno_range.
+      Focus 2.
+      eassumption.
+      simpl.
+
+      eapply anno_mono; eauto.
+       *)
+      
+Defined.
+
+
+
+      
       (*
   -  
     ff.
@@ -1147,5 +1198,5 @@ Proof.
 
       simpl.
       lia. *)
-*)
 Defined.
+*)

@@ -16,7 +16,7 @@ Inductive EvidenceC: Set :=
 (*| hhc: BS -> EvidenceC -> EvidenceC (* TODO: remove Ev param *) *)
 | nnc: N_ID -> BS -> EvidenceC -> EvidenceC
 | ssc: EvidenceC -> EvidenceC -> EvidenceC
-(*| ppc: EvidenceC -> EvidenceC -> EvidenceC *) .
+| ppc: EvidenceC -> EvidenceC -> EvidenceC.
 
 Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
 | evsub_refl : forall e : EvidenceC, EvSub e e
@@ -34,7 +34,13 @@ Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
     EvSub e (ssc e' e'')
 | ssSubr: forall e e' e'',
     EvSub e e'' ->
-    EvSub e (ssc e' e'').
+    EvSub e (ssc e' e'')
+| ppSubl: forall e e' e'',
+    EvSub e e' ->
+    EvSub e (ppc e' e'')
+| ppSubr: forall e e' e'',
+    EvSub e e'' ->
+    EvSub e (ppc e' e'').
 
 
 
@@ -63,8 +69,7 @@ Fixpoint et_fun (ec:EvidenceC) : Evidence :=
   (*| hhc _ ec' => hh p (et_fun p ec') *)
   | nnc ni _ ec' => nn ni (et_fun ec')
   | ssc ec1 ec2 => ss (et_fun ec1) (et_fun ec2)
-                     (*
-  | ppc ec1 ec2 => pp (et_fun p ec1) (et_fun p ec2) *)
+  | ppc ec1 ec2 => pp (et_fun ec1) (et_fun ec2)
   end.
 
 
@@ -90,10 +95,10 @@ Inductive Ev_Shape: EvidenceC -> Evidence -> Prop :=
     Ev_Shape e1 e1t ->
     Ev_Shape e2 e2t ->
     Ev_Shape (ssc e1 e2) (ss e1t e2t)
-(*| ppt: forall e1 e2 e1t e2t,
+| ppt: forall e1 e2 e1t e2t,
     Ev_Shape e1 e1t ->
     Ev_Shape e2 e2t ->
-    Ev_Shape (ppc e1 e2) (pp e1t e2t) *) .
+    Ev_Shape (ppc e1 e2) (pp e1t e2t).
 Hint Constructors Ev_Shape : core.
 
 Ltac evShapeFacts :=
@@ -110,8 +115,8 @@ Ltac evShapeFacts :=
   | [H: Ev_Shape _ (nn _ _) |- _] => invc H
   | [H: Ev_Shape (ssc _ _) _ |- _] => invc H
   | [H: Ev_Shape _ (ss _ _) |- _] => invc H
-  (*| [H: Ev_Shape (ppc _ _) _ |- _] => invc H
-  | [H: Ev_Shape _ (pp _ _) |- _] => invc H  *)
+  | [H: Ev_Shape (ppc _ _) _ |- _] => invc H
+  | [H: Ev_Shape _ (pp _ _) |- _] => invc H
   end.
 
 Lemma ev_evshape: forall ec,
@@ -129,7 +134,8 @@ Proof.
     econstructor; eauto.
   -
      econstructor; eauto.
-    
+  -
+     econstructor; eauto.
 Defined.
 
 (* TODO: perhaps an equality modulo "measuring place" *)
@@ -153,6 +159,12 @@ Proof.
   -
     repeat evShapeFacts.
     assert (et1 = et0) by eauto.
+    congruence.
+  -
+    repeat evShapeFacts.
+    
+    assert (e1t0 = e1t) by eauto.
+    assert (e2t0 = e2t) by eauto.
     congruence.
   -
     repeat evShapeFacts.

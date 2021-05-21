@@ -47,12 +47,11 @@ Inductive traceS: St -> list Ev -> Prop :=
     traceS st tr ->
     traceS (bsr j e st)
            (tr ++ [(join (pred j) (pl st) )])
-           (*
- | tbp: forall st1 tr1 st2 tr2 tr3 j xi yi,
+ | tbp: forall st1 tr1 st2 tr2 tr3 j,
     traceS st1 tr1 -> traceS st2 tr2 ->
     shuffle tr1 tr2 tr3 ->
-    traceS (bp j xi yi st1 st2)
-           (tr3 ++ [(joinp (pred j) xi yi (pl st2))]) *) .
+    traceS (bp j st1 st2)
+           (tr3 ++ [(join (pred j) (pl st2))]).
 Hint Constructors traceS : core.
 
 Fixpoint esizeS s:=
@@ -63,10 +62,8 @@ Fixpoint esizeS s:=
   | ls st t => esizeS st + esize t
   | bsl _ st t _ _ => 1 + esizeS st + esize t
   | bsr _ _ st => 1 + esizeS st
-                            (*
-  | bp _ _ _ st1 st2 => 1 + esizeS st1 + esizeS st2 *)
+  | bp _ st1 st2 => 1 + esizeS st1 + esizeS st2
   end.
-
 
 Ltac inv_trace :=
   match goal with
@@ -352,7 +349,7 @@ Proof.
     (*
     rewrite <- G1; auto. *)
 
-    (*
+    
   -
     eauto.
 
@@ -382,7 +379,6 @@ Proof.
     apply step_pl_eq in G1.
     rewrite <- G1; auto.
     apply tbp with (tr1:=tr1)(tr2:=tr2); auto. *)
-*)
 Qed.
 
 Lemma step_evt_tr:
@@ -405,15 +401,16 @@ Proof.
     (*
     inv H6; auto. *)
 
-    (*
     
-  - constructor. eapply tbpar; eauto; solve_by_inversion.
+  - constructor.
+
+    eapply tbpar; eauto; solve_by_inversion.
     
 (*
     inv H6; auto. inv H7; auto. *)
 
-     *)
 
+                          
     
   -
     
@@ -519,7 +516,7 @@ Proof.
     
   - rewrite <- app_nil_l; constructor; auto.
 
-    (*
+    
     
   -
     find_copy_apply_lem_hyp step_seval.
@@ -587,7 +584,6 @@ Proof.
     eapply tbp; eauto.
     (*
     apply tbp with (tr1:=[])(tr2:=[]); auto. *)
-*)
 Qed.
 
 Lemma nlstar_trace_helper:

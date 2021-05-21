@@ -112,8 +112,8 @@ Proof.
       eassumption.
       jkjk'; eauto.
 
-      (*
   -
+    Locate do_wf_pieces.
 
     do_wf_pieces.
     annogo.

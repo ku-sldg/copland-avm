@@ -45,20 +45,24 @@ Fixpoint copland_compile (t:AnnoTerm): CVM unit :=
       copland_compile t2 ;;
       e2r <- get_ev ;;
       join_seq (Nat.pred y) p e1r e2r
-               (*
-  | abpar (x,y) _ (*(loc_e1,loc_e1')*) (loc_e2,loc_e2') (sp1,sp2) t1 t2 =>
+  | abpar (x,y) (sp1,sp2) t1 t2 =>
       e <- get_ev ;;
       p <- get_pl ;;
-      e1 <- split_ev_par x sp1 sp2 (*loc_e1*) loc_e2 (*t1 t2*) e p ;;
+      pr <- split_ev_seq x sp1 sp2 e p ;;
+      let '(e1,e2) := pr in
       put_ev e1 ;;
       copland_compile t1 ;;
       e1r <- get_ev ;;
 
+      (*
       e2 <- get_store_at loc_e2 ;;
+       *)
+      
       put_ev e2 ;;
       copland_compile t2 ;;
-      e2r_store <- get_ev ;;
-      put_store_at loc_e2' e2r_store ;;
+      e2r <- get_ev ;;
+      (*
+      put_store_at loc_e2' e2r_store ;; *)
 
       (*
       runParThread t2 p loc_e2 loc_e2' *)
@@ -88,12 +92,11 @@ Fixpoint copland_compile (t:AnnoTerm): CVM unit :=
 
       (*
       runParThreads t1 t2 p loc_e1 loc_e1' loc_e2 loc_e2'  ;; *)
-      join_par (Nat.pred y) p (*loc_e1'*) e1r loc_e2'
+      join_par (Nat.pred y) p (*loc_e1'*) e1r e2r
       (*
       e1r <- get_store_at loc_e1' ;;
       e2r <- get_store_at loc_e2' ;;
       join_par (Nat.pred y) p e1r e2r *)
-*)
   end.
 
 Definition setup := MapC Plc (CVM unit).
