@@ -1606,81 +1606,52 @@ Proof.
       apply earlier_cons; auto.
       apply in_app_iff; right; simpl; auto.
   - solve_by_inversion.
+
+
+
   -
-    inv_prec.
-    (*
-
-    inv H7. *)
+    eapply earlier_cons_shift.
+    
+    inversion H12; subst.
     +
-      do_evin2.
-      (*
-
-      inv H15. inv H9. *)
-      *
-        find_eapply_lem_hyp evsys_tr_in; eauto.
-        (*
-
-        eapply evsys_tr_in in H4; eauto. *)
-        find_eapply_lem_hyp shuffle_in_left; eauto.
-        (*
-        apply shuffle_in_left with (e:= ev0) in H0; auto. *)
-        apply earlier_cons_shift; auto.
-        apply earlier_append; simpl; auto.
-      *
-        find_eapply_lem_hyp evsys_tr_in; eauto.
-        find_eapply_lem_hyp shuffle_in_right; eauto.
-        (*
-
-        eapply evsys_tr_in in H4; eauto.
-        apply shuffle_in_right with (e:=ev0) in H0; auto. *)
-        apply earlier_cons_shift; auto.
-        apply earlier_append; simpl; auto.
-
-
-
-        (*
+      inversion H13; subst.
+      ++
+        invc H14.
+        eapply earlier_append.
+        eapply shuffle_in_left.
+        eassumption.
+        eapply evsys_tr_in.
+        apply H6.
+        eassumption.
+        eassumption.
+        econstructor.
+        tauto.
+      ++
+        apply earlier_append.
+        eapply shuffle_in_right.
+        eassumption.
+        eapply evsys_tr_in.
+        eassumption.
+        eassumption.
+        eassumption.
+        invc H14.
+        econstructor.
+        tauto.
     +
-
-      inv_prec.
-      (*
-      find_eapply_lem_hyp shuffle_earlier_right; eauto. *)
-
-
+      Print prec.
+      eapply earlier_left.
+      inversion H13; subst.
       
-      
-      (*
-      inv H9. *)
-      *
-        (*
-        find_apply_hyp_hyp; auto. *)
-        find_eapply_lem_hyp shuffle_earlier_left.
+      ++
+        eapply shuffle_earlier_left.
         Focus 2.
+        eassumption.
         eauto.
-        eauto.
-        find_eapply_lem_hyp evsys_tr_in; eauto.
-        (*
-        apply IHtrace1 in H8; auto.
-        apply shuffle_earlier_left
-          with (e0:=ev0)(e1:=ev1) in H0; auto. *)
-
-       (*
-        apply earlier_cons_shift; auto. *)
-        apply earlier_left; auto.
-      *
-        find_apply_hyp_hyp; auto.
-        (*
-
-        apply IHtrace2 in H10; auto. *)
-        find_eapply_lem_hyp shuffle_earlier_right.
+      ++
+        eapply shuffle_earlier_right.
         Focus 2.
+        eassumption.
         eauto.
-        (*
-        apply shuffle_earlier_right
-          with (e0:=ev0)(e1:=ev1) in H0; auto. *)
-        apply earlier_cons_shift; auto.
-        apply earlier_left; auto.
-         *)
-
-    + admit.
-    + solve_by_inversion.
-Admitted.
+    +
+      solve_by_inversion.
+Defined.
