@@ -346,6 +346,52 @@ Proof.
   eapply lstar_silent_tran; eauto.
 Defined.
 
+Lemma lstar_stbparl:
+  forall st0 st1 st2 j tr,
+    lstar st0 tr st1 ->
+    lstar (bp j st0 st2) tr (bp j st1 st2).
+Proof.
+  intros.
+  induction H; auto.
+  eapply lstar_tran; eauto.
+  eapply lstar_silent_tran; eauto.
+Defined.
+
+Lemma lstar_stbparr:
+  forall st0 st1 st2 j tr,
+    lstar st1 tr st2 ->
+    lstar (bp j st0 st1) tr (bp j st0 st2).
+Proof.
+  intros.
+  induction H; auto.
+  eapply lstar_tran; eauto.
+  eapply lstar_silent_tran; eauto.
+Defined.
+
+(*
+Lemma lstar_stparl:
+  forall st0 st1 j t p e tr,
+    lstar st0 tr st1 ->
+    lstar (bsl j st0 t p e) tr (bsl j st1 t p e).
+Proof.
+  intros.
+  induction H; auto.
+  eapply lstar_tran; eauto.
+  eapply lstar_silent_tran; eauto.
+Defined.
+
+Lemma lstar_stbpar:
+  forall st0 st1 j e tr,
+    lstar st0 tr st1 ->
+    lstar (bsr j e st0) tr (bsr j e st1).
+Proof.
+  intros.
+  induction H; auto.
+  eapply lstar_tran; eauto.
+  eapply lstar_silent_tran; eauto.
+Defined.
+*)
+
 Lemma star_stbp:
   forall st0 st1 st2 st3 j,
     star st0 st1 ->

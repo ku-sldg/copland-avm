@@ -152,8 +152,9 @@ Proof.
     subst'.
     df.
     tauto.
-    (*
+    
   -
+    
 
 
 
@@ -167,10 +168,18 @@ Proof.
     subst.
     df.
     annogo.
+    do_pl_immut.
+    do_pl_immut.
+    do_pl_immut.
+    do_pl_immut.
+    
     df.
-    dohtac.
+    subst.
+    (*
+    dohtac. *)
     dosome.
     df.
+    (*
     destruct (map_get st_store5 n1); try solve_by_inversion.
     df.
 
@@ -196,6 +205,8 @@ Proof.
     }
     rewrite H0 in *.
     df.
+     
+    
 
     Check always_some.
     assert (o2 = Some tt).
@@ -204,6 +215,8 @@ Proof.
     }
     subst.
     df.
+     *)
+    
 
 
     (*
@@ -234,10 +247,18 @@ Proof.
 
     assert (
         StVM.st_trace
-           (snd (copland_compile t1 {| st_ev := splitEv s0 e; st_trace := m ++ (k ++ [Term_Defs.splitp n n1 p0]); st_pl := p0; st_store := map_set o n1 (splitEv s1 e) |})) =
+          (snd (copland_compile t1
+                 {| st_ev := splitEv s0 e;
+                    st_trace := m ++ (k ++ [Term_Defs.split n p]);
+                    st_pl := p;
+                    (*st_store := map_set o n1 (splitEv s1 e)*) |})) =
          m ++
          StVM.st_trace
-         (snd (copland_compile t1 {| st_ev := splitEv s0 e; st_trace := k ++ [Term_Defs.splitp n n1 p0]; st_pl := p0; st_store := map_set o n1 (splitEv s1 e) |}))).
+         (snd (copland_compile t1
+                               {| st_ev := splitEv s0 e;
+                                  st_trace := k ++ [Term_Defs.split n p];
+                                  st_pl := p;
+                                  (*st_store := map_set o n1 (splitEv s1 e)*) |}))).
     {
       rewrite <- app_assoc in *. (*Heqp4. *)
       eapply IHt1; eauto.
@@ -250,20 +271,34 @@ Proof.
     subst.
 
     assert (
-         StVM.st_trace (snd (copland_compile t2{| st_ev := e0; st_trace := m ++ st_trace; st_pl := st_pl4; st_store := st_store4 |})) =
-         m ++ StVM.st_trace (snd (copland_compile t2 {| st_ev := e0; st_trace := st_trace; st_pl := st_pl4; st_store := st_store4 |}))
+        StVM.st_trace (snd (copland_compile t2
+                                            {| st_ev := splitEv s1 e;
+                                               st_trace := m ++ st_trace0;
+                                               st_pl := p;
+                                               (*st_store := st_store4*) |})) =
+        m ++ StVM.st_trace (snd (copland_compile t2
+                                                 {| st_ev := splitEv s1 e;
+                                                    st_trace := st_trace0;
+                                                    st_pl := p;
+                                                    (*st_store := st_store4*) |}))
       ).
     eapply IHt2; eauto.
     subst'.
     df.
     subst.
+    tauto.
+
+    (*
 
     vmsts.
     df.
+    do_pl_immut.
+    subst.
 
+    (*
     assert (e0 = splitEv s1 e). admit.
     subst.
-    df.
+    df. 
 
 
     
@@ -271,7 +306,7 @@ Proof.
 
     
     tauto.
-    tauto. 
+    tauto.  
 
 
 
@@ -294,6 +329,8 @@ Proof.
 
     
     do_wf_pieces.
+     *)
+    
     repeat (df; dohtac; df).
     repeat (rewrite app_assoc).
 
@@ -722,52 +759,72 @@ Proof.
           subst.
           eapply IHt2; eauto.
 
-          (*
+          
   -
     do_wf_pieces.
     repeat (df; dohtac; df).
+    dosome.
+    vmsts.
     econstructor.
     destruct s0.
     +
       simpl.
+      df.
       eapply IHt1.
-      apply H3.     
-      eapply copland_compile_par.
+      apply H3.
       eassumption.
+      (*
+      eapply copland_compile_par. *)
       eassumption.
+
       tauto.
     +
       simpl.
       eapply IHt1.
+      df.
       eassumption.
-      eapply copland_compile_par.
+      (*
+      eapply copland_compile_par. *)
       eassumption.
+      df.
       econstructor.
       tauto.
     +
       destruct s1.
       ++
         simpl.
+        df.
         eapply IHt2.
         eassumption.
-        eapply copland_compile_par.
         eassumption.
+        (*
+        eapply copland_compile_par. *)
         eassumption.
+        do_pl_immut.
+        do_pl_immut.
+        subst.
         tauto.
       ++
         simpl.
+        df.
+        do_pl_immut.
+        do_pl_immut.
+        subst.
         eapply IHt2.
         eassumption.
-        eapply copland_compile_par.
+        (*
+        eapply copland_compile_par. *)
         eassumption.
         econstructor.
+        tauto.
+        (*
         eauto.
         Unshelve.
         eauto.
         eauto.
         eauto.
         eauto.
-*)
+         *)
 Defined.
 
 Axiom remote_LTS: forall t n et, 
@@ -785,6 +842,11 @@ Proof.
   -
     ff.
     erewrite IHt1_1.
+    eauto.
+  -
+    ff.
+    erewrite IHt1_1.
+    erewrite IHt1_2.
     eauto.
   -
     ff.
@@ -820,6 +882,10 @@ Proof.
   -
     invc H.
     destruct s; ff.
+  -
+    invc H.
+    destruct s; ff.
+    
 Defined.
    
 Lemma cvm_refines_lts_event_ordering : forall t tr et e e' p p',
@@ -962,10 +1028,94 @@ Proof.
     eapply stbsrstop.
     econstructor.
 
+
+  -    
+    do_wf_pieces.
+    destruct r; destruct s.
+    df.
+    vmsts.
+    dosome.
+    df.
+
+    do_suffix blah.
+    do_suffix blah'.
+    destruct_conjs; subst.
+    repeat do_restl.
+    
+    repeat do_pl_immut.
+    subst.
+    repeat rewrite <- app_assoc.
+
+    eapply lstar_tran.
+    econstructor.
+    simpl.
+
+    eapply lstar_transitive.
+    simpl.
+
+    eapply lstar_stbparl.
+
+    (*
+    eapply lstar_stparl.   *)
+     
+    eapply IHt1.
+    eassumption.
+    Focus 2.
+    eassumption.
+
+    eapply evshape_split; eauto.
+  
+    unfold run_cvm in *.
+    monad_unfold.
+
+    eapply lstar_transitive.
+
+    eapply lstar_stbparr.
+
+    (*
+
+    eapply lstar_silent_tran.
+    econstructor.
+
+    apply stbpstop.
+
+
+    
+    apply stbslstop.
+    
+    eapply lstar_transitive.
+    eapply lstar_stbsr. *)
+        
+    eapply IHt2.
+    eassumption.
+    Focus 2.
+    eassumption.
+    eapply evshape_split; eauto.
+
+    econstructor.
+
+    eapply stbpstop.
+
+    econstructor.
+Defined.
+
     (*
   -
+    do_wf_pieces.
+    do_pl_immut.
+    subst.
     destruct s; destruct r.
     repeat (df; dohtac; df).
+    dosome.
+    vmsts.
+    df.
+    
+    do_pl_immut.
+    df.
+    subst.
+    eapply lstar_transitive.
+   
+
     econstructor.
     (*
     assert (n1 = fst (range t1)).
@@ -979,7 +1129,7 @@ Proof.
       eauto.
     }
     subst. *)
-    econstructor.
+
     eapply lstar_transitive.
     simpl.
     apply bpar_shuffle.
@@ -1006,7 +1156,6 @@ Proof.
     exact mtc.
     eauto.  *)
 *)
-Defined.
 
 Lemma cvm_refines_lts_event_ordering_corrolary : forall t tr et e e' p p',
     well_formed_r t ->

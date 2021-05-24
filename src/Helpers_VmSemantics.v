@@ -129,7 +129,7 @@ Proof.
     repeat dunit;
     simpl in *; vmsts; simpl in *.
     +
-    assert (p0 = st_pl0).
+    assert (p = st_pl0).
     {
       edestruct IHt1.
       eassumption.
@@ -146,41 +146,7 @@ Proof.
     congruence.
 
     +
-    assert (p0 = st_pl0).
-    {
-      edestruct IHt1.
-      eassumption.
-      jkjk'; eauto.     
-    }
-
-    assert (st_pl0 = st_pl).
-    {
-      edestruct IHt2.
-      eassumption.
-      jkjk'; eauto.
-    }
-
-    congruence.
-    
-    +
-    assert (p0 = st_pl0).
-    {
-      edestruct IHt1.
-      eassumption.
-      jkjk'; eauto.     
-    }
-
-    assert (st_pl0 = st_pl).
-    {
-      edestruct IHt2.
-      eassumption.
-      jkjk'; eauto.
-    }
-
-    congruence.
-    +
-
-    assert (p0 = st_pl).
+    assert (p = st_pl).
     {
       edestruct IHt1.
       eassumption.
@@ -195,6 +161,42 @@ Proof.
     }
 
     congruence.
+    
+    +
+    assert (p = st_pl0).
+    {
+      edestruct IHt1.
+      eassumption.
+      jkjk'; eauto.     
+    }
+
+    assert (st_pl0 = st_pl).
+    {
+      edestruct IHt2.
+      eassumption.
+      jkjk'; eauto.
+    }
+
+    congruence.
+    +
+
+    assert (p = st_pl0).
+    {
+      edestruct IHt1.
+      eassumption.
+      jkjk'; eauto.     
+    }
+
+    assert (st_pl0 = st_pl).
+    {
+      edestruct IHt2.
+      eassumption.
+      jkjk'; eauto.
+    }
+
+    congruence.
+
+    (*
     +
        assert (p0 = st_pl).
     {
@@ -372,7 +374,7 @@ Proof.
     df.
     repeat anhl.
     eauto.
-    (*
+    
   -
     (*
     do_wf_pieces.
@@ -388,7 +390,8 @@ Proof.
     do_wf_pieces.
 
     cbn in *.
-    unfold split_ev_par in *.
+    (*
+    unfold split_ev_par in *. *)
     monad_unfold.
     repeat break_let.
     simpl in *.
@@ -396,7 +399,8 @@ Proof.
     dosome.
     df.
     dosome.
-    dohtac.
+    (*
+    dohtac. *)
     dosome.
     df.
 
@@ -404,6 +408,8 @@ Proof.
     simpl in *.
 
     repeat anhl.
+    tauto.
+    (*
     do_pl_immut.
     subst.
 
@@ -411,7 +417,7 @@ Proof.
     df.
     repeat anhl.
     tauto.
-*)
+     *)
 Defined.
 
 Ltac clear_triv :=
@@ -478,7 +484,7 @@ Proof.
     repeat break_match;
       try (
           df; eauto).
-    (*
+    
   -
     do_wf_pieces.
     df.
@@ -490,19 +496,30 @@ Proof.
     vmsts.
     df.
 
-    destruct o6.
+    destruct o7.
     +
+      (*
       destruct (map_get st_store1 n1); try solve_by_inversion.
       df.
       assert (o1 = Some tt) by eauto.
-      subst.
+      subst. *)
       df.
       tauto.
     +
       df.
-      invc H.
+      (*
+      invc H. *)
       df.
       subst.
+
+      assert (None = Some tt).
+      {
+        eauto.
+      }
+      solve_by_inversion.
+
+      (*
+      
 
       do_nodup.
       invc H17.
@@ -524,7 +541,7 @@ Proof.
       }
       rewrite H in *.
       solve_by_inversion.
-*)
+       *)
 Defined.
 
 Ltac do_somett :=
