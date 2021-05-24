@@ -8,6 +8,10 @@ Require Import MonadVM Impl_vm Term_Defs Term Auto StructTactics MonadVMFacts Ma
 
 Require Import Coq.Program.Tactics Coq.Program.Equality.
 
+(*
+Require Import List_Facts.
+*)
+
 Set Nested Proofs Allowed.
 
 Lemma pl_immut : forall t e tr p,
@@ -440,8 +444,6 @@ Ltac dohi'' :=
 Ltac dohi :=
   do 2 (repeat dohi''; destruct_conjs; subst);
   clear_triv.
-
-Require Import List_Facts.
 
 (*
 Lemma store_untouched : forall t st1 st1' store1 store1' x v,

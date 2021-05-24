@@ -11,7 +11,9 @@ University of California.  See license.txt for details. *)
 
 (** Traces and their relation to event systems. *)
 
-Require Import Preamble More_lists Term_Defs Term Event_system Term_system StructTactics.
+Require Import Preamble More_lists Defs Term_Defs Term Event_system Term_system StructTactics.
+
+Require Import Coq.Program.Tactics.
 
 Require Import Lia.
 
@@ -322,7 +324,30 @@ Qed.
 (** The events in a trace correspond to the events associated with an
     annotated term, a place, and some evidence. *)
 
-Require Import List_Facts Coq.Program.Tactics.
+
+Ltac inv_in :=
+  repeat
+  match goal with
+  | [H: In _ (?C _) |- _] =>
+    invc H
+  end.
+
+Ltac nodup_inv :=
+  repeat 
+    match goal with
+    | [H: NoDup (_::_) |- _] => invc H
+    end.
+
+Ltac do_nodup :=
+  repeat (
+      nodup_inv; inv_in;
+      ff;
+      nodup_inv; inv_in;
+      unfold not in *; try intro;
+      econstructor;
+      try intro;
+      inv_in;
+      try (conclude_using ltac:(econstructor; eauto))).
 
 Lemma trace_events:
   forall t p e tr v,
@@ -333,8 +358,7 @@ Proof.
   split; intros.
   - induction H0; inv_wfr.
     +
-      destruct x;
-        do_nodup.
+      destruct x; do_nodup.
 
       (*
       nodup_facts
@@ -566,7 +590,7 @@ Proof.
   eapply events_injective; eauto.
 Qed.
 
-Require Import Defs.
+
 
 Ltac tr_wf :=
   match goal with

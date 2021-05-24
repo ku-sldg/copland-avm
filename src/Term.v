@@ -1,5 +1,5 @@
-Require Import Defs Term_Defs List_Facts AnnoFacts.
-Require Import Preamble More_lists StructTactics Term_Facts.
+Require Import Defs Term_Defs.
+Require Import Preamble More_lists StructTactics.
 
 Require Import Compare_dec Coq.Program.Tactics.
 Require Import PeanoNat.

@@ -4,7 +4,7 @@ Proofs about the Copland Virtual Machine implementation, linking it to the Copla
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import More_lists Defs Term_Defs AnnoFacts Term ConcreteEvidence LTS Event_system Term_system Main.
+Require Import More_lists Defs Term_Defs Term ConcreteEvidence LTS Event_system Term_system Main.
 Require Import GenStMonad MonadVM MonadVMFacts Maps StructTactics Auto.
 Require Import Axioms_Io Impl_vm External_Facts Helpers_VmSemantics.
 

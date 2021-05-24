@@ -2,12 +2,8 @@
 Preamble.v
 More_lists.v
 StructTactics.v
-Term_Facts.v
-OptMonad.v
 Defs.v
 Term_Defs.v
-List_Facts.v
-AnnoFacts.v
 Term.v
 Event_system.v
 Term_system.v
