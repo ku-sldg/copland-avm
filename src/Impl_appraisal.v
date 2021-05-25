@@ -3,6 +3,12 @@ Require Import Term ConcreteEvidence GenStMonad MonadVM MonadAM.
 Require Import List.
 Import ListNotations.
 
+Definition fromSome{A:Type} (default:A) (opt:option A): A :=
+  match opt with
+  | Some x => x
+  | _ => default
+  end.
+
 Fixpoint build_app_comp_ev (e:EvidenceC): AM (CVM EvidenceC) :=
   match e with
   | mtc => ret (ret mtc)
@@ -30,6 +36,7 @@ Fixpoint build_app_comp_ev (e:EvidenceC): AM (CVM EvidenceC) :=
         innerRes <- d ;;
         ret (nnc nid check_res innerRes) in
     ret c
+
   | ssc e1 e2 =>
     c <- build_app_comp_ev e1 ;;
     d <- build_app_comp_ev e2 ;;
@@ -40,6 +47,57 @@ Fixpoint build_app_comp_ev (e:EvidenceC): AM (CVM EvidenceC) :=
         dr <- d ;;
         ret (ssc cr dr) in
     ret res
+
+  | ppc e1 e2 =>
+    c <- build_app_comp_ev e1 ;;
+    d <- build_app_comp_ev e2 ;;
+    let res :=
+        cr <- c ;;
+        put_ev mtc ;;
+        put_pl 0 ;;
+        dr <- d ;;
+        ret (ppc cr dr) in
+    ret res
+
+
+    (*    
+  | ssc e1 e2 =>
+    c <- build_app_comp_ev e1 ;;
+    d <- build_app_comp_ev e2 ;;
+    let e1r := fromSome mtc (evalSt c empty_vmst) in
+    let e2r := fromSome mtc (evalSt d empty_vmst) in
+    ret (ret (ssc e1r e2r))
+  | ppc e1 e2 =>
+    c <- build_app_comp_ev e1 ;;
+    d <- build_app_comp_ev e2 ;;
+    let e1r := fromSome mtc (evalSt c empty_vmst) in
+    let e2r := fromSome mtc (evalSt d empty_vmst) in
+    ret (ret (ppc e1r e2r))
+     *)
+        
+
+
+        (*
+  | ppc e1 e2 =>
+    c <- build_app_comp_ev e1 ;;
+    d <- build_app_comp_ev e2 ;;
+    let e1r := st_ev (execSt c empty_vmst) in
+    let e2r := st_ev (execSt d empty_vmst) in
+    ret (ret (ppc e1r e2r))
+*)
+    
+
+
+    (*
+    c <- build_app_comp_ev e1 ;;
+    d <- build_app_comp_ev e2 ;;
+    let res :=
+        cr <- c ;;
+        put_ev mtc ;;
+        put_pl 0 ;;
+        dr <- d ;;
+        ret (ssc cr dr) in
+    ret res *)
   end.
 
 

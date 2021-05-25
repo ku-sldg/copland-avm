@@ -49,7 +49,30 @@ Proof.
     concludes.
     destruct_conjs.
     repeat find_rewrite.
-    tauto.   
+    tauto.
+  -
+    ff.
+    specialize IHe1 with (a_st:=a_st) (a_st':=a) (o:=Some c).
+    concludes.
+    destruct_conjs.
+
+    specialize IHe2 with (a_st:=a) (a_st':=a_st') (o:=Some c0).
+    concludes.
+    destruct_conjs.
+    repeat find_rewrite.
+    tauto.
+  -
+    ff.
+    specialize IHe1 with (a_st:=a_st) (a_st':=a) (o:=Some c).
+    concludes.
+    destruct_conjs.
+
+    specialize IHe2 with (a_st:=a) (a_st':=a_st') (o:=None).
+    concludes.
+    destruct_conjs.
+    repeat find_rewrite.
+    tauto.
+    
 Defined.
 
 Ltac do_ba_st_const :=
@@ -76,7 +99,44 @@ Proof.
   generalizeEverythingElse e.
   induction e; intros.
   -
-Admitted.
+    econstructor.
+  -
+    ff.
+    evMappedFacts.
+    econstructor.
+    tauto.
+    eauto.
+    eexists.
+    econstructor.
+    subst'.
+    eassumption.
+  -
+    ff.
+    evMappedFacts.
+    econstructor.
+    tauto.
+    eauto.
+    eexists.
+    econstructor.
+    subst'.
+    eassumption.
+  -
+    ff.
+    evMappedFacts.
+    econstructor.
+    tauto.
+    eauto.
+    eexists.
+    econstructor.
+    subst'.
+    eassumption.
+  -
+    evMappedFacts.
+    econstructor; eauto.
+  -
+    evMappedFacts.
+    econstructor; eauto.
+Defined.
 
 Lemma build_app_some' : forall e a_st a_st',
     (exists o, build_app_comp_ev e a_st = (Some o, a_st')) ->
@@ -174,6 +234,25 @@ Proof.
         split; eauto.
         eassumption.
 
+          -
+    repeat ff; 
+      destruct_conjs;
+      ff.
+
+    do_ba_st_const.
+    
+      econstructor.
+      +
+        eauto.
+      +
+        assert (evMapped e2 a) by eauto.
+        
+        destruct_conjs.
+
+        eapply evmapped_relevant.
+        split; eauto.
+        eassumption.
+        
         
             
           
@@ -312,6 +391,32 @@ Proof.
     subst'.
     df.
     eauto.
+
+      -
+    cbn.
+    evMappedFacts.
+    assert (exists o a_st', build_app_comp_ev e1 a_st = (Some o, a_st')) by eauto.
+    assert (exists o a_st', build_app_comp_ev e2 a_st = (Some o, a_st')) by eauto.
+    destruct_conjs.
+    cbn.
+    df.
+    assert (evMapped e2 H5).
+    {
+      eapply evmapped_relevant.
+      do_ba_st_const.
+      destruct_conjs.
+      split.
+      symmetry.
+      apply H8.
+      
+      split; eauto.
+      eassumption.
+    }
+    assert (exists o a_st', build_app_comp_ev e2 H5 = (Some o, a_st')) by eauto.
+    destruct_conjs.
+    subst'.
+    df.
+    eauto.
 Defined.
 
 Lemma tr_irrel_ev_app: forall e e1 e2 a a_st' c ee pp tr tr' st_ev st_trace st_pl st_ev0 st_trace0 st_pl0,
@@ -374,6 +479,14 @@ Proof.
     ff.
     ff.
     ff.
+
+    (*
+  -
+    ff.
+    ff.
+    ff. *)
+
+    
     vmsts.
 
     assert (e5 = e).
@@ -393,6 +506,31 @@ Proof.
     }
     subst.
     tauto.
+    
+  -
+    ff.
+    ff.
+    ff.
+
+    vmsts.
+
+    assert (e5 = e).
+    {
+      eapply IHe1.
+      eassumption.
+      eassumption.
+      eassumption.
+    }
+
+    assert (e6 = e4).
+    {
+      eapply IHe2.
+      eassumption.
+      eassumption.
+      eassumption.
+    }
+    subst.
+    tauto. 
 Defined.
 
 Lemma tr_app_irrel: forall e a_st a_st' c0 e0 ee pp tr tr' new_vmst,
@@ -466,6 +604,9 @@ Proof.
     ff.
     ff.
     ff.
+    eauto.
+
+    
     assert (e = e4).
     {
       vmsts.
@@ -505,6 +646,128 @@ Proof.
      destruct_conjs.
      subst'.
      solve_by_inversion.
+
+  -
+    
+    ff.
+    ff.
+    ff.
+    eauto.
+
+    
+    assert (e = e4).
+    {
+      vmsts.
+      eapply tr_irrel_ev_app.
+      apply Heqp.
+      apply Heqp3.
+      apply Heqp1.
+    }
+    assert (e3 = e5).
+    {
+      vmsts.
+      eapply tr_irrel_ev_app.
+      apply Heqp0.
+      eassumption.
+      eassumption.
+    }
+    subst.
+    eauto.
+    
+    assert (exists new_vmst' : cvm_st,
+          c1 {| st_ev := mtc; st_trace := st_trace c3; st_pl := 0 |} =
+          (Some e4, new_vmst')) by eauto.
+    destruct_conjs.
+    subst'.
+    solve_by_inversion.
+
+     assert (exists new_vmst' : cvm_st,
+          c1 {| st_ev := mtc; st_trace := st_trace c3; st_pl := 0 |} =
+          (Some e3, new_vmst')) by eauto.
+     destruct_conjs.
+     subst'.
+     df.
+
+     assert (exists new_vmst' : cvm_st,
+          c {| st_ev := ee; st_trace := tr'; st_pl := pp |} =
+          (Some e, new_vmst')) by eauto.
+     destruct_conjs.
+     subst'.
+     solve_by_inversion.  
+Defined.
+
+Lemma app_always_some: forall e a_st a_st' x0 vmst,
+    build_app_comp_ev e a_st = (Some x0, a_st') ->
+    exists app_ev vmst',
+      x0 vmst = (Some app_ev, vmst').
+Proof.
+  induction e; intros.
+  -
+    ff.
+    eauto.
+  -
+    ff.
+    ff.
+    edestruct IHe.
+    eassumption.
+    destruct_conjs.
+    subst.
+    rewrite H0 in *.
+    
+    ff.
+    eauto.
+  -
+    ff.
+    ff.
+    edestruct IHe.
+    eassumption.
+    destruct_conjs.
+    rewrite H0 in *.
+    
+    ff.
+    eauto.
+  -
+    ff.
+    ff.
+    edestruct IHe.
+    eassumption.
+    destruct_conjs.
+    rewrite H0 in *.
+    
+    ff.
+    eauto.
+  -
+    ff.
+    ff.
+    ff.
+    eauto.
+    
+    assert (exists (app_ev : EvidenceC) (vmst' : cvm_st), c0 {| st_ev := mtc; st_trace := st_trace c1; st_pl := 0 |} = (Some app_ev, vmst')) by eauto.
+    destruct_conjs.
+    subst'.
+    solve_by_inversion.
+
+    assert (exists (app_ev : EvidenceC) (vmst' : cvm_st), c vmst = (Some app_ev, vmst')) by eauto.
+    destruct_conjs.
+    subst'.
+    solve_by_inversion.
+     
+  -
+    ff.
+    ff.
+    ff.
+    eauto.
+    
+    assert (exists (app_ev : EvidenceC) (vmst' : cvm_st), c0 {| st_ev := mtc; st_trace := st_trace c1; st_pl := 0 |} = (Some app_ev, vmst')) by eauto.
+    destruct_conjs.
+    subst'.
+    solve_by_inversion.
+
+    assert (exists (app_ev : EvidenceC) (vmst' : cvm_st), c vmst = (Some app_ev, vmst')) by eauto.
+    destruct_conjs.
+    subst'.
+    solve_by_inversion.
+    
 Defined.
 
 Lemma same_ev_shape: forall e et a_st a_st' ecomp new_vmst ec_res,
@@ -536,12 +799,179 @@ Proof.
     eauto.
   -
     evShapeFacts.
+    vmsts.
+
     repeat ff.
+    vmsts.
+    repeat ff.
+    assert ( exists app_ev vmst',
+               c empty_vmst = (Some app_ev, vmst')).
+    {
+      eapply app_always_some; eauto.
+    }
+
+    assert ( exists app_ev vmst',
+               c0 empty_vmst = (Some app_ev, vmst')).
+    {
+      eapply app_always_some; eauto.
+    }
+    destruct_conjs.
+    vmsts.
+    unfold empty_vmst in *.
+
+    repeat ff.
+    unfold evalSt in *.
+    unfold runSt in *.
+    rewrite H5 in *.
+    ff.
+
+
+    (*
+    econstructor.
+    eauto.
     
-    assert (exists new_vmst,
+    subst'.
+  (*  rewrite H5. *)
+    ff.
+    (*
+    rewrite H2. *)
+    ff.
+    eauto. *)
+
+     assert (exists new_vmst,
                  c0 {| st_ev := mtc; st_trace := []; st_pl := 0 |} =
                  (Some e0, new_vmst)).
     {
+      Check tr_app_irrel.
+      eapply tr_app_irrel; eauto.
+    }
+    destruct_conjs.
+    rewrite H1 in *.
+    df.
+
+    econstructor.
+    eauto.
+    eauto.
+  -
+
+        evShapeFacts.
+    vmsts.
+
+    repeat ff.
+    vmsts.
+    repeat ff.
+    assert ( exists app_ev vmst',
+               c empty_vmst = (Some app_ev, vmst')).
+    {
+      eapply app_always_some; eauto.
+    }
+
+    assert ( exists app_ev vmst',
+               c0 empty_vmst = (Some app_ev, vmst')).
+    {
+      eapply app_always_some; eauto.
+    }
+    destruct_conjs.
+    vmsts.
+    unfold empty_vmst in *.
+
+    repeat ff.
+    unfold evalSt in *.
+    unfold runSt in *.
+    rewrite H5 in *.
+    ff.
+
+
+    (*
+    econstructor.
+    eauto.
+    
+    subst'.
+  (*  rewrite H5. *)
+    ff.
+    (*
+    rewrite H2. *)
+    ff.
+    eauto. *)
+
+     assert (exists new_vmst,
+                 c0 {| st_ev := mtc; st_trace := []; st_pl := 0 |} =
+                 (Some e0, new_vmst)).
+    {
+      Check tr_app_irrel.
+      eapply tr_app_irrel; eauto.
+    }
+    destruct_conjs.
+    rewrite H1 in *.
+    df.
+
+    econstructor.
+    eauto.
+    eauto.
+
+
+
+(*
+    
+  -
+    evShapeFacts.
+    vmsts.
+
+    repeat ff.
+    vmsts.
+    repeat ff.
+    assert ( exists app_ev vmst',
+               c empty_vmst = (Some app_ev, vmst')).
+    {
+      eapply app_always_some; eauto.
+    }
+
+    assert ( exists app_ev vmst',
+               c0 empty_vmst = (Some app_ev, vmst')).
+    {
+      eapply app_always_some; eauto.
+    }
+    destruct_conjs.
+    vmsts.
+
+    repeat ff.
+    unfold evalSt in *.
+    unfold runSt in *.
+    rewrite H5.
+    ff.
+    rewrite H2.
+    ff.
+    eauto.
+ *)
+    
+
+    (*
+    
+    df.
+    subst'.
+    df.
+    econstructor.
+    
+    rewrite H5 in Heqp2.
+    invc Heqp2.
+    subst'.
+    ff
+    repeat ff.
+    econstructor.
+    eapply IHe1.
+    eassumption.
+    eassumption.
+    
+
+    vmsts.
+    df.
+
+    
+    assert (exists new_vmst e0,
+                 c0 {| st_ev := mtc; st_trace := []; st_pl := 0 |} =
+                 (Some e0, new_vmst)).
+    {
+      Check tr_app_irrel.
       eapply tr_app_irrel; eauto.
     }
     destruct_conjs.
@@ -554,16 +984,23 @@ Proof.
 
     unfold empty_vmst.
     eassumption.  
+     *)
+    
 Defined.
 
+
 (*
-Lemma trace_cumul : forall  t e a_st a_st' v tr tr' p n n' o o' e' o0,
-    build_app_comp t p a_st = (Some v, a_st') ->
-    v    {| st_ev := e;  st_trace := tr;  st_pl := n;  st_store := o |} =
-    (Some o0, {| st_ev := e'; st_trace := tr'; st_pl := n'; st_store := o'|}) ->
+build_app_comp_ev e2 a_st = (Some x, a_st') ->
+*)
+
+Lemma trace_cumul : forall  e e2 a_st a_st' x tr tr' n n' e' o0,
+    build_app_comp_ev e2 a_st = (Some x, a_st') ->
+    x  {| st_ev := e;  st_trace := tr;  st_pl := n (*;  st_store := o*) |} =
+    (Some o0, {| st_ev := e'; st_trace := tr'; st_pl := n' (*; st_store := o'*) |}) ->
     exists tr'', tr' = tr ++ tr''.
 Proof.
-  induction t; intros.
+  (*
+  induction e2; intros.
   -
     destruct a.
     +
@@ -668,7 +1105,10 @@ Proof.
       eexists.
       eauto.
 Defined.
+   *)
+Admitted.
 
+(*
 Ltac do_cumul2 :=
     match goal with
     | [
@@ -968,17 +1408,15 @@ Proof.
   -
     do_wf_pieces.
     vmsts.
-    df.
-    ff.
-    ff.
-    econstructor.
+    repeat ff.
     vmsts.
-    df.
+    repeat ff.
+    econstructor.
     eapply IHt1.
     eassumption.
     eassumption.
     df.
-    Abort.
+Abort.
 
 Lemma evMappedSome: forall e1 e2 a_st,
   EvSub e1 e2 ->
@@ -1032,6 +1470,18 @@ Proof.
       eauto.
     +
       eauto.
+    -
+    
+   evMappedFacts.
+    do_evsub.
+    +
+      econstructor.
+      tauto.
+      eassumption.
+    +
+      eauto.
+    +
+      eauto.    
       
 Defined.
 
@@ -1061,63 +1511,10 @@ Proof.
   eapply build_app_some; eauto.
 Defined.
 
-Lemma app_always_some: forall e a_st a_st' x0 vmst,
-    build_app_comp_ev e a_st = (Some x0, a_st') ->
-    exists app_ev vmst',
-      x0 vmst = (Some app_ev, vmst').
-Proof.
-  induction e; intros.
-  -
-    ff.
-    eauto.
-  -
-    ff.
-    ff.
-    edestruct IHe.
-    eassumption.
-    destruct_conjs.
-    subst.
-    rewrite H0 in *.
-    
-    ff.
-    eauto.
-  -
-    ff.
-    ff.
-    edestruct IHe.
-    eassumption.
-    destruct_conjs.
-    rewrite H0 in *.
-    
-    ff.
-    eauto.
-  -
-    ff.
-    ff.
-    edestruct IHe.
-    eassumption.
-    destruct_conjs.
-    rewrite H0 in *.
-    
-    ff.
-    eauto.
-  -
-    ff.
-    ff.
-    ff.
-    eauto.
-    assert (exists (app_ev : EvidenceC) (vmst' : cvm_st), c0 {| st_ev := mtc; st_trace := st_trace c1; st_pl := 0 |} = (Some app_ev, vmst')) by eauto.
-    destruct_conjs.
-    subst'.
-    solve_by_inversion.
 
-    assert (exists (app_ev : EvidenceC) (vmst' : cvm_st), c vmst = (Some app_ev, vmst')) by eauto.
-    destruct_conjs.
-    subst'.
-    solve_by_inversion.
-Defined.
 
 Lemma app_lseq_decomp': forall (*t1*) e1 e2 (*vmst vmst'*) a_st a_st' x
+                          ab_st
                          app_res init_vmst new_vmst,
     (*copland_compile t1 vmst = (Some tt, vmst') ->
     e1 = st_ev vmst' -> *)
@@ -1130,8 +1527,8 @@ Lemma app_lseq_decomp': forall (*t1*) e1 e2 (*vmst vmst'*) a_st a_st' x
 
 
     
-    exists x' app_ev1 new_vmst1 ab_st,
-      build_app_comp_ev e1 a_st = (Some x', ab_st) /\
+    exists x' app_ev1 new_vmst1 ab_st',
+      build_app_comp_ev e1 ab_st = (Some x', ab_st') /\
       runSt x' init_vmst = (Some app_ev1, new_vmst1) /\
 
       (*
@@ -1155,7 +1552,11 @@ Proof.
   destruct_conjs.
   exists x1.
   exists H4.
-  exists H2.
+  eexists.
+  eexists.
+  (*
+  exists a_st.
+  exists H2. *)
   split.
   eassumption.
   split.
@@ -1221,21 +1622,88 @@ Proof.
       ff.
       eauto.
   -
-    invc H.
+    
+    inversion H.
+    subst.
     +
-      ff.
-      ff.
-      ff.
-      ff.
+      repeat ff.
+    +
+      repeat ff.
+      
+      vmsts.
+      simpl in *.
+      assert (forall ev1, In ev1 st_trace -> In ev1 st_trace2).
+      {
+        eapply IHe2_1.
+        eassumption.
+        eassumption.
+        eassumption.
+        eassumption.
+        eassumption.
+      }
+
+      assert (In ev1 st_trace2) by eauto.
+
+      edestruct trace_cumul.
+      apply Heqp0.
+      eassumption.
+      subst.
+      eapply in_or_app.
+      eauto.
+    +
+      repeat ff.
+      
+      vmsts.
+      simpl in *.
+      assert (forall ev1, In ev1 st_trace -> In ev1 st_trace0).
+      {
+        eapply IHe2_2.
+        eassumption.
+        eassumption.
+        eassumption.
+        eassumption.
+        eassumption.
+      }
+
+      assert (In ev1 st_trace2) by eauto.
+
+      edestruct trace_cumul.
+      apply Heqp0.
+      eassumption.
+      subst.
+      eapply in_or_app.
+      eauto.
+      
+      
+      
+        
+
+
+        
+      repeat ff.
+      eapply IHe2_1.
+      eassumption.
+      apply Heqp.
+      eassumption.
     +
       ff.
       ff.
       ff.
       vmsts.
       ff.
+      Check app_always_some.
+      assert (exists app_ev vmst', c empty_vmst = (Some app_ev, vmst')).
+      {
+        eapply app_always_some; eauto.
+      }
+      destruct_conjs.
+      vmsts.
+      unfold empty_vmst in *.
+      
       eapply IHe2_1.
       eassumption.
       eassumption.
+      apply H1.
       eassumption.
       assert (forall ev1:Ev, In ev1 st_trace -> In ev1 st_trace2).
       {
@@ -1254,6 +1722,7 @@ Proof.
       eassumption.
     
 Defined.
+
 
 Lemma app_lseq_decomp: forall t1 t2 e1 e2 vmst vmst' vmst'' a_st a_st' x
                          app_res init_vmst new_vmst,
@@ -1294,13 +1763,60 @@ Proof.
   eassumption.
   eassumption.
 Defined.
+ *)
 
-Lemma appraisal_correct : forall t vmst vmst' p e_res init_vmst new_vmst a_st a_st' x app_res (*tr_app*) e ev,
+
+Lemma decomp_app_lseq:
+  forall
+    t1 t2
+    ev1 tr1 p ev1' tr1' p'
+    ev2 tr2 p2 ev2' tr2' p2'
+    x a_st a_st'
+    ev3 tr3 p3 app_res ev3' tr3' p3'
+    ab_st abb_st,
+    
+    
+    copland_compile t1 {| st_ev := ev1; st_trace := tr1; st_pl := p |} =
+    (Some tt, {| st_ev := ev1'; st_trace := tr1'; st_pl := p' |}) ->
+    
+    copland_compile t2 {| st_ev := ev2; st_trace := tr2; st_pl := p2 |} =
+    (Some tt, {| st_ev := ev2' ; st_trace := tr2'; st_pl := p2' |}) ->
+
+    build_app_comp_ev ev2' a_st = (Some x, a_st') ->
+
+    x {| st_ev := ev3; st_trace := tr3; st_pl := p3 |} =
+    (Some app_res, {| st_ev := ev3'; st_trace := tr3'; st_pl := p3' |}) ->
+
+    exists x' ev4 tr4 p4 ev4' tr4' p4' app_ev1 ab_st',
+      build_app_comp_ev ev1' ab_st = (Some x', ab_st') /\
+      runSt x' {| st_ev := ev4; st_trace := tr4; st_pl := p4 |} =
+      (Some app_ev1, {| st_ev := ev4'; st_trace := tr4'; st_pl := p4' |}) /\
+
+      
+      exists x'' ev5 tr5 p5 ev5' tr5' p5' app_ev2 ab_st' ,
+        build_app_comp_ev ev2' abb_st = (Some x'', ab_st') /\
+        runSt x'' {| st_ev := ev5; st_trace := tr5; st_pl := p5 |} =
+        (Some app_ev2, {| st_ev := ev5'; st_trace := tr5'; st_pl := p5' |}) /\
+        
+        (forall ev1, In ev1 tr4' -> In ev1 tr3') /\
+        (forall ev1, In ev1 tr5' -> In ev1 tr3').
+Proof.
+Admitted.
+
+
+
+
+Lemma appraisal_correct : forall t ev1 tr1 p e_res tr1' p'
+                            a_st a_st' x
+                            ev2 tr2 p2 app_res ev2' tr2' p2'
+                            e ev,
     well_formed_r t ->
-    copland_compile t vmst = (Some tt, vmst') ->
-    p = st_pl vmst ->
+    copland_compile t
+                    {| st_ev := ev1; st_trace := tr1; st_pl := p |} =
+                    (Some tt, {| st_ev := e_res; st_trace := tr1'; st_pl := p' |}) ->
+    (*p = st_pl vmst ->
     (*e = st_ev vmst -> *)
-    e_res = st_ev vmst' ->
+    e_res = st_ev vmst' -> *)
     (*e_res = st_ev new_vmst -> *)
 
     (*
@@ -1308,10 +1824,12 @@ Lemma appraisal_correct : forall t vmst vmst' p e_res init_vmst new_vmst a_st a_
     et = Term.eval (unanno t) p etype -> 
      *)
     build_app_comp_ev e_res a_st = (Some x, a_st') ->
-    runSt x init_vmst = (Some app_res, new_vmst) ->
+    
+    runSt x {| st_ev := ev2; st_trace := tr2; st_pl := p2 |} =
+              (Some app_res, {| st_ev := ev2'; st_trace := tr2'; st_pl := p2' |}) ->
     (*tr_app = st_trace new_vmst -> *)
     measEvent t p e ev ->
-    exists ev', In ev' (st_trace new_vmst) /\ appEvent ev a_st ev'.
+    exists ev', In ev' tr2' /\ appEvent ev a_st ev'.
 Proof.
   intros.
   generalizeEverythingElse t.
@@ -1351,30 +1869,265 @@ Proof.
     eassumption.
     eapply copland_compile_at.
     eassumption.
+    eassumption.
+    eassumption.
+    (*
     tauto.
     tauto.
     eassumption.
     eassumption.
-    simpl.
+    simpl. *)
     econstructor.
     eassumption.
     econstructor.
-    simpl in *.
     eauto.
 
   -
     do_wf_pieces.
     vmsts.
+    simpl in *.
+    subst.
+    repeat ff.
+
+    (*
     Check alseq_decomp_gen.
     edestruct alseq_decomp_gen. (*with (r:=r) (t1':=t1) (t2':=t2) (e:=st_ev2) (e'':=st_ev1) (p:=st_pl2) (p'':=st_pl1) (init_tr:=st_trace2) (tr:=st_trace1). *)
     eassumption.
     eassumption.
 
     destruct_conjs.
+    df. *)
+    vmsts.
+
+    edestruct decomp_app_lseq.
+    apply Heqp0.
+    apply Heqp1.
+    eassumption.
+    eassumption.
+    destruct_conjs.
+
+    measEventFacts.
+    vmsts.
+    do_pl_immut.
+    do_pl_immut.
+    subst.
+    inv_events;
+    unfold runSt in *.
+    + (* t1 case *)
+      assert (exists ev', In ev' H9 /\ appEvent ev a_st ev').
+      eapply IHt1.
+      eassumption.
+      eassumption.
+      eassumption.
+      apply H14.
+      econstructor; eauto.
+      destruct_conjs.
+      exists H3.
+      split; eauto.
+    + (* t2 case *)
+      assert (exists ev', In ev' H20 /\ appEvent ev a_st ev').
+      eapply IHt2.
+      eassumption.
+      eassumption.
+      eassumption.
+      apply H25.
+      econstructor; eauto.
+      destruct_conjs.
+      exists H3.
+      split; eauto.
+  -
+    do_wf_pieces.
+    vmsts.
+    simpl in *.
+    subst.
+    repeat ff.
+
+    vmsts.
+    repeat ff.
+
+
+    clear Heqp1.
+    (*clear Heqp2.*)
+    clear Heqp3.
+    (*
+    clear Heqp4. *)
+
+    edestruct decomp_app_lseq.
+    apply Heqp0.
+    apply Heqp5.
+    apply Heqp2.
+    eassumption.
+    destruct_conjs.
+
+
+
+
+
+    
+
+    measEventFacts.
+    vmsts.
+    do_pl_immut.
+    do_pl_immut.
+    subst.
+    inv_events;
+      try solve_by_inversion;
+      unfold runSt in *.
+
+    + (* t1 case *)
+      assert (exists ev', In ev' H7 /\ appEvent ev a_st ev').
+      eapply IHt1.
+      eassumption.
+      eassumption.
+      eassumption.
+      apply H12.
+      econstructor; eauto.
+      destruct_conjs.
+      exists H3.
+      split; eauto.
+    + (* t2 case *)
+      assert (exists ev', In ev' H18 /\ appEvent ev a_st ev').
+      eapply IHt2.
+      eassumption.
+      eassumption.
+      eassumption.
+      apply H23.
+      econstructor; eauto.
+      destruct_conjs.
+      exists H3.
+      split; eauto.
+
+        -
+    do_wf_pieces.
+    vmsts.
+    simpl in *.
+    subst.
+    repeat ff.
+
+    vmsts.
+    repeat ff.
+
+
+    clear Heqp1.
+    (*clear Heqp2.*)
+    clear Heqp3.
+    (*
+    clear Heqp4. *)
+
+    edestruct decomp_app_lseq.
+    apply Heqp0.
+    apply Heqp5.
+    apply Heqp2.
+    eassumption.
+    destruct_conjs.
+
+
+
+
+
+    
+
+    measEventFacts.
+    vmsts.
+    do_pl_immut.
+    do_pl_immut.
+    subst.
+    inv_events;
+      try solve_by_inversion;
+      unfold runSt in *.
+
+    + (* t1 case *)
+      assert (exists ev', In ev' H7 /\ appEvent ev a_st ev').
+      eapply IHt1.
+      eassumption.
+      eassumption.
+      eassumption.
+      apply H12.
+      econstructor; eauto.
+      destruct_conjs.
+      exists H3.
+      split; eauto.
+    + (* t2 case *)
+      assert (exists ev', In ev' H18 /\ appEvent ev a_st ev').
+      eapply IHt2.
+      eassumption.
+      eassumption.
+      eassumption.
+      apply H23.
+      econstructor; eauto.
+      destruct_conjs.
+      exists H3.
+      split; eauto.
+
+
+
+
+
+
+
+
+
+      
+
+(*
+    
+    + (* t1 case *)
+      repeat ff.
+
+      eapply IHt1.
+      eassumption.
+      eassumption.
+      eassumption.
+      eassumption.
+
+      assert (exists ev', In ev' st_trace /\ appEvent ev a_st ev').
+      eapply IHt1.
+      eassumption.
+      eassumption.
+      eassumption.
+      eassumption.
+      econstructor; eauto.
+      destruct_conjs.
+      exists H2.
+      split; eauto.
+    
+    
+    
+      
+      
+
+  -
+    do_wf_pieces.
+    vmsts.
+    simpl in *.
+    subst.
+    repeat ff.
+
+    measEventFacts.
+    vmsts.
+    inv_events.
+    +
+      solve_by_inversion.
+    +
+      simpl in *.
+      
+      
+    
+   *)   
+    
+    
+      
     
     
     
 
+
+
+
+
+
+
+    (*
 
 
     edestruct app_lseq_decomp. (*with
@@ -1505,6 +2258,11 @@ Proof.
       simpl in *.
       exists x2.
       split; eauto.
+     *)
+
+
+
+    
 Defined.
 
 

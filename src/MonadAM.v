@@ -80,14 +80,18 @@ Definition runAM {A:Type} (k:(AM A)) (* (env:AM_Env) *) (st:AM_St) : (option A) 
 Definition incNonce := runAM (am_newNonce 42) empty_amst.
 (*
 Compute (incNonce).
-*)
+ *)
 
-(*
+
 Definition am_run_t (t:Term) (e:EvidenceC) : AM EvidenceC :=
   let annt := annotated t in
-  let start_st := mk_st e [] 0 [] in
+  let start_st := (mk_st e [] 0) in
   ret (st_ev (run_cvm annt start_st)).
-*)
+
+Definition am_run_t_anno (annt:AnnoTerm) (e:EvidenceC) : AM EvidenceC :=
+  (*let annt := annotated t in *)
+  let start_st := (mk_st e [] 0) in
+  ret (st_ev (run_cvm annt start_st)).
 
 (*
 Definition t1 := (att 1 (lseq (asp (ASPC 44 [])) (asp SIG))).

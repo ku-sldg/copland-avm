@@ -31,13 +31,11 @@ Inductive evMapped : EvidenceC -> AM_St -> Prop :=
 | evMappedS : forall e1 e2 st,
     evMapped e1 st ->
     evMapped e2 st ->
-    evMapped (ssc e1 e2) st.
-             (*
+    evMapped (ssc e1 e2) st
 | evMappedP : forall e1 e2 st,
     evMapped e1 st ->
     evMapped e2 st ->
-    evMapped (pp e1 e2) st.
-*)
+    evMapped (ppc e1 e2) st.
 
 
 
