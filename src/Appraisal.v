@@ -1499,22 +1499,23 @@ Defined.
 Lemma subSome: forall e1 e2 x a_st a_st',
   EvSub e1 e2 ->
   build_app_comp_ev e2 a_st = (Some x, a_st') ->
-  exists x' ab_st', build_app_comp_ev e1 a_st = (Some x', ab_st').
+  exists x' ab_st ab_st', build_app_comp_ev e1 ab_st = (Some x', ab_st').
 Proof.
   intros.
+  edestruct build_app_some; eauto.
   assert (evMapped e1 a_st).
   {
     eapply evMappedSome.
     eassumption.
     eapply build_app_some'; eauto.
   }
-  eapply build_app_some; eauto.
+  eassumption.
 Defined.
 
 
-
+(*
 Lemma app_lseq_decomp': forall (*t1*) e1 e2 (*vmst vmst'*) a_st a_st' x
-                          ab_st
+                         
                          app_res init_vmst new_vmst,
     (*copland_compile t1 vmst = (Some tt, vmst') ->
     e1 = st_ev vmst' -> *)
@@ -1527,7 +1528,7 @@ Lemma app_lseq_decomp': forall (*t1*) e1 e2 (*vmst vmst'*) a_st a_st' x
 
 
     
-    exists x' app_ev1 new_vmst1 ab_st',
+    exists x' app_ev1 new_vmst1 ab_st ab_st',
       build_app_comp_ev e1 ab_st = (Some x', ab_st') /\
       runSt x' init_vmst = (Some app_ev1, new_vmst1) /\
 
@@ -1541,6 +1542,8 @@ Lemma app_lseq_decomp': forall (*t1*) e1 e2 (*vmst vmst'*) a_st a_st' x
 
 Proof.
   intros.
+
+  (*
   edestruct subSome.
   eassumption.
   eassumption.
@@ -1548,12 +1551,13 @@ Proof.
   exists x0.
 
   edestruct app_always_some.
-  apply H3.
+  apply H4.
   destruct_conjs.
   exists x1.
-  exists H4.
+  exists H5.
   eexists.
   eexists.
+
   (*
   exists a_st.
   exists H2. *)
@@ -1561,7 +1565,7 @@ Proof.
   eassumption.
   split.
   eassumption.
-  subst.
+  subst. *)
   vmsts.
   amsts.
   ff.
@@ -1570,13 +1574,31 @@ Proof.
   -
     invc H.
     ff.
-    eassumption.
+    Check subSome.
+    eexists.
+    eexists.
+    eexists.
+    eexists.
+    eexists.
+    split.
+    ff.
+    eauto.
   -
     invc H.
     +
       ff.
       ff.
       ff.
+      eexists.
+      eexists.
+      eexists.
+      exists a.
+      exists a_st'.
+      ff.
+      split.
+      ff.
+      reflexivity.
+      do_pl_immut.
       eassumption.
     +
       ff.
@@ -1655,6 +1677,13 @@ Proof.
       
       vmsts.
       simpl in *.
+
+      eapply IHe2_2.
+      eassumption.
+      eassumption.
+      eassumption.
+      eassumption.
+      
       assert (forall ev1, In ev1 st_trace -> In ev1 st_trace0).
       {
         eapply IHe2_2.
@@ -1722,8 +1751,9 @@ Proof.
       eassumption.
     
 Defined.
+*)
 
-
+(*
 Lemma app_lseq_decomp: forall t1 t2 e1 e2 vmst vmst' vmst'' a_st a_st' x
                          app_res init_vmst new_vmst,
     well_formed_r t1 ->
@@ -1945,6 +1975,8 @@ Proof.
     vmsts.
     repeat ff.
 
+    (*
+
 
     clear Heqp1.
     (*clear Heqp2.*)
@@ -1960,7 +1992,8 @@ Proof.
     destruct_conjs.
 
 
-
+     *)
+    
 
 
     
@@ -1974,18 +2007,37 @@ Proof.
       try solve_by_inversion;
       unfold runSt in *.
 
+    edestruct trace_cumul.
+    apply Heqp2.
+    eassumption.
+
     + (* t1 case *)
-      assert (exists ev', In ev' H7 /\ appEvent ev a_st ev').
+      assert (exists ev', In ev' st_trace (*H7*) /\ appEvent ev a_st ev').
       eapply IHt1.
       eassumption.
       eassumption.
       eassumption.
-      apply H12.
+      (*apply H12. *)
+      eassumption.
       econstructor; eauto.
       destruct_conjs.
+      (*exists H3. *)
       exists H3.
       split; eauto.
+      subst.
+      apply in_or_app.
+      eauto.
+
     + (* t2 case *)
+
+      eapply IHt2.
+      eassumption.
+      eassumption.
+      admit.
+      eassumption.
+      econstructor; eauto.
+
+      (*
       assert (exists ev', In ev' H18 /\ appEvent ev a_st ev').
       eapply IHt2.
       eassumption.
@@ -1996,8 +2048,10 @@ Proof.
       destruct_conjs.
       exists H3.
       split; eauto.
+       *)
+      
 
-        -
+  -
     do_wf_pieces.
     vmsts.
     simpl in *.
