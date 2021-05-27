@@ -2014,36 +2014,61 @@ Lemma decomp_app_lseq:
      *)
     
 
-    exists app_ev1 ab_st nmb nib amapb smapb trb csb,
-      build_app_comp_ev ev1' ab_st = (Some app_ev1,
-                                      {| am_nonceMap := nmb;
-                                         am_nonceId := nib;
-                                         st_aspmap := amapb;
-                                         st_sigmap := smapb;
-                                         am_st_trace:= trb;
-                                         checked := csb
-                                      |}) /\
+    exists app_ev1 trb trb' csb csb',
+      build_app_comp_ev ev1'
+       {| am_nonceMap := nm;
+          am_nonceId := ni;
+          st_aspmap := amap;
+          st_sigmap := smap;
+          am_st_trace:= trb;
+          checked := csb
+       |}
+
+      = (Some app_ev1,
+         {| am_nonceMap := nm;
+            am_nonceId := ni;
+            st_aspmap := amap;
+            st_sigmap := smap;
+            am_st_trace:= trb';
+            checked := csb'
+         |}) /\
       (*/\
       runSt x' {| st_ev := ev4; st_trace := tr4; st_pl := p4 |} =
       (Some app_ev1, {| st_ev := ev4'; st_trace := tr4'; st_pl := p4' |}) /\ *)
 
       
-      exists app_ev2 abb_st nmbb nibb amapbb smapbb trbb csbb,
-        build_app_comp_ev ev2' abb_st = (Some app_ev2,
-                                         {| am_nonceMap := nmbb;
-                                            am_nonceId := nibb;
-                                            st_aspmap := amapbb;
-                                            st_sigmap := smapbb;
-                                            am_st_trace:= trbb;
-                                            checked := csbb
-                                         |}) /\
+      exists app_ev2 trbb trbb' csbb csbb',
+        build_app_comp_ev ev2'
+         {| am_nonceMap := nm;
+            am_nonceId := ni;
+            st_aspmap := amap;
+            st_sigmap := smap;
+            am_st_trace:= trbb;
+            checked := csbb
+         |}
+
+        = (Some app_ev2,
+           {| am_nonceMap := nm;
+              am_nonceId := ni;
+              st_aspmap := amap;
+              st_sigmap := smap;
+              am_st_trace:= trbb';
+              checked := csbb'
+           |}) /\
         (*
         runSt x'' {| st_ev := ev5; st_trace := tr5; st_pl := p5 |} =
         (Some app_ev2, {| st_ev := ev5'; st_trace := tr5'; st_pl := p5' |}) /\ *)
         
-        (forall ev1, In ev1 trb -> In ev1 tr') /\
-        (forall ev1, In ev1 trbb -> In ev1 tr').
+        (forall ev1, In ev1 trb' -> In ev1 tr') /\
+        (forall ev1, In ev1 trbb' -> In ev1 tr').
 Proof.
+  intros.
+  generalizeEverythingElse ev2'.
+  induction ev2'; intros.
+  -
+    ff.
+    
+  
 Admitted.
 
 Lemma appraisal_correct : forall t ev1 tr1 p e_res tr1' p'
@@ -2176,6 +2201,7 @@ Proof.
     eassumption. *)
     destruct_conjs.
     amsts'.
+    unfold empty_amst in *.
 
     measEventFacts.
     ff.
@@ -2185,30 +2211,57 @@ Proof.
     inv_events;
     unfold runSt in *.
     +
-          
+      amsts'.
 
+      edestruct IHt1 with (tr':=H5).
+      eassumption.
+      eassumption.
+      eassumption.
+      econstructor.
+      eassumption.
+      eassumption.
+      destruct_conjs.
+
+      exists x0.
+      split; eauto.
+      invc H19.
+      econstructor.
+      reflexivity.
+      ff.
+          
+      (*
 
           (* t1 case *)
-      assert (exists ev', In ev' H9 /\ appEvent ev
-                                          {|
+      assert (exists ev', In ev' H9 /\
+          appEvent ev
+          {|
           am_nonceMap := am_nonceMap0;
           am_nonceId := am_nonceId0;
           st_aspmap := st_aspmap0;
           st_sigmap := st_sigmap0;
           am_st_trace := am_st_trace0;
           checked := checked0 |}
-                                          ev').
+          ev').
       eapply IHt1.
       eassumption.
       eassumption.
-      apply H11.
+      Focus 2.
+      econstructor.
+      eassumption.
+      eassumption.
+      eassumption.
+      destruct_conjs.
+      
       (*
       eassumption.
       apply H14. *)
-      econstructor; eauto.
+      (*
+      econstructor; eauto. *)
       destruct_conjs.
       exists H2.
-      split; eauto.
+      split; eauto. *)
+
+      (*
     + (* t2 case *)
       assert (exists ev', In ev' H20 /\ appEvent ev a_st ev').
       eapply IHt2.
@@ -2220,6 +2273,142 @@ Proof.
       destruct_conjs.
       exists H3.
       split; eauto.
+       *)
+
+    + (* t2 case *)
+      amsts'.
+
+      edestruct IHt2 with (tr':=H11).
+      eassumption.
+      eassumption.
+      eassumption.
+      econstructor.
+      eassumption.
+      eassumption.
+      destruct_conjs.
+
+      exists x0.
+      split; eauto.
+      invc H19.
+      econstructor.
+      reflexivity.
+      ff.
+
+
+  -
+    do_wf_pieces.
+    repeat ff.
+    vmsts.
+    repeat ff.
+    amsts'.
+    repeat ff.
+
+    edestruct am_trace_cumul; eauto.
+    subst.
+
+    measEventFacts.
+    ff.
+    do_pl_immut.
+    do_pl_immut.
+    subst.
+    inv_events;
+      unfold runSt in *;
+      try solve_by_inversion.
+    + (* t1 case *)
+      assert (exists ev', In ev' am_st_trace /\
+                     appEvent ev
+                              {|
+                                am_nonceMap := nm;
+                                am_nonceId := ni;
+                                st_aspmap := amap;
+                                st_sigmap := smap;
+                                am_st_trace := tr;
+                                checked := cs |} ev').
+      eapply IHt1.
+      eassumption.
+      eassumption.
+      eassumption.
+      econstructor.
+      eassumption.
+      eassumption.
+      destruct_conjs.
+      exists H2.
+      split.
+      apply in_or_app.
+      eauto.
+      eassumption.
+    + (* t2 case *)
+      edestruct IHt2.
+      eassumption.
+      eassumption.
+      eassumption.
+      econstructor.
+      eassumption.
+      eassumption.
+      destruct_conjs.
+
+      exists x0.
+      split; eauto.
+
+      assert (nm = am_nonceMap /\ ni = am_nonceId /\ amap = st_aspmap /\ smap = st_sigmap).
+      {
+        edestruct ba_const.
+        apply Heqp0.
+        destruct_conjs.
+        ff.
+      }
+
+      destruct_conjs.
+      subst.
+      invc H5.
+      ff.
+
+      econstructor.
+      reflexivity.
+      ff.
+  -
+    
+      
+
+
+      
+
+
+      
+      eapply IHt2.
+      eassumption.
+      eassumption.
+      eassumption.
+      assert (exists ev', In ev' (am_st_trace ++ x) /\
+                     appEvent ev
+                              {|
+            am_nonceMap := am_nonceMap;
+            am_nonceId := am_nonceId;
+            st_aspmap := st_aspmap;
+            st_sigmap := st_sigmap;
+            am_st_trace := am_st_trace;
+            checked := checked |} ev').
+      eapply IHt2.
+      eassumption.
+      eassumption.
+      eassumption.
+      econstructor.
+      eassumption.
+      eassumption.
+      destruct_conjs.
+      exists H2.
+      split.
+      apply in_or_app.
+      eauto.
+      eassumption.
+      
+      left.
+      
+
+      admit. (* TODO: tr_cumul lemma *)
+      
+    
+    
     
     
 
