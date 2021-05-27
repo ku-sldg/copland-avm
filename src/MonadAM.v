@@ -28,10 +28,11 @@ Definition am_newNonce (bs :BS) : AM EvidenceC :=
   let appm := st_aspmap am_st in
   let sigm := st_sigmap am_st in
   let checkedm := checked am_st in
+  let tracem := am_st_trace am_st in
   (*let plm := am_pl am_st in *)            
   let newMap := map_set mm i bs in
   let newId := i + 1 in
-  put (mkAM_St newMap newId appm sigm checkedm (*plm*)) ;;         
+  put (mkAM_St newMap newId appm sigm tracem checkedm (*plm*)) ;;         
   ret (nnc i bs mtc).
 
 Definition getNonceVal (nid:nat) : AM BS :=
@@ -52,7 +53,8 @@ Definition add_checked (nid:nat) : AM unit :=
   let appm := st_aspmap am_st in
   let sigm := st_sigmap am_st in
   let checkedm := checked am_st in
-  put (mkAM_St mm i appm sigm (checkedm ++ [nid])).
+  let tracem := am_st_trace am_st in
+  put (mkAM_St mm i appm sigm tracem (checkedm ++ [nid])).
   
 
 Definition am_checkNonce (nid:nat) (bs:BS) : AM BS :=
@@ -67,7 +69,7 @@ Definition nonces_checked (nm:MapC nat BS) (l:list nat) : Prop :=
 
 Definition nonces_checked_st (st:AM_St) : Prop :=
   match st with
-  | mkAM_St nm i am sm l =>
+  | mkAM_St nm i am sm tr l =>
     nonces_checked nm l
   end.
     

@@ -30,49 +30,96 @@ Proof.
     repeat ff; eauto.
   -
     ff.
-    specialize IHe1 with (a_st:=a_st) (a_st':=a) (o:=Some c).
+    unfold am_add_trace in *.
+    ff.
+    subst.
+    
+    specialize IHe with (a_st:=a) (a_st':={|
+          am_nonceMap := am_nonceMap;
+          am_nonceId := am_nonceId;
+          st_aspmap := st_aspmap;
+          st_sigmap := st_sigmap;
+          am_st_trace := am_st_trace;
+          checked := checked |}) (o:=Some e0).
     concludes.
     destruct_conjs.
+    ff.
 
-    specialize IHe2 with (a_st:=a) (a_st':=a_st') (o:=Some c0).
+    (*
+
+    specialize IHe2 with (a_st:=a) (a_st':=a_st') (o:=Some e0).
     concludes.
     destruct_conjs.
     repeat find_rewrite.
-    tauto.
+    tauto. *)
   -
     ff.
-    specialize IHe1 with (a_st:=a_st) (a_st':=a) (o:=Some c).
+    unfold am_add_trace in *.
+    ff.
+    subst.
+    specialize IHe with (a_st:=a) (a_st':= {|
+          am_nonceMap := am_nonceMap;
+          am_nonceId := am_nonceId;
+          st_aspmap := st_aspmap;
+          st_sigmap := st_sigmap;
+          am_st_trace := am_st_trace;
+          checked := checked |}) (o:=Some e0).
     concludes.
     destruct_conjs.
+    ff.
+    (*
 
     specialize IHe2 with (a_st:=a) (a_st':=a_st') (o:=None).
     concludes.
     destruct_conjs.
     repeat find_rewrite.
-    tauto.
+    tauto. *)
   -
+
     ff.
-    specialize IHe1 with (a_st:=a_st) (a_st':=a) (o:=Some c).
+    specialize IHe1 with (a_st:=a_st) (a_st':=a) (o:=Some e).
     concludes.
     destruct_conjs.
 
-    specialize IHe2 with (a_st:=a) (a_st':=a_st') (o:=Some c0).
-    concludes.
-    destruct_conjs.
-    repeat find_rewrite.
-    tauto.
-  -
-    ff.
-    specialize IHe1 with (a_st:=a_st) (a_st':=a) (o:=Some c).
-    concludes.
-    destruct_conjs.
-
-    specialize IHe2 with (a_st:=a) (a_st':=a_st') (o:=None).
+    specialize IHe2 with (a_st:=a) (a_st':=a_st') (o:=Some e0).
     concludes.
     destruct_conjs.
     repeat find_rewrite.
     tauto.
     
+  -
+    ff.
+    specialize IHe1 with (a_st:=a_st) (a_st':=a) (o:=Some e).
+    concludes.
+    destruct_conjs.
+
+    specialize IHe2 with (a_st:=a) (a_st':=a_st') (o:=None).
+    concludes.
+    destruct_conjs.
+    repeat find_rewrite.
+    tauto.
+  -
+     ff.
+    specialize IHe1 with (a_st:=a_st) (a_st':=a) (o:=Some e).
+    concludes.
+    destruct_conjs.
+
+    specialize IHe2 with (a_st:=a) (a_st':=a_st') (o:=Some e0).
+    concludes.
+    destruct_conjs.
+    repeat find_rewrite.
+    tauto.
+  -
+     ff.
+    specialize IHe1 with (a_st:=a_st) (a_st':=a) (o:=Some e).
+    concludes.
+    destruct_conjs.
+
+    specialize IHe2 with (a_st:=a) (a_st':=a_st') (o:=None).
+    concludes.
+    destruct_conjs.
+    repeat find_rewrite.
+    tauto.   
 Defined.
 
 Ltac do_ba_st_const :=
@@ -162,6 +209,7 @@ Proof.
     +
       destruct_conjs.
       solve_by_inversion.
+      
   -
     repeat ff.
     +
@@ -220,7 +268,7 @@ Proof.
       destruct_conjs;
       ff.
 
-    do_ba_st_const.
+      do_ba_st_const.
     
       econstructor.
       +
@@ -234,7 +282,7 @@ Proof.
         split; eauto.
         eassumption.
 
-          -
+  -
     repeat ff; 
       destruct_conjs;
       ff.
@@ -356,6 +404,7 @@ Proof.
     subst'.
     clear H1; clear H2; clear H3.
     repeat (ff; eauto).
+    (*
     edestruct IHe.
     eassumption.
     destruct_conjs.
@@ -365,7 +414,7 @@ Proof.
     eassumption.
     destruct_conjs.
     subst'.
-    solve_by_inversion.
+    solve_by_inversion. *)
   -
     cbn.
     evMappedFacts.
@@ -392,7 +441,7 @@ Proof.
     df.
     eauto.
 
-      -
+  -
     cbn.
     evMappedFacts.
     assert (exists o a_st', build_app_comp_ev e1 a_st = (Some o, a_st')) by eauto.
@@ -419,6 +468,60 @@ Proof.
     eauto.
 Defined.
 
+
+Lemma same_ev_shape: forall e et a_st a_st' ec_res,
+    Ev_Shape e et -> 
+    build_app_comp_ev e a_st = (Some ec_res, a_st') ->
+    (*runSt ecomp empty_vmst  = (Some ec_res, new_vmst) -> *)
+    Ev_Shape ec_res et.
+Proof.
+  intros.
+  generalizeEverythingElse e.
+  induction e; intros.
+  -
+    ff.
+  -
+    ff.
+    ff.
+    evShapeFacts.
+    eauto.
+  -
+    ff.
+    ff.
+    evShapeFacts.
+    eauto.
+  -
+    ff.
+    ff.
+    evShapeFacts.
+    eauto.
+  -
+    ff.
+    ff.
+    evShapeFacts.
+    eauto.
+  -
+    ff.
+    ff.
+    evShapeFacts.
+    eauto.
+Defined.
+
+    
+    
+    
+    
+    
+    
+
+
+
+
+
+
+
+
+(*
 Lemma tr_irrel_ev_app: forall e e1 e2 a a_st' c ee pp tr tr' st_ev st_trace st_pl st_ev0 st_trace0 st_pl0,
     build_app_comp_ev e a = (Some c, a_st') ->
     
@@ -987,12 +1090,43 @@ Proof.
      *)
     
 Defined.
+*)
 
 
 (*
 build_app_comp_ev e2 a_st = (Some x, a_st') ->
 *)
 
+
+Lemma am_trace_cumul : forall  e e_res
+                          nm nm' ni ni' amap amap' smap smap' tr tr' cs cs',
+    build_app_comp_ev e {| am_nonceMap := nm;
+                           am_nonceId := ni;
+                           st_aspmap := amap;
+                           st_sigmap := smap;
+                           am_st_trace:= tr;
+                           checked := cs
+                        |}
+    = (Some e_res, {| am_nonceMap := nm';
+                      am_nonceId := ni';
+                      st_aspmap := amap';
+                      st_sigmap := smap';
+                      am_st_trace:= tr';
+                      checked := cs'
+                        |}) -> 
+    exists tr'', tr' = tr ++ tr''.
+Proof.
+Admitted.
+
+
+
+
+
+
+
+
+
+(*
 Lemma trace_cumul : forall  e e2 a_st a_st' x tr tr' n n' e' o0,
     build_app_comp_ev e2 a_st = (Some x, a_st') ->
     x  {| st_ev := e;  st_trace := tr;  st_pl := n (*;  st_store := o*) |} =
@@ -1107,6 +1241,8 @@ Proof.
 Defined.
    *)
 Admitted.
+ *)
+
 
 (*
 Ltac do_cumul2 :=
@@ -1796,6 +1932,8 @@ Defined.
  *)
 
 
+
+(*
 Lemma decomp_app_lseq:
   forall
     t1 t2
@@ -1832,6 +1970,269 @@ Lemma decomp_app_lseq:
         (forall ev1, In ev1 tr5' -> In ev1 tr3').
 Proof.
 Admitted.
+ *)
+
+Ltac amsts' :=
+  repeat match goal with
+         | H:AM_St |- _ => destruct H
+         end.
+
+Lemma decomp_app_lseq:
+  forall
+    t1 t2
+    ev1 tr1 p ev1' tr1' p'
+    ev2 tr2 p2 ev2' tr2' p2'
+    nm nm' ni ni' amap amap' smap smap' tr tr' cs cs'
+    app_res,
+    (*ab_st abb_st, *)
+    
+    
+    copland_compile t1 {| st_ev := ev1; st_trace := tr1; st_pl := p |} =
+    (Some tt, {| st_ev := ev1'; st_trace := tr1'; st_pl := p' |}) ->
+    
+    copland_compile t2 {| st_ev := ev2; st_trace := tr2; st_pl := p2 |} =
+    (Some tt, {| st_ev := ev2' ; st_trace := tr2'; st_pl := p2' |}) ->
+
+    build_app_comp_ev ev2' {| am_nonceMap := nm;
+                              am_nonceId := ni;
+                              st_aspmap := amap;
+                              st_sigmap := smap;
+                              am_st_trace:= tr;
+                              checked := cs
+                           |} = (Some app_res,
+                                 {| am_nonceMap := nm';
+                                    am_nonceId := ni';
+                                    st_aspmap := amap';
+                                    st_sigmap := smap';
+                                    am_st_trace:= tr';
+                                    checked := cs'
+                                 |}) ->
+
+    (*
+    x {| st_ev := ev3; st_trace := tr3; st_pl := p3 |} =
+    (Some app_res, {| st_ev := ev3'; st_trace := tr3'; st_pl := p3' |}) ->
+     *)
+    
+
+    exists app_ev1 ab_st nmb nib amapb smapb trb csb,
+      build_app_comp_ev ev1' ab_st = (Some app_ev1,
+                                      {| am_nonceMap := nmb;
+                                         am_nonceId := nib;
+                                         st_aspmap := amapb;
+                                         st_sigmap := smapb;
+                                         am_st_trace:= trb;
+                                         checked := csb
+                                      |}) /\
+      (*/\
+      runSt x' {| st_ev := ev4; st_trace := tr4; st_pl := p4 |} =
+      (Some app_ev1, {| st_ev := ev4'; st_trace := tr4'; st_pl := p4' |}) /\ *)
+
+      
+      exists app_ev2 abb_st nmbb nibb amapbb smapbb trbb csbb,
+        build_app_comp_ev ev2' abb_st = (Some app_ev2,
+                                         {| am_nonceMap := nmbb;
+                                            am_nonceId := nibb;
+                                            st_aspmap := amapbb;
+                                            st_sigmap := smapbb;
+                                            am_st_trace:= trbb;
+                                            checked := csbb
+                                         |}) /\
+        (*
+        runSt x'' {| st_ev := ev5; st_trace := tr5; st_pl := p5 |} =
+        (Some app_ev2, {| st_ev := ev5'; st_trace := tr5'; st_pl := p5' |}) /\ *)
+        
+        (forall ev1, In ev1 trb -> In ev1 tr') /\
+        (forall ev1, In ev1 trbb -> In ev1 tr').
+Proof.
+Admitted.
+
+Lemma appraisal_correct : forall t ev1 tr1 p e_res tr1' p'
+                            nm nm' ni ni' amap amap' smap smap' tr tr' cs cs'
+                            app_res
+                            e ev,
+    well_formed_r t ->
+    copland_compile t
+                    {| st_ev := ev1; st_trace := tr1; st_pl := p |} =
+                    (Some tt, {| st_ev := e_res; st_trace := tr1'; st_pl := p' |}) ->
+    (*p = st_pl vmst ->
+    (*e = st_ev vmst -> *)
+    e_res = st_ev vmst' -> *)
+    (*e_res = st_ev new_vmst -> *)
+
+    (*
+    Ev_Shape e etype ->
+    et = Term.eval (unanno t) p etype -> 
+     *)
+    build_app_comp_ev e_res {| am_nonceMap := nm;
+                              am_nonceId := ni;
+                              st_aspmap := amap;
+                              st_sigmap := smap;
+                              am_st_trace:= tr;
+                              checked := cs
+                           |} = (Some app_res,  {| am_nonceMap := nm';
+                                    am_nonceId := ni';
+                                    st_aspmap := amap';
+                                    st_sigmap := smap';
+                                    am_st_trace:= tr';
+                                    checked := cs'
+                                 |}) ->
+
+    (*
+    runSt x {| st_ev := ev2; st_trace := tr2; st_pl := p2 |} =
+              (Some app_res, {| st_ev := ev2'; st_trace := tr2'; st_pl := p2' |}) ->
+     *)
+    
+    (*tr_app = st_trace new_vmst -> *)
+    measEvent t p e ev ->
+    exists ev', In ev' tr' /\ appEvent ev {| am_nonceMap := nm;
+                              am_nonceId := ni;
+                              st_aspmap := amap;
+                              st_sigmap := smap;
+                              am_st_trace:= tr;
+                              checked := cs
+                           |} ev'.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    measEventFacts.
+    evEventFacts.
+    invEvents.
+    unfold empty_vmst in *.
+    amsts'.
+    vmsts.
+    repeat ff.
+    
+    eexists.
+    split.
+    amsts'.
+    ff.
+    Focus 2.
+    econstructor.
+    reflexivity.
+    ff.
+    econstructor.
+    eassumption.
+    simpl.
+    eapply in_or_app.
+    right.
+    econstructor.
+    tauto.
+  -
+    measEventFacts.
+    evEventFacts.
+    invEvents.
+    unfold empty_vmst in *.
+    amsts.
+    vmsts.
+    ff.
+    try dohtac.
+    ff.
+    Print dohtac.
+    Check PeanoNat.Nat.eqb_eq.
+    do_wf_pieces.
+    edestruct IHt.
+    eassumption.
+    eapply copland_compile_at.
+    eassumption.
+    eassumption.
+    
+    (*
+    tauto.
+    tauto.
+    eassumption.
+    eassumption.
+    simpl. *)
+    econstructor.
+    eassumption.
+    econstructor.
+    eauto.
+  -
+    do_wf_pieces.
+    vmsts.
+    simpl in *.
+    subst.
+    repeat ff.
+
+    (*
+    Check alseq_decomp_gen.
+    edestruct alseq_decomp_gen. (*with (r:=r) (t1':=t1) (t2':=t2) (e:=st_ev2) (e'':=st_ev1) (p:=st_pl2) (p'':=st_pl1) (init_tr:=st_trace2) (tr:=st_trace1). *)
+    eassumption.
+    eassumption.
+
+    destruct_conjs.
+    df. *)
+    vmsts.
+    amsts'.
+    ff.
+    amsts'.
+
+    edestruct decomp_app_lseq.
+    apply Heqp0.
+    apply Heqp1.
+    eassumption.
+    (*
+    eassumption. *)
+    destruct_conjs.
+    amsts'.
+
+    measEventFacts.
+    ff.
+    do_pl_immut.
+    do_pl_immut.
+    subst.
+    inv_events;
+    unfold runSt in *.
+    +
+          
+
+
+          (* t1 case *)
+      assert (exists ev', In ev' H9 /\ appEvent ev
+                                          {|
+          am_nonceMap := am_nonceMap0;
+          am_nonceId := am_nonceId0;
+          st_aspmap := st_aspmap0;
+          st_sigmap := st_sigmap0;
+          am_st_trace := am_st_trace0;
+          checked := checked0 |}
+                                          ev').
+      eapply IHt1.
+      eassumption.
+      eassumption.
+      apply H11.
+      (*
+      eassumption.
+      apply H14. *)
+      econstructor; eauto.
+      destruct_conjs.
+      exists H2.
+      split; eauto.
+    + (* t2 case *)
+      assert (exists ev', In ev' H20 /\ appEvent ev a_st ev').
+      eapply IHt2.
+      eassumption.
+      eassumption.
+      eassumption.
+      apply H25.
+      econstructor; eauto.
+      destruct_conjs.
+      exists H3.
+      split; eauto.
+    
+    
+
+
+
+
+
+
+
+
+
+
+
 
 
 

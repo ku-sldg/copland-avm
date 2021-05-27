@@ -4,7 +4,7 @@ Record representing the AM Monad state structure.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Maps EqClass ConcreteEvidence.
+Require Import Maps EqClass ConcreteEvidence Term_Defs.
 
 Require Import List.
 Import ListNotations.
@@ -18,8 +18,9 @@ Record AM_St : Type := mkAM_St
                            am_nonceId : nat;
                            st_aspmap : asp_map;
                            st_sigmap : sig_map;
+                           am_st_trace: list Ev;
                            (*am_pl : Plc ; *)
                            checked : list nat }.
 
 Definition empty_amst :=
-  mkAM_St [] 0 [] [] [].
+  mkAM_St [] 0 [] [] [] [].
