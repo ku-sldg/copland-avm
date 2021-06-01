@@ -74,9 +74,10 @@ Definition add_tracem (tr:list Ev) : CVM unit :=
   modify (add_trace tr).
 
 
-Definition split_ev_seq (i:nat) (sp1 sp2:SP) (e:EvidenceC) (p:Plc) : CVM (EvidenceC*EvidenceC) :=
-    let e1 := splitEv sp1 e in
-    let e2 := splitEv sp2 e in
+Definition split_ev_seq (i:nat) (sp:Split) (e:EvidenceC) (p:Plc) :
+  CVM (EvidenceC*EvidenceC) :=
+    let e1 := splitEv_l sp e in
+    let e2 := splitEv_r sp e in
     add_tracem [Term_Defs.split i p] ;;
     ret (e1,e2).
 

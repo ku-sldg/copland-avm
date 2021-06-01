@@ -37,8 +37,8 @@ Fixpoint ev_sys (t: AnnoTerm) p e: EvSys Ev :=
                  (Term_Defs.split i p))
            (before (S i, j)
                    (before (S i, (pred j))
-                           (ev_sys x p (splitEv_T (fst s) e))
-                           (ev_sys y p (splitEv_T (snd s) e)))
+                           (ev_sys x p (splitEv_T_l s e))
+                           (ev_sys y p (splitEv_T_r s e)))
                    (leaf ((pred j), j)
                          (join (pred j) p)))
   | abpar (i, j) s x y =>
@@ -47,8 +47,8 @@ Fixpoint ev_sys (t: AnnoTerm) p e: EvSys Ev :=
                  (Term_Defs.split i p))
            (before (S i, j)
                    (merge (S i, (pred j))
-                           (ev_sys x p (splitEv_T (fst s) e))
-                           (ev_sys y p (splitEv_T (snd s) e)))
+                           (ev_sys x p (splitEv_T_l s e))
+                           (ev_sys y p (splitEv_T_r s e)))
                    (leaf ((pred j), j)
                          (join (pred j) p)))
 (*

@@ -227,10 +227,25 @@ Defined.
 
 
 
+Definition splitEv_l (sp:Split) (e:EvidenceC) : EvidenceC :=
+  match sp with
+  | RIGHT => mtc
+  | _ => e
+  end.
+
+Definition splitEv_r (sp:Split) (e:EvidenceC) : EvidenceC :=
+  match sp with
+  | LEFT => mtc
+  | _ => e
+  end.
+
+(*
+
 (** * Eval function definition *)
 Definition splitEv (sp:SP) (e:EvidenceC) : EvidenceC :=
   match sp with
   | ALL => e
   | NONE => mtc
   end.
+*)
 

@@ -263,15 +263,15 @@ Inductive trace: AnnoTerm -> Plc -> Evidence ->
     trace y p (aeval x p e) tr1 ->
     trace (alseq r x y) p e (tr0 ++ tr1)
 | tbseq: forall r s x y p e tr0 tr1,
-    trace x p (splitEv_T (fst s) e) tr0 ->
-    trace y p (splitEv_T (snd s) e) tr1 ->
+    trace x p (splitEv_T_l s e) tr0 ->
+    trace y p (splitEv_T_r s e) tr1 ->
     trace (abseq r s x y) p e
           ((Term_Defs.split (fst r) p)
              :: tr0 ++ tr1 ++
              [(join (pred (snd r)) p)])
 | tbpar: forall r s x y p e tr0 tr1 tr2,
-    trace x p (splitEv_T (fst s) e) tr0 ->
-    trace y p (splitEv_T (snd s) e) tr1 ->
+    trace x p (splitEv_T_l s e) tr0 ->
+    trace y p (splitEv_T_r s e) tr1 ->
     shuffle tr0 tr1 tr2 ->
     trace (abpar r s x y) p e
           ((Term_Defs.split (fst r) p)

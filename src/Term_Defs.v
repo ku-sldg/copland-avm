@@ -62,11 +62,14 @@ Inductive ASP: Set :=
 | SIG: ASP
 (*| HSH: ASP*) .
 
-Inductive SP: Set :=
-| ALL
-| NONE.
+Inductive Split: Set :=
+| LEFT
+| RIGHT
+| ALL.
 
+(*
 Definition Split: Set := (SP * SP).
+*)
 
 Inductive Term: Set :=
 | asp: ASP -> Term
@@ -250,10 +253,16 @@ Defined.
   
     
 
-Definition splitEv_T (sp:SP) (e:Evidence) : Evidence :=
+Definition splitEv_T_l (sp:Split) (e:Evidence) : Evidence :=
   match sp with
-  | ALL => e
-  | NONE => mt
+  | RIGHT => mt
+  | _ => e
+  end.
+
+Definition splitEv_T_r (sp:Split) (e:Evidence) : Evidence :=
+  match sp with
+  | LEFT => mt
+  | _ => e
   end.
 
 Definition eval_asp t p e :=
@@ -271,10 +280,10 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
   | asp a => eval_asp a p e
   | att q t1 => eval t1 q e
   | lseq t1 t2 => eval t2 p (eval t1 p e)
-  | bseq s t1 t2 => ss (eval t1 p (splitEv_T (fst s) e))
-                       (eval t2 p (splitEv_T (snd s) e))
-  | bpar s t1 t2 => pp (eval t1 p (splitEv_T (fst s) e))
-                      (eval t2 p (splitEv_T (snd s) e))
+  | bseq s t1 t2 => ss (eval t1 p (splitEv_T_l s e))
+                      (eval t2 p (splitEv_T_r s e))
+  | bpar s t1 t2 => pp (eval t1 p (splitEv_T_l s e))
+                      (eval t2 p (splitEv_T_r s e))
   end.
 
 (** * Events

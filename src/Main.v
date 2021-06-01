@@ -176,24 +176,14 @@ Proof.
   -
     cbn in *; auto.
     invc H.
-    assert ((splitEv_T (fst s) e) = (splitEv_T (fst s) e')) by eauto.
-    destruct s;
-      destruct s0.
-    destruct s.
-    
-    +
-      ff.
-    +
-      simpl in *.
-      eauto.
-    +
-      simpl in *.
-      destruct s.
-      ++
-        ff.
-      ++
-        ff.
-Abort.
+    assert ((splitEv_T_l s e) = (splitEv_T_l s e')) by eauto.
+    destruct s; eauto.
+  -
+    cbn in *; auto.
+    invc H.
+    assert ((splitEv_T_l s e) = (splitEv_T_l s e')) by eauto.
+    destruct s; eauto.
+Defined.
 
 Lemma step_silent_tr:
   forall st st' tr,

@@ -454,10 +454,10 @@ Fixpoint aeval t p e :=
   | aasp _ x => eval (asp x) p e
   | aatt _ q x => aeval x q e
   | alseq _ t1 t2 => aeval t2 p (aeval t1 p e)
-  | abseq _ s t1 t2 => ss (aeval t1 p ((splitEv_T (fst s)) e))
-                         (aeval t2 p ((splitEv_T (snd s)) e))
-  | abpar _ s t1 t2 => pp (aeval t1 p ((splitEv_T (fst s)) e))
-                         (aeval t2 p ((splitEv_T (snd s)) e))
+  | abseq _ s t1 t2 => ss (aeval t1 p ((splitEv_T_l s e)))
+                         (aeval t2 p ((splitEv_T_r s e)))
+  | abpar _ s t1 t2 => pp (aeval t1 p ((splitEv_T_l s e)))
+                         (aeval t2 p ((splitEv_T_r s e)))
   end. 
 
 (*
@@ -521,11 +521,11 @@ Inductive events: AnnoTerm -> Plc -> Evidence -> Ev -> Prop :=
       events (abseq r s t1 t2) p e (Term_Defs.split i p)
 | evtsbseql:
     forall r s e t1 t2 ev p,
-      events t1 p (splitEv_T (fst s) e) ev ->
+      events t1 p (splitEv_T_l s e) ev ->
       events (abseq r s t1 t2) p e ev
 | evtsbseqr:
     forall r s e t1 t2 ev p,
-      events t2 p (splitEv_T (snd s) e) ev ->
+      events t2 p (splitEv_T_r s e) ev ->
       events (abseq r s t1 t2) p e ev
 | evtsbseqjoin:
     forall r i s e t1 t2 p,
@@ -539,11 +539,11 @@ Inductive events: AnnoTerm -> Plc -> Evidence -> Ev -> Prop :=
              (Term_Defs.split i p)
 | evtsbparl:
     forall r s e t1 t2 ev p,
-      events t1 p (splitEv_T (fst s) e) ev ->
+      events t1 p (splitEv_T_l s e) ev ->
       events (abpar r s t1 t2) p e ev
 | evtsbparr:
     forall r s e t1 t2 ev p,
-      events t2 p (splitEv_T (snd s) e) ev ->
+      events t2 p (splitEv_T_r s e) ev ->
       events (abpar r s t1 t2) p e ev
 | evtsbparjoin:
     forall r i s e t1 t2 p,
@@ -576,9 +576,9 @@ Fixpoint check_req (t:AnnoTerm) (pp:Plc) (q:Plc) (e:Evidence) (e':Evidence): boo
   | aatt r rp t' => (eqb_evidence e e' && (Nat.eqb q rp)) || (check_req t' rp q e e')
   | alseq r t1 t2 => (check_req t1 pp q e e') || (check_req t2 pp q (aeval t1 pp e) e')
   | abseq r s t1 t2 =>
-    (check_req t1 pp q (splitEv_T (fst s) e) e') || (check_req t2 pp q (splitEv_T (snd s) e) e')
+    (check_req t1 pp q (splitEv_T_l s e) e') || (check_req t2 pp q (splitEv_T_r s e) e')
   | abpar r s t1 t2 =>
-    (check_req t1 pp q (splitEv_T (fst s) e) e') || (check_req t2 pp q (splitEv_T (snd s) e) e')
+    (check_req t1 pp q (splitEv_T_l s e) e') || (check_req t2 pp q (splitEv_T_r s e) e')
   | _ => false
   end.
 
@@ -725,13 +725,13 @@ Proof.
     destruct_conjs.
     destruct H.
     +
-      assert (req_evidence t1 pp q (splitEv_T (fst s) e) e') by eauto.
+      assert (req_evidence t1 pp q (splitEv_T_l s e) e') by eauto.
       invc H0.
       econstructor.
       apply evtsbseql.
       eassumption.
     +
-      assert (req_evidence t2 pp q (splitEv_T (snd s) e) e') by eauto.
+      assert (req_evidence t2 pp q (splitEv_T_r s e) e') by eauto.
       invc H0.
       econstructor.
       apply evtsbseqr.
@@ -742,13 +742,13 @@ Proof.
     destruct_conjs.
     destruct H.
     +
-      assert (req_evidence t1 pp q (splitEv_T (fst s) e) e') by eauto.
+      assert (req_evidence t1 pp q (splitEv_T_l s e) e') by eauto.
       invc H0.
       econstructor.
       apply evtsbparl.
       eassumption.
     +
-      assert (req_evidence t2 pp q (splitEv_T (snd s) e) e') by eauto.
+      assert (req_evidence t2 pp q (splitEv_T_r s e) e') by eauto.
       invc H0.
       econstructor.
       apply evtsbparr.
@@ -1056,10 +1056,11 @@ apply well_formed_range in G0.
 Check well_formed_range.
  *)
 
-
+(*
 Inductive splitEv_T_R : SP -> Evidence -> Evidence -> Prop :=
 | spAll: forall e, splitEv_T_R ALL e e
 | spNone: forall e, splitEv_T_R NONE e mt.
+
 
 Inductive evalR : Term -> Plc -> Evidence -> Evidence -> Prop :=
 | evalR_asp: forall a p e,
@@ -1179,3 +1180,4 @@ Proof.
       repeat econstructor; eauto.
 Defined.
 
+*)
