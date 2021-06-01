@@ -1095,7 +1095,12 @@ Defined.
 
 (*
 build_app_comp_ev e2 a_st = (Some x, a_st') ->
-*)
+ *)
+
+Ltac amsts' :=
+  repeat match goal with
+         | H:AM_St |- _ => destruct H
+         end.
 
 
 Lemma am_trace_cumul : forall  e e_res
@@ -1116,14 +1121,75 @@ Lemma am_trace_cumul : forall  e e_res
                         |}) -> 
     exists tr'', tr' = tr ++ tr''.
 Proof.
-Admitted.
-
-
-
-
-
-
-
+  intros.
+  generalizeEverythingElse e.
+  induction e; intros.
+  -
+    ff.
+    exists [].
+    rewrite app_nil_r.
+    auto.
+  -
+    repeat ff.
+    unfold am_add_trace in *.
+    ff.
+    edestruct IHe.
+    eassumption.
+    subst.
+    exists (x ++ [umeas 0 0 n3 (n2 :: l) n0 n1]).
+    rewrite app_assoc.
+    eauto.
+  -
+    repeat ff.
+    unfold am_add_trace in *.
+    ff.
+    edestruct IHe.
+    eassumption.
+    subst.
+    exists (x ++ [umeas 0 0 n1 [encodeEv e; n0] 0 0]).
+    rewrite app_assoc.
+    eauto.
+  
+  -
+    repeat ff.
+    unfold am_checkNonce in *.
+    repeat ff;
+      amsts'; ff.
+    +
+    edestruct IHe.
+    eassumption.
+    subst.
+    eauto.
+    +
+    edestruct IHe.
+    eassumption.
+    subst.
+    eauto.
+  -
+    repeat ff.
+    amsts'.
+    edestruct IHe1.
+    eassumption.
+    subst.
+    edestruct IHe2.
+    eassumption.
+    subst.
+    exists (x ++ x0).
+    rewrite app_assoc.
+    eauto.
+  -
+    repeat ff.
+    amsts'.
+    edestruct IHe1.
+    eassumption.
+    subst.
+    edestruct IHe2.
+    eassumption.
+    subst.
+    exists (x ++ x0).
+    rewrite app_assoc.
+    eauto.
+Defined.
 
 
 (*
@@ -1506,6 +1572,37 @@ Proof.
     try (econstructor; eauto);
     tauto.
 Defined.
+
+Locate well_formed_r.
+
+
+(*
+Inductive term_ev_accum: AnnoTerm -> Prop :=
+| evacc_asp: forall r x,
+    term_ev_accum (aasp r x)
+| evacc_att: forall r p x,
+    term_ev_accum x ->
+    term_ev_accum (aatt r p x)
+                  
+| wf_lseq_r: forall r x y,
+    term_ev_accum x -> term_ev_accum y ->
+    term_ev_accum (alseq r x y)              
+| wf_bseq_r: forall r s x y,
+    well_formed_r x -> well_formed_r y ->
+    S (fst r) = fst (range x) ->
+    snd (range x) = fst (range y) ->
+    snd r = S (snd (range y)) ->  
+    well_formed_r (abseq r s x y)              
+| wf_bpar_r: forall r s x y,
+    well_formed_r x -> well_formed_r y ->  
+    S (fst r) = fst (range x) ->
+    snd (range x) = fst (range y) ->
+    (snd r) = S (snd (range y)) ->
+    (*fst (range y) > fst (range x) -> *)
+    well_formed_r (abpar r s x y).
+Hint Constructors well_formed_r : core.
+ *)
+
 
 Lemma evAccum: forall t vmst vmst' e e',
   well_formed_r t -> 
@@ -1970,28 +2067,33 @@ Lemma decomp_app_lseq:
         (forall ev1, In ev1 tr5' -> In ev1 tr3').
 Proof.
 Admitted.
- *)
+*)
 
-Ltac amsts' :=
-  repeat match goal with
-         | H:AM_St |- _ => destruct H
-         end.
 
 Lemma decomp_app_lseq:
   forall
     t1 t2
     ev1 tr1 p ev1' tr1' p'
-    ev2 tr2 p2 ev2' tr2' p2'
+    tr2 p2 ev2' tr2' p2'
     nm nm' ni ni' amap amap' smap smap' tr tr' cs cs'
     app_res,
     (*ab_st abb_st, *)
     
+
     
     copland_compile t1 {| st_ev := ev1; st_trace := tr1; st_pl := p |} =
     (Some tt, {| st_ev := ev1'; st_trace := tr1'; st_pl := p' |}) ->
     
-    copland_compile t2 {| st_ev := ev2; st_trace := tr2; st_pl := p2 |} =
+    copland_compile t2 {| st_ev := ev1'; st_trace := tr2; st_pl := p2 |} =
     (Some tt, {| st_ev := ev2' ; st_trace := tr2'; st_pl := p2' |}) ->
+     
+
+    (*
+    copland_compile (alseq r t1 t2)
+         {| st_ev := ev1; st_trace := tr1; st_pl := p |} =
+       (Some tt, {| st_ev := ev2'; st_trace := tr2'; st_pl := p2' |}) ->
+     *)
+    
 
     build_app_comp_ev ev2' {| am_nonceMap := nm;
                               am_nonceId := ni;
@@ -2037,13 +2139,13 @@ Lemma decomp_app_lseq:
       (Some app_ev1, {| st_ev := ev4'; st_trace := tr4'; st_pl := p4' |}) /\ *)
 
       
-      exists app_ev2 trbb trbb' csbb csbb',
+      exists app_ev2 trbb' csbb csbb',
         build_app_comp_ev ev2'
          {| am_nonceMap := nm;
             am_nonceId := ni;
             st_aspmap := amap;
             st_sigmap := smap;
-            am_st_trace:= trbb;
+            am_st_trace:= trb';
             checked := csbb
          |}
 
@@ -2061,15 +2163,9 @@ Lemma decomp_app_lseq:
         
         (forall ev1, In ev1 trb' -> In ev1 tr') /\
         (forall ev1, In ev1 trbb' -> In ev1 tr').
-Proof.
-  intros.
-  generalizeEverythingElse ev2'.
-  induction ev2'; intros.
-  -
-    ff.
-    
-  
+Proof. 
 Admitted.
+*)
 
 Lemma appraisal_correct : forall t ev1 tr1 p e_res tr1' p'
                             nm nm' ni ni' amap amap' smap smap' tr tr' cs cs'
@@ -2193,6 +2289,15 @@ Proof.
     ff.
     amsts'.
 
+    edestruct IHt1.
+    eassumption.
+    eassumption.
+    
+
+
+
+    
+
     edestruct decomp_app_lseq.
     apply Heqp0.
     apply Heqp1.
@@ -2200,6 +2305,10 @@ Proof.
     (*
     eassumption. *)
     destruct_conjs.
+
+    (*
+    clear H15.
+    clear H16. *)
     amsts'.
     unfold empty_amst in *.
 
@@ -2210,7 +2319,7 @@ Proof.
     subst.
     inv_events;
     unfold runSt in *.
-    +
+    + (* t1 case *)
       amsts'.
 
       edestruct IHt1 with (tr':=H5).
@@ -2223,11 +2332,15 @@ Proof.
       destruct_conjs.
 
       exists x0.
-      split; eauto.
-      invc H19.
-      econstructor.
-      reflexivity.
-      ff.
+      split.
+      ++
+        apply H14.
+        eassumption.
+      ++
+        invc H18.
+        econstructor.
+        reflexivity.
+        ff.
           
       (*
 
@@ -2278,7 +2391,7 @@ Proof.
     + (* t2 case *)
       amsts'.
 
-      edestruct IHt2 with (tr':=H11).
+      edestruct IHt2 with (tr':=H10).
       eassumption.
       eassumption.
       eassumption.
@@ -2289,12 +2402,82 @@ Proof.
 
       exists x0.
       split; eauto.
-      invc H19.
+      invc H18.
       econstructor.
       reflexivity.
       ff.
 
 
+  -
+    do_wf_pieces.
+    repeat ff.
+    vmsts.
+    repeat ff.
+    amsts'.
+
+    edestruct am_trace_cumul; eauto.
+    subst.
+
+    measEventFacts.
+    ff.
+    do_pl_immut.
+    do_pl_immut.
+    subst.
+    inv_events;
+      unfold runSt in *;
+      try solve_by_inversion.
+    + (* t1 case *)
+      assert (exists ev', In ev' am_st_trace /\
+                     appEvent ev
+                              {|
+                                am_nonceMap := nm;
+                                am_nonceId := ni;
+                                st_aspmap := amap;
+                                st_sigmap := smap;
+                                am_st_trace := tr;
+                                checked := cs |} ev').
+      eapply IHt1.
+      eassumption.
+      eassumption.
+      eassumption.
+      econstructor.
+      eassumption.
+      eassumption.
+      destruct_conjs.
+      exists H2.
+      split.
+      apply in_or_app.
+      eauto.
+      eassumption.
+    + (* t2 case *)
+      edestruct IHt2.
+      eassumption.
+      eassumption.
+      eassumption.
+      econstructor.
+      eassumption.
+      eassumption.
+      destruct_conjs.
+
+      exists x0.
+      split; eauto.
+
+      assert (nm = am_nonceMap /\ ni = am_nonceId /\ amap = st_aspmap /\ smap = st_sigmap).
+      {
+        edestruct ba_const.
+        apply Heqp0.
+        destruct_conjs.
+        ff.
+      }
+
+      destruct_conjs.
+      subst.
+      invc H5.
+      ff.
+
+      econstructor.
+      reflexivity.
+      ff.
   -
     do_wf_pieces.
     repeat ff.
@@ -2366,15 +2549,9 @@ Proof.
       econstructor.
       reflexivity.
       ff.
-  -
-    
-      
+Defined.
 
-
-      
-
-
-      
+(*
       eapply IHt2.
       eassumption.
       eassumption.
@@ -2408,9 +2585,9 @@ Proof.
       admit. (* TODO: tr_cumul lemma *)
       
     
+    *)
     
     
-    
 
 
 
@@ -2423,7 +2600,7 @@ Proof.
 
 
 
-
+(*
 
 
 Lemma appraisal_correct : forall t ev1 tr1 p e_res tr1' p'
@@ -2908,13 +3085,278 @@ Proof.
 
     
 Defined.
-
+*)
 
      
     
     
     
 HERE
+
+
+(* EXTRA PROOF APP_DECOP:
+
+  intros.
+  generalizeEverythingElse ev1.
+  induction ev1; intros.
+  -
+    
+    subst.
+    
+    repeat ff.
+     assert (nm = nm' /\ ni = ni' /\ amap = amap' /\ smap = smap').
+      {
+        edestruct ba_const.
+        eassumption.
+        destruct_conjs.
+        ff.
+      }
+      destruct_conjs.
+      subst.
+      repeat eexists.
+      eauto.
+      edestruct am_trace_cumul.
+      eassumption.
+      subst.
+      intros.
+      apply in_or_app.
+      eauto.
+      eauto.
+  -
+    subst.
+        assert (evMapped ev1'  {|
+         am_nonceMap := nm;
+         am_nonceId := ni;
+         st_aspmap := amap;
+         st_sigmap := smap;
+         am_st_trace := tr;
+         checked := cs |}).
+    {
+      admit.
+    }
+    
+    repeat ff.
+    +
+
+    
+    
+    edestruct build_app_some.
+    eassumption.
+    destruct_conjs.
+    amsts'.
+    assert (nm = am_nonceMap /\ ni = am_nonceId /\ amap = st_aspmap /\ smap = st_sigmap).
+      {
+        edestruct ba_const.
+        apply H4.
+        destruct_conjs.
+        ff.
+      }
+      destruct_conjs.
+      subst.
+      unfold am_add_trace in *.
+
+      
+    eexists. eexists. eexists. eexists. eexists.
+    split.
+    cbn.
+    rewrite H4.
+    reflexivity.
+    edestruct IHev1'.
+    apply H.
+
+
+
+    
+    ++
+    
+      repeat ff.
+      +++
+      amsts'.
+      unfold am_add_trace in *.
+      repeat ff.
+
+       assert (am_nonceMap = am_nonceMap0 /\ am_nonceId = am_nonceId0 /\ st_aspmap = st_aspmap0 /\ st_sigmap = st_sigmap0).
+      {
+        edestruct ba_const.
+        apply Heqp1.
+        destruct_conjs.
+        ff.
+      }
+      destruct_conjs.
+      subst.
+
+
+
+
+      
+      reflexivity.
+
+      apply Heqp1.
+      
+        eauto.
+    unfold am_add_trace in *.
+    repeat ff.
+
+    subst.
+    
+      
+      
+    eauto.
+  -
+    edestruct IHev2'.
+    apply H.
+    apply H0.
+    repeat ff.
+    
+    
+
+
+
+
+  
+  generalizeEverythingElse t1.
+  induction t1; intros.
+  -
+    destruct a.
+    +
+      repeat ff.
+      assert (evMapped ev2' {|
+         am_nonceMap := nm;
+         am_nonceId := ni;
+         st_aspmap := amap;
+         st_sigmap := smap;
+         am_st_trace := tr;
+         checked := cs |}).
+      {
+        eapply build_app_some'.
+        exists app_res.
+        eauto.
+      }
+
+      assert (
+      exists (o : EvidenceC) (a_st' : AM_St),
+         build_app_comp_ev ev1' {|
+         am_nonceMap := nm;
+         am_nonceId := ni;
+         st_aspmap := amap;
+         st_sigmap := smap;
+         am_st_trace := tr;
+         checked := cs |} = (Some o, a_st')).
+      {
+        eapply build_app_some.
+        admit.
+      }
+      destruct_conjs.
+      amsts'.
+      repeat eexists.
+
+      assert (nm = am_nonceMap /\ ni = am_nonceId /\ amap = st_aspmap /\ smap = st_sigmap).
+      {
+        edestruct ba_const.
+        apply H4.
+        destruct_conjs.
+        ff.
+      }
+      destruct_conjs.
+      subst.
+      eauto.
+      eauto.
+
+      assert (nm = nm' /\ ni = ni' /\ amap = amap' /\ smap = smap').
+      {
+        edestruct ba_const.
+        apply H1.
+        destruct_conjs.
+        ff.
+      }
+      destruct_conjs.
+      subst.
+      eauto.
+      intros.
+
+
+      (*
+      admit.
+      intros.
+      eassumption.
+    +
+      
+    
+
+      eapply am_trace_cumul.
+
+
+
+      
+      apply H4.
+      
+
+      assert (evMapped ev1'
+                       {|
+         am_nonceMap := nm;
+         am_nonceId := ni;
+         st_aspmap := amap;
+         st_sigmap := smap;
+         am_st_trace := tr;
+         checked := cs |}).
+      {
+        Check build_app_some.
+        eapply build_app_some.
+      
+      
+    ff.
+    ff.
+*)
+    
+
+
+
+
+(*
+  
+  generalizeEverythingElse ev2'.
+  induction ev2'; intros.
+  -
+    ff.
+    assert (ev1' = mtc).
+    {
+      admit.
+    }
+    subst.
+    ff.
+    exists mtc.
+    exists [].
+    exists [].
+    exists [].
+    exists [].
+    split.
+    tauto.
+    exists mtc.
+    exists [].
+    exists [].
+    exists [].
+    exists [].
+    split.
+    tauto.
+
+    split.
+    intros.
+    solve_by_inversion.
+    intros.
+    solve_by_inversion.
+  -
+    ff.
+    ff.
+    ff.
+
+    unfold am_add_trace in *.
+    ff.
+    
+   *) 
+
+
+
+*)
   
 
 
