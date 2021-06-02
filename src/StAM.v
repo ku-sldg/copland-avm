@@ -19,7 +19,6 @@ Record AM_St : Type := mkAM_St
                            st_aspmap : asp_map;
                            st_sigmap : sig_map;
                            am_st_trace: list Ev;
-                           (*am_pl : Plc ; *)
                            checked : list nat }.
 
 Definition empty_amst :=
