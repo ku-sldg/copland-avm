@@ -13,11 +13,15 @@ University of California.  See license.txt for details. *)
     small-step semantics are compatible with the related event system.
     *)
 
+Require Import Preamble More_lists Term_Defs Term LTS Event_system Term_system Trace Defs.
+
+Require Import StructTactics.
+
 Require Import List.
 Import List.ListNotations.
 Open Scope list_scope.
+
 Require Import Lia.
-Require Import Preamble More_lists Term_Defs Term LTS Event_system Term_system Trace Defs.
 
 Set Nested Proofs Allowed.
 (** The traces associated with a state. *)
@@ -70,8 +74,6 @@ Ltac inv_trace :=
   | H:trace (?C _) _ _ _ |- _ => inv H
   end.
 
-Require Import StructTactics.
-
 Lemma esize_tr:
   forall t p e tr,
     trace t p e tr -> length tr = esize t.
@@ -102,54 +104,6 @@ Proof.
       repeat find_apply_lem_hyp shuffle_length;
       try lia.
 Defined.
-(*
-  - destruct a;
-      find_apply_lem_hyp esize_tr; auto.
-    (*
-
-
-      apply esize_tr in H4; simpl in *; auto. *)
-  - rewrite app_length; simpl.
-    find_apply_hyp_hyp; lia.
-    (*
-    apply IHst in H5; lia. *)
-  - rewrite app_length; simpl.
-    find_apply_hyp_hyp.
-    find_apply_lem_hyp esize_tr.
-    lia.
-    (*
-    apply IHst in H2. apply esize_tr in H4.
-    lia. *)
-    
-  - repeat (rewrite app_length; simpl).
-    find_apply_hyp_hyp.
-    find_apply_lem_hyp esize_tr.
-    lia.
-    (*
-    apply IHst in H6.
-    apply esize_tr in H7. lia. *)
-  - rewrite app_length; simpl.
-    find_apply_hyp_hyp.
-    lia.
-    (*
-    find_apply_lem_hyp esize_tr.
-    lia.
-    apply IHst in H4. lia. *)
-    
-  - rewrite app_length; simpl.
-    repeat find_apply_hyp_hyp.
-    find_apply_lem_hyp shuffle_length.
-    lia.
-    (*
-    apply IHst1 in H6.
-    apply IHst2 in H7.
-    apply shuffle_length in H8.
-    lia. *)
-Qed.
- *)
-
-
-
 
 Ltac jkjk'e :=
   match goal with
@@ -195,42 +149,11 @@ Proof.
   - constructor.
     constructor; auto.
     solve_by_inversion.
-
-    (*
-    inv H2; auto. *)
   -
-
-    (*
-    find_apply_lem_hyp step_pl_eq; auto.
-    find_apply_lem_hyp step_seval; auto.
-    
-    rewrite <- H7.
-    inv H.
-    
-    find_apply_hyp_hyp; eauto.
-    Check step_seval.
-    find_apply_lem_hyp step_seval; auto. *)
-
     find_copy_apply_lem_hyp step_pl_eq.
     find_copy_apply_lem_hyp step_seval.
-
-
-
     jkjk'e.
-
-    (*
-    
-
-
-    pose proof H7 as G.
-    pose proof H7 as G1.
-    apply step_pl_eq in G; auto.
-    apply step_seval in G1; auto.
-    rewrite <- G. (*rewrite <- G1. *)
-     *)
-
     eauto.
-
   -
     constructor.
     eauto.
@@ -240,135 +163,39 @@ Proof.
     
     cbn in *.
     invc H.
-    Check step_seval.
-    find_rewrite.
-    find_rewrite.
+    repeat find_rewrite.
     assert (traceS st tr1) by eauto.
-    Check step_seval.
     assert (seval st = seval st1).
     {
       eapply step_seval.
       eassumption.
     }
-    find_rewrite.
-    find_rewrite.
+    repeat find_rewrite.
     eauto.
-    
-
-    (*
-
-    (*
-    
-    eapply IHst in H3; eauto. *)
-    pose proof H6 as G.
-    apply step_pl_eq in H3.
-    rewrite H5; auto.
-    (* apply step_seval in G.
-    rewrite G; auto. *) *)
   -
     erewrite <- app_nil_l.
     constructor; auto.
-    (*
-
-    rewrite <- app_nil_l with (l:=tr).
-    constructor; auto. *)
-
-    
   -
-    constructor.
     eauto.
-
-    eauto.
-
-    
-(*
-    find_copy_apply_lem_hyp step_seval.
-    find_rewrite.
-    eauto. *)
-    (*
-    eauto.
-
-    (*
-
-    pose proof H8 as G.
-    eapply IHst in H8; eauto.
-    (*apply step_seval in G.
-    rewrite <- G; auto. *) *) *)
   -
-
-    
     erewrite <- app_nil_l.
     apply tbsl; auto; simpl; auto.
     invc H.
     invc H5.
     eauto.
-
-    (*
-
-    rewrite <- app_nil_l with (l:=tr0). *)
-    (*
-    rewrite app_assoc.
-    
-    rewrite <- app_assoc. *)
-    (*
-   
-    apply tbsl; auto; simpl; auto;
-    solve_by_inversion.
-     *)
-    
-    (*
-    inv H; auto. *)
   -
     find_eapply_hyp_hyp; eauto.
-
     find_copy_apply_lem_hyp step_seval.
     find_copy_apply_lem_hyp step_pl_eq.
-    (*
-    
-
-    pose proof H6 as G.
-    pose proof H6 as G1.
-    eapply IHst in H6; eauto.
-    apply step_seval in G. 
-    (*rewrite <- G; auto. *)
-    apply step_pl_eq in G1.
-     *)
-
     jkjk'e; auto.
-    
-    (*
-    rewrite <- G1; auto. *)
-
-    
   -
-    eauto.
-
-    (*
-
-    pose proof H6 as G.
-    eapply IHst1 in H6; eauto.
-    (* apply step_seval in G.
-    rewrite <- G; auto. 
-    apply tbp with (tr1:=tr1)(tr2:=tr2); auto. *)
-     *)
-    
+    eauto.    
   -
     find_copy_apply_hyp_hyp; eauto.
     find_copy_apply_lem_hyp step_seval.
     find_copy_apply_lem_hyp step_pl_eq.
     jkjk'e; auto.
     eapply tbp; eauto.
-
-    (*
-
-    pose proof H8 as G.
-    pose proof H8 as G1.
-    eapply IHst2 in H8; eauto.
-    apply step_seval in G.
-    (* rewrite <- G; auto. *)
-    apply step_pl_eq in G1.
-    rewrite <- G1; auto.
-    apply tbp with (tr1:=tr1)(tr2:=tr2); auto. *)
 Qed.
 
 Lemma step_evt_tr:
@@ -382,198 +209,52 @@ Proof.
     constructor.
   - constructor. apply tatt. simpl.
     solve_by_inversion.
-    (*
-    inv H6; auto. *)
-
-    
   - constructor. apply tbseq; auto.
-    solve_by_inversion.
-    (*
-    inv H6; auto. *)
-
-    
+    solve_by_inversion.  
   - constructor.
-
     eapply tbpar; eauto; solve_by_inversion.
-    
-(*
-    inv H6; auto. inv H7; auto. *)
-
-
-                          
-    
   -
-    
     find_copy_apply_lem_hyp step_seval.
     find_copy_apply_lem_hyp step_pl_eq.
     jkjk'e.
-    
-    (*
-
-    jkjk'e. *)
-    rewrite app_comm_cons; eauto.
-
-    (*
-
-    find_eapply_hyp_hyp.
-
-    pose proof H7 as G.
-    apply step_seval in G.
-    pose proof H7 as G1.
-    apply step_pl_eq in G1.
-    eapply IHst in H7; eauto.
-    (* rewrite <- G. *) rewrite <- G1.
-    rewrite app_comm_cons; auto. *)
-     
-    
+    rewrite app_comm_cons; eauto. 
   - rewrite <- app_nil_l; auto.
     apply trem; auto.
   -
     find_copy_apply_lem_hyp step_seval.
     find_copy_apply_lem_hyp step_pl_eq.
-
-    (*
-
-    pose proof H5 as G.
-    apply step_seval in G.
-    pose proof H5 as G1.
-    apply step_pl_eq in G1. *)
-
     rewrite app_comm_cons; auto.
-
     apply tls;
       try jkjk;
       eauto.
-
     repeat find_rewrite.
-    eauto.
-
-    
-(*
-    
-    eapply IHst in H3; eauto.
-
-    (*
-
-    
-    eapply IHst in H5; eauto. *)
-    rewrite app_comm_cons.
-    apply tls; auto.
-    jkjk; auto.
- *)
-    
-
-    (*
-    (*rewrite G. *) rewrite G1; auto. *)
-
-    
-    
+    eauto.    
   -
     find_copy_apply_lem_hyp step_seval.
-
     rewrite app_comm_cons; auto.
     eauto.
-
-    (*
-
-   (*
-
-    pose proof H8 as G.
-    apply step_seval in G. *)
-    eapply IHst in H8; eauto.
-    (*rewrite <- G. *)
-    rewrite app_comm_cons; auto. *)
   -
-
     find_copy_apply_lem_hyp step_seval.
     find_copy_apply_lem_hyp step_pl_eq.
-
     rewrite app_comm_cons.
     jkjk'e.
-    eauto.
-
-    (*
-
-
-    pose proof H6 as G.
-    apply step_seval in G.
-    pose proof H6 as G1.
-    apply step_pl_eq in G1.
-    eapply IHst in H6; eauto.
-    rewrite app_comm_cons;
-      (*rewrite <- G; *) rewrite <- G1; auto.
-     *)
-    
+    eauto.   
   - rewrite <- app_nil_l; constructor; auto.
-
-    
-    
   -
     find_copy_apply_lem_hyp step_seval.
     rewrite app_comm_cons.
-
     find_eapply_lem_hyp shuffle_left.
-
     eapply tbp; eauto.
-
-    (*
-    
-
-
-    pose proof H8 as G.
-    apply step_seval in G.
-    eapply IHst1 in H8; eauto.
-    apply shuffle_left with (e:=ev) in H9.
-    rewrite app_comm_cons;
-      (*rewrite <- G; *) auto.
-    apply tbp with (tr1:=(ev::tr1))(tr2:=tr2); auto. *)
   -
     find_copy_apply_lem_hyp step_seval.
     find_copy_apply_lem_hyp step_pl_eq.
-
-
-    (*
-    find_eapply_lem_hyp shuffle_right.
     rewrite app_comm_cons.
-
-    eapply tbp.
-     *)
-    
-
-
-(*
-    pose proof H8 as G.
-    apply step_seval in G.
-    pose proof H8 as G1.
-    apply step_pl_eq in G1.
- *)
-    rewrite app_comm_cons.
-
     find_eapply_lem_hyp shuffle_right.
-
-    (*
-    
-    apply shuffle_right with (e:=ev) in H10. 
-    
-   
-    eapply IHst2 in H9; eauto. *)
-
     jkjk'e.
     eapply tbp; eauto.
-
-    (*
-
-    (*
-    
-    rewrite app_comm_cons;
-      (*rewrite <- G; *) rewrite <- G1; auto. *)
-    apply tbp with (tr1:=tr1)(tr2:=(ev::tr2)); auto.
-     *)
-    
-  - rewrite <- app_nil_l; auto.
+  -
+    rewrite <- app_nil_l; auto.
     eapply tbp; eauto.
-    (*
-    apply tbp with (tr1:=[])(tr2:=[]); auto. *)
 Qed.
 
 Lemma nlstar_trace_helper:

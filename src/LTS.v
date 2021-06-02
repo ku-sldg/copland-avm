@@ -422,8 +422,6 @@ Proof.
     apply star_stls.
     apply IHt1.
     eapply star_tran; eauto.
-
-    
     
   - eapply star_tran; eauto.
     eapply star_transitive.
@@ -434,9 +432,6 @@ Proof.
     apply star_stbsr.
     apply IHt2.
     eapply star_tran; eauto.
-
-
-    
     
   -
     repeat dest_range.
@@ -475,16 +470,15 @@ Proof.
     + exists None.
       eapply ex_intro; eauto.
       
-      
     + exists (Some (split (fst r) n)).
       eapply ex_intro; eauto.
-      
       
     + exists (Some (Term_Defs.split(fst r) n)).
       (*destruct p; destruct p0. *)
       repeat dest_range.
       eapply ex_intro; eauto.
-  - right.
+  -
+    right.
     destruct IHst0.
     + destruct st0; simpl in H; try tauto.
       exists (Some (rpy (pred n) n0 n1)).
@@ -493,7 +487,8 @@ Proof.
       exists e.
       destruct H as [st1 H].
       exists (rem n n0 st1); auto.
-  - right.
+  -
+    right.
     destruct IHst0.
     + destruct st0; simpl in H; try tauto.
       exists None. eapply ex_intro; eauto.
@@ -501,9 +496,9 @@ Proof.
       exists e.
       destruct H as [st H].
       exists (ls st a). auto.
-      
-      
-  - right.
+          
+  -
+    right.
     destruct IHst0.
     + destruct st0; simpl in H; try tauto.
       exists None. eapply ex_intro; eauto.
@@ -520,8 +515,7 @@ Proof.
       exists e0.
       destruct H as [st H].
       exists (bsr n e st). auto.
-      
-      
+         
   - right.
     destruct IHst0_1 as [H|H].
     + destruct st0_1; simpl in H; try tauto.

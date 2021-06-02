@@ -14,46 +14,23 @@ Import ListNotations.
 
 Require Export StVM.
 
+
+
 Definition CVM := St cvm_st.
 
-
 (* VM monad operations *)
-
-(*
-Definition put_store_at (n:nat) (e:EvidenceC) : CVM unit :=
-  st <- get ;;
-     let e' := st_ev st in
-     let tr' := st_trace st in
-     let p' := st_pl st in
-     let store' := st_store st in
-  (*let '{| st_ev := _; st_stack := s; st_trace := tr |} := st in*)
-     put (mk_st e' tr' p' (map_set store' n e)).
-
-Definition get_store_at (n:nat) : CVM EvidenceC :=
-  st <- get ;;
-     let store' := st_store st in
-     let maybeEv := map_get store' n in
-     match maybeEv with
-     | Some e => ret e
-     | None => failm
-     end.
-*)
 
 Definition put_ev (e:EvidenceC) : CVM unit :=
   st <- get ;;
      let tr' := st_trace st in
      let p' := st_pl st in
-     (*let store' := st_store st in *)
-  (*let '{| st_ev := _; st_stack := s; st_trace := tr |} := st in*)
-     put (mk_st e tr' p' (*store'*)).
+     put (mk_st e tr' p').
 
 Definition put_pl (p:Plc) : CVM unit :=
   st <- get ;;
      let tr' := st_trace st in
      let e' := st_ev st in
-     (*let store' := st_store st in *)
-  (*let '{| st_ev := _; st_stack := s; st_trace := tr |} := st in*)
-    put (mk_st e' tr' p (*store'*)).
+     put (mk_st e' tr' p).
 
 Definition get_ev : CVM EvidenceC :=
   st <- get ;;
@@ -65,18 +42,17 @@ Definition get_pl : CVM Plc :=
 
 Definition modify_evm (f:EvidenceC -> EvidenceC) : CVM unit :=
   st <- get ;;
-  let '{| st_ev := e; st_trace := tr; st_pl := p(*; st_store := store*) |} := st in
-  put (mk_st (f e) tr p (*store*)).
+  let '{| st_ev := e; st_trace := tr; st_pl := p |} := st in
+  put (mk_st (f e) tr p).
 
 Definition add_trace (tr':list Ev) : cvm_st -> cvm_st :=
-  fun '{| st_ev := e; st_trace := tr; st_pl := p(*; st_store := store*) |} =>
-    mk_st e (tr ++ tr') p (*store*) .
+  fun '{| st_ev := e; st_trace := tr; st_pl := p |} =>
+    mk_st e (tr ++ tr') p.
 
 Definition add_tracem (tr:list Ev) : CVM unit :=
   modify (add_trace tr).
 
-
-Definition split_ev_seq (i:nat) (sp:Split) (e:EvidenceC) (p:Plc) :
+Definition split_ev (i:nat) (sp:Split) (e:EvidenceC) (p:Plc) :
   CVM (EvidenceC*EvidenceC) :=
     let e1 := splitEv_l sp e in
     let e2 := splitEv_r sp e in
@@ -140,100 +116,33 @@ Definition do_prim (x:nat) (a:ASP) : CVM EvidenceC :=
     ret (hhc bs e) *)
   end.
 
-Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) (*(req_loc:Loc)*) : CVM unit :=
+Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) : CVM unit :=
   p <- get_pl ;;
   e <- get_ev ;;
-  (*put_store_at req_loc e ;; *)
   add_tracem [req reqi p q (unanno t) (et_fun e)].
 
 (* Primitive CVM Monad operations that require IO Axioms *)
-Definition doRemote (t:AnnoTerm) (q:Plc) (e:EvidenceC) (*(reqi:nat) (rpyi:nat)*) : CVM EvidenceC :=
-  (*e <- get_store_at reqi ;; *)
+Definition doRemote (t:AnnoTerm) (q:Plc) (e:EvidenceC) : CVM EvidenceC :=
   add_tracem (remote_events t q) ;;
-  (*put_store_at rpyi (toRemote t q e) *)
   ret (toRemote t q e).
 
-Definition receiveResp (*(rpy_loc:Loc)*) (t:AnnoTerm) (q:Plc) (rpyi:nat) : CVM EvidenceC :=
-  (*e <- get_store_at rpy_loc ;; *)
+Definition receiveResp (t:AnnoTerm) (q:Plc) (rpyi:nat) : CVM EvidenceC :=
   p <- get_pl ;;
   e <- get_ev ;;
   e' <- doRemote t q e ;;
-  add_tracem [rpy (Nat.pred rpyi) (*rpy_loc*) p q] ;;
+  add_tracem [rpy (Nat.pred rpyi) p q] ;;
   ret e'. 
-
-
-
-
-(*
-Definition runParThread (t:AnnoTerm) (p:Plc) (loc1:Loc) (loc2:Loc) :
-  CVM unit (*(list Ev)*) :=
-  e <- get_store_at loc1 ;;
-  put_ev e ;;
-  copland_compile t ;;
-  e' <- get_ev ;;
-  
-
-  (*
-  let el := parallel_vm_events t p in
-  let e' := parallel_vm_thread t p e in
-  (*let loc := fst (range t) in *)
-   *)
-  
-  put_store_at loc2 e' (* ;;
-  ret el*) .
-*)
-
-
-(*
-Definition runParThreads (t1 t2:AnnoTerm) (p:Plc) (loc_e1 loc_e1' loc_e2 loc_e2':Loc) : CVM unit :=
-  el1 <- runParThread t1 p loc_e1 loc_e1' ;;
-  el2 <- runParThread t2 p loc_e2 loc_e2' ;;
-  add_tracem (shuffled_events el1 el2).
-*)
-
 
 Definition join_seq (n:nat) (p:Plc) (e1:EvidenceC) (e2:EvidenceC) : CVM unit :=
   put_ev (ssc e1 e2) ;;
   add_tracem [join n p].
 
-Definition join_par (n:nat) (p:Plc) (*(xi:Loc)*) (e1r:EvidenceC) (e2r:EvidenceC) : CVM unit :=
-  (*e1r <- get_store_at xi ;; *)
-  (*e2r <- get_store_at yi ;; *)
-  put_ev (ppc e1r e2r) ;;
+Definition join_par (n:nat) (p:Plc) (e1:EvidenceC) (e2:EvidenceC) : CVM unit :=
+  put_ev (ppc e1 e2) ;;
   add_tracem [join n p].
   
 
 (** * Helper functions for Appraisal *)
-
-(*
-Definition extractUev (e:EvidenceC) : CVM (BS * EvidenceC) :=
-  match e with
-  | uuc i bs e' => ret (bs,e')
-  | _ => failm
-  end.
-
-Definition extractSig (e:EvidenceC) : CVM (BS * EvidenceC) :=
-  match e with
-  | ggc bs e' => ret (bs, e')
-  | _ => failm
-  end.
-*)
-
-(*
-Definition extractHsh (e:EvidenceC) : CVM (BS * EvidenceC) :=
-  match e with
-  | hhc bs e' => ret (bs, e')
-  | _ => failm
-  end. *)
-
-(*
-Definition extractComp (e:EvidenceC) : CVM (EvidenceC * EvidenceC) :=
-  match e with
-  | ssc e1 e2 => ret (e1,e2)
-  (*| ppc e1 e2 => ret (e1,e2) *)
-  | _ => failm
-  end.
-*)
 
 Definition checkSig (x:nat) (i:ASP_ID) (e':EvidenceC) (sig:BS) : CVM BS :=
   invokeUSM x i ([encodeEv e'] ++ [sig] (* ++ args*) ) 0 0 ;;
@@ -266,8 +175,6 @@ Ltac monad_unfold :=
   join_par, *)
   add_trace,
   failm,
-  (* Uncommenting these evaluates too much, can't apply lemmas *)
-  (*get_store_at,*)
   get,
   when,
   put,
@@ -436,3 +343,33 @@ Proof.
         econstructor; (try simpl); eauto; try (econstructor) . *)
 Defined.
 *)
+
+
+
+
+(* *** Deprecated Parallel helper functions *** *)
+
+(*
+Definition runParThread (t:AnnoTerm) (p:Plc) (loc1:Loc) (loc2:Loc) :
+  CVM unit (*(list Ev)*) :=
+  e <- get_store_at loc1 ;;
+  put_ev e ;;
+  copland_compile t ;;
+  e' <- get_ev ;;
+  
+
+  (*
+  let el := parallel_vm_events t p in
+  let e' := parallel_vm_thread t p e in
+  (*let loc := fst (range t) in *)
+   *)
+  
+  put_store_at loc2 e' (* ;;
+  ret el*) .
+
+Definition runParThreads (t1 t2:AnnoTerm) (p:Plc) (loc_e1 loc_e1' loc_e2 loc_e2':Loc) : CVM unit :=
+  el1 <- runParThread t1 p loc_e1 loc_e1' ;;
+  el2 <- runParThread t2 p loc_e2 loc_e2' ;;
+  add_tracem (shuffled_events el1 el2).
+
+ *)
