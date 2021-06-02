@@ -4,7 +4,9 @@ More_lists.v
 StructTactics.v
 Defs.v
 Term_Defs.v
+Eqb_Evidence.v
 Term.v
+Priv_Pol.v
 Event_system.v
 Term_system.v
 Trace.v
@@ -21,13 +23,13 @@ MonadVM.v
 Impl_vm.v
 Auto.v
 Helpers_VmSemantics.v
+AutoApp.v
 External_Facts.v
 VmSemantics.v
 StAM.v
 MonadAM.v
 Impl_appraisal.v
 AllMapped.v
-AutoApp.v
 Appraisal_Defs.v
 Helpers_Appraisal.v
 Appraisal.v
