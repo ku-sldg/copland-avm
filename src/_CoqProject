@@ -28,5 +28,6 @@ MonadAM.v
 Impl_appraisal.v
 AllMapped.v
 AutoApp.v
+Appraisal_Defs.v
 Helpers_Appraisal.v
 Appraisal.v
