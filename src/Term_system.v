@@ -51,17 +51,6 @@ Fixpoint ev_sys (t: AnnoTerm) p e: EvSys Ev :=
                            (ev_sys y p (splitEv_T_r s e)))
                    (leaf ((pred j), j)
                          (join (pred j) p)))
-(*
-           before (i, j)
-           (leaf (i, S i)
-                 (splitp i (*xi*) yi p))
-           (before (S i, j)
-                   (merge (S i, (pred j))
-                          (ev_sys x p)
-                          (ev_sys y p))
-                   (leaf ((pred j), j)
-                   (joinp (pred j) (*xi'*) yi' yi' p)))
-*)
   end.
 
 Lemma evsys_range:
@@ -88,11 +77,6 @@ Proof.
         try destruct a;
         repeat (econstructor; repeat rewrite evsys_range; auto).
 Defined.
-(* 
-  - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto).
-    repeat (apply ws_merge; simpl in *; auto; repeat rewrite evsys_range; auto).
-Qed.
- *)
 
 Ltac do_evin :=
   match goal with
@@ -116,7 +100,6 @@ Proof.
     repeat expand_let_pairs; simpl in *;
       try (destruct a; auto; do_evin; auto; tauto);
 
-  
       try (
           repeat dest_range;
           repeat (find_rewrite; simpl in * );
@@ -126,127 +109,7 @@ Proof.
           repeat (find_rewrite; simpl in * );
           (find_apply_lem_hyp Nat.succ_inj) ; subst; auto;
             tauto.
-  
-  (*
-      try (
-          repeat dest_range;
-          repeat find_rewrite; simpl in *;
-          repeat (do_evin; auto);
-          tauto);
-      try (
-          repeat (find_rewrite; simpl in * );
-          inv_events; auto;
-          repeat (find_rewrite; simpl in * );
-          repeat (do_evin; auto);
-          (find_apply_lem_hyp Nat.succ_inj) ; subst; auto;
-          tauto).
-*)
 Defined.
-(*
-
-  (*
-  -
-    destruct a; simpl; auto; do_evin; auto.
-
-    (*
-    inv H0; auto; destruct a; simpl; auto. *)
-   *)
-
-  (*
-  -
-
-    dest_range.
-    (*
-    destruct p. *)
-    repeat find_rewrite; simpl in *.
-    (*
-    rewrite H8 in H0; simpl in H0. *)
-
-    repeat (do_evin; auto).
-    (*
-    inv H0; auto. inv H2; auto. inv H2; auto. inv H1; auto. *)
-  - repeat (do_evin; auto).
-    (*
-
-    inv H0; auto. *)
-    
-  -
-    repeat find_rewrite; simpl in *;
-      repeat (do_evin; auto).
-    (*
-
-    rewrite H10 in H0; simpl in H0.
-    inv H0; inv H2; auto; inv H1; auto. *)
-    
-  -
-
-    repeat dest_range;
-      repeat find_rewrite; simpl in *;
-        repeat (do_evin; auto).
-
-    (*
-
-    destruct p; destruct p0.
-    rewrite H12 in H0; simpl in H0.
-    inv H0; auto. inv H2; auto. inv H2; auto. inv H1; auto. inv H1; auto. *)
-
-*)
-  -
-
-    inv_events; auto.
-
-  -
-    repeat (find_rewrite; simpl in * ).
-    inv_events; auto.
-    repeat (find_rewrite; simpl in * ).
-
-    
-
-    find_apply_lem_hyp Nat.succ_inj; subst; auto.
-
-            (*
-            
-
-    rewrite Nat.succ_inj in *.
-
-    apply Nat.succ_inj in H7; subst; auto.
-
-    rewrite H8; simpl.
-    inv H0; auto.
-    rewrite H11 in H8.
-    apply Nat.succ_inj in H8; subst; auto. *)
-  -
-    inv_events; auto.
-    (*
-
-    inv H0; auto. *)
-  -
-    repeat (find_rewrite; simpl in * ).
-    inv_events; auto.
-    repeat (find_rewrite; simpl in * ).
-
-    find_apply_lem_hyp Nat.succ_inj; subst; auto.
-    (*
-    
-
-    rewrite H10; simpl.
-    inv H0; auto.
-    rewrite H12 in H10.
-    apply Nat.succ_inj in H10; subst; auto. *)
-    
-  -
-    repeat (find_rewrite; simpl in * );
-    inv_events; auto;
-    repeat (find_rewrite; simpl in * );
-    (find_apply_lem_hyp Nat.succ_inj) ; subst; auto.
-
-    (*
-    rewrite H12; simpl.
-    inv H0; auto.
-    rewrite H15 in H12.
-    apply Nat.succ_inj in H12; subst; auto. *)
-Qed.
- *)
 
 Ltac inv_sup :=
   match goal with
@@ -260,7 +123,6 @@ Ltac do_before_sup :=
   | [H: sup (ev_sys _ _ _) (* (alseq (n, n0) ls x y) p)*) _
      |- _] =>
     repeat apply before_sup in H
-
   end.
 
 Ltac inv_ws :=
@@ -302,138 +164,6 @@ Proof.
           repeat inv_sup; auto;
           tauto).
 Defined.
-(*
-
-    (*
-      try
-        (
-          repeat dest_range; simpl in *;
-          repeat break_let;
-          repeat do_before_sup;
-          repeat inv_sup; auto; tauto).
-*)
-      
-    +
-      repeat dest_range; simpl in *;
-        repeat break_let.
-      repeat do_before_sup;
-      repeat inv_sup; auto.
-
-      (*
-
-
-      destruct r as [i j]; simpl in *.
-      inv H0; inv H1; auto. *)
-    +
-      repeat dest_range; simpl in *;
-        repeat break_let;
-
-
-
-      repeat do_before_sup;
-      repeat inv_sup; auto.
-
-      (*
-          
-
-      (*
-
-      destruct r as [i j]; simpl in *.
-      repeat expand_let_pairs. *)
-      repeat apply before_sup in H3;
-      repeat apply before_sup in H4;
-     
-      repeat inv_sup; auto.
-      (*
-      inv H3; inv H4; auto. *)
-       *)
-      
-    +
-      repeat dest_range; simpl in *;
-        repeat break_let.
-
-      repeat do_before_sup.
-
-      (*
-      (*
-
-      destruct r as [i j]; simpl in *. *)
-      repeat apply before_sup in H4.
-      repeat apply before_sup in H5.
-       *)
-
-      inv_ws.
-      eauto.
-
-      
-
-      (*
-      invc G.
-      eauto.
-      
- 
-      eapply IHwell_formed_r2 in H4; eauto.
-      solve_by_inversion.
-       *)
-      
-      (*
-      inv G; auto. *)
-      
-    +
-
-      repeat dest_range; simpl in *;
-        repeat break_let.
-
-      
-      repeat do_before_sup;
-        repeat inv_sup; auto.
-
-      (*
-
-      (*
-
-      destruct r as [i j]; simpl in *.
-      repeat expand_let_pairs. *)
-      repeat apply before_sup in H4.
-      repeat apply before_sup in H5.
-      repeat inv_sup; auto.
-      (*
-      inv H3; inv H4; auto. *)
-*)
-
-
-      (*
-
-      destruct r as [i j]; simpl in *.
-      repeat apply before_sup in H4.
-      repeat apply before_sup in H5.
-      inv H4; inv H5; auto. *)
-      
-    +
-      repeat dest_range; simpl in *;
-        repeat break_let.
-
-      
-      repeat do_before_sup;
-      repeat inv_sup; auto.
-
-      (*
-
-      destruct r as [i j]; simpl in *.
-      repeat expand_let_pairs. *)
-      repeat apply before_sup in H5.
-      repeat apply before_sup in H6.
-      repeat inv_sup; auto.
-
-
-      (*
-      destruct r as [i j]; simpl in *.
-      repeat expand_let_pairs.
-      repeat apply before_sup in H5.
-      repeat apply before_sup in H6.
-      inv H5; inv H6; auto. *)
-Qed.
-*)
 
 Lemma evsys_max_unique:
   forall t p e,
@@ -457,46 +187,11 @@ Proof.
     intros;
     repeat dest_range;
     repeat expand_let_pairs;
-    try destruct locs;
-    inv_ws;
-    try destruct locs.
-   (* repeat find_rewrite; *)
-
-    (*
-    repeat do_before_sup;
-    try (eauto; tauto) *)
-    
-
+    inv_ws.
   -
-  repeat inv_sup; auto.
-
-  
-
-(*
-      repeat expand_let_pairs; simpl in *; auto;
-        try(
-          repeat dest_range; simpl in *;
-          repeat break_let;
-          repeat do_before_sup;
-
-          try (inv_ws; eauto; tauto);
-
-          repeat inv_sup; auto;
-          tauto)
- *)
-  (*
-  -
-
-    inv H0; auto. *)
-  -
-
     repeat inv_sup; auto.
-
-    (*
-
-    repeat expand_let_pairs.
-    repeat apply before_sup in H3.
-    inv H3; auto. *)
+  -
+    repeat inv_sup; auto.
   -
     cbn.
     apply IHwell_formed_r2.
@@ -504,54 +199,12 @@ Proof.
     cbn in *.
     do_before_sup.
     eassumption.
-
-    (*
-
-    
-
-   
-    
-    repeat apply before_sup in H4; auto.
-
-    
-    
-    
-    apply IHwell_formed_r2 in H4; auto. *)
-
-    
   -
     repeat do_before_sup.
     solve_by_inversion.
-
-    (*
-
-    repeat apply before_sup in H4.
-    solve_by_inversion.
-    (*
-    inv H4; auto. *)
-*)
-    
   -
     do_before_sup.
     solve_by_inversion.
-
-    (*
-
-    repeat expand_let_pairs.
-    repeat apply before_sup in H5.
-    inv H5; auto. *)
-
-    (*
-  -
-     do_before_sup.
-    solve_by_inversion.
-    repeat expand_let_pairs.
-    repeat apply before_sup in H5.
-    inv H5; auto.
-  -
-    repeat expand_let_pairs.
-    inv H6; eauto.
-*)
 Qed.
 
 (*
@@ -583,130 +236,20 @@ Proof.
 Qed.
 *)
 
+Check anno.
 (** lseq is associative relative to the event semantics *)
 
-(*
-
-Lemma firstn_gt: forall (ls: list nat) m n,
-    m >= n ->
-    firstn n (firstn m ls) = firstn n ls.
-Proof.
-  Search (firstn _ (firstn _ _)).
-
-  intros.
-  pose firstn_firstn.
-  pose (e nat ls n m).
-  assert (Init.Nat.min n m = n).
-  {
-    lia.
-  }
-  congruence.
-Defined.
-
-Lemma skipn_firstn_len: forall (ls:list nat) n m,
-    (firstn n (skipn m ls)) =
-    (skipn m (firstn (m + n) ls)).
-Proof.
-  intros.
-  Search (firstn (_ + _)).
-  eapply firstn_skipn_comm.
-Defined.
-
-Lemma skipn_assoc: forall (ls:list nat) n m,
-    (skipn n (skipn m ls)) =
-    (skipn (m + n) ls).
-Proof.
-  induction ls; intros.
-  -
-    repeat rewrite skipn_nil.
-    tauto.
-  -
-    ff'.
-    destruct m.
-    +
-      ff'.
-    +
-      ff'.
-Defined.
-*)
-
-
-(*
 Lemma lseq_assoc:
-  forall t1 t2 t3 i p ls b n n' t' t'',
-    anno (lseq t1 (lseq t2 t3)) i ls b = Some (n, t') ->
-    anno (lseq (lseq t1 t2) t3) i ls b = Some (n',t'') ->
+  forall t1 t2 t3 i p e n n' t' t'',
+    anno (lseq t1 (lseq t2 t3)) i = (n, t') ->
+    anno (lseq (lseq t1 t2) t3) i = (n',t'') ->
   
     same_rel
-      (ev_sys t' p)
-      (ev_sys t'' p).
+      (ev_sys t' p e)
+      (ev_sys t'' p e).
 Proof.
   intros; simpl.
   repeat expand_let_pairs; simpl.
-  ff.
-  Check before_associative_pairs.
-  ff'.
-  assert ((List.firstn (nss t1) (List.firstn (nss t1 + nss t2) ls)) =
-          (List.firstn (nss t1) ls)) as HH.
-  {
-    eapply firstn_gt; lia.
-  }
-  
-  rewrite HH in *; clear HH.
-
-  rewrite Heqo3 in *; clear Heqo3.
-
-  ff.
-
-  assert (
-      (List.firstn (nss t2) (List.skipn (nss t1) ls)) =
-      (List.skipn (nss t1) (List.firstn (nss t1 + nss t2) ls))) as HH.
-  {
-    eapply skipn_firstn_len.
-  }
-
-  ff.
-
-  repeat find_rewrite.
-
-  (*
-  
-  rewrite HH in *; clear HH.
-
-  rewrite Heqo2 in *; clear Heqo2. *)
-  ff.
-
-
-  
-
-  assert (
-      (List.skipn (nss t2) (List.skipn (nss t1) ls)) =
-      (List.skipn (nss t1 + nss t2) ls)) as HHH.
-  {
-    eapply skipn_assoc.
-  }
-
-  
-
-  repeat find_rewrite.
-
-  invc Heqo0.
-  
-  (*
-  repeat find_inversion.
-  ff.
-
-  rewrite HH in *; clear HH.
-
-  rewrite Heqo0 in *; clear Heqo0.
-  ff.     
-   *)
-  
-  (*
-  rewrite Heqo0 in *. *)
-  (*
-  inv Heqo4. *)
+  ff; repeat find_rewrite; ff.
   apply before_associative_pairs.
 Qed.
-
-*)

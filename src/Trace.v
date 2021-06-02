@@ -276,16 +276,7 @@ Inductive trace: AnnoTerm -> Plc -> Evidence ->
     trace (abpar r s x y) p e
           ((Term_Defs.split (fst r) p)
              :: tr2 ++
-             [(join (pred (snd r)) p)])
-          (*
-| tbpar: forall r lr s x y p tr0 tr1 tr2 (*xi xi'*) yi yi',
-    trace x p tr0 ->
-    trace y p tr1 ->
-    shuffle tr0 tr1 tr2 ->
-    trace (abpar r lr (*(xi,xi')*) (yi,yi') s x y) p
-          ((splitp (fst r) (*xi*) yi p)
-             :: tr2 ++
-             [(joinp (pred (snd r)) (*xi'*) yi' yi' p)]) *) .
+             [(join (pred (snd r)) p)]).
 Hint Resolve tasp : core.
 
 Lemma trace_length:
@@ -299,27 +290,6 @@ Proof.
            try find_apply_lem_hyp shuffle_length;
            lia).
 Defined.
-(*
-  -
-    find_eapply_hyp_hyp.
-    lia.
-    
-
-
-  
-  - apply IHt in H7; lia.
-  - apply IHt1 in H6.
-    apply IHt2 in H7; lia.
-    
-  - apply IHt1 in H7.
-    apply IHt2 in H8.
-    rewrite app_length; simpl in *; lia.
-    
-  - apply IHt1 in H9.
-    apply IHt2 in H10.
-    apply shuffle_length in H11; lia. 
-Qed.
-*)
 
 (** The events in a trace correspond to the events associated with an
     annotated term, a place, and some evidence. *)
@@ -359,32 +329,16 @@ Proof.
   - induction H0; inv_wfr.
     +
       destruct x; do_nodup.
-
-      (*
-      nodup_facts
-
-      inv H1; try inv H.
-      destruct x; constructor; auto. *)
     +
       inv_in.
-      (*
-      
-
-      inv H1. *)
       constructor; auto.
       rewrite in_app_iff in *.
       destruct_disjunct.
       eauto.
-
       inv_in; try solve_by_inversion.
-      
-(*
-      invc H2; try solve_by_inversion. *)
       apply evtsattrpy.
       lia.
-
-      (*
-      
+      (*   
       eauto.
       eapply IHtrace.
       eassumption.
@@ -408,83 +362,28 @@ Proof.
         
     +
       inv_in; subst; try solve_by_inversion.
-      (*
-      
-
-      destruct H1; subst; try solve_by_inversion. *)
-      (*
-      apply evtsbseqsplit; auto. *)
       rewrite in_app_iff in *; destruct_disjunct.
       apply evtsbseql; auto.
       rewrite in_app_iff in *; destruct_disjunct.
       apply evtsbseqr; auto.
       inv_in; subst; try solve_by_inversion.
-      (*
-      destruct H0; subst; try solve_by_inversion. *)
       repeat find_rewrite.
-      (*
-      rewrite H10. *)
-      apply evtsbseqjoin; auto.
-
-
-      (*
-    +
-      inv_in; subst; try solve_by_inversion.
-      (*
-      
-
-      destruct H1; subst; try solve_by_inversion. *)
-      (*
-      apply evtsbseqsplit; auto. *)
-      rewrite in_app_iff in *; destruct_disjunct.
-      apply evtsbparl; auto.
-      rewrite in_app_iff in *; destruct_disjunct.
-      apply evtsbparr; auto.
-      inv_in; subst; try solve_by_inversion.
-      (*
-      destruct H0; subst; try solve_by_inversion. *)
-      repeat find_rewrite.
-      (*
-      rewrite H10. *)
-      apply evtsbparjoin; auto.
-*)
-
-
-
-      
-      
+      apply evtsbseqjoin; auto. 
     +
       
 
       inv_in; subst; try solve_by_inversion.
-      (*
-      apply evtsbparsplit; auto. *)
       rewrite in_app_iff in *; destruct_disjunct.
-      (* find_eapply_lem_hyp shuffle_in. *)
-      
       apply shuffle_in with (e:=v) in H0.
-      (* repeat find_apply_hyp_hyp. *)
-      (*apply H0 in H1. *)
       destruct H0.
       repeat concludes.
       destruct_disjunct.
-      
-      (*
-      apply H0 in H.
-      destruct H.
-       *)
       
       apply evtsbparl; auto.
       apply evtsbparr; auto.
       inv_in.
       repeat find_rewrite.
       solve_by_inversion.
-
-      (*
-      (*
-      rewrite H13 in H; simpl in H.
-      destruct H; try tauto; subst. *)
-      apply evtsbparjoin; auto. *)
 
   - induction H0; inv H.
     + inv H1; destruct r as [i j]; simpl in *; auto.
@@ -503,26 +402,6 @@ Proof.
       inv H1; auto.
       repeat find_rewrite.
       auto.
-
-
-      (*
-    + simpl.
-      rewrite in_app_iff.
-      rewrite in_app_iff.
-      simpl.
-      inv H1; auto.
-      repeat find_rewrite.
-      auto.
-       *)
-      
-
-
-      
-      (*
-      rewrite H12 in *.
-      auto. *)
-
-      
       
     + simpl.
       rewrite in_app_iff.
@@ -537,18 +416,6 @@ Proof.
            try find_eapply_lem_hyp shuffle_in_right; eauto; tauto);
         try
           (repeat find_rewrite; auto; tauto).
-
-      (*
-      *
-        find_apply_hyp_hyp; auto.
-        find_eapply_lem_hyp shuffle_in_right; eauto.
-        
-
-        apply IHtrace1 in H8; auto.
-        eapply shuffle_in_left in H0; eauto.
-      * apply IHtrace2 in H10; auto.
-        eapply shuffle_in_right in H0; eauto.
-      * repeat find_rewrite; simpl; auto. *)
 Qed.
 
 Lemma trace_range:
@@ -590,8 +457,6 @@ Proof.
   eapply events_injective; eauto.
 Qed.
 
-
-
 Ltac tr_wf :=
   match goal with
   | [H: well_formed_r ?t,
@@ -600,13 +465,6 @@ Ltac tr_wf :=
     assert_new_proof_by (fst (range t) <= ev v < snd (range t))
                         ltac:(eapply trace_range; [apply H | apply H' | apply H''])
   end.
-
-(*
-Ltac inv_in' :=
-  match goal with
-  | H:In _ _ |- _ => invc H
-  end.
-*)
 
 Lemma nodup_trace:
   forall t p e tr,
@@ -619,27 +477,15 @@ Proof.
   - destruct r as [i j]; simpl in *; subst; simpl.
     apply NoDup_cons.
     + intro.
-      rewrite in_app_iff in *.
-      
+      rewrite in_app_iff in *. 
       destruct_disjunct.
-      (*
-      destruct H1. *)
       *
         find_eapply_lem_hyp trace_range; eauto.
         simpl in *.
         lia.
-        (*
-
-        eapply trace_range in H12; eauto.
-        simpl in *.
-        lia. *)
       *
         inv_in.
         solve_by_inversion.
-        (*
-        inv H1.
-        discriminate H2.
-        inv H2. *)
     +
       apply nodup_append; unfold disjoint_lists; auto; intros.
       * eapply IHt; eauto.
@@ -649,327 +495,61 @@ Proof.
         find_eapply_lem_hyp trace_range; eauto.
         simpl in *.
         lia.
-
-        (*
-
-        inv H2.
-        eapply trace_range in H12; eauto.
-        simpl in *.
-        lia.
-        solve_by_inversion. *)
-  - apply nodup_append; unfold disjoint_lists; auto; intros; eauto.
-
-    (*
-    eapply IHt1; eauto.
-    eapply IHt2; eauto.
-     *)
-    
-    (*
-    find_eapply_lem_hyp trace_range; eauto.
-    find_eapply_lem_hyp trace_range; eauto.
-    lia. *)
-
+  -
+    apply nodup_append; unfold disjoint_lists; auto; intros; eauto.
     repeat tr_wf.
     lia.
-
-    
   -
     dest_range'; simpl in *; subst; simpl.
-    (*
-
-    destruct r as [i j]; simpl in *; subst; simpl. *)
       
     apply NoDup_cons.
     + intro.
       repeat rewrite in_app_iff in *;
       repeat destruct_disjunct;
-        try solve_by_inversion.
-      (*
-        try (tr_wf;
-             simpl in *;
-             lia). *)
-      
+        try solve_by_inversion.     
       *
-        (*
-        find_eapply_lem_hyp trace_range; eauto.
-        repeat find_rewrite.
-        simpl in *. lia. *)
-
         tr_wf.
         simpl in *.
         lia.
-        (*
-
-        eapply trace_range in H13; eauto.
-        simpl in H13.
-        lia. *)
       *
         repeat tr_wf.
-
-        (*
-
-        eapply trace_range in H14; eauto. *)
         simpl in *.
         Locate well_formed_range.
         Check well_formed_range.
         repeat find_eapply_lem_hyp well_formed_range_r; auto.
         lia.
-        (*
-        apply well_formed_range_r in H6; auto.
-        lia. *)
       * inv_in.
         solve_by_inversion.
-        (*
-        discriminate H2.
-        solve_by_inversion. *)
     + apply nodup_append; unfold disjoint_lists; auto; intros.
       * eapply IHt1; eauto.
       * apply nodup_append; unfold disjoint_lists; auto; intros;
           try eauto;
           try do_nodup;
           try (inv_in; repeat tr_wf; simpl in *; lia).
-
-        (*
-        (*
-        -- eapply IHt2; eauto.
-         *)
-        
-        --
-          do_nodup.
-          (*
-
-          apply NoDup_cons.
-           intro HH; inv HH.
-           constructor. *)
-        --
-
-          inv_in.
-          repeat tr_wf.
-          simpl in *; lia.
-
-          (*
-          
-
-          inv H2.
-           eapply trace_range in H14; eauto.
-           simpl in H14.
-           lia.
-           solve_by_inversion. *)
-
-         *)
-
-
-        
       *
-
         rewrite in_app_iff in *; destruct_disjunct.
-
-        (*
-
-
-        apply in_app_iff in H2; destruct H2. *)
-
         repeat tr_wf.
         lia.
-
-        (*
-        
-        eapply trace_range in H13; eauto.
-        eapply trace_range in H14; eauto.
-        lia. *)
 
         inv_in.
         repeat tr_wf.
         repeat find_eapply_lem_hyp well_formed_range_r; auto.
         simpl in *.
-        lia.
-
-        (*
-
-        
-        inv H2.
-        eapply trace_range in H13; eauto.
-        simpl in H13.
-        apply well_formed_range_r in H7; auto.
-        lia.
-        solve_by_inversion.
-         *)
-
-
-
-
-
-(*
-        
-
+        lia.   
   -
     dest_range'; simpl in *; subst; simpl.
-    (*
-
-    destruct r as [i j]; simpl in *; subst; simpl. *)
-      
-    apply NoDup_cons.
-    + intro.
-      repeat rewrite in_app_iff in *.
-      repeat destruct_disjunct;
-        try solve_by_inversion.
-      (*
-        try (tr_wf;
-             simpl in *;
-             lia). *)
-
-      (*
-      *
-
-        (*
-        find_eapply_lem_hyp trace_range; eauto.
-        repeat find_rewrite.
-        simpl in *.
-         *)
-        
-
-        (*
-        Locate tr_wf.
-
-        
-        repeat tr_wf.
-        simpl in *.
-        lia.
-
-        (*
-
-        eapply trace_range in H13; eauto.
-        simpl in H13.
-        lia. *)
-       *)
-       *)
-      
-
-      
-      *
-        repeat tr_wf.
-
-        (*
-
-        eapply trace_range in H14; eauto. *)
-        simpl in *.
-        Locate well_formed_range.
-        Check well_formed_range.
-        repeat find_eapply_lem_hyp well_formed_range_r; auto.
-
-
-        (*
-        apply well_formed_range_r in H6; auto.
-        lia. *)
-        simpl in *.
-        repeat tr_wf.
-        lia.
-      
-      * inv_in.
-        solve_by_inversion.
-        (*
-        discriminate H2.
-        solve_by_inversion. *)
-    + apply nodup_append; unfold disjoint_lists; auto; intros.
-      * eapply IHt1; eauto.
-      * apply nodup_append; unfold disjoint_lists; auto; intros;
-          try eauto;
-          try do_nodup;
-          try (inv_in; repeat tr_wf; simpl in *; lia).
-
-        (*
-        (*
-        -- eapply IHt2; eauto.
-         *)
-        
-        --
-          do_nodup.
-          (*
-
-          apply NoDup_cons.
-           intro HH; inv HH.
-           constructor. *)
-        --
-
-          inv_in.
-          repeat tr_wf.
-          simpl in *; lia.
-
-          (*
-          
-
-          inv H2.
-           eapply trace_range in H14; eauto.
-           simpl in H14.
-           lia.
-           solve_by_inversion. *)
-
-         *)
-
-
-        
-      *
-
-        rewrite in_app_iff in *; destruct_disjunct.
-
-        (*
-
-
-        apply in_app_iff in H2; destruct H2. *)
-
-        repeat tr_wf.
-        lia.
-
-        (*
-        
-        eapply trace_range in H13; eauto.
-        eapply trace_range in H14; eauto.
-        lia. *)
-
-        inv_in.
-        repeat tr_wf.
-        repeat find_eapply_lem_hyp well_formed_range_r; auto.
-        simpl in *.
-        lia.
-
-        (*
-
-        
-        inv H2.
-        eapply trace_range in H13; eauto.
-        simpl in H13.
-        apply well_formed_range_r in H7; auto.
-        lia.
-        solve_by_inversion.
-         *)
-
-*)
-
-        
-       
-      
-  -
-    dest_range'; simpl in *; subst; simpl.
-    (*
-
-
-
-    destruct r as [i j]; simpl in *; subst; simpl. *)
     apply NoDup_cons.
     + intro HH.
       rewrite in_app_iff in *; destruct_disjunct;
         try (inv_in; solve_by_inversion; tauto).
       *
         find_eapply_lem_hyp shuffle_in; eauto.
-        (*
-
-        eapply shuffle_in in H1; eauto. *)
         
         destruct_disjunct;
           try (inv_in; solve_by_inversion);
           try solve_by_inversion;
           try (tr_wf;
-               simpl in *;
+               simpl in * ;
                lia).
         
         --
@@ -977,24 +557,6 @@ Proof.
           simpl in *.
           repeat find_eapply_lem_hyp well_formed_range_r; auto.
           lia.
-
-
-          (*
-          (*
-
-          eapply trace_range in H16; eauto.
-           simpl in H16.
-           lia. *)
-        -- eapply trace_range in H17; eauto.
-           simpl in H17.
-           apply well_formed_range_r in H9; auto.
-           lia.
-         
-        
-      
-        inv H1.
-        discriminate H2.
-        solve_by_inversion. *)
         
     + apply nodup_append; unfold disjoint_lists; auto; intros.
       *
@@ -1002,34 +564,13 @@ Proof.
         find_eapply_lem_hyp shuffle_nodup_append;
           unfold disjoint_lists; auto; intros;
             eauto.
-
-        (*
-
-        find_eapply_lem_hyp trace_range; eauto.
-
-
-        apply shuffle_nodup_append in H18;
-          unfold disjoint_lists; auto; intros.
-        eapply IHt1; eauto.
-        eapply IHt2; eauto.
-        eapply trace_range in H16; eauto.
-        eapply trace_range in H17; eauto. *)
         repeat tr_wf.
         simpl in *.
         lia.
       *
         do_nodup.
-        (*
-
-        apply NoDup_cons.
-        intro HH.
-        solve_by_inversion.
-        constructor. *)
       *
         inv_in.
-        (*
-
-        inv H2. *)
         --
           find_eapply_lem_hyp shuffle_in; eauto;
             destruct_disjunct;
@@ -1037,29 +578,7 @@ Proof.
               simpl in *;  
               try find_eapply_lem_hyp well_formed_range_r; eauto;
                 simpl in * ;
-                lia.
-
-          (*
-            
-          (*
-
-          eapply shuffle_in in H1; eauto.
-           destruct H1. *)
-
-          (*
-           eapply trace_range in H16; eauto.
-           simpl in H16. *)
-           apply well_formed_range_r in H9; auto.
-           lia.
-           eapply trace_range in H17; eauto.
-           simpl in H17.
-           lia.
-     
-    
-
-        -- solve_by_inversion.
-           *)
-          
+                lia.         
 Qed.
 
 Ltac do_shuf_l :=
@@ -1086,223 +605,61 @@ Lemma evsys_tr_in:
     In ev0 tr.
 Proof.
   intros.
-  (*
-  induction H0.
-  inv H.
-  simpl in H1.
-  expand_let_pairs. inv H1. simpl. auto. *)
-  
- 
   induction H0; inv_wfr; simpl in *;
     try expand_let_pairs; do_evin; simpl; auto;
       try (left; solve_by_inversion).
-
-  (*
-  - left. solve_by_inversion. *)
   -
-
     rewrite in_app_iff in *.
     right.
     do_evin; eauto.
     do_evin.
-    try (try right; left; solve_by_inversion).
-
-    (*
-    right. simpl. eauto.
-    +
-    eauto.
-    do_evin.
-    
-    (*
-
-      apply IHtrace in H5; auto.
-      rewrite in_app_iff; auto. *)
-    + inv H5. rewrite in_app_iff.
-      right. simpl. left. auto.
-     *)
-    
+    try (try right; left; solve_by_inversion).  
   -
     rewrite in_app_iff; auto.
-    (*
-
-    
-    apply IHtrace1 in H5; auto.
-    rewrite in_app_iff; auto. *)
   -
-    rewrite in_app_iff; auto.
-
-    (*
-
-    apply IHtrace2 in H6; auto.
-    rewrite in_app_iff; auto.
-     *)
-    
-
-    (*
-    
-  - left. solve_by_inversion.
-     *)
-
-    
-  - right.
+    rewrite in_app_iff; auto.   
+  -
+    right.
     rewrite in_app_iff in *.
     do_evin; auto.
-
-    (*
-
-
-    inv H3; auto. *)
     +
       do_evin; auto;
         eauto.
       rewrite in_app_iff; auto.
-
-      (*
-
-      (*
-
-      inv H4; auto. *)
-      * apply IHtrace1 in H6; auto.
-        rewrite in_app_iff; auto.
-      * apply IHtrace2 in H7; auto.
-        rewrite in_app_iff.
-        right; rewrite in_app_iff; auto. *)
     +
       do_evin; auto.
-      (*
-      inv H4; auto. *)
       (repeat rewrite in_app_iff; right).
       right.
       left.
-      auto.
-      (*
-      rewrite in_app_iff.
-      right.
-      simpl.
-      auto.
-      left.
-      simpl.
-      repeat (rewrite in_app_iff; right).
-      simpl; left; auto. *)
-
-
-(*
-
-      
+      auto.    
   - right.
-    rewrite in_app_iff in *.
     do_evin; auto.
-
-    (*
-
-
-    inv H3; auto. *)
-    +
-      do_evin; auto;
-        eauto.
-      rewrite in_app_iff; auto.
-
-      (*
-
-      (*
-
-      inv H4; auto. *)
-      * apply IHtrace1 in H6; auto.
-        rewrite in_app_iff; auto.
-      * apply IHtrace2 in H7; auto.
-        rewrite in_app_iff.
-        right; rewrite in_app_iff; auto. *)
     +
       do_evin; auto.
-      (*
-      inv H4; auto. *)
-      (repeat rewrite in_app_iff; right).
-      right.
-      left.
-      auto.
-      (*
-      rewrite in_app_iff.
-      right.
-      simpl.
-      auto.
-      left.
-      simpl.
-      repeat (rewrite in_app_iff; right).
-      simpl; left; auto. *)
-
-*)
-
-      
-
-      
-      (*
-  - left. solve_by_inversion.
-       *)
-
-      
-      
-  - right.
-
-    do_evin; auto.
-    (*
-
-    inv H4; auto. *)
-    +
-      do_evin; auto.
-      (*
-
-      inv H5; auto. *)
       *
         repeat find_apply_hyp_hyp.
-        (*
-        apply IHtrace1 in H6; auto. *)
         do_shuf_l.
-
-        (*
-        
-
-        
-        find_eapply_lem_hyp shuffle_in_left
-        eapply shuffle_in_left in H0; eauto. *)
         rewrite in_app_iff; auto.
       *
         find_eapply_hyp_hyp; auto.
 
         do_shuf_r.
         rewrite in_app_iff; auto.
-
-        (*
-        
-
-        apply IHtrace2 in H6; auto.
-        eapply shuffle_in_right in H0; eauto.
-        rewrite in_app_iff; auto. *)
     +
       do_evin.
-      (*
-      inv H5. *)
       rewrite in_app_iff; right; simpl; auto.
-      (*
-      apply in_app_iff; right; simpl; auto. *)
 Qed.
-
-
-(*
-Ltac inv_step :=
-  match goal with
-  | H:step (?C _) _ _ |- _ => inv H
-  end.
-
-
-Ltac inv_traceS' :=
-  match goal with
-  | H:traceS _ _ |- _ => inv H
-  end.
-*)
 
 Ltac inv_prec :=
   match goal with
   | H:prec (?C _) _ _ |- _ => inv H
+  end.
+
+Ltac do_evin2 :=
+  match goal with
+  | [H:ev_in _ (?C _),
+       H':ev_in _ (?D _)|- _] =>
+    inv H; inv H'
   end.
 
 (** The traces associated with an annotated term are compatible with
@@ -1319,320 +676,118 @@ Proof.
   induction H0; inv H; simpl in H1;
     try expand_let_pairs;
     inv_prec; simpl; auto. 
-
- (* inv H1; simpl; auto. *)
   -
-    Print do_evin.
-    Ltac do_evin2 :=
-      match goal with
-      | [H:ev_in _ (?C _),
-           H':ev_in _ (?D _)|- _] =>
-         inv H; inv H'
-      end.
-
     do_evin2.
-
-    (*
-
-    inv H12; inv H11. *)
     +
       find_eapply_lem_hyp evsys_tr_in; eauto.
-      (*
-      eapply evsys_tr_in in H4; eauto. *)
       apply earlier_cons; auto.
       apply in_app_iff; auto.
     +
       do_evin.
-      (*
-      inv H4. *)
       apply earlier_cons; auto.
       apply in_app_iff; auto; right; simpl; auto.
   - solve_by_inversion.
   -
     inv_prec.
-    (*
-
-    inv H11. *)
     +
       do_evin.
-      (*
-
-      inv H13. *)
       find_eapply_lem_hyp evsys_tr_in; eauto.
-      (*
-      eapply evsys_tr_in in H12; eauto. *)
       apply earlier_cons_shift; auto.
       apply earlier_append; auto; simpl; auto.
     +
       find_eapply_hyp_hyp; eauto.
-      (*
-
-      eapply IHtrace in H6; eauto. *)
       apply earlier_cons_shift; auto.
       apply earlier_left; auto.
     + solve_by_inversion.
   -
     find_eapply_lem_hyp evsys_tr_in; eauto.
     find_eapply_lem_hyp evsys_tr_in; eauto.
-
-    (*
-    eapply evsys_tr_in in H5; eauto.
-    eapply evsys_tr_in in H6; eauto. *)
     apply earlier_append; auto.
   -
     find_apply_hyp_hyp; auto.
-
-    (*
-    apply IHtrace1 in H5; auto. *)
     apply earlier_left; auto.
   -
     find_apply_hyp_hyp; auto.
-    (*
-
-    apply IHtrace2 in H6; auto. *)
-    apply earlier_right; auto.
-
-    
+    apply earlier_right; auto.   
   -
     do_evin2.
-    (*
-
-    inv H12; inv H11. *)
     +
       do_evin.
-      (*
-
-      inv H3. *)
       *
         find_eapply_lem_hyp evsys_tr_in; eauto.
-        (*
-
-        eapply evsys_tr_in in H4; eauto. *)
         apply earlier_cons; auto.
         apply in_app_iff; auto.
       *
-        find_eapply_lem_hyp evsys_tr_in; eauto.
-        
+        find_eapply_lem_hyp evsys_tr_in; eauto.      
         apply earlier_cons; auto.
-        (*
-
-        
-        eapply evsys_tr_in in H4; eauto.
-        apply earlier_cons; auto. *)
         apply in_app_iff; right;
           apply in_app_iff; simpl; auto.
     +
       do_evin.
-      (*
-
-      inv H3. *)
       apply earlier_cons; auto.
       repeat (apply in_app_iff; right).
       simpl; auto.
-  - solve_by_inversion.
-    
+  -
+    solve_by_inversion.
   -
     inv_prec.
-    (*
-
-    inv H11. *)
     +
       do_evin2.
-      (*
-
-      inv H13. inv H12. *)
       *
         find_eapply_lem_hyp evsys_tr_in; eauto.
-        (*
-
-        eapply evsys_tr_in in H3; eauto. *)
         apply earlier_cons_shift; auto.
         apply earlier_append; auto.
         apply in_app_iff; right; simpl; auto.
       *
         find_eapply_lem_hyp evsys_tr_in; eauto.
-        (*
-
-        eapply evsys_tr_in in H3; eauto. *)
         apply earlier_cons_shift; auto.
         apply earlier_right; auto.
         apply earlier_append; simpl; auto.
     +
       inv_prec.
-      (*
-
-      inv H12. *)
       *
         find_eapply_lem_hyp evsys_tr_in; eauto.
         find_eapply_lem_hyp evsys_tr_in; eauto.
 
-        (*
-        eapply evsys_tr_in in H14; eauto.
-        eapply evsys_tr_in in H13; eauto. *)
         apply earlier_cons_shift; auto.
         apply earlier_append; auto.
         apply in_app_iff; left; auto.
       *
         find_apply_hyp_hyp; auto.
-        (*
-
-        apply IHtrace1 in H6; auto. *)
         apply earlier_cons_shift; auto.
         apply earlier_left; auto.
       *
         find_apply_hyp_hyp; auto.
-        (*
-        apply IHtrace2 in H7; auto. *)
         apply earlier_cons_shift; auto.
         apply earlier_right; auto.
         apply earlier_left; auto.
-    + solve_by_inversion.
+    +
+      solve_by_inversion.
 
-
-
-      (*
   -
     do_evin2.
-    (*
-
-    inv H12; inv H11. *)
-    +
-      do_evin.
-      (*
-
-      inv H3. *)
-      *
-        find_eapply_lem_hyp evsys_tr_in; eauto.
-        (*
-
-        eapply evsys_tr_in in H4; eauto. *)
-        apply earlier_cons; auto.
-        apply in_app_iff; auto.
-      *
-        find_eapply_lem_hyp evsys_tr_in; eauto.
-        
-        apply earlier_cons; auto.
-        (*
-
-        
-        eapply evsys_tr_in in H4; eauto.
-        apply earlier_cons; auto. *)
-        apply in_app_iff; right;
-          apply in_app_iff; simpl; auto.
-    +
-      do_evin.
-      (*
-
-      inv H3. *)
-      apply earlier_cons; auto.
-      repeat (apply in_app_iff; right).
-      simpl; auto.
-  - solve_by_inversion.
-    
-  -
-    inv_prec.
-    (*
-
-    inv H11. *)
-    +
-      do_evin2.
-      (*
-
-      inv H13. inv H12. *)
-      *
-        find_eapply_lem_hyp evsys_tr_in; eauto.
-        (*
-
-        eapply evsys_tr_in in H3; eauto. *)
-        apply earlier_cons_shift; auto.
-        apply earlier_append; auto.
-        apply in_app_iff; right; simpl; auto.
-      *
-        find_eapply_lem_hyp evsys_tr_in; eauto.
-        (*
-
-        eapply evsys_tr_in in H3; eauto. *)
-        apply earlier_cons_shift; auto.
-        apply earlier_right; auto.
-        apply earlier_append; simpl; auto.
-    +
-      inv_prec.
-      (*
-
-      inv H12. *)
-      *
-        find_eapply_lem_hyp evsys_tr_in; eauto.
-        find_eapply_lem_hyp evsys_tr_in; eauto.
-
-        (*
-        eapply evsys_tr_in in H14; eauto.
-        eapply evsys_tr_in in H13; eauto. *)
-        apply earlier_cons_shift; auto.
-        apply earlier_append; auto.
-        apply in_app_iff; left; auto.
-      *
-        find_apply_hyp_hyp; auto.
-        (*
-
-        apply IHtrace1 in H6; auto. *)
-        apply earlier_cons_shift; auto.
-        apply earlier_left; auto.
-      *
-        find_apply_hyp_hyp; auto.
-        (*
-        apply IHtrace2 in H7; auto. *)
-        apply earlier_cons_shift; auto.
-        apply earlier_right; auto.
-        apply earlier_left; auto.
-    + solve_by_inversion.
-
-*)
-      
-
-      
-      
-      
-  -
-    do_evin2.
-    (*
-
-    inv H7. inv H9. *)
     +
       do_evin;
         find_eapply_lem_hyp evsys_tr_in; eauto.
-      (*
-      
-      inv H4; eapply evsys_tr_in in H5; eauto. *)
       * apply earlier_cons; auto.
         Check shuffle_in_left.
         find_eapply_lem_hyp shuffle_in_left.
-        Focus 2.
-        eauto.
-
-        (*
-        apply shuffle_in_left with
-            (es1:=tr1)(es2:=tr2) in H5; auto.  *)
+        2: {
+          eauto.
+        }
         erewrite in_app_iff; left; auto.
-        (*
-        eapply in_app_iff; left; auto. *)
       * apply earlier_cons; auto.
         find_eapply_lem_hyp shuffle_in_right.
-        Focus 2.
-        eauto.
-        (*
-        apply shuffle_in_right with (e:=ev1) in H0; auto. *)
+        2: {
+          eauto.
+        }
         apply in_app_iff; left; auto.
     +
       do_evin.
-      (*
-
-      inv H4. *)
       apply earlier_cons; auto.
       apply in_app_iff; right; simpl; auto.
-  - solve_by_inversion.
-
-
-
+  -
+    solve_by_inversion.
   -
     eapply earlier_cons_shift.
     
@@ -1662,19 +817,19 @@ Proof.
         econstructor.
         tauto.
     +
-      Print prec.
       eapply earlier_left.
       inversion H13; subst.
-      
       ++
         eapply shuffle_earlier_left.
-        Focus 2.
-        eassumption.
+        2: {
+          eassumption.
+        }   
         eauto.
       ++
         eapply shuffle_earlier_right.
-        Focus 2.
-        eassumption.
+        2: {
+          eassumption.
+        }
         eauto.
     +
       solve_by_inversion.
