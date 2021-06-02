@@ -7,6 +7,8 @@ Author:  Adam Petz, ampetz@ku.edu
 Require Import Term_Defs Term ConcreteEvidence GenStMonad Axioms_Io.
 Require Import Maps StructTactics.
 
+Require Import Coq.Program.Tactics.
+
 Require Import List.
 Import ListNotations.
 
@@ -276,7 +278,30 @@ Ltac monad_unfold :=
   simpl in *.
 
 
+Ltac vmsts :=
+  simpl in *;
+  repeat
+    match goal with
+    | [H: cvm_st |- _] => destruct H
+    end.
 
+Ltac amsts :=
+  repeat match goal with
+         | H:cvm_st |- _ => destruct H
+         end.
+
+Ltac pairs :=
+  simpl in *;
+  vmsts;
+  repeat
+    match goal with
+    | [H: (Some _, _) =
+          (Some _, _) |- _ ] => invc H; monad_unfold
+                                                          
+    | [H: {| st_ev := _; st_trace := _; st_pl := _(*; st_store := _*) |} =
+          {| st_ev := _; st_trace := _; st_pl := _ (*; st_store := _*) |} |- _ ] =>
+      invc H; monad_unfold
+    end; destruct_conjs; monad_unfold.
 
 (*
 Definition eval_asp (a:ASP) (e:EvidenceC) : EvidenceC :=
