@@ -18,20 +18,20 @@ Set Nested Proofs Allowed.
 Lemma st_trace_irrel : forall t tr1 tr1' tr2 tr2' e e' e'' p p' p'',
     well_formed_r t ->
     copland_compile t
-           {| st_ev := e;  st_trace := tr1; st_pl := p (*;  st_store := o*)  |} =
-    (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p' (*; st_store := o'*) |}) ->
+           {| st_ev := e;  st_trace := tr1; st_pl := p |} =
+    (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p' |}) ->
 
     copland_compile t
-           {| st_ev := e;  st_trace := tr2; st_pl := p(*;  st_store := o*) |} =
-    (Some tt, {| st_ev := e''; st_trace := tr2'; st_pl := p''(*; st_store := o''*) |}) ->
+           {| st_ev := e;  st_trace := tr2; st_pl := p |} =
+    (Some tt, {| st_ev := e''; st_trace := tr2'; st_pl := p'' |}) ->
     
-    e' = e'' /\ p' = p'' (*/\ o' = o''*) .
+    e' = e'' /\ p' = p''.
 Proof.
   intros.
 
   assert (st_ev
       (execSt (copland_compile t)
-              {| st_ev := e;  st_trace := tr2; st_pl := p (*;  st_store := o*)  |}) = e').
+              {| st_ev := e;  st_trace := tr2; st_pl := p |}) = e').
   eapply trace_irrel_ev; eauto.
   unfold execSt in *.
   subst''.
@@ -39,17 +39,11 @@ Proof.
 
   assert (st_pl
             (execSt (copland_compile t)
-                    {| st_ev := e;  st_trace := tr2; st_pl := p (*;  st_store := o*)  |}) = p').
+                    {| st_ev := e;  st_trace := tr2; st_pl := p |}) = p').
   eapply trace_irrel_pl; eauto.
   unfold execSt in *.
   subst''.
   simpl in *.
-
-  (*
-  assert (st_store
-            (execSt (copland_compile t)
-                    {| st_ev := e;  st_trace := tr2; st_pl := p (*;  st_store := o*)  |}) = o').
-  eapply trace_irrel_store; eauto. *)
   unfold execSt in *.
   subst''.
   simpl in *.
@@ -59,17 +53,16 @@ Defined.
 Lemma st_trace_cumul' : forall t m k e p v,
     well_formed_r t ->
     copland_compile t
-               {| st_ev := e; st_trace := m ++ k; st_pl := p (*; st_store := o*) |} =
+               {| st_ev := e; st_trace := m ++ k; st_pl := p |} =
     (Some tt, v) -> 
     st_trace
       ( execSt (copland_compile t)
-               {| st_ev := e; st_trace := m ++ k; st_pl := p(*; st_store := o*) |}) =
+               {| st_ev := e; st_trace := m ++ k; st_pl := p |}) =
     m ++
       st_trace
           (execSt (copland_compile t)
-                  {| st_ev := e; st_trace := k; st_pl := p(*; st_store := o*) |}).
+                  {| st_ev := e; st_trace := k; st_pl := p |}).
 Proof.
-  
   induction t; intros.
   -
     destruct r.
@@ -92,11 +85,11 @@ Proof.
     dohi.
     assert (
         StVM.st_trace
-          (snd (copland_compile t1 {| st_ev := e; st_trace := m ++ k; st_pl := p(*; st_store := o*) |}))
+          (snd (copland_compile t1 {| st_ev := e; st_trace := m ++ k; st_pl := p |}))
         =
         m ++
           StVM.st_trace
-          (snd (copland_compile t1 {| st_ev := e; st_trace := k; st_pl := p(*; st_store := o*) |}))).
+          (snd (copland_compile t1 {| st_ev := e; st_trace := k; st_pl := p |}))).
     eapply IHt1; eauto.
     repeat subst'.
     simpl in *.
@@ -104,11 +97,11 @@ Proof.
     assert (
         StVM.st_trace
           (snd (copland_compile t2
-           {| st_ev := st_ev0; st_trace := m ++ st_trace0; st_pl := st_pl0(*; st_store := st_store0*) |})) =
+           {| st_ev := st_ev0; st_trace := m ++ st_trace0; st_pl := st_pl0 |})) =
         m ++
           StVM.st_trace
           (snd (copland_compile t2
-           {| st_ev := st_ev0; st_trace := st_trace0; st_pl := st_pl0(*; st_store := st_store0*) |}))) as HH.
+           {| st_ev := st_ev0; st_trace := st_trace0; st_pl := st_pl0 |}))) as HH.
     eapply IHt2; eauto.
     repeat (subst'; simpl in * ).
     eauto.
@@ -129,12 +122,16 @@ Proof.
 
     assert (
         StVM.st_trace
-           (snd (copland_compile t1 {| st_ev := splitEv_l s e; st_trace := m ++ (k ++ [Term_Defs.split n p]); st_pl := p (*; st_store := o*) |})) =
+          (snd (copland_compile t1 {| st_ev := splitEv_l s e;
+                                      st_trace := m ++ (k ++ [Term_Defs.split n p]);
+                                      st_pl := p |})) =
          m ++
          StVM.st_trace
-         (snd (copland_compile t1 {| st_ev := splitEv_l s e; st_trace := k ++ [Term_Defs.split n p]; st_pl := p; (*st_store := o*) |}))).
+         (snd (copland_compile t1 {| st_ev := splitEv_l s e;
+                                     st_trace := k ++ [Term_Defs.split n p];
+                                     st_pl := p |}))).
     {
-      rewrite <- app_assoc in *. (*Heqp4. *)
+      rewrite <- app_assoc in *.
       eapply IHt1; eauto.
     }
     subst'.
@@ -145,21 +142,19 @@ Proof.
     subst.
 
     assert (
-         StVM.st_trace (snd (copland_compile t2{| st_ev := splitEv_r s e; st_trace := m ++ st_trace0; st_pl := st_pl0; (*st_store := st_store0*) |})) =
-         m ++ StVM.st_trace (snd (copland_compile t2 {| st_ev := splitEv_r s e; st_trace := st_trace0; st_pl := st_pl0; (*st_store := st_store0*) |}))
+        StVM.st_trace (snd (copland_compile t2{| st_ev := splitEv_r s e;
+                                                 st_trace := m ++ st_trace0;
+                                                 st_pl := st_pl0 |})) =
+        m ++ StVM.st_trace (snd (copland_compile t2 {| st_ev := splitEv_r s e;
+                                                       st_trace := st_trace0;
+                                                       st_pl := st_pl0 |}))
       ).
     eapply IHt2; eauto.
     subst'.
     df.
     tauto.
-    
   -
-    
-
-
-
     annogo.
-        
     do_wf_pieces.
     df.
     dosome.
@@ -175,92 +170,23 @@ Proof.
     
     df.
     subst.
-    (*
-    dohtac. *)
     dosome.
     df.
-    (*
-    destruct (map_get st_store5 n1); try solve_by_inversion.
-    df.
-
-    assert (map_get st_store0 n1 = Some (splitEv s1 e)).
-    {
-      eapply store_untouched; eauto.
-      econstructor.
-      df.
-      dohtac.
-      tauto.
-      invc H.
-      unfold not; intros.
-      unfold list_subset in *.
-      unfold incl in *.
-      invc H17.
-      unfold not in H4.
-      invc H5.
-      unfold not in *.
-      apply H4.
-      right.
-      apply in_or_app.
-      eauto.
-    }
-    rewrite H0 in *.
-    df.
-     
-    
-
-    Check always_some.
-    assert (o2 = Some tt).
-    {
-      eapply always_some; eauto.
-    }
-    subst.
-    df.
-     *)
-    
-
-
-    (*
-    eapply IHt1 in Heqp15.
-    Focus 2.
-    eassumption.
-    df.
-
-    vmsts.
-    df.
-    
-    subst'.
-
-    eapply IHt1 in Heqp5.
-    Focus 2.
-    eassumption.
-    df.
-    vmsts.
-    df.
-
-    subst'.
-    *)
-
-    
-    
-    
-   
 
     assert (
         StVM.st_trace
           (snd (copland_compile t1
                  {| st_ev := splitEv_l s e;
                     st_trace := m ++ (k ++ [Term_Defs.split n p]);
-                    st_pl := p;
-                    (*st_store := map_set o n1 (splitEv s1 e)*) |})) =
+                    st_pl := p |})) =
          m ++
          StVM.st_trace
          (snd (copland_compile t1
                                {| st_ev := splitEv_l s e;
                                   st_trace := k ++ [Term_Defs.split n p];
-                                  st_pl := p;
-                                  (*st_store := map_set o n1 (splitEv s1 e)*) |}))).
+                                  st_pl := p |}))).
     {
-      rewrite <- app_assoc in *. (*Heqp4. *)
+      rewrite <- app_assoc in *.
       eapply IHt1; eauto.
     }
     subst'.
@@ -274,126 +200,33 @@ Proof.
         StVM.st_trace (snd (copland_compile t2
                                             {| st_ev := splitEv_r s e;
                                                st_trace := m ++ st_trace0;
-                                               st_pl := p;
-                                               (*st_store := st_store4*) |})) =
+                                               st_pl := p |})) =
         m ++ StVM.st_trace (snd (copland_compile t2
                                                  {| st_ev := splitEv_r s e;
                                                     st_trace := st_trace0;
-                                                    st_pl := p;
-                                                    (*st_store := st_store4*) |}))
+                                                    st_pl := p |}))
       ).
     eapply IHt2; eauto.
     subst'.
     df.
     subst.
     tauto.
-
-    (*
-
-    vmsts.
-    df.
-    do_pl_immut.
-    subst.
-
-    (*
-    assert (e0 = splitEv s1 e). admit.
-    subst.
-    df. 
-
-
-    
-
-
-    
-    tauto.
-    tauto.  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-    do_wf_pieces.
-     *)
-    
-    repeat (df; dohtac; df).
-    repeat (rewrite app_assoc).
-
-    dosome.
-    df.
-    repeat break_match; try solve_by_inversion.
-
-    df.
-
-    vmsts.
-    df.
-
-    repeat (rewrite app_assoc).
-
-    vmsts.
-    df.
-
-    eapply IHt1 in Heqp5.
-    Focus 2.
-    eassumption.
-    df.
-    vmsts.
-    df.subst.
-
-    eapply IHt1 in Heqp15.
-    Focus 2.
-    eassumption.
-    df.
-    vmsts.
-    df.
-    subst.
-
-    eapply IHt2 in Heqp1.
-
-    assert 
-
-    
-    edestruct IHt1; [eassumption | eassumption | idtac].
-
-    
-    eassumption.
-    eassumption.
-
-
-    
-    tauto.
-*)
 Defined.
 
 (* Instance of st_trace_cumul' where k=[] *)
 Lemma st_trace_cumul : forall t m e p v,
     well_formed_r t ->
     copland_compile t
-               {| st_ev := e; st_trace := m; st_pl := p(*; st_store := o*) |} =
+               {| st_ev := e; st_trace := m; st_pl := p |} =
     (Some tt, v) -> 
     
     st_trace
       (execSt (copland_compile t)
-              {| st_ev := e; st_trace := m; st_pl := p(*; st_store := o*) |}) =
+              {| st_ev := e; st_trace := m; st_pl := p |}) =
     m ++
       st_trace
       (execSt (copland_compile t)
-                     {| st_ev := e; st_trace := []; st_pl := p(*; st_store := o*) |}).
+                     {| st_ev := e; st_trace := []; st_pl := p |}).
 Proof.
   intros.
   assert (m = m ++ []) as HH by (rewrite app_nil_r; auto).
@@ -409,13 +242,11 @@ Lemma suffix_prop : forall t e e' tr tr' p p',
            {|
              st_ev := e;
              st_trace := tr;
-             st_pl := p(*;
-             st_store := o*) |} =
+             st_pl := p |} =
     (Some tt, {|
       st_ev := e';
       st_trace := tr';
-      st_pl := p' (*;
-      st_store := o'*) |}) ->
+      st_pl := p' |}) ->
     exists l, tr' = tr ++ l.
 Proof.
   intros.
@@ -424,13 +255,11 @@ Proof.
            {|
              st_ev := e;
              st_trace := tr;
-             st_pl := p(*;
-             st_store := o*) |}) =
+             st_pl := p |}) =
     st_trace ({|
       st_ev := e';
       st_trace := tr';
-      st_pl := p'(*;
-      st_store := o'*) |})) as H00.
+      st_pl := p' |})) as H00.
   df.
   congruence.
   simpl in H00.
@@ -445,9 +274,9 @@ Defined.
 Ltac do_suffix name :=
   match goal with
   | [H': copland_compile ?t
-         {| st_ev := _;st_trace := ?tr; st_pl := _ (*; st_store := _*) |} =
+         {| st_ev := _;st_trace := ?tr; st_pl := _ |} =
          (Some tt,
-          {| st_ev := _; st_trace := ?tr'; st_pl := _ (*; st_store := _*) |}),
+          {| st_ev := _; st_trace := ?tr'; st_pl := _ |}),
          H2: well_formed_r ?t |- _] =>
     assert_new_proof_as_by
       (exists l, tr' = tr ++ l)
@@ -457,90 +286,45 @@ Ltac do_suffix name :=
 
 Lemma alseq_decomp_gen : forall r t1' t2' e e'' p p'' init_tr tr,
     well_formed_r (alseq r t1' t2') ->
-    copland_compile (alseq r t1' t2') {| st_ev := e; st_trace := init_tr; st_pl := p(*; st_store := o*) |} =
-    (Some tt, {| st_ev := e''; st_trace := tr; st_pl := p''(*; st_store := o''*) |}) ->
+    copland_compile (alseq r t1' t2') {| st_ev := e; st_trace := init_tr; st_pl := p |} =
+    (Some tt, {| st_ev := e''; st_trace := tr; st_pl := p'' |}) ->
 
     exists e' tr' p',
-      copland_compile t1' {| st_ev := e; st_trace := init_tr; st_pl := p(*; st_store := o*) |} =
-      (Some  tt, {| st_ev := e'; st_trace := tr'; st_pl := p'(*; st_store := o'*) |}) /\
-      (*exists tr'', *)
-        copland_compile t2' {| st_ev := e'; st_trace := tr'; st_pl := p'(*; st_store := o'*) |} =
-        (Some tt, {| st_ev := e''; st_trace := tr; st_pl := p''(*; st_store := o''*) |}) (*/\
-        tr = tr' ++ tr''.  *).     
+      copland_compile t1' {| st_ev := e; st_trace := init_tr; st_pl := p |} =
+      (Some  tt, {| st_ev := e'; st_trace := tr'; st_pl := p' |}) /\
+        copland_compile t2' {| st_ev := e'; st_trace := tr'; st_pl := p' |} =
+        (Some tt, {| st_ev := e''; st_trace := tr; st_pl := p'' |}).     
 Proof.
   intros.  
   do_wf_pieces.
   df.
   dosome.
   annogo.
-  exists st_ev. exists st_trace. exists st_pl. (*exists st_store. *)
+  exists st_ev. exists st_trace. exists st_pl.
   split.
   reflexivity.
-
-
-
-  (*
-  destruct
-    (copland_compile t2'
-                {| st_ev := st_ev; st_trace := init_tr; st_pl := st_pl(*; st_store := st_store*) |}) eqn:hey.
-   *)
   
   vmsts.
   do_asome.
   subst.
   annogo.
-
-  (*
-  exists st_trace0.
-  dohi.
   
-  split.
-  reflexivity. *)
-
   do_suffix hi.
   do_suffix hey.
   eassumption.
 Defined.
 
-(*
-
-  destruct_conjs.
-  subst.
-
-  pose st_trace_cumul'.
-
-  exists hi.
-  split.
-
-  
-  specialize e0 with (t:= t2') (m:=st_trace) (e:=st_ev) (p:= st_pl)
-                      (*(o:=st_store) *)
-                      (v:={| st_ev := st_ev0; st_trace := tr; st_pl := st_pl0(*; st_store := st_store0*) |}).
-  intros.
-  repeat concludes.
-  repeat ff.
-  df.
-  subst'.
-  repeat ff.
-  tauto. 
-Defined.
-*)
-
-
-
-
-
 Lemma alseq_decomp : forall r t1' t2' e e'' p p'' tr,
     well_formed_r (alseq r t1' t2') ->
-    copland_compile (alseq r t1' t2') {| st_ev := e; st_trace := []; st_pl := p(*; st_store := o*) |} =
-    (Some tt, {| st_ev := e''; st_trace := tr; st_pl := p''(*; st_store := o''*) |}) ->
+    copland_compile (alseq r t1' t2') {| st_ev := e; st_trace := []; st_pl := p |} =
+    (Some tt, {| st_ev := e''; st_trace := tr; st_pl := p'' |}) ->
 
     exists e' tr' p',
-      copland_compile t1' {| st_ev := e; st_trace := []; st_pl := p(*; st_store := o*) |} =
-      (Some  tt, {| st_ev := e'; st_trace := tr'; st_pl := p'(*; st_store := o'*) |}) /\
+      copland_compile t1' {| st_ev := e; st_trace := []; st_pl := p |} =
+      (Some  tt, {| st_ev := e'; st_trace := tr'; st_pl := p' |}) /\
       exists tr'',
-        copland_compile t2' {| st_ev := e'; st_trace := []; st_pl := p'(*; st_store := o'*) |} =
-        (Some tt, {| st_ev := e''; st_trace := tr''; st_pl := p''(*; st_store := o''*) |}) /\
+        copland_compile t2' {| st_ev := e'; st_trace := []; st_pl := p' |} =
+        (Some tt, {| st_ev := e''; st_trace := tr''; st_pl := p'' |}) /\
         tr = tr' ++ tr''.     
 Proof.
   intros.  
@@ -548,12 +332,12 @@ Proof.
   df.
   dosome.
   annogo.
-  exists st_ev. exists st_trace. exists st_pl. (*exists st_store. *)
+  exists st_ev. exists st_trace. exists st_pl.
   split.
   reflexivity.
   destruct
     (copland_compile t2'
-                {| st_ev := st_ev; st_trace := []; st_pl := st_pl(*; st_store := st_store*) |}) eqn:hey.
+                {| st_ev := st_ev; st_trace := []; st_pl := st_pl |}) eqn:hey.
   vmsts.
   do_asome.
   subst.
@@ -567,8 +351,7 @@ Proof.
 
   pose st_trace_cumul.
   specialize st_trace_cumul with (t:= t2') (m:=st_trace) (e:=st_ev) (p:= st_pl)
-                      (*(o:=st_store) *)
-                      (v:={| st_ev := st_ev0; st_trace := tr; st_pl := st_pl0(*; st_store := st_store0*) |}).
+                      (v:={| st_ev := st_ev0; st_trace := tr; st_pl := st_pl0 |}).
   intros.
   repeat concludes.
   df.
@@ -579,17 +362,17 @@ Defined.
 
 Lemma restl : forall t e e' x tr p p',
     well_formed_r t ->
-    copland_compile t {| st_ev := e; st_trace := x; st_pl := p(*; st_store := o*) |} =
-    (Some tt, {| st_ev := e'; st_trace := x ++ tr; st_pl := p'(*; st_store := o'*) |}) ->
+    copland_compile t {| st_ev := e; st_trace := x; st_pl := p |} =
+    (Some tt, {| st_ev := e'; st_trace := x ++ tr; st_pl := p' |}) ->
 
-    copland_compile t {| st_ev := e; st_trace := []; st_pl := p(*; st_store := o*) |} =
-    (Some tt, {| st_ev := e'; st_trace := tr; st_pl := p'(*; st_store := o'*) |}).
+    copland_compile t {| st_ev := e; st_trace := []; st_pl := p |} =
+    (Some tt, {| st_ev := e'; st_trace := tr; st_pl := p' |}).
 Proof.
   intros.
   
   assert (
-      st_trace (run_cvm t {| st_ev := e; st_trace := x; st_pl := p(*; st_store := o*) |}) =
-      st_trace ({| st_ev := e'; st_trace := x ++ tr; st_pl := p'(*; st_store := o'*) |})).
+      st_trace (run_cvm t {| st_ev := e; st_trace := x; st_pl := p |}) =
+      st_trace ({| st_ev := e'; st_trace := x ++ tr; st_pl := p' |})).
   {
     unfold run_cvm. 
     monad_unfold.
@@ -603,31 +386,21 @@ Proof.
    st_ev
      (execSt
         (copland_compile t)
-               {| st_ev := e; st_trace := []; st_pl := p(*; st_store := o*) |}) = e').
+               {| st_ev := e; st_trace := []; st_pl := p |}) = e').
   eapply trace_irrel_ev; eauto.
 
   assert (
    st_pl
      (execSt
         (copland_compile t)
-               {| st_ev := e; st_trace := []; st_pl := p(*; st_store := o*) |}) = p').
+               {| st_ev := e; st_trace := []; st_pl := p |}) = p').
   eapply trace_irrel_pl; eauto.
-
-  (*
-  assert (
-   st_store
-     (execSt
-        (copland_compile t)
-               {| st_ev := e; st_trace := []; st_pl := p; st_store := o |}) = o').
-  eapply trace_irrel_store; eauto.
-   *)
   
-
   assert (
       (execSt
          (copland_compile t)
-         {| st_ev := e; st_trace := []; st_pl := p(*; st_store := o*) |}) =
-      {| st_ev := e'; st_trace := tr; st_pl := p'(*; st_store := o'*) |}).
+         {| st_ev := e; st_trace := []; st_pl := p |}) =
+      {| st_ev := e'; st_trace := tr; st_pl := p' |}).
   {
     eapply st_congr; eauto.
     erewrite st_trace_cumul in H1.
@@ -637,7 +410,7 @@ Proof.
     eauto.
   }
   
-  destruct (copland_compile t {| st_ev := e; st_trace := []; st_pl := p(*; st_store := o*) |}) eqn:aa.
+  destruct (copland_compile t {| st_ev := e; st_trace := []; st_pl := p |}) eqn:aa.
   simpl in *.
   vmsts.
   simpl in *.
@@ -650,18 +423,16 @@ Defined.
 Ltac do_restl :=
   match goal with
   | [H: copland_compile ?t
-        {| st_ev := ?e; st_trace := ?tr; st_pl := ?p(*; st_store := ?o*) |} =
+        {| st_ev := ?e; st_trace := ?tr; st_pl := ?p |} =
         (Some tt,
-         {| st_ev := ?e'; st_trace := ?tr ++ ?x; st_pl := ?p'(*; st_store := ?o'*) |}),
+         {| st_ev := ?e'; st_trace := ?tr ++ ?x; st_pl := ?p' |}),
         H2: well_formed_r ?t |- _] =>
     assert_new_proof_by
-      (copland_compile t {| st_ev := e; st_trace := []; st_pl := p(*; st_store := o*) |} =
+      (copland_compile t {| st_ev := e; st_trace := []; st_pl := p |} =
        (Some tt,
-        {| st_ev := e'; st_trace := x; st_pl := p'(*; st_store := o'*) |}))
+        {| st_ev := e'; st_trace := x; st_pl := p' |}))
       ltac:(eapply restl; [apply H2 | apply H])
   end.
-
-Locate Ev_Shape.
 
 Axiom remote_Ev_Shape: forall e es t n,
     Ev_Shape e es ->
@@ -681,18 +452,8 @@ Proof.
           df;
           eauto).
   -
-    (*
-    do_wf_pieces. *)
-    repeat (df; try dohtac; df).    
+    repeat df. 
     annogo.
-
-    (*
-    eapply IHt.
-    eassumption.
-    eapply copland_compile_at; eauto.
-    eassumption.
-    reflexivity.
-     *)
 
     apply remote_Ev_Shape; eauto.
 
@@ -760,22 +521,7 @@ Proof.
           eauto.
         +++
           ff.
-          eauto.
- 
-        (*
-        destruct s.
-        +++
-          simpl.
-          repeat do_pl_immut.
-          subst.
-          eapply IHt2; eauto.
-        +++
-          simpl.
-          repeat do_pl_immut.
-          subst.
-          eapply IHt2; eauto. *)
-
-          
+          eauto.        
   -
     do_wf_pieces.
     df.
@@ -813,83 +559,10 @@ Proof.
         +++
           ff.
           eauto.
-
-
-
-
-
-(*
-    
-    do_wf_pieces.
-    repeat (df; dohtac; df).
-    dosome.
-    vmsts.
-    econstructor.
-    destruct s0.
-    +
-      simpl.
-      df.
-      eapply IHt1.
-      apply H3.
-      eassumption.
-      (*
-      eapply copland_compile_par. *)
-      eassumption.
-
-      tauto.
-    +
-      simpl.
-      eapply IHt1.
-      df.
-      eassumption.
-      (*
-      eapply copland_compile_par. *)
-      eassumption.
-      df.
-      econstructor.
-      tauto.
-    +
-      destruct s1.
-      ++
-        simpl.
-        df.
-        eapply IHt2.
-        eassumption.
-        eassumption.
-        (*
-        eapply copland_compile_par. *)
-        eassumption.
-        do_pl_immut.
-        do_pl_immut.
-        subst.
-        tauto.
-      ++
-        simpl.
-        df.
-        do_pl_immut.
-        do_pl_immut.
-        subst.
-        eapply IHt2.
-        eassumption.
-        (*
-        eapply copland_compile_par. *)
-        eassumption.
-        econstructor.
-        tauto.
-        (*
-        eauto.
-        Unshelve.
-        eauto.
-        eauto.
-        eauto.
-        eauto.
-         *)
-*)
 Defined.
 
 Axiom remote_LTS: forall t n et, 
     lstar (conf t n et) (remote_events t n) (stop n (aeval t n et)).
-
 
 Lemma eval_aeval: forall t1 p et,
     eval (unanno t1) p et = aeval t1 p et.
@@ -912,11 +585,8 @@ Proof.
     ff.
     erewrite IHt1_1.
     erewrite IHt1_2.
-    eauto.
-    
+    eauto. 
 Defined.
-
-Check splitEv_l.
 
 Lemma evshape_split_l: forall e et s,
     Ev_Shape e et ->
@@ -948,8 +618,7 @@ Proof.
     destruct s; ff.
   -
     invc H.
-    destruct s; ff.
-    
+    destruct s; ff.  
 Defined.
 
 Lemma evshape_split_r: forall e et s,
@@ -1000,7 +669,6 @@ Proof.
       df;
       econstructor; try (econstructor; reflexivity).
   - (* aatt case *)
-    (*do_wf_pieces. *)
     destruct r.
     repeat (df; try dohtac; df).
     Print remote_LTS.
@@ -1018,10 +686,7 @@ Proof.
       eassumption.
     }
     rewrite H1.
-    
 
-
-      
     eapply lstar_tran.
     econstructor.
     simpl.
@@ -1029,17 +694,8 @@ Proof.
     eapply lstar_strem.
     cbn.
     
-    
     apply H0.
-    (*
-    
-    eapply IHt; eauto.
-    admit.
-    apply copland_compile_at.
-    admit.
-     *)
-    
-    (* eassumption. *)
+
     econstructor.
     apply stattstop.
     econstructor.
@@ -1071,9 +727,6 @@ Proof.
 
     eapply eval_aeval; eauto.  
     eassumption.
-    
-    
-    
   -    
     do_wf_pieces.
     destruct r; destruct s.
@@ -1103,13 +756,10 @@ Proof.
      
     eapply IHt1.
     eassumption.
-    Focus 2.
+    2: {
+      eassumption.
+    }
     eassumption.
-
-    eassumption.
-
-    (*
-    eapply evshape_split_r; eauto. *)
   
     unfold run_cvm in *.
     monad_unfold.
@@ -1122,17 +772,68 @@ Proof.
         
     eapply IHt2.
     eassumption.
-    Focus 2.
-    eassumption.
+    2: {
+      eassumption.
+    }
+    
     econstructor.
-    (*
-    eapply evshape_split; eauto. *)
-
     econstructor.
     eapply stbsrstop.
     econstructor.
     +
-          df.
+      df.
+      vmsts.
+      dosome.
+      df.
+
+      do_suffix blah.
+      do_suffix blah'.
+      destruct_conjs; subst.
+      repeat do_restl.
+    
+    repeat do_pl_immut.
+    subst.
+    repeat rewrite <- app_assoc.
+
+    eapply lstar_tran.
+    econstructor.
+    simpl.
+
+    eapply lstar_transitive.
+    simpl.
+
+    eapply lstar_stbsl.  
+     
+    eapply IHt1.
+    eassumption.
+    2: {
+      eassumption.
+    }
+
+    econstructor.
+  
+    unfold run_cvm in *.
+    monad_unfold.
+
+    eapply lstar_silent_tran.
+    apply stbslstop.
+    
+    eapply lstar_transitive.
+    eapply lstar_stbsr.
+        
+    eapply IHt2.
+    eassumption.
+    2: {
+      eassumption.
+    }   
+    eassumption.
+
+    econstructor.
+    eapply stbsrstop.
+    econstructor.
+
+    +
+      df.
     vmsts.
     dosome.
     df.
@@ -1157,18 +858,12 @@ Proof.
      
     eapply IHt1.
     eassumption.
-    Focus 2.
+    2: {
+      eassumption.
+    }
+
     eassumption.
 
-    econstructor.
-
-    (*
-
-    eassumption. *)
-
-    (*
-    eapply evshape_split_r; eauto. *)
-  
     unfold run_cvm in *.
     monad_unfold.
 
@@ -1180,76 +875,12 @@ Proof.
         
     eapply IHt2.
     eassumption.
-    Focus 2.
-    eassumption.
+
+    2: {
+      eassumption.
+    }
 
     eassumption.
-
-    (*
-    econstructor. *)
-    (*
-    eapply evshape_split; eauto. *)
-
-    econstructor.
-    eapply stbsrstop.
-    econstructor.
-
-    +
-          df.
-    vmsts.
-    dosome.
-    df.
-
-    do_suffix blah.
-    do_suffix blah'.
-    destruct_conjs; subst.
-    repeat do_restl.
-    
-    repeat do_pl_immut.
-    subst.
-    repeat rewrite <- app_assoc.
-
-    eapply lstar_tran.
-    econstructor.
-    simpl.
-
-    eapply lstar_transitive.
-    simpl.
-
-    eapply lstar_stbsl.  
-     
-    eapply IHt1.
-    eassumption.
-    Focus 2.
-    eassumption.
-
-    eassumption.
-
-    (*
-    eapply evshape_split_r; eauto. *)
-  
-    unfold run_cvm in *.
-    monad_unfold.
-
-    eapply lstar_silent_tran.
-    apply stbslstop.
-    
-    eapply lstar_transitive.
-    eapply lstar_stbsr.
-        
-    eapply IHt2.
-    eassumption.
-    Focus 2.
-    eassumption.
-
-    eassumption.
-
-    (*
-    econstructor.
-     *)
-    
-    (*
-    eapply evshape_split; eauto. *)
 
     econstructor.
     eapply stbsrstop.
@@ -1281,19 +912,13 @@ Proof.
     simpl.
 
     eapply lstar_stbparl.
-
-    (*
-    eapply lstar_stparl.   *)
      
     eapply IHt1.
     eassumption.
-    Focus 2.
-    eassumption.
 
-    (*
-
-    eapply evshape_split; eauto.
-     *)
+    2: {
+      eassumption.
+    }
     eassumption.
   
     unfold run_cvm in *.
@@ -1302,28 +927,13 @@ Proof.
     eapply lstar_transitive.
 
     eapply lstar_stbparr.
-
-    (*
-
-    eapply lstar_silent_tran.
-    econstructor.
-
-    apply stbpstop.
-
-
-    
-    apply stbslstop.
-    
-    eapply lstar_transitive.
-    eapply lstar_stbsr. *)
         
     eapply IHt2.
     eassumption.
-    Focus 2.
-    eassumption.
 
-    (*
-    eapply evshape_split; eauto. *)
+    2: {
+      eassumption.
+    }
 
     econstructor.
 
@@ -1333,7 +943,7 @@ Proof.
 
     econstructor.
 
-        +
+    +
     df.
     vmsts.
     dosome.
@@ -1356,19 +966,13 @@ Proof.
     simpl.
 
     eapply lstar_stbparl.
-
-    (*
-    eapply lstar_stparl.   *)
      
     eapply IHt1.
     eassumption.
-    Focus 2.
-    eassumption.
-
-    (*
-
-    eapply evshape_split; eauto.
-     *)
+    2: {
+      eassumption.
+    }
+    
     econstructor.
   
     unfold run_cvm in *.
@@ -1377,28 +981,13 @@ Proof.
     eapply lstar_transitive.
 
     eapply lstar_stbparr.
-
-    (*
-
-    eapply lstar_silent_tran.
-    econstructor.
-
-    apply stbpstop.
-
-
-    
-    apply stbslstop.
-    
-    eapply lstar_transitive.
-    eapply lstar_stbsr. *)
         
     eapply IHt2.
     eassumption.
-    Focus 2.
-    eassumption.
 
-    (*
-    eapply evshape_split; eauto. *)
+    2: {
+      eassumption.
+    }
 
     eassumption.
 
@@ -1408,7 +997,7 @@ Proof.
 
     econstructor.
 
-        +
+    +
     df.
     vmsts.
     dosome.
@@ -1431,19 +1020,12 @@ Proof.
     simpl.
 
     eapply lstar_stbparl.
-
-    (*
-    eapply lstar_stparl.   *)
      
     eapply IHt1.
     eassumption.
-    Focus 2.
-    eassumption.
-
-    (*
-
-    eapply evshape_split; eauto.
-     *)
+    2: {
+      eassumption.
+    }
     eassumption.
   
     unfold run_cvm in *.
@@ -1452,29 +1034,12 @@ Proof.
     eapply lstar_transitive.
 
     eapply lstar_stbparr.
-
-    (*
-
-    eapply lstar_silent_tran.
-    econstructor.
-
-    apply stbpstop.
-
-
-    
-    apply stbslstop.
-    
-    eapply lstar_transitive.
-    eapply lstar_stbsr. *)
         
     eapply IHt2.
     eassumption.
-    Focus 2.
-    eassumption.
-
-    (*
-    eapply evshape_split; eauto. *)
-
+    2: {
+      eassumption.
+    }
     eassumption.
 
     econstructor.
@@ -1482,66 +1047,7 @@ Proof.
     eapply stbpstop.
 
     econstructor.
- 
 Defined.
-
-    (*
-  -
-    do_wf_pieces.
-    do_pl_immut.
-    subst.
-    destruct s; destruct r.
-    repeat (df; dohtac; df).
-    dosome.
-    vmsts.
-    df.
-    
-    do_pl_immut.
-    df.
-    subst.
-    eapply lstar_transitive.
-   
-
-    econstructor.
-    (*
-    assert (n1 = fst (range t1)).
-    {
-      rewrite Heqr.
-      eauto.
-    }
-    assert (n3 = fst (range t2)).
-    {
-      rewrite Heqr0.
-      eauto.
-    }
-    subst. *)
-
-    eapply lstar_transitive.
-    simpl.
-    apply bpar_shuffle.
-    econstructor.
-    (*
-    assert (n2 = snd (range t1)).
-    {
-      rewrite Heqr.
-      eauto.
-    }
-    assert (n4 = snd (range t2)).
-    {
-      rewrite Heqr0.
-      eauto.
-    }
-    subst.
-     *)
-    
-    
-    apply stbpstop.
-    econstructor.
-    (*
-    Unshelve.
-    exact mtc.
-    eauto.  *)
-*)
 
 Lemma cvm_refines_lts_event_ordering_corrolary : forall t tr et e e' p p',
     well_formed_r t ->
@@ -1552,13 +1058,12 @@ Lemma cvm_refines_lts_event_ordering_corrolary : forall t tr et e e' p p',
     lstar (conf t p et) tr (stop p (aeval t p et)).
 Proof.
   intros.
-  destruct (copland_compile t {| st_ev := e; st_trace := []; st_pl := p(*; st_store := o*) |}) eqn:hi.
+  destruct (copland_compile t {| st_ev := e; st_trace := []; st_pl := p |}) eqn:hi.
   simpl in *.
   vmsts.
   simpl in *.
   apply cvm_refines_lts_event_ordering with (t:=t) (tr:=tr) (e:=e) (p:=p) (e':=st_ev) (p':=st_pl); eauto.
   
-  (*destruct o0. *)
   try dunit.
   rewrite hi.
   unfold run_cvm in *.
@@ -1567,21 +1072,7 @@ Proof.
   simpl in *.
   subst.
   solve_by_inversion.
-  (*
-  reflexivity.
-  solve_by_inversion. *)
 Defined.
-
-(*
-Lemma wf_implies_wfr: forall t,
-    well_formed_r t ->
-    well_formed_r t.
-Proof.
-  induction t; intros;
-    try destruct a;
-    ff.
-Defined.
-*)
 
 Theorem cvm_respects_event_system' : forall t tr ev0 ev1 e e' et,
     well_formed_r t ->
@@ -1595,29 +1086,34 @@ Theorem cvm_respects_event_system' : forall t tr ev0 ev1 e e' et,
 Proof.
   intros.
   eapply ordered with (p:=0) (e:=et); eauto.
-  (*eapply wf_implies_wfr; eauto. *)
   eapply cvm_refines_lts_event_ordering; eauto.
 Defined.
 
-Theorem cvm_respects_event_system : forall t tr ev0 ev1 e e' t' i n et,
+Theorem cvm_respects_event_system : forall t tr ev0 ev1 e e' t' (*i n*) et,
     (*NoDup ls ->
     length ls = nss t' -> *)
     (*t = annotated t' ls -> *)
-    anno t' i = (n, t) ->
+    (*
+    anno t' i = (n, t) -> *)
+    t = annotated t' ->
     Ev_Shape e et ->
     copland_compile
       t
       (mk_st e [] 0) =
-      (Some tt, (mk_st e' tr 0)) ->
+    (Some tt, (mk_st e' tr 0)) ->
     prec (ev_sys t 0 et) ev0 ev1 ->
     earlier tr ev0 ev1.
 Proof.
   intros.
   assert (well_formed_r t).
-  unfold annotated in H.
+  {
+    unfold annotated in H.
+    unfold snd in *.
+    break_let.
     subst.
-    eapply anno_well_formed_r; eauto.
-    eapply ordered with (p:=0) (e:=et); eauto.
-    (*eapply wf_implies_wfr; eauto. *)
-    eapply cvm_refines_lts_event_ordering; eauto.
+    eapply anno_well_formed_r.
+    eassumption.
+  }
+  eapply ordered with (p:=0) (e:=et); eauto.
+  eapply cvm_refines_lts_event_ordering; eauto.
 Defined.

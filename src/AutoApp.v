@@ -62,15 +62,6 @@ Ltac doit' := repeat dosome_eqj;
 
 Ltac doit := repeat doit'.
 
-(*
-  Ltac map_get_subst :=
-  match goal with
-  | [H: map_get ?A ?B = _,
-  H2: context[map_get ?A ?B] |- _] =>
-  rewrite H in *; clear H
-  end.
- *)
-
 Ltac haaa :=
   let x:= fresh in
   match goal with
@@ -95,11 +86,10 @@ Ltac dosome_eq' y :=
   end.
 
 Ltac dothat :=
-  unfold StVM.st_ev, StVM.st_pl, StVM.st_trace (*, StVM.st_store*) in *;
+  unfold StVM.st_ev, StVM.st_pl, StVM.st_trace in *;
   try unfold st_ev in *;
   try unfold st_pl in *;
-  try unfold st_trace in * (*;
-  try unfold st_store in * *) .
+  try unfold st_trace in * .
 
 Ltac ff' :=
   repeat break_match; try solve_by_inversion.
@@ -110,10 +100,3 @@ Ltac do_inv_head :=
     match goal with
     | [H: ?ls ++ ?xs = ?ls ++ ?ys |- _] => assert_new_proof_by (xs = ys) tac
     end.
-
-(*
-Ltac doex := 
-  unfold extractUev, extractSig in *;
-  ff';
-  unfold ret in *; doit.
-*)
