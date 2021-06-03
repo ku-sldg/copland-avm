@@ -9,6 +9,11 @@ Import ListNotations.
 
 Set Nested Proofs Allowed.
 
+Ltac amsts' :=
+  repeat match goal with
+         | H:AM_St |- _ => destruct H
+         end.
+
 Lemma ba_const : forall e a_st a_st' o,
     build_app_comp_ev e a_st = (o, a_st') ->
     am_nonceMap a_st = am_nonceMap a_st' /\
@@ -20,102 +25,22 @@ Proof.
   intros.
   generalizeEverythingElse e.
   induction e; intros;
+    
     repeat ff;
     try eauto;
+    try (unfold am_add_trace in * );
     try (unfold am_checkNonce in * );
-    repeat ff; eauto.
-  -
-    ff.
-    unfold am_add_trace in *.
-    ff.
-    subst.
-    
-    specialize IHe with (a_st:=a) (a_st':={|
-          am_nonceMap := am_nonceMap;
-          am_nonceId := am_nonceId;
-          st_aspmap := st_aspmap;
-          st_sigmap := st_sigmap;
-          am_st_trace := am_st_trace;
-          checked := checked |}) (o:=Some e0).
-    concludes.
-    destruct_conjs.
-    ff.
+    repeat ff; eauto;
 
-    (*
+      try (edestruct IHe; eauto; tauto);
 
-    specialize IHe2 with (a_st:=a) (a_st':=a_st') (o:=Some e0).
-    concludes.
-    destruct_conjs.
-    repeat find_rewrite.
-    tauto. *)
-  -
-    ff.
-    unfold am_add_trace in *.
-    ff.
-    subst.
-    specialize IHe with (a_st:=a) (a_st':= {|
-          am_nonceMap := am_nonceMap;
-          am_nonceId := am_nonceId;
-          st_aspmap := st_aspmap;
-          st_sigmap := st_sigmap;
-          am_st_trace := am_st_trace;
-          checked := checked |}) (o:=Some e0).
-    concludes.
-    destruct_conjs.
-    ff.
-    (*
-
-    specialize IHe2 with (a_st:=a) (a_st':=a_st') (o:=None).
-    concludes.
-    destruct_conjs.
-    repeat find_rewrite.
-    tauto. *)
-  -
-
-    ff.
-    specialize IHe1 with (a_st:=a_st) (a_st':=a) (o:=Some e).
-    concludes.
-    destruct_conjs.
-
-    specialize IHe2 with (a_st:=a) (a_st':=a_st') (o:=Some e0).
-    concludes.
-    destruct_conjs.
-    repeat find_rewrite.
-    tauto.
-    
-  -
-    ff.
-    specialize IHe1 with (a_st:=a_st) (a_st':=a) (o:=Some e).
-    concludes.
-    destruct_conjs.
-
-    specialize IHe2 with (a_st:=a) (a_st':=a_st') (o:=None).
-    concludes.
-    destruct_conjs.
-    repeat find_rewrite.
-    tauto.
-  -
-     ff.
-    specialize IHe1 with (a_st:=a_st) (a_st':=a) (o:=Some e).
-    concludes.
-    destruct_conjs.
-
-    specialize IHe2 with (a_st:=a) (a_st':=a_st') (o:=Some e0).
-    concludes.
-    destruct_conjs.
-    repeat find_rewrite.
-    tauto.
-  -
-     ff.
-    specialize IHe1 with (a_st:=a_st) (a_st':=a) (o:=Some e).
-    concludes.
-    destruct_conjs.
-
-    specialize IHe2 with (a_st:=a) (a_st':=a_st') (o:=None).
-    concludes.
-    destruct_conjs.
-    repeat find_rewrite.
-    tauto.   
+      try (
+          amsts'; ff;
+          edestruct IHe1; eauto;
+          ff;
+          edestruct IHe2; eauto;
+          ff; destruct_conjs; ff
+        ).
 Defined.
 
 Ltac do_ba_st_const :=
@@ -123,10 +48,11 @@ Ltac do_ba_st_const :=
   repeat (
       match goal with
       | [H: build_app_comp_ev _ ?a_st = (_, ?a0) |- _] =>
-        assert_new_proof_by (am_nonceMap a_st = am_nonceMap a0 /\
-    am_nonceId a_st = am_nonceId a0 /\
-    st_aspmap a_st = st_aspmap a0 /\
-    st_sigmap a_st = st_sigmap a0) tac
+        assert_new_proof_by (
+            am_nonceMap a_st = am_nonceMap a0 /\
+            am_nonceId a_st = am_nonceId a0 /\
+            st_aspmap a_st = st_aspmap a0 /\
+            st_sigmap a_st = st_sigmap a0) tac
       end);
   subst.
 
@@ -140,59 +66,39 @@ Lemma evmapped_relevant: forall a_st a e,
 Proof.
   intros.
   generalizeEverythingElse e.
-  induction e; intros.
-  -
-    econstructor.
-  -
-    ff.
-    evMappedFacts.
-    econstructor.
-    tauto.
-    eauto.
-    eexists.
-    econstructor.
-    subst'.
-    eassumption.
-  -
-    ff.
-    evMappedFacts.
-    econstructor.
-    tauto.
-    eauto.
-    eexists.
-    econstructor.
-    subst'.
-    eassumption.
-  -
-    ff.
-    evMappedFacts.
-    econstructor.
-    tauto.
-    eauto.
-    eexists.
-    econstructor.
-    subst'.
-    eassumption.
-  -
-    evMappedFacts.
-    econstructor; eauto.
-  -
-    evMappedFacts.
-    econstructor; eauto.
+  induction e; intros;
+    try (econstructor; tauto);
+    try (
+        evMappedFacts;
+        repeat (econstructor; eauto); subst'; eauto).
 Defined.
 
 Lemma build_app_some' : forall e a_st a_st',
     (exists o, build_app_comp_ev e a_st = (Some o, a_st')) ->
     evMapped e a_st.
 Proof.
-  induction e; intros.
+  induction e; intros;
+    try (
+        repeat ff;
+        destruct_conjs;
+        try solve_by_inversion;
+        try (repeat (econstructor; eauto); tauto)
+      ).
+
+  
+      (*
   -
     econstructor.
   -
-    repeat ff.
+    repeat ff;
+      
+      destruct_conjs;
+      try solve_by_inversion;
+      try (repeat (econstructor; eauto); tauto).
+
     +
-      destruct_conjs.
       ff.
+      repeat (econstructor; eauto). subst'; eauto.
       econstructor.
       tauto.
       eauto.
@@ -223,7 +129,8 @@ Proof.
     +
       destruct_conjs.
       solve_by_inversion.
-  -
+*)
+  - (* nnc case *)
     repeat ff.
     +
       destruct_conjs.
@@ -250,15 +157,6 @@ Proof.
           destruct_conjs.
           subst'.
           eassumption.
-          
-
-        
-    +
-      destruct_conjs.
-      solve_by_inversion.
-    +
-      destruct_conjs.
-      solve_by_inversion.
   -
     repeat ff; 
       destruct_conjs;
@@ -295,56 +193,19 @@ Proof.
 
         eapply evmapped_relevant.
         split; eauto.
-        eassumption.
-        
-        
-            
-          
-          
-(*
-
-          
-        eapply IHe2.
-        
-        do_ba_st_const.
-        destruct_conjs.
-        subst'.
-        repeat find_rewrite.
-        do_ba_st_const.
-        Check ba_const.
-        destruct_conjs.
-        subst'.
-        repeat find_rewrite.
-        eauto.
-      ++
-        unfold am_checkNonce in *.
-        repeat ff.
-        +++
-        eexists.
-        econstructor.
-        do_ba_st_const.
-        destruct_conjs.
-        subst'.
-        eassumption.
-        +++
-          eexists.
-          econstructor.
-          do_ba_st_const.
-          destruct_conjs.
-          subst'.
-          eassumption.
-          
-
-        
-    +
-      destruct_conjs.
-      solve_by_inversion.
-    +
-      destruct_conjs.
-      solve_by_inversion.
-*)
-    
+        eassumption. 
 Defined.
+
+Ltac dosomeee :=
+  match goal with
+  | [H: context[forall _, _ -> exists _ _, build_app_comp_ev _ _ = (_,_)] |- _] =>
+    edestruct H; eauto
+  end;
+  destruct_conjs;
+  try subst';
+  df;
+  try subst';
+  df.
     
 Lemma build_app_some : forall e a_st,
     evMapped e a_st ->
@@ -367,28 +228,14 @@ Proof.
      *)
     
   -
-    cbn.
     evMappedFacts.
     ff.
-    subst'.
-    df.
-    edestruct IHe.
-    eassumption.
-    destruct_conjs.
-    subst'.
-    df.
+    dosomeee.
     eauto.
   -
-    cbn.
     evMappedFacts.
-    df.
-    subst'.
-    df.
-    edestruct IHe.
-    eassumption.
-    destruct_conjs.
-    subst'.
-    df.
+    ff.
+    dosomeee.
     eauto.
   -
     cbn.
@@ -400,20 +247,11 @@ Proof.
     subst'.
     clear H1; clear H2; clear H3.
     repeat (ff; eauto).
-    (*
-    edestruct IHe.
-    eassumption.
-    destruct_conjs.
-    subst'.
-    solve_by_inversion.
-    edestruct IHe.
-    eassumption.
-    destruct_conjs.
-    subst'.
-    solve_by_inversion. *)
+
   -
     cbn.
     evMappedFacts.
+    
     assert (exists o a_st', build_app_comp_ev e1 a_st = (Some o, a_st')) by eauto.
     assert (exists o a_st', build_app_comp_ev e2 a_st = (Some o, a_st')) by eauto.
     destruct_conjs.
@@ -1092,11 +930,6 @@ Defined.
 (*
 build_app_comp_ev e2 a_st = (Some x, a_st') ->
  *)
-
-Ltac amsts' :=
-  repeat match goal with
-         | H:AM_St |- _ => destruct H
-         end.
 
 
 Lemma am_trace_cumul : forall  e e_res
