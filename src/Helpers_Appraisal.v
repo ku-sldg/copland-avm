@@ -84,52 +84,6 @@ Proof.
         try solve_by_inversion;
         try (repeat (econstructor; eauto); tauto)
       ).
-
-  
-      (*
-  -
-    econstructor.
-  -
-    repeat ff;
-      
-      destruct_conjs;
-      try solve_by_inversion;
-      try (repeat (econstructor; eauto); tauto).
-
-    +
-      ff.
-      repeat (econstructor; eauto). subst'; eauto.
-      econstructor.
-      tauto.
-      eauto.
-      eexists.
-      econstructor.
-      eassumption.
-    +
-      destruct_conjs.
-      solve_by_inversion.
-    +
-      destruct_conjs.
-      solve_by_inversion.
-      
-  -
-    repeat ff.
-    +
-      destruct_conjs.
-      ff.
-      econstructor.
-      tauto.
-      eauto.
-      eexists.
-      econstructor.
-      eassumption.
-    +
-      destruct_conjs.
-      solve_by_inversion.
-    +
-      destruct_conjs.
-      solve_by_inversion.
-*)
   - (* nnc case *)
     repeat ff.
     +
@@ -203,11 +157,6 @@ Ltac dosomeee :=
   end;
   destruct_conjs;
   repeat (subst'; df).
-(*
-  try subst';
-  df;
-  try subst';
-  df. *)
     
 Lemma build_app_some : forall e a_st,
     evMapped e a_st ->
@@ -219,16 +168,6 @@ Proof.
   induction e; intros.
   -
     repeat ff; eauto.
-    (*
-    destruct ec;
-      try (cbn; df; eauto; tauto). 
-    +
-      evShapeFacts.
-    +
-      cbn.
-      evShapeFacts.
-     *)
-    
   -
     evMappedFacts.
     ff.
@@ -362,7 +301,6 @@ Proof.
     eexists.
     rewrite app_assoc.
     eauto.
-  
   -
     repeat ff;
       amsts';
@@ -440,13 +378,11 @@ Proof.
     tauto.
   -
     vmsts.
-    edestruct alseq_decomp_gen.
-    eassumption.
-    eassumption.
+    edestruct alseq_decomp_gen;
+    eauto.
     destruct_conjs.
 
     assert (EvSub st_ev0 x) by eauto.
-    
     assert (EvSub x st_ev) by eauto.
     eapply evSub_trans; eauto.
 
@@ -501,6 +437,101 @@ Proof.
   eassumption.
   eapply build_app_some'; eauto.
 Defined.
+
+
+Ltac do_cumul_app :=
+  repeat 
+    match goal with
+    | [H: build_app_comp_ev _
+          {|
+            am_nonceMap := _;
+            am_nonceId := _;
+            st_aspmap := _;
+            st_sigmap := _;
+            am_st_trace := ?tr;
+            checked := _ |} =
+          (Some _,
+           {|
+             am_nonceMap := _;
+             am_nonceId := _;
+             st_aspmap := _;
+             st_sigmap := _;
+             am_st_trace := ?tr2;
+             checked := _ |})
+       |- _] =>
+      assert_new_proof_by (exists trr, tr2 = tr ++ trr)
+                          ltac:(eapply am_trace_cumul; eauto)
+                                                          
+    end;
+  destruct_conjs; subst.
+
+Ltac do_inv_head' :=
+  repeat (rewrite <- app_assoc in * );
+  let tac := symmetry; eapply app_inv_head; eauto in
+  repeat
+    match goal with
+    | H:?ls ++ ?xs = ?ls ++ ?ys |- _ => assert_new_proof_by (ys = xs) tac
+    end.
+
+Ltac do_evsub_refl :=
+  let tac := econstructor in
+  repeat
+    match goal with
+    | [e:EvidenceC
+
+       |- _ ] =>
+      assert_new_proof_by (EvSub e e) tac
+    end.
+
+Ltac do_inor :=
+  let tac := econstructor in
+  match goal with
+  | [H: In _ (_ ++ _) |- _ ] =>
+    apply in_app_or in H;
+    destruct H
+  end.
+
+Ltac do_cumul_app_ih :=
+        repeat 
+    match goal with
+    | [H: build_app_comp_ev _
+          {|
+            am_nonceMap := _;
+            am_nonceId := _;
+            st_aspmap := _;
+            st_sigmap := _;
+            am_st_trace := ?tr;
+            checked := _ |} =
+          (Some _,
+           {|
+             am_nonceMap := _;
+             am_nonceId := _;
+             st_aspmap := _;
+             st_sigmap := _;
+             am_st_trace := ?tr ++ ?tr';
+             checked := _ |}),
+          H': build_app_comp_ev _
+           {|
+             am_nonceMap := _;
+             am_nonceId := _;
+             st_aspmap := _;
+             st_sigmap := _;
+             am_st_trace := ?tr2;
+             checked := _ |} =
+              (Some _,
+               {|
+                 am_nonceMap := _;
+                 am_nonceId := _;
+                 st_aspmap := _;
+                 st_sigmap := _;
+                 am_st_trace := ?tr2 ++ ?tr2';
+                                checked := _ |}),
+              IH: context [_ -> _]
+       |- _] =>
+      assert_new_proof_by (forall ev, In ev tr' -> In ev tr2' )
+                          ltac:(eapply IH; eauto)
+      end;
+  destruct_conjs; subst.
 
 Lemma hffh: forall e1 e2
               nm ni amap smap tr cs
@@ -571,177 +602,62 @@ Proof.
       subst.
       repeat ff.
       amsts'.
-      unfold am_add_trace in * .
+      unfold am_add_trace in *.
       invc H3.
       invc H4.
-      assert (exists trr, am_st_trace0 = tr ++ trr).
-      {
-        eapply am_trace_cumul.
-        apply Heqp1.
-      }
-      destruct_conjs.
+
+      do_cumul_app.
+      do_inv_head'.
       subst.
-      assert (exists trr, am_st_trace = tr2 ++ trr).
-      {
-        eapply am_trace_cumul.
-        apply Heqp0.
-      }
-      destruct_conjs.
-      subst.
+      do_evsub_refl.
 
-      
-      
-      assert (H0 ++ [umeas 0 0 n3 (n2 :: l) n0 n1] = x0).
-      {
-        repeat (rewrite <- app_assoc in * ); 
-          eapply app_inv_head; eauto.
-      }
+      do_cumul_app_ih.
+      do_inor.
 
-      assert (H1 ++ [umeas 0 0 n3 (n2 :: l) n0 n1] = x1).
-      {
-        repeat (rewrite <- app_assoc in * ); 
-          eapply app_inv_head; eauto.
-      }
-
-      assert (EvSub e2 e2).
-      {
-        econstructor.
-      }
-      
-
-      assert (forall ev, In ev H0 -> In ev H1).
-      {
-        eapply IHe2.
-        eassumption.
-        eassumption.
-        eassumption.
-      }
-
-      rewrite <- H3 in H2.
-      apply in_app_or in H2.
-      destruct H2.
-      assert (In ev H1) by eauto.
-      rewrite <- H4.
-      apply in_or_app.
-      eauto.
-      rewrite <- H4.
-      apply in_or_app.
-      right.
-      eauto.
+      apply in_or_app; eauto.
+      apply in_or_app; eauto.
     +
       subst.
       repeat ff.
       unfold am_add_trace in * .
       amsts'.
       invc H4.
-
-      assert (exists trr, am_st_trace = tr2 ++ trr).
-      {
-        eapply am_trace_cumul.
-        eassumption.
-      }
-      destruct_conjs.
+      do_cumul_app.
+      do_inv_head'.
       subst.
-
-      assert (x1 = H1 ++ [umeas 0 0 n3 (n2 :: l) n0 n1]).
-      {
-        repeat (rewrite <- app_assoc in * ); 
-          eapply app_inv_head; eauto.
-      }
-      subst.
-      apply in_or_app.
-      left.
-      eauto.
+      apply in_or_app; eauto.
   -
-
-    repeat ff.
+        repeat ff.
     inversion H.
     +
       repeat ff.
       subst.
       repeat ff.
       amsts'.
-      unfold am_add_trace in * .
+      unfold am_add_trace in *.
       invc H3.
       invc H4.
-      assert (exists trr, am_st_trace0 = tr ++ trr).
-      {
-        eapply am_trace_cumul.
-        apply Heqp1.
-      }
-      destruct_conjs.
+
+      do_cumul_app.
+      do_inv_head'.
       subst.
-      assert (exists trr, am_st_trace = tr2 ++ trr).
-      {
-        eapply am_trace_cumul.
-        apply Heqp0.
-      }
-      destruct_conjs.
-      subst.
+      do_evsub_refl.
+      do_cumul_app_ih.
+      do_inor.
 
-      
-      
-      assert (H0 ++ [umeas 0 0 n1 [encodeEv e2; n0] 0 0] = x0).
-      {
-        repeat (rewrite <- app_assoc in * ); 
-          eapply app_inv_head; eauto.
-      }
-
-      assert (H1 ++ [umeas 0 0 n1 [encodeEv e2; n0] 0 0] = x1).
-      {
-        repeat (rewrite <- app_assoc in * ); 
-          eapply app_inv_head; eauto.
-      }
-
-      assert (EvSub e2 e2).
-      {
-        econstructor.
-      }
-      
-
-      assert (forall ev, In ev H0 -> In ev H1).
-      {
-        eapply IHe2.
-        eassumption.
-        eassumption.
-        eassumption.
-      }
-
-      rewrite <- H3 in H2.
-      apply in_app_or in H2.
-      destruct H2.
-      assert (In ev H1) by eauto.
-      rewrite <- H4.
-      apply in_or_app.
-      eauto.
-      rewrite <- H4.
-      apply in_or_app.
-      right.
-      eauto.
-    +
+      apply in_or_app; eauto.
+      apply in_or_app; eauto.
+        +
       subst.
       repeat ff.
-      unfold am_add_trace in *.
+      unfold am_add_trace in * .
       amsts'.
       invc H4.
-
-      assert (exists trr, am_st_trace = tr2 ++ trr).
-      {
-        eapply am_trace_cumul.
-        eassumption.
-      }
-      destruct_conjs.
+      do_cumul_app.
+      do_inv_head'.
       subst.
+      apply in_or_app; eauto.
 
-      assert (x1 = H1 ++ [umeas 0 0 n1 [encodeEv e2; n0] 0 0]).
-      {
-        repeat (rewrite <- app_assoc in * ); 
-          eapply app_inv_head; eauto.
-      }
-      subst.
-      apply in_or_app.
-      left.
-      eauto.
 
   -
 
@@ -754,417 +670,164 @@ Proof.
       amsts'.
       unfold am_checkNonce in * .
       ff.
-      ff; try solve_by_inversion.
-      ++
-        subst.
-        assert (forall ev, In ev x0 -> In ev x1).
-        {
-          eapply IHe2.
-          econstructor.
-          eassumption.
-          eassumption.
-        }
-        eauto.
-      ++
-        subst.
-        assert (forall ev, In ev x0 -> In ev x1).
-        {
-          eapply IHe2.
-          econstructor.
-          eassumption.
-          eassumption.
-        }
-        eauto.
-      ++
-        subst.
-        assert (forall ev, In ev x0 -> In ev x1).
-        {
-          eapply IHe2.
-          econstructor.
-          eassumption.
-          eassumption.
-        }
-        eauto.
-      ++
-        subst.
-        assert (forall ev, In ev x0 -> In ev x1).
-        {
-          eapply IHe2.
-          econstructor.
-          eassumption.
-          eassumption.
-        }
-        eauto.
+      ff; try solve_by_inversion;
+        subst;
+        do_evsub_refl;
+        do_cumul_app_ih; eauto.
+
     +
-      subst.
-      repeat ff.
-      subst.
-      repeat ff.
+      repeat (subst; ff).
       amsts'.
       unfold am_checkNonce in *.
+      repeat ff; try solve_by_inversion;
+        subst;
+        do_cumul_app_ih; eauto.
+  -
+    repeat ff.
+    invc H.
+    +
+      repeat ff; amsts'; repeat ff.
+
+      do_cumul_app.
+
+      do_inv_head'.
+
+      subst.
+
+      assert (forall ev, In ev H3 -> In ev H0).
+      {
+        eapply IHe2_1.
+        econstructor.
+        eassumption.
+        eassumption.
+      }
+
+      do_ba_st_const.
       ff.
-      ff; try solve_by_inversion.
-      ++
-        subst.
-        assert (forall ev, In ev x0 -> In ev x1).
-        {
-          eapply IHe2.
-          eassumption.
-          eassumption.
-          eassumption.
-        }
-        eauto.
-      ++
-        subst.
-        assert (forall ev, In ev x0 -> In ev x1).
-        {
-          eapply IHe2.
-          eassumption.
-          eassumption.
-          eassumption.
-        }
-        eauto.
-  -
-    repeat ff.
-    invc H.
-    +
-      repeat ff.
-      amsts'.
-      repeat ff.
-
-      assert (exists trr, tr ++ x0 = am_st_trace0 ++ trr).
-      {
-        eapply am_trace_cumul; eauto.
-      }
-
-      assert (exists trr, tr2 ++ x1 = am_st_trace ++ trr).
-      {
-        eapply am_trace_cumul; eauto.
-      }
-
-      assert (exists trr, am_st_trace = tr2 ++ trr).
-      {
-        eapply am_trace_cumul; eauto.
-      }
-
-      assert (exists trr, am_st_trace0 = tr ++ trr).
-      {
-        eapply am_trace_cumul; eauto.
-      }
       destruct_conjs.
       subst.
 
-      assert (x1 = H1 ++ H0).
-      {
-        repeat (rewrite <- app_assoc in * ); 
-          eapply app_inv_head; eauto.
-      }
+      rewrite app_assoc in *.
+
       
-      assert (x0 = H3 ++ H).
+      assert (forall ev, In ev H1 -> In ev H).
       {
-        repeat (rewrite <- app_assoc in * ); 
-          eapply app_inv_head; eauto.
-      }
-
-      rewrite H4.
-      rewrite H5 in H2.
-      (*
-      clear H4; clear H5.
-      clear H7; clear H6. *)
-
-      assert (forall ev, In ev H3 -> In ev H1).
-      {
-        eapply IHe2_1.
+        eapply IHe2_2.
         econstructor.
         eassumption.
         eassumption.
       }
-      
-      apply in_app_or in H2.
-      destruct H2.
-      ++
-        apply in_or_app.
-        left.
-        eapply IHe2_1.
-        econstructor.
-        eassumption.
-        eassumption.
-        eauto.
-      ++
-        rewrite H5 in Heqp2.
-        rewrite H4 in Heqp0.
 
-        assert (forall ev, In ev H -> In ev H0).
-        {
-          eapply IHe2_2.
-          econstructor.
-          rewrite app_assoc in Heqp2.
-          rewrite app_assoc in Heqp0.
-          eassumption.
+      do_inor;
+        apply in_or_app; eauto.
 
-          assert (am_nonceMap = am_nonceMap0 /\ am_nonceId = am_nonceId0 /\ st_aspmap = st_aspmap0
-                  /\ st_sigmap = st_sigmap0).
-          {
-            do_ba_st_const.
-            simpl in *.
-            destruct_conjs.
-            subst.
-            tauto.
-          }
-          destruct_conjs.
-          subst.
-          rewrite app_assoc in Heqp0.
-          apply Heqp0.
-        }
-        apply in_or_app.
-        eauto.
     +
       amsts'.
       repeat ff.
 
-      assert (exists trr, am_st_trace = tr2 ++ trr).
-      {
-        eapply am_trace_cumul; eauto.
-      }
+      do_cumul_app.
 
-      assert (exists trr, tr2 ++ x1  = am_st_trace ++ trr).
-      {
-        eapply am_trace_cumul; eauto.
-      }
-      destruct_conjs.
+      do_inv_head'.
+
       subst.
 
-      assert (x1 = H ++ H1).
-      {
-        repeat (rewrite <- app_assoc in * );  
-          eapply app_inv_head; eauto.
-      }
-      subst.
-       
-      assert (forall ev, In ev x0 -> In ev H).
-      {
-        eapply IHe2_1.
-        eassumption.
-        eassumption.
-        eassumption.
-      }
+      do_cumul_app_ih.
+
       apply in_or_app.
       eauto.
     +
       amsts'.
       repeat ff.
 
-      assert (exists trr, am_st_trace = tr2 ++ trr).
-      {
-        eapply am_trace_cumul; eauto.
-      }
+      do_cumul_app.
 
-      assert (exists trr, tr2 ++ x1  = am_st_trace ++ trr).
-      {
-        eapply am_trace_cumul; eauto.
-      }
+      do_inv_head'.
+
+      subst.
+
+      do_ba_st_const.
+
       destruct_conjs.
+      ff.
       subst.
 
-      assert (x1 = H ++ H1).
-      {
-        repeat (rewrite <- app_assoc in * ); 
-          eapply app_inv_head; eauto.
-      }
-      subst.
+      rewrite app_assoc in *.
+      do_cumul_app_ih.
 
-      assert (am_nonceMap = nm /\ am_nonceId = ni /\ st_aspmap = amap /\ st_sigmap = smap).
-      {
-        do_ba_st_const.
-        simpl in *.
-        destruct_conjs.
-        subst.
-        tauto.
-      }
-      destruct_conjs.
-      subst.
-      
-      assert (forall ev, In ev x0 -> In ev H1).
-      {
-        eapply IHe2_2.
-        eassumption.
-        eassumption.
-        rewrite app_assoc in Heqp0.
-        eassumption.
-      }
       apply in_or_app.
       eauto.
   -
     repeat ff.
     invc H.
     +
-      repeat ff.
-      amsts'.
-      repeat ff.
+      repeat ff; amsts'; repeat ff.
 
-      assert (exists trr, tr ++ x0 = am_st_trace0 ++ trr).
+      do_cumul_app.
+
+      do_inv_head'.
+
+      subst.
+
+      assert (forall ev, In ev H3 -> In ev H0).
       {
-        eapply am_trace_cumul; eauto.
+        eapply IHe2_1.
+        econstructor.
+        eassumption.
+        eassumption.
       }
 
-      assert (exists trr, tr2 ++ x1 = am_st_trace ++ trr).
-      {
-        eapply am_trace_cumul; eauto.
-      }
-
-      assert (exists trr, am_st_trace = tr2 ++ trr).
-      {
-        eapply am_trace_cumul; eauto.
-      }
-
-      assert (exists trr, am_st_trace0 = tr ++ trr).
-      {
-        eapply am_trace_cumul; eauto.
-      }
+      do_ba_st_const.
+      ff.
       destruct_conjs.
       subst.
 
-      assert (x1 = H1 ++ H0).
-      {
-        repeat (rewrite <- app_assoc in * ); 
-          eapply app_inv_head; eauto.
-      }
+      rewrite app_assoc in *.
+
       
-      assert (x0 = H3 ++ H).
+      assert (forall ev, In ev H1 -> In ev H).
       {
-        repeat (rewrite <- app_assoc in * ); 
-          eapply app_inv_head; eauto.
-      }
-
-      rewrite H4.
-      rewrite H5 in H2.
-      (*
-      clear H4; clear H5.
-      clear H7; clear H6. *)
-
-      assert (forall ev, In ev H3 -> In ev H1).
-      {
-        eapply IHe2_1.
+        eapply IHe2_2.
         econstructor.
         eassumption.
         eassumption.
       }
-      
 
-      apply in_app_or in H2.
-      destruct H2.
-      ++
-        apply in_or_app.
-        left.
-        eapply IHe2_1.
-        econstructor.
-        eassumption.
-        eassumption.
-        eauto.
-      ++
-        rewrite H5 in Heqp2.
-        rewrite H4 in Heqp0.
+      do_inor;
+        apply in_or_app; eauto.
 
-        assert (forall ev, In ev H -> In ev H0).
-        {
-          eapply IHe2_2.
-          econstructor.
-          rewrite app_assoc in Heqp2.
-          rewrite app_assoc in Heqp0.
-          eassumption.
-
-          assert (am_nonceMap = am_nonceMap0 /\ am_nonceId = am_nonceId0 /\
-                  st_aspmap = st_aspmap0 /\ st_sigmap = st_sigmap0).
-          {
-            do_ba_st_const.
-            simpl in *.
-            destruct_conjs.
-            subst.
-            tauto.
-          }
-          destruct_conjs.
-          subst.
-          rewrite app_assoc in Heqp0.
-          apply Heqp0.
-        }
-        apply in_or_app.
-        eauto.
     +
       amsts'.
       repeat ff.
 
-      assert (exists trr, am_st_trace = tr2 ++ trr).
-      {
-        eapply am_trace_cumul; eauto.
-      }
+      do_cumul_app.
 
-      assert (exists trr, tr2 ++ x1  = am_st_trace ++ trr).
-      {
-        eapply am_trace_cumul; eauto.
-      }
-      destruct_conjs.
+      do_inv_head'.
+
       subst.
 
-      assert (x1 = H ++ H1).
-      {
-        repeat (rewrite <- app_assoc in * ); 
-          eapply app_inv_head; eauto.
-      }
-      subst.
-      
+      do_cumul_app_ih.
 
-      
-      assert (forall ev, In ev x0 -> In ev H).
-      {
-        eapply IHe2_1.
-        eassumption.
-        eassumption.
-        eassumption.
-      }
       apply in_or_app.
       eauto.
     +
       amsts'.
       repeat ff.
 
-      assert (exists trr, am_st_trace = tr2 ++ trr).
-      {
-        eapply am_trace_cumul; eauto.
-      }
+      do_cumul_app.
 
-      assert (exists trr, tr2 ++ x1  = am_st_trace ++ trr).
-      {
-        eapply am_trace_cumul; eauto.
-      }
+      do_inv_head'.
+
+      subst.
+
+      do_ba_st_const.
+
       destruct_conjs.
+      ff.
       subst.
 
-      assert (x1 = H ++ H1).
-      {
-        repeat (rewrite <- app_assoc in * ); 
-          eapply app_inv_head; eauto.
-      }
-      subst.
+      rewrite app_assoc in *.
+      do_cumul_app_ih.
 
-      assert (am_nonceMap = nm /\ am_nonceId = ni /\ st_aspmap = amap /\ st_sigmap = smap).
-      {
-        do_ba_st_const.
-        simpl in *.
-        destruct_conjs.
-        subst.
-        tauto.
-      }
-      destruct_conjs.
-      subst.
-
-      assert (forall ev, In ev x0 -> In ev H1).
-      {
-        eapply IHe2_2.
-        eassumption.
-        eassumption.
-        rewrite app_assoc in Heqp0.
-        eassumption.
-      }
       apply in_or_app.
       eauto.
 Defined.
