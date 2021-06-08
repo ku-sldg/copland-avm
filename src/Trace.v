@@ -251,7 +251,7 @@ Qed.
 Inductive trace: AnnoTerm -> Plc -> Evidence ->
                  list Ev -> Prop :=
 | tasp: forall r x p e,
-    trace (aasp r x) p e [(asp_event (fst r) x p)]
+    trace (aasp r x) p e [(asp_event (fst r) x p e)]
 | tatt: forall r x p q e tr1,
     trace x q e tr1 ->
     trace (aatt r q x) p e
@@ -514,8 +514,6 @@ Proof.
       *
         repeat tr_wf.
         simpl in *.
-        Locate well_formed_range.
-        Check well_formed_range.
         repeat find_eapply_lem_hyp well_formed_range_r; auto.
         lia.
       * inv_in.

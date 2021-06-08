@@ -90,13 +90,14 @@ Definition signEv (x:nat) : CVM EvidenceC :=
   add_tracem [sign x p] ;;
   ret (ggc p x e).
 
-(*
-Definition hashEv (x:nat) (e:EvidenceC) : CVM BS :=
-  (* e <- get_ev ;; *)
+Definition hashEvC (e:EvidenceC): BS.
+Admitted.
+
+Definition hashEv (x:nat) : CVM EvidenceC :=
+  e <- get_ev ;;
   p <- get_pl ;;
-  add_tracem [hash x p] ;;
-  ret x.
-*)
+  add_tracem [hash x p (et_fun e)] ;;
+  ret (hhc p (hashEvC e) (et_fun e)).
 
 Definition copyEv (x:nat) : CVM EvidenceC :=
   p <- get_pl ;;
@@ -110,10 +111,11 @@ Definition do_prim (x:nat) (a:ASP) : CVM EvidenceC :=
     invokeUSM x asp_id l tpl tid         
   | SIG =>
     signEv x
-  (*| HSH =>
+  | HSH =>
+    (*
     e <- get_ev ;;
-    bs <- hashEv x e ;;
-    ret (hhc bs e) *)
+    p <- get_pl ;; *)
+    hashEv x
   end.
 
 Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) : CVM unit :=
@@ -140,17 +142,6 @@ Definition join_seq (n:nat) (p:Plc) (e1:EvidenceC) (e2:EvidenceC) : CVM unit :=
 Definition join_par (n:nat) (p:Plc) (e1:EvidenceC) (e2:EvidenceC) : CVM unit :=
   put_ev (ppc e1 e2) ;;
   add_tracem [join n p].
-  
-
-(** * Helper functions for Appraisal *)
-
-Definition checkSig (x:nat) (i:ASP_ID) (e':EvidenceC) (sig:BS) : CVM BS :=
-  invokeUSM x i ([encodeEv e'] ++ [sig] (* ++ args*) ) 0 0 ;;
-  ret x.
-
-Definition checkUSM (x:nat) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID) (bs:BS) : CVM BS :=
-  invokeUSM x i ([bs] ++ l) tpl tid ;;
-  ret x.
    
 Ltac monad_unfold :=
   repeat unfold
@@ -158,7 +149,7 @@ Ltac monad_unfold :=
   do_prim,
   invokeUSM,
   signEv,
-  (*hashEv, *)
+  hashEv,
   copyEv,
 
   sendReq,

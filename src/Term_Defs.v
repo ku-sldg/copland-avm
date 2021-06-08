@@ -46,7 +46,7 @@ Inductive ASP: Set :=
 | CPY: ASP
 | ASPC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP
 | SIG: ASP
-(*| HSH: ASP*) .
+| HSH: ASP.
 
 Inductive Split: Set :=
 | LEFT
@@ -66,7 +66,7 @@ Inductive Evidence: Set :=
 | mt: Evidence
 | uu: (*Plc ->*) ASP_ID -> (list Arg) -> Plc -> TARG_ID -> Evidence -> Evidence
 | gg: Plc -> Evidence -> Evidence
-(*| hh: Plc -> Evidence -> Evidence *)
+| hh: Plc -> Evidence -> Evidence
 | nn: N_ID -> Evidence -> Evidence
 | ss: Evidence -> Evidence -> Evidence
 | pp: Evidence -> Evidence -> Evidence.
@@ -88,7 +88,7 @@ Definition eval_asp t p e :=
   | CPY => e 
   | ASPC i l upl targi => uu i l upl targi e
   | SIG => gg p e
-  (*| HSH => hh p e *)
+  | HSH => hh p e
   end.
 
 (** The evidence associated with a term, a place, and some initial evidence. *)
@@ -118,7 +118,7 @@ Inductive Ev: Set :=
 | copy:  nat -> Plc -> Ev 
 | umeas: nat -> Plc -> ASP_ID -> (list Arg) -> Plc -> TARG_ID -> Ev
 | sign: nat -> Plc -> Ev
-(*| hash: nat -> Plc -> Ev *)
+| hash: nat -> Plc -> Evidence -> Ev
 | req: nat -> Plc -> Plc -> Term -> Evidence -> Ev
 | rpy: nat -> Plc -> Plc -> Ev 
 | split: nat -> Plc -> Ev
@@ -141,7 +141,7 @@ Definition ev x : nat :=
   | copy i _ => i
   | umeas i _ _ _ _ _  => i
   | sign i _ => i
-  (*| hash i _ => i *)
+  | hash i _ _ => i
   | req i _ _ _ _ => i
   | rpy i _ _ => i 
   | split i _ => i
@@ -156,7 +156,7 @@ Definition pl x : Plc :=
   | copy _ p => p
   | umeas _ p _ _ _ _  => p
   | sign _ p => p
-  (*| hash _ p => p *)
+  | hash _ p _ => p
   | req _ p _ _ _ => p
   | rpy _ p _ => p
   | split _ p => p
@@ -173,12 +173,12 @@ See Lemma [events_injective].
  *)
 
 
-Definition asp_event i x p :=
+Definition asp_event i x p e :=
   match x with
   | CPY => copy i p
   | ASPC id l upl tid => umeas i p id l upl tid
   | SIG => sign i p
-  (*| HSH => hash i p *)
+  | HSH => hash i p e
   end.
 
 

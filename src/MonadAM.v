@@ -19,11 +19,12 @@ Definition am_newNonce (bs :BS) : AM EvidenceC :=
   let i := am_nonceId am_st in
   let appm := st_aspmap am_st in
   let sigm := st_sigmap am_st in
+  let hshm := st_hshmap am_st in
   let checkedm := checked am_st in
   let tracem := am_st_trace am_st in           
   let newMap := map_set mm i bs in
   let newId := i + 1 in
-  put (mkAM_St newMap newId appm sigm tracem checkedm) ;;         
+  put (mkAM_St newMap newId appm sigm hshm tracem checkedm) ;;         
   ret (nnc i bs mtc).
 
 Definition getNonceVal (nid:nat) : AM BS :=
@@ -40,9 +41,10 @@ Definition add_checked (nid:nat) : AM unit :=
   let i := am_nonceId am_st in
   let appm := st_aspmap am_st in
   let sigm := st_sigmap am_st in
+  let hshm := st_hshmap am_st in
   let checkedm := checked am_st in
   let tracem := am_st_trace am_st in
-  put (mkAM_St mm i appm sigm tracem (checkedm ++ [nid])).
+  put (mkAM_St mm i appm sigm hshm tracem (checkedm ++ [nid])).
 
 Definition am_checkNonce (nid:nat) (bs:BS) : AM BS :=
   good_bs <- getNonceVal nid ;;
@@ -56,9 +58,29 @@ Definition nonces_checked (nm:MapC nat BS) (l:list nat) : Prop :=
 
 Definition nonces_checked_st (st:AM_St) : Prop :=
   match st with
-  | mkAM_St nm i am sm tr l =>
+  | mkAM_St nm i am sm hm tr l =>
     nonces_checked nm l
   end.
+
+Require Import StVM MonadVM.
+
+(** * Helper functions for Appraisal *)
+
+Definition checkSig (x:nat) (i:ASP_ID) (e':EvidenceC) (sig:BS) : CVM BS :=
+  invokeUSM x i ([encodeEv e'] ++ [sig] (* ++ args*) ) 0 0 ;;
+  ret x.
+
+Definition checkUSM (x:nat) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID) (bs:BS) : CVM BS :=
+  invokeUSM x i ([bs] ++ l) tpl tid ;;
+  ret x.
+
+Definition hashEvT (e:Evidence): BS.
+Admitted.
+
+Definition checkHSH (*(x:nat) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID)*)
+           (e:Evidence) (bs:BS) : CVM BS :=
+  invokeUSM 0 1 ([hashEvT e] ++ [bs]) 42 43 ;;
+  ret 0.
 
 Definition runAM {A:Type} (k:(AM A)) (st:AM_St) : (option A) * AM_St :=
   runSt k st.

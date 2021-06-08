@@ -160,7 +160,7 @@ Proof.
 
     assert (forall ev, In ev x0 -> In ev x1).
     {
-      eapply hffh; eauto.
+      eapply app_evSub; eauto.
 
     }
 

@@ -171,10 +171,10 @@ Inductive events: AnnoTerm -> Plc -> Evidence -> Ev -> Prop :=
     forall r i p e,
       fst r = i ->
       events (aasp r SIG) p e (sign i p)
-(*| evtshsh:
-    forall r lr i p,
+| evtshsh:
+    forall r i p e,
       fst r = i ->
-      events (aasp r lr HSH) p (hash i p) *)
+      events (aasp r HSH) p e (hash i p e)
 | evtsattreq:
     forall r q t i p e,
       fst r = i ->

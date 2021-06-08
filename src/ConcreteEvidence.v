@@ -13,10 +13,48 @@ Inductive EvidenceC: Set :=
 | mtc: EvidenceC
 | uuc: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> BS -> EvidenceC -> EvidenceC
 | ggc: Plc -> BS -> EvidenceC -> EvidenceC
-(*| hhc: BS -> EvidenceC -> EvidenceC (* TODO: remove Ev param *) *)
+| hhc: Plc -> BS -> Evidence -> EvidenceC
 | nnc: N_ID -> BS -> EvidenceC -> EvidenceC
 | ssc: EvidenceC -> EvidenceC -> EvidenceC
 | ppc: EvidenceC -> EvidenceC -> EvidenceC.
+
+Fixpoint et_fun (ec:EvidenceC) : Evidence :=
+  match ec with
+  | mtc => mt
+  | uuc i l p tid _ ec' => uu i l p tid (et_fun ec')
+  | ggc p _ ec' => gg p (et_fun ec')
+  | hhc p _ et => hh p et (* TODO:  is this acceptable? *)
+  | nnc ni _ ec' => nn ni (et_fun ec')
+  | ssc ec1 ec2 => ss (et_fun ec1) (et_fun ec2)
+  | ppc ec1 ec2 => pp (et_fun ec1) (et_fun ec2)
+  end.
+
+Inductive EvSubT: Evidence -> Evidence -> Prop :=
+| evsub_reflT : forall e : Evidence, EvSubT e e
+| uuSubT: forall e e' i tid l tpl,
+    EvSubT e e' ->
+    EvSubT e (uu i l tpl tid e')
+| ggSubT: forall e e' p,
+    EvSubT e e' ->
+    EvSubT e (gg p e')
+| hhSubT: forall e e' p,
+    EvSubT e e' ->
+    EvSubT e (hh p e')
+| nnSubT: forall e e' i,
+    EvSubT e e' ->
+    EvSubT e (nn i e')
+| ssSublT: forall e e' e'',
+    EvSubT e e' ->
+    EvSubT e (ss e' e'')
+| ssSubrT: forall e e' e'',
+    EvSubT e e'' ->
+    EvSubT e (ss e' e'')
+| ppSublT: forall e e' e'',
+    EvSubT e e' ->
+    EvSubT e (pp e' e'')
+| ppSubrT: forall e e' e'',
+    EvSubT e e'' ->
+    EvSubT e (pp e' e'').
 
 Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
 | evsub_refl : forall e : EvidenceC, EvSub e e
@@ -26,6 +64,12 @@ Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
 | ggSub: forall e e' p bs,
     EvSub e e' ->
     EvSub e (ggc p bs e')
+| hhSub: forall e et p bs,
+    EvSubT (et_fun e) et ->
+    EvSub e (hhc p bs et)
+(*| hhSub: forall e e' p bs,
+    EvSub e e' ->
+    EvSub e (hhc p bs et) *)
 | nnSub: forall e e' i bs,
     EvSub e e' ->
     EvSub e (nnc i bs e')
@@ -42,6 +86,17 @@ Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
     EvSub e e'' ->
     EvSub e (ppc e' e'').
 
+
+Inductive EvBad': Evidence -> Prop :=
+| ggBad: forall e e' p p',
+    e = gg p' e' ->
+    EvBad' (hh p e).
+
+Inductive EvBad : Evidence -> Prop :=
+| evIsBad: forall e e',
+    EvSubT e e' ->
+    EvBad' e ->
+    EvBad e'.
 
 
 
@@ -61,16 +116,7 @@ Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=
 
 
 
-Fixpoint et_fun (ec:EvidenceC) : Evidence :=
-  match ec with
-  | mtc => mt
-  | uuc i l p tid _ ec' => uu i l p tid (et_fun ec')
-  | ggc p _ ec' => gg p (et_fun ec')
-  (*| hhc _ ec' => hh p (et_fun p ec') *)
-  | nnc ni _ ec' => nn ni (et_fun ec')
-  | ssc ec1 ec2 => ss (et_fun ec1) (et_fun ec2)
-  | ppc ec1 ec2 => pp (et_fun ec1) (et_fun ec2)
-  end.
+
 
 
 (*
@@ -85,9 +131,9 @@ Inductive Ev_Shape: EvidenceC -> Evidence -> Prop :=
 | ggt: forall p bs e et,
     Ev_Shape e et ->
     Ev_Shape (ggc p bs e) (gg p et)
-(*| hht: forall p bs e et,
-    Ev_Shape e et ->
-    Ev_Shape (hhc bs e) (hh p et) *)
+| hht: forall bs p et,
+    (*Ev_Shape e et -> *)
+    Ev_Shape (hhc p bs et) (hh p et)
 | nnt: forall bs e et i,
     Ev_Shape e et ->
     Ev_Shape (nnc i bs e) (nn i et) 
@@ -109,8 +155,8 @@ Ltac evShapeFacts :=
   | [H: Ev_Shape _ (uu _ _ _ _ _) |- _] => invc H
   | [H: Ev_Shape (ggc _ _ _) _ |- _] => invc H
   | [H: Ev_Shape _ (gg _ _) |- _] => invc H
-  (*| [H: Ev_Shape (hhc _ _) _ |- _] => invc H
-  | [H: Ev_Shape _ (hh _ _) |- _] => invc H *)
+  | [H: Ev_Shape (hhc _ _ _) _ |- _] => invc H
+  | [H: Ev_Shape _ (hh _ _) |- _] => invc H
   | [H: Ev_Shape (nnc _ _ _) _ |- _] => invc H
   | [H: Ev_Shape _ (nn _ _) |- _] => invc H
   | [H: Ev_Shape (ssc _ _) _ |- _] => invc H
@@ -135,7 +181,9 @@ Proof.
   -
      econstructor; eauto.
   -
-     econstructor; eauto.
+    econstructor; eauto.
+  -
+    econstructor; eauto.
 Defined.
 
 (* TODO: perhaps an equality modulo "measuring place" *)

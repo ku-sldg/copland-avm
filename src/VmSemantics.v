@@ -451,6 +451,23 @@ Proof.
       try (
           df;
           eauto).
+    +
+      assert (Ev_Shape e (et_fun e)).
+      {
+        eapply ev_evshape.
+      }
+
+      assert (es = (et_fun e)).
+      {
+        eapply evshape_determ.
+        eauto.
+        eauto.
+      }
+      subst.
+      eauto.
+      
+      
+      
   -
     repeat df. 
     annogo.
@@ -618,7 +635,10 @@ Proof.
     destruct s; ff.
   -
     invc H.
-    destruct s; ff.  
+    destruct s; ff.
+  -
+    invc H.
+    destruct s; ff. 
 Defined.
 
 Lemma evshape_split_r: forall e et s,
@@ -652,7 +672,9 @@ Proof.
   -
     invc H.
     destruct s; ff.
-    
+   -
+    invc H.
+    destruct s; ff.   
 Defined.
    
 Lemma cvm_refines_lts_event_ordering : forall t tr et e e' p p',
@@ -668,15 +690,28 @@ Proof.
     destruct a;
       df;
       econstructor; try (econstructor; reflexivity).
+    +
+      assert (et = et_fun e).
+      {
+        eapply evshape_determ; eauto.
+        apply ev_evshape; eauto.
+      }
+      rewrite <- H0.
+      econstructor; try (econstructor; reflexivity).
+      
+      
   - (* aatt case *)
     destruct r.
     repeat (df; try dohtac; df).
-    Print remote_LTS.
     
     assert (lstar (conf t n et) (remote_events t n) (stop n (aeval t n et))).
     {
       apply remote_LTS.
     }
+
+    pose ev_evshape.
+    pose (e0 e).
+    
     assert (et_fun e = et).
     {
       pose ev_evshape.

@@ -22,7 +22,7 @@ Set Nested Proofs Allowed.
 
 Fixpoint ev_sys (t: AnnoTerm) p e: EvSys Ev :=
   match t with
-  | aasp (i, j) x => leaf (i, j) (asp_event i x p)
+  | aasp (i, j) x => leaf (i, j) (asp_event i x p e)
   | aatt (i, j) q x =>
     before (i, j)
       (leaf (i, S i) (req i p q (unanno x) e))

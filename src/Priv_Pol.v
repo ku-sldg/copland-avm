@@ -55,6 +55,10 @@ Proof.
       cbn.
       inversion H.
       solve_by_inversion.
+    +     
+      cbn.
+      inversion H.
+      solve_by_inversion.
   -
     
     invc H.

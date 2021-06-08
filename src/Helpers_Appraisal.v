@@ -19,7 +19,10 @@ Lemma ba_const : forall e a_st a_st' o,
     am_nonceMap a_st = am_nonceMap a_st' /\
     am_nonceId a_st = am_nonceId a_st' /\
     st_aspmap a_st = st_aspmap a_st' /\
-    st_sigmap a_st = st_sigmap a_st'. (*/\
+    st_sigmap a_st = st_sigmap a_st' /\
+    st_hshmap a_st = st_hshmap a_st'.
+
+                               (*/\
     checked a_st = checked a_st'. *)
 Proof.
   intros.
@@ -52,15 +55,47 @@ Ltac do_ba_st_const :=
             am_nonceMap a_st = am_nonceMap a0 /\
             am_nonceId a_st = am_nonceId a0 /\
             st_aspmap a_st = st_aspmap a0 /\
-            st_sigmap a_st = st_sigmap a0) tac
+            st_sigmap a_st = st_sigmap a0 /\
+            st_hshmap a_st = st_hshmap a0
+          ) tac
       end);
   subst.
+
+(*
+Ltac hshMappedFacts :=
+  match goal with
+  | [H: hshMapped (?C _) _ |- _] => invc H
+  end;
+  destruct_conjs;
+  try debound.
+
+Lemma hshMapped_relevant: forall a_st a e,
+    (*
+    am_nonceMap a_st = am_nonceMap a /\
+    (*am_nonceId a_st = am_nonceId a /\ *)
+    st_aspmap a_st = st_aspmap a /\
+    st_sigmap a_st = st_sigmap a /\ *)
+    st_hshmap a_st = st_hshmap a ->
+    hshMapped e a ->
+    hshMapped e a_st.
+Proof.
+  intros.
+  generalizeEverythingElse e.
+  induction e; intros;
+    try (econstructor; tauto);
+    try (
+        hshMappedFacts;
+        repeat (econstructor; eauto); subst'; eauto).
+Defined.
+*)
+
 
 Lemma evmapped_relevant: forall a_st a e,
     am_nonceMap a_st = am_nonceMap a /\
     (*am_nonceId a_st = am_nonceId a /\ *)
     st_aspmap a_st = st_aspmap a /\
-    st_sigmap a_st = st_sigmap a ->
+    st_sigmap a_st = st_sigmap a /\
+    st_hshmap a_st = st_hshmap a ->
     evMapped e a ->
     evMapped e a_st.
 Proof.
@@ -71,6 +106,19 @@ Proof.
     try (
         evMappedFacts;
         repeat (econstructor; eauto); subst'; eauto).
+
+  (*
+  - (* hsh case *)
+    econstructor.
+    evMappedFacts.
+    amsts'.
+    df.
+    repeat subst'.
+    eapply hshMapped_relevant.
+    2: {
+      eassumption.
+    }
+    ff. *)
 Defined.
 
 Lemma build_app_some' : forall e a_st a_st',
@@ -84,6 +132,20 @@ Proof.
         try solve_by_inversion;
         try (repeat (econstructor; eauto); tauto)
       ).
+
+(*
+  - (* hhc case *)
+    repeat ff.
+    amsts'.
+    df.
+    econstructor.
+
+    HEREEEE
+
+
+    
+    admit.
+*)
   - (* nnc case *)
     repeat ff.
     +
@@ -179,6 +241,10 @@ Proof.
     dosomeee.
     eauto.
   -
+    evMappedFacts.
+    ff.
+    eauto.
+  -
     cbn.
     evMappedFacts.
     df.
@@ -186,7 +252,7 @@ Proof.
     do_ba_st_const.
     destruct_conjs.
     subst'.
-    clear H1; clear H2; clear H3.
+    clear H1; clear H2; clear H3; clear H4.
     repeat (ff; eauto).
 
   -
@@ -256,11 +322,12 @@ Proof.
 Defined.
 
 Lemma am_trace_cumul : forall  e e_res
-                          nm nm' ni ni' amap amap' smap smap' tr tr' cs cs',
+                          nm nm' ni ni' amap amap' smap smap' hmap hmap' tr tr' cs cs',
     build_app_comp_ev e {| am_nonceMap := nm;
                            am_nonceId := ni;
                            st_aspmap := amap;
                            st_sigmap := smap;
+                           st_hshmap := hmap;
                            am_st_trace:= tr;
                            checked := cs
                         |}
@@ -268,6 +335,7 @@ Lemma am_trace_cumul : forall  e e_res
                       am_nonceId := ni';
                       st_aspmap := amap';
                       st_sigmap := smap';
+                      st_hshmap := hmap';
                       am_st_trace:= tr';
                       checked := cs'
                         |}) -> 
@@ -285,6 +353,7 @@ Proof.
     repeat ff.
     unfold am_add_trace in *.
     ff.
+    invc H1.
     edestruct IHe.
     eassumption.
     subst.
@@ -295,6 +364,7 @@ Proof.
     repeat ff.
     unfold am_add_trace in *.
     ff.
+    invc H1.
     edestruct IHe.
     eassumption.
     subst.
@@ -304,10 +374,18 @@ Proof.
   -
     repeat ff;
       amsts';
+    repeat ff;
+    eauto.
+    (*
+    exists [].
+    rewrite app_nil_r.
+    eauto. *)
+  -
+    repeat ff;
+      amsts';
     unfold am_checkNonce in *;
     repeat ff;
     eauto.
-
   -
     repeat ff.
     amsts'.
@@ -330,11 +408,26 @@ Proof.
     eauto.
 Defined.
 
+Lemma mt_subT_all: forall e,
+    EvSubT mt e.
+Proof.
+    induction e; intros;
+    try
+      (econstructor; eauto; tauto).
+Defined.
+
+  
+
 Lemma mt_sub_all: forall e,
     EvSub mtc e.
 Proof.
   induction e; intros;
-    (econstructor; eauto; tauto).
+    try
+      (econstructor; eauto; tauto).
+  - (* hhc case *)
+    econstructor.
+    ff.
+    apply mt_subT_all.
 Defined.
 
 Ltac do_evsub :=
@@ -342,16 +435,90 @@ Ltac do_evsub :=
   | [H: EvSub _ (?C) |- _] => invc H
   end.
 
+Ltac do_evsubT :=
+  match goal with
+  | [H: EvSubT _ (?C) |- _] => invc H
+  end.
+
+Lemma evSubT_trans: forall e' e e'',
+  EvSubT e e' ->
+  EvSubT e' e'' ->
+  EvSubT e e''.
+Proof.
+  induction e''; intros;
+    try (
+        do_evsubT;
+        try solve_by_inversion;
+        try (econstructor; eauto);
+        tauto).
+Defined.
+
+Lemma esub_esubt: forall e e',
+    EvSub e e' ->
+    EvSubT (et_fun e) (et_fun e').
+Proof.
+  intros.
+  generalizeEverythingElse e'.
+  induction e'; intros.
+  -
+    do_evsub.
+    econstructor.
+  -
+    do_evsub.
+    ff.
+    econstructor.
+    econstructor. eauto.
+  -
+    do_evsub.
+    ff.
+    econstructor.
+    ff.
+    econstructor.
+    eauto.
+  -
+    do_evsub.
+    ff.
+    econstructor.
+    econstructor. eauto.
+  -
+    do_evsub.
+    ff.
+    econstructor.
+    econstructor. eauto.
+  -
+    do_evsub.
+    econstructor; eauto.
+    econstructor; eauto.
+    apply ssSubrT.
+    eauto.
+  -
+    do_evsub.
+    econstructor; eauto.
+    econstructor; eauto.
+    apply ppSubrT.
+    eauto.
+Defined.
+
+    
 Lemma evSub_trans: forall e' e e'',
   EvSub e e' ->
   EvSub e' e'' ->
   EvSub e e''.
 Proof.
   induction e''; intros;
+    try (
     do_evsub;
     try solve_by_inversion;
     try (econstructor; eauto);
-    tauto.
+    tauto).
+  -
+    do_evsub; eauto.
+    +
+      econstructor.
+      eapply evSubT_trans.
+      Focus 2.
+      eassumption.
+      apply esub_esubt; eauto.
 Defined.
 
 Lemma evAccum: forall t vmst vmst' e e',
@@ -408,12 +575,18 @@ Lemma evMappedSome: forall e1 e2 a_st,
 Proof.
   induction e2; intros;
     try evMappedFacts;
+    try (
     do_evsub;
       try (eauto; tauto);
       econstructor;
         try tauto;
-        try (eexists; econstructor; eauto).
-Defined.
+        try (eexists; econstructor; eauto); tauto).
+  -
+    invc H.
+    +
+      econstructor.
+    +
+Abort.
 
 (*
   Lemma evMappedAll: forall e1 a_st a_st',
@@ -426,6 +599,7 @@ Defined.
  *)
 
 
+(*
 Lemma subSome: forall e1 e2 x a_st a_st',
   EvSub e1 e2 ->
   build_app_comp_ev e2 a_st = (Some x, a_st') ->
@@ -437,6 +611,7 @@ Proof.
   eassumption.
   eapply build_app_some'; eauto.
 Defined.
+*)
 
 
 Ltac do_cumul_app :=
@@ -533,10 +708,10 @@ Ltac do_cumul_app_ih :=
       end;
   destruct_conjs; subst.
 
-Lemma hffh: forall e1 e2
-              nm ni amap smap tr cs
-              nm' ni' amap' smap' x0 cs'
-              nm2' ni2' amap2' smap2' tr2 x1 cs2 cs2'
+Lemma app_evSub: forall e1 e2
+              nm ni amap smap hmap tr cs
+              nm' ni' amap' smap' hmap' x0 cs'
+              nm2' ni2' amap2' smap2' hmap2' tr2 x1 cs2 cs2'
               x_res1 x_res2,
     
     EvSub e1 e2 ->
@@ -547,6 +722,7 @@ Lemma hffh: forall e1 e2
                         am_nonceId := ni;
                         st_aspmap := amap;
                         st_sigmap := smap;
+                        st_hshmap := hmap;
                         am_st_trace := tr;
                         checked := cs |} =
     (Some x_res1,
@@ -555,6 +731,7 @@ Lemma hffh: forall e1 e2
        am_nonceId := ni';
        st_aspmap := amap';
        st_sigmap := smap';
+       st_hshmap := hmap';
        am_st_trace := tr ++ x0;
        checked := cs' |}) ->
 
@@ -564,6 +741,7 @@ Lemma hffh: forall e1 e2
                         am_nonceId := ni;
                         st_aspmap := amap;
                         st_sigmap := smap;
+                        st_hshmap := hmap;
                         am_st_trace := tr2;
                         checked := cs2 |} =
     (Some x_res2,
@@ -572,6 +750,7 @@ Lemma hffh: forall e1 e2
        am_nonceId := ni2';
        st_aspmap := amap2';
        st_sigmap := smap2';
+       st_hshmap := hmap2';
        am_st_trace := tr2 ++ x1;
        checked := cs2' |}) ->
 
@@ -587,7 +766,7 @@ Proof.
     ff.
     assert (x0 = []).
     {
-      rewrite app_nil_end in H8 at 1.
+      rewrite app_nil_end in H9 at 1.
       eapply app_inv_head.
       symmetry.
       eassumption.
@@ -627,7 +806,7 @@ Proof.
       subst.
       apply in_or_app; eauto.
   -
-        repeat ff.
+    repeat ff.
     inversion H.
     +
       repeat ff.
@@ -657,6 +836,57 @@ Proof.
       do_inv_head'.
       subst.
       apply in_or_app; eauto.
+  -
+    repeat ff.
+    inversion H.
+    +
+      repeat ff.
+      subst.
+      repeat ff.
+      assert (x0 = []).
+      {
+        rewrite app_nil_end in H9 at 1.
+        eapply app_inv_head.
+        symmetry.
+        eassumption.
+      }
+      subst.
+      solve_by_inversion.
+    +
+      repeat ff.
+      subst.
+      repeat ff.
+      
+
+
+
+
+      
+      amsts'.
+      unfold am_add_trace in *.
+      invc H3.
+      invc H4.
+
+      do_cumul_app.
+      do_inv_head'.
+      subst.
+      do_evsub_refl.
+      do_cumul_app_ih.
+      do_inor.
+
+      apply in_or_app; eauto.
+      apply in_or_app; eauto.
+        +
+      subst.
+      repeat ff.
+      unfold am_add_trace in * .
+      amsts'.
+      invc H4.
+      do_cumul_app.
+      do_inv_head'.
+      subst.
+      apply in_or_app; eauto.
+    
 
 
   -

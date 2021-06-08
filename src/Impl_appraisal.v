@@ -10,9 +10,10 @@ Definition am_add_trace (tr':list Ev) : AM_St -> AM_St :=
         am_nonceId := ni;
         st_aspmap := amap;
         st_sigmap := smap;
+        st_hshmap := hmap;
         am_st_trace := tr;
         checked := cs |} =>
-    mkAM_St nm ni amap smap (tr ++ tr') cs.
+    mkAM_St nm ni amap smap hmap (tr ++ tr') cs.
 
 Definition am_add_tracem (tr:list Ev) : AM unit :=
   modify (am_add_trace tr).
@@ -31,6 +32,31 @@ Definition am_run_cvm_comp{A:Type} (comp:CVM A) : AM A :=
     ret v
   | _ => failm
   end.
+
+Require Import Maps.
+
+Definition am_get_hsh_gv (p:Plc) (i:ASP_ID) : AM BS :=
+  m <- gets st_hshmap ;;
+  let maybeId := map_get m (p,i) in
+  match maybeId with
+  | Some i' => ret i'
+  | None => failm
+  end.
+
+
+Definition am_get_hsh_golden_val (p:Plc) (et:Evidence): AM BS :=
+  (*
+    m <- gets st_aspmap ;;
+    let maybeId := map_get m (p,i) in
+    match maybeId with
+    | Some i' => ret i'
+    | None => failm
+    end.
+   *)
+  ret 0.
+
+Definition am_check_hsh_eq (gv:BS) (actual:BS) : AM BS :=
+  ret 1.
     
 Fixpoint build_app_comp_ev (e:EvidenceC): AM (EvidenceC) :=
   match e with
@@ -47,6 +73,14 @@ Fixpoint build_app_comp_ev (e:EvidenceC): AM (EvidenceC) :=
     innerRes <- build_app_comp_ev e' ;;
     am_run_cvm_comp (checkSig 0 app_id e' bs) ;;
     ret (ggc pi bs innerRes)
+        
+  | hhc pi bs et =>
+    gv <- am_get_hsh_golden_val pi et ;;
+    am_run_cvm_comp (checkHSH et gv) ;;
+    (*innerRes <- build_app_comp_ev e' ;; 
+    am_run_cvm_comp (checkSig 0 app_id e' bs) ;; *)
+    res <- am_check_hsh_eq gv bs ;;
+    ret (hhc pi res et)
                             
   | nnc nid bs e' =>
     innerRes <- build_app_comp_ev e' ;;

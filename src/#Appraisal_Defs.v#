@@ -18,10 +18,6 @@ Inductive evidenceEvent: Ev -> Prop :=
 (*
 | hev: forall n p, evidenceEvent (hash n p)*). 
 
-
-Definition hashEvT (e:Evidence): BS.
-Admitted.
-
 Definition measEvent (t:AnnoTerm) (p:Plc) (e:Evidence) (ev:Ev) : Prop :=
   events t p e ev /\ evidenceEvent ev.
 

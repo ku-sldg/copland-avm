@@ -49,7 +49,7 @@ Fixpoint seval st :=
   | bsl _ st t p e => ss (seval st) (aeval t p e)
   | bsr _ e st => ss e (seval st)
   | bp _ st0 st1 => pp (seval st0) (seval st1)
-end.
+  end.
 
 (** * Labeled Transition System
 
@@ -63,7 +63,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
 | stasp:
     forall r x p e,
       step (conf (aasp r x) p e)
-           (Some (asp_event (fst r) x p))
+           (Some (asp_event (fst r) x p e))
            (stop p (aeval (aasp r x) p e))
 (** Remote call *)
 
@@ -462,7 +462,7 @@ Proof.
   - left; simpl; auto.
   - right.
     destruct a.
-    + exists (Some (asp_event (fst r) a n)).
+    + exists (Some (asp_event (fst r) a n e)).
       eapply ex_intro; eauto.
     + exists (Some (req (fst r) n n0 (unanno a) e)).
       repeat dest_range.
