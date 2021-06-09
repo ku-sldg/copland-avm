@@ -568,14 +568,20 @@ Proof.
       eauto; tauto.
 Defined.
 
+(* TODO: check that this axiom is reasonable/ how to discharge it *)
+Axiom evmapped_hsh_pieces: forall n n0 e e1 a_st,
+    evMapped (hhc n n0 e) a_st ->
+    EvSubT (et_fun e1) e ->
+    evMapped e1 a_st.
+
 Lemma evMappedSome: forall e1 e2 a_st,
   EvSub e1 e2 ->
   evMapped e2 a_st ->
   evMapped e1 a_st.
 Proof.
   induction e2; intros;
-    try evMappedFacts;
     try (
+    try evMappedFacts;
     do_evsub;
       try (eauto; tauto);
       econstructor;
@@ -586,7 +592,8 @@ Proof.
     +
       econstructor.
     +
-Abort.
+      eapply evmapped_hsh_pieces; eauto.
+Defined.
 
 (*
   Lemma evMappedAll: forall e1 a_st a_st',
@@ -599,7 +606,7 @@ Abort.
  *)
 
 
-(*
+
 Lemma subSome: forall e1 e2 x a_st a_st',
   EvSub e1 e2 ->
   build_app_comp_ev e2 a_st = (Some x, a_st') ->
@@ -611,8 +618,6 @@ Proof.
   eassumption.
   eapply build_app_some'; eauto.
 Defined.
-*)
-
 
 Ltac do_cumul_app :=
   repeat 
@@ -708,15 +713,24 @@ Ltac do_cumul_app_ih :=
       end;
   destruct_conjs; subst.
 
-Lemma app_evSub: forall e1 e2
+
+Lemma app_evSub: forall st_ev e_res t1 t2 ev1 tr1 p st_trace tr1'
               nm ni amap smap hmap tr cs
               nm' ni' amap' smap' hmap' x0 cs'
               nm2' ni2' amap2' smap2' hmap2' tr2 x1 cs2 cs2'
               x_res1 x_res2,
     
-    EvSub e1 e2 ->
+    (*EvSub e1 e2 -> *)
 
-    build_app_comp_ev e1
+    copland_compile t1 {| st_ev := ev1; st_trace := tr1; st_pl := p |} =
+    (Some tt, {| st_ev := st_ev; st_trace := st_trace; st_pl := p |}) ->
+      
+    copland_compile t2
+    {| st_ev := st_ev; st_trace := st_trace; st_pl := p |} =
+    (Some tt, {| st_ev := e_res; st_trace := tr1'; st_pl := p |}) ->
+
+
+    build_app_comp_ev st_ev
                       {|
                         am_nonceMap := nm;
                         am_nonceId := ni;
@@ -735,7 +749,7 @@ Lemma app_evSub: forall e1 e2
        am_st_trace := tr ++ x0;
        checked := cs' |}) ->
 
-    build_app_comp_ev e2
+    build_app_comp_ev e_res
                       {|
                         am_nonceMap := nm;
                         am_nonceId := ni;
@@ -754,8 +768,26 @@ Lemma app_evSub: forall e1 e2
        am_st_trace := tr2 ++ x1;
        checked := cs2' |}) ->
 
-    forall ev, In ev x0 -> In ev x1.
+    (forall ev, In ev x0 -> In ev x1).
+
+    (*
+    forall n p i args tpl tid,
+      In (umeas n p i args tpl tid) x0 ->
+      (In (umeas n p i args tpl tid) x1 \/
+       (exists n' p' args' tpl' tid' e e',
+           In (umeas n' p' 1 ([hashEvT e] ++ args') tpl' tid') x1 /\
+           EvSubT (uu i args tpl tid e') e)).
+     *)
+    
+
+(*
+             exists evid, hsh_appEvent ev evid /\ exists n p i args tpl tid, In (umeas n p i ([hashEvT evid] ++ args) tpl tid) x1)). *)
+
 Proof.
+
+  (*
+
+  
   intros.
   generalizeEverythingElse e2.
   induction e2; intros.
@@ -775,6 +807,21 @@ Proof.
     solve_by_inversion.
   -
     repeat ff.
+    unfold am_add_trace in *.
+    repeat ff.
+    invc H4.
+    do_cumul_app.
+    do_inv_head'.
+    subst.
+    clear H9.
+    clear H4.
+
+
+
+    
+
+
+    
     inversion H.
     +
       repeat ff.
@@ -782,29 +829,414 @@ Proof.
       repeat ff.
       amsts'.
       unfold am_add_trace in *.
-      invc H3.
       invc H4.
 
       do_cumul_app.
       do_inv_head'.
       subst.
       do_evsub_refl.
+      clear H9.
+
+      Print do_cumul_app_ih.
+
+      
+      do_cumul_app_ih.
+
+      do_inor.
+      ++
+        apply in_or_app.
+        eauto.
+      ++
+        apply in_or_app.
+        eauto.
+    +
+      subst.
 
       do_cumul_app_ih.
-      do_inor.
+      apply in_or_app.
+      eauto.
+  -
+        repeat ff.
+    unfold am_add_trace in *.
+    repeat ff.
+    invc H4.
+    do_cumul_app.
+    do_inv_head'.
+    subst.
+    clear H9.
+    clear H4.
 
-      apply in_or_app; eauto.
-      apply in_or_app; eauto.
+
+
+    
+
+
+    
+    inversion H.
+    +
+      repeat ff.
+      subst.
+      repeat ff.
+      amsts'.
+      unfold am_add_trace in *.
+      invc H4.
+
+      do_cumul_app.
+      do_inv_head'.
+      subst.
+      do_evsub_refl.
+      clear H9.
+
+      Print do_cumul_app_ih.
+
+      
+      do_cumul_app_ih.
+
+      do_inor.
+      ++
+        apply in_or_app.
+        eauto.
+      ++
+        apply in_or_app.
+        eauto.
+    +
+      subst.
+
+      do_cumul_app_ih.
+      apply in_or_app.
+      eauto.
+  -
+    cbn in *.
+    invc H1.
+    do_cumul_app.
+    do_inv_head'.subst.
+    clear H3.
+    clear H10.
+
+
+    
+    repeat ff.
+    unfold am_add_trace in *.
+    repeat ff.
+    invc H4.
+    do_cumul_app.
+    do_inv_head'.
+    subst.
+    clear H9.
+    clear H4.
+
+
+
+    
+
+
+    
+    inversion H.
+    +
+      repeat ff.
+      subst.
+      repeat ff.
+      amsts'.
+      unfold am_add_trace in *.
+      invc H4.
+
+      do_cumul_app.
+      do_inv_head'.
+      subst.
+      do_evsub_refl.
+      clear H9.
+
+      Print do_cumul_app_ih.
+
+      
+      do_cumul_app_ih.
+
+      do_inor.
+      ++
+        apply in_or_app.
+        eauto.
+      ++
+        apply in_or_app.
+        eauto.
+    +
+      subst.
+
+      do_cumul_app_ih.
+      apply in_or_app.
+      eauto.
+    
+    
+      
+      
+        
+        
+
+
+
+      
+      edestruct IHe2.
+      eassumption.
+      apply Heqp1.
+      apply Heqp0.
+      eassumption.
+      left.
+      apply in_or_app.
+      eauto.
+      destruct_conjs.
+      right.
+      eexists.
+      split; eauto.
+      repeat eexists.
+      eapply in_or_app.
+      eauto.
+      ++
+        invc H2; try solve_by_inversion.
+        left.
+        apply in_or_app.
+        right.
+        econstructor.
+        tauto.
     +
       subst.
       repeat ff.
       unfold am_add_trace in * .
       amsts'.
-      invc H4.
       do_cumul_app.
       do_inv_head'.
       subst.
-      apply in_or_app; eauto.
+      edestruct IHe2.
+      eassumption.
+      eassumption.
+      eassumption.
+      eassumption.
+      left.
+      apply in_or_app.
+      eauto.
+      destruct_conjs.
+      invc H4.
+      right.
+      repeat eexists.
+
+      eassumption.
+      apply in_or_app.
+      eauto.
+
+  -
+    repeat ff.
+    unfold am_add_trace in *.
+    repeat ff.
+    invc H4.
+    do_cumul_app.
+    do_inv_head'.
+    subst.
+    clear H9.
+    clear H4.
+
+
+
+    
+
+
+    
+    inversion H.
+    +
+      repeat ff.
+      subst.
+      repeat ff.
+      amsts'.
+      unfold am_add_trace in *.
+      invc H4.
+
+      do_cumul_app.
+      do_inv_head'.
+      subst.
+      do_evsub_refl.
+      clear H9.
+
+      Print do_cumul_app_ih.
+
+      (*
+      do_cumul_app_ih. *)
+
+      do_inor.
+      ++
+
+
+
+      
+      edestruct IHe2.
+      eassumption.
+      apply Heqp1.
+      apply Heqp0.
+      eassumption.
+      left.
+      apply in_or_app.
+      eauto.
+      destruct_conjs.
+      right.
+      eexists.
+      split; eauto.
+      repeat eexists.
+      eapply in_or_app.
+      eauto.
+      ++
+        invc H2; try solve_by_inversion.
+        left.
+        apply in_or_app.
+        right.
+        econstructor.
+        tauto.
+    +
+      subst.
+      repeat ff.
+      unfold am_add_trace in * .
+      amsts'.
+      do_cumul_app.
+      do_inv_head'.
+      subst.
+      edestruct IHe2.
+      eassumption.
+      eassumption.
+      eassumption.
+      eassumption.
+      left.
+      apply in_or_app.
+      eauto.
+      destruct_conjs.
+      invc H4.
+      right.
+      repeat eexists.
+
+      eassumption.
+      apply in_or_app.
+      eauto.
+    
+
+  -
+    cbn in *.
+    invc H1.
+    (*
+    ff.
+    repeat ff.
+    unfold am_add_trace in *.
+    repeat ff.
+    invc H4. *)
+    do_cumul_app.
+    do_inv_head'.
+    subst.
+    clear H3.
+    clear H10.
+
+
+
+    
+
+
+    
+    inversion H.
+    +
+      
+      repeat ff.
+      subst.
+      cbn in *.
+      invc H0.
+      assert (x0 = [umeas 0 0 1 [MonadAM.hashEvT e; 0] 42 43]).
+      {
+        admit.
+      }
+      subst.
+      invc H2; try solve_by_inversion.
+    +
+      repeat ff.
+      subst.
+      cbn in *.
+      right.
+      
+      repeat eexists.
+      Focus 2.
+      left.
+      admit.
+      reflexivity.
+      econstructor.
+      
+      
+      
+      right.
+      repeat eexists.
+      econstructor.
+      repeat ff.
+      amsts'.
+      unfold am_add_trace in *.
+      invc H4.
+
+      do_cumul_app.
+      do_inv_head'.
+      subst.
+      do_evsub_refl.
+      clear H9.
+
+      Print do_cumul_app_ih.
+
+      (*
+      do_cumul_app_ih. *)
+
+      do_inor.
+      ++
+
+
+
+      
+      edestruct IHe2.
+      eassumption.
+      apply Heqp1.
+      apply Heqp0.
+      eassumption.
+      left.
+      apply in_or_app.
+      eauto.
+      destruct_conjs.
+      right.
+      eexists.
+      split; eauto.
+      repeat eexists.
+      eapply in_or_app.
+      eauto.
+      ++
+        invc H2; try solve_by_inversion.
+        left.
+        apply in_or_app.
+        right.
+        econstructor.
+        tauto.
+    +
+      subst.
+      repeat ff.
+      unfold am_add_trace in * .
+      amsts'.
+      do_cumul_app.
+      do_inv_head'.
+      subst.
+      edestruct IHe2.
+      eassumption.
+      eassumption.
+      eassumption.
+      eassumption.
+      left.
+      apply in_or_app.
+      eauto.
+      destruct_conjs.
+      invc H4.
+      right.
+      repeat eexists.
+
+      eassumption.
+      apply in_or_app.
+      eauto.
+
+
+
+
+      
   -
     repeat ff.
     inversion H.
@@ -821,6 +1253,9 @@ Proof.
       do_inv_head'.
       subst.
       do_evsub_refl.
+      edestruct IHe2.
+      eassumption.
+      eassumption
       do_cumul_app_ih.
       do_inor.
 
@@ -837,12 +1272,50 @@ Proof.
       subst.
       apply in_or_app; eauto.
   -
-    repeat ff.
+    cbn in *.
+    monad_unfold.
+    invc H1.
+
+    assert (x1 = [umeas 0 0 1 [MonadAM.hashEvT e; 0] 42 43]).
+    {
+      admit.
+    }
+    subst.
+    clear H10.
+
+   
+    
+
+
+
+    (*
+    ff.
+    repeat ff. *)
     inversion H.
     +
+      subst.
+      (*
       repeat ff.
       subst.
-      repeat ff.
+      repeat ff. *)
+      cbn in *.
+      invc H0.
+
+      assert (x0 = [umeas 0 0 1 [MonadAM.hashEvT e; 0] 42 43]).
+      {
+        admit.
+      }
+      subst.
+      invc H2; eauto.
+    +
+      subst.
+      
+      congruence.
+      
+      
+
+
+      (*
       assert (x0 = []).
       {
         rewrite app_nil_end in H9 at 1.
@@ -851,8 +1324,17 @@ Proof.
         eassumption.
       }
       subst.
-      solve_by_inversion.
+      solve_by_inversion. *)
     +
+      subst.
+      assert (x1 = [umeas 0 0 1 [MonadAM.hashEvT e; 0] 42 43]).
+      {
+        admit.
+      }
+      subst.
+      clear H10.
+      econstructor.
+      
       repeat ff.
       subst.
       repeat ff.
@@ -1061,3 +1543,6 @@ Proof.
       apply in_or_app.
       eauto.
 Defined.
+
+*)
+Admitted.

@@ -5,10 +5,12 @@ Require Import StructTactics.
 Require Import List.
 Import ListNotations.
 
+(*
 Inductive hsh_appEvent: Ev -> Evidence -> Prop :=
 | hshappev: forall n p i args tpl tid e e',
-    EvSubT (uu i args tpl tid e') e ->
-    hsh_appEvent (umeas n p i args tpl tid) e.
+    EvSubT (uu i args tpl tid e) e' ->
+    hsh_appEvent (umeas n p i args tpl tid) e'.
+*)
   
 
 
@@ -26,13 +28,14 @@ Definition measEvent (t:AnnoTerm) (p:Plc) (e:Evidence) (ev:Ev) : Prop :=
   events t p e ev /\ evidenceEvent ev.
 
 Inductive appEvent : Ev -> AM_St -> Ev -> Prop :=
-| aeu : forall p p' i i' n n' m args tpl tid st,
+| aeu : forall p p' i i' n n' m args tpl tpl' tid tid' st,
     m = st_aspmap st ->
     bound_to m (tpl,i) i' ->
-    appEvent (umeas n p i args tpl tid) st (umeas n' p' i' ([n] ++ args) tpl tid)
-| ahu : forall n p i e args tpl tid ev st,
-    hsh_appEvent ev e ->
-    appEvent ev st (umeas n p i ([hashEvT e] ++ args) tpl tid).
+    appEvent (umeas n p i args tpl tid) st (umeas n' p' i' ([n] ++ args) tpl' tid')
+| ahu : forall n n' p p' i e e' args args' tpl tpl' tid tid' st,
+    (*hsh_appEvent ev e -> *)
+    EvSubT (uu i args' tpl' tid' e') e ->
+    appEvent (umeas n' p' i args' tpl' tid') st (umeas n p 1 ([hashEvT e] ++ args) tpl tid).
 (*| asu : forall p q i' n n' m  args st,
     m = st_sigmap st ->
     bound_to m p i' ->
