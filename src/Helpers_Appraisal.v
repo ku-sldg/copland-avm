@@ -785,20 +785,24 @@ Lemma app_evSub: forall st_ev e_res t1 t2 ev1 tr1 p st_trace tr1'
 
 Proof.
 
-  (*
+  
 
   
   intros.
-  generalizeEverythingElse e2.
-  induction e2; intros.
+  generalizeEverythingElse e_res.
+  induction e_res; intros.
   -
     ff.
-    inversion H.
+    assert (st_ev = mtc).
+    {
+      admit.
+    }
     subst.
     ff.
+
     assert (x0 = []).
     {
-      rewrite app_nil_end in H9 at 1.
+      rewrite app_nil_end in H10 at 1.
       eapply app_inv_head.
       symmetry.
       eassumption.
@@ -806,15 +810,28 @@ Proof.
     subst.
     solve_by_inversion.
   -
+    
     repeat ff.
     unfold am_add_trace in *.
     repeat ff.
-    invc H4.
+    invc H5.
     do_cumul_app.
     do_inv_head'.
     subst.
-    clear H9.
-    clear H4.
+    clear H10.
+    clear H5.
+
+    do_cumul_app.
+    do_inv_head'.
+    subst.
+
+    do_cumul_app_ih.
+
+    assert (forall ev, In ev x0 -> In ev H2).
+    {
+      eapply IHe_res.
+      apply H.
+      apply H0.
 
 
 

@@ -32,7 +32,7 @@ Lemma appraisal_correct : forall t ev1 tr1 p e_res tr1' p'
                                                     st_aspmap := amap';
                                                     st_sigmap := smap';
                                                     st_hshmap := hmap';
-                                                    am_st_trace:= tr ++ tr';
+                                                    am_st_trace:= tr';
                                                     checked := cs'
                                                  |}) ->
    (* Ev_Shape ev1 e -> *)
@@ -65,7 +65,6 @@ Proof.
     do_cumul_app.
     do_inv_head'.
     subst.
-    clear H7.
     
     eexists.
     split.
@@ -79,6 +78,8 @@ Proof.
       eassumption.
     }
     simpl.
+    eapply in_or_app.
+    right.
     eapply in_or_app.
     right.
     econstructor.
@@ -221,9 +222,9 @@ Proof.
 
     edestruct am_trace_cumul.
     apply H7.
-    (*
+    
     edestruct am_trace_cumul.
-    apply H1. *)
+    apply H1.
     subst.
 
     
@@ -250,7 +251,10 @@ Proof.
           eassumption.
         }
  *)
-    assert (forall ev, In ev x0 -> In ev tr').
+
+
+    
+    assert (forall ev, In ev x0 -> In ev x1).
     {
       eapply app_evSub.
       eauto.
@@ -301,23 +305,51 @@ Proof.
       invc H9.
       ++
         specialize (H6 (umeas n' p' i' ([n] ++ args) tpl' tid')).
+        apply in_app_or in H8.
+        destruct H8.
+        +++
+          eexists.
+          split.
+          apply in_or_app.
+          eauto.
+          econstructor.
+          tauto.
+          eassumption.
+        +++
+          
         concludes.
         eexists.
         split.
-        eassumption.
+        apply in_or_app.
+        eauto.
+        
         econstructor.
         tauto.
         eassumption.
       ++
         specialize (H6 (umeas n0 p1 1 ([hashEvT e0] ++ args0) tpl0 tid0)).
+        apply in_app_or in H8.
+        destruct H8.
+        +++
+          eexists.
+          split.
+          apply in_or_app.
+          eauto.
+          eapply ahu.
+          eassumption.
+        +++
+          
         concludes.
         eexists.
         split.
-        eassumption.
+        apply in_or_app.
+        eauto.
         eapply ahu.
         eassumption.
 
-    + (* t1 case *)
+
+
+    + (* t2 case *)
 
       amsts'.
       edestruct IHt2.
@@ -360,7 +392,7 @@ Proof.
 
 
         
-      
+      (*
         
         
 
@@ -689,19 +721,34 @@ Proof.
       destruct_conjs.
       exists x.
       eauto. *)
+
+
+
+
+*)
       
-  -
+  - (* abseq case *)
     do_wf_pieces.
     repeat ff.
     vmsts.
     repeat ff.
     amsts'.
 
-    edestruct am_trace_cumul; eauto.
+    (*
+    edestruct am_trace_cumul; eauto. *)
+
+     edestruct am_trace_cumul; eauto.
     subst.
+    
 
     measEventFacts.
-    ff.
+    (*
+    do_cumul_app.
+    do_inv_head'.
+    do_inv_head'. *)
+    subst.
+    (*
+    ff. *)
     do_pl_immut.
     do_pl_immut.
     subst.
@@ -710,6 +757,18 @@ Proof.
       try solve_by_inversion.
     
     + (* t1 case *)
+      (*
+      edestruct am_trace_cumul.
+      apply Heqp0.
+      subst.
+
+      edestruct am_trace_cumul.
+      apply Heqp1.
+      do_inv_head'.
+      subst. *)
+
+
+     
       assert (exists ev', In ev' am_st_trace /\
                      appEvent ev
                               {|
@@ -733,8 +792,98 @@ Proof.
       apply in_or_app.
       eauto.
       eassumption.
+
+    + (* t2 case *)
+
+      (*
+
+      edestruct am_trace_cumul.
+      apply Heqp0.
+      subst.
+
+      edestruct am_trace_cumul.
+      apply Heqp1.
+      do_inv_head'.
+      subst.
+
+
+
+      
+      assert (exists ev', In ev' H2 /\
+                     appEvent ev
+                              {|
+                                am_nonceMap := am_nonceMap;
+                                am_nonceId := am_nonceId;
+                                st_aspmap := st_aspmap;
+                                st_sigmap := st_sigmap;
+                                st_hshmap := st_hshmap;
+                                am_st_trace := tr ++ H5;
+                                checked := checked |} ev'). *)
+      eapply IHt2.
+      eassumption.
+      eassumption.
+      (*
+      rewrite app_assoc in *. *)
+      eassumption.
+      econstructor.
+      eassumption.
+      eassumption.
+      destruct_conjs.
+      exists H9.
+      split.
+      apply in_or_app.
+      eauto.
+      eassumption.
+
+
+
+
+
+      
       
     + (* t2 case *)
+     
+
+      assert (nm = am_nonceMap /\ ni = am_nonceId /\ amap = st_aspmap /\ smap = st_sigmap /\ hmap = st_hshmap).
+      {
+        edestruct ba_const.
+        apply Heqp0.
+        destruct_conjs.
+        ff.
+      }
+      destruct_conjs.
+      subst.
+      
+       assert (exists ev', In ev' H2 /\
+                     appEvent ev
+                              {|
+                                am_nonceMap := am_nonceMap;
+                                am_nonceId := am_nonceId;
+                                st_aspmap := st_aspmap;
+                                st_sigmap := st_sigmap;
+                                st_hshmap := st_hshmap;
+                                am_st_trace := tr ++ H5;
+                                checked := checked |} ev').
+       eapply IHt2.
+       eassumption.
+       eassumption.
+       rewrite app_assoc in *.
+       eassumption.
+       econstructor.
+       eassumption.
+       eassumption.
+       destruct_conjs.
+       exists H9.
+       split.
+       apply in_or_app.
+       eauto.
+       eassumption.
+
+
+
+
+      
+      rewrite app_assoc in *.
       edestruct IHt2.
       eassumption.
       eassumption.
@@ -744,22 +893,32 @@ Proof.
       eassumption.
       destruct_conjs.
 
-      exists x0.
-      split; eauto.
-
-      assert (nm = am_nonceMap /\ ni = am_nonceId /\ amap = st_aspmap /\ smap = st_sigmap /\ st_hshmap = st_hshmap).
+            assert (nm = am_nonceMap /\ ni = am_nonceId /\ amap = st_aspmap /\ smap = st_sigmap /\ st_hshmap = st_hshmap).
       {
         edestruct ba_const.
         apply Heqp0.
         destruct_conjs.
         ff.
       }
+      destruct_conjs.
+      subst.
+
+      exists x0.
+      split.
+      ++
+        apply in_or_app.
+        eauto.
+      ++
+        
+        
+        
+
+
 
       destruct_conjs.
       subst.
       invc H5.
       ++
-      ff.
       econstructor.
       reflexivity.
       ff.
