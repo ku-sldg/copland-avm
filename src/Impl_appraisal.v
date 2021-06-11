@@ -18,8 +18,8 @@ Definition am_add_trace (tr':list Ev) : AM_St -> AM_St :=
 Definition am_add_tracem (tr:list Ev) : AM unit :=
   modify (am_add_trace tr).
 
-Definition am_run_cvm (annt:AnnoTerm) (e:EvidenceC) : AM EvidenceC :=
-  let start_st := (mk_st e [] 0) in
+Definition am_run_cvm (annt:AnnoTerm) (e:EvidenceC) (et:Evidence) : AM EvidenceC :=
+  let start_st := (mk_st e et [] 0) in
   let end_st := (run_cvm annt start_st) in
   am_add_tracem (st_trace end_st) ;;
   ret (st_ev end_st).
@@ -58,42 +58,43 @@ Definition am_get_hsh_golden_val (p:Plc) (et:Evidence): AM BS :=
 Definition am_check_hsh_eq (gv:BS) (actual:BS) : AM BS :=
   ret 1.
     
-Fixpoint build_app_comp_ev (e:EvidenceC): AM (EvidenceC) :=
-  match e with
-  | mtc => ret mtc
+Fixpoint build_app_comp_ev (e:EvidenceC) (et:Evidence): AM (EvidenceC) :=
+  match (e,et) with
+  | (mtc,mt) => ret mtc
               
-  | uuc i args tpl tid bs e' =>
-    app_id <- am_get_app_asp tpl i ;;
-    innerRes <- build_app_comp_ev e' ;;
-    res <- am_run_cvm_comp (checkUSM 0 app_id args tpl tid bs) ;;
-    ret (uuc i args tpl tid res innerRes)
+  | (uuc i args tpl tid bs e', uu i' args' tpl' tid' et') =>
+    app_id <- am_get_app_asp tpl' i' ;;
+    innerRes <- build_app_comp_ev e' et' ;;
+    res <- am_run_cvm_comp (checkUSM 0 app_id args' tpl' tid' bs) ;;
+    ret (uuc i' args' tpl' tid' res innerRes)
 
-  | ggc pi bs e' =>
-    app_id <- am_get_sig_asp pi ;;
-    innerRes <- build_app_comp_ev e' ;;
+  | (ggc pi bs e', gg pi' et') =>
+    app_id <- am_get_sig_asp pi' ;;
+    innerRes <- build_app_comp_ev e' et' ;;
     am_run_cvm_comp (checkSig 0 app_id e' bs) ;;
-    ret (ggc pi bs innerRes)
+    ret (ggc pi' bs innerRes)
         
-  | hhc pi bs et =>
-    gv <- am_get_hsh_golden_val pi et ;;
-    am_run_cvm_comp (checkHSH et gv) ;;
+  | (hhc pi bs, hh pi' et') =>
+    gv <- am_get_hsh_golden_val pi' et' ;;
+    am_run_cvm_comp (checkHSH et' gv) ;;
     (*innerRes <- build_app_comp_ev e' ;; 
     am_run_cvm_comp (checkSig 0 app_id e' bs) ;; *)
     res <- am_check_hsh_eq gv bs ;;
-    ret (hhc pi res et)
+    ret (hhc pi' res)
                             
-  | nnc nid bs e' =>
-    innerRes <- build_app_comp_ev e' ;;
+  | (nnc nid bs e', nn nid' et') =>
+    innerRes <- build_app_comp_ev e' et' ;;
     check_res <- am_checkNonce nid bs ;;
     ret (nnc nid check_res innerRes)
 
-  | ssc e1 e2 =>
-    c <- build_app_comp_ev e1 ;;
-    d <- build_app_comp_ev e2 ;;
+  | (ssc e1 e2, ss e1t e2t) =>
+    c <- build_app_comp_ev e1 e1t ;;
+    d <- build_app_comp_ev e2 e2t ;;
     ret (ssc c d)
 
-  | ppc e1 e2 =>
-    c <- build_app_comp_ev e1 ;;
-    d <- build_app_comp_ev e2 ;;
-    ret (ppc c d)       
+  | (ppc e1 e2, pp e1t e2t) =>
+    c <- build_app_comp_ev e1 e1t ;;
+    d <- build_app_comp_ev e2 e2t ;;
+    ret (ppc c d)
+  | _ => failm
   end.

@@ -11,16 +11,17 @@ Require Import Coq.Program.Tactics Coq.Program.Equality.
 Require Import List.
 Import ListNotations.
 
-Lemma appraisal_correct : forall t ev1 tr1 p e_res tr1' p'
+Lemma appraisal_correct : forall t ev1 tr1 p e_res tr1' p' et_res et
                             nm nm' ni ni' amap amap' smap smap' hmap hmap' tr tr' cs cs'
                             app_res
                             e ev,
     well_formed_r t ->
+    (*Ev_Shape ev1 et -> *)
     copland_compile t
-                    {| st_ev := ev1; st_trace := tr1; st_pl := p |} =
-    (Some tt, {| st_ev := e_res; st_trace := tr1'; st_pl := p' |}) ->
+                    {| st_ev := ev1; st_evT := et; st_trace := tr1; st_pl := p |} =
+    (Some tt, {| st_ev := e_res; st_evT := et_res; st_trace := tr1'; st_pl := p' |}) ->
 
-    build_app_comp_ev e_res {| am_nonceMap := nm;
+    build_app_comp_ev e_res et_res {| am_nonceMap := nm;
                                am_nonceId := ni;
                                st_aspmap := amap;
                                st_sigmap := smap;
@@ -80,8 +81,9 @@ Proof.
     simpl.
     eapply in_or_app.
     right.
+    (*
     eapply in_or_app.
-    right.
+    right. *)
     econstructor.
     tauto.
   -
@@ -190,7 +192,11 @@ Proof.
 
     } *)
 
-     assert (EvSub st_ev e_res).
+
+
+    
+
+     assert (EvSubT st_evT et_res).
     {
       eapply evAccum.
       eauto.
@@ -198,15 +204,17 @@ Proof.
       eauto.
       eauto.
     }
-
-    Check build_app_some.
-    Check evMappedSome.
+     
+    
 
     edestruct build_app_some.
     eapply evMappedSome.
     eassumption.
     eapply build_app_some'.
     eauto.
+    admit.
+
+    
     
 (*
     edestruct subSome.
@@ -219,9 +227,9 @@ Proof.
     amsts'.
 
     
-
+(*
     edestruct am_trace_cumul.
-    apply H7.
+    apply H7. *)
     
     edestruct am_trace_cumul.
     apply H1.
@@ -253,7 +261,8 @@ Proof.
  *)
 
 
-    
+
+    (*
     assert (forall ev, In ev x0 -> In ev x1).
     {
       eapply app_evSub.
@@ -261,7 +270,7 @@ Proof.
       eauto.
       eassumption.
       eassumption.
-    }
+    } *)
     
 
     inv_events;
@@ -302,7 +311,7 @@ Proof.
       destruct_conjs.
       invc H5.
 
-      invc H9.
+      invc H8.
       ++
         specialize (H6 (umeas n' p' i' ([n] ++ args) tpl' tid')).
         apply in_app_or in H8.

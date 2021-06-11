@@ -34,8 +34,49 @@ Inductive hshMapped : Evidence -> AM_St -> Prop :=
     hshMapped et1 st ->
     hshMapped et2 st ->
     hshMapped (pp et1 et2) st. 
-*)
+ *)
 
+
+Inductive evMapped : Evidence -> AM_St -> Prop :=
+| evMappedMt : forall m, evMapped mt m
+| evMappedU : forall p i args tid e' m st,
+    m = st_aspmap st ->
+    evMapped e' st -> 
+    (exists j, bound_to m (p,i) j) -> 
+    evMapped (uu i args p tid e') st
+| evMappedG : forall e' m p st,
+    m = st_sigmap st ->
+    evMapped e' st ->
+    (exists j, bound_to m p j) ->
+    evMapped (gg p e') st
+| evMappedH : forall e' st p,
+    (*hshMapped et st -> *)
+    evMapped e' st ->
+    evMapped (hh p e') st
+(*| evMappedH : forall e' p st,
+    (*m = st_sigmap st -> *)
+    evMapped e' st ->
+    evMapped (hh p e') st    
+*)
+| evMappedN : forall e' nid st nm,
+    nm = am_nonceMap st ->
+    evMapped e' st ->
+    (exists v, bound_to nm nid v) ->
+    evMapped (nn nid e') st
+
+| evMappedS : forall e1 e2 st,
+    evMapped e1 st ->
+    evMapped e2 st ->
+    evMapped (ss e1 e2) st
+| evMappedP : forall e1 e2 st,
+    evMapped e1 st ->
+    evMapped e2 st ->
+    evMapped (pp e1 e2) st.
+
+
+
+
+(*
 Inductive evMapped : EvidenceC -> AM_St -> Prop :=
 | evMappedMt : forall m, evMapped mtc m
 | evMappedU : forall p i args tid e' m st bs,
@@ -70,6 +111,7 @@ Inductive evMapped : EvidenceC -> AM_St -> Prop :=
     evMapped e1 st ->
     evMapped e2 st ->
     evMapped (ppc e1 e2) st.
+*)
 
 Ltac debound :=
   match goal with

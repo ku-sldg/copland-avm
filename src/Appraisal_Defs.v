@@ -1,4 +1,4 @@
-Require Import Term_Defs Term StAM Maps ConcreteEvidence.
+Require Import Term_Defs Term StAM Maps ConcreteEvidence MonadAM.
 
 Require Import StructTactics.
 
@@ -20,9 +20,9 @@ Inductive evidenceEvent: Ev -> Prop :=
 (*
 | hev: forall n p, evidenceEvent (hash n p)*). 
 
-
+(*
 Definition hashEvT (e:Evidence): BS.
-Admitted.
+Admitted. *)
 
 Definition measEvent (t:AnnoTerm) (p:Plc) (e:Evidence) (ev:Ev) : Prop :=
   events t p e ev /\ evidenceEvent ev.

@@ -770,7 +770,7 @@ Proof.
     destruct r.
     repeat (df; try dohtac; df).
     
-    assert (lstar (conf t n et') (remote_events t n) (stop n (aeval t n et'))).
+    assert (lstar (conf t n et) (remote_events t n) (stop n (aeval t n et))).
     {
       apply remote_LTS.
     }

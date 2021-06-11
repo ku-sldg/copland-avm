@@ -155,7 +155,9 @@ Definition doRemote (t:AnnoTerm) (q:Plc) (e:EvidenceC) : CVM EvidenceC :=
 Definition receiveResp (t:AnnoTerm) (q:Plc) (rpyi:nat) : CVM EvidenceC :=
   p <- get_pl ;;
   e <- get_ev ;;
+  et <- get_evT ;;
   e' <- doRemote t q e ;;
+  put_evT (aeval t q et) ;;
   add_tracem [rpy (Nat.pred rpyi) p q] ;;
   ret e'. 
 

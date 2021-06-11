@@ -87,13 +87,13 @@ Definition runAM {A:Type} (k:(AM A)) (st:AM_St) : (option A) * AM_St :=
 
 Definition incNonce := runAM (am_newNonce 42) empty_amst.
 
-Definition am_run_t (t:Term) (e:EvidenceC) : AM EvidenceC :=
+Definition am_run_t (t:Term) (e:EvidenceC) (et:Evidence) : AM EvidenceC :=
   let annt := annotated t in
-  let start_st := (mk_st e [] 0) in
+  let start_st := (mk_st e et [] 0) in
   ret (st_ev (run_cvm annt start_st)).
 
-Definition am_run_t_anno (annt:AnnoTerm) (e:EvidenceC) : AM EvidenceC :=
-  let start_st := (mk_st e [] 0) in
+Definition am_run_t_anno (annt:AnnoTerm) (e:EvidenceC) (et:Evidence) : AM EvidenceC :=
+  let start_st := (mk_st e et [] 0) in
   ret (st_ev (run_cvm annt start_st)).
 
 (** * Helper functions for Appraisal *)
