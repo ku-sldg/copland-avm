@@ -24,17 +24,30 @@ Definition put_ev (e:EvidenceC) : CVM unit :=
   st <- get ;;
      let tr' := st_trace st in
      let p' := st_pl st in
-     put (mk_st e tr' p').
+     let et := st_evT st in 
+     put (mk_st e et tr' p').
+
+Definition put_evT (et:Evidence) : CVM unit :=
+  st <- get ;;
+     let tr' := st_trace st in
+     let p' := st_pl st in
+     let e := st_ev st in 
+     put (mk_st e et tr' p').
 
 Definition put_pl (p:Plc) : CVM unit :=
   st <- get ;;
      let tr' := st_trace st in
      let e' := st_ev st in
-     put (mk_st e' tr' p).
+     let et := st_evT st in
+     put (mk_st e' et tr' p).
 
 Definition get_ev : CVM EvidenceC :=
   st <- get ;;
   ret (st_ev st).
+
+Definition get_evT : CVM Evidence :=
+  st <- get ;;
+  ret (st_evT st).
 
 Definition get_pl : CVM Plc :=
   st <- get ;;
@@ -42,22 +55,27 @@ Definition get_pl : CVM Plc :=
 
 Definition modify_evm (f:EvidenceC -> EvidenceC) : CVM unit :=
   st <- get ;;
-  let '{| st_ev := e; st_trace := tr; st_pl := p |} := st in
-  put (mk_st (f e) tr p).
+  let '{| st_ev := e; st_evT := et; st_trace := tr; st_pl := p |} := st in
+  put (mk_st (f e) et tr p).
 
 Definition add_trace (tr':list Ev) : cvm_st -> cvm_st :=
-  fun '{| st_ev := e; st_trace := tr; st_pl := p |} =>
-    mk_st e (tr ++ tr') p.
+  fun '{| st_ev := e; st_evT := et; st_trace := tr; st_pl := p |} =>
+    mk_st e et (tr ++ tr') p.
 
 Definition add_tracem (tr:list Ev) : CVM unit :=
   modify (add_trace tr).
 
 Definition split_ev (i:nat) (sp:Split) (e:EvidenceC) (p:Plc) :
-  CVM (EvidenceC*EvidenceC) :=
-    let e1 := splitEv_l sp e in
-    let e2 := splitEv_r sp e in
-    add_tracem [Term_Defs.split i p] ;;
-    ret (e1,e2).
+  CVM (EvidenceC*Evidence) :=
+  et <- get_evT ;;
+  let '(e1,et1) := splitEv_l sp e et in
+  let '(e2,et2) := splitEv_r sp e et in
+  put_ev e1 ;;
+  put_evT et1 ;;
+  add_tracem [Term_Defs.split i p] ;;
+  ret (e2,et2).
+
+Locate splitEv_l.
 
 (*
 Definition split_ev_par (i:nat) (sp1 sp2:SP) (*((*loc_e1*) loc_e2:Loc) *)
@@ -77,7 +95,9 @@ Definition split_ev_par (i:nat) (sp1 sp2:SP) (*((*loc_e1*) loc_e2:Loc) *)
 
 Definition invokeUSM (x:nat) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID) : CVM EvidenceC :=
   e <- get_ev ;;
+  et <- get_evT ;;
   p <- get_pl ;;
+  put_evT (uu i l tpl tid et) ;;
   add_tracem [umeas x p i l tpl tid];;
   ret (uuc i l tpl tid x e).
 
@@ -86,8 +106,10 @@ Admitted.
 
 Definition signEv (x:nat) : CVM EvidenceC :=
   e <- get_ev ;;
+  et <- get_evT ;;
   p <- get_pl ;;
-  add_tracem [sign x p] ;;
+  put_evT (gg p et) ;;
+  add_tracem [sign x p] ;;  (* TODO: evidence type for sign event? *)
   ret (ggc p x e).
 
 Definition hashEvC (e:EvidenceC): BS.
@@ -95,9 +117,11 @@ Admitted.
 
 Definition hashEv (x:nat) : CVM EvidenceC :=
   e <- get_ev ;;
+  et <- get_evT ;;
   p <- get_pl ;;
-  add_tracem [hash x p (et_fun e)] ;;
-  ret (hhc p (hashEvC e) (et_fun e)).
+  put_evT (hh p et) ;;
+  add_tracem [hash x p et] ;;  (* TODO: evidence type for hash event? *)
+  ret (hhc p (hashEvC e)).
 
 Definition copyEv (x:nat) : CVM EvidenceC :=
   p <- get_pl ;;
@@ -120,8 +144,8 @@ Definition do_prim (x:nat) (a:ASP) : CVM EvidenceC :=
 
 Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) : CVM unit :=
   p <- get_pl ;;
-  e <- get_ev ;;
-  add_tracem [req reqi p q (unanno t) (et_fun e)].
+  et <- get_evT ;;
+  add_tracem [req reqi p q (unanno t) et].
 
 (* Primitive CVM Monad operations that require IO Axioms *)
 Definition doRemote (t:AnnoTerm) (q:Plc) (e:EvidenceC) : CVM EvidenceC :=
@@ -135,12 +159,14 @@ Definition receiveResp (t:AnnoTerm) (q:Plc) (rpyi:nat) : CVM EvidenceC :=
   add_tracem [rpy (Nat.pred rpyi) p q] ;;
   ret e'. 
 
-Definition join_seq (n:nat) (p:Plc) (e1:EvidenceC) (e2:EvidenceC) : CVM unit :=
+Definition join_seq (n:nat) (p:Plc) (e1:EvidenceC) (e1t:Evidence) (e2:EvidenceC) (e2t:Evidence) : CVM unit :=
   put_ev (ssc e1 e2) ;;
+  put_evT (ss e1t e2t);;
   add_tracem [join n p].
 
-Definition join_par (n:nat) (p:Plc) (e1:EvidenceC) (e2:EvidenceC) : CVM unit :=
+Definition join_par (n:nat) (p:Plc) (e1:EvidenceC) (e1t:Evidence) (e2:EvidenceC) (e2t:Evidence) : CVM unit :=
   put_ev (ppc e1 e2) ;;
+  put_evT (pp e1t e2t) ;;
   add_tracem [join n p].
    
 Ltac monad_unfold :=
@@ -160,6 +186,7 @@ Ltac monad_unfold :=
 
   get_ev,
   get_pl,
+  get_evT,
   add_tracem,
   modify_evm,
   (*split_ev_seq,

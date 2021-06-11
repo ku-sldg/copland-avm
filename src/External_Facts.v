@@ -9,18 +9,22 @@ Require Import Term ConcreteEvidence StVM Impl_vm Axioms_Io GenStMonad Helpers_V
 Require Import List.
 Import ListNotations.
 
-Axiom copland_compile_external' : forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (tr:list Ev),
+Check aeval.
+
+Axiom copland_compile_external' : forall (t : AnnoTerm) (e : EvidenceC) (et:Evidence) (n : nat) (tr:list Ev),
     runSt 
       (copland_compile t)
-      {| st_ev := e; st_trace := tr; st_pl := n (*; st_store := o*) |} =
+      {| st_ev := e; st_evT := et; st_trace := tr; st_pl := n (*; st_store := o*) |} =
     (Some tt,
      {| st_ev := remote_evidence t n e;
+        st_evT := aeval t n et;
         st_trace := tr ++ (remote_trace t n);
         st_pl :=
           st_pl
             (
               execSt (copland_compile t)
                      {| st_ev := e;
+                        st_evT := et;
                         st_trace := [];
                         st_pl := n (*;
                         st_store := o*) |}) (*;
@@ -35,11 +39,12 @@ Axiom copland_compile_external' : forall (t : AnnoTerm) (e : EvidenceC) (n : nat
      |}).
 
 
-Lemma copland_compile_external : forall (t : AnnoTerm) (e : EvidenceC) (n : nat),
+Lemma copland_compile_external : forall (t : AnnoTerm) (e : EvidenceC) (et:Evidence) (n : nat),
     well_formed_r t ->
-    copland_compile t {| st_ev := e; st_trace := []; st_pl := n (*; st_store := o*) |} =
+    copland_compile t {| st_ev := e; st_evT := et; st_trace := []; st_pl := n (*; st_store := o*) |} =
     (Some tt,
      {| st_ev := remote_evidence t n e;
+        st_evT := aeval t n et;
         st_trace := remote_trace t n;
         st_pl := n (*;
         st_store :=
@@ -59,7 +64,8 @@ Proof.
             (
               execSt
                 (copland_compile t)
-                  {| st_ev := e;
+                {| st_ev := e;
+                   st_evT := et;
                      st_trace := [];
                      st_pl := n (*;
                      st_store := o *) |})) as H0'.
@@ -67,18 +73,19 @@ Proof.
     rewrite pl_immut;
     tauto. 
   }
-  rewrite H0' at 4.
+  rewrite H0' at 5.
   eapply copland_compile_external'.
 Defined.
 
 
 
 
-Lemma copland_compile_at' : forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (tr: list Ev),
+Lemma copland_compile_at' : forall (t : AnnoTerm) (e : EvidenceC) (et:Evidence) (n : nat) (tr: list Ev),
     well_formed_r t ->
-    copland_compile t {| st_ev := e; st_trace := tr; st_pl := n (*; st_store := o*) |} =
+    copland_compile t {| st_ev := e; st_evT := et; st_trace := tr; st_pl := n (*; st_store := o*) |} =
     (Some tt,
      {| st_ev := toRemote t n e;
+        st_evT := aeval t n et;
         st_trace := tr ++ remote_events t n;
         st_pl := n;
        (* st_store :=
@@ -100,21 +107,23 @@ Proof.
             (execSt
                (copland_compile t)
                {| st_ev := e;
+                  st_evT := et;
                   st_trace := [];
                   st_pl := n (*;
                   st_store := o*) |}) = n) as H0.
   eapply pl_immut.
   eauto.
-  rewrite <- H0 at 4.
+  rewrite <- H0 at 5.
   eapply copland_compile_external'.
 Defined.
 
 
-Lemma copland_compile_at : forall (t : AnnoTerm) (e : EvidenceC) (n : nat),
+Lemma copland_compile_at : forall (t : AnnoTerm) (e : EvidenceC) (et:Evidence) (n : nat),
     well_formed_r t ->
-    copland_compile t {| st_ev := e; st_trace := []; st_pl := n (*; st_store := o*) |} =
+    copland_compile t {| st_ev := e; st_evT := et; st_trace := []; st_pl := n (*; st_store := o*) |} =
     (Some tt,
      {| st_ev := toRemote t n e;
+        st_evT := aeval t n et;
         st_trace := remote_events t n;
         st_pl := n (* ;
         st_store :=

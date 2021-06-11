@@ -13,21 +13,23 @@ Inductive EvidenceC: Set :=
 | mtc: EvidenceC
 | uuc: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> BS -> EvidenceC -> EvidenceC
 | ggc: Plc -> BS -> EvidenceC -> EvidenceC
-| hhc: Plc -> BS -> Evidence -> EvidenceC
+| hhc: Plc -> BS -> (*Evidence ->*) EvidenceC
 | nnc: N_ID -> BS -> EvidenceC -> EvidenceC
 | ssc: EvidenceC -> EvidenceC -> EvidenceC
 | ppc: EvidenceC -> EvidenceC -> EvidenceC.
 
+(*
 Fixpoint et_fun (ec:EvidenceC) : Evidence :=
   match ec with
   | mtc => mt
   | uuc i l p tid _ ec' => uu i l p tid (et_fun ec')
   | ggc p _ ec' => gg p (et_fun ec')
-  | hhc p _ et => hh p et (* TODO:  is this acceptable? *)
+  | hhc p _ => hh p et (* TODO:  is this acceptable? *)
   | nnc ni _ ec' => nn ni (et_fun ec')
   | ssc ec1 ec2 => ss (et_fun ec1) (et_fun ec2)
   | ppc ec1 ec2 => pp (et_fun ec1) (et_fun ec2)
   end.
+*)
 
 Inductive EvSubT: Evidence -> Evidence -> Prop :=
 | evsub_reflT : forall e : Evidence, EvSubT e e
@@ -64,9 +66,9 @@ Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
 | ggSub: forall e e' p bs,
     EvSub e e' ->
     EvSub e (ggc p bs e')
-| hhSub: forall e et p bs,
+(*| hhSub: forall e et p bs,
     EvSubT (et_fun e) et ->
-    EvSub e (hhc p bs et)
+    EvSub e (hhc p bs et) *)
 (*| hhSub: forall e e' p bs,
     EvSub e e' ->
     EvSub e (hhc p bs et) *)
@@ -133,7 +135,7 @@ Inductive Ev_Shape: EvidenceC -> Evidence -> Prop :=
     Ev_Shape (ggc p bs e) (gg p et)
 | hht: forall bs p et,
     (*Ev_Shape e et -> *)
-    Ev_Shape (hhc p bs et) (hh p et)
+    Ev_Shape (hhc p bs) (hh p et)
 | nnt: forall bs e et i,
     Ev_Shape e et ->
     Ev_Shape (nnc i bs e) (nn i et) 
@@ -155,7 +157,7 @@ Ltac evShapeFacts :=
   | [H: Ev_Shape _ (uu _ _ _ _ _) |- _] => invc H
   | [H: Ev_Shape (ggc _ _ _) _ |- _] => invc H
   | [H: Ev_Shape _ (gg _ _) |- _] => invc H
-  | [H: Ev_Shape (hhc _ _ _) _ |- _] => invc H
+  | [H: Ev_Shape (hhc _ _) _ |- _] => invc H
   | [H: Ev_Shape _ (hh _ _) |- _] => invc H
   | [H: Ev_Shape (nnc _ _ _) _ |- _] => invc H
   | [H: Ev_Shape _ (nn _ _) |- _] => invc H
@@ -165,6 +167,7 @@ Ltac evShapeFacts :=
   | [H: Ev_Shape _ (pp _ _) |- _] => invc H
   end.
 
+(*
 Lemma ev_evshape: forall ec,
     Ev_Shape ec (et_fun ec).
 Proof.
@@ -185,7 +188,9 @@ Proof.
   -
     econstructor; eauto.
 Defined.
+*)
 
+(*
 (* TODO: perhaps an equality modulo "measuring place" *)
 Lemma evshape_determ: forall ec et et',
   Ev_Shape ec et ->
@@ -204,10 +209,11 @@ Proof.
     repeat evShapeFacts.
     assert (et1 = et0) by eauto.
     congruence.
+    
   -
     repeat evShapeFacts.
     assert (et1 = et0) by eauto.
-    congruence.
+    congruence. 
   -
     repeat evShapeFacts.
     
@@ -221,6 +227,7 @@ Proof.
     assert (e2t0 = e2t) by eauto.
     congruence. 
 Defined.
+*)
 
 Lemma ev_shape_transitive : forall e e' et et',
     Ev_Shape e et ->
@@ -275,16 +282,16 @@ Defined.
 
 
 
-Definition splitEv_l (sp:Split) (e:EvidenceC) : EvidenceC :=
+Definition splitEv_l (sp:Split) (e:EvidenceC) (et:Evidence): (EvidenceC*Evidence) :=
   match sp with
-  | RIGHT => mtc
-  | _ => e
+  | RIGHT => (mtc,mt)
+  | _ => (e,et)
   end.
 
-Definition splitEv_r (sp:Split) (e:EvidenceC) : EvidenceC :=
+Definition splitEv_r (sp:Split) (e:EvidenceC) (et:Evidence) : (EvidenceC*Evidence) :=
   match sp with
-  | LEFT => mtc
-  | _ => e
+  | LEFT => (mtc,mt)
+  | _ => (e,et)
   end.
 
 (*
