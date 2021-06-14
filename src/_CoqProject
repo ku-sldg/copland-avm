@@ -28,8 +28,7 @@ External_Facts.v
 VmSemantics.v
 StAM.v
 MonadAM.v
-Impl_appraisal.v
+alt_Impl_appraisal.v
 AllMapped.v
-Appraisal_Defs.v
-Helpers_Appraisal.v
-Appraisal.v
+Appraisal_Defs_alt.v
+Appraisal_alt.v
