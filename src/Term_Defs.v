@@ -64,12 +64,33 @@ Inductive Term: Set :=
 
 Inductive Evidence: Set :=
 | mt: Evidence
-| uu: (*Plc ->*) ASP_ID -> (list Arg) -> Plc -> TARG_ID -> Evidence -> Evidence
+| uu: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> Evidence -> Evidence
 | gg: Plc -> Evidence -> Evidence
 | hh: Plc -> Evidence -> Evidence
-| nn: N_ID -> Evidence -> Evidence
+| nn: N_ID -> (*Evidence ->*) Evidence
 | ss: Evidence -> Evidence -> Evidence
 | pp: Evidence -> Evidence -> Evidence.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Definition splitEv_T_l (sp:Split) (e:Evidence) : Evidence :=
   match sp with

@@ -31,8 +31,8 @@ Fixpoint eqb_evidence (e:Evidence) (e':Evidence): bool :=
     (Nat.eqb p p') && (eqb_evidence e1 e2)
   | (hh p e1, hh p' e2) =>
     (Nat.eqb p p') && (eqb_evidence e1 e2)
-  | (nn i e1, nn i' e2) =>
-    (Nat.eqb i i') && (eqb_evidence e1 e2)
+  | (nn i, nn i') =>
+    (Nat.eqb i i') (*&& (eqb_evidence e1 e2) *)
   | (ss e1 e2, ss e1' e2') =>
     (eqb_evidence e1 e1') && (eqb_evidence e2 e2')
   | (pp e1 e2, pp e1' e2') =>
@@ -83,11 +83,11 @@ Proof.
       congruence.
     +
       cbn in *.
-      rewrite Bool.andb_true_iff in H.
+      (*rewrite Bool.andb_true_iff in H. *)
       destruct_conjs.
       apply EqNat.beq_nat_true in H.
-      specialize IHe1 with e2.
-      concludes.
+      (*specialize IHe1 with e2.  
+      concludes. *)
       congruence.
     +
       cbn in *.
@@ -146,9 +146,10 @@ Proof.
       invc H.
       cbn in *.
       repeat rewrite Bool.andb_true_iff.
-      split.
+      (*split. *)
       apply Nat.eqb_refl.
-      eauto.
+      (*
+      eauto. *)
     +
       invc H.
       cbn in *.

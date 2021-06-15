@@ -26,9 +26,9 @@ Fixpoint copland_compile (t:AnnoTerm): CVM unit :=
       copland_compile t1 ;;
       copland_compile t2
   | abseq (x,y) sp t1 t2 =>
-      e <- get_ev ;;
-      p <- get_pl ;;
-      pr <- split_ev x sp e p ;;
+      (*e <- get_ev ;;
+      p <- get_pl ;; *)
+      pr <- split_ev x sp (*e p*) ;;
       let '(e2,et2) := pr in
       (*put_ev e1 ;; *)
       copland_compile t1 ;;
@@ -39,11 +39,11 @@ Fixpoint copland_compile (t:AnnoTerm): CVM unit :=
       copland_compile t2 ;;
       e2r <- get_ev ;;
       e2rt <- get_evT ;;
-      join_seq (Nat.pred y) p e1r e1rt e2r e2rt
+      join_seq (Nat.pred y) e1r e1rt e2r e2rt
   | abpar (x,y) sp t1 t2 =>
-    e <- get_ev ;;
-    p <- get_pl ;;
-    pr <- split_ev x sp e p ;;
+    (*e <- get_ev ;;
+    p <- get_pl ;; *)
+    pr <- split_ev x sp (*e p*) ;;
     let '(e2,et2) := pr in
     (*put_ev e1 ;; *)
     copland_compile t1 ;;
@@ -54,7 +54,7 @@ Fixpoint copland_compile (t:AnnoTerm): CVM unit :=
     copland_compile t2 ;;
     e2r <- get_ev ;;
     e2rt <- get_evT ;;
-    join_par (Nat.pred y) p e1r e1rt e2r e2rt
+    join_par (Nat.pred y) e1r e1rt e2r e2rt
 
 
     (*

@@ -17,36 +17,14 @@ Set Nested Proofs Allowed.
 
 
 Lemma appraisal_correct : forall t ev1 tr1 p e_res tr1' p' et_res et
-                            (*nm nm' ni ni' amap amap' smap smap' hmap hmap' tr tr' cs cs' *)
-                            (*app_res *)
                             e ev,
     well_formed_r t ->
-    (*Ev_Shape ev1 et -> *)
     copland_compile t
-                    {| st_ev := ev1; st_evT := et; st_trace := tr1; st_pl := p |} =
-    (Some tt, {| st_ev := e_res; st_evT := et_res; st_trace := tr1'; st_pl := p' |}) ->
-
-    (*build_app_comp_ev e_res et_res = app_res -> *)
-
-    (*
-    build_app_comp_ev e_res et_res {| am_nonceMap := nm;
-                               am_nonceId := ni;
-                               st_aspmap := amap;
-                               st_sigmap := smap;
-                               st_hshmap := hmap;
-                               am_st_trace:= tr;
-                               checked := cs
-                            |} = (Some app_res,  {| am_nonceMap := nm';
-                                                    am_nonceId := ni';
-                                                    st_aspmap := amap';
-                                                    st_sigmap := smap';
-                                                    st_hshmap := hmap';
-                                                    am_st_trace:= tr';
-                                                    checked := cs'
-                                                 |}) ->
-     *)
-    
-   (* Ev_Shape ev1 e -> *)
+      {| st_ev := ev1; st_evT := et; st_trace := tr1; st_pl := p |} =
+    (Some tt, {| st_ev := e_res;
+                 st_evT := et_res;
+                 st_trace := tr1';
+                 st_pl := p' |}) ->
 
     measEvent t p e ev ->
     appEvent_Evidence ev (build_app_comp_ev e_res et_res).

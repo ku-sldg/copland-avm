@@ -10,6 +10,12 @@ Notation BS := nat (only parsing).
 
 (** * Concrete Evidence *)
 Inductive EvidenceC: Set :=
+| HashV: BS -> EvidenceC
+| PairHashV: EvidenceC -> EvidenceC -> EvidenceC.
+
+
+
+  (*
 | mtc: EvidenceC
 | uuc: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> BS -> EvidenceC -> EvidenceC
 | ggc: Plc -> BS -> EvidenceC -> EvidenceC
@@ -17,6 +23,7 @@ Inductive EvidenceC: Set :=
 | nnc: N_ID -> BS -> EvidenceC -> EvidenceC
 | ssc: EvidenceC -> EvidenceC -> EvidenceC
 | ppc: EvidenceC -> EvidenceC -> EvidenceC.
+*)
 
 (*
 Fixpoint et_fun (ec:EvidenceC) : Evidence :=
@@ -42,9 +49,9 @@ Inductive EvSubT: Evidence -> Evidence -> Prop :=
 | hhSubT: forall e e' p,
     EvSubT e e' ->
     EvSubT e (hh p e')
-| nnSubT: forall e e' i,
+(*| nnSubT: forall e e' i,
     EvSubT e e' ->
-    EvSubT e (nn i e')
+    EvSubT e (nn i e') *)
 | ssSublT: forall e e' e'',
     EvSubT e e' ->
     EvSubT e (ss e' e'')
@@ -60,6 +67,14 @@ Inductive EvSubT: Evidence -> Evidence -> Prop :=
 
 Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
 | evsub_refl : forall e : EvidenceC, EvSub e e
+| evsub_pairl : forall e1 e e',
+    EvSub e1 e ->
+    EvSub e1 (PairHashV e e')
+| evsub_pairr : forall e2 e e',
+    EvSub e2 e' ->
+    EvSub e2 (PairHashV e e').
+
+(*
 | uuSub: forall e e' i tid l tpl bs,
     EvSub e e' ->
     EvSub e (uuc i l tpl tid bs e')
@@ -87,6 +102,7 @@ Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
 | ppSubr: forall e e' e'',
     EvSub e e'' ->
     EvSub e (ppc e' e'').
+*)
 
 
 Inductive EvBad': Evidence -> Prop :=
@@ -126,31 +142,36 @@ Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=
  *)
 
 Inductive Ev_Shape: EvidenceC -> Evidence -> Prop :=
-| mtt: Ev_Shape mtc mt
+| mtt: Ev_Shape (HashV 0) mt
 | uut: forall id l tid tpl bs e et,
     Ev_Shape e et ->
-    Ev_Shape (uuc id l tpl tid bs e) (uu id l tpl tid et)
+    Ev_Shape (PairHashV bs e) (uu id l tpl tid et)
 | ggt: forall p bs e et,
     Ev_Shape e et ->
-    Ev_Shape (ggc p bs e) (gg p et)
+    Ev_Shape (PairHashV bs e) (gg p et)
 | hht: forall bs p et,
     (*Ev_Shape e et -> *)
-    Ev_Shape (hhc p bs) (hh p et)
-| nnt: forall bs e et i,
-    Ev_Shape e et ->
-    Ev_Shape (nnc i bs e) (nn i et) 
+    Ev_Shape (HashV bs) (hh p et)
+| nnt: forall bs i,
+    Ev_Shape (HashV bs) (nn i)
 | sst: forall e1 e2 e1t e2t,
     Ev_Shape e1 e1t ->
     Ev_Shape e2 e2t ->
-    Ev_Shape (ssc e1 e2) (ss e1t e2t)
+    Ev_Shape (PairHashV e1 e2) (ss e1t e2t)
 | ppt: forall e1 e2 e1t e2t,
     Ev_Shape e1 e1t ->
     Ev_Shape e2 e2t ->
-    Ev_Shape (ppc e1 e2) (pp e1t e2t).
+    Ev_Shape (PairHashV e1 e2) (pp e1t e2t).
 Hint Constructors Ev_Shape : core.
 
 Ltac evShapeFacts :=
   match goal with
+  | [H: Ev_Shape (?C _) _ |- _] => invc H
+  | [H: Ev_Shape _ (?C _) |- _] => invc H
+  | [H: Ev_Shape _ mt |- _] => invc H
+  end.
+    
+    (*
   | [H: Ev_Shape mtc _ |- _] => invc H
   | [H: Ev_Shape _ mt |- _] => invc H
   | [H: Ev_Shape (uuc _ _ _ _ _ _) _ |- _] => invc H
@@ -165,7 +186,10 @@ Ltac evShapeFacts :=
   | [H: Ev_Shape _ (ss _ _) |- _] => invc H
   | [H: Ev_Shape (ppc _ _) _ |- _] => invc H
   | [H: Ev_Shape _ (pp _ _) |- _] => invc H
+     
+    
   end.
+*)
 
 (*
 Lemma ev_evshape: forall ec,
@@ -236,10 +260,43 @@ Lemma ev_shape_transitive : forall e e' et et',
     Ev_Shape e' et'.
 Proof.
   intros.
-  generalizeEverythingElse e.
+  generalizeEverythingElse et.
+  induction et; intros.
+  -
+    evShapeFacts.
+    +
+      evShapeFacts.
+      ++
+        eauto.
+  -
+    evShapeFacts.
+    evShapeFacts.
+    evShapeFacts.
+    +
+      eauto.
+    +
+      eauto.
+    +
+      
+      
+      
+      
+      
+      assert (Ev_Shape e0 e1t).
+      {
+        eapply IHet.
+        apply H4.
+        eassumption.
+        admit.
+      }
+Abort.
+
+(*
+  
   induction e; destruct et; intros;
     try repeat evShapeFacts; eauto; tauto.
 Defined.
+*)
 
 (*
     
@@ -284,13 +341,13 @@ Defined.
 
 Definition splitEv_l (sp:Split) (e:EvidenceC) (et:Evidence): (EvidenceC*Evidence) :=
   match sp with
-  | RIGHT => (mtc,mt)
+  | RIGHT => (HashV 0,mt)
   | _ => (e,et)
   end.
 
 Definition splitEv_r (sp:Split) (e:EvidenceC) (et:Evidence) : (EvidenceC*Evidence) :=
   match sp with
-  | LEFT => (mtc,mt)
+  | LEFT => (HashV 0,mt)
   | _ => (e,et)
   end.
 

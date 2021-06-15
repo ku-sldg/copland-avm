@@ -18,4 +18,4 @@ Record cvm_st : Type := mk_st
                            st_pl:Plc (*;
                            st_store:ev_store*)}.
 
-Definition empty_vmst := mk_st mtc mt [] 0 (* [] *) .
+Definition empty_vmst := mk_st (HashV 0) mt [] 0 (* [] *) .

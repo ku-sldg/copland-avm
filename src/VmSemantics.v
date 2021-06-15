@@ -669,34 +669,8 @@ Lemma evshape_split_l: forall e et s,
 Proof.
   intros.
   generalizeEverythingElse e.
-  induction e; intros.
-  -
-    invc H.
-    destruct s.
-    ff.
-    eauto.
-    ff.
-    eauto.
-    ff.
-    eauto.
-  -
-    invc H.
-    destruct s; ff.
-  -
-    invc H.
-    destruct s; ff.
-  -
-    invc H.
-    destruct s; ff.
-  -
-    invc H.
-    destruct s; ff.
-  -
-    invc H.
-    destruct s; ff.
-  -
-    invc H.
-    destruct s; ff. 
+  induction e; intros;
+    try (destruct s; ff; tauto).
 Defined.
 
 Lemma evshape_split_r: forall e et s,
@@ -705,34 +679,8 @@ Lemma evshape_split_r: forall e et s,
 Proof.
   intros.
   generalizeEverythingElse e.
-  induction e; intros.
-  -
-    invc H.
-    destruct s.
-    ff.
-    eauto.
-    ff.
-    eauto.
-    ff.
-    eauto.
-  -
-    invc H.
-    destruct s; ff.
-  -
-    invc H.
-    destruct s; ff.
-  -
-    invc H.
-    destruct s; ff.
-  -
-    invc H.
-    destruct s; ff.
-  -
-    invc H.
-    destruct s; ff.
-   -
-    invc H.
-    destruct s; ff.   
+  induction e; intros;
+    try (destruct s; ff; tauto).
 Defined.
 
 Lemma cvm_evT_aeval: forall t e e' et et' tr tr' p p',

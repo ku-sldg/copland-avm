@@ -65,8 +65,10 @@ Definition add_trace (tr':list Ev) : cvm_st -> cvm_st :=
 Definition add_tracem (tr:list Ev) : CVM unit :=
   modify (add_trace tr).
 
-Definition split_ev (i:nat) (sp:Split) (e:EvidenceC) (p:Plc) :
+Definition split_ev (i:nat) (sp:Split):
   CVM (EvidenceC*Evidence) :=
+  e <- get_ev ;;
+  p <- get_pl ;;
   et <- get_evT ;;
   let '(e1,et1) := splitEv_l sp e et in
   let '(e2,et2) := splitEv_r sp e et in
@@ -74,8 +76,6 @@ Definition split_ev (i:nat) (sp:Split) (e:EvidenceC) (p:Plc) :
   put_evT et1 ;;
   add_tracem [Term_Defs.split i p] ;;
   ret (e2,et2).
-
-Locate splitEv_l.
 
 (*
 Definition split_ev_par (i:nat) (sp1 sp2:SP) (*((*loc_e1*) loc_e2:Loc) *)
@@ -93,35 +93,51 @@ Definition split_ev_par (i:nat) (sp1 sp2:SP) (*((*loc_e1*) loc_e2:Loc) *)
 
 (** * Partially-symbolic implementations of IO operations *)
 
-Definition invokeUSM (x:nat) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID) : CVM EvidenceC :=
-  e <- get_ev ;;
+Definition nat_to_bs (x:nat): BS.
+Admitted.
+
+Definition tag_ASP (x:nat) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID): CVM unit :=
   et <- get_evT ;;
   p <- get_pl ;;
   put_evT (uu i l tpl tid et) ;;
-  add_tracem [umeas x p i l tpl tid];;
-  ret (uuc i l tpl tid x e).
+  add_tracem [umeas x p i l tpl tid].
+  
+
+Definition invoke_ASP (x:nat) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID) : CVM EvidenceC :=
+  tag_ASP x i l tpl tid ;;
+  e <- get_ev ;;
+  ret (PairHashV (HashV x) e).
 
 Definition encodeEv (e:EvidenceC) : BS.
 Admitted.
 
-Definition signEv (x:nat) : CVM EvidenceC :=
-  e <- get_ev ;;
+Definition do_sig (bs:BS): BS.
+Admitted.
+
+Definition tag_SIG (x:nat) : CVM unit :=
   et <- get_evT ;;
   p <- get_pl ;;
   put_evT (gg p et) ;;
-  add_tracem [sign x p] ;;  (* TODO: evidence type for sign event? *)
-  ret (ggc p x e).
+  add_tracem [sign x p].  (* TODO: evidence type for sign event? *)
 
-Definition hashEvC (e:EvidenceC): BS.
+Definition signEv (x:nat) : CVM EvidenceC :=
+  tag_SIG x ;;
+  e <- get_ev ;;
+  ret (PairHashV (HashV (do_sig (encodeEv e))) e).
+
+Definition do_hash (e:BS): BS.
 Admitted.
 
-Definition hashEv (x:nat) : CVM EvidenceC :=
-  e <- get_ev ;;
+Definition tag_HSH (x:nat) : CVM unit :=
   et <- get_evT ;;
   p <- get_pl ;;
   put_evT (hh p et) ;;
-  add_tracem [hash x p et] ;;  (* TODO: evidence type for hash event? *)
-  ret (hhc p (hashEvC e)).
+  add_tracem [hash x p et].   (* TODO: evidence type for hash event? *)
+
+Definition hashEv (x:nat) : CVM EvidenceC :=
+  tag_HSH x ;;
+  e <- get_ev ;;
+  ret (HashV (do_hash (encodeEv e))).
 
 Definition copyEv (x:nat) : CVM EvidenceC :=
   p <- get_pl ;;
@@ -132,13 +148,10 @@ Definition do_prim (x:nat) (a:ASP) : CVM EvidenceC :=
   match a with
   | CPY => copyEv x
   | ASPC asp_id l tpl tid =>
-    invokeUSM x asp_id l tpl tid         
+    invoke_ASP x asp_id l tpl tid         
   | SIG =>
     signEv x
   | HSH =>
-    (*
-    e <- get_ev ;;
-    p <- get_pl ;; *)
     hashEv x
   end.
 
@@ -161,13 +174,15 @@ Definition receiveResp (t:AnnoTerm) (q:Plc) (rpyi:nat) : CVM EvidenceC :=
   add_tracem [rpy (Nat.pred rpyi) p q] ;;
   ret e'. 
 
-Definition join_seq (n:nat) (p:Plc) (e1:EvidenceC) (e1t:Evidence) (e2:EvidenceC) (e2t:Evidence) : CVM unit :=
-  put_ev (ssc e1 e2) ;;
+Definition join_seq (n:nat) (e1:EvidenceC) (e1t:Evidence) (e2:EvidenceC) (e2t:Evidence) : CVM unit :=
+  p <- get_pl ;;
+  put_ev (PairHashV e1 e2) ;;
   put_evT (ss e1t e2t);;
   add_tracem [join n p].
 
-Definition join_par (n:nat) (p:Plc) (e1:EvidenceC) (e1t:Evidence) (e2:EvidenceC) (e2t:Evidence) : CVM unit :=
-  put_ev (ppc e1 e2) ;;
+Definition join_par (n:nat) (e1:EvidenceC) (e1t:Evidence) (e2:EvidenceC) (e2t:Evidence) : CVM unit :=
+  p <- get_pl ;;
+  put_ev (PairHashV e1 e2) ;;
   put_evT (pp e1t e2t) ;;
   add_tracem [join n p].
    
@@ -175,7 +190,7 @@ Ltac monad_unfold :=
   repeat unfold
   execSt,  
   do_prim,
-  invokeUSM,
+  invoke_ASP,
   signEv,
   hashEv,
   copyEv,
@@ -225,8 +240,8 @@ Ltac pairs :=
     | [H: (Some _, _) =
           (Some _, _) |- _ ] => invc H; monad_unfold
                                                           
-    | [H: {| st_ev := _; st_trace := _; st_pl := _(*; st_store := _*) |} =
-          {| st_ev := _; st_trace := _; st_pl := _ (*; st_store := _*) |} |- _ ] =>
+    | [H: {| st_ev := _; st_evT := _; st_trace := _; st_pl := _(*; st_store := _*) |} =
+          {| st_ev := _; st_evT := _; st_trace := _; st_pl := _ (*; st_store := _*) |} |- _ ] =>
       invc H; monad_unfold
     end; destruct_conjs; monad_unfold.
 
