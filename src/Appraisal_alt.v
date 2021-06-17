@@ -1,6 +1,6 @@
-Require Import GenStMonad MonadVM MonadAM ConcreteEvidence.
+Require Import GenStMonad MonadVM (*MonadAM*) ConcreteEvidence.
 Require Import StAM Axioms_Io Impl_vm (*Impl_appraisal*) Maps VmSemantics Event_system Term_system External_Facts Helpers_VmSemantics.
-Require Import Auto AutoApp AllMapped (*Appraisal_Defs Helpers_Appraisal*).
+Require Import Auto AutoApp (*AllMapped Appraisal_Defs Helpers_Appraisal*).
 
 Require Import Appraisal_Defs_alt alt_Impl_appraisal.
 
@@ -15,10 +15,16 @@ Import ListNotations.
 
 Set Nested Proofs Allowed.
 
+Lemma build_app_some_evshape: forall e et,
+    Ev_Shape e et ->
+    exists x, build_app_comp_ev e et = Some x.
+Proof.
+Admitted.
 
 Lemma appraisal_correct : forall t ev1 tr1 p e_res tr1' p' et_res et
                             e ev,
     well_formed_r t ->
+    Ev_Shape ev1 e ->
     copland_compile t
       {| st_ev := ev1; st_evT := et; st_trace := tr1; st_pl := p |} =
     (Some tt, {| st_ev := e_res;
@@ -27,37 +33,71 @@ Lemma appraisal_correct : forall t ev1 tr1 p e_res tr1' p' et_res et
                  st_pl := p' |}) ->
 
     measEvent t p e ev ->
-    appEvent_Evidence ev (build_app_comp_ev e_res et_res).
+    exists app_res, build_app_comp_ev e_res (aeval t p e) = Some app_res /\
+    
+    appEvent_Evidence ev app_res.
 Proof.
   intros.
+
+  edestruct build_app_some_evshape.
+  eapply cvm_refines_lts_evidence.
+  eassumption.
+  eassumption.
+  eassumption.
+  tauto.
+  exists x.
+  split.
+  Locate aeval.
+  rewrite eval_aeval in H3.
+  eassumption.
+
+
+
+  
   generalizeEverythingElse t.
   induction t; intros.
   -
       measEventFacts.
       evEventFacts.
       inv_events.
+      (*
+      edestruct build_app_some_evshape.
+      eapply cvm_refines_lts_evidence.
+      eassumption.
+      eassumption.
+      eassumption.
+      tauto. 
+
+      eexists.
+      split.
+      eassumption. *)
+
       ff.
-      econstructor.
-      tauto.
-      econstructor.
+      break_match; try solve_by_inversion.
+      ff.
+
+      repeat econstructor.
+
   -
     measEventFacts.
     evEventFacts.
     invEvents.
-    unfold empty_vmst in *.
-    amsts.
     vmsts.
     ff.
     do_wf_pieces.
     eapply IHt.
+    eassumption.
     eassumption.
     eapply copland_compile_at.
     eassumption.
     econstructor.
     eassumption.
     econstructor.
+    eassumption.
   -
-     do_wf_pieces.
+    Print do_wf_pieces.
+    edestruct wf_lseq_pieces;[eauto | idtac].
+    (* do_wf_pieces. *)
     vmsts.
     simpl in *.
     subst.
@@ -72,11 +112,259 @@ Proof.
     do_pl_immut.
     subst.
 
+    invc H6.
+
     
     inv_events.
-     +
-       invc H4.
-       clear H0.
+     + (* t1 case *)
+       clear H1.
+
+       edestruct build_app_some_evshape.
+       eapply cvm_refines_lts_evidence.
+       apply H4.
+       eassumption.
+       eassumption.
+       tauto.
+       edestruct build_app_some_evshape.
+       eapply cvm_refines_lts_evidence.
+       apply H5.
+       eassumption.
+       eapply cvm_refines_lts_evidence.
+       apply H4.
+       eassumption.
+       eassumption.
+       tauto.
+       tauto.
+       
+(*
+       assert (exists et pi bs e',
+                  EvSub (HashV (checkHash et pi bs)) x0 /\
+                  EvSubT (uu i args tpl tid e') et).
+       {
+         admit.
+       }
+ *)
+       rewrite H3 in *.
+       invc H2.
+
+       
+
+       
+       
+
+       assert (exists et pi bs e',
+                  EvSub (BitsV (bsval (checkHash et pi bs))) x1 /\
+                  EvSubT (uu i args tpl tid e') et).
+       {
+         admit.
+       }
+
+       destruct_conjs.
+       
+
+       eapply ahu.
+       apply H10.
+       eassumption.
+
+       subst'.
+
+       
+       
+       
+
+
+
+
+       
+
+       assert (
+            forall x : EvidenceC,
+         build_app_comp_ev st_ev (eval (unanno t1) p e) = Some x ->
+         appEvent_Evidence (umeas n p0 i args tpl tid) x).
+       {
+        
+         (*
+
+        assert (exists app_res : EvidenceC,
+           build_app_comp_ev st_ev (aeval t1 p e) = Some app_res ->
+           appEvent_Evidence (umeas n p0 i args tpl tid) app_res).
+       {  *)
+         eapply IHt1.
+         eassumption.
+         eassumption.
+         eassumption.
+         econstructor.
+         eassumption.
+         econstructor.
+       }
+       destruct_conjs.
+
+       
+     
+
+
+
+       (*
+       edestruct build_app_some_evshape.
+       eapply cvm_refines_lts_evidence.
+       apply H.
+       ff.
+       rewrite Heqp0 in *.
+       ff.
+       rewrite Heqp1 in *.
+       ff.
+       eassumption.
+       tauto.
+       ff.
+       exists x.
+       split.
+       admit. *)
+
+       (*
+       assert ((exists n' p' et' e', events t1 p e (hash n' p' et') /\
+                             EvSubT (uu i args tpl tid e') et') \/
+               (exists n' p' et' e', events t2 p (aeval t1 p e) (hash n' p' et') /\
+                             EvSubT (uu i args tpl tid e') et') \/
+               (EvSub (HashV (checkASP i args tpl tid n)) x)).
+       {
+         admit.
+       }
+        *)
+
+       assert (
+
+
+       
+
+       Lemma events_dec_hsh:
+         forall t p e i args tpl tid,
+           {exists n' p' et' e',
+               events t p e (hash n' p' et') /\
+               EvSubT (uu i args tpl tid e') et'} +
+           {~
+              (exists n' p' et' e',
+               events t p e (hash n' p' et') /\
+               EvSubT (uu i args tpl tid e') et')}.
+       Proof.
+       Admitted.
+
+       destruct (events_dec_hsh t2 p (aeval t1 p e) i args tpl tid).
+       ++
+         destruct_conjs.
+         eapply ahu.
+         eassumption.
+         
+
+         assert (
+         exists app_res : EvidenceC,
+           build_app_comp_ev e_res (aeval t2 p (aeval t1 p e)) = Some app_res /\
+           appEvent_Evidence (umeas n p0 i args tpl tid) app_res).
+         {
+           eapply IHt2.
+           eassumption.
+
+         eapply cvm_refines_lts_evidence.
+         apply H3.
+         eassumption.
+         eassumption.
+         admit.
+         eassumption.
+         econstructor.
+         eassumption.
+         ff.
+         rewrite Heqp0 in *.
+         ff.
+         rewrite Heqp1 in *.
+         ff.
+         eassumption.
+         tauto.
+         eassumption.
+
+       destruct (events_dec_hsh t1 p e i args tpl tid).
+       ++
+         destruct_conjs.
+         destruct (events_dec_hsh t2 p (aeval t1 p e) i args tpl tid).
+         +++
+           destruct_conjs.
+
+       assert ((exists n' p' et' e', events t1 p e (hash n' p' et') /\
+                                
+                             EvSubT (uu i args tpl tid e') et') \/
+               (exists n' p' et' e', events t2 p (aeval t1 p e) (hash n' p' et') /\
+                             EvSubT (uu i args tpl tid e') et') \/
+               (EvSub (HashV (checkASP i args tpl tid n)) x)).
+       
+       destruct H7.
+       ++
+         destruct_conjs.
+         eapply ahu.
+         eassumption.
+
+
+         
+         admit.
+       ++
+         destruct H2.
+         +++
+         
+       
+               
+
+
+       
+
+       assert (exists app_res : EvidenceC,
+           build_app_comp_ev st_ev (aeval t1 p e) = Some app_res /\
+           appEvent_Evidence (umeas n p0 i args tpl tid) app_res).
+       {
+         eapply IHt1.
+         eassumption.
+         eassumption.
+         eassumption.
+         econstructor.
+         eassumption.
+         econstructor.
+       }
+       destruct_conjs.
+
+       invc H5.
+       ++
+         edestruct build_app_some_evshape.
+         eapply cvm_refines_lts_evidence.
+         apply H.
+         cbn.
+         ff.
+         rewrite Heqp0 in *.
+         ff.
+         rewrite Heqp1 in *.
+         ff.
+         eassumption.
+         tauto.
+         exists x.
+         split.
+         admit.
+         ff.
+
+
+         
+         ff.
+         
+         eexists.
+         split.
+
+       edestruct IHt1.
+       eassumption.
+       eapply cvm_refines_lts_evidence.
+       
+       apply H3.
+       eassumption.
+       eassumption.
+       tauto.
+       eassumption.
+       e
+
+
+       
 
        assert (EvSub ev1 st_ev /\ EvSub st_ev e_res).
        {

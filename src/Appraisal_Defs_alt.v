@@ -1,4 +1,4 @@
-Require Import Term_Defs Term StAM Maps ConcreteEvidence MonadAM.
+Require Import Term_Defs Term StAM Maps ConcreteEvidence (*MonadAM*).
 
 Require Import StructTactics.
 
@@ -6,6 +6,28 @@ Require Import List.
 Import ListNotations.
 
 Require Import alt_Impl_appraisal OptMonad.
+
+Locate checkASP.
+
+
+Inductive evidenceEvent: Ev -> Prop :=
+| uev: forall n p i args tpl tid, evidenceEvent (umeas n p i args tpl tid).
+
+Definition measEvent (t:AnnoTerm) (p:Plc) (e:Evidence) (ev:Ev) : Prop :=
+  events t p e ev /\ evidenceEvent ev.
+
+Inductive appEvent_Evidence : Ev -> EvidenceC -> Prop :=
+  aeu: forall i args tpl tid e n p,
+    EvSub (BitsV (bsval (checkASP i args tpl tid n))) e ->
+    appEvent_Evidence (umeas n p i args tpl tid) e
+| ahu: forall i args tpl tid e' et n p pi bs e,
+    EvSubT (uu i args tpl tid  e') et ->
+    EvSub (BitsV (bsval (checkHash et pi bs))) e ->
+    appEvent_Evidence (umeas n p i args tpl tid) e.
+
+
+
+
 
 (*
 Inductive hsh_appEvent: Ev -> Evidence -> Prop :=
@@ -25,6 +47,12 @@ Inductive Evidence: Set :=
 | pp: Evidence -> Evidence -> Evidence.
 *)
 
+
+
+
+
+
+(*
 Fixpoint evidence_size (e:Evidence): nat :=
   match e with
   | mt => 0
@@ -132,7 +160,7 @@ Proof.
     cbn in *.
 
     Compute (from_cannon' [] (ss mt mt)).
-    
+ *)   
 
 
 
@@ -140,20 +168,7 @@ Proof.
   
 
 
-Inductive evidenceEvent: Ev -> Prop :=
-| uev: forall n p i args tpl tid, evidenceEvent (umeas n p i args tpl tid).
 
-Definition measEvent (t:AnnoTerm) (p:Plc) (e:Evidence) (ev:Ev) : Prop :=
-  events t p e ev /\ evidenceEvent ev.
-
-Inductive appEvent_Evidence : Ev -> EvidenceC -> Prop :=
-  aeu: forall i args tpl tid e' e n p,
-    EvSub (uuc i args tpl tid (checkASP i args tpl tid n) e') e ->
-    appEvent_Evidence (umeas n p i args tpl tid) e
-| ahu: forall i args tpl tid e' et n p pi bs e,
-    EvSubT (uu i args tpl tid  e') et ->
-    EvSub (hhc pi (checkHash et pi bs)) e ->
-    appEvent_Evidence (umeas n p i args tpl tid) e.
 
 
 

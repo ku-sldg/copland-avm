@@ -27,9 +27,7 @@ AutoApp.v
 External_Facts.v
 VmSemantics.v
 StAM.v
-MonadAM.v
-alt_Impl_appraisal.v
-AllMapped.v
 OptMonad.v
+alt_Impl_appraisal.v
 Appraisal_Defs_alt.v
 Appraisal_alt.v

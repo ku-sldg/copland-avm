@@ -93,8 +93,10 @@ Definition split_ev_par (i:nat) (sp1 sp2:SP) (*((*loc_e1*) loc_e2:Loc) *)
 
 (** * Partially-symbolic implementations of IO operations *)
 
+(*
 Definition nat_to_bs (x:nat): BS.
 Admitted.
+*)
 
 Definition tag_ASP (x:nat) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID): CVM unit :=
   et <- get_evT ;;
@@ -106,9 +108,9 @@ Definition tag_ASP (x:nat) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID): CVM 
 Definition invoke_ASP (x:nat) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID) : CVM EvidenceC :=
   tag_ASP x i l tpl tid ;;
   e <- get_ev ;;
-  ret (PairHashV (HashV x) e).
+  ret (PairBitsV (BitsV (bsval x)) e).
 
-Definition encodeEv (e:EvidenceC) : BS.
+Definition encodeEvSig (e:EvidenceC): BS.
 Admitted.
 
 Definition do_sig (bs:BS): BS.
@@ -123,10 +125,15 @@ Definition tag_SIG (x:nat) : CVM unit :=
 Definition signEv (x:nat) : CVM EvidenceC :=
   tag_SIG x ;;
   e <- get_ev ;;
-  ret (PairHashV (HashV (do_sig (encodeEv e))) e).
+  ret (PairBitsV (BitsV (bsval (do_sig (encodeEvSig e)))) e).
 
+Definition doHash (e:EvidenceC): BSV.
+Admitted.
+
+(*
 Definition do_hash (e:BS): BS.
 Admitted.
+*)
 
 Definition tag_HSH (x:nat) : CVM unit :=
   et <- get_evT ;;
@@ -137,7 +144,7 @@ Definition tag_HSH (x:nat) : CVM unit :=
 Definition hashEv (x:nat) : CVM EvidenceC :=
   tag_HSH x ;;
   e <- get_ev ;;
-  ret (HashV (do_hash (encodeEv e))).
+  ret (BitsV (doHash e)(*(do_hash (encodeEv e))*)).
 
 Definition copyEv (x:nat) : CVM EvidenceC :=
   p <- get_pl ;;
@@ -176,13 +183,13 @@ Definition receiveResp (t:AnnoTerm) (q:Plc) (rpyi:nat) : CVM EvidenceC :=
 
 Definition join_seq (n:nat) (e1:EvidenceC) (e1t:Evidence) (e2:EvidenceC) (e2t:Evidence) : CVM unit :=
   p <- get_pl ;;
-  put_ev (PairHashV e1 e2) ;;
+  put_ev (PairBitsV e1 e2) ;;
   put_evT (ss e1t e2t);;
   add_tracem [join n p].
 
 Definition join_par (n:nat) (e1:EvidenceC) (e1t:Evidence) (e2:EvidenceC) (e2t:Evidence) : CVM unit :=
   p <- get_pl ;;
-  put_ev (PairHashV e1 e2) ;;
+  put_ev (PairBitsV e1 e2) ;;
   put_evT (pp e1t e2t) ;;
   add_tracem [join n p].
    

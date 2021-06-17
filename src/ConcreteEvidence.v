@@ -8,10 +8,22 @@ Require Export Term_Defs Term StructTactics.
 
 Notation BS := nat (only parsing).
 
+Require Import List.
+Import ListNotations.
+
+Inductive BSV : Set :=
+| bsval: BS -> BSV
+| bshsh: list BSV -> BSV.
+(*| bscons: BS -> BSV -> BSV. *)
+
+Definition bs1 := bsval 42.
+Definition bs2 := bshsh [(bsval 42)].
+Print bs2.
+
 (** * Concrete Evidence *)
 Inductive EvidenceC: Set :=
-| HashV: BS -> EvidenceC
-| PairHashV: EvidenceC -> EvidenceC -> EvidenceC.
+| BitsV: BSV -> EvidenceC
+| PairBitsV: EvidenceC -> EvidenceC -> EvidenceC.
 
 
 
@@ -69,10 +81,10 @@ Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
 | evsub_refl : forall e : EvidenceC, EvSub e e
 | evsub_pairl : forall e1 e e',
     EvSub e1 e ->
-    EvSub e1 (PairHashV e e')
+    EvSub e1 (PairBitsV e e')
 | evsub_pairr : forall e2 e e',
     EvSub e2 e' ->
-    EvSub e2 (PairHashV e e').
+    EvSub e2 (PairBitsV e e').
 
 (*
 | uuSub: forall e e' i tid l tpl bs,
@@ -142,26 +154,26 @@ Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=
  *)
 
 Inductive Ev_Shape: EvidenceC -> Evidence -> Prop :=
-| mtt: Ev_Shape (HashV 0) mt
+| mtt: Ev_Shape (BitsV (bsval 0)) mt
 | uut: forall id l tid tpl bs e et,
     Ev_Shape e et ->
-    Ev_Shape (PairHashV bs e) (uu id l tpl tid et)
+    Ev_Shape (PairBitsV bs e) (uu id l tpl tid et)
 | ggt: forall p bs e et,
     Ev_Shape e et ->
-    Ev_Shape (PairHashV bs e) (gg p et)
+    Ev_Shape (PairBitsV bs e) (gg p et)
 | hht: forall bs p et,
     (*Ev_Shape e et -> *)
-    Ev_Shape (HashV bs) (hh p et)
+    Ev_Shape (BitsV bs) (hh p et)
 | nnt: forall bs i,
-    Ev_Shape (HashV bs) (nn i)
+    Ev_Shape (BitsV bs) (nn i)
 | sst: forall e1 e2 e1t e2t,
     Ev_Shape e1 e1t ->
     Ev_Shape e2 e2t ->
-    Ev_Shape (PairHashV e1 e2) (ss e1t e2t)
+    Ev_Shape (PairBitsV e1 e2) (ss e1t e2t)
 | ppt: forall e1 e2 e1t e2t,
     Ev_Shape e1 e1t ->
     Ev_Shape e2 e2t ->
-    Ev_Shape (PairHashV e1 e2) (pp e1t e2t).
+    Ev_Shape (PairBitsV e1 e2) (pp e1t e2t).
 Hint Constructors Ev_Shape : core.
 
 Ltac evShapeFacts :=
@@ -341,13 +353,13 @@ Defined.
 
 Definition splitEv_l (sp:Split) (e:EvidenceC) (et:Evidence): (EvidenceC*Evidence) :=
   match sp with
-  | RIGHT => (HashV 0,mt)
+  | RIGHT => (BitsV (bsval 0),mt)
   | _ => (e,et)
   end.
 
 Definition splitEv_r (sp:Split) (e:EvidenceC) (et:Evidence) : (EvidenceC*Evidence) :=
   match sp with
-  | LEFT => (HashV 0,mt)
+  | LEFT => (BitsV (bsval 0),mt)
   | _ => (e,et)
   end.
 
