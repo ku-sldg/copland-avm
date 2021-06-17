@@ -11,18 +11,21 @@ Notation BS := nat (only parsing).
 Require Import List.
 Import ListNotations.
 
+(*
 Inductive BSV : Set :=
 | bsval: BS -> BSV
 | bshsh: list BSV -> BSV.
 (*| bscons: BS -> BSV -> BSV. *)
 
+
 Definition bs1 := bsval 42.
 Definition bs2 := bshsh [(bsval 42)].
 Print bs2.
+*)
 
 (** * Concrete Evidence *)
 Inductive EvidenceC: Set :=
-| BitsV: BSV -> EvidenceC
+| BitsV: BS -> EvidenceC
 | PairBitsV: EvidenceC -> EvidenceC -> EvidenceC.
 
 
@@ -154,7 +157,7 @@ Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=
  *)
 
 Inductive Ev_Shape: EvidenceC -> Evidence -> Prop :=
-| mtt: Ev_Shape (BitsV (bsval 0)) mt
+| mtt: Ev_Shape (BitsV 0) mt
 | uut: forall id l tid tpl bs e et,
     Ev_Shape e et ->
     Ev_Shape (PairBitsV bs e) (uu id l tpl tid et)
@@ -353,13 +356,13 @@ Defined.
 
 Definition splitEv_l (sp:Split) (e:EvidenceC) (et:Evidence): (EvidenceC*Evidence) :=
   match sp with
-  | RIGHT => (BitsV (bsval 0),mt)
+  | RIGHT => (BitsV 0, mt)
   | _ => (e,et)
   end.
 
 Definition splitEv_r (sp:Split) (e:EvidenceC) (et:Evidence) : (EvidenceC*Evidence) :=
   match sp with
-  | LEFT => (BitsV (bsval 0),mt)
+  | LEFT => (BitsV 0, mt)
   | _ => (e,et)
   end.
 

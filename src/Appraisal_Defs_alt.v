@@ -18,11 +18,11 @@ Definition measEvent (t:AnnoTerm) (p:Plc) (e:Evidence) (ev:Ev) : Prop :=
 
 Inductive appEvent_Evidence : Ev -> EvidenceC -> Prop :=
   aeu: forall i args tpl tid e n p,
-    EvSub (BitsV (bsval (checkASP i args tpl tid n))) e ->
+    EvSub (BitsV (checkASP i args tpl tid n)) e ->
     appEvent_Evidence (umeas n p i args tpl tid) e
 | ahu: forall i args tpl tid e' et n p pi bs e,
     EvSubT (uu i args tpl tid  e') et ->
-    EvSub (BitsV (bsval (checkHash et pi bs))) e ->
+    EvSub (BitsV (checkHash et pi bs)) e ->
     appEvent_Evidence (umeas n p i args tpl tid) e.
 
 

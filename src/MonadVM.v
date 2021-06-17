@@ -108,7 +108,7 @@ Definition tag_ASP (x:nat) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID): CVM 
 Definition invoke_ASP (x:nat) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID) : CVM EvidenceC :=
   tag_ASP x i l tpl tid ;;
   e <- get_ev ;;
-  ret (PairBitsV (BitsV (bsval x)) e).
+  ret (PairBitsV (BitsV x) e).
 
 Definition encodeEvSig (e:EvidenceC): BS.
 Admitted.
@@ -125,9 +125,9 @@ Definition tag_SIG (x:nat) : CVM unit :=
 Definition signEv (x:nat) : CVM EvidenceC :=
   tag_SIG x ;;
   e <- get_ev ;;
-  ret (PairBitsV (BitsV (bsval (do_sig (encodeEvSig e)))) e).
+  ret (PairBitsV (BitsV (do_sig (encodeEvSig e))) e).
 
-Definition doHash (e:EvidenceC): BSV.
+Definition doHash (e:EvidenceC): BS.
 Admitted.
 
 (*

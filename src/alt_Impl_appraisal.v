@@ -69,20 +69,22 @@ Admitted.
 Definition checkSig (e:EvidenceC) (p:Plc) (sig:BS) : BS.
 Admitted.
 
-Definition checkHash (e:Evidence) (p:Plc) (hash:list BSV) : BS.
+Definition checkHash (e:Evidence) (p:Plc) (hash:BS) : BS.
 Admitted.
 
 Definition peelBitsVval (e:EvidenceC) : option (BS*EvidenceC) :=
   match e with
-  | PairBitsV (BitsV (bsval bs)) e' => Some (bs,e')
+  | PairBitsV (BitsV bs) e' => Some (bs,e')
   | _ => None
   end.
 
+(*
 Definition peelBitsVhsh (e:EvidenceC) : option (list BSV*EvidenceC) :=
   match e with
   | PairBitsV (BitsV (bshsh ls)) e' => Some (ls,e')
   | _ => None
   end.
+*)
     
 Definition peelPairBitsV (e:EvidenceC) : option (EvidenceC*EvidenceC) :=
   match e with
@@ -94,25 +96,25 @@ Definition peelPairBitsV (e:EvidenceC) : option (EvidenceC*EvidenceC) :=
     
 Fixpoint build_app_comp_ev (e:EvidenceC) (et:Evidence): option EvidenceC :=
   match et with
-  | mt => ret (BitsV (bsval 0))
+  | mt => ret (BitsV  0)
               
   | uu i' args' tpl' tid' et' =>
     '(bs,e') <- peelBitsVval e ;;
     res <- (build_app_comp_ev e' et') ;;
-    ret (PairBitsV (BitsV (bsval (checkASP i' args' tpl' tid' bs))) res)
+    ret (PairBitsV (BitsV (checkASP i' args' tpl' tid' bs)) res)
   | gg pi et' =>
     '(bs,e') <- peelBitsVval e ;;
     res <- (build_app_comp_ev e' et') ;;
-    ret (PairBitsV (BitsV (bsval (checkSig e' pi bs))) res)
+    ret (PairBitsV (BitsV (checkSig e' pi bs)) res)
   | hh pi et' =>
     (*'(bs,e') <- peelPairBitsV e ;; *)
    
     match e with
-    | BitsV (bshsh ls) =>
-       ret (BitsV (bsval (checkHash et' pi ls)))
+    | BitsV bs =>
+       ret (BitsV (checkHash et' pi bs))
     | _ => None
     end
-  | nn nid => ret (BitsV (bsval nid)) (* TODO: do checkNonce *)
+  | nn nid => ret (BitsV nid) (* TODO: do checkNonce *)
   | ss et1 et2 =>
     '(e1,e2) <- peelPairBitsV e ;;
       e1_res <- build_app_comp_ev e1 et1 ;;
