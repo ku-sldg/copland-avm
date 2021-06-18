@@ -96,7 +96,6 @@ Proof.
   tauto.
   exists x.
   split.
-  Locate aeval.
   rewrite eval_aeval in H3.
   eassumption.
 
@@ -105,21 +104,11 @@ Proof.
   
   generalizeEverythingElse t.
   induction t; intros.
+  
   - (* aasp case *)
       measEventFacts.
       evEventFacts.
       inv_events.
-      (*
-      edestruct build_app_some_evshape.
-      eapply cvm_refines_lts_evidence.
-      eassumption.
-      eassumption.
-      eassumption.
-      tauto. 
-
-      eexists.
-      split.
-      eassumption. *)
 
       ff.
       break_match; try solve_by_inversion.
@@ -143,8 +132,8 @@ Proof.
     eassumption.
     econstructor.
     eassumption.
+    
   - (* alseq case *)
-    Print do_wf_pieces.
     edestruct wf_lseq_pieces;[eauto | idtac].
     (* do_wf_pieces. *)
     vmsts.
@@ -435,13 +424,10 @@ Proof.
   - (* abpar base *)
     admit.
 
-
-
-    HERE
-      
+    (*
     Unshelve.
-    eauto.
+    eauto. 
+     *)
+    
 
 Abort.
-
-HERE

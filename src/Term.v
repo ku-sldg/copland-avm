@@ -140,9 +140,6 @@ Fixpoint aeval t p e :=
                          (aeval t2 p ((splitEv_T_r s e)))
   end.
 
-Check anno.
-
-
 Lemma eval_aeval:
   forall t p e i,
     eval t p e = aeval (snd (anno t i)) p e.

@@ -9,7 +9,7 @@ Require Import Term ConcreteEvidence StVM Impl_vm Axioms_Io GenStMonad Helpers_V
 Require Import List.
 Import ListNotations.
 
-Check aeval.
+
 
 Axiom copland_compile_external' : forall (t : AnnoTerm) (e : EvidenceC) (et:Evidence) (n : nat) (tr:list Ev),
     runSt 

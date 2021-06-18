@@ -7,8 +7,6 @@ Import ListNotations.
 
 Require Import alt_Impl_appraisal OptMonad.
 
-Locate checkASP.
-
 
 Inductive evidenceEvent: Ev -> Prop :=
 | uev: forall n p i args tpl tid, evidenceEvent (umeas n p i args tpl tid).

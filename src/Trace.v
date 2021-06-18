@@ -768,7 +768,7 @@ Proof.
       do_evin;
         find_eapply_lem_hyp evsys_tr_in; eauto.
       * apply earlier_cons; auto.
-        Check shuffle_in_left.
+        
         find_eapply_lem_hyp shuffle_in_left.
         2: {
           eauto.

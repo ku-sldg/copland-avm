@@ -517,10 +517,12 @@ Proof.
         eassumption.
       }
       erewrite anno_range.
-      Focus 2.
-      eassumption.
+      2: {
+        eassumption.
+      }
+      
       tauto.
-
+      
       simpl.
       erewrite anno_range.
       2: {

@@ -236,7 +236,6 @@ Proof.
 Qed.
 *)
 
-Check anno.
 (** lseq is associative relative to the event semantics *)
 
 Lemma lseq_assoc:
