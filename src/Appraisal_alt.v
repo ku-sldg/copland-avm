@@ -15,6 +15,7 @@ Import ListNotations.
 
 Set Nested Proofs Allowed.
 
+(*
 Lemma build_app_some_evshape: forall e et,
     Ev_Shape e et ->
     exists x, build_app_comp_ev e et = Some x.
@@ -26,6 +27,7 @@ Definition peelOneBitsVval (e:EvidenceC) : option BS :=
   | (BitsV bs) => Some bs
   | _ => None
   end.
+*)
 
 (*
 Inductive EvidenceCon: Set :=
@@ -38,6 +40,7 @@ Inductive EvidenceCon: Set :=
 | ppc: EvidenceCon -> EvidenceCon -> EvidenceCon.
 *)
 
+(*
 Fixpoint reconstruct_EvCon (e:EvidenceC) (et:Evidence): option EvidenceCon :=
   match et with
   | mt =>
@@ -70,6 +73,506 @@ Fixpoint reconstruct_EvCon (e:EvidenceC) (et:Evidence): option EvidenceCon :=
     e2r <- reconstruct_EvCon e2 et2 ;;
     ret (ppc e1r e2r)
   end.
+ *)
+
+Lemma uuc_app: forall e' e'' i args tpl tid n,
+    EvSub (uuc i args tpl tid n e'') e' ->
+    exists e'', EvSub (uuc i args tpl tid (checkASP i args tpl tid n) e'')
+                 (build_app_comp_evC e').
+(*appEvent_EvidenceC (umeas n p i args tpl tid) (build_app_comp_evC e'). *)
+Proof.
+  intros.
+  generalizeEverythingElse e'.
+  induction e'; intros.
+  -
+    ff.
+    
+  -
+    ff.
+    invc H.
+    +
+      eexists.
+      econstructor.
+    +
+      edestruct IHe'.
+      eassumption.
+      exists x.
+      apply uuSub.
+      eassumption.
+  -
+    ff.
+    invc H.
+    edestruct IHe'.
+    eassumption.
+    exists x.
+    apply ggSub.
+    eassumption.
+  -
+    ff.
+  -
+    ff.
+  -
+    ff.
+    invc H.
+    +
+      edestruct IHe'1.
+      eassumption.
+      exists x.
+      apply ssSubl.
+      eassumption.
+    +
+      edestruct IHe'2.
+      eassumption.
+      exists x.
+      apply ssSubr.
+      eassumption.
+  -
+    ff.
+    invc H.
+    +
+      edestruct IHe'1.
+      eassumption.
+      exists x.
+      apply ppSubl.
+      eassumption.
+    +
+      edestruct IHe'2.
+      eassumption.
+      exists x.
+      apply ppSubr.
+      eassumption.
+Defined.
+
+Lemma hhc_app: forall e' p bs et,
+    EvSub (hhc p bs et) e' ->
+    EvSub (hhc p (checkHash et p bs) et)
+          (build_app_comp_evC e').
+Proof.
+  intros.
+  generalizeEverythingElse e'.
+  induction e'; intros.
+  -
+    ff.
+    
+  -
+    ff.
+    invc H.
+    apply uuSub.
+    eauto.
+  -
+    ff.
+    invc H.
+    apply ggSub.
+    eauto.
+  -
+    ff.
+    invc H.
+    econstructor.
+  -
+    ff.
+  -
+    ff.
+    invc H.
+    +
+      apply ssSubl; eauto.
+    +
+      apply ssSubr; eauto.
+  -
+    ff.
+    invc H.
+    +
+      apply ppSubl; eauto.
+    +
+      apply ppSubr; eauto.
+Defined.
+
+Lemma uu_preserved: forall t1 t2 p et n p0 i args tpl tid
+                      e tr st_ev st_trace p'
+                      e' tr' p'',
+    events t1 p et (umeas n p0 i args tpl tid) ->
+    copland_compile t1 {| st_ev := e; st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := st_ev; st_trace := st_trace; st_pl := p' |}) ->
+    
+    copland_compile t2
+                    {| st_ev := st_ev; st_trace := st_trace; st_pl := p' |} =
+    (Some tt, {| st_ev := e'; st_trace := tr'; st_pl := p'' |}) ->
+
+    (
+      (exists e'', EvSub (uuc i args tpl tid n e'') e') \/
+      (exists ett p' bs et',
+          EvSub (hhc p' bs ett) e' /\
+          EvSubT (uu i args tpl tid et') ett)
+    ).
+Proof.
+Admitted.
+
+Lemma appraisal_correct : forall t e e' tr tr' p p' et ev,
+    well_formed_r t ->
+    Ev_Shape e et ->
+    copland_compile t
+      {| st_ev := e; st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := e';
+                 st_trace := tr';
+                 st_pl := p' |}) ->
+
+    measEvent t p et ev ->
+    
+    (*build_app_comp_evC e' = app_res /\ *)
+    appEvent_EvidenceC ev (build_app_comp_evC e').
+Proof.
+  generalizeEverythingElse t.
+  induction t; intros.
+  - (* aasp case *)
+    measEventFacts.
+    evEventFacts.
+    inv_events.
+    ff.
+    repeat econstructor.
+
+  - (* aatt case *)
+    measEventFacts.
+    evEventFacts.
+    invEvents.
+    vmsts.
+    ff.
+    do_wf_pieces.
+    eapply IHt.
+    eassumption.
+    eassumption.
+    eapply copland_compile_at.
+    eassumption.
+    econstructor.
+    eassumption.
+    econstructor.
+  - (* alseq case *)
+    edestruct wf_lseq_pieces;[eauto | idtac].
+    (* do_wf_pieces. *)
+    vmsts.
+    simpl in *.
+    subst.
+    repeat ff.
+
+    vmsts.
+
+    measEventFacts.
+    do_pl_immut.
+    do_pl_immut.
+    subst.
+
+    invc H5.
+
+    
+    inv_events.
+     + (* t1 case *)
+       clear H1.
+
+       assert (
+           (exists e'', EvSub (uuc i args tpl tid n e'') e') \/
+           (exists ett p' bs et',
+               EvSub (hhc p' bs ett) e' /\
+               EvSubT (uu i args tpl tid et') ett)
+         ).
+              
+       {
+         eapply uu_preserved; eauto.
+       }
+       destruct H1.
+       ++
+
+       destruct_conjs.
+
+
+
+       assert (
+        exists e'', EvSub (uuc i args tpl tid (checkASP i args tpl tid n) e'')
+                     (build_app_comp_evC e')).
+       {
+         eapply uuc_app; eauto.
+       }
+       destruct_conjs.
+       econstructor.
+       eassumption.
+       ++
+         destruct_conjs.
+
+         assert (EvSub (hhc H2 (checkHash H1 H2 H5) H1) (build_app_comp_evC e')).
+         {
+           eapply hhc_app; eauto.
+         }
+
+         eapply ahuc.
+         eassumption.
+         eassumption.
+     + (* t2 case *)
+       assert (appEvent_EvidenceC (umeas n p0 i args tpl tid)
+                                  (build_app_comp_evC e')).
+       {
+         eapply IHt2.
+         eassumption.
+         Focus 2.
+         eassumption.
+         eapply cvm_refines_lts_evidence.
+         apply H3.
+         eassumption.
+         eassumption.
+         tauto.
+         econstructor.
+         rewrite eval_aeval.
+         eassumption.
+         econstructor.
+       }
+       eassumption.
+    - (* abseq case *)
+    (*
+    do_wf_pieces. *)
+    edestruct wf_bseq_pieces;[eauto | idtac].
+    vmsts.
+    simpl in *.
+    subst.
+    repeat ff.
+
+    vmsts.
+    ff.
+
+    measEventFacts.
+    ff.
+    do_pl_immut.
+    do_pl_immut.
+    subst.
+    invc H5.
+
+    
+    inv_events;
+      ff.
+    + (* t1 case *)
+      destruct s.
+      ++
+        ff.
+
+      
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
+      {
+        eapply IHt1.
+        eassumption.
+        eassumption.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      invc H2.
+      +++
+        econstructor.
+        econstructor.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        econstructor.
+        eassumption.
+      ++
+        ff.
+
+      
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
+      {
+        eapply IHt1.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      invc H2.
+      +++
+        econstructor.
+        econstructor.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        econstructor.
+        eassumption.
+      ++
+        ff.
+
+      
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
+      {
+        eapply IHt1.
+        eassumption.
+        eassumption.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      invc H2.
+      +++
+        econstructor.
+        econstructor.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        econstructor.
+        eassumption.
+    + (* t2 case *)
+
+      destruct s.
+      ++
+        ff.
+
+      
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
+      {
+        eapply IHt2.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      invc H2.
+      +++
+        econstructor.
+        apply ssSubr.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        apply ssSubr.
+        eassumption.
+      ++
+        ff.
+
+      
+        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
+      {
+        eapply IHt2.
+        eassumption.
+        eassumption.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      invc H2.
+      +++
+        econstructor.
+        apply ssSubr.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        apply ssSubr.
+        eassumption.
+      ++
+        ff.
+
+      
+        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
+      {
+        eapply IHt2.
+        eassumption.
+        eassumption.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      invc H2.
+      +++
+        econstructor.
+        apply ssSubr.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        apply ssSubr.
+        eassumption.
+    -
+      
+    
+       
+       
+       
+         
+         
+           
+       
+       
+       
+           
+             
+           
+           
+           
+           
+             
+           pose (IHe' e'' i args tpl tid n3).
+           concludes.
+           invc H
+           subst.
+           ff.
+           econstructor.
+           apply uuSub.
+           
+           
+         generalizeEverythingElse e''.
+         dependent induction e''; intros.
+         -
+           ff.
+           econstructor.
+           eapply uuSub.
+           econstructor.
+         -
+           edestruct IHEvSub.
+           tauto.
+           econstructor.
+           ff.
+           apply uuSub.
+           eauto.
+           invc H.
+           +
+             eauto.
+             ff.
+             
+             edestruct IHe'.
+           
+           ff.
+           repeat (econstructor; eauto).
+           
+           
+           
+       Admitted.
+
+       eapply uuc_app; eauto.
+       
+
+
+       
+       destruct_conjs.
+       invc H2.
+       ff.
+       repeat econstructor.
+       ff.
+       econstructor.
+       apply uuSub.
+       e
+       ff.
+       apply evsub_refl.
+       admit
+       
+    
     
 
 

@@ -85,9 +85,8 @@ Inductive EvSubT: Evidence -> Evidence -> Prop :=
     EvSubT e (pp e' e'').
 
 Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
-
-  (*
 | evsub_refl : forall e : EvidenceC, EvSub e e
+                                      (*
 | evsub_pairl : forall e1 e e',
     EvSub e1 e ->
     EvSub e1 (PairBitsV e e')

@@ -72,6 +72,7 @@ Admitted.
 Definition checkHash (e:Evidence) (p:Plc) (hash:BS) : BS.
 Admitted.
 
+(*
 Definition peelBitsVval (e:EvidenceC) : option (BS*EvidenceC) :=
   match e with
   | PairBitsV (BitsV bs) e' => Some (bs,e')
@@ -83,6 +84,7 @@ Definition peelPairBitsV (e:EvidenceC) : option (EvidenceC*EvidenceC) :=
   | PairBitsV e1 e2 => ret (e1,e2)
   | _ => None
   end.
+*)
 
 (*
 Definition peelBitsVhsh (e:EvidenceC) : option (list BSV*EvidenceC) :=
@@ -92,6 +94,8 @@ Definition peelBitsVhsh (e:EvidenceC) : option (list BSV*EvidenceC) :=
   end.
  *)
 
+
+(*
 Inductive EvidenceCon: Set :=
 | mtc: EvidenceCon
 | uuc: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> BS -> EvidenceCon -> EvidenceCon
@@ -100,13 +104,13 @@ Inductive EvidenceCon: Set :=
 | nnc: N_ID -> BS -> EvidenceCon
 | ssc: EvidenceCon -> EvidenceCon -> EvidenceCon
 | ppc: EvidenceCon -> EvidenceCon -> EvidenceCon.
+*)
 
 
-
-Definition checkSigC (e':EvidenceCon) (p:Plc) (sig:BS): BS.
+Definition checkSigC (e':EvidenceC) (p:Plc) (sig:BS): BS.
 Admitted.
 
-Fixpoint build_app_comp_evC (e:EvidenceCon) : EvidenceCon :=
+Fixpoint build_app_comp_evC (e:EvidenceC) : EvidenceC :=
   match e with
   | mtc => mtc
               
@@ -125,7 +129,9 @@ Fixpoint build_app_comp_evC (e:EvidenceCon) : EvidenceCon :=
   | ppc e1 e2 =>
     ppc (build_app_comp_evC e1) (build_app_comp_evC e2)
   end.
-        
+
+
+(*
 Fixpoint build_app_comp_ev (e:EvidenceC) (et:Evidence): option EvidenceC :=
   match et with
   | mt => ret (BitsV  0)
@@ -158,6 +164,7 @@ Fixpoint build_app_comp_ev (e:EvidenceC) (et:Evidence): option EvidenceC :=
       e2_res <- build_app_comp_ev e2 et2 ;;
       ret (PairBitsV e1_res e2_res)
   end.
+*)
 
 (*
   | (ggc pi bs e', gg pi' et') =>
