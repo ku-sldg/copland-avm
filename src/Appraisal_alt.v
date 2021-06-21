@@ -772,7 +772,7 @@ Proof.
         solve_by_inversion.
   - (* ssc case *)       
     assert (
-      (exists e'', EvSub (uuc i args tpl tid n1 e'') st_ev) \/
+      (exists e'', EvSub (uuc i args tpl tid n e'') st_ev) \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) st_ev /\
           EvSubT (uu i args tpl tid et') ett)
@@ -788,10 +788,10 @@ Proof.
       destruct_conjs.
 
       assert (
-           (EvSub (uuc i args tpl tid n1 H4) (ggc n n0 e')) \/
+           (EvSub (uuc i args tpl tid n H4) (ssc e'1 e'2)) \/
            (exists ett p' bs,
-               EvSub (hhc p' bs ett) (ggc n n0 e') /\
-               EvSubT (et_fun (uuc i args tpl tid n1 H4)) ett
+               EvSub (hhc p' bs ett) (ssc e'1 e'2) /\
+               EvSubT (et_fun (uuc i args tpl tid n H4)) ett
            )
         ).
       {
@@ -800,9 +800,14 @@ Proof.
       destruct H6.
       ++
         invc H6.
+        +++
         left.
         repeat eexists.
-        apply ggSub; eauto.
+        apply ssSubl; eauto.
+        +++
+          left.
+          repeat eexists.
+          apply ssSubr; eauto.
         (*
         +++
           left.
@@ -824,9 +829,9 @@ Proof.
     +
       destruct_conjs.
        assert (
-           (EvSub (hhc H5 H6 H4) (ggc n n0 e')) \/
+           (EvSub (hhc H5 H6 H4) (ssc e'1 e'2)) \/
            (exists ett p' bs,
-               EvSub (hhc p' bs ett) (ggc n n0 e') /\
+               EvSub (hhc p' bs ett) (ssc e'1 e'2) /\
                EvSubT (et_fun (hhc H5 H6 H4)) ett
            )
          ).
@@ -836,15 +841,21 @@ Proof.
        destruct H10.
       ++
         invc H10.
+        +++
         right.
         repeat eexists.
-        apply ggSub.
+        apply ssSubl.
         eassumption.
         eassumption.
+        +++
+          right.
+          repeat eexists.
+          apply ssSubr.
+          eassumption.
+          eassumption.
       ++
         destruct_conjs.
         ff.
-        invc H13.
         assert (EvSubT (uu i args tpl tid H7) H10).
         {
           eapply evsubT_transitive.
@@ -852,20 +863,130 @@ Proof.
           eassumption.
           eassumption.
         }
+        invc H13.
+        +++
+        
         
         right.
         repeat eexists.
-        apply ggSub.
+        apply ssSubl.
         eassumption.
         eassumption.
-    
-    
-    
-    
-            
-    
-    
-Admitted.
+        +++
+          right.
+          repeat eexists.
+          apply ssSubr.
+          eassumption.
+          eassumption.
+    - (* ssc case *)       
+    assert (
+      (exists e'', EvSub (uuc i args tpl tid n e'') st_ev) \/
+      (exists ett p' bs et',
+          EvSub (hhc p' bs ett) st_ev /\
+          EvSubT (uu i args tpl tid et') ett)
+      ).
+    {
+      eapply uu_preserved'.
+      apply H.
+      eassumption.
+      eassumption.
+    }
+    destruct H4.
+    +
+      destruct_conjs.
+
+      assert (
+           (EvSub (uuc i args tpl tid n H4) (ppc e'1 e'2)) \/
+           (exists ett p' bs,
+               EvSub (hhc p' bs ett) (ppc e'1 e'2) /\
+               EvSubT (et_fun (uuc i args tpl tid n H4)) ett
+           )
+        ).
+      {
+        eapply evAccum; eauto.
+      }
+      destruct H6.
+      ++
+        invc H6.
+        +++
+        left.
+        repeat eexists.
+        apply ppSubl; eauto.
+        +++
+          left.
+          repeat eexists.
+          apply ppSubr; eauto.
+        (*
+        +++
+          left.
+          eexists.
+          econstructor.
+        +++
+          left.
+          eexists.
+          apply uuSub.
+          eauto. *)
+      ++
+        destruct_conjs.
+        ff.
+        right.
+        repeat eexists.
+        eauto.
+        eauto.
+
+    +
+      destruct_conjs.
+       assert (
+           (EvSub (hhc H5 H6 H4) (ppc e'1 e'2)) \/
+           (exists ett p' bs,
+               EvSub (hhc p' bs ett) (ppc e'1 e'2) /\
+               EvSubT (et_fun (hhc H5 H6 H4)) ett
+           )
+         ).
+       {
+         eapply evAccum; eauto.
+       }
+       destruct H10.
+      ++
+        invc H10.
+        +++
+        right.
+        repeat eexists.
+        apply ppSubl.
+        eassumption.
+        eassumption.
+        +++
+          right.
+          repeat eexists.
+          apply ppSubr.
+          eassumption.
+          eassumption.
+      ++
+        destruct_conjs.
+        ff.
+        assert (EvSubT (uu i args tpl tid H7) H10).
+        {
+          eapply evsubT_transitive.
+          apply hhSubT.
+          eassumption.
+          eassumption.
+        }
+        invc H13.
+        +++
+        
+        
+        right.
+        repeat eexists.
+        apply ppSubl.
+        eassumption.
+        eassumption.
+        +++
+          right.
+          repeat eexists.
+          apply ppSubr.
+          eassumption.
+          eassumption.
+Defined.
 
 Lemma appraisal_correct : forall t e e' tr tr' p p' et ev,
     well_formed_r t ->
@@ -1165,7 +1286,185 @@ Proof.
         eassumption.
         apply ssSubr.
         eassumption.
-    -
+    - (* abpar case *)
+    (*
+    do_wf_pieces. *)
+    edestruct wf_bpar_pieces;[eauto | idtac].
+    vmsts.
+    simpl in *.
+    subst.
+    repeat ff.
+
+    vmsts.
+    ff.
+
+    measEventFacts.
+    ff.
+    do_pl_immut.
+    do_pl_immut.
+    subst.
+    invc H5.
+
+    
+    inv_events;
+      ff.
+    + (* t1 case *)
+      destruct s.
+      ++
+        ff.
+
+      
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
+      {
+        eapply IHt1.
+        eassumption.
+        eassumption.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      invc H2.
+      +++
+        econstructor.
+        econstructor.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        econstructor.
+        eassumption.
+      ++
+        ff.
+
+      
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
+      {
+        eapply IHt1.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      invc H2.
+      +++
+        econstructor.
+        econstructor.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        econstructor.
+        eassumption.
+      ++
+        ff.
+
+      
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
+      {
+        eapply IHt1.
+        eassumption.
+        eassumption.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      invc H2.
+      +++
+        econstructor.
+        econstructor.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        econstructor.
+        eassumption.
+    + (* t2 case *)
+
+      destruct s.
+      ++
+        ff.
+
+      
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
+      {
+        eapply IHt2.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      invc H2.
+      +++
+        econstructor.
+        apply ppSubr.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        apply ppSubr.
+        eassumption.
+      ++
+        ff.
+
+      
+        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
+      {
+        eapply IHt2.
+        eassumption.
+        eassumption.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      invc H2.
+      +++
+        econstructor.
+        apply ppSubr.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        apply ppSubr.
+        eassumption.
+      ++
+        ff.
+
+      
+        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
+      {
+        eapply IHt2.
+        eassumption.
+        eassumption.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      invc H2.
+      +++
+        econstructor.
+        apply ppSubr.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        apply ppSubr.
+        eassumption.
+Defined.
+
       
     
        
