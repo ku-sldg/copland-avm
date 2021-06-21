@@ -78,22 +78,54 @@ Definition peelBitsVval (e:EvidenceC) : option (BS*EvidenceC) :=
   | _ => None
   end.
 
+Definition peelPairBitsV (e:EvidenceC) : option (EvidenceC*EvidenceC) :=
+  match e with
+  | PairBitsV e1 e2 => ret (e1,e2)
+  | _ => None
+  end.
+
 (*
 Definition peelBitsVhsh (e:EvidenceC) : option (list BSV*EvidenceC) :=
   match e with
   | PairBitsV (BitsV (bshsh ls)) e' => Some (ls,e')
   | _ => None
   end.
-*)
-    
-Definition peelPairBitsV (e:EvidenceC) : option (EvidenceC*EvidenceC) :=
-  match e with
-  | PairBitsV e1 e2 => ret (e1,e2)
-  | _ => None
-  end.
-    
+ *)
 
-    
+Inductive EvidenceCon: Set :=
+| mtc: EvidenceCon
+| uuc: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> BS -> EvidenceCon -> EvidenceCon
+| ggc: Plc -> BS -> EvidenceCon -> EvidenceCon
+| hhc: Plc -> BS -> Evidence -> EvidenceCon
+| nnc: N_ID -> BS -> EvidenceCon
+| ssc: EvidenceCon -> EvidenceCon -> EvidenceCon
+| ppc: EvidenceCon -> EvidenceCon -> EvidenceCon.
+
+
+
+Definition checkSigC (e':EvidenceCon) (p:Plc) (sig:BS): BS.
+Admitted.
+
+Fixpoint build_app_comp_evC (e:EvidenceCon) : EvidenceCon :=
+  match e with
+  | mtc => mtc
+              
+  | uuc i args tpl tid bs e' =>
+    uuc i args tpl tid (checkASP i args tpl tid bs)
+        (build_app_comp_evC e')
+  | ggc p bs e' =>
+    ggc p (checkSigC e' p bs)
+        (build_app_comp_evC e')
+  | hhc p bs et =>
+    hhc p (checkHash et p bs) et
+  | nnc nid bs =>
+    nnc nid bs (* TODO: check nonce *)
+  | ssc e1 e2 =>
+    ssc (build_app_comp_evC e1) (build_app_comp_evC e2)
+  | ppc e1 e2 =>
+    ppc (build_app_comp_evC e1) (build_app_comp_evC e2)
+  end.
+        
 Fixpoint build_app_comp_ev (e:EvidenceC) (et:Evidence): option EvidenceC :=
   match et with
   | mt => ret (BitsV  0)

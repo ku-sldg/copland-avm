@@ -29,6 +29,10 @@ Inductive EvidenceC: Set :=
 | PairBitsV: EvidenceC -> EvidenceC -> EvidenceC.
 
 
+Inductive evidence_bs: AnnoTerm -> Plc -> Evidence -> EvidenceC -> Evidence -> Prop :=
+| evcpy: forall r p et ec et',
+    evidence_bs (aasp r CPY) p et ec et'.
+
 
   (*
 | mtc: EvidenceC

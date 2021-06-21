@@ -23,7 +23,14 @@ Inductive appEvent_Evidence : Ev -> EvidenceC -> Prop :=
     EvSub (BitsV (checkHash et pi bs)) e ->
     appEvent_Evidence (umeas n p i args tpl tid) e.
 
-
+Inductive appEvent_EvidenceC : Ev -> EvidenceC -> Prop :=
+  aeuc: forall i args tpl tid e n p,
+    EvSub (BitsV (checkASP i args tpl tid n)) e ->
+    appEvent_EvidenceC (umeas n p i args tpl tid) e
+| ahuc: forall i args tpl tid e' et n p pi bs e,
+    EvSubT (uu i args tpl tid  e') et ->
+    EvSub (BitsV (checkHash et pi bs)) e ->
+    appEvent_EvidenceC (umeas n p i args tpl tid) e.
 
 
 
