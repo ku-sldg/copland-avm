@@ -10,14 +10,13 @@ Require Import Coq.Program.Tactics Coq.Program.Equality.
 
 Set Nested Proofs Allowed.
 
-Lemma pl_immut : forall t e et tr p,
+Lemma pl_immut : forall t e tr p,
     well_formed_r t ->
     st_pl
       (execSt
          (copland_compile t)
          {|
            st_ev := e;
-           st_evT := et;
            st_trace := tr;
            st_pl := p |}) = p.
 Proof.
@@ -196,12 +195,10 @@ Ltac do_pl_immut :=
       match goal with
       | [H: copland_compile ?t
                             {| st_ev := _;
-                               st_evT := _;
                         st_trace := _;
                         st_pl := ?p |} =
             (_,
              {| st_ev := _;
-                         st_evT := _;
                          st_trace := _;
                          st_pl := ?p' |}),
          H2: well_formed_r ?t |- _] =>
@@ -209,12 +206,11 @@ Ltac do_pl_immut :=
       end.
 
 Lemma st_congr :
-  forall st tr e et p,
+  forall st tr e p,
     st_ev st = e ->
-    st_evT st = et ->
     st_trace st = tr ->
     st_pl st = p ->
-    st =  {| st_ev := e; st_evT := et; st_trace := tr; st_pl := p |}.
+    st =  {| st_ev := e; st_trace := tr; st_pl := p |}.
 Proof.
   intros.
   subst; destruct st; auto.
@@ -233,13 +229,13 @@ Ltac anhl :=
     destruct_conjs; subst
   end.
 
-Lemma hihi : forall t e e' e'' et et' et'' x x' y y' p p' p'',
+Lemma hihi : forall t e e' e'' x x' y y' p p' p'',
     well_formed_r t ->
-    copland_compile t {| st_ev := e; st_evT := et; st_trace := x; st_pl := p |} =
-    (Some tt, {| st_ev := e'; st_evT := et'; st_trace := x'; st_pl := p' |}) ->
-    copland_compile t {| st_ev := e; st_evT := et; st_trace := y; st_pl := p |} =
-    (Some tt, {| st_ev := e''; st_evT := et''; st_trace := y'; st_pl := p'' |}) ->
-    (e' = e'' /\ et' = et'' /\ p' = p'').
+    copland_compile t {| st_ev := e; st_trace := x; st_pl := p |} =
+    (Some tt, {| st_ev := e'; st_trace := x'; st_pl := p' |}) ->
+    copland_compile t {| st_ev := e; st_trace := y; st_pl := p |} =
+    (Some tt, {| st_ev := e''; st_trace := y'; st_pl := p'' |}) ->
+    (e' = e'' /\ p' = p'').
 Proof.
   induction t; intros.
   - destruct a;
@@ -294,12 +290,12 @@ Ltac dohi'' :=
   annogo;
   let tac Hwf H H' := eapply hihi; [apply Hwf | apply H | apply H'] in
   match goal with
-  | [H : copland_compile ?t1 {| st_ev := ?e; st_evT := ?et; st_trace := _; st_pl := ?p |} =
-         (?opt, {| st_ev := ?e'; st_evT := ?et'; st_trace := _; st_pl := ?p' |}),
-         H' : copland_compile ?t1 {| st_ev := ?e; st_evT := ?et; st_trace := _; st_pl := ?p |} =
-              (?opt, {| st_ev := ?e''; st_evT := ?et''; st_trace := _; st_pl := ?p'' |}),
+  | [H : copland_compile ?t1 {| st_ev := ?e; st_trace := _; st_pl := ?p |} =
+         (?opt, {| st_ev := ?e'; st_trace := _; st_pl := ?p' |}),
+         H' : copland_compile ?t1 {| st_ev := ?e; st_trace := _; st_pl := ?p |} =
+              (?opt, {| st_ev := ?e''; st_trace := _; st_pl := ?p'' |}),
                 Hwf : well_formed_r ?t1  |- _] =>
-    assert_new_proof_by (e' = e'' /\ et' = et'' /\ p' = p'') ltac:(tac Hwf H H')
+    assert_new_proof_by (e' = e'' /\ p' = p'') ltac:(tac Hwf H H')
   end.
 
 Ltac dohi :=
@@ -340,7 +336,7 @@ Proof.
     dohtac.
     df.
 
-    assert (o6 = Some tt) by eauto.
+    assert (o4 = Some tt) by eauto.
     subst.
     vmsts.
     df.
@@ -371,18 +367,18 @@ Ltac do_somett :=
 
 Ltac do_asome := repeat do_somett; clear_triv.
 
-Lemma trace_irrel_pl : forall t tr1 tr1' tr2 e e' et et' p1' p1,
+Lemma trace_irrel_pl : forall t tr1 tr1' tr2 e e' p1' p1,
     well_formed_r t ->
     copland_compile t
-           {| st_ev := e; st_evT := et; st_trace := tr1; st_pl := p1 |} =
-    (Some tt, {| st_ev := e'; st_evT := et'; st_trace := tr1'; st_pl := p1' |}) ->
+           {| st_ev := e; st_trace := tr1; st_pl := p1 |} =
+    (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1' |}) ->
     
     st_pl
       (execSt (copland_compile t)
-           {| st_ev := e;  st_evT := et; st_trace := tr2; st_pl := p1 |}) = p1'.
+           {| st_ev := e; st_trace := tr2; st_pl := p1 |}) = p1'.
 Proof.
   intros.
-  destruct (copland_compile t {| st_ev := e; st_evT := et; st_trace := tr2; st_pl := p1 |}) eqn:ff.
+  destruct (copland_compile t {| st_ev := e; st_trace := tr2; st_pl := p1 |}) eqn:ff.
   simpl.
   vmsts.
   simpl.
@@ -393,40 +389,18 @@ Proof.
   tauto.
 Defined.
 
-Lemma trace_irrel_ev : forall t tr1 tr1' tr2 e e' et et' p1' p1,
+Lemma trace_irrel_ev : forall t tr1 tr1' tr2 e e' p1' p1,
     well_formed_r t ->
     copland_compile t
-           {| st_ev := e; st_evT := et; st_trace := tr1; st_pl := p1 |} =
-    (Some tt, {| st_ev := e'; st_evT := et'; st_trace := tr1'; st_pl := p1' |}) ->
+           {| st_ev := e; st_trace := tr1; st_pl := p1 |} =
+    (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1' |}) ->
     
     st_ev
       (execSt (copland_compile t)
-           {| st_ev := e;  st_evT := et; st_trace := tr2; st_pl := p1 |}) = e'.
+           {| st_ev := e; st_trace := tr2; st_pl := p1 |}) = e'.
 Proof.
   intros.
-  destruct (copland_compile t {| st_ev := e; st_evT := et; st_trace := tr2; st_pl := p1 |}) eqn:ff.
-  simpl.
-  vmsts.
-  simpl.
-  do_asome.
-  subst.
-  dohi.
-  df.
-  tauto.
-Defined.
-
-Lemma trace_irrel_evT : forall t tr1 tr1' tr2 e e' et et' p1' p1,
-    well_formed_r t ->
-    copland_compile t
-           {| st_ev := e; st_evT := et; st_trace := tr1; st_pl := p1 |} =
-    (Some tt, {| st_ev := e'; st_evT := et'; st_trace := tr1'; st_pl := p1' |}) ->
-    
-    st_evT
-      (execSt (copland_compile t)
-           {| st_ev := e;  st_evT := et; st_trace := tr2; st_pl := p1 |}) = et'.
-Proof.
-  intros.
-  destruct (copland_compile t {| st_ev := e; st_evT := et; st_trace := tr2; st_pl := p1 |}) eqn:ff.
+  destruct (copland_compile t {| st_ev := e; st_trace := tr2; st_pl := p1 |}) eqn:ff.
   simpl.
   vmsts.
   simpl.

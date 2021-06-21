@@ -11,51 +11,30 @@ Import ListNotations.
 
 
 
-Axiom copland_compile_external' : forall (t : AnnoTerm) (e : EvidenceC) (et:Evidence) (n : nat) (tr:list Ev),
+Axiom copland_compile_external' : forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (tr:list Ev),
     runSt 
       (copland_compile t)
-      {| st_ev := e; st_evT := et; st_trace := tr; st_pl := n (*; st_store := o*) |} =
+      {| st_ev := e; st_trace := tr; st_pl := n |} =
     (Some tt,
      {| st_ev := remote_evidence t n e;
-        st_evT := aeval t n et;
         st_trace := tr ++ (remote_trace t n);
         st_pl :=
           st_pl
             (
               execSt (copland_compile t)
                      {| st_ev := e;
-                        st_evT := et;
                         st_trace := [];
-                        st_pl := n (*;
-                        st_store := o*) |}) (*;
-        st_store :=
-          st_store
-            (
-              execSt (copland_compile t)
-                     {| st_ev := e;
-                        st_trace := [];
-                        st_pl := n;
-                        st_store := o |}); *)
+                        st_pl := n |})
      |}).
 
 
-Lemma copland_compile_external : forall (t : AnnoTerm) (e : EvidenceC) (et:Evidence) (n : nat),
+Lemma copland_compile_external : forall (t : AnnoTerm) (e : EvidenceC) (n : nat),
     well_formed_r t ->
-    copland_compile t {| st_ev := e; st_evT := et; st_trace := []; st_pl := n (*; st_store := o*) |} =
+    copland_compile t {| st_ev := e; st_trace := []; st_pl := n |} =
     (Some tt,
      {| st_ev := remote_evidence t n e;
-        st_evT := aeval t n et;
         st_trace := remote_trace t n;
-        st_pl := n (*;
-        st_store :=
-          st_store
-            (
-              execSt
-                (copland_compile t)
-                  {| st_ev := e;
-                     st_trace := [];
-                     st_pl := n;
-                     st_store := o |}); *)
+        st_pl := n
      |}).
 Proof.
   intros.
@@ -65,38 +44,26 @@ Proof.
               execSt
                 (copland_compile t)
                 {| st_ev := e;
-                   st_evT := et;
                      st_trace := [];
-                     st_pl := n (*;
-                     st_store := o *) |})) as H0'.
+                     st_pl := n |})) as H0'.
   {
     rewrite pl_immut;
     tauto. 
   }
-  rewrite H0' at 5.
+  rewrite H0' at 4.
   eapply copland_compile_external'.
 Defined.
 
 
 
 
-Lemma copland_compile_at' : forall (t : AnnoTerm) (e : EvidenceC) (et:Evidence) (n : nat) (tr: list Ev),
+Lemma copland_compile_at' : forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (tr: list Ev),
     well_formed_r t ->
-    copland_compile t {| st_ev := e; st_evT := et; st_trace := tr; st_pl := n (*; st_store := o*) |} =
+    copland_compile t {| st_ev := e; st_trace := tr; st_pl := n |} =
     (Some tt,
      {| st_ev := toRemote t n e;
-        st_evT := aeval t n et;
         st_trace := tr ++ remote_events t n;
         st_pl := n;
-       (* st_store :=
-          st_store
-            (
-              execSt
-                (copland_compile t)
-                {| st_ev := e;
-                   st_trace := [];
-                   st_pl := n;
-                   st_store := o |}); *)
      |}).
 Proof.
   intros.
@@ -107,34 +74,22 @@ Proof.
             (execSt
                (copland_compile t)
                {| st_ev := e;
-                  st_evT := et;
                   st_trace := [];
-                  st_pl := n (*;
-                  st_store := o*) |}) = n) as H0.
+                  st_pl := n |}) = n) as H0.
   eapply pl_immut.
   eauto.
-  rewrite <- H0 at 5.
+  rewrite <- H0 at 4.
   eapply copland_compile_external'.
 Defined.
 
 
-Lemma copland_compile_at : forall (t : AnnoTerm) (e : EvidenceC) (et:Evidence) (n : nat),
+Lemma copland_compile_at : forall (t : AnnoTerm) (e : EvidenceC) (n : nat),
     well_formed_r t ->
-    copland_compile t {| st_ev := e; st_evT := et; st_trace := []; st_pl := n (*; st_store := o*) |} =
+    copland_compile t {| st_ev := e; st_trace := []; st_pl := n |} =
     (Some tt,
      {| st_ev := toRemote t n e;
-        st_evT := aeval t n et;
         st_trace := remote_events t n;
-        st_pl := n (* ;
-        st_store :=
-          st_store
-            (
-              execSt
-                (copland_compile t)
-                {| st_ev := e;
-                              st_trace := [];
-                              st_pl := n;
-                              st_store := o |}); *)
+        st_pl := n
      |}).
 Proof.
   intros.

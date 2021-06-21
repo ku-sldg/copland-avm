@@ -24,6 +24,8 @@ Print bs2.
 *)
 
 (** * Concrete Evidence *)
+
+(*
 Inductive EvidenceC: Set :=
 | BitsV: BS -> EvidenceC
 | PairBitsV: EvidenceC -> EvidenceC -> EvidenceC.
@@ -32,30 +34,28 @@ Inductive EvidenceC: Set :=
 Inductive evidence_bs: AnnoTerm -> Plc -> Evidence -> EvidenceC -> Evidence -> Prop :=
 | evcpy: forall r p et ec et',
     evidence_bs (aasp r CPY) p et ec et'.
+*)
 
 
-  (*
+Inductive EvidenceC: Set :=
 | mtc: EvidenceC
 | uuc: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> BS -> EvidenceC -> EvidenceC
 | ggc: Plc -> BS -> EvidenceC -> EvidenceC
-| hhc: Plc -> BS -> (*Evidence ->*) EvidenceC
-| nnc: N_ID -> BS -> EvidenceC -> EvidenceC
+| hhc: Plc -> BS -> Evidence -> EvidenceC
+| nnc: N_ID -> BS -> (*EvidenceC ->*) EvidenceC
 | ssc: EvidenceC -> EvidenceC -> EvidenceC
 | ppc: EvidenceC -> EvidenceC -> EvidenceC.
-*)
 
-(*
 Fixpoint et_fun (ec:EvidenceC) : Evidence :=
   match ec with
   | mtc => mt
   | uuc i l p tid _ ec' => uu i l p tid (et_fun ec')
   | ggc p _ ec' => gg p (et_fun ec')
-  | hhc p _ => hh p et (* TODO:  is this acceptable? *)
-  | nnc ni _ ec' => nn ni (et_fun ec')
+  | hhc p _ et => hh p et (* TODO:  is this acceptable? *)
+  | nnc ni _ => nn ni
   | ssc ec1 ec2 => ss (et_fun ec1) (et_fun ec2)
   | ppc ec1 ec2 => pp (et_fun ec1) (et_fun ec2)
   end.
-*)
 
 Inductive EvSubT: Evidence -> Evidence -> Prop :=
 | evsub_reflT : forall e : Evidence, EvSubT e e
@@ -85,6 +85,8 @@ Inductive EvSubT: Evidence -> Evidence -> Prop :=
     EvSubT e (pp e' e'').
 
 Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
+
+  (*
 | evsub_refl : forall e : EvidenceC, EvSub e e
 | evsub_pairl : forall e1 e e',
     EvSub e1 e ->
@@ -92,8 +94,8 @@ Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
 | evsub_pairr : forall e2 e e',
     EvSub e2 e' ->
     EvSub e2 (PairBitsV e e').
+*)
 
-(*
 | uuSub: forall e e' i tid l tpl bs,
     EvSub e e' ->
     EvSub e (uuc i l tpl tid bs e')
@@ -106,9 +108,9 @@ Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
 (*| hhSub: forall e e' p bs,
     EvSub e e' ->
     EvSub e (hhc p bs et) *)
-| nnSub: forall e e' i bs,
+(*| nnSub: forall e e' i bs,
     EvSub e e' ->
-    EvSub e (nnc i bs e')
+    EvSub e (nnc i bs e') *)
 | ssSubl: forall e e' e'',
     EvSub e e' ->
     EvSub e (ssc e' e'')
@@ -121,9 +123,8 @@ Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
 | ppSubr: forall e e' e'',
     EvSub e e'' ->
     EvSub e (ppc e' e'').
-*)
 
-
+(*
 Inductive EvBad': Evidence -> Prop :=
 | ggBad: forall e e' p p',
     e = gg p' e' ->
@@ -134,22 +135,9 @@ Inductive EvBad : Evidence -> Prop :=
     EvSubT e e' ->
     EvBad' e ->
     EvBad e'.
+*)
 
 
-
-(*
-Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=
-  match ec with
-  | mtc => mt
-(*  | kkc i A q _ ec' => kk i p q A (et_fun p ec') *)
-  | uuc i _ ec' => uu i p (et_fun p ec')
-  | ggc q _ ec' => gg q (et_fun p ec')
-  | hhc _ ec' => hh p (et_fun p ec')
-  | nnc n _ ec' => nn n (et_fun p ec')
-  | ssc ec1 ec2 => ss (et_fun p ec1) (et_fun p ec2)
-  | ppc ec1 ec2 => pp (et_fun p ec1) (et_fun p ec2)
-  end.
- *)
 
 
 
@@ -157,30 +145,30 @@ Fixpoint et_fun (p:Plc) (ec:EvidenceC) : Evidence :=
 
 
 (*
-| uuc: ASP_ID -> Plc -> TARG_ID -> BS -> EvidenceC -> EvidenceC
+| uuc: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> BS -> EvidenceC -> EvidenceC
  *)
 
 Inductive Ev_Shape: EvidenceC -> Evidence -> Prop :=
-| mtt: Ev_Shape (BitsV 0) mt
+| mtt: Ev_Shape mtc mt
 | uut: forall id l tid tpl bs e et,
     Ev_Shape e et ->
-    Ev_Shape (PairBitsV bs e) (uu id l tpl tid et)
+    Ev_Shape (uuc id l tpl tid bs e ) (uu id l tpl tid et)
 | ggt: forall p bs e et,
     Ev_Shape e et ->
-    Ev_Shape (PairBitsV bs e) (gg p et)
+    Ev_Shape (ggc p bs e) (gg p et)
 | hht: forall bs p et,
     (*Ev_Shape e et -> *)
-    Ev_Shape (BitsV bs) (hh p et)
+    Ev_Shape (hhc p bs et) (hh p et)
 | nnt: forall bs i,
-    Ev_Shape (BitsV bs) (nn i)
+    Ev_Shape (nnc i bs) (nn i)
 | sst: forall e1 e2 e1t e2t,
     Ev_Shape e1 e1t ->
     Ev_Shape e2 e2t ->
-    Ev_Shape (PairBitsV e1 e2) (ss e1t e2t)
+    Ev_Shape (ssc e1 e2) (ss e1t e2t)
 | ppt: forall e1 e2 e1t e2t,
     Ev_Shape e1 e1t ->
     Ev_Shape e2 e2t ->
-    Ev_Shape (PairBitsV e1 e2) (pp e1t e2t).
+    Ev_Shape (ppc e1 e2) (pp e1t e2t).
 Hint Constructors Ev_Shape : core.
 
 Ltac evShapeFacts :=
@@ -188,6 +176,7 @@ Ltac evShapeFacts :=
   | [H: Ev_Shape (?C _) _ |- _] => invc H
   | [H: Ev_Shape _ (?C _) |- _] => invc H
   | [H: Ev_Shape _ mt |- _] => invc H
+  | [H: Ev_Shape mtc _ |- _] => invc H
   end.
     
     (*
@@ -210,7 +199,6 @@ Ltac evShapeFacts :=
   end.
 *)
 
-(*
 Lemma ev_evshape: forall ec,
     Ev_Shape ec (et_fun ec).
 Proof.
@@ -231,9 +219,7 @@ Proof.
   -
     econstructor; eauto.
 Defined.
-*)
 
-(*
 (* TODO: perhaps an equality modulo "measuring place" *)
 Lemma evshape_determ: forall ec et et',
   Ev_Shape ec et ->
@@ -252,11 +238,11 @@ Proof.
     repeat evShapeFacts.
     assert (et1 = et0) by eauto.
     congruence.
-    
+    (*
   -
     repeat evShapeFacts.
     assert (et1 = et0) by eauto.
-    congruence. 
+    congruence.  *)
   -
     repeat evShapeFacts.
     
@@ -270,7 +256,6 @@ Proof.
     assert (e2t0 = e2t) by eauto.
     congruence. 
 Defined.
-*)
 
 Lemma ev_shape_transitive : forall e e' et et',
     Ev_Shape e et ->
@@ -280,42 +265,10 @@ Lemma ev_shape_transitive : forall e e' et et',
 Proof.
   intros.
   generalizeEverythingElse et.
-  induction et; intros.
-  -
-    evShapeFacts.
-    +
-      evShapeFacts.
-      ++
-        eauto.
-  -
-    evShapeFacts.
-    evShapeFacts.
-    evShapeFacts.
-    +
-      eauto.
-    +
-      eauto.
-    +
-      
-      
-      
-      
-      
-      assert (Ev_Shape e0 e1t).
-      {
-        eapply IHet.
-        apply H4.
-        eassumption.
-        admit.
-      }
-Abort.
-
-(*
-  
-  induction e; destruct et; intros;
-    try repeat evShapeFacts; eauto; tauto.
+  induction et; intros;
+    try
+      (repeat evShapeFacts; eauto).
 Defined.
-*)
 
 (*
     
@@ -358,16 +311,16 @@ Defined.
 
 
 
-Definition splitEv_l (sp:Split) (e:EvidenceC) (et:Evidence): (EvidenceC*Evidence) :=
+Definition splitEv_l (sp:Split) (e:EvidenceC): EvidenceC :=
   match sp with
-  | RIGHT => (BitsV 0, mt)
-  | _ => (e,et)
+  | RIGHT => mtc
+  | _ => e
   end.
 
-Definition splitEv_r (sp:Split) (e:EvidenceC) (et:Evidence) : (EvidenceC*Evidence) :=
+Definition splitEv_r (sp:Split) (e:EvidenceC): EvidenceC :=
   match sp with
-  | LEFT => (BitsV 0, mt)
-  | _ => (e,et)
+  | LEFT => mtc
+  | _ => e
   end.
 
 (*

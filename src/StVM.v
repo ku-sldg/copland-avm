@@ -13,9 +13,9 @@ Import ListNotations.
 (*Definition ev_store := MapC nat EvidenceC. *)
 Record cvm_st : Type := mk_st
                           {st_ev:EvidenceC ;
-                           st_evT: Evidence ;
+                           (*st_evT: Evidence ; *)
                            st_trace:list Ev ;
                            st_pl:Plc (*;
                            st_store:ev_store*)}.
 
-Definition empty_vmst := mk_st (BitsV 0) mt [] 0 (* [] *) .
+Definition empty_vmst := mk_st mtc [] 0 (* [] *) .
