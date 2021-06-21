@@ -186,6 +186,51 @@ Proof.
       apply ppSubr; eauto.
 Defined.
 
+Lemma evsubT_transitive: forall e e' e'',
+    EvSubT e e' ->
+    EvSubT e' e'' ->
+    EvSubT e e''.
+Proof.
+  intros.
+  generalizeEverythingElse e''.
+  induction e''; intros.
+  -
+    invc H0.
+    eassumption.
+  -
+    invc H0.
+    eassumption.
+    eapply uuSubT; eauto.
+  -
+    invc H0.
+    eassumption.
+    apply ggSubT; eauto.
+  -
+    invc H0.
+    eassumption.
+    apply hhSubT.
+    eauto.
+  -
+    invc H0.
+    eassumption.
+  -
+    invc H0.
+    +
+      eauto.
+    +
+      apply ssSublT; eauto.
+    +
+      apply ssSubrT; eauto.
+  -
+    invc H0.
+    +
+      eauto.
+    +
+      apply ppSublT; eauto.
+    +
+      apply ppSubrT; eauto.
+Defined.
+
 Lemma evAccum: forall t p e e' e'' tr tr' p',
 
     well_formed_r t ->
@@ -203,14 +248,264 @@ Lemma evAccum: forall t p e e' e'' tr tr' p',
       )
     ).
 Proof.
-Admitted.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a;
+      (ff; eauto).
+    +
+      left.
+      apply uuSub; eauto.
+    +
+      left.
+      apply ggSub; eauto.
+    +
+      right.
+      repeat eexists.
+      econstructor.
+      Lemma evsub_etfun: forall e e',
+        EvSub e e' ->
+        EvSubT (et_fun e) (et_fun e').
+      Proof.
+        intros.
+        induction H; intros.
+        -
+          econstructor.
+        -
+          apply uuSubT; eauto.
+        -
+          apply ggSubT; eauto.
+        -
+          ff.
+          apply ssSublT; eauto.
+        -
+          ff.
+          apply ssSubrT; eauto.
+        -
+          ff.
+          apply ppSublT; eauto.
+        -
+          ff.
+          apply ppSubrT; eauto.
+      Defined.
+      
+      apply evsub_etfun; eauto.
+  -
+    do_wf_pieces.
+    ff.
+    
+    eapply IHt.
+    eassumption.
+    eassumption.
+    apply copland_compile_at.
+    eassumption.
+  -
+    ff.
+    dosome.
+    ff.
+    vmsts.
 
-Lemma evsubT_transitive: forall e e' e'',
-    EvSubT e e' ->
-    EvSubT e' e'' ->
-    EvSubT e e''.
-Proof.
-Admitted.
+    do_wf_pieces.
+
+    assert (EvSub e'' st_ev \/
+         (exists (ett : Evidence) (p'0 bs : nat),
+             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (et_fun e'') ett)).
+    {
+      eapply IHt1.
+      eassumption.
+      Focus 2.
+      eassumption.
+      eassumption.
+    }
+    destruct H3.
+    +
+
+      assert (EvSub e'' e' \/
+         (exists (ett : Evidence) (p'0 bs : nat),
+             EvSub (hhc p'0 bs ett) e' /\ EvSubT (et_fun e'') ett)).
+    {
+      eapply IHt2.
+      eassumption.
+      eassumption.
+      eassumption.
+    }
+    destruct H4.
+      ++
+        eapply IHt2.
+        eassumption.
+        apply H3.
+        eassumption.
+      ++
+        destruct_conjs.
+        right.
+        repeat eexists.
+        eauto.
+        eauto.
+    +
+      destruct_conjs.
+      assert (EvSub (hhc H4 H5 H3) e' \/
+         (exists (ett : Evidence) (p'0 bs : nat),
+             EvSub (hhc p'0 bs ett) e' /\ EvSubT (et_fun (hhc H4 H5 H3)) ett)).
+    {
+      eapply IHt2.
+      eassumption.
+      eassumption.
+      eassumption.
+    }
+    destruct H8.
+      ++
+        right.
+        repeat eexists.
+        eauto.
+        eauto.
+      ++
+        destruct_conjs.
+        ff.
+        
+        right.
+        exists H8.
+        repeat eexists.
+        eassumption.
+        assert (EvSubT (et_fun e'') (hh H4 H3)).
+        {
+          
+        
+        eapply evsubT_transitive.
+        eassumption.
+        apply hhSubT.
+        econstructor.
+        }
+        eapply evsubT_transitive.
+        eassumption.
+        eassumption.
+  -
+    do_wf_pieces.
+    ff.
+    dosome.
+    ff.
+    vmsts.
+    ff.
+
+    destruct s.
+    +
+      ff.
+      assert (
+           EvSub e'' st_ev0 \/
+         (exists (ett : Evidence) (p'0 bs : nat),
+             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (et_fun e'') ett)
+        ) by eauto.
+      destruct H1.
+      ++
+        left.
+        apply ssSubl; eauto.
+      ++
+        destruct_conjs.
+        right.
+        repeat eexists.
+        apply ssSubl.
+        eassumption.
+        eassumption.
+    +
+      ff.
+      assert (
+           EvSub e'' st_ev \/
+         (exists (ett : Evidence) (p'0 bs : nat),
+             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (et_fun e'') ett)
+        ) by eauto.
+      destruct H1.
+      ++
+        left.
+        apply ssSubr; eauto.
+      ++
+        destruct_conjs.
+        right.
+        repeat eexists.
+        apply ssSubr.
+        eassumption.
+        eassumption.
+    +
+      ff.
+      assert (
+           EvSub e'' st_ev0 \/
+         (exists (ett : Evidence) (p'0 bs : nat),
+             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (et_fun e'') ett)
+        ) by eauto.
+      destruct H1.
+      ++
+        left.
+        apply ssSubl; eauto.
+      ++
+        destruct_conjs.
+        right.
+        repeat eexists.
+        apply ssSubl.
+        eassumption.
+        eassumption.
+  -
+        do_wf_pieces.
+    ff.
+    dosome.
+    ff.
+    vmsts.
+    ff.
+
+    destruct s.
+    +
+      ff.
+      assert (
+           EvSub e'' st_ev0 \/
+         (exists (ett : Evidence) (p'0 bs : nat),
+             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (et_fun e'') ett)
+        ) by eauto.
+      destruct H1.
+      ++
+        left.
+        apply ppSubl; eauto.
+      ++
+        destruct_conjs.
+        right.
+        repeat eexists.
+        apply ppSubl.
+        eassumption.
+        eassumption.
+    +
+      ff.
+      assert (
+           EvSub e'' st_ev \/
+         (exists (ett : Evidence) (p'0 bs : nat),
+             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (et_fun e'') ett)
+        ) by eauto.
+      destruct H1.
+      ++
+        left.
+        apply ppSubr; eauto.
+      ++
+        destruct_conjs.
+        right.
+        repeat eexists.
+        apply ppSubr.
+        eassumption.
+        eassumption.
+    +
+      ff.
+      assert (
+           EvSub e'' st_ev0 \/
+         (exists (ett : Evidence) (p'0 bs : nat),
+             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (et_fun e'') ett)
+        ) by eauto.
+      destruct H1.
+      ++
+        left.
+        apply ppSubl; eauto.
+      ++
+        destruct_conjs.
+        right.
+        repeat eexists.
+        apply ppSubl.
+        eassumption.
+        eassumption.
+Defined.
 
 Lemma uu_preserved': forall t p et n p0 i args tpl tid
                        e tr e' tr' p',
@@ -372,10 +667,613 @@ Proof.
         eauto.
         eauto.
   -
-    admit.
+    do_wf_pieces.
+    ff.
+    dosome.
+    ff.
+    vmsts.
+    ff.
+
+    invEvents.
+    + (* t1 case *)
+
+      destruct s; ff.
+      ++
+
+      assert (
+            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
+         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
+             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (uu i args tpl tid et') ett)
+        ).
+      {
+        eapply IHt1.
+        eassumption.
+        eassumption.
+        eassumption.
+      }
+      
+      destruct H0.
+      +++
+        destruct_conjs.
+        left.
+        eexists.
+        apply ssSubl; eauto.
+        (*
+        assert (
+            (EvSub (uuc i args tpl tid n H0) e) \/
+            (exists ett p' bs,
+                EvSub (hhc p' bs ett) e /\
+                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
+            )
+          ).
+        {
+          eapply evAccum.
+          apply H2.
+          eassumption.
+          eassumption.
+        }
+        clear H1.
+        destruct H4. 
+        +++
+
+          left.
+          eauto. *)
+        +++
+          destruct_conjs.
+          ff.
+          right.
+          repeat eexists.
+          apply ssSubl; eauto.
+          eauto.
+      ++
+        
+          
+      assert (
+            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
+         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
+             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (uu i args tpl tid et') ett)
+        ).
+      {
+        eapply IHt1.
+        eassumption.
+        eassumption.
+        eassumption.
+      }
+      
+      destruct H0.
+      +++
+        destruct_conjs.
+        left.
+        eexists.
+        apply ssSubl; eauto.
+        (*
+        assert (
+            (EvSub (uuc i args tpl tid n H0) e) \/
+            (exists ett p' bs,
+                EvSub (hhc p' bs ett) e /\
+                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
+            )
+          ).
+        {
+          eapply evAccum.
+          apply H2.
+          eassumption.
+          eassumption.
+        }
+        clear H1.
+        destruct H4. 
+        +++
+
+          left.
+          eauto. *)
+        +++
+          destruct_conjs.
+          ff.
+          right.
+          repeat eexists.
+          apply ssSubl; eauto.
+          eauto.
+      ++
+        
+      assert (
+            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
+         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
+             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (uu i args tpl tid et') ett)
+        ).
+      {
+        eapply IHt1.
+        eassumption.
+        eassumption.
+        eassumption.
+      }
+      
+      destruct H0.
+      +++
+        destruct_conjs.
+        left.
+        eexists.
+        apply ssSubl; eauto.
+        (*
+        assert (
+            (EvSub (uuc i args tpl tid n H0) e) \/
+            (exists ett p' bs,
+                EvSub (hhc p' bs ett) e /\
+                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
+            )
+          ).
+        {
+          eapply evAccum.
+          apply H2.
+          eassumption.
+          eassumption.
+        }
+        clear H1.
+        destruct H4. 
+        +++
+
+          left.
+          eauto. *)
+        +++
+          destruct_conjs.
+          ff.
+          right.
+          repeat eexists.
+          apply ssSubl; eauto.
+          eauto.
+    + (* t2 case *)
+
+      do_pl_immut.
+      do_pl_immut.
+      subst.
+
+      destruct s; ff.
+      ++
+
+      assert (
+            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev) \/
+         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
+             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (uu i args tpl tid et') ett)
+        ).
+      {
+        eapply IHt2.
+        eassumption.
+        eassumption.
+        eassumption.
+      }
+      
+      destruct H0.
+      +++
+        destruct_conjs.
+        left.
+        eexists.
+        apply ssSubr; eauto.
+        (*
+        assert (
+            (EvSub (uuc i args tpl tid n H0) e) \/
+            (exists ett p' bs,
+                EvSub (hhc p' bs ett) e /\
+                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
+            )
+          ).
+        {
+          eapply evAccum.
+          apply H2.
+          eassumption.
+          eassumption.
+        }
+        clear H1.
+        destruct H4. 
+        +++
+
+          left.
+          eauto. *)
+        +++
+          destruct_conjs.
+          ff.
+          right.
+          repeat eexists.
+          apply ssSubr; eauto.
+          eauto.
+      ++
+        
+          
+      assert (
+            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev) \/
+         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
+             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (uu i args tpl tid et') ett)
+        ).
+      {
+        eapply IHt2.
+        eassumption.
+        eassumption.
+        eassumption.
+      }
+      
+      destruct H0.
+      +++
+        destruct_conjs.
+        left.
+        eexists.
+        apply ssSubr; eauto.
+        (*
+        assert (
+            (EvSub (uuc i args tpl tid n H0) e) \/
+            (exists ett p' bs,
+                EvSub (hhc p' bs ett) e /\
+                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
+            )
+          ).
+        {
+          eapply evAccum.
+          apply H2.
+          eassumption.
+          eassumption.
+        }
+        clear H1.
+        destruct H4. 
+        +++
+
+          left.
+          eauto. *)
+        +++
+          destruct_conjs.
+          ff.
+          right.
+          repeat eexists.
+          apply ssSubr; eauto.
+          eauto.
+      ++
+        
+      assert (
+            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev) \/
+         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
+             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (uu i args tpl tid et') ett)
+        ).
+      {
+        eapply IHt2.
+        eassumption.
+        eassumption.
+        eassumption.
+      }
+      
+      destruct H0.
+      +++
+        destruct_conjs.
+        left.
+        eexists.
+        apply ssSubr; eauto.
+        (*
+        assert (
+            (EvSub (uuc i args tpl tid n H0) e) \/
+            (exists ett p' bs,
+                EvSub (hhc p' bs ett) e /\
+                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
+            )
+          ).
+        {
+          eapply evAccum.
+          apply H2.
+          eassumption.
+          eassumption.
+        }
+        clear H1.
+        destruct H4. 
+        +++
+
+          left.
+          eauto. *)
+        +++
+          destruct_conjs.
+          ff.
+          right.
+          repeat eexists.
+          apply ssSubr; eauto.
+          eauto.
+
   -
-    admit.
-Admitted.
+    do_wf_pieces.
+    ff.
+    dosome.
+    ff.
+    vmsts.
+    ff.
+
+    invEvents.
+    + (* t1 case *)
+
+      destruct s; ff.
+      ++
+
+      assert (
+            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
+         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
+             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (uu i args tpl tid et') ett)
+        ).
+      {
+        eapply IHt1.
+        eassumption.
+        eassumption.
+        eassumption.
+      }
+      
+      destruct H0.
+      +++
+        destruct_conjs.
+        left.
+        eexists.
+        apply ppSubl; eauto.
+        (*
+        assert (
+            (EvSub (uuc i args tpl tid n H0) e) \/
+            (exists ett p' bs,
+                EvSub (hhc p' bs ett) e /\
+                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
+            )
+          ).
+        {
+          eapply evAccum.
+          apply H2.
+          eassumption.
+          eassumption.
+        }
+        clear H1.
+        destruct H4. 
+        +++
+
+          left.
+          eauto. *)
+        +++
+          destruct_conjs.
+          ff.
+          right.
+          repeat eexists.
+          apply ppSubl; eauto.
+          eauto.
+      ++
+        
+          
+      assert (
+            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
+         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
+             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (uu i args tpl tid et') ett)
+        ).
+      {
+        eapply IHt1.
+        eassumption.
+        eassumption.
+        eassumption.
+      }
+      
+      destruct H0.
+      +++
+        destruct_conjs.
+        left.
+        eexists.
+        apply ppSubl; eauto.
+        (*
+        assert (
+            (EvSub (uuc i args tpl tid n H0) e) \/
+            (exists ett p' bs,
+                EvSub (hhc p' bs ett) e /\
+                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
+            )
+          ).
+        {
+          eapply evAccum.
+          apply H2.
+          eassumption.
+          eassumption.
+        }
+        clear H1.
+        destruct H4. 
+        +++
+
+          left.
+          eauto. *)
+        +++
+          destruct_conjs.
+          ff.
+          right.
+          repeat eexists.
+          apply ppSubl; eauto.
+          eauto.
+      ++
+        
+      assert (
+            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
+         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
+             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (uu i args tpl tid et') ett)
+        ).
+      {
+        eapply IHt1.
+        eassumption.
+        eassumption.
+        eassumption.
+      }
+      
+      destruct H0.
+      +++
+        destruct_conjs.
+        left.
+        eexists.
+        apply ppSubl; eauto.
+        (*
+        assert (
+            (EvSub (uuc i args tpl tid n H0) e) \/
+            (exists ett p' bs,
+                EvSub (hhc p' bs ett) e /\
+                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
+            )
+          ).
+        {
+          eapply evAccum.
+          apply H2.
+          eassumption.
+          eassumption.
+        }
+        clear H1.
+        destruct H4. 
+        +++
+
+          left.
+          eauto. *)
+        +++
+          destruct_conjs.
+          ff.
+          right.
+          repeat eexists.
+          apply ppSubl; eauto.
+          eauto.
+    + (* t2 case *)
+
+      do_pl_immut.
+      do_pl_immut.
+      subst.
+
+      destruct s; ff.
+      ++
+
+      assert (
+            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev) \/
+         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
+             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (uu i args tpl tid et') ett)
+        ).
+      {
+        eapply IHt2.
+        eassumption.
+        eassumption.
+        eassumption.
+      }
+      
+      destruct H0.
+      +++
+        destruct_conjs.
+        left.
+        eexists.
+        apply ppSubr; eauto.
+        (*
+        assert (
+            (EvSub (uuc i args tpl tid n H0) e) \/
+            (exists ett p' bs,
+                EvSub (hhc p' bs ett) e /\
+                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
+            )
+          ).
+        {
+          eapply evAccum.
+          apply H2.
+          eassumption.
+          eassumption.
+        }
+        clear H1.
+        destruct H4. 
+        +++
+
+          left.
+          eauto. *)
+        +++
+          destruct_conjs.
+          ff.
+          right.
+          repeat eexists.
+          apply ppSubr; eauto.
+          eauto.
+      ++
+        
+          
+      assert (
+            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev) \/
+         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
+             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (uu i args tpl tid et') ett)
+        ).
+      {
+        eapply IHt2.
+        eassumption.
+        eassumption.
+        eassumption.
+      }
+      
+      destruct H0.
+      +++
+        destruct_conjs.
+        left.
+        eexists.
+        apply ppSubr; eauto.
+        (*
+        assert (
+            (EvSub (uuc i args tpl tid n H0) e) \/
+            (exists ett p' bs,
+                EvSub (hhc p' bs ett) e /\
+                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
+            )
+          ).
+        {
+          eapply evAccum.
+          apply H2.
+          eassumption.
+          eassumption.
+        }
+        clear H1.
+        destruct H4. 
+        +++
+
+          left.
+          eauto. *)
+        +++
+          destruct_conjs.
+          ff.
+          right.
+          repeat eexists.
+          apply ppSubr; eauto.
+          eauto.
+      ++
+        
+      assert (
+            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev) \/
+         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
+             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (uu i args tpl tid et') ett)
+        ).
+      {
+        eapply IHt2.
+        eassumption.
+        eassumption.
+        eassumption.
+      }
+      
+      destruct H0.
+      +++
+        destruct_conjs.
+        left.
+        eexists.
+        apply ppSubr; eauto.
+        (*
+        assert (
+            (EvSub (uuc i args tpl tid n H0) e) \/
+            (exists ett p' bs,
+                EvSub (hhc p' bs ett) e /\
+                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
+            )
+          ).
+        {
+          eapply evAccum.
+          apply H2.
+          eassumption.
+          eassumption.
+        }
+        clear H1.
+        destruct H4. 
+        +++
+
+          left.
+          eauto. *)
+        +++
+          destruct_conjs.
+          ff.
+          right.
+          repeat eexists.
+          apply ppSubr; eauto.
+          eauto.
+Defined.
 
 Lemma uu_preserved: forall t1 t2 p et n p0 i args tpl tid
                       e tr st_ev st_trace p'
@@ -1474,7 +2372,7 @@ Defined.
          
            
        
-       
+HEREEEE
        
            
              
