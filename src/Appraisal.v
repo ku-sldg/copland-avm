@@ -1,8 +1,8 @@
-Require Import (*GenStMonad*) MonadVM (*MonadAM*) ConcreteEvidence.
-Require Import StAM Axioms_Io Impl_vm (*Impl_appraisal*) Maps VmSemantics Event_system Term_system External_Facts Helpers_VmSemantics.
-Require Import Auto AutoApp (*AllMapped Appraisal_Defs Helpers_Appraisal*).
+Require Import Maps Event_system Term_system MonadVM ConcreteEvidence.
+Require Import Impl_vm Helpers_VmSemantics VmSemantics.
+Require Import Axioms_Io External_Facts Auto AutoApp.
 
-Require Import Appraisal_Defs_alt alt_Impl_appraisal.
+Require Import StAM Appraisal_Defs Impl_appraisal (*MonadAM*).
 
 Require Import Coq.Arith.Peano_dec.
 

@@ -28,6 +28,6 @@ External_Facts.v
 VmSemantics.v
 StAM.v
 OptMonad.v
-alt_Impl_appraisal.v
-Appraisal_Defs_alt.v
-Appraisal_alt.v
+Impl_appraisal.v
+Appraisal_Defs.v
+Appraisal.v

@@ -1,11 +1,11 @@
-Require Import Term_Defs Term StAM Maps ConcreteEvidence (*MonadAM*).
+Require Import Term_Defs Term StAM Maps ConcreteEvidence OptMonad.
+
+Require Import Impl_appraisal (*MonadAM*).
 
 Require Import StructTactics.
 
 Require Import List.
 Import ListNotations.
-
-Require Import alt_Impl_appraisal OptMonad.
 
 
 Inductive evidenceEvent: Ev -> Prop :=
