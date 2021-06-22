@@ -388,15 +388,6 @@ Proof.
         (copland_compile t)
                {| st_ev := e; st_trace := []; st_pl := p |}) = p').
   eapply trace_irrel_pl; eauto.
-
-  (*
-    assert (
-   st_evT
-     (execSt
-        (copland_compile t)
-               {| st_ev := e; st_evT := et; st_trace := []; st_pl := p |}) = et').
-  eapply trace_irrel_evT; eauto.
-*)
   
   assert (
       (execSt
@@ -653,15 +644,6 @@ Proof.
   induction e; intros;
     try (destruct s; ff; tauto).
 Defined.
-
-(*
-Lemma cvm_evT_aeval: forall t e e' et et' tr tr' p p',
-    copland_compile t {| st_ev := e; st_evT := et; st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := e'; st_evT := et'; st_trace := tr'; st_pl := p' |}) ->
-    et' = aeval t p et.
-Proof.
-Admitted.
-*)
    
 Lemma cvm_refines_lts_event_ordering : forall t tr e e' et p p',
     well_formed_r t ->
@@ -751,12 +733,6 @@ Proof.
     eassumption.
 
     eapply eval_aeval; eauto.
-    (*
-    assert (H3 = aeval t1 p et).
-    {
-      eapply cvm_evT_aeval; eauto.
-    } 
-    subst. *)
     eassumption.
     
   -    
@@ -1121,12 +1097,7 @@ Proof.
   eapply cvm_refines_lts_event_ordering; eauto.
 Defined.
 
-Theorem cvm_respects_event_system : forall t tr ev0 ev1 e e' t' (*i n*) et,
-    (*NoDup ls ->
-    length ls = nss t' -> *)
-    (*t = annotated t' ls -> *)
-    (*
-    anno t' i = (n, t) -> *)
+Theorem cvm_respects_event_system : forall t tr ev0 ev1 e e' t' et,
     t = annotated t' ->
     Ev_Shape e et ->
     copland_compile

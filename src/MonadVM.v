@@ -15,7 +15,6 @@ Import ListNotations.
 Require Export StVM.
 
 
-
 Definition CVM := St cvm_st.
 
 (* VM monad operations *)
@@ -61,19 +60,6 @@ Definition split_ev (i:nat) (sp:Split): CVM EvidenceC :=
   add_tracem [Term_Defs.split i p] ;;
   ret e2.
 
-(*
-Definition split_ev_par (i:nat) (sp1 sp2:SP) (*((*loc_e1*) loc_e2:Loc) *)
-           (*(t1 t2:AnnoTerm)*) (e:EvidenceC) (p:Plc) : CVM EvidenceC :=
-    let e1 := splitEv sp1 e in
-    let e2 := splitEv sp2 e in
-    (*let loc_e1 := fst (range t1) in
-    let loc_e2 := fst (range t2) in *)
-    (*put_store_at loc_e1 e1 ;; *)
-    (*put_store_at loc_e2 e2 ;; *)
-    add_tracem [Term_Defs.split i p] ;;
-    ret e1.
-*)
-
 
 (** * Partially-symbolic implementations of IO operations *)
 
@@ -85,7 +71,6 @@ Admitted.
 Definition tag_ASP (x:nat) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID): CVM unit :=
   p <- get_pl ;;
   add_tracem [umeas x p i l tpl tid].
-  
 
 Definition invoke_ASP (x:nat) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID) : CVM EvidenceC :=
   tag_ASP x i l tpl tid ;;
@@ -98,6 +83,9 @@ Admitted.
 Definition do_sig (p:Plc) (bs:BS): BS.
 Admitted.
 
+Definition do_hash (p:Plc) (bs:BS): BS.
+Admitted.
+
 Definition tag_SIG (x:nat) (p:Plc) : CVM unit :=
   add_tracem [sign x p].  (* TODO: evidence type for sign event? *)
 
@@ -106,14 +94,6 @@ Definition signEv (x:nat) : CVM EvidenceC :=
   tag_SIG x p ;;
   e <- get_ev ;;
   ret (ggc p (do_sig p (encodeEv e)) e).
-
-Definition do_hash (p:Plc) (bs:BS): BS.
-Admitted.
-
-(*
-Definition do_hash (e:BS): BS.
-Admitted.
-*)
 
 Definition tag_HSH (x:nat) (p:Plc) (et:Evidence): CVM unit :=
   add_tracem [hash x p et].   (* TODO: evidence type for hash event? *)
