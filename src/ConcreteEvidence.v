@@ -27,7 +27,7 @@ Definition EvBits := list BS.
 Inductive EvC: Set :=
 | evc: EvBits -> Evidence -> EvC.
 
-Definition mt_evc: EvC := (evc [] mt).
+Definition mt_evc: EvC := (evc [0] mt).
 
 Fixpoint et_fun (ec:EvidenceC) : Evidence :=
   match ec with

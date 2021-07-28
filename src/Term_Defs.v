@@ -71,6 +71,19 @@ Inductive Evidence: Set :=
 | ss: Evidence -> Evidence -> Evidence
 | pp: Evidence -> Evidence -> Evidence.
 
+Fixpoint et_size (e:Evidence): nat :=
+  match e with
+  | mt => 1
+  | uu _ _ _ _ e' => 1 + (et_size e')
+  | gg _ e' => 1 + (et_size e')
+  | hh _ _ => 1
+  | nn _ => 1
+  | ss e1 e2 => (et_size e1) + (et_size e2)
+  | pp e1 e2 => (et_size e1) + (et_size e2)
+  end.
+    
+  
+
 Definition splitEv_T_l (sp:Split) (e:Evidence) : Evidence :=
   match sp with
   | RIGHT => mt
