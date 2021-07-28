@@ -22,6 +22,13 @@ Inductive EvidenceC: Set :=
 | ssc: EvidenceC -> EvidenceC -> EvidenceC
 | ppc: EvidenceC -> EvidenceC -> EvidenceC.
 
+Definition EvBits := list BS.
+
+Inductive EvC: Set :=
+| evc: EvBits -> Evidence -> EvC.
+
+Definition mt_evc: EvC := (evc [] mt).
+
 Fixpoint et_fun (ec:EvidenceC) : Evidence :=
   match ec with
   | mtc => mt
@@ -178,15 +185,15 @@ Proof.
     eauto.
 Defined.
 
-Definition splitEv_l (sp:Split) (e:EvidenceC): EvidenceC :=
+Definition splitEv_l (sp:Split) (e:EvC): EvC :=
   match sp with
-  | RIGHT => mtc
+  | RIGHT => mt_evc
   | _ => e
   end.
 
-Definition splitEv_r (sp:Split) (e:EvidenceC): EvidenceC :=
+Definition splitEv_r (sp:Split) (e:EvC): EvC :=
   match sp with
-  | LEFT => mtc
+  | LEFT => mt_evc
   | _ => e
   end.
 

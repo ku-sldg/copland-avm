@@ -8,7 +8,7 @@ Require Import Term ConcreteEvidence LTS.
 
 (** IO Axioms *)
 
-Definition toRemote (t:AnnoTerm) (pTo:Plc) (e:EvidenceC) : EvidenceC.
+Definition toRemote (t:AnnoTerm) (pTo:Plc) (e:EvC) : EvC.
 Admitted.
 Definition remote_events (t:AnnoTerm) (p:Plc) : (list Ev).
 Admitted.
@@ -19,7 +19,7 @@ Admitted.
 *)
 
 
-Definition parallel_vm_thread (t:AnnoTerm) (p:Plc) (e:EvidenceC) : EvidenceC.
+Definition parallel_vm_thread (t:AnnoTerm) (p:Plc) (e:EvC) : EvC.
 Admitted.
 
 Definition parallel_vm_events (t:AnnoTerm) (p:Plc) : list Ev.
@@ -30,7 +30,7 @@ Admitted.
 
 
 
-Definition remote_evidence (t:AnnoTerm) (p:Plc) (e:EvidenceC) : EvidenceC.
+Definition remote_evidence (t:AnnoTerm) (p:Plc) (e:EvC) : EvC.
 Admitted.
 
 Definition remote_trace (t:AnnoTerm) (p:Plc) : list Ev.
@@ -38,7 +38,7 @@ Admitted.
 
 
 
-Axiom at_evidence : forall t (p:Plc) (e:EvidenceC),
+Axiom at_evidence : forall t (p:Plc) (e:EvC),
     toRemote t p e = remote_evidence t p e.
 
 Axiom at_events : forall t p,

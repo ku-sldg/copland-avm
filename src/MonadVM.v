@@ -19,7 +19,7 @@ Definition CVM := St cvm_st.
 
 (* VM monad operations *)
 
-Definition put_ev (e:EvidenceC) : CVM unit :=
+Definition put_ev (e:EvC) : CVM unit :=
   st <- get ;;
      let tr' := st_trace st in
      let p' := st_pl st in
@@ -31,7 +31,7 @@ Definition put_pl (p:Plc) : CVM unit :=
      let e' := st_ev st in
      put (mk_st e' tr' p).
 
-Definition get_ev : CVM EvidenceC :=
+Definition get_ev : CVM EvC :=
   st <- get ;;
   ret (st_ev st).
 
@@ -39,7 +39,7 @@ Definition get_pl : CVM Plc :=
   st <- get ;;
   ret (st_pl st).
 
-Definition modify_evm (f:EvidenceC -> EvidenceC) : CVM unit :=
+Definition modify_evm (f:EvC -> EvC) : CVM unit :=
   st <- get ;;
   let '{| st_ev := e; st_trace := tr; st_pl := p |} := st in
   put (mk_st (f e) tr p).
@@ -51,7 +51,7 @@ Definition add_trace (tr':list Ev) : cvm_st -> cvm_st :=
 Definition add_tracem (tr:list Ev) : CVM unit :=
   modify (add_trace tr).
 
-Definition split_ev (i:nat) (sp:Split): CVM EvidenceC :=
+Definition split_ev (i:nat) (sp:Split): CVM EvC :=
   e <- get_ev ;;
   p <- get_pl ;;
   let e1 := splitEv_l sp e in
@@ -68,84 +68,121 @@ Definition nat_to_bs (x:nat): BS.
 Admitted.
 *)
 
-Definition tag_ASP (x:nat) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID): CVM unit :=
+Definition call_ASP (i:ASP_ID) (l:list Arg) (tid:TARG_ID) (tpl:Plc) (x:nat) : CVM BS :=
   p <- get_pl ;;
-  add_tracem [umeas x p i l tpl tid].
+  add_tracem [umeas x p i l tpl tid];;
+  ret x.
 
-Definition invoke_ASP (x:nat) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID) : CVM EvidenceC :=
-  tag_ASP x i l tpl tid ;;
+(* Matches on evidence type param only for verification.  
+   Will extract to the cons function over the first two params (new measurement bits + existing evidence) *)
+Definition cons_uu (x:BS) (e:EvC) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID): EvC :=
+  match e with
+  | evc bits et => evc (x :: bits) (uu i l tpl tid et)
+  end.
+
+Definition invoke_ASP (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID) (x:nat) : CVM EvC :=
+  bs <- call_ASP i l tid tpl x ;;
   e <- get_ev ;;
-  ret (uuc i l tpl tid x e).
+  ret (cons_uu bs e i l tpl tid).
 
-Definition encodeEv (e:EvidenceC): BS.
+Definition encodeEv (e:EvC): BS.
 Admitted.
 
-Definition do_sig (p:Plc) (bs:BS): BS.
+Definition do_sig (bs:BS) (p:Plc) : BS.
 Admitted.
 
-Definition do_hash (p:Plc) (bs:BS): BS.
+Definition do_hash (bs:BS) (p:Plc) : BS.
 Admitted.
 
 Definition tag_SIG (x:nat) (p:Plc) : CVM unit :=
   add_tracem [sign x p].  (* TODO: evidence type for sign event? *)
 
-Definition signEv (x:nat) : CVM EvidenceC :=
+Definition cons_gg (sig:BS) (e:EvC) (p:Plc): EvC :=
+  match e with
+  | evc bits et => evc (sig :: bits) (gg p et)
+  end.
+
+Definition signEv (x:nat) : CVM EvC :=
   p <- get_pl ;;
   tag_SIG x p ;;
   e <- get_ev ;;
-  ret (ggc p (do_sig p (encodeEv e)) e).
+  ret (cons_gg (do_sig (encodeEv e) p) e p).
 
-Definition tag_HSH (x:nat) (p:Plc) (et:Evidence): CVM unit :=
-  add_tracem [hash x p et].   (* TODO: evidence type for hash event? *)
+Definition tag_HSH (x:nat) (p:Plc) (e:EvC): CVM unit :=
+  match e with
+  | evc bits et =>
+    add_tracem [hash x p et]  (* TODO: evidence type for hash event? *)
+  end.
 
-Definition hashEv (x:nat) : CVM EvidenceC :=
+Definition cons_hh (hsh:BS) (e:EvC) (p:Plc): EvC :=
+  match e with
+  | evc bits et => evc [hsh] (hh p et)
+  end.
+
+Definition hashEv (x:nat) : CVM EvC :=
   p <- get_pl ;;
   e <- get_ev ;;
-  let et := et_fun e in
-  tag_HSH x p et ;;
-  ret (hhc p (do_hash p (encodeEv e)) et).
+  tag_HSH x p e ;;
+  ret (cons_hh (do_hash (encodeEv e) p) e p).
 
-Definition copyEv (x:nat) : CVM EvidenceC :=
+Definition copyEv (x:nat) : CVM EvC :=
   p <- get_pl ;;
   add_tracem [copy x p] ;;
   get_ev.
 
-Definition do_prim (x:nat) (a:ASP) : CVM EvidenceC :=
+Definition do_prim (x:nat) (a:ASP) : CVM EvC :=
   match a with
   | CPY => copyEv x
   | ASPC asp_id l tpl tid =>
-    invoke_ASP x asp_id l tpl tid         
+    invoke_ASP asp_id l tpl tid x       
   | SIG =>
     signEv x
   | HSH =>
     hashEv x
   end.
 
+Definition et_fun' (e:EvC): Evidence :=
+  match e with
+  | evc bits et => et
+  end.
+    
 Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) : CVM unit :=
   p <- get_pl ;;
   e <- get_ev ;;
-  add_tracem [req reqi p q (unanno t) (et_fun e)].
+  add_tracem [req reqi p q (unanno t) (et_fun' e)].
+
+Locate toRemote.
 
 (* Primitive CVM Monad operations that require IO Axioms *)
-Definition doRemote (t:AnnoTerm) (q:Plc) (e:EvidenceC) : CVM EvidenceC :=
+Definition doRemote (t:AnnoTerm) (q:Plc) (e:EvC) : CVM EvC :=
   add_tracem (remote_events t q) ;;
   ret (toRemote t q e).
 
-Definition receiveResp (t:AnnoTerm) (q:Plc) (rpyi:nat) : CVM EvidenceC :=
+Definition receiveResp (t:AnnoTerm) (q:Plc) (rpyi:nat) : CVM EvC :=
   p <- get_pl ;;
   e <- get_ev ;;
   e' <- doRemote t q e ;;
   add_tracem [rpy (Nat.pred rpyi) p q] ;;
-  ret e'. 
+  ret e'.
 
-Definition join_seq (n:nat) (e1:EvidenceC) (e2:EvidenceC): CVM unit :=
+Definition ss_cons (e1:EvC) (e2:EvC): EvC :=
+  match (e1, e2) with
+  | (evc bits1 et1, evc bits2 et2) => evc (bits1 ++ bits2) (ss et1 et2)
+  end.
+
+Definition pp_cons (e1:EvC) (e2:EvC): EvC :=
+  match (e1, e2) with
+  | (evc bits1 et1, evc bits2 et2) => evc (bits1 ++ bits2) (pp et1 et2)
+  end.
+
+Definition join_seq (n:nat) (e1:EvC) (e2:EvC): CVM unit :=
   p <- get_pl ;;
-  put_ev (ssc e1 e2) ;;
+  put_ev (ss_cons e1 e2) ;;
   add_tracem [join n p].
 
-Definition join_par (n:nat) (e1:EvidenceC) (e2:EvidenceC): CVM unit :=
+Definition join_par (n:nat) (e1:EvC) (e2:EvC): CVM unit :=
   p <- get_pl ;;
-  put_ev (ppc e1 e2) ;;
+  put_ev (pp_cons e1 e2) ;;
   add_tracem [join n p].
    
 Ltac monad_unfold :=
@@ -156,6 +193,8 @@ Ltac monad_unfold :=
   signEv,
   hashEv,
   copyEv,
+
+  tag_HSH,
 
   sendReq,
   doRemote,

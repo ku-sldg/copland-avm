@@ -11,7 +11,7 @@ Import ListNotations.
 
 
 
-Axiom copland_compile_external' : forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (tr:list Ev),
+Axiom copland_compile_external' : forall (t : AnnoTerm) (e : EvC) (n : nat) (tr:list Ev),
     runSt 
       (copland_compile t)
       {| st_ev := e; st_trace := tr; st_pl := n |} =
@@ -28,7 +28,7 @@ Axiom copland_compile_external' : forall (t : AnnoTerm) (e : EvidenceC) (n : nat
      |}).
 
 
-Lemma copland_compile_external : forall (t : AnnoTerm) (e : EvidenceC) (n : nat),
+Lemma copland_compile_external : forall (t : AnnoTerm) (e : EvC) (n : nat),
     well_formed_r t ->
     copland_compile t {| st_ev := e; st_trace := []; st_pl := n |} =
     (Some tt,
@@ -57,7 +57,7 @@ Defined.
 
 
 
-Lemma copland_compile_at' : forall (t : AnnoTerm) (e : EvidenceC) (n : nat) (tr: list Ev),
+Lemma copland_compile_at' : forall (t : AnnoTerm) (e : EvC) (n : nat) (tr: list Ev),
     well_formed_r t ->
     copland_compile t {| st_ev := e; st_trace := tr; st_pl := n |} =
     (Some tt,
@@ -83,7 +83,7 @@ Proof.
 Defined.
 
 
-Lemma copland_compile_at : forall (t : AnnoTerm) (e : EvidenceC) (n : nat),
+Lemma copland_compile_at : forall (t : AnnoTerm) (e : EvC) (n : nat),
     well_formed_r t ->
     copland_compile t {| st_ev := e; st_trace := []; st_pl := n |} =
     (Some tt,

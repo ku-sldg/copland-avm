@@ -24,7 +24,8 @@ Proof.
   -
     destruct r.
     destruct a;
-      reflexivity.
+      df;
+      try reflexivity.
   -
     do_wf_pieces.
     repeat (df; try dohtac; df).   
@@ -260,6 +261,7 @@ Proof.
     simpl in *.
     df.
     repeat anhl.
+    repeat find_inversion.
     eauto.
   - 
     do_wf_pieces.
@@ -278,6 +280,7 @@ Proof.
     simpl in *.
 
     repeat anhl.
+    repeat (find_inversion).
     tauto.
 Defined.
 

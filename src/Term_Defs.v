@@ -71,27 +71,6 @@ Inductive Evidence: Set :=
 | ss: Evidence -> Evidence -> Evidence
 | pp: Evidence -> Evidence -> Evidence.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 Definition splitEv_T_l (sp:Split) (e:Evidence) : Evidence :=
   match sp with
   | RIGHT => mt
@@ -124,6 +103,20 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
   | bpar s t1 t2 => pp (eval t1 p (splitEv_T_l s e))
                       (eval t2 p (splitEv_T_r s e))
   end.
+
+(*
+Definition userAM: Plc := 2.
+Definition platAM: Plc := 1.
+Definition heliAM: Plc := 0.
+
+Definition im_terms: Term :=
+  bpar ALL (ASPC 
+
+Definition platSub: Term := 
+
+Definition case_phrase :=
+  att userAM 
+*)
 
 (** * Events
 
