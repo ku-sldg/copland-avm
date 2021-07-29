@@ -1,6 +1,6 @@
 Require Import Term_Defs Term StAM Maps ConcreteEvidence OptMonad.
 
-Require Import Impl_appraisal (*MonadAM*).
+Require Import Impl_appraisal_alt (*MonadAM*).
 
 Require Import StructTactics.
 
