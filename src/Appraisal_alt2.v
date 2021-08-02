@@ -1838,11 +1838,27 @@ Defined.
    *)
 Admitted.
 
+Inductive wf_ec : EvC -> Prop :=
+| wf_ec_c: forall ls et,
+    length ls = et_size et ->
+    wf_ec (evc ls et).
+
+Lemma wf_ec_preserved_by_cvm : forall bits bits' et et' t1 tr tr' p p',
+    wf_ec (evc bits et) ->
+    copland_compile t1
+                    {| st_ev := evc bits et; st_trace := tr; st_pl := p |} =
+    (Some tt,
+     {| st_ev := evc bits' et'; st_trace := tr'; st_pl := p' |}) ->
+    wf_ec (evc bits' et').
+Proof.
+Admitted.
+
 
 Lemma appraisal_correct : forall t e' tr tr' p p' et ev bits ecc,
     well_formed_r t ->
+    wf_ec (evc bits et) ->
     (*Ev_Shape e et -> *)
-    e' = fromSome mtc (reconstruct_ev ecc) -> (* = (Some e') -> *)
+    Some e' = (reconstruct_ev ecc) -> (*fromSome mtc (reconstruct_ev ecc) ->*) (* = (Some e') -> *)
     copland_compile t
       {| st_ev := (evc bits et); st_trace := tr; st_pl := p |} =
     (Some tt, {| st_ev := ecc;
@@ -1854,6 +1870,7 @@ Lemma appraisal_correct : forall t e' tr tr' p p' et ev bits ecc,
     (*build_app_comp_evC e' = app_res /\ *)
     appEvent_EvidenceC ev (build_app_comp_evC e').
 Proof.
+  intros.
   generalizeEverythingElse t.
   induction t; intros.
   - (* aasp case *)
@@ -1861,12 +1878,18 @@ Proof.
     evEventFacts.
     inv_events.
     ff.
+    break_match; try solve_by_inversion.
+    invc H1.
+    (*
     assert (exists x, reconstruct_ev' bits et = Some x).
     {
       admit.
     }
     destruct_conjs.
+    
     rewrite H1.
+     *)
+    
     repeat econstructor.
 
   - (* aatt case *)
@@ -1878,7 +1901,8 @@ Proof.
     do_wf_pieces.
     eapply IHt.
     eassumption.
-    reflexivity.
+    eassumption.
+    eassumption.
 
     eapply copland_compile_at.
     eassumption.
@@ -1900,12 +1924,12 @@ Proof.
     do_pl_immut.
     subst.
 
-    invc H1.
+    invc H6.
 
     
     inv_events.
      + (* t1 case *)
-       clear H0.
+       (*clear H0. *)
 
        assert (
            (exists e'', EvSub (uuc i args tpl tid n e'') (fromSome mtc (reconstruct_ev ecc))) \/
@@ -1916,14 +1940,14 @@ Proof.
               
        {
          eapply uu_preserved.
-         apply H3.
          apply H4.
+         apply H5.
          reflexivity.
          eassumption.
          eassumption.
          eassumption.
        }
-       destruct H0.
+       destruct H3.
        ++
 
        destruct_conjs.
@@ -1938,12 +1962,17 @@ Proof.
        }
        destruct_conjs.
        econstructor.
+       rewrite <- H1 in *.
        eassumption.
        ++
+         rewrite <- H1 in *.
+         ff.
          destruct_conjs.
 
          eapply ahuc.
-         apply H7.
+         eassumption.
+         (*
+         apply H9. *)
          eapply hhc_app; eauto.
          (*
 
@@ -1957,12 +1986,21 @@ Proof.
          eassumption. *)
      + (* t2 case *)
        assert (appEvent_EvidenceC (umeas n p0 i args tpl tid)
-                                  (build_app_comp_evC (fromSome mtc (reconstruct_ev ecc)))).
+                                  (build_app_comp_evC (e'))).
        {
+         destruct ecc.
          destruct st_ev.
          eapply IHt2.
          eassumption.
-         reflexivity.
+
+         eapply wf_ec_preserved_by_cvm.
+         eassumption.
+         eassumption.
+         
+
+
+         
+         eassumption.
          eassumption.
          (*
          
@@ -1977,7 +2015,7 @@ Proof.
          tauto. *)
          econstructor.
          Check eval_aeval.
-         assert (e0 = aeval t1 p et).
+         assert (e2 = aeval t1 p et).
          {
            rewrite <- eval_aeval.
            
@@ -2010,13 +2048,16 @@ Proof.
     vmsts.
     simpl in *.
     subst.
+    ff.
+
+    (*
 
     assert (exists x, reconstruct_ev' (firstn (et_size e0) (e ++ e1)) e0 = Some x).
     {
       admit.
     }
     destruct_conjs.
-    rewrite H1.
+    rewrite H1. 
 
     assert (exists x, reconstruct_ev' (skipn (et_size e0) (e ++ e1)) e2 = Some x).
     {
@@ -2024,6 +2065,8 @@ Proof.
     }
     destruct_conjs.
     rewrite H6.
+     *)
+    
     
     repeat ff.
 
@@ -2035,7 +2078,7 @@ Proof.
     do_pl_immut.
     do_pl_immut.
     subst.
-    invc H8.
+    invc H2.
 
     
     inv_events;
@@ -2045,18 +2088,44 @@ Proof.
       ++
         ff.
 
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm; eauto.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm; eauto.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
       
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (fromSome mtc (reconstruct_ev (evc e e0))))).
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e3))).
       {
-        eapply IHt1.
+        eapply IHt1 with (ecc := evc e e0).
         eassumption.
-        reflexivity.
+        eassumption.
+        rewrite <- Heqo.
+        unfold reconstruct_ev. tauto.
         eassumption.
         econstructor.
         eassumption.
         econstructor.
       }
 
+      (*
       assert (firstn (et_size e0) (e ++ e1) = e).
       {
         admit.
@@ -2066,11 +2135,13 @@ Proof.
         admit.
       }
       rewrite H8 in *. clear H8.
-      rewrite H9 in *. clear H9.
+      rewrite H9 in *. clear H9. *)
 
+
+      (*
       unfold reconstruct_ev in H2.
       rewrite H1 in H2.
-      ff.
+      ff. *)
       
       
 
@@ -2088,18 +2159,69 @@ Proof.
       ++
         ff.
 
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            unfold mt_evc in *.
+            eapply wf_ec_preserved_by_cvm with (bits:=[0]) (et:=mt).
+            econstructor.
+            ff.
+            eauto.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            unfold mt_evc in *.
+            eapply wf_ec_preserved_by_cvm with (bits:=[0]) (et:=mt).
+            econstructor.
+            ff.
+            eauto.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+
+
+
+
+
+        
+(*
+         assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          admit.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          admit.
+        }
+        rewrite H1 in *; clear H1.
+        rewrite H2 in *; clear H2. *)
+
       
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (fromSome mtc (reconstruct_ev (evc e e0))))).
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e3))).
       {
-        eapply IHt1.
+        eapply IHt1 with (ecc:=evc e e0) (bits:=[0]) (et:=mt).
         eassumption.
-        reflexivity.
+        econstructor. ff.
+        rewrite <- Heqo. tauto.
         eassumption.
         econstructor.
         eassumption.
         econstructor.
       }
 
+      (*
       assert (firstn (et_size e0) (e ++ e1) = e).
       {
         admit.
@@ -2113,7 +2235,7 @@ Proof.
 
       unfold reconstruct_ev in H2.
       rewrite H1 in H2.
-      ff.
+      ff. *)
 
       invc H2.
       +++
@@ -2128,18 +2250,60 @@ Proof.
       ++
         ff.
 
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm; eauto.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm; eauto.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+
+
+
+        
+(*
+         assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          admit.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          admit.
+        }
+        rewrite H1 in *; clear H1.
+        rewrite H2 in *; clear H2.
+*)
+
       
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (fromSome mtc (reconstruct_ev (evc e e0))))).
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e3))).
       {
-        eapply IHt1.
+        eapply IHt1 with (ecc:= evc e e0).
         eassumption.
-        reflexivity.
+        eassumption.
+        rewrite <- Heqo. tauto.
         eassumption.
         econstructor.
         eassumption.
         econstructor.
       }
 
+      (*
        assert (firstn (et_size e0) (e ++ e1) = e).
       {
         admit.
@@ -2153,7 +2317,7 @@ Proof.
 
       unfold reconstruct_ev in H2.
       rewrite H1 in H2.
-      ff.
+      ff. *)
 
       invc H2.
       +++
@@ -2171,17 +2335,58 @@ Proof.
       ++
         ff.
 
+
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm; eauto.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm; eauto.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+        (*
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          admit.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          admit.
+        }
+        rewrite H1 in *; clear H1.
+        rewrite H2 in *; clear H2. *)
+
       
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (fromSome mtc (reconstruct_ev (evc e1 e2))))).
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
       {
-        eapply IHt2.
+        eapply IHt2 with (ecc:=evc e1 e2) (bits:=[0]) (et:=mt).
         eassumption.
-        reflexivity.
+        econstructor. ff.
+        rewrite <- Heqo0. tauto.
         eassumption.
         econstructor.
         eassumption.
         econstructor.
       }
+
+      (*
 
       assert (firstn (et_size e0) (e ++ e1) = e).
       {
@@ -2196,7 +2401,7 @@ Proof.
 
       unfold reconstruct_ev in H2.
       rewrite H6 in H2.
-      ff.
+      ff. *)
 
       invc H2.
       +++
@@ -2211,18 +2416,64 @@ Proof.
       ++
         ff.
 
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm with (bits:=[0]) (et:=mt).
+            econstructor. ff.
+            eassumption.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm with (bits:=[0]) (et:=mt).
+            econstructor. ff.
+            eassumption.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+
+        (*
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          admit.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          admit.
+        }
+        rewrite H1 in *; clear H1.
+        rewrite H2 in *; clear H2.
+         *)
+        
+
       
-        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (fromSome mtc (reconstruct_ev (evc e1 e2))))).
+        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
       {
-        eapply IHt2.
+        eapply IHt2 with (ecc:=evc e1 e2).
         eassumption.
-        reflexivity.
+        eassumption.
+        rewrite <- Heqo0. tauto.
         eassumption.
         econstructor.
         eassumption.
         econstructor.
       }
 
+      (*
       assert (firstn (et_size e0) (e ++ e1) = e).
       {
         admit.
@@ -2236,7 +2487,7 @@ Proof.
 
       unfold reconstruct_ev in H2.
       rewrite H6 in H2.
-      ff.
+      ff. *)
 
       invc H2.
       +++
@@ -2251,17 +2502,57 @@ Proof.
       ++
         ff.
 
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm; eauto.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm; eauto.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+
+        (*
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          admit.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          admit.
+        }
+        rewrite H1 in *; clear H1.
+        rewrite H2 in *; clear H2. *)
+
       
-        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (fromSome mtc (reconstruct_ev (evc e1 e2))))).
+        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
       {
-        eapply IHt2.
+        eapply IHt2 with (ecc:=evc e1 e2).
         eassumption.
-        reflexivity.
+        eassumption.
+        rewrite <- Heqo0. tauto.
         eassumption.
         econstructor.
         eassumption.
         econstructor.
       }
+
+      (*
 
       assert (firstn (et_size e0) (e ++ e1) = e).
       {
@@ -2276,7 +2567,7 @@ Proof.
 
       unfold reconstruct_ev in H2.
       rewrite H6 in H2.
-      ff.
+      ff. *)
 
       invc H2.
       +++
@@ -2289,8 +2580,7 @@ Proof.
         apply ssSubr.
         eassumption.
 
-
-    - (* abspar case *)
+    - (* abpar case *)
     (*
     do_wf_pieces. *)
     edestruct wf_bpar_pieces;[eauto | idtac].
@@ -2302,13 +2592,16 @@ Proof.
     vmsts.
     simpl in *.
     subst.
+    ff.
+
+    (*
 
     assert (exists x, reconstruct_ev' (firstn (et_size e0) (e ++ e1)) e0 = Some x).
     {
       admit.
     }
     destruct_conjs.
-    rewrite H1.
+    rewrite H1. 
 
     assert (exists x, reconstruct_ev' (skipn (et_size e0) (e ++ e1)) e2 = Some x).
     {
@@ -2316,6 +2609,8 @@ Proof.
     }
     destruct_conjs.
     rewrite H6.
+     *)
+    
     
     repeat ff.
 
@@ -2327,7 +2622,7 @@ Proof.
     do_pl_immut.
     do_pl_immut.
     subst.
-    invc H8.
+    invc H2.
 
     
     inv_events;
@@ -2337,18 +2632,44 @@ Proof.
       ++
         ff.
 
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm; eauto.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm; eauto.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
       
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (fromSome mtc (reconstruct_ev (evc e e0))))).
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e3))).
       {
-        eapply IHt1.
+        eapply IHt1 with (ecc := evc e e0).
         eassumption.
-        reflexivity.
+        eassumption.
+        rewrite <- Heqo.
+        unfold reconstruct_ev. tauto.
         eassumption.
         econstructor.
         eassumption.
         econstructor.
       }
 
+      (*
       assert (firstn (et_size e0) (e ++ e1) = e).
       {
         admit.
@@ -2358,11 +2679,13 @@ Proof.
         admit.
       }
       rewrite H8 in *. clear H8.
-      rewrite H9 in *. clear H9.
+      rewrite H9 in *. clear H9. *)
 
+
+      (*
       unfold reconstruct_ev in H2.
       rewrite H1 in H2.
-      ff.
+      ff. *)
       
       
 
@@ -2380,18 +2703,69 @@ Proof.
       ++
         ff.
 
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            unfold mt_evc in *.
+            eapply wf_ec_preserved_by_cvm with (bits:=[0]) (et:=mt).
+            econstructor.
+            ff.
+            eauto.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            unfold mt_evc in *.
+            eapply wf_ec_preserved_by_cvm with (bits:=[0]) (et:=mt).
+            econstructor.
+            ff.
+            eauto.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+
+
+
+
+
+        
+(*
+         assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          admit.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          admit.
+        }
+        rewrite H1 in *; clear H1.
+        rewrite H2 in *; clear H2. *)
+
       
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (fromSome mtc (reconstruct_ev (evc e e0))))).
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e3))).
       {
-        eapply IHt1.
+        eapply IHt1 with (ecc:=evc e e0) (bits:=[0]) (et:=mt).
         eassumption.
-        reflexivity.
+        econstructor. ff.
+        rewrite <- Heqo. tauto.
         eassumption.
         econstructor.
         eassumption.
         econstructor.
       }
 
+      (*
       assert (firstn (et_size e0) (e ++ e1) = e).
       {
         admit.
@@ -2405,7 +2779,7 @@ Proof.
 
       unfold reconstruct_ev in H2.
       rewrite H1 in H2.
-      ff.
+      ff. *)
 
       invc H2.
       +++
@@ -2420,18 +2794,60 @@ Proof.
       ++
         ff.
 
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm; eauto.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm; eauto.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+
+
+
+        
+(*
+         assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          admit.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          admit.
+        }
+        rewrite H1 in *; clear H1.
+        rewrite H2 in *; clear H2.
+*)
+
       
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (fromSome mtc (reconstruct_ev (evc e e0))))).
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e3))).
       {
-        eapply IHt1.
+        eapply IHt1 with (ecc:= evc e e0).
         eassumption.
-        reflexivity.
+        eassumption.
+        rewrite <- Heqo. tauto.
         eassumption.
         econstructor.
         eassumption.
         econstructor.
       }
 
+      (*
        assert (firstn (et_size e0) (e ++ e1) = e).
       {
         admit.
@@ -2445,7 +2861,7 @@ Proof.
 
       unfold reconstruct_ev in H2.
       rewrite H1 in H2.
-      ff.
+      ff. *)
 
       invc H2.
       +++
@@ -2463,17 +2879,58 @@ Proof.
       ++
         ff.
 
+
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm; eauto.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm; eauto.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+        (*
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          admit.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          admit.
+        }
+        rewrite H1 in *; clear H1.
+        rewrite H2 in *; clear H2. *)
+
       
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (fromSome mtc (reconstruct_ev (evc e1 e2))))).
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
       {
-        eapply IHt2.
+        eapply IHt2 with (ecc:=evc e1 e2) (bits:=[0]) (et:=mt).
         eassumption.
-        reflexivity.
+        econstructor. ff.
+        rewrite <- Heqo0. tauto.
         eassumption.
         econstructor.
         eassumption.
         econstructor.
       }
+
+      (*
 
       assert (firstn (et_size e0) (e ++ e1) = e).
       {
@@ -2488,7 +2945,7 @@ Proof.
 
       unfold reconstruct_ev in H2.
       rewrite H6 in H2.
-      ff.
+      ff. *)
 
       invc H2.
       +++
@@ -2503,18 +2960,64 @@ Proof.
       ++
         ff.
 
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm with (bits:=[0]) (et:=mt).
+            econstructor. ff.
+            eassumption.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm with (bits:=[0]) (et:=mt).
+            econstructor. ff.
+            eassumption.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+
+        (*
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          admit.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          admit.
+        }
+        rewrite H1 in *; clear H1.
+        rewrite H2 in *; clear H2.
+         *)
+        
+
       
-        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (fromSome mtc (reconstruct_ev (evc e1 e2))))).
+        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
       {
-        eapply IHt2.
+        eapply IHt2 with (ecc:=evc e1 e2).
         eassumption.
-        reflexivity.
+        eassumption.
+        rewrite <- Heqo0. tauto.
         eassumption.
         econstructor.
         eassumption.
         econstructor.
       }
 
+      (*
       assert (firstn (et_size e0) (e ++ e1) = e).
       {
         admit.
@@ -2528,7 +3031,7 @@ Proof.
 
       unfold reconstruct_ev in H2.
       rewrite H6 in H2.
-      ff.
+      ff. *)
 
       invc H2.
       +++
@@ -2543,17 +3046,57 @@ Proof.
       ++
         ff.
 
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm; eauto.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm; eauto.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+
+        (*
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          admit.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          admit.
+        }
+        rewrite H1 in *; clear H1.
+        rewrite H2 in *; clear H2. *)
+
       
-        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (fromSome mtc (reconstruct_ev (evc e1 e2))))).
+        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
       {
-        eapply IHt2.
+        eapply IHt2 with (ecc:=evc e1 e2).
         eassumption.
-        reflexivity.
+        eassumption.
+        rewrite <- Heqo0. tauto.
         eassumption.
         econstructor.
         eassumption.
         econstructor.
       }
+
+      (*
 
       assert (firstn (et_size e0) (e ++ e1) = e).
       {
@@ -2568,7 +3111,7 @@ Proof.
 
       unfold reconstruct_ev in H2.
       rewrite H6 in H2.
-      ff.
+      ff. *)
 
       invc H2.
       +++
@@ -2579,12 +3122,8 @@ Proof.
         eapply ahuc.
         eassumption.
         apply ppSubr.
-        eassumption.        
-
-
-
-
-
+        eassumption.
+Defined.    
 
 (*
 
