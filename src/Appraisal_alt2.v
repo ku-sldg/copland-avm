@@ -13,6 +13,8 @@ Require Import Coq.Program.Tactics Coq.Program.Equality.
 Require Import List.
 Import ListNotations.
 
+Require Import Lia.
+
 Set Nested Proofs Allowed.
 
 (*
@@ -145,6 +147,7 @@ Inductive wf_ec : EvC -> Prop :=
     wf_ec (evc ls et).
 
 Lemma wf_ec_preserved_by_cvm : forall bits bits' et et' t1 tr tr' p p',
+    well_formed_r t1 ->
     wf_ec (evc bits et) ->
     copland_compile t1
                     {| st_ev := evc bits et; st_trace := tr; st_pl := p |} =
@@ -152,11 +155,342 @@ Lemma wf_ec_preserved_by_cvm : forall bits bits' et et' t1 tr tr' p p',
      {| st_ev := evc bits' et'; st_trace := tr'; st_pl := p' |}) ->
     wf_ec (evc bits' et').
 Proof.
-Admitted.
+  intros.
+  generalizeEverythingElse t1.
+  induction t1; intros.
+  -
+    destruct a; ff;
+      invc H0;
+      try (
+          econstructor;
+          ff;
+          try tauto;
+          try congruence).
+      
+  -
+    ff.
+    do_wf_pieces.
+    rewrite H3.
+    eapply IHt1.
+    eassumption.
+    eassumption.
+    rewrite <- H3.
+    apply copland_compile_at.
+    eassumption.
+  -
+    repeat ff.
+    vmsts.
+    do_wf_pieces.
+    destruct st_ev.
+
+    (*
+    edestruct IHt1_1.
+    eassumption.
+    eassumption.
+    eassumption.
+*)
+
+    eapply IHt1_2.
+    eassumption.
+    2: { eassumption.
+    }
+
+    eapply IHt1_1.
+    eassumption.
+    eassumption.
+    eassumption.
+  -
+
+    repeat ff.
+    vmsts.
+    repeat ff.
+    subst.
+    do_wf_pieces.
+
+    destruct s.
+    +
+      ff.
+      unfold mt_evc in *.
+      assert (wf_ec (evc e e0)) by eauto.
+      invc H3.
+
+      assert (wf_ec (evc e1 e2)).
+      {
+        eapply IHt1_2.
+        eassumption.
+        2: { eassumption. }
+        econstructor. tauto.
+      }
+      invc H3.
+      econstructor.
+      ff.
+      rewrite <- H5.
+      rewrite <- H6.
+      Search (length (_ ++ _)).
+      eapply app_length.
+    +
+       ff.
+      unfold mt_evc in *.
+      assert (wf_ec (evc e e0)).
+      {
+        eapply IHt1_1.
+        eassumption.
+        2: { eassumption. }
+        econstructor. tauto.
+      }
+      
+      invc H3.
+
+      assert (wf_ec (evc e1 e2)) by eauto.
+      invc H3.
+      econstructor.
+      ff.
+      rewrite <- H5.
+      rewrite <- H6.
+      eapply app_length.
+    +
+      ff.
+      assert (wf_ec (evc e e0)) by eauto.
+      invc H3.
+
+      assert (wf_ec (evc e1 e2)) by eauto.
+      invc H3.
+     
+      econstructor.
+      ff.
+      rewrite <- H5.
+      rewrite <- H6.
+      eapply app_length.
+    -
+
+    repeat ff.
+    vmsts.
+    repeat ff.
+    subst.
+    do_wf_pieces.
+
+    destruct s.
+    +
+      ff.
+      unfold mt_evc in *.
+      assert (wf_ec (evc e e0)) by eauto.
+      invc H3.
+
+      assert (wf_ec (evc e1 e2)).
+      {
+        eapply IHt1_2.
+        eassumption.
+        2: { eassumption. }
+        econstructor. tauto.
+      }
+      invc H3.
+      econstructor.
+      ff.
+      rewrite <- H5.
+      rewrite <- H6.
+      Search (length (_ ++ _)).
+      eapply app_length.
+    +
+       ff.
+      unfold mt_evc in *.
+      assert (wf_ec (evc e e0)).
+      {
+        eapply IHt1_1.
+        eassumption.
+        2: { eassumption. }
+        econstructor. tauto.
+      }
+      
+      invc H3.
+
+      assert (wf_ec (evc e1 e2)) by eauto.
+      invc H3.
+      econstructor.
+      ff.
+      rewrite <- H5.
+      rewrite <- H6.
+      eapply app_length.
+    +
+      ff.
+      assert (wf_ec (evc e e0)) by eauto.
+      invc H3.
+
+      assert (wf_ec (evc e1 e2)) by eauto.
+      invc H3.
+     
+      econstructor.
+      ff.
+      rewrite <- H5.
+      rewrite <- H6.
+      eapply app_length.
+Defined.
+
+Lemma some_recons' : forall e x,
+    length e = S x ->
+    exists bs ls', peel_bs e = Some (bs, ls').
+Proof.
+  intros.
+  destruct e;
+    ff; eauto.
+Defined.
+
+Lemma peel_fact: forall e x y H,
+    length e = S x ->
+    peel_bs e = Some (y, H) ->
+    length H = x.
+Proof.
+  intros.
+  destruct e;
+    ff; eauto.
+Defined.
+
+Lemma firstn_long: forall (e:list BS) x,
+    length e >= x ->
+    length (firstn x e) = x.
+Proof.
+  intros.
+  Search (length (firstn _ _) = _).
+  eapply firstn_length_le.
+  lia.
+Defined.
+
+Lemma skipn_long: forall (e:list BS) x y,
+    length e = x + y ->
+    length (skipn x e) = y.
+Proof.
+  intros.
+  Search (length (skipn _ _ ) = _).
+  assert (length (skipn x e) = length e - x).
+  { eapply skipn_length. }
+  lia.
+Defined.
+
+Lemma some_recons : forall e,
+    wf_ec e ->
+    exists ee, Some ee = reconstruct_ev e.
+Proof.
+  intros.
+  destruct e.
+  generalizeEverythingElse e0.
+  induction e0; intros.
+  -
+    ff.
+    eauto.
+  -
+    invc H.
+    cbn in *.
+
+    edestruct some_recons'.
+    apply H1.
+    destruct_conjs.
+    rewrite H0.
+
+    edestruct IHe0 with (e := H).
+    econstructor.
+
+
+
+    eapply peel_fact; eauto.
+    
+
+    rewrite <- H2.
+    eauto.
+
+
+
+    
+  -
+    invc H.
+    cbn in *.
+
+    edestruct some_recons'.
+    apply H1.
+    destruct_conjs.
+    rewrite H0.
+
+    edestruct IHe0 with (e := H).
+    econstructor.
+
+
+
+    eapply peel_fact; eauto.
+    
+
+    rewrite <- H2.
+    eauto.
+  -
+    invc H.
+    cbn in *.
+
+    edestruct some_recons'.
+    apply H1.
+    destruct_conjs.
+    rewrite H0.
+    eauto.
+  -
+    invc H.
+    cbn in *.
+
+    edestruct some_recons'.
+    apply H1.
+    destruct_conjs.
+    rewrite H0.
+    eauto.
+  -
+    invc H.
+    cbn in *.
+
+    edestruct IHe0_1 with (e:= firstn (et_size e0_1) e).
+    econstructor.
+
+
+
+    eapply firstn_long; eauto.
+    lia.
+
+
+    rewrite <- H.
+
+    edestruct IHe0_2 with (e:= skipn (et_size e0_1) e).
+    econstructor.
+
+
+
+    eapply skipn_long; eauto.
+
+    rewrite <- H0.
+    eauto.
+
+      -
+    invc H.
+    cbn in *.
+
+    edestruct IHe0_1 with (e:= firstn (et_size e0_1) e).
+    econstructor.
+
+
+
+    eapply firstn_long; eauto.
+    lia.
+
+
+    rewrite <- H.
+
+    edestruct IHe0_2 with (e:= skipn (et_size e0_1) e).
+    econstructor.
+
+
+
+    eapply skipn_long; eauto.
+
+    rewrite <- H0.
+    eauto.
+Defined.
 
 Lemma evAccum: forall t p (e e' e'':EvidenceC) tr tr' p' (ecc ecc':EvC),
 
     well_formed_r t ->
+    wf_ec ecc ->
     Some e =  (reconstruct_ev ecc) -> (*fromSome mtc (reconstruct_ev ecc) ->*) (* = (Some e) -> *)
     Some e' = (reconstruct_ev ecc') -> (*fromSome mtc (reconstruct_ev ecc') ->*) (* = (Some e') -> *)
     EvSub e'' e ->
@@ -180,7 +514,7 @@ Proof.
     destruct a;
       (ff; try eauto).
     +
-      rewrite <- H0 in *. clear H0.
+      rewrite <- H1 in *. clear H1.
       ff.
     +
       unfold cons_uu in *.
@@ -209,6 +543,7 @@ Proof.
     apply H0.
     eassumption.
     eassumption.
+    eassumption.
     apply copland_compile_at.
     eassumption.
   -
@@ -224,21 +559,27 @@ Proof.
     destruct ecc'. *)
     
     
-    
     assert (exists ee, Some ee = reconstruct_ev st_ev).
     {
-      admit.
+      destruct st_ev.
+      destruct ecc.
+      eapply some_recons.
+      eapply wf_ec_preserved_by_cvm.
+      apply H4.
+      eassumption.
+      eassumption.
     }
+
     destruct_conjs.
     
 
-    assert (EvSub e'' H5 \/
+    assert (EvSub e'' H6 \/
          (exists (ett : Evidence) (p'0 bs : nat),
-             EvSub (hhc p'0 bs ett) H5 /\ EvSubT (et_fun e'') ett)).
+             EvSub (hhc p'0 bs ett) H6 /\ EvSubT (et_fun e'') ett)).
     {
       eauto.
     }
-    destruct H7.
+    destruct H8.
     +
       
       
@@ -254,17 +595,25 @@ Proof.
              EvSub (hhc p'0 bs ett) e' /\ EvSubT (et_fun e'') ett)).
       { *)
         
-        
+
+      destruct st_ev.
+      destruct ecc.
         eapply IHt2.
         eassumption.
-        2: {
-          eassumption.
-        }
         3: {
           eassumption.
         }
+        4: {
+          eassumption.
+        }
+        
+        eapply wf_ec_preserved_by_cvm.
+        apply H4.
+        2: { eassumption. }
         eassumption.
         eassumption.
+        eassumption.
+
 
         (*
       }
@@ -290,18 +639,24 @@ Proof.
         eauto. *) *)
     +
       destruct_conjs.
-      assert (EvSub (hhc H8 H9 H7) e' \/
+      destruct ecc.
+      destruct st_ev.
+      assert (EvSub (hhc H9 H10 H8) e' \/
          (exists (ett : Evidence) (p'0 bs : nat),
-             EvSub (hhc p'0 bs ett) e' /\ EvSubT (et_fun (hhc H8 H9 H7)) ett)).
+             EvSub (hhc p'0 bs ett) e' /\ EvSubT (et_fun (hhc H9 H10 H8)) ett)).
     {
       eapply IHt2.
       eassumption.
-      2: {
+      3: {
         eassumption.
       }
-      2: {
+      4: {
         eassumption.
       }
+      eapply wf_ec_preserved_by_cvm.
+      apply H4.
+      eassumption.
+      eassumption.
       eassumption.
       eassumption.
       (*
@@ -311,7 +666,7 @@ Proof.
       eassumption.
       eassumption. *)
     } 
-    destruct H12.
+    destruct H13.
       ++
         right.
         repeat (eexists; eauto).
@@ -323,10 +678,10 @@ Proof.
         ff.
         
         right.
-        exists H12.
+        exists H13.
         repeat eexists.
         eassumption.
-        assert (EvSubT (et_fun e'') (hh H8 H7)).
+        assert (EvSubT (et_fun e'') (hh H9 H8)).
         {
           
         
@@ -365,28 +720,68 @@ Proof.
     {
           assert (wf_ec (evc e0 e1)).
           {
-            admit.
+            destruct s.
+            +
+              ff.
+              destruct ecc.
+              eapply wf_ec_preserved_by_cvm.
+              apply H5. eassumption. eassumption.
+            +
+              ff.
+              destruct ecc.
+              ff.
+              unfold mt_evc in *. ff.
+              eapply wf_ec_preserved_by_cvm.
+              apply H5.
+              2: { eassumption. }
+              econstructor. ff.
+            +
+              ff.
+              destruct ecc.
+              eapply wf_ec_preserved_by_cvm.
+              apply H5. eassumption. eassumption.
+
             (*
             eapply wf_ec_preserved_by_cvm; eauto. *)
           }
-          invc H1.
-          rewrite <- H6.
+          invc H2.
+          rewrite <- H7.
           eapply More_lists.firstn_append.
-        }
-        assert (skipn (et_size e1) (e0 ++ e2) = e2).
-    {
-      admit.
-      (*
-      assert (wf_ec (evc e e0)).
-      {
-        eapply wf_ec_preserved_by_cvm; eauto.
-      }
-      invc H3.
-      rewrite <- H7.
-      eapply More_lists.skipn_append. *)
     }
-    rewrite H1 in *; clear H1.
-    rewrite H3 in *; clear H3.
+    assert (skipn (et_size e1) (e0 ++ e2) = e2).
+    {
+     
+      
+      assert (wf_ec (evc e0 e1)).
+      {
+        destruct s.
+        +
+          ff.
+          destruct ecc.
+          eapply wf_ec_preserved_by_cvm.
+          apply H5. eassumption. eassumption.
+        +
+          ff.
+          destruct ecc.
+          ff.
+          unfold mt_evc in *. ff.
+          eapply wf_ec_preserved_by_cvm.
+          apply H5.
+          2: { eassumption. }
+          econstructor. ff.
+        +
+          ff.
+          destruct ecc.
+          eapply wf_ec_preserved_by_cvm.
+          apply H5. eassumption. eassumption.
+
+      }
+      invc H4.
+      rewrite <- H8.
+      eapply More_lists.skipn_append.
+    }
+    rewrite H2 in *; clear H2.
+    rewrite H4 in *; clear H4.
 
 
 
@@ -413,7 +808,8 @@ Proof.
         ff.
         eapply IHt1.
         eassumption.
-        apply H0.
+        eassumption.
+        apply H1.
         rewrite <- Heqo.
         2: {
           eassumption.
@@ -428,14 +824,20 @@ Proof.
       cbn in *.
       rewrite Heqo in *.
       ff.
-      
+
+
+          Ltac door :=
+      match goal with
+      | [H: _ \/ _  |- _] =>
+        destruct H
+      end; destruct_conjs.
       
         
         
 
 
         
-      destruct H1.
+      door.
       ++
         eauto.
         (*
@@ -467,10 +869,11 @@ Proof.
         ff.
         eapply IHt2.
         eassumption.
-        4: {
+        5: {
           
           eassumption.
         }
+        eassumption.
         ff.
         cbn.
         rewrite Heqo0. tauto.
@@ -487,7 +890,7 @@ Proof.
 
 
         
-      destruct H1.
+      door.
       ++
         eauto.
         (*
@@ -517,6 +920,7 @@ Proof.
         ff.
         eapply IHt2.
         eassumption.
+        eassumption.
         4: {
           
           eassumption.
@@ -537,7 +941,7 @@ Proof.
 
 
         
-      destruct H1.
+      door.
       ++
         eauto.
         (*
@@ -561,6 +965,7 @@ Proof.
     ff.
     subst.
 
+    (*
     assert (firstn (et_size e1) (e0 ++ e2) = e0).
     {
       admit.
@@ -571,6 +976,84 @@ Proof.
       admit.
     }
     rewrite H1 in *. clear H1.
+     *)
+
+
+    assert (firstn (et_size e1) (e0 ++ e2) = e0).
+    {
+          assert (wf_ec (evc e0 e1)).
+          {
+            destruct s.
+            +
+              ff.
+              destruct ecc.
+              eapply wf_ec_preserved_by_cvm.
+              apply H5. eassumption. eassumption.
+            +
+              ff.
+              destruct ecc.
+              ff.
+              unfold mt_evc in *. ff.
+              eapply wf_ec_preserved_by_cvm.
+              apply H5.
+              2: { eassumption. }
+              econstructor. ff.
+            +
+              ff.
+              destruct ecc.
+              eapply wf_ec_preserved_by_cvm.
+              apply H5. eassumption. eassumption.
+
+            (*
+            eapply wf_ec_preserved_by_cvm; eauto. *)
+          }
+          invc H2.
+          rewrite <- H7.
+          eapply More_lists.firstn_append.
+    }
+    assert (skipn (et_size e1) (e0 ++ e2) = e2).
+    {
+     
+      
+      assert (wf_ec (evc e0 e1)).
+      {
+        destruct s.
+        +
+          ff.
+          destruct ecc.
+          eapply wf_ec_preserved_by_cvm.
+          apply H5. eassumption. eassumption.
+        +
+          ff.
+          destruct ecc.
+          ff.
+          unfold mt_evc in *. ff.
+          eapply wf_ec_preserved_by_cvm.
+          apply H5.
+          2: { eassumption. }
+          econstructor. ff.
+        +
+          ff.
+          destruct ecc.
+          eapply wf_ec_preserved_by_cvm.
+          apply H5. eassumption. eassumption.
+
+      }
+      invc H4.
+      rewrite <- H8.
+      eapply More_lists.skipn_append.
+    }
+    rewrite H2 in *; clear H2.
+    rewrite H4 in *; clear H4.
+
+
+
+
+
+
+
+
+    
     
     
 
@@ -588,7 +1071,8 @@ Proof.
         ff.
         eapply IHt1.
         eassumption.
-        apply H0.
+        eassumption.
+        apply H1.
         rewrite <- Heqo.
         2: {
           eassumption.
@@ -603,14 +1087,14 @@ Proof.
       cbn in *.
       rewrite Heqo in *.
       ff.
-      
+
       
         
         
 
 
         
-      destruct H1.
+      door.
       ++
         eauto.
         (*
@@ -642,10 +1126,11 @@ Proof.
         ff.
         eapply IHt2.
         eassumption.
-        4: {
+        5: {
           
           eassumption.
         }
+        eassumption.
         ff.
         cbn.
         rewrite Heqo0. tauto.
@@ -662,7 +1147,7 @@ Proof.
 
 
         
-      destruct H1.
+      door.
       ++
         eauto.
         (*
@@ -692,6 +1177,7 @@ Proof.
         ff.
         eapply IHt2.
         eassumption.
+        eassumption.
         4: {
           
           eassumption.
@@ -712,7 +1198,7 @@ Proof.
 
 
         
-      destruct H1.
+      door.
       ++
         eauto.
         (*
@@ -726,24 +1212,7 @@ Proof.
         apply ssSubl.
         eassumption.
         eassumption. *)
-Admitted.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Defined.
 
 
 
@@ -826,6 +1295,7 @@ Lemma uu_preserved': forall t p et n p0 i args tpl tid
                        e tr e' tr' p' ecc ecc',
 
     well_formed_r t ->
+    wf_ec ecc ->
     Some e = (reconstruct_ev ecc) -> (* = (Some e) -> *)
     Some e' = (reconstruct_ev ecc') -> (* = (Some e') -> *)
     events t p et (umeas n p0 i args tpl tid) ->
@@ -875,10 +1345,11 @@ Proof.
       eapply IHt.
            
       eassumption.
+      eassumption.
       2: {
         eassumption.
       }
-      apply H0.
+      apply H1.
       
     eassumption.
 
@@ -899,17 +1370,24 @@ Proof.
 
       assert (exists ee, Some ee = reconstruct_ev st_ev).
       {
-        admit.
+        eapply some_recons.
+        destruct st_ev.
+        destruct ecc.
+        eapply wf_ec_preserved_by_cvm.
+        apply H5.
+        eassumption.
+        eassumption.
       }
       destruct_conjs.
       
       assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') H2) \/
+            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') H3) \/
          (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) H2 /\ EvSubT (uu i args tpl tid et') ett)
+             EvSub (hhc p'0 bs ett) H3 /\ EvSubT (uu i args tpl tid et') ett)
         ).
       {
         eapply IHt1.
+        eassumption.
         eassumption.
         3: {
           eassumption.
@@ -917,27 +1395,41 @@ Proof.
         2: {
           eassumption.
         }
-        apply H0.
+        apply H1.
         
         
         eassumption.
       }
       destruct_conjs.
-      destruct H6.
+      door.
       ++
         destruct_conjs.
         assert (
-            (EvSub (uuc i args tpl tid n H6) e') \/
+            (EvSub (uuc i args tpl tid n H7) e') \/
             (exists ett p' bs,
                 EvSub (hhc p' bs ett) e' /\
-                EvSubT (et_fun (uuc i args tpl tid n H6)) ett
+                EvSubT (et_fun (uuc i args tpl tid n H7)) ett
             )
           ).
         {
-          eapply evAccum; eauto.
+          destruct st_ev.
+          destruct ecc.
+          destruct ecc'.
+          eapply evAccum.
+          eassumption.
+          5: { eassumption. }
+          eapply wf_ec_preserved_by_cvm.
+          apply H5.
+          
+          2: { eassumption. }
+          eassumption.
+          eassumption.
+          eassumption.
+          eassumption.
+          
         }
-        clear H11.
-        destruct H8.
+        clear H12.
+        door.
         +++
           left.
           eauto.
@@ -952,16 +1444,30 @@ Proof.
       ++
         destruct_conjs.
         assert (
-            (EvSub (hhc H7 H8 H6) e') \/
+            (EvSub (hhc H8 H9 H7) e') \/
             (exists ett p' bs,
                 EvSub (hhc p' bs ett) e' /\
-                EvSubT (et_fun (hhc H7 H8 H6)) ett
+                EvSubT (et_fun (hhc H8 H9 H7)) ett
             )
           ).
         {
-          eapply evAccum; eauto.
+          destruct st_ev.
+          destruct ecc.
+          destruct ecc'.
+          eapply evAccum.
+          eassumption.
+          5: { eassumption. }
+          eapply wf_ec_preserved_by_cvm.
+          apply H5.
+          
+          2: { eassumption. }
+          eassumption.
+          eassumption.
+          eassumption.
+          eassumption.
+          
         }
-        destruct H13.
+        door.
         +++
           right.
           repeat (eexists; eauto).
@@ -975,7 +1481,7 @@ Proof.
           repeat eexists.
           eauto.
 
-          assert (EvSubT (uu i args tpl tid H9) (hh H7 H6)).
+          assert (EvSubT (uu i args tpl tid H10) (hh H8 H7)).
           {
             apply hhSubT.
             eassumption.
@@ -998,7 +1504,13 @@ Proof.
 
       assert (exists ee, Some ee = reconstruct_ev st_ev).
       {
-        admit.
+        eapply some_recons.
+        destruct st_ev.
+        destruct ecc.
+        eapply wf_ec_preserved_by_cvm.
+        apply H5.
+        eassumption.
+        eassumption.
       }
       destruct_conjs.
 
@@ -1008,14 +1520,19 @@ Proof.
              EvSub (hhc p'0 bs ett) e' /\ EvSubT (uu i args tpl tid et') ett)
         ).
       {
+        destruct ecc. destruct ecc'. destruct st_ev.
         eapply IHt2.
         eassumption.
-        apply H3.
+        eapply wf_ec_preserved_by_cvm.
+        apply H5.
+        eassumption.
+        eassumption.
+        eassumption.
         eassumption.
         eassumption.
         eassumption.
       }
-      destruct H6.
+      door.
       ++
         destruct_conjs.
         left.
@@ -1038,6 +1555,85 @@ Proof.
     invEvents.
     + (* t1 case *)
 
+
+
+
+      assert (firstn (et_size e1) (e0 ++ e2) = e0).
+      {
+        assert (wf_ec (evc e0 e1)).
+        {
+          destruct s.
+          +
+            ff.
+            destruct ecc.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5. eassumption. eassumption.
+          +
+            ff.
+            destruct ecc.
+            ff.
+            unfold mt_evc in *. ff.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5.
+            2: { eassumption. }
+            econstructor. ff.
+          +
+            ff.
+            destruct ecc.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5. eassumption. eassumption.
+
+        (*
+            eapply wf_ec_preserved_by_cvm; eauto. *)
+        }
+        invc H2.
+        rewrite <- H4.
+        eapply More_lists.firstn_append.
+      }
+      assert (skipn (et_size e1) (e0 ++ e2) = e2).
+      {
+        
+        
+        assert (wf_ec (evc e0 e1)).
+        {
+          destruct s.
+          +
+            ff.
+            destruct ecc.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5. eassumption. eassumption.
+          +
+            ff.
+            destruct ecc.
+            ff.
+            unfold mt_evc in *. ff.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5.
+            2: { eassumption. }
+            econstructor. ff.
+          +
+            ff.
+            destruct ecc.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5. eassumption. eassumption.
+
+        }
+        invc H3.
+        rewrite <- H7.
+        eapply More_lists.skipn_append.
+      }
+      rewrite H2 in *; clear H2.
+      rewrite H3 in *; clear H3.
+
+
+
+
+
+
+
+
+      (*
+
       destruct s; ff.
       ++
 
@@ -1051,8 +1647,11 @@ Proof.
         }
         rewrite H1 in *; clear H1.
         rewrite H2 in *; clear H2.
+       *)
+      
         
-        
+      destruct s; ff.
+      ++
 
       assert (
             (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') e4) \/
@@ -1062,14 +1661,15 @@ Proof.
       {
         eapply IHt1.
         eassumption.
+        eassumption.
         3: { eassumption. }
-        apply H0.
+        eassumption.
         2: { eassumption. }
         rewrite <- Heqo.
         cbn. tauto.
       }
       
-      destruct H1.
+      door.
       +++
         destruct_conjs.
         eauto.
@@ -1106,18 +1706,11 @@ Proof.
           (*
           apply ssSubl; eauto.
           eauto. *)
+          
+          
       ++
 
-        assert (firstn (et_size e1) (e0 ++ e2) = e0).
-        {
-          admit.
-        }
-        assert (skipn (et_size e1) (e0 ++ e2) = e2).
-        {
-          admit.
-        }
-        rewrite H1 in *; clear H1.
-        rewrite H2 in *; clear H2.
+        
         
           
       assert (
@@ -1126,16 +1719,20 @@ Proof.
              EvSub (hhc p'0 bs ett) e4 /\ EvSubT (uu i args tpl tid et') ett)
         ).
       {
+        destruct ecc.
+        unfold mt_evc in *.
         eapply IHt1.
         eassumption.
-        3: { eassumption. }
-        3: { eassumption. }
-        cbn. tauto.
+        4: { eassumption. }
+        4: { eassumption. }
+        econstructor. ff.
+        ff. tauto.
+
         rewrite <- Heqo.
         ff.
       }
       
-      destruct H1.
+      door.
       +++
         destruct_conjs.
         left.
@@ -1173,37 +1770,28 @@ Proof.
           eauto. *)
       ++
 
-        assert (firstn (et_size e1) (e0 ++ e2) = e0).
-        {
-          admit.
-        }
-        assert (skipn (et_size e1) (e0 ++ e2) = e2).
-        {
-          admit.
-        }
-        rewrite H1 in *; clear H1.
-        rewrite H2 in *; clear H2.
-
-
-
-
         
         
+          
       assert (
             (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') e4) \/
          (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
              EvSub (hhc p'0 bs ett) e4 /\ EvSubT (uu i args tpl tid et') ett)
         ).
       {
+        destruct ecc.
         eapply IHt1.
         eassumption.
-        3: { eassumption. }
-        3: { eassumption. }
-        ff.
+        4: { eassumption. }
+        4: { eassumption. }
+        eassumption.
+        eassumption.
+
+        rewrite <- Heqo.
         ff.
       }
       
-      destruct H1.
+      door.
       +++
         destruct_conjs.
         left.
@@ -1239,11 +1827,85 @@ Proof.
           (*
           apply ssSubl; eauto.
           eauto. *)
+
     + (* t2 case *)
 
       do_pl_immut.
       do_pl_immut.
       subst.
+
+            assert (firstn (et_size e1) (e0 ++ e2) = e0).
+      {
+        assert (wf_ec (evc e0 e1)).
+        {
+          destruct s.
+          +
+            ff.
+            destruct ecc.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5. eassumption. eassumption.
+          +
+            ff.
+            destruct ecc.
+            ff.
+            unfold mt_evc in *. ff.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5.
+            2: { eassumption. }
+            econstructor. ff.
+          +
+            ff.
+            destruct ecc.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5. eassumption. eassumption.
+
+        (*
+            eapply wf_ec_preserved_by_cvm; eauto. *)
+        }
+        invc H2.
+        rewrite <- H4.
+        eapply More_lists.firstn_append.
+      }
+      assert (skipn (et_size e1) (e0 ++ e2) = e2).
+      {
+        
+        
+        assert (wf_ec (evc e0 e1)).
+        {
+          destruct s.
+          +
+            ff.
+            destruct ecc.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5. eassumption. eassumption.
+          +
+            ff.
+            destruct ecc.
+            ff.
+            unfold mt_evc in *. ff.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5.
+            2: { eassumption. }
+            econstructor. ff.
+          +
+            ff.
+            destruct ecc.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5. eassumption. eassumption.
+
+        }
+        invc H3.
+        rewrite <- H7.
+        eapply More_lists.skipn_append.
+      }
+      rewrite H2 in *; clear H2.
+      rewrite H3 in *; clear H3.
+
+
+
+
+
+      (*
 
       destruct s; ff.
       ++
@@ -1258,6 +1920,24 @@ Proof.
         }
         rewrite H1 in *; clear H1.
         rewrite H2 in *; clear H2.
+       *)
+
+
+      
+
+
+
+
+
+      destruct s; ff.
+
+
+
+
+
+
+      ++
+        
 
       assert (
             (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') e5) \/
@@ -1268,14 +1948,15 @@ Proof.
         eapply IHt2.
         eassumption.
         
-        3: { eassumption. }
-        3: { eassumption. }
+        4: { eassumption. }
+        4: { eassumption. }
+        unfold mt_evc. econstructor. ff.
         ff.
         ff.
         ff.
       }
       
-      destruct H1.
+      door.
       +++
         destruct_conjs.
         left.
@@ -1313,16 +1994,7 @@ Proof.
           eauto. *)
 
       ++
-        assert (firstn (et_size e1) (e0 ++ e2) = e0).
-        {
-          admit.
-        }
-        assert (skipn (et_size e1) (e0 ++ e2) = e2).
-        {
-          admit.
-        }
-        rewrite H1 in *; clear H1.
-        rewrite H2 in *; clear H2.
+        
 
       assert (
             (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') e5) \/
@@ -1333,13 +2005,14 @@ Proof.
         eapply IHt2.
         eassumption.
         
-        3: { eassumption. }
-        3: { eassumption. }
+        4: { eassumption. }
+        4: { eassumption. }
+        ff.
         ff.
         ff.
       }
       
-      destruct H1.
+      door.
       +++
         destruct_conjs.
         left.
@@ -1377,16 +2050,7 @@ Proof.
           eauto. *)
 
       ++
-                assert (firstn (et_size e1) (e0 ++ e2) = e0).
-        {
-          admit.
-        }
-        assert (skipn (et_size e1) (e0 ++ e2) = e2).
-        {
-          admit.
-        }
-        rewrite H1 in *; clear H1.
-        rewrite H2 in *; clear H2.
+        
 
       assert (
             (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') e5) \/
@@ -1397,13 +2061,14 @@ Proof.
         eapply IHt2.
         eassumption.
         
-        3: { eassumption. }
-        3: { eassumption. }
+        4: { eassumption. }
+        4: { eassumption. }
+        ff.
         ff.
         ff.
       }
       
-      destruct H1.
+      door.
       +++
         destruct_conjs.
         left.
@@ -1439,6 +2104,7 @@ Proof.
           (*
           apply ssSubr; eauto.
           eauto. *)
+
 
   -
     do_wf_pieces.
@@ -1451,6 +2117,85 @@ Proof.
     invEvents.
     + (* t1 case *)
 
+
+
+
+      assert (firstn (et_size e1) (e0 ++ e2) = e0).
+      {
+        assert (wf_ec (evc e0 e1)).
+        {
+          destruct s.
+          +
+            ff.
+            destruct ecc.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5. eassumption. eassumption.
+          +
+            ff.
+            destruct ecc.
+            ff.
+            unfold mt_evc in *. ff.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5.
+            2: { eassumption. }
+            econstructor. ff.
+          +
+            ff.
+            destruct ecc.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5. eassumption. eassumption.
+
+        (*
+            eapply wf_ec_preserved_by_cvm; eauto. *)
+        }
+        invc H2.
+        rewrite <- H4.
+        eapply More_lists.firstn_append.
+      }
+      assert (skipn (et_size e1) (e0 ++ e2) = e2).
+      {
+        
+        
+        assert (wf_ec (evc e0 e1)).
+        {
+          destruct s.
+          +
+            ff.
+            destruct ecc.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5. eassumption. eassumption.
+          +
+            ff.
+            destruct ecc.
+            ff.
+            unfold mt_evc in *. ff.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5.
+            2: { eassumption. }
+            econstructor. ff.
+          +
+            ff.
+            destruct ecc.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5. eassumption. eassumption.
+
+        }
+        invc H3.
+        rewrite <- H7.
+        eapply More_lists.skipn_append.
+      }
+      rewrite H2 in *; clear H2.
+      rewrite H3 in *; clear H3.
+
+
+
+
+
+
+
+
+      (*
+
       destruct s; ff.
       ++
 
@@ -1464,8 +2209,11 @@ Proof.
         }
         rewrite H1 in *; clear H1.
         rewrite H2 in *; clear H2.
+       *)
+      
         
-        
+      destruct s; ff.
+      ++
 
       assert (
             (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') e4) \/
@@ -1475,14 +2223,15 @@ Proof.
       {
         eapply IHt1.
         eassumption.
+        eassumption.
         3: { eassumption. }
-        apply H0.
+        eassumption.
         2: { eassumption. }
         rewrite <- Heqo.
         cbn. tauto.
       }
       
-      destruct H1.
+      door.
       +++
         destruct_conjs.
         eauto.
@@ -1519,18 +2268,11 @@ Proof.
           (*
           apply ssSubl; eauto.
           eauto. *)
+          
+          
       ++
 
-        assert (firstn (et_size e1) (e0 ++ e2) = e0).
-        {
-          admit.
-        }
-        assert (skipn (et_size e1) (e0 ++ e2) = e2).
-        {
-          admit.
-        }
-        rewrite H1 in *; clear H1.
-        rewrite H2 in *; clear H2.
+        
         
           
       assert (
@@ -1539,16 +2281,20 @@ Proof.
              EvSub (hhc p'0 bs ett) e4 /\ EvSubT (uu i args tpl tid et') ett)
         ).
       {
+        destruct ecc.
+        unfold mt_evc in *.
         eapply IHt1.
         eassumption.
-        3: { eassumption. }
-        3: { eassumption. }
-        cbn. tauto.
+        4: { eassumption. }
+        4: { eassumption. }
+        econstructor. ff.
+        ff. tauto.
+
         rewrite <- Heqo.
         ff.
       }
       
-      destruct H1.
+      door.
       +++
         destruct_conjs.
         left.
@@ -1586,37 +2332,28 @@ Proof.
           eauto. *)
       ++
 
-        assert (firstn (et_size e1) (e0 ++ e2) = e0).
-        {
-          admit.
-        }
-        assert (skipn (et_size e1) (e0 ++ e2) = e2).
-        {
-          admit.
-        }
-        rewrite H1 in *; clear H1.
-        rewrite H2 in *; clear H2.
-
-
-
-
         
         
+          
       assert (
             (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') e4) \/
          (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
              EvSub (hhc p'0 bs ett) e4 /\ EvSubT (uu i args tpl tid et') ett)
         ).
       {
+        destruct ecc.
         eapply IHt1.
         eassumption.
-        3: { eassumption. }
-        3: { eassumption. }
-        ff.
+        4: { eassumption. }
+        4: { eassumption. }
+        eassumption.
+        eassumption.
+
+        rewrite <- Heqo.
         ff.
       }
       
-      destruct H1.
+      door.
       +++
         destruct_conjs.
         left.
@@ -1652,12 +2389,86 @@ Proof.
           (*
           apply ssSubl; eauto.
           eauto. *)
+
     + (* t2 case *)
 
       do_pl_immut.
       do_pl_immut.
       subst.
 
+            assert (firstn (et_size e1) (e0 ++ e2) = e0).
+      {
+        assert (wf_ec (evc e0 e1)).
+        {
+          destruct s.
+          +
+            ff.
+            destruct ecc.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5. eassumption. eassumption.
+          +
+            ff.
+            destruct ecc.
+            ff.
+            unfold mt_evc in *. ff.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5.
+            2: { eassumption. }
+            econstructor. ff.
+          +
+            ff.
+            destruct ecc.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5. eassumption. eassumption.
+
+        (*
+            eapply wf_ec_preserved_by_cvm; eauto. *)
+        }
+        invc H2.
+        rewrite <- H4.
+        eapply More_lists.firstn_append.
+      }
+      assert (skipn (et_size e1) (e0 ++ e2) = e2).
+      {
+        
+        
+        assert (wf_ec (evc e0 e1)).
+        {
+          destruct s.
+          +
+            ff.
+            destruct ecc.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5. eassumption. eassumption.
+          +
+            ff.
+            destruct ecc.
+            ff.
+            unfold mt_evc in *. ff.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5.
+            2: { eassumption. }
+            econstructor. ff.
+          +
+            ff.
+            destruct ecc.
+            eapply wf_ec_preserved_by_cvm.
+            apply H5. eassumption. eassumption.
+
+        }
+        invc H3.
+        rewrite <- H7.
+        eapply More_lists.skipn_append.
+      }
+      rewrite H2 in *; clear H2.
+      rewrite H3 in *; clear H3.
+
+
+
+
+
+      (*
+
       destruct s; ff.
       ++
 
@@ -1671,6 +2482,24 @@ Proof.
         }
         rewrite H1 in *; clear H1.
         rewrite H2 in *; clear H2.
+       *)
+
+
+      
+
+
+
+
+
+      destruct s; ff.
+
+
+
+
+
+
+      ++
+        
 
       assert (
             (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') e5) \/
@@ -1681,14 +2510,15 @@ Proof.
         eapply IHt2.
         eassumption.
         
-        3: { eassumption. }
-        3: { eassumption. }
+        4: { eassumption. }
+        4: { eassumption. }
+        unfold mt_evc. econstructor. ff.
         ff.
         ff.
         ff.
       }
       
-      destruct H1.
+      door.
       +++
         destruct_conjs.
         left.
@@ -1726,16 +2556,7 @@ Proof.
           eauto. *)
 
       ++
-        assert (firstn (et_size e1) (e0 ++ e2) = e0).
-        {
-          admit.
-        }
-        assert (skipn (et_size e1) (e0 ++ e2) = e2).
-        {
-          admit.
-        }
-        rewrite H1 in *; clear H1.
-        rewrite H2 in *; clear H2.
+        
 
       assert (
             (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') e5) \/
@@ -1746,13 +2567,14 @@ Proof.
         eapply IHt2.
         eassumption.
         
-        3: { eassumption. }
-        3: { eassumption. }
+        4: { eassumption. }
+        4: { eassumption. }
+        ff.
         ff.
         ff.
       }
       
-      destruct H1.
+      door.
       +++
         destruct_conjs.
         left.
@@ -1790,16 +2612,7 @@ Proof.
           eauto. *)
 
       ++
-                assert (firstn (et_size e1) (e0 ++ e2) = e0).
-        {
-          admit.
-        }
-        assert (skipn (et_size e1) (e0 ++ e2) = e2).
-        {
-          admit.
-        }
-        rewrite H1 in *; clear H1.
-        rewrite H2 in *; clear H2.
+        
 
       assert (
             (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') e5) \/
@@ -1810,13 +2623,14 @@ Proof.
         eapply IHt2.
         eassumption.
         
-        3: { eassumption. }
-        3: { eassumption. }
+        4: { eassumption. }
+        4: { eassumption. }
+        ff.
         ff.
         ff.
       }
       
-      destruct H1.
+      door.
       +++
         destruct_conjs.
         left.
@@ -1852,26 +2666,8 @@ Proof.
           (*
           apply ssSubr; eauto.
           eauto. *)
-Admitted.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-          
+          Defined.
+     
 (*
 
           
@@ -2308,6 +3104,7 @@ Lemma uu_preserved: forall t1 t2 p et n p0 i args tpl tid
                       e' tr' p'' ecc,
     well_formed_r t1 ->
     well_formed_r t2 ->
+    wf_ec e ->
     Some e' = (reconstruct_ev ecc) -> (* = (Some e') -> *)
     events t1 p et (umeas n p0 i args tpl tid) ->
     copland_compile t1 {| st_ev := e; st_trace := tr; st_pl := p |} =
@@ -2327,25 +3124,32 @@ Proof.
   intros.
   assert (exists ee, Some ee = reconstruct_ev st_ev).
   {
-    admit.
+    destruct st_ev.
+    destruct e.
+    eapply some_recons.
+    eapply wf_ec_preserved_by_cvm.
+    apply H. eassumption.
+    eassumption.
   }
   assert (exists ee, Some ee = reconstruct_ev e).
   {
-    admit.
+    eapply some_recons; eauto.
   }
   
   destruct_conjs.
   
   assert (
-      (exists e'', EvSub (uuc i args tpl tid n e'') H5) \/
+      (exists e'', EvSub (uuc i args tpl tid n e'') H6) \/
       (exists ett p' bs et',
-          EvSub (hhc p' bs ett) H5 /\
+          EvSub (hhc p' bs ett) H6 /\
           EvSubT (uu i args tpl tid et') ett)
       ).
     {
       eapply uu_preserved'.
       apply H.
-      apply H7.
+      eassumption.
+      
+      eassumption.
       eassumption.
       eassumption.
       eassumption.
@@ -2358,11 +3162,7 @@ Proof.
   
   -
 
-    Ltac door :=
-      match goal with
-      | [H: _ \/ _  |- _] =>
-        destruct H
-      end; destruct_conjs.
+
 
     door.
     +
@@ -2370,22 +3170,28 @@ Proof.
       
 
       assert (
-           (EvSub (uuc i args tpl tid n H9) mtc) \/
+           (EvSub (uuc i args tpl tid n H10) mtc) \/
            (exists ett p' bs,
                EvSub (hhc p' bs ett) mtc /\
-               EvSubT (et_fun (uuc i args tpl tid n H9)) ett
+               EvSubT (et_fun (uuc i args tpl tid n H10)) ett
            )
         ).
       {
+        destruct st_ev.
+        destruct e.
         eapply evAccum.
         apply H0.
-        2: { eassumption. }
-        apply H8.
+        5: { eassumption. }
+        eapply wf_ec_preserved_by_cvm.
+        apply H.
+        eassumption.
+        eassumption.
+        eassumption.
         eassumption.
         eassumption.
         
       }
-      destruct H11.
+      door.
       ++
         solve_by_inversion.
       ++
@@ -2394,21 +3200,27 @@ Proof.
     +
       destruct_conjs.
        assert (
-           (EvSub (hhc H10 H11 H9) mtc) \/
+           (EvSub (hhc H11 H12 H10) mtc) \/
            (exists ett p' bs,
                EvSub (hhc p' bs ett) mtc /\
-               EvSubT (et_fun (hhc H10 H11 H9)) ett
+               EvSubT (et_fun (hhc H11 H12 H10)) ett
            )
          ).
        {
+         destruct st_ev.
+         destruct e.
          eapply evAccum.
          apply H0.
-         2: { eassumption. }
-         apply H8.
+         3: { eassumption. }
+         4: { eassumption. }
+         eapply wf_ec_preserved_by_cvm.
+         apply H.
+         eassumption.
+         eassumption.
          eassumption.
          eassumption.
        }
-       destruct H15.
+       door.
       ++
         solve_by_inversion.
       ++
@@ -2437,16 +3249,24 @@ Proof.
       destruct_conjs.
 
       assert (
-           (EvSub (uuc i args tpl tid n1 H9) (nnc n n0)) \/
+           (EvSub (uuc i args tpl tid n1 H10) (nnc n n0)) \/
            (exists ett p' bs,
                EvSub (hhc p' bs ett) (nnc n n0) /\
-               EvSubT (et_fun (uuc i args tpl tid n1 H9)) ett
+               EvSubT (et_fun (uuc i args tpl tid n1 H10)) ett
            )
         ).
       {
+        destruct e.
+        destruct st_ev.
+        destruct ecc.
         eapply evAccum.
-        apply H0.
-        apply H8.
+        eassumption.
+        5: { eassumption. }
+
+        eapply wf_ec_preserved_by_cvm.
+        apply H.
+        eassumption.
+        eassumption.
         eassumption.
         eassumption.
         eassumption.
@@ -2460,17 +3280,24 @@ Proof.
         solve_by_inversion.
     +
       destruct_conjs.
+      destruct ecc.
+      destruct st_ev.
+      destruct e.
        assert (
-           (EvSub (hhc H10 H11 H9) (nnc n n0)) \/
+           (EvSub (hhc H11 H12 H10) (nnc n n0)) \/
            (exists ett p' bs,
                EvSub (hhc p' bs ett) (nnc n n0) /\
-               EvSubT (et_fun (hhc H10 H11 H9)) ett
+               EvSubT (et_fun (hhc H11 H12 H10)) ett
            )
          ).
        {
         eapply evAccum.
         apply H0.
-        apply H8.
+        5: { eassumption. }
+        eapply wf_ec_preserved_by_cvm.
+        apply H.
+        eassumption.
+        eassumption.
         eassumption.
         eassumption.
         eassumption.
@@ -2505,23 +3332,30 @@ Proof.
       destruct_conjs.
 
       assert (
-           (EvSub (uuc i args tpl tid n3 H9) (uuc n l n0 n1 n2 e')) \/
+           (EvSub (uuc i args tpl tid n3 H10) (uuc n l n0 n1 n2 e')) \/
            (exists ett p' bs,
                EvSub (hhc p' bs ett) (uuc n l n0 n1 n2 e') /\
-               EvSubT (et_fun (uuc i args tpl tid n3 H9)) ett
+               EvSubT (et_fun (uuc i args tpl tid n3 H10)) ett
            )
         ).
       {
+        destruct e.
+        destruct st_ev.
+        destruct ecc.
         eapply evAccum.
         apply H0.
-        apply H8.
+        5: { eassumption. }
+        eapply wf_ec_preserved_by_cvm.
+        apply H.
+        eassumption.
+        eassumption.
         eassumption.
         eassumption.
         eassumption.
       }
       door.
       ++
-        invc H11; eauto.
+        invc H12; eauto.
         (*
         +++
           left.
@@ -2543,23 +3377,37 @@ Proof.
     +
       destruct_conjs.
        assert (
-           (EvSub (hhc H10 H11 H9) (uuc n l n0 n1 n2 e')) \/
+           (EvSub (hhc H11 H12 H10) (uuc n l n0 n1 n2 e')) \/
            (exists ett p' bs,
                EvSub (hhc p' bs ett) (uuc n l n0 n1 n2 e') /\
-               EvSubT (et_fun (hhc H10 H11 H9)) ett
+               EvSubT (et_fun (hhc H11 H12 H10)) ett
            )
          ).
        {
+          destruct e.
+        destruct st_ev.
+        destruct ecc.
+
+
+
+
+
+         
          eapply evAccum.
          eassumption.
-         apply H8.
+         5: { eassumption. }
+         eapply wf_ec_preserved_by_cvm.
+         apply H.
+         eassumption.
+
+         eassumption.
          eassumption.
          eassumption.
          eassumption.
        }
        door.
       ++
-        invc H15.
+        invc H16.
         right.
         repeat eexists.
         apply uuSub.
@@ -2568,8 +3416,8 @@ Proof.
       ++
         destruct_conjs.
         ff.
-        invc H18.
-        assert (EvSubT (uu i args tpl tid H12) H15).
+        invc H19.
+        assert (EvSubT (uu i args tpl tid H13) H16).
         {
           eapply evsubT_transitive.
           apply hhSubT.
@@ -2582,10 +3430,13 @@ Proof.
         apply uuSub.
         eassumption.
         eassumption.
-  -
+
+
+  - (* ggc case *)
     (*
+        
     assert (
-      (exists e'', EvSub (uuc i args tpl tid n1 e'') st_ev) \/
+      (exists e'', EvSub (uuc i args tpl tid n3 e'') st_ev) \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) st_ev /\
           EvSubT (uu i args tpl tid et') ett)
@@ -2595,34 +3446,38 @@ Proof.
       apply H.
       eassumption.
       eassumption.
-    }
-    destruct H4.
-     *)
+    } *)
     door.
+    (*
+    destruct H4. *)
     +
       destruct_conjs.
 
       assert (
-           (EvSub (uuc i args tpl tid n1 H9) (ggc n n0 e')) \/
+           (EvSub (uuc i args tpl tid n1 H10) (ggc n n0 e')) \/
            (exists ett p' bs,
                EvSub (hhc p' bs ett) (ggc n n0 e') /\
-               EvSubT (et_fun (uuc i args tpl tid n1 H9)) ett
+               EvSubT (et_fun (uuc i args tpl tid n1 H10)) ett
            )
         ).
       {
+        destruct e.
+        destruct st_ev.
+        destruct ecc.
         eapply evAccum.
+        apply H0.
+        5: { eassumption. }
+        eapply wf_ec_preserved_by_cvm.
+        apply H.
         eassumption.
-        apply H8.
+        eassumption.
         eassumption.
         eassumption.
         eassumption.
       }
       door.
       ++
-        invc H11.
-        left.
-        repeat eexists.
-        apply ggSub; eauto.
+        invc H12; eauto.
         (*
         +++
           left.
@@ -2644,23 +3499,37 @@ Proof.
     +
       destruct_conjs.
        assert (
-           (EvSub (hhc H10 H11 H9) (ggc n n0 e')) \/
+           (EvSub (hhc H11 H12 H10) (ggc n n0 e')) \/
            (exists ett p' bs,
                EvSub (hhc p' bs ett) (ggc n n0 e') /\
-               EvSubT (et_fun (hhc H10 H11 H9)) ett
+               EvSubT (et_fun (hhc H11 H12 H10)) ett
            )
          ).
        {
+          destruct e.
+        destruct st_ev.
+        destruct ecc.
+
+
+
+
+
+         
          eapply evAccum.
          eassumption.
-         apply H8.
+         5: { eassumption. }
+         eapply wf_ec_preserved_by_cvm.
+         apply H.
+         eassumption.
+
+         eassumption.
          eassumption.
          eassumption.
          eassumption.
        }
        door.
       ++
-        invc H15.
+        invc H16.
         right.
         repeat eexists.
         apply ggSub.
@@ -2669,8 +3538,8 @@ Proof.
       ++
         destruct_conjs.
         ff.
-        invc H18.
-        assert (EvSubT (uu i args tpl tid H12) H15).
+        invc H19.
+        assert (EvSubT (uu i args tpl tid H13) H16).
         {
           eapply evsubT_transitive.
           apply hhSubT.
@@ -2683,11 +3552,14 @@ Proof.
         apply ggSub.
         eassumption.
         eassumption.
-  -
 
+        
+
+  - (* hhc case *)
     (*
+        
     assert (
-      (exists e'', EvSub (uuc i args tpl tid n1 e'') st_ev) \/
+      (exists e'', EvSub (uuc i args tpl tid n3 e'') st_ev) \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) st_ev /\
           EvSubT (uu i args tpl tid et') ett)
@@ -2697,35 +3569,38 @@ Proof.
       apply H.
       eassumption.
       eassumption.
-    }
-    destruct H4.
-     *)
+    } *)
     door.
+    (*
+    destruct H4. *)
     +
       destruct_conjs.
 
-      assert (
-           (EvSub (uuc i args tpl tid n1 H9) (hhc n n0 e)) \/
+       assert (
+           (EvSub (uuc i args tpl tid n1 H10) (hhc n n0 e)) \/
            (exists ett p' bs,
                EvSub (hhc p' bs ett) (hhc n n0 e) /\
-               EvSubT (et_fun (uuc i args tpl tid n1 H9)) ett
+               EvSubT (et_fun (uuc i args tpl tid n1 H10)) ett
            )
         ).
       {
+        destruct e0.
+        destruct st_ev.
+        destruct ecc.
         eapply evAccum.
+        apply H0.
+        5: { eassumption. }
+        eapply wf_ec_preserved_by_cvm.
+        apply H.
         eassumption.
-        apply H8.
+        eassumption.
         eassumption.
         eassumption.
         eassumption.
       }
       door.
       ++
-        invc H11.
-        (*
-        left.
-        repeat eexists.
-        apply ggSub; eauto.
+        invc H12; eauto.
         (*
         +++
           left.
@@ -2736,8 +3611,6 @@ Proof.
           eexists.
           apply uuSub.
           eauto. *)
-         *)
-        
       ++
         destruct_conjs.
         ff.
@@ -2749,36 +3622,46 @@ Proof.
     +
       destruct_conjs.
        assert (
-           (EvSub (hhc H10 H11 H9) (hhc n n0 e)) \/
+           (EvSub (hhc H11 H12 H10) (hhc n n0 e)) \/
            (exists ett p' bs,
                EvSub (hhc p' bs ett) (hhc n n0 e) /\
-               EvSubT (et_fun (hhc H10 H11 H9)) ett
+               EvSubT (et_fun (hhc H11 H12 H10)) ett
            )
          ).
        {
+          destruct e0.
+        destruct st_ev.
+        destruct ecc.
+
+
+
+
+
+         
          eapply evAccum.
          eassumption.
-         apply H8.
+         5: { eassumption. }
+         eapply wf_ec_preserved_by_cvm.
+         apply H.
+         eassumption.
+
+         eassumption.
          eassumption.
          eassumption.
          eassumption.
        }
        door.
       ++
-        invc H15.
+        invc H16.
         right.
         repeat eexists.
-        econstructor.
         eauto.
-        (*
-        apply hhSub.
-        eassumption.
-        eassumption. *)
+        eauto.
       ++
         destruct_conjs.
         ff.
-        invc H18.
-        assert (EvSubT (uu i args tpl tid H12) e).
+        invc H19.
+        assert (EvSubT (uu i args tpl tid H13) e).
         {
           eapply evsubT_transitive.
           apply hhSubT.
@@ -2788,8 +3671,322 @@ Proof.
         
         right.
         repeat eexists.
-        econstructor.
+        eauto.
+        eauto.
+
+
+
+  - (* ssc case *)
+    (*
+        
+    assert (
+      (exists e'', EvSub (uuc i args tpl tid n3 e'') st_ev) \/
+      (exists ett p' bs et',
+          EvSub (hhc p' bs ett) st_ev /\
+          EvSubT (uu i args tpl tid et') ett)
+      ).
+    {
+      eapply uu_preserved'.
+      apply H.
+      eassumption.
+      eassumption.
+    } *)
+    door.
+    (*
+    destruct H4. *)
+    +
+      destruct_conjs.
+
+       assert (
+           (EvSub (uuc i args tpl tid n H10) (ssc e'1 e'2)) \/
+           (exists ett p' bs,
+               EvSub (hhc p' bs ett) (ssc e'1 e'2) /\
+               EvSubT (et_fun (uuc i args tpl tid n H10)) ett
+           )
+        ).
+      {
+        destruct e.
+        destruct st_ev.
+        destruct ecc.
+        eapply evAccum.
+        apply H0.
+        5: { eassumption. }
+        eapply wf_ec_preserved_by_cvm.
+        apply H.
         eassumption.
+        eassumption.
+        eassumption.
+        eassumption.
+        eassumption.
+      }
+      door.
+      ++
+        invc H12; eauto.
+        (*
+        +++
+          left.
+          eexists.
+          econstructor.
+        +++
+          left.
+          eexists.
+          apply uuSub.
+          eauto. *)
+      ++
+        destruct_conjs.
+        ff.
+        right.
+        repeat eexists.
+        eauto.
+        eauto.
+
+    +
+      destruct_conjs.
+       assert (
+           (EvSub (hhc H11 H12 H10) (ssc e'1 e'2)) \/
+           (exists ett p' bs,
+               EvSub (hhc p' bs ett) (ssc e'1 e'2) /\
+               EvSubT (et_fun (hhc H11 H12 H10)) ett
+           )
+         ).
+       {
+         destruct e.
+         destruct st_ev.
+         destruct ecc.
+
+
+
+
+
+         
+         eapply evAccum.
+         eassumption.
+         5: { eassumption. }
+         eapply wf_ec_preserved_by_cvm.
+         apply H.
+         eassumption.
+
+         eassumption.
+         eassumption.
+         eassumption.
+         eassumption.
+       }
+       door.
+      ++
+        invc H16.
+        +++
+        right.
+        repeat eexists.
+        apply ssSubl.
+        eassumption.
+        eassumption.
+        +++
+          right.
+          repeat eexists.
+          apply ssSubr.
+          eassumption.
+          eassumption.
+      ++
+        destruct_conjs.
+        ff.
+        assert (EvSubT (uu i args tpl tid H13) H16).
+        {
+          eapply evsubT_transitive.
+          apply hhSubT.
+          eassumption.
+          eassumption.
+        }
+        invc H19.
+        +++
+        
+        
+        right.
+        repeat eexists.
+        apply ssSubl.
+        eassumption.
+        eassumption.
+        +++
+          right.
+          repeat eexists.
+          apply ssSubr.
+          eassumption.
+          eassumption.
+
+
+  - (* ppc case *)
+    (*
+        
+    assert (
+      (exists e'', EvSub (uuc i args tpl tid n3 e'') st_ev) \/
+      (exists ett p' bs et',
+          EvSub (hhc p' bs ett) st_ev /\
+          EvSubT (uu i args tpl tid et') ett)
+      ).
+    {
+      eapply uu_preserved'.
+      apply H.
+      eassumption.
+      eassumption.
+    } *)
+    door.
+    (*
+    destruct H4. *)
+    +
+      destruct_conjs.
+
+       assert (
+           (EvSub (uuc i args tpl tid n H10) (ppc e'1 e'2)) \/
+           (exists ett p' bs,
+               EvSub (hhc p' bs ett) (ppc e'1 e'2) /\
+               EvSubT (et_fun (uuc i args tpl tid n H10)) ett
+           )
+        ).
+      {
+        destruct e.
+        destruct st_ev.
+        destruct ecc.
+        eapply evAccum.
+        apply H0.
+        5: { eassumption. }
+        eapply wf_ec_preserved_by_cvm.
+        apply H.
+        eassumption.
+        eassumption.
+        eassumption.
+        eassumption.
+        eassumption.
+      }
+      door.
+      ++
+        invc H12; eauto.
+        (*
+        +++
+          left.
+          eexists.
+          econstructor.
+        +++
+          left.
+          eexists.
+          apply uuSub.
+          eauto. *)
+      ++
+        destruct_conjs.
+        ff.
+        right.
+        repeat eexists.
+        eauto.
+        eauto.
+
+    +
+      destruct_conjs.
+       assert (
+           (EvSub (hhc H11 H12 H10) (ppc e'1 e'2)) \/
+           (exists ett p' bs,
+               EvSub (hhc p' bs ett) (ppc e'1 e'2) /\
+               EvSubT (et_fun (hhc H11 H12 H10)) ett
+           )
+         ).
+       {
+         destruct e.
+         destruct st_ev.
+         destruct ecc.
+
+
+
+
+
+         
+         eapply evAccum.
+         eassumption.
+         5: { eassumption. }
+         eapply wf_ec_preserved_by_cvm.
+         apply H.
+         eassumption.
+
+         eassumption.
+         eassumption.
+         eassumption.
+         eassumption.
+       }
+       door.
+      ++
+        invc H16.
+        +++
+        right.
+        repeat eexists.
+        apply ppSubl.
+        eassumption.
+        eassumption.
+        +++
+          right.
+          repeat eexists.
+          apply ppSubr.
+          eassumption.
+          eassumption.
+      ++
+        destruct_conjs.
+        ff.
+        assert (EvSubT (uu i args tpl tid H13) H16).
+        {
+          eapply evsubT_transitive.
+          apply hhSubT.
+          eassumption.
+          eassumption.
+        }
+        invc H19.
+        +++
+        
+        
+        right.
+        repeat eexists.
+        apply ppSubl.
+        eassumption.
+        eassumption.
+        +++
+          right.
+          repeat eexists.
+          apply ppSubr.
+          eassumption.
+          eassumption.
+          Defined.
+
+
+
+
+
+(*
+
+
+       
+      ++
+        invc H16.
+        right.
+        repeat eexists.
+        eauto.
+        eauto.
+        
+      ++
+        destruct_conjs.
+        ff.
+        invc H19.
+        assert (EvSubT (uu i args tpl tid H13) e).
+        {
+          eapply evsubT_transitive.
+          apply hhSubT.
+          eassumption.
+          eassumption.
+        }
+        
+        right.
+        repeat eexists.
+        eauto.
+        eauto. *)
+
+        
+
+
+
+     (*   
 
   - (* ssc case *)
 
@@ -3158,6 +4355,7 @@ Proof.
 Defined.
 *)
 Admitted.
+*)
 
 
 Lemma appraisal_correct : forall t e' tr tr' p p' et ev bits ecc,
@@ -3248,12 +4446,14 @@ Proof.
          eapply uu_preserved.
          apply H4.
          apply H5.
+         5: { eassumption. }
+         4: { eassumption. }
+         eassumption.
+              
          rewrite <- H1.
          ff.
          eassumption.
-         eassumption.
-         eassumption.
-         eassumption.
+
        }
        destruct H3.
        ++
@@ -3300,16 +4500,14 @@ Proof.
          destruct st_ev.
          eapply IHt2.
          eassumption.
+         3: { eassumption. }
 
          eapply wf_ec_preserved_by_cvm.
+         apply H4.
+         eassumption.
          eassumption.
          eassumption.
          
-
-
-         
-         eassumption.
-         eassumption.
          (*
          
          
@@ -3400,7 +4598,10 @@ Proof.
         {
           assert (wf_ec (evc e e0)).
           {
-            eapply wf_ec_preserved_by_cvm; eauto.
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
           }
           invc H2.
           rewrite <- H6.
@@ -3410,7 +4611,10 @@ Proof.
         {
           assert (wf_ec (evc e e0)).
           {
-            eapply wf_ec_preserved_by_cvm; eauto.
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
           }
           invc H3.
           rewrite <- H7.
@@ -3473,6 +4677,7 @@ Proof.
           {
             unfold mt_evc in *.
             eapply wf_ec_preserved_by_cvm with (bits:=[0]) (et:=mt).
+            apply H4.
             econstructor.
             ff.
             eauto.
@@ -3487,6 +4692,7 @@ Proof.
           {
             unfold mt_evc in *.
             eapply wf_ec_preserved_by_cvm with (bits:=[0]) (et:=mt).
+            apply H4.
             econstructor.
             ff.
             eauto.
@@ -3562,7 +4768,10 @@ Proof.
         {
           assert (wf_ec (evc e e0)).
           {
-            eapply wf_ec_preserved_by_cvm; eauto.
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
           }
           invc H2.
           rewrite <- H6.
@@ -3572,7 +4781,10 @@ Proof.
         {
           assert (wf_ec (evc e e0)).
           {
-            eapply wf_ec_preserved_by_cvm; eauto.
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
           }
           invc H3.
           rewrite <- H7.
@@ -3649,7 +4861,10 @@ Proof.
         {
           assert (wf_ec (evc e e0)).
           {
-            eapply wf_ec_preserved_by_cvm; eauto.
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
           }
           invc H2.
           rewrite <- H6.
@@ -3659,7 +4874,10 @@ Proof.
         {
           assert (wf_ec (evc e e0)).
           {
-            eapply wf_ec_preserved_by_cvm; eauto.
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
           }
           invc H3.
           rewrite <- H7.
@@ -3730,7 +4948,9 @@ Proof.
           assert (wf_ec (evc e e0)).
           {
             eapply wf_ec_preserved_by_cvm with (bits:=[0]) (et:=mt).
+            apply H4.
             econstructor. ff.
+            
             eassumption.
           }
           invc H2.
@@ -3742,6 +4962,7 @@ Proof.
           assert (wf_ec (evc e e0)).
           {
             eapply wf_ec_preserved_by_cvm with (bits:=[0]) (et:=mt).
+            apply H4.
             econstructor. ff.
             eassumption.
           }
@@ -3814,7 +5035,10 @@ Proof.
         {
           assert (wf_ec (evc e e0)).
           {
-            eapply wf_ec_preserved_by_cvm; eauto.
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
           }
           invc H2.
           rewrite <- H6.
@@ -3824,7 +5048,10 @@ Proof.
         {
           assert (wf_ec (evc e e0)).
           {
-            eapply wf_ec_preserved_by_cvm; eauto.
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
           }
           invc H3.
           rewrite <- H7.
@@ -3888,6 +5115,1342 @@ Proof.
         apply ssSubr.
         eassumption.
 
+
+
+    - (* abseq case *)
+    (*
+    do_wf_pieces. *)
+    edestruct wf_bpar_pieces;[eauto | idtac].
+    vmsts.
+    simpl in *.
+    subst.
+    ff.
+    ff.
+    vmsts.
+    simpl in *.
+    subst.
+    ff.
+
+    (*
+
+    assert (exists x, reconstruct_ev' (firstn (et_size e0) (e ++ e1)) e0 = Some x).
+    {
+      admit.
+    }
+    destruct_conjs.
+    rewrite H1. 
+
+    assert (exists x, reconstruct_ev' (skipn (et_size e0) (e ++ e1)) e2 = Some x).
+    {
+      admit.
+    }
+    destruct_conjs.
+    rewrite H6.
+     *)
+    
+    
+    repeat ff.
+
+    vmsts.
+    ff.
+
+    measEventFacts.
+    ff.
+    do_pl_immut.
+    do_pl_immut.
+    subst.
+    invc H2.
+
+    
+    inv_events;
+      ff.
+    + (* t1 case *)
+      destruct s.
+      ++
+        ff.
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+      
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e3))).
+      {
+        eapply IHt1 with (ecc := evc e e0).
+        eassumption.
+        eassumption.
+        rewrite <- Heqo.
+        unfold reconstruct_ev. tauto.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      (*
+      assert (firstn (et_size e0) (e ++ e1) = e).
+      {
+        admit.
+      }
+      assert (skipn (et_size e0) (e ++ e1) = e1).
+      {
+        admit.
+      }
+      rewrite H8 in *. clear H8.
+      rewrite H9 in *. clear H9. *)
+
+
+      (*
+      unfold reconstruct_ev in H2.
+      rewrite H1 in H2.
+      ff. *)
+      
+      
+
+      invc H2.
+      +++
+        econstructor.
+        econstructor.
+        
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        econstructor.
+        eassumption.
+      ++
+        ff.
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            unfold mt_evc in *.
+            eapply wf_ec_preserved_by_cvm with (bits:=[0]) (et:=mt).
+            apply H4.
+            econstructor.
+            ff.
+            eauto.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            unfold mt_evc in *.
+            eapply wf_ec_preserved_by_cvm with (bits:=[0]) (et:=mt).
+            apply H4.
+            econstructor.
+            ff.
+            eauto.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+
+
+
+
+
+        
+(*
+         assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          admit.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          admit.
+        }
+        rewrite H1 in *; clear H1.
+        rewrite H2 in *; clear H2. *)
+
+      
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e3))).
+      {
+        eapply IHt1 with (ecc:=evc e e0) (bits:=[0]) (et:=mt).
+        eassumption.
+        econstructor. ff.
+        rewrite <- Heqo. tauto.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      (*
+      assert (firstn (et_size e0) (e ++ e1) = e).
+      {
+        admit.
+      }
+      assert (skipn (et_size e0) (e ++ e1) = e1).
+      {
+        admit.
+      }
+      rewrite H8 in *. clear H8.
+      rewrite H9 in *. clear H9.
+
+      unfold reconstruct_ev in H2.
+      rewrite H1 in H2.
+      ff. *)
+
+      invc H2.
+      +++
+        econstructor.
+        econstructor.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        econstructor.
+        eassumption.
+      ++
+        ff.
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+
+
+
+        
+(*
+         assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          admit.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          admit.
+        }
+        rewrite H1 in *; clear H1.
+        rewrite H2 in *; clear H2.
+*)
+
+      
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e3))).
+      {
+        eapply IHt1 with (ecc:= evc e e0).
+        eassumption.
+        eassumption.
+        rewrite <- Heqo. tauto.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      (*
+       assert (firstn (et_size e0) (e ++ e1) = e).
+      {
+        admit.
+      }
+      assert (skipn (et_size e0) (e ++ e1) = e1).
+      {
+        admit.
+      }
+      rewrite H8 in *. clear H8.
+      rewrite H9 in *. clear H9.
+
+      unfold reconstruct_ev in H2.
+      rewrite H1 in H2.
+      ff. *)
+
+      invc H2.
+      +++
+        econstructor.
+        econstructor.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        econstructor.
+        eassumption.
+    + (* t2 case *)
+
+      destruct s.
+      ++
+        ff.
+
+
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+        (*
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          admit.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          admit.
+        }
+        rewrite H1 in *; clear H1.
+        rewrite H2 in *; clear H2. *)
+
+      
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
+      {
+        eapply IHt2 with (ecc:=evc e1 e2) (bits:=[0]) (et:=mt).
+        eassumption.
+        econstructor. ff.
+        rewrite <- Heqo0. tauto.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      (*
+
+      assert (firstn (et_size e0) (e ++ e1) = e).
+      {
+        admit.
+      }
+      assert (skipn (et_size e0) (e ++ e1) = e1).
+      {
+        admit.
+      }
+      rewrite H8 in *. clear H8.
+      rewrite H9 in *. clear H9.
+
+      unfold reconstruct_ev in H2.
+      rewrite H6 in H2.
+      ff. *)
+
+      invc H2.
+      +++
+        econstructor.
+        apply ppSubr.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        apply ppSubr.
+        eassumption.
+      ++
+        ff.
+
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm with (bits:=[0]) (et:=mt).
+            apply H4.
+            econstructor. ff.
+            
+            eassumption.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm with (bits:=[0]) (et:=mt).
+            apply H4.
+            econstructor. ff.
+            eassumption.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+
+        (*
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          admit.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          admit.
+        }
+        rewrite H1 in *; clear H1.
+        rewrite H2 in *; clear H2.
+         *)
+        
+
+      
+        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
+      {
+        eapply IHt2 with (ecc:=evc e1 e2).
+        eassumption.
+        eassumption.
+        rewrite <- Heqo0. tauto.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      (*
+      assert (firstn (et_size e0) (e ++ e1) = e).
+      {
+        admit.
+      }
+      assert (skipn (et_size e0) (e ++ e1) = e1).
+      {
+        admit.
+      }
+      rewrite H8 in *. clear H8.
+      rewrite H9 in *. clear H9.
+
+      unfold reconstruct_ev in H2.
+      rewrite H6 in H2.
+      ff. *)
+
+      invc H2.
+      +++
+        econstructor.
+        apply ppSubr.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        apply ppSubr.
+        eassumption.
+      ++
+        ff.
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+
+        (*
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          admit.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          admit.
+        }
+        rewrite H1 in *; clear H1.
+        rewrite H2 in *; clear H2. *)
+
+      
+        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
+      {
+        eapply IHt2 with (ecc:=evc e1 e2).
+        eassumption.
+        eassumption.
+        rewrite <- Heqo0. tauto.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      (*
+
+      assert (firstn (et_size e0) (e ++ e1) = e).
+      {
+        admit.
+      }
+      assert (skipn (et_size e0) (e ++ e1) = e1).
+      {
+        admit.
+      }
+      rewrite H8 in *. clear H8.
+      rewrite H9 in *. clear H9.
+
+      unfold reconstruct_ev in H2.
+      rewrite H6 in H2.
+      ff. *)
+
+      invc H2.
+      +++
+        econstructor.
+        apply ppSubr.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        apply ppSubr.
+        eassumption.
+Defined.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*
+
+
+
+
+
+
+
+
+
+        
+
+
+
+  - (* abpar case *)
+    edestruct wf_lseq_pieces;[eauto | idtac].
+    (* do_wf_pieces. *)
+    vmsts.
+    simpl in *.
+    subst.
+    repeat ff.
+
+    vmsts.
+
+    measEventFacts.
+    do_pl_immut.
+    do_pl_immut.
+    subst.
+
+    invc H6.
+
+    
+    inv_events.
+     + (* t1 case *)
+       (*clear H0. *)
+
+       assert (
+           (exists e'', EvSub (uuc i args tpl tid n e'') (fromSome mtc (reconstruct_ev ecc))) \/
+           (exists ett p' bs et',
+               EvSub (hhc p' bs ett) (fromSome mtc (reconstruct_ev ecc)) /\
+               EvSubT (uu i args tpl tid et') ett)
+         ).
+              
+       {
+         eapply uu_preserved.
+         apply H4.
+         apply H5.
+         5: { eassumption. }
+         4: { eassumption. }
+         eassumption.
+              
+         rewrite <- H1.
+         ff.
+         eassumption.
+
+       }
+       destruct H3.
+       ++
+
+       destruct_conjs.
+
+
+
+       assert (
+        exists e'', EvSub (uuc i args tpl tid (checkASP i args tpl tid n) e'')
+                     (build_app_comp_evC (fromSome mtc (reconstruct_ev ecc)))).
+       {
+         eapply uuc_app; eauto.
+       }
+       destruct_conjs.
+       econstructor.
+       rewrite <- H1 in *.
+       eassumption.
+       ++
+         rewrite <- H1 in *.
+         ff.
+         destruct_conjs.
+
+         eapply ahuc.
+         eassumption.
+         (*
+         apply H9. *)
+         eapply hhc_app; eauto.
+         (*
+
+         assert (EvSub (hhc H2 (checkHash H1 H2 H5) H1) (build_app_comp_evC (fromSome mtc (reconstruct_ev ecc)))).
+         {
+           eapply hhc_app; eauto.
+         }
+
+         eapply ahuc.
+         eassumption.
+         eassumption. *)
+     + (* t2 case *)
+       assert (appEvent_EvidenceC (umeas n p0 i args tpl tid)
+                                  (build_app_comp_evC (e'))).
+       {
+         destruct ecc.
+         destruct st_ev.
+         eapply IHt2.
+         eassumption.
+         3: { eassumption. }
+
+         eapply wf_ec_preserved_by_cvm.
+         apply H4.
+         eassumption.
+         eassumption.
+         eassumption.
+         
+         (*
+         
+         
+         2: {
+           eassumption.
+         }      
+         eapply cvm_refines_lts_evidence.
+         apply H3.
+         eassumption.
+         eassumption.
+         tauto. *)
+         econstructor.
+         Check eval_aeval.
+         assert (e2 = aeval t1 p et).
+         {
+           rewrite <- eval_aeval.
+           
+           eapply cvm_refines_lts_evidence.
+           eassumption.
+           eassumption.
+         }
+         subst.
+         eassumption.
+         econstructor.
+       }
+       eassumption.
+       
+         (*
+         
+         rewrite eval_aeval.
+         eassumption. 
+         econstructor.
+       }
+       eassumption. *)
+
+
+
+
+
+
+
+       
+    - (* abseq case *)
+    (*
+    do_wf_pieces. *)
+    edestruct wf_bseq_pieces;[eauto | idtac].
+    vmsts.
+    simpl in *.
+    subst.
+    ff.
+    ff.
+    vmsts.
+    simpl in *.
+    subst.
+    ff.
+
+    (*
+
+    assert (exists x, reconstruct_ev' (firstn (et_size e0) (e ++ e1)) e0 = Some x).
+    {
+      admit.
+    }
+    destruct_conjs.
+    rewrite H1. 
+
+    assert (exists x, reconstruct_ev' (skipn (et_size e0) (e ++ e1)) e2 = Some x).
+    {
+      admit.
+    }
+    destruct_conjs.
+    rewrite H6.
+     *)
+    
+    
+    repeat ff.
+
+    vmsts.
+    ff.
+
+    measEventFacts.
+    ff.
+    do_pl_immut.
+    do_pl_immut.
+    subst.
+    invc H2.
+
+    
+    inv_events;
+      ff.
+    + (* t1 case *)
+      destruct s.
+      ++
+        ff.
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+      
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e3))).
+      {
+        eapply IHt1 with (ecc := evc e e0).
+        eassumption.
+        eassumption.
+        rewrite <- Heqo.
+        unfold reconstruct_ev. tauto.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      (*
+      assert (firstn (et_size e0) (e ++ e1) = e).
+      {
+        admit.
+      }
+      assert (skipn (et_size e0) (e ++ e1) = e1).
+      {
+        admit.
+      }
+      rewrite H8 in *. clear H8.
+      rewrite H9 in *. clear H9. *)
+
+
+      (*
+      unfold reconstruct_ev in H2.
+      rewrite H1 in H2.
+      ff. *)
+      
+      
+
+      invc H2.
+      +++
+        econstructor.
+        econstructor.
+        
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        econstructor.
+        eassumption.
+      ++
+        ff.
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            unfold mt_evc in *.
+            eapply wf_ec_preserved_by_cvm with (bits:=[0]) (et:=mt).
+            apply H4.
+            econstructor.
+            ff.
+            eauto.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            unfold mt_evc in *.
+            eapply wf_ec_preserved_by_cvm with (bits:=[0]) (et:=mt).
+            apply H4.
+            econstructor.
+            ff.
+            eauto.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+
+
+
+
+
+        
+(*
+         assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          admit.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          admit.
+        }
+        rewrite H1 in *; clear H1.
+        rewrite H2 in *; clear H2. *)
+
+      
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e3))).
+      {
+        eapply IHt1 with (ecc:=evc e e0) (bits:=[0]) (et:=mt).
+        eassumption.
+        econstructor. ff.
+        rewrite <- Heqo. tauto.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      (*
+      assert (firstn (et_size e0) (e ++ e1) = e).
+      {
+        admit.
+      }
+      assert (skipn (et_size e0) (e ++ e1) = e1).
+      {
+        admit.
+      }
+      rewrite H8 in *. clear H8.
+      rewrite H9 in *. clear H9.
+
+      unfold reconstruct_ev in H2.
+      rewrite H1 in H2.
+      ff. *)
+
+      invc H2.
+      +++
+        econstructor.
+        econstructor.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        econstructor.
+        eassumption.
+      ++
+        ff.
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+
+
+
+        
+(*
+         assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          admit.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          admit.
+        }
+        rewrite H1 in *; clear H1.
+        rewrite H2 in *; clear H2.
+*)
+
+      
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e3))).
+      {
+        eapply IHt1 with (ecc:= evc e e0).
+        eassumption.
+        eassumption.
+        rewrite <- Heqo. tauto.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      (*
+       assert (firstn (et_size e0) (e ++ e1) = e).
+      {
+        admit.
+      }
+      assert (skipn (et_size e0) (e ++ e1) = e1).
+      {
+        admit.
+      }
+      rewrite H8 in *. clear H8.
+      rewrite H9 in *. clear H9.
+
+      unfold reconstruct_ev in H2.
+      rewrite H1 in H2.
+      ff. *)
+
+      invc H2.
+      +++
+        econstructor.
+        econstructor.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        econstructor.
+        eassumption.
+    + (* t2 case *)
+
+      destruct s.
+      ++
+        ff.
+
+
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+        (*
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          admit.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          admit.
+        }
+        rewrite H1 in *; clear H1.
+        rewrite H2 in *; clear H2. *)
+
+      
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
+      {
+        eapply IHt2 with (ecc:=evc e1 e2) (bits:=[0]) (et:=mt).
+        eassumption.
+        econstructor. ff.
+        rewrite <- Heqo0. tauto.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      (*
+
+      assert (firstn (et_size e0) (e ++ e1) = e).
+      {
+        admit.
+      }
+      assert (skipn (et_size e0) (e ++ e1) = e1).
+      {
+        admit.
+      }
+      rewrite H8 in *. clear H8.
+      rewrite H9 in *. clear H9.
+
+      unfold reconstruct_ev in H2.
+      rewrite H6 in H2.
+      ff. *)
+
+      invc H2.
+      +++
+        econstructor.
+        apply ssSubr.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        apply ssSubr.
+        eassumption.
+      ++
+        ff.
+
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm with (bits:=[0]) (et:=mt).
+            apply H4.
+            econstructor. ff.
+            
+            eassumption.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm with (bits:=[0]) (et:=mt).
+            apply H4.
+            econstructor. ff.
+            eassumption.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+
+        (*
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          admit.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          admit.
+        }
+        rewrite H1 in *; clear H1.
+        rewrite H2 in *; clear H2.
+         *)
+        
+
+      
+        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
+      {
+        eapply IHt2 with (ecc:=evc e1 e2).
+        eassumption.
+        eassumption.
+        rewrite <- Heqo0. tauto.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      (*
+      assert (firstn (et_size e0) (e ++ e1) = e).
+      {
+        admit.
+      }
+      assert (skipn (et_size e0) (e ++ e1) = e1).
+      {
+        admit.
+      }
+      rewrite H8 in *. clear H8.
+      rewrite H9 in *. clear H9.
+
+      unfold reconstruct_ev in H2.
+      rewrite H6 in H2.
+      ff. *)
+
+      invc H2.
+      +++
+        econstructor.
+        apply ssSubr.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        apply ssSubr.
+        eassumption.
+      ++
+        ff.
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
+          }
+          invc H2.
+          rewrite <- H6.
+          eapply More_lists.firstn_append.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          assert (wf_ec (evc e e0)).
+          {
+            eapply wf_ec_preserved_by_cvm.
+            apply H4.
+            eauto.
+            eauto.
+          }
+          invc H3.
+          rewrite <- H7.
+          eapply More_lists.skipn_append.
+        }
+        rewrite H2 in *; clear H2.
+        rewrite H3 in *; clear H3.
+
+
+        (*
+
+        assert (firstn (et_size e0) (e ++ e1) = e).
+        {
+          admit.
+        }
+        assert (skipn (et_size e0) (e ++ e1) = e1).
+        {
+          admit.
+        }
+        rewrite H1 in *; clear H1.
+        rewrite H2 in *; clear H2. *)
+
+      
+        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
+      {
+        eapply IHt2 with (ecc:=evc e1 e2).
+        eassumption.
+        eassumption.
+        rewrite <- Heqo0. tauto.
+        eassumption.
+        econstructor.
+        eassumption.
+        econstructor.
+      }
+
+      (*
+
+      assert (firstn (et_size e0) (e ++ e1) = e).
+      {
+        admit.
+      }
+      assert (skipn (et_size e0) (e ++ e1) = e1).
+      {
+        admit.
+      }
+      rewrite H8 in *. clear H8.
+      rewrite H9 in *. clear H9.
+
+      unfold reconstruct_ev in H2.
+      rewrite H6 in H2.
+      ff. *)
+
+      invc H2.
+      +++
+        econstructor.
+        apply ssSubr.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        apply ssSubr.
+        eassumption.
+
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+        
     - (* abpar case *)
     (*
     do_wf_pieces. *)
@@ -4431,7 +6994,12 @@ Proof.
         eassumption.
         apply ppSubr.
         eassumption.
-Defined.    
+Defined.   
+
+
+ *)
+
+
 
 (*
 
