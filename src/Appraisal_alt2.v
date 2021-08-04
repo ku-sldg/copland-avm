@@ -17,41 +17,6 @@ Require Import Lia.
 
 Set Nested Proofs Allowed.
 
-(*
-Fixpoint reconstruct_EvCon (e:EvidenceC) (et:Evidence): option EvidenceCon :=
-  match et with
-  | mt =>
-    match e with
-    | BitsV 0 => ret mtc
-    | _ => None
-    end
-  | uu i args tpl tid et' =>
-    '(bs,e') <- peelBitsVval e ;;
-    e_res <- reconstruct_EvCon e' et' ;;
-    ret (uuc i args tpl tid bs e_res)
-  | gg p et' =>
-    '(bs,e') <- peelBitsVval e ;;
-    e_res <- reconstruct_EvCon e' et' ;;
-    ret (ggc p bs e_res)
-  | hh p et' =>
-    bs <- peelOneBitsVval e ;;
-    ret (hhc p bs et')
-  | nn nid =>
-    bs <- peelOneBitsVval e ;;
-    ret (nnc nid bs)
-  | ss et1 et2 =>
-    '(e1,e2) <- peelPairBitsV e ;;
-    e1r <- reconstruct_EvCon e1 et1 ;;
-    e2r <- reconstruct_EvCon e2 et2 ;;
-    ret (ssc e1r e2r)
-  | pp et1 et2 =>
-    '(e1,e2) <- peelPairBitsV e ;;
-    e1r <- reconstruct_EvCon e1 et1 ;;
-    e2r <- reconstruct_EvCon e2 et2 ;;
-    ret (ppc e1r e2r)
-  end.
- *)
-
 Ltac evsub_ih :=
   match goal with
   | [H: EvSub _ ?e,
@@ -112,39 +77,78 @@ Lemma etfun_reconstruct: forall e e0 e1,
 Proof.
   intros.
   generalizeEverythingElse e1.
-  induction e1; intros.
-  -
-    ff.
-  -
-    ff.
-    ff.
-    erewrite IHe1; eauto.
-  -
-    ff.
-    ff.
-    erewrite IHe1; eauto.
-  -
-    ff.
-    ff.
-  -
-    ff.
-    ff.
-  -
-    ff.
-    ff.
-    erewrite IHe1_1; eauto.
-    erewrite IHe1_2; eauto.
-  -
-    ff.
-    ff.
-    erewrite IHe1_1; eauto.
-    erewrite IHe1_2; eauto.
+  induction e1; intros;
+    repeat ff;
+    repeat jkjke.
 Defined.
 
 Inductive wf_ec : EvC -> Prop :=
 | wf_ec_c: forall ls et,
     length ls = et_size et ->
     wf_ec (evc ls et).
+
+Ltac dest_evc :=
+  repeat
+    match goal with
+    | [H: EvC |-  _ ] => destruct H
+    end.
+
+Ltac find_wfec' :=
+  repeat 
+    let tac H H2 H3 H4 := eapply H; [apply H2 | apply H3 | apply H4] in
+    match goal with
+    | [H: context [well_formed_r ?t -> _](*
+                   wf_ec _ ->
+                   copland_compile _ _ _ = _ ->
+                   wf_ec _]*),
+          H2: well_formed_r ?t,
+              H3: wf_ec (evc ?bits ?et),
+                  H4: copland_compile ?t
+                                      {| st_ev := evc ?bits ?et; st_trace := _; st_pl := _ |} =
+                      (_, {| st_ev := (evc ?bits' ?et'); st_trace := _; st_pl := _ |})
+                        
+
+
+       |- _ ] => 
+      assert_new_proof_by
+        (wf_ec (evc bits' et'))
+        
+        ltac: (tac H H2 H3 H4)
+    (*
+                     ltac:(eapply H; [apply H2 | apply H3 | apply H4]) *)
+    end.
+
+Ltac find_wfec'' :=
+  repeat
+    let tac H H2 H4 b e := (eapply H with (bits:=b) (et:=e); [apply H2 | econstructor; tauto | apply H4]) in
+    match goal with
+    | [H: context [well_formed_r ?t -> _](*
+                   wf_ec _ ->
+                   copland_compile _ _ _ = _ ->
+                   wf_ec _]*),
+          H2: well_formed_r ?t,
+              H4: copland_compile ?t
+                                  {| st_ev := evc ?bits ?et; st_trace := _; st_pl := _ |} =
+                  (_, {| st_ev := (evc ?bits' ?et'); st_trace := _; st_pl := _ |})
+                    
+
+
+       |- _ ] => 
+      assert_new_proof_by
+        (wf_ec (evc bits' et'))
+        
+        ltac: (tac H H2 H4 bits et)
+    (*
+                     ltac:(eapply H; [apply H2 | apply H3 | apply H4]) *)
+    end.
+
+Ltac find_wfec := find_wfec'; find_wfec''.
+
+Ltac inv_wfec :=
+  repeat
+    match goal with
+    | [H: wf_ec _ |-  _ ] => invc H
+    end.
 
 Lemma wf_ec_preserved_by_cvm : forall bits bits' et et' t1 tr tr' p p',
     well_formed_r t1 ->
@@ -170,49 +174,76 @@ Proof.
   -
     ff.
     do_wf_pieces.
-    rewrite H3.
-    eapply IHt1.
-    eassumption.
-    eassumption.
-    rewrite <- H3.
-    apply copland_compile_at.
-    eassumption.
+    jkjke.
+    (*
+    rewrite H3. *)
+    eapply IHt1;
+      try eassumption.
+    jkjke'.
+    apply copland_compile_at;
+      try eassumption.
   -
     repeat ff.
     vmsts.
     do_wf_pieces.
-    destruct st_ev.
-
-    (*
-    edestruct IHt1_1.
-    eassumption.
-    eassumption.
-    eassumption.
-*)
-
+    dest_evc.
     eapply IHt1_2.
     eassumption.
-    2: { eassumption.
-    }
-
-    eapply IHt1_1.
-    eassumption.
-    eassumption.
-    eassumption.
+    2: eassumption.
+    eauto.
   -
-
-    repeat ff.
-    vmsts.
-    repeat ff.
-    subst.
+    repeat ff; vmsts; repeat ff; subst.
     do_wf_pieces.
 
-    destruct s.
+    destruct s;
+      ff;
+      unfold mt_evc in *;
+      find_wfec;
+      inv_wfec;
+      ff;
+      econstructor;
+      ff; repeat jkjke';
+        eapply app_length.
+  -
+    repeat ff; vmsts; repeat ff; subst.
+    do_wf_pieces.
+
+    destruct s;
+      ff;
+      unfold mt_evc in *;
+      find_wfec;
+      inv_wfec;
+      ff;
+      econstructor;
+      ff; repeat jkjke';
+        eapply app_length.    
+
+
+(*
+    
     +
       ff.
       unfold mt_evc in *.
-      assert (wf_ec (evc e e0)) by eauto.
+      find_wfec.
+      inv_wfec.
+
+      (*
+      Set Ltac Backtrace.
+
+      fail_if_in_hyps_type (wf_ec (evc e e0; assert H by tac
+      find_wfec.
+      Info Level 1.
+
+      Info 33 find_wfec.
+      find_wfec.
+      Ltac Debug. *)
+
+
+      (*
+      
       invc H3.
+
+      find_wfec.
 
       assert (wf_ec (evc e1 e2)).
       {
@@ -221,12 +252,17 @@ Proof.
         2: { eassumption. }
         econstructor. tauto.
       }
-      invc H3.
+      invc H3. *)
+
+      
       econstructor.
       ff.
+      repeat jkjke'.
+
+      (*
       rewrite <- H5.
       rewrite <- H6.
-      Search (length (_ ++ _)).
+      Search (length (_ ++ _)). *)
       eapply app_length.
     +
        ff.
@@ -261,6 +297,10 @@ Proof.
       rewrite <- H5.
       rewrite <- H6.
       eapply app_length.
+ *)
+
+
+    (*
     -
 
     repeat ff.
@@ -322,7 +362,48 @@ Proof.
       ff.
       rewrite <- H5.
       rewrite <- H6.
-      eapply app_length.
+      eapply app_length. *)
+Defined.
+
+Lemma peel_fact': forall e x y H,
+    length e = S x ->
+    peel_bs e = Some (y, H) ->
+    length H = x.
+Proof.
+  intros.
+  destruct e;
+    ff; eauto.
+Defined.
+
+Lemma peel_fact: forall e x y H et,
+    length e = S x ->
+    peel_bs e = Some (y, H) ->
+    et_size et = x ->
+    wf_ec (evc H et).
+Proof.
+  intros.
+  econstructor.
+  eapply peel_fact'; eauto.
+  lia.
+Defined.
+
+Lemma firstn_long: forall (e:list BS) x,
+    length e >= x ->
+    length (firstn x e) = x.
+Proof.
+  intros.
+  eapply firstn_length_le.
+  lia.
+Defined.
+
+Lemma skipn_long: forall (e:list BS) x y,
+    length e = x + y ->
+    length (skipn x e) = y.
+Proof.
+  intros.
+  assert (length (skipn x e) = length e - x).
+  { eapply skipn_length. }
+  lia.
 Defined.
 
 Lemma some_recons' : forall e x,
@@ -334,36 +415,25 @@ Proof.
     ff; eauto.
 Defined.
 
-Lemma peel_fact: forall e x y H,
-    length e = S x ->
-    peel_bs e = Some (y, H) ->
-    length H = x.
-Proof.
-  intros.
-  destruct e;
-    ff; eauto.
-Defined.
+Ltac do_some_recons' :=
+  match goal with
+  | [H: length ?e = S _ |- _ ] =>
+    edestruct some_recons'; [apply H | idtac]
+                              
+  end; destruct_conjs; jkjke.
 
-Lemma firstn_long: forall (e:list BS) x,
-    length e >= x ->
-    length (firstn x e) = x.
-Proof.
-  intros.
-  Search (length (firstn _ _) = _).
-  eapply firstn_length_le.
-  lia.
-Defined.
+Ltac do_rcih :=
+  match goal with
+  | [H: context[reconstruct_ev' _ _]
+               
 
-Lemma skipn_long: forall (e:list BS) x y,
-    length e = x + y ->
-    length (skipn x e) = y.
-Proof.
-  intros.
-  Search (length (skipn _ _ ) = _).
-  assert (length (skipn x e) = length e - x).
-  { eapply skipn_length. }
-  lia.
-Defined.
+     |- context[reconstruct_ev' ?e' ?et] ] =>
+    assert_new_proof_by
+      (exists x, Some x = reconstruct_ev' e' et)
+      ltac:(eapply H with (e:=e');
+            try (eapply peel_fact; eauto; tauto);
+            try (econstructor; first [eapply firstn_long | eapply skipn_long]; try eauto; try lia))      
+  end.
 
 Lemma some_recons : forall e,
     wf_ec e ->
@@ -372,119 +442,19 @@ Proof.
   intros.
   destruct e.
   generalizeEverythingElse e0.
-  induction e0; intros.
-  -
-    ff.
-    eauto.
-  -
-    invc H.
-    cbn in *.
-
-    edestruct some_recons'.
-    apply H1.
-    destruct_conjs.
-    rewrite H0.
-
-    edestruct IHe0 with (e := H).
-    econstructor.
-
-
-
-    eapply peel_fact; eauto.
-    
-
-    rewrite <- H2.
-    eauto.
-
-
-
-    
-  -
-    invc H.
-    cbn in *.
-
-    edestruct some_recons'.
-    apply H1.
-    destruct_conjs.
-    rewrite H0.
-
-    edestruct IHe0 with (e := H).
-    econstructor.
-
-
-
-    eapply peel_fact; eauto.
-    
-
-    rewrite <- H2.
-    eauto.
-  -
-    invc H.
-    cbn in *.
-
-    edestruct some_recons'.
-    apply H1.
-    destruct_conjs.
-    rewrite H0.
-    eauto.
-  -
-    invc H.
-    cbn in *.
-
-    edestruct some_recons'.
-    apply H1.
-    destruct_conjs.
-    rewrite H0.
-    eauto.
-  -
-    invc H.
-    cbn in *.
-
-    edestruct IHe0_1 with (e:= firstn (et_size e0_1) e).
-    econstructor.
-
-
-
-    eapply firstn_long; eauto.
-    lia.
-
-
-    rewrite <- H.
-
-    edestruct IHe0_2 with (e:= skipn (et_size e0_1) e).
-    econstructor.
-
-
-
-    eapply skipn_long; eauto.
-
-    rewrite <- H0.
-    eauto.
-
-      -
-    invc H.
-    cbn in *.
-
-    edestruct IHe0_1 with (e:= firstn (et_size e0_1) e).
-    econstructor.
-
-
-
-    eapply firstn_long; eauto.
-    lia.
-
-
-    rewrite <- H.
-
-    edestruct IHe0_2 with (e:= skipn (et_size e0_1) e).
-    econstructor.
-
-
-
-    eapply skipn_long; eauto.
-
-    rewrite <- H0.
-    eauto.
+  induction e0; intros;
+    try (ff; eauto; tauto);
+    try
+      ( inv_wfec; ff;
+        do_some_recons');
+    try (
+        repeat do_rcih;
+        destruct_conjs;
+        repeat jkjke');
+    try ( inv_wfec; ff;
+          repeat do_rcih;
+          destruct_conjs;
+          repeat jkjke').
 Defined.
 
 Lemma evAccum: forall t p (e e' e'':EvidenceC) tr tr' p' (ecc ecc':EvC),

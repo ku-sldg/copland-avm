@@ -101,3 +101,13 @@ Ltac dohtac := fail_no_match_some;
                (*try htac''; *)
                try rewrite PeanoNat.Nat.eqb_refl in *;
                try rewrite PeanoNat.Nat.eqb_eq in *.
+
+Ltac jkjke :=
+  match goal with
+  | [H: _ |-  _ ] => erewrite H; eauto
+  end.
+
+Ltac jkjke' :=
+  match goal with
+  | [H: _ |-  _ ] => erewrite <- H; eauto
+  end.
