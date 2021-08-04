@@ -102,16 +102,16 @@ Ltac find_wfec' :=
                    copland_compile _ _ _ = _ ->
                    wf_ec _]*),
           H2: well_formed_r ?t,
-              H3: wf_ec (evc ?bits ?et),
+              H3: wf_ec ?e,
                   H4: copland_compile ?t
-                                      {| st_ev := evc ?bits ?et; st_trace := _; st_pl := _ |} =
-                      (_, {| st_ev := (evc ?bits' ?et'); st_trace := _; st_pl := _ |})
+                                      {| st_ev := ?e; st_trace := _; st_pl := _ |} =
+                      (_, {| st_ev := ?e'; st_trace := _; st_pl := _ |})
                         
 
 
        |- _ ] => 
       assert_new_proof_by
-        (wf_ec (evc bits' et'))
+        (wf_ec e')
         
         ltac: (tac H H2 H3 H4)
     (*
@@ -120,7 +120,7 @@ Ltac find_wfec' :=
 
 Ltac find_wfec'' :=
   repeat
-    let tac H H2 H4 b e := (eapply H with (bits:=b) (et:=e); [apply H2 | econstructor; tauto | apply H4]) in
+    let tac H H2 H4 := (eapply H with (e:=evc [0] mt); [apply H2 | econstructor; tauto | apply H4]) in
     match goal with
     | [H: context [well_formed_r ?t -> _](*
                    wf_ec _ ->
@@ -128,16 +128,16 @@ Ltac find_wfec'' :=
                    wf_ec _]*),
           H2: well_formed_r ?t,
               H4: copland_compile ?t
-                                  {| st_ev := evc ?bits ?et; st_trace := _; st_pl := _ |} =
-                  (_, {| st_ev := (evc ?bits' ?et'); st_trace := _; st_pl := _ |})
+                                  {| st_ev := _; st_trace := _; st_pl := _ |} =
+                  (_, {| st_ev := ?e'; st_trace := _; st_pl := _ |})
                     
 
 
        |- _ ] => 
       assert_new_proof_by
-        (wf_ec (evc bits' et'))
+        (wf_ec (e'))
         
-        ltac: (tac H H2 H4 bits et)
+        ltac: (tac H H2 H4)
     (*
                      ltac:(eapply H; [apply H2 | apply H3 | apply H4]) *)
     end.
@@ -150,14 +150,14 @@ Ltac inv_wfec :=
     | [H: wf_ec _ |-  _ ] => invc H
     end.
 
-Lemma wf_ec_preserved_by_cvm : forall bits bits' et et' t1 tr tr' p p',
+Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' p p',
     well_formed_r t1 ->
-    wf_ec (evc bits et) ->
+    wf_ec e ->
     copland_compile t1
-                    {| st_ev := evc bits et; st_trace := tr; st_pl := p |} =
+                    {| st_ev := e; st_trace := tr; st_pl := p |} =
     (Some tt,
-     {| st_ev := evc bits' et'; st_trace := tr'; st_pl := p' |}) ->
-    wf_ec (evc bits' et').
+     {| st_ev := e'; st_trace := tr'; st_pl := p' |}) ->
+    wf_ec (e').
 Proof.
   intros.
   generalizeEverythingElse t1.
@@ -174,23 +174,22 @@ Proof.
   -
     ff.
     do_wf_pieces.
-    jkjke.
     (*
     rewrite H3. *)
     eapply IHt1;
       try eassumption.
-    jkjke'.
+
     apply copland_compile_at;
       try eassumption.
   -
     repeat ff.
     vmsts.
     do_wf_pieces.
-    dest_evc.
+    (*
     eapply IHt1_2.
     eassumption.
     2: eassumption.
-    eauto.
+    eauto. *)
   -
     repeat ff; vmsts; repeat ff; subst.
     do_wf_pieces.
@@ -457,6 +456,83 @@ Proof.
           repeat jkjke').
 Defined.
 
+Ltac do_somerecons :=
+  repeat
+    match goal with
+    | [H: wf_ec ?e
+                
+
+       |- _ ] =>
+      assert_new_proof_by
+        (exists x, Some x = reconstruct_ev e)
+        ltac:(eapply some_recons; apply H)     
+    end; destruct_conjs.
+
+Ltac do_wfec_preserved :=
+  repeat
+    match goal with
+    | [H: well_formed_r ?t,
+          H2: wf_ec ?stev,
+              H3: copland_compile ?t
+                                  {| st_ev := ?stev; st_trace := _; st_pl := _ |} =
+                  (Some tt,
+                   {| st_ev := ?stev'; st_trace := _; st_pl := _ |})
+                    
+
+       |- _ ] =>
+      assert_new_proof_by (wf_ec stev')
+                          ltac:(eapply wf_ec_preserved_by_cvm; [apply H | apply H2 | apply H3])
+                                 
+    end.
+
+Ltac door :=
+  match goal with
+  | [H: _ \/ _  |- _] =>
+    destruct H
+  end; destruct_conjs.
+
+Ltac do_evsub_ih :=
+  match goal with
+  | [H: copland_compile ?t1 {| st_ev := _; st_trace := _; st_pl := _ |} =
+        (Some tt, {| st_ev := ?stev; st_trace := _; st_pl := _ |}),
+        
+        H2: copland_compile ?t2 {| st_ev := ?stev; st_trace := _; st_pl := _ |} =
+            (Some tt, {| st_ev := _; st_trace := _; st_pl := _ |}),
+            H3: Some ?v = reconstruct_ev ?stev
+
+     |- context[EvSub ?e'' _ \/ _]] =>
+    
+    assert_new_proof_by
+      (EvSub e'' v \/
+       (exists (ett : Evidence) (p'0 bs : nat),
+           EvSub (hhc p'0 bs ett) v /\ EvSubT (et_fun e'') ett))
+      eauto
+  end.
+
+Ltac do_evsubh_ih :=
+  match goal with
+  | [H: EvSub (hhc ?H2 ?H3 ?H4) _
+
+     |- context[EvSub _ ?e' \/ _]] =>
+    
+    assert_new_proof_by
+      (EvSub (hhc H2 H3 H4) e' \/
+       (exists (ett : Evidence) (p'0 bs : nat),
+           EvSub (hhc p'0 bs ett) e' /\ EvSubT (et_fun (hhc H2 H3 H4)) ett))
+      eauto
+  end.
+
+Ltac do_hh_sub :=
+  match goal with
+  | [H: context[(hh ?H2 ?H3)]
+
+     |- context[EvSubT ?e'' _]] =>
+    
+    assert_new_proof_by
+      (EvSubT e'' (hh H2 H3))
+      ltac: (eapply evsubT_transitive; eauto)
+  end.
+
 Lemma evAccum: forall t p (e e' e'':EvidenceC) tr tr' p' (ecc ecc':EvC),
 
     well_formed_r t ->
@@ -482,16 +558,11 @@ Proof.
   induction t; intros.
   -
     destruct a;
-      (ff; try eauto).
-    +
-      rewrite <- H1 in *. clear H1.
-      ff.
-    +
-      unfold cons_uu in *.
-      repeat ff.
-    +
-      unfold cons_gg in *.
-      repeat ff.
+      repeat ff;
+      try jkjke';
+      try unfold cons_uu in *;
+      try unfold cons_gg in *;
+      (repeat ff; try eauto).
     +
       right.
       repeat eexists.
@@ -527,8 +598,30 @@ Proof.
     destruct st_ev.
     destruct ecc.
     destruct ecc'. *)
+
+
+    (*
+    well_formed_r t1 ->
+    wf_ec (evc bits et) ->
+    copland_compile t1
+                    {| st_ev := evc bits et; st_trace := tr; st_pl := p |} =
+    (Some tt,
+     {| st_ev := evc bits' et'; st_trace := tr'; st_pl := p' |}) ->
+    wf_ec (evc bits' et').
+     *)
+    
+
+    
+
+
+
+    do_wfec_preserved.
+
+    do_somerecons.
+
     
     
+    (*
     assert (exists ee, Some ee = reconstruct_ev st_ev).
     {
       destruct st_ev.
@@ -540,23 +633,25 @@ Proof.
       eassumption.
     }
 
-    destruct_conjs.
+    destruct_conjs. *)
+
     
 
-    assert (EvSub e'' H6 \/
-         (exists (ett : Evidence) (p'0 bs : nat),
-             EvSub (hhc p'0 bs ett) H6 /\ EvSubT (et_fun e'') ett)).
+
+    do_evsub_ih.
+
+    (*
+    
+
+    assert (EvSub e'' H9 \/
+            (exists (ett : Evidence) (p'0 bs : nat),
+                EvSub (hhc p'0 bs ett) H9 /\ EvSubT (et_fun e'') ett)).
     {
       eauto.
-    }
-    destruct H8.
+    } *)
+    
+    door.
     +
-      
-      
-      
-      
-      
-
 
       (*
 
@@ -565,24 +660,10 @@ Proof.
              EvSub (hhc p'0 bs ett) e' /\ EvSubT (et_fun e'') ett)).
       { *)
         
-
+(*
       destruct st_ev.
-      destruct ecc.
-        eapply IHt2.
-        eassumption.
-        3: {
-          eassumption.
-        }
-        4: {
-          eassumption.
-        }
-        
-        eapply wf_ec_preserved_by_cvm.
-        apply H4.
-        2: { eassumption. }
-        eassumption.
-        eassumption.
-        eassumption.
+      destruct ecc. *)
+        eapply IHt2 with (ecc:=st_ev); eauto.
 
 
         (*
@@ -608,9 +689,22 @@ Proof.
         eauto.
         eauto. *) *)
     +
+
+
+
+      do_evsubh_ih.
+
+
+
+
+
+
+(*
+      
+      (*
       destruct_conjs.
       destruct ecc.
-      destruct st_ev.
+      destruct st_ev. *)
       assert (EvSub (hhc H9 H10 H8) e' \/
          (exists (ett : Evidence) (p'0 bs : nat),
              EvSub (hhc p'0 bs ett) e' /\ EvSubT (et_fun (hhc H9 H10 H8)) ett)).
@@ -636,7 +730,9 @@ Proof.
       eassumption.
       eassumption. *)
     } 
-    destruct H13.
+ *)
+      
+    door.
       ++
         right.
         repeat (eexists; eauto).
@@ -648,21 +744,28 @@ Proof.
         ff.
         
         right.
-        exists H13.
-        repeat eexists.
-        eassumption.
-        assert (EvSubT (et_fun e'') (hh H9 H8)).
+        repeat (eexists; eauto).
+        do_hh_sub.
+
+        (*
+
+        
+
+        assert (EvSubT (et_fun e'') (hh H15 H14)).
         {
           
         
-        eapply evsubT_transitive.
+          eapply evsubT_transitive; eauto.
+          (*
         eassumption.
         apply hhSubT.
-        econstructor.
-        }
-        eapply evsubT_transitive.
+        econstructor. *)
+        } *)
+        eapply evsubT_transitive; eauto.
+
+        (*
         eassumption.
-        eassumption.
+        eassumption. *)
   -
     do_wf_pieces.
     ff.
@@ -796,11 +899,7 @@ Proof.
       ff.
 
 
-          Ltac door :=
-      match goal with
-      | [H: _ \/ _  |- _] =>
-        destruct H
-      end; destruct_conjs.
+
       
         
         

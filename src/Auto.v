@@ -109,5 +109,5 @@ Ltac jkjke :=
 
 Ltac jkjke' :=
   match goal with
-  | [H: _ |-  _ ] => erewrite <- H; eauto
+  | [H: _ |-  _ ] => erewrite <- H in *; eauto
   end.
