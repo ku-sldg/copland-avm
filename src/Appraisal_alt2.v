@@ -3875,19 +3875,25 @@ Proof.
           eassumption.
 Defined.
 
+Definition get_et (e:EvC) : Evidence :=
+  match e with
+  | evc ec et => et
+  end.
+    
 
-Lemma appraisal_correct : forall t e' tr tr' p p' et ev bits ecc,
+
+Lemma appraisal_correct : forall t e' tr tr' p p' ecc ev ee,
     well_formed_r t ->
-    wf_ec (evc bits et) ->
+    wf_ec ee(*(evc bits et)*) ->
     (*Ev_Shape e et -> *)
     Some e' = (reconstruct_ev ecc) -> (*fromSome mtc (reconstruct_ev ecc) ->*) (* = (Some e') -> *)
     copland_compile t
-      {| st_ev := (evc bits et); st_trace := tr; st_pl := p |} =
+      {| st_ev := ee; st_trace := tr; st_pl := p |} =
     (Some tt, {| st_ev := ecc;
                  st_trace := tr';
                  st_pl := p' |}) ->
 
-    measEvent t p et ev ->
+    measEvent t p (get_et ee) ev ->
     
     (*build_app_comp_evC e' = app_res /\ *)
     appEvent_EvidenceC ev (build_app_comp_evC e').
@@ -3898,6 +3904,7 @@ Proof.
   - (* aasp case *)
     measEventFacts.
     evEventFacts.
+    destruct ee.
     inv_events.
     ff.
     break_match; try solve_by_inversion.
@@ -4048,7 +4055,9 @@ Proof.
        eassumption.
        eassumption.
        econstructor.
-       assert (e2 = aeval t1 p et).
+       destruct ee.
+       ff.
+       assert (e2 = aeval t1 p e4).
          {
            rewrite <- eval_aeval.
            
@@ -4169,6 +4178,367 @@ Proof.
 
     do_wfec_firstn.
     do_wfec_skipn.
+
+    rewrite H9 in *; clear H9.
+    rewrite H8 in *; clear H8.
+
+    rewrite fold_recev in *.
+
+    inv_events.
+    + (* t1 case *)
+
+    assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e3))).
+    {
+        
+        
+        destruct ee; ff.
+        destruct s; ff.
+        ++
+          rewrite fold_recev in *.
+          
+          eapply IHt1.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          econstructor.
+        ++
+          rewrite fold_recev in *.
+          
+          eapply IHt1.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          econstructor.
+        ++
+          rewrite fold_recev in *.
+          
+          eapply IHt1.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          econstructor.
+    }
+
+    invc H8.
+      +++
+        econstructor.
+        econstructor.
+        
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        econstructor.
+        eassumption.
+
+    + (* t1 case *)
+
+    assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
+    {
+        
+        
+        destruct ee; ff.
+        destruct s; ff.
+        ++
+          rewrite fold_recev in *.
+          
+          eapply IHt2.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          econstructor.
+        ++
+          rewrite fold_recev in *.
+          
+          eapply IHt2.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          econstructor.
+        ++
+          rewrite fold_recev in *.
+          
+          eapply IHt2.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          econstructor.
+    }
+
+    invc H8.
+      +++
+        econstructor.
+        apply ssSubr.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        apply ssSubr.
+        eassumption.
+
+    - (* abpar case *)
+    (*
+    do_wf_pieces. *)
+    edestruct wf_bpar_pieces;[eauto | idtac].
+    vmsts.
+    simpl in *.
+    subst.
+    ff.
+    ff.
+    vmsts.
+    simpl in *.
+    subst.
+    ff.
+
+    (*
+
+    assert (exists x, reconstruct_ev' (firstn (et_size e0) (e ++ e1)) e0 = Some x).
+    {
+      admit.
+    }
+    destruct_conjs.
+    rewrite H1. 
+
+    assert (exists x, reconstruct_ev' (skipn (et_size e0) (e ++ e1)) e2 = Some x).
+    {
+      admit.
+    }
+    destruct_conjs.
+    rewrite H6.
+     *)
+    
+    
+    repeat ff.
+
+    vmsts.
+    ff.
+
+    measEventFacts.
+    ff.
+    do_pl_immut.
+    do_pl_immut.
+    subst.
+    invc H2.
+
+    do_wfec_split.
+
+    do_wfec_preserved.
+
+    do_wfec_firstn.
+    do_wfec_skipn.
+
+    rewrite H9 in *; clear H9.
+    rewrite H8 in *; clear H8.
+
+    rewrite fold_recev in *.
+
+    inv_events.
+    + (* t1 case *)
+
+    assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e3))).
+    {
+        
+        
+        destruct ee; ff.
+        destruct s; ff.
+        ++
+          rewrite fold_recev in *.
+          
+          eapply IHt1.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          econstructor.
+        ++
+          rewrite fold_recev in *.
+          
+          eapply IHt1.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          econstructor.
+        ++
+          rewrite fold_recev in *.
+          
+          eapply IHt1.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          econstructor.
+    }
+
+    invc H8.
+      +++
+        econstructor.
+        econstructor.
+        
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        econstructor.
+        eassumption.
+
+    + (* t1 case *)
+
+    assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
+    {
+        
+        
+        destruct ee; ff.
+        destruct s; ff.
+        ++
+          rewrite fold_recev in *.
+          
+          eapply IHt2.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          econstructor.
+        ++
+          rewrite fold_recev in *.
+          
+          eapply IHt2.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          econstructor.
+        ++
+          rewrite fold_recev in *.
+          
+          eapply IHt2.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          econstructor.
+    }
+
+    invc H8.
+      +++
+        econstructor.
+        apply ppSubr.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        apply ppSubr.
+        eassumption.
+Defined.
+
+
+        
+      
+(*
+
+        
+    
+
+
+
+    
+      +
+         destruct ee; ff.
+        destruct s; ff.
+        ++
+          rewrite fold_recev in *.
+          
+          eapply IHt2.
+          eassumption.
+          3: { eassumption. }
+          ff.
+          2: { ff. econstructor.
+            eassumption. }
+          eassumption.
+          econstructor. ff.
+          econstructor.
+        ++
+          rewrite fold_recev in *.
+          
+          eapply IHt1.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          econstructor.
+        ++
+          rewrite fold_recev in *.
+          
+          eapply IHt1.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          econstructor.
+        
+          
+        
+          eassumption.
+        destruct ee.
+        ff.
+          econstructor. eassumption. econstructor.
+          ++
+            econstructor. eassumption. econstructor.
+          ++
+            econstructor. eassumption. econstructor.
+        
+      eapply IHt1 with (ecc := evc e e0).
+        eassumption.
+        2: { jkjke'. }
+        2: { eassumption. }
+        eassumption.
+        destruct ee.
+        ff.
+        inv_events.
+        +
+          destruct s; ff.
+          ++
+        
+            econstructor. eassumption. econstructor.
+          ++
+            econstructor. eassumption. econstructor.
+          ++
+            econstructor. eassumption. econstructor.
+        +
+          destruct s; ff.
+          ++
+          econstructor; eassumption; econstructor.
+          ++
+            econstructor. eassumption. econstructor.
+          ++
+            econstructor. eassumption. econstructor.
+          
+            
+      
+
+
+
+    
 
     
     inv_events;
@@ -6643,6 +7013,11 @@ Defined.
         apply ppSubr.
         eassumption.
 Defined.   
+
+
+
+
+*)
 
 
  *)
