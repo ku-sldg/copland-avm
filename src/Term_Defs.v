@@ -73,7 +73,7 @@ Inductive Evidence: Set :=
 
 Fixpoint et_size (e:Evidence): nat :=
   match e with
-  | mt => 1
+  | mt => 0
   | uu _ _ _ _ e' => 1 + (et_size e')
   | gg _ e' => 1 + (et_size e')
   | hh _ _ => 1

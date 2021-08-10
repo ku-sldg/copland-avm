@@ -1,11 +1,97 @@
 Require Import Term_Defs Term StAM Maps ConcreteEvidence OptMonad.
 
-Require Import Impl_appraisal (*MonadAM*).
+(* Require Import Impl_appraisal (*MonadAM*). *)
+
+Require Import AutoApp.
 
 Require Import StructTactics.
 
 Require Import List.
 Import ListNotations.
+
+Require Import Lia.
+
+Fixpoint encodeEv (e:EvidenceC) : EvBits :=
+  match e with
+  | mtc => []
+  | nnc _ bs => [bs]
+  | uuc _ _ _ _ bs e' =>
+    bs :: (encodeEv e')
+  | ggc _ bs e' =>
+    bs :: (encodeEv e')
+  | hhc _ bs _ =>
+    [bs]
+  | ssc e1 e2 =>
+    (encodeEv e1) ++ (encodeEv e2)
+  | ppc e1 e2 =>
+    (encodeEv e1) ++ (encodeEv e2)
+  end.
+
+Definition checkASP (i:ASP_ID) (args:list Arg) (tpl:Plc) (tid:Plc) (bs:BS) : BS.
+Admitted.
+
+Definition checkSigBits (ls:EvBits) (p:Plc) (sig:BS) : BS.
+Admitted.
+
+Definition checkSig (e:EvidenceC) (p:Plc) (sig:BS) : BS :=
+  checkSigBits (encodeEv e) p sig.
+
+Definition checkHash (e:Evidence) (p:Plc) (hash:BS) : BS.
+Admitted.
+
+Definition peel_bs (ls:EvBits) : option (BS * EvBits) :=
+  match ls with
+  | bs :: ls' => Some (bs, ls')
+  | _ => None
+  end.
+
+Inductive wf_ec : EvC -> Prop :=
+| wf_ec_c: forall ls et,
+    length ls = et_size et ->
+    wf_ec (evc ls et).
+
+
+
+Lemma peel_fact': forall e x y H,
+    length e = S x ->
+    peel_bs e = Some (y, H) ->
+    length H = x.
+Proof.
+  intros.
+  destruct e;
+    ff; eauto.
+Defined.
+
+Lemma peel_fact: forall e x y H et,
+    length e = S x ->
+    peel_bs e = Some (y, H) ->
+    et_size et = x ->
+    wf_ec (evc H et).
+Proof.
+  intros.
+  econstructor.
+  eapply peel_fact'; eauto.
+  lia.
+Defined.
+
+Lemma firstn_long: forall (e:list BS) x,
+    length e >= x ->
+    length (firstn x e) = x.
+Proof.
+  intros.
+  eapply firstn_length_le.
+  lia.
+Defined.
+
+Lemma skipn_long: forall (e:list BS) x y,
+    length e = x + y ->
+    length (skipn x e) = y.
+Proof.
+  intros.
+  assert (length (skipn x e) = length e - x).
+  { eapply skipn_length. }
+  lia.
+Defined.
 
 
 Inductive evidenceEvent: Ev -> Prop :=

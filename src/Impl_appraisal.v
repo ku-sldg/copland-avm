@@ -3,11 +3,14 @@ Require Import Term ConcreteEvidence (*GenStMonad MonadVM MonadAM*) .
 (*
 Require Import Impl_vm StAM. *)
 
+Require Import Appraisal_Defs.
+
 Require Import List.
 Import ListNotations.
 
 Require Import OptMonad.
 
+(*
 Definition checkASP (i:ASP_ID) (args:list Arg) (tpl:Plc) (tid:Plc) (bs:BS) : BS.
 Admitted.
 
@@ -22,10 +25,15 @@ Definition peel_bs (ls:EvBits) : option (BS * EvBits) :=
   | bs :: ls' => Some (bs, ls')
   | _ => None
   end.
+*)
 
 Fixpoint reconstruct_ev' (ls:EvBits) (et:Evidence) : option EvidenceC :=
   match et with
-  | mt => Some mtc
+  | mt => (* Some mtc *)
+    match ls with
+    | [] => Some mtc
+    | _ => None
+    end 
   | uu i args tpl tid et' =>
     '(bs, ls') <- peel_bs ls ;;
     x <- reconstruct_ev' ls' et' ;;

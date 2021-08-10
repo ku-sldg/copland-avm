@@ -15,6 +15,9 @@ Import ListNotations.
 
 Require Import Lia.
 
+(*
+Require Import Impl_appraisal_alt. *)
+
 Set Nested Proofs Allowed.
 
 Ltac evsub_ih :=
@@ -82,10 +85,12 @@ Proof.
     repeat jkjke.
 Defined.
 
+(*
 Inductive wf_ec : EvC -> Prop :=
 | wf_ec_c: forall ls et,
     length ls = et_size et ->
     wf_ec (evc ls et).
+*)
 
 Ltac dest_evc :=
   repeat
@@ -200,6 +205,7 @@ Proof.
         eapply app_length.   
 Defined.
 
+(*
 Lemma peel_fact': forall e x y H,
     length e = S x ->
     peel_bs e = Some (y, H) ->
@@ -240,6 +246,7 @@ Proof.
   { eapply skipn_length. }
   lia.
 Defined.
+*)
 
 Lemma some_recons' : forall e x,
     length e = S x ->
@@ -290,6 +297,10 @@ Proof.
           repeat do_rcih;
           destruct_conjs;
           repeat jkjke').
+  assert (e = []).
+  { destruct e; try solve_by_inversion. }
+  ff.
+  eauto.
 Defined.
 
 Ltac do_somerecons :=
