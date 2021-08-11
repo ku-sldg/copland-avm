@@ -19,10 +19,6 @@ Require Import Impl_appraisal_alt.
 
 Set Nested Proofs Allowed.
 
-
-Check Impl_appraisal_alt.build_app_comp_evC.
-Check Impl_appraisal.build_app_comp_evC.
-
 Lemma inv_recon_mt: forall ls et,
     reconstruct_ev' ls et = Some mtc ->
     et = mt.
@@ -197,7 +193,6 @@ Proof.
     }
     jkjke'.
     jkjke'.
-    Search firstn.
     rewrite firstn_skipn.
     tauto.
     -
@@ -230,7 +225,6 @@ Proof.
     }
     jkjke'.
     jkjke'.
-    Search firstn.
     rewrite firstn_skipn.
     tauto.
 Defined.
@@ -309,15 +303,12 @@ Proof.
     ff.
     rewrite <- H4.
     rewrite <- H3.
-    Search firstn.
-    Search firstn.
     assert (e = (firstn (et_size H0) e) ++ (skipn (et_size H0) e)).
     
     { rewrite firstn_skipn.
       tauto.
     }
     rewrite H at 1.
-    Check app_length.
     eapply app_length.
   -
     assert (exists et1 et2, et = pp et1 et2).
@@ -335,15 +326,12 @@ Proof.
     ff.
     rewrite <- H4.
     rewrite <- H3.
-    Search firstn.
-    Search firstn.
     assert (e = (firstn (et_size H0) e) ++ (skipn (et_size H0) e)).
     
     { rewrite firstn_skipn.
       tauto.
     }
     rewrite H at 1.
-    Check app_length.
     eapply app_length.
 Defined.
 

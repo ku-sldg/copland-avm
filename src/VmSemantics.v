@@ -428,8 +428,6 @@ Ltac do_restl :=
       ltac:(eapply restl; [apply H2 | apply H])
   end.
 
-Check splitEv_l.
-
 Lemma splitEv_T_l_LEFT: forall e bits bits' es e0,
     et_size e = es ->
     splitEv_l LEFT (evc bits e) = (evc bits' e0) ->
@@ -456,8 +454,6 @@ Axiom remote_Ev_Shape: forall e es t n,
     Ev_Shape (toRemote t n e) (eval (unanno t) n es).
  *)
 
-Check length.
-
 Definition Ev_Shape' (bits:list BS) (et:Evidence) :=
   length bits = et_size et.
 
@@ -466,29 +462,179 @@ Axiom remote_Ev_Shape: forall et et' t n bits bits',
     toRemote t n (evc bits et) = evc bits' et' ->
     Ev_Shape' bits' (eval (unanno t) n et).
 
+Definition get_et (e:EvC) : Evidence :=
+  match e with
+  | evc ec et => et
+  end.
+
+Lemma cvm_refines_lts_evidence' : forall t tr tr' e e' p p',
+    well_formed_r t ->
+    copland_compile t (mk_st e tr p) = (Some tt, (mk_st e' tr' p')) ->
+    get_et e' = (Term_Defs.eval (unanno t) p (get_et e)).
+
+Proof.
+  induction t; intros.
+  -
+    destruct a;
+      try (
+          try unfold get_et;
+          df;
+          eauto).
+
+  -
+    repeat df. 
+    annogo.
+    do_wf_pieces.
+    eapply IHt.
+    eassumption.  
+    eapply copland_compile_at.
+    eassumption.
+
+  -
+    do_wf_pieces.
+    do_suffix blah.
+    destruct_conjs.
+    subst.
+
+    edestruct alseq_decomp.
+    eassumption.
+    eapply restl.
+    eassumption.
+    eassumption.
+    destruct_conjs.
+    df.
+    dosome.
+
+    destruct x.
+    destruct e'.
+    vmsts.
+
+    repeat do_pl_immut; subst.
+
+    assert (e3 = get_et (evc e2 e3)) by tauto.
+    repeat jkjke'.
+    
+  -
+    do_wf_pieces.
+    df.
+    repeat break_match;
+      try solve_by_inversion;
+      try (df; tauto).
+    +
+      df.
+      
+      annogo.
+      simpl in *.
+      do_suffix blah.
+      do_suffix blah'.
+      destruct_conjs; subst.
+      repeat do_restl.
+
+      assert (e1 = get_et (evc e0 e1)) by tauto.
+      jkjke.
+      assert (e3 = get_et (evc e2 e3)) by tauto.
+      jkjke.
+
+      assert (get_et (evc e0 e1) = (eval (unanno t1) p (splitEv_T_l s (get_et e)))).
+      {
+        destruct s.
+        ++
+          eapply IHt1;
+          eassumption.
+        ++
+          unfold splitEv_T_l.
+          assert (mt = get_et (evc [] mt)) by tauto.
+          jkjke.
+        ++
+          unfold splitEv_T_l.
+          jkjke. 
+      }
+
+      assert (get_et (evc e2 e3) = (eval (unanno t2) p (splitEv_T_r s (get_et e)))).
+      {
+        repeat do_pl_immut; subst.
+        destruct s.
+        ++
+          unfold splitEv_T_r.
+          assert (mt = get_et (evc [] mt)) by tauto.
+          jkjke.
+        ++
+          unfold splitEv_T_r.
+          jkjke.
+        ++
+          unfold splitEv_T_r.
+          jkjke. 
+      }
+
+      congruence.
+
+  - (* abpar case *)
+    do_wf_pieces.
+    df.
+    repeat break_match;
+      try solve_by_inversion;
+      try (df; tauto).
+    +
+      df.
+      
+      annogo.
+      simpl in *.
+      do_suffix blah.
+      do_suffix blah'.
+      destruct_conjs; subst.
+      repeat do_restl.
+
+      assert (e1 = get_et (evc e0 e1)) by tauto.
+      jkjke.
+      assert (e3 = get_et (evc e2 e3)) by tauto.
+      jkjke.
+
+      assert (get_et (evc e0 e1) = (eval (unanno t1) p (splitEv_T_l s (get_et e)))).
+      {
+        destruct s.
+        ++
+          eapply IHt1;
+          eassumption.
+        ++
+          unfold splitEv_T_l.
+          assert (mt = get_et (evc [] mt)) by tauto.
+          jkjke.
+        ++
+          unfold splitEv_T_l.
+          jkjke. 
+      }
+
+      assert (get_et (evc e2 e3) = (eval (unanno t2) p (splitEv_T_r s (get_et e)))).
+      {
+        repeat do_pl_immut; subst.
+        destruct s.
+        ++
+          unfold splitEv_T_r.
+          assert (mt = get_et (evc [] mt)) by tauto.
+          jkjke.
+        ++
+          unfold splitEv_T_r.
+          jkjke.
+        ++
+          unfold splitEv_T_r.
+          jkjke. 
+      }
+
+      congruence.
+Defined.
+
 Lemma cvm_refines_lts_evidence : forall t tr tr' bits bits' et et' p p',
     well_formed_r t ->
     copland_compile t (mk_st (evc bits et) tr p) = (Some tt, (mk_st (evc bits' et') tr' p')) ->
-    (*Ev_Shape' bits et -> *)
-    (*
-    Term_Defs.eval (unanno t) p es = e's -> *)
-    et' = (Term_Defs.eval (unanno t) p et). (* /\
-    Ev_Shape' bits' et'. *)
-
+    et' = (Term_Defs.eval (unanno t) p et).
 Proof.
-Admitted.
+  intros.
+  assert (et = get_et (evc bits et)) by tauto.
+  assert (et' = get_et (evc bits' et')) by tauto.
+  rewrite H1; rewrite H2.
+  eapply cvm_refines_lts_evidence'; eauto.
+Defined.
 
-Lemma cvm_evidence_size : forall t tr tr' bits bits' et et' p p',
-    well_formed_r t ->
-    copland_compile t (mk_st (evc bits et) tr p) = (Some tt, (mk_st (evc bits' et') tr' p')) ->
-    Ev_Shape' bits et ->
-    (*
-    Term_Defs.eval (unanno t) p es = e's -> *)
-    (*et' = (Term_Defs.eval (unanno t) p et) /\ *)
-    Ev_Shape' bits' (Term_Defs.eval (unanno t) p et).
-
-Proof.
-Admitted.
 
 
 (*
@@ -1005,14 +1151,13 @@ Proof.
     subst.   
     eapply IHt2. (*with (e:= x). *)
     eassumption.
-    Check eval.
     assert (e0 = Term_Defs.eval (unanno t1) p et).
     eapply cvm_refines_lts_evidence; eauto.
 
     subst.
     rewrite <- eval_aeval.
     
-    apply H6.
+    eassumption.
     
   -    
     do_wf_pieces.
@@ -1065,10 +1210,7 @@ Proof.
       eassumption.
       } *)
     eassumption.
-
-    Print step.
-    
-    
+        
     econstructor.
 
     eapply stbsrstop.
@@ -1122,10 +1264,7 @@ Proof.
       eassumption.
       } *)
     eassumption.
-
-    Print step.
-    
-    
+      
     econstructor.
 
     eapply stbsrstop.
@@ -1178,10 +1317,7 @@ Proof.
       eassumption.
       } *)
     eassumption.
-
-    Print step.
-    
-    
+       
     econstructor.
 
     eapply stbsrstop.
@@ -1211,7 +1347,6 @@ Proof.
 
     eapply lstar_transitive.
     simpl.
-    Locate lstar_stbparl.
 
     eapply lstar_stbparl.  
      
@@ -1242,10 +1377,7 @@ Proof.
       eassumption.
       } *)
     eassumption.
-
-    Print step.
-    
-    
+      
     econstructor.
 
     eapply stbpstop.
@@ -1271,7 +1403,6 @@ Proof.
 
     eapply lstar_transitive.
     simpl.
-    Locate lstar_stbparl.
 
     eapply lstar_stbparl.  
      
@@ -1303,9 +1434,6 @@ Proof.
       } *)
     eassumption.
 
-    Print step.
-    
-    
     econstructor.
 
     eapply stbpstop.
@@ -1332,7 +1460,6 @@ Proof.
 
     eapply lstar_transitive.
     simpl.
-    Locate lstar_stbparl.
 
     eapply lstar_stbparl.  
      
@@ -1363,10 +1490,7 @@ Proof.
       eassumption.
       } *)
     eassumption.
-
-    Print step.
-    
-    
+        
     econstructor.
 
     eapply stbpstop.

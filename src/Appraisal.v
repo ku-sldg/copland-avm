@@ -13,42 +13,12 @@ Require Import Coq.Program.Tactics Coq.Program.Equality.
 Require Import List.
 Import ListNotations.
 
-Set Nested Proofs Allowed.
+Require Import Lia.
 
 (*
-Fixpoint reconstruct_EvCon (e:EvidenceC) (et:Evidence): option EvidenceCon :=
-  match et with
-  | mt =>
-    match e with
-    | BitsV 0 => ret mtc
-    | _ => None
-    end
-  | uu i args tpl tid et' =>
-    '(bs,e') <- peelBitsVval e ;;
-    e_res <- reconstruct_EvCon e' et' ;;
-    ret (uuc i args tpl tid bs e_res)
-  | gg p et' =>
-    '(bs,e') <- peelBitsVval e ;;
-    e_res <- reconstruct_EvCon e' et' ;;
-    ret (ggc p bs e_res)
-  | hh p et' =>
-    bs <- peelOneBitsVval e ;;
-    ret (hhc p bs et')
-  | nn nid =>
-    bs <- peelOneBitsVval e ;;
-    ret (nnc nid bs)
-  | ss et1 et2 =>
-    '(e1,e2) <- peelPairBitsV e ;;
-    e1r <- reconstruct_EvCon e1 et1 ;;
-    e2r <- reconstruct_EvCon e2 et2 ;;
-    ret (ssc e1r e2r)
-  | pp et1 et2 =>
-    '(e1,e2) <- peelPairBitsV e ;;
-    e1r <- reconstruct_EvCon e1 et1 ;;
-    e2r <- reconstruct_EvCon e2 et2 ;;
-    ret (ppc e1r e2r)
-  end.
- *)
+Require Import Impl_appraisal_alt. *)
+
+Set Nested Proofs Allowed.
 
 Ltac evsub_ih :=
   match goal with
@@ -104,12 +74,365 @@ Proof.
     ff; eauto.
 Defined.
 
-Lemma evAccum: forall t p e e' e'' tr tr' p',
+Lemma etfun_reconstruct: forall e e0 e1,
+    Some e = reconstruct_ev' e0 e1 ->
+    e1 = et_fun e.
+Proof.
+  intros.
+  generalizeEverythingElse e1.
+  induction e1; intros;
+    repeat ff;
+    repeat jkjke.
+Defined.
+
+(*
+Inductive wf_ec : EvC -> Prop :=
+| wf_ec_c: forall ls et,
+    length ls = et_size et ->
+    wf_ec (evc ls et).
+*)
+
+Ltac dest_evc :=
+  repeat
+    match goal with
+    | [H: EvC |-  _ ] => destruct H
+    end.
+
+Ltac find_wfec :=
+  repeat 
+    match goal with
+    | [H: context [well_formed_r ?t -> _](*
+                   wf_ec _ ->
+                   copland_compile _ _ _ = _ ->
+                   wf_ec _]*),
+          H2: well_formed_r ?t,
+              H3: wf_ec ?e,
+                  H4: copland_compile ?t
+                                      {| st_ev := ?e; st_trace := _; st_pl := _ |} =
+                      (_, {| st_ev := ?e'; st_trace := _; st_pl := _ |})
+       |- _ ] => 
+      assert_new_proof_by
+        (wf_ec e')
+        
+        ltac:(eapply H; [apply H2 | apply H3 | apply H4])
+    end.
+
+Ltac inv_wfec :=
+  repeat
+    match goal with
+    | [H: wf_ec _ |-  _ ] => invc H
+    end.
+
+Lemma wfec_split: forall e s,
+    wf_ec e ->
+    wf_ec (splitEv_l s e) /\ wf_ec (splitEv_r s e).
+Proof.
+  intros.
+  split;
+    destruct s; ff; try unfold mt_evc; ff;
+      econstructor; ff.
+Defined.
+
+Ltac do_wfec_split :=
+  match goal with
+  | [H: context[splitEv_l ?s ?e],
+        H2: context[splitEv_r ?s ?e],
+            H3: wf_ec ?e
+     |- _] =>
+    
+    assert_new_proof_by
+      (wf_ec (splitEv_l s e) /\ wf_ec (splitEv_r s e))
+      ltac: (eapply wfec_split; apply H3)
+  end; destruct_conjs.
+
+Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' p p',
+    well_formed_r t1 ->
+    wf_ec e ->
+    copland_compile t1
+                    {| st_ev := e; st_trace := tr; st_pl := p |} =
+    (Some tt,
+     {| st_ev := e'; st_trace := tr'; st_pl := p' |}) ->
+    wf_ec (e').
+Proof.
+  intros.
+  generalizeEverythingElse t1.
+  induction t1; intros.
+  -
+    destruct a; ff;
+      invc H0;
+      try (
+          econstructor;
+          ff;
+          try tauto;
+          try congruence).  
+  -
+    ff.
+    do_wf_pieces.
+
+    eapply IHt1;
+      try eassumption.
+
+    apply copland_compile_at;
+      try eassumption.
+  -
+    repeat ff.
+    vmsts.
+    do_wf_pieces.
+  -
+    repeat ff; vmsts; subst.
+    do_wf_pieces.
+
+    do_wfec_split.
+
+    find_wfec;
+      inv_wfec;
+      ff;
+      econstructor;
+      ff; repeat jkjke';
+        eapply app_length.
+
+  -
+    repeat ff; vmsts; subst.
+    do_wf_pieces.
+
+    do_wfec_split.
+
+    find_wfec;
+      inv_wfec;
+      ff;
+      econstructor;
+      ff; repeat jkjke';
+        eapply app_length.   
+Defined.
+
+Ltac do_wfec_preserved :=
+  repeat
+    match goal with
+    | [H: well_formed_r ?t,
+          H2: wf_ec ?stev,
+              H3: copland_compile ?t
+                                  {| st_ev := ?stev; st_trace := _; st_pl := _ |} =
+                  (Some tt,
+                   {| st_ev := ?stev'; st_trace := _; st_pl := _ |})
+       |- _ ] =>
+      assert_new_proof_by (wf_ec stev')
+                          ltac:(eapply wf_ec_preserved_by_cvm; [apply H | apply H2 | apply H3])
+                                 
+    end.
+
+Lemma cvm_evidence_size : forall t tr tr' bits bits' et et' p p',
+    well_formed_r t ->
+    copland_compile t (mk_st (evc bits et) tr p) = (Some tt, (mk_st (evc bits' et') tr' p')) ->
+    Ev_Shape' bits et ->
+    (*
+    Term_Defs.eval (unanno t) p es = e's -> *)
+    (*et' = (Term_Defs.eval (unanno t) p et) /\ *)
+    Ev_Shape' bits' (Term_Defs.eval (unanno t) p et).
+
+Proof.
+  intros.
+  unfold Ev_Shape' in *.
+  assert (et' = (Term_Defs.eval (unanno t) p et)).
+  {
+    eapply cvm_refines_lts_evidence; eauto.
+  }
+  jkjke'.
+  assert (wf_ec (evc bits et)).
+  {
+    econstructor.
+    tauto.
+  }
+  
+  do_wfec_preserved.
+  invc H4.
+  tauto.
+Defined.
+
+Lemma some_recons' : forall e x,
+    length e = S x ->
+    exists bs ls', peel_bs e = Some (bs, ls').
+Proof.
+  intros.
+  destruct e;
+    ff; eauto.
+Defined.
+
+Ltac do_some_recons' :=
+  match goal with
+  | [H: length ?e = S _ |- _ ] =>
+    edestruct some_recons'; [apply H | idtac]
+                              
+  end; destruct_conjs; jkjke.
+
+Ltac do_rcih :=
+  match goal with
+  | [H: context[reconstruct_ev' _ _]
+               
+
+     |- context[reconstruct_ev' ?e' ?et] ] =>
+    assert_new_proof_by
+      (exists x, Some x = reconstruct_ev' e' et)
+      ltac:(eapply H with (e:=e');
+            try (eapply peel_fact; eauto; tauto);
+            try (econstructor; first [eapply firstn_long | eapply skipn_long]; try eauto; try lia))      
+  end.
+
+Lemma some_recons : forall e,
+    wf_ec e ->
+    exists ee, Some ee = reconstruct_ev e.
+Proof.
+  intros.
+  destruct e.
+  generalizeEverythingElse e0.
+  induction e0; intros;
+    try (ff; eauto; tauto);
+    try
+      ( inv_wfec; ff;
+        do_some_recons');
+    try (
+        repeat do_rcih;
+        destruct_conjs;
+        repeat jkjke');
+    try ( inv_wfec; ff;
+          repeat do_rcih;
+          destruct_conjs;
+          repeat jkjke').
+  assert (e = []).
+  { destruct e; try solve_by_inversion. }
+  ff.
+  eauto.
+  destruct e; try solve_by_inversion.
+  ff.
+  destruct e; try solve_by_inversion.
+  ff.
+Defined.
+
+Ltac do_somerecons :=
+  repeat
+    match goal with
+    | [H: wf_ec ?e
+       |- _ ] =>
+      assert_new_proof_by
+        (exists x, Some x = reconstruct_ev e)
+        ltac:(eapply some_recons; apply H)     
+    end; destruct_conjs.
+
+Ltac door :=
+  match goal with
+  | [H: _ \/ _  |- _] =>
+    destruct H
+  end; destruct_conjs.
+
+Ltac do_evsub_ih :=
+  match goal with
+  | [H: copland_compile ?t1 {| st_ev := _; st_trace := _; st_pl := _ |} =
+        (Some tt, {| st_ev := ?stev; st_trace := _; st_pl := _ |}),
+        
+        H2: copland_compile ?t2 {| st_ev := ?stev'; st_trace := _; st_pl := _ |} =
+            (Some tt, {| st_ev := _; st_trace := _; st_pl := _ |}),
+            H3: Some ?v = reconstruct_ev ?stev
+
+     |- context[EvSub ?e'' _ \/ _]] =>
+    
+    assert_new_proof_by
+      (EvSub e'' v \/
+       (exists (ett : Evidence) (p'0 bs : nat),
+           EvSub (hhc p'0 bs ett) v /\ EvSubT (et_fun e'') ett))
+      eauto
+  end.
+
+Ltac do_evsubh_ih :=
+  match goal with
+  | [H: EvSub (hhc ?H2 ?H3 ?H4) _
+
+     |- context[EvSub _ ?e' \/ _]] =>
+    
+    assert_new_proof_by
+      (EvSub (hhc H2 H3 H4) e' \/
+       (exists (ett : Evidence) (p'0 bs : nat),
+           EvSub (hhc p'0 bs ett) e' /\ EvSubT (et_fun (hhc H2 H3 H4)) ett))
+      eauto
+  end.
+
+Ltac do_hh_sub :=
+  match goal with
+  | [H: context[(hh ?H2 ?H3)]
+
+     |- context[EvSubT ?e'' _]] =>
+    
+    assert_new_proof_by
+      (EvSubT e'' (hh H2 H3))
+      ltac: (eapply evsubT_transitive; eauto)
+  end.
+
+Lemma wfec_firstn: forall e0 e1 e2,
+    wf_ec (evc e0 e1) ->
+    firstn (et_size e1) (e0 ++ e2) = e0.
+Proof.
+  intros.
+  inv_wfec.
+  jkjke'.
+  eapply More_lists.firstn_append.
+Defined.
+
+Ltac do_wfec_firstn :=
+  match goal with
+  | [H: context[(firstn (et_size ?e1) (?e0 ++ ?e2))],
+        H2: wf_ec (evc ?e0 ?e1)
+
+     |- _] =>
+    
+    assert_new_proof_by
+      (firstn (et_size e1) (e0 ++ e2) = e0)
+      ltac: (eapply wfec_firstn; apply H2)
+  end.
+
+Lemma wfec_skipn: forall e0 e1 e2,
+    wf_ec (evc e0 e1) ->
+    skipn (et_size e1) (e0 ++ e2) = e2.
+Proof.
+  intros.
+  inv_wfec.
+  jkjke'.
+  eapply More_lists.skipn_append.
+Defined.
+
+Ltac do_wfec_skipn :=
+  match goal with
+  | [H: context[(skipn (et_size ?e1) (?e0 ++ ?e2))],
+        H2: wf_ec (evc ?e0 ?e1)
+
+     |- _] =>
+    
+    assert_new_proof_by
+      (skipn (et_size e1) (e0 ++ e2) = e2)
+      ltac: (eapply wfec_skipn; apply H2)
+  end.
+
+Lemma fold_recev: forall e0 e1,
+    reconstruct_ev' e0 e1 = reconstruct_ev (evc e0 e1).
+Proof.
+  ff.
+  tauto.
+Defined.
+
+Ltac clear_skipn_firstn :=
+  match goal with
+  | [H: firstn _ _ = _,
+        H2: skipn _ _ = _ |- _]
+    => rewrite H in *; clear H;
+      rewrite H2 in *; clear H2
+  end.
+
+Lemma evAccum: forall t p (e e' e'':EvidenceC) tr tr' p' (ecc ecc':EvC),
 
     well_formed_r t ->
+    wf_ec ecc ->
+    Some e =  (reconstruct_ev ecc) ->
+    Some e' = (reconstruct_ev ecc') ->
     EvSub e'' e ->
-    copland_compile t {| st_ev := e; st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := e'; st_trace := tr'; st_pl := p' |}) ->
+    copland_compile t {| st_ev := ecc; st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
 
     (
       (EvSub e'' e') \/
@@ -124,98 +447,65 @@ Proof.
   induction t; intros.
   -
     destruct a;
-      (ff; eauto).
+      repeat ff;
+      try jkjke';
+      try unfold cons_uu in *;
+      try unfold cons_gg in *;
+      (repeat ff; try eauto).
     +
       right.
       repeat eexists.
       econstructor.
+      assert (e1 = et_fun e).
+      {
+        eapply etfun_reconstruct; eauto.
+      }
+      subst.
 
-      
       apply evsub_etfun; eauto.
-  -
+  - (* aatt case *)
     do_wf_pieces.
     ff.
     
     eapply IHt.
     eassumption.
+    apply H0.
+    eassumption.
+    eassumption.
     eassumption.
     apply copland_compile_at.
     eassumption.
-  -
+  - (* alseq case *)
     ff.
     dosome.
-    ff.
     vmsts.
 
     do_wf_pieces.
 
-    assert (EvSub e'' st_ev \/
-         (exists (ett : Evidence) (p'0 bs : nat),
-             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (et_fun e'') ett)).
-    {
-      eauto.
-    }
-    destruct H3.
-    +
+    do_wfec_preserved.
 
-      assert (EvSub e'' e' \/
-         (exists (ett : Evidence) (p'0 bs : nat),
-             EvSub (hhc p'0 bs ett) e' /\ EvSubT (et_fun e'') ett)).
-      {
-        eauto.
-    }
-    destruct H4.
-      ++
-        eauto.
-        (*
-        eapply IHt2.
-        eassumption.
-        apply H3.
-        eassumption. *)
-      ++
-        destruct_conjs.
-        right.
-        repeat eexists.
-        eauto.
-        eauto.
+    do_somerecons.
+
+    do_evsub_ih.
+    
+    door.
     +
-      destruct_conjs.
-      assert (EvSub (hhc H4 H5 H3) e' \/
-         (exists (ett : Evidence) (p'0 bs : nat),
-             EvSub (hhc p'0 bs ett) e' /\ EvSubT (et_fun (hhc H4 H5 H3)) ett)).
-    {
-      eapply IHt2.
-      eassumption.
-      eassumption.
-      eassumption.
-    }
-    destruct H8.
+      eapply IHt2 with (ecc:=st_ev); eauto.
+    +
+      do_evsubh_ih.
+      
+      door.
       ++
         right.
         repeat (eexists; eauto).
-        (*
-        eauto.
-        eauto. *)
       ++
         destruct_conjs.
         ff.
         
         right.
-        exists H8.
-        repeat eexists.
-        eassumption.
-        assert (EvSubT (et_fun e'') (hh H4 H3)).
-        {
-          
-        
-        eapply evsubT_transitive.
-        eassumption.
-        apply hhSubT.
-        econstructor.
-        }
-        eapply evsubT_transitive.
-        eassumption.
-        eassumption.
+        repeat (eexists; eauto).
+        do_hh_sub.
+        eapply evsubT_transitive; eauto.
   -
     do_wf_pieces.
     ff.
@@ -223,73 +513,36 @@ Proof.
     ff.
     vmsts.
     ff.
+    subst.
 
-    destruct s.
-    +
-      ff.
-      assert (
-           EvSub e'' st_ev0 \/
-         (exists (ett : Evidence) (p'0 bs : nat),
-             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (et_fun e'') ett)
-        ) by eauto.
-      destruct H1.
-      ++
-        eauto.
-        (*
-        left.
-        apply ssSubl; eauto. *)
-      ++
-        destruct_conjs.
-        right.
-        repeat (eexists; eauto).
-        (*
-        apply ssSubl.
-        eassumption.
-        eassumption. *)
-    +
-      ff.
-      assert (
-           EvSub e'' st_ev \/
-         (exists (ett : Evidence) (p'0 bs : nat),
-             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (et_fun e'') ett)
-        ) by eauto.
-      destruct H1.
-      ++
-        eauto.
-        (*
-        left.
-        apply ssSubr; eauto. *)
-      ++
-        destruct_conjs.
-        right.
-        repeat (eexists; eauto).
-        (*
-        apply ssSubr.
-        eassumption.
-        eassumption. *)
-    +
-      ff.
-      assert (
-           EvSub e'' st_ev0 \/
-         (exists (ett : Evidence) (p'0 bs : nat),
-             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (et_fun e'') ett)
-        ) by eauto.
-      destruct H1.
-      ++
-        eauto.
-        (*
-        left.
-        apply ssSubl; eauto. *)
-      ++
-        destruct_conjs.
-        right.
-        repeat (eexists; eauto).
-        (*
-        eauto.
-        eauto.
-        apply ssSubl.
-        eassumption.
-        eassumption. *)
+    do_wfec_split.
+
+    do_wfec_preserved.
+
+    do_wfec_firstn.
+    do_wfec_skipn.
+    
+    clear_skipn_firstn.
+
+    do_wfec_preserved.
+
+    do_somerecons.
+
+    destruct s;
+      
+      ff;
+      try unfold mt_evc in *;
+      repeat jkjke';
+      ff;
+      rewrite fold_recev in *;
+      do_evsub_ih;
+      
+      ff;
+      
+      door; destruct_conjs;
+        try eauto;
+        try (right; repeat (eexists; eauto)).
+
   -
     do_wf_pieces.
     ff.
@@ -297,80 +550,112 @@ Proof.
     ff.
     vmsts.
     ff.
+    subst.
 
-    destruct s.
-    +
-      ff.
-      assert (
-           EvSub e'' st_ev0 \/
-         (exists (ett : Evidence) (p'0 bs : nat),
-             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (et_fun e'') ett)
-        ) by eauto.
-      destruct H1.
-      ++
-        eauto.
-        (*
-        left.
-        apply ppSubl; eauto. *)
-      ++
-        destruct_conjs.
-        right.
-        repeat (eexists; eauto).
-        (*
-        apply ppSubl.
-        eassumption.
-        eassumption. *)
-    +
-      ff.
-      assert (
-           EvSub e'' st_ev \/
-         (exists (ett : Evidence) (p'0 bs : nat),
-             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (et_fun e'') ett)
-        ) by eauto.
-      destruct H1.
-      ++
-        eauto.
-        (*
-        left.
-        apply ppSubr; eauto. *)
-      ++
-        destruct_conjs.
-        right.
-        repeat (eexists; eauto).
-        (*
-        apply ppSubr.
-        eassumption.
-        eassumption. *)
-    +
-      ff.
-      assert (
-           EvSub e'' st_ev0 \/
-         (exists (ett : Evidence) (p'0 bs : nat),
-             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (et_fun e'') ett)
-        ) by eauto.
-      destruct H1.
-      ++
-        eauto.
-        (*
-        left.
-        apply ppSubl; eauto. *)
-      ++
-        destruct_conjs.
-        right.
-        repeat (eexists; eauto).
-        (*
-        apply ppSubl.
-        eassumption.
-        eassumption. *)
+    do_wfec_split.
+
+    do_wfec_preserved.
+
+    do_wfec_firstn.
+    do_wfec_skipn.
+
+    clear_skipn_firstn.
+
+    do_wfec_preserved.
+
+    do_somerecons.
+
+   destruct s;
+      
+      ff;
+      try unfold mt_evc in *;
+      repeat jkjke';
+      ff;
+      rewrite fold_recev in *;
+      do_evsub_ih;
+      
+      ff;
+      
+      door; destruct_conjs;
+        try eauto;
+        try (right; repeat (eexists; eauto)).
 Defined.
 
+Ltac do_evaccum :=
+  repeat 
+    match goal with
+    | [ H: well_formed_r ?t,
+           H2: wf_ec ?ecc,
+               H3: Some ?e = reconstruct_ev ?ecc,
+                   H4: Some ?e' = reconstruct_ev ?ecc',
+                       H5: EvSub ?e'' ?e,
+                           H6: copland_compile ?t
+                                               {| st_ev := ?ecc; st_trace := _; st_pl := _ |} =
+                               (Some tt, {| st_ev := ?ecc'; st_trace := _; st_pl := _ |})
+
+        |- _] =>
+      
+      assert_new_proof_by
+        (EvSub e'' e' \/
+         (exists (ett : Evidence) (p'0 bs : nat),
+             EvSub (hhc p'0 bs ett) e' /\ EvSubT (et_fun e'') ett))
+        ltac: (eapply evAccum; [apply H | apply H2 | apply H3 | apply H4 | apply H5 | apply H6])
+    end.         
+
+Ltac do_evsub_ihhh' :=
+  match goal with
+  | [H: copland_compile ?t1
+                        {| st_ev := ?ee; st_trace := _; st_pl := _ |} =
+        (Some tt, {| st_ev := ?stev; st_trace := _; st_pl := _ |}),
+        
+       (* H2: copland_compile ?t2
+                            {| st_ev := _(*?stev'*); st_trace := _; st_pl := _ |} =
+            (Some tt, {| st_ev := _; st_trace := _; st_pl := _ |}), *)
+            H3: Some _ = reconstruct_ev ?ee,
+                H4: Some ?v' = reconstruct_ev ?stev,
+                IH: forall _, _ -> _ ,(*context[forall _, well_formed_r ?t1 -> _], *)
+       Hf: well_formed_r ?t1,
+       Hwf: wf_ec ?ee,
+       Hev: events ?t1 _ _ _
+       
+
+     |-  (exists e'' : EvidenceC, EvSub (uuc ?i ?args ?tpl ?tid ?n e'') _) \/
+        (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
+            EvSub (hhc p'0 bs ett) _ /\ EvSubT (uu ?i ?args ?tpl ?tid et') ett)
+          (*context[EvSub _(*(uuc ?i ?args ?tpl ?tid ?n _)*) _ \/ _]*)
+    ] => 
+
+      
+
+    assert_new_proof_by 
+      (
+        (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') v') \/
+        (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
+            EvSub (hhc p'0 bs ett) v' /\ EvSubT (uu i args tpl tid et') ett)
+      )
+
+      (*
+          assert_new_proof_by
+            (exists ee, EvSub (uuc i args tpl tid n ee) v \/
+             (exists (ett : Evidence) (p'0 bs : nat) (et':Evidence),
+                 EvSub (hhc p'0 bs ett) v /\ EvSubT (uu i args tpl tid et') ett)) 
+       *)
+      ltac: (eapply IH; [apply Hf | apply Hwf | apply H3 | apply H4 | apply Hev | apply H])
+      (*ltac:(ff; repeat jkjke'; eauto)*)
+       
+      
+  end.
+
 Lemma uu_preserved': forall t p et n p0 i args tpl tid
-                       e tr e' tr' p',
+                       e tr e' tr' p' ecc ecc',
 
     well_formed_r t ->
+    wf_ec ecc ->
+    Some e = (reconstruct_ev ecc) ->
+    Some e' = (reconstruct_ev ecc') ->
     events t p et (umeas n p0 i args tpl tid) ->
-    copland_compile t {| st_ev := e; st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := e'; st_trace := tr'; st_pl := p' |}) ->
+    copland_compile t {| st_ev := ecc; st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
 
     (
       (exists e'', EvSub (uuc i args tpl tid n e'') e') \/
@@ -387,6 +672,8 @@ Proof.
     +
       inv_events.
       ff.
+      unfold cons_uu in *.
+      repeat ff.
       left.
       eexists.
       econstructor.
@@ -394,21 +681,9 @@ Proof.
     ff.
     invEvents.
     do_wf_pieces.
-    assert (
-         (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n0 e'')  (toRemote t n e)) \/
-        (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-            EvSub (hhc p'0 bs ett)  (toRemote t n e) /\ EvSubT (uu i args tpl tid et') ett)
-      ).
 
-    {
-      eapply IHt.
-           
-    eassumption.
-    eassumption.
-    apply copland_compile_at.
-    eassumption.
-    }
-    eassumption.
+    eapply IHt; eauto.
+    apply copland_compile_at; eauto.
   -
     do_wf_pieces.
     ff.
@@ -419,34 +694,23 @@ Proof.
 
     invEvents.
     + (* t1 case *)
+     
+      do_wfec_preserved.
+      do_somerecons.
 
-      assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (uu i args tpl tid et') ett)
-        ).
-      {
-        eapply IHt1.
-        eassumption.
-        eassumption.
-        eassumption.
-      }
-      destruct_conjs.
-      destruct H0.
+      repeat do_evsub_ihhh'.
+
+      door.
       ++
         destruct_conjs.
-        assert (
-            (EvSub (uuc i args tpl tid n H0) e') \/
-            (exists ett p' bs,
-                EvSub (hhc p' bs ett) e' /\
-                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
-            )
-          ).
-        {
-          eapply evAccum; eauto.
-        }
-        clear H1.
-        destruct H4.
+
+        repeat jkjke'.
+        repeat ff.
+
+        do_evaccum.
+        
+        clear H12.
+        door.
         +++
           left.
           eauto.
@@ -455,28 +719,17 @@ Proof.
           ff.
           right.
           repeat (eexists; eauto).
-          (*
-          eauto.
-          eauto. *)
+
       ++
-        destruct_conjs.
-        assert (
-            (EvSub (hhc H1 H4 H0) e') \/
-            (exists ett p' bs,
-                EvSub (hhc p' bs ett) e' /\
-                EvSubT (et_fun (hhc H1 H4 H0)) ett
-            )
-          ).
-        {
-          eapply evAccum; eauto.
-        }
-        destruct H8.
+        repeat jkjke'.
+        repeat ff.
+        
+        do_evaccum.
+
+        door.
         +++
           right.
           repeat (eexists; eauto).
-                 (*
-          eauto.
-          eauto. *)
         +++
           destruct_conjs.
           ff.
@@ -484,48 +737,33 @@ Proof.
           repeat eexists.
           eauto.
 
-          assert (EvSubT (uu i args tpl tid H5) (hh H1 H0)).
-          {
-            apply hhSubT.
-            eassumption.
-          }
-
-          
-          
-
           eapply evsubT_transitive.
-          apply H14.
+          eapply hhSubT.
           eassumption.
+          eassumption.
+          
     + (* t2 case *)
 
       do_pl_immut.
       do_pl_immut.
       subst.
 
-      assert (
-           (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') e') \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) e' /\ EvSubT (uu i args tpl tid et') ett)
-        ).
-      {
-        eapply IHt2.
-        eassumption.
-        eassumption.
-        eassumption.
-      }
-      destruct H0.
+      do_wfec_preserved.
+      do_somerecons.
+
+      repeat do_evsub_ihhh'.
+
+      clear H14.
+      door.
       ++
-        destruct_conjs.
-        left.
         eauto.
       ++
-        destruct_conjs.
-        right.
+        destruct_conjs;
+        right;
         repeat (eexists; eauto).
-        (*
-        eauto.
-        eauto. *)
-  -
+
+
+  - (* abseq case *)
     do_wf_pieces.
     ff.
     dosome.
@@ -533,322 +771,28 @@ Proof.
     vmsts.
     ff.
 
-    invEvents.
-    + (* t1 case *)
+    invEvents;
 
-      destruct s; ff.
-      ++
+      do_wfec_split;
+      do_wfec_preserved;
+      do_wfec_firstn;
+      do_wfec_skipn;
+      clear_skipn_firstn;
+      do_wfec_preserved;
+      repeat do_pl_immut;
+      do_somerecons;
+      repeat jkjke'; ff;
+      try (rewrite fold_recev in * );
+      try do_somerecons;
+      do_evsub_ihhh';
 
-      assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (uu i args tpl tid et') ett)
-        ).
-      {
-        eapply IHt1.
-        eassumption.
-        eassumption.
-        eassumption.
-      }
-      
-      destruct H0.
-      +++
-        destruct_conjs.
-        eauto.
-        (*
-        left.
-        eexists.
-        apply ssSubl; eauto. *)
-        
-        (*
-        assert (
-            (EvSub (uuc i args tpl tid n H0) e) \/
-            (exists ett p' bs,
-                EvSub (hhc p' bs ett) e /\
-                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
-            )
-          ).
-        {
-          eapply evAccum.
-          apply H2.
-          eassumption.
-          eassumption.
-        }
-        clear H1.
-        destruct H4. 
-        +++
+      door; repeat jkjke'; ff;
+        try eauto;
+        try (destruct_conjs;
+             right;
+             repeat (eexists; eauto)).
 
-          left.
-          eauto. *)
-        +++
-          destruct_conjs.
-          ff.
-          right.
-          repeat (eexists; eauto).
-          (*
-          apply ssSubl; eauto.
-          eauto. *)
-      ++
-        
-          
-      assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (uu i args tpl tid et') ett)
-        ).
-      {
-        eapply IHt1.
-        eassumption.
-        eassumption.
-        eassumption.
-      }
-      
-      destruct H0.
-      +++
-        destruct_conjs.
-        left.
-        eauto.
-        (*
-        eexists.
-        apply ssSubl; eauto. *)
-        (*
-        assert (
-            (EvSub (uuc i args tpl tid n H0) e) \/
-            (exists ett p' bs,
-                EvSub (hhc p' bs ett) e /\
-                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
-            )
-          ).
-        {
-          eapply evAccum.
-          apply H2.
-          eassumption.
-          eassumption.
-        }
-        clear H1.
-        destruct H4. 
-        +++
-
-          left.
-          eauto. *)
-        +++
-          destruct_conjs.
-          ff.
-          right.
-          repeat (eexists; eauto).
-          (*
-          apply ssSubl; eauto.
-          eauto. *)
-      ++
-        
-      assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (uu i args tpl tid et') ett)
-        ).
-      {
-        eapply IHt1.
-        eassumption.
-        eassumption.
-        eassumption.
-      }
-      
-      destruct H0.
-      +++
-        destruct_conjs.
-        left.
-        eauto.
-        (*
-        eexists.
-        apply ssSubl; eauto. *)
-        (*
-        assert (
-            (EvSub (uuc i args tpl tid n H0) e) \/
-            (exists ett p' bs,
-                EvSub (hhc p' bs ett) e /\
-                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
-            )
-          ).
-        {
-          eapply evAccum.
-          apply H2.
-          eassumption.
-          eassumption.
-        }
-        clear H1.
-        destruct H4. 
-        +++
-
-          left.
-          eauto. *)
-        +++
-          destruct_conjs.
-          ff.
-          right.
-          repeat (eexists; eauto).
-          (*
-          apply ssSubl; eauto.
-          eauto. *)
-    + (* t2 case *)
-
-      do_pl_immut.
-      do_pl_immut.
-      subst.
-
-      destruct s; ff.
-      ++
-
-      assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (uu i args tpl tid et') ett)
-        ).
-      {
-        eapply IHt2.
-        eassumption.
-        eassumption.
-        eassumption.
-      }
-      
-      destruct H0.
-      +++
-        destruct_conjs.
-        left.
-        eauto.
-        (*
-        eexists.
-        apply ssSubr; eauto. *)
-        (*
-        assert (
-            (EvSub (uuc i args tpl tid n H0) e) \/
-            (exists ett p' bs,
-                EvSub (hhc p' bs ett) e /\
-                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
-            )
-          ).
-        {
-          eapply evAccum.
-          apply H2.
-          eassumption.
-          eassumption.
-        }
-        clear H1.
-        destruct H4. 
-        +++
-
-          left.
-          eauto. *)
-        +++
-          destruct_conjs.
-          ff.
-          right.
-          repeat (eexists; eauto).
-          (*
-          apply ssSubr; eauto.
-          eauto. *)
-      ++
-        
-          
-      assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (uu i args tpl tid et') ett)
-        ).
-      {
-        eapply IHt2.
-        eassumption.
-        eassumption.
-        eassumption.
-      }
-      
-      destruct H0.
-      +++
-        destruct_conjs.
-        left.
-        eauto.
-        (*
-        eexists.
-        apply ssSubr; eauto. *)
-        (*
-        assert (
-            (EvSub (uuc i args tpl tid n H0) e) \/
-            (exists ett p' bs,
-                EvSub (hhc p' bs ett) e /\
-                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
-            )
-          ).
-        {
-          eapply evAccum.
-          apply H2.
-          eassumption.
-          eassumption.
-        }
-        clear H1.
-        destruct H4. 
-        +++
-
-          left.
-          eauto. *)
-        +++
-          destruct_conjs.
-          ff.
-          right.
-          repeat (eexists; eauto).
-          (*
-          apply ssSubr; eauto.
-          eauto. *)
-      ++
-        
-      assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (uu i args tpl tid et') ett)
-        ).
-      {
-        eapply IHt2.
-        eassumption.
-        eassumption.
-        eassumption.
-      }
-      
-      destruct H0.
-      +++
-        destruct_conjs.
-        left.
-        eauto.
-        (*
-        eexists.
-        apply ssSubr; eauto. *)
-        (*
-        assert (
-            (EvSub (uuc i args tpl tid n H0) e) \/
-            (exists ett p' bs,
-                EvSub (hhc p' bs ett) e /\
-                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
-            )
-          ).
-        {
-          eapply evAccum.
-          apply H2.
-          eassumption.
-          eassumption.
-        }
-        clear H1.
-        destruct H4. 
-        +++
-
-          left.
-          eauto. *)
-        +++
-          destruct_conjs.
-          ff.
-          right.
-          repeat (eexists; eauto).
-          (*
-          apply ssSubr; eauto.
-          eauto. *)
-
-  -
+  - (* abpar case *)
     do_wf_pieces.
     ff.
     dosome.
@@ -856,333 +800,43 @@ Proof.
     vmsts.
     ff.
 
-    invEvents.
-    + (* t1 case *)
+    invEvents;
 
-      destruct s; ff.
-      ++
+      do_wfec_split;
+      do_wfec_preserved;
+      do_wfec_firstn;
+      do_wfec_skipn;
+      clear_skipn_firstn;
+      do_wfec_preserved;
+      repeat do_pl_immut;
+      do_somerecons;
+      repeat jkjke'; ff;
+      try (rewrite fold_recev in * );
+      try do_somerecons;
+      do_evsub_ihhh';
 
-      assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (uu i args tpl tid et') ett)
-        ).
-      {
-        eapply IHt1.
-        eassumption.
-        eassumption.
-        eassumption.
-      }
-      
-      destruct H0.
-      +++
-        destruct_conjs.
-        left.
-        eauto.
-        (*
-        eexists.
-        apply ppSubl; eauto. *)
-        (*
-        assert (
-            (EvSub (uuc i args tpl tid n H0) e) \/
-            (exists ett p' bs,
-                EvSub (hhc p' bs ett) e /\
-                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
-            )
-          ).
-        {
-          eapply evAccum.
-          apply H2.
-          eassumption.
-          eassumption.
-        }
-        clear H1.
-        destruct H4. 
-        +++
-
-          left.
-          eauto. *)
-        +++
-          destruct_conjs.
-          ff.
-          right.
-          repeat (eexists; eauto).
-          (*
-          apply ppSubl; eauto.
-          eauto. *)
-      ++
-        
-          
-      assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (uu i args tpl tid et') ett)
-        ).
-      {
-        eapply IHt1.
-        eassumption.
-        eassumption.
-        eassumption.
-      }
-      
-      destruct H0.
-      +++
-        destruct_conjs.
-        left.
-        eauto.
-        (*
-        eexists.
-        apply ppSubl; eauto. *)
-        (*
-        assert (
-            (EvSub (uuc i args tpl tid n H0) e) \/
-            (exists ett p' bs,
-                EvSub (hhc p' bs ett) e /\
-                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
-            )
-          ).
-        {
-          eapply evAccum.
-          apply H2.
-          eassumption.
-          eassumption.
-        }
-        clear H1.
-        destruct H4. 
-        +++
-
-          left.
-          eauto. *)
-        +++
-          destruct_conjs.
-          ff.
-          right.
-          repeat (eexists; eauto).
-          (*
-          apply ppSubl; eauto.
-          eauto. *)
-      ++
-        
-      assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (uu i args tpl tid et') ett)
-        ).
-      {
-        eapply IHt1.
-        eassumption.
-        eassumption.
-        eassumption.
-      }
-      
-      destruct H0.
-      +++
-        destruct_conjs.
-        left.
-        eauto.
-        (*
-        eexists.
-        apply ppSubl; eauto. *)
-        (*
-        assert (
-            (EvSub (uuc i args tpl tid n H0) e) \/
-            (exists ett p' bs,
-                EvSub (hhc p' bs ett) e /\
-                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
-            )
-          ).
-        {
-          eapply evAccum.
-          apply H2.
-          eassumption.
-          eassumption.
-        }
-        clear H1.
-        destruct H4. 
-        +++
-
-          left.
-          eauto. *)
-        +++
-          destruct_conjs.
-          ff.
-          right.
-          repeat (eexists; eauto).
-          (*
-          apply ppSubl; eauto.
-          eauto. *)
-    + (* t2 case *)
-
-      do_pl_immut.
-      do_pl_immut.
-      subst.
-
-      destruct s; ff.
-      ++
-
-      assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (uu i args tpl tid et') ett)
-        ).
-      {
-        eapply IHt2.
-        eassumption.
-        eassumption.
-        eassumption.
-      }
-      
-      destruct H0.
-      +++
-        destruct_conjs.
-        left.
-        eauto.
-        (*
-        eexists.
-        apply ppSubr; eauto. *)
-        (*
-        assert (
-            (EvSub (uuc i args tpl tid n H0) e) \/
-            (exists ett p' bs,
-                EvSub (hhc p' bs ett) e /\
-                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
-            )
-          ).
-        {
-          eapply evAccum.
-          apply H2.
-          eassumption.
-          eassumption.
-        }
-        clear H1.
-        destruct H4. 
-        +++
-
-          left.
-          eauto. *)
-        +++
-          destruct_conjs.
-          ff.
-          right.
-          repeat (eexists; eauto).
-          (*
-          apply ppSubr; eauto.
-          eauto. *)
-      ++
-        
-          
-      assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (uu i args tpl tid et') ett)
-        ).
-      {
-        eapply IHt2.
-        eassumption.
-        eassumption.
-        eassumption.
-      }
-      
-      destruct H0.
-      +++
-        destruct_conjs.
-        left.
-        eauto.
-        (*
-        eexists.
-        apply ppSubr; eauto. *)
-        (*
-        assert (
-            (EvSub (uuc i args tpl tid n H0) e) \/
-            (exists ett p' bs,
-                EvSub (hhc p' bs ett) e /\
-                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
-            )
-          ).
-        {
-          eapply evAccum.
-          apply H2.
-          eassumption.
-          eassumption.
-        }
-        clear H1.
-        destruct H4. 
-        +++
-
-          left.
-          eauto. *)
-        +++
-          destruct_conjs.
-          ff.
-          right.
-          repeat (eexists; eauto).
-          (*
-          apply ppSubr; eauto.
-          eauto. *)
-      ++
-        
-      assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (uu i args tpl tid et') ett)
-        ).
-      {
-        eapply IHt2.
-        eassumption.
-        eassumption.
-        eassumption.
-      }
-      
-      destruct H0.
-      +++
-        destruct_conjs.
-        left.
-        eauto.
-        (*
-        eexists.
-        apply ppSubr; eauto. *)
-        (*
-        assert (
-            (EvSub (uuc i args tpl tid n H0) e) \/
-            (exists ett p' bs,
-                EvSub (hhc p' bs ett) e /\
-                EvSubT (et_fun (uuc i args tpl tid n H0)) ett
-            )
-          ).
-        {
-          eapply evAccum.
-          apply H2.
-          eassumption.
-          eassumption.
-        }
-        clear H1.
-        destruct H4. 
-        +++
-
-          left.
-          eauto. *)
-        +++
-          destruct_conjs.
-          ff.
-          right.
-          repeat (eexists; eauto).
-          (*
-          apply ppSubr; eauto.
-          eauto. *)
+      door; repeat jkjke'; ff;
+        try eauto;
+        try (destruct_conjs;
+             right;
+             repeat (eexists; eauto)).
 Defined.
+
 
 Lemma uu_preserved: forall t1 t2 p et n p0 i args tpl tid
                       e tr st_ev st_trace p'
-                      e' tr' p'',
+                      e' tr' p'' ecc,
     well_formed_r t1 ->
     well_formed_r t2 ->
+    wf_ec e ->
+    Some e' = (reconstruct_ev ecc) ->
     events t1 p et (umeas n p0 i args tpl tid) ->
     copland_compile t1 {| st_ev := e; st_trace := tr; st_pl := p |} =
     (Some tt, {| st_ev := st_ev; st_trace := st_trace; st_pl := p' |}) ->
     
     copland_compile t2
                     {| st_ev := st_ev; st_trace := st_trace; st_pl := p' |} =
-    (Some tt, {| st_ev := e'; st_trace := tr'; st_pl := p'' |}) ->
+    (Some tt, {| st_ev := ecc; st_trace := tr'; st_pl := p'' |}) ->
 
     (
       (exists e'', EvSub (uuc i args tpl tid n e'') e') \/
@@ -1192,653 +846,80 @@ Lemma uu_preserved: forall t1 t2 p et n p0 i args tpl tid
     ).
 Proof.
   intros.
+
+  ff.
+  do_wfec_preserved.
+  do_somerecons.
+  
   assert (
-      (exists e'', EvSub (uuc i args tpl tid n e'') st_ev) \/
+      (exists e'', EvSub (uuc i args tpl tid n e'') H9) \/
       (exists ett p' bs et',
-          EvSub (hhc p' bs ett) st_ev /\
+          EvSub (hhc p' bs ett) H9 /\
           EvSubT (uu i args tpl tid et') ett)
       ).
     {
       eapply uu_preserved'.
       apply H.
+      4: { eassumption. }
+      4: { eassumption. }
+      eassumption.
       eassumption.
       eassumption.
     }
-  generalizeEverythingElse e'.
-  induction e'; intros.
+    door;
+      do_evaccum.
+  +
+    clear H16.
+    door; eauto.
 
-  
+    right;
+      (repeat eexists; eauto).
+  +
+    clear H20.
+    door; ff.
+    ++
+    right;
+      repeat (eexists; eauto).
 
-  
-  -
-
-    Ltac door :=
-      match goal with
-      | [H: _ \/ _  |- _] =>
-        destruct H
-      end; destruct_conjs.
-
-    door.
-    +
-
+    ++
+      assert (EvSubT (uu i args tpl tid H17) H20).
+      {
+        eapply evsubT_transitive.
+        apply hhSubT.
+        eassumption.
+        eassumption.
+      }
       
-
-      assert (
-           (EvSub (uuc i args tpl tid n H4) mtc) \/
-           (exists ett p' bs,
-               EvSub (hhc p' bs ett) mtc /\
-               EvSubT (et_fun (uuc i args tpl tid n H4)) ett
-           )
-        ).
-      {
-        eapply evAccum; eauto.
-      }
-      destruct H6.
-      ++
-        solve_by_inversion.
-      ++
-        destruct_conjs.
-        solve_by_inversion.
-    +
-      destruct_conjs.
-       assert (
-           (EvSub (hhc H5 H6 H4) mtc) \/
-           (exists ett p' bs,
-               EvSub (hhc p' bs ett) mtc /\
-               EvSubT (et_fun (hhc H5 H6 H4)) ett
-           )
-         ).
-       {
-         eapply evAccum; eauto.
-       }
-       destruct H10.
-      ++
-        solve_by_inversion.
-      ++
-        destruct_conjs.
-        solve_by_inversion.
-
-  - (* nnc case *)
-
-    (*
-    assert (
-      (exists e'', EvSub (uuc i args tpl tid n1 e'') st_ev) \/
-      (exists ett p' bs et',
-          EvSub (hhc p' bs ett) st_ev /\
-          EvSubT (uu i args tpl tid et') ett)
-      ).
-    {
-      eapply uu_preserved'.
-      apply H.
-      eassumption.
-      eassumption.
-    } *)
-    door.
-    (*
-    destruct H4. *)
-    +
-      destruct_conjs.
-
-      assert (
-           (EvSub (uuc i args tpl tid n1 H4) (nnc n n0)) \/
-           (exists ett p' bs,
-               EvSub (hhc p' bs ett) (nnc n n0) /\
-               EvSubT (et_fun (uuc i args tpl tid n1 H4)) ett
-           )
-        ).
-      {
-        eapply evAccum; eauto.
-      }
-      destruct H6.
-      ++
-        solve_by_inversion.
-      ++
-        destruct_conjs.
-        solve_by_inversion.
-    +
-      destruct_conjs.
-       assert (
-           (EvSub (hhc H5 H6 H4) (nnc n n0)) \/
-           (exists ett p' bs,
-               EvSub (hhc p' bs ett) (nnc n n0) /\
-               EvSubT (et_fun (hhc H5 H6 H4)) ett
-           )
-         ).
-       {
-         eapply evAccum; eauto.
-       }
-       destruct H10.
-      ++
-        solve_by_inversion.
-      ++
-        destruct_conjs.
-        solve_by_inversion. 
-      
-  -
-    (*
-        
-    assert (
-      (exists e'', EvSub (uuc i args tpl tid n3 e'') st_ev) \/
-      (exists ett p' bs et',
-          EvSub (hhc p' bs ett) st_ev /\
-          EvSubT (uu i args tpl tid et') ett)
-      ).
-    {
-      eapply uu_preserved'.
-      apply H.
-      eassumption.
-      eassumption.
-    } *)
-    door.
-    (*
-    destruct H4. *)
-    +
-      destruct_conjs.
-
-      assert (
-           (EvSub (uuc i args tpl tid n3 H4) (uuc n l n0 n1 n2 e')) \/
-           (exists ett p' bs,
-               EvSub (hhc p' bs ett) (uuc n l n0 n1 n2 e') /\
-               EvSubT (et_fun (uuc i args tpl tid n3 H4)) ett
-           )
-        ).
-      {
-        eapply evAccum; eauto.
-      }
-      destruct H6.
-      ++
-        invc H6; eauto.
-        (*
-        +++
-          left.
-          eexists.
-          econstructor.
-        +++
-          left.
-          eexists.
-          apply uuSub.
-          eauto. *)
-      ++
-        destruct_conjs.
-        ff.
-        right.
-        repeat eexists.
-        eauto.
-        eauto.
-
-    +
-      destruct_conjs.
-       assert (
-           (EvSub (hhc H5 H6 H4) (uuc n l n0 n1 n2 e')) \/
-           (exists ett p' bs,
-               EvSub (hhc p' bs ett) (uuc n l n0 n1 n2 e') /\
-               EvSubT (et_fun (hhc H5 H6 H4)) ett
-           )
-         ).
-       {
-         eapply evAccum; eauto.
-       }
-       destruct H10.
-      ++
-        invc H10.
-        right.
-        repeat eexists.
-        apply uuSub.
-        eassumption.
-        eassumption.
-      ++
-        destruct_conjs.
-        ff.
-        invc H13.
-        assert (EvSubT (uu i args tpl tid H7) H10).
-        {
-          eapply evsubT_transitive.
-          apply hhSubT.
-          eassumption.
-          eassumption.
-        }
-        
-        right.
-        repeat eexists.
-        apply uuSub.
-        eassumption.
-        eassumption.
-  -
-    (*
-    assert (
-      (exists e'', EvSub (uuc i args tpl tid n1 e'') st_ev) \/
-      (exists ett p' bs et',
-          EvSub (hhc p' bs ett) st_ev /\
-          EvSubT (uu i args tpl tid et') ett)
-      ).
-    {
-      eapply uu_preserved'.
-      apply H.
-      eassumption.
-      eassumption.
-    }
-    destruct H4.
-     *)
-    door.
-    +
-      destruct_conjs.
-
-      assert (
-           (EvSub (uuc i args tpl tid n1 H4) (ggc n n0 e')) \/
-           (exists ett p' bs,
-               EvSub (hhc p' bs ett) (ggc n n0 e') /\
-               EvSubT (et_fun (uuc i args tpl tid n1 H4)) ett
-           )
-        ).
-      {
-        eapply evAccum; eauto.
-      }
-      destruct H6.
-      ++
-        invc H6.
-        left.
-        repeat eexists.
-        apply ggSub; eauto.
-        (*
-        +++
-          left.
-          eexists.
-          econstructor.
-        +++
-          left.
-          eexists.
-          apply uuSub.
-          eauto. *)
-      ++
-        destruct_conjs.
-        ff.
-        right.
-        repeat eexists.
-        eauto.
-        eauto.
-
-    +
-      destruct_conjs.
-       assert (
-           (EvSub (hhc H5 H6 H4) (ggc n n0 e')) \/
-           (exists ett p' bs,
-               EvSub (hhc p' bs ett) (ggc n n0 e') /\
-               EvSubT (et_fun (hhc H5 H6 H4)) ett
-           )
-         ).
-       {
-         eapply evAccum; eauto.
-       }
-       destruct H10.
-      ++
-        invc H10.
-        right.
-        repeat eexists.
-        apply ggSub.
-        eassumption.
-        eassumption.
-      ++
-        destruct_conjs.
-        ff.
-        invc H13.
-        assert (EvSubT (uu i args tpl tid H7) H10).
-        {
-          eapply evsubT_transitive.
-          apply hhSubT.
-          eassumption.
-          eassumption.
-        }
-        
-        right.
-        repeat eexists.
-        apply ggSub.
-        eassumption.
-        eassumption.
-  -
-
-    (*
-    assert (
-      (exists e'', EvSub (uuc i args tpl tid n1 e'') st_ev) \/
-      (exists ett p' bs et',
-          EvSub (hhc p' bs ett) st_ev /\
-          EvSubT (uu i args tpl tid et') ett)
-      ).
-    {
-      eapply uu_preserved'.
-      apply H.
-      eassumption.
-      eassumption.
-    }
-    destruct H4.
-     *)
-    door.
-    +
-      destruct_conjs.
-
-      assert (
-           (EvSub (uuc i args tpl tid n1 H4) (hhc n n0 e)) \/
-           (exists ett p' bs,
-               EvSub (hhc p' bs ett) (hhc n n0 e) /\
-               EvSubT (et_fun (uuc i args tpl tid n1 H4)) ett
-           )
-        ).
-      {
-        eapply evAccum; eauto.
-      }
-      destruct H6.
-      ++
-        invc H6.
-        (*
-        left.
-        repeat eexists.
-        apply ggSub; eauto.
-        (*
-        +++
-          left.
-          eexists.
-          econstructor.
-        +++
-          left.
-          eexists.
-          apply uuSub.
-          eauto. *)
-         *)
-        
-      ++
-        destruct_conjs.
-        ff.
-        right.
-        repeat eexists.
-        eauto.
-        eauto.
-
-    +
-      destruct_conjs.
-       assert (
-           (EvSub (hhc H5 H6 H4) (hhc n n0 e)) \/
-           (exists ett p' bs,
-               EvSub (hhc p' bs ett) (hhc n n0 e) /\
-               EvSubT (et_fun (hhc H5 H6 H4)) ett
-           )
-         ).
-       {
-         eapply evAccum; eauto.
-       }
-       destruct H10.
-      ++
-        invc H10.
-        right.
-        repeat eexists.
-        econstructor.
-        eauto.
-        (*
-        apply hhSub.
-        eassumption.
-        eassumption. *)
-      ++
-        destruct_conjs.
-        ff.
-        invc H13.
-        assert (EvSubT (uu i args tpl tid H7) e).
-        {
-          eapply evsubT_transitive.
-          apply hhSubT.
-          eassumption.
-          eassumption.
-        }
-        
-        right.
-        repeat eexists.
-        econstructor.
-        eassumption.
-
-  - (* ssc case *)
-
-    (*
-    assert (
-      (exists e'', EvSub (uuc i args tpl tid n e'') st_ev) \/
-      (exists ett p' bs et',
-          EvSub (hhc p' bs ett) st_ev /\
-          EvSubT (uu i args tpl tid et') ett)
-      ).
-    {
-      eapply uu_preserved'.
-      apply H.
-      eassumption.
-      eassumption.
-    }
-    destruct H4.
-     *)
-    door.
-    +
-      destruct_conjs.
-
-      assert (
-           (EvSub (uuc i args tpl tid n H4) (ssc e'1 e'2)) \/
-           (exists ett p' bs,
-               EvSub (hhc p' bs ett) (ssc e'1 e'2) /\
-               EvSubT (et_fun (uuc i args tpl tid n H4)) ett
-           )
-        ).
-      {
-        eapply evAccum; eauto.
-      }
-      destruct H6.
-      ++
-        invc H6.
-        +++
-        left.
-        repeat eexists.
-        apply ssSubl; eauto.
-        +++
-          left.
-          repeat eexists.
-          apply ssSubr; eauto.
-        (*
-        +++
-          left.
-          eexists.
-          econstructor.
-        +++
-          left.
-          eexists.
-          apply uuSub.
-          eauto. *)
-      ++
-        destruct_conjs.
-        ff.
-        right.
-        repeat eexists.
-        eauto.
-        eauto.
-
-    +
-      destruct_conjs.
-       assert (
-           (EvSub (hhc H5 H6 H4) (ssc e'1 e'2)) \/
-           (exists ett p' bs,
-               EvSub (hhc p' bs ett) (ssc e'1 e'2) /\
-               EvSubT (et_fun (hhc H5 H6 H4)) ett
-           )
-         ).
-       {
-         eapply evAccum; eauto.
-       }
-       destruct H10.
-      ++
-        invc H10.
-        +++
-        right.
-        repeat eexists.
-        apply ssSubl.
-        eassumption.
-        eassumption.
-        +++
-          right.
-          repeat eexists.
-          apply ssSubr.
-          eassumption.
-          eassumption.
-      ++
-        destruct_conjs.
-        ff.
-        assert (EvSubT (uu i args tpl tid H7) H10).
-        {
-          eapply evsubT_transitive.
-          apply hhSubT.
-          eassumption.
-          eassumption.
-        }
-        invc H13.
-        +++
-        
-        
-        right.
-        repeat eexists.
-        apply ssSubl.
-        eassumption.
-        eassumption.
-        +++
-          right.
-          repeat eexists.
-          apply ssSubr.
-          eassumption.
-          eassumption.
-          
-  - (* ppc case *)
-    (*
-    assert (
-      (exists e'', EvSub (uuc i args tpl tid n e'') st_ev) \/
-      (exists ett p' bs et',
-          EvSub (hhc p' bs ett) st_ev /\
-          EvSubT (uu i args tpl tid et') ett)
-      ).
-    {
-      eapply uu_preserved'.
-      apply H.
-      eassumption.
-      eassumption.
-    }
-    destruct H4.
-     *)
-    door.
-    +
-      destruct_conjs.
-
-      assert (
-           (EvSub (uuc i args tpl tid n H4) (ppc e'1 e'2)) \/
-           (exists ett p' bs,
-               EvSub (hhc p' bs ett) (ppc e'1 e'2) /\
-               EvSubT (et_fun (uuc i args tpl tid n H4)) ett
-           )
-        ).
-      {
-        eapply evAccum; eauto.
-      }
-      destruct H6.
-      ++
-        invc H6.
-        +++
-        left.
-        repeat eexists.
-        apply ppSubl; eauto.
-        +++
-          left.
-          repeat eexists.
-          apply ppSubr; eauto.
-        (*
-        +++
-          left.
-          eexists.
-          econstructor.
-        +++
-          left.
-          eexists.
-          apply uuSub.
-          eauto. *)
-      ++
-        destruct_conjs.
-        ff.
-        right.
-        repeat eexists.
-        eauto.
-        eauto.
-
-    +
-      destruct_conjs.
-       assert (
-           (EvSub (hhc H5 H6 H4) (ppc e'1 e'2)) \/
-           (exists ett p' bs,
-               EvSub (hhc p' bs ett) (ppc e'1 e'2) /\
-               EvSubT (et_fun (hhc H5 H6 H4)) ett
-           )
-         ).
-       {
-         eapply evAccum; eauto.
-       }
-       destruct H10.
-      ++
-        invc H10.
-        +++
-        right.
-        repeat eexists.
-        apply ppSubl.
-        eassumption.
-        eassumption.
-        +++
-          right.
-          repeat eexists.
-          apply ppSubr.
-          eassumption.
-          eassumption.
-      ++
-        destruct_conjs.
-        ff.
-        assert (EvSubT (uu i args tpl tid H7) H10).
-        {
-          eapply evsubT_transitive.
-          apply hhSubT.
-          eassumption.
-          eassumption.
-        }
-        invc H13.
-        +++
-        
-        
-        right.
-        repeat eexists.
-        apply ppSubl.
-        eassumption.
-        eassumption.
-        +++
-          right.
-          repeat eexists.
-          apply ppSubr.
-          eassumption.
-          eassumption.
+      right; 
+        repeat (eexists; eauto).
 Defined.
 
-Lemma appraisal_correct : forall t e e' tr tr' p p' et ev,
+Lemma appraisal_correct : forall t e' tr tr' p p' ecc ev ee,
     well_formed_r t ->
-    Ev_Shape e et ->
+    wf_ec ee ->
+    Some e' = (reconstruct_ev ecc) ->
     copland_compile t
-      {| st_ev := e; st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := e';
+                    {| st_ev := ee; st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := ecc;
                  st_trace := tr';
                  st_pl := p' |}) ->
 
-    measEvent t p et ev ->
-    
-    (*build_app_comp_evC e' = app_res /\ *)
+    measEvent t p (get_et ee) ev ->
     appEvent_EvidenceC ev (build_app_comp_evC e').
 Proof.
+  intros.
   generalizeEverythingElse t.
   induction t; intros.
   - (* aasp case *)
+    
     measEventFacts.
     evEventFacts.
+    destruct ee.
     inv_events.
     ff.
+    break_match; try solve_by_inversion.
+    invc H1.
+    
     repeat econstructor.
 
   - (* aatt case *)
@@ -1851,14 +932,16 @@ Proof.
     eapply IHt.
     eassumption.
     eassumption.
+    eassumption.
+
     eapply copland_compile_at.
     eassumption.
     econstructor.
     eassumption.
     econstructor.
   - (* alseq case *)
-    edestruct wf_lseq_pieces;[eauto | idtac].
-    (* do_wf_pieces. *)
+    
+    do_wf_pieces.
     vmsts.
     simpl in *.
     subst.
@@ -1867,266 +950,165 @@ Proof.
     vmsts.
 
     measEventFacts.
-    do_pl_immut.
-    do_pl_immut.
+    repeat do_pl_immut.
     subst.
-
-    invc H5.
-
-    
+    invc H6.
     inv_events.
-     + (* t1 case *)
-       clear H1.
+    + (* t1 case *)
 
-       assert (
-           (exists e'', EvSub (uuc i args tpl tid n e'') e') \/
-           (exists ett p' bs et',
-               EvSub (hhc p' bs ett) e' /\
-               EvSubT (uu i args tpl tid et') ett)
-         ).
-              
-       {
-         eapply uu_preserved.
-         apply H3.
-         apply H4.
-         eassumption.
-         eassumption.
-         eassumption.
-       }
-       destruct H1.
-       ++
+      edestruct uu_preserved.
+      apply H4.
+      apply H5.
+      5: { eassumption. }
+      4: { eassumption. }
+      eassumption.
+      jkjke'.
+      eauto.
 
-       destruct_conjs.
+      destruct_conjs.
 
+      assert (
+          exists e'', EvSub (uuc i args tpl tid (checkASP i args tpl tid n) e'')
+                       (build_app_comp_evC e')).
+      {
+        
+        eapply uuc_app; eauto.
+      }
+      destruct_conjs.
+      econstructor.
+      eassumption.
+      destruct_conjs.
+      eapply ahuc.
+      eassumption.
+      eapply hhc_app; eauto.
+      
+    + (* t2 case *)
 
-
-       assert (
-        exists e'', EvSub (uuc i args tpl tid (checkASP i args tpl tid n) e'')
-                     (build_app_comp_evC e')).
-       {
-         eapply uuc_app; eauto.
-       }
-       destruct_conjs.
-       econstructor.
-       eassumption.
-       ++
-         destruct_conjs.
-
-         assert (EvSub (hhc H2 (checkHash H1 H2 H5) H1) (build_app_comp_evC e')).
-         {
-           eapply hhc_app; eauto.
-         }
-
-         eapply ahuc.
-         eassumption.
-         eassumption.
-     + (* t2 case *)
-       assert (appEvent_EvidenceC (umeas n p0 i args tpl tid)
-                                  (build_app_comp_evC e')).
-       {
-         eapply IHt2.
-         eassumption.
-         2: {
-           eassumption.
-         }         
-         eapply cvm_refines_lts_evidence.
-         apply H3.
-         eassumption.
-         eassumption.
-         tauto.
-         econstructor.
-         rewrite eval_aeval.
-         eassumption.
-         econstructor.
-       }
-       eassumption.
-    - (* abseq case *)
+      do_wfec_preserved.
+      destruct ecc.
+      destruct st_ev.
+      
+      eapply IHt2.
+      eassumption.
+      3: { eassumption. }
+      eassumption.
+      eassumption.
+      econstructor.
+      destruct ee.
+      ff.
+      assert (e2 = aeval t1 p e4).
+      {
+        rewrite <- eval_aeval.
+        eapply cvm_refines_lts_evidence.
+        eassumption.
+        eassumption.
+      }
+      subst.
+      eassumption.
+      econstructor.
+      
+  - (* abseq case *)
     (*
     do_wf_pieces. *)
     edestruct wf_bseq_pieces;[eauto | idtac].
     vmsts.
     simpl in *.
     subst.
-    repeat ff.
-
-    vmsts.
     ff.
-
-    measEventFacts.
     ff.
-    do_pl_immut.
-    do_pl_immut.
-    subst.
-    invc H5.
-
-    
-    inv_events;
-      ff.
-    + (* t1 case *)
-      destruct s.
-      ++
-        ff.
-
-      
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
-      {
-        eapply IHt1.
-        eassumption.
-        eassumption.
-        eassumption.
-        econstructor.
-        eassumption.
-        econstructor.
-      }
-
-      invc H2.
-      +++
-        econstructor.
-        econstructor.
-        eassumption.
-      +++
-        eapply ahuc.
-        eassumption.
-        econstructor.
-        eassumption.
-      ++
-        ff.
-
-      
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
-      {
-        eapply IHt1.
-        eassumption.
-        econstructor.
-        eassumption.
-        econstructor.
-        eassumption.
-        econstructor.
-      }
-
-      invc H2.
-      +++
-        econstructor.
-        econstructor.
-        eassumption.
-      +++
-        eapply ahuc.
-        eassumption.
-        econstructor.
-        eassumption.
-      ++
-        ff.
-
-      
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
-      {
-        eapply IHt1.
-        eassumption.
-        eassumption.
-        eassumption.
-        econstructor.
-        eassumption.
-        econstructor.
-      }
-
-      invc H2.
-      +++
-        econstructor.
-        econstructor.
-        eassumption.
-      +++
-        eapply ahuc.
-        eassumption.
-        econstructor.
-        eassumption.
-    + (* t2 case *)
-
-      destruct s.
-      ++
-        ff.
-
-      
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
-      {
-        eapply IHt2.
-        eassumption.
-        econstructor.
-        eassumption.
-        econstructor.
-        eassumption.
-        econstructor.
-      }
-
-      invc H2.
-      +++
-        econstructor.
-        apply ssSubr.
-        eassumption.
-      +++
-        eapply ahuc.
-        eassumption.
-        apply ssSubr.
-        eassumption.
-      ++
-        ff.
-
-      
-        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
-      {
-        eapply IHt2.
-        eassumption.
-        eassumption.
-        eassumption.
-        econstructor.
-        eassumption.
-        econstructor.
-      }
-
-      invc H2.
-      +++
-        econstructor.
-        apply ssSubr.
-        eassumption.
-      +++
-        eapply ahuc.
-        eassumption.
-        apply ssSubr.
-        eassumption.
-      ++
-        ff.
-
-      
-        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
-      {
-        eapply IHt2.
-        eassumption.
-        eassumption.
-        eassumption.
-        econstructor.
-        eassumption.
-        econstructor.
-      }
-
-      invc H2.
-      +++
-        econstructor.
-        apply ssSubr.
-        eassumption.
-      +++
-        eapply ahuc.
-        eassumption.
-        apply ssSubr.
-        eassumption.
-    - (* abpar case *)
-    (*
-    do_wf_pieces. *)
-    edestruct wf_bpar_pieces;[eauto | idtac].
     vmsts.
     simpl in *.
     subst.
+    
     repeat ff.
 
+    measEventFacts.
+    repeat do_pl_immut.
+    subst.
+    invc H2.
+
+    do_wfec_split.
+
+    do_wfec_preserved.
+
+    do_wfec_firstn.
+    do_wfec_skipn.
+
+    clear_skipn_firstn.
+
+    rewrite fold_recev in *.
+
+    inv_events.
+    + (* t1 case *)
+
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e3))).
+      {
+        destruct ee; ff.
+
+        rewrite fold_recev in *.
+          
+          eapply IHt1.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          destruct s; ff.
+          econstructor.
+      }
+      
+      invc H8.
+      +++
+        econstructor.
+        econstructor.
+        
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        econstructor.
+        eassumption.
+
+    + (* t1 case *)
+
+
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
+      {      
+        destruct ee; ff.
+
+        rewrite fold_recev in *.
+          
+          eapply IHt2.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          destruct s; ff.
+          econstructor.
+      }
+
+      invc H8.
+      +++
+        econstructor.
+        apply ssSubr.
+        eassumption.
+      +++
+        eapply ahuc.
+        eassumption.
+        apply ssSubr.
+        eassumption.
+
+  - (* abpar case *)
+    do_wf_pieces.
     vmsts.
+    simpl in *.
+    subst.
+    ff.
+    ff.
+    vmsts.
+    simpl in *.
+    subst.
     ff.
 
     measEventFacts.
@@ -2134,157 +1116,68 @@ Proof.
     do_pl_immut.
     do_pl_immut.
     subst.
-    invc H5.
+    invc H2.
 
-    
-    inv_events;
-      ff.
+    do_wfec_split.
+
+    do_wfec_preserved.
+
+    do_wfec_firstn.
+    do_wfec_skipn.
+
+    clear_skipn_firstn.
+
+    rewrite fold_recev in *.
+
+    inv_events.
     + (* t1 case *)
-      destruct s.
-      ++
-        ff.
 
-      
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e3))).
       {
-        eapply IHt1.
-        eassumption.
-        eassumption.
-        eassumption.
-        econstructor.
-        eassumption.
-        econstructor.
+        destruct ee; ff.
+
+        rewrite fold_recev in *.
+          
+          eapply IHt1.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          destruct s; ff.
+          econstructor.
       }
 
-      invc H2.
+      invc H8.
       +++
         econstructor.
-        econstructor.
+        econstructor.   
         eassumption.
       +++
         eapply ahuc.
         eassumption.
         econstructor.
         eassumption.
-      ++
-        ff.
 
-      
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
+    + (* t1 case *)
+
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
       {
-        eapply IHt1.
-        eassumption.
-        econstructor.
-        eassumption.
-        econstructor.
-        eassumption.
-        econstructor.
+        destruct ee; ff.
+
+        rewrite fold_recev in *.
+          
+          eapply IHt2.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          destruct s; ff.
+          econstructor.
       }
 
-      invc H2.
-      +++
-        econstructor.
-        econstructor.
-        eassumption.
-      +++
-        eapply ahuc.
-        eassumption.
-        econstructor.
-        eassumption.
-      ++
-        ff.
-
-      
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
-      {
-        eapply IHt1.
-        eassumption.
-        eassumption.
-        eassumption.
-        econstructor.
-        eassumption.
-        econstructor.
-      }
-
-      invc H2.
-      +++
-        econstructor.
-        econstructor.
-        eassumption.
-      +++
-        eapply ahuc.
-        eassumption.
-        econstructor.
-        eassumption.
-    + (* t2 case *)
-
-      destruct s.
-      ++
-        ff.
-
-      
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
-      {
-        eapply IHt2.
-        eassumption.
-        econstructor.
-        eassumption.
-        econstructor.
-        eassumption.
-        econstructor.
-      }
-
-      invc H2.
-      +++
-        econstructor.
-        apply ppSubr.
-        eassumption.
-      +++
-        eapply ahuc.
-        eassumption.
-        apply ppSubr.
-        eassumption.
-      ++
-        ff.
-
-      
-        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
-      {
-        eapply IHt2.
-        eassumption.
-        eassumption.
-        eassumption.
-        econstructor.
-        eassumption.
-        econstructor.
-      }
-
-      invc H2.
-      +++
-        econstructor.
-        apply ppSubr.
-        eassumption.
-      +++
-        eapply ahuc.
-        eassumption.
-        apply ppSubr.
-        eassumption.
-      ++
-        ff.
-
-      
-        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
-      {
-        eapply IHt2.
-        eassumption.
-        eassumption.
-        eassumption.
-        econstructor.
-        eassumption.
-        econstructor.
-      }
-
-      invc H2.
+      invc H8.
       +++
         econstructor.
         apply ppSubr.

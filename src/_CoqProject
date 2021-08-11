@@ -6,7 +6,6 @@ Defs.v
 Term_Defs.v
 Eqb_Evidence.v
 Term.v
-Priv_Pol.v
 Event_system.v
 Term_system.v
 Trace.v
@@ -17,7 +16,6 @@ Axioms_Io.v
 EqClass.v
 Maps.v
 GenStMonad.v
-MonadLaws.v
 StVM.v
 MonadVM.v
 Impl_vm.v
@@ -29,7 +27,7 @@ VmSemantics.v
 StAM.v
 OptMonad.v
 Appraisal_Defs.v
-Impl_appraisal_alt.v
 Impl_appraisal.v
+Impl_appraisal_alt.v
 Appraisal_AltImpls_Eq.v
-Appraisal_alt2.v
+Appraisal.v
