@@ -301,6 +301,10 @@ Proof.
   { destruct e; try solve_by_inversion. }
   ff.
   eauto.
+  destruct e; try solve_by_inversion.
+  ff.
+  destruct e; try solve_by_inversion.
+  ff.
 Defined.
 
 Ltac do_somerecons :=

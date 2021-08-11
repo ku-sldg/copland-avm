@@ -44,10 +44,18 @@ Fixpoint reconstruct_ev' (ls:EvBits) (et:Evidence) : option EvidenceC :=
     Some (ggc p bs x)
   | hh p et' =>
     '(bs, ls') <- peel_bs ls ;;
-    Some (hhc p bs et')
+     match ls' with
+    | [] => Some (hhc p bs et')
+    | _ => None
+    end 
+   
   | nn i =>
     '(bs, ls') <- peel_bs ls ;;
-    Some (nnc i bs)
+     match ls' with
+    | [] => Some (nnc i bs)
+    | _ => None
+    end 
+    
   | ss et1 et2 =>
     e1 <- reconstruct_ev' (firstn (et_size et1) ls) et1 ;;
     e2 <- reconstruct_ev' (skipn (et_size et1) ls) et2 ;;

@@ -111,11 +111,13 @@ Proof.
     subst.
     repeat ff.
     destruct ls; try solve_by_inversion.
+
+    (*
     invc H.
     ff.
     assert (e = []).
     destruct e; try solve_by_inversion.
-    ff.
+    ff. *)
   -
     ff.
     assert (exists et', et = uu n l n0 n1 et').
@@ -165,11 +167,6 @@ Proof.
     invc H.
     ff.
     destruct ls; try solve_by_inversion.
-    ff.
-    assert (e0 = []).
-    { destruct e0; try solve_by_inversion. }
-    subst.
-    ff.
   -
     ff.
     assert (exists et1 et2, et = ss et1 et2).
@@ -238,6 +235,118 @@ Proof.
     tauto.
 Defined.
 
+Lemma wf_recon: forall e et ec,
+    reconstruct_ev' e et = Some ec ->
+    wf_ec (evc e et).
+Proof.
+  intros.
+  generalizeEverythingElse ec.
+  induction ec; intros.
+  -
+    assert (et = mt).
+    eapply inv_recon_mt; eauto.
+    subst.
+    repeat ff.
+    econstructor.
+    tauto.
+  -
+    assert (et = nn n) by (eapply inv_recon_nn; eauto).
+    subst.
+    repeat ff.
+    econstructor.
+    ff.
+    destruct e; try solve_by_inversion.
+  -
+    assert (exists et', et = uu n l n0 n1 et').
+    { eapply inv_recon_uu; eauto. }
+    destruct_conjs.
+    subst.
+    repeat ff.
+    assert (wf_ec (evc e0 H0)) by eauto.
+    econstructor.
+    ff.
+    invc H.
+    destruct e; try solve_by_inversion.
+    ff.
+    lia.
+  -
+    assert (exists et', et = gg n et').
+    { eapply inv_recon_gg; eauto. }
+    destruct_conjs.
+    subst.
+    repeat ff.
+    assert (wf_ec (evc e0 H0)) by eauto.
+    econstructor.
+    ff.
+    invc H.
+    destruct e; try solve_by_inversion.
+    ff.
+    lia.
+  -
+    assert (et = hh n e).
+    { eapply inv_recon_hh; eauto.
+    }
+    subst.
+    repeat ff.
+    
+    
+    econstructor.
+    ff.
+    destruct e0; try solve_by_inversion.
+  -
+    assert (exists et1 et2, et = ss et1 et2).
+    { eapply inv_recon_ss; eauto. }
+    destruct_conjs.
+    subst.
+    repeat ff.
+
+    assert (wf_ec (evc (firstn (et_size H0) e) H0)) by eauto.
+
+    assert (wf_ec (evc (skipn (et_size H0) e) H1)) by eauto.
+
+    invc H; invc H2.
+    econstructor.
+    ff.
+    rewrite <- H4.
+    rewrite <- H3.
+    Search firstn.
+    Search firstn.
+    assert (e = (firstn (et_size H0) e) ++ (skipn (et_size H0) e)).
+    
+    { rewrite firstn_skipn.
+      tauto.
+    }
+    rewrite H at 1.
+    Check app_length.
+    eapply app_length.
+  -
+    assert (exists et1 et2, et = pp et1 et2).
+    { eapply inv_recon_pp; eauto. }
+    destruct_conjs.
+    subst.
+    repeat ff.
+
+    assert (wf_ec (evc (firstn (et_size H0) e) H0)) by eauto.
+
+    assert (wf_ec (evc (skipn (et_size H0) e) H1)) by eauto.
+
+    invc H; invc H2.
+    econstructor.
+    ff.
+    rewrite <- H4.
+    rewrite <- H3.
+    Search firstn.
+    Search firstn.
+    assert (e = (firstn (et_size H0) e) ++ (skipn (et_size H0) e)).
+    
+    { rewrite firstn_skipn.
+      tauto.
+    }
+    rewrite H at 1.
+    Check app_length.
+    eapply app_length.
+Defined.
+
 
 Lemma appraisal_alt : forall ec1 ec2 ec2' ls et,
 
@@ -273,14 +382,6 @@ Proof.
     subst.
     repeat ff.
 
-    (*
-
-    assert (Impl_appraisal.peel_bs = peel_bs) as H.
-    { admit. }
-    rewrite H in *; clear H. 
-    find_rewrite.
-    ff. *)
-
     assert (e0 = (Impl_appraisal.build_app_comp_evC e1)).
     {
       eapply IHec2.
@@ -300,14 +401,6 @@ Proof.
     subst.
     repeat ff.
 
-    (*
-
-    assert (Impl_appraisal.peel_bs = peel_bs) as H.
-    { admit. }
-    rewrite H in *; clear H. 
-    find_rewrite.
-    ff. *)
-
     assert (e0 = (Impl_appraisal.build_app_comp_evC e1)).
     {
       eapply IHec2.
@@ -325,24 +418,7 @@ Proof.
         eapply recon_encodeEv.
         2: { eassumption. }
 
-        Lemma wf_recon: forall e et ec,
-          reconstruct_ev' e et = Some ec ->
-          wf_ec (evc e et).
-        Proof.
-          intros.
-          generalizeEverythingElse ec.
-          induction ec; intros.
-          -
-            assert (et = mt).
-            eapply inv_recon_mt; eauto.
-            subst.
-            repeat ff.
-            econstructor.
-            tauto.
-        Admitted.
-
         eapply wf_recon; eauto.
-        
       }
       congruence.
     }
