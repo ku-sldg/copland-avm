@@ -1,75 +1,9 @@
-Require Import Term ConcreteEvidence (*GenStMonad MonadVM MonadAM*) .
+Require Import ConcreteEvidence. (* Term GenStMonad MonadVM MonadAM. *)
 
-(*
-Require Import Impl_vm StAM. *)
-
-Require Import Appraisal_Defs.
+Require Import Appraisal_Defs. (* Require Import Impl_vm StAM. *)
 
 Require Import List.
 Import ListNotations.
-
-Require Import OptMonad.
-
-(*
-Definition checkASP (i:ASP_ID) (args:list Arg) (tpl:Plc) (tid:Plc) (bs:BS) : BS.
-Admitted.
-
-Definition checkSig (e:EvidenceC) (p:Plc) (sig:BS) : BS.
-Admitted.
-
-Definition checkHash (e:Evidence) (p:Plc) (hash:BS) : BS.
-Admitted.
-
-Definition peel_bs (ls:EvBits) : option (BS * EvBits) :=
-  match ls with
-  | bs :: ls' => Some (bs, ls')
-  | _ => None
-  end.
-*)
-
-Fixpoint reconstruct_ev' (ls:EvBits) (et:Evidence) : option EvidenceC :=
-  match et with
-  | mt => (* Some mtc *)
-    match ls with
-    | [] => Some mtc
-    | _ => None
-    end 
-  | uu i args tpl tid et' =>
-    '(bs, ls') <- peel_bs ls ;;
-    x <- reconstruct_ev' ls' et' ;;
-    Some (uuc i args tpl tid bs x)
-  | gg p et' =>
-    '(bs, ls') <- peel_bs ls ;;
-    x <- reconstruct_ev' ls' et' ;;
-    Some (ggc p bs x)
-  | hh p et' =>
-    '(bs, ls') <- peel_bs ls ;;
-     match ls' with
-    | [] => Some (hhc p bs et')
-    | _ => None
-    end 
-   
-  | nn i =>
-    '(bs, ls') <- peel_bs ls ;;
-     match ls' with
-    | [] => Some (nnc i bs)
-    | _ => None
-    end 
-    
-  | ss et1 et2 =>
-    e1 <- reconstruct_ev' (firstn (et_size et1) ls) et1 ;;
-    e2 <- reconstruct_ev' (skipn (et_size et1) ls) et2 ;;
-    Some (ssc e1 e2)
-  | pp et1 et2 =>
-    e1 <- reconstruct_ev' (firstn (et_size et1) ls) et1 ;;
-    e2 <- reconstruct_ev' (skipn (et_size et1) ls) et2 ;;
-    Some (ppc e1 e2)  
-  end.
-
-Definition reconstruct_ev (e:EvC) : option EvidenceC :=
-  match e with
-  | evc ls et => reconstruct_ev' ls et
-  end.
 
 Fixpoint build_app_comp_evC (e:EvidenceC) : EvidenceC :=
   match e with

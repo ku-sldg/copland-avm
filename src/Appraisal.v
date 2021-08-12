@@ -1188,3 +1188,40 @@ Proof.
         apply ppSubr.
         eassumption.
 Defined.
+
+Require Import Appraisal_AltImpls_Eq Impl_appraisal_alt.
+
+Definition get_bits (e:EvC): list BS :=
+  match e with
+  | evc ls _ => ls
+  end.
+    
+
+Lemma appraisal_correct_alt : forall t e' tr tr' p p' bits' et' ev ee,
+    well_formed_r t ->
+    wf_ec ee ->
+    copland_compile t
+                    {| st_ev := ee; st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := (evc bits' et');
+                 st_trace := tr';
+                 st_pl := p' |}) ->
+
+    measEvent t p (get_et ee) ev ->
+    Some e' = Impl_appraisal_alt.build_app_comp_evC et' bits' ->
+    appEvent_EvidenceC ev e'.
+Proof.
+  intros.
+  ff.
+  do_wfec_preserved.
+  do_somerecons.
+  erewrite appraisal_alt.
+  eapply appraisal_correct.
+  eassumption.
+  3: { eassumption. }
+  eassumption.
+  2: { eassumption. }
+  2: { eassumption. }
+  3: { tauto. }
+  eassumption.
+  eassumption.
+Defined.
