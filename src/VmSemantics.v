@@ -428,6 +428,16 @@ Ltac do_restl :=
       ltac:(eapply restl; [apply H2 | apply H])
   end.
 
+Lemma splitEv_T_l_LEFT: forall e bits bits' es e0 sp,
+    et_size e = es ->
+    splitEv_l (ALL,sp) (evc bits e) = (evc bits' e0) ->
+    et_size e0 = es. (* (splitEv_T_l LEFT es). *)
+Proof.
+  intros.
+  ff.
+Defined.
+
+(*
 Lemma splitEv_T_l_LEFT: forall e bits bits' es e0,
     et_size e = es ->
     splitEv_l LEFT (evc bits e) = (evc bits' e0) ->
@@ -436,6 +446,7 @@ Proof.
   intros.
   ff.
 Defined.
+*)
 
 (*
 Lemma splitEv_T_l_LEFT: forall e es e0,
@@ -474,14 +485,14 @@ Lemma cvm_refines_lts_evidence' : forall t tr tr' e e' p p',
 
 Proof.
   induction t; intros.
-  -
+  - (* aasp case *)
     destruct a;
       try (
           try unfold get_et;
           df;
           eauto).
 
-  -
+  - (* at case *)
     repeat df. 
     annogo.
     do_wf_pieces.
@@ -490,7 +501,7 @@ Proof.
     eapply copland_compile_at.
     eassumption.
 
-  -
+  - (* alseq case *)
     do_wf_pieces.
     do_suffix blah.
     destruct_conjs.
@@ -514,7 +525,7 @@ Proof.
     assert (e3 = get_et (evc e2 e3)) by tauto.
     repeat jkjke'.
     
-  -
+  - (* abseq case *)
     do_wf_pieces.
     df.
     repeat break_match;
@@ -537,7 +548,7 @@ Proof.
 
       assert (get_et (evc e0 e1) = (eval (unanno t1) p (splitEv_T_l s (get_et e)))).
       {
-        destruct s.
+        destruct s; destruct s.
         ++
           eapply IHt1;
           eassumption.
@@ -545,28 +556,25 @@ Proof.
           unfold splitEv_T_l.
           assert (mt = get_et (evc [] mt)) by tauto.
           jkjke.
-        ++
-          unfold splitEv_T_l.
-          jkjke. 
       }
+      ff.
+      rewrite H6.
+      
 
       assert (get_et (evc e2 e3) = (eval (unanno t2) p (splitEv_T_r s (get_et e)))).
       {
         repeat do_pl_immut; subst.
         destruct s.
+        destruct s0.
         ++
           unfold splitEv_T_r.
+          eauto.
+        ++
           assert (mt = get_et (evc [] mt)) by tauto.
           jkjke.
-        ++
-          unfold splitEv_T_r.
-          jkjke.
-        ++
-          unfold splitEv_T_r.
-          jkjke. 
+          ff.
       }
-
-      congruence.
+      ff.
 
   - (* abpar case *)
     do_wf_pieces.
@@ -591,7 +599,7 @@ Proof.
 
       assert (get_et (evc e0 e1) = (eval (unanno t1) p (splitEv_T_l s (get_et e)))).
       {
-        destruct s.
+        destruct s; destruct s.
         ++
           eapply IHt1;
           eassumption.
@@ -599,28 +607,25 @@ Proof.
           unfold splitEv_T_l.
           assert (mt = get_et (evc [] mt)) by tauto.
           jkjke.
-        ++
-          unfold splitEv_T_l.
-          jkjke. 
       }
+      ff.
+      rewrite H6.
+      
 
       assert (get_et (evc e2 e3) = (eval (unanno t2) p (splitEv_T_r s (get_et e)))).
       {
         repeat do_pl_immut; subst.
         destruct s.
+        destruct s0.
         ++
           unfold splitEv_T_r.
+          eauto.
+        ++
           assert (mt = get_et (evc [] mt)) by tauto.
           jkjke.
-        ++
-          unfold splitEv_T_r.
-          jkjke.
-        ++
-          unfold splitEv_T_r.
-          jkjke. 
+          ff.
       }
-
-      congruence.
+      ff.
 Defined.
 
 Lemma cvm_refines_lts_evidence : forall t tr tr' bits bits' et et' p p',
@@ -1079,7 +1084,7 @@ Proof.
       df;
       econstructor; try (econstructor; reflexivity).
 
-    (*
+  (*
     
     +
       assert (et = et_fun e).
@@ -1089,8 +1094,8 @@ Proof.
       }
       rewrite <- H0.
       econstructor; try (econstructor; reflexivity). *)
-      
-      
+    
+    
   - (* aatt case *)
     destruct r.
     repeat (df; try dohtac; df).
@@ -1159,342 +1164,458 @@ Proof.
     
     eassumption.
     
-  -    
+  -    (* abseq case *)
     do_wf_pieces.
-    destruct r; destruct s.
-    +
-    df.
-    vmsts.
-    dosome.
-    df.
-
-    do_suffix blah.
-    do_suffix blah'.
-    destruct_conjs; subst.
-    repeat do_restl.
-    
-    repeat do_pl_immut.
-    subst.
-    repeat rewrite <- app_assoc.
-
-    eapply lstar_tran.
-    econstructor.
-    simpl.
-
-    eapply lstar_transitive.
-    simpl.
-
-    eapply lstar_stbsl.  
-     
-    eapply IHt1.
-    eassumption.
-    (*
-    2: {
-      eassumption.
-    } *)
-    eassumption.
-  
-    unfold run_cvm in *.
-    monad_unfold.
-
-    eapply lstar_silent_tran.
-    apply stbslstop.
-    
-    eapply lstar_transitive.
-    eapply lstar_stbsr.
-        
-    eapply IHt2.
-    eassumption.
-    (*
-    2: {
-      eassumption.
-      } *)
-    eassumption.
-        
-    econstructor.
-
-    eapply stbsrstop.
-    econstructor.
-    +
-      
-    df.
-    vmsts.
-    dosome.
-    df.
-
-    do_suffix blah.
-    do_suffix blah'.
-    destruct_conjs; subst.
-    repeat do_restl.
-    
-    repeat do_pl_immut.
-    subst.
-    repeat rewrite <- app_assoc.
-
-    eapply lstar_tran.
-    econstructor.
-    simpl.
-
-    eapply lstar_transitive.
-    simpl.
-
-    eapply lstar_stbsl.  
-     
-    eapply IHt1.
-    eassumption.
-    (*
-    2: {
-      eassumption.
-    } *)
-    eassumption.
-  
-    unfold run_cvm in *.
-    monad_unfold.
-
-    eapply lstar_silent_tran.
-    apply stbslstop.
-    
-    eapply lstar_transitive.
-    eapply lstar_stbsr.
-        
-    eapply IHt2.
-    eassumption.
-    (*
-    2: {
-      eassumption.
-      } *)
-    eassumption.
-      
-    econstructor.
-
-    eapply stbsrstop.
-    econstructor.
+    destruct r; destruct s; destruct s; destruct s0.
     +
       df.
-    vmsts.
-    dosome.
-    df.
+      vmsts.
+      dosome.
+      df.
 
-    do_suffix blah.
-    do_suffix blah'.
-    destruct_conjs; subst.
-    repeat do_restl.
-    
-    repeat do_pl_immut.
-    subst.
-    repeat rewrite <- app_assoc.
-
-    eapply lstar_tran.
-    econstructor.
-    simpl.
-
-    eapply lstar_transitive.
-    simpl.
-
-    eapply lstar_stbsl.  
-     
-    eapply IHt1.
-    eassumption.
-    (*
-    2: {
-      eassumption.
-    } *)
-    eassumption.
-  
-    unfold run_cvm in *.
-    monad_unfold.
-
-    eapply lstar_silent_tran.
-    apply stbslstop.
-    
-    eapply lstar_transitive.
-    eapply lstar_stbsr.
-        
-    eapply IHt2.
-    eassumption.
-    (*
-    2: {
-      eassumption.
-      } *)
-    eassumption.
-       
-    econstructor.
-
-    eapply stbsrstop.
-    econstructor.
-
-  -    
-    do_wf_pieces.
-    destruct r; destruct s.
-    +
-    df.
-    vmsts.
-    dosome.
-    df.
-
-    do_suffix blah.
-    do_suffix blah'.
-    destruct_conjs; subst.
-    repeat do_restl.
-    
-    repeat do_pl_immut.
-    subst.
-    repeat rewrite <- app_assoc.
-
-    eapply lstar_tran.
-    econstructor.
-    simpl.
-
-    eapply lstar_transitive.
-    simpl.
-
-    eapply lstar_stbparl.  
-     
-    eapply IHt1.
-    eassumption.
-    (*
-    2: {
-      eassumption.
-    } *)
-    eassumption.
-  
-    unfold run_cvm in *.
-    monad_unfold.
-
-    (*
-    eapply lstar_transitive.
-    
-    apply stbpstepleft.
-    apply stbpstop. *)
-    
-    eapply lstar_transitive.
-    eapply lstar_stbparr.
-        
-    eapply IHt2.
-    eassumption.
-    (*
-    2: {
-      eassumption.
-      } *)
-    eassumption.
+      do_suffix blah.
+      do_suffix blah'.
+      destruct_conjs; subst.
+      repeat do_restl.
       
-    econstructor.
+      repeat do_pl_immut.
+      subst.
+      repeat rewrite <- app_assoc.
 
-    eapply stbpstop.
-    econstructor.
-        +
-    df.
-    vmsts.
-    dosome.
-    df.
+      eapply lstar_tran.
+      econstructor.
+      simpl.
 
-    do_suffix blah.
-    do_suffix blah'.
-    destruct_conjs; subst.
-    repeat do_restl.
+      eapply lstar_transitive.
+      simpl.
+
+      eapply lstar_stbsl.  
+      
+      eapply IHt1.
+      eassumption.
+      (*
     
-    repeat do_pl_immut.
-    subst.
-    repeat rewrite <- app_assoc.
-
-    eapply lstar_tran.
-    econstructor.
-    simpl.
-
-    eapply lstar_transitive.
-    simpl.
-
-    eapply lstar_stbparl.  
-     
-    eapply IHt1.
-    eassumption.
-    (*
     2: {
       eassumption.
-    } *)
-    eassumption.
-  
-    unfold run_cvm in *.
-    monad_unfold.
+      } *)
+      eassumption.
+      
+      unfold run_cvm in *.
+      monad_unfold.
 
-    (*
+      eapply lstar_silent_tran.
+      apply stbslstop.
+      
+      eapply lstar_transitive.
+      eapply lstar_stbsr.
+      
+      eapply IHt2.
+      eassumption.
+      (*
+    2: {
+      eassumption.
+      } *)
+      eassumption.
+      
+      econstructor.
+
+      eapply stbsrstop.
+      econstructor.
+
+
+    +
+      df.
+      vmsts.
+      dosome.
+      df.
+
+      do_suffix blah.
+      do_suffix blah'.
+      destruct_conjs; subst.
+      repeat do_restl.
+      
+      repeat do_pl_immut.
+      subst.
+      repeat rewrite <- app_assoc.
+
+      eapply lstar_tran.
+      econstructor.
+      simpl.
+
+      eapply lstar_transitive.
+      simpl.
+
+      eapply lstar_stbsl.  
+      
+      eapply IHt1.
+      eassumption.
+      (*
+    
+    2: {
+      eassumption.
+      } *)
+      eassumption.
+      
+      unfold run_cvm in *.
+      monad_unfold.
+
+      eapply lstar_silent_tran.
+      apply stbslstop.
+      
+      eapply lstar_transitive.
+      eapply lstar_stbsr.
+      
+      eapply IHt2.
+      eassumption.
+      (*
+    2: {
+      eassumption.
+      } *)
+      eassumption.
+      
+      econstructor.
+
+      eapply stbsrstop.
+      econstructor.
+ 
+    +
+      
+      df.
+      vmsts.
+      dosome.
+      df.
+
+      do_suffix blah.
+      do_suffix blah'.
+      destruct_conjs; subst.
+      repeat do_restl.
+      
+      repeat do_pl_immut.
+      subst.
+      repeat rewrite <- app_assoc.
+
+      eapply lstar_tran.
+      econstructor.
+      simpl.
+
+      eapply lstar_transitive.
+      simpl.
+
+      eapply lstar_stbsl.  
+      
+      eapply IHt1.
+      eassumption.
+      (*
+    2: {
+      eassumption.
+      } *)
+      eassumption.
+      
+      unfold run_cvm in *.
+      monad_unfold.
+
+      eapply lstar_silent_tran.
+      apply stbslstop.
+      
+      eapply lstar_transitive.
+      eapply lstar_stbsr.
+      
+      eapply IHt2.
+      eassumption.
+      (*
+    2: {
+      eassumption.
+      } *)
+      eassumption.
+      
+      econstructor.
+
+      eapply stbsrstop.
+      econstructor.
+    +
+      df.
+      vmsts.
+      dosome.
+      df.
+
+      do_suffix blah.
+      do_suffix blah'.
+      destruct_conjs; subst.
+      repeat do_restl.
+      
+      repeat do_pl_immut.
+      subst.
+      repeat rewrite <- app_assoc.
+
+      eapply lstar_tran.
+      econstructor.
+      simpl.
+
+      eapply lstar_transitive.
+      simpl.
+
+      eapply lstar_stbsl.  
+      
+      eapply IHt1.
+      eassumption.
+      (*
+    2: {
+      eassumption.
+      } *)
+      eassumption.
+      
+      unfold run_cvm in *.
+      monad_unfold.
+
+      eapply lstar_silent_tran.
+      apply stbslstop.
+      
+      eapply lstar_transitive.
+      eapply lstar_stbsr.
+      
+      eapply IHt2.
+      eassumption.
+      (*
+    2: {
+      eassumption.
+      } *)
+      eassumption.
+      
+      econstructor.
+
+      eapply stbsrstop.
+      econstructor.
+
+  - (* abpar case *)
+    do_wf_pieces.
+    destruct r; destruct s; destruct s; destruct s0.
+    +
+      df.
+      vmsts.
+      dosome.
+      df.
+
+      do_suffix blah.
+      do_suffix blah'.
+      destruct_conjs; subst.
+      repeat do_restl.
+      
+      repeat do_pl_immut.
+      subst.
+      repeat rewrite <- app_assoc.
+
+      eapply lstar_tran.
+      econstructor.
+      simpl.
+
+      eapply lstar_transitive.
+      simpl.
+
+      eapply lstar_stbparl.  
+      
+      eapply IHt1.
+      eassumption.
+      (*
+    2: {
+      eassumption.
+      } *)
+      eassumption.
+      
+      unfold run_cvm in *.
+      monad_unfold.
+
+      (*
     eapply lstar_transitive.
     
     apply stbpstepleft.
     apply stbpstop. *)
-    
-    eapply lstar_transitive.
-    eapply lstar_stbparr.
-        
-    eapply IHt2.
-    eassumption.
-    (*
+      
+      eapply lstar_transitive.
+      eapply lstar_stbparr.
+      
+      eapply IHt2.
+      eassumption.
+      (*
     2: {
       eassumption.
       } *)
-    eassumption.
+      eassumption.
+      
+      econstructor.
 
-    econstructor.
+      eapply stbpstop.
+      econstructor.
 
-    eapply stbpstop.
-    econstructor.
+    +
+      df.
+      vmsts.
+      dosome.
+      df.
 
-        +
-    df.
-    vmsts.
-    dosome.
-    df.
+      do_suffix blah.
+      do_suffix blah'.
+      destruct_conjs; subst.
+      repeat do_restl.
+      
+      repeat do_pl_immut.
+      subst.
+      repeat rewrite <- app_assoc.
 
-    do_suffix blah.
-    do_suffix blah'.
-    destruct_conjs; subst.
-    repeat do_restl.
-    
-    repeat do_pl_immut.
-    subst.
-    repeat rewrite <- app_assoc.
+      eapply lstar_tran.
+      econstructor.
+      simpl.
 
-    eapply lstar_tran.
-    econstructor.
-    simpl.
+      eapply lstar_transitive.
+      simpl.
 
-    eapply lstar_transitive.
-    simpl.
-
-    eapply lstar_stbparl.  
-     
-    eapply IHt1.
-    eassumption.
-    (*
+      eapply lstar_stbparl.  
+      
+      eapply IHt1.
+      eassumption.
+      (*
     2: {
       eassumption.
-    } *)
-    eassumption.
-  
-    unfold run_cvm in *.
-    monad_unfold.
+      } *)
+      eassumption.
+      
+      unfold run_cvm in *.
+      monad_unfold.
 
-    (*
+      (*
     eapply lstar_transitive.
     
     apply stbpstepleft.
     apply stbpstop. *)
-    
-    eapply lstar_transitive.
-    eapply lstar_stbparr.
-        
-    eapply IHt2.
-    eassumption.
-    (*
+      
+      eapply lstar_transitive.
+      eapply lstar_stbparr.
+      
+      eapply IHt2.
+      eassumption.
+      (*
     2: {
       eassumption.
       } *)
-    eassumption.
-        
-    econstructor.
+      eassumption.
+      
+      econstructor.
 
-    eapply stbpstop.
-    econstructor.
+      eapply stbpstop.
+      econstructor.
+
+    +
+      df.
+      vmsts.
+      dosome.
+      df.
+
+      do_suffix blah.
+      do_suffix blah'.
+      destruct_conjs; subst.
+      repeat do_restl.
+      
+      repeat do_pl_immut.
+      subst.
+      repeat rewrite <- app_assoc.
+
+      eapply lstar_tran.
+      econstructor.
+      simpl.
+
+      eapply lstar_transitive.
+      simpl.
+
+      eapply lstar_stbparl.  
+      
+      eapply IHt1.
+      eassumption.
+      (*
+    2: {
+      eassumption.
+      } *)
+      eassumption.
+      
+      unfold run_cvm in *.
+      monad_unfold.
+
+      (*
+    eapply lstar_transitive.
+    
+    apply stbpstepleft.
+    apply stbpstop. *)
+      
+      eapply lstar_transitive.
+      eapply lstar_stbparr.
+      
+      eapply IHt2.
+      eassumption.
+      (*
+    2: {
+      eassumption.
+      } *)
+      eassumption.
+
+      econstructor.
+
+      eapply stbpstop.
+      econstructor.
+
+    +
+      df.
+      vmsts.
+      dosome.
+      df.
+
+      do_suffix blah.
+      do_suffix blah'.
+      destruct_conjs; subst.
+      repeat do_restl.
+      
+      repeat do_pl_immut.
+      subst.
+      repeat rewrite <- app_assoc.
+
+      eapply lstar_tran.
+      econstructor.
+      simpl.
+
+      eapply lstar_transitive.
+      simpl.
+
+      eapply lstar_stbparl.  
+      
+      eapply IHt1.
+      eassumption.
+      (*
+    2: {
+      eassumption.
+      } *)
+      eassumption.
+      
+      unfold run_cvm in *.
+      monad_unfold.
+
+      (*
+    eapply lstar_transitive.
+    
+    apply stbpstepleft.
+    apply stbpstop. *)
+      
+      eapply lstar_transitive.
+      eapply lstar_stbparr.
+      
+      eapply IHt2.
+      eassumption.
+      (*
+    2: {
+      eassumption.
+      } *)
+      eassumption.
+      
+      econstructor.
+
+      eapply stbpstop.
+      econstructor.
 Defined.
 
 

@@ -187,14 +187,14 @@ Defined.
 
 Definition splitEv_l (sp:Split) (e:EvC): EvC :=
   match sp with
-  | RIGHT => mt_evc
-  | _ => e
+  | (ALL, _) => e
+  | _ => mt_evc
   end.
 
 Definition splitEv_r (sp:Split) (e:EvC): EvC :=
   match sp with
-  | LEFT => mt_evc
-  | _ => e
+  | (_,ALL) => e
+  | _ => mt_evc
   end.
 
 (*

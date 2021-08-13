@@ -48,10 +48,17 @@ Inductive ASP: Set :=
 | SIG: ASP
 | HSH: ASP.
 
+Inductive SP: Set :=
+| ALL
+| NONE.
+
+Definition Split: Set := (SP * SP).
+(*
 Inductive Split: Set :=
 | LEFT
 | RIGHT
 | ALL.
+*)
 
 Inductive Term: Set :=
 | asp: ASP -> Term
@@ -82,8 +89,19 @@ Fixpoint et_size (e:Evidence): nat :=
   | pp e1 e2 => (et_size e1) + (et_size e2)
   end.
     
-  
+Definition splitEv_T_l (sp:Split) (e:Evidence) : Evidence :=
+  match sp with
+  | (ALL,_) => e
+  |  _ => mt
+  end.
 
+Definition splitEv_T_r (sp:Split) (e:Evidence) : Evidence :=
+  match sp with
+  | (_,ALL) => e
+  |  _ => mt
+  end.
+
+(*
 Definition splitEv_T_l (sp:Split) (e:Evidence) : Evidence :=
   match sp with
   | RIGHT => mt
@@ -95,6 +113,7 @@ Definition splitEv_T_r (sp:Split) (e:Evidence) : Evidence :=
   | LEFT => mt
   | _ => e
   end.
+*)
 
 Definition eval_asp t p e :=
   match t with

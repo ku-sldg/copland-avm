@@ -424,9 +424,47 @@ Ltac clear_skipn_firstn :=
       rewrite H2 in *; clear H2
   end.
 
+Inductive term_sub : AnnoTerm -> AnnoTerm -> Prop :=
+| termsub_refl: forall t: AnnoTerm, term_sub t t
+| aatt_sub: forall t t' r p,
+    term_sub t' t ->
+    term_sub t' (aatt r p t)
+| alseq_subl: forall t' t1 t2 r,
+    term_sub t' t1 ->
+    term_sub t' (alseq r t1 t2)
+| alseq_subr: forall t' t1 t2 r,
+    term_sub t' t2 ->
+    term_sub t' (alseq r t1 t2)
+| abseq_subl: forall t' t1 t2 r s,
+    term_sub t' t1 ->
+    term_sub t' (abseq r s t1 t2)
+| abseq_subr: forall t' t1 t2 r s,
+    term_sub t' t2 ->
+    term_sub t' (abseq r s t1 t2)
+| abpar_subl: forall t' t1 t2 r s,
+    term_sub t' t1 ->
+    term_sub t' (abpar r s t1 t2)
+| abpar_subr: forall t' t1 t2 r s,
+    term_sub t' t2 ->
+    term_sub t' (abpar r s t1 t2).
+
+Definition none_none_term (t:AnnoTerm): Prop :=
+  (exists t1 t2 r,
+      t = abseq r (NONE,NONE) t1 t2)
+  \/
+  (exists t1 t2 r,
+      t = abpar r (NONE,NONE) t1 t2).
+
+Definition not_none_none (t:AnnoTerm) :=
+  forall t',
+    none_none_term t' ->
+  ~ (term_sub t' t).
+             
+
 Lemma evAccum: forall t p (e e' e'':EvidenceC) tr tr' p' (ecc ecc':EvC),
 
     well_formed_r t ->
+    not_none_none t ->
     wf_ec ecc ->
     Some e =  (reconstruct_ev ecc) ->
     Some e' = (reconstruct_ev ecc') ->
@@ -466,15 +504,34 @@ Proof.
   - (* aatt case *)
     do_wf_pieces.
     ff.
+    unfold not_none_none in H0.
     
     eapply IHt.
     eassumption.
+    2: {
+      apply H1.
+    }
+    2: {
+      eassumption. }
+    2: {
+    
+      eassumption. }
+    2: {
+      eassumption. }
+    2: {
+      apply copland_compile_at.
+      eassumption.
+    }
+    unfold not_none_none.
+    intros.
+    unfold not. intros.
+    specialize H0 with (t':=t').
+    concludes.
+    unfold not in *.
     apply H0.
+    econstructor.
     eassumption.
-    eassumption.
-    eassumption.
-    apply copland_compile_at.
-    eassumption.
+
   - (* alseq case *)
     ff.
     dosome.
@@ -486,12 +543,98 @@ Proof.
 
     do_somerecons.
 
+
+    (*
+Ltac do_evsub_ih :=
+  match goal with
+  | [H: copland_compile ?t1 {| st_ev := _; st_trace := _; st_pl := _ |} =
+        (Some tt, {| st_ev := ?stev; st_trace := _; st_pl := _ |}),
+        
+        H2: copland_compile ?t2 {| st_ev := ?stev'; st_trace := _; st_pl := _ |} =
+            (Some tt, {| st_ev := _; st_trace := _; st_pl := _ |}),
+            H3: Some ?v = reconstruct_ev ?stev
+
+     |- context[EvSub ?e'' _ \/ _]] =>
+    
+    assert_new_proof_by
+      (EvSub e'' v \/
+       (exists (ett : Evidence) (p'0 bs : nat),
+           EvSub (hhc p'0 bs ett) v /\ EvSubT (et_fun e'') ett))
+      eauto
+  end.
+     *)
+
+    assert (not_none_none t1).
+    {
+      unfold not_none_none in *.
+      intros.
+      unfold not in *.
+      intros.
+      specialize H0 with (t':=t').
+      apply H0.
+      eassumption.
+      econstructor.
+      eassumption. }
+    assert (not_none_none t2).
+    {
+      unfold not_none_none in *.
+      intros.
+      unfold not in *.
+      intros.
+      specialize H0 with (t':=t').
+      apply H0.
+      eassumption.
+      apply alseq_subr.
+      eassumption. }
+
+    (*
+    unfold not_none_none in *.
+
+
+    assert
+      (EvSub e'' H10 \/
+       (exists (ett:Evidence) (p'0 bs: nat),
+           EvSub (hhc p'0 bs ett) H10 /\ EvSubT (et_fun e'') ett)).
+    {
+      eapply IHt1.
+      eassumption.
+      intros.
+      specialize H0 with (t':=t').
+      concludes.
+      unfold not in *; intros.
+      apply H0.
+      econstructor.
+      eassumption.
+      3: { eassumption. }
+      3: { eassumption. }
+      3: { eassumption. }
+      eassumption.
+      eassumption.
+    }
+     *)
+
     do_evsub_ih.
+    
     
     door.
     +
       eapply IHt2 with (ecc:=st_ev); eauto.
+
+      (*
+      intros.
+      specialize H0 with (t':=t').
+      unfold not in *.
+      intros.
+      apply H0.
+      eassumption.
+      apply alseq_subr.
+      eassumption. *)
     +
+
+      
+
+
+      
       do_evsubh_ih.
       
       door.
@@ -506,7 +649,7 @@ Proof.
         repeat (eexists; eauto).
         do_hh_sub.
         eapply evsubT_transitive; eauto.
-  -
+  - (* abseq case *)
     do_wf_pieces.
     ff.
     dosome.
@@ -528,8 +671,32 @@ Proof.
 
     do_somerecons.
 
-    destruct s;
-      
+    assert (not_none_none t1).
+    {
+      unfold not_none_none in *.
+      intros.
+      unfold not in *.
+      intros.
+      specialize H0 with (t':=t').
+      apply H0.
+      eassumption.
+      econstructor.
+      eassumption. }
+    assert (not_none_none t2).
+    {
+      unfold not_none_none in *.
+      intros.
+      unfold not in *.
+      intros.
+      specialize H0 with (t':=t').
+      apply H0.
+      eassumption.
+      apply abseq_subr.
+      eassumption. }
+
+    destruct s; destruct s; destruct s0;
+
+      try (
       ff;
       try unfold mt_evc in *;
       repeat jkjke';
@@ -541,9 +708,25 @@ Proof.
       
       door; destruct_conjs;
         try eauto;
-        try (right; repeat (eexists; eauto)).
+        try (right; repeat (eexists; eauto))
+        ).
 
-  -
+    unfold not_none_none in *.
+    specialize H0 with (t':= (abseq (n,n0) (NONE, NONE) t1 t2)).
+    assert (~
+       term_sub (abseq (n, n0) (NONE, NONE) t1 t2)
+       (abseq (n, n0) (NONE, NONE) t1 t2)).
+    apply H0.
+    unfold none_none_term.
+    eauto.
+    unfold not in H22.
+    exfalso.
+    apply H22.
+    econstructor.
+
+
+
+  - (* abpar case *)
     do_wf_pieces.
     ff.
     dosome.
@@ -558,15 +741,39 @@ Proof.
 
     do_wfec_firstn.
     do_wfec_skipn.
-
+    
     clear_skipn_firstn.
 
     do_wfec_preserved.
 
     do_somerecons.
 
-   destruct s;
-      
+    assert (not_none_none t1).
+    {
+      unfold not_none_none in *.
+      intros.
+      unfold not in *.
+      intros.
+      specialize H0 with (t':=t').
+      apply H0.
+      eassumption.
+      econstructor.
+      eassumption. }
+    assert (not_none_none t2).
+    {
+      unfold not_none_none in *.
+      intros.
+      unfold not in *.
+      intros.
+      specialize H0 with (t':=t').
+      apply H0.
+      eassumption.
+      apply abpar_subr.
+      eassumption. }
+
+    destruct s; destruct s; destruct s0;
+
+      try (
       ff;
       try unfold mt_evc in *;
       repeat jkjke';
@@ -578,7 +785,21 @@ Proof.
       
       door; destruct_conjs;
         try eauto;
-        try (right; repeat (eexists; eauto)).
+        try (right; repeat (eexists; eauto))
+        ).
+
+    unfold not_none_none in *.
+    specialize H0 with (t':= (abpar (n,n0) (NONE, NONE) t1 t2)).
+    assert (~
+       term_sub (abpar (n, n0) (NONE, NONE) t1 t2)
+       (abpar (n, n0) (NONE, NONE) t1 t2)).
+    apply H0.
+    unfold none_none_term.
+    eauto.
+    unfold not in H22.
+    exfalso.
+    apply H22.
+    econstructor.
 Defined.
 
 Ltac do_evaccum :=

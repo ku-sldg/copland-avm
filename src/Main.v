@@ -130,7 +130,20 @@ Proof.
   -
     cbn in *; auto.
     invc H.
+    destruct s.
+    destruct s; destruct s0.
+    +
+      eauto.
+    +
+      eauto.
+    +
+      eauto.
+    +
+      ff.
+Abort.  (* TODO:  can this be proven with assumptions about term split? *)
+(*   
     assert ((splitEv_T_l s e) = (splitEv_T_l s e')) by eauto.
+    destruct s; destruct s; destruct s0; eauto.
     destruct s; eauto.
   -
     cbn in *; auto.
@@ -138,6 +151,7 @@ Proof.
     assert ((splitEv_T_l s e) = (splitEv_T_l s e')) by eauto.
     destruct s; eauto.
 Defined.
+*)
 
 Lemma step_silent_tr:
   forall st st' tr,
