@@ -458,7 +458,149 @@ Definition none_none_term (t:AnnoTerm): Prop :=
 Definition not_none_none (t:AnnoTerm) :=
   forall t',
     none_none_term t' ->
-  ~ (term_sub t' t).
+    ~ (term_sub t' t).
+
+Lemma not_none_alseq_pieces: forall r t1 t2,
+    not_none_none (alseq r t1 t2) ->
+    not_none_none t1 /\ not_none_none t2.
+Proof.
+  unfold not_none_none in *.
+  intros.
+  split.
+  -
+    unfold not in *.
+    intros.
+    specialize H with (t':=t').
+    apply H.
+    eassumption.
+    econstructor.
+    eassumption.
+  -
+    unfold not in *.
+    intros.
+    specialize H with (t':=t').
+    apply H.
+    eassumption.
+    apply alseq_subr.
+    eassumption.
+Defined.
+
+Lemma not_none_abseq_pieces: forall r s t1 t2,
+    not_none_none (abseq r s t1 t2) ->
+    not_none_none t1 /\ not_none_none t2.
+Proof.
+  unfold not_none_none in *.
+  intros.
+  split.
+  -
+    unfold not in *.
+    intros.
+    specialize H with (t':=t').
+    apply H.
+    eassumption.
+    econstructor.
+    eassumption.
+  -
+    unfold not in *.
+    intros.
+    specialize H with (t':=t').
+    apply H.
+    eassumption.
+    apply abseq_subr.
+    eassumption.
+Defined.
+
+Lemma not_none_abpar_pieces: forall r s t1 t2,
+    not_none_none (abpar r s t1 t2) ->
+    not_none_none t1 /\ not_none_none t2.
+Proof.
+  unfold not_none_none in *.
+  intros.
+  split.
+  -
+    unfold not in *.
+    intros.
+    specialize H with (t':=t').
+    apply H.
+    eassumption.
+    econstructor.
+    eassumption.
+  -
+    unfold not in *.
+    intros.
+    specialize H with (t':=t').
+    apply H.
+    eassumption.
+    apply abpar_subr.
+    eassumption.
+Defined.
+
+Lemma not_none_aatt_pieces: forall r q t1,
+    not_none_none (aatt r q t1) ->
+    not_none_none t1.
+Proof.
+  intros.
+  unfold not_none_none in *.
+  intros.
+  unfold not. intros.
+  specialize H with (t':=t').
+  concludes.
+  unfold not in *.
+  apply H.
+  econstructor.
+  eassumption.
+Defined.
+
+Ltac do_not_none_alseq_pieces :=
+  match goal with
+  | [H: not_none_none (alseq _ ?t1 ?t2)
+
+     |- _] =>
+    
+    assert_new_proof_by
+      (not_none_none t1 /\ not_none_none t2)
+      ltac:(eapply not_none_alseq_pieces; apply H)
+  end.
+
+Ltac do_not_none_abseq_pieces :=
+  match goal with
+  | [H: not_none_none (abseq _ _ ?t1 ?t2)
+
+     |- _] =>
+    
+    assert_new_proof_by
+      (not_none_none t1 /\ not_none_none t2)
+      ltac:(eapply not_none_abseq_pieces; apply H)
+  end.
+
+Ltac do_not_none_abpar_pieces :=
+  match goal with
+  | [H: not_none_none (abpar _ _ ?t1 ?t2)
+
+     |- _] =>
+    
+    assert_new_proof_by
+      (not_none_none t1 /\ not_none_none t2)
+      ltac:(eapply not_none_abpar_pieces; apply H)
+  end.
+
+Ltac do_not_none_aatt_pieces :=
+  match goal with
+  | [H: not_none_none (aatt _ _ ?t1)
+
+     |- _] =>
+    
+    assert_new_proof_by
+      (not_none_none t1)
+      ltac:(eapply not_none_aatt_pieces; apply H)
+  end.
+
+Ltac do_not_none :=
+  try do_not_none_aatt_pieces;
+  try do_not_none_alseq_pieces;
+  try do_not_none_abseq_pieces;
+  try do_not_none_abpar_pieces;
+  destruct_conjs.
              
 
 Lemma evAccum: forall t p (e e' e'':EvidenceC) tr tr' p' (ecc ecc':EvC),
@@ -503,11 +645,12 @@ Proof.
       apply evsub_etfun; eauto.
   - (* aatt case *)
     do_wf_pieces.
+    do_not_none.
     ff.
-    unfold not_none_none in H0.
     
     eapply IHt.
     eassumption.
+
     2: {
       apply H1.
     }
@@ -522,14 +665,6 @@ Proof.
       apply copland_compile_at.
       eassumption.
     }
-    unfold not_none_none.
-    intros.
-    unfold not. intros.
-    specialize H0 with (t':=t').
-    concludes.
-    unfold not in *.
-    apply H0.
-    econstructor.
     eassumption.
 
   - (* alseq case *)
@@ -564,6 +699,13 @@ Ltac do_evsub_ih :=
   end.
      *)
 
+
+
+    do_not_none.
+
+    
+    (*
+
     assert (not_none_none t1).
     {
       unfold not_none_none in *.
@@ -586,6 +728,8 @@ Ltac do_evsub_ih :=
       eassumption.
       apply alseq_subr.
       eassumption. }
+     *)
+    
 
     (*
     unfold not_none_none in *.
@@ -671,6 +815,10 @@ Ltac do_evsub_ih :=
 
     do_somerecons.
 
+    do_not_none.
+
+    (*
+
     assert (not_none_none t1).
     {
       unfold not_none_none in *.
@@ -693,6 +841,8 @@ Ltac do_evsub_ih :=
       eassumption.
       apply abseq_subr.
       eassumption. }
+     *)
+    
 
     destruct s; destruct s; destruct s0;
 
@@ -748,6 +898,10 @@ Ltac do_evsub_ih :=
 
     do_somerecons.
 
+    do_not_none.
+
+    (*
+
     assert (not_none_none t1).
     {
       unfold not_none_none in *.
@@ -770,6 +924,8 @@ Ltac do_evsub_ih :=
       eassumption.
       apply abpar_subr.
       eassumption. }
+     *)
+    
 
     destruct s; destruct s; destruct s0;
 
@@ -812,7 +968,8 @@ Ltac do_evaccum :=
                        H5: EvSub ?e'' ?e,
                            H6: copland_compile ?t
                                                {| st_ev := ?ecc; st_trace := _; st_pl := _ |} =
-                               (Some tt, {| st_ev := ?ecc'; st_trace := _; st_pl := _ |})
+                               (Some tt, {| st_ev := ?ecc'; st_trace := _; st_pl := _ |}),
+                               H7: not_none_none ?t
 
         |- _] =>
       
@@ -820,7 +977,7 @@ Ltac do_evaccum :=
         (EvSub e'' e' \/
          (exists (ett : Evidence) (p'0 bs : nat),
              EvSub (hhc p'0 bs ett) e' /\ EvSubT (et_fun e'') ett))
-        ltac: (eapply evAccum; [apply H | apply H2 | apply H3 | apply H4 | apply H5 | apply H6])
+        ltac: (eapply evAccum; [apply H | apply H7 | apply H2 | apply H3 | apply H4 | apply H5 | apply H6])
     end.         
 
 Ltac do_evsub_ihhh' :=
@@ -836,6 +993,7 @@ Ltac do_evsub_ihhh' :=
                 H4: Some ?v' = reconstruct_ev ?stev,
                 IH: forall _, _ -> _ ,(*context[forall _, well_formed_r ?t1 -> _], *)
        Hf: well_formed_r ?t1,
+       Hnn: not_none_none ?t1,
        Hwf: wf_ec ?ee,
        Hev: events ?t1 _ _ _
        
@@ -861,7 +1019,7 @@ Ltac do_evsub_ihhh' :=
              (exists (ett : Evidence) (p'0 bs : nat) (et':Evidence),
                  EvSub (hhc p'0 bs ett) v /\ EvSubT (uu i args tpl tid et') ett)) 
        *)
-      ltac: (eapply IH; [apply Hf | apply Hwf | apply H3 | apply H4 | apply Hev | apply H])
+      ltac: (eapply IH; [apply Hf | apply Hnn| apply Hwf | apply H3 | apply H4 | apply Hev | apply H])
       (*ltac:(ff; repeat jkjke'; eauto)*)
        
       
@@ -871,6 +1029,7 @@ Lemma uu_preserved': forall t p et n p0 i args tpl tid
                        e tr e' tr' p' ecc ecc',
 
     well_formed_r t ->
+    not_none_none t ->
     wf_ec ecc ->
     Some e = (reconstruct_ev ecc) ->
     Some e' = (reconstruct_ev ecc') ->
@@ -902,11 +1061,13 @@ Proof.
     ff.
     invEvents.
     do_wf_pieces.
+    do_not_none.
 
     eapply IHt; eauto.
     apply copland_compile_at; eauto.
   -
     do_wf_pieces.
+    do_not_none.
     ff.
     dosome.
     ff.
@@ -929,8 +1090,9 @@ Proof.
         repeat ff.
 
         do_evaccum.
-        
-        clear H12.
+
+        (*
+        clear H12. *)
         door.
         +++
           left.
@@ -974,7 +1136,7 @@ Proof.
 
       repeat do_evsub_ihhh'.
 
-      clear H14.
+      clear H17.
       door.
       ++
         eauto.
@@ -986,6 +1148,7 @@ Proof.
 
   - (* abseq case *)
     do_wf_pieces.
+    do_not_none.
     ff.
     dosome.
     ff.
@@ -1015,6 +1178,7 @@ Proof.
 
   - (* abpar case *)
     do_wf_pieces.
+    do_not_none.
     ff.
     dosome.
     ff.
@@ -1049,6 +1213,8 @@ Lemma uu_preserved: forall t1 t2 p et n p0 i args tpl tid
                       e' tr' p'' ecc,
     well_formed_r t1 ->
     well_formed_r t2 ->
+    not_none_none t1 ->
+    not_none_none t2 ->
     wf_ec e ->
     Some e' = (reconstruct_ev ecc) ->
     events t1 p et (umeas n p0 i args tpl tid) ->
@@ -1073,14 +1239,15 @@ Proof.
   do_somerecons.
   
   assert (
-      (exists e'', EvSub (uuc i args tpl tid n e'') H9) \/
+      (exists e'', EvSub (uuc i args tpl tid n e'') H11) \/
       (exists ett p' bs et',
-          EvSub (hhc p' bs ett) H9 /\
+          EvSub (hhc p' bs ett) H11 /\
           EvSubT (uu i args tpl tid et') ett)
       ).
     {
       eapply uu_preserved'.
       apply H.
+      eassumption.
       4: { eassumption. }
       4: { eassumption. }
       eassumption.
@@ -1090,20 +1257,21 @@ Proof.
     door;
       do_evaccum.
   +
-    clear H16.
+    
+    clear H18.
     door; eauto.
 
     right;
       (repeat eexists; eauto).
   +
-    clear H20.
+    clear H22.
     door; ff.
     ++
     right;
       repeat (eexists; eauto).
 
     ++
-      assert (EvSubT (uu i args tpl tid H17) H20).
+      assert (EvSubT (uu i args tpl tid H19) H22).
       {
         eapply evsubT_transitive.
         apply hhSubT.
@@ -1117,6 +1285,7 @@ Defined.
 
 Lemma appraisal_correct : forall t e' tr tr' p p' ecc ev ee,
     well_formed_r t ->
+    not_none_none t ->
     wf_ec ee ->
     Some e' = (reconstruct_ev ecc) ->
     copland_compile t
@@ -1139,7 +1308,7 @@ Proof.
     inv_events.
     ff.
     break_match; try solve_by_inversion.
-    invc H1.
+    invc H2.
     
     repeat econstructor.
 
@@ -1150,7 +1319,9 @@ Proof.
     vmsts.
     ff.
     do_wf_pieces.
+    do_not_none.
     eapply IHt.
+    eassumption.
     eassumption.
     eassumption.
     eassumption.
@@ -1163,6 +1334,7 @@ Proof.
   - (* alseq case *)
     
     do_wf_pieces.
+    do_not_none.
     vmsts.
     simpl in *.
     subst.
@@ -1173,18 +1345,23 @@ Proof.
     measEventFacts.
     repeat do_pl_immut.
     subst.
-    invc H6.
+    invc H9.
     inv_events.
     + (* t1 case *)
 
       edestruct uu_preserved.
-      apply H4.
       apply H5.
-      5: { eassumption. }
+      apply H6.
+      eassumption.
+      eassumption.
+      4: { eassumption. }
       4: { eassumption. }
       eassumption.
+      eassumption.
+      eassumption.
+      (*
       jkjke'.
-      eauto.
+      eauto. *)
 
       destruct_conjs.
 
@@ -1211,6 +1388,7 @@ Proof.
       
       eapply IHt2.
       eassumption.
+      eassumption.
       3: { eassumption. }
       eassumption.
       eassumption.
@@ -1229,9 +1407,11 @@ Proof.
       econstructor.
       
   - (* abseq case *)
+    
+    do_wf_pieces.
+    do_not_none.
     (*
-    do_wf_pieces. *)
-    edestruct wf_bseq_pieces;[eauto | idtac].
+    edestruct wf_bseq_pieces;[eauto | idtac]. *)
     vmsts.
     simpl in *.
     subst.
@@ -1246,7 +1426,7 @@ Proof.
     measEventFacts.
     repeat do_pl_immut.
     subst.
-    invc H2.
+    invc H3.
 
     do_wfec_split.
 
@@ -1270,15 +1450,16 @@ Proof.
           
           eapply IHt1.
           eassumption.
+          eassumption.
           2: { jkjke'. }
           2: { eassumption. }
           eassumption.
           econstructor. ff.
-          destruct s; ff.
+          destruct s; destruct s; ff.
           econstructor.
       }
       
-      invc H8.
+      invc H11.
       +++
         econstructor.
         econstructor.
@@ -1301,15 +1482,16 @@ Proof.
           
           eapply IHt2.
           eassumption.
+          eassumption.
           2: { jkjke'. }
           2: { eassumption. }
           eassumption.
           econstructor. ff.
-          destruct s; ff.
+          destruct s; destruct s0; ff.
           econstructor.
       }
 
-      invc H8.
+      invc H11.
       +++
         econstructor.
         apply ssSubr.
@@ -1322,6 +1504,7 @@ Proof.
 
   - (* abpar case *)
     do_wf_pieces.
+    do_not_none.
     vmsts.
     simpl in *.
     subst.
@@ -1337,7 +1520,7 @@ Proof.
     do_pl_immut.
     do_pl_immut.
     subst.
-    invc H2.
+    invc H3.
 
     do_wfec_split.
 
@@ -1361,15 +1544,16 @@ Proof.
           
           eapply IHt1.
           eassumption.
+          eassumption.
           2: { jkjke'. }
           2: { eassumption. }
           eassumption.
           econstructor. ff.
-          destruct s; ff.
+          destruct s; destruct s; ff.
           econstructor.
       }
 
-      invc H8.
+      invc H11.
       +++
         econstructor.
         econstructor.   
@@ -1390,15 +1574,16 @@ Proof.
           
           eapply IHt2.
           eassumption.
+          eassumption.
           2: { jkjke'. }
           2: { eassumption. }
           eassumption.
           econstructor. ff.
-          destruct s; ff.
+          destruct s; destruct s0; ff.
           econstructor.
       }
 
-      invc H8.
+      invc H11.
       +++
         econstructor.
         apply ppSubr.
@@ -1420,6 +1605,7 @@ Definition get_bits (e:EvC): list BS :=
 
 Lemma appraisal_correct_alt : forall t e' tr tr' p p' bits' et' ev ee,
     well_formed_r t ->
+    not_none_none t ->
     wf_ec ee ->
     copland_compile t
                     {| st_ev := ee; st_trace := tr; st_pl := p |} =
@@ -1437,6 +1623,7 @@ Proof.
   do_somerecons.
   erewrite appraisal_alt.
   eapply appraisal_correct.
+  eassumption.
   eassumption.
   3: { eassumption. }
   eassumption.
