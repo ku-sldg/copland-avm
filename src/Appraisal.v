@@ -6,17 +6,12 @@ Require Import StAM Appraisal_Defs Impl_appraisal (*MonadAM*).
 
 Require Import Coq.Arith.Peano_dec.
 
-Require Import StructTactics OptMonad.
+Require Import StructTactics OptMonad. 
 
-Require Import Coq.Program.Tactics Coq.Program.Equality.
+Require Import Lia Coq.Program.Tactics Coq.Program.Equality.
 
 Require Import List.
 Import ListNotations.
-
-Require Import Lia.
-
-(*
-Require Import Impl_appraisal_alt. *)
 
 Set Nested Proofs Allowed.
 
@@ -84,13 +79,6 @@ Proof.
     repeat ff;
     repeat jkjke.
 Defined.
-
-(*
-Inductive wf_ec : EvC -> Prop :=
-| wf_ec_c: forall ls et,
-    length ls = et_size et ->
-    wf_ec (evc ls et).
-*)
 
 Ltac dest_evc :=
   repeat
@@ -219,34 +207,6 @@ Ltac do_wfec_preserved :=
                           ltac:(eapply wf_ec_preserved_by_cvm; [apply H | apply H2 | apply H3])
                                  
     end.
-
-Lemma cvm_evidence_size : forall t tr tr' bits bits' et et' p p',
-    well_formed_r t ->
-    copland_compile t (mk_st (evc bits et) tr p) = (Some tt, (mk_st (evc bits' et') tr' p')) ->
-    Ev_Shape' bits et ->
-    (*
-    Term_Defs.eval (unanno t) p es = e's -> *)
-    (*et' = (Term_Defs.eval (unanno t) p et) /\ *)
-    Ev_Shape' bits' (Term_Defs.eval (unanno t) p et).
-
-Proof.
-  intros.
-  unfold Ev_Shape' in *.
-  assert (et' = (Term_Defs.eval (unanno t) p et)).
-  {
-    eapply cvm_refines_lts_evidence; eauto.
-  }
-  jkjke'.
-  assert (wf_ec (evc bits et)).
-  {
-    econstructor.
-    tauto.
-  }
-  
-  do_wfec_preserved.
-  invc H4.
-  tauto.
-Defined.
 
 Lemma some_recons' : forall e x,
     length e = S x ->
@@ -678,107 +638,15 @@ Proof.
 
     do_somerecons.
 
-
-    (*
-Ltac do_evsub_ih :=
-  match goal with
-  | [H: copland_compile ?t1 {| st_ev := _; st_trace := _; st_pl := _ |} =
-        (Some tt, {| st_ev := ?stev; st_trace := _; st_pl := _ |}),
-        
-        H2: copland_compile ?t2 {| st_ev := ?stev'; st_trace := _; st_pl := _ |} =
-            (Some tt, {| st_ev := _; st_trace := _; st_pl := _ |}),
-            H3: Some ?v = reconstruct_ev ?stev
-
-     |- context[EvSub ?e'' _ \/ _]] =>
-    
-    assert_new_proof_by
-      (EvSub e'' v \/
-       (exists (ett : Evidence) (p'0 bs : nat),
-           EvSub (hhc p'0 bs ett) v /\ EvSubT (et_fun e'') ett))
-      eauto
-  end.
-     *)
-
-
-
     do_not_none.
 
-    
-    (*
-
-    assert (not_none_none t1).
-    {
-      unfold not_none_none in *.
-      intros.
-      unfold not in *.
-      intros.
-      specialize H0 with (t':=t').
-      apply H0.
-      eassumption.
-      econstructor.
-      eassumption. }
-    assert (not_none_none t2).
-    {
-      unfold not_none_none in *.
-      intros.
-      unfold not in *.
-      intros.
-      specialize H0 with (t':=t').
-      apply H0.
-      eassumption.
-      apply alseq_subr.
-      eassumption. }
-     *)
-    
-
-    (*
-    unfold not_none_none in *.
-
-
-    assert
-      (EvSub e'' H10 \/
-       (exists (ett:Evidence) (p'0 bs: nat),
-           EvSub (hhc p'0 bs ett) H10 /\ EvSubT (et_fun e'') ett)).
-    {
-      eapply IHt1.
-      eassumption.
-      intros.
-      specialize H0 with (t':=t').
-      concludes.
-      unfold not in *; intros.
-      apply H0.
-      econstructor.
-      eassumption.
-      3: { eassumption. }
-      3: { eassumption. }
-      3: { eassumption. }
-      eassumption.
-      eassumption.
-    }
-     *)
-
     do_evsub_ih.
-    
     
     door.
     +
       eapply IHt2 with (ecc:=st_ev); eauto.
-
-      (*
-      intros.
-      specialize H0 with (t':=t').
-      unfold not in *.
-      intros.
-      apply H0.
-      eassumption.
-      apply alseq_subr.
-      eassumption. *)
     +
 
-      
-
-
-      
       do_evsubh_ih.
       
       door.
@@ -793,6 +661,7 @@ Ltac do_evsub_ih :=
         repeat (eexists; eauto).
         do_hh_sub.
         eapply evsubT_transitive; eauto.
+        
   - (* abseq case *)
     do_wf_pieces.
     ff.
@@ -816,34 +685,7 @@ Ltac do_evsub_ih :=
     do_somerecons.
 
     do_not_none.
-
-    (*
-
-    assert (not_none_none t1).
-    {
-      unfold not_none_none in *.
-      intros.
-      unfold not in *.
-      intros.
-      specialize H0 with (t':=t').
-      apply H0.
-      eassumption.
-      econstructor.
-      eassumption. }
-    assert (not_none_none t2).
-    {
-      unfold not_none_none in *.
-      intros.
-      unfold not in *.
-      intros.
-      specialize H0 with (t':=t').
-      apply H0.
-      eassumption.
-      apply abseq_subr.
-      eassumption. }
-     *)
     
-
     destruct s; destruct s; destruct s0;
 
       try (
@@ -874,8 +716,6 @@ Ltac do_evsub_ih :=
     apply H22.
     econstructor.
 
-
-
   - (* abpar case *)
     do_wf_pieces.
     ff.
@@ -899,34 +739,7 @@ Ltac do_evsub_ih :=
     do_somerecons.
 
     do_not_none.
-
-    (*
-
-    assert (not_none_none t1).
-    {
-      unfold not_none_none in *.
-      intros.
-      unfold not in *.
-      intros.
-      specialize H0 with (t':=t').
-      apply H0.
-      eassumption.
-      econstructor.
-      eassumption. }
-    assert (not_none_none t2).
-    {
-      unfold not_none_none in *.
-      intros.
-      unfold not in *.
-      intros.
-      specialize H0 with (t':=t').
-      apply H0.
-      eassumption.
-      apply abpar_subr.
-      eassumption. }
-     *)
     
-
     destruct s; destruct s; destruct s0;
 
       try (
@@ -1301,7 +1114,6 @@ Proof.
   generalizeEverythingElse t.
   induction t; intros.
   - (* aasp case *)
-    
     measEventFacts.
     evEventFacts.
     destruct ee.
@@ -1359,9 +1171,6 @@ Proof.
       eassumption.
       eassumption.
       eassumption.
-      (*
-      jkjke'.
-      eauto. *)
 
       destruct_conjs.
 
@@ -1410,8 +1219,6 @@ Proof.
     
     do_wf_pieces.
     do_not_none.
-    (*
-    edestruct wf_bseq_pieces;[eauto | idtac]. *)
     vmsts.
     simpl in *.
     subst.
@@ -1473,8 +1280,8 @@ Proof.
 
     + (* t1 case *)
 
-
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
+      assert (appEvent_EvidenceC
+                (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
       {      
         destruct ee; ff.
 
@@ -1595,12 +1402,7 @@ Proof.
         eassumption.
 Defined.
 
-Require Import Appraisal_AltImpls_Eq Impl_appraisal_alt.
-
-Definition get_bits (e:EvC): list BS :=
-  match e with
-  | evc ls _ => ls
-  end.
+Require Import Impl_appraisal_alt Appraisal_AltImpls_Eq.
     
 
 Lemma appraisal_correct_alt : forall t e' tr tr' p p' bits' et' ev ee,

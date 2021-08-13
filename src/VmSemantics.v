@@ -465,6 +465,7 @@ Axiom remote_Ev_Shape: forall e es t n,
     Ev_Shape (toRemote t n e) (eval (unanno t) n es).
  *)
 
+(*
 Definition Ev_Shape' (bits:list BS) (et:Evidence) :=
   length bits = et_size et.
 
@@ -472,11 +473,7 @@ Axiom remote_Ev_Shape: forall et et' t n bits bits',
     Ev_Shape' bits et ->
     toRemote t n (evc bits et) = evc bits' et' ->
     Ev_Shape' bits' (eval (unanno t) n et).
-
-Definition get_et (e:EvC) : Evidence :=
-  match e with
-  | evc ec et => et
-  end.
+ *)
 
 Lemma cvm_refines_lts_evidence' : forall t tr tr' e e' p p',
     well_formed_r t ->

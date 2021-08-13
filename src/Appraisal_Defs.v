@@ -15,11 +15,6 @@ Definition peel_bs (ls:EvBits) : option (BS * EvBits) :=
   | _ => None
   end.
 
-Inductive wf_ec : EvC -> Prop :=
-| wf_ec_c: forall ls et,
-    length ls = et_size et ->
-    wf_ec (evc ls et).
-
 Lemma peel_fact': forall e x y H,
     length e = S x ->
     peel_bs e = Some (y, H) ->

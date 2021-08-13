@@ -29,6 +29,21 @@ Inductive EvC: Set :=
 
 Definition mt_evc: EvC := (evc [] mt).
 
+Definition get_et (e:EvC) : Evidence :=
+  match e with
+  | evc ec et => et
+  end.
+
+Definition get_bits (e:EvC): list BS :=
+  match e with
+  | evc ls _ => ls
+  end.
+
+Inductive wf_ec : EvC -> Prop :=
+| wf_ec_c: forall ls et,
+    length ls = et_size et ->
+    wf_ec (evc ls et).
+
 Fixpoint et_fun (ec:EvidenceC) : Evidence :=
   match ec with
   | mtc => mt
