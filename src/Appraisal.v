@@ -593,16 +593,28 @@ Proof.
       try unfold cons_gg in *;
       (repeat ff; try eauto).
     +
-      right.
-      repeat eexists.
-      econstructor.
+      destruct ecc.
+      ff.
+      assert (e2 = et_fun e).
+      {
+        eapply etfun_reconstruct; eauto.
+      }
+      subst.
+      jkjke'.
+      ff.
+    +
+      destruct ecc.
+      ff.
       assert (e1 = et_fun e).
       {
         eapply etfun_reconstruct; eauto.
       }
       subst.
-
+      right.
+      repeat eexists.
+      econstructor.
       apply evsub_etfun; eauto.
+      
   - (* aatt case *)
     do_wf_pieces.
     do_not_none.

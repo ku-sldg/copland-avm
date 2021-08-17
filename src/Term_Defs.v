@@ -163,10 +163,10 @@ Definition case_phrase :=
 Inductive Ev: Set :=
 | copy:  nat -> Plc -> Ev 
 | umeas: nat -> Plc -> ASP_ID -> (list Arg) -> Plc -> TARG_ID -> Ev
-| sign: nat -> Plc -> Ev
+| sign: nat -> Plc -> Evidence -> Ev
 | hash: nat -> Plc -> Evidence -> Ev
 | req: nat -> Plc -> Plc -> Term -> Evidence -> Ev
-| rpy: nat -> Plc -> Plc -> Ev 
+| rpy: nat -> Plc -> Plc -> Evidence -> Ev 
 | split: nat -> Plc -> Ev
 (*| splitp: nat -> (*Loc ->*) Loc -> Plc -> Ev *)
 | join:  nat -> Plc -> Ev
@@ -186,10 +186,10 @@ Definition ev x : nat :=
   match x with
   | copy i _ => i
   | umeas i _ _ _ _ _  => i
-  | sign i _ => i
+  | sign i _ _ => i
   | hash i _ _ => i
   | req i _ _ _ _ => i
-  | rpy i _ _ => i 
+  | rpy i _ _ _ => i 
   | split i _ => i
   (* | splitp i _ _ => i *)
   | join i _ => i
@@ -201,10 +201,10 @@ Definition pl x : Plc :=
   match x with
   | copy _ p => p
   | umeas _ p _ _ _ _  => p
-  | sign _ p => p
+  | sign _ p _ => p
   | hash _ p _ => p
   | req _ p _ _ _ => p
-  | rpy _ p _ => p
+  | rpy _ p _ _ => p
   | split _ p => p
   (*| splitp _ _ p => p *)
   | join _ p => p
@@ -223,7 +223,7 @@ Definition asp_event i x p e :=
   match x with
   | CPY => copy i p
   | ASPC id l upl tid => umeas i p id l upl tid
-  | SIG => sign i p
+  | SIG => sign i p e
   | HSH => hash i p e
   end.
 

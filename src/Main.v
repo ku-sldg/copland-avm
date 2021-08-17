@@ -36,7 +36,7 @@ Inductive traceS: St -> list Ev -> Prop :=
     traceS st tr ->
     traceS (rem j p st)
            (tr ++
-               [(rpy (pred j) p (pl st))])
+               [(rpy (pred j) p (pl st) (seval st))])
 | tls: forall st tr1 t tr2,
     traceS st tr1 ->
     trace t (pl st) (seval st) tr2 ->
@@ -167,6 +167,7 @@ Proof.
     find_copy_apply_lem_hyp step_pl_eq.
     find_copy_apply_lem_hyp step_seval.
     jkjk'e.
+    jkjk'e.
     eauto.
   -
     constructor.
@@ -230,6 +231,7 @@ Proof.
   -
     find_copy_apply_lem_hyp step_seval.
     find_copy_apply_lem_hyp step_pl_eq.
+    jkjk'e.
     jkjk'e.
     rewrite app_comm_cons; eauto. 
   - rewrite <- app_nil_l; auto.

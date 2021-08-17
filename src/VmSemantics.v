@@ -1127,6 +1127,16 @@ Proof.
     cbn.
     
     apply H0.
+    jkjke.
+    ff.
+    assert (et' = (aeval t n et)).
+    {
+      erewrite <- remote_Evidence_Type_Axiom.
+      jkjke.
+    }
+    subst.
+    
+      
 
     econstructor.
     apply stattstop.

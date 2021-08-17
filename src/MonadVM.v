@@ -94,30 +94,32 @@ Admitted.
 Definition do_hash (bs:BS) (p:Plc) : BS.
 Admitted.
 
-Definition tag_SIG (x:nat) (p:Plc) : CVM unit :=
-  add_tracem [sign x p].  (* TODO: evidence type for sign event? *)
+Definition tag_SIG (x:nat) (p:Plc) (e:EvC) : CVM unit :=
+  add_tracem [sign x p (get_et e)].
 
 Definition cons_gg (sig:BS) (e:EvC) (p:Plc): EvC :=
+  evc (sig :: (get_bits e)) (gg p (get_et e)).
+(*
   match e with
   | evc bits et => evc (sig :: bits) (gg p et)
   end.
+ *)
+
 
 Definition signEv (x:nat) : CVM EvC :=
   p <- get_pl ;;
-  tag_SIG x p ;;
   e <- get_ev ;;
+  tag_SIG x p e ;;
   ret (cons_gg (do_sig (encodeEv e) p) e p).
 
 Definition tag_HSH (x:nat) (p:Plc) (e:EvC): CVM unit :=
-  match e with
-  | evc bits et =>
-    add_tracem [hash x p et]  (* TODO: evidence type for hash event? *)
-  end.
+  add_tracem [hash x p (get_et e)].
 
 Definition cons_hh (hsh:BS) (e:EvC) (p:Plc): EvC :=
-  match e with
+  evc [hsh] (hh p (get_et e)).
+  (*match e with
   | evc bits et => evc [hsh] (hh p et)
-  end.
+  end. *)
 
 Definition hashEv (x:nat) : CVM EvC :=
   p <- get_pl ;;
@@ -141,17 +143,17 @@ Definition do_prim (x:nat) (a:ASP) : CVM EvC :=
     hashEv x
   end.
 
+(*
 Definition et_fun' (e:EvC): Evidence :=
   match e with
   | evc bits et => et
   end.
+*)
     
 Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) : CVM unit :=
   p <- get_pl ;;
   e <- get_ev ;;
-  add_tracem [req reqi p q (unanno t) (et_fun' e)].
-
-Locate toRemote.
+  add_tracem [req reqi p q (unanno t) (get_et e)].
 
 (* Primitive CVM Monad operations that require IO Axioms *)
 Definition doRemote (t:AnnoTerm) (q:Plc) (e:EvC) : CVM EvC :=
@@ -162,7 +164,7 @@ Definition receiveResp (t:AnnoTerm) (q:Plc) (rpyi:nat) : CVM EvC :=
   p <- get_pl ;;
   e <- get_ev ;;
   e' <- doRemote t q e ;;
-  add_tracem [rpy (Nat.pred rpyi) p q] ;;
+  add_tracem [rpy (Nat.pred rpyi) p q (get_et e')] ;;
   ret e'.
 
 Definition ss_cons (e1:EvC) (e2:EvC): EvC :=

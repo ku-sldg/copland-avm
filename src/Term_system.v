@@ -28,7 +28,7 @@ Fixpoint ev_sys (t: AnnoTerm) p e: EvSys Ev :=
       (leaf (i, S i) (req i p q (unanno x) e))
       (before (S i, j)
               (ev_sys x q e)
-              (leaf (pred j, j) (rpy (pred j) p q)))
+              (leaf (pred j, j) (rpy (pred j) p q (aeval x q e))))
   | alseq r x y => before r (ev_sys x p e)
                           (ev_sys y p (aeval x p e))
   | abseq (i, j) s x y =>

@@ -257,7 +257,7 @@ Inductive trace: AnnoTerm -> Plc -> Evidence ->
     trace (aatt r q x) p e
           ((req (fst r) p q (unanno x) e )
              :: tr1 ++
-             [(rpy (pred (snd r)) p q)])
+             [(rpy (pred (snd r)) p q (aeval x q e))])
 | tlseq: forall r x y p e tr0 tr1,
     trace x p e tr0 ->
     trace y p (aeval x p e) tr1 ->

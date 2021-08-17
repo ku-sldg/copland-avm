@@ -37,6 +37,9 @@ Definition remote_trace (t:AnnoTerm) (p:Plc) : list Ev.
 Admitted.
 
 
+Axiom remote_Evidence_Type_Axiom: forall t n bits et,
+    get_et (toRemote t n (evc bits et)) = aeval t n et.
+
 
 Axiom at_evidence : forall t (p:Plc) (e:EvC),
     toRemote t p e = remote_evidence t p e.

@@ -167,7 +167,7 @@ Inductive events: AnnoTerm -> Plc -> Evidence -> Ev -> Prop :=
 | evtssig:
     forall r i p e,
       fst r = i ->
-      events (aasp r SIG) p e (sign i p)
+      events (aasp r SIG) p e (sign i p e)
 | evtshsh:
     forall r i p e,
       fst r = i ->
@@ -183,7 +183,7 @@ Inductive events: AnnoTerm -> Plc -> Evidence -> Ev -> Prop :=
 | evtsattrpy:
     forall r q t i p e,
       snd r = S i ->
-      events (aatt r q t) p e (rpy i p q)
+      events (aatt r q t) p e (rpy i p q (aeval t q e))
 | evtslseql:
     forall r t1 t2 ev p e,
       events t1 p e ev ->

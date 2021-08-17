@@ -79,7 +79,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
 | stattstop:
     forall j p q e,
       step (rem j p (stop q e))
-           (Some (rpy (pred j) p q))
+           (Some (rpy (pred j) p q e))
            (stop p e)
 (** Linear Sequential Composition *)
 
@@ -481,7 +481,7 @@ Proof.
     right.
     destruct IHst0.
     + destruct st0; simpl in H; try tauto.
-      exists (Some (rpy (pred n) n0 n1)).
+      exists (Some (rpy (pred n) n0 n1 e)).
       eapply ex_intro; eauto.
     + destruct H as [e H].
       exists e.
