@@ -116,13 +116,11 @@ Inductive evidenceEvent: Ev -> Prop :=
 Definition measEvent (t:AnnoTerm) (p:Plc) (e:Evidence) (ev:Ev) : Prop :=
   events t p e ev /\ evidenceEvent ev.
 
-(*
 Inductive sigEventP: Ev -> Prop :=
-| sev: forall n p, sigEventP (sign n p).
+| sev: forall n p e, sigEventP (sign n p e).
 
 Definition sigEvent (t:AnnoTerm) (p:Plc) (e:Evidence) (ev:Ev) : Prop :=
   events t p e ev /\ sigEventP ev.
-*)
 
 Inductive appEvent_EvidenceC : Ev -> EvidenceC -> Prop :=
 | aeuc: forall i args tpl tid e e' n p,
@@ -133,12 +131,10 @@ Inductive appEvent_EvidenceC : Ev -> EvidenceC -> Prop :=
     EvSub (hhc pi (checkHash et pi bs) et) e ->
     appEvent_EvidenceC (umeas n p i args tpl tid) e.
 
-(*
 Inductive appEvent_Sig_EvidenceC: Ev -> EvidenceC -> Prop :=
 | asigc: forall n p sig e e' e'',
     EvSub (ggc p (checkSig e' p sig) e'') e ->
-    appEvent_Sig_EvidenceC (sign n p) e.
-*)
+    appEvent_Sig_EvidenceC (sign n p (et_fun e')) e.
 
 Ltac measEventFacts :=
   match goal with

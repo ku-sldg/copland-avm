@@ -1108,6 +1108,716 @@ Proof.
         repeat (eexists; eauto).
 Defined.
 
+Ltac sigEventFacts :=
+  match goal with
+  | [H: sigEvent _ _ _ _ |- _] => invc H
+  end.
+
+Ltac sigEventPFacts :=
+  match goal with
+  | [H: sigEventP _ |- _] => invc H
+  end.
+
+Lemma gg_preserved': forall t p et n p0 et'
+                       tr e' tr' p' ecc ecc',
+
+    well_formed_r t ->
+    not_none_none t ->
+    wf_ec ecc ->
+    (*Some e = (reconstruct_ev ecc) -> *)
+    Some e' = (reconstruct_ev ecc') ->
+    (*events t p et (umeas n p0 i args tpl tid) -> *)
+    events t p et (sign n p0 et') ->
+    copland_compile t {| st_ev := ecc; st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
+
+    (
+      (exists bits e'', EvSub (ggc p0 (do_sig (MonadVM.encodeEv (evc bits et')) p0) e'') e' /\
+                   et_fun e'' = et'
+      )
+
+      (* \/
+      (exists ett p' bs et',
+          EvSub (hhc p' bs ett) e' /\
+          EvSubT (gg p0 et') ett) *)
+    ).
+
+    (*
+
+    (
+      (exists e'', EvSub (uuc i args tpl tid n e'') e') \/
+      (exists ett p' bs et',
+          EvSub (hhc p' bs ett) e' /\
+          EvSubT (uu i args tpl tid et') ett) 
+    ). *)
+Proof.
+
+  (*
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a; ff.
+    +
+      inv_events.
+      ff.
+      unfold cons_uu in *.
+      repeat ff.
+      left.
+      eexists.
+      econstructor.
+  -
+    ff.
+    invEvents.
+    do_wf_pieces.
+    do_not_none.
+
+    eapply IHt; eauto.
+    apply copland_compile_at; eauto.
+  -
+    do_wf_pieces.
+    do_not_none.
+    ff.
+    dosome.
+    ff.
+    vmsts.
+    ff.
+
+    invEvents.
+    + (* t1 case *)
+     
+      do_wfec_preserved.
+      do_somerecons.
+
+      repeat do_evsub_ihhh'.
+
+      door.
+      ++
+        destruct_conjs.
+
+        repeat jkjke'.
+        repeat ff.
+
+        do_evaccum.
+
+        (*
+        clear H12. *)
+        door.
+        +++
+          left.
+          eauto.
+        +++
+          destruct_conjs.
+          ff.
+          right.
+          repeat (eexists; eauto).
+
+      ++
+        repeat jkjke'.
+        repeat ff.
+        
+        do_evaccum.
+
+        door.
+        +++
+          right.
+          repeat (eexists; eauto).
+        +++
+          destruct_conjs.
+          ff.
+          right.
+          repeat eexists.
+          eauto.
+
+          eapply evsubT_transitive.
+          eapply hhSubT.
+          eassumption.
+          eassumption.
+          
+    + (* t2 case *)
+
+      do_pl_immut.
+      do_pl_immut.
+      subst.
+
+      do_wfec_preserved.
+      do_somerecons.
+
+      repeat do_evsub_ihhh'.
+
+      clear H17.
+      door.
+      ++
+        eauto.
+      ++
+        destruct_conjs;
+        right;
+        repeat (eexists; eauto).
+
+
+  - (* abseq case *)
+    do_wf_pieces.
+    do_not_none.
+    ff.
+    dosome.
+    ff.
+    vmsts.
+    ff.
+
+    invEvents;
+
+      do_wfec_split;
+      do_wfec_preserved;
+      do_wfec_firstn;
+      do_wfec_skipn;
+      clear_skipn_firstn;
+      do_wfec_preserved;
+      repeat do_pl_immut;
+      do_somerecons;
+      repeat jkjke'; ff;
+      try (rewrite fold_recev in * );
+      try do_somerecons;
+      do_evsub_ihhh';
+
+      door; repeat jkjke'; ff;
+        try eauto;
+        try (destruct_conjs;
+             right;
+             repeat (eexists; eauto)).
+
+  - (* abpar case *)
+    do_wf_pieces.
+    do_not_none.
+    ff.
+    dosome.
+    ff.
+    vmsts.
+    ff.
+
+    invEvents;
+
+      do_wfec_split;
+      do_wfec_preserved;
+      do_wfec_firstn;
+      do_wfec_skipn;
+      clear_skipn_firstn;
+      do_wfec_preserved;
+      repeat do_pl_immut;
+      do_somerecons;
+      repeat jkjke'; ff;
+      try (rewrite fold_recev in * );
+      try do_somerecons;
+      do_evsub_ihhh';
+
+      door; repeat jkjke'; ff;
+        try eauto;
+        try (destruct_conjs;
+             right;
+             repeat (eexists; eauto)).
+*)
+Admitted.
+
+
+Lemma gg_preserved: forall t1 t2 p et n p0  et'
+                      e tr st_ev st_trace p'
+                      e' tr' p'' ecc,
+    well_formed_r t1 ->
+    well_formed_r t2 ->
+    not_none_none t1 ->
+    not_none_none t2 ->
+    wf_ec e ->
+    Some e' = (reconstruct_ev ecc) ->
+    (*events t1 p et (umeas n p0 i args tpl tid) -> *)
+    events t1 p et (sign n p0 et') ->
+    copland_compile t1 {| st_ev := e; st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := st_ev; st_trace := st_trace; st_pl := p' |}) ->
+    
+    copland_compile t2
+                    {| st_ev := st_ev; st_trace := st_trace; st_pl := p' |} =
+    (Some tt, {| st_ev := ecc; st_trace := tr'; st_pl := p'' |}) ->
+
+    (
+      (exists bits e'', EvSub (ggc p0 (do_sig (MonadVM.encodeEv (evc bits et')) p0) e'') e' /\
+      (et_fun e'' = et'))
+
+      (* \/
+      (exists ett p' bs et',
+          EvSub (hhc p' bs ett) e' /\
+          EvSubT (gg p0 et') ett) *)
+    ).
+    (*
+    (
+      (exists e'', EvSub (uuc i args tpl tid n e'') e') \/
+      (exists ett p' bs et',
+          EvSub (hhc p' bs ett) e' /\
+          EvSubT (uu i args tpl tid et') ett)
+    ). *)
+Proof.
+
+  intros.
+
+  ff.
+  do_wfec_preserved.
+  do_somerecons.
+    assert (
+        (exists bits e'', EvSub (ggc p0 (do_sig (MonadVM.encodeEv (evc bits et')) p0) e'') H11 /\
+      et_fun e'' = et' )).
+
+        (*\/
+      (exists ett p' bs et',
+          EvSub (hhc p' bs ett) H11 /\
+          EvSubT (gg p0 et') ett)
+      ). *)
+    {
+      eapply gg_preserved'.
+      apply H.
+      eassumption.
+      4: { eassumption. }
+      eassumption.
+      eassumption.
+      eassumption.
+    }
+    destruct_conjs.
+
+    do_evaccum.
+    clear H20.
+    door.
+  +
+    ff.
+    repeat eexists.
+    eassumption.
+    repeat jkjke'.
+  +
+    repeat jkjke'.
+    repeat ff.
+    admit.
+Admitted.
+    (*
+  +
+    clear H22.
+    door; ff.
+    ++
+    right;
+      repeat (eexists; eauto).
+
+    ++
+      assert (EvSubT (gg p0 H19) H22).
+      {
+        eapply evsubT_transitive.
+        apply hhSubT.
+        eassumption.
+        eassumption.
+      }
+      
+      right; 
+        repeat (eexists; eauto).
+     *)
+
+Lemma ggc_app: forall p0 x e H4 e',
+    EvSub (ggc p0 (do_sig (MonadVM.encodeEv (evc x e)) p0) H4) e' ->
+    exists e'' sigbs,
+      EvSub
+        (ggc p0 (checkSig H4 p0 sigbs) e'')
+        (build_app_comp_evC e'). (* /\ (et_fun H4 = e). *)
+    (*
+    exists e'' ec,
+      EvSub
+        (ggc p0 (checkSig ec p0 (do_sig (MonadVM.encodeEv (evc x e)) p0)) e'')
+        (build_app_comp_evC e') /\ (Some ec = reconstruct_ev (evc x e)). *)
+Proof.
+  intros.
+  generalizeEverythingElse e'.
+  induction e'; intros;
+    ff.
+  (*
+    try evSubFacts; eauto.
+    try evsub_ih.
+   *)
+  -
+    evSubFacts.
+    edestruct IHe'; eauto.
+    destruct_conjs.
+    subst.
+    repeat eexists.
+    eauto.
+  -
+    (*
+    unfold checkSig in *. *)
+    ff.
+    invc H.
+    +
+      (*
+      assert (wf_ec (evc x e)). admit.
+      do_somerecons. *)
+      exists ((build_app_comp_evC e')).
+      (*eexists.*)
+      exists ((do_sig (MonadVM.encodeEv (evc x e)) n)).
+      econstructor.
+    +
+      edestruct IHe'; eauto.
+      destruct_conjs.
+      subst.
+      repeat eexists.
+      eauto.
+  -
+    evSubFacts.
+    +
+    edestruct IHe'1; eauto.
+    destruct_conjs.
+    subst.
+    repeat eexists.
+    eauto.
+    +
+      edestruct IHe'2; eauto.
+      destruct_conjs.
+      subst.
+      repeat eexists.
+      eauto.
+  -
+        evSubFacts.
+    +
+    edestruct IHe'1; eauto.
+    destruct_conjs.
+    subst.
+    repeat eexists.
+    eauto.
+    +
+      edestruct IHe'2; eauto.
+      destruct_conjs.
+      subst.
+      repeat eexists.
+      eauto.
+Defined.
+
+Lemma appraisal_correct_sig : forall t e' tr tr' p p' ecc ev ee,
+    well_formed_r t ->
+    not_none_none t ->
+    wf_ec ee ->
+    Some e' = (reconstruct_ev ecc) ->
+    copland_compile t
+                    {| st_ev := ee; st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := ecc;
+                 st_trace := tr';
+                 st_pl := p' |}) ->
+
+    sigEvent t p (get_et ee) ev ->
+    appEvent_Sig_EvidenceC ev (build_app_comp_evC e').
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  - (* aasp case *)
+    sigEventFacts.
+    sigEventPFacts.
+    destruct ee.
+    inv_events.
+    ff.
+    break_match; try solve_by_inversion.
+    invc H2.
+    ff.
+    assert (e = et_fun e1).
+    {
+      eapply etfun_reconstruct; eauto.
+    }
+    subst.
+    
+    repeat econstructor.
+  -
+    sigEventFacts.
+    sigEventPFacts.
+    invEvents.
+    vmsts.
+    ff.
+    do_wf_pieces.
+    do_not_none.
+    eapply IHt.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+
+    eapply copland_compile_at.
+    eassumption.
+    econstructor.
+    eassumption.
+    econstructor.
+  - (* alseq case *)
+    
+    do_wf_pieces.
+    do_not_none.
+    vmsts.
+    simpl in *.
+    subst.
+    repeat ff.
+
+    vmsts.
+
+    sigEventFacts.
+    repeat do_pl_immut.
+    subst.
+    sigEventPFacts.
+    inv_events.
+    + (* t1 case *)
+
+      edestruct gg_preserved.
+      apply H5.
+      apply H6.
+      eassumption.
+      eassumption.
+      4: { eassumption. }
+      4: { eassumption. }
+      eassumption.
+      eassumption.
+      eassumption.
+
+      destruct_conjs.
+
+      edestruct ggc_app.
+      eassumption.
+
+      
+(*
+      assert (exists e'' ec,
+                 EvSub (ggc p0
+                            (checkSig ec p0 (do_sig (MonadVM.encodeEv (evc x e)) p0))
+                            e''
+                       )
+                       (build_app_comp_evC e') /\
+                 (et_fun ec = e)
+             ).
+      {
+        eapply ggc_app; eauto.
+      }
+ *)
+      
+      destruct_conjs.
+      Check uuc_app.
+
+      (*
+      assert (e = et_fun H11).
+      {
+        congruence.
+      } *)
+      subst.
+      econstructor.
+      eassumption.
+            (*
+      eassumption.
+      destruct_conjs.
+      assert 
+      econstructor.
+      
+
+      assert (
+          exists e'', EvSub (uuc i args tpl tid (checkASP i args tpl tid n) e'')
+                       (build_app_comp_evC e')).
+      {
+        
+        eapply uuc_app; eauto.
+      }
+      destruct_conjs.
+      econstructor.
+      eassumption.
+      destruct_conjs.
+      eapply ahuc.
+      eassumption.
+      eapply hhc_app; eauto. *)
+    
+      
+
+
+      
+    + (* t2 case *)
+
+      do_wfec_preserved.
+      destruct ecc.
+      destruct st_ev.
+      
+      eapply IHt2.
+      eassumption.
+      eassumption.
+      3: { eassumption. }
+      eassumption.
+      eassumption.
+      destruct ee.
+      ff.
+      assert (e3 = aeval t1 p e5).
+      {
+        rewrite <- eval_aeval.
+        eapply cvm_refines_lts_evidence.
+        eassumption.
+        eassumption.
+      }
+      subst.
+      econstructor.
+      eassumption.
+      econstructor.
+  -
+    do_wf_pieces.
+    do_not_none.
+    vmsts.
+    simpl in *.
+    subst.
+    ff.
+    ff.
+    vmsts.
+    simpl in *.
+    subst.
+    
+    repeat ff.
+
+    sigEventFacts.
+    sigEventPFacts.
+    repeat do_pl_immut.
+    subst.
+
+    (*
+    invc H3. *)
+
+    do_wfec_split.
+
+    do_wfec_preserved.
+
+    do_wfec_firstn.
+    do_wfec_skipn.
+
+    clear_skipn_firstn.
+
+    rewrite fold_recev in *.
+
+    inv_events.
+    + (* t1 case *)
+
+
+      assert (appEvent_Sig_EvidenceC (sign n1 p0 e5) (build_app_comp_evC e3)).
+      {
+        destruct ee; ff.
+
+        rewrite fold_recev in *.
+          
+          eapply IHt1.
+          eassumption.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          destruct s; destruct s; ff.
+          econstructor.
+      }
+      invc H11.
+      econstructor.
+      econstructor.
+      eassumption.
+    + (* t2 case *)
+
+      assert (appEvent_Sig_EvidenceC (sign n1 p0 e5) (build_app_comp_evC e4)).
+      {
+        destruct ee; ff.
+
+        rewrite fold_recev in *.
+          
+          eapply IHt2.
+          eassumption.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          destruct s; destruct s0; ff.
+          econstructor.
+      }
+      
+      
+      invc H11.
+      +++
+        econstructor.
+        apply ssSubr.
+        eassumption.
+  -
+        do_wf_pieces.
+    do_not_none.
+    vmsts.
+    simpl in *.
+    subst.
+    ff.
+    ff.
+    vmsts.
+    simpl in *.
+    subst.
+    
+    repeat ff.
+
+    sigEventFacts.
+    sigEventPFacts.
+    repeat do_pl_immut.
+    subst.
+
+    (*
+    invc H3. *)
+
+    do_wfec_split.
+
+    do_wfec_preserved.
+
+    do_wfec_firstn.
+    do_wfec_skipn.
+
+    clear_skipn_firstn.
+
+    rewrite fold_recev in *.
+
+    inv_events.
+    + (* t1 case *)
+
+
+      assert (appEvent_Sig_EvidenceC (sign n1 p0 e5) (build_app_comp_evC e3)).
+      {
+        destruct ee; ff.
+
+        rewrite fold_recev in *.
+          
+          eapply IHt1.
+          eassumption.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          destruct s; destruct s; ff.
+          econstructor.
+      }
+      invc H11.
+      econstructor.
+      econstructor.
+      eassumption.
+    + (* t2 case *)
+
+      assert (appEvent_Sig_EvidenceC (sign n1 p0 e5) (build_app_comp_evC e4)).
+      {
+        destruct ee; ff.
+
+        rewrite fold_recev in *.
+          
+          eapply IHt2.
+          eassumption.
+          eassumption.
+          2: { jkjke'. }
+          2: { eassumption. }
+          eassumption.
+          econstructor. ff.
+          destruct s; destruct s0; ff.
+          econstructor.
+      }
+      
+      
+      invc H11.
+      +++
+        econstructor.
+        apply ppSubr.
+        eassumption.
+Defined.
+
 Lemma appraisal_correct : forall t e' tr tr' p p' ecc ev ee,
     well_formed_r t ->
     not_none_none t ->
