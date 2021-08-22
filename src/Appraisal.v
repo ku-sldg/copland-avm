@@ -2099,12 +2099,12 @@ Ltac do_evaccum :=
         ltac: (eapply evAccum; [apply H | apply H7 | apply H2 | apply H3 | apply H4 | apply H5 | apply H6])
     end.
 
-Lemma sig_term_ev_lseq: forall r t1 t2 e e0 e1 e2 e3 tr tr' p p' H5,
+Lemma sig_term_ev_lseq: forall r t1 t2 e e0 e1 e2 e3 tr tr' p p',
     not_hash_sig_term_ev (alseq r t1 t2) e ->
     copland_compile t1 {| st_ev := evc e0 e1; st_trace := tr; st_pl := p |} =
     (Some tt, {| st_ev := evc e2 e3; st_trace := tr'; st_pl := p' |}) ->
     Some e  = reconstruct_ev (evc e0 e1) ->
-    Some H5 = reconstruct_ev (evc e2 e3) ->
+    (*Some H5 = reconstruct_ev (evc e2 e3) -> *)
     not_hash_sig_term_ev t1 e. (* /\
       not_hash_sig_term_ev t2 H5. *)
 Proof.
@@ -2113,7 +2113,7 @@ Proof.
   intros.
   unfold not_hash_sig_term_ev in H.
   destruct_conjs.
-  unfold not in H4.
+  unfold not in H3.
   
   split.
   -
@@ -2136,372 +2136,15 @@ Proof.
     unfold not.
     intros.
     destruct_conjs.
-    eapply H4.
+    eapply H3.
     (*
           split; eauto.
      *)
     eassumption.
-    invc H7.
+    invc H5.
     econstructor.
     apply alseq_subl.
     eassumption.
-Defined.
-
-Definition splitEvl (sp:Split) (e:EvidenceC) : EvidenceC :=
-  match sp with
-  | (ALL,_) => e
-  | _ => mtc
-  end.
-
-Definition splitEvr (sp:Split) (e:EvidenceC) : EvidenceC :=
-  match sp with
-  | (_,ALL) => e
-  | _ => mtc
-  end.
-
-Lemma sig_term_ev_bseql: forall (r : Range) s (t1 t2 : AnnoTerm) (e : EvidenceC) 
-                           (e0 : EvBits) (e1 : Evidence)
-                           (tr tr' : list Ev) (p p' : nat) ecc',
-    not_hash_sig_term_ev (abseq r s t1 t2) e ->
-    copland_compile t1 {| st_ev := splitEv_l s (evc e0 e1); st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
-    Some e = reconstruct_ev (evc e0 e1) ->
-    (*Some H5 = reconstruct_ev (evc e2 e3) -> *)
-    not_hash_sig_term_ev t1 (splitEvl s e).
-Proof.
-  intros.
-  unfold not_hash_sig_term_ev in H.
-  destruct_conjs.
-  unfold not in H3.
-  
-  split.
-  -
-
-    cbv.
-    intros.
-    destruct_conjs.
-    subst.
-    cbv in H.
-    eapply H.
-    repeat eexists.
-    eassumption.
-    eassumption.
-    apply abseq_subl.
-    eassumption.
-  -
-    destruct s.
-    destruct s; destruct s0; ff.
-    +
-      split; eauto.
-
-      unfold not.
-      intros.
-      destruct_conjs.
-      invc H5.
-      eapply H3.
-      eassumption.
-      econstructor.
-      apply abseq_subl.
-      eassumption.
-    +
-      split; eauto.
-
-      unfold not.
-      intros.
-      destruct_conjs.
-      invc H5.
-      eapply H3.
-      eassumption.
-      econstructor.
-      apply abseq_subl.
-      eassumption.
-    +
-      split.
-      ++
-        cbv.
-        intros.
-        invc H5.
-        destruct_conjs.
-        invc H9.
-      ++
-        intros.
-        invc H4.
-        destruct_conjs.
-        subst.
-        invc H8.
-    +
-      split.
-      ++
-        cbv.
-        intros.
-        invc H5.
-        destruct_conjs.
-        invc H9.
-      ++
-        intros.
-        invc H4.
-        destruct_conjs.
-        subst.
-        invc H8.
-Defined.
-
-Lemma sig_term_ev_bseqr: forall (r : Range) s (t1 t2 : AnnoTerm) (e : EvidenceC) 
-                           (e0 : EvBits) (e1 : Evidence)
-                           (tr tr' : list Ev) (p p' : nat) ecc',
-    not_hash_sig_term_ev (abseq r s t1 t2) e ->
-    copland_compile t2 {| st_ev := splitEv_r s (evc e0 e1); st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
-    Some e = reconstruct_ev (evc e0 e1) ->
-    (*Some H5 = reconstruct_ev (evc e2 e3) -> *)
-    not_hash_sig_term_ev t2 (splitEvr s e).
-Proof.
-  intros.
-  unfold not_hash_sig_term_ev in H.
-  destruct_conjs.
-  unfold not in H3.
-  
-  split.
-  -
-
-    cbv.
-    intros.
-    destruct_conjs.
-    subst.
-    cbv in H.
-    eapply H.
-    repeat eexists.
-    eassumption.
-    eassumption.
-    apply abseq_subr.
-    eassumption.
-  -
-    destruct s.
-    destruct s; destruct s0; ff.
-    +
-      split; eauto.
-
-      unfold not.
-      intros.
-      destruct_conjs.
-      invc H5.
-      eapply H3.
-      eassumption.
-      econstructor.
-      apply abseq_subr.
-      eassumption.
-    +
-      split.
-      ++
-        cbv.
-        intros.
-        invc H5.
-        destruct_conjs.
-        invc H9.
-      ++
-        intros.
-        invc H4.
-        destruct_conjs.
-        subst.
-        invc H8.
-    +
-      split; eauto.
-
-      unfold not.
-      intros.
-      destruct_conjs.
-      invc H5.
-      eapply H3.
-      eassumption.
-      econstructor.
-      apply abseq_subr.
-      eassumption.
-    +
-      split.
-      ++
-        cbv.
-        intros.
-        invc H5.
-        destruct_conjs.
-        invc H9.
-      ++
-        intros.
-        invc H4.
-        destruct_conjs.
-        subst.
-        invc H8.
-Defined.
-
-Lemma sig_term_ev_bparl: forall (r : Range) s (t1 t2 : AnnoTerm) (e : EvidenceC) 
-                           (e0 : EvBits) (e1 : Evidence)
-                           (tr tr' : list Ev) (p p' : nat) ecc',
-    not_hash_sig_term_ev (abpar r s t1 t2) e ->
-    copland_compile t1 {| st_ev := splitEv_l s (evc e0 e1); st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
-    Some e = reconstruct_ev (evc e0 e1) ->
-    (*Some H5 = reconstruct_ev (evc e2 e3) -> *)
-    not_hash_sig_term_ev t1 (splitEvl s e).
-Proof.
-  intros.
-  unfold not_hash_sig_term_ev in H.
-  destruct_conjs.
-  unfold not in H3.
-  
-  split.
-  -
-
-    cbv.
-    intros.
-    destruct_conjs.
-    subst.
-    cbv in H.
-    eapply H.
-    repeat eexists.
-    eassumption.
-    eassumption.
-    Print term_sub.
-    apply abpar_subl.
-    eassumption.
-  -
-    destruct s.
-    destruct s; destruct s0; ff.
-    +
-      split; eauto.
-
-      unfold not.
-      intros.
-      destruct_conjs.
-      invc H5.
-      eapply H3.
-      eassumption.
-      econstructor.
-      apply abpar_subl.
-      eassumption.
-    +
-      split; eauto.
-
-      unfold not.
-      intros.
-      destruct_conjs.
-      invc H5.
-      eapply H3.
-      eassumption.
-      econstructor.
-      apply abpar_subl.
-      eassumption.
-    +
-      split.
-      ++
-        cbv.
-        intros.
-        invc H5.
-        destruct_conjs.
-        invc H9.
-      ++
-        intros.
-        invc H4.
-        destruct_conjs.
-        subst.
-        invc H8.
-    +
-      split.
-      ++
-        cbv.
-        intros.
-        invc H5.
-        destruct_conjs.
-        invc H9.
-      ++
-        intros.
-        invc H4.
-        destruct_conjs.
-        subst.
-        invc H8.
-Defined.
-
-Lemma sig_term_ev_bparr: forall (r : Range) s (t1 t2 : AnnoTerm) (e : EvidenceC) 
-                           (e0 : EvBits) (e1 : Evidence)
-                           (tr tr' : list Ev) (p p' : nat) ecc',
-    not_hash_sig_term_ev (abpar r s t1 t2) e ->
-    copland_compile t2 {| st_ev := splitEv_r s (evc e0 e1); st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
-    Some e = reconstruct_ev (evc e0 e1) ->
-    (*Some H5 = reconstruct_ev (evc e2 e3) -> *)
-    not_hash_sig_term_ev t2 (splitEvr s e).
-Proof.
-  intros.
-  unfold not_hash_sig_term_ev in H.
-  destruct_conjs.
-  unfold not in H3.
-  
-  split.
-  -
-
-    cbv.
-    intros.
-    destruct_conjs.
-    subst.
-    cbv in H.
-    eapply H.
-    repeat eexists.
-    eassumption.
-    eassumption.
-    apply abpar_subr.
-    eassumption.
-  -
-    destruct s.
-    destruct s; destruct s0; ff.
-    +
-      split; eauto.
-
-      unfold not.
-      intros.
-      destruct_conjs.
-      invc H5.
-      eapply H3.
-      eassumption.
-      econstructor.
-      apply abpar_subr.
-      eassumption.
-    +
-      split.
-      ++
-        cbv.
-        intros.
-        invc H5.
-        destruct_conjs.
-        invc H9.
-      ++
-        intros.
-        invc H4.
-        destruct_conjs.
-        subst.
-        invc H8.
-    +
-      split; eauto.
-
-      unfold not.
-      intros.
-      destruct_conjs.
-      invc H5.
-      eapply H3.
-      eassumption.
-      econstructor.
-      apply abpar_subr.
-      eassumption.
-    +
-      split.
-      ++
-        cbv.
-        intros.
-        invc H5.
-        destruct_conjs.
-        invc H9.
-      ++
-        intros.
-        invc H4.
-        destruct_conjs.
-        subst.
-        invc H8.
 Defined.
 
 Lemma sig_is: forall t ecc ecc' e e' tr tr' p p',
@@ -3193,6 +2836,363 @@ Proof.
         eexists.
         apply abpar_subr.
         eassumption.
+Defined.
+
+Definition splitEvl (sp:Split) (e:EvidenceC) : EvidenceC :=
+  match sp with
+  | (ALL,_) => e
+  | _ => mtc
+  end.
+
+Definition splitEvr (sp:Split) (e:EvidenceC) : EvidenceC :=
+  match sp with
+  | (_,ALL) => e
+  | _ => mtc
+  end.
+
+Lemma sig_term_ev_bseql: forall (r : Range) s (t1 t2 : AnnoTerm) (e : EvidenceC) 
+                           (e0 : EvBits) (e1 : Evidence)
+                           (tr tr' : list Ev) (p p' : nat) ecc',
+    not_hash_sig_term_ev (abseq r s t1 t2) e ->
+    copland_compile t1 {| st_ev := splitEv_l s (evc e0 e1); st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
+    Some e = reconstruct_ev (evc e0 e1) ->
+    (*Some H5 = reconstruct_ev (evc e2 e3) -> *)
+    not_hash_sig_term_ev t1 (splitEvl s e).
+Proof.
+  intros.
+  unfold not_hash_sig_term_ev in H.
+  destruct_conjs.
+  unfold not in H3.
+  
+  split.
+  -
+
+    cbv.
+    intros.
+    destruct_conjs.
+    subst.
+    cbv in H.
+    eapply H.
+    repeat eexists.
+    eassumption.
+    eassumption.
+    apply abseq_subl.
+    eassumption.
+  -
+    destruct s.
+    destruct s; destruct s0; ff.
+    +
+      split; eauto.
+
+      unfold not.
+      intros.
+      destruct_conjs.
+      invc H5.
+      eapply H3.
+      eassumption.
+      econstructor.
+      apply abseq_subl.
+      eassumption.
+    +
+      split; eauto.
+
+      unfold not.
+      intros.
+      destruct_conjs.
+      invc H5.
+      eapply H3.
+      eassumption.
+      econstructor.
+      apply abseq_subl.
+      eassumption.
+    +
+      split.
+      ++
+        cbv.
+        intros.
+        invc H5.
+        destruct_conjs.
+        invc H9.
+      ++
+        intros.
+        invc H4.
+        destruct_conjs.
+        subst.
+        invc H8.
+    +
+      split.
+      ++
+        cbv.
+        intros.
+        invc H5.
+        destruct_conjs.
+        invc H9.
+      ++
+        intros.
+        invc H4.
+        destruct_conjs.
+        subst.
+        invc H8.
+Defined.
+
+Lemma sig_term_ev_bseqr: forall (r : Range) s (t1 t2 : AnnoTerm) (e : EvidenceC) 
+                           (e0 : EvBits) (e1 : Evidence)
+                           (tr tr' : list Ev) (p p' : nat) ecc',
+    not_hash_sig_term_ev (abseq r s t1 t2) e ->
+    copland_compile t2 {| st_ev := splitEv_r s (evc e0 e1); st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
+    Some e = reconstruct_ev (evc e0 e1) ->
+    (*Some H5 = reconstruct_ev (evc e2 e3) -> *)
+    not_hash_sig_term_ev t2 (splitEvr s e).
+Proof.
+  intros.
+  unfold not_hash_sig_term_ev in H.
+  destruct_conjs.
+  unfold not in H3.
+  
+  split.
+  -
+
+    cbv.
+    intros.
+    destruct_conjs.
+    subst.
+    cbv in H.
+    eapply H.
+    repeat eexists.
+    eassumption.
+    eassumption.
+    apply abseq_subr.
+    eassumption.
+  -
+    destruct s.
+    destruct s; destruct s0; ff.
+    +
+      split; eauto.
+
+      unfold not.
+      intros.
+      destruct_conjs.
+      invc H5.
+      eapply H3.
+      eassumption.
+      econstructor.
+      apply abseq_subr.
+      eassumption.
+    +
+      split.
+      ++
+        cbv.
+        intros.
+        invc H5.
+        destruct_conjs.
+        invc H9.
+      ++
+        intros.
+        invc H4.
+        destruct_conjs.
+        subst.
+        invc H8.
+    +
+      split; eauto.
+
+      unfold not.
+      intros.
+      destruct_conjs.
+      invc H5.
+      eapply H3.
+      eassumption.
+      econstructor.
+      apply abseq_subr.
+      eassumption.
+    +
+      split.
+      ++
+        cbv.
+        intros.
+        invc H5.
+        destruct_conjs.
+        invc H9.
+      ++
+        intros.
+        invc H4.
+        destruct_conjs.
+        subst.
+        invc H8.
+Defined.
+
+Lemma sig_term_ev_bparl: forall (r : Range) s (t1 t2 : AnnoTerm) (e : EvidenceC) 
+                           (e0 : EvBits) (e1 : Evidence)
+                           (tr tr' : list Ev) (p p' : nat) ecc',
+    not_hash_sig_term_ev (abpar r s t1 t2) e ->
+    copland_compile t1 {| st_ev := splitEv_l s (evc e0 e1); st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
+    Some e = reconstruct_ev (evc e0 e1) ->
+    (*Some H5 = reconstruct_ev (evc e2 e3) -> *)
+    not_hash_sig_term_ev t1 (splitEvl s e).
+Proof.
+  intros.
+  unfold not_hash_sig_term_ev in H.
+  destruct_conjs.
+  unfold not in H3.
+  
+  split.
+  -
+
+    cbv.
+    intros.
+    destruct_conjs.
+    subst.
+    cbv in H.
+    eapply H.
+    repeat eexists.
+    eassumption.
+    eassumption.
+    Print term_sub.
+    apply abpar_subl.
+    eassumption.
+  -
+    destruct s.
+    destruct s; destruct s0; ff.
+    +
+      split; eauto.
+
+      unfold not.
+      intros.
+      destruct_conjs.
+      invc H5.
+      eapply H3.
+      eassumption.
+      econstructor.
+      apply abpar_subl.
+      eassumption.
+    +
+      split; eauto.
+
+      unfold not.
+      intros.
+      destruct_conjs.
+      invc H5.
+      eapply H3.
+      eassumption.
+      econstructor.
+      apply abpar_subl.
+      eassumption.
+    +
+      split.
+      ++
+        cbv.
+        intros.
+        invc H5.
+        destruct_conjs.
+        invc H9.
+      ++
+        intros.
+        invc H4.
+        destruct_conjs.
+        subst.
+        invc H8.
+    +
+      split.
+      ++
+        cbv.
+        intros.
+        invc H5.
+        destruct_conjs.
+        invc H9.
+      ++
+        intros.
+        invc H4.
+        destruct_conjs.
+        subst.
+        invc H8.
+Defined.
+
+Lemma sig_term_ev_bparr: forall (r : Range) s (t1 t2 : AnnoTerm) (e : EvidenceC) 
+                           (e0 : EvBits) (e1 : Evidence)
+                           (tr tr' : list Ev) (p p' : nat) ecc',
+    not_hash_sig_term_ev (abpar r s t1 t2) e ->
+    copland_compile t2 {| st_ev := splitEv_r s (evc e0 e1); st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
+    Some e = reconstruct_ev (evc e0 e1) ->
+    (*Some H5 = reconstruct_ev (evc e2 e3) -> *)
+    not_hash_sig_term_ev t2 (splitEvr s e).
+Proof.
+  intros.
+  unfold not_hash_sig_term_ev in H.
+  destruct_conjs.
+  unfold not in H3.
+  
+  split.
+  -
+
+    cbv.
+    intros.
+    destruct_conjs.
+    subst.
+    cbv in H.
+    eapply H.
+    repeat eexists.
+    eassumption.
+    eassumption.
+    apply abpar_subr.
+    eassumption.
+  -
+    destruct s.
+    destruct s; destruct s0; ff.
+    +
+      split; eauto.
+
+      unfold not.
+      intros.
+      destruct_conjs.
+      invc H5.
+      eapply H3.
+      eassumption.
+      econstructor.
+      apply abpar_subr.
+      eassumption.
+    +
+      split.
+      ++
+        cbv.
+        intros.
+        invc H5.
+        destruct_conjs.
+        invc H9.
+      ++
+        intros.
+        invc H4.
+        destruct_conjs.
+        subst.
+        invc H8.
+    +
+      split; eauto.
+
+      unfold not.
+      intros.
+      destruct_conjs.
+      invc H5.
+      eapply H3.
+      eassumption.
+      econstructor.
+      apply abpar_subr.
+      eassumption.
+    +
+      split.
+      ++
+        cbv.
+        intros.
+        invc H5.
+        destruct_conjs.
+        invc H9.
+      ++
+        intros.
+        invc H4.
+        destruct_conjs.
+        subst.
+        invc H8.
 Defined.
 
 Lemma hshsig_ev_term_contra: forall t p (e e' :EvidenceC) tr tr' p' (ecc ecc':EvC),
@@ -3911,6 +3911,94 @@ Proof.
       eassumption.
 Defined.
 
+Lemma sig_term_ev_lseqr: forall r t1 t2 e e0 e1 e2 e3 tr tr' p p' H5,
+    well_formed_r t1 ->
+    wf_ec (evc e0 e1) ->
+    not_hash_sig_term_ev (alseq r t1 t2) e ->
+    copland_compile t1 {| st_ev := evc e0 e1; st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := evc e2 e3; st_trace := tr'; st_pl := p' |}) ->
+    Some e  = reconstruct_ev (evc e0 e1) ->
+    Some H5 = reconstruct_ev (evc e2 e3) ->
+    (*not_hash_sig_term_ev t1 e.*)
+    not_hash_sig_term_ev t2 H5.
+Proof.
+  intros.
+
+  assert (not_hash_sig_term_ev t1 e).
+  eapply sig_term_ev_lseq; eauto.
+
+
+
+  (*
+  unfold not_hash_sig_term_ev in H1.
+  destruct_conjs.
+  unfold not in H7.
+   *)
+  
+  
+  split.
+  -
+    invc H1.
+    do_not_hshsig.
+    eassumption.
+  -
+    split.
+    +
+      eapply hshsig_ev_term_contra.
+      eassumption.
+      eassumption.
+      eassumption.
+      eassumption.
+      eassumption.
+      eassumption.
+    +
+      (*
+      edestruct sig_is.
+      eassumption.
+      eassumption.
+      eassumption.
+      eassumption.
+      eassumption. *)
+
+      intros.
+      unfold not; intros.
+
+      edestruct sig_is.
+      eassumption.
+      eassumption.
+      eassumption.
+      eassumption.
+      eassumption.
+      eassumption.
+
+
+      unfold not_hash_sig_term_ev in H1.
+      destruct_conjs.
+      unfold not_hash_sig_term in H1.
+      unfold not in *.
+      invc H8.
+      eapply H11.
+      eassumption.
+      econstructor.
+      Print term_sub.
+      apply alseq_subr.
+      eassumption.
+
+      
+      destruct_conjs.
+      unfold not_hash_sig_term_ev in H1.
+      destruct_conjs.
+      unfold not_hash_sig_term in H1.
+      unfold not in *.
+      invc H8.
+      eapply H1.
+      econstructor.
+      repeat eexists.
+      eassumption.
+      eassumption.
+      econstructor.
+Defined.
+
 Ltac do_evsub_ihhh' :=
   match goal with
   | [H: copland_compile ?t1
@@ -4502,6 +4590,11 @@ Lemma gg_preserved': forall t p et n p0 et'
           EvSubT (uu i args tpl tid et') ett) 
     ). *)
 Proof.
+
+
+
+
+  (*
 
   
   intros.
@@ -5414,6 +5507,8 @@ Proof.
       destruct_conjs.
       eauto.
 Defined.
+   *)
+Admitted.
 
 
 
@@ -5677,6 +5772,15 @@ Proof.
       repeat eexists.
       eauto.
   -
+    ff.
+    invc H.
+    ff.
+    repeat eexists.
+    econstructor.
+    ff.
+    eassumption.
+    
+  -
     evSubFacts.
     +
     edestruct IHe'1; eauto.
@@ -5691,7 +5795,7 @@ Proof.
       repeat eexists.
       eauto.
   -
-        evSubFacts.
+    evSubFacts.
     +
     edestruct IHe'1; eauto.
     destruct_conjs.
@@ -5704,13 +5808,18 @@ Proof.
       subst.
       repeat eexists.
       eauto.
+      Unshelve.
+      eauto.
 Defined.
 
 Lemma appraisal_correct_sig : forall t e e' tr tr' p p' ecc ev ee,
     well_formed_r t ->
     not_none_none t ->
+    (*
     not_hash_sig_term t ->
     not_hash_sig_ev e ->
+     *)
+    not_hash_sig_term_ev t e ->
     wf_ec ee ->
     Some e = (reconstruct_ev ee) ->
     Some e' = (reconstruct_ev ecc) ->
@@ -5733,7 +5842,7 @@ Proof.
     inv_events.
     ff.
     break_match; try solve_by_inversion.
-    invc H5.
+    invc H4.
     ff.
     assert (e0 = et_fun e2).
     {
@@ -5751,15 +5860,26 @@ Proof.
     ff.
     do_wf_pieces.
     do_not_none.
+    invc H1.
     do_not_hshsig.
     eapply IHt.
     eassumption.
     eassumption.
+    econstructor.
+    eassumption.
+    split; try eassumption.
+    intros.
+    unfold not in *; intros.
+    apply H9.
+    eassumption.
+    invc H11.
+    econstructor.
+    econstructor.
     eassumption.
     eassumption.
     eassumption.
     eassumption.
-    eassumption.
+
 
     eapply copland_compile_at.
     eassumption.
@@ -5770,6 +5890,7 @@ Proof.
     
     do_wf_pieces.
     do_not_none.
+    invc H1.
     do_not_hshsig.
     vmsts.
     simpl in *.
@@ -5790,24 +5911,58 @@ Proof.
       destruct ee.
 
       Check gg_preserved'.
+      
 
       edestruct gg_preserved' with (t:= alseq r t1 t2).
       eassumption.
       eassumption.
       eassumption.
+      5: { eassumption. }
+      ff. eassumption.
+      2: { eassumption. }
       3: {
-        eassumption. }
-      eassumption.
-      3: { eassumption. }
-      repeat jkjke'; repeat ff.
-      2: {
-        simpl.
-        cbn.
-        monad_unfold.
-        rewrite Heqp0.
+        vmsts.
+        rewrite <- Heqp1.
+        repeat ff; try solve_by_inversion.
+        vmsts.
+        repeat ff.
+        destruct o; try solve_by_inversion.
+        repeat ff.
+        do_pl_immut.
+        do_pl_immut.
+        do_pl_immut.
+        subst.
+        rewrite Heqp0 in Heqp2.
         ff.
+        
+        vmsts.
+        subst.
+        do_pl_immut.
+        do_pl_immut.
+        do_pl_immut.
+        subst.
+        rewrite Heqp0 in Heqp2.
+        solve_by_inversion.
       }
+      2: { eassumption. }
+      jkjke'.
+      jkjke'.
+      ff.
+
+
+      (*
+
+      eapply hshsig_ev_term_contra.
+      apply H7.
+      apply H2.
+      2: { eassumption. }
+      econstructor.
       eassumption.
+      split.
+      eassumption.
+      admit.
+       *)
+      
 
       destruct_conjs.
 
@@ -5875,6 +6030,21 @@ Proof.
       eapply IHt2.
       eassumption.
       eassumption.
+      4: { eassumption. }
+      4: { eassumption. }
+      2: { eassumption. }
+      2: { eassumption. }
+      jkjke'.
+      jkjke'.
+      ff.
+      rewrite fold_recev in *.
+      Check hshsig_ev_term_contra.
+      admit.
+
+      (*
+
+
+      
       eassumption.
       4: { eassumption. }
       4: { eassumption. }
@@ -5883,11 +6053,29 @@ Proof.
       repeat jkjke'; repeat ff.
       eapply hshsig_ev_term_contra.
       apply H8.
-      assumption.
+      apply H3.
       4: { eassumption. }
       2: { eassumption. }
+      2: { eassumption. }
+
+      eapply sig_term_ev_lseq.
+      
+      
+      2: { destruct ee.
+           ff.
+           econstructor.
+      assert (e4 = aeval t1 p e6).
+      {
+        rewrite <- eval_aeval.
+        eapply cvm_refines_lts_evidence.
+        eassumption.
+        eassumption.
+      }
+      subst.
+      
       eassumption.
-      eassumption.
+      econstructor.
+       *)
 
       destruct ee.
       ff.
@@ -5902,9 +6090,11 @@ Proof.
       econstructor.
       eassumption.
       econstructor.
+      
   - (* abseq case *)
     do_wf_pieces.
     do_not_none.
+    invc H1.
     do_not_hshsig.
     vmsts.
     simpl in *.
@@ -5933,6 +6123,7 @@ Proof.
     do_wfec_skipn.
 
     clear_skipn_firstn.
+    
 
     rewrite fold_recev in *.
 
@@ -5956,33 +6147,51 @@ Proof.
           eauto.
         }
         destruct_conjs.
-        assert (not_hash_sig_ev H16).
+        
+        assert (not_hash_sig_ev H17).
         {
+         
           destruct s; destruct s; destruct s0; ff.
+          rewrite fold_recev in *.
           jkjke'. ff.
           jkjke'. ff.
-          cbv. intros. invc H17. destruct_conjs. solve_by_inversion.
-          cbv. intros. invc H17. destruct_conjs. solve_by_inversion.
+         
+          cbv. intros. invc H18. destruct_conjs. solve_by_inversion.
+          cbv. intros. invc H18. destruct_conjs. solve_by_inversion.
         }
         
           
           eapply IHt1.
           eassumption.
           eassumption.
+          eapply sig_term_ev_bseql.
+          
+          econstructor. eassumption.
+          split.
+          apply H12.
+          eauto.
+         
           eassumption.
-          5: { eassumption. }
-          4: { jkjke. }
-          2: { eassumption. }
-          2: { eassumption. }
+         
+          
           eassumption.
+          4: { eassumption. }
+          eassumption.
+          rewrite <- H18.
+          2: { symmetry. eassumption. }
+          destruct s. destruct s; destruct s0; ff.
+          jkjke'. jkjke'.
+
+          ff.
           econstructor.
           destruct s; destruct s; ff.
           econstructor.
       }
-
-      invc H16.
+      invc H17.
       econstructor.
-      eauto.
+      ff.
+      
+
 
     + (* t2 case *)
 
@@ -6002,40 +6211,52 @@ Proof.
           eauto.
         }
         destruct_conjs.
-        assert (not_hash_sig_ev H16).
+        assert (not_hash_sig_ev H17).
         {
           destruct s; destruct s; destruct s0; ff.
           jkjke'. ff.
-          cbv. intros. invc H17. destruct_conjs. solve_by_inversion.
+          cbv. intros. invc H18. destruct_conjs. solve_by_inversion.
           jkjke'. ff.
-          cbv. intros. invc H17. destruct_conjs. solve_by_inversion.
+          cbv. intros. invc H18. destruct_conjs. solve_by_inversion.
         }
           
           eapply IHt2.
           eassumption.
           eassumption.
+          eapply sig_term_ev_bseqr.
+
+          econstructor. eassumption.
+          split.
+          apply H12.
+          eauto.
+
           eassumption.
-          5: { eassumption. }
-          4: { jkjke'. }
-          2: { eassumption. }
-          2: { eassumption. }
+
           eassumption.
-          econstructor. ff.
-          destruct s; destruct s0; ff.
+          4: { eassumption. }
+          eassumption.
+          rewrite <- H18.
+          2: { symmetry. eassumption. }
+          destruct s; destruct s; destruct s0; ff.
+          jkjke'. jkjke'.
+
+          ff.
+          econstructor.
+          destruct s; destruct s; destruct s0; ff.
           econstructor.
       }
       
       
-      invc H16.
+      invc H17.
       +++
         econstructor.
         apply ssSubr.
         eassumption.
 
-
-  -
+  - (* abseq case *)
     do_wf_pieces.
     do_not_none.
+    invc H1.
     do_not_hshsig.
     vmsts.
     simpl in *.
@@ -6064,6 +6285,7 @@ Proof.
     do_wfec_skipn.
 
     clear_skipn_firstn.
+    
 
     rewrite fold_recev in *.
 
@@ -6087,33 +6309,51 @@ Proof.
           eauto.
         }
         destruct_conjs.
-        assert (not_hash_sig_ev H16).
+        
+        assert (not_hash_sig_ev H17).
         {
+         
           destruct s; destruct s; destruct s0; ff.
+          rewrite fold_recev in *.
           jkjke'. ff.
           jkjke'. ff.
-          cbv. intros. invc H17. destruct_conjs. solve_by_inversion.
-          cbv. intros. invc H17. destruct_conjs. solve_by_inversion.
+         
+          cbv. intros. invc H18. destruct_conjs. solve_by_inversion.
+          cbv. intros. invc H18. destruct_conjs. solve_by_inversion.
         }
         
           
           eapply IHt1.
           eassumption.
           eassumption.
+          eapply sig_term_ev_bparl.
+          
+          econstructor. eassumption.
+          split.
+          apply H12.
+          eauto.
+         
           eassumption.
-          5: { eassumption. }
-          4: { jkjke. }
-          2: { eassumption. }
-          2: { eassumption. }
+         
+          
           eassumption.
+          4: { eassumption. }
+          eassumption.
+          rewrite <- H18.
+          2: { symmetry. eassumption. }
+          destruct s. destruct s; destruct s0; ff.
+          jkjke'. jkjke'.
+
+          ff.
           econstructor.
           destruct s; destruct s; ff.
           econstructor.
       }
-
-      invc H16.
+      invc H17.
       econstructor.
-      eauto.
+      ff.
+      
+
 
     + (* t2 case *)
 
@@ -6133,36 +6373,50 @@ Proof.
           eauto.
         }
         destruct_conjs.
-        assert (not_hash_sig_ev H16).
+        assert (not_hash_sig_ev H17).
         {
           destruct s; destruct s; destruct s0; ff.
           jkjke'. ff.
-          cbv. intros. invc H17. destruct_conjs. solve_by_inversion.
+          cbv. intros. invc H18. destruct_conjs. solve_by_inversion.
           jkjke'. ff.
-          cbv. intros. invc H17. destruct_conjs. solve_by_inversion.
+          cbv. intros. invc H18. destruct_conjs. solve_by_inversion.
         }
           
           eapply IHt2.
           eassumption.
           eassumption.
+          eapply sig_term_ev_bparr.
+
+          econstructor. eassumption.
+          split.
+          apply H12.
+          eauto.
+
           eassumption.
-          5: { eassumption. }
-          4: { jkjke'. }
-          2: { eassumption. }
-          2: { eassumption. }
+
           eassumption.
-          econstructor. ff.
-          destruct s; destruct s0; ff.
+          4: { eassumption. }
+          eassumption.
+          rewrite <- H18.
+          2: { symmetry. eassumption. }
+          destruct s; destruct s; destruct s0; ff.
+          jkjke'. jkjke'.
+
+          ff.
+          econstructor.
+          destruct s; destruct s; destruct s0; ff.
           econstructor.
       }
       
       
-      invc H16.
+      invc H17.
       +++
         econstructor.
         apply ppSubr.
         eassumption.
+
 Defined.
+        
 
 Lemma appraisal_correct : forall t e' tr tr' p p' ecc ev ee,
     well_formed_r t ->
