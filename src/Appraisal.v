@@ -771,17 +771,74 @@ Ltac do_not_hshsig :=
   try do_not_hshsig_abpar_pieces;
   destruct_conjs.
 
+Lemma evsubt_preserved_aeval: forall t et ett p,
+    not_none_none t ->
+    EvSubT ett et ->
+    EvSubT ett (aeval t p et).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros; ff.
+  -
+    destruct a; ff.
+    apply uuSubT.
+    eauto.
+  -
+    do_not_none.
+    eauto.
+  -
+    do_not_none.
+    eauto.
+  -
+    do_not_none.
+    destruct s.
+    destruct s; destruct s0; ff.
+    
+    unfold not_none_none in H.
+    unfold not in *.
+    exfalso.
+    eapply H with (t' := (abseq r (NONE, NONE) t1 t2)).
+    econstructor.
+    repeat eexists.
+    econstructor.
+  -
+    do_not_none.
+    destruct s.
+    destruct s; destruct s0; ff.
+    
+    unfold not_none_none in H.
+    unfold not in *.
+    exfalso.
+    eapply H with (t' := (abpar r (NONE, NONE) t1 t2)).
+    Print none_none_term.
+    right.
+    repeat eexists.
+    econstructor.
+Defined.
+
 Lemma evsubt_preserved: forall t e e' et et' tr tr' p p' ett,
-    copland_compile t {| st_ev := e et; st_trace := tr; st_pl := p |} =
+    well_formed_r t ->
+    not_none_none t ->
+    copland_compile t {| st_ev := evc e et; st_trace := tr; st_pl := p |} =
     (Some tt, {| st_ev := evc e' et'; st_trace := tr'; st_pl := p' |}) ->
     EvSubT ett et ->
     EvSubT ett et'.
 Proof.
-Admitted.
+  intros.
+  assert (et' = Term_Defs.eval (unanno t) p et).
+  {
+    eapply cvm_refines_lts_evidence; eauto.
+  }
+  subst.
+
+  rewrite eval_aeval.
+  eapply evsubt_preserved_aeval; eauto.
+Defined.
 
 Lemma ggsub: forall t ecc tr p e e0 tr' p' r,
 
     well_formed_r t ->
+    not_none_none t ->
     copland_compile t {| st_ev := ecc; st_trace := tr; st_pl := p |} =
     (Some tt, {| st_ev := evc e e0; st_trace := tr'; st_pl := p' |}) ->
 
@@ -792,11 +849,14 @@ Proof.
   generalizeEverythingElse t.
   induction t; intros; repeat ff.
   -
+    do_not_none.
     eauto.
   -
     do_wf_pieces.
-    invc H1.
+    do_not_none.
+    invc H2.
     eapply IHt.
+    eassumption.
     eassumption.
     jkjke'.
     apply copland_compile_at.
@@ -804,34 +864,36 @@ Proof.
     eassumption.
   -
     do_wf_pieces.
+    do_not_none.
     vmsts.
     destruct st_ev.
     
     
-    invc H1.
+    invc H2.
     +
       assert (exists p et, EvSubT (gg p et) e2) by eauto.
       destruct_conjs.
 
-      exists H1. exists H3.
+      exists H2. exists H6.
 
       eapply evsubt_preserved; eauto.
     +
       eauto.
   -
     do_wf_pieces.
+    do_not_none.
     vmsts.
     repeat ff.
     destruct st_ev.
 
-    invc H1.
+    invc H2.
     +
       ff.
 
       assert (exists p et, EvSubT (gg p et) e2) by eauto.
       destruct_conjs.
 
-      exists H1. exists H3.
+      exists H2. exists H6.
       apply ssSublT.
       eassumption.
     +
@@ -840,23 +902,24 @@ Proof.
       assert (exists p et, EvSubT (gg p et) e4) by eauto.
       destruct_conjs.
 
-      exists H1. exists H3.
+      exists H2. exists H6.
       apply ssSubrT.
       eassumption.
   -
     do_wf_pieces.
+    do_not_none.
     vmsts.
     repeat ff.
     destruct st_ev.
 
-    invc H1.
+    invc H2.
     +
       ff.
 
       assert (exists p et, EvSubT (gg p et) e2) by eauto.
       destruct_conjs.
 
-      exists H1. exists H3.
+      exists H2. exists H6.
       apply ppSublT.
       eassumption.
     +
@@ -865,500 +928,292 @@ Proof.
       assert (exists p et, EvSubT (gg p et) e4) by eauto.
       destruct_conjs.
 
-      exists H1. exists H3.
+      exists H2. exists H6.
       apply ppSubrT.
       eassumption.
 Defined.
 
-      Lemma evsub_hh: forall e e' e0,
-        EvSub e0 e' ->
-        EvSubT (et_fun e') e ->
-        EvSubT (et_fun e0) e.
-      Proof.
-        intros.
-        generalizeEverythingElse e.
-        induction e; intros; ff.
-        -
+Lemma evsub_hh: forall e e' e0,
+    EvSub e0 e' ->
+    EvSubT (et_fun e') e ->
+    EvSubT (et_fun e0) e.
+Proof.
+  intros.
+  generalizeEverythingElse e.
+  induction e; intros; ff.
+  -
+    invc H0.
+    jkjke.
+    assert (e' = mtc).
+    {
+      destruct e'; try solve_by_inversion.
+    }
+    subst.
+    invc H.
+    ff.
+  -
+    invc H0.
+    +
+      assert (exists bs ec, e' = uuc n l n0 n1 bs ec).
+      {
+        destruct e'; try solve_by_inversion.
+        ff.
+        repeat eexists.
+      }
+      destruct_conjs.
+      subst.
+      ff.
+      invc H.
+      ++
+        ff.
+      ++
+        
+        assert (EvSubT (et_fun e0) (et_fun H1)).
+        {
+          eapply IHe.
+          eassumption.
+          econstructor.
+        }
+        apply uuSubT. eassumption.
+    +
+      assert (EvSubT (et_fun e0) e) by eauto.
+      apply uuSubT. eassumption.
+  -
+    invc H0.
+    +
+      assert (exists bs ec, e' = ggc n bs ec).
+      {
+        destruct e'; try solve_by_inversion.
+        ff.
+        repeat eexists.
+      }
+      destruct_conjs.
+      subst.
+      ff.
+      invc H.
+      ++
+        ff.
+      ++
+
+        assert (EvSubT (et_fun e0) (et_fun H1)).
+        {
+          eapply IHe.
+          eassumption.
+          econstructor.
+        }
+        apply ggSubT. eassumption.
+    +
+      assert (EvSubT (et_fun e0) e) by eauto.
+      apply ggSubT. eassumption.
+  -
+    invc H0.
+    +
+      assert (exists bs, e' = hhc n bs e).
+      {
+        destruct e'; try solve_by_inversion.
+        ff.
+        repeat eexists.
+      }
+      destruct_conjs.
+      subst.
+      ff.
+      invc H.
+      ++
+        ff.
+      ++
+        assert (EvSubT (et_fun e0) e).
+        {
+          eapply IHe.
+          econstructor.
+          eassumption.
+        }
+        apply hhSubT.
+        eassumption.
+    +
+      assert (EvSubT (et_fun e0) e) by eauto.
+      apply hhSubT. eassumption.
+  -
+    invc H0.
+    assert (exists bs, e' = nnc n bs).
+    {
+      destruct e'; try solve_by_inversion.
+      ff.
+      repeat eexists.
+    }
+    destruct_conjs.
+    subst.
+    ff.
+  -
+    
+    assert ((exists e1 e2, e' = ssc e1 e2) \/
+            EvSubT (et_fun e') e1 \/
+            EvSubT (et_fun e') e2).
+    {
+      invc H0.
+      +
+        destruct e'; try solve_by_inversion.
+        ff.
+        left.
+        repeat eexists.
+      +
+        eauto.
+      +
+        eauto.
+    }
+    door.
+    +
+      destruct_conjs.
+      subst.
+      
+      
+      ff.
+      invc H.
+      
+      ++
+        ff.
+      ++
+        assert (EvSubT (ss (et_fun H1) (et_fun H2)) e1 \/
+                EvSubT (ss (et_fun H1) (et_fun H2)) e2 \/
+                e1 = (et_fun H1) /\ e2 = (et_fun H2)).
+        {
           invc H0.
-          jkjke.
-          assert (e' = mtc).
-          {
-            destruct e'; try solve_by_inversion.
-          }
-          subst.
-          invc H.
-          ff.
-        -
+          +++
+            right.
+            right.
+            eauto.
+          +++
+            left.
+            eauto.
+          +++
+            eauto.
+        }
+        door.
+        +++
+          eauto.
+        +++
+          door.
+          ++++
+            eauto.
+          ++++
+            subst.
+            eauto.
+      ++
+        assert (EvSubT (ss (et_fun H1) (et_fun H2)) e1 \/
+                EvSubT (ss (et_fun H1) (et_fun H2)) e2 \/
+                e1 = (et_fun H1) /\ e2 = (et_fun H2)).
+        {
           invc H0.
-          +
-            assert (exists bs ec, e' = uuc n l n0 n1 bs ec).
-            {
-              destruct e'; try solve_by_inversion.
-              ff.
-              repeat eexists.
-            }
-            destruct_conjs.
+          +++
+            right.
+            right.
+            eauto.
+          +++
+            left.
+            eauto.
+          +++
+            eauto.
+        }
+        door.
+        +++
+          eauto.
+        +++
+          door.
+          ++++
+            eauto.
+          ++++
             subst.
-            ff.
-            invc H.
-            ++
-              ff.
-            ++
-              
-            assert (EvSubT (et_fun e0) (et_fun H1)).
-            {
-              eapply IHe.
-              eassumption.
-              econstructor.
-            }
-            apply uuSubT. eassumption.
-          +
-            assert (EvSubT (et_fun e0) e) by eauto.
-            apply uuSubT. eassumption.
-        -
+            eauto.
+    +
+      door.
+      eauto.
+      eauto.
+
+
+  - (* ppc case *)
+    
+    assert ((exists e1 e2, e' = ppc e1 e2) \/
+            EvSubT (et_fun e') e1 \/
+            EvSubT (et_fun e') e2).
+    {
+      invc H0.
+      +
+        destruct e'; try solve_by_inversion.
+        ff.
+        left.
+        repeat eexists.
+      +
+        eauto.
+      +
+        eauto.
+    }
+    door.
+    +
+      destruct_conjs.
+      subst.
+      
+      
+      ff.
+      invc H.
+      
+      ++
+        ff.
+      ++
+        assert (EvSubT (pp (et_fun H1) (et_fun H2)) e1 \/
+                EvSubT (pp (et_fun H1) (et_fun H2)) e2 \/
+                e1 = (et_fun H1) /\ e2 = (et_fun H2)).
+        {
           invc H0.
-          +
-            assert (exists bs ec, e' = ggc n bs ec).
-            {
-              destruct e'; try solve_by_inversion.
-              ff.
-              repeat eexists.
-            }
-            destruct_conjs.
+          +++
+            right.
+            right.
+            eauto.
+          +++
+            left.
+            eauto.
+          +++
+            eauto.
+        }
+        door.
+        +++
+          eauto.
+        +++
+          door.
+          ++++
+            eauto.
+          ++++
             subst.
-            ff.
-            invc H.
-            ++
-              ff.
-            ++
-
-              assert (EvSubT (et_fun e0) (et_fun H1)).
-              {
-                eapply IHe.
-                eassumption.
-                econstructor.
-              }
-              apply ggSubT. eassumption.
-          +
-            assert (EvSubT (et_fun e0) e) by eauto.
-            apply ggSubT. eassumption.
-        -
+            eauto.
+      ++
+        assert (EvSubT (pp (et_fun H1) (et_fun H2)) e1 \/
+                EvSubT (pp (et_fun H1) (et_fun H2)) e2 \/
+                e1 = (et_fun H1) /\ e2 = (et_fun H2)).
+        {
           invc H0.
-          +
-            assert (exists bs, e' = hhc n bs e).
-            {
-              destruct e'; try solve_by_inversion.
-              ff.
-              repeat eexists.
-            }
-            destruct_conjs.
+          +++
+            right.
+            right.
+            eauto.
+          +++
+            left.
+            eauto.
+          +++
+            eauto.
+        }
+        door.
+        +++
+          eauto.
+        +++
+          door.
+          ++++
+            eauto.
+          ++++
             subst.
-            ff.
-            invc H.
-            ++
-              ff.
-            ++
-              assert (EvSubT (et_fun e0) e).
-              {
-                eapply IHe.
-                econstructor.
-                eassumption.
-              }
-              apply hhSubT.
-              eassumption.
-          +
-            assert (EvSubT (et_fun e0) e) by eauto.
-            apply hhSubT. eassumption.
-        -
-          invc H0.
-          assert (exists bs, e' = nnc n bs).
-          {
-            destruct e'; try solve_by_inversion.
-              ff.
-              repeat eexists.
-          }
-          destruct_conjs.
-          subst.
-          ff.
-        -
-          
-          assert ((exists e1 e2, e' = ssc e1 e2) \/
-                           EvSubT (et_fun e') e1 \/
-                           EvSubT (et_fun e') e2).
-          {
-            invc H0.
-            +
-              destruct e'; try solve_by_inversion.
-              ff.
-              left.
-              repeat eexists.
-            +
-              eauto.
-            +
-              eauto.
-            }
-            door.
-            +
-            destruct_conjs.
-            subst.
-          
-          
-            ff.
-            invc H.
-            
-            ++
-              ff.
-            ++
-              assert (EvSubT (ss (et_fun H1) (et_fun H2)) e1 \/
-                      EvSubT (ss (et_fun H1) (et_fun H2)) e2 \/
-                      e1 = (et_fun H1) /\ e2 = (et_fun H2)).
-              {
-                 invc H0.
-                +++
-                  right.
-                  right.
-                  eauto.
-                +++
-                  left.
-                  eauto.
-                +++
-                  eauto.
-              }
-              door.
-              +++
-                eauto.
-              +++
-                door.
-                ++++
-                  eauto.
-                ++++
-                  subst.
-                  eauto.
-            ++
-              assert (EvSubT (ss (et_fun H1) (et_fun H2)) e1 \/
-                      EvSubT (ss (et_fun H1) (et_fun H2)) e2 \/
-                      e1 = (et_fun H1) /\ e2 = (et_fun H2)).
-              {
-                invc H0.
-                +++
-                  right.
-                  right.
-                  eauto.
-                +++
-                  left.
-                  eauto.
-                +++
-                  eauto.
-              }
-              door.
-              +++
-                eauto.
-              +++
-                door.
-                ++++
-                  eauto.
-                ++++
-                  subst.
-                  eauto.
-            +
-              door.
-              eauto.
-              eauto.
-
-
-        - (* ppc case *)
-          
-          assert ((exists e1 e2, e' = ppc e1 e2) \/
-                           EvSubT (et_fun e') e1 \/
-                           EvSubT (et_fun e') e2).
-          {
-            invc H0.
-            +
-              destruct e'; try solve_by_inversion.
-              ff.
-              left.
-              repeat eexists.
-            +
-              eauto.
-            +
-              eauto.
-            }
-            door.
-            +
-            destruct_conjs.
-            subst.
-          
-          
-            ff.
-            invc H.
-            
-            ++
-              ff.
-            ++
-              assert (EvSubT (pp (et_fun H1) (et_fun H2)) e1 \/
-                      EvSubT (pp (et_fun H1) (et_fun H2)) e2 \/
-                      e1 = (et_fun H1) /\ e2 = (et_fun H2)).
-              {
-                 invc H0.
-                +++
-                  right.
-                  right.
-                  eauto.
-                +++
-                  left.
-                  eauto.
-                +++
-                  eauto.
-              }
-              door.
-              +++
-                eauto.
-              +++
-                door.
-                ++++
-                  eauto.
-                ++++
-                  subst.
-                  eauto.
-            ++
-              assert (EvSubT (pp (et_fun H1) (et_fun H2)) e1 \/
-                      EvSubT (pp (et_fun H1) (et_fun H2)) e2 \/
-                      e1 = (et_fun H1) /\ e2 = (et_fun H2)).
-              {
-                invc H0.
-                +++
-                  right.
-                  right.
-                  eauto.
-                +++
-                  left.
-                  eauto.
-                +++
-                  eauto.
-              }
-              door.
-              +++
-                eauto.
-              +++
-                door.
-                ++++
-                  eauto.
-                ++++
-                  subst.
-                  eauto.
-            +
-              door.
-              eauto.
-              eauto.
-              Defined.
-
-
-
-      (*
-              
-              
-              
-        - (* ppc case *)
-            assert (exists e1 e2, e' = ppc e1 e2).
-            {
-              admit.
-            }
-            destruct_conjs.
-            subst.
-            ff.
-            invc H.
-            
-            +
-              ff.
-            +
-              assert (EvSubT (pp (et_fun H1) (et_fun H2)) e1 \/
-                      EvSubT (pp (et_fun H1) (et_fun H2)) e2 \/
-                      e1 = (et_fun H1) /\ e2 = (et_fun H2)).
-              {
-                 invc H0.
-                +++
-                  right.
-                  right.
-                  eauto.
-                +++
-                  left.
-                  eauto.
-                +++
-                  eauto.
-              }
-              door.
-              ++
-                eauto.
-              ++
-                door.
-                +++
-                  eauto.
-                +++
-                  subst.
-                  eauto.
-            +
-              assert (EvSubT (pp (et_fun H1) (et_fun H2)) e1 \/
-                      EvSubT (pp (et_fun H1) (et_fun H2)) e2 \/
-                      e1 = (et_fun H1) /\ e2 = (et_fun H2)).
-              {
-                invc H0.
-                +++
-                  right.
-                  right.
-                  eauto.
-                +++
-                  left.
-                  eauto.
-                +++
-                  eauto.
-              }
-              door.
-              ++
-                eauto.
-              ++
-                door.
-                +++
-                  eauto.
-                +++
-                  subst.
-                  eauto.
-          
-              
-          
-                  
-                  
-                
-              
-              Check evsub_etfun.
-              assert (exists ec1 ec2, et_fun (ssc ec1 ec2) = ss e1 e2).
-              {
-                admit.
-              }
-              destruct_conjs.
-              rewrite <- H4.
-              eapply evsub_etfun.
-              
-              
-              
-
-
-
-            
-            invc H.
-            
-            +
-              ff.
-            +
-              econstructor.
-              eapply IHe1.
-              eassumption.
-              eapply IHe1.
-              econstructor.
-              eauto.
-              assert (EvSubT (et_fun e0) e1).
-              {
-              eapply IHe1.
-              eassumption.
-              invc H0.
-              ++
-                ff.
-              ++
-                eauto.
-              ++
-                assert (EvSubT (et_fun H2) e2).
-                eauto.
-                assert (EvSubT (et_fun H2) e1).
-                eapply IHe1.
-                
-                
-
-
-              
-              Lemma ss_evsub: forall e1 e2 et1 et2,
-                EvSubT (ss et1 et2) (ss e1 e2) ->
-                EvSubT et1 e1.
-              Proof.
-                
-                intros.
-                generalizeEverythingElse e1.
-                induction e1; intros.
-                -
-                  invc H.
-                  econstructor.
-                  invc H2.
-                  invc H2
-                invc H.
-                econstructor.
-                invc H2.
-                admit.
-              Admitted.
-
-              eapply ss_evsub; eauto.
-              
-                
-              
-              apply ssSublT.
-              eassumption.
-            +
-              assert (EvSubT (et_fun e0) e2).
-              eapply IHe2.
-              eassumption.
-              admit.
-              apply ssSubrT.
-              eassumption.
-              
-              
-              
-
-
-
-            
-            invc H.
-            +
-              ff.
-            +
-              invc H0.
-              ++
-                assert (EvSubT (et_fun e0) (et_fun H1)) by eauto.
-                apply ssSublT. eassumption.
-              ++
-                
-                
-              eapply IHe1.
-              eassumption.
-
-
-              
-              apply ssSubrT.
-              eauto.
-              eapply evsub_etfun.
-              
-            apply ssSublT.
-            
-            
-          
-          
-          
-            
-              
-              
-            
-          
-            
-              
-              
-            
-          
-            
-            
-            
-          
-          
-            
-
-          
-      Admitted.
-       *)
+            eauto.
+    +
+      door.
+      eauto.
+      eauto.
+Defined.
 
 
 Lemma evsub_transitive: forall e e' e'',
@@ -2651,6 +2506,8 @@ Defined.
 
 Lemma sig_is: forall t ecc ecc' e e' tr tr' p p',
 
+    well_formed_r t ->
+    wf_ec ecc ->
     copland_compile t
                     {| st_ev := ecc; st_trace := tr; st_pl := p |} =
     (Some tt,
@@ -2673,18 +2530,18 @@ Proof.
   -
     unfold cons_uu in *.
     repeat ff.
-    invc H2.
+    invc H4.
     destruct_conjs.
     subst.
-    invc H3.
+    invc H5.
     left.
     econstructor.
     eauto.
   -
-    invc H2.
+    invc H4.
     destruct_conjs.
     subst.
-    invc H4.
+    invc H6.
     +
       right.
       exists (n, n0).
@@ -2697,20 +2554,23 @@ Proof.
       eexists.
       econstructor.
   -
-    invc H2.
+    invc H4.
     destruct_conjs.
     subst.
-    invc H4.
+    invc H6.
     ff.
     left.
     eapply gg_recons; eauto.
   -
+    do_wf_pieces.
 
     edestruct IHt.
+    eassumption.
+    eassumption.
     apply copland_compile_at.
-    admit.
-    apply H0.
-    apply H1.
+    eassumption.
+    apply H2.
+    eassumption.
     eassumption.
     left. eauto.
     destruct_conjs.
@@ -2719,24 +2579,34 @@ Proof.
     econstructor.
     eassumption.
   -
+    do_wf_pieces.
     vmsts.
+    do_wfec_preserved.
+    do_somerecons.
+    (*
     assert (exists ee, Some ee = reconstruct_ev st_ev).
     { admit. }
-    destruct_conjs.
+    destruct_conjs. *)
 
-    assert (gg_sub H \/ (exists r, term_sub (aasp r SIG) t2)).
+    assert (gg_sub H9 \/ (exists r, term_sub (aasp r SIG) t2)).
     {
       eapply IHt2.
       eassumption.
+      apply H6.
       eassumption.
       eassumption.
-      eassumption.
+      jkjke'.
+      jkjke'.
+      jkjke'.
+      ff.
     }
     door.
 
     assert (gg_sub e \/ (exists r, term_sub (aasp r SIG) t1)).
     {
       eapply IHt1.
+      eassumption.
+      2: { eassumption. }
       eassumption.
       eassumption.
       eassumption.
@@ -2753,21 +2623,38 @@ Proof.
     eexists.
     apply alseq_subr. eassumption.
   - (* abseq case *)
+
+    do_wf_pieces.
     vmsts.
-    invc H2.
+    do_wfec_preserved.
+    do_somerecons.
+    do_wfec_split.
+    do_wfec_preserved.
+    Print do_wfec_firstn.
+    ff.
+    subst.
+    do_wfec_firstn.
+    do_wfec_skipn.
+    repeat find_rewrite.
+    vmsts.
+    invc H4.
     destruct_conjs.
     subst.
-    invc H4.
+    invc H16.
     +
       ff.
+      (*
       assert (exists ee, Some ee = reconstruct_ev st_ev0).
       admit.
 
       assert (exists ee, Some ee = reconstruct_ev st_ev).
       admit.
       destruct_conjs.
+       *)
+      
 
       rewrite fold_recev in *.
+      (*
 
       assert ((firstn (et_size e1) (e0 ++ e2)) = e0).
       admit.
@@ -2775,29 +2662,56 @@ Proof.
       admit.
       rewrite H7 in *; clear H7.
       rewrite H8 in *; clear H8.
-      jkjke'.
-      jkjke'.
+       *)
+
+      clear H11; clear H12.
+      
       jkjke'.
       jkjke'.
       repeat ff.
+      do_wfec_preserved.
+      do_somerecons.
       
       
-      assert (gg_sub e \/ exists r, term_sub (aasp r SIG) t1).
+      assert (gg_sub H5 \/ exists r, term_sub (aasp r SIG) t1).
       {
         destruct s.
         destruct s; destruct s0.
         ++
           eapply IHt1.
           eassumption.
+          2: { eassumption. }
           eassumption.
           eassumption.
+          eassumption.
+          rewrite fold_recev in *.
+          jkjke'.
+          jkjke'.
+          ff.
+          jkjke'.
+          jkjke'.
+          jkjke'.
+          jkjke'.
+          ff.
+          
           econstructor.
           eauto.
         ++
           eapply IHt1.
           eassumption.
+          2: { eassumption. }
           eassumption.
           eassumption.
+          eassumption.
+          jkjke'.
+          jkjke'.
+          repeat ff.
+          jkjke'.
+          jkjke'.
+          jkjke'.
+          jkjke'.
+          repeat ff.
+          
           econstructor.
           eauto.
         ++
@@ -2805,17 +2719,23 @@ Proof.
           {
             eapply IHt1.
             eassumption.
+            2: { eassumption. }
+            ff.
             ff.
             eassumption.
+            repeat jkjke'.
+            repeat ff.
+            repeat jkjke'.
+            repeat ff.
             econstructor.
             eauto.
           }
           door.
           +++
-            invc H2.
+            invc H22.
             destruct_conjs.
             subst.
-            invc H9.
+            solve_by_inversion.
           +++
             right.
             eauto.
@@ -2824,20 +2744,26 @@ Proof.
           {
             eapply IHt1.
             eassumption.
+            2: {eassumption. }
+            
+            eassumption.
             ff.
             eassumption.
+            repeat jkjke'.
+            repeat ff.
+            repeat jkjke'.
+            repeat ff.
+            
             econstructor.
             eauto.
           }
           door.
           +++
-            invc H2.
-            
+            invc H22.       
             destruct_conjs.
             subst.
-            invc H9.
-          +++
-            
+            solve_by_inversion.
+          +++   
             right.
             eauto.
       }
@@ -2845,24 +2771,24 @@ Proof.
       ++
         eauto.
       ++
-        
-
         right.
         eexists.
         apply abseq_subl.
         eassumption.
     +
-
-
-      ff.
+            ff.
+      (*
       assert (exists ee, Some ee = reconstruct_ev st_ev0).
       admit.
 
       assert (exists ee, Some ee = reconstruct_ev st_ev).
       admit.
       destruct_conjs.
+       *)
+      
 
       rewrite fold_recev in *.
+      (*
 
       assert ((firstn (et_size e1) (e0 ++ e2)) = e0).
       admit.
@@ -2870,22 +2796,38 @@ Proof.
       admit.
       rewrite H7 in *; clear H7.
       rewrite H8 in *; clear H8.
-      jkjke'.
-      jkjke'.
+       *)
+
+      clear H11; clear H12.
+      
       jkjke'.
       jkjke'.
       repeat ff.
+      do_wfec_preserved.
+      do_somerecons.
       
       
-      assert (gg_sub e \/ exists r, term_sub (aasp r SIG) t2).
+      assert (gg_sub H5 \/ exists r, term_sub (aasp r SIG) t2).
       {
         destruct s.
         destruct s; destruct s0.
         ++
           eapply IHt2.
           eassumption.
+          2: { eassumption. }
           eassumption.
           eassumption.
+          eassumption.
+          rewrite fold_recev in *.
+          jkjke'.
+          jkjke'.
+          ff.
+          jkjke'.
+          jkjke'.
+          jkjke'.
+          jkjke'.
+          ff.
+          
           econstructor.
           eauto.
         ++
@@ -2893,28 +2835,41 @@ Proof.
           {
             eapply IHt2.
             eassumption.
+            2: { eassumption. }
+            ff.
             ff.
             eassumption.
+            repeat jkjke'.
+            repeat ff.
+            repeat jkjke'.
+            repeat ff.
             econstructor.
             eauto.
           }
           door.
           +++
-            invc H2.
+            invc H22.
             destruct_conjs.
             subst.
-            invc H9.
+            solve_by_inversion.
           +++
             right.
             eauto.
-            
-
-            
         ++
           eapply IHt2.
           eassumption.
+          2: { eassumption. }
           eassumption.
           eassumption.
+          eassumption.
+          rewrite fold_recev in *.
+          jkjke'.
+          jkjke'.
+          ff.
+          jkjke'.
+          jkjke'.
+          jkjke'.
+          
           econstructor.
           eauto.
         ++
@@ -2922,20 +2877,27 @@ Proof.
           {
             eapply IHt2.
             eassumption.
+            2: { eassumption. }
+            ff.
             ff.
             eassumption.
+            repeat jkjke'.
+            repeat ff.
+            repeat jkjke'.
+            repeat ff.
             econstructor.
             eauto.
           }
           door.
           +++
-            invc H2.
+            invc H22.
             destruct_conjs.
             subst.
-            invc H9.
+            solve_by_inversion.
           +++
             right.
             eauto.
+
       }
       door.
       ++
@@ -2945,22 +2907,40 @@ Proof.
         eexists.
         apply abseq_subr.
         eassumption.
+
   - (* abpar case *)
+
+    do_wf_pieces.
     vmsts.
-    invc H2.
+    do_wfec_preserved.
+    do_somerecons.
+    do_wfec_split.
+    do_wfec_preserved.
+    Print do_wfec_firstn.
+    ff.
+    subst.
+    do_wfec_firstn.
+    do_wfec_skipn.
+    repeat find_rewrite.
+    vmsts.
+    invc H4.
     destruct_conjs.
     subst.
-    invc H4.
+    invc H16.
     +
       ff.
+      (*
       assert (exists ee, Some ee = reconstruct_ev st_ev0).
       admit.
 
       assert (exists ee, Some ee = reconstruct_ev st_ev).
       admit.
       destruct_conjs.
+       *)
+      
 
       rewrite fold_recev in *.
+      (*
 
       assert ((firstn (et_size e1) (e0 ++ e2)) = e0).
       admit.
@@ -2968,29 +2948,56 @@ Proof.
       admit.
       rewrite H7 in *; clear H7.
       rewrite H8 in *; clear H8.
-      jkjke'.
-      jkjke'.
+       *)
+
+      clear H11; clear H12.
+      
       jkjke'.
       jkjke'.
       repeat ff.
+      do_wfec_preserved.
+      do_somerecons.
       
       
-      assert (gg_sub e \/ exists r, term_sub (aasp r SIG) t1).
+      assert (gg_sub H5 \/ exists r, term_sub (aasp r SIG) t1).
       {
         destruct s.
         destruct s; destruct s0.
         ++
           eapply IHt1.
           eassumption.
+          2: { eassumption. }
           eassumption.
           eassumption.
+          eassumption.
+          rewrite fold_recev in *.
+          jkjke'.
+          jkjke'.
+          ff.
+          jkjke'.
+          jkjke'.
+          jkjke'.
+          jkjke'.
+          ff.
+          
           econstructor.
           eauto.
         ++
           eapply IHt1.
           eassumption.
+          2: { eassumption. }
           eassumption.
           eassumption.
+          eassumption.
+          jkjke'.
+          jkjke'.
+          repeat ff.
+          jkjke'.
+          jkjke'.
+          jkjke'.
+          jkjke'.
+          repeat ff.
+          
           econstructor.
           eauto.
         ++
@@ -2998,17 +3005,23 @@ Proof.
           {
             eapply IHt1.
             eassumption.
+            2: { eassumption. }
+            ff.
             ff.
             eassumption.
+            repeat jkjke'.
+            repeat ff.
+            repeat jkjke'.
+            repeat ff.
             econstructor.
             eauto.
           }
           door.
           +++
-            invc H2.
+            invc H22.
             destruct_conjs.
             subst.
-            invc H9.
+            solve_by_inversion.
           +++
             right.
             eauto.
@@ -3017,20 +3030,26 @@ Proof.
           {
             eapply IHt1.
             eassumption.
+            2: {eassumption. }
+            
+            eassumption.
             ff.
             eassumption.
+            repeat jkjke'.
+            repeat ff.
+            repeat jkjke'.
+            repeat ff.
+            
             econstructor.
             eauto.
           }
           door.
           +++
-            invc H2.
-            
+            invc H22.       
             destruct_conjs.
             subst.
-            invc H9.
-          +++
-            
+            solve_by_inversion.
+          +++   
             right.
             eauto.
       }
@@ -3038,24 +3057,24 @@ Proof.
       ++
         eauto.
       ++
-        
-
         right.
         eexists.
         apply abpar_subl.
         eassumption.
     +
-
-
-      ff.
+            ff.
+      (*
       assert (exists ee, Some ee = reconstruct_ev st_ev0).
       admit.
 
       assert (exists ee, Some ee = reconstruct_ev st_ev).
       admit.
       destruct_conjs.
+       *)
+      
 
       rewrite fold_recev in *.
+      (*
 
       assert ((firstn (et_size e1) (e0 ++ e2)) = e0).
       admit.
@@ -3063,22 +3082,38 @@ Proof.
       admit.
       rewrite H7 in *; clear H7.
       rewrite H8 in *; clear H8.
-      jkjke'.
-      jkjke'.
+       *)
+
+      clear H11; clear H12.
+      
       jkjke'.
       jkjke'.
       repeat ff.
+      do_wfec_preserved.
+      do_somerecons.
       
       
-      assert (gg_sub e \/ exists r, term_sub (aasp r SIG) t2).
+      assert (gg_sub H5 \/ exists r, term_sub (aasp r SIG) t2).
       {
         destruct s.
         destruct s; destruct s0.
         ++
           eapply IHt2.
           eassumption.
+          2: { eassumption. }
           eassumption.
           eassumption.
+          eassumption.
+          rewrite fold_recev in *.
+          jkjke'.
+          jkjke'.
+          ff.
+          jkjke'.
+          jkjke'.
+          jkjke'.
+          jkjke'.
+          ff.
+          
           econstructor.
           eauto.
         ++
@@ -3086,28 +3121,41 @@ Proof.
           {
             eapply IHt2.
             eassumption.
+            2: { eassumption. }
+            ff.
             ff.
             eassumption.
+            repeat jkjke'.
+            repeat ff.
+            repeat jkjke'.
+            repeat ff.
             econstructor.
             eauto.
           }
           door.
           +++
-            invc H2.
+            invc H22.
             destruct_conjs.
             subst.
-            invc H9.
+            solve_by_inversion.
           +++
             right.
             eauto.
-            
-
-            
         ++
           eapply IHt2.
           eassumption.
+          2: { eassumption. }
           eassumption.
           eassumption.
+          eassumption.
+          rewrite fold_recev in *.
+          jkjke'.
+          jkjke'.
+          ff.
+          jkjke'.
+          jkjke'.
+          jkjke'.
+          
           econstructor.
           eauto.
         ++
@@ -3115,159 +3163,37 @@ Proof.
           {
             eapply IHt2.
             eassumption.
+            2: { eassumption. }
+            ff.
             ff.
             eassumption.
+            repeat jkjke'.
+            repeat ff.
+            repeat jkjke'.
+            repeat ff.
             econstructor.
             eauto.
           }
           door.
           +++
-            invc H2.
+            invc H22.
             destruct_conjs.
             subst.
-            invc H9.
+            solve_by_inversion.
           +++
             right.
             eauto.
+
       }
       door.
       ++
         eauto.
       ++
-        
-
         right.
         eexists.
         apply abpar_subr.
         eassumption.
-
-
-
-Admitted.
-
-
-
-        (*
-            
-              
-                ++
-                  assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t2)).
-                  {
-                    eapply IHt2.
-                    eassumption.
-                    ff.
-                    eassumption.
-                    econstructor.
-                    eauto.
-                  }
-                  door.
-                  +++
-                  invc H2.
-                
-                  destruct_conjs.
-                  subst.
-                  invc H9.
-                  +++
-                
-                  right.
-                  eauto.
-              }
-              door.
-             ++
-               eauto.
-             ++
-               
-
-              right.
-              eexists.
-              apply abseq_subl.
-              eassumption.
-
-
-
-
-              
-              
-            
-              
-
-
-
-
-
-
-
-
-
-              
-                  
-                  
-
-                  destruct_conjs.
-                  subst.
-                  invc H9.
-                  right.
-                  eauto.
-                  
-                  
-                  ff.
-                  unfold mt_evc in *.
-                  ff.
-                  eapply IHt1.
-                  eassumption.
-                  ff.
-                eassumption.
-                eassumption.
-                econstructor.
-                eauto.
-                  
-                  
-            
-            
-            
-            
-
-            
-            
-            destruct_conjs.
-            edestruct evAccum.
-            7: { apply Heqp0. }
-            admit.
-            admit.
-            admit.
-            eassumption.
-            eassumption.
-            admit.
-            econstructor.
-            edestruct IHt1.
-            eassumption.
-            eassumption.
-            admit.
-            eassumption.
-            left.
-            eauto.
-            destruct_conjs.
-            right.
-            eexists.
-            apply alseq_subl.
-            eassumption.
-          -
-            
-            
-            
-            
-
-            Check gg_recons.
-            
-         
-            
-            
-            
-
-
-          
-        Admitted.
-         *)
+Defined.
 
 Lemma hshsig_ev_term_contra: forall t p (e e' :EvidenceC) tr tr' p' (ecc ecc':EvC),
 
@@ -3277,6 +3203,7 @@ Lemma hshsig_ev_term_contra: forall t p (e e' :EvidenceC) tr tr' p' (ecc ecc':Ev
      *)
 
     well_formed_r t ->
+    wf_ec ecc ->
 
     (*not_hash_sig_term t ->
     not_hash_sig_ev e ->
@@ -3323,9 +3250,10 @@ Proof.
       destruct ecc.
       ff.
     }
-    rewrite H3 in *; clear H3.
+    
+    rewrite H4 in *; clear H4.
     jkjke'.
-    ff.
+    ff. 
 
 
 
@@ -3338,13 +3266,13 @@ Proof.
 
     assert (~ (gg_sub e)).
     {
-      cbv in H0.
+      cbv in H1.
       destruct_conjs.
       unfold not; intros.
-      invc H5.
+      invc H6.
       destruct_conjs.
       subst.
-      eapply H4.
+      eapply H5.
       repeat eexists.
       eassumption.
       repeat eexists.
@@ -3356,11 +3284,11 @@ Proof.
     intros.
     unfold not.
     intros.
-    eapply H3.
-    invc H4.
+    eapply H4.
+    invc H5.
     destruct_conjs.
     subst.
-    invc H5.
+    invc H6.
 
     eapply gg_recons; eauto.
 
@@ -3370,29 +3298,29 @@ Proof.
     eassumption.
     eassumption.
 
-    unfold not_hash_sig_ev in H2.
+    unfold not_hash_sig_ev in H3.
     unfold not in *.
     exfalso.
-    eapply H2.
+    eapply H3.
     econstructor.
     repeat eexists.
-    apply H10.
+    eassumption.
     eassumption.
 
   - (* aatt case *)
     do_wf_pieces.
     assert (not_hash_sig_term_ev t e).
     {
-      invc H0.
+      invc H1.
       destruct_conjs.
       econstructor.
       cbv.
       intros.
       destruct_conjs.
       subst.
-      unfold not_hash_sig_term in H4.
-      unfold not in H4.
-      eapply H4 with (t':=(alseq (n2, n3) H8 H6)).
+      unfold not_hash_sig_term in H5.
+      unfold not in H5.
+      eapply H5 with (t':=(alseq (n2, n3) H9 H7)).
       econstructor.
       repeat eexists.
       eassumption.
@@ -3406,9 +3334,9 @@ Proof.
       unfold not in *.
       intros.
       destruct_conjs.
-      eapply H5.
+      eapply H6.
       eassumption.
-      invc H7.
+      invc H8.
       econstructor.
       eapply termsub_transitive.
       eassumption.
@@ -3418,17 +3346,33 @@ Proof.
     
     eapply IHt.
     eassumption.
+    2: { eassumption. }
     eassumption.
     eassumption.
     eassumption.
     apply copland_compile_at.
     eassumption.
   -
-    do_wf_pieces.
-    ff.
+
+     do_wf_pieces.
     vmsts.
+    do_wfec_preserved.
+    do_somerecons.
+    (*
+    do_wfec_split.
+    do_wfec_preserved.
+    Print do_wfec_firstn.
+    ff.
+    subst.
+    do_wfec_firstn.
+    do_wfec_skipn.
+    repeat find_rewrite.
+     *)
+
     ff.
     destruct ecc; destruct st_ev.
+
+    (*
 
     
     assert (exists e, Some e = reconstruct_ev (evc e2 e3)).
@@ -3436,6 +3380,8 @@ Proof.
       admit.
     }
     destruct_conjs.
+     *)
+    
 
 
 
@@ -3523,21 +3469,27 @@ Proof.
     
     
 
-    assert (not_hash_sig_ev H5).
+    assert (not_hash_sig_ev H9).
     {
-      eapply IHt1; eauto.
+      eapply IHt1.
+      eassumption.
+      2: { eassumption. }
+      2: { eassumption. }
+      eassumption.
+      eassumption.
+      eassumption.
     }
 
-    assert (not_hash_sig_term t2).
+    assert (not_hash_sig_term t2). (* TODO: make this an auto lemma *)
     {
-      unfold not_hash_sig_term_ev in H0.
+      unfold not_hash_sig_term_ev in H1.
       destruct_conjs.
-      unfold not_hash_sig_term in H0.
+      unfold not_hash_sig_term in H1.
       cbv.
-      unfold not in H0.
+      unfold not in H1.
       intros.
       destruct_conjs.
-      eapply H0 with (t':= (alseq (n, n0) H13 H11)).
+      eapply H1 with (t':= (alseq (n, n0) H20 H18)).
       econstructor.
       repeat eexists.
       eassumption.
@@ -3547,7 +3499,7 @@ Proof.
       eassumption.
     }
 
-    assert (not_hash_sig_term_ev t2 H5).
+    assert (not_hash_sig_term_ev t2 H9).
     {
       split.
       eassumption.
@@ -3560,26 +3512,32 @@ Proof.
       assert (gg_sub e \/
               (exists r, term_sub (aasp r SIG) t1)).
       {
-        eapply sig_is; eauto.   
+        eapply sig_is.
+        eassumption.
+        2: { eassumption. }
+        eassumption.
+        eassumption.
+        eassumption.
+        eassumption.
       }
       door.
       +
-      unfold not_hash_sig_term_ev in H0.
+      unfold not_hash_sig_term_ev in H1.
       destruct_conjs.
-      unfold not in H14.
-      eapply H14.
+      unfold not in H21.
+      eapply H21.
       eassumption.
-      invc H11.
+      invc H18.
       econstructor.
       apply alseq_subr.
       eassumption.
       +
-        invc H11.
-        unfold not_hash_sig_term_ev in H0.
+        invc H18.
+        unfold not_hash_sig_term_ev in H1.
         destruct_conjs.
-        unfold not_hash_sig_term in H0.
-        unfold not in H0.
-        eapply H0 with (t':= (alseq r t1 t2)).
+        unfold not_hash_sig_term in H1.
+        unfold not in H1.
+        eapply H1 with (t':= (alseq r t1 t2)).
         econstructor.
         repeat eexists.
         eassumption.
@@ -3696,11 +3654,30 @@ Proof.
 
     eapply IHt2.
     eassumption.
+    2: { eassumption. }
+    2: { eassumption. }
     eassumption.
     eassumption.
     eassumption.
-    eassumption.
-  -
+  - (* abseq case *)
+     do_wf_pieces.
+    vmsts.
+    do_wfec_preserved.
+    do_somerecons.
+    do_wfec_split.
+    do_wfec_preserved.
+    Print do_wfec_firstn.
+    ff.
+    subst.
+    do_wfec_firstn.
+    do_wfec_skipn.
+    repeat find_rewrite.
+
+
+
+(*
+
+    
     do_wf_pieces.
     Check sig_term_ev_lseq.
 
@@ -3710,8 +3687,13 @@ Proof.
 
     assert ((skipn (et_size e1) (e0 ++ e2)) = e2).
     admit.
+ *)
+
+    (*
     rewrite H4 in *; clear H4.
     rewrite H5 in *; clear H5.
+     *)
+    clear H11; clear H12.
     jkjke'.
     jkjke'.
     vmsts.
@@ -3720,20 +3702,25 @@ Proof.
     intros.
     unfold not.
     intros.
-    invc H5.
+    invc H11.
     +
-      invc H4.
+      invc H2.
       destruct_conjs.
-      invc H8.
+      invc H14.
     +
-      assert (not_hash_sig_ev e4).
+      rewrite fold_recev in *.
+      do_wfec_preserved.
+      do_somerecons.
+      assert (not_hash_sig_ev H11).
       {
         eapply IHt1.
         eassumption.
-        3: { symmetry. eassumption. }
-        3: {
+        
+        4: { eassumption. }
+        4: {
           eassumption. }
-        assert (not_hash_sig_term_ev t1 (splitEvl s e)).
+        eassumption.
+        assert (not_hash_sig_term_ev t1 (splitEvl s H5)).
         {
           destruct ecc.
           eapply sig_term_ev_bseql.
@@ -3746,26 +3733,33 @@ Proof.
 
       }
       
-      invc H4.
+      invc H2.
       destruct_conjs.
       subst.
-      unfold not_hash_sig_ev in H5.
+      unfold not_hash_sig_ev in H22.
       unfold not in *.
-      eapply H5.
+      eapply H22.
       econstructor.
       repeat eexists.
       eassumption.
-      eassumption.
+      jkjke'.
+      jkjke'.
+      jkjke'.
+      jkjke'.
+      repeat ff.
 
     +
+      rewrite fold_recev in *.
       assert (not_hash_sig_ev e5).
       {
         eapply IHt2.
         eassumption.
-        3: { symmetry. eassumption. }
-        3: {
+        
+        4: { symmetry. eassumption. }
+        4: {
           eassumption. }
-        assert (not_hash_sig_term_ev t2 (splitEvr s e)).
+        eassumption.
+        assert (not_hash_sig_term_ev t2 (splitEvr s H5)).
         {
            destruct ecc.
           eapply sig_term_ev_bseqr.
@@ -3778,19 +3772,41 @@ Proof.
 
       }
       
-      invc H4.
+      invc H2.
       destruct_conjs.
       subst.
-      unfold not_hash_sig_ev in H5.
+      unfold not_hash_sig_ev in H11.
       unfold not in *.
-      eapply H5.
+      eapply H11.
       econstructor.
       repeat eexists.
       eassumption.
       eassumption.
-  - (* abpar case *)
 
+
+
+  - (* abpar case *)
+    
     do_wf_pieces.
+    vmsts.
+    do_wfec_preserved.
+    do_somerecons.
+    do_wfec_split.
+    do_wfec_preserved.
+    Print do_wfec_firstn.
+    ff.
+    subst.
+    do_wfec_firstn.
+    do_wfec_skipn.
+    repeat find_rewrite.
+
+
+
+(*
+
+    
+    do_wf_pieces.
+    Check sig_term_ev_lseq.
 
     rewrite fold_recev in *.
     assert ((firstn (et_size e1) (e0 ++ e2)) = e0).
@@ -3798,8 +3814,13 @@ Proof.
 
     assert ((skipn (et_size e1) (e0 ++ e2)) = e2).
     admit.
+ *)
+
+    (*
     rewrite H4 in *; clear H4.
     rewrite H5 in *; clear H5.
+     *)
+    clear H11; clear H12.
     jkjke'.
     jkjke'.
     vmsts.
@@ -3808,20 +3829,25 @@ Proof.
     intros.
     unfold not.
     intros.
-    invc H5.
+    invc H11.
     +
-      invc H4.
+      invc H2.
       destruct_conjs.
-      invc H8.
+      invc H14.
     +
-      assert (not_hash_sig_ev e4).
+      rewrite fold_recev in *.
+      do_wfec_preserved.
+      do_somerecons.
+      assert (not_hash_sig_ev H11).
       {
         eapply IHt1.
         eassumption.
-        3: { symmetry. eassumption. }
-        3: {
+        
+        4: { eassumption. }
+        4: {
           eassumption. }
-        assert (not_hash_sig_term_ev t1 (splitEvl s e)).
+        eassumption.
+        assert (not_hash_sig_term_ev t1 (splitEvl s H5)).
         {
           destruct ecc.
           eapply sig_term_ev_bparl.
@@ -3834,26 +3860,33 @@ Proof.
 
       }
       
-      invc H4.
+      invc H2.
       destruct_conjs.
       subst.
-      unfold not_hash_sig_ev in H5.
+      unfold not_hash_sig_ev in H22.
       unfold not in *.
-      eapply H5.
+      eapply H22.
       econstructor.
       repeat eexists.
       eassumption.
-      eassumption.
+      jkjke'.
+      jkjke'.
+      jkjke'.
+      jkjke'.
+      repeat ff.
 
     +
+      rewrite fold_recev in *.
       assert (not_hash_sig_ev e5).
       {
         eapply IHt2.
         eassumption.
-        3: { symmetry. eassumption. }
-        3: {
+        
+        4: { symmetry. eassumption. }
+        4: {
           eassumption. }
-        assert (not_hash_sig_term_ev t2 (splitEvr s e)).
+        eassumption.
+        assert (not_hash_sig_term_ev t2 (splitEvr s H5)).
         {
            destruct ecc.
           eapply sig_term_ev_bparr.
@@ -3866,401 +3899,17 @@ Proof.
 
       }
       
-      invc H4.
+      invc H2.
       destruct_conjs.
       subst.
-      unfold not_hash_sig_ev in H5.
+      unfold not_hash_sig_ev in H11.
       unfold not in *.
-      eapply H5.
+      eapply H11.
       econstructor.
       repeat eexists.
       eassumption.
       eassumption.
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      
-  -
-    
-      
-      
-
-
-    destruct s; destruct s; destruct s0; ff.
-    assert (not_hash_sig_term_ev t1 e).
-    {
-      destruct ecc.
-      destruct st_ev0.
-      eapply sig_term_ev_bseq.
-      eassumption.
-      eassumption.
-      eassumption.
-      symmetry.
-      eassumption.
-    }
-
-    rewrite Heqe0 in *.
-
-    unfold not_hash_sig_ev.
-    intros.
-    unfold not.
-    intros.
-    
-    
-
-    
-
-
-    assert (not_hash_sig_term_ev t1 (splitEvl s e)).
-    {
-      destruct s; destruct s; destruct s0; ff.
-      eapply sig_term_ev_bseq.
-      eassumption.
-      eassumption.
-      destruct s.
-      destruct s; destruct s0; ff.
-      +
-        destruct ecc.
-        destruct st_ev0.
-        eapply sig_term_ev_bseq.
-        eassumption.
-        eassumption.
-        eassumption.
-        symmetry.
-        eassumption.
-      +
-        destruct ecc.
-        destruct st_ev0.
-        eapply sig_term_ev_bseq.
-        eassumption.
-        eassumption.
-        eassumption.
-        symmetry.
-        eassumption.
-      +
-        destruct ecc.
-        destruct st_ev0.
-        unfold mt_evc in *.
-        eapply sig_term_ev_bseq.
-        eassumption.
-        eassumption.
-        eassumption.
-        symmetry.
-        eassumption.
-        
-    }
-    
-    
-    jkjke'.
-    jkjke'.
-    
-    
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-      (*
-  -
-    
-    destruct ecc; ff.
-    jkjke'.
-    ff.
-    cbv.
-    intros.
-    destruct_conjs.
-    ff.
-    cbv in H1.
-    eapply H1.
-    repeat eexists.
-    eassumption.
-    invc H4.
-    +
-      ff.
-    +
-      ff.
-  -
-    destruct ecc.
-    ff.
-
-    Lemma mid_ecc: forall e e0 e1 p bs,
-      Some e = reconstruct_ev' e0 e1 ->
-      not_hash_sig_ev e ->
-      not_hash_sig_ev (hhc p bs e1).
-    Proof.
-      intros.
-      generalizeEverythingElse e.
-      induction e; intros; ff.
-      -
-        assert (e1 = mt).
-        { admit. }
-        subst.
-        cbv.
-        intros.
-        destruct_conjs.
-        subst.
-        invc H2.
-        invc H8.
-      -
-        assert (e1 = nn n).
-        {
-          admit.
-        }
-        subst.
-        cbv.
-        intros.
-        destruct_conjs.
-        invc H2.
-        invc H10.
-        invc H8.
-      -
-        assert (exists et', e1 = uu n l n0 n1 et').
-        {
-          admit.
-        }
-        destruct_conjs.
-        subst.
-        cbv.
-        intros.
-        destruct_conjs.
-        invc H3.
-        invc H11.
-        invc H9.
-        ff.
-        ff.
-
-        assert (not_hash_sig_ev (hhc 1 2 H1)).
-        {
-          eapply IHe.
-          jkjke'.
-          unfold not_hash_sig_ev in *.
-          intros.
-          unfold not in *; intros.
-          eapply H0.
-          eassumption.
-          apply uuSub.
-          eassumption.
-        }
-
-        unfold not_hash_sig_ev in H.
-        unfold not in *.
-        eapply H with (e' := hhc 1 2 H1).
-        cbv.
-        repeat eexists.
-        eassumption.
-        econstructor.
-      -
-
-        assert (not_hash_sig_ev e).
-        {
-          admit.
-        }
-
-        assert (exists et', e1 = gg n et').
-        {
-          admit.
-        }
-        destruct_conjs.
-        subst.
-
-        assert (exists bits,
-                   Some e = reconstruct_ev' bits H2).
-        {
-          repeat ff.
-          repeat eexists.
-          jkjke'.
-        }
-        destruct_conjs.
-
-        edestruct IHe with (e1:= H2) (e':= hhc 1 2 H2).
-        eassumption.
-        eassumption.
-        econstructor.
-        repeat eexists.
-        
-        
-        assert (exists et', not_hash_sig_ev (hhc 1 2 (gg n et'))).
-        {
-          
-          repeat ff.
-
-          assert (not_hash_sig_ev (hhc 3 4 H2)).
-          {
-            eapply IHe.
-            jkjke'.
-            eassumption.
-          }
-
-          unfold not_hash_sig_ev in H0.
-          unfold not in H0.
-          exfalso.
-          eapply H0.
-
-
-          
-          unfold not in *.
-          exfalso.
-          
-
-
-          (*
-
-
-          
-          exists H1.
-          subst.
-          repeat ff.
-          eapply IHe.
-          repeat ff.
-          eapply IHe.
-          
-          
-          admit.
-        }
-        destruct_conjs.
-        unfold not_hash_sig_ev in H2.
-        unfold not in *.
-        exfalso.
-        eapply H2 with (e':=(hhc 1 2 (gg n H1))).
-        econstructor.
-        repeat eexists. econstructor.
-        econstructor.
-        
-
-        assert (exists et', e1 = gg n et').
-        {
-          admit.
-        }
-        destruct_conjs.
-        subst.
-        repeat ff.
-
-        assert (not_hash_sig_ev e2).
-          {
-            admit.
-          }
-
-
-          
-
-          eapply IHe.
-
-        assert (not_hash_sig_ev (hhc 1 2 H1)).
-        {
-          
-          
-          eapply IHe.
-          jkjke'.
-          eassumption.
-        }
-
-        unfold not_hash_sig_ev in H2.
-        unfold not in H2.
-        unfold not_hash_sig_ev in H.
-        unfold not in *.
-        unfold not_hash_sig_ev.
-        unfold not.
-        intros.
-        invc H4.
-        eapply H2.
-        eassumption.
-        invc H4.
-        eassumption.
-        exfalso.
-        eapply H2 with (e':= hhc 1 2 H1).
-        cbv.
-        repeat eexists.
-        
-        
-
-
-        
-        eapply IHe.
-        jkjke'.
-        subst.
-        repeat ff.
-        assert (not_hash_sig_ev e2).
-        {
-          admit.
-        }
-        eapply IHe.
-        
-
-        cbv.
-        intros.
-        destruct_conjs.
-        subst.
-        
-        cbv.
-        intros.
-        destruct_conjs.
-        invc H3.
-        invc H11.
-        invc H9.
-        ff.
-        ff.
-
-        assert (not_hash_sig_ev (hhc 1 2 H1)).
-        {
-          eapply IHe.
-          jkjke'.
-          unfold not_hash_sig_ev in *.
-          intros.
-          unfold not in *; intros.
-          eapply H0.
-          eassumption.
-          apply ggSub.
-          eassumption.
-        }
-
-        unfold not_hash_sig_ev in H.
-        unfold not in *.
-        eapply H with (e' := hhc 1 2 H1).
-        cbv.
-        repeat eexists.
-        eassumption.
-        econstructor.
-
-*)
-          
-          
-        
-        
-        
-        
-        
-    Admitted.
-
-    eapply mid_ecc; eauto.
-*)
-
-Admitted.
-
-         
+Defined.
 
 Ltac do_evsub_ihhh' :=
   match goal with
