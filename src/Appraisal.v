@@ -1648,17 +1648,6 @@ Proof.
     invc H0.
     rewrite fold_recev in *.
 
-    (*
-    assert (gg_sub e2).
-    {
-      
-      eapply IHe with (ecc:=(evc e1 H1)).
-      symmetry.
-      apply Heqo0.
-      ff.
-      eassumption.
-    }
-     *)
     edestruct IHe.
     jkjke'.
     ff.
@@ -1686,29 +1675,6 @@ Proof.
     apply ggSub.
     eassumption.
 
-    (*
-  -
-    destruct ecc; ff.
-    repeat eexists.
-    inv
-    
-
-
-    
-    eapply IHe.
-    invc H0.
-    repeat eexists.
-    apply ggSub.
-    eauto.
-    repeat eexists.
-    apply hhSub.
-    econstructor.
-    econstructor.
-    
-    econstructor.
-    econstructor.
-    repeat eexists.
-    eauto. *)
   -
     destruct ecc; ff.
     assert (e1 = hh n e).
@@ -1721,20 +1687,6 @@ Proof.
     eauto.
     eauto.
 
-    (*
-    
-    assert (exists y', y = et_fun y').
-    {
-      eapply etfun_exists.
-    }
-    destruct_conjs.
-    subst.
-    
-    econstructor.
-    repeat eexists.
-    eapply hhSub.
-    ff.
-    eassumption. *)
   -
     destruct ecc; ff.
     assert (exists et1 et2, e0 = ss et1 et2).
@@ -1746,10 +1698,6 @@ Proof.
     repeat ff.
     invc H0.
     +
-      (*
-      assert (gg_sub e0).
-      {
-       *)
       rewrite fold_recev in *.
       edestruct IHe1.
       symmetry.
@@ -1757,15 +1705,6 @@ Proof.
       ff.
       eassumption.
 
-      (*
-      
-        rewrite fold_recev in *.
-        eapply IHe1.
-        symmetry.
-        eassumption.
-        ff.
-        eassumption.
-       } *)
       repeat eexists.
       apply ssSubl. eassumption.
     +
@@ -1780,19 +1719,10 @@ Proof.
       ff.
       eassumption.
 
-      (*
-      
-        rewrite fold_recev in *.
-        eapply IHe1.
-        symmetry.
-        eassumption.
-        ff.
-        eassumption.
-       } *)
       repeat eexists.
       apply ssSubr. eassumption.
   -
-        destruct ecc; ff.
+    destruct ecc; ff.
     assert (exists et1 et2, e0 = pp et1 et2).
     {
       eapply inv_recon_pp; eauto.
@@ -1802,10 +1732,6 @@ Proof.
     repeat ff.
     invc H0.
     +
-      (*
-      assert (gg_sub e0).
-      {
-       *)
       rewrite fold_recev in *.
       edestruct IHe1.
       symmetry.
@@ -1813,22 +1739,9 @@ Proof.
       ff.
       eassumption.
 
-      (*
-      
-        rewrite fold_recev in *.
-        eapply IHe1.
-        symmetry.
-        eassumption.
-        ff.
-        eassumption.
-       } *)
       repeat eexists.
       apply ppSubl. eassumption.
     +
-            (*
-      assert (gg_sub e0).
-      {
-       *)
       rewrite fold_recev in *.
       edestruct IHe2.
       symmetry.
@@ -1836,15 +1749,6 @@ Proof.
       ff.
       eassumption.
 
-      (*
-      
-        rewrite fold_recev in *.
-        eapply IHe1.
-        symmetry.
-        eassumption.
-        ff.
-        eassumption.
-       } *)
       repeat eexists.
       apply ppSubr. eassumption.
       Unshelve.
@@ -2104,17 +2008,12 @@ Lemma sig_term_ev_lseq: forall r t1 t2 e e0 e1 e2 e3 tr tr' p p',
     copland_compile t1 {| st_ev := evc e0 e1; st_trace := tr; st_pl := p |} =
     (Some tt, {| st_ev := evc e2 e3; st_trace := tr'; st_pl := p' |}) ->
     Some e  = reconstruct_ev (evc e0 e1) ->
-    (*Some H5 = reconstruct_ev (evc e2 e3) -> *)
-    not_hash_sig_term_ev t1 e. (* /\
-      not_hash_sig_term_ev t2 H5. *)
+    not_hash_sig_term_ev t1 e.
 Proof.
-
-  
   intros.
   unfold not_hash_sig_term_ev in H.
   destruct_conjs.
   unfold not in H3.
-  
   split.
   -
 
@@ -2129,17 +2028,13 @@ Proof.
     eassumption.
     apply alseq_subl.
     eassumption.
-  -
-    
-    
+  -  
     split; eauto.
     unfold not.
     intros.
     destruct_conjs.
     eapply H3.
-    (*
-          split; eauto.
-     *)
+
     eassumption.
     invc H5.
     econstructor.
@@ -2226,10 +2121,6 @@ Proof.
     vmsts.
     do_wfec_preserved.
     do_somerecons.
-    (*
-    assert (exists ee, Some ee = reconstruct_ev st_ev).
-    { admit. }
-    destruct_conjs. *)
 
     assert (gg_sub H9 \/ (exists r, term_sub (aasp r SIG) t2)).
     {
@@ -2286,26 +2177,7 @@ Proof.
     invc H16.
     +
       ff.
-      (*
-      assert (exists ee, Some ee = reconstruct_ev st_ev0).
-      admit.
-
-      assert (exists ee, Some ee = reconstruct_ev st_ev).
-      admit.
-      destruct_conjs.
-       *)
-      
-
       rewrite fold_recev in *.
-      (*
-
-      assert ((firstn (et_size e1) (e0 ++ e2)) = e0).
-      admit.
-      assert ((skipn (et_size e1) (e0 ++ e2)) = e2).
-      admit.
-      rewrite H7 in *; clear H7.
-      rewrite H8 in *; clear H8.
-       *)
 
       clear H11; clear H12.
       
@@ -2314,8 +2186,7 @@ Proof.
       repeat ff.
       do_wfec_preserved.
       do_somerecons.
-      
-      
+            
       assert (gg_sub H5 \/ exists r, term_sub (aasp r SIG) t1).
       {
         destruct s.
@@ -2419,27 +2290,9 @@ Proof.
         apply abseq_subl.
         eassumption.
     +
-            ff.
-      (*
-      assert (exists ee, Some ee = reconstruct_ev st_ev0).
-      admit.
-
-      assert (exists ee, Some ee = reconstruct_ev st_ev).
-      admit.
-      destruct_conjs.
-       *)
+      ff.
       
-
       rewrite fold_recev in *.
-      (*
-
-      assert ((firstn (et_size e1) (e0 ++ e2)) = e0).
-      admit.
-      assert ((skipn (et_size e1) (e0 ++ e2)) = e2).
-      admit.
-      rewrite H7 in *; clear H7.
-      rewrite H8 in *; clear H8.
-       *)
 
       clear H11; clear H12.
       
@@ -2448,7 +2301,6 @@ Proof.
       repeat ff.
       do_wfec_preserved.
       do_somerecons.
-      
       
       assert (gg_sub H5 \/ exists r, term_sub (aasp r SIG) t2).
       {
@@ -2572,26 +2424,8 @@ Proof.
     invc H16.
     +
       ff.
-      (*
-      assert (exists ee, Some ee = reconstruct_ev st_ev0).
-      admit.
-
-      assert (exists ee, Some ee = reconstruct_ev st_ev).
-      admit.
-      destruct_conjs.
-       *)
       
-
       rewrite fold_recev in *.
-      (*
-
-      assert ((firstn (et_size e1) (e0 ++ e2)) = e0).
-      admit.
-      assert ((skipn (et_size e1) (e0 ++ e2)) = e2).
-      admit.
-      rewrite H7 in *; clear H7.
-      rewrite H8 in *; clear H8.
-       *)
 
       clear H11; clear H12.
       
@@ -2600,8 +2434,7 @@ Proof.
       repeat ff.
       do_wfec_preserved.
       do_somerecons.
-      
-      
+       
       assert (gg_sub H5 \/ exists r, term_sub (aasp r SIG) t1).
       {
         destruct s.
@@ -2705,27 +2538,9 @@ Proof.
         apply abpar_subl.
         eassumption.
     +
-            ff.
-      (*
-      assert (exists ee, Some ee = reconstruct_ev st_ev0).
-      admit.
-
-      assert (exists ee, Some ee = reconstruct_ev st_ev).
-      admit.
-      destruct_conjs.
-       *)
+      ff.
       
-
       rewrite fold_recev in *.
-      (*
-
-      assert ((firstn (et_size e1) (e0 ++ e2)) = e0).
-      admit.
-      assert ((skipn (et_size e1) (e0 ++ e2)) = e2).
-      admit.
-      rewrite H7 in *; clear H7.
-      rewrite H8 in *; clear H8.
-       *)
 
       clear H11; clear H12.
       
@@ -2734,8 +2549,7 @@ Proof.
       repeat ff.
       do_wfec_preserved.
       do_somerecons.
-      
-      
+            
       assert (gg_sub H5 \/ exists r, term_sub (aasp r SIG) t2).
       {
         destruct s.
@@ -2857,7 +2671,6 @@ Lemma sig_term_ev_bseql: forall (r : Range) s (t1 t2 : AnnoTerm) (e : EvidenceC)
     copland_compile t1 {| st_ev := splitEv_l s (evc e0 e1); st_trace := tr; st_pl := p |} =
     (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
     Some e = reconstruct_ev (evc e0 e1) ->
-    (*Some H5 = reconstruct_ev (evc e2 e3) -> *)
     not_hash_sig_term_ev t1 (splitEvl s e).
 Proof.
   intros.
@@ -2867,7 +2680,6 @@ Proof.
   
   split.
   -
-
     cbv.
     intros.
     destruct_conjs.
@@ -2943,7 +2755,6 @@ Lemma sig_term_ev_bseqr: forall (r : Range) s (t1 t2 : AnnoTerm) (e : EvidenceC)
     copland_compile t2 {| st_ev := splitEv_r s (evc e0 e1); st_trace := tr; st_pl := p |} =
     (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
     Some e = reconstruct_ev (evc e0 e1) ->
-    (*Some H5 = reconstruct_ev (evc e2 e3) -> *)
     not_hash_sig_term_ev t2 (splitEvr s e).
 Proof.
   intros.
@@ -2953,7 +2764,6 @@ Proof.
   
   split.
   -
-
     cbv.
     intros.
     destruct_conjs.
@@ -3029,7 +2839,6 @@ Lemma sig_term_ev_bparl: forall (r : Range) s (t1 t2 : AnnoTerm) (e : EvidenceC)
     copland_compile t1 {| st_ev := splitEv_l s (evc e0 e1); st_trace := tr; st_pl := p |} =
     (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
     Some e = reconstruct_ev (evc e0 e1) ->
-    (*Some H5 = reconstruct_ev (evc e2 e3) -> *)
     not_hash_sig_term_ev t1 (splitEvl s e).
 Proof.
   intros.
@@ -3039,7 +2848,6 @@ Proof.
   
   split.
   -
-
     cbv.
     intros.
     destruct_conjs.
@@ -3049,7 +2857,6 @@ Proof.
     repeat eexists.
     eassumption.
     eassumption.
-    Print term_sub.
     apply abpar_subl.
     eassumption.
   -
@@ -3116,7 +2923,6 @@ Lemma sig_term_ev_bparr: forall (r : Range) s (t1 t2 : AnnoTerm) (e : EvidenceC)
     copland_compile t2 {| st_ev := splitEv_r s (evc e0 e1); st_trace := tr; st_pl := p |} =
     (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
     Some e = reconstruct_ev (evc e0 e1) ->
-    (*Some H5 = reconstruct_ev (evc e2 e3) -> *)
     not_hash_sig_term_ev t2 (splitEvr s e).
 Proof.
   intros.
@@ -3126,7 +2932,6 @@ Proof.
   
   split.
   -
-
     cbv.
     intros.
     destruct_conjs.
@@ -3143,7 +2948,6 @@ Proof.
     destruct s; destruct s0; ff.
     +
       split; eauto.
-
       unfold not.
       intros.
       destruct_conjs.
@@ -3197,23 +3001,13 @@ Defined.
 
 Lemma hshsig_ev_term_contra: forall t p (e e' :EvidenceC) tr tr' p' (ecc ecc':EvC),
 
-    (*well_formed_r t -> 
-    not_none_none t -> 
-    wf_ec ecc -> 
-     *)
-
     well_formed_r t ->
     wf_ec ecc ->
-
-    (*not_hash_sig_term t ->
-    not_hash_sig_ev e ->
-     *)
     not_hash_sig_term_ev t e ->
     
     Some e =  (reconstruct_ev ecc) ->
     Some e' = (reconstruct_ev ecc') ->
 
-    (*EvSub e'' e -> *)
     copland_compile t {| st_ev := ecc; st_trace := tr; st_pl := p |} =
     (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
 
@@ -3254,9 +3048,6 @@ Proof.
     rewrite H4 in *; clear H4.
     jkjke'.
     ff. 
-
-
-
     eapply not_hshsig_ggc; eauto.
   -
     assert (not_hash_sig_ev e).
@@ -3353,121 +3144,16 @@ Proof.
     apply copland_compile_at.
     eassumption.
   -
-
-     do_wf_pieces.
+    do_wf_pieces.
     vmsts.
     do_wfec_preserved.
     do_somerecons.
-    (*
-    do_wfec_split.
-    do_wfec_preserved.
-    Print do_wfec_firstn.
-    ff.
-    subst.
-    do_wfec_firstn.
-    do_wfec_skipn.
-    repeat find_rewrite.
-     *)
 
     ff.
     destruct ecc; destruct st_ev.
-
-    (*
-
-    
-    assert (exists e, Some e = reconstruct_ev (evc e2 e3)).
-    {
-      admit.
-    }
-    destruct_conjs.
-     *)
-    
-
-
-
-
-    (*
-      -
-        split.
-        +
-          cbv.
-          intros.
-          destruct_conjs.
-          subst.
-          cbv in H.
-          eapply H.
-          repeat eexists.
-          eassumption.
-          eassumption.
-          apply alseq_subr.
-          eassumption.
-        +
-          split; eauto.
-
-          Lemma termev_helper:
-            not_hash_sig_term_ev t e ->
-            copland_compile t1 {| st_ev := evc e0 e1; st_trace := tr; st_pl := p |} =
-            (Some tt, {| st_ev := evc e2 e3; st_trace := tr'; st_pl := p' |})
-          
-        
-          
-
-
-      
-      split.
-      -
-        cbv.
-        split.
-        +
-          intros.
-          destruct_conjs.
-          subst.
-          unfold not in *.
-          eapply H4.
-          split.
-          2: {
-            econstructor.
-            eapply termsub_transitive with (t':=t1).
-            eapply termsub_transitive with (t':=(alseq (n, n0) H8 H6)).
-            apply alseq_subr.
-            eassumption.
-            eassumption.
-            econstructor.
-            econstructor.
-          }
-
-          admit.
-        +
-          split.
-          ++
-            
-          
-        
-          
-            eapply termsub_transitive.
-            eassumption.
-            eapply termsub_transitive with (t' := t1).
-            eapply termsub_transitive.
-            eassumption.
-            apply alseq_subl.
-            
-
-            eapply termsub_transitive.
-            eassumption.
-            
-            
-          
-          eapply H.
-          destruct_conjs.
-       *)
   
-
     assert (not_hash_sig_term_ev t1 e).
     eapply sig_term_ev_lseq; eauto.
-
-
-    
-    
 
     assert (not_hash_sig_ev H9).
     {
@@ -3545,113 +3231,6 @@ Proof.
         econstructor.
     }
     
-        
-      
-      
-(*
-
-      
-      unfold not_hash_sig_term_ev in H0.
-      destruct_conjs.
-      unfold not in H13.
-      invc H11.
-      eapply H13.
-      2: {
-        
-        econstructor.
-        eapply termsub_transitive.
-        eassumption.
-        apply alseq_subr.
-        econstructor.
-      }
-
-      invc H10.
-      destruct_conjs.
-      subst.
-
-      Check evAccum.
-      edestruct evAccum.
-      7: { apply Heqp0. }
-      eassumption.
-      admit.
-      admit.
-      eassumption.
-      eassumption.
-      econstructor.
-      invc H10.
-      destruct_conjs.
-      subst.
-      admit.
-      eassumption.
-      admit.
-      admit.
-      apply H1.
-      apply H2.
-      2: { eassumption
-      
-      
-
-
-
-      
-      unfold not_hash_sig_term in H9.
-      unfold not_hash_sig_ev in H8.
-      unfold gg_sub.
-      unfold not_hash_sig_term_ev in H7.
-      destruct_conjs.
-      unfold not_hash_sig_term_ev in H0.
-      destruct_conjs.
-      unfold not_hash_sig_term in H0.
-      unfold not.
-      intros.
-      destruct_conjs.
-      subst.
-      unfold not in H13.
-      unfold not in H11.
-      unfold not_hash_sig_term in H7.
-      cbv in H0.
-      unfold not.
-      intros.
-      destruct_conjs.
-      invc H10.
-      destruct_conjs.
-      subst.
-      invc H11.
-      eapply H13.
-      repeat eexists.
-      2: {
-        apply alseq_subr.
-        eassumption.
-      }
-
-      
-      
-
-
-
-      
-      unfold not.
-      intros.
-      destruct_conjs.
-      invc H11.
-      cbv in H9.
-      eapply H9.
-      exists r.
-      exists x.
-      exists x.
-      exists t1. exists t2.
-      split.
-      reflexivity.
-      split.
-      2: { eassumption. }
-      
-      repeat eexists.
-      2: {
-        eassumption. }
- *)
-    
-    
-
     eapply IHt2.
     eassumption.
     2: { eassumption. }
@@ -3673,26 +3252,6 @@ Proof.
     do_wfec_skipn.
     repeat find_rewrite.
 
-
-
-(*
-
-    
-    do_wf_pieces.
-    Check sig_term_ev_lseq.
-
-    rewrite fold_recev in *.
-    assert ((firstn (et_size e1) (e0 ++ e2)) = e0).
-    admit.
-
-    assert ((skipn (et_size e1) (e0 ++ e2)) = e2).
-    admit.
- *)
-
-    (*
-    rewrite H4 in *; clear H4.
-    rewrite H5 in *; clear H5.
-     *)
     clear H11; clear H12.
     jkjke'.
     jkjke'.
@@ -3783,8 +3342,6 @@ Proof.
       eassumption.
       eassumption.
 
-
-
   - (* abpar case *)
     
     do_wf_pieces.
@@ -3800,26 +3357,6 @@ Proof.
     do_wfec_skipn.
     repeat find_rewrite.
 
-
-
-(*
-
-    
-    do_wf_pieces.
-    Check sig_term_ev_lseq.
-
-    rewrite fold_recev in *.
-    assert ((firstn (et_size e1) (e0 ++ e2)) = e0).
-    admit.
-
-    assert ((skipn (et_size e1) (e0 ++ e2)) = e2).
-    admit.
- *)
-
-    (*
-    rewrite H4 in *; clear H4.
-    rewrite H5 in *; clear H5.
-     *)
     clear H11; clear H12.
     jkjke'.
     jkjke'.
@@ -3896,7 +3433,6 @@ Proof.
         }
         eassumption.
         destruct s; destruct s; destruct s0; ff.
-
       }
       
       invc H2.
@@ -3919,7 +3455,6 @@ Lemma sig_term_ev_lseqr: forall r t1 t2 e e0 e1 e2 e3 tr tr' p p' H5,
     (Some tt, {| st_ev := evc e2 e3; st_trace := tr'; st_pl := p' |}) ->
     Some e  = reconstruct_ev (evc e0 e1) ->
     Some H5 = reconstruct_ev (evc e2 e3) ->
-    (*not_hash_sig_term_ev t1 e.*)
     not_hash_sig_term_ev t2 H5.
 Proof.
   intros.
@@ -3927,15 +3462,6 @@ Proof.
   assert (not_hash_sig_term_ev t1 e).
   eapply sig_term_ev_lseq; eauto.
 
-
-
-  (*
-  unfold not_hash_sig_term_ev in H1.
-  destruct_conjs.
-  unfold not in H7.
-   *)
-  
-  
   split.
   -
     invc H1.
@@ -3952,13 +3478,6 @@ Proof.
       eassumption.
       eassumption.
     +
-      (*
-      edestruct sig_is.
-      eassumption.
-      eassumption.
-      eassumption.
-      eassumption.
-      eassumption. *)
 
       intros.
       unfold not; intros.
@@ -3984,7 +3503,6 @@ Proof.
       apply alseq_subr.
       eassumption.
 
-      
       destruct_conjs.
       unfold not_hash_sig_term_ev in H1.
       destruct_conjs.
@@ -4312,262 +3830,15 @@ Ltac sigEventPFacts :=
   | [H: sigEventP _ |- _] => invc H
   end.
 
-
-
-(*
-Lemma sig_hsh_contra': forall t1 t2 r e tr p st_ev st_trace st_pl
-                         ecc' tr' p' H9 a b c p0 H2 (*n H19*) ,
-    (*not_hsh_sig (alseq r t1 t2) -> *)
-
-    (*
-    events t1 p et (sign n p0 (et_fun H19)) -> *)
-    
-    copland_compile t1 {| st_ev := e; st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := st_ev; st_trace := st_trace; st_pl := st_pl |}) ->
-    
-    copland_compile t2 {| st_ev := st_ev; st_trace := st_trace; st_pl := st_pl |} =
-    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
-
-    Some H9 = reconstruct_ev ecc' ->
-
-    EvSub (hhc a b H2) H9 ->
-    EvSubT (gg p0 c) H2 ->
-
-    (
-      (exists t1', hash_sig_term t1' /\ term_sub t1' t1) \/
-      (exists t2', hash_sig_term t2' /\ term_sub t2' t2) \/
-      hash_sig_term (alseq r t1 t2)).
-Proof.
-  intros.
-
-
-  
-  generalizeEverythingElse H9.
-  induction H9; intros.
-  -
-    repeat ff.
-  -
-    repeat ff.
-  -
-    (*
-    invc H3.
-    Locate reconstruct_ev. *)
-    assert (exists et' bits, ecc' = (evc bits (uu n l n0 n1 et'))).
-    {
-      admit.
-    }
-    destruct_conjs.
-    subst.
-    repeat ff.
-    rewrite fold_recev in *.
-    invc H3.
-
-    edestruct IHEvidenceC.
-    3: {
-      symmetry.
-      eassumption.
-    }
-    3: { eassumption. }
-    3: { eassumption. }
-    apply H.
-
-    admit.
-    destruct_conjs.
-    eauto.
-    door.
-    eauto.
-    eauto.
-  -
-    assert (exists et' bits, ecc' = (evc bits (gg n et'))).
-    {
-      admit.
-    }
-    destruct_conjs.
-    subst.
-    repeat ff.
-    rewrite fold_recev in *.
-    invc H3.
-
-    edestruct IHEvidenceC.
-    3: {
-      symmetry.
-      eassumption.
-    }
-    3: { eassumption. }
-    3: { eassumption. }
-    apply H.
-
-    admit.
-    destruct_conjs.
-    eauto.
-    door.
-    eauto.
-    eauto.
-  -
-    assert (exists bits et', ecc' = (evc bits (hh n et'))).
-    {
-      admit.
-    }
-    destruct_conjs.
-    subst.
-    repeat ff.
-    invc H3.
-
-    destruct e0. destruct st_ev.
-
-    assert (EvSubT (gg p0 c) e2).
-    {
-
-      HERE
-
-
-   
-
-
-    
-    admit.
-  -
-    assert (exists bits et1 et2 , ecc' = (evc bits (ss et1 et2))).
-    {
-      admit.
-    }
-    destruct_conjs.
-    subst.
-    repeat ff.
-    rewrite fold_recev in *.
-    invc H3.
-    Check wfec_firstn.
-    ++
-
-      edestruct IHEvidenceC1 with (r:=r).
-      3: { symmetry. eassumption. }
-      3: { eassumption. }
-      3: { eassumption. }
-      
-      apply H.
-      admit.
-      eauto.
-      door; eauto.
-    ++
-      edestruct IHEvidenceC2 with (r:=r).
-      3: { symmetry. eassumption. }
-      3: { eassumption. }
-      3: { eassumption. }
-      
-      apply H.
-      admit.
-      eauto.
-      door; eauto.
-
-  -
-    assert (exists bits et1 et2 , ecc' = (evc bits (pp et1 et2))).
-    {
-      admit.
-    }
-    destruct_conjs.
-    subst.
-    repeat ff.
-    rewrite fold_recev in *.
-    invc H3.
-    Check wfec_firstn.
-    ++
-
-      edestruct IHEvidenceC1 with (r:=r).
-      3: { symmetry. eassumption. }
-      3: { eassumption. }
-      3: { eassumption. }
-      
-      apply H.
-      admit.
-      eauto.
-      door; eauto.
-    ++
-      edestruct IHEvidenceC2 with (r:=r).
-      3: { symmetry. eassumption. }
-      3: { eassumption. }
-      3: { eassumption. }
-      
-      apply H.
-      admit.
-      eauto.
-      door; eauto.
-      Unshelve.
-      eauto.
-      eauto.
-      eauto.
-      eauto.
-      eauto.
-      eauto.
-      eauto.
-      eauto.
-      eauto.
-      eauto.
-      eauto.
-      eauto.
-    
-Admitted.
-
-Lemma sig_hsh_contra: forall t1 t2 r e tr p st_ev st_trace st_pl
-                        ecc' tr' p' H9 a b c p0 H2,
-    not_hsh_sig (alseq r t1 t2) ->
-    
-    copland_compile t1 {| st_ev := e; st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := st_ev; st_trace := st_trace; st_pl := st_pl |}) ->
-    
-    copland_compile t2 {| st_ev := st_ev; st_trace := st_trace; st_pl := st_pl |} =
-    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
-
-    Some H9 = reconstruct_ev ecc' ->
-
-    EvSub (hhc a b H2) H9 ->
-    EvSubT (gg p0 c) H2 ->
-    False.
-Proof.
-  intros.
-  unfold not_hsh_sig in *.
-  unfold not in *.
-
-  assert (
-      (exists t1', hash_sig_term t1' /\ term_sub t1' t1) \/
-      (exists t2', hash_sig_term t2' /\ term_sub t2' t2) \/
-      hash_sig_term (alseq r t1 t2)).
-  {
-    eapply sig_hsh_contra'; eauto.
-  }
-
-  door.
-  eapply H.
-  apply H7.
-  econstructor.
-  eassumption.
-
-  door.
-  eapply H.
-  apply H7.
-  Locate term_sub.
-  apply alseq_subr.
-  eassumption.
-
-  eapply H.
-  eassumption.
-  econstructor.
-Defined.
-*)
-
 Lemma gg_preserved': forall t p et n p0 et'
                        tr e e' tr' p' bits ecc',
 
     well_formed_r t ->
     not_none_none t ->
     not_hash_sig_term_ev t e ->
-    (*
-    not_hash_sig_term t -> *)
-    (*not_hash_sig_ev e' -> *)
     wf_ec (evc bits et) ->
-    (*not_hash_sig_ev e -> *)
     Some e = (reconstruct_ev (evc bits et)) ->
     Some e' = (reconstruct_ev ecc') ->
-    (*events t p et (umeas n p0 i args tpl tid) -> *)
     events t p et (sign n p0 et') ->
     copland_compile t {| st_ev := (evc bits et); st_trace := tr; st_pl := p |} =
     (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
@@ -4576,39 +3847,10 @@ Lemma gg_preserved': forall t p et n p0 et'
       (exists bits e'', EvSub (ggc p0 (do_sig (MonadVM.encodeEv (evc bits et')) p0) e'') e' /\
                    et_fun e'' = et'
       )
-
-      (* \/
-      (exists ett p' bs et',
-          EvSub (hhc p' bs ett) e' /\
-          EvSubT (gg p0 et') ett) *)
     ).
-
-    (*
-
-    (
-      (exists e'', EvSub (uuc i args tpl tid n e'') e') \/
-      (exists ett p' bs et',
-          EvSub (hhc p' bs ett) e' /\
-          EvSubT (uu i args tpl tid et') ett) 
-    ). *)
 Proof.
 
-
-
-
-  
-
-  
   intros.
-
-  (*
-  destruct ecc'.
-  assert (e2 = Term_Defs.eval (unanno t) p e0).
-  { eapply cvm_refines_lts_evidence.
-    eassumption.
-    eassumption.
-  } *)
-  
   generalizeEverythingElse t.
   
   induction t; intros.
@@ -4616,10 +3858,6 @@ Proof.
     subst.
     destruct a; try (ff; tauto).
     +
-      (*
-    destruct ecc.
-    unfold get_bits in *.
-    unfold get_et in *. *)
     ff.
     invEvents.
     ff.
@@ -4683,30 +3921,9 @@ Proof.
         eassumption.
         eassumption.
         eassumption.
-        eassumption.
-
-        (*
-        eauto.
-        apply H3.
-        2: { eassumption. }
-        2: { eassumption. }
-        eassumption. *)
-        
+        eassumption.       
       }
       
-      (*
-      Check evAccum.
-
-      edestruct evAccum.
-      7: { apply Heqp1. }
-      eassumption.
-      eassumption.
-      eassumption.
-      eassumption.
-      eassumption.
-       *)
-      
-
       destruct st_ev.
       edestruct IHt1.
       eassumption.
@@ -4717,73 +3934,27 @@ Proof.
       eassumption.
       2: { eassumption. }
       eassumption.
-      (*
-      eassumption.
-      eassumption.
-      eassumption.
-      5: { eassumption. }
-      3: { eassumption. }
-      eassumption.
-      repeat jkjke'.
-      repeat ff.
-      repeat jkjke'.
-      repeat ff.
-      2: { eassumption. }
-      eassumption. 
-       *)
-      
 
-      (*
-
-      
-
-      assert (exists bs e'',
-                 EvSub (ggc p0 
-
-      eapply IHt1.
-      eassumption.
-      eassumption.
-      2: {
-        eassumption. }
-      2: { eassumption. }
-      2: { eassumption.
-
-      repeat do_evsub_ihhh'. *)
       destruct_conjs.
 
-      (*
+      repeat jkjke'.
+      repeat ff.
+      repeat jkjke'.
+      repeat ff.
+      repeat jkjke'.
+      repeat ff.
+
+      rewrite fold_recev in *.
+
+      do_evaccum.
+
       door.
-      ++
-
-      
-        destruct_conjs. *)
-
-        repeat jkjke'.
-        repeat ff.
-        repeat jkjke'.
-        repeat ff.
-        repeat jkjke'.
-        repeat ff.
-
-        rewrite fold_recev in *.
-
-        do_evaccum.
-        
-
-        (*
-        clear H12. *)
-        door.
       +++
         eauto.
-        (*
-          left.
-          eauto. *)
       +++
         ff.
         assert (not_hash_sig_ev H11).
-        {
-          
-          
+        {      
           destruct ecc'.
           eapply hshsig_ev_term_contra.
           apply H8.
@@ -4810,48 +3981,7 @@ Proof.
         econstructor.
         repeat eexists.
         eassumption.
-        eassumption.
-        
-
-          
-
-          
-        (*
-        admit.  (* TODO: eliminate this case with well_formedness conditions on t1/t2 *)
-         *)
-        
-
-        (*
-          destruct_conjs.
-          ff.
-          repeat (eexists; eauto).
-          e
-          right.
-          repeat (eexists; eauto).
-
-      ++
-        repeat jkjke'.
-        repeat ff.
-        
-        do_evaccum.
-
-        door.
-        +++
-          right.
-          repeat (eexists; eauto).
-        +++
-          destruct_conjs.
-          ff.
-          right.
-          repeat eexists.
-          eauto.
-
-          eapply evsubT_transitive.
-          eapply hhSubT.
-          eassumption.
-          eassumption.
-         *)
-        
+        eassumption.       
           
     + (* t2 case *)
 
@@ -4889,58 +4019,9 @@ Proof.
       2: { eassumption. }
       eassumption.
 
-      (*
-
-
-      
-      eassumption.
-      5: { eassumption. }
-      3: { eassumption. }
-      4: { 
-        
-        
-        
-
-        eassumption.
-      }
-      eassumption.
-      2: { eassumption. }
-
-      eapply hshsig_ev_term_contra.
-      apply H8.
-      eauto.
-      3: { eassumption. }
-      3: { eassumption. }
-      2: { eassumption. } *)
       repeat jkjke'; repeat ff.
       repeat jkjke'; repeat ff.
-
-      (*
       
-      
-        
-
-
-      (*
-
-      repeat do_evsub_ihhh'. *)
-
-      (*
-      clear H17.
-      door.
-      ++ *)
-      repeat jkjke'; repeat ff.
-      eauto.
-
-      (*
-      ++
-        destruct_conjs;
-        right;
-        repeat (eexists; eauto). *)
-       *)
-      
-
-
   - (* abseq case *)
     do_wf_pieces.
     do_not_none.
@@ -4988,38 +4069,7 @@ Proof.
         eassumption.
         eassumption.
         destruct s.
-        destruct s; destruct s0; ff.
-
-        (*
-        repeat jkjke'; repeat ff.
-        2: { eassumption. }
-        Check sig_term_ev_bseql.
-
-
-
-        
-        eassumption.
-        3: { eassumption. }
-        3: { eassumption. }
-        2: { eassumption. }
-        destruct s.
-        destruct s; destruct s0; ff.
-        repeat jkjke'; repeat ff.
-        repeat jkjke'; repeat ff.
-        repeat jkjke'; repeat ff.
-        cbv.
-        intros.
-        invc H15.
-        destruct_conjs.
-        solve_by_inversion.
-
-        cbv.
-        intros.
-        invc H15.
-        destruct_conjs.
-        solve_by_inversion.
-         *)
-        
+        destruct s; destruct s0; ff.       
       }
 
       assert (not_hash_sig_ev e5).
@@ -5036,43 +4086,11 @@ Proof.
         eassumption.
         eassumption.
         destruct s.
-        destruct s; destruct s0; ff.
-
-        (*
-        repeat jkjke'; repeat ff.
-        
-        eassumption.
-        3: { eassumption. }
-        3: { eassumption. }
-        2: { eassumption. }
-        destruct s.
-        destruct s; destruct s0; ff.
-        repeat jkjke'; repeat ff.
-
-        cbv.
-        intros.
-        invc H16.
-        destruct_conjs.
-        solve_by_inversion.
-
-
-        
-        repeat jkjke'; repeat ff.
-        
-        cbv.
-        intros.
-        invc H16.
-        destruct_conjs.
-        solve_by_inversion.
-         *)
-        
+        destruct s; destruct s0; ff.      
       }
       
-
       destruct s; destruct s; destruct s0; ff.
       ++
-        
-
       edestruct IHt1.
       eassumption.
       eassumption.
@@ -5083,21 +4101,8 @@ Proof.
       4: { eassumption. }
       2: { eassumption. }
       eassumption.
-      2: {
-        eassumption. }
-      eassumption.
-
-      (*
-      eassumption.
-      apply H5.
       2: { eassumption. }
       eassumption.
-      2: {
-        eassumption.
-      }
-      2: {
-      eassumption. }
-      eassumption. *)
 
       destruct_conjs.
       eauto.
@@ -5116,21 +4121,8 @@ Proof.
         eassumption. }
       eassumption.
 
-      (*
-      eassumption.
-      apply H5.
-      2: { eassumption. }
-      eassumption.
-      2: {
-        eassumption.
-      }
-      2: {
-      eassumption. }
-      eassumption. *)
-
       destruct_conjs.
       eauto.
-
 
       ++
         edestruct IHt1.
@@ -5145,29 +4137,7 @@ Proof.
       econstructor. tauto.
       ff.
       eassumption.
-
-      (*
-
-        eassumption. }
-      eassumption.
-      2: {
-        eassumption. }
-      eassumption.
-
-      (*
-      eassumption.
-      apply H5.
-      2: { eassumption. }
-      eassumption.
-      2: {
-        eassumption.
-      }
-      2: {
-      eassumption. }
-      eassumption. *)
-       *)
       
-
       destruct_conjs.
       eauto.
       ++
@@ -5183,38 +4153,13 @@ Proof.
       econstructor. tauto.
       ff.
       eassumption.
-
-      (*
-
-        eassumption. }
-      eassumption.
-      2: {
-        eassumption. }
-      eassumption.
-
-      (*
-      eassumption.
-      apply H5.
-      2: { eassumption. }
-      eassumption.
-      2: {
-        eassumption.
-      }
-      2: {
-      eassumption. }
-      eassumption. *)
-       *)
       
-
       destruct_conjs.
       eauto.
-        
-
-
 
     +
 
-            repeat jkjke'; ff.
+      repeat jkjke'; ff.
       repeat jkjke'; repeat ff.
 
       assert (not_hash_sig_ev e4).
@@ -5232,38 +4177,7 @@ Proof.
         eassumption.
         eassumption.
         destruct s.
-        destruct s; destruct s0; ff.
-
-        (*
-        repeat jkjke'; repeat ff.
-        2: { eassumption. }
-        Check sig_term_ev_bseql.
-
-
-
-        
-        eassumption.
-        3: { eassumption. }
-        3: { eassumption. }
-        2: { eassumption. }
-        destruct s.
-        destruct s; destruct s0; ff.
-        repeat jkjke'; repeat ff.
-        repeat jkjke'; repeat ff.
-        repeat jkjke'; repeat ff.
-        cbv.
-        intros.
-        invc H15.
-        destruct_conjs.
-        solve_by_inversion.
-
-        cbv.
-        intros.
-        invc H15.
-        destruct_conjs.
-        solve_by_inversion.
-         *)
-        
+        destruct s; destruct s0; ff.       
       }
 
       assert (not_hash_sig_ev e5).
@@ -5280,43 +4194,11 @@ Proof.
         eassumption.
         eassumption.
         destruct s.
-        destruct s; destruct s0; ff.
-
-        (*
-        repeat jkjke'; repeat ff.
-        
-        eassumption.
-        3: { eassumption. }
-        3: { eassumption. }
-        2: { eassumption. }
-        destruct s.
-        destruct s; destruct s0; ff.
-        repeat jkjke'; repeat ff.
-
-        cbv.
-        intros.
-        invc H16.
-        destruct_conjs.
-        solve_by_inversion.
-
-
-        
-        repeat jkjke'; repeat ff.
-        
-        cbv.
-        intros.
-        invc H16.
-        destruct_conjs.
-        solve_by_inversion.
-         *)
-        
+        destruct s; destruct s0; ff.      
       }
-      
-
+     
       destruct s; destruct s; destruct s0; ff.
       ++
-        
-
       edestruct IHt2.
       eassumption.
       eassumption.
@@ -5331,22 +4213,10 @@ Proof.
         eassumption. }
       eassumption.
 
-      (*
-      eassumption.
-      apply H5.
-      2: { eassumption. }
-      eassumption.
-      2: {
-        eassumption.
-      }
-      2: {
-      eassumption. }
-      eassumption. *)
-
       destruct_conjs.
       eauto.
       ++
-                edestruct IHt2.
+        edestruct IHt2.
       eassumption.
       eassumption.
       eapply sig_term_ev_bseqr.
@@ -5358,38 +4228,11 @@ Proof.
       econstructor. tauto.
       ff.
       eassumption.
-
-      (*
-
-        eassumption. }
-      eassumption.
-      2: {
-        eassumption. }
-      eassumption.
-
-      (*
-      eassumption.
-      apply H5.
-      2: { eassumption. }
-      eassumption.
-      2: {
-        eassumption.
-      }
-      2: {
-      eassumption. }
-      eassumption. *)
-       *)
       
-
       destruct_conjs.
       eauto.
-
-
-
-
-
     ++  
-        edestruct IHt2.
+      edestruct IHt2.
       eassumption.
       eassumption.
       eapply sig_term_ev_bseqr.
@@ -5402,18 +4245,6 @@ Proof.
       2: {
         eassumption. }
       eassumption.
-
-      (*
-      eassumption.
-      apply H5.
-      2: { eassumption. }
-      eassumption.
-      2: {
-        eassumption.
-      }
-      2: {
-      eassumption. }
-      eassumption. *)
 
       destruct_conjs.
       eauto.
@@ -5432,28 +4263,6 @@ Proof.
       econstructor. tauto.
       ff.
       eassumption.
-
-      (*
-
-        eassumption. }
-      eassumption.
-      2: {
-        eassumption. }
-      eassumption.
-
-      (*
-      eassumption.
-      apply H5.
-      2: { eassumption. }
-      eassumption.
-      2: {
-        eassumption.
-      }
-      2: {
-      eassumption. }
-      eassumption. *)
-       *)
-      
 
       destruct_conjs.
       eauto.
@@ -5485,8 +4294,6 @@ Proof.
       try do_evsub_ihhh'.
 
     +
-      
-
       repeat jkjke'; ff.
       repeat jkjke'; repeat ff.
 
@@ -5506,36 +4313,6 @@ Proof.
         eassumption.
         destruct s.
         destruct s; destruct s0; ff.
-
-        (*
-        repeat jkjke'; repeat ff.
-        2: { eassumption. }
-        Check sig_term_ev_bseql.
-
-
-
-        
-        eassumption.
-        3: { eassumption. }
-        3: { eassumption. }
-        2: { eassumption. }
-        destruct s.
-        destruct s; destruct s0; ff.
-        repeat jkjke'; repeat ff.
-        repeat jkjke'; repeat ff.
-        repeat jkjke'; repeat ff.
-        cbv.
-        intros.
-        invc H15.
-        destruct_conjs.
-        solve_by_inversion.
-
-        cbv.
-        intros.
-        invc H15.
-        destruct_conjs.
-        solve_by_inversion.
-         *)
         
       }
 
@@ -5554,34 +4331,6 @@ Proof.
         eassumption.
         destruct s.
         destruct s; destruct s0; ff.
-
-        (*
-        repeat jkjke'; repeat ff.
-        
-        eassumption.
-        3: { eassumption. }
-        3: { eassumption. }
-        2: { eassumption. }
-        destruct s.
-        destruct s; destruct s0; ff.
-        repeat jkjke'; repeat ff.
-
-        cbv.
-        intros.
-        invc H16.
-        destruct_conjs.
-        solve_by_inversion.
-
-
-        
-        repeat jkjke'; repeat ff.
-        
-        cbv.
-        intros.
-        invc H16.
-        destruct_conjs.
-        solve_by_inversion.
-         *)
         
       }
       
@@ -5589,7 +4338,6 @@ Proof.
       destruct s; destruct s; destruct s0; ff.
       ++
         
-
       edestruct IHt1.
       eassumption.
       eassumption.
@@ -5604,18 +4352,6 @@ Proof.
         eassumption. }
       eassumption.
 
-      (*
-      eassumption.
-      apply H5.
-      2: { eassumption. }
-      eassumption.
-      2: {
-        eassumption.
-      }
-      2: {
-      eassumption. }
-      eassumption. *)
-
       destruct_conjs.
       eauto.
       ++
@@ -5633,21 +4369,8 @@ Proof.
         eassumption. }
       eassumption.
 
-      (*
-      eassumption.
-      apply H5.
-      2: { eassumption. }
-      eassumption.
-      2: {
-        eassumption.
-      }
-      2: {
-      eassumption. }
-      eassumption. *)
-
       destruct_conjs.
       eauto.
-
 
       ++
         edestruct IHt1.
@@ -5662,29 +4385,7 @@ Proof.
       econstructor. tauto.
       ff.
       eassumption.
-
-      (*
-
-        eassumption. }
-      eassumption.
-      2: {
-        eassumption. }
-      eassumption.
-
-      (*
-      eassumption.
-      apply H5.
-      2: { eassumption. }
-      eassumption.
-      2: {
-        eassumption.
-      }
-      2: {
-      eassumption. }
-      eassumption. *)
-       *)
       
-
       destruct_conjs.
       eauto.
       ++
@@ -5700,43 +4401,16 @@ Proof.
       econstructor. tauto.
       ff.
       eassumption.
-
-      (*
-
-        eassumption. }
-      eassumption.
-      2: {
-        eassumption. }
-      eassumption.
-
-      (*
-      eassumption.
-      apply H5.
-      2: { eassumption. }
-      eassumption.
-      2: {
-        eassumption.
-      }
-      2: {
-      eassumption. }
-      eassumption. *)
-       *)
       
-
       destruct_conjs.
       eauto.
-        
-
-
 
     +
-
-            repeat jkjke'; ff.
+      repeat jkjke'; ff.
       repeat jkjke'; repeat ff.
 
       assert (not_hash_sig_ev e4).
-      {
-        
+      {    
         repeat jkjke'; repeat ff.
         repeat rewrite fold_recev in *.
         eapply hshsig_ev_term_contra.
@@ -5749,38 +4423,7 @@ Proof.
         eassumption.
         eassumption.
         destruct s.
-        destruct s; destruct s0; ff.
-
-        (*
-        repeat jkjke'; repeat ff.
-        2: { eassumption. }
-        Check sig_term_ev_bseql.
-
-
-
-        
-        eassumption.
-        3: { eassumption. }
-        3: { eassumption. }
-        2: { eassumption. }
-        destruct s.
-        destruct s; destruct s0; ff.
-        repeat jkjke'; repeat ff.
-        repeat jkjke'; repeat ff.
-        repeat jkjke'; repeat ff.
-        cbv.
-        intros.
-        invc H15.
-        destruct_conjs.
-        solve_by_inversion.
-
-        cbv.
-        intros.
-        invc H15.
-        destruct_conjs.
-        solve_by_inversion.
-         *)
-        
+        destruct s; destruct s0; ff.     
       }
 
       assert (not_hash_sig_ev e5).
@@ -5797,43 +4440,12 @@ Proof.
         eassumption.
         eassumption.
         destruct s.
-        destruct s; destruct s0; ff.
-
-        (*
-        repeat jkjke'; repeat ff.
-        
-        eassumption.
-        3: { eassumption. }
-        3: { eassumption. }
-        2: { eassumption. }
-        destruct s.
-        destruct s; destruct s0; ff.
-        repeat jkjke'; repeat ff.
-
-        cbv.
-        intros.
-        invc H16.
-        destruct_conjs.
-        solve_by_inversion.
-
-
-        
-        repeat jkjke'; repeat ff.
-        
-        cbv.
-        intros.
-        invc H16.
-        destruct_conjs.
-        solve_by_inversion.
-         *)
-        
+        destruct s; destruct s0; ff.    
       }
       
 
       destruct s; destruct s; destruct s0; ff.
       ++
-        
-
       edestruct IHt2.
       eassumption.
       eassumption.
@@ -5844,26 +4456,13 @@ Proof.
       4: { eassumption. }
       2: { eassumption. }
       eassumption.
-      2: {
-        eassumption. }
-      eassumption.
-
-      (*
-      eassumption.
-      apply H5.
       2: { eassumption. }
       eassumption.
-      2: {
-        eassumption.
-      }
-      2: {
-      eassumption. }
-      eassumption. *)
 
       destruct_conjs.
       eauto.
       ++
-                edestruct IHt2.
+        edestruct IHt2.
       eassumption.
       eassumption.
       eapply sig_term_ev_bparr.
@@ -5875,35 +4474,9 @@ Proof.
       econstructor. tauto.
       ff.
       eassumption.
-
-      (*
-
-        eassumption. }
-      eassumption.
-      2: {
-        eassumption. }
-      eassumption.
-
-      (*
-      eassumption.
-      apply H5.
-      2: { eassumption. }
-      eassumption.
-      2: {
-        eassumption.
-      }
-      2: {
-      eassumption. }
-      eassumption. *)
-       *)
       
-
       destruct_conjs.
       eauto.
-
-
-
-
 
     ++  
         edestruct IHt2.
@@ -5920,21 +4493,8 @@ Proof.
         eassumption. }
       eassumption.
 
-      (*
-      eassumption.
-      apply H5.
-      2: { eassumption. }
-      eassumption.
-      2: {
-        eassumption.
-      }
-      2: {
-      eassumption. }
-      eassumption. *)
-
       destruct_conjs.
       eauto.
-
 
       ++
         edestruct IHt2.
@@ -5949,260 +4509,22 @@ Proof.
       econstructor. tauto.
       ff.
       eassumption.
-
-      (*
-
-        eassumption. }
-      eassumption.
-      2: {
-        eassumption. }
-      eassumption.
-
-      (*
-      eassumption.
-      apply H5.
-      2: { eassumption. }
-      eassumption.
-      2: {
-        eassumption.
-      }
-      2: {
-      eassumption. }
-      eassumption. *)
-       *)
       
-
       destruct_conjs.
       eauto.
 Defined.
-
-      (*
-        unfold splitEv_l in Heqp0.
-        destruct s; destruct s0; ff.
-        +
-          eassumption.
-        +
-          eassumption.
-          
-          
-          
-          
-
-        
-      3: { eassumption.
-
-      door; repeat jkjke'; ff;
-        try eauto;
-        try (destruct_conjs;
-             right;
-             repeat (eexists; eauto)).
-
-  - (* abpar case *)
-    do_wf_pieces.
-    do_not_none.
-    ff.
-    dosome.
-    ff.
-    vmsts.
-    ff.
-
-    invEvents;
-
-      do_wfec_split;
-      do_wfec_preserved;
-      do_wfec_firstn;
-      do_wfec_skipn;
-      clear_skipn_firstn;
-      do_wfec_preserved;
-      repeat do_pl_immut;
-      do_somerecons;
-      repeat jkjke'; ff;
-      try (rewrite fold_recev in * );
-      try do_somerecons;
-      do_evsub_ihhh';
-
-      door; repeat jkjke'; ff;
-        try eauto;
-        try (destruct_conjs;
-             right;
-             repeat (eexists; eauto)).
-Admitted.
-*)
-
-(*
-Lemma gg_preserved: forall t1 t2 p et n p0  et'
-                      bits tr st_ev st_trace p'
-                      e' tr' p'' ecc,
-    well_formed_r t1 ->
-    well_formed_r t2 ->
-    not_none_none t1 ->
-    not_none_none t2 ->
-    not_hsh_sig t1 ->
-    not_hsh_sig t2 ->
-    wf_ec (evc bits et) ->
-    Some e' = (reconstruct_ev ecc) ->
-    (*events t1 p et (umeas n p0 i args tpl tid) -> *)
-    events t1 p et (sign n p0 et') ->
-    copland_compile t1 {| st_ev := (evc bits et); st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := st_ev; st_trace := st_trace; st_pl := p' |}) ->
-    
-    copland_compile t2
-                    {| st_ev := st_ev; st_trace := st_trace; st_pl := p' |} =
-    (Some tt, {| st_ev := ecc; st_trace := tr'; st_pl := p'' |}) ->
-
-    (
-      (exists bits e'', EvSub (ggc p0 (do_sig (MonadVM.encodeEv (evc bits et')) p0) e'') e' /\
-      (et_fun e'' = et'))
-
-      (* \/
-      (exists ett p' bs et',
-          EvSub (hhc p' bs ett) e' /\
-          EvSubT (gg p0 et') ett) *)
-    ).
-    (*
-    (
-      (exists e'', EvSub (uuc i args tpl tid n e'') e') \/
-      (exists ett p' bs et',
-          EvSub (hhc p' bs ett) e' /\
-          EvSubT (uu i args tpl tid et') ett)
-    ). *)
-Proof.
-
-  intros.
-
-  ff.
-  do_wfec_preserved.
-  do_somerecons.
-    assert (
-        (exists bits e'', EvSub (ggc p0 (do_sig (MonadVM.encodeEv (evc bits et')) p0) e'') H13 /\
-      et_fun e'' = et' )).
-
-        (*\/
-      (exists ett p' bs et',
-          EvSub (hhc p' bs ett) H11 /\
-          EvSubT (gg p0 et') ett)
-      ). *)
-    {
-      eapply gg_preserved'.
-      apply H.
-      eassumption.
-      eassumption.
-      4: { eassumption. }
-      eassumption.
-      eassumption.
-      eassumption.
-    }
-    destruct_conjs.
-
-    do_evaccum.
-    clear H22.
-    door.
-  +
-    ff.
-    repeat eexists.
-    eassumption.
-    repeat jkjke'.
-  +
-    repeat jkjke'.
-    repeat ff.
-    (*
-    admit. (* TODO: eliminate this case with well_formedness conditions on t1/t2 *)
-     *)
-
-    assert (
-              (exists t1', hash_sig_term t1' /\ term_sub t1' t1) \/
-              (exists t2', hash_sig_term t2' /\ term_sub t2' t2) \/
-              hash_sig_term (alseq (0,0) t1 t2)).
-    { admit. }
-
-    door.
-    ++
-
-      unfold not_hsh_sig in H3.
-      unfold not in *.
-      exfalso.
-      eapply H3.
-      eassumption.
-      eassumption.
-    ++
-      door.
-      +++
-      
-      unfold not_hsh_sig in H4.
-      unfold not in *.
-      exfalso.
-      eapply H4.
-      eassumption.
-      eassumption.
-      +++
-        unfold hash_sig_term in *.
-        destruct_conjs.
-        repeat ff.
-        assert (hash_sig_term (alseq (0,0) H28 H29)).
-        {
-          admit.
-        }
-        unfold not_hsh_sig in *.
-        unfold not in *.
-        exfalso.
-        eapply H6.
-        
-        unfold 
-        
-      
-        eapply sig_hsh_contra.
-        apply H1.
-        eauto.
-        eauto.
-        eauto.
-        eauto.
-        eauto.
-        eauto.
-Defined.
-    (*
-  +
-    clear H22.
-    door; ff.
-    ++
-    right;
-      repeat (eexists; eauto).
-
-    ++
-      assert (EvSubT (gg p0 H19) H22).
-      {
-        eapply evsubT_transitive.
-        apply hhSubT.
-        eassumption.
-        eassumption.
-      }
-      
-      right; 
-        repeat (eexists; eauto).
-     *)
-
-
-*)
 
 Lemma ggc_app: forall p0 x e H4 e',
     EvSub (ggc p0 (do_sig (MonadVM.encodeEv (evc x e)) p0) H4) e' ->
     exists e'' sigbs,
       EvSub
         (ggc p0 (checkSig H4 p0 sigbs) e'')
-        (build_app_comp_evC e'). (* /\ (et_fun H4 = e). *)
-    (*
-    exists e'' ec,
-      EvSub
-        (ggc p0 (checkSig ec p0 (do_sig (MonadVM.encodeEv (evc x e)) p0)) e'')
-        (build_app_comp_evC e') /\ (Some ec = reconstruct_ev (evc x e)). *)
+        (build_app_comp_evC e').
 Proof.
   intros.
   generalizeEverythingElse e'.
   induction e'; intros;
     ff.
-  (*
-    try evSubFacts; eauto.
-    try evsub_ih.
-   *)
   -
     evSubFacts.
     edestruct IHe'; eauto.
@@ -6211,16 +4533,10 @@ Proof.
     repeat eexists.
     eauto.
   -
-    (*
-    unfold checkSig in *. *)
     ff.
     invc H.
     +
-      (*
-      assert (wf_ec (evc x e)). admit.
-      do_somerecons. *)
       exists ((build_app_comp_evC e')).
-      (*eexists.*)
       exists ((do_sig (MonadVM.encodeEv (evc x e)) n)).
       econstructor.
     +
@@ -6273,10 +4589,6 @@ Defined.
 Lemma appraisal_correct_sig : forall t e e' tr tr' p p' ecc ev ee,
     well_formed_r t ->
     not_none_none t ->
-    (*
-    not_hash_sig_term t ->
-    not_hash_sig_ev e ->
-     *)
     not_hash_sig_term_ev t e ->
     wf_ec ee ->
     Some e = (reconstruct_ev ee) ->
@@ -6338,7 +4650,6 @@ Proof.
     eassumption.
     eassumption.
 
-
     eapply copland_compile_at.
     eassumption.
     econstructor.
@@ -6369,7 +4680,6 @@ Proof.
 
       Check gg_preserved'.
       
-
       edestruct gg_preserved' with (t:= alseq r t1 t2).
       eassumption.
       eassumption.
@@ -6405,78 +4715,18 @@ Proof.
       jkjke'.
       jkjke'.
       ff.
-
-
-      (*
-
-      eapply hshsig_ev_term_contra.
-      apply H7.
-      apply H2.
-      2: { eassumption. }
-      econstructor.
-      eassumption.
-      split.
-      eassumption.
-      admit.
-       *)
       
-
       destruct_conjs.
 
       edestruct ggc_app.
       eassumption.
-
-      
-(*
-      assert (exists e'' ec,
-                 EvSub (ggc p0
-                            (checkSig ec p0 (do_sig (MonadVM.encodeEv (evc x e)) p0))
-                            e''
-                       )
-                       (build_app_comp_evC e') /\
-                 (et_fun ec = e)
-             ).
-      {
-        eapply ggc_app; eauto.
-      }
- *)
       
       destruct_conjs.
 
-      (*
-      assert (e = et_fun H11).
-      {
-        congruence.
-      } *)
       subst.
       econstructor.
       repeat jkjke'.
       repeat ff.
-            (*
-      eassumption.
-      destruct_conjs.
-      assert 
-      econstructor.
-      
-
-      assert (
-          exists e'', EvSub (uuc i args tpl tid (checkASP i args tpl tid n) e'')
-                       (build_app_comp_evC e')).
-      {
-        
-        eapply uuc_app; eauto.
-      }
-      destruct_conjs.
-      econstructor.
-      eassumption.
-      destruct_conjs.
-      eapply ahuc.
-      eassumption.
-      eapply hhc_app; eauto. *)
-    
-      
-
-
       
     + (* t2 case *)
 
@@ -6504,58 +4754,6 @@ Proof.
       eassumption.
       eassumption.
       eassumption.
-
-      (*
-      destruct ee; ff.
-      assert (e4 = aeval t1 p e6).
-      {
-        rewrite <- eval_aeval.
-        eapply cvm_refines_lts_evidence.
-        eassumption.
-        eassumption.
-      }
-      subst.
-      econstructor.
-      eassumption.
-      econstructor.
-       *)
-      
-
-      (*
-
-
-      
-      eassumption.
-      4: { eassumption. }
-      4: { eassumption. }
-      2: { eassumption. }
-      2: { eassumption. }
-      repeat jkjke'; repeat ff.
-      eapply hshsig_ev_term_contra.
-      apply H8.
-      apply H3.
-      4: { eassumption. }
-      2: { eassumption. }
-      2: { eassumption. }
-
-      eapply sig_term_ev_lseq.
-      
-      
-      2: { destruct ee.
-           ff.
-           econstructor.
-      assert (e4 = aeval t1 p e6).
-      {
-        rewrite <- eval_aeval.
-        eapply cvm_refines_lts_evidence.
-        eassumption.
-        eassumption.
-      }
-      subst.
-      
-      eassumption.
-      econstructor.
-       *)
 
       destruct ee.
       ff.
@@ -6593,9 +4791,6 @@ Proof.
     repeat do_pl_immut.
     subst.
 
-    (*
-    invc H3. *)
-
     do_wfec_split.
 
     do_wfec_preserved.
@@ -6610,7 +4805,6 @@ Proof.
 
     inv_events.
     + (* t1 case *)
-
 
       assert (appEvent_Sig_EvidenceC (sign n1 p0 e6) (build_app_comp_evC e4)).
       {
@@ -6639,39 +4833,22 @@ Proof.
           repeat jkjke'. ff.
           repeat jkjke'. ff.
           repeat jkjke'; ff.
-         
-         
+                
           cbv. intros. invc H13. destruct_conjs. solve_by_inversion.
           cbv. intros. invc H13. destruct_conjs. solve_by_inversion.
         }
         
-          
-          eapply IHt1.
+        eapply IHt1.
           eassumption.
           eassumption.
           eapply sig_term_ev_bseql.
           eassumption.
           eassumption.
           eassumption.
-
-          (*
-          
-          econstructor. eassumption.
-          split.
-          apply H12.
-          eauto.
-         
-          eassumption.
-         
-          
-          eassumption.
-           *)
           
           4: { eassumption. }
           eassumption.
-          (*
-          rewrite <- H18.
-          2: { symmetry. eassumption. } *)
+
           destruct s. destruct s; destruct s0; ff.
           jkjke'. 
 
@@ -6714,13 +4891,9 @@ Proof.
           cbv. intros. invc H13. destruct_conjs. solve_by_inversion.
           repeat jkjke'. ff.
           repeat jkjke'. ff.
-          
-         
-         
           cbv. intros. invc H13. destruct_conjs. solve_by_inversion.
         }
         
-          
           eapply IHt2.
           eassumption.
           eassumption.
@@ -6728,25 +4901,9 @@ Proof.
           eassumption.
           eassumption.
           eassumption.
-
-          (*
-          
-          econstructor. eassumption.
-          split.
-          apply H12.
-          eauto.
-         
-          eassumption.
-         
-          
-          eassumption.
-           *)
           
           4: { eassumption. }
           eassumption.
-          (*
-          rewrite <- H18.
-          2: { symmetry. eassumption. } *)
           destruct s. destruct s; destruct s0; ff.
           symmetry. eassumption.
 
@@ -6757,8 +4914,6 @@ Proof.
       invc H13.
       econstructor.
       ff.
-
-
 
   - (* abpar case *)
     
@@ -6782,9 +4937,6 @@ Proof.
     sigEventPFacts.
     repeat do_pl_immut.
     subst.
-
-    (*
-    invc H3. *)
 
     do_wfec_split.
 
@@ -6843,25 +4995,10 @@ Proof.
           eassumption.
           eassumption.
           eassumption.
-
-          (*
-          
-          econstructor. eassumption.
-          split.
-          apply H12.
-          eauto.
-         
-          eassumption.
-         
-          
-          eassumption.
-           *)
           
           4: { eassumption. }
           eassumption.
-          (*
-          rewrite <- H18.
-          2: { symmetry. eassumption. } *)
+          
           destruct s. destruct s; destruct s0; ff.
           jkjke'. 
 
@@ -6904,9 +5041,6 @@ Proof.
           cbv. intros. invc H13. destruct_conjs. solve_by_inversion.
           repeat jkjke'. ff.
           repeat jkjke'. ff.
-          
-         
-         
           cbv. intros. invc H13. destruct_conjs. solve_by_inversion.
         }
         
@@ -6918,25 +5052,9 @@ Proof.
           eassumption.
           eassumption.
           eassumption.
-
-          (*
-          
-          econstructor. eassumption.
-          split.
-          apply H12.
-          eauto.
-         
-          eassumption.
-         
-          
-          eassumption.
-           *)
           
           4: { eassumption. }
           eassumption.
-          (*
-          rewrite <- H18.
-          2: { symmetry. eassumption. } *)
           destruct s. destruct s; destruct s0; ff.
           symmetry. eassumption.
 
