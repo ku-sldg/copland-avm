@@ -113,7 +113,7 @@ Definition splitEv_T_r (sp:Split) (e:Evidence) : Evidence :=
   | LEFT => mt
   | _ => e
   end.
-*)
+ *)
 
 Definition eval_asp t p e :=
   match t with
@@ -263,6 +263,62 @@ Definition range x :=
   | abseq r _ _ _ => r
   | abpar r _ _ _ => r
   end.
+
+Inductive term_sub : AnnoTerm -> AnnoTerm -> Prop :=
+| termsub_refl: forall t: AnnoTerm, term_sub t t
+| aatt_sub: forall t t' r p,
+    term_sub t' t ->
+    term_sub t' (aatt r p t)
+| alseq_subl: forall t' t1 t2 r,
+    term_sub t' t1 ->
+    term_sub t' (alseq r t1 t2)
+| alseq_subr: forall t' t1 t2 r,
+    term_sub t' t2 ->
+    term_sub t' (alseq r t1 t2)
+| abseq_subl: forall t' t1 t2 r s,
+    term_sub t' t1 ->
+    term_sub t' (abseq r s t1 t2)
+| abseq_subr: forall t' t1 t2 r s,
+    term_sub t' t2 ->
+    term_sub t' (abseq r s t1 t2)
+| abpar_subl: forall t' t1 t2 r s,
+    term_sub t' t1 ->
+    term_sub t' (abpar r s t1 t2)
+| abpar_subr: forall t' t1 t2 r s,
+    term_sub t' t2 ->
+    term_sub t' (abpar r s t1 t2).
+
+Lemma termsub_transitive: forall t t' t'',
+    term_sub t t' ->
+    term_sub t' t'' ->
+    term_sub t t''.
+  intros.
+  generalizeEverythingElse t''.
+  induction t''; intros; ff.
+  -
+    invc H0.
+    eassumption.
+    econstructor.
+    eauto.
+  -
+    invc H0; eauto.
+    econstructor.
+    eauto.
+    apply alseq_subr.
+    eauto.
+  -
+    invc H0; eauto.
+    econstructor.
+    eauto.
+    apply abseq_subr.
+    eauto.
+  -
+    invc H0; eauto.
+    econstructor.
+    eauto.
+    apply abpar_subr.
+    eauto.
+Defined.
 
 (*
 (** This function annotates a term.  It feeds a natural number

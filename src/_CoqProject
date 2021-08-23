@@ -2,6 +2,7 @@
 Preamble.v
 More_lists.v
 StructTactics.v
+AutoPrim.v
 Defs.v
 Term_Defs.v
 Eqb_Evidence.v
@@ -30,4 +31,5 @@ Appraisal_Defs.v
 Impl_appraisal.v
 Impl_appraisal_alt.v
 Appraisal_AltImpls_Eq.v
+Helpers_Appraisal.v
 Appraisal.v

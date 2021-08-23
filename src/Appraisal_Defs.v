@@ -136,6 +136,51 @@ Inductive appEvent_Sig_EvidenceC: Ev -> EvidenceC -> Prop :=
     EvSub (ggc p (checkSig e' p sig) e'') e ->
     appEvent_Sig_EvidenceC (sign n p (et_fun e')) e.
 
+Definition none_none_term (t:AnnoTerm): Prop :=
+  (exists t1 t2 r,
+      t = abseq r (NONE,NONE) t1 t2)
+  \/
+  (exists t1 t2 r,
+      t = abpar r (NONE,NONE) t1 t2).
+
+Definition not_none_none (t:AnnoTerm) :=
+  forall t',
+    none_none_term t'  -> 
+    ~ (term_sub t' t).
+
+Definition hash_sig_term (t:AnnoTerm): Prop :=
+  exists r r1 r2 t1 t2,
+  t = alseq r t1 t2 /\
+  term_sub (aasp r1 SIG) t1 /\
+  term_sub (aasp r2 HSH) t2.
+
+Definition not_hash_sig_term (t:AnnoTerm) :=
+  forall t',
+    hash_sig_term t'  -> 
+    ~ (term_sub t' t).
+
+Definition hash_sig_ev (e:EvidenceC): Prop :=
+  exists p p' bs et et',
+    e = hhc p bs et /\ 
+    EvSubT (gg p' et') et.
+
+Definition not_hash_sig_ev (e:EvidenceC) :=
+  forall e',
+    hash_sig_ev e' ->
+    ~ (EvSub e' e).
+
+Definition gg_sub (e:EvidenceC) :=
+  exists p bs e'' e', e' = ggc p bs e'' /\
+                 EvSub e' e.
+
+Definition hsh_subt (t:AnnoTerm) :=
+  exists r, term_sub (aasp r HSH) t.
+
+Definition not_hash_sig_term_ev (t:AnnoTerm) (e:EvidenceC): Prop :=
+  not_hash_sig_term t /\
+  not_hash_sig_ev e /\
+  ((gg_sub e) -> ~ (hsh_subt t)).
+
 Ltac measEventFacts :=
   match goal with
   | [H: measEvent _ _ _ _ |- _] => invc H

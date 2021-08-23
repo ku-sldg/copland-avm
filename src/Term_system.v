@@ -83,11 +83,6 @@ Ltac do_evin :=
   | [H:ev_in _ (?C _) |- _] => inv H
   end.
 
-Ltac inv_events :=
-  match goal with
-  | [H:events (?C _) _ _ _ |- _] => inv H
-  end.
-
 (** The events in the event system correspond to the events associated
     with a term, a place, and some evidence. *)
 

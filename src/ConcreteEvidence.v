@@ -4,7 +4,9 @@ Evidence structure that models concrete results of Copland phrase execution.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Export Term_Defs Term StructTactics.
+Require Export Term_Defs Term StructTactics AutoPrim.
+
+Require Import Coq.Program.Tactics.
 
 Require Import List.
 Import ListNotations.
@@ -88,6 +90,18 @@ Ltac evSubTFacts :=
   | [H: EvSubT mt _ |- _] => invc H
   end.
 
+Lemma evsubT_transitive: forall e e' e'',
+    EvSubT e e' ->
+    EvSubT e' e'' ->
+    EvSubT e e''.
+Proof.
+  intros.
+  generalizeEverythingElse e''.
+  induction e''; intros;
+    try evSubTFacts;
+       eauto.
+Defined.
+
 Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
 | evsub_refl : forall e : EvidenceC, EvSub e e
 | uuSub: forall e e' i tid l tpl bs,
@@ -120,6 +134,324 @@ Ltac evSubFacts :=
   | [H: EvSub _ mt |- _] => invc H
   | [H: EvSub mtc _ |- _] => invc H
   end.
+
+
+Lemma evsub_etfun: forall e e',
+    EvSub e e' ->
+    EvSubT (et_fun e) (et_fun e').
+Proof.
+  intros.
+  induction H; intros;
+    cbn in *; eauto.
+Defined.
+
+Lemma evsub_hh: forall e e' e0,
+    EvSub e0 e' ->
+    EvSubT (et_fun e') e ->
+    EvSubT (et_fun e0) e.
+Proof.
+  intros.
+  generalizeEverythingElse e.
+  induction e; intros; fff.
+  -
+    invc H0.
+    jkjke.
+    assert (e' = mtc).
+    {
+      destruct e'; try solve_by_inversion.
+    }
+    subst.
+    invc H.
+    fff.
+  -
+    invc H0.
+    +
+      assert (exists bs ec, e' = uuc n l n0 n1 bs ec).
+      {
+        destruct e'; try solve_by_inversion.
+        fff.
+        repeat eexists.
+      }
+      destruct_conjs.
+      subst.
+      fff.
+      invc H.
+      ++
+        fff.
+      ++
+        
+        assert (EvSubT (et_fun e0) (et_fun H1)).
+        {
+          eapply IHe.
+          eassumption.
+          econstructor.
+        }
+        apply uuSubT. eassumption.
+    +
+      assert (EvSubT (et_fun e0) e) by eauto.
+      apply uuSubT. eassumption.
+  -
+    invc H0.
+    +
+      assert (exists bs ec, e' = ggc n bs ec).
+      {
+        destruct e'; try solve_by_inversion.
+        fff.
+        repeat eexists.
+      }
+      destruct_conjs.
+      subst.
+      fff.
+      invc H.
+      ++
+        fff.
+      ++
+
+        assert (EvSubT (et_fun e0) (et_fun H1)).
+        {
+          eapply IHe.
+          eassumption.
+          econstructor.
+        }
+        apply ggSubT. eassumption.
+    +
+      assert (EvSubT (et_fun e0) e) by eauto.
+      apply ggSubT. eassumption.
+  -
+    invc H0.
+    +
+      assert (exists bs, e' = hhc n bs e).
+      {
+        destruct e'; try solve_by_inversion.
+        fff.
+        repeat eexists.
+      }
+      destruct_conjs.
+      subst.
+      fff.
+      invc H.
+      ++
+        fff.
+      ++
+        assert (EvSubT (et_fun e0) e).
+        {
+          eapply IHe.
+          econstructor.
+          eassumption.
+        }
+        apply hhSubT.
+        eassumption.
+    +
+      assert (EvSubT (et_fun e0) e) by eauto.
+      apply hhSubT. eassumption.
+  -
+    invc H0.
+    assert (exists bs, e' = nnc n bs).
+    {
+      destruct e'; try solve_by_inversion.
+      fff.
+      repeat eexists.
+    }
+    destruct_conjs.
+    subst.
+    fff.
+  -
+    
+    assert ((exists e1 e2, e' = ssc e1 e2) \/
+            EvSubT (et_fun e') e1 \/
+            EvSubT (et_fun e') e2).
+    {
+      invc H0.
+      +
+        destruct e'; try solve_by_inversion.
+        fff.
+        left.
+        repeat eexists.
+      +
+        eauto.
+      +
+        eauto.
+    }
+    door.
+    +
+      destruct_conjs.
+      subst.
+      
+      
+      fff.
+      invc H.
+      
+      ++
+        fff.
+      ++
+        assert (EvSubT (ss (et_fun H1) (et_fun H2)) e1 \/
+                EvSubT (ss (et_fun H1) (et_fun H2)) e2 \/
+                e1 = (et_fun H1) /\ e2 = (et_fun H2)).
+        {
+          invc H0.
+          +++
+            right.
+            right.
+            eauto.
+          +++
+            left.
+            eauto.
+          +++
+            eauto.
+        }
+        door.
+        +++
+          eauto.
+        +++
+          door.
+          ++++
+            eauto.
+          ++++
+            subst.
+            eauto.
+      ++
+        assert (EvSubT (ss (et_fun H1) (et_fun H2)) e1 \/
+                EvSubT (ss (et_fun H1) (et_fun H2)) e2 \/
+                e1 = (et_fun H1) /\ e2 = (et_fun H2)).
+        {
+          invc H0.
+          +++
+            right.
+            right.
+            eauto.
+          +++
+            left.
+            eauto.
+          +++
+            eauto.
+        }
+        door.
+        +++
+          eauto.
+        +++
+          door.
+          ++++
+            eauto.
+          ++++
+            subst.
+            eauto.
+    +
+      door.
+      eauto.
+      eauto.
+
+
+  - (* ppc case *)
+    
+    assert ((exists e1 e2, e' = ppc e1 e2) \/
+            EvSubT (et_fun e') e1 \/
+            EvSubT (et_fun e') e2).
+    {
+      invc H0.
+      +
+        destruct e'; try solve_by_inversion.
+        fff.
+        left.
+        repeat eexists.
+      +
+        eauto.
+      +
+        eauto.
+    }
+    door.
+    +
+      destruct_conjs.
+      subst.
+      
+      
+      fff.
+      invc H.
+      
+      ++
+        fff.
+      ++
+        assert (EvSubT (pp (et_fun H1) (et_fun H2)) e1 \/
+                EvSubT (pp (et_fun H1) (et_fun H2)) e2 \/
+                e1 = (et_fun H1) /\ e2 = (et_fun H2)).
+        {
+          invc H0.
+          +++
+            right.
+            right.
+            eauto.
+          +++
+            left.
+            eauto.
+          +++
+            eauto.
+        }
+        door.
+        +++
+          eauto.
+        +++
+          door.
+          ++++
+            eauto.
+          ++++
+            subst.
+            eauto.
+      ++
+        assert (EvSubT (pp (et_fun H1) (et_fun H2)) e1 \/
+                EvSubT (pp (et_fun H1) (et_fun H2)) e2 \/
+                e1 = (et_fun H1) /\ e2 = (et_fun H2)).
+        {
+          invc H0.
+          +++
+            right.
+            right.
+            eauto.
+          +++
+            left.
+            eauto.
+          +++
+            eauto.
+        }
+        door.
+        +++
+          eauto.
+        +++
+          door.
+          ++++
+            eauto.
+          ++++
+            subst.
+            eauto.
+    +
+      door.
+      eauto.
+      eauto.
+Defined.
+
+Lemma evsub_transitive: forall e e' e'',
+    EvSub e e' ->
+    EvSub e' e'' ->
+    EvSub e e''.
+Proof.
+  intros.
+  generalizeEverythingElse e''.
+  induction e''; intros; fff.
+  -
+    invc H0; eauto.
+  -
+    invc H0; eauto.
+  -
+    invc H0.
+    +
+      eassumption.
+    +
+      econstructor.
+
+      eapply evsub_hh; eauto.
+  -
+    invc H0; eauto.
+  -
+    invc H0; eauto.
+Defined.
 
 (*
 Inductive EvBad': Evidence -> Prop :=
@@ -210,6 +542,18 @@ Definition splitEv_r (sp:Split) (e:EvC): EvC :=
   match sp with
   | (_,ALL) => e
   | _ => mt_evc
+  end.
+
+Definition splitEvl (sp:Split) (e:EvidenceC) : EvidenceC :=
+  match sp with
+  | (ALL,_) => e
+  | _ => mtc
+  end.
+
+Definition splitEvr (sp:Split) (e:EvidenceC) : EvidenceC :=
+  match sp with
+  | (_,ALL) => e
+  | _ => mtc
   end.
 
 (*

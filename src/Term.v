@@ -230,6 +230,11 @@ Inductive events: AnnoTerm -> Plc -> Evidence -> Ev -> Prop :=
              (join i  p).
 Hint Constructors events : core.
 
+Ltac inv_events :=
+  match goal with
+  | [H:events (?C _) _ _ _ |- _] => inv H
+  end.
+
 Ltac inv_wfr :=
   match goal with
   | [H: well_formed_r _ |- _] => inv H
