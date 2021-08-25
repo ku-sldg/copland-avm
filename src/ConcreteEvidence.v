@@ -131,7 +131,7 @@ Ltac evSubFacts :=
   match goal with
   | [H: EvSub (?C _) _ |- _] => invc H
   | [H: EvSub _ (?C _) |- _] => invc H
-  | [H: EvSub _ mt |- _] => invc H
+  | [H: EvSub _ mtc |- _] => invc H
   | [H: EvSub mtc _ |- _] => invc H
   end.
 
