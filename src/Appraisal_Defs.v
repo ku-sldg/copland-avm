@@ -197,23 +197,41 @@ Ltac invEvents :=
   end.
 
 Lemma inv_recon_mt: forall ls et,
-    reconstruct_ev' ls et = Some mtc ->
+    Some mtc = reconstruct_ev' ls et ->
     et = mt.
 Proof.
   intros.
   destruct et; repeat ff; try solve_by_inversion.
 Defined.
 
+Ltac do_inv_recon_mt :=
+  match goal with
+  | [H: Some mtc = reconstruct_ev' _ ?et
+
+     |- _] =>
+    assert_new_proof_by (et = mt) ltac:(eapply inv_recon_mt; apply H)
+  end;
+  subst.
+
 Lemma inv_recon_nn: forall ls et n n0,
-    reconstruct_ev' ls et = Some (nnc n n0) ->
+    Some (nnc n n0) = reconstruct_ev' ls et ->
     et = nn n.
 Proof.
   intros.
   destruct et; repeat ff; try solve_by_inversion.
 Defined.
 
+Ltac do_inv_recon_nn :=
+  match goal with
+  | [H: Some (nnc ?n _) = reconstruct_ev' _ ?et
+
+     |- _] =>
+    assert_new_proof_by (et = nn n) ltac:(eapply inv_recon_nn; apply H)
+  end;
+  subst.
+
 Lemma inv_recon_uu: forall ls et n l n0 n1 n2 ec,
-    reconstruct_ev' ls et = Some (uuc n l n0 n1 n2 ec) ->
+    Some (uuc n l n0 n1 n2 ec) = reconstruct_ev' ls et  ->
     (exists et', et = uu n l n0 n1 et').
 Proof.
   intros.
@@ -221,8 +239,19 @@ Proof.
   eauto.
 Defined.
 
+Ltac do_inv_recon_uu :=
+  match goal with
+  | [H: Some (uuc ?n ?l ?n0 ?n1 _ _) = reconstruct_ev' _ ?et
+
+     |- _] =>
+    assert_new_proof_by (exists et', et = uu n l n0 n1 et')
+                        ltac:(eapply inv_recon_uu; apply H)
+  end;
+  destruct_conjs;
+  subst.
+
 Lemma inv_recon_gg: forall ls et n n0 ec,
-    reconstruct_ev' ls et = Some (ggc n n0 ec) ->
+    Some (ggc n n0 ec) = reconstruct_ev' ls et ->
     (exists et', et = gg n et').
 Proof.
   intros.
@@ -230,16 +259,37 @@ Proof.
   eauto.
 Defined.
 
+Ltac do_inv_recon_gg :=
+  match goal with
+  | [H: Some (ggc ?n _ _) = reconstruct_ev' _ ?et
+
+     |- _] =>
+    assert_new_proof_by (exists et', et = gg n et')
+                        ltac:(eapply inv_recon_gg; apply H)
+  end;
+  destruct_conjs;
+  subst.
+
 Lemma inv_recon_hh: forall ls et n n0 et',
-    reconstruct_ev' ls et = Some (hhc n n0 et') ->
+    Some (hhc n n0 et') = reconstruct_ev' ls et  ->
     (et = hh n et' ).
 Proof.
   intros.
   destruct et; repeat ff; try solve_by_inversion.
 Defined.
 
+Ltac do_inv_recon_hh :=
+  match goal with
+  | [H: Some (hhc ?n _ ?et') = reconstruct_ev' _ ?et
+
+     |- _] =>
+    assert_new_proof_by (et = hh n et')
+                        ltac:(eapply inv_recon_hh; apply H)
+  end;
+  subst.
+
 Lemma inv_recon_ss: forall ls et ec1 ec2,
-    reconstruct_ev' ls et = Some (ssc ec1 ec2) ->
+    Some (ssc ec1 ec2) = reconstruct_ev' ls et ->
     (exists et1 et2, et = ss et1 et2).
 Proof.
   intros.
@@ -247,14 +297,45 @@ Proof.
   eauto.
 Defined.
 
+Ltac do_inv_recon_ss :=
+  match goal with
+  | [H: Some (ssc _ _) = reconstruct_ev' _ ?et
+
+     |- _] =>
+    assert_new_proof_by (exists et1 et2, et = ss et1 et2)
+                        ltac:(eapply inv_recon_ss; apply H)
+  end;
+  destruct_conjs;
+  subst.
+
 Lemma inv_recon_pp: forall ls et ec1 ec2,
-    reconstruct_ev' ls et = Some (ppc ec1 ec2) ->
+    Some (ppc ec1 ec2) = reconstruct_ev' ls et ->
     (exists et1 et2, et = pp et1 et2).
 Proof.
   intros.
   destruct et; repeat ff; try solve_by_inversion.
   eauto.
 Defined.
+
+Ltac do_inv_recon_pp :=
+  match goal with
+  | [H: Some (ppc _ _) = reconstruct_ev' _ ?et
+
+     |- _] =>
+    assert_new_proof_by (exists et1 et2, et = pp et1 et2)
+                        ltac:(eapply inv_recon_pp; apply H)
+  end;
+  destruct_conjs;
+  subst.
+
+Ltac do_inv_recon :=
+  try do_inv_recon_mt;
+  try do_inv_recon_nn;
+  try do_inv_recon_uu;
+  try do_inv_recon_gg;
+  try do_inv_recon_hh;
+  try do_inv_recon_ss;
+  try do_inv_recon_pp.
 
 Lemma firstn_long: forall (e:list BS) x,
     length e >= x ->

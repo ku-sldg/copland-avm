@@ -5,6 +5,8 @@ Require Import Coq.Program.Tactics Lia.
 Require Import List.
 Import ListNotations.
 
+Set Nested Proofs Allowed.
+
 
 Ltac evsub_ih :=
   match goal with
@@ -352,184 +354,78 @@ Lemma not_none_alseq_pieces: forall r t1 t2,
     not_none_none (alseq r t1 t2) ->
     not_none_none t1 /\ not_none_none t2.
 Proof.
-  unfold not_none_none in *.
-  intros.
-  split.
-  -
+  unfold not_none_none in *;
     unfold not in *.
-    intros.
-    specialize H with (t':=t').
-    apply H.
-    eassumption.
-    econstructor.
-    eassumption.
-  -
-    unfold not in *.
-    intros.
-    specialize H with (t':=t').
-    apply H.
-    eassumption.
-    apply alseq_subr.
-    eassumption.
+  split; eauto.
 Defined.
 
 Lemma not_none_abseq_pieces: forall r s t1 t2,
     not_none_none (abseq r s t1 t2) ->
     not_none_none t1 /\ not_none_none t2.
 Proof.
-  unfold not_none_none in *.
-  intros.
-  split.
-  -
+  unfold not_none_none in *;
     unfold not in *.
-    intros.
-    specialize H with (t':=t').
-    apply H.
-    eassumption.
-    econstructor.
-    eassumption.
-  -
-    unfold not in *.
-    intros.
-    specialize H with (t':=t').
-    apply H.
-    eassumption.
-    apply abseq_subr.
-    eassumption.
+  split; eauto.
 Defined.
 
 Lemma not_none_abpar_pieces: forall r s t1 t2,
     not_none_none (abpar r s t1 t2) ->
     not_none_none t1 /\ not_none_none t2.
 Proof.
-  unfold not_none_none in *.
-  intros.
-  split.
-  -
+  unfold not_none_none in *;
     unfold not in *.
-    intros.
-    specialize H with (t':=t').
-    apply H.
-    eassumption.
-    econstructor.
-    eassumption.
-  -
-    unfold not in *.
-    intros.
-    specialize H with (t':=t').
-    apply H.
-    eassumption.
-    apply abpar_subr.
-    eassumption.
+  split; eauto.
 Defined.
 
 Lemma not_none_aatt_pieces: forall r q t1,
     not_none_none (aatt r q t1) ->
     not_none_none t1.
 Proof.
-  intros.
-  unfold not_none_none in *.
-  intros.
-  unfold not. intros.
-  specialize H with (t':=t').
-  concludes.
-  unfold not in *.
-  apply H.
-  econstructor.
-  eassumption.
+  intros;
+    unfold not_none_none in *;
+    unfold not in *.
+  eauto.
 Defined.
 
 Lemma not_hshsig_alseq_pieces: forall r t1 t2,
     not_hash_sig_term (alseq r t1 t2) ->
     not_hash_sig_term t1 /\ not_hash_sig_term t2.
 Proof.
-  unfold not_hash_sig_term in *.
-  intros.
-  split.
-  -
+  intros;
+    unfold not_hash_sig_term in *;
     unfold not in *.
-    intros.
-    specialize H with (t':=t').
-    apply H.
-    eassumption.
-    econstructor.
-    eassumption.
-  -
-    unfold not in *.
-    intros.
-    specialize H with (t':=t').
-    apply H.
-    eassumption.
-    apply alseq_subr.
-    eassumption.
+  split; eauto.
 Defined.
 
 Lemma not_hshsig_abseq_pieces: forall r s t1 t2,
     not_hash_sig_term (abseq r s t1 t2) ->
     not_hash_sig_term t1 /\ not_hash_sig_term t2.
 Proof.
-  unfold not_hash_sig_term in *.
-  intros.
-  split.
-  -
+  intros;
+    unfold not_hash_sig_term in *;
     unfold not in *.
-    intros.
-    specialize H with (t':=t').
-    apply H.
-    eassumption.
-    econstructor.
-    eassumption.
-  -
-    unfold not in *.
-    intros.
-    specialize H with (t':=t').
-    apply H.
-    eassumption.
-    apply abseq_subr.
-    eassumption.
+  split; eauto.
 Defined.
 
 Lemma not_hshsig_abpar_pieces: forall r s t1 t2,
     not_hash_sig_term (abpar r s t1 t2) ->
     not_hash_sig_term t1 /\ not_hash_sig_term t2.
 Proof.
-  unfold not_hash_sig_term in *.
-  intros.
-  split.
-  -
+  intros;
+    unfold not_hash_sig_term in *;
     unfold not in *.
-    intros.
-    specialize H with (t':=t').
-    apply H.
-    eassumption.
-    econstructor.
-    eassumption.
-  -
-    unfold not in *.
-    intros.
-    specialize H with (t':=t').
-    apply H.
-    eassumption.
-    apply abpar_subr.
-    eassumption.
+  split; eauto.
 Defined.
 
 Lemma not_hshsig_aatt_pieces: forall r q t1,
     not_hash_sig_term (aatt r q t1) ->
     not_hash_sig_term t1.
 Proof.
-  intros.
-  unfold not_hash_sig_term in *.
-  intros.
-  unfold not. intros.
-  specialize H with (t':=t').
-  concludes.
-  unfold not in *.
-  apply H.
-  econstructor.
-  eassumption.
+  intros;
+    unfold not_hash_sig_term in *;
+    unfold not in *.
+  eauto.
 Defined.
-
 
 Ltac do_not_none_alseq_pieces :=
   match goal with
@@ -582,7 +478,6 @@ Ltac do_not_none :=
   try do_not_none_abpar_pieces;
   destruct_conjs.
 
-
 Ltac do_not_hshsig_alseq_pieces :=
   match goal with
   | [H: not_hash_sig_term (alseq _ ?t1 ?t2)
@@ -634,6 +529,51 @@ Ltac do_not_hshsig :=
   try do_not_hshsig_abpar_pieces;
   destruct_conjs.
 
+Lemma not_none_none_contra_bseq: forall r t1 t2 (P:Prop),
+    not_none_none (abseq r (NONE, NONE) t1 t2) ->
+    P.
+Proof.
+  intros.
+  cbv in H.
+  exfalso.
+  eapply H.
+  left.
+  repeat eexists.
+  eauto.
+Defined.
+
+Lemma not_none_none_contra_bpar: forall r t1 t2 (P:Prop),
+    not_none_none (abpar r (NONE, NONE) t1 t2) ->
+    P.
+Proof.
+  intros.
+  cbv in H.
+  exfalso.
+  eapply H.
+  right.
+  repeat eexists.
+  eauto.
+Defined.
+
+Ltac do_none_none_contra_bseq :=
+  match goal with
+  | [H: not_none_none (abseq _ (NONE,NONE) _ _)
+
+     |- _] =>
+    (eapply not_none_none_contra_bseq; apply H)
+  end.
+
+Ltac do_none_none_contra_bpar :=
+  match goal with
+  | [H: not_none_none (abpar _ (NONE,NONE) _ _)
+
+     |- _] =>
+    (eapply not_none_none_contra_bpar; apply H)
+  end.
+
+Ltac do_none_none_contra :=
+  try do_none_none_contra_bseq;
+  try do_none_none_contra_bpar.
 
 Lemma evsubt_preserved_aeval: forall t et ett p,
     not_none_none t ->
@@ -642,41 +582,12 @@ Lemma evsubt_preserved_aeval: forall t et ett p,
 Proof.
   intros.
   generalizeEverythingElse t.
-  induction t; intros; ff.
-  -
-    destruct a; ff.
-    apply uuSubT.
-    eauto.
-  -
-    do_not_none.
-    eauto.
-  -
-    do_not_none.
-    eauto.
-  -
-    do_not_none.
-    destruct s.
-    destruct s; destruct s0; ff.
-    
-    unfold not_none_none in H.
-    unfold not in *.
-    exfalso.
-    eapply H with (t' := (abseq r (NONE, NONE) t1 t2)).
-    econstructor.
-    repeat eexists.
-    econstructor.
-  -
-    do_not_none.
-    destruct s.
-    destruct s; destruct s0; ff.
-    
-    unfold not_none_none in H.
-    unfold not in *.
-    exfalso.
-    eapply H with (t' := (abpar r (NONE, NONE) t1 t2)).
-    right.
-    repeat eexists.
-    econstructor.
+  induction t; intros; ff;
+  try (destruct a; ff; eauto; tauto); (* aasp case *)
+    do_not_none;
+    try eauto; (* aatt, alseq cases *)
+    try (destruct s; destruct s; destruct s0; ff;
+         do_none_none_contra). (* abseq, abpar cases  *)
 Defined.
 
 Lemma evsubt_preserved: forall t e e' et et' tr tr' p p' ett,
@@ -702,18 +613,9 @@ Lemma not_ev: forall t e,
     not_hash_sig_term_ev t e ->
     not_hash_sig_ev e.
 Proof.
-  intros.
-  cbv in H.
+  intros; cbv in *.
   destruct_conjs.
-  cbv.
-  destruct_conjs.
-  intros.
-  destruct_conjs.
-  subst.
-  eapply H0.
-  repeat eexists.
-  eassumption.
-  eassumption.
+  eauto.
 Defined.
 
 Lemma etfun_exists: forall y,
@@ -753,34 +655,20 @@ Lemma not_hshsig_uuc: forall e' n l n1 n2 x,
     not_hash_sig_ev e' ->
     not_hash_sig_ev (uuc n l n1 n2 x e').
 Proof.
-  intros.
-  unfold not_hash_sig_ev in *.
-  intros.
-  unfold not in *; intros.
-  invc H1.
-  unfold hash_sig_ev in H0.
-  destruct_conjs.
-  invc H5.
-  eapply H.
-  eassumption.
-  eassumption.
+  cbv in *; intros.
+  evSubFacts;
+    try (destruct_conjs; solve_by_inversion);
+    eauto.
 Defined.
 
 Lemma not_hshsig_ggc: forall e' n bs,
     not_hash_sig_ev e' ->
     not_hash_sig_ev (ggc n bs e').
 Proof.
-  intros.
-  unfold not_hash_sig_ev in *.
-  intros.
-  unfold not in *; intros.
-  invc H1.
-  unfold hash_sig_ev in H0.
-  destruct_conjs.
-  invc H5.
-  eapply H.
-  eassumption.
-  eassumption.
+    cbv in *; intros.
+  evSubFacts;
+    try (destruct_conjs; solve_by_inversion);
+    eauto.
 Defined.
 
 Lemma gg_recons: forall e ecc x y,
@@ -788,67 +676,64 @@ Lemma gg_recons: forall e ecc x y,
     EvSubT (gg x y) (get_et ecc) ->
     gg_sub e.
 Proof.
-  intros.
+  intros e ecc x y H H0.
   generalizeEverythingElse e.
   induction e; intros; ff.
   -
-    destruct ecc; ff.
-    assert (e0 = mt).
-    {
-      destruct e0; repeat ff; try solve_by_inversion.
-    }
-    subst.
-    invc H0.
+    destruct ecc; ff;
+      do_inv_recon.
+    solve_by_inversion.
   -
-    destruct ecc; ff.
-    assert (e0 = nn n).
-    {
-      destruct e0; repeat ff; try solve_by_inversion.
-    }
-    subst.
-    invc H0.
+    destruct ecc; ff;
+      do_inv_recon.
+    solve_by_inversion.
   -
-    destruct ecc; ff.
-    assert (exists et', e1 = uu n l n0 n1 et').
-    {
-      destruct e1; repeat ff; try solve_by_inversion.
-      eauto.
-    }
+    destruct ecc; ff;
+      do_inv_recon.
+    (*
+    assert (exists et', e1 = uu n l n0 n1 et') by
+        (eapply inv_recon_uu; eauto).
     destruct_conjs.
     subst.
+     *)
+    
     repeat ff.
-    invc H0.
+    evSubTFacts.
     rewrite fold_recev in *.
     assert (gg_sub e2).
     {
-      
       eapply IHe with (ecc:=(evc e1 H1)).
       symmetry.
-      apply Heqo0.
+      find_apply_hyp_goal.
       ff.
       eassumption.
     }
-    invc H.
-    destruct_conjs.
-    subst.
-    econstructor.
+    unfold gg_sub in *;
+      destruct_conjs; subst.
+    
+    econstructor.  
     repeat eexists.
-    apply uuSub.
-    eassumption.
+    eauto.
   -
     destruct ecc; ff.
     econstructor.
     repeat eexists.
     eauto.
   -
-    destruct ecc; ff.
+    destruct ecc; ff;
+      do_inv_recon.
+    (*
     assert (e1 = hh n e).
     {
       eapply inv_recon_hh; eauto.
     }
     subst.
+     *)
+    
     repeat ff.
-    invc H0.
+    evSubTFacts.
+    (*
+    invc H0. *)
     assert (exists y', y = et_fun y').
     {
       eapply etfun_exists.
@@ -858,19 +743,23 @@ Proof.
     
     econstructor.
     repeat eexists.
-    eapply hhSub.
-    ff.
-    eassumption.
+    eauto.
   -
-    destruct ecc; ff.
+    destruct ecc; ff;
+      do_inv_recon.
+    (*
     assert (exists et1 et2, e0 = ss et1 et2).
     {
       eapply inv_recon_ss; eauto.
     }
     destruct_conjs.
     subst.
+     *)
+    
     repeat ff.
-    invc H0.
+    evSubTFacts.
+    (*
+    invc H0. *)
     +
       assert (gg_sub e0).
       {
@@ -881,13 +770,16 @@ Proof.
         ff.
         eassumption.
       }
-      invc H.
-      destruct_conjs.
-      subst.
+      unfold gg_sub in *;
+        destruct_conjs;
+        subst.
+      (*
+      cbv in H;
+      destruct_conjs;
+      subst. *)
       econstructor.
       repeat eexists.
-      apply ssSubl.
-      eassumption.
+      eauto.
     +
       assert (gg_sub e3).
       {
@@ -898,23 +790,33 @@ Proof.
         ff.
         eassumption.
       }
+      unfold gg_sub in *;
+        destruct_conjs; subst.
+      (*
       invc H.
       destruct_conjs.
       subst.
+       *)
+      
       econstructor.
       repeat eexists.
-      apply ssSubr.
-      eassumption.
+      eauto.
   -
-    destruct ecc; ff.
+    destruct ecc; ff;
+      do_inv_recon.
+    (*
     assert (exists et1 et2, e0 = pp et1 et2).
     {
       eapply inv_recon_pp; eauto.
     }
     destruct_conjs.
     subst.
+     *)
+    
     repeat ff.
-    invc H0.
+    evSubTFacts.
+    (*
+    invc H0. *)
     +
       assert (gg_sub e0).
       {
@@ -925,13 +827,11 @@ Proof.
         ff.
         eassumption.
       }
-      invc H.
-      destruct_conjs.
-      subst.
+      unfold gg_sub in *;
+        destruct_conjs; subst.
       econstructor.
       repeat eexists.
-      apply ppSubl.
-      eassumption.
+      eauto.
     +
       assert (gg_sub e3).
       {
@@ -942,13 +842,11 @@ Proof.
         ff.
         eassumption.
       }
-      invc H.
-      destruct_conjs.
-      subst.
+      unfold gg_sub in *;
+      destruct_conjs; subst.
       econstructor.
       repeat eexists.
-      apply ppSubr.
-      eassumption.
+      eauto.
       Unshelve.
       eauto.
 Defined.

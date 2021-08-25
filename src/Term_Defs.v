@@ -287,37 +287,15 @@ Inductive term_sub : AnnoTerm -> AnnoTerm -> Prop :=
 | abpar_subr: forall t' t1 t2 r s,
     term_sub t' t2 ->
     term_sub t' (abpar r s t1 t2).
+Hint Constructors term_sub : core.
 
 Lemma termsub_transitive: forall t t' t'',
     term_sub t t' ->
     term_sub t' t'' ->
     term_sub t t''.
-  intros.
   generalizeEverythingElse t''.
-  induction t''; intros; ff.
-  -
-    invc H0.
-    eassumption.
-    econstructor.
-    eauto.
-  -
-    invc H0; eauto.
-    econstructor.
-    eauto.
-    apply alseq_subr.
-    eauto.
-  -
-    invc H0; eauto.
-    econstructor.
-    eauto.
-    apply abseq_subr.
-    eauto.
-  -
-    invc H0; eauto.
-    econstructor.
-    eauto.
-    apply abpar_subr.
-    eauto.
+  induction t''; intros H H0; ff.
+    (* try (invc H0; eauto). *)
 Defined.
 
 (*
