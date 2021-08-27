@@ -3356,76 +3356,25 @@ Proof.
 
       do_nhse_nosplit.  
       
-      destruct s; destruct s; destruct s0; ff.
-      ++
-        edestruct IHt1.
-        eassumption.
-        eassumption.
+      destruct s; destruct s; destruct s0; ff;
+        rewrite fold_recev in *;
         
-        eapply sig_term_ev_bseql.
         
-        eassumption.
-        eassumption.
-        eassumption.
-        4: { eassumption. }
-        2: { eassumption. }
-        eassumption.
-        2: { eassumption. }
-        eassumption.
-
-        destruct_conjs.
-        eauto.
-      ++
-        edestruct IHt1.
-        eassumption.
-        eassumption.
-        eapply sig_term_ev_bseql.
-        eassumption.
-        eassumption.
-        eassumption.
-        4: { eassumption. }
-        2: { eassumption. }
-        eassumption.
-        2: {
-          eassumption. }
-        eassumption.
-
-        destruct_conjs.
-        eauto.
-
-      ++
-        edestruct IHt1.
-        eassumption.
-        eassumption.
-        eapply sig_term_ev_bseql.
-        eassumption.
-        eassumption.
-        eassumption.
-        4: { eassumption. }
-        4: { eassumption. }
-        econstructor. tauto.
-        ff.
-        eassumption.
+        try(
+        edestruct IHt1;
         
-        destruct_conjs.
-        eauto.
-      ++
-        edestruct IHt1.
-        eassumption.
-        eassumption.
-        eapply sig_term_ev_bseql.
-        eassumption.
-        eassumption.
-        eassumption.
-        4: { eassumption. }
-        4: { eassumption. }
-        econstructor. tauto.
-        ff.
-        eassumption.
+        [apply H7 | apply H9
+         | eapply sig_term_ev_bseql; [apply H1 | apply Heqp0 | apply H30]
+         | apply H2 | apply H30 | apply H34 | apply H16 | apply Heqp0 | idtac]);
 
+        try
+          (
+            edestruct IHt1;
         
-        destruct_conjs.
-        eauto.
+            [apply H7 | apply H9
+             | eapply sig_term_ev_bseql; [apply H1 | apply Heqp0 | apply H30]
+             | apply H4 | (ff; tauto) | apply H34 | apply H16 | apply Heqp0 | idtac]);
+        destruct_conjs; eauto.
 
     +
 
@@ -3434,76 +3383,28 @@ Proof.
       repeat rewrite fold_recev in *.
 
       do_nhse_nosplit.
+      
+      destruct s; destruct s; destruct s0; ff;
+        rewrite fold_recev in *;
         
-      destruct s; destruct s; destruct s0; ff.
-      ++
-        edestruct IHt2.
-        eassumption.
-        eassumption.
-        eapply sig_term_ev_bseqr.
-        eassumption.
-        eassumption.
-        eassumption.
-        4: { eassumption. }
-        2: { eassumption. }
-        eassumption.
-        2: {
-          eassumption. }
-        eassumption.
-
-        destruct_conjs.
-        eauto.
-      ++
-        edestruct IHt2.
-        eassumption.
-        eassumption.
-        eapply sig_term_ev_bseqr.
-        eassumption.
-        eassumption.
-        eassumption.
-        4: { eassumption. }
-        4: { eassumption. }
-        econstructor. tauto.
-        ff.
-        eassumption.
         
-        destruct_conjs.
-        eauto.
-      ++  
-        edestruct IHt2.
-        eassumption.
-        eassumption.
-        eapply sig_term_ev_bseqr.
-        eassumption.
-        eassumption.
-        eassumption.
-        4: { eassumption. }
-        2: { eassumption. }
-        eassumption.
-        2: {
-          eassumption. }
-        eassumption.
+        try(
+        edestruct IHt2;
+        
+        [apply H8 | apply H10
+         | eapply sig_term_ev_bseqr; [apply H1 | apply Heqp5 | apply H30]
+         | apply H2 | apply H30 | apply H33 | apply H16 | apply Heqp5 | idtac]);
+        
 
-        destruct_conjs.
-        eauto.
+        try
+          (
+            edestruct IHt2;
+        
+            [apply H8 | apply H10
+             | eapply sig_term_ev_bseqr; [apply H1 | apply Heqp5 | apply H30]
+             | apply H5 | (ff; tauto) | apply H33 | apply H16 | apply Heqp5 | idtac]);
+        destruct_conjs; eauto.
 
-
-      ++
-        edestruct IHt2.
-        eassumption.
-        eassumption.
-        eapply sig_term_ev_bseqr.
-        eassumption.
-        eassumption.
-        eassumption.
-        4: { eassumption. }
-        4: { eassumption. }
-        econstructor. tauto.
-        ff.
-        eassumption.
-
-        destruct_conjs.
-        eauto.
 
   - (* abpar case *)
     do_wf_pieces.
@@ -3532,155 +3433,59 @@ Proof.
         try do_evsub_ihhh'.
 
     +
+
       repeat jkjke'; ff.
       repeat jkjke'; repeat ff.
       repeat rewrite fold_recev in *.
 
-      do_nhse_nosplit.
+      do_nhse_nosplit.  
       
-      destruct s; destruct s; destruct s0; ff.
-      ++
+      destruct s; destruct s; destruct s0; ff;
+        rewrite fold_recev in *;
         
-        edestruct IHt1.
-        eassumption.
-        eassumption.
-        eapply sig_term_ev_bparl.
-        eassumption.
-        eassumption.
-        eassumption.
-        4: { eassumption. }
-        2: { eassumption. }
-        eassumption.
-        2: {
-          eassumption. }
-        eassumption.
-
-        destruct_conjs.
-        eauto.
-      ++
-        edestruct IHt1.
-        eassumption.
-        eassumption.
-        eapply sig_term_ev_bparl.
-        eassumption.
-        eassumption.
-        eassumption.
-        4: { eassumption. }
-        2: { eassumption. }
-        eassumption.
-        2: {
-          eassumption. }
-        eassumption.
-
-        destruct_conjs.
-        eauto.
-
-      ++
-        edestruct IHt1.
-        eassumption.
-        eassumption.
-        eapply sig_term_ev_bparl.
-        eassumption.
-        eassumption.
-        eassumption.
-        4: { eassumption. }
-        4: { eassumption. }
-        econstructor. tauto.
-        ff.
-        eassumption.
         
-        destruct_conjs.
-        eauto.
-      ++
-        edestruct IHt1.
-        eassumption.
-        eassumption.
-        eapply sig_term_ev_bparl.
-        eassumption.
-        eassumption.
-        eassumption.
-        4: { eassumption. }
-        4: { eassumption. }
-        econstructor. tauto.
-        ff.
-        eassumption.
+        try(
+        edestruct IHt1;
         
-        destruct_conjs.
-        eauto.
+        [apply H7 | apply H9
+         | eapply sig_term_ev_bparl; [apply H1 | apply Heqp0 | apply H30]
+         | apply H2 | apply H30 | apply H34 | apply H16 | apply Heqp0 | idtac]);
+
+        try
+          (
+            edestruct IHt1;
+        
+            [apply H7 | apply H9
+             | eapply sig_term_ev_bparl; [apply H1 | apply Heqp0 | apply H30]
+             | apply H4 | (ff; tauto) | apply H34 | apply H16 | apply Heqp0 | idtac]);
+        destruct_conjs; eauto.
 
     +
+
       repeat jkjke'; ff.
       repeat jkjke'; repeat ff.
       repeat rewrite fold_recev in *.
 
       do_nhse_nosplit.
       
-      destruct s; destruct s; destruct s0; ff.
-      ++
-        edestruct IHt2.
-        eassumption.
-        eassumption.
-        eapply sig_term_ev_bparr.
-        eassumption.
-        eassumption.
-        eassumption.
-        4: { eassumption. }
-        2: { eassumption. }
-        eassumption.
-        2: { eassumption. }
-        eassumption.
-
-        destruct_conjs.
-        eauto.
-      ++
-        edestruct IHt2.
-        eassumption.
-        eassumption.
-        eapply sig_term_ev_bparr.
-        eassumption.
-        eassumption.
-        eassumption.
-        4: { eassumption. }
-        4: { eassumption. }
-        econstructor. tauto.
-        ff.
-        eassumption.
+      destruct s; destruct s; destruct s0; ff;
+        rewrite fold_recev in *;
         
-        destruct_conjs.
-        eauto.
-
-      ++  
-        edestruct IHt2.
-        eassumption.
-        eassumption.
-        eapply sig_term_ev_bparr.
-        eassumption.
-        eassumption.
-        eassumption.
-        4: { eassumption. }
-        2: { eassumption. }
-        eassumption.
-        2: {
-          eassumption. }
-        eassumption.
-
-        destruct_conjs.
-        eauto.
-
-      ++
-        edestruct IHt2.
-        eassumption.
-        eassumption.
-        eapply sig_term_ev_bparr.
-        eassumption.
-        eassumption.
-        eassumption.
-        4: { eassumption. }
-        4: { eassumption. }
-        econstructor. tauto.
-        ff.
-        eassumption.
         
-        destruct_conjs.
-        eauto.
+        try(
+        edestruct IHt2;
+        
+        [apply H8 | apply H10
+         | eapply sig_term_ev_bparr; [apply H1 | apply Heqp5 | apply H30]
+         | apply H2 | apply H30 | apply H33 | apply H16 | apply Heqp5 | idtac]);
+        
+
+        try
+          (
+            edestruct IHt2;
+        
+            [apply H8 | apply H10
+             | eapply sig_term_ev_bparr; [apply H1 | apply Heqp5 | apply H30]
+             | apply H5 | (ff; tauto) | apply H33 | apply H16 | apply Heqp5 | idtac]);
+        destruct_conjs; eauto.
 Defined.
