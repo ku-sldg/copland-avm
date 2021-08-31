@@ -3145,7 +3145,7 @@ Lemma gg_preserved': forall t p et n p0 et'
     (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
 
     (
-      (exists bits e'', EvSub (ggc p0 (do_sig (MonadVM.encodeEv (evc bits et')) p0) e'') e' /\
+      (exists bits e'', EvSub (ggc p0 (do_sig (MonadVM.encodeEv (evc bits et')) p0 n) e'') e' /\
                    et_fun e'' = et'
       )
     ).

@@ -131,9 +131,11 @@ Inductive appEvent_EvidenceC : Ev -> EvidenceC -> Prop :=
     EvSub (hhc pi (checkHash et pi bs) et) e ->
     appEvent_EvidenceC (umeas n p i args tpl tid) e.
 
+Require Import MonadVM.
+
 Inductive appEvent_Sig_EvidenceC: Ev -> EvidenceC -> Prop :=
-| asigc: forall n p sig e e' e'',
-    EvSub (ggc p (checkSig e' p sig) e'') e ->
+| asigc: forall n p e e' e'' ee,
+    EvSub (ggc p (checkSig e' p (do_sig ee p n)) e'') e ->
     appEvent_Sig_EvidenceC (sign n p (et_fun e')) e.
 
 Definition none_none_term (t:AnnoTerm): Prop :=
@@ -356,10 +358,12 @@ Proof.
   lia.
 Defined.
 
+Locate encodeEv.
+
 Lemma recon_encodeEv : forall ls et ec,
     wf_ec (evc ls et) -> 
     reconstruct_ev' ls et = Some ec ->
-    ls = encodeEv ec.
+    ls = Appraisal_Defs.encodeEv ec.
 Proof.
   intros.
   generalizeEverythingElse ec.
@@ -452,7 +456,7 @@ Proof.
     invc H.
     ff.
 
-    assert ((firstn (et_size H1) ls) = encodeEv ec1).
+    assert ((firstn (et_size H1) ls) = Appraisal_Defs.encodeEv ec1).
     { eapply IHec1 with (et:= H1).
       econstructor.
       eapply firstn_long.
@@ -460,7 +464,7 @@ Proof.
       eassumption.
     }
 
-    assert ((skipn (et_size H1) ls) = encodeEv ec2).
+    assert ((skipn (et_size H1) ls) = Appraisal_Defs.encodeEv ec2).
     {
       eapply IHec2 with (et := H2).
       econstructor.
@@ -484,7 +488,7 @@ Proof.
     invc H.
     ff.
 
-    assert ((firstn (et_size H1) ls) = encodeEv ec1).
+    assert ((firstn (et_size H1) ls) = Appraisal_Defs.encodeEv ec1).
     { eapply IHec1 with (et:= H1).
       econstructor.
       eapply firstn_long.
@@ -492,7 +496,7 @@ Proof.
       eassumption.
     }
 
-    assert ((skipn (et_size H1) ls) = encodeEv ec2).
+    assert ((skipn (et_size H1) ls) = Appraisal_Defs.encodeEv ec2).
     {
       eapply IHec2 with (et := H2).
       econstructor.

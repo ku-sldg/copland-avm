@@ -15,9 +15,9 @@ Import ListNotations.
 
 Set Nested Proofs Allowed.
 
-Lemma ggc_app: forall p0 x e H4 e',
-    EvSub (ggc p0 (do_sig (MonadVM.encodeEv (evc x e)) p0) H4) e' ->
-    exists e'' sigbs,
+Lemma ggc_app: forall p0 sigbs H4 e'(*p0 x e H4 e' n*),
+    EvSub (ggc p0 sigbs(*(do_sig (MonadVM.encodeEv (evc x e)) p0 n)*) H4) e' ->
+    exists e'',
       EvSub
         (ggc p0 (checkSig H4 p0 sigbs) e'')
         (build_app_comp_evC e').
@@ -29,23 +29,26 @@ Proof.
   -
     evSubFacts.
     edestruct IHe'; eauto.
+    (*
     destruct_conjs.
     subst.
     repeat eexists.
-    eauto.
+    eauto. *)
   -
     ff.
     invc H.
     +
       exists ((build_app_comp_evC e')).
-      exists ((do_sig (MonadVM.encodeEv (evc x e)) n)).
+      (*
+      exists ((do_sig (MonadVM.encodeEv (evc x e)) n n1)). *)
       econstructor.
     +
       edestruct IHe'; eauto.
+      (*
       destruct_conjs.
       subst.
       repeat eexists.
-      eauto.
+      eauto. *)
   -
     ff.
     invc H.
@@ -59,32 +62,36 @@ Proof.
     evSubFacts.
     +
       edestruct IHe'1; eauto.
+      (*
       destruct_conjs.
       subst.
       repeat eexists.
-      eauto.
+      eauto. *)
     +
       edestruct IHe'2; eauto.
+      (*
       destruct_conjs.
       subst.
       repeat eexists.
-      eauto.
+      eauto. *)
   -
     evSubFacts.
     +
       edestruct IHe'1; eauto.
+      (*
       destruct_conjs.
       subst.
       repeat eexists.
-      eauto.
+      eauto. *)
     +
       edestruct IHe'2; eauto.
+      (*
       destruct_conjs.
       subst.
       repeat eexists.
       eauto.
       Unshelve.
-      eauto.
+      eauto. *)
 Defined.
 
 Lemma appraisal_correct_sig : forall t e e' tr tr' p p' ecc ev ee,
@@ -224,6 +231,9 @@ Proof.
 
       subst.
       econstructor.
+
+
+      
       repeat jkjke'.
       repeat ff.
       
