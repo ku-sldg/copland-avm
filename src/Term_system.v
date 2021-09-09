@@ -13,7 +13,9 @@ University of California.  See license.txt for details. *)
 
 Require Import Preamble More_lists StructTactics Defs Term_Defs Term Event_system.
 
-Require Import Omega Lia List.
+Require Import Lia List PeanoNat.
+
+Search "succ".
 
 Set Nested Proofs Allowed.
 
@@ -86,6 +88,8 @@ Ltac do_evin :=
 (** The events in the event system correspond to the events associated
     with a term, a place, and some evidence. *)
 
+Search "succ".
+
 Lemma evsys_events:
   forall t p e ev,
     well_formed_r t ->
@@ -102,7 +106,7 @@ Proof.
           inv_events; auto);
           
           repeat (find_rewrite; simpl in * );
-          (find_apply_lem_hyp Nat.succ_inj) ; subst; auto;
+          (find_apply_lem_hyp Nat.succ_inj  ) ; subst; auto;
             tauto.
 Defined.
 

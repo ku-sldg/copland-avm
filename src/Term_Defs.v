@@ -42,6 +42,10 @@ Notation TARG_ID := nat (only parsing).
 Notation N_ID := nat (only parsing).
 Notation Arg := nat (only parsing).
 
+(*
+Definition BS := nat.
+*)
+
 Inductive ASP: Set :=
 | CPY: ASP
 | ASPC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP

@@ -914,3 +914,33 @@ Proof.
   eassumption.
   eassumption.
 Defined.
+
+Lemma appraisal_correct_alt_et : forall t e' tr tr' p p' bits bits' et et' et'' ev,
+    well_formed_r t ->
+    not_none_none t ->
+    wf_ec (evc bits et) ->
+    et' = aeval t p et ->
+    copland_compile t
+                    {| st_ev := (evc bits et); st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := (evc bits' et'');
+                 st_trace := tr';
+                 st_pl := p' |}) ->
+
+    measEvent t p et ev ->
+    Some e' = Impl_appraisal_alt.build_app_comp_evC et' bits' ->
+    appEvent_EvidenceC ev e'.
+Proof.
+  intros.
+  assert (et'' = et').
+  {
+    subst.
+    rewrite <- eval_aeval.
+    eapply cvm_refines_lts_evidence.
+    eassumption.
+    eassumption.
+  }
+  subst.
+
+  eapply appraisal_correct_alt; eauto.
+Defined.
+  

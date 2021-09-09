@@ -88,7 +88,7 @@ Definition invoke_ASP (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID) (x:nat) : 
 Definition encodeEv (e:EvC): BS.
 Admitted.
 
-Definition do_sig (bs:BS) (p:Plc) (sigTag:BS) : BS.
+Definition do_sig (bs:BS) (p:Plc) (sigTag:nat) : BS.
 Admitted.
 
 Definition do_hash (bs:BS) (p:Plc) : BS.
@@ -98,7 +98,11 @@ Definition tag_SIG (x:nat) (p:Plc) (e:EvC) : CVM unit :=
   add_tracem [sign x p (get_et e)].
 
 Definition cons_gg (sig:BS) (e:EvC) (p:Plc): EvC :=
-  evc (sig :: (get_bits e)) (gg p (get_et e)).
+  match e with
+  | evc bits et =>
+    evc (sig :: bits) (gg p et)
+  end.
+    
 (*
   match e with
   | evc bits et => evc (sig :: bits) (gg p et)

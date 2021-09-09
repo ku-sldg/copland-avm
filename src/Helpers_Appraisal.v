@@ -976,6 +976,7 @@ Proof.
       try unfold cons_uu in *;
       try unfold cons_gg in *;
       (repeat ff; try eauto).
+    (*
     +
       destruct ecc.
       ff.
@@ -984,8 +985,9 @@ Proof.
         eapply etfun_reconstruct; eauto.
       }
       subst.
-      jkjke'.
       ff.
+      jkjke'.
+      ff. *)
     +
       destruct ecc.
       ff.
@@ -1239,6 +1241,11 @@ Proof.
     eauto.
   -
     do_ggsub.
+    right.
+    eauto.
+    (*
+    left.
+    e
     evSubFacts.
     +
       right.
@@ -1246,7 +1253,7 @@ Proof.
       econstructor.
     +
       destruct ecc; ff.
-      jkjke'.
+      jkjke'. *)
   -
     do_ggsub.
     evSubFacts.
@@ -2127,11 +2134,18 @@ Proof.
     repeat ff.
     unfold not_hash_sig_term_ev in *;
       destruct_conjs.
+
     (*
+    
     assert (not_hash_sig_ev e).
     {
       eapply not_ev; eauto.
     } *)
+    unfold cons_gg in *.
+    destruct ecc.
+    ff.
+    rewrite fold_recev in *.
+    (*
     rewrite fold_recev in *.
     assert ((evc (get_bits ecc) (get_et ecc)) = ecc).
     {
@@ -2139,8 +2153,10 @@ Proof.
       ff.
     }
     rewrite H5 in *; clear H5.
-    jkjke'.
-    ff. 
+     *)
+    
+    jkjke'. 
+    ff.
     eapply not_hshsig_ggc; eauto.
   -
     assert (not_hash_sig_ev e).
