@@ -43,7 +43,8 @@ Fixpoint build_app_comp_evC (et:Evidence) (ls:EvBits) : option EvidenceC :=
     Some (ggc p (checkSigBits ls' p bs) x)
   | hh p et =>
     '(bs, _) <- peel_bs ls ;;
-    Some (hhc p (checkHash et p bs) et)
+    res <- checkHash et p bs ;;
+    Some (hhc p res et)
   | nn nid =>
     '(bs, _) <- peel_bs ls ;;
     Some (nnc nid bs) (* TODO: check nonce *)

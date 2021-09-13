@@ -1,6 +1,6 @@
 Require Import ConcreteEvidence. (* Term GenStMonad MonadVM MonadAM. *)
 
-Require Import Appraisal_Defs. (* Require Import Impl_vm StAM. *)
+Require Import OptMonad Appraisal_Defs.  (* Require Import Impl_vm StAM. *)
 
 Require Import List.
 Import ListNotations.
@@ -16,7 +16,7 @@ Fixpoint build_app_comp_evC (e:EvidenceC) : EvidenceC :=
     ggc p (checkSig e' p bs)
         (build_app_comp_evC e')
   | hhc p bs et =>
-    hhc p (checkHash et p bs) et
+    hhc p (fromSome 0 (checkHash et p bs)) et
   | nnc nid bs =>
     nnc nid bs (* TODO: check nonce *)
   | ssc e1 e2 =>

@@ -107,8 +107,33 @@ Admitted.
 Definition checkSig (e:EvidenceC) (p:Plc) (sig:BS) : BS :=
   checkSigBits (encodeEv e) p sig.
 
-Definition checkHash (e:Evidence) (p:Plc) (hash:BS) : BS.
+Fixpoint checkHash (e:Evidence) (p:Plc) (hash:BS) : option BS :=
+  match e with
+  | gg _ _ => None
+  | uu _ _ _ _ e' => checkHash e' p hash
+  | hh _ e' => checkHash e' p hash
+  | ss e1 e2 =>
+    res1 <- checkHash e1 p hash ;;
+    res2 <- checkHash e2 p hash ;;
+    ret 1
+  | pp e1 e2 =>
+    res1 <- checkHash e1 p hash ;;
+    res2 <- checkHash e2 p hash ;;
+    ret 1
+  | _ => None
+  end.
+
+(*
+
+Definition checkHash (e:Evidence) (p:Plc) (hash:BS) : BS :=
+  fromSome 0 None.
+  (*
+  fromSome 0 (checkHash' e p hash). *)
+ *)
+
+(*
 Admitted.
+ *)
 
 Inductive evidenceEvent: Ev -> Prop :=
 | uev: forall n p i args tpl tid, evidenceEvent (umeas n p i args tpl tid).
@@ -128,7 +153,7 @@ Inductive appEvent_EvidenceC : Ev -> EvidenceC -> Prop :=
     appEvent_EvidenceC (umeas n p i args tpl tid) e
 | ahuc: forall i args tpl tid e' et n p pi bs e,
     EvSubT (uu i args tpl tid  e') et ->
-    EvSub (hhc pi (checkHash et pi bs) et) e ->
+    EvSub (hhc pi (fromSome 0 (checkHash et pi bs)) et) e ->
     appEvent_EvidenceC (umeas n p i args tpl tid) e.
 
 Require Import MonadVM.

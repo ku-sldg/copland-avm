@@ -2,6 +2,8 @@ Require Import ConcreteEvidence Appraisal_Defs StVM Impl_vm Impl_appraisal Auto 
 
 Require Import Coq.Program.Tactics Lia.
 
+Require Import OptMonad.
+
 Require Import List.
 Import ListNotations.
 
@@ -35,7 +37,7 @@ Defined.
 
 Lemma hhc_app: forall e' p bs et,
     EvSub (hhc p bs et) e' ->
-    EvSub (hhc p (checkHash et p bs) et)
+    EvSub (hhc p (fromSome 0 (checkHash et p bs)) et)
           (build_app_comp_evC e').
 Proof.
   intros.

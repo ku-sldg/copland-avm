@@ -94,6 +94,41 @@ Proof.
       eauto. *)
 Defined.
 
+
+(*
+Lemma appraisal_correct_alt : forall t e' tr tr' p p' bits' et' ev ee,
+    well_formed_r t ->
+    not_none_none t ->
+    wf_ec ee ->
+    copland_compile t
+                    {| st_ev := ee; st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := (evc bits' et');
+                 st_trace := tr';
+                 st_pl := p' |}) ->
+
+    measEvent t p (get_et ee) ev ->
+    Some e' = Impl_appraisal_alt.build_app_comp_evC et' bits' ->
+    appEvent_EvidenceC ev e'.
+Proof.
+ *)
+
+(*
+Lemma appraisal_correct_alt : forall t e' tr tr' p p' bits' et' ev ee,
+    well_formed_r t ->
+    not_none_none t ->
+    wf_ec ee ->
+    copland_compile t
+                    {| st_ev := ee; st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := (evc bits' et');
+                 st_trace := tr';
+                 st_pl := p' |}) ->
+
+    measEvent t p (get_et ee) ev ->
+    Some e' = Impl_appraisal_alt.build_app_comp_evC et' bits' ->
+    appEvent_EvidenceC ev e'.
+Proof.
+ *)
+
 Lemma appraisal_correct_sig : forall t e e' tr tr' p p' ecc ev ee,
     well_formed_r t ->
     not_none_none t ->
@@ -882,6 +917,72 @@ Proof.
 Defined.
 
 Require Import Impl_appraisal_alt Appraisal_AltImpls_Eq.
+
+Lemma appraisal_correct_sig_alt : forall t e e' tr tr' p p' bits' et' ev ee,
+    well_formed_r t ->
+    not_none_none t ->
+    not_hash_sig_term_ev t e ->
+    wf_ec ee ->
+    Some e = (reconstruct_ev ee) ->
+    copland_compile t
+                    {| st_ev := ee; st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := (evc bits' et');
+                 st_trace := tr';
+                 st_pl := p' |}) ->
+
+    sigEvent t p (get_et ee) ev ->
+    Some e' = Impl_appraisal_alt.build_app_comp_evC et' bits' ->
+    appEvent_Sig_EvidenceC ev e'.
+Proof.
+  intros.
+  ff.
+  do_wfec_preserved.
+  do_somerecons.
+  erewrite appraisal_alt.
+  eapply appraisal_correct_sig.
+  eassumption.
+  eassumption.
+  eassumption.
+  4: { eassumption. }
+  eassumption.
+  2: { eassumption. }
+  2: { eassumption. }
+  eassumption.
+  eassumption.
+  eassumption.
+  tauto.
+Defined.
+
+Lemma appraisal_correct_sig_alt_et : forall t bits et et' et'' e e' tr tr' p p' bits' ev,
+    well_formed_r t ->
+    not_none_none t ->
+    not_hash_sig_term_ev t e ->
+    wf_ec (evc bits et) ->
+    et' = aeval t p et ->
+    Some e = (reconstruct_ev (evc bits et)) ->
+    copland_compile t
+                    {| st_ev := (evc bits et); st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := (evc bits' et'');
+                 st_trace := tr';
+                 st_pl := p' |}) ->
+
+    sigEvent t p et ev ->
+    Some e' = Impl_appraisal_alt.build_app_comp_evC et' bits' ->
+    appEvent_Sig_EvidenceC ev e'.
+Proof.
+  intros.
+  assert (et'' = et').
+  {
+    subst.
+    rewrite <- eval_aeval.
+    eapply cvm_refines_lts_evidence.
+    eassumption.
+    eassumption.
+  }
+  subst.
+
+  eapply appraisal_correct_sig_alt; eauto.
+Defined.
 
 
 Lemma appraisal_correct_alt : forall t e' tr tr' p p' bits' et' ev ee,
