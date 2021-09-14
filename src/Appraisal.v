@@ -49,6 +49,8 @@ Proof.
       subst.
       repeat eexists.
       eauto. *)
+
+      (*
   -
     ff.
     invc H.
@@ -56,7 +58,7 @@ Proof.
     repeat eexists.
     econstructor.
     ff.
-    eassumption.
+    eassumption. *)
     
   -
     evSubFacts.

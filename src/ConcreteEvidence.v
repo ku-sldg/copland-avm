@@ -110,9 +110,9 @@ Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
 | ggSub: forall e e' p bs,
     EvSub e e' ->
     EvSub e (ggc p bs e')
-| hhSub: forall e et p bs,
+(*| hhSub: forall e et p bs,
     EvSubT (et_fun e) et ->
-    EvSub e (hhc p bs et)
+    EvSub e (hhc p bs et) *)
 | ssSubl: forall e e' e'',
     EvSub e e' ->
     EvSub e (ssc e' e'')
@@ -229,6 +229,7 @@ Proof.
       destruct_conjs.
       subst.
       fff.
+      (*
       invc H.
       ++
         fff.
@@ -240,7 +241,7 @@ Proof.
           eassumption.
         }
         apply hhSubT.
-        eassumption.
+        eassumption. *)
     +
       assert (EvSubT (et_fun e0) e) by eauto.
       apply hhSubT. eassumption.
@@ -439,6 +440,7 @@ Proof.
     invc H0; eauto.
   -
     invc H0; eauto.
+    (*
   -
     invc H0.
     +
@@ -447,6 +449,8 @@ Proof.
       econstructor.
 
       eapply evsub_hh; eauto.
+     *)
+    
   -
     invc H0; eauto.
   -

@@ -680,10 +680,11 @@ Defined.
 
 Lemma gg_recons: forall e ecc x y,
     Some e = reconstruct_ev ecc ->
+    not_hash_sig_ev e ->
     EvSubT (gg x y) (get_et ecc) ->
     gg_sub e.
 Proof.
-  intros e ecc x y H H0.
+  intros e ecc x y H H0 H1.
   generalizeEverythingElse e.
   induction e; intros; ff.
   -
@@ -709,12 +710,22 @@ Proof.
     rewrite fold_recev in *.
     assert (gg_sub e2).
     {
-      eapply IHe with (ecc:=(evc e1 H1)).
+      eapply IHe with (ecc:=(evc e1 H2)).
       symmetry.
       find_apply_hyp_goal.
       ff.
+      Print not_hash_sig_ev.
+      unfold not_hash_sig_ev in H0.
+      unfold not_hash_sig_ev.
+      unfold not in *.
+      intros.
+      eapply H0.
+      eassumption.
+      eauto.
+      ff.
       eassumption.
     }
+
     do_ggsub. 
     repeat eexists.
     eauto.
@@ -744,10 +755,21 @@ Proof.
     }
     destruct_conjs.
     subst.
+
+    unfold not_hash_sig_ev in H0.
+    unfold not in *.
+    exfalso.
+    eapply H0.
+    2: { econstructor. }
+    econstructor.
+    repeat eexists.
+    eassumption.
+
+    (*
     
     econstructor.
     repeat eexists.
-    eauto.
+    eauto. *)
   -
     destruct ecc; ff;
       do_inv_recon.
@@ -772,6 +794,9 @@ Proof.
         symmetry.
         eassumption.
         ff.
+        unfold not_hash_sig_ev in *.
+        unfold not in *.
+        eauto.
         eassumption.
       }
       do_ggsub.
@@ -785,6 +810,9 @@ Proof.
         symmetry.
         eassumption.
         ff.
+        unfold not_hash_sig_ev in *.
+        unfold not in *.
+        eauto.
         eassumption.
       }
       do_ggsub.
@@ -814,6 +842,9 @@ Proof.
         symmetry.
         eassumption.
         ff.
+        unfold not_hash_sig_ev in *.
+        unfold not in *.
+        eauto.
         eassumption.
       }
       do_ggsub.
@@ -827,15 +858,17 @@ Proof.
         symmetry.
         eassumption.
         ff.
+        unfold not_hash_sig_ev in *.
+        unfold not in *.
+        eauto.
         eassumption.
       }
       do_ggsub.
       repeat eexists.
       eauto.
-      Unshelve.
-      eauto.
 Defined.
 
+(*
 Lemma hh_recons: forall e ecc x y,
     Some e = reconstruct_ev ecc ->
     EvSubT (hh x y) (get_et ecc) ->
@@ -894,7 +927,8 @@ Proof.
     repeat ff.
     evSubTFacts.
     eauto.
-    eauto.
+    
+    HERE
 
   -
     destruct ecc; ff;
@@ -948,6 +982,7 @@ Proof.
       Unshelve.
       eauto.
 Defined.
+*)
 
 Lemma evAccum: forall t p (e e' e'':EvidenceC) tr tr' p' (ecc ecc':EvC),
 
@@ -1259,9 +1294,10 @@ Proof.
   -
     do_ggsub.
     evSubFacts.
+    (*
     ff.
     left.
-    eapply gg_recons; eauto.
+    eapply gg_recons; eauto. *)
   -
     do_wf_pieces.
 
@@ -2194,6 +2230,8 @@ Proof.
 
     eapply gg_recons; eauto.
 
+    (*
+
     ff.
 
     edestruct hh_recons.
@@ -2207,7 +2245,7 @@ Proof.
     econstructor.
     repeat eexists.
     eassumption.
-    eassumption.
+    eassumption. *)
 
   - (* aatt case *)
     do_wf_pieces.
