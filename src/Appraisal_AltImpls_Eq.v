@@ -60,7 +60,8 @@ Proof.
       tauto.
     }
     subst.
-    congruence.
+    unfold checkASPF.
+    jkjke.
   -
     ff.
     subst.
@@ -80,6 +81,8 @@ Proof.
     }
     subst.
     unfold checkSig.
+    unfold checkSigF.
+    unfold checkSig.
     assert (checkSigBits e n n1 =
             checkSigBits (encodeEv e1) n n1).
     {
@@ -92,7 +95,9 @@ Proof.
       }
       congruence.
     }
-    congruence.
+    rewrite <- H.
+    rewrite Heqo1.
+    ff.
   -
     ff.
     subst.

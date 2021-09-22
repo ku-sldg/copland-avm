@@ -10,10 +10,10 @@ Fixpoint build_app_comp_evC (e:EvidenceC) : EvidenceC :=
   | mtc => mtc
               
   | uuc i args tpl tid bs e' =>
-    uuc i args tpl tid (checkASP i args tpl tid bs)
+    uuc i args tpl tid (checkASPF i args tpl tid bs)
         (build_app_comp_evC e')
   | ggc p bs e' =>
-    ggc p (checkSig e' p bs)
+    ggc p (checkSigF e' p bs)
         (build_app_comp_evC e')
   | hhc p bs et =>
     hhc p (fromSome 0 (checkHash et p bs)) et

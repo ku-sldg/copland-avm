@@ -35,12 +35,14 @@ Fixpoint build_app_comp_evC (et:Evidence) (ls:EvBits) : option EvidenceC :=
   | uu i args tpl tid et' =>
     '(bs, ls') <- peel_bs ls ;;
     x <- build_app_comp_evC et' ls' ;;
-    Some (uuc i args tpl tid (checkASP i args tpl tid bs) x)
+    res <- checkASP i args tpl tid bs ;;
+    Some (uuc i args tpl tid res x)
     
   | gg p et' =>
     '(bs, ls') <- peel_bs ls ;;
     x <- build_app_comp_evC et' ls' ;;
-    Some (ggc p (checkSigBits ls' p bs) x)
+    res <- checkSigBits ls' p bs ;;
+    Some (ggc p res x)
   | hh p et =>
     '(bs, _) <- peel_bs ls ;;
     res <- checkHash et p bs ;;

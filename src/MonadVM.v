@@ -85,7 +85,7 @@ Definition invoke_ASP (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID) (x:nat) : 
   e <- get_ev ;;
   ret (cons_uu bs e i l tpl tid).
 
-Definition encodeEv (e:EvC): BS.
+Definition encodeEvBits (e:EvC): BS.
 Admitted.
 
 Definition do_sig (bs:BS) (p:Plc) (sigTag:nat) : BS.
@@ -114,7 +114,7 @@ Definition signEv (x:nat) : CVM EvC :=
   p <- get_pl ;;
   e <- get_ev ;;
   tag_SIG x p e ;;
-  ret (cons_gg (do_sig (encodeEv e) p x) e p).
+  ret (cons_gg (do_sig (encodeEvBits e) p x) e p).
 
 Definition tag_HSH (x:nat) (p:Plc) (e:EvC): CVM unit :=
   add_tracem [hash x p (get_et e)].
@@ -129,7 +129,7 @@ Definition hashEv (x:nat) : CVM EvC :=
   p <- get_pl ;;
   e <- get_ev ;;
   tag_HSH x p e ;;
-  ret (cons_hh (do_hash (encodeEv e) p) e p).
+  ret (cons_hh (do_hash (encodeEvBits e) p) e p).
 
 Definition copyEv (x:nat) : CVM EvC :=
   p <- get_pl ;;

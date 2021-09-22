@@ -19,7 +19,7 @@ Lemma ggc_app: forall p0 sigbs H4 e'(*p0 x e H4 e' n*),
     EvSub (ggc p0 sigbs(*(do_sig (MonadVM.encodeEv (evc x e)) p0 n)*) H4) e' ->
     exists e'',
       EvSub
-        (ggc p0 (checkSig H4 p0 sigbs) e'')
+        (ggc p0 (checkSigF H4 p0 sigbs) e'')
         (build_app_comp_evC e').
 Proof.
   intros.
@@ -187,10 +187,13 @@ Proof.
     unfold not in *; intros.
     apply H9.
     eassumption.
-    invc H11.
+    (*
+    invc H11. *)
     econstructor.
+    eauto.
+    (*
     econstructor.
-    eassumption.
+    eassumption. *)
     eassumption.
     eassumption.
     eassumption.
@@ -691,7 +694,7 @@ Proof.
       destruct_conjs.
 
       assert (
-          exists e'', EvSub (uuc i args tpl tid (checkASP i args tpl tid n) e'')
+          exists e'', EvSub (uuc i args tpl tid (checkASPF i args tpl tid n) e'')
                        (build_app_comp_evC e')).
       {
         

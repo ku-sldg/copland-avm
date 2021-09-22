@@ -24,7 +24,7 @@ Ltac do_ggsub :=
 
 Lemma uuc_app: forall e' e'' i args tpl tid n,
     EvSub (uuc i args tpl tid n e'') e' ->
-    exists e'', EvSub (uuc i args tpl tid (checkASP i args tpl tid n) e'')
+    exists e'', EvSub (uuc i args tpl tid (checkASPF i args tpl tid n) e'')
                  (build_app_comp_evC e').
 Proof.
   intros.
@@ -1233,6 +1233,8 @@ Proof.
     eauto.
   -  
     split; eauto.
+
+    (*
     unfold not.
     intros.
     destruct_conjs.
@@ -1240,7 +1242,7 @@ Proof.
     destruct_conjs.
     find_eapply_hyp_hyp.
     econstructor.
-    eauto.
+    eauto. *)
 Defined.
 
 Lemma sig_is: forall t ecc ecc' e e' tr tr' p p',
@@ -1831,7 +1833,8 @@ Proof.
     eauto.
     eauto.
     eauto.
-  -    
+
+  -
     destruct s.
     destruct s; destruct s0; ff;
       try (
@@ -1989,13 +1992,14 @@ Proof.
   invc H.
   destruct_conjs.
   econstructor.
+  
   cbv.
   intros.
   destruct_conjs.
   subst.
   unfold not_hash_sig_term in *.
   unfold not in *.
-  eapply H0 with (t':=(alseq (n2, n3) H4 H2)).
+  eapply H0. (*with (t':=(alseq (n2, n3) H4 H2)). *)
   econstructor.
   repeat eexists.
   eassumption.
@@ -2011,12 +2015,15 @@ Proof.
   destruct_conjs.
   eapply H1.
   eassumption.
-  do_hsh_subt.
+  (*
+  do_hsh_subt. *)
   econstructor.
+  eauto.
+  (*
   eapply termsub_transitive.
   eassumption.
   econstructor.
-  econstructor.
+  econstructor. *)
 Defined.
 
 Ltac do_nhste_att :=
@@ -2056,7 +2063,7 @@ Proof.
   unfold not in *.
   intros.
   destruct_conjs.
-  eapply H with (t':= (alseq (n, n0) H4 H2)).
+  eapply H. (*with (t':= (alseq (n, n0) H4 H2)). *)
   econstructor.
   repeat eexists.
   eassumption.
@@ -2274,6 +2281,8 @@ Proof.
 
     do_nhst_lseqr.
 
+    
+
     assert (not_hash_sig_term_ev t2 H9).
     {
       split.
@@ -2299,19 +2308,24 @@ Proof.
         unfold not in H19.
         eapply H19.
         eassumption.
+        eauto.
+        (*
         do_hsh_subt.
         econstructor.
-        eauto.
+        eauto. *)
       +
         do_hsh_subt.
-        unfold not_hash_sig_term_ev in H1.
+        unfold not_hash_sig_term_ev in *.
         destruct_conjs.
-        unfold not_hash_sig_term in H1.
-        unfold not in H1.
-        eapply H1 with (t':= (alseq r t1 t2)).
+        unfold not_hash_sig_term in *.
+        unfold not in *.
+        eapply H1. (*with (t':= (alseq r t1 t2)). *)
+        
+        
         econstructor.
         repeat eexists.
         eassumption.
+        
         eassumption.
         econstructor.
     }
@@ -3201,7 +3215,7 @@ Lemma gg_preserved': forall t p et n p0 et'
     (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
 
     (
-      (exists bits e'', EvSub (ggc p0 (do_sig (MonadVM.encodeEv (evc bits et')) p0 n) e'') e' /\
+      (exists bits e'', EvSub (ggc p0 (do_sig (MonadVM.encodeEvBits (evc bits et')) p0 n) e'') e' /\
                    et_fun e'' = et'
       )
     ).
@@ -3255,8 +3269,10 @@ Proof.
     repeat eexists.
     eassumption.
     econstructor.
+    eauto.
+    (*
     econstructor.
-    eassumption.
+    eassumption. *)
     apply copland_compile_at; eauto.
   - (* alseq case *)
     do_wf_pieces.

@@ -98,18 +98,28 @@ Definition reconstruct_ev (e:EvC) : option EvidenceC :=
   | evc ls et => reconstruct_ev' ls et
   end.
 
-Definition checkASP (i:ASP_ID) (args:list Arg) (tpl:Plc) (tid:Plc) (bs:BS) : BS.
+Definition checkASP (i:ASP_ID) (args:list Arg) (tpl:Plc) (tid:Plc) (bs:BS) : option BS.
 Admitted.
 
-Definition checkSigBits (ls:EvBits) (p:Plc) (sig:BS) : BS.
+Definition checkASPF  (i:ASP_ID) (args:list Arg) (tpl:Plc) (tid:Plc) (bs:BS) : BS := fromSome 0 (checkASP i args tpl tid bs).
+
+Definition checkSigBits (ls:EvBits) (p:Plc) (sig:BS) : option BS.
 Admitted.
 
-Definition checkSig (e:EvidenceC) (p:Plc) (sig:BS) : BS :=
+Definition checkSigBitsF (ls:EvBits) (p:Plc) (sig:BS) : BS :=
+  fromSome 0 (checkSigBits ls p sig).
+
+Definition checkSig (e:EvidenceC) (p:Plc) (sig:BS) : option BS :=
   checkSigBits (encodeEv e) p sig.
+
+Definition checkSigF (e:EvidenceC) (p:Plc) (sig:BS) : BS :=
+  fromSome 0 (checkSig e p sig).
 
 Fixpoint checkHash (e:Evidence) (p:Plc) (hash:BS) : option BS :=
   match e with
   | gg _ _ => None
+  | mt => ret 0 (* TODO: implement reconstruct_hash and ignore mt *)
+  | nn _ => ret 0 (* TODO: reconstruct_hash will grab nonce value here *)
   | uu _ _ _ _ e' => checkHash e' p hash
   | hh _ e' => checkHash e' p hash
   | ss e1 e2 =>
@@ -120,9 +130,10 @@ Fixpoint checkHash (e:Evidence) (p:Plc) (hash:BS) : option BS :=
     res1 <- checkHash e1 p hash ;;
     res2 <- checkHash e2 p hash ;;
     ret 1
-  | _ => None
   end.
 
+Definition checkHashF (e:Evidence) (p:Plc) (hash:BS) : BS :=
+  fromSome 0 (checkHash e p hash).
 (*
 
 Definition checkHash (e:Evidence) (p:Plc) (hash:BS) : BS :=
@@ -149,18 +160,18 @@ Definition sigEvent (t:AnnoTerm) (p:Plc) (e:Evidence) (ev:Ev) : Prop :=
 
 Inductive appEvent_EvidenceC : Ev -> EvidenceC -> Prop :=
 | aeuc: forall i args tpl tid e e' n p,
-    EvSub (uuc i args tpl tid (checkASP i args tpl tid n) e') e ->
+    EvSub (uuc i args tpl tid (checkASPF i args tpl tid n) e') e ->
     appEvent_EvidenceC (umeas n p i args tpl tid) e
 | ahuc: forall i args tpl tid e' et n p pi bs e,
     EvSubT (uu i args tpl tid  e') et ->
-    EvSub (hhc pi (fromSome 0 (checkHash et pi bs)) et) e ->
+    EvSub (hhc pi (checkHashF et pi bs) et) e ->
     appEvent_EvidenceC (umeas n p i args tpl tid) e.
 
 Require Import MonadVM.
 
 Inductive appEvent_Sig_EvidenceC: Ev -> EvidenceC -> Prop :=
 | asigc: forall n p e e' e'' ee,
-    EvSub (ggc p (checkSig e' p (do_sig ee p n)) e'') e ->
+    EvSub (ggc p (checkSigF e' p (do_sig ee p n)) e'') e ->
     appEvent_Sig_EvidenceC (sign n p (et_fun e')) e.
 
 Definition none_none_term (t:AnnoTerm): Prop :=
@@ -175,11 +186,38 @@ Definition not_none_none (t:AnnoTerm) :=
     none_none_term t'  -> 
     ~ (term_sub t' t).
 
+Inductive reaches_HSH : AnnoTerm -> Prop :=
+| rh_hsh: forall r, reaches_HSH (aasp r (HSH))
+| rh_aatt: forall r p t,
+    reaches_HSH t ->
+    reaches_HSH (aatt r p t)
+| rh_lseql: forall r t1 t2,
+    reaches_HSH t1 ->
+    reaches_HSH (alseq r t1 t2)
+| rh_lseqr: forall r t1 t2,
+    reaches_HSH t2 ->
+    reaches_HSH (alseq r t1 t2)
+| rh_bseql: forall r sp2 t1 t2,
+    reaches_HSH t1 ->
+    reaches_HSH (abseq r (ALL,sp2) t1 t2)
+| rh_bseqr: forall r sp1 t1 t2,
+    reaches_HSH t2 ->
+    reaches_HSH (abseq r (sp1,ALL) t1 t2)
+| rh_bparl: forall r sp2 t1 t2,
+    reaches_HSH t1 ->
+    reaches_HSH (abpar r (ALL,sp2) t1 t2)
+| rh_bparr: forall r sp1 t1 t2,
+    reaches_HSH t2 ->
+    reaches_HSH (abpar r (sp1,ALL) t1 t2).
+Hint Constructors reaches_HSH : core.
+
 Definition hash_sig_term (t:AnnoTerm): Prop :=
-  exists r r1 r2 t1 t2,
+  exists r r1 t1 t2,
   t = alseq r t1 t2 /\
   term_sub (aasp r1 SIG) t1 /\
-  term_sub (aasp r2 HSH) t2.
+  reaches_HSH t2.
+  (*
+  term_sub (aasp r2 HSH) t2. *)
 
 Definition not_hash_sig_term (t:AnnoTerm) :=
   forall t',
@@ -206,7 +244,7 @@ Definition hsh_subt (t:AnnoTerm) :=
 Definition not_hash_sig_term_ev (t:AnnoTerm) (e:EvidenceC): Prop :=
   not_hash_sig_term t /\
   not_hash_sig_ev e /\
-  ((gg_sub e) -> ~ (hsh_subt t)).
+  ((gg_sub e) -> ~ (reaches_HSH t)).
 
 Ltac measEventFacts :=
   match goal with
@@ -383,12 +421,10 @@ Proof.
   lia.
 Defined.
 
-Locate encodeEv.
-
 Lemma recon_encodeEv : forall ls et ec,
     wf_ec (evc ls et) -> 
     reconstruct_ev' ls et = Some ec ->
-    ls = Appraisal_Defs.encodeEv ec.
+    ls = encodeEv ec.
 Proof.
   intros.
   generalizeEverythingElse ec.
@@ -481,7 +517,7 @@ Proof.
     invc H.
     ff.
 
-    assert ((firstn (et_size H1) ls) = Appraisal_Defs.encodeEv ec1).
+    assert ((firstn (et_size H1) ls) = encodeEv ec1).
     { eapply IHec1 with (et:= H1).
       econstructor.
       eapply firstn_long.
@@ -489,7 +525,7 @@ Proof.
       eassumption.
     }
 
-    assert ((skipn (et_size H1) ls) = Appraisal_Defs.encodeEv ec2).
+    assert ((skipn (et_size H1) ls) = encodeEv ec2).
     {
       eapply IHec2 with (et := H2).
       econstructor.
@@ -513,7 +549,7 @@ Proof.
     invc H.
     ff.
 
-    assert ((firstn (et_size H1) ls) = Appraisal_Defs.encodeEv ec1).
+    assert ((firstn (et_size H1) ls) = encodeEv ec1).
     { eapply IHec1 with (et:= H1).
       econstructor.
       eapply firstn_long.
@@ -521,7 +557,7 @@ Proof.
       eassumption.
     }
 
-    assert ((skipn (et_size H1) ls) = Appraisal_Defs.encodeEv ec2).
+    assert ((skipn (et_size H1) ls) = encodeEv ec2).
     {
       eapply IHec2 with (et := H2).
       econstructor.
