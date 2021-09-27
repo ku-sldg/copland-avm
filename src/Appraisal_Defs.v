@@ -109,6 +109,12 @@ Admitted.
 Definition checkSigBitsF (ls:EvBits) (p:Plc) (sig:BS) : BS :=
   fromSome 0 (checkSigBits ls p sig).
 
+Definition checkNonce (nid:nat) (val:BS) : option BS.
+Admitted.
+
+Definition checkNonceF (nid:nat) (val:BS) : BS :=
+  fromSome 0 (checkNonce nid val).
+
 Definition checkSig (e:EvidenceC) (p:Plc) (sig:BS) : option BS :=
   checkSigBits (encodeEv e) p sig.
 

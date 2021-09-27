@@ -42,6 +42,8 @@ Proof.
     { eapply inv_recon_nn; eauto. }
     subst.
     repeat ff.
+    unfold checkNonceF.
+    jkjke.
   -
     ff.
     subst.
@@ -106,6 +108,7 @@ Proof.
     }
     subst.
     repeat ff.
+    unfold checkHashF.
     jkjke.
   -
     ff.

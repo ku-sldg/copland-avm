@@ -16,9 +16,9 @@ Fixpoint build_app_comp_evC (e:EvidenceC) : EvidenceC :=
     ggc p (checkSigF e' p bs)
         (build_app_comp_evC e')
   | hhc p bs et =>
-    hhc p (fromSome 0 (checkHash et p bs)) et
+    hhc p (checkHashF et p bs)(*(fromSome 0 (checkHash et p bs))*) et
   | nnc nid bs =>
-    nnc nid bs (* TODO: check nonce *)
+    nnc nid (checkNonceF nid bs)
   | ssc e1 e2 =>
     ssc (build_app_comp_evC e1) (build_app_comp_evC e2)
   | ppc e1 e2 =>

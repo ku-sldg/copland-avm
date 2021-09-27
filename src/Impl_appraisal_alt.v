@@ -49,7 +49,8 @@ Fixpoint build_app_comp_evC (et:Evidence) (ls:EvBits) : option EvidenceC :=
     Some (hhc p res et)
   | nn nid =>
     '(bs, _) <- peel_bs ls ;;
-    Some (nnc nid bs) (* TODO: check nonce *)
+    res <- checkNonce nid bs ;;
+    Some (nnc nid res)
 
   | ss et1 et2 =>
     x <- build_app_comp_evC et1 (firstn (et_size et1) ls) ;;
