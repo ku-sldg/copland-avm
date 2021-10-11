@@ -96,41 +96,6 @@ Proof.
       eauto. *)
 Defined.
 
-
-(*
-Lemma appraisal_correct_alt : forall t e' tr tr' p p' bits' et' ev ee,
-    well_formed_r t ->
-    not_none_none t ->
-    wf_ec ee ->
-    copland_compile t
-                    {| st_ev := ee; st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := (evc bits' et');
-                 st_trace := tr';
-                 st_pl := p' |}) ->
-
-    measEvent t p (get_et ee) ev ->
-    Some e' = Impl_appraisal_alt.build_app_comp_evC et' bits' ->
-    appEvent_EvidenceC ev e'.
-Proof.
- *)
-
-(*
-Lemma appraisal_correct_alt : forall t e' tr tr' p p' bits' et' ev ee,
-    well_formed_r t ->
-    not_none_none t ->
-    wf_ec ee ->
-    copland_compile t
-                    {| st_ev := ee; st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := (evc bits' et');
-                 st_trace := tr';
-                 st_pl := p' |}) ->
-
-    measEvent t p (get_et ee) ev ->
-    Some e' = Impl_appraisal_alt.build_app_comp_evC et' bits' ->
-    appEvent_EvidenceC ev e'.
-Proof.
- *)
-
 Lemma appraisal_correct_sig : forall t e e' tr tr' p p' ecc ev ee,
     well_formed_r t ->
     not_none_none t ->
@@ -694,7 +659,7 @@ Proof.
       destruct_conjs.
 
       assert (
-          exists e'', EvSub (uuc i args tpl tid (checkASPF i args tpl tid n) e'')
+          exists e'', EvSub (uuc i args tpl tid p0 (checkASPF i args tpl tid n) e'')
                        (build_app_comp_evC e')).
       {
         
@@ -1050,3 +1015,53 @@ Proof.
   eapply appraisal_correct_alt; eauto.
 Defined.
   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*
+Lemma appraisal_correct_alt : forall t e' tr tr' p p' bits' et' ev ee,
+    well_formed_r t ->
+    not_none_none t ->
+    wf_ec ee ->
+    copland_compile t
+                    {| st_ev := ee; st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := (evc bits' et');
+                 st_trace := tr';
+                 st_pl := p' |}) ->
+
+    measEvent t p (get_et ee) ev ->
+    Some e' = Impl_appraisal_alt.build_app_comp_evC et' bits' ->
+    appEvent_EvidenceC ev e'.
+Proof.
+ *)
+
+(*
+Lemma appraisal_correct_alt : forall t e' tr tr' p p' bits' et' ev ee,
+    well_formed_r t ->
+    not_none_none t ->
+    wf_ec ee ->
+    copland_compile t
+                    {| st_ev := ee; st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := (evc bits' et');
+                 st_trace := tr';
+                 st_pl := p' |}) ->
+
+    measEvent t p (get_et ee) ev ->
+    Some e' = Impl_appraisal_alt.build_app_comp_evC et' bits' ->
+    appEvent_EvidenceC ev e'.
+Proof.
+ *)

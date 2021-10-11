@@ -437,44 +437,6 @@ Proof.
   ff.
 Defined.
 
-(*
-Lemma splitEv_T_l_LEFT: forall e bits bits' es e0,
-    et_size e = es ->
-    splitEv_l LEFT (evc bits e) = (evc bits' e0) ->
-    et_size e0 = es. (* (splitEv_T_l LEFT es). *)
-Proof.
-  intros.
-  ff.
-Defined.
-*)
-
-(*
-Lemma splitEv_T_l_LEFT: forall e es e0,
-    Ev_Shape e es ->
-    splitEv_l LEFT e = e0 ->
-    Ev_Shape e0 (splitEv_T_l LEFT es).
-Proof.
-  intros.
-  generalizeEverythingElse e.
-  induction e; intros;
-    ff.
-Defined.
-
-Axiom remote_Ev_Shape: forall e es t n,
-    Ev_Shape e es ->
-    Ev_Shape (toRemote t n e) (eval (unanno t) n es).
- *)
-
-(*
-Definition Ev_Shape' (bits:list BS) (et:Evidence) :=
-  length bits = et_size et.
-
-Axiom remote_Ev_Shape: forall et et' t n bits bits',
-    Ev_Shape' bits et ->
-    toRemote t n (evc bits et) = evc bits' et' ->
-    Ev_Shape' bits' (eval (unanno t) n et).
- *)
-
 Lemma cvm_refines_lts_evidence' : forall t tr tr' e e' p p',
     well_formed_r t ->
     copland_compile t (mk_st e tr p) = (Some tt, (mk_st e' tr' p')) ->
@@ -637,387 +599,6 @@ Proof.
   eapply cvm_refines_lts_evidence'; eauto.
 Defined.
 
-
-
-(*
-Lemma cvm_refines_lts_evidence : forall t tr tr' bits bits' et et' p p',
-    well_formed_r t ->
-    copland_compile t (mk_st (evc bits et) tr p) = (Some tt, (mk_st (evc bits' et') tr' p')) ->
-    Ev_Shape' bits et ->
-    (*
-    Term_Defs.eval (unanno t) p es = e's -> *)
-    et' = (Term_Defs.eval (unanno t) p et) /\
-    Ev_Shape' bits' et'.
-
-Proof.
-  induction t; intros.
-  -
-    destruct a;
-      try (
-          df;
-          eauto).
-    +
-      split.
-      eauto.
-      unfold Ev_Shape' in *.
-      ff.
-    +
-      split.
-      eauto.
-      unfold Ev_Shape' in *.
-      ff.
-
-    +
-      split.
-      eauto.
-      unfold Ev_Shape' in *.
-      ff.
-
-  -
-    repeat df. 
-    annogo.
-    do_wf_pieces.
-    edestruct IHt; eauto.
-    rewrite <- H3.
-    apply copland_compile_at.
-    eauto.
-
-  -
-    do_wf_pieces.
-    do_suffix blah.
-    destruct_conjs.
-    subst.
-
-    edestruct alseq_decomp.
-    eassumption.
-    eapply restl.
-    eassumption.
-    eassumption.
-    destruct_conjs.
-    df.
-    dosome.
-
-    destruct x.
-    vmsts.
-
-    edestruct IHt1.
-    eassumption.
-    eassumption.
-    eassumption.
-    subst.
-
-    edestruct IHt2.
-    eassumption. eassumption.
-    eassumption.
-    subst.
-    split.
-    repeat do_pl_immut.
-    subst.
-    eauto.
-    eassumption.     
-  -
-    do_wf_pieces.
-    df.
-    repeat break_match;
-      try solve_by_inversion;
-      try (df; tauto).
-    +
-      df.
-      annogo.
-      simpl in *.
-      do_suffix blah.
-      do_suffix blah'.
-      destruct_conjs; subst.
-      repeat do_restl.
-
-      
-      destruct s; ff.
-      ++
-        edestruct IHt1; eauto.
-        subst.
-        edestruct IHt2.
-        eassumption.
-        eassumption.
-        unfold Ev_Shape'. ff.
-        subst.
-        repeat do_pl_immut. subst.
-        split. eauto. df.
-        unfold Ev_Shape' in *.
-        ff.
-        Search length.
-        rewrite app_length.
-        subst.
-        lia.
-      ++
-        edestruct IHt1; eauto. cbv. lia.
-        subst.
-        edestruct IHt2; eauto.
-        unfold Ev_Shape'. ff.
-        subst.
-        repeat do_pl_immut. subst.
-        split. eauto. df.
-        unfold Ev_Shape' in *.
-        ff.
-        Search length.
-        rewrite app_length.
-        subst.
-        lia.
-      ++
-        edestruct IHt1; eauto.
-        subst.
-        edestruct IHt2; eauto.
-        unfold Ev_Shape'. ff.
-        subst.
-        repeat do_pl_immut. subst.
-        split. eauto. df.
-        unfold Ev_Shape' in *.
-        ff.
-        Search length.
-        rewrite app_length.
-        subst.
-        lia.
-  -
-    do_wf_pieces.
-    df.
-    repeat break_match;
-      try solve_by_inversion;
-      try (df; tauto).
-    +
-      df.
-      annogo.
-      simpl in *.
-      do_suffix blah.
-      do_suffix blah'.
-      destruct_conjs; subst.
-      repeat do_restl.
-
-      
-      destruct s; ff.
-      ++
-        edestruct IHt1; eauto.
-        subst.
-        edestruct IHt2.
-        eassumption.
-        eassumption.
-        unfold Ev_Shape'. ff.
-        subst.
-        repeat do_pl_immut. subst.
-        split. eauto. df.
-        unfold Ev_Shape' in *.
-        ff.
-        Search length.
-        rewrite app_length.
-        subst.
-        lia.
-      ++
-        edestruct IHt1; eauto. cbv. lia.
-        subst.
-        edestruct IHt2; eauto.
-        unfold Ev_Shape'. ff.
-        subst.
-        repeat do_pl_immut. subst.
-        split. eauto. df.
-        unfold Ev_Shape' in *.
-        ff.
-        Search length.
-        rewrite app_length.
-        subst.
-        lia.
-      ++
-        edestruct IHt1; eauto.
-        subst.
-        edestruct IHt2; eauto.
-        unfold Ev_Shape'. ff.
-        subst.
-        repeat do_pl_immut. subst.
-        split. eauto. df.
-        unfold Ev_Shape' in *.
-        ff.
-        Search length.
-        rewrite app_length.
-        subst.
-        lia.
-Defined.
-*)
-
-(*
-Proof.
-  induction t; intros.
-  -
-    destruct a;
-      try (
-          df;
-          eauto).
-    +
-      split.
-      eauto.
-      unfold Ev_Shape' in *.
-      ff.
-    +
-      split.
-      eauto.
-      unfold Ev_Shape' in *.
-      ff.
-
-    +
-      split.
-      eauto.
-      unfold Ev_Shape' in *.
-      ff.
-
-
-
-
-    
-
-  (*  
-    +
-      assert (Ev_Shape e (et_fun e)).
-      {
-        eapply ev_evshape.
-      }
-
-      assert (es = (et_fun e)).
-      {
-        eapply evshape_determ.
-        eauto.
-        eauto.
-      }
-      subst.
-      eauto.
-*)
-      
-      
-      
-  -
-    repeat df. 
-    annogo.
-
-    apply remote_Ev_Shape; eauto.
-
-  -
-    do_wf_pieces.
-    do_suffix blah.
-    destruct_conjs.
-    subst.
-
-    edestruct alseq_decomp.
-    eassumption.
-    eapply restl.
-    eassumption.
-    eassumption.
-    destruct_conjs.
-    df.
-    dosome.
-    
-    eapply IHt2.
-    + eassumption.
-    + eassumption.
-    + eapply IHt1.
-      ++ eassumption.
-      ++ eassumption.
-      ++ eassumption.      
-      ++ reflexivity.
-    +
-      repeat do_pl_immut.
-      subst.
-      congruence.
-      
-  -
-    do_wf_pieces.
-    df.
-    repeat break_match;
-      try solve_by_inversion;
-      try (df; tauto).
-    +
-      df.
-      annogo.
-      simpl in *.
-      do_suffix blah.
-      do_suffix blah'.
-      destruct_conjs; subst.
-      repeat do_restl.
-      
-      econstructor.
-      destruct s.
-      ++
-        eapply IHt1; eauto.
-        (*
-
-        eapply splitEv_T_l_LEFT; eauto. *)
-        
-      ++
-        simpl in *.
-        eapply IHt1; eauto.
-        
-      ++
-        ff.
-        eauto.
-      ++
-        simpl in *.
-        repeat do_pl_immut.
-        subst.
-        destruct s.
-        +++
-          ff.
-          eauto.
-        +++
-          ff.
-          eauto.
-        +++
-          ff.
-          eauto.
-
-   -
-    do_wf_pieces.
-    df.
-    repeat break_match;
-      try solve_by_inversion;
-      try (df; tauto).
-    +
-      df.
-      annogo.
-      simpl in *.
-      do_suffix blah.
-      do_suffix blah'.
-      destruct_conjs; subst.
-      repeat do_restl.
-      
-      econstructor.
-      destruct s.
-      ++
-        eapply IHt1; eauto.
-
-        (*
-        eapply splitEv_T_l_LEFT; eauto. *)
-        
-      ++
-        simpl in *.
-        eapply IHt1; eauto.
-      ++
-        ff.
-        eauto.
-      ++
-        simpl in *.
-        repeat do_pl_immut.
-        subst.
-        destruct s.
-        +++
-          ff.
-          eauto.
-        +++
-          ff.
-          eauto.
-        +++
-          ff.
-          eauto.
-Defined.
-*)
-
-
-
-
-
 Axiom remote_LTS: forall t n et, 
     lstar (conf t n et) (remote_events t n) (stop n (aeval t n et)).
 
@@ -1044,28 +625,6 @@ Proof.
     erewrite IHt1_2.
     eauto. 
 Defined.
-
-(*
-Lemma evshape_split_l: forall e et s,
-    Ev_Shape e et ->
-    Ev_Shape ((splitEv_l s e)) (splitEv_T_l s et).
-Proof.
-  intros.
-  generalizeEverythingElse e.
-  induction e; intros;
-    try (destruct s; ff; tauto).
-Defined.
-
-Lemma evshape_split_r: forall e et s,
-    Ev_Shape e et ->
-    Ev_Shape ((splitEv_r s e)) (splitEv_T_r s et).
-Proof.
-  intros.
-  generalizeEverythingElse e.
-  induction e; intros;
-    try (destruct s; ff; tauto).
-Defined.
- *)
 
 Lemma cvm_refines_lts_event_ordering : forall t tr bits bits' et et' p p',
     well_formed_r t ->
@@ -1625,6 +1184,525 @@ Proof.
       econstructor.
 Defined.
 
+Lemma cvm_refines_lts_event_ordering_corrolary : forall t tr bits bits' et et' p p',
+    well_formed_r t ->
+    (*Ev_Shape e et -> *)
+    copland_compile t (mk_st (evc bits et) [] p) = (Some tt, (mk_st (evc bits' et') tr p')) ->
+    st_trace (run_cvm t
+                     (mk_st (evc bits et) [] p)) = tr ->
+    lstar (conf t p et) tr (stop p (aeval t p et)).
+Proof.
+  intros.
+  destruct (copland_compile t {| st_ev := (evc bits et); st_trace := []; st_pl := p |}) eqn:hi.
+  simpl in *.
+  vmsts.
+  simpl in *.
+  apply cvm_refines_lts_event_ordering with (t:=t) (tr:=tr) (bits:=bits) (et:=et) (bits':=bits') (et':=et') (p:=p) (p':=st_pl); eauto.
+  
+  try dunit.
+  rewrite hi.
+  unfold run_cvm in *.
+  monad_unfold.
+  rewrite hi in *.
+  simpl in *.
+  subst.
+  solve_by_inversion.
+Defined.
+
+Theorem cvm_respects_event_system' : forall t tr ev0 ev1 bits bits' et et',
+    well_formed_r t ->
+    (*Ev_Shape e et -> *)
+    copland_compile 
+      t
+      (mk_st (evc bits et) [] 0) =
+      (Some tt, (mk_st (evc bits' et') tr 0)) ->
+    prec (ev_sys t 0 et) ev0 ev1 ->
+    earlier tr ev0 ev1.
+Proof.
+  intros.
+  eapply ordered with (p:=0) (e:=et); eauto.
+  eapply cvm_refines_lts_event_ordering; eauto.
+Defined.
+
+Theorem cvm_respects_event_system : forall t tr ev0 ev1 bits bits' et et' t',
+    t = annotated t' ->
+    (*Ev_Shape e et ->*)
+    copland_compile
+      t
+      (mk_st (evc bits et) [] 0) =
+    (Some tt, (mk_st (evc bits' et') tr 0)) ->
+    prec (ev_sys t 0 et) ev0 ev1 ->
+    earlier tr ev0 ev1.
+Proof.
+  intros.
+  assert (well_formed_r t).
+  {
+    unfold annotated in H.
+    unfold snd in *.
+    break_let.
+    subst.
+    eapply anno_well_formed_r.
+    eassumption.
+  }
+  eapply ordered with (p:=0) (e:=et); eauto.
+  eapply cvm_refines_lts_event_ordering; eauto.
+Defined.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*
+Lemma splitEv_T_l_LEFT: forall e bits bits' es e0,
+    et_size e = es ->
+    splitEv_l LEFT (evc bits e) = (evc bits' e0) ->
+    et_size e0 = es. (* (splitEv_T_l LEFT es). *)
+Proof.
+  intros.
+  ff.
+Defined.
+*)
+
+(*
+Lemma splitEv_T_l_LEFT: forall e es e0,
+    Ev_Shape e es ->
+    splitEv_l LEFT e = e0 ->
+    Ev_Shape e0 (splitEv_T_l LEFT es).
+Proof.
+  intros.
+  generalizeEverythingElse e.
+  induction e; intros;
+    ff.
+Defined.
+
+Axiom remote_Ev_Shape: forall e es t n,
+    Ev_Shape e es ->
+    Ev_Shape (toRemote t n e) (eval (unanno t) n es).
+ *)
+
+(*
+Definition Ev_Shape' (bits:list BS) (et:Evidence) :=
+  length bits = et_size et.
+
+Axiom remote_Ev_Shape: forall et et' t n bits bits',
+    Ev_Shape' bits et ->
+    toRemote t n (evc bits et) = evc bits' et' ->
+    Ev_Shape' bits' (eval (unanno t) n et).
+ *)
+
+
+
+(*
+Lemma cvm_refines_lts_evidence : forall t tr tr' bits bits' et et' p p',
+    well_formed_r t ->
+    copland_compile t (mk_st (evc bits et) tr p) = (Some tt, (mk_st (evc bits' et') tr' p')) ->
+    Ev_Shape' bits et ->
+    (*
+    Term_Defs.eval (unanno t) p es = e's -> *)
+    et' = (Term_Defs.eval (unanno t) p et) /\
+    Ev_Shape' bits' et'.
+
+Proof.
+  induction t; intros.
+  -
+    destruct a;
+      try (
+          df;
+          eauto).
+    +
+      split.
+      eauto.
+      unfold Ev_Shape' in *.
+      ff.
+    +
+      split.
+      eauto.
+      unfold Ev_Shape' in *.
+      ff.
+
+    +
+      split.
+      eauto.
+      unfold Ev_Shape' in *.
+      ff.
+
+  -
+    repeat df. 
+    annogo.
+    do_wf_pieces.
+    edestruct IHt; eauto.
+    rewrite <- H3.
+    apply copland_compile_at.
+    eauto.
+
+  -
+    do_wf_pieces.
+    do_suffix blah.
+    destruct_conjs.
+    subst.
+
+    edestruct alseq_decomp.
+    eassumption.
+    eapply restl.
+    eassumption.
+    eassumption.
+    destruct_conjs.
+    df.
+    dosome.
+
+    destruct x.
+    vmsts.
+
+    edestruct IHt1.
+    eassumption.
+    eassumption.
+    eassumption.
+    subst.
+
+    edestruct IHt2.
+    eassumption. eassumption.
+    eassumption.
+    subst.
+    split.
+    repeat do_pl_immut.
+    subst.
+    eauto.
+    eassumption.     
+  -
+    do_wf_pieces.
+    df.
+    repeat break_match;
+      try solve_by_inversion;
+      try (df; tauto).
+    +
+      df.
+      annogo.
+      simpl in *.
+      do_suffix blah.
+      do_suffix blah'.
+      destruct_conjs; subst.
+      repeat do_restl.
+
+      
+      destruct s; ff.
+      ++
+        edestruct IHt1; eauto.
+        subst.
+        edestruct IHt2.
+        eassumption.
+        eassumption.
+        unfold Ev_Shape'. ff.
+        subst.
+        repeat do_pl_immut. subst.
+        split. eauto. df.
+        unfold Ev_Shape' in *.
+        ff.
+        Search length.
+        rewrite app_length.
+        subst.
+        lia.
+      ++
+        edestruct IHt1; eauto. cbv. lia.
+        subst.
+        edestruct IHt2; eauto.
+        unfold Ev_Shape'. ff.
+        subst.
+        repeat do_pl_immut. subst.
+        split. eauto. df.
+        unfold Ev_Shape' in *.
+        ff.
+        Search length.
+        rewrite app_length.
+        subst.
+        lia.
+      ++
+        edestruct IHt1; eauto.
+        subst.
+        edestruct IHt2; eauto.
+        unfold Ev_Shape'. ff.
+        subst.
+        repeat do_pl_immut. subst.
+        split. eauto. df.
+        unfold Ev_Shape' in *.
+        ff.
+        Search length.
+        rewrite app_length.
+        subst.
+        lia.
+  -
+    do_wf_pieces.
+    df.
+    repeat break_match;
+      try solve_by_inversion;
+      try (df; tauto).
+    +
+      df.
+      annogo.
+      simpl in *.
+      do_suffix blah.
+      do_suffix blah'.
+      destruct_conjs; subst.
+      repeat do_restl.
+
+      
+      destruct s; ff.
+      ++
+        edestruct IHt1; eauto.
+        subst.
+        edestruct IHt2.
+        eassumption.
+        eassumption.
+        unfold Ev_Shape'. ff.
+        subst.
+        repeat do_pl_immut. subst.
+        split. eauto. df.
+        unfold Ev_Shape' in *.
+        ff.
+        Search length.
+        rewrite app_length.
+        subst.
+        lia.
+      ++
+        edestruct IHt1; eauto. cbv. lia.
+        subst.
+        edestruct IHt2; eauto.
+        unfold Ev_Shape'. ff.
+        subst.
+        repeat do_pl_immut. subst.
+        split. eauto. df.
+        unfold Ev_Shape' in *.
+        ff.
+        Search length.
+        rewrite app_length.
+        subst.
+        lia.
+      ++
+        edestruct IHt1; eauto.
+        subst.
+        edestruct IHt2; eauto.
+        unfold Ev_Shape'. ff.
+        subst.
+        repeat do_pl_immut. subst.
+        split. eauto. df.
+        unfold Ev_Shape' in *.
+        ff.
+        Search length.
+        rewrite app_length.
+        subst.
+        lia.
+Defined.
+*)
+
+(*
+Proof.
+  induction t; intros.
+  -
+    destruct a;
+      try (
+          df;
+          eauto).
+    +
+      split.
+      eauto.
+      unfold Ev_Shape' in *.
+      ff.
+    +
+      split.
+      eauto.
+      unfold Ev_Shape' in *.
+      ff.
+
+    +
+      split.
+      eauto.
+      unfold Ev_Shape' in *.
+      ff.
+
+
+
+
+    
+
+  (*  
+    +
+      assert (Ev_Shape e (et_fun e)).
+      {
+        eapply ev_evshape.
+      }
+
+      assert (es = (et_fun e)).
+      {
+        eapply evshape_determ.
+        eauto.
+        eauto.
+      }
+      subst.
+      eauto.
+*)
+      
+      
+      
+  -
+    repeat df. 
+    annogo.
+
+    apply remote_Ev_Shape; eauto.
+
+  -
+    do_wf_pieces.
+    do_suffix blah.
+    destruct_conjs.
+    subst.
+
+    edestruct alseq_decomp.
+    eassumption.
+    eapply restl.
+    eassumption.
+    eassumption.
+    destruct_conjs.
+    df.
+    dosome.
+    
+    eapply IHt2.
+    + eassumption.
+    + eassumption.
+    + eapply IHt1.
+      ++ eassumption.
+      ++ eassumption.
+      ++ eassumption.      
+      ++ reflexivity.
+    +
+      repeat do_pl_immut.
+      subst.
+      congruence.
+      
+  -
+    do_wf_pieces.
+    df.
+    repeat break_match;
+      try solve_by_inversion;
+      try (df; tauto).
+    +
+      df.
+      annogo.
+      simpl in *.
+      do_suffix blah.
+      do_suffix blah'.
+      destruct_conjs; subst.
+      repeat do_restl.
+      
+      econstructor.
+      destruct s.
+      ++
+        eapply IHt1; eauto.
+        (*
+
+        eapply splitEv_T_l_LEFT; eauto. *)
+        
+      ++
+        simpl in *.
+        eapply IHt1; eauto.
+        
+      ++
+        ff.
+        eauto.
+      ++
+        simpl in *.
+        repeat do_pl_immut.
+        subst.
+        destruct s.
+        +++
+          ff.
+          eauto.
+        +++
+          ff.
+          eauto.
+        +++
+          ff.
+          eauto.
+
+   -
+    do_wf_pieces.
+    df.
+    repeat break_match;
+      try solve_by_inversion;
+      try (df; tauto).
+    +
+      df.
+      annogo.
+      simpl in *.
+      do_suffix blah.
+      do_suffix blah'.
+      destruct_conjs; subst.
+      repeat do_restl.
+      
+      econstructor.
+      destruct s.
+      ++
+        eapply IHt1; eauto.
+
+        (*
+        eapply splitEv_T_l_LEFT; eauto. *)
+        
+      ++
+        simpl in *.
+        eapply IHt1; eauto.
+      ++
+        ff.
+        eauto.
+      ++
+        simpl in *.
+        repeat do_pl_immut.
+        subst.
+        destruct s.
+        +++
+          ff.
+          eauto.
+        +++
+          ff.
+          eauto.
+        +++
+          ff.
+          eauto.
+Defined.
+*)
+
+
+
+
+(*
+Lemma evshape_split_l: forall e et s,
+    Ev_Shape e et ->
+    Ev_Shape ((splitEv_l s e)) (splitEv_T_l s et).
+Proof.
+  intros.
+  generalizeEverythingElse e.
+  induction e; intros;
+    try (destruct s; ff; tauto).
+Defined.
+
+Lemma evshape_split_r: forall e et s,
+    Ev_Shape e et ->
+    Ev_Shape ((splitEv_r s e)) (splitEv_T_r s et).
+Proof.
+  intros.
+  generalizeEverythingElse e.
+  induction e; intros;
+    try (destruct s; ff; tauto).
+Defined.
+ *)
+
 
 
 
@@ -2042,67 +2120,3 @@ Proof.
     econstructor.
 Defined.
 *)
-
-Lemma cvm_refines_lts_event_ordering_corrolary : forall t tr bits bits' et et' p p',
-    well_formed_r t ->
-    (*Ev_Shape e et -> *)
-    copland_compile t (mk_st (evc bits et) [] p) = (Some tt, (mk_st (evc bits' et') tr p')) ->
-    st_trace (run_cvm t
-                     (mk_st (evc bits et) [] p)) = tr ->
-    lstar (conf t p et) tr (stop p (aeval t p et)).
-Proof.
-  intros.
-  destruct (copland_compile t {| st_ev := (evc bits et); st_trace := []; st_pl := p |}) eqn:hi.
-  simpl in *.
-  vmsts.
-  simpl in *.
-  apply cvm_refines_lts_event_ordering with (t:=t) (tr:=tr) (bits:=bits) (et:=et) (bits':=bits') (et':=et') (p:=p) (p':=st_pl); eauto.
-  
-  try dunit.
-  rewrite hi.
-  unfold run_cvm in *.
-  monad_unfold.
-  rewrite hi in *.
-  simpl in *.
-  subst.
-  solve_by_inversion.
-Defined.
-
-Theorem cvm_respects_event_system' : forall t tr ev0 ev1 bits bits' et et',
-    well_formed_r t ->
-    (*Ev_Shape e et -> *)
-    copland_compile 
-      t
-      (mk_st (evc bits et) [] 0) =
-      (Some tt, (mk_st (evc bits' et') tr 0)) ->
-    prec (ev_sys t 0 et) ev0 ev1 ->
-    earlier tr ev0 ev1.
-Proof.
-  intros.
-  eapply ordered with (p:=0) (e:=et); eauto.
-  eapply cvm_refines_lts_event_ordering; eauto.
-Defined.
-
-Theorem cvm_respects_event_system : forall t tr ev0 ev1 bits bits' et et' t',
-    t = annotated t' ->
-    (*Ev_Shape e et ->*)
-    copland_compile
-      t
-      (mk_st (evc bits et) [] 0) =
-    (Some tt, (mk_st (evc bits' et') tr 0)) ->
-    prec (ev_sys t 0 et) ev0 ev1 ->
-    earlier tr ev0 ev1.
-Proof.
-  intros.
-  assert (well_formed_r t).
-  {
-    unfold annotated in H.
-    unfold snd in *.
-    break_let.
-    subst.
-    eapply anno_well_formed_r.
-    eassumption.
-  }
-  eapply ordered with (p:=0) (e:=et); eauto.
-  eapply cvm_refines_lts_event_ordering; eauto.
-Defined.

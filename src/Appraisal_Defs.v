@@ -42,7 +42,7 @@ Fixpoint encodeEv (e:EvidenceC) : EvBits :=
   match e with
   | mtc => []
   | nnc _ bs => [bs]
-  | uuc _ _ _ _ bs e' =>
+  | uuc _ _ _ _ _ bs e' =>
     bs :: (encodeEv e')
   | ggc _ bs e' =>
     bs :: (encodeEv e')
@@ -61,10 +61,10 @@ Fixpoint reconstruct_ev' (ls:EvBits) (et:Evidence) : option EvidenceC :=
     | [] => Some mtc
     | _ => None
     end 
-  | uu i args tpl tid et' =>
+  | uu i args tpl tid p et' =>
     '(bs, ls') <- peel_bs ls ;;
     x <- reconstruct_ev' ls' et' ;;
-    Some (uuc i args tpl tid bs x)
+    Some (uuc i args tpl tid p bs x)
   | gg p et' =>
     '(bs, ls') <- peel_bs ls ;;
     x <- reconstruct_ev' ls' et' ;;
@@ -126,7 +126,7 @@ Fixpoint checkHash (e:Evidence) (p:Plc) (hash:BS) : option BS :=
   | gg _ _ => None
   | mt => ret 0 (* TODO: implement reconstruct_hash and ignore mt *)
   | nn _ => ret 0 (* TODO: reconstruct_hash will grab nonce value here *)
-  | uu _ _ _ _ e' => checkHash e' p hash
+  | uu _ _ _ _ _ e' => checkHash e' p hash
   | hh _ e' => checkHash e' p hash
   | ss e1 e2 =>
     res1 <- checkHash e1 p hash ;;
@@ -166,10 +166,10 @@ Definition sigEvent (t:AnnoTerm) (p:Plc) (e:Evidence) (ev:Ev) : Prop :=
 
 Inductive appEvent_EvidenceC : Ev -> EvidenceC -> Prop :=
 | aeuc: forall i args tpl tid e e' n p,
-    EvSub (uuc i args tpl tid (checkASPF i args tpl tid n) e') e ->
+    EvSub (uuc i args tpl tid p (checkASPF i args tpl tid n) e') e ->
     appEvent_EvidenceC (umeas n p i args tpl tid) e
 | ahuc: forall i args tpl tid e' et n p pi bs e,
-    EvSubT (uu i args tpl tid  e') et ->
+    EvSubT (uu i args tpl tid p e') et ->
     EvSub (hhc pi (checkHashF et pi bs) et) e ->
     appEvent_EvidenceC (umeas n p i args tpl tid) e.
 
@@ -301,9 +301,9 @@ Ltac do_inv_recon_nn :=
   end;
   subst.
 
-Lemma inv_recon_uu: forall ls et n l n0 n1 n2 ec,
-    Some (uuc n l n0 n1 n2 ec) = reconstruct_ev' ls et  ->
-    (exists et', et = uu n l n0 n1 et').
+Lemma inv_recon_uu: forall ls et n l n0 n1 n2 p ec,
+    Some (uuc n l n0 n1 p n2 ec) = reconstruct_ev' ls et  ->
+    (exists et', et = uu n l n0 n1 p et').
 Proof.
   intros.
   destruct et; repeat ff; try solve_by_inversion.
@@ -312,10 +312,10 @@ Defined.
 
 Ltac do_inv_recon_uu :=
   match goal with
-  | [H: Some (uuc ?n ?l ?n0 ?n1 _ _) = reconstruct_ev' _ ?et
+  | [H: Some (uuc ?n ?l ?n0 ?n1 ?p _ _) = reconstruct_ev' _ ?et
 
      |- _] =>
-    assert_new_proof_by (exists et', et = uu n l n0 n1 et')
+    assert_new_proof_by (exists et', et = uu n l n0 n1 p et')
                         ltac:(eapply inv_recon_uu; apply H)
   end;
   destruct_conjs;
@@ -464,7 +464,7 @@ Proof.
     ff. *)
   -
     ff.
-    assert (exists et', et = uu n l n0 n1 et').
+    assert (exists et', et = uu n l n0 n1 n2 et').
     {
       eapply inv_recon_uu; eauto.
     }
@@ -599,7 +599,7 @@ Proof.
     ff.
     destruct e; try solve_by_inversion.
   -
-    assert (exists et', et = uu n l n0 n1 et').
+    assert (exists et', et = uu n l n0 n1 n2 et').
     { eapply inv_recon_uu; eauto. }
     destruct_conjs.
     subst.

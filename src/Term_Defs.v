@@ -75,7 +75,7 @@ Inductive Term: Set :=
 
 Inductive Evidence: Set :=
 | mt: Evidence
-| uu: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> Evidence -> Evidence
+| uu: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> Plc -> Evidence -> Evidence
 | gg: Plc -> Evidence -> Evidence
 | hh: Plc -> Evidence -> Evidence
 | nn: N_ID -> (*Evidence ->*) Evidence
@@ -85,7 +85,7 @@ Inductive Evidence: Set :=
 Fixpoint et_size (e:Evidence): nat :=
   match e with
   | mt => 0
-  | uu _ _ _ _ e' => 1 + (et_size e')
+  | uu _ _ _ _ _ e' => 1 + (et_size e')
   | gg _ e' => 1 + (et_size e')
   | hh _ _ => 1
   | nn _ => 1
@@ -122,7 +122,7 @@ Definition splitEv_T_r (sp:Split) (e:Evidence) : Evidence :=
 Definition eval_asp t p e :=
   match t with
   | CPY => e 
-  | ASPC i l upl targi => uu i l upl targi e
+  | ASPC i l upl targi => uu i l upl targi p e
   | SIG => gg p e
   | HSH => hh p e
   end.

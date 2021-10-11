@@ -24,8 +24,8 @@ Admitted.
 Fixpoint eqb_evidence (e:Evidence) (e':Evidence): bool :=
   match (e,e') with
   | (mt,mt) => true
-  | (uu i args p tid e1, uu i' args' p' tid' e2) =>
-    (Nat.eqb i i') && (list_beq nat Nat.eqb args args') && (Nat.eqb p p')
+  | (uu i args p tid q e1, uu i' args' p' tid' q' e2) =>
+    (Nat.eqb i i') && (list_beq nat Nat.eqb args args') && (Nat.eqb p p') && (Nat.eqb q q')
     && (Nat.eqb tid tid') && (eqb_evidence e1 e2)
   | (gg p e1, gg p' e2) =>
     (Nat.eqb p p') && (eqb_evidence e1 e2)
@@ -55,11 +55,13 @@ Proof.
       rewrite Bool.andb_true_iff in H.
       rewrite Bool.andb_true_iff in H.
       rewrite Bool.andb_true_iff in H.
+      rewrite Bool.andb_true_iff in H.
       destruct_conjs.
-      rewrite eqb_eq_list in H3.
+      rewrite eqb_eq_list in H4.
 
       apply EqNat.beq_nat_true in H1.
       apply EqNat.beq_nat_true in H2.
+      apply EqNat.beq_nat_true in H3.
       apply EqNat.beq_nat_true in H.
       subst.
       specialize IHe1 with e2.
@@ -121,10 +123,12 @@ Proof.
       split.
       split.
       split.
+      split.
       apply Nat.eqb_refl.
 
       rewrite eqb_eq_list.
       auto.
+      apply Nat.eqb_refl.
       apply Nat.eqb_refl.
       apply Nat.eqb_refl.
       eauto.

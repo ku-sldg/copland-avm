@@ -22,9 +22,9 @@ Ltac do_ggsub :=
   destruct_conjs;
   subst.
 
-Lemma uuc_app: forall e' e'' i args tpl tid n,
-    EvSub (uuc i args tpl tid n e'') e' ->
-    exists e'', EvSub (uuc i args tpl tid (checkASPF i args tpl tid n) e'')
+Lemma uuc_app: forall e' e'' i args tpl tid p n,
+    EvSub (uuc i args tpl tid p n e'') e' ->
+    exists e'', EvSub (uuc i args tpl tid p (checkASPF i args tpl tid n) e'')
                  (build_app_comp_evC e').
 Proof.
   intros.
@@ -635,7 +635,7 @@ Proof.
     eauto.
   -
     destruct_conjs.
-    exists (uuc n l n0 n1 1 IHy).
+    exists (uuc n l n0 n1 n2 1 IHy).
     ff.
   -
     destruct_conjs.
@@ -658,9 +658,9 @@ Proof.
     ff.
 Defined.
 
-Lemma not_hshsig_uuc: forall e' n l n1 n2 x,
+Lemma not_hshsig_uuc: forall e' n l n1 n2 p x,
     not_hash_sig_ev e' ->
-    not_hash_sig_ev (uuc n l n1 n2 x e').
+    not_hash_sig_ev (uuc n l n1 n2 p x e').
 Proof.
   cbv in *; intros.
   evSubFacts;
@@ -868,122 +868,6 @@ Proof.
       eauto.
 Defined.
 
-(*
-Lemma hh_recons: forall e ecc x y,
-    Some e = reconstruct_ev ecc ->
-    EvSubT (hh x y) (get_et ecc) ->
-    exists bs, EvSub (hhc x bs y) e.
-Proof.
-  intros.
-  generalizeEverythingElse e.
-  induction e; intros; ff.
-  -
-    destruct ecc; ff;
-      do_inv_recon.
-    solve_by_inversion.
-  -
-   destruct ecc; ff;
-      do_inv_recon.
-    solve_by_inversion.
-  -
-    (*
-    destruct ecc; ff.
-    assert (exists et', e1 = uu n l n0 n1 et').
-    {
-      destruct e1; repeat ff; try solve_by_inversion.
-      eauto.
-    }
-    destruct_conjs.
-    subst. *)
-
-    destruct ecc; ff;
-      do_inv_recon.
-    repeat ff.
-    evSubTFacts.
-    rewrite fold_recev in *.
-    
-    edestruct IHe.
-    jkjke'.
-    ff.
-    eassumption.
-    eauto.
-  -
-    destruct ecc; ff;
-      do_inv_recon.
-    
-    repeat ff.
-    rewrite fold_recev in *.
-    evSubTFacts.
-    
-    edestruct IHe.
-    symmetry.
-    eassumption.
-    ff.
-    eassumption.
-    eauto.
-  -
-    destruct ecc; ff;
-      do_inv_recon.
-    repeat ff.
-    evSubTFacts.
-    eauto.
-    
-    HERE
-
-  -
-    destruct ecc; ff;
-      do_inv_recon.
-    repeat ff.
-    evSubTFacts.
-    +
-      rewrite fold_recev in *.
-      edestruct IHe1.
-      symmetry.
-      eassumption.
-      ff.
-      eassumption.
-      eauto.
-    +
-      (*
-      assert (gg_sub e0).
-      {
-       *)
-      rewrite fold_recev in *.
-      edestruct IHe2.
-      symmetry.
-      eassumption.
-      ff.
-      eassumption.
-
-      eauto.
-  -
-    destruct ecc; ff;
-      do_inv_recon.
-
-    repeat ff.
-    evSubTFacts.
-    +
-      rewrite fold_recev in *.
-      edestruct IHe1.
-      symmetry.
-      eassumption.
-      ff.
-      eassumption.
-      eauto.
-    +
-      rewrite fold_recev in *.
-      edestruct IHe2.
-      symmetry.
-      eassumption.
-      ff.
-      eassumption.
-      eauto.
-      
-      Unshelve.
-      eauto.
-Defined.
-*)
-
 Lemma evAccum: forall t p (e e' e'':EvidenceC) tr tr' p' (ecc ecc':EvC),
 
     well_formed_r t ->
@@ -1033,10 +917,36 @@ Proof.
         eapply etfun_reconstruct; eauto.
       }
       subst.
+      ff.
+      eauto.
+    +
+      destruct ecc.
+      ff.
+      assert (e1 = et_fun e).
+      {
+        eapply etfun_reconstruct; eauto.
+      }
+      subst.
+      ff.
       right.
       repeat eexists.
-      econstructor.
+      ff.
       apply evsub_etfun; eauto.
+     
+      (*
+      left.
+      econstructor.
+
+
+
+      
+      right.
+      repeat eexists.
+      ff.
+      econstructor.
+      apply evsub_etfun; eauto. 
+       *)
+      
       
   - (* aatt case *)
     do_wf_pieces.
@@ -2186,7 +2096,7 @@ Proof.
     {
       eapply not_ev; eauto.
     } *)
-    unfold cons_gg in *.
+    unfold cons_sig in *.
     destruct ecc.
     ff.
     rewrite fold_recev in *.
@@ -2524,23 +2434,6 @@ Proof.
       eassumption.
 Defined.
 
-(*
-Lemma hshsig_ev_term_contra: forall t p (e e' :EvidenceC) tr tr' p' (ecc ecc':EvC),
-
-    well_formed_r t ->
-    wf_ec ecc ->
-    not_hash_sig_term_ev t e ->
-    
-    Some e =  (reconstruct_ev ecc) ->
-    Some e' = (reconstruct_ev ecc') ->
-
-    copland_compile t {| st_ev := ecc; st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
-
-    not_hash_sig_ev e'.
-Proof.
-*)
-
 Ltac do_hste_contra :=
   match goal with
   | [H: well_formed_r ?t,
@@ -2632,19 +2525,6 @@ Proof.
       eauto.
 Defined.
 
-(*
-Lemma sig_term_ev_lseqr: forall r t1 t2 e e0 e1 e2 e3 tr tr' p p' H5,
-    well_formed_r t1 ->
-    wf_ec (evc e0 e1) ->
-    not_hash_sig_term_ev (alseq r t1 t2) e ->
-    copland_compile t1 {| st_ev := evc e0 e1; st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := evc e2 e3; st_trace := tr'; st_pl := p' |}) ->
-    Some e  = reconstruct_ev (evc e0 e1) ->
-    Some H5 = reconstruct_ev (evc e2 e3) ->
-    not_hash_sig_term_ev t2 H5.
-Proof.
-*)
-
 Ltac do_evsub_ihhh' :=
   match goal with
   | [H: copland_compile ?t1
@@ -2663,9 +2543,9 @@ Ltac do_evsub_ihhh' :=
        Hev: events ?t1 _ _ _
                    
 
-       |-  (exists e'' : EvidenceC, EvSub (uuc ?i ?args ?tpl ?tid ?n e'') _) \/
+       |-  (exists e'' : EvidenceC, EvSub (uuc ?i ?args ?tpl ?tid ?p0 ?n e'') _) \/
           (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-              EvSub (hhc p'0 bs ett) _ /\ EvSubT (uu ?i ?args ?tpl ?tid et') ett)
+              EvSub (hhc p'0 bs ett) _ /\ EvSubT (uu ?i ?args ?tpl ?tid ?p0 et') ett)
             (*context[EvSub _(*(uuc ?i ?args ?tpl ?tid ?n _)*) _ \/ _]*)
     ] => 
 
@@ -2673,9 +2553,9 @@ Ltac do_evsub_ihhh' :=
 
     assert_new_proof_by 
       (
-        (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') v') \/
+        (exists e'' : EvidenceC, EvSub (uuc i args tpl tid p0 n e'') v') \/
         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-            EvSub (hhc p'0 bs ett) v' /\ EvSubT (uu i args tpl tid et') ett)
+            EvSub (hhc p'0 bs ett) v' /\ EvSubT (uu i args tpl tid p0 et') ett)
       )
 
       (*
@@ -2703,10 +2583,10 @@ Lemma uu_preserved': forall t p et n p0 i args tpl tid
     (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
 
     (
-      (exists e'', EvSub (uuc i args tpl tid n e'') e') \/
+      (exists e'', EvSub (uuc i args tpl tid p0 n e'') e') \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) e' /\
-          EvSubT (uu i args tpl tid et') ett)
+          EvSubT (uu i args tpl tid p0 et') ett)
     ).
 Proof.
   intros.
@@ -2891,10 +2771,10 @@ Lemma uu_preserved: forall t1 t2 p et n p0 i args tpl tid
     (Some tt, {| st_ev := ecc; st_trace := tr'; st_pl := p'' |}) ->
 
     (
-      (exists e'', EvSub (uuc i args tpl tid n e'') e') \/
+      (exists e'', EvSub (uuc i args tpl tid p0 n e'') e') \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) e' /\
-          EvSubT (uu i args tpl tid et') ett)
+          EvSubT (uu i args tpl tid p0 et') ett)
     ).
 Proof.
   intros.
@@ -2904,10 +2784,10 @@ Proof.
   do_somerecons.
   
   assert (
-      (exists e'', EvSub (uuc i args tpl tid n e'') H11) \/
+      (exists e'', EvSub (uuc i args tpl tid p0 n e'') H11) \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) H11 /\
-          EvSubT (uu i args tpl tid et') ett)
+          EvSubT (uu i args tpl tid p0 et') ett)
     ).
   {
     eapply uu_preserved'.
@@ -2936,7 +2816,7 @@ Proof.
         repeat (eexists; eauto).
 
     ++
-      assert (EvSubT (uu i args tpl tid H19) H22).
+      assert (EvSubT (uu i args tpl tid p0 H19) H22).
       {
         eapply evsubT_transitive.
         apply hhSubT.
@@ -3561,3 +3441,166 @@ Proof.
              | apply H5 | (ff; tauto) | apply H33 | apply H16 | apply Heqp5 | idtac]);
         destruct_conjs; eauto.
 Defined.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*
+Lemma sig_term_ev_lseqr: forall r t1 t2 e e0 e1 e2 e3 tr tr' p p' H5,
+    well_formed_r t1 ->
+    wf_ec (evc e0 e1) ->
+    not_hash_sig_term_ev (alseq r t1 t2) e ->
+    copland_compile t1 {| st_ev := evc e0 e1; st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := evc e2 e3; st_trace := tr'; st_pl := p' |}) ->
+    Some e  = reconstruct_ev (evc e0 e1) ->
+    Some H5 = reconstruct_ev (evc e2 e3) ->
+    not_hash_sig_term_ev t2 H5.
+Proof.
+ *)
+
+(*
+Lemma hshsig_ev_term_contra: forall t p (e e' :EvidenceC) tr tr' p' (ecc ecc':EvC),
+
+    well_formed_r t ->
+    wf_ec ecc ->
+    not_hash_sig_term_ev t e ->
+    
+    Some e =  (reconstruct_ev ecc) ->
+    Some e' = (reconstruct_ev ecc') ->
+
+    copland_compile t {| st_ev := ecc; st_trace := tr; st_pl := p |} =
+    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
+
+    not_hash_sig_ev e'.
+Proof.
+ *)
+
+(*
+Lemma hh_recons: forall e ecc x y,
+    Some e = reconstruct_ev ecc ->
+    EvSubT (hh x y) (get_et ecc) ->
+    exists bs, EvSub (hhc x bs y) e.
+Proof.
+  intros.
+  generalizeEverythingElse e.
+  induction e; intros; ff.
+  -
+    destruct ecc; ff;
+      do_inv_recon.
+    solve_by_inversion.
+  -
+   destruct ecc; ff;
+      do_inv_recon.
+    solve_by_inversion.
+  -
+    (*
+    destruct ecc; ff.
+    assert (exists et', e1 = uu n l n0 n1 et').
+    {
+      destruct e1; repeat ff; try solve_by_inversion.
+      eauto.
+    }
+    destruct_conjs.
+    subst. *)
+
+    destruct ecc; ff;
+      do_inv_recon.
+    repeat ff.
+    evSubTFacts.
+    rewrite fold_recev in *.
+    
+    edestruct IHe.
+    jkjke'.
+    ff.
+    eassumption.
+    eauto.
+  -
+    destruct ecc; ff;
+      do_inv_recon.
+    
+    repeat ff.
+    rewrite fold_recev in *.
+    evSubTFacts.
+    
+    edestruct IHe.
+    symmetry.
+    eassumption.
+    ff.
+    eassumption.
+    eauto.
+  -
+    destruct ecc; ff;
+      do_inv_recon.
+    repeat ff.
+    evSubTFacts.
+    eauto.
+    
+    HERE
+
+  -
+    destruct ecc; ff;
+      do_inv_recon.
+    repeat ff.
+    evSubTFacts.
+    +
+      rewrite fold_recev in *.
+      edestruct IHe1.
+      symmetry.
+      eassumption.
+      ff.
+      eassumption.
+      eauto.
+    +
+      (*
+      assert (gg_sub e0).
+      {
+       *)
+      rewrite fold_recev in *.
+      edestruct IHe2.
+      symmetry.
+      eassumption.
+      ff.
+      eassumption.
+
+      eauto.
+  -
+    destruct ecc; ff;
+      do_inv_recon.
+
+    repeat ff.
+    evSubTFacts.
+    +
+      rewrite fold_recev in *.
+      edestruct IHe1.
+      symmetry.
+      eassumption.
+      ff.
+      eassumption.
+      eauto.
+    +
+      rewrite fold_recev in *.
+      edestruct IHe2.
+      symmetry.
+      eassumption.
+      ff.
+      eassumption.
+      eauto.
+      
+      Unshelve.
+      eauto.
+Defined.
+*)

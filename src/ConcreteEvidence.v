@@ -18,7 +18,7 @@ Notation BS := nat (only parsing).
 Inductive EvidenceC: Set :=
 | mtc: EvidenceC
 | nnc: N_ID -> BS -> EvidenceC
-| uuc: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> BS -> EvidenceC -> EvidenceC
+| uuc: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> Plc -> BS -> EvidenceC -> EvidenceC
 | ggc: Plc -> BS -> EvidenceC -> EvidenceC
 | hhc: Plc -> BS -> Evidence -> EvidenceC
 | ssc: EvidenceC -> EvidenceC -> EvidenceC
@@ -49,7 +49,7 @@ Inductive wf_ec : EvC -> Prop :=
 Fixpoint et_fun (ec:EvidenceC) : Evidence :=
   match ec with
   | mtc => mt
-  | uuc i l p tid _ ec' => uu i l p tid (et_fun ec')
+  | uuc i l p tid q _ ec' => uu i l p tid q (et_fun ec')
   | ggc p _ ec' => gg p (et_fun ec')
   | hhc p _ et => hh p et
   | nnc ni _ => nn ni
@@ -59,9 +59,9 @@ Fixpoint et_fun (ec:EvidenceC) : Evidence :=
 
 Inductive EvSubT: Evidence -> Evidence -> Prop :=
 | evsub_reflT : forall e : Evidence, EvSubT e e
-| uuSubT: forall e e' i tid l tpl,
+| uuSubT: forall e e' i tid l tpl q,
     EvSubT e e' ->
-    EvSubT e (uu i l tpl tid e')
+    EvSubT e (uu i l tpl tid q e')
 | ggSubT: forall e e' p,
     EvSubT e e' ->
     EvSubT e (gg p e')
@@ -104,9 +104,9 @@ Defined.
 
 Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
 | evsub_refl : forall e : EvidenceC, EvSub e e
-| uuSub: forall e e' i tid l tpl bs,
+| uuSub: forall e e' i tid l tpl q bs,
     EvSub e e' ->
-    EvSub e (uuc i l tpl tid bs e')
+    EvSub e (uuc i l tpl tid q bs e')
 | ggSub: forall e e' p bs,
     EvSub e e' ->
     EvSub e (ggc p bs e')
@@ -166,7 +166,7 @@ Proof.
   -
     invc H0.
     +
-      assert (exists bs ec, e' = uuc n l n0 n1 bs ec).
+      assert (exists bs ec, e' = uuc n l n0 n1 n2 bs ec).
       {
         destruct e'; try solve_by_inversion.
         fff.
@@ -472,9 +472,9 @@ Inductive EvBad : Evidence -> Prop :=
 
 Inductive Ev_Shape: EvidenceC -> Evidence -> Prop :=
 | mtt: Ev_Shape mtc mt
-| uut: forall id l tid tpl bs e et,
+| uut: forall id l tid tpl q bs e et,
     Ev_Shape e et ->
-    Ev_Shape (uuc id l tpl tid bs e ) (uu id l tpl tid et)
+    Ev_Shape (uuc id l tpl tid q bs e ) (uu id l tpl tid q et)
 | ggt: forall p bs e et,
     Ev_Shape e et ->
     Ev_Shape (ggc p bs e) (gg p et)
@@ -506,7 +506,7 @@ Proof.
   intros.
   induction ec; intros;
     try econstructor;
-    eauto.
+    eauto.  
 Defined.
 
 (* TODO: perhaps an equality modulo "measuring place" *)

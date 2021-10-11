@@ -48,7 +48,7 @@ Proof.
     ff.
     subst.
     ff.
-    assert (exists et', et = uu n l n0 n1 et').
+    assert (exists et', et = uu n l n0 n1 n2 et').
     { eapply inv_recon_uu; eauto. }
     destruct_conjs.
     subst.

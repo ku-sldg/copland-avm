@@ -75,15 +75,16 @@ Definition call_ASP (i:ASP_ID) (l:list Arg) (tid:TARG_ID) (tpl:Plc) (x:nat) : CV
 
 (* Matches on evidence type param only for verification.  
    Will extract to the cons function over the first two params (new measurement bits + existing evidence) *)
-Definition cons_uu (x:BS) (e:EvC) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID): EvC :=
+Definition cons_uu (x:BS) (e:EvC) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID) (p:Plc): EvC :=
   match e with
-  | evc bits et => evc (x :: bits) (uu i l tpl tid et)
+  | evc bits et => evc (x :: bits) (uu i l tpl tid p et)
   end.
 
 Definition invoke_ASP (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID) (x:nat) : CVM EvC :=
   bs <- call_ASP i l tid tpl x ;;
   e <- get_ev ;;
-  ret (cons_uu bs e i l tpl tid).
+  p <- get_pl ;;
+  ret (cons_uu bs e i l tpl tid p).
 
 Definition encodeEvBits (e:EvC): BS.
 Admitted.
@@ -97,7 +98,7 @@ Admitted.
 Definition tag_SIG (x:nat) (p:Plc) (e:EvC) : CVM unit :=
   add_tracem [sign x p (get_et e)].
 
-Definition cons_gg (sig:BS) (e:EvC) (p:Plc): EvC :=
+Definition cons_sig (sig:BS) (e:EvC) (p:Plc): EvC :=
   match e with
   | evc bits et =>
     evc (sig :: bits) (gg p et)
@@ -114,7 +115,7 @@ Definition signEv (x:nat) : CVM EvC :=
   p <- get_pl ;;
   e <- get_ev ;;
   tag_SIG x p e ;;
-  ret (cons_gg (do_sig (encodeEvBits e) p x) e p).
+  ret (cons_sig (do_sig (encodeEvBits e) p x) e p).
 
 Definition tag_HSH (x:nat) (p:Plc) (e:EvC): CVM unit :=
   add_tracem [hash x p (get_et e)].
@@ -141,10 +142,8 @@ Definition do_prim (x:nat) (a:ASP) : CVM EvC :=
   | CPY => copyEv x
   | ASPC asp_id l tpl tid =>
     invoke_ASP asp_id l tpl tid x       
-  | SIG =>
-    signEv x
-  | HSH =>
-    hashEv x
+  | SIG => signEv x
+  | HSH => hashEv x
   end.
 
 (*
