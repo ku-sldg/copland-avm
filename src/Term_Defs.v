@@ -92,6 +92,35 @@ Fixpoint et_size (e:Evidence): nat :=
   | ss e1 e2 => (et_size e1) + (et_size e2)
   | pp e1 e2 => (et_size e1) + (et_size e2)
   end.
+
+Fixpoint thread_count (t:Term) : nat :=
+  match t with
+  | asp _ => 0
+  | att _ _ => 0
+  | lseq t1 t2 => max (thread_count t1) (thread_count t2)
+  | bseq _ t1 t2 => max (thread_count t1) (thread_count t2)
+  | bpar _ t1 t2 => 1 + (thread_count t1) + (thread_count t2)
+  end.
+
+(*
+Fixpoint thread_count' (t:Term) (n:nat) : nat :=
+  match t with
+  | asp _ => n
+  | att _ _ => n
+  | lseq t1 t2 => max (thread_count' t1 0) (thread_count' t2 0)
+  | bseq _ t1 t2 => max (thread_count' t1 0) (thread_count' t2 0)
+  | bpar _ t1 t2 => 1 + (thread_count' t1 0) + (thread_count' t2 0)
+  end.
+
+Definition thread_count (t:Term) : nat :=
+  thread_count' t 0.
+*)
+
+Compute (thread_count (bpar (ALL,ALL) (asp SIG) (asp CPY))).
+
+Check max.
+Print max.
+    
     
 Definition splitEv_T_l (sp:Split) (e:Evidence) : Evidence :=
   match sp with
@@ -243,6 +272,9 @@ Definition asp_event i x p e :=
 
 Definition Range: Set := nat * nat.
 
+Definition Loc: Set := nat.
+Definition Locs: Set := list Loc.
+
 Inductive AnnoTerm: Set :=
 | aasp: Range -> ASP -> AnnoTerm
 | aatt: Range -> Plc -> AnnoTerm -> AnnoTerm
@@ -353,6 +385,88 @@ Lemma unique_req_events (t:AnnoTerm) : forall p i i0 p1 p2 q q0 t0 t1,
     not (events t p (req i0 loc p2 q0 t1)).
  *)
 
+Inductive AnnoTermPar: Set :=
+| aasp_par: Range -> ASP -> AnnoTermPar
+| aatt_par: Range -> Plc -> AnnoTerm -> AnnoTermPar
+| alseq_par: Range -> AnnoTermPar -> AnnoTermPar -> AnnoTermPar
+| abseq_par: Range -> Split -> AnnoTermPar -> AnnoTermPar -> AnnoTermPar
+| abpar_par:
+    Range -> Loc -> Split -> AnnoTermPar -> AnnoTerm -> AnnoTermPar.
+
+Definition range_par x :=
+  match x with
+  | aasp_par r _ => r
+  | aatt_par r _ _ => r
+  | alseq_par r _ _ => r
+  | abseq_par r _ _ _ => r
+  | abpar_par r _ _ _ _ => r
+  end.
+
+Inductive well_formed_r_annt: AnnoTerm -> Prop :=
+| wf_asp_r_annt: forall r x,
+    snd r = S (fst r) ->
+    well_formed_r_annt (aasp r x)
+| wf_att_r_annt: forall r p x,
+    well_formed_r_annt x ->
+    S (fst r) = fst (range x) ->
+    snd r = S (snd (range x)) ->
+    Nat.pred (snd r) > fst r ->
+    well_formed_r_annt (aatt r p x)
+                  
+| wf_lseq_r_annt: forall r x y,
+    well_formed_r_annt x -> well_formed_r_annt y ->
+    fst r = fst (range x) ->
+    snd (range x) = fst (range y) ->
+    snd r = snd (range y) -> 
+    well_formed_r_annt (alseq r x y)               
+| wf_bseq_r_annt: forall r s x y,
+    well_formed_r_annt x -> well_formed_r_annt y ->
+    S (fst r) = fst (range x) ->
+    snd (range x) = fst (range y) ->
+    snd r = S (snd (range y)) ->  
+    well_formed_r_annt (abseq r s x y)              
+| wf_bpar_r_annt: forall r s x y,
+    well_formed_r_annt x -> well_formed_r_annt y ->  
+    S (fst r) = fst (range x) ->
+    snd (range x) = fst (range y) ->
+    (snd r) = S (snd (range y)) ->
+    (*fst (range y) > fst (range x) -> *)
+    well_formed_r_annt (abpar r s x y).
+Hint Constructors well_formed_r_annt : core.
+
+Inductive well_formed_r: AnnoTermPar -> Prop :=
+| wf_asp_r: forall r x,
+    snd r = S (fst r) ->
+    well_formed_r (aasp_par r x)
+| wf_att_r: forall r p x,
+    well_formed_r_annt x ->
+    S (fst r) = fst (range x) ->
+    snd r = S (snd (range x)) ->
+    Nat.pred (snd r) > fst r ->
+    well_formed_r (aatt_par r p x)
+                  
+| wf_lseq_r: forall r x y,
+    well_formed_r x -> well_formed_r y ->
+    fst r = fst (range_par x) ->
+    snd (range_par x) = fst (range_par y) ->
+    snd r = snd (range_par y) -> 
+    well_formed_r (alseq_par r x y)               
+| wf_bseq_r: forall r s x y,
+    well_formed_r x -> well_formed_r y ->
+    S (fst r) = fst (range_par x) ->
+    snd (range_par x) = fst (range_par y) ->
+    snd r = S (snd (range_par y)) ->  
+    well_formed_r (abseq_par r s x y)              
+| wf_bpar_r: forall r loc s x y,
+    well_formed_r x -> well_formed_r_annt y ->  
+    S (fst r) = fst (range_par x) ->
+    snd (range_par x) = fst (range y) ->
+    (snd r) = S (snd (range y)) ->
+    (*fst (range y) > fst (range x) -> *)
+    well_formed_r (abpar_par r loc s x y).
+Hint Constructors well_formed_r : core.
+
+(*
 Inductive well_formed_r: AnnoTerm -> Prop :=
 | wf_asp_r: forall r x,
     snd r = S (fst r) ->
@@ -384,6 +498,7 @@ Inductive well_formed_r: AnnoTerm -> Prop :=
     (*fst (range y) > fst (range x) -> *)
     well_formed_r (abpar r s x y).
 Hint Constructors well_formed_r : core.
+*)
 
 Ltac afa :=
   match goal with   
@@ -469,7 +584,7 @@ Ltac do_list_empty :=
 Lemma anno_well_formed_r:
   forall t i j t',
     anno t i = (j, t') ->
-    well_formed_r t'.
+    well_formed_r_annt t'.
 Proof.
   intros.
   generalizeEverythingElse t.
@@ -593,3 +708,63 @@ Proof.
       }
       tauto.     
 Defined.
+
+
+
+
+(*
+Inductive AnnoTerm_Par: Set :=
+| aterm_par: AnnoTerm -> Loc -> AnnoTerm_Par.
+ *)
+
+(*
+
+Require Import OptMonad.
+
+Definition peel_loc (ls:Locs) : option (Loc * Locs) :=
+  match ls with
+  | bs :: ls' => Some (bs, ls')
+  | _ => None
+  end.
+
+Lemma peel_fact': forall e x y H,
+    length e = S x ->
+    peel_loc e = Some (y, H) ->
+    length H = x.
+Proof.
+  intros.
+  destruct e;
+    ff; eauto.
+Defined.
+ *)
+
+
+
+Fixpoint anno_par (t:AnnoTerm) (loc:Loc) : (Loc * AnnoTermPar)  :=
+  match t with
+  | aasp r a => (loc, aasp_par r a)
+  | aatt r p t => (loc, aatt_par r p t)
+                     
+  | alseq r t1 t2 =>
+    let '(loc', t1') := anno_par t1 loc in
+    let '(loc'', t2') := anno_par t2 loc' in
+
+    (loc'', alseq_par r t1' t2')
+      
+  | abseq r spl t1 t2 =>
+    let '(loc', t1') := anno_par t1 loc in
+    let '(loc'', t2') := anno_par t2 loc' in
+
+    (loc'', abseq_par r spl t1' t2')
+      
+ 
+  | abpar r spl t1 t2 =>
+    let '(loc', t1') := anno_par t1 (S loc) in
+    
+    (loc', abpar_par r loc spl t1' t2)
+
+  end.
+
+Definition annotated_par x :=
+  snd (anno_par x 0).
+    

@@ -44,21 +44,23 @@ Definition modify_evm (f:EvC -> EvC) : CVM unit :=
   let '{| st_ev := e; st_trace := tr; st_pl := p |} := st in
   put (mk_st (f e) tr p).
 
-Definition add_trace (tr':list Ev) : cvm_st -> cvm_st :=
+Definition add_trace (tr':list CVM_Event) : cvm_st -> cvm_st :=
   fun '{| st_ev := e; st_trace := tr; st_pl := p |} =>
     mk_st e (tr ++ tr') p.
 
-Definition add_tracem (tr:list Ev) : CVM unit :=
+Definition add_tracem (tr:list CVM_Event) : CVM unit :=
   modify (add_trace tr).
 
-Definition split_ev (i:nat) (sp:Split): CVM EvC :=
+Definition split_ev (sp:Split): CVM (EvC*EvC) :=
   e <- get_ev ;;
-  p <- get_pl ;;
   let e1 := splitEv_l sp e in
   let e2 := splitEv_r sp e in
-  put_ev e1 ;;
-  add_tracem [Term_Defs.split i p] ;;
-  ret e2.
+  ret (e1,e2).
+
+Definition split_ev_seq (i:nat) (sp:Split): CVM (EvC*EvC) :=
+  p <- get_pl ;;
+  add_tracem [cvm_split i p] ;;
+  split_ev sp.
 
 
 (** * Partially-symbolic implementations of IO operations *)
@@ -70,7 +72,7 @@ Admitted.
 
 Definition call_ASP (i:ASP_ID) (l:list Arg) (tid:TARG_ID) (tpl:Plc) (x:nat) : CVM BS :=
   p <- get_pl ;;
-  add_tracem [umeas x p i l tpl tid];;
+  add_tracem [cvm_umeas x p i l tpl tid];;
   ret x.
 
 (* Matches on evidence type param only for verification.  
@@ -96,7 +98,7 @@ Definition do_hash (bs:BS) (p:Plc) : BS.
 Admitted.
 
 Definition tag_SIG (x:nat) (p:Plc) (e:EvC) : CVM unit :=
-  add_tracem [sign x p (get_et e)].
+  add_tracem [cvm_sign x p (get_et e)].
 
 Definition cons_sig (sig:BS) (e:EvC) (p:Plc): EvC :=
   match e with
@@ -118,7 +120,7 @@ Definition signEv (x:nat) : CVM EvC :=
   ret (cons_sig (do_sig (encodeEvBits e) p x) e p).
 
 Definition tag_HSH (x:nat) (p:Plc) (e:EvC): CVM unit :=
-  add_tracem [hash x p (get_et e)].
+  add_tracem [cvm_hash x p (get_et e)].
 
 Definition cons_hh (hsh:BS) (e:EvC) (p:Plc): EvC :=
   evc [hsh] (hh p (get_et e)).
@@ -134,7 +136,7 @@ Definition hashEv (x:nat) : CVM EvC :=
 
 Definition copyEv (x:nat) : CVM EvC :=
   p <- get_pl ;;
-  add_tracem [copy x p] ;;
+  add_tracem [cvm_copy x p] ;;
   get_ev.
 
 Definition do_prim (x:nat) (a:ASP) : CVM EvC :=
@@ -156,7 +158,7 @@ Definition et_fun' (e:EvC): Evidence :=
 Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) : CVM unit :=
   p <- get_pl ;;
   e <- get_ev ;;
-  add_tracem [req reqi p q (unanno t) (get_et e)].
+  add_tracem [cvm_req reqi p q (unanno t) (get_et e)].
 
 (* Primitive CVM Monad operations that require IO Axioms *)
 Definition doRemote (t:AnnoTerm) (q:Plc) (e:EvC) : CVM EvC :=
@@ -167,7 +169,7 @@ Definition receiveResp (t:AnnoTerm) (q:Plc) (rpyi:nat) : CVM EvC :=
   p <- get_pl ;;
   e <- get_ev ;;
   e' <- doRemote t q e ;;
-  add_tracem [rpy (Nat.pred rpyi) p q (get_et e')] ;;
+  add_tracem [cvm_rpy (Nat.pred rpyi) p q (get_et e')] ;;
   ret e'.
 
 Definition ss_cons (e1:EvC) (e2:EvC): EvC :=
@@ -183,12 +185,25 @@ Definition pp_cons (e1:EvC) (e2:EvC): EvC :=
 Definition join_seq (n:nat) (e1:EvC) (e2:EvC): CVM unit :=
   p <- get_pl ;;
   put_ev (ss_cons e1 e2) ;;
-  add_tracem [join n p].
+  add_tracem [cvm_join n p].
 
-Definition join_par (n:nat) (e1:EvC) (e2:EvC): CVM unit :=
+Definition start_par_thread (i:nat) (loc:Loc) (t:AnnoTerm) (e:EvC) : CVM unit :=
+  (*
+  e <- get_ev ;;
   p <- get_pl ;;
-  put_ev (pp_cons e1 e2) ;;
-  add_tracem [join n p].
+  let e1 := splitEv_l sp e in
+  let e2 := splitEv_r sp e in
+  put_ev e1 ;; *)
+  p <- get_pl ;;
+  add_tracem [cvm_splitp i loc p t (get_et e)].
+
+Definition wait_par_thread (n:nat) (loc:Loc) (t:AnnoTerm) (e:EvC) : CVM EvC :=
+  p <- get_pl ;;
+  add_tracem [cvm_joinp n loc p t] ;;
+  ret (parallel_vm_thread t p e).
+
+Definition join_par (e1:EvC) (e2:EvC): CVM unit :=
+  put_ev (pp_cons e1 e2).
    
 Ltac monad_unfold :=
   repeat unfold

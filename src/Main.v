@@ -301,7 +301,7 @@ Qed.
 
 Lemma lstar_trace:
   forall t p e tr,
-    well_formed_r t ->
+    well_formed_r_annt t ->
     lstar (conf t p e) tr (stop p (aeval t p e)) ->
     trace t p e tr.
 Proof.
@@ -316,7 +316,7 @@ Qed.
 
 Theorem ordered:
   forall t p e tr ev0 ev1,
-    well_formed_r t ->
+    well_formed_r_annt t ->
     lstar (conf t p e) tr (stop p (aeval t p e)) ->
     prec (ev_sys t p e) ev0 ev1 ->
     earlier tr ev0 ev1.

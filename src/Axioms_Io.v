@@ -4,13 +4,13 @@ Uninterpreted functions and rewrite rules that model external (remote and local 
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term ConcreteEvidence LTS.
+Require Import Term ConcreteEvidence LTS StVM.
 
 (** IO Axioms *)
 
 Definition toRemote (t:AnnoTerm) (pTo:Plc) (e:EvC) : EvC.
 Admitted.
-Definition remote_events (t:AnnoTerm) (p:Plc) : (list Ev).
+Definition remote_events (t:AnnoTerm) (p:Plc) : (list CVM_Event).
 Admitted.
 
 (*
@@ -22,7 +22,7 @@ Admitted.
 Definition parallel_vm_thread (t:AnnoTerm) (p:Plc) (e:EvC) : EvC.
 Admitted.
 
-Definition parallel_vm_events (t:AnnoTerm) (p:Plc) : list Ev.
+Definition parallel_vm_events (t:AnnoTerm) (p:Plc) : list CVM_Event.
 Admitted.
 
 Definition shuffled_events (el1:list Ev) (el2:list Ev) : list Ev.
@@ -33,7 +33,7 @@ Admitted.
 Definition remote_evidence (t:AnnoTerm) (p:Plc) (e:EvC) : EvC.
 Admitted.
 
-Definition remote_trace (t:AnnoTerm) (p:Plc) : list Ev.
+Definition remote_trace (t:AnnoTerm) (p:Plc) : list CVM_Event.
 Admitted.
 
 

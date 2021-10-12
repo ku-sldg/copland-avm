@@ -70,7 +70,7 @@ end.
 
 Lemma well_structured_evsys:
   forall t p e,
-    well_formed_r t ->
+    well_formed_r_annt t ->
     well_structured ev (ev_sys t p e).
 Proof.
   induction t; intros; inv_wfr; simpl;
@@ -92,7 +92,7 @@ Search "succ".
 
 Lemma evsys_events:
   forall t p e ev,
-    well_formed_r t ->
+    well_formed_r_annt t ->
     ev_in ev (ev_sys t p e) <-> events t p e ev.
 Proof.
   split; revert p; revert e; induction t; intros; inv_wfr; simpl in *;
@@ -133,7 +133,7 @@ Ltac inv_ws :=
 
 Lemma supreme_unique:
   forall t p e,
-    well_formed_r t ->
+    well_formed_r_annt t ->
     exists ! v, supreme (ev_sys t p e) v.
 Proof.
   intros t p e H.
@@ -166,7 +166,7 @@ Defined.
 
 Lemma evsys_max_unique:
   forall t p e,
-    well_formed_r t ->
+    well_formed_r_annt t ->
     unique (supreme (ev_sys t p e)) (max (ev_sys t p e)).
 Proof.
   intros t p e H.
@@ -193,7 +193,7 @@ Proof.
     repeat inv_sup; auto.
   -
     cbn.
-    apply IHwell_formed_r2.
+    apply IHwell_formed_r_annt2.
     eassumption.
     cbn in *.
     do_before_sup.

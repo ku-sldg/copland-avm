@@ -12,7 +12,7 @@ Import List.ListNotations.
 Set Nested Proofs Allowed.
 
 Lemma wf_lseq_pieces: forall r t1 t2,
-    well_formed_r (alseq r t1 t2) ->
+    well_formed_r (alseq_par r t1 t2) ->
     well_formed_r t1 /\ well_formed_r t2.
 Proof.
   intros.
@@ -21,8 +21,8 @@ Proof.
 Defined.
 
 Lemma wf_at_pieces: forall t r p,
-    well_formed_r (aatt r p t) ->
-    well_formed_r t.
+    well_formed_r (aatt_par r p t) ->
+    well_formed_r_annt t.
 Proof.
   intros.
   inversion H.
@@ -30,7 +30,7 @@ Proof.
 Defined.
 
 Lemma wf_bseq_pieces: forall r s t1 t2,
-    well_formed_r (abseq r s t1 t2) ->
+    well_formed_r (abseq_par r s t1 t2) ->
     well_formed_r t1 /\ well_formed_r t2.
 Proof.
   intros.
@@ -38,9 +38,9 @@ Proof.
   tauto.
 Defined.
 
-Lemma wf_bpar_pieces: forall r s t1 t2,
-    well_formed_r (abpar r s t1 t2) ->
-    well_formed_r t1 /\ well_formed_r t2.
+Lemma wf_bpar_pieces: forall r loc s t1 t2,
+    well_formed_r (abpar_par r loc s t1 t2) ->
+    well_formed_r t1 /\ well_formed_r_annt t2.
 Proof.
   intros.
   inversion H.
@@ -49,20 +49,20 @@ Defined.
 
 Ltac do_wf_pieces :=
   match goal with
-  | [H: well_formed_r (alseq _ _ _ ) |- _] =>
+  | [H: well_formed_r (alseq_par _ _ _ ) |- _] =>
     (edestruct wf_lseq_pieces; eauto)
-  | [H: well_formed_r (aatt _ _?t) |- _] =>   
-    assert (well_formed_r t)
+  | [H: well_formed_r (aatt_par _ _?t) |- _] =>   
+    assert (well_formed_r_annt t)
       by (eapply wf_at_pieces; eauto)
-  | [H: well_formed_r (abseq _ _ _ _) |- _] =>
+  | [H: well_formed_r (abseq_par _ _ _ _) |- _] =>
     (edestruct wf_bseq_pieces; eauto)
-  | [H: well_formed_r (abpar _ _ _ _) |- _] =>
+  | [H: well_formed_r (abpar_par _ _ _ _ _) |- _] =>
     (edestruct wf_bpar_pieces; eauto)
   end.
 
 Lemma well_formed_range_r:
   forall t,
-    well_formed_r t ->
+    well_formed_r_annt t ->
     snd (range t) = fst (range t) + esize t.
 Proof.
     induction t;
@@ -70,15 +70,17 @@ Proof.
          repeat find_apply_hyp_hyp; lia).
 Defined.
 
+(*
 Lemma well_formed_range:
   forall t,
-    well_formed_r t ->
+    well_formed_r_annt t ->
     snd (range t) = fst (range t) + esize t.
 Proof.
   induction t;
     try (intros H; simpl; inv H; simpl;
          repeat find_apply_hyp_hyp; lia).
 Defined.
+*)
 
 Lemma esize_nonempty: forall t, esize t > 0.
 Proof.
@@ -89,11 +91,11 @@ Proof.
 Defined.
 
 Lemma wf_mono: forall t,
-    well_formed_r t ->
+    well_formed_r_annt t ->
     snd (range t) > fst (range t).
 Proof.
   intros.
-  rewrite well_formed_range.
+  rewrite well_formed_range_r.
   pose (esize_nonempty t).
   lia.
   eauto.
@@ -235,14 +237,23 @@ Ltac inv_events :=
   | [H:events (?C _) _ _ _ |- _] => inv H
   end.
 
-Ltac inv_wfr :=
+Ltac inv_wfr' :=
   match goal with
   | [H: well_formed_r _ |- _] => inv H
   end.
 
+Ltac inv_wfr'' :=
+  match goal with
+  | [H: well_formed_r_annt _ |- _] => inv H
+  end.
+
+Ltac inv_wfr :=
+  try inv_wfr';
+  try inv_wfr''.
+
 Lemma events_range:
   forall t v p e,
-    well_formed_r t ->
+    well_formed_r_annt t ->
     events t p e v ->
     fst (range t) <= ev v < snd (range t).
 Proof.
@@ -331,7 +342,7 @@ Ltac do_bra_range :=
 
 Lemma events_range_event:
   forall t p i e,
-    well_formed_r t ->
+    well_formed_r_annt t ->
     fst (range t) <= i < snd (range t) ->
     exists v, events t p e v /\ ev v = i.
 Proof.
@@ -392,14 +403,21 @@ Ltac aba :=
   | [H: events _ _ _ _, H': events _ _ _ _ |- _] => inv H; inv H'
   end.
 
+(*
+Ltac wfr' :=
+  match goal with
+  | [H': well_formed_r ?HH |- _] => pose_new_proof (well_formed_range_r HH H')
+  end.
+*)
+
 Ltac wfr :=
   match goal with
-  | [(*H: AnnoTerm,*) H': well_formed_r ?HH |- _] => pose_new_proof (well_formed_range_r HH H')
+  | [H': well_formed_r_annt ?HH |- _] => pose_new_proof (well_formed_range_r HH H')
   end.
 
 Lemma events_injective:
   forall t p e v1 v2,
-    well_formed_r t ->
+    well_formed_r_annt t ->
     events t p e v1 ->
     events t p e v2 ->
     ev v1 = ev v2 ->

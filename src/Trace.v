@@ -321,7 +321,7 @@ Ltac do_nodup :=
 
 Lemma trace_events:
   forall t p e tr v,
-    well_formed_r t ->
+    well_formed_r_annt t ->
     trace t p e tr ->
     In v tr <-> events t p e v.
 Proof.
@@ -420,7 +420,7 @@ Qed.
 
 Lemma trace_range:
   forall t p e tr v,
-    well_formed_r t ->
+    well_formed_r_annt t ->
     trace t p e tr ->
     In v tr ->
     fst (range t) <= ev v < snd (range t).
@@ -432,7 +432,7 @@ Qed.
 
 Lemma trace_range_event:
   forall t p e tr i,
-    well_formed_r t ->
+    well_formed_r_annt t ->
     trace t p e tr ->
     fst (range t) <= i < snd (range t) ->
     exists v, In v tr /\ ev v = i.
@@ -445,7 +445,7 @@ Qed.
 
 Lemma trace_injective_events:
   forall t p e tr v0 v1,
-    well_formed_r t ->
+    well_formed_r_annt t ->
     trace t p e tr ->
     In v0 tr -> In v1 tr ->
     ev v0 = ev v1 ->
@@ -459,7 +459,7 @@ Qed.
 
 Ltac tr_wf :=
   match goal with
-  | [H: well_formed_r ?t,
+  | [H: well_formed_r_annt ?t,
         H': trace ?t _ _ ?tr,
             H'': In ?v ?tr |- _] =>
     assert_new_proof_by (fst (range t) <= ev v < snd (range t))
@@ -468,7 +468,7 @@ Ltac tr_wf :=
 
 Lemma nodup_trace:
   forall t p e tr,
-    well_formed_r t ->
+    well_formed_r_annt t ->
     trace t p e tr ->
     NoDup tr.
 Proof.
@@ -597,7 +597,7 @@ Ltac do_shuf_r :=
 
 Lemma evsys_tr_in:
   forall t p e tr ev0,
-    well_formed_r t ->
+    well_formed_r_annt t ->
     trace t p e tr ->
     ev_in ev0 (ev_sys t p e) ->
     In ev0 tr.
@@ -665,7 +665,7 @@ Ltac do_evin2 :=
 
 Theorem trace_order:
   forall t p e tr ev0 ev1,
-    well_formed_r t ->
+    well_formed_r_annt t ->
     trace t p e tr ->
     prec (ev_sys t p e) ev0 ev1 ->
     earlier tr ev0 ev1.
