@@ -484,6 +484,21 @@ Proof.
     tauto.
 Defined.
 
+Lemma evc_inv: forall e,
+    e = evc (get_bits e) (get_et e).
+Proof.
+  destruct e; eauto.
+Defined.
+
+Lemma front_app{A} :
+  forall (x:A) xs ys,
+    
+    x :: xs ++ ys = [x] ++ xs ++ ys.
+Proof.
+  intros.
+  tauto.
+Defined.
+
 
 Lemma cvm_refines_lts_evidence' : forall t tr tr' e e' p p',
     well_formed_r t ->
@@ -631,11 +646,7 @@ Proof.
 
       do_pl_immut.
       subst.
-       Lemma evc_inv: forall e,
-              e = evc (get_bits e) (get_et e).
-          Proof.
-            destruct e; eauto.
-          Defined.
+
 
       assert (e3 = (eval (unanno a) p (splitEv_T_r s (get_et e)))).
       {
@@ -697,13 +708,6 @@ Proof.
   eapply cvm_refines_lts_evidence'; eauto.
 Defined.
 
-Definition lts_remote_events (t:AnnoTerm) (p:Plc) : list Ev.
-Admitted.
-
-
-Axiom remote_LTS: forall t n et, 
-    lstar (conf t n et) (lts_remote_events t n) (stop n (aeval t n et)).
-
 Lemma eval_aeval: forall t1 p et,
     eval (unanno t1) p et = aeval t1 p et.
 Proof.
@@ -728,6 +732,30 @@ Proof.
     eauto. 
 Defined.
 
+Definition cvm_shuffled_events (e1:list CVM_Event) (e2:list CVM_Event): list CVM_Event.
+Admitted.
+
+Inductive cvm_to_lts_trace: list CVM_Event -> list CVM_Event -> Prop :=
+| cvm_shuffle: forall cvm_l1 n n0 loc p t et,
+    cvm_to_lts_trace
+      ([cvm_splitp n loc p t et] ++ cvm_l1 ++ [cvm_joinp n0 loc p t])
+      ([cvm_split n p] ++ (cvm_shuffled_events cvm_l1 (remote_events t p)) ++ [cvm_join n0 p]).
+
+
+
+    cvm_to_lts_trace l1 cvm_l1 ->
+    cvm_to_lts_trace
+      ([Term_Defs.split n p] ++
+       (shuffled_events l1 (lts_remote_events t p)) ++
+       [Term_Defs.join n0 p])
+      ([cvm_splitp n loc p t et] ++ cvm_l1 ++ [cvm_joinp n0 loc p t])
+
+
+
+
+
+
+
 Inductive cvm_to_lts_event: Ev -> CVM_Event -> Prop :=
 | cvmlts_copy: forall n p,
     cvm_to_lts_event (copy n p) (cvm_copy n p)
@@ -751,13 +779,15 @@ Inductive cvm_to_lts_event: Ev -> CVM_Event -> Prop :=
                      (cvm_split n p)
 | cvmlts_join: forall n p,
     cvm_to_lts_event (Term_Defs.join n p)
-                     (cvm_join n p)
+                     (cvm_join n p).
+(*
 | cvmlts_splitp: forall n p loc t et,
     cvm_to_lts_event (Term_Defs.split n p)
                      (cvm_splitp n loc p t et)
 | cvmlts_joinp: forall n p loc t,
     cvm_to_lts_event (Term_Defs.join n p)
                      (cvm_joinp n loc p t).
+*)
 Hint Constructors cvm_to_lts_event : core.
 
 Check shuffled_events.
@@ -766,6 +796,9 @@ Locate shuffle.
 
 
 Inductive cvm_to_lts_trace: list Ev -> list CVM_Event -> Prop :=
+(*| cvm_remote: forall t n,
+    cvm_to_lts_trace (lts_remote_events t n) (remote_events t n) *)
+| cvm_empty: cvm_to_lts_trace [] []
 | cvm_shuffle: forall l1 cvm_l1 n n0 loc p t et,
     cvm_to_lts_trace l1 cvm_l1 ->
     cvm_to_lts_trace
@@ -773,17 +806,26 @@ Inductive cvm_to_lts_trace: list Ev -> list CVM_Event -> Prop :=
        (shuffled_events l1 (lts_remote_events t p)) ++
        [Term_Defs.join n0 p])
       ([cvm_splitp n loc p t et] ++ cvm_l1 ++ [cvm_joinp n0 loc p t])
+      (*
 | cvm_move: forall tr_lts tr_cvm rest_lts rest_cvm,
     cvm_to_lts_trace tr_lts tr_cvm ->
     cvm_to_lts_trace
       rest_lts
       rest_cvm ->
     cvm_to_lts_trace (tr_lts ++ rest_lts) (tr_cvm ++ rest_cvm)
-| cvm_move_one: forall e1_lts e1_cvm (*rest_lts rest_cvm*),
+*)
+| cvm_move_one: forall e1_lts e1_cvm rest_lts rest_cvm,
     cvm_to_lts_event e1_lts e1_cvm ->
+    cvm_to_lts_trace rest_lts rest_cvm ->
     cvm_to_lts_trace
-      ([e1_lts] (* ++ rest_lts *))
-      ([e1_cvm] (* ++ rest_cvm *)).
+      ([e1_lts] ++ rest_lts)
+      ([e1_cvm] ++ rest_cvm)
+| cvm_move_remote: forall a n rest_lts rest_cvm,
+    (*cvm_to_lts_event e1_lts e1_cvm -> *)
+    cvm_to_lts_trace rest_lts rest_cvm ->
+    cvm_to_lts_trace
+      (lts_remote_events a n ++ rest_lts)
+      (remote_events a n ++ rest_cvm).
 Hint Constructors cvm_to_lts_trace : core.
 
 Lemma cvm_refines_lts_event_ordering : forall t cvm_tr bits bits' et et' p p',
@@ -998,9 +1040,24 @@ Proof.
     econstructor.
     simpl.
 
+
+
+     repeat (rewrite front_app).
+     
+
+     (*
      assert ((req n0 p' n (unanno a) et  :: lts_remote_events a n ++ [rpy (Nat.pred n1) p' n (aeval a n et)]) =
-            [req n0 p' n (unanno a) et] ++  lts_remote_events a n ++ [rpy (Nat.pred n1) p' n (aeval a n et)]).
-    admit.
+             [req n0 p' n (unanno a) et] ++  lts_remote_events a n ++ [rpy (Nat.pred n1) p' n (aeval a n et)]).
+     {
+       tauto.
+       Search app.
+
+      
+
+       rewrite front_app.
+       tauto.
+     }
+
     rewrite H1; clear H1.
 
     assert (    (cvm_req n0 p' n (unanno a) et
@@ -1011,15 +1068,20 @@ Proof.
      [cvm_rpy (Nat.pred n1) p' n (get_et (toRemote a n (evc bits et)))])).
     admit.
     rewrite H1; clear H1.
+      *)
+     
     econstructor.
     econstructor.
     econstructor.
 
     econstructor.
-
-    admit. (* TODO: lemma or extra rule in relation? *)
-    econstructor.
+    (*
+    admit. (*econstructor.*) (* TODO: lemma or extra rule in relation?   Done... *)
+     
+    
+    econstructor. *)
     rewrite remote_Evidence_Type_Axiom.
+    econstructor.
     econstructor.
     
 
@@ -1068,6 +1130,18 @@ Proof.
     
     eassumption.
     +
+      invc H9.
+      ++
+        simpl.
+        eauto.
+      ++
+        
+
+
+
+        
+      eauto.
+      simpl.
       econstructor.
       eauto.
       eauto.
@@ -1162,6 +1236,8 @@ Proof.
       econstructor.
       ++
         simpl.
+        repeat (rewrite front_app).
+        (*
         assert ((Term_Defs.split n p :: x ++ x0 ++ [join (Nat.pred n0) p]) =
                 ([Term_Defs.split n p] ++ x ++ x0 ++ [join (Nat.pred n0) p])).
         admit.
@@ -1171,14 +1247,15 @@ Proof.
                 ([StVM.cvm_split n p] ++ blah' ++ blah ++ [cvm_join (Nat.pred n0) p])).
         admit.
         rewrite H9.
-        eauto.
+         *)
+        
         econstructor.
         econstructor.
         econstructor.
         eauto.
     +
       
-              df.
+      df.
       vmsts.
       dosome.
       df.
@@ -1250,6 +1327,8 @@ Proof.
       econstructor.
       ++
         simpl.
+        repeat (rewrite front_app).
+        (*
         assert ((Term_Defs.split n p :: x ++ x0 ++ [join (Nat.pred n0) p]) =
                 ([Term_Defs.split n p] ++ x ++ x0 ++ [join (Nat.pred n0) p])).
         admit.
@@ -1260,12 +1339,14 @@ Proof.
         admit.
         rewrite H9.
         eauto.
+         *)
+        
         econstructor.
         econstructor.
         econstructor.
         eauto.
     +
-            df.
+      df.
       vmsts.
       dosome.
       df.
@@ -1337,6 +1418,8 @@ Proof.
       econstructor.
       ++
         simpl.
+        repeat (rewrite front_app).
+        (*
         assert ((Term_Defs.split n p :: x ++ x0 ++ [join (Nat.pred n0) p]) =
                 ([Term_Defs.split n p] ++ x ++ x0 ++ [join (Nat.pred n0) p])).
         admit.
@@ -1347,12 +1430,14 @@ Proof.
         admit.
         rewrite H9.
         eauto.
+         *)
+        
         econstructor.
         econstructor.
         econstructor.
         eauto.
     +
-            df.
+      df.
       vmsts.
       dosome.
       df.
@@ -1424,6 +1509,8 @@ Proof.
       econstructor.
       ++
         simpl.
+        repeat (rewrite front_app).
+        (*
         assert ((Term_Defs.split n p :: x ++ x0 ++ [join (Nat.pred n0) p]) =
                 ([Term_Defs.split n p] ++ x ++ x0 ++ [join (Nat.pred n0) p])).
         admit.
@@ -1434,6 +1521,8 @@ Proof.
         admit.
         rewrite H9.
         eauto.
+         *)
+        
         econstructor.
         econstructor.
         econstructor.
@@ -1606,15 +1695,7 @@ Proof.
       econstructor.
  *)
 
-        Axiom par_events : forall t p,
-    parallel_vm_events t p = remote_trace t p.
 
-      Axiom bpar_shuffle : forall x tr p t1 t2 et1 et2,
-          lstar (conf t1 p et1) tr (stop p (aeval t1 p et1)) ->
-    lstar (bp x (conf t1 p et1) (conf t2 p et2))
-          (shuffled_events tr
-                           (lts_remote_events t2 p))
-          (bp x (stop p (aeval t1 p et1)) (stop p (aeval t2 p et2))).
 
   - (* abpar case *)
     do_wf_pieces.
@@ -1814,7 +1895,7 @@ Proof.
         eapply cvm_shuffle.
         eassumption.
     +
-            df.
+      df.
       vmsts.
       dosome.
       df.
@@ -1911,7 +1992,7 @@ Proof.
         eapply cvm_shuffle.
         eassumption.
     +
-            df.
+      df.
       vmsts.
       dosome.
       df.
@@ -2319,22 +2400,45 @@ Proof.
       eapply stbpstop.
       econstructor.
 Defined.
-*)
+ *)
+Admitted.
 
-Lemma cvm_refines_lts_event_ordering_corrolary : forall t tr bits bits' et et' p p',
+(*
+    exists tr,
+    lstar (conf (unannoPar t) p et) tr (stop p (aeval (unannoPar t) p et)) /\
+    cvm_to_lts_trace tr cvm_tr.
+ *)
+
+
+Lemma cvm_refines_lts_event_ordering_corrolary : forall t cvm_tr bits (*bits'*) et (*et'*) p (*p'*),
     well_formed_r t ->
     (*Ev_Shape e et -> *)
-    copland_compile t (mk_st (evc bits et) [] p) = (Some tt, (mk_st (evc bits' et') tr p')) ->
+    (*copland_compile t (mk_st (evc bits et) [] p) = (Some tt, (mk_st (evc bits' et') tr p')) -> *)
     st_trace (run_cvm t
-                     (mk_st (evc bits et) [] p)) = tr ->
-    lstar (conf t p et) tr (stop p (aeval t p et)).
+                      (mk_st (evc bits et) [] p)) = cvm_tr ->
+    exists tr,
+    lstar (conf (unannoPar t) p et) tr (stop p (aeval (unannoPar t) p et)) /\
+    cvm_to_lts_trace tr cvm_tr.
+    (*lstar (conf t p et) tr (stop p (aeval t p et)). *)
 Proof.
   intros.
   destruct (copland_compile t {| st_ev := (evc bits et); st_trace := []; st_pl := p |}) eqn:hi.
   simpl in *.
   vmsts.
   simpl in *.
-  apply cvm_refines_lts_event_ordering with (t:=t) (tr:=tr) (bits:=bits) (et:=et) (bits':=bits') (et':=et') (p:=p) (p':=st_pl); eauto.
+  Check cvm_refines_lts_event_ordering.
+  simpl.
+  assert (o = Some tt).
+  {
+    eapply always_some.
+    eassumption.
+    eassumption.
+  }
+  subst.
+  destruct st_ev.
+  
+  
+  apply cvm_refines_lts_event_ordering with (t:=t) (*(tr:=tr)*) (bits:=bits) (et:=et) (bits':=e) (et':=e0) (p:=p) (p':=st_pl); eauto.
   
   try dunit.
   rewrite hi.
@@ -2342,24 +2446,539 @@ Proof.
   monad_unfold.
   rewrite hi in *.
   simpl in *.
-  subst.
-  solve_by_inversion.
+  tauto.
 Defined.
 
-Theorem cvm_respects_event_system' : forall t tr ev0 ev1 bits bits' et et',
+Lemma range_par: forall t,
+    range_par t = range (unannoPar t).
+Proof.
+  destruct t; eauto.
+Defined.
+
+Lemma wfr_implies_wfrannt :
+  forall t,
+    well_formed_r t ->
+    well_formed_r_annt (unannoPar t).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+        invc H;
+    repeat find_apply_hyp_hyp;
+    repeat rewrite range_par in *;
+    econstructor; eauto.
+Defined.
+
+    Lemma cvm_splitp_contra: forall tr_lts n loc p t et,
+      cvm_to_lts_trace tr_lts [cvm_splitp n loc p t et] ->
+      False.
+    Proof.
+      intros.
+      generalizeEverythingElse H.
+      dependent induction H; intros.
+      -
+        Search (_ ++ _ = [] -> _).
+        edestruct app_eq_nil.
+        eassumption.
+        invc H1.
+      -
+        assert (
+            (tr_cvm = [cvm_splitp n loc p t et] /\ rest_cvm = []) \/
+            (rest_cvm = [cvm_splitp n loc p t et] /\ tr_cvm = [])).
+        {
+          Search (_ ++ _ = [_]).
+          edestruct app_eq_unit.
+          eassumption.
+          destruct H1.
+          subst.
+          right.
+          split; tauto.
+          destruct_conjs.
+          subst.
+          left; eauto.
+        }
+
+        destruct H1;
+          destruct_conjs; subst; eauto.
+      -
+        invc H.
+    Defined.
+
+        Lemma cvm_joinp_contra: forall tr_lts n loc p t,
+      cvm_to_lts_trace tr_lts [cvm_joinp n loc p t] ->
+      False.
+    Proof.
+      intros.
+      generalizeEverythingElse H.
+      dependent induction H; intros.
+      (*
+      -
+        Search (_ ++ _ = [] -> _).
+        edestruct app_eq_nil.
+        eassumption.
+        invc H1. *)
+      -
+        assert (
+            (tr_cvm = [cvm_joinp n loc p t] /\ rest_cvm = []) \/
+            (rest_cvm = [cvm_joinp n loc p t] /\ tr_cvm = [])).
+        {
+          Search (_ ++ _ = [_]).
+          edestruct app_eq_unit.
+          eassumption.
+          destruct H1.
+          subst.
+          right.
+          split; tauto.
+          destruct_conjs.
+          subst.
+          left; eauto.
+        }
+
+        destruct H1;
+          destruct_conjs; subst; eauto.
+      -
+        invc H.
+    Defined.
+
+            Lemma cvm_to_lts_non_empty: forall lts_tr,
+          cvm_to_lts_trace lts_tr [] ->
+          False.
+        Proof.
+          intros.
+          dependent induction H.
+          simpl.
+          assert (tr_cvm = [] /\ rest_cvm = []).
+          {
+            Search (_ ++ _ = []).
+            eapply app_eq_nil; eauto.
+          }
+          destruct_conjs.
+          eauto.
+        Defined.
+
+              Lemma cvm_to_lts_event_determ: forall e1_lts e2_lts e1_cvm,
+        cvm_to_lts_event e1_lts e1_cvm ->
+        cvm_to_lts_event e2_lts e1_cvm ->
+        e1_lts = e2_lts.
+      Proof.
+      Admitted.
+
+Lemma cvm_to_lts_determ:
+  forall tr tr' cvm_tr,
+    cvm_to_lts_trace tr cvm_tr ->
+    cvm_to_lts_trace tr' cvm_tr ->
+    tr = tr'.
+Proof.
+  intros.
+  generalizeEverythingElse H.
+  dependent induction H; intros.
+  -
+    assert (exists ls,
+               tr' =
+               [Term_Defs.split n p] ++
+                                     (shuffled_events ls (lts_remote_events t p)) ++
+                                     [Term_Defs.join n0 p] /\
+               cvm_to_lts_trace ls cvm_l1).
+    {
+      admit.
+    }
+    destruct_conjs.
+    assert (l1 = H1) by eauto.
+    subst.
+    tauto.
+    
+
+(*
+  
+  (*
+  -
+    inversion H0.
+    +
+      tauto.
+    +
+      inversion H0.
+      assert (tr_cvm = [] /\ rest_cvm = []).
+      {
+        admit. (* OK *)
+      }
+      destruct_conjs; subst.
+      invc H1.
+      invc H3.
+      tauto. *)
+      
+      
+      
+  -
+    invc H0.
+    +
+      
+    assert (cvm_l0 = cvm_l1).
+    {
+      Search (_ ++ [_] = _ ++ [_]).
+      edestruct app_inj_tail.
+      eassumption.
+      eauto.
+    }
+    subst.
+    
+    assert (l1 = l0).
+    {
+    eapply IHcvm_to_lts_trace.
+    eassumption.
+    }
+    subst.
+    assert (n2 = n0).
+    {
+      edestruct app_inj_tail.
+      eassumption.
+      solve_by_inversion.
+
+    }
+    subst.
+    tauto.
+    +
+    assert (cvm_splitp n loc p t et :: cvm_l1 ++ [cvm_joinp n0 loc p t] =
+            [cvm_splitp n loc p t et] ++ cvm_l1 ++ [cvm_joinp n0 loc p t]).
+    {
+      tauto.
+    }
+    rewrite H0 in *; clear H0.
+
+    assert ((tr_cvm = [cvm_splitp n loc p t et] /\
+             rest_cvm = cvm_l1 ++ [cvm_joinp n0 loc p t]) \/
+            (tr_cvm = [cvm_splitp n loc p t et] ++ cvm_l1 /\
+             rest_cvm = [cvm_joinp n0 loc p t]) \/
+            ( (exists ls, tr_cvm = [cvm_splitp n loc p t et] ++ ls) /\
+              (exists ls', rest_cvm = ls' ++ [cvm_joinp n0 loc p t])) \/
+            (tr_cvm = [cvm_splitp n loc p t et] ++ cvm_l1 ++ [cvm_joinp n0 loc p t] /\
+             rest_cvm = []) \/
+            (rest_cvm = [cvm_splitp n loc p t et] ++ cvm_l1 ++ [cvm_joinp n0 loc p t] /\
+             tr_cvm = [])
+           ).
+                   
+    {
+      admit.
+    }
+    repeat door; subst.
+    ++
+      exfalso.
+      eapply cvm_splitp_contra; eauto.
+    ++
+      exfalso.
+      eapply cvm_joinp_contra; eauto.
+    ++
+      assert (cvm_l1 = H0 ++ H3).
+      {
+        admit.
+      }
+      subst.
+
+      assert (exists cvm_ls,
+                 tr_lts =
+                 ([Term_Defs.split n p] ++ shuffled_events l1 (lts_remote_events t p) ++ [Term_Defs.join n p]) /\
+                 H0 = cvm_ls ++ [cvm_joinp n loc p t] /\
+                 cvm_to_lts_trace l1 cvm_ls
+             ).
+      {
+        admit.
+      }
+      destruct_conjs.
+      subst.
+
+      assert (exists cvm_ls,
+                 rest_lts =
+                 ([Term_Defs.split n0 p] ++ shuffled_events l1 (lts_remote_events t p) ++ [Term_Defs.join n0 p]) /\
+                 H3 = [cvm_splitp n0 loc p t et] ++ cvm_ls /\
+                 cvm_to_lts_trace l1 cvm_ls
+             ).
+      {
+        admit.
+      }
+      destruct_conjs.
+      subst.
+      
+             
+
+
+
+      
+
+
+      
+      
+                 H0 = cvm_l1 ++ [cvm_joinp n loc p t] /\
+                 cvm_to_lts_trace 
+
+
+      
+      clear H1.
+      
+      
+      
+      
+      
+
+    
+
+    (*
+    assert (tr_cvm = [cvm_splitp n loc p t et] /\
+            rest_cvm = cvm_l1 ++ [cvm_joinp n0 loc p t]).
+    {
+      admit.
+    }
+    destruct_conjs.
+    subst.
+     *)
+    
+
+    
+
+    exfalso.
+    eapply cvm_splitp_contra; eauto.
+    +
+      admit.
+ *)
+    
+  -
+    assert (tr_cvm = [] \/
+            rest_cvm [] \/
+            
+    
+      
+    admit.
+  -
+    invc H0.
+    +
+      admit.
+    +
+      assert (tr_cvm = [e1_cvm] /\ rest_cvm = [] \/
+              rest_cvm = [e1_cvm] /\ tr_cvm = []).
+      {
+        admit. (* OK *)
+      }
+      destruct H0;
+        destruct_conjs;
+        subst.
+      ++
+
+        exfalso.
+        eapply cvm_to_lts_non_empty; eauto.
+
+      ++
+         exfalso.
+        eapply cvm_to_lts_non_empty; eauto.
+
+    +
+      
+
+
+      assert (e1_lts = e1_lts0).
+      {
+        eapply cvm_to_lts_event_determ; eauto.
+      }
+      subst.
+      tauto.
+      
+      eassumption.
+      eassumption.
+      
+        
+        invc H4.
+        invc H2.
+        +++
+          admit.
+        +++
+          
+      
+      
+    
+
+
+
+
+    
+    
+    invc H1.
+    +
+    
+    
+
+
+    
+    invc H2.
+    ++
+      admit.
+    ++
+      assert (tr_cvm = [] \/ rest_cvm = []).
+      {
+        admit.
+      }
+      destruct H2.
+      +++
+        subst.
+        assert (rest_cvm = [cvm_splitp n loc p t et]).
+        {
+          admit.
+        }
+        subst.
+        invc H6
+        
+      
+      
+    
+
+
+
+    
+
+    Search "++".
+
+    edestruct app_eq_app.
+    apply H1.
+    invc H0.
+    ++
+    destruct_conjs.
+    subst.
+
+    invc H2.
+    +++
+      edestruct app_eq_app.
+      apply H3.
+      invc H0.
+      ++++
+        destruct_conjs.
+        subst.
+        clear H1.
+        clear H3.
+        invc H4.
+        +++++
+
+
+
+
+    
+
+
+
+    edestruct app_eq_app.
+    apply H3.
+    invc H0.
+    destruct_conjs.
+    subst.
+    clear H1.
+    clear H3.
+    invc H4; try solve_by_inversion.
+    assert (n0 = n2 /\ loc0 = loc /\ p0 = p /\ t0 = t).
+    {
+      admit.
+    }
+    destruct_conjs; subst.
+    
+    assert (l1 = l0).
+    {
+      eapply IHcvm_to_lts_trace.
+      
+      eassumption.
+
+    assert (tr_cvm = [cvm_splitp n loc p t et] /\ rest_cvm = 
+    
+    rewrite front_app.
+
+
+
+    
+    admit.
+    
+    
+    
+
+    
+Admitted.
+
+Theorem cvm_respects_event_system' : forall t tr cvm_tr ev0 ev1 bits bits' et et',
     well_formed_r t ->
     (*Ev_Shape e et -> *)
     copland_compile 
       t
       (mk_st (evc bits et) [] 0) =
-      (Some tt, (mk_st (evc bits' et') tr 0)) ->
-    prec (ev_sys t 0 et) ev0 ev1 ->
+    (Some tt, (mk_st (evc bits' et') cvm_tr 0)) ->
+    cvm_to_lts_trace tr cvm_tr ->
+    prec (ev_sys (unannoPar t) 0 et) ev0 ev1 ->
     earlier tr ev0 ev1.
 Proof.
   intros.
-  eapply ordered with (p:=0) (e:=et); eauto.
-  eapply cvm_refines_lts_event_ordering; eauto.
+  edestruct cvm_refines_lts_event_ordering.
+  eassumption.
+  eassumption.
+  destruct_conjs.
+  assert (x = tr).
+  {
+    eapply cvm_to_lts_determ; eauto.
+
+  }
+  subst.
+  eapply ordered.
+  eapply wfr_implies_wfrannt; eauto.
+  eassumption.
+  eassumption.
+  
+
+
+
+(*
+Theorem cvm_respects_event_system' : forall t cvm_tr ev0 ev1 bits bits' et et',
+    well_formed_r t ->
+    (*Ev_Shape e et -> *)
+    copland_compile 
+      t
+      (mk_st (evc bits et) [] 0) =
+    (Some tt, (mk_st (evc bits' et') cvm_tr 0)) ->
+    (
+        exists tr,
+    lstar (conf (unannoPar t) 0 et) tr (stop 0 (aeval (unannoPar t) 0 et)) /\
+    cvm_to_lts_trace tr cvm_tr ->
+    (prec (ev_sys (unannoPar t) 0 et) ev0 ev1 ->
+     earlier tr ev0 ev1)).
+Proof.
+  intros.
+  eexists.
+  intros.
+  destruct_conjs.
+  eapply ordered.
+  eapply wfr_implies_wfrannt.
+  eassumption.
+  eassumption.
+  eassumption.
+  
+
+
+
+
+
+
+  
+  edestruct cvm_refines_lts_event_ordering.
+  eassumption.
+  eassumption.
+  destruct_conjs.
+  exists x.
+  intros.
+  eapply ordered.
+  eapply wfr_implies_wfrannt.
+  eassumption.
+  eassumption.
+  eassumption.
 Defined.
+
+  split.
+  eassumption.
+  split.
+  eassumption.
+  intros.
+  eapply ordered with (p:=0) (e:=et); eauto.
+  eapply wfr_implies_wfrannt; eauto.
+Defined.
+*)
 
 Theorem cvm_respects_event_system : forall t tr ev0 ev1 bits bits' et et' t',
     t = annotated t' ->
