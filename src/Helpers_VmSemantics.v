@@ -118,12 +118,14 @@ Proof.
     repeat dunit;
     simpl in * ; vmsts; simpl in *.
     +
-    assert (p = st_pl0).
+    assert (p = st_pl).
     {
-      edestruct IHt1.
+      edestruct IHt.
       eassumption.
       jkjk'; eauto.     
     }
+    congruence.
+    (*
 
     assert (st_pl0 = st_pl).
     {
@@ -133,14 +135,19 @@ Proof.
     }
 
     congruence.
+     *)
+    
 
     +
     assert (p = st_pl).
     {
-      edestruct IHt1.
+      edestruct IHt.
       eassumption.
       jkjk'; eauto.     
     }
+    congruence.
+
+    (*
 
     assert (st_pl = st_pl0).
     {
@@ -149,7 +156,10 @@ Proof.
       jkjk'; eauto.
     }
 
-    congruence.
+    congruence. *)
+
+    
+    (*
     
     +
     assert (p = st_pl0).
@@ -184,6 +194,8 @@ Proof.
     }
 
     congruence.
+     *)
+    
 Defined.
 
 Ltac do_pl_immut :=
@@ -281,6 +293,8 @@ Proof.
 
     repeat anhl.
     repeat (find_inversion).
+    repeat find_rewrite.
+    df.
     tauto.
 Defined.
 
@@ -338,11 +352,14 @@ Proof.
     df.
     dohtac.
     df.
+    simpl.
 
-    assert (o4 = Some tt) by eauto.
+    assert (o2 = Some tt) by eauto.
     subst.
     vmsts.
     df.
+    tauto.
+    (*
 
     destruct o0.
     +
@@ -357,7 +374,7 @@ Proof.
       {
         eauto.
       }
-      solve_by_inversion.
+      solve_by_inversion. *)
 Defined.
 
 Ltac do_somett :=

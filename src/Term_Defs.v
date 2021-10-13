@@ -393,6 +393,16 @@ Inductive AnnoTermPar: Set :=
 | abpar_par:
     Range -> Loc -> Split -> AnnoTermPar -> AnnoTerm -> AnnoTermPar.
 
+Fixpoint unannoPar (t:AnnoTermPar) : AnnoTerm :=
+  match t with
+  | aasp_par r a => aasp r a
+  | aatt_par r p t => aatt r p t
+  | alseq_par r a1 a2 => alseq r (unannoPar a1) (unannoPar a2)                 
+  | abseq_par r spl a1 a2 => abseq r spl (unannoPar a1) (unannoPar a2) 
+  | abpar_par r _ spl a1 a2 => abpar r spl (unannoPar a1) a2
+  end.
+  
+
 Definition range_par x :=
   match x with
   | aasp_par r _ => r

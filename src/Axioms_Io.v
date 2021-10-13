@@ -47,9 +47,11 @@ Axiom at_evidence : forall t (p:Plc) (e:EvC),
 Axiom at_events : forall t p,
   remote_events t p = remote_trace t p.
 
-(*
-Axiom par_evidence : forall t (p:Plc) (e:EvidenceC),
+
+Axiom par_evidence : forall t (p:Plc) (e:EvC),
     parallel_vm_thread t p e = remote_evidence t p e.
+
+(*
 
 Axiom par_events : forall t p,
     parallel_vm_events t p = remote_trace t p.

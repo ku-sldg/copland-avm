@@ -11,13 +11,13 @@ Import ListNotations.
 
 
 
-Axiom copland_compile_external' : forall (t : AnnoTerm) (e : EvC) (n : nat) (tr:list Ev),
+Axiom copland_compile_external' : forall (t : AnnoTermPar) (e : EvC) (n : nat) (tr:list CVM_Event),
     runSt 
       (copland_compile t)
       {| st_ev := e; st_trace := tr; st_pl := n |} =
     (Some tt,
-     {| st_ev := remote_evidence t n e;
-        st_trace := tr ++ (remote_trace t n);
+     {| st_ev := remote_evidence (unannoPar t) n e;
+        st_trace := tr ++ (remote_trace (unannoPar t) n);
         st_pl :=
           st_pl
             (
@@ -28,17 +28,17 @@ Axiom copland_compile_external' : forall (t : AnnoTerm) (e : EvC) (n : nat) (tr:
      |}).
 
 
-Lemma copland_compile_external : forall (t : AnnoTerm) (e : EvC) (n : nat),
+Lemma copland_compile_external : forall (t : AnnoTermPar) (e : EvC) (n : nat),
     well_formed_r t ->
     copland_compile t {| st_ev := e; st_trace := []; st_pl := n |} =
     (Some tt,
-     {| st_ev := remote_evidence t n e;
-        st_trace := remote_trace t n;
+     {| st_ev := remote_evidence (unannoPar t) n e;
+        st_trace := remote_trace (unannoPar t) n;
         st_pl := n
      |}).
 Proof.
   intros.
-  assert ([] ++ (remote_trace t n) = (remote_trace t n)) by eauto.
+  assert ([] ++ (remote_trace (unannoPar t) n) = (remote_trace (unannoPar t) n)) by eauto.
   assert (n = st_pl
             (
               execSt
@@ -57,12 +57,12 @@ Defined.
 
 
 
-Lemma copland_compile_at' : forall (t : AnnoTerm) (e : EvC) (n : nat) (tr: list Ev),
+Lemma copland_compile_at' : forall (t : AnnoTermPar) (e : EvC) (n : nat) (tr: list CVM_Event),
     well_formed_r t ->
     copland_compile t {| st_ev := e; st_trace := tr; st_pl := n |} =
     (Some tt,
-     {| st_ev := toRemote t n e;
-        st_trace := tr ++ remote_events t n;
+     {| st_ev := toRemote (unannoPar t) n e;
+        st_trace := tr ++ remote_events (unannoPar t) n;
         st_pl := n;
      |}).
 Proof.
@@ -83,12 +83,12 @@ Proof.
 Defined.
 
 
-Lemma copland_compile_at : forall (t : AnnoTerm) (e : EvC) (n : nat),
+Lemma copland_compile_at : forall (t : AnnoTermPar) (e : EvC) (n : nat),
     well_formed_r t ->
     copland_compile t {| st_ev := e; st_trace := []; st_pl := n |} =
     (Some tt,
-     {| st_ev := toRemote t n e;
-        st_trace := remote_events t n;
+     {| st_ev := toRemote (unannoPar t) n e;
+        st_trace := remote_events (unannoPar t) n;
         st_pl := n
      |}).
 Proof.
