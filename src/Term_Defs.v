@@ -181,7 +181,25 @@ Definition platSub: Term :=
 
 Definition case_phrase :=
   att userAM 
-*)
+ *)
+
+(** * Annotated Terms
+
+    Annotated terms are used to ensure that each distinct event has a
+    distinct natural number.  To do so, each term is annotated by a
+    pair of numbers called a range.  Let [(i, k)] be the label for
+    term [t].  The labels will be chosen to have the property such
+    that for each event in the set of events associated with term [t],
+    its number [j] will be in the range [i <= j < k].  *)
+
+Definition Range: Set := nat * nat.
+
+Inductive AnnoTerm: Set :=
+| aasp: Range -> ASP -> AnnoTerm
+| aatt: Range -> Plc -> AnnoTerm -> AnnoTerm
+| alseq: Range -> AnnoTerm -> AnnoTerm -> AnnoTerm
+| abseq: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
+| abpar: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm.
 
 (** * Events
 
@@ -193,6 +211,9 @@ Definition case_phrase :=
 
  *)
 
+Definition Loc: Set := nat.
+Definition Locs: Set := list Loc.
+
 Inductive Ev: Set :=
 | copy:  nat -> Plc -> Ev 
 | umeas: nat -> Plc -> ASP_ID -> (list Arg) -> Plc -> TARG_ID -> Ev
@@ -201,8 +222,10 @@ Inductive Ev: Set :=
 | req: nat -> Plc -> Plc -> Term -> Evidence -> Ev
 | rpy: nat -> Plc -> Plc -> Evidence -> Ev 
 | split: nat -> Plc -> Ev
+| cvm_thread_start: nat -> Loc -> Plc -> AnnoTerm -> Evidence -> Ev
 (*| splitp: nat -> (*Loc ->*) Loc -> Plc -> Ev *)
 | join:  nat -> Plc -> Ev
+| cvm_thread_end:  nat -> Loc -> Plc -> AnnoTerm -> Ev
 (*| joinp: nat -> Loc -> Loc -> Plc -> Ev *).
 
 Definition eq_ev_dec:
@@ -224,8 +247,10 @@ Definition ev x : nat :=
   | req i _ _ _ _ => i
   | rpy i _ _ _ => i 
   | split i _ => i
+  | cvm_thread_start i _ _ _ _ => i
   (* | splitp i _ _ => i *)
   | join i _ => i
+  | cvm_thread_end i _ _ _ => i
   (* | joinp i _ _ _ => i *)
   end.
 
@@ -239,8 +264,10 @@ Definition pl x : Plc :=
   | req _ p _ _ _ => p
   | rpy _ p _ _ => p
   | split _ p => p
+  | cvm_thread_start _ _ p _ _ => p
   (*| splitp _ _ p => p *)
   | join _ p => p
+  | cvm_thread_end _ _ p _ => p
   (* | joinp _ _ _ p => p *)
   end.
 
@@ -261,26 +288,7 @@ Definition asp_event i x p e :=
   end.
 
 
-(** * Annotated Terms
 
-    Annotated terms are used to ensure that each distinct event has a
-    distinct natural number.  To do so, each term is annotated by a
-    pair of numbers called a range.  Let [(i, k)] be the label for
-    term [t].  The labels will be chosen to have the property such
-    that for each event in the set of events associated with term [t],
-    its number [j] will be in the range [i <= j < k].  *)
-
-Definition Range: Set := nat * nat.
-
-Definition Loc: Set := nat.
-Definition Locs: Set := list Loc.
-
-Inductive AnnoTerm: Set :=
-| aasp: Range -> ASP -> AnnoTerm
-| aatt: Range -> Plc -> AnnoTerm -> AnnoTerm
-| alseq: Range -> AnnoTerm -> AnnoTerm -> AnnoTerm
-| abseq: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
-| abpar: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm.
 
 Fixpoint esize t :=
   match t with

@@ -10,7 +10,7 @@ Require Import Term ConcreteEvidence LTS StVM.
 
 Definition toRemote (t:AnnoTerm) (pTo:Plc) (e:EvC) : EvC.
 Admitted.
-Definition remote_events (t:AnnoTerm) (p:Plc) : (list CVM_Event).
+Definition remote_events (t:AnnoTerm) (p:Plc) : (list Ev).
 Admitted.
 
 (*
@@ -22,14 +22,16 @@ Admitted.
 Definition parallel_vm_thread (t:AnnoTerm) (p:Plc) (e:EvC) : EvC.
 Admitted.
 
-Definition parallel_vm_events (t:AnnoTerm) (p:Plc) : list CVM_Event.
+Definition parallel_vm_events (t:AnnoTerm) (p:Plc) : list Ev.
 Admitted.
 
 Definition shuffled_events (el1:list Ev) (el2:list Ev) : list Ev.
 Admitted.
 
+(*
 Definition lts_remote_events (t:AnnoTerm) (p:Plc) : list Ev.
 Admitted.
+*)
 
 
 
@@ -40,14 +42,14 @@ Admitted.
 *)
 
 Axiom remote_LTS: forall t n et, 
-    lstar (conf t n et) (lts_remote_events t n) (stop n (aeval t n et)).
+    lstar (conf t n et) (remote_events t n) (stop n (aeval t n et)).
 
 
 
 Definition remote_evidence (t:AnnoTerm) (p:Plc) (e:EvC) : EvC.
 Admitted.
 
-Definition remote_trace (t:AnnoTerm) (p:Plc) : list CVM_Event.
+Definition remote_trace (t:AnnoTerm) (p:Plc) : list Ev.
 Admitted.
 
 
@@ -73,7 +75,7 @@ Axiom par_evidence : forall t (p:Plc) (e:EvC),
           lstar (conf t1 p et1) tr (stop p (aeval t1 p et1)) ->
     lstar (bp x (conf t1 p et1) (conf t2 p et2))
           (shuffled_events tr
-                           (lts_remote_events t2 p))
+                           (remote_events t2 p))
           (bp x (stop p (aeval t1 p et1)) (stop p (aeval t2 p et2))).
 
 

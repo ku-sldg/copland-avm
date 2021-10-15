@@ -26,7 +26,7 @@ Fixpoint copland_compile (t:AnnoTermPar): CVM unit :=
       copland_compile t1 ;;
       copland_compile t2
   | abseq_par (x,y) sp t1 t2 =>
-    pr <- split_ev_seq x sp ;;
+    pr <- split_ev x sp ;;
     let '(e1,e2) := pr in
     put_ev e1 ;;
     copland_compile t1 ;;
@@ -36,14 +36,14 @@ Fixpoint copland_compile (t:AnnoTermPar): CVM unit :=
     e2r <- get_ev ;;
     join_seq (Nat.pred y) e1r e2r
   | abpar_par (x,y) loc sp t1 t2 =>
-    pr <- split_ev sp ;;
+    pr <- split_ev x sp ;;
     let '(e1,e2) := pr in
     start_par_thread x loc t2 e2 ;;
     put_ev e1 ;;
     copland_compile t1 ;;
     e1r <- get_ev ;;
     e2r <- wait_par_thread (Nat.pred y) loc t2 e2 ;;
-    join_par e1r e2r
+    join_par (Nat.pred y) e1r e2r
   end.
 
 Definition run_cvm (t:AnnoTermPar) st : cvm_st :=

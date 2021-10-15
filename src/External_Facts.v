@@ -11,7 +11,7 @@ Import ListNotations.
 
 
 
-Axiom copland_compile_external' : forall (t : AnnoTermPar) (e : EvC) (n : nat) (tr:list CVM_Event),
+Axiom copland_compile_external' : forall (t : AnnoTermPar) (e : EvC) (n : nat) (tr:list Ev),
     runSt 
       (copland_compile t)
       {| st_ev := e; st_trace := tr; st_pl := n |} =
@@ -57,7 +57,7 @@ Defined.
 
 
 
-Lemma copland_compile_at' : forall (t : AnnoTermPar) (e : EvC) (n : nat) (tr: list CVM_Event),
+Lemma copland_compile_at' : forall (t : AnnoTermPar) (e : EvC) (n : nat) (tr: list Ev),
     well_formed_r t ->
     copland_compile t {| st_ev := e; st_trace := tr; st_pl := n |} =
     (Some tt,

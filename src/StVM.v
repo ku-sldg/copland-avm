@@ -9,6 +9,7 @@ Require Import Maps.
 Require Import List.
 Import ListNotations.
 
+(*
 Inductive CVM_Event: Set :=
 | cvm_copy:  nat -> Plc -> CVM_Event 
 | cvm_umeas: nat -> Plc -> ASP_ID -> (list Arg) -> Plc -> TARG_ID -> CVM_Event
@@ -20,13 +21,14 @@ Inductive CVM_Event: Set :=
 | cvm_splitp: nat -> Loc -> Plc -> AnnoTerm -> Evidence -> CVM_Event
 | cvm_join:  nat -> Plc -> CVM_Event
 | cvm_joinp:  nat -> Loc -> Plc -> AnnoTerm -> CVM_Event.
+*)
 
 (* Specific VM monad state *)
 (*Definition ev_store := MapC nat EvidenceC. *)
 Record cvm_st : Type := mk_st
                           {st_ev:EvC ;
                            (*st_evT: Evidence ; *)
-                           st_trace:list CVM_Event ;
+                           st_trace:list Ev ;
                            st_pl:Plc (*;
                            st_store:ev_store*)}.
 
