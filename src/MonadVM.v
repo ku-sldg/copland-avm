@@ -59,14 +59,6 @@ Definition split_ev (i:nat) (sp:Split): CVM (EvC*EvC) :=
   add_tracem [Term_Defs.split i p] ;;
   ret (e1,e2).
 
-(*
-Definition split_ev_seq (i:nat) (sp:Split): CVM (EvC*EvC) :=
-  p <- get_pl ;;
-  add_tracem [Term_Defs.split i p] ;;
-  split_ev sp.
-*)
-
-
 (** * Partially-symbolic implementations of IO operations *)
 
 (*
@@ -109,13 +101,6 @@ Definition cons_sig (sig:BS) (e:EvC) (p:Plc): EvC :=
   | evc bits et =>
     evc (sig :: bits) (gg p et)
   end.
-    
-(*
-  match e with
-  | evc bits et => evc (sig :: bits) (gg p et)
-  end.
- *)
-
 
 Definition signEv (x:nat) : CVM EvC :=
   p <- get_pl ;;
@@ -192,12 +177,6 @@ Definition join_seq (n:nat) (e1:EvC) (e2:EvC): CVM unit :=
   add_tracem [join n p].
 
 Definition start_par_thread (i:nat) (loc:Loc) (t:AnnoTerm) (e:EvC) : CVM unit :=
-  (*
-  e <- get_ev ;;
-  p <- get_pl ;;
-  let e1 := splitEv_l sp e in
-  let e2 := splitEv_r sp e in
-  put_ev e1 ;; *)
   p <- get_pl ;;
   add_tracem [cvm_thread_start i loc p t (get_et e)].
 

@@ -124,19 +124,7 @@ Proof.
       eassumption.
       jkjk'; eauto.     
     }
-    congruence.
-    (*
-
-    assert (st_pl0 = st_pl).
-    {
-      edestruct IHt2.
-      eassumption.
-      jkjk'; eauto.
-    }
-
-    congruence.
-     *)
-    
+    congruence.   
 
     +
     assert (p = st_pl).
@@ -145,57 +133,7 @@ Proof.
       eassumption.
       jkjk'; eauto.     
     }
-    congruence.
-
-    (*
-
-    assert (st_pl = st_pl0).
-    {
-      edestruct IHt2.
-      eassumption.
-      jkjk'; eauto.
-    }
-
-    congruence. *)
-
-    
-    (*
-    
-    +
-    assert (p = st_pl0).
-    {
-      edestruct IHt1.
-      eassumption.
-      jkjk'; eauto.     
-    }
-
-    assert (st_pl0 = st_pl).
-    {
-      edestruct IHt2.
-      eassumption.
-      jkjk'; eauto.
-    }
-
-    congruence.
-    +
-
-    assert (p = st_pl0).
-    {
-      edestruct IHt1.
-      eassumption.
-      jkjk'; eauto.     
-    }
-
-    assert (st_pl0 = st_pl).
-    {
-      edestruct IHt2.
-      eassumption.
-      jkjk'; eauto.
-    }
-
-    congruence.
-     *)
-    
+    congruence. 
 Defined.
 
 Ltac do_pl_immut :=
@@ -359,22 +297,6 @@ Proof.
     vmsts.
     df.
     tauto.
-    (*
-
-    destruct o0.
-    +
-      df.
-      tauto.
-    +
-      df.
-      df.
-      subst.
-
-      assert (None = Some tt).
-      {
-        eauto.
-      }
-      solve_by_inversion. *)
 Defined.
 
 Ltac do_somett :=
