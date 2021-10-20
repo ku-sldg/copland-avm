@@ -308,27 +308,82 @@ Definition range x :=
   | abpar r _ _ _ => r
   end.
 
+Inductive AnnoTermPar: Set :=
+| aasp_par: Range -> ASP -> AnnoTermPar
+| aatt_par: Range -> Plc -> AnnoTerm -> AnnoTermPar
+| alseq_par: Range -> AnnoTermPar -> AnnoTermPar -> AnnoTermPar
+| abseq_par: Range -> Split -> AnnoTermPar -> AnnoTermPar -> AnnoTermPar
+| abpar_par:
+    Range -> Loc -> Split -> AnnoTermPar -> AnnoTerm -> AnnoTermPar.
+
+Fixpoint unannoPar (t:AnnoTermPar) : AnnoTerm :=
+  match t with
+  | aasp_par r a => aasp r a
+  | aatt_par r p t => aatt r p t
+  | alseq_par r a1 a2 => alseq r (unannoPar a1) (unannoPar a2)                 
+  | abseq_par r spl a1 a2 => abseq r spl (unannoPar a1) (unannoPar a2) 
+  | abpar_par r _ spl a1 a2 => abpar r spl (unannoPar a1) a2
+  end.
+  
+
+Definition range_par x :=
+  match x with
+  | aasp_par r _ => r
+  | aatt_par r _ _ => r
+  | alseq_par r _ _ => r
+  | abseq_par r _ _ _ => r
+  | abpar_par r _ _ _ _ => r
+  end.
+
+Fixpoint anno_par (t:AnnoTerm) (loc:Loc) : (Loc * AnnoTermPar)  :=
+  match t with
+  | aasp r a => (loc, aasp_par r a)
+  | aatt r p t => (loc, aatt_par r p t)
+                     
+  | alseq r t1 t2 =>
+    let '(loc', t1') := anno_par t1 loc in
+    let '(loc'', t2') := anno_par t2 loc' in
+
+    (loc'', alseq_par r t1' t2')
+      
+  | abseq r spl t1 t2 =>
+    let '(loc', t1') := anno_par t1 loc in
+    let '(loc'', t2') := anno_par t2 loc' in
+
+    (loc'', abseq_par r spl t1' t2')
+      
+ 
+  | abpar r spl t1 t2 =>
+    let '(loc', t1') := anno_par t1 (S loc) in
+    
+    (loc', abpar_par r loc spl t1' t2)
+
+  end.
+
+Definition annotated_par x :=
+  snd (anno_par x 0).
+
 Inductive term_sub : AnnoTerm -> AnnoTerm -> Prop :=
-| termsub_refl: forall t: AnnoTerm, term_sub t t
-| aatt_sub: forall t t' r p,
+| termsub_refl_annt: forall t: AnnoTerm, term_sub t t
+| aatt_sub_annt: forall t t' r p,
     term_sub t' t ->
     term_sub t' (aatt r p t)
-| alseq_subl: forall t' t1 t2 r,
+| alseq_subl_annt: forall t' t1 t2 r,
     term_sub t' t1 ->
     term_sub t' (alseq r t1 t2)
-| alseq_subr: forall t' t1 t2 r,
+| alseq_subr_annt: forall t' t1 t2 r,
     term_sub t' t2 ->
     term_sub t' (alseq r t1 t2)
-| abseq_subl: forall t' t1 t2 r s,
+| abseq_subl_annt: forall t' t1 t2 r s,
     term_sub t' t1 ->
     term_sub t' (abseq r s t1 t2)
-| abseq_subr: forall t' t1 t2 r s,
+| abseq_subr_annt: forall t' t1 t2 r s,
     term_sub t' t2 ->
     term_sub t' (abseq r s t1 t2)
-| abpar_subl: forall t' t1 t2 r s,
+| abpar_subl_annt: forall t' t1 t2 r s,
     term_sub t' t1 ->
     term_sub t' (abpar r s t1 t2)
-| abpar_subr: forall t' t1 t2 r s,
+| abpar_subr_annt: forall t' t1 t2 r s,
     term_sub t' t2 ->
     term_sub t' (abpar r s t1 t2).
 Hint Constructors term_sub : core.
@@ -337,10 +392,117 @@ Lemma termsub_transitive: forall t t' t'',
     term_sub t t' ->
     term_sub t' t'' ->
     term_sub t t''.
+Proof.  
   generalizeEverythingElse t''.
-  induction t''; intros H H0; ff.
+  induction t'';
+    intros H H0; ff.
     (* try (invc H0; eauto). *)
 Defined.
+
+(*
+Inductive term_sub : AnnoTermPar -> AnnoTermPar -> Prop :=
+| termsub_refl: forall t: AnnoTermPar, term_sub t t
+| aatt_sub: forall t r loc p tr ta,
+    (*term_sub_annt t' t -> *)
+    tr = snd (anno_par t loc) ->
+    term_sub ta tr ->
+    term_sub ta (aatt_par r p t)
+| alseq_subl: forall t' t1 t2 r,
+    term_sub t' t1 ->
+    term_sub t' (alseq_par r t1 t2)
+| alseq_subr: forall t' t1 t2 r,
+    term_sub t' t2 ->
+    term_sub t' (alseq_par r t1 t2)
+| abseq_subl: forall t' t1 t2 r s,
+    term_sub t' t1 ->
+    term_sub t' (abseq_par r s t1 t2)
+| abseq_subr: forall t' t1 t2 r s,
+    term_sub t' t2 ->
+    term_sub t' (abseq_par r s t1 t2)
+| abpar_subl: forall t' t1 t2 r loc s,
+    term_sub t' t1 ->
+    term_sub t' (abpar_par r loc s t1 t2)
+| abpar_subr: forall t1 t2 r loc s tpar ta,
+    (*term_sub_annt t' t2 -> *)
+    tpar = snd (anno_par t2 loc) ->
+    term_sub ta tpar ->
+    term_sub ta (abpar_par r loc s t1 t2).
+Hint Constructors term_sub : core.
+
+Lemma termsub_transitive: forall t t' t'',
+    term_sub t t' ->
+    term_sub t' t'' ->
+    term_sub t t''.
+Proof.
+  intros.
+
+  assert (term_sub_annt (unannoPar t) (unannoPar t')).
+  {
+    admit.
+  }
+  assert (term_sub_annt (unannoPar t') (unannoPar t'')).
+  {
+    admit.
+  }
+
+  Lemma annt_to_termsub: forall t1 t2,
+    term_sub_annt (unannoPar t1) (unannoPar t2) ->
+    term_sub t1 t2.
+  Proof.
+  Admitted.
+
+  assert (term_sub_annt (unannoPar t) (unannoPar t'')).
+  {
+    eapply termsub_transitive_annt; eauto.
+  }
+  eapply annt_to_termsub; eauto.
+  
+
+  find_apply_lem_hyp annt_to_termsub.
+  find_apply_lem_hyp annt_to_termsub.
+  
+    
+    
+    
+
+    
+  eapply termsub_transitive_annt.
+  
+  
+
+
+
+
+  
+  generalizeEverythingElse t''.
+  induction t''; intros t t' H H0; ff;
+    try (inv H0; eauto; tauto).
+  -
+    inversion H0.
+    +
+      subst.
+      eauto.
+    +
+      invc H0.
+      eassumption.
+      econstructor.
+      reflexivity.
+      eassumption.
+      
+    
+    econstructor.
+    reflexivity.
+    eassumption.
+    reflexivity.
+    eassumption.
+  
+Defined.
+
+*)
+
+
+
+
 
 (*
 (** This function annotates a term.  It feeds a natural number
@@ -393,32 +555,7 @@ Lemma unique_req_events (t:AnnoTerm) : forall p i i0 p1 p2 q q0 t0 t1,
     not (events t p (req i0 loc p2 q0 t1)).
  *)
 
-Inductive AnnoTermPar: Set :=
-| aasp_par: Range -> ASP -> AnnoTermPar
-| aatt_par: Range -> Plc -> AnnoTerm -> AnnoTermPar
-| alseq_par: Range -> AnnoTermPar -> AnnoTermPar -> AnnoTermPar
-| abseq_par: Range -> Split -> AnnoTermPar -> AnnoTermPar -> AnnoTermPar
-| abpar_par:
-    Range -> Loc -> Split -> AnnoTermPar -> AnnoTerm -> AnnoTermPar.
 
-Fixpoint unannoPar (t:AnnoTermPar) : AnnoTerm :=
-  match t with
-  | aasp_par r a => aasp r a
-  | aatt_par r p t => aatt r p t
-  | alseq_par r a1 a2 => alseq r (unannoPar a1) (unannoPar a2)                 
-  | abseq_par r spl a1 a2 => abseq r spl (unannoPar a1) (unannoPar a2) 
-  | abpar_par r _ spl a1 a2 => abpar r spl (unannoPar a1) a2
-  end.
-  
-
-Definition range_par x :=
-  match x with
-  | aasp_par r _ => r
-  | aatt_par r _ _ => r
-  | alseq_par r _ _ => r
-  | abseq_par r _ _ _ => r
-  | abpar_par r _ _ _ _ => r
-  end.
 
 Inductive well_formed_r_annt: AnnoTerm -> Prop :=
 | wf_asp_r_annt: forall r x,
@@ -758,31 +895,5 @@ Defined.
 
 
 
-Fixpoint anno_par (t:AnnoTerm) (loc:Loc) : (Loc * AnnoTermPar)  :=
-  match t with
-  | aasp r a => (loc, aasp_par r a)
-  | aatt r p t => (loc, aatt_par r p t)
-                     
-  | alseq r t1 t2 =>
-    let '(loc', t1') := anno_par t1 loc in
-    let '(loc'', t2') := anno_par t2 loc' in
 
-    (loc'', alseq_par r t1' t2')
-      
-  | abseq r spl t1 t2 =>
-    let '(loc', t1') := anno_par t1 loc in
-    let '(loc'', t2') := anno_par t2 loc' in
-
-    (loc'', abseq_par r spl t1' t2')
-      
- 
-  | abpar r spl t1 t2 =>
-    let '(loc', t1') := anno_par t1 (S loc) in
-    
-    (loc', abpar_par r loc spl t1' t2)
-
-  end.
-
-Definition annotated_par x :=
-  snd (anno_par x 0).
     

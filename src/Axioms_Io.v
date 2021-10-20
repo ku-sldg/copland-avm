@@ -78,6 +78,10 @@ Axiom par_evidence : forall t (p:Plc) (e:EvC),
                            (remote_events t2 p))
           (bp x (stop p (aeval t1 p et1)) (stop p (aeval t2 p et2))).
 
+      Axiom wf_ec_preserved_remote: forall a n e,
+      wf_ec e ->
+      well_formed_r_annt a ->
+      wf_ec (Axioms_Io.toRemote a n e).
 
 
 
