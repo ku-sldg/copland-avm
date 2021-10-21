@@ -255,7 +255,7 @@ Ltac dohi'' :=
 
 Ltac dohi :=
   do 2 (repeat dohi''; destruct_conjs; subst);
-  clear_triv.
+  repeat clear_triv.
 
 Lemma always_some : forall t vm_st vm_st' op,
     well_formed_r t ->
@@ -307,7 +307,7 @@ Ltac do_somett :=
   end.
 
 
-Ltac do_asome := repeat do_somett; clear_triv.
+Ltac do_asome := repeat do_somett; repeat clear_triv.
 
 Lemma trace_irrel_pl : forall t tr1 tr1' tr2 e e' p1' p1,
     well_formed_r t ->

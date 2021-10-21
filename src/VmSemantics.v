@@ -52,11 +52,123 @@ Proof.
   repeat split; try congruence.
 Defined.
 
-Lemma st_trace_cumul' : forall t m k e p v,
+Lemma alseq_decomp_gen : forall r t1' t2' e e'' p p'' init_tr tr,
+    well_formed_r (alseq_par r t1' t2') ->
+    copland_compile (alseq_par r t1' t2') {| st_ev := e; st_trace := init_tr; st_pl := p |} =
+    (Some tt, {| st_ev := e''; st_trace := tr; st_pl := p'' |}) ->
+
+    exists e' tr' p',
+      copland_compile t1' {| st_ev := e; st_trace := init_tr; st_pl := p |} =
+      (Some  tt, {| st_ev := e'; st_trace := tr'; st_pl := p' |}) /\
+        copland_compile t2' {| st_ev := e'; st_trace := tr'; st_pl := p' |} =
+        (Some tt, {| st_ev := e''; st_trace := tr; st_pl := p'' |}).     
+Proof.
+  intros.  
+  do_wf_pieces.
+  df.
+  dosome.
+  annogo.
+  exists st_ev. exists st_trace. exists st_pl.
+  split.
+  reflexivity.
+
+  eassumption.
+Defined.
+
+Inductive copland_compileP : AnnoTermPar -> cvm_st -> (option unit) -> cvm_st ->  Prop :=
+| ccp: forall t st st' res,
+    copland_compile t st = (res, st') ->
+    copland_compileP t st res st'.
+
+Lemma ccp_implies_cc: forall t st st' res,
+  copland_compileP t st res st' ->
+  copland_compile t st = (res,st').
+Proof.
+  intros.
+  solve_by_inversion.
+Defined.
+
+Lemma cc_implies_ccp: forall t st st' res,
+  copland_compile t st = (res,st') -> 
+  copland_compileP t st res st'.
+Proof.
+  intros.
+  econstructor.
+  tauto.
+Defined.
+
+Lemma ccp_iff_cc: forall t st st' res,
+  copland_compile t st = (res,st') <-> 
+  copland_compileP t st res st'.
+Proof.
+  intros.
+  split; intros;
+    try (eapply cc_implies_ccp; eauto);
+    try (eapply ccp_implies_cc; eauto).
+Defined.
+
+Ltac dd :=
+  repeat (
+      df;
+      annogo;
+      dosome;
+      do_asome;
+      subst).
+
+Ltac do_st_trace :=
+  match goal with
+  | [H': context[{| st_ev := ?e; st_trace := ?tr; st_pl := ?p |}]
+     |- context[?tr]] =>
+    assert_new_proof_by
+      (tr = st_trace {| st_ev := e; st_trace := tr; st_pl := p |} )
+      tauto
+  end.
+
+Ltac find_rw_in_goal :=
+  match goal with
+  | [H': context[?x = _]
+     |- context[?x]] =>
+    rewrite H'; clear H'
+  end.
+
+Ltac cumul_ih :=
+  match goal with
+  | [H: context[(st_trace _ = _ ++ st_trace _)],
+        H': copland_compileP ?t1 {| st_ev := _; st_trace := ?m ++ ?k; st_pl := _ |}
+                             (Some tt)
+                             ?v_full,
+            H'': copland_compileP ?t1 {| st_ev := _; st_trace := ?k; st_pl := _ |}
+                                  (Some tt)
+                                  ?v_suffix
+     |- _] =>
+    assert_new_proof_by (st_trace v_full = m ++ st_trace v_suffix) eauto
+  end.
+
+Lemma st_trace_cumul' : forall t m k e p v_full v_suffix o_suffix,
     well_formed_r t ->
+    (*
     copland_compile t
                {| st_ev := e; st_trace := m ++ k; st_pl := p |} =
     (Some tt, v) -> 
+     *)
+    copland_compileP t
+               {| st_ev := e; st_trace := m ++ k; st_pl := p |}
+               (Some tt) v_full ->
+
+    (*
+    copland_compileP t
+                     {| st_ev := e; st_trace := m ++ k; st_pl := p |}
+                     o_full v_full ->
+     *)
+    
+    copland_compileP t
+                     {| st_ev := e; st_trace := k; st_pl := p |}
+                     o_suffix v_suffix ->
+
+    st_trace v_full = m ++ st_trace v_suffix.
+
+    (*
+    
     st_trace
       ( execSt (copland_compile t)
                {| st_ev := e; st_trace := m ++ k; st_pl := p |}) =
@@ -64,176 +176,95 @@ Lemma st_trace_cumul' : forall t m k e p v,
       st_trace
           (execSt (copland_compile t)
                   {| st_ev := e; st_trace := k; st_pl := p |}).
+*)
 Proof.
   induction t; intros.
   -
     destruct r.
+    rewrite <- ccp_iff_cc in *.
+    
     destruct a;
       simpl;
       df;
       repeat rewrite app_assoc;
       reflexivity.
   -
+    rewrite <- ccp_iff_cc in *.
     repeat (df; try dohtac; df).
     repeat rewrite app_assoc.
     reflexivity.
-  -
-    df.
-    annogo.
+
+  - (* alseq case *)
+
     do_wf_pieces.
-    dosome.
-    do_asome.
-    subst.
-    df.
-    dohi.
-    assert (
-        StVM.st_trace
-          (snd (copland_compile t1 {| st_ev := e; st_trace := m ++ k; st_pl := p |}))
-        =
-        m ++
-          StVM.st_trace
-          (snd (copland_compile t1 {| st_ev := e; st_trace := k; st_pl := p |}))).
-    eapply IHt1; eauto.
-    repeat subst'.
-    simpl in *.
-    subst.
-    assert (
-        StVM.st_trace
-          (snd (copland_compile t2
-           {| st_ev := st_ev0; st_trace := m ++ st_trace0; st_pl := st_pl0 |})) =
-        m ++
-          StVM.st_trace
-          (snd (copland_compile t2
-           {| st_ev := st_ev0; st_trace := st_trace0; st_pl := st_pl0 |}))) as HH.
-    eapply IHt2; eauto.
-    repeat (subst'; simpl in * ).
+
+    rewrite <- ccp_iff_cc in *.
+    dd.
+    dohi. 
+    rewrite ccp_iff_cc in *.
+
+    cumul_ih.
+    dd.
+    repeat do_st_trace.
+    repeat find_rw_in_goal.
     eauto.
-    
-  - (* abseq case *)
-    annogo.
-        
+
+  -
     do_wf_pieces.
-    df.
-    dosome.
 
-    do_asome.
-    subst.
-    df.
-    annogo.
-    df.
+    rewrite <- ccp_iff_cc in *.
+    dd.
     dohi.
+    repeat find_inversion.
 
-    assert (
-        StVM.st_trace
-          (snd (copland_compile t1 {| st_ev := (splitEv_l s e);
-                                      st_trace := m ++ (k ++ [Term_Defs.split n p]);
-                                      st_pl := p |})) =
-         m ++
-         StVM.st_trace
-         (snd (copland_compile t1 {| st_ev := (splitEv_l s e);
-                                     st_trace := k ++ [Term_Defs.split n p];
-                                     st_pl := p |}))).
-    {
-      rewrite <- app_assoc in *.
-      eapply IHt1; eauto.
-    }
-    subst'.
-    df.
-    rewrite app_assoc in *.
-    subst'.
-    df.  
-    subst.
+    rewrite ccp_iff_cc in *.
 
-    assert (
-        StVM.st_trace (snd (copland_compile t2{| st_ev := (splitEv_r s e);
-                                                 st_trace := m ++ st_trace0;
-                                                 st_pl := st_pl0 |})) =
-        m ++ StVM.st_trace (snd (copland_compile t2 {| st_ev := (splitEv_r s e);
-                                                       st_trace := st_trace0;
-                                                       st_pl := st_pl0 |}))
-      ).
-    eapply IHt2; eauto.
-
-    subst'.
-    df.
-    subst.
-    tauto.
-
-  - (* abpar case *)
-    annogo.
-        
-    do_wf_pieces.
-    df.
-    dosome.
-
-    do_asome.
-    subst.
-    df.
-    annogo.
-    df.
-    dohi.
-
-    assert (
-        StVM.st_trace
-          (snd (copland_compile t {| st_ev := (splitEv_l s e);
-                                      st_trace := m ++ (k ++ [Term_Defs.split n p] ++ [cvm_thread_start n l p a (get_et (splitEv_r s e))]);
-                                      st_pl := p |})) =
-         m ++
-         StVM.st_trace
-         (snd (copland_compile t {| st_ev := (splitEv_l s e);
-                                     st_trace := k ++ [Term_Defs.split n p] ++ [cvm_thread_start n l p a (get_et (splitEv_r s e))];
-                                     st_pl := p |}))).
-    {
-      repeat rewrite <- app_assoc in *.
-      eapply IHt; eauto.
-    }
-    subst'.
-
-    rewrite app_assoc in *.
-    subst'.
-    df.
-    assert (
-        ((k ++ [Term_Defs.split n p]) ++
-                                      [cvm_thread_start n l p a (get_et (splitEv_r s e))]) =
-        ( k ++ [Term_Defs.split n p; cvm_thread_start n l p a (get_et (splitEv_r s e))])
-      ).
-    {
-      rewrite <- app_assoc.
-      tauto.
-    }
-    rewrite H0 in *; clear H0.
-    rewrite Heqp1 in *; clear Heqp1.
-    df.
     repeat rewrite <- app_assoc in *.
-    df.
-    subst'.
-    df.
-    subst.
-    rewrite <- app_assoc.
-    tauto.
+
+    cumul_ih.
+    dd.
+    cumul_ih.
+    dd.
+    rewrite app_assoc.
+    eauto.
+  -
+    do_wf_pieces.
+
+    rewrite <- ccp_iff_cc in *.
+    dd.
+    dohi.
+    repeat find_inversion.
+
+    rewrite ccp_iff_cc in *.
+
+    repeat rewrite <- app_assoc in *.
+
+    cumul_ih.
+    dd.
+    repeat rewrite app_assoc.
+    eauto.
 Defined.
 
-
 (* Instance of st_trace_cumul' where k=[] *)
-Lemma st_trace_cumul : forall t m e p v,
+Lemma st_trace_cumul : forall t m e p v_full v_suffix o_suffix,
     well_formed_r t ->
-    copland_compile t
-               {| st_ev := e; st_trace := m; st_pl := p |} =
-    (Some tt, v) -> 
+
+    copland_compileP t
+               {| st_ev := e; st_trace := m; st_pl := p |}
+               (Some tt) v_full ->
     
-    st_trace
-      (execSt (copland_compile t)
-              {| st_ev := e; st_trace := m; st_pl := p |}) =
-    m ++
-      st_trace
-      (execSt (copland_compile t)
-                     {| st_ev := e; st_trace := []; st_pl := p |}).
+    copland_compileP t
+                     {| st_ev := e; st_trace := []; st_pl := p |}
+                     o_suffix v_suffix ->
+
+    st_trace v_full = m ++ st_trace v_suffix.
 Proof.
   intros.
-  assert (m = m ++ []) as HH by (rewrite app_nil_r; auto).
-  rewrite HH at 1.
+  (*
+  assert (m = m ++ []) as HH by (rewrite app_nil_r; auto). 
+  rewrite HH at 1. *)
   eapply st_trace_cumul'; eauto.
-  rewrite app_nil_r.
+  repeat rewrite app_nil_r.
   eauto.
 Defined.
 
@@ -285,35 +316,7 @@ Ltac do_suffix name :=
              name
   end.
 
-Lemma alseq_decomp_gen : forall r t1' t2' e e'' p p'' init_tr tr,
-    well_formed_r (alseq_par r t1' t2') ->
-    copland_compile (alseq_par r t1' t2') {| st_ev := e; st_trace := init_tr; st_pl := p |} =
-    (Some tt, {| st_ev := e''; st_trace := tr; st_pl := p'' |}) ->
 
-    exists e' tr' p',
-      copland_compile t1' {| st_ev := e; st_trace := init_tr; st_pl := p |} =
-      (Some  tt, {| st_ev := e'; st_trace := tr'; st_pl := p' |}) /\
-        copland_compile t2' {| st_ev := e'; st_trace := tr'; st_pl := p' |} =
-        (Some tt, {| st_ev := e''; st_trace := tr; st_pl := p'' |}).     
-Proof.
-  intros.  
-  do_wf_pieces.
-  df.
-  dosome.
-  annogo.
-  exists st_ev. exists st_trace. exists st_pl.
-  split.
-  reflexivity.
-  
-  vmsts.
-  do_asome.
-  subst.
-  annogo.
-  
-  do_suffix hi.
-  do_suffix hey.
-  eassumption.
-Defined.
 
 Lemma alseq_decomp : forall r t1' t2' e e'' p p'' tr,
     well_formed_r (alseq_par r t1' t2') ->
