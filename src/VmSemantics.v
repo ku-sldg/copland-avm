@@ -13,9 +13,8 @@ Import ListNotations.
 Require Import Coq.Program.Tactics Coq.Program.Equality.
 Require Import Coq.Arith.Peano_dec Lia.
 
-(*
+
 Set Nested Proofs Allowed.
-*)
 
 Lemma st_trace_irrel : forall t tr1 tr1' tr2 tr2' e e' e'' p p' p'',
     well_formed_r t ->
@@ -124,6 +123,15 @@ Ltac do_st_trace :=
       tauto
   end.
 
+Ltac do_st_trace_assumps :=
+  match goal with
+  | [H': context[{| st_ev := ?e; st_trace := ?tr; st_pl := ?p |}]
+     |- _] =>
+    assert_new_proof_by
+      (tr = st_trace {| st_ev := e; st_trace := tr; st_pl := p |} )
+      tauto
+  end.
+
 Ltac find_rw_in_goal :=
   match goal with
   | [H': context[?x = _]
@@ -146,37 +154,16 @@ Ltac cumul_ih :=
 
 Lemma st_trace_cumul' : forall t m k e p v_full v_suffix o_suffix,
     well_formed_r t ->
-    (*
-    copland_compile t
-               {| st_ev := e; st_trace := m ++ k; st_pl := p |} =
-    (Some tt, v) -> 
-     *)
+
     copland_compileP t
                {| st_ev := e; st_trace := m ++ k; st_pl := p |}
                (Some tt) v_full ->
-
-    (*
-    copland_compileP t
-                     {| st_ev := e; st_trace := m ++ k; st_pl := p |}
-                     o_full v_full ->
-     *)
     
     copland_compileP t
                      {| st_ev := e; st_trace := k; st_pl := p |}
                      o_suffix v_suffix ->
 
     st_trace v_full = m ++ st_trace v_suffix.
-
-    (*
-    
-    st_trace
-      ( execSt (copland_compile t)
-               {| st_ev := e; st_trace := m ++ k; st_pl := p |}) =
-    m ++
-      st_trace
-          (execSt (copland_compile t)
-                  {| st_ev := e; st_trace := k; st_pl := p |}).
-*)
 Proof.
   induction t; intros.
   -
@@ -209,7 +196,7 @@ Proof.
     repeat find_rw_in_goal.
     eauto.
 
-  -
+  - (* abseq case *)
     do_wf_pieces.
 
     rewrite <- ccp_iff_cc in *.
@@ -227,7 +214,8 @@ Proof.
     dd.
     rewrite app_assoc.
     eauto.
-  -
+    
+  - (* abpar case *)
     do_wf_pieces.
 
     rewrite <- ccp_iff_cc in *.
@@ -260,55 +248,74 @@ Lemma st_trace_cumul : forall t m e p v_full v_suffix o_suffix,
     st_trace v_full = m ++ st_trace v_suffix.
 Proof.
   intros.
-  (*
-  assert (m = m ++ []) as HH by (rewrite app_nil_r; auto). 
-  rewrite HH at 1. *)
   eapply st_trace_cumul'; eauto.
   repeat rewrite app_nil_r.
   eauto.
 Defined.
 
+Lemma exists_some_cc: forall t st,
+    well_formed_r t ->
+    exists st',
+      copland_compile t st = (Some tt, st').
+Proof.
+  intros.
+  destruct (copland_compile t st) eqn:ee.
+  do_asome.
+  subst.
+  eauto.
+Defined.
+
+Ltac do_exists_some_cc t st :=
+  match goal with
+  | [H: well_formed_r t  |- _] =>
+    assert_new_proof_by
+      (exists st', copland_compile t st = (Some tt, st') )
+      ltac:(eapply exists_some_cc; [apply H])
+  end;
+  destruct_conjs.
+
 Lemma suffix_prop : forall t e e' tr tr' p p',
     well_formed_r t ->
-    copland_compile t
+    copland_compileP t
+           {| st_ev := e;
+              st_trace := tr;
+              st_pl := p |}
+           (Some tt)
            {|
-             st_ev := e;
-             st_trace := tr;
-             st_pl := p |} =
-    (Some tt, {|
-       st_ev := e';
-      st_trace := tr';
-      st_pl := p' |}) ->
+             st_ev := e';
+             st_trace := tr';
+             st_pl := p' |} ->
     exists l, tr' = tr ++ l.
 Proof.
   intros.
-  assert (st_trace
-            (execSt (copland_compile t)
-           {|
-             st_ev := e;
-             st_trace := tr;
-             st_pl := p |}) =
-    st_trace ({|
-                 st_ev := e';
-      st_trace := tr';
-      st_pl := p' |})) as H00.
-  df.
-  congruence.
-  simpl in H00.
+
+  do_exists_some_cc t {| st_ev := e; st_trace := []; st_pl := p |}.
+
+  rewrite ccp_iff_cc in *.
+
+  repeat do_st_trace_assumps.
+  repeat find_rw_in_goal.
   eexists.
-  rewrite <- H00.
-  erewrite st_trace_cumul.
-  eauto.
-  eauto.
-  eauto.
+  unfold st_trace at 2.
+  erewrite st_trace_cumul'.
+  2: {
+    eassumption.
+  }
+  3: {
+    apply H2.
+  }
+  simpl.
+  tauto.
+  rewrite app_nil_r.
+  eassumption.
 Defined.
 
 Ltac do_suffix name :=
   match goal with
-  | [H': copland_compile ?t
-         {| st_ev := _; st_trace := ?tr; st_pl := _ |} =
-         (Some tt,
-          {| st_ev := _; st_trace := ?tr'; st_pl := _ |}),
+  | [H': copland_compileP ?t
+         {| st_ev := _; st_trace := ?tr; st_pl := _ |}
+         (Some tt)
+         {| st_ev := _; st_trace := ?tr'; st_pl := _ |},
          H2: well_formed_r ?t |- _] =>
     assert_new_proof_as_by
       (exists l, tr' = tr ++ l)
@@ -316,125 +323,112 @@ Ltac do_suffix name :=
              name
   end.
 
-
-
 Lemma alseq_decomp : forall r t1' t2' e e'' p p'' tr,
     well_formed_r (alseq_par r t1' t2') ->
-    copland_compile (alseq_par r t1' t2') {| st_ev := e; st_trace := []; st_pl := p |} =
-    (Some tt, {| st_ev := e''; st_trace := tr; st_pl := p'' |}) ->
+    copland_compileP (alseq_par r t1' t2')
+                     {| st_ev := e; st_trace := []; st_pl := p |}
+                     (Some tt)
+                     {| st_ev := e''; st_trace := tr; st_pl := p'' |} ->
 
     exists e' tr' p',
-      copland_compile t1' {| st_ev := e; st_trace := []; st_pl := p |} =
-      (Some  tt, {| st_ev := e'; st_trace := tr'; st_pl := p' |}) /\
+      copland_compileP t1'
+                       {| st_ev := e; st_trace := []; st_pl := p |}
+                       (Some  tt)
+                       {| st_ev := e'; st_trace := tr'; st_pl := p' |} /\
       exists tr'',
-        copland_compile t2' {| st_ev := e'; st_trace := []; st_pl := p' |} =
-        (Some tt, {| st_ev := e''; st_trace := tr''; st_pl := p'' |}) /\
+        copland_compileP t2'
+                         {| st_ev := e'; st_trace := []; st_pl := p' |}
+                         (Some tt)
+                         {| st_ev := e''; st_trace := tr''; st_pl := p'' |} /\
         tr = tr' ++ tr''.     
 Proof.
   intros.  
   do_wf_pieces.
-  df.
-  dosome.
-  annogo.
-  exists st_ev. exists st_trace. exists st_pl.
-  split.
-  reflexivity.
-  destruct
-    (copland_compile t2'
-                {| st_ev := st_ev; st_trace := []; st_pl := st_pl |}) eqn:hey.
-  vmsts.
-  do_asome.
-  subst.
-  annogo.
-
-  exists st_trace0.
-  dohi.
   
-  split.
-  reflexivity.
+  rewrite <- ccp_iff_cc in *.
+  dd.
+  rewrite ccp_iff_cc in *.
 
-  pose st_trace_cumul.
-  specialize st_trace_cumul with (t:= t2') (m:=st_trace) (e:=st_ev) (p:= st_pl)
-                      (v:={| st_ev := st_ev0; st_trace := tr; st_pl := st_pl0 |}).
-  intros.
-  repeat concludes.
-  df.
-  subst'.
-  df.
-  tauto. 
+  eexists.
+  eexists.
+  eexists.
+
+  split.
+  +
+    eassumption.
+  +
+    do_exists_some_cc t2' {| st_ev := st_ev0; st_trace := []; st_pl := st_pl0 |}.
+    vmsts.
+
+    eexists.
+
+    rewrite <- ccp_iff_cc in *.
+    dohi.
+    rewrite ccp_iff_cc in *.
+
+    split.
+    ++
+      eassumption.
+    ++
+      repeat do_st_trace.
+      repeat find_rw_in_goal.
+      eapply st_trace_cumul; 
+        eassumption.
 Defined.
 
 Lemma restl : forall t e e' x tr p p',
     well_formed_r t ->
-    copland_compile t {| st_ev := e; st_trace := x; st_pl := p |} =
-    (Some tt, {| st_ev := e'; st_trace := x ++ tr; st_pl := p' |}) ->
+    copland_compileP t
+                     {| st_ev := e; st_trace := x; st_pl := p |}
+                     (Some tt)
+                     {| st_ev := e'; st_trace := x ++ tr; st_pl := p' |} ->
 
-    copland_compile t {| st_ev := e; st_trace := []; st_pl := p |} =
-    (Some tt, {| st_ev := e'; st_trace := tr; st_pl := p' |}).
+    copland_compileP t
+                     {| st_ev := e; st_trace := []; st_pl := p |}
+                     (Some tt)
+                     {| st_ev := e'; st_trace := tr; st_pl := p' |}.
 Proof.
   intros.
-  
-  assert (
-      st_trace (run_cvm t {| st_ev := e; st_trace := x; st_pl := p |}) =
-      st_trace ({| st_ev := e'; st_trace := x ++ tr; st_pl := p' |})).
-  {
-    unfold run_cvm. 
-    monad_unfold.
-    subst'.
-    simpl.
-    reflexivity.
-  }
-  
-  unfold run_cvm in *.
-  assert (
-   st_ev
-     (execSt
-        (copland_compile t)
-               {| st_ev := e; st_trace := []; st_pl := p |}) = e').
-  eapply trace_irrel_ev; eauto.
 
-  assert (
-   st_pl
-     (execSt
-        (copland_compile t)
-               {| st_ev := e; st_trace := []; st_pl := p |}) = p').
-  eapply trace_irrel_pl; eauto.
-  
-  assert (
-      (execSt
-         (copland_compile t)
-         {| st_ev := e; st_trace := []; st_pl := p |}) =
-      {| st_ev := e'; st_trace := tr; st_pl := p' |}).
+  do_exists_some_cc t  {| st_ev := e; st_trace := []; st_pl := p |}.
+  rewrite <- ccp_iff_cc in *.
+  dohi.
+  rewrite ccp_iff_cc in *.
+
+  assert (st_trace = tr).
   {
-    eapply st_congr; eauto.
-    erewrite st_trace_cumul in H1.
-    eapply app_inv_head.
-    eauto.
-    eauto.
-    eauto.
+    do_st_trace.
+    rewrite H1; clear H1.
+    assert (tr = st_trace).
+    {
+      assert (StVM.st_trace {| st_ev := st_ev; st_trace := x ++ tr; st_pl := st_pl |} =
+              x ++ StVM.st_trace {| st_ev := st_ev; st_trace := st_trace; st_pl := st_pl |}).
+      {
+        eapply st_trace_cumul;
+        eassumption.
+      }
+      simpl in *.
+      eapply app_inv_head; eauto.
+    }
+    rewrite H1; clear H1.
+    simpl.
+    tauto.
   }
-  
-  destruct (copland_compile t {| st_ev := e; st_trace := []; st_pl := p |}) eqn:aa.
-  simpl in *.
-  vmsts.
-  simpl in *.
-  repeat find_inversion.
-  do_asome.
-  df.
-  tauto.
+  congruence.
 Defined.
 
 Ltac do_restl :=
   match goal with
-  | [H: copland_compile ?t
-        {| st_ev := ?e; st_trace := ?tr; st_pl := ?p |} =
-        (Some tt,
-         {| st_ev := ?e'; st_trace := ?tr ++ ?x; st_pl := ?p' |}),
+  | [H: copland_compileP ?t
+        {| st_ev := ?e; st_trace := ?tr; st_pl := ?p |}
+        (Some tt)
+        {| st_ev := ?e'; st_trace := ?tr ++ ?x; st_pl := ?p' |},
         H2: well_formed_r ?t |- _] =>
     assert_new_proof_by
-      (copland_compile t {| st_ev := e; st_trace := []; st_pl := p |} =
-       (Some tt,
-        {| st_ev := e'; st_trace := x; st_pl := p' |}))
+      (copland_compileP t
+                        {| st_ev := e; st_trace := []; st_pl := p |}
+                        (Some tt)
+                        {| st_ev := e'; st_trace := x; st_pl := p' |})
       ltac:(eapply restl; [apply H2 | apply H])
   end.
 
@@ -504,10 +498,19 @@ Proof.
   tauto.
 Defined.
 
+Lemma back_app{A:Type}: forall (x y:A),
+    [x; y] = [x] ++ [y].
+Proof.
+  intros.
+  tauto.
+Defined.
 
 Lemma cvm_refines_lts_evidence' : forall t tr tr' e e' p p',
     well_formed_r t ->
-    copland_compile t (mk_st e tr p) = (Some tt, (mk_st e' tr' p')) ->
+    copland_compileP t
+                     (mk_st e tr p)
+                     (Some tt)
+                     (mk_st e' tr' p') ->
     get_et e' = (Term_Defs.eval (unanno (unannoPar t)) p (get_et e)).
 
 Proof.
@@ -516,20 +519,20 @@ Proof.
   induction t; intros.
     
   - (* aasp case *)
+    rewrite <- ccp_iff_cc in *.
     destruct a;
       try (
           try unfold get_et;
-          df;
+          dd;
           eauto).
 
   - (* at case *)
-    repeat df. 
-    annogo.
-    do_wf_pieces.
+    (*do_wf_pieces. *)
+    rewrite <- ccp_iff_cc in *.
     destruct e.
-    ff.
+    dd.
+
     erewrite eval_aeval.
-    simpl.
         
     rewrite aeval_anno.
     eapply remote_Evidence_Type_Axiom.
@@ -546,20 +549,32 @@ Proof.
     eassumption.
     eassumption.
     destruct_conjs.
-    df.
-    dosome.
 
+    rewrite <- ccp_iff_cc in *.
+    dd.
+    repeat do_pl_immut; subst.
+    repeat clear_triv.
+    rewrite ccp_iff_cc in *.
+ 
     destruct x.
     destruct e'.
-    vmsts.
-
-    repeat do_pl_immut; subst.
 
     assert (e3 = get_et (evc e2 e3)) by tauto.
     repeat jkjke'.
     
   - (* abseq case *)
     do_wf_pieces.
+
+    rewrite <- ccp_iff_cc in *.
+    dd.
+    repeat do_pl_immut; subst.
+    repeat clear_triv.
+    rewrite ccp_iff_cc in *.
+    
+
+
+
+    (*
     df.
     repeat break_match;
       try solve_by_inversion;
@@ -569,8 +584,11 @@ Proof.
       
       annogo.
       simpl in *.
+     *)
+    
       do_suffix blah.
       do_suffix blah'.
+      
       destruct_conjs; subst.
       repeat do_restl.
 
@@ -590,13 +608,18 @@ Proof.
           assert (mt = get_et (evc [] mt)) by tauto.
           jkjke.
       }
+      dd.
+      (*
       ff.
       rewrite H6.
+       *)
+      
       
 
       assert (get_et (evc e2 e3) = (eval (unanno (unannoPar t2)) p (splitEv_T_r s (get_et e)))).
       {
-        repeat do_pl_immut; subst.
+        (*
+        repeat do_pl_immut; subst. *)
         destruct s.
         destruct s0.
         ++
@@ -605,12 +628,24 @@ Proof.
         ++
           assert (mt = get_et (evc [] mt)) by tauto.
           jkjke.
-          ff.
+          eauto.
       }
-      ff.
+      simpl in *; subst.
+      tauto.
 
   - (* abpar case *)
     do_wf_pieces.
+
+    rewrite <- ccp_iff_cc in *.
+    dd.
+    repeat do_pl_immut; subst.
+    repeat clear_triv.
+    rewrite ccp_iff_cc in *.
+
+
+
+(*
+    
     df.
     repeat break_match;
       try solve_by_inversion;
@@ -620,6 +655,8 @@ Proof.
       
       annogo.
       simpl in *.
+ *)
+    
       do_suffix blah.
       (* do_suffix blah'. *)
       destruct_conjs; subst.
@@ -641,56 +678,41 @@ Proof.
           assert (mt = get_et (evc [] mt)) by tauto.
           jkjke.
       }
+      dd.
+      (*
       ff.
       rewrite H5.
 
       do_pl_immut.
       subst.
+       *)
 
+      Lemma par_evidence_r: forall a p s e e2 e3,
+        parallel_vm_thread a p (splitEv_r s e) = evc e2 e3 ->
+        e3 = (eval (unanno a) p (splitEv_T_r s (get_et e))).
+      Proof.
+        intros.
 
-      assert (e3 = (eval (unanno a) p (splitEv_T_r s (get_et e)))).
-      {
         rewrite par_evidence in *.
          destruct s.
          destruct s; destruct s0;
-           simpl in *.
-         +
-           rewrite eval_aeval with (i:=0).
-           rewrite aeval_anno.
-           erewrite <- remote_Evidence_Type_Axiom. (*with (bits:=[]). *)
-           rewrite at_evidence.
-           erewrite <- evc_inv.
-           rewrite Heqe2.
-           ff.
-         +
-           rewrite eval_aeval with (i:=0).
-           rewrite aeval_anno.
-           unfold mt_evc in *.
-           erewrite <- remote_Evidence_Type_Axiom. (*with (bits:=[]). *)
-           rewrite at_evidence.
-          (* erewrite <- evc_inv. *)
-           rewrite Heqe2.
-           ff.
-         +
-           rewrite eval_aeval with (i:=0).
-           rewrite aeval_anno.
-           unfold mt_evc in *.
-           erewrite <- remote_Evidence_Type_Axiom. (*with (bits:=[]). *)
-           rewrite at_evidence.
-           erewrite <- evc_inv.
-           rewrite Heqe2.
-           ff.
-         +
-           rewrite eval_aeval with (i:=0).
-           rewrite aeval_anno.
-           unfold mt_evc in *.
-           erewrite <- remote_Evidence_Type_Axiom. (*with (bits:=[]). *)
-           rewrite at_evidence.
-          (* erewrite <- evc_inv. *)
-           rewrite Heqe2.
-           ff.
+           simpl in *;
+           
+           erewrite eval_aeval with (i:=0);
+           rewrite aeval_anno;
+           try (unfold mt_evc in * );
+           erewrite <- remote_Evidence_Type_Axiom;
+           rewrite at_evidence;
+           try (erewrite <- evc_inv);
+           jkjke.
+      Defined.
+
+      assert (e3 = (eval (unanno a) p (splitEv_T_r s (get_et e)))).
+      {
+        eapply par_evidence_r; eauto.
       }
-      rewrite H5.
+
+      find_rw_in_goal.
       tauto.
       Unshelve.
       eauto.
@@ -698,7 +720,10 @@ Defined.
 
 Lemma cvm_refines_lts_evidence : forall t tr tr' bits bits' et et' p p',
     well_formed_r t ->
-    copland_compile t (mk_st (evc bits et) tr p) = (Some tt, (mk_st (evc bits' et') tr' p')) ->
+    copland_compileP t
+                     (mk_st (evc bits et) tr p)
+                     (Some tt)
+                     (mk_st (evc bits' et') tr' p') ->
     et' = (Term_Defs.eval (unanno (unannoPar t)) p et).
 Proof.
   intros.
@@ -738,9 +763,14 @@ Axiom thread_bookend_peel: forall t p et etr n l a n0 tr,
      (shuffled_events tr (remote_events a p))
     ).
 
+Print aeval.
+
 Lemma cvm_refines_lts_event_ordering : forall t cvm_tr bits bits' et et' p p',
     well_formed_r t ->
-    copland_compile t (mk_st (evc bits et) [] p) = (Some tt, (mk_st (evc bits' et') cvm_tr p')) ->
+    copland_compileP t
+                     (mk_st (evc bits et) [] p)
+                     (Some tt)
+                     (mk_st (evc bits' et') cvm_tr p') ->
     lstar (conf (unannoPar t) p et) cvm_tr (stop p (aeval (unannoPar t) p et)).
 Proof.
   intros t cvm_tr bits bits' et et' p p' H H'.
@@ -748,11 +778,13 @@ Proof.
   induction t; intros.
   
   - (* aasp case *)
+    rewrite <- ccp_iff_cc in *.
      destruct a;
       df;
       econstructor; try (econstructor; reflexivity).
     
   - (* aatt case *)
+    rewrite <- ccp_iff_cc in *.
     destruct r.
     repeat (df; try dohtac; df).
     
@@ -767,10 +799,10 @@ Proof.
     eapply lstar_transitive.
     eapply lstar_strem.
     cbn.
-    
-    apply H0.
+    eassumption.
+
     jkjke.
-    ff.
+    simpl.
     assert (et' = (aeval a n et)).
     {
       erewrite <- remote_Evidence_Type_Axiom.
@@ -787,21 +819,33 @@ Proof.
     edestruct alseq_decomp; eauto.
     destruct_conjs.
     destruct x.
+
+    rewrite <- ccp_iff_cc in *.
+    dd.
+    repeat do_pl_immut; subst.
+    repeat clear_triv.
+    rewrite ccp_iff_cc in *.
+
+
+    
     econstructor.
     econstructor.
     subst.
     eapply lstar_transitive.
     eapply lstar_stls.
-    df.
+    
     eapply IHt1.
     eassumption.
     eassumption.
 
     eapply lstar_silent_tran.
     apply stlseqstop.
-    df.
+
+    (*
     repeat do_pl_immut.
     subst.   
+     *)
+    
     eapply IHt2. (*with (e:= x). *)
     eassumption.
     assert (e0 = Term_Defs.eval (unanno (unannoPar t1)) p et).
@@ -813,238 +857,104 @@ Proof.
     eassumption.
 
 
-  -    (* abseq case *)
+  - (* abseq case *)
     do_wf_pieces.
-    destruct r; destruct s; destruct s; destruct s0.
-    +
-      df.
-      vmsts.
-      dosome.
-      df.
 
-      do_suffix blah.
-      do_suffix blah'.
-      destruct_conjs; subst.
-      repeat do_restl.
-      
-      repeat do_pl_immut.
-      subst.
-      repeat rewrite <- app_assoc.
+    rewrite <- ccp_iff_cc in *.
+    dd.
+    repeat do_pl_immut; subst.
+    repeat clear_triv.
+    rewrite ccp_iff_cc in *.
+    
+    do_suffix blah.
+    do_suffix blah'.
+    destruct_conjs; subst.
+    repeat do_restl.
+    
+    repeat rewrite <- app_assoc.
 
-      eapply lstar_tran.
-      econstructor.
+    eapply lstar_tran.
+    econstructor.
+    simpl.
+
+    assert (
+        lstar (conf (unannoPar t1) p (splitEv_T_l s et)) blah' (stop p (aeval (unannoPar t1) p (splitEv_T_l s et)))
+      ).
+    {
+      destruct s; destruct s; destruct s0;
+        eauto.
+    }
+
+    assert (
+      lstar (conf (unannoPar t2) p  (splitEv_T_r s et)) blah (stop p (aeval (unannoPar t2) p  (splitEv_T_r s et)))
+    ).
+    {
+      destruct s; destruct s; destruct s0;
+        eauto.
+    }
+
+
+    eapply lstar_transitive.
       simpl.
 
-      eapply lstar_transitive.
-      simpl.
-
-      eapply lstar_stbsl.  
-      
-      eapply IHt1.
+      eapply lstar_stbsl.
       eassumption.
-
-      eassumption.
-      
-      unfold run_cvm in *.
-      monad_unfold.
 
       eapply lstar_silent_tran.
       apply stbslstop.
       
       eapply lstar_transitive.
       eapply lstar_stbsr.
-      
-      eapply IHt2.
       eassumption.
-
-      eassumption.
-      
+           
       econstructor.
 
       eapply stbsrstop.
       econstructor.
-
-    +
-      df.
-      vmsts.
-      dosome.
-      df.
-
-      do_suffix blah.
-      do_suffix blah'.
-      destruct_conjs; subst.
-      repeat do_restl.
-      
-      repeat do_pl_immut.
-      subst.
-      repeat rewrite <- app_assoc.
-
-      eapply lstar_tran.
-      econstructor.
-      simpl.
-
-      eapply lstar_transitive.
-      simpl.
-
-      eapply lstar_stbsl.  
-      
-      eapply IHt1.
-      eassumption.
-
-      eassumption.
-      
-      unfold run_cvm in *.
-      monad_unfold.
-
-      eapply lstar_silent_tran.
-      apply stbslstop.
-      
-      eapply lstar_transitive.
-      eapply lstar_stbsr.
-      
-      eapply IHt2.
-      eassumption.
-
-      eassumption.
-      
-      econstructor.
-
-      eapply stbsrstop.
-      econstructor.
- 
-    +  
-      df.
-      vmsts.
-      dosome.
-      df.
-
-      do_suffix blah.
-      do_suffix blah'.
-      destruct_conjs; subst.
-      repeat do_restl.
-      
-      repeat do_pl_immut.
-      subst.
-      repeat rewrite <- app_assoc.
-
-      eapply lstar_tran.
-      econstructor.
-      simpl.
-
-      eapply lstar_transitive.
-      simpl.
-
-      eapply lstar_stbsl.  
-      
-      eapply IHt1.
-      eassumption.
-
-      eassumption.
-      
-      unfold run_cvm in *.
-      monad_unfold.
-
-      eapply lstar_silent_tran.
-      apply stbslstop.
-      
-      eapply lstar_transitive.
-      eapply lstar_stbsr.
-      
-      eapply IHt2.
-      eassumption.
-
-      eassumption.
-      
-      econstructor.
-
-      eapply stbsrstop.
-      econstructor.
-    +
-      df.
-      vmsts.
-      dosome.
-      df.
-
-      do_suffix blah.
-      do_suffix blah'.
-      destruct_conjs; subst.
-      repeat do_restl.
-      
-      repeat do_pl_immut.
-      subst.
-      repeat rewrite <- app_assoc.
-
-      eapply lstar_tran.
-      econstructor.
-      simpl.
-
-      eapply lstar_transitive.
-      simpl.
-
-      eapply lstar_stbsl.  
-      
-      eapply IHt1.
-      eassumption.
-
-      eassumption.
-      
-      unfold run_cvm in *.
-      monad_unfold.
-
-      eapply lstar_silent_tran.
-      apply stbslstop.
-      
-      eapply lstar_transitive.
-      eapply lstar_stbsr.
-      
-      eapply IHt2.
-      eassumption.
-
-      eassumption.
-      
-      econstructor.
-
-      eapply stbsrstop.
-      econstructor.
-
 
   - (* abpar case *)
+
     do_wf_pieces.
-    destruct r; destruct s; destruct s; destruct s0.
-    +
-      df.
-      vmsts.
-      dosome.
-      df.
 
-      do_suffix blah.
-      
-      destruct_conjs; subst.
-      repeat do_restl.
-      
-      repeat do_pl_immut.
-      subst.
-      repeat rewrite <- app_assoc.
+    rewrite <- ccp_iff_cc in *.
+    dd.
+    repeat do_pl_immut; subst.
+    repeat clear_triv.
+    rewrite ccp_iff_cc in *.
+    
+    do_suffix blah.
+    destruct_conjs; subst.
+    repeat do_restl.
+    
+    repeat rewrite <- app_assoc.
 
-      assert (lstar (conf (unannoPar t) p et) blah (stop p (aeval (unannoPar t) p et))).
-      eauto.
+    assert (
+        lstar (conf (unannoPar t) p (splitEv_T_l s et)) blah (stop p (aeval (unannoPar t) p (splitEv_T_l s et)))
+      ).
+    {
+      destruct s; destruct s; destruct s0;
+        eauto.
+    }
 
       eapply lstar_tran.
       econstructor.
       simpl.
 
-      assert (
-          (cvm_thread_start n l p a et
-                            :: blah ++ [cvm_thread_end (Nat.pred n0) l p a; join (Nat.pred n0) p]) =
-          (([cvm_thread_start n l p a et] ++
-                                         blah ++ [cvm_thread_end (Nat.pred n0) l p a]) ++ [join (Nat.pred n0) p])).
-      { rewrite front_app.
-        repeat rewrite <- app_assoc.
-        tauto.
+      rewrite front_app.
+      rewrite back_app.
+
+      assert ([cvm_thread_start n l p a (get_et (splitEv_r s (evc bits et)))]
+                ++
+                blah ++
+                [cvm_thread_end (Nat.pred n0) l p a] =
+              shuffled_events blah (remote_events a p)).
+      {
+        eapply thread_bookend_peel.
+        eassumption.
       }
-      subst'.
-      
-      erewrite thread_bookend_peel.
+
+      repeat rewrite app_assoc in *.
+      jkjke.
 
       eapply lstar_transitive.
 
@@ -1054,146 +964,9 @@ Proof.
       eapply lstar_tran.
       apply stbpstop.
       econstructor.
-      eassumption.
-
-    +
-      df.
-      vmsts.
-      dosome.
-      df.
-
-      do_suffix blah.
-
-      destruct_conjs; subst.
-      repeat do_restl.
-      
-      repeat do_pl_immut.
-      subst.
-      repeat rewrite <- app_assoc.
-
-      assert (lstar (conf (unannoPar t) p et) blah (stop p (aeval (unannoPar t) p et))).
-      eauto.
-
-      eapply lstar_tran.
-      econstructor.
-      simpl.
-
-      assert (
-          (cvm_thread_start n l p a mt
-                            :: blah ++ [cvm_thread_end (Nat.pred n0) l p a; join (Nat.pred n0) p]) =
-          (([cvm_thread_start n l p a mt] ++
-                                         blah ++ [cvm_thread_end (Nat.pred n0) l p a]) ++ [join (Nat.pred n0) p])).
-      { rewrite front_app.
-        repeat rewrite <- app_assoc.
-        tauto.
-      }
-      subst'.
-      
-      erewrite thread_bookend_peel.
-
-      eapply lstar_transitive.
-
-      eapply bpar_shuffle.
-      eassumption.
-
-      eapply lstar_tran.
-      apply stbpstop.
-      econstructor.
-      eassumption.
-
-    +
-      df.
-      vmsts.
-      dosome.
-      df.
-
-      do_suffix blah.
-      
-      destruct_conjs; subst.
-      repeat do_restl.
-      
-      repeat do_pl_immut.
-      subst.
-      repeat rewrite <- app_assoc.
-
-      assert (lstar (conf (unannoPar t) p mt) blah (stop p (aeval (unannoPar t) p mt))).
-      eauto.
-
-      eapply lstar_tran.
-      econstructor.
-      simpl.
-
-      assert (
-          (cvm_thread_start n l p a et
-                            :: blah ++ [cvm_thread_end (Nat.pred n0) l p a; join (Nat.pred n0) p]) =
-          (([cvm_thread_start n l p a et] ++
-                                         blah ++ [cvm_thread_end (Nat.pred n0) l p a]) ++ [join (Nat.pred n0) p])).
-      { rewrite front_app.
-        repeat rewrite <- app_assoc.
-        tauto.
-      }
-      subst'.
-      
-      erewrite thread_bookend_peel.
-
-      eapply lstar_transitive.
-
-      eapply bpar_shuffle.
-      eassumption.
-
-      eapply lstar_tran.
-      apply stbpstop.
-      econstructor.
-      eassumption.
-
-    +
-      df.
-      vmsts.
-      dosome.
-      df.
-
-      do_suffix blah.
-
-      destruct_conjs; subst.
-      repeat do_restl.
-      
-      repeat do_pl_immut.
-      subst.
-      repeat rewrite <- app_assoc.
-
-      assert (lstar (conf (unannoPar t) p mt) blah (stop p (aeval (unannoPar t) p mt))).
-      eauto.
-
-      eapply lstar_tran.
-      econstructor.
-      simpl.
-
-      assert (
-          (cvm_thread_start n l p a mt
-                            :: blah ++ [cvm_thread_end (Nat.pred n0) l p a; join (Nat.pred n0) p]) =
-          (([cvm_thread_start n l p a mt] ++
-                                         blah ++ [cvm_thread_end (Nat.pred n0) l p a]) ++ [join (Nat.pred n0) p])).
-      { rewrite front_app.
-        repeat rewrite <- app_assoc.
-        tauto.
-      }
-      subst'.
-      
-      erewrite thread_bookend_peel.
-
-      eapply lstar_transitive.
-
-      eapply bpar_shuffle.
-      eassumption.
-
-      eapply lstar_tran.
-      apply stbpstop.
-      econstructor.
-      eassumption.
 Defined.
 
-
-Lemma cvm_refines_lts_event_ordering_corrolary : forall t cvm_tr bits (*bits'*) et (*et'*) p (*p'*),
+Lemma cvm_refines_lts_event_ordering_corrolary : forall t cvm_tr bits et p,
     well_formed_r t ->
     st_trace (run_cvm t
                       (mk_st (evc bits et) [] p)) = cvm_tr ->
@@ -1204,15 +977,9 @@ Proof.
   simpl in *.
   vmsts.
   simpl in *.
-  Check cvm_refines_lts_event_ordering.
-  simpl.
-  assert (o = Some tt).
-  {
-    eapply always_some.
-    eassumption.
-    eassumption.
-  }
+  do_asome.
   subst.
+  
   destruct st_ev.
 
   unfold run_cvm in *.
@@ -1221,6 +988,7 @@ Proof.
   simpl in *.
 
   eapply cvm_refines_lts_event_ordering with (t:=t) (cvm_tr:=st_trace) (bits:=bits) (et:=et) (bits':=e) (et':=e0) (p:=p) (p':=st_pl); eauto.
+  econstructor; eauto.
 Defined.
 
 Lemma range_par: forall t,
@@ -1245,12 +1013,10 @@ Defined.
 
 Theorem cvm_respects_event_system' : forall t cvm_tr ev0 ev1 bits bits' et et',
     well_formed_r t ->
-    (*Ev_Shape e et -> *)
-    copland_compile 
-      t
-      (mk_st (evc bits et) [] 0) =
-    (Some tt, (mk_st (evc bits' et') cvm_tr 0)) ->
-    (*cvm_to_lts_trace cvm_tr tr -> *)
+    copland_compileP t
+                     (mk_st (evc bits et) [] 0)
+                     (Some tt)
+                     (mk_st (evc bits' et') cvm_tr 0) ->
     prec (ev_sys (unannoPar t) 0 et) ev0 ev1 ->
     earlier cvm_tr ev0 ev1.
 Proof.
@@ -1463,8 +1229,6 @@ Lemma wfr_annt_implies_wfr_par: forall a l l' a0,
     anno_par a l = (l', a0) ->
     well_formed_r a0.
 Proof.
-
-  
   intros.
   generalizeEverythingElse a.
   induction a; intros;
@@ -1572,59 +1336,53 @@ Proof.
     eassumption.
 Defined.
 
+Lemma annopar_well_formed_r: forall t t',
+    t = annotated_par (annotated t') ->
+    well_formed_r t.
+Proof.
+  intros.
+  rewrite H in *.
+  eapply wfr_annt_implies_wfr_par.
+  2: {
+    unfold annotated_par in *.
+    unfold annotated in *.
+    assert (anno_par (snd (anno t' 0)) 0 = (fst (anno_par (snd (anno t' 0)) 0), snd (anno_par (snd (anno t' 0)) 0))).
+    {
+      destruct (anno_par (snd (anno t' 0)) 0); tauto.
+    }
+    jkjke.
+
+  }
+  eapply anno_well_formed_r.
+  assert (anno t' 0 = (fst (anno t' 0), snd (anno t' 0))).
+  {
+    destruct (anno t' 0); tauto.
+  }
+  jkjke.
+Defined.
+
 Theorem cvm_respects_event_system : forall t cvm_tr ev0 ev1 bits bits' et et' t',
     t = annotated_par (annotated t') ->
-    copland_compile
-      t
-      (mk_st (evc bits et) [] 0) =
-    (Some tt, (mk_st (evc bits' et') cvm_tr 0)) ->
+    copland_compileP t
+                     (mk_st (evc bits et) [] 0)
+                     (Some tt)
+                     (mk_st (evc bits' et') cvm_tr 0) ->
 
     prec (ev_sys (unannoPar t) 0 et) ev0 ev1 ->
     earlier cvm_tr ev0 ev1.
 Proof.
   intros.
+
   assert (well_formed_r t).
   {
-    unfold annotated in H.
-    unfold snd in *.
-    break_let.
-    subst.
-    assert (well_formed_r_annt (annotated t')).
-    {
-      unfold annotated.
-      unfold snd in *.
-      eapply anno_well_formed_r.
-      rewrite Heqp.
-      reflexivity.
-    }
-    unfold annotated in *.
-    unfold snd in *.
-    rewrite Heqp in *.
-
-    unfold annotated_par.
-    assert (exists a', (annotated_par a) = a').
-    {
-      eexists.
-      reflexivity.
-    }
-    destruct_conjs.
-    unfold annotated_par in H3.
-    rewrite H3.
-   
-    
-    eapply wfr_annt_implies_wfr_par with (l:= 0).
-    eassumption.
-    assert (anno_par a 0 = (fst (anno_par a 0), snd (anno_par a 0))).
-    {
-      destruct (anno_par a 0); tauto.
-    }
-    rewrite H4.
-    rewrite H3.
-    reflexivity.
+    eapply annopar_well_formed_r; eauto.
   }
 
-  eapply ordered with (p:=0) (e:=et); eauto.
-  eapply wfr_implies_wfrannt; eauto.
-  eapply cvm_refines_lts_event_ordering; eauto.
-  
+  assert (well_formed_r_annt (unannoPar t)).
+  {
+    eapply wfr_implies_wfrannt; eauto.
+  }
+
+  eapply ordered; try eassumption.
+  eapply cvm_refines_lts_event_ordering; eassumption.
 Defined.
