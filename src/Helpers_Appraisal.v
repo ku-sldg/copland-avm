@@ -76,9 +76,10 @@ Ltac find_wfec :=
                    wf_ec _]*),
           H2: well_formed_r ?t,
               H3: wf_ec ?e,
-                  H4: copland_compile ?t
-                                      {| st_ev := ?e; st_trace := _; st_pl := _ |} =
-                      (_, {| st_ev := ?e'; st_trace := _; st_pl := _ |})
+                  H4: copland_compileP ?t
+                                       {| st_ev := ?e; st_trace := _; st_pl := _ |}
+                                       (_)
+                                       {| st_ev := ?e'; st_trace := _; st_pl := _ |}
        |- _ ] => 
       assert_new_proof_by
         (wf_ec e')
@@ -117,16 +118,17 @@ Ltac do_wfec_split :=
 Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' p p',
     well_formed_r t1 ->
     wf_ec e ->
-    copland_compile t1
-                    {| st_ev := e; st_trace := tr; st_pl := p |} =
-    (Some tt,
-     {| st_ev := e'; st_trace := tr'; st_pl := p' |}) ->
+    copland_compileP t1
+                    {| st_ev := e; st_trace := tr; st_pl := p |}
+                    (Some tt)
+                    {| st_ev := e'; st_trace := tr'; st_pl := p' |} ->
     wf_ec (e').
 Proof.
   intros.
   generalizeEverythingElse t1.
   induction t1; intros.
   -
+    rewrite <- ccp_iff_cc in *.
     destruct a; ff;
       invc H0;
       try (
@@ -135,31 +137,43 @@ Proof.
           try tauto;
           try congruence).  
   -
-    ff.
+    rewrite <- ccp_iff_cc in *.
+    dd.
     do_wf_pieces.
 
     eapply wf_ec_preserved_remote; eauto.
 
   -
-    repeat ff.
-    vmsts.
     do_wf_pieces.
+    rewrite <- ccp_iff_cc in *.
+    dd.
+    rewrite ccp_iff_cc in *.
+    eauto.
   -
-    repeat ff; vmsts; subst.
     do_wf_pieces.
+    rewrite <- ccp_iff_cc in *.
+    dd.
+    rewrite ccp_iff_cc in *.
 
     do_wfec_split.
-
-    find_wfec;
+        find_wfec;
       inv_wfec;
-      ff;
+      dd;
       econstructor;
-      ff; repeat jkjke';
+      dd; repeat jkjke';
         eapply app_length.
 
   -
+    do_wf_pieces.
+
+    rewrite <- ccp_iff_cc in *.
+    dd.
+    rewrite ccp_iff_cc in *.
+    (*
     repeat ff; vmsts; subst.
     do_wf_pieces.
+     *)
+    
 
     do_wfec_split.
 
@@ -167,7 +181,7 @@ Proof.
       inv_wfec;
       ff;
       econstructor;
-      ff;
+      dd;
       repeat jkjke'.
 
     erewrite app_length.
@@ -182,14 +196,8 @@ Proof.
       eassumption.
       eassumption.
     }
-    
 
-    assert (length e2 = et_size e3).
-    {
-      invc H0.
-      tauto.
-    }
-    congruence.
+    solve_by_inversion.
 Defined.
 
 Ltac do_wfec_preserved :=
@@ -197,10 +205,10 @@ Ltac do_wfec_preserved :=
     match goal with
     | [H: well_formed_r ?t,
           H2: wf_ec ?stev,
-              H3: copland_compile ?t
-                                  {| st_ev := ?stev; st_trace := _; st_pl := _ |} =
-                  (Some tt,
-                   {| st_ev := ?stev'; st_trace := _; st_pl := _ |})
+              H3: copland_compileP ?t
+                                   {| st_ev := ?stev; st_trace := _; st_pl := _ |}
+                                   (Some tt)
+                                   {| st_ev := ?stev'; st_trace := _; st_pl := _ |}
        |- _ ] =>
       assert_new_proof_by (wf_ec stev')
                           ltac:(eapply wf_ec_preserved_by_cvm; [apply H | apply H2 | apply H3])
@@ -278,11 +286,15 @@ Ltac do_somerecons :=
 
 Ltac do_evsub_ih :=
   match goal with
-  | [H: copland_compile ?t1 {| st_ev := _; st_trace := _; st_pl := _ |} =
-        (Some tt, {| st_ev := ?stev; st_trace := _; st_pl := _ |}),
+  | [H: copland_compileP ?t1
+                         {| st_ev := _; st_trace := _; st_pl := _ |}
+                         (Some tt)
+                         {| st_ev := ?stev; st_trace := _; st_pl := _ |},
         
-        H2: copland_compile ?t2 {| st_ev := ?stev'; st_trace := _; st_pl := _ |} =
-            (Some tt, {| st_ev := _; st_trace := _; st_pl := _ |}),
+        H2: copland_compileP ?t2
+                             {| st_ev := ?stev'; st_trace := _; st_pl := _ |}
+                             (Some tt)
+                             {| st_ev := _; st_trace := _; st_pl := _ |},
             H3: Some ?v = reconstruct_ev ?stev
 
      |- context[EvSub ?e'' _ \/ _]] =>
@@ -617,134 +629,44 @@ Proof.
          do_none_none_contra). (* abseq, abpar cases  *)
 Defined.
 
-Check copland_compile.
-
 Lemma evsubt_preserved: forall t e e' et et' tr tr' p p' ett,
     well_formed_r_annt t ->
     not_none_none t ->
-    copland_compile (annotated_par t) {| st_ev := evc e et; st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := evc e' et'; st_trace := tr'; st_pl := p' |}) ->
+    copland_compileP (annotated_par t)
+                     {| st_ev := evc e et; st_trace := tr; st_pl := p |}
+                     (Some tt)
+                     {| st_ev := evc e' et'; st_trace := tr'; st_pl := p' |} ->
     EvSubT ett et ->
     EvSubT ett et'.
 Proof.
   intros.
-  Check cvm_refines_lts_evidence.
-  assert (et' = Term_Defs.eval (unanno t) p et).
+
+  assert (exists l' t', anno_par t 0 = (l',t')).
   {
-    Check cvm_refines_lts_evidence.
-    (*
-       well_formed_r t ->
-       copland_compile t
-         {| st_ev := evc bits et; st_trace := tr; st_pl := p |} =
-       (Some tt,
-       {|
-         st_ev := evc bits' et'; st_trace := tr'; st_pl := p'
-       |}) -> et' = eval (unanno (unannoPar t)) p et
-     *)
-
-    assert (exists l' t', anno_par t 0 = (l',t')).
-    {
-      destruct (anno_par t 0).
-      repeat eexists.
-    }
-
-    destruct_conjs.
-
-    unfold annotated_par in *.
-    rewrite H5 in *.
-    simpl in *.
-
-    Check cvm_refines_lts_evidence.
-
-    assert (et' = eval (unanno (unannoPar H4)) p et).
-    {
-      eapply cvm_refines_lts_evidence.
-    eapply wfr_annt_implies_wfr_par.
-    eassumption.
-    eassumption.
-    eassumption.
-    }
-    subst.
-
-    (*
-    Require Import VmSemantics. *)
-
-    assert (unannoPar H4 = t).
-    {
-      eapply anno_unanno_par.
-      eassumption.
-    }
-    congruence.
+    destruct (anno_par t 0).
+    repeat eexists.
   }
+  destruct_conjs.
   
-    
-    
-
-
-  (*
-
-
-    
-
-    erewrite cvm_refines_lts_evidence.
-    2: {
-      Search "implies".
-      eapply wfr_annt_implies_wfr_par.
-      eassumption.
-      eassumption.
-      (*
-      unfold annotated_par in Heqa.
-      jkjke
-      reflexivity.
-      eapply wfr_annt_implies_wfr.
-      eassumption.
-       *)
-    }
-    2: {
-
-
-
-
-    
-    2: {
-       unfold annotated_par in H1.
-    rewrite H5 in *.
-    simpl in *.
+  assert (t = (unannoPar H4)).
+  {
+    erewrite anno_unanno_par.
+    reflexivity.
     eassumption.
-    unfold annotated_par in H1.
-    rewrite H5 in *.
-    simpl in *.
-    
-    
-    
+  }
+  subst.
+  unfold annotated_par in *.
+  rewrite H5 in *.
+  simpl in H1.
+
+  assert (et' = eval (unanno (unannoPar H4)) p et).
+  {
     eapply cvm_refines_lts_evidence.
     eapply wfr_annt_implies_wfr_par.
     eassumption.
     eassumption.
-    unfold annotated_par in H1.
-    rewrite H5 in *.
-    simpl in *.
     eassumption.
-    unfold annotated_par in H1.
-    rewrite H5 in *.
-    simpl in *.
-
-    assert (et' = (eval (unanno t) p et)).
-    {
-      eapply cvm_refines
-
-
-
-    
-    eapply cvm_refines_lts_evidence.
-    eapply wfr_annt_implies_wfr.
-
-
-    
-    eapply cvm_refines_lts_evidence; eauto.
   }
-   *)
-  
   subst.
 
   rewrite eval_aeval.
@@ -1013,8 +935,10 @@ Lemma evAccum: forall t p (e e' e'':EvidenceC) tr tr' p' (ecc ecc':EvC) loc,
     Some e =  (reconstruct_ev ecc) ->
     Some e' = (reconstruct_ev ecc') ->
     EvSub e'' e ->
-    copland_compile (snd (anno_par t loc)) {| st_ev := ecc; st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
+    copland_compileP (snd (anno_par t loc))
+                     {| st_ev := ecc; st_trace := tr; st_pl := p |}
+                     (Some tt)
+                     {| st_ev := ecc'; st_trace := tr'; st_pl := p' |} ->
 
     (
       (EvSub e'' e') \/
@@ -1028,6 +952,7 @@ Proof.
   generalizeEverythingElse t.
   induction t; intros.
   -
+    rewrite <- ccp_iff_cc in *.
     destruct a;
       repeat ff;
       try jkjke';
@@ -1086,13 +1011,15 @@ Proof.
       
       
   - (* aatt case *)
-    (*
-    do_wf_pieces. *)
-    invc H.
+    
+    do_wf_pieces.
     do_not_none.
+    rewrite <- ccp_iff_cc in *.
+    dd.
+    (*
     ff.
     repeat break_let.
-    simpl.
+    simpl. *)
 
     assert (exists l' t', anno_par t 0 = (l',t')).
     {
@@ -1102,7 +1029,7 @@ Proof.
     destruct_conjs.
 
 
-    assert (t = unannoPar H6).
+    assert (t = unannoPar H8).
     {
     erewrite anno_unanno_par.
     reflexivity.
@@ -1125,26 +1052,31 @@ Proof.
     2: {
       eassumption. }
     eassumption.
-    rewrite H7.
+    rewrite H9.
 
    
 
-    assert (annotated_par (unannoPar H6) = H6).
+    assert (annotated_par (unannoPar H8) = H8).
     {
-      rewrite <- H8.
+      
+      rewrite <- H10.
+       
+      
       unfold annotated_par.
       jkjke.
       erewrite anno_unanno_par.
       2: {
         eassumption.
       }
-      rewrite H7.
+      
+      rewrite H9.
       tauto.
     }
     (*
     
     rewrite H11. *)
-    rewrite H8.
+    rewrite H10.
+    rewrite <- ccp_iff_cc.
     eapply copland_compile_at.
     eapply wfr_annt_implies_wfr_par.
     eassumption.
@@ -1152,8 +1084,14 @@ Proof.
 
   - (* alseq case *)
 
+    do_wf_pieces.
+
+    (*
+
 
     invc H.
+     *)
+    
 
     (*
     Lemma some_annopar:
@@ -1209,12 +1147,20 @@ Proof.
     }
     destruct_conjs.
      *)
+
+    rewrite <- ccp_iff_cc in *.
+    dd.
+    rewrite ccp_iff_cc in *.
+
+    (*
     simpl in *.
     repeat break_let.
     simpl in *.
     monad_unfold.
     repeat break_match; try solve_by_inversion.
     find_inversion.
+     *)
+    
 
     
     specialize IHt1 with (loc:=loc).
@@ -1251,9 +1197,12 @@ Proof.
     invc H5.
     clear H7.
      *)
-    
+
+    (*
     dunit.
     vmsts.
+     *)
+    
 
 
     (*
@@ -1314,7 +1263,7 @@ Proof.
     {
       Search "implies".
       eapply wfr_annt_implies_wfr_par.
-      apply H9.
+      2: { eassumption. }
       eassumption.
     }
     assert (well_formed_r a0).
@@ -1350,10 +1299,16 @@ Ltac do_evsub_ih :=
   end
      *)
 
+    
+
+    repeat jkjke'.
+    dd.
+    (*
     jkjke'.
-    jkjke'.
+    dd.
+    
     invc H2.
-    invc H3.
+    invc H3. *)
     
 
     (*
@@ -1415,7 +1370,7 @@ Ltac do_evsub_ih :=
     
     door.
     +
-      eapply IHt2 with (ecc:=st_ev).
+      eapply IHt2 with (ecc:=st_ev0).
       eassumption.
       eassumption.
       eassumption.
@@ -1480,8 +1435,23 @@ Ltac do_evsubh_ih :=
     subst.
      *)
 
+    do_wf_pieces.
+
+    (*
+
     simpl.
     invc H.
+     *)
+
+
+
+    rewrite <- ccp_iff_cc in *.
+    dd.
+    rewrite ccp_iff_cc in *.
+
+    (*
+
+    
     simpl in *.
     repeat break_let.
     simpl in *.
@@ -1494,6 +1464,8 @@ Ltac do_evsubh_ih :=
     simpl in *.
     invc H3.
     clear Heqr.
+     *)
+    
    
 
     do_wfec_split.
@@ -1502,7 +1474,7 @@ Ltac do_evsubh_ih :=
     {
       Search "implies".
       eapply wfr_annt_implies_wfr_par.
-      apply H10.
+      2: {eassumption. }
       eassumption.
     }
     assert (well_formed_r a0).
@@ -1524,11 +1496,14 @@ Ltac do_evsubh_ih :=
     do_somerecons.
 
     do_not_none.
+    
     rewrite fold_recev in *.
-    jkjke'.
-    jkjke'.
-    jkjke'.
-    ff.
+    repeat 
+      jkjke'.
+    dd.
+    rewrite fold_recev in *.
+    repeat jkjke'.
+    dd.
 
     specialize IHt1 with (loc := loc).
     find_rewrite.
@@ -1541,14 +1516,14 @@ Ltac do_evsubh_ih :=
     destruct s; destruct s; destruct s0;
 
       try (
-          ff;
+          dd;
           try unfold mt_evc in *;
           repeat jkjke';
-          ff;
+          dd;
           rewrite fold_recev in *;
           do_evsub_ih;
           
-          ff;
+          dd;
           
           door; destruct_conjs;
           try eauto;
@@ -1557,7 +1532,7 @@ Ltac do_evsubh_ih :=
 
     do_none_none_contra.
 
-      - (* abseq case *)
+  - (* abseq case *)
 
     (*
     do_wf_pieces.
@@ -1569,8 +1544,33 @@ Ltac do_evsubh_ih :=
     subst.
      *)
 
+    do_wf_pieces.
+
+    (*
+
     simpl.
     invc H.
+     *)
+
+
+
+    rewrite <- ccp_iff_cc in *.
+    dd.
+    ff.
+        assert (well_formed_r a).
+    {
+      Search "implies".
+      eapply wfr_annt_implies_wfr_par.
+      2: {eassumption. }
+      eassumption.
+    }
+    do_pl_immut.
+    subst.
+    rewrite ccp_iff_cc in *.
+
+    (*
+
+    
     simpl in *.
     repeat break_let.
     simpl in *.
@@ -1583,17 +1583,13 @@ Ltac do_evsubh_ih :=
     simpl in *.
     invc H3.
     clear Heqr.
+     *)
+    
    
 
     do_wfec_split.
 
-    assert (well_formed_r a).
-    {
-      Search "implies".
-      eapply wfr_annt_implies_wfr_par.
-      apply H10.
-      eassumption.
-    }
+
     (*
     assert (well_formed_r a0).
     {
@@ -1616,28 +1612,59 @@ Ltac do_evsubh_ih :=
     do_somerecons.
 
     do_not_none.
+
+    
     rewrite fold_recev in *.
-    jkjke'.
-    jkjke'.
-    jkjke'.
-    ff.
+    repeat 
+      jkjke'.
+    (*
+    rewrite fold_recev in *.
+    rewrite <- Heqe2 in *.
+    dd.
+    break_match; try solve_by_inversion.
+     *)
+    
+    find_rewrite.
+
 
     specialize IHt1 with (loc := S loc).
     find_rewrite.
     find_rewrite.
+    dd.
 
     (*
-
     specialize IHt2 with (loc:=l).
     find_rewrite.
      *)
+    
 
-
+    
+    
     destruct s; destruct s; destruct s0.
+
+    (*
+
+      try (
+          dd;
+          try unfold mt_evc in *;
+          repeat jkjke';
+          dd;
+          rewrite fold_recev in *;
+          do_evsub_ih;
+          
+          dd;
+          
+          door; destruct_conjs;
+          try eauto;
+          try (right; repeat (eexists; eauto))
+        ).
+
+    do_none_none_contra.
+     *)
     +
-      ff.
+      dd.
       repeat jkjke'.
-      ff.
+      dd.
       rewrite fold_recev in *.
 
       edestruct IHt1.
@@ -1675,10 +1702,10 @@ Ltac do_evsubh_ih :=
       destruct_conjs.
       right; repeat (eexists; eauto).
     +
-      ff.
+      dd.
       try unfold mt_evc in *;
       repeat jkjke'.
-      ff.
+      dd.
       rewrite fold_recev in *.
 
       assert (exists loc loc' t2',
@@ -1695,10 +1722,10 @@ Ltac do_evsubh_ih :=
                  
 
       assert (
-          copland_compile H8 {| st_ev := ecc; st_trace := []; st_pl := p |} =
+          copland_compile H11 {| st_ev := ecc; st_trace := []; st_pl := p |} =
           (Some tt,
-     {| st_ev := toRemote (unannoPar H8) p ecc;
-        st_trace := remote_events (unannoPar H8) p;
+     {| st_ev := toRemote (unannoPar H11) p ecc;
+        st_trace := remote_events (unannoPar H11) p;
         st_pl := p
      |})).
       {
@@ -1706,41 +1733,38 @@ Ltac do_evsubh_ih :=
       eapply copland_compile_at.
       Search "implies".
       eapply wfr_annt_implies_wfr_par.
-      apply H11.
+      2: { eassumption. }
       eassumption.
       }
+      rewrite ccp_iff_cc in *.
       
 
       edestruct IHt2.
       eassumption.
       eassumption.
       5 : {
-        rewrite H9.
-        eassumption.
+        jkjke.
       }
       eassumption.
       eassumption.
       rewrite at_evidence.
       rewrite <- par_evidence.
-      assert (t2 = unannoPar H8).
+      assert (t2 = unannoPar H11).
       {
         erewrite anno_unanno_par.
         reflexivity.
         eassumption.
       }
-      rewrite <- H15; clear H15.
-      do_pl_immut.
-      subst.
+      rewrite <- H16.
       rewrite Heqe2.
-      jkjke'.
-      eassumption.
-      
-     
+      eauto.
+      eauto.
       eauto.
 
       destruct_conjs.
 
       right; repeat (eexists; eauto).
+
     +
       do_none_none_contra.
 Defined.
@@ -1754,8 +1778,10 @@ Lemma evAccum': forall t p (e e' e'':EvidenceC) tr tr' p' (ecc ecc':EvC) t' loc,
     Some e =  (reconstruct_ev ecc) ->
     Some e' = (reconstruct_ev ecc') ->
     EvSub e'' e ->
-    copland_compile t {| st_ev := ecc; st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
+    copland_compileP t
+                     {| st_ev := ecc; st_trace := tr; st_pl := p |}
+                     (Some tt)
+                     {| st_ev := ecc'; st_trace := tr'; st_pl := p' |} ->
 
     (
       (EvSub e'' e') \/
@@ -1830,9 +1856,10 @@ Ltac do_evaccum :=
                H3: Some ?e = reconstruct_ev ?ecc,
                    H4: Some ?e' = reconstruct_ev ?ecc',
                        H5: EvSub ?e'' ?e,
-                           H6: copland_compile (snd (anno_par ?t _))
-                                               {| st_ev := ?ecc; st_trace := _; st_pl := _ |} =
-                               (Some tt, {| st_ev := ?ecc'; st_trace := _; st_pl := _ |}),
+                           H6: copland_compileP (snd (anno_par ?t _))
+                                                {| st_ev := ?ecc; st_trace := _; st_pl := _ |}
+                                                (Some tt)
+                                                {| st_ev := ?ecc'; st_trace := _; st_pl := _ |},
                                H7: not_none_none ?t,
                                    H8: _ = snd (anno_par ?t _)
 
@@ -1849,8 +1876,10 @@ Ltac do_evaccum :=
 
 Lemma sig_term_ev_lseq: forall r t1 t2 e e0 e1 e2 e3 tr tr' p p' loc,
     not_hash_sig_term_ev (alseq r t1 t2) e ->
-    copland_compile (snd (anno_par t1 loc)) {| st_ev := evc e0 e1; st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := evc e2 e3; st_trace := tr'; st_pl := p' |}) ->
+    copland_compileP (snd (anno_par t1 loc))
+                     {| st_ev := evc e0 e1; st_trace := tr; st_pl := p |}
+                     (Some tt)
+                     {| st_ev := evc e2 e3; st_trace := tr'; st_pl := p' |} ->
     Some e  = reconstruct_ev (evc e0 e1) ->
     not_hash_sig_term_ev t1 e.
 Proof.
@@ -1891,10 +1920,10 @@ Lemma sig_is: forall t ecc ecc' e e' tr tr' p p' loc,
 
     well_formed_r (snd(anno_par t loc)) ->
     wf_ec ecc ->
-    copland_compile (snd(anno_par t loc))
-                    {| st_ev := ecc; st_trace := tr; st_pl := p |} =
-    (Some tt,
-     {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
+    copland_compileP (snd(anno_par t loc))
+                     {| st_ev := ecc; st_trace := tr; st_pl := p |}
+                     (Some tt)
+                     {| st_ev := ecc'; st_trace := tr'; st_pl := p' |} ->
 
     Some e = reconstruct_ev ecc ->
     Some e' = reconstruct_ev ecc' ->
@@ -1906,12 +1935,16 @@ Lemma sig_is: forall t ecc ecc' e e' tr tr' p p' loc,
 Proof.
   intros.
   generalizeEverythingElse t.
-  induction t; intros; repeat ff.
+  induction t; intros; ff.
   -
+    rewrite <- ccp_iff_cc in *.
+    
+    destruct a; dd.
+    +
     jkjke'.
     ff.
-  -
-    unfold cons_uu in *.
+    +
+       unfold cons_uu in *.
     repeat ff.
 
     do_ggsub.
@@ -1920,30 +1953,17 @@ Proof.
     left.
     econstructor.
     eauto.
-  -
-    do_ggsub.
-    right.
-    eauto.
-    (*
-    left.
-    e
-    evSubFacts.
     +
+      do_ggsub.
       right.
-      exists (n, n0).
-      econstructor.
+      eauto.
     +
-      destruct ecc; ff.
-      jkjke'. *)
-  -
-    do_ggsub.
-    evSubFacts.
-    (*
-    ff.
-    left.
-    eapply gg_recons; eauto. *)
+      do_ggsub.
+      evSubFacts.
   -
     do_wf_pieces.
+    rewrite <- ccp_iff_cc in *.
+    dd.
 
     edestruct IHt.
     Search "implies".
@@ -1956,10 +1976,11 @@ Proof.
     
     eassumption.
 
+    rewrite <- ccp_iff_cc.
+
     apply copland_compile_at.
     eapply wfr_annt_implies_wfr_par.
     eassumption.
-    unfold annotated_par.
     eapply annopar_fst_snd.
     apply H2.
     erewrite anno_unanno_par.
@@ -1973,6 +1994,8 @@ Proof.
     destruct_conjs.
     eauto.
   -
+    do_wf_pieces.
+    (*
     assert (well_formed_r a).
     {
       invc H.
@@ -1984,11 +2007,19 @@ Proof.
       invc H.
       eassumption.
     }
+     *)
+    
     (*
     
     
     do_wf_pieces. *)
-    vmsts.
+
+    rewrite <- ccp_iff_cc in *.
+    dd.
+    repeat do_pl_immut.
+    subst.
+    rewrite ccp_iff_cc in *.
+    
     do_wfec_preserved.
     do_somerecons.
 
@@ -2002,8 +2033,7 @@ Proof.
     
 
 
-    ff.
-    simpl.
+   
     (*
     unfold annotated_par in *.
     unfold anno_par in *.
@@ -2013,7 +2043,7 @@ Proof.
     fold anno_par in *.
      *)
     
-    vmsts.
+
     
 
 
@@ -2021,12 +2051,11 @@ Proof.
     {
       eapply IHt2.
       eassumption.
-      apply H6.
+      2: { eassumption. }
       eassumption.
-      eassumption.
-      jkjke'.
-      jkjke'.
-      jkjke'.
+      repeat jkjke'.
+      ff.
+      repeat jkjke'.
       ff.
     }
     door.
@@ -2048,53 +2077,117 @@ Proof.
   - (* abseq case *)
 
     do_wf_pieces.
-    vmsts.
-    simpl in *.
+
+    rewrite <- ccp_iff_cc in *.
+    dd.
+    repeat do_pl_immut.
+    subst.
+    rewrite ccp_iff_cc in *.
+
+    repeat break_match; try solve_by_inversion.
+    dd.
+    rewrite fold_recev in *.
+
+    do_wfec_split.
+    
+
+
+    
+    Print do_wfec_preserved.
+    (*
+Ltac do_wfec_preserved :=
+  repeat
+   match goal with
+   | H:well_formed_r ?t,
+     H2:wf_ec ?stev,
+     H3:copland_compileP ?t {| st_ev := ?stev; st_trace := _; st_pl := _ |}
+          (Some tt) {| st_ev := ?stev'; st_trace := _; st_pl := _ |}
+     |- _ =>
+         assert_new_proof_by (wf_ec stev')
+          ltac:(eapply wf_ec_preserved_by_cvm;
+                 [ apply H | apply H2 | apply H3 ])
+   end
+     *)
+    
     do_wfec_preserved.
+
+    
+    do_wfec_firstn.
+
+
+    (*
+    do_wfec_preserved.
+     *)
+    
     do_somerecons.
+
+    (*
     do_wfec_split.
     do_wfec_preserved.
     ff.
     subst.
+     
+    
     do_wfec_firstn.
+     *)
+    
     do_wfec_skipn.
     clear_skipn_firstn.
     repeat find_rewrite.
+    dd.
     vmsts.
     do_ggsub.
 
     evSubFacts.
 
     +
-      ff.
       rewrite fold_recev in *.
       
       jkjke'.
       jkjke'.
       repeat ff.
+      (*
       do_wfec_preserved.
       do_somerecons.
+       *)
       
-      assert (gg_sub H5 \/ exists r, term_sub (aasp r SIG) t1).
+      
+      assert (gg_sub H14 \/ exists r, term_sub (aasp r SIG) t1).
       {
         destruct s.
-        destruct s; destruct s0.
+        destruct s; destruct s0;
+          dd.
         ++
           repeat jkjke'.
           eapply IHt1.
           jkjke.
 
-          2: { jkjke.  }
+          2: { repeat find_rewrite.
+               eassumption.
+             }
           eassumption.
-          eassumption.
-          eassumption.
+          repeat find_rewrite.
+          tauto.
           rewrite fold_recev in *.
+          eauto.
+          (*
+          eassumption.
+          jkjke'.
+          jkjke'.
+          eassumption.
+          
+          rewrite fold_recev in *.
+          repeat jkjke'.
+          repeat find_rewrite.
+          
           jkjke'.
           jkjke'.
           ff.
           jkjke'.
           jkjke'.
           ff.
+           *)
+          
 
 
           repeat eexists.
@@ -2105,17 +2198,32 @@ Proof.
           eapply IHt1.
           jkjke.
 
-          2: { jkjke.  }
+          2: { repeat find_rewrite.
+               eassumption.
+             }
           eassumption.
-          eassumption.
-          eassumption.
+          repeat find_rewrite.
+          tauto.
           rewrite fold_recev in *.
+          eauto.
+          (*
+          eassumption.
+          jkjke'.
+          jkjke'.
+          eassumption.
+          
+          rewrite fold_recev in *.
+          repeat jkjke'.
+          repeat find_rewrite.
+          
           jkjke'.
           jkjke'.
           ff.
           jkjke'.
           jkjke'.
           ff.
+           *)
+          
 
 
           repeat eexists.
@@ -2130,11 +2238,9 @@ Proof.
             2: { jkjke. }
             eassumption.
             ff.
-            eassumption.
-            repeat jkjke'.
-            repeat ff.
-            repeat jkjke'.
-            repeat ff.
+            rewrite fold_recev in *.
+            eauto.
+           
             repeat eexists.
             eauto.
           }
@@ -2144,7 +2250,6 @@ Proof.
             solve_by_inversion.
           +++
             eauto.
-
                     ++
           repeat jkjke'.
           assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t1)).
@@ -2154,11 +2259,9 @@ Proof.
             2: { jkjke. }
             eassumption.
             ff.
-            eassumption.
-            repeat jkjke'.
-            repeat ff.
-            repeat jkjke'.
-            repeat ff.
+            rewrite fold_recev in *.
+            eauto.
+           
             repeat eexists.
             eauto.
           }
@@ -2172,78 +2275,53 @@ Proof.
       door; eauto.
 
     +
-      ff.
       rewrite fold_recev in *.
       
       jkjke'.
       jkjke'.
       repeat ff.
+      (*
       do_wfec_preserved.
       do_somerecons.
+       *)
       
-      assert (gg_sub H5 \/ exists r, term_sub (aasp r SIG) t2).
+      
+      assert (gg_sub H14 \/ exists r, term_sub (aasp r SIG) t2).
       {
         destruct s.
-        destruct s; destruct s0.
+        destruct s; destruct s0;
+          dd.
         ++
           repeat jkjke'.
           eapply IHt2.
           jkjke.
 
-          2: { jkjke.  }
+          2: { repeat find_rewrite.
+               eassumption.
+             }
           eassumption.
-          eassumption.
-          eassumption.
+          repeat find_rewrite.
+          tauto.
           rewrite fold_recev in *.
-          jkjke'.
-          jkjke'.
-          ff.
-          jkjke'.
-          jkjke'.
-          ff.
-
-
-          repeat eexists.
           eauto.
-        ++
-          repeat jkjke'.
-          assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t2)).
-          {
-            eapply IHt2.
-            jkjke.
-            2: { jkjke. }
-            eassumption.
-            ff.
-            eassumption.
-            repeat jkjke'.
-            repeat ff.
-            repeat jkjke'.
-            repeat ff.
-            repeat eexists.
-            eauto.
-          }
-          door.
-          +++
-            do_ggsub.
-            solve_by_inversion.
-          +++
-            eauto.
-        ++
-          repeat jkjke'.
-          eapply IHt2.
-          jkjke.
-
-          2: { jkjke.  }
+          (*
           eassumption.
+          jkjke'.
+          jkjke'.
           eassumption.
-          eassumption.
+          
           rewrite fold_recev in *.
+          repeat jkjke'.
+          repeat find_rewrite.
+          
           jkjke'.
           jkjke'.
           ff.
           jkjke'.
           jkjke'.
           ff.
+           *)
+          
 
 
           repeat eexists.
@@ -2257,11 +2335,71 @@ Proof.
             2: { jkjke. }
             eassumption.
             ff.
+            rewrite fold_recev in *.
+            eauto.
+           
+            repeat eexists.
+            eauto.
+          }
+          door.
+          +++
+            do_ggsub.
+            solve_by_inversion.
+          +++
+            eauto.
+
+
+
+
+          
+
+        ++
+          repeat jkjke'.
+          eapply IHt2.
+          jkjke.
+
+          2: { repeat find_rewrite.
+               eassumption.
+             }
+          eassumption.
+          repeat find_rewrite.
+          tauto.
+          rewrite fold_recev in *.
+          eauto.
+          (*
+          eassumption.
+          jkjke'.
+          jkjke'.
+          eassumption.
+          
+          rewrite fold_recev in *.
+          repeat jkjke'.
+          repeat find_rewrite.
+          
+          jkjke'.
+          jkjke'.
+          ff.
+          jkjke'.
+          jkjke'.
+          ff.
+           *)
+          
+
+
+          repeat eexists.
+          eauto.
+                            ++
+          repeat jkjke'.
+          assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t2)).
+          {
+            eapply IHt2.
+            jkjke.
+            2: { jkjke. }
             eassumption.
-            repeat jkjke'.
-            repeat ff.
-            repeat jkjke'.
-            repeat ff.
+            ff.
+            rewrite fold_recev in *.
+            eauto.
+           
             repeat eexists.
             eauto.
           }
@@ -2274,56 +2412,144 @@ Proof.
       }
       door; eauto.
 
-  - (* apar case *)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+
+
+
+
+  - (* NEW abpar case *)
+    
     do_wf_pieces.
-    vmsts.
-    simpl in *.
+
+    rewrite <- ccp_iff_cc in *.
+    dd.
+    repeat do_pl_immut.
+    subst.
+    rewrite ccp_iff_cc in *.
+
+    repeat break_match; try solve_by_inversion.
+    dd.
+    rewrite fold_recev in *.
+
+    do_wfec_split.
+    
+
+
+    
+    Print do_wfec_preserved.
+    (*
+Ltac do_wfec_preserved :=
+  repeat
+   match goal with
+   | H:well_formed_r ?t,
+     H2:wf_ec ?stev,
+     H3:copland_compileP ?t {| st_ev := ?stev; st_trace := _; st_pl := _ |}
+          (Some tt) {| st_ev := ?stev'; st_trace := _; st_pl := _ |}
+     |- _ =>
+         assert_new_proof_by (wf_ec stev')
+          ltac:(eapply wf_ec_preserved_by_cvm;
+                 [ apply H | apply H2 | apply H3 ])
+   end
+     *)
+    
     do_wfec_preserved.
+
+    
+    do_wfec_firstn.
+
+
+    (*
+    do_wfec_preserved.
+     *)
+    
     do_somerecons.
+
+    (*
     do_wfec_split.
     do_wfec_preserved.
     ff.
     subst.
+     
+    
     do_wfec_firstn.
+     *)
+    
     do_wfec_skipn.
     clear_skipn_firstn.
     repeat find_rewrite.
+    dd.
     vmsts.
     do_ggsub.
 
     evSubFacts.
 
     +
-      ff.
       rewrite fold_recev in *.
       
       jkjke'.
       jkjke'.
       repeat ff.
+      (*
       do_wfec_preserved.
       do_somerecons.
+       *)
       
-      assert (gg_sub H5 \/ exists r, term_sub (aasp r SIG) t1).
+      
+      assert (gg_sub H12 \/ exists r, term_sub (aasp r SIG) t1).
       {
         destruct s.
-        destruct s; destruct s0.
+        destruct s; destruct s0;
+          dd.
         ++
           repeat jkjke'.
           eapply IHt1.
           jkjke.
 
-          2: { jkjke.  }
+          2: { repeat find_rewrite.
+               eassumption.
+             }
           eassumption.
-          eassumption.
-          eassumption.
+          repeat find_rewrite.
+          tauto.
           rewrite fold_recev in *.
+          eauto.
+          (*
+          eassumption.
+          jkjke'.
+          jkjke'.
+          eassumption.
+          
+          rewrite fold_recev in *.
+          repeat jkjke'.
+          repeat find_rewrite.
+          
           jkjke'.
           jkjke'.
           ff.
           jkjke'.
           jkjke'.
           ff.
+           *)
+          
 
 
           repeat eexists.
@@ -2334,17 +2560,32 @@ Proof.
           eapply IHt1.
           jkjke.
 
-          2: { jkjke.  }
+          2: { repeat find_rewrite.
+               eassumption.
+             }
           eassumption.
-          eassumption.
-          eassumption.
+          repeat find_rewrite.
+          tauto.
           rewrite fold_recev in *.
+          eauto.
+          (*
+          eassumption.
+          jkjke'.
+          jkjke'.
+          eassumption.
+          
+          rewrite fold_recev in *.
+          repeat jkjke'.
+          repeat find_rewrite.
+          
           jkjke'.
           jkjke'.
           ff.
           jkjke'.
           jkjke'.
           ff.
+           *)
+          
 
 
           repeat eexists.
@@ -2359,11 +2600,9 @@ Proof.
             2: { jkjke. }
             eassumption.
             ff.
-            eassumption.
-            repeat jkjke'.
-            repeat ff.
-            repeat jkjke'.
-            repeat ff.
+            rewrite fold_recev in *.
+            eauto.
+           
             repeat eexists.
             eauto.
           }
@@ -2373,7 +2612,6 @@ Proof.
             solve_by_inversion.
           +++
             eauto.
-
         ++
           repeat jkjke'.
           assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t1)).
@@ -2383,11 +2621,9 @@ Proof.
             2: { jkjke. }
             eassumption.
             ff.
-            eassumption.
-            repeat jkjke'.
-            repeat ff.
-            repeat jkjke'.
-            repeat ff.
+            rewrite fold_recev in *.
+            eauto.
+           
             repeat eexists.
             eauto.
           }
@@ -2401,12 +2637,23 @@ Proof.
       door; eauto.
 
     +
+      rewrite fold_recev in *.
+      
+      jkjke'.
+      jkjke'.
+      repeat ff.
+
+
+      (*
+      
       ff.
       rewrite fold_recev in *.
       
       jkjke'.
       jkjke'.
       repeat ff.
+       *)
+      
 
        assert (exists l' t', anno_par t2 0 = (l',t')).
        {
@@ -2417,35 +2664,55 @@ Proof.
        destruct_conjs.
        specialize IHt2 with (loc:=0).
        find_rewrite.
-       assert (well_formed_r H12).
+       assert (well_formed_r H16).
        {
          Search "implies".
          eapply wfr_annt_implies_wfr_par.
-         apply H3.
+         2: { eassumption. }
          eassumption.
        }
+
+      
+
+       
+       Print do_wfec_preserved.
+       (*
+Ltac do_wfec_preserved :=
+  repeat
+   match goal with
+   | H:well_formed_r ?t,
+     H2:wf_ec ?stev,
+     H3:copland_compileP ?t {| st_ev := ?stev; st_trace := _; st_pl := _ |}
+          (Some tt) {| st_ev := ?stev'; st_trace := _; st_pl := _ |}
+     |- _ =>
+         assert_new_proof_by (wf_ec stev')
+          ltac:(eapply wf_ec_preserved_by_cvm;
+                 [ apply H | apply H2 | apply H3 ])
+   end
+        *)
        
 
-
-
-      
-      do_wfec_preserved.
+       (*
+      do_wfec_preserved. 
       do_somerecons.
+        *)
+       
       
-      assert (gg_sub H5 \/ exists r, term_sub (aasp r SIG) t2).
+      assert (gg_sub H12 \/ exists r, term_sub (aasp r SIG) t2).
       {
         destruct s.
-        destruct s; destruct s0.
+        destruct s; destruct s0;
+          dd.
         ++
           repeat jkjke'.
-          ff.
-          repeat jkjke'.
-          ff.
+          dd.
+
           eapply IHt2.
           eassumption.
           
 
           2: {
+            rewrite <- ccp_iff_cc.
             eapply copland_compile_at.
             eassumption.
           }
@@ -2458,8 +2725,7 @@ Proof.
           rewrite Heqe2.
           2: { eassumption. }
           rewrite fold_recev in *.
-          symmetry.
-          eassumption.
+          eauto.
           }
           eassumption.
           eassumption.
@@ -2468,11 +2734,13 @@ Proof.
 
         ++
           repeat jkjke'.
+          dd.
           assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t2)).
           {
             eapply IHt2.
             eassumption.
             2: {
+              rewrite <- ccp_iff_cc.
               eapply copland_compile_at.
               eassumption.
             }
@@ -2485,8 +2753,7 @@ Proof.
           rewrite Heqe2.
           2: { eassumption. }
           rewrite fold_recev in *.
-          symmetry.
-          eassumption.
+          eauto.
             }
             econstructor.
             tauto.
@@ -2502,14 +2769,13 @@ Proof.
             eauto.
         ++
           repeat jkjke'.
-          ff.
-          repeat jkjke'.
-          ff.
+          dd.
           eapply IHt2.
           eassumption.
           
 
           2: {
+            rewrite <- ccp_iff_cc.
             eapply copland_compile_at.
             eassumption.
           }
@@ -2532,11 +2798,13 @@ Proof.
         ++
 
           repeat jkjke'.
+          dd.
           assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t2)).
           {
             eapply IHt2.
             eassumption.
             2: {
+              rewrite <- ccp_iff_cc.
               eapply copland_compile_at.
               eassumption.
             }
@@ -2569,496 +2837,6 @@ Proof.
       Unshelve.
       eauto.
 Defined.
-      
-          
-          
-          
-              
-    (*        
-
-
-              jkjke. }
-            eassumption.
-            ff.
-            eassumption.
-            repeat jkjke'.
-            repeat ff.
-            repeat jkjke'.
-            repeat ff.
-            repeat eexists.
-            eauto.
-          }
-          door.
-          +++
-            do_ggsub.
-            solve_by_inversion.
-          +++
-            eauto.
-        ++
-          repeat jkjke'.
-          eapply IHt2.
-          jkjke.
-
-          2: { jkjke.  }
-          eassumption.
-          eassumption.
-          eassumption.
-          rewrite fold_recev in *.
-          jkjke'.
-          jkjke'.
-          ff.
-          jkjke'.
-          jkjke'.
-          ff.
-
-
-          repeat eexists.
-          eauto.
-                  ++
-          repeat jkjke'.
-          assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t2)).
-          {
-            eapply IHt2.
-            jkjke.
-            2: { jkjke. }
-            eassumption.
-            ff.
-            eassumption.
-            repeat jkjke'.
-            repeat ff.
-            repeat jkjke'.
-            repeat ff.
-            repeat eexists.
-            eauto.
-          }
-          door.
-          +++
-            do_ggsub.
-            solve_by_inversion.
-          +++
-            eauto.
-      }
-      door; eauto.
-
-
-
-
-
-      
-  
-    
-      
-
-
-          
-
-          
-
-
-
-          
-
-        ++
-          repeat jkjke'.
-          eapply IHt2.
-          jkjke.
-
-          2: { jkjke.  }
-          eassumption.
-          eassumption.
-          eassumption.
-          rewrite fold_recev in *.
-          jkjke'.
-          jkjke'.
-          ff.
-          jkjke'.
-          jkjke'.
-          ff.
-
-
-          repeat eexists.
-          eauto.
-
-        ++
-          repeat jkjke'.
-          assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t1)).
-          {
-            eapply IHt1.
-            jkjke.
-            2: { jkjke. }
-            eassumption.
-            ff.
-            eassumption.
-            repeat jkjke'.
-            repeat ff.
-            repeat jkjke'.
-            repeat ff.
-            repeat eexists.
-            eauto.
-          }
-          door.
-          +++
-            do_ggsub.
-            solve_by_inversion.
-          +++
-            eauto.
-
-        ++
-          repeat jkjke'.
-          assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t1)).
-          {
-            eapply IHt1.
-            jkjke.
-            2: { jkjke. }
-            eassumption.
-            ff.
-            eassumption.
-            repeat jkjke'.
-            repeat ff.
-            repeat jkjke'.
-            repeat ff.
-            repeat eexists.
-            eauto.
-          }
-          door.
-          +++
-            do_ggsub.
-            solve_by_inversion.
-          +++
-            eauto.
-      }
-      door; eauto.
-
-
-
-
-
-
-
-
-      
-
-
-
-
-    +
-      ff.
-      
-      rewrite fold_recev in *.
-      
-      jkjke'.
-      jkjke'.
-      repeat ff.
-      do_wfec_preserved.
-      do_somerecons.
-      
-      assert (gg_sub H5 \/ exists r, term_sub (aasp r SIG) t2).
-      {
-        destruct s.
-        destruct s; destruct s0.
-        ++
-          eapply IHt2.
-          eassumption.
-          2: { eassumption. }
-          eassumption.
-          eassumption.
-          eassumption.
-          rewrite fold_recev in *.
-          jkjke'.
-          jkjke'.
-          ff.
-          jkjke'.
-          jkjke'.
-          jkjke'.
-          jkjke'.
-          ff.
-          
-          econstructor.
-          eauto.
-        ++
-          assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t2)).
-          {
-            eapply IHt2.
-            eassumption.
-            2: { eassumption. }
-            ff.
-            ff.
-            eassumption.
-            repeat jkjke'.
-            repeat ff.
-            repeat jkjke'.
-            repeat ff.
-            econstructor.
-            eauto.
-          }
-          door.
-          +++
-            do_ggsub.
-            solve_by_inversion.
-          +++
-            eauto.
-        ++
-          eapply IHt2.
-          eassumption.
-          2: { eassumption. }
-          eassumption.
-          eassumption.
-          eassumption.
-          rewrite fold_recev in *.
-          jkjke'.
-          jkjke'.
-          ff.
-          jkjke'.
-          jkjke'.
-          jkjke'.
-          
-          econstructor.
-          eauto.
-        ++
-          assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t2)).
-          {
-            eapply IHt2.
-            eassumption.
-            2: { eassumption. }
-            ff.
-            ff.
-            eassumption.
-            repeat jkjke'.
-            repeat ff.
-            repeat jkjke'.
-            repeat ff.
-            econstructor.
-            eauto.
-          }
-          door.
-          +++
-            do_ggsub.
-            solve_by_inversion.
-          +++
-            eauto.
-
-      }
-      door; eauto.
-
-  - (* abpar case *)
-
-    do_wf_pieces.
-    vmsts.
-    do_wfec_preserved.
-    do_somerecons.
-    do_wfec_split.
-    do_wfec_preserved.
-    ff.
-    subst.
-    do_wfec_firstn.
-    do_wfec_skipn.
-    clear_skipn_firstn.
-    repeat find_rewrite.
-    vmsts.
-    do_ggsub.
-
-    evSubFacts.
-
-    +
-      ff.
-      rewrite fold_recev in *.
-      
-      jkjke'.
-      jkjke'.
-      repeat ff.
-      do_wfec_preserved.
-      do_somerecons.
-      
-      assert (gg_sub H5 \/ exists r, term_sub (aasp r SIG) t1).
-      {
-        destruct s.
-        destruct s; destruct s0.
-        ++
-          eapply IHt1.
-          eassumption.
-          2: { eassumption. }
-          eassumption.
-          eassumption.
-          eassumption.
-          rewrite fold_recev in *.
-          jkjke'.
-          jkjke'.
-          ff.
-          jkjke'.
-          jkjke'.
-          jkjke'.
-          jkjke'.
-          ff.
-
-          repeat eexists.
-          eauto.
-        ++
-          eapply IHt1.
-          eassumption.
-          2: { eassumption. }
-          eassumption.
-          eassumption.
-          eassumption.
-          jkjke'.
-          jkjke'.
-          repeat ff.
-          jkjke'.
-          jkjke'.
-          jkjke'.
-          jkjke'.
-          repeat ff.
-          
-          repeat eexists.
-          eauto.
-        ++
-          assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t1)).
-          {
-            eapply IHt1.
-            eassumption.
-            2: { eassumption. }
-            ff.
-            ff.
-            eassumption.
-            repeat jkjke'.
-            repeat ff.
-            repeat jkjke'.
-            repeat ff.
-            repeat eexists.
-            eauto.
-          }
-          door.
-          +++
-            do_ggsub.
-            solve_by_inversion.
-          +++
-            eauto.
-        ++
-          assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t1)).
-          {
-            eapply IHt1.
-            eassumption.
-            2: {eassumption. }
-            
-            eassumption.
-            ff.
-            eassumption.
-            repeat jkjke'.
-            repeat ff.
-            repeat jkjke'.
-            repeat ff.
-            
-            econstructor.
-            eauto.
-          }
-          door.
-          +++
-            do_ggsub.
-            solve_by_inversion.
-          +++
-            eauto.
-      }
-      door; eauto.
-
-    +
-      ff.
-      
-      rewrite fold_recev in *.
-      
-      jkjke'.
-      jkjke'.
-      repeat ff.
-      do_wfec_preserved.
-      do_somerecons.
-      
-      assert (gg_sub H5 \/ exists r, term_sub (aasp r SIG) t2).
-      {
-        destruct s.
-        destruct s; destruct s0.
-        ++
-          eapply IHt2.
-          eassumption.
-          2: { eassumption. }
-          eassumption.
-          eassumption.
-          eassumption.
-          rewrite fold_recev in *.
-          jkjke'.
-          jkjke'.
-          ff.
-          jkjke'.
-          jkjke'.
-          jkjke'.
-          jkjke'.
-          ff.
-          
-          econstructor.
-          eauto.
-        ++
-          assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t2)).
-          {
-            eapply IHt2.
-            eassumption.
-            2: { eassumption. }
-            ff.
-            ff.
-            eassumption.
-            repeat jkjke'.
-            repeat ff.
-            repeat jkjke'.
-            repeat ff.
-            econstructor.
-            eauto.
-          }
-          door.
-          +++
-            do_ggsub.
-            solve_by_inversion.
-          +++
-            eauto.
-        ++
-          eapply IHt2.
-          eassumption.
-          2: { eassumption. }
-          eassumption.
-          eassumption.
-          eassumption.
-          rewrite fold_recev in *.
-          jkjke'.
-          jkjke'.
-          ff.
-          jkjke'.
-          jkjke'.
-          jkjke'.
-          
-          econstructor.
-          eauto.
-        ++
-          assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t2)).
-          {
-            eapply IHt2.
-            eassumption.
-            2: { eassumption. }
-            ff.
-            ff.
-            eassumption.
-            repeat jkjke'.
-            repeat ff.
-            repeat jkjke'.
-            repeat ff.
-            econstructor.
-            eauto.
-          }
-          door.
-          +++
-            do_ggsub.
-            solve_by_inversion.
-          +++
-            eauto.
-
-      }
-      door; eauto.
-Defined.
-*)
 
 Ltac do_sig_is :=
   match goal with
@@ -3067,8 +2845,10 @@ Ltac do_sig_is :=
             H6: gg_sub ?e',
                 H4: Some ?e = reconstruct_ev ?ecc,
                     H5: Some ?e' = reconstruct_ev ?ecc',
-                        H3: copland_compile (snd (anno_par ?t _)) {| st_ev := ?ecc; st_trace := _; st_pl := _ |} =
-                            (Some tt, {| st_ev := ?ecc'; st_trace := _; st_pl := _ |})
+                        H3: copland_compileP (snd (anno_par ?t _))
+                                             {| st_ev := ?ecc; st_trace := _; st_pl := _ |}
+                                             (Some tt)
+                                             {| st_ev := ?ecc'; st_trace := _; st_pl := _ |}
 
      |- _] =>
     
@@ -3086,8 +2866,10 @@ Lemma sig_term_ev_bseql: forall (r : Range) s (t1 t2 : AnnoTerm) (e : EvidenceC)
                            (e0 : EvBits) (e1 : Evidence)
                            (tr tr' : list Ev) (p p' : nat) ecc' loc,
     not_hash_sig_term_ev (abseq r s t1 t2) e ->
-    copland_compile (snd(anno_par t1 loc)) {| st_ev := splitEv_l s (evc e0 e1); st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
+    copland_compileP (snd(anno_par t1 loc))
+                     {| st_ev := splitEv_l s (evc e0 e1); st_trace := tr; st_pl := p |}
+                     (Some tt)
+                     {| st_ev := ecc'; st_trace := tr'; st_pl := p' |} ->
     Some e = reconstruct_ev (evc e0 e1) ->
     not_hash_sig_term_ev t1 (splitEvl s e).
 Proof.
@@ -3131,8 +2913,10 @@ Lemma sig_term_ev_bseqr: forall (r : Range) s (t1 t2 : AnnoTerm) (e : EvidenceC)
                            (e0 : EvBits) (e1 : Evidence)
                            (tr tr' : list Ev) (p p' : nat) ecc' loc,
     not_hash_sig_term_ev (abseq r s t1 t2) e ->
-    copland_compile (snd(anno_par t2 loc)) {| st_ev := splitEv_r s (evc e0 e1); st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
+    copland_compileP (snd(anno_par t2 loc))
+                    {| st_ev := splitEv_r s (evc e0 e1); st_trace := tr; st_pl := p |}
+                    (Some tt)
+                    {| st_ev := ecc'; st_trace := tr'; st_pl := p' |} ->
     Some e = reconstruct_ev (evc e0 e1) ->
     not_hash_sig_term_ev t2 (splitEvr s e).
 Proof.
@@ -3175,8 +2959,10 @@ Lemma sig_term_ev_bparl: forall (r : Range) s (t1 t2 : AnnoTerm) (e : EvidenceC)
                            (e0 : EvBits) (e1 : Evidence)
                            (tr tr' : list Ev) (p p' : nat) ecc' loc,
     not_hash_sig_term_ev (abpar r s t1 t2) e ->
-    copland_compile (snd(anno_par t1 loc)) {| st_ev := splitEv_l s (evc e0 e1); st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
+    copland_compileP (snd(anno_par t1 loc))
+                     {| st_ev := splitEv_l s (evc e0 e1); st_trace := tr; st_pl := p |}
+                     (Some tt)
+                     {| st_ev := ecc'; st_trace := tr'; st_pl := p' |} ->
     Some e = reconstruct_ev (evc e0 e1) ->
     not_hash_sig_term_ev t1 (splitEvl s e).
 Proof.
@@ -3219,8 +3005,10 @@ Lemma sig_term_ev_bparr: forall (r : Range) s (t1 t2 : AnnoTerm) (e : EvidenceC)
                            (e0 : EvBits) (e1 : Evidence)
                            (tr tr' : list Ev) (p p' : nat) ecc' loc,
     not_hash_sig_term_ev (abpar r s t1 t2) e ->
-    copland_compile (snd(anno_par t2 loc)) {| st_ev := splitEv_r s (evc e0 e1); st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
+    copland_compileP (snd(anno_par t2 loc))
+                     {| st_ev := splitEv_r s (evc e0 e1); st_trace := tr; st_pl := p |}
+                     (Some tt)
+                     {| st_ev := ecc'; st_trace := tr'; st_pl := p' |} ->
     Some e = reconstruct_ev (evc e0 e1) ->
     not_hash_sig_term_ev t2 (splitEvr s e).
 Proof.
@@ -3315,8 +3103,10 @@ Ltac do_nhste_att :=
 Ltac do_nste_lseq :=
   match goal with
   | [H: not_hash_sig_term_ev (alseq _ ?t1 _) ?e,
-        H2: copland_compile (snd (anno_par ?t1 _)) {| st_ev := ?ec; st_trace := _; st_pl := _ |} =
-            (Some tt, {| st_ev := _; st_trace := _; st_pl := _ |}),
+        H2: copland_compileP (snd (anno_par ?t1 _))
+                             {| st_ev := ?ec; st_trace := _; st_pl := _ |}
+                             (Some tt)
+                             {| st_ev := _; st_trace := _; st_pl := _ |},
             H3: Some ?e = reconstruct_ev ?ec
 
      |- _] =>
@@ -3361,8 +3151,10 @@ Ltac do_nhst_lseqr :=
 Ltac do_ste_bseql :=
   match goal with
   | [H: not_hash_sig_term_ev (abseq _ ?s ?t1 _) ?e,
-        H2: copland_compile (snd (anno_par ?t1 _)) {| st_ev := splitEv_l ?s ?ec; st_trace := _; st_pl := _ |} =
-            (Some tt, {| st_ev := _; st_trace := _; st_pl := _ |}),
+        H2: copland_compileP (snd (anno_par ?t1 _))
+                             {| st_ev := splitEv_l ?s ?ec; st_trace := _; st_pl := _ |}
+                             (Some tt)
+                             {| st_ev := _; st_trace := _; st_pl := _ |},
             H3: Some ?e = reconstruct_ev ?ec
 
      |- _] =>
@@ -3375,8 +3167,10 @@ Ltac do_ste_bseql :=
 Ltac do_ste_bseqr :=
   match goal with
   | [H: not_hash_sig_term_ev (abseq _ ?s _ ?t2) ?e,
-        H2: copland_compile (snd (anno_par ?t1 _)) {| st_ev := splitEv_r ?s ?ec; st_trace := _; st_pl := _ |} =
-            (Some tt, {| st_ev := _; st_trace := _; st_pl := _ |}),
+        H2: copland_compileP (snd (anno_par ?t1 _))
+                            {| st_ev := splitEv_r ?s ?ec; st_trace := _; st_pl := _ |}
+                            (Some tt)
+                            {| st_ev := _; st_trace := _; st_pl := _ |},
             H3: Some ?e = reconstruct_ev ?ec
 
      |- _] =>
@@ -3389,8 +3183,10 @@ Ltac do_ste_bseqr :=
 Ltac do_ste_bparl :=
   match goal with
   | [H: not_hash_sig_term_ev (abpar _ ?s ?t1 _) ?e,
-        H2: copland_compile (snd (anno_par ?t1 _)) {| st_ev := splitEv_l ?s ?ec; st_trace := _; st_pl := _ |} =
-            (Some tt, {| st_ev := _; st_trace := _; st_pl := _ |}),
+        H2: copland_compileP (snd (anno_par ?t1 _))
+                            {| st_ev := splitEv_l ?s ?ec; st_trace := _; st_pl := _ |}
+                            (Some tt)
+                            {| st_ev := _; st_trace := _; st_pl := _ |},
             H3: Some ?e = reconstruct_ev ?ec
 
      |- _] =>
@@ -3403,8 +3199,10 @@ Ltac do_ste_bparl :=
 Ltac do_ste_bparr :=
   match goal with
   | [H: not_hash_sig_term_ev (abpar _ ?s _ ?t2) ?e,
-        H2: copland_compile (snd (anno_par ?t1 _)) {| st_ev := splitEv_r ?s ?ec; st_trace := _; st_pl := _ |} =
-            (Some tt, {| st_ev := _; st_trace := _; st_pl := _ |}),
+        H2: copland_compileP (snd (anno_par ?t1 _))
+                             {| st_ev := splitEv_r ?s ?ec; st_trace := _; st_pl := _ |}
+                             (Some tt)
+                             {| st_ev := _; st_trace := _; st_pl := _ |},
             H3: Some ?e = reconstruct_ev ?ec
 
      |- _] =>
@@ -3430,27 +3228,32 @@ Lemma hshsig_ev_term_contra: forall t p (e e' :EvidenceC) tr tr' p' (ecc ecc':Ev
     Some e =  (reconstruct_ev ecc) ->
     Some e' = (reconstruct_ev ecc') ->
 
-    copland_compile (snd(anno_par t loc)) {| st_ev := ecc; st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := ecc'; st_trace := tr'; st_pl := p' |}) ->
+    copland_compileP (snd(anno_par t loc))
+                     {| st_ev := ecc; st_trace := tr; st_pl := p |}
+                     (Some tt)
+                     {| st_ev := ecc'; st_trace := tr'; st_pl := p' |} ->
 
     not_hash_sig_ev e'.
 Proof.
   intros.
   generalizeEverythingElse t.
-  induction t; intros; repeat ff.
+  induction t; intros. (* repeat ff. *)
   -
+    rewrite <- ccp_iff_cc in *.
+    destruct a; dd.
+    +
     jkjke'.
     ff.
     unfold not_hash_sig_term_ev in *.
     destruct_conjs.
     eassumption.
-  -
+  +
     unfold cons_uu in *.
     repeat ff.
     unfold not_hash_sig_term_ev in *;
       destruct_conjs.
     eapply not_hshsig_uuc; eauto.
-  -
+  +
     repeat ff.
     unfold not_hash_sig_term_ev in *;
       destruct_conjs.
@@ -3478,7 +3281,7 @@ Proof.
     jkjke'. 
     ff.
     eapply not_hshsig_ggc; eauto.
-  -
+  +
     assert (not_hash_sig_ev e).
     {
       eapply not_ev; eauto.
@@ -3530,7 +3333,14 @@ Proof.
     eassumption. *)
 
   - (* aatt case *)
+    (*
     do_wf_pieces.
+    do_nhste_att.
+     *)
+
+    cbn in *.
+    destruct r.
+    do_wf_pieces. 
     do_nhste_att.
 
     assert (exists l' t', anno_par t 0 = (l',t')).
@@ -3539,8 +3349,18 @@ Proof.
       repeat eexists.
     }
     destruct_conjs.
+    (*
+    jkjke.
+     *)
+    
+
+
+
+
+    
     specialize IHt with (loc:=0).
     find_rewrite.
+    simpl in *.
 
     assert (
             copland_compile H7 {| st_ev := ecc; st_trace := []; st_pl := n |} =

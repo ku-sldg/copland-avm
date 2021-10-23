@@ -47,7 +47,7 @@ Proof.
   tauto.
 Defined.
 
-Ltac do_wf_pieces :=
+Ltac do_wf_pieces' :=
   match goal with
   | [H: well_formed_r (alseq_par _ _ _ ) |- _] =>
     (edestruct wf_lseq_pieces; eauto)
@@ -59,6 +59,62 @@ Ltac do_wf_pieces :=
   | [H: well_formed_r (abpar_par _ _ _ _ _) |- _] =>
     (edestruct wf_bpar_pieces; eauto)
   end.
+
+Lemma wfr_lseq_pieces: forall r t1 t2,
+    well_formed_r_annt (alseq r t1 t2) ->
+    well_formed_r_annt t1 /\ well_formed_r_annt t2.
+Proof.
+  intros.
+  inversion H.
+  tauto.
+Defined.
+
+Lemma wfr_at_pieces: forall t r p,
+    well_formed_r_annt (aatt r p t) ->
+    well_formed_r_annt t.
+Proof.
+  intros.
+  inversion H.
+  tauto.
+Defined.
+
+Lemma wfr_bseq_pieces: forall r s t1 t2,
+    well_formed_r_annt (abseq r s t1 t2) ->
+    well_formed_r_annt t1 /\ well_formed_r_annt t2.
+Proof.
+  intros.
+  inversion H.
+  tauto.
+Defined.
+
+Lemma wfr_bpar_pieces: forall r s t1 t2,
+    well_formed_r_annt (abpar r s t1 t2) ->
+    well_formed_r_annt t1 /\ well_formed_r_annt t2.
+Proof.
+  intros.
+  inversion H.
+  tauto.
+Defined.
+
+Ltac do_wfr_pieces :=
+  match goal with
+  | [H: well_formed_r_annt (alseq _ _ _ ) |- _] =>
+    (edestruct wfr_lseq_pieces; eauto)
+  | [H: well_formed_r_annt (aatt _ _?t) |- _] =>   
+    assert (well_formed_r_annt t)
+      by (eapply wfr_at_pieces; eauto)
+  | [H: well_formed_r_annt (abseq _ _ _ _) |- _] =>
+    (edestruct wfr_bseq_pieces; eauto)
+  | [H: well_formed_r_annt (abpar _ _ _ _) |- _] =>
+    (edestruct wfr_bpar_pieces; eauto)
+  end.
+
+
+Ltac do_wf_pieces :=
+  try do_wf_pieces';
+  try do_wfr_pieces.
+
+
 
 Lemma well_formed_range_r:
   forall t,
