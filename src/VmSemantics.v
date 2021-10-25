@@ -1224,9 +1224,22 @@ Proof.
     congruence.
 Defined.
 
-Lemma wfr_annt_implies_wfr_par: forall a l l' a0,
+Inductive annoP: AnnoTerm -> Term -> nat -> Prop :=
+| annoP_c: forall anno_term t n,
+    anno_term = snd (anno t n) ->
+    annoP anno_term t n.
+
+Inductive anno_parP: AnnoTermPar -> AnnoTerm -> Loc -> Prop :=
+| anno_parP_c: forall par_term t loc,
+    par_term = snd (anno_par t loc) ->
+    anno_parP par_term t loc.
+
+Lemma wfr_annt_implies_wfr_par: forall a l a0,
     well_formed_r_annt a ->
+    (*
     anno_par a l = (l', a0) ->
+     *)
+    anno_parP a0 a l ->
     well_formed_r a0.
 Proof.
   intros.
@@ -1234,20 +1247,36 @@ Proof.
   induction a; intros;
     invc H.
   -
+    invc H0.
     try econstructor;
       ff.
   -
+    invc H0.
     ff.
   -
+    invc H0.
 
     unfold anno_par in *.
     repeat break_let.
     fold anno_par in *.
-    invc H0.
+    (*
+    invc H0. *)
     simpl.
+    assert (anno_parP a a1 l).
+    {
+      econstructor.
+      jkjke.
+    }
+    assert (anno_parP a0 a2 l0).
+    {
+      econstructor.
+      jkjke.
+    }
+    
+    
 
     assert (well_formed_r a) by eauto.
-    assert (well_formed_r a3) by eauto.
+    assert (well_formed_r a0) by eauto.
     econstructor.
     eassumption.
     eassumption.
@@ -1268,7 +1297,7 @@ Proof.
 
     rewrite range_par.
 
-    assert (unannoPar a3 = a2).
+    assert (unannoPar a0 = a2).
     {
       eapply anno_unanno_par.
       eassumption.
@@ -1276,14 +1305,28 @@ Proof.
     congruence.
   -
 
+    invc H0.
+
     unfold anno_par in *.
     repeat break_let.
     fold anno_par in *.
-    invc H0.
+    (*
+    invc H0. *)
     simpl.
 
+    assert (anno_parP a a1 l).
+    {
+      econstructor.
+      jkjke.
+    }
+    assert (anno_parP a0 a2 l0).
+    {
+      econstructor.
+      jkjke.
+    }
+
     assert (well_formed_r a) by eauto.
-    assert (well_formed_r a3) by eauto.
+    assert (well_formed_r a0) by eauto.
     econstructor.
     eassumption.
     eassumption.
@@ -1305,18 +1348,34 @@ Proof.
 
     rewrite range_par.
 
-    assert (unannoPar a3 = a2).
+    assert (unannoPar a0 = a2).
     {
       eapply anno_unanno_par.
       eassumption.
     }
     congruence.
   -
+    invc H0.
     unfold anno_par in *.
     repeat break_let.
     fold anno_par in *.
-    invc H0.
+    (*
+    invc H0. *)
     simpl.
+
+    assert (anno_parP a a1 (S l)).
+    {
+      econstructor.
+      jkjke.
+    }
+    (*
+    assert (anno_parP a0 a2 l0).
+    {
+      econstructor.
+      jkjke.
+    }
+     *)
+    
 
     assert (well_formed_r a) by eauto.
     
@@ -1344,13 +1403,17 @@ Proof.
   rewrite H in *.
   eapply wfr_annt_implies_wfr_par.
   2: {
+    econstructor.
     unfold annotated_par in *.
     unfold annotated in *.
     assert (anno_par (snd (anno t' 0)) 0 = (fst (anno_par (snd (anno t' 0)) 0), snd (anno_par (snd (anno t' 0)) 0))).
     {
       destruct (anno_par (snd (anno t' 0)) 0); tauto.
     }
+    reflexivity.
+    (*
     jkjke.
+    simpl. *)
 
   }
   eapply anno_well_formed_r.
@@ -1361,28 +1424,61 @@ Proof.
   jkjke.
 Defined.
 
-Theorem cvm_respects_event_system : forall t cvm_tr ev0 ev1 bits bits' et et' t',
-    t = annotated_par (annotated t') ->
-    copland_compileP t
+Theorem cvm_respects_event_system : forall pt t cvm_tr ev0 ev1 bits bits' et et' anno_t,
+    annoP anno_t t 0 ->
+    anno_parP pt anno_t 0 ->
+    (*
+    t = annotated_par (annotated t') -> *)
+    copland_compileP pt
                      (mk_st (evc bits et) [] 0)
                      (Some tt)
                      (mk_st (evc bits' et') cvm_tr 0) ->
 
-    prec (ev_sys (unannoPar t) 0 et) ev0 ev1 ->
+    prec (ev_sys anno_t(*(unannoPar t)*) 0 et) ev0 ev1 ->
     earlier cvm_tr ev0 ev1.
 Proof.
   intros.
 
-  assert (well_formed_r t).
+  assert (well_formed_r pt).
   {
-    eapply annopar_well_formed_r; eauto.
+    inversion H0.
+    inversion H.
+    eapply annopar_well_formed_r.
+    unfold annotated.
+    rewrite <- H7.
+    unfold annotated_par.
+    rewrite H3.
+    tauto.
   }
 
-  assert (well_formed_r_annt (unannoPar t)).
-  {
-    eapply wfr_implies_wfrannt; eauto.
-  }
 
+  assert (well_formed_r_annt anno_t(*(unannoPar t)*)).
+  {
+    destruct (anno_par anno_t 0) eqn: hi.
+    inversion H0.
+    rewrite <- anno_unanno_par with (l:=0) (l':=l) (annt:=pt).
+    2: {
+      assert (a = pt).
+      {
+        subst.
+        jkjke.
+      }
+      congruence.
+    }
+    eapply wfr_implies_wfrannt.
+    eassumption.
+  }
   eapply ordered; try eassumption.
-  eapply cvm_refines_lts_event_ordering; eassumption.
+  assert (anno_t = unannoPar pt).
+  {
+    destruct (anno_par anno_t 0) eqn: hi.
+    inversion H0.
+    erewrite anno_unanno_par.
+    reflexivity.
+    rewrite H5.
+    rewrite hi.
+    reflexivity.
+  }
+  rewrite H5.
+  eapply cvm_refines_lts_event_ordering; eauto.
 Defined.
