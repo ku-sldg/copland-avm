@@ -1473,13 +1473,14 @@ Defined.
 
 Require Import Impl_appraisal_alt Appraisal_AltImpls_Eq.
 
-Lemma appraisal_correct_sig_alt : forall t e e' tr tr' p p' bits' et' ev ee,
-    well_formed_r t ->
+Lemma appraisal_correct_sig_alt : forall t pt loc e e' tr tr' p p' bits' et' ev ee,
+    anno_parP pt t loc ->
+    well_formed_r pt ->
     not_none_none t ->
     not_hash_sig_term_ev t e ->
     wf_ec ee ->
     Some e = (reconstruct_ev ee) ->
-    copland_compile t
+    copland_compile pt
                     {| st_ev := ee; st_trace := tr; st_pl := p |} =
     (Some tt, {| st_ev := (evc bits' et');
                  st_trace := tr';
@@ -1490,6 +1491,7 @@ Lemma appraisal_correct_sig_alt : forall t e e' tr tr' p p' bits' et' ev ee,
     appEvent_Sig_EvidenceC ev e'.
 Proof.
   intros.
+  wrap_ccp.
   ff.
   do_wfec_preserved.
   do_somerecons.
@@ -1498,24 +1500,26 @@ Proof.
   eassumption.
   eassumption.
   eassumption.
-  4: { eassumption. }
+  5: { eassumption. }
   eassumption.
-  2: { eassumption. }
-  2: { eassumption. }
+  eassumption.
+  eassumption.
+  eassumption.
   eassumption.
   eassumption.
   eassumption.
   tauto.
 Defined.
 
-Lemma appraisal_correct_sig_alt_et : forall t bits et et' et'' e e' tr tr' p p' bits' ev,
-    well_formed_r t ->
+Lemma appraisal_correct_sig_alt_et : forall t pt loc bits et et' et'' e e' tr tr' p p' bits' ev,
+    anno_parP pt t loc ->
+    well_formed_r pt ->
     not_none_none t ->
     not_hash_sig_term_ev t e ->
     wf_ec (evc bits et) ->
     et' = aeval t p et ->
     Some e = (reconstruct_ev (evc bits et)) ->
-    copland_compile t
+    copland_compile pt
                     {| st_ev := (evc bits et); st_trace := tr; st_pl := p |} =
     (Some tt, {| st_ev := (evc bits' et'');
                  st_trace := tr';
@@ -1526,25 +1530,38 @@ Lemma appraisal_correct_sig_alt_et : forall t bits et et' et'' e e' tr tr' p p' 
     appEvent_Sig_EvidenceC ev e'.
 Proof.
   intros.
-  assert (et'' = et').
+  wrap_ccp.
+  assert (et'' =  (aeval t p et)).
   {
     subst.
     rewrite <- eval_aeval.
+    inversion H.
+    assert (t = unannoPar pt).
+    {
+      erewrite anno_unanno_par.
+      reflexivity.
+      rewrite H4.
+      eapply annopar_fst_snd.
+    }
+    rewrite H12.
+ 
     eapply cvm_refines_lts_evidence.
     eassumption.
     eassumption.
   }
   subst.
+  invc H6.
 
   eapply appraisal_correct_sig_alt; eauto.
 Defined.
 
 
-Lemma appraisal_correct_alt : forall t e' tr tr' p p' bits' et' ev ee,
-    well_formed_r t ->
+Lemma appraisal_correct_alt : forall t pt loc e' tr tr' p p' bits' et' ev ee,
+    anno_parP pt t loc ->
+    well_formed_r pt ->
     not_none_none t ->
     wf_ec ee ->
-    copland_compile t
+    copland_compile pt
                     {| st_ev := ee; st_trace := tr; st_pl := p |} =
     (Some tt, {| st_ev := (evc bits' et');
                  st_trace := tr';
@@ -1555,28 +1572,30 @@ Lemma appraisal_correct_alt : forall t e' tr tr' p p' bits' et' ev ee,
     appEvent_EvidenceC ev e'.
 Proof.
   intros.
-  ff.
+  wrap_ccp.
   do_wfec_preserved.
   do_somerecons.
   erewrite appraisal_alt.
   eapply appraisal_correct.
   eassumption.
   eassumption.
+  eassumption.
   3: { eassumption. }
   eassumption.
-  2: { eassumption. }
-  2: { eassumption. }
-  3: { tauto. }
   eassumption.
   eassumption.
+  eassumption.
+  eassumption.
+  tauto.
 Defined.
 
-Lemma appraisal_correct_alt_et : forall t e' tr tr' p p' bits bits' et et' et'' ev,
-    well_formed_r t ->
+Lemma appraisal_correct_alt_et : forall t pt loc e' tr tr' p p' bits bits' et et' et'' ev,
+    anno_parP pt t loc ->
+    well_formed_r pt ->
     not_none_none t ->
     wf_ec (evc bits et) ->
     et' = aeval t p et ->
-    copland_compile t
+    copland_compile pt
                     {| st_ev := (evc bits et); st_trace := tr; st_pl := p |} =
     (Some tt, {| st_ev := (evc bits' et'');
                  st_trace := tr';
@@ -1587,17 +1606,40 @@ Lemma appraisal_correct_alt_et : forall t e' tr tr' p p' bits bits' et et' et'' 
     appEvent_EvidenceC ev e'.
 Proof.
   intros.
-  assert (et'' = et').
+  wrap_ccp.
+  assert (et'' = (aeval t p et)).
   {
     subst.
+    inversion H.
+    assert (t = unannoPar pt).
+    {
+      erewrite anno_unanno_par.
+      reflexivity.
+      rewrite H3.
+      eapply annopar_fst_snd.
+    }
+    
+    
     rewrite <- eval_aeval.
+    rewrite H10.
+    
     eapply cvm_refines_lts_evidence.
     eassumption.
     eassumption.
   }
   subst.
 
-  eapply appraisal_correct_alt; eauto.
+  eapply appraisal_correct_alt.
+  5: {
+    wrap_ccp.
+    eassumption.
+  }
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
+  eauto.
 Defined.
   
 
