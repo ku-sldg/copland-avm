@@ -723,8 +723,7 @@ Ltac do_wrap_reconP :=
   match goal with
   | [H: reconstruct_ev ?ec = Some ?e
      |- _] =>
-    assert_new_proof_by (reconstruct_evP ec e)
-                        ltac: (eapply wrap_reconP; apply H)
+    apply wrap_reconP in H
   end.
 
 Lemma etfun_reconstruct: forall e e0 e1,
