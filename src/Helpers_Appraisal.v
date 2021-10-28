@@ -50,23 +50,6 @@ Proof.
     eauto.
 Defined.
 
-Lemma etfun_reconstruct: forall e e0 e1,
-    Some e = reconstruct_ev' e0 e1 ->
-    e1 = et_fun e.
-Proof.
-  intros.
-  generalizeEverythingElse e1.
-  induction e1; intros;
-    repeat ff;
-    repeat jkjke.
-Defined.
-
-Ltac dest_evc :=
-  repeat
-    match goal with
-    | [H: EvC |-  _ ] => destruct H
-    end.
-
 Ltac find_wfec :=
   repeat 
     match goal with
@@ -85,12 +68,6 @@ Ltac find_wfec :=
         (wf_ec e')
         
         ltac:(eapply H; [apply H2 | apply H3 | apply H4])
-    end.
-
-Ltac inv_wfec :=
-  repeat
-    match goal with
-    | [H: wf_ec _ |-  _ ] => invc H
     end.
 
 Lemma wfec_split: forall e s,
@@ -215,74 +192,7 @@ Ltac do_wfec_preserved :=
                                  
     end.
 
-Lemma some_recons' : forall e x,
-    length e = S x ->
-    exists bs ls', peel_bs e = Some (bs, ls').
-Proof.
-  intros.
-  destruct e;
-    ff; eauto.
-Defined.
 
-Ltac do_some_recons' :=
-  match goal with
-  | [H: length ?e = S _ |- _ ] =>
-    edestruct some_recons'; [apply H | idtac]
-                              
-  end; destruct_conjs; jkjke.
-
-Ltac do_rcih :=
-  match goal with
-  | [H: context[reconstruct_ev' _ _]
-               
-
-     |- context[reconstruct_ev' ?e' ?et] ] =>
-    assert_new_proof_by
-      (exists x, Some x = reconstruct_ev' e' et)
-      ltac:(eapply H with (e:=e');
-            try (eapply peel_fact; eauto; tauto);
-            try (econstructor; first [eapply firstn_long | eapply skipn_long]; try eauto; try lia))      
-  end.
-
-Lemma some_recons : forall e,
-    wf_ec e ->
-    exists ee, Some ee = reconstruct_ev e.
-Proof.
-  intros.
-  destruct e.
-  generalizeEverythingElse e0.
-  induction e0; intros;
-    try (ff; eauto; tauto);
-    try
-      ( inv_wfec; ff;
-        do_some_recons');
-    try (
-        repeat do_rcih;
-        destruct_conjs;
-        repeat jkjke');
-    try ( inv_wfec; ff;
-          repeat do_rcih;
-          destruct_conjs;
-          repeat jkjke').
-  assert (e = []).
-  { destruct e; try solve_by_inversion. }
-  ff.
-  eauto.
-  destruct e; try solve_by_inversion.
-  ff.
-  destruct e; try solve_by_inversion.
-  ff.
-Defined.
-
-Ltac do_somerecons :=
-  repeat
-    match goal with
-    | [H: wf_ec ?e
-       |- _ ] =>
-      assert_new_proof_by
-        (exists x, Some x = reconstruct_ev e)
-        ltac:(eapply some_recons; apply H)     
-    end; destruct_conjs.
 
 Ltac do_evsub_ih :=
   match goal with
@@ -295,7 +205,7 @@ Ltac do_evsub_ih :=
                              {| st_ev := ?stev'; st_trace := _; st_pl := _ |}
                              (Some tt)
                              {| st_ev := _; st_trace := _; st_pl := _ |},
-            H3: Some ?v = reconstruct_ev ?stev
+            H3: reconstruct_evP ?stev ?v (*Some ?v = reconstruct_ev ?stev *)
 
      |- context[EvSub ?e'' _ \/ _]] =>
     
@@ -373,13 +283,6 @@ Ltac do_wfec_skipn :=
       (skipn (et_size e1) (e0 ++ e2) = e2)
       ltac: (eapply wfec_skipn; apply H2)
   end.
-
-Lemma fold_recev: forall e0 e1,
-    reconstruct_ev' e0 e1 = reconstruct_ev (evc e0 e1).
-Proof.
-  ff.
-  tauto.
-Defined.
 
 Ltac clear_skipn_firstn :=
   match goal with
@@ -758,197 +661,58 @@ Proof.
 Defined.
 
 Lemma gg_recons: forall e ecc x y,
-    Some e = reconstruct_ev ecc ->
+    reconstruct_evP ecc e ->
     not_hash_sig_ev e ->
     EvSubT (gg x y) (get_et ecc) ->
     gg_sub e.
 Proof.
   intros e ecc x y H H0 H1.
   generalizeEverythingElse e.
-  induction e; intros; ff.
-  -
+  induction e; intros;
     destruct ecc; ff;
-      do_inv_recon.
-    solve_by_inversion.
-  -
-    destruct ecc; ff;
-      do_inv_recon.
-    solve_by_inversion.
-  -
-    destruct ecc; ff;
-      do_inv_recon.
-    (*
-    assert (exists et', e1 = uu n l n0 n1 et') by
-        (eapply inv_recon_uu; eauto).
-    destruct_conjs.
-    subst.
-     *)
-    
-    repeat ff.
+    do_inv_recon;
+      try solve_by_inversion;
+      do_nhse;
+      do_recon_inv.
+  
+  - (* uuc case *)
     evSubTFacts.
-    rewrite fold_recev in *.
-    assert (gg_sub e2).
-    {
-      eapply IHe with (ecc:=(evc e1 H2)).
-      symmetry.
-      find_apply_hyp_goal.
-      ff.
-      Print not_hash_sig_ev.
-      unfold not_hash_sig_ev in H0.
-      unfold not_hash_sig_ev.
-      unfold not in *.
-      intros.
-      eapply H0.
-      eassumption.
-      eauto.
-      ff.
-      eassumption.
-    }
-
+    assert (gg_sub e) by eauto.
     do_ggsub. 
     repeat eexists.
     eauto.
-  -
-    destruct ecc; ff.
+    
+  - (* ggc case *)
     econstructor.
     repeat eexists.
     eauto.
-  -
-    destruct ecc; ff;
-      do_inv_recon.
-    (*
-    assert (e1 = hh n e).
-    {
-      eapply inv_recon_hh; eauto.
-    }
-    subst.
-     *)
     
-    repeat ff.
+  - (* ssc case *)
     evSubTFacts.
-    (*
-    invc H0. *)
-    assert (exists y', y = et_fun y').
-    {
-      eapply etfun_exists.
-    }
-    destruct_conjs.
-    subst.
+    +
+      assert (gg_sub e1) by eauto.
+      do_ggsub.
+      repeat eexists.
+      eauto.
+    +
+      assert (gg_sub e2) by eauto.
+      do_ggsub.
+      repeat eexists.
+      eauto.
 
-    unfold not_hash_sig_ev in H0.
-    unfold not in *.
-    exfalso.
-    eapply H0.
-    2: { econstructor. }
-    econstructor.
-    repeat eexists.
-    eassumption.
-
-    (*
-    
-    econstructor.
-    repeat eexists.
-    eauto. *)
-  -
-    destruct ecc; ff;
-      do_inv_recon.
-    (*
-    assert (exists et1 et2, e0 = ss et1 et2).
-    {
-      eapply inv_recon_ss; eauto.
-    }
-    destruct_conjs.
-    subst.
-     *)
-    
-    repeat ff.
+  - (* ppc case *)
     evSubTFacts.
-    (*
-    invc H0. *)
     +
-      assert (gg_sub e0).
-      {
-        rewrite fold_recev in *.
-        eapply IHe1.
-        symmetry.
-        eassumption.
-        ff.
-        unfold not_hash_sig_ev in *.
-        unfold not in *.
-        eauto.
-        eassumption.
-      }
+      assert (gg_sub e1) by eauto.    
       do_ggsub.
       repeat eexists.
       eauto.
     +
-      assert (gg_sub e3).
-      {
-        rewrite fold_recev in *.
-        eapply IHe2.
-        symmetry.
-        eassumption.
-        ff.
-        unfold not_hash_sig_ev in *.
-        unfold not in *.
-        eauto.
-        eassumption.
-      }
-      do_ggsub.
-      repeat eexists.
-      eauto.
-  -
-    destruct ecc; ff;
-      do_inv_recon.
-    (*
-    assert (exists et1 et2, e0 = pp et1 et2).
-    {
-      eapply inv_recon_pp; eauto.
-    }
-    destruct_conjs.
-    subst.
-     *)
-    
-    repeat ff.
-    evSubTFacts.
-    (*
-    invc H0. *)
-    +
-      assert (gg_sub e0).
-      {
-        rewrite fold_recev in *.
-        eapply IHe1.
-        symmetry.
-        eassumption.
-        ff.
-        unfold not_hash_sig_ev in *.
-        unfold not in *.
-        eauto.
-        eassumption.
-      }
-      do_ggsub.
-      repeat eexists.
-      eauto.
-    +
-      assert (gg_sub e3).
-      {
-        rewrite fold_recev in *.
-        eapply IHe2.
-        symmetry.
-        eassumption.
-        ff.
-        unfold not_hash_sig_ev in *.
-        unfold not in *.
-        eauto.
-        eassumption.
-      }
+      assert (gg_sub e2) by eauto.
       do_ggsub.
       repeat eexists.
       eauto.
 Defined.
-
-
-
 
 Lemma annopar_fst_snd: forall t l,
     anno_par t l = (fst (anno_par t l), snd (anno_par t l)).
@@ -965,8 +729,15 @@ Lemma evAccum: forall t pt p (e e' e'':EvidenceC) tr tr' p' (ecc ecc':EvC) loc,
     not_none_none t ->
     wf_ec ecc ->
     anno_parP pt t loc ->
+
+    reconstruct_evP ecc e ->
+    reconstruct_evP ecc' e' ->
+
+    (*
     Some e =  (reconstruct_ev ecc) ->
     Some e' = (reconstruct_ev ecc') ->
+     *)
+    
     EvSub e'' e ->
     copland_compileP (pt)
                      {| st_ev := ecc; st_trace := tr; st_pl := p |}
@@ -989,10 +760,12 @@ Proof.
     rewrite <- ccp_iff_cc in *.
     destruct a;
       repeat ff;
-      try jkjke';
+      (*try jkjke'; *)
       try unfold cons_uu in *;
       try unfold cons_gg in *;
       (repeat ff; try eauto).
+    +
+    admit.
     (*
     +
       destruct ecc.
@@ -1010,6 +783,8 @@ Proof.
       ff.
       assert (e1 = et_fun e).
       {
+        eapply etfun_reconstruct.
+        Locate etfun_reconstruct.
         eapply etfun_reconstruct; eauto.
       }
       subst.
