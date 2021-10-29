@@ -102,8 +102,8 @@ Lemma appraisal_correct_sig : forall t pt loc e e' tr tr' p p' ecc ev ee,
     not_none_none t ->
     not_hash_sig_term_ev t e ->
     wf_ec ee ->
-    Some e = (reconstruct_ev ee) ->
-    Some e' = (reconstruct_ev ecc) ->
+    reconstruct_evP ee e ->
+    reconstruct_evP ecc e' ->
     copland_compileP pt
                      {| st_ev := ee; st_trace := tr; st_pl := p |}
                      (Some tt)
@@ -125,18 +125,22 @@ Proof.
     destruct ee.
     inv_events.
     ff.
+    do_rewrap_reconP.
+    (*
     break_match; try solve_by_inversion.
     invc H4.
+     *)
+    
     ff.
     assert (e0 = et_fun e2).
     {
-      rewrite fold_recev in *.
+      
       eapply etfun_reconstruct; eauto.
     }
     subst.
     
     repeat econstructor.
-  -
+  - (* aatt case *)
     wrap_ccp.
     sigEventFacts.
     sigEventPFacts.
@@ -198,12 +202,15 @@ Proof.
     
     do_not_none.
     do_not_hshsig.
+    (*
     vmsts.
     simpl in *.
     subst.
     repeat ff.
 
     vmsts.
+     *)
+    
 
     sigEventFacts.
     repeat do_pl_immut.
@@ -211,6 +218,7 @@ Proof.
     sigEventPFacts.
     do_wfec_preserved.
     do_somerecons.
+    do_reconP_determ.
     inv_events.
     + (* t1 case *)
 
@@ -279,17 +287,17 @@ Proof.
 
       subst.
       econstructor.
-
-
-      
-      repeat jkjke'.
-      repeat ff.
+      eauto.
       
     + (* t2 case *)
       wrap_ccp.
 
+      (*
+
       repeat jkjke'.
       repeat ff.
+       *)
+      
       Print do_wfec_preserved.
       (*
 Ltac do_wfec_preserved :=
@@ -316,6 +324,7 @@ Ltac do_wfec_preserved :=
         eassumption.
       }
       do_somerecons.
+      do_reconP_determ.
 
         destruct ee;
         destruct st_ev0.
@@ -406,9 +415,10 @@ Ltac do_wfec_preserved :=
     sigEventPFacts.
     do_wfec_preserved.
     do_somerecons.
+    do_reconP_determ.
 
     wrap_ccp.
-    ff.
+    
 
 
 
@@ -439,6 +449,8 @@ Ltac do_wfec_preserved :=
     repeat do_pl_immut.
     subst.
      *)
+
+    do_rewrap_reconP.
     
 
     do_wfec_split.
@@ -451,27 +463,49 @@ Ltac do_wfec_preserved :=
     clear_skipn_firstn.
     
 
-    rewrite fold_recev in *.
+    
 
     inv_events.
     + (* t1 case *)
 
-      assert (appEvent_Sig_EvidenceC (sign n p0 e0) (build_app_comp_evC e5)).
+      assert (appEvent_Sig_EvidenceC (sign n p0 e0) (build_app_comp_evC e4)).
       {
         destruct ee; ff.
 
-        rewrite fold_recev in *.
+       
 
-        assert (exists ee, Some ee = reconstruct_ev (splitEv_l s (evc e7 e8))).
+        assert (exists ee, Some ee = reconstruct_ev (splitEv_l s (evc e e1))).
         {
           destruct s.
-          destruct s; destruct s0; ff.
+          destruct s; destruct s0.
+          ff.
+          rewrite fold_recev.
+          invc Heqo0.
+          eexists.
           eauto.
-          eauto.
-          eauto.
-          eauto.
+
+          ff.
+          rewrite fold_recev.
+          invc Heqo.
+          eassumption.
+
+          ff.
+          rewrite fold_recev.
+          invc Heqo.
+          eexists.
+          eassumption.
+
+          ff.
+          eexists.
+          tauto.
+
+          ff.
+          eexists.
+          tauto.
         }
         destruct_conjs.
+
+        (*
         
         assert (not_hash_sig_ev H17).
         {
@@ -479,11 +513,12 @@ Ltac do_wfec_preserved :=
           invc H1. *)
           
           destruct s; destruct s; destruct s0; ff.
+          (*
           rewrite fold_recev in *.
           repeat jkjke'. ff.
           repeat jkjke'. ff.
           repeat jkjke'. ff.
-          repeat jkjke'; ff.
+          repeat jkjke'; ff. *)
 
           (*
           
@@ -492,6 +527,8 @@ Ltac do_wfec_preserved :=
            *)
           
         }
+         *)
+        
         
         eapply IHt1.
         eassumption.
@@ -508,34 +545,56 @@ Ltac do_wfec_preserved :=
         eassumption.
 
         destruct s. destruct s; destruct s0; ff.
-        jkjke'. 
+        econstructor; tauto.
+        econstructor; tauto.
+        eassumption.
+       
 
-        ff.
-        econstructor.
-        destruct s; destruct s; ff.
-        econstructor.
+        destruct s; destruct s; destruct s0; ff.
+        econstructor. eassumption. econstructor.
+        econstructor. eassumption. econstructor.
+        econstructor. eassumption. econstructor.
+        econstructor. eassumption. econstructor.
       }
-      invc H22.
+      invc H21.
       econstructor.
       ff.
     + (* t2 case *)
 
-      assert (appEvent_Sig_EvidenceC (sign n p0 e0) (build_app_comp_evC e6)).
+      assert (appEvent_Sig_EvidenceC (sign n p0 e0) (build_app_comp_evC e5)).
       {
         destruct ee; ff.
 
-        rewrite fold_recev in *.
+       
 
-        assert (exists ee, Some ee = reconstruct_ev (splitEv_l s (evc e7 e8))).
+        assert (exists ee, Some ee = reconstruct_ev (splitEv_l s (evc e2 e3))).
         {
           destruct s.
           destruct s; destruct s0; ff.
+                    ff.
+          rewrite fold_recev.
+          invc Heqo0.
+          eexists.
           eauto.
-          eauto.
-          eauto.
-          eauto.
+
+          
+          rewrite fold_recev.
+          invc Heqo0.
+          eexists.
+          eassumption.
+
+
+          ff.
+          eexists.
+          tauto.
+
+          ff.
+          eexists.
+          tauto.
         }
         destruct_conjs.
+
+        (*
         
         assert (not_hash_sig_ev H17).
         {
@@ -556,6 +615,8 @@ Ltac do_wfec_preserved :=
            *)
           
         }
+         *)
+        
         
         eapply IHt2.
         eassumption.
@@ -572,14 +633,17 @@ Ltac do_wfec_preserved :=
         eassumption.
 
         destruct s. destruct s; destruct s0; ff.
-        jkjke'. 
+        econstructor. tauto.
+        econstructor. tauto.
+        eassumption.
 
-        ff.
-        econstructor.
         destruct s; destruct s; destruct s0; ff.
-        econstructor.
+        econstructor. eassumption. econstructor.
+        econstructor. eassumption. econstructor.
+        econstructor. eassumption. econstructor.
+        econstructor. eassumption. econstructor.
       }
-      invc H22.
+      invc H21.
       econstructor.
       ff.
 
