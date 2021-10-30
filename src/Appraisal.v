@@ -913,7 +913,7 @@ Lemma appraisal_correct : forall t pt loc e' tr tr' p p' ecc ev ee,
     well_formed_r pt ->
     not_none_none t ->
     wf_ec ee ->
-    Some e' = (reconstruct_ev ecc) ->
+    reconstruct_evP ecc e' ->
     copland_compileP pt
                      {| st_ev := ee; st_trace := tr; st_pl := p |}
                      (Some tt)
@@ -935,8 +935,12 @@ Proof.
     destruct ee.
     inv_events.
     ff.
+    do_rewrap_reconP.
+    (*
     break_match; try solve_by_inversion.
     invc H3.
+     *)
+    
     
     repeat econstructor.
 
@@ -959,7 +963,7 @@ Proof.
     subst.
     
     repeat econstructor. *)
-  -
+  - (* aatt case *)
     wrap_ccp.
     measEventFacts.
     evEventFacts.
@@ -1100,8 +1104,10 @@ Proof.
           exists e'', EvSub (uuc i args tpl tid p0 (checkASPF i args tpl tid n) e'')
                        (build_app_comp_evC e')).
       {
+        do_reconP_determ.
+        (*
         repeat jkjke'.
-        ff.
+        ff. *)
         
         eapply uuc_app; eauto.
       }
@@ -1111,17 +1117,23 @@ Proof.
       destruct_conjs.
       eapply ahuc.
       eassumption.
+      do_reconP_determ.
+      (*
       repeat jkjke'.
-      ff.
+      ff. *)
       eapply hhc_app; eauto.
       
     + (* t2 case *)
       wrap_ccp.
+      do_reconP_determ.
+      (*
 
       repeat jkjke'.
       repeat ff.
       Print do_wfec_preserved.
       Check wf_ec_preserved_by_cvm.
+       *)
+      
       (*
 Ltac do_wfec_preserved :=
   repeat
@@ -1151,6 +1163,7 @@ Ltac do_wfec_preserved :=
        *)
       
       do_somerecons.
+      do_reconP_determ.
 
         destruct ee;
         destruct st_ev0.
@@ -1220,7 +1233,8 @@ Ltac do_wfec_preserved :=
 
         
     wrap_ccp.
-    ff.
+
+    do_rewrap_reconP.
 
     (*
     
@@ -1309,8 +1323,6 @@ Ltac do_wfec_preserved :=
     clear_skipn_firstn.
     
 
-    rewrite fold_recev in *.
-
     inv_events.
 
     + (* t1 case NEW *)
@@ -1319,17 +1331,16 @@ Ltac do_wfec_preserved :=
       {
         destruct ee; ff.
 
-        rewrite fold_recev in *.
         
         eapply IHt1.
         eassumption.
         
         eassumption.
         eassumption.
-        2: { jkjke'. }
+        2: { eassumption. }
         2: { eassumption. }
         eassumption.
-        econstructor. ff.
+        econstructor.
         destruct s; destruct s; ff.
         econstructor.
       }
@@ -1352,17 +1363,15 @@ Ltac do_wfec_preserved :=
                 (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
       {      
         destruct ee; ff.
-
-        rewrite fold_recev in *.
         
         eapply IHt2.
         eassumption.
         eassumption.
         eassumption.
-        2: { jkjke'. }
+        2: { eassumption. }
         2: { eassumption. }
         eassumption.
-        econstructor. ff.
+        econstructor.
         destruct s; destruct s0; ff.
         econstructor.
       }
@@ -1381,7 +1390,8 @@ Ltac do_wfec_preserved :=
     
         
     wrap_ccp.
-    ff.
+
+    do_rewrap_reconP.
 
     (*
     
@@ -1468,9 +1478,6 @@ Ltac do_wfec_preserved :=
     do_wfec_skipn.
 
     clear_skipn_firstn.
-    
-
-    rewrite fold_recev in *.
 
     inv_events.
     
@@ -1483,17 +1490,15 @@ Ltac do_wfec_preserved :=
       assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e3))).
       {
         destruct ee; ff.
-
-        rewrite fold_recev in *.
         
         eapply IHt1.
         eassumption.
         eassumption.
         eassumption.
-        2: { jkjke'. }
+        2: { eassumption. }
         2: { eassumption. }
         eassumption.
-        econstructor. ff.
+        econstructor.
         destruct s; destruct s; ff.
         econstructor.
       }
@@ -1514,8 +1519,6 @@ Ltac do_wfec_preserved :=
       assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
       {
         destruct ee; ff.
-
-        rewrite fold_recev in *.
 
         do_assume_remote t2 (splitEv_r s (evc e5 e6)) p HHH.
         
@@ -1539,8 +1542,8 @@ Ltac do_wfec_preserved :=
         rewrite par_evidence in *.
         rewrite <- H13.
         rewrite Heqe1.
-        symmetry. eassumption.
-        econstructor. ff.
+        eassumption.
+        econstructor.
         destruct s; destruct s0; ff.
         econstructor.
         
@@ -1566,7 +1569,7 @@ Lemma appraisal_correct_sig_alt : forall t pt loc e e' tr tr' p p' bits' et' ev 
     not_none_none t ->
     not_hash_sig_term_ev t e ->
     wf_ec ee ->
-    Some e = (reconstruct_ev ee) ->
+    reconstruct_evP ee e ->
     copland_compile pt
                     {| st_ev := ee; st_trace := tr; st_pl := p |} =
     (Some tt, {| st_ev := (evc bits' et');
@@ -1579,7 +1582,6 @@ Lemma appraisal_correct_sig_alt : forall t pt loc e e' tr tr' p p' bits' et' ev 
 Proof.
   intros.
   wrap_ccp.
-  ff.
   do_wfec_preserved.
   do_somerecons.
   erewrite appraisal_alt.
@@ -1605,7 +1607,7 @@ Lemma appraisal_correct_sig_alt_et : forall t pt loc bits et et' et'' e e' tr tr
     not_hash_sig_term_ev t e ->
     wf_ec (evc bits et) ->
     et' = aeval t p et ->
-    Some e = (reconstruct_ev (evc bits et)) ->
+    reconstruct_evP (evc bits et) e ->
     copland_compile pt
                     {| st_ev := (evc bits et); st_trace := tr; st_pl := p |} =
     (Some tt, {| st_ev := (evc bits' et'');
