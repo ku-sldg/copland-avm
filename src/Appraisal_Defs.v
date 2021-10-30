@@ -1,4 +1,4 @@
-Require Import Term_Defs Term StAM Maps ConcreteEvidence OptMonad Auto More_lists.
+Require Import Term_Defs Term Maps ConcreteEvidence OptMonad Auto More_lists Appraisal_Evidence.
 
 (* Require Import Impl_appraisal (*MonadAM*). *)
 
@@ -8,114 +8,6 @@ Require Import List.
 Import ListNotations.
 
 Require Import Lia Coq.Program.Tactics.
-
-Lemma firstn_long: forall (e:list BS) x,
-    length e >= x ->
-    length (firstn x e) = x.
-Proof.
-  intros.
-  eapply firstn_length_le.
-  lia.
-Defined.
-
-Lemma skipn_long: forall (e:list BS) x y,
-    length e = x + y ->
-    length (skipn x e) = y.
-Proof.
-  intros.
-  assert (length (skipn x e) = length e - x).
-  { eapply skipn_length. }
-  lia.
-Defined.
-
-Definition peel_bs (ls:EvBits) : option (BS * EvBits) :=
-  match ls with
-  | bs :: ls' => Some (bs, ls')
-  | _ => None
-  end.
-
-Lemma peel_fact': forall e x y H,
-    length e = S x ->
-    peel_bs e = Some (y, H) ->
-    length H = x.
-Proof.
-  intros.
-  destruct e;
-    ff; eauto.
-Defined.
-
-Lemma peel_fact: forall e x y H et,
-    length e = S x ->
-    peel_bs e = Some (y, H) ->
-    et_size et = x ->
-    wf_ec (evc H et).
-Proof.
-  intros.
-  econstructor.
-  eapply peel_fact'; eauto.
-  lia.
-Defined.
-
-
-Fixpoint encodeEv (e:EvidenceC) : EvBits :=
-  match e with
-  | mtc => []
-  | nnc _ bs => [bs]
-  | uuc _ _ _ _ _ bs e' =>
-    bs :: (encodeEv e')
-  | ggc _ bs e' =>
-    bs :: (encodeEv e')
-  | hhc _ bs _ =>
-    [bs]
-  | ssc e1 e2 =>
-    (encodeEv e1) ++ (encodeEv e2)
-  | ppc e1 e2 =>
-    (encodeEv e1) ++ (encodeEv e2)
-  end.
-
-Fixpoint reconstruct_ev' (ls:EvBits) (et:Evidence) : option EvidenceC :=
-  match et with
-  | mt => (* Some mtc *)
-    match ls with
-    | [] => Some mtc
-    | _ => None
-    end 
-  | uu i args tpl tid p et' =>
-    '(bs, ls') <- peel_bs ls ;;
-    x <- reconstruct_ev' ls' et' ;;
-    Some (uuc i args tpl tid p bs x)
-  | gg p et' =>
-    '(bs, ls') <- peel_bs ls ;;
-    x <- reconstruct_ev' ls' et' ;;
-    Some (ggc p bs x)
-  | hh p et' =>
-    '(bs, ls') <- peel_bs ls ;;
-     match ls' with
-    | [] => Some (hhc p bs et')
-    | _ => None
-    end 
-   
-  | nn i =>
-    '(bs, ls') <- peel_bs ls ;;
-     match ls' with
-    | [] => Some (nnc i bs)
-    | _ => None
-    end 
-    
-  | ss et1 et2 =>
-    e1 <- reconstruct_ev' (firstn (et_size et1) ls) et1 ;;
-    e2 <- reconstruct_ev' (skipn (et_size et1) ls) et2 ;;
-    Some (ssc e1 e2)
-  | pp et1 et2 =>
-    e1 <- reconstruct_ev' (firstn (et_size et1) ls) et1 ;;
-    e2 <- reconstruct_ev' (skipn (et_size et1) ls) et2 ;;
-    Some (ppc e1 e2)  
-  end.
-
-Definition reconstruct_ev (e:EvC) : option EvidenceC :=
-  match e with
-  | evc ls et => reconstruct_ev' ls et
-  end.
 
 Definition checkASP (i:ASP_ID) (args:list Arg) (tpl:Plc) (tid:Plc) (bs:BS) : option BS.
 Admitted.
@@ -270,12 +162,6 @@ Definition not_hash_sig_term_ev (t:AnnoTerm) (e:EvidenceC): Prop :=
   not_hash_sig_term t /\
   not_hash_sig_ev e /\
   ((gg_sub e) -> ~ (reaches_HSH t)).
-
-
-Inductive reconstruct_evP: EvC -> EvidenceC -> Prop :=
-| reconstruct_evC: forall e ee,
-    Some ee = reconstruct_ev e ->
-    reconstruct_evP e ee.
 
 Lemma inv_recon_mt: forall ls et,
     reconstruct_evP (evc ls et) mtc ->
@@ -702,30 +588,6 @@ Ltac do_recon_inv :=
   try do_recon_inv_ss;
   try do_recon_inv_pp.
 
-Lemma fold_recev: forall e0 e1,
-    reconstruct_ev' e0 e1 = reconstruct_ev (evc e0 e1).
-Proof.
-  ff.
-  tauto.
-Defined.
-
-Lemma wrap_reconP: forall ec e,
-    reconstruct_ev ec = Some e ->
-    reconstruct_evP ec e.
-Proof.
-  intros.
-  econstructor.
-  congruence.
-Defined.
-
-Ltac do_wrap_reconP :=
-  repeat
-  match goal with
-  | [H: reconstruct_ev ?ec = Some ?e
-     |- _] =>
-    apply wrap_reconP in H
-  end.
-
 Lemma etfun_reconstruct: forall e e0 e1,
     reconstruct_evP (evc e0 e1) e ->
     e1 = et_fun e.
@@ -825,17 +687,6 @@ Proof.
   eassumption.
 Defined.
 
-(*
-Ltac do_somerecons :=
-  repeat
-    match goal with
-    | [H: wf_ec ?e
-       |- _ ] =>
-      assert_new_proof_by
-        (exists x, Some x = reconstruct_ev e)
-        ltac:(eapply some_recons; apply H)     
-    end; destruct_conjs.
- *)
 Ltac do_somerecons :=
   repeat
     match goal with
@@ -845,9 +696,6 @@ Ltac do_somerecons :=
         (exists x, reconstruct_evP e x)
         ltac:(eapply some_reconsP; apply H)     
     end; destruct_conjs.
-
-
-
 
 Ltac measEventFacts :=
   match goal with
@@ -875,69 +723,20 @@ Proof.
   -
     ff.
     do_inv_recon.
-    (*
-    assert (et = mt).
-    {
-      eapply inv_recon_mt; eauto.
-    }
-    subst.
-     *)
     inv_wfec.
-
     destruct ls; try solve_by_inversion.
   (* TODO: exclude mt case? *)
   -
     ff.
     do_inv_recon.
     tauto.
-
-    (*
-    (*
-    assert (et = nn n).
-    {
-      eapply inv_recon_nn; eauto.
-    }
-    subst.
-     *)
-    inv_wfec.
-    invc H0.
-    
-    
-    repeat ff.
-    destruct ls; try solve_by_inversion.
-     *)
-    
-
-    (*
-    invc H.
-    ff.
-    assert (e = []).
-    destruct e; try solve_by_inversion.
-    ff. *)
   -
     ff.
     do_inv_recon.
-    (*
-    assert (exists et', et = uu n l n0 n1 n2 et').
-    {
-      eapply inv_recon_uu; eauto.
-    }
-    destruct_conjs.
-    subst.
-     
-    
-    repeat ff.
-    invc H.
-     *)
     do_recon_inv.
     inv_wfec.
     repeat ff.
 
-    (*
-    invc H0.
-    inv_wfec.
-    repeat ff. *)
-    
     edestruct IHec.
     2: {
       eassumption.
@@ -949,23 +748,7 @@ Proof.
   -
     ff.
     do_inv_recon.
-    (*
-    assert (exists et', et = gg n et').
-    {
-      eapply inv_recon_gg; eauto.
-    }
-    destruct_conjs.
-    subst.
-     
-    
-    repeat ff.
-     *)
     do_recon_inv.
-    (*
-    
-    invc H0.
-     *)
-    
     inv_wfec.
     repeat ff.
     edestruct IHec.
@@ -979,67 +762,15 @@ Proof.
   -
     ff.
     do_inv_recon.
-    tauto.
-    (*
-    assert (et = hh n e).
-    {
-      eapply inv_recon_hh; eauto.
-    }
-    subst.
-    repeat ff.
-    invc H.
-    ff.
-    destruct ls; try solve_by_inversion.
-     *)
-    
+    tauto.  
   -
     ff.
     do_inv_recon.
-    (*
-    assert (exists et1 et2, et = ss et1 et2).
-    {
-      eapply inv_recon_ss; eauto.
-    }
-    destruct_conjs.
-    subst.
-    repeat ff.
-    invc H.
-    ff.
-     *)
 
     do_recon_inv.
 
-
-    (*
-    invc H0.
-     *)
-    
     inv_wfec.
     ff.
-
-
-      
-
-    (*
-    assert ((firstn (et_size H1) ls) = encodeEv e).
-    { eapply IHec1 with (et:= H1).
-      econstructor.
-      eapply firstn_long.
-      lia.
-      econstructor.
-      ff.
-    }
-
-    assert ((skipn (et_size H1) ls) = encodeEv e0).
-    {
-      eapply IHec2 with (et := H2).
-      econstructor.
-      eapply skipn_long.
-      lia.
-      econstructor.
-      ff.
-    }
-     *)
     
     jkjke'.
     jkjke'.
@@ -1052,56 +783,12 @@ Proof.
     econstructor.
     eapply skipn_long. lia.
 
-    
-
   -
-        ff.
-    do_inv_recon.
-    (*
-    assert (exists et1 et2, et = ss et1 et2).
-    {
-      eapply inv_recon_ss; eauto.
-    }
-    destruct_conjs.
-    subst.
-    repeat ff.
-    invc H.
     ff.
-     *)
-
+    do_inv_recon.
     do_recon_inv.
-
-
-    (*
-    invc H0.
-     *)
-    
     inv_wfec.
     ff.
-
-
-      
-
-    (*
-    assert ((firstn (et_size H1) ls) = encodeEv e).
-    { eapply IHec1 with (et:= H1).
-      econstructor.
-      eapply firstn_long.
-      lia.
-      econstructor.
-      ff.
-    }
-
-    assert ((skipn (et_size H1) ls) = encodeEv e0).
-    {
-      eapply IHec2 with (et := H2).
-      econstructor.
-      eapply skipn_long.
-      lia.
-      econstructor.
-      ff.
-    }
-     *)
     
     jkjke'.
     jkjke'.
@@ -1132,71 +819,19 @@ Proof.
     do_inv_recon.
     econstructor.
     tauto.
-    (*
-    assert (et = nn n) by (eapply inv_recon_nn; eauto).
-    subst.
-    repeat ff.
-    econstructor.
-    ff.
-    destruct e; try solve_by_inversion. *)
   -
     do_inv_recon.
     do_recon_inv.
-
-    (*
-    invc H. 
-    repeat ff.
-     *)
-   
-
-    (*
-    assert (exists et', et = uu n l n0 n1 n2 et').
-    { eapply inv_recon_uu; eauto. }
-    destruct_conjs.
-    subst.
-    repeat ff. *)
     assert (wf_ec (evc H0 H1)) by eauto.
     inv_wfec.
-    (*
-    {
-      eapply IHec.
-      econstructor.
-      eauto.
-    }
-     *)
-    
-    
-    
     econstructor.
     ff.
     lia.
   -
     do_inv_recon.
     do_recon_inv.
-
-    (*
-    invc H.
-    repeat ff.
-     *)
-    
-
-    (*
-    assert (exists et', et = uu n l n0 n1 n2 et').
-    { eapply inv_recon_uu; eauto. }
-    destruct_conjs.
-    subst.
-    repeat ff. *)
     assert (wf_ec (evc H0 H1)) by eauto.
-    (*
-    {
-      eapply IHec.
-      econstructor.
-      eauto.
-    }
-     *)
-    inv_wfec.
-    
-    
+    inv_wfec. 
     econstructor.
     ff.
     lia.
@@ -1207,18 +842,7 @@ Proof.
     tauto.
   -
     do_inv_recon.
-    (*
-    { eapply inv_recon_ss; eauto. }
-    destruct_conjs.
-    subst.
-     
-    
-    repeat ff.
-     *)
     do_recon_inv.
-
-    
-    
 
     assert (wf_ec (evc (firstn (et_size H0) e) H0)) as HH.
     {
@@ -1226,7 +850,6 @@ Proof.
       eassumption.
     }
     
-
     assert (wf_ec (evc (skipn (et_size H0) e) H1)) as HH'.
     {
       eapply IHec2.
@@ -1249,20 +872,9 @@ Proof.
     rewrite HH at 1.
     eapply app_length.
 
-      -
+  -
     do_inv_recon.
-    (*
-    { eapply inv_recon_ss; eauto. }
-    destruct_conjs.
-    subst.
-     
-    
-    repeat ff.
-     *)
     do_recon_inv.
-
-    
-    
 
     assert (wf_ec (evc (firstn (et_size H0) e) H0)) as HH.
     {
@@ -1270,7 +882,6 @@ Proof.
       eassumption.
     }
     
-
     assert (wf_ec (evc (skipn (et_size H0) e) H1)) as HH'.
     {
       eapply IHec2.

@@ -136,13 +136,6 @@ Definition do_prim (x:nat) (a:ASP) : CVM EvC :=
   | SIG => signEv x
   | HSH => hashEv x
   end.
-
-(*
-Definition et_fun' (e:EvC): Evidence :=
-  match e with
-  | evc bits et => et
-  end.
-*)
     
 Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) : CVM unit :=
   p <- get_pl ;;

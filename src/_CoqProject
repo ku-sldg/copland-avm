@@ -25,8 +25,8 @@ Auto.v
 Helpers_VmSemantics.v
 AutoApp.v
 External_Facts.v
+Appraisal_Evidence.v
 VmSemantics.v
-StAM.v
 ExtLib_Any.v
 ExtLib_Functor.v
 ExtLib_Applicative.v

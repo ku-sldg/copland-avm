@@ -116,10 +116,9 @@ Definition thread_count (t:Term) : nat :=
   thread_count' t 0.
 *)
 
+(*
 Compute (thread_count (bpar (ALL,ALL) (asp SIG) (asp CPY))).
-
-Check max.
-Print max.
+*)
     
     
 Definition splitEv_T_l (sp:Split) (e:Evidence) : Evidence :=

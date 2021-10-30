@@ -4,7 +4,7 @@ Proofs about the Copland Virtual Machine implementation, linking it to the Copla
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import More_lists Defs Term_Defs Term ConcreteEvidence LTS Event_system Term_system Main.
+Require Import More_lists Defs Term_Defs Term ConcreteEvidence LTS Event_system Term_system Main Appraisal_Evidence.
 Require Import GenStMonad MonadVM Maps StructTactics Auto.
 Require Import Axioms_Io Impl_vm External_Facts Helpers_VmSemantics.
 
@@ -13,8 +13,9 @@ Import ListNotations.
 Require Import Coq.Program.Tactics Coq.Program.Equality.
 Require Import Coq.Arith.Peano_dec Lia.
 
-
+(*
 Set Nested Proofs Allowed.
+ *)
 
 Lemma st_trace_irrel : forall t tr1 tr1' tr2 tr2' e e' e'' p p' p'',
     well_formed_r t ->
@@ -74,46 +75,6 @@ Proof.
   eassumption.
 Defined.
 
-Inductive copland_compileP : AnnoTermPar -> cvm_st -> (option unit) -> cvm_st ->  Prop :=
-| ccp: forall t st st' res,
-    copland_compile t st = (res, st') ->
-    copland_compileP t st res st'.
-
-Lemma ccp_implies_cc: forall t st st' res,
-  copland_compileP t st res st' ->
-  copland_compile t st = (res,st').
-Proof.
-  intros.
-  solve_by_inversion.
-Defined.
-
-Lemma cc_implies_ccp: forall t st st' res,
-  copland_compile t st = (res,st') -> 
-  copland_compileP t st res st'.
-Proof.
-  intros.
-  econstructor.
-  tauto.
-Defined.
-
-Lemma ccp_iff_cc: forall t st st' res,
-  copland_compile t st = (res,st') <-> 
-  copland_compileP t st res st'.
-Proof.
-  intros.
-  split; intros;
-    try (eapply cc_implies_ccp; eauto);
-    try (eapply ccp_implies_cc; eauto).
-Defined.
-
-Ltac dd :=
-  repeat (
-      df;
-      annogo;
-      dosome;
-      do_asome;
-      subst).
-
 Ltac do_st_trace :=
   match goal with
   | [H': context[{| st_ev := ?e; st_trace := ?tr; st_pl := ?p |}]
@@ -152,6 +113,13 @@ Ltac cumul_ih :=
     assert_new_proof_by (st_trace v_full = m ++ st_trace v_suffix) eauto
   end.
 
+Ltac wrap_ccp_dohi :=
+  do_wf_pieces;
+  rewrite <- ccp_iff_cc in *;
+  dd;
+  dohi;
+  rewrite ccp_iff_cc in *.
+
 Lemma st_trace_cumul' : forall t m k e p v_full v_suffix o_suffix,
     well_formed_r t ->
 
@@ -168,7 +136,7 @@ Proof.
   induction t; intros.
   -
     destruct r.
-    rewrite <- ccp_iff_cc in *.
+    wrap_ccp.
     
     destruct a;
       simpl;
@@ -176,20 +144,13 @@ Proof.
       repeat rewrite app_assoc;
       reflexivity.
   -
-    rewrite <- ccp_iff_cc in *.
-    repeat (df; try dohtac; df).
+    wrap_ccp.
     repeat rewrite app_assoc.
     reflexivity.
 
   - (* alseq case *)
-
-    do_wf_pieces.
-
-    rewrite <- ccp_iff_cc in *.
-    dd.
-    dohi. 
-    rewrite ccp_iff_cc in *.
-
+    wrap_ccp_dohi.
+     
     cumul_ih.
     dd.
     repeat do_st_trace.
@@ -197,15 +158,8 @@ Proof.
     eauto.
 
   - (* abseq case *)
-    do_wf_pieces.
-
-    rewrite <- ccp_iff_cc in *.
-    dd.
-    dohi.
-    repeat find_inversion.
-
-    rewrite ccp_iff_cc in *.
-
+    wrap_ccp_dohi.
+    
     repeat rewrite <- app_assoc in *.
 
     cumul_ih.
@@ -216,14 +170,7 @@ Proof.
     eauto.
     
   - (* abpar case *)
-    do_wf_pieces.
-
-    rewrite <- ccp_iff_cc in *.
-    dd.
-    dohi.
-    repeat find_inversion.
-
-    rewrite ccp_iff_cc in *.
+    wrap_ccp_dohi.
 
     repeat rewrite <- app_assoc in *.
 
@@ -342,13 +289,9 @@ Lemma alseq_decomp : forall r t1' t2' e e'' p p'' tr,
                          {| st_ev := e''; st_trace := tr''; st_pl := p'' |} /\
         tr = tr' ++ tr''.     
 Proof.
-  intros.  
-  do_wf_pieces.
+  intros.
+  wrap_ccp_dohi.
   
-  rewrite <- ccp_iff_cc in *.
-  dd.
-  rewrite ccp_iff_cc in *.
-
   eexists.
   eexists.
   eexists.
@@ -362,9 +305,7 @@ Proof.
 
     eexists.
 
-    rewrite <- ccp_iff_cc in *.
-    dohi.
-    rewrite ccp_iff_cc in *.
+    wrap_ccp_dohi.
 
     split.
     ++
@@ -391,9 +332,7 @@ Proof.
   intros.
 
   do_exists_some_cc t  {| st_ev := e; st_trace := []; st_pl := p |}.
-  rewrite <- ccp_iff_cc in *.
-  dohi.
-  rewrite ccp_iff_cc in *.
+  wrap_ccp_dohi.
 
   assert (st_trace = tr).
   {
@@ -505,6 +444,26 @@ Proof.
   tauto.
 Defined.
 
+Lemma par_evidence_r: forall a p s e e2 e3,
+    parallel_vm_thread a p (splitEv_r s e) = evc e2 e3 ->
+    e3 = (eval (unanno a) p (splitEv_T_r s (get_et e))).
+Proof.
+  intros.
+
+  rewrite par_evidence in *.
+  destruct s.
+  destruct s; destruct s0;
+    simpl in *;
+    
+    erewrite eval_aeval with (i:=0);
+    rewrite aeval_anno;
+    try (unfold mt_evc in * );
+    erewrite <- remote_Evidence_Type_Axiom;
+    rewrite at_evidence;
+    try (erewrite <- evc_inv);
+    jkjke.
+Defined.
+
 Lemma cvm_refines_lts_evidence' : forall t tr tr' e e' p p',
     well_formed_r t ->
     copland_compileP t
@@ -517,7 +476,7 @@ Proof.
   intros.
   generalizeEverythingElse t.
   induction t; intros.
-    
+  
   - (* aasp case *)
     rewrite <- ccp_iff_cc in *.
     destruct a;
@@ -527,18 +486,16 @@ Proof.
           eauto).
 
   - (* at case *)
-    (*do_wf_pieces. *)
     rewrite <- ccp_iff_cc in *.
     destruct e.
     dd.
 
     erewrite eval_aeval.
-        
+    
     rewrite aeval_anno.
     eapply remote_Evidence_Type_Axiom.
 
   - (* alseq case *)
-    do_wf_pieces.
     do_suffix blah.
     destruct_conjs.
     subst.
@@ -550,12 +507,8 @@ Proof.
     eassumption.
     destruct_conjs.
 
-    rewrite <- ccp_iff_cc in *.
-    dd.
-    repeat do_pl_immut; subst.
-    repeat clear_triv.
-    rewrite ccp_iff_cc in *.
- 
+    wrap_ccp.
+    
     destruct x.
     destruct e'.
 
@@ -563,159 +516,83 @@ Proof.
     repeat jkjke'.
     
   - (* abseq case *)
-    do_wf_pieces.
 
-    rewrite <- ccp_iff_cc in *.
-    dd.
-    repeat do_pl_immut; subst.
-    repeat clear_triv.
-    rewrite ccp_iff_cc in *.
+    wrap_ccp.
     
-
-
-
-    (*
-    df.
-    repeat break_match;
-      try solve_by_inversion;
-      try (df; tauto).
+    do_suffix blah.
+    do_suffix blah'.
     
-      df.
-      
-      annogo.
-      simpl in *.
-     *)
-    
-      do_suffix blah.
-      do_suffix blah'.
-      
-      destruct_conjs; subst.
-      repeat do_restl.
+    destruct_conjs; subst.
+    repeat do_restl.
 
-      assert (e1 = get_et (evc e0 e1)) by tauto.
-      jkjke.
-      assert (e3 = get_et (evc e2 e3)) by tauto.
-      jkjke.
+    assert (e1 = get_et (evc e0 e1)) by tauto.
+    jkjke.
+    assert (e3 = get_et (evc e2 e3)) by tauto.
+    jkjke.
 
-      assert (get_et (evc e0 e1) = (eval (unanno (unannoPar t1)) p (splitEv_T_l s (get_et e)))).
-      {
-        destruct s; destruct s.
-        ++
-          eapply IHt1;
+    assert (get_et (evc e0 e1) = (eval (unanno (unannoPar t1)) p (splitEv_T_l s (get_et e)))).
+    {
+      destruct s; destruct s.
+      ++
+        eapply IHt1;
           eassumption.
-        ++
-          unfold splitEv_T_l.
-          assert (mt = get_et (evc [] mt)) by tauto.
-          jkjke.
-      }
-      dd.
-      (*
-      ff.
-      rewrite H6.
-       *)
-      
-      
-
-      assert (get_et (evc e2 e3) = (eval (unanno (unannoPar t2)) p (splitEv_T_r s (get_et e)))).
-      {
-        (*
-        repeat do_pl_immut; subst. *)
-        destruct s.
-        destruct s0.
-        ++
-          unfold splitEv_T_r.
-          eauto.
-        ++
-          assert (mt = get_et (evc [] mt)) by tauto.
-          jkjke.
-          eauto.
-      }
-      simpl in *; subst.
-      tauto.
+      ++
+        unfold splitEv_T_l.
+        assert (mt = get_et (evc [] mt)) by tauto.
+        jkjke.
+    }
+    dd.
+    
+    assert (get_et (evc e2 e3) = (eval (unanno (unannoPar t2)) p (splitEv_T_r s (get_et e)))).
+    {
+      destruct s.
+      destruct s0.
+      ++
+        unfold splitEv_T_r.
+        eauto.
+      ++
+        assert (mt = get_et (evc [] mt)) by tauto.
+        jkjke.
+        eauto.
+    }
+    simpl in *; subst.
+    tauto.
 
   - (* abpar case *)
-    do_wf_pieces.
+    wrap_ccp.
 
-    rewrite <- ccp_iff_cc in *.
-    dd.
-    repeat do_pl_immut; subst.
-    repeat clear_triv.
-    rewrite ccp_iff_cc in *.
+    do_suffix blah.
 
+    destruct_conjs; subst.
+    repeat do_restl.
 
+    assert (e1 = get_et (evc e0 e1)) by tauto.
+    jkjke.
+    assert (e3 = get_et (evc e2 e3)) by tauto.
+    jkjke.
 
-(*
-    
-    df.
-    repeat break_match;
-      try solve_by_inversion;
-      try (df; tauto).
-    +
-      df.
-      
-      annogo.
-      simpl in *.
- *)
-    
-      do_suffix blah.
-      (* do_suffix blah'. *)
-      destruct_conjs; subst.
-      repeat do_restl.
-
-      assert (e1 = get_et (evc e0 e1)) by tauto.
-      jkjke.
-      assert (e3 = get_et (evc e2 e3)) by tauto.
-      jkjke.
-
-      assert (get_et (evc e0 e1) = (eval (unanno (unannoPar t)) p (splitEv_T_l s (get_et e)))).
-      {
-        destruct s; destruct s.
-        ++
-          eapply IHt;
+    assert (get_et (evc e0 e1) = (eval (unanno (unannoPar t)) p (splitEv_T_l s (get_et e)))).
+    {
+      destruct s; destruct s.
+      ++
+        eapply IHt;
           eassumption.
-        ++
-          unfold splitEv_T_l.
-          assert (mt = get_et (evc [] mt)) by tauto.
-          jkjke.
-      }
-      dd.
-      (*
-      ff.
-      rewrite H5.
+      ++
+        unfold splitEv_T_l.
+        assert (mt = get_et (evc [] mt)) by tauto.
+        jkjke.
+    }
+    dd.
 
-      do_pl_immut.
-      subst.
-       *)
+    assert (e3 = (eval (unanno a) p (splitEv_T_r s (get_et e)))).
+    {
+      eapply par_evidence_r; eauto.
+    }
 
-      Lemma par_evidence_r: forall a p s e e2 e3,
-        parallel_vm_thread a p (splitEv_r s e) = evc e2 e3 ->
-        e3 = (eval (unanno a) p (splitEv_T_r s (get_et e))).
-      Proof.
-        intros.
-
-        rewrite par_evidence in *.
-         destruct s.
-         destruct s; destruct s0;
-           simpl in *;
-           
-           erewrite eval_aeval with (i:=0);
-           rewrite aeval_anno;
-           try (unfold mt_evc in * );
-           erewrite <- remote_Evidence_Type_Axiom;
-           rewrite at_evidence;
-           try (erewrite <- evc_inv);
-           jkjke.
-      Defined.
-
-      assert (e3 = (eval (unanno a) p (splitEv_T_r s (get_et e)))).
-      {
-        eapply par_evidence_r; eauto.
-      }
-
-      find_rw_in_goal.
-      tauto.
-      Unshelve.
-      eauto.
+    find_rw_in_goal.
+    tauto.
+    Unshelve.
+    eauto.
 Defined.
 
 Lemma cvm_refines_lts_evidence : forall t tr tr' bits bits' et et' p p',
@@ -756,14 +633,6 @@ Proof.
     erewrite IHt1_2.
     eauto. 
 Defined.
-
-Axiom thread_bookend_peel: forall t p et etr n l a n0 tr,
-    lstar (conf (unannoPar t) p et) tr (stop p (aeval (unannoPar t) p et)) ->
-    ([cvm_thread_start n l p a etr] ++ tr ++ [cvm_thread_end (Nat.pred n0) l p a] =
-     (shuffled_events tr (remote_events a p))
-    ).
-
-Print aeval.
 
 Lemma cvm_refines_lts_event_ordering : forall t cvm_tr bits bits' et et' p p',
     well_formed_r t ->
@@ -820,14 +689,8 @@ Proof.
     destruct_conjs.
     destruct x.
 
-    rewrite <- ccp_iff_cc in *.
-    dd.
-    repeat do_pl_immut; subst.
-    repeat clear_triv.
-    rewrite ccp_iff_cc in *.
-
-
-    
+    wrap_ccp.
+ 
     econstructor.
     econstructor.
     subst.
@@ -841,11 +704,6 @@ Proof.
     eapply lstar_silent_tran.
     apply stlseqstop.
 
-    (*
-    repeat do_pl_immut.
-    subst.   
-     *)
-    
     eapply IHt2. (*with (e:= x). *)
     eassumption.
     assert (e0 = Term_Defs.eval (unanno (unannoPar t1)) p et).
@@ -856,15 +714,8 @@ Proof.
     
     eassumption.
 
-
   - (* abseq case *)
-    do_wf_pieces.
-
-    rewrite <- ccp_iff_cc in *.
-    dd.
-    repeat do_pl_immut; subst.
-    repeat clear_triv.
-    rewrite ccp_iff_cc in *.
+    wrap_ccp.
     
     do_suffix blah.
     do_suffix blah'.
@@ -914,13 +765,7 @@ Proof.
 
   - (* abpar case *)
 
-    do_wf_pieces.
-
-    rewrite <- ccp_iff_cc in *.
-    dd.
-    repeat do_pl_immut; subst.
-    repeat clear_triv.
-    rewrite ccp_iff_cc in *.
+    wrap_ccp.
     
     do_suffix blah.
     destruct_conjs; subst.
@@ -1224,21 +1069,8 @@ Proof.
     congruence.
 Defined.
 
-Inductive annoP: AnnoTerm -> Term -> nat -> Prop :=
-| annoP_c: forall anno_term t n,
-    anno_term = snd (anno t n) ->
-    annoP anno_term t n.
-
-Inductive anno_parP: AnnoTermPar -> AnnoTerm -> Loc -> Prop :=
-| anno_parP_c: forall par_term t loc,
-    par_term = snd (anno_par t loc) ->
-    anno_parP par_term t loc.
-
 Lemma wfr_annt_implies_wfr_par: forall a l a0,
     well_formed_r_annt a ->
-    (*
-    anno_par a l = (l', a0) ->
-     *)
     anno_parP a0 a l ->
     well_formed_r a0.
 Proof.
@@ -1259,8 +1091,7 @@ Proof.
     unfold anno_par in *.
     repeat break_let.
     fold anno_par in *.
-    (*
-    invc H0. *)
+
     simpl.
     assert (anno_parP a a1 l).
     {
@@ -1272,8 +1103,6 @@ Proof.
       econstructor.
       jkjke.
     }
-    
-    
 
     assert (well_formed_r a) by eauto.
     assert (well_formed_r a0) by eauto.
@@ -1427,14 +1256,12 @@ Defined.
 Theorem cvm_respects_event_system : forall pt t cvm_tr ev0 ev1 bits bits' et et' anno_t,
     annoP anno_t t 0 ->
     anno_parP pt anno_t 0 ->
-    (*
-    t = annotated_par (annotated t') -> *)
     copland_compileP pt
                      (mk_st (evc bits et) [] 0)
                      (Some tt)
                      (mk_st (evc bits' et') cvm_tr 0) ->
 
-    prec (ev_sys anno_t(*(unannoPar t)*) 0 et) ev0 ev1 ->
+    prec (ev_sys anno_t 0 et) ev0 ev1 ->
     earlier cvm_tr ev0 ev1.
 Proof.
   intros.

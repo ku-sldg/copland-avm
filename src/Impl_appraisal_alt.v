@@ -1,4 +1,4 @@
-Require Import Term ConcreteEvidence (*GenStMonad MonadVM MonadAM*) .
+Require Import Term ConcreteEvidence Appraisal_Evidence (*GenStMonad MonadVM MonadAM*) .
 
 (*
 Require Import Impl_vm StAM. *)

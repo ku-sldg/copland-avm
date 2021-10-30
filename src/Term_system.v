@@ -15,9 +15,9 @@ Require Import Preamble More_lists StructTactics Defs Term_Defs Term Event_syste
 
 Require Import Lia List PeanoNat.
 
-Search "succ".
-
+(*
 Set Nested Proofs Allowed.
+*)
 
 (** Construct an event system from an annotated term, place, and
     evidence. *)
@@ -87,8 +87,6 @@ Ltac do_evin :=
 
 (** The events in the event system correspond to the events associated
     with a term, a place, and some evidence. *)
-
-Search "succ".
 
 Lemma evsys_events:
   forall t p e ev,

@@ -229,19 +229,6 @@ Proof.
       destruct_conjs.
       subst.
       fff.
-      (*
-      invc H.
-      ++
-        fff.
-      ++
-        assert (EvSubT (et_fun e0) e).
-        {
-          eapply IHe.
-          econstructor.
-          eassumption.
-        }
-        apply hhSubT.
-        eassumption. *)
     +
       assert (EvSubT (et_fun e0) e) by eauto.
       apply hhSubT. eassumption.
@@ -433,42 +420,10 @@ Lemma evsub_transitive: forall e e' e'',
     EvSub e' e'' ->
     EvSub e e''.
 Proof.
-  intros.
+  intros e e' e'' H H0.
   generalizeEverythingElse e''.
-  induction e''; intros; fff.
-  -
-    invc H0; eauto.
-  -
-    invc H0; eauto.
-    (*
-  -
-    invc H0.
-    +
-      eassumption.
-    +
-      econstructor.
-
-      eapply evsub_hh; eauto.
-     *)
-    
-  -
-    invc H0; eauto.
-  -
-    invc H0; eauto.
+  induction e''; intros; fff; invc H0; eauto.
 Defined.
-
-(*
-Inductive EvBad': Evidence -> Prop :=
-| ggBad: forall e e' p p',
-    e = gg p' e' ->
-    EvBad' (hh p e).
-
-Inductive EvBad : Evidence -> Prop :=
-| evIsBad: forall e e',
-    EvSubT e e' ->
-    EvBad' e ->
-    EvBad e'.
-*)
 
 Inductive Ev_Shape: EvidenceC -> Evidence -> Prop :=
 | mtt: Ev_Shape mtc mt
