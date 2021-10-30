@@ -213,8 +213,7 @@ Proof.
     
 
     sigEventFacts.
-    repeat do_pl_immut.
-    subst.
+
     sigEventPFacts.
     do_wfec_preserved.
     do_somerecons.
@@ -472,7 +471,8 @@ Ltac do_wfec_preserved :=
       {
         destruct ee; ff.
 
-       
+
+        (*
 
         assert (exists ee, Some ee = reconstruct_ev (splitEv_l s (evc e e1))).
         {
@@ -504,6 +504,8 @@ Ltac do_wfec_preserved :=
           tauto.
         }
         destruct_conjs.
+         *)
+        
 
         (*
         
@@ -567,6 +569,7 @@ Ltac do_wfec_preserved :=
 
        
 
+        (*
         assert (exists ee, Some ee = reconstruct_ev (splitEv_l s (evc e2 e3))).
         {
           destruct s.
@@ -593,6 +596,8 @@ Ltac do_wfec_preserved :=
           tauto.
         }
         destruct_conjs.
+         *)
+        
 
         (*
         
@@ -633,8 +638,8 @@ Ltac do_wfec_preserved :=
         eassumption.
 
         destruct s. destruct s; destruct s0; ff.
-        econstructor. tauto.
-        econstructor. tauto.
+        econstructor; tauto.
+        econstructor; tauto.
         eassumption.
 
         destruct s; destruct s; destruct s0; ff.
@@ -681,8 +686,9 @@ Ltac do_wfec_preserved :=
     do_wfec_preserved.
     do_somerecons.
 
+    do_reconP_determ.
+
     wrap_ccp.
-    ff.
 
 
 
@@ -713,6 +719,8 @@ Ltac do_wfec_preserved :=
     repeat do_pl_immut.
     subst.
      *)
+
+    do_rewrap_reconP.
     
 
     do_wfec_split.
@@ -723,16 +731,23 @@ Ltac do_wfec_preserved :=
     do_wfec_skipn.
 
     clear_skipn_firstn.
+
+    (*
     
 
     rewrite fold_recev in *.
+     *)
+
+    do_reconP_determ.
 
     inv_events.
     + (* t1 case *)
 
-      assert (appEvent_Sig_EvidenceC (sign n p0 e0) (build_app_comp_evC e5)).
+      assert (appEvent_Sig_EvidenceC (sign n p0 e0) (build_app_comp_evC e4)).
       {
-        destruct ee; ff.
+        destruct ee; dd.
+
+        (*
 
         rewrite fold_recev in *.
 
@@ -766,6 +781,8 @@ Ltac do_wfec_preserved :=
            *)
           
         }
+         *)
+        
         
         eapply IHt1.
         eassumption.
@@ -782,23 +799,27 @@ Ltac do_wfec_preserved :=
         eassumption.
 
         destruct s. destruct s; destruct s0; ff.
-        jkjke'. 
+        econstructor; tauto.
+        econstructor; tauto.
+        eassumption.
+        destruct s; destruct s; destruct s0; ff.
+        econstructor. eassumption. econstructor.
+        econstructor. eassumption. econstructor.
+        econstructor. eassumption. econstructor.
+        econstructor. eassumption. econstructor.
 
-        ff.
-        econstructor.
-        destruct s; destruct s; ff.
-        econstructor.
       }
-      invc H21.
+      invc H20.
       econstructor.
       ff.
+      
     + (* NEW t2 case *)
           
-      assert (appEvent_Sig_EvidenceC (sign n p0 e0) (build_app_comp_evC e6)).
+      assert (appEvent_Sig_EvidenceC (sign n p0 e0) (build_app_comp_evC e5)).
       {
         destruct ee; ff.
 
-        rewrite fold_recev in *.
+        (*
 
         assert (exists ee, Some ee = reconstruct_ev (splitEv_l s (evc e7 e8))).
         {
@@ -831,15 +852,16 @@ Ltac do_wfec_preserved :=
           
         }
         simpl.
+         *)
+        
 
-        do_assume_remote t2 (splitEv_r s (evc e7 e8)) p HHH.
+        do_assume_remote t2 (splitEv_r s (evc e6 e7)) p HHH.
         eapply IHt2.
         econstructor.
         reflexivity.
         eapply wfr_annt_implies_wfr_par.
         eassumption.
-        econstructor.
-        tauto.
+        econstructor. tauto.
         eassumption.
         (*
         eassumption.
@@ -852,19 +874,20 @@ Ltac do_wfec_preserved :=
         eassumption. *)
         
         4: {
-          rewrite H24.
+          rewrite H20.
           simpl.
           econstructor.
           eassumption. }
         eassumption.
 
         destruct s. destruct s; destruct s0; ff.
+        econstructor; tauto.
+        econstructor; tauto.
 
         rewrite at_evidence.
         rewrite par_evidence in *.
-        rewrite <- H26.
-        rewrite Heqe3.
-        symmetry.
+        rewrite <- H22.
+        rewrite Heqe2.
         eassumption.
 
         (*
@@ -879,7 +902,7 @@ Ltac do_wfec_preserved :=
         destruct s; destruct s; destruct s0; ff.
         econstructor.
       }
-      invc H21.
+      invc H20.
       econstructor.
       ff.
 Defined.
