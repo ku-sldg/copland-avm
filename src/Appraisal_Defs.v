@@ -9,48 +9,51 @@ Import ListNotations.
 
 Require Import Lia Coq.Program.Tactics.
 
+Definition default_bs : BS.
+Admitted.
+
 Definition checkASP (i:ASP_ID) (args:list Arg) (tpl:Plc) (tid:Plc) (bs:BS) : option BS.
 Admitted.
 
-Definition checkASPF  (i:ASP_ID) (args:list Arg) (tpl:Plc) (tid:Plc) (bs:BS) : BS := fromSome 0 (checkASP i args tpl tid bs).
+Definition checkASPF  (i:ASP_ID) (args:list Arg) (tpl:Plc) (tid:Plc) (bs:BS) : BS := fromSome default_bs (checkASP i args tpl tid bs).
 
 Definition checkSigBits (ls:EvBits) (p:Plc) (sig:BS) : option BS.
 Admitted.
 
 Definition checkSigBitsF (ls:EvBits) (p:Plc) (sig:BS) : BS :=
-  fromSome 0 (checkSigBits ls p sig).
+  fromSome default_bs (checkSigBits ls p sig).
 
 Definition checkNonce (nid:nat) (val:BS) : option BS.
 Admitted.
 
 Definition checkNonceF (nid:nat) (val:BS) : BS :=
-  fromSome 0 (checkNonce nid val).
+  fromSome default_bs (checkNonce nid val).
 
 Definition checkSig (e:EvidenceC) (p:Plc) (sig:BS) : option BS :=
   checkSigBits (encodeEv e) p sig.
 
 Definition checkSigF (e:EvidenceC) (p:Plc) (sig:BS) : BS :=
-  fromSome 0 (checkSig e p sig).
+  fromSome default_bs (checkSig e p sig).
 
 Fixpoint checkHash (e:Evidence) (p:Plc) (hash:BS) : option BS :=
   match e with
   | gg _ _ => None
-  | mt => ret 0 (* TODO: implement reconstruct_hash and ignore mt *)
-  | nn _ => ret 0 (* TODO: reconstruct_hash will grab nonce value here *)
+  | mt => ret default_bs (* TODO: implement reconstruct_hash and ignore mt *)
+  | nn _ => ret default_bs (* TODO: reconstruct_hash will grab nonce value here *)
   | uu _ _ _ _ _ e' => checkHash e' p hash
   | hh _ e' => checkHash e' p hash
   | ss e1 e2 =>
     res1 <- checkHash e1 p hash ;;
     res2 <- checkHash e2 p hash ;;
-    ret 1
+    ret default_bs
   | pp e1 e2 =>
     res1 <- checkHash e1 p hash ;;
     res2 <- checkHash e2 p hash ;;
-    ret 1
+    ret default_bs
   end.
 
 Definition checkHashF (e:Evidence) (p:Plc) (hash:BS) : BS :=
-  fromSome 0 (checkHash e p hash).
+  fromSome default_bs (checkHash e p hash).
 (*
 
 Definition checkHash (e:Evidence) (p:Plc) (hash:BS) : BS :=

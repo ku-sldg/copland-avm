@@ -9,7 +9,9 @@ Require Import Lia.
 Require Import List.
 Import List.ListNotations.
 
+(*
 Set Nested Proofs Allowed.
+*)
 
 Lemma wf_lseq_pieces: forall r t1 t2,
     well_formed_r (alseq_par r t1 t2) ->

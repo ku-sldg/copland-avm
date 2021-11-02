@@ -11,7 +11,12 @@ Require Import Coq.Program.Tactics.
 Require Import List.
 Import ListNotations.
 
+Definition BS : Set.
+Admitted.
+
+(*
 Notation BS := nat (only parsing).
+*)
 
 (** * Concrete Evidence *)
 

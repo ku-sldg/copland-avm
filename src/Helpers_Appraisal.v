@@ -41,7 +41,7 @@ Defined.
 
 Lemma hhc_app: forall e' p bs et,
     EvSub (hhc p bs et) e' ->
-    EvSub (hhc p (fromSome 0 (checkHash et p bs)) et)
+    EvSub (hhc p (fromSome default_bs (checkHash et p bs)) et)
           (build_app_comp_evC e').
 Proof.
   intros.
@@ -191,7 +191,7 @@ Ltac do_evsub_ih :=
     
     assert_new_proof_by
       (EvSub e'' v \/
-       (exists (ett : Evidence) (p'0 bs : nat),
+       (exists (ett : Evidence) p'0 bs,
            EvSub (hhc p'0 bs ett) v /\ EvSubT (et_fun e'') ett))
       eauto
   end.
@@ -204,7 +204,7 @@ Ltac do_evsubh_ih :=
     
     assert_new_proof_by
       (EvSub (hhc H2 H3 H4) e' \/
-       (exists (ett : Evidence) (p'0 bs : nat),
+       (exists (ett : Evidence) p'0 bs,
            EvSub (hhc p'0 bs ett) e' /\ EvSubT (et_fun (hhc H2 H3 H4)) ett))
       eauto
   end.
@@ -569,18 +569,18 @@ Proof.
     eauto.
   -
     destruct_conjs.
-    exists (uuc n l n0 n1 n2 1 IHy).
+    exists (uuc n l n0 n1 n2 default_bs IHy).
     ff.
   -
     destruct_conjs.
-    exists (ggc n 1 IHy).
+    exists (ggc n default_bs IHy).
     ff.
   -
     destruct_conjs.
-    exists (hhc n 1 y).
+    exists (hhc n default_bs y).
     ff.
   -
-    exists (nnc n 1).
+    exists (nnc n default_bs).
     ff.
   -
     destruct_conjs.
@@ -963,7 +963,7 @@ Ltac do_evaccum :=
       
       assert_new_proof_by
         (EvSub e'' e' \/
-         (exists (ett : Evidence) (p'0 bs : nat),
+         (exists (ett : Evidence) p'0 bs,
              EvSub (hhc p'0 bs ett) e' /\ EvSubT (et_fun e'') ett))
         ltac: (eapply evAccum; [apply H8 | apply H | apply H7 | apply H2 | apply H3 | apply H4 | apply H5 | apply H6])
     end.
@@ -2372,7 +2372,7 @@ Ltac do_evsub_ihhh' :=
                    
 
        |-  (exists e'' : EvidenceC, EvSub (uuc ?i ?args ?tpl ?tid ?p0 ?n e'') _) \/
-          (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
+          (exists (ett : Evidence) p'0 bs (et' : Evidence),
               EvSub (hhc p'0 bs ett) _ /\ EvSubT (uu ?i ?args ?tpl ?tid ?p0 et') ett)
             (*context[EvSub _(*(uuc ?i ?args ?tpl ?tid ?n _)*) _ \/ _]*)
     ] => 
@@ -2382,7 +2382,7 @@ Ltac do_evsub_ihhh' :=
     assert_new_proof_by 
       (
         (exists e'' : EvidenceC, EvSub (uuc i args tpl tid p0 n e'') v') \/
-        (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
+        (exists (ett : Evidence) p'0 bs (et' : Evidence),
             EvSub (hhc p'0 bs ett) v' /\ EvSubT (uu i args tpl tid p0 et') ett)
       )
 

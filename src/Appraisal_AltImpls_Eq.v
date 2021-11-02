@@ -62,8 +62,8 @@ Proof.
     unfold checkSig.
     unfold checkSigF.
     unfold checkSig.
-    assert (checkSigBits H2 n n0 =
-            checkSigBits (encodeEv ec2) n n0).
+    assert (checkSigBits H2 n b =
+            checkSigBits (encodeEv ec2) n b).
     {
       assert (H2 = encodeEv ec2).
       {
