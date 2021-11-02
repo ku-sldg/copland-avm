@@ -94,7 +94,7 @@ Ltac do_wfec_split :=
 Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' p p',
     well_formed_r t1 ->
     wf_ec e ->
-    copland_compileP t1
+        copland_compileP t1
                     {| st_ev := e; st_trace := tr; st_pl := p |}
                     (Some tt)
                     {| st_ev := e'; st_trace := tr'; st_pl := p' |} ->
@@ -106,7 +106,7 @@ Proof.
   -
     rewrite <- ccp_iff_cc in *.
     destruct a; ff;
-      invc H0;
+      inv_wfec;
       try (
           econstructor;
           ff;
@@ -124,19 +124,22 @@ Proof.
     wrap_ccp.
 
     do_wfec_split.
-        find_wfec;
-      inv_wfec;
-      dd;
-      econstructor;
-      dd; repeat jkjke';
-        eapply app_length.
+
+    find_apply_hyp_hyp.
+    find_apply_hyp_hyp.
+    econstructor.
+    dd.
+    inv_wfec.
+    repeat jkjke'.
+    eapply app_length.
 
   -
     wrap_ccp.
     
     do_wfec_split.
 
-    find_wfec;
+    find_apply_hyp_hyp.
+
       inv_wfec;
       ff;
       econstructor;
@@ -2411,7 +2414,7 @@ Lemma uu_preserved': forall t pt p et n p0 i args tpl tid
                      {| st_ev := ecc'; st_trace := tr'; st_pl := p' |} ->
 
     (
-      (exists e'', EvSub (uuc i args tpl tid p0 n e'') e') \/
+      (exists e'', EvSub (uuc i args tpl tid p0 (do_asp i args tid p0 tpl n) e'') e') \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) e' /\
           EvSubT (uu i args tpl tid p0 et') ett)
@@ -2652,7 +2655,7 @@ Lemma uu_preserved: forall t1 t2 pt1 pt2 loc1 loc2 p et n p0 i args tpl tid
                      {| st_ev := ecc; st_trace := tr'; st_pl := p'' |} ->
 
     (
-      (exists e'', EvSub (uuc i args tpl tid p0 n e'') e') \/
+      (exists e'', EvSub (uuc i args tpl tid p0 (do_asp i args tid p0 tpl n) e'') e') \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) e' /\
           EvSubT (uu i args tpl tid p0 et') ett)
@@ -2666,7 +2669,7 @@ Proof.
   do_somerecons.
   
   assert (
-      (exists e'', EvSub (uuc i args tpl tid p0 n e'') H13) \/
+      (exists e'', EvSub (uuc i args tpl tid p0 (do_asp i args tid p0 tpl n) e'') H13) \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) H13 /\
           EvSubT (uu i args tpl tid p0 et') ett)

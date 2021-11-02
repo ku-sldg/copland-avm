@@ -43,6 +43,7 @@ Fixpoint build_app_comp_evC (et:Evidence) (ls:EvBits) : option EvidenceC :=
     x <- build_app_comp_evC et' ls' ;;
     res <- checkSigBits ls' p bs ;;
     Some (ggc p res x)
+         
   | hh p et =>
     '(bs, _) <- peel_bs ls ;;
     res <- checkHash et p bs ;;

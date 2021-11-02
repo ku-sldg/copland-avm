@@ -489,7 +489,7 @@ Proof.
     rewrite <- ccp_iff_cc in *.
     destruct e.
     dd.
-
+    
     erewrite eval_aeval.
     
     rewrite aeval_anno.
@@ -1309,3 +1309,82 @@ Proof.
   rewrite H5.
   eapply cvm_refines_lts_event_ordering; eauto.
 Defined.
+
+Print run_cvm.
+Check st_trace.
+
+Theorem cvm_respects_event_system_run : forall pt t cvm_tr ev0 ev1 bits (*bits' et' *)et  anno_t,
+    annoP anno_t t 0 ->
+    anno_parP pt anno_t 0 ->
+    st_trace (run_cvm pt (mk_st (evc bits et) [] 0)) = cvm_tr ->
+
+    (*
+    =
+    (mk_st (evc bits' et') cvm_tr 0) ->
+     *)
+    
+
+    prec (ev_sys anno_t 0 et) ev0 ev1 ->
+    earlier cvm_tr ev0 ev1.
+Proof.
+  intros.
+  assert (well_formed_r pt).
+  {
+    inversion H0.
+    inversion H.
+    subst.
+    eapply annopar_well_formed_r.
+    unfold annotated_par.
+    unfold annotated.
+    reflexivity.
+  }
+
+  destruct ((copland_compile pt {| st_ev := evc bits et; st_trace := []; st_pl := 0 |})) eqn:hi.
+  do_somett.
+  subst.
+
+  simpl in *. destruct c.
+  simpl in *.
+  unfold run_cvm in *.
+  unfold execSt in *.
+  rewrite hi.
+  simpl.
+  destruct st_ev.
+  do_pl_immut.
+  subst.
+  
+  eapply cvm_respects_event_system.
+  eassumption.
+  eassumption.
+  econstructor.
+  eassumption.
+  eassumption.
+Defined.
+
+Theorem cvm_respects_event_system_run' : forall pt t cvm_tr ev0 ev1 bits (*bits' et' *)et  anno_t,
+    anno_t = annotated t ->
+    pt = annotated_par anno_t ->
+    (*
+    annoP anno_t t 0 ->
+    anno_parP pt anno_t 0 -> *)
+    st_trace (run_cvm pt (mk_st (evc bits et) [] 0)) = cvm_tr ->
+
+    (*
+    =
+    (mk_st (evc bits' et') cvm_tr 0) ->
+     *)
+    
+
+    prec (ev_sys anno_t 0 et) ev0 ev1 ->
+    earlier cvm_tr ev0 ev1.
+Proof.
+  intros.
+  eapply cvm_respects_event_system_run.
+  econstructor.
+  eassumption.
+  econstructor.
+  eassumption.
+  eassumption.
+  eassumption.
+Defined.
+  

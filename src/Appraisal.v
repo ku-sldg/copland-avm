@@ -546,7 +546,7 @@ Proof.
       destruct_conjs.
 
       assert (
-          exists e'', EvSub (uuc i args tpl tid p0 (checkASPF i args tpl tid n) e'')
+          exists e'', EvSub (uuc i args tpl tid p0 (checkASPF i args tpl tid (do_asp i args tid p0 tpl n)) e'')
                        (build_app_comp_evC e')).
       {
         do_reconP_determ.

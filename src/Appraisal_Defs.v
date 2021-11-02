@@ -1,4 +1,4 @@
-Require Import Term_Defs Term Maps ConcreteEvidence OptMonad Auto More_lists Appraisal_Evidence.
+Require Import Term_Defs Term Maps ConcreteEvidence OptMonad Auto More_lists Appraisal_Evidence MonadVM.
 
 (* Require Import Impl_appraisal (*MonadAM*). *)
 
@@ -77,14 +77,12 @@ Definition sigEvent (t:AnnoTerm) (p:Plc) (e:Evidence) (ev:Ev) : Prop :=
 
 Inductive appEvent_EvidenceC : Ev -> EvidenceC -> Prop :=
 | aeuc: forall i args tpl tid e e' n p,
-    EvSub (uuc i args tpl tid p (checkASPF i args tpl tid n) e') e ->
+    EvSub (uuc i args tpl tid p (checkASPF i args tpl tid (do_asp i args tid p tpl n)) e') e ->
     appEvent_EvidenceC (umeas n p i args tpl tid) e
 | ahuc: forall i args tpl tid e' et n p pi bs e,
     EvSubT (uu i args tpl tid p e') et ->
     EvSub (hhc pi (checkHashF et pi bs) et) e ->
     appEvent_EvidenceC (umeas n p i args tpl tid) e.
-
-Require Import MonadVM.
 
 Inductive appEvent_Sig_EvidenceC: Ev -> EvidenceC -> Prop :=
 | asigc: forall n p e e' e'' ee,
