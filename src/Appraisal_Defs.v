@@ -9,10 +9,10 @@ Import ListNotations.
 
 Require Import Lia Coq.Program.Tactics.
 
-Definition checkASP (i:ASP_ID) (args:list Arg) (tpl:Plc) (tid:Plc) (bs:BS) : option BS.
+Definition checkASP (params:ASP_PARAMS) (bs:BS) : option BS.
 Admitted.
 
-Definition checkASPF  (i:ASP_ID) (args:list Arg) (tpl:Plc) (tid:Plc) (bs:BS) : BS := fromSome default_bs (checkASP i args tpl tid bs).
+Definition checkASPF (params:ASP_PARAMS) (bs:BS) : BS := fromSome default_bs (checkASP params bs).
 
 Definition checkSigBits (ls:EvBits) (p:Plc) (sig:BS) : option BS.
 Admitted.
@@ -37,7 +37,7 @@ Fixpoint checkHash (e:Evidence) (p:Plc) (hash:BS) : option BS :=
   | gg _ _ => None
   | mt => ret default_bs (* TODO: implement reconstruct_hash and ignore mt *)
   | nn _ => ret default_bs (* TODO: reconstruct_hash will grab nonce value here *)
-  | uu _ _ _ _ _ e' => checkHash e' p hash
+  | uu _  _ e' => checkHash e' p hash
   | hh _ e' => checkHash e' p hash
   | ss e1 e2 =>
     res1 <- checkHash e1 p hash ;;
@@ -77,10 +77,10 @@ Definition sigEvent (t:AnnoTerm) (p:Plc) (e:Evidence) (ev:Ev) : Prop :=
 
 Inductive appEvent_EvidenceC : Ev -> EvidenceC -> Prop :=
 | aeuc: forall i args tpl tid e e' n p,
-    EvSub (uuc i args tpl tid p (checkASPF i args tpl tid (do_asp i args tid p tpl n)) e') e ->
+    EvSub (uuc (asp_paramsC i args tpl tid) p (checkASPF (asp_paramsC i args tpl tid) (do_asp (asp_paramsC i args tpl tid) p n)) e') e ->
     appEvent_EvidenceC (umeas n p i args tpl tid) e
 | ahuc: forall i args tpl tid e' et n p pi bs e,
-    EvSubT (uu i args tpl tid p e') et ->
+    EvSubT (uu (asp_paramsC i args tpl tid) p e') et ->
     EvSub (hhc pi (checkHashF et pi bs) et) e ->
     appEvent_EvidenceC (umeas n p i args tpl tid) e.
 
@@ -217,9 +217,9 @@ Ltac do_inv_recon_nn :=
   destruct_conjs;
   subst.
 
-Lemma inv_recon_uu: forall ls et n l n0 n1 n2 p ec,
-    reconstruct_evP (evc ls et) (uuc n l n0 n1 p n2 ec)  ->
-    (exists ls' et', et = uu n l n0 n1 p et' /\
+Lemma inv_recon_uu: forall ls et params n2 p ec,
+    reconstruct_evP (evc ls et) (uuc params p n2 ec)  ->
+    (exists ls' et', et = uu params p et' /\
                 ls = n2 :: ls'). (* /\
                 wf_ec (evc ls' et')). *)
 Proof.
@@ -234,10 +234,10 @@ Defined.
 
 Ltac do_inv_recon_uu :=
   match goal with
-  | [H: reconstruct_evP (evc ?ls ?et) (uuc ?n ?l ?n0 ?n1 ?p ?uval _)
+  | [H: reconstruct_evP (evc ?ls ?et) (uuc ?params ?p ?uval _)
 
      |- _] =>
-    assert_new_proof_by (exists ls' et', et = uu n l n0 n1 p et' /\
+    assert_new_proof_by (exists ls' et', et = uu params p et' /\
                         ls = uval :: ls')
                         ltac:(eapply inv_recon_uu; apply H)
   end;
@@ -341,8 +341,8 @@ Ltac do_inv_recon :=
   try do_inv_recon_ss;
   try do_inv_recon_pp.
 
-Lemma nhse_uuc: forall n l n0 n1 n2 n3 e,
-    not_hash_sig_ev (uuc n l n0 n1 n2 n3 e) ->
+Lemma nhse_uuc: forall params n2 n3 e,
+    not_hash_sig_ev (uuc params n2 n3 e) ->
     not_hash_sig_ev e.
 Proof.
   intros.
@@ -357,7 +357,7 @@ Defined.
 
 Ltac do_nhse_uuc:=
   match goal with
-  | [H: not_hash_sig_ev (uuc _ _ _ _ _ _ ?e)
+  | [H: not_hash_sig_ev (uuc _ _ _ ?e)
      |- _] =>
     assert_new_proof_by (not_hash_sig_ev e) ltac:(eapply nhse_uuc; apply H)
   end.
@@ -482,10 +482,10 @@ Ltac do_nhse :=
   try do_nhse_ssc;
   try do_nhse_ppc.
 
-Lemma recon_inv_uu: forall n n0 n1 n2 n3 H2 H3 e l,
+Lemma recon_inv_uu: forall n2 n3 H2 H3 e params,
     reconstruct_evP
-      (evc (n3 :: H2) (uu n l n0 n1 n2 H3))
-      (uuc n l n0 n1 n2 n3 e) ->
+      (evc (n3 :: H2) (uu params n2 H3))
+      (uuc params n2 n3 e) ->
     reconstruct_evP (evc H2 H3) e.
 Proof.
   intros.
@@ -499,8 +499,8 @@ Defined.
 Ltac do_recon_inv_uu :=
   match goal with
   | [H: reconstruct_evP
-          (evc (_ :: ?H2) (uu _ _ _ _ _ ?H3))
-          (uuc _ _ _ _ _ _ ?e)
+          (evc (_ :: ?H2) (uu _ _ ?H3))
+          (uuc _ _ _ ?e)
      |- _] =>
     assert_new_proof_by (reconstruct_evP (evc H2 H3) e) ltac:(eapply recon_inv_uu; apply H)
   end.

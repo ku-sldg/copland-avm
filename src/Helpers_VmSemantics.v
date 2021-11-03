@@ -23,7 +23,8 @@ Proof.
   induction t; intros.
   -
     destruct r.
-    destruct a;
+    destruct a; (* asp *)
+      try destruct a; (* asp params *)
       df;
       try reflexivity.
   -
@@ -189,7 +190,8 @@ Lemma hihi : forall t e e' e'' x x' y y' p p' p'',
     (e' = e'' /\ p' = p'').
 Proof.
   induction t; intros.
-  - destruct a;
+  - destruct a; (* asp *)
+      try destruct a; (* asp params *)
       df; eauto.
   -
     repeat (df; try dohtac; df).
@@ -267,7 +269,8 @@ Lemma always_some : forall t vm_st vm_st' op,
 Proof.
   induction t; intros.
   -
-    destruct a;
+    destruct a; (* asp *)
+      try destruct a; (* asp params *)
       try (df; tauto).
   -
     repeat (df; try dohtac; df).

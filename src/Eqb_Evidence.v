@@ -20,11 +20,12 @@ Lemma eqb_eq_list {A:Type}:
   forall x y f,
     list_beq A f x y = true <-> x = y.
 Admitted.
+Print asp_paramsC.
 
 Fixpoint eqb_evidence (e:Evidence) (e':Evidence): bool :=
   match (e,e') with
   | (mt,mt) => true
-  | (uu i args p tid q e1, uu i' args' p' tid' q' e2) =>
+  | (uu (asp_paramsC i args p tid) q e1, uu (asp_paramsC i' args' p' tid') q' e2) =>
     (Nat.eqb i i') && (list_beq nat Nat.eqb args args') && (Nat.eqb p p') && (Nat.eqb q q')
     && (Nat.eqb tid tid') && (eqb_evidence e1 e2)
   | (gg p e1, gg p' e2) =>
@@ -48,7 +49,7 @@ Proof.
   -
     generalizeEverythingElse e1.
     induction e1; destruct e2; intros;
-      try (cbn in *; try solve_by_inversion; eauto; tauto).
+      try (cbn in *; repeat break_match; try solve_by_inversion; eauto).
     +
       cbn in *.
       rewrite Bool.andb_true_iff in H.
@@ -114,7 +115,7 @@ Proof.
   -
     generalizeEverythingElse e1.
     induction e1; destruct e2; intros;
-      try (cbn in * ; try solve_by_inversion; eauto; tauto).
+      try (cbn in * ; repeat break_match; try solve_by_inversion; eauto).
     +
       invc H.
       cbn in *.

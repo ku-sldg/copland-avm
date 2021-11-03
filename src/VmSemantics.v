@@ -138,7 +138,8 @@ Proof.
     destruct r.
     wrap_ccp.
     
-    destruct a;
+    destruct a; (* asp *)
+      try destruct a; (* asp params *)
       simpl;
       df;
       repeat rewrite app_assoc;
@@ -648,7 +649,8 @@ Proof.
   
   - (* aasp case *)
     rewrite <- ccp_iff_cc in *.
-     destruct a;
+    destruct a; (* asp *)
+      try destruct a; (* asp params *)
       df;
       econstructor; try (econstructor; reflexivity).
     

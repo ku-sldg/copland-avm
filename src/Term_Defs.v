@@ -44,11 +44,14 @@ Notation Arg := nat (only parsing).
 
 (*
 Definition BS := nat.
-*)
+ *)
+
+Inductive ASP_PARAMS: Set :=
+| asp_paramsC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP_PARAMS.
 
 Inductive ASP: Set :=
 | CPY: ASP
-| ASPC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP
+| ASPC: ASP_PARAMS -> ASP
 | SIG: ASP
 | HSH: ASP.
 
@@ -75,7 +78,7 @@ Inductive Term: Set :=
 
 Inductive Evidence: Set :=
 | mt: Evidence
-| uu: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> Plc -> Evidence -> Evidence
+| uu: ASP_PARAMS -> Plc -> Evidence -> Evidence
 | gg: Plc -> Evidence -> Evidence
 | hh: Plc -> Evidence -> Evidence
 | nn: N_ID -> (*Evidence ->*) Evidence
@@ -85,7 +88,7 @@ Inductive Evidence: Set :=
 Fixpoint et_size (e:Evidence): nat :=
   match e with
   | mt => 0
-  | uu _ _ _ _ _ e' => 1 + (et_size e')
+  | uu _ _ e' => 1 + (et_size e')
   | gg _ e' => 1 + (et_size e')
   | hh _ _ => 1
   | nn _ => 1
@@ -150,7 +153,7 @@ Definition splitEv_T_r (sp:Split) (e:Evidence) : Evidence :=
 Definition eval_asp t p e :=
   match t with
   | CPY => e 
-  | ASPC i l upl targi => uu i l upl targi p e
+  | ASPC params => uu params p e
   | SIG => gg p e
   | HSH => hh p e
   end.
@@ -281,7 +284,7 @@ See Lemma [events_injective].
 Definition asp_event i x p e :=
   match x with
   | CPY => copy i p
-  | ASPC id l upl tid => umeas i p id l upl tid
+  | ASPC (asp_paramsC id l upl tid) => umeas i p id l upl tid
   | SIG => sign i p e
   | HSH => hash i p e
   end.

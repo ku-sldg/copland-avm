@@ -57,7 +57,7 @@ Fixpoint encodeEv (e:EvidenceC) : EvBits :=
   match e with
   | mtc => []
   | nnc _ bs => [bs]
-  | uuc _ _ _ _ _ bs e' =>
+  | uuc _  _ bs e' =>
     bs :: (encodeEv e')
   | ggc _ bs e' =>
     bs :: (encodeEv e')
@@ -76,10 +76,10 @@ Fixpoint reconstruct_ev' (ls:EvBits) (et:Evidence) : option EvidenceC :=
     | [] => Some mtc
     | _ => None
     end 
-  | uu i args tpl tid p et' =>
+  | uu params p et' =>
     '(bs, ls') <- peel_bs ls ;;
     x <- reconstruct_ev' ls' et' ;;
-    Some (uuc i args tpl tid p bs x)
+    Some (uuc params p bs x)
   | gg p et' =>
     '(bs, ls') <- peel_bs ls ;;
     x <- reconstruct_ev' ls' et' ;;

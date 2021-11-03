@@ -74,10 +74,13 @@ Lemma well_structured_evsys:
     well_structured ev (ev_sys t p e).
 Proof.
   induction t; intros; inv_wfr; simpl;
+    try (
     repeat expand_let_pairs; dest_range'; (*destruct r as [i k]; *)
       simpl in *; subst; auto;
-        try destruct a;
-        repeat (econstructor; repeat rewrite evsys_range; auto).
+      try destruct a; (* asp destruct *)
+      try destruct a; (* asp params destruct *)
+        repeat (econstructor; repeat rewrite evsys_range; auto);
+        tauto).
 Defined.
 
 Ltac do_evin :=
@@ -95,7 +98,7 @@ Lemma evsys_events:
 Proof.
   split; revert p; revert e; induction t; intros; inv_wfr; simpl in *;
     repeat expand_let_pairs; simpl in *;
-      try (destruct a; auto; do_evin; auto; tauto);
+      try (destruct a; try (destruct a); auto; do_evin; auto; tauto);
 
       try (
           repeat dest_range;

@@ -223,7 +223,7 @@ Inductive events: AnnoTerm -> Plc -> Evidence -> Ev -> Prop :=
 | evtsusm:
     forall i id l tid r p e tpl,
       fst r = i ->
-      events (aasp r (ASPC id l tpl tid)) p e (umeas i p id l tpl tid)
+      events (aasp r (ASPC (asp_paramsC id l tpl tid))) p e (umeas i p id l tpl tid)
 | evtssig:
     forall r i p e,
       fst r = i ->
@@ -406,8 +406,8 @@ Lemma events_range_event:
 Proof.
   intros t p i e H; revert i; revert p; revert e.
   induction H; intros; simpl in *.
-  - destruct x; eapply ex_intro; split; auto;
-      (*destruct r as [j k];*) simpl in *; lia.
+  - destruct x; try destruct a; eapply ex_intro; split; auto;
+      (*destruct r as [j k];*) simpl in *; try lia.
   - find_eapply_lem_hyp at_range; eauto.
     repeat destruct_disjunct; subst; eauto.
     (* + eapply ex_intro; split; auto. *)

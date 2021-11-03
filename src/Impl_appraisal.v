@@ -9,8 +9,8 @@ Fixpoint build_app_comp_evC (e:EvidenceC) : EvidenceC :=
   match e with
   | mtc => mtc
               
-  | uuc i args tpl tid p bs e' =>
-    uuc i args tpl tid p (checkASPF i args tpl tid bs)
+  | uuc params p bs e' =>
+    uuc params p (checkASPF params bs)
         (build_app_comp_evC e')
   | ggc p bs e' =>
     ggc p (checkSigF e' p bs)

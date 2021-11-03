@@ -26,9 +26,9 @@ Ltac do_ggsub :=
   destruct_conjs;
   subst.
 
-Lemma uuc_app: forall e' e'' i args tpl tid p n,
-    EvSub (uuc i args tpl tid p n e'') e' ->
-    exists e'', EvSub (uuc i args tpl tid p (checkASPF i args tpl tid n) e'')
+Lemma uuc_app: forall e' e'' params p n,
+    EvSub (uuc params p n e'') e' ->
+    exists e'', EvSub (uuc params p (checkASPF params n) e'')
                  (build_app_comp_evC e').
 Proof.
   intros.
@@ -105,7 +105,9 @@ Proof.
   induction t1; intros.
   -
     rewrite <- ccp_iff_cc in *.
-    destruct a; ff;
+    destruct a; (* asp *)
+      try destruct a; (* asp params *)
+      ff;
       inv_wfec;
       try (
           econstructor;
@@ -569,7 +571,7 @@ Proof.
     eauto.
   -
     destruct_conjs.
-    exists (uuc n l n0 n1 n2 default_bs IHy).
+    exists (uuc a n default_bs IHy).
     ff.
   -
     destruct_conjs.
@@ -592,9 +594,9 @@ Proof.
     ff.
 Defined.
 
-Lemma not_hshsig_uuc: forall e' n l n1 n2 p x,
+Lemma not_hshsig_uuc: forall e' params p x,
     not_hash_sig_ev e' ->
-    not_hash_sig_ev (uuc n l n1 n2 p x e').
+    not_hash_sig_ev (uuc params p x e').
 Proof.
   cbv in *; intros.
   evSubFacts;
@@ -2371,9 +2373,9 @@ Ltac do_evsub_ihhh' :=
        Hev: events ?t1 _ _ _
                    
 
-       |-  (exists e'' : EvidenceC, EvSub (uuc ?i ?args ?tpl ?tid ?p0 ?n e'') _) \/
+       |-  (exists e'' : EvidenceC, EvSub (uuc ?params ?p0 ?n e'') _) \/
           (exists (ett : Evidence) p'0 bs (et' : Evidence),
-              EvSub (hhc p'0 bs ett) _ /\ EvSubT (uu ?i ?args ?tpl ?tid ?p0 et') ett)
+              EvSub (hhc p'0 bs ett) _ /\ EvSubT (uu ?params ?p0 et') ett)
             (*context[EvSub _(*(uuc ?i ?args ?tpl ?tid ?n _)*) _ \/ _]*)
     ] => 
 
@@ -2381,9 +2383,9 @@ Ltac do_evsub_ihhh' :=
 
     assert_new_proof_by 
       (
-        (exists e'' : EvidenceC, EvSub (uuc i args tpl tid p0 n e'') v') \/
+        (exists e'' : EvidenceC, EvSub (uuc params p0 n e'') v') \/
         (exists (ett : Evidence) p'0 bs (et' : Evidence),
-            EvSub (hhc p'0 bs ett) v' /\ EvSubT (uu i args tpl tid p0 et') ett)
+            EvSub (hhc p'0 bs ett) v' /\ EvSubT (uu params p0 et') ett)
       )
 
       (*
@@ -2414,10 +2416,10 @@ Lemma uu_preserved': forall t pt p et n p0 i args tpl tid
                      {| st_ev := ecc'; st_trace := tr'; st_pl := p' |} ->
 
     (
-      (exists e'', EvSub (uuc i args tpl tid p0 (do_asp i args tid p0 tpl n) e'') e') \/
+      (exists e'', EvSub (uuc (asp_paramsC i args tpl tid) p0 (do_asp (asp_paramsC i args tpl tid) p0 n) e'') e') \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) e' /\
-          EvSubT (uu i args tpl tid p0 et') ett)
+          EvSubT (uu (asp_paramsC i args tpl tid) p0 et') ett)
     ).
 Proof.
   intros.
@@ -2655,10 +2657,10 @@ Lemma uu_preserved: forall t1 t2 pt1 pt2 loc1 loc2 p et n p0 i args tpl tid
                      {| st_ev := ecc; st_trace := tr'; st_pl := p'' |} ->
 
     (
-      (exists e'', EvSub (uuc i args tpl tid p0 (do_asp i args tid p0 tpl n) e'') e') \/
+      (exists e'', EvSub (uuc (asp_paramsC i args tpl tid) p0 (do_asp (asp_paramsC i args tpl tid) p0 n) e'') e') \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) e' /\
-          EvSubT (uu i args tpl tid p0 et') ett)
+          EvSubT (uu (asp_paramsC i args tpl tid) p0 et') ett)
     ).
 Proof.
   intros.
@@ -2669,10 +2671,10 @@ Proof.
   do_somerecons.
   
   assert (
-      (exists e'', EvSub (uuc i args tpl tid p0 (do_asp i args tid p0 tpl n) e'') H13) \/
+      (exists e'', EvSub (uuc (asp_paramsC i args tpl tid) p0 (do_asp (asp_paramsC i args tpl tid) p0 n) e'') H13) \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) H13 /\
-          EvSubT (uu i args tpl tid p0 et') ett)
+          EvSubT (uu (asp_paramsC i args tpl tid) p0 et') ett)
     ).
   {
     eapply uu_preserved'.
@@ -2702,7 +2704,7 @@ Proof.
         repeat (eexists; eauto).
 
     ++
-      assert (EvSubT (uu i args tpl tid p0 H21) H24).
+      assert (EvSubT (uu (asp_paramsC i args tpl tid) p0 H21) H24).
       {
         eapply evsubT_transitive.
         apply hhSubT.

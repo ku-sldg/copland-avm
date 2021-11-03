@@ -66,25 +66,27 @@ Definition nat_to_bs (x:nat): BS.
 Admitted.
 *)
 
-Definition do_asp (i:ASP_ID) (l:list Arg) (tid:TARG_ID) (mpl:Plc) (tpl:Plc) (x:nat) : BS.
+Definition do_asp (params :ASP_PARAMS) (mpl:Plc) (x:nat) : BS.
 Admitted.
          
-Definition tag_ASP (i:ASP_ID) (l:list Arg) (tid:TARG_ID) (mpl:Plc) (tpl:Plc) (x:nat) : CVM unit :=
-  add_tracem [umeas x mpl i l tpl tid].
+Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) (x:nat) : CVM unit :=
+  match params with
+  | asp_paramsC i l tpl tid => add_tracem [umeas x mpl i l tpl tid]
+  end.
 
 
 (* Matches on evidence type param only for verification.  
    Will extract to the cons function over the first two params (new measurement bits + existing evidence) *)
-Definition cons_uu (x:BS) (e:EvC) (i:ASP_ID) (l:list Arg) (tid:TARG_ID) (mpl:Plc) (tpl:Plc) : EvC :=
+Definition cons_uu (x:BS) (e:EvC) (params:ASP_PARAMS) (mpl:Plc) : EvC :=
   match e with
-  | evc bits et => evc (x :: bits) (uu i l tpl tid mpl et)
+  | evc bits et => evc (x :: bits) (uu params mpl et)
   end.
 
-Definition invoke_ASP (i:ASP_ID) (l:list Arg) (tid:TARG_ID) (tpl:Plc) (x:nat) : CVM EvC :=
+Definition invoke_ASP (params:ASP_PARAMS) (x:nat) : CVM EvC :=
   e <- get_ev ;;
   p <- get_pl ;;
-  tag_ASP i l tid p tpl x ;;
-  ret (cons_uu (do_asp i l tid p tpl x) e i l tid p tpl).
+  tag_ASP params p x ;;
+  ret (cons_uu (do_asp params p x) e params p).
 
 Definition encodeEvBits (e:EvC): BS.
 Admitted.
@@ -133,8 +135,8 @@ Definition copyEv (x:nat) : CVM EvC :=
 Definition do_prim (x:nat) (a:ASP) : CVM EvC :=
   match a with
   | CPY => copyEv x
-  | ASPC asp_id l tpl tid =>
-    invoke_ASP asp_id l tid tpl x       
+  | ASPC params =>
+    invoke_ASP params x       
   | SIG => signEv x
   | HSH => hashEv x
   end.

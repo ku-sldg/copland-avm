@@ -32,11 +32,11 @@ Fixpoint build_app_comp_evC (et:Evidence) (ls:EvBits) : option EvidenceC :=
   match et with
   | mt => Some mtc
               
-  | uu i args tpl tid p et' =>
+  | uu params p et' =>
     '(bs, ls') <- peel_bs ls ;;
     x <- build_app_comp_evC et' ls' ;;
-    res <- checkASP i args tpl tid bs ;;
-    Some (uuc i args tpl tid p res x)
+    res <- checkASP params bs ;;
+    Some (uuc params p res x)
     
   | gg p et' =>
     '(bs, ls') <- peel_bs ls ;;
