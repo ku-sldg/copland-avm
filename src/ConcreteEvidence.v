@@ -14,6 +14,9 @@ Import ListNotations.
 Definition BS : Set.
 Admitted.
 
+Definition default_bs : BS.
+Admitted.
+
 (*
 Notation BS := nat (only parsing).
 *)

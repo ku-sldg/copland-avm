@@ -9,9 +9,6 @@ Import ListNotations.
 
 Require Import Lia Coq.Program.Tactics.
 
-Definition default_bs : BS.
-Admitted.
-
 Definition checkASP (i:ASP_ID) (args:list Arg) (tpl:Plc) (tid:Plc) (bs:BS) : option BS.
 Admitted.
 
