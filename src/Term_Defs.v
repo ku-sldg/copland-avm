@@ -224,10 +224,10 @@ Inductive Ev: Set :=
 | req: nat -> Plc -> Plc -> Term -> Evidence -> Ev
 | rpy: nat -> Plc -> Plc -> Evidence -> Ev 
 | split: nat -> Plc -> Ev
-| cvm_thread_start: nat -> Loc -> Plc -> AnnoTerm -> Evidence -> Ev
+| cvm_thread_start: (*nat ->*) Loc -> Plc -> AnnoTerm -> Evidence -> Ev
 (*| splitp: nat -> (*Loc ->*) Loc -> Plc -> Ev *)
 | join:  nat -> Plc -> Ev
-| cvm_thread_end:  nat -> Loc -> Plc -> AnnoTerm -> Ev
+| cvm_thread_end:  (*nat ->*) Loc -> (*Plc -> AnnoTerm ->*) Ev
 (*| joinp: nat -> Loc -> Loc -> Plc -> Ev *).
 
 Definition eq_ev_dec:
@@ -249,10 +249,10 @@ Definition ev x : nat :=
   | req i _ _ _ _ => i
   | rpy i _ _ _ => i 
   | split i _ => i
-  | cvm_thread_start i _ _ _ _ => i
+  | cvm_thread_start _ _ _ _ => 42
   (* | splitp i _ _ => i *)
   | join i _ => i
-  | cvm_thread_end i _ _ _ => i
+  | cvm_thread_end _ => 43
   (* | joinp i _ _ _ => i *)
   end.
 
@@ -266,10 +266,10 @@ Definition pl x : Plc :=
   | req _ p _ _ _ => p
   | rpy _ p _ _ => p
   | split _ p => p
-  | cvm_thread_start _ _ p _ _ => p
+  | cvm_thread_start _ p _ _ => p
   (*| splitp _ _ p => p *)
   | join _ p => p
-  | cvm_thread_end _ _ p _ => p
+  | cvm_thread_end _ => 45
   (* | joinp _ _ _ p => p *)
   end.
 

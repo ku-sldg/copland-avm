@@ -38,11 +38,11 @@ Fixpoint copland_compile (t:AnnoTermPar): CVM unit :=
   | abpar_par (x,y) loc sp t1 t2 =>
     pr <- split_ev x sp ;;
     let '(e1,e2) := pr in
-    start_par_thread x loc t2 e2 ;;
+    start_par_thread loc t2 e2 ;;
     put_ev e1 ;;
     copland_compile t1 ;;
     e1r <- get_ev ;;
-    e2r <- wait_par_thread (Nat.pred y) loc t2 e2 ;;
+    e2r <- wait_par_thread (*(Nat.pred y)*) loc t2 e2 ;;
     join_par (Nat.pred y) e1r e2r
   end.
 

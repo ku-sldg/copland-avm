@@ -445,8 +445,8 @@ Proof.
   tauto.
 Defined.
 
-Lemma par_evidence_r: forall a p s e e2 e3,
-    parallel_vm_thread a p (splitEv_r s e) = evc e2 e3 ->
+Lemma par_evidence_r: forall a p s e e2 e3 l,
+    parallel_vm_thread l a p (splitEv_r s e) = evc e2 e3 ->
     e3 = (eval (unanno a) p (splitEv_T_r s (get_et e))).
 Proof.
   intros.
@@ -659,7 +659,7 @@ Proof.
     destruct r.
     repeat (df; try dohtac; df).
     
-    assert (lstar (conf a n et) (remote_events a n) (stop n (aeval a n et))).
+    assert (lstar (conf a n et) (cvm_events a n et) (stop n (aeval a n et))).
     {
       apply remote_LTS.
     }
@@ -779,8 +779,11 @@ Proof.
         lstar (conf (unannoPar t) p (splitEv_T_l s et)) blah (stop p (aeval (unannoPar t) p (splitEv_T_l s et)))
       ).
     {
-      destruct s; destruct s; destruct s0;
-        eauto.
+      destruct s; destruct s; destruct s0.
+      eapply IHt; eauto.
+      eapply IHt; eauto.
+      eapply IHt; eauto.
+      eapply IHt; eauto.
     }
 
       eapply lstar_tran.
@@ -790,11 +793,11 @@ Proof.
       rewrite front_app.
       rewrite back_app.
 
-      assert ([cvm_thread_start n l p a (get_et (splitEv_r s (evc bits et)))]
+      assert ([cvm_thread_start l p a (get_et (splitEv_r s (evc bits et)))]
                 ++
                 blah ++
-                [cvm_thread_end (Nat.pred n0) l p a] =
-              shuffled_events blah (remote_events a p)).
+                [cvm_thread_end l] =
+              shuffled_events blah (cvm_events a p (get_et (splitEv_r s (evc bits et))))).
       {
         eapply thread_bookend_peel.
         eassumption.
@@ -803,7 +806,17 @@ Proof.
       repeat rewrite app_assoc in *.
       jkjke.
 
+      assert (
+          (splitEv_T_r s et) =
+          (get_et (splitEv_r s (evc bits et)))).
+      {
+        destruct s; destruct s; destruct s0; ff.
+      }
+      jkjke.
+      
+
       eapply lstar_transitive.
+      
 
       eapply bpar_shuffle.
       eassumption.

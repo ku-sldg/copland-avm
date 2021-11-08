@@ -14,6 +14,8 @@ Import ListNotations.
 
 Require Export StVM.
 
+Definition Event_ID := nat.
+
 
 Definition CVM := St cvm_st.
 
@@ -51,7 +53,7 @@ Definition add_trace (tr':list Ev) : cvm_st -> cvm_st :=
 Definition add_tracem (tr:list Ev) : CVM unit :=
   modify (add_trace tr).
 
-Definition split_ev (i:nat) (sp:Split): CVM (EvC*EvC) :=
+Definition split_ev (i:Event_ID) (sp:Split): CVM (EvC*EvC) :=
   e <- get_ev ;;
   p <- get_pl ;;
   let e1 := splitEv_l sp e in
@@ -66,10 +68,10 @@ Definition nat_to_bs (x:nat): BS.
 Admitted.
 *)
 
-Definition do_asp (params :ASP_PARAMS) (mpl:Plc) (x:nat) : BS.
+Definition do_asp (params :ASP_PARAMS) (mpl:Plc) (x:Event_ID) : BS.
 Admitted.
          
-Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) (x:nat) : CVM unit :=
+Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) (x:Event_ID) : CVM unit :=
   match params with
   | asp_paramsC i l tpl tid => add_tracem [umeas x mpl i l tpl tid]
   end.
@@ -82,7 +84,7 @@ Definition cons_uu (x:BS) (e:EvC) (params:ASP_PARAMS) (mpl:Plc) : EvC :=
   | evc bits et => evc (x :: bits) (uu params mpl et)
   end.
 
-Definition invoke_ASP (params:ASP_PARAMS) (x:nat) : CVM EvC :=
+Definition invoke_ASP (params:ASP_PARAMS) (x:Event_ID) : CVM EvC :=
   e <- get_ev ;;
   p <- get_pl ;;
   tag_ASP params p x ;;
@@ -91,48 +93,46 @@ Definition invoke_ASP (params:ASP_PARAMS) (x:nat) : CVM EvC :=
 Definition encodeEvBits (e:EvC): BS.
 Admitted.
 
-Definition do_sig (bs:BS) (p:Plc) (sigTag:nat) : BS.
+Definition do_sig (bs:BS) (p:Plc) (sigTag:Event_ID) : BS.
 Admitted.
 
 Definition do_hash (bs:BS) (p:Plc) : BS.
 Admitted.
 
-Definition tag_SIG (x:nat) (p:Plc) (e:EvC) : CVM unit :=
+Definition tag_SIG (x:Event_ID) (p:Plc) (e:EvC) : CVM unit :=
   add_tracem [sign x p (get_et e)].
 
 Definition cons_sig (sig:BS) (e:EvC) (p:Plc): EvC :=
   match e with
-  | evc bits et =>
-    evc (sig :: bits) (gg p et)
+  | evc bits et => evc (sig :: bits) (gg p et)
   end.
 
-Definition signEv (x:nat) : CVM EvC :=
+Definition signEv (x:Event_ID) : CVM EvC :=
   p <- get_pl ;;
   e <- get_ev ;;
   tag_SIG x p e ;;
   ret (cons_sig (do_sig (encodeEvBits e) p x) e p).
 
-Definition tag_HSH (x:nat) (p:Plc) (e:EvC): CVM unit :=
+Definition tag_HSH (x:Event_ID) (p:Plc) (e:EvC): CVM unit :=
   add_tracem [hash x p (get_et e)].
 
 Definition cons_hh (hsh:BS) (e:EvC) (p:Plc): EvC :=
-  evc [hsh] (hh p (get_et e)).
-  (*match e with
-  | evc bits et => evc [hsh] (hh p et)
-  end. *)
+  match e with
+  | evc _ et => evc [hsh] (hh p et)
+  end.
 
-Definition hashEv (x:nat) : CVM EvC :=
+Definition hashEv (x:Event_ID) : CVM EvC :=
   p <- get_pl ;;
   e <- get_ev ;;
   tag_HSH x p e ;;
   ret (cons_hh (do_hash (encodeEvBits e) p) e p).
 
-Definition copyEv (x:nat) : CVM EvC :=
+Definition copyEv (x:Event_ID) : CVM EvC :=
   p <- get_pl ;;
   add_tracem [copy x p] ;;
   get_ev.
 
-Definition do_prim (x:nat) (a:ASP) : CVM EvC :=
+Definition do_prim (x:Event_ID) (a:ASP) : CVM EvC :=
   match a with
   | CPY => copyEv x
   | ASPC params =>
@@ -141,17 +141,17 @@ Definition do_prim (x:nat) (a:ASP) : CVM EvC :=
   | HSH => hashEv x
   end.
     
-Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) : CVM unit :=
+Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:Event_ID) : CVM unit :=
   p <- get_pl ;;
   e <- get_ev ;;
   add_tracem [req reqi p q (unanno t) (get_et e)].
 
 (* Primitive CVM Monad operations that require IO Axioms *)
 Definition doRemote (t:AnnoTerm) (q:Plc) (e:EvC) : CVM EvC :=
-  add_tracem (remote_events t q) ;;
+  add_tracem (cvm_events t q (get_et e)) ;;
   ret (toRemote t q e).
 
-Definition receiveResp (t:AnnoTerm) (q:Plc) (rpyi:nat) : CVM EvC :=
+Definition receiveResp (t:AnnoTerm) (q:Plc) (rpyi:Event_ID) : CVM EvC :=
   p <- get_pl ;;
   e <- get_ev ;;
   e' <- doRemote t q e ;;
@@ -168,21 +168,26 @@ Definition pp_cons (e1:EvC) (e2:EvC): EvC :=
   | (evc bits1 et1, evc bits2 et2) => evc (bits1 ++ bits2) (pp et1 et2)
   end.
 
-Definition join_seq (n:nat) (e1:EvC) (e2:EvC): CVM unit :=
+Definition join_seq (n:Event_ID) (e1:EvC) (e2:EvC): CVM unit :=
   p <- get_pl ;;
   put_ev (ss_cons e1 e2) ;;
   add_tracem [join n p].
 
-Definition start_par_thread (i:nat) (loc:Loc) (t:AnnoTerm) (e:EvC) : CVM unit :=
-  p <- get_pl ;;
-  add_tracem [cvm_thread_start i loc p t (get_et e)].
+Definition do_start_par_thread (loc:Loc) (t:AnnoTerm) (e:EvBits) : CVM unit :=
+ret tt.  (* Admitted. *)
 
-Definition wait_par_thread (n:nat) (loc:Loc) (t:AnnoTerm) (e:EvC) : CVM EvC :=
+Definition start_par_thread (loc:Loc) (t:AnnoTerm) (e:EvC) : CVM unit :=
   p <- get_pl ;;
-  add_tracem [cvm_thread_end n loc p t] ;;
-  ret (parallel_vm_thread t p e).
+  do_start_par_thread loc t (get_bits e) ;;
+  add_tracem [cvm_thread_start loc p t (get_et e)].
 
-Definition join_par (n:nat) (e1:EvC) (e2:EvC): CVM unit :=
+Definition wait_par_thread (loc:Loc) (t:AnnoTerm) (e:EvC) : CVM EvC :=
+  p <- get_pl ;;
+  let res := parallel_vm_thread loc t p e in
+  add_tracem [cvm_thread_end loc] ;;
+  ret res.
+
+Definition join_par (n:Event_ID) (e1:EvC) (e2:EvC): CVM unit :=
   p <- get_pl ;;
   put_ev (pp_cons e1 e2) ;;
   add_tracem [join n p].

@@ -20,7 +20,6 @@ GenStMonad.v
 StVM.v
 MonadVM.v
 Impl_vm.v
-Test_Extract.v
 Auto.v
 Helpers_VmSemantics.v
 AutoApp.v
@@ -35,7 +34,6 @@ OptMonad.v
 Appraisal_Defs.v
 Impl_appraisal.v
 Impl_appraisal_alt.v
-Test_Extract_App.v
 Appraisal_AltImpls_Eq.v
 Helpers_Appraisal.v
 Appraisal.v

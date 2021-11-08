@@ -690,7 +690,7 @@ Ltac do_assert_remote t e p :=
                       {| st_ev := e; st_trace := []; st_pl := p|} =
       (Some tt,
        {| st_ev := toRemote (unannoPar t) p e;
-                   st_trace := remote_events (unannoPar t) p;
+                   st_trace := cvm_events (unannoPar t) p (get_et e);
                                st_pl := p
        |})
     ) by
@@ -1048,6 +1048,7 @@ Proof.
       eauto.
     +
       unfold cons_hh in *.
+      repeat ff.
       do_rewrap_reconP.
       do_ggsub.
       evSubFacts.
@@ -1441,7 +1442,7 @@ Proof.
           3: {
           
           rewrite at_evidence.
-          rewrite <- par_evidence.
+          erewrite <- par_evidence.
           erewrite anno_unanno_par.
           rewrite Heqe2.
           2: {
@@ -1470,7 +1471,7 @@ Proof.
             3: {
           
           rewrite at_evidence.
-          rewrite <- par_evidence.
+          erewrite <- par_evidence.
           erewrite anno_unanno_par.
           rewrite Heqe2.
           2: {
@@ -1506,7 +1507,7 @@ Proof.
           3: {
           
           rewrite at_evidence.
-          rewrite <- par_evidence.
+          erewrite <- par_evidence.
           erewrite anno_unanno_par.
           rewrite Heqe2.
           2: {
@@ -1536,7 +1537,7 @@ Proof.
             3: {
           
           rewrite at_evidence.
-          rewrite <- par_evidence.
+          erewrite <- par_evidence.
           erewrite anno_unanno_par.
           rewrite Heqe2.
           2: {
@@ -1937,6 +1938,7 @@ Proof.
       eapply not_ev; eauto.
     }
     unfold cons_hh in *.
+    repeat ff.
     do_rewrap_reconP.
 
     assert (~ (gg_sub e)).

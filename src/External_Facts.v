@@ -16,8 +16,8 @@ Axiom copland_compile_external' : forall (t : AnnoTermPar) (e : EvC) (n : nat) (
       (copland_compile t)
       {| st_ev := e; st_trace := tr; st_pl := n |} =
     (Some tt,
-     {| st_ev := remote_evidence (unannoPar t) n e;
-        st_trace := tr ++ (remote_trace (unannoPar t) n);
+     {| st_ev := cvm_evidence (unannoPar t) n e;
+        st_trace := tr ++ (cvm_events (unannoPar t) n (get_et e));
         st_pl :=
           st_pl
             (
@@ -32,13 +32,13 @@ Lemma copland_compile_external : forall (t : AnnoTermPar) (e : EvC) (n : nat),
     well_formed_r t ->
     copland_compile t {| st_ev := e; st_trace := []; st_pl := n |} =
     (Some tt,
-     {| st_ev := remote_evidence (unannoPar t) n e;
-        st_trace := remote_trace (unannoPar t) n;
+     {| st_ev := cvm_evidence (unannoPar t) n e;
+        st_trace := cvm_events (unannoPar t) n (get_et e);
         st_pl := n
      |}).
 Proof.
   intros.
-  assert ([] ++ (remote_trace (unannoPar t) n) = (remote_trace (unannoPar t) n)) by eauto.
+  assert ([] ++ (cvm_events (unannoPar t) n (get_et e)) = (cvm_events (unannoPar t) n (get_et e))) by eauto.
   assert (n = st_pl
             (
               execSt
@@ -62,13 +62,14 @@ Lemma copland_compile_at' : forall (t : AnnoTermPar) (e : EvC) (n : nat) (tr: li
     copland_compile t {| st_ev := e; st_trace := tr; st_pl := n |} =
     (Some tt,
      {| st_ev := toRemote (unannoPar t) n e;
-        st_trace := tr ++ remote_events (unannoPar t) n;
+        st_trace := tr ++ cvm_events (unannoPar t) n (get_et e);
         st_pl := n;
      |}).
 Proof.
   intros.
   rewrite at_evidence.
-  rewrite at_events.
+  (*
+  rewrite at_events. *)
   
   assert (st_pl
             (execSt
@@ -88,13 +89,14 @@ Lemma copland_compile_at : forall (t : AnnoTermPar) (e : EvC) (n : nat),
     copland_compile t {| st_ev := e; st_trace := []; st_pl := n |} =
     (Some tt,
      {| st_ev := toRemote (unannoPar t) n e;
-        st_trace := remote_events (unannoPar t) n;
+        st_trace := cvm_events (unannoPar t) n (get_et e);
         st_pl := n
      |}).
 Proof.
   intros.
   rewrite at_evidence.
-  rewrite at_events.
+  (*
+  rewrite at_events. *)
   eapply copland_compile_external; eauto.
 Defined.
 
