@@ -1468,9 +1468,6 @@ Proof.
   eapply cvm_refines_lts_event_ordering; eauto.
 Defined.
 
-Print run_cvm.
-Check st_trace.
-
 Theorem cvm_respects_event_system_run : forall pt t cvm_tr ev0 ev1 bits (*bits' et' *)et  anno_t,
     annoP anno_t t 0 ->
     anno_parP pt anno_t 0 ->

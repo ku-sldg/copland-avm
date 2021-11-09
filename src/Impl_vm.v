@@ -21,9 +21,6 @@ Fixpoint copland_compile (t:AnnoTermPar): CVM unit :=
   | aatt_par (reqi,rpyi) q t' =>
     e <- get_ev ;;
     e' <- doRemote t' q e reqi rpyi ;;
-    (*
-      sendReq t' q e i ;;
-      e' <- receiveResp t' q e j ;; *)
     put_ev e'
   | alseq_par _ t1 t2 =>
       copland_compile t1 ;;

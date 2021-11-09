@@ -16,7 +16,6 @@ Require Export StVM.
 
 Definition Event_ID := nat.
 
-
 Definition CVM := St cvm_st.
 
 (* VM monad operations *)
@@ -141,6 +140,7 @@ Definition do_prim (x:Event_ID) (a:ASP) : CVM EvC :=
   | HSH => hashEv x
   end.
 
+(* Primitive monadic communication primitives (some require IO Axioms) *)
 
 Definition tag_REQ (t:AnnoTerm) (p:Plc) (q:Plc) (e:EvC) (reqi:Event_ID) : CVM unit :=
   add_tracem [req reqi p q (unanno t) (get_et e)].
@@ -160,35 +160,6 @@ Definition doRemote (t:AnnoTerm) (q:Plc) (e:EvC) (reqi:Event_ID) (rpyi:Event_ID)
   tag_RPY p q e' rpyi ;;
   ret e'.
 
-(*
-Definition receiveResp (t:AnnoTerm) (q:Plc) (e:EvC) (rpyi:Event_ID) : CVM EvC :=
-  p <- get_pl ;;
-  (* e <- get_ev ;; *)
-  (*e' <- doRemote t q e ;; *)
-  (*
-  let e' := (toRemote t q e) in
-   *)
-  e' <- doRemoteSession t q e ;;
-  add_tracem [rpy (Nat.pred rpyi) p q (get_et e')] ;;
-  ret e'.
- *)
-
-(*
-
-(* Primitive CVM Monad operations that require IO Axioms *)
-Definition doRemote (t:AnnoTerm) (q:Plc) (e:EvC) (reqi:Event_ID) (rpyi:Event_ID) : CVM EvC :=
-  (*sendReq t q e reqi ;; *)
-  p <- get_pl ;;
-  add_tracem [req reqi p q (unanno t) (get_et e)] ;;
-  e' <- doRemoteSession t q e ;;
-  (*
-  add_tracem (cvm_events t q (get_et e)) ;; *)
-  e' <- receiveResp t q e rpyi ;;
-  ret e'.
-*)
-
-
-
 Definition ss_cons (e1:EvC) (e2:EvC): EvC :=
   match (e1, e2) with
   | (evc bits1 et1, evc bits2 et2) => evc (bits1 ++ bits2) (ss et1 et2)
@@ -203,6 +174,8 @@ Definition join_seq (n:Event_ID) (e1:EvC) (e2:EvC): CVM unit :=
   p <- get_pl ;;
   put_ev (ss_cons e1 e2) ;;
   add_tracem [join (Nat.pred n) p].
+
+(* Primitive monadic parallel CVM thread primitives (some require IO Axioms) *)
 
 Definition do_start_par_threadIO (loc:Loc) (t:AnnoTerm) (e:EvBits) : unit.
 Admitted.
@@ -240,12 +213,7 @@ Ltac monad_unfold :=
   copyEv,
 
   tag_HSH,
-
-  (*sendReq, *)
   doRemote,
-  (*receiveResp, *)
-  (*runParThreads, 
-  runParThread, *)
 
   get_ev,
   get_pl,
