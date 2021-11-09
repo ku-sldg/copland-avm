@@ -11,7 +11,7 @@ Import ListNotations.
 
 (** IO Axioms *)
 
-Definition toRemote (t:AnnoTerm) (pTo:Plc) (e:EvC) : EvC.
+Definition doRemote_session (t:AnnoTerm) (pTo:Plc) (e:EvC) : EvC.
 Admitted.
 
 Definition parallel_vm_thread (l:Loc) (t:AnnoTerm) (p:Plc) (e:EvC) : EvC.
@@ -41,11 +41,11 @@ Axiom remote_LTS: forall t n et,
 
 
 Axiom remote_Evidence_Type_Axiom: forall t n bits et,
-    get_et (toRemote t n (evc bits et)) = aeval t n et.
+    get_et (doRemote_session t n (evc bits et)) = aeval t n et.
 
 
 Axiom at_evidence : forall t (p:Plc) (e:EvC),
-    toRemote t p e = cvm_evidence t p e.
+    doRemote_session t p e = cvm_evidence t p e.
 
 (*
 Axiom at_events : forall t p,
@@ -77,4 +77,4 @@ Axiom thread_bookend_peel: forall t p et etr l a tr,
 Axiom wf_ec_preserved_remote: forall a n e,
     wf_ec e ->
     well_formed_r_annt a ->
-    wf_ec (Axioms_Io.toRemote a n e).
+    wf_ec (doRemote_session a n e).

@@ -858,7 +858,7 @@ Ltac do_assert_remote t e p :=
       copland_compile t
                       {| st_ev := e; st_trace := []; st_pl := p|} =
       (Some tt,
-       {| st_ev := toRemote (unannoPar t) p e;
+       {| st_ev := doRemote_session (unannoPar t) p e;
                    st_trace := cvm_events (unannoPar t) p (get_et e);
                                st_pl := p
        |})

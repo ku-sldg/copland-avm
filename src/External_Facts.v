@@ -61,7 +61,7 @@ Lemma copland_compile_at' : forall (t : AnnoTermPar) (e : EvC) (n : nat) (tr: li
     well_formed_r t ->
     copland_compile t {| st_ev := e; st_trace := tr; st_pl := n |} =
     (Some tt,
-     {| st_ev := toRemote (unannoPar t) n e;
+     {| st_ev := doRemote_session (unannoPar t) n e;
         st_trace := tr ++ cvm_events (unannoPar t) n (get_et e);
         st_pl := n;
      |}).
@@ -88,7 +88,7 @@ Lemma copland_compile_at : forall (t : AnnoTermPar) (e : EvC) (n : nat),
     well_formed_r t ->
     copland_compile t {| st_ev := e; st_trace := []; st_pl := n |} =
     (Some tt,
-     {| st_ev := toRemote (unannoPar t) n e;
+     {| st_ev := doRemote_session (unannoPar t) n e;
         st_trace := cvm_events (unannoPar t) n (get_et e);
         st_pl := n
      |}).

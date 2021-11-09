@@ -150,7 +150,7 @@ Definition tag_RPY (p:Plc) (q:Plc) (e:EvC) (rpyi:Event_ID) : CVM unit :=
 
 Definition remote_session (t:AnnoTerm) (p:Plc) (q:Plc) (e:EvC) (reqi:Event_ID) : CVM EvC :=
   tag_REQ t p q e reqi ;;
-  let e' := (toRemote t q e) in
+  let e' := (doRemote_session t q e) in
   add_tracem (cvm_events t q (get_et e)) ;;
   ret e'.
 
