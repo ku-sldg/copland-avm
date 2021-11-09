@@ -140,23 +140,54 @@ Definition do_prim (x:Event_ID) (a:ASP) : CVM EvC :=
   | SIG => signEv x
   | HSH => hashEv x
   end.
-    
-Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:Event_ID) : CVM unit :=
-  p <- get_pl ;;
-  e <- get_ev ;;
+
+
+Definition tag_REQ (t:AnnoTerm) (p:Plc) (q:Plc) (e:EvC) (reqi:Event_ID) : CVM unit :=
   add_tracem [req reqi p q (unanno t) (get_et e)].
 
-(* Primitive CVM Monad operations that require IO Axioms *)
-Definition doRemote (t:AnnoTerm) (q:Plc) (e:EvC) : CVM EvC :=
-  add_tracem (cvm_events t q (get_et e)) ;;
-  ret (toRemote t q e).
+Definition tag_RPY (p:Plc) (q:Plc) (e:EvC) (rpyi:Event_ID) : CVM unit :=
+  add_tracem [rpy (Nat.pred rpyi) p q (get_et e)].
 
-Definition receiveResp (t:AnnoTerm) (q:Plc) (rpyi:Event_ID) : CVM EvC :=
+Definition remote_session (t:AnnoTerm) (p:Plc) (q:Plc) (e:EvC) (reqi:Event_ID) : CVM EvC :=
+  tag_REQ t p q e reqi ;;
+  let e' := (toRemote t q e) in
+  add_tracem (cvm_events t q (get_et e)) ;;
+  ret e'.
+
+Definition doRemote (t:AnnoTerm) (q:Plc) (e:EvC) (reqi:Event_ID) (rpyi:Event_ID) : CVM EvC :=
   p <- get_pl ;;
-  e <- get_ev ;;
-  e' <- doRemote t q e ;;
+  e' <- remote_session t p q e reqi ;;
+  tag_RPY p q e' rpyi ;;
+  ret e'.
+
+(*
+Definition receiveResp (t:AnnoTerm) (q:Plc) (e:EvC) (rpyi:Event_ID) : CVM EvC :=
+  p <- get_pl ;;
+  (* e <- get_ev ;; *)
+  (*e' <- doRemote t q e ;; *)
+  (*
+  let e' := (toRemote t q e) in
+   *)
+  e' <- doRemoteSession t q e ;;
   add_tracem [rpy (Nat.pred rpyi) p q (get_et e')] ;;
   ret e'.
+ *)
+
+(*
+
+(* Primitive CVM Monad operations that require IO Axioms *)
+Definition doRemote (t:AnnoTerm) (q:Plc) (e:EvC) (reqi:Event_ID) (rpyi:Event_ID) : CVM EvC :=
+  (*sendReq t q e reqi ;; *)
+  p <- get_pl ;;
+  add_tracem [req reqi p q (unanno t) (get_et e)] ;;
+  e' <- doRemoteSession t q e ;;
+  (*
+  add_tracem (cvm_events t q (get_et e)) ;; *)
+  e' <- receiveResp t q e rpyi ;;
+  ret e'.
+*)
+
+
 
 Definition ss_cons (e1:EvC) (e2:EvC): EvC :=
   match (e1, e2) with
@@ -171,26 +202,33 @@ Definition pp_cons (e1:EvC) (e2:EvC): EvC :=
 Definition join_seq (n:Event_ID) (e1:EvC) (e2:EvC): CVM unit :=
   p <- get_pl ;;
   put_ev (ss_cons e1 e2) ;;
-  add_tracem [join n p].
+  add_tracem [join (Nat.pred n) p].
+
+Definition do_start_par_threadIO (loc:Loc) (t:AnnoTerm) (e:EvBits) : unit.
+Admitted.
 
 Definition do_start_par_thread (loc:Loc) (t:AnnoTerm) (e:EvBits) : CVM unit :=
-ret tt.  (* Admitted. *)
+  let _ := do_start_par_threadIO loc t e in
+  ret tt.  (* Admitted. *)
 
 Definition start_par_thread (loc:Loc) (t:AnnoTerm) (e:EvC) : CVM unit :=
   p <- get_pl ;;
   do_start_par_thread loc t (get_bits e) ;;
   add_tracem [cvm_thread_start loc p t (get_et e)].
 
+Definition do_wait_par_thread (loc:Loc) (t:AnnoTerm) (p:Plc) (e:EvC) : CVM EvC :=
+  ret (parallel_vm_thread loc t p e).
+
 Definition wait_par_thread (loc:Loc) (t:AnnoTerm) (e:EvC) : CVM EvC :=
   p <- get_pl ;;
-  let res := parallel_vm_thread loc t p e in
+  e' <- do_wait_par_thread loc t p e ;;
   add_tracem [cvm_thread_end loc] ;;
-  ret res.
+  ret e'.
 
 Definition join_par (n:Event_ID) (e1:EvC) (e2:EvC): CVM unit :=
   p <- get_pl ;;
   put_ev (pp_cons e1 e2) ;;
-  add_tracem [join n p].
+  add_tracem [join (Nat.pred n) p].
    
 Ltac monad_unfold :=
   repeat unfold
@@ -203,9 +241,9 @@ Ltac monad_unfold :=
 
   tag_HSH,
 
-  sendReq,
+  (*sendReq, *)
   doRemote,
-  receiveResp,
+  (*receiveResp, *)
   (*runParThreads, 
   runParThread, *)
 

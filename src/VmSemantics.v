@@ -17,6 +17,407 @@ Require Import Coq.Arith.Peano_dec Lia.
 Set Nested Proofs Allowed.
  *)
 
+Lemma range_par: forall t,
+    range_par t = range (unannoPar t).
+Proof.
+  destruct t; eauto.
+Defined.
+
+Lemma wfr_implies_wfrannt :
+  forall t,
+    well_formed_r t ->
+    well_formed_r_annt (unannoPar t).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+        invc H;
+    repeat find_apply_hyp_hyp;
+    repeat rewrite range_par in *;
+    econstructor; eauto.
+Defined.
+
+Lemma anno_unanno_par: forall a l l' annt,
+    anno_par a l = (l', annt) ->
+    unannoPar annt = a.
+Proof.
+  intros.
+  generalizeEverythingElse a.
+  induction a; intros.
+  -
+    ff.
+  -
+    ff.
+  -
+    ff.
+    assert (unannoPar a = a1) by eauto.
+    assert (unannoPar a0 = a2) by eauto.
+    congruence.
+  -
+    ff.
+    assert (unannoPar a = a1) by eauto.
+    assert (unannoPar a0 = a2) by eauto.
+    congruence.
+  -
+    ff.
+    assert (unannoPar a = a1) by eauto.
+    congruence.
+Defined.
+
+Lemma fst_annopar: forall a a' l l',
+    anno_par a l = (l', a') ->
+    fst (range a) = fst (Term_Defs.range_par a').
+Proof.
+  intros.
+  generalizeEverythingElse a.
+  destruct a; intros; ff.
+Defined.
+
+Lemma snd_annopar_snd: forall a a' l l',
+    anno_par a l = (l', a') ->
+    Term_Defs.range_par a' = range a.
+Proof.
+  intros.
+  generalizeEverythingElse a.
+  induction a; intros; ff.
+Defined.
+
+Lemma wfr_par_irrel: forall a2 l l' l0 l0' a0 a0',
+    well_formed_r_annt a2 ->
+    anno_par a2 l' = (l0', a0') ->
+    anno_par a2 l = (l0, a0) ->
+    well_formed_r a0 ->
+    well_formed_r a0'.
+Proof.
+  intros.
+  unfold annotated_par in *.
+  generalizeEverythingElse a2.
+  induction a2; intros.
+  -
+    ff.
+  -
+    ff.
+  -
+    ff.
+    invc H2.
+    invc H.
+    
+    assert (well_formed_r a2).
+    {
+      eauto.
+    }
+    assert (well_formed_r a3).
+    {
+      eauto.
+    }
+    
+    econstructor.
+    eassumption.
+    eassumption.
+    destruct r.
+    simpl in *.
+    subst.
+    erewrite <- fst_annopar.
+    erewrite <- fst_annopar.
+    reflexivity.
+    eassumption.
+    eassumption.
+    erewrite snd_annopar_snd.
+    erewrite snd_annopar_snd.
+    2: { eassumption. }
+    2: { eassumption. }
+    subst'.
+    subst'.
+    congruence.
+
+    assert (
+        Term_Defs.range_par a1 =
+        Term_Defs.range_par a3).
+    {
+      rewrite range_par.
+      rewrite range_par.
+      erewrite anno_unanno_par.
+      erewrite anno_unanno_par.
+      reflexivity.
+      eassumption.
+      eassumption.
+    }
+    congruence.
+  -
+    ff.
+    invc H2.
+    invc H.
+    
+    assert (well_formed_r a2).
+    {
+      eauto.
+    }
+    assert (well_formed_r a3).
+    {
+      eauto.
+    }
+    
+    econstructor.
+    eassumption.
+    eassumption.
+    destruct r.
+    simpl in *.
+    subst.
+    subst'.
+    erewrite <- fst_annopar.
+    erewrite <- fst_annopar.
+    reflexivity.
+    eassumption.
+    eassumption.
+
+    erewrite snd_annopar_snd.
+    erewrite snd_annopar_snd.
+    2: { eassumption. }
+    2: { eassumption. }
+    subst'.
+    subst'.
+    congruence.
+
+    assert (
+        Term_Defs.range_par a1 =
+        Term_Defs.range_par a3).
+    {
+      rewrite range_par.
+      rewrite range_par.
+      erewrite anno_unanno_par.
+      erewrite anno_unanno_par.
+      reflexivity.
+      eassumption.
+      eassumption.
+    }
+    congruence.
+  -
+    ff.
+    invc H2.
+    
+    invc H.
+    
+    assert (well_formed_r a1).
+    {
+      eauto.
+    }
+    
+    econstructor.
+    eassumption.
+    eassumption.
+    destruct r.
+    simpl in *.
+    subst.
+    subst'.
+    erewrite <- fst_annopar.
+    erewrite <- fst_annopar.
+    reflexivity.
+    eassumption.
+    eassumption.
+    subst'.
+    subst'.
+    rewrite <- H9.
+
+    assert (
+        Term_Defs.range_par a1 =
+        Term_Defs.range_par a).
+    {
+      rewrite range_par.
+      rewrite range_par.
+      erewrite anno_unanno_par.
+      erewrite anno_unanno_par.
+      reflexivity.
+      eassumption.
+      eassumption.
+    }
+    congruence.
+    congruence.
+Defined.
+
+Lemma wfr_annt_implies_wfr_par: forall a l a0,
+    well_formed_r_annt a ->
+    anno_parP a0 a l ->
+    well_formed_r a0.
+Proof.
+  intros.
+  generalizeEverythingElse a.
+  induction a; intros;
+    invc H.
+  -
+    invc H0.
+    try econstructor;
+      ff.
+  -
+    invc H0.
+    ff.
+  -
+    invc H0.
+
+    unfold anno_par in *.
+    repeat break_let.
+    fold anno_par in *.
+
+    simpl.
+    assert (anno_parP a a1 l).
+    {
+      econstructor.
+      jkjke.
+    }
+    assert (anno_parP a0 a2 l0).
+    {
+      econstructor.
+      jkjke.
+    }
+
+    assert (well_formed_r a) by eauto.
+    assert (well_formed_r a0) by eauto.
+    econstructor.
+    eassumption.
+    eassumption.
+    destruct r.
+    simpl in *.
+    subst.
+
+    eapply fst_annopar; eauto.
+
+    erewrite snd_annopar_snd.
+    erewrite snd_annopar_snd.
+    2: { eassumption. }
+    2: { eassumption. }
+    subst'.
+    congruence.
+    
+    subst'.
+
+    rewrite range_par.
+
+    assert (unannoPar a0 = a2).
+    {
+      eapply anno_unanno_par.
+      eassumption.
+    }
+    congruence.
+  -
+
+    invc H0.
+
+    unfold anno_par in *.
+    repeat break_let.
+    fold anno_par in *.
+    (*
+    invc H0. *)
+    simpl.
+
+    assert (anno_parP a a1 l).
+    {
+      econstructor.
+      jkjke.
+    }
+    assert (anno_parP a0 a2 l0).
+    {
+      econstructor.
+      jkjke.
+    }
+
+    assert (well_formed_r a) by eauto.
+    assert (well_formed_r a0) by eauto.
+    econstructor.
+    eassumption.
+    eassumption.
+    destruct r.
+    simpl in *.
+    subst.
+    rewrite H7.
+    
+    eapply fst_annopar; eauto.
+
+    erewrite snd_annopar_snd.
+    erewrite snd_annopar_snd.
+    2: { eassumption. }
+    2: { eassumption. }
+    subst'.
+    congruence.
+
+    subst'.
+
+    rewrite range_par.
+
+    assert (unannoPar a0 = a2).
+    {
+      eapply anno_unanno_par.
+      eassumption.
+    }
+    congruence.
+  -
+    invc H0.
+    unfold anno_par in *.
+    repeat break_let.
+    fold anno_par in *.
+    (*
+    invc H0. *)
+    simpl.
+
+    assert (anno_parP a a1 (S l)).
+    {
+      econstructor.
+      jkjke.
+    }
+    (*
+    assert (anno_parP a0 a2 l0).
+    {
+      econstructor.
+      jkjke.
+    }
+     *)
+    
+
+    assert (well_formed_r a) by eauto.
+    
+    econstructor.
+    eassumption.
+    eassumption.
+    destruct r.
+    simpl in *.
+    subst.
+    rewrite H7.
+
+    eapply fst_annopar; eauto.
+    rewrite <- H8.
+
+    erewrite snd_annopar_snd; eauto.
+
+    eassumption.
+Defined.
+
+Lemma annopar_well_formed_r: forall t t',
+    t = annotated_par (annotated t') ->
+    well_formed_r t.
+Proof.
+  intros.
+  rewrite H in *.
+  eapply wfr_annt_implies_wfr_par.
+  2: {
+    econstructor.
+    unfold annotated_par in *.
+    unfold annotated in *.
+    assert (anno_par (snd (anno t' 0)) 0 = (fst (anno_par (snd (anno t' 0)) 0), snd (anno_par (snd (anno t' 0)) 0))).
+    {
+      destruct (anno_par (snd (anno t' 0)) 0); tauto.
+    }
+    reflexivity.
+    (*
+    jkjke.
+    simpl. *)
+
+  }
+  eapply anno_well_formed_r.
+  assert (anno t' 0 = (fst (anno t' 0), snd (anno t' 0))).
+  {
+    destruct (anno t' 0); tauto.
+  }
+  jkjke.
+Defined.
+
 Lemma st_trace_irrel : forall t tr1 tr1' tr2 tr2' e e' e'' p p' p'',
     well_formed_r t ->
     copland_compile t
@@ -445,6 +846,146 @@ Proof.
   tauto.
 Defined.
 
+Ltac do_t_at_zero t x :=
+  let y := fresh in
+  assert (exists l' t', anno_par t 0 = (l',t')) as y by
+        (destruct (anno_par t 0); repeat eexists);
+  destruct y;
+  destruct y as [x].
+
+Ltac do_assert_remote t e p :=
+  assert (
+      copland_compile t
+                      {| st_ev := e; st_trace := []; st_pl := p|} =
+      (Some tt,
+       {| st_ev := toRemote (unannoPar t) p e;
+                   st_trace := cvm_events (unannoPar t) p (get_et e);
+                               st_pl := p
+       |})
+    ) by
+    (eapply copland_compile_at;
+     eapply wfr_annt_implies_wfr_par;
+     [eassumption | econstructor; jkjke]).
+
+Ltac do_assert_unannoPar t x :=
+  assert (t = unannoPar x) by
+    (erewrite anno_unanno_par;
+     [reflexivity | eassumption]).
+
+Ltac do_assume_remote t e p x :=
+  do_t_at_zero t x;
+  do_assert_remote x e p;
+  do_assert_unannoPar t x.
+
+(*
+Lemma par_evidence_r: forall a p s e e2 e3 l,
+    (*well_formed_r_annt a -> *)
+    parallel_vm_thread l a p (splitEv_r s e) = evc e2 e3 ->
+    e3 = (eval (unanno a) p (splitEv_T_r s (get_et e))).
+Proof.
+  intros.
+
+
+  (*
+  do_assume_remote a (splitEv_r s e) p XX.
+
+  rewrite par_evidence in *.
+  rewrite <- H3 in *.
+  rewrite at_evidence in *.
+  rewrite H0 in *.
+  erewrite eval_aeval.
+
+  rewrite aeval_anno.
+  try (erewrite <- remote_Evidence_Type_Axiom).
+  rewrite at_evidence in *.
+  destruct s; destruct s; destruct s0;
+        simpl in *;
+
+        (*
+    erewrite eval_aeval with (i:=0);
+    rewrite aeval_anno; *)
+        try (unfold mt_evc in * );
+        (*
+    try (erewrite <- remote_Evidence_Type_Axiom); *)
+    (*rewrite at_evidence; *)
+    try (erewrite <- evc_inv);
+    jkjke.
+    
+  simpl in *.
+  rewrite <- evc_inv.
+  repeat jkjke.
+  rewrite <- H3.
+  
+  rewrite H0.
+  tauto.
+  rewrite <- H0.
+  jkjke.
+  rewrite H3.
+
+
+  
+  assert (evc e2 e3 = evc (get_bits (evc e2 e3)) (get_et (evc e2 e3))).
+
+  {
+    admit.
+  }
+  rewrite <- H0 in H4.
+  rewrite H4.
+  
+  Check evc_inv.
+  erewrite evc_inv.
+  
+  Check evc_inv.
+  
+
+  
+    rewrite at_evidence;
+    try (erewrite <- evc_inv);
+    jkjke.
+
+  eapply cvm_
+
+  rewrite anno_unanno.
+   *)
+  
+
+  
+  destruct s.
+  destruct s; destruct s0;
+
+  simpl in *;
+
+    (*
+    erewrite eval_aeval with (i:=0);
+    rewrite aeval_anno;
+    try (unfold mt_evc in * );
+  
+
+  
+  
+    try (erewrite <- remote_Evidence_Type_Axiom);
+    rewrite at_evidence;
+    try (erewrite <- evc_inv);
+    jkjke.
+
+
+
+
+  
+    simpl in *;
+     *)
+    
+    
+    erewrite eval_aeval with (i:=0);
+    rewrite aeval_anno;
+    try (unfold mt_evc in * );
+    try (erewrite <- remote_Evidence_Type_Axiom);
+    rewrite at_evidence;
+    try (erewrite <- evc_inv);
+    jkjke.
+Defined.
+ *)
+
 Lemma par_evidence_r: forall a p s e e2 e3 l,
     parallel_vm_thread l a p (splitEv_r s e) = evc e2 e3 ->
     e3 = (eval (unanno a) p (splitEv_T_r s (get_et e))).
@@ -672,6 +1213,7 @@ Proof.
     cbn.
     eassumption.
 
+    
     jkjke.
     simpl.
     assert (et' = (aeval a n et)).
@@ -851,26 +1393,6 @@ Proof.
   econstructor; eauto.
 Defined.
 
-Lemma range_par: forall t,
-    range_par t = range (unannoPar t).
-Proof.
-  destruct t; eauto.
-Defined.
-
-Lemma wfr_implies_wfrannt :
-  forall t,
-    well_formed_r t ->
-    well_formed_r_annt (unannoPar t).
-Proof.
-  intros.
-  generalizeEverythingElse t.
-  induction t; intros;
-        invc H;
-    repeat find_apply_hyp_hyp;
-    repeat rewrite range_par in *;
-    econstructor; eauto.
-Defined.
-
 Theorem cvm_respects_event_system' : forall t cvm_tr ev0 ev1 bits bits' et et',
     well_formed_r t ->
     copland_compileP t
@@ -887,386 +1409,7 @@ Proof.
   eassumption.
 Defined.
 
-Lemma anno_unanno_par: forall a l l' annt,
-    anno_par a l = (l', annt) ->
-    unannoPar annt = a.
-Proof.
-  intros.
-  generalizeEverythingElse a.
-  induction a; intros.
-  -
-    ff.
-  -
-    ff.
-  -
-    ff.
-    assert (unannoPar a = a1) by eauto.
-    assert (unannoPar a0 = a2) by eauto.
-    congruence.
-  -
-    ff.
-    assert (unannoPar a = a1) by eauto.
-    assert (unannoPar a0 = a2) by eauto.
-    congruence.
-  -
-    ff.
-    assert (unannoPar a = a1) by eauto.
-    congruence.
-Defined.
 
-Lemma fst_annopar: forall a a' l l',
-    anno_par a l = (l', a') ->
-    fst (range a) = fst (Term_Defs.range_par a').
-Proof.
-  intros.
-  generalizeEverythingElse a.
-  destruct a; intros; ff.
-Defined.
-
-Lemma snd_annopar_snd: forall a a' l l',
-    anno_par a l = (l', a') ->
-    Term_Defs.range_par a' = range a.
-Proof.
-  intros.
-  generalizeEverythingElse a.
-  induction a; intros; ff.
-Defined.
-
-Lemma wfr_par_irrel: forall a2 l l' l0 l0' a0 a0',
-    well_formed_r_annt a2 ->
-    anno_par a2 l' = (l0', a0') ->
-    anno_par a2 l = (l0, a0) ->
-    well_formed_r a0 ->
-    well_formed_r a0'.
-Proof.
-  intros.
-  unfold annotated_par in *.
-  generalizeEverythingElse a2.
-  induction a2; intros.
-  -
-    ff.
-  -
-    ff.
-  -
-    ff.
-    invc H2.
-    invc H.
-    
-    assert (well_formed_r a2).
-    {
-      eauto.
-    }
-    assert (well_formed_r a3).
-    {
-      eauto.
-    }
-    
-    econstructor.
-    eassumption.
-    eassumption.
-    destruct r.
-    simpl in *.
-    subst.
-    erewrite <- fst_annopar.
-    erewrite <- fst_annopar.
-    reflexivity.
-    eassumption.
-    eassumption.
-    erewrite snd_annopar_snd.
-    erewrite snd_annopar_snd.
-    2: { eassumption. }
-    2: { eassumption. }
-    subst'.
-    subst'.
-    congruence.
-
-    assert (
-        Term_Defs.range_par a1 =
-        Term_Defs.range_par a3).
-    {
-      rewrite range_par.
-      rewrite range_par.
-      erewrite anno_unanno_par.
-      erewrite anno_unanno_par.
-      reflexivity.
-      eassumption.
-      eassumption.
-    }
-    congruence.
-  -
-    ff.
-    invc H2.
-    invc H.
-    
-    assert (well_formed_r a2).
-    {
-      eauto.
-    }
-    assert (well_formed_r a3).
-    {
-      eauto.
-    }
-    
-    econstructor.
-    eassumption.
-    eassumption.
-    destruct r.
-    simpl in *.
-    subst.
-    subst'.
-    erewrite <- fst_annopar.
-    erewrite <- fst_annopar.
-    reflexivity.
-    eassumption.
-    eassumption.
-
-    erewrite snd_annopar_snd.
-    erewrite snd_annopar_snd.
-    2: { eassumption. }
-    2: { eassumption. }
-    subst'.
-    subst'.
-    congruence.
-
-    assert (
-        Term_Defs.range_par a1 =
-        Term_Defs.range_par a3).
-    {
-      rewrite range_par.
-      rewrite range_par.
-      erewrite anno_unanno_par.
-      erewrite anno_unanno_par.
-      reflexivity.
-      eassumption.
-      eassumption.
-    }
-    congruence.
-  -
-    ff.
-    invc H2.
-    
-    invc H.
-    
-    assert (well_formed_r a1).
-    {
-      eauto.
-    }
-    
-    econstructor.
-    eassumption.
-    eassumption.
-    destruct r.
-    simpl in *.
-    subst.
-    subst'.
-    erewrite <- fst_annopar.
-    erewrite <- fst_annopar.
-    reflexivity.
-    eassumption.
-    eassumption.
-    subst'.
-    subst'.
-    rewrite <- H9.
-
-    assert (
-        Term_Defs.range_par a1 =
-        Term_Defs.range_par a).
-    {
-      rewrite range_par.
-      rewrite range_par.
-      erewrite anno_unanno_par.
-      erewrite anno_unanno_par.
-      reflexivity.
-      eassumption.
-      eassumption.
-    }
-    congruence.
-    congruence.
-Defined.
-
-Lemma wfr_annt_implies_wfr_par: forall a l a0,
-    well_formed_r_annt a ->
-    anno_parP a0 a l ->
-    well_formed_r a0.
-Proof.
-  intros.
-  generalizeEverythingElse a.
-  induction a; intros;
-    invc H.
-  -
-    invc H0.
-    try econstructor;
-      ff.
-  -
-    invc H0.
-    ff.
-  -
-    invc H0.
-
-    unfold anno_par in *.
-    repeat break_let.
-    fold anno_par in *.
-
-    simpl.
-    assert (anno_parP a a1 l).
-    {
-      econstructor.
-      jkjke.
-    }
-    assert (anno_parP a0 a2 l0).
-    {
-      econstructor.
-      jkjke.
-    }
-
-    assert (well_formed_r a) by eauto.
-    assert (well_formed_r a0) by eauto.
-    econstructor.
-    eassumption.
-    eassumption.
-    destruct r.
-    simpl in *.
-    subst.
-
-    eapply fst_annopar; eauto.
-
-    erewrite snd_annopar_snd.
-    erewrite snd_annopar_snd.
-    2: { eassumption. }
-    2: { eassumption. }
-    subst'.
-    congruence.
-    
-    subst'.
-
-    rewrite range_par.
-
-    assert (unannoPar a0 = a2).
-    {
-      eapply anno_unanno_par.
-      eassumption.
-    }
-    congruence.
-  -
-
-    invc H0.
-
-    unfold anno_par in *.
-    repeat break_let.
-    fold anno_par in *.
-    (*
-    invc H0. *)
-    simpl.
-
-    assert (anno_parP a a1 l).
-    {
-      econstructor.
-      jkjke.
-    }
-    assert (anno_parP a0 a2 l0).
-    {
-      econstructor.
-      jkjke.
-    }
-
-    assert (well_formed_r a) by eauto.
-    assert (well_formed_r a0) by eauto.
-    econstructor.
-    eassumption.
-    eassumption.
-    destruct r.
-    simpl in *.
-    subst.
-    rewrite H7.
-    
-    eapply fst_annopar; eauto.
-
-    erewrite snd_annopar_snd.
-    erewrite snd_annopar_snd.
-    2: { eassumption. }
-    2: { eassumption. }
-    subst'.
-    congruence.
-
-    subst'.
-
-    rewrite range_par.
-
-    assert (unannoPar a0 = a2).
-    {
-      eapply anno_unanno_par.
-      eassumption.
-    }
-    congruence.
-  -
-    invc H0.
-    unfold anno_par in *.
-    repeat break_let.
-    fold anno_par in *.
-    (*
-    invc H0. *)
-    simpl.
-
-    assert (anno_parP a a1 (S l)).
-    {
-      econstructor.
-      jkjke.
-    }
-    (*
-    assert (anno_parP a0 a2 l0).
-    {
-      econstructor.
-      jkjke.
-    }
-     *)
-    
-
-    assert (well_formed_r a) by eauto.
-    
-    econstructor.
-    eassumption.
-    eassumption.
-    destruct r.
-    simpl in *.
-    subst.
-    rewrite H7.
-
-    eapply fst_annopar; eauto.
-    rewrite <- H8.
-
-    erewrite snd_annopar_snd; eauto.
-
-    eassumption.
-Defined.
-
-Lemma annopar_well_formed_r: forall t t',
-    t = annotated_par (annotated t') ->
-    well_formed_r t.
-Proof.
-  intros.
-  rewrite H in *.
-  eapply wfr_annt_implies_wfr_par.
-  2: {
-    econstructor.
-    unfold annotated_par in *.
-    unfold annotated in *.
-    assert (anno_par (snd (anno t' 0)) 0 = (fst (anno_par (snd (anno t' 0)) 0), snd (anno_par (snd (anno t' 0)) 0))).
-    {
-      destruct (anno_par (snd (anno t' 0)) 0); tauto.
-    }
-    reflexivity.
-    (*
-    jkjke.
-    simpl. *)
-
-  }
-  eapply anno_well_formed_r.
-  assert (anno t' 0 = (fst (anno t' 0), snd (anno t' 0))).
-  {
-    destruct (anno t' 0); tauto.
-  }
-  jkjke.
-Defined.
 
 Theorem cvm_respects_event_system : forall pt t cvm_tr ev0 ev1 bits bits' et et' anno_t,
     annoP anno_t t 0 ->

@@ -40,10 +40,8 @@ Axiom remote_LTS: forall t n et,
     lstar (conf t n et) (cvm_events t n et) (stop n (aeval t n et)).
 
 
-(*
 Axiom remote_Evidence_Type_Axiom: forall t n bits et,
     get_et (toRemote t n (evc bits et)) = aeval t n et.
-*)
 
 
 Axiom at_evidence : forall t (p:Plc) (e:EvC),
