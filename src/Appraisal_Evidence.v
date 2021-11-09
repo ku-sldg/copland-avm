@@ -24,7 +24,7 @@ Proof.
   lia.
 Defined.
 
-Definition peel_bs (ls:EvBits) : option (BS * EvBits) :=
+Definition peel_bs (ls:RawEv) : option (BS * RawEv) :=
   match ls with
   | bs :: ls' => Some (bs, ls')
   | _ => None
@@ -53,7 +53,7 @@ Proof.
 Defined.
 
 
-Fixpoint encodeEv (e:EvidenceC) : EvBits :=
+Fixpoint encodeEv (e:EvidenceC) : RawEv :=
   match e with
   | mtc => []
   | nnc _ bs => [bs]
@@ -69,7 +69,7 @@ Fixpoint encodeEv (e:EvidenceC) : EvBits :=
     (encodeEv e1) ++ (encodeEv e2)
   end.
 
-Fixpoint reconstruct_ev' (ls:EvBits) (et:Evidence) : option EvidenceC :=
+Fixpoint reconstruct_ev' (ls:RawEv) (et:Evidence) : option EvidenceC :=
   match et with
   | mt => (* Some mtc *)
     match ls with

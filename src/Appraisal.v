@@ -86,7 +86,7 @@ Proof.
     do_rewrap_reconP.
     
     ff.
-    assert (e0 = et_fun e2).
+    assert (e0 = et_fun e1).
     {    
       eapply etfun_reconstruct; eauto.
     }
@@ -225,7 +225,7 @@ Proof.
 
       econstructor.
       simpl in *.
-      assert (e3 = aeval t1 p e1).
+      assert (e1 = aeval t1 p e).
       {
         rewrite <- eval_aeval.
         inversion Heqp1.
@@ -286,7 +286,7 @@ Proof.
     inv_events.
     + (* t1 case *)
 
-      assert (appEvent_Sig_EvidenceC (sign n p0 e0) (build_app_comp_evC e4)).
+      assert (appEvent_Sig_EvidenceC (sign n p0 e0) (build_app_comp_evC e2)).
       {
         destruct ee; ff.
               
@@ -317,7 +317,7 @@ Proof.
       ff.
     + (* t2 case *)
 
-      assert (appEvent_Sig_EvidenceC (sign n p0 e0) (build_app_comp_evC e5)).
+      assert (appEvent_Sig_EvidenceC (sign n p0 e0) (build_app_comp_evC e3)).
       {
         destruct ee; ff.
               
@@ -386,7 +386,7 @@ Proof.
     inv_events.
     + (* t1 case *)
 
-      assert (appEvent_Sig_EvidenceC (sign n p0 e0) (build_app_comp_evC e4)).
+      assert (appEvent_Sig_EvidenceC (sign n p0 e0) (build_app_comp_evC e2)).
       {
         destruct ee; dd.
               
@@ -417,11 +417,11 @@ Proof.
       
     + (* NEW t2 case *)
           
-      assert (appEvent_Sig_EvidenceC (sign n p0 e0) (build_app_comp_evC e5)).
+      assert (appEvent_Sig_EvidenceC (sign n p0 e0) (build_app_comp_evC e3)).
       {
         destruct ee; ff.
         
-        do_assume_remote t2 (splitEv_r s (evc e6 e7)) p HHH.
+        do_assume_remote t2 (splitEv_r s (evc r e4)) p HHH.
         eapply IHt2.
         econstructor.
         reflexivity.
@@ -446,7 +446,7 @@ Proof.
         rewrite at_evidence.
         rewrite par_evidence in *.
         rewrite <- H22.
-        rewrite Heqe2.
+        rewrite Heqe1.
         eassumption.
         econstructor.
         destruct s; destruct s; destruct s0; ff.
@@ -582,7 +582,7 @@ Proof.
       
       econstructor.
       simpl in *.
-      assert (e2 = aeval t1 p e0).
+      assert (e0 = aeval t1 p e).
       {
         rewrite <- eval_aeval.
         inversion Heqp0.
@@ -627,7 +627,7 @@ Proof.
 
     + (* t1 case NEW *)
 
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e3))).
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e1))).
       {
         destruct ee; ff.
         
@@ -659,7 +659,7 @@ Proof.
     + (* t2 case NEW *)
 
       assert (appEvent_EvidenceC
-                (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
+                (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e2))).
       {      
         destruct ee; ff.
         
@@ -710,7 +710,7 @@ Proof.
 
     + (* t1 case *)
 
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e3))).
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e1))).
       {
         destruct ee; ff.
         
@@ -739,11 +739,11 @@ Proof.
 
     + (* t2 case *)
 
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e4))).
+      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC (e2))).
       {
         destruct ee; ff.
 
-        do_assume_remote t2 (splitEv_r s (evc e5 e6)) p HHH.
+        do_assume_remote t2 (splitEv_r s (evc r e3)) p HHH.
         
         
         eapply IHt2.
@@ -764,7 +764,7 @@ Proof.
         rewrite at_evidence.
         rewrite par_evidence in *.
         rewrite <- H13.
-        rewrite Heqe1.
+        rewrite Heqe0.
         eassumption.
         econstructor.
         destruct s; destruct s0; ff.

@@ -32,10 +32,10 @@ Inductive EvidenceC: Set :=
 | ssc: EvidenceC -> EvidenceC -> EvidenceC
 | ppc: EvidenceC -> EvidenceC -> EvidenceC.
 
-Definition EvBits := list BS.
+Definition RawEv := list BS.
 
 Inductive EvC: Set :=
-| evc: EvBits -> Evidence -> EvC.
+| evc: RawEv -> Evidence -> EvC.
 
 Definition mt_evc: EvC := (evc [] mt).
 

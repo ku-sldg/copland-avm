@@ -14,10 +14,10 @@ Admitted.
 
 Definition checkASPF (params:ASP_PARAMS) (bs:BS) : BS := fromSome default_bs (checkASP params bs).
 
-Definition checkSigBits (ls:EvBits) (p:Plc) (sig:BS) : option BS.
+Definition checkSigBits (ls:RawEv) (p:Plc) (sig:BS) : option BS.
 Admitted.
 
-Definition checkSigBitsF (ls:EvBits) (p:Plc) (sig:BS) : BS :=
+Definition checkSigBitsF (ls:RawEv) (p:Plc) (sig:BS) : BS :=
   fromSome default_bs (checkSigBits ls p sig).
 
 Definition checkNonce (nid:nat) (val:BS) : option BS.
@@ -638,7 +638,7 @@ Ltac do_rcih :=
      |- context[reconstruct_ev' ?e' ?et] ] =>
     assert_new_proof_by
       (exists x, Some x = reconstruct_ev' e' et)
-      ltac:(eapply H with (e:=e');
+      ltac:(eapply H with (r:=e'); (* TODO:  make r less one-off *)
             try (eapply peel_fact; eauto; tauto);
             try (econstructor; first [eapply firstn_long | eapply skipn_long]; try eauto; try lia))      
   end.
@@ -649,8 +649,31 @@ Lemma some_recons : forall e,
 Proof.
   intros.
   destruct e.
-  generalizeEverythingElse e0.
-  induction e0; intros;
+  generalizeEverythingElse e.
+  induction e; intros;
+    (*
+    try (dd; eauto; tauto).
+  inv_wfec; ff.
+  destruct r; try solve_by_inversion. eauto.
+
+  inv_wfec; ff.
+  do_some_recons'.
+  do_rcih.
+  
+  
+
+
+
+  
+    do_some_recons'.
+        try
+      ( inv_wfec; ff;
+        do_some_recons'). *)
+
+
+
+
+  
     try (ff; eauto; tauto);
     try
       ( inv_wfec; ff;
@@ -663,13 +686,15 @@ Proof.
           repeat do_rcih;
           destruct_conjs;
           repeat jkjke').
-  assert (e = []).
-  { destruct e; try solve_by_inversion. }
+
+
+  
+  assert (r = []).
+  { destruct r; try solve_by_inversion. }
+  ff. eauto.
+  destruct r; try solve_by_inversion.
   ff.
-  eauto.
-  destruct e; try solve_by_inversion.
-  ff.
-  destruct e; try solve_by_inversion.
+  destruct r; try solve_by_inversion.
   ff.
 Defined.
 

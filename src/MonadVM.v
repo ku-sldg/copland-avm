@@ -177,10 +177,10 @@ Definition join_seq (n:Event_ID) (e1:EvC) (e2:EvC): CVM unit :=
 
 (* Primitive monadic parallel CVM thread primitives (some require IO Axioms) *)
 
-Definition do_start_par_threadIO (loc:Loc) (t:AnnoTerm) (e:EvBits) : unit.
+Definition do_start_par_threadIO (loc:Loc) (t:AnnoTerm) (e:RawEv) : unit.
 Admitted.
 
-Definition do_start_par_thread (loc:Loc) (t:AnnoTerm) (e:EvBits) : CVM unit :=
+Definition do_start_par_thread (loc:Loc) (t:AnnoTerm) (e:RawEv) : CVM unit :=
   let _ := do_start_par_threadIO loc t e in
   ret tt.  (* Admitted. *)
 

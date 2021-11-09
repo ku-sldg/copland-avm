@@ -986,9 +986,9 @@ Proof.
 Defined.
  *)
 
-Lemma par_evidence_r: forall a p s e e2 e3 l,
-    parallel_vm_thread l a p (splitEv_r s e) = evc e2 e3 ->
-    e3 = (eval (unanno a) p (splitEv_T_r s (get_et e))).
+Lemma par_evidence_r: forall a p s e et e2 e3 l,
+    parallel_vm_thread l a p (splitEv_r s (evc e et)) = evc e2 e3 ->
+    e3 = (eval (unanno a) p (splitEv_T_r s et)).
 Proof.
   intros.
 
@@ -1006,6 +1006,135 @@ Proof.
     jkjke.
 Defined.
 
+Lemma cvm_refines_lts_evidence : forall t tr tr' bits bits' et et' p p',
+    well_formed_r t ->
+    copland_compileP t
+                     (mk_st (evc bits et) tr p)
+                     (Some tt)
+                     (mk_st (evc bits' et') tr' p') ->
+    et' = (Term_Defs.eval (unanno (unannoPar t)) p et).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  
+  - (* aasp case *)
+    rewrite <- ccp_iff_cc in *.
+    destruct a;
+      try (
+          (*try unfold get_et; *)
+          dd;
+          eauto).
+
+  - (* at case *)
+    rewrite <- ccp_iff_cc in *.
+    (*
+    destruct e. *)
+    dd.
+    
+    erewrite eval_aeval.
+    
+    
+    rewrite aeval_anno.
+    erewrite <- remote_Evidence_Type_Axiom.
+    jkjke.
+
+  - (* alseq case *)
+    do_suffix blah.
+    destruct_conjs.
+    subst.
+
+    edestruct alseq_decomp.
+    eassumption.
+    eapply restl.
+    eassumption.
+    eassumption.
+    destruct_conjs.
+
+    wrap_ccp.
+    
+    destruct x.
+    (*
+    destruct e. *)
+    repeat jkjke'.
+
+    (*
+
+    
+    assert (e3 = get_et (evc e2 e3)) by tauto.
+    repeat jkjke'. *)
+    
+  - (* abseq case *)
+
+    wrap_ccp.
+    
+    do_suffix blah.
+    do_suffix blah'.
+    
+    destruct_conjs; subst.
+    repeat do_restl.
+
+    assert (e = (eval (unanno (unannoPar t1)) p (splitEv_T_l s et))).
+    {
+      destruct s; destruct s.
+      ++
+        eapply IHt1;
+          eassumption.
+      ++
+        unfold splitEv_T_l.
+        assert (mt = get_et (evc [] mt)) by tauto.
+        jkjke.
+    }
+    dd.
+
+    assert (e0 = (eval (unanno (unannoPar t2)) p (splitEv_T_r s et))).
+    {
+      destruct s.
+      destruct s0.
+      ++
+        unfold splitEv_T_r.
+        eauto.
+      ++
+        simpl.
+        eauto.
+    }
+    
+    simpl in *; subst.
+    tauto.
+
+  - (* abpar case *)
+    wrap_ccp.
+
+    do_suffix blah.
+
+    destruct_conjs; subst.
+    repeat do_restl.
+
+    assert (e = (eval (unanno (unannoPar t)) p (splitEv_T_l s et))).
+    {
+      destruct s; destruct s.
+      ++
+        eapply IHt;
+          eassumption.
+      ++
+        unfold splitEv_T_l.
+        assert (mt = get_et (evc [] mt)) by tauto.
+        jkjke.
+    }
+    dd.
+
+    assert (e0 = (eval (unanno a) p (splitEv_T_r s et))).
+    {
+      eapply par_evidence_r; eauto.
+    }
+
+    find_rw_in_goal.
+    tauto.
+    Unshelve.
+    eauto.
+Defined.
+
+(*
 Lemma cvm_refines_lts_evidence' : forall t tr tr' e e' p p',
     well_formed_r t ->
     copland_compileP t
@@ -1052,8 +1181,9 @@ Proof.
     wrap_ccp.
     
     destruct x.
-    destruct e'.
+    destruct e.
 
+    
     assert (e3 = get_et (evc e2 e3)) by tauto.
     repeat jkjke'.
     
@@ -1151,6 +1281,7 @@ Proof.
   rewrite H1; rewrite H2.
   eapply cvm_refines_lts_evidence'; eauto.
 Defined.
+*)
 
 Lemma eval_aeval: forall t1 p et,
     eval (unanno t1) p et = aeval t1 p et.
@@ -1250,7 +1381,7 @@ Proof.
 
     eapply IHt2. (*with (e:= x). *)
     eassumption.
-    assert (e0 = Term_Defs.eval (unanno (unannoPar t1)) p et).
+    assert (e = Term_Defs.eval (unanno (unannoPar t1)) p et).
     eapply cvm_refines_lts_evidence; eauto.
 
     subst.
@@ -1388,8 +1519,9 @@ Proof.
   monad_unfold.
   rewrite hi in *.
   simpl in *.
+  Check cvm_refines_lts_event_ordering.
 
-  eapply cvm_refines_lts_event_ordering with (t:=t) (cvm_tr:=st_trace) (bits:=bits) (et:=et) (bits':=e) (et':=e0) (p:=p) (p':=st_pl); eauto.
+  eapply cvm_refines_lts_event_ordering; eauto.
   econstructor; eauto.
 Defined.
 

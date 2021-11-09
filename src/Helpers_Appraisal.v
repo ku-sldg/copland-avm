@@ -150,11 +150,11 @@ Proof.
 
     erewrite app_length.
 
-    assert (wf_ec (evc e2 e3)).
+    assert (wf_ec (evc r1 e1)).
     {
-      rewrite par_evidence in Heqe2.
-      rewrite <- at_evidence in Heqe2.
-      rewrite <- Heqe2.
+      rewrite par_evidence in Heqe1.
+      rewrite <- at_evidence in Heqe1.
+      rewrite <- Heqe1.
       eapply wf_ec_preserved_remote.
       econstructor.
       eassumption.
@@ -762,9 +762,8 @@ Proof.
     +
       destruct ecc; ff.
       do_rewrap_reconP.
-      do_reconP_determ.
 
-      assert (e1 = et_fun e).
+      assert (e0 = et_fun e).
       {
         eapply etfun_reconstruct; eauto.
       }
@@ -929,7 +928,7 @@ Proof.
       eassumption.
      
       eassumption.
-      rewrite <- Heqe2 in *.
+      rewrite <- Heqe1 in *.
       rewrite par_evidence in *.
       rewrite at_evidence in *.
       rewrite <- H20.
@@ -1444,7 +1443,7 @@ Proof.
           rewrite at_evidence.
           erewrite <- par_evidence.
           erewrite anno_unanno_par.
-          rewrite Heqe2.
+          rewrite Heqe1.
           2: {
             invc H22.
             eapply annopar_fst_snd.
@@ -1473,7 +1472,7 @@ Proof.
           rewrite at_evidence.
           erewrite <- par_evidence.
           erewrite anno_unanno_par.
-          rewrite Heqe2.
+          rewrite Heqe1.
           2: {
             invc H22.
             eapply annopar_fst_snd.  }
@@ -1509,7 +1508,7 @@ Proof.
           rewrite at_evidence.
           erewrite <- par_evidence.
           erewrite anno_unanno_par.
-          rewrite Heqe2.
+          rewrite Heqe1.
           2: {
             invc H22.
             eapply annopar_fst_snd.
@@ -1539,7 +1538,7 @@ Proof.
           rewrite at_evidence.
           erewrite <- par_evidence.
           erewrite anno_unanno_par.
-          rewrite Heqe2.
+          rewrite Heqe1.
           2: {
             invc H22.
             eapply annopar_fst_snd.  }
@@ -2227,7 +2226,7 @@ Proof.
       jkjke.
     }
     
-      assert (not_hash_sig_ev e5).
+      assert (not_hash_sig_ev e3).
     {
       do_reconP_determ.
         eapply IHt2 with (e:=(splitEvr s H10)).
@@ -2254,20 +2253,20 @@ Proof.
            do_reconP_determ; ff.
 
          rewrite at_evidence.
-         rewrite par_evidence in Heqe2.
+         rewrite par_evidence in Heqe1.
          congruence.
          rewrite at_evidence.
-         rewrite par_evidence in Heqe2.
-         rewrite <- Heqe2 in *.
+         rewrite par_evidence in Heqe1.
+         rewrite <- Heqe1 in *.
          eassumption.
 
          rewrite at_evidence.
-         rewrite par_evidence in Heqe2.
+         rewrite par_evidence in Heqe1.
          congruence.
 
          rewrite at_evidence.
-         rewrite par_evidence in Heqe2.
-         rewrite <- Heqe2 in *.
+         rewrite par_evidence in Heqe1.
+         rewrite <- Heqe1 in *.
          eassumption.
       }
       
@@ -2620,7 +2619,7 @@ Proof.
         rewrite at_evidence in *.
         
         rewrite <- H20.
-        rewrite Heqe2.
+        rewrite Heqe1.
         eassumption.
       }
       eassumption.
@@ -3166,7 +3165,7 @@ Proof.
       destruct st_ev0;
         destruct ecc'.
 
-      assert (e0 = (aeval t1 p et)).
+      assert (e = (aeval t1 p et)).
       {
         rewrite <- eval_aeval.
         inversion Heqp4.
@@ -3497,7 +3496,7 @@ Proof.
         rewrite at_evidence.
         rewrite par_evidence in *.
         rewrite <- H21.
-        rewrite Heqe2.
+        rewrite Heqe1.
         eassumption.
         
         destruct_conjs; eauto.
@@ -3526,7 +3525,7 @@ Proof.
         rewrite at_evidence.
         rewrite par_evidence in *.
         rewrite <- H26.
-        rewrite Heqe2.
+        rewrite Heqe1.
         eassumption.
 
         destruct_conjs; eauto.
@@ -3554,7 +3553,7 @@ Proof.
         rewrite at_evidence.
         rewrite par_evidence in *.
         rewrite <- H26.
-        rewrite Heqe2.
+        rewrite Heqe1.
         eassumption.
         
         destruct_conjs; eauto.
@@ -3583,7 +3582,7 @@ Proof.
         rewrite at_evidence.
         rewrite par_evidence in *.
         rewrite <- H26.
-        rewrite Heqe2.
+        rewrite Heqe1.
         eassumption.
 
         destruct_conjs; eauto.
