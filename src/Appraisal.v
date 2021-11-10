@@ -15,7 +15,8 @@ Import ListNotations.
 
 (*
 Set Nested Proofs Allowed.
-*)
+ *)
+    
 
 Lemma ggc_app: forall p0 sigbs H4 e',
     EvSub (ggc p0 sigbs H4) e' ->
@@ -84,15 +85,40 @@ Proof.
     inv_events.
     ff.
     do_rewrap_reconP.
-    
-    ff.
-    assert (e0 = et_fun e1).
-    {    
-      eapply etfun_reconstruct; eauto.
+    unfold checkSigF.
+    unfold checkSig.
+    fold checkSigBitsF.
+
+    assert (
+        checkSigBitsF (encodeEv e1)
+                      p'
+                      (do_sig (encodeEvBits (evc r e0)) p' n) =
+        (fromSome default_bs
+          (checkSigBits (encodeEv e1) p'
+             (do_sig (encodeEvBits (evc r e0)) p' n)))
+
+
+      ).
+    { tauto. }
+    rewrite <- H5.
+    assert (r = encodeEv e1).
+    {
+      eapply recon_encodeEv.
+      eassumption.
+      eassumption.
     }
-    subst.
+    rewrite <- H7.
+    assert (r = get_bits (evc r e0)).
+    { tauto. }
+    assert (e0 = get_et (evc r e0)).
+    {
+      tauto.
+    }
     
+    rewrite H8.
+    rewrite H9.
     repeat econstructor.
+
   - (* aatt case *)
     wrap_ccp.
     sigEventFacts.
@@ -176,16 +202,38 @@ Proof.
       }
       eassumption.
       
+      
       destruct_conjs.
+      assert (encodeEv H18 = x).
+      {
+        symmetry.
+        eassumption.
+      }
+      
 
       edestruct ggc_app.
       eassumption.
-      
-      destruct_conjs.
 
-      subst.
+      unfold checkSigF in *.
+      unfold checkSig in *.
+      rewrite H21 in *; clear H21.
       econstructor.
-      eauto.
+      (*
+      exact (evc x (et_fun H18)).
+      assert (
+          checkSigBitsF (encodeEv H18)
+                        p0
+                        (do_sig (encodeEvBits (evc x (et_fun H18))) p0 n) =
+
+          
+          (fromSome default_bs
+                (checkSigBits (encodeEv H18) p0
+                              (do_sig (encodeEvBits (evc x (et_fun H18))) p0 n)))).
+      {
+        tauto. }
+      rewrite <- H20 in *. *)
+      eassumption.
+
       
     + (* t2 case *)
       wrap_ccp.
@@ -314,7 +362,8 @@ Proof.
       }
       invc H21.
       econstructor.
-      ff.
+      eauto.
+
     + (* t2 case *)
 
       assert (appEvent_Sig_EvidenceC (sign n p0 e0) (build_app_comp_evC e3)).
@@ -344,7 +393,7 @@ Proof.
       }
       invc H21.
       econstructor.
-      ff.
+      eauto.
 
   - (* NEW abpar case *)
 
@@ -413,7 +462,7 @@ Proof.
       }
       invc H20.
       econstructor.
-      ff.
+      eauto.
       
     + (* NEW t2 case *)
           

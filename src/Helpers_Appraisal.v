@@ -3017,7 +3017,8 @@ Lemma gg_preserved': forall t pt loc p et n p0 et'
 
     (
       (exists bits e'', EvSub (ggc p0 (do_sig (MonadVM.encodeEvBits (evc bits et')) p0 n) e'') e' /\
-                   et_fun e'' = et'
+                   et_fun e'' = et' /\
+                   bits = encodeEv e''
       )
     ).
 Proof.
@@ -3036,6 +3037,15 @@ Proof.
       ff.
       do_rewrap_reconP.
       do_reconP_determ.
+      assert (bits = encodeEv e0).
+      {
+        eapply recon_encodeEv.
+        eassumption.
+        eassumption.
+      }
+      subst.
+      
+       
 
       repeat eexists.
       econstructor.
@@ -3246,7 +3256,8 @@ Proof.
         eauto.
         2: { eassumption. }
         eassumption.
-        destruct_conjs; eauto.
+        destruct_conjs.
+        esplit; eauto.
       ++
         edestruct IHt1.
         eassumption.
@@ -3260,7 +3271,8 @@ Proof.
         eauto.
         2: { eassumption. }
         eassumption.
-        destruct_conjs; eauto.
+        destruct_conjs.
+        esplit; eauto.
       ++
         edestruct IHt1.
         eassumption.
@@ -3275,7 +3287,8 @@ Proof.
         simpl.
         econstructor. tauto.
         eassumption.
-        destruct_conjs; eauto.
+        destruct_conjs.
+        esplit; eauto.
       ++
         edestruct IHt1.
         eassumption.
@@ -3290,7 +3303,8 @@ Proof.
         simpl.
         econstructor. tauto.
         eassumption.
-        destruct_conjs; eauto.
+        destruct_conjs.
+        esplit; eauto.
 
     +
       do_reconP_determ.
@@ -3312,7 +3326,8 @@ Proof.
         eauto.
         2: { eassumption. }
         eassumption.
-        destruct_conjs; eauto.
+        destruct_conjs.
+        esplit; eauto.
       ++
         edestruct IHt2.
         eassumption.
@@ -3328,7 +3343,8 @@ Proof.
         
         simpl. econstructor. tauto.
         eassumption.
-        destruct_conjs; eauto.
+        destruct_conjs.
+        esplit; eauto.
       ++
         edestruct IHt2.
         eassumption.
@@ -3343,7 +3359,8 @@ Proof.
         
         2: { eassumption. }
         eassumption.
-        destruct_conjs; eauto.
+        destruct_conjs.
+        esplit; eauto.
       ++
         edestruct IHt2.
         eassumption.
@@ -3359,7 +3376,8 @@ Proof.
         
         simpl. econstructor. tauto.
         eassumption.
-        destruct_conjs; eauto.
+        destruct_conjs.
+        esplit; eauto.
 
   - (* abseq case *)
     wrap_ccp.
@@ -3422,7 +3440,8 @@ Proof.
         ff.
         2: { eassumption. }
         eassumption.
-        destruct_conjs; eauto.
+        destruct_conjs.
+        esplit; eauto.
       ++
         edestruct IHt1.
         eassumption.
@@ -3436,7 +3455,8 @@ Proof.
         ff.
         2: { eassumption. }
         eassumption.
-        destruct_conjs; eauto.
+        destruct_conjs.
+        esplit; eauto.
       ++
         edestruct IHt1.
         eassumption.
@@ -3450,7 +3470,8 @@ Proof.
         econstructor. tauto.
         eassumption.
 
-        destruct_conjs; eauto.
+        destruct_conjs.
+        esplit; eauto.
       ++
         edestruct IHt1.
         eassumption.
@@ -3464,7 +3485,8 @@ Proof.
         econstructor. tauto.
         eassumption.
 
-        destruct_conjs; eauto.
+        destruct_conjs.
+        esplit; eauto.
 
     +
       do_reconP_determ.
@@ -3499,7 +3521,8 @@ Proof.
         rewrite Heqe1.
         eassumption.
         
-        destruct_conjs; eauto.
+        destruct_conjs.
+        esplit; eauto.
       ++
         do_assume_remote t2 mt_evc p HHH.
         edestruct IHt2.
@@ -3528,7 +3551,8 @@ Proof.
         rewrite Heqe1.
         eassumption.
 
-        destruct_conjs; eauto.
+        destruct_conjs.
+        esplit; eauto.
       ++
         do_assume_remote t2 (evc bits et) p HHH.
         edestruct IHt2.
@@ -3556,7 +3580,8 @@ Proof.
         rewrite Heqe1.
         eassumption.
         
-        destruct_conjs; eauto.
+        destruct_conjs.
+        esplit; eauto.
       ++
         do_assume_remote t2 mt_evc p HHH.
         edestruct IHt2.
@@ -3585,5 +3610,6 @@ Proof.
         rewrite Heqe1.
         eassumption.
 
-        destruct_conjs; eauto.
+        destruct_conjs.
+        esplit; eauto.
 Defined.

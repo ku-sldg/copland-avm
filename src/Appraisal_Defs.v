@@ -77,17 +77,47 @@ Definition sigEvent (t:AnnoTerm) (p:Plc) (e:Evidence) (ev:Ev) : Prop :=
 
 Inductive appEvent_EvidenceC : Ev -> EvidenceC -> Prop :=
 | aeuc: forall i args tpl tid e e' n p,
-    EvSub (uuc (asp_paramsC i args tpl tid) p (checkASPF (asp_paramsC i args tpl tid) (do_asp (asp_paramsC i args tpl tid) p n)) e') e ->
+    let params := (asp_paramsC i args tpl tid) in
+    EvSub (uuc params p (checkASPF params (do_asp params p n)) e') e ->
     appEvent_EvidenceC (umeas n p i args tpl tid) e
 | ahuc: forall i args tpl tid e' et n p pi bs e,
     EvSubT (uu (asp_paramsC i args tpl tid) p e') et ->
     EvSub (hhc pi (checkHashF et pi bs) et) e ->
     appEvent_EvidenceC (umeas n p i args tpl tid) e.
 
+(*
 Inductive appEvent_Sig_EvidenceC: Ev -> EvidenceC -> Prop :=
 | asigc: forall n p e e' e'' ee,
     EvSub (ggc p (checkSigF e' p (do_sig ee p n)) e'') e ->
     appEvent_Sig_EvidenceC (sign n p (et_fun e')) e.
+ *)
+
+(*
+Inductive signs_meas: AnnoTerm -> Event_ID -> BS -> Prop :=
+| sm_asp: forall t t1 t2 et1 et2 et2' x mpl id l tpl tid n p q r,
+    events t1 p et1 (umeas x mpl id l tpl tid) ->
+    events t2 p et2 (sign n q et2') ->
+    term_sub (alseq r t1 t2) t ->
+    signs_meas t n (do_asp (asp_paramsC id l tpl tid) mpl x).
+
+Definition signs_all_meas (t:AnnoTerm) (x:Event_ID) (bits:list BS) :=
+  forall (v:BS),
+  signs_meas t x v ->
+  In v bits.
+
+Inductive appEvent_Sig_EvidenceC': AnnoTerm -> Ev -> EvidenceC -> Prop :=
+| asigc: forall t n p e e'' bits et,
+    (*let e' := (evc bits et) in *)
+    signs_all_meas t n bits ->
+    EvSub (ggc p (checkSigBitsF bits p (do_sig (encodeEvBits (evc bits et)) p n)) e'') e ->
+    appEvent_Sig_EvidenceC' t (sign n p et) e.
+*)
+
+Inductive appEvent_Sig_EvidenceC: Ev -> EvidenceC -> Prop :=
+| asigc: forall n p e e'' bits et,
+    (*let e' := (evc bits et) in *)
+    EvSub (ggc p (checkSigBitsF bits p (do_sig (encodeEvBits (evc bits et)) p n)) e'') e ->
+    appEvent_Sig_EvidenceC (sign n p et) e.
 
 Definition none_none_term (t:AnnoTerm): Prop :=
   (exists t1 t2 r,

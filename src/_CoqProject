@@ -34,6 +34,7 @@ OptMonad.v
 Appraisal_Defs.v
 Impl_appraisal.v
 Impl_appraisal_alt.v
+Test_Extract_App.v
 Appraisal_AltImpls_Eq.v
 Helpers_Appraisal.v
 Appraisal.v
