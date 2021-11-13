@@ -13,9 +13,10 @@ Import List.ListNotations.
 Set Nested Proofs Allowed.
 *)
 
+(*
 Lemma wf_lseq_pieces: forall r t1 t2,
-    well_formed_r (alseq_par r t1 t2) ->
-    well_formed_r t1 /\ well_formed_r t2.
+    well_formed_r_annt (alseq r t1 t2) ->
+    well_formed_r_annt t1 /\ well_formed_r_annt t2.
 Proof.
   intros.
   inversion H.
@@ -23,7 +24,7 @@ Proof.
 Defined.
 
 Lemma wf_at_pieces: forall t r p,
-    well_formed_r (aatt_par r p t) ->
+    well_formed_r_annt (aatt r p t) ->
     well_formed_r_annt t.
 Proof.
   intros.
@@ -32,17 +33,17 @@ Proof.
 Defined.
 
 Lemma wf_bseq_pieces: forall r s t1 t2,
-    well_formed_r (abseq_par r s t1 t2) ->
-    well_formed_r t1 /\ well_formed_r t2.
+    well_formed_r_annt (abseq r s t1 t2) ->
+    well_formed_r_annt t1 /\ well_formed_r_annt t2.
 Proof.
   intros.
   inversion H.
   tauto.
 Defined.
 
-Lemma wf_bpar_pieces: forall r loc s t1 t2,
-    well_formed_r (abpar_par r loc s t1 t2) ->
-    well_formed_r t1 /\ well_formed_r_annt t2.
+Lemma wf_bpar_pieces: forall r s t1 t2,
+    well_formed_r_annt (abpar r s t1 t2) ->
+    well_formed_r_annt t1 /\ well_formed_r_annt t2.
 Proof.
   intros.
   inversion H.
@@ -51,16 +52,17 @@ Defined.
 
 Ltac do_wf_pieces' :=
   match goal with
-  | [H: well_formed_r (alseq_par _ _ _ ) |- _] =>
+  | [H: well_formed_r_annt (alseq _ _ _ ) |- _] =>
     (edestruct wf_lseq_pieces; eauto)
-  | [H: well_formed_r (aatt_par _ _?t) |- _] =>   
+  | [H: well_formed_r_annt (aatt _ _?t) |- _] =>   
     assert (well_formed_r_annt t)
       by (eapply wf_at_pieces; eauto)
-  | [H: well_formed_r (abseq_par _ _ _ _) |- _] =>
+  | [H: well_formed_r_annt (abseq _ _ _ _) |- _] =>
     (edestruct wf_bseq_pieces; eauto)
-  | [H: well_formed_r (abpar_par _ _ _ _ _) |- _] =>
+  | [H: well_formed_r_annt (abpar _ _ _ _) |- _] =>
     (edestruct wf_bpar_pieces; eauto)
   end.
+*)
 
 Lemma wfr_lseq_pieces: forall r t1 t2,
     well_formed_r_annt (alseq r t1 t2) ->
@@ -98,7 +100,7 @@ Proof.
   tauto.
 Defined.
 
-Ltac do_wfr_pieces :=
+Ltac do_wf_pieces :=
   match goal with
   | [H: well_formed_r_annt (alseq _ _ _ ) |- _] =>
     (edestruct wfr_lseq_pieces; eauto)
@@ -112,9 +114,11 @@ Ltac do_wfr_pieces :=
   end.
 
 
+(*
 Ltac do_wf_pieces :=
   try do_wf_pieces';
   try do_wfr_pieces.
+*)
 
 
 
@@ -295,19 +299,23 @@ Ltac inv_events :=
   | [H:events (?C _) _ _ _ |- _] => inv H
   end.
 
+(*
 Ltac inv_wfr' :=
   match goal with
   | [H: well_formed_r _ |- _] => inv H
   end.
+*)
 
-Ltac inv_wfr'' :=
+Ltac inv_wfr :=
   match goal with
   | [H: well_formed_r_annt _ |- _] => inv H
   end.
 
+(*
 Ltac inv_wfr :=
   try inv_wfr';
   try inv_wfr''.
+*)
 
 Lemma events_range:
   forall t v p e,

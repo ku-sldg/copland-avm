@@ -224,7 +224,7 @@ Inductive Ev: Set :=
 | req: nat -> Plc -> Plc -> Term -> Evidence -> Ev
 | rpy: nat -> Plc -> Plc -> Evidence -> Ev 
 | split: nat -> Plc -> Ev
-| cvm_thread_start: (*nat ->*) Loc -> Plc -> AnnoTerm -> Evidence -> Ev
+| cvm_thread_start: (*nat ->*) Loc -> Plc -> Term -> Evidence -> Ev
 (*| splitp: nat -> (*Loc ->*) Loc -> Plc -> Ev *)
 | join:  nat -> Plc -> Ev
 | cvm_thread_end:  (*nat ->*) Loc -> (*Plc -> AnnoTerm ->*) Ev
@@ -311,23 +311,23 @@ Definition range x :=
   end.
 
 Inductive AnnoTermPar: Set :=
-| aasp_par: Range -> ASP -> AnnoTermPar
-| aatt_par: Range -> Plc -> AnnoTerm -> AnnoTermPar
-| alseq_par: Range -> AnnoTermPar -> AnnoTermPar -> AnnoTermPar
-| abseq_par: Range -> Split -> AnnoTermPar -> AnnoTermPar -> AnnoTermPar
+| aasp_par: (*Range ->*) ASP -> AnnoTermPar
+| aatt_par: (*Range ->*) Plc -> Term -> AnnoTermPar
+| alseq_par: (*Range ->*) AnnoTermPar -> AnnoTermPar -> AnnoTermPar
+| abseq_par: (*Range ->*) Split -> AnnoTermPar -> AnnoTermPar -> AnnoTermPar
 | abpar_par:
-    Range -> Loc -> Split -> AnnoTermPar -> AnnoTerm -> AnnoTermPar.
+    (*Range ->*) Loc -> Split -> AnnoTermPar -> Term -> AnnoTermPar.
 
-Fixpoint unannoPar (t:AnnoTermPar) : AnnoTerm :=
+Fixpoint unannoPar (t:AnnoTermPar) : Term :=
   match t with
-  | aasp_par r a => aasp r a
-  | aatt_par r p t => aatt r p t
-  | alseq_par r a1 a2 => alseq r (unannoPar a1) (unannoPar a2)                 
-  | abseq_par r spl a1 a2 => abseq r spl (unannoPar a1) (unannoPar a2) 
-  | abpar_par r _ spl a1 a2 => abpar r spl (unannoPar a1) a2
+  | aasp_par a => asp a
+  | aatt_par p t => att p t
+  | alseq_par a1 a2 => lseq (unannoPar a1) (unannoPar a2)                 
+  | abseq_par spl a1 a2 => bseq spl (unannoPar a1) (unannoPar a2) 
+  | abpar_par _ spl a1 a2 => bpar spl (unannoPar a1) a2
   end.
   
-
+(*
 Definition range_par x :=
   match x with
   | aasp_par r _ => r
@@ -336,33 +336,34 @@ Definition range_par x :=
   | abseq_par r _ _ _ => r
   | abpar_par r _ _ _ _ => r
   end.
+*)
 
-Fixpoint anno_par (t:AnnoTerm) (loc:Loc) : (Loc * AnnoTermPar)  :=
+Fixpoint anno_par (t:Term) (loc:Loc) : (Loc * AnnoTermPar)  :=
   match t with
-  | aasp r a => (loc, aasp_par r a)
-  | aatt r p t => (loc, aatt_par r p t)
+  | asp a => (loc, aasp_par a)
+  | att p t => (loc, aatt_par p t)
                      
-  | alseq r t1 t2 =>
+  | lseq t1 t2 =>
     let '(loc', t1') := anno_par t1 loc in
     let '(loc'', t2') := anno_par t2 loc' in
 
-    (loc'', alseq_par r t1' t2')
+    (loc'', alseq_par t1' t2')
       
-  | abseq r spl t1 t2 =>
+  | bseq spl t1 t2 =>
     let '(loc', t1') := anno_par t1 loc in
     let '(loc'', t2') := anno_par t2 loc' in
 
-    (loc'', abseq_par r spl t1' t2')
+    (loc'', abseq_par spl t1' t2')
       
  
-  | abpar r spl t1 t2 =>
+  | bpar spl t1 t2 =>
     let '(loc', t1') := anno_par t1 (S loc) in
     
-    (loc', abpar_par r loc spl t1' t2)
+    (loc', abpar_par loc spl t1' t2)
 
   end.
 
-Definition annotated_par x :=
+Definition annotated_par (x:Term) :=
   snd (anno_par x 0).
 
 Inductive term_sub : AnnoTerm -> AnnoTerm -> Prop :=
@@ -547,6 +548,47 @@ Fixpoint unanno a :=
   | abpar _ spl a1 a2 => bpar spl (unanno a1) (unanno a2)
   end.
 
+Lemma anno_unanno: forall t i,
+    unanno (snd (anno t i)) = t.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a; ff.
+  -
+    ff.
+    erewrite <- IHt.
+    rewrite Heqp.
+    simpl.
+    tauto.
+  -
+    ff.
+    erewrite <- IHt1.
+    erewrite <- IHt2.
+    rewrite Heqp.
+    rewrite Heqp0.
+    tauto.
+  -
+    ff.
+    erewrite <- IHt1.
+    erewrite <- IHt2.
+    rewrite Heqp.
+    rewrite Heqp0.
+    tauto.
+  -
+    ff.
+    erewrite <- IHt1.
+    erewrite <- IHt2.
+    rewrite Heqp.
+    rewrite Heqp0.
+    tauto.
+Defined.
+    
+    
+    
+    
+
 (** This predicate determines if an annotated term is well formed,
     that is if its ranges correctly capture the relations between a
     term and its associated events. *)
@@ -591,6 +633,7 @@ Inductive well_formed_r_annt: AnnoTerm -> Prop :=
     well_formed_r_annt (abpar r s x y).
 Hint Constructors well_formed_r_annt : core.
 
+(*
 Inductive well_formed_r: AnnoTermPar -> Prop :=
 | wf_asp_r: forall r x,
     snd r = S (fst r) ->
@@ -622,6 +665,7 @@ Inductive well_formed_r: AnnoTermPar -> Prop :=
     (*fst (range y) > fst (range x) -> *)
     well_formed_r (abpar_par r loc s x y).
 Hint Constructors well_formed_r : core.
+*)
 
 (*
 Inductive well_formed_r: AnnoTerm -> Prop :=

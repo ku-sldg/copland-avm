@@ -7,14 +7,12 @@ Author:  Adam Petz, ampetz@ku.edu
 Require Import Term_Defs Term ConcreteEvidence GenStMonad Axioms_Io.
 Require Import Maps StructTactics.
 
-Require Import Coq.Program.Tactics.
+Require Import Coq.Program.Tactics Lia.
 
 Require Import List.
 Import ListNotations.
 
 Require Export StVM.
-
-Definition Event_ID := nat.
 
 Definition CVM := St cvm_st.
 
@@ -24,13 +22,15 @@ Definition put_ev (e:EvC) : CVM unit :=
   st <- get ;;
      let tr' := st_trace st in
      let p' := st_pl st in
-     put (mk_st e tr' p').
+     let i := st_evid st in
+     put (mk_st e tr' p' i).
 
 Definition put_pl (p:Plc) : CVM unit :=
   st <- get ;;
      let tr' := st_trace st in
      let e' := st_ev st in
-     put (mk_st e' tr' p).
+     let i := st_evid st in
+     put (mk_st e' tr' p i).
 
 Definition get_ev : CVM EvC :=
   st <- get ;;
@@ -40,21 +40,32 @@ Definition get_pl : CVM Plc :=
   st <- get ;;
   ret (st_pl st).
 
+Definition inc_id : CVM Event_ID :=
+  st <- get ;;
+    let tr' := st_trace st in
+    let e' := st_ev st in
+    let p' := st_pl st in
+    let i := st_evid st in
+    put (mk_st e' tr' p' (i + 1)) ;;
+    ret i.
+  
+
 Definition modify_evm (f:EvC -> EvC) : CVM unit :=
   st <- get ;;
-  let '{| st_ev := e; st_trace := tr; st_pl := p |} := st in
-  put (mk_st (f e) tr p).
+  let '{| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |} := st in
+  put (mk_st (f e) tr p i).
 
 Definition add_trace (tr':list Ev) : cvm_st -> cvm_st :=
-  fun '{| st_ev := e; st_trace := tr; st_pl := p |} =>
-    mk_st e (tr ++ tr') p.
+  fun '{| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |} =>
+    mk_st e (tr ++ tr') p i.
 
 Definition add_tracem (tr:list Ev) : CVM unit :=
   modify (add_trace tr).
 
-Definition split_ev (i:Event_ID) (sp:Split): CVM (EvC*EvC) :=
+Definition split_ev (sp:Split): CVM (EvC*EvC) :=
   e <- get_ev ;;
   p <- get_pl ;;
+  i <- inc_id ;;
   let e1 := splitEv_l sp e in
   let e2 := splitEv_r sp e in
   add_tracem [Term_Defs.split i p] ;;
@@ -83,9 +94,10 @@ Definition cons_uu (x:BS) (e:EvC) (params:ASP_PARAMS) (mpl:Plc) : EvC :=
   | evc bits et => evc (x :: bits) (uu params mpl et)
   end.
 
-Definition invoke_ASP (params:ASP_PARAMS) (x:Event_ID) : CVM EvC :=
+Definition invoke_ASP (params:ASP_PARAMS) : CVM EvC :=
   e <- get_ev ;;
   p <- get_pl ;;
+  x <- inc_id ;;
   tag_ASP params p x ;;
   ret (cons_uu (do_asp params p x) e params p).
 
@@ -106,9 +118,10 @@ Definition cons_sig (sig:BS) (e:EvC) (p:Plc): EvC :=
   | evc bits et => evc (sig :: bits) (gg p et)
   end.
 
-Definition signEv (x:Event_ID) : CVM EvC :=
+Definition signEv : CVM EvC :=
   p <- get_pl ;;
   e <- get_ev ;;
+  x <- inc_id ;;
   tag_SIG x p e ;;
   ret (cons_sig (do_sig (encodeEvBits e) p x) e p).
 
@@ -120,44 +133,186 @@ Definition cons_hh (hsh:BS) (e:EvC) (p:Plc): EvC :=
   | evc _ et => evc [hsh] (hh p et)
   end.
 
-Definition hashEv (x:Event_ID) : CVM EvC :=
+Definition hashEv : CVM EvC :=
   p <- get_pl ;;
   e <- get_ev ;;
+  x <- inc_id ;;
   tag_HSH x p e ;;
   ret (cons_hh (do_hash (encodeEvBits e) p) e p).
 
-Definition copyEv (x:Event_ID) : CVM EvC :=
+Definition copyEv : CVM EvC :=
   p <- get_pl ;;
+  x <- inc_id ;;
   add_tracem [copy x p] ;;
   get_ev.
 
-Definition do_prim (x:Event_ID) (a:ASP) : CVM EvC :=
+Definition do_prim (a:ASP) : CVM EvC :=
   match a with
-  | CPY => copyEv x
+  | CPY => copyEv
   | ASPC params =>
-    invoke_ASP params x       
-  | SIG => signEv x
-  | HSH => hashEv x
+    invoke_ASP params     
+  | SIG => signEv
+  | HSH => hashEv
   end.
+
+(*
+Fixpoint anno (t: Term) (i:nat) : (nat * AnnoTerm) :=
+  match t with
+  | asp x => (S i, (aasp (i, S i) x))
+
+  | att p x =>
+    let '(j,a) := anno x (S i)  in
+    (S j, aatt (i, S j) p a)
+
+  | lseq x y =>
+    let '(j,a) := anno x i in
+    let '(k,bt) := anno y j in
+    (k, alseq (i, k) a bt)
+
+  | bseq s x y =>
+    let '(j,a) := anno x (S i) in
+    let '(k,b) := anno y j in
+    (S k, abseq (i, S k) s a b)
+
+  | bpar s x y =>
+    let '(j,a) := anno x (S i) in
+    let '(k,b) := anno y j in
+    (S k, abpar (i, S k) s a b)
+  end.
+ *)
+
+Fixpoint event_id_span (t: Term) : nat :=
+  match t with
+  | asp x => 1 (*(S i, (aasp (i, S i) x)) *)
+
+  | att p x => 2 + (event_id_span x)
+                    (*
+    let '(j,a) := anno x (S i)  in
+    (S j, aatt (i, S j) p a) *)
+
+  | lseq x y =>
+    (event_id_span x) + (event_id_span y)
+                          (*
+    let '(j,a) := anno x i in
+    let '(k,bt) := anno y j in
+    (k, alseq (i, k) a bt) *)
+
+  | bseq s x y =>
+    2 + (event_id_span x) + (event_id_span y)
+                          (*
+    let '(j,a) := anno x (S i) in
+    let '(k,b) := anno y j in
+    (S k, abseq (i, S k) s a b) *)
+
+  | bpar s x y =>
+    2 + (event_id_span x) + (event_id_span y)
+                              (*
+    let '(j,a) := anno x (S i) in
+    let '(k,b) := anno y j in
+    (S k, abpar (i, S k) s a b) *)
+  end.
+
+Lemma span_range : forall t i j t',
+  anno t i = (j, t') ->
+  event_id_span t = (j - i).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a;
+    try 
+    cbn in *;
+    find_inversion;
+    lia.
+  -
+    cbn in *.
+    repeat break_let.
+    find_inversion.
+    assert (event_id_span t = n0 - (S i)).
+    { eauto. }
+    rewrite H.
+    assert (n0 > (S i)).
+    {
+      eapply anno_mono.
+      eassumption.
+    }
+    lia.
+  -
+    cbn in *.
+    repeat break_let.
+    repeat find_inversion.
+    assert (event_id_span t1 = (n - i)) by eauto.
+    assert (event_id_span t2 = (j - n)) by eauto.
+    repeat jkjke.
+    assert (n > i).
+    { eapply anno_mono; eauto. }
+    assert (j > n).
+    { eapply anno_mono; eauto. }
+    lia.
+  -
+    cbn in *.
+    repeat break_let.
+    repeat find_inversion.
+    assert (event_id_span t1 = (n - (S i))) by eauto.
+    assert (event_id_span t2 = (n0 - n)) by eauto.
+    repeat jkjke.
+    assert (n > (S i)).
+    { eapply anno_mono; eauto. }
+    assert (n0 > n).
+    { eapply anno_mono; eauto. }
+    lia.
+  -
+        cbn in *.
+    repeat break_let.
+    repeat find_inversion.
+    assert (event_id_span t1 = (n - (S i))) by eauto.
+    assert (event_id_span t2 = (n0 - n)) by eauto.
+    repeat jkjke.
+    assert (n > (S i)).
+    { eapply anno_mono; eauto. }
+    assert (n0 > n).
+    { eapply anno_mono; eauto. }
+    lia.
+Defined.
+    
+      
+    
+   
+    
+Definition inc_remote_event_ids (t:Term) : CVM unit :=
+  st <- get ;;
+    let tr' := st_trace st in
+    let e' := st_ev st in
+    let p' := st_pl st in
+    let i := st_evid st in
+    let new_i := i + (event_id_span t) in
+    put (mk_st e' tr' p' new_i).
+  
+    
+    
 
 (* Primitive monadic communication primitives (some require IO Axioms) *)
 
-Definition tag_REQ (t:AnnoTerm) (p:Plc) (q:Plc) (e:EvC) (reqi:Event_ID) : CVM unit :=
-  add_tracem [req reqi p q (unanno t) (get_et e)].
+Definition tag_REQ (t:Term) (p:Plc) (q:Plc) (e:EvC) : CVM unit :=
+  reqi <- inc_id ;;
+  add_tracem [req reqi p q t (get_et e)].
 
-Definition tag_RPY (p:Plc) (q:Plc) (e:EvC) (rpyi:Event_ID) : CVM unit :=
-  add_tracem [rpy (Nat.pred rpyi) p q (get_et e)].
+Definition tag_RPY (p:Plc) (q:Plc) (e:EvC) : CVM unit :=
+  rpyi <- inc_id ;;
+  add_tracem [rpy rpyi p q (get_et e)].
 
-Definition remote_session (t:AnnoTerm) (p:Plc) (q:Plc) (e:EvC) (reqi:Event_ID) : CVM EvC :=
-  tag_REQ t p q e reqi ;;
+Definition remote_session (t:Term) (p:Plc) (q:Plc) (e:EvC) : CVM EvC :=
+  tag_REQ t p q e ;;
   let e' := (doRemote_session t q e) in
   add_tracem (cvm_events t q (get_et e)) ;;
+  inc_remote_event_ids t ;;
   ret e'.
 
-Definition doRemote (t:AnnoTerm) (q:Plc) (e:EvC) (reqi:Event_ID) (rpyi:Event_ID) : CVM EvC :=
+Definition doRemote (t:Term) (q:Plc) (e:EvC) : CVM EvC :=
   p <- get_pl ;;
-  e' <- remote_session t p q e reqi ;;
-  tag_RPY p q e' rpyi ;;
+  e' <- remote_session t p q e ;;
+  tag_RPY p q e' ;;
   ret e'.
 
 Definition ss_cons (e1:EvC) (e2:EvC): EvC :=
@@ -170,38 +325,40 @@ Definition pp_cons (e1:EvC) (e2:EvC): EvC :=
   | (evc bits1 et1, evc bits2 et2) => evc (bits1 ++ bits2) (pp et1 et2)
   end.
 
-Definition join_seq (n:Event_ID) (e1:EvC) (e2:EvC): CVM unit :=
+Definition join_seq (e1:EvC) (e2:EvC): CVM unit :=
   p <- get_pl ;;
+  n <- inc_id ;;
   put_ev (ss_cons e1 e2) ;;
-  add_tracem [join (Nat.pred n) p].
+  add_tracem [join n(*(Nat.pred n)*) p].
 
 (* Primitive monadic parallel CVM thread primitives (some require IO Axioms) *)
 
-Definition do_start_par_threadIO (loc:Loc) (t:AnnoTerm) (e:RawEv) : unit.
+Definition do_start_par_threadIO (loc:Loc) (t:Term) (e:RawEv) : unit.
 Admitted.
 
-Definition do_start_par_thread (loc:Loc) (t:AnnoTerm) (e:RawEv) : CVM unit :=
+Definition do_start_par_thread (loc:Loc) (t:Term) (e:RawEv) : CVM unit :=
   let _ := do_start_par_threadIO loc t e in
   ret tt.  (* Admitted. *)
 
-Definition start_par_thread (loc:Loc) (t:AnnoTerm) (e:EvC) : CVM unit :=
+Definition start_par_thread (loc:Loc) (t:Term) (e:EvC) : CVM unit :=
   p <- get_pl ;;
   do_start_par_thread loc t (get_bits e) ;;
   add_tracem [cvm_thread_start loc p t (get_et e)].
 
-Definition do_wait_par_thread (loc:Loc) (t:AnnoTerm) (p:Plc) (e:EvC) : CVM EvC :=
+Definition do_wait_par_thread (loc:Loc) (t:Term) (p:Plc) (e:EvC) : CVM EvC :=
   ret (parallel_vm_thread loc t p e).
 
-Definition wait_par_thread (loc:Loc) (t:AnnoTerm) (e:EvC) : CVM EvC :=
+Definition wait_par_thread (loc:Loc) (t:Term) (e:EvC) : CVM EvC :=
   p <- get_pl ;;
   e' <- do_wait_par_thread loc t p e ;;
   add_tracem [cvm_thread_end loc] ;;
   ret e'.
 
-Definition join_par (n:Event_ID) (e1:EvC) (e2:EvC): CVM unit :=
+Definition join_par (e1:EvC) (e2:EvC): CVM unit :=
   p <- get_pl ;;
+  n <- inc_id ;;
   put_ev (pp_cons e1 e2) ;;
-  add_tracem [join (Nat.pred n) p].
+  add_tracem [join n (*(Nat.pred n)*) p].
    
 Ltac monad_unfold :=
   repeat unfold
@@ -253,8 +410,8 @@ Ltac pairs :=
     | [H: (Some _, _) =
           (Some _, _) |- _ ] => invc H; monad_unfold
                                                           
-    | [H: {| st_ev := _; st_trace := _; st_pl := _(*; st_store := _*) |} =
-          {| st_ev := _; st_trace := _; st_pl := _ (*; st_store := _*) |} |- _ ] =>
+    | [H: {| st_ev := _; st_trace := _; st_pl := _(*; st_store := _*); st_evid := _ |} =
+          {| st_ev := _; st_trace := _; st_pl := _ (*; st_store := _*); st_evid := _ |} |- _ ] =>
       invc H; monad_unfold
     end; destruct_conjs; monad_unfold.
 

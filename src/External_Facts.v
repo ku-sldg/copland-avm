@@ -4,17 +4,19 @@ Axioms and lemmas that capture the semantics of external CVM instances.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term ConcreteEvidence StVM Impl_vm Axioms_Io GenStMonad Helpers_VmSemantics.
+Require Import Term ConcreteEvidence StVM Impl_vm Axioms_Io GenStMonad Helpers_VmSemantics MonadVM.
 
 Require Import List.
 Import ListNotations.
 
+Search "span".
 
 
-Axiom copland_compile_external' : forall (t : AnnoTermPar) (e : EvC) (n : nat) (tr:list Ev),
+
+Axiom copland_compile_external' : forall (t : AnnoTermPar) (e : EvC) (n : nat) (tr:list Ev) (i:Event_ID),
     runSt 
       (copland_compile t)
-      {| st_ev := e; st_trace := tr; st_pl := n |} =
+      {| st_ev := e; st_trace := tr; st_pl := n; st_evid := i |} =
     (Some tt,
      {| st_ev := cvm_evidence (unannoPar t) n e;
         st_trace := tr ++ (cvm_events (unannoPar t) n (get_et e));
@@ -24,17 +26,20 @@ Axiom copland_compile_external' : forall (t : AnnoTermPar) (e : EvC) (n : nat) (
               execSt (copland_compile t)
                      {| st_ev := e;
                         st_trace := [];
-                        st_pl := n |})
+                        st_pl := n;
+                        st_evid := i |});
+        st_evid := (i + event_id_span (unannoPar t))
      |}).
 
 
-Lemma copland_compile_external : forall (t : AnnoTermPar) (e : EvC) (n : nat),
-    well_formed_r t ->
-    copland_compile t {| st_ev := e; st_trace := []; st_pl := n |} =
+Lemma copland_compile_external : forall (t : AnnoTermPar) (e : EvC) (n : nat) i,
+    (*well_formed_r t -> *)
+    copland_compile t {| st_ev := e; st_trace := []; st_pl := n; st_evid := i|} =
     (Some tt,
      {| st_ev := cvm_evidence (unannoPar t) n e;
         st_trace := cvm_events (unannoPar t) n (get_et e);
-        st_pl := n
+        st_pl := n;
+        st_evid := (i + event_id_span (unannoPar t))
      |}).
 Proof.
   intros.
@@ -45,7 +50,7 @@ Proof.
                 (copland_compile t)
                 {| st_ev := e;
                      st_trace := [];
-                     st_pl := n |})) as H0'.
+                     st_pl := n; st_evid := i |})) as H0'.
   {
     rewrite pl_immut;
     tauto. 
@@ -57,13 +62,14 @@ Defined.
 
 
 
-Lemma copland_compile_at' : forall (t : AnnoTermPar) (e : EvC) (n : nat) (tr: list Ev),
-    well_formed_r t ->
-    copland_compile t {| st_ev := e; st_trace := tr; st_pl := n |} =
+Lemma copland_compile_at' : forall (t : AnnoTermPar) (e : EvC) (n : nat) (tr: list Ev) i,
+    (*well_formed_r t -> *)
+    copland_compile t {| st_ev := e; st_trace := tr; st_pl := n; st_evid := i |} =
     (Some tt,
      {| st_ev := doRemote_session (unannoPar t) n e;
         st_trace := tr ++ cvm_events (unannoPar t) n (get_et e);
         st_pl := n;
+        st_evid := (i + event_id_span (unannoPar t))
      |}).
 Proof.
   intros.
@@ -76,7 +82,8 @@ Proof.
                (copland_compile t)
                {| st_ev := e;
                   st_trace := [];
-                  st_pl := n |}) = n) as H0.
+                  st_pl := n;
+                  st_evid := i|}) = n) as H0.
   eapply pl_immut.
   eauto.
   rewrite <- H0 at 4.
@@ -84,13 +91,14 @@ Proof.
 Defined.
 
 
-Lemma copland_compile_at : forall (t : AnnoTermPar) (e : EvC) (n : nat),
-    well_formed_r t ->
-    copland_compile t {| st_ev := e; st_trace := []; st_pl := n |} =
+Lemma copland_compile_at : forall (t : AnnoTermPar) (e : EvC) (n : nat) i,
+    (*well_formed_r t -> *)
+    copland_compile t {| st_ev := e; st_trace := []; st_pl := n; st_evid := i|} =
     (Some tt,
      {| st_ev := doRemote_session (unannoPar t) n e;
         st_trace := cvm_events (unannoPar t) n (get_et e);
-        st_pl := n
+        st_pl := n;
+        st_evid := (i + event_id_span (unannoPar t))
      |}).
 Proof.
   intros.

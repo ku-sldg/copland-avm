@@ -179,7 +179,7 @@ Inductive annoP: AnnoTerm -> Term -> nat -> Prop :=
     anno_term = snd (anno t n) ->
     annoP anno_term t n.
 
-Inductive anno_parP: AnnoTermPar -> AnnoTerm -> Loc -> Prop :=
+Inductive anno_parP: AnnoTermPar -> Term -> Loc -> Prop :=
 | anno_parP_c: forall par_term t loc,
     par_term = snd (anno_par t loc) ->
     anno_parP par_term t loc.
@@ -253,7 +253,7 @@ Ltac wrap_ccp :=
   try inv_annoparP;
   dd;
   repeat do_annopar_redo;
-  do_wf_pieces;
+  (*do_wf_pieces; *)
   repeat do_pl_immut;
   dd;
   try rewrite ccp_iff_cc in *.
