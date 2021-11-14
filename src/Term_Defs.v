@@ -366,6 +366,43 @@ Fixpoint anno_par (t:Term) (loc:Loc) : (Loc * AnnoTermPar)  :=
 Definition annotated_par (x:Term) :=
   snd (anno_par x 0).
 
+Inductive term_sub : Term -> Term -> Prop :=
+| termsub_refl_annt: forall t: Term, term_sub t t
+| aatt_sub_annt: forall t t' p,
+    term_sub t' t ->
+    term_sub t' (att p t)
+| alseq_subl_annt: forall t' t1 t2,
+    term_sub t' t1 ->
+    term_sub t' (lseq t1 t2)
+| alseq_subr_annt: forall t' t1 t2,
+    term_sub t' t2 ->
+    term_sub t' (lseq t1 t2)
+| abseq_subl_annt: forall t' t1 t2 s,
+    term_sub t' t1 ->
+    term_sub t' (bseq s t1 t2)
+| abseq_subr_annt: forall t' t1 t2 s,
+    term_sub t' t2 ->
+    term_sub t' (bseq s t1 t2)
+| abpar_subl_annt: forall t' t1 t2 s,
+    term_sub t' t1 ->
+    term_sub t' (bpar s t1 t2)
+| abpar_subr_annt: forall t' t1 t2 s,
+    term_sub t' t2 ->
+    term_sub t' (bpar s t1 t2).
+Hint Constructors term_sub : core.
+
+Lemma termsub_transitive: forall t t' t'',
+    term_sub t t' ->
+    term_sub t' t'' ->
+    term_sub t t''.
+Proof.  
+  generalizeEverythingElse t''.
+  induction t'';
+    intros H H0; ff.
+    (* try (invc H0; eauto). *)
+Defined.
+
+(*
 Inductive term_sub : AnnoTerm -> AnnoTerm -> Prop :=
 | termsub_refl_annt: forall t: AnnoTerm, term_sub t t
 | aatt_sub_annt: forall t t' r p,
@@ -401,6 +438,7 @@ Proof.
     intros H H0; ff.
     (* try (invc H0; eauto). *)
 Defined.
+*)
 
 (*
 Inductive term_sub : AnnoTermPar -> AnnoTermPar -> Prop :=

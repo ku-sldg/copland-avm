@@ -1027,7 +1027,7 @@ Proof.
     jkjke.
 Defined.
 
-Lemma cvm_refines_lts_evidence : forall t tr tr' bits bits' et et' p p' i i',
+Lemma cvm_refines_lts_evidence' : forall t tr tr' bits bits' et et' p p' i i',
     (*well_formed_r t -> *)
     copland_compileP t
                      (mk_st (evc bits et) tr p i)
@@ -1153,6 +1153,31 @@ Proof.
 
     find_rw_in_goal.
     tauto.
+Defined.
+
+Lemma cvm_refines_lts_evidence : forall t t' tr tr' bits bits' et et' p p' i i' loc,
+    (*well_formed_r t -> *)
+    anno_parP t t' loc ->
+    copland_compileP t
+                     (mk_st (evc bits et) tr p i)
+                     (Some tt)
+                     (mk_st (evc bits' et') tr' p' i') ->
+    et' = (Term_Defs.eval t' p et).
+Proof.
+  intros.
+  assert (t' = unannoPar t).
+  {
+    destruct (anno_par t' loc) eqn: hi.
+    invc H.
+    erewrite anno_unanno_par.
+    reflexivity.
+    rewrite hi.
+    simpl; tauto.
+  }
+  rewrite H1.
+  
+  eapply cvm_refines_lts_evidence'.
+  eassumption.
 Defined.
 
 (*
@@ -1328,7 +1353,7 @@ Proof.
     eauto. 
 Defined.
 
-Lemma cvm_spans: forall t e tr p i e' tr' p' i',
+Lemma cvm_spans': forall t e tr p i e' tr' p' i',
     copland_compileP t
                      {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |}
                      (Some tt)
@@ -1382,6 +1407,33 @@ Proof.
     lia.
 Defined.
 
+Lemma cvm_spans: forall t t' e tr p i e' tr' p' i' loc,
+    anno_parP t t' loc ->
+    copland_compileP t
+                     {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |}
+                     (Some tt)
+                     {|
+                       st_ev := e';
+                       st_trace := tr';
+                       st_pl := p';
+                       st_evid := i'
+                     |} ->
+    i' = i + event_id_span t'.
+Proof.
+  intros.
+  assert (t' = unannoPar t).
+  {
+    destruct (anno_par t' loc) eqn: hi.
+    invc H.
+    erewrite anno_unanno_par.
+    reflexivity.
+    jkjke.
+  }
+  rewrite H1.
+  eapply cvm_spans'; eauto.
+Defined.
+  
+
 Lemma span_cvm: forall atp t annt loc i j e e' tr tr' p p' i',
     copland_compileP atp
                      {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |} 
@@ -1412,23 +1464,7 @@ Proof.
   }
   subst.
   symmetry.
-  assert (t = unannoPar atp).
-  {
-    destruct (anno_par t loc) eqn: hi.
-    
-    inversion H0.
-    erewrite anno_unanno_par.
-    reflexivity.
-    rewrite hi.
-    subst.
-    rewrite hi.
-    tauto.
-  }
-  rewrite H2.
-
-  
-  eapply cvm_spans.
-  eassumption.
+  eapply cvm_spans; eauto.
 Defined.
 
 Lemma cvm_refines_lts_event_ordering : forall t atp annt cvm_tr bits bits' et et' p p' i i' loc,
@@ -1592,8 +1628,10 @@ Proof.
     eapply IHt2. (*with (e:= x). *)
     eassumption.
     econstructor; jkjke.
-    assert (e = Term_Defs.eval (unannoPar a) p et).
-    eapply cvm_refines_lts_evidence; eauto.
+    assert (e = Term_Defs.eval t1 p et).
+    eapply cvm_refines_lts_evidence.
+    eassumption.
+    eassumption.
 
 
     subst.
@@ -1628,6 +1666,7 @@ Proof.
     assert (H1 = i + event_id_span t1).
     {
 
+      (*
       assert (t1 = unannoPar a).
       {
         destruct (anno_par t1 loc) eqn: hi.
@@ -1643,6 +1682,10 @@ Proof.
       }
      
       rewrite H0.
+       *)
+      
+      Check cvm_spans.
+      Locate cvm_spans.
       eapply cvm_spans; eauto.
 
     }
@@ -1670,7 +1713,22 @@ Proof.
 
     }
     assert (n = H1) by congruence.
+    rewrite H7 in *; clear H7.
+    rewrite H6 in *; clear H6.
+    assert (t1 = unannoPar a).
+    {
+      destruct (anno_par t1 loc) eqn: hi.
+        erewrite anno_unanno_par.
+        reflexivity.
+        inversion Heqp0.
+        subst.
+        rewrite hi.
+        simpl.
+        tauto.
+    }
     subst.
+    
+    
     
     eassumption.
 
@@ -1891,7 +1949,6 @@ Proof.
       apply stbpstop.
       econstructor.
 Defined.
-Print anno_parP.
 
 Lemma cvm_refines_lts_event_ordering_corrolary : forall t annt atp cvm_tr bits et p loc i,
     (*well_formed_r_annt t -> *)

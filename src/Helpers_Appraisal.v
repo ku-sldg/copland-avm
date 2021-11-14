@@ -55,8 +55,8 @@ Defined.
 Ltac find_wfec :=
   repeat 
     match goal with
-    | [H: context [well_formed_r ?t -> _],
-          H2: well_formed_r ?t,
+    | [H: context [(*well_formed_r ?t*)_ -> _],
+          (*H2: well_formed_r ?t, *)
               H3: wf_ec ?e,
                   H4: copland_compileP ?t
                                        {| st_ev := ?e; st_trace := _; st_pl := _ |}
@@ -66,7 +66,7 @@ Ltac find_wfec :=
       assert_new_proof_by
         (wf_ec e')
         
-        ltac:(eapply H; [apply H2 | apply H3 | apply H4])
+        ltac:(eapply H; [(*apply H2 |*) apply H3 | apply H4])
     end.
 
 Lemma wfec_split: forall e s,
@@ -91,13 +91,13 @@ Ltac do_wfec_split :=
       ltac: (eapply wfec_split; apply H3)
   end; destruct_conjs.
 
-Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' p p',
-    well_formed_r t1 ->
+Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' p p' i i',
+    (*well_formed_r t1 -> *)
     wf_ec e ->
         copland_compileP t1
-                    {| st_ev := e; st_trace := tr; st_pl := p |}
+                    {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |}
                     (Some tt)
-                    {| st_ev := e'; st_trace := tr'; st_pl := p' |} ->
+                    {| st_ev := e'; st_trace := tr'; st_pl := p'; st_evid := i' |} ->
     wf_ec (e').
 Proof.
   intros.
@@ -150,14 +150,13 @@ Proof.
 
     erewrite app_length.
 
-    assert (wf_ec (evc r1 e1)).
+    assert (wf_ec (evc r0 e1)).
     {
       rewrite par_evidence in Heqe1.
       rewrite <- at_evidence in Heqe1.
       rewrite <- Heqe1.
       eapply wf_ec_preserved_remote.
       econstructor.
-      eassumption.
       eassumption.
     }
 
@@ -167,15 +166,15 @@ Defined.
 Ltac do_wfec_preserved :=
   repeat
     match goal with
-    | [H: well_formed_r ?t,
+    | [(*H: well_formed_r ?t, *)
           H2: wf_ec ?stev,
               H3: copland_compileP ?t
-                                   {| st_ev := ?stev; st_trace := _; st_pl := _ |}
+                                   {| st_ev := ?stev; st_trace := _; st_pl := _; st_evid := _ |}
                                    (Some tt)
-                                   {| st_ev := ?stev'; st_trace := _; st_pl := _ |}
+                                   {| st_ev := ?stev'; st_trace := _; st_pl := _; st_evid := _ |}
        |- _ ] =>
       assert_new_proof_by (wf_ec stev')
-                          ltac:(eapply wf_ec_preserved_by_cvm; [apply H | apply H2 | apply H3])
+                          ltac:(eapply wf_ec_preserved_by_cvm; [(*apply H |*) apply H2 | apply H3])
                                  
     end.
 
@@ -184,9 +183,9 @@ Ltac do_wfec_preserved :=
 Ltac do_evsub_ih :=
   match goal with
   | [H: copland_compileP ?t1
-                         {| st_ev := _; st_trace := _; st_pl := _ |}
+                         {| st_ev := _; st_trace := _; st_pl := _; st_evid := _ |}
                          (Some tt)
-                         {| st_ev := ?stev; st_trace := _; st_pl := _ |},
+                         {| st_ev := ?stev; st_trace := _; st_pl := _; st_evid := _ |},
             H3: reconstruct_evP ?stev ?v
 
      |- context[EvSub ?e'' _ \/ _]] =>
@@ -274,8 +273,8 @@ Ltac clear_skipn_firstn :=
       rewrite H2 in *; clear H2
   end.
 
-Lemma not_none_alseq_pieces: forall r t1 t2,
-    not_none_none (alseq r t1 t2) ->
+Lemma not_none_alseq_pieces: forall t1 t2,
+    not_none_none (lseq t1 t2) ->
     not_none_none t1 /\ not_none_none t2.
 Proof.
   unfold not_none_none in *;
@@ -283,8 +282,8 @@ Proof.
   split; eauto.
 Defined.
 
-Lemma not_none_abseq_pieces: forall r s t1 t2,
-    not_none_none (abseq r s t1 t2) ->
+Lemma not_none_abseq_pieces: forall s t1 t2,
+    not_none_none (bseq s t1 t2) ->
     not_none_none t1 /\ not_none_none t2.
 Proof.
   unfold not_none_none in *;
@@ -292,8 +291,8 @@ Proof.
   split; eauto.
 Defined.
 
-Lemma not_none_abpar_pieces: forall r s t1 t2,
-    not_none_none (abpar r s t1 t2) ->
+Lemma not_none_abpar_pieces: forall s t1 t2,
+    not_none_none (bpar s t1 t2) ->
     not_none_none t1 /\ not_none_none t2.
 Proof.
   unfold not_none_none in *;
@@ -301,8 +300,8 @@ Proof.
   split; eauto.
 Defined.
 
-Lemma not_none_aatt_pieces: forall r q t1,
-    not_none_none (aatt r q t1) ->
+Lemma not_none_aatt_pieces: forall q t1,
+    not_none_none (att q t1) ->
     not_none_none t1.
 Proof.
   intros;
@@ -311,8 +310,8 @@ Proof.
   eauto.
 Defined.
 
-Lemma not_hshsig_alseq_pieces: forall r t1 t2,
-    not_hash_sig_term (alseq r t1 t2) ->
+Lemma not_hshsig_alseq_pieces: forall t1 t2,
+    not_hash_sig_term (lseq t1 t2) ->
     not_hash_sig_term t1 /\ not_hash_sig_term t2.
 Proof.
   intros;
@@ -321,8 +320,8 @@ Proof.
   split; eauto.
 Defined.
 
-Lemma not_hshsig_abseq_pieces: forall r s t1 t2,
-    not_hash_sig_term (abseq r s t1 t2) ->
+Lemma not_hshsig_abseq_pieces: forall s t1 t2,
+    not_hash_sig_term (bseq s t1 t2) ->
     not_hash_sig_term t1 /\ not_hash_sig_term t2.
 Proof.
   intros;
@@ -331,8 +330,8 @@ Proof.
   split; eauto.
 Defined.
 
-Lemma not_hshsig_abpar_pieces: forall r s t1 t2,
-    not_hash_sig_term (abpar r s t1 t2) ->
+Lemma not_hshsig_abpar_pieces: forall s t1 t2,
+    not_hash_sig_term (bpar s t1 t2) ->
     not_hash_sig_term t1 /\ not_hash_sig_term t2.
 Proof.
   intros;
@@ -341,8 +340,8 @@ Proof.
   split; eauto.
 Defined.
 
-Lemma not_hshsig_aatt_pieces: forall r q t1,
-    not_hash_sig_term (aatt r q t1) ->
+Lemma not_hshsig_aatt_pieces: forall q t1,
+    not_hash_sig_term (att q t1) ->
     not_hash_sig_term t1.
 Proof.
   intros;
@@ -353,7 +352,7 @@ Defined.
 
 Ltac do_not_none_alseq_pieces :=
   match goal with
-  | [H: not_none_none (alseq _ ?t1 ?t2)
+  | [H: not_none_none (lseq ?t1 ?t2)
 
      |- _] =>
     
@@ -364,7 +363,7 @@ Ltac do_not_none_alseq_pieces :=
 
 Ltac do_not_none_abseq_pieces :=
   match goal with
-  | [H: not_none_none (abseq _ _ ?t1 ?t2)
+  | [H: not_none_none (bseq _ ?t1 ?t2)
 
      |- _] =>
     
@@ -375,7 +374,7 @@ Ltac do_not_none_abseq_pieces :=
 
 Ltac do_not_none_abpar_pieces :=
   match goal with
-  | [H: not_none_none (abpar _ _ ?t1 ?t2)
+  | [H: not_none_none (bpar _ ?t1 ?t2)
 
      |- _] =>
     
@@ -386,7 +385,7 @@ Ltac do_not_none_abpar_pieces :=
 
 Ltac do_not_none_aatt_pieces :=
   match goal with
-  | [H: not_none_none (aatt _ _ ?t1)
+  | [H: not_none_none (att _ ?t1)
 
      |- _] =>
     
@@ -404,7 +403,7 @@ Ltac do_not_none :=
 
 Ltac do_not_hshsig_alseq_pieces :=
   match goal with
-  | [H: not_hash_sig_term (alseq _ ?t1 ?t2)
+  | [H: not_hash_sig_term (lseq ?t1 ?t2)
      |- _] =>
     
     assert_new_proof_by
@@ -414,7 +413,7 @@ Ltac do_not_hshsig_alseq_pieces :=
 
 Ltac do_not_hshsig_abseq_pieces :=
   match goal with
-  | [H: not_hash_sig_term (abseq _ _ ?t1 ?t2)
+  | [H: not_hash_sig_term (bseq _ ?t1 ?t2)
      |- _] =>
     
     assert_new_proof_by
@@ -424,7 +423,7 @@ Ltac do_not_hshsig_abseq_pieces :=
 
 Ltac do_not_hshsig_abpar_pieces :=
   match goal with
-  | [H: not_hash_sig_term (abpar _ _ ?t1 ?t2)
+  | [H: not_hash_sig_term (bpar _ ?t1 ?t2)
      |- _] =>
     
     assert_new_proof_by
@@ -434,7 +433,7 @@ Ltac do_not_hshsig_abpar_pieces :=
 
 Ltac do_not_hshsig_aatt_pieces :=
   match goal with
-  | [H: not_hash_sig_term (aatt _ _ ?t1)
+  | [H: not_hash_sig_term (att _ ?t1)
 
      |- _] =>
     
@@ -450,8 +449,8 @@ Ltac do_not_hshsig :=
   try do_not_hshsig_abpar_pieces;
   destruct_conjs.
 
-Lemma not_none_none_contra_bseq: forall r t1 t2 (P:Prop),
-    not_none_none (abseq r (NONE, NONE) t1 t2) ->
+Lemma not_none_none_contra_bseq: forall t1 t2 (P:Prop),
+    not_none_none (bseq (NONE, NONE) t1 t2) ->
     P.
 Proof.
   intros.
@@ -463,8 +462,8 @@ Proof.
   eauto.
 Defined.
 
-Lemma not_none_none_contra_bpar: forall r t1 t2 (P:Prop),
-    not_none_none (abpar r (NONE, NONE) t1 t2) ->
+Lemma not_none_none_contra_bpar: forall t1 t2 (P:Prop),
+    not_none_none (bpar (NONE, NONE) t1 t2) ->
     P.
 Proof.
   intros.
@@ -478,7 +477,7 @@ Defined.
 
 Ltac do_none_none_contra_bseq :=
   match goal with
-  | [H: not_none_none (abseq _ (NONE,NONE) _ _)
+  | [H: not_none_none (bseq (NONE,NONE) _ _)
 
      |- _] =>
     (eapply not_none_none_contra_bseq; apply H)
@@ -486,7 +485,7 @@ Ltac do_none_none_contra_bseq :=
 
 Ltac do_none_none_contra_bpar :=
   match goal with
-  | [H: not_none_none (abpar _ (NONE,NONE) _ _)
+  | [H: not_none_none (bpar (NONE,NONE) _ _)
 
      |- _] =>
     (eapply not_none_none_contra_bpar; apply H)
@@ -496,10 +495,10 @@ Ltac do_none_none_contra :=
   try do_none_none_contra_bseq;
   try do_none_none_contra_bpar.
 
-Lemma evsubt_preserved_aeval: forall t et ett p,
+Lemma evsubt_preserved_eval: forall t et ett p,
     not_none_none t ->
     EvSubT ett et ->
-    EvSubT ett (aeval t p et).
+    EvSubT ett (eval t p et).
 Proof.
   intros.
   generalizeEverythingElse t.
@@ -511,19 +510,21 @@ Proof.
          do_none_none_contra). (* abseq, abpar cases  *)
 Defined.
 
-Lemma evsubt_preserved: forall t pt e e' et et' tr tr' p p' ett,
-    well_formed_r_annt t ->
+Lemma evsubt_preserved: forall t pt e e' et et' tr tr' p p' ett i i',
+    (*well_formed_r_annt t -> *)
     not_none_none t ->
     anno_parP pt t 0 ->
+    (*annoP annt t 0 -> *)
     copland_compileP pt
-                     {| st_ev := evc e et; st_trace := tr; st_pl := p |}
+                     {| st_ev := evc e et; st_trace := tr; st_pl := p; st_evid := i |}
                      (Some tt)
-                     {| st_ev := evc e' et'; st_trace := tr'; st_pl := p' |} ->
+                     {| st_ev := evc e' et'; st_trace := tr'; st_pl := p'; st_evid := i' |} ->
     EvSubT ett et ->
     EvSubT ett et'.
 Proof.
   intros.
 
+  (*
   destruct (anno_par t 0) eqn:hi.
   
   assert (t = (unannoPar pt)).
@@ -534,22 +535,38 @@ Proof.
     rewrite hi in *.
     simpl in H4.
     subst.
-    tauto.
+    tauto.3
   }
+   *)
+  
 
-  assert (et' = eval (unanno t) p et).
+  assert (et' = eval t p et).
   {
-    rewrite H4.
-    eapply cvm_refines_lts_evidence.
-    eapply wfr_annt_implies_wfr_par.
-    eassumption.
-    eassumption.
-    eassumption.
+    (*
+    rewrite H4. *)
+    eapply cvm_refines_lts_evidence; eauto.
   }
   subst.
 
-  rewrite eval_aeval.
-  eapply evsubt_preserved_aeval; eauto.
+
+  (*
+  assert (unannoPar pt = unanno annt).
+  {
+    destruct (anno_par t 0) eqn: hi.
+    invc H0.
+    invc H1.
+    rewrite anno_unanno.
+    erewrite anno_unanno_par.
+    reflexivity.
+
+    rewrite hi.
+    simpl.
+    reflexivity.
+  }
+  rewrite H4.
+   *)
+
+    eapply evsubt_preserved_eval; eauto.
 Defined.
 
 Lemma not_ev: forall t e,
@@ -684,34 +701,35 @@ Ltac do_t_at_zero t x :=
   destruct y;
   destruct y as [x].
 
-Ltac do_assert_remote t e p :=
+Ltac do_assert_remote t e p i :=
   assert (
       copland_compile t
-                      {| st_ev := e; st_trace := []; st_pl := p|} =
+                      {| st_ev := e; st_trace := []; st_pl := p; st_evid := i|} =
       (Some tt,
        {| st_ev := doRemote_session (unannoPar t) p e;
                    st_trace := cvm_events (unannoPar t) p (get_et e);
-                               st_pl := p
+                               st_pl := p; st_evid :=  (i + event_id_span (unannoPar t))
        |})
     ) by
-    (eapply copland_compile_at;
+    (eapply copland_compile_at(*;
      eapply wfr_annt_implies_wfr_par;
-     [eassumption | econstructor; jkjke]).
+     [eassumption | econstructor; jkjke]*)).
 
 Ltac do_assert_unannoPar t x :=
   assert (t = unannoPar x) by
     (erewrite anno_unanno_par;
      [reflexivity | eassumption]).
 
-Ltac do_assume_remote t e p x :=
+Ltac do_assume_remote t e p i x :=
   do_t_at_zero t x;
-  do_assert_remote x e p;
+  do_assert_remote x e p i;
   do_assert_unannoPar t x.
 
-Lemma evAccum: forall t pt p (e e' e'':EvidenceC) tr tr' p' (ecc ecc':EvC) loc,
+Lemma evAccum: forall t pt p (e e' e'':EvidenceC) tr tr' p' (ecc ecc':EvC) loc i i',
 
     anno_parP pt t loc ->
-    well_formed_r pt ->
+    (*annoP annt t i -> *)
+    (*well_formed_r pt -> *)
     not_none_none t ->
     wf_ec ecc ->
 
@@ -720,9 +738,9 @@ Lemma evAccum: forall t pt p (e e' e'':EvidenceC) tr tr' p' (ecc ecc':EvC) loc,
     
     EvSub e'' e ->
     copland_compileP (pt)
-                     {| st_ev := ecc; st_trace := tr; st_pl := p |}
+                     {| st_ev := ecc; st_trace := tr; st_pl := p; st_evid := i |}
                      (Some tt)
-                     {| st_ev := ecc'; st_trace := tr'; st_pl := p' |} ->
+                     {| st_ev := ecc'; st_trace := tr'; st_pl := p'; st_evid := i' |} ->
 
     (
       (EvSub e'' e') \/
@@ -779,23 +797,24 @@ Proof.
     wrap_ccp.
     do_not_none.
 
-    do_assume_remote t ecc n HHH.
+    do_assume_remote t ecc n loc HHH.
     
     eapply IHt.
 
-    8: {
+    7: {
       econstructor.
       eassumption.   
     }
+    (*
     econstructor. rewrite H8. tauto.
     eapply wfr_annt_implies_wfr_par.
-    eassumption.
+    eassumption. *)
     do_annopar_redo. eassumption.
     
     eassumption.
     eassumption.
     eassumption.
-    rewrite <- H10.
+    rewrite <- H8.
     eassumption.
     eassumption.
 
@@ -911,27 +930,32 @@ Proof.
         [destruct_conjs;
          left; eauto | right; repeat eexists; eauto].
     +
-      do_assume_remote t2 ecc p HHH.
+      do_assume_remote t2 ecc p loc HHH.
 
       edestruct IHt2.
-      8: {
+      7: {
         econstructor.
         eassumption. }
 
-      econstructor. rewrite H14. tauto.
+      econstructor. rewrite H11. tauto.
+
+      (*
       
       eapply wfr_annt_implies_wfr_par.
       eassumption.
       econstructor. rewrite H14. tauto.
+       *)
+      
      
       eassumption.
       eassumption.
      
       eassumption.
+
       rewrite <- Heqe1 in *.
       rewrite par_evidence in *.
       rewrite at_evidence in *.
-      rewrite <- H20.
+      rewrite <- H17.
       dd.
       eassumption.
       do_reconP_determ.
@@ -948,15 +972,15 @@ Defined.
 Ltac do_evaccum :=
   repeat 
     match goal with
-    | [ H: well_formed_r ?pt,
+    | [ (*H: well_formed_r ?pt, *)
            H2: wf_ec ?ecc,
                H3: reconstruct_evP ?ecc ?e,
                    H4: reconstruct_evP ?ecc' ?e',
                        H5: EvSub ?e'' ?e,
                            H6: copland_compileP ?pt
-                                                {| st_ev := ?ecc; st_trace := _; st_pl := _ |}
+                                                {| st_ev := ?ecc; st_trace := _; st_pl := _; st_evid := _ |}
                                                 (Some tt)
-                                                {| st_ev := ?ecc'; st_trace := _; st_pl := _ |},
+                                                {| st_ev := ?ecc'; st_trace := _; st_pl := _; st_evid := _ |},
                                H7: not_none_none ?t,
                                    H8: anno_parP ?pt ?t _
 
@@ -966,13 +990,13 @@ Ltac do_evaccum :=
         (EvSub e'' e' \/
          (exists (ett : Evidence) p'0 bs,
              EvSub (hhc p'0 bs ett) e' /\ EvSubT (et_fun e'') ett))
-        ltac: (eapply evAccum; [apply H8 | apply H | apply H7 | apply H2 | apply H3 | apply H4 | apply H5 | apply H6])
+        ltac: (eapply evAccum; [apply H8 (*| apply H *) | apply H7 | apply H2 | apply H3 | apply H4 | apply H5 | apply H6])
     end.
 
 
 
-Lemma sig_term_ev_lseq: forall r t1 t2 e,
-    not_hash_sig_term_ev (alseq r t1 t2) e ->  
+Lemma sig_term_ev_lseq: forall t1 t2 e,
+    not_hash_sig_term_ev (lseq t1 t2) e ->  
     not_hash_sig_term_ev t1 e.
 Proof.
   intros.
@@ -998,15 +1022,15 @@ Proof.
 Defined.
 
 
-Lemma sig_is: forall t pt ecc ecc' e e' tr tr' p p' loc,
+Lemma sig_is: forall t pt ecc ecc' e e' tr tr' p p' loc i i',
 
     anno_parP pt t loc ->
-    well_formed_r pt ->
+    (*well_formed_r pt -> *)
     wf_ec ecc ->
     copland_compileP pt
-                     {| st_ev := ecc; st_trace := tr; st_pl := p |}
+                     {| st_ev := ecc; st_trace := tr; st_pl := p; st_evid := i |}
                      (Some tt)
-                     {| st_ev := ecc'; st_trace := tr'; st_pl := p' |} ->
+                     {| st_ev := ecc'; st_trace := tr'; st_pl := p'; st_evid := i' |} ->
 
     reconstruct_evP ecc e ->
     reconstruct_evP ecc' e' ->
@@ -1014,7 +1038,7 @@ Lemma sig_is: forall t pt ecc ecc' e e' tr tr' p p' loc,
     gg_sub e' ->
 
     gg_sub e \/
-    exists r, term_sub (aasp r SIG) t.
+    term_sub (asp SIG) t.
 Proof.
   intros.
   generalizeEverythingElse t.
@@ -1057,19 +1081,21 @@ Proof.
     edestruct IHt.
     econstructor.
     reflexivity.
+    (*
     eapply wfr_annt_implies_wfr_par.
     eassumption.
     econstructor.
-    tauto.
+    tauto. *)
     
     eassumption.
 
     rewrite <- ccp_iff_cc.
 
     apply copland_compile_at.
+    (*
     eapply wfr_annt_implies_wfr_par.
-    eassumption.
-    econstructor. tauto.
+    eassumption. 
+    econstructor. tauto. *)
     eassumption.
 
     erewrite anno_unanno_par.
@@ -1094,10 +1120,9 @@ Proof.
 
     specialize IHt2 with (loc:=l).
 
-    assert (gg_sub H10 \/ (exists r, term_sub (aasp r SIG) t2)).
+    assert (gg_sub H7 \/ (term_sub (asp SIG) t2)).
     {
       eapply IHt2.
-      eassumption.
       eassumption.
       2: { eassumption. }
       eassumption.
@@ -1107,10 +1132,9 @@ Proof.
     }
     door.
 
-    assert (gg_sub H11 \/ (exists r, term_sub (aasp r SIG) t1)).
+    assert (gg_sub H8 \/ (term_sub (asp SIG) t1)).
     {
       eapply IHt1.
-      eassumption.
       eassumption.
       2: { eassumption. }
       eassumption.
@@ -1149,7 +1173,7 @@ Proof.
 
     +
           
-      assert (gg_sub H15 \/ exists r, term_sub (aasp r SIG) t1).
+      assert (gg_sub H12 \/ term_sub (asp SIG) t1).
       {
         destruct s.
         destruct s; destruct s0;
@@ -1157,7 +1181,6 @@ Proof.
         ++
           eapply IHt1.
           eassumption.
-          eassumption.
           2: { eassumption. }
           eassumption.
           eassumption.
@@ -1169,7 +1192,6 @@ Proof.
         ++
           eapply IHt1.
           eassumption.
-          eassumption.
           2: { eassumption. }
           eassumption.
           eauto.
@@ -1179,10 +1201,9 @@ Proof.
           eauto.
 
         ++
-          assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t1)).
+          assert (gg_sub mtc \/ (term_sub (asp SIG) t1)).
           {
             eapply IHt1.
-            eassumption.
             eassumption.
             2: { eassumption. }
             econstructor.
@@ -1201,10 +1222,9 @@ Proof.
           +++
             eauto.
         ++
-          assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t1)).
+          assert (gg_sub mtc \/ (term_sub (asp SIG) t1)).
           {
             eapply IHt1.
-            eassumption.
             eassumption.
             2: { eassumption. }
             eauto.
@@ -1224,17 +1244,15 @@ Proof.
       }
       door; eauto.
 
-
     +
          
-      assert (gg_sub H15 \/ exists r, term_sub (aasp r SIG) t2).
+      assert (gg_sub H12 \/ term_sub (asp SIG) t2).
       {
         destruct s.
         destruct s; destruct s0;
           dd.
         ++
           eapply IHt2.
-          eassumption.
           eassumption.
           2: { eassumption. }
           eassumption.
@@ -1245,10 +1263,9 @@ Proof.
           eauto.
         ++
           
-          assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t2)).
+          assert (gg_sub mtc \/ (term_sub (asp SIG) t2)).
           {
             eapply IHt2.
-            eassumption.
             eassumption.
             2: { eassumption. }
             eauto.
@@ -1269,7 +1286,6 @@ Proof.
           
           eapply IHt2.
           eassumption.
-          eassumption.
           2: { eassumption. }
           eassumption.
           eauto.
@@ -1279,10 +1295,9 @@ Proof.
           eauto.
         ++
          
-          assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t2)).
+          assert (gg_sub mtc \/ (term_sub (asp SIG) t2)).
           {
             eapply IHt2.
-            eassumption.
             eassumption.
             2: { eassumption. }
             eauto.
@@ -1325,14 +1340,13 @@ Proof.
 
     +
     
-      assert (gg_sub H13 \/ exists r, term_sub (aasp r SIG) t1).
+      assert (gg_sub H10 \/ term_sub (asp SIG) t1).
       {
         destruct s.
         destruct s; destruct s0;
           dd; do_reconP_determ.
         ++
           eapply IHt1.
-          eassumption.
           eassumption.
           2: { eassumption. }
           eassumption.
@@ -1345,7 +1359,6 @@ Proof.
 
         ++
           eapply IHt1.
-          eassumption.
           eassumption.
           2: { eassumption. }
           eassumption.
@@ -1357,10 +1370,9 @@ Proof.
 
         ++
          
-          assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t1)).
+          assert (gg_sub mtc \/ (term_sub (asp SIG) t1)).
           {
             eapply IHt1.
-            eassumption.
             eassumption.
             2: { eassumption. }
             eauto.
@@ -1378,10 +1390,9 @@ Proof.
             eauto.
         ++
          
-          assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t1)).
+          assert (gg_sub mtc \/ (term_sub (asp SIG) t1)).
           {
             eapply IHt1.
-            eassumption.
             eassumption.
             2: { eassumption. }
             eauto.
@@ -1411,6 +1422,7 @@ Proof.
        destruct_conjs.
        
        specialize IHt2 with (loc:=0).
+       (*
        assert (well_formed_r H21).
        {
          eapply wfr_annt_implies_wfr_par.
@@ -1418,11 +1430,11 @@ Proof.
            econstructor.
            jkjke. }
          eassumption.
-       }
+       } *)
 
        do_annopar_redo.
  
-      assert (gg_sub H13 \/ exists r, term_sub (aasp r SIG) t2).
+      assert (gg_sub H10 \/ term_sub (asp SIG) t2).
       {
         destruct s.
         destruct s; destruct s0;
@@ -1431,12 +1443,10 @@ Proof.
          
           eapply IHt2.
           eassumption.
-          eassumption.
           
           2: {
             rewrite <- ccp_iff_cc.
             eapply copland_compile_at.
-            eassumption.
           }
           3: {
           
@@ -1444,12 +1454,11 @@ Proof.
           erewrite <- par_evidence.
           erewrite anno_unanno_par.
           rewrite Heqe1.
-          2: {
-            invc H22.
-            eapply annopar_fst_snd.
+          eassumption.
+          invc H16.
+          eapply annopar_fst_snd.
           }
-          eauto.
-          }
+
           eassumption.
           eassumption.
           repeat eexists.
@@ -1457,15 +1466,13 @@ Proof.
 
         ++
           
-          assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t2)).
+          assert (gg_sub mtc \/ (term_sub (asp SIG) t2)).
           {
             eapply IHt2.
-            eassumption.
             eassumption.
             2: {
               rewrite <- ccp_iff_cc.
               eapply copland_compile_at.
-              eassumption.
             }
             3: {
           
@@ -1473,11 +1480,9 @@ Proof.
           erewrite <- par_evidence.
           erewrite anno_unanno_par.
           rewrite Heqe1.
-          2: {
-            invc H22.
-            eapply annopar_fst_snd.  }
-
-          eauto.
+          eassumption.
+            invc H16.
+            eapply annopar_fst_snd.
             }
             econstructor.
             tauto.
@@ -1495,13 +1500,11 @@ Proof.
         ++
           eapply IHt2.
           eassumption.
-          eassumption.
           
 
           2: {
             rewrite <- ccp_iff_cc.
             eapply copland_compile_at.
-            eassumption.
           }
           3: {
           
@@ -1509,12 +1512,11 @@ Proof.
           erewrite <- par_evidence.
           erewrite anno_unanno_par.
           rewrite Heqe1.
-          2: {
-            invc H22.
+          eassumption.
+            invc H16.
             eapply annopar_fst_snd.
           }
-          eauto.
-          }
+
           eassumption.
           
           eassumption.
@@ -1523,15 +1525,13 @@ Proof.
 
         ++
 
-          assert (gg_sub mtc \/ (exists r, term_sub (aasp r SIG) t2)).
+          assert (gg_sub mtc \/ (term_sub (asp SIG) t2)).
           {
             eapply IHt2.
-            eassumption.
             eassumption.
             2: {
               rewrite <- ccp_iff_cc.
               eapply copland_compile_at.
-              eassumption.
             }
             3: {
           
@@ -1539,12 +1539,10 @@ Proof.
           erewrite <- par_evidence.
           erewrite anno_unanno_par.
           rewrite Heqe1.
-          2: {
-            invc H22.
+          eassumption.
+            invc H16.
             eapply annopar_fst_snd.  }
 
-          eauto.
-            }
             econstructor.
             tauto.
             econstructor.
@@ -1564,26 +1562,31 @@ Proof.
       
       Unshelve.
       eauto.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
+      eauto.
 Defined.
 
 Ltac do_sig_is :=
   match goal with
-  | [H: well_formed_r ?pt,
+  | [(*H: well_formed_r ?pt, *)
         H2: wf_ec ?ecc,
             H': anno_parP ?pt ?t _,
             H6: gg_sub ?e',
                 H4: reconstruct_evP ?ecc ?e,
                     H5: reconstruct_evP ?ecc' ?e',
                         H3: copland_compileP ?pt
-                                             {| st_ev := ?ecc; st_trace := _; st_pl := _ |}
+                                             {| st_ev := ?ecc; st_trace := _; st_pl := _; st_evid := _ |}
                                              (Some tt)
-                                             {| st_ev := ?ecc'; st_trace := _; st_pl := _ |}
+                                             {| st_ev := ?ecc'; st_trace := _; st_pl := _; st_evid := _ |}
 
      |- _] =>
     
     assert_new_proof_by
-      (gg_sub e \/ (exists r : Range, term_sub (aasp r SIG) t))
-      ltac:(eapply sig_is; [apply H' | apply H | apply H2 | apply H3 | apply H4 | apply H5 | apply H6])
+      (gg_sub e \/ (term_sub (asp SIG) t))
+      ltac:(eapply sig_is; [apply H' | (*apply H |*) apply H2 | apply H3 | apply H4 | apply H5 | apply H6])
   end.
 
 Ltac do_hsh_subt :=
@@ -1591,9 +1594,9 @@ Ltac do_hsh_subt :=
   destruct_conjs;
   subst.
 
-Lemma sig_term_ev_bseql: forall (r : Range) s (t1 t2 : AnnoTerm)
+Lemma sig_term_ev_bseql: forall s (t1 t2 : Term)
                            (e : EvidenceC),
-    not_hash_sig_term_ev (abseq r s t1 t2) e ->
+    not_hash_sig_term_ev (bseq s t1 t2) e ->
     
     not_hash_sig_term_ev t1 (splitEvl s e).
 Proof.
@@ -1633,10 +1636,10 @@ Proof.
           solve_by_inversion).
 Defined.
 
-Lemma sig_term_ev_bseqr: forall (r : Range) s (t1 t2 : AnnoTerm)
+Lemma sig_term_ev_bseqr: forall s (t1 t2 : Term)
                            (e : EvidenceC),
     
-    not_hash_sig_term_ev (abseq r s t1 t2) e ->   
+    not_hash_sig_term_ev (bseq s t1 t2) e ->   
     not_hash_sig_term_ev t2 (splitEvr s e).
 Proof.
   intros.
@@ -1674,10 +1677,10 @@ Proof.
           solve_by_inversion).
 Defined.
 
-Lemma sig_term_ev_bparl: forall (r : Range) s (t1 t2 : AnnoTerm)
+Lemma sig_term_ev_bparl: forall s (t1 t2 : Term)
                            (e : EvidenceC),
     
-    not_hash_sig_term_ev (abpar r s t1 t2) e ->
+    not_hash_sig_term_ev (bpar s t1 t2) e ->
     not_hash_sig_term_ev t1 (splitEvl s e).
 Proof.
   intros.
@@ -1715,10 +1718,10 @@ Proof.
           solve_by_inversion).
 Defined.
 
-Lemma sig_term_ev_bparr: forall (r : Range) s (t1 t2 : AnnoTerm)
+Lemma sig_term_ev_bparr: forall s (t1 t2 : Term)
                            (e : EvidenceC),
     
-    not_hash_sig_term_ev (abpar r s t1 t2) e ->
+    not_hash_sig_term_ev (bpar s t1 t2) e ->
     not_hash_sig_term_ev t2 (splitEvr s e).
 Proof.
   intros.
@@ -1756,8 +1759,8 @@ Proof.
           solve_by_inversion).
 Defined.
 
-Lemma not_hste_att: forall t e n0 n1 n,
-    not_hash_sig_term_ev (aatt (n0, n1) n t) e ->
+Lemma not_hste_att: forall t e n,
+    not_hash_sig_term_ev (att n t) e ->
     not_hash_sig_term_ev t e.
 Proof.
   intros.
@@ -1793,7 +1796,7 @@ Defined.
 
 Ltac do_nhste_att :=
   match goal with
-  | [H: not_hash_sig_term_ev (aatt _ _ ?t) ?e
+  | [H: not_hash_sig_term_ev (att _ ?t) ?e
 
      |- _] =>
     
@@ -1804,7 +1807,7 @@ Ltac do_nhste_att :=
 
 Ltac do_nhste_lseql :=
   match goal with
-  | [H: not_hash_sig_term_ev (alseq _ ?t1 _) ?e
+  | [H: not_hash_sig_term_ev (lseq ?t1 _) ?e
      |- _] =>
     
     assert_new_proof_by
@@ -1812,8 +1815,8 @@ Ltac do_nhste_lseql :=
       ltac:(eapply sig_term_ev_lseq; [apply H (* | apply H2 | apply H3 *) ])
   end.
 
-Lemma nhst_lseq_r: forall r t1 t2 e,
-    not_hash_sig_term_ev (alseq r t1 t2) e ->
+Lemma nhst_lseq_r: forall t1 t2 e,
+    not_hash_sig_term_ev (lseq t1 t2) e ->
     not_hash_sig_term t2.
 Proof.
   intros.
@@ -1835,7 +1838,7 @@ Defined.
 
 Ltac do_nhst_lseqr :=
   match goal with
-  | [H: not_hash_sig_term_ev (alseq _ _ ?t2) _
+  | [H: not_hash_sig_term_ev (lseq _ ?t2) _
 
      |- _] =>
     
@@ -1846,7 +1849,7 @@ Ltac do_nhst_lseqr :=
 
 Ltac do_nhste_bseql :=
   match goal with
-  | [H: not_hash_sig_term_ev (abseq _ ?s ?t1 _) ?e
+  | [H: not_hash_sig_term_ev (bseq ?s ?t1 _) ?e
      |- _] =>
     
     assert_new_proof_by
@@ -1856,7 +1859,7 @@ Ltac do_nhste_bseql :=
 
 Ltac do_nhste_bseqr :=
   match goal with
-  | [H: not_hash_sig_term_ev (abseq _ ?s _ ?t2) ?e 
+  | [H: not_hash_sig_term_ev (bseq ?s _ ?t2) ?e 
      |- _] =>
     
     assert_new_proof_by
@@ -1866,7 +1869,7 @@ Ltac do_nhste_bseqr :=
 
 Ltac do_nhste_bparl :=
   match goal with
-  | [H: not_hash_sig_term_ev (abpar _ ?s ?t1 _) ?e
+  | [H: not_hash_sig_term_ev (bpar ?s ?t1 _) ?e
      |- _] =>
     
     assert_new_proof_by
@@ -1876,7 +1879,7 @@ Ltac do_nhste_bparl :=
 
 Ltac do_nhste_bparr :=
   match goal with
-  | [H: not_hash_sig_term_ev (abpar _ ?s _ ?t2) ?e
+  | [H: not_hash_sig_term_ev (bpar ?s _ ?t2) ?e
      |- _] =>
     
     assert_new_proof_by
@@ -1884,10 +1887,10 @@ Ltac do_nhste_bparr :=
       ltac:(eapply sig_term_ev_bparr; [apply H (* | apply H2 | apply H3 *) ])
   end.
 
-Lemma hshsig_ev_term_contra: forall t pt p (e e' :EvidenceC) tr tr' p' (ecc ecc':EvC) loc,
+Lemma hshsig_ev_term_contra: forall t pt p (e e' :EvidenceC) tr tr' p' (ecc ecc':EvC) loc i i',
 
     anno_parP pt t loc ->
-    well_formed_r pt ->
+    (*well_formed_r pt -> *)
     wf_ec ecc ->
     not_hash_sig_term_ev t e ->
     
@@ -1895,9 +1898,9 @@ Lemma hshsig_ev_term_contra: forall t pt p (e e' :EvidenceC) tr tr' p' (ecc ecc'
     reconstruct_evP ecc' e' ->
 
     copland_compileP pt
-                     {| st_ev := ecc; st_trace := tr; st_pl := p |}
+                     {| st_ev := ecc; st_trace := tr; st_pl := p; st_evid := i |}
                      (Some tt)
-                     {| st_ev := ecc'; st_trace := tr'; st_pl := p' |} ->
+                     {| st_ev := ecc'; st_trace := tr'; st_pl := p'; st_evid := i' |} ->
 
     not_hash_sig_ev e'.
 Proof.
@@ -1946,7 +1949,7 @@ Proof.
       destruct_conjs.
       unfold not; intros.
       do_ggsub.
-      eapply H6.
+      eapply H5.
       repeat eexists.
       eassumption.
       repeat eexists.
@@ -1958,12 +1961,12 @@ Proof.
     intros.
     unfold not.
     intros.
-    eapply H4.
-    invc H7.
+    eapply H3.
     invc H6.
+    invc H5.
     destruct_conjs.
    
-    invc H10.
+    invc H9.
 
     eapply gg_recons; eauto.
 
@@ -1973,14 +1976,15 @@ Proof.
     
     do_nhste_att.
 
-    do_assume_remote t ecc n HHH.
+    do_assume_remote t ecc n loc HHH.
 
     specialize IHt with (loc:=0).
      
     eapply IHt.
     econstructor. tauto.
+    (*
     eapply wfr_annt_implies_wfr_par;
-      [eassumption | econstructor; jkjke].
+      [eassumption | econstructor; jkjke]. *)
 
     2: { eassumption. }
     2: { eassumption. }
@@ -2007,11 +2011,11 @@ Proof.
     
     do_nhste_lseql.
     
-    assert (not_hash_sig_ev H10) by eauto.
+    assert (not_hash_sig_ev H7) by eauto.
 
     do_nhst_lseqr.
 
-    assert (not_hash_sig_term_ev t2 H10).
+    assert (not_hash_sig_term_ev t2 H7).
     {
       split.
       eassumption.
@@ -2025,10 +2029,10 @@ Proof.
       
       door.
       +
-        unfold not_hash_sig_term_ev in H2.
+        unfold not_hash_sig_term_ev in H1.
         destruct_conjs.
-        unfold not in H20.
-        eapply H20.
+        unfold not in H17.
+        eapply H17.
         eassumption.
         eauto.
       +
@@ -2037,7 +2041,7 @@ Proof.
         destruct_conjs.
         unfold not_hash_sig_term in *.
         unfold not in *.
-        eapply H2. (*with (t':= (alseq r t1 t2)). *)
+        eapply H1. (*with (t':= (alseq r t1 t2)). *)
                 
         econstructor.
         repeat eexists.
@@ -2049,7 +2053,6 @@ Proof.
     }
     
     eapply IHt2.
-    eassumption.
     eassumption.
 
     2: { eassumption. }
@@ -2089,15 +2092,14 @@ Proof.
     evSubFacts.
 
     +
-      invc H15.
+      invc H12.
       destruct_conjs.
       solve_by_inversion.
     +
             
-      assert (not_hash_sig_ev H11).
+      assert (not_hash_sig_ev H8).
       {
         eapply IHt1.
-        eassumption.
         eassumption.
         
         4: {
@@ -2112,12 +2114,12 @@ Proof.
 
       }
       
-      invc H15.
+      invc H12.
       destruct_conjs.
       subst.
-      unfold not_hash_sig_ev in H18.
+      unfold not_hash_sig_ev in H15.
       unfold not in *.
-      eapply H18.
+      eapply H15.
       econstructor.
       repeat eexists.
       eassumption.
@@ -2125,10 +2127,9 @@ Proof.
 
     +
       
-      assert (not_hash_sig_ev H10).
+      assert (not_hash_sig_ev H7).
       {
         eapply IHt2.
-        eassumption.
         eassumption.
         
         4: { eassumption. }
@@ -2142,12 +2143,12 @@ Proof.
 
       }
       
-      invc H15.
+      invc H12.
       destruct_conjs.
       subst.
-      unfold not_hash_sig_ev in H18.
+      unfold not_hash_sig_ev in H15.
       unfold not in *.
-      eapply H18.
+      eapply H15.
       econstructor.
       repeat eexists.
       eassumption.
@@ -2182,15 +2183,14 @@ Proof.
 
     evSubFacts.
     +
-      invc H13.
+      invc H10.
       destruct_conjs.
       solve_by_inversion.
     +
                
-      assert (not_hash_sig_ev H9).
+      assert (not_hash_sig_ev H6).
       {
         eapply IHt1.
-        eassumption.
         eassumption.
         5: { eassumption. }
         eassumption.
@@ -2202,11 +2202,11 @@ Proof.
         eassumption.
       }
       
-      invc H13.
+      invc H10.
       destruct_conjs.
-      unfold not_hash_sig_ev in H16.
+      unfold not_hash_sig_ev in H13.
       unfold not in *.
-      eapply H16.
+      eapply H13.
       econstructor.
       repeat eexists.
       eassumption.
@@ -2215,7 +2215,9 @@ Proof.
     +
       wrap_ccp.
 
-      do_assume_remote t2 (splitEv_r s ecc) p HHH.
+      do_assume_remote t2 (splitEv_r s ecc) p loc HHH.
+
+      (*
       
     assert (well_formed_r HHH).
     {
@@ -2225,12 +2227,14 @@ Proof.
       subst.
       jkjke.
     }
+       *)
+      
     
       assert (not_hash_sig_ev e3).
     {
       do_reconP_determ.
-        eapply IHt2 with (e:=(splitEvr s H10)).
-        7: {
+        eapply IHt2 with (e:=(splitEvr s H9)).
+        6: {
           econstructor.
           eassumption.
         }
@@ -2239,11 +2243,13 @@ Proof.
         jkjke.
         eassumption.
         eassumption.
+
         
         destruct s; destruct s; destruct s0; dd;
           do_reconP_determ; ff.
+        (*
          destruct s; destruct s; destruct s0; dd;
-           do_reconP_determ; ff.
+           do_reconP_determ; ff. *)
          econstructor. tauto.
          econstructor. tauto.
 
@@ -2270,13 +2276,13 @@ Proof.
          eassumption.
       }
       
-      invc H13.
+      invc H10.
       destruct_conjs.
       subst.
      
-      unfold not_hash_sig_ev in H25.
+      unfold not_hash_sig_ev in H19.
       unfold not in *.
-      eapply H25.
+      eapply H19.
       econstructor.
       repeat eexists.
       eassumption.
@@ -2285,33 +2291,33 @@ Defined.
 
 Ltac do_hste_contra :=
   match goal with
-  | [H: well_formed_r ?pt,
+  | [(*H: well_formed_r ?pt, *)
         H': anno_parP ?pt ?t _,
         H2: wf_ec ?ecc,
             H3: not_hash_sig_term_ev ?t ?e,
                 H4: reconstruct_evP ?ecc ?e,
                     H5: reconstruct_evP ?ecc' ?e',
                         H6: copland_compileP ?pt
-                                             {| st_ev := ?ecc; st_trace := _; st_pl := _ |}
+                                             {| st_ev := ?ecc; st_trace := _; st_pl := _; st_evid := _ |}
                                              (Some tt)
-                                             {| st_ev := ?ecc'; st_trace := _; st_pl := _ |}
+                                             {| st_ev := ?ecc'; st_trace := _; st_pl := _; st_evid := _ |}
 
      |- _] =>
     
     assert_new_proof_by
       (not_hash_sig_ev e')
-      ltac:(eapply hshsig_ev_term_contra; [apply H' | apply H | apply H2 | apply H3 | apply H4 | apply H5 | apply H6])
+      ltac:(eapply hshsig_ev_term_contra; [apply H' | (*apply H |*) apply H2 | apply H3 | apply H4 | apply H5 | apply H6])
   end.
 
-Lemma sig_term_ev_lseqr: forall r t1 t2 pt e e0 e1 e2 e3 tr tr' p p' H5 loc,
+Lemma sig_term_ev_lseqr: forall t1 t2 pt e e0 e1 e2 e3 tr tr' p p' H5 loc i i',
     anno_parP pt t1 loc ->
-    well_formed_r pt ->
+    (*well_formed_r pt -> *)
     wf_ec (evc e0 e1) ->
-    not_hash_sig_term_ev (alseq r t1 t2) e ->
+    not_hash_sig_term_ev (lseq t1 t2) e ->
     copland_compileP pt
-                     {| st_ev := evc e0 e1; st_trace := tr; st_pl := p |}
+                     {| st_ev := evc e0 e1; st_trace := tr; st_pl := p; st_evid := i |}
                      (Some tt)
-                     {| st_ev := evc e2 e3; st_trace := tr'; st_pl := p' |} ->
+                     {| st_ev := evc e2 e3; st_trace := tr'; st_pl := p'; st_evid := i' |} ->
     reconstruct_evP (evc e0 e1) e ->
     reconstruct_evP (evc e2 e3) H5 ->
     not_hash_sig_term_ev t2 H5.
@@ -2336,7 +2342,7 @@ Proof.
       door.
 
       ++
-        unfold not_hash_sig_term_ev in H2.
+        unfold not_hash_sig_term_ev in H1.
         destruct_conjs.
         concludes.
         unfold not in *.
@@ -2346,12 +2352,12 @@ Proof.
       ++
         
 
-        unfold not_hash_sig_term_ev in H2.
+        unfold not_hash_sig_term_ev in H1.
         destruct_conjs.
-        unfold not_hash_sig_term in H2.
+        unfold not_hash_sig_term in H1.
         unfold not in *.
         do_hsh_subt.
-        eapply H2; eauto.
+        eapply H1; eauto.
         econstructor.
         repeat eexists.
         eauto.
@@ -2361,17 +2367,18 @@ Defined.
 Ltac do_evsub_ihhh' :=
   match goal with
   | [H: copland_compileP ?pt
-                         {| st_ev := ?ee; st_trace := _; st_pl := _ |}
+                         {| st_ev := ?ee; st_trace := _; st_pl := _; st_evid := _ |}
                          (Some tt)
-                         {| st_ev := ?stev; st_trace := _; st_pl := _ |},
+                         {| st_ev := ?stev; st_trace := _; st_pl := _; st_evid := _ |},
         H': anno_parP ?pt ?t1 _,
+            H'': annoP ?annt ?t1 _,
         H3: reconstruct_evP ?ee _,
             H4: reconstruct_evP ?stev ?v',
                 IH: forall _, _ -> _ ,(*context[forall _, well_formed_r ?t1 -> _], *)
-       Hf: well_formed_r ?pt,
+       (*Hf: well_formed_r ?pt, *)
        Hnn: not_none_none ?t1,
        Hwf: wf_ec ?ee,
-       Hev: events ?t1 _ _ _
+       Hev: events ?annt _ _ _
                    
 
        |-  (exists e'' : EvidenceC, EvSub (uuc ?params ?p0 ?n e'') _) \/
@@ -2395,26 +2402,27 @@ Ltac do_evsub_ihhh' :=
              (exists (ett : Evidence) (p'0 bs : nat) (et':Evidence),
                  EvSub (hhc p'0 bs ett) v /\ EvSubT (uu i args tpl tid et') ett)) 
        *)
-      ltac: (eapply IH; [apply H' | apply Hf | apply Hnn| apply Hwf | apply H3 | apply H4 | apply Hev | apply H])
+      ltac: (eapply IH; [apply H' | apply H'' | (*apply Hf |*) apply Hnn| apply Hwf | apply H3 | apply H4 | apply Hev | apply H])
               (*ltac:(ff; repeat jkjke'; eauto)*)
               
               
   end.
 
-Lemma uu_preserved': forall t pt p et n p0 i args tpl tid
-                       e tr e' tr' p' ecc ecc' loc,
+Lemma uu_preserved': forall t annt pt p et n p0 i args tpl tid
+                       e tr e' tr' p' ecc ecc' loc l l',
 
     anno_parP pt t loc ->
-    well_formed_r pt ->
+    (*well_formed_r pt -> *)
+    annoP annt t l ->
     not_none_none t ->
     wf_ec ecc ->
     reconstruct_evP ecc e ->
     reconstruct_evP ecc' e' ->
-    events t p et (umeas n p0 i args tpl tid) ->
+    events annt p et (umeas n p0 i args tpl tid) ->
     copland_compileP pt
-                     {| st_ev := ecc; st_trace := tr; st_pl := p |}
+                     {| st_ev := ecc; st_trace := tr; st_pl := p; st_evid := l |}
                      (Some tt)
-                     {| st_ev := ecc'; st_trace := tr'; st_pl := p' |} ->
+                     {| st_ev := ecc'; st_trace := tr'; st_pl := p'; st_evid := l' |} ->
 
     (
       (exists e'', EvSub (uuc (asp_paramsC i args tpl tid) p0 (do_asp (asp_paramsC i args tpl tid) p0 n) e'') e') \/
@@ -2428,6 +2436,8 @@ Proof.
   induction t; intros.
   -
     wrap_ccp.
+    invc H0.
+    invc H.
     
     destruct a; ff.
     +
@@ -2435,39 +2445,86 @@ Proof.
 
       unfold cons_uu in *.
       repeat ff.
+      
       do_rewrap_reconP.
       left.
       eexists.
       econstructor.
   -
     wrap_ccp.
-    invEvents.
+    inversion H0.
+    subst.
+    inversion H.
+    subst.
+    cbn in *.
+    repeat break_let.
+    simpl in *.
+    clear H6.
+    
+    inv_events.
+
+    (*
+    invEvents. *)
     do_not_none.
 
-    do_assume_remote t ecc n H9.
+    do_assume_remote t ecc n (S l) H9.
     
       specialize IHt with (loc:=0).
 
       eapply IHt.
       econstructor.
       reflexivity.
+      (*
       eapply wfr_annt_implies_wfr_par.
-      eassumption.
+      eassumption. *)
       econstructor. tauto.
       eassumption.
       eassumption.
       eassumption.
       eassumption.
+
+      rewrite Heqp.
+      simpl.
       eassumption.
-      
+      rewrite H10.
+      erewrite anno_unanno_par.
       rewrite H7.
       simpl.
-      rewrite H10.
+      rewrite H10 in *.
       econstructor.
+      eassumption.
       eassumption.
     
   -
     wrap_ccp.
+    
+    inversion H; inversion H0.
+    
+    dd.
+    assert (st_evid0 = n1).
+    {
+      symmetry.
+      eapply span_cvm.
+      eassumption.
+      eassumption.
+      eassumption.
+    }
+    assert (l' = n2).
+    {
+      subst.
+      symmetry.
+      eapply span_cvm.
+      apply Heqp3.
+      eassumption.
+      eassumption.
+    }
+    dd.
+    
+    
+    repeat do_annopar_redo.
+    repeat do_anno_redo.
+    repeat clear_dups.
+    clear Heqp7; clear l2.
   
     do_not_none.
 
@@ -2477,6 +2534,45 @@ Proof.
       do_wfec_preserved.
       do_somerecons.
       do_reconP_determ.
+
+
+
+
+
+      
+      Print do_evsub_ihhh'.
+      (*
+Ltac do_evsub_ihhh' :=
+  match goal with
+  | H:copland_compileP ?pt
+        {| st_ev := ?ee; st_trace := _; st_pl := _; st_evid := _ |} 
+        (Some tt)
+        {| st_ev := ?stev; st_trace := _; st_pl := _; st_evid := _ |},
+    H':anno_parP ?pt ?t1 _,
+    H3:reconstruct_evP ?ee _,
+    H4:reconstruct_evP ?stev ?v',
+    IH:_ -> _ -> _,
+    Hnn:not_none_none ?t1,
+    Hwf:wf_ec ?ee,
+    Hev:events ?t1 _ _ _
+    |-
+    (exists e'' : EvidenceC, EvSub (uuc ?params ?p0 ?n e'') _) \/
+    (exists (ett : Evidence) p'0 bs (et' : Evidence),
+       EvSub (hhc p'0 bs ett) _ /\ EvSubT (uu ?params ?p0 et') ett) =>
+        assert_new_proof_by
+         ((exists e'' : EvidenceC, EvSub (uuc params p0 n e'') v') \/
+          (exists (ett : Evidence) p'0 bs (et' : Evidence),
+             EvSub (hhc p'0 bs ett) v' /\ EvSubT (uu params p0 et') ett))
+         ltac:(eapply IH;
+                [ apply H'
+                | apply Hnn
+                | apply Hwf
+                | apply H3
+                | apply H4
+                | apply Hev
+                | apply H ])
+  end
+*)
 
       repeat do_evsub_ihhh'.
 
@@ -2518,8 +2614,22 @@ Proof.
       do_somerecons.
 
       do_reconP_determ.
+
+      (*
+
+
+      edestruct IHt2.
+      eassumption.
+      eassumption.
+      eassumption.
+      4 : { eassumption. }
+      4: { eassumption. *)
+
+
+
       
-      repeat do_evsub_ihhh'.
+      
+      do_evsub_ihhh'.
 
       door.
       ++
@@ -2532,9 +2642,67 @@ Proof.
   - (* abseq case *)
 
     wrap_ccp.
+    
+    inversion H; inversion H0.
+    
+    dd.
+    assert (st_evid1 = n1).
+    {
+      symmetry.
+      eapply span_cvm.
+      eassumption.
+      eassumption.
+      assert (l + 1 = S l) by lia.
+      jkjke.
+    }
+    assert (st_evid = n2).
+    {
+      subst.
+      symmetry.
+      eapply span_cvm.
+      apply Heqp7.
+      eassumption.
+      eassumption.
+    }
+    dd.
+    
+    
+    repeat do_annopar_redo.
+    repeat do_anno_redo.
+    repeat clear_dups.
+    clear Heqp6; clear l2.
+  
     do_not_none.
 
     do_rewrap_reconP.
+
+    assert (l + 1 = S l) by lia.
+    rewrite H4 in *; clear H4.
+
+
+    (*
+    invEvents.
+    +
+      do_wfec_split.
+      do_wfec_preserved.
+      do_wfec_firstn.
+      do_wfec_skipn.
+      clear_skipn_firstn.
+      do_wfec_preserved.
+      try do_somerecons.
+      do_reconP_determ. *)
+      
+
+
+
+
+    (*
+    wrap_ccp.
+    do_not_none.
+
+    do_rewrap_reconP.
+     *)
+    
     
     invEvents;
 
@@ -2556,11 +2724,49 @@ Proof.
 
   - (* abpar case *)
 
+        wrap_ccp.
+    
+    inversion H; inversion H0.
+    
+    dd.
+    assert (st_evid = n1).
+    {
+      assert (l + 1 = S l) by lia.
+      symmetry.
+      eapply span_cvm.
+      eassumption.
+      eassumption.
+      jkjke.
+    }
+    (*
+    assert (st_evid = n2).
+    {
+      admit.
+    } *)
+    dd.
+    
+    
+    repeat do_annopar_redo.
+    repeat do_anno_redo.
+    repeat clear_dups.
+    (*
+    clear Heqp6; clear l2. *)
+  
+    do_not_none.
 
+    do_rewrap_reconP.
+
+    assert (l + 1 = S l) by lia.
+    rewrite H4 in *; clear H4.
+
+
+    (*
     wrap_ccp.
     do_not_none.
 
     do_rewrap_reconP.
+     *)
+    
 
     invEvents;
 
@@ -2594,31 +2800,38 @@ Proof.
       do_somerecons.
       do_reconP_determ.
 
-      do_assume_remote t2 (splitEv_r s ecc) p HHH.
+      do_assume_remote t2 (splitEv_r s ecc) p n1 HHH.
 
       edestruct IHt2.
       econstructor.
       reflexivity.
-      
+
+      (*
       eapply wfr_annt_implies_wfr_par.
       eassumption.
       econstructor.
-      tauto.
+      tauto. *)
       eassumption.
-      5: {
+      eassumption.
+      4: {
+        eassumption.
+        (*
         econstructor.
         rewrite H15.
         simpl.
-        eassumption.
+        eassumption. *)
       }
       4: {
+        econstructor.
+        rewrite H13.
+        simpl.
         eassumption.
       }
       3 : {
         rewrite par_evidence in *.
         rewrite at_evidence in *.
         
-        rewrite <- H20.
+        rewrite <- H18.
         rewrite Heqe1.
         eassumption.
       }
@@ -2634,28 +2847,34 @@ Proof.
       repeat (eexists; eauto).  
 Defined.
 
-
-Lemma uu_preserved: forall t1 t2 pt1 pt2 loc1 loc2 p et n p0 i args tpl tid
+(*
+    anno_parP pt t loc ->
+    (*well_formed_r pt -> *)
+    annoP annt t l ->
+    not_none_none t ->
+*)
+Lemma uu_preserved: forall t1 t2 annt pt1 pt2 loc1 loc2 p et n p0 i args tpl tid
                       e tr st_ev st_trace p'
-                      e' tr' p'' ecc,
+                      e' tr' p'' ecc l l' l'',
     anno_parP pt1 t1 loc1 ->
     anno_parP pt2 t2 loc2 ->
-    well_formed_r pt1 ->
-    well_formed_r pt2 ->
+    (*well_formed_r pt1 ->
+    well_formed_r pt2 -> *)
+    annoP annt t1 l ->
     not_none_none t1 ->
     not_none_none t2 ->
     wf_ec e ->
     reconstruct_evP ecc e' ->
-    events t1 p et (umeas n p0 i args tpl tid) ->
+    events annt p et (umeas n p0 i args tpl tid) ->
     copland_compileP pt1
-                     {| st_ev := e; st_trace := tr; st_pl := p |}
+                     {| st_ev := e; st_trace := tr; st_pl := p; st_evid := l |}
                      (Some tt)
-                     {| st_ev := st_ev; st_trace := st_trace; st_pl := p' |} ->
+                     {| st_ev := st_ev; st_trace := st_trace; st_pl := p'; st_evid := l' |} ->
     
     copland_compileP pt2
-                     {| st_ev := st_ev; st_trace := st_trace; st_pl := p' |}
+                     {| st_ev := st_ev; st_trace := st_trace; st_pl := p'; st_evid := l' |}
                      (Some tt)
-                     {| st_ev := ecc; st_trace := tr'; st_pl := p'' |} ->
+                     {| st_ev := ecc; st_trace := tr'; st_pl := p''; st_evid := l'' |} ->
 
     (
       (exists e'', EvSub (uuc (asp_paramsC i args tpl tid) p0 (do_asp (asp_paramsC i args tpl tid) p0 n) e'') e') \/
@@ -2672,9 +2891,9 @@ Proof.
   do_somerecons.
   
   assert (
-      (exists e'', EvSub (uuc (asp_paramsC i args tpl tid) p0 (do_asp (asp_paramsC i args tpl tid) p0 n) e'') H13) \/
+      (exists e'', EvSub (uuc (asp_paramsC i args tpl tid) p0 (do_asp (asp_paramsC i args tpl tid) p0 n) e'') H12) \/
       (exists ett p' bs et',
-          EvSub (hhc p' bs ett) H13 /\
+          EvSub (hhc p' bs ett) H12 /\
           EvSubT (uu (asp_paramsC i args tpl tid) p0 et') ett)
     ).
   {
@@ -2692,20 +2911,20 @@ Proof.
     do_evaccum.
   +
     
-    clear H20.
+    clear H19.
     door; eauto.
 
     right;
       (repeat eexists; eauto).
   +
-    clear H24.
+    clear H23.
     door; ff.
     ++
       right;
         repeat (eexists; eauto).
 
     ++
-      assert (EvSubT (uu (asp_paramsC i args tpl tid) p0 H21) H24).
+      assert (EvSubT (uu (asp_paramsC i args tpl tid) p0 H20) H23).
       {
         eapply evsubT_transitive.
         apply hhSubT.
@@ -2719,22 +2938,22 @@ Defined.
 
 Ltac do_nhste_lseqr :=
   match goal with
-  | [H: well_formed_r ?pt,
+  | [(*H: well_formed_r ?pt, *)
         H': anno_parP ?pt ?t1 _,
         H2: wf_ec ?ecc,
             H3: not_hash_sig_term_ev (alseq _ ?t1 ?t2) ?e,
                 H5: reconstruct_evP ?ecc ?e,
                     H6: reconstruct_evP ?ecc' ?e',
                         H4: copland_compileP ?pt
-                                             {| st_ev := ?ecc; st_trace := _; st_pl := _ |}
+                                             {| st_ev := ?ecc; st_trace := _; st_pl := _; st_evid := _ |}
                                              (Some tt)
-                                             {| st_ev := ?ecc'; st_trace := _; st_pl := _ |}
+                                             {| st_ev := ?ecc'; st_trace := _; st_pl := _; st_evid := _ |}
 
      |- _] =>
     
     assert_new_proof_by
       (not_hash_sig_term_ev t2 e')
-      ltac:(eapply sig_term_ev_lseqr; [apply H' | apply H | apply H2 | apply H3 | apply H4 | apply H5 | apply H6])
+      ltac:(eapply sig_term_ev_lseqr; [apply H' | (*apply H |*) apply H2 | apply H3 | apply H4 | apply H5 | apply H6])
   end.
 
 Ltac do_ste :=
@@ -2758,19 +2977,20 @@ Ltac sigEventPFacts :=
   | [H: sigEventP _ |- _] => invc H
   end.
 
-Lemma nhse_bseql_nosplit: forall t1 t2 pt loc ecc ecc' r s tr tr' p p' e e' H19,
+Lemma nhse_bseql_nosplit: forall t1 t2 pt loc ecc ecc' s tr tr' p p' e e' H19 i i',
     anno_parP pt t1 loc ->
-    well_formed_r pt ->
+    (*well_formed_r pt -> *)
     wf_ec ecc ->
     wf_ec (splitEv_l s ecc) -> 
-    not_hash_sig_term_ev (abseq r s t1 t2) H19 ->
+    not_hash_sig_term_ev (bseq s t1 t2) H19 ->
     copland_compileP pt
                      {|
                       st_ev := splitEv_l s ecc;
                       st_trace := tr;
-                      st_pl := p |}
+                      st_pl := p;
+                      st_evid := i|}
                      (Some tt)
-                     {| st_ev := ecc'; st_trace := tr'; st_pl := p' |} ->
+                     {| st_ev := ecc'; st_trace := tr'; st_pl := p'; st_evid := i' |} ->
 
     
     reconstruct_evP ecc H19 ->
@@ -2782,8 +3002,7 @@ Proof.
   destruct ecc.
   eapply hshsig_ev_term_contra.
   eassumption.
-  6: { eassumption. }
-  eassumption.
+  5: { eassumption. }
   eassumption.
   eapply sig_term_ev_bseql.
   eassumption.
@@ -2798,39 +3017,40 @@ Defined.
 
 Ltac do_nhse_bseql_nosplit :=
   match goal with
-  | [H: well_formed_r ?pt,
+  | [(*H: well_formed_r ?pt, *)
         H': anno_parP ?pt ?t1 _,
         H2: wf_ec ?ecc,
             H3: wf_ec (splitEv_l ?s ?ecc),
-                H4: not_hash_sig_term_ev (abseq _ ?s ?t1 _) ?H19,
+                H4: not_hash_sig_term_ev (bseq ?s ?t1 _) ?H19,
                     H6: reconstruct_evP ?ecc ?H19,
                         H7: reconstruct_evP (splitEv_l ?s ?ecc) ?e,
                             H8: reconstruct_evP ?ecc' ?e',
                                 H5: copland_compileP ?pt
-                                                     {| st_ev := splitEv_l ?s ?ecc; st_trace := _; st_pl := _ |}
+                                                     {| st_ev := splitEv_l ?s ?ecc; st_trace := _; st_pl := _; st_evid := _ |}
                                                      (Some tt)
-                                                     {| st_ev := ?ecc'; st_trace := _; st_pl := _ |}
+                                                     {| st_ev := ?ecc'; st_trace := _; st_pl := _; st_evid := _ |}
 
      |- _] =>
     
     assert_new_proof_by
       (not_hash_sig_ev e')
-      ltac:(eapply nhse_bseql_nosplit; [apply H' | apply H | apply H2 | apply H3 | apply H4 | apply H5 | apply H6 | apply H7 | apply H8])
+      ltac:(eapply nhse_bseql_nosplit; [apply H' | (*apply H |*) apply H2 | apply H3 | apply H4 | apply H5 | apply H6 | apply H7 | apply H8])
   end.
 
-Lemma nhse_bseqr_nosplit: forall t1 t2 pt loc ecc ecc' r s tr tr' p p' e e' H19,
+Lemma nhse_bseqr_nosplit: forall t1 t2 pt loc ecc ecc' s tr tr' p p' e e' H19 i i',
     anno_parP pt t2 loc ->
-    well_formed_r pt ->
+    (*well_formed_r pt -> *)
     wf_ec ecc ->
     wf_ec (splitEv_r s ecc) -> 
-    not_hash_sig_term_ev (abseq r s t1 t2) H19 ->
+    not_hash_sig_term_ev (bseq s t1 t2) H19 ->
     copland_compileP pt
                      {|
                       st_ev := splitEv_r s ecc;
                       st_trace := tr;
-                      st_pl := p |}
+                      st_pl := p;
+                      st_evid := i|}
                      (Some tt)
-                     {| st_ev := ecc'; st_trace := tr'; st_pl := p' |} ->
+                     {| st_ev := ecc'; st_trace := tr'; st_pl := p'; st_evid := i' |} ->
 
     
     reconstruct_evP ecc H19 ->
@@ -2842,8 +3062,7 @@ Proof.
   destruct ecc.
   eapply hshsig_ev_term_contra.
   eassumption.
-  6: { eassumption. }
-  eassumption.
+  5: { eassumption. }
   eassumption.
   eapply sig_term_ev_bseqr.
   eassumption.
@@ -2856,39 +3075,40 @@ Defined.
 
 Ltac do_nhse_bseqr_nosplit :=
   match goal with
-  | [H: well_formed_r ?pt,
+  | [(*H: well_formed_r ?pt, *)
         H': anno_parP ?pt ?t2 _,
         H2: wf_ec ?ecc,
             H3: wf_ec (splitEv_r ?s ?ecc),
-                H4: not_hash_sig_term_ev (abseq _ ?s _ ?t2) ?H19,
+                H4: not_hash_sig_term_ev (bseq ?s _ ?t2) ?H19,
                     H6: reconstruct_evP ?ecc ?H19,
                         H7: reconstruct_evP (splitEv_r ?s ?ecc) ?e,
                             H8: reconstruct_evP ?ecc' ?e',
                                 H5: copland_compileP ?pt
-                                                     {| st_ev := splitEv_r ?s ?ecc; st_trace := _; st_pl := _ |}
+                                                     {| st_ev := splitEv_r ?s ?ecc; st_trace := _; st_pl := _; st_evid := _ |}
                                                      (Some tt)
-                                                     {| st_ev := ?ecc'; st_trace := _; st_pl := _ |}
+                                                     {| st_ev := ?ecc'; st_trace := _; st_pl := _; st_evid := _|}
 
      |- _] =>
     
     assert_new_proof_by
       (not_hash_sig_ev e')
-      ltac:(eapply nhse_bseqr_nosplit; [apply H | apply H2 | apply H3 | apply H4 | apply H5 | apply H6 | apply H7 | apply H8])
+      ltac:(eapply nhse_bseqr_nosplit; [(*apply H |*)apply H' | apply H2 | apply H3 | apply H4 | apply H5 | apply H6 | apply H7 | apply H8])
   end.
 
-Lemma nhse_bparl_nosplit: forall t1 t2 pt loc ecc ecc' r s tr tr' p p' e e' H19,
+Lemma nhse_bparl_nosplit: forall t1 t2 pt loc ecc ecc' s tr tr' p p' e e' H19 i i',
     anno_parP pt t1 loc ->
-    well_formed_r pt ->
+    (*well_formed_r pt -> *)
     wf_ec ecc ->
     wf_ec (splitEv_l s ecc) -> 
-    not_hash_sig_term_ev (abpar r s t1 t2) H19 ->
+    not_hash_sig_term_ev (bpar s t1 t2) H19 ->
     copland_compileP pt
                     {|
                       st_ev := splitEv_l s ecc;
                       st_trace := tr;
-                      st_pl := p |}
+                      st_pl := p;
+                      st_evid := i|}
                     (Some tt)
-                    {| st_ev := ecc'; st_trace := tr'; st_pl := p' |} ->
+                    {| st_ev := ecc'; st_trace := tr'; st_pl := p'; st_evid := i' |} ->
 
     
     reconstruct_evP ecc H19 ->
@@ -2900,8 +3120,7 @@ Proof.
   destruct ecc.
   eapply hshsig_ev_term_contra.
   eassumption.
-  6: { eassumption. }
-  eassumption.
+  5: { eassumption. }
   eassumption.
   eapply sig_term_ev_bparl.
   eassumption.
@@ -2914,39 +3133,40 @@ Defined.
 
 Ltac do_nhse_bparl_nosplit :=
   match goal with
-  | [H: well_formed_r ?t1,
+  | [(*H: well_formed_r ?t1, *)
         H': anno_par ?pt ?t1 _,
         H2: wf_ec ?ecc,
             H3: wf_ec (splitEv_l ?s ?ecc),
-                H4: not_hash_sig_term_ev (abpar _ ?s ?t1 _) ?H19,
+                H4: not_hash_sig_term_ev (bpar ?s ?t1 _) ?H19,
                     H6: reconstruct_evP ?ecc ?H19,
                         H7: reconstruct_evP (splitEv_l ?s ?ecc) ?e,
                             H8: reconstruct_evP ?ecc' ?e',
                                 H5: copland_compileP ?pt
-                                                     {| st_ev := splitEv_l ?s ?ecc; st_trace := _; st_pl := _ |}
+                                                     {| st_ev := splitEv_l ?s ?ecc; st_trace := _; st_pl := _; st_evid := _ |}
                                                      (Some tt)
-                                                     {| st_ev := ?ecc'; st_trace := _; st_pl := _ |}
+                                                     {| st_ev := ?ecc'; st_trace := _; st_pl := _; st_evid := _ |}
 
      |- _] =>
     
     assert_new_proof_by
       (not_hash_sig_ev e')
-      ltac:(eapply nhse_bparl_nosplit; [apply H' | apply H | apply H2 | apply H3 | apply H4 | apply H5 | apply H6 | apply H7 | apply H8])
+      ltac:(eapply nhse_bparl_nosplit; [apply H' | (*apply H |*) apply H2 | apply H3 | apply H4 | apply H5 | apply H6 | apply H7 | apply H8])
   end.
 
-Lemma nhse_bparr_nosplit: forall t1 t2 pt loc ecc ecc' r s tr tr' p p' e e' H19,
+Lemma nhse_bparr_nosplit: forall t1 t2 pt loc ecc ecc' s tr tr' p p' e e' H19 i i',
     anno_parP pt t2 loc ->
-    well_formed_r pt ->
+    (*well_formed_r pt -> *)
     wf_ec ecc ->
     wf_ec (splitEv_r s ecc) -> 
-    not_hash_sig_term_ev (abpar r s t1 t2) H19 ->
+    not_hash_sig_term_ev (bpar s t1 t2) H19 ->
     copland_compileP pt
                     {|
                       st_ev := splitEv_r s ecc;
                       st_trace := tr;
-                      st_pl := p |}
+                      st_pl := p;
+                      st_evid := i|}
                     (Some tt)
-                    {| st_ev := ecc'; st_trace := tr'; st_pl := p' |} ->
+                    {| st_ev := ecc'; st_trace := tr'; st_pl := p'; st_evid := i' |} ->
 
     
     reconstruct_evP ecc H19 ->
@@ -2958,8 +3178,7 @@ Proof.
   destruct ecc.
   eapply hshsig_ev_term_contra.
   eassumption.
-  6: { eassumption. }
-  eassumption.
+  5: { eassumption. }
   eassumption.
   eapply sig_term_ev_bparr.
   eassumption.
@@ -2972,24 +3191,24 @@ Defined.
 
 Ltac do_nhse_bparr_nosplit :=
   match goal with
-  | [H: well_formed_r ?pt,
+  | [(*H: well_formed_r ?pt, *)
         H': anno_parP ?pt ?t2 _,
         H2: wf_ec ?ecc,
             H3: wf_ec (splitEv_r ?s ?ecc),
-                H4: not_hash_sig_term_ev (abpar _ ?s _ ?t2) ?H19,
+                H4: not_hash_sig_term_ev (bpar ?s _ ?t2) ?H19,
                     H6: reconstruct_evP ?ecc ?H19,
                         H7: reconstruct_evP (splitEv_r ?s ?ecc) ?e,
                             H8: reconstruct_evP ?ecc' ?e',
                                 H5: copland_compileP ?pt
-                                                     {| st_ev := splitEv_r ?s ?ecc; st_trace := _; st_pl := _ |}
+                                                     {| st_ev := splitEv_r ?s ?ecc; st_trace := _; st_pl := _; st_evid := _|}
                                                      (Some tt)
-                                                     {| st_ev := ?ecc'; st_trace := _; st_pl := _ |}
+                                                     {| st_ev := ?ecc'; st_trace := _; st_pl := _; st_evid := _ |}
 
      |- _] =>
     
     assert_new_proof_by
       (not_hash_sig_ev e')
-      ltac:(eapply nhse_bparr_nosplit; [apply H' | apply H | apply H2 | apply H3 | apply H4 | apply H5 | apply H6 | apply H7 | apply H8])
+      ltac:(eapply nhse_bparr_nosplit; [apply H' | (*apply H |*) apply H2 | apply H3 | apply H4 | apply H5 | apply H6 | apply H7 | apply H8])
   end.
 
 
@@ -2999,21 +3218,22 @@ Ltac do_nhse_nosplit :=
   try do_nhse_bparl_nosplit;
   try do_nhse_bparr_nosplit.
 
-Lemma gg_preserved': forall t pt loc p et n p0 et'
-                       tr e e' tr' p' bits ecc',
+Lemma gg_preserved': forall t annt pt loc p et n p0 et'
+                       tr e e' tr' p' bits ecc' l l',
 
     anno_parP pt t loc ->
-    well_formed_r pt ->
+    (*well_formed_r pt -> *)
+    annoP annt t l ->
     not_none_none t ->
     not_hash_sig_term_ev t e ->
     wf_ec (evc bits et) ->
     reconstruct_evP (evc bits et) e ->
     reconstruct_evP ecc' e' ->
-    events t p et (sign n p0 et') ->
+    events annt p et (sign n p0 et') ->
     copland_compileP pt
-                     {| st_ev := (evc bits et); st_trace := tr; st_pl := p |}
+                     {| st_ev := (evc bits et); st_trace := tr; st_pl := p; st_evid := l |}
                      (Some tt)
-                     {| st_ev := ecc'; st_trace := tr'; st_pl := p' |} ->
+                     {| st_ev := ecc'; st_trace := tr'; st_pl := p'; st_evid := l' |} ->
 
     (
       (exists bits e'', EvSub (ggc p0 (do_sig (MonadVM.encodeEvBits (evc bits et')) p0 n) e'') e' /\
@@ -3029,6 +3249,7 @@ Proof.
   induction t; intros.
   -
     wrap_ccp.
+    invc H; invc H0.
     subst.
     destruct a; try (ff; tauto).
     +

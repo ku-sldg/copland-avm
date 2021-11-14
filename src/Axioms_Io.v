@@ -78,9 +78,7 @@ Axiom thread_bookend_peel: forall (t:AnnoTerm) p (*et*) etr l (a:Term) tr,
     ).
 
 
-(*
 Axiom wf_ec_preserved_remote: forall a n e,
     wf_ec e ->
-    well_formed_r a ->
+    (*well_formed_r a -> *)
     wf_ec (doRemote_session a n e).
-*)

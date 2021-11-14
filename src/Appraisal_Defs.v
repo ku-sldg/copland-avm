@@ -119,52 +119,52 @@ Inductive appEvent_Sig_EvidenceC: Ev -> EvidenceC -> Prop :=
     EvSub (ggc p (checkSigBitsF bits p (do_sig (encodeEvBits (evc bits et)) p n)) e'') e ->
     appEvent_Sig_EvidenceC (sign n p et) e.
 
-Definition none_none_term (t:AnnoTerm): Prop :=
-  (exists t1 t2 r,
-      t = abseq r (NONE,NONE) t1 t2)
+Definition none_none_term (t:Term): Prop :=
+  (exists t1 t2,
+      t = bseq (NONE,NONE) t1 t2)
   \/
-  (exists t1 t2 r,
-      t = abpar r (NONE,NONE) t1 t2).
+  (exists t1 t2,
+      t = bpar (NONE,NONE) t1 t2).
 
-Definition not_none_none (t:AnnoTerm) :=
+Definition not_none_none (t:Term) :=
   forall t',
     none_none_term t'  -> 
     ~ (term_sub t' t).
 
-Inductive reaches_HSH : AnnoTerm -> Prop :=
-| rh_hsh: forall r, reaches_HSH (aasp r (HSH))
-| rh_aatt: forall r p t,
+Inductive reaches_HSH : Term -> Prop :=
+| rh_hsh: reaches_HSH (asp (HSH))
+| rh_aatt: forall p t,
     reaches_HSH t ->
-    reaches_HSH (aatt r p t)
-| rh_lseql: forall r t1 t2,
+    reaches_HSH (att p t)
+| rh_lseql: forall t1 t2,
     reaches_HSH t1 ->
-    reaches_HSH (alseq r t1 t2)
-| rh_lseqr: forall r t1 t2,
+    reaches_HSH (lseq t1 t2)
+| rh_lseqr: forall t1 t2,
     reaches_HSH t2 ->
-    reaches_HSH (alseq r t1 t2)
-| rh_bseql: forall r sp2 t1 t2,
+    reaches_HSH (lseq t1 t2)
+| rh_bseql: forall sp2 t1 t2,
     reaches_HSH t1 ->
-    reaches_HSH (abseq r (ALL,sp2) t1 t2)
-| rh_bseqr: forall r sp1 t1 t2,
+    reaches_HSH (bseq (ALL,sp2) t1 t2)
+| rh_bseqr: forall sp1 t1 t2,
     reaches_HSH t2 ->
-    reaches_HSH (abseq r (sp1,ALL) t1 t2)
-| rh_bparl: forall r sp2 t1 t2,
+    reaches_HSH (bseq (sp1,ALL) t1 t2)
+| rh_bparl: forall sp2 t1 t2,
     reaches_HSH t1 ->
-    reaches_HSH (abpar r (ALL,sp2) t1 t2)
-| rh_bparr: forall r sp1 t1 t2,
+    reaches_HSH (bpar (ALL,sp2) t1 t2)
+| rh_bparr: forall sp1 t1 t2,
     reaches_HSH t2 ->
-    reaches_HSH (abpar r (sp1,ALL) t1 t2).
+    reaches_HSH (bpar (sp1,ALL) t1 t2).
 Hint Constructors reaches_HSH : core.
 
-Definition hash_sig_term (t:AnnoTerm): Prop :=
-  exists r r1 t1 t2,
-  t = alseq r t1 t2 /\
-  term_sub (aasp r1 SIG) t1 /\
+Definition hash_sig_term (t:Term): Prop :=
+  exists t1 t2,
+  t = lseq t1 t2 /\
+  term_sub (asp SIG) t1 /\
   reaches_HSH t2.
   (*
   term_sub (aasp r2 HSH) t2. *)
 
-Definition not_hash_sig_term (t:AnnoTerm) :=
+Definition not_hash_sig_term (t:Term) :=
   forall t',
     hash_sig_term t'  -> 
     ~ (term_sub t' t).
@@ -183,10 +183,10 @@ Definition gg_sub (e:EvidenceC) :=
   exists p bs e'' e', e' = ggc p bs e'' /\
                  EvSub e' e.
 
-Definition hsh_subt (t:AnnoTerm) :=
-  exists r, term_sub (aasp r HSH) t.
+Definition hsh_subt (t:Term) :=
+  term_sub (asp HSH) t.
 
-Definition not_hash_sig_term_ev (t:AnnoTerm) (e:EvidenceC): Prop :=
+Definition not_hash_sig_term_ev (t:Term) (e:EvidenceC): Prop :=
   not_hash_sig_term t /\
   not_hash_sig_ev e /\
   ((gg_sub e) -> ~ (reaches_HSH t)).
