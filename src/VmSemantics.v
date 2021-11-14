@@ -1340,7 +1340,96 @@ Lemma cvm_spans: forall t e tr p i e' tr' p' i',
                      |} ->
     i' = i + event_id_span (unannoPar t).
 Proof.
-Admitted.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a.
+    +
+      wrap_ccp.
+      tauto.
+    +
+      wrap_ccp.
+      unfold tag_ASP in *.
+      destruct a.
+      ff.
+    +
+      wrap_ccp.
+      tauto.
+    +
+      wrap_ccp.
+      tauto.
+  -
+    wrap_ccp.
+    simpl.
+    lia.
+  -
+    wrap_ccp.
+    assert (st_evid0 = i + event_id_span (unannoPar t1)) by eauto.
+    assert (i' = st_evid0 + event_id_span (unannoPar t2)) by eauto.
+    subst.
+    lia.
+  -
+    wrap_ccp.
+    assert (st_evid1 = (i + 1) + event_id_span (unannoPar t1)) by eauto.
+    assert (st_evid = st_evid1 + event_id_span (unannoPar t2)) by eauto.
+    subst.
+    lia.
+  -
+    wrap_ccp.
+    assert (st_evid = (i + 1) + event_id_span (unannoPar t)) by eauto.
+    subst.
+    lia.
+Defined.
+
+Lemma span_cvm: forall atp t annt loc i j e e' tr tr' p p' i',
+    copland_compileP atp
+                     {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |} 
+                     (Some tt)
+                     {| st_ev := e'; st_trace := tr'; st_pl := p'; st_evid := i' |} ->
+    
+    anno_parP atp t loc ->
+    anno t i = (j, annt) ->
+    j = i'.
+
+Proof.
+  intros.
+  assert (j = i + event_id_span t).
+  {
+    assert (j - i = event_id_span t).
+    {
+      symmetry.
+      eapply span_range.
+      eauto.
+    }
+    rewrite <- H2.
+    assert (j > i).
+    {
+      eapply anno_mono; eauto.
+    }
+    
+    lia.
+  }
+  subst.
+  symmetry.
+  assert (t = unannoPar atp).
+  {
+    destruct (anno_par t loc) eqn: hi.
+    
+    inversion H0.
+    erewrite anno_unanno_par.
+    reflexivity.
+    rewrite hi.
+    subst.
+    rewrite hi.
+    tauto.
+  }
+  rewrite H2.
+
+  
+  eapply cvm_spans.
+  eassumption.
+Defined.
 
 Lemma cvm_refines_lts_event_ordering : forall t atp annt cvm_tr bits bits' et et' p p' i i' loc,
     anno_parP atp t loc ->
@@ -1584,30 +1673,32 @@ Proof.
     subst.
     
     eassumption.
-  -
-    
-    
-      
-        
-      
-        congruence.
-        apply hi.
-        rewrite H5.
-        
-        invc Heqp0.
-        jkjke.
-        eassumption.
-      Check anno_unanno_par.
-            
-      erewrite <- anno_unanno_par.
-      reflexivity.
-      Check anno_unanno. 
-      erewrite <- anno_unanno.
-    
-    eassumption.
 
   - (* abseq case *)
+
+
+    inversion annoParPH.
+    inversion annPH.
+    subst.
+
+    
     wrap_ccp.
+
+    assert (n = st_evid1).
+    {
+      assert (i+1 = S i) by lia.
+      find_rewrite.
+      
+      eapply span_cvm; eauto.
+    }
+
+    assert (n0 = st_evid).
+    {
+      subst.
+      eapply span_cvm; eauto.
+    }
+    
+    repeat do_anno_redo.
     
     do_suffix blah.
     do_suffix blah'.
@@ -1621,19 +1712,27 @@ Proof.
     simpl.
 
     assert (
-        lstar (conf (unannoPar t1) p (splitEv_T_l s et)) blah' (stop p (aeval (unannoPar t1) p (splitEv_T_l s et)))
+        lstar (conf a1 p (splitEv_T_l s et)) blah' (stop p (aeval a1 p (splitEv_T_l s et)))
       ).
     {
+      assert (i + 1 = S i) by lia.
+      find_rewrite.
       destruct s; destruct s; destruct s0;
+        simpl in *;
         eauto.
     }
 
     assert (
-      lstar (conf (unannoPar t2) p  (splitEv_T_r s et)) blah (stop p (aeval (unannoPar t2) p  (splitEv_T_r s et)))
+      lstar (conf a2 p  (splitEv_T_r s et)) blah (stop p (aeval a2 p  (splitEv_T_r s et)))
     ).
     {
+      assert (i + 1 = S i) by lia.
+      find_rewrite.
+
+      subst.
       destruct s; destruct s; destruct s0;
-        eauto.
+        simpl in *; eauto.
+
     }
 
 
@@ -1657,6 +1756,10 @@ Proof.
 
   - (* abpar case *)
 
+
+(*
+    
+
     wrap_ccp.
     
     do_suffix blah.
@@ -1664,17 +1767,71 @@ Proof.
     repeat do_restl.
     
     repeat rewrite <- app_assoc.
+ *)
+    inversion annoParPH.
+    inversion annPH.
+    subst.
+
+    
+    wrap_ccp.
+
+    assert (n = st_evid).
+    {
+      assert (i+1 = S i) by lia.
+      find_rewrite.
+      
+      eapply span_cvm; eauto.
+    }
+
+    assert (n0 = n + event_id_span t2).
+    {
+      Check span_range.
+      assert (event_id_span t2 = n0 - n).
+      {
+        eapply span_range.
+        eauto.
+      }
+      assert (n0 > n).
+      {
+        eapply anno_mono; eauto.
+      }
+      lia.
+    }
+    
+
+    (*
+    assert (n0 = st_evid).
+    {
+      subst.
+      eapply span_cvm; eauto.
+    } *)
+    
+    repeat do_anno_redo.
+    
+    do_suffix blah.
+    (*
+    do_suffix blah'. *)
+    destruct_conjs; subst.
+    repeat do_restl.
+    
+    repeat rewrite <- app_assoc.
 
     assert (
-        lstar (conf (unannoPar t) p (splitEv_T_l s et)) blah (stop p (aeval (unannoPar t) p (splitEv_T_l s et)))
+        lstar (conf a0 p (splitEv_T_l s et)) blah (stop p (aeval a0 p (splitEv_T_l s et)))
       ).
     {
-      destruct s; destruct s; destruct s0.
-      eapply IHt; eauto.
-      eapply IHt; eauto.
-      eapply IHt; eauto.
-      eapply IHt; eauto.
+      assert (i + 1 = S i) by lia.
+      find_rewrite.
+      destruct s; destruct s; destruct s0; simpl in *;
+        eauto.
     }
+    (*
+    
+      eapply IHt1. apply Heqp0. apply Heqp1.
+      eapply IHt1; eauto.
+      eapply IHt; eauto.
+      eapply IHt; eauto.
+    } *)
 
       eapply lstar_tran.
       econstructor.
@@ -1683,11 +1840,11 @@ Proof.
       rewrite front_app.
       rewrite back_app.
 
-      assert ([cvm_thread_start l p a (get_et (splitEv_r s (evc bits et)))]
+      assert ([cvm_thread_start loc p t2 (get_et (splitEv_r s (evc bits et)))]
                 ++
                 blah ++
-                [cvm_thread_end l] =
-              shuffled_events blah (cvm_events a p (get_et (splitEv_r s (evc bits et))))).
+                [cvm_thread_end loc] =
+              shuffled_events blah (cvm_events t2 p (get_et (splitEv_r s (evc bits et))))).
       {
         eapply thread_bookend_peel.
         eassumption.
@@ -1703,6 +1860,14 @@ Proof.
         destruct s; destruct s; destruct s0; ff.
       }
       jkjke.
+
+      assert (t2 = unanno a1).
+      {
+        invc Heqp2.
+        erewrite anno_unanno.
+        tauto.
+      }
+      subst.
       
 
       eapply lstar_transitive.
@@ -1712,18 +1877,32 @@ Proof.
       eassumption.
 
       eapply lstar_tran.
+      (*
+      assert (n0 = st_evid).
+      {
+        eapply span_cvm.
+        
+
+
+        admit. }
+      find_rw_in_goal. *)
+
+
       apply stbpstop.
       econstructor.
 Defined.
+Print anno_parP.
 
-Lemma cvm_refines_lts_event_ordering_corrolary : forall t cvm_tr bits et p,
-    well_formed_r t ->
-    st_trace (run_cvm t
-                      (mk_st (evc bits et) [] p)) = cvm_tr ->
-    lstar (conf (unannoPar t) p et) cvm_tr (stop p (aeval (unannoPar t) p et)).
+Lemma cvm_refines_lts_event_ordering_corrolary : forall t annt atp cvm_tr bits et p loc i,
+    (*well_formed_r_annt t -> *)
+    annoP annt t i ->
+    anno_parP atp t loc ->
+    st_trace (run_cvm atp
+                      (mk_st (evc bits et) [] p i)) = cvm_tr ->
+    lstar (conf annt p et) cvm_tr (stop p (aeval annt p et)).
 Proof.
   intros.
-  destruct (copland_compile t {| st_ev := (evc bits et); st_trace := []; st_pl := p |}) eqn:hi.
+  destruct (copland_compile atp {| st_ev := (evc bits et); st_trace := []; st_pl := p; st_evid := i |}) eqn:hi.
   simpl in *.
   vmsts.
   simpl in *.
@@ -1742,26 +1921,51 @@ Proof.
   econstructor; eauto.
 Defined.
 
-Theorem cvm_respects_event_system' : forall t cvm_tr ev0 ev1 bits bits' et et',
-    well_formed_r t ->
-    copland_compileP t
-                     (mk_st (evc bits et) [] 0)
+Theorem cvm_respects_event_system : forall atp annt t cvm_tr ev0 ev1 bits bits' et et' i i' loc,
+    (*well_formed_r t -> *)
+    annoP annt t i ->
+    anno_parP atp t loc ->
+    copland_compileP atp
+                     (mk_st (evc bits et) [] 0 i)
                      (Some tt)
-                     (mk_st (evc bits' et') cvm_tr 0) ->
-    prec (ev_sys (unannoPar t) 0 et) ev0 ev1 ->
+                     (mk_st (evc bits' et') cvm_tr 0 i') ->
+    prec (ev_sys annt 0 et) ev0 ev1 ->
     earlier cvm_tr ev0 ev1.
 Proof.
   intros.
+  Lemma anno_redo: forall t i annt,
+    annoP annt t i ->
+    exists i', anno t i = (i', annt).
+  Proof.
+    intros.
+    destruct (anno t i) eqn:hi.
+    invc H.
+    eexists.
+    rewrite hi.
+    tauto.
+  Defined.
+
+  edestruct anno_redo; eauto.
+    
+
+    
+  assert (well_formed_r_annt annt).
+  eapply anno_well_formed_r.
+  eassumption.
+
+  
   eapply ordered.
-  eapply wfr_implies_wfrannt; eauto.
+  eapply anno_well_formed_r.
+  eassumption.
+
   eapply cvm_refines_lts_event_ordering; eauto.
   eassumption.
 Defined.
 
 
-
+(*
 Theorem cvm_respects_event_system : forall pt t cvm_tr ev0 ev1 bits bits' et et' anno_t,
-    annoP anno_t t 0 ->
+    annoP annt t 0 ->
     anno_parP pt anno_t 0 ->
     copland_compileP pt
                      (mk_st (evc bits et) [] 0)
@@ -1816,11 +2020,12 @@ Proof.
   rewrite H5.
   eapply cvm_refines_lts_event_ordering; eauto.
 Defined.
+*)
 
-Theorem cvm_respects_event_system_run : forall pt t cvm_tr ev0 ev1 bits (*bits' et' *)et  anno_t,
-    annoP anno_t t 0 ->
-    anno_parP pt anno_t 0 ->
-    st_trace (run_cvm pt (mk_st (evc bits et) [] 0)) = cvm_tr ->
+Theorem cvm_respects_event_system_run : forall atp annt t cvm_tr ev0 ev1 bits (*bits' et' *)et i loc,
+    annoP annt t i ->
+    anno_parP atp t loc ->
+    st_trace (run_cvm atp (mk_st (evc bits et) [] 0 i)) = cvm_tr ->
 
     (*
     =
@@ -1828,22 +2033,19 @@ Theorem cvm_respects_event_system_run : forall pt t cvm_tr ev0 ev1 bits (*bits' 
      *)
     
 
-    prec (ev_sys anno_t 0 et) ev0 ev1 ->
+    prec (ev_sys annt 0 et) ev0 ev1 ->
     earlier cvm_tr ev0 ev1.
 Proof.
   intros.
-  assert (well_formed_r pt).
+  assert (well_formed_r_annt annt).
   {
-    inversion H0.
-    inversion H.
-    subst.
-    eapply annopar_well_formed_r.
-    unfold annotated_par.
-    unfold annotated.
-    reflexivity.
+    edestruct anno_redo.
+    eassumption.
+    eapply anno_well_formed_r.
+    eassumption.
   }
 
-  destruct ((copland_compile pt {| st_ev := evc bits et; st_trace := []; st_pl := 0 |})) eqn:hi.
+  destruct ((copland_compile atp {| st_ev := evc bits et; st_trace := []; st_pl := 0; st_evid := i |})) eqn:hi.
   do_somett.
   subst.
 
@@ -1865,13 +2067,13 @@ Proof.
   eassumption.
 Defined.
 
-Theorem cvm_respects_event_system_run' : forall pt t cvm_tr ev0 ev1 bits (*bits' et' *)et  anno_t,
-    anno_t = annotated t ->
-    pt = annotated_par anno_t ->
+Theorem cvm_respects_event_system_run' : forall atp annt t cvm_tr ev0 ev1 bits (*bits' et' *)et,
+    annt = annotated t ->
+    atp = annotated_par t ->
     (*
     annoP anno_t t 0 ->
     anno_parP pt anno_t 0 -> *)
-    st_trace (run_cvm pt (mk_st (evc bits et) [] 0)) = cvm_tr ->
+    st_trace (run_cvm atp (mk_st (evc bits et) [] 0 0)) = cvm_tr ->
 
     (*
     =
@@ -1879,7 +2081,7 @@ Theorem cvm_respects_event_system_run' : forall pt t cvm_tr ev0 ev1 bits (*bits'
      *)
     
 
-    prec (ev_sys anno_t 0 et) ev0 ev1 ->
+    prec (ev_sys annt 0 et) ev0 ev1 ->
     earlier cvm_tr ev0 ev1.
 Proof.
   intros.

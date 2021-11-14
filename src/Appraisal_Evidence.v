@@ -207,6 +207,29 @@ Ltac inv_annoparP :=
     inversion H
   end.
 
+Lemma annoP_redo: forall t annt n n',
+    anno t n = (n', annt) ->
+    annoP annt t n.
+Proof.
+  intros.
+  econstructor.
+  jkjke.
+Defined.
+
+Ltac do_anno_redo :=
+  match goal with
+  | [H: anno ?t ?n = (_,?annt)
+     |- _ ] =>
+    eapply annoP_redo in H
+  end.
+
+Ltac inv_annoP :=
+  match goal with
+  | [H: annoP _ (?c _) _
+     |- _ ] =>
+    inversion H
+  end.
+
 Inductive copland_compileP : AnnoTermPar -> cvm_st -> (option unit) -> cvm_st ->  Prop :=
 | ccp: forall t st st' res,
     copland_compile t st = (res, st') ->

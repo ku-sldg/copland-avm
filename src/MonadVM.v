@@ -352,6 +352,7 @@ Definition wait_par_thread (loc:Loc) (t:Term) (e:EvC) : CVM EvC :=
   p <- get_pl ;;
   e' <- do_wait_par_thread loc t p e ;;
   add_tracem [cvm_thread_end loc] ;;
+  inc_remote_event_ids t ;;
   ret e'.
 
 Definition join_par (e1:EvC) (e2:EvC): CVM unit :=
