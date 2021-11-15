@@ -1223,6 +1223,806 @@ Lemma cvm_raw_evidence_denote_fact : forall t annt t' tr tr' bits bits' et et' p
 Proof.
 Admitted. (* TODO: prove this!! *)
 
+Ltac inv_wfec :=
+  repeat
+    match goal with
+    | [H: wf_ec _ |-  _ ] => invc H
+    end.
+
+Lemma wfec_firstn: forall e0 e1 e2,
+    wf_ec (evc e0 e1) ->
+    firstn (et_size e1) (e0 ++ e2) = e0.
+Proof.
+  intros.
+  inv_wfec.
+  jkjke'.
+  eapply More_lists.firstn_append.
+Defined.
+
+Ltac do_wfec_firstn :=
+  match goal with
+  | [H: context[(firstn (et_size ?e1) (?e0 ++ ?e2))],
+        H2: wf_ec (evc ?e0 ?e1)
+
+     |- _] =>
+    
+    assert_new_proof_by
+      (firstn (et_size e1) (e0 ++ e2) = e0)
+      ltac: (eapply wfec_firstn; apply H2)
+  end.
+
+Lemma wfec_skipn: forall e0 e1 e2,
+    wf_ec (evc e0 e1) ->
+    skipn (et_size e1) (e0 ++ e2) = e2.
+Proof.
+  intros.
+  inv_wfec.
+  jkjke'.
+  eapply More_lists.skipn_append.
+Defined.
+
+Ltac do_wfec_skipn :=
+  match goal with
+  | [H: context[(skipn (et_size ?e1) (?e0 ++ ?e2))],
+        H2: wf_ec (evc ?e0 ?e1)
+
+     |- _] =>
+    
+    assert_new_proof_by
+      (skipn (et_size e1) (e0 ++ e2) = e2)
+      ltac: (eapply wfec_skipn; apply H2)
+  end.
+
+Ltac clear_skipn_firstn :=
+  match goal with
+  | [H: firstn _ _ = _,
+        H2: skipn _ _ = _ |- _]
+    => rewrite H in *; clear H;
+      rewrite H2 in *; clear H2
+  end.
+
+Lemma wfec_encodeEv_etfun:
+  forall e,
+    wf_ec (evc (encodeEv e) (et_fun e)).
+Proof.
+Admitted.
+
+Lemma recon_same: forall e,
+    Some e = reconstruct_ev (evc (encodeEv e) (et_fun e)).
+Proof.
+  intros.
+  induction e; intros;
+    try (dd; tauto).
+  -
+    dd.
+    rewrite <- IHe.
+    tauto.
+  -
+    dd.
+    rewrite <- IHe.
+    tauto.
+  -
+    dd.
+    assert (wf_ec (evc (encodeEv e1) (et_fun e1))).
+    {
+      eapply wfec_encodeEv_etfun.
+      }
+    assert ((firstn (et_size (et_fun e1)) (encodeEv e1 ++ encodeEv e2)) =
+            encodeEv e1).
+    {
+
+      eapply wfec_firstn.
+      eassumption.
+    }
+    assert ((skipn (et_size (et_fun e1)) (encodeEv e1 ++ encodeEv e2)) =
+            encodeEv e2).
+    {
+
+      eapply wfec_skipn.
+      eassumption.
+    }
+    rewrite H0; clear H0.
+    rewrite H1; clear H1.
+    
+    
+    
+    rewrite <- IHe1.
+    rewrite <- IHe2.
+    tauto.
+  -
+    dd.
+    assert (wf_ec (evc (encodeEv e1) (et_fun e1))).
+    {
+      eapply wfec_encodeEv_etfun.
+    }
+    assert ((firstn (et_size (et_fun e1)) (encodeEv e1 ++ encodeEv e2)) =
+            encodeEv e1).
+    {
+     eapply wfec_firstn.
+     eassumption.
+    }
+    assert ((skipn (et_size (et_fun e1)) (encodeEv e1 ++ encodeEv e2)) =
+            encodeEv e2).
+    {
+      eapply wfec_skipn.
+      eassumption.
+    }
+    rewrite H0; clear H0.
+    rewrite H1; clear H1.
+    
+    
+    
+    rewrite <- IHe1.
+    rewrite <- IHe2.
+    tauto.
+Defined.
+
+Lemma inv_recon_mt: forall ls et,
+    reconstruct_evP (evc ls et) mtc ->
+    et = mt.
+Proof.
+  intros.
+  invc H.
+  destruct et; repeat ff; try solve_by_inversion.
+  tauto.
+Defined.
+
+Ltac do_inv_recon_mt :=
+  match goal with
+  | [H: reconstruct_evP (evc _ ?et) mtc
+
+     |- _] =>
+    assert_new_proof_by (et = mt) ltac:(eapply inv_recon_mt; apply H)
+  end;
+  subst.
+
+Lemma inv_recon_mt': forall ls e,
+    reconstruct_evP (evc ls mt) e ->
+    e = mtc.
+Proof.
+  intros.
+  invc H.
+  repeat ff; try solve_by_inversion.
+  tauto.
+Defined.
+
+Ltac do_inv_recon_mt' :=
+  match goal with
+  | [H: reconstruct_evP (evc _ mt) ?e
+
+     |- _] =>
+    assert_new_proof_by (e = mtc) ltac:(eapply inv_recon_mt'; apply H)
+  end;
+  subst.
+
+
+Lemma inv_recon_nn: forall ls et n n0,
+    reconstruct_evP (evc ls et) (nnc n n0) ->
+    et = nn n /\ ls = [n0].
+Proof.
+  intros.
+  invc H.
+  destruct et; repeat ff; destruct ls; try solve_by_inversion.
+Defined.
+
+Ltac do_inv_recon_nn :=
+  match goal with
+  | [H: reconstruct_evP (evc ?ls ?et) (nnc ?n ?nval)
+
+     |- _] =>
+    assert_new_proof_by (et = nn n /\ ls = [nval]) ltac:(eapply inv_recon_nn; apply H)
+  end;
+  destruct_conjs;
+  subst.
+
+Lemma inv_recon_uu: forall ls et params n2 p ec,
+    reconstruct_evP (evc ls et) (uuc params p n2 ec)  ->
+    (exists ls' et', et = uu params p et' /\
+                ls = n2 :: ls'). (* /\
+                wf_ec (evc ls' et')). *)
+Proof.
+  intros.
+  invc H.
+  repeat ff.
+  destruct et; repeat ff; try solve_by_inversion.
+  
+  repeat eexists.
+  destruct ls; ff.
+Defined.
+
+Ltac do_inv_recon_uu :=
+  match goal with
+  | [H: reconstruct_evP (evc ?ls ?et) (uuc ?params ?p ?uval _)
+
+     |- _] =>
+    assert_new_proof_by (exists ls' et', et = uu params p et' /\
+                        ls = uval :: ls')
+                        ltac:(eapply inv_recon_uu; apply H)
+  end;
+  destruct_conjs;
+  subst.
+
+Lemma inv_recon_gg: forall ls et n n0 ec,
+    reconstruct_evP (evc ls et) (ggc n n0 ec) ->
+    (exists ls' et', et = gg n et' /\
+                ls = n0 :: ls').
+Proof.
+  intros.
+  invc H.
+  destruct et; repeat ff; try solve_by_inversion.
+
+  repeat eexists.
+  destruct ls; ff.
+Defined.
+
+Ltac do_inv_recon_gg :=
+  match goal with
+  | [H: reconstruct_evP (evc ?ls ?et) (ggc ?n ?n0 _)
+
+     |- _] =>
+    assert_new_proof_by (exists ls' et', et = gg n et' /\
+                                    ls = n0 :: ls')
+                        ltac:(eapply inv_recon_gg; apply H)
+  end;
+  destruct_conjs;
+  subst.
+
+Lemma inv_recon_hh: forall ls et n n0 et',
+    reconstruct_evP (evc ls et) (hhc n n0 et') ->
+    (et = hh n et' ) /\ ls = [n0].
+Proof.
+  intros.
+  invc H.
+  destruct et; repeat ff; destruct ls; try solve_by_inversion.
+Defined.
+
+Ltac do_inv_recon_hh :=
+  match goal with
+  | [H: reconstruct_evP (evc ?ls ?et) (hhc ?n ?hval ?et')
+
+     |- _] =>
+    assert_new_proof_by (et = hh n et' /\ ls = [hval])
+                        ltac:(eapply inv_recon_hh; apply H)
+  end;
+  destruct_conjs;
+  subst.
+
+Lemma inv_recon_ss: forall ls et ec1 ec2,
+    reconstruct_evP (evc ls et) (ssc ec1 ec2) ->
+    (exists et1 et2, et = ss et1 et2).
+Proof.
+  intros.
+  invc H.
+  destruct et; repeat ff; try solve_by_inversion.
+  eauto.
+Defined.
+
+Ltac do_inv_recon_ss :=
+  match goal with
+  | [H: reconstruct_evP (evc _ ?et) (ssc _ _)
+
+     |- _] =>
+    assert_new_proof_by (exists et1 et2, et = ss et1 et2)
+                        ltac:(eapply inv_recon_ss; apply H)
+  end;
+  destruct_conjs;
+  subst.
+
+Lemma inv_recon_pp: forall ls et ec1 ec2,
+    reconstruct_evP (evc ls et) (ppc ec1 ec2) ->
+    (exists et1 et2, et = pp et1 et2).
+Proof.
+  intros.
+  invc H.
+  destruct et; repeat ff; try solve_by_inversion.
+  eauto.
+Defined.
+
+Ltac do_inv_recon_pp :=
+  match goal with
+  | [H: reconstruct_evP (evc _ ?et) (ppc _ _)
+
+     |- _] =>
+    assert_new_proof_by (exists et1 et2, et = pp et1 et2)
+                        ltac:(eapply inv_recon_pp; apply H)
+  end;
+  destruct_conjs;
+  subst.
+
+Ltac do_inv_recon :=
+  try do_inv_recon_mt;
+  try do_inv_recon_mt';
+  try do_inv_recon_nn;
+  try do_inv_recon_uu;
+  try do_inv_recon_gg;
+  try do_inv_recon_hh;
+  try do_inv_recon_ss;
+  try do_inv_recon_pp.
+
+Lemma etfun_reconstruct: forall e e0 e1,
+    reconstruct_evP (evc e0 e1) e ->
+    e1 = et_fun e.
+Proof.
+  intros.
+  generalizeEverythingElse e1.
+  induction e1; intros e e0 H;
+    do_inv_recon;
+    ff;
+    invc H;
+    repeat ff;
+    rewrite fold_recev in *;
+    do_wrap_reconP;
+    repeat jkjke.
+Defined.
+
+Lemma wfec_split: forall e s,
+    wf_ec e ->
+    wf_ec (splitEv_l s e) /\ wf_ec (splitEv_r s e).
+Proof.
+  intros.
+  split;
+    destruct s; ff; try unfold mt_evc; ff;
+      econstructor; ff.
+Defined.
+
+Ltac do_wfec_split :=
+  match goal with
+  | [H: context[splitEv_l ?s ?e],
+        H2: context[splitEv_r ?s ?e],
+            H3: wf_ec ?e
+     |- _] =>
+    
+    assert_new_proof_by
+      (wf_ec (splitEv_l s e) /\ wf_ec (splitEv_r s e))
+      ltac: (eapply wfec_split; apply H3)
+  end; destruct_conjs.
+
+Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' p p' i i',
+    (*well_formed_r t1 -> *)
+    wf_ec e ->
+        copland_compileP t1
+                    {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |}
+                    (Some tt)
+                    {| st_ev := e'; st_trace := tr'; st_pl := p'; st_evid := i' |} ->
+    wf_ec (e').
+Proof.
+  intros.
+  generalizeEverythingElse t1.
+  induction t1; intros.
+  -
+    rewrite <- ccp_iff_cc in *.
+    destruct a; (* asp *)
+      try destruct a; (* asp params *)
+      ff;
+      inv_wfec;
+      try (
+          econstructor;
+          ff;
+          try tauto;
+          try congruence).  
+  -
+    wrap_ccp.
+
+    eapply wf_ec_preserved_remote; eauto.
+
+  -
+    wrap_ccp.
+    eauto.
+  -
+    wrap_ccp.
+
+    do_wfec_split.
+
+    find_apply_hyp_hyp.
+    find_apply_hyp_hyp.
+    econstructor.
+    dd.
+    inv_wfec.
+    repeat jkjke'.
+    eapply app_length.
+
+  -
+    wrap_ccp.
+    
+    do_wfec_split.
+
+    find_apply_hyp_hyp.
+
+      inv_wfec;
+      ff;
+      econstructor;
+      dd;
+      repeat jkjke'.
+
+    erewrite app_length.
+
+    assert (wf_ec (evc r0 e1)).
+    {
+      rewrite par_evidence in Heqe1.
+      rewrite <- at_evidence in Heqe1.
+      rewrite <- Heqe1.
+      eapply wf_ec_preserved_remote.
+      econstructor.
+      eassumption.
+    }
+
+    solve_by_inversion.
+Defined.
+
+Ltac do_wfec_preserved :=
+  repeat
+    match goal with
+    | [(*H: well_formed_r ?t, *)
+          H2: wf_ec ?stev,
+              H3: copland_compileP ?t
+                                   {| st_ev := ?stev; st_trace := _; st_pl := _; st_evid := _ |}
+                                   (Some tt)
+                                   {| st_ev := ?stev'; st_trace := _; st_pl := _; st_evid := _ |}
+       |- _ ] =>
+      assert_new_proof_by (wf_ec stev')
+                          ltac:(eapply wf_ec_preserved_by_cvm; [(*apply H |*) apply H2 | apply H3])
+                                 
+    end.
+
+Ltac dest_evc :=
+  repeat
+    match goal with
+    | [H: EvC |-  _ ] => destruct H
+    end.
+
+
+
+Lemma some_recons' : forall e x,
+    length e = S x ->
+    exists bs ls', peel_bs e = Some (bs, ls').
+Proof.
+  intros.
+  destruct e;
+    ff; eauto.
+Defined.
+
+Ltac do_some_recons' :=
+  match goal with
+  | [H: length ?e = S _ |- _ ] =>
+    edestruct some_recons'; [apply H | idtac]
+                              
+  end; destruct_conjs; jkjke.
+
+Ltac do_rcih :=
+  match goal with
+  | [H: context[reconstruct_ev' _ _]
+               
+
+     |- context[reconstruct_ev' ?e' ?et] ] =>
+    assert_new_proof_by
+      (exists x, Some x = reconstruct_ev' e' et)
+      ltac:(eapply H with (r:=e'); (* TODO:  make r less one-off *)
+            try (eapply peel_fact; eauto; tauto);
+            try (econstructor; first [eapply firstn_long | eapply skipn_long]; try eauto; try lia))      
+  end.
+
+Locate peel_fact.
+
+Lemma some_recons : forall e,
+    wf_ec e ->
+    exists ee, Some ee = reconstruct_ev e.
+Proof.
+  intros.
+  destruct e.
+  generalizeEverythingElse e.
+  induction e; intros.
+  -
+
+
+
+
+
+
+  try (ff; eauto; tauto).
+    try
+      ( inv_wfec; ff;
+        do_some_recons');
+    try (
+        repeat do_rcih;
+        destruct_conjs;
+        repeat jkjke');
+    try ( inv_wfec; ff;
+          repeat do_rcih;
+          destruct_conjs;
+          repeat jkjke').
+    eauto.
+  -
+      try (ff; eauto; tauto).
+    try
+      ( inv_wfec; ff;
+        do_some_recons').
+    try (
+        repeat do_rcih;
+        destruct_conjs;
+        repeat jkjke').
+
+
+
+    inv_wfec; ff;
+      repeat do_rcih;
+      destruct_conjs.
+    repeat jkjke'.
+    repeat jkjke'.
+    find_inversion.
+    do_rcih.
+    eauto.
+     assert (r = []).
+     { destruct r; try solve_by_inversion. }
+     subst.
+     solve_by_inversion.
+  -
+    try (ff; eauto; tauto).
+    try
+      ( inv_wfec; ff;
+        do_some_recons').
+    try (
+        repeat do_rcih;
+        destruct_conjs;
+        repeat jkjke').
+        inv_wfec; ff;
+      repeat do_rcih;
+      destruct_conjs.
+    repeat jkjke'.
+    repeat jkjke'.
+    find_inversion.
+    do_rcih.
+    eauto.
+     assert (r = []).
+     { destruct r; try solve_by_inversion. }
+     subst.
+     solve_by_inversion.
+  -
+        try (ff; eauto; tauto).
+    try
+      ( inv_wfec; ff;
+        do_some_recons').
+    try (
+        repeat do_rcih;
+        destruct_conjs;
+        repeat jkjke').
+        inv_wfec; ff;
+      repeat do_rcih;
+      destruct_conjs.
+    repeat jkjke'.
+    repeat jkjke'.
+    find_inversion.
+
+    destruct r; try solve_by_inversion.
+    dd.
+    destruct r; try solve_by_inversion.
+  -
+            try (ff; eauto; tauto).
+    try
+      ( inv_wfec; ff;
+        do_some_recons').
+    try (
+        repeat do_rcih;
+        destruct_conjs;
+        repeat jkjke').
+        inv_wfec; ff;
+      repeat do_rcih;
+      destruct_conjs.
+    repeat jkjke'.
+    repeat jkjke'.
+    find_inversion.
+
+    destruct r; try solve_by_inversion.
+    dd.
+    destruct r; try solve_by_inversion.
+  -
+            try (ff; eauto; tauto).
+    try
+      ( inv_wfec; ff;
+        do_some_recons').
+    try (
+        repeat do_rcih;
+        destruct_conjs;
+        repeat jkjke').
+        inv_wfec; ff;
+      repeat do_rcih;
+      destruct_conjs.
+        eauto.
+
+
+        edestruct IHe2 with (r:=  (skipn (et_size e1) r)).
+        econstructor.
+        eapply skipn_long.
+        eassumption.
+        rewrite <- H in *.
+        solve_by_inversion.
+
+        edestruct IHe1 with (r:=  (firstn (et_size e1) r)).
+        econstructor.
+        eapply firstn_long.
+        lia.
+        rewrite <- H in *.
+        solve_by_inversion.
+  -
+                try (ff; eauto; tauto).
+    try
+      ( inv_wfec; ff;
+        do_some_recons').
+    try (
+        repeat do_rcih;
+        destruct_conjs;
+        repeat jkjke').
+        inv_wfec; ff;
+      repeat do_rcih;
+      destruct_conjs.
+        eauto.
+
+
+        edestruct IHe2 with (r:=  (skipn (et_size e1) r)).
+        econstructor.
+        eapply skipn_long.
+        eassumption.
+        rewrite <- H in *.
+        solve_by_inversion.
+
+        edestruct IHe1 with (r:=  (firstn (et_size e1) r)).
+        econstructor.
+        eapply firstn_long.
+        lia.
+        rewrite <- H in *.
+        solve_by_inversion.
+Defined.
+
+Lemma some_reconsP : forall e,
+    wf_ec e ->
+    exists ee, reconstruct_evP e ee.
+Proof.
+  intros.
+  edestruct some_recons.
+  eassumption.
+  eexists.
+  econstructor.
+  eassumption.
+Defined.
+
+Ltac do_somerecons :=
+  repeat
+    match goal with
+    | [H: wf_ec ?e
+       |- _ ] =>
+      assert_new_proof_by
+        (exists x, reconstruct_evP e x)
+        ltac:(eapply some_reconsP; apply H)     
+    end; destruct_conjs.
+
+
+Lemma cvm_ev_deonte_evtype: forall annt t i p e,
+    annoP annt t i ->
+    et_fun (cvm_evidence_denote annt p e) = (aeval annt p (et_fun e)).
+Proof.
+  Check cvm_refines_lts_evidence.
+  intros.
+
+  
+  inversion H.
+  rewrite H0 at 2.
+  destruct (anno_par t i) eqn: hi.
+  simpl.
+  destruct (copland_compile a
+                            {|
+                              st_ev := evc (encodeEv e) (et_fun e);
+                              st_trace := [];
+                              st_pl := p;
+                              st_evid := i
+                            |}) eqn: hey.
+  assert (o = Some tt).
+  {
+    Search "some".
+    eapply always_some.
+    eassumption.
+  }
+  rewrite H4 in *; clear H4.
+  vmsts.
+  destruct st_ev.
+  assert (wf_ec (evc (encodeEv e) (et_fun e))).
+  {
+    eapply wfec_encodeEv_etfun.
+  }
+  assert (wf_ec (evc r e0)).
+  {
+    eapply wf_ec_preserved_by_cvm.
+    eassumption.
+    econstructor.
+    eassumption.
+  }
+  assert (reconstruct_evP (evc (encodeEv e) (et_fun e)) e).
+  {
+    econstructor.
+    eapply recon_same.
+  }
+  assert (exists ecc, reconstruct_evP (evc r e0) ecc).
+  {
+    assert (exists ecc, Some ecc = reconstruct_ev (evc r e0)).
+    {
+      eapply some_recons; eauto.
+    }
+    destruct_conjs.
+    exists H7.
+    econstructor.
+    eassumption.
+  }
+  destruct_conjs.
+  
+  
+  assert (cvm_evidence_denote annt p e = H7).
+  {
+    rewrite <- H3 in *; clear H3.
+    rewrite <- H2 in *; clear H2.
+    eapply cvm_raw_evidence_denote_fact.
+    econstructor.
+    reflexivity.
+    econstructor.
+    jkjke.
+    rewrite hi.
+    simpl.
+    econstructor.
+    eassumption.
+    eassumption.
+    eassumption.
+  }
+
+  (*
+  
+    jkjke.
+    simpl.
+    subst.
+    eassumption.
+   *)
+  
+  
+
+  (*
+  assert (e0 = (et_fun (cvm_evidence_denote annt p e))).
+  assert (exists bits', st_ev = (evc bits' (et_fun (cvm_evidence_denote annt p e)))).
+  {
+    eexists.
+    
+    admit.
+  }
+  destruct_conjs.
+  rewrite H5 in *; clear H5.
+    
+  (*
+  assert (st_ev = aeval annt p (et_fun e)).
+   *)
+   *)
+  rewrite H9.
+
+  assert (e0 = et_fun H7).
+  {
+    eapply etfun_reconstruct.
+    eauto.
+  }
+  rewrite <- H10.
+  
+    
+
+
+
+  
+  Check eval_aeval.
+  Locate eval_aeval.
+  erewrite <- eval_aeval.
+  eapply cvm_refines_lts_evidence.
+  econstructor.
+  reflexivity.
+  rewrite hi.
+  simpl.
+  econstructor.
+  eassumption.
+Defined.
+
+
+
 
 (*
 Lemma cvm_refines_lts_evidence' : forall t tr tr' e e' p p',
@@ -1373,7 +2173,8 @@ Proof.
 Defined.
 *)
 
-Lemma eval_aeval: forall t1 p et,
+Check eval_aeval.
+Lemma eval_aeval': forall t1 p et,
     eval (unanno t1) p et = aeval t1 p et.
 Proof.
   induction t1; intros.
@@ -1596,7 +2397,7 @@ Proof.
     simpl.
     assert (et' = (aeval a n et)).
     {
-      rewrite <- eval_aeval.
+      rewrite <- eval_aeval'.
       erewrite <- remote_Evidence_Type_Axiom.
       rewrite <- H3.
       rewrite H0.
@@ -1679,7 +2480,7 @@ Proof.
 
 
     subst.
-    rewrite <- eval_aeval.
+    rewrite <- eval_aeval'.
     assert (unannoPar a = unanno a1).
     {
       assert (unannoPar a = t1).
