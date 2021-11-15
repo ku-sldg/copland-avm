@@ -1179,6 +1179,50 @@ Proof.
   eapply cvm_refines_lts_evidence'.
   eassumption.
 Defined.
+Check encodeEvBits.
+Search "encode".
+
+Definition encodeEvRaw(e:RawEv): BS.
+Admitted.
+
+Definition cvm_evidence_denote_asp (a:ASP) (p:Plc) (e:EvidenceC) (x:Event_ID): EvidenceC :=
+  match a with
+  | CPY => e
+  | ASPC params => uuc params p (do_asp params p x) e
+  | SIG => ggc p (do_sig (encodeEvRaw (encodeEv e)) p x) e 
+  | HSH => hhc p (do_hash (encodeEvRaw (encodeEv e)) p) (et_fun e)
+  end.
+
+Search "split".
+
+Fixpoint cvm_evidence_denote (t:AnnoTerm) (p:Plc) (ec:EvidenceC) : EvidenceC :=
+  match t with
+  | aasp (i,_) x => cvm_evidence_denote_asp x p ec i
+  | aatt _ q x => cvm_evidence_denote x q ec
+  | alseq _ t1 t2 => cvm_evidence_denote t2 p (cvm_evidence_denote t1 p ec)
+  | abseq _ s t1 t2 => ssc (cvm_evidence_denote t1 p ((splitEvl s ec)))
+                         (cvm_evidence_denote t2 p ((splitEvr s ec)))
+  | abpar _ s t1 t2 => ppc (cvm_evidence_denote t1 p ((splitEvl s ec)))
+                         (cvm_evidence_denote t2 p ((splitEvr s ec)))
+  end.
+Check reconstruct_evP.
+
+Lemma cvm_raw_evidence_denote_fact : forall t annt t' tr tr' bits bits' et et' p p' i i' loc ec ec',
+    (*well_formed_r t -> *)
+    anno_parP t t' loc ->
+    annoP annt t' i ->
+    copland_compileP t
+                     (mk_st (evc bits et) tr p i)
+                     (Some tt)
+                     (mk_st (evc bits' et') tr' p' i') ->
+    reconstruct_evP (evc bits et) ec ->
+    reconstruct_evP (evc bits' et') ec' ->
+
+    cvm_evidence_denote annt p ec = ec'.
+   (* et' = (Term_Defs.eval t' p et). *)
+Proof.
+Admitted. (* TODO: prove this!! *)
+
 
 (*
 Lemma cvm_refines_lts_evidence' : forall t tr tr' e e' p p',
