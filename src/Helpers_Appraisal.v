@@ -528,45 +528,7 @@ Proof.
       eauto.
 Defined.
 
-Lemma annopar_fst_snd: forall t l,
-    anno_par t l = (fst (anno_par t l), snd (anno_par t l)).
-Proof.
-  intros.
-  destruct (anno_par t l).
-  simpl.
-  tauto.
-Defined.
 
-Ltac do_t_at_zero t x :=
-  let y := fresh in
-  assert (exists l' t', anno_par t 0 = (l',t')) as y by
-        (destruct (anno_par t 0); repeat eexists);
-  destruct y;
-  destruct y as [x].
-
-Ltac do_assert_remote t e p i :=
-  assert (
-      copland_compile t
-                      {| st_ev := e; st_trace := []; st_pl := p; st_evid := i|} =
-      (Some tt,
-       {| st_ev := doRemote_session (unannoPar t) p e;
-                   st_trace := cvm_events (unannoPar t) p (get_et e);
-                               st_pl := p; st_evid :=  (i + event_id_span (unannoPar t))
-       |})
-    ) by
-    (eapply copland_compile_at(*;
-     eapply wfr_annt_implies_wfr_par;
-     [eassumption | econstructor; jkjke]*)).
-
-Ltac do_assert_unannoPar t x :=
-  assert (t = unannoPar x) by
-    (erewrite anno_unanno_par;
-     [reflexivity | eassumption]).
-
-Ltac do_assume_remote t e p i x :=
-  do_t_at_zero t x;
-  do_assert_remote x e p i;
-  do_assert_unannoPar t x.
 
 
 
@@ -720,13 +682,7 @@ Proof.
       econstructor. *)
 Admitted.
 *)
-Locate reconstruct_ev.
-Lemma reconp_wfec: forall ecc e,
-    reconstruct_evP ecc e ->
-    wf_ec ecc.
-Proof.
-  intros.
-Admitted.
+
 
 Lemma evAccum: forall t annt p (e e' e'':EvidenceC) (*tr tr' p'*) (* (ecc ecc':EvC) *) (*loc*) i (*i'*),
 
@@ -3582,7 +3538,7 @@ Proof.
         Locate anno_unanno_par.
         Locate do_somerecons.
 
-        eapply cvm_ev_deonte_evtype.
+        eapply cvm_ev_denote_evtype.
         eassumption.
       }
       
@@ -4424,11 +4380,7 @@ Ltac do_nhse_bparr_nosplit :=
 
 
 
-Lemma encodeEvBits_iff_Raw: forall e,
-    encodeEvBits (evc (encodeEv e) (et_fun e)) =
-    encodeEvRaw (encodeEv e).
-Proof.
-Admitted.
+
 
 
 
@@ -4795,7 +4747,7 @@ Ltac do_nhst_lseqr :=
 
       assert (et_fun ((cvm_evidence_denote a p e)) =  (aeval a p (et_fun e))).
       {
-        eapply cvm_ev_deonte_evtype.
+        eapply cvm_ev_denote_evtype.
         eassumption.
       }
       

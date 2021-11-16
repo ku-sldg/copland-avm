@@ -865,6 +865,8 @@ Proof.
   tauto.
 Defined.
 
+(*
+
 Ltac do_t_at_zero t x :=
   let y := fresh in
   assert (exists l' t', anno_par t 0 = (l',t')) as y by
@@ -895,6 +897,46 @@ Ltac do_assert_unannoPar t x :=
 Ltac do_assume_remote t e p x :=
   do_t_at_zero t x;
   do_assert_remote x e p;
+  do_assert_unannoPar t x.
+ *)
+Lemma annopar_fst_snd: forall t l,
+    anno_par t l = (fst (anno_par t l), snd (anno_par t l)).
+Proof.
+  intros.
+  destruct (anno_par t l).
+  simpl.
+  tauto.
+Defined.
+
+Ltac do_t_at_zero t x :=
+  let y := fresh in
+  assert (exists l' t', anno_par t 0 = (l',t')) as y by
+        (destruct (anno_par t 0); repeat eexists);
+  destruct y;
+  destruct y as [x].
+
+Ltac do_assert_remote t e p i :=
+  assert (
+      copland_compile t
+                      {| st_ev := e; st_trace := []; st_pl := p; st_evid := i|} =
+      (Some tt,
+       {| st_ev := doRemote_session (unannoPar t) p e;
+                   st_trace := cvm_events (unannoPar t) p (get_et e);
+                               st_pl := p; st_evid :=  (i + event_id_span (unannoPar t))
+       |})
+    ) by
+    (eapply copland_compile_at(*;
+     eapply wfr_annt_implies_wfr_par;
+     [eassumption | econstructor; jkjke]*)).
+
+Ltac do_assert_unannoPar t x :=
+  assert (t = unannoPar x) by
+    (erewrite anno_unanno_par;
+     [reflexivity | eassumption]).
+
+Ltac do_assume_remote t e p i x :=
+  do_t_at_zero t x;
+  do_assert_remote x e p i;
   do_assert_unannoPar t x.
 
 (*
@@ -1182,46 +1224,7 @@ Defined.
 Check encodeEvBits.
 Search "encode".
 
-Definition encodeEvRaw(e:RawEv): BS.
-Admitted.
 
-Definition cvm_evidence_denote_asp (a:ASP) (p:Plc) (e:EvidenceC) (x:Event_ID): EvidenceC :=
-  match a with
-  | CPY => e
-  | ASPC params => uuc params p (do_asp params p x) e
-  | SIG => ggc p (do_sig (encodeEvRaw (encodeEv e)) p x) e 
-  | HSH => hhc p (do_hash (encodeEvRaw (encodeEv e)) p) (et_fun e)
-  end.
-
-Search "split".
-
-Fixpoint cvm_evidence_denote (t:AnnoTerm) (p:Plc) (ec:EvidenceC) : EvidenceC :=
-  match t with
-  | aasp (i,_) x => cvm_evidence_denote_asp x p ec i
-  | aatt _ q x => cvm_evidence_denote x q ec
-  | alseq _ t1 t2 => cvm_evidence_denote t2 p (cvm_evidence_denote t1 p ec)
-  | abseq _ s t1 t2 => ssc (cvm_evidence_denote t1 p ((splitEvl s ec)))
-                         (cvm_evidence_denote t2 p ((splitEvr s ec)))
-  | abpar _ s t1 t2 => ppc (cvm_evidence_denote t1 p ((splitEvl s ec)))
-                         (cvm_evidence_denote t2 p ((splitEvr s ec)))
-  end.
-Check reconstruct_evP.
-
-Lemma cvm_raw_evidence_denote_fact : forall t annt t' tr tr' bits bits' et et' p p' i i' loc ec ec',
-    (*well_formed_r t -> *)
-    anno_parP t t' loc ->
-    annoP annt t' i ->
-    copland_compileP t
-                     (mk_st (evc bits et) tr p i)
-                     (Some tt)
-                     (mk_st (evc bits' et') tr' p' i') ->
-    reconstruct_evP (evc bits et) ec ->
-    reconstruct_evP (evc bits' et') ec' ->
-
-    cvm_evidence_denote annt p ec = ec'.
-   (* et' = (Term_Defs.eval t' p et). *)
-Proof.
-Admitted. (* TODO: prove this!! *)
 
 Ltac inv_wfec :=
   repeat
@@ -1285,7 +1288,46 @@ Lemma wfec_encodeEv_etfun:
   forall e,
     wf_ec (evc (encodeEv e) (et_fun e)).
 Proof.
-Admitted.
+  intros.
+  induction e; intros.
+  -
+    dd.
+    econstructor; tauto.
+  -
+    dd.
+    econstructor; tauto.
+  -
+    dd.
+    econstructor.
+    invc IHe.
+    dd.
+    jkjke.
+  -
+    dd.
+    econstructor.
+    invc IHe.
+    dd.
+    jkjke.
+  -
+    dd.
+    econstructor; tauto.
+  -
+    dd.
+    invc IHe1.
+    invc IHe2.
+    econstructor.
+    dd.
+    erewrite app_length.
+    jkjke.
+  -
+    dd.
+    invc IHe1.
+    invc IHe2.
+    econstructor.
+    dd.
+    erewrite app_length.
+    jkjke.
+Defined.
 
 Lemma recon_same: forall e,
     Some e = reconstruct_ev (evc (encodeEv e) (et_fun e)).
@@ -1538,6 +1580,110 @@ Ltac do_inv_recon :=
   try do_inv_recon_hh;
   try do_inv_recon_ss;
   try do_inv_recon_pp.
+
+Lemma recon_inv_uu: forall n2 n3 H2 H3 e params,
+    reconstruct_evP
+      (evc (n3 :: H2) (uu params n2 H3))
+      (uuc params n2 n3 e) ->
+    reconstruct_evP (evc H2 H3) e.
+Proof.
+  intros.
+  invc H.
+  repeat ff.
+  econstructor.
+  symmetry.
+  tauto.
+Defined.
+
+Ltac do_recon_inv_uu :=
+  match goal with
+  | [H: reconstruct_evP
+          (evc (_ :: ?H2) (uu _ _ ?H3))
+          (uuc _ _ _ ?e)
+     |- _] =>
+    assert_new_proof_by (reconstruct_evP (evc H2 H3) e) ltac:(eapply recon_inv_uu; apply H)
+  end.
+
+Lemma recon_inv_gg: forall sig ls p et e,
+    reconstruct_evP
+      (evc (sig :: ls) (gg p et))
+      (ggc p sig e) ->
+    reconstruct_evP (evc ls et) e.
+Proof.
+  intros.
+  invc H.
+  repeat ff.
+  econstructor.
+  symmetry.
+  tauto.
+Defined.
+
+Ltac do_recon_inv_gg :=
+  match goal with
+  | [H: reconstruct_evP
+          (evc (_ :: ?ls) (gg _ ?et))
+          (ggc _ _ ?e)
+     |- _] =>
+    assert_new_proof_by (reconstruct_evP (evc ls et) e) ltac:(eapply recon_inv_gg; apply H)
+  end.
+
+Lemma recon_inv_ss: forall ls H1 H2 ec1 ec2,
+    reconstruct_evP (evc ls (ss H1 H2)) (ssc ec1 ec2) ->
+    reconstruct_evP (evc (firstn (et_size H1) ls) H1) ec1 /\
+    reconstruct_evP (evc (skipn (et_size H1) ls) H2)  ec2.
+Proof.
+  intros.
+  invc H.
+  repeat ff.
+  split;
+    econstructor;
+    try 
+      symmetry; eassumption.
+Defined.
+
+Lemma recon_inv_pp: forall ls H1 H2 ec1 ec2,
+    reconstruct_evP (evc ls (pp H1 H2)) (ppc ec1 ec2) ->
+    reconstruct_evP (evc (firstn (et_size H1) ls) H1) ec1 /\
+    reconstruct_evP (evc (skipn (et_size H1) ls) H2)  ec2.
+Proof.
+  intros.
+  invc H.
+  repeat ff.
+  split;
+    econstructor;
+    try 
+      symmetry; eassumption.
+Defined.
+
+Ltac do_recon_inv_ss :=
+  match goal with
+  | [H: reconstruct_evP
+          (evc ?ls (ss ?H1 ?H2))
+          (ssc ?ec1 ?ec2)
+     |- _] =>
+    assert_new_proof_by
+      (reconstruct_evP (evc (firstn (et_size H1) ls) H1) ec1 /\
+       reconstruct_evP (evc (skipn (et_size H1) ls) H2)  ec2)
+      ltac:(eapply recon_inv_ss; apply H)
+  end; destruct_conjs.
+
+Ltac do_recon_inv_pp :=
+  match goal with
+  | [H: reconstruct_evP
+          (evc ?ls (pp ?H1 ?H2))
+          (ppc ?ec1 ?ec2)
+     |- _] =>
+    assert_new_proof_by
+      (reconstruct_evP (evc (firstn (et_size H1) ls) H1) ec1 /\
+       reconstruct_evP (evc (skipn (et_size H1) ls) H2)  ec2)
+      ltac:(eapply recon_inv_pp; apply H)
+  end; destruct_conjs.
+
+Ltac do_recon_inv :=
+  try do_recon_inv_uu;
+  try do_recon_inv_gg;
+  try do_recon_inv_ss;
+  try do_recon_inv_pp.
 
 Lemma etfun_reconstruct: forall e e0 e1,
     reconstruct_evP (evc e0 e1) e ->
@@ -1894,6 +2040,888 @@ Ltac do_somerecons :=
         ltac:(eapply some_reconsP; apply H)     
     end; destruct_conjs.
 
+Definition cvm_evidence_denote_asp (a:ASP) (p:Plc) (e:EvidenceC) (x:Event_ID): EvidenceC :=
+  match a with
+  | CPY => e
+  | ASPC params => uuc params p (do_asp params p x) e
+  | SIG => ggc p (do_sig (encodeEvRaw (encodeEv e)) p x) e 
+  | HSH => hhc p (do_hash (encodeEvRaw (encodeEv e)) p) (et_fun e)
+  end.
+
+Fixpoint cvm_evidence_denote (t:AnnoTerm) (p:Plc) (ec:EvidenceC) : EvidenceC :=
+  match t with
+  | aasp (i,_) x => cvm_evidence_denote_asp x p ec i
+  | aatt _ q x => cvm_evidence_denote x q ec
+  | alseq _ t1 t2 => cvm_evidence_denote t2 p (cvm_evidence_denote t1 p ec)
+  | abseq _ s t1 t2 => ssc (cvm_evidence_denote t1 p ((splitEvl s ec)))
+                         (cvm_evidence_denote t2 p ((splitEvr s ec)))
+  | abpar _ s t1 t2 => ppc (cvm_evidence_denote t1 p ((splitEvl s ec)))
+                         (cvm_evidence_denote t2 p ((splitEvr s ec)))
+  end.
+
+Lemma recon_encodeEv: forall bits et ec,
+    reconstruct_evP (evc bits et) ec ->
+    encodeEv ec = bits.
+Proof.
+  intros.
+  generalizeEverythingElse ec.
+  induction ec; intros.
+  -
+    dd.
+    do_inv_recon.
+    invc H.
+    ff.
+  -
+    dd.
+    do_inv_recon.
+    ff.
+  -
+    do_inv_recon.
+    ff.
+    invc H.
+    ff.
+    assert (reconstruct_evP (evc H0 H1) e).
+    {
+      econstructor; eauto.
+    }
+    assert (encodeEv e = H0) by eauto.
+    congruence.
+  -
+    do_inv_recon.
+    ff.
+    invc H.
+    ff.
+    rewrite fold_recev in *.
+    do_wrap_reconP.
+    (*
+      assert (reconstruct_evP (evc H0 H1) e).
+      {
+        econstructor; eauto.
+      } *)
+    assert (encodeEv e = H0) by eauto.
+    congruence.
+  -
+    do_inv_recon.
+    ff.
+  -
+    do_inv_recon.
+    ff.
+    invc H.
+    ff.
+    rewrite fold_recev in *.
+    do_wrap_reconP.
+    
+    
+    assert (encodeEv e =  (firstn (et_size H0) bits)) by eauto.
+    assert (encodeEv e0 = (skipn (et_size H0) bits)) by eauto.
+
+    assert (bits = firstn (et_size H0) bits ++ skipn (et_size H0) bits).
+    {
+      symmetry.
+      eapply firstn_skipn.
+    }
+    rewrite H3 at 1.
+    congruence.
+  -
+    do_inv_recon.
+    ff.
+    invc H.
+    ff.
+    rewrite fold_recev in *.
+    do_wrap_reconP.
+    
+    
+    assert (encodeEv e =  (firstn (et_size H0) bits)) by eauto.
+    assert (encodeEv e0 = (skipn (et_size H0) bits)) by eauto.
+
+    assert (bits = firstn (et_size H0) bits ++ skipn (et_size H0) bits).
+    {
+      symmetry.
+      eapply firstn_skipn.
+    }
+    rewrite H3 at 1.
+    congruence.
+Defined.
+
+Lemma recon_encodeEv_Raw: forall ec bits et,
+    reconstruct_evP (evc bits et) ec ->
+    encodeEvRaw (encodeEv ec) = encodeEvBits (evc bits et).
+Proof.
+  intros.
+  unfold encodeEvBits.
+  erewrite recon_encodeEv.
+  tauto.
+  eauto.
+Defined.
+
+
+Lemma encodeEvBits_iff_Raw: forall e,
+    encodeEvBits (evc (encodeEv e) (et_fun e)) = encodeEvRaw (encodeEv e).
+Proof.
+  intros.
+  assert (reconstruct_evP (evc (encodeEv e) (et_fun e)) e).
+  {
+    econstructor.
+    eapply recon_same.
+  }
+  erewrite recon_encodeEv_Raw.
+  reflexivity.
+  eassumption.
+Defined.
+
+(*
+Lemma reconp_wfec: forall ecc e,
+    reconstruct_evP ecc e ->
+    wf_ec ecc.
+Proof.
+  intros.
+Admitted.
+*)
+
+Lemma wfec_recon: forall ee ec,
+    reconstruct_evP ee ec ->
+    wf_ec ee.
+Proof.
+  intros.
+  generalizeEverythingElse ec.
+  induction ec; intros; destruct ee.
+  -
+    do_inv_recon.
+    dd.
+    invc H.
+    dd.
+    ff.
+    econstructor. tauto.
+  -
+    do_inv_recon.
+    invc H.
+    dd.
+    econstructor; tauto.
+  -
+    do_inv_recon.
+    invc H.
+    dd.
+    ff.
+    assert (wf_ec (evc H0 H1)).
+    {
+      apply IHec.
+      econstructor.
+      eauto.
+    }
+    econstructor.
+    dd.
+    invc H.
+    lia.
+  -
+    do_inv_recon.
+    invc H.
+    dd.
+    ff.
+    assert (wf_ec (evc H0 H1)).
+    {
+      apply IHec.
+      econstructor.
+      eauto.
+    }
+    econstructor.
+    dd.
+    invc H.
+    lia.
+  -
+    do_inv_recon.
+    invc H.
+    dd.
+    econstructor; tauto.
+  -
+    do_inv_recon.
+    invc H.
+    dd.
+    ff.
+
+    assert (wf_ec (evc (firstn (et_size H0) r) H0)).
+    {
+      apply IHec1.
+      econstructor.
+      eauto.
+    }
+    assert (wf_ec (evc (skipn (et_size H0) r) H1)).
+    {
+      apply IHec2.
+      econstructor.
+      eauto.
+    }
+    
+    econstructor.
+    dd.
+    invc H.
+    invc H2.
+    rewrite <- H4.
+    rewrite <- H3.
+    Check firstn_skipn.
+    assert (r = firstn (et_size H0) r ++ skipn (et_size H0) r).
+    {
+      symmetry.
+      eapply firstn_skipn.
+    }
+    rewrite H at 1.
+    eapply app_length.
+  -
+        do_inv_recon.
+    invc H.
+    dd.
+    ff.
+
+    assert (wf_ec (evc (firstn (et_size H0) r) H0)).
+    {
+      apply IHec1.
+      econstructor.
+      eauto.
+    }
+    assert (wf_ec (evc (skipn (et_size H0) r) H1)).
+    {
+      apply IHec2.
+      econstructor.
+      eauto.
+    }
+    
+    econstructor.
+    dd.
+    invc H.
+    invc H2.
+    rewrite <- H4.
+    rewrite <- H3.
+    Check firstn_skipn.
+    assert (r = firstn (et_size H0) r ++ skipn (et_size H0) r).
+    {
+      symmetry.
+      eapply firstn_skipn.
+    }
+    rewrite H at 1.
+    eapply app_length.
+Defined.
+
+Lemma eval_aeval': forall t1 p et,
+    eval (unanno t1) p et = aeval t1 p et.
+Proof.
+  induction t1; intros.
+  -
+    ff.
+  -
+    ff.
+  -
+    ff.
+    erewrite IHt1_1.
+    eauto.
+  -
+    ff.
+    erewrite IHt1_1.
+    erewrite IHt1_2.
+    eauto.
+  -
+    ff.
+    erewrite IHt1_1.
+    erewrite IHt1_2.
+    eauto. 
+Defined.
+
+Lemma cvm_spans': forall t e tr p i e' tr' p' i',
+    copland_compileP t
+                     {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |}
+                     (Some tt)
+                     {|
+                       st_ev := e';
+                       st_trace := tr';
+                       st_pl := p';
+                       st_evid := i'
+                     |} ->
+    i' = i + event_id_span (unannoPar t).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a.
+    +
+      wrap_ccp.
+      tauto.
+    +
+      wrap_ccp.
+      unfold tag_ASP in *.
+      destruct a.
+      ff.
+    +
+      wrap_ccp.
+      tauto.
+    +
+      wrap_ccp.
+      tauto.
+  -
+    wrap_ccp.
+    simpl.
+    lia.
+  -
+    wrap_ccp.
+    assert (st_evid0 = i + event_id_span (unannoPar t1)) by eauto.
+    assert (i' = st_evid0 + event_id_span (unannoPar t2)) by eauto.
+    subst.
+    lia.
+  -
+    wrap_ccp.
+    assert (st_evid1 = (i + 1) + event_id_span (unannoPar t1)) by eauto.
+    assert (st_evid = st_evid1 + event_id_span (unannoPar t2)) by eauto.
+    subst.
+    lia.
+  -
+    wrap_ccp.
+    assert (st_evid = (i + 1) + event_id_span (unannoPar t)) by eauto.
+    subst.
+    lia.
+Defined.
+
+Lemma cvm_spans: forall t t' e tr p i e' tr' p' i' loc,
+    anno_parP t t' loc ->
+    copland_compileP t
+                     {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |}
+                     (Some tt)
+                     {|
+                       st_ev := e';
+                       st_trace := tr';
+                       st_pl := p';
+                       st_evid := i'
+                     |} ->
+    i' = i + event_id_span t'.
+Proof.
+  intros.
+  assert (t' = unannoPar t).
+  {
+    destruct (anno_par t' loc) eqn: hi.
+    invc H.
+    erewrite anno_unanno_par.
+    reflexivity.
+    jkjke.
+  }
+  rewrite H1.
+  eapply cvm_spans'; eauto.
+Defined.
+  
+
+Lemma span_cvm: forall atp t annt loc i j e e' tr tr' p p' i',
+    copland_compileP atp
+                     {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |} 
+                     (Some tt)
+                     {| st_ev := e'; st_trace := tr'; st_pl := p'; st_evid := i' |} ->
+    
+    anno_parP atp t loc ->
+    anno t i = (j, annt) ->
+    j = i'.
+
+Proof.
+  intros.
+  assert (j = i + event_id_span t).
+  {
+    assert (j - i = event_id_span t).
+    {
+      symmetry.
+      eapply span_range.
+      eauto.
+    }
+    rewrite <- H2.
+    assert (j > i).
+    {
+      eapply anno_mono; eauto.
+    }
+    
+    lia.
+  }
+  subst.
+  symmetry.
+  eapply cvm_spans; eauto.
+Defined.
+
+Lemma cvm_raw_evidence_denote_fact : forall t annt t' tr tr' bits bits' et et' p p' i i' loc ec ec',
+    (*well_formed_r t -> *)
+    anno_parP t t' loc ->
+    annoP annt t' i ->
+    copland_compileP t
+                     (mk_st (evc bits et) tr p i)
+                     (Some tt)
+                     (mk_st (evc bits' et') tr' p' i') ->
+    reconstruct_evP (evc bits et) ec ->
+    reconstruct_evP (evc bits' et') ec' ->
+
+    cvm_evidence_denote annt p ec = ec'.
+   (* et' = (Term_Defs.eval t' p et). *)
+Proof.
+  intros.
+  generalizeEverythingElse t'.
+  induction t'; intros.
+  -
+    invc H0.
+    invc H.
+    dd.
+    destruct a.
+    +
+      wrap_ccp.
+      Search "determ".
+      eapply reconP_determ; eauto.
+    +
+      wrap_ccp.
+      unfold tag_ASP in *.
+      dd.
+      invc H3.
+      invc H2.
+      dd.
+      jkjke'.
+      dd.
+      tauto.
+    +
+      wrap_ccp.
+      invc H3; invc H2.
+      dd.
+      jkjke'.
+      dd.
+      assert (encodeEvRaw (encodeEv ec) = (encodeEvBits (evc bits et))).
+      {
+
+
+        eapply recon_encodeEv_Raw.
+        econstructor.
+        eauto.
+      }
+      congruence.
+    +
+      wrap_ccp.
+      invc H3; invc H2.
+      dd.
+      assert (et_fun ec = et).
+      {
+        Check etfun_reconstruct.
+        symmetry.
+        eapply etfun_reconstruct.
+        econstructor.
+        eassumption.
+      }
+      
+      erewrite recon_encodeEv_Raw.
+      rewrite H.
+      tauto.
+      econstructor.
+      eassumption.
+  -
+    wrap_ccp.
+    invc H; invc H0.
+    dd.
+    do_anno_redo.
+
+    do_assume_remote t' (evc bits et) n (S i) HHH.
+    rewrite <- H1 in *; clear H1.
+    rewrite H5 in *.
+    simpl in *.
+
+    eapply IHt'.
+    econstructor.
+    reflexivity.
+    eassumption.
+    rewrite H.
+    dd.
+    econstructor.
+    eassumption.
+    eassumption.
+    eassumption.
+  -
+    
+    wrap_ccp.
+    inversion H0.
+    dd.
+    assert (n0 = st_evid0).
+    {
+      Search "span".
+      assert (event_id_span t'1 = n0 - i).
+      {
+        eapply span_range; eauto.
+      }
+      assert (st_evid0 = i + event_id_span t'1).
+      {
+        eapply cvm_spans; eauto.
+      }
+      assert (n0 > i).
+      {
+        eapply anno_mono; eauto.
+      }
+      lia.
+    }
+
+    dd.
+    assert (n1 = i').
+    {
+      assert (event_id_span t'2 = n1 - st_evid0).
+      {
+        eapply span_range; eauto.
+      }
+      assert (i' = st_evid0 + event_id_span t'2).
+      {
+        eapply cvm_spans; eauto.
+      }
+      assert (n1 > st_evid0).
+      {
+        eapply anno_mono; eauto.
+      }
+      lia.
+    }
+    subst.
+
+    dd.
+    repeat do_anno_redo.
+
+
+
+    destruct st_ev0.
+
+
+
+    assert (wf_ec (evc bits et)).
+    {
+      eapply wfec_recon; eauto.
+    }
+
+    do_wfec_preserved.
+
+    do_somerecons.
+
+    (*
+
+    do_somerecons.
+    do_somerecons.
+    do_somerecons.
+    Print do_somerecons.
+    
+
+    Print do_somerecons.
+
+    do_somerecons.
+
+    assert (wf_ec (evc r e)).
+    {
+      Search "preserved".
+      eapply wf_ec_preserved_by_cvm.
+      
+
+    Print do_wfec_preserved.
+
+    do_wfec_preserved.
+
+    Search "preserved".
+    
+
+    do_wfec_preserved.
+     *)
+    
+
+
+    assert ((cvm_evidence_denote a1 p ec) = H7).
+    {
+      eapply IHt'1.
+    
+    apply Heqp0.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    }
+    (*
+    assert (st_evid0 = n).
+    {
+      Check cvm_spans.
+      assert (st_evid0 = i + event_id_span t'1).
+      {
+        eapply cvm_spans.
+        eassumption.
+        eassumption.
+      }
+      rewrite H12.
+      inversion Heqp4.
+      assert (n = i + 
+      Check span_range.
+      
+      assert (event_id_span t'1 = 
+
+      
+      Locate span_range.
+      
+      admit.
+    }
+     *)
+    
+    subst.
+    
+    
+    eapply IHt'2.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+    eassumption.
+  -
+    wrap_ccp.
+    invc H0.
+    dd.
+    assert (n = st_evid1).
+    {
+      assert (event_id_span t'1 = n - (S i)).
+      {
+        eapply span_range; eauto.
+      }
+      assert (st_evid1 = (i + 1) + event_id_span t'1).
+      {
+        eapply cvm_spans; eauto.
+      }
+      assert (n > (S i)).
+      {
+        eapply anno_mono; eauto.
+      }
+      lia.
+    }
+    dd.
+    assert (n0 = st_evid).
+    {
+      assert (event_id_span t'2 = n0 - st_evid1).
+      {
+        eapply span_range; eauto.
+      }
+      assert (st_evid = st_evid1 + event_id_span t'2).
+      {
+        eapply cvm_spans; eauto.
+      }
+      assert (n0 > st_evid1).
+      {
+        eapply anno_mono; eauto.
+      }
+      lia.
+    }
+    repeat do_anno_redo.
+
+    assert (wf_ec (evc bits et)).
+    {
+      eapply wfec_recon; eauto.
+    }
+
+    do_wfec_split.
+
+    do_wfec_preserved.
+    do_rewrap_reconP.
+    
+    do_wfec_firstn.
+    do_wfec_skipn.
+
+    clear_skipn_firstn.
+
+    assert ((cvm_evidence_denote a1 p (splitEvl s ec)) = e1).
+    {
+      assert (i + 1 = S i) by lia.
+      rewrite H0 in *; clear H0.
+      destruct s; destruct s; destruct s0; dd.
+      +
+        eauto.
+      +
+        eauto.    
+      +
+        eapply IHt'1.
+        eassumption.
+        eassumption.
+        eassumption.
+        econstructor. tauto.
+        eassumption.
+        
+      + eapply IHt'1.
+        eassumption.
+        eassumption.
+        eassumption.
+        econstructor. tauto.
+        eassumption.
+    }
+    jkjke.
+
+    assert ((cvm_evidence_denote a2 p (splitEvr s ec)) = e2).
+    {
+      (*
+      assert (n = st_evid1).
+      {
+        admit.
+      }
+       *)
+      
+      subst.
+      
+      assert (i + 1 = S i) by lia.
+      rewrite H0 in *; clear H0.
+      destruct s; destruct s; destruct s0; dd.
+      +
+        eauto.
+      +
+        eapply IHt'2.
+        eassumption.
+        eassumption.
+        eassumption.
+        econstructor. tauto.
+        eassumption.
+      +
+        eauto.
+      +
+        eapply IHt'2.
+        eassumption.
+        eassumption.
+        eassumption.
+        econstructor. tauto.
+        eassumption.
+    }
+    congruence.
+  - (* abpar case *)
+    wrap_ccp.
+    invc H0.
+    dd.
+    assert (n = st_evid).
+    {
+      assert (event_id_span t'1 = n - (S i)).
+      {
+        eapply span_range; eauto.
+      }
+      assert (st_evid = (i + 1) + event_id_span t'1).
+      {
+        eapply cvm_spans; eauto.
+      }
+      assert (n > (S i)).
+      {
+        eapply anno_mono; eauto.
+      }
+      lia.
+    }
+    dd.
+
+    repeat do_anno_redo.
+
+    assert (wf_ec (evc bits et)).
+    {
+      eapply wfec_recon; eauto.
+    }
+
+    do_wfec_split.
+
+    do_wfec_preserved.
+    do_rewrap_reconP.
+    
+    do_wfec_firstn.
+    do_wfec_skipn.
+
+    clear_skipn_firstn.
+
+    do_assume_remote t'2 (splitEv_r s (evc bits et)) p st_evid HHH.
+
+    
+
+    assert ((cvm_evidence_denote a0 p (splitEvl s ec)) = e1).
+    {
+      assert (i + 1 = S i) by lia.
+      rewrite H8 in *; clear H8.
+      destruct s; destruct s; destruct s0; dd.
+      +
+        eauto.
+      +
+        eauto.    
+      +
+        eapply IHt'1.
+        eassumption.
+        eassumption.
+        eassumption.
+        econstructor. tauto.
+        eassumption.
+        
+      + eapply IHt'1.
+        eassumption.
+        eassumption.
+        eassumption.
+        econstructor. tauto.
+        eassumption.
+    }
+    jkjke.
+
+    assert ((cvm_evidence_denote a1 p (splitEvr s ec)) = e2).
+    {
+      (*
+      assert (n = st_evid).
+      {
+        admit.
+      }
+      rewrite H9 in *; clear H9. *)
+      rewrite at_evidence in *.
+      rewrite par_evidence in *.
+      rewrite H7 in *.
+      rewrite Heqe0 in *.
+      
+      
+      destruct s; destruct s; destruct s0; simpl.
+      +
+      eapply IHt'2.
+      econstructor.
+      reflexivity.
+      eassumption.
+      rewrite H7.
+      erewrite anno_unanno_par.
+      rewrite H3.
+      simpl.
+      econstructor.
+      simpl in *.
+      eassumption.
+      rewrite H3. tauto.
+      eassumption.
+      eassumption.
+      +
+        eapply IHt'2.
+      econstructor.
+      reflexivity.
+      eassumption.
+      rewrite H7.
+      erewrite anno_unanno_par.
+      rewrite H3.
+      simpl.
+      econstructor.
+      simpl in *.
+      eassumption.
+      rewrite H3. tauto.
+      econstructor; tauto.
+      eassumption.
+      +
+      eapply IHt'2.
+      econstructor.
+      reflexivity.
+      eassumption.
+      rewrite H7.
+      erewrite anno_unanno_par.
+      rewrite H3.
+      simpl.
+      econstructor.
+      simpl in *.
+      eassumption.
+      rewrite H3. tauto.
+      eassumption.
+      eassumption.
+      +
+      eapply IHt'2.
+      econstructor.
+      reflexivity.
+      eassumption.
+      rewrite H7.
+      erewrite anno_unanno_par.
+      rewrite H3.
+      simpl.
+      econstructor.
+      simpl in *.
+      eassumption.
+      rewrite H3. tauto.
+      econstructor; tauto.
+      eassumption.
+    }
+    congruence.
+Defined.
 
 Lemma cvm_ev_denote_evtype: forall annt t i p e,
     annoP annt t i ->
@@ -2174,143 +3202,7 @@ Defined.
 *)
 
 Check eval_aeval.
-Lemma eval_aeval': forall t1 p et,
-    eval (unanno t1) p et = aeval t1 p et.
-Proof.
-  induction t1; intros.
-  -
-    ff.
-  -
-    ff.
-  -
-    ff.
-    erewrite IHt1_1.
-    eauto.
-  -
-    ff.
-    erewrite IHt1_1.
-    erewrite IHt1_2.
-    eauto.
-  -
-    ff.
-    erewrite IHt1_1.
-    erewrite IHt1_2.
-    eauto. 
-Defined.
 
-Lemma cvm_spans': forall t e tr p i e' tr' p' i',
-    copland_compileP t
-                     {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |}
-                     (Some tt)
-                     {|
-                       st_ev := e';
-                       st_trace := tr';
-                       st_pl := p';
-                       st_evid := i'
-                     |} ->
-    i' = i + event_id_span (unannoPar t).
-Proof.
-  intros.
-  generalizeEverythingElse t.
-  induction t; intros.
-  -
-    destruct a.
-    +
-      wrap_ccp.
-      tauto.
-    +
-      wrap_ccp.
-      unfold tag_ASP in *.
-      destruct a.
-      ff.
-    +
-      wrap_ccp.
-      tauto.
-    +
-      wrap_ccp.
-      tauto.
-  -
-    wrap_ccp.
-    simpl.
-    lia.
-  -
-    wrap_ccp.
-    assert (st_evid0 = i + event_id_span (unannoPar t1)) by eauto.
-    assert (i' = st_evid0 + event_id_span (unannoPar t2)) by eauto.
-    subst.
-    lia.
-  -
-    wrap_ccp.
-    assert (st_evid1 = (i + 1) + event_id_span (unannoPar t1)) by eauto.
-    assert (st_evid = st_evid1 + event_id_span (unannoPar t2)) by eauto.
-    subst.
-    lia.
-  -
-    wrap_ccp.
-    assert (st_evid = (i + 1) + event_id_span (unannoPar t)) by eauto.
-    subst.
-    lia.
-Defined.
-
-Lemma cvm_spans: forall t t' e tr p i e' tr' p' i' loc,
-    anno_parP t t' loc ->
-    copland_compileP t
-                     {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |}
-                     (Some tt)
-                     {|
-                       st_ev := e';
-                       st_trace := tr';
-                       st_pl := p';
-                       st_evid := i'
-                     |} ->
-    i' = i + event_id_span t'.
-Proof.
-  intros.
-  assert (t' = unannoPar t).
-  {
-    destruct (anno_par t' loc) eqn: hi.
-    invc H.
-    erewrite anno_unanno_par.
-    reflexivity.
-    jkjke.
-  }
-  rewrite H1.
-  eapply cvm_spans'; eauto.
-Defined.
-  
-
-Lemma span_cvm: forall atp t annt loc i j e e' tr tr' p p' i',
-    copland_compileP atp
-                     {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |} 
-                     (Some tt)
-                     {| st_ev := e'; st_trace := tr'; st_pl := p'; st_evid := i' |} ->
-    
-    anno_parP atp t loc ->
-    anno t i = (j, annt) ->
-    j = i'.
-
-Proof.
-  intros.
-  assert (j = i + event_id_span t).
-  {
-    assert (j - i = event_id_span t).
-    {
-      symmetry.
-      eapply span_range.
-      eauto.
-    }
-    rewrite <- H2.
-    assert (j > i).
-    {
-      eapply anno_mono; eauto.
-    }
-    
-    lia.
-  }
-  subst.
-  symmetry.
-  eapply cvm_spans; eauto.
-Defined.
 
 Lemma cvm_refines_lts_event_ordering : forall t atp annt cvm_tr bits bits' et et' p p' i i' loc,
     anno_parP atp t loc ->

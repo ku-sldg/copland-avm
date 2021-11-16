@@ -104,8 +104,13 @@ Definition invoke_ASP (params:ASP_PARAMS) : CVM EvC :=
   bs <- tag_ASP params p ;;
   ret (cons_uu bs e params p).
 
-Definition encodeEvBits (e:EvC): BS.
+Definition encodeEvRaw(e:RawEv): BS.
 Admitted.
+
+Definition encodeEvBits (e:EvC): BS :=
+  match e with
+  | (evc bits _) => encodeEvRaw bits
+  end.
 
 Definition do_sig (bs:BS) (p:Plc) (sigTag:Event_ID) : BS.
 Admitted.
