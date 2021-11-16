@@ -55,12 +55,12 @@ Proof.
       edestruct IHe'2; eauto.
 Defined.
 
-Lemma appraisal_correct_sig : forall t pt loc e e' tr tr' p p' ecc ev ee,
-    anno_parP pt t loc ->
-    well_formed_r pt ->
+Lemma appraisal_correct_sig : forall t annt n e e' p ev,
+    annoP annt t n ->
+    (*well_formed_r pt -> *)
     not_none_none t ->
     not_hash_sig_term_ev t e ->
-    wf_ec ee ->
+    (*wf_ec ee ->
     reconstruct_evP ee e ->
     reconstruct_evP ecc e' ->
     copland_compileP pt
@@ -69,38 +69,111 @@ Lemma appraisal_correct_sig : forall t pt loc e e' tr tr' p p' ecc ev ee,
                      {| st_ev := ecc;
                         st_trace := tr';
                         st_pl := p' |} ->
+     *)
+    cvm_evidence_denote annt p e = e' ->
 
-    sigEvent t p (get_et ee) ev ->
+    sigEvent annt p (et_fun e) ev ->
     appEvent_Sig_EvidenceC ev (build_app_comp_evC e').
 Proof.
   intros.
+
+
+  sigEventFacts.
+  sigEventPFacts.
+
+
+
+  edestruct gg_preserved'.
+      Check ggc_app.
+      2: { eassumption. }
+      2: { eassumption. }
+      eassumption.
+      eassumption.
+      reflexivity.
+
+      destruct_conjs.
+
+      edestruct ggc_app.
+      eassumption.
+
+      econstructor.
+      dd.
+      eassumption.
+Defined.
+      
+
+(*
+        econstructor.
+           eassumption.
+           split.
+           eassumption.
+           eassumption.
+      }
+      2: { apply H9. }
+      2: { dd. reflexivity. }
+      econstructor.
+      dd.
+      rewrite Heqp1 in *.
+      dd.
+      rewrite Heqp0 in *.
+      dd.
+      tauto.
+
+
+
+
+
+  
   generalizeEverythingElse t.
   induction t; intros.
   - (* aasp case *)
-    wrap_ccp.
+    dd.
+    invc H.
+    dd.
     
     sigEventFacts.
     sigEventPFacts.
+    (*
     destruct ee.
+     *)
+    
     inv_events.
     ff.
-    do_rewrap_reconP.
+    (*
+    do_rewrap_reconP. *)
     unfold checkSigF.
     unfold checkSig.
     fold checkSigBitsF.
 
     assert (
-        checkSigBitsF (encodeEv e1)
-                      p'
-                      (do_sig (encodeEvBits (evc r e0)) p' n) =
+
+
+        checkSigBitsF (encodeEv e)
+                      p0
+                      (do_sig (encodeEvRaw (encodeEv e)) p0 n) =
+        
         (fromSome default_bs
-          (checkSigBits (encodeEv e1) p'
-             (do_sig (encodeEvBits (evc r e0)) p' n)))
-
-
-      ).
+          (checkSigBits (encodeEv e) p0
+                        (do_sig (encodeEvRaw (encodeEv e)) p0 n)))
+      ) as H5.
     { tauto. }
+           
+
+    (*
+    assert (
+        checkSigBitsF (encodeEv e)
+                      p0
+                      (do_sig (encodeEvBits (evc r e0)) p0 n) =
+        (fromSome default_bs
+          (checkSigBits (encodeEv e) p0
+             (do_sig (encodeEvBits (evc r e0)) p0 n)))
+
+
+      ) as H5.
+    { tauto. }
+     *)
     rewrite <- H5.
+    (*
     assert (r = encodeEv e1).
     {
       eapply recon_encodeEv.
@@ -117,56 +190,70 @@ Proof.
     
     rewrite H8.
     rewrite H9.
+     *)
+    assert (
+        (encodeEvRaw (encodeEv e)) =
+        (encodeEvBits (evc (encodeEv e) (et_fun e)))
+      ).
+    {
+      admit.
+    }
+    rewrite H2.
+    
+           
     repeat econstructor.
+    
 
   - (* aatt case *)
+    (*
     wrap_ccp.
+     *)
+    dd.
+    invc H.
+    dd.
+    do_anno_redo.
+    
     sigEventFacts.
     sigEventPFacts.
     invEvents.
 
     do_not_none.
-    inversion H2.
+    inversion H1.
     do_not_hshsig.
 
-    do_assume_remote t ee n HHH.
+    
+
+    do_assume_remote t (evc (encodeEv e) (et_fun e)) n (S n0) HHH.
     
     eapply IHt.
+    eassumption.
+    (*
     econstructor.
     reflexivity.
     eapply wfr_annt_implies_wfr_par.
+     *)
+    
     eassumption.
+
+    (*
     econstructor.
-    tauto.
-    eassumption.
+    tauto. 
+    eassumption. *)
     econstructor.
     eassumption.
     split; try eassumption.
     intros.
     unfold not in *; intros.
-    apply H11.
+    apply H5.
     eassumption.
     econstructor. eauto.
-    eassumption.
-    eassumption.
-    eassumption.
-    rewrite H12.
-    simpl.
-    rewrite H15.
-    econstructor.
-    eapply copland_compile_at.
-    eapply wfr_annt_implies_wfr_par.
-    
-    eassumption.
-    econstructor.
-    rewrite H12.
-    tauto.
-    econstructor.
-    eassumption.
+    reflexivity.
+    econstructor; eauto.
     econstructor.
     
   - (* alseq case *)
 
+    (*
     (*
     wrap_ccp.
      *)  
@@ -174,6 +261,36 @@ Proof.
     (*
     do_wf_pieces.
      *)
+     *)
+
+    (*
+    assert (exists annot1, annoP annot1 t1 n).
+    {
+      admit.
+    }
+    assert (exists annot2 n', annoP annot2 t2 n').
+    {
+      admit.
+    }
+    destruct_conjs.
+    dd.
+    invc H.
+    dd.
+     *)
+    
+    
+    
+
+    (*
+    dd.
+    invc H.
+    dd.
+
+    repeat do_anno_redo.
+     *)
+    
+    
+    invc H1.
     
     do_not_none.
     do_not_hshsig.
@@ -181,15 +298,107 @@ Proof.
     sigEventFacts.
 
     sigEventPFacts.
+    invc H.
+    dd.
+    (*
     do_wfec_preserved.
     do_somerecons.
     do_reconP_determ.
+     *)
+    
     inv_events.
     + (* t1 case *)
 
-      destruct ee.
+      (*
+
+      destruct ee. *)
+
+      Check gg_preserved'.
+
+      edestruct gg_preserved' with (t:= lseq t1 t2).
+      Check ggc_app.
+      2: { eassumption. }
+      2: { econstructor.
+           eassumption.
+           split.
+           eassumption.
+           eassumption.
+      }
+      2: { apply H9. }
+      2: { dd. reflexivity. }
+      econstructor.
+      dd.
+      rewrite Heqp1 in *.
+      dd.
+      rewrite Heqp0 in *.
+      dd.
+      tauto.
+
+
+
+      (*
+     
       
-      edestruct gg_preserved' with (t:= alseq r t1 t2).
+      edestruct gg_preserved' with (t:= lseq t1 t2) (e:= cvm_evidence_denote a p e) (e':= cvm_evidence_denote a0 p (cvm_evidence_denote a p e)).
+      admit.
+      eassumption.
+      econstructor.
+      eassumption.
+      split; try eassumption.
+      eapply hshsig_ev_term_contra.
+      2 : { econstructor.
+            apply H7.
+            split. apply H5.
+            intros.
+            unfold not in *; intros.
+            eapply H6.
+            eassumption.
+            eauto.
+      }
+      econstructor.
+      jkjke.
+      simpl.
+      reflexivity.
+      
+      
+            split; try eassumption.
+      
+      Print do_ste.
+      Print do_hste_contra.
+      eapply sig_term_ev_lseqr.
+      2: { econstructor.
+           eassumption.
+           split; eassumption.
+      }
+      econstructor.
+      jkjke.
+      reflexivity.
+      intros.
+      unfold not; intros.
+      
+      
+      eassumption.
+      reflexivity.
+       *)
+      
+
+
+(*
+      
+      eassumption.
+      econstructor.
+      reflexivity.
+      eassumption.
+      econstructor.
+      eassumption.
+      split; eassumption.
+      eassumption.
+      inversion Heqp0.
+      inversion Heqp1.
+      dd.
+      reflexivity.
+      
+      jkjke.
       eassumption.
       eassumption.
       eassumption.
@@ -201,23 +410,36 @@ Proof.
         eassumption.
       }
       eassumption.
+ *)
+      
       
       
       destruct_conjs.
+      (*
       assert (encodeEv H18 = x).
       {
         symmetry.
         eassumption.
       }
+       *)
+
+      Check ggc_app.
+      
       
 
       edestruct ggc_app.
+
       eassumption.
 
       unfold checkSigF in *.
       unfold checkSig in *.
-      rewrite H21 in *; clear H21.
+      (*
+      rewrite H11 in *; clear H11. *)
       econstructor.
+      subst.
+
+
+      
       (*
       exact (evc x (et_fun H18)).
       assert (
@@ -236,7 +458,12 @@ Proof.
 
       
     + (* t2 case *)
+      (*
       wrap_ccp.
+       *)
+
+
+      (*
 
       do_wfec_preserved.
       
@@ -252,48 +479,32 @@ Proof.
 
         destruct ee;
         destruct st_ev0.
+       *)
+      
+
+      repeat do_anno_redo.
       
       eapply IHt2.
       eassumption.
       eassumption.
-      eassumption.
-      4: { eassumption. }
-      4: { eassumption. }
-      2: { eassumption. }
-      2: { eassumption. }
-      
       eapply sig_term_ev_lseqr.
-      5: { eassumption. }
-      eassumption.
-      eassumption.
-      eassumption.
-      eassumption.
-      eassumption.
-      eassumption.
-
+      apply Heqp1.
       econstructor.
-      simpl in *.
-      assert (e1 = aeval t1 p e).
+      eassumption.
+      split.
+      eassumption.
+      eassumption.
+      reflexivity.
+      reflexivity.
+      econstructor.
+      assert ((et_fun (cvm_evidence_denote a p e)) =
+              (aeval a p (et_fun e))).
       {
-        rewrite <- eval_aeval.
-        inversion Heqp1.
-        assert (t1 = unannoPar a).
-        {
-          erewrite anno_unanno_par.
-          reflexivity.
-          subst.
-          eapply annopar_fst_snd.
-        }
-        find_rw_in_goal.
-        
-       
-        eapply cvm_refines_lts_evidence.
-        eassumption.
+        eapply cvm_ev_deonte_evtype.
         eassumption.
       }
-      subst.
+      rewrite H.
       eassumption.
-      
       econstructor.
 
       
@@ -505,8 +716,57 @@ Proof.
       econstructor.
       ff.
 Defined.
+ *)
+
+Lemma appraisal_correct : forall t annt n e' p ev e,
+    annoP annt t n ->
+    (*well_formed_r pt -> *)
+    not_none_none t ->
+    (*wf_ec ee ->
+    reconstruct_evP ecc e' ->
+    copland_compileP pt
+                     {| st_ev := ee; st_trace := tr; st_pl := p |}
+                     (Some tt)
+                     {| st_ev := ecc;
+                        st_trace := tr';
+                        st_pl := p' |} ->
+     *)
+    cvm_evidence_denote annt p e = e' ->
+
+    measEvent annt p (et_fun e) ev ->
+    appEvent_EvidenceC ev (build_app_comp_evC e').
+Proof.
+  intros.
 
 
+  measEventFacts.
+  evEventFacts.
+
+  edestruct uu_preserved'.
+  eassumption.
+  eassumption.
+  eassumption.
+  reflexivity.
+
+  -
+    destruct_conjs.
+    edestruct uuc_app.
+    eassumption.
+
+    
+    econstructor.
+    eassumption.
+  -
+    destruct_conjs.
+
+    eapply ahuc.
+    eassumption.
+    eapply hhc_app.
+    eassumption.
+Defined.
+
+
+(*
 Lemma appraisal_correct : forall t pt loc e' tr tr' p p' ecc ev ee,
     anno_parP pt t loc ->
     well_formed_r pt ->
@@ -832,23 +1092,26 @@ Proof.
         apply ppSubr.
         eassumption.
 Defined.
+*)
 
 Require Import Impl_appraisal_alt Appraisal_AltImpls_Eq.
 
-Lemma appraisal_correct_sig_alt : forall t pt loc e e' tr tr' p p' bits' et' ev ee,
+Lemma appraisal_correct_sig_alt : forall t annt pt loc e e' tr tr' p p' bits' et' ev ee i i',
     anno_parP pt t loc ->
-    well_formed_r pt ->
+    annoP annt t i -> 
+    well_formed_r_annt annt ->
     not_none_none t ->
     not_hash_sig_term_ev t e ->
     wf_ec ee ->
     reconstruct_evP ee e ->
     copland_compile pt
-                    {| st_ev := ee; st_trace := tr; st_pl := p |} =
+                    {| st_ev := ee; st_trace := tr; st_pl := p; st_evid := i |} =
     (Some tt, {| st_ev := (evc bits' et');
                  st_trace := tr';
-                 st_pl := p' |}) ->
+                 st_pl := p';
+                 st_evid := i'|}) ->
 
-    sigEvent t p (get_et ee) ev ->
+    sigEvent annt p (get_et ee) ev ->
     Some e' = Impl_appraisal_alt.build_app_comp_evC et' bits' ->
     appEvent_Sig_EvidenceC ev e'.
 Proof.
@@ -856,46 +1119,153 @@ Proof.
   wrap_ccp.
   do_wfec_preserved.
   do_somerecons.
+  destruct ee.
+  assert (et_fun e = e0).
+  {
+    symmetry.
+    eapply etfun_reconstruct.
+    eauto.
+  }
+  subst.
+  
   erewrite appraisal_alt.
   eapply appraisal_correct_sig.
   eassumption.
   eassumption.
   eassumption.
-  5: { eassumption. }
+ 
+  eapply cvm_raw_evidence_denote_fact; eauto.
   eassumption.
   eassumption.
   eassumption.
-  eassumption.
-  eassumption.
-  eassumption.
-  eassumption.
-  tauto.
+  reflexivity.
 Defined.
 
-Lemma appraisal_correct_sig_alt_et : forall t pt loc bits et et' et'' e e' tr tr' p p' bits' ev,
+Lemma appraisal_correct_sig_alt_et : forall t annt pt loc bits et et' et'' e e' tr tr' p p' bits' ev i i',
     anno_parP pt t loc ->
-    well_formed_r pt ->
+    annoP annt t i ->
+    well_formed_r_annt annt ->
     not_none_none t ->
     not_hash_sig_term_ev t e ->
     wf_ec (evc bits et) ->
-    et' = aeval t p et ->
+    et' = aeval annt p et ->
     reconstruct_evP (evc bits et) e ->
     copland_compile pt
-                    {| st_ev := (evc bits et); st_trace := tr; st_pl := p |} =
+                    {| st_ev := (evc bits et); st_trace := tr; st_pl := p; st_evid := i |} =
     (Some tt, {| st_ev := (evc bits' et'');
                  st_trace := tr';
-                 st_pl := p' |}) ->
+                 st_pl := p';
+                 st_evid := i'|}) ->
 
-    sigEvent t p et ev ->
+    sigEvent annt p et ev ->
     Some e' = Impl_appraisal_alt.build_app_comp_evC et' bits' ->
     appEvent_Sig_EvidenceC ev e'.
 Proof.
   intros.
   wrap_ccp.
-  assert (et'' =  (aeval t p et)).
+  assert (et'' =  (aeval annt p et)).
   {
-    subst.
+    invc H0.
+
     rewrite <- eval_aeval.
+    inversion H.
+    assert (t = unannoPar pt).
+    {
+      erewrite anno_unanno_par.
+      reflexivity.
+      
+      rewrite H0.
+      eapply annopar_fst_snd.
+    }
+    rewrite H12.
+ 
+    eapply cvm_refines_lts_evidence.
+    rewrite <- H12.
+    eassumption.
+    eassumption.
+  }
+  subst.
+  invc H7.
+  eapply appraisal_correct_sig_alt; eauto.
+Defined.
+
+
+Lemma appraisal_correct_alt : forall t annt pt loc e' tr tr' p p' bits' et' ev ee i i',
+    anno_parP pt t loc ->
+    annoP annt t i ->
+    well_formed_r_annt annt ->
+    not_none_none t ->
+    wf_ec ee ->
+    copland_compile pt
+                    {| st_ev := ee; st_trace := tr; st_pl := p; st_evid := i |} =
+    (Some tt, {| st_ev := (evc bits' et');
+                 st_trace := tr';
+                 st_pl := p'; st_evid := i' |}) ->
+
+    measEvent annt p (get_et ee) ev ->
+    Some e' = Impl_appraisal_alt.build_app_comp_evC et' bits' ->
+    appEvent_EvidenceC ev e'.
+Proof.
+  intros.
+  wrap_ccp.
+  do_wfec_preserved.
+  do_somerecons.
+  destruct ee.
+  assert (e = et_fun H9).
+  {
+    eapply etfun_reconstruct.
+    eauto.
+  }
+  subst.
+    
+  erewrite appraisal_alt.
+  eapply appraisal_correct.
+  eassumption.
+  eassumption.
+  eapply cvm_raw_evidence_denote_fact; eauto.
+
+  eassumption.
+  eassumption.
+  eassumption.
+  reflexivity.
+Defined.
+
+Lemma appraisal_correct_alt_et : forall t annt pt loc e' tr tr' p p' bits bits' et et' et'' ev i i',
+    anno_parP pt t loc ->
+    annoP annt t i ->
+    well_formed_r_annt annt ->
+    not_none_none t ->
+    wf_ec (evc bits et) ->
+    et' = aeval annt p et ->
+    copland_compile pt
+                    {| st_ev := (evc bits et); st_trace := tr; st_pl := p; st_evid := i |} =
+    (Some tt, {| st_ev := (evc bits' et'');
+                 st_trace := tr';
+                 st_pl := p';
+                 st_evid := i'|}) ->
+
+    measEvent annt p et ev ->
+    Some e' = Impl_appraisal_alt.build_app_comp_evC et' bits' ->
+    appEvent_EvidenceC ev e'.
+Proof.
+  intros.
+  wrap_ccp.
+  assert (et'' = (aeval annt p et)).
+  {
+    invc H0.
+    erewrite <- eval_aeval.
+    eapply cvm_refines_lts_evidence.
+    eassumption.
+    eassumption.
+  }
+
+
+  (*
+  
+
+
+    
+    subst.
     inversion H.
     assert (t = unannoPar pt).
     {
@@ -904,97 +1274,31 @@ Proof.
       rewrite H4.
       eapply annopar_fst_snd.
     }
-    rewrite H12.
- 
-    eapply cvm_refines_lts_evidence.
-    eassumption.
-    eassumption.
-  }
-  subst.
-  invc H6.
-
-  eapply appraisal_correct_sig_alt; eauto.
-Defined.
-
-
-Lemma appraisal_correct_alt : forall t pt loc e' tr tr' p p' bits' et' ev ee,
-    anno_parP pt t loc ->
-    well_formed_r pt ->
-    not_none_none t ->
-    wf_ec ee ->
-    copland_compile pt
-                    {| st_ev := ee; st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := (evc bits' et');
-                 st_trace := tr';
-                 st_pl := p' |}) ->
-
-    measEvent t p (get_et ee) ev ->
-    Some e' = Impl_appraisal_alt.build_app_comp_evC et' bits' ->
-    appEvent_EvidenceC ev e'.
-Proof.
-  intros.
-  wrap_ccp.
-  do_wfec_preserved.
-  do_somerecons.
-  erewrite appraisal_alt.
-  eapply appraisal_correct.
-  eassumption.
-  eassumption.
-  eassumption.
-  3: { eassumption. }
-  eassumption.
-  eassumption.
-  eassumption.
-  eassumption.
-  eassumption.
-  tauto.
-Defined.
-
-Lemma appraisal_correct_alt_et : forall t pt loc e' tr tr' p p' bits bits' et et' et'' ev,
-    anno_parP pt t loc ->
-    well_formed_r pt ->
-    not_none_none t ->
-    wf_ec (evc bits et) ->
-    et' = aeval t p et ->
-    copland_compile pt
-                    {| st_ev := (evc bits et); st_trace := tr; st_pl := p |} =
-    (Some tt, {| st_ev := (evc bits' et'');
-                 st_trace := tr';
-                 st_pl := p' |}) ->
-
-    measEvent t p et ev ->
-    Some e' = Impl_appraisal_alt.build_app_comp_evC et' bits' ->
-    appEvent_EvidenceC ev e'.
-Proof.
-  intros.
-  wrap_ccp.
-  assert (et'' = (aeval t p et)).
-  {
-    subst.
-    inversion H.
-    assert (t = unannoPar pt).
-    {
-      erewrite anno_unanno_par.
-      reflexivity.
-      rewrite H3.
-      eapply annopar_fst_snd.
-    }
+    invc H0.
     
     
     rewrite <- eval_aeval.
-    rewrite H10.
+    invc H.
+    
     
     eapply cvm_refines_lts_evidence.
+    econstructor.
+    reflexivity.
+    rewrite H4.
+    econstructor.
     eassumption.
     eassumption.
   }
+   *)
+  
   subst.
 
   eapply appraisal_correct_alt.
-  5: {
+  6: {
     wrap_ccp.
     eassumption.
   }
+  eauto.
   eauto.
   eauto.
   eauto.

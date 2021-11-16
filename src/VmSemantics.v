@@ -1895,7 +1895,7 @@ Ltac do_somerecons :=
     end; destruct_conjs.
 
 
-Lemma cvm_ev_deonte_evtype: forall annt t i p e,
+Lemma cvm_ev_denote_evtype: forall annt t i p e,
     annoP annt t i ->
     et_fun (cvm_evidence_denote annt p e) = (aeval annt p (et_fun e)).
 Proof.
