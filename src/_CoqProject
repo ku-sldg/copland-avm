@@ -14,8 +14,6 @@ LTS.v
 Main.v
 ConcreteEvidence.v
 Axioms_Io.v
-EqClass.v
-Maps.v
 GenStMonad.v
 StVM.v
 MonadVM.v

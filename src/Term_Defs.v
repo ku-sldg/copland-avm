@@ -14,6 +14,7 @@ University of California.  See license.txt for details. *)
 
 Require Import PeanoNat Nat Compare_dec Lia.
 Require Import Preamble StructTactics Defs.
+Require Import AutoPrim.
 
 Require Import List.
 Import List.ListNotations.
@@ -25,7 +26,9 @@ Require Import Coq.Bool.Bool.
 Require Import List.
 Import ListNotations.
 
+(*
 Set Nested Proofs Allowed.
+*)
 
 
 (** * Terms and Evidence
@@ -36,15 +39,11 @@ Set Nested Proofs Allowed.
 
 (** [Plc] represents a place. *)
 
-Notation Plc := nat (only parsing).
-Notation ASP_ID := nat (only parsing).
-Notation TARG_ID := nat (only parsing).
-Notation N_ID := nat (only parsing).
-Notation Arg := nat (only parsing).
-
-(*
-Definition BS := nat.
- *)
+Definition Plc: Set := nat.
+Definition ASP_ID: Set := nat.
+Definition TARG_ID: Set := nat.
+Definition N_ID: Set := nat.
+Definition Arg: Set := nat.
 
 Inductive ASP_PARAMS: Set :=
 | asp_paramsC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP_PARAMS.
@@ -60,12 +59,6 @@ Inductive SP: Set :=
 | NONE.
 
 Definition Split: Set := (SP * SP).
-(*
-Inductive Split: Set :=
-| LEFT
-| RIGHT
-| ALL.
-*)
 
 Inductive Term: Set :=
 | asp: ASP -> Term
@@ -81,7 +74,7 @@ Inductive Evidence: Set :=
 | uu: ASP_PARAMS -> Plc -> Evidence -> Evidence
 | gg: Plc -> Evidence -> Evidence
 | hh: Plc -> Evidence -> Evidence
-| nn: N_ID -> (*Evidence ->*) Evidence
+| nn: N_ID -> Evidence
 | ss: Evidence -> Evidence -> Evidence
 | pp: Evidence -> Evidence -> Evidence.
 
@@ -106,20 +99,6 @@ Fixpoint thread_count (t:Term) : nat :=
   end.
 
 (*
-Fixpoint thread_count' (t:Term) (n:nat) : nat :=
-  match t with
-  | asp _ => n
-  | att _ _ => n
-  | lseq t1 t2 => max (thread_count' t1 0) (thread_count' t2 0)
-  | bseq _ t1 t2 => max (thread_count' t1 0) (thread_count' t2 0)
-  | bpar _ t1 t2 => 1 + (thread_count' t1 0) + (thread_count' t2 0)
-  end.
-
-Definition thread_count (t:Term) : nat :=
-  thread_count' t 0.
-*)
-
-(*
 Compute (thread_count (bpar (ALL,ALL) (asp SIG) (asp CPY))).
 *)
     
@@ -135,20 +114,6 @@ Definition splitEv_T_r (sp:Split) (e:Evidence) : Evidence :=
   | (_,ALL) => e
   |  _ => mt
   end.
-
-(*
-Definition splitEv_T_l (sp:Split) (e:Evidence) : Evidence :=
-  match sp with
-  | RIGHT => mt
-  | _ => e
-  end.
-
-Definition splitEv_T_r (sp:Split) (e:Evidence) : Evidence :=
-  match sp with
-  | LEFT => mt
-  | _ => e
-  end.
- *)
 
 Definition eval_asp t p e :=
   match t with
@@ -171,19 +136,6 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
                       (eval t2 p (splitEv_T_r s e))
   end.
 
-(*
-Definition userAM: Plc := 2.
-Definition platAM: Plc := 1.
-Definition heliAM: Plc := 0.
-
-Definition im_terms: Term :=
-  bpar ALL (ASPC 
-
-Definition platSub: Term := 
-
-Definition case_phrase :=
-  att userAM 
- *)
 
 (** * Annotated Terms
 
@@ -224,11 +176,9 @@ Inductive Ev: Set :=
 | req: nat -> Plc -> Plc -> Term -> Evidence -> Ev
 | rpy: nat -> Plc -> Plc -> Evidence -> Ev 
 | split: nat -> Plc -> Ev
-| cvm_thread_start: (*nat ->*) Loc -> Plc -> Term -> Evidence -> Ev
-(*| splitp: nat -> (*Loc ->*) Loc -> Plc -> Ev *)
 | join:  nat -> Plc -> Ev
-| cvm_thread_end:  (*nat ->*) Loc -> (*Plc -> AnnoTerm ->*) Ev
-(*| joinp: nat -> Loc -> Loc -> Plc -> Ev *).
+| cvm_thread_start: Loc -> Plc -> Term -> Evidence -> Ev
+| cvm_thread_end: Loc -> Ev.
 
 Definition eq_ev_dec:
   forall x y: Ev, {x = y} + {x <> y}.
@@ -249,11 +199,9 @@ Definition ev x : nat :=
   | req i _ _ _ _ => i
   | rpy i _ _ _ => i 
   | split i _ => i
-  | cvm_thread_start _ _ _ _ => 42
-  (* | splitp i _ _ => i *)
   | join i _ => i
+  | cvm_thread_start _ _ _ _ => 42
   | cvm_thread_end _ => 43
-  (* | joinp i _ _ _ => i *)
   end.
 
 (** The natural number indicating the place where an event occured. *)
@@ -266,11 +214,9 @@ Definition pl x : Plc :=
   | req _ p _ _ _ => p
   | rpy _ p _ _ => p
   | split _ p => p
-  | cvm_thread_start _ p _ _ => p
-  (*| splitp _ _ p => p *)
   | join _ p => p
+  | cvm_thread_start _ p _ _ => p
   | cvm_thread_end _ => 45
-  (* | joinp _ _ _ p => p *)
   end.
 
 (** Events are used in a manner that ensures that
@@ -288,9 +234,6 @@ Definition asp_event i x p e :=
   | SIG => sign i p e
   | HSH => hash i p e
   end.
-
-
-
 
 Fixpoint esize t :=
   match t with
@@ -311,12 +254,11 @@ Definition range x :=
   end.
 
 Inductive AnnoTermPar: Set :=
-| aasp_par: (*Range ->*) ASP -> AnnoTermPar
-| aatt_par: (*Range ->*) Plc -> Term -> AnnoTermPar
-| alseq_par: (*Range ->*) AnnoTermPar -> AnnoTermPar -> AnnoTermPar
-| abseq_par: (*Range ->*) Split -> AnnoTermPar -> AnnoTermPar -> AnnoTermPar
-| abpar_par:
-    (*Range ->*) Loc -> Split -> AnnoTermPar -> Term -> AnnoTermPar.
+| aasp_par: ASP -> AnnoTermPar
+| aatt_par: Plc -> Term -> AnnoTermPar
+| alseq_par: AnnoTermPar -> AnnoTermPar -> AnnoTermPar
+| abseq_par: Split -> AnnoTermPar -> AnnoTermPar -> AnnoTermPar
+| abpar_par: Loc -> Split -> AnnoTermPar -> Term -> AnnoTermPar.
 
 Fixpoint unannoPar (t:AnnoTermPar) : Term :=
   match t with
@@ -326,17 +268,6 @@ Fixpoint unannoPar (t:AnnoTermPar) : Term :=
   | abseq_par spl a1 a2 => bseq spl (unannoPar a1) (unannoPar a2) 
   | abpar_par _ spl a1 a2 => bpar spl (unannoPar a1) a2
   end.
-  
-(*
-Definition range_par x :=
-  match x with
-  | aasp_par r _ => r
-  | aatt_par r _ _ => r
-  | alseq_par r _ _ => r
-  | abseq_par r _ _ _ => r
-  | abpar_par r _ _ _ _ => r
-  end.
-*)
 
 Fixpoint anno_par (t:Term) (loc:Loc) : (Loc * AnnoTermPar)  :=
   match t with
@@ -355,12 +286,10 @@ Fixpoint anno_par (t:Term) (loc:Loc) : (Loc * AnnoTermPar)  :=
 
     (loc'', abseq_par spl t1' t2')
       
- 
   | bpar spl t1 t2 =>
     let '(loc', t1') := anno_par t1 (S loc) in
     
     (loc', abpar_par loc spl t1' t2)
-
   end.
 
 Definition annotated_par (x:Term) :=
@@ -401,148 +330,6 @@ Proof.
     intros H H0; ff.
     (* try (invc H0; eauto). *)
 Defined.
-
-(*
-Inductive term_sub : AnnoTerm -> AnnoTerm -> Prop :=
-| termsub_refl_annt: forall t: AnnoTerm, term_sub t t
-| aatt_sub_annt: forall t t' r p,
-    term_sub t' t ->
-    term_sub t' (aatt r p t)
-| alseq_subl_annt: forall t' t1 t2 r,
-    term_sub t' t1 ->
-    term_sub t' (alseq r t1 t2)
-| alseq_subr_annt: forall t' t1 t2 r,
-    term_sub t' t2 ->
-    term_sub t' (alseq r t1 t2)
-| abseq_subl_annt: forall t' t1 t2 r s,
-    term_sub t' t1 ->
-    term_sub t' (abseq r s t1 t2)
-| abseq_subr_annt: forall t' t1 t2 r s,
-    term_sub t' t2 ->
-    term_sub t' (abseq r s t1 t2)
-| abpar_subl_annt: forall t' t1 t2 r s,
-    term_sub t' t1 ->
-    term_sub t' (abpar r s t1 t2)
-| abpar_subr_annt: forall t' t1 t2 r s,
-    term_sub t' t2 ->
-    term_sub t' (abpar r s t1 t2).
-Hint Constructors term_sub : core.
-
-Lemma termsub_transitive: forall t t' t'',
-    term_sub t t' ->
-    term_sub t' t'' ->
-    term_sub t t''.
-Proof.  
-  generalizeEverythingElse t''.
-  induction t'';
-    intros H H0; ff.
-    (* try (invc H0; eauto). *)
-Defined.
-*)
-
-(*
-Inductive term_sub : AnnoTermPar -> AnnoTermPar -> Prop :=
-| termsub_refl: forall t: AnnoTermPar, term_sub t t
-| aatt_sub: forall t r loc p tr ta,
-    (*term_sub_annt t' t -> *)
-    tr = snd (anno_par t loc) ->
-    term_sub ta tr ->
-    term_sub ta (aatt_par r p t)
-| alseq_subl: forall t' t1 t2 r,
-    term_sub t' t1 ->
-    term_sub t' (alseq_par r t1 t2)
-| alseq_subr: forall t' t1 t2 r,
-    term_sub t' t2 ->
-    term_sub t' (alseq_par r t1 t2)
-| abseq_subl: forall t' t1 t2 r s,
-    term_sub t' t1 ->
-    term_sub t' (abseq_par r s t1 t2)
-| abseq_subr: forall t' t1 t2 r s,
-    term_sub t' t2 ->
-    term_sub t' (abseq_par r s t1 t2)
-| abpar_subl: forall t' t1 t2 r loc s,
-    term_sub t' t1 ->
-    term_sub t' (abpar_par r loc s t1 t2)
-| abpar_subr: forall t1 t2 r loc s tpar ta,
-    (*term_sub_annt t' t2 -> *)
-    tpar = snd (anno_par t2 loc) ->
-    term_sub ta tpar ->
-    term_sub ta (abpar_par r loc s t1 t2).
-Hint Constructors term_sub : core.
-
-Lemma termsub_transitive: forall t t' t'',
-    term_sub t t' ->
-    term_sub t' t'' ->
-    term_sub t t''.
-Proof.
-  intros.
-
-  assert (term_sub_annt (unannoPar t) (unannoPar t')).
-  {
-    admit.
-  }
-  assert (term_sub_annt (unannoPar t') (unannoPar t'')).
-  {
-    admit.
-  }
-
-  Lemma annt_to_termsub: forall t1 t2,
-    term_sub_annt (unannoPar t1) (unannoPar t2) ->
-    term_sub t1 t2.
-  Proof.
-  Admitted.
-
-  assert (term_sub_annt (unannoPar t) (unannoPar t'')).
-  {
-    eapply termsub_transitive_annt; eauto.
-  }
-  eapply annt_to_termsub; eauto.
-  
-
-  find_apply_lem_hyp annt_to_termsub.
-  find_apply_lem_hyp annt_to_termsub.
-  
-    
-    
-    
-
-    
-  eapply termsub_transitive_annt.
-  
-  
-
-
-
-
-  
-  generalizeEverythingElse t''.
-  induction t''; intros t t' H H0; ff;
-    try (inv H0; eauto; tauto).
-  -
-    inversion H0.
-    +
-      subst.
-      eauto.
-    +
-      invc H0.
-      eassumption.
-      econstructor.
-      reflexivity.
-      eassumption.
-      
-    
-    econstructor.
-    reflexivity.
-    eassumption.
-    reflexivity.
-    eassumption.
-  
-Defined.
-
-*)
-
-
-
 
 
 (*
@@ -597,35 +384,26 @@ Proof.
   -
     ff.
     erewrite <- IHt.
-    rewrite Heqp.
-    simpl.
-    tauto.
+    jkjke.
   -
     ff.
     erewrite <- IHt1.
     erewrite <- IHt2.
-    rewrite Heqp.
-    rewrite Heqp0.
-    tauto.
+    jkjke.
+    jkjke.
   -
     ff.
     erewrite <- IHt1.
     erewrite <- IHt2.
-    rewrite Heqp.
-    rewrite Heqp0.
-    tauto.
+    jkjke.
+    jkjke.
   -
     ff.
     erewrite <- IHt1.
     erewrite <- IHt2.
-    rewrite Heqp.
-    rewrite Heqp0.
-    tauto.
+    jkjke.
+    jkjke.
 Defined.
-    
-    
-    
-    
 
 (** This predicate determines if an annotated term is well formed,
     that is if its ranges correctly capture the relations between a
@@ -670,74 +448,6 @@ Inductive well_formed_r_annt: AnnoTerm -> Prop :=
     (*fst (range y) > fst (range x) -> *)
     well_formed_r_annt (abpar r s x y).
 Hint Constructors well_formed_r_annt : core.
-
-(*
-Inductive well_formed_r: AnnoTermPar -> Prop :=
-| wf_asp_r: forall r x,
-    snd r = S (fst r) ->
-    well_formed_r (aasp_par r x)
-| wf_att_r: forall r p x,
-    well_formed_r_annt x ->
-    S (fst r) = fst (range x) ->
-    snd r = S (snd (range x)) ->
-    Nat.pred (snd r) > fst r ->
-    well_formed_r (aatt_par r p x)
-                  
-| wf_lseq_r: forall r x y,
-    well_formed_r x -> well_formed_r y ->
-    fst r = fst (range_par x) ->
-    snd (range_par x) = fst (range_par y) ->
-    snd r = snd (range_par y) -> 
-    well_formed_r (alseq_par r x y)               
-| wf_bseq_r: forall r s x y,
-    well_formed_r x -> well_formed_r y ->
-    S (fst r) = fst (range_par x) ->
-    snd (range_par x) = fst (range_par y) ->
-    snd r = S (snd (range_par y)) ->  
-    well_formed_r (abseq_par r s x y)              
-| wf_bpar_r: forall r loc s x y,
-    well_formed_r x -> well_formed_r_annt y ->  
-    S (fst r) = fst (range_par x) ->
-    snd (range_par x) = fst (range y) ->
-    (snd r) = S (snd (range y)) ->
-    (*fst (range y) > fst (range x) -> *)
-    well_formed_r (abpar_par r loc s x y).
-Hint Constructors well_formed_r : core.
-*)
-
-(*
-Inductive well_formed_r: AnnoTerm -> Prop :=
-| wf_asp_r: forall r x,
-    snd r = S (fst r) ->
-    well_formed_r (aasp r x)
-| wf_att_r: forall r p x,
-    well_formed_r x ->
-    S (fst r) = fst (range x) ->
-    snd r = S (snd (range x)) ->
-    Nat.pred (snd r) > fst r ->
-    well_formed_r (aatt r p x)
-                  
-| wf_lseq_r: forall r x y,
-    well_formed_r x -> well_formed_r y ->
-    fst r = fst (range x) ->
-    snd (range x) = fst (range y) ->
-    snd r = snd (range y) -> 
-    well_formed_r (alseq r x y)               
-| wf_bseq_r: forall r s x y,
-    well_formed_r x -> well_formed_r y ->
-    S (fst r) = fst (range x) ->
-    snd (range x) = fst (range y) ->
-    snd r = S (snd (range y)) ->  
-    well_formed_r (abseq r s x y)              
-| wf_bpar_r: forall r s x y,
-    well_formed_r x -> well_formed_r y ->  
-    S (fst r) = fst (range x) ->
-    snd (range x) = fst (range y) ->
-    (snd r) = S (snd (range y)) ->
-    (*fst (range y) > fst (range x) -> *)
-    well_formed_r (abpar r s x y).
-Hint Constructors well_formed_r : core.
-*)
 
 Ltac afa :=
   match goal with   
@@ -851,7 +561,7 @@ Proof.
       tauto.
 
       simpl.
-      assert (n0 > S i) by (eapply anno_mono; eauto).
+      assert (n > S i) by (eapply anno_mono; eauto).
       lia.
   -
     ff.
@@ -947,37 +657,3 @@ Proof.
       }
       tauto.     
 Defined.
-
-
-
-
-(*
-Inductive AnnoTerm_Par: Set :=
-| aterm_par: AnnoTerm -> Loc -> AnnoTerm_Par.
- *)
-
-(*
-
-Require Import OptMonad.
-
-Definition peel_loc (ls:Locs) : option (Loc * Locs) :=
-  match ls with
-  | bs :: ls' => Some (bs, ls')
-  | _ => None
-  end.
-
-Lemma peel_fact': forall e x y H,
-    length e = S x ->
-    peel_loc e = Some (y, H) ->
-    length H = x.
-Proof.
-  intros.
-  destruct e;
-    ff; eauto.
-Defined.
- *)
-
-
-
-
-    

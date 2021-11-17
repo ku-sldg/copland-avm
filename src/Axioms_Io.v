@@ -17,10 +17,7 @@ Admitted.
 Definition parallel_vm_thread (l:Loc) (t:Term) (p:Plc) (e:EvC) : EvC.
 Admitted.
 
-(*
-Definition parallel_vm_events (t:AnnoTerm) (p:Plc) : list Ev.
-Admitted.
-*)
+
 
 Definition shuffled_events (el1:list Ev) (el2:list Ev) : list Ev.
 Admitted.
@@ -30,11 +27,6 @@ Admitted.
 
 Definition cvm_evidence (t:Term) (p:Plc) (e:EvC) : EvC.
 Admitted.
-
-(*
-Definition remote_trace (t:AnnoTerm) (p:Plc) : list Ev.
-Admitted.
-*)
 
 
 Axiom remote_LTS: forall t n et, 
@@ -48,19 +40,9 @@ Axiom remote_Evidence_Type_Axiom: forall t n bits et,
 Axiom at_evidence : forall t (p:Plc) (e:EvC),
     doRemote_session t p e = cvm_evidence t p e.
 
-(*
-Axiom at_events : forall t p,
-  remote_events t p = remote_trace t p.
-*)
-
 
 Axiom par_evidence : forall t (p:Plc) (e:EvC) loc,
     parallel_vm_thread loc t p e = cvm_evidence t p e.
-
-(*
-Axiom par_events : forall t p,
-    parallel_vm_events t p = remote_trace t p.
-*)
 
 
 
@@ -80,5 +62,4 @@ Axiom thread_bookend_peel: forall (t:AnnoTerm) p (*et*) etr l (a:Term) tr,
 
 Axiom wf_ec_preserved_remote: forall a n e,
     wf_ec e ->
-    (*well_formed_r a -> *)
     wf_ec (doRemote_session a n e).

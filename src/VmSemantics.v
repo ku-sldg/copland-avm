@@ -814,33 +814,25 @@ Proof.
     eauto.
     simpl.
     erewrite <- IHa.
-    rewrite Heqp.
-    simpl.
-    tauto.
+    jkjke.
   -
     ff.
     erewrite <- IHa1.
     erewrite <- IHa2.
-    rewrite Heqp0.
-    rewrite Heqp.
-    simpl.
-    tauto.
+    jkjke.
+    jkjke.
   -
     ff.
     erewrite <- IHa1.
     erewrite <- IHa2.
-    rewrite Heqp0.
-    rewrite Heqp.
-    simpl.
-    tauto.
+    jkjke.
+    jkjke.
   -
     ff.
     erewrite <- IHa1.
     erewrite <- IHa2.
-    rewrite Heqp0.
-    rewrite Heqp.
-    simpl.
-    tauto.
+    jkjke.
+    jkjke.
 Defined.
 
 Lemma evc_inv: forall e,
@@ -2155,6 +2147,7 @@ Proof.
 Defined.
 
 
+(*
 Lemma encodeEvBits_iff_Raw: forall e,
     encodeEvBits (evc (encodeEv e) (et_fun e)) = encodeEvRaw (encodeEv e).
 Proof.
@@ -2168,6 +2161,7 @@ Proof.
   reflexivity.
   eassumption.
 Defined.
+*)
 
 (*
 Lemma reconp_wfec: forall ecc e,
@@ -2488,6 +2482,7 @@ Proof.
         econstructor.
         eauto.
       }
+      unfold encodeEvBits in *.
       congruence.
     +
       wrap_ccp.
@@ -2513,7 +2508,7 @@ Proof.
     dd.
     do_anno_redo.
 
-    do_assume_remote t' (evc bits et) n (S i) HHH.
+    do_assume_remote t' (evc bits et) p (S i) HHH.
     rewrite <- H1 in *; clear H1.
     rewrite H5 in *.
     simpl in *.
@@ -3257,7 +3252,7 @@ Proof.
       tauto.
     }
     
-    assert (lstar (conf a n et) (cvm_events t n et) (stop n (aeval a n et))).
+    assert (lstar (conf a p et) (cvm_events t p et) (stop p (aeval a p et))).
     {
       rewrite H3.
 
@@ -3265,7 +3260,7 @@ Proof.
     }
 
     
-    assert (i = fst (i, S n0)) as H2 by tauto.
+    assert (i = fst (i, S n)) as H2 by tauto.
     
 
     rewrite H2 at 2.
@@ -3287,7 +3282,7 @@ Proof.
     
     jkjke.
     simpl.
-    assert (et' = (aeval a n et)).
+    assert (et' = (aeval a p et)).
     {
       rewrite <- eval_aeval'.
       erewrite <- remote_Evidence_Type_Axiom.
@@ -3298,15 +3293,15 @@ Proof.
     rewrite <- H4.
     rewrite <- H3.
 
-    assert ((S i) + event_id_span t = n0).
+    assert ((S i) + event_id_span t = n).
     {
-      assert (event_id_span t = n0 - (S i)).
+      assert (event_id_span t = n - (S i)).
       {
         eapply span_range.
         eassumption.
       }
       rewrite H5.
-      assert (n0 > (S i)).
+      assert (n > (S i)).
       {
         eapply anno_mono.
         eassumption.

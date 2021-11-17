@@ -431,15 +431,15 @@ Proof.
     eauto.
   -
     destruct_conjs.
-    exists (uuc a n default_bs IHy).
+    exists (uuc a p default_bs IHy).
     ff.
   -
     destruct_conjs.
-    exists (ggc n default_bs IHy).
+    exists (ggc p default_bs IHy).
     ff.
   -
     destruct_conjs.
-    exists (hhc n default_bs y).
+    exists (hhc p default_bs y).
     ff.
   -
     exists (nnc n default_bs).
@@ -4452,14 +4452,23 @@ Proof.
        
 
       repeat eexists.
+      (*
       assert ((encodeEvBits (evc (encodeEv e) (et_fun e))) =
               (encodeEvRaw (encodeEv e))).
       {
         eapply encodeEvBits_iff_Raw.
       }
+       *)
+      
+      unfold encodeEvBits in *.
+      econstructor.
+      (*
+      tauto.
       rewrite H.
       
       econstructor.
+       *)
+      
 
       
       (*
@@ -4515,10 +4524,10 @@ Proof.
     eassumption.
     econstructor.
     eauto.
-    inversion Heqp1.
+    inversion Heqp2.
     rewrite <- H9.
     eassumption.
-    inversion Heqp1.
+    inversion Heqp2.
     rewrite <- H9.
     reflexivity.
 

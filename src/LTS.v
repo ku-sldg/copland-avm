@@ -462,18 +462,18 @@ Proof.
   - left; simpl; auto.
   - right.
     destruct a.
-    + exists (Some (asp_event (fst r) a n e)).
+    + exists (Some (asp_event (fst r) a p e)).
       eapply ex_intro; eauto.
-    + exists (Some (req (fst r) n n0 (unanno a) e)).
+    + exists (Some (req (fst r) p p0 (unanno a) e)).
       repeat dest_range.
       eapply ex_intro; eauto.
     + exists None.
       eapply ex_intro; eauto.
       
-    + exists (Some (split (fst r) n)).
+    + exists (Some (split (fst r) p)).
       eapply ex_intro; eauto.
       
-    + exists (Some (Term_Defs.split(fst r) n)).
+    + exists (Some (Term_Defs.split(fst r) p)).
       (*destruct p; destruct p0. *)
       repeat dest_range.
       eapply ex_intro; eauto.
@@ -481,12 +481,12 @@ Proof.
     right.
     destruct IHst0.
     + destruct st0; simpl in H; try tauto.
-      exists (Some (rpy (pred n) n0 n1 e)).
+      exists (Some (rpy (pred n) p p0 e)).
       eapply ex_intro; eauto.
     + destruct H as [e H].
       exists e.
       destruct H as [st1 H].
-      exists (rem n n0 st1); auto.
+      exists (rem n p st1); auto.
   -
     right.
     destruct IHst0.
@@ -505,11 +505,11 @@ Proof.
     + destruct H as [e0 H].
       exists e0.
       destruct H as [st H].
-      exists (bsl n st a n0 e). auto.
+      exists (bsl n st a p e). auto.
   - right.
     destruct IHst0.
     + destruct st0; simpl in H; try tauto.
-      exists (Some (join (pred n) n0)).
+      exists (Some (join (pred n) p)).
       eapply ex_intro; eauto.
     + destruct H as [e0 H].
       exists e0.
@@ -522,12 +522,12 @@ Proof.
       clear H.
       destruct IHst0_2.
       * destruct st0_2; simpl in H; try tauto.
-        exists (Some (join (pred n) n1)).
+        exists (Some (join (pred n) p0)).
         eapply ex_intro; eauto.
       * destruct H as [e0 H].
         exists e0.
         destruct H as [st H].
-        exists (bp n (stop n0 e) st). auto.
+        exists (bp n (stop p e) st). auto.
     + destruct H as [e0 H].
       exists e0.
       destruct H as [st H].

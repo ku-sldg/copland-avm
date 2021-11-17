@@ -16,11 +16,104 @@ Hint Resolve eq_evidence_dec : core.
 
 Scheme Equality for list.
 
+Lemma list_beq_refl {A:Type}: forall f y,
+    (forall a b, f a b = true <-> a = b) ->
+    list_beq A f y y = true.
+ Proof.
+   intros.
+   generalizeEverythingElse y.
+   induction y; intros.
+   -
+     cbn.
+     tauto.
+   -
+     cbn.
+     eapply andb_true_intro.
+     split.
+     +
+       eapply H; eauto.
+     +
+       eauto.
+ Defined.
+
 Lemma eqb_eq_list {A:Type}:
   forall x y f,
+    (forall a b, f a b = true <-> a = b) ->
     list_beq A f x y = true <-> x = y.
-Admitted.
-Print asp_paramsC.
+Proof.
+  intros.
+  generalizeEverythingElse x.
+  induction x; destruct y; intros.
+  -
+    cbn in *.
+    split; tauto.
+  -
+    cbn in *.
+    split;
+      intros;
+      solve_by_inversion.
+  -
+    cbn in *.
+    split; intros;
+      solve_by_inversion.
+  -
+    cbn in *.
+    split; intros.
+    +
+      assert (f a a0 = true /\ list_beq A f x y = true).
+      {
+        eapply andb_true_iff.
+        eassumption.
+      }
+      destruct_conjs.
+      
+      edestruct IHx with (y:= y).
+      assert (x = y).
+      {
+        eapply IHx.
+        split; intros.
+        eapply H.
+        eassumption.
+        specialize H with (a:=a1) (b:=b).
+        inversion H.
+        eapply H5. eassumption.
+        eassumption.
+      }
+      intros.
+      split; intros.
+      specialize H with (a:=a1) (b:=b).
+      invc H.
+      eapply H5; eauto.
+      subst.
+      specialize H with (a:=b) (b:=b).
+      invc H.
+      eapply H4; eauto.
+      
+
+      assert (a = a0).
+      {
+        
+      
+        concludes.
+        eapply H.
+        eassumption.
+      }
+      subst.
+      assert (x = y).
+      {
+        eapply IHx.
+        eassumption.
+        eassumption.
+      }
+      congruence.
+    +
+      invc H0.
+      eapply andb_true_intro.
+      split.
+      eapply H.
+      reflexivity.
+      eapply list_beq_refl; eauto.
+Defined.
 
 Fixpoint eqb_evidence (e:Evidence) (e':Evidence): bool :=
   match (e,e') with
@@ -32,8 +125,7 @@ Fixpoint eqb_evidence (e:Evidence) (e':Evidence): bool :=
     (Nat.eqb p p') && (eqb_evidence e1 e2)
   | (hh p e1, hh p' e2) =>
     (Nat.eqb p p') && (eqb_evidence e1 e2)
-  | (nn i, nn i') =>
-    (Nat.eqb i i') (*&& (eqb_evidence e1 e2) *)
+  | (nn i, nn i') => (Nat.eqb i i')
   | (ss e1 e2, ss e1' e2') =>
     (eqb_evidence e1 e1') && (eqb_evidence e2 e2')
   | (pp e1 e2, pp e1' e2') =>
@@ -68,6 +160,29 @@ Proof.
       specialize IHe1 with e2.
       concludes.
       congruence.
+     
+      (*
+EqNat.beq_nat_refl: forall n : nat, true = (n =? n)
+Nat.eqb_refl: forall x : nat, (x =? x) = true
+       *)
+      simpl.
+      intros.
+      split; intros.
+      eapply Nat.eqb_eq; eauto.
+      subst.
+      (*
+      Search ((_ =? _) = true).
+       *)
+      
+      (*
+Nat.eqb_refl: forall x : nat, (x =? x) = true
+EqNat.beq_nat_true: forall n m : nat, (n =? m) = true -> n = m
+Nat.eqb_eq: forall n m : nat, (n =? m) = true <-> n = m
+       *)
+      
+      eapply Nat.eqb_refl.
+      
+      
     +
       cbn in *.
       rewrite Bool.andb_true_iff in H.
@@ -129,6 +244,7 @@ Proof.
 
       rewrite eqb_eq_list.
       auto.
+      eapply Nat.eqb_eq.
       apply Nat.eqb_refl.
       apply Nat.eqb_refl.
       apply Nat.eqb_refl.

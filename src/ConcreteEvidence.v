@@ -17,10 +17,6 @@ Admitted.
 Definition default_bs : BS.
 Admitted.
 
-(*
-Notation BS := nat (only parsing).
-*)
-
 (** * Concrete Evidence *)
 
 Inductive EvidenceC: Set :=
@@ -174,7 +170,7 @@ Proof.
   -
     invc H0.
     +
-      assert (exists bs ec, e' = uuc a n bs ec).
+      assert (exists bs ec, e' = uuc a p bs ec).
       {
         destruct e'; try solve_by_inversion.
         fff.
@@ -201,7 +197,7 @@ Proof.
   -
     invc H0.
     +
-      assert (exists bs ec, e' = ggc n bs ec).
+      assert (exists bs ec, e' = ggc p bs ec).
       {
         destruct e'; try solve_by_inversion.
         fff.
@@ -228,7 +224,7 @@ Proof.
   -
     invc H0.
     +
-      assert (exists bs, e' = hhc n bs e).
+      assert (exists bs, e' = hhc p bs e).
       {
         destruct e'; try solve_by_inversion.
         fff.
@@ -522,11 +518,3 @@ Definition splitEvr (sp:Split) (e:EvidenceC) : EvidenceC :=
   | (_,ALL) => e
   | _ => mtc
   end.
-
-(*
-Definition splitEv (sp:SP) (e:EvidenceC) : EvidenceC :=
-  match sp with
-  | ALL => e
-  | NONE => mtc
-  end.
-*)

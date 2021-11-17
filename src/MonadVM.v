@@ -73,10 +73,6 @@ Definition split_ev (sp:Split): CVM (EvC*EvC) :=
 
 (** * Partially-symbolic implementations of IO operations *)
 
-(*
-Definition nat_to_bs (x:nat): BS.
-Admitted.
-*)
 
 Definition do_asp (params :ASP_PARAMS) (mpl:Plc) (x:Event_ID) : BS.
 Admitted.
@@ -168,61 +164,17 @@ Definition do_prim (a:ASP) : CVM EvC :=
   | HSH => hashEv
   end.
 
-(*
-Fixpoint anno (t: Term) (i:nat) : (nat * AnnoTerm) :=
-  match t with
-  | asp x => (S i, (aasp (i, S i) x))
-
-  | att p x =>
-    let '(j,a) := anno x (S i)  in
-    (S j, aatt (i, S j) p a)
-
-  | lseq x y =>
-    let '(j,a) := anno x i in
-    let '(k,bt) := anno y j in
-    (k, alseq (i, k) a bt)
-
-  | bseq s x y =>
-    let '(j,a) := anno x (S i) in
-    let '(k,b) := anno y j in
-    (S k, abseq (i, S k) s a b)
-
-  | bpar s x y =>
-    let '(j,a) := anno x (S i) in
-    let '(k,b) := anno y j in
-    (S k, abpar (i, S k) s a b)
-  end.
- *)
-
 Fixpoint event_id_span (t: Term) : nat :=
   match t with
-  | asp x => 1 (*(S i, (aasp (i, S i) x)) *)
+  | asp x => 1
 
   | att p x => 2 + (event_id_span x)
-                    (*
-    let '(j,a) := anno x (S i)  in
-    (S j, aatt (i, S j) p a) *)
 
-  | lseq x y =>
-    (event_id_span x) + (event_id_span y)
-                          (*
-    let '(j,a) := anno x i in
-    let '(k,bt) := anno y j in
-    (k, alseq (i, k) a bt) *)
+  | lseq x y => (event_id_span x) + (event_id_span y)
 
-  | bseq s x y =>
-    2 + (event_id_span x) + (event_id_span y)
-                          (*
-    let '(j,a) := anno x (S i) in
-    let '(k,b) := anno y j in
-    (S k, abseq (i, S k) s a b) *)
+  | bseq s x y => 2 + (event_id_span x) + (event_id_span y)
 
-  | bpar s x y =>
-    2 + (event_id_span x) + (event_id_span y)
-                              (*
-    let '(j,a) := anno x (S i) in
-    let '(k,b) := anno y j in
-    (S k, abpar (i, S k) s a b) *)
+  | bpar s x y => 2 + (event_id_span x) + (event_id_span y)
   end.
 
 Lemma span_range : forall t i j t',
@@ -242,10 +194,10 @@ Proof.
     cbn in *.
     repeat break_let.
     find_inversion.
-    assert (event_id_span t = n0 - (S i)).
+    assert (event_id_span t = n - (S i)).
     { eauto. }
     rewrite H.
-    assert (n0 > (S i)).
+    assert (n > (S i)).
     {
       eapply anno_mono.
       eassumption.
@@ -288,11 +240,7 @@ Proof.
     { eapply anno_mono; eauto. }
     lia.
 Defined.
-    
-      
-    
-   
-    
+
 Definition inc_remote_event_ids (t:Term) : CVM unit :=
   st <- get ;;
     let tr' := st_trace st in
@@ -302,9 +250,6 @@ Definition inc_remote_event_ids (t:Term) : CVM unit :=
     let new_i := i + (event_id_span t) in
     put (mk_st e' tr' p' new_i).
   
-    
-    
-
 (* Primitive monadic communication primitives (some require IO Axioms) *)
 
 Definition tag_REQ (t:Term) (p:Plc) (q:Plc) (e:EvC) : CVM unit :=
