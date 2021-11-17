@@ -45,6 +45,14 @@ Definition TARG_ID: Set := nat.
 Definition N_ID: Set := nat.
 Definition Arg: Set := nat.
 
+Definition Event_ID: Set := nat.
+
+Definition BS : Set.
+Admitted.
+
+Definition default_bs : BS.
+Admitted.
+
 Inductive ASP_PARAMS: Set :=
 | asp_paramsC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP_PARAMS.
 
@@ -100,7 +108,29 @@ Fixpoint thread_count (t:Term) : nat :=
 
 (*
 Compute (thread_count (bpar (ALL,ALL) (asp SIG) (asp CPY))).
-*)
+ *)
+
+Definition RawEv := list BS.
+
+Inductive EvC: Set :=
+| evc: RawEv -> Evidence -> EvC.
+
+Definition mt_evc: EvC := (evc [] mt).
+
+Definition get_et (e:EvC) : Evidence :=
+  match e with
+  | evc ec et => et
+  end.
+
+Definition get_bits (e:EvC): list BS :=
+  match e with
+  | evc ls _ => ls
+  end.
+
+Inductive wf_ec : EvC -> Prop :=
+| wf_ec_c: forall ls et,
+    length ls = et_size et ->
+    wf_ec (evc ls et).
     
     
 Definition splitEv_T_l (sp:Split) (e:Evidence) : Evidence :=
@@ -154,6 +184,8 @@ Inductive AnnoTerm: Set :=
 | alseq: Range -> AnnoTerm -> AnnoTerm -> AnnoTerm
 | abseq: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
 | abpar: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm.
+
+
 
 (** * Events
 
@@ -414,6 +446,29 @@ Lemma unique_req_events (t:AnnoTerm) : forall p i i0 p1 p2 q q0 t0 t1,
        events t p (req i  loc p1 q  t0) ->
     not (events t p (req i0 loc p2 q0 t1)).
  *)
+
+(** Eval for annotated terms. *)
+
+Fixpoint aeval t p e :=
+  match t with
+  | aasp _ x => eval (asp x) p e
+  | aatt _ q x => aeval x q e
+  | alseq _ t1 t2 => aeval t2 p (aeval t1 p e)
+  | abseq _ s t1 t2 => ss (aeval t1 p ((splitEv_T_l s e)))
+                         (aeval t2 p ((splitEv_T_r s e)))
+  | abpar _ s t1 t2 => pp (aeval t1 p ((splitEv_T_l s e)))
+                         (aeval t2 p ((splitEv_T_r s e)))
+  end.
+
+Lemma eval_aeval:
+  forall t p e i,
+    eval t p e = aeval (snd (anno t i)) p e.
+Proof.
+  induction t; intros; simpl; auto;
+    repeat expand_let_pairs; simpl;
+      try (repeat jkjk; auto;congruence);
+      try (repeat jkjk'; auto).
+Defined.
 
 
 

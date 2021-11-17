@@ -4,13 +4,10 @@ Axioms and lemmas that capture the semantics of external CVM instances.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term ConcreteEvidence StVM Impl_vm Axioms_Io GenStMonad Helpers_VmSemantics MonadVM.
+Require Import Term_Defs StVM Impl_vm Axioms_Io Helpers_VmSemantics MonadVM.
 
 Require Import List.
 Import ListNotations.
-
-Search "span".
-
 
 
 Axiom copland_compile_external' : forall (t : AnnoTermPar) (e : EvC) (n : nat) (tr:list Ev) (i:Event_ID),
@@ -30,7 +27,6 @@ Axiom copland_compile_external' : forall (t : AnnoTermPar) (e : EvC) (n : nat) (
                         st_evid := i |});
         st_evid := (i + event_id_span (unannoPar t))
      |}).
-
 
 Lemma copland_compile_external : forall (t : AnnoTermPar) (e : EvC) (n : nat) i,
     (*well_formed_r t -> *)

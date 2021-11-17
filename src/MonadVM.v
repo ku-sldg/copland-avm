@@ -4,15 +4,15 @@ Definition of the CVM Monad + monadic helper functions.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term_Defs Term ConcreteEvidence GenStMonad Axioms_Io.
-Require Import Maps StructTactics.
+Require Import Term_Defs Term ConcreteEvidence Axioms_Io Evidence_Bundlers AutoPrim.
+Require Import StructTactics.
 
 Require Import Coq.Program.Tactics Lia.
 
 Require Import List.
 Import ListNotations.
 
-Require Export StVM.
+Require Export StVM GenStMonad IO_Stubs.
 
 Definition CVM := St cvm_st.
 
@@ -73,9 +73,10 @@ Definition split_ev (sp:Split): CVM (EvC*EvC) :=
 
 (** * Partially-symbolic implementations of IO operations *)
 
-
+(*
 Definition do_asp (params :ASP_PARAMS) (mpl:Plc) (x:Event_ID) : BS.
 Admitted.
+*)
          
 Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) : CVM BS :=
   match params with
@@ -86,44 +87,17 @@ Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) : CVM BS :=
     ret bs
   end.
 
-
-(* Matches on evidence type param only for verification.  
-   Will extract to the cons function over the first two params (new measurement bits + existing evidence) *)
-Definition cons_uu (x:BS) (e:EvC) (params:ASP_PARAMS) (mpl:Plc) : EvC :=
-  match e with
-  | evc bits et => evc (x :: bits) (uu params mpl et)
-  end.
-
 Definition invoke_ASP (params:ASP_PARAMS) : CVM EvC :=
   e <- get_ev ;;
   p <- get_pl ;;
   bs <- tag_ASP params p ;;
   ret (cons_uu bs e params p).
 
-Definition encodeEvRaw(e:RawEv): BS.
-Admitted.
-
-Definition encodeEvBits (e:EvC): BS :=
-  match e with
-  | (evc bits _) => encodeEvRaw bits
-  end.
-
-Definition do_sig (bs:BS) (p:Plc) (sigTag:Event_ID) : BS.
-Admitted.
-
-Definition do_hash (bs:BS) (p:Plc) : BS.
-Admitted.
-
 Definition tag_SIG (p:Plc) (e:EvC) : CVM BS :=
   x <- inc_id ;;
   let bs := (do_sig (encodeEvBits e) p x) in
   add_tracem [sign x p (get_et e)];;
   ret bs.
-
-Definition cons_sig (sig:BS) (e:EvC) (p:Plc): EvC :=
-  match e with
-  | evc bits et => evc (sig :: bits) (gg p et)
-  end.
 
 Definition signEv : CVM EvC :=
   p <- get_pl ;;
@@ -137,11 +111,6 @@ Definition tag_HSH (p:Plc) (e:EvC): CVM BS :=
   let bs := (do_hash (encodeEvBits e) p) in
   add_tracem [hash x p (get_et e)] ;;
   ret bs.
-
-Definition cons_hh (hsh:BS) (e:EvC) (p:Plc): EvC :=
-  match e with
-  | evc _ et => evc [hsh] (hh p et)
-  end.
 
 Definition hashEv : CVM EvC :=
   p <- get_pl ;;
@@ -273,26 +242,18 @@ Definition doRemote (t:Term) (q:Plc) (e:EvC) : CVM EvC :=
   tag_RPY p q e' ;;
   ret e'.
 
-Definition ss_cons (e1:EvC) (e2:EvC): EvC :=
-  match (e1, e2) with
-  | (evc bits1 et1, evc bits2 et2) => evc (bits1 ++ bits2) (ss et1 et2)
-  end.
-
-Definition pp_cons (e1:EvC) (e2:EvC): EvC :=
-  match (e1, e2) with
-  | (evc bits1 et1, evc bits2 et2) => evc (bits1 ++ bits2) (pp et1 et2)
-  end.
-
 Definition join_seq (e1:EvC) (e2:EvC): CVM unit :=
   p <- get_pl ;;
   n <- inc_id ;;
   put_ev (ss_cons e1 e2) ;;
-  add_tracem [join n(*(Nat.pred n)*) p].
+  add_tracem [join n p].
 
 (* Primitive monadic parallel CVM thread primitives (some require IO Axioms) *)
 
+(*
 Definition do_start_par_threadIO (loc:Loc) (t:Term) (e:RawEv) : unit.
 Admitted.
+*)
 
 Definition do_start_par_thread (loc:Loc) (t:Term) (e:RawEv) : CVM unit :=
   let _ := do_start_par_threadIO loc t e in
@@ -317,7 +278,7 @@ Definition join_par (e1:EvC) (e2:EvC): CVM unit :=
   p <- get_pl ;;
   n <- inc_id ;;
   put_ev (pp_cons e1 e2) ;;
-  add_tracem [join n (*(Nat.pred n)*) p].
+  add_tracem [join n p].
    
 Ltac monad_unfold :=
   repeat unfold

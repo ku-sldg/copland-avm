@@ -4,18 +4,14 @@ Evidence structure that models concrete results of Copland phrase execution.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Export Term_Defs Term StructTactics AutoPrim.
+Require Import StructTactics AutoPrim IO_Stubs.
 
 Require Import Coq.Program.Tactics.
 
 Require Import List.
 Import ListNotations.
 
-Definition BS : Set.
-Admitted.
-
-Definition default_bs : BS.
-Admitted.
+Require Export Term_Defs.
 
 (** * Concrete Evidence *)
 
@@ -28,28 +24,6 @@ Inductive EvidenceC: Set :=
 | ssc: EvidenceC -> EvidenceC -> EvidenceC
 | ppc: EvidenceC -> EvidenceC -> EvidenceC.
 
-Definition RawEv := list BS.
-
-Inductive EvC: Set :=
-| evc: RawEv -> Evidence -> EvC.
-
-Definition mt_evc: EvC := (evc [] mt).
-
-Definition get_et (e:EvC) : Evidence :=
-  match e with
-  | evc ec et => et
-  end.
-
-Definition get_bits (e:EvC): list BS :=
-  match e with
-  | evc ls _ => ls
-  end.
-
-Inductive wf_ec : EvC -> Prop :=
-| wf_ec_c: forall ls et,
-    length ls = et_size et ->
-    wf_ec (evc ls et).
-
 Fixpoint et_fun (ec:EvidenceC) : Evidence :=
   match ec with
   | mtc => mt
@@ -59,6 +33,11 @@ Fixpoint et_fun (ec:EvidenceC) : Evidence :=
   | nnc ni _ => nn ni
   | ssc ec1 ec2 => ss (et_fun ec1) (et_fun ec2)
   | ppc ec1 ec2 => pp (et_fun ec1) (et_fun ec2)
+  end.
+
+Definition encodeEvBits (e:EvC): BS :=
+  match e with
+  | (evc bits _) => encodeEvRaw bits
   end.
 
 Inductive EvSubT: Evidence -> Evidence -> Prop :=

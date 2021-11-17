@@ -1,4 +1,4 @@
-Require Import Maps Event_system Term_system MonadVM ConcreteEvidence.
+Require Import Event_system Term_system ConcreteEvidence StVM.
 Require Import Impl_vm Helpers_VmSemantics VmSemantics.
 Require Import Axioms_Io External_Facts Auto AutoApp.
 

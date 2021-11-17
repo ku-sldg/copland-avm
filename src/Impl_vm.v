@@ -4,12 +4,10 @@ Implementation of the Copland Compiler and Virtual Machine.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term_Defs Term GenStMonad MonadVM.
+Require Import Term_Defs Term MonadVM.
 
 Require Import List.
 Import ListNotations.
-
-Require Import Maps.
 
 (** Monadic VM implementation *)
 

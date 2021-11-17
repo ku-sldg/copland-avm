@@ -12,10 +12,12 @@ Term_system.v
 Trace.v
 LTS.v
 Main.v
+IO_Stubs.v
 ConcreteEvidence.v
+StVM.v
 Axioms_Io.v
 GenStMonad.v
-StVM.v
+Evidence_Bundlers.v
 MonadVM.v
 Impl_vm.v
 Auto.v
@@ -32,7 +34,6 @@ OptMonad.v
 Appraisal_Defs.v
 Impl_appraisal.v
 Impl_appraisal_alt.v
-Test_Extract_App.v
 Appraisal_AltImpls_Eq.v
 Helpers_Appraisal.v
 Appraisal.v

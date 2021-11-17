@@ -1,4 +1,4 @@
-Require Import Term_Defs Term Maps ConcreteEvidence OptMonad Auto More_lists Appraisal_Evidence MonadVM VmSemantics.
+Require Import Term_Defs Term ConcreteEvidence OptMonad Auto More_lists Appraisal_Evidence VmSemantics IO_Stubs AutoPrim.
 
 (* Require Import Impl_appraisal (*MonadAM*). *)
 

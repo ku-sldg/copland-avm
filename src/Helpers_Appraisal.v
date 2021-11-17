@@ -1,6 +1,6 @@
-Require Import ConcreteEvidence Appraisal_Defs StVM Impl_vm Impl_appraisal Auto AutoApp External_Facts MonadVM Helpers_VmSemantics Appraisal_Evidence VmSemantics.
+Require Import Term ConcreteEvidence Appraisal_Defs StVM Impl_vm Impl_appraisal Auto AutoApp External_Facts Helpers_VmSemantics Appraisal_Evidence VmSemantics Evidence_Bundlers AutoPrim Axioms_Io IO_Stubs.
 
-Require Import Axioms_Io.
+Require Import StructTactics.
 
 Require Import Coq.Program.Tactics Lia.
 
@@ -9,7 +9,9 @@ Require Import OptMonad.
 Require Import List.
 Import ListNotations.
 
+(*
 Set Nested Proofs Allowed.
+*)
 
 
 Ltac evsub_ih :=
@@ -4412,7 +4414,7 @@ Lemma gg_preserved': forall t annt p n p0 et'
     
 
     (
-      (exists bits e'', EvSub (ggc p0 (do_sig (MonadVM.encodeEvBits (evc bits et')) p0 n) e'') e' /\
+      (exists bits e'', EvSub (ggc p0 (do_sig (encodeEvBits (evc bits et')) p0 n) e'') e' /\
                    et_fun e'' = et' /\
                    bits = encodeEv e''
       )

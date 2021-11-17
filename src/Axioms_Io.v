@@ -4,7 +4,7 @@ Uninterpreted functions and rewrite rules that model external (remote and local 
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term ConcreteEvidence LTS StVM.
+Require Import Term_Defs LTS.
 
 Require Import List.
 Import ListNotations.

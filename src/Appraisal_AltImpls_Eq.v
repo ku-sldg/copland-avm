@@ -1,6 +1,6 @@
-Require Import Maps Event_system Term_system MonadVM ConcreteEvidence Appraisal_Evidence.
+Require Import Event_system Term_system ConcreteEvidence Appraisal_Evidence.
 Require Import Impl_vm Helpers_VmSemantics VmSemantics.
-Require Import Axioms_Io External_Facts Auto AutoApp.
+Require Import Axioms_Io External_Facts Auto AutoApp AutoPrim.
 
 Require Import Appraisal_Defs Impl_appraisal Impl_appraisal_alt (*MonadAM*).
 

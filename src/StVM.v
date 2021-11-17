@@ -8,8 +8,6 @@ Require Import ConcreteEvidence.
 Require Import List.
 Import ListNotations.
 
-Definition Event_ID: Set := nat.
-
 (* Specific VM monad state *)
 Record cvm_st : Type := mk_st
                           {st_ev:EvC ;

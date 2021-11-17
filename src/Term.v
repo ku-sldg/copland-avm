@@ -1,4 +1,4 @@
-Require Import Defs Term_Defs Eqb_Evidence.
+Require Import Defs Eqb_Evidence.
 Require Import Preamble More_lists StructTactics.
 
 Require Import Compare_dec Coq.Program.Tactics.
@@ -8,6 +8,8 @@ Require Import Lia.
 
 Require Import List.
 Import List.ListNotations.
+
+Require Export Term_Defs.
 
 (*
 Set Nested Proofs Allowed.
@@ -119,29 +121,6 @@ Ltac wf_hammer :=
   eauto;
   tauto.
 *)
-
-(** Eval for annotated terms. *)
-
-Fixpoint aeval t p e :=
-  match t with
-  | aasp _ x => eval (asp x) p e
-  | aatt _ q x => aeval x q e
-  | alseq _ t1 t2 => aeval t2 p (aeval t1 p e)
-  | abseq _ s t1 t2 => ss (aeval t1 p ((splitEv_T_l s e)))
-                         (aeval t2 p ((splitEv_T_r s e)))
-  | abpar _ s t1 t2 => pp (aeval t1 p ((splitEv_T_l s e)))
-                         (aeval t2 p ((splitEv_T_r s e)))
-  end.
-
-Lemma eval_aeval:
-  forall t p e i,
-    eval t p e = aeval (snd (anno t i)) p e.
-Proof.
-  induction t; intros; simpl; auto;
-    repeat expand_let_pairs; simpl;
-      try (repeat jkjk; auto;congruence);
-      try (repeat jkjk'; auto).
-Defined.
 
 (** This predicate specifies when a term, a place, and some initial
     evidence is related to an event.  In other words, it specifies the
