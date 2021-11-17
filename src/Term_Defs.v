@@ -437,6 +437,33 @@ Proof.
     jkjke.
 Defined.
 
+Lemma anno_unanno_par: forall a l l' annt,
+    anno_par a l = (l', annt) ->
+    unannoPar annt = a.
+Proof.
+  intros.
+  generalizeEverythingElse a.
+  induction a; intros.
+  -
+    ff.
+  -
+    ff.
+  -
+    ff.
+    assert (unannoPar a = a1) by eauto.
+    assert (unannoPar a0 = a2) by eauto.
+    congruence.
+  -
+    ff.
+    assert (unannoPar a = a1) by eauto.
+    assert (unannoPar a0 = a2) by eauto.
+    congruence.
+  -
+    ff.
+    assert (unannoPar a = a1) by eauto.
+    congruence.
+Defined.
+
 (** This predicate determines if an annotated term is well formed,
     that is if its ranges correctly capture the relations between a
     term and its associated events. *)

@@ -4,14 +4,15 @@ Helper lemmas for proofs about the VM semantics.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import MonadVM Impl_vm Term_Defs Term Auto StructTactics.
+Require Import MonadVM Impl_vm Term_Defs Auto StructTactics.
 
 Require Import Coq.Program.Tactics Coq.Program.Equality.
 
+(*
 Set Nested Proofs Allowed.
+*)
 
 Lemma pl_immut : forall t e tr p i,
-    (*well_formed_r t -> *)
     st_pl
       (execSt
          (copland_compile t)
@@ -24,17 +25,12 @@ Proof.
   induction t; intros.
   -
     destruct a; (* asp *)
-      try destruct a; (* asp params *)
-      df;
+      try destruct a; (* asp params *)    
       try reflexivity.
   -
-    (*
-    do_wf_pieces. *)
-    repeat (df; try dohtac; df).   
+    df.
     reflexivity.
   -
-    (*
-    do_wf_pieces. *)
     simpl in *.
     monad_unfold.
     repeat break_match;
@@ -177,7 +173,6 @@ Ltac anhl :=
   end.
 
 Lemma hihi : forall t e e' e'' x x' y y' p p' p'' i i' i'',
-    (*well_formed_r t -> *)
     copland_compile t {| st_ev := e; st_trace := x; st_pl := p; st_evid := i |} =
     (Some tt, {| st_ev := e'; st_trace := x'; st_pl := p'; st_evid := i' |}) ->
     copland_compile t {| st_ev := e; st_trace := y; st_pl := p; st_evid := i |} =
@@ -192,7 +187,6 @@ Proof.
     repeat (df; try dohtac; df).
     tauto.
   -
-    (*do_wf_pieces. *)
     df;
     repeat break_match;
     try (repeat find_inversion);
@@ -201,8 +195,6 @@ Proof.
     anhl.
     eauto. 
   -
-    (*
-    do_wf_pieces. *)
     df;
     repeat break_match;
     try (repeat find_inversion);
@@ -212,8 +204,6 @@ Proof.
     repeat find_inversion.
     eauto.
   -
-    (*
-    do_wf_pieces. *)
     cbn in *.
     monad_unfold.
     repeat break_let.
@@ -257,7 +247,6 @@ Ltac dohi :=
   repeat clear_triv.
 
 Lemma always_some : forall t vm_st vm_st' op,
-    (*well_formed_r t -> *)
     copland_compile 
       t
       vm_st =
@@ -274,22 +263,16 @@ Proof.
     tauto.
   -
     df.
-    (*
-    do_wf_pieces. *)
     
     destruct o eqn:hhh;
       try (df; eauto).
   -
     df.
-    (*
-    do_wf_pieces. *)
 
     repeat break_match;
       try (
           df; eauto).
   -
-    (*
-    do_wf_pieces. *)
     df.
     dohtac.
     df.
@@ -313,7 +296,6 @@ Ltac do_somett :=
 Ltac do_asome := repeat do_somett; repeat clear_triv.
 
 Lemma trace_irrel_pl : forall t tr1 tr1' tr2 e e' p1' p1 i i',
-    (*well_formed_r t -> *)
     copland_compile t
            {| st_ev := e; st_trace := tr1; st_pl := p1; st_evid := i |} =
     (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_evid := i' |}) ->
@@ -335,7 +317,6 @@ Proof.
 Defined.
 
 Lemma trace_irrel_ev : forall t tr1 tr1' tr2 e e' p1' p1 i i',
-    (*well_formed_r t -> *)
     copland_compile t
            {| st_ev := e; st_trace := tr1; st_pl := p1; st_evid := i|} =
     (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_evid := i' |}) ->
@@ -357,7 +338,6 @@ Proof.
 Defined.
 
 Lemma trace_irrel_evid : forall t tr1 tr1' tr2 e e' p1' p1 i i',
-    (*well_formed_r t -> *)
     copland_compile t
            {| st_ev := e; st_trace := tr1; st_pl := p1; st_evid := i|} =
     (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_evid := i' |}) ->

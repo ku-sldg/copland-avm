@@ -1,6 +1,7 @@
 Require Import StructTactics Auto Helpers_VmSemantics StVM MonadVM GenStMonad.
 Require Import List.
 
+(*
 Ltac dosome :=
   repeat (
       match goal with
@@ -12,14 +13,15 @@ Ltac dosome :=
             (Some _, _) |- _] =>
         destruct o; try solve_by_inversion
       end; df).
+*)  (* ALready in Auto.v *)
 
+(*
 Ltac tacc H :=
   (symmetry;
    erewrite <- pl_immut in *;
    rewrite H;
    eauto ).
-
-Ltac ff := repeat break_match; try solve_by_inversion; df.
+*)
 
 Ltac dosome_eq y :=
   match goal with
@@ -100,3 +102,11 @@ Ltac do_inv_head :=
     match goal with
     | [H: ?ls ++ ?xs = ?ls ++ ?ys |- _] => assert_new_proof_by (xs = ys) tac
     end.
+
+Ltac dd :=
+  repeat (
+      df;
+      annogo;
+      dosome;
+      do_asome;
+      subst).

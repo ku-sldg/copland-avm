@@ -262,21 +262,12 @@ Proof.
     try (eapply ccp_implies_cc; eauto).
 Defined.
 
-Ltac dd :=
-  repeat (
-      df;
-      annogo;
-      dosome;
-      do_asome;
-      subst).
-
 Ltac wrap_ccp :=
   
   try rewrite <- ccp_iff_cc in *;
   try inv_annoparP;
   dd;
   repeat do_annopar_redo;
-  (*do_wf_pieces; *)
   repeat do_pl_immut;
   dd;
   try rewrite ccp_iff_cc in *.

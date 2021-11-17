@@ -24,6 +24,8 @@ Ltac df :=
       repeat dunit;
       unfold snd in * ).
 
+Ltac ff := repeat break_match; try solve_by_inversion; df.
+
 Ltac dosome :=
   repeat (
       match goal with
