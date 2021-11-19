@@ -52,7 +52,6 @@ Proof.
   lia.
 Defined.
 
-
 Fixpoint encodeEv (e:EvidenceC) : RawEv :=
   match e with
   | mtc => []
@@ -174,34 +173,6 @@ Ltac do_reconP_determ :=
     clear H2
   end; subst.
 
-(*
-Inductive annoP: AnnoTerm -> Term -> Prop :=
-| annoP_c: forall anno_term t,
-    (exists n n', anno t n = (n',anno_term)) -> (* anno_term = snd (anno t n)) -> *)
-    annoP anno_term t.
-
-Inductive annoP_indexed': AnnoTerm -> Term -> nat -> Prop :=
-| annoP_c_i': forall anno_term t n,
-    (exists n', anno t n = (n', anno_term)) -> (*anno_term = snd (anno t n) -> *)
-    annoP_indexed' anno_term t n.
-
-Inductive annoP_indexed: AnnoTerm -> Term -> nat -> nat ->  Prop :=
-| annoP_c_i: forall anno_term t n n',
-    (*(exists n', anno t n = (n', anno_term)) -> (*anno_term = snd (anno t n) -> *) *)
-    anno t n = (n', anno_term) ->
-    annoP_indexed anno_term t n n'.
-
-Inductive anno_parP: AnnoTermPar -> Term -> Prop :=
-| anno_parP_c: forall par_term t,
-    (exists loc loc', anno_par t loc = (loc', par_term)) -> (*par_term = snd (anno_par t loc)) -> *)
-    anno_parP par_term t.
-
-Inductive anno_parPloc: AnnoTermPar -> Term -> Loc -> Prop :=
-| anno_parP_cloc: forall par_term t loc,
-    (exists loc', anno_par t loc = (loc', par_term)) -> (*par_term = snd (anno_par t loc) -> *)
-    anno_parPloc par_term t loc.
-*)
-
 Lemma anno_parP_redo: forall t pt loc loc',
     anno_par t loc = (loc', pt) ->
     anno_parP pt t.
@@ -300,15 +271,6 @@ Ltac inv_annoP_indexed :=
   end;
   destruct_conjs.
 
-(*
-Ltac inv_annoP_indexed' :=
-  match goal with
-  | [H: annoP_indexed _ _ _(*_ (?c _) _*)
-     |- _ ] =>
-    inversion H
-  end.
-*)
-
 Inductive copland_compileP :
   AnnoTermPar -> cvm_st -> (option unit) -> cvm_st ->  Prop :=
 | ccp: forall t st st' res,
@@ -380,15 +342,3 @@ Ltac wrap_ccp_anno :=
   repeat do_pl_immut;
   dd;
   try rewrite ccp_iff_cc in *.
-
-
-  (*
-  try inv_annoparP;
-  try inv_annoparPloc;
-  dd;
-  repeat do_annopar_redo;
-  repeat do_pl_immut;
-  dd;
-  try rewrite ccp_iff_cc in *.
-   *)
-
