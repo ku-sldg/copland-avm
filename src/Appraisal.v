@@ -54,8 +54,8 @@ Proof.
       edestruct IHe'2; eauto.
 Defined.
 
-Lemma appraisal_correct_sig : forall t annt n e e' p ev,
-    annoP annt t n ->
+Lemma appraisal_correct_sig : forall t annt e e' p ev,
+    annoP annt t ->
     not_none_none t ->
     not_hash_sig_term_ev t e ->
     cvm_evidence_denote annt p e = e' ->
@@ -84,8 +84,8 @@ Proof.
   eassumption.
 Defined.
 
-Lemma appraisal_correct : forall t annt n e' p ev e,
-    annoP annt t n ->
+Lemma appraisal_correct : forall t annt e' p ev e,
+    annoP annt t ->
     not_none_none t ->
     cvm_evidence_denote annt p e = e' ->
     measEvent annt p (et_fun e) ev ->
@@ -118,9 +118,9 @@ Defined.
 Require Import Impl_appraisal_alt Appraisal_AltImpls_Eq.
 
 Lemma appraisal_correct_sig_alt :
-  forall t annt pt loc e e' tr tr' p p' bits' et' ev ee i i',
-    anno_parP pt t loc ->
-    annoP annt t i -> 
+  forall t annt pt e e' tr tr' p p' bits' et' ev ee i i',
+    anno_parP pt t ->
+    annoP_indexed annt t i i' -> 
     well_formed_r_annt annt ->
     not_none_none t ->
     not_hash_sig_term_ev t e ->
@@ -152,9 +152,10 @@ Proof.
   
   erewrite appraisal_alt.
   eapply appraisal_correct_sig.
+  econstructor. repeat eexists. invc H0. eassumption.
   eassumption.
   eassumption.
-  eassumption.
+
  
   eapply cvm_raw_evidence_denote_fact; eauto.
   eassumption.
@@ -164,9 +165,9 @@ Proof.
 Defined.
 
 Lemma appraisal_correct_sig_alt_et :
-  forall t annt pt loc bits et et' et'' e e' tr tr' p p' bits' ev i i',
-    anno_parP pt t loc ->
-    annoP annt t i ->
+  forall t annt pt bits et et' et'' e e' tr tr' p p' bits' ev i i',
+    anno_parP pt t ->
+    annoP_indexed annt t i i' ->
     well_formed_r_annt annt ->
     not_none_none t ->
     not_hash_sig_term_ev t e ->
@@ -188,7 +189,14 @@ Proof.
   wrap_ccp.
   assert (et'' =  (aeval annt p et)).
   {
+    (*
     invc H0.
+     *)
+    Check eval_aeval.
+    rewrite <- eval_aeval'.
+    Check cvm_refines_lts_evidence.
+
+    (*
 
     rewrite <- eval_aeval.
     inversion H.
@@ -201,12 +209,23 @@ Proof.
       eapply annopar_fst_snd.
     }
     rewrite H12.
- 
+     *)
+    
+
+    assert (t = unanno annt).
+    {
+      invc H0.
+      erewrite <- anno_unanno at 1.
+      rewrite H5.
+      tauto.
+    }
+    subst.
+    
     eapply cvm_refines_lts_evidence.
-    rewrite <- H12.
     eassumption.
     eassumption.
   }
+
   subst.
   invc H7.
   eapply appraisal_correct_sig_alt; eauto.
@@ -214,9 +233,9 @@ Defined.
 
 
 Lemma appraisal_correct_alt :
-  forall t annt pt loc e' tr tr' p p' bits' et' ev ee i i',
-    anno_parP pt t loc ->
-    annoP annt t i ->
+  forall t annt pt e' tr tr' p p' bits' et' ev ee i i',
+    anno_parP pt t ->
+    annoP_indexed annt t i i' ->
     well_formed_r_annt annt ->
     not_none_none t ->
     wf_ec ee ->
@@ -244,7 +263,7 @@ Proof.
     
   erewrite appraisal_alt.
   eapply appraisal_correct.
-  eassumption.
+  econstructor. repeat eexists. invc H0. eassumption.
   eassumption.
   eapply cvm_raw_evidence_denote_fact; eauto.
 
@@ -255,9 +274,9 @@ Proof.
 Defined.
 
 Lemma appraisal_correct_alt_et :
-  forall t annt pt loc e' tr tr' p p' bits bits' et et' et'' ev i i',
-    anno_parP pt t loc ->
-    annoP annt t i ->
+  forall t annt pt e' tr tr' p p' bits bits' et et' et'' ev i i',
+    anno_parP pt t ->
+    annoP_indexed annt t i i' ->
     well_formed_r_annt annt ->
     not_none_none t ->
     wf_ec (evc bits et) ->
@@ -277,8 +296,16 @@ Proof.
   wrap_ccp.
   assert (et'' = (aeval annt p et)).
   {
-    invc H0.
-    erewrite <- eval_aeval.
+    assert (t = unanno annt).
+    {
+      invc H0.
+      erewrite <- anno_unanno at 1.
+      rewrite H4.
+      tauto.
+    }
+    subst.
+
+    erewrite <- eval_aeval'.
     eapply cvm_refines_lts_evidence.
     eassumption.
     eassumption.

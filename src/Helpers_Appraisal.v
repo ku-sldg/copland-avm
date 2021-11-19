@@ -348,7 +348,7 @@ Defined.
 
 Lemma evsubt_preserved: forall t pt e e' et et' tr tr' p p' ett i i',
     not_none_none t ->
-    anno_parP pt t 0 ->
+    anno_parP pt t ->
     copland_compileP pt
                      {| st_ev := evc e et; st_trace := tr; st_pl := p; st_evid := i |}
                      (Some tt)
@@ -585,9 +585,9 @@ Ltac do_evsub_ih'' :=
            EvSub (hhc p'0 bs ett) v /\ EvSubT (et_fun e'') ett))
   end.
 
-Lemma evAccum: forall t annt p e e' e'' i,
+Lemma evAccum: forall t annt p e e' e'',
 
-    annoP annt t i -> 
+    annoP annt t -> 
     not_none_none t ->
     cvm_evidence_denote annt p e = e' -> 
     EvSub e'' e ->
@@ -604,8 +604,7 @@ Proof.
   generalizeEverythingElse t.
   induction t; intros.
   -
-    dd.
-    invc H.
+    inv_annoP.
     dd.
     destruct a; dd; eauto.
     right.
@@ -614,22 +613,31 @@ Proof.
     eapply evsub_etfun.
     eassumption.
   - (* aatt case *)
-    dd.
-    invc H.
+    inv_annoP.
     dd.
     do_not_none.
     edestruct IHt.
-    econstructor.
-    jkjke.
+    econstructor. repeat eexists. eassumption.
     eassumption.
-    dd. reflexivity.
+    reflexivity.
     eassumption.
     eauto.
     eauto.
   - (* alseq case *)
+    (*
     dd.
     invc H.
     dd.
+    repeat do_anno_redo.
+     *)
+    dd.
+    inv_annoP.
+    dd.
+    (*
+    inv_annoP_indexed.
+    dd.
+    repeat do_anno_indexed_redo.
+     *)
     repeat do_anno_redo.
     do_not_none.
     edestruct recon_evdenote_decomp with (a:=a) (p:=p) (e:=e).
@@ -639,6 +647,7 @@ Proof.
       
     {
       eapply IHt1; eauto.
+      
     }
     
     door.
@@ -647,9 +656,9 @@ Proof.
     ++
           
      assert
-      (EvSub (hhc H5 H6 H4) (cvm_evidence_denote a0 p (cvm_evidence_denote a p e)) \/
+      (EvSub (hhc H8 H9 H7) (cvm_evidence_denote a0 p (cvm_evidence_denote a p e)) \/
        (exists (ett : Evidence) p'0 bs,
-           EvSub (hhc p'0 bs ett) (cvm_evidence_denote a0 p (cvm_evidence_denote a p e)) /\ EvSubT (et_fun (hhc H5 H6 H4)) ett)).
+           EvSub (hhc p'0 bs ett) (cvm_evidence_denote a0 p (cvm_evidence_denote a p e)) /\ EvSubT (et_fun (hhc H8 H9 H7)) ett)).
      {
        eapply IHt2;
          try eassumption;
@@ -669,9 +678,15 @@ Proof.
         eapply evsubT_transitive; eauto.
         
   - (* abseq case *)
+
+    inv_annoP.
+    dd.
+    (*
     dd.
     invc H.
     dd.
+    repeat do_anno_indexed_redo.
+     *)
     repeat do_anno_redo.
 
     do_not_none.
@@ -700,8 +715,13 @@ Proof.
       do_none_none_contra.
   - (* abpar case *)
 
+    (*
     dd.
     invc H.
+    dd.
+    repeat do_anno_indexed_redo.
+     *)
+    inv_annoP.
     dd.
     repeat do_anno_redo.
 
@@ -739,7 +759,7 @@ Ltac do_evaccum :=
            (*H6: cvm_evidence_denote ?annt _ ?e = ?e', *)
            e': EvidenceC,
                H7: not_none_none ?t,
-                   H8: annoP ?annt ?t _
+                   H8: annoP _ ?t
 
         |- _] =>
       
@@ -777,9 +797,9 @@ Proof.
 Defined.
 
 
-Lemma sig_is: forall t annt e e' p i,
+Lemma sig_is: forall t annt e e' p,
 
-    annoP annt t i ->
+    annoP annt t ->
     cvm_evidence_denote annt p e = e' ->
     gg_sub e' ->
     gg_sub e \/
@@ -791,7 +811,7 @@ Proof.
   -
     dd.
     
-    destruct a; invc H; dd; eauto; try tauto.
+    destruct a; inv_annoP; dd; eauto; try tauto.
     +
       do_ggsub.
       evSubFacts.
@@ -803,47 +823,41 @@ Proof.
       evSubFacts.
       
   - (* aatt case *)
-    dd.
-    invc H.
+    inv_annoP.
     dd.
     
     edestruct IHt.
-    econstructor.
+    econstructor. repeat eexists. eassumption.
     reflexivity.
-    reflexivity.
-    jkjke.
+    eassumption.
     eauto.
     eauto.
     
   -
-    dd.
-    invc H.
+    inv_annoP.
     dd.
 
     assert (gg_sub (cvm_evidence_denote a p e) \/ term_sub (asp SIG) t2).
     {
       eapply IHt2.
-      econstructor.
+      econstructor. repeat eexists. eassumption.
       reflexivity.
-      reflexivity.
-      simpl.
-      jkjke.
+      eassumption.
     }
 
     door.
     +
       edestruct IHt1.
-      econstructor. reflexivity.
+      econstructor. repeat eexists. eassumption.
       reflexivity.
-      jkjke.
+      eauto.
       eauto.
       eauto.
     +
       eauto.
 
   - (* abseq case *)
-    dd.
-    invc H.
+    inv_annoP.
     dd.
 
     do_ggsub.
@@ -851,11 +865,9 @@ Proof.
     +
 
     edestruct IHt1.
-    econstructor.
+    econstructor. repeat eexists. eassumption.
     reflexivity.
-    reflexivity.
-    jkjke.
-    simpl.
+
     repeat eexists.
     eassumption.
     destruct_conjs.
@@ -870,11 +882,8 @@ Proof.
     eauto.
     +
       edestruct IHt2.
-    econstructor.
+     econstructor. repeat eexists. eassumption.
     reflexivity.
-    reflexivity.
-    jkjke.
-    simpl.
     repeat eexists.
     eassumption.
     destruct_conjs.
@@ -887,9 +896,8 @@ Proof.
       eauto.
     right.
     eauto.
-    - (* abseq case *)
-    dd.
-    invc H.
+  - (* abseq case *)
+    inv_annoP.
     dd.
 
     do_ggsub.
@@ -897,11 +905,8 @@ Proof.
     +
 
     edestruct IHt1.
-    econstructor.
+    econstructor. repeat eexists. eassumption.
     reflexivity.
-    reflexivity.
-    jkjke.
-    simpl.
     repeat eexists.
     eassumption.
     destruct_conjs.
@@ -916,17 +921,14 @@ Proof.
     eauto.
     +
       edestruct IHt2.
-    econstructor.
+    econstructor. repeat eexists. eassumption.
     reflexivity.
-    reflexivity.
-    jkjke.
-    simpl.
+    
+
     repeat eexists.
     eassumption.
-    destruct_conjs.
-    subst.
-    left.
-    repeat eexists.
+    destruct_conjs; subst.
+    left. repeat eexists.
     destruct s; destruct s; destruct s0;
       dd;
       try solve_by_inversion;
@@ -938,7 +940,7 @@ Defined.
 Ltac do_sig_is :=
   repeat 
   match goal with
-  | [ H': annoP ?annt ?t _,
+  | [ H': annoP ?annt ?t,
           H6: gg_sub ?e',
               He: EvidenceC
      |- _] =>
@@ -1315,9 +1317,9 @@ Proof.
       eauto.
 Defined.
 
-Lemma hshsig_ev_term_contra: forall t annt p e e' i,
+Lemma hshsig_ev_term_contra: forall t annt p e e',
 
-    annoP annt t i ->
+    annoP annt t ->
     not_hash_sig_term_ev t e ->
     cvm_evidence_denote annt p e = e' ->
     not_hash_sig_ev e'.
@@ -1326,8 +1328,7 @@ Proof.
   generalizeEverythingElse t.
   induction t; intros.
   -
-    dd.
-    invc H.
+    inv_annoP.
     dd.
     destruct a; dd.
     +
@@ -1355,7 +1356,7 @@ Proof.
         unfold not_hash_sig_term_ev in *.
         destruct_conjs.
         unfold not in *; intros.
-        apply H1.
+        apply H3.
         eassumption.
         eauto.
       }
@@ -1365,31 +1366,30 @@ Proof.
       unfold not_hash_sig_ev.
       intros.
       unfold not in *; intros.
-      invc H4.
+      invc H5.
       unfold hash_sig_ev in *.
       destruct_conjs.
-      invc H8.
-      apply H.
+      invc H6.
+      invc H13.
+      apply H1.
 
       eapply gg_recons''; eauto.
 
   - (* aatt case *)
 
-    dd.
-    invc H.
+    inv_annoP.
     dd.
     
     do_nhste_att.
      
     eapply IHt.
-    econstructor. tauto.
+    econstructor. repeat eexists. eassumption.
     eassumption.
-    jkjke.
+    reflexivity.
         
   - (* alseq case *)
 
-    dd.
-    invc H.
+    inv_annoP.
     dd.
     repeat do_anno_redo.
         
@@ -1418,8 +1418,8 @@ Proof.
 
       unfold not_hash_sig_term_ev in H0.
       destruct_conjs.
-      unfold not in H7.
-      eapply H7.
+      unfold not in H10.
+      eapply H10.
       eassumption.
       eauto.
     ++
@@ -1439,8 +1439,7 @@ Proof.
   - (* abseq case *)
 
 
-    dd.
-    invc H.
+    inv_annoP.
     dd.
     repeat do_anno_redo.
         
@@ -1455,7 +1454,7 @@ Proof.
     evSubFacts.
 
     +
-      invc H.
+      invc H1.
       
       destruct_conjs.
       solve_by_inversion.
@@ -1468,15 +1467,14 @@ Proof.
         reflexivity.
       }
 
-      eapply H1; eassumption.
+      eapply H3; eassumption.
 
     +
       assert (not_hash_sig_ev (cvm_evidence_denote a0 p (splitEvr s e))) by eauto.
-      eapply H1; eassumption.
-  -
+      eapply H3; eassumption.
+  - (* bpar case *)
     
-    dd.
-    invc H.
+    inv_annoP.
     dd.
     repeat do_anno_redo.
        
@@ -1491,7 +1489,7 @@ Proof.
     evSubFacts.
 
     +
-      invc H.
+      invc H1.
       destruct_conjs.
       solve_by_inversion.
     +
@@ -1503,17 +1501,17 @@ Proof.
         reflexivity.
       }
 
-      eapply H1; eassumption.
+      eapply H3; eassumption.
 
     +
       assert (not_hash_sig_ev (cvm_evidence_denote a0 p (splitEvr s e))) by eauto.
-      eapply H1; eassumption.
+      eapply H3; eassumption.
 Defined.
 
 Ltac do_hste_contra :=
   repeat 
   match goal with
-  | [H': annoP ?annt ?t _,
+  | [H': annoP ?annt ?t,
          H3: not_hash_sig_term_ev ?t ?e,
              He: EvidenceC
      |- _] =>
@@ -1523,8 +1521,8 @@ Ltac do_hste_contra :=
       ltac:(eapply hshsig_ev_term_contra; [apply H' | apply H3 | try reflexivity; try eassumption])
   end.
 
-Lemma sig_term_ev_lseqr: forall t1 t2 annt e e' p loc,
-    annoP annt t1 loc ->
+Lemma sig_term_ev_lseqr: forall t1 t2 annt e e' p,
+    annoP annt t1 ->
     not_hash_sig_term_ev (lseq t1 t2) e ->
     cvm_evidence_denote annt p e = e' ->  
     not_hash_sig_term_ev t2 e'.
@@ -1573,7 +1571,7 @@ Defined.
 
 Ltac do_nhste_lseqr :=
   match goal with
-  | [H': annoP ?annt ?t1 _,
+  | [H': annoP ?annt ?t1,
          H3: not_hash_sig_term_ev (lseq ?t1 ?t2) ?e
         |- _] =>
     edestruct sig_term_ev_lseqr;
@@ -1582,9 +1580,9 @@ Ltac do_nhste_lseqr :=
   end.
 
 Lemma uu_preserved': forall t annt p n p0 i args tpl tid
-                       e e' l,
+                       e e',
 
-    annoP annt t l ->
+    annoP annt t ->
     not_none_none t ->
     events annt p (et_fun e) (umeas n p0 i args tpl tid) ->
     cvm_evidence_denote annt p e = e' ->
@@ -1600,9 +1598,9 @@ Proof.
   generalizeEverythingElse t.
   induction t; intros.
   -
+    inv_annoP.
     dd.
-    invc H.
-    dd.
+
         
     destruct a; ff.
     +
@@ -1614,24 +1612,24 @@ Proof.
       eexists.
       econstructor.
   -
+    inv_annoP.
     dd.
-    invc H.
-    dd.
+
     do_anno_redo.
        
     inv_events.
 
     do_not_none.
+    inv_annoP.
 
-    do_assume_remote t (evc (encodeEv e) (et_fun e)) n (S l) H9.
+    do_assume_remote t (evc (encodeEv e) (et_fun e)) n (S H4) HHH.
     do_annopar_redo.
 
     eapply IHt;
       try eassumption;
       try reflexivity.  
   -
-    dd.
-    invc H.
+    inv_annoP.
     dd.
     repeat do_anno_redo.
     
@@ -1648,14 +1646,30 @@ Proof.
 
       destruct_conjs.
 
+      (*
+      inversion Heqp0; subst; destruct_conjs.
+      Check evAccum.
+      Print do_evaccum.
+      Check evAccum.
+       *)
+      
+
       edestruct evAccum.
-      apply Heqp0.
-      eassumption.
-      2 : { eassumption. }
-      reflexivity.
+      ++
+        apply Heqp0.
+      ++
+        
+        eassumption.
+      ++
+      
+        reflexivity.
+      ++
+        eassumption.
 
       ++
-        left. eauto.
+        left.
+        eauto.
+
 
       ++
         destruct_conjs.
@@ -1665,17 +1679,26 @@ Proof.
       ++
         destruct_conjs.
 
-        edestruct evAccum.
-        apply Heqp0.
-        eassumption.
-        2: { eassumption. }
-        reflexivity.
+        (*
+        inversion Heqp0; subst; destruct_conjs.
+         *)
+        
 
+        edestruct evAccum.
         +++
-          right.
-          repeat (eexists; eauto).
+          apply Heqp0.
         +++
-          destruct_conjs.
+          eassumption.
+        +++
+          reflexivity.
+        +++
+          eassumption.
+        +++
+           right.
+           repeat (eexists; eauto).
+        +++
+          
+           destruct_conjs.
           right.
           repeat eexists.
           eauto.
@@ -1690,7 +1713,6 @@ Proof.
       assert (et_fun (cvm_evidence_denote a p e) = (aeval a p (et_fun e))).
       {
         eapply cvm_ev_denote_evtype.
-        eassumption.
       }
         
       edestruct IHt2.
@@ -1717,8 +1739,7 @@ Proof.
 
   - (* abseq case *)
 
-    dd.
-    invc H.
+    inv_annoP.
     dd.
     repeat do_anno_redo.
   
@@ -1846,8 +1867,7 @@ Proof.
 
   - (* new abpar case *)
 
-    dd.
-    invc H.
+    inv_annoP.
     dd.
     repeat do_anno_redo.
   
@@ -1974,8 +1994,8 @@ Proof.
 Defined.
 
 Lemma uu_preserved:
-  forall t1 t2 annt p n p0 i args tpl tid e e''' e' l,
-    annoP annt t1 l ->
+  forall t1 t2 annt p n p0 i args tpl tid e e''' e',
+    annoP annt t1 ->
     not_none_none t1 ->
     not_none_none t2 ->
     events annt p (et_fun e) (umeas n p0 i args tpl tid) ->
@@ -2052,8 +2072,8 @@ Ltac sigEventPFacts :=
   | [H: sigEventP _ |- _] => invc H
   end.
 
-Lemma nhse_bseql_nosplit: forall t1 t2 annt loc s p e e',
-    annoP annt t1 loc ->
+Lemma nhse_bseql_nosplit: forall t1 t2 annt s p e e',
+    annoP annt t1 ->
     not_hash_sig_term_ev (bseq s t1 t2) e ->
     cvm_evidence_denote annt p (splitEvl s e) = e' ->
     not_hash_sig_ev e'.
@@ -2068,7 +2088,7 @@ Defined.
 
 Ltac do_nhse_bseql_nosplit :=
   match goal with
-  | [H': annoP ?annt ?t1 _,
+  | [H': annoP ?annt ?t1,
             H4: not_hash_sig_term_ev (bseq ?s ?t1 _) _,
                 e': EvidenceC 
      |- _] =>
@@ -2080,8 +2100,8 @@ Ltac do_nhse_bseql_nosplit :=
                                        | try eassumption; try reflexivity])
   end.
 
-Lemma nhse_bseqr_nosplit: forall t1 t2 annt loc s p e e',
-    annoP annt t2 loc ->
+Lemma nhse_bseqr_nosplit: forall t1 t2 annt s p e e',
+    annoP annt t2 ->
     not_hash_sig_term_ev (bseq s t1 t2) e ->
     cvm_evidence_denote annt p (splitEvr s e) = e' ->
     not_hash_sig_ev e'.
@@ -2096,7 +2116,7 @@ Defined.
 
 Ltac do_nhse_bseqr_nosplit :=
   match goal with
-  | [H': annoP ?annt ?t2 _,
+  | [H': annoP ?annt ?t2,
             H4: not_hash_sig_term_ev (bseq ?s _ ?t2) _,
                 e': EvidenceC 
      |- _] =>
@@ -2110,8 +2130,8 @@ Ltac do_nhse_bseqr_nosplit :=
 
 
 
-Lemma nhse_bparl_nosplit: forall t1 t2 annt loc s p e e',
-    annoP annt t1 loc ->
+Lemma nhse_bparl_nosplit: forall t1 t2 annt s p e e',
+    annoP annt t1 ->
     not_hash_sig_term_ev (bpar s t1 t2) e ->
     cvm_evidence_denote annt p (splitEvl s e) = e' ->
     not_hash_sig_ev e'.
@@ -2126,7 +2146,7 @@ Defined.
 
 Ltac do_nhse_bparl_nosplit :=
   match goal with
-  | [H': annoP ?annt ?t1 _,
+  | [H': annoP ?annt ?t1,
             H4: not_hash_sig_term_ev (bpar ?s ?t1 _) _,
                 e': EvidenceC 
      |- _] =>
@@ -2138,8 +2158,8 @@ Ltac do_nhse_bparl_nosplit :=
                                        | try eassumption; try reflexivity])
   end.
 
-Lemma nhse_bparr_nosplit: forall t1 t2 annt loc s p e e',
-    annoP annt t2 loc ->
+Lemma nhse_bparr_nosplit: forall t1 t2 annt s p e e',
+    annoP annt t2 ->
     not_hash_sig_term_ev (bpar s t1 t2) e ->
     cvm_evidence_denote annt p (splitEvr s e) = e' ->
     not_hash_sig_ev e'.
@@ -2154,7 +2174,7 @@ Defined.
 
 Ltac do_nhse_bparr_nosplit :=
   match goal with
-  | [H': annoP ?annt ?t2 _,
+  | [H': annoP ?annt ?t2,
             H4: not_hash_sig_term_ev (bpar ?s _ ?t2) _,
                 e': EvidenceC 
      |- _] =>
@@ -2173,8 +2193,8 @@ Ltac do_nhse_nosplit :=
   try do_nhse_bparr_nosplit.
 
 Lemma gg_preserved':
-  forall t annt p n p0 et' e e' l,
-    annoP annt t l ->
+  forall t annt p n p0 et' e e',
+    annoP annt t ->
     not_none_none t ->
     not_hash_sig_term_ev t e ->
     events annt p (et_fun e) (sign n p0 et') ->
@@ -2191,8 +2211,7 @@ Proof.
   generalizeEverythingElse t.
   induction t; intros.
   -
-    dd.
-    invc H.
+    inv_annoP.
     dd.
     destruct a; try (ff; tauto).
     +
@@ -2206,10 +2225,9 @@ Proof.
       
   - (* aatt case *)
 
+    inv_annoP.
     dd.
-    invc H.
-    dd.
-    do_anno_redo.
+    do_anno_indexed_redo.
     invEvents.
     do_not_none.
 
@@ -2217,11 +2235,11 @@ Proof.
       destruct_conjs.
     do_not_hshsig.
 
-    do_assume_remote t (evc (encodeEv e) (et_fun e)) n (S l) HHH.
+    do_assume_remote t (evc (encodeEv e) (et_fun e)) n (S H4) HHH.
 
     eapply IHt.
-    econstructor.
-    reflexivity.
+    econstructor. repeat eexists. invc Heqp2. eassumption.
+
     
     eassumption.
     split.
@@ -2234,22 +2252,17 @@ Proof.
     do_hsh_subt.
     do_ggsub.
     
-    eapply H3.
+    eapply H5.
     repeat eexists.
     eassumption.
     econstructor.
     eauto.
-    inversion Heqp2.
-    rewrite <- H9.
     eassumption.
-    inversion Heqp2.
-    rewrite <- H9.
     reflexivity.
         
   - (* alseq case *)
 
-    dd.
-    invc H.
+    inv_annoP.
     dd.
     repeat do_anno_redo.
     do_not_none.
@@ -2315,11 +2328,11 @@ Proof.
         destruct_conjs.
         dd.
             
-        unfold not_hash_sig_ev in H9.
+        unfold not_hash_sig_ev in H12.
         
         unfold not in *.
         exfalso.
-        eapply H9.
+        eapply H12.
         econstructor.
         repeat eexists.
         eassumption.
@@ -2342,13 +2355,14 @@ Proof.
       assert (et_fun ((cvm_evidence_denote a p e)) =  (aeval a p (et_fun e))).
       {
         eapply cvm_ev_denote_evtype.
-        eassumption.
       }
       
       edestruct IHt2.
       eassumption.
       eassumption.
-      2: { rewrite H10.
+      2: {
+
+        rewrite H13.
            eassumption. }
       
       econstructor.
@@ -2360,8 +2374,7 @@ Proof.
       
   - (* abseq case *)
 
-    dd.
-    invc H.
+    inv_annoP.
     dd.
     repeat do_anno_redo.
     do_not_none.
@@ -2459,8 +2472,7 @@ Proof.
 
   - (* abpar case *)
 
-    dd.
-    invc H.
+    inv_annoP.
     dd.
     repeat do_anno_redo.
     do_not_none.
