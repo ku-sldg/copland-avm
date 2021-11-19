@@ -3,7 +3,7 @@ Require Import ConcreteEvidence AutoApp OptMonad Auto Helpers_VmSemantics Term_D
 Require Import List.
 Import ListNotations.
 
-Require Import Lia.
+Require Import Lia Coq.Program.Tactics.
 
 Lemma firstn_long: forall (e:list BS) x,
     length e >= x ->
@@ -174,19 +174,47 @@ Ltac do_reconP_determ :=
     clear H2
   end; subst.
 
-Inductive annoP: AnnoTerm -> Term -> nat -> Prop :=
-| annoP_c: forall anno_term t n,
-    anno_term = snd (anno t n) ->
-    annoP anno_term t n.
+(*
+Inductive annoP: AnnoTerm -> Term -> Prop :=
+| annoP_c: forall anno_term t,
+    (exists n n', anno t n = (n',anno_term)) -> (* anno_term = snd (anno t n)) -> *)
+    annoP anno_term t.
 
-Inductive anno_parP: AnnoTermPar -> Term -> Loc -> Prop :=
-| anno_parP_c: forall par_term t loc,
-    par_term = snd (anno_par t loc) ->
-    anno_parP par_term t loc.
+Inductive annoP_indexed': AnnoTerm -> Term -> nat -> Prop :=
+| annoP_c_i': forall anno_term t n,
+    (exists n', anno t n = (n', anno_term)) -> (*anno_term = snd (anno t n) -> *)
+    annoP_indexed' anno_term t n.
+
+Inductive annoP_indexed: AnnoTerm -> Term -> nat -> nat ->  Prop :=
+| annoP_c_i: forall anno_term t n n',
+    (*(exists n', anno t n = (n', anno_term)) -> (*anno_term = snd (anno t n) -> *) *)
+    anno t n = (n', anno_term) ->
+    annoP_indexed anno_term t n n'.
+
+Inductive anno_parP: AnnoTermPar -> Term -> Prop :=
+| anno_parP_c: forall par_term t,
+    (exists loc loc', anno_par t loc = (loc', par_term)) -> (*par_term = snd (anno_par t loc)) -> *)
+    anno_parP par_term t.
+
+Inductive anno_parPloc: AnnoTermPar -> Term -> Loc -> Prop :=
+| anno_parP_cloc: forall par_term t loc,
+    (exists loc', anno_par t loc = (loc', par_term)) -> (*par_term = snd (anno_par t loc) -> *)
+    anno_parPloc par_term t loc.
+*)
 
 Lemma anno_parP_redo: forall t pt loc loc',
     anno_par t loc = (loc', pt) ->
-    anno_parP pt t loc.
+    anno_parP pt t.
+Proof.
+  intros.
+  econstructor.
+  eexists.
+  jkjke.
+Defined.
+
+Lemma anno_parPloc_redo: forall t pt loc loc',
+    anno_par t loc = (loc', pt) ->
+    anno_parPloc pt t loc.
 Proof.
   intros.
   econstructor.
@@ -200,19 +228,36 @@ Ltac do_annopar_redo :=
     eapply anno_parP_redo in H
   end.
 
+Ltac do_annopar_loc_redo :=
+  match goal with
+  | [H: anno_par ?t ?loc = (_,?pt)
+     |- _ ] =>
+    eapply anno_parPloc_redo in H
+  end.
+
 Ltac inv_annoparP :=
   match goal with
-  | [H: anno_parP ?t (?c _) _
+  | [H: anno_parP _ _ (* ?t (?c _) *)
      |- _ ] =>
-    inversion H
-  end.
+    inversion H; subst
+  end;
+  destruct_conjs.
+
+Ltac inv_annoparPloc :=
+  match goal with
+  | [H: anno_parPloc _ _ _(*?t (?c _) _ *)
+     |- _ ] =>
+    inversion H; subst
+  end;
+  destruct_conjs.
 
 Lemma annoP_redo: forall t annt n n',
     anno t n = (n', annt) ->
-    annoP annt t n.
+    annoP annt t.
 Proof.
   intros.
   econstructor.
+  eexists.
   jkjke.
 Defined.
 
@@ -225,12 +270,47 @@ Ltac do_anno_redo :=
 
 Ltac inv_annoP :=
   match goal with
-  | [H: annoP _ (?c _) _
+  | [H: annoP _ _ (*_ (?c _) *)
+     |- _ ] =>
+    inversion H; subst
+  end;
+  destruct_conjs.
+
+Lemma annoP_indexed_redo: forall t annt n n',
+    anno t n = (n', annt) ->
+    annoP_indexed annt t n n'.
+Proof.
+  intros.
+  econstructor.
+  jkjke.
+Defined.
+
+Ltac do_anno_indexed_redo :=
+  match goal with
+  | [H: anno _ _ = (_,_)
+     |- _ ] =>
+    eapply annoP_indexed_redo in H
+  end.
+
+Ltac inv_annoP_indexed :=
+  match goal with
+  | [H: annoP_indexed _ _ _ _(*_ (?c _) _*)
+     |- _ ] =>
+    inversion H; subst
+  end;
+  destruct_conjs.
+
+(*
+Ltac inv_annoP_indexed' :=
+  match goal with
+  | [H: annoP_indexed _ _ _(*_ (?c _) _*)
      |- _ ] =>
     inversion H
   end.
+*)
 
-Inductive copland_compileP : AnnoTermPar -> cvm_st -> (option unit) -> cvm_st ->  Prop :=
+Inductive copland_compileP :
+  AnnoTermPar -> cvm_st -> (option unit) -> cvm_st ->  Prop :=
 | ccp: forall t st st' res,
     copland_compile t st = (res, st') ->
     copland_compileP t st res st'.
@@ -262,12 +342,53 @@ Proof.
     try (eapply ccp_implies_cc; eauto).
 Defined.
 
+Ltac wrap_annopar :=
+  inv_annoparP;
+  dd;
+  repeat do_annopar_redo.
+
+Ltac wrap_annoparloc :=
+  inv_annoparPloc;
+  dd;
+  repeat do_annopar_loc_redo.
+
+Ltac wrap_anno :=
+  inv_annoP;
+  dd;
+  repeat do_anno_redo.
+
+Ltac wrap_anno_indexed :=
+  inv_annoP_indexed;
+  dd;
+  repeat do_anno_indexed_redo.
+
 Ltac wrap_ccp :=
   
   try rewrite <- ccp_iff_cc in *;
+  dd;
+  repeat do_pl_immut;
+  dd;
+  try rewrite ccp_iff_cc in *.
+
+Ltac wrap_ccp_anno :=
+  
+  try rewrite <- ccp_iff_cc in *;
+  try wrap_annopar;
+  try wrap_annoparloc;
+  try wrap_anno;
+  try wrap_anno_indexed;
+  repeat do_pl_immut;
+  dd;
+  try rewrite ccp_iff_cc in *.
+
+
+  (*
   try inv_annoparP;
+  try inv_annoparPloc;
   dd;
   repeat do_annopar_redo;
   repeat do_pl_immut;
   dd;
   try rewrite ccp_iff_cc in *.
+   *)
+

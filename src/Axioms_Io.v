@@ -29,8 +29,9 @@ Definition cvm_evidence (t:Term) (p:Plc) (e:EvC) : EvC.
 Admitted.
 
 
-Axiom remote_LTS: forall t n et, 
-    lstar (conf t n et) (cvm_events (unanno t) n et) (stop n (aeval t n et)).
+Axiom remote_LTS: forall t annt n et i i',
+    annoP_indexed annt t i i' ->
+    lstar (conf annt n et) (cvm_events t n et) (stop n (aeval annt n et)).
 
 
 Axiom remote_Evidence_Type_Axiom: forall t n bits et,
@@ -46,12 +47,13 @@ Axiom par_evidence : forall t (p:Plc) (e:EvC) loc,
 
 
 
-Axiom bpar_shuffle : forall x tr p t1 t2 et1 et2,
+Axiom bpar_shuffle : forall x annt2 i i' tr p t1 t2 et1 et2,
+    annoP_indexed annt2 t2 i i' ->
     lstar (conf t1 p et1) tr (stop p (aeval t1 p et1)) ->
-    lstar (bp x (conf t1 p et1) (conf t2 p et2))
+    lstar (bp x (conf t1 p et1) (conf annt2 p et2))
           (shuffled_events tr
-                           (cvm_events (unanno t2) p et2))
-          (bp x (stop p (aeval t1 p et1)) (stop p (aeval t2 p et2))).
+                           (cvm_events t2 p et2))
+          (bp x (stop p (aeval t1 p et1)) (stop p (aeval annt2 p et2))).
 
 Axiom thread_bookend_peel: forall (t:AnnoTerm) p (*et*) etr l (a:Term) tr,
     (*lstar (conf t p et) tr (stop p (aeval t p et)) -> *)
