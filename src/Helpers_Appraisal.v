@@ -54,8 +54,7 @@ Defined.
 Ltac find_wfec :=
   repeat 
     match goal with
-    | [H: context [(*well_formed_r ?t*)_ -> _],
-          (*H2: well_formed_r ?t, *)
+    | [H: context [_ -> _],
               H3: wf_ec ?e,
                   H4: copland_compileP ?t
                                        {| st_ev := ?e; st_trace := _; st_pl := _ |}
@@ -65,7 +64,7 @@ Ltac find_wfec :=
       assert_new_proof_by
         (wf_ec e')
         
-        ltac:(eapply H; [(*apply H2 |*) apply H3 | apply H4])
+        ltac:(eapply H; [apply H3 | apply H4])
     end.
 
 Ltac do_evsub_ih :=
@@ -385,7 +384,7 @@ Proof.
     exists mtc.
     eauto.
   -
-    destruct_conjs.
+    destruct_conjs. 
     exists (uuc a p default_bs IHy).
     ff.
   -
@@ -624,27 +623,16 @@ Proof.
     eauto.
     eauto.
   - (* alseq case *)
-    (*
-    dd.
-    invc H.
-    dd.
-    repeat do_anno_redo.
-     *)
     dd.
     inv_annoP.
     dd.
-    (*
-    inv_annoP_indexed.
-    dd.
-    repeat do_anno_indexed_redo.
-     *)
     repeat do_anno_redo.
     do_not_none.
     edestruct recon_evdenote_decomp with (a:=a) (p:=p) (e:=e).
     destruct x.
     
     do_evsub_ih''. (* IHt1 *)
-      
+    
     {
       eapply IHt1; eauto.
       
@@ -654,18 +642,18 @@ Proof.
     ++
       eapply IHt2; eauto.
     ++
-          
-     assert
-      (EvSub (hhc H8 H9 H7) (cvm_evidence_denote a0 p (cvm_evidence_denote a p e)) \/
-       (exists (ett : Evidence) p'0 bs,
-           EvSub (hhc p'0 bs ett) (cvm_evidence_denote a0 p (cvm_evidence_denote a p e)) /\ EvSubT (et_fun (hhc H8 H9 H7)) ett)).
-     {
-       eapply IHt2;
-         try eassumption;
-         try reflexivity.
-     }
+      
+      assert
+        (EvSub (hhc H8 H9 H7) (cvm_evidence_denote a0 p (cvm_evidence_denote a p e)) \/
+         (exists (ett : Evidence) p'0 bs,
+             EvSub (hhc p'0 bs ett) (cvm_evidence_denote a0 p (cvm_evidence_denote a p e)) /\ EvSubT (et_fun (hhc H8 H9 H7)) ett)).
+      {
+        eapply IHt2;
+          try eassumption;
+          try reflexivity.
+      }
 
-     door.
+      door.
       +++
         right.
         repeat (eexists; eauto).
@@ -681,83 +669,69 @@ Proof.
 
     inv_annoP.
     dd.
-    (*
-    dd.
-    invc H.
-    dd.
-    repeat do_anno_indexed_redo.
-     *)
     repeat do_anno_redo.
-
     do_not_none.
 
     destruct s; destruct s; destruct s0;
       dd.
 
     +
-    edestruct IHt1; eauto.
-    destruct_conjs.
-    right.
-    repeat eexists; eauto.
+      edestruct IHt1; eauto.
+      destruct_conjs.
+      right.
+      repeat eexists; eauto.
 
     +
       edestruct IHt1; eauto.
 
-    destruct_conjs.
-    right.
-    repeat eexists; eauto.
+      destruct_conjs.
+      right.
+      repeat eexists; eauto.
     +
       edestruct IHt2; eauto.
-    destruct_conjs.
-    right.
-    repeat eexists; eauto.
+      destruct_conjs.
+      right.
+      repeat eexists; eauto.
     +
       do_none_none_contra.
   - (* abpar case *)
 
-    (*
-    dd.
-    invc H.
-    dd.
-    repeat do_anno_indexed_redo.
-     *)
     inv_annoP.
     dd.
     repeat do_anno_redo.
-
     do_not_none.
 
     destruct s; destruct s; destruct s0;
       dd.
 
     +
-    edestruct IHt1; eauto.
+      edestruct IHt1; eauto.
 
-    destruct_conjs.
-    right.
-    repeat eexists; eauto.
+      destruct_conjs.
+      right.
+      repeat eexists; eauto.
 
     +
       edestruct IHt1; eauto.
 
-    destruct_conjs.
-    right.
-    repeat eexists; eauto.
+      destruct_conjs.
+      right.
+      repeat eexists; eauto.
     +
       edestruct IHt2; eauto.
-    destruct_conjs.
-    right.
-    repeat eexists; eauto.
+      destruct_conjs.
+      right.
+      repeat eexists; eauto.
     +
       do_none_none_contra.
 Defined.
 
-Ltac do_evaccum :=
+Ltac do_evaccum e' :=
   repeat 
     match goal with
-    | [H5: EvSub ?e'' ?e,
+    | [H5: EvSub ?e'' _,
            (*H6: cvm_evidence_denote ?annt _ ?e = ?e', *)
-           e': EvidenceC,
+           (*e': EvidenceC, *)
                H7: not_none_none ?t,
                    H8: annoP _ ?t
 
@@ -767,7 +741,7 @@ Ltac do_evaccum :=
         (EvSub e'' e' \/
          (exists (ett : Evidence) p'0 bs,
              EvSub (hhc p'0 bs ett) e' /\ EvSubT (et_fun e'') ett))
-        ltac: (eapply evAccum; [apply H8 (*| apply H *) | apply H7 (*| apply H2 | apply H3 | apply H4*) | try reflexivity; try eassumption | apply H5])
+        ltac: (eapply evAccum; [apply H8 (*| apply H *) | apply H7 (*| apply H2 | apply H3 | apply H4*) | try eassumption; try reflexivity | apply H5])
     end.
 
 Lemma sig_term_ev_lseq: forall t1 t2 e,
@@ -795,7 +769,6 @@ Proof.
   -  
     split; eauto.
 Defined.
-
 
 Lemma sig_is: forall t annt e e' p,
 
@@ -864,38 +837,38 @@ Proof.
     evSubFacts.
     +
 
-    edestruct IHt1.
-    econstructor. repeat eexists. eassumption.
-    reflexivity.
+      edestruct IHt1.
+      econstructor. repeat eexists. eassumption.
+      reflexivity.
 
-    repeat eexists.
-    eassumption.
-    destruct_conjs.
-    subst.
-    left.
-    repeat eexists.
-    destruct s; destruct s; destruct s0;
-      dd;
-      try solve_by_inversion;
+      repeat eexists.
+      eassumption.
+      destruct_conjs.
+      subst.
+      left.
+      repeat eexists.
+      destruct s; destruct s; destruct s0;
+        dd;
+        try solve_by_inversion;
+        eauto.
+      right.
       eauto.
-    right.
-    eauto.
     +
       edestruct IHt2.
-     econstructor. repeat eexists. eassumption.
-    reflexivity.
-    repeat eexists.
-    eassumption.
-    destruct_conjs.
-    subst.
-    left.
-    repeat eexists.
-    destruct s; destruct s; destruct s0;
-      dd;
-      try solve_by_inversion;
+      econstructor. repeat eexists. eassumption.
+      reflexivity.
+      repeat eexists.
+      eassumption.
+      destruct_conjs.
+      subst.
+      left.
+      repeat eexists.
+      destruct s; destruct s; destruct s0;
+        dd;
+        try solve_by_inversion;
+        eauto.
+      right.
       eauto.
-    right.
-    eauto.
   - (* abseq case *)
     inv_annoP.
     dd.
@@ -904,50 +877,50 @@ Proof.
     evSubFacts.
     +
 
-    edestruct IHt1.
-    econstructor. repeat eexists. eassumption.
-    reflexivity.
-    repeat eexists.
-    eassumption.
-    destruct_conjs.
-    subst.
-    left.
-    repeat eexists.
-    destruct s; destruct s; destruct s0;
-      dd;
-      try solve_by_inversion;
+      edestruct IHt1.
+      econstructor. repeat eexists. eassumption.
+      reflexivity.
+      repeat eexists.
+      eassumption.
+      destruct_conjs.
+      subst.
+      left.
+      repeat eexists.
+      destruct s; destruct s; destruct s0;
+        dd;
+        try solve_by_inversion;
+        eauto.
+      right.
       eauto.
-    right.
-    eauto.
     +
       edestruct IHt2.
-    econstructor. repeat eexists. eassumption.
-    reflexivity.
-    
+      econstructor. repeat eexists. eassumption.
+      reflexivity.
+      
 
-    repeat eexists.
-    eassumption.
-    destruct_conjs; subst.
-    left. repeat eexists.
-    destruct s; destruct s; destruct s0;
-      dd;
-      try solve_by_inversion;
+      repeat eexists.
+      eassumption.
+      destruct_conjs; subst.
+      left. repeat eexists.
+      destruct s; destruct s; destruct s0;
+        dd;
+        try solve_by_inversion;
+        eauto.
+      right.
       eauto.
-    right.
-    eauto.
 Defined.
 
-Ltac do_sig_is :=
+Ltac do_sig_is He :=
   repeat 
   match goal with
   | [ H': annoP ?annt ?t,
-          H6: gg_sub ?e',
-              He: EvidenceC
+          H6: gg_sub ?e'
+              (*He: EvidenceC *)
      |- _] =>
     
     assert_new_proof_by
       (gg_sub He \/ (term_sub (asp SIG) t))
-      ltac:(eapply sig_is; [apply H' | try reflexivity; try eassumption |  apply H6])
+      ltac:(eapply sig_is; [apply H' | try eassumption; try reflexivity |  apply H6])
   end.
 
 Ltac do_hsh_subt :=
@@ -1411,7 +1384,7 @@ Proof.
     unfold not.
     intros.
 
-    do_sig_is.
+    do_sig_is e.
     
     door.
     ++
@@ -1508,17 +1481,17 @@ Proof.
       eapply H3; eassumption.
 Defined.
 
-Ltac do_hste_contra :=
+Ltac do_hste_contra He :=
   repeat 
   match goal with
   | [H': annoP ?annt ?t,
-         H3: not_hash_sig_term_ev ?t ?e,
-             He: EvidenceC
+         H3: not_hash_sig_term_ev ?t ?e
+             (*He: EvidenceC *)
      |- _] =>
     
     assert_new_proof_by
       (not_hash_sig_ev He)
-      ltac:(eapply hshsig_ev_term_contra; [apply H' | apply H3 | try reflexivity; try eassumption])
+      ltac:(eapply hshsig_ev_term_contra; [apply H' | apply H3 | try eassumption; reflexivity])
   end.
 
 Lemma sig_term_ev_lseqr: forall t1 t2 annt e e' p,
@@ -1534,19 +1507,16 @@ Proof.
 
   split; try eassumption.
 
-  do_hste_contra.
+  do_hste_contra e'.
 
   -
     split; try eassumption.
     +
-
       intros.
       unfold not; intros.
 
-      edestruct sig_is.
-      eassumption.
-      eassumption.
-      eassumption.
+      do_sig_is e.
+      door.
 
       ++
         unfold not_hash_sig_term_ev in H0.
@@ -1646,59 +1616,29 @@ Proof.
 
       destruct_conjs.
 
-      (*
-      inversion Heqp0; subst; destruct_conjs.
-      Check evAccum.
-      Print do_evaccum.
-      Check evAccum.
-       *)
-      
-
-      edestruct evAccum.
-      ++
-        apply Heqp0.
-      ++
-        
-        eassumption.
-      ++
-      
-        reflexivity.
-      ++
-        eassumption.
+      do_evaccum (cvm_evidence_denote a0 p (cvm_evidence_denote a p e)).
+      door.
 
       ++
         left.
         eauto.
-
-
+        
       ++
         destruct_conjs.
         
-      right.
-      repeat (eexists; eauto).
+        right.
+        repeat (eexists; eauto).
       ++
         destruct_conjs.
 
-        (*
-        inversion Heqp0; subst; destruct_conjs.
-         *)
-        
-
-        edestruct evAccum.
+        do_evaccum (cvm_evidence_denote a0 p (cvm_evidence_denote a p e)).
+        door.
         +++
-          apply Heqp0.
-        +++
-          eassumption.
-        +++
-          reflexivity.
-        +++
-          eassumption.
-        +++
-           right.
-           repeat (eexists; eauto).
+          right.
+          repeat (eexists; eauto).
         +++
           
-           destruct_conjs.
+          destruct_conjs.
           right.
           repeat eexists.
           eauto.
@@ -1724,7 +1664,6 @@ Proof.
 
       destruct_conjs.
 
-
       ++
         eapply IHt2.
         eassumption.
@@ -1742,11 +1681,9 @@ Proof.
     inv_annoP.
     dd.
     repeat do_anno_redo.
-  
     do_not_none.
 
     invEvents.
-
     +
       destruct s; destruct s; destruct s0; dd.
       ++
@@ -2024,22 +1961,34 @@ Proof.
     eassumption.
     tauto.
   }
-  door;
-    do_evaccum.
+  rewrite <- H3 in *; clear H3.
+  door.
   +
-    clear H6.
-    door; eauto.
+    do_evaccum (cvm_evidence_denote annt p (cvm_evidence_denote annt p e)).
+    clear H5.
+  
+    door.
+    ++
+      
+      left.
+      eexists.
+      jkjke'.
+    ++
+      
+      
 
     right;
       (repeat eexists; eauto).
+    jkjke'.
   +
-    door; ff.
+    do_evaccum (cvm_evidence_denote annt p (cvm_evidence_denote annt p e)).
+    door.
     ++
-      right;
-        repeat (eexists; eauto).
-
+      right.
+      repeat (eexists; eauto).
+      jkjke'.
     ++
-      assert (EvSubT (uu (asp_paramsC i args tpl tid) p0 H8) H11).
+      assert (EvSubT (uu (asp_paramsC i args tpl tid) p0 H7) H10).
       {
         eapply evsubT_transitive.
         apply hhSubT.
@@ -2049,6 +1998,7 @@ Proof.
       
       right; 
         repeat (eexists; eauto).
+      jkjke'.
 Defined.
 
 Ltac do_ste :=
@@ -2239,7 +2189,6 @@ Proof.
 
     eapply IHt.
     econstructor. repeat eexists. invc Heqp2. eassumption.
-
     
     eassumption.
     split.
@@ -2278,49 +2227,19 @@ Proof.
     invEvents.
     + (* t1 case *)
 
-      try do_nhste_att. try do_nhste_lseql.
-      
-
-
-      try do_nhst_lseqr.
+      try do_nhste_lseql.
       try do_nhste_lseqr.
       destruct_conjs.
 
-      assert (not_hash_sig_ev (cvm_evidence_denote a0 p (cvm_evidence_denote a p e))).
-      {
-        eapply hshsig_ev_term_contra.
-        apply Heqp0.
-        econstructor.
-        eassumption.
-        split; try eassumption.
-        reflexivity.
-      }
-      (*
-
-      do_hste_contra. *)
-
-      (*
-      edestruct sig_term_ev_lseqr.
-      apply Heqp1.
-      eassumption.
-      reflexivity.
-
-      destruct_conjs.
-
-      do_ste.
-      clear H10.
-       *)
+      do_hste_contra (cvm_evidence_denote a0 p (cvm_evidence_denote a p e)).
       
       edestruct IHt1; try eassumption; try reflexivity.
 
       destruct_conjs.
       subst.
 
-      edestruct evAccum.
-      apply Heqp0.
-      eassumption.
-      2: { eassumption. }
-      reflexivity.
+      do_evaccum (cvm_evidence_denote a0 p (cvm_evidence_denote a p e)).
+      door.
 
       +++
         eauto.
@@ -2342,15 +2261,7 @@ Proof.
   
       do_ste.
       destruct_conjs.
-      assert (not_hash_sig_ev (cvm_evidence_denote a0 p (cvm_evidence_denote a p e))).
-      {
-        eapply hshsig_ev_term_contra.
-        apply Heqp0.
-        econstructor.
-        eassumption.
-        split; try eassumption.
-        reflexivity.
-      }
+      do_hste_contra (cvm_evidence_denote a0 p (cvm_evidence_denote a p e)).
       
       assert (et_fun ((cvm_evidence_denote a p e)) =  (aeval a p (et_fun e))).
       {
@@ -2360,10 +2271,7 @@ Proof.
       edestruct IHt2.
       eassumption.
       eassumption.
-      2: {
-
-        rewrite H13.
-           eassumption. }
+      2: { jkjke.  }
       
       econstructor.
       eassumption.
@@ -2382,9 +2290,7 @@ Proof.
     invEvents.
     
     +
-      
       destruct s; destruct s; destruct s0; ff.
-
       ++
         edestruct IHt1.
         eassumption.
@@ -2427,7 +2333,6 @@ Proof.
         esplit; eauto.
     +
       destruct s; destruct s; destruct s0; ff.
-
       ++
         edestruct IHt2.
         eassumption.
@@ -2480,9 +2385,7 @@ Proof.
     invEvents.
     
     +
-      
       destruct s; destruct s; destruct s0; ff.
-
       ++
         edestruct IHt1.
         eassumption.
@@ -2566,4 +2469,6 @@ Proof.
         reflexivity.
         destruct_conjs.
         esplit; eauto.
+        Unshelve.
+        eauto.
 Defined.

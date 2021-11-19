@@ -189,29 +189,8 @@ Proof.
   wrap_ccp.
   assert (et'' =  (aeval annt p et)).
   {
-    (*
-    invc H0.
-     *)
-    Check eval_aeval.
     rewrite <- eval_aeval'.
-    Check cvm_refines_lts_evidence.
-
-    (*
-
-    rewrite <- eval_aeval.
-    inversion H.
-    assert (t = unannoPar pt).
-    {
-      erewrite anno_unanno_par.
-      reflexivity.
-      
-      rewrite H0.
-      eapply annopar_fst_snd.
-    }
-    rewrite H12.
-     *)
     
-
     assert (t = unanno annt).
     {
       invc H0.

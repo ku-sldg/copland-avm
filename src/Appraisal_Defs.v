@@ -1,8 +1,8 @@
-Require Import Term_Defs Term ConcreteEvidence OptMonad Auto More_lists Appraisal_Evidence VmSemantics IO_Stubs AutoPrim.
+Require Import Term_Defs Term ConcreteEvidence OptMonad Auto More_lists Appraisal_Evidence VmSemantics IO_Stubs AutoPrim AutoApp.
 
 (* Require Import Impl_appraisal (*MonadAM*). *)
 
-Require Import AutoApp StructTactics.
+Require Import StructTactics.
 
 Require Import List.
 Import ListNotations.
@@ -51,17 +51,6 @@ Fixpoint checkHash (e:Evidence) (p:Plc) (hash:BS) : option BS :=
 
 Definition checkHashF (e:Evidence) (p:Plc) (hash:BS) : BS :=
   fromSome default_bs (checkHash e p hash).
-(*
-
-Definition checkHash (e:Evidence) (p:Plc) (hash:BS) : BS :=
-  fromSome 0 None.
-  (*
-  fromSome 0 (checkHash' e p hash). *)
- *)
-
-(*
-Admitted.
- *)
 
 Inductive evidenceEvent: Ev -> Prop :=
 | uev: forall n p i args tpl tid, evidenceEvent (umeas n p i args tpl tid).
@@ -190,8 +179,6 @@ Definition not_hash_sig_term_ev (t:Term) (e:EvidenceC): Prop :=
   not_hash_sig_term t /\
   not_hash_sig_ev e /\
   ((gg_sub e) -> ~ (reaches_HSH t)).
-
-
 
 Lemma nhse_uuc: forall params n2 n3 e,
     not_hash_sig_ev (uuc params n2 n3 e) ->
@@ -326,19 +313,12 @@ Ltac do_nhse_ppc:=
                          not_hash_sig_ev e2) ltac:(eapply nhse_ppc; apply H)
   end; destruct_conjs.
 
-
 Ltac do_nhse :=
   try do_nhse_uuc;
   try do_nhse_hhc_contra;
   try do_nhse_ggc;
   try do_nhse_ssc;
   try do_nhse_ppc.
-
-
-
-
-
-
 
 Ltac measEventFacts :=
   match goal with
