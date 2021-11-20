@@ -4,20 +4,20 @@ Uninterpreted functions and rewrite rules that model external (remote and local 
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term_Defs LTS.
+Require Import Term_Defs LTS IO_Stubs.
 
 Require Import List.
 Import ListNotations.
 
 (** IO Axioms *)
 
+(*
 Definition doRemote_session (t:Term) (pTo:Plc) (e:EvC) : EvC.
 Admitted.
 
 Definition parallel_vm_thread (l:Loc) (t:Term) (p:Plc) (e:EvC) : EvC.
 Admitted.
-
-
+*)
 
 Definition shuffled_events (el1:list Ev) (el2:list Ev) : list Ev.
 Admitted.

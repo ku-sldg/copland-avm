@@ -78,44 +78,43 @@ Definition do_asp (params :ASP_PARAMS) (mpl:Plc) (x:Event_ID) : BS.
 Admitted.
 *)
          
-Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) : CVM BS :=
+Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) : CVM Event_ID :=
   match params with
   | asp_paramsC i l tpl tid =>
     x <- inc_id ;;
-    let bs := (do_asp params mpl x) in
     add_tracem [umeas x mpl i l tpl tid] ;;
-    ret bs
+    ret x
   end.
 
 Definition invoke_ASP (params:ASP_PARAMS) : CVM EvC :=
   e <- get_ev ;;
   p <- get_pl ;;
-  bs <- tag_ASP params p ;;
+  x <- tag_ASP params p ;;
+  let bs := (do_asp params p x) in
   ret (cons_uu bs e params p).
 
-Definition tag_SIG (p:Plc) (e:EvC) : CVM BS :=
+Definition tag_SIG (p:Plc) (e:EvC) : CVM Event_ID :=
   x <- inc_id ;;
-  let bs := (do_sig (encodeEvBits e) p x) in
   add_tracem [sign x p (get_et e)];;
-  ret bs.
+  ret x.
 
 Definition signEv : CVM EvC :=
   p <- get_pl ;;
   e <- get_ev ;;
-
-  bs <- tag_SIG p e ;;
+  x <- tag_SIG p e ;;
+  let bs := (do_sig (encodeEvBits e) p x) in
   ret (cons_sig bs e p).
 
-Definition tag_HSH (p:Plc) (e:EvC): CVM BS :=
+Definition tag_HSH (p:Plc) (e:EvC): CVM Event_ID :=
   x <- inc_id ;;
-  let bs := (do_hash (encodeEvBits e) p) in
   add_tracem [hash x p (get_et e)] ;;
-  ret bs.
+  ret x.
 
 Definition hashEv : CVM EvC :=
   p <- get_pl ;;
   e <- get_ev ;;
-  bs <- tag_HSH p e ;;
+  x <- tag_HSH p e ;;
+  let bs := (do_hash (encodeEvBits e) p) in
   ret (cons_hh bs e p).
 
 Definition copyEv : CVM EvC :=

@@ -4,7 +4,7 @@ Evidence structure that models concrete results of Copland phrase execution.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import StructTactics AutoPrim IO_Stubs.
+Require Import StructTactics AutoPrim.
 
 Require Import Coq.Program.Tactics.
 
@@ -35,10 +35,12 @@ Fixpoint et_fun (ec:EvidenceC) : Evidence :=
   | ppc ec1 ec2 => pp (et_fun ec1) (et_fun ec2)
   end.
 
+(*
 Definition encodeEvBits (e:EvC): BS :=
   match e with
   | (evc bits _) => encodeEvRaw bits
   end.
+*)
 
 Inductive EvSubT: Evidence -> Evidence -> Prop :=
 | evsub_reflT : forall e : Evidence, EvSubT e e

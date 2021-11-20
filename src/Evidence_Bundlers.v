@@ -1,4 +1,4 @@
-Require Import ConcreteEvidence.
+Require Import ConcreteEvidence IO_Stubs.
 
 Require Import List.
 Import ListNotations.
@@ -28,4 +28,9 @@ Definition ss_cons (e1:EvC) (e2:EvC): EvC :=
 Definition pp_cons (e1:EvC) (e2:EvC): EvC :=
   match (e1, e2) with
   | (evc bits1 et1, evc bits2 et2) => evc (bits1 ++ bits2) (pp et1 et2)
+  end.
+
+Definition encodeEvBits (e:EvC): BS :=
+  match e with
+  | (evc bits _) => encodeEvRaw bits
   end.
