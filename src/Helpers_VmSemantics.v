@@ -4,7 +4,7 @@ Helper lemmas for proofs about the VM semantics.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import MonadVM Impl_vm Term_Defs Auto StructTactics.
+Require Import MonadVM Impl_VM Term_Defs Auto StructTactics.
 
 Require Import Coq.Program.Tactics Coq.Program.Equality.
 

@@ -53,7 +53,7 @@ Definition checkHashF (e:Evidence) (p:Plc) (hash:BS) : BS :=
   fromSome default_bs (checkHash e p hash).
 
 Inductive evidenceEvent: Ev -> Prop :=
-| uev: forall n p i args tpl tid, evidenceEvent (umeas n p i args tpl tid).
+| uev: forall n p ps, evidenceEvent (umeas n p ps).
 
 Definition measEvent (t:AnnoTerm) (p:Plc) (e:Evidence) (ev:Ev) : Prop :=
   events t p e ev /\ evidenceEvent ev.
@@ -65,14 +65,14 @@ Definition sigEvent (t:AnnoTerm) (p:Plc) (e:Evidence) (ev:Ev) : Prop :=
   events t p e ev /\ sigEventP ev.
 
 Inductive appEvent_EvidenceC : Ev -> EvidenceC -> Prop :=
-| aeuc: forall i args tpl tid e e' n p,
-    let params := (asp_paramsC i args tpl tid) in
+| aeuc: forall e e' n p params,
+    (*let params := (asp_paramsC i args tpl tid) in *)
     EvSub (uuc params p (checkASPF params (do_asp params p n)) e') e ->
-    appEvent_EvidenceC (umeas n p i args tpl tid) e
-| ahuc: forall i args tpl tid e' et n p pi bs e,
-    EvSubT (uu (asp_paramsC i args tpl tid) p e') et ->
+    appEvent_EvidenceC (umeas n p params) e
+| ahuc: forall ps e' et n p pi bs e,
+    EvSubT (uu ps p e') et ->
     EvSub (hhc pi (checkHashF et pi bs) et) e ->
-    appEvent_EvidenceC (umeas n p i args tpl tid) e.
+    appEvent_EvidenceC (umeas n p ps) e.
 
 (*
 Inductive appEvent_Sig_EvidenceC: Ev -> EvidenceC -> Prop :=

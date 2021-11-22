@@ -1,5 +1,5 @@
 Require Import Event_system Term_system ConcreteEvidence StVM.
-Require Import Impl_vm Helpers_VmSemantics VmSemantics.
+Require Import Impl_VM Helpers_VmSemantics VmSemantics.
 Require Import Axioms_Io External_Facts Auto AutoApp.
 
 Require Import Appraisal_Defs Impl_appraisal.

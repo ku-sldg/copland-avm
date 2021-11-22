@@ -82,7 +82,7 @@ Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) : CVM Event_ID :=
   match params with
   | asp_paramsC i l tpl tid =>
     x <- inc_id ;;
-    add_tracem [umeas x mpl i l tpl tid] ;;
+    add_tracem [umeas x mpl params] ;;
     ret x
   end.
 

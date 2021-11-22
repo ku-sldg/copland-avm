@@ -1,4 +1,4 @@
-Require Import Term ConcreteEvidence Appraisal_Defs StVM Impl_vm Impl_appraisal Auto AutoApp External_Facts Helpers_VmSemantics Appraisal_Evidence VmSemantics Evidence_Bundlers AutoPrim Axioms_Io IO_Stubs.
+Require Import Term ConcreteEvidence Appraisal_Defs StVM Impl_VM Impl_appraisal Auto AutoApp External_Facts Helpers_VmSemantics Appraisal_Evidence VmSemantics Evidence_Bundlers AutoPrim Axioms_Io IO_Stubs.
 
 Require Import StructTactics.
 
@@ -1549,19 +1549,18 @@ Ltac do_nhste_lseqr :=
       try eassumption; try reflexivity | idtac ]
   end.
 
-Lemma uu_preserved': forall t annt p n p0 i args tpl tid
-                       e e',
+Lemma uu_preserved': forall t annt p n p0 e e' params,
 
     annoP annt t ->
     not_none_none t ->
-    events annt p (et_fun e) (umeas n p0 i args tpl tid) ->
+    events annt p (et_fun e) (umeas n p0 params) ->
     cvm_evidence_denote annt p e = e' ->
 
     (
-      (exists e'', EvSub (uuc (asp_paramsC i args tpl tid) p0 (do_asp (asp_paramsC i args tpl tid) p0 n) e'') e') \/
+      (exists e'', EvSub (uuc params p0 (do_asp params p0 n) e'') e') \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) e' /\
-          EvSubT (uu (asp_paramsC i args tpl tid) p0 et') ett)
+          EvSubT (uu params p0 et') ett)
     ).
 Proof.
   intros.
@@ -1931,28 +1930,28 @@ Proof.
 Defined.
 
 Lemma uu_preserved:
-  forall t1 t2 annt p n p0 i args tpl tid e e''' e',
+  forall t1 t2 annt p n p0 e e''' e' params,
     annoP annt t1 ->
     not_none_none t1 ->
     not_none_none t2 ->
-    events annt p (et_fun e) (umeas n p0 i args tpl tid) ->
+    events annt p (et_fun e) (umeas n p0 params) ->
     cvm_evidence_denote annt p e = e''' ->
     cvm_evidence_denote annt p e''' = e' ->
     
     (
-      (exists e'', EvSub (uuc (asp_paramsC i args tpl tid) p0 (do_asp (asp_paramsC i args tpl tid) p0 n) e'') e') \/
+      (exists e'', EvSub (uuc params p0 (do_asp params p0 n) e'') e') \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) e' /\
-          EvSubT (uu (asp_paramsC i args tpl tid) p0 et') ett)
+          EvSubT (uu params p0 et') ett)
     ).
 Proof.
   intros.
   
   assert (
-      (exists e'', EvSub (uuc (asp_paramsC i args tpl tid) p0 (do_asp (asp_paramsC i args tpl tid) p0 n) e'') e''') \/
+      (exists e'', EvSub (uuc params p0 (do_asp params p0 n) e'') e''') \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) e''' /\
-          EvSubT (uu (asp_paramsC i args tpl tid) p0 et') ett)
+          EvSubT (uu params p0 et') ett)
     ).
   {
     eapply uu_preserved'.
@@ -1988,7 +1987,7 @@ Proof.
       repeat (eexists; eauto).
       jkjke'.
     ++
-      assert (EvSubT (uu (asp_paramsC i args tpl tid) p0 H7) H10).
+      assert (EvSubT (uu params p0 H7) H10).
       {
         eapply evsubT_transitive.
         apply hhSubT.

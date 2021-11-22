@@ -5,12 +5,18 @@ Require Import StructTactics.
 Require Import Coq.Program.Tactics Coq.Bool.Bool.
 Require Import PeanoNat.
 
+(*
+Set Nested Proofs Allowed.
+*)
 
 Definition eq_evidence_dec:
   forall x y: Evidence, {x = y} + {x <> y}.
 Proof.
   intros;
     repeat decide equality.
+  apply eq_targid_dec.
+  apply eq_arg_dec.
+  apply eq_aspid_dec.
 Defined.
 Hint Resolve eq_evidence_dec : core.
 
@@ -118,9 +124,10 @@ Defined.
 Fixpoint eqb_evidence (e:Evidence) (e':Evidence): bool :=
   match (e,e') with
   | (mt,mt) => true
-  | (uu (asp_paramsC i args p tid) q e1, uu (asp_paramsC i' args' p' tid') q' e2) =>
-    (Nat.eqb i i') && (list_beq nat Nat.eqb args args') && (Nat.eqb p p') && (Nat.eqb q q')
-    && (Nat.eqb tid tid') && (eqb_evidence e1 e2)
+  | (uu params q e1, uu params' q' e2) =>
+    (eqb_asp_params params params') &&
+    (Nat.eqb q q') &&
+    (eqb_evidence e1 e2)
   | (gg p e1, gg p' e2) =>
     (Nat.eqb p p') && (eqb_evidence e1 e2)
   | (hh p e1, hh p' e2) =>
@@ -146,20 +153,31 @@ Proof.
       cbn in *.
       rewrite Bool.andb_true_iff in H.
       rewrite Bool.andb_true_iff in H.
+      (*
       rewrite Bool.andb_true_iff in H.
       rewrite Bool.andb_true_iff in H.
-      rewrite Bool.andb_true_iff in H.
+      rewrite Bool.andb_true_iff in H. *)
       destruct_conjs.
-      rewrite eqb_eq_list in H4.
+      (*
+      rewrite eqb_eq_list in H4. *)
 
       apply EqNat.beq_nat_true in H1.
+      (*
       apply EqNat.beq_nat_true in H2.
       apply EqNat.beq_nat_true in H3.
-      apply EqNat.beq_nat_true in H.
+      apply EqNat.beq_nat_true in H. *)
       subst.
       specialize IHe1 with e2.
       concludes.
+      assert (a = a0).
+      {
+        erewrite <- eqb_asp_params_true_iff.
+        eassumption.
+      }
+            
       congruence.
+
+      (*
      
       (*
 EqNat.beq_nat_refl: forall n : nat, true = (n =? n)
@@ -181,6 +199,8 @@ Nat.eqb_eq: forall n m : nat, (n =? m) = true <-> n = m
        *)
       
       eapply Nat.eqb_refl.
+       *)
+      
       
       
     +
@@ -237,17 +257,23 @@ Nat.eqb_eq: forall n m : nat, (n =? m) = true <-> n = m
       repeat rewrite Bool.andb_true_iff.
       split.
       split.
+      (*
       split.
       split.
-      split.
+      split. *)
+
+      erewrite eqb_asp_params_true_iff.
+      tauto.
+      
       apply Nat.eqb_refl.
+      (*
 
       rewrite eqb_eq_list.
       auto.
       eapply Nat.eqb_eq.
       apply Nat.eqb_refl.
       apply Nat.eqb_refl.
-      apply Nat.eqb_refl.
+      apply Nat.eqb_refl. *)
       eauto.
     +
       invc H.

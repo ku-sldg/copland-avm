@@ -40,21 +40,59 @@ Set Nested Proofs Allowed.
 (** [Plc] represents a place. *)
 
 Definition Plc: Set := nat.
-Definition ASP_ID: Set := nat.
-Definition TARG_ID: Set := nat.
 Definition N_ID: Set := nat.
-Definition Arg: Set := nat.
 
 Definition Event_ID: Set := nat.
 
-Definition BS : Set.
+
+Definition ASP_ID: Set.
+Admitted.
+Definition TARG_ID: Set.
+Admitted.
+Definition Arg: Set.
 Admitted.
 
+Definition BS : Set.
+Admitted.
 Definition default_bs : BS.
+Admitted.
+
+Definition eq_aspid_dec:
+  forall x y: ASP_ID, {x = y} + {x <> y}.
+Proof.
+Admitted.
+
+Definition eq_targid_dec:
+  forall x y: TARG_ID, {x = y} + {x <> y}.
+Proof.
+Admitted.
+
+Definition eq_arg_dec:
+  forall x y: Arg, {x = y} + {x <> y}.
+Proof.
 Admitted.
 
 Inductive ASP_PARAMS: Set :=
 | asp_paramsC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP_PARAMS.
+
+Definition eqb_asp_params: ASP_PARAMS -> ASP_PARAMS -> bool.
+Admitted.
+
+Definition eq_asp_params_dec:
+  forall x y: ASP_PARAMS, {x = y} + {x <> y}.
+Proof.
+  intros;
+    repeat decide equality.
+  eapply eq_targid_dec.
+  eapply eq_arg_dec.
+  eapply eq_aspid_dec.
+Defined.
+
+Lemma eqb_asp_params_true_iff: forall a a0,
+    eqb_asp_params a a0 = true <->
+    a = a0.
+Proof.
+Admitted.
 
 Inductive ASP: Set :=
 | CPY: ASP
@@ -202,7 +240,7 @@ Definition Locs: Set := list Loc.
 
 Inductive Ev: Set :=
 | copy:  nat -> Plc -> Ev 
-| umeas: nat -> Plc -> ASP_ID -> (list Arg) -> Plc -> TARG_ID -> Ev
+| umeas: nat -> Plc -> ASP_PARAMS -> Ev
 | sign: nat -> Plc -> Evidence -> Ev
 | hash: nat -> Plc -> Evidence -> Ev
 | req: nat -> Plc -> Plc -> Term -> Evidence -> Ev
@@ -216,7 +254,10 @@ Definition eq_ev_dec:
   forall x y: Ev, {x = y} + {x <> y}.
 Proof.
   intros;
-    repeat decide equality.
+    repeat decide equality;
+    try (apply eq_arg_dec);
+    try (apply eq_aspid_dec);
+    try (apply eq_targid_dec).
 Defined.
 Hint Resolve eq_ev_dec : core.
 
@@ -225,7 +266,7 @@ Hint Resolve eq_ev_dec : core.
 Definition ev x : nat :=
   match x with
   | copy i _ => i
-  | umeas i _ _ _ _ _  => i
+  | umeas i _ _ => i
   | sign i _ _ => i
   | hash i _ _ => i
   | req i _ _ _ _ => i
@@ -240,7 +281,7 @@ Definition ev x : nat :=
 Definition pl x : Plc :=
   match x with
   | copy _ p => p
-  | umeas _ p _ _ _ _  => p
+  | umeas _ p _ => p
   | sign _ p _ => p
   | hash _ p _ => p
   | req _ p _ _ _ => p
@@ -262,7 +303,7 @@ See Lemma [events_injective].
 Definition asp_event i x p e :=
   match x with
   | CPY => copy i p
-  | ASPC (asp_paramsC id l upl tid) => umeas i p id l upl tid
+  | ASPC ps => umeas i p ps
   | SIG => sign i p e
   | HSH => hash i p e
   end.
