@@ -4,6 +4,7 @@ More_lists.v
 StructTactics.v
 AutoPrim.v
 Defs.v
+BS.v
 Term_Defs.v
 Eqb_Evidence.v
 Term.v

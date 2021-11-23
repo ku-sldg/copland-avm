@@ -10,3 +10,4 @@ coq.mk.conf
 *.aux
 *~
 src/html/*
+src/*.hs

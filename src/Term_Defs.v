@@ -16,6 +16,8 @@ Require Import PeanoNat Nat Compare_dec Lia.
 Require Import Preamble StructTactics Defs.
 Require Import AutoPrim.
 
+Require Export BS.
+
 Require Import List.
 Import List.ListNotations.
 
@@ -50,11 +52,6 @@ Admitted.
 Definition TARG_ID: Set.
 Admitted.
 Definition Arg: Set.
-Admitted.
-
-Definition BS : Set.
-Admitted.
-Definition default_bs : BS.
 Admitted.
 
 Definition eq_aspid_dec:
