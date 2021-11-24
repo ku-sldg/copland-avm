@@ -14,7 +14,9 @@ Import ListNotations.
 
 Require Export StVM GenStMonad IO_Stubs.
 
+(*
 Definition CVM := St cvm_st.
+*)
 
 (* VM monad operations *)
 
@@ -90,7 +92,8 @@ Definition invoke_ASP (params:ASP_PARAMS) : CVM EvC :=
   e <- get_ev ;;
   p <- get_pl ;;
   x <- tag_ASP params p ;;
-  let bs := (do_asp params p x) in
+  bs <- do_asp' params p x ;;
+  (*let bs := (do_asp params p x) in *)
   ret (cons_uu bs e params p).
 
 Definition tag_SIG (p:Plc) (e:EvC) : CVM Event_ID :=
@@ -102,7 +105,8 @@ Definition signEv : CVM EvC :=
   p <- get_pl ;;
   e <- get_ev ;;
   x <- tag_SIG p e ;;
-  let bs := (do_sig (encodeEvBits e) p x) in
+  bs <- do_sig' (encodeEvBits e) p x ;;
+  (*let bs := (do_sig (encodeEvBits e) p x) in *)
   ret (cons_sig bs e p).
 
 Definition tag_HSH (p:Plc) (e:EvC): CVM Event_ID :=
@@ -114,7 +118,8 @@ Definition hashEv : CVM EvC :=
   p <- get_pl ;;
   e <- get_ev ;;
   x <- tag_HSH p e ;;
-  let bs := (do_hash (encodeEvBits e) p) in
+  bs <- do_hash' (encodeEvBits e) p ;;
+  (*let bs := (do_hash (encodeEvBits e) p) in *)
   ret (cons_hh bs e p).
 
 Definition copyEv : CVM EvC :=
@@ -230,7 +235,8 @@ Definition tag_RPY (p:Plc) (q:Plc) (e:EvC) : CVM unit :=
 
 Definition remote_session (t:Term) (p:Plc) (q:Plc) (e:EvC) : CVM EvC :=
   tag_REQ t p q e ;;
-  let e' := (doRemote_session t q e) in
+  (*let e' := (doRemote_session t q e) in *)
+  e' <- doRemote_session' t q e ;;
   add_tracem (cvm_events t q (get_et e)) ;;
   inc_remote_event_ids t ;;
   ret e'.
@@ -254,17 +260,21 @@ Definition do_start_par_threadIO (loc:Loc) (t:Term) (e:RawEv) : unit.
 Admitted.
 *)
 
+(*
 Definition do_start_par_thread (loc:Loc) (t:Term) (e:RawEv) : CVM unit :=
   let _ := do_start_par_threadIO loc t e in
   ret tt.  (* Admitted. *)
+*)
 
 Definition start_par_thread (loc:Loc) (t:Term) (e:EvC) : CVM unit :=
   p <- get_pl ;;
   do_start_par_thread loc t (get_bits e) ;;
   add_tracem [cvm_thread_start loc p t (get_et e)].
 
+(*
 Definition do_wait_par_thread (loc:Loc) (t:Term) (p:Plc) (e:EvC) : CVM EvC :=
   ret (parallel_vm_thread loc t p e).
+*)
 
 Definition wait_par_thread (loc:Loc) (t:Term) (e:EvC) : CVM EvC :=
   p <- get_pl ;;

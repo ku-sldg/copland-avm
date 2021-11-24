@@ -1,6 +1,6 @@
 Require Extraction.
 
-Require Import Impl_VM IO_Stubs MonadVM.
+Require Import Impl_VM IO_Stubs MonadVM IO_Type.
 (*Require Import Impl_appraisal_alt. *)
 
 (*
@@ -20,9 +20,14 @@ Extract Constant Term_Defs.ASP_ID => "Prelude.Int".
 Extract Constant Term_Defs.TARG_ID => "Prelude.Int".
 Extract Constant Term_Defs.Arg => "Prelude.String".
 
+(*Extract Constant IO_Type.IO "a" => "IO a". *)
+
 Extraction Implicit do_asp [2 3].
+Extraction Implicit do_asp' [2 3].
 Extraction Implicit do_sig [2 3].
+Extraction Implicit do_sig' [2 3].
 Extraction Implicit do_hash [2].
+Extraction Implicit do_hash' [2].
 Extraction Implicit parallel_vm_thread [2 3 4].
 Extraction Implicit do_wait_par_thread [2 3 4].
 

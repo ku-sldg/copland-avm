@@ -14,10 +14,11 @@ Trace.v
 LTS.v
 Main.v
 ConcreteEvidence.v
-IO_Stubs.v
-StVM.v
-Axioms_Io.v
 GenStMonad.v
+StVM.v
+IO_Type.v
+IO_Stubs.v
+Axioms_Io.v
 Evidence_Bundlers.v
 MonadVM.v
 Impl_VM.v

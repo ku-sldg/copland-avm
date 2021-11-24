@@ -4,7 +4,7 @@ Record representing the CVM Monad state structure.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import ConcreteEvidence.
+Require Import ConcreteEvidence GenStMonad.
 Require Import List.
 Import ListNotations.
 
@@ -16,3 +16,5 @@ Record cvm_st : Type := mk_st
                            st_evid:Event_ID}.
 
 Definition empty_vmst := mk_st (evc [] mt) [] 0 0.
+
+Definition CVM := St cvm_st.
