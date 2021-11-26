@@ -25,17 +25,173 @@ Ltac do_ggsub :=
   destruct_conjs;
   subst.
 
+Lemma recon_build_app : forall e',
+      exists bits,
+        reconstruct_evP (evc bits (et_fun e')) (build_app_comp_evC e').
+Proof.
+  intros.
+  induction e';
+    ff.
+  -
+    exists [].
+    econstructor.
+    repeat ff.
+    tauto.
+  -
+    exists [(checkNonceF n b)].
+    econstructor.
+    repeat ff.
+  -
+    destruct_conjs.
+    invc H.
+    ff.
+    exists ([(checkASPF a b)] ++ IHe').
+    econstructor.
+    repeat ff.
+  -
+    destruct_conjs.
+    invc H.
+    ff.
+    exists ([(checkSigF e' p b)] ++ IHe').
+    econstructor.
+    repeat ff.
+  -
+    exists [(checkHashF e p b)].
+    econstructor.
+    repeat ff.
+  -
+    destruct_conjs.
+    invc H0; invc H.
+    repeat ff.
+    exists (IHe'1 ++ IHe'2).
+    assert (wf_ec (evc IHe'1 (et_fun e'1))).
+    {
+      eapply wf_recon.
+      econstructor.
+      eassumption.
+    }
+    assert (wf_ec (evc IHe'2 (et_fun e'2))).
+    {
+      eapply wf_recon.
+      econstructor.
+      eassumption.
+    }
+    econstructor.
+    repeat ff;
+    
+    try do_wfec_firstn;
+    try do_wfec_skipn;
+    try clear_skipn_firstn.
+    
+    jkjke'.
+    jkjke'.
+    invc Heqo.
+    invc Heqo0.
+    tauto.
+
+    jkjke'.
+    jkjke'.
+    solve_by_inversion.
+
+    rewrite H3 in *.
+    rewrite Heqo in *.
+    solve_by_inversion.
+  -
+        destruct_conjs.
+    invc H0; invc H.
+    repeat ff.
+    exists (IHe'1 ++ IHe'2).
+    assert (wf_ec (evc IHe'1 (et_fun e'1))).
+    {
+      eapply wf_recon.
+      econstructor.
+      eassumption.
+    }
+    assert (wf_ec (evc IHe'2 (et_fun e'2))).
+    {
+      eapply wf_recon.
+      econstructor.
+      eassumption.
+    }
+    econstructor.
+    repeat ff;
+    
+    try do_wfec_firstn;
+    try do_wfec_skipn;
+    try clear_skipn_firstn.
+    
+    jkjke'.
+    jkjke'.
+    invc Heqo.
+    invc Heqo0.
+    tauto.
+
+    jkjke'.
+    jkjke'.
+    solve_by_inversion.
+
+    rewrite H3 in *.
+    rewrite Heqo in *.
+    solve_by_inversion.
+Defined.
+
 Lemma uuc_app: forall e' e'' params p n,
     EvSub (uuc params p n e'') e' ->
-    exists e'', EvSub (uuc params p (checkASPF params n) e'')
+    exists bits' e''',
+      reconstruct_evP (evc bits' (et_fun e'')) e''' /\
+      EvSub (uuc params p (checkASPF params n) e''')
                  (build_app_comp_evC e').
 Proof.
   intros.
   generalizeEverythingElse e'.
   induction e'; intros;
-    ff;
-    try evSubFacts; eauto;
-      try evsub_ih.
+    ff.
+    
+  -
+    edestruct recon_build_app.
+    evSubFacts.
+    eexists.
+    eexists.
+    split.
+    2: {
+      econstructor.
+    }
+    eassumption.
+
+    edestruct IHe'.
+    eassumption.
+    destruct_conjs.
+    eauto.
+  -
+    evSubFacts.
+    edestruct IHe'.
+    eassumption.
+    destruct_conjs.
+    eauto.
+  -
+    evSubFacts.
+    +
+      edestruct IHe'1.
+      eassumption.
+      destruct_conjs.
+      eauto.
+    +
+      edestruct IHe'2.
+      eassumption.
+      destruct_conjs.
+      eauto.
+  -
+    evSubFacts.
+    +
+      edestruct IHe'1.
+      eassumption.
+      destruct_conjs.
+      eauto.
+    +
+      edestruct IHe'2.
+      eassumption.
+      destruct_conjs.
+      eauto.
 Defined.
 
 Lemma hhc_app: forall e' p bs et,
@@ -1549,18 +1705,20 @@ Ltac do_nhste_lseqr :=
       try eassumption; try reflexivity | idtac ]
   end.
 
-Lemma uu_preserved': forall t annt p n p0 e e' params,
+Lemma uu_preserved': forall t annt p n p0 e e' params et,
 
     annoP annt t ->
     not_none_none t ->
-    events annt p (et_fun e) (umeas n p0 params) ->
+    events annt p (et_fun e) (umeas n p0 params et) ->
     cvm_evidence_denote annt p e = e' ->
 
     (
-      (exists e'', EvSub (uuc params p0 (do_asp params p0 n) e'') e') \/
-      (exists ett p' bs et',
+      (exists bits'' e'',
+          (reconstruct_evP (evc bits'' et) e'' /\
+          EvSub (uuc params p0 (do_asp params p0 n) e'') e')) \/
+      (exists ett p' bs,
           EvSub (hhc p' bs ett) e' /\
-          EvSubT (uu params p0 et') ett)
+          EvSubT (uu params p0 et) ett)
     ).
 Proof.
   intros.
@@ -1578,7 +1736,11 @@ Proof.
       unfold cons_uu in *.
       repeat ff.
       left.
+      exists (encodeEv e).
       eexists.
+      split.
+      econstructor.
+      eapply recon_same.
       econstructor.
   -
     inv_annoP.
@@ -1623,8 +1785,13 @@ Proof.
         eauto.
         
       ++
-        destruct_conjs.
-        
+        assert (et = et_fun H6).
+        {
+          eapply etfun_reconstruct.
+          eassumption.
+        }
+        subst.
+
         right.
         repeat (eexists; eauto).
       ++
@@ -1693,10 +1860,17 @@ Proof.
         reflexivity.
         destruct_conjs.
         +++
+          left.
+          repeat eexists.
+          invc H6.
+          eassumption.
+
+          eauto.
+          (*
           try eauto;
           try (destruct_conjs;
                right;
-               repeat (eexists; eauto)).
+               repeat (eexists; eauto)). *)
         +++
           try eauto;
           try (destruct_conjs;
@@ -1710,6 +1884,9 @@ Proof.
         reflexivity.
         destruct_conjs.
         +++
+          left.
+          repeat eexists.
+          invc H6. eassumption.
           try eauto;
           try (destruct_conjs;
                right;
@@ -1729,6 +1906,9 @@ Proof.
         reflexivity.
         destruct_conjs.
         +++
+          left.
+          repeat eexists.
+          invc H7. eassumption.
           try eauto;
           try (destruct_conjs;
                right;
@@ -1752,6 +1932,9 @@ Proof.
         reflexivity.
         destruct_conjs.
         +++
+          left.
+          repeat eexists.
+          invc H6. eassumption.
           try eauto;
           try (destruct_conjs;
                right;
@@ -1771,6 +1954,9 @@ Proof.
         reflexivity.
         destruct_conjs.
         +++
+          left.
+          repeat eexists.
+          invc H7. eassumption.
           try eauto;
           try (destruct_conjs;
                right;
@@ -1788,6 +1974,9 @@ Proof.
         reflexivity.
         destruct_conjs.
         +++
+          left.
+          repeat eexists.
+          invc H6. eassumption.
           try eauto;
           try (destruct_conjs;
                right;
@@ -1821,6 +2010,9 @@ Proof.
         reflexivity.
         destruct_conjs.
         +++
+          left.
+          repeat eexists.
+          invc H6. eassumption.
           try eauto;
           try (destruct_conjs;
                right;
@@ -1838,6 +2030,9 @@ Proof.
         reflexivity.
         destruct_conjs.
         +++
+          left.
+          repeat eexists.
+          invc H6. eassumption.
           try eauto;
           try (destruct_conjs;
                right;
@@ -1857,6 +2052,9 @@ Proof.
         reflexivity.
         destruct_conjs.
         +++
+          left.
+          repeat eexists.
+          invc H7. eassumption.
           try eauto;
           try (destruct_conjs;
                right;
@@ -1879,6 +2077,9 @@ Proof.
         reflexivity.
         destruct_conjs.
         +++
+          left.
+          repeat eexists.
+          invc H6. eassumption.
           try eauto;
           try (destruct_conjs;
                right;
@@ -1898,6 +2099,9 @@ Proof.
         reflexivity.
         destruct_conjs.
         +++
+          left.
+          repeat eexists.
+          invc H7. eassumption.
           try eauto;
           try (destruct_conjs;
                right;
@@ -1915,6 +2119,9 @@ Proof.
         reflexivity.
         destruct_conjs.
         +++
+          left.
+          repeat eexists.
+          invc H6. eassumption.
           try eauto;
           try (destruct_conjs;
                right;
@@ -1930,16 +2137,18 @@ Proof.
 Defined.
 
 Lemma uu_preserved:
-  forall t1 t2 annt p n p0 e e''' e' params,
+  forall t1 t2 annt p n p0 e e''' e' params et,
     annoP annt t1 ->
     not_none_none t1 ->
     not_none_none t2 ->
-    events annt p (et_fun e) (umeas n p0 params) ->
+    events annt p (et_fun e) (umeas n p0 params et) ->
     cvm_evidence_denote annt p e = e''' ->
     cvm_evidence_denote annt p e''' = e' ->
     
     (
-      (exists e'', EvSub (uuc params p0 (do_asp params p0 n) e'') e') \/
+      (exists bits'' e'',
+          (reconstruct_evP (evc bits'' et) e'' /\
+           EvSub (uuc params p0 (do_asp params p0 n) e'') e')) \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) e' /\
           EvSubT (uu params p0 et') ett)
@@ -1948,10 +2157,12 @@ Proof.
   intros.
   
   assert (
-      (exists e'', EvSub (uuc params p0 (do_asp params p0 n) e'') e''') \/
-      (exists ett p' bs et',
+      (exists bits'' e'',
+          (reconstruct_evP (evc bits'' et) e'' /\
+           EvSub (uuc params p0 (do_asp params p0 n) e'') e''')) \/
+      (exists ett p' bs,
           EvSub (hhc p' bs ett) e''' /\
-          EvSubT (uu params p0 et') ett)
+          EvSubT (uu params p0 et) ett)
     ).
   {
     eapply uu_preserved'.
@@ -1964,7 +2175,7 @@ Proof.
   door.
   +
     do_evaccum (cvm_evidence_denote annt p (cvm_evidence_denote annt p e)).
-    clear H5.
+    clear H7.
   
     door.
     ++
@@ -1987,7 +2198,7 @@ Proof.
       repeat (eexists; eauto).
       jkjke'.
     ++
-      assert (EvSubT (uu params p0 H7) H10).
+      assert (EvSubT (uu params p0 et) H9).
       {
         eapply evsubT_transitive.
         apply hhSubT.

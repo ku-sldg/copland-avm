@@ -135,7 +135,7 @@ Inductive events: AnnoTerm -> Plc -> Evidence -> Ev -> Prop :=
 | evtsusm:
     forall i r p e ps,
       fst r = i ->
-      events (aasp r (ASPC ps)) p e (umeas i p ps)
+      events (aasp r (ASPC ps)) p e (umeas i p ps e)
 | evtssig:
     forall r i p e,
       fst r = i ->

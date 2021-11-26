@@ -53,7 +53,7 @@ Definition checkHashF (e:Evidence) (p:Plc) (hash:BS) : BS :=
   fromSome default_bs (checkHash e p hash).
 
 Inductive evidenceEvent: Ev -> Prop :=
-| uev: forall n p ps, evidenceEvent (umeas n p ps).
+| uev: forall n p ps e, evidenceEvent (umeas n p ps e).
 
 Definition measEvent (t:AnnoTerm) (p:Plc) (e:Evidence) (ev:Ev) : Prop :=
   events t p e ev /\ evidenceEvent ev.
@@ -68,11 +68,11 @@ Inductive appEvent_EvidenceC : Ev -> EvidenceC -> Prop :=
 | aeuc: forall e e' n p params,
     (*let params := (asp_paramsC i args tpl tid) in *)
     EvSub (uuc params p (checkASPF params (do_asp params p n)) e') e ->
-    appEvent_EvidenceC (umeas n p params) e
+    appEvent_EvidenceC (umeas n p params (et_fun e')) e
 | ahuc: forall ps e' et n p pi bs e,
     EvSubT (uu ps p e') et ->
     EvSub (hhc pi (checkHashF et pi bs) et) e ->
-    appEvent_EvidenceC (umeas n p ps) e.
+    appEvent_EvidenceC (umeas n p ps e') e.
 
 (*
 Inductive appEvent_Sig_EvidenceC: Ev -> EvidenceC -> Prop :=

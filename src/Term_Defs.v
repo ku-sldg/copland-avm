@@ -237,7 +237,7 @@ Definition Locs: Set := list Loc.
 
 Inductive Ev: Set :=
 | copy:  nat -> Plc -> Ev 
-| umeas: nat -> Plc -> ASP_PARAMS -> Ev
+| umeas: nat -> Plc -> ASP_PARAMS -> Evidence -> Ev
 | sign: nat -> Plc -> Evidence -> Ev
 | hash: nat -> Plc -> Evidence -> Ev
 | req: nat -> Plc -> Plc -> Term -> Evidence -> Ev
@@ -263,7 +263,7 @@ Hint Resolve eq_ev_dec : core.
 Definition ev x : nat :=
   match x with
   | copy i _ => i
-  | umeas i _ _ => i
+  | umeas i _ _ _ => i
   | sign i _ _ => i
   | hash i _ _ => i
   | req i _ _ _ _ => i
@@ -278,7 +278,7 @@ Definition ev x : nat :=
 Definition pl x : Plc :=
   match x with
   | copy _ p => p
-  | umeas _ p _ => p
+  | umeas _ p _ _ => p
   | sign _ p _ => p
   | hash _ p _ => p
   | req _ p _ _ _ => p
@@ -300,7 +300,7 @@ See Lemma [events_injective].
 Definition asp_event i x p e :=
   match x with
   | CPY => copy i p
-  | ASPC ps => umeas i p ps
+  | ASPC ps => umeas i p ps e
   | SIG => sign i p e
   | HSH => hash i p e
   end.

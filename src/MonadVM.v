@@ -80,18 +80,18 @@ Definition do_asp (params :ASP_PARAMS) (mpl:Plc) (x:Event_ID) : BS.
 Admitted.
 *)
          
-Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) : CVM Event_ID :=
+Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) (e:EvC) : CVM Event_ID :=
   match params with
   | asp_paramsC i l tpl tid =>
     x <- inc_id ;;
-    add_tracem [umeas x mpl params] ;;
+    add_tracem [umeas x mpl params (get_et e)] ;;
     ret x
   end.
 
 Definition invoke_ASP (params:ASP_PARAMS) : CVM EvC :=
   e <- get_ev ;;
   p <- get_pl ;;
-  x <- tag_ASP params p ;;
+  x <- tag_ASP params p e ;;
   bs <- do_asp' params p x ;;
   (*let bs := (do_asp params p x) in *)
   ret (cons_uu bs e params p).

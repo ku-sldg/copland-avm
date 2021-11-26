@@ -100,13 +100,37 @@ Proof.
   eassumption.
   reflexivity.
 
-  -
-    destruct_conjs.
+  destruct_conjs.
+    (*
+    assert (e0 = et_fun H2).
+    {
+      Search (_ = et_fun _).
+      eapply etfun_reconstruct; eauto.
+    }
+    subst.
+     *)
+    
+    
     edestruct uuc_app.
     eassumption.
-    econstructor.
+    
+    destruct_conjs.
+
+    assert (e0 = et_fun H2).
+    {
+      eapply etfun_reconstruct; eauto.
+    }
+    assert (et_fun H2 = et_fun H6).
+    {
+      eapply etfun_reconstruct; eauto.
+    }
+    assert (e0 = et_fun H6) by congruence.
+    rewrite H11.
+    
+    eapply aeuc.
     eassumption.
-  -
+
+  
     destruct_conjs.
     eapply ahuc.
     eassumption.
