@@ -1,7 +1,6 @@
 Require Extraction.
 
 Require Import Impl_VM IO_Stubs MonadVM IO_Type.
-(*Require Import Impl_appraisal_alt. *)
 
 (*
 Extraction Language CakeML.
@@ -13,17 +12,18 @@ Require Import ExtrHaskellBasic.
 
 
 Require Import ExtrHaskellNatNum. 
-Extract Inductive nat => "Prelude.Int" ["0" "Prelude.succ"]
-                                    "(\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))".
-Extract Constant Term_Defs.Plc => "Prelude.Int".
+Extract Inductive nat =>
+"Prelude.Int"
+  ["0" "Prelude.succ"]
+  "(\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))".
 Extract Constant Term_Defs.ASP_ID => "Prelude.Int".
 Extract Constant Term_Defs.TARG_ID => "Prelude.Int".
 Extract Constant Term_Defs.Arg => "Prelude.String".
 
 (*Extract Constant IO_Type.IO "a" => "IO a". *)
 
-Extraction Implicit do_asp [2 3].
-Extraction Implicit do_asp' [2 3].
+Extraction Implicit do_asp [3 4].
+Extraction Implicit do_asp' [3 4].
 Extraction Implicit do_sig [2 3].
 Extraction Implicit do_sig' [2 3].
 Extraction Implicit do_hash [2].
@@ -34,6 +34,30 @@ Extraction Implicit do_wait_par_thread [2 3 4].
 
 
 Separate Extraction copland_compile.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 (*
 Extraction Library Term_Defs.

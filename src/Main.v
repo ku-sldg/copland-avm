@@ -110,6 +110,7 @@ Ltac jkjk'e :=
   | [H: _ = ?X |-  context[?X] ] => erewrite <- H
   end.
 
+(*
 Lemma aeval_ev_determ: forall a p e e',
     aeval a p e = aeval a p e' ->
     e = e'.
@@ -120,7 +121,9 @@ Proof.
   -
     destruct a;
       cbn in *; auto;
-        solve_by_inversion.
+        try solve_by_inversion.
+    destruct a.
+    try solve_by_inversion.
   -
     cbn in *; auto.
     eauto.
@@ -141,6 +144,10 @@ Proof.
     +
       ff.
 Abort.  (* TODO:  can this be proven with assumptions about term split? *)
+ *)
+
+
+
 (*   
     assert ((splitEv_T_l s e) = (splitEv_T_l s e')) by eauto.
     destruct s; destruct s; destruct s0; eauto.

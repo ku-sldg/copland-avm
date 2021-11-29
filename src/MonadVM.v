@@ -81,18 +81,22 @@ Admitted.
 *)
          
 Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) (e:EvC) : CVM Event_ID :=
-  match params with
+  (*match params with
   | asp_paramsC i l tpl tid =>
     x <- inc_id ;;
-    add_tracem [umeas x mpl params (get_et e)] ;;
+    add_tracem [umeas x mpl params (*(get_et e)*)] ;;
     ret x
-  end.
+  end. *)
+  x <- inc_id ;;
+  add_tracem [umeas x mpl params (get_et e)] ;;
+  ret x.
+  
 
 Definition invoke_ASP (params:ASP_PARAMS) : CVM EvC :=
   e <- get_ev ;;
   p <- get_pl ;;
   x <- tag_ASP params p e ;;
-  bs <- do_asp' params p x ;;
+  bs <- do_asp' params (get_bits e) p x ;;
   (*let bs := (do_asp params p x) in *)
   ret (cons_uu bs e params p).
 

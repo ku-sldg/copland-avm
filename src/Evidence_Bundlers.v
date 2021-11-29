@@ -5,9 +5,9 @@ Import ListNotations.
 
 (* Matches on evidence type param only for verification.  
    Will extract to the cons function over the first two params (new measurement bits + existing evidence) *)
-Definition cons_uu (x:BS) (e:EvC) (params:ASP_PARAMS) (mpl:Plc) : EvC :=
+Definition cons_uu (x:BS) (e:EvC) (*(i:ASP_ID) (args:list Arg) (tpl:Plc) (tid:TARG_ID) (tet:Evidence)*)(params:ASP_PARAMS) (mpl:Plc) : EvC :=
   match e with
-  | evc bits et => evc (x :: bits) (uu params mpl et)
+  | evc bits et => evc (x :: bits) (uu params(*i args tpl tid tet*) mpl et)
   end.
 
 Definition cons_sig (sig:BS) (e:EvC) (p:Plc): EvC :=

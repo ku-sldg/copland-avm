@@ -25,52 +25,62 @@ Ltac do_ggsub :=
   destruct_conjs;
   subst.
 
+(*
 Lemma recon_build_app : forall e',
-      exists bits,
-        reconstruct_evP (evc bits (et_fun e')) (build_app_comp_evC e').
+    
+        reconstruct_evP (evc (encodeEv (build_app_comp_evC e')) (et_fun e')) (build_app_comp_evC e').
 Proof.
   intros.
   induction e';
     ff.
   -
-    exists [].
     econstructor.
     repeat ff.
     tauto.
   -
-    exists [(checkNonceF n b)].
+    (*
+    exists [(checkNonceF n b)]. *)
     econstructor.
     repeat ff.
   -
+    invc IHe'.
+    (*
     destruct_conjs.
     invc H.
     ff.
-    exists ([(checkASPF a b)] ++ IHe').
+    exists ([(checkASPF a b)] ++ IHe'). *)
     econstructor.
     repeat ff.
   -
+    (*
     destruct_conjs.
     invc H.
     ff.
     exists ([(checkSigF e' p b)] ++ IHe').
+     *)
+    invc IHe'.
+    
     econstructor.
     repeat ff.
   -
-    exists [(checkHashF e p b)].
+    (*
+    exists [(checkHashF e p b)]. *)
     econstructor.
     repeat ff.
   -
+    (*
     destruct_conjs.
     invc H0; invc H.
     repeat ff.
-    exists (IHe'1 ++ IHe'2).
-    assert (wf_ec (evc IHe'1 (et_fun e'1))).
+    exists (IHe'1 ++ IHe'2). *)
+    invc IHe'1; invc IHe'2.
+    assert (wf_ec (evc (encodeEv (build_app_comp_evC e'1)) (et_fun e'1))).
     {
       eapply wf_recon.
       econstructor.
       eassumption.
     }
-    assert (wf_ec (evc IHe'2 (et_fun e'2))).
+    assert (wf_ec (evc (encodeEv (build_app_comp_evC e'2)) (et_fun e'2))).
     {
       eapply wf_recon.
       econstructor.
@@ -96,18 +106,16 @@ Proof.
     rewrite H3 in *.
     rewrite Heqo in *.
     solve_by_inversion.
+
   -
-        destruct_conjs.
-    invc H0; invc H.
-    repeat ff.
-    exists (IHe'1 ++ IHe'2).
-    assert (wf_ec (evc IHe'1 (et_fun e'1))).
+        invc IHe'1; invc IHe'2.
+    assert (wf_ec (evc (encodeEv (build_app_comp_evC e'1)) (et_fun e'1))).
     {
       eapply wf_recon.
       econstructor.
       eassumption.
     }
-    assert (wf_ec (evc IHe'2 (et_fun e'2))).
+    assert (wf_ec (evc (encodeEv (build_app_comp_evC e'2)) (et_fun e'2))).
     {
       eapply wf_recon.
       econstructor.
@@ -134,12 +142,15 @@ Proof.
     rewrite Heqo in *.
     solve_by_inversion.
 Defined.
+*)
 
 Lemma uuc_app: forall e' e'' params p n,
     EvSub (uuc params p n e'') e' ->
-    exists bits' e''',
-      reconstruct_evP (evc bits' (et_fun e'')) e''' /\
-      EvSub (uuc params p (checkASPF params n) e''')
+    (*reconstruct_evP (evc
+                       (encodeEv  (build_app_comp_evC e''))
+                       (et_fun (build_app_comp_evC e''))
+                    ) e''' -> *)
+      EvSub (uuc params p (checkASPF params n) (build_app_comp_evC e''))
                  (build_app_comp_evC e').
 Proof.
   intros.
@@ -148,9 +159,96 @@ Proof.
     ff.
     
   -
-    edestruct recon_build_app.
+
     evSubFacts.
+    +
+    (*
+    Check recon_build_app.
+
+    
+    edestruct recon_build_app.
+     *)
+      econstructor.
+    +
+      econstructor.
+      eauto.
+
+
+      (*
+    
+     
+      
+      
+    
+
+
+    (*
+    exists  (build_app_comp_evC e').
+     *)
+      edestruct IHe'.
+      2: { eassumption. }
+
+
+
+
+
+      
+      edestruct recon_build_app.
+      edestruct IHe'.
+      eassumption.
+    eapply IHe'.
+      
+    
+    split.
+    ++
+    econstructor.
+    eapply recon_same.
+    ++
+      econstructor.
+    +
+      edestruct 
+
+
+
+      
+      exists (build_app_comp_evC e').
+      split.
+      ++
+        econstructor.
+        eapply recon_same.
+      ++
+        edestruct IHe'.
+        eassumption.
+        destruct_conjs.
+        econstructor.
+        eassumption.
+        
+      
+    
+      
+
+
+    
+    
+    
+    Check recon_same.
+    econstructor.
+    eapply recon_same.
+    eapply recon_build_app.
+    eapply recon_same.
+    edestruct IHe'.
+    eassumption.
+
+
+    
+    edestruct recon_build_app.
     eexists.
+    split.
+    2: { econstructor. }
+    
+
+
+    
     eexists.
     split.
     2: {
@@ -162,36 +260,55 @@ Proof.
     eassumption.
     destruct_conjs.
     eauto.
+       *)
+      
   -
     evSubFacts.
+    econstructor.
+    eauto.
+    (*
     edestruct IHe'.
     eassumption.
     destruct_conjs.
-    eauto.
+    eauto. *)
   -
     evSubFacts.
     +
+      econstructor.
+      eauto.
+      (*
       edestruct IHe'1.
       eassumption.
       destruct_conjs.
-      eauto.
+      eauto. *)
     +
+      apply ssSubr.
+      eauto.
+      (*
       edestruct IHe'2.
       eassumption.
       destruct_conjs.
-      eauto.
+      eauto. *)
   -
     evSubFacts.
     +
+      econstructor.
+      eauto.
+      (*
       edestruct IHe'1.
       eassumption.
       destruct_conjs.
-      eauto.
+      eauto. *)
     +
+      apply ppSubr.
+      eauto.
+      (*
+      econstructor.
+      apply ppSubr.
       edestruct IHe'2.
       eassumption.
       destruct_conjs.
-      eauto.
+      eauto. *)
 Defined.
 
 Lemma hhc_app: forall e' p bs et,
@@ -1715,7 +1832,7 @@ Lemma uu_preserved': forall t annt p n p0 e e' params et,
     (
       (exists bits'' e'',
           (reconstruct_evP (evc bits'' et) e'' /\
-          EvSub (uuc params p0 (do_asp params p0 n) e'') e')) \/
+          EvSub (uuc params p0 (do_asp params bits'' p0 n) e'') e')) \/
       (exists ett p' bs,
           EvSub (hhc p' bs ett) e' /\
           EvSubT (uu params p0 et) ett)
@@ -2148,7 +2265,7 @@ Lemma uu_preserved:
     (
       (exists bits'' e'',
           (reconstruct_evP (evc bits'' et) e'' /\
-           EvSub (uuc params p0 (do_asp params p0 n) e'') e')) \/
+           EvSub (uuc params p0 (do_asp params bits'' p0 n) e'') e')) \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) e' /\
           EvSubT (uu params p0 et') ett)
@@ -2159,7 +2276,7 @@ Proof.
   assert (
       (exists bits'' e'',
           (reconstruct_evP (evc bits'' et) e'' /\
-           EvSub (uuc params p0 (do_asp params p0 n) e'') e''')) \/
+           EvSub (uuc params p0 (do_asp params bits'' p0 n) e'') e''')) \/
       (exists ett p' bs,
           EvSub (hhc p' bs ett) e''' /\
           EvSubT (uu params p0 et) ett)

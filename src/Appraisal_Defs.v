@@ -12,7 +12,8 @@ Require Import Lia Coq.Program.Tactics.
 Definition checkASP (params:ASP_PARAMS) (bs:BS) : option BS.
 Admitted.
 
-Definition checkASPF (params:ASP_PARAMS) (bs:BS) : BS := fromSome default_bs (checkASP params bs).
+Definition checkASPF (params:ASP_PARAMS) (bs:BS) : BS :=
+  fromSome default_bs (checkASP params bs).
 
 Definition checkSigBits (ls:RawEv) (p:Plc) (sig:BS) : option BS.
 Admitted.
@@ -65,9 +66,11 @@ Definition sigEvent (t:AnnoTerm) (p:Plc) (e:Evidence) (ev:Ev) : Prop :=
   events t p e ev /\ sigEventP ev.
 
 Inductive appEvent_EvidenceC : Ev -> EvidenceC -> Prop :=
-| aeuc: forall e e' n p params,
+| aeuc: forall e e' e'' n p params,
     (*let params := (asp_paramsC i args tpl tid) in *)
-    EvSub (uuc params p (checkASPF params (do_asp params p n)) e') e ->
+    EvSub (uuc params p
+               (checkASPF params
+                          (do_asp params (encodeEv e') p n)) e'') e ->
     appEvent_EvidenceC (umeas n p params (et_fun e')) e
 | ahuc: forall ps e' et n p pi bs e,
     EvSubT (uu ps p e') et ->

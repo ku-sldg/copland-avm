@@ -69,6 +69,26 @@ Definition eq_arg_dec:
 Proof.
 Admitted.
 
+(*
+Inductive ASP_PARAMS': Set :=
+| asp_paramsC': ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP_PARAMS'.
+
+Definition eqb_asp_params': ASP_PARAMS' -> ASP_PARAMS' -> bool.
+Admitted.
+
+Definition eq_asp_params'_dec:
+  forall x y: ASP_PARAMS', {x = y} + {x <> y}.
+Proof.
+  intros;
+    repeat decide equality.
+  eapply eq_targid_dec.
+  eapply eq_arg_dec.
+  eapply eq_aspid_dec.
+Defined.
+*)
+
+(** The structure of evidence. *)
+
 Inductive ASP_PARAMS: Set :=
 | asp_paramsC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP_PARAMS.
 
@@ -84,12 +104,36 @@ Proof.
   eapply eq_arg_dec.
   eapply eq_aspid_dec.
 Defined.
+(*
+  eapply eq_targid_dec.
+  eapply eq_arg_dec.
+  eapply eq_aspid_dec. 
+Defined.
+ *)
+
 
 Lemma eqb_asp_params_true_iff: forall a a0,
     eqb_asp_params a a0 = true <->
     a = a0.
 Proof.
 Admitted.
+
+Inductive Evidence: Set :=
+| mt: Evidence
+| uu: (*ASP_PARAMS ->*) ASP_PARAMS ->
+      (*Evidence ->*) Plc -> Evidence -> Evidence
+| gg: Plc -> Evidence -> Evidence
+| hh: Plc -> Evidence -> Evidence
+| nn: N_ID -> Evidence
+| ss: Evidence -> Evidence -> Evidence
+| pp: Evidence -> Evidence -> Evidence.
+
+Definition eq_evidence_dec:
+  forall x y: Evidence, {x = y} + {x <> y}.
+Proof.
+Admitted.
+
+
 
 Inductive ASP: Set :=
 | CPY: ASP
@@ -109,17 +153,6 @@ Inductive Term: Set :=
 | lseq: Term -> Term -> Term
 | bseq: Split -> Term -> Term -> Term
 | bpar: Split -> Term -> Term -> Term.
-
-(** The structure of evidence. *)
-
-Inductive Evidence: Set :=
-| mt: Evidence
-| uu: ASP_PARAMS -> Plc -> Evidence -> Evidence
-| gg: Plc -> Evidence -> Evidence
-| hh: Plc -> Evidence -> Evidence
-| nn: N_ID -> Evidence
-| ss: Evidence -> Evidence -> Evidence
-| pp: Evidence -> Evidence -> Evidence.
 
 Fixpoint et_size (e:Evidence): nat :=
   match e with
@@ -180,10 +213,16 @@ Definition splitEv_T_r (sp:Split) (e:Evidence) : Evidence :=
   |  _ => mt
   end.
 
+(*
+Inductive ASP_PARAMS: Set :=
+| asp_paramsC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> Evidence -> ASP_PARAMS.
+*)
+
 Definition eval_asp t p e :=
   match t with
   | CPY => e 
-  | ASPC params => uu params p e
+  | ASPC params (*(asp_paramsC i args tpl tid tet)*) =>
+      uu (*i args tpl tid tet*) params p e
   | SIG => gg p e
   | HSH => hh p e
   end.

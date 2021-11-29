@@ -124,8 +124,9 @@ Defined.
 Fixpoint eqb_evidence (e:Evidence) (e':Evidence): bool :=
   match (e,e') with
   | (mt,mt) => true
-  | (uu params q e1, uu params' q' e2) =>
-    (eqb_asp_params params params') &&
+  | (uu (*i args tpl tid tet*) params q e1,
+     uu (*i' args' tpl' tid' tet'*) params' q' e2) =>
+    (eqb_asp_params params params') && 
     (Nat.eqb q q') &&
     (eqb_evidence e1 e2)
   | (gg p e1, gg p' e2) =>
@@ -143,6 +144,7 @@ Fixpoint eqb_evidence (e:Evidence) (e':Evidence): bool :=
 Lemma eqb_eq_evidence: forall e1 e2,
     eqb_evidence e1 e2 = true <-> e1 = e2.
 Proof.
+  
   intros.
   split.
   -

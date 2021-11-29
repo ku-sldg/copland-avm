@@ -3,11 +3,11 @@ Require Import Term_Defs ConcreteEvidence GenStMonad IO_Type.
 Definition encodeEvRaw(e:RawEv): BS.
 Admitted.
 
-Definition do_asp (params :ASP_PARAMS) (mpl:Plc) (x:Event_ID) : BS.
+Definition do_asp (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) : BS.
 Admitted.
 
-Definition do_asp' (params :ASP_PARAMS) (mpl:Plc) (x:Event_ID) : IO BS :=
-  ret (do_asp params mpl x).
+Definition do_asp' (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) : IO BS :=
+  ret (do_asp params e mpl x).
 
 Definition do_sig (bs:BS) (p:Plc) (sigTag:Event_ID) : BS.
 Admitted.

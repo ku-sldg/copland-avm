@@ -1281,7 +1281,7 @@ Ltac do_somerecons :=
 Definition cvm_evidence_denote_asp (a:ASP) (p:Plc) (e:EvidenceC) (x:Event_ID): EvidenceC :=
   match a with
   | CPY => e
-  | ASPC params => uuc params p (do_asp params p x) e
+  | ASPC params => uuc params p (do_asp params (encodeEv e) p x) e
   | SIG => ggc p (do_sig (encodeEvRaw (encodeEv e)) p x) e 
   | HSH => hhc p (do_hash (encodeEvRaw (encodeEv e)) p) (et_fun e)
   end.
@@ -1690,6 +1690,15 @@ Proof.
       dd.
       jkjke'.
       dd.
+      assert (bits = (encodeEv ec)).
+      {
+        symmetry.
+        eapply recon_encodeEv.
+        econstructor.
+        eassumption.
+      }
+      subst.
+      
       tauto.
     +
       dd.

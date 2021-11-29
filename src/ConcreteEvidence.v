@@ -18,7 +18,8 @@ Require Export Term_Defs.
 Inductive EvidenceC: Set :=
 | mtc: EvidenceC
 | nnc: N_ID -> BS -> EvidenceC
-| uuc: ASP_PARAMS -> Plc -> BS -> EvidenceC -> EvidenceC
+| uuc: ASP_PARAMS -> (*ASP_ID -> (list Arg) -> Plc -> TARG_ID -> 
+       Evidence -> *) Plc -> BS -> EvidenceC -> EvidenceC
 | ggc: Plc -> BS -> EvidenceC -> EvidenceC
 | hhc: Plc -> BS -> Evidence -> EvidenceC
 | ssc: EvidenceC -> EvidenceC -> EvidenceC
@@ -27,7 +28,8 @@ Inductive EvidenceC: Set :=
 Fixpoint et_fun (ec:EvidenceC) : Evidence :=
   match ec with
   | mtc => mt
-  | uuc params q _ ec' => uu params q (et_fun ec')
+  | uuc (*i args tpl tid tet*) params q _ ec' =>
+      uu (*i args tpl tid tet*) params q (et_fun ec')
   | ggc p _ ec' => gg p (et_fun ec')
   | hhc p _ et => hh p et
   | nnc ni _ => nn ni
@@ -44,9 +46,9 @@ Definition encodeEvBits (e:EvC): BS :=
 
 Inductive EvSubT: Evidence -> Evidence -> Prop :=
 | evsub_reflT : forall e : Evidence, EvSubT e e
-| uuSubT: forall e e' params q,
+| uuSubT: forall e e' params (*i args tpl tid tet *) q,
     EvSubT e e' ->
-    EvSubT e (uu params q e')
+    EvSubT e (uu params (*i args tpl tid tet*) q e')
 | ggSubT: forall e e' p,
     EvSubT e e' ->
     EvSubT e (gg p e')
@@ -89,9 +91,9 @@ Defined.
 
 Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
 | evsub_refl : forall e : EvidenceC, EvSub e e
-| uuSub: forall e e' params q bs,
+| uuSub: forall e e' params (*i args tpl tid tet*) q bs,
     EvSub e e' ->
-    EvSub e (uuc params q bs e')
+    EvSub e (uuc params (*i args tpl tid tet*) q bs e')
 | ggSub: forall e e' p bs,
     EvSub e e' ->
     EvSub e (ggc p bs e')
@@ -167,9 +169,11 @@ Proof.
         
         assert (EvSubT (et_fun e0) (et_fun H1)).
         {
+          eauto.
+          (*
           eapply IHe.
           eassumption.
-          econstructor.
+          econstructor. *)
         }
         apply uuSubT. eassumption.
     +
@@ -410,6 +414,7 @@ Proof.
   induction e''; intros; fff; invc H0; eauto.
 Defined.
 
+(*
 Inductive Ev_Shape: EvidenceC -> Evidence -> Prop :=
 | mtt: Ev_Shape mtc mt
 | uut: forall params q bs e et,
@@ -449,6 +454,7 @@ Proof.
     eauto.  
 Defined.
 
+
 (* TODO: perhaps an equality modulo "measuring place" *)
 Lemma evshape_determ: forall ec et et',
   Ev_Shape ec et ->
@@ -475,6 +481,7 @@ Proof.
     repeat evShapeFacts;
     eauto.
 Defined.
+*)
 
 Definition splitEv_l (sp:Split) (e:EvC): EvC :=
   match sp with
