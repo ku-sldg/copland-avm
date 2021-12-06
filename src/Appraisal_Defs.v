@@ -1,4 +1,6 @@
-Require Import Term_Defs Term ConcreteEvidence OptMonad Auto More_lists Appraisal_Evidence VmSemantics IO_Stubs AutoPrim AutoApp Evidence_Bundlers.
+Require Import Term_Defs Term ConcreteEvidence (*OptMonad*) Auto More_lists Appraisal_Evidence VmSemantics IO_Stubs AutoPrim AutoApp Evidence_Bundlers.
+
+Require Import StAM GenOptMonad.
 
 (* Require Import Impl_appraisal (*MonadAM*). *)
 
@@ -9,31 +11,31 @@ Import ListNotations.
 
 Require Import Lia Coq.Program.Tactics.
 
-Definition checkASP (params:ASP_PARAMS) (bs:BS) : option BS.
+Definition checkASP (params:ASP_PARAMS) (bs:BS) : AM BS.
 Admitted.
 
 Definition checkASPF (params:ASP_PARAMS) (bs:BS) : BS :=
   fromSome default_bs (checkASP params bs).
 
-Definition checkSigBits (ls:RawEv) (p:Plc) (sig:BS) : option BS.
+Definition checkSigBits (ls:RawEv) (p:Plc) (sig:BS) : AM BS.
 Admitted.
 
 Definition checkSigBitsF (ls:RawEv) (p:Plc) (sig:BS) : BS :=
   fromSome default_bs (checkSigBits ls p sig).
 
-Definition checkNonce (nid:nat) (val:BS) : option BS.
+Definition checkNonce (nid:nat) (val:BS) : AM BS.
 Admitted.
 
 Definition checkNonceF (nid:nat) (val:BS) : BS :=
   fromSome default_bs (checkNonce nid val).
 
-Definition checkSig (e:EvidenceC) (p:Plc) (sig:BS) : option BS :=
+Definition checkSig (e:EvidenceC) (p:Plc) (sig:BS) : AM BS :=
   checkSigBits (encodeEv e) p sig.
 
 Definition checkSigF (e:EvidenceC) (p:Plc) (sig:BS) : BS :=
   fromSome default_bs (checkSig e p sig).
 
-Fixpoint checkHash (e:Evidence) (p:Plc) (hash:BS) : option BS :=
+Fixpoint checkHash (e:Evidence) (p:Plc) (hash:BS) : AM BS :=
   match e with
   | gg _ _ => None
   | mt => ret default_bs (* TODO: implement reconstruct_hash and ignore mt *)

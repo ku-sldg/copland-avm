@@ -1,6 +1,8 @@
 Require Extraction.
 
-Require Import Impl_VM IO_Stubs MonadVM IO_Type.
+Require Import (*Impl_VM*) Run_VM IO_Stubs MonadVM IO_Type Term_Defs.
+
+Require Import Impl_appraisal_alt.
 
 (*
 Extraction Language CakeML.
@@ -32,8 +34,14 @@ Extraction Implicit parallel_vm_thread [2 3 4].
 Extraction Implicit do_wait_par_thread [2 3 4].
 
 
+Separate Extraction build_app_comp_evC.
 
-Separate Extraction copland_compile.
+
+(*
+Extraction anno_par.
+Extraction annotated_par.
+*)
+Separate Extraction run_cvm'.
 
 
 

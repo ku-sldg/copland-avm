@@ -15,6 +15,7 @@ LTS.v
 Main.v
 ConcreteEvidence.v
 GenStMonad.v
+GenOptMonad.v
 StVM.v
 IO_Type.v
 IO_Stubs.v
@@ -22,6 +23,7 @@ Axioms_Io.v
 Evidence_Bundlers.v
 MonadVM.v
 Impl_VM.v
+Run_VM.v
 Auto.v
 Helpers_VmSemantics.v
 AutoApp.v
@@ -34,6 +36,7 @@ ExtLib_Applicative.v
 ExtLib_Monad.v
 OptMonad.v
 Appraisal_Defs.v
+StAM.v
 Impl_appraisal.v
 Impl_appraisal_alt.v
 Test_Extract_App.v

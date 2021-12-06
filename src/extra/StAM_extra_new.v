@@ -4,17 +4,11 @@ Record representing the AM Monad state structure.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-(*Require Import Maps EqClass ConcreteEvidence Term_Defs. *)
+Require Import Maps EqClass ConcreteEvidence Term_Defs.
 
-(*
 Require Import List.
 Import ListNotations.
- *)
 
-Require Import GenOptMonad.
-
-
-(*
 Definition asp_map := MapC (Plc * ASP_ID) ASP_ID.
 Definition sig_map := MapC Plc ASP_ID.
 Definition hsh_map := MapC (Plc * ASP_ID) BS.
@@ -31,12 +25,3 @@ Record AM_St : Type := mkAM_St
 
 Definition empty_amst :=
   mkAM_St [] 0 [] [] [] [] [].
- *)
-
-Definition AM := Opt.
-
-Definition fromSome{A:Type} (default:A) (opt:Opt A): A :=
-  match opt with
-  | Some x => x
-  | _ => default
-  end.

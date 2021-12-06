@@ -31,10 +31,17 @@ Proof.
   -
     do_inv_recon.
     repeat ff.
+    unfold GenOptMonad.bind in *.
+    unfold GenOptMonad.ret in *.
+    repeat ff.
     unfold checkNonceF.
     jkjke.
   -
     do_inv_recon.
+    repeat ff.
+    unfold GenOptMonad.bind in *.
+    unfold GenOptMonad.ret in *.
+    repeat ff.
     
     repeat ff.
 
@@ -43,6 +50,9 @@ Proof.
       eapply IHec2.
       jkjke.
       invc H0.
+      repeat ff.
+      unfold GenOptMonad.bind in *.
+      unfold GenOptMonad.ret in *.
       repeat ff.
       econstructor.
       ff.
@@ -55,6 +65,9 @@ Proof.
     do_inv_recon.
     do_recon_inv.
     
+    repeat ff.
+    unfold GenOptMonad.bind in *.
+    unfold GenOptMonad.ret in *.
     repeat ff.
 
     assert (e = (Impl_appraisal.build_app_comp_evC ec2)) by eauto.
@@ -76,16 +89,22 @@ Proof.
       tauto.
     }
     rewrite <- H.
-    rewrite Heqo0.
+    rewrite Heqa0.
     ff.
   -
     do_inv_recon.
+    repeat ff.
+    unfold GenOptMonad.bind in *.
+    unfold GenOptMonad.ret in *.
     repeat ff.
     unfold checkHashF.
     jkjke.
   -
     do_inv_recon.
     do_recon_inv. 
+    repeat ff.
+    unfold GenOptMonad.bind in *.
+    unfold GenOptMonad.ret in *.
     repeat ff.
     assert (e = (Impl_appraisal.build_app_comp_evC ec2_1)) by eauto.
     assert (e0 = (Impl_appraisal.build_app_comp_evC ec2_2)) by eauto. 
@@ -94,6 +113,9 @@ Proof.
   -
     do_inv_recon.
     do_recon_inv.
+    repeat ff.
+    unfold GenOptMonad.bind in *.
+    unfold GenOptMonad.ret in *.
     repeat ff.
     assert (e = (Impl_appraisal.build_app_comp_evC ec2_1)) by eauto.   
     assert (e0 = (Impl_appraisal.build_app_comp_evC ec2_2)) by eauto.

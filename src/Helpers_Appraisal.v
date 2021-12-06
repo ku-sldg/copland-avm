@@ -806,8 +806,10 @@ Proof.
   destruct ecc'; try solve_by_inversion.
   do_inv_recon_ss.
   invc H.
-  dd.
-  ff.
+  repeat ff.
+    unfold GenOptMonad.bind in *.
+    unfold GenOptMonad.ret in *.
+    repeat ff.
   rewrite fold_recev in *.
   split.
   eexists.
@@ -831,8 +833,10 @@ Proof.
   destruct ecc'; try solve_by_inversion.
   do_inv_recon_pp.
   invc H.
-  dd.
-  ff.
+  repeat ff.
+    unfold GenOptMonad.bind in *.
+    unfold GenOptMonad.ret in *.
+    repeat ff.
   rewrite fold_recev in *.
   split.
   eexists.

@@ -110,16 +110,6 @@ Proof.
     subst.
      *)
 
-
-  Check uuc_app.
-  (*
-uuc_app
-     : forall (e' e'' : EvidenceC) (params : ASP_PARAMS) (p : Plc) (n : BS),
-       EvSub (uuc params p n e'') e' ->
-       EvSub (uuc params p (checkASPF params n) (build_app_comp_evC e''))
-         (build_app_comp_evC e')
-   *)
-
   apply uuc_app in H5.
 
   assert (e0 = et_fun H2).
@@ -131,7 +121,6 @@ uuc_app
   {
     
     eapply recon_encodeEv.
-    Search (_ -> wf_ec _).
     eapply wf_recon.
     eassumption.
     eassumption.

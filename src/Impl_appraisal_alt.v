@@ -8,7 +8,10 @@ Require Import Appraisal_Defs.
 Require Import List.
 Import ListNotations.
 
-Require Import OptMonad.
+(*
+Require Import OptMonad. *)
+
+Require Import StAM GenOptMonad.
 
 (*
 
@@ -28,7 +31,7 @@ Definition peel_bs (ls:EvBits) : option (BS * EvBits) :=
   end.
 *)
 
-Fixpoint build_app_comp_evC (et:Evidence) (ls:RawEv) : option EvidenceC :=
+Fixpoint build_app_comp_evC (et:Evidence) (ls:RawEv) : AM EvidenceC :=
   match et with
   | mt => Some mtc
               
@@ -36,31 +39,31 @@ Fixpoint build_app_comp_evC (et:Evidence) (ls:RawEv) : option EvidenceC :=
     '(bs, ls') <- peel_bs ls ;;
     x <- build_app_comp_evC et' ls' ;;
     res <- checkASP params bs ;;
-    Some (uuc params p res x)
+    ret (uuc params p res x)
     
   | gg p et' =>
     '(bs, ls') <- peel_bs ls ;;
     x <- build_app_comp_evC et' ls' ;;
     res <- checkSigBits ls' p bs ;;
-    Some (ggc p res x)
+    ret (ggc p res x)
          
   | hh p et =>
     '(bs, _) <- peel_bs ls ;;
     res <- checkHash et p bs ;;
-    Some (hhc p res et)
+    ret (hhc p res et)
   | nn nid =>
     '(bs, _) <- peel_bs ls ;;
     res <- checkNonce nid bs ;;
-    Some (nnc nid res)
+    ret (nnc nid res)
 
   | ss et1 et2 =>
     x <- build_app_comp_evC et1 (firstn (et_size et1) ls) ;;
     y <- build_app_comp_evC et2 (skipn (et_size et1) ls) ;;
-    Some (ssc x y)
+    ret (ssc x y)
   | pp et1 et2 =>
     x <- build_app_comp_evC et1 (firstn (et_size et1) ls) ;;
     y <- build_app_comp_evC et2 (skipn (et_size et1) ls) ;;
-    Some (ppc x y)
+    ret (ppc x y)
   end.
 
 (*

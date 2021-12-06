@@ -6,7 +6,7 @@ Author:  Adam Petz, ampetz@ku.edu
 
 Require Import More_lists Defs Term_Defs ConcreteEvidence LTS Event_system Term_system Main Appraisal_Evidence AutoPrim AutoApp.
 Require Import MonadVM StructTactics Auto.
-Require Import Axioms_Io Impl_VM External_Facts Helpers_VmSemantics Evidence_Bundlers.
+Require Import Axioms_Io Impl_VM Run_VM External_Facts Helpers_VmSemantics Evidence_Bundlers.
 
 Require Import List.
 Import ListNotations.
@@ -686,7 +686,9 @@ Proof.
     try ( (* ss and pp cases *)
         assert (wf_ec (evc (encodeEv e1) (et_fun e1))) by
           (eapply wfec_encodeEv_etfun);
-    ff;
+        ff;
+        try (unfold GenOptMonad.bind);
+        ff;
       try do_wfec_firstn;
       try do_wfec_skipn;
       repeat find_rewrite;
@@ -700,7 +702,7 @@ Lemma inv_recon_mt: forall ls et,
 Proof.
   intros.
   invc H.
-  destruct et; repeat ff; try solve_by_inversion.
+  destruct et; repeat ff; try (unfold GenOptMonad.bind in *); repeat ff; try solve_by_inversion.
 Defined.
 
 Ltac do_inv_recon_mt :=
@@ -737,7 +739,7 @@ Lemma inv_recon_nn: forall ls et n n0,
 Proof.
   intros.
   invc H.
-  destruct et; repeat ff; destruct ls; try solve_by_inversion.
+  destruct et; repeat ff; try (unfold GenOptMonad.bind in *); repeat ff; destruct ls; try solve_by_inversion.
 Defined.
 
 Ltac do_inv_recon_nn :=
@@ -759,7 +761,7 @@ Proof.
   intros.
   invc H.
   repeat ff.
-  destruct et; repeat ff; try solve_by_inversion.
+  destruct et; repeat ff; try (unfold GenOptMonad.bind in *); repeat ff; try solve_by_inversion.
   
   repeat eexists.
   destruct ls; ff.
@@ -784,7 +786,7 @@ Lemma inv_recon_gg: forall ls et n n0 ec,
 Proof.
   intros.
   invc H.
-  destruct et; repeat ff; try solve_by_inversion.
+  destruct et; repeat ff; try (unfold GenOptMonad.bind in *); repeat ff; try solve_by_inversion.
 
   repeat eexists.
   destruct ls; ff.
@@ -808,7 +810,7 @@ Lemma inv_recon_hh: forall ls et n n0 et',
 Proof.
   intros.
   invc H.
-  destruct et; repeat ff; destruct ls; try solve_by_inversion.
+  destruct et; repeat ff; try (unfold GenOptMonad.bind in *); repeat ff; destruct ls; try solve_by_inversion.
 Defined.
 
 Ltac do_inv_recon_hh :=
@@ -828,7 +830,7 @@ Lemma inv_recon_ss: forall ls et ec1 ec2,
 Proof.
   intros.
   invc H.
-  destruct et; repeat ff; try solve_by_inversion.
+  destruct et; repeat ff; try (unfold GenOptMonad.bind in *); repeat ff; try solve_by_inversion.
   eauto.
 Defined.
 
@@ -849,7 +851,7 @@ Lemma inv_recon_pp: forall ls et ec1 ec2,
 Proof.
   intros.
   invc H.
-  destruct et; repeat ff; try solve_by_inversion.
+  destruct et; repeat ff; try (unfold GenOptMonad.bind in *); repeat ff; try solve_by_inversion.
   eauto.
 Defined.
 
@@ -882,7 +884,7 @@ Lemma recon_inv_uu: forall n2 n3 H2 H3 e params,
 Proof.
   intros.
   invc H.
-  repeat ff.
+  repeat ff; try (unfold GenOptMonad.bind in *); repeat ff;
   econstructor.
   symmetry.
   tauto.
@@ -905,7 +907,7 @@ Lemma recon_inv_gg: forall sig ls p et e,
 Proof.
   intros.
   invc H.
-  repeat ff.
+  repeat ff; try (unfold GenOptMonad.bind in *); repeat ff;
   econstructor.
   symmetry.
   tauto.
@@ -927,7 +929,7 @@ Lemma recon_inv_ss: forall ls H1 H2 ec1 ec2,
 Proof.
   intros.
   invc H.
-  repeat ff.
+  repeat ff; try (unfold GenOptMonad.bind in *); repeat ff;
   split;
     econstructor;
     try 
@@ -941,7 +943,7 @@ Lemma recon_inv_pp: forall ls H1 H2 ec1 ec2,
 Proof.
   intros.
   invc H.
-  repeat ff.
+  repeat ff; try (unfold GenOptMonad.bind in *); repeat ff;
   split;
     econstructor;
     try 
@@ -988,7 +990,7 @@ Proof.
     do_inv_recon;
     ff;
     invc H;
-    repeat ff;
+    repeat ff; try (unfold GenOptMonad.bind in *); repeat ff;
     rewrite fold_recev in *;
     do_wrap_reconP;
     repeat jkjke.
@@ -1162,15 +1164,47 @@ Proof.
           repeat jkjke';
         repeat ff; eauto).
   -
-      try (ff; eauto; tauto).
-    try
-      ( inv_wfec; ff;
-        do_some_recons').
-    try (
-        repeat do_rcih;
-        destruct_conjs;
-        repeat jkjke').
-    
+    repeat ff.
+    (unfold GenOptMonad.bind in *).
+     repeat ff.
+     +
+     eauto.
+     +
+       inv_wfec.
+       assert (wf_ec (evc r0 e)).
+       {
+         eapply peel_fact; eauto.
+       }
+       ff.
+     +
+       destruct r; try solve_by_inversion.
+       ff.
+       invc H.
+       ff.
+
+
+     -
+           repeat ff.
+    (unfold GenOptMonad.bind in *).
+     repeat ff.
+     +
+     eauto.
+     +
+       inv_wfec.
+       assert (wf_ec (evc r0 e)).
+       {
+         eapply peel_fact; eauto.
+       }
+       ff.
+     +
+       destruct r; try solve_by_inversion.
+       ff.
+       invc H.
+       ff.
+
+
+       
+    (*
   -
     try (ff; eauto; tauto).
     try
@@ -1179,7 +1213,27 @@ Proof.
     try (
         repeat do_rcih;
         destruct_conjs;
-        repeat jkjke').
+        repeat jkjke'). *)
+
+
+     -
+           repeat ff.
+    (unfold GenOptMonad.bind in *).
+     repeat ff.
+     +
+     eauto.
+     +
+       inv_wfec.
+       ff.
+       destruct r; try solve_by_inversion.
+       ff.
+
+     +
+       destruct r; try solve_by_inversion.
+       ff.
+       invc H.
+       ff.
+       
     
   -
         try (ff; eauto; tauto).
@@ -1199,6 +1253,10 @@ Proof.
 
     destruct r; try solve_by_inversion.
     dd.
+    destruct H; try solve_by_inversion.
+    eauto.
+
+    (*
   -
     try (ff; eauto; tauto).
     try
@@ -1216,6 +1274,8 @@ Proof.
 
     destruct r; try solve_by_inversion.
     dd.
+     *)
+    
   -
     try (ff; eauto; tauto).
     try
@@ -1235,7 +1295,9 @@ Proof.
     econstructor.
     eapply skipn_long.
     eassumption.
-    repeat jkjke'.  
+    repeat jkjke'.
+    unfold GenOptMonad.bind in *.
+    eauto.
   -
     try (ff; eauto; tauto).
     try
@@ -1254,6 +1316,8 @@ Proof.
     eapply skipn_long.
     eassumption.
     repeat jkjke'.
+    unfold GenOptMonad.bind in *.
+    eauto.
 Defined.
 
 Lemma some_reconsP : forall e,
@@ -1318,6 +1382,8 @@ Proof.
     ff.
     invc H.
     repeat ff.
+    unfold GenOptMonad.bind in *.
+    ff.
     assert (reconstruct_evP (evc H0 H1) e).
     {
       econstructor; eauto.
@@ -1329,6 +1395,8 @@ Proof.
     ff.
     invc H.
     repeat ff.
+    unfold GenOptMonad.bind in *.
+    ff.
     rewrite fold_recev in *.
     do_wrap_reconP.
     assert (encodeEv e = H0) by eauto.
@@ -1340,7 +1408,9 @@ Proof.
     do_inv_recon.
     ff.
     invc H.
-    repeat ff.
+    ff.
+    unfold GenOptMonad.bind in *.
+    ff.
     rewrite fold_recev in *.
     do_wrap_reconP.
     
@@ -1359,7 +1429,9 @@ Proof.
     do_inv_recon.
     ff.
     invc H.
-    repeat ff.
+    ff.
+    unfold GenOptMonad.bind in *.
+    ff.
     rewrite fold_recev in *.
     do_wrap_reconP.
     
@@ -1411,6 +1483,8 @@ Proof.
     invc H.
     dd.
     ff.
+    unfold GenOptMonad.bind in *.
+    ff.
     assert (wf_ec (evc H0 H1)).
     {
       apply IHec.
@@ -1425,6 +1499,8 @@ Proof.
     do_inv_recon.
     invc H.
     dd.
+    ff.
+    unfold GenOptMonad.bind in *.
     ff.
     assert (wf_ec (evc H0 H1)).
     {
@@ -1445,6 +1521,8 @@ Proof.
     do_inv_recon.
     invc H.
     dd.
+    ff.
+    unfold GenOptMonad.bind in *.
     ff.
 
     assert (wf_ec (evc (firstn (et_size H0) r) H0)).
@@ -1477,6 +1555,8 @@ Proof.
         do_inv_recon.
     invc H.
     dd.
+    ff.
+    unfold GenOptMonad.bind in *.
     ff.
 
     assert (wf_ec (evc (firstn (et_size H0) r) H0)).
@@ -1775,7 +1855,7 @@ Proof.
     eauto.
   -
     wrap_ccp_anno.
-
+    
     assert (n0 = st_evid) by lia.
     subst.
     clear H7.
@@ -1805,22 +1885,42 @@ Proof.
     do_wfec_skipn.
 
     clear_skipn_firstn.
+    dd.
+    unfold GenOptMonad.bind in *.
+    ff.
+    assert (reconstruct_evP (evc r e) e1).
+    {
+      econstructor.
+      symmetry.
+      eassumption.
+    }
+    assert (reconstruct_evP (evc r0 e0) e2).
+    {
+      econstructor.
+      symmetry.
+      eassumption.
+    }
+    (*
+    clear Heqo; clear Heqo0. *)
+    
+   
 
     assert ((cvm_evidence_denote a1 p (splitEvl s ec)) = e1).
     {
-      assert (i + 1 = S i) by lia.
-      rewrite H3 in *; clear H3.
+      assert (i + 1 = S i) as H11 by lia.
+      rewrite H11 in *; clear H11.
       destruct s; destruct s; destruct s0; dd.
       +
         eauto.
       +
-        eauto.    
+        eauto.  
       +
         eapply IHt'1.
         2: { eassumption. }
         eassumption.
         eassumption.
         econstructor; tauto.
+        
         eassumption.
         
       + eapply IHt'1.
@@ -1836,8 +1936,8 @@ Proof.
     {    
       subst.
       
-      assert (i + 1 = S i) by lia.
-      rewrite H3 in *; clear H3.
+      assert (i + 1 = S i) as H11 by lia.
+      rewrite H11 in *; clear H11.
       destruct s; destruct s; destruct s0; dd.
       +
         eauto.
@@ -1890,13 +1990,28 @@ Proof.
     do_wfec_skipn.
 
     clear_skipn_firstn.
+    dd.
+    unfold GenOptMonad.bind in *.
+    ff.
+    assert (reconstruct_evP (evc r e) e1).
+    {
+      econstructor.
+      symmetry.
+      eassumption.
+    }
+    assert (reconstruct_evP (evc r0 e0) e2).
+    {
+      econstructor.
+      symmetry.
+      eassumption.
+    }
 
     do_assume_remote t'2 (splitEv_r s (evc bits et)) p st_evid HHH.
 
     assert ((cvm_evidence_denote a0 p (splitEvl s ec)) = e1).
     {
-      assert (i + 1 = S i) by lia.
-      rewrite H11 in *; clear H11.
+      assert (i + 1 = S i) as H13 by lia.
+      rewrite H13 in *; clear H13.
       destruct s; destruct s; destruct s0; dd.
       +
         eauto.
@@ -1923,7 +2038,7 @@ Proof.
     {
       rewrite at_evidence in *.
       rewrite par_evidence in *.
-      rewrite H10 in *.
+      rewrite H12 in *.
       rewrite Heqe0 in *.
        
       destruct s; destruct s; destruct s0; simpl.
