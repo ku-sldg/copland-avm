@@ -30,8 +30,8 @@ AutoApp.v
 External_Facts.v
 Appraisal_Evidence.v
 VmSemantics.v
+Appraisal_IO_Stubs.v
 Appraisal_Defs.v
-StAM.v
 Impl_appraisal.v
 Impl_appraisal_alt.v
 Test_Extract_App.v

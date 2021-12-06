@@ -2,7 +2,9 @@ Require Import Term ConcreteEvidence Appraisal_Defs StVM Impl_VM Impl_appraisal 
 
 Require Import StructTactics.
 
+(*
 Require Import StAM.
+*)
 
 Require Import Coq.Program.Tactics Lia.
 

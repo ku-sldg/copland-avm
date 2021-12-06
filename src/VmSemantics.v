@@ -1227,6 +1227,9 @@ Proof.
        ff.
        destruct r; try solve_by_inversion.
        ff.
+       unfold GenOptMonad.ret in *.
+       repeat ff.
+       
 
      +
        destruct r; try solve_by_inversion.
@@ -1254,7 +1257,11 @@ Proof.
     destruct r; try solve_by_inversion.
     dd.
     destruct H; try solve_by_inversion.
+    unfold GenOptMonad.ret in *.
+    repeat ff.
     eauto.
+    ff.
+    
 
     (*
   -

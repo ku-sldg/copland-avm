@@ -5,6 +5,12 @@ Import ListNotations.
 
 Require Import Lia Coq.Program.Tactics.
 
+Definition peel_bs (ls:RawEv) : AM (BS * RawEv) :=
+  match ls with
+  | bs :: ls' => ret (bs, ls')
+  | _ => failm
+  end.
+
 Lemma firstn_long: forall (e:list BS) x,
     length e >= x ->
     length (firstn x e) = x.
@@ -23,12 +29,6 @@ Proof.
   { eapply skipn_length. }
   lia.
 Defined.
-
-Definition peel_bs (ls:RawEv) : option (BS * RawEv) :=
-  match ls with
-  | bs :: ls' => Some (bs, ls')
-  | _ => None
-  end.
 
 Lemma peel_fact': forall e x y H,
     length e = S x ->

@@ -33,6 +33,7 @@ Definition empty_amst :=
   mkAM_St [] 0 [] [] [] [] [].
  *)
 
+(*
 Definition AM := Opt.
 
 Definition fromSome{A:Type} (default:A) (opt:Opt A): A :=
@@ -40,3 +41,4 @@ Definition fromSome{A:Type} (default:A) (opt:Opt A): A :=
   | Some x => x
   | _ => default
   end.
+*)

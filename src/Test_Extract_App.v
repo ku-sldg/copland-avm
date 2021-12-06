@@ -33,15 +33,23 @@ Extraction Implicit do_hash' [2].
 Extraction Implicit parallel_vm_thread [2 3 4].
 Extraction Implicit do_wait_par_thread [2 3 4].
 
+Definition my_extracted (t:Term) (st:cvm_st) (et:Evidence) (ls:RawEv) :=
+  let res := run_cvm' t st in
+  let res' := build_app_comp_evC et ls in
+  (res, res').
 
+Separate Extraction my_extracted.
+(*
+Separate Extraction run_cvm'.
 Separate Extraction build_app_comp_evC.
+*)
 
 
 (*
 Extraction anno_par.
 Extraction annotated_par.
 *)
-Separate Extraction run_cvm'.
+
 
 
 

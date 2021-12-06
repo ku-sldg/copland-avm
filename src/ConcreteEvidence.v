@@ -506,3 +506,11 @@ Definition splitEvr (sp:Split) (e:EvidenceC) : EvidenceC :=
   | (_,ALL) => e
   | _ => mtc
   end.
+
+(*
+Definition peel_bs (ls:RawEv) : option (BS * RawEv) :=
+  match ls with
+  | bs :: ls' => Some (bs, ls')
+  | _ => None
+  end.
+*)

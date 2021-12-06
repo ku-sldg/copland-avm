@@ -1,9 +1,9 @@
-Require Import Term ConcreteEvidence Appraisal_Evidence (*GenStMonad MonadVM MonadAM*) .
+Require Import Term ConcreteEvidence (*Appraisal_Evidence*) (*GenStMonad MonadVM MonadAM*) .
 
 (*
 Require Import Impl_vm StAM. *)
 
-Require Import Appraisal_Defs.
+Require Import Appraisal_Defs Appraisal_Evidence.
 
 Require Import List.
 Import ListNotations.
@@ -11,7 +11,7 @@ Import ListNotations.
 (*
 Require Import OptMonad. *)
 
-Require Import StAM GenOptMonad.
+Require Import GenOptMonad.
 
 (*
 
@@ -33,7 +33,7 @@ Definition peel_bs (ls:EvBits) : option (BS * EvBits) :=
 
 Fixpoint build_app_comp_evC (et:Evidence) (ls:RawEv) : AM EvidenceC :=
   match et with
-  | mt => Some mtc
+  | mt => ret mtc
               
   | uu params p et' =>
     '(bs, ls') <- peel_bs ls ;;
