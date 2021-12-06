@@ -30,11 +30,6 @@ AutoApp.v
 External_Facts.v
 Appraisal_Evidence.v
 VmSemantics.v
-ExtLib_Any.v
-ExtLib_Functor.v
-ExtLib_Applicative.v
-ExtLib_Monad.v
-OptMonad.v
 Appraisal_Defs.v
 StAM.v
 Impl_appraisal.v

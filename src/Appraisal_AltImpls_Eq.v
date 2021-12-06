@@ -6,7 +6,7 @@ Require Import Appraisal_Defs Impl_appraisal Impl_appraisal_alt (*MonadAM*).
 
 Require Import Coq.Arith.Peano_dec.
 
-Require Import StructTactics OptMonad.
+Require Import StructTactics.
 
 Require Import Coq.Program.Tactics Coq.Program.Equality.
 

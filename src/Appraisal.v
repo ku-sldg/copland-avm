@@ -6,7 +6,7 @@ Require Import Appraisal_Defs Impl_appraisal.
 
 Require Import Coq.Arith.Peano_dec.
 
-Require Import StructTactics OptMonad Appraisal_Evidence Helpers_Appraisal.
+Require Import StructTactics Appraisal_Evidence Helpers_Appraisal.
 
 Require Import Lia Coq.Program.Tactics Coq.Program.Equality.
 
