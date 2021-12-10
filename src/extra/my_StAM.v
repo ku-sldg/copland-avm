@@ -11,8 +11,17 @@ Require Import List.
 Import ListNotations.
  *)
 
-Require Import GenOptMonad.
+Require Import Maps BS.
 
+Require Export GenStMonad. (*GenOptMonad. *)
+
+
+(* Specific AM monad state *)
+Record am_st : Type := mkAM_St
+                         { am_nonceMap : MapC nat BS;
+                           am_nonceId : nat }.
+
+Definition AM := St am_st.
 
 (*
 Definition asp_map := MapC (Plc * ASP_ID) ASP_ID.

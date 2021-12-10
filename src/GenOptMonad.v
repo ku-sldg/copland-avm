@@ -4,7 +4,7 @@ General definition of an option monad + monadic notations, borrowed/tweaked from
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-(* Generalized State Monad *)
+(* Generalized Option Monad *)
 Definition Opt (A : Type) : Type := (option A). (** S % type. *)
 
 Definition ret {A : Type} (a : A) : Opt A := (Some a).
@@ -72,7 +72,9 @@ Definition gets {S} {A} (f:S -> A) : St S A :=
 Definition when {A} (b : bool) (m : Opt A) : Opt unit :=
   if b then m ;; ret tt else nop.
 
+(*
 Definition AM := Opt.
+*)
 
 (*
 Definition fromSome{A:Type} (default:A) (opt:Opt A): A :=

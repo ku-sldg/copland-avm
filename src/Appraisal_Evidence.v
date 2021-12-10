@@ -5,7 +5,7 @@ Import ListNotations.
 
 Require Import Lia Coq.Program.Tactics.
 
-Definition peel_bs (ls:RawEv) : AM (BS * RawEv) :=
+Definition peel_bs (ls:RawEv) : Opt (BS * RawEv) :=
   match ls with
   | bs :: ls' => ret (bs, ls')
   | _ => failm
@@ -68,7 +68,7 @@ Fixpoint encodeEv (e:EvidenceC) : RawEv :=
     (encodeEv e1) ++ (encodeEv e2)
   end.
 
-Fixpoint reconstruct_ev' (ls:RawEv) (et:Evidence) : option EvidenceC :=
+Fixpoint reconstruct_ev' (ls:RawEv) (et:Evidence) : Opt EvidenceC :=
   match et with
   | mt => (* Some mtc *)
     match ls with
@@ -107,7 +107,7 @@ Fixpoint reconstruct_ev' (ls:RawEv) (et:Evidence) : option EvidenceC :=
     Some (ppc e1 e2)  
   end.
 
-Definition reconstruct_ev (e:EvC) : option EvidenceC :=
+Definition reconstruct_ev (e:EvC) : Opt EvidenceC :=
   match e with
   | evc ls et => reconstruct_ev' ls et
   end.

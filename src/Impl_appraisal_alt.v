@@ -31,7 +31,7 @@ Definition peel_bs (ls:EvBits) : option (BS * EvBits) :=
   end.
 *)
 
-Fixpoint build_app_comp_evC (et:Evidence) (ls:RawEv) : AM EvidenceC :=
+Fixpoint build_app_comp_evC (et:Evidence) (ls:RawEv) : Opt EvidenceC :=
   match et with
   | mt => ret mtc
               

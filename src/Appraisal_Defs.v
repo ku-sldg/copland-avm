@@ -1,6 +1,6 @@
 Require Import Term_Defs Term ConcreteEvidence (*OptMonad*) Auto More_lists Appraisal_Evidence VmSemantics IO_Stubs AutoPrim AutoApp Evidence_Bundlers.
 
-Require Import GenOptMonad.
+Require Import (*StAM*) GenOptMonad.
 
 (* Require Import Impl_appraisal (*MonadAM*). *)
 
@@ -43,13 +43,13 @@ Admitted.
 Definition checkNonceF (nid:nat) (val:BS) : BS :=
   fromSome default_bs (checkNonce nid val).
 
-Definition checkSig (e:EvidenceC) (p:Plc) (sig:BS) : AM BS :=
+Definition checkSig (e:EvidenceC) (p:Plc) (sig:BS) : Opt BS :=
   checkSigBits (encodeEv e) p sig.
 
 Definition checkSigF (e:EvidenceC) (p:Plc) (sig:BS) : BS :=
   fromSome default_bs (checkSig e p sig).
 
-Fixpoint checkHash (e:Evidence) (p:Plc) (hash:BS) : AM BS :=
+Fixpoint checkHash (e:Evidence) (p:Plc) (hash:BS) : Opt BS :=
   match e with
   | gg _ _ => failm
   | mt => ret default_bs (* TODO: implement reconstruct_hash and ignore mt *)

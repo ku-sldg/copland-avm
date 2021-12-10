@@ -36,7 +36,8 @@ Extraction Implicit do_wait_par_thread [2 3 4].
 Definition my_extracted (t:Term) (st:cvm_st) (et:Evidence) (ls:RawEv) :=
   let res := run_cvm' t st in
   let res' := build_app_comp_evC et ls in
-  (res, res').
+  let res'' := eval t 0 mt in
+  (res, res', res'').
 
 Separate Extraction my_extracted.
 (*

@@ -89,7 +89,7 @@ Proof.
       tauto.
     }
     rewrite <- H.
-    rewrite Heqa0.
+    rewrite Heqo0.
     ff.
   -
     do_inv_recon.
