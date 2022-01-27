@@ -2,7 +2,6 @@
 Preamble.v
 More_lists.v
 StructTactics.v
-AutoPrim.v
 Defs.v
 BS.v
 Term_Defs.v

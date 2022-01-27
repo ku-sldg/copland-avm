@@ -14,7 +14,7 @@ University of California.  See license.txt for details. *)
 
 Require Import PeanoNat Nat Compare_dec Lia.
 Require Import Preamble StructTactics Defs.
-Require Import AutoPrim.
+(*Require Import AutoPrim. *)
 
 Require Export BS.
 
@@ -54,21 +54,6 @@ Admitted.
 Definition Arg: Set.
 Admitted.
 
-Definition eq_aspid_dec:
-  forall x y: ASP_ID, {x = y} + {x <> y}.
-Proof.
-Admitted.
-
-Definition eq_targid_dec:
-  forall x y: TARG_ID, {x = y} + {x <> y}.
-Proof.
-Admitted.
-
-Definition eq_arg_dec:
-  forall x y: Arg, {x = y} + {x <> y}.
-Proof.
-Admitted.
-
 (*
 Inductive ASP_PARAMS': Set :=
 | asp_paramsC': ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP_PARAMS'.
@@ -92,32 +77,6 @@ Defined.
 Inductive ASP_PARAMS: Set :=
 | asp_paramsC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP_PARAMS.
 
-Definition eqb_asp_params: ASP_PARAMS -> ASP_PARAMS -> bool.
-Admitted.
-
-Definition eq_asp_params_dec:
-  forall x y: ASP_PARAMS, {x = y} + {x <> y}.
-Proof.
-  intros;
-    repeat decide equality.
-  eapply eq_targid_dec.
-  eapply eq_arg_dec.
-  eapply eq_aspid_dec.
-Defined.
-(*
-  eapply eq_targid_dec.
-  eapply eq_arg_dec.
-  eapply eq_aspid_dec. 
-Defined.
- *)
-
-
-Lemma eqb_asp_params_true_iff: forall a a0,
-    eqb_asp_params a a0 = true <->
-    a = a0.
-Proof.
-Admitted.
-
 Inductive Evidence: Set :=
 | mt: Evidence
 | uu: (*ASP_PARAMS ->*) ASP_PARAMS ->
@@ -127,13 +86,6 @@ Inductive Evidence: Set :=
 | nn: N_ID -> Evidence
 | ss: Evidence -> Evidence -> Evidence
 | pp: Evidence -> Evidence -> Evidence.
-
-Definition eq_evidence_dec:
-  forall x y: Evidence, {x = y} + {x <> y}.
-Proof.
-Admitted.
-
-
 
 Inductive ASP: Set :=
 | CPY: ASP
@@ -285,17 +237,6 @@ Inductive Ev: Set :=
 | join:  nat -> Plc -> Ev
 | cvm_thread_start: Loc -> Plc -> Term -> Evidence -> Ev
 | cvm_thread_end: Loc -> Ev.
-
-Definition eq_ev_dec:
-  forall x y: Ev, {x = y} + {x <> y}.
-Proof.
-  intros;
-    repeat decide equality;
-    try (apply eq_arg_dec);
-    try (apply eq_aspid_dec);
-    try (apply eq_targid_dec).
-Defined.
-Hint Resolve eq_ev_dec : core.
 
 (** The natural number used to distinguish events. *)
 

@@ -4,7 +4,7 @@ Proofs about the Copland Virtual Machine implementation, linking it to the Copla
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import More_lists Defs Term_Defs ConcreteEvidence LTS Event_system Term_system Main Appraisal_Evidence AutoPrim AutoApp.
+Require Import More_lists Defs Term_Defs ConcreteEvidence LTS Event_system Term_system Main Appraisal_Evidence AutoApp.
 Require Import MonadVM StructTactics Auto.
 Require Import Axioms_Io Impl_VM Run_VM External_Facts Helpers_VmSemantics Evidence_Bundlers.
 

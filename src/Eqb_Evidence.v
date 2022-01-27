@@ -7,8 +7,76 @@ Require Import PeanoNat.
 
 (*
 Set Nested Proofs Allowed.
+ *)
+
+
+(* eqb Copland phrase terms *)
+Definition eq_aspid_dec:
+  forall x y: ASP_ID, {x = y} + {x <> y}.
+Proof.
+Admitted.
+
+Definition eq_targid_dec:
+  forall x y: TARG_ID, {x = y} + {x <> y}.
+Proof.
+Admitted.
+
+Definition eq_arg_dec:
+  forall x y: Arg, {x = y} + {x <> y}.
+Proof.
+Admitted.
+
+Definition eqb_asp_params: ASP_PARAMS -> ASP_PARAMS -> bool.
+Admitted.
+
+Definition eq_asp_params_dec:
+  forall x y: ASP_PARAMS, {x = y} + {x <> y}.
+Proof.
+  intros;
+    repeat decide equality.
+  eapply eq_targid_dec.
+  eapply eq_arg_dec.
+  eapply eq_aspid_dec.
+Defined.
+(*
+  eapply eq_targid_dec.
+  eapply eq_arg_dec.
+  eapply eq_aspid_dec. 
+Defined.
+ *)
+
+Lemma eqb_asp_params_true_iff: forall a a0,
+    eqb_asp_params a a0 = true <->
+    a = a0.
+Proof.
+Admitted.
+
+(*
+(* Duplicate below *)
+Definition eq_evidence_dec:
+  forall x y: Evidence, {x = y} + {x <> y}.
+Proof.
+Admitted.
 *)
 
+Definition eq_ev_dec:
+  forall x y: Ev, {x = y} + {x <> y}.
+Proof.
+  intros;
+    repeat decide equality;
+    try (apply eq_arg_dec);
+    try (apply eq_aspid_dec);
+    try (apply eq_targid_dec).
+Defined.
+Hint Resolve eq_ev_dec : core.
+
+
+
+
+
+
+
+(* eqb Copland evidence terms *)
 Definition eq_evidence_dec:
   forall x y: Evidence, {x = y} + {x <> y}.
 Proof.

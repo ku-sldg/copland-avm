@@ -1,4 +1,4 @@
-Require Import Term_Defs Term ConcreteEvidence (*OptMonad*) Auto More_lists Appraisal_Evidence VmSemantics IO_Stubs AutoPrim AutoApp Evidence_Bundlers.
+Require Import Term_Defs Term ConcreteEvidence (*OptMonad*) Auto More_lists Appraisal_Evidence VmSemantics IO_Stubs Defs AutoApp Evidence_Bundlers.
 
 Require Import (*StAM*) GenOptMonad.
 
@@ -468,7 +468,7 @@ Proof.
     inv_wfec.
     econstructor.
     ff.
-    lia.
+    (*lia. *)
   -
     do_inv_recon.
     do_recon_inv.
@@ -476,7 +476,7 @@ Proof.
     inv_wfec. 
     econstructor.
     ff.
-    lia.
+    (*lia.*)
 
   -
     do_inv_recon.

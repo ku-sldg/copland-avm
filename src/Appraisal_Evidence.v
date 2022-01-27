@@ -1,4 +1,4 @@
-Require Import ConcreteEvidence AutoApp (*OptMonad*) Auto Helpers_VmSemantics Term_Defs StVM Impl_VM AutoPrim StructTactics GenOptMonad. (* StAM *)
+Require Import ConcreteEvidence AutoApp (*OptMonad*) Auto Helpers_VmSemantics Term_Defs StVM Impl_VM Defs StructTactics GenOptMonad. (* StAM *)
 
 Require Import List.
 Import ListNotations.

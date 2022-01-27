@@ -3,8 +3,40 @@ Require Import StructTactics.
 Require Import List.
 Import List.ListNotations.
 
+Require Import Coq.Program.Tactics.
+
+Ltac dff :=
+  repeat (
+      cbn in *;
+      (*unfold runSt in *; *)
+      repeat break_let;
+      repeat ((*monad_unfold;*) cbn in *; find_inversion);
+      (*monad_unfold;
+      repeat dunit; *)
+      unfold snd in * ).
+
+Ltac fff := repeat break_match; try solve_by_inversion; dff.
+
+Ltac jkjke :=
+  match goal with
+  | [H: _ |-  _ ] => erewrite H; eauto
+  end.
+
+Ltac jkjke' :=
+  match goal with
+  | [H: _ |-  _ ] => erewrite <- H in *; eauto
+  end.
+
+Ltac door :=
+  match goal with
+  | [H: _ \/ _  |- _] =>
+    destruct H
+  end; destruct_conjs.
+
+(*
 Definition list_subset{A:Type} :=
   incl (A:=A).
+*)
 
 Lemma pairsinv : forall (a a' b b':nat),
     a <> a' -> (a,b) <> (a',b').
@@ -13,10 +45,13 @@ Proof.
   congruence.
 Defined.
 
+(*
 Ltac asdf :=
   match goal with
   | [H: _, H2: _ |- _] => apply H in H2
   end.
+*)
+
 
 Ltac ff :=
   repeat (cbn in *;
@@ -30,7 +65,7 @@ Ltac ff' :=
   repeat (cbn in *;
           repeat break_match; try solve_by_inversion;
           repeat find_inversion;
-          unfold list_subset in *;
+          (*unfold list_subset in *; *)
           unfold incl in * ).
 
 Ltac fail_if_in_hyps H := 

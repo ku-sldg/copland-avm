@@ -4,7 +4,7 @@ Definition of the CVM Monad + monadic helper functions.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term_Defs Term ConcreteEvidence Axioms_Io Evidence_Bundlers AutoPrim.
+Require Import Term_Defs Term ConcreteEvidence Axioms_Io Evidence_Bundlers Defs.
 Require Import StructTactics.
 
 Require Import Coq.Program.Tactics Lia.

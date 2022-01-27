@@ -4,7 +4,7 @@ Evidence structure that models concrete results of Copland phrase execution.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import StructTactics AutoPrim.
+Require Import StructTactics Defs. (*AutoPrim. *)
 
 Require Import Coq.Program.Tactics.
 

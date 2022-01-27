@@ -1,6 +1,6 @@
 Require Import Event_system Term_system ConcreteEvidence Appraisal_Evidence.
 Require Import Impl_VM Helpers_VmSemantics VmSemantics.
-Require Import Axioms_Io External_Facts Auto AutoApp AutoPrim.
+Require Import Axioms_Io External_Facts Auto AutoApp Defs.
 
 Require Import Appraisal_Defs Impl_appraisal Impl_appraisal_alt (*MonadAM*).
 
@@ -90,7 +90,8 @@ Proof.
     }
     rewrite <- H.
     rewrite Heqo0.
-    ff.
+    cbn in *.
+    tauto.
   -
     do_inv_recon.
     repeat ff.

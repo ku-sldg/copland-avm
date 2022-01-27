@@ -1,4 +1,4 @@
-Require Import Term ConcreteEvidence Appraisal_Defs StVM Impl_VM Impl_appraisal Auto AutoApp External_Facts Helpers_VmSemantics Appraisal_Evidence VmSemantics Evidence_Bundlers AutoPrim Axioms_Io IO_Stubs.
+Require Import Term ConcreteEvidence Appraisal_Defs StVM Impl_VM Impl_appraisal Auto AutoApp External_Facts Helpers_VmSemantics Appraisal_Evidence VmSemantics Evidence_Bundlers Defs Axioms_Io IO_Stubs.
 
 Require Import StructTactics.
 
@@ -159,6 +159,9 @@ Proof.
   generalizeEverythingElse e'.
   induction e'; intros;
     ff.
+Defined.
+
+(*
     
   -
 
@@ -312,6 +315,7 @@ Proof.
       destruct_conjs.
       eauto. *)
 Defined.
+*)
 
 Lemma hhc_app: forall e' p bs et,
     EvSub (hhc p bs et) e' ->
