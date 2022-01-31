@@ -1,0 +1,17 @@
+*.vo
+*.glob
+.coqdeps.d
+coq.mk
+coq.mk.conf
+*.vok
+*.vos
+.coq.mk.d
+.lia.cache
+*.aux
+*~
+<<<<<<< HEAD
+src/html/*
+=======
+src/html/*
+src/*.hs
+>>>>>>> cvm_evid

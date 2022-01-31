@@ -9,7 +9,9 @@ Require Import EqClass.
 
 Require Import List.
 Import ListNotations.
-Require Import Coq.Arith.EqNat.
+Require Import Coq.Arith.EqNat Coq.Program.Tactics PeanoNat.
+
+Require Import StructTactics.
 
 (* ================================================================= *)
 (** ** List-Based Maps *)
@@ -58,6 +60,12 @@ Fixpoint map_get{A B:Type} `{H : EqClass A} (m : MapC A B ) x : option B :=
 
 Definition map_set{A B:Type} `{H : EqClass A} (m:MapC A B) (x:A) (v:B) : MapC A B := (x, v) :: m.
 
+Fixpoint map_vals{A B:Type} `{H : EqClass A} (m : MapC A B ) : list B :=
+  match m with
+  | [] => []
+  | (k', v) :: m' => v :: map_vals m'
+  end.
+
 (*
 (** Finally, the domain of a map is just the set of its keys. *)
 Fixpoint map_dom {K V} (m:MapC K V) : list K :=
@@ -72,4 +80,45 @@ Fixpoint map_dom {K V} (m:MapC K V) : list K :=
     [m] *)
 
 Inductive bound_to{A B:Type} `{H : EqClass A} : MapC A B -> A -> B -> Prop :=
-  | Bind : forall x m a, map_get m x = Some a -> bound_to m x a.
+| Bind : forall x m a, map_get m x = Some a -> bound_to m x a.
+
+Lemma bound_to_eq_dec {A B: Type} `{H: EqClass A}:
+  forall m x,
+    {(exists (a:B), bound_to m x a)} + {not (exists (a:B), bound_to m x a)}.
+Proof.
+  intros.
+  generalizeEverythingElse m.
+  induction m; intros.
+  -
+    right.
+    unfold not.
+    intros.
+    destruct_conjs.
+    invc H1.
+    simpl in *.
+    solve_by_inversion.
+  -
+    destruct H.
+    destruct a.
+    pose (IHm x).
+    inversion s.
+
+    (*
+    
+    +
+      destruct (Nat.eq_dec a x).
+      admit.
+    +
+      
+      
+      left.
+      eexists.
+      econstructor.
+      inversion e.
+    destruct_conjs.
+    left.
+     *)
+Admitted.
+
+    
+    

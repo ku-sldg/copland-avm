@@ -4,46 +4,37 @@ Definition of the CVM Monad + monadic helper functions.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term ConcreteEvidence GenStMonad Axioms_Io.
-Require Import Maps StructTactics.
+Require Import Term_Defs Term ConcreteEvidence Axioms_Io Evidence_Bundlers Defs.
+Require Import StructTactics.
+
+Require Import Coq.Program.Tactics Lia.
 
 Require Import List.
 Import ListNotations.
 
-Require Export StVM.
+Require Export StVM GenStMonad IO_Stubs.
 
+(*
 Definition CVM := St cvm_st.
-
+*)
 
 (* VM monad operations *)
 
-Definition put_store_at (n:nat) (e:EvidenceC) : CVM unit :=
+Definition put_ev (e:EvC) : CVM unit :=
   st <- get ;;
+     let tr' := st_trace st in
+     let p' := st_pl st in
+     let i := st_evid st in
+     put (mk_st e tr' p' i).
+
+Definition put_pl (p:Plc) : CVM unit :=
+  st <- get ;;
+     let tr' := st_trace st in
      let e' := st_ev st in
-     let tr' := st_trace st in
-     let p' := st_pl st in
-     let store' := st_store st in
-  (*let '{| st_ev := _; st_stack := s; st_trace := tr |} := st in*)
-     put (mk_st e' tr' p' (map_set store' n e)).
+     let i := st_evid st in
+     put (mk_st e' tr' p i).
 
-Definition get_store_at (n:nat) : CVM EvidenceC :=
-  st <- get ;;
-     let store' := st_store st in
-     let maybeEv := map_get store' n in
-     match maybeEv with
-     | Some e => ret e
-     | None => failm
-     end.
-
-Definition put_ev (e:EvidenceC) : CVM unit :=
-  st <- get ;;
-     let tr' := st_trace st in
-     let p' := st_pl st in
-     let store' := st_store st in
-  (*let '{| st_ev := _; st_stack := s; st_trace := tr |} := st in*)
-    put (mk_st e tr' p' store').
-
-Definition get_ev : CVM EvidenceC :=
+Definition get_ev : CVM EvC :=
   st <- get ;;
   ret (st_ev st).
 
@@ -51,172 +42,277 @@ Definition get_pl : CVM Plc :=
   st <- get ;;
   ret (st_pl st).
 
-Definition modify_evm (f:EvidenceC -> EvidenceC) : CVM unit :=
+Definition inc_id : CVM Event_ID :=
   st <- get ;;
-  let '{| st_ev := e; st_trace := tr; st_pl := p; st_store := store |} := st in
-  put (mk_st (f e) tr p store).
+    let tr' := st_trace st in
+    let e' := st_ev st in
+    let p' := st_pl st in
+    let i := st_evid st in
+    put (mk_st e' tr' p' (i + 1)) ;;
+    ret i.
+  
+
+Definition modify_evm (f:EvC -> EvC) : CVM unit :=
+  st <- get ;;
+  let '{| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |} := st in
+  put (mk_st (f e) tr p i).
 
 Definition add_trace (tr':list Ev) : cvm_st -> cvm_st :=
-  fun '{| st_ev := e; st_trace := tr; st_pl := p; st_store := store |} =>
-    mk_st e (tr ++ tr') p store.
+  fun '{| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |} =>
+    mk_st e (tr ++ tr') p i.
 
 Definition add_tracem (tr:list Ev) : CVM unit :=
   modify (add_trace tr).
 
-
-Definition split_evm (i:nat) (sp1 sp2:SP) (e:EvidenceC) (p:Plc) : CVM (EvidenceC*EvidenceC) :=
-    let e1 := splitEv sp1 e in
-    let e2 := splitEv sp2 e in
-    add_tracem [Term.split i p] ;;
-               ret (e1,e2).
+Definition split_ev (sp:Split): CVM (EvC*EvC) :=
+  e <- get_ev ;;
+  p <- get_pl ;;
+  i <- inc_id ;;
+  let e1 := splitEv_l sp e in
+  let e2 := splitEv_r sp e in
+  add_tracem [Term_Defs.split i p] ;;
+  ret (e1,e2).
 
 (** * Partially-symbolic implementations of IO operations *)
 
-Definition invokeUSM (x:nat) (i:ASP_ID) (l:list Arg) (e:EvidenceC) : CVM BS :=
-  (*e <- get_ev ;; *)
-  p <- get_pl ;;
-  add_tracem [Term.umeas x p i l];;
-  ret x 
-  (*ret (uuc i x e)*).
-
-Definition encodeEv (e:EvidenceC) : BS.
+(*
+Definition do_asp (params :ASP_PARAMS) (mpl:Plc) (x:Event_ID) : BS.
 Admitted.
-
-Definition signEv (x:nat) (e:EvidenceC) : CVM BS :=
-  (* e <- get_ev ;; *)
-  p <- get_pl ;;
-  add_tracem [Term.sign x p] ;;
-  ret x
-  (*ret (ggc x e)*).
-
-
-Definition hashEv (x:nat) (e:EvidenceC) : CVM BS :=
-  (* e <- get_ev ;; *)
-  p <- get_pl ;;
-  add_tracem [Term.hash x p] ;;
+*)
+         
+Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) (e:EvC) : CVM Event_ID :=
+  (*match params with
+  | asp_paramsC i l tpl tid =>
+    x <- inc_id ;;
+    add_tracem [umeas x mpl params (*(get_et e)*)] ;;
+    ret x
+  end. *)
+  x <- inc_id ;;
+  add_tracem [umeas x mpl params (get_et e)] ;;
   ret x.
-
-Definition copyEv (x:nat) : CVM EvidenceC :=
-  p <- get_pl ;;
-  add_tracem [Term.copy x p] ;;
-  get_ev.
-
-Definition do_prim (x:nat) (a:ASP) : CVM EvidenceC :=
-  match a with
-  | CPY => copyEv x
-  | ASPC asp_id args =>
-    e <- get_ev ;;
-    bs <- invokeUSM x asp_id args e ;;
-    ret (uuc asp_id bs e)               
-  | SIG =>
-    e<- get_ev ;;
-    bs <- signEv x e ;;
-    ret (ggc bs e)
-  | HSH =>
-    e <- get_ev ;;
-    bs <- hashEv x e ;;
-    ret (hhc bs e)
-  end.
-
-Definition sendReq (t:AnnoTerm) (q:Plc) (reqi:nat) : CVM unit :=
-  p <- get_pl ;;
-  e <- get_ev ;;
-  put_store_at reqi e ;;
-  add_tracem [req reqi p q (unanno t)].
-
-Definition receiveResp (rpyi:nat) (q:Plc) : CVM EvidenceC :=
-  e <- get_store_at rpyi ;;
-  p <- get_pl ;;
-  add_tracem [rpy (Nat.pred rpyi) p q] ;;
-  ret e.
-
-(* Primitive CVM Monad operations that require IO Axioms *)
-Definition doRemote (t:AnnoTerm) (q:Plc) (reqi:nat) (rpyi:nat) : CVM unit :=
-  e <- get_store_at reqi ;;
-  add_tracem (remote_events t q) ;;
-  put_store_at rpyi (toRemote t q e).
-
-Definition runParThread (t:AnnoTerm) (p:Plc) (loc1:nat) (loc2:nat) : CVM (list Ev) :=
-  e <- get_store_at loc1 ;;
-  let el := parallel_vm_events t p in
-  let e' := parallel_vm_thread t p e in
-  (*let loc := fst (range t) in *)
-  put_store_at loc2 e' ;;
-  ret el.
-
-Definition runParThreads (t1 t2:AnnoTerm) (p:Plc) (loc_e1 loc_e1' loc_e2 loc_e2':nat) : CVM unit :=
-  el1 <- runParThread t1 p loc_e1 loc_e1' ;;
-  el2 <- runParThread t2 p loc_e2 loc_e2' ;;
-  add_tracem (shuffled_events el1 el2).
-
-Definition join_seq (n:nat) (p:Plc) (e1:EvidenceC) (e2:EvidenceC) : CVM unit :=
-  put_ev (ssc e1 e2) ;;
-  add_tracem [Term.join n p].
-
-Definition join_par (n:nat) (p:Plc) (e1:EvidenceC) (e2:EvidenceC) : CVM unit :=
-  put_ev (ppc e1 e2) ;;
-  add_tracem [Term.join n p].
   
 
-(** * Helper functions for Appraisal *)
+Definition invoke_ASP (params:ASP_PARAMS) : CVM EvC :=
+  e <- get_ev ;;
+  p <- get_pl ;;
+  x <- tag_ASP params p e ;;
+  bs <- do_asp' params (get_bits e) p x ;;
+  (*let bs := (do_asp params p x) in *)
+  ret (cons_uu bs e params p).
 
-Definition extractUev (e:EvidenceC) : CVM (BS * EvidenceC) :=
-  match e with
-  | uuc i bs e' => ret (bs,e')
-  | _ => failm
+Definition tag_SIG (p:Plc) (e:EvC) : CVM Event_ID :=
+  x <- inc_id ;;
+  add_tracem [sign x p (get_et e)];;
+  ret x.
+
+Definition signEv : CVM EvC :=
+  p <- get_pl ;;
+  e <- get_ev ;;
+  x <- tag_SIG p e ;;
+  bs <- do_sig' (encodeEvBits e) p x ;;
+  (*let bs := (do_sig (encodeEvBits e) p x) in *)
+  ret (cons_sig bs e p).
+
+Definition tag_HSH (p:Plc) (e:EvC): CVM Event_ID :=
+  x <- inc_id ;;
+  add_tracem [hash x p (get_et e)] ;;
+  ret x.
+
+Definition hashEv : CVM EvC :=
+  p <- get_pl ;;
+  e <- get_ev ;;
+  x <- tag_HSH p e ;;
+  bs <- do_hash' (encodeEvBits e) p ;;
+  (*let bs := (do_hash (encodeEvBits e) p) in *)
+  ret (cons_hh bs e p).
+
+Definition copyEv : CVM EvC :=
+  p <- get_pl ;;
+  x <- inc_id ;;
+  add_tracem [copy x p] ;;
+  get_ev.
+
+Definition do_prim (a:ASP) : CVM EvC :=
+  match a with
+  | CPY => copyEv
+  | ASPC params =>
+    invoke_ASP params     
+  | SIG => signEv
+  | HSH => hashEv
   end.
 
-Definition extractSig (e:EvidenceC) : CVM (BS * EvidenceC) :=
-  match e with
-  | ggc bs e' => ret (bs, e')
-  | _ => failm
+Fixpoint event_id_span (t: Term) : nat :=
+  match t with
+  | asp x => 1
+
+  | att p x => 2 + (event_id_span x)
+
+  | lseq x y => (event_id_span x) + (event_id_span y)
+
+  | bseq s x y => 2 + (event_id_span x) + (event_id_span y)
+
+  | bpar s x y => 2 + (event_id_span x) + (event_id_span y)
   end.
+
+Lemma span_range : forall t i j t',
+  anno t i = (j, t') ->
+  event_id_span t = (j - i).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a;
+    try 
+    cbn in *;
+    find_inversion;
+    lia.
+  -
+    cbn in *.
+    repeat break_let.
+    find_inversion.
+    assert (event_id_span t = n - (S i)).
+    { eauto. }
+    rewrite H.
+    assert (n > (S i)).
+    {
+      eapply anno_mono.
+      eassumption.
+    }
+    lia.
+  -
+    cbn in *.
+    repeat break_let.
+    repeat find_inversion.
+    assert (event_id_span t1 = (n - i)) by eauto.
+    assert (event_id_span t2 = (j - n)) by eauto.
+    repeat jkjke.
+    assert (n > i).
+    { eapply anno_mono; eauto. }
+    assert (j > n).
+    { eapply anno_mono; eauto. }
+    lia.
+  -
+    cbn in *.
+    repeat break_let.
+    repeat find_inversion.
+    assert (event_id_span t1 = (n - (S i))) by eauto.
+    assert (event_id_span t2 = (n0 - n)) by eauto.
+    repeat jkjke.
+    assert (n > (S i)).
+    { eapply anno_mono; eauto. }
+    assert (n0 > n).
+    { eapply anno_mono; eauto. }
+    lia.
+  -
+        cbn in *.
+    repeat break_let.
+    repeat find_inversion.
+    assert (event_id_span t1 = (n - (S i))) by eauto.
+    assert (event_id_span t2 = (n0 - n)) by eauto.
+    repeat jkjke.
+    assert (n > (S i)).
+    { eapply anno_mono; eauto. }
+    assert (n0 > n).
+    { eapply anno_mono; eauto. }
+    lia.
+Defined.
+
+Definition inc_remote_event_ids (t:Term) : CVM unit :=
+  st <- get ;;
+    let tr' := st_trace st in
+    let e' := st_ev st in
+    let p' := st_pl st in
+    let i := st_evid st in
+    let new_i := i + (event_id_span t) in
+    put (mk_st e' tr' p' new_i).
+  
+(* Primitive monadic communication primitives (some require IO Axioms) *)
+
+Definition tag_REQ (t:Term) (p:Plc) (q:Plc) (e:EvC) : CVM unit :=
+  reqi <- inc_id ;;
+  add_tracem [req reqi p q t (get_et e)].
+
+Definition tag_RPY (p:Plc) (q:Plc) (e:EvC) : CVM unit :=
+  rpyi <- inc_id ;;
+  add_tracem [rpy rpyi p q (get_et e)].
+
+Definition remote_session (t:Term) (p:Plc) (q:Plc) (e:EvC) : CVM EvC :=
+  tag_REQ t p q e ;;
+  (*let e' := (doRemote_session t q e) in *)
+  e' <- doRemote_session' t q e ;;
+  add_tracem (cvm_events t q (get_et e)) ;;
+  inc_remote_event_ids t ;;
+  ret e'.
+
+Definition doRemote (t:Term) (q:Plc) (e:EvC) : CVM EvC :=
+  p <- get_pl ;;
+  e' <- remote_session t p q e ;;
+  tag_RPY p q e' ;;
+  ret e'.
+
+Definition join_seq (e1:EvC) (e2:EvC): CVM unit :=
+  p <- get_pl ;;
+  n <- inc_id ;;
+  put_ev (ss_cons e1 e2) ;;
+  add_tracem [join n p].
+
+(* Primitive monadic parallel CVM thread primitives (some require IO Axioms) *)
 
 (*
-Definition extractHsh (e:EvidenceC) : CVM (BS * EvidenceC) :=
-  match e with
-  | hhc bs e' => ret (bs, e')
-  | _ => failm
-  end. *)
+Definition do_start_par_threadIO (loc:Loc) (t:Term) (e:RawEv) : unit.
+Admitted.
+*)
 
+(*
+Definition do_start_par_thread (loc:Loc) (t:Term) (e:RawEv) : CVM unit :=
+  let _ := do_start_par_threadIO loc t e in
+  ret tt.  (* Admitted. *)
+*)
 
-Definition extractComp (e:EvidenceC) : CVM (EvidenceC * EvidenceC) :=
-  match e with
-  | ssc e1 e2 => ret (e1,e2)
-  (*| ppc e1 e2 => ret (e1,e2) *)
-  | _ => failm
-  end.
+Definition start_par_thread (loc:Loc) (t:Term) (e:EvC) : CVM unit :=
+  p <- get_pl ;;
+  do_start_par_thread loc t (get_bits e) ;;
+  add_tracem [cvm_thread_start loc p t (get_et e)].
 
-Definition checkSig (x:nat) (i:ASP_ID) (e':EvidenceC) (sig:BS) : CVM BS :=
-  invokeUSM x i ([encodeEv e'] ++ [sig] (* ++ args*) ) mtc.
+(*
+Definition do_wait_par_thread (loc:Loc) (t:Term) (p:Plc) (e:EvC) : CVM EvC :=
+  ret (parallel_vm_thread loc t p e).
+*)
 
-Definition checkUSM (x:nat) (i:ASP_ID) (l:list Arg) (bs:BS) : CVM BS :=
-  invokeUSM x i ([bs] ++ l) mtc.
+Definition wait_par_thread (loc:Loc) (t:Term) (e:EvC) : CVM EvC :=
+  p <- get_pl ;;
+  e' <- do_wait_par_thread loc t p e ;;
+  add_tracem [cvm_thread_end loc] ;;
+  inc_remote_event_ids t ;;
+  ret e'.
+
+Definition join_par (e1:EvC) (e2:EvC): CVM unit :=
+  p <- get_pl ;;
+  n <- inc_id ;;
+  put_ev (pp_cons e1 e2) ;;
+  add_tracem [join n p].
    
 Ltac monad_unfold :=
   repeat unfold
   execSt,  
   do_prim,
-  invokeUSM,
+  invoke_ASP,
   signEv,
   hashEv,
   copyEv,
 
-  sendReq,
+  tag_HSH,
   doRemote,
-  receiveResp,
-  runParThreads,
-  runParThread,
 
   get_ev,
   get_pl,
   add_tracem,
   modify_evm,
-  split_evm,
+  (*split_ev_seq,
+  join_par, *)
   add_trace,
   failm,
-  (* Uncommenting these evaluates too much, can't apply lemmas *)
-  (*get_store_at,*)
   get,
   when,
   put,
@@ -227,7 +323,30 @@ Ltac monad_unfold :=
   simpl in *.
 
 
+Ltac vmsts :=
+  simpl in *;
+  repeat
+    match goal with
+    | [H: cvm_st |- _] => destruct H
+    end.
 
+Ltac amsts :=
+  repeat match goal with
+         | H:cvm_st |- _ => destruct H
+         end.
+
+Ltac pairs :=
+  simpl in *;
+  vmsts;
+  repeat
+    match goal with
+    | [H: (Some _, _) =
+          (Some _, _) |- _ ] => invc H; monad_unfold
+                                                          
+    | [H: {| st_ev := _; st_trace := _; st_pl := _(*; st_store := _*); st_evid := _ |} =
+          {| st_ev := _; st_trace := _; st_pl := _ (*; st_store := _*); st_evid := _ |} |- _ ] =>
+      invc H; monad_unfold
+    end; destruct_conjs; monad_unfold.
 
 (*
 Definition eval_asp (a:ASP) (e:EvidenceC) : EvidenceC :=
@@ -362,3 +481,33 @@ Proof.
         econstructor; (try simpl); eauto; try (econstructor) . *)
 Defined.
 *)
+
+
+
+
+(* *** Deprecated Parallel helper functions *** *)
+
+(*
+Definition runParThread (t:AnnoTerm) (p:Plc) (loc1:Loc) (loc2:Loc) :
+  CVM unit (*(list Ev)*) :=
+  e <- get_store_at loc1 ;;
+  put_ev e ;;
+  copland_compile t ;;
+  e' <- get_ev ;;
+  
+
+  (*
+  let el := parallel_vm_events t p in
+  let e' := parallel_vm_thread t p e in
+  (*let loc := fst (range t) in *)
+   *)
+  
+  put_store_at loc2 e' (* ;;
+  ret el*) .
+
+Definition runParThreads (t1 t2:AnnoTerm) (p:Plc) (loc_e1 loc_e1' loc_e2 loc_e2':Loc) : CVM unit :=
+  el1 <- runParThread t1 p loc_e1 loc_e1' ;;
+  el2 <- runParThread t2 p loc_e2 loc_e2' ;;
+  add_tracem (shuffled_events el1 el2).
+
+ *)

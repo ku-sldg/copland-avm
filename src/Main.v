@@ -13,32 +13,37 @@ University of California.  See license.txt for details. *)
     small-step semantics are compatible with the related event system.
     *)
 
+Require Import Preamble More_lists Term_Defs Term LTS Event_system Term_system Trace Defs.
+
+Require Import StructTactics.
+
 Require Import List.
 Import List.ListNotations.
 Open Scope list_scope.
-Require Import Lia.
-Require Import Preamble More_lists Term LTS Event_system Term_system Trace.
 
+Require Import Lia.
+
+Set Nested Proofs Allowed.
 (** The traces associated with a state. *)
 
 Inductive traceS: St -> list Ev -> Prop :=
 | tstop: forall p e,
     traceS (stop p e) []
 | tconf: forall t tr p e,
-    trace t p tr ->
+    trace t p e tr ->
     traceS (conf t p e) tr
 | trem: forall st tr j p,
     traceS st tr ->
     traceS (rem j p st)
            (tr ++
-               [(rpy (pred j) p (pl st))])
+               [(rpy (pred j) p (pl st) (seval st))])
 | tls: forall st tr1 t tr2,
     traceS st tr1 ->
-    trace t (pl st) tr2 ->
+    trace t (pl st) (seval st) tr2 ->
     traceS (ls st t) (tr1 ++ tr2)
 | tbsl: forall st tr1 t p e tr2 j,
     traceS st tr1 ->
-    trace t p tr2 ->
+    trace t p e tr2 ->
     traceS (bsl j st t p e)
            (tr1 ++ tr2 ++
                 [(join (pred j) p )])
@@ -64,49 +69,96 @@ Fixpoint esizeS s:=
   | bp _ st1 st2 => 1 + esizeS st1 + esizeS st2
   end.
 
+Ltac inv_trace :=
+  match goal with
+  | H:trace (?C _) _ _ _ |- _ => inv H
+  end.
+
 Lemma esize_tr:
-  forall t p tr,
-    trace t p tr -> length tr = esize t.
+  forall t p e tr,
+    trace t p e tr -> length tr = esize t.
 Proof.
-  induction t; intros; inv H; simpl;
-    autorewrite with list; simpl; auto.
-  apply IHt in H5. lia.
-  apply IHt1 in H5.
-  apply IHt2 in H6. lia.
-  
-  apply IHt1 in H6.
-  apply IHt2 in H7. lia.
-  
-  apply shuffle_length in H8.
-  apply IHt1 in H6.
-  apply IHt2 in H7. 
-  lia.
-Qed.
+  induction t; intros; inv_trace; simpl;
+    autorewrite with list; simpl; auto;
+      try (
+          try find_apply_lem_hyp shuffle_length;
+          repeat find_apply_hyp_hyp;
+          lia).
+Defined.
+
+Ltac inv_traceS :=
+  match goal with
+  | H:traceS (?C _) _ |- _ => inv H
+  end.
 
 Lemma esizeS_tr:
   forall st tr,
     traceS st tr -> length tr = esizeS st.
 Proof.
-  induction st; intros; inv H; simpl; auto.
-  - destruct a; apply esize_tr in H4; simpl in *; auto.
-  - rewrite app_length; simpl.
-    apply IHst in H4. lia.
-  - rewrite app_length; simpl.
-    apply IHst in H2. apply esize_tr in H4.
-    lia.
-    
-  - repeat (rewrite app_length; simpl).
-    apply IHst in H6.
-    apply esize_tr in H7. lia.
-  - rewrite app_length; simpl.
-    apply IHst in H4. lia.
-    
-  - rewrite app_length; simpl.
-    apply IHst1 in H3.
-    apply IHst2 in H5.
-    apply shuffle_length in H6.
-    lia.
-Qed.
+  induction st; intros;
+    inv_traceS; simpl; auto;
+      try (destruct a; find_apply_lem_hyp esize_tr; tauto);
+      repeat find_apply_lem_hyp esize_tr;
+      repeat (rewrite app_length; simpl);
+      repeat find_apply_hyp_hyp;
+      repeat find_apply_lem_hyp shuffle_length;
+      try lia.
+Defined.
+
+Ltac jkjk'e :=
+  match goal with
+  | [H: _ = ?X |-  context[?X] ] => erewrite <- H
+  end.
+
+(*
+Lemma aeval_ev_determ: forall a p e e',
+    aeval a p e = aeval a p e' ->
+    e = e'.
+Proof.
+  intros.
+  generalizeEverythingElse a.
+  induction a; intros.
+  -
+    destruct a;
+      cbn in *; auto;
+        try solve_by_inversion.
+    destruct a.
+    try solve_by_inversion.
+  -
+    cbn in *; auto.
+    eauto.
+  -
+    cbn in *; auto.
+    eauto.
+  -
+    cbn in *; auto.
+    invc H.
+    destruct s.
+    destruct s; destruct s0.
+    +
+      eauto.
+    +
+      eauto.
+    +
+      eauto.
+    +
+      ff.
+Abort.  (* TODO:  can this be proven with assumptions about term split? *)
+ *)
+
+
+
+(*   
+    assert ((splitEv_T_l s e) = (splitEv_T_l s e')) by eauto.
+    destruct s; destruct s; destruct s0; eauto.
+    destruct s; eauto.
+  -
+    cbn in *; auto.
+    invc H.
+    assert ((splitEv_T_l s e) = (splitEv_T_l s e')) by eauto.
+    destruct s; eauto.
+Defined.
+*)
 
 Lemma step_silent_tr:
   forall st st' tr,
@@ -117,52 +169,55 @@ Proof.
   induction st; intros; inv H; inv H0.
   - constructor.
     constructor; auto.
-    inv H2; auto.
-  - pose proof H6 as G.
-    pose proof H6 as G1.
-    apply step_pl_eq in G; auto.
-    apply step_seval in G1; auto.
-    rewrite <- G. (*rewrite <- G1. *)
-    eapply IHst in H6; eauto.
-  - constructor; auto.
-    eapply IHst in H2; eauto.
-    pose proof H5 as G.
-    apply step_pl_eq in H5.
-    rewrite H5; auto.
-    (* apply step_seval in G.
-    rewrite G; auto. *)
-  - rewrite <- app_nil_l with (l:=tr).
+    solve_by_inversion.
+  -
+    find_copy_apply_lem_hyp step_pl_eq.
+    find_copy_apply_lem_hyp step_seval.
+    jkjk'e.
+    jkjk'e.
+    eauto.
+  -
+    constructor.
+    eauto.
+
+    find_apply_lem_hyp step_pl_eq.
+    find_copy_apply_lem_hyp step_seval.
+    
+    cbn in *.
+    invc H.
+    repeat find_rewrite.
+    assert (traceS st tr1) by eauto.
+    assert (seval st = seval st1).
+    {
+      eapply step_seval.
+      eassumption.
+    }
+    repeat find_rewrite.
+    eauto.
+  -
+    erewrite <- app_nil_l.
     constructor; auto.
-    
-  - pose proof H8 as G.
-    eapply IHst in H8; eauto.
-    (*apply step_seval in G.
-    rewrite <- G; auto. *)
-  - rewrite <- app_nil_l with (l:=tr0).
-    rewrite <- app_assoc.
-    apply tbsl; auto. simpl; auto.
-    inv H4; auto.
-  - pose proof H6 as G.
-    pose proof H6 as G1.
-    eapply IHst in H6; eauto.
-    apply step_seval in G.
-    (*rewrite <- G; auto. *)
-    apply step_pl_eq in G1.
-    rewrite <- G1; auto.
-    
-  - pose proof H6 as G.
-    eapply IHst1 in H6; eauto.
-    (* apply step_seval in G.
-    rewrite <- G; auto. 
-    apply tbp with (tr1:=tr1)(tr2:=tr2); auto. *)
-  - pose proof H6 as G.
-    pose proof H6 as G1.
-    eapply IHst2 in H6; eauto.
-    apply step_seval in G.
-    (* rewrite <- G; auto. *)
-    apply step_pl_eq in G1.
-    rewrite <- G1; auto.
-    apply tbp with (tr1:=tr1)(tr2:=tr2); auto.
+  -
+    eauto.
+  -
+    erewrite <- app_nil_l.
+    apply tbsl; auto; simpl; auto.
+    invc H.
+    invc H5.
+    eauto.
+  -
+    find_eapply_hyp_hyp; eauto.
+    find_copy_apply_lem_hyp step_seval.
+    find_copy_apply_lem_hyp step_pl_eq.
+    jkjk'e; auto.
+  -
+    eauto.    
+  -
+    find_copy_apply_hyp_hyp; eauto.
+    find_copy_apply_lem_hyp step_seval.
+    find_copy_apply_lem_hyp step_pl_eq.
+    jkjk'e; auto.
+    eapply tbp; eauto.
 Qed.
 
 Lemma step_evt_tr:
@@ -175,63 +230,54 @@ Proof.
   - constructor.
     constructor.
   - constructor. apply tatt. simpl.
-    inv H4; auto.
-    
+    solve_by_inversion.
   - constructor. apply tbseq; auto.
-    inv H6; auto.
-    
-  - constructor. eapply tbpar; eauto.
-    inv H3; auto. inv H5; auto.
-  - pose proof H6 as G.
-    apply step_seval in G.
-    pose proof H6 as G1.
-    apply step_pl_eq in G1.
-    eapply IHst in H6; eauto.
-    (* rewrite <- G. *) rewrite <- G1.
-    rewrite app_comm_cons; auto.
+    solve_by_inversion.  
+  - constructor.
+    eapply tbpar; eauto; solve_by_inversion.
+  -
+    find_copy_apply_lem_hyp step_seval.
+    find_copy_apply_lem_hyp step_pl_eq.
+    jkjk'e.
+    jkjk'e.
+    rewrite app_comm_cons; eauto. 
   - rewrite <- app_nil_l; auto.
     apply trem; auto.
-  - pose proof H5 as G.
-    apply step_seval in G.
-    pose proof H5 as G1.
-    apply step_pl_eq in G1.
-    eapply IHst in H5; eauto.
-    rewrite app_comm_cons.
-    apply tls; auto.
-    (*rewrite G. *) rewrite G1; auto.
-    
-  - pose proof H8 as G.
-    apply step_seval in G.
-    eapply IHst in H8; eauto.
-    (*rewrite <- G. *)
+  -
+    find_copy_apply_lem_hyp step_seval.
+    find_copy_apply_lem_hyp step_pl_eq.
     rewrite app_comm_cons; auto.
-  - pose proof H6 as G.
-    apply step_seval in G.
-    pose proof H6 as G1.
-    apply step_pl_eq in G1.
-    eapply IHst in H6; eauto.
-    rewrite app_comm_cons;
-      (*rewrite <- G; *) rewrite <- G1; auto.
+    apply tls;
+      try jkjk;
+      eauto.
+    repeat find_rewrite.
+    eauto.    
+  -
+    find_copy_apply_lem_hyp step_seval.
+    rewrite app_comm_cons; auto.
+    eauto.
+  -
+    find_copy_apply_lem_hyp step_seval.
+    find_copy_apply_lem_hyp step_pl_eq.
+    rewrite app_comm_cons.
+    jkjk'e.
+    eauto.   
   - rewrite <- app_nil_l; constructor; auto.
-    
-  - pose proof H6 as G.
-    apply step_seval in G.
-    eapply IHst1 in H6; eauto.
-    apply shuffle_left with (e:=ev) in H7.
-    rewrite app_comm_cons;
-      (*rewrite <- G; *) auto.
-    apply tbp with (tr1:=(ev::tr1))(tr2:=tr2); auto.
-  - pose proof H6 as G.
-    apply step_seval in G.
-    pose proof H6 as G1.
-    apply step_pl_eq in G1.
-    apply shuffle_right with (e:=ev) in H7.
-    eapply IHst2 in H6; eauto.
-    rewrite app_comm_cons;
-      (*rewrite <- G; *) rewrite <- G1; auto.
-    apply tbp with (tr1:=tr1)(tr2:=(ev::tr2)); auto.
-  - rewrite <- app_nil_l; auto.
-    apply tbp with (tr1:=[])(tr2:=[]); auto.
+  -
+    find_copy_apply_lem_hyp step_seval.
+    rewrite app_comm_cons.
+    find_eapply_lem_hyp shuffle_left.
+    eapply tbp; eauto.
+  -
+    find_copy_apply_lem_hyp step_seval.
+    find_copy_apply_lem_hyp step_pl_eq.
+    rewrite app_comm_cons.
+    find_eapply_lem_hyp shuffle_right.
+    jkjk'e.
+    eapply tbp; eauto.
+  -
+    rewrite <- app_nil_l; auto.
+    eapply tbp; eauto.
 Qed.
 
 Lemma nlstar_trace_helper:
@@ -262,9 +308,9 @@ Qed.
 
 Lemma lstar_trace:
   forall t p e tr,
-    well_formed t ->
+    well_formed_r_annt t ->
     lstar (conf t p e) tr (stop p (aeval t p e)) ->
-    trace t p tr.
+    trace t p e tr.
 Proof.
   intros.
   apply lstar_nlstar in H0.
@@ -277,12 +323,12 @@ Qed.
 
 Theorem ordered:
   forall t p e tr ev0 ev1,
-    well_formed t ->
+    well_formed_r_annt t ->
     lstar (conf t p e) tr (stop p (aeval t p e)) ->
-    prec (ev_sys t p) ev0 ev1 ->
+    prec (ev_sys t p e) ev0 ev1 ->
     earlier tr ev0 ev1.
 Proof.
   intros.
   apply lstar_trace in H0; auto.
-  apply trace_order with (t:=t)(p:=p); auto.
+  apply trace_order with (t:=t)(p:=p)(e:=e); auto.
 Qed.

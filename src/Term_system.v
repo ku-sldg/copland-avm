@@ -11,163 +11,167 @@ University of California.  See license.txt for details. *)
 
 (** Copland specific event systems. *)
 
-Require Import Omega Preamble More_lists Term Event_system.
+Require Import Preamble More_lists StructTactics Defs Term_Defs Term Event_system.
+
+Require Import Lia List PeanoNat.
+
+(*
+Set Nested Proofs Allowed.
+*)
 
 (** Construct an event system from an annotated term, place, and
     evidence. *)
 
-Fixpoint ev_sys (t: AnnoTerm) p: EvSys Ev :=
+Fixpoint ev_sys (t: AnnoTerm) p e: EvSys Ev :=
   match t with
-  | aasp (i, j) x => leaf (i, j) (asp_event i x p)
+  | aasp (i, j) x => leaf (i, j) (asp_event i x p e)
   | aatt (i, j) q x =>
     before (i, j)
-      (leaf (i, S i) (req i p q (unanno x)))
+      (leaf (i, S i) (req i p q (unanno x) e))
       (before (S i, j)
-              (ev_sys x q)
-              (leaf (pred j, j) (rpy (pred j) p q)))
-  | alseq r x y => before r (ev_sys x p)
-                          (ev_sys y p)
+              (ev_sys x q e)
+              (leaf (pred j, j) (rpy (pred j) p q (aeval x q e))))
+  | alseq r x y => before r (ev_sys x p e)
+                          (ev_sys y p (aeval x p e))
   | abseq (i, j) s x y =>
     before (i, j)
            (leaf (i, S i)
-                 (split i p))
+                 (Term_Defs.split i p))
            (before (S i, j)
                    (before (S i, (pred j))
-                           (ev_sys x p)
-                           (ev_sys y p))
+                           (ev_sys x p (splitEv_T_l s e))
+                           (ev_sys y p (splitEv_T_r s e)))
                    (leaf ((pred j), j)
-                   (join (pred j) p)))
+                         (join (pred j) p)))
   | abpar (i, j) s x y =>
     before (i, j)
            (leaf (i, S i)
-                 (split i p))
+                 (Term_Defs.split i p))
            (before (S i, j)
                    (merge (S i, (pred j))
-                          (ev_sys x p)
-                          (ev_sys y p))
+                           (ev_sys x p (splitEv_T_l s e))
+                           (ev_sys y p (splitEv_T_r s e)))
                    (leaf ((pred j), j)
-                   (join (pred j) p)))
+                         (join (pred j) p)))
   end.
 
 Lemma evsys_range:
-  forall t p,
-    es_range (ev_sys t p) = range t.
+  forall t p e,
+    es_range (ev_sys t p e) = range t.
 Proof.
   induction t; intros; simpl; auto;
     repeat expand_let_pairs; simpl; auto.
 Qed.
 
+Ltac dest_range' :=
+match goal with
+| H:Range |- _ => destruct H
+end.
+
 Lemma well_structured_evsys:
-  forall t p,
-    well_formed t ->
-    well_structured ev (ev_sys t p).
+  forall t p e,
+    well_formed_r_annt t ->
+    well_structured ev (ev_sys t p e).
 Proof.
-  induction t; intros; inv H; simpl;
-    repeat expand_let_pairs; destruct r as [i k];
-      simpl in *; subst; auto.
-  - apply ws_leaf_event; auto;
-      destruct a; simpl; auto.
-  - apply ws_before; simpl; auto.
-    rewrite H4.
-    apply ws_before; simpl; auto; rewrite evsys_range; auto.
-  - apply ws_before; auto; repeat rewrite evsys_range; auto.
-    
-  - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto).
-    
-  - repeat (apply ws_before; simpl in *; auto; repeat rewrite evsys_range; auto).
-    repeat (apply ws_merge; simpl in *; auto; repeat rewrite evsys_range; auto).
-Qed.
+  induction t; intros; inv_wfr; simpl;
+    try (
+    repeat expand_let_pairs; dest_range'; (*destruct r as [i k]; *)
+      simpl in *; subst; auto;
+      try destruct a; (* asp destruct *)
+      try destruct a; (* asp params destruct *)
+        repeat (econstructor; repeat rewrite evsys_range; auto);
+        tauto).
+Defined.
+
+Ltac do_evin :=
+  match goal with
+  | [H:ev_in _ (?C _) |- _] => inv H
+  end.
 
 (** The events in the event system correspond to the events associated
     with a term, a place, and some evidence. *)
 
 Lemma evsys_events:
-  forall t p ev,
-    well_formed t ->
-    ev_in ev (ev_sys t p) <-> events t p ev.
+  forall t p e ev,
+    well_formed_r_annt t ->
+    ev_in ev (ev_sys t p e) <-> events t p e ev.
 Proof.
-  split; revert p; induction t; intros; inv H; simpl in *;
-    repeat expand_let_pairs; simpl in *.
-  - inv H0; auto; destruct a; simpl; auto.
-  - rewrite H6 in H0; simpl in H0.
-    inv H0; auto; inv H2; auto; inv H1; auto.
-  - inv H0; auto.
-    
-  - rewrite H9 in H0; simpl in H0.
-    inv H0; inv H2; auto; inv H1; auto.
-    
-  - rewrite H9 in H0; simpl in H0.
-    inv H0; inv H2; auto; inv H1; auto.
-  - inv H0; auto.
-  - rewrite H6; simpl.
-    inv H0; auto.
-    rewrite H8 in H6.
-    apply Nat.succ_inj in H6; subst; auto.
-  - inv H0; auto.
-  - rewrite H9; simpl.
-    inv H0; auto.
-    rewrite H11 in H9.
-    apply Nat.succ_inj in H9; subst; auto.
-    
-  - rewrite H9; simpl.
-    inv H0; auto.
-    rewrite H12 in H9.
-    apply Nat.succ_inj in H9; subst; auto.
-Qed.
+  split; revert p; revert e; induction t; intros; inv_wfr; simpl in *;
+    repeat expand_let_pairs; simpl in *;
+      try (destruct a; try (destruct a); auto; do_evin; auto; tauto);
+
+      try (
+          repeat dest_range;
+          repeat (find_rewrite; simpl in * );
+          repeat (do_evin; auto);
+          inv_events; auto);
+          
+          repeat (find_rewrite; simpl in * );
+          (find_apply_lem_hyp Nat.succ_inj  ) ; subst; auto;
+            tauto.
+Defined.
+
+Ltac inv_sup :=
+  match goal with
+  | [H:sup (?C _) _ |- _] => inv H
+  end.
+
+Ltac do_before_sup :=
+  match goal with
+  | [H: sup (before _ _ _) _ |- _] =>
+    repeat apply before_sup in H
+  | [H: sup (ev_sys _ _ _) (* (alseq (n, n0) ls x y) p)*) _
+     |- _] =>
+    repeat apply before_sup in H
+  end.
+
+Ltac inv_ws :=
+  match goal with
+  | [H:well_structured _ (?C _) |- _] => inv H
+  end.
 
 (** Maximal events are unique. *)
 
 Lemma supreme_unique:
-  forall t p,
-    well_formed t ->
-    exists ! v, supreme (ev_sys t p) v.
+  forall t p e,
+    well_formed_r_annt t ->
+    exists ! v, supreme (ev_sys t p e) v.
 Proof.
-  intros.
-  assert (G: well_structured ev (ev_sys t p)).
+  intros t p e H.
+  assert (G: well_structured ev (ev_sys t p e)).
   apply well_structured_evsys; auto.
   rewrite <- unique_existence.
   split.
-  - exists (max (ev_sys t p)).
-    apply supreme_max with (ev:=ev); auto.
+  - exists (max (ev_sys t p e)).
+    eapply supreme_max (*with (ev:=ev);*); eauto.
   - unfold uniqueness.
-    intros.
-    rewrite <- sup_supreme with (ev:=ev) in H0; auto.
-    rewrite <- sup_supreme with (ev:=ev) in H1; auto.
+    intros x y H0 H1.
+    erewrite <- sup_supreme (*with (ev:=ev)*) in H0; eauto.
+    erewrite <- sup_supreme (*with (ev:=ev)*) in H1; eauto.
     revert H1.
     revert H0.
     revert G.
     revert p.
-    induction H; intros.
-    + destruct r as [i j]; simpl in *.
-      inv H0; inv H1; auto.
-    + destruct r as [i j]; simpl in *.
-      repeat apply before_sup in H2.
-      repeat apply before_sup in H3.
-      inv H2; inv H3; auto.
-    + destruct r as [i j]; simpl in *.
-      repeat apply before_sup in H4.
-      repeat apply before_sup in H5.
-      eapply IHwell_formed2 in H4; eauto.
-      inv G; auto.
-      
-    + destruct r as [i j]; simpl in *.
-      repeat apply before_sup in H4.
-      repeat apply before_sup in H5.
-      inv H4; inv H5; auto.
-      
-    + destruct r as [i j]; simpl in *.
-      repeat apply before_sup in H5.
-      repeat apply before_sup in H6.
-      inv H5; inv H6; auto.
-Qed.
+    revert e.
+    induction H; intros;
+      try(
+          repeat dest_range; simpl in *;
+          repeat break_let;
+          repeat do_before_sup;
+
+          try (inv_ws; eauto; tauto);
+
+          repeat inv_sup; auto;
+          tauto).
+Defined.
 
 Lemma evsys_max_unique:
-  forall t p,
-    well_formed t ->
-    unique (supreme (ev_sys t p)) (max (ev_sys t p)).
+  forall t p e,
+    well_formed_r_annt t ->
+    unique (supreme (ev_sys t p e)) (max (ev_sys t p e)).
 Proof.
-  intros.
-  assert (G: well_structured ev (ev_sys t p)).
+  intros t p e H.
+  assert (G: well_structured ev (ev_sys t p e)).
   apply well_structured_evsys; auto.
   unfold unique.
   split.
@@ -178,18 +182,29 @@ Proof.
   revert G.
   revert x'.
   revert p.
-  induction H; intros; destruct r as [i j]; inv G; simpl in *; auto.
-  - inv H0; auto.
-  - repeat apply before_sup in H2.
-    inv H2; auto.
-  - repeat apply before_sup in H4.
-    apply IHwell_formed2 in H4; auto.
-    
-  - repeat apply before_sup in H4.
-    inv H4; auto.
-    
-  - repeat apply before_sup in H5.
-    inv H5; auto.
+  revert e.
+  induction H;
+    intros;
+    repeat dest_range;
+    repeat expand_let_pairs;
+    inv_ws.
+  -
+    repeat inv_sup; auto.
+  -
+    repeat inv_sup; auto.
+  -
+    cbn.
+    apply IHwell_formed_r_annt2.
+    eassumption.
+    cbn in *.
+    do_before_sup.
+    eassumption.
+  -
+    repeat do_before_sup.
+    solve_by_inversion.
+  -
+    do_before_sup.
+    solve_by_inversion.
 Qed.
 
 (*
@@ -224,12 +239,16 @@ Qed.
 (** lseq is associative relative to the event semantics *)
 
 Lemma lseq_assoc:
-  forall t1 t2 t3 i p,
+  forall t1 t2 t3 i p e n n' t' t'',
+    anno (lseq t1 (lseq t2 t3)) i = (n, t') ->
+    anno (lseq (lseq t1 t2) t3) i = (n',t'') ->
+  
     same_rel
-      (ev_sys (snd (anno (lseq t1 (lseq t2 t3)) i)) p)
-      (ev_sys (snd (anno (lseq (lseq t1 t2) t3) i)) p).
+      (ev_sys t' p e)
+      (ev_sys t'' p e).
 Proof.
   intros; simpl.
   repeat expand_let_pairs; simpl.
+  ff; repeat find_rewrite; ff.
   apply before_associative_pairs.
 Qed.

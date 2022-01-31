@@ -14,14 +14,14 @@ University of California.  See license.txt for details. *)
 Require Import List.
 Import List.ListNotations.
 Open Scope list_scope.
-Require Import PeanoNat Minus Lia Preamble Term.
+Require Import PeanoNat Minus Lia Preamble Term_Defs Term.
 
 (** * States *)
 
 Inductive St: Set :=
 | stop: Plc -> Evidence -> St
 | conf: AnnoTerm -> Plc -> Evidence -> St
-| rem: Plc -> Plc -> St -> St
+| rem: nat -> Plc -> St -> St
 | ls: St -> AnnoTerm -> St
 | bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
 | bsr: nat -> Evidence -> St -> St
@@ -49,7 +49,7 @@ Fixpoint seval st :=
   | bsl _ st t p e => ss (seval st) (aeval t p e)
   | bsr _ e st => ss e (seval st)
   | bp _ st0 st1 => pp (seval st0) (seval st1)
-end.
+  end.
 
 (** * Labeled Transition System
 
@@ -63,14 +63,14 @@ Inductive step: St -> option Ev -> St -> Prop :=
 | stasp:
     forall r x p e,
       step (conf (aasp r x) p e)
-           (Some (asp_event (fst r) x p))
+           (Some (asp_event (fst r) x p e))
            (stop p (aeval (aasp r x) p e))
 (** Remote call *)
 
 | statt:
     forall r x p q e,
       step (conf (aatt r q x) p e)
-           (Some (req (fst r) p q (unanno x)))
+           (Some (req (fst r) p q (unanno x) e))
            (rem (snd r) p (conf x q e))
 | stattstep:
     forall st0 ev st1 p j,
@@ -79,7 +79,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
 | stattstop:
     forall j p q e,
       step (rem j p (stop q e))
-           (Some (rpy (pred j) p q))
+           (Some (rpy (pred j) p q e))
            (stop p e)
 (** Linear Sequential Composition *)
 
@@ -97,12 +97,13 @@ Inductive step: St -> option Ev -> St -> Prop :=
       step (ls (stop p e) t) None (conf t p e)
 (** Branching Sequential Composition *)
 
+           
 | stbseq:
     forall r s x y p e,
       step (conf (abseq r s x y) p e)
            (Some (split (fst r) p))
-           (bsl (snd r) (conf x p (splitEv_T (fst s) e))
-                y p (splitEv_T (snd s) e))
+           (bsl (snd r) (conf x p (splitEv_T_l s e))
+                y p (splitEv_T_r s e))
 | stbslstep:
     forall st0 ev st1 j t p e,
       step st0 ev st1 ->
@@ -112,6 +113,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
       step (bsl j (stop p e) t p' e')
            None
            (bsr j e (conf t p' e'))
+           
 | stbsrstep:
     forall st0 ev st1 j e,
       step st0 ev st1 ->
@@ -127,10 +129,10 @@ Inductive step: St -> option Ev -> St -> Prop :=
 | stbpar:
     forall r s x y p e,
       step (conf (abpar r s x y) p e)
-           (Some (split (fst r) p))
+           (Some (Term_Defs.split (fst r) p))
            (bp (snd r)
-               (conf x p (splitEv_T (fst s) e))
-               (conf y p (splitEv_T (snd s) e)))
+               (conf x p (splitEv_T_l s e))
+               (conf y p (splitEv_T_r s e)))
 | stbpstepleft:
     forall st0 st1 st2 ev j,
       step st0 ev st2 ->
@@ -321,6 +323,7 @@ Proof.
   eapply lstar_silent_tran; eauto.
 Defined.
 
+
 Lemma lstar_stbsl:
   forall st0 st1 j t p e tr,
     lstar st0 tr st1 ->
@@ -343,6 +346,52 @@ Proof.
   eapply lstar_silent_tran; eauto.
 Defined.
 
+Lemma lstar_stbparl:
+  forall st0 st1 st2 j tr,
+    lstar st0 tr st1 ->
+    lstar (bp j st0 st2) tr (bp j st1 st2).
+Proof.
+  intros.
+  induction H; auto.
+  eapply lstar_tran; eauto.
+  eapply lstar_silent_tran; eauto.
+Defined.
+
+Lemma lstar_stbparr:
+  forall st0 st1 st2 j tr,
+    lstar st1 tr st2 ->
+    lstar (bp j st0 st1) tr (bp j st0 st2).
+Proof.
+  intros.
+  induction H; auto.
+  eapply lstar_tran; eauto.
+  eapply lstar_silent_tran; eauto.
+Defined.
+
+(*
+Lemma lstar_stparl:
+  forall st0 st1 j t p e tr,
+    lstar st0 tr st1 ->
+    lstar (bsl j st0 t p e) tr (bsl j st1 t p e).
+Proof.
+  intros.
+  induction H; auto.
+  eapply lstar_tran; eauto.
+  eapply lstar_silent_tran; eauto.
+Defined.
+
+Lemma lstar_stbpar:
+  forall st0 st1 j e tr,
+    lstar st0 tr st1 ->
+    lstar (bsr j e st0) tr (bsr j e st1).
+Proof.
+  intros.
+  induction H; auto.
+  eapply lstar_tran; eauto.
+  eapply lstar_silent_tran; eauto.
+Defined.
+*)
+
 Lemma star_stbp:
   forall st0 st1 st2 st3 j,
     star st0 st1 ->
@@ -362,7 +411,8 @@ Theorem correct_path_exists:
 Proof.
   induction t; intros; simpl; eauto.
   - eapply star_tran; eauto.
-  - eapply star_tran; eauto.
+  - (* destruct p. *)
+    eapply star_tran; eauto.
     eapply star_transitive.
     apply star_strem.
     apply IHt.
@@ -382,7 +432,11 @@ Proof.
     apply star_stbsr.
     apply IHt2.
     eapply star_tran; eauto.
-  - eapply star_tran; eauto.
+    
+  -
+    repeat dest_range.
+    (*destruct p; destruct p0. *)
+    eapply star_tran; eauto.
     eapply star_transitive.
     apply star_stbp.
     apply IHt1.
@@ -408,28 +462,33 @@ Proof.
   - left; simpl; auto.
   - right.
     destruct a.
-    + exists (Some (asp_event (fst r) a n)).
+    + exists (Some (asp_event (fst r) a p e)).
       eapply ex_intro; eauto.
-    + exists (Some (req (fst r) n n0 (unanno a))).
+    + exists (Some (req (fst r) p p0 (unanno a) e)).
+      repeat dest_range.
       eapply ex_intro; eauto.
     + exists None.
       eapply ex_intro; eauto.
       
-    + exists (Some (split (fst r) n)).
+    + exists (Some (split (fst r) p)).
       eapply ex_intro; eauto.
       
-    + exists (Some (split (fst r) n)).
+    + exists (Some (Term_Defs.split(fst r) p)).
+      (*destruct p; destruct p0. *)
+      repeat dest_range.
       eapply ex_intro; eauto.
-  - right.
+  -
+    right.
     destruct IHst0.
     + destruct st0; simpl in H; try tauto.
-      exists (Some (rpy (pred n) n0 n1)).
+      exists (Some (rpy (pred n) p p0 e)).
       eapply ex_intro; eauto.
     + destruct H as [e H].
       exists e.
       destruct H as [st1 H].
-      exists (rem n n0 st1). auto.
-  - right.
+      exists (rem n p st1); auto.
+  -
+    right.
     destruct IHst0.
     + destruct st0; simpl in H; try tauto.
       exists None. eapply ex_intro; eauto.
@@ -437,37 +496,38 @@ Proof.
       exists e.
       destruct H as [st H].
       exists (ls st a). auto.
-      
-  - right.
+          
+  -
+    right.
     destruct IHst0.
     + destruct st0; simpl in H; try tauto.
       exists None. eapply ex_intro; eauto.
     + destruct H as [e0 H].
       exists e0.
       destruct H as [st H].
-      exists (bsl n st a n0 e). auto.
+      exists (bsl n st a p e). auto.
   - right.
     destruct IHst0.
     + destruct st0; simpl in H; try tauto.
-      exists (Some (join (pred n) n0)).
+      exists (Some (join (pred n) p)).
       eapply ex_intro; eauto.
     + destruct H as [e0 H].
       exists e0.
       destruct H as [st H].
       exists (bsr n e st). auto.
-      
+         
   - right.
     destruct IHst0_1 as [H|H].
     + destruct st0_1; simpl in H; try tauto.
       clear H.
       destruct IHst0_2.
       * destruct st0_2; simpl in H; try tauto.
-        exists (Some (join (pred n) n1)).
+        exists (Some (join (pred n) p0)).
         eapply ex_intro; eauto.
       * destruct H as [e0 H].
         exists e0.
         destruct H as [st H].
-        exists (bp n (stop n0 e) st). auto.
+        exists (bp n (stop p e) st). auto.
     + destruct H as [e0 H].
       exists e0.
       destruct H as [st H].
