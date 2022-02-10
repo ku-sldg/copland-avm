@@ -33,6 +33,8 @@ Appraisal_IO_Stubs.v
 Appraisal_Defs.v
 Impl_appraisal.v
 Impl_appraisal_alt.v
+Example_Phrases_Admits.v
+Example_Phrases.v
 Test_Extract_App.v
 Appraisal_AltImpls_Eq.v
 Helpers_Appraisal.v
