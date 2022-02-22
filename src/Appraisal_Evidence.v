@@ -173,6 +173,7 @@ Ltac do_reconP_determ :=
     clear H2
   end; subst.
 
+(*
 Lemma anno_parP_redo: forall t pt loc loc',
     anno_par t loc = (loc', pt) ->
     anno_parP pt t.
@@ -182,7 +183,18 @@ Proof.
   eexists.
   jkjke.
 Defined.
+ *)
+Lemma anno_parP_redo: forall t pt loc loc',
+    anno_par_list' t loc = Some (loc', pt) ->
+    anno_parP pt t.
+Proof.
+  intros.
+  econstructor.
+  eexists.
+  jkjke.
+Defined.
 
+(*
 Lemma anno_parPloc_redo: forall t pt loc loc',
     anno_par t loc = (loc', pt) ->
     anno_parPloc pt t loc.
@@ -191,6 +203,18 @@ Proof.
   econstructor.
   jkjke.
 Defined.
+ *)
+Lemma anno_parPloc_redo: forall t pt loc loc',
+    anno_par_list' t loc = Some (loc', pt) ->
+    anno_parPloc pt t loc.
+Proof.
+  intros.
+  econstructor.
+  jkjke.
+Defined.
+
+
+(*
 
 Ltac do_annopar_redo :=
   match goal with
@@ -205,6 +229,23 @@ Ltac do_annopar_loc_redo :=
      |- _ ] =>
     eapply anno_parPloc_redo in H
   end.
+ *)
+
+Ltac do_annopar_redo :=
+  match goal with
+  | [H: anno_par_list' ?t ?loc = Some (_,?pt)
+     |- _ ] =>
+    eapply anno_parP_redo in H
+  end.
+
+Ltac do_annopar_loc_redo :=
+  match goal with
+  | [H: anno_par_list' ?t ?loc = (_,?pt)
+     |- _ ] =>
+    eapply anno_parPloc_redo in H
+  end.
+
+
 
 Ltac inv_annoparP :=
   match goal with
@@ -340,5 +381,7 @@ Ltac wrap_ccp_anno :=
   try wrap_anno;
   try wrap_anno_indexed;
   repeat do_pl_immut;
+  try (unfold GenOptMonad.ret in * );
+  try (unfold GenOptMonad.bind in * );
   dd;
   try rewrite ccp_iff_cc in *.

@@ -428,10 +428,18 @@ Proof.
   tauto.
 Defined.
 
+(*
 Ltac do_t_at_zero t x :=
   let y := fresh in
   assert (exists l' t', anno_par t 0 = (l',t')) as y by
         (destruct (anno_par t 0); repeat eexists);
+  destruct y;
+  destruct y as [x].
+ *)
+Ltac do_t_at_zero t x l :=
+  let y := fresh in
+  assert (exists l' t', anno_par_list' t l = Some (l',t')) as y by
+        (destruct (anno_par_list' t l); repeat eexists);
   destruct y;
   destruct y as [x].
 
@@ -448,13 +456,13 @@ Ltac do_assert_remote t e p i :=
 
 Ltac do_assert_unannoPar t x :=
   assert (t = unannoPar x) by
-    (erewrite anno_unanno_par;
+    (erewrite anno_unanno_par_list';
      [reflexivity | eassumption]).
 
-Ltac do_assume_remote t e p i x :=
-  do_t_at_zero t x;
-  do_assert_remote x e p i;
-  do_assert_unannoPar t x.
+Ltac do_assume_remote t e p i x l :=
+  do_t_at_zero t x l;
+  do_assert_remote x e p i.
+  (*do_assert_unannoPar t x. *)
 
 Lemma par_evidence_r: forall a p s e et e2 e3 l,
     parallel_vm_thread l a p (splitEv_r s (evc e et)) = evc e2 e3 ->
@@ -593,7 +601,7 @@ Proof.
   assert (t' = unannoPar t).
   {
     inv_annoparP.
-    erewrite anno_unanno_par.
+    erewrite anno_unanno_par_list'.
     reflexivity.
     jkjke.
   }
@@ -1642,14 +1650,26 @@ Defined.
   -
     lia.
   -
+    wrap_ccp_anno.
+    ff.
+    wrap_ccp_anno.
+    ff.
     find_apply_hyp_hyp.
     find_apply_hyp_hyp.
     lia.
   -
+    wrap_ccp_anno.
+    ff.
+    wrap_ccp_anno.
+    ff.
     find_apply_hyp_hyp.
     find_apply_hyp_hyp.
     lia.
   -
+    wrap_ccp_anno.
+    ff.
+    wrap_ccp_anno.
+    ff.
     find_apply_hyp_hyp.
     lia.
 Defined.
@@ -1660,11 +1680,12 @@ Lemma get_unannoPar: forall t t',
 Proof.
   intros.
   inv_annoparP.
-  destruct (anno_par t' H0) eqn: hi.
+  destruct (anno_par_list' t' H0) eqn: hi.
   subst.
-  erewrite anno_unanno_par.
+  erewrite anno_unanno_par_list'.
   reflexivity.
   jkjke.
+  solve_by_inversion.
 Defined.
   
 
@@ -1820,20 +1841,56 @@ Proof.
       eassumption.
   -
     wrap_ccp_anno.
-    
-    do_assume_remote t' (evc bits et) p (S i) HHH.
-    
-    rewrite <- H8 in *; clear H8.
-    rewrite H6 in *.
-    simpl in *.
+    ff.
     wrap_ccp_anno.
 
-    eapply IHt'; eauto.
-    assert (n = (S (i + event_id_span t'))) by lia.
-    subst.
+    (*
+    
+    do_assume_remote t' (evc bits et) p (S i) HHH [0;0].
+     *)
+
+    assert (exists l l' annt, anno_par_list' t' l = Some (l', annt)).
+    {
+      admit.
+    }
+    destruct_conjs.
+
+    assert (t' = unannoPar H10).
+    {
+      erewrite anno_unanno_par_list'.
+      reflexivity.
+      eassumption.
+    }
+
+    do_assert_remote H10 (evc bits et) p (S i).
+
+    rewrite <- H12 in H13.
+    rewrite H6 in H13.
+    
+    
+
+    
+    eapply IHt'.
+    econstructor.
     eassumption.
+
+
+
+    econstructor.
+    eauto.
+    wrap_ccp_anno.
+
+    assert (n = (S (i + event_id_span (unannoPar H10)))) by lia.
+    rewrite <- H14.
+    eassumption.
+    eassumption.
+    eassumption.
+
   -
     wrap_ccp_anno.
+    ff.
+    wrap_ccp_anno.
+    ff.
 
     assert (n = st_evid0).
     {
@@ -1853,7 +1910,7 @@ Proof.
 
     do_somerecons.
     
-    assert ((cvm_evidence_denote a1 p ec) = H9).
+    assert ((cvm_evidence_denote a st_pl0 ec) = H12).
     {
       eapply IHt'1; eassumption.   
     }
@@ -1862,17 +1919,20 @@ Proof.
     eauto.
   -
     wrap_ccp_anno.
+    ff.
+    wrap_ccp_anno.
+    ff.
     
     assert (n0 = st_evid) by lia.
     subst.
-    clear H7.
+    clear H13.
 
     assert (n = st_evid1).
     {
       assert (i + 1 = S i) by lia.
-      rewrite H in *; clear H.
+      rewrite H8 in *; clear H8.
       eapply anno_cvm_span.
-      apply Heqp3.
+      apply Heqp0.
       eassumption.
       eassumption.
     }
@@ -1912,10 +1972,10 @@ Proof.
     
    
 
-    assert ((cvm_evidence_denote a1 p (splitEvl s ec)) = e1).
+    assert ((cvm_evidence_denote a st_pl1 (splitEvl s ec)) = e1).
     {
-      assert (i + 1 = S i) as H11 by lia.
-      rewrite H11 in *; clear H11.
+      assert (i + 1 = S i) as H14 by lia.
+      rewrite H14 in *; clear H14.
       destruct s; destruct s; destruct s0; dd.
       +
         eauto.
@@ -1939,12 +1999,12 @@ Proof.
     }
     jkjke.
 
-    assert ((cvm_evidence_denote a2 p (splitEvr s ec)) = e2).
+    assert ((cvm_evidence_denote a0 st_pl1 (splitEvr s ec)) = e2).
     {    
       subst.
       
-      assert (i + 1 = S i) as H11 by lia.
-      rewrite H11 in *; clear H11.
+      assert (i + 1 = S i) as H14 by lia.
+      rewrite H14 in *; clear H14.
       destruct s; destruct s; destruct s0; dd.
       +
         eauto.
@@ -1969,19 +2029,22 @@ Proof.
     
   - (* abpar case *)
     wrap_ccp_anno.
+    ff.
+    wrap_ccp_anno.
+    ff.
     
     assert (n = st_evid).
     {
       assert (i+1 = S i) by lia.
-      rewrite H in *; clear H.
+      rewrite H8 in *; clear H8.
       eapply anno_cvm_span.
-      apply Heqp2.
+      apply Heqp0.
       eassumption.
       eassumption.
     }
     dd.
     assert (n0 = (st_evid + event_id_span t'2)) by lia.
-    subst; clear H7.
+    subst; clear H13.
 
     assert (wf_ec (evc bits et)).
     {
@@ -2013,12 +2076,39 @@ Proof.
       eassumption.
     }
 
-    do_assume_remote t'2 (splitEv_r s (evc bits et)) p st_evid HHH.
 
-    assert ((cvm_evidence_denote a0 p (splitEvl s ec)) = e1).
+    assert (exists l l' annt, anno_par_list' t'2 l = Some (l', annt)).
     {
-      assert (i + 1 = S i) as H13 by lia.
-      rewrite H13 in *; clear H13.
+      admit.
+    }
+    destruct_conjs.
+
+    assert (t'2 = unannoPar H15).
+    {
+      erewrite anno_unanno_par_list'.
+      reflexivity.
+      eassumption.
+    }
+
+    do_assert_remote H15 (splitEv_r s (evc bits et)) p st_evid.
+
+    rewrite <- H17 in H18.
+    rewrite at_evidence in *.
+    rewrite par_evidence in *.
+    (*rewrite H6 in H13. *)
+    rewrite Heqe0 in H18.
+
+
+
+    (*
+
+    do_assume_remote t'2 (splitEv_r s (evc bits et)) p st_evid HHH.
+*) 
+
+    assert ((cvm_evidence_denote a p (splitEvl s ec)) = e1).
+    {
+      assert (i + 1 = S i) as H22 by lia.
+      rewrite H22 in *; clear H22.
       destruct s; destruct s; destruct s0; dd.
       +
         eauto.
@@ -2041,12 +2131,13 @@ Proof.
     }
     jkjke.
 
-    assert ((cvm_evidence_denote a1 p (splitEvr s ec)) = e2).
+    assert ((cvm_evidence_denote a0 p (splitEvr s ec)) = e2).
     {
+      (*
       rewrite at_evidence in *.
       rewrite par_evidence in *.
       rewrite H12 in *.
-      rewrite Heqe0 in *.
+      rewrite Heqe0 in *. *)
        
       destruct s; destruct s; destruct s0; simpl.
       +
@@ -2099,7 +2190,7 @@ Proof.
         eassumption.
     }
     congruence.
-Defined.
+Admitted.
 
 
 Lemma cvm_ev_denote_evtype: forall annt p e,
@@ -2165,7 +2256,7 @@ Proof.
    
     assert (t = unanno a) as H3.
     {
-      invc Heqp0.
+      invc Heqp1.
       
       erewrite <- anno_unanno at 1.
       rewrite H.
@@ -2204,11 +2295,12 @@ Proof.
 
     rewrite H1.
     simpl.
-    assert ( (i + 1 + event_id_span t) = Nat.pred (S (i + event_id_span t + 1))).
+    Print stattstop.
+    assert ( (i + 1 + event_id_span t) = Nat.pred (i + 1 + event_id_span t + 1)).
     {
       lia.
     }
-    rewrite H4.
+    rewrite H4 at 2.
     
     econstructor.
     
@@ -2221,8 +2313,12 @@ Proof.
     invc annPH.
     destruct_conjs.
     dd.
+    unfold GenOptMonad.bind in *.
+    ff.
     do_annopar_redo.
     do_annopar_redo.
+    unfold GenOptMonad.ret in *.
+    ff.
     
     edestruct alseq_decomp; eauto.
     destruct_conjs.
@@ -2282,14 +2378,19 @@ Proof.
   - (* abseq case *)
 
     wrap_ccp_anno.
+    ff.
+    wrap_ccp_anno.
+    ff.
 
     assert (n = st_evid1).
     {
       assert (i+1 = S i) by lia.
       find_rewrite.
-      invc Heqp3.
-      
-      eapply span_cvm; eauto.
+      eapply span_cvm.
+      eassumption.
+      eassumption.
+      invc Heqp0.
+      eassumption.
     }
     subst.
 
@@ -2309,7 +2410,7 @@ Proof.
     simpl.
 
     assert (
-        lstar (conf a1 p (splitEv_T_l s et)) blah' (stop p (aeval a1 p (splitEv_T_l s et)))
+        lstar (conf a st_pl1 (splitEv_T_l s et)) blah' (stop st_pl1 (aeval a st_pl1 (splitEv_T_l s et)))
       ).
     {
       assert (i + 1 = S i) by lia.
@@ -2320,7 +2421,7 @@ Proof.
     }
 
     assert (
-      lstar (conf a2 p  (splitEv_T_r s et)) blah (stop p (aeval a2 p  (splitEv_T_r s et)))
+      lstar (conf a0 st_pl1  (splitEv_T_r s et)) blah (stop st_pl1 (aeval a0 st_pl1  (splitEv_T_r s et)))
     ).
     {
       assert (i + 1 = S i) by lia.
@@ -2344,6 +2445,11 @@ Proof.
     eapply lstar_transitive.
     eapply lstar_stbsr.
     eassumption.
+
+    assert (st_evid = Nat.pred (st_evid + 1)) by lia.
+    rewrite H8 at 2.
+
+    Print stbsrstop.
     
     econstructor.
 
@@ -2353,12 +2459,15 @@ Proof.
   - (* abpar case *)
 
     wrap_ccp_anno.
+    ff.
+    wrap_ccp_anno.
+    ff.
 
     assert (n = st_evid).
     {
       assert (i+1 = S i) by lia.
       find_rewrite.
-      invc Heqp2.
+      invc Heqp0.
       
       eapply span_cvm; eauto.
     }
@@ -2366,7 +2475,7 @@ Proof.
 
     assert (n0 = st_evid + event_id_span t2) by lia.
     
-    subst. clear H3.
+    subst. clear H9.
     
     repeat do_anno_redo.
     
@@ -2378,7 +2487,7 @@ Proof.
     repeat rewrite <- app_assoc.
 
     assert (
-        lstar (conf a0 p (splitEv_T_l s et)) blah (stop p (aeval a0 p (splitEv_T_l s et)))
+        lstar (conf a p (splitEv_T_l s et)) blah (stop p (aeval a p (splitEv_T_l s et)))
       ).
     {
       assert (i + 1 = S i) by lia.
@@ -2394,10 +2503,10 @@ Proof.
       rewrite front_app.
       rewrite back_app.
 
-      assert ([cvm_thread_start H p t2 (get_et (splitEv_r s (evc bits et)))]
+      assert ([cvm_thread_start l p t2 (get_et (splitEv_r s (evc bits et)))]
                 ++
                 blah ++
-                [cvm_thread_end H] =
+                [cvm_thread_end l] =
               shuffled_events blah (cvm_events t2 p (get_et (splitEv_r s (evc bits et))))).
       {
         eapply thread_bookend_peel.
@@ -2421,7 +2530,12 @@ Proof.
       eassumption.
       eassumption.
 
+      assert ((st_evid + event_id_span t2) = Nat.pred ((st_evid + event_id_span t2) + 1)) by lia.
+      rewrite H8 at 2.
+
       eapply lstar_tran.
+
+      
 
       apply stbpstop.
       econstructor.
@@ -2468,8 +2582,8 @@ Defined.
 Theorem cvm_respects_event_system :
   forall atp annt t cvm_tr ev0 ev1 bits bits' et et' i i',
     annoP_indexed annt t i i' ->
-    (*anno_parP atp t -> *)
-    anno_par_listP atp t ->
+    anno_parP atp t -> 
+    (*anno_par_listP atp t -> *)
     copland_compileP atp
                      (mk_st (evc bits et) [] 0 i)
                      (Some tt)
@@ -2478,12 +2592,15 @@ Theorem cvm_respects_event_system :
     earlier cvm_tr ev0 ev1.
 Proof.
   intros.
+  (*
   assert (anno_parP atp t).
   {
     eapply list_nolist_same_annopar.
     eassumption.
   }
   clear H0.
+   *)
+  
   
   
 
@@ -2505,7 +2622,8 @@ Defined.
 Theorem cvm_respects_event_system_run :
   forall atp annt t cvm_tr ev0 ev1 bits et i i',
     annoP_indexed annt t i i' ->
-    anno_par_listP atp t ->
+    (*anno_par_listP atp t -> *)
+    anno_parP atp t ->
     st_trace (run_cvm atp (mk_st (evc bits et) [] 0 i)) = cvm_tr ->
     
     prec (ev_sys annt 0 et) ev0 ev1 ->
@@ -2536,7 +2654,8 @@ Proof.
   assert (i' = st_evid).
   {
     eapply anno_cvm_span; eauto.
-    eapply list_nolist_same_annopar. eassumption.
+    (*
+    eapply list_nolist_same_annopar. eassumption. *)
     econstructor; eassumption.
   }
   subst.
@@ -2549,25 +2668,45 @@ Proof.
   eassumption.
 Defined.
 
-Theorem cvm_respects_event_system_run' : forall atp annt t cvm_tr ev0 ev1 bits (*bits' et' *)et,
+Theorem cvm_respects_event_system_run' : forall atp annt t cvm_tr ev0 ev1 bits (*bits' et' *)et ls,
     annt = annotated t ->
-    atp = annotated_par t ->
+    (*atp = annotated_par t -> *)
+    anno_par_list t ls = Some atp -> 
     st_trace (run_cvm atp (mk_st (evc bits et) [] 0 0)) = cvm_tr ->
     
     prec (ev_sys annt 0 et) ev0 ev1 ->
     earlier cvm_tr ev0 ev1.
 Proof.
   intros.
+  (*
   unfold annotated in *.
-  unfold annotated_par in *.
+  unfold annotated_par in *. *)
   destruct (anno t 0) eqn: hi.
-  destruct (anno_par t 0) eqn: hey.
+  (*
+  destruct (anno_par t 0) eqn: hey. *)
+  assert (anno_parP atp t).
+  {
+    unfold anno_par_list in H0.
+    unfold GenOptMonad.bind in *.
+    unfold GenOptMonad.ret in *.
+    ff.
+    econstructor.
+    repeat eexists.
+    eassumption.
+  }
+  
+    
   eapply cvm_respects_event_system_run.
   econstructor. eassumption.
-  econstructor. repeat eexists. eassumption.
+  eassumption.
+  (*
+  econstructor. repeat eexists. eassumption. *)
   subst.
   simpl.
   reflexivity.
+  dd.
+  unfold annotated in *.
+  rewrite hi in *.
   dd.
   eassumption.
 Defined.

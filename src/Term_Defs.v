@@ -809,6 +809,19 @@ Inductive annoP_indexed: AnnoTerm -> Term -> nat -> nat ->  Prop :=
     anno t n = (n', anno_term) ->
     annoP_indexed anno_term t n n'.
 
+
+Inductive anno_parP (*anno_par_listP*): AnnoTermPar -> Term -> Prop :=
+| anno_parP_c: forall par_term t,
+    (exists ls ls', anno_par_list' t ls = Some (ls', par_term)) -> (*par_term = snd (anno_par t loc)) -> *)
+    (*anno_par_listP*) anno_parP par_term t.
+
+Inductive anno_parPloc: AnnoTermPar -> Term -> list Loc -> Prop :=
+| anno_parP_cloc: forall par_term t ls,
+    (exists ls', anno_par_list' t ls = Some (ls', par_term)) -> (*par_term = snd (anno_par t loc) -> *)
+    anno_parPloc par_term t ls.
+
+
+(*
 Inductive anno_parP: AnnoTermPar -> Term -> Prop :=
 | anno_parP_c: forall par_term t,
     (exists loc loc', anno_par t loc = (loc', par_term)) -> (*par_term = snd (anno_par t loc)) -> *)
@@ -822,13 +835,16 @@ Inductive anno_parPloc: AnnoTermPar -> Term -> Loc -> Prop :=
 
 Inductive anno_par_listP: AnnoTermPar -> Term -> Prop :=
 | anno_par_listP_c: forall par_term t,
-    (exists ls ls', anno_par t ls = (ls', par_term)) -> (*par_term = snd (anno_par t loc)) -> *)
+    (exists ls ls', anno_par_list' t ls = Some (ls', par_term)) -> (*par_term = snd (anno_par t loc)) -> *)
     anno_par_listP par_term t.
 
 Inductive anno_par_listPls: AnnoTermPar -> Term -> list Loc -> Prop :=
 | anno_par_listP_cloc: forall par_term t ls,
     (exists ls', anno_par_list' t ls = Some (ls', par_term)) -> (*par_term = snd (anno_par t loc) -> *)
     anno_par_listPls par_term t ls.
+*)
+
+(*
 
 Lemma nolist_list_same_annopar: forall t annt,
   anno_parP annt t ->
@@ -841,16 +857,53 @@ Proof.
     invc H.
     destruct_conjs.
     econstructor.
-    eauto.
+    destruct a; ff; eauto.
   -
     invc H.
     destruct_conjs.
     econstructor.
+    ff.
     eauto.
   -
     invc H.
     destruct_conjs.
+    ff.
+    assert (anno_parP a t1).
+    {
+      econstructor; eauto.
+    }
+    find_eapply_hyp_hyp.
+
+    assert (anno_parP a0 t2).
+    {
+      econstructor; eauto.
+    }
+    find_eapply_hyp_hyp.
+
+    invc H1; invc H2.
+    destruct_conjs.
+
+
+    (*
     econstructor.
+    exists H3. eexists.
+
+    ff.
+
+    unfold bind.
+    unfold ret.
+    find_rewrite.
+    find_rewrite.
+    
+    repeat eexists.
+    ff.
+    rewrite H6 in *.
+    ff.
+    unfold an
+    ff.
+    eauto.
+    ff.
+    
     eauto.
   -
     invc H.
@@ -862,6 +915,7 @@ Proof.
     econstructor.
     eauto.
 Defined.
+*)
 
 Lemma list_nolist_same_annopar: forall t annt,
   anno_par_listP annt t ->
@@ -875,7 +929,7 @@ Proof.
 Defined.
     
     
-    
+*)    
     
 
 
