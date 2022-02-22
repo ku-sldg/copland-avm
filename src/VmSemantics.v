@@ -2468,7 +2468,8 @@ Defined.
 Theorem cvm_respects_event_system :
   forall atp annt t cvm_tr ev0 ev1 bits bits' et et' i i',
     annoP_indexed annt t i i' ->
-    anno_parP atp t ->
+    (*anno_parP atp t -> *)
+    anno_par_listP atp t ->
     copland_compileP atp
                      (mk_st (evc bits et) [] 0 i)
                      (Some tt)
@@ -2477,6 +2478,14 @@ Theorem cvm_respects_event_system :
     earlier cvm_tr ev0 ev1.
 Proof.
   intros.
+  assert (anno_parP atp t).
+  {
+    eapply list_nolist_same_annopar.
+    eassumption.
+  }
+  clear H0.
+  
+  
 
   assert (well_formed_r_annt annt).
   {
@@ -2496,7 +2505,7 @@ Defined.
 Theorem cvm_respects_event_system_run :
   forall atp annt t cvm_tr ev0 ev1 bits et i i',
     annoP_indexed annt t i i' ->
-    anno_parP atp t ->
+    anno_par_listP atp t ->
     st_trace (run_cvm atp (mk_st (evc bits et) [] 0 i)) = cvm_tr ->
     
     prec (ev_sys annt 0 et) ev0 ev1 ->
@@ -2527,6 +2536,7 @@ Proof.
   assert (i' = st_evid).
   {
     eapply anno_cvm_span; eauto.
+    eapply list_nolist_same_annopar. eassumption.
     econstructor; eassumption.
   }
   subst.

@@ -136,3 +136,13 @@ Definition layered_bg_strong : Term :=
                  (appraise P2 it)
                  (asp SIG)))).
   
+
+
+
+Definition test_par_nested : Term :=
+  bpar (ALL,ALL)
+       (asp SIG)
+       (bpar (ALL,ALL)
+             (asp SIG)
+             (asp SIG)).
+       

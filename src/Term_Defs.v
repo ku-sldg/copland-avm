@@ -13,7 +13,7 @@ University of California.  See license.txt for details. *)
     events, and annotated terms. *)
 
 Require Import PeanoNat Nat Compare_dec Lia.
-Require Import Preamble StructTactics Defs.
+Require Import Preamble StructTactics Defs GenOptMonad.
 (*Require Import AutoPrim. *)
 
 Require Export BS.
@@ -124,6 +124,15 @@ Fixpoint thread_count (t:Term) : nat :=
   | lseq t1 t2 => max (thread_count t1) (thread_count t2)
   | bseq _ t1 t2 => max (thread_count t1) (thread_count t2)
   | bpar _ t1 t2 => 1 + (thread_count t1) + (thread_count t2)
+  end.
+
+Fixpoint top_level_thread_count (t:Term) : nat :=
+  match t with
+  | asp _ => 0
+  | att _ _ => 0
+  | lseq t1 t2 => (top_level_thread_count t1) + (top_level_thread_count t2)
+  | bseq _ t1 t2 => (top_level_thread_count t1) + (top_level_thread_count t2)
+  | bpar _ t1 t2 => 1 + (top_level_thread_count t1) (* + (thread_count t2) *)
   end.
 
 (*
@@ -322,7 +331,7 @@ Fixpoint unannoPar (t:AnnoTermPar) : Term :=
 Fixpoint anno_par (t:Term) (loc:Loc) : (Loc * AnnoTermPar)  :=
   match t with
   | asp a => (loc, aasp_par a)
-  | att p t => (loc, aatt_par p t)
+  | att p t' => (loc, aatt_par p t')
                      
   | lseq t1 t2 =>
     let '(loc', t1') := anno_par t1 loc in
@@ -341,6 +350,258 @@ Fixpoint anno_par (t:Term) (loc:Loc) : (Loc * AnnoTermPar)  :=
     
     (loc', abpar_par loc spl t1' t2)
   end.
+
+Definition peel_loc (ls:list Loc) : Opt (Loc * list Loc) :=
+  match ls with
+  | bs :: ls' => ret (bs, ls')
+  | _ => failm
+  end.
+
+Fixpoint anno_par_list' (t:Term) (ls:list Loc) : Opt (list Loc * AnnoTermPar) :=
+  match t with
+  | asp a => ret (ls, aasp_par a)
+  | att p t' => ret (ls, aatt_par p t')
+  | lseq t1 t2 =>
+    '(ls', t1') <- anno_par_list' t1 ls ;;
+    '(ls'', t2') <- anno_par_list' t2 ls' ;;
+    ret (ls'', alseq_par t1' t2')
+  | bseq spl t1 t2 =>
+    '(ls', t1') <- anno_par_list' t1 ls ;;
+    '(ls'', t2') <- anno_par_list' t2 ls' ;;
+    ret (ls'', abseq_par spl t1' t2')
+  | bpar spl t1 t2 =>
+    '(loc, ls') <- peel_loc ls ;;
+    '(ls'', t1') <- anno_par_list' t1 ls' ;;
+    ret (ls'', abpar_par loc spl t1' t2)
+  end.
+
+Definition anno_par_list (t:Term) (ls:list Loc) : Opt AnnoTermPar :=
+  '(ls', t') <- anno_par_list' t ls ;;
+  ret t'.
+
+Set Nested Proofs Allowed.
+
+Lemma peel_loc_fact: forall ls ls' loc,
+    peel_loc ls = Some (loc, ls') ->
+    length ls' = length ls - 1.
+Proof.
+  intros.
+  generalizeEverythingElse ls.
+  induction ls; intros; ff.
+  unfold ret in *. inversion H.
+  subst.
+  lia.
+Defined.
+
+Lemma par_list_helper: forall t1 t1' ls ls',
+    anno_par_list' t1 ls = Some (ls', t1') ->
+    length ls' = length ls - top_level_thread_count t1.
+Proof.
+  intros.
+  generalizeEverythingElse t1.
+  induction t1; intros.
+  -
+    ff.
+    unfold ret in *.
+    ff.
+    lia.
+  -
+    ff.
+    unfold ret in *.
+    ff.
+    lia.
+  -
+    ff.
+    unfold bind in *.
+    unfold ret in *.
+    ff.
+    find_eapply_hyp_hyp.
+    find_eapply_hyp_hyp.
+    lia.
+  -
+    ff.
+    unfold bind in *.
+    unfold ret in *.
+    ff.
+    find_eapply_hyp_hyp.
+    find_eapply_hyp_hyp.
+    lia.
+  -
+    ff.
+    unfold bind in *.
+    unfold ret in *.
+    ff.
+    find_eapply_hyp_hyp.
+    rewrite Heqo0.
+    assert (length l0 = length ls - 1).
+    {
+      eapply peel_loc_fact.
+      eauto.
+    }
+    lia.
+Defined.
+
+Lemma peel_loc_fact2: forall ls, 
+    length ls >= 1 ->
+    exists res, peel_loc ls = Some res.
+Proof.
+  intros.
+  generalizeEverythingElse ls.
+  induction ls; intros.
+  -
+    ff.
+  -
+    ff.
+    unfold ret.
+    eauto.
+Defined.
+
+Lemma anno_par_list_some : forall ls t,
+  length ls >= (top_level_thread_count t) ->
+  exists t', anno_par_list t ls = Some t'.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    ff.
+    eauto.
+  -
+    ff.
+    eauto.
+  -
+    ff.
+    unfold anno_par_list.
+    cbn.
+    destruct (anno_par_list' t1 ls) eqn:hi.
+    unfold bind.
+    ff.
+    unfold ret.
+    eauto.
+
+    assert (length l >= top_level_thread_count t2).
+    {
+      assert (length ls >= top_level_thread_count t2) by lia.
+      assert (length l = length ls - (top_level_thread_count t1)).
+      {
+
+
+        eapply par_list_helper; eauto.
+      }
+      rewrite H1.
+      lia.
+    }
+
+    find_eapply_hyp_hyp.
+    destruct_conjs.
+    unfold anno_par_list in H1.
+    unfold bind in H1.
+    ff.
+
+    assert (length ls >= top_level_thread_count t1) by lia.
+    find_eapply_hyp_hyp.
+    destruct_conjs.
+    unfold anno_par_list in H1.
+    unfold bind in H1.
+    ff.
+  -
+    ff.
+    unfold anno_par_list.
+    cbn.
+    destruct (anno_par_list' t1 ls) eqn:hi.
+    unfold bind.
+    ff.
+    unfold ret.
+    eauto.
+
+    assert (length l >= top_level_thread_count t2).
+    {
+      assert (length ls >= top_level_thread_count t2) by lia.
+      assert (length l = length ls - (top_level_thread_count t1)).
+      {
+
+
+        eapply par_list_helper; eauto.
+      }
+      rewrite H1.
+      lia.
+    }
+
+    find_eapply_hyp_hyp.
+    destruct_conjs.
+    unfold anno_par_list in H1.
+    unfold bind in H1.
+    ff.
+
+    assert (length ls >= top_level_thread_count t1) by lia.
+    find_eapply_hyp_hyp.
+    destruct_conjs.
+    unfold anno_par_list in H1.
+    unfold bind in H1.
+    ff.
+  -
+    ff.
+    unfold anno_par_list.
+    cbn.
+    destruct (anno_par_list' t1 ls) eqn:hi.
+    unfold bind.
+    ff.
+    unfold ret.
+    eauto.
+
+    assert (length l0 >= top_level_thread_count t1).
+    {
+      assert (length l0 = length ls - 1).
+      {
+        eapply peel_loc_fact; eauto.
+      }
+      lia.
+    }
+    find_eapply_hyp_hyp.
+    destruct_conjs.
+    unfold anno_par_list in H1.
+    unfold bind in H1. ff.
+
+    assert (length ls >= 1) by lia.
+
+
+    edestruct peel_loc_fact2.
+    eassumption.
+    rewrite H1 in *.
+    ff.
+
+    unfold bind in *.
+    ff.
+    unfold ret in *; ff.
+    eauto.
+
+    assert (length l0 >= top_level_thread_count t1).
+    {
+      assert (length l0 = length ls - 1).
+      {
+        eapply peel_loc_fact; eauto.
+      }
+      lia.
+
+    }
+    find_eapply_hyp_hyp.
+    destruct_conjs.
+    unfold anno_par_list in H1.
+    unfold bind in H1. ff.
+
+     assert (length ls >= 1) by lia.
+
+
+    edestruct peel_loc_fact2.
+    eassumption.
+    rewrite H1 in *.
+    ff.
+Defined.
+
+    
+    
+    
+              
 
 Definition annotated_par (x:Term) :=
   snd (anno_par x 0).
@@ -482,6 +743,55 @@ Proof.
     congruence.
 Defined.
 
+Lemma anno_unanno_par_list': forall a l l' annt,
+    anno_par_list' a l = Some (l', annt) ->
+    unannoPar annt = a.
+Proof.
+  intros.
+  generalizeEverythingElse a.
+  induction a; intros.
+  -
+    ff.
+  -
+    ff.
+  -
+    ff.
+    unfold bind in *.
+    unfold ret in *.
+    ff.
+    assert (unannoPar a = a1) by eauto.
+    assert (unannoPar a0 = a2) by eauto.
+    congruence.
+  -
+    ff.
+    unfold bind in *.
+    unfold ret in *.
+    ff.
+    assert (unannoPar a = a1) by eauto.
+    assert (unannoPar a0 = a2) by eauto.
+    congruence.
+  -
+    ff.
+    unfold bind in *.
+    unfold ret in *.
+    ff.
+    assert (unannoPar a = a1) by eauto.
+    congruence.
+Defined.
+
+Lemma anno_unanno_par_list: forall a l annt,
+    anno_par_list a l = Some annt ->
+    unannoPar annt = a.
+Proof.
+  intros.
+  unfold anno_par_list in *.
+  unfold bind in *.
+  unfold ret in *.
+  ff.
+  eapply anno_unanno_par_list'.
+  eassumption.
+Defined.
+
 
 Inductive annoP: AnnoTerm -> Term -> Prop :=
 | annoP_c: forall anno_term t,
@@ -510,6 +820,63 @@ Inductive anno_parPloc: AnnoTermPar -> Term -> Loc -> Prop :=
     anno_parPloc par_term t loc.
 
 
+Inductive anno_par_listP: AnnoTermPar -> Term -> Prop :=
+| anno_par_listP_c: forall par_term t,
+    (exists ls ls', anno_par t ls = (ls', par_term)) -> (*par_term = snd (anno_par t loc)) -> *)
+    anno_par_listP par_term t.
+
+Inductive anno_par_listPls: AnnoTermPar -> Term -> list Loc -> Prop :=
+| anno_par_listP_cloc: forall par_term t ls,
+    (exists ls', anno_par_list' t ls = Some (ls', par_term)) -> (*par_term = snd (anno_par t loc) -> *)
+    anno_par_listPls par_term t ls.
+
+Lemma nolist_list_same_annopar: forall t annt,
+  anno_parP annt t ->
+  anno_par_listP annt t.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    invc H.
+    destruct_conjs.
+    econstructor.
+    eauto.
+  -
+    invc H.
+    destruct_conjs.
+    econstructor.
+    eauto.
+  -
+    invc H.
+    destruct_conjs.
+    econstructor.
+    eauto.
+  -
+    invc H.
+    destruct_conjs.
+    econstructor.
+    eauto.
+  - invc H.
+    destruct_conjs.
+    econstructor.
+    eauto.
+Defined.
+
+Lemma list_nolist_same_annopar: forall t annt,
+  anno_par_listP annt t ->
+  anno_parP annt t.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros;
+    invc H;
+    destruct_conjs; econstructor; eauto.
+Defined.
+    
+    
+    
+    
 
 
 (** This predicate determines if an annotated term is well formed,
