@@ -5,6 +5,7 @@ StructTactics.v
 Defs.v
 BS.v
 Term_Defs.v
+Anno_Term_Defs.v
 Eqb_Evidence.v
 Term.v
 Event_system.v

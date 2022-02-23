@@ -1,6 +1,6 @@
 Require Extraction.
 
-Require Import (*Impl_VM*) Run_VM IO_Stubs MonadVM IO_Type Term_Defs Example_Phrases.
+Require Import (*Impl_VM*) Run_VM IO_Stubs MonadVM IO_Type Term_Defs Anno_Term_Defs Example_Phrases.
 
 Require Import Impl_appraisal_alt.
 
@@ -41,7 +41,7 @@ Definition my_extracted (t:Term) (st:cvm_st) (et:Evidence) (ls:RawEv) :=
   (res, res', res'').
 *)
 
-Separate Extraction run_cvm' build_app_comp_evC eval cert_style_simple_sig cert_style cert_cache_p1 cert_cache_p0 bg_check par_mut_p0 par_mut_p1 layered_bg_weak layered_bg_strong test_par_nested anno_par top_level_thread_count.
+Separate Extraction run_cvm' build_app_comp_evC eval cert_style_simple_sig cert_style cert_cache_p1 cert_cache_p0 bg_check par_mut_p0 par_mut_p1 layered_bg_weak layered_bg_strong test_par_nested anno_par_list top_level_thread_count.
 (* my_extracted. *)
 
 (*

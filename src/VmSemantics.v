@@ -4,7 +4,7 @@ Proofs about the Copland Virtual Machine implementation, linking it to the Copla
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import More_lists Defs Term_Defs ConcreteEvidence LTS Event_system Term_system Main Appraisal_Evidence AutoApp.
+Require Import More_lists Defs Term_Defs Anno_Term_Defs ConcreteEvidence LTS Event_system Term_system Main Appraisal_Evidence AutoApp.
 Require Import MonadVM StructTactics Auto.
 Require Import Axioms_Io Impl_VM Run_VM External_Facts Helpers_VmSemantics Evidence_Bundlers.
 
@@ -436,10 +436,168 @@ Ltac do_t_at_zero t x :=
   destruct y;
   destruct y as [x].
  *)
-Ltac do_t_at_zero t x l :=
+(*
+Fixpoint build_list_n'{A:Type} (a:A) (ls:list A) (n:nat) : list A :=
+  match n with
+  | O => ls
+  | S n' => build_list_n' a (a::ls) n'
+  end.
+ *)
+
+Fixpoint build_list_n'{A:Type} (a:A) (ls:list A) (n:nat) : list A :=
+  match n with
+  | O => ls
+  | S n' => build_list_n' a (ls ++ [a]) n'
+  end.
+
+Definition build_list_n{A:Type} (a:A) (n:nat) : list A :=
+  build_list_n' a [] n.
+
+Set Nested Proofs Allowed.
+
+Lemma blnl{A:Type}: forall (a:A) n,
+    build_list_n a n = [] ->
+    n = 0.
+Proof.
+Admitted.
+  
+Lemma build_list_n_length{A:Type}: forall (a:A) (n:nat) (ls:list A),
+    ls = build_list_n a n ->
+    length ls = n.
+Proof.
+Admitted.
+  (*
+  intros.
+  generalizeEverythingElse n.
+  dependent induction n; intros.
+  -
+    ff.
+  -
+    ff.
+    destruct ls.
+    +
+      ff.
+      admit.
+    +
+      ff.
+      assert (length ls = n).
+      {
+        eapply IHn.
+        admit.
+      }
+      congruence.
+      
+      
+      
+    
+
+
+
+    symmetry.
+    eapply blnl; eauto.
+  -
+    ff.
+    destruct n.
+    + unfold build_list_n in H.
+      ff.
+    +
+      unfold build_list_n in *.
+      assert (length ls = n).
+      {
+        eapply IHls.
+        ff.
+        Lemma blafaf{A:Type}: forall (a:A) ls a0 n,
+          a :: ls = build_list_n' a0 [a0] n ->
+          ls = build_list_n' a0 [] n.
+        Proof.
+          intros.
+          generalizeEverythingElse n.
+          dependent induction n; intros.
+          -
+            ff.
+          -
+            destruct ls.
+            +
+              ff.
+              admit.
+            +
+              cbn in *.
+              ff.
+              
+              
+            ff.
+            
+          ff.
+        Admitted.
+
+        eapply blafaf.
+        eassumption.
+      }
+      eauto.
+Defined.
+      
+
+        
+      admit.
+      eauto.
+
+
+      
+      erewrite IHls.
+      reflexivity.
+      ff.
+      
+
+
+    
+    erewrite IHls with (n:=Nat.pred n).
+    destruct n.
+    
+    tauto.
+    lia.
+    assert (length ls = 
+    assert (length (a::ls) = n).
+    eapply IHls.
+    
+
+    
+    unfold build_list_n in *.
+    destruct n.
+    + tauto.
+    + dd.
+*)
+
+Lemma list_exists_length{A:Type}{a:A}: forall n,
+    exists (ls:list A),
+      length ls = n.
+Proof.
+  intros.
+  exists (build_list_n a n).
+  eapply build_list_n_length.
+  reflexivity.
+Defined.
+
+Lemma exists_some_anno_parlist: forall t,
+    exists l l' t', anno_par_list' t l = Some (l',t').
+Proof.
+  intros.
+  edestruct (@list_exists_length Loc 0 (top_level_thread_count t)).
+  edestruct (anno_par_list_some x t).
+  lia.
+  unfold anno_par_list in H0.
+  unfold GenOptMonad.bind in *;
+    unfold GenOptMonad.ret in *;
+    ff.
+  repeat eexists.
+  eassumption.
+Defined.
+  
+
+Ltac do_t_at_zero t x :=
   let y := fresh in
-  assert (exists l' t', anno_par_list' t l = Some (l',t')) as y by
-        (destruct (anno_par_list' t l); repeat eexists);
+  assert (exists l l' t', anno_par_list' t l = Some (l',t')) as y by
+        (apply exists_some_anno_parlist);
+  destruct y;
   destruct y;
   destruct y as [x].
 
@@ -459,10 +617,10 @@ Ltac do_assert_unannoPar t x :=
     (erewrite anno_unanno_par_list';
      [reflexivity | eassumption]).
 
-Ltac do_assume_remote t e p i x l :=
-  do_t_at_zero t x l;
-  do_assert_remote x e p i.
-  (*do_assert_unannoPar t x. *)
+Ltac do_assume_remote t e p i x :=
+  do_t_at_zero t x;
+  do_assert_remote x e p i;
+  do_assert_unannoPar t x.
 
 Lemma par_evidence_r: forall a p s e et e2 e3 l,
     parallel_vm_thread l a p (splitEv_r s (evc e et)) = evc e2 e3 ->
@@ -1844,6 +2002,36 @@ Proof.
     ff.
     wrap_ccp_anno.
 
+    do_assume_remote t' (evc bits et) p (S i) H10.
+
+
+    rewrite <- H11 in H7.
+    rewrite H6 in H7.
+    
+    
+
+    
+    eapply IHt'.
+    econstructor.
+    eassumption.
+
+
+
+    econstructor.
+    eauto.
+    wrap_ccp_anno.
+
+    assert (n = (S (i + event_id_span (unannoPar H10)))) by lia.
+    rewrite <- H12.
+    eassumption.
+    eassumption.
+    eassumption.
+
+
+    
+
+    (*
+
     (*
     
     do_assume_remote t' (evc bits et) p (S i) HHH [0;0].
@@ -1863,6 +2051,12 @@ Proof.
     }
 
     do_assert_remote H10 (evc bits et) p (S i).
+     
+
+
+
+
+    
 
     rewrite <- H12 in H13.
     rewrite H6 in H13.
@@ -1885,6 +2079,7 @@ Proof.
     eassumption.
     eassumption.
     eassumption.
+*)
 
   -
     wrap_ccp_anno.
@@ -2077,6 +2272,11 @@ Proof.
     }
 
 
+    (*
+
+    
+
+
     assert (exists l l' annt, anno_par_list' t'2 l = Some (l', annt)).
     {
       admit.
@@ -2091,12 +2291,25 @@ Proof.
     }
 
     do_assert_remote H15 (splitEv_r s (evc bits et)) p st_evid.
+     *)
+
+    do_assume_remote t'2 (splitEv_r s (evc bits et)) p st_evid HHH.
+
+
+
+    (*
 
     rewrite <- H17 in H18.
     rewrite at_evidence in *.
     rewrite par_evidence in *.
     (*rewrite H6 in H13. *)
     rewrite Heqe0 in H18.
+     *)
+
+    rewrite <- H15 in H14.
+    rewrite at_evidence in *.
+    rewrite par_evidence in *.
+    rewrite Heqe0 in H14.
 
 
 
@@ -2190,7 +2403,7 @@ Proof.
         eassumption.
     }
     congruence.
-Admitted.
+Defined.
 
 
 Lemma cvm_ev_denote_evtype: forall annt p e,

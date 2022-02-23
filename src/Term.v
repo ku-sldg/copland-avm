@@ -9,7 +9,7 @@ Require Import Lia.
 Require Import List.
 Import List.ListNotations.
 
-Require Export Term_Defs.
+Require Export Term_Defs Anno_Term_Defs.
 
 (*
 Set Nested Proofs Allowed.

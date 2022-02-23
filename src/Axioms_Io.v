@@ -4,7 +4,7 @@ Uninterpreted functions and rewrite rules that model external (remote and local 
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term_Defs LTS IO_Stubs.
+Require Import Term_Defs Anno_Term_Defs LTS IO_Stubs.
 
 Require Import List.
 Import ListNotations.

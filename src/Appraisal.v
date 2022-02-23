@@ -4,6 +4,8 @@ Require Import Axioms_Io External_Facts Auto AutoApp.
 
 Require Import Appraisal_Defs Impl_appraisal.
 
+Require Import Anno_Term_Defs.
+
 Require Import Coq.Arith.Peano_dec.
 
 Require Import StructTactics Appraisal_Evidence Helpers_Appraisal.
