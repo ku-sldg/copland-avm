@@ -31,26 +31,28 @@ Once compilation completes, open the desired `.v` file in `src/` to step through
 * LTS.v:  Small-step, labelled transition system reference semantics for Copland
 * Main.v:  Main theorems for Copland reference semantics
 * ConcreteEvidence.v:  Evidence structure that models concrete results of Copland phrase execution (`EvidenceC`), `Evidence` and `EvidenceC` sub-term relations (`EvSubT` and `EvSub`).
-* GenStMonad.v:  General definition of a state monad with error + monadic notations, borrowed/tweaked from:  https://github.com/uwplse/verdi/blob/master/core/StateMachineHandlerMonad.v
-* GenOptMonad.v:  General option monad + notations
-* StVM.v:  Record representing the CVM Monad state structure(`cvm_st`) + CVM monad definition (`CVM`).
+* StMonad_Coq.v:  General definition of a state monad with error + monadic notations, borrowed/tweaked from:  https://github.com/uwplse/verdi/blob/master/core/StateMachineHandlerMonad.v
+* OptMonad_Coq.v:  General option monad + notations
+* Cvm_St.v:  Record representing the CVM Monad state structure(`cvm_st`) + CVM monad definition (`CVM`).
 * IO_Type.v:  IO type, defined as alias to CVM monad.  Useful as its own module for extraction.
 * IO_Stubs.v:  Abstract (Admitted) definitions of IO function signatures (measurements, crypto, communication) that must be filled in for a concrete execution.
 * Axioms_Io.v:  Uninterpreted functions and rewrite rules that model external (remote and local parallel) components that interpret Copland phrases
 * Evidence_Bundlers.v:  Helper functions that simultaneously bundle raw evidence and update a related evidence type structure.  Used by the CVM to update the internal type-tagged evidence structure (`EvC`).  
-* MonadVM.v:  CVM Monad monadic helper functions (workhorses of the CVM implementation).
-* Impl_vm.v:  Top-level monadic function implementing the Copland Compiler/VM (`copland_compile`).
-* Run_VM.v:  CVM monad run functions.
+* Cvm_Monad.v:  CVM Monad monadic helper functions (workhorses of the CVM implementation).
+* Cvm_Impl.v:  Top-level monadic function implementing the Copland Compiler/VM (`copland_compile`).
+* Cvm_Run.v:  CVM monad run functions.
 * Auto.v:  More automation tactics.  Mostly generic, some cvm-monad-specific.
 * Helpers_VmSemantics.v:  Helper lemmas for proofs about the CVM semantics.
 * AutoApp.v:  More automation.
 * External_Facts.v:  Axioms and lemmas that capture the semantics of external CVM instances.
 * Appraisal_Evidence.v:  Functions and lemmas that relate raw and structured evidence, useful for both CVM execution and appraisal.  Also some wrappers/automation for `copland_compile` and annotated terms.
-* VmSemantics.v:  Main proofs about the Copland Virtual Machine implementation, linking it to the Copland reference semantics. 
+* CvmSemantics.v:  Main proofs about the Copland Virtual Machine implementation, linking it to the Copland reference semantics. 
 * Appraisal_IO_Stubs.v:  Abstract (Admitted) definitions of IO function signatures for primitive appraisal checkers.
-* Appraisal_Defs.v:  Helper functions for appraisal procedure + predicates used for stating appraisal correctness + predicates restricting well-formed phrases and evidence that are appraisable.
-* Impl_appraisal.v:  Top-level function implementing appraisal over `EvidenceC` representation (non-monadic primitive checkers for now).
-* Impl_appraisal_alt.v:  Top-level function implementing appraisal, simultaneous walk over raw evidence and evidence type.  Defined in the option monad for now (lifts to AM monad in extracted code).
+* Appraisal_Defs.v:  Helper functions for appraisal procedure +
+  predicates used for stating appraisal correctness + predicates
+  restricting well-formed phrases and evidence that are appraisable.
+* Impl_appraisal.v:  Top-level function implementing appraisal, simultaneous walk over raw evidence and evidence type.  Defined in the option monad for now (lifts to AM monad in extracted code).
+* Impl_appraisal_alt.v:  Top-level function implementing appraisal over `EvidenceC` representation (non-monadic primitive checkers for now).
 * Test_Extract_App.v:  Experimental code extraction module.
 * Appraisal_AltImpls_Eq.v:  Proof that alternative appraisal implementations are equivalent modulo evidence representations.
 * Helpers_Appraisal.v:  Helper lemmas for proofs about appraisal correctness.
