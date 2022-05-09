@@ -1,4 +1,4 @@
-Require Import Term_Defs GenOptMonad BS Preamble.
+Require Import Term_Defs OptMonad_Coq BS Preamble.
 Require Import StructTactics Defs.
 
 

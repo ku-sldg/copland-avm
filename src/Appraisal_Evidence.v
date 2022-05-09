@@ -1,4 +1,4 @@
-Require Import ConcreteEvidence AutoApp (*OptMonad*) Auto Helpers_VmSemantics Term_Defs Anno_Term_Defs StVM Impl_VM Defs StructTactics GenOptMonad. (* StAM *)
+Require Import ConcreteEvidence AutoApp (*OptMonad*) Auto Helpers_CvmSemantics Term_Defs Anno_Term_Defs Cvm_St Cvm_Impl Defs StructTactics OptMonad_Coq. (* StAM *)
 
 Require Import List.
 Import ListNotations.
@@ -381,7 +381,7 @@ Ltac wrap_ccp_anno :=
   try wrap_anno;
   try wrap_anno_indexed;
   repeat do_pl_immut;
-  try (unfold GenOptMonad.ret in * );
-  try (unfold GenOptMonad.bind in * );
+  try (unfold OptMonad_Coq.ret in * );
+  try (unfold OptMonad_Coq.bind in * );
   dd;
   try rewrite ccp_iff_cc in *.

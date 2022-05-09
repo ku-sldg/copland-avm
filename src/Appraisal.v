@@ -1,8 +1,8 @@
-Require Import Event_system Term_system ConcreteEvidence StVM.
-Require Import Impl_VM Helpers_VmSemantics VmSemantics.
+Require Import Event_system Term_system ConcreteEvidence Cvm_St.
+Require Import Cvm_Impl Helpers_CvmSemantics CvmSemantics.
 Require Import Axioms_Io External_Facts Auto AutoApp.
 
-Require Import Appraisal_Defs Impl_appraisal.
+Require Import Appraisal_Defs Impl_appraisal_alt.
 
 Require Import Anno_Term_Defs.
 
@@ -140,7 +140,7 @@ Proof.
 Defined.
 
 
-Require Import Impl_appraisal_alt Appraisal_AltImpls_Eq.
+Require Import Impl_appraisal Appraisal_AltImpls_Eq.
 
 Lemma appraisal_correct_sig_alt :
   forall t annt pt e e' tr tr' p p' bits' et' ev ee i i',
@@ -159,7 +159,7 @@ Lemma appraisal_correct_sig_alt :
                  st_evid := i'|}) ->
 
     sigEvent annt p (get_et ee) ev ->
-    Some e' = Impl_appraisal_alt.build_app_comp_evC et' bits' ->
+    Some e' = Impl_appraisal.build_app_comp_evC et' bits' ->
     appEvent_Sig_EvidenceC ev e'.
 Proof.
   intros.
@@ -207,7 +207,7 @@ Lemma appraisal_correct_sig_alt_et :
                  st_evid := i'|}) ->
 
     sigEvent annt p et ev ->
-    Some e' = Impl_appraisal_alt.build_app_comp_evC et' bits' ->
+    Some e' = Impl_appraisal.build_app_comp_evC et' bits' ->
     appEvent_Sig_EvidenceC ev e'.
 Proof.
   intros.
@@ -250,7 +250,7 @@ Lemma appraisal_correct_alt :
                  st_pl := p'; st_evid := i' |}) ->
 
     measEvent annt p (get_et ee) ev ->
-    Some e' = Impl_appraisal_alt.build_app_comp_evC et' bits' ->
+    Some e' = Impl_appraisal.build_app_comp_evC et' bits' ->
     appEvent_EvidenceC ev e'.
 Proof.
   intros.
@@ -293,7 +293,7 @@ Lemma appraisal_correct_alt_et :
                  st_evid := i'|}) ->
 
     measEvent annt p et ev ->
-    Some e' = Impl_appraisal_alt.build_app_comp_evC et' bits' ->
+    Some e' = Impl_appraisal.build_app_comp_evC et' bits' ->
     appEvent_EvidenceC ev e'.
 Proof.
   intros.

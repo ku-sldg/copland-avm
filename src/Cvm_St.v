@@ -4,7 +4,7 @@ Record representing the CVM Monad state structure.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import ConcreteEvidence GenStMonad.
+Require Import ConcreteEvidence StMonad_Coq.
 Require Import List.
 Import ListNotations.
 

@@ -1,4 +1,4 @@
-Require Import Term_Defs GenOptMonad.
+Require Import Term_Defs OptMonad_Coq.
 
 Definition checkASP (params:ASP_PARAMS) (bs:BS) : Opt BS.
 Admitted.

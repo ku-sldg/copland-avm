@@ -5,8 +5,8 @@ Author:  Adam Petz, ampetz@ku.edu
 *)
 
 Require Import More_lists Defs Term_Defs Anno_Term_Defs ConcreteEvidence LTS Event_system Term_system Main Appraisal_Evidence AutoApp.
-Require Import MonadVM StructTactics Auto.
-Require Import Axioms_Io Impl_VM Run_VM External_Facts Helpers_VmSemantics Evidence_Bundlers.
+Require Import Cvm_Monad StructTactics Auto.
+Require Import Axioms_Io Cvm_Impl Cvm_Run External_Facts Helpers_CvmSemantics Evidence_Bundlers.
 
 Require Import List.
 Import ListNotations.
@@ -352,8 +352,8 @@ Proof.
     rewrite H0; clear H0.
     assert (tr = st_trace).
     {
-      assert (StVM.st_trace {| st_ev := st_ev; st_trace := x ++ tr; st_pl := st_pl; st_evid := st_evid|} =
-              x ++ StVM.st_trace {| st_ev := st_ev; st_trace := st_trace; st_pl := st_pl; st_evid := st_evid |}).
+      assert (Cvm_St.st_trace {| st_ev := st_ev; st_trace := x ++ tr; st_pl := st_pl; st_evid := st_evid|} =
+              x ++ Cvm_St.st_trace {| st_ev := st_ev; st_trace := st_trace; st_pl := st_pl; st_evid := st_evid |}).
       {
         eapply st_trace_cumul; 
         eassumption.
@@ -585,8 +585,8 @@ Proof.
   edestruct (anno_par_list_some x t).
   lia.
   unfold anno_par_list in H0.
-  unfold GenOptMonad.bind in *;
-    unfold GenOptMonad.ret in *;
+  unfold OptMonad_Coq.bind in *;
+    unfold OptMonad_Coq.ret in *;
     ff.
   repeat eexists.
   eassumption.
@@ -853,7 +853,7 @@ Proof.
         assert (wf_ec (evc (encodeEv e1) (et_fun e1))) by
           (eapply wfec_encodeEv_etfun);
         ff;
-        try (unfold GenOptMonad.bind);
+        try (unfold OptMonad_Coq.bind);
         ff;
       try do_wfec_firstn;
       try do_wfec_skipn;
@@ -868,7 +868,7 @@ Lemma inv_recon_mt: forall ls et,
 Proof.
   intros.
   invc H.
-  destruct et; repeat ff; try (unfold GenOptMonad.bind in *); repeat ff; try solve_by_inversion.
+  destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff; try solve_by_inversion.
 Defined.
 
 Ltac do_inv_recon_mt :=
@@ -905,7 +905,7 @@ Lemma inv_recon_nn: forall ls et n n0,
 Proof.
   intros.
   invc H.
-  destruct et; repeat ff; try (unfold GenOptMonad.bind in *); repeat ff; destruct ls; try solve_by_inversion.
+  destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff; destruct ls; try solve_by_inversion.
 Defined.
 
 Ltac do_inv_recon_nn :=
@@ -927,7 +927,7 @@ Proof.
   intros.
   invc H.
   repeat ff.
-  destruct et; repeat ff; try (unfold GenOptMonad.bind in *); repeat ff; try solve_by_inversion.
+  destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff; try solve_by_inversion.
   
   repeat eexists.
   destruct ls; ff.
@@ -952,7 +952,7 @@ Lemma inv_recon_gg: forall ls et n n0 ec,
 Proof.
   intros.
   invc H.
-  destruct et; repeat ff; try (unfold GenOptMonad.bind in *); repeat ff; try solve_by_inversion.
+  destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff; try solve_by_inversion.
 
   repeat eexists.
   destruct ls; ff.
@@ -976,7 +976,7 @@ Lemma inv_recon_hh: forall ls et n n0 et',
 Proof.
   intros.
   invc H.
-  destruct et; repeat ff; try (unfold GenOptMonad.bind in *); repeat ff; destruct ls; try solve_by_inversion.
+  destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff; destruct ls; try solve_by_inversion.
 Defined.
 
 Ltac do_inv_recon_hh :=
@@ -996,7 +996,7 @@ Lemma inv_recon_ss: forall ls et ec1 ec2,
 Proof.
   intros.
   invc H.
-  destruct et; repeat ff; try (unfold GenOptMonad.bind in *); repeat ff; try solve_by_inversion.
+  destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff; try solve_by_inversion.
   eauto.
 Defined.
 
@@ -1017,7 +1017,7 @@ Lemma inv_recon_pp: forall ls et ec1 ec2,
 Proof.
   intros.
   invc H.
-  destruct et; repeat ff; try (unfold GenOptMonad.bind in *); repeat ff; try solve_by_inversion.
+  destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff; try solve_by_inversion.
   eauto.
 Defined.
 
@@ -1050,7 +1050,7 @@ Lemma recon_inv_uu: forall n2 n3 H2 H3 e params,
 Proof.
   intros.
   invc H.
-  repeat ff; try (unfold GenOptMonad.bind in *); repeat ff;
+  repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff;
   econstructor.
   symmetry.
   tauto.
@@ -1073,7 +1073,7 @@ Lemma recon_inv_gg: forall sig ls p et e,
 Proof.
   intros.
   invc H.
-  repeat ff; try (unfold GenOptMonad.bind in *); repeat ff;
+  repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff;
   econstructor.
   symmetry.
   tauto.
@@ -1095,7 +1095,7 @@ Lemma recon_inv_ss: forall ls H1 H2 ec1 ec2,
 Proof.
   intros.
   invc H.
-  repeat ff; try (unfold GenOptMonad.bind in *); repeat ff;
+  repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff;
   split;
     econstructor;
     try 
@@ -1109,7 +1109,7 @@ Lemma recon_inv_pp: forall ls H1 H2 ec1 ec2,
 Proof.
   intros.
   invc H.
-  repeat ff; try (unfold GenOptMonad.bind in *); repeat ff;
+  repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff;
   split;
     econstructor;
     try 
@@ -1156,7 +1156,7 @@ Proof.
     do_inv_recon;
     ff;
     invc H;
-    repeat ff; try (unfold GenOptMonad.bind in *); repeat ff;
+    repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff;
     rewrite fold_recev in *;
     do_wrap_reconP;
     repeat jkjke.
@@ -1331,7 +1331,7 @@ Proof.
         repeat ff; eauto).
   -
     repeat ff.
-    (unfold GenOptMonad.bind in *).
+    (unfold OptMonad_Coq.bind in *).
      repeat ff.
      +
      eauto.
@@ -1351,7 +1351,7 @@ Proof.
 
      -
            repeat ff.
-    (unfold GenOptMonad.bind in *).
+    (unfold OptMonad_Coq.bind in *).
      repeat ff.
      +
      eauto.
@@ -1384,7 +1384,7 @@ Proof.
 
      -
            repeat ff.
-    (unfold GenOptMonad.bind in *).
+    (unfold OptMonad_Coq.bind in *).
      repeat ff.
      +
      eauto.
@@ -1393,7 +1393,7 @@ Proof.
        ff.
        destruct r; try solve_by_inversion.
        ff.
-       unfold GenOptMonad.ret in *.
+       unfold OptMonad_Coq.ret in *.
        repeat ff.
        
 
@@ -1423,7 +1423,7 @@ Proof.
     destruct r; try solve_by_inversion.
     dd.
     destruct H; try solve_by_inversion.
-    unfold GenOptMonad.ret in *.
+    unfold OptMonad_Coq.ret in *.
     repeat ff.
     eauto.
     ff.
@@ -1469,7 +1469,7 @@ Proof.
     eapply skipn_long.
     eassumption.
     repeat jkjke'.
-    unfold GenOptMonad.bind in *.
+    unfold OptMonad_Coq.bind in *.
     eauto.
   -
     try (ff; eauto; tauto).
@@ -1489,7 +1489,7 @@ Proof.
     eapply skipn_long.
     eassumption.
     repeat jkjke'.
-    unfold GenOptMonad.bind in *.
+    unfold OptMonad_Coq.bind in *.
     eauto.
 Defined.
 
@@ -1555,7 +1555,7 @@ Proof.
     ff.
     invc H.
     repeat ff.
-    unfold GenOptMonad.bind in *.
+    unfold OptMonad_Coq.bind in *.
     ff.
     assert (reconstruct_evP (evc H0 H1) e).
     {
@@ -1568,7 +1568,7 @@ Proof.
     ff.
     invc H.
     repeat ff.
-    unfold GenOptMonad.bind in *.
+    unfold OptMonad_Coq.bind in *.
     ff.
     rewrite fold_recev in *.
     do_wrap_reconP.
@@ -1582,7 +1582,7 @@ Proof.
     ff.
     invc H.
     ff.
-    unfold GenOptMonad.bind in *.
+    unfold OptMonad_Coq.bind in *.
     ff.
     rewrite fold_recev in *.
     do_wrap_reconP.
@@ -1603,7 +1603,7 @@ Proof.
     ff.
     invc H.
     ff.
-    unfold GenOptMonad.bind in *.
+    unfold OptMonad_Coq.bind in *.
     ff.
     rewrite fold_recev in *.
     do_wrap_reconP.
@@ -1656,7 +1656,7 @@ Proof.
     invc H.
     dd.
     ff.
-    unfold GenOptMonad.bind in *.
+    unfold OptMonad_Coq.bind in *.
     ff.
     assert (wf_ec (evc H0 H1)).
     {
@@ -1673,7 +1673,7 @@ Proof.
     invc H.
     dd.
     ff.
-    unfold GenOptMonad.bind in *.
+    unfold OptMonad_Coq.bind in *.
     ff.
     assert (wf_ec (evc H0 H1)).
     {
@@ -1695,7 +1695,7 @@ Proof.
     invc H.
     dd.
     ff.
-    unfold GenOptMonad.bind in *.
+    unfold OptMonad_Coq.bind in *.
     ff.
 
     assert (wf_ec (evc (firstn (et_size H0) r) H0)).
@@ -1729,7 +1729,7 @@ Proof.
     invc H.
     dd.
     ff.
-    unfold GenOptMonad.bind in *.
+    unfold OptMonad_Coq.bind in *.
     ff.
 
     assert (wf_ec (evc (firstn (et_size H0) r) H0)).
@@ -2148,7 +2148,7 @@ Proof.
 
     clear_skipn_firstn.
     dd.
-    unfold GenOptMonad.bind in *.
+    unfold OptMonad_Coq.bind in *.
     ff.
     assert (reconstruct_evP (evc r e) e1).
     {
@@ -2256,7 +2256,7 @@ Proof.
 
     clear_skipn_firstn.
     dd.
-    unfold GenOptMonad.bind in *.
+    unfold OptMonad_Coq.bind in *.
     ff.
     assert (reconstruct_evP (evc r e) e1).
     {
@@ -2526,11 +2526,11 @@ Proof.
     invc annPH.
     destruct_conjs.
     dd.
-    unfold GenOptMonad.bind in *.
+    unfold OptMonad_Coq.bind in *.
     ff.
     do_annopar_redo.
     do_annopar_redo.
-    unfold GenOptMonad.ret in *.
+    unfold OptMonad_Coq.ret in *.
     ff.
     
     edestruct alseq_decomp; eauto.
@@ -2900,8 +2900,8 @@ Proof.
   assert (anno_parP atp t).
   {
     unfold anno_par_list in H0.
-    unfold GenOptMonad.bind in *.
-    unfold GenOptMonad.ret in *.
+    unfold OptMonad_Coq.bind in *.
+    unfold OptMonad_Coq.ret in *.
     ff.
     econstructor.
     repeat eexists.

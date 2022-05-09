@@ -1,6 +1,6 @@
-Require Import Term_Defs Term ConcreteEvidence (*OptMonad*) Auto More_lists Appraisal_Evidence VmSemantics IO_Stubs Defs AutoApp Evidence_Bundlers.
+Require Import Term_Defs Term ConcreteEvidence (*OptMonad*) Auto More_lists Appraisal_Evidence CvmSemantics IO_Stubs Defs AutoApp Evidence_Bundlers.
 
-Require Import (*StAM*) GenOptMonad.
+Require Import (*StAM*) OptMonad_Coq.
 
 (* Require Import Impl_appraisal (*MonadAM*). *)
 

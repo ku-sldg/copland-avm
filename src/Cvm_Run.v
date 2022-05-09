@@ -1,4 +1,4 @@
-Require Import Term_Defs Anno_Term_Defs Impl_VM StVM GenStMonad.
+Require Import Term_Defs Anno_Term_Defs Cvm_Impl Cvm_St StMonad_Coq.
 
 Definition run_cvm (t:AnnoTermPar) st : cvm_st :=
   execSt (copland_compile t) st.

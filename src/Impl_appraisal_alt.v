@@ -1,69 +1,28 @@
-Require Import Term ConcreteEvidence (*Appraisal_Evidence*) (*GenStMonad MonadVM MonadAM*) .
+Require Import ConcreteEvidence. (* Term GenStMonad MonadVM MonadAM. *)
 
-(*
-Require Import Impl_vm StAM. *)
-
-Require Import Appraisal_Defs Appraisal_Evidence.
+Require Import Appraisal_Defs.  (* Require Import Impl_vm StAM. *)
 
 Require Import List.
 Import ListNotations.
 
-(*
-Require Import OptMonad. *)
-
-Require Import GenOptMonad.
-
-(*
-
-Definition checkASP (i:ASP_ID) (args:list Arg) (tpl:Plc) (tid:Plc) (bs:BS) : BS.
-Admitted.
-
-Definition checkSig (ls:EvBits) (p:Plc) (sig:BS) : BS.
-Admitted.
-
-Definition checkHash (e:Evidence) (p:Plc) (hash:BS) : BS.
-Admitted.
-
-Definition peel_bs (ls:EvBits) : option (BS * EvBits) :=
-  match ls with
-  | bs :: ls' => Some (bs, ls')
-  | _ => None
-  end.
-*)
-
-Fixpoint build_app_comp_evC (et:Evidence) (ls:RawEv) : Opt EvidenceC :=
-  match et with
-  | mt => ret mtc
+Fixpoint build_app_comp_evC (e:EvidenceC) : EvidenceC :=
+  match e with
+  | mtc => mtc
               
-  | uu params p et' =>
-    '(bs, ls') <- peel_bs ls ;;
-    x <- build_app_comp_evC et' ls' ;;
-    res <- checkASP params bs ;;
-    ret (uuc params p res x)
-    
-  | gg p et' =>
-    '(bs, ls') <- peel_bs ls ;;
-    x <- build_app_comp_evC et' ls' ;;
-    res <- checkSigBits ls' p bs ;;
-    ret (ggc p res x)
-         
-  | hh p et =>
-    '(bs, _) <- peel_bs ls ;;
-    res <- checkHash et p bs ;;
-    ret (hhc p res et)
-  | nn nid =>
-    '(bs, _) <- peel_bs ls ;;
-    res <- checkNonce nid bs ;;
-    ret (nnc nid res)
-
-  | ss et1 et2 =>
-    x <- build_app_comp_evC et1 (firstn (et_size et1) ls) ;;
-    y <- build_app_comp_evC et2 (skipn (et_size et1) ls) ;;
-    ret (ssc x y)
-  | pp et1 et2 =>
-    x <- build_app_comp_evC et1 (firstn (et_size et1) ls) ;;
-    y <- build_app_comp_evC et2 (skipn (et_size et1) ls) ;;
-    ret (ppc x y)
+  | uuc params p bs e' =>
+    uuc params p (checkASPF params bs)
+        (build_app_comp_evC e')
+  | ggc p bs e' =>
+    ggc p (checkSigF e' p bs)
+        (build_app_comp_evC e')
+  | hhc p bs et =>
+    hhc p (checkHashF et p bs)(*(fromSome 0 (checkHash et p bs))*) et
+  | nnc nid bs =>
+    nnc nid (checkNonceF nid bs)
+  | ssc e1 e2 =>
+    ssc (build_app_comp_evC e1) (build_app_comp_evC e2)
+  | ppc e1 e2 =>
+    ppc (build_app_comp_evC e1) (build_app_comp_evC e2)
   end.
 
 (*

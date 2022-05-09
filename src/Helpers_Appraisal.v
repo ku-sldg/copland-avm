@@ -1,4 +1,4 @@
-Require Import Term ConcreteEvidence Appraisal_Defs StVM Impl_VM Impl_appraisal Auto AutoApp External_Facts Helpers_VmSemantics Appraisal_Evidence VmSemantics Evidence_Bundlers Defs Axioms_Io IO_Stubs.
+Require Import Term ConcreteEvidence Appraisal_Defs Cvm_St Cvm_Impl Impl_appraisal_alt Auto AutoApp External_Facts Helpers_CvmSemantics Appraisal_Evidence CvmSemantics Evidence_Bundlers Defs Axioms_Io IO_Stubs.
 
 Require Import StructTactics.
 
@@ -152,8 +152,8 @@ Lemma uuc_app: forall e' e'' params p n,
                        (encodeEv  (build_app_comp_evC e''))
                        (et_fun (build_app_comp_evC e''))
                     ) e''' -> *)
-      EvSub (uuc params p (checkASPF params n) (build_app_comp_evC e''))
-                 (build_app_comp_evC e').
+      EvSub (uuc params p (checkASPF params n) (Impl_appraisal_alt.build_app_comp_evC e''))
+                 (Impl_appraisal_alt.build_app_comp_evC e').
 Proof.
   intros.
   generalizeEverythingElse e'.
@@ -813,8 +813,8 @@ Proof.
   do_inv_recon_ss.
   invc H.
   repeat ff.
-    unfold GenOptMonad.bind in *.
-    unfold GenOptMonad.ret in *.
+    unfold OptMonad_Coq.bind in *.
+    unfold OptMonad_Coq.ret in *.
     repeat ff.
   rewrite fold_recev in *.
   split.
@@ -840,8 +840,8 @@ Proof.
   do_inv_recon_pp.
   invc H.
   repeat ff.
-    unfold GenOptMonad.bind in *.
-    unfold GenOptMonad.ret in *.
+    unfold OptMonad_Coq.bind in *.
+    unfold OptMonad_Coq.ret in *.
     repeat ff.
   rewrite fold_recev in *.
   split.

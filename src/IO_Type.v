@@ -1,4 +1,4 @@
-Require Import StVM.
+Require Import Cvm_St.
 
 
 Definition IO := CVM.

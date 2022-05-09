@@ -13,7 +13,7 @@ University of California.  See license.txt for details. *)
     events, and annotated terms. *)
 
 Require Import PeanoNat Nat Compare_dec Lia.
-Require Import Preamble StructTactics Defs GenOptMonad.
+Require Import Preamble StructTactics Defs OptMonad_Coq.
 (*Require Import AutoPrim. *)
 
 Require Export BS.

@@ -1,4 +1,4 @@
-Require Import StructTactics Auto Helpers_VmSemantics StVM MonadVM GenStMonad.
+Require Import StructTactics Auto Helpers_CvmSemantics Cvm_St Cvm_Monad StMonad_Coq.
 Require Import List.
 
 (*
@@ -88,7 +88,7 @@ Ltac dosome_eq' y :=
   end.
 
 Ltac dothat :=
-  unfold StVM.st_ev, StVM.st_pl, StVM.st_trace in *;
+  unfold Cvm_St.st_ev, Cvm_St.st_pl, Cvm_St.st_trace in *;
   try unfold st_ev in *;
   try unfold st_pl in *;
   try unfold st_trace in * .

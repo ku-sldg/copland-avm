@@ -1,8 +1,8 @@
 Require Extraction.
 
-Require Import (*Impl_VM*) Run_VM IO_Stubs MonadVM IO_Type Term_Defs Anno_Term_Defs Example_Phrases.
+Require Import (*Impl_VM*) Cvm_Run IO_Stubs Cvm_Monad IO_Type Term_Defs Anno_Term_Defs Example_Phrases.
 
-Require Import Impl_appraisal_alt.
+Require Import Impl_appraisal.
 
 (*
 Extraction Language CakeML.

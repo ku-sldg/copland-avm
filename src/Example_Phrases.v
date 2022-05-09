@@ -22,10 +22,10 @@ Definition certificate (p:Plc) (targ: TARG_ID) :=
   asp (ASPC (asp_paramsC cert_id [] p targ)).
 
 Definition store (p:Plc) (targ: TARG_ID) :=
-  asp (ASPC (asp_paramsC store_id [] p targ)).
+  asp (ASPC (asp_paramsC cache_id store_args p targ)).
 
 Definition retrieve (p:Plc) (targ: TARG_ID) :=
-  asp (ASPC (asp_paramsC retrieve_id [] p targ)).
+  asp (ASPC (asp_paramsC cache_id retrieve_args p targ)).
 
 
 (* 
@@ -128,7 +128,7 @@ pg. 29:20, Layered Background Check section
 Definition layered_bg_strong : Term :=
     att P1
       (lseq
-         (bseq (ALL,ALL) (* only change from layered_bg_1 on this line (bpar --> bseq) *)
+         (bseq (ALL,ALL) (* only change from layered_bg_weak on this line (bpar --> bseq) *)
                layered_bg'
                layered_bg'')
          (att P2

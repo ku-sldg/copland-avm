@@ -12,7 +12,7 @@ Require Import Coq.Program.Tactics Lia.
 Require Import List.
 Import ListNotations.
 
-Require Export StVM GenStMonad IO_Stubs.
+Require Export Cvm_St StMonad_Coq IO_Stubs.
 
 (*
 Definition CVM := St cvm_st.
