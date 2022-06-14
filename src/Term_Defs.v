@@ -106,32 +106,6 @@ Inductive Term: Set :=
 | bseq: Split -> Term -> Term -> Term
 | bpar: Split -> Term -> Term -> Term.
 
-(* Adapted from Imp language Notation in Software Foundations (Pierce) *)
-Declare Custom Entry copland_entry.
-Declare Scope cop_ent_scope.
-Notation "<{ e }>" := e (at level 0, e custom copland_entry at level 99) : cop_ent_scope.
-Notation "( x )" := x (in custom copland_entry, x at level 99) : cop_ent_scope.
-Notation "x" := x (in custom copland_entry at level 0, x constr at level 0) : cop_ent_scope.
-(* Branches*)
-Notation "x -<- y" := (bseq (NONE, NONE) x y) (in custom copland_entry at level 70, right associativity).
-Notation "x +<- y" := (bseq (ALL, NONE) x y) (in custom copland_entry at level 70, right associativity).
-Notation "x -<+ y" := (bseq (NONE, ALL) x y) (in custom copland_entry at level 70, right associativity).
-Notation "x +<+ y" := (bseq (ALL, ALL) x y) (in custom copland_entry at level 70, right associativity).
-Notation "x -~- y" := (bpar (NONE, NONE) x y) (in custom copland_entry at level 70, right associativity).
-Notation "x +~- y" := (bpar (ALL, NONE) x y) (in custom copland_entry at level 70, right associativity).
-Notation "x -~+ y" := (bpar (NONE, ALL) x y) (in custom copland_entry at level 70, right associativity).
-Notation "x +~+ y" := (bpar (ALL, ALL) x y) (in custom copland_entry at level 70, right associativity).
-(* ARROW sequences *)
-Notation "x -> y" := (lseq x y) (in custom copland_entry at level 99, right associativity).
-(* ASP's *)
-Notation "!" := (asp SIG) (in custom copland_entry at level 98).
-Notation "#" := (asp HSH) (in custom copland_entry at level 98).
-Notation "'_'" := (asp CPY) (in custom copland_entry at level 98).
-Notation "'<' x y z '>'" := (asp (ASPC (asp_paramsC x nil y z))) 
-                      (in custom copland_entry at level 98).
-(* @ plc phrase *)
-Notation "@ p [ ph ]" := (att p ph) (in custom copland_entry at level 50).
-
 Fixpoint et_size (e:Evidence): nat :=
   match e with
   | mt => 0
