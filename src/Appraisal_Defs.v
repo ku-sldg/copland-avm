@@ -164,13 +164,36 @@ Inductive reaches_HSH : Term -> Prop :=
     reaches_HSH (bpar (sp1,ALL) t1 t2).
 Hint Constructors reaches_HSH : core.
 
+(* Essentially a sub-term, except only allows if evidence from t will reach ts *)
+Inductive ev_reaches (t : Term) (ts : Term) : Prop :=
+| ev_reaches_refl     : t = ts -> ev_reaches t ts
+| ev_reaches_bseq_aa  : forall t1 t2, t = (bseq (ALL,ALL) t1 t2)
+                          -> (ev_reaches t1 ts) \/ (ev_reaches t2 ts)
+                          -> (ev_reaches t ts)
+| ev_reaches_bseq_an  : forall t1 t2, t = (bseq (ALL,NONE) t1 t2)
+                          -> (ev_reaches t1 ts)
+                          -> (ev_reaches t ts)
+| ev_reaches_bseq_na  : forall t1 t2, t = (bseq (NONE,ALL) t1 t2)
+                          -> (ev_reaches t2 ts)
+                          -> (ev_reaches t ts)
+| ev_reaches_bpar_aa  : forall t1 t2, t = (bpar (ALL,ALL) t1 t2)
+                          -> (ev_reaches t1 ts) \/ (ev_reaches t2 ts)
+                          -> (ev_reaches t ts)
+| ev_reaches_bpar_an  : forall t1 t2, t = (bpar (ALL,NONE) t1 t2)
+                          -> (ev_reaches t1 ts)
+                          -> (ev_reaches t ts)
+| ev_reaches_bpar_na  : forall t1 t2, t = (bpar (NONE,ALL) t1 t2)
+                          -> (ev_reaches t2 ts)
+                          -> (ev_reaches t ts)
+| ev_reaches_lseq     : forall t1 t2, t = (lseq t1 t2)
+                          -> (ev_reaches t1 ts) \/ (ev_reaches t2 ts)
+                          -> ev_reaches t ts.
+
 Definition hash_sig_term (t:Term): Prop :=
   exists t1 t2,
   t = lseq t1 t2 /\
   term_sub (asp SIG) t1 /\
-  reaches_HSH t2.
-  (*
-  term_sub (aasp r2 HSH) t2. *)
+  ev_reaches t2 (asp HSH). (* evidence will reach a HSH in t2*)
 
 Definition not_hash_sig_term (t:Term) :=
   forall t',
