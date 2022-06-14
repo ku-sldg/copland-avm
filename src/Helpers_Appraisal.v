@@ -1686,11 +1686,6 @@ Proof.
         eapply H0. (*with (t':= (alseq r t1 t2)). *)
                 
         econstructor.
-        eexists.
-        eexists.
-        eexists.
-        eexists.
-        apply H8.
         repeat eexists.
         eassumption.
         
