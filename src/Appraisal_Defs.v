@@ -138,7 +138,7 @@ Definition not_none_none (t:Term) :=
   forall t',
     none_none_term t'  -> 
     ~ (term_sub t' t).
-
+(* 
 Inductive reaches_HSH : Term -> Prop :=
 | rh_hsh: reaches_HSH (asp (HSH))
 | rh_aatt: forall p t,
@@ -162,7 +162,7 @@ Inductive reaches_HSH : Term -> Prop :=
 | rh_bparr: forall sp1 t1 t2,
     reaches_HSH t2 ->
     reaches_HSH (bpar (sp1,ALL) t1 t2).
-Hint Constructors reaches_HSH : core.
+Hint Constructors reaches_HSH : core. *)
 
 (* Essentially a sub-term, except only allows if evidence from t will reach ts *)
 Inductive ev_reaches (t : Term) (ts : Term) : Prop :=
@@ -175,6 +175,9 @@ Inductive ev_reaches (t : Term) (ts : Term) : Prop :=
                           -> (ev_reaches t ts)
 | ev_reaches_bseq_na  : forall t1 t2, t = (bseq (NONE,ALL) t1 t2)
                           -> (ev_reaches t2 ts)
+                          -> (ev_reaches t ts)
+| ev_reaches_att      : forall p t1, t = (att p t1)
+                          -> (ev_reaches t1 ts)
                           -> (ev_reaches t ts)
 | ev_reaches_bpar_aa  : forall t1 t2, t = (bpar (ALL,ALL) t1 t2)
                           -> (ev_reaches t1 ts) \/ (ev_reaches t2 ts)
@@ -220,7 +223,7 @@ Definition hsh_subt (t:Term) :=
 Definition not_hash_sig_term_ev (t:Term) (e:EvidenceC): Prop :=
   not_hash_sig_term t /\
   not_hash_sig_ev e /\
-  ((gg_sub e) -> ~ (reaches_HSH t)).
+  ((gg_sub e) -> ~ (ev_reaches t (asp HSH))).
 
 Lemma nhse_uuc: forall params n2 n3 e,
     not_hash_sig_ev (uuc params n2 n3 e) ->
