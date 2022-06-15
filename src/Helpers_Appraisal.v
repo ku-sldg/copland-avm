@@ -1971,11 +1971,11 @@ Proof.
 
       unfold not_hash_sig_term_ev in H0.
       destruct_conjs.
-      unfold not in H10.
-      eapply H10.
-      eassumption.
-      eauto.
-      admit. (* unsure why this must be true *)
+      apply H10 in H8.
+      apply H8.
+      eapply ev_reaches_lseq.
+      reflexivity.
+      right. assumption.
     ++ 
       unfold not_hash_sig_term_ev in *.
         destruct_conjs.
@@ -2060,7 +2060,7 @@ Proof.
     +
       assert (not_hash_sig_ev (cvm_evidence_denote a0 p (splitEvr s e))) by eauto.
       eapply H3; eassumption.
-Admitted.
+Qed.
 
 Ltac do_hste_contra He :=
   repeat 
@@ -2107,7 +2107,9 @@ Proof.
         do_hsh_subt.
         forwards;
           eauto.
-        admit. (* same as before gg_sub e -> ? *)
+          eapply ev_reaches_lseq.
+          reflexivity.
+          right. assumption.
       ++
         unfold not_hash_sig_term_ev in H0.
         destruct_conjs.
@@ -2119,7 +2121,7 @@ Proof.
         repeat eexists.
         eauto.
         eauto.
-Admitted.
+Qed.
 
 Ltac do_nhste_lseqr :=
   match goal with
@@ -2840,8 +2842,9 @@ Proof.
     eapply H5.
     repeat eexists.
     eassumption.
-    econstructor.
-    admit. (* seemingly related to gg_sub as well *)
+    eapply ev_reaches_att.
+    reflexivity.
+    assumption.
     eassumption.
     reflexivity.
         
@@ -3107,4 +3110,4 @@ Proof.
         esplit; eauto.
         Unshelve.
         eauto.
-Admitted.
+Qed.
