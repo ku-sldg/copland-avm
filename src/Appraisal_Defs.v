@@ -196,7 +196,9 @@ Definition hash_sig_term (t:Term): Prop :=
   exists t1 t2,
   t = lseq t1 t2 /\
   term_sub (asp SIG) t1 /\
-  ev_reaches t2 (asp HSH). (* evidence will reach a HSH in t2*)
+  reaches_HSH t2.
+  (*
+  term_sub (aasp r2 HSH) t2. *)
 
 Definition not_hash_sig_term (t:Term) :=
   forall t',
