@@ -1029,80 +1029,61 @@ Ltac do_evaccum e' :=
 
 Ltac qinv H := inversion H; subst; clear H.
 
+Ltac crush_ev_reaches_impl := 
+  intros ts t H;
+  generalize dependent ts;
+  induction t; simpl; intros; inversion H; simpl; try discriminate;
+  try (subst; apply termsub_refl_annt); 
+  repeat match goal with (* yield injections *)
+  | H : _ = _ |- _ => qinv H
+  end; 
+  repeat match goal with 
+  | H : _ \/ _ |- _ => destruct H
+  end;
+  auto.
+
+Ltac crush_sig_term_ev CONS := 
+  inversion H as [H0 H1]; simpl in *;
+  unfold not_hash_sig_term_ev;
+  destruct H1 as [H1 H2];
+  unfold not_hash_sig_term in *;
+  split; [
+    intros t' H3; specialize H0 with t';
+    apply H0 in H3; auto 
+    |
+    split; [
+	        match goal with 
+          | H : _ |- not_hash_sig_ev mtc => intros e' H3 Co;
+                                           qinv Co;
+                                           inversion H3 as [x H4];
+                                           destruct H4 as [c1 [c2 [c3 [c4 [c5 c6]]]]];
+                                           inversion c5
+	        | H : _ |- _ => auto
+         end
+	      |
+	        intros H3 TX;
+          match goal with
+          | H : gg_sub mtc |- _ => inversion H3 as [x H4];
+                                   destruct H4 as [c1 [c2 [c3 [c4 c5]]]];
+                                   subst; qinv c5
+	        | H : _ |- _ => apply H2 in H3;
+                          apply H3; eapply CONS;
+                          [reflexivity | auto]
+          end
+      ]
+  ].
+
 Lemma term_sub_lseq_impl : forall t t1 t2,
   (~ term_sub t (lseq t1 t2)) ->
   (~ term_sub t t1) /\ (~ term_sub t t2).
 Proof.
-  intros t.
-  induction t; intros;
-  try (split; intros TX; apply H; 
-  [apply alseq_subl_annt | apply alseq_subr_annt];
-  assumption).
+  auto.
 Qed.
 
 Lemma ev_reaches_impl_term_sub : forall ts t,
   ev_reaches t ts -> term_sub ts t.
 Proof.
-  intros.
-  generalize dependent ts.
-  induction t; simpl; intros.
-  - (* asp a *)
-    destruct ts; qinv H; simpl; rewrite H0; try discriminate.
-    (* only leaves case asp a = asp a0 *)
-    apply termsub_refl_annt.
-  - (* att p t *)
-    inversion H; simpl; try discriminate.
-    * subst. apply termsub_refl_annt.
-    * injection H0. intros. subst.
-      apply aatt_sub_annt.
-      apply IHt. assumption.
-  - (* lseq -> *)
-    inversion H; simpl; try discriminate.
-    * subst. apply termsub_refl_annt.
-    * injection H0. intros. subst.
-      destruct H1. (* cases sub left vs right*)
-      ** apply alseq_subl_annt.
-          apply IHt1. assumption.
-      ** apply alseq_subr_annt.
-          apply IHt2. assumption.
-  - (* bseq *)
-    inversion H; simpl; try discriminate.
-    (* 4 cases left *)
-    * subst. apply termsub_refl_annt.
-    * injection H0. intros. subst.
-      destruct H1.
-      (* left vs right*)
-      ** apply abseq_subl_annt. 
-          apply IHt1. assumption.
-      ** apply abseq_subr_annt.
-          apply IHt2. assumption.
-    * injection H0. intros. subst.
-      (* only one, since ev_reaches restricts none case *)
-      apply abseq_subl_annt. 
-      apply IHt1. assumption.
-    * injection H0. intros. subst.
-      (* only one, since ev_reaches restricts none case *)
-      apply abseq_subr_annt. 
-      apply IHt2. assumption.
-  - (* bpar *)
-    inversion H; simpl; try discriminate.
-    (* 4 cases left *)
-    * subst. apply termsub_refl_annt.
-    * injection H0. intros. subst.
-      destruct H1.
-      (* left vs right*)
-      ** apply abpar_subl_annt. 
-          apply IHt1. assumption.
-      ** apply abpar_subr_annt.
-          apply IHt2. assumption.
-    * injection H0. intros. subst.
-      (* only one, since ev_reaches restricts none case *)
-      apply abpar_subl_annt. 
-      apply IHt1. assumption.
-    * injection H0. intros. subst.
-      (* only one, since ev_reaches restricts none case *)
-      apply abpar_subr_annt. 
-      apply IHt2. assumption.
+  crush_ev_reaches_impl.
 Qed.
 
 Lemma sig_term_ev_lseq: forall t1 t2 e,
@@ -1110,24 +1091,7 @@ Lemma sig_term_ev_lseq: forall t1 t2 e,
     not_hash_sig_term_ev t1 e.
 Proof.
   intros.
-  inversion H.
-  unfold not_hash_sig_term_ev.
-  destruct_conjs.
-  unfold not_hash_sig_term in *.
-  split.
-  - intros.
-    specialize H0 with t'.
-    apply H0 in H3.
-    apply term_sub_lseq_impl in H3.
-    destruct_conjs. assumption.
-  - split.
-    * assumption.
-    * intros H3 TX.
-      apply H2 in H3.
-      apply H3.
-      eapply ev_reaches_lseq.
-      reflexivity.
-      left. assumption.
+  crush_sig_term_ev ev_reaches_lseq.
 Qed.
 
 Lemma sig_is: forall t annt e e' p,
@@ -1292,10 +1256,7 @@ Lemma term_sub_bseq_impl : forall t s t1 t2,
   (~ term_sub t (bseq s t1 t2)) ->
   (~ term_sub t t1) /\ (~ term_sub t t2).
 Proof.
-  intros t.
-  induction t; intros;
-  try (split; intros TX; apply H; 
-  [apply abseq_subl_annt | apply abseq_subr_annt]; assumption).
+  auto.
 Qed.
 
 Lemma sig_term_ev_bseql: forall s (t1 t2 : Term)
@@ -1305,86 +1266,11 @@ Lemma sig_term_ev_bseql: forall s (t1 t2 : Term)
     not_hash_sig_term_ev t1 (splitEvl s e).
 Proof.
   intros.
-  destruct s eqn:E. destruct s0; destruct s1;
-  inversion H; simpl in *.
-  - (* all, all*)
-    unfold not_hash_sig_term_ev.
-    destruct_conjs.
-    unfold not_hash_sig_term in *.
-    split.
-    * intros.
-      specialize H0 with t'.
-      apply H0 in H3.
-      apply term_sub_bseq_impl in H3.
-      destruct_conjs. assumption.
-    * split.
-      ** assumption.
-      ** intros H3 TX.
-          apply H2 in H3.
-          apply H3.
-          eapply ev_reaches_bseq_aa.
-          reflexivity.
-          left. assumption.
-  - (* all, none *)
-    unfold not_hash_sig_term_ev.
-    destruct_conjs.
-    unfold not_hash_sig_term in *.
-    split.
-    * intros.
-      specialize H0 with t'.
-      apply H0 in H3.
-      apply term_sub_bseq_impl in H3.
-      destruct_conjs. assumption.
-    * split.
-      ** assumption.
-      ** intros H3 TX.
-          apply H2 in H3.
-          apply H3.
-          eapply ev_reaches_bseq_an.
-          reflexivity.
-          assumption.
-  - (* none, all *)
-    unfold not_hash_sig_term_ev.
-    destruct_conjs.
-    unfold not_hash_sig_term in *.
-    split.
-    * intros.
-      specialize H0 with t'.
-      apply H0 in H3.
-      apply term_sub_bseq_impl in H3.
-      destruct_conjs. assumption.
-    * split.
-      ** unfold not_hash_sig_ev.
-         (* complex contradiction *)
-         intros e' H3 Co.
-         qinv Co. qinv H3.
-         destruct_conjs.
-         qinv H7.
-      ** intros H3 TX.
-         qinv H3.
-         destruct_conjs.
-         qinv H7. qinv H9.
-- (* none, none *)
-    unfold not_hash_sig_term_ev.
-    destruct_conjs.
-    unfold not_hash_sig_term in *.
-    split.
-    * intros.
-      specialize H0 with t'.
-      apply H0 in H3.
-      apply term_sub_bseq_impl in H3.
-      destruct_conjs. assumption.
-    * split.
-      ** unfold not_hash_sig_ev.
-         (* complex contradiction *)
-         intros e' H3 Co.
-         qinv Co. qinv H3.
-         destruct_conjs.
-         qinv H7.
-      ** intros H3 TX.
-         qinv H3.
-         destruct_conjs.
-         qinv H7. qinv H9.
+  destruct s eqn:E. destruct s0; destruct s1.
+  - crush_sig_term_ev ev_reaches_bseq_aa.
+  - crush_sig_term_ev ev_reaches_bseq_an.
+  - crush_sig_term_ev ev_reaches_bseq_na.
+  - crush_sig_term_ev ev_reaches_bseq_na.
 Qed.
 
 Lemma sig_term_ev_bseqr: forall s (t1 t2 : Term)
@@ -1394,86 +1280,12 @@ Lemma sig_term_ev_bseqr: forall s (t1 t2 : Term)
     not_hash_sig_term_ev t2 (splitEvr s e).
 Proof.
   intros.
-  destruct s eqn:E. destruct s0; destruct s1;
-  inversion H; simpl in *.
-  - (* all, all*)
-    unfold not_hash_sig_term_ev.
-    destruct_conjs.
-    unfold not_hash_sig_term in *.
-    split.
-    * intros.
-      specialize H0 with t'.
-      apply H0 in H3.
-      apply term_sub_bseq_impl in H3.
-      destruct_conjs. assumption.
-    * split.
-      ** assumption.
-      ** intros H3 TX.
-          apply H2 in H3.
-          apply H3.
-          eapply ev_reaches_bseq_aa.
-          reflexivity.
-          right. assumption.
-  - (* all, none *)
-    unfold not_hash_sig_term_ev.
-    destruct_conjs.
-    unfold not_hash_sig_term in *.
-    split.
-    * intros.
-      specialize H0 with t'.
-      apply H0 in H3.
-      apply term_sub_bseq_impl in H3.
-      destruct_conjs. assumption.
-    * split.
-      ** unfold not_hash_sig_ev.
-         (* complex contradiction *)
-         intros e' H3 Co.
-         qinv Co. qinv H3.
-         destruct_conjs.
-         qinv H7.
-      ** intros H3 TX.
-         qinv H3.
-         destruct_conjs.
-         qinv H7. qinv H9.
-  - (* none, all *)
-    unfold not_hash_sig_term_ev.
-    destruct_conjs.
-    unfold not_hash_sig_term in *.
-    split.
-    * intros.
-      specialize H0 with t'.
-      apply H0 in H3.
-      apply term_sub_bseq_impl in H3.
-      destruct_conjs. assumption.
-    * split.
-      ** assumption.
-      ** intros H3 TX.
-          apply H2 in H3.
-          apply H3.
-          eapply ev_reaches_bseq_na.
-          reflexivity.
-          assumption.
-- (* none, none *)
-    unfold not_hash_sig_term_ev.
-    destruct_conjs.
-    unfold not_hash_sig_term in *.
-    split.
-    * intros.
-      specialize H0 with t'.
-      apply H0 in H3.
-      apply term_sub_bseq_impl in H3.
-      destruct_conjs. assumption.
-    * split.
-      ** unfold not_hash_sig_ev.
-         (* complex contradiction *)
-         intros e' H3 Co.
-         qinv Co. qinv H3.
-         destruct_conjs.
-         qinv H7.
-      ** intros H3 TX.
-         qinv H3.
-         destruct_conjs.
-         qinv H7. qinv H9.
+  destruct s eqn:E. destruct s0; destruct s1.
+  - crush_sig_term_ev ev_reaches_bseq_aa.
+  - crush_sig_term_ev ev_reaches_bseq_an.
+  - crush_sig_term_ev ev_reaches_bseq_na.
+  - crush_sig_term_ev ev_reaches_bseq_na. 
+  (* in contradiction case, constructor passed does not really matter *)
 Qed.
 
 
@@ -1481,10 +1293,7 @@ Lemma term_sub_bpar_impl : forall t s t1 t2,
   (~ term_sub t (bpar s t1 t2)) ->
   (~ term_sub t t1) /\ (~ term_sub t t2).
 Proof.
-  intros t.
-  induction t; intros;
-  try (split; intros TX; apply H; 
-  [apply abpar_subl_annt | apply abpar_subr_annt]; assumption).
+  auto.
 Qed.
 
 Lemma sig_term_ev_bparl: forall s (t1 t2 : Term)
@@ -1494,86 +1303,12 @@ Lemma sig_term_ev_bparl: forall s (t1 t2 : Term)
     not_hash_sig_term_ev t1 (splitEvl s e).
 Proof.
   intros.
-  destruct s eqn:E. destruct s0; destruct s1;
-  inversion H; simpl in *.
-  - (* all, all*)
-    unfold not_hash_sig_term_ev.
-    destruct_conjs.
-    unfold not_hash_sig_term in *.
-    split.
-    * intros.
-      specialize H0 with t'.
-      apply H0 in H3.
-      apply term_sub_bpar_impl in H3.
-      destruct_conjs. assumption.
-    * split.
-      ** assumption.
-      ** intros H3 TX.
-          apply H2 in H3.
-          apply H3.
-          eapply ev_reaches_bpar_aa.
-          reflexivity.
-          left. assumption.
-  - (* all, none *)
-    unfold not_hash_sig_term_ev.
-    destruct_conjs.
-    unfold not_hash_sig_term in *.
-    split.
-    * intros.
-      specialize H0 with t'.
-      apply H0 in H3.
-      apply term_sub_bpar_impl in H3.
-      destruct_conjs. assumption.
-    * split.
-      ** assumption.
-      ** intros H3 TX.
-          apply H2 in H3.
-          apply H3.
-          eapply ev_reaches_bpar_an.
-          reflexivity.
-          assumption.
-  - (* none, all *)
-    unfold not_hash_sig_term_ev.
-    destruct_conjs.
-    unfold not_hash_sig_term in *.
-    split.
-    * intros.
-      specialize H0 with t'.
-      apply H0 in H3.
-      apply term_sub_bpar_impl in H3.
-      destruct_conjs. assumption.
-    * split.
-      ** unfold not_hash_sig_ev.
-         (* complex contradiction *)
-         intros e' H3 Co.
-         qinv Co. qinv H3.
-         destruct_conjs.
-         qinv H7.
-      ** intros H3 TX.
-         qinv H3.
-         destruct_conjs.
-         qinv H7. qinv H9.
-- (* none, none *)
-    unfold not_hash_sig_term_ev.
-    destruct_conjs.
-    unfold not_hash_sig_term in *.
-    split.
-    * intros.
-      specialize H0 with t'.
-      apply H0 in H3.
-      apply term_sub_bpar_impl in H3.
-      destruct_conjs. assumption.
-    * split.
-      ** unfold not_hash_sig_ev.
-         (* complex contradiction *)
-         intros e' H3 Co.
-         qinv Co. qinv H3.
-         destruct_conjs.
-         qinv H7.
-      ** intros H3 TX.
-         qinv H3.
-         destruct_conjs.
-         qinv H7. qinv H9.
+  destruct s eqn:E. destruct s0; destruct s1.
+  - crush_sig_term_ev ev_reaches_bpar_aa.
+  - crush_sig_term_ev ev_reaches_bpar_an.
+  - crush_sig_term_ev ev_reaches_bpar_na.
+  - crush_sig_term_ev ev_reaches_bpar_na. 
+  (* in contradiction case, constructor passed does not really matter *)
 Qed.
 
 Lemma sig_term_ev_bparr: forall s (t1 t2 : Term)
@@ -1583,95 +1318,19 @@ Lemma sig_term_ev_bparr: forall s (t1 t2 : Term)
     not_hash_sig_term_ev t2 (splitEvr s e).
 Proof.
   intros.
-  destruct s eqn:E. destruct s0; destruct s1;
-  inversion H; simpl in *.
-  - (* all, all*)
-    unfold not_hash_sig_term_ev.
-    destruct_conjs.
-    unfold not_hash_sig_term in *.
-    split.
-    * intros.
-      specialize H0 with t'.
-      apply H0 in H3.
-      apply term_sub_bpar_impl in H3.
-      destruct_conjs. assumption.
-    * split.
-      ** assumption.
-      ** intros H3 TX.
-          apply H2 in H3.
-          apply H3.
-          eapply ev_reaches_bpar_aa.
-          reflexivity.
-          right. assumption.
-  - (* all, none *)
-    unfold not_hash_sig_term_ev.
-    destruct_conjs.
-    unfold not_hash_sig_term in *.
-    split.
-    * intros.
-      specialize H0 with t'.
-      apply H0 in H3.
-      apply term_sub_bpar_impl in H3.
-      destruct_conjs. assumption.
-    * split.
-      ** unfold not_hash_sig_ev.
-         (* complex contradiction *)
-         intros e' H3 Co.
-         qinv Co. qinv H3.
-         destruct_conjs.
-         qinv H7.
-      ** intros H3 TX.
-         qinv H3.
-         destruct_conjs.
-         qinv H7. qinv H9.
-  - (* none, all *)
-    unfold not_hash_sig_term_ev.
-    destruct_conjs.
-    unfold not_hash_sig_term in *.
-    split.
-    * intros.
-      specialize H0 with t'.
-      apply H0 in H3.
-      apply term_sub_bpar_impl in H3.
-      destruct_conjs. assumption.
-    * split.
-      ** assumption.
-      ** intros H3 TX.
-          apply H2 in H3.
-          apply H3.
-          eapply ev_reaches_bpar_na.
-          reflexivity.
-          assumption.
-- (* none, none *)
-    unfold not_hash_sig_term_ev.
-    destruct_conjs.
-    unfold not_hash_sig_term in *.
-    split.
-    * intros.
-      specialize H0 with t'.
-      apply H0 in H3.
-      apply term_sub_bpar_impl in H3.
-      destruct_conjs. assumption.
-    * split.
-      ** unfold not_hash_sig_ev.
-         (* complex contradiction *)
-         intros e' H3 Co.
-         qinv Co. qinv H3.
-         destruct_conjs.
-         qinv H7.
-      ** intros H3 TX.
-         qinv H3.
-         destruct_conjs.
-         qinv H7. qinv H9.
+  destruct s eqn:E. destruct s0; destruct s1.
+  - crush_sig_term_ev ev_reaches_bpar_aa.
+  - crush_sig_term_ev ev_reaches_bpar_an.
+  - crush_sig_term_ev ev_reaches_bpar_na.
+  - crush_sig_term_ev ev_reaches_bpar_na. 
+  (* in contradiction case, constructor passed does not really matter *)
 Qed.
 
 Lemma term_sub_att_impl : forall t t1 p,
   (~ term_sub t (att p t1)) ->
   (~ term_sub t t1).
 Proof.
-  intros t.
-  induction t; intros; intros TX; apply H;
-    apply aatt_sub_annt; assumption.
+  auto.
 Qed.
 
 Lemma not_hste_att: forall t e n,
@@ -1679,32 +1338,7 @@ Lemma not_hste_att: forall t e n,
     not_hash_sig_term_ev t e.
 Proof.
   intros.
-  inversion H.
-  unfold not_hash_sig_term_ev.
-  destruct_conjs.
-  split.
-  - cbv.
-    intros.
-    destruct_conjs.
-    subst.
-    unfold not_hash_sig_term in *.
-    unfold not in *.
-    eapply H0. (*with (t':=(alseq (n2, n3) H4 H2)). *)
-    econstructor.
-    repeat eexists.
-    eassumption.
-    eassumption.
-    eapply termsub_transitive.
-    eassumption.
-    econstructor.
-    econstructor.
-  - split.
-    * assumption.
-    * intros H3 TX.
-      apply H2 in H3.
-      apply H3.
-      eapply ev_reaches_att.
-      reflexivity. assumption.
+  crush_sig_term_ev ev_reaches_att.
 Qed.
 
 Ltac do_nhste_att :=
