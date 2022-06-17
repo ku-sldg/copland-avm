@@ -19,16 +19,6 @@ Admitted.
 
 
 (* eqb Copland phrase terms *)
-Definition eq_aspid_dec:
-  forall x y: ASP_ID, {x = y} + {x <> y}.
-Proof.
-Admitted.
-
-Definition eq_targid_dec:
-  forall x y: TARG_ID, {x = y} + {x <> y}.
-Proof.
-Admitted.
-
 Definition eq_arg_dec:
   forall x y: Arg, {x = y} + {x <> y}.
 Proof.
@@ -40,11 +30,9 @@ Admitted.
 Definition eq_asp_params_dec:
   forall x y: ASP_PARAMS, {x = y} + {x <> y}.
 Proof.
-  intros;
-    repeat decide equality.
-  eapply eq_targid_dec.
+  intros.
+  decide equality; repeat (decide equality).
   eapply eq_arg_dec.
-  eapply eq_aspid_dec.
 Defined.
 (*
   eapply eq_targid_dec.
@@ -72,9 +60,7 @@ Definition eq_ev_dec:
 Proof.
   intros;
     repeat decide equality;
-    try (apply eq_arg_dec);
-    try (apply eq_aspid_dec);
-    try (apply eq_targid_dec).
+    try (apply eq_arg_dec).
 Defined.
 Hint Resolve eq_ev_dec : core.
 
@@ -90,9 +76,7 @@ Definition eq_evidence_dec:
 Proof.
   intros;
     repeat decide equality.
-  apply eq_targid_dec.
   apply eq_arg_dec.
-  apply eq_aspid_dec.
 Defined.
 Hint Resolve eq_evidence_dec : core.
 

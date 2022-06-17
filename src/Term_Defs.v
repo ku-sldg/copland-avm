@@ -17,6 +17,7 @@ Require Import Preamble StructTactics Defs OptMonad_Coq.
 (*Require Import AutoPrim. *)
 
 Require Export BS.
+Require Export String.
 
 Require Import List.
 Import List.ListNotations.
@@ -47,10 +48,8 @@ Definition N_ID: Set := nat.
 Definition Event_ID: Set := nat.
 
 
-Definition ASP_ID: Set.
-Admitted.
-Definition TARG_ID: Set.
-Admitted.
+Definition ASP_ID: Set := string.
+Definition TARG_ID: Set := string.
 Definition Arg: Set.
 Admitted.
 
