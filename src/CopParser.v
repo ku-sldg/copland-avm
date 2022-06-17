@@ -405,9 +405,13 @@ match fuel with
                         end
                     | NoneE m'' => (* Try parsing parens *)
                         match (parseParens fuel' xs) with
-                        | SomeE (x''', xs''') => parsePhrase' fuel' xs'''
+                        | SomeE (x''', xs''') => 
+                            match parsePhrase' fuel' xs''' with
+                            | NoneE m'' => NoneE m''
+                            | SomeE (x'''',xs'''') => SomeE (x''' ++ x'''', xs'''')
+                            end
                         | NoneE m''' => (* We actually failed*)
-                                  NoneE ("Fail: " ++ m' ++ m'' ++ m''')
+                                  NoneE ("Fail: " ++ m''')
                         end
                     end
                 end
@@ -418,21 +422,21 @@ with parsePhrase' (fuel : nat) (xs : list token) : optionE (string * list token)
   | 0 => NoneE "Out of Fuel"
   | S (fuel') => 
       match xs with
-      | nil => SomeE ("Empty (allowed in prime)",nil)
+      | nil => SomeE ("",nil)
       | h :: t => if (string_dec h "->") 
                   then (* it is an arrow *)
                       match (parsePhrase fuel' t) with
-                      | NoneE m' => NoneE ("invalid arrow" ++ m')
+                      | NoneE m' => NoneE ("invalid arrow")
                       | SomeE (x',xs') => 
                                   match (parsePhrase' fuel' xs') with
                                   | NoneE m'' => NoneE m''
                                   | SomeE (x'',xs'') => 
-                                      SomeE ("ARR " ++ x' ++ x'', xs'')
+                                      SomeE (" ARR " ++ x' ++ x'', xs'')
                                   end
                       end
                   else (* try parse branch *)
                       match (parseBranch xs) with
-                      | NoneE m' => NoneE ("invalid branch" ++ m')
+                      | NoneE m' => SomeE ("",xs) (* must be empty *)
                       | SomeE (x',xs') => 
                           match (parsePhrase fuel' xs') with
                           | NoneE m'' => NoneE m''
@@ -449,7 +453,7 @@ with parseATT (fuel : nat) (xs : list token) : optionE (string * list token) :=
       | nil => NoneE "Expected @ plc PHR"
       | x :: xs' =>
           match (parseAT_Place xs) with
-          | NoneE m => NoneE ("Failed to parseATT : " ++ m)
+          | NoneE m => NoneE ("Failed to parseATT : ")
           | SomeE (x',xs') => 
               (* we got out @ place now we need [phr] or phr*)
               match xs' with
@@ -459,7 +463,7 @@ with parseATT (fuel : nat) (xs : list token) : optionE (string * list token) :=
                   then
                     (* we are in brackets *)
                     match (parsePhrase fuel' t) with
-                    | NoneE m => NoneE ("Invalid phrase after @ place" ++ m)
+                    | NoneE m => NoneE ("Invalid phrase after @ place")
                     | SomeE (x'',xs'') => 
                         (* we have parsed the phrase, check for final brackets *)
                         match xs'' with
@@ -474,7 +478,7 @@ with parseATT (fuel : nat) (xs : list token) : optionE (string * list token) :=
                     end
                   else
                     match (parsePhrase fuel' xs') with
-                    | NoneE m => NoneE ("Invalid phrase after @ place" ++ m)
+                    | NoneE m => NoneE ("Invalid phrase after @ place")
                     | SomeE (x'',xs'') => SomeE (x' ++ x'', xs'')
                     end
               end
@@ -511,9 +515,11 @@ with parseParens (fuel : nat) (xs : list token) : optionE (string * list token) 
   end
 .
 
-Definition testPhr := "@p1 kim p2 ker".
+Definition testPhr := "@p1 kim p2 ker -> ! -<- ! -> @p2 (vc p2 sys) -> !".
+Compute tokenize testPhr.
 
 Compute parsePhrase 20 (tokenize testPhr).
+Compute parsePhrase 20 (tokenize "").
 Compute parseAT_Place (tokenize testPhr).
 
 
