@@ -10,6 +10,14 @@ Set Nested Proofs Allowed.
  *)
 
 
+Definition eqb_aspid: ASP_ID -> ASP_ID -> bool.
+Admitted.
+
+Lemma eqb_eq_aspid: forall i1 i2,
+    eqb_aspid i1 i2 = true <-> i1 = i2.
+Admitted.
+
+
 (* eqb Copland phrase terms *)
 Definition eq_aspid_dec:
   forall x y: ASP_ID, {x = y} + {x <> y}.
