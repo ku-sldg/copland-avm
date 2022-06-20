@@ -128,6 +128,10 @@ Ltac wf_hammer :=
     evidence. *)
 
 Inductive events: AnnoTerm -> Plc -> Evidence -> Ev -> Prop :=
+| evtsnull:
+    forall r i p e,
+      fst r = i ->
+      events (aasp r NULL) p e (null i p)
 | evtscpy:
     forall r i p e,
       fst r = i ->

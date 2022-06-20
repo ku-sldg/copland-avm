@@ -1517,6 +1517,7 @@ Ltac do_somerecons :=
 
 Definition cvm_evidence_denote_asp (a:ASP) (p:Plc) (e:EvidenceC) (x:Event_ID): EvidenceC :=
   match a with
+  | NULL => mtc
   | CPY => e
   | ASPC params => uuc params p (do_asp params (encodeEv e) p x) e
   | SIG => ggc p (do_sig (encodeEvRaw (encodeEv e)) p x) e 
@@ -1945,6 +1946,10 @@ Proof.
     wrap_ccp_anno.
     
     destruct a.
+    + (* NULL case *)
+      invc H3.
+      dd.
+      tauto.   
     +
       dd.
       eapply reconP_determ; eauto.
