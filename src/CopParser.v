@@ -347,22 +347,34 @@ Proof.
     soundParse.
 Qed. *)
 
+Definition parseNull (xs : list token) : optionE (ASP * list token) :=
+  match xs with
+  | nil => NoneE "Expected NULL"
+  | h :: t => if (h =? "{}")
+                then SomeE (NULL, t)
+                else NoneE "Invalid Null"
+  end.
+
 Definition parseASP (xs : list token) : optionE (Term * list token) :=
     match xs with
     | nil   => NoneE "Expected ASP"
     | x::t  =>  
-        match (parseCopy xs) with
+        match (parseNull xs) with
         | SomeE (x',x'') => SomeE (asp x', x'')
         | NoneE _ =>
-            match (parseASPC xs) with
-            | SomeE (x', x'') => SomeE (asp x', x'')
+            match (parseCopy xs) with
+            | SomeE (x',x'') => SomeE (asp x', x'')
             | NoneE _ =>
-                match (parseSign xs) with
+                match (parseASPC xs) with
                 | SomeE (x', x'') => SomeE (asp x', x'')
                 | NoneE _ =>
-                    match (parseHash xs) with
+                    match (parseSign xs) with
                     | SomeE (x', x'') => SomeE (asp x', x'')
-                    | NoneE _ => NoneE "Expected an ASP"
+                    | NoneE _ =>
+                        match (parseHash xs) with
+                        | SomeE (x', x'') => SomeE (asp x', x'')
+                        | NoneE _ => NoneE "Expected an ASP"
+                        end
                     end
                 end
             end
