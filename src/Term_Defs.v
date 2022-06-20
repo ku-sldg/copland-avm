@@ -87,6 +87,7 @@ Inductive Evidence: Set :=
 | pp: Evidence -> Evidence -> Evidence.
 
 Inductive ASP: Set :=
+| NULL: ASP
 | CPY: ASP
 | ASPC: ASP_PARAMS -> ASP
 | SIG: ASP
@@ -130,6 +131,10 @@ Notation "'<' x y z '>'" := (asp (ASPC (asp_paramsC x nil y z)))
                       (in custom copland_entry at level 98).
 (* @ plc phrase *)
 Notation "@ p [ ph ]" := (att p ph) (in custom copland_entry at level 50).
+
+
+
+
 
 Fixpoint et_size (e:Evidence): nat :=
   match e with
@@ -206,6 +211,7 @@ Inductive ASP_PARAMS: Set :=
 
 Definition eval_asp t p e :=
   match t with
+  | NULL => mt
   | CPY => e 
   | ASPC params (*(asp_paramsC i args tpl tid tet)*) =>
       uu (*i args tpl tid tet*) params p e
@@ -240,6 +246,7 @@ Definition Loc: Set := nat.
 Definition Locs: Set := list Loc.
 
 Inductive Ev: Set :=
+| null: nat -> Plc -> Ev
 | copy:  nat -> Plc -> Ev 
 | umeas: nat -> Plc -> ASP_PARAMS -> Evidence -> Ev
 | sign: nat -> Plc -> Evidence -> Ev
@@ -255,6 +262,7 @@ Inductive Ev: Set :=
 
 Definition ev x : nat :=
   match x with
+  | null i _ => i
   | copy i _ => i
   | umeas i _ _ _ => i
   | sign i _ _ => i
@@ -270,6 +278,7 @@ Definition ev x : nat :=
 (** The natural number indicating the place where an event occured. *)
 Definition pl x : Plc :=
   match x with
+  | null _ p => p
   | copy _ p => p
   | umeas _ p _ _ => p
   | sign _ p _ => p
@@ -292,6 +301,7 @@ See Lemma [events_injective].
 
 Definition asp_event i x p e :=
   match x with
+  | NULL => null i p
   | CPY => copy i p
   | ASPC ps => umeas i p ps e
   | SIG => sign i p e

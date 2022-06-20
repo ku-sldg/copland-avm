@@ -132,8 +132,15 @@ Definition copyEv : CVM EvC :=
   add_tracem [copy x p] ;;
   get_ev.
 
+Definition nullEv : CVM EvC :=
+  p <- get_pl ;;
+  x <- inc_id ;;
+  add_tracem [null x p] ;;
+  ret mt_evc.
+
 Definition do_prim (a:ASP) : CVM EvC :=
   match a with
+  | NULL => nullEv
   | CPY => copyEv
   | ASPC params =>
     invoke_ASP params     
