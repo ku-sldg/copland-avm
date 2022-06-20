@@ -578,18 +578,18 @@ with parseParens (fuel : nat) (xs : list token) : optionE (Term * list token) :=
   end
 .
 
-Definition testPhr := "@1 kim 2 ker -> ! -<- ! -> @2 (vc 2 sys) -> !".
+Definition testPhr := "@1 kim 2 ker -> ! -<- @2 (vc 2 sys) -> !".
 (* Definition testPhr2 := "@p1 kim p2 ker -> ! -<- ! -> @p2 (vc p2 sys) -> !".
 Compute tokenize testPhr. *)
 
-Compute parsePhrase 20 (tokenize testPhr).
+Definition transTestPhr := <{ @ 1 [< "kim" 2 "ker" > -> (!) -<- @ 2 [< "vc" 2 "sys"> -> !]]}>.
+Example testPhr1 : parsePhrase 20 (tokenize testPhr) 
+  = SomeE (transTestPhr, []).
+  reflexivity. Qed.
+
+Print transTestPhr.
 Compute parsePhrase 20 (tokenize "").
 Compute parseAT_Place (tokenize testPhr).
-
-
-
-
-
 
 
 (* If we have a        (Sign, Hash) *)
