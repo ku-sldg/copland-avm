@@ -128,7 +128,7 @@ Notation "!" := (asp SIG) (in custom copland_entry at level 98).
 Notation "#" := (asp HSH) (in custom copland_entry at level 98).
 Notation "'_'" := (asp CPY) (in custom copland_entry at level 98).
 Notation "'{''}'" := (asp NULL) (in custom copland_entry at level 98).
-Notation "'<' x y z '>'" := (asp (ASPC (asp_paramsC x nil y z))) 
+Notation "'<<' x y z '>>`'" := (asp (ASPC (asp_paramsC x nil y z))) 
                       (in custom copland_entry at level 98).
 (* @ plc phrase *)
 Notation "@ p [ ph ]" := (att p ph) (in custom copland_entry at level 50).

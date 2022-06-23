@@ -13,6 +13,8 @@ From Coq Require Import Lists.List. Import ListNotations.
 Require Import Appraisal_Defs.
 Require Import Term_Defs.
 Require Import Anno_Term_Defs.
+Require Import Maps.
+Require Import EqClass.
 
 Module CopParser.
 Open Scope cop_ent_scope.
@@ -173,206 +175,266 @@ Notation "' p <- e1 <|> e2"
         | NoneE err => e2
         end) (right associativity, p pattern, at level 60, e1 at next level).
 
-
 Definition isIdTail := fun x => orb (isAlphaNum x) (isUnderscore x).
 
-Definition parseSymbol (xs : list token)
-                         : optionE (string * list token) :=
+Theorem weak_string_eqb_eq : forall x y : string,
+  (x =? y) = true -> x = y.
+Proof.
+  apply String.eqb_eq.
+Qed.
+
+Instance str_eq_class : EqClass string :=
+  { eqb:= String.eqb;
+    eqb_leibniz := weak_string_eqb_eq }.
+
+Definition symbol_map := MapD string nat.
+
+Notation "'map' k 'to' v 'in' m" := (mapD_set m k v) (at level 200, no associativity).
+
+Definition parseSymbol (xs : list token) (sm : symbol_map) 
+                         : optionE (symbol_map * string * list token) :=
     match xs with
     | [] => NoneE "Expected identifier"
     | x::xs' => match (list_of_string x) with
                 | nil => NoneE ("Illegal identifier: nil - is this possible?")
                 | xh :: xt => if andb (isLowerAlpha xh) (forallb isIdTail xt) then
-                                SomeE (x, xs')
+                                SomeE (sm, x, xs')
                               else 
                                 NoneE ("Illegal Identifier: '" ++ x ++ "'")
                 end
     end.
 
-Compute parseSymbol ["b1hello_bob";"world"; ","; "this"; "is";"a";"(";"simple";")";"test";"!";"var";"bob";";";"var";"b_b"; ";";"var";"";"icansay";"123"] % string.
+Compute parseSymbol ["b1hello_bob";"world"; ","; "this"; "is";"a";"(";"simple";")";"test";"!";"var";"bob";";";"var";"b_b"; ";";"var";"";"icansay";"123"] map_empty % string.
 
 (* TODO: Need a better string -> digit converter *)
-Definition parseDigits (xs : list token) : optionE (nat * list token) :=
+Definition parseDigits (xs : list token) (sm : symbol_map)
+      : optionE (symbol_map * string * list token) :=
   match xs with
   | nil     => NoneE "Expected digits"
   | x::xs'  => if (forallb isDigit (list_of_string x))
-                then SomeE ((fold_left
+                then 
+                  let dig := (fold_left
                                 (fun n d =>
                                     10 * n + (nat_of_ascii d -
                                               nat_of_ascii "0"%char))
                                 (list_of_string x)
-                                0), xs')
+                                0) in
+                  SomeE ((map x to dig in sm), x, xs')
                 else NoneE "Invalid digit sequence"
   end.
 
-Example parseDigits1 : parseDigits (tokenize "01") = SomeE (1, []).
+Example parseDigits1 : parseDigits (tokenize "01") map_empty 
+= SomeE (
+    (map "01" to 1 in map_empty), "01", []).
 reflexivity. Qed.
 
-Example parseDigits2 : parseDigits (tokenize "183 cow") = SomeE (183, ["cow"]).
+Example parseDigits2 : parseDigits (tokenize "183 cow") map_empty
+= SomeE ((map "183" to 183 in map_empty),"183", ["cow"]).
 reflexivity. Qed.
 
-Example parseDigits3 : parseDigits ["1"; "kim"; "2"; "ker"] = SomeE (1, ["kim"; "2"; "ker"]).
+Example parseDigits3 : parseDigits ["1"; "kim"; "2"; "ker"] map_empty
+= SomeE ((map "1" to 1 in map_empty), "1", ["kim"; "2"; "ker"]).
 reflexivity. Qed.
 
-(*   
-We are leaving this out for now because frankly Coq only allows NATs as places
-
-Definition parsePlace (xs : list token) : optionE (string * list token) :=
+Definition parsePlace (xs : list token) (sm : symbol_map)
+                      : optionE (symbol_map * string * list token) :=
   match xs with
   | nil => NoneE "Expected Place"
   | x::xs' => (* try parse symbol *)
-              match (parseSymbol xs) with
+              match (parseSymbol xs sm) with
               | SomeE x => SomeE x
               | NoneE m => (* try parse digits *)
-                            match (parseDigits xs) with
+                            match (parseDigits xs sm) with
                             | SomeE x' => SomeE x'
                             | NoneE m' => NoneE (m ++ m')
                             end
               end
-  end. *)
-
-Definition parsePlace (xs : list token) : optionE (Plc * list token) :=
-  match xs with
-  | nil => NoneE "Expected Place"
-  | x::xs' =>  (* try parse digits *) parseDigits xs
   end. 
 
-Example parsePlace1 : parseDigits ["1"; "kim"; "2"; "ker"] = SomeE (1, ["kim"; "2"; "ker"]).
-reflexivity. Qed.
-
-Ltac soundParse :=
-    intros s;
-    match goal with
-    | |- context [ s <> ?str <-> _] => 
-                split; (* split and *)
-                [ split; intros H; (* split bijection *)
-                    [
-                    rewrite <- String.eqb_neq in H;
-                    destruct (String.eqb s str) eqn:E; auto; discriminate
-                    |
-                    apply String.eqb_neq; assumption
-                    ]
-                | split; intros H; [
-                        subst; reflexivity
-                        |
-                        match goal with
-                        | H : context [?x s = true ] |- _ => unfold x in H;
-                                                            apply String.eqb_eq; assumption
-                        end
-                ]
-                ]
-    end.
-(* 
-Definition parserSoundASP 
-  (p : (xs : list token) : (optionE (ASP * list token))) 
-  (val : string) 
-  (a : ASP) : Prop :=
-    forall s, 
-    (s <> val <-> p s = false)
-    /\
-    (s = val <-> p s = true). *)
-(* 
-Definition parseNull (xs : list token) : optionE (ASP * list token) := 
-  match xs with
-  | nil => NoneE "Expected a null"
-  | h :: t => if (h =? "{}") 
-                then SomeE (NULL, t) 
-                else NoneE "Invalid NULL"
+Definition aspToCopString (a : ASP) (sm : symbol_map): string :=
+  match a with
+  | NULL  => "{}"
+  | CPY   => "_"
+  | SIG   => "!"
+  | HSH   => "#"
+  | ASPC (asp_paramsC aId args plc tId) =>
+      match (mapD_get_key sm plc) with
+      | None => "ERROR: Could not locate symbol"
+      | Some plcN =>
+        aId ++ " " ++ plcN ++ " " ++ tId
+      end
   end.
 
-Lemma isNullSound : parserSound isNull "{}".
-Proof.
-    soundParse.
-Qed. *)
 
-Definition parseCopy (xs : list token) : optionE (ASP * list token) := 
+Example aspToCopString0 : aspToCopString (ASPC (asp_paramsC "hi" nil 102 "ker")) map_empty =
+  "ERROR: Could not locate symbol". reflexivity. Qed.
+
+
+Example aspToCopString1 : 
+aspToCopString (ASPC (asp_paramsC "hi" nil 102 "ker")) (map "102" to 102 in mapD_empty) =
+  "hi 102 ker". reflexivity. Qed.
+
+Definition spToStr (s : SP) :=
+  match s with
+  | ALL => "+"
+  | NONE => "-"
+  end.
+
+Fixpoint termToCopString (t : Term) (sm : symbol_map) : string :=
+  match t with
+  | asp a       => aspToCopString a sm
+  | att p t     => match (mapD_get_key sm p) with
+                   | None => "ERROR - Could not map place"
+                   | Some pstr => "@" ++ pstr ++ " " ++ termToCopString t sm
+                   end
+  | lseq t1 t2  => termToCopString t1 sm ++ " -> " ++ termToCopString t2 sm
+  | bseq (s1,s2) t1 t2 => 
+    termToCopString t1 sm ++ " " ++ 
+    spToStr s1 ++ "<" ++ spToStr s2 ++ " " ++ termToCopString t2 sm
+  | bpar (s1,s2) t1 t2 =>
+    termToCopString t1 sm ++ " " ++ spToStr s1 
+    ++ "~" ++ spToStr s2 ++ " " ++ termToCopString t2 sm
+  end.
+
+Example termToCopString1 : termToCopString <{ @ 1 [ < "vc" 2 "sys" > ]}> (map "1" to 1 in (map "2" to 2 in map_empty))= "@1 vc 2 sys".
+reflexivity. Qed.
+
+Definition parserSoundASP 
+  (p :  list token -> symbol_map
+        -> (optionE (symbol_map * Term * list token))) 
+  (val : string) 
+  (a : ASP) : Prop :=
+    forall s t (sm : symbol_map), 
+    (s = val <-> p (s :: t) sm = SomeE (sm, (asp a), t))
+    /\
+    (s <> val <-> exists m, p (s :: t) sm = NoneE m).
+
+Definition parseCopy (xs : list token) (sm : symbol_map)
+                      : optionE (symbol_map * Term * list token) := 
   match xs with
   | nil => NoneE "Expected a copy"
   | h :: t => if (h =? "_") 
-                then SomeE (CPY, t) 
+                then SomeE (sm, (asp CPY), t) 
                 else NoneE "Invalid CPY"
   end.
-(* 
-Lemma isCopySound : parserSound isCopy "_".
+  
+Ltac qinv H := inversion H; subst; clear H.
+
+Ltac soundParse :=
+  split;
+  repeat match goal with
+  | |- context [?s = ?str <-> _] => split; intros H;
+      try (subst; reflexivity); try (inversion H; destruct (String.eqb s str) eqn:E; [
+        rewrite String.eqb_eq in E; assumption
+        | 
+        discriminate
+    ])
+  | |- context [?s <> ?str <-> _] => split; intros H; [
+        unfold not in H; destruct (String.eqb s str) eqn:E; [
+          simpl; rewrite String.eqb_eq in E; subst; exfalso; apply H; reflexivity
+          |
+          simpl; rewrite E; eexists; reflexivity
+        ]
+        |
+        inversion H; inversion H0; destruct (String.eqb s str) eqn:E; [
+          inversion H2
+          |
+          unfold not; intros; subst; inversion E
+        ]
+        ]
+  end.
+
+Lemma isCopySound : parserSoundASP parseCopy "_" CPY.
 Proof.
-    soundParse.
-Qed. *)
+  soundParse.
+Qed.
 
 (* TODO: Need to make guarantee that parseSymbol only consumes 1 token *)
-Definition parseASPC (xs : list token) : optionE (ASP * list token) := 
-    let sym1 := parseSymbol xs in
+Definition parseASPC (xs : list token) (sm : symbol_map)
+                      : optionE (symbol_map * Term * list token) := 
+    let sym1 := parseSymbol xs sm in
     match sym1 with
     | NoneE m => NoneE m
-    | SomeE (x',xs') => 
-        let place := parseDigits xs' in
+    | SomeE (sm', x',xs') => 
+        let place := parseDigits xs' sm' in
         match place with
         | NoneE m => NoneE m
-        | SomeE (x'',xs'') =>   let sym2 := parseSymbol xs'' in
-                                match sym2 with
-                                | NoneE m => NoneE m
-                                | SomeE (x''',xs''') => 
-                                        SomeE ((ASPC (asp_paramsC x' nil x'' x''')),xs''')
-                                end
+        | SomeE (sm'', x'',xs'') =>   
+                  let sym2 := parseSymbol xs'' sm'' in
+                  match sym2 with
+                  | NoneE m => NoneE m
+                  | SomeE (sm''', x''',xs''') => 
+                      match (map_get sm''' x'') with
+                      | None => NoneE "Failed to find relevant symbol for ASPC"
+                      | Some pNat =>
+                          SomeE (sm''',
+                            (asp (ASPC (asp_paramsC x' nil pNat x'''))),
+                            xs''')
+                      end
+                  end
         end
     end.
 
-Example parseASPC1 : parseASPC (tokenize "p2 0 kim") = 
-  SomeE (ASPC (asp_paramsC "p2" nil 0 "kim"), nil).
-  reflexivity. Qed.
+Compute parseASPC (tokenize "p2 0 kim") map_empty.
 
-Definition parseSign (xs : list token) : optionE (ASP * list token) := 
+Definition parseSign (xs : list token) sm : optionE (symbol_map * Term * list token) := 
   match xs with
   | nil => NoneE "Expected a sign"
   | h :: t => if (h =? "!") 
-                then SomeE (SIG, t) 
+                then SomeE (sm, (asp SIG), t) 
                 else NoneE "Invalid SIGN"
   end.
-(* 
-Lemma isSignSound : parserSound parseSign "!".
+
+Lemma isSignSound : parserSoundASP parseSign "!" SIG.
 Proof.
-    soundParse.
-Qed. *)
+  soundParse.
+Qed.
 
-
-Definition parseHash (xs : list token) : optionE (ASP * list token) := 
+Definition parseHash (xs : list token) sm : optionE (symbol_map * Term * list token) := 
   match xs with
   | nil => NoneE "Expected a hash"
   | h :: t => if (h =? "#") 
-                then SomeE (HSH, t) 
+                then SomeE (sm, (asp HSH), t) 
                 else NoneE "Invalid HASH"
   end.
-(* 
-Lemma isHashSound: parserSound isHash "#".
+
+Lemma isHashSound: parserSoundASP parseHash "#" HSH.
 Proof.
     soundParse.
-Qed. *)
+Qed.
 
-Definition parseNull (xs : list token) : optionE (ASP * list token) :=
+Definition parseNull (xs : list token) sm : optionE (symbol_map * Term * list token) :=
   match xs with
   | nil => NoneE "Expected NULL"
   | h :: t => if (h =? "{}")
-                then SomeE (NULL, t)
+                then SomeE (sm, (asp NULL), t)
                 else NoneE "Invalid Null"
   end.
 
-Definition parseASP (xs : list token) : optionE (Term * list token) :=
+Lemma isNullSound : parserSoundASP parseNull "{}" NULL.
+Proof.
+  soundParse.
+Qed.
+
+Definition parseASP (xs : list token) (sm : symbol_map)
+                    : optionE (symbol_map * Term * list token) :=
     match xs with
     | nil   => NoneE "Expected ASP"
     | x::t  =>  
-        match (parseNull xs) with
-        | SomeE (x',x'') => SomeE (asp x', x'')
+        match (parseNull xs sm) with
+        | SomeE x' => SomeE x'
         | NoneE _ =>
-            match (parseCopy xs) with
-            | SomeE (x',x'') => SomeE (asp x', x'')
+            match (parseCopy xs sm) with
+            | SomeE x'' => SomeE x''
             | NoneE _ =>
-                match (parseASPC xs) with
-                | SomeE (x', x'') => SomeE (asp x', x'')
+                match (parseASPC xs sm) with
+                | SomeE x''' => SomeE x'''
                 | NoneE _ =>
-                    match (parseSign xs) with
-                    | SomeE (x', x'') => SomeE (asp x', x'')
+                    match (parseSign xs sm) with
+                    | SomeE x'''' => SomeE x''''
                     | NoneE _ =>
-                        match (parseHash xs) with
-                        | SomeE (x', x'') => SomeE (asp x', x'')
+                        match (parseHash xs sm) with
+                        | SomeE x''''' => SomeE x'''''
                         | NoneE _ => NoneE "Expected an ASP"
                         end
                     end
@@ -382,36 +444,33 @@ Definition parseASP (xs : list token) : optionE (Term * list token) :=
     end. 
 
 Compute parseASP (tokenize "hello 189 d_1").
-Example parseASP1 : parseASP (tokenize "hello 189 d_1") = SomeE (<{ < "hello" 189 "d_1" > }>, nil).
-reflexivity. Qed.
 
-Definition parseBranch (xs : list token) (prevT : Term) 
-                : optionE ((Term -> Term) * list token) :=
+Definition parseBranch (xs : list token) (prevT : Term) (sm : symbol_map)
+                : optionE (symbol_map * (Term -> Term) * list token) :=
     match xs with
     | nil   => NoneE "Expected branch"
     | h::t  => (* we only check head, as this should be one contiguous token *)
                 if (string_dec h "-<-")
-                then SomeE (fun t' => (bseq (NONE, NONE) prevT t'), t)
+                then SomeE (sm, fun t' => (bseq (NONE, NONE) prevT t'), t)
                 else if (string_dec h "-<+")
-                then SomeE (fun t' => (bseq (NONE, ALL) prevT t'), t)
+                then SomeE (sm, fun t' => (bseq (NONE, ALL) prevT t'), t)
                 else if (string_dec h "+<-")
-                then SomeE (fun t' => (bseq (ALL, NONE) prevT t'), t)
+                then SomeE (sm, fun t' => (bseq (ALL, NONE) prevT t'), t)
                 else if (string_dec h "+<+")
-                then SomeE (fun t' => (bseq (ALL, ALL) prevT t'), t)
+                then SomeE (sm, fun t' => (bseq (ALL, ALL) prevT t'), t)
                 else if (string_dec h "-~-")
-                then SomeE (fun t' => (bpar (NONE, NONE) prevT t'), t)
+                then SomeE (sm, fun t' => (bpar (NONE, NONE) prevT t'), t)
                 else if (string_dec h "-~+")
-                then SomeE (fun t' => (bpar (NONE, ALL) prevT t'), t)
+                then SomeE (sm, fun t' => (bpar (NONE, ALL) prevT t'), t)
                 else if (string_dec h "+~-")
-                then SomeE (fun t' => (bpar (ALL, NONE) prevT t'), t)
+                then SomeE (sm, fun t' => (bpar (ALL, NONE) prevT t'), t)
                 else if (string_dec h "+~+")
-                then SomeE (fun t' => (bpar (ALL, ALL) prevT t'), t)
+                then SomeE (sm, fun t' => (bpar (ALL, ALL) prevT t'), t)
                 else NoneE "Invalid branch"
     end.
 
-Ltac qinv H := inversion H; subst; clear H.
-
-Definition parseAT_Place (xs : list token) : optionE (Plc * list token) :=
+Definition parseAT_Place (xs : list token) (sm : symbol_map)
+                        : optionE (symbol_map * Plc * list token) :=
   (* here, we deal with the cases for @ place *)
   match xs with
   | nil => NoneE "Looking for @ place"
@@ -422,7 +481,15 @@ Definition parseAT_Place (xs : list token) : optionE (Plc * list token) :=
       then (* it is likely @ place *)
         if (string_dec h "@")
         then (* found @, look for place in rem tokens*)
-          parsePlace t
+          match parsePlace t sm with
+          | NoneE m => NoneE m
+          | SomeE (sm', pStr, tks) =>
+              match (map_get sm' pStr) with
+              | None => NoneE "ERROR - Invalid Place in Map"
+              | Some plc => 
+                  SomeE (sm', plc, tks)
+              end
+          end
         else (* it was not @, *)
           NoneE "Expected @ symbol"
       else
@@ -434,7 +501,15 @@ Definition parseAT_Place (xs : list token) : optionE (Plc * list token) :=
             if (Ascii.eqb h' "@")
             then (* found @, look for place in rem of token*)
               let firstTok : token := (string_of_list t') in
-              parsePlace ( firstTok :: t)
+              match parsePlace (firstTok :: t) sm with
+              | NoneE m => NoneE m
+              | SomeE (sm', pStr, tks) =>
+                  match (map_get sm' pStr) with
+                  | None => NoneE "ERROR - Invalid Place in Map"
+                  | Some plc => 
+                      SomeE (sm', plc, tks)
+                  end
+              end
             else (* it was not @, *)
               NoneE "Expected @ symbol"
         end
@@ -442,7 +517,8 @@ Definition parseAT_Place (xs : list token) : optionE (Plc * list token) :=
 
 Compute parseAT_Place (tokenize " @1029 cow ham cheese").
 
-Fixpoint parsePhrase (fuel : nat) (xs : list token) : optionE (Term * list token) :=
+Fixpoint parsePhrase (fuel : nat) (xs : list token) (sm : symbol_map)
+              : optionE (symbol_map * Term * list token) :=
   (* we are using the left-recursive removed grammer now *)
 match fuel with
 | 0 => NoneE "Out of fuel"
@@ -451,37 +527,39 @@ match fuel with
   | nil     => NoneE "Expected phrase"
   | h::t  =>  (* We have tokens to work with *)
                 (* try parsing an ASP *)
-                match (parseASP xs) with
-                | SomeE (x',xs') => (* Parse the PHR' *)
-                    match parsePhrase' fuel' x' xs' with
+                match (parseASP xs sm) with
+                | SomeE (sm', x',xs') => (* Parse the PHR' *)
+                    match (parsePhrase' fuel' x' xs' sm') with
                     | NoneE m => NoneE m
-                    | SomeE (NoneE m,_) => (* It was empty *) 
-                          SomeE (x', xs')
+                    | SomeE (sm', NoneE m,_) => (* It was empty *) 
+                          SomeE (sm', x', xs')
                           (* NoneE m *)
                           (* SomeE (x',xs') *)
-                    | SomeE (SomeE x'', xs'') => SomeE (x'', xs'')
+                    | SomeE (sm', SomeE x'', xs'') => SomeE (sm', x'', xs'')
                     end
                 | NoneE m'  => (* try parsing ATT *)
-                    match parseATT fuel' xs with
-                    | SomeE (x'',xs'') => 
+                    match (parseATT fuel' xs sm) with
+                    | SomeE (sm', x'',xs'') => 
                         (* parsePhrase' fuel' x'' xs'' *)
-                        match parsePhrase' fuel' x'' xs'' with
+                        match (parsePhrase' fuel' x'' xs'' sm') with
                         | NoneE m => NoneE (m ++ ", " ++ m')
-                        | SomeE (NoneE m,_) => (* It was empty *) 
-                              SomeE (x'',xs'')
+                        | SomeE (sm', NoneE m,_) => (* It was empty *) 
+                              SomeE (sm', x'',xs'')
                               (* NoneE (m ++ ", " ++ m') *)
                               (* let mT : list token := [m] in
                               SomeE (x'', (xs'' ++ mT)) *)
-                        | SomeE (SomeE x''', xs''') => SomeE (x''', xs''')
+                        | SomeE (sm', SomeE x''', xs''') => SomeE (sm', x''', xs''')
                         end
                     | NoneE m'' => (* Try parsing parens *)
-                        match (parseParens fuel' xs) with
-                        | SomeE (x''', xs''') => 
+                        match (parseParens fuel' xs sm) with
+                        | SomeE (sm', x''', xs''') => 
                             (* parsePhrase' fuel' x''' xs''' *)
-                            match parsePhrase' fuel' x''' xs''' with
+                            match (parsePhrase' fuel' x''' xs''' sm') with
                             | NoneE m => NoneE m
-                            | SomeE (NoneE _,_) => (* It was empty *) SomeE (x''',xs''')
-                            | SomeE (SomeE x'''', xs'''') => SomeE (x'''', xs'''')
+                            | SomeE (sm', NoneE _,_) => 
+                                  (* It was empty *) SomeE (sm', x''',xs''')
+                            | SomeE (sm', SomeE x'''', xs'''') => 
+                                  SomeE (sm', x'''', xs'''')
                             end
                         | NoneE m''' => (* We actually failed*)
                                   NoneE ("Fail: " ++ m''' ++ ", " ++ m'' ++ ", " ++ m')
@@ -490,46 +568,50 @@ match fuel with
                 end
   end
 end
-with parsePhrase' (fuel : nat) (prevT : Term) (xs : list token) 
-                                  : optionE ((optionE Term) * list token) :=
+with parsePhrase' (fuel : nat) (prevT : Term) 
+                  (xs : list token) (sm : symbol_map)
+                  : optionE (symbol_map * (optionE Term) * list token) :=
   match fuel with
   | 0 => NoneE "Out of Fuel"
   | S (fuel') => 
       match xs with
-      | nil => SomeE (NoneE "Empty1", xs)
+      | nil => SomeE (sm, NoneE "Empty1", xs)
       (* SomeE ("",nil) (* NEED TO FIX, we should be able to parse no more*) *)
       | h :: t => if (string_dec h "->") 
                   then (* it is an arrow *)
-                      match (parsePhrase fuel' t) with
+                      match (parsePhrase fuel' t sm) with
                       | NoneE m' => NoneE ("invalid arrow")
-                      | SomeE (x',xs') => 
-                                  match (parsePhrase' fuel' (lseq prevT x') xs') with
+                      | SomeE (sm', x',xs') => 
+                                  match (parsePhrase' fuel' (lseq prevT x') xs' sm') with
                                   | NoneE m'' => NoneE m''
-                                  | SomeE (NoneE m, _) => SomeE (SomeE (lseq prevT x'), xs')
-                                  | SomeE (x'',xs'') => SomeE (x'', xs'')
+                                  | SomeE (sm', NoneE m, _) => 
+                                        SomeE (sm', SomeE (lseq prevT x'), xs')
+                                  | SomeE (sm', x'',xs'') => SomeE (sm', x'', xs'')
                                   end
                       end
                   else (* try parse branch *)
-                      match (parseBranch xs prevT) with
-                      | NoneE m' => SomeE (NoneE "Empty2", xs) (* must be empty *)
-                      | SomeE (brnFn,xs') => 
-                          match (parsePhrase fuel' xs') with
+                      match (parseBranch xs prevT sm) with
+                      | NoneE m' => SomeE (sm, NoneE "Empty2", xs) (* must be empty *)
+                      | SomeE (sm', brnFn,xs') => 
+                          match (parsePhrase fuel' xs' sm') with
                           | NoneE m'' => NoneE m''
-                          | SomeE (x'',xs'') => SomeE ((SomeE (brnFn x'')), xs'')
+                          | SomeE (sm'', x'',xs'') => 
+                                SomeE (sm'', (SomeE (brnFn x'')), xs'')
                           end
                       end
       end
   end
-with parseATT (fuel : nat) (xs : list token) : optionE (Term * list token) :=
+with parseATT (fuel : nat) (xs : list token) (sm : symbol_map)
+              : optionE (symbol_map * Term * list token) :=
   match fuel with
   | 0 => NoneE "Out of fuel"
   | S (fuel') => 
       match xs with
       | nil => NoneE "Expected @ plc PHR"
       | x :: xs' =>
-          match (parseAT_Place xs) with
+          match (parseAT_Place xs sm) with
           | NoneE m => NoneE ("Failed to parseATT : ")
-          | SomeE (x',xs') => 
+          | SomeE (sm', x',xs') => 
               (* we got out @ place now we need [phr] or phr*)
               match xs' with
               | nil => NoneE "Missing phrase after @ place"
@@ -537,30 +619,31 @@ with parseATT (fuel : nat) (xs : list token) : optionE (Term * list token) :=
                   if (string_dec h "[")
                   then
                     (* we are in brackets *)
-                    match (parsePhrase fuel' t) with
+                    match (parsePhrase fuel' t sm') with
                     | NoneE m => NoneE ("Invalid phrase after @ place (1) due to (" ++ m ++ "), ")
-                    | SomeE (x'',xs'') => 
+                    | SomeE (sm'', x'',xs'') => 
                         (* we have parsed the phrase, check for final brackets *)
                         match xs'' with
                         | nil => NoneE "Missing final brackets"
                         | h :: t => 
                             if (string_dec h "]")
                             then
-                              SomeE (att x' x'', t)
+                              SomeE (sm'', att x' x'', t)
                             else
                               NoneE "Invalid final brackets"
                         end
                     end
                   else
-                    match (parsePhrase fuel' xs') with
+                    match (parsePhrase fuel' xs' sm') with
                     | NoneE m => NoneE ("Invalid phrase after @ place (2) due to (" ++ m ++ "), ")
-                    | SomeE (x'',xs'') => SomeE (att x' x'', xs'')
+                    | SomeE (sm', x'',xs'') => SomeE (sm', att x' x'', xs'')
                     end
               end
           end
       end
   end
-with parseParens (fuel : nat) (xs : list token) : optionE (Term * list token) :=
+with parseParens (fuel : nat) (xs : list token) (sm : symbol_map) 
+                  : optionE (symbol_map * Term * list token) :=
   match fuel with
   | 0 => NoneE "Out of fuel"
   | S (fuel') => 
@@ -570,16 +653,16 @@ with parseParens (fuel : nat) (xs : list token) : optionE (Term * list token) :=
           if (string_dec h "(")
           then
             (* we are in parens *)
-            match (parsePhrase fuel' t) with
+            match (parsePhrase fuel' t sm) with
             | NoneE m => NoneE ("Invalid phrase within parens due to (" ++ m ++ "), ")
-            | SomeE (x'',xs'') => 
+            | SomeE (sm', x'',xs'') => 
                 (* we have parsed the phrase, check for final parens *)
                 match xs'' with
                 | nil => NoneE "Missing final parens"
                 | h :: t => 
                     if (string_dec h ")")
                     then
-                      SomeE (x'', t)
+                      SomeE (sm', x'', t)
                     else
                       NoneE "Invalid final parens"
                 end
@@ -595,13 +678,82 @@ Definition testPhr := "@1 kim 2 ker -> ! -<- @2 (vc 2 sys) -> !".
 Compute tokenize testPhr. *)
 
 Definition transTestPhr := <{ @ 1 [< "kim" 2 "ker" > -> (!) -<- @ 2 [< "vc" 2 "sys"> -> !]]}>.
-Example testPhr1 : parsePhrase 20 (tokenize testPhr) 
-  = SomeE (transTestPhr, []).
-  reflexivity. Qed.
 
 Print transTestPhr.
-Compute parsePhrase 20 (tokenize "").
-Compute parseAT_Place (tokenize testPhr).
+Compute parsePhrase 20 (tokenize "") map_empty.
+Compute parsePhrase 20 (tokenize testPhr) map_empty.
+
+(* 
+Lemma parser_app : forall (n1 n2 : nat) (t1 t2 : Term) (s1 s2 xs1 xs2 : list token),
+  parsePhrase n1 s1 = SomeE (t1, xs1) ->
+  parsePhrase n2 s2 = SomeE (t2, xs2) ->
+  exists n1, parsePhrase n1 (s1 ++ s2) = SomeE (t1, (List.app xs1 s2)).
+Proof.
+  intros.
+   *)
+
+Theorem prettyPrintParsable : forall (t : Term) p,
+  exists n sm, 
+    (forall v, mapD_get_key sm v = Some p) -> 
+    parsePhrase n (tokenize (termToCopString t sm)) map_empty =
+      SomeE (sm, t, nil).
+Proof.
+  intros.
+  induction t.
+  - simpl. induction a; simpl.
+    * exists 2. simpl. exists map_empty. reflexivity.
+    * exists 2. simpl. exists map_empty. reflexivity.
+    * destruct a. exists 2.
+      destruct p.
+      ** exists (map "0" to 0 in map_empty).
+         (* we cannot force a and t to not be space?! *)
+         admit.
+      ** (* invincible p value :( *) admit.
+    * exists 2. simpl. exists map_empty. reflexivity.
+    * exists 2. simpl. exists map_empty. reflexivity.
+  - destruct IHt as [n' [sm' H]].
+    simpl.
+    exists (n' + 2). exists sm'. 
+    simpl. 
+    intros.
+    rewrite H0.
+    simpl.
+
+
+Theorem parser_involutive: forall (t t1 : Term) sm rsm sm' rsm',
+  exists n, parsePhrase n (tokenize (termToCopString t rsm')) sm rsm = SomeE (sm', rsm', t1, nil) ->
+  termToCopString t = termToCopString t1.
+Proof.
+  intros t.
+  induction t; intros.
+  - destruct a.
+    * exists 2. simpl. intros. qinv H. reflexivity.
+    * exists 2. simpl. intros H. qinv H. reflexivity.
+    * destruct a. destruct p.
+      ** simpl.
+      ** exists 2. destruct p. 
+        *** destruct a.
+          **** simpl. intros. discriminate.
+          **** simpl. intros. 
+  induction t.
+  - simpl. destruct a. 
+    * simpl. unfold tokenize. simpl. exists 10. simpl. reflexivity.
+    * simpl. unfold tokenize. simpl. exists 10. reflexivity.
+    * destruct a. admit. (* dies on computation? *)
+    * simpl. unfold tokenize. simpl. exists 10. reflexivity.
+    * simpl. unfold tokenize. simpl. exists 10. reflexivity.
+  - induction p.
+    * simpl. unfold tokenize. simpl. destruct IHt.
+      exists (x + 2). simpl. admit.
+    * admit.
+  - simpl. unfold tokenize. simpl. destruct IHt1.
+    destruct IHt2. exists (x + x0 + 2).
+    simpl. admit.
+  - simpl. destruct s.
+  
+Qed.
+
+
 
 
 (* If we have a        (Sign, Hash) *)
