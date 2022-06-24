@@ -108,6 +108,209 @@ Fixpoint tokenize_helper (cls : chartype) (acc xs : list ascii)
     end
   end %char.
 
+Ltac magic_match :=
+  match goal with
+  | H : _ |- context [ exists c' l', tokenize_helper ?c ?l ?arem = tokenize_helper c' l' ?arem] =>
+    exists c, l; reflexivity
+  end.
+
+
+Lemma tokenize_helper_peel_one : forall (a : ascii) (arem : list ascii) c l l' lAcc,
+  ((l = [] -> l' = []) /\ (l <> [] -> l' = [rev l]) ->
+  (a = "["%char \/ a = "]"%char \/ a = "("%char \/ a = ")"%char) -> 
+  tokenize_helper c l (a :: arem) 
+    = l' ++ [a] :: (tokenize_helper other nil arem))
+  /\ 
+  (((classifyChar a = white -> lAcc = nil /\ (l = [] -> l' = []) /\ (l <> [] -> l' = [rev l])) 
+    /\ ((~ classifyChar a = white) -> lAcc = (a :: l) /\ l' = nil)) ->
+  (a <> "["%char /\ a <> "]"%char /\ a <> "("%char /\ a <> ")"%char ->
+  tokenize_helper c l (a :: arem) 
+    = l' ++ tokenize_helper (classifyChar a) lAcc arem)).
+Proof.
+
+  intros.
+  split; intros.
+  - destruct H as [H1  H2].
+    * destruct H0 as [H | [H | [H | H]]]; subst; simpl;
+      try (destruct l; [rewrite H1; auto |
+        rewrite H2; auto; intros C; discriminate ]).
+  - destruct (classifyChar a) eqn:A; destruct a eqn:A'; destruct b,b0,b1,b2,b3,b4,b5,b6; 
+    try discriminate; destruct H as [Hc1 Hc2]; 
+    (* manage alpha *)
+    try (assert (alpha <> white) by congruence;
+      apply Hc2 in H; destruct H; subst; reflexivity);
+    (* manage digits *)
+    try (assert (digit <> white) by congruence;
+      apply Hc2 in H; destruct H; subst; reflexivity);
+    (* manage other *)
+    try (assert (other <> white) by congruence;
+      apply Hc2 in H; destruct H; subst; reflexivity);
+    (* manage white *)
+    try (assert (white = white) by reflexivity; apply Hc1 in H;
+      destruct H; subst; simpl; destruct H1 as [Hl1 Hl2];
+      destruct l; auto; simpl; [
+      rewrite Hl1; auto |
+      rewrite Hl2; auto; intros C; discriminate]).
+    (* underscore *)
+    * assert (underscore <> white) by congruence;
+      apply Hc2 in H; destruct H; subst; reflexivity.
+    (* managing indep tokens *)
+    * destruct H0. exfalso. apply H. reflexivity.
+    * destruct H0. destruct H0. exfalso. apply H0. reflexivity.
+    * destruct H0. destruct H0. destruct H1. exfalso. apply H2. reflexivity.
+    * destruct H0. destruct H0. destruct H1. exfalso. apply H1. reflexivity.
+Qed.
+
+Lemma list_of_string_app : forall str1 str2,
+  list_of_string (str1 ++ str2) = list_of_string str1 ++ list_of_string str2.
+Proof.
+  intros.
+  induction str1.
+  - simpl. reflexivity.
+  - simpl. rewrite IHstr1. reflexivity.
+Qed.
+
+Lemma list_of_string_cons : forall a str1 a0 astr,
+  list_of_string (String a str1) = a0 :: astr 
+  <-> a = a0 /\ list_of_string str1 = astr.
+Proof.
+  split; intros.
+  - inversion H. auto.
+  - destruct H. auto. simpl. rewrite H0.  rewrite H. reflexivity.
+Qed.
+
+Lemma list_of_string_space :
+  list_of_string " " = [" "%char].
+Proof.
+  auto.
+Qed.
+
+Lemma tokenize_helper_space_after : forall c st (t1 : string),
+  tokenize_helper c st (list_of_string t1) 
+  = tokenize_helper c st (list_of_string (t1 ++ " ")).
+Proof.
+  intros.
+  generalize dependent c.
+  generalize dependent st.
+  induction t1.
+  - simpl. destruct st eqn:E.
+    * reflexivity.
+    * rewrite app_nil_r. reflexivity.
+  - destruct (list_of_string (String a t1)) eqn:AT.
+    * inversion AT.
+    * intros.
+      pose proof (tokenize_helper_peel_one a0 l c st).
+      rewrite list_of_string_app. rewrite AT.
+      inversion AT.
+      subst.
+      destruct a0; destruct b,b0,b1,b2,b3,b4,b5,b6;
+      simpl; intros; rewrite list_of_string_app in IHt1;
+      rewrite <- list_of_string_space; 
+      try (apply IHt1);
+      try (rewrite IHt1; reflexivity).
+Qed.
+
+Ltac createBase char := 
+  assert (Ht : char <> "["%char /\
+     char <> "]"%char /\
+     char <> "("%char /\ char <> ")"%char) by now 
+      split; [ intros C; discriminate |
+      split; [ intros C; discriminate | 
+      split; intros C; discriminate ] ].
+
+
+Lemma tokenize_helper_space' : forall (t1 t2 : string),
+  exists c l, tokenize_helper c l (list_of_string t1) 
+  ++ tokenize_helper white nil (list_of_string t2) 
+  = tokenize_helper c l (list_of_string (t1 ++ " " ++ t2)).
+Proof.
+  intros t1.
+  induction t1; intros.
+  - exists white, nil. reflexivity.
+  - destruct (list_of_string (String a t1)) eqn:T1.
+    * inversion T1.
+    * injection T1. intros. subst.
+      pose proof (tokenize_helper_peel_one a0 (list_of_string t1)) as Hsm.
+      pose proof (tokenize_helper_peel_one a0 (list_of_string (t1 ++ " " ++ t2))) as Hsm'.
+      destruct Hsm as [HsmI HsmO].
+      destruct Hsm' as [HsmI' HsmO'].
+      destruct a0; destruct b,b0,b1,b2,b3,b4,b5,b6.
+      ** createBase "255"%char.
+         apply HsmO in Ht as htemp.
+         destruct htemp as [c' [l' Hf]].
+         apply HsmO' in Ht as htemp.
+         destruct htemp as [c'' [l'' Hf']].
+         clear HsmO. clear HsmO'. clear HsmI. clear HsmI'. clear Ht.
+         specialize IHt1 with t2.
+         destruct IHt1 as [c [l IHt1]].
+         rewrite Hf.
+         rewrite list_of_string_app.
+         rewrite list_of_string_app.
+         rewrite T1. pose proof app_assoc.
+         rewrite list_of_string_app in Hf'.
+         rewrite list_of_string_app in Hf'.
+         assert (("255"%char :: list_of_string t1) ++
+          list_of_string " " ++ list_of_string t2 = "255"%char :: list_of_string t1 ++
+          list_of_string " " ++ list_of_string t2). {
+            auto.
+          }
+         rewrite H0.
+         rewrite Hf'.
+         rewrite list_of_string_cons.
+     apply H0 in H1.
+     destruct H1 as [c' [l' Hf]].
+     rewrite Hf.
+  intros. 
+  destruct (t1) eqn:T1.
+  - simpl. reflexivity.
+  - destruct (t2) eqn:T2.
+    * 
+
+Lemma tokenize_helper_space : forall (t1 t2 : string) c l,
+  tokenize_helper c l (list_of_string t1) 
+  ++ tokenize_helper white nil (list_of_string t2) 
+  = tokenize_helper c l (list_of_string (t1 ++ " " ++ t2)).
+Proof.
+  intros t1.
+  induction t1; intros.
+  - reflexivity.
+  - destruct (list_of_string (String a t1)) eqn:T1.
+    * inversion T1.
+    * injection T1. intros. subst.
+      pose proof (tokenize_helper_peel_one a0 (list_of_string t1)) as Hsm.
+      pose proof (tokenize_helper_peel_one a0 (list_of_string (t1 ++ " " ++ t2))) as Hsm'.
+      destruct Hsm as [HsmI HsmO].
+      destruct Hsm' as [HsmI' HsmO'].
+      destruct a0; destruct b,b0,b1,b2,b3,b4,b5,b6.
+      ** createBase "255"%char.
+         apply HsmO in Ht as htemp.
+         destruct htemp as [c' [l' Hf]].
+         apply HsmO' in Ht as htemp.
+         destruct htemp as [c'' [l'' Hf']].
+         clear HsmO. clear HsmO'. clear HsmI. clear HsmI'. clear Ht.
+         rewrite Hf.
+         rewrite list_of_string_app.
+         rewrite list_of_string_app.
+         rewrite T1. pose proof app_assoc.
+         rewrite list_of_string_app in Hf'.
+         rewrite list_of_string_app in Hf'.
+         assert (("255"%char :: list_of_string t1) ++
+          list_of_string " " ++ list_of_string t2 = "255"%char :: list_of_string t1 ++
+          list_of_string " " ++ list_of_string t2). {
+            auto.
+          }
+         rewrite H0.
+         rewrite Hf'.
+         rewrite list_of_string_cons.
+     apply H0 in H1.
+     destruct H1 as [c' [l' Hf]].
+     rewrite Hf.
+  intros. 
+  destruct (t1) eqn:T1.
+  - simpl. reflexivity.
+  - destruct (t2) eqn:T2.
+    * 
+
 Definition tokenize (s : string) : list string :=
   map string_of_list (tokenize_helper white [] (list_of_string s)).
 
@@ -251,6 +454,8 @@ Definition parsePlace (xs : list token) (sm : symbol_map)
               end
   end. 
 
+Compute parsePlace (tokenize "p2") map_empty.
+
 Definition aspToCopString (a : ASP) (sm : symbol_map): string :=
   match a with
   | NULL  => "{}"
@@ -365,6 +570,9 @@ Definition parseASPC (xs : list token) (sm : symbol_map)
                   | NoneE m => NoneE m
                   | SomeE (sm''', x''',xs''') => 
                       match (map_get sm''' x'') with
+                      (* TODO: Right now we FORCE the place to be digits because
+                        the place is digits in Coq, we should find a way around this
+                        though *)
                       | None => NoneE "Failed to find relevant symbol for ASPC"
                       | Some pNat =>
                           SomeE (sm''',
@@ -375,7 +583,7 @@ Definition parseASPC (xs : list token) (sm : symbol_map)
         end
     end.
 
-Compute parseASPC (tokenize "p2 0 kim") map_empty.
+Compute parseASPC (tokenize "p2 p0 kim") map_empty.
 
 Definition parseSign (xs : list token) sm : optionE (symbol_map * Term * list token) := 
   match xs with
@@ -444,6 +652,7 @@ Definition parseASP (xs : list token) (sm : symbol_map)
     end. 
 
 Compute parseASP (tokenize "hello 189 d_1").
+Compute parseASP (tokenize "kim p2 ker") map_empty.
 
 Definition parseBranch (xs : list token) (prevT : Term) (sm : symbol_map)
                 : optionE (symbol_map * (Term -> Term) * list token) :=
@@ -692,25 +901,74 @@ Proof.
   intros.
    *)
 
-Theorem prettyPrintParsable : forall (t : Term) p,
-  exists n sm, 
-    (forall v, mapD_get_key sm v = Some p) -> 
-    parsePhrase n (tokenize (termToCopString t sm)) map_empty =
-      SomeE (sm, t, nil).
+Compute parsePhrase 3 ["aTest"; "plcTest"; "tTest"] map_empty.
+Compute parsePhrase 3 (tokenize "kim p2 ker") map_empty.
+
+Axiom mapD_specific_parser : forall sm p str,
+  mapD_get_key sm p = Some str ->
+  p = (fold_left
+        (fun n d =>
+            10 * n + (nat_of_ascii d -
+                      nat_of_ascii "0"%char))
+        (list_of_string str)
+        0).
+
+Lemma tokenize_app : forall (t1 t2 str : string),
+  str = t1 ++ " " ++ t2 ->
+  (tokenize str) = List.app (tokenize t1) (tokenize t2).
 Proof.
-  intros.
+  intros t1.
+  induction t1; simpl; intros.
+  - rewrite H. reflexivity.
+  - assert ( str = (String a t1) ++ " " ++ t2). {
+    rewrite H. simpl. reflexivity.
+    }
+    destruct (tokenize t2) eqn:T2.
+    * 
+    rewrite H0. 
+    pose proof (rev_tokenize_app (String a t1) t2 str).
+    destruct (String a t1).
+    * simpl. reflexivity.
+    * simpl. 
+
+
+Theorem prettyPrintParsable : forall (t : Term) sm,
+  (* we have to force them to be parsable somehow *)
+  (forall (a : ASP_ID), a = "aTest") ->
+  (forall (t : TARG_ID), t = "tTest") ->
+  (forall (v : nat), mapD_get_key sm v = Some "123") ->  
+  (forall (l : list Arg), l = nil) -> 
+  exists n sm',
+    parsePhrase n (tokenize (termToCopString t sm)) map_empty =
+      SomeE (sm', t, nil).
+Proof.
+  intros t sm HA HT HMap Hargs.
   induction t.
   - simpl. induction a; simpl.
-    * exists 2. simpl. exists map_empty. reflexivity.
-    * exists 2. simpl. exists map_empty. reflexivity.
-    * destruct a. exists 2.
-      destruct p.
-      ** exists (map "0" to 0 in map_empty).
-         (* we cannot force a and t to not be space?! *)
-         admit.
-      ** (* invincible p value :( *) admit.
-    * exists 2. simpl. exists map_empty. reflexivity.
-    * exists 2. simpl. exists map_empty. reflexivity.
+    * exists 2, map_empty. reflexivity.
+    * exists 2, map_empty. reflexivity.
+    * exists 3.
+      exists (map "123" to 123 in map_empty).
+      destruct a.
+      assert (Ha' : a = "aTest"). { auto. }
+      rewrite Ha'.
+      rewrite HMap.
+      assert (Ht' : t = "tTest"). { auto. }
+      rewrite Ht'.
+      assert (Htok : tokenize ("aTest" ++ String " " ("123" ++ " tTest")) = ["aTest";"123"; "tTest"]). { auto. }
+      rewrite Htok. clear Ha'. clear Ht'. clear Htok.
+      simpl. 
+      specialize HMap with p as HP.
+      apply mapD_specific_parser in HP. simpl in HP. rewrite HP.
+      repeat f_equal. auto.
+    * exists 2, map_empty. reflexivity.
+    * exists 2, map_empty. reflexivity.
+  - destruct IHt as [n' [sm' H]].
+    simpl in *.
+    exists (n' + 2), (map "123" to 123 in sm').
+    simpl.
+    rewrite HMap.
+    
   - destruct IHt as [n' [sm' H]].
     simpl.
     exists (n' + 2). exists sm'. 
