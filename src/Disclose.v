@@ -21,11 +21,29 @@ Inductive discloses_to_remote: Ev -> (Plc*Evidence) -> Prop :=
 | at_disclose: forall i p q t e,
     discloses_to_remote (req i p q t e) (q,e).
 
+Definition get_aspid (ps:ASP_PARAMS): ASP_ID :=
+  match ps with
+  | asp_paramsC i _ _ _ => i
+  end.
+
+
 Inductive discloses_to_asp: Ev -> (Plc*ASP_ID*Evidence) -> Prop :=
-| asp_disclose: forall i p asp_id args tpl tid e,
+| asp_disclose: forall i p (asp_id:ASP_ID) args tpl tid e,
     discloses_to_asp
       (umeas i p (asp_paramsC asp_id args tpl tid) e)
       (p,asp_id,e).
+
+
+(*
+Inductive discloses_to_asp: Ev -> (Plc*ASP_ID*Evidence) -> Prop :=
+| asp_disclose: forall i p ps (asp_id:ASP_ID) e,
+    let asp_id := get_aspid ps in
+    ps <> sig_params ->
+    ps <> hsh_params ->
+    discloses_to_asp
+      (umeas i p ps e)
+      (p,asp_id,e).
+*)
 
 Definition splitEv_mt (sp:SP) (e:Evidence) : Evidence :=
   match sp with
@@ -408,10 +426,19 @@ Qed.
 
 Fixpoint term_discloses_to_asp (t:Term) (p:Plc) (e:Evidence) (r:(Plc*ASP_ID*Evidence)) : bool :=
   match t with
-  | asp (ASPC (asp_paramsC x _ _ _)) =>
+  | asp (ASPC sp _ (asp_paramsC x _ _ _)) =>
     let '(rp,ri,re) := r in
-    (Nat.eqb p rp) && (eqb_aspid x ri) && (eqb_evidence e re)
-    
+    match sp with
+    | NONE => (eqb_evidence re mt)
+    | ALL => 
+      (Nat.eqb p rp) && (eqb_aspid x ri) && (eqb_evidence e re)
+    end
+  | asp SIG =>
+    let '(rp,ri,re) := r in
+    (Nat.eqb p rp) && (eqb_aspid (get_aspid sig_params) ri) && (eqb_evidence e re)
+  | asp HSH =>
+    let '(rp,ri,re) := r in
+    (Nat.eqb p rp) && (eqb_aspid (get_aspid hsh_params) ri) && (eqb_evidence e re)
   | att q t' => (* (Nat.eqb q (fst r)) && (eqb_evidence e (snd r)) || *)
                (term_discloses_to_asp t' q e r)
   | lseq t1 t2 => (term_discloses_to_asp t1 p e r) ||
@@ -443,8 +470,10 @@ Proof.
     invc H2.
     invc H1.
     invc H2.
+
     invc H1.
     invc H2.
+
     rewrite PeanoNat.Nat.eqb_refl in H.
      assert (eqb_evidence e0 e0 = true).
     {
@@ -457,10 +486,56 @@ Proof.
     rewrite H0 in *; clear H0.
     invc H.
 
+    
+
+    invc H1.
+    simpl in *.
+    invc H2.
+
+    assert (eqb_evidence mt mt = true).
+    {
+      apply eqb_eq_evidence. auto. }
+    solve_by_inversion.
+
     invc H1.
     invc H2.
-    invc H1.
+
+    destruct sig_params.
+    ff.
+
+    rewrite PeanoNat.Nat.eqb_refl in H.
+     assert (eqb_evidence e0 e0 = true).
+    {
+      apply eqb_eq_evidence. auto. }
+    rewrite H0 in *; clear H0.
+    assert (eqb_aspid a a = true).
+    {
+      apply eqb_eq_aspid. auto.
+    }
+    rewrite H0 in *; clear H0.
+    invc H.
+
+     invc H1.
     invc H2.
+
+    destruct hsh_params.
+    ff.
+
+    rewrite PeanoNat.Nat.eqb_refl in H.
+     assert (eqb_evidence e0 e0 = true).
+    {
+      apply eqb_eq_evidence. auto. }
+    rewrite H0 in *; clear H0.
+    assert (eqb_aspid a a = true).
+    {
+      apply eqb_eq_aspid. auto.
+    }
+    rewrite H0 in *; clear H0.
+    invc H.
+
+    
+    
+      
 
   -
     invc H0.
@@ -717,8 +792,9 @@ Lemma filter_asp_disclosures_correct_cvm:
   forall rs p e ts ts' t annt r ev atp i i' bits bits' e' cvm_tr p',
   filter_asp_disclosures rs p e ts = ts' ->
   In t ts ->
-  
-  anno_parP atp t ->
+
+  term_to_coreP t atp ->
+  (*anno_parP atp t -> *)
   annoP_indexed annt t i i' ->
   copland_compileP atp
                    (mk_st (evc bits e) [] p i)
@@ -741,7 +817,7 @@ Proof.
       eapply anno_well_formed_r.
       eassumption.
     -
-      eapply cvm_refines_lts_event_ordering.
+      eapply cvm_refines_lts_events.
       +
         eassumption.
       +
