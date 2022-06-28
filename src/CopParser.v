@@ -10,7 +10,6 @@ From Coq Require Import Init.Nat.
 From Coq Require Import Arith.EqNat.
 From Coq Require Import Lists.List. Import ListNotations.
 
-Require Import Appraisal_Defs.
 Require Import Term_Defs.
 Require Import Anno_Term_Defs.
 Require Import Maps.
@@ -108,59 +107,6 @@ Fixpoint tokenize_helper (cls : chartype) (acc xs : list ascii)
     end
   end %char.
 
-Ltac magic_match :=
-  match goal with
-  | H : _ |- context [ exists c' l', tokenize_helper ?c ?l ?arem = tokenize_helper c' l' ?arem] =>
-    exists c, l; reflexivity
-  end.
-
-
-Lemma tokenize_helper_peel_one : forall (a : ascii) (arem : list ascii) c l l' lAcc,
-  ((l = [] -> l' = []) /\ (l <> [] -> l' = [rev l]) ->
-  (a = "["%char \/ a = "]"%char \/ a = "("%char \/ a = ")"%char) -> 
-  tokenize_helper c l (a :: arem) 
-    = l' ++ [a] :: (tokenize_helper other nil arem))
-  /\ 
-  (((classifyChar a = white -> lAcc = nil /\ (l = [] -> l' = []) /\ (l <> [] -> l' = [rev l])) 
-    /\ ((~ classifyChar a = white) -> lAcc = (a :: l) /\ l' = nil)) ->
-  (a <> "["%char /\ a <> "]"%char /\ a <> "("%char /\ a <> ")"%char ->
-  tokenize_helper c l (a :: arem) 
-    = l' ++ tokenize_helper (classifyChar a) lAcc arem)).
-Proof.
-
-  intros.
-  split; intros.
-  - destruct H as [H1  H2].
-    * destruct H0 as [H | [H | [H | H]]]; subst; simpl;
-      try (destruct l; [rewrite H1; auto |
-        rewrite H2; auto; intros C; discriminate ]).
-  - destruct (classifyChar a) eqn:A; destruct a eqn:A'; destruct b,b0,b1,b2,b3,b4,b5,b6; 
-    try discriminate; destruct H as [Hc1 Hc2]; 
-    (* manage alpha *)
-    try (assert (alpha <> white) by congruence;
-      apply Hc2 in H; destruct H; subst; reflexivity);
-    (* manage digits *)
-    try (assert (digit <> white) by congruence;
-      apply Hc2 in H; destruct H; subst; reflexivity);
-    (* manage other *)
-    try (assert (other <> white) by congruence;
-      apply Hc2 in H; destruct H; subst; reflexivity);
-    (* manage white *)
-    try (assert (white = white) by reflexivity; apply Hc1 in H;
-      destruct H; subst; simpl; destruct H1 as [Hl1 Hl2];
-      destruct l; auto; simpl; [
-      rewrite Hl1; auto |
-      rewrite Hl2; auto; intros C; discriminate]).
-    (* underscore *)
-    * assert (underscore <> white) by congruence;
-      apply Hc2 in H; destruct H; subst; reflexivity.
-    (* managing indep tokens *)
-    * destruct H0. exfalso. apply H. reflexivity.
-    * destruct H0. destruct H0. exfalso. apply H0. reflexivity.
-    * destruct H0. destruct H0. destruct H1. exfalso. apply H2. reflexivity.
-    * destruct H0. destruct H0. destruct H1. exfalso. apply H1. reflexivity.
-Qed.
-
 Lemma list_of_string_app : forall str1 str2,
   list_of_string (str1 ++ str2) = list_of_string str1 ++ list_of_string str2.
 Proof.
@@ -199,7 +145,6 @@ Proof.
   - destruct (list_of_string (String a t1)) eqn:AT.
     * inversion AT.
     * intros.
-      pose proof (tokenize_helper_peel_one a0 l c st).
       rewrite list_of_string_app. rewrite AT.
       inversion AT.
       subst.
@@ -217,99 +162,6 @@ Ltac createBase char :=
       split; [ intros C; discriminate |
       split; [ intros C; discriminate | 
       split; intros C; discriminate ] ].
-
-
-Lemma tokenize_helper_space' : forall (t1 t2 : string),
-  exists c l, tokenize_helper c l (list_of_string t1) 
-  ++ tokenize_helper white nil (list_of_string t2) 
-  = tokenize_helper c l (list_of_string (t1 ++ " " ++ t2)).
-Proof.
-  intros t1.
-  induction t1; intros.
-  - exists white, nil. reflexivity.
-  - destruct (list_of_string (String a t1)) eqn:T1.
-    * inversion T1.
-    * injection T1. intros. subst.
-      pose proof (tokenize_helper_peel_one a0 (list_of_string t1)) as Hsm.
-      pose proof (tokenize_helper_peel_one a0 (list_of_string (t1 ++ " " ++ t2))) as Hsm'.
-      destruct Hsm as [HsmI HsmO].
-      destruct Hsm' as [HsmI' HsmO'].
-      destruct a0; destruct b,b0,b1,b2,b3,b4,b5,b6.
-      ** createBase "255"%char.
-         apply HsmO in Ht as htemp.
-         destruct htemp as [c' [l' Hf]].
-         apply HsmO' in Ht as htemp.
-         destruct htemp as [c'' [l'' Hf']].
-         clear HsmO. clear HsmO'. clear HsmI. clear HsmI'. clear Ht.
-         specialize IHt1 with t2.
-         destruct IHt1 as [c [l IHt1]].
-         rewrite Hf.
-         rewrite list_of_string_app.
-         rewrite list_of_string_app.
-         rewrite T1. pose proof app_assoc.
-         rewrite list_of_string_app in Hf'.
-         rewrite list_of_string_app in Hf'.
-         assert (("255"%char :: list_of_string t1) ++
-          list_of_string " " ++ list_of_string t2 = "255"%char :: list_of_string t1 ++
-          list_of_string " " ++ list_of_string t2). {
-            auto.
-          }
-         rewrite H0.
-         rewrite Hf'.
-         rewrite list_of_string_cons.
-     apply H0 in H1.
-     destruct H1 as [c' [l' Hf]].
-     rewrite Hf.
-  intros. 
-  destruct (t1) eqn:T1.
-  - simpl. reflexivity.
-  - destruct (t2) eqn:T2.
-    * 
-
-Lemma tokenize_helper_space : forall (t1 t2 : string) c l,
-  tokenize_helper c l (list_of_string t1) 
-  ++ tokenize_helper white nil (list_of_string t2) 
-  = tokenize_helper c l (list_of_string (t1 ++ " " ++ t2)).
-Proof.
-  intros t1.
-  induction t1; intros.
-  - reflexivity.
-  - destruct (list_of_string (String a t1)) eqn:T1.
-    * inversion T1.
-    * injection T1. intros. subst.
-      pose proof (tokenize_helper_peel_one a0 (list_of_string t1)) as Hsm.
-      pose proof (tokenize_helper_peel_one a0 (list_of_string (t1 ++ " " ++ t2))) as Hsm'.
-      destruct Hsm as [HsmI HsmO].
-      destruct Hsm' as [HsmI' HsmO'].
-      destruct a0; destruct b,b0,b1,b2,b3,b4,b5,b6.
-      ** createBase "255"%char.
-         apply HsmO in Ht as htemp.
-         destruct htemp as [c' [l' Hf]].
-         apply HsmO' in Ht as htemp.
-         destruct htemp as [c'' [l'' Hf']].
-         clear HsmO. clear HsmO'. clear HsmI. clear HsmI'. clear Ht.
-         rewrite Hf.
-         rewrite list_of_string_app.
-         rewrite list_of_string_app.
-         rewrite T1. pose proof app_assoc.
-         rewrite list_of_string_app in Hf'.
-         rewrite list_of_string_app in Hf'.
-         assert (("255"%char :: list_of_string t1) ++
-          list_of_string " " ++ list_of_string t2 = "255"%char :: list_of_string t1 ++
-          list_of_string " " ++ list_of_string t2). {
-            auto.
-          }
-         rewrite H0.
-         rewrite Hf'.
-         rewrite list_of_string_cons.
-     apply H0 in H1.
-     destruct H1 as [c' [l' Hf]].
-     rewrite Hf.
-  intros. 
-  destruct (t1) eqn:T1.
-  - simpl. reflexivity.
-  - destruct (t2) eqn:T2.
-    * 
 
 Definition tokenize (s : string) : list string :=
   map string_of_list (tokenize_helper white [] (list_of_string s)).
@@ -370,13 +222,6 @@ Definition expect (t : token) : parser unit :=
      Copland Specific Parsing
      ------------------------
 ***)
-
-(* Adding a notation to match PARSEC from Haskell *)
-Notation "' p <- e1 <|> e2" 
-    := (match e1 with
-        | SomeE p => e1
-        | NoneE err => e2
-        end) (right associativity, p pattern, at level 60, e1 at next level).
 
 Definition isIdTail := fun x => orb (isAlphaNum x) (isUnderscore x).
 
@@ -883,101 +728,15 @@ with parseParens (fuel : nat) (xs : list token) (sm : symbol_map)
 .
 
 Definition testPhr := "@1 kim 2 ker -> ! -<- @2 (vc 2 sys) -> !".
-(* Definition testPhr2 := "@p1 kim p2 ker -> ! -<- ! -> @p2 (vc p2 sys) -> !".
-Compute tokenize testPhr. *)
-
 Definition transTestPhr := <{ @ 1 [< "kim" 2 "ker" > -> (!) -<- @ 2 [< "vc" 2 "sys"> -> !]]}>.
 
 Print transTestPhr.
 Compute parsePhrase 20 (tokenize "") map_empty.
 Compute parsePhrase 20 (tokenize testPhr) map_empty.
-
-(* 
-Lemma parser_app : forall (n1 n2 : nat) (t1 t2 : Term) (s1 s2 xs1 xs2 : list token),
-  parsePhrase n1 s1 = SomeE (t1, xs1) ->
-  parsePhrase n2 s2 = SomeE (t2, xs2) ->
-  exists n1, parsePhrase n1 (s1 ++ s2) = SomeE (t1, (List.app xs1 s2)).
-Proof.
-  intros.
-   *)
-
 Compute parsePhrase 3 ["aTest"; "plcTest"; "tTest"] map_empty.
 Compute parsePhrase 3 (tokenize "kim p2 ker") map_empty.
 
-Axiom mapD_specific_parser : forall sm p str,
-  mapD_get_key sm p = Some str ->
-  p = (fold_left
-        (fun n d =>
-            10 * n + (nat_of_ascii d -
-                      nat_of_ascii "0"%char))
-        (list_of_string str)
-        0).
-
-Lemma tokenize_app : forall (t1 t2 str : string),
-  str = t1 ++ " " ++ t2 ->
-  (tokenize str) = List.app (tokenize t1) (tokenize t2).
-Proof.
-  intros t1.
-  induction t1; simpl; intros.
-  - rewrite H. reflexivity.
-  - assert ( str = (String a t1) ++ " " ++ t2). {
-    rewrite H. simpl. reflexivity.
-    }
-    destruct (tokenize t2) eqn:T2.
-    * 
-    rewrite H0. 
-    pose proof (rev_tokenize_app (String a t1) t2 str).
-    destruct (String a t1).
-    * simpl. reflexivity.
-    * simpl. 
-
-
-Theorem prettyPrintParsable : forall (t : Term) sm,
-  (* we have to force them to be parsable somehow *)
-  (forall (a : ASP_ID), a = "aTest") ->
-  (forall (t : TARG_ID), t = "tTest") ->
-  (forall (v : nat), mapD_get_key sm v = Some "123") ->  
-  (forall (l : list Arg), l = nil) -> 
-  exists n sm',
-    parsePhrase n (tokenize (termToCopString t sm)) map_empty =
-      SomeE (sm', t, nil).
-Proof.
-  intros t sm HA HT HMap Hargs.
-  induction t.
-  - simpl. induction a; simpl.
-    * exists 2, map_empty. reflexivity.
-    * exists 2, map_empty. reflexivity.
-    * exists 3.
-      exists (map "123" to 123 in map_empty).
-      destruct a.
-      assert (Ha' : a = "aTest"). { auto. }
-      rewrite Ha'.
-      rewrite HMap.
-      assert (Ht' : t = "tTest"). { auto. }
-      rewrite Ht'.
-      assert (Htok : tokenize ("aTest" ++ String " " ("123" ++ " tTest")) = ["aTest";"123"; "tTest"]). { auto. }
-      rewrite Htok. clear Ha'. clear Ht'. clear Htok.
-      simpl. 
-      specialize HMap with p as HP.
-      apply mapD_specific_parser in HP. simpl in HP. rewrite HP.
-      repeat f_equal. auto.
-    * exists 2, map_empty. reflexivity.
-    * exists 2, map_empty. reflexivity.
-  - destruct IHt as [n' [sm' H]].
-    simpl in *.
-    exists (n' + 2), (map "123" to 123 in sm').
-    simpl.
-    rewrite HMap.
-    
-  - destruct IHt as [n' [sm' H]].
-    simpl.
-    exists (n' + 2). exists sm'. 
-    simpl. 
-    intros.
-    rewrite H0.
-    simpl.
-
-
+(* 
 Theorem parser_involutive: forall (t t1 : Term) sm rsm sm' rsm',
   exists n, parsePhrase n (tokenize (termToCopString t rsm')) sm rsm = SomeE (sm', rsm', t1, nil) ->
   termToCopString t = termToCopString t1.
@@ -1009,252 +768,7 @@ Proof.
     simpl. admit.
   - simpl. destruct s.
   
-Qed.
+Qed. *)
 
-
-
-
-(* If we have a        (Sign, Hash) *)
-Fixpoint checkSign_Hash (bb : (bool * bool)) (t : Term): (bool * bool) :=
-    match t with
-    | (asp a) =>
-        match a with
-        | SIG => let (s', h') := bb in if s' then (s', h') else (true, false)
-        | HSH => let (s', _) := bb in (s', true)
-        | _ => bb
-        end
-    | (att plc t)            => checkSign_Hash bb t
-    | (lseq f sec)            => match (checkSign_Hash bb f) with
-                                | (sf,hf) => if sf
-                                                then (if hf 
-                                                    then (true,true)
-                                                    else (checkSign_Hash (sf,hf) sec))
-                                                else (checkSign_Hash (sf,hf) sec)
-                                end
-    | (bseq (sp1,sp2) f sec) => match sp1 with
-                                | ALL => match sp2 with
-                                        | ALL => (* Check both*)
-                                            match (checkSign_Hash bb f) with
-                                            | (true, true)  => (true,true)
-                                            | (sf,hf)       => (checkSign_Hash (sf,hf) sec)
-                                            end
-                                        | NONE => (* Check only sp1 with above, reset below*)
-                                            match (checkSign_Hash bb f) with
-                                            | (true, true)  => (true,true)
-                                            | (sf,hf)    => (checkSign_Hash (false,false) sec)
-                                            end
-                                        end
-                                | NONE => match sp2 with
-                                        | ALL => (* Check only sp2 with above, reset below*)
-                                            match (checkSign_Hash (false,false) f) with
-                                            | (true, true)  => (true,true)
-                                            | (sf,hf)       => (checkSign_Hash bb sec)
-                                            end
-                                        | NONE => (* reset for both*)
-                                            match (checkSign_Hash (false,false) f) with
-                                            | (true, true)  => (true,true)
-                                            | (sf,hf)       => (checkSign_Hash (false,false) sec)
-                                            end
-                                        end
-                                end
-    | (bpar (sp1,sp2) f sec) => match sp1 with
-                                | ALL => match sp2 with
-                                        | ALL => (* Check both*)
-                                            match (checkSign_Hash bb f) with
-                                            | (true, true)  => (true,true)
-                                            | (sf,hf)       => (checkSign_Hash (sf,hf) sec)
-                                            end
-                                        | NONE => (* Check only sp1 with above, reset below*)
-                                            match (checkSign_Hash bb f) with
-                                            | (true, true)  => (true,true)
-                                            | (sf,hf)       => (checkSign_Hash (false,false) sec)
-                                            end
-                                        end
-                                | NONE => match sp2 with
-                                        | ALL => (* Check only sp2 with above, reset below*)
-                                            match (checkSign_Hash (false,false) f) with
-                                            | (true, true)  => (true,true)
-                                            | (sf,hf)       => (checkSign_Hash bb sec)
-                                            end
-                                        | NONE => (* reset for both*)
-                                            match (checkSign_Hash (false,false) f) with
-                                            | (true, true)  => (true,true)
-                                            | (sf,hf)       => (checkSign_Hash (false,false) sec)
-                                            end
-                                        end
-                                end 
-    end.
-
-Example csh_test1 : checkSign_Hash (false,false) (lseq (asp SIG) (asp HSH)) = (true,true).
-reflexivity. Qed.
-
-Example csh_test2 : 
-    checkSign_Hash (false,false) (lseq (asp SIG) (lseq (asp CPY) (asp HSH)))
-    = (true,true).
-simpl.
-reflexivity. Qed.
-
-Definition sign_hash_TypeCheck (t : Term) : @optionE Term :=
-    match (checkSign_Hash (false,false) t) with
-    | (true, true)  => NoneE "Failed typecheck"
-    | (_,_)         => SomeE t
-    end.
-
-Example shTC1 : sign_hash_TypeCheck (lseq (asp SIG) (asp HSH)) = NoneE "Failed typecheck".
-Proof. reflexivity. Qed.
-
-Example shTC2 : sign_hash_TypeCheck (lseq (asp HSH) (asp SIG)) = SomeE (lseq (asp HSH) (asp SIG)).
-reflexivity. Qed.
-
-Lemma none_not_some : forall (t : Term),
-    @NoneE Term "" = SomeE t -> False.
-Proof.
-    intros. discriminate.
-Qed.
-
-Lemma checkSH_lseq : forall (t1 t2 : Term) b0 b1,
-    ((checkSign_Hash (false,false) t1) = (b0,b1) -> (b0 = true /\ b1 = true) -> (checkSign_Hash (false, false) (lseq t1 t2) = (true,true))) 
-    /\
-    ((checkSign_Hash (false,false) t1) = (b0,b1) -> (b0 <> true \/ b1 <> true) -> (checkSign_Hash (false, false) (lseq t1 t2) = (checkSign_Hash (b0, b1) t2))).
-Proof.
-    split; intros.
-    * destruct H0; subst. simpl. rewrite H. reflexivity.
-    * destruct H0.
-        ** simpl. apply Bool.not_true_is_false in H0. subst. rewrite H. reflexivity.
-        ** simpl. apply Bool.not_true_is_false in H0. 
-            subst. rewrite H.
-            destruct b0; reflexivity.
-Qed.
-
-Lemma T_impl_P : forall (P : Prop),
-    (True -> P) -> P.
-Proof.
-    intros.
-    apply H. apply I.
-Qed.
-
-Lemma att_injective_SH : forall p t,
-    sign_hash_TypeCheck (att p t) = SomeE (att p t) ->
-    sign_hash_TypeCheck t = SomeE t.
-Proof.
-    unfold sign_hash_TypeCheck.
-    intros.
-    induction t; simpl in *.
-    - induction a; reflexivity.
-    - destruct (checkSign_Hash (false,false) t).
-        destruct b,b0; simpl in *; try discriminate; try reflexivity.
-    - destruct (checkSign_Hash (false,false) t1) eqn:T1.
-        destruct (checkSign_Hash (false,false) t2) eqn:T2.
-        destruct b,b0,b1,b2; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (true,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (true,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (true,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (true,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-
-        * destruct (checkSign_Hash (false,true) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (false,true) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (false,true) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (false,true) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        
-        * destruct (checkSign_Hash (false,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (false,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (false,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (false,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-    - destruct (checkSign_Hash (false,false) t1) eqn:T1.
-        destruct (checkSign_Hash (false,false) t2) eqn:T2.
-        destruct b,b0,b1,b2; simpl in *; destruct s as [s1 s2]; destruct s1, s2; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (true,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (true,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (true,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (true,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-
-        * destruct (checkSign_Hash (false,true) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (false,true) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (false,true) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (false,true) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        
-        * destruct (checkSign_Hash (false,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (false,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (false,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (false,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-    - destruct (checkSign_Hash (false,false) t1) eqn:T1.
-        destruct (checkSign_Hash (false,false) t2) eqn:T2.
-        destruct b,b0,b1,b2; simpl in *; destruct s as [s1 s2]; destruct s1, s2; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (true,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (true,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (true,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (true,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-
-        * destruct (checkSign_Hash (false,true) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (false,true) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (false,true) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (false,true) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        
-        * destruct (checkSign_Hash (false,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (false,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (false,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-        * destruct (checkSign_Hash (false,false) t2) eqn:T2'.
-            destruct b,b0; simpl in *; try discriminate; try reflexivity.
-Qed.
-
-Lemma termsub_refl : forall t t',
-    t = t' ->
-    term_sub t t' <-> term_sub t' t.
-Proof.
-    split; intros; subst; assumption.
-Qed. 
-
-Lemma att_term_sub_bijection : forall t t' p,
-    (att p t) <> t' ->
-    term_sub t' t <-> term_sub t' (att p t).
-Proof.
-    split; intros.
-    - apply aatt_sub_annt. apply H0.
-    - generalize dependent t. induction t'; intros.
-        * qinv H0. apply H3.
-        * qinv H0.
-            ** (* very obviously false, (X ..) cannot be sub of X *)
-                (* proving it different story *)
-                exfalso. apply H. reflexivity.
-            ** apply H3.
-        * qinv H0. apply H3.
-        * qinv H0. apply H3.
-        * qinv H0. apply H3.
-Qed.
 
 End CopParser.
