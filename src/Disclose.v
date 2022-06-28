@@ -69,6 +69,8 @@ Proof.
     invc H2.
     invc H1.
     invc H2.
+    invc H2.
+    invc H1.
   -
     invc H0.
     destruct_conjs.
@@ -356,7 +358,8 @@ Lemma filter_remote_disclosures_correct_cvm:
   filter_remote_disclosures rs p e ts = ts' ->
   In t ts ->
   
-  anno_parP atp t ->
+  (* anno_parP atp t -> *)
+  term_to_coreP t atp ->
   annoP_indexed annt t i i' ->
   copland_compileP atp
                    (mk_st (evc bits e) [] p i)
@@ -379,7 +382,7 @@ Proof.
       eapply anno_well_formed_r.
       eassumption.
     -
-      eapply cvm_refines_lts_event_ordering.
+      eapply cvm_refines_lts_events.
       +
         eassumption.
       +
@@ -436,6 +439,8 @@ Proof.
     destruct_conjs.
     destruct a; ff.
     
+    invc H1.
+    invc H2.
     invc H1.
     invc H2.
     invc H1.

@@ -56,16 +56,18 @@ Fixpoint encodeEv (e:EvidenceC) : RawEv :=
   match e with
   | mtc => []
   | nnc _ bs => [bs]
+                 (*
   | uuc _  _ bs e' =>
+    bs :: (encodeEv e') *)
+  | ggc _ _ bs e' =>
     bs :: (encodeEv e')
-  | ggc _ bs e' =>
-    bs :: (encodeEv e')
-  | hhc _ bs _ =>
+  | hhc _ _ bs _ =>
     [bs]
   | ssc e1 e2 =>
     (encodeEv e1) ++ (encodeEv e2)
+                  (*
   | ppc e1 e2 =>
-    (encodeEv e1) ++ (encodeEv e2)
+    (encodeEv e1) ++ (encodeEv e2) *)
   end.
 
 Fixpoint reconstruct_ev' (ls:RawEv) (et:Evidence) : Opt EvidenceC :=
@@ -74,19 +76,20 @@ Fixpoint reconstruct_ev' (ls:RawEv) (et:Evidence) : Opt EvidenceC :=
     match ls with
     | [] => Some mtc
     | _ => None
-    end 
+    end
+      (*
   | uu params p et' =>
     '(bs, ls') <- peel_bs ls ;;
     x <- reconstruct_ev' ls' et' ;;
-    Some (uuc params p bs x)
-  | gg p et' =>
+    Some (uuc params p bs x) *)
+  | gg p ps et' =>
     '(bs, ls') <- peel_bs ls ;;
     x <- reconstruct_ev' ls' et' ;;
-    Some (ggc p bs x)
-  | hh p et' =>
+    Some (ggc p ps bs x)
+  | hh p ps et' =>
     '(bs, ls') <- peel_bs ls ;;
      match ls' with
-    | [] => Some (hhc p bs et')
+    | [] => Some (hhc p ps bs et')
     | _ => None
     end 
    
@@ -101,11 +104,13 @@ Fixpoint reconstruct_ev' (ls:RawEv) (et:Evidence) : Opt EvidenceC :=
     e1 <- reconstruct_ev' (firstn (et_size et1) ls) et1 ;;
     e2 <- reconstruct_ev' (skipn (et_size et1) ls) et2 ;;
     Some (ssc e1 e2)
+  end.
+         (*
   | pp et1 et2 =>
     e1 <- reconstruct_ev' (firstn (et_size et1) ls) et1 ;;
     e2 <- reconstruct_ev' (skipn (et_size et1) ls) et2 ;;
     Some (ppc e1 e2)  
-  end.
+  end. *)
 
 Definition reconstruct_ev (e:EvC) : Opt EvidenceC :=
   match e with
@@ -184,6 +189,17 @@ Proof.
   jkjke.
 Defined.
  *)
+
+Lemma term_to_coreP_redo: forall t t',
+    term_to_core_term t = t' ->
+    term_to_coreP t t'.
+Proof.
+  intros.
+  econstructor.
+  eauto.
+Defined.
+
+(*
 Lemma anno_parP_redo: forall t pt loc loc',
     anno_par_list' t loc = Some (loc', pt) ->
     anno_parP pt t.
@@ -213,6 +229,13 @@ Proof.
   jkjke.
 Defined.
 
+*)
+Ltac do_term_to_core_redo :=
+  match goal with
+  | [H: term_to_core_term ?t = ?t'
+     |- _ ] =>
+    eapply term_to_coreP_redo in H
+  end.
 
 (*
 
@@ -230,6 +253,9 @@ Ltac do_annopar_loc_redo :=
     eapply anno_parPloc_redo in H
   end.
  *)
+
+
+(*
 
 Ltac do_annopar_redo :=
   match goal with
@@ -262,6 +288,18 @@ Ltac inv_annoparPloc :=
     inversion H; subst
   end;
   destruct_conjs.
+ *)
+
+Ltac inv_term_coreP :=
+  match goal with
+  | [H: term_to_coreP _ _ (* ?t (?c _) *)
+     |- _ ] =>
+    inversion H; subst
+  end.
+
+
+
+
 
 Lemma annoP_redo: forall t annt n n',
     anno t n = (n', annt) ->
@@ -313,7 +351,7 @@ Ltac inv_annoP_indexed :=
   destruct_conjs.
 
 Inductive copland_compileP :
-  AnnoTermPar -> cvm_st -> (option unit) -> cvm_st ->  Prop :=
+  Core_Term -> cvm_st -> (option unit) -> cvm_st ->  Prop :=
 | ccp: forall t st st' res,
     copland_compile t st = (res, st') ->
     copland_compileP t st res st'.
@@ -346,6 +384,12 @@ Proof.
 Defined.
 
 Ltac wrap_annopar :=
+  inv_term_coreP;
+  dd;
+  repeat do_term_to_core_redo.
+
+(*
+Ltac wrap_annopar :=
   inv_annoparP;
   dd;
   repeat do_annopar_redo.
@@ -354,6 +398,7 @@ Ltac wrap_annoparloc :=
   inv_annoparPloc;
   dd;
   repeat do_annopar_loc_redo.
+*)
 
 Ltac wrap_anno :=
   inv_annoP;
@@ -377,7 +422,8 @@ Ltac wrap_ccp_anno :=
   
   try rewrite <- ccp_iff_cc in *;
   try wrap_annopar;
-  try wrap_annoparloc;
+  (*
+  try wrap_annoparloc; *)
   try wrap_anno;
   try wrap_anno_indexed;
   repeat do_pl_immut;

@@ -137,17 +137,17 @@ Inductive events: AnnoTerm -> Plc -> Evidence -> Ev -> Prop :=
       fst r = i ->
       events (aasp r CPY) p e (copy i p)
 | evtsusm:
-    forall i r p e ps,
+    forall i r p e sp fwd ps,
       fst r = i ->
-      events (aasp r (ASPC ps)) p e (umeas i p ps e)
+      events (aasp r (ASPC sp fwd ps)) p e (umeas i p ps (sp_ev sp e))
 | evtssig:
     forall r i p e,
       fst r = i ->
-      events (aasp r SIG) p e (sign i p e)
+      events (aasp r SIG) p e (umeas i p sig_params e) (* (sign i p e) *)
 | evtshsh:
     forall r i p e,
       fst r = i ->
-      events (aasp r HSH) p e (hash i p e)
+      events (aasp r HSH) p e (umeas i p hsh_params e) (* (hash i p e) *)
 | evtsattreq:
     forall r q t i p e,
       fst r = i ->

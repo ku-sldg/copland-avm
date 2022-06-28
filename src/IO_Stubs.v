@@ -21,13 +21,13 @@ Admitted.
 Definition do_hash' (bs:BS) (p:Plc) : IO BS :=
   ret (do_hash bs p).
 
-Definition do_start_par_thread (loc:Loc) (t:Term) (e:RawEv) : IO unit :=
+Definition do_start_par_thread (loc:Loc) (t:Core_Term) (e:RawEv) : IO unit :=
   ret tt.
 
-Definition parallel_vm_thread (l:Loc) (t:Term) (p:Plc) (e:EvC) : EvC.
+Definition parallel_vm_thread (l:Loc) (t:Core_Term) (p:Plc) (e:EvC) : EvC.
 Admitted.
 
-Definition do_wait_par_thread (loc:Loc) (t:Term) (p:Plc) (e:EvC) : IO EvC :=
+Definition do_wait_par_thread (loc:Loc) (t:Core_Term) (p:Plc) (e:EvC) : IO EvC :=
   ret (parallel_vm_thread loc t p e).
 
 

@@ -91,13 +91,35 @@ Ltac do_evin :=
 (** The events in the event system correspond to the events associated
     with a term, a place, and some evidence. *)
 
+Locate dest_range.
 Lemma evsys_events:
   forall t p e ev,
     well_formed_r_annt t ->
     ev_in ev (ev_sys t p e) <-> events t p e ev.
 Proof.
   split; revert p; revert e; induction t; intros; inv_wfr; simpl in *;
-    repeat expand_let_pairs; simpl in *;
+    repeat expand_let_pairs; dest_range'; simpl in *;
+      try (destruct a; auto; do_evin; auto);
+
+  (*
+  do_evin.
+  invc H0.
+  destruct s.
+  assert (e = sp_ev ALL e).
+  {
+    ff.
+  }
+  rewrite H0.
+  eauto.
+  
+  
+
+  destruct a. do_evin. auto.
+*)
+
+
+
+  
       try (destruct a; try (destruct a); auto; do_evin; auto; tauto);
 
       try (
