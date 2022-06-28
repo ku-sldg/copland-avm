@@ -4,27 +4,211 @@ Experiments in stating "disclosure" properties of the CVM.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term_Defs Anno_Term_Defs Term LTS Cvm_Impl Cvm_St Trace Main.
+Require Import Term_Defs Anno_Term_Defs Term LTS Cvm_Impl Cvm_St Trace Main ConcreteEvidence.
 
 Require Import CvmSemantics Appraisal_Evidence Eqb_Evidence Auto.
 
 Require Import StructTactics.
 
-Require Import Coq.Program.Tactics.
+Require Import Coq.Program.Tactics PeanoNat.
 
 Require Import List.
 Import ListNotations.
 
 Set Nested Proofs Allowed.
 
+
+
+Fixpoint evsubt_bool (e:Evidence) (e':Evidence): bool :=
+  match (eqb_evidence e e') with
+  | true => true
+  | false =>
+    match e' with
+    | gg _ _ et' => evsubt_bool e et'
+    | hh _ _ et' => evsubt_bool e et'
+    | ss e1 e2 => evsubt_bool e e1 || evsubt_bool e e2
+    | _ => false
+    end
+  end.
+
+Lemma eqb_asp_params_refl: forall a,
+    eqb_asp_params a a = true.
+Proof.
+Admitted.
+
+Lemma eqb_evidence_refl: forall e,
+    eqb_evidence e e = true.
+Proof.
+Admitted.
+
+Lemma evsubt_prop_bool: forall e e',
+    EvSubT e e' -> evsubt_bool e e' = true.
+Proof.
+  intros.
+  generalizeEverythingElse e'.
+  induction e'; intros;
+    try (invc H; ff; try tauto; rewrite PeanoNat.Nat.eqb_refl; tauto).
+  - (* gg case *)
+    invc H.
+    +
+    ff.
+    rewrite PeanoNat.Nat.eqb_refl.
+    rewrite eqb_asp_params_refl.
+    rewrite eqb_evidence_refl.
+    ff.
+    +
+      ff.
+      assert (evsubt_bool e e' = true) by eauto.
+      rewrite H.
+      ff.
+  - (* hh case *)
+    invc H.
+    +
+    ff.
+    rewrite PeanoNat.Nat.eqb_refl.
+    rewrite eqb_asp_params_refl.
+    rewrite eqb_evidence_refl.
+    ff.
+    +
+      ff.
+      assert (evsubt_bool e e' = true) by eauto.
+      rewrite H.
+      ff.
+  - (* ss case *)
+    ff.
+    invc H.
+    +
+      rewrite eqb_evidence_refl.
+      ff.
+    +
+      erewrite IHe'1.
+      ff.
+      eassumption.
+    +
+      erewrite IHe'2.
+      ff.
+      Search orb.
+      rewrite Bool.orb_true_r.
+      ff.
+      eassumption.
+Qed.
+
+
+Lemma evsubt_bool_prop: forall e e',
+    evsubt_bool e e' = true -> EvSubT e e'.
+Proof.
+  intros.
+  generalizeEverythingElse e'.
+  induction e'; intros.
+  -
+    ff.
+    destruct e; ff.
+  -
+    ff.
+    destruct e; ff.
+    Search (_ -> _ = _).
+    Search PeanoNat.Nat.eqb_refl.
+    rewrite EqNat.beq_nat_true with (n:=n0) (m:=n).
+    ff.
+    eassumption.
+  -
+    ff.
+    destruct e; ff.
+    rewrite Bool.andb_true_iff in Heqb.
+    rewrite Bool.andb_true_iff in Heqb.
+    destruct_conjs.
+    rewrite eqb_asp_params_true_iff in *.
+    Check  EqNat.beq_nat_true.
+    apply EqNat.beq_nat_true in H0.
+    apply eqb_eq_evidence in H1.
+    subst.
+   
+
+    eapply evsub_reflT.
+  -
+    destruct e; ff.
+    Search (if _ then _ else _).
+    (*
+Bool.orb_lazy_alt: forall a b : bool, (a || b)%bool = (if a then true else b)
+     *)
+    assert (
+        (orb ((p0 =? p) && eqb_asp_params a0 a && eqb_evidence e e')%bool
+            (evsubt_bool (hh p0 a0 e) e')) =
+    (if ((p0 =? p) && eqb_asp_params a0 a && eqb_evidence e e')%bool
+       then true
+     else evsubt_bool (hh p0 a0 e) e')).
+    {
+      apply Bool.orb_lazy_alt.
+    }
+    rewrite H in H0.
+    Search orb.
+    apply Bool.orb_prop in H0.
+    invc H0.
+     rewrite Bool.andb_true_iff in H1.
+    rewrite Bool.andb_true_iff in H1.
+    destruct_conjs.
+    rewrite eqb_asp_params_true_iff in *.
+    Check  EqNat.beq_nat_true.
+    apply EqNat.beq_nat_true in H0.
+    apply eqb_eq_evidence in H1.
+    subst.
+   
+
+    eapply evsub_reflT.
+    eauto.
+  - (* ss case *)
+    ff.
+
+     assert (
+        (orb (eqb_evidence e (ss e'1 e'2))%bool
+            (evsubt_bool e e'1 || evsubt_bool e e'2)) =
+    (if eqb_evidence e (ss e'1 e'2)
+       then true
+     else (evsubt_bool e e'1 || evsubt_bool e e'2)%bool)).
+     {
+       apply Bool.orb_lazy_alt.
+     }
+     rewrite H in H0.
+
+     apply Bool.orb_prop in H0.
+     invc H0.
+    +
+      ff.
+      apply eqb_eq_evidence in Heqb.
+      ff.
+    +
+      apply Bool.orb_prop in H1.
+      invc H1.
+      ++
+        ff.
+      ++
+        ff.
+Qed.
+
+Lemma evsubt_bool_prop_iff: forall e e',
+    EvSubT e e' <-> evsubt_bool e e' = true.
+Proof.
+  intros; split.
+  apply evsubt_prop_bool.
+  apply evsubt_bool_prop.
+Qed.
+  
+
+
+
+
+(* A relation specifying events (Ev) that disclose evidence to other places.
+   Technically, we are considering "Evidence Types" (Evidence), but the correspondence of 
+   those types to concrete binary evidence values is maintained by the CVM.
+ 
+  Example:  
+  discloses_to_remote ev (q,et) says that event ev discloses evidence of type et to place q.
+
 Inductive discloses_to_remote: Ev -> (Plc*Evidence) -> Prop :=
 | at_disclose: forall i p q t e,
     discloses_to_remote (req i p q t e) (q,e).
 
-Definition get_aspid (ps:ASP_PARAMS): ASP_ID :=
-  match ps with
-  | asp_paramsC i _ _ _ => i
-  end.
+
 
 
 Inductive discloses_to_asp: Ev -> (Plc*ASP_ID*Evidence) -> Prop :=
@@ -423,6 +607,11 @@ Qed.
 
 (* Start ASP disclosures definitions and facts *)
 
+
+Definition get_aspid (ps:ASP_PARAMS): ASP_ID :=
+  match ps with
+  | asp_paramsC i _ _ _ => i
+  end.
 
 Fixpoint term_discloses_to_asp (t:Term) (p:Plc) (e:Evidence) (r:(Plc*ASP_ID*Evidence)) : bool :=
   match t with
