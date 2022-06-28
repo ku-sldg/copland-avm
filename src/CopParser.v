@@ -346,7 +346,7 @@ Fixpoint termToCopString (t : Term) (sm : symbol_map) : string :=
     ++ "~" ++ spToStr s2 ++ " " ++ termToCopString t2 sm
   end.
 
-Example termToCopString1 : termToCopString <{ @ 1 [ < "vc" 2 "sys" > ]}> (map "1" to 1 in (map "2" to 2 in map_empty))= "@1 vc 2 sys".
+Example termToCopString1 : termToCopString <{ @ 1 [ << "vc" 2 "sys" >> ]}> (map "1" to 1 in (map "2" to 2 in map_empty))= "@1 vc 2 sys".
 reflexivity. Qed.
 
 Definition parserSoundASP 
@@ -728,7 +728,7 @@ with parseParens (fuel : nat) (xs : list token) (sm : symbol_map)
 .
 
 Definition testPhr := "@1 kim 2 ker -> ! -<- @2 (vc 2 sys) -> !".
-Definition transTestPhr := <{ @ 1 [< "kim" 2 "ker" > -> (!) -<- @ 2 [< "vc" 2 "sys"> -> !]]}>.
+Definition transTestPhr := <{ @ 1 [<< "kim" 2 "ker" >> -> (!) -<- @ 2 [<< "vc" 2 "sys">> -> !]]}>.
 
 Print transTestPhr.
 Compute parsePhrase 20 (tokenize "") map_empty.
