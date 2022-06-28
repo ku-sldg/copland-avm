@@ -12,3 +12,4 @@ coq.mk.conf
 src/html/*
 src/*.hs
 src/.vscode
+src/_CoqProject.local
