@@ -78,24 +78,30 @@ Inductive ASP_PARAMS: Set :=
 
 Inductive Evidence: Set :=
 | mt: Evidence
-| uu: (*ASP_PARAMS ->*) ASP_PARAMS ->
-      (*Evidence ->*) Plc -> Evidence -> Evidence
-| gg: Plc -> Evidence -> Evidence
-| hh: Plc -> Evidence -> Evidence
 | nn: N_ID -> Evidence
-| ss: Evidence -> Evidence -> Evidence
-| pp: Evidence -> Evidence -> Evidence.
-
-Inductive ASP: Set :=
-| NULL: ASP
-| CPY: ASP
-| ASPC: ASP_PARAMS -> ASP
-| SIG: ASP
-| HSH: ASP.
+(*
+| uu: (*ASP_PARAMS ->*) ASP_PARAMS ->
+      (*Evidence ->*) Plc -> Evidence -> Evidence *)
+| gg: Plc -> ASP_PARAMS -> Evidence -> Evidence
+| hh: Plc -> ASP_PARAMS -> Evidence -> Evidence
+| ss: Evidence -> Evidence -> Evidence.
+(*
+| pp: Evidence -> Evidence -> Evidence. *)
 
 Inductive SP: Set :=
 | ALL
 | NONE.
+
+Inductive FWD: Set :=
+| COMP
+| EXTD.
+
+Inductive ASP: Set :=
+| NULL: ASP
+| CPY: ASP
+| ASPC: SP -> FWD -> ASP_PARAMS -> ASP
+| SIG: ASP
+| HSH: ASP.
 
 Definition Split: Set := (SP * SP).
 
@@ -133,19 +139,98 @@ Notation "'<<' x y z '>>'" := (asp (ASPC (asp_paramsC x nil y z)))
 (* @ plc phrase *)
 Notation "@ p [ ph ]" := (att p ph) (in custom copland_entry at level 50).
 
+Inductive ASP_Core: Set :=
+| NULLC: ASP_Core
+| CLEAR: ASP_Core
+| CPYC: ASP_Core
+| ASPCC: FWD -> ASP_PARAMS -> ASP_Core.
+
+Definition Loc: Set := nat.
+Definition Locs: Set := list Loc.
+
+Inductive Core_Term: Set :=
+| aspc: ASP_Core -> Core_Term
+| attc: Plc -> Term -> Core_Term
+| lseqc: Core_Term -> Core_Term -> Core_Term
+| bseqc: Core_Term -> Core_Term -> Core_Term
+| bparc: Loc -> Core_Term -> Core_Term -> Core_Term.
+
+Definition sig_params : ASP_PARAMS.
+Admitted.
+
+Definition hsh_params : ASP_PARAMS.
+Admitted.
+
+Definition asp_term_to_core (a:ASP) : Core_Term :=
+  match a with
+  | NULL => aspc NULLC
+  | CPY => aspc CPYC
+  | ASPC sp fwd params =>
+    match sp with
+    | NONE => lseqc (aspc CLEAR) (aspc (ASPCC fwd params))
+    | ALL => (aspc (ASPCC fwd params))
+    end
+                   
+  | SIG => aspc (ASPCC EXTD sig_params)
+  | HSH => aspc (ASPCC COMP hsh_params)
+  end.
+
+Fixpoint term_to_core_term (t:Term) : Core_Term :=
+  match t with
+  | asp a => (asp_term_to_core a)
+  | att q t' => attc q t'
+
+  | lseq t1 t2 => lseqc (term_to_core_term t1) (term_to_core_term t2)
+
+  | bseq (ALL,ALL) t1 t2 =>
+    bseqc
+      (term_to_core_term t1) (term_to_core_term t2)  
+  | bseq (ALL,NONE) t1 t2 =>
+    bseqc
+      (term_to_core_term t1)
+      (lseqc (aspc CLEAR) (term_to_core_term t2))
+  | bseq (NONE,ALL) t1 t2 =>
+    bseqc
+      (lseqc (aspc CLEAR) (term_to_core_term t1))
+      (term_to_core_term t2)
+  | bseq (NONE,NONE) t1 t2 =>
+    bseqc
+      (lseqc (aspc CLEAR) (term_to_core_term t1))
+      (lseqc (aspc CLEAR) (term_to_core_term t2))
+          
+  | bpar (ALL,ALL) t1 t2 =>
+    bparc 0 (term_to_core_term t1) (term_to_core_term t2)     
+  | bpar (ALL,NONE) t1 t2 =>
+    bparc 0
+      (term_to_core_term t1)
+      (lseqc (aspc CLEAR) (term_to_core_term t2))
+  | bpar (NONE,ALL) t1 t2 =>
+    bparc 0
+      (lseqc (aspc CLEAR) (term_to_core_term t1))
+      (term_to_core_term t2)
+  | bpar (NONE,NONE) t1 t2 =>
+    bparc 0
+      (lseqc (aspc CLEAR) (term_to_core_term t1))
+      (lseqc (aspc CLEAR) (term_to_core_term t2))
+  end.
 
 
+
+Inductive term_to_coreP: Term -> Core_Term -> Prop :=
+| toCoreP: forall t t',
+    term_to_core_term t = t' ->
+    term_to_coreP t t'.
 
 
 Fixpoint et_size (e:Evidence): nat :=
   match e with
   | mt => 0
-  | uu _ _ e' => 1 + (et_size e')
-  | gg _ e' => 1 + (et_size e')
-  | hh _ _ => 1
+  (*| uu _ _ e' => 1 + (et_size e') *)
+  | gg _ _ e' => 1 + (et_size e')
+  | hh _ _ _ => 1
   | nn _ => 1
   | ss e1 e2 => (et_size e1) + (et_size e2)
-  | pp e1 e2 => (et_size e1) + (et_size e2)
+  (*| pp e1 e2 => (et_size e1) + (et_size e2) *)
   end.
 
 Fixpoint thread_count (t:Term) : nat :=
@@ -208,16 +293,41 @@ Definition splitEv_T_r (sp:Split) (e:Evidence) : Evidence :=
 (*
 Inductive ASP_PARAMS: Set :=
 | asp_paramsC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> Evidence -> ASP_PARAMS.
+ *)
+
+Print ASP.
+(*
+Inductive ASP : Set :=
+    NULL : ASP | CPY : ASP | ASPC : SP -> FWD -> ASP_PARAMS -> ASP | SIG : ASP | HSH : ASP.
 *)
+Print Evidence.
+(*
+Inductive Evidence : Set :=
+    mt : Evidence
+  | nn : N_ID -> Evidence
+  | gg : Plc -> ASP_PARAMS -> Evidence -> Evidence
+  | hh : Plc -> ASP_PARAMS -> Evidence -> Evidence
+  | ss : Evidence -> Evidence -> Evidence.
+ *)
+
+Definition sp_ev (sp:SP) (e:Evidence) : Evidence :=
+  match sp with
+  | ALL => e
+  | NONE => mt
+  end.
+    
 
 Definition eval_asp t p e :=
   match t with
   | NULL => mt
   | CPY => e 
-  | ASPC params (*(asp_paramsC i args tpl tid tet)*) =>
-      uu (*i args tpl tid tet*) params p e
-  | SIG => gg p e
-  | HSH => hh p e
+  | ASPC sp fwd params (*(asp_paramsC i args tpl tid tet)*) =>
+    match fwd with
+    | COMP => hh p params (sp_ev sp e)
+    | EXTD => gg p params (sp_ev sp e)
+    end
+  | SIG => gg p sig_params e
+  | HSH => hh p hsh_params e
   end.
 
 (** The evidence associated with a term, a place, and some initial evidence. *)
@@ -229,7 +339,7 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
   | lseq t1 t2 => eval t2 p (eval t1 p e)
   | bseq s t1 t2 => ss (eval t1 p (splitEv_T_l s e))
                       (eval t2 p (splitEv_T_r s e))
-  | bpar s t1 t2 => pp (eval t1 p (splitEv_T_l s e))
+  | bpar s t1 t2 => ss (eval t1 p (splitEv_T_l s e))
                       (eval t2 p (splitEv_T_r s e))
   end.
 
@@ -243,21 +353,45 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
 
  *)
 
-Definition Loc: Set := nat.
-Definition Locs: Set := list Loc.
+
 
 Inductive Ev: Set :=
 | null: nat -> Plc -> Ev
 | copy:  nat -> Plc -> Ev 
 | umeas: nat -> Plc -> ASP_PARAMS -> Evidence -> Ev
+(*
 | sign: nat -> Plc -> Evidence -> Ev
 | hash: nat -> Plc -> Evidence -> Ev
+*)
 | req: nat -> Plc -> Plc -> Term -> Evidence -> Ev
 | rpy: nat -> Plc -> Plc -> Evidence -> Ev 
 | split: nat -> Plc -> Ev
 | join:  nat -> Plc -> Ev
-| cvm_thread_start: Loc -> Plc -> Term -> Evidence -> Ev
+| cvm_thread_start: Loc -> Plc -> Core_Term -> Evidence -> Ev
 | cvm_thread_end: Loc -> Ev.
+
+
+(*
+Definition events_eq : Ev ->  Ev -> Prop.
+Admitted.
+
+Lemma exists (f:nat -> nat),
+    forall x, f x = x' ->
+         
+*)
+
+
+(*
+Inductive event_equiv : Ev -> Ev -> Prop :=. 
+
+Definition traces_modulo_null : list Ev -> list Ev -> Prop.
+Admitted.
+
+Lemma traces_map : exists (f:nat -> nat),
+    traces_modulo_null splitList 
+*)
+
+
 
 (** The natural number used to distinguish events. *)
 
@@ -266,8 +400,8 @@ Definition ev x : nat :=
   | null i _ => i
   | copy i _ => i
   | umeas i _ _ _ => i
-  | sign i _ _ => i
-  | hash i _ _ => i
+  (*| sign i _ _ => i
+  | hash i _ _ => i *)
   | req i _ _ _ _ => i
   | rpy i _ _ _ => i 
   | split i _ => i
@@ -282,8 +416,9 @@ Definition pl x : Plc :=
   | null _ p => p
   | copy _ p => p
   | umeas _ p _ _ => p
+                      (*
   | sign _ p _ => p
-  | hash _ p _ => p
+  | hash _ p _ => p *)
   | req _ p _ _ _ => p
   | rpy _ p _ _ => p
   | split _ p => p
@@ -304,9 +439,9 @@ Definition asp_event i x p e :=
   match x with
   | NULL => null i p
   | CPY => copy i p
-  | ASPC ps => umeas i p ps e
-  | SIG => sign i p e
-  | HSH => hash i p e
+  | ASPC sp _ ps => umeas i p ps (sp_ev sp e)
+  | SIG => umeas i p sig_params e (* sign i p e *)
+  | HSH => umeas i p hsh_params e
   end.
 
 

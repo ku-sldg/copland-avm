@@ -112,7 +112,7 @@ Proof.
     +
     assert (p = st_pl).
     {
-      edestruct IHt.
+      edestruct IHt1.
       jkjk'; eauto.     
     }
     congruence.   
@@ -120,7 +120,7 @@ Proof.
     +
     assert (p = st_pl).
     {
-      edestruct IHt.
+      edestruct IHt1.
       jkjk'; eauto.     
     }
     congruence. 

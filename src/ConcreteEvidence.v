@@ -18,24 +18,31 @@ Require Export Term_Defs.
 Inductive EvidenceC: Set :=
 | mtc: EvidenceC
 | nnc: N_ID -> BS -> EvidenceC
+                     (*
 | uuc: ASP_PARAMS -> (*ASP_ID -> (list Arg) -> Plc -> TARG_ID -> 
        Evidence -> *) Plc -> BS -> EvidenceC -> EvidenceC
-| ggc: Plc -> BS -> EvidenceC -> EvidenceC
-| hhc: Plc -> BS -> Evidence -> EvidenceC
-| ssc: EvidenceC -> EvidenceC -> EvidenceC
-| ppc: EvidenceC -> EvidenceC -> EvidenceC.
+*)
+| ggc: Plc -> ASP_PARAMS -> BS -> EvidenceC -> EvidenceC
+| hhc: Plc -> ASP_PARAMS -> BS -> Evidence -> EvidenceC
+| ssc: EvidenceC -> EvidenceC -> EvidenceC.
+                                 (*
+| ppc: EvidenceC -> EvidenceC -> EvidenceC. *)
 
 Fixpoint et_fun (ec:EvidenceC) : Evidence :=
   match ec with
   | mtc => mt
+            (*
   | uuc (*i args tpl tid tet*) params q _ ec' =>
-      uu (*i args tpl tid tet*) params q (et_fun ec')
-  | ggc p _ ec' => gg p (et_fun ec')
-  | hhc p _ et => hh p et
+      uu (*i args tpl tid tet*) params q (et_fun ec') *)
+  | ggc p params _ ec' => gg p params (et_fun ec')
+  | hhc p params _ et => hh p params et
   | nnc ni _ => nn ni
   | ssc ec1 ec2 => ss (et_fun ec1) (et_fun ec2)
-  | ppc ec1 ec2 => pp (et_fun ec1) (et_fun ec2)
   end.
+    
+                     (*
+  | ppc ec1 ec2 => pp (et_fun ec1) (et_fun ec2) 
+  end. *)
 
 (*
 Definition encodeEvBits (e:EvC): BS :=
@@ -46,27 +53,29 @@ Definition encodeEvBits (e:EvC): BS :=
 
 Inductive EvSubT: Evidence -> Evidence -> Prop :=
 | evsub_reflT : forall e : Evidence, EvSubT e e
+                                       (*
 | uuSubT: forall e e' params (*i args tpl tid tet *) q,
     EvSubT e e' ->
-    EvSubT e (uu params (*i args tpl tid tet*) q e')
-| ggSubT: forall e e' p,
+    EvSubT e (uu params (*i args tpl tid tet*) q e') *)
+| ggSubT: forall e e' p ps,
     EvSubT e e' ->
-    EvSubT e (gg p e')
-| hhSubT: forall e e' p,
+    EvSubT e (gg p ps e')
+| hhSubT: forall e e' p ps,
     EvSubT e e' ->
-    EvSubT e (hh p e')
+    EvSubT e (hh p ps e')
 | ssSublT: forall e e' e'',
     EvSubT e e' ->
     EvSubT e (ss e' e'')
 | ssSubrT: forall e e' e'',
     EvSubT e e'' ->
-    EvSubT e (ss e' e'')
+    EvSubT e (ss e' e'').
+           (*
 | ppSublT: forall e e' e'',
     EvSubT e e' ->
     EvSubT e (pp e' e'')
 | ppSubrT: forall e e' e'',
     EvSubT e e'' ->
-    EvSubT e (pp e' e'').
+    EvSubT e (pp e' e''). *)
 Hint Constructors EvSubT : core.
 
 Ltac evSubTFacts :=
@@ -91,12 +100,13 @@ Defined.
 
 Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
 | evsub_refl : forall e : EvidenceC, EvSub e e
+                                      (*
 | uuSub: forall e e' params (*i args tpl tid tet*) q bs,
     EvSub e e' ->
-    EvSub e (uuc params (*i args tpl tid tet*) q bs e')
-| ggSub: forall e e' p bs,
+    EvSub e (uuc params (*i args tpl tid tet*) q bs e') *)
+| ggSub: forall e e' p ps bs,
     EvSub e e' ->
-    EvSub e (ggc p bs e')
+    EvSub e (ggc p ps bs e')
 (*| hhSub: forall e et p bs,
     EvSubT (et_fun e) et ->
     EvSub e (hhc p bs et) *)
@@ -105,13 +115,14 @@ Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
     EvSub e (ssc e' e'')
 | ssSubr: forall e e' e'',
     EvSub e e'' ->
-    EvSub e (ssc e' e'')
+    EvSub e (ssc e' e'').
+          (*
 | ppSubl: forall e e' e'',
     EvSub e e' ->
     EvSub e (ppc e' e'')
 | ppSubr: forall e e' e'',
     EvSub e e'' ->
-    EvSub e (ppc e' e'').
+    EvSub e (ppc e' e''). *)
 Hint Constructors EvSub : core.
 
 Ltac evSubFacts :=
@@ -152,6 +163,17 @@ Proof.
     fff.
   -
     invc H0.
+    jkjke.
+    destruct e'; try solve_by_inversion.
+    invc H.
+    ff.
+
+    (*
+
+
+    
+  -
+    invc H0.
     +
       assert (exists bs ec, e' = uuc a p bs ec).
       {
@@ -179,10 +201,11 @@ Proof.
     +
       assert (EvSubT (et_fun e0) e) by eauto.
       apply uuSubT. eassumption.
+*)
   -
     invc H0.
     +
-      assert (exists bs ec, e' = ggc p bs ec).
+      assert (exists bs ec, e' = ggc p a bs ec).
       {
         destruct e'; try solve_by_inversion.
         fff.
@@ -209,7 +232,7 @@ Proof.
   -
     invc H0.
     +
-      assert (exists bs, e' = hhc p bs e).
+      assert (exists bs, e' = hhc p a bs e).
       {
         destruct e'; try solve_by_inversion.
         fff.
@@ -221,6 +244,7 @@ Proof.
     +
       assert (EvSubT (et_fun e0) e) by eauto.
       apply hhSubT. eassumption.
+      (*
   -
     invc H0.
     assert (exists bs, e' = nnc n bs).
@@ -232,6 +256,7 @@ Proof.
     destruct_conjs.
     subst.
     fff.
+*)
   -
     
     assert ((exists e1 e2, e' = ssc e1 e2) \/
@@ -318,6 +343,9 @@ Proof.
       eauto.
 
 
+      (*
+
+
   - (* ppc case *)
     
     assert ((exists e1 e2, e' = ppc e1 e2) \/
@@ -402,7 +430,10 @@ Proof.
       door.
       eauto.
       eauto.
-Defined.
+       *)
+
+      
+Qed.
 
 Lemma evsub_transitive: forall e e' e'',
     EvSub e e' ->

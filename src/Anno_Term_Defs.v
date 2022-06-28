@@ -48,6 +48,8 @@ Definition range x :=
   | abpar r _ _ _ => r
   end.
 
+
+(*
 Inductive AnnoTermPar: Set :=
 | aasp_par: ASP -> AnnoTermPar
 | aatt_par: Plc -> Term -> AnnoTermPar
@@ -341,6 +343,7 @@ Defined.
 
 Definition annotated_par (x:Term) :=
   snd (anno_par x 0).
+*)
 
 Inductive term_sub : Term -> Term -> Prop :=
 | termsub_refl_annt: forall t: Term, term_sub t t
@@ -377,6 +380,337 @@ Proof.
     intros H H0; ff.
     (* try (invc H0; eauto). *)
 Defined.
+
+
+(*
+
+Lemma nullify_no_none_nones_seq: forall t t' t1 t2 sp,
+    nullify_branchesP t t' ->
+    term_sub (bseq sp t1 t2) t' ->
+    sp = (ALL,ALL).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a; ff; invc H; ff.
+  -
+    invc H; ff.
+    invc H0.
+    
+    eapply IHt.
+    2: { eassumption. }
+    econstructor.
+    eauto.
+  -
+    invc H; ff.
+    invc H0.
+    + (* t1 term_sub case *)
+      eapply IHt1.
+      2: { eassumption. }
+      econstructor; eauto.
+    +
+      eapply IHt2.
+      2: { eassumption. }
+      econstructor; eauto.
+  -
+    invc H; ff.
+    invc H0; ff.
+    eapply IHt1.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    eapply IHt2.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    invc H0; ff.
+
+     eapply IHt1.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    invc H2.
+    invc H1.
+
+     eapply IHt2.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    invc H0; ff.
+
+    invc H2.
+    invc H1.
+
+    eapply IHt1.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    
+     eapply IHt2.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    invc H0; ff.
+
+    invc H2.
+    invc H1.
+
+    eapply IHt1.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    invc H2.
+    invc H1.
+
+    
+     eapply IHt2.
+    2: { eassumption. }
+    econstructor; eauto.
+  -
+        invc H; ff.
+    invc H0; ff.
+    eapply IHt1.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    eapply IHt2.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    invc H0; ff.
+
+     eapply IHt1.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    invc H2.
+    invc H1.
+
+     eapply IHt2.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    invc H0; ff.
+
+    invc H2.
+    invc H1.
+
+    eapply IHt1.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    
+     eapply IHt2.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    invc H0; ff.
+
+    invc H2.
+    invc H1.
+
+    eapply IHt1.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    invc H2.
+    invc H1.
+
+    
+     eapply IHt2.
+    2: { eassumption. }
+    econstructor; eauto.
+Qed.
+
+Lemma nullify_no_none_nones_par: forall t t' t1 t2 sp,
+    nullify_branchesP t t' ->
+    term_sub (bpar sp t1 t2) t' ->
+    sp = (ALL,ALL).
+Proof.
+    intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a; ff; invc H; ff.
+  -
+    invc H; ff.
+    invc H0.
+    
+    eapply IHt.
+    2: { eassumption. }
+    econstructor.
+    eauto.
+  -
+    invc H; ff.
+    invc H0.
+    + (* t1 term_sub case *)
+      eapply IHt1.
+      2: { eassumption. }
+      econstructor; eauto.
+    +
+      eapply IHt2.
+      2: { eassumption. }
+      econstructor; eauto.
+  -
+    invc H; ff.
+    invc H0; ff.
+    eapply IHt1.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    eapply IHt2.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    invc H0; ff.
+
+     eapply IHt1.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    invc H2.
+    invc H1.
+
+     eapply IHt2.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    invc H0; ff.
+
+    invc H2.
+    invc H1.
+
+    eapply IHt1.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    
+     eapply IHt2.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    invc H0; ff.
+
+    invc H2.
+    invc H1.
+
+    eapply IHt1.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    invc H2.
+    invc H1.
+
+    
+     eapply IHt2.
+    2: { eassumption. }
+    econstructor; eauto.
+  -
+        invc H; ff.
+    invc H0; ff.
+    eapply IHt1.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    eapply IHt2.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    invc H0; ff.
+
+     eapply IHt1.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    invc H2.
+    invc H1.
+
+     eapply IHt2.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    invc H0; ff.
+
+    invc H2.
+    invc H1.
+
+    eapply IHt1.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    
+     eapply IHt2.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    invc H0; ff.
+
+    invc H2.
+    invc H1.
+
+    eapply IHt1.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    invc H2.
+    invc H1.
+
+    
+     eapply IHt2.
+    2: { eassumption. }
+    econstructor; eauto.
+Qed.
+
+Lemma nullify_no_none_seq_contra: forall t t' t1 t2 sp1 sp2,
+  nullify_branchesP t t' ->
+  term_sub (bseq (sp1,sp2) t1 t2) t' ->
+  ((sp1 = NONE) \/ (sp2 = NONE)) ->
+  False.
+Proof.
+  intros.
+  invc H1.
+  -
+    assert ((NONE,sp2) = (ALL,ALL)).
+    {
+      eapply nullify_no_none_nones_seq; eauto.
+    }
+    invc H1.
+  -
+    assert ((sp1,NONE) = (ALL,ALL)).
+    {
+      eapply nullify_no_none_nones_seq; eauto.
+    }
+    invc H1.
+Qed.
+
+Lemma nullify_no_none_par_contra: forall t t' t1 t2 sp1 sp2,
+  nullify_branchesP t t' ->
+  term_sub (bpar (sp1,sp2) t1 t2) t' ->
+  ((sp1 = NONE) \/ (sp2 = NONE)) ->
+  False.
+Proof.
+  intros.
+  invc H1.
+  -
+    assert ((NONE,sp2) = (ALL,ALL)).
+    {
+      eapply nullify_no_none_nones_par; eauto.
+    }
+    invc H1.
+  -
+    assert ((sp1,NONE) = (ALL,ALL)).
+    {
+      eapply nullify_no_none_nones_par; eauto.
+    }
+    invc H1.
+Qed.
+*)
+    
+    
+                                   
+
+  
 
 
 (*
@@ -451,6 +785,9 @@ Proof.
     jkjke.
     jkjke.
 Defined.
+
+
+(*
 
 Lemma anno_unanno_par: forall a l l' annt,
     anno_par a l = (l', annt) ->
@@ -527,6 +864,7 @@ Proof.
   eapply anno_unanno_par_list'.
   eassumption.
 Defined.
+*)
 
 
 Inductive annoP: AnnoTerm -> Term -> Prop :=
@@ -546,6 +884,8 @@ Inductive annoP_indexed: AnnoTerm -> Term -> nat -> nat ->  Prop :=
     annoP_indexed anno_term t n n'.
 
 
+
+(*
 Inductive anno_parP (*anno_par_listP*): AnnoTermPar -> Term -> Prop :=
 | anno_parP_c: forall par_term t,
     (exists ls ls', anno_par_list' t ls = Some (ls', par_term)) -> (*par_term = snd (anno_par t loc)) -> *)
@@ -555,6 +895,7 @@ Inductive anno_parPloc: AnnoTermPar -> Term -> list Loc -> Prop :=
 | anno_parP_cloc: forall par_term t ls,
     (exists ls', anno_par_list' t ls = Some (ls', par_term)) -> (*par_term = snd (anno_par t loc) -> *)
     anno_parPloc par_term t ls.
+*)
 
 
 (*
@@ -688,7 +1029,7 @@ Fixpoint aeval t p e :=
   | alseq _ t1 t2 => aeval t2 p (aeval t1 p e)
   | abseq _ s t1 t2 => ss (aeval t1 p ((splitEv_T_l s e)))
                          (aeval t2 p ((splitEv_T_r s e)))
-  | abpar _ s t1 t2 => pp (aeval t1 p ((splitEv_T_l s e)))
+  | abpar _ s t1 t2 => ss (aeval t1 p ((splitEv_T_l s e)))
                          (aeval t2 p ((splitEv_T_r s e)))
   end.
 

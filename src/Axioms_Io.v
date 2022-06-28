@@ -22,6 +22,12 @@ Admitted.
 Definition shuffled_events (el1:list Ev) (el2:list Ev) : list Ev.
 Admitted.
 
+Definition cvm_events_core (t:Core_Term) (p:Plc) (e:Evidence) : list Ev.
+Admitted.
+
+Definition cvm_evidence_core (t:Core_Term) (p:Plc) (e:EvC) : EvC.
+Admitted.
+
 Definition cvm_events (t:Term) (p:Plc) (e:Evidence) : list Ev.
 Admitted.
 
@@ -43,7 +49,7 @@ Axiom at_evidence : forall t (p:Plc) (e:EvC),
 
 
 Axiom par_evidence : forall t (p:Plc) (e:EvC) loc,
-    parallel_vm_thread loc t p e = cvm_evidence t p e.
+    parallel_vm_thread loc (term_to_core_term t) p e = cvm_evidence t p e.
 
 
 
@@ -55,10 +61,10 @@ Axiom bpar_shuffle : forall x annt2 i i' tr p t1 t2 et1 et2,
                            (cvm_events t2 p et2))
           (bp x (stop p (aeval t1 p et1)) (stop p (aeval annt2 p et2))).
 
-Axiom thread_bookend_peel: forall (t:AnnoTerm) p (*et*) etr l (a:Term) tr,
+Axiom thread_bookend_peel: forall (t:AnnoTerm) p (*et*) etr l (a:Core_Term) tr,
     (*lstar (conf t p et) tr (stop p (aeval t p et)) -> *)
     ([cvm_thread_start l p a etr] ++ tr ++ [cvm_thread_end l] =
-     (shuffled_events tr (cvm_events a p etr))
+     (shuffled_events tr (cvm_events_core a p etr))
     ).
 
 
