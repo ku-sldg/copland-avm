@@ -75,7 +75,7 @@ Definition eq_evidence_dec:
   forall x y: Evidence, {x = y} + {x <> y}.
 Proof.
   intros;
-    repeat decide equality.
+    repeat decide equality;
   apply eq_arg_dec.
 Defined.
 Hint Resolve eq_evidence_dec : core.
@@ -181,23 +181,28 @@ Proof.
       eapply list_beq_refl; eauto.
 Defined.
 
+Print Evidence.
+
 Fixpoint eqb_evidence (e:Evidence) (e':Evidence): bool :=
   match (e,e') with
   | (mt,mt) => true
+                (*
   | (uu (*i args tpl tid tet*) params q e1,
      uu (*i' args' tpl' tid' tet'*) params' q' e2) =>
     (eqb_asp_params params params') && 
     (Nat.eqb q q') &&
     (eqb_evidence e1 e2)
-  | (gg p e1, gg p' e2) =>
-    (Nat.eqb p p') && (eqb_evidence e1 e2)
-  | (hh p e1, hh p' e2) =>
-    (Nat.eqb p p') && (eqb_evidence e1 e2)
+*)
+  | (gg p params e1, gg p' params' e2) =>
+    (Nat.eqb p p') && (eqb_asp_params params params') && (eqb_evidence e1 e2)
+  | (hh p params e1, hh p' params' e2) =>
+    (Nat.eqb p p') && (eqb_asp_params params params') && (eqb_evidence e1 e2)
   | (nn i, nn i') => (Nat.eqb i i')
   | (ss e1 e2, ss e1' e2') =>
     (eqb_evidence e1 e1') && (eqb_evidence e2 e2')
+                               (*
   | (pp e1 e2, pp e1' e2') =>
-    (eqb_evidence e1 e1') && (eqb_evidence e2 e2')
+    (eqb_evidence e1 e1') && (eqb_evidence e2 e2') *)
   | _ => false
   end.
 
@@ -212,6 +217,16 @@ Proof.
     induction e1; destruct e2; intros;
       try (cbn in *; repeat break_match; try solve_by_inversion; eauto).
     +
+      
+      apply EqNat.beq_nat_true in H.
+      eauto.
+
+
+
+
+
+    
+    +
       cbn in *.
       rewrite Bool.andb_true_iff in H.
       rewrite Bool.andb_true_iff in H.
@@ -223,7 +238,7 @@ Proof.
       (*
       rewrite eqb_eq_list in H4. *)
 
-      apply EqNat.beq_nat_true in H1.
+      apply EqNat.beq_nat_true in H.
       (*
       apply EqNat.beq_nat_true in H2.
       apply EqNat.beq_nat_true in H3.
@@ -268,11 +283,15 @@ Nat.eqb_eq: forall n m : nat, (n =? m) = true <-> n = m
     +
       cbn in *.
       rewrite Bool.andb_true_iff in H.
+      rewrite Bool.andb_true_iff in H.
       destruct_conjs.
       apply EqNat.beq_nat_true in H.
       specialize IHe1 with e2.
       concludes.
+      rewrite eqb_asp_params_true_iff in H1.
       congruence.
+
+      (*
     +
       cbn in *.
       rewrite Bool.andb_true_iff in H.
@@ -288,7 +307,7 @@ Nat.eqb_eq: forall n m : nat, (n =? m) = true <-> n = m
       apply EqNat.beq_nat_true in H.
       (*specialize IHe1 with e2.  
       concludes. *)
-      congruence.
+      congruence. *)
     +
       cbn in *.
       rewrite Bool.andb_true_iff in H.
@@ -299,6 +318,8 @@ Nat.eqb_eq: forall n m : nat, (n =? m) = true <-> n = m
       concludes.
       concludes.
       congruence.
+
+      (*
     +
       cbn in *.
       rewrite Bool.andb_true_iff in H.
@@ -308,11 +329,21 @@ Nat.eqb_eq: forall n m : nat, (n =? m) = true <-> n = m
       specialize IHe1_2 with e2_2.
       concludes.
       concludes.
-      congruence.
+      congruence. *)
   -
     generalizeEverythingElse e1.
     induction e1; destruct e2; intros;
       try (cbn in * ; repeat break_match; try solve_by_inversion; eauto).
+    +
+      invc H.
+      apply Nat.eqb_refl.
+    
+      
+
+
+
+(*
+    
     +
       invc H.
       cbn in *.
@@ -337,20 +368,27 @@ Nat.eqb_eq: forall n m : nat, (n =? m) = true <-> n = m
       apply Nat.eqb_refl.
       apply Nat.eqb_refl. *)
       eauto.
+
+ *)
+      
     +
       invc H.
       cbn in *.
       repeat rewrite Bool.andb_true_iff.
-      split.
+      split. split.
       apply Nat.eqb_refl.
+      erewrite eqb_asp_params_true_iff. tauto.
+      
       eauto.
     +
       invc H.
       cbn in *.
       repeat rewrite Bool.andb_true_iff.
-      split.
+      split. split.
       apply Nat.eqb_refl.
+      erewrite eqb_asp_params_true_iff. tauto.
       eauto.
+      (*
     +
       invc H.
       cbn in *.
@@ -359,16 +397,20 @@ Nat.eqb_eq: forall n m : nat, (n =? m) = true <-> n = m
       apply Nat.eqb_refl.
       (*
       eauto. *)
+       *)
+      
     +
       invc H.
       cbn in *.
       repeat rewrite Bool.andb_true_iff.
       split;
         eauto.
+
+      (*
     +
       invc H.
       cbn in *.
       repeat rewrite Bool.andb_true_iff.
       split;
-      eauto. 
+      eauto.  *)
 Defined.

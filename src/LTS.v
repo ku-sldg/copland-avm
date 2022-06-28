@@ -48,7 +48,7 @@ Fixpoint seval st :=
   | ls st t => aeval t (pl st) (seval st)
   | bsl _ st t p e => ss (seval st) (aeval t p e)
   | bsr _ e st => ss e (seval st)
-  | bp _ st0 st1 => pp (seval st0) (seval st1)
+  | bp _ st0 st1 => ss (seval st0) (seval st1)
   end.
 
 (** * Labeled Transition System
@@ -145,7 +145,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
     forall j p e p' e',
       step (bp j (stop p e) (stop p' e'))
            (Some (join (pred j) p'))
-           (stop p' (pp e e')).
+           (stop p' (ss e e')).
 Hint Constructors step : core.
 
 (** A step preserves place. *)

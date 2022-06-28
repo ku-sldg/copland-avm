@@ -64,6 +64,7 @@ Definition add_trace (tr':list Ev) : cvm_st -> cvm_st :=
 Definition add_tracem (tr:list Ev) : CVM unit :=
   modify (add_trace tr).
 
+(*
 Definition split_ev (sp:Split): CVM (EvC*EvC) :=
   e <- get_ev ;;
   p <- get_pl ;;
@@ -72,6 +73,13 @@ Definition split_ev (sp:Split): CVM (EvC*EvC) :=
   let e2 := splitEv_r sp e in
   add_tracem [Term_Defs.split i p] ;;
   ret (e1,e2).
+ *)
+
+Definition split_ev : CVM unit :=
+  p <- get_pl ;;
+  i <- inc_id ;;
+  add_tracem [Term_Defs.split i p].
+
 
 (** * Partially-symbolic implementations of IO operations *)
 
@@ -90,21 +98,30 @@ Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) (e:EvC) : CVM Event_ID :=
   x <- inc_id ;;
   add_tracem [umeas x mpl params (get_et e)] ;;
   ret x.
+
+Definition fwd_asp (fwd:FWD) (bs:BS) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
+  match fwd with
+  | COMP => cons_hh bs e p ps
+  | EXTD => cons_gg bs e p ps
+  end.
   
 
-Definition invoke_ASP (params:ASP_PARAMS) : CVM EvC :=
+Definition invoke_ASP (fwd:FWD) (params:ASP_PARAMS) : CVM EvC :=
   e <- get_ev ;;
   p <- get_pl ;;
   x <- tag_ASP params p e ;;
   bs <- do_asp' params (get_bits e) p x ;;
   (*let bs := (do_asp params p x) in *)
-  ret (cons_uu bs e params p).
+  ret (fwd_asp fwd bs e p params).
 
+(*
 Definition tag_SIG (p:Plc) (e:EvC) : CVM Event_ID :=
   x <- inc_id ;;
   add_tracem [sign x p (get_et e)];;
   ret x.
+*)
 
+(*
 Definition signEv : CVM EvC :=
   p <- get_pl ;;
   e <- get_ev ;;
@@ -125,6 +142,7 @@ Definition hashEv : CVM EvC :=
   bs <- do_hash' (encodeEvBits e) p ;;
   (*let bs := (do_hash (encodeEvBits e) p) in *)
   ret (cons_hh bs e p).
+*)
 
 Definition copyEv : CVM EvC :=
   p <- get_pl ;;
@@ -138,33 +156,56 @@ Definition nullEv : CVM EvC :=
   add_tracem [null x p] ;;
   ret mt_evc.
 
-Definition do_prim (a:ASP) : CVM EvC :=
+Definition clearEv : CVM EvC :=
+  ret mt_evc.
+
+Definition do_prim (a:ASP_Core) : CVM EvC :=
   match a with
-  | NULL => nullEv
-  | CPY => copyEv
-  | ASPC params =>
-    invoke_ASP params     
+  | NULLC => nullEv
+  | CLEAR => clearEv
+  | CPYC => copyEv
+  | ASPCC fwd params =>
+    invoke_ASP fwd params
+               (*
   | SIG => signEv
-  | HSH => hashEv
+  | HSH => hashEv *)
   end.
 
-Fixpoint event_id_span (t: Term) : nat :=
+
+Fixpoint event_id_span' (t: Term) : nat :=
   match t with
   | asp x => 1
 
-  | att p x => 2 + (event_id_span x)
+  | att p x => 2 + (event_id_span' x)
 
-  | lseq x y => (event_id_span x) + (event_id_span y)
+  | lseq x y => (event_id_span' x) + (event_id_span' y)
 
-  | bseq s x y => 2 + (event_id_span x) + (event_id_span y)
+  | bseq s x y => 2 + (event_id_span' x) + (event_id_span' y)
 
-  | bpar s x y => 2 + (event_id_span x) + (event_id_span y)
+  | bpar s x y => 2 + (event_id_span' x) + (event_id_span' y)
   end.
+
+Fixpoint event_id_span (t: Core_Term) : nat :=
+  match t with
+  | aspc CLEAR =>  0
+
+  | attc _ x => 2 + (event_id_span' x)
+
+  | lseqc x y => (event_id_span x) + (event_id_span y)
+
+  | bseqc x y => 2 + (event_id_span x) + (event_id_span y)
+
+  | bparc _ x y => 2 + (event_id_span x) + (event_id_span y)
+  | _ => 1
+  end.
+
 
 Lemma span_range : forall t i j t',
   anno t i = (j, t') ->
-  event_id_span t = (j - i).
+  event_id_span' t = (j - i).
 Proof.
+Admitted.
+  (*
   intros.
   generalizeEverythingElse t.
   induction t; intros.
@@ -224,8 +265,18 @@ Proof.
     { eapply anno_mono; eauto. }
     lia.
 Defined.
+*)
 
 Definition inc_remote_event_ids (t:Term) : CVM unit :=
+  st <- get ;;
+    let tr' := st_trace st in
+    let e' := st_ev st in
+    let p' := st_pl st in
+    let i := st_evid st in
+    let new_i := i + (event_id_span' t) in
+    put (mk_st e' tr' p' new_i).
+
+Definition inc_par_event_ids (t:Core_Term) : CVM unit :=
   st <- get ;;
     let tr' := st_trace st in
     let e' := st_ev st in
@@ -277,7 +328,7 @@ Definition do_start_par_thread (loc:Loc) (t:Term) (e:RawEv) : CVM unit :=
   ret tt.  (* Admitted. *)
 *)
 
-Definition start_par_thread (loc:Loc) (t:Term) (e:EvC) : CVM unit :=
+Definition start_par_thread (loc:Loc) (t:Core_Term) (e:EvC) : CVM unit :=
   p <- get_pl ;;
   do_start_par_thread loc t (get_bits e) ;;
   add_tracem [cvm_thread_start loc p t (get_et e)].
@@ -287,29 +338,32 @@ Definition do_wait_par_thread (loc:Loc) (t:Term) (p:Plc) (e:EvC) : CVM EvC :=
   ret (parallel_vm_thread loc t p e).
 *)
 
-Definition wait_par_thread (loc:Loc) (t:Term) (e:EvC) : CVM EvC :=
+Definition wait_par_thread (loc:Loc) (t:Core_Term) (e:EvC) : CVM EvC :=
   p <- get_pl ;;
   e' <- do_wait_par_thread loc t p e ;;
   add_tracem [cvm_thread_end loc] ;;
-  inc_remote_event_ids t ;;
+  inc_par_event_ids t ;;
   ret e'.
 
+(*
 Definition join_par (e1:EvC) (e2:EvC): CVM unit :=
   p <- get_pl ;;
   n <- inc_id ;;
   put_ev (pp_cons e1 e2) ;;
   add_tracem [join n p].
+*)
    
 Ltac monad_unfold :=
   repeat unfold
   execSt,  
   do_prim,
   invoke_ASP,
-  signEv,
-  hashEv,
+  (*signEv,
+  hashEv, *)
+  clearEv,
   copyEv,
 
-  tag_HSH,
+  (*tag_HSH, *)
   doRemote,
 
   get_ev,
