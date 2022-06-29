@@ -19,10 +19,6 @@ Admitted.
 
 
 (* eqb Copland phrase terms *)
-Definition eq_arg_dec:
-  forall x y: Arg, {x = y} + {x <> y}.
-Proof.
-Admitted.
 
 Definition eqb_asp_params: ASP_PARAMS -> ASP_PARAMS -> bool.
 Admitted.
@@ -32,14 +28,7 @@ Definition eq_asp_params_dec:
 Proof.
   intros.
   decide equality; repeat (decide equality).
-  eapply eq_arg_dec.
 Defined.
-(*
-  eapply eq_targid_dec.
-  eapply eq_arg_dec.
-  eapply eq_aspid_dec. 
-Defined.
- *)
 
 Lemma eqb_asp_params_true_iff: forall a a0,
     eqb_asp_params a a0 = true <->
