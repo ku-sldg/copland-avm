@@ -133,11 +133,15 @@ Notation "x -> y" := (lseq x y) (in custom copland_entry at level 99, right asso
 Notation "!" := (asp SIG) (in custom copland_entry at level 98).
 Notation "#" := (asp HSH) (in custom copland_entry at level 98).
 Notation "'_'" := (asp CPY) (in custom copland_entry at level 98).
-Notation "'{''}'" := (asp NULL) (in custom copland_entry at level 98).
+Notation "'{}'" := (asp NULL) (in custom copland_entry at level 98).
 Notation "'<<' x y z '>>'" := (asp (ASPC (asp_paramsC x nil y z))) 
                       (in custom copland_entry at level 98).
 (* @ plc phrase *)
 Notation "@ p [ ph ]" := (att p ph) (in custom copland_entry at level 50).
+
+Open Scope cop_ent_scope.
+Definition test1 := <{ _ -> {} }>.
+Example test1ex : test1 = (lseq (asp CPY) (asp NULL)). reflexivity. Defined.
 
 Inductive ASP_Core: Set :=
 | NULLC: ASP_Core

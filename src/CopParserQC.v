@@ -94,7 +94,12 @@ Fixpoint genSymbolTail (sz : nat) : G string :=
   end.
 Definition genSymbol : G string :=
   h <- genLower ;;
-  tailSize <- choose (0,20) ;;
+  tailSize <- choose (0,20) ;; 
+  (* NOTE: We enforce a size limit here, it is questionable
+           if we can really justify this as arbitrary then.
+           But, I have faith that if it can work for any string length 1-21
+           the parser will work for any string. the buck has to stop somewhere
+           might as well be here *)
   t <- genSymbolTail tailSize ;;
   ret (String h t).
 
@@ -309,10 +314,24 @@ destruct (a =? a0) eqn:Asp.
 Defined. 
 
 (*** Gen *)
+(* Safe to do here, because we already locked in the rest of the sub-terms arbitraries *)
 Derive Arbitrary for ASP_PARAMS.
+
+
+Definition genASP_PARAMS_Correct (a : ASP_PARAMS) : bool :=
+  match CopParser.parseASPC (CopParser.tokenize (show a)) map_empty with
+  | CopParser.SomeE (m, s, t) => (Nat.leb (List.length t) 0)
+  | CopParser.NoneE _ => false
+  end.
+
+QuickChick genASP_PARAMS_Correct.
+
 Sample (@arbitrary ASP_PARAMS _).
 
+(******************************************************************)
 (** ASP *)
+(******************************************************************)
+
 (*** Show *)
 Definition showASP_Aux (a : ASP) : string :=
     match a with
@@ -341,5 +360,227 @@ inversion H. inversion dec.
 - right. intro C. inversion C. contradiction.
 Defined.
 
+(*** Gen, Shrink, Arbitrary - Auto derived here *)
 Derive Arbitrary for ASP.
 
+(* Sample (@arbitrary ASP _). *)
+
+(*** Testing *)
+Definition genASP_Correct (a : ASP) : bool :=
+  match CopParser.parseASP (CopParser.tokenize (show a)) map_empty with
+  | CopParser.SomeE (m, s, t) => (Nat.leb (List.length t) 0)
+  | CopParser.NoneE _ => false
+  end.
+
+QuickChick genASP_Correct.
+
+(******************************************************************)
+(* Split *)
+(******************************************************************)
+
+(** We must first address SP *)
+#[local]
+Instance showSP : Show (SP) :=
+{
+  show x := match x with ALL => "+" | NONE => "-" end
+}.
+
+(** Dec SP*)
+#[local]
+Instance decSP (sp1 sp2 : SP) : Dec (sp1 = sp2).
+dec_eq. Defined.
+
+Derive Arbitrary for SP.
+(* Sample (@arbitrary SP _). *)
+
+(** Show Split *)
+#[local]
+Instance showSplit : Show (Split) :=
+{
+  show sp := let (s1,s2) := sp in show s1 ++ " " ++ show s2
+}.
+
+(** Dec Split *)
+#[local]
+Instance decSplit (sp1 sp2 : Split) : Dec (sp1 = sp2).
+dec_eq. Defined.
+
+(** G Split *)
+Definition gSplit : G Split :=
+  s1 <- (@arbitrary SP _) ;;
+  s2 <- (@arbitrary SP _) ;;
+  ret (s1, s2).
+
+(** Gen Split *)
+#[local]
+Instance genSplit : Gen Split :=
+{
+  arbitrary := gSplit
+}.
+
+(** Shrink Split *)
+Definition shrinkSplit_Aux (s : Split) : list (Split) :=
+  match s with
+  | (NONE, NONE) => []
+  | (NONE, ALL) => [(NONE, NONE)]
+  | (ALL, NONE) => [(NONE, NONE); (NONE, ALL)]
+  | (ALL, ALL) => [(NONE, NONE); (NONE, ALL); (ALL, NONE)]
+  end.
+
+(** Arbitrary Split*)
+#[local]
+Instance arbitrarySplit : Arbitrary (Split). Defined.
+
+
+(******************************************************************)
+(* Term *)
+(******************************************************************)
+(** Show Term *)
+Fixpoint showTerm_Aux (t : Term) : string :=
+  match t with
+  | asp a => show a
+  | att p t' => "@" ++ show p ++ " " ++ showTerm_Aux t'
+  | lseq t1 t2 => showTerm_Aux t1 ++ " -> " ++ showTerm_Aux t2
+  | bseq (s1,s2) t1 t2 => 
+      showTerm_Aux t1 ++ " " ++ show s1 ++ "<" ++ show s2 ++ " " ++ showTerm_Aux t2
+  | bpar (s1,s2) t1 t2 =>
+      showTerm_Aux t1 ++ " " ++ show s1 ++ "~" ++ show s2 ++ " " ++ showTerm_Aux t2
+  end.
+
+#[local]
+Instance showTerm : Show (Term) :=
+{
+  show := showTerm_Aux
+}.
+
+Ltac kill_false := let C := fresh "CONTRA" in
+                   intro C; inversion C; congruence.
+
+Ltac adec := try (left; reflexivity); try (right; kill_false).
+
+Ltac qinv H := inversion H; subst; clear H.
+
+(** Dec Term *)
+#[local]
+Instance decTerm (t1 t2 : Term) : Dec (t1 = t2).
+constructor. unfold ssrbool.decidable.
+generalize dependent t2.
+induction t1; intros; try (destruct a, a0); try (destruct t2);
+adec.
+- pose proof (decASP a a0).
+  qinv H. qinv dec; adec.
+- destruct (Nat.eqb p p0) eqn:plc.
+  * (* places equal*)
+    rewrite Nat.eqb_eq in *. subst. specialize IHt1 with t2.
+    destruct IHt1; subst; adec.
+  * rewrite Nat.eqb_neq in *. subst; adec.
+- specialize IHt1_1 with t2_1. specialize IHt1_2 with t2_2.
+  destruct IHt1_1; destruct IHt1_2; simpl; subst; adec.
+- destruct s, s0, s, s1, s0, s2; adec;
+  specialize IHt1_1 with t2_1; specialize IHt1_2 with t2_2;
+  destruct IHt1_1; destruct IHt1_2; simpl; subst; adec.
+- destruct s, s0, s, s1, s0, s2; adec;
+  specialize IHt1_1 with t2_1; specialize IHt1_2 with t2_2;
+  destruct IHt1_1; destruct IHt1_2; simpl; subst; adec.
+Defined.
+
+(** G Term *)
+Fixpoint gTerm (sz : nat) : G Term :=
+  match sz with
+  (* Base case, we just use a ASP as they are functionally terminals *)
+  | 0 => term <- arbitrary ;; ret (asp term)
+  | S f' => freq [
+      (1, term <- arbitrary ;; ret (asp term)) ; 
+      (Nat.mul 10 sz, p <- arbitrary ;; t' <- (gTerm f') ;; ret (att p t')) ;
+      (Nat.mul 10 sz, t1 <- (gTerm f') ;; t2 <- (gTerm f') ;; ret (lseq t1 t2)) ;
+      (Nat.mul 10 sz, sp <- arbitrary ;; t1 <- (gTerm f') ;; t2 <- (gTerm f') ;; ret (bseq sp t1 t2)) ;
+      (Nat.mul 10 sz, sp <- arbitrary ;; t1 <- (gTerm f') ;; t2 <- (gTerm f') ;; ret (bpar sp t1 t2))
+    ]
+  end.
+
+(* Sample (bind (choose (1,5)) (fun x => gTerm x)). *)
+
+(** Gen Term *)
+#[local]
+Instance genTerm : Gen (Term) :=
+{ arbitrary := sized (fun x => gTerm (S x)) }.
+
+(** Shrink Term *)
+Fixpoint shrinkTerm_Aux (t : Term) : list (Term) :=
+  match t with
+  | asp a => (map (fun a' => asp a') (shrink a))
+  | att p t' => 
+    (* vary p or vary t *)
+    [t'] ++ 
+    (map (fun p' => att p' t) (shrink p)) ++ 
+    (map (fun t'' => att p t'') (shrinkTerm_Aux t'))
+  | lseq t1 t2 =>
+    [t1 ; t2] ++ 
+    (map (fun t1' => lseq t1' t2) (shrinkTerm_Aux t1)) ++
+    (map (fun t2' => lseq t1 t2') (shrinkTerm_Aux t2))
+  | bseq sp t1 t2 =>
+    [t1 ; t2] ++ (* Vary sp, t1 or t2*)
+    (map (fun sp' => bseq sp' t1 t2) (shrink sp)) ++
+    (map (fun t1' => bseq sp t1' t2) (shrinkTerm_Aux t1)) ++
+    (map (fun t2' => bseq sp t1 t2') (shrinkTerm_Aux t2))
+  | bpar sp t1 t2 =>
+    [t1 ; t2] ++ (* Vary sp, t1 or t2*)
+    (map (fun sp' => bpar sp' t1 t2) (shrink sp)) ++
+    (map (fun t1' => bpar sp t1' t2) (shrinkTerm_Aux t1)) ++
+    (map (fun t2' => bpar sp t1 t2') (shrinkTerm_Aux t2))
+  end.
+
+#[local]
+Instance shrinkTerm : Shrink (Term) :=
+{ shrink := shrinkTerm_Aux }.
+
+(** Arbitrary Term *)
+#[local]
+Instance arbitraryTerm : Arbitrary (Term). Defined.
+
+(** Testing *)
+
+Fixpoint term_seq_size (t : Term) : nat :=
+  match t with
+  | asp _ => 0
+  | att _ t' => term_seq_size t'
+  | lseq t1 t2 => 1 + term_seq_size t1 + term_seq_size t2
+  | bseq sp t1 t2 => 1 + term_seq_size t1 + term_seq_size t2
+  | bpar sp t1 t2 => 1 + term_seq_size t1 + term_seq_size t2
+  end.
+
+Fixpoint term_fuel (t : Term) : nat := 5 +
+  match t with
+  | asp _ => 1
+  | att p t' => 2 + term_fuel t'
+  | lseq t1 t2 => 2 + term_seq_size t1 + term_seq_size t2
+  | bseq sp t1 t2 => 2 + term_seq_size t1 + term_seq_size t2
+  | bpar sp t1 t2 => 2 + term_seq_size t1 + term_seq_size t2
+  end.
+  
+
+Definition genTerm_Correct (a : Term) : bool :=
+  match CopParser.parsePhrase (term_fuel a) (CopParser.tokenize (show a)) map_empty with
+  | CopParser.SomeE (m, s, t) => (Nat.leb (List.length t) 0)
+  | CopParser.NoneE _ => false
+  end.
+
+Definition stat_collect_prop (t : Term) :=
+  (fun t => collect (term_seq_size t) true).
+(* QuickChickWith (updMaxSize stdArgs 9) stat_collect_prop. *)
+
+Open Scope cop_ent_scope.
+(* This seems to be an actual error case, we are return too many maps of crap *)
+Definition test1 := "_ +<- {} -~+ ! -<+ ! -> ! +~- _".
+Example test1ex : CopParser.parsePhrase 12 (CopParser.tokenize test1) map_empty = 
+  <{ `_ +<- (asp NULL) }>.
+Compute (CopParser.parsePhrase 12 (CopParser.tokenize test1) map_empty).
+Definition test1Term := (@pair (prod CopParser.symbol_map Term) (list CopParser.token)
+            (@pair CopParser.symbol_map Term (@nil (prod string nat))
+               (bseq (@pair SP SP ALL NONE) (asp CPY)
+                  (bpar (@pair SP SP NONE ALL) (asp NULL)
+                     (bseq (@pair SP SP NONE ALL) 
+                        (asp SIG)
+                        (lseq (asp SIG)
+                           (bpar (@pair SP SP ALL NONE) (asp SIG) (asp CPY)))))))).
+QuickChickWith (updMaxSize stdArgs 3) genTerm_Correct.
