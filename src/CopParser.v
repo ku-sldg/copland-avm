@@ -130,6 +130,9 @@ Lemma list_of_string_space :
 Proof.
   auto.
 Qed.
+(* 
+This proof takes too long, but works
+Uncomment if ever needed
 
 Lemma tokenize_helper_space_after : forall c st (t1 : string),
   tokenize_helper c st (list_of_string t1) 
@@ -153,7 +156,7 @@ Proof.
       rewrite <- list_of_string_space; 
       try (apply IHt1);
       try (rewrite IHt1; reflexivity).
-Qed.
+Qed. *)
 
 Ltac createBase char := 
   assert (Ht : char <> "["%char /\
@@ -175,10 +178,12 @@ unfold tokenize. reflexivity. Qed.
 (* Error Message Options *)
 Inductive optionE (X:Type) : Type :=
   | SomeE (x : X)
-  | NoneE (s : string).
+  | NoneE (s : string)
+  | OutOfFuel.
 
 Arguments SomeE {X}.
 Arguments NoneE {X}.
+Arguments OutOfFuel {X}.
 
 Open Scope string_scope.
 
@@ -187,8 +192,9 @@ Definition parser (T : Type) :=
 
 Fixpoint many_helper {T} (p : parser T) acc steps xs :=
   match steps, p xs with
+  | _, OutOfFuel => OutOfFuel
   | 0, _ =>
-      NoneE "Too many recursive calls"
+      OutOfFuel
   | _, NoneE _ =>
       SomeE ((rev acc), xs)
   | S steps', SomeE (t, xs') =>
@@ -290,9 +296,11 @@ Definition parsePlace (xs : list token) (sm : symbol_map)
   | nil => NoneE "Expected Place"
   | x::xs' => (* try parse symbol *)
               match (parseSymbol xs sm) with
+              | OutOfFuel => OutOfFuel
               | SomeE x => SomeE x
               | NoneE m => (* try parse digits *)
                             match (parseDigits xs sm) with
+                            | OutOfFuel => OutOfFuel
                             | SomeE x' => SomeE x'
                             | NoneE m' => NoneE (m ++ m')
                             end
@@ -301,53 +309,11 @@ Definition parsePlace (xs : list token) (sm : symbol_map)
 
 Compute parsePlace (tokenize "p2") map_empty.
 
-Definition aspToCopString (a : ASP) (sm : symbol_map): string :=
-  match a with
-  | NULL  => "{}"
-  | CPY   => "_"
-  | SIG   => "!"
-  | HSH   => "#"
-  | ASPC (asp_paramsC aId args plc tId) =>
-      match (mapD_get_key sm plc) with
-      | None => "ERROR: Could not locate symbol"
-      | Some plcN =>
-        aId ++ " " ++ plcN ++ " " ++ tId
-      end
-  end.
-
-
-Example aspToCopString0 : aspToCopString (ASPC (asp_paramsC "hi" nil 102 "ker")) map_empty =
-  "ERROR: Could not locate symbol". reflexivity. Qed.
-
-
-Example aspToCopString1 : 
-aspToCopString (ASPC (asp_paramsC "hi" nil 102 "ker")) (map "102" to 102 in mapD_empty) =
-  "hi 102 ker". reflexivity. Qed.
-
 Definition spToStr (s : SP) :=
   match s with
   | ALL => "+"
   | NONE => "-"
   end.
-
-Fixpoint termToCopString (t : Term) (sm : symbol_map) : string :=
-  match t with
-  | asp a       => aspToCopString a sm
-  | att p t     => match (mapD_get_key sm p) with
-                   | None => "ERROR - Could not map place"
-                   | Some pstr => "@" ++ pstr ++ " " ++ termToCopString t sm
-                   end
-  | lseq t1 t2  => termToCopString t1 sm ++ " -> " ++ termToCopString t2 sm
-  | bseq (s1,s2) t1 t2 => 
-    termToCopString t1 sm ++ " " ++ 
-    spToStr s1 ++ "<" ++ spToStr s2 ++ " " ++ termToCopString t2 sm
-  | bpar (s1,s2) t1 t2 =>
-    termToCopString t1 sm ++ " " ++ spToStr s1 
-    ++ "~" ++ spToStr s2 ++ " " ++ termToCopString t2 sm
-  end.
-
-Example termToCopString1 : termToCopString <{ @ 1 [ << "vc" 2 "sys" >> ]}> (map "1" to 1 in (map "2" to 2 in map_empty))= "@1 vc 2 sys".
-reflexivity. Qed.
 
 Definition parserSoundASP 
   (p :  list token -> symbol_map
@@ -404,14 +370,17 @@ Definition parseASPC (xs : list token) (sm : symbol_map)
                       : optionE (symbol_map * Term * list token) := 
     let sym1 := parseSymbol xs sm in
     match sym1 with
+    | OutOfFuel => OutOfFuel
     | NoneE m => NoneE m
     | SomeE (sm', x',xs') => 
         let place := parseDigits xs' sm' in
         match place with
+        | OutOfFuel => OutOfFuel
         | NoneE m => NoneE m
         | SomeE (sm'', x'',xs'') =>   
                   let sym2 := parseSymbol xs'' sm'' in
                   match sym2 with
+                  | OutOfFuel => OutOfFuel
                   | NoneE m => NoneE m
                   | SomeE (sm''', x''',xs''') => 
                       match (map_get sm''' x'') with
@@ -421,7 +390,7 @@ Definition parseASPC (xs : list token) (sm : symbol_map)
                       | None => NoneE "Failed to find relevant symbol for ASPC"
                       | Some pNat =>
                           SomeE (sm''',
-                            (asp (ASPC (asp_paramsC x' nil pNat x'''))),
+                            (asp (ASPC ALL EXTD (asp_paramsC x' nil pNat x'''))),
                             xs''')
                       end
                   end
@@ -475,18 +444,23 @@ Definition parseASP (xs : list token) (sm : symbol_map)
     | nil   => NoneE "Expected ASP"
     | x::t  =>  
         match (parseNull xs sm) with
+        | OutOfFuel => OutOfFuel
         | SomeE x' => SomeE x'
         | NoneE _ =>
             match (parseCopy xs sm) with
+            | OutOfFuel => OutOfFuel
             | SomeE x'' => SomeE x''
             | NoneE _ =>
                 match (parseASPC xs sm) with
+                | OutOfFuel => OutOfFuel
                 | SomeE x''' => SomeE x'''
                 | NoneE _ =>
                     match (parseSign xs sm) with
+                    | OutOfFuel => OutOfFuel
                     | SomeE x'''' => SomeE x''''
                     | NoneE _ =>
                         match (parseHash xs sm) with
+                        | OutOfFuel => OutOfFuel
                         | SomeE x''''' => SomeE x'''''
                         | NoneE _ => NoneE "Expected an ASP"
                         end
@@ -536,6 +510,7 @@ Definition parseAT_Place (xs : list token) (sm : symbol_map)
         if (string_dec h "@")
         then (* found @, look for place in rem tokens*)
           match parsePlace t sm with
+          | OutOfFuel => OutOfFuel
           | NoneE m => NoneE m
           | SomeE (sm', pStr, tks) =>
               match (map_get sm' pStr) with
@@ -556,6 +531,7 @@ Definition parseAT_Place (xs : list token) (sm : symbol_map)
             then (* found @, look for place in rem of token*)
               let firstTok : token := (string_of_list t') in
               match parsePlace (firstTok :: t) sm with
+              | OutOfFuel => OutOfFuel
               | NoneE m => NoneE m
               | SomeE (sm', pStr, tks) =>
                   match (map_get sm' pStr) with
@@ -575,16 +551,19 @@ Fixpoint parsePhrase (fuel : nat) (xs : list token) (sm : symbol_map)
               : optionE (symbol_map * Term * list token) :=
   (* we are using the left-recursive removed grammer now *)
 match fuel with
-| 0 => NoneE "Out of fuel"
+| 0 => OutOfFuel
 | S fuel' => 
   match xs with
   | nil     => NoneE "Expected phrase"
   | h::t  =>  (* We have tokens to work with *)
                 (* try parsing an ASP *)
                 match (parseASP xs sm) with
+                | OutOfFuel => OutOfFuel
                 | SomeE (sm', x',xs') => (* Parse the PHR' *)
                     match (parsePhrase' fuel' x' xs' sm') with
+                    | OutOfFuel => OutOfFuel
                     | NoneE m => NoneE m
+                    | SomeE (_, OutOfFuel, _ ) => OutOfFuel
                     | SomeE (sm', NoneE m,_) => (* It was empty *) 
                           SomeE (sm', x', xs')
                           (* NoneE m *)
@@ -593,10 +572,13 @@ match fuel with
                     end
                 | NoneE m'  => (* try parsing ATT *)
                     match (parseATT fuel' xs sm) with
+                    | OutOfFuel => OutOfFuel
                     | SomeE (sm', x'',xs'') => 
                         (* parsePhrase' fuel' x'' xs'' *)
                         match (parsePhrase' fuel' x'' xs'' sm') with
+                        | OutOfFuel => OutOfFuel
                         | NoneE m => NoneE (m ++ ", " ++ m')
+                        | SomeE (_, OutOfFuel, _ ) => OutOfFuel
                         | SomeE (sm', NoneE m,_) => (* It was empty *) 
                               SomeE (sm', x'',xs'')
                               (* NoneE (m ++ ", " ++ m') *)
@@ -606,10 +588,13 @@ match fuel with
                         end
                     | NoneE m'' => (* Try parsing parens *)
                         match (parseParens fuel' xs sm) with
+                        | OutOfFuel => OutOfFuel
                         | SomeE (sm', x''', xs''') => 
                             (* parsePhrase' fuel' x''' xs''' *)
                             match (parsePhrase' fuel' x''' xs''' sm') with
+                            | OutOfFuel => OutOfFuel
                             | NoneE m => NoneE m
+                            | SomeE (_, OutOfFuel, _ ) => OutOfFuel
                             | SomeE (sm', NoneE _,_) => 
                                   (* It was empty *) SomeE (sm', x''',xs''')
                             | SomeE (sm', SomeE x'''', xs'''') => 
@@ -626,7 +611,7 @@ with parsePhrase' (fuel : nat) (prevT : Term)
                   (xs : list token) (sm : symbol_map)
                   : optionE (symbol_map * (optionE Term) * list token) :=
   match fuel with
-  | 0 => NoneE "Out of Fuel"
+  | 0 => OutOfFuel
   | S (fuel') => 
       match xs with
       | nil => SomeE (sm, NoneE "Empty1", xs)
@@ -634,9 +619,11 @@ with parsePhrase' (fuel : nat) (prevT : Term)
       | h :: t => if (string_dec h "->") 
                   then (* it is an arrow *)
                       match (parsePhrase fuel' t sm) with
+                      | OutOfFuel => OutOfFuel
                       | NoneE m' => NoneE ("invalid arrow")
                       | SomeE (sm', x',xs') => 
                                   match (parsePhrase' fuel' (lseq prevT x') xs' sm') with
+                                  | OutOfFuel => OutOfFuel
                                   | NoneE m'' => NoneE m''
                                   | SomeE (sm', NoneE m, _) => 
                                         SomeE (sm', SomeE (lseq prevT x'), xs')
@@ -645,9 +632,11 @@ with parsePhrase' (fuel : nat) (prevT : Term)
                       end
                   else (* try parse branch *)
                       match (parseBranch xs prevT sm) with
+                      | OutOfFuel => OutOfFuel
                       | NoneE m' => SomeE (sm, NoneE "Empty2", xs) (* must be empty *)
                       | SomeE (sm', brnFn,xs') => 
                           match (parsePhrase fuel' xs' sm') with
+                          | OutOfFuel => OutOfFuel
                           | NoneE m'' => NoneE m''
                           | SomeE (sm'', x'',xs'') => 
                                 SomeE (sm'', (SomeE (brnFn x'')), xs'')
@@ -658,12 +647,13 @@ with parsePhrase' (fuel : nat) (prevT : Term)
 with parseATT (fuel : nat) (xs : list token) (sm : symbol_map)
               : optionE (symbol_map * Term * list token) :=
   match fuel with
-  | 0 => NoneE "Out of fuel"
+  | 0 => OutOfFuel
   | S (fuel') => 
       match xs with
       | nil => NoneE "Expected @ plc PHR"
       | x :: xs' =>
           match (parseAT_Place xs sm) with
+          | OutOfFuel => OutOfFuel
           | NoneE m => NoneE ("Failed to parseATT : ")
           | SomeE (sm', x',xs') => 
               (* we got out @ place now we need [phr] or phr*)
@@ -674,6 +664,7 @@ with parseATT (fuel : nat) (xs : list token) (sm : symbol_map)
                   then
                     (* we are in brackets *)
                     match (parsePhrase fuel' t sm') with
+                    | OutOfFuel => OutOfFuel
                     | NoneE m => NoneE ("Invalid phrase after @ place (1) due to (" ++ m ++ "), ")
                     | SomeE (sm'', x'',xs'') => 
                         (* we have parsed the phrase, check for final brackets *)
@@ -689,6 +680,7 @@ with parseATT (fuel : nat) (xs : list token) (sm : symbol_map)
                     end
                   else
                     match (parsePhrase fuel' xs' sm') with
+                    | OutOfFuel => OutOfFuel
                     | NoneE m => NoneE ("Invalid phrase after @ place (2) due to (" ++ m ++ "), ")
                     | SomeE (sm', x'',xs'') => SomeE (sm', att x' x'', xs'')
                     end
@@ -699,7 +691,7 @@ with parseATT (fuel : nat) (xs : list token) (sm : symbol_map)
 with parseParens (fuel : nat) (xs : list token) (sm : symbol_map) 
                   : optionE (symbol_map * Term * list token) :=
   match fuel with
-  | 0 => NoneE "Out of fuel"
+  | 0 => OutOfFuel
   | S (fuel') => 
       match xs with
       | nil => NoneE "Missing parenthesis"
@@ -708,6 +700,7 @@ with parseParens (fuel : nat) (xs : list token) (sm : symbol_map)
           then
             (* we are in parens *)
             match (parsePhrase fuel' t sm) with
+            | OutOfFuel => OutOfFuel
             | NoneE m => NoneE ("Invalid phrase within parens due to (" ++ m ++ "), ")
             | SomeE (sm', x'',xs'') => 
                 (* we have parsed the phrase, check for final parens *)
@@ -735,6 +728,8 @@ Compute parsePhrase 20 (tokenize "") map_empty.
 Compute parsePhrase 20 (tokenize testPhr) map_empty.
 Compute parsePhrase 3 ["aTest"; "plcTest"; "tTest"] map_empty.
 Compute parsePhrase 3 (tokenize "kim p2 ker") map_empty.
+(* Minimum fuel needed here is 12 - quite a lot *)
+Compute parsePhrase 12 (tokenize testPhr) map_empty.
 
 (* 
 Theorem parser_involutive: forall (t t1 : Term) sm rsm sm' rsm',
