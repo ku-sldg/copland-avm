@@ -267,9 +267,7 @@ Instance arbitraryTARG_ID : Arbitrary (TARG_ID). Defined.
 
 #[local]
 Instance decArg (a1 a2 : Arg) : Dec (a1 = a2).
-constructor. unfold ssrbool.decidable.
-(* We are going to force false *)
-right. apply args_always_neq.
+dec_eq.
 Defined.
 
 (*** Gen (list Arg) *)
@@ -286,79 +284,6 @@ Instance genListArg : Gen (list Arg) :=
   arbitrary := gListArg
 }.
 
-(******************************************************************)
-(** ASP_PARAMS *)
-(******************************************************************)
-
-(*** Show *)
-Open Scope monad_scope.
-
-Definition showASP_PARAMS_Aux 
-    (aspp : ASP_PARAMS) `{_ : Show ASP_ID} `{_ : Show TARG_ID} `{Show Plc} : string :=
-    match aspp with
-    | (asp_paramsC a arg p t) =>
-        show a ++ " " ++ show p ++ " " ++ show t
-    end.
-
-#[local]
-Instance showASP_PARAMS : Show (ASP_PARAMS) :=
-    {
-        show asp := showASP_PARAMS_Aux asp
-    }.
-
-Compute (show (asp_paramsC "kim" nil 2 "ker")).
-(*** Dec *)
-#[local]
-Instance decASP_PARAMS (a1 a2 : ASP_PARAMS): Dec (a1 = a2).
-constructor. unfold ssrbool.decidable.
-destruct a1, a2.
-destruct (a =? a0) eqn:Asp.
-- (* asp_id are equal *) 
-  destruct (Nat.eqb p p0) eqn:Plc.
-  * (* plc are equal *)
-    destruct (t =? t0) eqn:Targ.
-    ** (* Targ are equal *)
-      rewrite String.eqb_eq in *. subst.
-      rewrite Nat.eqb_eq in Plc. subst.
-      generalize dependent l0.
-      induction l; intros.
-      *** destruct l0 eqn:E.
-        **** left. reflexivity.
-        **** right. intro. inversion H.
-      *** destruct l0 eqn:E.
-        **** right. intro. inversion H.
-        **** specialize IHl with l1. destruct IHl.
-          ***** inversion e. 
-                (* Use of a possibly dangerous decidablity admittance about args *)
-                pose proof (decArg a a1). inversion H.
-                inversion dec.
-            ****** subst. left. reflexivity.
-            ****** right. intro. inversion H2. contradiction.
-          ***** right. intro. inversion H. subst. apply n. reflexivity.
-    ** right. intro. inversion H; subst. 
-      rewrite String.eqb_refl in Targ. discriminate.
-  * right. intro. inversion H; subst.
-    rewrite Nat.eqb_refl in Plc. discriminate. 
-- (* asp_id are not equal *)
-  right. intro. inversion H; subst.
-  rewrite String.eqb_refl in Asp. discriminate.
-Defined. 
-
-(*** Gen *)
-(* Safe to do here, because we already locked in the rest of the sub-terms arbitraries *)
-Derive Arbitrary for ASP_PARAMS.
-
-
-Definition genASP_PARAMS_Correct (a : ASP_PARAMS) : bool :=
-  match CopParser.parseASPC (CopParser.tokenize (show a)) map_empty with
-  | CopParser.SomeE (m, s, t) => (Nat.leb (List.length t) 0)
-  | CopParser.NoneE _ => false
-  | CopParser.OutOfFuel => false
-  end.
-
-QuickChick genASP_PARAMS_Correct.
-
-(* Sample (@arbitrary ASP_PARAMS _). *)
 
 
 (******************************************************************)
@@ -451,6 +376,49 @@ Instance arbitraryFWD : Arbitrary (FWD). Defined.
 
 
 (******************************************************************)
+(** ASPC and ASP_PARAMS *)
+(******************************************************************)
+
+(*** Show *)
+Open Scope monad_scope.
+
+Definition showASP_PARAMS_Aux 
+    (aspp : ASP_PARAMS) `{_ : Show ASP_ID} `{_ : Show TARG_ID} `{Show Plc} : string :=
+    match aspp with
+    | (asp_paramsC a arg p t) =>
+        show a ++ " " ++ show p ++ " " ++ show t
+    end.
+
+#[local]
+Instance showASP_PARAMS : Show (ASP_PARAMS) :=
+    {
+        show asp := showASP_PARAMS_Aux asp
+    }.
+
+Compute (show (asp_paramsC "kim" nil 2 "ker")).
+(*** Dec *)
+#[local]
+Instance decASP_PARAMS (a1 a2 : ASP_PARAMS): Dec (a1 = a2).
+dec_eq.
+Defined.
+
+(*** Gen *)
+(* Safe to do here, because we already locked in the rest of the sub-terms arbitraries *)
+Derive Arbitrary for ASP_PARAMS.
+
+
+Definition genASP_PARAMS_Correct (a : ASP_PARAMS) : bool :=
+  match CopParser.parseASPC (CopParser.tokenize (show a)) map_empty with
+  | CopParser.SomeE (m, s, t) => (Nat.leb (List.length t) 0)
+  | CopParser.NoneE _ => false
+  | CopParser.OutOfFuel => false
+  end.
+
+QuickChick genASP_PARAMS_Correct.
+
+(* Sample (@arbitrary ASP_PARAMS _). *)
+
+(******************************************************************)
 (** ASP *)
 (******************************************************************)
 
@@ -481,8 +449,34 @@ inversion H. inversion dec; subst;
 destruct s, s0, f, f0; adec.
 Defined.
 
-(*** Gen, Shrink, Arbitrary - Auto derived here *)
-Derive Arbitrary for ASP.
+(*** G ASP *)
+Definition gASP : G ASP :=
+  oneOf [
+    (ret NULL) ; (ret CPY) ; (ret SIG) ; (ret HSH) ;
+    (par <- arbitrary ;; ret (ASPC ALL EXTD par))
+  ].
+
+(*** Gen ASP *)
+#[local]
+Instance genASP : Gen (ASP) :=
+{ arbitrary := gASP }.
+
+(*** Shrink ASP *)
+Definition shrinkASP_Aux (a : ASP) : list (ASP) :=
+  match a with
+  | (ASPC sp fwd par) => map (fun p' => (ASPC sp fwd p')) (shrink par)
+  | _ => [] (* If its just a basic ASP we cant shrink *)
+  end.
+
+#[local]
+Instance shrinkASP : Shrink (ASP) :=
+{
+  shrink := shrinkASP_Aux
+}.
+
+(*** Arbitrary ASP *)
+#[local]
+Instance arbitraryASP : Arbitrary (ASP). Defined.
 
 (* Sample (@arbitrary ASP _). *)
 
@@ -496,6 +490,18 @@ Definition genASP_Correct (a : ASP) : bool :=
 
 QuickChick genASP_Correct.
 
+Definition genASP_parse_correct (a : ASP) : option ASP :=
+  match CopParser.parseASP (CopParser.tokenize (show a)) map_empty with
+  | CopParser.SomeE (_, (asp a'), _) => Some a'
+  | _ => None
+  end.
+
+#[local]
+Instance decEqOptionAsp : Dec_Eq (option ASP). dec_eq. Defined.
+
+Conjecture genASP_works : forall (a : ASP), (genASP_parse_correct a) = Some a.
+QuickChick genASP_works.
+
 (******************************************************************)
 (* Term *)
 (******************************************************************)
@@ -503,12 +509,12 @@ QuickChick genASP_Correct.
 Fixpoint showTerm_Aux (t : Term) : string :=
   match t with
   | asp a => show a
-  | att p t' => "@" ++ show p ++ " " ++ showTerm_Aux t'
-  | lseq t1 t2 => showTerm_Aux t1 ++ " -> " ++ showTerm_Aux t2
+  | att p t' => "@" ++ show p ++ " (" ++ showTerm_Aux t' ++ ")"
+  | lseq t1 t2 => "((" ++ showTerm_Aux t1 ++ ") -> (" ++ showTerm_Aux t2 ++ "))"
   | bseq (s1,s2) t1 t2 => 
-      showTerm_Aux t1 ++ " " ++ show s1 ++ "<" ++ show s2 ++ " " ++ showTerm_Aux t2
+    "((" ++ showTerm_Aux t1 ++ ") " ++ show s1 ++ "<" ++ show s2 ++ " (" ++ showTerm_Aux t2 ++ "))"
   | bpar (s1,s2) t1 t2 =>
-      showTerm_Aux t1 ++ " " ++ show s1 ++ "~" ++ show s2 ++ " " ++ showTerm_Aux t2
+    "((" ++ showTerm_Aux t1 ++ ") " ++ show s1 ++ "~" ++ show s2 ++ " (" ++ showTerm_Aux t2 ++ "))"
   end.
 
 #[local]
@@ -542,6 +548,10 @@ adec.
   destruct IHt1_1; destruct IHt1_2; simpl; subst; adec.
 Defined.
 
+#[local]
+Instance decEqTerm (t1 t2 : Term) : Dec_Eq (Term).
+dec_eq. Defined.
+
 (** G Term *)
 Fixpoint gTerm (sz : nat) : G Term :=
   match sz with
@@ -564,28 +574,32 @@ Instance genTerm : Gen (Term) :=
 { arbitrary := sized (fun x => gTerm (S x)) }.
 
 (** Shrink Term *)
-Fixpoint shrinkTerm_Aux (t : Term) : list (Term) :=
+Definition shrinkTerm_Aux (t : Term) : list (Term) :=
   match t with
   | asp a => (map (fun a' => asp a') (shrink a))
-  | _ => [] 
+  (* | _ => []  *)
   (* Testing to see how detrimental the shrink is*)
-  (* | att p t' => 
+  | att p t' => 
     (* vary p or vary t *)
-    [t'] ++ 
+    [t'] 
+    (* ++ 
     (map (fun p' => att p' t) (shrink p)) ++ 
-    (map (fun t'' => att p t'') (shrinkTerm_Aux t'))
+    (map (fun t'' => att p t'') (shrinkTerm_Aux t')) *)
   | lseq t1 t2 =>
-    [t1 ; t2] ++ 
+    [t1 ; t2] 
+    (* ++ 
     (map (fun t1' => lseq t1' t2) (shrinkTerm_Aux t1)) ++
-    (map (fun t2' => lseq t1 t2') (shrinkTerm_Aux t2))
+    (map (fun t2' => lseq t1 t2') (shrinkTerm_Aux t2)) *)
   | bseq sp t1 t2 =>
     [t1 ; t2] ++ (* Vary sp, t1 or t2*)
-    (map (fun sp' => bseq sp' t1 t2) (shrink sp)) ++
+    (map (fun sp' => bseq sp' t1 t2) (shrink sp)) 
+    (* ++
     (map (fun t1' => bseq sp t1' t2) (shrinkTerm_Aux t1)) ++
-    (map (fun t2' => bseq sp t1 t2') (shrinkTerm_Aux t2))
+    (map (fun t2' => bseq sp t1 t2') (shrinkTerm_Aux t2)) *)
   | bpar sp t1 t2 =>
     [t1 ; t2] ++ (* Vary sp, t1 or t2*)
-    (map (fun sp' => bpar sp' t1 t2) (shrink sp)) ++
+    (map (fun sp' => bpar sp' t1 t2) (shrink sp)) 
+    (* ++
     (map (fun t1' => bpar sp t1' t2) (shrinkTerm_Aux t1)) ++
     (map (fun t2' => bpar sp t1 t2') (shrinkTerm_Aux t2)) *)
   end.
@@ -609,8 +623,7 @@ Fixpoint term_seq_size (t : Term) : nat :=
   | bpar sp t1 t2 => 1 + term_seq_size t1 + term_seq_size t2
   end.
 
-Definition term_fuel (t : Term) : nat := Nat.mul 4 (S (term_seq_size t)).
-  
+Definition term_fuel (t : Term) : nat := Nat.mul 10 (S (term_seq_size t)).
 
 Definition genTerm_Correct (a : Term) : bool :=
   match CopParser.parsePhrase (term_fuel a) (CopParser.tokenize (show a)) map_empty with
@@ -624,14 +637,6 @@ Definition stat_collect_prop (t : Term) :=
 QuickChickWith (updMaxSize stdArgs 9) stat_collect_prop.
 
 Open Scope cop_ent_scope.
-(* This seems to be an actual error case, we are return too many maps of crap *)
-Definition test1 := "_ +<- {} -~+ ! -<+ ! -> ! +~- _".
-Example test1ex : CopParser.parsePhrase 12 (CopParser.tokenize test1) map_empty = 
-  CopParser.SomeE (map_empty, <{ __ +<- {} -~+ ! -<+ ! -> ! +~- __ }>, nil).
-  reflexivity. Defined. 
-
-Compute (CopParser.parsePhrase 12 (CopParser.tokenize test1) map_empty).
-Compute CopParser.parsePhrase (100) (CopParser.tokenize "w 1 jWx6P_z05x") map_empty.
 
 Definition parse_succeeds' (a : Term) :=
   match CopParser.parsePhrase (term_fuel a) (CopParser.tokenize (show a)) map_empty with
@@ -657,53 +662,28 @@ Extract Constant defNumShrinks => "0".
 Conjecture all_terms_parseable : forall (a : Term), (parse_succeeds a) = true.
 QuickChick all_terms_parseable.
 
-Definition parse_to_out (a : Term) : Term.
-destruct (CopParser.parsePhrase (term_fuel a) (CopParser.tokenize (show a)) map_empty) eqn:E.
-- destruct x. destruct p. apply t.
-- pose proof (all_terms_parseable a). unfold parse_succeeds in H.
-  rewrite E in H. discriminate.
-- pose proof (all_terms_parseable a). unfold parse_succeeds in H.
-  rewrite E in H. discriminate.
-Defined.
+Definition DEBUG_parse (s : string) : option Term :=
+  match (CopParser.parsePhrase 100 (CopParser.tokenize s) map_empty) with
+  | CopParser.SomeE (_, a', _) => Some a'
+  | CopParser.NoneE _ => None
+  | CopParser.OutOfFuel => None
+  end.
 
-Definition equivalent_term (a : Term) :=
-  (parse_to_out a = a)?.
+Definition parse_to_out (a : Term) : option (Term) :=
+  match (CopParser.parsePhrase (term_fuel a) (CopParser.tokenize (show a)) map_empty) with
+  | CopParser.SomeE (_, a', _) => Some a'
+  | CopParser.NoneE _ => None
+  | CopParser.OutOfFuel => None
+  end.
 
-Conjecture parsed_terms_match : forall (a : Term), equivalent_term a = true.
+#[local]
+Instance decEqOptionTerm : Dec_Eq (option Term).
+dec_eq. Defined.
+
+(* Extract Constant defNumTests => "100000". 
+It passes this, but seems excessive for everytime we run
+*)
+Extract Constant defSize => "10".
+
+Conjecture parsed_terms_match : forall (a : Term), (parse_to_out a) = Some a.
 QuickChick parsed_terms_match.
-
-Definition ex1 : Term := <{ @2 [ @1 [ << "o44" 1 "j90nV6" >> -<- @1 [ << "i_" 2 "w" >> +~- ! -> << "i1BBYZ" 1 "nI_9P" >> ] ] ] }>.
-(* Compute (show ex1).
-Compute ex1.
-Compute (CopParser.parsePhrase (term_fuel ex1) (CopParser.tokenize (show ex1)) map_empty). *)
-Compute (parse_to_out ex1).
-Compute (ex1).
-Example ex1_match : (parse_to_out ex1 = ex1)? = true.
-simpl.
-Compute ((parse_to_out ex1 = ex1)?).
-
-
- :=
-  match CopParser.parsePhrase (term_fuel a) (CopParser.tokenize (show a)) map_empty with
-  | CopParser.SomeE (m, s, t) => s
-  | CopParser.NoneE _ => 
-
-  end.
-
-Definition term_parse_correct (a : Term) : Checker :=
-  match CopParser.parsePhrase (100) (CopParser.tokenize (show a)) map_empty with
-  | CopParser.SomeE (m, s, t) => if (a = s)? then ret Success else ret (Failure a)
-  | CopParser.NoneE _ => ret (Failure a)
-  end.
-(* 
-Definition forall_terms_parse_correct : Checker :=
-  a <- (@arbitrary Term _) ;;
-  r <- checker (term_parse_correct a) ;;
-  match r with
-  | Success => ret Success
-  | Failure b => ret (Failure (a,b))
-  end. *)
-
-Locate "?".
-(* QuickChickWith (updMaxSize stdArgs 3) genTerm_Correct. *)
-QuickChickWith (updMaxSize stdArgs 2) term_parse_correct.
