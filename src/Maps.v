@@ -66,6 +66,77 @@ Fixpoint map_vals{A B:Type} `{H : EqClass A} (m : MapC A B ) : list B :=
   | (k', v) :: m' => v :: map_vals m'
   end.
 
+(* A two-way implementation of list maps, where you can lookup from a key, or value *)
+Definition MapD (A:Type) (B:Type) `{H : EqClass A} `{H1 : EqClass B} := list (A * B).
+
+(** The [empty] map is the empty list. *)
+
+Definition mapD_empty{A B:Type} `{H : EqClass A} `{H1 : EqClass B} : MapD A B := [].
+
+(** To [get] the binding of an identifier [x], we just need to walk 
+    through the list and find the first [cons] cell where the key 
+    is equal to [x], if any. *)
+
+Fixpoint mapD_get_value{A B:Type} `{H : EqClass A} `{H1 : EqClass B} (m : MapD A B ) x : option B :=
+  match m with
+  | [] => None
+  | (k, v) :: m' => if eqb x k then Some v else mapD_get_value m' x
+  end.
+
+  
+Fixpoint mapD_get_key{A B:Type} `{H : EqClass A} `{H1 : EqClass B} 
+          (m : MapD A B ) (v : B) : option A :=
+  match m with
+  | [] => None
+  | (k, v') :: m' => if eqb v v' then Some k else mapD_get_key m' v
+  end.
+
+
+(** To [set] the binding of an identifier, we just need to [cons] 
+    it at the front of the list. *) 
+
+Definition mapD_set{A B:Type} `{H : EqClass A} `{H1 : EqClass B} 
+                    (m:MapD A B) (x:A) (v:B) : MapD A B := (x, v) :: m.
+
+Fixpoint mapD_vals{A B:Type} `{H : EqClass A} `{H1 : EqClass B} (m : MapD A B ) : list B :=
+  match m with
+  | [] => []
+  | (k', v) :: m' => v :: mapD_vals m'
+  end.
+
+Fixpoint mapD_keys{A B : Type} `{H : EqClass A} `{H1 : EqClass B} (m : MapD A B) : list A :=
+  match m with
+  | nil => nil
+  | (k',v') :: m' => k' :: mapD_keys m'
+  end.
+
+(* TODO: Update these proofs to be more general *)
+Lemma mapD_key_values_length : forall m,
+  length (mapD_vals m) = length (mapD_keys m).
+Proof.
+  intros.
+  induction m; simpl.
+  - reflexivity.
+  - destruct a. simpl. rewrite IHm. reflexivity.
+Qed.
+
+Theorem mapD_kv_len_match: forall m,
+  length (mapD_vals m) = length m.
+Proof.
+  intros.
+  induction m; simpl.
+  - reflexivity.
+  - destruct a; simpl; rewrite IHm; reflexivity.
+Qed.
+
+Theorem mapD_get_works : forall m x v,
+  mapD_get_key (mapD_set m x v) v = Some x.
+Proof.
+  intros.
+  induction x; simpl;
+  rewrite Nat.eqb_refl; reflexivity.
+Qed.
+
 (*
 (** Finally, the domain of a map is just the set of its keys. *)
 Fixpoint map_dom {K V} (m:MapC K V) : list K :=

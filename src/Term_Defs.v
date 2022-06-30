@@ -50,8 +50,7 @@ Definition Event_ID: Set := nat.
 
 Definition ASP_ID: Set := string.
 Definition TARG_ID: Set := string.
-Definition Arg: Set.
-Admitted.
+Definition Arg: Set := string.
 
 (*
 Inductive ASP_PARAMS': Set :=
@@ -132,11 +131,16 @@ Notation "x -> y" := (lseq x y) (in custom copland_entry at level 99, right asso
 (* ASP's *)
 Notation "!" := (asp SIG) (in custom copland_entry at level 98).
 Notation "#" := (asp HSH) (in custom copland_entry at level 98).
-Notation "'_'" := (asp CPY) (in custom copland_entry at level 98).
-Notation "'<' x y z '>'" := (asp (ASPC (asp_paramsC x nil y z))) 
+Notation "'__'" := (asp CPY) (in custom copland_entry at level 98).
+Notation "'{}'" := (asp NULL) (in custom copland_entry at level 98).
+Notation "'<<' x y z '>>'" := (asp (ASPC ALL EXTD (asp_paramsC x nil y z))) 
                       (in custom copland_entry at level 98).
 (* @ plc phrase *)
 Notation "@ p [ ph ]" := (att p ph) (in custom copland_entry at level 50).
+
+Open Scope cop_ent_scope.
+Definition test1 := <{ __ -> {} }>.
+Example test1ex : test1 = (lseq (asp CPY) (asp NULL)). reflexivity. Defined.
 
 Inductive ASP_Core: Set :=
 | NULLC: ASP_Core

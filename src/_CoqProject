@@ -40,3 +40,5 @@ Test_Extract_App.v
 Appraisal_AltImpls_Eq.v
 Helpers_Appraisal.v
 Appraisal.v
+EqClass.v
+Maps.v
