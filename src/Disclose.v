@@ -204,18 +204,22 @@ Qed.
   Example:  
   discloses_to_remote ev (q,et) says that event ev discloses evidence of type et to place q.
 
+*)
+
 Inductive discloses_to_remote: Ev -> (Plc*Evidence) -> Prop :=
-| at_disclose: forall i p q t e,
-    discloses_to_remote (req i p q t e) (q,e).
+| at_disclose: forall i p q t e e',
+    EvSubT e' e ->
+    discloses_to_remote (req i p q t e) (q,e').
 
 
 
 
 Inductive discloses_to_asp: Ev -> (Plc*ASP_ID*Evidence) -> Prop :=
-| asp_disclose: forall i p (asp_id:ASP_ID) args tpl tid e,
+| asp_disclose: forall i p (asp_id:ASP_ID) args tpl tid e e',
+    EvSubT e' e ->
     discloses_to_asp
       (umeas i p (asp_paramsC asp_id args tpl tid) e)
-      (p,asp_id,e).
+      (p,asp_id,e').
 
 
 (*
@@ -237,7 +241,7 @@ Definition splitEv_mt (sp:SP) (e:Evidence) : Evidence :=
 
 Fixpoint term_discloses_to_remote (t:Term) (p:Plc) (e:Evidence) (r:(Plc*Evidence)) : bool :=
   match t with
-  | att q t' => (Nat.eqb q (fst r)) && (eqb_evidence e (snd r)) ||
+  | att q t' => (Nat.eqb q (fst r)) && (evsubt_bool (snd r) e) ||
                (term_discloses_to_remote t' q e r)
   | lseq t1 t2 => (term_discloses_to_remote t1 p e r) ||
                  (term_discloses_to_remote t2 p (eval t1 p e) r)
@@ -273,7 +277,7 @@ Proof.
     invc H2.
     invc H2.
     invc H1.
-  -
+  - (* @ case *)
     invc H0.
     destruct_conjs.
     invc H4.
@@ -293,12 +297,26 @@ Proof.
     +
     simpl in *.
     invc H2.
+    assert (evsubt_bool e0 e = false).
+    {
+      rewrite <- EqNat.beq_nat_refl in H.
+      Search andb.
+      rewrite Bool.andb_true_l in H.
+      eassumption.
+    }
+    rewrite evsubt_bool_prop_iff in H4.
+    rewrite H4 in H1. solve_by_inversion.
+
+    (*
+    
+    solve_by_inversion.
+    
     rewrite PeanoNat.Nat.eqb_refl in H.
     assert (eqb_evidence e0 e0 = true).
     {
       apply eqb_eq_evidence. auto. }
     rewrite H1 in *.
-    invc H.
+    invc H. *)
     +
       eapply IHt.
       eassumption.
@@ -620,14 +638,14 @@ Fixpoint term_discloses_to_asp (t:Term) (p:Plc) (e:Evidence) (r:(Plc*ASP_ID*Evid
     match sp with
     | NONE => (eqb_evidence re mt)
     | ALL => 
-      (Nat.eqb p rp) && (eqb_aspid x ri) && (eqb_evidence e re)
+      (Nat.eqb p rp) && (eqb_aspid x ri) && (evsubt_bool re e)  (* (eqb_evidence e re) *)
     end
   | asp SIG =>
     let '(rp,ri,re) := r in
-    (Nat.eqb p rp) && (eqb_aspid (get_aspid sig_params) ri) && (eqb_evidence e re)
+    (Nat.eqb p rp) && (eqb_aspid (get_aspid sig_params) ri) && (evsubt_bool re e) (* (eqb_evidence e re) *)
   | asp HSH =>
     let '(rp,ri,re) := r in
-    (Nat.eqb p rp) && (eqb_aspid (get_aspid hsh_params) ri) && (eqb_evidence e re)
+    (Nat.eqb p rp) && (eqb_aspid (get_aspid hsh_params) ri) && (evsubt_bool re e) (* (eqb_evidence e re) *)
   | att q t' => (* (Nat.eqb q (fst r)) && (eqb_evidence e (snd r)) || *)
                (term_discloses_to_asp t' q e r)
   | lseq t1 t2 => (term_discloses_to_asp t1 p e r) ||
@@ -664,16 +682,34 @@ Proof.
     invc H2.
 
     rewrite PeanoNat.Nat.eqb_refl in H.
-     assert (eqb_evidence e0 e0 = true).
-    {
-      apply eqb_eq_evidence. auto. }
-    rewrite H0 in *; clear H0.
+
     assert (eqb_aspid a0 a0 = true).
     {
       apply eqb_eq_aspid. auto.
     }
     rewrite H0 in *; clear H0.
     invc H.
+    
+
+    (*
+     assert (eqb_evidence e0 e0 = true).
+    {
+      apply eqb_eq_evidence. auto. }
+     *)
+
+    rewrite evsubt_bool_prop_iff in H1.
+    rewrite H1 in *.
+    solve_by_inversion.
+
+    (*
+    
+    rewrite H0 in *; clear H0.
+    assert (eqb_aspid a0 a0 = true).
+    {
+      apply eqb_eq_aspid. auto.
+    }
+    rewrite H0 in *; clear H0.
+    invc H. *)
 
     
 
@@ -684,6 +720,8 @@ Proof.
     assert (eqb_evidence mt mt = true).
     {
       apply eqb_eq_evidence. auto. }
+    invc H1.
+    rewrite H0 in *.
     solve_by_inversion.
 
     invc H1.
@@ -693,16 +731,35 @@ Proof.
     ff.
 
     rewrite PeanoNat.Nat.eqb_refl in H.
+
+    (*
      assert (eqb_evidence e0 e0 = true).
     {
-      apply eqb_eq_evidence. auto. }
-    rewrite H0 in *; clear H0.
+      apply eqb_eq_evidence. auto. } *)
     assert (eqb_aspid a a = true).
     {
       apply eqb_eq_aspid. auto.
     }
     rewrite H0 in *; clear H0.
     invc H.
+    rewrite evsubt_bool_prop_iff in H1.
+    rewrite H1 in *. solve_by_inversion.
+
+    (*
+
+    
+    assert (evsubt_bool e0 e = false).
+    {
+      admit.
+    }
+    
+    rewrite H0 in *; clear H0.
+    assert (eqb_aspid a a = true).
+    {
+      apply eqb_eq_aspid. auto.
+    }
+    rewrite H0 in *; clear H0.
+    invc H. *)
 
      invc H1.
     invc H2.
@@ -711,6 +768,18 @@ Proof.
     ff.
 
     rewrite PeanoNat.Nat.eqb_refl in H.
+
+    assert (eqb_aspid a a = true).
+    {
+      apply eqb_eq_aspid. auto.
+    }
+    rewrite H0 in *; clear H0.
+    invc H.
+    rewrite evsubt_bool_prop_iff in H1.
+    rewrite H1 in *. solve_by_inversion.
+
+(*
+    
      assert (eqb_evidence e0 e0 = true).
     {
       apply eqb_eq_evidence. auto. }
@@ -721,6 +790,7 @@ Proof.
     }
     rewrite H0 in *; clear H0.
     invc H.
+*)
 
     
     
@@ -912,8 +982,6 @@ Definition term_discloses_to_asps (ls: list (Plc*ASP_ID*Evidence)) (t:Term) (p:P
 
 Definition filter_asp_disclosures (ls: list (Plc*ASP_ID*Evidence)) (p:Plc) (e:Evidence) (ts:list Term):
   list Term := filter (fun t => negb (term_discloses_to_asps ls t p e)) ts.
-
-
 
 
 
