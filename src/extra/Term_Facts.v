@@ -1,14 +1,26 @@
 Require Import List.
 Import List.ListNotations.
 
-Require Import Coq.Arith.Even.
+Definition even_nat_ind :
+  forall (P : nat -> Prop),
+  P 0 ->
+  P 1 ->
+  (forall n, P n -> P (S (S n))) ->
+  forall n, P n :=
+    fun P => fun P0 => fun P1 => fun P_plus_2 =>
+      fix f n := match n with
+                 | 0 => P0
+                 | 1 => P1
+                 | S (S n) => P_plus_2 n (f n)
+                 end.
 
 Lemma both_args_even: forall a b,
     Nat.even a = true ->
     Nat.even b = true ->
     Nat.even (a + b) = true.
 Proof.
-Admitted.
+  induction a using even_nat_ind; simpl; intros; auto; try discriminate.
+Qed.
 
 Definition get_available_locs (n:nat): list nat.
 Admitted.
@@ -38,10 +50,28 @@ Compute (make_pairs' [7;8;9;10] [(1,2); (3,4)]).
 
 Lemma even_list_struc{A:Type}: forall n (ls:list A),
     length ls = n ->
-    Coq.Arith.Even.even n ->
-    ls = [] \/ exists x y ls', ls = x :: y :: ls' /\ (Coq.Arith.Even.even (length ls')).
+    Nat.even n = true ->
+    ls = [] \/ exists x y ls', ls = x :: y :: ls' /\ (Nat.even (length ls') = true).
 Proof.
-Admitted.
+  induction n using even_nat_ind; simpl; intros; auto.
+  - left. destruct ls; simpl in *; auto; congruence.
+  - discriminate.
+  - right. destruct ls.
+    * discriminate.
+    * destruct ls.
+      ** discriminate.
+      ** specialize IHn with ls.
+         assert (length ls = n). { 
+          inversion H. auto.
+         }
+         apply (IHn H1) in H0.
+         destruct H0.
+        *** exists a, a0, []. split; subst; auto.
+        *** destruct H0 as [x' [y' Hl]]. 
+            destruct Hl as [ls' [Hl1 Hl2]].
+            subst.
+            exists a, a0, (x' :: y' :: ls'); split; subst; auto.
+Qed.
 
 (*
 Check even_ind.
@@ -51,11 +81,30 @@ even_ind
  *)
 *)
 
+
+Definition even_list_ind'{A:Type}
+  : forall (P : list A -> Prop), 
+  P [] -> (* base case*)
+  (forall x, P [x]) -> (* base case 2 *)
+  (* (forall ls, Nat.even (length ls) = true -> P ls) -> *)
+  (forall ls x y, P ls -> P (x :: y :: ls)) ->
+  (forall ls, P ls) :=
+    fun P => fun P0 => fun P1 => fun Pc2 =>
+      fix f l := match l with
+                  | [] => P0
+                  | [x] => P1 x
+                  | h1 :: h2 :: l' => Pc2 l' h1 h2 (f l')
+                  end.
+
 Definition even_list_ind{A:Type}
-  : forall P : list A -> Prop, P [] ->
-                    (forall ls x y, even (length ls) -> P ls -> P (x :: y :: ls)) ->
-                    (forall ls, even (length ls) -> P ls).
-Admitted.
+  : forall (P : list A -> Prop), 
+  P [] -> (* base case*)
+                    (forall ls x y, Nat.even (length ls) = true -> P ls -> P (x :: y :: ls)) ->
+                    (forall ls, Nat.even (length ls) = true -> P ls).
+Proof.
+  induction ls using even_list_ind'; intros; auto.
+  - discriminate.
+Qed.
 
 (*
 Lemma start_irrel: forall ls ls' ls'' H0,
@@ -103,123 +152,31 @@ Admitted.
 
 
 Lemma cumul: forall ls ps H0,
-    Coq.Arith.Even.even (length ls) ->
+    Nat.even (length ls) = true ->
     make_pairs' ls ps = Some H0 ->
     exists lss,
     H0 = ps ++ lss.
     (*
     make_pairs' ls (p :: ps) = Some (p :: H0). *)
 Proof.
-
-  (*
-  apply even_ind.
-  intros ps H0 p ls H.
-  generalize dependent ls.
-  apply even_list_ind.
-  intros.
-  generalizeEverythingElse ls.
-  apply even_list_ind.
-  -
-    cbn in *.
-  intros.
-  pose (even_list_struc (length ls) ls).
-  repeat concludes.
-  induction o.
-  -
-    subst.
-    cbn in *.
-    eauto.
-    congruence.
-  -
-    destruct_conjs.
-    subst.
-    cbn in *.
-*)
-Admitted.
-
-Lemma make_pairs_succeeds: forall ps ls,
+  induction ls using even_list_ind'; simpl; intros; auto.
+  - exists nil. rewrite app_nil_r. injection H1. auto.
+  - discriminate.
+  - specialize IHls with (ps ++ [(x,y)]) H0.
+    apply (IHls H) in H1. 
+    destruct H1.
+    exists ([(x,y)] ++ x0). rewrite app_assoc in *.
+    auto.
+Qed.
+  
+Lemma make_pairs_succeeds: forall ls,
   (*length ls = n -> *)
-  Coq.Arith.Even.even (length ls) ->
+  Nat.even (length ls) = true ->
+  forall ps,
   exists ps',
   make_pairs' ls ps = Some ps'.
 Proof.
-  (*
-  apply even_list_ind.
-  -
-    cbn.
-    eauto.
-  -
-    intros.
-    destruct_conjs.
-    unfold make_pairs in *.
-    cbn.
-    pose (cumul ls ps H0).
-    repeat concludes.
-    destruct_conjs.
-    subst.
-
-    exists ((ps ++ [(x, y)]) ++ e).
-    
-
-
-    
-    pose cumul.
-    pose (e ls ps H0).
-    repeat concludes.
-    destruct_conjs.
-    exists (H0 ++ [(x,y)]).
-
-    eapply cumul; eauto.
-Defined.
-
-    
-    
-    pose (even_list_struc (length ls) ls).
-    repeat concludes.
-    destruct o.
-    +
-      subst.
-      cbn.
-      eauto.
-    +
-      destruct_conjs.
-      rewrite H4 in *.
-      cbn in *.
-
-      Lemma make_pairs'_cumul: forall ls ps H0,
-        make_pairs' ls ps = Some H0 ->
-        exists rest, H0 = ps ++ rest.
-      Proof.
-      Admitted.
-
-      assert (exists rest, H0 = [(H1,H2)] ++ rest).
-      {
-        eapply make_pairs'_cumul; eauto.
-      }
-
-      destruct_conjs.
-      subst
-      
-      
-
-      eapply start_irrel; eauto.
-Defined.
-
-      
-      cbv
-      
-    
-    
-  intros n ls len.
-  rewrite <- len.
-  generalize dependent ls.
-  apply even_list_ind.
-  apply even_ind.
-  intros.
-  generalize dependent ls.
-  apply even_ind.
-  intros ls n len.
-  Check even_ind.
-  apply even_ind.
-*)
-Admitted.
+  induction ls using even_list_ind'; simpl; intros; auto.
+  - exists ps. auto.
+  - discriminate.
+Qed.

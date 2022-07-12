@@ -34,12 +34,14 @@ Fixpoint evsubt_bool (e:Evidence) (e':Evidence): bool :=
 Lemma eqb_asp_params_refl: forall a,
     eqb_asp_params a a = true.
 Proof.
-Admitted.
+  intros. apply eqb_asp_params_true_iff. auto.
+Qed.
 
 Lemma eqb_evidence_refl: forall e,
     eqb_evidence e e = true.
 Proof.
-Admitted.
+  intros. apply eqb_eq_evidence. auto.
+Qed.
 
 Lemma evsubt_prop_bool: forall e e',
     EvSubT e e' -> evsubt_bool e e' = true.

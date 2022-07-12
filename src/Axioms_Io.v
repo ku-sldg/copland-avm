@@ -22,7 +22,8 @@ Admitted.
 Definition shuffled_events (el1:list Ev) (el2:list Ev) : list Ev.
 Admitted.
 
-Definition cvm_events_core (t:Core_Term) (p:Plc) (e:Evidence) : list Ev.
+Definition cvm_events_core (t:Core_Term) (p:Plc) (e:Evidence) : list Ev. 
+
 Admitted.
 
 Definition cvm_evidence_core (t:Core_Term) (p:Plc) (e:EvC) : EvC.
