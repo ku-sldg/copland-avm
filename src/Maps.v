@@ -168,28 +168,32 @@ Proof.
     invc H1.
     simpl in *.
     solve_by_inversion.
-  -
-    destruct H.
-    destruct a.
-    pose (IHm x).
-    inversion s.
-
-    (*
-    
-    +
-      destruct (Nat.eq_dec a x).
-      admit.
-    +
-      
-      
-      left.
-      eexists.
-      econstructor.
-      inversion e.
-    destruct_conjs.
-    left.
-     *)
-Admitted.
-
-    
+  - specialize IHm with x.
+    destruct IHm.
+    * (* bound_to m x a *)
+      destruct a.
+      destruct (eqb x a) eqn:E.
+      ** (* x = a *)
+         left. exists b. econstructor. simpl. 
+         rewrite E. auto.
+      ** (* x <> a *)
+        assert (exists a0, bound_to ((a,b) :: m) x a0). {
+          destruct e. exists x0.
+          inversion H0; subst. econstructor. simpl.
+          rewrite E. auto.
+        }
+        left. auto.
+    * (* ~ (exists a, bound_to m x a )*)
+      destruct a.
+      destruct (eqb x a) eqn:E.
+      ** (* x = a *)
+         left. exists b. econstructor; simpl; rewrite E; auto.
+      ** (* x <> a *)
+         assert (~ (exists a0, bound_to ((a,b) :: m) x a0)). {
+          intros Contra. destruct Contra. inversion H0. subst.
+          unfold map_get in H1. rewrite E in H1. simpl in *.
+          destruct n. exists x0. econstructor. apply H1.
+         }
+         right. auto.
+Qed.
     

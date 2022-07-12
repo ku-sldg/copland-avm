@@ -82,7 +82,7 @@ Definition split_ev : CVM unit :=
 
 
 (** * Partially-symbolic implementations of IO operations *)
-
+         
 (*
 Definition do_asp (params :ASP_PARAMS) (mpl:Plc) (x:Event_ID) : BS.
 Admitted.
@@ -204,68 +204,37 @@ Lemma span_range : forall t i j t',
   anno t i = (j, t') ->
   event_id_span' t = (j - i).
 Proof.
-Admitted.
-  (*
-  intros.
-  generalizeEverythingElse t.
-  induction t; intros.
-  -
-    destruct a;
-    try 
-    cbn in *;
-    find_inversion;
+  induction t; simpl; intros.
+  - destruct a; simpl in *; find_inversion; lia.
+  - repeat break_let. find_inversion.
+    apply IHt in Heqp0 as H'. rewrite H'.
+    assert (n > S i). { eapply anno_mono. eassumption. }
     lia.
-  -
-    cbn in *.
-    repeat break_let.
-    find_inversion.
-    assert (event_id_span t = n - (S i)).
-    { eauto. }
-    rewrite H.
-    assert (n > (S i)).
-    {
-      eapply anno_mono.
-      eassumption.
+  - repeat break_let; repeat find_inversion.
+    assert (event_id_span' t1 = (n - i)) by eauto.
+    assert (event_id_span' t2 = (j - n)) by eauto.
+    repeat jkjke.
+    assert (n > i /\ j > n). {
+      split; eapply anno_mono; eauto.
     }
     lia.
-  -
-    cbn in *.
-    repeat break_let.
-    repeat find_inversion.
-    assert (event_id_span t1 = (n - i)) by eauto.
-    assert (event_id_span t2 = (j - n)) by eauto.
+  - repeat break_let; repeat find_inversion.
+    assert (event_id_span' t1 = (n - S i)) by eauto.
+    assert (event_id_span' t2 = (n0 - n)) by eauto.
     repeat jkjke.
-    assert (n > i).
-    { eapply anno_mono; eauto. }
-    assert (j > n).
-    { eapply anno_mono; eauto. }
+    assert (n > S i /\ n0 > n). {
+      split; eapply anno_mono; eauto.
+    }
     lia.
-  -
-    cbn in *.
-    repeat break_let.
-    repeat find_inversion.
-    assert (event_id_span t1 = (n - (S i))) by eauto.
-    assert (event_id_span t2 = (n0 - n)) by eauto.
+  - repeat break_let; repeat find_inversion.
+    assert (event_id_span' t1 = (n - S i)) by eauto.
+    assert (event_id_span' t2 = (n0 - n)) by eauto.
     repeat jkjke.
-    assert (n > (S i)).
-    { eapply anno_mono; eauto. }
-    assert (n0 > n).
-    { eapply anno_mono; eauto. }
+    assert (n > S i /\ n0 > n). {
+      split; eapply anno_mono; eauto.
+    }
     lia.
-  -
-        cbn in *.
-    repeat break_let.
-    repeat find_inversion.
-    assert (event_id_span t1 = (n - (S i))) by eauto.
-    assert (event_id_span t2 = (n0 - n)) by eauto.
-    repeat jkjke.
-    assert (n > (S i)).
-    { eapply anno_mono; eauto. }
-    assert (n0 > n).
-    { eapply anno_mono; eauto. }
-    lia.
-Defined.
-*)
+Qed.
 
 Definition inc_remote_event_ids (t:Term) : CVM unit :=
   st <- get ;;
