@@ -9,40 +9,34 @@ Require Import PeanoNat.
 Set Nested Proofs Allowed.
  *)
 
-
+(** Abstract definitions of boolean equality for ASP ID and PARAMS *)
 Definition eqb_aspid: ASP_ID -> ASP_ID -> bool.
 Admitted.
-
-Lemma eqb_eq_aspid: forall i1 i2,
-    eqb_aspid i1 i2 = true <-> i1 = i2.
-Admitted.
-
-
-(* eqb Copland phrase terms *)
 
 Definition eqb_asp_params: ASP_PARAMS -> ASP_PARAMS -> bool.
 Admitted.
 
+
+(** Admitted Lemmas relating boolean to propositional equality for 
+   ASP ID and PARAMS *)
+Lemma eqb_eq_aspid: forall i1 i2,
+    eqb_aspid i1 i2 = true <-> i1 = i2.
+Admitted.
+
+Lemma eqb_eq_asp_params: forall a a0,
+    eqb_asp_params a a0 = true <-> a = a0.
+Proof.
+Admitted.
+
+
+
+(** Decidable equality proofs for various Copland datatypes *)
 Definition eq_asp_params_dec:
   forall x y: ASP_PARAMS, {x = y} + {x <> y}.
 Proof.
   intros.
   decide equality; repeat (decide equality).
 Defined.
-
-Lemma eqb_asp_params_true_iff: forall a a0,
-    eqb_asp_params a a0 = true <->
-    a = a0.
-Proof.
-Admitted.
-
-(*
-(* Duplicate below *)
-Definition eq_evidence_dec:
-  forall x y: Evidence, {x = y} + {x <> y}.
-Proof.
-Admitted.
-*)
 
 Definition eq_ev_dec:
   forall x y: Ev, {x = y} + {x <> y}.
@@ -53,13 +47,6 @@ Proof.
 Defined.
 Hint Resolve eq_ev_dec : core.
 
-
-
-
-
-
-
-(* eqb Copland evidence terms *)
 Definition eq_evidence_dec:
   forall x y: Evidence, {x = y} + {x <> y}.
 Proof.
@@ -69,6 +56,8 @@ Proof.
 Defined.
 Hint Resolve eq_evidence_dec : core.
 
+
+(** list equality Lemmas *)
 Scheme Equality for list.
 
 Lemma list_beq_refl {A:Type}: forall f y,
@@ -170,18 +159,10 @@ Proof.
       eapply list_beq_refl; eauto.
 Defined.
 
-Print Evidence.
-
+(** Boolean equality for Evidence Types *)
 Fixpoint eqb_evidence (e:Evidence) (e':Evidence): bool :=
   match (e,e') with
   | (mt,mt) => true
-                (*
-  | (uu (*i args tpl tid tet*) params q e1,
-     uu (*i' args' tpl' tid' tet'*) params' q' e2) =>
-    (eqb_asp_params params params') && 
-    (Nat.eqb q q') &&
-    (eqb_evidence e1 e2)
-*)
   | (gg p params e1, gg p' params' e2) =>
     (Nat.eqb p p') && (eqb_asp_params params params') && (eqb_evidence e1 e2)
   | (hh p params e1, hh p' params' e2) =>
@@ -189,12 +170,11 @@ Fixpoint eqb_evidence (e:Evidence) (e':Evidence): bool :=
   | (nn i, nn i') => (Nat.eqb i i')
   | (ss e1 e2, ss e1' e2') =>
     (eqb_evidence e1 e1') && (eqb_evidence e2 e2')
-                               (*
-  | (pp e1 e2, pp e1' e2') =>
-    (eqb_evidence e1 e1') && (eqb_evidence e2 e2') *)
   | _ => false
   end.
 
+
+(**  Lemma relating boolean to propositional equality for Evidence Types *)
 Lemma eqb_eq_evidence: forall e1 e2,
     eqb_evidence e1 e2 = true <-> e1 = e2.
 Proof.
@@ -206,68 +186,23 @@ Proof.
     induction e1; destruct e2; intros;
       try (cbn in *; repeat break_match; try solve_by_inversion; eauto).
     +
-      
       apply EqNat.beq_nat_true in H.
       eauto.
-
-
-
-
-
-    
     +
       cbn in *.
       rewrite Bool.andb_true_iff in H.
       rewrite Bool.andb_true_iff in H.
-      (*
-      rewrite Bool.andb_true_iff in H.
-      rewrite Bool.andb_true_iff in H.
-      rewrite Bool.andb_true_iff in H. *)
       destruct_conjs.
-      (*
-      rewrite eqb_eq_list in H4. *)
-
       apply EqNat.beq_nat_true in H.
-      (*
-      apply EqNat.beq_nat_true in H2.
-      apply EqNat.beq_nat_true in H3.
-      apply EqNat.beq_nat_true in H. *)
       subst.
       specialize IHe1 with e2.
       concludes.
       assert (a = a0).
       {
-        erewrite <- eqb_asp_params_true_iff.
+        erewrite <- eqb_eq_asp_params.
         eassumption.
-      }
-            
-      congruence.
-
-      (*
-     
-      (*
-EqNat.beq_nat_refl: forall n : nat, true = (n =? n)
-Nat.eqb_refl: forall x : nat, (x =? x) = true
-       *)
-      simpl.
-      intros.
-      split; intros.
-      eapply Nat.eqb_eq; eauto.
-      subst.
-      (*
-      Search ((_ =? _) = true).
-       *)
-      
-      (*
-Nat.eqb_refl: forall x : nat, (x =? x) = true
-EqNat.beq_nat_true: forall n m : nat, (n =? m) = true -> n = m
-Nat.eqb_eq: forall n m : nat, (n =? m) = true <-> n = m
-       *)
-      
-      eapply Nat.eqb_refl.
-       *)
-      
-      
+      }       
+      congruence.  
       
     +
       cbn in *.
@@ -277,48 +212,17 @@ Nat.eqb_eq: forall n m : nat, (n =? m) = true <-> n = m
       apply EqNat.beq_nat_true in H.
       specialize IHe1 with e2.
       concludes.
-      rewrite eqb_asp_params_true_iff in H1.
+      rewrite eqb_eq_asp_params in H1.
       congruence.
-
-      (*
     +
       cbn in *.
       rewrite Bool.andb_true_iff in H.
       destruct_conjs.
-      apply EqNat.beq_nat_true in H.
-      specialize IHe1 with e2.
-      concludes.
-      congruence.
-    +
-      cbn in *.
-      (*rewrite Bool.andb_true_iff in H. *)
-      destruct_conjs.
-      apply EqNat.beq_nat_true in H.
-      (*specialize IHe1 with e2.  
-      concludes. *)
-      congruence. *)
-    +
-      cbn in *.
-      rewrite Bool.andb_true_iff in H.
-      destruct_conjs.
-      
       specialize IHe1_1 with e2_1.
       specialize IHe1_2 with e2_2.
       concludes.
       concludes.
       congruence.
-
-      (*
-    +
-      cbn in *.
-      rewrite Bool.andb_true_iff in H.
-      destruct_conjs.
-      
-      specialize IHe1_1 with e2_1.
-      specialize IHe1_2 with e2_2.
-      concludes.
-      concludes.
-      congruence. *)
   -
     generalizeEverythingElse e1.
     induction e1; destruct e2; intros;
@@ -326,39 +230,6 @@ Nat.eqb_eq: forall n m : nat, (n =? m) = true <-> n = m
     +
       invc H.
       apply Nat.eqb_refl.
-    
-      
-
-
-
-(*
-    
-    +
-      invc H.
-      cbn in *.
-      repeat rewrite Bool.andb_true_iff.
-      split.
-      split.
-      (*
-      split.
-      split.
-      split. *)
-
-      erewrite eqb_asp_params_true_iff.
-      tauto.
-      
-      apply Nat.eqb_refl.
-      (*
-
-      rewrite eqb_eq_list.
-      auto.
-      eapply Nat.eqb_eq.
-      apply Nat.eqb_refl.
-      apply Nat.eqb_refl.
-      apply Nat.eqb_refl. *)
-      eauto.
-
- *)
       
     +
       invc H.
@@ -366,8 +237,7 @@ Nat.eqb_eq: forall n m : nat, (n =? m) = true <-> n = m
       repeat rewrite Bool.andb_true_iff.
       split. split.
       apply Nat.eqb_refl.
-      erewrite eqb_asp_params_true_iff. tauto.
-      
+      erewrite eqb_eq_asp_params. tauto.
       eauto.
     +
       invc H.
@@ -375,31 +245,12 @@ Nat.eqb_eq: forall n m : nat, (n =? m) = true <-> n = m
       repeat rewrite Bool.andb_true_iff.
       split. split.
       apply Nat.eqb_refl.
-      erewrite eqb_asp_params_true_iff. tauto.
+      erewrite eqb_eq_asp_params. tauto.
       eauto.
-      (*
-    +
-      invc H.
-      cbn in *.
-      repeat rewrite Bool.andb_true_iff.
-      (*split. *)
-      apply Nat.eqb_refl.
-      (*
-      eauto. *)
-       *)
-      
     +
       invc H.
       cbn in *.
       repeat rewrite Bool.andb_true_iff.
       split;
         eauto.
-
-      (*
-    +
-      invc H.
-      cbn in *.
-      repeat rewrite Bool.andb_true_iff.
-      split;
-      eauto.  *)
 Defined.

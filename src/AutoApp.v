@@ -1,27 +1,7 @@
+(* Misc automation tactics.  Some of these might be repeats or overlap. *)
+
 Require Import StructTactics Auto Helpers_CvmSemantics Cvm_St Cvm_Monad StMonad_Coq.
 Require Import List.
-
-(*
-Ltac dosome :=
-  repeat (
-      match goal with
-      | [H: match ?o with
-            | Some _ => _
-            | _ => _
-            end
-            =
-            (Some _, _) |- _] =>
-        destruct o; try solve_by_inversion
-      end; df).
-*)  (* ALready in Auto.v *)
-
-(*
-Ltac tacc H :=
-  (symmetry;
-   erewrite <- pl_immut in *;
-   rewrite H;
-   eauto ).
-*)
 
 Ltac dosome_eq y :=
   match goal with

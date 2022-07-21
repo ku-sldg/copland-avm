@@ -15,7 +15,7 @@ Require Import Coq.Arith.Peano_dec Lia.
 
 (*
 Set Nested Proofs Allowed.
-*)
+ *)
 
 
 Lemma st_trace_irrel : forall t tr1 tr1' tr2 tr2' e e' e'' p p' p'' i i' i'',

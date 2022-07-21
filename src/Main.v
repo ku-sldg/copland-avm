@@ -105,60 +105,11 @@ Proof.
       try lia.
 Defined.
 
+(*
 Ltac jkjk'e :=
   match goal with
   | [H: _ = ?X |-  context[?X] ] => erewrite <- H
-  end.
-
-(*
-Lemma aeval_ev_determ: forall a p e e',
-    aeval a p e = aeval a p e' ->
-    e = e'.
-Proof.
-  intros.
-  generalizeEverythingElse a.
-  induction a; intros.
-  -
-    destruct a;
-      cbn in *; auto;
-        try solve_by_inversion.
-    destruct a.
-    try solve_by_inversion.
-  -
-    cbn in *; auto.
-    eauto.
-  -
-    cbn in *; auto.
-    eauto.
-  -
-    cbn in *; auto.
-    invc H.
-    destruct s.
-    destruct s; destruct s0.
-    +
-      eauto.
-    +
-      eauto.
-    +
-      eauto.
-    +
-      ff.
-Abort.  (* TODO:  can this be proven with assumptions about term split? *)
- *)
-
-
-
-(*   
-    assert ((splitEv_T_l s e) = (splitEv_T_l s e')) by eauto.
-    destruct s; destruct s; destruct s0; eauto.
-    destruct s; eauto.
-  -
-    cbn in *; auto.
-    invc H.
-    assert ((splitEv_T_l s e) = (splitEv_T_l s e')) by eauto.
-    destruct s; eauto.
-Defined.
-*)
+  end. *)
 
 Lemma step_silent_tr:
   forall st st' tr,
@@ -173,9 +124,8 @@ Proof.
   -
     find_copy_apply_lem_hyp step_pl_eq.
     find_copy_apply_lem_hyp step_seval.
-    jkjk'e.
-    jkjk'e.
-    eauto.
+    jkjke'.
+    jkjke'.
   -
     constructor.
     eauto.
@@ -209,15 +159,14 @@ Proof.
     find_eapply_hyp_hyp; eauto.
     find_copy_apply_lem_hyp step_seval.
     find_copy_apply_lem_hyp step_pl_eq.
-    jkjk'e; auto.
+    jkjke'.
   -
     eauto.    
   -
     find_copy_apply_hyp_hyp; eauto.
     find_copy_apply_lem_hyp step_seval.
     find_copy_apply_lem_hyp step_pl_eq.
-    jkjk'e; auto.
-    eapply tbp; eauto.
+    jkjke'.
 Qed.
 
 Lemma step_evt_tr:
@@ -238,8 +187,8 @@ Proof.
   -
     find_copy_apply_lem_hyp step_seval.
     find_copy_apply_lem_hyp step_pl_eq.
-    jkjk'e.
-    jkjk'e.
+    jkjke'.
+    jkjke'.
     rewrite app_comm_cons; eauto. 
   - rewrite <- app_nil_l; auto.
     apply trem; auto.
@@ -260,8 +209,7 @@ Proof.
     find_copy_apply_lem_hyp step_seval.
     find_copy_apply_lem_hyp step_pl_eq.
     rewrite app_comm_cons.
-    jkjk'e.
-    eauto.   
+    jkjke'.
   - rewrite <- app_nil_l; constructor; auto.
   -
     find_copy_apply_lem_hyp step_seval.
@@ -273,8 +221,7 @@ Proof.
     find_copy_apply_lem_hyp step_pl_eq.
     rewrite app_comm_cons.
     find_eapply_lem_hyp shuffle_right.
-    jkjk'e.
-    eapply tbp; eauto.
+    jkjke'.
   -
     rewrite <- app_nil_l; auto.
     eapply tbp; eauto.

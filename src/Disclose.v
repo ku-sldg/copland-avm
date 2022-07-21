@@ -117,7 +117,7 @@ Proof.
     rewrite Bool.andb_true_iff in Heqb.
     rewrite Bool.andb_true_iff in Heqb.
     destruct_conjs.
-    rewrite eqb_asp_params_true_iff in *.
+    rewrite eqb_eq_asp_params in *.
     Check  EqNat.beq_nat_true.
     apply EqNat.beq_nat_true in H0.
     apply eqb_eq_evidence in H1.
@@ -147,7 +147,7 @@ Bool.orb_lazy_alt: forall a b : bool, (a || b)%bool = (if a then true else b)
      rewrite Bool.andb_true_iff in H1.
     rewrite Bool.andb_true_iff in H1.
     destruct_conjs.
-    rewrite eqb_asp_params_true_iff in *.
+    rewrite eqb_eq_asp_params in *.
     Check  EqNat.beq_nat_true.
     apply EqNat.beq_nat_true in H0.
     apply eqb_eq_evidence in H1.
@@ -488,7 +488,7 @@ Qed.
 
 Lemma filter_remote_disclosures_correct_events: forall rs p e ts ts' t annt r ev,
   filter_remote_disclosures rs p e ts = ts' ->
-  In t ts ->
+  (*In t ts -> *)
   annoP annt t ->
   events annt p e ev ->
   In r rs ->
@@ -513,8 +513,8 @@ Proof.
   3: { eassumption. }
   2: { eassumption. }
 
-  rewrite <- H in H4. clear H.
-  rewrite filter_In in H4.
+  rewrite <- H in H3. clear H.
+  rewrite filter_In in H3.
   destruct_conjs. clear H.
   unfold term_discloses_to_remotes in *.
   Check existsb_exists.
@@ -529,7 +529,7 @@ Proof.
     rewrite <- Bool.negb_true_iff.
     eassumption.
   }
-  clear H4.
+  clear H3.
 
   assert (forall x, In x rs -> term_discloses_to_remote t p e x = false).
   {
@@ -539,18 +539,18 @@ Proof.
       eapply hii.
       eassumption.
     }
-    rewrite forallb_forall in H5.
+    rewrite forallb_forall in H4.
       Search negb.
   (*
 Bool.negb_false_iff: forall b : bool, negb b = false <-> b = true
 Bool.negb_true_iff: forall b : bool, negb b = true <-> b = false
    *)
       rewrite <- Bool.negb_true_iff.
-      eapply H5.
+      eapply H4.
       eassumption.
   }
 
-  eapply H4. eassumption.
+  eapply H3. eassumption.
 Qed.
 
 Lemma lts_refines_events: forall t p e tr ev,
@@ -575,23 +575,18 @@ Admitted.
 
 Lemma filter_remote_disclosures_correct_cvm:
   forall rs p e ts ts' t annt r ev atp i i' bits bits' e' cvm_tr p',
-  filter_remote_disclosures rs p e ts = ts' ->
-  In t ts ->
-  
-  (* anno_parP atp t -> *)
-  term_to_coreP t atp ->
-  annoP_indexed annt t i i' ->
-  copland_compileP atp
-                   (mk_st (evc bits e) [] p i)
-                   (Some tt)
-                   (mk_st (evc bits' e') cvm_tr p' i') ->
-
-  In ev cvm_tr ->
-  
-  In r rs ->
-  In t ts' -> 
-  ~ (discloses_to_remote ev r).
- (*  ~ (In t ts'). *)
+    filter_remote_disclosures rs p e ts = ts' ->
+    In t ts' -> 
+    term_to_coreP t atp ->
+    annoP_indexed annt t i i' ->
+    copland_compileP atp
+                     (mk_st (evc bits e) [] p i)
+                     (Some tt)
+                     (mk_st (evc bits' e') cvm_tr p' i') ->
+    
+    In ev cvm_tr ->
+    In r rs ->
+    ~ (discloses_to_remote ev r).
 Proof.
   intros.
   assert (events annt p e ev).
