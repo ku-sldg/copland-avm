@@ -199,6 +199,15 @@ Fixpoint event_id_span (t: Core_Term) : nat :=
   | _ => 1
   end.
 
+Lemma event_id_works : forall t,
+  event_id_span' t = event_id_span (term_to_core_term t).
+Proof with (simpl in *; eauto).
+  induction t...
+  - destruct a... destruct s...
+  - destruct s, s, s0...
+  - destruct s, s, s0...
+Qed.
+
 
 Lemma span_range : forall t i j t',
   anno t i = (j, t') ->
