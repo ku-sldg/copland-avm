@@ -29,11 +29,11 @@ Admitted.
 Definition cvm_evidence_core (t:Core_Term) (p:Plc) (e:EvC) : EvC.
 Admitted.
 
-Definition cvm_events (t:Term) (p:Plc) (e:Evidence) : list Ev.
-Admitted.
+Definition cvm_events (t:Term) (p:Plc) (e:Evidence) : list Ev :=
+  cvm_events_core (term_to_core_term t) p e.
 
-Definition cvm_evidence (t:Term) (p:Plc) (e:EvC) : EvC.
-Admitted.
+Definition cvm_evidence (t:Term) (p:Plc) (e:EvC) : EvC :=
+  cvm_evidence_core (term_to_core_term t) p e.
 
 
 Axiom remote_LTS: forall t annt n et i i',
