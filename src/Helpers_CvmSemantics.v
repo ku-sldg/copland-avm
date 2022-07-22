@@ -1,5 +1,5 @@
 (*
-Helper lemmas for proofs about the VM semantics.
+Helper lemmas for proofs about the CVM semantics.
 
 Author:  Adam Petz, ampetz@ku.edu
 *)
@@ -12,6 +12,7 @@ Require Import Coq.Program.Tactics Coq.Program.Equality.
 Set Nested Proofs Allowed.
 *)
 
+(* Lemma stating the CVM st_pl parameter ends up where it started execuiton *)
 Lemma pl_immut : forall t e tr p i,
     st_pl
       (execSt
@@ -41,12 +42,12 @@ Proof.
     assert (p = st_pl0).
     {
       edestruct IHt1.
-      jkjk'.
+      jkjke.
     }
     assert (st_pl0 = st_pl).
     {
       edestruct IHt2.
-      jkjk'.
+      jkjk_s.
     }
     congruence.
   -
@@ -64,14 +65,13 @@ Proof.
     assert (p = st_pl0).
     {
       edestruct IHt1.
-      jkjk'; eauto.     
+      jkjk_s; eauto.     
     }
 
     assert (st_pl0 = st_pl).
     {     
       edestruct IHt2.
-
-      jkjk'; eauto.
+      jkjk_s; eauto.
     }
 
     congruence.
@@ -79,24 +79,24 @@ Proof.
       assert (p = st_pl).
       {
         edestruct IHt1.
-          jkjk'; eauto.
+        jkjk_s; eauto.
       }
 
       assert (st_pl = st_pl0).
       {
         edestruct IHt2.
-          jkjk'; eauto.
+        jkjk_s; eauto.
       }
 
       congruence.
     +
       symmetry.
       edestruct IHt1.
-      jkjk'; eauto.
+      jkjk_s; eauto.
     +
       symmetry.
       edestruct IHt1.
-      jkjk'; eauto.
+      jkjk_s; eauto.
 
   -
     annogo.
@@ -113,7 +113,7 @@ Proof.
     assert (p = st_pl).
     {
       edestruct IHt1.
-      jkjk'; eauto.     
+      jkjke. 
     }
     congruence.   
 
@@ -121,7 +121,7 @@ Proof.
     assert (p = st_pl).
     {
       edestruct IHt1.
-      jkjk'; eauto.     
+      jkjke.    
     }
     congruence. 
 Defined.
@@ -159,19 +159,20 @@ Proof.
   subst; destruct st; auto.
 Defined.
 
+(* Hack to apply a specific induction hypothesis in some proofs *)
 Ltac anhl :=
   annogo;
   match goal with
-  | [(*H: well_formed_r ?a, *)
-     H2: copland_compile ?a _ = _,
+  | [H2: copland_compile ?a _ = _,
      H3: copland_compile ?a _ = _,
-     IH: context[(*well_formed_r ?a*) _ -> _] |- _] =>
+     IH: context[ _ -> _] |- _] =>
     edestruct IH;
-    [(*apply H | *)
-     apply H2 | apply H3 | idtac]; clear H2; clear H3;
+    [ apply H2 | apply H3 | idtac]; clear H2; clear H3;
     destruct_conjs; subst
   end.
 
+(* Lemma stating the following:  If all starting parameters to the cvm_st are the same, except 
+   for possibly the trace, then all of those final parameters should also be equal. *)
 Lemma hihi : forall t e e' e'' x x' y y' p p' p'' i i' i'',
     copland_compile t {| st_ev := e; st_trace := x; st_pl := p; st_evid := i |} =
     (Some tt, {| st_ev := e'; st_trace := x'; st_pl := p'; st_evid := i' |}) ->
@@ -238,7 +239,7 @@ Ltac dohi'' :=
          (?opt, {| st_ev := ?e'; st_trace := _; st_pl := ?p'; st_evid := ?i' |}),
          H' : copland_compile ?t1 {| st_ev := ?e; st_trace := _; st_pl := ?p; st_evid := ?i |} =
               (?opt, {| st_ev := ?e''; st_trace := _; st_pl := ?p''; st_evid := ?i'' |})
-                (*Hwf : well_formed_r ?t1*)  |- _] =>
+     |- _] =>
     assert_new_proof_by (e' = e'' /\ p' = p'' /\ i' = i'') ltac:(tac H H')
   end.
 
@@ -246,11 +247,11 @@ Ltac dohi :=
   do 2 (repeat dohi''; destruct_conjs; subst);
   repeat clear_triv.
 
+
+(* CVM execution always succeeds.  
+   Note:  This may need revisiting if we consider more robust models of CVM failure. *)
 Lemma always_some : forall t vm_st vm_st' op,
-    copland_compile 
-      t
-      vm_st =
-    (op, vm_st') ->
+    copland_compile t vm_st = (op, vm_st') ->
     op = Some tt.
 Proof.
   induction t; intros.
@@ -288,13 +289,14 @@ Defined.
 Ltac do_somett :=
   match goal with
   | [H: copland_compile ?t _ = (?o, _)
-        (*H2: well_formed_r ?t*) |- _] =>
+     |- _] =>
     assert_new_proof_by (o = Some tt) ltac:(eapply always_some; [apply H])
   end.
 
-
 Ltac do_asome := repeat do_somett; repeat clear_triv.
 
+(* States that the resulting place (st_pl) is unaffected by the initial trace.
+   This is a simple corollary of the Lemma hihi above. *)
 Lemma trace_irrel_pl : forall t tr1 tr1' tr2 e e' p1' p1 i i',
     copland_compile t
            {| st_ev := e; st_trace := tr1; st_pl := p1; st_evid := i |} =
@@ -316,6 +318,8 @@ Proof.
   tauto.
 Defined.
 
+(* States that the resulting evidence (st_ev) is unaffected by the initial trace.
+   This is a simple corollary of the Lemma hihi above. *)
 Lemma trace_irrel_ev : forall t tr1 tr1' tr2 e e' p1' p1 i i',
     copland_compile t
            {| st_ev := e; st_trace := tr1; st_pl := p1; st_evid := i|} =
@@ -337,6 +341,8 @@ Proof.
   tauto.
 Defined.
 
+(* States that the resulting event id counter (st_evid) is unaffected by the initial trace.
+   This is a simple corollary of the Lemma hihi above. *)
 Lemma trace_irrel_evid : forall t tr1 tr1' tr2 e e' p1' p1 i i',
     copland_compile t
            {| st_ev := e; st_trace := tr1; st_pl := p1; st_evid := i|} =

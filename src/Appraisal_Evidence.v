@@ -1,4 +1,4 @@
-Require Import ConcreteEvidence AutoApp (*OptMonad*) Auto Helpers_CvmSemantics Term_Defs Anno_Term_Defs Cvm_St Cvm_Impl Defs StructTactics OptMonad_Coq. (* StAM *)
+Require Import ConcreteEvidence AutoApp Auto Helpers_CvmSemantics Term_Defs Anno_Term_Defs Cvm_St Cvm_Impl Defs StructTactics OptMonad_Coq.
 
 Require Import List.
 Import ListNotations.
@@ -56,32 +56,18 @@ Fixpoint encodeEv (e:EvidenceC) : RawEv :=
   match e with
   | mtc => []
   | nnc _ bs => [bs]
-                 (*
-  | uuc _  _ bs e' =>
-    bs :: (encodeEv e') *)
-  | ggc _ _ bs e' =>
-    bs :: (encodeEv e')
-  | hhc _ _ bs _ =>
-    [bs]
-  | ssc e1 e2 =>
-    (encodeEv e1) ++ (encodeEv e2)
-                  (*
-  | ppc e1 e2 =>
-    (encodeEv e1) ++ (encodeEv e2) *)
+  | ggc _ _ bs e' => bs :: (encodeEv e')
+  | hhc _ _ bs _ => [bs]
+  | ssc e1 e2 => (encodeEv e1) ++ (encodeEv e2)
   end.
 
 Fixpoint reconstruct_ev' (ls:RawEv) (et:Evidence) : Opt EvidenceC :=
   match et with
-  | mt => (* Some mtc *)
+  | mt => 
     match ls with
     | [] => Some mtc
     | _ => None
     end
-      (*
-  | uu params p et' =>
-    '(bs, ls') <- peel_bs ls ;;
-    x <- reconstruct_ev' ls' et' ;;
-    Some (uuc params p bs x) *)
   | gg p ps et' =>
     '(bs, ls') <- peel_bs ls ;;
     x <- reconstruct_ev' ls' et' ;;
@@ -92,25 +78,17 @@ Fixpoint reconstruct_ev' (ls:RawEv) (et:Evidence) : Opt EvidenceC :=
     | [] => Some (hhc p ps bs et')
     | _ => None
     end 
-   
   | nn i =>
     '(bs, ls') <- peel_bs ls ;;
      match ls' with
     | [] => Some (nnc i bs)
     | _ => None
     end 
-    
   | ss et1 et2 =>
     e1 <- reconstruct_ev' (firstn (et_size et1) ls) et1 ;;
     e2 <- reconstruct_ev' (skipn (et_size et1) ls) et2 ;;
     Some (ssc e1 e2)
   end.
-         (*
-  | pp et1 et2 =>
-    e1 <- reconstruct_ev' (firstn (et_size et1) ls) et1 ;;
-    e2 <- reconstruct_ev' (skipn (et_size et1) ls) et2 ;;
-    Some (ppc e1 e2)  
-  end. *)
 
 Definition reconstruct_ev (e:EvC) : Opt EvidenceC :=
   match e with
@@ -178,18 +156,6 @@ Ltac do_reconP_determ :=
     clear H2
   end; subst.
 
-(*
-Lemma anno_parP_redo: forall t pt loc loc',
-    anno_par t loc = (loc', pt) ->
-    anno_parP pt t.
-Proof.
-  intros.
-  econstructor.
-  eexists.
-  jkjke.
-Defined.
- *)
-
 Lemma term_to_coreP_redo: forall t t',
     term_to_core_term t = t' ->
     term_to_coreP t t'.
@@ -199,37 +165,6 @@ Proof.
   eauto.
 Defined.
 
-(*
-Lemma anno_parP_redo: forall t pt loc loc',
-    anno_par_list' t loc = Some (loc', pt) ->
-    anno_parP pt t.
-Proof.
-  intros.
-  econstructor.
-  eexists.
-  jkjke.
-Defined.
-
-(*
-Lemma anno_parPloc_redo: forall t pt loc loc',
-    anno_par t loc = (loc', pt) ->
-    anno_parPloc pt t loc.
-Proof.
-  intros.
-  econstructor.
-  jkjke.
-Defined.
- *)
-Lemma anno_parPloc_redo: forall t pt loc loc',
-    anno_par_list' t loc = Some (loc', pt) ->
-    anno_parPloc pt t loc.
-Proof.
-  intros.
-  econstructor.
-  jkjke.
-Defined.
-
-*)
 Ltac do_term_to_core_redo :=
   match goal with
   | [H: term_to_core_term ?t = ?t'
@@ -237,69 +172,12 @@ Ltac do_term_to_core_redo :=
     eapply term_to_coreP_redo in H
   end.
 
-(*
-
-Ltac do_annopar_redo :=
-  match goal with
-  | [H: anno_par ?t ?loc = (_,?pt)
-     |- _ ] =>
-    eapply anno_parP_redo in H
-  end.
-
-Ltac do_annopar_loc_redo :=
-  match goal with
-  | [H: anno_par ?t ?loc = (_,?pt)
-     |- _ ] =>
-    eapply anno_parPloc_redo in H
-  end.
- *)
-
-
-(*
-
-Ltac do_annopar_redo :=
-  match goal with
-  | [H: anno_par_list' ?t ?loc = Some (_,?pt)
-     |- _ ] =>
-    eapply anno_parP_redo in H
-  end.
-
-Ltac do_annopar_loc_redo :=
-  match goal with
-  | [H: anno_par_list' ?t ?loc = (_,?pt)
-     |- _ ] =>
-    eapply anno_parPloc_redo in H
-  end.
-
-
-
-Ltac inv_annoparP :=
-  match goal with
-  | [H: anno_parP _ _ (* ?t (?c _) *)
-     |- _ ] =>
-    inversion H; subst
-  end;
-  destruct_conjs.
-
-Ltac inv_annoparPloc :=
-  match goal with
-  | [H: anno_parPloc _ _ _(*?t (?c _) _ *)
-     |- _ ] =>
-    inversion H; subst
-  end;
-  destruct_conjs.
- *)
-
 Ltac inv_term_coreP :=
   match goal with
   | [H: term_to_coreP _ _ (* ?t (?c _) *)
      |- _ ] =>
     inversion H; subst
   end.
-
-
-
-
 
 Lemma annoP_redo: forall t annt n n',
     anno t n = (n', annt) ->
@@ -388,18 +266,6 @@ Ltac wrap_annopar :=
   dd;
   repeat do_term_to_core_redo.
 
-(*
-Ltac wrap_annopar :=
-  inv_annoparP;
-  dd;
-  repeat do_annopar_redo.
-
-Ltac wrap_annoparloc :=
-  inv_annoparPloc;
-  dd;
-  repeat do_annopar_loc_redo.
-*)
-
 Ltac wrap_anno :=
   inv_annoP;
   dd;
@@ -422,8 +288,6 @@ Ltac wrap_ccp_anno :=
   
   try rewrite <- ccp_iff_cc in *;
   try wrap_annopar;
-  (*
-  try wrap_annoparloc; *)
   try wrap_anno;
   try wrap_anno_indexed;
   repeat do_pl_immut;
@@ -431,3 +295,123 @@ Ltac wrap_ccp_anno :=
   try (unfold OptMonad_Coq.bind in * );
   dd;
   try rewrite ccp_iff_cc in *.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(** BEGIN Deprecated parallel annotated term stuff *)
+
+(*
+Lemma anno_parP_redo: forall t pt loc loc',
+    anno_par_list' t loc = Some (loc', pt) ->
+    anno_parP pt t.
+Proof.
+  intros.
+  econstructor.
+  eexists.
+  jkjke.
+Defined.
+
+(*
+Lemma anno_parPloc_redo: forall t pt loc loc',
+    anno_par t loc = (loc', pt) ->
+    anno_parPloc pt t loc.
+Proof.
+  intros.
+  econstructor.
+  jkjke.
+Defined.
+ *)
+Lemma anno_parPloc_redo: forall t pt loc loc',
+    anno_par_list' t loc = Some (loc', pt) ->
+    anno_parPloc pt t loc.
+Proof.
+  intros.
+  econstructor.
+  jkjke.
+Defined.
+
+ *)
+
+(*
+
+Ltac do_annopar_redo :=
+  match goal with
+  | [H: anno_par ?t ?loc = (_,?pt)
+     |- _ ] =>
+    eapply anno_parP_redo in H
+  end.
+
+Ltac do_annopar_loc_redo :=
+  match goal with
+  | [H: anno_par ?t ?loc = (_,?pt)
+     |- _ ] =>
+    eapply anno_parPloc_redo in H
+  end.
+ *)
+
+
+(*
+
+Ltac do_annopar_redo :=
+  match goal with
+  | [H: anno_par_list' ?t ?loc = Some (_,?pt)
+     |- _ ] =>
+    eapply anno_parP_redo in H
+  end.
+
+Ltac do_annopar_loc_redo :=
+  match goal with
+  | [H: anno_par_list' ?t ?loc = (_,?pt)
+     |- _ ] =>
+    eapply anno_parPloc_redo in H
+  end.
+
+
+
+Ltac inv_annoparP :=
+  match goal with
+  | [H: anno_parP _ _ (* ?t (?c _) *)
+     |- _ ] =>
+    inversion H; subst
+  end;
+  destruct_conjs.
+
+Ltac inv_annoparPloc :=
+  match goal with
+  | [H: anno_parPloc _ _ _(*?t (?c _) _ *)
+     |- _ ] =>
+    inversion H; subst
+  end;
+  destruct_conjs.
+ *)
+
+
+(*
+Ltac wrap_annopar :=
+  inv_annoparP;
+  dd;
+  repeat do_annopar_redo.
+
+Ltac wrap_annoparloc :=
+  inv_annoparPloc;
+  dd;
+  repeat do_annopar_loc_redo.
+ *)
+
+
+(** END Deprecated parallel annotated term stuff *)

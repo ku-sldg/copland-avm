@@ -7,11 +7,6 @@ Require Import List.
 Import List.ListNotations.
 
 
-
-
-
-
-
 (** * Annotated Terms
 
     Annotated terms are used to ensure that each distinct event has a
@@ -30,6 +25,7 @@ Inductive AnnoTerm: Set :=
 | abseq: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
 | abpar: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm.
 
+(* Evidence Type size *)
 Fixpoint esize t :=
   match t with
   | aasp _ _ => 1
@@ -39,6 +35,7 @@ Fixpoint esize t :=
   | abpar _ _ t1 t2 => 2 + esize t1 + esize t2
   end.
 
+(* Extract Range from each annotated term *)
 Definition range x :=
   match x with
   | aasp r _ => r
@@ -48,303 +45,7 @@ Definition range x :=
   | abpar r _ _ _ => r
   end.
 
-
-(*
-Inductive AnnoTermPar: Set :=
-| aasp_par: ASP -> AnnoTermPar
-| aatt_par: Plc -> Term -> AnnoTermPar
-| alseq_par: AnnoTermPar -> AnnoTermPar -> AnnoTermPar
-| abseq_par: Split -> AnnoTermPar -> AnnoTermPar -> AnnoTermPar
-| abpar_par: Loc -> Split -> AnnoTermPar -> Term -> AnnoTermPar.
-
-Fixpoint unannoPar (t:AnnoTermPar) : Term :=
-  match t with
-  | aasp_par a => asp a
-  | aatt_par p t => att p t
-  | alseq_par a1 a2 => lseq (unannoPar a1) (unannoPar a2)                 
-  | abseq_par spl a1 a2 => bseq spl (unannoPar a1) (unannoPar a2) 
-  | abpar_par _ spl a1 a2 => bpar spl (unannoPar a1) a2
-  end.
-
-Fixpoint anno_par (t:Term) (loc:Loc) : (Loc * AnnoTermPar)  :=
-  match t with
-  | asp a => (loc, aasp_par a)
-  | att p t' => (loc, aatt_par p t')
-                     
-  | lseq t1 t2 =>
-    let '(loc', t1') := anno_par t1 loc in
-    let '(loc'', t2') := anno_par t2 loc' in
-
-    (loc'', alseq_par t1' t2')
-      
-  | bseq spl t1 t2 =>
-    let '(loc', t1') := anno_par t1 loc in
-    let '(loc'', t2') := anno_par t2 loc' in
-
-    (loc'', abseq_par spl t1' t2')
-      
-  | bpar spl t1 t2 =>
-    let '(loc', t1') := anno_par t1 (S loc) in
-    
-    (loc', abpar_par loc spl t1' t2)
-  end.
-
-Definition peel_loc (ls:list Loc) : Opt (Loc * list Loc) :=
-  match ls with
-  | bs :: ls' => ret (bs, ls')
-  | _ => failm
-  end.
-
-Fixpoint anno_par_list' (t:Term) (ls:list Loc) : Opt (list Loc * AnnoTermPar) :=
-  match t with
-  | asp a => ret (ls, aasp_par a)
-  | att p t' => ret (ls, aatt_par p t')
-  | lseq t1 t2 =>
-    '(ls', t1') <- anno_par_list' t1 ls ;;
-    '(ls'', t2') <- anno_par_list' t2 ls' ;;
-    ret (ls'', alseq_par t1' t2')
-  | bseq spl t1 t2 =>
-    '(ls', t1') <- anno_par_list' t1 ls ;;
-    '(ls'', t2') <- anno_par_list' t2 ls' ;;
-    ret (ls'', abseq_par spl t1' t2')
-  | bpar spl t1 t2 =>
-    '(loc, ls') <- peel_loc ls ;;
-    '(ls'', t1') <- anno_par_list' t1 ls' ;;
-    ret (ls'', abpar_par loc spl t1' t2)
-  end.
-
-Definition anno_par_list (t:Term) (ls:list Loc) : Opt AnnoTermPar :=
-  '(ls', t') <- anno_par_list' t ls ;;
-  ret t'.
-
-Set Nested Proofs Allowed.
-
-Lemma peel_loc_fact: forall ls ls' loc,
-    peel_loc ls = Some (loc, ls') ->
-    length ls' = length ls - 1.
-Proof.
-  intros.
-  generalizeEverythingElse ls.
-  induction ls; intros; ff.
-  unfold ret in *. inversion H.
-  subst.
-  lia.
-Defined.
-
-Lemma par_list_helper: forall t1 t1' ls ls',
-    anno_par_list' t1 ls = Some (ls', t1') ->
-    length ls' = length ls - top_level_thread_count t1.
-Proof.
-  intros.
-  generalizeEverythingElse t1.
-  induction t1; intros.
-  -
-    ff.
-    unfold ret in *.
-    ff.
-    lia.
-  -
-    ff.
-    unfold ret in *.
-    ff.
-    lia.
-  -
-    ff.
-    unfold bind in *.
-    unfold ret in *.
-    ff.
-    find_eapply_hyp_hyp.
-    find_eapply_hyp_hyp.
-    lia.
-  -
-    ff.
-    unfold bind in *.
-    unfold ret in *.
-    ff.
-    find_eapply_hyp_hyp.
-    find_eapply_hyp_hyp.
-    lia.
-  -
-    ff.
-    unfold bind in *.
-    unfold ret in *.
-    ff.
-    find_eapply_hyp_hyp.
-    rewrite Heqo0.
-    assert (length l0 = length ls - 1).
-    {
-      eapply peel_loc_fact.
-      eauto.
-    }
-    lia.
-Defined.
-
-Lemma peel_loc_fact2: forall ls, 
-    length ls >= 1 ->
-    exists res, peel_loc ls = Some res.
-Proof.
-  intros.
-  generalizeEverythingElse ls.
-  induction ls; intros.
-  -
-    ff.
-  -
-    ff.
-    unfold ret.
-    eauto.
-Defined.
-
-Lemma anno_par_list_some : forall ls t,
-  length ls >= (top_level_thread_count t) ->
-  exists t', anno_par_list t ls = Some t'.
-Proof.
-  intros.
-  generalizeEverythingElse t.
-  induction t; intros.
-  -
-    ff.
-    eauto.
-  -
-    ff.
-    eauto.
-  -
-    ff.
-    unfold anno_par_list.
-    cbn.
-    destruct (anno_par_list' t1 ls) eqn:hi.
-    unfold bind.
-    ff.
-    unfold ret.
-    eauto.
-
-    assert (length l >= top_level_thread_count t2).
-    {
-      assert (length ls >= top_level_thread_count t2) by lia.
-      assert (length l = length ls - (top_level_thread_count t1)).
-      {
-
-
-        eapply par_list_helper; eauto.
-      }
-      rewrite H1.
-      lia.
-    }
-
-    find_eapply_hyp_hyp.
-    destruct_conjs.
-    unfold anno_par_list in H1.
-    unfold bind in H1.
-    ff.
-
-    assert (length ls >= top_level_thread_count t1) by lia.
-    find_eapply_hyp_hyp.
-    destruct_conjs.
-    unfold anno_par_list in H1.
-    unfold bind in H1.
-    ff.
-  -
-    ff.
-    unfold anno_par_list.
-    cbn.
-    destruct (anno_par_list' t1 ls) eqn:hi.
-    unfold bind.
-    ff.
-    unfold ret.
-    eauto.
-
-    assert (length l >= top_level_thread_count t2).
-    {
-      assert (length ls >= top_level_thread_count t2) by lia.
-      assert (length l = length ls - (top_level_thread_count t1)).
-      {
-
-
-        eapply par_list_helper; eauto.
-      }
-      rewrite H1.
-      lia.
-    }
-
-    find_eapply_hyp_hyp.
-    destruct_conjs.
-    unfold anno_par_list in H1.
-    unfold bind in H1.
-    ff.
-
-    assert (length ls >= top_level_thread_count t1) by lia.
-    find_eapply_hyp_hyp.
-    destruct_conjs.
-    unfold anno_par_list in H1.
-    unfold bind in H1.
-    ff.
-  -
-    ff.
-    unfold anno_par_list.
-    cbn.
-    destruct (anno_par_list' t1 ls) eqn:hi.
-    unfold bind.
-    ff.
-    unfold ret.
-    eauto.
-
-    assert (length l0 >= top_level_thread_count t1).
-    {
-      assert (length l0 = length ls - 1).
-      {
-        eapply peel_loc_fact; eauto.
-      }
-      lia.
-    }
-    find_eapply_hyp_hyp.
-    destruct_conjs.
-    unfold anno_par_list in H1.
-    unfold bind in H1. ff.
-
-    assert (length ls >= 1) by lia.
-
-
-    edestruct peel_loc_fact2.
-    eassumption.
-    rewrite H1 in *.
-    ff.
-
-    unfold bind in *.
-    ff.
-    unfold ret in *; ff.
-    eauto.
-
-    assert (length l0 >= top_level_thread_count t1).
-    {
-      assert (length l0 = length ls - 1).
-      {
-        eapply peel_loc_fact; eauto.
-      }
-      lia.
-
-    }
-    find_eapply_hyp_hyp.
-    destruct_conjs.
-    unfold anno_par_list in H1.
-    unfold bind in H1. ff.
-
-     assert (length ls >= 1) by lia.
-
-
-    edestruct peel_loc_fact2.
-    eassumption.
-    rewrite H1 in *.
-    ff.
-Defined.
-
-    
-    
-    
-              
-
-Definition annotated_par (x:Term) :=
-  snd (anno_par x 0).
-*)
-
+(* Term subset relation *)
 Inductive term_sub : Term -> Term -> Prop :=
 | termsub_refl_annt: forall t: Term, term_sub t t
 | aatt_sub_annt: forall t t' p,
@@ -378,346 +79,11 @@ Proof.
   generalizeEverythingElse t''.
   induction t'';
     intros H H0; ff.
-    (* try (invc H0; eauto). *)
 Defined.
 
-
-(*
-
-Lemma nullify_no_none_nones_seq: forall t t' t1 t2 sp,
-    nullify_branchesP t t' ->
-    term_sub (bseq sp t1 t2) t' ->
-    sp = (ALL,ALL).
-Proof.
-  intros.
-  generalizeEverythingElse t.
-  induction t; intros.
-  -
-    destruct a; ff; invc H; ff.
-  -
-    invc H; ff.
-    invc H0.
-    
-    eapply IHt.
-    2: { eassumption. }
-    econstructor.
-    eauto.
-  -
-    invc H; ff.
-    invc H0.
-    + (* t1 term_sub case *)
-      eapply IHt1.
-      2: { eassumption. }
-      econstructor; eauto.
-    +
-      eapply IHt2.
-      2: { eassumption. }
-      econstructor; eauto.
-  -
-    invc H; ff.
-    invc H0; ff.
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    eapply IHt2.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    invc H0; ff.
-
-     eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    invc H2.
-    invc H1.
-
-     eapply IHt2.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    invc H0; ff.
-
-    invc H2.
-    invc H1.
-
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    
-     eapply IHt2.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    invc H0; ff.
-
-    invc H2.
-    invc H1.
-
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    invc H2.
-    invc H1.
-
-    
-     eapply IHt2.
-    2: { eassumption. }
-    econstructor; eauto.
-  -
-        invc H; ff.
-    invc H0; ff.
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    eapply IHt2.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    invc H0; ff.
-
-     eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    invc H2.
-    invc H1.
-
-     eapply IHt2.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    invc H0; ff.
-
-    invc H2.
-    invc H1.
-
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    
-     eapply IHt2.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    invc H0; ff.
-
-    invc H2.
-    invc H1.
-
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    invc H2.
-    invc H1.
-
-    
-     eapply IHt2.
-    2: { eassumption. }
-    econstructor; eauto.
-Qed.
-
-Lemma nullify_no_none_nones_par: forall t t' t1 t2 sp,
-    nullify_branchesP t t' ->
-    term_sub (bpar sp t1 t2) t' ->
-    sp = (ALL,ALL).
-Proof.
-    intros.
-  generalizeEverythingElse t.
-  induction t; intros.
-  -
-    destruct a; ff; invc H; ff.
-  -
-    invc H; ff.
-    invc H0.
-    
-    eapply IHt.
-    2: { eassumption. }
-    econstructor.
-    eauto.
-  -
-    invc H; ff.
-    invc H0.
-    + (* t1 term_sub case *)
-      eapply IHt1.
-      2: { eassumption. }
-      econstructor; eauto.
-    +
-      eapply IHt2.
-      2: { eassumption. }
-      econstructor; eauto.
-  -
-    invc H; ff.
-    invc H0; ff.
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    eapply IHt2.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    invc H0; ff.
-
-     eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    invc H2.
-    invc H1.
-
-     eapply IHt2.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    invc H0; ff.
-
-    invc H2.
-    invc H1.
-
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    
-     eapply IHt2.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    invc H0; ff.
-
-    invc H2.
-    invc H1.
-
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    invc H2.
-    invc H1.
-
-    
-     eapply IHt2.
-    2: { eassumption. }
-    econstructor; eauto.
-  -
-        invc H; ff.
-    invc H0; ff.
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    eapply IHt2.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    invc H0; ff.
-
-     eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    invc H2.
-    invc H1.
-
-     eapply IHt2.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    invc H0; ff.
-
-    invc H2.
-    invc H1.
-
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    
-     eapply IHt2.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    invc H0; ff.
-
-    invc H2.
-    invc H1.
-
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    invc H2.
-    invc H1.
-
-    
-     eapply IHt2.
-    2: { eassumption. }
-    econstructor; eauto.
-Qed.
-
-Lemma nullify_no_none_seq_contra: forall t t' t1 t2 sp1 sp2,
-  nullify_branchesP t t' ->
-  term_sub (bseq (sp1,sp2) t1 t2) t' ->
-  ((sp1 = NONE) \/ (sp2 = NONE)) ->
-  False.
-Proof.
-  intros.
-  invc H1.
-  -
-    assert ((NONE,sp2) = (ALL,ALL)).
-    {
-      eapply nullify_no_none_nones_seq; eauto.
-    }
-    invc H1.
-  -
-    assert ((sp1,NONE) = (ALL,ALL)).
-    {
-      eapply nullify_no_none_nones_seq; eauto.
-    }
-    invc H1.
-Qed.
-
-Lemma nullify_no_none_par_contra: forall t t' t1 t2 sp1 sp2,
-  nullify_branchesP t t' ->
-  term_sub (bpar (sp1,sp2) t1 t2) t' ->
-  ((sp1 = NONE) \/ (sp2 = NONE)) ->
-  False.
-Proof.
-  intros.
-  invc H1.
-  -
-    assert ((NONE,sp2) = (ALL,ALL)).
-    {
-      eapply nullify_no_none_nones_par; eauto.
-    }
-    invc H1.
-  -
-    assert ((sp1,NONE) = (ALL,ALL)).
-    {
-      eapply nullify_no_none_nones_par; eauto.
-    }
-    invc H1.
-Qed.
-*)
-    
-    
-                                   
-
-  
-
-
-(*
 (** This function annotates a term.  It feeds a natural number
     throughout the computation so as to ensure each event has a unique
-    natural number. *) *)
-
+    natural number. *)
 Fixpoint anno (t: Term) (i:nat) : (nat * AnnoTerm) :=
   match t with
   | asp x => (S i, (aasp (i, S i) x))
@@ -786,87 +152,7 @@ Proof.
     jkjke.
 Defined.
 
-
-(*
-
-Lemma anno_unanno_par: forall a l l' annt,
-    anno_par a l = (l', annt) ->
-    unannoPar annt = a.
-Proof.
-  intros.
-  generalizeEverythingElse a.
-  induction a; intros.
-  -
-    ff.
-  -
-    ff.
-  -
-    ff.
-    assert (unannoPar a = a1) by eauto.
-    assert (unannoPar a0 = a2) by eauto.
-    congruence.
-  -
-    ff.
-    assert (unannoPar a = a1) by eauto.
-    assert (unannoPar a0 = a2) by eauto.
-    congruence.
-  -
-    ff.
-    assert (unannoPar a = a1) by eauto.
-    congruence.
-Defined.
-
-Lemma anno_unanno_par_list': forall a l l' annt,
-    anno_par_list' a l = Some (l', annt) ->
-    unannoPar annt = a.
-Proof.
-  intros.
-  generalizeEverythingElse a.
-  induction a; intros.
-  -
-    ff.
-  -
-    ff.
-  -
-    ff.
-    unfold bind in *.
-    unfold ret in *.
-    ff.
-    assert (unannoPar a = a1) by eauto.
-    assert (unannoPar a0 = a2) by eauto.
-    congruence.
-  -
-    ff.
-    unfold bind in *.
-    unfold ret in *.
-    ff.
-    assert (unannoPar a = a1) by eauto.
-    assert (unannoPar a0 = a2) by eauto.
-    congruence.
-  -
-    ff.
-    unfold bind in *.
-    unfold ret in *.
-    ff.
-    assert (unannoPar a = a1) by eauto.
-    congruence.
-Defined.
-
-Lemma anno_unanno_par_list: forall a l annt,
-    anno_par_list a l = Some annt ->
-    unannoPar annt = a.
-Proof.
-  intros.
-  unfold anno_par_list in *.
-  unfold bind in *.
-  unfold ret in *.
-  ff.
-  eapply anno_unanno_par_list'.
-  eassumption.
-Defined.
-*)
-
-
+(* Propositional versions of anno function equalities *)
 Inductive annoP: AnnoTerm -> Term -> Prop :=
 | annoP_c: forall anno_term t,
     (exists n n', anno t n = (n',anno_term)) -> (* anno_term = snd (anno t n)) -> *)
@@ -884,143 +170,7 @@ Inductive annoP_indexed: AnnoTerm -> Term -> nat -> nat ->  Prop :=
     annoP_indexed anno_term t n n'.
 
 
-
-(*
-Inductive anno_parP (*anno_par_listP*): AnnoTermPar -> Term -> Prop :=
-| anno_parP_c: forall par_term t,
-    (exists ls ls', anno_par_list' t ls = Some (ls', par_term)) -> (*par_term = snd (anno_par t loc)) -> *)
-    (*anno_par_listP*) anno_parP par_term t.
-
-Inductive anno_parPloc: AnnoTermPar -> Term -> list Loc -> Prop :=
-| anno_parP_cloc: forall par_term t ls,
-    (exists ls', anno_par_list' t ls = Some (ls', par_term)) -> (*par_term = snd (anno_par t loc) -> *)
-    anno_parPloc par_term t ls.
-*)
-
-
-(*
-Inductive anno_parP: AnnoTermPar -> Term -> Prop :=
-| anno_parP_c: forall par_term t,
-    (exists loc loc', anno_par t loc = (loc', par_term)) -> (*par_term = snd (anno_par t loc)) -> *)
-    anno_parP par_term t.
-
-Inductive anno_parPloc: AnnoTermPar -> Term -> Loc -> Prop :=
-| anno_parP_cloc: forall par_term t loc,
-    (exists loc', anno_par t loc = (loc', par_term)) -> (*par_term = snd (anno_par t loc) -> *)
-    anno_parPloc par_term t loc.
-
-
-Inductive anno_par_listP: AnnoTermPar -> Term -> Prop :=
-| anno_par_listP_c: forall par_term t,
-    (exists ls ls', anno_par_list' t ls = Some (ls', par_term)) -> (*par_term = snd (anno_par t loc)) -> *)
-    anno_par_listP par_term t.
-
-Inductive anno_par_listPls: AnnoTermPar -> Term -> list Loc -> Prop :=
-| anno_par_listP_cloc: forall par_term t ls,
-    (exists ls', anno_par_list' t ls = Some (ls', par_term)) -> (*par_term = snd (anno_par t loc) -> *)
-    anno_par_listPls par_term t ls.
-*)
-
-(*
-
-Lemma nolist_list_same_annopar: forall t annt,
-  anno_parP annt t ->
-  anno_par_listP annt t.
-Proof.
-  intros.
-  generalizeEverythingElse t.
-  induction t; intros.
-  -
-    invc H.
-    destruct_conjs.
-    econstructor.
-    destruct a; ff; eauto.
-  -
-    invc H.
-    destruct_conjs.
-    econstructor.
-    ff.
-    eauto.
-  -
-    invc H.
-    destruct_conjs.
-    ff.
-    assert (anno_parP a t1).
-    {
-      econstructor; eauto.
-    }
-    find_eapply_hyp_hyp.
-
-    assert (anno_parP a0 t2).
-    {
-      econstructor; eauto.
-    }
-    find_eapply_hyp_hyp.
-
-    invc H1; invc H2.
-    destruct_conjs.
-
-
-    (*
-    econstructor.
-    exists H3. eexists.
-
-    ff.
-
-    unfold bind.
-    unfold ret.
-    find_rewrite.
-    find_rewrite.
-    
-    repeat eexists.
-    ff.
-    rewrite H6 in *.
-    ff.
-    unfold an
-    ff.
-    eauto.
-    ff.
-    
-    eauto.
-  -
-    invc H.
-    destruct_conjs.
-    econstructor.
-    eauto.
-  - invc H.
-    destruct_conjs.
-    econstructor.
-    eauto.
-Defined.
-*)
-
-Lemma list_nolist_same_annopar: forall t annt,
-  anno_par_listP annt t ->
-  anno_parP annt t.
-Proof.
-  intros.
-  generalizeEverythingElse t.
-  induction t; intros;
-    invc H;
-    destruct_conjs; econstructor; eauto.
-Defined.
-    
-    
-*)    
-    
-
-
-(** This predicate determines if an annotated term is well formed,
-    that is if its ranges correctly capture the relations between a
-    term and its associated events. *)
-
-(*
-Lemma unique_req_events (t:AnnoTerm) : forall p i i0 p1 p2 q q0 t0 t1,
-       events t p (req i  loc p1 q  t0) ->
-    not (events t p (req i0 loc p2 q0 t1)).
- *)
-
-(** Eval for annotated terms. *)
+(** eval (evidence semantics) for annotated terms. *)
 
 Fixpoint aeval t p e :=
   match t with
@@ -1044,7 +194,9 @@ Proof.
 Defined.
 
 
-
+(** This predicate determines if an annotated term is well formed,
+    that is if its ranges correctly capture the relations between a
+    term and its associated events. *)
 Inductive well_formed_r_annt: AnnoTerm -> Prop :=
 | wf_asp_r_annt: forall r x,
     snd r = S (fst r) ->
@@ -1054,8 +206,7 @@ Inductive well_formed_r_annt: AnnoTerm -> Prop :=
     S (fst r) = fst (range x) ->
     snd r = S (snd (range x)) ->
     Nat.pred (snd r) > fst r ->
-    well_formed_r_annt (aatt r p x)
-                  
+    well_formed_r_annt (aatt r p x)               
 | wf_lseq_r_annt: forall r x y,
     well_formed_r_annt x -> well_formed_r_annt y ->
     fst r = fst (range x) ->
@@ -1077,6 +228,8 @@ Inductive well_formed_r_annt: AnnoTerm -> Prop :=
     well_formed_r_annt (abpar r s x y).
 Hint Constructors well_formed_r_annt : core.
 
+
+(*
 Ltac afa :=
   match goal with   
   | [H : forall _, _, H2: Term, H3: nat |- _] => pose_new_proof (H H2 H3)
@@ -1092,13 +245,17 @@ Ltac afa'' :=
   | [H : forall _, _, H2: Term, H3: nat, H4:nat, H5: AnnoTerm |- _] =>
     pose_new_proof (H H2 (H3)(H4) H5)
   end.
+*)
 
+
+(*
 Ltac same_index :=
   match goal with
   | [H: anno ?t _ = (?n, _),
         H': anno ?t _ = (?n', _) |- _] =>
     assert_new_proof_by (n = n') eauto
   end.
+*)
 
 Lemma same_anno_range: forall t i a b n n',
     anno t i = (n,a) ->
@@ -1131,6 +288,7 @@ Proof.
   induction x; intros; ff.
 Defined.
 
+(*
 Ltac haha :=
   let asdff := eapply anno_mono; eauto in
   match goal with
@@ -1151,13 +309,18 @@ Ltac hehe'' :=
   match goal with
   | [x: Term, y:nat |- _] => pose_new_proof (anno_range x y)
   end.
+*)
 
+(*
 Ltac do_list_empty :=
   match goal with
     [H: length ?ls = 0 |- _] =>
     assert_new_proof_by (ls = []) ltac:(destruct ls; solve_by_inversion)
   end.
+*)
 
+
+(** Lemma stating that any annotated term produced via anno is well formed *)
 Lemma anno_well_formed_r:
   forall t i j t',
     anno t i = (j, t') ->

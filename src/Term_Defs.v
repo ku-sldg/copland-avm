@@ -1,4 +1,10 @@
-(* Copland terms, events, and annotated terms *)
+(** This file contains the basic definitions for Copland terms, Core terms, 
+   Evidence Types, and Copland events. *)
+
+(*
+   These definitions have been adapted from an earlier version, archived 
+   here:  https://ku-sldg.github.io/copland/resources/coplandcoq.tar.gz
+*)
 
 (* LICENSE NOTICE
 
@@ -9,25 +15,11 @@ This proof script is free software: you can redistribute it and/or
 modify it under the terms of the BSD License as published by the
 University of California.  See license.txt for details. *)
 
-(** This module contains the basic definitions for Copland terms,
-    events, and annotated terms. *)
-
-Require Import PeanoNat Nat Compare_dec Lia.
-Require Import Preamble StructTactics Defs OptMonad_Coq.
-(*Require Import AutoPrim. *)
-
 Require Export BS.
 Require Export String.
 
 Require Import List.
 Import List.ListNotations.
-
-Require Import Coq.Arith.Even Coq.Program.Tactics Coq.Program.Equality.
-
-Require Import Coq.Bool.Bool.
-
-Require Import List.
-Import ListNotations.
 
 (*
 Set Nested Proofs Allowed.
@@ -40,61 +32,53 @@ Set Nested Proofs Allowed.
     with data a dependency, a sequence of terms with no data
     dependency, or parallel terms. *)
 
-(** [Plc] represents a place. *)
-
+(** [Plc] represents a place (or attestation domain). *)
 Definition Plc: Set := nat.
+(** [N_ID] represents a nonce identifier.  *)
 Definition N_ID: Set := nat.
-
+(** [Event_ID] represents Event identifiers *)
 Definition Event_ID: Set := nat.
 
-
+(** [ASP_ID], [TARG_ID], and [Arg] are all string-typed parameters to ASPs 
+    [ASP_ID] identifies the procedure invoked.
+    [TARG_ID] identifies the target (when a target makes sense).
+    [Arg] represents a custom argument for a given ASP 
+          (defined and interpreted per-scenario/implementaiton).
+*)
 Definition ASP_ID: Set := string.
 Definition TARG_ID: Set := string.
 Definition Arg: Set := string.
 
-(*
-Inductive ASP_PARAMS': Set :=
-| asp_paramsC': ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP_PARAMS'.
-
-Definition eqb_asp_params': ASP_PARAMS' -> ASP_PARAMS' -> bool.
-Admitted.
-
-Definition eq_asp_params'_dec:
-  forall x y: ASP_PARAMS', {x = y} + {x <> y}.
-Proof.
-  intros;
-    repeat decide equality.
-  eapply eq_targid_dec.
-  eapply eq_arg_dec.
-  eapply eq_aspid_dec.
-Defined.
-*)
-
-(** The structure of evidence. *)
-
+(** Grouping ASP parameters into one constructor *)
 Inductive ASP_PARAMS: Set :=
 | asp_paramsC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP_PARAMS.
 
+(** The structure of evidence. *)
 Inductive Evidence: Set :=
 | mt: Evidence
 | nn: N_ID -> Evidence
-(*
-| uu: (*ASP_PARAMS ->*) ASP_PARAMS ->
-      (*Evidence ->*) Plc -> Evidence -> Evidence *)
 | gg: Plc -> ASP_PARAMS -> Evidence -> Evidence
 | hh: Plc -> ASP_PARAMS -> Evidence -> Evidence
 | ss: Evidence -> Evidence -> Evidence.
-(*
-| pp: Evidence -> Evidence -> Evidence. *)
 
+(** Evidene routing types:  
+      ALL:   pass through all evidence
+      NONE   pass through empty evidence
+*)
 Inductive SP: Set :=
 | ALL
 | NONE.
 
+(** Evidence extension types:
+      COMP:  Compact evidence down to a single value.
+      EXTD:  Extend evidence by appending a new value.
+*)
 Inductive FWD: Set :=
 | COMP
 | EXTD.
 
+
+(** Primitive Copland phases *)
 Inductive ASP: Set :=
 | NULL: ASP
 | CPY: ASP
@@ -102,8 +86,11 @@ Inductive ASP: Set :=
 | SIG: ASP
 | HSH: ASP.
 
+(** Pair of evidence splitters that indicate routing evidence to subterms 
+    of branching phrases *)
 Definition Split: Set := (SP * SP).
 
+(** Main Copland phrase datatype definition *)
 Inductive Term: Set :=
 | asp: ASP -> Term
 | att: Plc -> Term -> Term
@@ -142,15 +129,21 @@ Open Scope cop_ent_scope.
 Definition test1 := <{ __ -> {} }>.
 Example test1ex : test1 = (lseq (asp CPY) (asp NULL)). reflexivity. Defined.
 
+
+(** Copland Core_Term primitive datatypes *)
 Inductive ASP_Core: Set :=
 | NULLC: ASP_Core
 | CLEAR: ASP_Core
 | CPYC: ASP_Core
 | ASPCC: FWD -> ASP_PARAMS -> ASP_Core.
 
+(** Abstract Location identifiers used to aid in management and execution 
+    of parallel Copland phrases. *)
 Definition Loc: Set := nat.
 Definition Locs: Set := list Loc.
 
+(** Copland Core_Term definition.  Compilation target of the Copland Compiler, 
+    execution language of the Copland VM (CVM). *)
 Inductive Core_Term: Set :=
 | aspc: ASP_Core -> Core_Term
 | attc: Plc -> Term -> Core_Term
@@ -158,12 +151,15 @@ Inductive Core_Term: Set :=
 | bseqc: Core_Term -> Core_Term -> Core_Term
 | bparc: Loc -> Core_Term -> Core_Term -> Core_Term.
 
+(** Abstract definitions for signing and hashing parameters.  
+    May instantiate these during compilation in the future. *)
 Definition sig_params : ASP_PARAMS.
 Admitted.
-
 Definition hsh_params : ASP_PARAMS.
 Admitted.
 
+
+(**  Translating a primitive Copland phrase to its Core_Term equivalent *)
 Definition asp_term_to_core (a:ASP) : Core_Term :=
   match a with
   | NULL => aspc NULLC
@@ -178,6 +174,7 @@ Definition asp_term_to_core (a:ASP) : Core_Term :=
   | HSH => aspc (ASPCC COMP hsh_params)
   end.
 
+(**  Translating a Copland phrase to its Core_Term equivalent *)
 Fixpoint term_to_core_term (t:Term) : Core_Term :=
   match t with
   | asp a => (asp_term_to_core a)
@@ -218,24 +215,26 @@ Fixpoint term_to_core_term (t:Term) : Core_Term :=
   end.
 
 
-
+(** Propositional encapsulation of term_to_core_term.  
+    Useful to avoid spurious rewriting during proofs *)
 Inductive term_to_coreP: Term -> Core_Term -> Prop :=
 | toCoreP: forall t t',
     term_to_core_term t = t' ->
     term_to_coreP t t'.
 
 
+(**  Calculate the size of an Evidence type *)
 Fixpoint et_size (e:Evidence): nat :=
   match e with
   | mt => 0
-  (*| uu _ _ e' => 1 + (et_size e') *)
   | gg _ _ e' => 1 + (et_size e')
   | hh _ _ _ => 1
   | nn _ => 1
   | ss e1 e2 => (et_size e1) + (et_size e2)
-  (*| pp e1 e2 => (et_size e1) + (et_size e2) *)
   end.
 
+
+(*
 Fixpoint thread_count (t:Term) : nat :=
   match t with
   | asp _ => 0
@@ -253,13 +252,18 @@ Fixpoint top_level_thread_count (t:Term) : nat :=
   | bseq _ t1 t2 => (top_level_thread_count t1) + (top_level_thread_count t2)
   | bpar _ t1 t2 => 1 + (top_level_thread_count t1) (* + (thread_count t2) *)
   end.
+*)
 
 (*
 Compute (thread_count (bpar (ALL,ALL) (asp SIG) (asp CPY))).
  *)
 
+
+(** Raw Evidence representaiton:  a list of binary (BS) values. *)
 Definition RawEv := list BS.
 
+(**  Type-Tagged Raw Evidence representation.  Used as the internal evidence
+     type managed by the CVM to track evidence contents and its structure. *)
 Inductive EvC: Set :=
 | evc: RawEv -> Evidence -> EvC.
 
@@ -275,6 +279,8 @@ Definition get_bits (e:EvC): list BS :=
   | evc ls _ => ls
   end.
 
+(** A "well-formed" EvC value is where the length of its raw evidence portion
+    has the proper size (calculated over the Evidence Type portion). *)
 Inductive wf_ec : EvC -> Prop :=
 | wf_ec_c: forall ls et,
     length ls = et_size et ->
@@ -293,38 +299,18 @@ Definition splitEv_T_r (sp:Split) (e:Evidence) : Evidence :=
   |  _ => mt
   end.
 
-(*
-Inductive ASP_PARAMS: Set :=
-| asp_paramsC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> Evidence -> ASP_PARAMS.
- *)
-
-Print ASP.
-(*
-Inductive ASP : Set :=
-    NULL : ASP | CPY : ASP | ASPC : SP -> FWD -> ASP_PARAMS -> ASP | SIG : ASP | HSH : ASP.
-*)
-Print Evidence.
-(*
-Inductive Evidence : Set :=
-    mt : Evidence
-  | nn : N_ID -> Evidence
-  | gg : Plc -> ASP_PARAMS -> Evidence -> Evidence
-  | hh : Plc -> ASP_PARAMS -> Evidence -> Evidence
-  | ss : Evidence -> Evidence -> Evidence.
- *)
-
 Definition sp_ev (sp:SP) (e:Evidence) : Evidence :=
   match sp with
   | ALL => e
   | NONE => mt
   end.
-    
 
+(** Helper function for evidence type reference semantics *)
 Definition eval_asp t p e :=
   match t with
   | NULL => mt
   | CPY => e 
-  | ASPC sp fwd params (*(asp_paramsC i args tpl tid tet)*) =>
+  | ASPC sp fwd params =>
     match fwd with
     | COMP => hh p params (sp_ev sp e)
     | EXTD => gg p params (sp_ev sp e)
@@ -333,7 +319,8 @@ Definition eval_asp t p e :=
   | HSH => hh p hsh_params e
   end.
 
-(** The evidence associated with a term, a place, and some initial evidence. *)
+(** Evidence Type denotational reference semantics.
+    The evidence associated with a term, a place, and some initial evidence. *)
 
 Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
   match t with
@@ -351,50 +338,23 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
     There are events for each kind of action. This includes ASP
     actions such as measurement or data processing. It also includes
     control flow actions: a [split] occurs when a thread of control
-    splits, and a [join] occurs when two threads join.  Each event is
-    distinguished using a unique natural number.
-
+    splits, and a [join] occurs when two threads join.  [req] and [rpy] 
+    are communication events.  [cvm_thread_start] and [cvm_thread_end] are 
+    parallel thread synchonization events, unique to CVM execution (not in 
+    the reference semantics).  Each event is distinguished using a unique 
+    natural number.
  *)
-
-
 
 Inductive Ev: Set :=
 | null: nat -> Plc -> Ev
 | copy:  nat -> Plc -> Ev 
 | umeas: nat -> Plc -> ASP_PARAMS -> Evidence -> Ev
-(*
-| sign: nat -> Plc -> Evidence -> Ev
-| hash: nat -> Plc -> Evidence -> Ev
-*)
 | req: nat -> Plc -> Plc -> Term -> Evidence -> Ev
 | rpy: nat -> Plc -> Plc -> Evidence -> Ev 
 | split: nat -> Plc -> Ev
 | join:  nat -> Plc -> Ev
 | cvm_thread_start: Loc -> Plc -> Core_Term -> Evidence -> Ev
 | cvm_thread_end: Loc -> Ev.
-
-
-(*
-Definition events_eq : Ev ->  Ev -> Prop.
-Admitted.
-
-Lemma exists (f:nat -> nat),
-    forall x, f x = x' ->
-         
-*)
-
-
-(*
-Inductive event_equiv : Ev -> Ev -> Prop :=. 
-
-Definition traces_modulo_null : list Ev -> list Ev -> Prop.
-Admitted.
-
-Lemma traces_map : exists (f:nat -> nat),
-    traces_modulo_null splitList 
-*)
-
-
 
 (** The natural number used to distinguish events. *)
 
@@ -403,8 +363,6 @@ Definition ev x : nat :=
   | null i _ => i
   | copy i _ => i
   | umeas i _ _ _ => i
-  (*| sign i _ _ => i
-  | hash i _ _ => i *)
   | req i _ _ _ _ => i
   | rpy i _ _ _ => i 
   | split i _ => i
@@ -419,9 +377,6 @@ Definition pl x : Plc :=
   | null _ p => p
   | copy _ p => p
   | umeas _ p _ _ => p
-                      (*
-  | sign _ p _ => p
-  | hash _ p _ => p *)
   | req _ p _ _ _ => p
   | rpy _ p _ _ => p
   | split _ p => p
@@ -443,7 +398,7 @@ Definition asp_event i x p e :=
   | NULL => null i p
   | CPY => copy i p
   | ASPC sp _ ps => umeas i p ps (sp_ev sp e)
-  | SIG => umeas i p sig_params e (* sign i p e *)
+  | SIG => umeas i p sig_params e
   | HSH => umeas i p hsh_params e
   end.
 

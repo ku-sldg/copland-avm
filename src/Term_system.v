@@ -101,25 +101,6 @@ Proof.
     repeat expand_let_pairs; dest_range'; simpl in *;
       try (destruct a; auto; do_evin; auto);
 
-  (*
-  do_evin.
-  invc H0.
-  destruct s.
-  assert (e = sp_ev ALL e).
-  {
-    ff.
-  }
-  rewrite H0.
-  eauto.
-  
-  
-
-  destruct a. do_evin. auto.
-*)
-
-
-
-  
       try (destruct a; try (destruct a); auto; do_evin; auto; tauto);
 
       try (

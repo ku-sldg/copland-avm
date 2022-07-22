@@ -1,5 +1,5 @@
 (*
-Implementation of the Copland Compiler and Virtual Machine.
+Implementation of the Copland Virtual Machine (CVM).
 
 Author:  Adam Petz, ampetz@ku.edu
 *)
@@ -9,8 +9,10 @@ Require Import Term_Defs Anno_Term_Defs Cvm_Monad.
 Require Import List.
 Import ListNotations.
 
-(** Monadic VM implementation *)
-
+(** Monadic CVM implementation *)
+(* TODO: rename this to something besides "copland_compile".  Is really 
+   more of an interpreter.  The Term to Core_Term translation function 
+   is closer to a Copland Compiler than this.  *)
 Fixpoint copland_compile (t:Core_Term): CVM unit :=
   match t with
   | aspc a =>
@@ -24,10 +26,6 @@ Fixpoint copland_compile (t:Core_Term): CVM unit :=
       copland_compile t1 ;;
       copland_compile t2
   | bseqc t1 t2 =>
-    (*
-    pr <- split_ev sp ;;
-    let '(e1,e2) := pr in
-    put_ev e1 ;; *)
     split_ev ;;
     e <- get_ev ;;
     copland_compile t1 ;;
@@ -39,21 +37,9 @@ Fixpoint copland_compile (t:Core_Term): CVM unit :=
   | bparc loc t1 t2 =>
     split_ev ;;
     e <- get_ev ;;
-    (*
-    pr <- split_ev sp ;;
-    let '(e1,e2) := pr in *)
     start_par_thread loc t2 e ;;
-    (* put_ev e1 ;; *)
     copland_compile t1 ;;
     e1r <- get_ev ;;
     e2r <- wait_par_thread loc t2 e ;;
     join_seq e1r e2r
   end.
-
-(*
-Definition run_cvm (t:AnnoTermPar) st : cvm_st :=
-  execSt (copland_compile t) st.
-
-Definition run_cvm' (t:Term) st : cvm_st :=
-  run_cvm (annotated_par t) st.
-*)

@@ -1,3 +1,15 @@
+(** Abstract definitions of IO Stub signatures.  The functions with names that 
+    have a tick at the end (i.e. do_asp') should be instantiated to concrete 
+    IO functions in the executable language upon extraction.
+
+    The non-ticked functions (i.e. do_asp) only live in Coq, and largely 
+    represent raw evidence values.  We leave these  abstract (Admitted) in Coq 
+    because they are either too low-level to reason about, or require external 
+    IO capabilities not modeled first-class in our spec.  These abstract 
+    evidence values support specification of correctness properties for 
+    Appraisal (see usage of do_asp in appEvent_EvidenceC of Appraisal_Defs.v).
+ *)
+
 Require Import Term_Defs ConcreteEvidence StMonad_Coq IO_Type.
 
 Definition encodeEvRaw(e:RawEv): BS.
