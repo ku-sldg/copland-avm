@@ -56,7 +56,7 @@ Inductive traceS: St -> list Ev -> Prop :=
     shuffle tr1 tr2 tr3 ->
     traceS (bp j st1 st2)
            (tr3 ++ [(join (pred j) (pl st2))]).
-Hint Constructors traceS : core.
+#[export] Hint Constructors traceS : core.
 
 Fixpoint esizeS s:=
   match s with

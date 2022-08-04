@@ -69,7 +69,7 @@ Inductive term_sub : Term -> Term -> Prop :=
 | abpar_subr_annt: forall t' t1 t2 s,
     term_sub t' t2 ->
     term_sub t' (bpar s t1 t2).
-Hint Constructors term_sub : core.
+#[export] Hint Constructors term_sub : core.
 
 Lemma termsub_transitive: forall t t' t'',
     term_sub t t' ->
@@ -226,7 +226,7 @@ Inductive well_formed_r_annt: AnnoTerm -> Prop :=
     (snd r) = S (snd (range y)) ->
     (*fst (range y) > fst (range x) -> *)
     well_formed_r_annt (abpar r s x y).
-Hint Constructors well_formed_r_annt : core.
+#[export] Hint Constructors well_formed_r_annt : core.
 
 
 (*
@@ -278,7 +278,7 @@ Proof.
     repeat find_apply_hyp_hyp;
     lia.
 Defined.
-Hint Resolve anno_mono : core.
+#[export] Hint Resolve anno_mono : core.
 
 Lemma anno_range:
   forall x i j t',

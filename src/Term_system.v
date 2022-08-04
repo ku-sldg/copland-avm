@@ -91,7 +91,6 @@ Ltac do_evin :=
 (** The events in the event system correspond to the events associated
     with a term, a place, and some evidence. *)
 
-Locate dest_range.
 Lemma evsys_events:
   forall t p e ev,
     well_formed_r_annt t ->

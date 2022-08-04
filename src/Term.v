@@ -209,7 +209,7 @@ Inductive events: AnnoTerm -> Plc -> Evidence -> Ev -> Prop :=
       snd r = S i ->
       events (abpar r s t1 t2) p e
              (join i  p).
-Hint Constructors events : core.
+#[export] Hint Constructors events : core.
 
 Ltac inv_events :=
   match goal with

@@ -104,7 +104,7 @@ Proof.
     repeat decide equality;
     try (apply eq_arg_dec).
 Defined.
-Hint Resolve eq_ev_dec : core.
+#[local] Hint Resolve eq_ev_dec : core.
 
 Definition eq_evidence_dec:
   forall x y: Evidence, {x = y} + {x <> y}.
@@ -113,7 +113,7 @@ Proof.
     repeat decide equality;
   apply eq_arg_dec.
 Defined.
-Hint Resolve eq_evidence_dec : core.
+#[local] Hint Resolve eq_evidence_dec : core.
 
 
 (** list equality Lemmas *)

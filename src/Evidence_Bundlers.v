@@ -10,8 +10,6 @@ Require Import ConcreteEvidence IO_Stubs.
 Require Import List.
 Import ListNotations.
 
-Locate encodeEvRaw.
-
 (** Extends raw evidence by prepending one value to the front.
     Also updates underlying Evidence Type.
     An example is digital signatures, where the signature value is prepended *)

@@ -51,7 +51,7 @@ Inductive EvSubT: Evidence -> Evidence -> Prop :=
 | ssSubrT: forall e e' e'',
     EvSubT e e'' ->
     EvSubT e (ss e' e'').
-Hint Constructors EvSubT : core.
+#[export] Hint Constructors EvSubT : core.
 
 Ltac evSubTFacts :=
   match goal with
@@ -85,7 +85,7 @@ Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
 | ssSubr: forall e e' e'',
     EvSub e e'' ->
     EvSub e (ssc e' e'').
-Hint Constructors EvSub : core.
+#[export] Hint Constructors EvSub : core.
 
 Ltac evSubFacts :=
   match goal with

@@ -18,32 +18,6 @@ Set Nested Proofs Allowed.
  *)
 
 
-(*
-(** * Structural Lemma:   states the existence of an intermediate CVM state during execution of an lseq phrase.
-      Useful for leveraging induction hypotheses in the lseq case of induction over phrases *)
-Lemma alseq_decomp_gen : forall t1' t2' e e'' p p'' init_tr tr i i'',
-    copland_compile (lseqc t1' t2')
-                    {| st_ev := e; st_trace := init_tr; st_pl := p; st_evid := i |} =
-    (Some tt, {| st_ev := e''; st_trace := tr; st_pl := p''; st_evid := i'' |}) ->
-
-    exists e' tr' p' i',
-      copland_compile t1' {| st_ev := e; st_trace := init_tr; st_pl := p; st_evid := i |} =
-      (Some  tt, {| st_ev := e'; st_trace := tr'; st_pl := p'; st_evid := i' |}) /\
-      
-      copland_compile t2' {| st_ev := e'; st_trace := tr'; st_pl := p'; st_evid := i' |} =
-      (Some tt, {| st_ev := e''; st_trace := tr; st_pl := p''; st_evid := i'' |}).     
-Proof.
-  intros.
-  df.
-  dosome.
-  annogo.
-  exists st_ev. exists st_trace. exists st_pl. exists st_evid.
-  split.
-  reflexivity.
-  eassumption.
-Defined.
-*)
-
 Ltac do_st_trace :=
   match goal with
   | [H': context[{| st_ev := ?e; st_trace := ?tr; st_pl := ?p; st_evid := ?i |}]
@@ -1574,7 +1548,6 @@ Lemma span_cvm: forall atp t annt i j e e' tr tr' p p' i',
          st_pl := p';
          st_evid := i' |} ->
     
-    (* anno_parP atp t -> *)
     term_to_coreP t atp -> 
     anno t i = (j, annt) ->
     j = i'.
@@ -1603,7 +1576,6 @@ Defined.
 (** * Propositional version of span_cvm *)
 Lemma anno_span_cvm: forall t pt annt i i' e e' p p' tr tr' st_evid1,
     annoP_indexed annt t i i' ->
-    (* anno_parP pt t -> *)
     term_to_coreP t pt ->
     copland_compileP pt
                      {|
@@ -1639,7 +1611,6 @@ Lemma cvm_raw_evidence_denote_fact :
                      (mk_st (evc bits et) tr p i)
                      (Some tt)
                      (mk_st (evc bits' et') tr' p' i') ->
-    (*anno_parP t t' -> *)
     term_to_coreP t' t ->
     annoP_indexed annt t' i i' ->
 

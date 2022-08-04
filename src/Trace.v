@@ -40,7 +40,7 @@ Inductive shuffle: list Ev -> list Ev -> list Ev -> Prop :=
     forall e es0 es1 es2,
       shuffle es0 es1 es2 ->
       shuffle es0 (e :: es1) (e :: es2).
-Hint Constructors shuffle : core.
+#[export] Hint Constructors shuffle : core.
 
 Lemma shuffle_length:
   forall es0 es1 es2,
@@ -277,7 +277,7 @@ Inductive trace: AnnoTerm -> Plc -> Evidence ->
           ((Term_Defs.split (fst r) p)
              :: tr2 ++
              [(join (pred (snd r)) p)]).
-Hint Resolve tasp : core.
+#[export] Hint Resolve tasp : core.
 
 Lemma trace_length:
   forall t p e tr,

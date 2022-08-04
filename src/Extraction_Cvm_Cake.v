@@ -27,10 +27,12 @@ Extract Constant Term_Defs.Arg => "Prelude.String".
 
 Extraction Implicit do_asp [3 4].
 Extraction Implicit do_asp' [3 4].
+(*
 Extraction Implicit do_sig [2 3].
 Extraction Implicit do_sig' [2 3].
 Extraction Implicit do_hash [2].
 Extraction Implicit do_hash' [2].
+*)
 Extraction Implicit parallel_vm_thread [2 3 4].
 Extraction Implicit do_wait_par_thread [2 3 4].
 
