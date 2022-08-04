@@ -18,57 +18,20 @@ Set Nested Proofs Allowed.
  *)
 
 
-Lemma st_trace_irrel : forall t tr1 tr1' tr2 tr2' e e' e'' p p' p'' i i' i'',
-    copland_compile t
-           {| st_ev := e; st_trace := tr1; st_pl := p; st_evid := i |} =
-    (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p'; st_evid := i' |}) ->
-
-    copland_compile t
-           {| st_ev := e; st_trace := tr2; st_pl := p; st_evid := i |} =
-    (Some tt, {| st_ev := e''; st_trace := tr2'; st_pl := p''; st_evid := i'' |}) ->
-    
-    e' = e'' /\ p' = p'' /\ i' = i''.
-Proof.
-  intros.
-
-  assert (st_ev
-      (execSt (copland_compile t)
-              {| st_ev := e; st_trace := tr2; st_pl := p; st_evid := i |}) = e').
-  eapply trace_irrel_ev; eauto.
-  unfold execSt in *.
-  subst''.
-  simpl in *.
-
-  assert (st_pl
-            (execSt (copland_compile t)
-                    {| st_ev := e; st_trace := tr2; st_pl := p; st_evid := i |}) = p').
-  eapply trace_irrel_pl; eauto.
-  unfold execSt in *.
-  subst''.
-  simpl in *.
-
-  assert (st_evid
-            (execSt (copland_compile t)
-                    {| st_ev := e; st_trace := tr2; st_pl := p; st_evid := i |}) = i').
-  eapply trace_irrel_evid; eauto.
-  unfold execSt in *.
-  subst''.
-  simpl in *.
-  
-  subst''.
-  simpl in *.
-  repeat split; try congruence.
-Defined.
-
+(*
+(** * Structural Lemma:   states the existence of an intermediate CVM state during execution of an lseq phrase.
+      Useful for leveraging induction hypotheses in the lseq case of induction over phrases *)
 Lemma alseq_decomp_gen : forall t1' t2' e e'' p p'' init_tr tr i i'',
-    copland_compile (lseqc t1' t2') {| st_ev := e; st_trace := init_tr; st_pl := p; st_evid := i |} =
+    copland_compile (lseqc t1' t2')
+                    {| st_ev := e; st_trace := init_tr; st_pl := p; st_evid := i |} =
     (Some tt, {| st_ev := e''; st_trace := tr; st_pl := p''; st_evid := i'' |}) ->
 
     exists e' tr' p' i',
       copland_compile t1' {| st_ev := e; st_trace := init_tr; st_pl := p; st_evid := i |} =
       (Some  tt, {| st_ev := e'; st_trace := tr'; st_pl := p'; st_evid := i' |}) /\
-        copland_compile t2' {| st_ev := e'; st_trace := tr'; st_pl := p'; st_evid := i' |} =
-        (Some tt, {| st_ev := e''; st_trace := tr; st_pl := p''; st_evid := i'' |}).     
+      
+      copland_compile t2' {| st_ev := e'; st_trace := tr'; st_pl := p'; st_evid := i' |} =
+      (Some tt, {| st_ev := e''; st_trace := tr; st_pl := p''; st_evid := i'' |}).     
 Proof.
   intros.
   df.
@@ -77,9 +40,9 @@ Proof.
   exists st_ev. exists st_trace. exists st_pl. exists st_evid.
   split.
   reflexivity.
-
   eassumption.
 Defined.
+*)
 
 Ltac do_st_trace :=
   match goal with
@@ -125,7 +88,10 @@ Ltac wrap_ccp_dohi :=
   dohi;
   rewrite ccp_iff_cc in *.
 
-Lemma st_trace_cumul' : forall t m k e p v_full v_suffix o_suffix i,
+
+(** * Helper Lemma stating: CVM traces are "cumulative" (or monotonic).  
+      Traces are only ever extended--prefixes are maintained. *)
+Lemma st_trace_cumul'' : forall t m k e p v_full v_suffix o_suffix i,
     copland_compileP t
                {| st_ev := e; st_trace := m ++ k; st_pl := p; st_evid := i |}
                (Some tt) v_full ->
@@ -179,8 +145,9 @@ Proof.
     eauto.
 Defined.
 
-(* Instance of st_trace_cumul' where k=[] *)
-Lemma st_trace_cumul : forall t m e p v_full v_suffix o_suffix i,
+
+(** * Instance of st_trace_cumul'' where k=[] *)
+Lemma st_trace_cumul' : forall t m e p v_full v_suffix o_suffix i,
     copland_compileP t
                {| st_ev := e; st_trace := m; st_pl := p; st_evid := i |}
                (Some tt) v_full ->
@@ -192,11 +159,12 @@ Lemma st_trace_cumul : forall t m e p v_full v_suffix o_suffix i,
     st_trace v_full = m ++ st_trace v_suffix.
 Proof.
   intros.
-  eapply st_trace_cumul'; eauto.
+  eapply st_trace_cumul''; eauto.
   repeat rewrite app_nil_r.
   eauto.
 Defined.
 
+(** * Lemma:  CVM execution always succeeds *)
 Lemma exists_some_cc: forall t st,
     exists st',
       copland_compile t st = (Some tt, st').
@@ -214,6 +182,11 @@ Ltac do_exists_some_cc t st :=
       ltac:(eapply exists_some_cc);
     destruct_conjs.
 
+
+(** * Lemma stating: CVM traces are "cumulative" (or monotonic).  
+      Traces are only ever extended--prefixes are maintained. 
+      TODO:  rename to st_trace_cumul 
+*) 
 Lemma suffix_prop : forall t e e' tr tr' p p' i i',
     copland_compileP t
            {| st_ev := e;
@@ -240,7 +213,7 @@ Proof.
   repeat find_rw_in_goal.
   eexists.
 
-  erewrite st_trace_cumul'.
+  erewrite st_trace_cumul''.
   3: {
     eassumption.
   }
@@ -263,6 +236,11 @@ Ltac do_suffix name :=
              name
   end.
 
+(** * Structural Lemma:   Decomposes the CVM trace for the lseq phrase into the appending of the two traces
+      computed by its subterms, where each subterm starts from the empty trace.
+
+      Useful for leveraging induction hypotheses in the lseq case of induction that require empty traces in the 
+      initial CVM state. *)
 Lemma alseq_decomp : forall t1' t2' e e'' p p'' tr i i'',
     copland_compileP
       (lseqc t1' t2')
@@ -327,10 +305,12 @@ Proof.
     ++
       repeat do_st_trace.
       repeat find_rw_in_goal.
-      eapply st_trace_cumul; 
+      eapply st_trace_cumul'; 
         eassumption.
 Defined.
 
+
+(** Structural convenience lemma:  reconfigures CVM execution to use an empty initial trace *)
 Lemma restl : forall t e e' x tr p p' i i',
     copland_compileP t
                      {| st_ev := e; st_trace := x; st_pl := p; st_evid := i|}
@@ -356,7 +336,7 @@ Proof.
       assert (Cvm_St.st_trace {| st_ev := st_ev; st_trace := x ++ tr; st_pl := st_pl; st_evid := st_evid|} =
               x ++ Cvm_St.st_trace {| st_ev := st_ev; st_trace := st_trace; st_pl := st_pl; st_evid := st_evid |}).
       {
-        eapply st_trace_cumul; 
+        eapply st_trace_cumul'; 
         eassumption.
       }
       simpl in *.
@@ -408,8 +388,7 @@ Proof.
 Defined.
 
 Lemma front_app{A} :
-  forall (x:A) xs ys,
-    
+  forall (x:A) xs ys,    
     x :: xs ++ ys = [x] ++ xs ++ ys.
 Proof.
   tauto.
@@ -421,194 +400,9 @@ Proof.
   tauto.
 Defined.
 
-(*
-Lemma annopar_fst_snd: forall t l,
-    anno_par t l = (fst (anno_par t l), snd (anno_par t l)).
-Proof.
-  intros.
-  destruct (anno_par t l).
-  tauto.
-Defined.
-*)
 
-(*
-Ltac do_t_at_zero t x :=
-  let y := fresh in
-  assert (exists l' t', anno_par t 0 = (l',t')) as y by
-        (destruct (anno_par t 0); repeat eexists);
-  destruct y;
-  destruct y as [x].
- *)
-(*
-Fixpoint build_list_n'{A:Type} (a:A) (ls:list A) (n:nat) : list A :=
-  match n with
-  | O => ls
-  | S n' => build_list_n' a (a::ls) n'
-  end.
- *)
-
-Fixpoint build_list_n'{A:Type} (a:A) (ls:list A) (n:nat) : list A :=
-  match n with
-  | O => ls
-  | S n' => build_list_n' a (ls ++ [a]) n'
-  end.
-
-Definition build_list_n{A:Type} (a:A) (n:nat) : list A :=
-  build_list_n' a [] n.
-
-(*
-Lemma blnl{A:Type}: forall (a:A) n,
-    build_list_n a n = [] ->
-    n = 0.
-Proof.
-Admitted.
-  
-Lemma build_list_n_length{A:Type}: forall (a:A) (n:nat) (ls:list A),
-    ls = build_list_n a n ->
-    length ls = n.
-Proof.
-Admitted.
-*)
-  (*
-  intros.
-  generalizeEverythingElse n.
-  dependent induction n; intros.
-  -
-    ff.
-  -
-    ff.
-    destruct ls.
-    +
-      ff.
-      admit.
-    +
-      ff.
-      assert (length ls = n).
-      {
-        eapply IHn.
-        admit.
-      }
-      congruence.
-      
-      
-      
-    
-
-
-
-    symmetry.
-    eapply blnl; eauto.
-  -
-    ff.
-    destruct n.
-    + unfold build_list_n in H.
-      ff.
-    +
-      unfold build_list_n in *.
-      assert (length ls = n).
-      {
-        eapply IHls.
-        ff.
-        Lemma blafaf{A:Type}: forall (a:A) ls a0 n,
-          a :: ls = build_list_n' a0 [a0] n ->
-          ls = build_list_n' a0 [] n.
-        Proof.
-          intros.
-          generalizeEverythingElse n.
-          dependent induction n; intros.
-          -
-            ff.
-          -
-            destruct ls.
-            +
-              ff.
-              admit.
-            +
-              cbn in *.
-              ff.
-              
-              
-            ff.
-            
-          ff.
-        Admitted.
-
-        eapply blafaf.
-        eassumption.
-      }
-      eauto.
-Defined.
-      
-
-        
-      admit.
-      eauto.
-
-
-      
-      erewrite IHls.
-      reflexivity.
-      ff.
-      
-
-
-    
-    erewrite IHls with (n:=Nat.pred n).
-    destruct n.
-    
-    tauto.
-    lia.
-    assert (length ls = 
-    assert (length (a::ls) = n).
-    eapply IHls.
-    
-
-    
-    unfold build_list_n in *.
-    destruct n.
-    + tauto.
-    + dd.
-*)
-
-
-(*
-Lemma list_exists_length{A:Type}{a:A}: forall n,
-    exists (ls:list A),
-      length ls = n.
-Proof.
-  intros.
-  exists (build_list_n a n).
-  eapply build_list_n_length.
-  reflexivity.
-Defined.
-*)
-
-(*
-Lemma exists_some_anno_parlist: forall t,
-    exists l l' t', anno_par_list' t l = Some (l',t').
-Proof.
-  intros.
-  edestruct (@list_exists_length Loc 0 (top_level_thread_count t)).
-  edestruct (anno_par_list_some x t).
-  lia.
-  unfold anno_par_list in H0.
-  unfold OptMonad_Coq.bind in *;
-    unfold OptMonad_Coq.ret in *;
-    ff.
-  repeat eexists.
-  eassumption.
-Defined.
-  
-
-Ltac do_t_at_zero t x :=
-  let y := fresh in
-  assert (exists l l' t', anno_par_list' t l = Some (l',t')) as y by
-        (apply exists_some_anno_parlist);
-  destruct y;
-  destruct y;
-  destruct y as [x].
-*)
-
+(** * Assert an arbitrary (remote) CVM execution.  
+      Uses uninterpreted functions for "simulated" CVM evidence and events. *)
 Ltac do_assert_remote t e p i :=
   assert (
       copland_compile t
@@ -620,39 +414,16 @@ Ltac do_assert_remote t e p i :=
        |})
     ) by (eapply copland_compile_external).
 
+
 (*
-
-Ltac do_assert_unannoPar t x :=
-  assert (t = unannoPar x) by
-    (erewrite anno_unanno_par_list';
-     [reflexivity | eassumption]).
-*)
-
 Ltac do_assume_remote t e p i (* x *) :=
   (* do_t_at_zero t x; *)
   do_assert_remote (*x*) t e p i (* ;
   do_assert_unannoPar t x *) .
-
-
-(*
-Lemma par_evidence_r: forall a p s e et e2 e3 l,
-    parallel_vm_thread l a p (splitEv_r s (evc e et)) = evc e2 e3 ->
-    e3 = (eval a p (splitEv_T_r s et)).
-Proof.
-  intros.
-
-  rewrite par_evidence in *.
-  destruct s.
-  destruct s; destruct s0;
-    simpl in *;
-    try (unfold mt_evc in * );
-    erewrite <- remote_Evidence_Type_Axiom;
-    rewrite at_evidence;
-    try (erewrite <- evc_inv);
-    jkjke.
-Defined.
  *)
 
+
+(** * Lemma:  parallel CVM threads preserve the reference Evidence Type semantics (eval). *)
 Lemma par_evidence_r: forall l p bits bits' et et' t2,
     parallel_vm_thread l (term_to_core_term t2) p (evc bits et) = evc bits' et' ->
     et' = eval t2 p et.
@@ -666,12 +437,15 @@ Proof.
   tauto.
 Qed.
          
-
+(** * Axiom about "simulated" parallel semantics of CVM execution:
+      Executing a "CLEAR" before a term is the same as executing that term with mt initial evidence.
+      TODO:  can we use existing axioms to prove this? *)
 Axiom par_evidence_clear: forall l p bits et t2,
     parallel_vm_thread l (lseqc (aspc CLEAR) t2) p (evc bits et) =
     parallel_vm_thread l t2 p mt_evc.
 
-
+(** * Main Lemma:  CVM execution maintains the Evidence Type reference semantics (eval) for 
+      its internal evidence bundle. *)
 Lemma cvm_refines_lts_evidence' : forall t tr tr' bits bits' et et' p p' i i',
     copland_compileP (term_to_core_term t)
                      (mk_st (evc bits et) tr p i)
@@ -805,7 +579,7 @@ Proof.
       congruence.
 Qed.
 
-
+(** * Propositional version of CVM Evidence Type preservation. *)
 Lemma cvm_refines_lts_evidence :
   forall t t' tr tr' bits bits' et et' p p' i i',
     term_to_coreP t t' ->
@@ -894,6 +668,7 @@ Proof.
          jkjke).
 Defined.
 
+(** * Recontstructing an EvC value computed by encoding it and computing its type is the same as the original. *)
 Lemma recon_same: forall e,
     Some e = reconstruct_ev (evc (encodeEv e) (et_fun e)).
 Proof.
@@ -970,37 +745,6 @@ Ltac do_inv_recon_nn :=
   destruct_conjs;
   subst.
 
-(*
-
-Lemma inv_recon_uu: forall ls et params n2 p ec,
-    reconstruct_evP (evc ls et) (uuc params p n2 ec)  ->
-    (exists ls' et', et = uu params p et' /\
-                ls = n2 :: ls'). (* /\
-                wf_ec (evc ls' et')). *)
-Proof.
-  intros.
-  invc H.
-  repeat ff.
-  destruct et; repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff; try solve_by_inversion.
-  
-  repeat eexists.
-  destruct ls; ff.
-                               Defined.
-                               
-
-Ltac do_inv_recon_uu :=
-  match goal with
-  | [H: reconstruct_evP (evc ?ls ?et) (uuc ?params ?p ?uval _)
-
-     |- _] =>
-    assert_new_proof_by (exists ls' et', et = uu params p et' /\
-                        ls = uval :: ls')
-                        ltac:(eapply inv_recon_uu; apply H)
-  end;
-  destruct_conjs;
-  subst.
-*)
-
 Lemma inv_recon_gg: forall p ps ls et n ec,
     reconstruct_evP (evc ls et) (ggc p ps n ec) ->
     (exists ls' et', et = gg p ps et' /\
@@ -1068,66 +812,13 @@ Ltac do_inv_recon_ss :=
   subst.
 
 
-(*
-Lemma inv_recon_pp: forall ls et ec1 ec2,
-    reconstruct_evP (evc ls et) (ppc ec1 ec2) ->
-    (exists et1 et2, et = pp et1 et2).
-Proof.
-  intros.
-  invc H.
-  destruct et; repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff; try solve_by_inversion.
-  eauto.
-Defined.
-
-                               
-                                 
-
-Ltac do_inv_recon_pp :=
-  match goal with
-  | [H: reconstruct_evP (evc _ ?et) (ppc _ _)
-
-     |- _] =>
-    assert_new_proof_by (exists et1 et2, et = pp et1 et2)
-                        ltac:(eapply inv_recon_pp; apply H)
-  end;
-  destruct_conjs;
-  subst.
-*)
-
 Ltac do_inv_recon :=
   try do_inv_recon_mt;
   try do_inv_recon_mt';
   try do_inv_recon_nn;
-  (* try do_inv_recon_uu; *)
   try do_inv_recon_gg;
   try do_inv_recon_hh;
   try do_inv_recon_ss.
-  (* try do_inv_recon_pp. *)
-
-(*
-Lemma recon_inv_uu: forall n2 n3 H2 H3 e params,
-    reconstruct_evP
-      (evc (n3 :: H2) (uu params n2 H3))
-      (uuc params n2 n3 e) ->
-    reconstruct_evP (evc H2 H3) e.
-Proof.
-  intros.
-  invc H.
-  repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff;
-  econstructor.
-  symmetry.
-  tauto.
-Defined.
-
-Ltac do_recon_inv_uu :=
-  match goal with
-  | [H: reconstruct_evP
-          (evc (_ :: ?H2) (uu _ _ ?H3))
-          (uuc _ _ _ ?e)
-     |- _] =>
-    assert_new_proof_by (reconstruct_evP (evc H2 H3) e) ltac:(eapply recon_inv_uu; apply H)
-  end.
-*)
 
 Lemma recon_inv_gg: forall sig ls p ps et e,
     reconstruct_evP
@@ -1166,23 +857,6 @@ Proof.
       symmetry; eassumption.
 Qed.
 
-                  
-(*
-Lemma recon_inv_pp: forall ls H1 H2 ec1 ec2,
-    reconstruct_evP (evc ls (pp H1 H2)) (ppc ec1 ec2) ->
-    reconstruct_evP (evc (firstn (et_size H1) ls) H1) ec1 /\
-    reconstruct_evP (evc (skipn (et_size H1) ls) H2)  ec2.
-Proof.
-  intros.
-  invc H.
-  repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff;
-  split;
-    econstructor;
-    try 
-      symmetry; eassumption.
-Defined.
- *)
-
 Ltac do_recon_inv_ss :=
   match goal with
   | [H: reconstruct_evP
@@ -1195,25 +869,9 @@ Ltac do_recon_inv_ss :=
       ltac:(eapply recon_inv_ss; apply H)
   end; destruct_conjs.
 
-(*
-Ltac do_recon_inv_pp :=
-  match goal with
-  | [H: reconstruct_evP
-          (evc ?ls (pp ?H1 ?H2))
-          (ppc ?ec1 ?ec2)
-     |- _] =>
-    assert_new_proof_by
-      (reconstruct_evP (evc (firstn (et_size H1) ls) H1) ec1 /\
-       reconstruct_evP (evc (skipn (et_size H1) ls) H2)  ec2)
-      ltac:(eapply recon_inv_pp; apply H)
-  end; destruct_conjs.
-*)
-
 Ltac do_recon_inv :=
-  (* try do_recon_inv_uu; *)
   try do_recon_inv_gg;
   try do_recon_inv_ss.
-  (* try do_recon_inv_pp. *)
 
 Lemma etfun_reconstruct: forall e e0 e1,
     reconstruct_evP (evc e0 e1) e ->
@@ -1253,10 +911,13 @@ Ltac do_wfec_split :=
       ltac: (eapply wfec_split; apply H3)
   end; destruct_conjs.
 
+(** * Axiom:  assume parallel CVM threads preserve well-formedness of EvC bundles *)
 Axiom wf_ec_preserved_par: forall e l t2 p,
     wf_ec e ->
     wf_ec (parallel_vm_thread l t2 p e).
 
+(** * Lemma:  CVM execution preserves well-formedness of EvC bundles 
+      (Evidence Type of sufficient length for raw evidence). *)
 Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' p p' i i',
     wf_ec e ->
         copland_compileP t1
@@ -1363,7 +1024,7 @@ Ltac dest_evc :=
     end.
 
 
-
+(** * If a raw evidence sequence is non-empty, we can grab a first element. *)
 Lemma some_recons' : forall e x,
     length e = S x ->
     exists bs ls', peel_bs e = Some (bs, ls').
@@ -1393,9 +1054,10 @@ Ltac do_rcih :=
             try (econstructor; first [eapply firstn_long | eapply skipn_long]; try eauto; try lia))      
   end.
 
-Lemma some_recons : forall e,
+(** * Lemma:  well-formed EvC bundles can be successfully reconstructed to a Typed Concrete Evidence (EvidenceC) value. *)
+Lemma some_recons : forall (e:EvC),
     wf_ec e ->
-    exists ee, Some ee = reconstruct_ev e.
+    exists (ee:EvidenceC), Some ee = reconstruct_ev e.
 Proof.
   intros.
   destruct e.
@@ -1520,13 +1182,6 @@ Definition spc_ev (sp:SP) (e:EvidenceC) : EvidenceC :=
   | NONE => mtc
   end.
 
-Check do_asp.
-(*
-do_asp
-     : ASP_PARAMS -> RawEv -> Plc -> Event_ID -> BS
- *)
-
-Check encodeEv.
 
 Definition cvm_evidence_denote_asp (a:ASP) (p:Plc) (e:EvidenceC) (x:Event_ID): EvidenceC :=
   match a with
@@ -1541,6 +1196,8 @@ Definition cvm_evidence_denote_asp (a:ASP) (p:Plc) (e:EvidenceC) (x:Event_ID): E
   | HSH => hhc p hsh_params (do_asp hsh_params (encodeEv e) p x) (et_fun e)
   end.
 
+
+(** * Denotation function of a Typed Concrete Evidence value from an annotated term, initial place, initial evidence *)
 Fixpoint cvm_evidence_denote (t:AnnoTerm) (p:Plc) (ec:EvidenceC) : EvidenceC :=
   match t with
   | aasp (i,_) x => cvm_evidence_denote_asp x p ec i
@@ -1552,6 +1209,7 @@ Fixpoint cvm_evidence_denote (t:AnnoTerm) (p:Plc) (ec:EvidenceC) : EvidenceC :=
                          (cvm_evidence_denote t2 p ((splitEvr s ec)))
   end.
 
+(** * Lemma:  Encoding an EvC bundle gives you the bits used to (re)construct it. *)
 Lemma recon_encodeEv: forall bits et ec,
     reconstruct_evP (evc bits et) ec ->
     encodeEv ec = bits.
@@ -1583,23 +1241,6 @@ Proof.
   - (* hhc case *)
     do_inv_recon.
     ff.
-
-    (*
-  -
-    do_inv_recon.
-    ff.
-    invc H.
-    repeat ff.
-    unfold OptMonad_Coq.bind in *.
-    ff.
-    rewrite fold_recev in *.
-    do_wrap_reconP.
-    assert (encodeEv e = H0) by eauto.
-    congruence.
-  -
-    do_inv_recon.
-    ff.
-*)
   -
     do_inv_recon.
     ff.
@@ -1634,7 +1275,7 @@ Proof.
   eauto.
 Defined.
 
-Lemma wfec_recon: forall ee ec,
+Lemma wfec_recon: forall (ee:EvC) (ec:EvidenceC),
     reconstruct_evP ee ec ->
     wf_ec ee.
 Proof.
@@ -1671,24 +1312,6 @@ Proof.
     invc H.
     lia.
 
-    (*
-  -
-    do_inv_recon.
-    invc H.
-    dd.
-    ff.
-    unfold OptMonad_Coq.bind in *.
-    ff.
-    assert (wf_ec (evc H0 H1)).
-    {
-      apply IHec.
-      econstructor.
-      eauto.
-    }
-    econstructor.
-    dd.
-    invc H.
-    lia. *)
   -
     do_inv_recon.
     invc H.
@@ -1728,45 +1351,9 @@ Proof.
     }
     rewrite H at 1.
     eapply app_length.
-
-    (*
-  -
-        do_inv_recon.
-    invc H.
-    dd.
-    ff.
-    unfold OptMonad_Coq.bind in *.
-    ff.
-
-    assert (wf_ec (evc (firstn (et_size H0) r) H0)).
-    {
-      apply IHec1.
-      econstructor.
-      eauto.
-    }
-    assert (wf_ec (evc (skipn (et_size H0) r) H1)).
-    {
-      apply IHec2.
-      econstructor.
-      eauto.
-    }
-    
-    econstructor.
-    dd.
-    invc H.
-    invc H2.
-    rewrite <- H4.
-    rewrite <- H3.
-    assert (r = firstn (et_size H0) r ++ skipn (et_size H0) r).
-    {
-      symmetry.
-      eapply firstn_skipn.
-    }
-    rewrite H at 1.
-    eapply app_length.
-*)
 Qed.
 
+(** * Lemma:  evidence semantics same for annotated and un-annotated terms *)
 Lemma eval_aeval': forall t1 p et,
     eval (unanno t1) p et = aeval t1 p et.
 Proof.
@@ -1775,6 +1362,7 @@ Proof.
     repeat jkjke.
 Defined.
 
+(**  * Event ID spans same for a term and its corresponding core term. *)
 Lemma event_id_spans_same : forall t,
     event_id_span' t = event_id_span (term_to_core_term t).
 Proof.
@@ -1792,6 +1380,7 @@ Proof.
     destruct s0; ff; lia.
 Qed.
 
+(** * Lemma:  CVM increases event IDs according to event_id_span' denotation. *)
 Lemma cvm_spans: forall t pt e tr p i e' tr' p' i',
     term_to_coreP t pt ->
     copland_compileP
@@ -1814,7 +1403,7 @@ Proof.
   induction t; intros;
     wrap_ccp_anno.
 
-
+  
  (*   (* This is more automated, but slower *)
     try (
         destruct a;
@@ -1970,24 +1559,8 @@ Defined.
     
     lia.
 Qed.
-
-(*
-Lemma get_unannoPar: forall t t',
-    anno_parP t t' ->
-    t' = unannoPar t.
-Proof.
-  intros.
-  inv_annoparP.
-  destruct (anno_par_list' t' H0) eqn: hi.
-  subst.
-  erewrite anno_unanno_par_list'.
-  reflexivity.
-  jkjke.
-  solve_by_inversion.
-Defined.
-*)
   
-
+(** * CVM event ID span same as annotated term range *)
 Lemma span_cvm: forall atp t annt i j e e' tr tr' p p' i',
     copland_compileP
       atp
@@ -2027,7 +1600,8 @@ Proof.
   eapply cvm_spans; eauto.
 Defined.
 
-Lemma anno_cvm_span: forall t pt annt i i' e e' p p' tr tr' st_evid1,
+(** * Propositional version of span_cvm *)
+Lemma anno_span_cvm: forall t pt annt i i' e e' p p' tr tr' st_evid1,
     annoP_indexed annt t i i' ->
     (* anno_parP pt t -> *)
     term_to_coreP t pt ->
@@ -2047,26 +1621,9 @@ Lemma anno_cvm_span: forall t pt annt i i' e e' p p' tr tr' st_evid1,
     i' = st_evid1.
 Proof.
   intros.
-  assert (event_id_span' t = i' - i).
-  {
-    eapply span_range.
-    invc H.
-    eassumption.
-  }
-  assert (st_evid1 = i + event_id_span' t).
-  {
-    eapply cvm_spans; eauto.
-  }
-  assert (i' > i).
-  {
-    eapply anno_mono.
-    
-    invc H.
-    eassumption.
-  }
-  lia.
-Defined.
-
+  invc H.
+  eapply span_cvm; eauto.
+Qed.
 
 Axiom events_cvm_to_core_mt : forall t p e,
     cvm_events_core (lseqc (aspc CLEAR) t) p e = cvm_events_core t p mt.
@@ -2074,6 +1631,8 @@ Axiom events_cvm_to_core_mt : forall t p e,
 Axiom ev_cvm_mtc: forall ct p e loc,
     parallel_vm_thread loc ct p mt_evc = parallel_vm_thread loc (lseqc (aspc CLEAR) ct) p e.
 
+
+(** * Lemma:  relating reconstructed CVM EvC bundles via the EvidenceC evidence denotation. *)
 Lemma cvm_raw_evidence_denote_fact :
   forall t annt t' tr tr' bits bits' et et' p p' i i' ec ec',
     copland_compileP t
@@ -2104,21 +1663,6 @@ Proof.
     + (* CPY case *)
       dd.
       eapply reconP_determ; eauto.
-
-      (*
-    +
-      destruct f; ff.
-      wrap_ccp_anno; ff.
-
-      invc H3.
-      ff.
-
-      invc H0.
-      ff
-
-      do_recon_inv.
-
-      do_inv_recon. *)
 
     +
       ff.
@@ -2168,41 +1712,6 @@ Proof.
         wrap_ccp_anno.
         invc H3.
         ff.
-        
-      
-        
-        
-        
-        
-        
-          
-        
-      
-      
-
-
-
-
-(*
-      
-    +
-      dd.
-      unfold tag_ASP in *.
-      dd.
-      invc H3; invc H2.
-      dd.
-      jkjke'.
-      dd.
-      assert (bits = (encodeEv ec)).
-      {
-        symmetry.
-        eapply recon_encodeEv.
-        econstructor.
-        eassumption.
-      }
-      subst.
-      
-      tauto. *)
     +
       dd.
       invc H3; invc H2.
@@ -2235,11 +1744,7 @@ Proof.
     ff.
     wrap_ccp_anno.
 
-    Locate do_assume_remote.
-
-    Print do_assume_remote.
-
-    do_assume_remote (term_to_core_term t') (evc bits et) p (S i).
+    do_assert_remote (term_to_core_term t') (evc bits et) p (S i).
 
     assert (evc bits' et' = cvm_evidence_core (term_to_core_term t') p (evc bits et)). {
 
@@ -2257,7 +1762,7 @@ Proof.
     assert (n = (S i + event_id_span (term_to_core_term t'))).
     {
       wrap_ccp_anno.
-      eapply anno_cvm_span.
+      eapply anno_span_cvm.
       eassumption.
       2: { eassumption. }
       econstructor; eauto.
@@ -2275,7 +1780,7 @@ Proof.
 
     assert (n = st_evid0).
     {
-      eapply anno_cvm_span.
+      eapply anno_span_cvm.
       eassumption.
       2: { eassumption. }
       econstructor; eauto.
@@ -2355,7 +1860,7 @@ Proof.
 
     assert (n = st_evid1).
       {
-        eapply anno_cvm_span.
+        eapply anno_span_cvm.
         eassumption.
         2: { 
              apply Heqp2. }
@@ -2383,7 +1888,7 @@ Proof.
       econstructor; eauto.
       assert (n0 = st_evid).
       {
-        eapply anno_cvm_span.
+        eapply anno_span_cvm.
         eassumption.
         2: { eassumption. }
    
@@ -2435,7 +1940,7 @@ Proof.
 
     assert (n = st_evid1).
       {
-        eapply anno_cvm_span.
+        eapply anno_span_cvm.
         eassumption.
         2: { 
              apply Heqp2. }
@@ -2463,7 +1968,7 @@ Proof.
       econstructor; eauto.
       assert (n0 = st_evid).
       {
-        eapply anno_cvm_span.
+        eapply anno_span_cvm.
         eassumption.
         2: { eassumption. }
    
@@ -2518,7 +2023,7 @@ Proof.
 
     assert (n = st_evid1).
       {
-        eapply anno_cvm_span.
+        eapply anno_span_cvm.
         eassumption.
         2: { 
              apply Heqp8. }
@@ -2546,7 +2051,7 @@ Proof.
       econstructor; eauto.
       assert (n0 = st_evid).
       {
-        eapply anno_cvm_span.
+        eapply anno_span_cvm.
         eassumption.
         2: { eassumption. }
    
@@ -2602,7 +2107,7 @@ Proof.
 
     assert (n = st_evid1).
       {
-        eapply anno_cvm_span.
+        eapply anno_span_cvm.
         eassumption.
         2: { 
              apply Heqp9. }
@@ -2630,7 +2135,7 @@ Proof.
       econstructor; eauto.
       assert (n0 = st_evid).
       {
-        eapply anno_cvm_span.
+        eapply anno_span_cvm.
         eassumption.
         2: { eassumption. }
    
@@ -2690,7 +2195,7 @@ Proof.
 
     assert (n = st_evid).
       {
-        eapply anno_cvm_span.
+        eapply anno_span_cvm.
         eassumption.
         2: { 
              apply Heqp2. }
@@ -2711,7 +2216,7 @@ Proof.
       eassumption.
     }
 
-     do_assume_remote (term_to_core_term t'2) (evc bits et) p (st_evid).
+    do_assert_remote (term_to_core_term t'2) (evc bits et) p (st_evid).
 
     wrap_ccp_anno.
 
@@ -2720,18 +2225,14 @@ Proof.
     unfold cvm_evidence in *.
     rewrite Heqe0 in *.
 
-
-
-    
-
-     assert (cvm_evidence_denote a0 p ec = e2).
+    assert (cvm_evidence_denote a0 p ec = e2).
     {
       eapply IHt'2.
       apply H9.
       econstructor; eauto.
       assert (n0 = st_evid + event_id_span (term_to_core_term t'2)).
       {
-        eapply anno_cvm_span.
+        eapply anno_span_cvm.
         apply Heqp1.
         2: { eassumption. }
    
@@ -2785,7 +2286,7 @@ Proof.
 
     assert (n = st_evid).
       {
-        eapply anno_cvm_span.
+        eapply anno_span_cvm.
         eassumption.
         2: { 
              apply Heqp2. }
@@ -2806,15 +2307,9 @@ Proof.
       eassumption.
     }
 
-     do_assume_remote (term_to_core_term t'2) mt_evc p (st_evid).
+     do_assert_remote (term_to_core_term t'2) mt_evc p (st_evid).
 
     wrap_ccp_anno.
-
-
-    (*
-Axiom evidence_cvm_to_core : forall t p e,
-    cvm_evidence t p e = cvm_evidence_core (term_to_core_term t) p e.
-     *)
 
     rewrite <- ev_cvm_mtc in *.
 
@@ -2831,7 +2326,7 @@ Axiom evidence_cvm_to_core : forall t p e,
       econstructor; eauto.
       assert (n0 = st_evid + event_id_span (term_to_core_term t'2)).
       {
-        eapply anno_cvm_span.
+        eapply anno_span_cvm.
         apply Heqp1.
         2: { eassumption. }
    
@@ -2891,7 +2386,7 @@ Axiom evidence_cvm_to_core : forall t p e,
 
     assert (n = st_evid).
       {
-        eapply anno_cvm_span.
+        eapply anno_span_cvm.
         apply Heqp0.
         2: { 
              apply Heqp3. }
@@ -2912,19 +2407,9 @@ Axiom evidence_cvm_to_core : forall t p e,
       eassumption.
     }
 
-     do_assume_remote (term_to_core_term t'2) (evc bits et) p (st_evid).
+     do_assert_remote (term_to_core_term t'2) (evc bits et) p (st_evid).
 
     wrap_ccp_anno.
-
-
-    (*
-Axiom evidence_cvm_to_core : forall t p e,
-    cvm_evidence t p e = cvm_evidence_core (term_to_core_term t) p e.
-     *)
-
-    (*
-
-    rewrite <- ev_cvm_mtc in *. *)
 
     rewrite par_evidence in *.
 
@@ -2939,7 +2424,7 @@ Axiom evidence_cvm_to_core : forall t p e,
       econstructor; eauto.
       assert (n0 = st_evid + event_id_span (term_to_core_term t'2)).
       {
-        eapply anno_cvm_span.
+        eapply anno_span_cvm.
         apply Heqp1.
         2: { eassumption. }
    
@@ -3000,7 +2485,7 @@ Axiom evidence_cvm_to_core : forall t p e,
 
     assert (n = st_evid).
       {
-        eapply anno_cvm_span.
+        eapply anno_span_cvm.
         apply Heqp0.
         2: { 
              apply Heqp3. }
@@ -3021,7 +2506,7 @@ Axiom evidence_cvm_to_core : forall t p e,
       eassumption.
     }
 
-     do_assume_remote (term_to_core_term t'2) mt_evc p (st_evid).
+     do_assert_remote (term_to_core_term t'2) mt_evc p (st_evid).
 
     wrap_ccp_anno.
 
@@ -3040,7 +2525,7 @@ Axiom evidence_cvm_to_core : forall t p e,
       econstructor; eauto.
       assert (n0 = st_evid + event_id_span (term_to_core_term t'2)).
       {
-        eapply anno_cvm_span.
+        eapply anno_span_cvm.
         apply Heqp1.
         2: { eassumption. }
    
@@ -3059,6 +2544,7 @@ Axiom evidence_cvm_to_core : forall t p e,
 Qed.
 
 
+(** * Lemma:  Evidence Type denotation respects evidence reference semantics  *)
 Lemma cvm_ev_denote_evtype: forall annt p e,
     (*annoP annt t -> *)
     et_fun (cvm_evidence_denote annt p e) = (aeval annt p (et_fun e)).
@@ -3092,9 +2578,11 @@ Proof.
     destruct s; destruct s; destruct s0; eauto.
 Defined.
 
-Lemma cvm_refines_lts_events :
+
+(** * Theorem:  Main Theorem stating that for an arbitrary Copland phrase, all of its execution traces 
+      in the CVM are also captured in the LTS reference semantics. *)
+Theorem cvm_refines_lts_events :
   forall t atp annt cvm_tr bits bits' et et' p p' i i',
-    (* anno_parP atp t -> *)
     term_to_coreP t atp ->
     annoP_indexed annt t i i' ->
     copland_compileP atp
@@ -3132,25 +2620,6 @@ Proof.
       ++
          wrap_ccp_anno.
          try (econstructor; econstructor; reflexivity).
-      
-        
-
-(*
-
-    
-    econstructor.
-
-    
-
-
-    
-    invc annPH;
-      destruct a; df;   
-        repeat break_match; try solve_by_inversion;
-          try unfold tag_ASP in *;
-          df;
-          
-          econstructor; try (econstructor; reflexivity). *)
     
   - (* aatt case *)
     wrap_ccp_anno.
@@ -3200,14 +2669,8 @@ Proof.
 
     rewrite H0.
     simpl.
-    Print stattstop.
+
     assert (((i + 1 + event_id_span' t)) = Nat.pred (S (i + event_id_span' t + 1))) by lia.
-    (*
-    assert ( (i + 1 + event_id_span' t) = Nat.pred (i + 1 + event_id_span' t + 1)).
-    {
-      lia.
-    }
-     *)
     
     
     rewrite H2 at 1.
@@ -3219,15 +2682,6 @@ Proof.
 
   -  (* alseq case *)
 
-    (*
-    invc annoParPH.
-    invc annPH. *)
-    (*
-    destruct_conjs.
-    dd.
-    unfold OptMonad_Coq.bind in *.
-    ff. 
-    wrap_ccp_anno. *)
     invc annoParPH.
     edestruct alseq_decomp; eauto.
     destruct_conjs.
@@ -3238,18 +2692,10 @@ Proof.
     ff.
     do_anno_indexed_redo.
     do_anno_indexed_redo.
-
-
-    (*
-    
-    edestruct alseq_decomp; eauto.
-    destruct_conjs.
-    destruct x.
-     *)
     
     assert (n = H1).
     {
-      eapply anno_cvm_span.
+      eapply anno_span_cvm.
       econstructor.
       invc Heqp0.
       eassumption.
@@ -3797,19 +3243,6 @@ Proof.
       rewrite H2.
    
       rewrite events_cvm_to_core_mt.
-
-      (*
-      jkjke. *)
-
-      (*
-
-      assert (
-          (splitEv_T_r s et) =
-          (get_et (splitEv_r s (evc bits et)))).
-      {
-        destruct s; destruct s; destruct s0; ff.
-      }
-      jkjke. *)
       
       eapply lstar_transitive.
 
@@ -3887,23 +3320,6 @@ Proof.
 
       repeat rewrite app_assoc in *.
       rewrite H2.
-
-      (*
-   
-      rewrite events_cvm_to_core_mt. *)
-
-      (*
-      jkjke. *)
-
-      (*
-
-      assert (
-          (splitEv_T_r s et) =
-          (get_et (splitEv_r s (evc bits et)))).
-      {
-        destruct s; destruct s; destruct s0; ff.
-      }
-      jkjke. *)
       
       eapply lstar_transitive.
 
@@ -3984,19 +3400,6 @@ Proof.
       rewrite H2.
    
       rewrite events_cvm_to_core_mt.
-
-      (*
-      jkjke. *)
-
-      (*
-
-      assert (
-          (splitEv_T_r s et) =
-          (get_et (splitEv_r s (evc bits et)))).
-      {
-        destruct s; destruct s; destruct s0; ff.
-      }
-      jkjke. *)
       
       eapply lstar_transitive.
 
@@ -4017,10 +3420,11 @@ Proof.
       econstructor.
 Qed.
 
-Lemma cvm_refines_lts_event_ordering_corrolary :
+
+(** * Slight reformulation of cvm_refines_events, in terms of st_trace. *)
+Corollary cvm_refines_lts_event_ordering_corrolary :
   forall t annt atp cvm_tr bits et p i i',
     annoP_indexed annt t i i' ->
-    (* anno_parP atp t -> *)
     term_to_coreP t atp ->
     st_trace (run_cvm atp
                       (mk_st (evc bits et) [] p i)) = cvm_tr ->
@@ -4046,7 +3450,7 @@ Proof.
 
   assert (i' = st_evid).
   {
-    eapply anno_cvm_span; eauto.
+    eapply anno_span_cvm; eauto.
     econstructor.
     eassumption.
   }
@@ -4054,14 +3458,15 @@ Proof.
   
   eapply cvm_refines_lts_events; eauto.
   econstructor; eauto.
-Defined.
+Qed.
 
+
+(** * Main correctness theorem about CVM events:  event orderings respect the 
+      event system (partial order) reference semantics. *)
 Theorem cvm_respects_event_system :
   forall atp annt t cvm_tr ev0 ev1 bits bits' et et' i i',
     annoP_indexed annt t i i' ->
-    (* anno_parP atp t ->  *)
     term_to_coreP t atp ->
-    (*anno_par_listP atp t -> *)
     copland_compileP atp
                      (mk_st (evc bits et) [] 0 i)
                      (Some tt)
@@ -4070,18 +3475,6 @@ Theorem cvm_respects_event_system :
     earlier cvm_tr ev0 ev1.
 Proof.
   intros.
-  (*
-  assert (anno_parP atp t).
-  {
-    eapply list_nolist_same_annopar.
-    eassumption.
-  }
-  clear H0.
-   *)
-  
-  
-  
-
   assert (well_formed_r_annt annt).
   {
   eapply anno_well_formed_r.
@@ -4095,13 +3488,11 @@ Proof.
   eassumption.
   eapply cvm_refines_lts_events; eauto.
   eassumption.
-Defined.
+Qed.
 
-Theorem cvm_respects_event_system_run :
+Corollary cvm_respects_event_system_run :
   forall atp annt t cvm_tr ev0 ev1 bits et i i',
     annoP_indexed annt t i i' ->
-    (*anno_par_listP atp t -> *)
-    (* anno_parP atp t -> *)
     term_to_coreP t atp ->
     st_trace (run_cvm atp (mk_st (evc bits et) [] 0 i)) = cvm_tr ->
     
@@ -4109,49 +3500,27 @@ Theorem cvm_respects_event_system_run :
     earlier cvm_tr ev0 ev1.
 Proof.
   intros.
-  assert (well_formed_r_annt annt).
-  {
-    eapply anno_well_formed_r.
-    invc H.
-    eassumption.
-  }
-
-  destruct ((copland_compile atp {| st_ev := evc bits et; st_trace := []; st_pl := 0; st_evid := i |})) eqn:hi.
-  do_somett.
-  subst.
-
-  simpl in *. destruct c.
-  simpl in *.
   unfold run_cvm in *.
-  unfold execSt in *.
-  rewrite hi.
+  ff.
+  do_somett.
+  vmsts.
+  subst.
   simpl.
-  destruct st_ev.
   do_pl_immut.
   subst.
-
   assert (i' = st_evid).
   {
-    eapply anno_cvm_span; eauto.
-    (*
-    eapply list_nolist_same_annopar. eassumption. *)
+    eapply anno_span_cvm; eauto.
     econstructor; eassumption.
   }
   subst.
-  
-  eapply cvm_respects_event_system.
-  eassumption.
-  eassumption.
-  econstructor.
-  eassumption.
-  eassumption.
-Defined.
+  destruct st_ev.
+  eapply cvm_respects_event_system; eauto.
+  econstructor; eassumption.
+Qed.
 
-Theorem cvm_respects_event_system_run' : forall atp annt t cvm_tr ev0 ev1 bits (*bits' et' *)et (*ls*),
+Corollary cvm_respects_event_system_run' : forall atp annt t cvm_tr ev0 ev1 bits et,
     annt = annotated t ->
-    (*atp = annotated_par t -> *)
-    (*
-    anno_par_list t ls = Some atp ->  *)
     term_to_core_term t = atp ->
     st_trace (run_cvm atp (mk_st (evc bits et) [] 0 0)) = cvm_tr ->
     
@@ -4159,46 +3528,16 @@ Theorem cvm_respects_event_system_run' : forall atp annt t cvm_tr ev0 ev1 bits (
     earlier cvm_tr ev0 ev1.
 Proof.
   intros.
-  (*
-  unfold annotated in *.
-  unfold annotated_par in *. *)
   destruct (anno t 0) eqn: hi.
-  (*
-  destruct (anno_par t 0) eqn: hey. *)
-
-
-  (*
-  assert (anno_parP atp t).
-  {
-    unfold anno_par_list in H0.
-    unfold OptMonad_Coq.bind in *.
-    unfold OptMonad_Coq.ret in *.
-    ff.
-    econstructor.
-    repeat eexists.
-    eassumption.
-  }
-   *)
 
   assert (term_to_coreP t atp).
   {
     econstructor; eauto.
   }
   
-  
-    
-  eapply cvm_respects_event_system_run.
-  econstructor. eassumption.
-  eassumption.
-  (*
-  econstructor. repeat eexists. eassumption. *)
-  subst.
-  simpl.
-  reflexivity.
-  dd.
+  eapply cvm_respects_event_system_run; eauto.
   unfold annotated in *.
-  rewrite hi in *.
-  dd.
-  eassumption.
-Defined.
+  ff.
+  econstructor. eassumption.
+Qed.
   

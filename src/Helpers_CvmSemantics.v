@@ -12,7 +12,7 @@ Require Import Coq.Program.Tactics Coq.Program.Equality.
 Set Nested Proofs Allowed.
 *)
 
-(* Lemma stating the CVM st_pl parameter ends up where it started execuiton *)
+(* Lemma stating the CVM st_pl parameter ends up where it started execution *)
 Lemma pl_immut : forall t e tr p i,
     st_pl
       (execSt
@@ -173,7 +173,7 @@ Ltac anhl :=
 
 (* Lemma stating the following:  If all starting parameters to the cvm_st are the same, except 
    for possibly the trace, then all of those final parameters should also be equal. *)
-Lemma hihi : forall t e e' e'' x x' y y' p p' p'' i i' i'',
+Lemma st_trace_irrel : forall t e e' e'' x x' y y' p p' p'' i i' i'',
     copland_compile t {| st_ev := e; st_trace := x; st_pl := p; st_evid := i |} =
     (Some tt, {| st_ev := e'; st_trace := x'; st_pl := p'; st_evid := i' |}) ->
     copland_compile t {| st_ev := e; st_trace := y; st_pl := p; st_evid := i |} =
@@ -233,7 +233,7 @@ Ltac clear_triv :=
 
 Ltac dohi'' :=
   annogo;
-  let tac H H' := eapply hihi; [apply H | apply H'] in
+  let tac H H' := eapply st_trace_irrel; [apply H | apply H'] in
   match goal with
   | [H : copland_compile ?t1 {| st_ev := ?e; st_trace := _; st_pl := ?p; st_evid := ?i |} =
          (?opt, {| st_ev := ?e'; st_trace := _; st_pl := ?p'; st_evid := ?i' |}),

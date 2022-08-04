@@ -151,6 +151,31 @@ Inductive Core_Term: Set :=
 | bseqc: Core_Term -> Core_Term -> Core_Term
 | bparc: Loc -> Core_Term -> Core_Term -> Core_Term.
 
+Declare Custom Entry core_copland_entry.
+Declare Scope core_cop_ent_scope.
+Notation "<<core>{ e }>" := e (at level 0, e custom core_copland_entry at level 99) : core_cop_ent_scope.
+Notation "( x )" := x (in custom core_copland_entry, x at level 99) : core_cop_ent_scope.
+Notation "x" := x (in custom core_copland_entry at level 0, x constr at level 0) : core_cop_ent_scope.
+(* Branches*)
+Notation "x < y" := (bseqc x y) (in custom core_copland_entry at level 70, right associativity).
+Notation "x ~ l y" := (bparc l x y) (in custom core_copland_entry at level 70, right associativity).
+(* ARROW sequences *)
+Notation "x -> y" := (lseqc x y) (in custom core_copland_entry at level 99, right associativity).
+(* ASP_CORE's *)
+Notation "'__'" := (aspc CPYC) (in custom core_copland_entry at level 98).
+Notation "'{}'" := (aspc NULLC) (in custom core_copland_entry at level 98).
+Notation "'CLR'" := (aspc CLEAR) (in custom core_copland_entry at level 98).
+Notation "'<<' F x y z '>>'" := (aspc (ASPCC F (asp_paramsC x nil y z))) 
+                      (in custom core_copland_entry at level 98).
+(* @ plc phrase *)
+Notation "@ p [ ph ]" := (attc p ph) (in custom core_copland_entry at level 50).
+
+
+Open Scope core_cop_ent_scope.
+Definition test2 := <<core>{ __ -> {} }>.
+Example test2ex : test2 = (lseqc (aspc CPYC) (aspc NULLC)). reflexivity. Defined.
+Example test3 : <<core>{ CLR -> {}}> = (lseqc (aspc CLEAR) (aspc NULLC)). reflexivity. Defined.
+
 (** Abstract definitions for signing and hashing parameters.  
     May instantiate these during compilation in the future. *)
 Definition sig_params : ASP_PARAMS.
