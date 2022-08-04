@@ -260,6 +260,13 @@ Definition parseSymbol (xs : list token) (sm : symbol_map)
 
 Compute parseSymbol ["b1hello_bob";"world"; ","; "this"; "is";"a";"(";"simple";")";"test";"!";"var";"bob";";";"var";"b_b"; ";";"var";"";"icansay";"123"] map_empty % string.
 
+Definition str_to_nat (x : list ascii) : nat :=
+  (fold_left 
+    (fun n d => 10 * n + (nat_of_ascii d - nat_of_ascii "0"%char))
+    x
+    0
+  ).
+
 (* TODO: Need a better string -> digit converter *)
 Definition parseDigits (xs : list token) (sm : symbol_map)
       : optionE (symbol_map * string * list token) :=
@@ -267,12 +274,7 @@ Definition parseDigits (xs : list token) (sm : symbol_map)
   | nil     => NoneE "Expected digits"
   | x::xs'  => if (forallb isDigit (list_of_string x))
                 then 
-                  let dig := (fold_left
-                                (fun n d =>
-                                    10 * n + (nat_of_ascii d -
-                                              nat_of_ascii "0"%char))
-                                (list_of_string x)
-                                0) in
+                  let dig := str_to_nat (list_of_string x) in
                   SomeE ((map x to dig in sm), x, xs')
                 else NoneE "Invalid digit sequence"
   end.
@@ -294,18 +296,21 @@ Definition parsePlace (xs : list token) (sm : symbol_map)
                       : optionE (symbol_map * string * list token) :=
   match xs with
   | nil => NoneE "Expected Place"
-  | x::xs' => (* try parse symbol *)
-              match (parseSymbol xs sm) with
-              | OutOfFuel => OutOfFuel
-              | SomeE x => SomeE x
-              | NoneE m => (* try parse digits *)
-                            match (parseDigits xs sm) with
-                            | OutOfFuel => OutOfFuel
-                            | SomeE x' => SomeE x'
-                            | NoneE m' => NoneE (m ++ m')
-                            end
-              end
-  end. 
+  | x::xs' => (* we need places to be either DIGITS or p + DIGITS *)
+              match (list_of_string x) with
+                | nil => NoneE ("Illegal place: nil - is this possible?")
+                | xh :: xt => if andb (isLowerAlpha xh) (forallb isDigit xt) then
+                              (* we are a p + DIGITS *)
+                                let dig := str_to_nat xt in
+                                SomeE ((map x to dig in sm), x, xs')
+                              else if (forallb isDigit (xh :: xt)) then
+                                (* we are completely a digit *)
+                                let dig := str_to_nat (list_of_string x) in
+                                SomeE ((map x to dig in sm), x, xs')
+                              else 
+                                NoneE ("Illegal Identifier: '" ++ x ++ "'")
+                end
+    end.
 
 Compute parsePlace (tokenize "p2") map_empty.
 
@@ -373,7 +378,7 @@ Definition parseASPC (xs : list token) (sm : symbol_map)
     | OutOfFuel => OutOfFuel
     | NoneE m => NoneE m
     | SomeE (sm', x',xs') => 
-        let place := parseDigits xs' sm' in
+        let place := parsePlace xs' sm' in
         match place with
         | OutOfFuel => OutOfFuel
         | NoneE m => NoneE m
@@ -383,7 +388,7 @@ Definition parseASPC (xs : list token) (sm : symbol_map)
                   | OutOfFuel => OutOfFuel
                   | NoneE m => NoneE m
                   | SomeE (sm''', x''',xs''') => 
-                      match (map_get sm''' x'') with
+                      match (mapD_get_value sm''' x'') with
                       (* TODO: Right now we FORCE the place to be digits because
                         the place is digits in Coq, we should find a way around this
                         though *)
@@ -721,6 +726,9 @@ with parseParens (fuel : nat) (xs : list token) (sm : symbol_map)
 .
 
 Definition testPhr := "@1 kim 2 ker -> ! -<- @2 (vc 2 sys) -> !".
+Definition testPhr2 := "@p1 kim p2 ker -> ! -<- @p2 [(vc p2 sys) -> !]".
+Compute parsePhrase 20 (tokenize testPhr2) map_empty.
+
 Definition transTestPhr := <{ @ 1 [<< "kim" 2 "ker" >> -> (!) -<- @ 2 [<< "vc" 2 "sys">> -> !]]}>.
 
 Print transTestPhr.

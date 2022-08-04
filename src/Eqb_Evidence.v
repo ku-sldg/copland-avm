@@ -9,26 +9,60 @@ Require Import PeanoNat.
 Set Nested Proofs Allowed.
  *)
 
-(** Abstract definitions of boolean equality for ASP ID and PARAMS *)
-Definition eqb_aspid: ASP_ID -> ASP_ID -> bool.
-Admitted.
 
-Definition eqb_asp_params: ASP_PARAMS -> ASP_PARAMS -> bool.
-Admitted.
-
+Definition eqb_aspid (a1 a2 : ASP_ID) : bool :=
+  String.eqb a1 a2.
 
 (** Admitted Lemmas relating boolean to propositional equality for 
    ASP ID and PARAMS *)
 Lemma eqb_eq_aspid: forall i1 i2,
     eqb_aspid i1 i2 = true <-> i1 = i2.
-Admitted.
-
-Lemma eqb_eq_asp_params: forall a a0,
-    eqb_asp_params a a0 = true <-> a = a0.
 Proof.
-Admitted.
+  intros.
+  destruct (eqb_aspid i1 i2) eqn:E.
+  - split; auto. intros. unfold eqb_aspid in E.
+    rewrite String.eqb_eq in E. auto.
+  - split; try congruence. intros.
+    unfold eqb_aspid in E. rewrite String.eqb_neq in E.
+    congruence.
+Qed.
+
+Open Scope list.
+
+Fixpoint eqb_list_args (a1 a2 : list Arg) : bool :=
+  match a1, a2 with
+  | h1 :: t1, h2 :: t2 => andb (String.eqb h1 h2) (eqb_list_args t1 t2)
+  | nil, nil => true
+  | _, _ => false
+  end.
+
+Close Scope list.
 
 
+Lemma eqb_list_args_true_iff : forall a1 a2,
+    eqb_list_args a1 a2 = true <->
+    a1 = a2.
+Proof.
+  split; intros.
+  - generalize dependent a2.
+    induction a1; simpl; intros.
+    * destruct a2; auto; try congruence.
+    * destruct a2; auto; try congruence.
+      rewrite andb_true_iff in H. destruct_conjs.
+      rewrite String.eqb_eq in H. subst. 
+      apply IHa1 in H0. subst. auto.
+  - subst. induction a2; auto. 
+    simpl; rewrite IHa2. rewrite String.eqb_refl. auto.
+Qed.
+
+Definition eqb_asp_params (ap1 ap2 : ASP_PARAMS) : bool :=
+  match ap1, ap2 with
+  | (asp_paramsC a1 la1 p1 t1), (asp_paramsC a2 la2 p2 t2) =>
+      andb (eqb_aspid a1 a2) 
+        (andb (eqb_list_args la1 la2)
+          (andb (Nat.eqb p1 p2) 
+                (String.eqb t1 t2)))
+  end.
 
 (** Decidable equality proofs for various Copland datatypes *)
 Definition eq_asp_params_dec:
@@ -37,6 +71,31 @@ Proof.
   intros.
   decide equality; repeat (decide equality).
 Defined.
+
+Lemma eqb_eq_asp_params: forall a a0,
+    eqb_asp_params a a0 = true <->
+    a = a0.
+Proof.
+  split; intros; pose proof (eq_asp_params_dec a a0) as HD.
+  - destruct HD; auto. 
+    unfold eqb_asp_params in H.
+    destruct a, a0. 
+    repeat rewrite andb_true_iff in H.
+    destruct_conjs.
+    rewrite String.eqb_eq in *. subst.
+    rewrite Nat.eqb_eq in *. subst.
+    rewrite eqb_list_args_true_iff in *. subst.
+    reflexivity.
+  - subst. unfold eqb_asp_params.
+    destruct a0. 
+    repeat rewrite andb_true_iff.
+    repeat split.
+    * unfold eqb_aspid. rewrite String.eqb_eq. auto.
+    * apply eqb_list_args_true_iff. auto.
+    * rewrite Nat.eqb_eq. auto.
+    * rewrite String.eqb_eq. auto.
+Qed.
+
 
 Definition eq_ev_dec:
   forall x y: Ev, {x = y} + {x <> y}.

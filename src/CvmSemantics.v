@@ -1625,15 +1625,8 @@ Proof.
   eapply span_cvm; eauto.
 Qed.
 
-(* Axioms about event and evidence semantics of core terms *)
-Axiom events_cvm_to_core : forall t p e,
-    cvm_events t p e = cvm_events_core (term_to_core_term t) p e.
-
 Axiom events_cvm_to_core_mt : forall t p e,
     cvm_events_core (lseqc (aspc CLEAR) t) p e = cvm_events_core t p mt.
-
-Axiom evidence_cvm_to_core : forall t p e,
-    cvm_evidence t p e = cvm_evidence_core (term_to_core_term t) p e.
 
 Axiom ev_cvm_mtc: forall ct p e loc,
     parallel_vm_thread loc ct p mt_evc = parallel_vm_thread loc (lseqc (aspc CLEAR) ct) p e.
@@ -1756,7 +1749,7 @@ Proof.
     assert (evc bits' et' = cvm_evidence_core (term_to_core_term t') p (evc bits et)). {
 
       rewrite at_evidence in *.
-      rewrite evidence_cvm_to_core in *.
+      unfold cvm_evidence in *.
       rewrite H5.
       tauto.
     }
@@ -2229,7 +2222,7 @@ Proof.
 
     rewrite par_evidence in *.
 
-    rewrite evidence_cvm_to_core in *.
+    unfold cvm_evidence in *.
     rewrite Heqe0 in *.
 
     assert (cvm_evidence_denote a0 p ec = e2).
@@ -2322,7 +2315,7 @@ Proof.
 
     rewrite par_evidence in *.
 
-    rewrite evidence_cvm_to_core in *.
+    unfold cvm_evidence in *.
     rewrite Heqe0 in *.
 
 
@@ -2420,7 +2413,7 @@ Proof.
 
     rewrite par_evidence in *.
 
-    rewrite evidence_cvm_to_core in *.
+    unfold cvm_evidence in *.
     rewrite Heqe0 in *.
 
 
@@ -2521,7 +2514,7 @@ Proof.
 
     rewrite par_evidence in *.
 
-    rewrite evidence_cvm_to_core in *.
+    unfold cvm_evidence in *.
     rewrite Heqe0 in *.
 
 
@@ -3174,7 +3167,7 @@ Proof.
       
       eapply lstar_transitive.
 
-      rewrite <- events_cvm_to_core.
+      unfold cvm_events in *.
       
       eapply bpar_shuffle.
       eassumption.
@@ -3253,7 +3246,7 @@ Proof.
       
       eapply lstar_transitive.
 
-      rewrite <- events_cvm_to_core.
+      unfold cvm_events in *.
       
       eapply bpar_shuffle.
       eassumption.
@@ -3330,7 +3323,7 @@ Proof.
       
       eapply lstar_transitive.
 
-      rewrite <- events_cvm_to_core.
+      unfold cvm_events in *.
       
       eapply bpar_shuffle.
       eassumption.
@@ -3410,7 +3403,7 @@ Proof.
       
       eapply lstar_transitive.
 
-      rewrite <- events_cvm_to_core.
+      unfold cvm_events in *.
       
       eapply bpar_shuffle.
       eassumption.

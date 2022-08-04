@@ -509,7 +509,8 @@ QuickChick genASP_works.
 Fixpoint showTerm_Aux (t : Term) : string :=
   match t with
   | asp a => show a
-  | att p t' => "@" ++ show p ++ " (" ++ showTerm_Aux t' ++ ")"
+  (* This works with just @ or @p *)
+  | att p t' => "@" ++ show p ++ " " ++ showTerm_Aux t' ++ ""
   | lseq t1 t2 => "((" ++ showTerm_Aux t1 ++ ") -> (" ++ showTerm_Aux t2 ++ "))"
   | bseq (s1,s2) t1 t2 => 
     "((" ++ showTerm_Aux t1 ++ ") " ++ show s1 ++ "<" ++ show s2 ++ " (" ++ showTerm_Aux t2 ++ "))"
@@ -633,7 +634,9 @@ Definition genTerm_Correct (a : Term) : bool :=
   end.
 
 Definition stat_collect_prop (t : Term) :=
-  (fun t => collect (term_seq_size t) true).
+  (fun t => collect (term_seq_size t) (genTerm_Correct t)).
+
+
 QuickChickWith (updMaxSize stdArgs 9) stat_collect_prop.
 
 Open Scope cop_ent_scope.
