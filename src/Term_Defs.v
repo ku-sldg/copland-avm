@@ -200,51 +200,51 @@ Definition asp_term_to_core (a:ASP) : Core_Term :=
   end.
 
 (**  Translating a Copland phrase to its Core_Term equivalent *)
-Fixpoint term_to_core_term (t:Term) : Core_Term :=
+Fixpoint copland_compile (t:Term) : Core_Term :=
   match t with
   | asp a => (asp_term_to_core a)
   | att q t' => attc q t'
 
-  | lseq t1 t2 => lseqc (term_to_core_term t1) (term_to_core_term t2)
+  | lseq t1 t2 => lseqc (copland_compile t1) (copland_compile t2)
 
   | bseq (ALL,ALL) t1 t2 =>
     bseqc
-      (term_to_core_term t1) (term_to_core_term t2)  
+      (copland_compile t1) (copland_compile t2)  
   | bseq (ALL,NONE) t1 t2 =>
     bseqc
-      (term_to_core_term t1)
-      (lseqc (aspc CLEAR) (term_to_core_term t2))
+      (copland_compile t1)
+      (lseqc (aspc CLEAR) (copland_compile t2))
   | bseq (NONE,ALL) t1 t2 =>
     bseqc
-      (lseqc (aspc CLEAR) (term_to_core_term t1))
-      (term_to_core_term t2)
+      (lseqc (aspc CLEAR) (copland_compile t1))
+      (copland_compile t2)
   | bseq (NONE,NONE) t1 t2 =>
     bseqc
-      (lseqc (aspc CLEAR) (term_to_core_term t1))
-      (lseqc (aspc CLEAR) (term_to_core_term t2))
+      (lseqc (aspc CLEAR) (copland_compile t1))
+      (lseqc (aspc CLEAR) (copland_compile t2))
           
   | bpar (ALL,ALL) t1 t2 =>
-    bparc 0 (term_to_core_term t1) (term_to_core_term t2)     
+    bparc 0 (copland_compile t1) (copland_compile t2)     
   | bpar (ALL,NONE) t1 t2 =>
     bparc 0
-      (term_to_core_term t1)
-      (lseqc (aspc CLEAR) (term_to_core_term t2))
+      (copland_compile t1)
+      (lseqc (aspc CLEAR) (copland_compile t2))
   | bpar (NONE,ALL) t1 t2 =>
     bparc 0
-      (lseqc (aspc CLEAR) (term_to_core_term t1))
-      (term_to_core_term t2)
+      (lseqc (aspc CLEAR) (copland_compile t1))
+      (copland_compile t2)
   | bpar (NONE,NONE) t1 t2 =>
     bparc 0
-      (lseqc (aspc CLEAR) (term_to_core_term t1))
-      (lseqc (aspc CLEAR) (term_to_core_term t2))
+      (lseqc (aspc CLEAR) (copland_compile t1))
+      (lseqc (aspc CLEAR) (copland_compile t2))
   end.
 
 
-(** Propositional encapsulation of term_to_core_term.  
+(** Propositional encapsulation of copland_compile.  
     Useful to avoid spurious rewriting during proofs *)
 Inductive term_to_coreP: Term -> Core_Term -> Prop :=
 | toCoreP: forall t t',
-    term_to_core_term t = t' ->
+    copland_compile t = t' ->
     term_to_coreP t t'.
 
 

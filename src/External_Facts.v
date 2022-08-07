@@ -10,9 +10,9 @@ Require Import List.
 Import ListNotations.
 
 
-Axiom copland_compile_external' : forall (t : Core_Term) (e : EvC) (n : nat) (tr:list Ev) (i:Event_ID),
+Axiom build_cvm_external' : forall (t : Core_Term) (e : EvC) (n : nat) (tr:list Ev) (i:Event_ID),
     runSt 
-      (copland_compile t)
+      (build_cvm t)
       {| st_ev := e;
          st_trace := tr;
          st_pl := n;
@@ -23,7 +23,7 @@ Axiom copland_compile_external' : forall (t : Core_Term) (e : EvC) (n : nat) (tr
         st_pl :=
           st_pl
             (
-              execSt (copland_compile t)
+              execSt (build_cvm t)
                      {| st_ev := e;
                         st_trace := [];
                         st_pl := n;
@@ -31,8 +31,8 @@ Axiom copland_compile_external' : forall (t : Core_Term) (e : EvC) (n : nat) (tr
         st_evid := (i + event_id_span t)
      |}).
 
-Lemma copland_compile_external : forall (t : Core_Term) (e : EvC) (n : nat) i,
-    copland_compile t
+Lemma build_cvm_external : forall (t : Core_Term) (e : EvC) (n : nat) i,
+    build_cvm t
                     {| st_ev := e;
                        st_trace := [];
                        st_pl := n;
@@ -49,7 +49,7 @@ Proof.
   assert (n = st_pl
             (
               execSt
-                (copland_compile t)
+                (build_cvm t)
                 {| st_ev := e;
                      st_trace := [];
                      st_pl := n; st_evid := i |})) as H0'.
@@ -58,5 +58,5 @@ Proof.
     tauto. 
   }
   rewrite H0' at 4.
-  eapply copland_compile_external'.
+  eapply build_cvm_external'.
 Defined.

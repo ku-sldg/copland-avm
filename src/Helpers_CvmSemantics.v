@@ -16,7 +16,7 @@ Set Nested Proofs Allowed.
 Lemma pl_immut : forall t e tr p i,
     st_pl
       (execSt
-         (copland_compile t)
+         (build_cvm t)
          {|
            st_ev := e;
            st_trace := tr;
@@ -134,7 +134,7 @@ Ltac do_pl_immut :=
           reflexivity (*| 
           apply H2*)] in
       match goal with
-      | [H: copland_compile ?t
+      | [H: build_cvm ?t
                             {| st_ev := _;
                         st_trace := _;
                                     st_pl := ?p;
@@ -163,8 +163,8 @@ Defined.
 Ltac anhl :=
   annogo;
   match goal with
-  | [H2: copland_compile ?a _ = _,
-     H3: copland_compile ?a _ = _,
+  | [H2: build_cvm ?a _ = _,
+     H3: build_cvm ?a _ = _,
      IH: context[ _ -> _] |- _] =>
     edestruct IH;
     [ apply H2 | apply H3 | idtac]; clear H2; clear H3;
@@ -174,9 +174,9 @@ Ltac anhl :=
 (* Lemma stating the following:  If all starting parameters to the cvm_st are the same, except 
    for possibly the trace, then all of those final parameters should also be equal. *)
 Lemma st_trace_irrel : forall t e e' e'' x x' y y' p p' p'' i i' i'',
-    copland_compile t {| st_ev := e; st_trace := x; st_pl := p; st_evid := i |} =
+    build_cvm t {| st_ev := e; st_trace := x; st_pl := p; st_evid := i |} =
     (Some tt, {| st_ev := e'; st_trace := x'; st_pl := p'; st_evid := i' |}) ->
-    copland_compile t {| st_ev := e; st_trace := y; st_pl := p; st_evid := i |} =
+    build_cvm t {| st_ev := e; st_trace := y; st_pl := p; st_evid := i |} =
     (Some tt, {| st_ev := e''; st_trace := y'; st_pl := p''; st_evid := i'' |}) ->
     (e' = e'' /\ p' = p'' /\ i' = i'').
 Proof.
@@ -235,9 +235,9 @@ Ltac dohi'' :=
   annogo;
   let tac H H' := eapply st_trace_irrel; [apply H | apply H'] in
   match goal with
-  | [H : copland_compile ?t1 {| st_ev := ?e; st_trace := _; st_pl := ?p; st_evid := ?i |} =
+  | [H : build_cvm ?t1 {| st_ev := ?e; st_trace := _; st_pl := ?p; st_evid := ?i |} =
          (?opt, {| st_ev := ?e'; st_trace := _; st_pl := ?p'; st_evid := ?i' |}),
-         H' : copland_compile ?t1 {| st_ev := ?e; st_trace := _; st_pl := ?p; st_evid := ?i |} =
+         H' : build_cvm ?t1 {| st_ev := ?e; st_trace := _; st_pl := ?p; st_evid := ?i |} =
               (?opt, {| st_ev := ?e''; st_trace := _; st_pl := ?p''; st_evid := ?i'' |})
      |- _] =>
     assert_new_proof_by (e' = e'' /\ p' = p'' /\ i' = i'') ltac:(tac H H')
@@ -251,7 +251,7 @@ Ltac dohi :=
 (* CVM execution always succeeds.  
    Note:  This may need revisiting if we consider more robust models of CVM failure. *)
 Lemma always_some : forall t vm_st vm_st' op,
-    copland_compile t vm_st = (op, vm_st') ->
+    build_cvm t vm_st = (op, vm_st') ->
     op = Some tt.
 Proof.
   induction t; intros.
@@ -288,7 +288,7 @@ Defined.
 
 Ltac do_somett :=
   match goal with
-  | [H: copland_compile ?t _ = (?o, _)
+  | [H: build_cvm ?t _ = (?o, _)
      |- _] =>
     assert_new_proof_by (o = Some tt) ltac:(eapply always_some; [apply H])
   end.
@@ -298,16 +298,16 @@ Ltac do_asome := repeat do_somett; repeat clear_triv.
 (* States that the resulting place (st_pl) is unaffected by the initial trace.
    This is a simple corollary of the Lemma hihi above. *)
 Lemma trace_irrel_pl : forall t tr1 tr1' tr2 e e' p1' p1 i i',
-    copland_compile t
+    build_cvm t
            {| st_ev := e; st_trace := tr1; st_pl := p1; st_evid := i |} =
     (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_evid := i' |}) ->
     
     st_pl
-      (execSt (copland_compile t)
+      (execSt (build_cvm t)
            {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i |}) = p1'.
 Proof.
   intros.
-  destruct (copland_compile t {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i |}) eqn:ff.
+  destruct (build_cvm t {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i |}) eqn:ff.
   simpl.
   vmsts.
   simpl.
@@ -321,16 +321,16 @@ Defined.
 (* States that the resulting evidence (st_ev) is unaffected by the initial trace.
    This is a simple corollary of the Lemma hihi above. *)
 Lemma trace_irrel_ev : forall t tr1 tr1' tr2 e e' p1' p1 i i',
-    copland_compile t
+    build_cvm t
            {| st_ev := e; st_trace := tr1; st_pl := p1; st_evid := i|} =
     (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_evid := i' |}) ->
     
     st_ev
-      (execSt (copland_compile t)
+      (execSt (build_cvm t)
            {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i |}) = e'.
 Proof.
   intros.
-  destruct (copland_compile t {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i |}) eqn:ff.
+  destruct (build_cvm t {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i |}) eqn:ff.
   simpl.
   vmsts.
   simpl.
@@ -344,16 +344,16 @@ Defined.
 (* States that the resulting event id counter (st_evid) is unaffected by the initial trace.
    This is a simple corollary of the Lemma hihi above. *)
 Lemma trace_irrel_evid : forall t tr1 tr1' tr2 e e' p1' p1 i i',
-    copland_compile t
+    build_cvm t
            {| st_ev := e; st_trace := tr1; st_pl := p1; st_evid := i|} =
     (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_evid := i' |}) ->
     
     st_evid
-      (execSt (copland_compile t)
+      (execSt (build_cvm t)
            {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i |}) = i'.
 Proof.
   intros.
-  destruct (copland_compile t {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i |}) eqn:ff.
+  destruct (build_cvm t {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i |}) eqn:ff.
   simpl.
   vmsts.
   simpl.

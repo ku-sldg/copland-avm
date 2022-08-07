@@ -46,10 +46,10 @@ Ltac find_rw_in_goal :=
 Ltac cumul_ih :=
   match goal with
   | [H: context[(st_trace _ = _ ++ st_trace _)],
-        H': copland_compileP ?t1 {| st_ev := _; st_trace := ?m ++ ?k; st_pl := _; st_evid := _ |}
+        H': build_cvmP ?t1 {| st_ev := _; st_trace := ?m ++ ?k; st_pl := _; st_evid := _ |}
                              (Some tt)
                              ?v_full,
-            H'': copland_compileP ?t1 {| st_ev := _; st_trace := ?k; st_pl := _; st_evid := _ |}
+            H'': build_cvmP ?t1 {| st_ev := _; st_trace := ?k; st_pl := _; st_evid := _ |}
                                   (Some tt)
                                   ?v_suffix
      |- _] =>
@@ -66,11 +66,11 @@ Ltac wrap_ccp_dohi :=
 (** * Helper Lemma stating: CVM traces are "cumulative" (or monotonic).  
       Traces are only ever extended--prefixes are maintained. *)
 Lemma st_trace_cumul'' : forall t m k e p v_full v_suffix o_suffix i,
-    copland_compileP t
+    build_cvmP t
                {| st_ev := e; st_trace := m ++ k; st_pl := p; st_evid := i |}
                (Some tt) v_full ->
     
-    copland_compileP t
+    build_cvmP t
                      {| st_ev := e; st_trace := k; st_pl := p; st_evid := i |}
                      o_suffix v_suffix ->
 
@@ -122,11 +122,11 @@ Defined.
 
 (** * Instance of st_trace_cumul'' where k=[] *)
 Lemma st_trace_cumul' : forall t m e p v_full v_suffix o_suffix i,
-    copland_compileP t
+    build_cvmP t
                {| st_ev := e; st_trace := m; st_pl := p; st_evid := i |}
                (Some tt) v_full ->
     
-    copland_compileP t
+    build_cvmP t
                      {| st_ev := e; st_trace := []; st_pl := p; st_evid := i |}
                      o_suffix v_suffix ->
 
@@ -141,10 +141,10 @@ Defined.
 (** * Lemma:  CVM execution always succeeds *)
 Lemma exists_some_cc: forall t st,
     exists st',
-      copland_compile t st = (Some tt, st').
+      build_cvm t st = (Some tt, st').
 Proof.
   intros.
-  destruct (copland_compile t st) eqn:ee.
+  destruct (build_cvm t st) eqn:ee.
   do_asome.
   subst.
   eauto.
@@ -152,7 +152,7 @@ Defined.
 
 Ltac do_exists_some_cc t st :=
     assert_new_proof_by
-      (exists st', copland_compile t st = (Some tt, st') )
+      (exists st', build_cvm t st = (Some tt, st') )
       ltac:(eapply exists_some_cc);
     destruct_conjs.
 
@@ -162,7 +162,7 @@ Ltac do_exists_some_cc t st :=
       TODO:  rename to st_trace_cumul 
 *) 
 Lemma suffix_prop : forall t e e' tr tr' p p' i i',
-    copland_compileP t
+    build_cvmP t
            {| st_ev := e;
               st_trace := tr;
               st_pl := p;
@@ -199,7 +199,7 @@ Defined.
 
 Ltac do_suffix name :=
   match goal with
-  | [H': copland_compileP ?t
+  | [H': build_cvmP ?t
          {| st_ev := _; st_trace := ?tr; st_pl := _; st_evid := _ |}
          (Some tt)
          {| st_ev := _; st_trace := ?tr'; st_pl := _; st_evid := _ |}
@@ -216,7 +216,7 @@ Ltac do_suffix name :=
       Useful for leveraging induction hypotheses in the lseq case of induction that require empty traces in the 
       initial CVM state. *)
 Lemma alseq_decomp : forall t1' t2' e e'' p p'' tr i i'',
-    copland_compileP
+    build_cvmP
       (lseqc t1' t2')
       {| st_ev := e;
          st_trace := [];
@@ -229,7 +229,7 @@ Lemma alseq_decomp : forall t1' t2' e e'' p p'' tr i i'',
          st_evid := i'' |} ->
 
     exists e' tr' p' i',
-      copland_compileP
+      build_cvmP
         t1'
         {| st_ev := e;
            st_trace := [];
@@ -241,7 +241,7 @@ Lemma alseq_decomp : forall t1' t2' e e'' p p'' tr i i'',
            st_pl := p';
            st_evid := i' |} /\
       exists tr'',
-        copland_compileP
+        build_cvmP
           t2'
           {| st_ev := e';
              st_trace := [];
@@ -286,12 +286,12 @@ Defined.
 
 (** Structural convenience lemma:  reconfigures CVM execution to use an empty initial trace *)
 Lemma restl : forall t e e' x tr p p' i i',
-    copland_compileP t
+    build_cvmP t
                      {| st_ev := e; st_trace := x; st_pl := p; st_evid := i|}
                      (Some tt)
                      {| st_ev := e'; st_trace := x ++ tr; st_pl := p'; st_evid := i' |} ->
 
-    copland_compileP t
+    build_cvmP t
                      {| st_ev := e; st_trace := []; st_pl := p; st_evid := i |}
                      (Some tt)
                      {| st_ev := e'; st_trace := tr; st_pl := p'; st_evid := i' |}.
@@ -323,13 +323,13 @@ Defined.
 
 Ltac do_restl :=
   match goal with
-  | [H: copland_compileP ?t
+  | [H: build_cvmP ?t
         {| st_ev := ?e; st_trace := ?tr; st_pl := ?p; st_evid := ?i |}
         (Some tt)
         {| st_ev := ?e'; st_trace := ?tr ++ ?x; st_pl := ?p'; st_evid := ?i' |}
         (*H2: well_formed_r ?t*) |- _] =>
     assert_new_proof_by
-      (copland_compileP t
+      (build_cvmP t
                         {| st_ev := e; st_trace := []; st_pl := p; st_evid := i|}
                         (Some tt)
                         {| st_ev := e'; st_trace := x; st_pl := p'; st_evid := i' |})
@@ -379,14 +379,14 @@ Defined.
       Uses uninterpreted functions for "simulated" CVM evidence and events. *)
 Ltac do_assert_remote t e p i :=
   assert (
-      copland_compile t
+      build_cvm t
                       {| st_ev := e; st_trace := []; st_pl := p; st_evid := i|} =
       (Some tt,
        {| st_ev := cvm_evidence_core t p e;
                    st_trace := cvm_events_core t p (get_et e);
                                st_pl := p; st_evid :=  (i + event_id_span t)
        |})
-    ) by (eapply copland_compile_external).
+    ) by (eapply build_cvm_external).
 
 
 (*
@@ -399,7 +399,7 @@ Ltac do_assume_remote t e p i (* x *) :=
 
 (** * Lemma:  parallel CVM threads preserve the reference Evidence Type semantics (eval). *)
 Lemma par_evidence_r: forall l p bits bits' et et' t2,
-    parallel_vm_thread l (term_to_core_term t2) p (evc bits et) = evc bits' et' ->
+    parallel_vm_thread l (copland_compile t2) p (evc bits et) = evc bits' et' ->
     et' = eval t2 p et.
 Proof.
   intros.
@@ -421,7 +421,7 @@ Axiom par_evidence_clear: forall l p bits et t2,
 (** * Main Lemma:  CVM execution maintains the Evidence Type reference semantics (eval) for 
       its internal evidence bundle. *)
 Lemma cvm_refines_lts_evidence' : forall t tr tr' bits bits' et et' p p' i i',
-    copland_compileP (term_to_core_term t)
+    build_cvmP (copland_compile t)
                      (mk_st (evc bits et) tr p i)
                      (Some tt)
                      (mk_st (evc bits' et') tr' p' i') ->
@@ -557,7 +557,7 @@ Qed.
 Lemma cvm_refines_lts_evidence :
   forall t t' tr tr' bits bits' et et' p p' i i',
     term_to_coreP t t' ->
-    copland_compileP t'
+    build_cvmP t'
                      (mk_st (evc bits et) tr p i)
                      (Some tt)
                      (mk_st (evc bits' et') tr' p' i') ->
@@ -894,7 +894,7 @@ Axiom wf_ec_preserved_par: forall e l t2 p,
       (Evidence Type of sufficient length for raw evidence). *)
 Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' p p' i i',
     wf_ec e ->
-        copland_compileP t1
+        build_cvmP t1
                     {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |}
                     (Some tt)
                     {| st_ev := e'; st_trace := tr'; st_pl := p'; st_evid := i' |} ->
@@ -981,7 +981,7 @@ Ltac do_wfec_preserved :=
     match goal with
     | [(*H: well_formed_r ?t, *)
           H2: wf_ec ?stev,
-              H3: copland_compileP ?t
+              H3: build_cvmP ?t
                                    {| st_ev := ?stev; st_trace := _; st_pl := _; st_evid := _ |}
                                    (Some tt)
                                    {| st_ev := ?stev'; st_trace := _; st_pl := _; st_evid := _ |}
@@ -1338,7 +1338,7 @@ Defined.
 
 (**  * Event ID spans same for a term and its corresponding core term. *)
 Lemma event_id_spans_same : forall t,
-    event_id_span' t = event_id_span (term_to_core_term t).
+    event_id_span' t = event_id_span (copland_compile t).
 Proof.
   intros.
   induction t; ff.
@@ -1357,7 +1357,7 @@ Qed.
 (** * Lemma:  CVM increases event IDs according to event_id_span' denotation. *)
 Lemma cvm_spans: forall t pt e tr p i e' tr' p' i',
     term_to_coreP t pt ->
-    copland_compileP
+    build_cvmP
       pt
       {| st_ev := e;
          st_trace := tr;
@@ -1487,7 +1487,7 @@ Defined.
     2: { eassumption. }
     econstructor; eauto.
 
-    assert (event_id_span' t2 = event_id_span (term_to_core_term t2)).
+    assert (event_id_span' t2 = event_id_span (copland_compile t2)).
     {
       eapply event_id_spans_same.
     }
@@ -1500,7 +1500,7 @@ Defined.
     2: { eassumption. }
     econstructor; eauto.
 
-    assert (event_id_span' t2 = event_id_span (term_to_core_term t2)).
+    assert (event_id_span' t2 = event_id_span (copland_compile t2)).
     {
       eapply event_id_spans_same.
     }
@@ -1513,7 +1513,7 @@ Defined.
     2: { eassumption. }
     econstructor; eauto.
 
-    assert (event_id_span' t2 = event_id_span (term_to_core_term t2)).
+    assert (event_id_span' t2 = event_id_span (copland_compile t2)).
     {
       eapply event_id_spans_same.
     }
@@ -1526,7 +1526,7 @@ Defined.
     2: { eassumption. }
     econstructor; eauto.
 
-    assert (event_id_span' t2 = event_id_span (term_to_core_term t2)).
+    assert (event_id_span' t2 = event_id_span (copland_compile t2)).
     {
       eapply event_id_spans_same.
     }
@@ -1536,7 +1536,7 @@ Qed.
   
 (** * CVM event ID span same as annotated term range *)
 Lemma span_cvm: forall atp t annt i j e e' tr tr' p p' i',
-    copland_compileP
+    build_cvmP
       atp
       {| st_ev := e;
          st_trace := tr;
@@ -1577,7 +1577,7 @@ Defined.
 Lemma anno_span_cvm: forall t pt annt i i' e e' p p' tr tr' st_evid1,
     annoP_indexed annt t i i' ->
     term_to_coreP t pt ->
-    copland_compileP pt
+    build_cvmP pt
                      {|
                        st_ev := e ;
                        st_trace := tr ;
@@ -1607,7 +1607,7 @@ Axiom ev_cvm_mtc: forall ct p e loc,
 (** * Lemma:  relating reconstructed CVM EvC bundles via the EvidenceC evidence denotation. *)
 Lemma cvm_raw_evidence_denote_fact :
   forall t annt t' tr tr' bits bits' et et' p p' i i' ec ec',
-    copland_compileP t
+    build_cvmP t
                      (mk_st (evc bits et) tr p i)
                      (Some tt)
                      (mk_st (evc bits' et') tr' p' i') ->
@@ -1715,9 +1715,9 @@ Proof.
     ff.
     wrap_ccp_anno.
 
-    do_assert_remote (term_to_core_term t') (evc bits et) p (S i).
+    do_assert_remote (copland_compile t') (evc bits et) p (S i).
 
-    assert (evc bits' et' = cvm_evidence_core (term_to_core_term t') p (evc bits et)). {
+    assert (evc bits' et' = cvm_evidence_core (copland_compile t') p (evc bits et)). {
 
       rewrite at_evidence in *.
       unfold cvm_evidence in *.
@@ -1730,7 +1730,7 @@ Proof.
     rewrite <- H7 in H4.
     eassumption.
     econstructor; eauto.
-    assert (n = (S i + event_id_span (term_to_core_term t'))).
+    assert (n = (S i + event_id_span (copland_compile t'))).
     {
       wrap_ccp_anno.
       eapply anno_span_cvm.
@@ -2187,7 +2187,7 @@ Proof.
       eassumption.
     }
 
-    do_assert_remote (term_to_core_term t'2) (evc bits et) p (st_evid).
+    do_assert_remote (copland_compile t'2) (evc bits et) p (st_evid).
 
     wrap_ccp_anno.
 
@@ -2201,7 +2201,7 @@ Proof.
       eapply IHt'2.
       apply H9.
       econstructor; eauto.
-      assert (n0 = st_evid + event_id_span (term_to_core_term t'2)).
+      assert (n0 = st_evid + event_id_span (copland_compile t'2)).
       {
         eapply anno_span_cvm.
         apply Heqp1.
@@ -2278,7 +2278,7 @@ Proof.
       eassumption.
     }
 
-     do_assert_remote (term_to_core_term t'2) mt_evc p (st_evid).
+     do_assert_remote (copland_compile t'2) mt_evc p (st_evid).
 
     wrap_ccp_anno.
 
@@ -2295,7 +2295,7 @@ Proof.
       eapply IHt'2.
       apply H9.
       econstructor; eauto.
-      assert (n0 = st_evid + event_id_span (term_to_core_term t'2)).
+      assert (n0 = st_evid + event_id_span (copland_compile t'2)).
       {
         eapply anno_span_cvm.
         apply Heqp1.
@@ -2378,7 +2378,7 @@ Proof.
       eassumption.
     }
 
-     do_assert_remote (term_to_core_term t'2) (evc bits et) p (st_evid).
+     do_assert_remote (copland_compile t'2) (evc bits et) p (st_evid).
 
     wrap_ccp_anno.
 
@@ -2393,7 +2393,7 @@ Proof.
       eapply IHt'2.
       eassumption.
       econstructor; eauto.
-      assert (n0 = st_evid + event_id_span (term_to_core_term t'2)).
+      assert (n0 = st_evid + event_id_span (copland_compile t'2)).
       {
         eapply anno_span_cvm.
         apply Heqp1.
@@ -2477,7 +2477,7 @@ Proof.
       eassumption.
     }
 
-     do_assert_remote (term_to_core_term t'2) mt_evc p (st_evid).
+     do_assert_remote (copland_compile t'2) mt_evc p (st_evid).
 
     wrap_ccp_anno.
 
@@ -2494,7 +2494,7 @@ Proof.
       eapply IHt'2.
       eassumption.
       econstructor; eauto.
-      assert (n0 = st_evid + event_id_span (term_to_core_term t'2)).
+      assert (n0 = st_evid + event_id_span (copland_compile t'2)).
       {
         eapply anno_span_cvm.
         apply Heqp1.
@@ -2556,7 +2556,7 @@ Theorem cvm_refines_lts_events :
   forall t atp annt cvm_tr bits bits' et et' p p' i i',
     term_to_coreP t atp ->
     annoP_indexed annt t i i' ->
-    copland_compileP atp
+    build_cvmP atp
                      (mk_st (evc bits et) [] p i)
                      (Some tt)
                      (mk_st (evc bits' et') cvm_tr p' i') ->
@@ -2656,7 +2656,7 @@ Proof.
     invc annoParPH.
     edestruct alseq_decomp; eauto.
     destruct_conjs.
-    fold term_to_core_term in *.
+    fold copland_compile in *.
 
     inversion annPH.
     subst.
@@ -3080,7 +3080,7 @@ Proof.
     }
     subst.
 
-    assert (n0 = st_evid + event_id_span (term_to_core_term t2)) by lia.
+    assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
     
     subst. clear H4.
     
@@ -3113,11 +3113,11 @@ Proof.
       rewrite front_app.
       rewrite back_app.
 
-      assert ([cvm_thread_start 0 p (term_to_core_term t2) et]
+      assert ([cvm_thread_start 0 p (copland_compile t2) et]
                 ++
                 blah ++
                 [cvm_thread_end 0] =
-              shuffled_events blah (cvm_events_core  (term_to_core_term t2) p et)).
+              shuffled_events blah (cvm_events_core  (copland_compile t2) p et)).
       {
         eapply thread_bookend_peel.
         eassumption.
@@ -3144,7 +3144,7 @@ Proof.
       eassumption.
       eassumption.
 
-      assert ((st_evid + event_id_span (term_to_core_term t2)) = Nat.pred ((st_evid + event_id_span (term_to_core_term t2)) + 1)) by lia.
+      assert ((st_evid + event_id_span (copland_compile t2)) = Nat.pred ((st_evid + event_id_span (copland_compile t2)) + 1)) by lia.
       rewrite H3 at 2.
 
       eapply lstar_tran.
@@ -3167,7 +3167,7 @@ Proof.
     }
     subst.
 
-    assert (n0 = st_evid + event_id_span (term_to_core_term t2)) by lia.
+    assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
     
     subst. clear H4.
     
@@ -3200,11 +3200,11 @@ Proof.
       rewrite front_app.
       rewrite back_app.
 
-      assert ([cvm_thread_start 0 p (lseqc (aspc CLEAR) (term_to_core_term t2)) et]
+      assert ([cvm_thread_start 0 p (lseqc (aspc CLEAR) (copland_compile t2)) et]
                 ++
                 blah ++
                 [cvm_thread_end 0] =
-              shuffled_events blah (cvm_events_core (lseqc (aspc CLEAR) (term_to_core_term t2)) p et)).
+              shuffled_events blah (cvm_events_core (lseqc (aspc CLEAR) (copland_compile t2)) p et)).
       {
         eapply thread_bookend_peel.
         eassumption.
@@ -3223,7 +3223,7 @@ Proof.
       eassumption.
       eassumption.
 
-      assert ((st_evid + event_id_span (term_to_core_term t2)) = Nat.pred ((st_evid + event_id_span (term_to_core_term t2)) + 1)) by lia.
+      assert ((st_evid + event_id_span (copland_compile t2)) = Nat.pred ((st_evid + event_id_span (copland_compile t2)) + 1)) by lia.
       rewrite H3 at 2.
 
       eapply lstar_tran.
@@ -3246,7 +3246,7 @@ Proof.
     }
     subst.
 
-    assert (n0 = st_evid + event_id_span (term_to_core_term t2)) by lia.
+    assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
     
     subst. clear H4.
     
@@ -3279,11 +3279,11 @@ Proof.
       rewrite front_app.
       rewrite back_app.
 
-      assert ([cvm_thread_start 0 p ((term_to_core_term t2)) et]
+      assert ([cvm_thread_start 0 p ((copland_compile t2)) et]
                 ++
                 blah ++
                 [cvm_thread_end 0] =
-              shuffled_events blah (cvm_events_core (term_to_core_term t2) p et)).
+              shuffled_events blah (cvm_events_core (copland_compile t2) p et)).
       {
         eapply thread_bookend_peel.
         eassumption.
@@ -3300,7 +3300,7 @@ Proof.
       eassumption.
       eassumption.
 
-      assert ((st_evid + event_id_span (term_to_core_term t2)) = Nat.pred ((st_evid + event_id_span (term_to_core_term t2)) + 1)) by lia.
+      assert ((st_evid + event_id_span (copland_compile t2)) = Nat.pred ((st_evid + event_id_span (copland_compile t2)) + 1)) by lia.
       rewrite H3 at 2.
 
       eapply lstar_tran.
@@ -3324,7 +3324,7 @@ Proof.
     }
     subst.
 
-    assert (n0 = st_evid + event_id_span (term_to_core_term t2)) by lia.
+    assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
     
     subst. clear H4.
     
@@ -3357,11 +3357,11 @@ Proof.
       rewrite front_app.
       rewrite back_app.
 
-      assert ([cvm_thread_start 0 p (lseqc (aspc CLEAR) (term_to_core_term t2)) et]
+      assert ([cvm_thread_start 0 p (lseqc (aspc CLEAR) (copland_compile t2)) et]
                 ++
                 blah ++
                 [cvm_thread_end 0] =
-              shuffled_events blah (cvm_events_core (lseqc (aspc CLEAR) (term_to_core_term t2)) p et)).
+              shuffled_events blah (cvm_events_core (lseqc (aspc CLEAR) (copland_compile t2)) p et)).
       {
         eapply thread_bookend_peel.
         eassumption.
@@ -3380,7 +3380,7 @@ Proof.
       eassumption.
       eassumption.
 
-      assert ((st_evid + event_id_span (term_to_core_term t2)) = Nat.pred ((st_evid + event_id_span (term_to_core_term t2)) + 1)) by lia.
+      assert ((st_evid + event_id_span (copland_compile t2)) = Nat.pred ((st_evid + event_id_span (copland_compile t2)) + 1)) by lia.
       rewrite H3 at 2.
 
       eapply lstar_tran.
@@ -3402,7 +3402,7 @@ Corollary cvm_refines_lts_event_ordering_corrolary :
     lstar (conf annt p et) cvm_tr (stop p (aeval annt p et)).
 Proof.
   intros.
-  destruct (copland_compile atp {| st_ev := (evc bits et);
+  destruct (build_cvm atp {| st_ev := (evc bits et);
                                    st_trace := [];
                                    st_pl := p;
                                    st_evid := i |}) eqn:hi.
@@ -3438,7 +3438,7 @@ Theorem cvm_respects_event_system :
   forall atp annt t cvm_tr ev0 ev1 bits bits' et et' i i',
     annoP_indexed annt t i i' ->
     term_to_coreP t atp ->
-    copland_compileP atp
+    build_cvmP atp
                      (mk_st (evc bits et) [] 0 i)
                      (Some tt)
                      (mk_st (evc bits' et') cvm_tr 0 i') ->
@@ -3492,7 +3492,7 @@ Qed.
 
 Corollary cvm_respects_event_system_run' : forall atp annt t cvm_tr ev0 ev1 bits et,
     annt = annotated t ->
-    term_to_core_term t = atp ->
+    copland_compile t = atp ->
     st_trace (run_cvm atp (mk_st (evc bits et) [] 0 0)) = cvm_tr ->
     
     prec (ev_sys annt 0 et) ev0 ev1 ->

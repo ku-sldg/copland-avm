@@ -150,7 +150,7 @@ Fixpoint event_id_span (t: Core_Term) : nat :=
   end.
 
 Lemma event_id_works : forall t,
-  event_id_span' t = event_id_span (term_to_core_term t).
+  event_id_span' t = event_id_span (copland_compile t).
 Proof with (simpl in *; eauto).
   induction t...
   - destruct a... destruct s...

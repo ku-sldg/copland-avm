@@ -29,10 +29,10 @@ Definition cvm_evidence_core (t:Core_Term) (p:Plc) (e:EvC) : EvC.
 Admitted.
 
 Definition cvm_events (t:Term) (p:Plc) (e:Evidence) : list Ev :=
-  cvm_events_core (term_to_core_term t) p e.
+  cvm_events_core (copland_compile t) p e.
 
 Definition cvm_evidence (t:Term) (p:Plc) (e:EvC) : EvC :=
-  cvm_evidence_core (term_to_core_term t) p e.
+  cvm_evidence_core (copland_compile t) p e.
 
 
 Axiom remote_LTS: forall t annt n et i i',
@@ -49,7 +49,7 @@ Axiom at_evidence : forall t (p:Plc) (e:EvC),
 
 
 Axiom par_evidence : forall t (p:Plc) (e:EvC) loc,
-    parallel_vm_thread loc (term_to_core_term t) p e = cvm_evidence t p e.
+    parallel_vm_thread loc (copland_compile t) p e = cvm_evidence t p e.
 
 
 

@@ -157,7 +157,7 @@ Ltac do_reconP_determ :=
   end; subst.
 
 Lemma term_to_coreP_redo: forall t t',
-    term_to_core_term t = t' ->
+    copland_compile t = t' ->
     term_to_coreP t t'.
 Proof.
   intros.
@@ -167,7 +167,7 @@ Defined.
 
 Ltac do_term_to_core_redo :=
   match goal with
-  | [H: term_to_core_term ?t = ?t'
+  | [H: copland_compile ?t = ?t'
      |- _ ] =>
     eapply term_to_coreP_redo in H
   end.
@@ -228,23 +228,23 @@ Ltac inv_annoP_indexed :=
   end;
   destruct_conjs.
 
-Inductive copland_compileP :
+Inductive build_cvmP :
   Core_Term -> cvm_st -> (option unit) -> cvm_st ->  Prop :=
 | ccp: forall t st st' res,
-    copland_compile t st = (res, st') ->
-    copland_compileP t st res st'.
+    build_cvm t st = (res, st') ->
+    build_cvmP t st res st'.
 
 Lemma ccp_implies_cc: forall t st st' res,
-  copland_compileP t st res st' ->
-  copland_compile t st = (res,st').
+  build_cvmP t st res st' ->
+  build_cvm t st = (res,st').
 Proof.
   intros.
   solve_by_inversion.
 Defined.
 
 Lemma cc_implies_ccp: forall t st st' res,
-  copland_compile t st = (res,st') -> 
-  copland_compileP t st res st'.
+  build_cvm t st = (res,st') -> 
+  build_cvmP t st res st'.
 Proof.
   intros.
   econstructor.
@@ -252,8 +252,8 @@ Proof.
 Defined.
 
 Lemma ccp_iff_cc: forall t st st' res,
-  copland_compile t st = (res,st') <-> 
-  copland_compileP t st res st'.
+  build_cvm t st = (res,st') <-> 
+  build_cvmP t st res st'.
 Proof.
   intros.
   split; intros;
