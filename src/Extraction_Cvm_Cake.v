@@ -1,6 +1,6 @@
 Require Extraction.
 
-Require Import (*Impl_VM*) Cvm_Run IO_Stubs. (*Cvm_Monad IO_Type Term_Defs Anno_Term_Defs.*) (*Example_Phrases. *)
+Require Import (*Impl_VM*) Term_Defs Cvm_Run IO_Stubs. (*Cvm_Monad IO_Type Term_Defs Anno_Term_Defs.*) (*Example_Phrases. *)
 
 (*
 Require Import Impl_appraisal. *)
@@ -25,6 +25,10 @@ Extract Constant Term_Defs.Arg => "Prelude.String".
 
 (*Extract Constant IO_Type.IO "a" => "IO a". *)
 
+Extract Inductive nat => "nat" ["O" "S"].
+Extract Inductive bool => "bool" ["True" "False"].
+Extract Inductive option => "option" ["Some" "None"].
+
 Extraction Implicit do_asp [3 4].
 Extraction Implicit do_asp' [3 4].
 (*
@@ -36,6 +40,8 @@ Extraction Implicit do_hash' [2].
 Extraction Implicit parallel_vm_thread [2 3 4].
 Extraction Implicit do_wait_par_thread [2 3 4].
 
+Extract Constant sig_params => "undefined ()".
+Extract Constant hsh_params => "undefined ()".
 (*
 Definition my_extracted (t:Term) (st:cvm_st) (et:Evidence) (ls:RawEv) :=
   let res := run_cvm' t st in
