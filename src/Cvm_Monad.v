@@ -51,7 +51,7 @@ Definition inc_id : CVM Event_ID :=
     let e' := st_ev st in
     let p' := st_pl st in
     let i := st_evid st in
-    put (mk_st e' tr' p' (i + 1)) ;;
+    put (mk_st e' tr' p' (Nat.add i (S O))) ;;
     ret i.
   
 
@@ -114,14 +114,14 @@ Definition nullEv : CVM EvC :=
   add_tracem [null x p] ;;
   ret mt_evc.
 
-Definition clearEv : CVM EvC :=
-  ret mt_evc.
+Definition clearEv : unit -> CVM EvC :=
+  fun _ => ret mt_evc.
 
 (* Helper that interprets primitive core terms in the CVM.  *)
 Definition do_prim (a:ASP_Core) : CVM EvC :=
   match a with
   | NULLC => nullEv
-  | CLEAR => clearEv
+  | CLEAR => clearEv tt
   | CPYC => copyEv
   | ASPCC fwd params => invoke_ASP fwd params
   end.
@@ -131,22 +131,22 @@ Definition do_prim (a:ASP_Core) : CVM EvC :=
 Fixpoint event_id_span' (t: Term) : nat :=
   match t with
   | asp x => 1
-  | att p x => 2 + (event_id_span' x)
-  | lseq x y => (event_id_span' x) + (event_id_span' y)
-  | bseq s x y => 2 + (event_id_span' x) + (event_id_span' y)
-  | bpar s x y => 2 + (event_id_span' x) + (event_id_span' y)
+  | att p x => Nat.add (S (S O)) (event_id_span' x)
+  | lseq x y => Nat.add (event_id_span' x) (event_id_span' y)
+  | bseq s x y => Nat.add (S (S O)) (Nat.add (event_id_span' x) (event_id_span' y))
+  | bpar s x y => Nat.add (S (S O)) (Nat.add (event_id_span' x) (event_id_span' y))
   end.
 
 (* Same as event_id_span', but for Core Terms *)
 (* TODO: consider changing this to event_id_span_Core *)
 Fixpoint event_id_span (t: Core_Term) : nat :=
   match t with
-  | aspc CLEAR =>  0
-  | attc _ x => 2 + (event_id_span' x)
-  | lseqc x y => (event_id_span x) + (event_id_span y)
-  | bseqc x y => 2 + (event_id_span x) + (event_id_span y)
-  | bparc _ x y => 2 + (event_id_span x) + (event_id_span y)
-  | _ => 1
+  | aspc CLEAR =>  O
+  | attc _ x => Nat.add (S (S O)) (event_id_span' x)
+  | lseqc x y => Nat.add (event_id_span x) (event_id_span y)
+  | bseqc x y => Nat.add (S (S O)) (Nat.add (event_id_span x) (event_id_span y))
+  | bparc _ x y => Nat.add (S (S O)) (Nat.add (event_id_span x) (event_id_span y))
+  | _ => S O
   end.
 
 Lemma event_id_works : forall t,
@@ -228,7 +228,7 @@ Definition inc_remote_event_ids (t:Term) : CVM unit :=
     let e' := st_ev st in
     let p' := st_pl st in
     let i := st_evid st in
-    let new_i := i + (event_id_span' t) in
+    let new_i := Nat.add i (event_id_span' t) in
     put (mk_st e' tr' p' new_i).
 
 (* Monadic helper function to simulate a span of parallel event IDs 
@@ -239,7 +239,7 @@ Definition inc_par_event_ids (t:Core_Term) : CVM unit :=
     let e' := st_ev st in
     let p' := st_pl st in
     let i := st_evid st in
-    let new_i := i + (event_id_span t) in
+    let new_i := Nat.add i (event_id_span t) in
     put (mk_st e' tr' p' new_i).
   
 (* Primitive monadic communication primitives 

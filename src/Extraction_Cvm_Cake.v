@@ -29,6 +29,10 @@ Extract Inductive nat => "nat" ["O" "S"].
 Extract Inductive bool => "bool" ["True" "False"].
 Extract Inductive option => "option" ["Some" "None"].
 
+Extract Inductive unit => unit [ "()" ].
+Extract Inductive list => list [ "[]" "( :: )" ].
+(*Extract Inductive prod => "( * )" [ "" ]. *)
+
 Extraction Implicit do_asp [3 4].
 Extraction Implicit do_asp' [3 4].
 (*
@@ -40,8 +44,10 @@ Extraction Implicit do_hash' [2].
 Extraction Implicit parallel_vm_thread [2 3 4].
 Extraction Implicit do_wait_par_thread [2 3 4].
 
-Extract Constant sig_params => "undefined ()".
-Extract Constant hsh_params => "undefined ()".
+
+Extract Constant sig_params => "( undefined () )".
+Extract Constant hsh_params => "( undefined () )".
+
 (*
 Definition my_extracted (t:Term) (st:cvm_st) (et:Evidence) (ls:RawEv) :=
   let res := run_cvm' t st in
@@ -55,6 +61,7 @@ Definition my_extracted (t:Term) (st:cvm_st) (et:Evidence) (ls:RawEv) :=
 Separate Extraction run_cvm' build_app_comp_evC eval cert_style_simple_sig cert_style cert_cache_p1 cert_cache_p0 bg_check par_mut_p0 par_mut_p1 layered_bg_weak layered_bg_strong test_par_nested anno_par_list top_level_thread_count.
 *)
 
+Extract Constant Nat.add => "(+)".
 
 Separate Extraction run_cvm'.
 

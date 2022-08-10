@@ -66,17 +66,17 @@ Fixpoint copland_compile (t:Term) : Core_Term :=
       (lseqc (aspc CLEAR) (copland_compile t2))
           
   | bpar (ALL,ALL) t1 t2 =>
-    bparc 0 (copland_compile t1) (copland_compile t2)     
+    bparc O (copland_compile t1) (copland_compile t2)     
   | bpar (ALL,NONE) t1 t2 =>
-    bparc 0
+    bparc O
       (copland_compile t1)
       (lseqc (aspc CLEAR) (copland_compile t2))
   | bpar (NONE,ALL) t1 t2 =>
-    bparc 0
+    bparc O
       (lseqc (aspc CLEAR) (copland_compile t1))
       (copland_compile t2)
   | bpar (NONE,NONE) t1 t2 =>
-    bparc 0
+    bparc O
       (lseqc (aspc CLEAR) (copland_compile t1))
       (lseqc (aspc CLEAR) (copland_compile t2))
   end.
@@ -93,7 +93,7 @@ Inductive term_to_coreP: Term -> Core_Term -> Prop :=
 (**  Calculate the size of an Evidence type *)
 Fixpoint et_size (e:Evidence): nat :=
   match e with
-  | mt => 0
+  | mt => O
   | gg _ _ e' => 1 + (et_size e')
   | hh _ _ _ => 1
   | nn _ => 1
@@ -104,8 +104,8 @@ Fixpoint et_size (e:Evidence): nat :=
 (*
 Fixpoint thread_count (t:Term) : nat :=
   match t with
-  | asp _ => 0
-  | att _ _ => 0
+  | asp _ => O
+  | att _ _ => O
   | lseq t1 t2 => max (thread_count t1) (thread_count t2)
   | bseq _ t1 t2 => max (thread_count t1) (thread_count t2)
   | bpar _ t1 t2 => 1 + (thread_count t1) + (thread_count t2)
@@ -113,8 +113,8 @@ Fixpoint thread_count (t:Term) : nat :=
 
 Fixpoint top_level_thread_count (t:Term) : nat :=
   match t with
-  | asp _ => 0
-  | att _ _ => 0
+  | asp _ => O
+  | att _ _ => O
   | lseq t1 t2 => (top_level_thread_count t1) + (top_level_thread_count t2)
   | bseq _ t1 t2 => (top_level_thread_count t1) + (top_level_thread_count t2)
   | bpar _ t1 t2 => 1 + (top_level_thread_count t1) (* + (thread_count t2) *)
