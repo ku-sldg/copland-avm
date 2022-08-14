@@ -32,4 +32,6 @@ AutoApp.v
 External_Facts.v
 Appraisal_Evidence.v
 CvmSemantics.v
+Example_Phrases_Demo_Admits.v
+Example_Phrases_Demo.v
 Extraction_Cvm_Cake.v

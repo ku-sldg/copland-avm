@@ -1,6 +1,6 @@
 Require Extraction.
 
-Require Import (*Impl_VM*) Term_Defs Cvm_Run IO_Stubs. (*Cvm_Monad IO_Type Term_Defs Anno_Term_Defs.*) (*Example_Phrases. *)
+Require Import (*Impl_VM*) Term_Defs Cvm_Run IO_Stubs Example_Phrases_Demo. (*Cvm_Monad IO_Type Term_Defs Anno_Term_Defs.*) (*Example_Phrases. *)
 
 (*
 Require Import Impl_appraisal. *)
@@ -63,7 +63,7 @@ Separate Extraction run_cvm' build_app_comp_evC eval cert_style_simple_sig cert_
 
 Extract Constant Nat.add => "(+)".
 
-Separate Extraction run_cvm'.
+Separate Extraction run_cvm_rawEv run_cvm_fresh demo_phrase.
 
 
 
