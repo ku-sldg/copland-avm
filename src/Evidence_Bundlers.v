@@ -34,6 +34,14 @@ Definition cons_enc (enc:BS) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
   | evc _ et => evc [enc] (uu p ENCR ps et)
   end.
 
+(** Collapses raw evidence by replacing the entire sequence with the input 
+    encrypted value blob.  Updates underlying Evidence Type to reflect the
+    encryption. *)
+Definition cons_kill (res:BS) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
+  match e with
+  | evc _ et => evc [] (uu p KILL ps et)
+  end.
+
 (** Appends raw evidence and Evidence Types for the pair of input bundles *)
 Definition ss_cons (e1:EvC) (e2:EvC): EvC :=
   match (e1, e2) with

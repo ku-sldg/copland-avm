@@ -104,6 +104,7 @@ Fixpoint et_size (e:Evidence): nat :=
     | COMP => 1
     | ENCR => 1(* et_size e' *)
     | EXTD => 1 + et_size e'
+    | KILL => 0
     end
     
     

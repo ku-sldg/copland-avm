@@ -92,6 +92,7 @@ Definition fwd_asp (fwd:FWD) (bs:BS) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
   | COMP => cons_hsh bs e p ps
   | EXTD => cons_gg bs e p ps
   | ENCR => cons_enc bs e p ps
+  | KILL => cons_kill bs e p ps
   end.
 
 (* Simulates invoking an arbitrary ASP.  Tags the event, builds and returns 

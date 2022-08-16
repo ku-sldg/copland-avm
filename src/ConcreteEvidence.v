@@ -25,6 +25,7 @@ Inductive EvidenceC: Set :=
 | ggc: Plc -> ASP_PARAMS -> BS -> EvidenceC -> EvidenceC
 | hhc: Plc -> ASP_PARAMS -> BS -> Evidence -> EvidenceC
 | eec: Plc -> ASP_PARAMS -> BS -> Evidence -> EvidenceC
+| kkc: Plc -> ASP_PARAMS -> Evidence -> EvidenceC
 | ssc: EvidenceC -> EvidenceC -> EvidenceC.
 
 (** The Evidence Type associated with a Typed Concrete Evidence value *)
@@ -34,6 +35,7 @@ Fixpoint et_fun (ec:EvidenceC) : Evidence :=
   | ggc p params _ ec' => uu p EXTD params (et_fun ec')
   | hhc p params _ et => uu p COMP params et
   | eec p params _ et => uu p ENCR params et
+  | kkc p params et' => uu p KILL params et'
   | nnc ni _ => nn ni
   | ssc ec1 ec2 => ss (et_fun ec1) (et_fun ec2)
   end.
@@ -128,8 +130,19 @@ Proof.
     {
       destruct e'; try solve_by_inversion.
     }
-    subst.
+    (*
+        
+    assert (e' = mtc \/ exists p params, e' = (kkc p params)).
+    {
+      destruct e'; try solve_by_inversion.
+      right. eauto.
+    }
+    door;
+    subst;
     solve_by_inversion.
+     *)
+    subst.
+    ff.
   -
     invc H0.
     jkjke.
@@ -172,6 +185,9 @@ Proof.
       ++
         destruct e'; ff.
         invc H; ff; eauto.
+
+      ++
+        destruct e'; ff.
           
     +
       eauto.
