@@ -31,7 +31,7 @@ Definition tpm_sig : Term :=
 
 Definition ssl_enc : Term :=
   asp (
-  ASPC ALL EXTD (asp_paramsC ssl_enc_aspid ssl_enc_args source_plc ssl_enc_targid)).
+  ASPC ALL ENCR (asp_paramsC ssl_enc_aspid ssl_enc_args source_plc ssl_enc_targid)).
 
 Definition demo_phrase : Term :=
   <{ create_and_load_ak ->

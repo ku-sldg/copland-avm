@@ -39,6 +39,7 @@ Definition asp_term_to_core (a:ASP) : Core_Term :=
                    
   | SIG => aspc (ASPCC EXTD sig_params)
   | HSH => aspc (ASPCC COMP hsh_params)
+  | ENC q => aspc (ASPCC ENCR (enc_params q))
   end.
 
 (**  Translating a Copland phrase to its Core_Term equivalent *)
@@ -94,8 +95,18 @@ Inductive term_to_coreP: Term -> Core_Term -> Prop :=
 Fixpoint et_size (e:Evidence): nat :=
   match e with
   | mt => O
+           (*
   | gg _ _ e' => 1 + (et_size e')
   | hh _ _ _ => 1
+            *)
+  | uu _ fwd _ e' =>
+    match fwd with
+    | COMP => 1
+    | ENCR => 1(* et_size e' *)
+    | EXTD => 1 + et_size e'
+    end
+    
+    
   | nn _ => 1
   | ss e1 e2 => (et_size e1) + (et_size e2)
   end.
@@ -177,13 +188,19 @@ Definition eval_asp t p e :=
   match t with
   | NULL => mt
   | CPY => e 
-  | ASPC sp fwd params =>
+  | ASPC sp fwd params => uu p fwd params (sp_ev sp e)
+                            (*
     match fwd with
+    | ENCR => 
     | COMP => hh p params (sp_ev sp e)
     | EXTD => gg p params (sp_ev sp e)
-    end
+    end *)
+                            (*
   | SIG => gg p sig_params e
-  | HSH => hh p hsh_params e
+  | HSH => hh p hsh_params e *)
+  | SIG => uu p EXTD sig_params e
+  | HSH => uu p COMP hsh_params e
+  | ENC q => uu p ENCR (enc_params q) e
   end.
 
 (** Evidence Type denotational reference semantics.
@@ -267,6 +284,7 @@ Definition asp_event i x p e :=
   | ASPC sp _ ps => umeas i p ps (sp_ev sp e)
   | SIG => umeas i p sig_params e
   | HSH => umeas i p hsh_params e
+  | ENC q => umeas i p (enc_params q) e
   end.
 
 

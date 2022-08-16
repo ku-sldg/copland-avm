@@ -8,6 +8,7 @@
 Require Import ConcreteEvidence IO_Stubs.
 
 Require Import List.
+
 Import ListNotations.
 
 (** Extends raw evidence by prepending one value to the front.
@@ -15,15 +16,22 @@ Import ListNotations.
     An example is digital signatures, where the signature value is prepended *)
 Definition cons_gg (sig:BS) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
   match e with
-  | evc bits et => evc (sig :: bits) (gg p ps et)
+  | evc bits et => evc (sig :: bits) (uu p EXTD ps et)
   end.
 
 (** Collapses raw evidence by replacing the entire sequence with the input 
-    binary value.  Also updates underlying Evidence Type.
-    An example is hash operation. *)
-Definition cons_hh (hsh:BS) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
+    binary hash value.  Updates underlying Evidence Type to reflect the hash. *)
+Definition cons_hsh (hsh:BS) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
   match e with
-  | evc _ et => evc [hsh] (hh p ps et)
+  | evc _ et => evc [hsh] (uu p COMP ps et)
+  end.
+
+(** Collapses raw evidence by replacing the entire sequence with the input 
+    encrypted value blob.  Updates underlying Evidence Type to reflect the
+    encryption. *)
+Definition cons_enc (enc:BS) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
+  match e with
+  | evc _ et => evc [enc] (uu p ENCR ps et)
   end.
 
 (** Appends raw evidence and Evidence Types for the pair of input bundles *)

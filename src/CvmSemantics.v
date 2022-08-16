@@ -433,13 +433,13 @@ Proof.
   
   - (* aasp case *)
     rewrite <- ccp_iff_cc in *.
+    subst.
     destruct a;
       (try dd; eauto).
     +
       destruct s; dd.
       destruct f; dd; eauto.
       destruct f; dd; eauto.
-      
 
   - (* at case *)
     rewrite <- ccp_iff_cc in *.
@@ -632,6 +632,42 @@ Lemma wfec_encodeEv_etfun:
     wf_ec (evc (encodeEv e) (et_fun e)).
 Proof.
   intros.
+
+  (*
+  induction e; intros.
+  -
+    ff.
+    econstructor; eauto.
+  -
+    ff.
+    econstructor; eauto.
+  -
+    ff.
+    econstructor.
+    ff.
+    invc IHe.
+    eauto.
+  -
+    destruct f.
+    +
+      ff.
+      econstructor. ff.
+    +
+      ff.
+      econstructor. ff.
+    +
+      ff.
+      econstructor.
+      ff.
+      
+      
+    ff.
+    
+    *)
+    
+    
+    
+  
   induction e; intros;
     dd;
     try (econstructor; tauto);
@@ -721,7 +757,7 @@ Ltac do_inv_recon_nn :=
 
 Lemma inv_recon_gg: forall p ps ls et n ec,
     reconstruct_evP (evc ls et) (ggc p ps n ec) ->
-    (exists ls' et', et = gg p ps et' /\
+    (exists ls' et', et = uu p EXTD ps et' /\
                 ls = n :: ls').
 Proof.
   intros.
@@ -737,7 +773,7 @@ Ltac do_inv_recon_gg :=
   | [H: reconstruct_evP (evc ?ls ?et) (ggc ?p ?ps ?n _)
 
      |- _] =>
-    assert_new_proof_by (exists ls' et', et = gg p ps et' /\
+    assert_new_proof_by (exists ls' et', et = uu p EXTD ps et' /\
                                     ls = n :: ls')
                         ltac:(eapply inv_recon_gg; apply H)
   end;
@@ -746,7 +782,7 @@ Ltac do_inv_recon_gg :=
 
 Lemma inv_recon_hh: forall p ps ls et n et',
     reconstruct_evP (evc ls et) (hhc p ps n et') ->
-    (et = hh p ps et' ) /\ ls = [n].
+    (et = uu p COMP ps et' ) /\ ls = [n].
 Proof.
   intros.
   invc H.
@@ -758,8 +794,28 @@ Ltac do_inv_recon_hh :=
   | [H: reconstruct_evP (evc ?ls ?et) (hhc ?p ?ps ?hval ?et')
 
      |- _] =>
-    assert_new_proof_by (et = hh p ps et' /\ ls = [hval])
+    assert_new_proof_by (et = uu p COMP ps et' /\ ls = [hval])
                         ltac:(eapply inv_recon_hh; apply H)
+  end;
+  destruct_conjs;
+  subst.
+
+Lemma inv_recon_ee: forall p ps ls et n et',
+    reconstruct_evP (evc ls et) (eec p ps n et') ->
+    (et = uu p ENCR ps et' ) /\ ls = [n].
+Proof.
+  intros.
+  invc H.
+  destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff; destruct ls; try solve_by_inversion.
+Defined.
+
+Ltac do_inv_recon_ee :=
+  match goal with
+  | [H: reconstruct_evP (evc ?ls ?et) (eec ?p ?ps ?hval ?et')
+
+     |- _] =>
+    assert_new_proof_by (et = uu p ENCR ps et' /\ ls = [hval])
+                        ltac:(eapply inv_recon_ee; apply H)
   end;
   destruct_conjs;
   subst.
@@ -792,11 +848,12 @@ Ltac do_inv_recon :=
   try do_inv_recon_nn;
   try do_inv_recon_gg;
   try do_inv_recon_hh;
+  try do_inv_recon_ee;
   try do_inv_recon_ss.
 
 Lemma recon_inv_gg: forall sig ls p ps et e,
     reconstruct_evP
-      (evc (sig :: ls) (gg p ps et))
+      (evc (sig :: ls) (uu p EXTD ps et))
       (ggc p ps sig e) ->
     reconstruct_evP (evc ls et) e.
 Proof.
@@ -811,7 +868,7 @@ Defined.
 Ltac do_recon_inv_gg :=
   match goal with
   | [H: reconstruct_evP
-          (evc (_ :: ?ls) (gg _ _ ?et))
+          (evc (_ :: ?ls) (uu _ _ _ ?et))
           (ggc _ _ _ ?e)
      |- _] =>
     assert_new_proof_by (reconstruct_evP (evc ls et) e) ltac:(eapply recon_inv_gg; apply H)
@@ -924,6 +981,10 @@ Proof.
         ff.
         econstructor.
         ff.
+      ++
+        ff.
+        econstructor.
+        ff.        
         congruence.
         
   -
@@ -1075,11 +1136,79 @@ Proof.
 
 
     
-  -
-    repeat ff.
-    (unfold OptMonad_Coq.bind in *).
-     repeat ff.
+     -
+       
+       
+       
+    repeat ff;
+    (unfold OptMonad_Coq.bind in *);
+     repeat ff; eauto.
      +
+       inv_wfec.
+       ff.
+       assert (exists v, r = [v]).
+       {
+         destruct r; ff.
+         destruct r; ff. }
+       destruct_conjs. subst.
+       ff.
+     +
+       inv_wfec.
+       assert (r = []).
+       {
+         destruct r; ff. }
+       subst.
+       ff.
+     +
+       inv_wfec.
+       ff.
+       assert (exists v, r = [v]).
+       { destruct r; ff.
+       destruct r; ff. }
+       destruct_conjs.
+       subst.
+       ff.
+     +
+       inv_wfec.
+       ff.
+       assert (exists v, r = [v]).
+       { destruct r; ff. }
+       destruct_conjs.
+       subst.
+       ff.
+     +
+       inv_wfec.
+       ff.
+       destruct r; ff.
+       unfold OptMonad_Coq.ret in *.
+       ff.
+       assert (exists ee, Some ee = reconstruct_ev' r0 e).
+       { eapply IHe.
+         econstructor. eassumption. }
+       destruct_conjs.
+       rewrite <- H1 in *.
+       solve_by_inversion.
+     +
+       inv_wfec.
+       ff.
+       assert (r = []).
+       {
+         destruct r; ff.
+       }
+       subst.
+       ff.
+       
+       
+       
+       
+      (* 
+       
+       
+     
+     +
+       inv_wfec.
+       ff.
+       eapply peel_fact.
      eauto.
      +
        inv_wfec.
@@ -1096,7 +1225,7 @@ Proof.
 
          -
     repeat ff.
-    (unfold OptMonad_Coq.bind in *).
+    (unfold OptMonad_Coq.bind in * ).
      repeat ff.
      +
      eauto.
@@ -1114,6 +1243,8 @@ Proof.
        ff.
        invc H.
        ff.
+       *)
+         
        
     
      - (* ss case *)
@@ -1165,9 +1296,11 @@ Definition cvm_evidence_denote_asp (a:ASP) (p:Plc) (e:EvidenceC) (x:Event_ID): E
     match fwd with
     | COMP => hhc p params (do_asp params (encodeEv (spc_ev sp e)) p x) (sp_ev sp (et_fun e))
     | EXTD => ggc p params (do_asp params (encodeEv (spc_ev sp e)) p x) (spc_ev sp e)
+    | ENCR => eec p params (do_asp params (encodeEv (spc_ev sp e)) p x) (sp_ev sp (et_fun e))
     end
   | SIG => ggc p sig_params (do_asp sig_params (encodeEv e) p x) e
   | HSH => hhc p hsh_params (do_asp hsh_params (encodeEv e) p x) (et_fun e)
+  | ENC q => eec p (enc_params q) (do_asp (enc_params q) (encodeEv e) p x) (et_fun e)
   end.
 
 
@@ -1215,6 +1348,11 @@ Proof.
   - (* hhc case *)
     do_inv_recon.
     ff.
+    Locate reconstruct_ev.
+  -
+    do_inv_recon.
+    ff.
+    
   -
     do_inv_recon.
     ff.
@@ -1295,8 +1433,15 @@ Proof.
     do_inv_recon.
     invc H.
     dd.
+    econstructor; tauto.
+    
+  -
+    do_inv_recon.
+    invc H.
+    dd.
     ff.
     unfold OptMonad_Coq.bind in *.
+    
     ff.
 
     assert (wf_ec (evc (firstn (et_size H0) r) H0)).
@@ -1407,6 +1552,9 @@ Defined.
       wrap_ccp_anno; ff.
     +
       wrap_ccp_anno; ff.
+    +
+      wrap_ccp_anno; ff.
+      
   
   -
     lia.
@@ -1666,6 +1814,33 @@ Proof.
         wrap_ccp_anno.
         invc H3.
         ff.
+         assert (bits = encodeEv ec).
+        {
+          symmetry.
+          invc H2.
+          eapply recon_encodeEv.
+          econstructor.
+          eassumption.
+        }
+        subst.
+
+        assert (et_fun ec = et).
+      {
+        symmetry.
+        eapply etfun_reconstruct.
+        eassumption.
+      }
+      congruence.
+
+      ++
+        wrap_ccp_anno.
+        invc H3.
+        ff.
+        
+      ++
+        wrap_ccp_anno.
+        invc H3.
+        ff.
         invc H2.
         ff.
         jkjke'.
@@ -1709,6 +1884,22 @@ Proof.
       rewrite recon_encodeEv  with (bits:=bits) (et:=et).
       congruence.
       econstructor; eassumption.
+    +
+      wrap_ccp.
+      invc H3; invc H2.
+      dd.
+      assert (et_fun ec = et).
+      {
+        symmetry.
+        eapply etfun_reconstruct.
+        econstructor.
+        eassumption.
+      }
+
+      rewrite recon_encodeEv  with (bits:=bits) (et:=et).
+      congruence.
+      econstructor; eassumption.
+      
 
   -
     wrap_ccp_anno.
@@ -2591,6 +2782,15 @@ Proof.
       ++
          wrap_ccp_anno.
          try (econstructor; econstructor; reflexivity).
+    +
+      ff.
+      ++
+        wrap_ccp_anno.
+        try (econstructor; econstructor; reflexivity).
+      ++
+         wrap_ccp_anno.
+         try (econstructor; econstructor; reflexivity).
+      
     
   - (* aatt case *)
     wrap_ccp_anno.

@@ -53,12 +53,24 @@ Definition Arg: Set := string.
 Inductive ASP_PARAMS: Set :=
 | asp_paramsC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP_PARAMS.
 
+(** Evidence extension types:
+      COMP:  Compact evidence down to a single value.
+      EXTD:  Extend evidence by appending a new value.
+*)
+Inductive FWD: Set :=
+| COMP
+| ENCR
+| EXTD.
+
 (** The structure of evidence. *)
 Inductive Evidence: Set :=
 | mt: Evidence
 | nn: N_ID -> Evidence
+| uu: Plc -> FWD -> ASP_PARAMS -> Evidence -> Evidence
+(*
 | gg: Plc -> ASP_PARAMS -> Evidence -> Evidence
 | hh: Plc -> ASP_PARAMS -> Evidence -> Evidence
+*)
 | ss: Evidence -> Evidence -> Evidence.
 
 (** Evidene routing types:  
@@ -69,14 +81,6 @@ Inductive SP: Set :=
 | ALL
 | NONE.
 
-(** Evidence extension types:
-      COMP:  Compact evidence down to a single value.
-      EXTD:  Extend evidence by appending a new value.
-*)
-Inductive FWD: Set :=
-| COMP
-| EXTD.
-
 
 (** Primitive Copland phases *)
 Inductive ASP: Set :=
@@ -84,7 +88,8 @@ Inductive ASP: Set :=
 | CPY: ASP
 | ASPC: SP -> FWD -> ASP_PARAMS -> ASP
 | SIG: ASP
-| HSH: ASP.
+| HSH: ASP
+| ENC: Plc -> ASP.
 
 (** Pair of evidence splitters that indicate routing evidence to subterms 
     of branching phrases *)
@@ -118,6 +123,7 @@ Notation "x -> y" := (lseq x y) (in custom copland_entry at level 99, right asso
 (* ASP's *)
 Notation "!" := (asp SIG) (in custom copland_entry at level 98).
 Notation "#" := (asp HSH) (in custom copland_entry at level 98).
+Notation "* p" := (asp (ENC p)) (in custom copland_entry at level 98).
 Notation "'__'" := (asp CPY) (in custom copland_entry at level 98).
 Notation "'{}'" := (asp NULL) (in custom copland_entry at level 98).
 Notation "'<<' x y z '>>'" := (asp (ASPC ALL EXTD (asp_paramsC x nil y z))) 
@@ -128,6 +134,8 @@ Notation "@ p [ ph ]" := (att p ph) (in custom copland_entry at level 50).
 Open Scope cop_ent_scope.
 Definition test1 := <{ __ -> {} }>.
 Example test1ex : test1 = (lseq (asp CPY) (asp NULL)). reflexivity. Defined.
+Definition test_enc := <{ __ -> * 2}>.
+Example testencex : test_enc = (lseq (asp CPY) (asp (ENC 2))). reflexivity. Defined.
 
 
 (** Copland Core_Term primitive datatypes *)

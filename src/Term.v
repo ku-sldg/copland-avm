@@ -153,6 +153,10 @@ Inductive events: AnnoTerm -> Plc -> Evidence -> Ev -> Prop :=
     forall r i p e,
       fst r = i ->
       events (aasp r HSH) p e (umeas i p hsh_params e) (* (hash i p e) *)
+| evtsenc:
+    forall r i p q e,
+      fst r = i ->
+      events (aasp r (ENC q)) p e (umeas i p (enc_params q) e) (* (hash i p e) *)
 | evtsattreq:
     forall r q t i p e,
       fst r = i ->
@@ -320,6 +324,10 @@ Proof.
   induction H; intros; simpl in *.
   - destruct x; try destruct a; eapply ex_intro; split; auto;
       (*destruct r as [j k];*) simpl in *; try lia.
+    (*
+    + admit.
+    + *)
+      
   - find_eapply_lem_hyp at_range; eauto.
     repeat destruct_disjunct; subst; eauto.
     (* + eapply ex_intro; split; auto. *)

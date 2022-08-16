@@ -89,8 +89,9 @@ Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) (e:EvC) : CVM Event_ID :=
    the evidence extension parameter of an ASP term. *)
 Definition fwd_asp (fwd:FWD) (bs:BS) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
   match fwd with
-  | COMP => cons_hh bs e p ps
+  | COMP => cons_hsh bs e p ps
   | EXTD => cons_gg bs e p ps
+  | ENCR => cons_enc bs e p ps
   end.
 
 (* Simulates invoking an arbitrary ASP.  Tags the event, builds and returns 

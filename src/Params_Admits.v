@@ -6,3 +6,6 @@ Definition sig_params : ASP_PARAMS.
 Admitted.
 Definition hsh_params : ASP_PARAMS.
 Admitted.
+
+Definition enc_params : Plc -> ASP_PARAMS.
+Admitted.

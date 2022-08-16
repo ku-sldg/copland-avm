@@ -24,14 +24,16 @@ Inductive EvidenceC: Set :=
 | nnc: N_ID -> BS -> EvidenceC
 | ggc: Plc -> ASP_PARAMS -> BS -> EvidenceC -> EvidenceC
 | hhc: Plc -> ASP_PARAMS -> BS -> Evidence -> EvidenceC
+| eec: Plc -> ASP_PARAMS -> BS -> Evidence -> EvidenceC
 | ssc: EvidenceC -> EvidenceC -> EvidenceC.
 
 (** The Evidence Type associated with a Typed Concrete Evidence value *)
 Fixpoint et_fun (ec:EvidenceC) : Evidence :=
   match ec with
   | mtc => mt
-  | ggc p params _ ec' => gg p params (et_fun ec')
-  | hhc p params _ et => hh p params et
+  | ggc p params _ ec' => uu p EXTD params (et_fun ec')
+  | hhc p params _ et => uu p COMP params et
+  | eec p params _ et => uu p ENCR params et
   | nnc ni _ => nn ni
   | ssc ec1 ec2 => ss (et_fun ec1) (et_fun ec2)
   end.
@@ -39,12 +41,17 @@ Fixpoint et_fun (ec:EvidenceC) : Evidence :=
 (** Evidence Type subterm relation *)
 Inductive EvSubT: Evidence -> Evidence -> Prop :=
 | evsub_reflT : forall e : Evidence, EvSubT e e
+                                       (*
 | ggSubT: forall e e' p ps,
     EvSubT e e' ->
     EvSubT e (gg p ps e')
 | hhSubT: forall e e' p ps,
     EvSubT e e' ->
     EvSubT e (hh p ps e')
+                                        *)
+| uuSubT: forall e e' p fwd ps,
+    EvSubT e e' -> 
+    EvSubT e (uu p fwd ps e')
 | ssSublT: forall e e' e'',
     EvSubT e e' ->
     EvSubT e (ss e' e'')
@@ -79,6 +86,7 @@ Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
 | ggSub: forall e e' p ps bs,
     EvSub e e' ->
     EvSub e (ggc p ps bs e')
+          (* TODO: encrypt case here? *)
 | ssSubl: forall e e' e'',
     EvSub e e' ->
     EvSub e (ssc e' e'')
@@ -129,6 +137,8 @@ Proof.
     ff.
   -
     invc H0.
+
+    (*
     +
       assert (exists bs ec, e' = ggc p a bs ec).
       {
@@ -150,70 +160,30 @@ Proof.
           econstructor.
         }
         apply ggSubT. eassumption.
+     *)
     +
-      assert (EvSubT (et_fun e0) e) by eauto.
-      apply ggSubT. eassumption.
+      destruct f.
+      ++
+        destruct e'; ff.
+          
+      ++
+        destruct e'; ff.
+          
+      ++
+        destruct e'; ff.
+        invc H; ff; eauto.
+          
+    +
+      eauto.
   -
     invc H0.
     +
-      assert (exists bs, e' = hhc p a bs e).
-      {
-        destruct e'; ff.
-        repeat eexists.
-      }
-      destruct_conjs.
-      subst.
-      ff.
+      destruct e'; ff.
+      invc H; ff; eauto.
     +
-      assert (EvSubT (et_fun e0) e) by eauto.
-      apply hhSubT. eassumption.
-  -
-    
-    assert ((exists e1 e2, e' = ssc e1 e2) \/
-            EvSubT (et_fun e') e1 \/
-            EvSubT (et_fun e') e2).
-    {
-      invc H0; eauto.
-      +
-        destruct e'; ff.
-        left.
-        repeat eexists.
-    }
-    door.
+      eauto.
     +
-      destruct_conjs.
-      subst.
-      ff.
-      invc H; ff.
-      
-
-      ++
-        assert (EvSubT (ss (et_fun H1) (et_fun H2)) e1 \/
-                EvSubT (ss (et_fun H1) (et_fun H2)) e2 \/
-                e1 = (et_fun H1) /\ e2 = (et_fun H2)).
-        {
-          invc H0; eauto.
-        }
-        door.
-        +++
-          eauto.
-        +++
-          door; subst; eauto.
-      ++
-        assert (EvSubT (ss (et_fun H1) (et_fun H2)) e1 \/
-                EvSubT (ss (et_fun H1) (et_fun H2)) e2 \/
-                e1 = (et_fun H1) /\ e2 = (et_fun H2)).
-        {
-          invc H0; eauto.
-        }
-        door.
-        +++
-          eauto.
-        +++
-          door; subst; eauto.
-    +
-      door; 
-      eauto.    
+      eauto.   
 Qed.
 
 Lemma evsub_transitive: forall e e' e'',
