@@ -3,7 +3,7 @@ Require Import Term ConcreteEvidence (*Appraisal_Evidence*) (*GenStMonad MonadVM
 (*
 Require Import Impl_vm StAM. *)
 
-Require Import Appraisal_Defs Appraisal_Evidence.
+Require Import Appraisal_Defs_New Appraisal_Evidence.
 
 Require Import List.
 Import ListNotations.
@@ -24,13 +24,59 @@ Admitted.
 Definition checkHash (e:Evidence) (p:Plc) (hash:BS) : BS.
 Admitted.
 
+
 Definition peel_bs (ls:EvBits) : option (BS * EvBits) :=
   match ls with
   | bs :: ls' => Some (bs, ls')
   | _ => None
   end.
-*)
+ *)
 
+
+
+(*
+Definition checkASP_fwd (p:Plc) (f:FWD) (params:ASP_PARAMS)
+           (et:Evidence) (bs:BS) (ls:RawEv) : Opt EvidenceC :=
+  match f with
+  | COMP => res <- checkHH params bs ;;
+           ret (hhc p params res et)
+  | ENCR => res <- checkEE params bs ;;
+           ret (eec p params res et)
+  | _ => res <- checkASP params bs ;;
+        
+        ret (ggc p params bs mtc)
+  end.
+ *)
+
+
+
+Fixpoint build_app_comp_evC (et:Evidence) (ls:RawEv) : Opt EvidenceC :=
+  match et with
+  | mt => ret mtc
+  | uu p fwd params et' =>
+    '(bs, ls') <- peel_bs ls ;;
+    match fwd with
+    | COMP => ret mtc
+      (*
+      v <- checkHH params bs et' ;;
+      ret (hhc p params v et') *)
+    | ENCR =>
+      decrypted_ls <- decrypt_bs_to_rawev bs params ;;
+      rest <- build_app_comp_evC et' decrypted_ls ;;
+      ret (eec p params default_bs rest)
+    (* TODO: consider encoding success/failure  of decryption for bs param 
+       (instead of default_bs)  *)
+    | EXTD =>
+      v <- checkGG params p bs ls' ;;
+      rest <- build_app_comp_evC et' ls' ;;
+      ret (ggc p params v rest)
+    | KILL => ret (kkc p params et')
+    end
+  | _ => ret mtc
+  end.
+
+
+(*
 Fixpoint build_app_comp_evC (et:Evidence) (ls:RawEv) : Opt EvidenceC :=
   match et with
   | mt => ret mtc
@@ -65,6 +111,7 @@ Fixpoint build_app_comp_evC (et:Evidence) (ls:RawEv) : Opt EvidenceC :=
     y <- build_app_comp_evC et2 (skipn (et_size et1) ls) ;;
     ret (ppc x y)
   end.
+*)
 
 (*
 (* *** Extra AM Monad defs *** *)

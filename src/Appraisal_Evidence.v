@@ -85,7 +85,7 @@ Fixpoint reconstruct_ev' (ls:RawEv) (et:Evidence) : Opt EvidenceC :=
     | ENCR =>
       '(bs, ls') <- peel_bs ls ;;
       match ls' with
-      | [] => Some (eec p ps bs et')
+      | [] => Some (eec p ps bs mtc(* et' *))
       | _ => None
       end
     | KILL =>

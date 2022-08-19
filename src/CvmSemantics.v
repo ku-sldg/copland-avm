@@ -815,21 +815,27 @@ Ltac do_inv_recon_hh :=
   destruct_conjs;
   subst.
 
-Lemma inv_recon_ee: forall p ps ls et n et',
-    reconstruct_evP (evc ls et) (eec p ps n et') ->
-    (et = uu p ENCR ps et' ) /\ ls = [n].
+Lemma inv_recon_ee: forall p ps ls et n ec',
+    reconstruct_evP (evc ls et) (eec p ps n ec') ->
+    (* (exists et', et = uu p ENCR ps et' ) /\ ls = [n]. *)
+    (exists et', et = uu p ENCR ps et' /\ ls = [n]).
 Proof.
   intros.
   invc H.
   destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff; destruct ls; try solve_by_inversion.
+                               -
+                               ff.
+                               repeat eexists.
+                               ff.
+                               
 Defined.
 
 Ltac do_inv_recon_ee :=
   match goal with
-  | [H: reconstruct_evP (evc ?ls ?et) (eec ?p ?ps ?hval ?et')
+  | [H: reconstruct_evP (evc ?ls ?et) (eec ?p ?ps ?hval _)
 
      |- _] =>
-    assert_new_proof_by (et = uu p ENCR ps et' /\ ls = [hval])
+    assert_new_proof_by (exists et', et = uu p ENCR ps et' /\ ls = [hval])
                         ltac:(eapply inv_recon_ee; apply H)
   end;
   destruct_conjs;
@@ -940,6 +946,10 @@ Ltac do_recon_inv :=
   try do_recon_inv_gg;
   try do_recon_inv_ss.
 
+
+(*
+TODO: try this again after appraisal lemmas settled 
+
 Lemma etfun_reconstruct: forall e e0 e1,
     reconstruct_evP (evc e0 e1) e ->
     e1 = et_fun e.
@@ -1003,14 +1013,27 @@ Proof.
 
   
   induction e1; intros e e0 H;
+    try (
     do_inv_recon;
     ff;
     invc H;
     repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff;
     rewrite fold_recev in *;
     do_wrap_reconP;
-    repeat jkjke.
+    repeat jkjke).
+  -
+    destruct f; ff.
+    +
+      invc H.
+      repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff.
+    +
+      invc H.
+       repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff.
+      
+      
+    
 Qed.
+*)
 
 Lemma wfec_split: forall e s,
     wf_ec e ->
@@ -1387,6 +1410,8 @@ Definition spc_ev (sp:SP) (e:EvidenceC) : EvidenceC :=
   | NONE => mtc
   end.
 
+(*
+TODO: try this again after appraisal lemmas settled 
 
 Definition cvm_evidence_denote_asp (a:ASP) (p:Plc) (e:EvidenceC) (x:Event_ID): EvidenceC :=
   match a with
@@ -1416,6 +1441,7 @@ Fixpoint cvm_evidence_denote (t:AnnoTerm) (p:Plc) (ec:EvidenceC) : EvidenceC :=
   | abpar _ s t1 t2 => ssc (cvm_evidence_denote t1 p ((splitEvl s ec)))
                          (cvm_evidence_denote t2 p ((splitEvr s ec)))
   end.
+*)
 
 (** * Lemma:  Encoding an EvC bundle gives you the bits used to (re)construct it. *)
 Lemma recon_encodeEv: forall bits et ec,
@@ -1453,8 +1479,10 @@ Proof.
     ff.
     Locate reconstruct_ev.
   -
+    
     do_inv_recon.
     ff.
+    
   -
     do_inv_recon.
     ff.
@@ -1863,6 +1891,9 @@ Axiom events_cvm_to_core_mt : forall t p e,
 
 Axiom ev_cvm_mtc: forall ct p e loc,
     parallel_vm_thread loc ct p mt_evc = parallel_vm_thread loc (lseqc (aspc CLEAR) ct) p e.
+
+(*
+TODO: try this lemma again after getting appraisal Lemmas settled 
 
 
 (** * Lemma:  relating reconstructed CVM EvC bundles via the EvidenceC evidence denotation. *)
@@ -2836,7 +2867,6 @@ Proof.
     congruence.
 Qed.
 
-
 (** * Lemma:  Evidence Type denotation respects evidence reference semantics  *)
 Lemma cvm_ev_denote_evtype: forall annt p e,
     (*annoP annt t -> *)
@@ -2870,6 +2900,7 @@ Proof.
     jkjke.
     destruct s; destruct s; destruct s0; eauto.
 Defined.
+*)
 
 
 (** * Theorem:  Main Theorem stating that for an arbitrary Copland phrase, all of its execution traces 
