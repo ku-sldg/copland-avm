@@ -53,27 +53,36 @@ Definition checkASP_fwd (p:Plc) (f:FWD) (params:ASP_PARAMS)
 Fixpoint build_app_comp_evC (et:Evidence) (ls:RawEv) : Opt EvidenceC :=
   match et with
   | mt => ret mtc
+  | nn nid => ret mtc (* TODO: nonce check *)
   | uu p fwd params et' =>
-    '(bs, ls') <- peel_bs ls ;;
     match fwd with
-    | COMP => ret mtc
+    | COMP => ret mtc (* TODO hash check *)
       (*
       v <- checkHH params bs et' ;;
       ret (hhc p params v et') *)
     | ENCR =>
+      '(bs, ls') <- peel_bs ls ;;
       decrypted_ls <- decrypt_bs_to_rawev bs params ;;
       rest <- build_app_comp_evC et' decrypted_ls ;;
       ret (eec p params default_bs rest)
     (* TODO: consider encoding success/failure  of decryption for bs param 
        (instead of default_bs)  *)
     | EXTD =>
+      '(bs, ls') <- peel_bs ls ;;
       v <- checkGG params p bs ls' ;;
       rest <- build_app_comp_evC et' ls' ;;
       ret (ggc p params v rest)
-    | KILL => ret (kkc p params et')
+    | KILL => ret mtc (* (kkc p params et') *)
     end
-  | _ => ret mtc
+  | ss et1 et2 => 
+      x <- build_app_comp_evC et1 (firstn (et_size et1) ls) ;;
+      y <- build_app_comp_evC et2 (skipn (et_size et1) ls) ;;
+      ret (ssc x y)
   end.
+
+Definition run_gen_appraise (t:Term) (p:Plc) (et:Evidence) (ls:RawEv) :=
+  fromSome mtc (build_app_comp_evC (eval t p et) ls).
+Check run_gen_appraise.
 
 
 (*

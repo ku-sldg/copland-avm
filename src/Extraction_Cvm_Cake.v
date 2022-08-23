@@ -63,7 +63,7 @@ Separate Extraction run_cvm' build_app_comp_evC eval cert_style_simple_sig cert_
 
 Extract Constant Nat.add => "(+)".
 
-Separate Extraction run_cvm_rawEv run_cvm_fresh demo_phrase build_app_comp_evC.
+Separate Extraction run_cvm_rawEv run_cvm_fresh demo_phrase run_gen_appraise.
 
 
 

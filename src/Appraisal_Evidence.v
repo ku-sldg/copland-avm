@@ -59,7 +59,7 @@ Fixpoint encodeEv (e:EvidenceC) : RawEv :=
   | ggc _ _ bs e' => bs :: (encodeEv e')
   | hhc _ _ bs _ => [bs]
   | eec _ _ bs _ => [bs]
-  | kkc _ _ _ => []
+  (* | kkc _ _ _ => [] *)
   | ssc e1 e2 => (encodeEv e1) ++ (encodeEv e2)
   end.
 
@@ -85,13 +85,13 @@ Fixpoint reconstruct_ev' (ls:RawEv) (et:Evidence) : Opt EvidenceC :=
     | ENCR =>
       '(bs, ls') <- peel_bs ls ;;
       match ls' with
-      | [] => Some (eec p ps bs mtc(* et' *))
+      | [] => Some (eec p ps bs  mtc (* et' *) (* mtc *))
       | _ => None
       end
     | KILL =>
       (* '(bs, ls') <- peel_bs ls ;; *)
       match ls with
-      | [] => Some (kkc p ps et')
+      | [] => Some mtc(* (kkc p ps et') *)
       | _ => None
       end
     end
