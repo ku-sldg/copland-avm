@@ -61,7 +61,8 @@ Inductive FWD: Set :=
 | COMP
 | ENCR
 | EXTD
-| KILL.
+| KILL
+| KEEP.
 
 (** The structure of evidence. *)
 Inductive Evidence: Set :=

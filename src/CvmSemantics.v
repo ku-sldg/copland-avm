@@ -439,7 +439,15 @@ Proof.
     +
       destruct s; dd.
       destruct f; dd; eauto.
+      unfold mt_evc in *.
+      ff.
       destruct f; dd; eauto.
+      unfold mt_evc in *.
+      ff.
+      unfold mt_evc in *.
+      ff.
+
+      
 
   - (* at case *)
     rewrite <- ccp_iff_cc in *.
@@ -1123,7 +1131,12 @@ Proof.
       ++
         ff.
         econstructor.
-        ff.        
+        ff.
+      ++
+        ff.
+        econstructor.
+        ff.
+        
         
   -
     wrap_ccp.
@@ -1227,6 +1240,10 @@ Ltac do_rcih :=
             try (econstructor; first [eapply firstn_long | eapply skipn_long]; try eauto; try lia))      
   end.
 
+
+(*
+
+
 (** * Lemma:  well-formed EvC bundles can be successfully reconstructed to a Typed Concrete Evidence (EvidenceC) value. *)
 Lemma some_recons : forall (e:EvC),
     wf_ec e ->
@@ -1253,7 +1270,7 @@ Proof.
 
   -
     repeat ff.
-    (unfold OptMonad_Coq.bind in *).
+    (unfold OptMonad_Coq.bind in * ).
      repeat ff.
      +
      eauto.
@@ -1279,7 +1296,7 @@ Proof.
        
        
     repeat ff;
-    (unfold OptMonad_Coq.bind in *);
+    (unfold OptMonad_Coq.bind in * );
      repeat ff; eauto.
      +
        inv_wfec.
@@ -1386,6 +1403,15 @@ Proof.
        invc H.
        ff.
        *)
+     +
+       inv_wfec.
+       ff.
+       edestruct IHe.
+       econstructor.
+       eassumption.
+       asdf
+       
+       
          
        
     
@@ -1422,6 +1448,7 @@ Ltac do_somerecons :=
         (exists x, reconstruct_evP e x)
         ltac:(eapply some_reconsP; apply H)     
     end; destruct_conjs.
+*)
 
 Definition spc_ev (sp:SP) (e:EvidenceC) : EvidenceC :=
   match sp with
@@ -2985,6 +3012,15 @@ Proof.
       ++
          wrap_ccp_anno.
          try (econstructor; econstructor; reflexivity).
+    +
+      ff.
+      ++
+         wrap_ccp_anno.
+        try (econstructor; econstructor; reflexivity).
+      ++
+         wrap_ccp_anno.
+         try (econstructor; econstructor; reflexivity).
+      
       
       
     

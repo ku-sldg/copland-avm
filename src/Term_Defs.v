@@ -105,6 +105,7 @@ Fixpoint et_size (e:Evidence): nat :=
     | ENCR => 1(* et_size e' *)
     | EXTD => 1 + et_size e'
     | KILL => 0
+    | KEEP => et_size e'
     end
     
     
@@ -189,16 +190,12 @@ Definition eval_asp t p e :=
   match t with
   | NULL => mt
   | CPY => e 
-  | ASPC sp fwd params => uu p fwd params (sp_ev sp e)
-                            (*
+  | ASPC sp fwd params =>
     match fwd with
-    | ENCR => 
-    | COMP => hh p params (sp_ev sp e)
-    | EXTD => gg p params (sp_ev sp e)
-    end *)
-                            (*
-  | SIG => gg p sig_params e
-  | HSH => hh p hsh_params e *)
+    | KEEP => (sp_ev sp e)
+    | KILL => mt
+    | _ => uu p fwd params (sp_ev sp e)
+    end
   | SIG => uu p EXTD sig_params e
   | HSH => uu p COMP hsh_params e
   | ENC q => uu p ENCR (enc_params q) e

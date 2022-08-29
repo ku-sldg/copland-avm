@@ -72,7 +72,8 @@ Fixpoint build_app_comp_evC (et:Evidence) (ls:RawEv) : Opt EvidenceC :=
       v <- checkGG params p bs ls' ;;
       rest <- build_app_comp_evC et' ls' ;;
       ret (ggc p params v rest)
-    | KILL => ret mtc (* (kkc p params et') *)
+    | KILL => ret mtc (* Should never reach this case *)
+    | KEEP => ret mtc (* Should never reach this case *)
     end
   | ss et1 et2 => 
       x <- build_app_comp_evC et1 (firstn (et_size et1) ls) ;;

@@ -24,8 +24,7 @@ Inductive EvidenceC: Set :=
 | nnc: N_ID -> BS -> EvidenceC
 | ggc: Plc -> ASP_PARAMS -> BS -> EvidenceC -> EvidenceC
 | hhc: Plc -> ASP_PARAMS -> BS -> Evidence -> EvidenceC
-| eec: Plc -> ASP_PARAMS -> BS -> (*Evidence ->*) EvidenceC -> EvidenceC
-(* | kkc: Plc -> ASP_PARAMS -> Evidence -> EvidenceC *)
+| eec: Plc -> ASP_PARAMS -> BS -> EvidenceC -> EvidenceC
 | ssc: EvidenceC -> EvidenceC -> EvidenceC.
 
 (** The Evidence Type associated with a Typed Concrete Evidence value *)
@@ -34,8 +33,7 @@ Fixpoint et_fun (ec:EvidenceC) : Evidence :=
   | mtc => mt
   | ggc p params _ ec' => uu p EXTD params (et_fun ec')
   | hhc p params _ et => uu p COMP params et
-  | eec p params _ ec' => uu p ENCR params (et_fun ec')  (*mt*) (* (et_fun ec') *)
-  (* | kkc p params et' => uu p KILL params et' *)
+  | eec p params _ ec' => uu p ENCR params (et_fun ec')
   | nnc ni _ => nn ni
   | ssc ec1 ec2 => ss (et_fun ec1) (et_fun ec2)
   end.
@@ -43,14 +41,6 @@ Fixpoint et_fun (ec:EvidenceC) : Evidence :=
 (** Evidence Type subterm relation *)
 Inductive EvSubT: Evidence -> Evidence -> Prop :=
 | evsub_reflT : forall e : Evidence, EvSubT e e
-                                       (*
-| ggSubT: forall e e' p ps,
-    EvSubT e e' ->
-    EvSubT e (gg p ps e')
-| hhSubT: forall e e' p ps,
-    EvSubT e e' ->
-    EvSubT e (hh p ps e')
-                                        *)
 | uuSubT: forall e e' p fwd ps,
     EvSubT e e' -> 
     EvSubT e (uu p fwd ps e')
@@ -186,6 +176,9 @@ Proof.
         destruct e'; ff.
         invc H; ff; eauto.
 
+      ++
+        destruct e'; ff.
+        
       ++
         destruct e'; ff.
           
