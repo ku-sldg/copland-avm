@@ -20,3 +20,6 @@ Admitted.
 
 Definition checkGG' (params:ASP_PARAMS) (p:Plc) (sig:BS) (ls:RawEv) : BS.
 Admitted.
+
+Definition checkNonce' (nonceGolden:BS) (nonceCandidate:BS) : BS.
+Admitted.

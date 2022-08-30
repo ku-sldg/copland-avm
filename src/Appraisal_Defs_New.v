@@ -23,3 +23,5 @@ Definition decrypt_bs_to_rawev (bs:BS) (params:ASP_PARAMS) : Opt RawEv :=
 Definition checkGG (params:ASP_PARAMS) (p:Plc) (sig:BS) (ls:RawEv) : Opt BS :=
   Some (checkGG' params p sig ls).
 
+Definition checkNonce (nonceGolden:BS) (nonceCandidate:BS) : Opt BS :=
+  Some (checkNonce' nonceGolden nonceCandidate).

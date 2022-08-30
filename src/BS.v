@@ -5,3 +5,8 @@ Definition BS : Set.
 Admitted.
 Definition default_bs : BS.
 Admitted.
+
+Definition passed_bs : BS.
+Admitted.
+Definition failed_bs : BS.
+Admitted.

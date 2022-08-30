@@ -15,11 +15,11 @@ Definition term1 := att 1 (asp SIG).
 
 Definition create_and_load_ak : Term :=
   asp (
-  ASPC ALL KILL (asp_paramsC cal_ak_aspid cal_ak_args source_plc cal_ak_targid)).
+  ASPC ALL KEEP (asp_paramsC cal_ak_aspid cal_ak_args source_plc cal_ak_targid)).
 
 Definition pub_key_to_bc : Term :=
   asp (
-  ASPC ALL KILL (asp_paramsC pub_bc_aspid pub_bc_args source_plc pub_bc_targid)).
+  ASPC ALL KEEP (asp_paramsC pub_bc_aspid pub_bc_args source_plc pub_bc_targid)).
 
 Definition get_data : Term :=
   asp (
