@@ -229,34 +229,6 @@ Inductive well_formed_r_annt: AnnoTerm -> Prop :=
 #[export] Hint Constructors well_formed_r_annt : core.
 
 
-(*
-Ltac afa :=
-  match goal with   
-  | [H : forall _, _, H2: Term, H3: nat |- _] => pose_new_proof (H H2 H3)
-  end.
-
-Ltac afa' :=
-  match goal with   
-  | [H : forall _, _, H2: Term, H3: nat |- _] => pose_new_proof (H H2 (S H3))
-  end.
-
-Ltac afa'' :=
-  match goal with   
-  | [H : forall _, _, H2: Term, H3: nat, H4:nat, H5: AnnoTerm |- _] =>
-    pose_new_proof (H H2 (H3)(H4) H5)
-  end.
-*)
-
-
-(*
-Ltac same_index :=
-  match goal with
-  | [H: anno ?t _ = (?n, _),
-        H': anno ?t _ = (?n', _) |- _] =>
-    assert_new_proof_by (n = n') eauto
-  end.
-*)
-
 Lemma same_anno_range: forall t i a b n n',
     anno t i = (n,a) ->
     anno t i = (n',b) ->
@@ -287,37 +259,6 @@ Lemma anno_range:
 Proof.
   induction x; intros; ff.
 Defined.
-
-(*
-Ltac haha :=
-  let asdff := eapply anno_mono; eauto in
-  match goal with
-  | [H: anno _ ?x = (?y,_) |- _] => assert_new_proof_by (y > x) (asdff)
-  end.
-
-Ltac hehe :=
-  match goal with
-  | [H: anno ?x ?y = (_,_) |- _] => pose_new_proof (anno_range x y)
-  end.
-
-Ltac hehe' :=
-  match goal with
-  | [x: Term, y:nat |- _] => pose_new_proof (anno_range x (S y))
-  end.
-
-Ltac hehe'' :=
-  match goal with
-  | [x: Term, y:nat |- _] => pose_new_proof (anno_range x y)
-  end.
-*)
-
-(*
-Ltac do_list_empty :=
-  match goal with
-    [H: length ?ls = 0 |- _] =>
-    assert_new_proof_by (ls = []) ltac:(destruct ls; solve_by_inversion)
-  end.
-*)
 
 
 (** Lemma stating that any annotated term produced via anno is well formed *)

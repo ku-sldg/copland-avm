@@ -114,19 +114,6 @@ Proof.
   destruct a; ff.
 Defined.
 
-(*
-Ltac wf_hammer :=
-  ff;
-  (*do_nodup; *)
-  try (eapply anno_well_formed_r; eauto; tauto);
-  repeat do_mono;
-  repeat erewrite anno_range;
-  try tauto;
-  try lia;
-  eauto;
-  tauto.
-*)
-
 (** This predicate specifies when a term, a place, and some initial
     evidence is related to an event.  In other words, it specifies the
     set of events associated with a term, a place, and some initial

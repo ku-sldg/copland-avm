@@ -687,7 +687,7 @@ Proof.
 Defined.
 
 
-(* TODO:  this lemma does not hold for (Some kkc ... = Some mtc) case
+(* TODO:  this lemma does not hold for (Some eec ... = Some mtc) case
 
 (** * Recontstructing an EvC value computed by encoding it and computing its type is the same as the original. *)
 Lemma recon_same: forall e,
@@ -709,6 +709,7 @@ Proof.
       try solve_by_inversion;
       try (repeat find_inversion; tauto)).
   Locate encodeEv.
+  Locate reconstruct_ev.
 Defined.
 *)
 

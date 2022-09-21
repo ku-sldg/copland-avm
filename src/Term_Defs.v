@@ -35,8 +35,7 @@ Definition asp_term_to_core (a:ASP) : Core_Term :=
     match sp with
     | NONE => lseqc (aspc CLEAR) (aspc (ASPCC fwd params))
     | ALL => (aspc (ASPCC fwd params))
-    end
-                   
+    end                
   | SIG => aspc (ASPCC EXTD sig_params)
   | HSH => aspc (ASPCC COMP hsh_params)
   | ENC q => aspc (ASPCC ENCR (enc_params q))
@@ -95,48 +94,17 @@ Inductive term_to_coreP: Term -> Core_Term -> Prop :=
 Fixpoint et_size (e:Evidence): nat :=
   match e with
   | mt => O
-           (*
-  | gg _ _ e' => 1 + (et_size e')
-  | hh _ _ _ => 1
-            *)
   | uu _ fwd _ e' =>
     match fwd with
     | COMP => 1
-    | ENCR => 1(* et_size e' *)
+    | ENCR => 1
     | EXTD => 1 + et_size e'
     | KILL => 0
     | KEEP => et_size e'
-    end
-    
-    
+    end 
   | nn _ => 1
   | ss e1 e2 => (et_size e1) + (et_size e2)
   end.
-
-
-(*
-Fixpoint thread_count (t:Term) : nat :=
-  match t with
-  | asp _ => O
-  | att _ _ => O
-  | lseq t1 t2 => max (thread_count t1) (thread_count t2)
-  | bseq _ t1 t2 => max (thread_count t1) (thread_count t2)
-  | bpar _ t1 t2 => 1 + (thread_count t1) + (thread_count t2)
-  end.
-
-Fixpoint top_level_thread_count (t:Term) : nat :=
-  match t with
-  | asp _ => O
-  | att _ _ => O
-  | lseq t1 t2 => (top_level_thread_count t1) + (top_level_thread_count t2)
-  | bseq _ t1 t2 => (top_level_thread_count t1) + (top_level_thread_count t2)
-  | bpar _ t1 t2 => 1 + (top_level_thread_count t1) (* + (thread_count t2) *)
-  end.
-*)
-
-(*
-Compute (thread_count (bpar (ALL,ALL) (asp SIG) (asp CPY))).
- *)
 
 
 (** Raw Evidence representaiton:  a list of binary (BS) values. *)

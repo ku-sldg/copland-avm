@@ -120,17 +120,6 @@ Proof.
     {
       destruct e'; try solve_by_inversion.
     }
-    (*
-        
-    assert (e' = mtc \/ exists p params, e' = (kkc p params)).
-    {
-      destruct e'; try solve_by_inversion.
-      right. eauto.
-    }
-    door;
-    subst;
-    solve_by_inversion.
-     *)
     subst.
     ff.
   -
@@ -140,30 +129,6 @@ Proof.
     ff.
   -
     invc H0.
-
-    (*
-    +
-      assert (exists bs ec, e' = ggc p a bs ec).
-      {
-        destruct e'; ff.
-        repeat eexists.
-      }
-      destruct_conjs.
-      subst.
-      ff.
-      invc H.
-      ++
-        ff.
-      ++
-
-        assert (EvSubT (et_fun e0) (et_fun H1)).
-        {
-          eapply IHe.
-          eassumption.
-          econstructor.
-        }
-        apply ggSubT. eassumption.
-     *)
     +
       destruct f.
       ++

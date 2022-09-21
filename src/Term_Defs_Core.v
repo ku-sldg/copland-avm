@@ -3,10 +3,11 @@
 
 (*
    These definitions have been adapted from an earlier version, archived 
-   here:  https://ku-sldg.github.io/copland/resources/coplandcoq.tar.gz
-*)
+   here:  https://ku-sldg.github.io/copland/resources/coplandcoq.tar.gz 
 
-(* LICENSE NOTICE
+   with License:
+
+LICENSE NOTICE
 
 Copyright (c) 2018 The MITRE Corporation.
 All Rights Reserved.
@@ -53,9 +54,20 @@ Definition Arg: Set := string.
 Inductive ASP_PARAMS: Set :=
 | asp_paramsC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP_PARAMS.
 
-(** Evidence extension types:
-      COMP:  Compact evidence down to a single value.
-      EXTD:  Extend evidence by appending a new value.
+(** Evidence extension types for ASPs:
+      COMP:  Compact evidence down to a single value (i.e. a hash).
+      ENCR:  Like COMP, but the single value is semantically an ENCRYPTED one.
+      EXTD:  Extend bundle (non-destructively) by prepending the new ASP result to the front.
+      KILL:  Ignore evidence produced by an ASP and put Mt evidence.
+      KEEP:  Ignore evidence produced by an ASP and keep the input evidence unchanged.
+
+
+COMP:  [b1, b2, ..., bn] ==> [hash([b1, b2, ..., bn])]
+ENCR:  [b1, b2, ..., bn] ==> [encrypt([b1, b2, ..., bn])]
+EXTD:  [b1, b2, ..., bn] ==> [f([b1, b2, ..., bn]), b1, b2, ..., bn]], 
+            where f represents the ASP's functional result over an input evidence bundle.
+KILL:  [b1, b2, ..., bn] ==> []
+KEEP:  [b1, b2, ..., bn] ==> [b1, b2, ..., bn]
 *)
 Inductive FWD: Set :=
 | COMP
@@ -64,15 +76,17 @@ Inductive FWD: Set :=
 | KILL
 | KEEP.
 
-(** The structure of evidence. *)
+(** The structure of evidence. 
+
+    mt:  Empty evidence 
+    nn:  Nonce evidence (with an ID)
+    uu:  ASP evidence 
+    ss:  evidence pairing (composition)
+*)
 Inductive Evidence: Set :=
 | mt: Evidence
 | nn: N_ID -> Evidence
 | uu: Plc -> FWD -> ASP_PARAMS -> Evidence -> Evidence
-(*
-| gg: Plc -> ASP_PARAMS -> Evidence -> Evidence
-| hh: Plc -> ASP_PARAMS -> Evidence -> Evidence
-*)
 | ss: Evidence -> Evidence -> Evidence.
 
 (** Evidene routing types:  
@@ -84,7 +98,19 @@ Inductive SP: Set :=
 | NONE.
 
 
-(** Primitive Copland phases *)
+(** Primitive Copland phases 
+
+    NULL:    Empty out evidence (optionally with a strong "zeroize" effect)
+    CPY:     Copy evidence (leave input evidence unchanged)
+    ASPC sp fwd ps:    
+        Arbitrary ASPs:
+          sp indicates passing ALL or NONE as input evidence.
+          fwd indicates how to extend output evidence.
+          ps indicates the asp parameters structure
+    SIG:     Signature primitive
+    HSH:     Hash primitive 
+    ENC q:   Encryption primitive using public key associated with place q.
+*)
 Inductive ASP: Set :=
 | NULL: ASP
 | CPY: ASP

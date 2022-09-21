@@ -9,7 +9,7 @@ Require Import Term_Defs Anno_Term_Defs Cvm_Monad.
 Require Import List.
 Import ListNotations.
 
-(** Monadic CVM implementation *)
+(** Monadic CVM implementation (top-level) *)
 Fixpoint build_cvm (t:Core_Term): CVM unit :=
   match t with
   | aspc a =>
