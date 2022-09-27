@@ -35,7 +35,7 @@ Fixpoint et_fun (ec:EvidenceC) : Evidence :=
   | ggc p params _ ec' => uu p EXTD params (et_fun ec')
   | hhc p params _ et => uu p COMP params et
   | eec p params _ et => uu p ENCR params et (* (et_fun ec') *)
-  | kkc _ _ _ => mt
+  | kkc p params et' => uu p KILL params et'
   | nnc ni _ => nn ni
   | ssc ec1 ec2 => ss (et_fun ec1) (et_fun ec2)
   end.
@@ -118,6 +118,11 @@ Proof.
   -
     invc H0.
     jkjke.
+    assert (e' = mtc).
+    {
+      destruct e'; try solve_by_inversion.
+    }
+    (*
     assert (e' = mtc \/ (exists p ps et', e' = kkc p ps et')).
     {
       destruct e'; try solve_by_inversion.
@@ -130,6 +135,9 @@ Proof.
     +
       subst.
       ff.
+     *)
+    subst.
+    ff.
       
   -
     invc H0.

@@ -71,7 +71,7 @@ Fixpoint encodeEv (e:EvidenceC) : RawEv :=
   | ggc _ _ bs e' => bs :: (encodeEv e')
   | hhc _ _ bs _ => [bs]
   | eec _ _ bs _ => [bs]
-  (* | kkc _ _ _ => [] *)
+  | kkc _ _ _ => []
   | ssc e1 e2 => (encodeEv e1) ++ (encodeEv e2)
   end.
 
@@ -102,7 +102,7 @@ Fixpoint reconstruct_ev' (ls:RawEv) (et:Evidence) : Opt EvidenceC :=
       end
     | KILL =>
       match ls with
-      | [] => Some mtc
+      | [] => Some (kkc p ps et')
       | _ => None
       end
     | KEEP => None
@@ -144,12 +144,6 @@ Proof.
                     
          -
            eauto.
-         -
-           eauto.
-           (*
-           
-                      right.
-                      eauto. *)
                                  
 Defined.
 
@@ -489,6 +483,8 @@ Proof.
     rewrite fold_recev in *;
     do_wrap_reconP;
     repeat jkjke).
+
+  (*
   -
     destruct f; ff.
     + (* COMP case *)
@@ -518,11 +514,13 @@ Proof.
       congruence.
     + (* KILL case *)
       invc H.
+      unfold reconstruct_ev in *.
+     
       Print et_fun.
       ff.
       ff.
       
-
+*)
 Qed.
 
 Lemma wfec_split: forall e s,
@@ -595,6 +593,19 @@ Proof.
     do_inv_recon.
     ff. 
      *)
+
+  - (* kkc case *)
+    do_inv_recon.
+    ff.
+    invc H.
+    ff.
+    unfold reconstruct_ev' in *.
+    ff.
+    unfold OptMonad_Coq.bind in *.
+    ff.
+    rewrite fold_recev in *.
+    do_wrap_reconP.
+    admit.
     
     
     
@@ -619,7 +630,7 @@ Proof.
     }
     rewrite H3 at 1.
     congruence.
-Qed.
+Admitted.
 
 Lemma recon_encodeEv_Raw: forall ec bits et,
     reconstruct_evP (evc bits et) ec ->
@@ -648,7 +659,8 @@ Proof.
     econstructor. tauto.
     invc H.
     repeat ff.
-    econstructor. tauto.
+    (*
+    econstructor. tauto. *)
   -
     do_inv_recon.
     invc H.
@@ -688,6 +700,10 @@ Proof.
     invc H.
     econstructor; tauto.   
      *)
+
+  - (* kkc case *)
+    admit.
+    
     
     
   -
@@ -725,7 +741,7 @@ Proof.
     }
     rewrite H at 1.
     eapply app_length.
-Qed.
+Admitted.
 
 Lemma reconP_determ: forall ec e e',
     reconstruct_evP ec e ->
@@ -1007,7 +1023,6 @@ Fixpoint cvm_evidence_denote (t:AnnoTerm) (p:Plc) (ec:EvidenceC) : EvidenceC :=
 
 (*
 TODO: try this lemma again after getting appraisal Lemmas settled 
-*)
 
 
 (** * Lemma:  relating reconstructed CVM EvC bundles via the EvidenceC evidence denotation. *)
@@ -1117,10 +1132,16 @@ Proof.
         invc H3.
         ff.
       ++
+        admit.
+      ++
+        admit.
+        
+        
+      ++
         wrap_ccp_anno.
         invc H3.
         ff.
-        assert (et_fun ec = et).
+        assert (et_fun ec' = et').
         {
           symmetry.
         eapply etfun_reconstruct.

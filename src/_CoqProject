@@ -29,8 +29,8 @@ Cvm_Run.v
 Auto.v
 AutoApp.v
 Helpers_CvmSemantics.v
-External_Facts.v
 Appraisal_Evidence.v
+External_Facts.v
 CvmSemantics.v
 Example_Phrases_Demo_Admits.v
 Example_Phrases_Demo.v
