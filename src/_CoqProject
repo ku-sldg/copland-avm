@@ -27,8 +27,8 @@ Cvm_Monad.v
 Cvm_Impl.v
 Cvm_Run.v
 Auto.v
-Helpers_CvmSemantics.v
 AutoApp.v
+Helpers_CvmSemantics.v
 External_Facts.v
 Appraisal_Evidence.v
 CvmSemantics.v

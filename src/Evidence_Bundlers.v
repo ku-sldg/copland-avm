@@ -11,6 +11,13 @@ Require Import List.
 
 Import ListNotations.
 
+(* Helper that simulates encoding the raw bits portion of an evidence bundle.
+   Note: encodeEvRaw is (as of now) an Admitted (abstract) operation.  *)
+Definition encodeEvBits (e:EvC): BS :=
+  match e with
+  | (evc bits _) => encodeEvRaw bits
+  end.
+
 (** Extends raw evidence by prepending one value to the front.
     Also updates underlying Evidence Type.
     An example is digital signatures, where the signature value is prepended *)

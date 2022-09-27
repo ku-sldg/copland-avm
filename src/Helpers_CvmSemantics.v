@@ -4,9 +4,12 @@ Helper lemmas for proofs about the CVM semantics.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Cvm_Monad Cvm_Impl Term_Defs Auto StructTactics.
+Require Import Anno_Term_Defs Cvm_Monad Cvm_Impl Term_Defs Auto StructTactics AutoApp.
 
 Require Import Coq.Program.Tactics Coq.Program.Equality.
+
+Require Import List.
+Import ListNotations.
 
 (*
 Set Nested Proofs Allowed.
@@ -226,10 +229,6 @@ Proof.
     tauto.
 Defined.
 
-Ltac clear_triv :=
-  match goal with
-  | [H: ?x = ?x |- _] => clear H
-  end.
 
 Ltac dohi'' :=
   annogo;
@@ -248,52 +247,8 @@ Ltac dohi :=
   repeat clear_triv.
 
 
-(* CVM execution always succeeds.  
-   Note:  This may need revisiting if we consider more robust models of CVM failure. *)
-Lemma always_some : forall t vm_st vm_st' op,
-    build_cvm t vm_st = (op, vm_st') ->
-    op = Some tt.
-Proof.
-  induction t; intros.
-  -
-    destruct a; (* asp *)
-      try destruct a; (* asp params *)
-      try (df; tauto).
-  -
-    repeat (df; try dohtac; df).
-    tauto.
-  -
-    df.
-    
-    destruct o eqn:hhh;
-      try (df; eauto).
-  -
-    df.
 
-    repeat break_match;
-      try (
-          df; eauto).
-  -
-    df.
-    dohtac.
-    df.
-    simpl.
 
-    assert (o = Some tt) by eauto.
-    subst.
-    vmsts.
-    df.
-    tauto.
-Defined.
-
-Ltac do_somett :=
-  match goal with
-  | [H: build_cvm ?t _ = (?o, _)
-     |- _] =>
-    assert_new_proof_by (o = Some tt) ltac:(eapply always_some; [apply H])
-  end.
-
-Ltac do_asome := repeat do_somett; repeat clear_triv.
 
 (* States that the resulting place (st_pl) is unaffected by the initial trace.
    This is a simple corollary of the Lemma hihi above. *)
@@ -363,3 +318,192 @@ Proof.
   df.
   tauto.
 Defined.
+
+
+Ltac do_st_trace :=
+  match goal with
+  | [H': context[{| st_ev := ?e; st_trace := ?tr; st_pl := ?p; st_evid := ?i |}]
+     |- context[?tr]] =>
+    assert_new_proof_by
+      (tr = st_trace {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |} )
+      tauto
+  end.
+
+Ltac do_st_trace_assumps :=
+  match goal with
+  | [H': context[{| st_ev := ?e; st_trace := ?tr; st_pl := ?p; st_evid := ?i |}]
+     |- _] =>
+    assert_new_proof_by
+      (tr = st_trace {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |} )
+      tauto
+  end.
+
+Ltac find_rw_in_goal :=
+  match goal with
+  | [H': context[?x = _]
+     |- context[?x]] =>
+    rewrite H'; clear H'
+  end.
+
+Inductive build_cvmP :
+  Core_Term -> cvm_st -> (option unit) -> cvm_st ->  Prop :=
+| ccp: forall t st st' res,
+    build_cvm t st = (res, st') ->
+    build_cvmP t st res st'.
+
+Lemma ccp_implies_cc: forall t st st' res,
+  build_cvmP t st res st' ->
+  build_cvm t st = (res,st').
+Proof.
+  intros.
+  solve_by_inversion.
+Defined.
+
+Lemma cc_implies_ccp: forall t st st' res,
+  build_cvm t st = (res,st') -> 
+  build_cvmP t st res st'.
+Proof.
+  intros.
+  econstructor.
+  tauto.
+Defined.
+
+Lemma ccp_iff_cc: forall t st st' res,
+  build_cvm t st = (res,st') <-> 
+  build_cvmP t st res st'.
+Proof.
+  intros.
+  split; intros;
+    try (eapply cc_implies_ccp; eauto);
+    try (eapply ccp_implies_cc; eauto).
+Defined.
+
+Ltac inv_term_coreP :=
+  match goal with
+  | [H: term_to_coreP _ _ (* ?t (?c _) *)
+     |- _ ] =>
+    inversion H; subst
+  end.
+
+Lemma term_to_coreP_redo: forall t t',
+    copland_compile t = t' ->
+    term_to_coreP t t'.
+Proof.
+  intros.
+  econstructor.
+  eauto.
+Defined.
+
+Ltac do_term_to_core_redo :=
+  match goal with
+  | [H: copland_compile ?t = ?t'
+     |- _ ] =>
+    eapply term_to_coreP_redo in H
+  end.
+
+
+
+Lemma annoP_redo: forall t annt n n',
+    anno t n = (n', annt) ->
+    annoP annt t.
+Proof.
+  intros.
+  econstructor.
+  eexists.
+  jkjke.
+Defined.
+
+Ltac do_anno_redo :=
+  match goal with
+  | [H: anno ?t ?n = (_,?annt)
+     |- _ ] =>
+    eapply annoP_redo in H
+  end.
+
+Ltac inv_annoP :=
+  match goal with
+  | [H: annoP _ _ (*_ (?c _) *)
+     |- _ ] =>
+    inversion H; subst
+  end;
+  destruct_conjs.
+
+Lemma annoP_indexed_redo: forall t annt n n',
+    anno t n = (n', annt) ->
+    annoP_indexed annt t n n'.
+Proof.
+  intros.
+  econstructor.
+  jkjke.
+Defined.
+
+Ltac do_anno_indexed_redo :=
+  match goal with
+  | [H: anno _ _ = (_,_)
+     |- _ ] =>
+    eapply annoP_indexed_redo in H
+  end.
+
+Ltac inv_annoP_indexed :=
+  match goal with
+  | [H: annoP_indexed _ _ _ _(*_ (?c _) _*)
+     |- _ ] =>
+    inversion H; subst
+  end;
+  destruct_conjs.
+
+Ltac wrap_annopar :=
+  inv_term_coreP;
+  dd;
+  repeat do_term_to_core_redo.
+
+Ltac wrap_anno :=
+  inv_annoP;
+  dd;
+  repeat do_anno_redo.
+
+Ltac wrap_anno_indexed :=
+  inv_annoP_indexed;
+  dd;
+  repeat do_anno_indexed_redo.
+
+Ltac wrap_ccp :=
+  
+  try rewrite <- ccp_iff_cc in *;
+  dd;
+  repeat do_pl_immut;
+  dd;
+  try rewrite ccp_iff_cc in *.
+
+Ltac wrap_ccp_anno :=
+  
+  try rewrite <- ccp_iff_cc in *;
+  try wrap_annopar;
+  try wrap_anno;
+  try wrap_anno_indexed;
+  repeat do_pl_immut;
+  try (unfold OptMonad_Coq.ret in * );
+  try (unfold OptMonad_Coq.bind in * );
+  dd;
+  try rewrite ccp_iff_cc in *.
+
+
+
+Ltac cumul_ih :=
+  match goal with
+  | [H: context[(st_trace _ = _ ++ st_trace _)],
+        H': build_cvmP ?t1 {| st_ev := _; st_trace := ?m ++ ?k; st_pl := _; st_evid := _ |}
+                             (Some tt)
+                             ?v_full,
+            H'': build_cvmP ?t1 {| st_ev := _; st_trace := ?k; st_pl := _; st_evid := _ |}
+                                  (Some tt)
+                                  ?v_suffix
+     |- _] =>
+    assert_new_proof_by (st_trace v_full = m ++ st_trace v_suffix) eauto
+  end.
+
+Ltac wrap_ccp_dohi :=
+  rewrite <- ccp_iff_cc in *;
+  dd;
+  dohi;
+  rewrite ccp_iff_cc in *.

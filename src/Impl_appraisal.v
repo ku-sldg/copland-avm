@@ -49,17 +49,16 @@ Definition checkASP_fwd (p:Plc) (f:FWD) (params:ASP_PARAMS)
  *)
 
 
-
-Fixpoint build_app_comp_evC (et:Evidence) (ls:RawEv) (nonceGolden:BS) : Opt EvidenceC :=
+Fixpoint build_app_comp_evC (et:Evidence) (ls:RawEv) (nonceGolden:BS) : Opt AppResultC :=
   match et with
-  | mt => ret mtc
+  | mt => ret mtc_app
   | nn nid =>
     '(bs, _) <- peel_bs ls ;;
     res <- checkNonce nonceGolden bs ;;  (* TODO: proper nonce check *)
-    ret (nnc nid res)
+    ret (nnc_app nid res)
   | uu p fwd params et' =>
     match fwd with
-    | COMP => ret mtc (* TODO hash check *)
+    | COMP => ret mtc_app (* TODO hash check *)
       (*
       v <- checkHH params bs et' ;;
       ret (hhc p params v et') *)
@@ -67,25 +66,25 @@ Fixpoint build_app_comp_evC (et:Evidence) (ls:RawEv) (nonceGolden:BS) : Opt Evid
       '(bs, ls') <- peel_bs ls ;;
       decrypted_ls <- decrypt_bs_to_rawev bs params ;;
       rest <- build_app_comp_evC et' decrypted_ls nonceGolden ;;
-      ret (eec p params passed_bs rest)
+      ret (eec_app p params passed_bs rest)
     (* TODO: consider encoding success/failure  of decryption for bs param 
        (instead of default_bs)  *)
     | EXTD =>
       '(bs, ls') <- peel_bs ls ;;
       v <- checkGG params p bs ls' ;;
       rest <- build_app_comp_evC et' ls' nonceGolden ;;
-      ret (ggc p params v rest)
-    | KILL => ret mtc (* Should never reach this case *)
-    | KEEP => ret mtc (* Should never reach this case *)
+      ret (ggc_app p params v rest)
+    | KILL => ret mtc_app (* Do we ever reach this case? *)
+    | KEEP => build_app_comp_evC et' ls nonceGolden  (* ret mtc_app *) (* Do we ever reach this case? *)
     end
   | ss et1 et2 => 
       x <- build_app_comp_evC et1 (firstn (et_size et1) ls) nonceGolden ;;
       y <- build_app_comp_evC et2 (skipn (et_size et1) ls) nonceGolden  ;;
-      ret (ssc x y)
+      ret (ssc_app x y)
   end.
 
 Definition run_gen_appraise (t:Term) (p:Plc) (et:Evidence) (nonceGolden:BS) (ls:RawEv) :=
-  fromSome mtc (build_app_comp_evC (eval t p et) ls nonceGolden).
+  fromSome mtc_app (build_app_comp_evC (eval t p et) ls nonceGolden).
 
 Definition run_gen_appraise_w_nonce (t:Term) (p:Plc) (nonceIn:BS) (ls:RawEv) :=
   run_gen_appraise t p (nn 0) nonceIn ls.

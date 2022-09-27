@@ -1,6 +1,6 @@
 (* Misc automation tactics.  Some of these might be repeats or overlap. *)
 
-Require Import StructTactics Auto Helpers_CvmSemantics Cvm_St Cvm_Monad StMonad_Coq.
+Require Import StructTactics Auto (* Helpers_CvmSemantics *) Cvm_St Cvm_Monad StMonad_Coq Cvm_Impl.
 Require Import List.
 
 Ltac dosome_eq y :=
@@ -82,6 +82,60 @@ Ltac do_inv_head :=
     match goal with
     | [H: ?ls ++ ?xs = ?ls ++ ?ys |- _] => assert_new_proof_by (xs = ys) tac
     end.
+
+
+(* CVM execution always succeeds.  
+   Note:  This may need revisiting if we consider more robust models of CVM failure. *)
+Lemma always_some : forall t vm_st vm_st' op,
+    build_cvm t vm_st = (op, vm_st') ->
+    op = Some tt.
+Proof.
+  induction t; intros.
+  -
+    destruct a; (* asp *)
+      try destruct a; (* asp params *)
+      try (df; tauto).
+  -
+    repeat (df; try dohtac; df).
+    tauto.
+  -
+    df.
+    
+    destruct o eqn:hhh;
+      try (df; eauto).
+  -
+    df.
+
+    repeat break_match;
+      try (
+          df; eauto).
+  -
+    df.
+    dohtac.
+    df.
+    simpl.
+
+    assert (o = Some tt) by eauto.
+    subst.
+    vmsts.
+    df.
+    tauto.
+Defined.
+
+Ltac do_somett :=
+  match goal with
+  | [H: build_cvm ?t _ = (?o, _)
+     |- _] =>
+    assert_new_proof_by (o = Some tt) ltac:(eapply always_some; [apply H])
+  end.
+
+
+Ltac clear_triv :=
+  match goal with
+  | [H: ?x = ?x |- _] => clear H
+  end.
+
+Ltac do_asome := repeat do_somett; repeat clear_triv.
 
 Ltac dd :=
   repeat (

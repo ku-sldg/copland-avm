@@ -14,12 +14,6 @@ Import ListNotations.
 
 Require Export Cvm_St StMonad_Coq IO_Stubs.
 
-(* Helper that simulates encoding the raw bits portion of an evidence bundle.
-   Note: encodeEvRaw is (as of now) an Admitted (abstract) operation.  *)
-Definition encodeEvBits (e:EvC): BS :=
-  match e with
-  | (evc bits _) => encodeEvRaw bits
-  end.
 
 (** * CVM monadic primitive operations *)
 
