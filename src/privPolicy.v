@@ -37,7 +37,7 @@ Global Hint Resolve privPolicy : core.
 
 Example privCheck1 : privPolicy target_plc get_data' = true.
 Proof. 
-  unfold privPolicy. simpl. rewrite eqb_refl. Search Nat.eqb. rewrite PeanoNat.Nat.eqb_refl. rewrite PeanoNat.Nat.eqb_refl. auto. 
+  unfold privPolicy. simpl. rewrite eqb_refl. rewrite PeanoNat.Nat.eqb_refl. rewrite PeanoNat.Nat.eqb_refl. auto. 
 Qed. 
 
 Definition another_plc : Plc. Admitted.  
