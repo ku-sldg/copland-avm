@@ -10,13 +10,14 @@ Require Import String.
 (* notation scope so that strings are interpreted correctly. *)
 Open Scope string_scope.
 
+(* here is the get_data term copied. We want to make sure that the get_data_aspid is only called when the target (0) requests from the source (1)*)
 Definition get_data' : Term :=
   asp (
   ASPC ALL EXTD (asp_paramsC get_data_aspid get_data_args source_plc get_data_targid)).
 
 Check get_data_aspid.
 
-(* ASPIDs are defined by Definition... not an inductive structure. *)
+(* ASPIDs are defined by Definition... not an inductive structure. Can use string matching for the "get data" case. *)
 
 (* everything is just strings... check this file to ensure strings match 
 https://github.com/ku-sldg/am-cakeml/blob/tpm-dev/stubs/Example_Phrases_Demo_Admits.sml*)
