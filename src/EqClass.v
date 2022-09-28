@@ -12,6 +12,7 @@ Class EqClass (A : Type) :=
   { eqb : A -> A -> bool ;
     eqb_leibniz : forall x y, eqb x y = true -> x = y }.
 
+#[global]
 Instance nat_EqClass : EqClass nat :=
   { eqb:= PeanoNat.Nat.eqb;
     eqb_leibniz := beq_nat_true }.
@@ -53,7 +54,7 @@ Defined.
 
                                                              
 
-
+#[global]
 Instance pair_EqClass{A B:Type}`{H:EqClass A}`{H':EqClass B} : EqClass (A*B) :=
   { eqb:= eqbPair;
     eqb_leibniz := beq_pair_true }.
