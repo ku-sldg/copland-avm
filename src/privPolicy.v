@@ -17,9 +17,6 @@ Definition get_data' : Term :=
   asp (
   ASPC ALL EXTD (asp_paramsC get_data_aspid get_data_args source_plc get_data_targid)).
 
-Check get_data_aspid.
-Check eqb_aspid. 
-
 (* ASPIDs are defined by Definition. use eqb_aspid for string comparison *)
 
 (* privacy policy ensures that the sending place (place that sends the request aka the target) can recieve the requested data. In this case, the data should only be shared between source (O) and target (S O) . *)
@@ -45,14 +42,14 @@ Qed.
 
 Definition another_plc : Plc. Admitted.  
 
-Lemma neq_plc : Nat.eqb another_plc target_plc = false.
-Proof. apply PeanoNat.Nat.eqb_neq. Search (_<>_).  Abort. 
+Example privCheck2 : exists p: Plc, p <> target_plc -> privPolicy another_plc get_data' = false.
+Proof.
+  intros. exists another_plc. intros.
+  simpl. rewrite eqb_refl. rewrite PeanoNat.Nat.eqb_refl. apply PeanoNat.Nat.eqb_neq in H. rewrite H. auto.
+Qed.
 
-Example privCheck2 : privPolicy another_plc get_data' = false.
-Proof. 
-  unfold privPolicy. simpl. 
-  rewrite eqb_refl. rewrite PeanoNat.Nat.eqb_refl.
-  Search ((Nat.eqb _ _) = false <-> _). rewrite PeanoNat.Nat.eqb_neq. 
-  Search PeanoNat.Nat.eqb_compare. unfold Nat.eqb. rewrite eqb_neq.
-
-
+Example privCheck2' : forall p: Plc, p <> target_plc -> privPolicy p get_data' = false.
+Proof.
+  intros.
+  simpl. rewrite eqb_refl. rewrite PeanoNat.Nat.eqb_refl. apply PeanoNat.Nat.eqb_neq in H. rewrite H. auto.  
+Qed.
