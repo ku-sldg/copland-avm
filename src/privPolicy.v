@@ -26,7 +26,7 @@ Check eqb_aspid.
 Fixpoint privPolicy (sendPlc:Plc) (t:Term) : bool := 
     match t with 
     | asp (ASPC _ _ (asp_paramsC aspid args rp tid)) => match eqb_aspid aspid get_data_aspid with 
-                                                        | true => if andb (Nat.eqb sendPlc 1) (Nat.eqb rp 0) then true else false  
+                                                        | true => if andb (Nat.eqb sendPlc target_plc) (Nat.eqb rp source_plc) then true else false  
                                                         | false => true 
                                                         end
     | asp _ => true
@@ -38,14 +38,21 @@ Fixpoint privPolicy (sendPlc:Plc) (t:Term) : bool :=
 
 Global Hint Resolve privPolicy : core. 
 
-Example privCheck1 : privPolicy 1 get_data' = true.
+Example privCheck1 : privPolicy target_plc get_data' = true.
 Proof. 
-  unfold privPolicy. simpl. rewrite eqb_refl. 
-  (* can't finish this proof since the term has source_plc as an admitted value *)
-Abort. 
-
-Example privCheck2 : privPolicy 2 get_data' = false.
-Proof. 
-  unfold privPolicy. simpl. rewrite eqb_refl. auto.
+  unfold privPolicy. simpl. rewrite eqb_refl. Search Nat.eqb. rewrite PeanoNat.Nat.eqb_refl. rewrite PeanoNat.Nat.eqb_refl. auto. 
 Qed. 
+
+Definition another_plc : Plc. Admitted.  
+
+Lemma neq_plc : Nat.eqb another_plc target_plc = false.
+Proof. apply PeanoNat.Nat.eqb_neq. Search (_<>_).  Abort. 
+
+Example privCheck2 : privPolicy another_plc get_data' = false.
+Proof. 
+  unfold privPolicy. simpl. 
+  rewrite eqb_refl. rewrite PeanoNat.Nat.eqb_refl.
+  Search ((Nat.eqb _ _) = false <-> _). rewrite PeanoNat.Nat.eqb_neq. 
+  Search PeanoNat.Nat.eqb_compare. unfold Nat.eqb. rewrite eqb_neq.
+
 
