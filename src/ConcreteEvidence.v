@@ -26,6 +26,7 @@ Inductive EvidenceC: Set :=
 | hhc: Plc -> ASP_PARAMS -> BS -> Evidence -> EvidenceC
 | eec: Plc -> ASP_PARAMS -> BS -> Evidence -> EvidenceC
 | kkc: Plc -> ASP_PARAMS -> Evidence -> EvidenceC
+| kpc: Plc -> ASP_PARAMS -> EvidenceC -> EvidenceC
 | ssc: EvidenceC -> EvidenceC -> EvidenceC.
 
 (** The Evidence Type associated with a Typed Concrete Evidence value *)
@@ -36,6 +37,8 @@ Fixpoint et_fun (ec:EvidenceC) : Evidence :=
   | hhc p params _ et => uu p COMP params et
   | eec p params _ et => uu p ENCR params et (* (et_fun ec') *)
   | kkc p params et' => uu p KILL params et'
+  | kpc p params ec' => uu p KEEP params (et_fun ec')
+                       
   | nnc ni _ => nn ni
   | ssc ec1 ec2 => ss (et_fun ec1) (et_fun ec2)
   end.

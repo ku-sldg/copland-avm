@@ -389,3 +389,97 @@ Proof.
       }
       tauto.     
 Defined.
+
+(* Computes the length of the "span" or range of event IDs for a given Term *)
+(* TODO: consider changing this to event_id_span_Term *)
+Fixpoint event_id_span' (t: Term) : nat :=
+  match t with
+  | asp x => 1
+  | att p x => Nat.add (S (S O)) (event_id_span' x)
+  | lseq x y => Nat.add (event_id_span' x) (event_id_span' y)
+  | bseq s x y => Nat.add (S (S O)) (Nat.add (event_id_span' x) (event_id_span' y))
+  | bpar s x y => Nat.add (S (S O)) (Nat.add (event_id_span' x) (event_id_span' y))
+  end.
+
+(* Same as event_id_span', but for Core Terms *)
+(* TODO: consider changing this to event_id_span_Core *)
+Fixpoint event_id_span (t: Core_Term) : nat :=
+  match t with
+  | aspc CLEAR =>  O
+  | attc _ x => Nat.add (S (S O)) (event_id_span' x)
+  | lseqc x y => Nat.add (event_id_span x) (event_id_span y)
+  | bseqc x y => Nat.add (S (S O)) (Nat.add (event_id_span x) (event_id_span y))
+  | bparc _ x y => Nat.add (S (S O)) (Nat.add (event_id_span x) (event_id_span y))
+  | _ => S O
+  end.
+
+Lemma event_id_works : forall t,
+  event_id_span' t = event_id_span (copland_compile t).
+Proof with (simpl in *; eauto).
+  induction t...
+  - destruct a... destruct s...
+  - destruct s, s, s0...
+  - destruct s, s, s0...
+Qed.
+
+
+Lemma span_range : forall t i j t',
+  anno t i = (j, t') ->
+  event_id_span' t = (j - i).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    destruct a;
+    try 
+    cbn in *;
+    find_inversion;
+    lia.
+  -
+    cbn in *.
+    repeat break_let.
+    find_inversion.
+    assert (event_id_span' t = n - (S i)).
+    { eauto. }
+    rewrite H.
+    assert (n > (S i)).
+    {
+      eapply anno_mono.
+      eassumption.
+    }
+    lia.
+  -
+    cbn in *.
+    repeat break_let.
+    repeat find_inversion.
+    assert (event_id_span' t1 = (n - i)) by eauto.
+    assert (event_id_span' t2 = (j - n)) by eauto.
+    repeat jkjke.
+    assert (n > i /\ j > n). {
+      split; eapply anno_mono; eauto.
+    }
+    lia.
+  -
+    cbn in *.
+    repeat break_let.
+    repeat find_inversion.
+    assert (event_id_span' t1 = (n - (S i))) by eauto.
+    assert (event_id_span' t2 = (n0 - n)) by eauto.
+    repeat jkjke.
+    assert (n > S i /\ n0 > n). {
+      split; eapply anno_mono; eauto.
+    }
+    lia.
+  -
+        cbn in *.
+    repeat break_let.
+    repeat find_inversion.
+    assert (event_id_span' t1 = (n - (S i))) by eauto.
+    assert (event_id_span' t2 = (n0 - n)) by eauto.
+    repeat jkjke.
+    assert (n > S i /\ n0 > n). {
+      split; eapply anno_mono; eauto.
+    }
+    lia.
+Defined.

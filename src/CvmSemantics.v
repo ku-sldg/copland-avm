@@ -333,26 +333,7 @@ Proof.
 Defined.
 
 
-(** * Assert an arbitrary (remote) CVM execution.  
-      Uses uninterpreted functions for "simulated" CVM evidence and events. *)
-Ltac do_assert_remote t e p i :=
-  assert (
-      build_cvm t
-                      {| st_ev := e; st_trace := []; st_pl := p; st_evid := i|} =
-      (Some tt,
-       {| st_ev := cvm_evidence_core t p e;
-                   st_trace := cvm_events_core t p (get_et e);
-                               st_pl := p; st_evid :=  (i + event_id_span t)
-       |})
-    ) by (eapply build_cvm_external).
 
-
-(*
-Ltac do_assume_remote t e p i (* x *) :=
-  (* do_t_at_zero t x; *)
-  do_assert_remote (*x*) t e p i (* ;
-  do_assert_unannoPar t x *) .
- *)
 
 
 (** * Lemma:  parallel CVM threads preserve the reference Evidence Type semantics (eval). *)
@@ -1113,9 +1094,6 @@ Qed.
 
 Axiom events_cvm_to_core_mt : forall t p e,
     cvm_events_core (lseqc (aspc CLEAR) t) p e = cvm_events_core t p mt.
-
-Axiom ev_cvm_mtc: forall ct p e loc,
-    parallel_vm_thread loc ct p mt_evc = parallel_vm_thread loc (lseqc (aspc CLEAR) ct) p e.
 
 
 (** * Theorem:  Main Theorem stating that for an arbitrary Copland phrase, all of its execution traces 
