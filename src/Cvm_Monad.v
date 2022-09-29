@@ -219,20 +219,6 @@ Ltac monad_unfold :=
   ret in * ;
   simpl in * .
 
-(* Look for cvm_st hyps and destruct them *)
-Ltac vmsts :=
-  simpl in *;
-  repeat
-    match goal with
-    | [H: cvm_st |- _] => destruct H
-    end.
-
-(* Same as vmsts, but without preceding simplification (simpl). *)
-Ltac amsts :=
-  repeat match goal with
-         | H:cvm_st |- _ => destruct H
-         end.
-
 (* Grouping together some common hypothesis normalizations.  Inverting pairs of
    Some values, cvm_st equivalences, etc. *)
 Ltac pairs :=

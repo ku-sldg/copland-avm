@@ -6,17 +6,6 @@ Import ListNotations.
 Require Import Lia Coq.Program.Tactics.
 
 
-
-Inductive AppResultC: Set :=
-| mtc_app: AppResultC
-| nnc_app: N_ID -> BS -> AppResultC
-| ggc_app: Plc -> ASP_PARAMS -> BS -> AppResultC -> AppResultC
-| hhc_app: Plc -> ASP_PARAMS -> BS -> AppResultC -> (* Evidence -> *) AppResultC
-| eec_app: Plc -> ASP_PARAMS -> BS -> AppResultC ->(* Evidence -> *) AppResultC
-| ssc_app: AppResultC -> AppResultC -> AppResultC.
-
-
-
 Definition peel_bs (ls:RawEv) : Opt (BS * RawEv) :=
   match ls with
   | bs :: ls' => ret (bs, ls')
@@ -1306,15 +1295,27 @@ Definition cvm_evidence_denote_asp (a:ASP) (p:Plc) (e:EvidenceC) (x:Event_ID): E
   | CPY => e
   | ASPC sp fwd params =>
     match fwd with
-    | COMP => hhc p params (do_asp params (encodeEv (spc_ev sp e)) p x) (sp_ev sp (et_fun e))
-    | EXTD => ggc p params (do_asp params (encodeEv (spc_ev sp e)) p x) (spc_ev sp e)
-    | ENCR => eec p params (do_asp params (encodeEv (spc_ev sp e)) p x) (sp_ev sp (et_fun e)) (* (spc_ev sp e) (sp_ev sp (et_fun e)) *)
+    | COMP => hhc p params
+                 (do_asp params (encodeEv (spc_ev sp e)) p x)
+                 (sp_ev sp (et_fun e))
+    | EXTD => ggc p params
+                 (do_asp params (encodeEv (spc_ev sp e)) p x)
+                 (spc_ev sp e)
+    | ENCR => eec p params
+                 (do_asp params (encodeEv (spc_ev sp e)) p x)
+                 (sp_ev sp (et_fun e))
     | KEEP => (spc_ev sp e)
     | KILL => mtc (* kkc p params (sp_ev sp (et_fun e)) *)
     end
-  | SIG => ggc p sig_params (do_asp sig_params (encodeEv e) p x) e
-  | HSH => hhc p hsh_params (do_asp hsh_params (encodeEv e) p x) (et_fun e)
-  | ENC q => eec p (enc_params q) (do_asp (enc_params q) (encodeEv e) p x) (et_fun e) (* e *) (* (et_fun e) *)
+  | SIG => ggc p sig_params
+              (do_asp sig_params (encodeEv e) p x)
+              e
+  | HSH => hhc p hsh_params
+              (do_asp hsh_params (encodeEv e) p x)
+              (et_fun e)
+  | ENC q => eec p (enc_params q)
+                (do_asp (enc_params q) (encodeEv e) p x)
+                (et_fun e)
   end.
 
 
@@ -1809,6 +1810,520 @@ Axiom ev_cvm_mtc: forall ct p e loc,
     parallel_vm_thread loc ct p mt_evc = parallel_vm_thread loc (lseqc (aspc CLEAR) ct) p e.
 
 
+(** * Lemma:  Evidence Type denotation respects evidence reference semantics  *)
+Lemma cvm_ev_denote_evtype: forall annt p e,
+    (*annoP annt t -> *)
+    et_fun (cvm_evidence_denote annt p e) = (aeval annt p (et_fun e)).
+Proof.
+  intros.
+  generalizeEverythingElse annt.
+  induction annt; intros.
+  -
+    dd.
+    destruct a; dd;
+      try eauto.
+    +
+      destruct f; ff.
+      destruct s; ff.
+      destruct s; ff.
+  -
+    dd.
+    eauto.
+  -
+    dd.
+    assert (et_fun (cvm_evidence_denote annt1 p e) = aeval annt1 p (et_fun e)) by eauto.
+    repeat jkjke.
+  -
+    dd.
+    jkjke.
+    jkjke.
+    destruct s; destruct s; destruct s0; eauto.
+  -
+    dd.
+    jkjke.
+    jkjke.
+    destruct s; destruct s; destruct s0; eauto.
+Defined.
+
+
+(** * Lemma:  CVM execution always succeeds *)
+Lemma exists_some_cc: forall t st,
+    exists st',
+      build_cvm t st = (Some tt, st').
+Proof.
+  intros.
+  destruct (build_cvm t st) eqn:ee.
+  do_asome.
+  subst.
+  eauto.
+Defined.
+
+Ltac do_exists_some_cc t st :=
+    assert_new_proof_by
+      (exists st', build_cvm t st = (Some tt, st') )
+      ltac:(eapply exists_some_cc);
+    destruct_conjs.
+
+
+
+(** * Helper Lemma stating: CVM traces are "cumulative" (or monotonic).  
+      Traces are only ever extended--prefixes are maintained. *)
+Lemma st_trace_cumul'' : forall t m k e p v_full v_suffix o_suffix i,
+    build_cvmP t
+               {| st_ev := e; st_trace := m ++ k; st_pl := p; st_evid := i |}
+               (Some tt) v_full ->
+    
+    build_cvmP t
+                     {| st_ev := e; st_trace := k; st_pl := p; st_evid := i |}
+                     o_suffix v_suffix ->
+
+    st_trace v_full = m ++ st_trace v_suffix.
+Proof.
+  induction t; intros.
+  -
+    wrap_ccp.
+    
+    destruct a; (* asp *)
+      try destruct a; (* asp params *)
+      simpl;
+      df;
+      repeat rewrite app_assoc;
+      reflexivity.
+  -
+    wrap_ccp.
+    repeat rewrite app_assoc.
+    reflexivity.
+
+  - (* alseq case *)
+    wrap_ccp_dohi.
+     
+    cumul_ih.
+    dd.
+    repeat do_st_trace.
+    repeat find_rw_in_goal.
+    eauto.
+
+  - (* abseq case *)
+    wrap_ccp_dohi.
+    repeat rewrite <- app_assoc in *.
+    cumul_ih.
+    dd.
+    cumul_ih.
+    dd.
+    rewrite app_assoc.
+    eauto.
+    
+  - (* abpar case *)
+    wrap_ccp_dohi.
+    repeat rewrite <- app_assoc in *.
+    cumul_ih.
+    dd.
+    repeat rewrite app_assoc.
+    eauto.
+Defined.
+
+
+
+(** * Instance of st_trace_cumul'' where k=[] *)
+Lemma st_trace_cumul' : forall t m e p v_full v_suffix o_suffix i,
+    build_cvmP t
+               {| st_ev := e; st_trace := m; st_pl := p; st_evid := i |}
+               (Some tt) v_full ->
+    
+    build_cvmP t
+                     {| st_ev := e; st_trace := []; st_pl := p; st_evid := i |}
+                     o_suffix v_suffix ->
+
+    st_trace v_full = m ++ st_trace v_suffix.
+Proof.
+  intros.
+  eapply st_trace_cumul''; eauto.
+  repeat rewrite app_nil_r.
+  eauto.
+Defined.
+
+
+(** * Lemma stating: CVM traces are "cumulative" (or monotonic).  
+      Traces are only ever extended--prefixes are maintained. 
+      TODO:  rename to st_trace_cumul 
+*) 
+Lemma suffix_prop : forall t e e' tr tr' p p' i i',
+    build_cvmP t
+           {| st_ev := e;
+              st_trace := tr;
+              st_pl := p;
+              st_evid := i |}
+           (Some tt)
+           {|
+             st_ev := e';
+             st_trace := tr';
+             st_pl := p';
+             st_evid := i' |} ->
+    exists l, tr' = tr ++ l.
+Proof.
+  intros.
+
+  do_exists_some_cc t {| st_ev := e; st_trace := []; st_pl := p; st_evid := i |}.
+  wrap_ccp.
+  (*
+
+  rewrite ccp_iff_cc in *. *)
+
+  repeat do_st_trace_assumps.
+  repeat find_rw_in_goal.
+  eexists.
+
+  erewrite st_trace_cumul''.
+  3: {
+    eassumption.
+  }
+  simpl.
+  tauto.
+  rewrite app_nil_r.
+  eassumption.
+Defined.
+
+Ltac do_suffix name :=
+  match goal with
+  | [H': build_cvmP ?t
+         {| st_ev := _; st_trace := ?tr; st_pl := _; st_evid := _ |}
+         (Some tt)
+         {| st_ev := _; st_trace := ?tr'; st_pl := _; st_evid := _ |}
+         (*H2: well_formed_r ?t*) |- _] =>
+    assert_new_proof_as_by
+      (exists l, tr' = tr ++ l)
+      ltac:(eapply suffix_prop; [apply H'])
+             name
+  end.
+
+(** * Structural Lemma:   Decomposes the CVM trace for the lseq phrase into the appending of the two traces
+      computed by its subterms, where each subterm starts from the empty trace.
+
+      Useful for leveraging induction hypotheses in the lseq case of induction that require empty traces in the 
+      initial CVM state. *)
+Lemma alseq_decomp : forall t1' t2' e e'' p p'' tr i i'',
+    build_cvmP
+      (lseqc t1' t2')
+      {| st_ev := e;
+         st_trace := [];
+         st_pl := p;
+         st_evid := i |}
+      (Some tt)
+      {| st_ev := e'';
+         st_trace := tr;
+         st_pl := p'';
+         st_evid := i'' |} ->
+
+    exists e' tr' p' i',
+      build_cvmP
+        t1'
+        {| st_ev := e;
+           st_trace := [];
+           st_pl := p;
+           st_evid := i |}
+        (Some  tt)
+        {| st_ev := e';
+           st_trace := tr';
+           st_pl := p';
+           st_evid := i' |} /\
+      exists tr'',
+        build_cvmP
+          t2'
+          {| st_ev := e';
+             st_trace := [];
+             st_pl := p';
+             st_evid := i' |}
+          (Some tt)
+          {| st_ev := e'';
+             st_trace := tr'';
+             st_pl := p'';
+             st_evid := i'' |} /\
+        tr = tr' ++ tr''.     
+Proof.
+  intros.
+  wrap_ccp_dohi.
+  
+  eexists.
+  eexists.
+  eexists.
+  eexists.
+
+  split.
+  +
+    eassumption.
+  +
+    do_exists_some_cc t2' {| st_ev := st_ev0; st_trace := []; st_pl := st_pl0; st_evid := st_evid0 |}.
+    vmsts.
+
+    eexists.
+
+    wrap_ccp_dohi.
+
+    split.
+    ++
+      eassumption.
+    ++
+      repeat do_st_trace.
+      repeat find_rw_in_goal.
+      eapply st_trace_cumul'; 
+        eassumption.
+Defined.
+
+
+(** Structural convenience lemma:  reconfigures CVM execution to use an empty initial trace *)
+Lemma restl : forall t e e' x tr p p' i i',
+    build_cvmP t
+                     {| st_ev := e; st_trace := x; st_pl := p; st_evid := i|}
+                     (Some tt)
+                     {| st_ev := e'; st_trace := x ++ tr; st_pl := p'; st_evid := i' |} ->
+
+    build_cvmP t
+                     {| st_ev := e; st_trace := []; st_pl := p; st_evid := i |}
+                     (Some tt)
+                     {| st_ev := e'; st_trace := tr; st_pl := p'; st_evid := i' |}.
+Proof.
+  intros.
+
+  do_exists_some_cc t  {| st_ev := e; st_trace := []; st_pl := p; st_evid := i |}.
+  wrap_ccp_dohi.
+
+  assert (st_trace = tr).
+  {
+    do_st_trace.
+    rewrite H0; clear H0.
+    assert (tr = st_trace).
+    {
+      assert (Cvm_St.st_trace {| st_ev := st_ev; st_trace := x ++ tr; st_pl := st_pl; st_evid := st_evid|} =
+              x ++ Cvm_St.st_trace {| st_ev := st_ev; st_trace := st_trace; st_pl := st_pl; st_evid := st_evid |}).
+      {
+        eapply st_trace_cumul'; 
+        eassumption.
+      }
+      simpl in *.
+      eapply app_inv_head; eauto.
+    }
+    jkjke.
+  }
+  congruence.
+Defined.
+
+Ltac do_restl :=
+  match goal with
+  | [H: build_cvmP ?t
+        {| st_ev := ?e; st_trace := ?tr; st_pl := ?p; st_evid := ?i |}
+        (Some tt)
+        {| st_ev := ?e'; st_trace := ?tr ++ ?x; st_pl := ?p'; st_evid := ?i' |}
+        (*H2: well_formed_r ?t*) |- _] =>
+    assert_new_proof_by
+      (build_cvmP t
+                        {| st_ev := e; st_trace := []; st_pl := p; st_evid := i|}
+                        (Some tt)
+                        {| st_ev := e'; st_trace := x; st_pl := p'; st_evid := i' |})
+      ltac:(eapply restl; [apply H])
+  end.
+
+
+
+
+(** * Lemma:  evidence semantics same for annotated and un-annotated terms *)
+Lemma eval_aeval': forall t1 p et,
+    eval (unanno t1) p et = aeval t1 p et.
+Proof.
+  induction t1; intros;
+    repeat ff;
+    repeat jkjke.
+Defined.
+
+
+
+
+
+
+
+(** * Lemma:  parallel CVM threads preserve the reference Evidence Type semantics (eval). *)
+Lemma par_evidence_r: forall l p bits bits' et et' t2,
+    parallel_vm_thread l (copland_compile t2) p (evc bits et) = evc bits' et' ->
+    et' = eval t2 p et.
+Proof.
+  intros.
+  rewrite par_evidence in H.
+  rewrite <- at_evidence in H.
+  rewrite <- remote_Evidence_Type_Axiom with (bits := bits).
+  rewrite H.
+  simpl.
+  tauto.
+Qed.
+         
+(** * Axiom about "simulated" parallel semantics of CVM execution:
+      Executing a "CLEAR" before a term is the same as executing that term with mt initial evidence.
+      TODO:  can we use existing axioms to prove this? *)
+Axiom par_evidence_clear: forall l p bits et t2,
+    parallel_vm_thread l (lseqc (aspc CLEAR) t2) p (evc bits et) =
+    parallel_vm_thread l t2 p mt_evc.
+
+(** * Main Lemma:  CVM execution maintains the Evidence Type reference semantics (eval) for 
+      its internal evidence bundle. *)
+Lemma cvm_refines_lts_evidence' : forall t tr tr' bits bits' et et' p p' i i',
+    build_cvmP (copland_compile t)
+                     (mk_st (evc bits et) tr p i)
+                     (Some tt)
+                     (mk_st (evc bits' et') tr' p' i') ->
+    et' = (Term_Defs.eval t p et).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  
+  - (* aasp case *)
+    rewrite <- ccp_iff_cc in *.
+    subst.
+    destruct a;
+      (try dd; eauto).
+    +
+      destruct s; dd.
+      destruct f; dd; eauto.
+      unfold mt_evc in *.
+      ff.
+      destruct f; dd; eauto.
+      unfold mt_evc in *.
+      ff.
+      unfold mt_evc in *.
+      ff.
+
+      
+
+  - (* at case *)
+    rewrite <- ccp_iff_cc in *.
+    dd.
+    erewrite <- remote_Evidence_Type_Axiom.
+    jkjke.
+
+  - (* alseq case *)
+    do_suffix blah.
+    destruct_conjs.
+    subst.
+
+    edestruct alseq_decomp.
+    eapply restl.
+    eassumption.
+    destruct_conjs.
+
+    wrap_ccp.
+    
+    destruct x.
+    repeat jkjke'.
+    
+  - (* abseq case *)
+
+    (*
+    do_suffix blah.
+    do_suffix blah'. *)
+
+    wrap_ccp.
+
+    destruct s0; destruct s1; ff.
+    +
+      wrap_ccp.
+      assert (e = eval t1 st_pl1 et) by eauto.
+
+      assert (e0 = eval t2 st_pl1 et) by eauto.
+      congruence.
+    +
+      wrap_ccp.
+      assert (e = eval t1 st_pl1 et) by eauto.
+
+      assert (e0 = eval t2 st_pl1 mt) by eauto.
+      congruence.
+    +
+      wrap_ccp.
+      assert (e = eval t1 st_pl1 mt) by eauto.
+
+      assert (e0 = eval t2 st_pl1 et) by eauto.
+      congruence.
+    +
+      wrap_ccp.
+      assert (e = eval t1 st_pl1 mt) by eauto.
+
+      assert (e0 = eval t2 st_pl1 mt) by eauto.
+      congruence.
+      
+   - (* abpar case *)
+
+    (*
+    do_suffix blah.
+    do_suffix blah'. *)
+
+    wrap_ccp.
+
+    destruct s0; destruct s1; ff.
+    +
+      wrap_ccp.
+      assert (e = eval t1 p et) by eauto.
+
+      assert (e0 = eval t2 p et).
+      {
+        eapply par_evidence_r.
+        eassumption.
+      }
+      congruence.
+      
+    +
+      wrap_ccp.
+      assert (e = eval t1 p et) by eauto.
+
+      assert (e0 = eval t2 p mt).
+      {
+        rewrite par_evidence_clear in Heqe0.
+
+        eapply par_evidence_r.
+        eassumption.
+      }
+      
+      congruence.
+    +
+      wrap_ccp.
+      assert (e = eval t1 p mt) by eauto.
+
+      assert (e0 = eval t2 p et).
+      {
+        eapply par_evidence_r.
+        eassumption.
+      }
+      congruence.
+    +
+      wrap_ccp.
+      assert (e = eval t1 p mt) by eauto.
+
+      assert (e0 = eval t2 p mt).
+      {
+        rewrite par_evidence_clear in Heqe0.
+
+        eapply par_evidence_r.
+        eassumption.
+      }
+      congruence.
+Qed.
+
+(** * Propositional version of CVM Evidence Type preservation. *)
+Lemma cvm_refines_lts_evidence :
+  forall t t' tr tr' bits bits' et et' p p' i i',
+    term_to_coreP t t' ->
+    build_cvmP t'
+                     (mk_st (evc bits et) tr p i)
+                     (Some tt)
+                     (mk_st (evc bits' et') tr' p' i') ->
+    et' = (Term_Defs.eval t p et).
+Proof.
+  intros.
+  invc H.
+  eapply cvm_refines_lts_evidence'.
+  eauto.
+Qed.
+
+
+
+
+
 
 (*
 TODO: try this lemma again after getting appraisal Lemmas settled 
@@ -1836,17 +2351,20 @@ Proof.
   -
     wrap_ccp_anno.
     
-    destruct a; wrap_ccp_anno.
+    destruct a. (* wrap_ccp_anno. *)
     + (* NULL case *)
+      wrap_ccp_anno.
       ff.
       invc H3.
       dd.
       tauto.   
     + (* CPY case *)
+      wrap_ccp_anno.
       dd.
       eapply reconP_determ; eauto.
 
-    +
+    + (* ASPC case *)
+      wrap_ccp_anno.
       ff.
       ++ (* COMP case *)
         wrap_ccp_anno.
@@ -1869,11 +2387,11 @@ Proof.
         eassumption.
       }
       congruence.
-      ++
+      ++ (* COMP NONE case *)
         wrap_ccp_anno.
         invc H3.
         ff.
-      ++
+      ++ (* ENCR ALL case *)
         wrap_ccp_anno.
         invc H3.
         ff.
@@ -1895,12 +2413,12 @@ Proof.
       }
       congruence.
 
-      ++
+      ++ (* ENCR NONE case *)
         wrap_ccp_anno.
         invc H3.
         ff.
         
-      ++
+      ++ (* EXTD ALL case *)
         wrap_ccp_anno.
         invc H3.
         ff.
@@ -1917,15 +2435,15 @@ Proof.
         }
         subst.
         tauto.
-      ++
+      ++ (* EXTD NONE case *)
         wrap_ccp_anno.
         invc H3.
         ff.
-      ++ (* KILL case *)
+      ++ (* KILL ALL case *)
         wrap_ccp_anno.
         invc H3.
         ff.
-      ++
+      ++ (* KILL NONE case *)
         wrap_ccp_anno.
         invc H3.
         ff.
@@ -1951,12 +2469,13 @@ Proof.
         ff.
 
     +
+      wrap_ccp.
       dd.
       invc H3; invc H2.
       dd.
       jkjke'.
       dd.
-      Search (encodeEv _ = _).
+      (* Search (encodeEv _ = _). *)
       rewrite recon_encodeEv with (bits:=bits) (et:=et).
       tauto.
       econstructor; eassumption.
@@ -2797,40 +3316,33 @@ Proof.
     congruence.
 Qed.
 
-(** * Lemma:  Evidence Type denotation respects evidence reference semantics  *)
-Lemma cvm_ev_denote_evtype: forall annt p e,
-    (*annoP annt t -> *)
-    et_fun (cvm_evidence_denote annt p e) = (aeval annt p (et_fun e)).
+
+Lemma cvm_raw_evidence_denote_fact_eval :
+  forall t annt t' tr tr' bits bits' et et' p p' i i' ec ec',
+    build_cvmP t
+                     (mk_st (evc bits et) tr p i)
+                     (Some tt)
+                     (mk_st (evc bits' et') tr' p' i') ->
+    term_to_coreP t' t ->
+    annoP_indexed annt t' i i' ->
+
+    reconstruct_evP (evc bits et) ec ->
+    reconstruct_evP (evc bits' (eval t' p et)) ec' ->
+
+    cvm_evidence_denote annt p ec = ec'.
 Proof.
   intros.
-  generalizeEverythingElse annt.
-  induction annt; intros.
-  -
-    dd.
-    destruct a; dd;
-      try eauto.
-    +
-      destruct f; ff.
-      destruct s; ff.
-      destruct s; ff.
-  -
-    dd.
-    eauto.
-  -
-    dd.
-    assert (et_fun (cvm_evidence_denote annt1 p e) = aeval annt1 p (et_fun e)) by eauto.
-    repeat jkjke.
-  -
-    dd.
-    jkjke.
-    jkjke.
-    destruct s; destruct s; destruct s0; eauto.
-  -
-    dd.
-    jkjke.
-    jkjke.
-    destruct s; destruct s; destruct s0; eauto.
-Defined.
+  assert (et' = eval t' p et).
+  {
+    eapply cvm_refines_lts_evidence.
+    eassumption.
+    eassumption.
+  }
+  eapply cvm_raw_evidence_denote_fact; eauto.
+  congruence.
+Qed.
+  
+
 
 
 

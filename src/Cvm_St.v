@@ -28,3 +28,17 @@ Definition empty_vmst := mk_st (evc [] mt) [] 0 0.
 
 (** CVM monad -- simple instantiation of the general St monad with cvm_st *)
 Definition CVM := St cvm_st.
+
+(* Look for cvm_st hyps and destruct them *)
+Ltac vmsts :=
+  simpl in *;
+  repeat
+    match goal with
+    | [H: cvm_st |- _] => destruct H
+    end.
+
+(* Same as vmsts, but without preceding simplification (simpl). *)
+Ltac amsts :=
+  repeat match goal with
+         | H:cvm_st |- _ => destruct H
+         end.
