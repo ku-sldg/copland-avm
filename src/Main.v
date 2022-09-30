@@ -191,7 +191,7 @@ Proof.
     jkjke'.
     rewrite app_comm_cons; eauto. 
   - rewrite <- app_nil_l; auto.
-    apply trem; auto.
+    (* apply trem; auto. *)
   -
     find_copy_apply_lem_hyp step_seval.
     find_copy_apply_lem_hyp step_pl_eq.

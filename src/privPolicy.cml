@@ -1,0 +1,38 @@
+(** val get_data' : coq_Term **)
+
+val get_data' =
+  Coq_asp (ASPC ALL EXTD (Coq_asp_paramsC get_data_aspid get_data_args
+    source_plc get_data_targid))
+
+(** val privPolicy : coq_Plc -> coq_Term -> bool **)
+
+fun privPolicy sendPlc t = case t of
+  Coq_asp a =>
+  (case a of
+     ASPC _ _ a0 =>
+     let val Coq_asp_paramsC aspid _ rp _ = a0 in
+     (case eqb_aspid aspid get_data_aspid of
+        True =>
+        (case eqb sendPlc target_plc of
+           True => eqb rp source_plc
+         | False => False)
+      | False => True) end
+   | _ => True)
+| Coq_att _ t0 => privPolicy sendPlc t0
+| Coq_lseq t1 t2 =>
+  (case privPolicy sendPlc t1 of
+     True => privPolicy sendPlc t2
+   | False => False)
+| Coq_bseq _ t1 t2 =>
+  (case privPolicy sendPlc t1 of
+     True => privPolicy sendPlc t2
+   | False => False)
+| Coq_bpar _ t1 t2 =>
+  (case privPolicy sendPlc t1 of
+     True => privPolicy sendPlc t2
+   | False => False)
+
+(** val another_plc : coq_Plc **)
+
+val another_plc =
+  failwith "AXIOM TO BE REALIZED"

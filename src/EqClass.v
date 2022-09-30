@@ -53,6 +53,7 @@ Proof.
 Defined.
 
                                                              
+
 (*
 #[global]
 Instance pair_EqClass{A B:Type}`{H:EqClass A}`{H':EqClass B} : EqClass (A*B) :=
