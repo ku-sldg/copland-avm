@@ -49,15 +49,6 @@ Definition checkASP_fwd (p:Plc) (f:FWD) (params:ASP_PARAMS)
  *)
 
 
-Inductive AppResultC: Set :=
-| mtc_app: AppResultC
-| nnc_app: N_ID -> BS -> AppResultC
-| ggc_app: Plc -> ASP_PARAMS -> BS -> AppResultC -> AppResultC
-| hhc_app: Plc -> ASP_PARAMS -> BS -> AppResultC -> (* Evidence -> *) AppResultC
-| eec_app: Plc -> ASP_PARAMS -> BS -> AppResultC ->(* Evidence -> *) AppResultC
-| ssc_app: AppResultC -> AppResultC -> AppResultC.
-
-
 Fixpoint build_app_comp_evC (et:Evidence) (ls:RawEv) (nonceGolden:BS) : Opt AppResultC :=
   match et with
   | mt => ret mtc_app

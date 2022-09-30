@@ -15,7 +15,7 @@ Definition target_plc : Plc := S O.
 *)
 
 Definition source_plc : Plc. Admitted.
-Definition target_plc : Plc. Admitted.
+Definition dest_plc : Plc. Admitted.
 
 Definition cal_ak_targid : ASP_ID. Admitted.
 Definition cal_ak_aspid : ASP_ID. Admitted.

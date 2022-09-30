@@ -212,3 +212,12 @@ Open Scope core_cop_ent_scope.
 Definition test2 := <<core>{ __ -> {} }>.
 Example test2ex : test2 = (lseqc (aspc CPYC) (aspc NULLC)). reflexivity. Defined.
 Example test3 : <<core>{ CLR -> {}}> = (lseqc (aspc CLEAR) (aspc NULLC)). reflexivity. Defined.
+
+
+Inductive AppResultC: Set :=
+| mtc_app: AppResultC
+| nnc_app: N_ID -> BS -> AppResultC
+| ggc_app: Plc -> ASP_PARAMS -> BS -> AppResultC -> AppResultC
+| hhc_app: Plc -> ASP_PARAMS -> BS -> AppResultC -> (* Evidence -> *) AppResultC
+| eec_app: Plc -> ASP_PARAMS -> BS -> AppResultC ->(* Evidence -> *) AppResultC
+| ssc_app: AppResultC -> AppResultC -> AppResultC.

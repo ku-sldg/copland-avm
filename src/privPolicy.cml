@@ -13,7 +13,7 @@ fun privPolicy sendPlc t = case t of
      let val Coq_asp_paramsC aspid _ rp _ = a0 in
      (case eqb_aspid aspid get_data_aspid of
         True =>
-        (case eqb sendPlc target_plc of
+        (case eqb sendPlc dest_plc of
            True => eqb rp source_plc
          | False => False)
       | False => True) end

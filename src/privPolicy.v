@@ -23,7 +23,7 @@ Definition get_data' : Term :=
 Fixpoint privPolicy (sendPlc:Plc) (t:Term) : bool := 
     match t with 
     | asp (ASPC _ _ (asp_paramsC aspid args rp tid)) => match eqb_aspid aspid get_data_aspid with 
-                                                        | true => if andb (Nat.eqb sendPlc target_plc) (Nat.eqb rp source_plc) then true else false  
+                                                        | true => if andb (Nat.eqb sendPlc dest_plc) (Nat.eqb rp source_plc) then true else false  
                                                         | false => true 
                                                         end
     | asp _ => true
@@ -35,20 +35,20 @@ Fixpoint privPolicy (sendPlc:Plc) (t:Term) : bool :=
 
 Global Hint Resolve privPolicy : core. 
 
-Example privCheck1 : privPolicy target_plc get_data' = true.
+Example privCheck1 : privPolicy dest_plc get_data' = true.
 Proof. 
   unfold privPolicy. simpl. rewrite eqb_refl. rewrite PeanoNat.Nat.eqb_refl. rewrite PeanoNat.Nat.eqb_refl. auto. 
 Qed. 
 
 Definition another_plc : Plc. Admitted.  
 
-Example privCheck2 : exists p: Plc, p <> target_plc -> privPolicy another_plc get_data' = false.
+Example privCheck2 : exists p: Plc, p <> dest_plc -> privPolicy another_plc get_data' = false.
 Proof.
   intros. exists another_plc. intros.
   simpl. rewrite eqb_refl. rewrite PeanoNat.Nat.eqb_refl. apply PeanoNat.Nat.eqb_neq in H. rewrite H. auto.
 Qed.
 
-Example privCheck2' : forall p: Plc, p <> target_plc -> privPolicy p get_data' = false.
+Example privCheck2' : forall p: Plc, p <> dest_plc -> privPolicy p get_data' = false.
 Proof.
   intros.
   simpl. rewrite eqb_refl. rewrite PeanoNat.Nat.eqb_refl. apply PeanoNat.Nat.eqb_neq in H. rewrite H. auto.  
