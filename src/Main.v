@@ -190,7 +190,8 @@ Proof.
     jkjke'.
     jkjke'.
     rewrite app_comm_cons; eauto. 
-  - rewrite <- app_nil_l; auto.
+  - rewrite <- app_nil_l.
+    econstructor; eauto.
     (* apply trem; auto. *)
   -
     find_copy_apply_lem_hyp step_seval.

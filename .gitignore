@@ -15,3 +15,4 @@ src/*.cml
 src/.vscode
 src/_CoqProject.local
 .vscode
+src/_CoqProject
