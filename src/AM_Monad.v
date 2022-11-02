@@ -16,6 +16,18 @@ Definition am_newNonce (bs:BS) : AM nat :=
   put (mkAM_St newMap newId) ;;
   ret oldId.
 
+Check map_get.
+
+Definition am_getNonce (nid:nat) : AM BS :=
+  oldSt <- get ;;
+  let oldMap := am_nonceMap oldSt in
+  let resopt := map_get oldMap nid in
+  match resopt with
+  | Some res => ret res
+  | None => failm
+  end.
+                 
+
 Definition am_runCvm_nonce (t:Term) (p:Plc) (bs:BS) : AM (nat * RawEv) :=
   nid <- am_newNonce bs ;;
   ret (nid, run_cvm_rawEv t p [bs]).

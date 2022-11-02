@@ -53,6 +53,10 @@ Notation "x <- c1 ;; c2" := (@bind _ _ _ c1 (fun x => c2))
 Notation "e1 ;; e2" := (_ <- e1 ;; e2)
                          (at level 100, right associativity).
 
+Notation "' pat <- c1 ;; c2" :=
+    (@bind _ _ c1 (fun x => match x with pat => c2 end))
+    (at level 100, pat pattern, c1 at next level, right associativity).
+
 Definition gets {S} {A} (f:S -> A) : St S A :=
   st <- get ;;
   ret (f st).

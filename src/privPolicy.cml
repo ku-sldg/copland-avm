@@ -31,8 +31,3 @@ fun privPolicy sendPlc t = case t of
   (case privPolicy sendPlc t1 of
      True => privPolicy sendPlc t2
    | False => False)
-
-(** val another_plc : coq_Plc **)
-
-val another_plc =
-  failwith "AXIOM TO BE REALIZED"

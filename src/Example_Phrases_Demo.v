@@ -1,16 +1,13 @@
 Require Import Term_Defs Example_Phrases_Demo_Admits.
 
+(*
+Require Import String.
+ *)
+
 Require Import List.
 Import ListNotations.
 
-(*
-Require Import String.
-*)
 
-
-(*
-Definition term1 := att 1 (asp SIG).
-*)
 
 
 Definition create_and_load_ak : Term :=
@@ -36,14 +33,35 @@ Definition ssl_enc : Term :=
 Definition local_enc : Term :=
   asp (ENC 0).
 
+Definition ssl_sig : Term :=
+  asp (
+      ASPC ALL EXTD (asp_paramsC ssl_sig_aspid ssl_sig_args dest_plc ssl_sig_targid)).
+
+Definition kim_meas : Term :=
+  asp (
+  ASPC ALL EXTD (asp_paramsC kim_meas_aspid kim_meas_args dest_plc kim_meas_targid)).
+
 Definition demo_phrase : Term :=
-  <{ create_and_load_ak ->
+  <{ kim_meas ->
+     create_and_load_ak ->
      pub_key_to_bc ->
      get_data ->
      tpm_sig ->
-     (*local_enc*)
      ssl_enc }>.
 
+
+Definition client_data_phrase : Term :=
+  asp (
+      ASPC ALL KILL (asp_paramsC store_clientData_aspid store_clientData_args source_plc store_clientData_targid)).
+
+
+
+(*
+Definition etsize_mt_sig :=
+  et_size (uu 0 EXTD sig_params mt).
+
+Compute etsize_mt_sig.
+*)
 
 (*
 Definition P0 : Plc := 0.

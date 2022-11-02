@@ -10,7 +10,7 @@ Require Import String.
 (* notation scope so that strings are interpreted correctly. *)
 Open Scope string_scope.
 
-Require Import Eqb_Evidence. 
+Require Import Eqb_Evidence.
 
 (* here is the get_data term copied. We want to make sure that the get_data_aspid is only called when the target (0) requests from the source (1)*)
 Definition get_data' : Term :=
@@ -40,6 +40,7 @@ Proof.
   unfold privPolicy. simpl. rewrite eqb_refl. rewrite PeanoNat.Nat.eqb_refl. rewrite PeanoNat.Nat.eqb_refl. auto. 
 Qed. 
 
+(*
 Definition another_plc : Plc. Admitted.  
 
 Example privCheck2 : exists p: Plc, p <> dest_plc -> privPolicy another_plc get_data' = false.
@@ -47,6 +48,7 @@ Proof.
   intros. exists another_plc. intros.
   simpl. rewrite eqb_refl. rewrite PeanoNat.Nat.eqb_refl. apply PeanoNat.Nat.eqb_neq in H. rewrite H. auto.
 Qed.
+*)
 
 Example privCheck2' : forall p: Plc, p <> dest_plc -> privPolicy p get_data' = false.
 Proof.

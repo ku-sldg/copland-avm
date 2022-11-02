@@ -4,7 +4,7 @@ Require Import (*Impl_VM*) Term_Defs Cvm_Run IO_Stubs Example_Phrases_Demo. (*Cv
 
 Require Import privPolicy. 
 
-Require Import Impl_appraisal.
+Require Import Impl_appraisal_AM.
 
 Extraction Language CakeML.
 
@@ -64,7 +64,7 @@ Separate Extraction run_cvm' build_app_comp_evC eval cert_style_simple_sig cert_
 
 Extract Constant Nat.add => "(+)".
 
-Separate Extraction run_cvm_rawEv demo_phrase run_gen_appraise_w_nonce privPolicy.
+Separate Extraction run_cvm_rawEv demo_phrase client_data_phrase ssl_sig (* run_gen_appraise_w_nonce *) run_gen_appraise_am_nonce  privPolicy.
 
 
 

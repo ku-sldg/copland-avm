@@ -34,13 +34,13 @@ External_Facts.v
 CvmSemantics.v
 Example_Phrases_Demo_Admits.v
 Example_Phrases_Demo.v
-Appraisal_IO_Stubs_New.v
-Appraisal_Defs_New.v
+Appraisal_IO_Stubs_AM.v
+Appraisal_Defs_AM.v
 EqClass.v
 Maps.v
 AM_St.v
 AM_Monad.v
-Impl_appraisal.v
+Impl_appraisal_AM.v
 Appraisal_Semantics.v
 privPolicy.v
 Extraction_Cvm_Cake.v
