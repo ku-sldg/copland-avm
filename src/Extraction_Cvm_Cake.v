@@ -64,7 +64,7 @@ Separate Extraction run_cvm' build_app_comp_evC eval cert_style_simple_sig cert_
 
 Extract Constant Nat.add => "(+)".
 
-Separate Extraction run_cvm_rawEv demo_phrase client_data_phrase ssl_sig (* run_gen_appraise_w_nonce *) run_gen_appraise_am_nonce  privPolicy.
+Separate Extraction run_cvm_rawEv demo_phrase client_data_phrase ssl_sig (* run_gen_appraise_w_nonce *) run_am_sendReq_nonce privPolicy.
 
 
 

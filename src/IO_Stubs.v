@@ -34,6 +34,10 @@ Definition parallel_vm_thread (l:Loc) (t:Core_Term) (p:Plc) (e:EvC) : EvC.
 Admitted.
 
 
+(** * Stub for a top-level request from a remote client AM  *)
+Definition am_sendReq (t:Term) (pFrom:Plc) (pTo:Plc) (e:RawEv) : RawEv.
+Admitted.
+
 Definition do_asp' (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) : IO BS :=
   ret (do_asp params e mpl x).
 

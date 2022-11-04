@@ -26,7 +26,7 @@ Definition am_getNonce (nid:nat) : AM BS :=
   | Some res => ret res
   | None => failm
   end.
-                 
+
 
 Definition am_runCvm_nonce (t:Term) (p:Plc) (bs:BS) : AM (nat * RawEv) :=
   nid <- am_newNonce bs ;;

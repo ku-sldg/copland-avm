@@ -15,4 +15,4 @@ Record AM_St : Type := mkAM_St
                            checked : list nat*) *) }.
 
 Definition empty_amst :=
-  mkAM_St [] 0 (* [] [] *) .
+  mkAM_St map_empty 0 (* [] [] *) .

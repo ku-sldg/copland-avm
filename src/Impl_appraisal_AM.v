@@ -5,6 +5,8 @@ Require Import Impl_vm StAM. *)
 
 Require Import Appraisal_Defs_AM Appraisal_IO_Stubs_AM (*Appraisal_Evidence *) AM_Monad AM_St.
 
+Require Import IO_Stubs.
+
 Require Import List.
 Import ListNotations.
 
@@ -79,14 +81,16 @@ Definition run_gen_appraise_am (t:Term) (p:Plc) (et:Evidence) (ls:RawEv) : AppRe
   let optRes := evalSt am_appr_comp empty_amst in
   fromSome mtc_app optRes.
 
-Definition gen_appraise_am_nonce (t:Term) (p:Plc) : AM AppResultC :=
+Definition am_sendReq_nonce (t:Term) (pFrom:Plc) (pTo:Plc) : AM AppResultC :=
   let nonce_bits := gen_nonce_bits in
   nid <- am_newNonce nonce_bits ;;
-  gen_appraise_am_comp t p (nn nid) [nonce_bits].
+  let resev := am_sendReq t pFrom pTo [nonce_bits] in
+  gen_appraise_am_comp t pFrom (nn nid) resev.
 
-Definition run_gen_appraise_am_nonce (t:Term) (p:Plc) : AppResultC :=
-  let am_comp := gen_appraise_am_nonce t p in
+Definition run_am_sendReq_nonce (t:Term) (pFrom:Plc) (pTo:Plc) : AppResultC :=
+  let am_comp := am_sendReq_nonce t pFrom pTo in
   let optRes := evalSt am_comp empty_amst in
+  (* TODO:  use input nonce mapping instead of empty_amst here *)
   fromSome mtc_app optRes.
 
 
