@@ -6,12 +6,12 @@ Require Import List.
 Import ListNotations.
 
 
-Definition am_sendReq_auth (t:Term) (pFrom:Plc) (pTo:Plc) (initEv:RawEv) (* (et:Evidence) *) : AM unit :=
+Definition am_sendReq_auth (t:Term) (pFrom:Plc) (pTo:Plc) (initEv:RawEv) (* (et:Evidence) *) : AM RawEv :=
   let auth_phrase := ssl_sig in
   let auth_rawev := run_cvm_rawEv auth_phrase pFrom [] in
-  let et := eval t pFrom mt in
+  let et := eval auth_phrase pFrom mt in
   let resev := am_sendReq t pFrom pTo et (auth_rawev ++ initEv) in
-  ret tt.
+  ret resev.
 
 Definition client_demo_am_comp (v:unit) : AM unit :=
   let app_res := run_am_sendReq_nonce_auth demo_phrase dest_plc source_plc in
