@@ -12,7 +12,10 @@ Definition term1 := att 1 (asp SIG).
 (*
 Definition source_plc : Plc := O.
 Definition target_plc : Plc := S O.
-*)
+ *)
+
+Definition client_data_bs : BS. Admitted.
+
 
 Definition source_plc : Plc. Admitted.
 Definition dest_plc : Plc. Admitted.

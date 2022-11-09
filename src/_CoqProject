@@ -41,6 +41,7 @@ Maps.v
 AM_St.v
 AM_Monad.v
 Impl_appraisal_AM.v
+Demo_AM.v
 Appraisal_Semantics.v
 privPolicy.v
 Extraction_Cvm_Cake.v

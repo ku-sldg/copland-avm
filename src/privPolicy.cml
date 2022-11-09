@@ -1,9 +1,3 @@
-(** val get_data' : coq_Term **)
-
-val get_data' =
-  Coq_asp (ASPC ALL EXTD (Coq_asp_paramsC get_data_aspid get_data_args
-    source_plc get_data_targid))
-
 (** val privPolicy : coq_Plc -> coq_Term -> bool **)
 
 fun privPolicy sendPlc t = case t of

@@ -1,11 +1,13 @@
 Require Import Term ConcreteEvidence StMonad_Coq. (*Appraisal_Evidence*) (*GenStMonad MonadVM MonadAM*)
 
+Require Import Example_Phrases_Demo.
+
 (*
 Require Import Impl_vm StAM. *)
 
 Require Import Appraisal_Defs_AM Appraisal_IO_Stubs_AM (*Appraisal_Evidence *) AM_Monad AM_St.
 
-Require Import IO_Stubs.
+Require Import IO_Stubs privPolicy Cvm_Run.
 
 Require Import List.
 Import ListNotations.
@@ -76,29 +78,72 @@ Definition fromSome{A:Type} (default:A) (opt:option A): A :=
 Definition gen_appraise_am_comp (t:Term) (p:Plc) (et:Evidence) (ls:RawEv) : AM AppResultC :=
   gen_appraise_AM (eval t p et) ls.
 
-Definition run_gen_appraise_am (t:Term) (p:Plc) (et:Evidence) (ls:RawEv) : AppResultC :=
-  let am_appr_comp := gen_appraise_AM (eval t p et) ls in
-  let optRes := evalSt am_appr_comp empty_amst in
-  fromSome mtc_app optRes.
 
-Definition am_sendReq_nonce (t:Term) (pFrom:Plc) (pTo:Plc) : AM AppResultC :=
-  let nonce_bits := gen_nonce_bits in
-  nid <- am_newNonce nonce_bits ;;
-  let resev := am_sendReq t pFrom pTo [nonce_bits] in
-  gen_appraise_am_comp t pFrom (nn nid) resev.
-
-Definition run_am_sendReq_nonce (t:Term) (pFrom:Plc) (pTo:Plc) : AppResultC :=
-  let am_comp := am_sendReq_nonce t pFrom pTo in
+Definition run_am_app_comp{A:Type} (am_comp:AM A) (default_A:A) : A :=
   let optRes := evalSt am_comp empty_amst in
   (* TODO:  use input nonce mapping instead of empty_amst here *)
-  fromSome mtc_app optRes.
+  fromSome default_A optRes.
+
+Definition run_gen_appraise_am (t:Term) (p:Plc) (et:Evidence) (ls:RawEv) : AppResultC := 
+  let am_appr_comp := gen_appraise_AM (eval t p et) ls in
+  (run_am_app_comp am_appr_comp mtc_app).
+
+Definition am_sendReq_nonce (t:Term) (pFrom:Plc) (pTo:Plc) (et:Evidence) : AM AppResultC :=
+  let nonce_bits := gen_nonce_bits in
+  nid <- am_newNonce nonce_bits ;;
+  let resev := am_sendReq t pFrom pTo et [nonce_bits] in
+  gen_appraise_am_comp t pFrom (nn nid) resev.
+
+Definition run_am_sendReq_nonce (t:Term) (pFrom:Plc) (pTo:Plc) (et:Evidence) : AppResultC :=
+  let am_comp := am_sendReq_nonce t pFrom pTo et in
+  (run_am_app_comp am_comp mtc_app).
+(* TODO:  use input nonce mapping instead of empty_amst here?? *)
+
+Definition am_sendReq_nonce_auth (t:Term) (pFrom:Plc) (pTo:Plc) (* (et:Evidence) *) : AM AppResultC :=
+  let nonce_bits := gen_nonce_bits in
+  nid <- am_newNonce nonce_bits ;;
+  let auth_phrase := ssl_sig in
+  let auth_rawev := run_cvm_rawEv auth_phrase pFrom [] in
+  let et := eval auth_phrase pFrom mt in
+  let resev := am_sendReq t pFrom pTo et (auth_rawev ++ [nonce_bits]) in
+  gen_appraise_am_comp t pFrom (nn nid) resev.
+
+Definition run_am_sendReq_nonce_auth (t:Term) (pFrom:Plc) (pTo:Plc) (* (et:Evidence) *) : AppResultC :=
+  let am_comp := am_sendReq_nonce_auth t pFrom pTo in
+  (run_am_app_comp am_comp mtc_app).
 
 
+Definition am_check_auth_tok (t:Term) (fromPl:Plc) (rawev:RawEv) (auth_et:Evidence) : AM (AppResultC * RawEv) :=
+  let esize := et_size auth_et in
+  let appev := firstn esize rawev in
+  let restev := skipn esize rawev in
+  
+  appres <-
+  (match (requester_bound t fromPl auth_et) with
+   | false => ret mtc_app
+   | true => gen_appraise_AM auth_et appev
+   end) ;;
+  ret (appres, restev).
 
 
+Definition am_serve_auth_tok_req (t:Term) (fromPl:Plc) (myPl:Plc) (rawev:RawEv) (auth_et:Evidence) : AM RawEv :=
+  v <- am_check_auth_tok t fromPl rawev auth_et ;;
+  match v with
+    (appres, initRawEv) =>
+    match (andb (requester_bound t fromPl auth_et) (appraise_auth_tok appres)) with
+    | true =>
+      match (privPolicy fromPl t) with
+      | true => ret (run_cvm_rawEv t myPl initRawEv)
+      | false => failm
+      end
+                   
+    | false => failm
+    end
+  end.
 
-
-
+Definition run_am_serve_auth_tok_req (t:Term) (fromPl:Plc) (myPl:Plc) (rawev:RawEv) (auth_et:Evidence) : RawEv :=
+  run_am_app_comp (am_serve_auth_tok_req t fromPl myPl rawev auth_et) [].
+  
 
 
 
