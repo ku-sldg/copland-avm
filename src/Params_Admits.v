@@ -1,4 +1,5 @@
-Require Export Term_Defs_Core.
+Require Import Term_Defs_Core.
+
 
 (** Abstract definitions for signing and hashing parameters.  
     May instantiate these during compilation in the future. *)

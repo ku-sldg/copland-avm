@@ -10,36 +10,33 @@ Import ListNotations.
 
 
 
+
+Definition kim_meas : Term :=
+  <{ << kim_meas_aspid dest_plc kim_meas_targid >> }>.
+
 Definition create_and_load_ak : Term :=
   asp (
-  ASPC ALL KEEP (asp_paramsC cal_ak_aspid cal_ak_args source_plc cal_ak_targid)).
+      ASPC ALL KEEP
+           (asp_paramsC
+              cal_ak_aspid cal_ak_args source_plc cal_ak_targid)).
 
 Definition pub_key_to_bc : Term :=
   asp (
-  ASPC ALL KEEP (asp_paramsC pub_bc_aspid pub_bc_args source_plc pub_bc_targid)).
+      ASPC ALL KEEP
+           (asp_paramsC
+              pub_bc_aspid pub_bc_args source_plc pub_bc_targid)).
 
 Definition get_data : Term :=
-  asp (
-  ASPC ALL EXTD (asp_paramsC get_data_aspid get_data_args source_plc get_data_targid)).
+  <{ << get_data_aspid source_plc get_data_targid >> }>.
 
 Definition tpm_sig : Term :=
-  asp (
-  ASPC ALL EXTD (asp_paramsC tpm_sig_aspid tpm_sig_args source_plc tpm_sig_targid)).
+  <{ << tpm_sig_aspid source_plc tpm_sig_targid >> }>.
 
 Definition ssl_enc : Term :=
   asp (
-      ASPC ALL ENCR (asp_paramsC ssl_enc_aspid ssl_enc_args source_plc ssl_enc_targid)).
-
-Definition local_enc : Term :=
-  asp (ENC 0).
-
-Definition ssl_sig : Term :=
-  asp (
-      ASPC ALL EXTD (asp_paramsC ssl_sig_aspid ssl_sig_args dest_plc ssl_sig_targid)).
-
-Definition kim_meas : Term :=
-  asp (
-  ASPC ALL EXTD (asp_paramsC kim_meas_aspid kim_meas_args dest_plc kim_meas_targid)).
+      ASPC ALL ENCR
+           (asp_paramsC
+              ssl_enc_aspid ssl_enc_args source_plc ssl_enc_targid)).
 
 Definition demo_phrase : Term :=
   <{ kim_meas ->
@@ -48,6 +45,14 @@ Definition demo_phrase : Term :=
      get_data ->
      tpm_sig ->
      ssl_enc }>.
+
+
+
+
+
+Definition ssl_sig : Term :=
+  asp (
+      ASPC ALL EXTD (asp_paramsC ssl_sig_aspid ssl_sig_args dest_plc ssl_sig_targid)).
 
 
 Definition client_data_phrase : Term :=

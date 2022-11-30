@@ -1,8 +1,7 @@
 Require Import List.
 Import List.ListNotations.
 
-Require Export Params_Admits.
-Require Import Term_Defs.
+Require Import Params_Admits Term_Defs Eqb_Evidence.
 
 Require Import Example_Phrases_Demo Example_Phrases_Demo_Admits.  
 
@@ -10,7 +9,6 @@ Require Import String.
 (* notation scope so that strings are interpreted correctly. *)
 Open Scope string_scope.
 
-Require Import Eqb_Evidence.
 
 (* here is the get_data term copied. We want to make sure that the get_data_aspid is only called when the target (0) requests from the source (1)*)
 Definition get_data' : Term :=

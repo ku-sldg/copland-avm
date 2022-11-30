@@ -108,6 +108,23 @@ Definition am_sendReq_nonce_auth (t:Term) (pFrom:Plc) (pTo:Plc) (* (et:Evidence)
   let resev := am_sendReq t pFrom pTo et (auth_rawev ++ [nonce_bits]) in
   gen_appraise_am_comp t pFrom (nn nid) resev.
 
+(*
+Definition client_demo_am_comp (t:Term) (pFrom:Plc) (pTo:Plc) : AM AppResultC :=
+  nonce_bits <- gen_nonce_bits ;;
+  nid <- am_newNonce nonce_bits ;;
+  let auth_phrase := ssl_sig in
+  auth_rawev <- run_cvm_rawEv auth_phrase pFrom [] ;;
+  let auth_et := eval auth_phrase pFrom mt in
+  resev <- am_sendReq t pFrom pTo auth_et (auth_rawev ++ [nonce_bits]) ;;
+  app_res <- gen_appraise_am_comp t pFrom (nn nid) resev ;;
+    match (walk app_res) with
+    | (true, server_raw_data) =>
+        run_cvm_rawEv store_server_data pFrom [server_raw_data]
+    end ;;
+  ret app_res.
+*)
+    
+
 Definition run_am_sendReq_nonce_auth (t:Term) (pFrom:Plc) (pTo:Plc) (* (et:Evidence) *) : AppResultC :=
   let am_comp := am_sendReq_nonce_auth t pFrom pTo in
   (run_am_app_comp am_comp mtc_app).

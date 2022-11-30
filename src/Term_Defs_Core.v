@@ -24,7 +24,11 @@ Import List.ListNotations.
 
 (*
 Set Nested Proofs Allowed.
-*)
+ *)
+
+Module Export Term_Defs_Core.
+
+
 
 
 (** * Terms and Evidence
@@ -221,3 +225,6 @@ Inductive AppResultC: Set :=
 | hhc_app: Plc -> ASP_PARAMS -> BS -> AppResultC -> (* Evidence -> *) AppResultC
 | eec_app: Plc -> ASP_PARAMS -> BS -> AppResultC ->(* Evidence -> *) AppResultC
 | ssc_app: AppResultC -> AppResultC -> AppResultC.
+
+
+End Term_Defs_Core.

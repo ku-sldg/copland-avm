@@ -24,6 +24,8 @@ Import List.ListNotations.
 
 Require Export Params_Admits.
 
+Require Export Term_Defs_Core.
+
 (* sig_params, hsh_params, defs were here *)
 
 (**  Translating a primitive Copland phrase to its Core_Term equivalent *)

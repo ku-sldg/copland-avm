@@ -1,10 +1,13 @@
-(** val privPolicy : coq_Plc -> coq_Term -> bool **)
+(** val privPolicy :
+    Term_Defs_Core.Term_Defs_Core.coq_Plc ->
+    Term_Defs_Core.Term_Defs_Core.coq_Term -> bool **)
 
 fun privPolicy sendPlc t = case t of
-  Coq_asp a =>
+  Term_Defs_Core.Term_Defs_Core.Coq_asp a =>
   (case a of
-     ASPC _ _ a0 =>
-     let val Coq_asp_paramsC aspid _ rp _ = a0 in
+     Term_Defs_Core.Term_Defs_Core.ASPC _ _ a0 =>
+     let val Term_Defs_Core.Term_Defs_Core.Coq_asp_paramsC aspid _ rp _ = a0
+     in
      (case eqb_aspid aspid get_data_aspid of
         True =>
         (case eqb sendPlc dest_plc of
@@ -12,16 +15,16 @@ fun privPolicy sendPlc t = case t of
          | False => False)
       | False => True) end
    | _ => True)
-| Coq_att _ t0 => privPolicy sendPlc t0
-| Coq_lseq t1 t2 =>
+| Term_Defs_Core.Term_Defs_Core.Coq_att _ t0 => privPolicy sendPlc t0
+| Term_Defs_Core.Term_Defs_Core.Coq_lseq t1 t2 =>
   (case privPolicy sendPlc t1 of
      True => privPolicy sendPlc t2
    | False => False)
-| Coq_bseq _ t1 t2 =>
+| Term_Defs_Core.Term_Defs_Core.Coq_bseq _ t1 t2 =>
   (case privPolicy sendPlc t1 of
      True => privPolicy sendPlc t2
    | False => False)
-| Coq_bpar _ t1 t2 =>
+| Term_Defs_Core.Term_Defs_Core.Coq_bpar _ t1 t2 =>
   (case privPolicy sendPlc t1 of
      True => privPolicy sendPlc t2
    | False => False)
