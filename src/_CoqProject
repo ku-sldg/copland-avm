@@ -16,6 +16,7 @@ Term_system.v
 Trace.v
 LTS.v
 Main.v
+Manifest.v
 ConcreteEvidence.v
 StMonad_Coq.v
 Cvm_St.v
