@@ -4,7 +4,7 @@ Require Import (*Impl_VM*) Term_Defs Cvm_Run IO_Stubs Example_Phrases_Demo. (*Cv
 
 Require Import privPolicy Manifest.
 
-Require Import Impl_appraisal_AM Demo_AM.
+Require Import Impl_appraisal Demo_AM.
 
 (*
 Require Import Cvm_Impl.

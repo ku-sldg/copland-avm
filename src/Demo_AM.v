@@ -1,4 +1,4 @@
-Require Import AM_Monad Impl_appraisal_AM StMonad_Coq Term_Defs_Core Term Cvm_Run IO_Stubs.
+Require Import AM_Monad Impl_appraisal StMonad_Coq Term_Defs_Core Term Cvm_Run IO_Stubs.
 
 Require Import Example_Phrases_Demo Example_Phrases_Demo_Admits.
 
