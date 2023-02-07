@@ -17,12 +17,12 @@ Definition checkEE (params:ASP_PARAMS) (bs:BS) : Opt BS :=
 Some (checkEE' params bs).
 *)
 
-Definition decrypt_bs_to_rawev_am (bs:BS) (params:ASP_PARAMS) : AM RawEv :=
-  ret (decrypt_bs_to_rawev' bs params).
+Definition decrypt_bs_to_rawev' (bs:BS) (params:ASP_PARAMS) : AM RawEv :=
+  ret (decrypt_bs_to_rawev bs params).
 
-Definition checkGG (params:ASP_PARAMS) (p:Plc) (sig:BS) (ls:RawEv) : AM BS :=
-  ret (checkGG' params p sig ls).
+Definition check_asp_EXTD' (params:ASP_PARAMS) (p:Plc) (sig:BS) (ls:RawEv) : AM BS :=
+  ret (check_asp_EXTD params p sig ls).
 
-Definition checkNonce (nid:nat) (nonceCandidate:BS) : AM BS :=
+Definition checkNonce' (nid:nat) (nonceCandidate:BS) : AM BS :=
   nonceGolden <- am_getNonce nid ;;
-  ret (checkNonce' nonceGolden nonceCandidate).
+  ret (checkNonce nonceGolden nonceCandidate).

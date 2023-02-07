@@ -29,7 +29,7 @@ Fixpoint gen_appraise_AM (et:Evidence) (ls:RawEv) : AM AppResultC :=
     (* '(bs, _) *)v <- (peel_bs_am ls) ;;
     match v with
       (bs, _) =>
-      res <- checkNonce nid bs ;;  (* TODO: proper nonce check *)
+      res <- checkNonce' nid bs ;;  (* TODO: proper nonce check *)
       ret (nnc_app nid res)
     end
         (*
@@ -45,7 +45,7 @@ Fixpoint gen_appraise_AM (et:Evidence) (ls:RawEv) : AM AppResultC :=
       (* '(bs, ls') *)v <- peel_bs_am ls ;;
       match v with
         (bs, ls') => 
-        decrypted_ls <- decrypt_bs_to_rawev_am bs params ;;
+        decrypted_ls <- decrypt_bs_to_rawev' bs params ;;
         rest <- gen_appraise_AM et' decrypted_ls ;;
         ret (eec_app p params passed_bs rest)
       end
@@ -55,7 +55,7 @@ Fixpoint gen_appraise_AM (et:Evidence) (ls:RawEv) : AM AppResultC :=
       (* '(bs, ls') *)v <- peel_bs_am ls ;;
       match v with
         (bs, ls') => 
-        v <- checkGG params p bs ls' ;;
+        v <- check_asp_EXTD' params p bs ls' ;;
         rest <- gen_appraise_AM et' ls' ;;
         ret (ggc_app p params v rest)
       end

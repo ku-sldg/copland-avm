@@ -13,9 +13,19 @@ Definition am_sendReq_auth (t:Term) (pFrom:Plc) (pTo:Plc) (initEv:RawEv) (* (et:
   let resev := am_sendReq t pFrom pTo et (auth_rawev ++ initEv) in
   ret resev.
 
-Definition client_demo_am_comp (v:unit) : AM unit :=
-  let app_res := run_am_sendReq_nonce_auth demo_phrase dest_plc source_plc in
+Definition client_demo_am_comp (t:Term) : AM bool :=
+  let app_res := run_am_sendReq_nonce_auth t dest_plc source_plc in
   let bool_res :=
+      match app_res with
+      | (ggc_app _ _ kimcheckres _) => true
+      | _ => false (* default_bs *)
+      end in
+        (*
+  let bool_res :=
+      match kimcheckres with
+      | _ => true
+      end in *)
+      (*
       match app_res with
       | eec_app _ _ _
                 (ggc_app _ _ sigcheckres
@@ -24,11 +34,16 @@ Definition client_demo_am_comp (v:unit) : AM unit :=
         true
       | _ => false
       end in
-  if bool_res then
-    (am_sendReq_auth client_data_phrase dest_plc source_plc [client_data_bs]) ;;
-    ret tt
-  else 
-    ret tt.
+       *)
 
-Definition run_client_demo_am_comp (v:unit) : unit :=
-  run_am_app_comp (client_demo_am_comp tt) tt.
+  
+      
+  if bool_res then
+    (* (am_sendReq_auth client_data_phrase dest_plc source_plc [kimcheckres]) ;; *)
+    ret bool_res
+    (*ret tt *)
+  else
+    ret false.
+
+Definition run_client_demo_am_comp (t:Term) : bool :=
+  run_am_app_comp (client_demo_am_comp t) false.
