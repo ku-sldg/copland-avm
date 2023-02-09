@@ -94,10 +94,11 @@ Fixpoint genSymbolTail (sz : nat) : G string :=
   match sz with
   | 0 => ret ""
   | S sz' => freq [
-    (1, liftM (fun x => String x EmptyString) genIdChar) ;
-    (sz, bind (genIdChar) (fun h => 
-          bind (genSymbolTail sz') (fun t =>
-            ret (String h t))))
+    (1,   x <- genIdChar ;;
+          ret (String x EmptyString));
+    (sz,  h <- genIdChar ;;
+          t <- genSymbolTail sz' ;;
+          ret (String h t))
     ]
   end.
 Definition genSymbol : G string :=
@@ -366,6 +367,9 @@ Definition shrinkFWD_Aux (f : FWD) : list (FWD) :=
   match f with
   | EXTD => []
   | COMP => [EXTD]
+  | ENCR => [COMP]
+  | KILL => [ENCR]
+  | KEEP => [KILL]
   end.
 #[local]
 Instance shrinkFWD : Shrink (FWD) :=
@@ -430,6 +434,7 @@ Definition showASP_Aux (a : ASP) : string :=
     | ASPC sp fwd params => show params
     | SIG => "!"
     | HSH => "#"
+    | ENC v => "ENC"
     end.
     
 #[local]
@@ -446,9 +451,14 @@ constructor. unfold ssrbool.decidable.
 destruct a1, a2; try (left; reflexivity); try (right; intro C; inversion C; fail).
 pose proof (decASP_PARAMS a a0).
 inversion H. inversion dec; subst;
-destruct s, s0, f, f0; adec.
+destruct s, s0, f, f0; adec. 
+pose proof (decPlc p p0). inversion H; inversion dec; subst; adec.
 Defined.
 
+(* TODO: This does not GENERATE ENC! 
+but we also do not have a set syntax for ENC to parse...
+Once we get that, then we can add this and all tests should work the same
+*)
 (*** G ASP *)
 Definition gASP : G ASP :=
   oneOf [

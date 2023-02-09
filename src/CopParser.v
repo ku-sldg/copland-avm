@@ -510,7 +510,7 @@ Definition parseAT_Place (xs : list token) (sm : symbol_map)
   | h :: t =>
       (* convert it to a list of string in case @ place or @place *)
       let lh := (list_of_string h) in
-      if (Nat.eqb (length h) 1) 
+      if (Nat.eqb (String.length h) 1) 
       then (* it is likely @ place *)
         if (string_dec h "@")
         then (* found @, look for place in rem tokens*)
