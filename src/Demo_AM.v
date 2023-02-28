@@ -6,20 +6,43 @@ Require Import List.
 Import ListNotations.
 
 
-Definition am_sendReq_auth (t:Term) (pFrom:Plc) (pTo:Plc) (initEv:RawEv) (* (et:Evidence) *) : AM RawEv :=
-  let auth_phrase := ssl_sig in
-  let auth_rawev := run_cvm_rawEv auth_phrase pFrom [] in
-  let et := eval auth_phrase pFrom mt in
-  let resev := am_sendReq t pFrom pTo et (auth_rawev ++ initEv) in
-  ret resev.
+(* dest_plc = 0, source_plc = 3 *)
+Definition client_demo_am_comp (t:Term) : AppResultC :=
+  (*
+  run_am_sendReq_nonce_auth t dest_plc source_plc. 
+   *)
+  run_am_sendReq_nonce t dest_plc source_plc.
 
-Definition client_demo_am_comp (t:Term) : AM bool :=
-  let app_res := run_am_sendReq_nonce_auth t dest_plc source_plc in
-  let bool_res :=
+Definition client_demo_am_comp_auth (t:Term) : AppResultC :=
+  (*
+  run_am_sendReq_nonce_auth t dest_plc source_plc. 
+   *)
+  run_am_sendReq_nonce_auth t dest_plc source_plc.
+
+
+
+(*
+
+
+
+
+
+  (*
+  let app_res := run_am_sendReq_nonce_auth t dest_plc (* 0 *) source_plc (* 1 *) in
+  let bool_res := appres_size_lt_zero app_res in
+   *)
+  
+
+(*
+  
       match app_res with
       | (ggc_app _ _ kimcheckres _) => true
       | _ => false (* default_bs *)
       end in
+
+*)
+
+
         (*
   let bool_res :=
       match kimcheckres with
@@ -45,5 +68,11 @@ Definition client_demo_am_comp (t:Term) : AM bool :=
   else
     ret false.
 
-Definition run_client_demo_am_comp (t:Term) : bool :=
-  run_am_app_comp (client_demo_am_comp t) false.
+*)
+
+
+
+(* 
+Definition run_client_demo_am_comp (t:Term) : AppResultC :=
+  run_am_app_comp (client_demo_am_comp t) mtc_app.
+*)

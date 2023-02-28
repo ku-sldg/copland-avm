@@ -57,6 +57,7 @@ Extraction Implicit do_wait_par_thread [2 3 4].
 
 Extract Constant sig_params => "( undefined () )".
 Extract Constant hsh_params => "( undefined () )".
+(* Extract Constant + => "add". *)
 
 (*
 Definition my_extracted (t:Term) (st:cvm_st) (et:Evidence) (ls:RawEv) :=
@@ -71,9 +72,11 @@ Definition my_extracted (t:Term) (st:cvm_st) (et:Evidence) (ls:RawEv) :=
 Separate Extraction run_cvm' build_app_comp_evC eval cert_style_simple_sig cert_style cert_cache_p1 cert_cache_p0 bg_check par_mut_p0 par_mut_p1 layered_bg_weak layered_bg_strong test_par_nested anno_par_list top_level_thread_count.
 *)
 
+(*
 Extract Constant Nat.add => "(+)".
+*)
 
-Separate Extraction (* run_cvm_rawEv *) demo_phrase client_data_phrase ssl_sig (* run_gen_appraise_w_nonce *) run_client_demo_am_comp run_am_serve_auth_tok_req CoplandM.Manifest.Manifest. (* privPolicy *)
+Separate Extraction (* run_cvm_rawEv *) demo_phrase demo_phrase2 demo_phrase3 client_data_phrase ssl_sig (* run_gen_appraise_w_nonce *) client_demo_am_comp client_demo_am_comp_auth run_am_serve_auth_tok_req CoplandM.Manifest.Manifest. (* privPolicy *)
 
 
 

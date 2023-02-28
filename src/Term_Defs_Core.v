@@ -230,6 +230,22 @@ Inductive AppResultC: Set :=
 | eec_app: Plc -> ASP_PARAMS -> BS -> AppResultC ->(* Evidence -> *) AppResultC
 | ssc_app: AppResultC -> AppResultC -> AppResultC.
 
+
+Fixpoint appresultc_size (res:AppResultC) : nat :=
+  match res with
+  | mtc_app => 0
+  | nnc_app _ _ => 1
+  | ggc_app _ _ _ res' => Nat.add 1 (appresultc_size res')
+  | hhc_app _ _ _ res' => Nat.add 1 (appresultc_size res')
+  | eec_app _ _ _ res' => Nat.add 1 (appresultc_size res')
+  | ssc_app res1 res2 => Nat.add (appresultc_size res1) (appresultc_size res2)
+  end.
+
+Definition appres_size_lt_zero (res:AppResultC) : bool :=
+  Nat.ltb (appresultc_size res) 0.
+
+
+
 (*
 End Term_Defs_Core.
 *)
