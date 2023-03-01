@@ -135,6 +135,9 @@ Inductive wf_ec : EvC -> Prop :=
 | wf_ec_c: forall (ls:RawEv) et,
     length ls = et_size et ->
     wf_ec (evc ls et).
+
+
+Definition ReqAuthTok := EvC.
     
     
 Definition splitEv_T_l (sp:Split) (e:Evidence) : Evidence :=

@@ -91,7 +91,7 @@ Definition run_gen_appraise_am (t:Term) (p:Plc) (et:Evidence) (ls:RawEv) : AppRe
 Definition am_sendReq_nonce (t:Term) (pFrom:Plc) (pTo:Plc) (* (et:Evidence) *) : AM AppResultC :=
   let nonce_bits := gen_nonce_bits in
   nid <- am_newNonce nonce_bits ;;
-  let resev := am_sendReq t pFrom pTo mt [] [nonce_bits] in (* mt ok here for auth Evidence Type? *)
+  let resev := am_sendReq t pFrom pTo (evc [] mt) [nonce_bits] in (* mt ok here for auth Evidence Type? *)
   let expected_et := eval t pTo (nn nid) in
   gen_appraise_AM expected_et resev.
   (* gen_appraise_am_comp t pFrom expected_et resev. *)
@@ -107,7 +107,7 @@ Definition am_sendReq_nonce_auth (t:Term) (pFrom:Plc) (pTo:Plc) (* (et:Evidence)
   let auth_phrase := (* kim_meas *) ssl_sig in
   let auth_rawev := run_cvm_rawEv auth_phrase pFrom [] in
   let auth_et := eval auth_phrase pFrom mt in
-  let resev := am_sendReq t pFrom pTo auth_et auth_rawev [nonce_bits] (* (auth_rawev ++ [nonce_bits]) *) in
+  let resev := am_sendReq t pFrom pTo (evc auth_rawev auth_et) [nonce_bits] (* (auth_rawev ++ [nonce_bits]) *) in
   let expected_et := eval t pTo (nn nid) in
   gen_appraise_AM expected_et resev.
   (* gen_appraise_am_comp t pFrom expected_et resev. *)
@@ -117,7 +117,7 @@ Definition am_sendReq_auth (t:Term) (pFrom:Plc) (pTo:Plc) (initEv:RawEv) (* (et:
   let auth_phrase := (* kim_meas *) ssl_sig in
   let auth_rawev := run_cvm_rawEv auth_phrase pFrom [] in
   let et := eval auth_phrase pFrom mt in
-  let resev := am_sendReq t pFrom pTo et auth_rawev initEv (* (auth_rawev ++ initEv) *) in
+  let resev := am_sendReq t pFrom pTo (evc auth_rawev et) initEv (* (auth_rawev ++ initEv) *) in
   ret resev.
 
 (*
@@ -142,36 +142,41 @@ Definition run_am_sendReq_nonce_auth (t:Term) (pFrom:Plc) (pTo:Plc) (* (et:Evide
   (run_am_app_comp am_comp mtc_app).
 
 
-Definition am_check_auth_tok (t:Term) (fromPl:Plc) (auth_ev:RawEv) (auth_et:Evidence) : AM AppResultC (* (AppResultC * RawEv) *) :=
+Definition am_check_auth_tok (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) : AM AppResultC (* (AppResultC * RawEv) *) :=
   (*
   let esize := et_size auth_et in
   let appev := firstn esize rawev in
   let restev := skipn esize rawev in
    *)
   
-  
-  appres <-
-  (match (requester_bound t fromPl auth_et) with
-   | false => ret mtc_app
-   | true => gen_appraise_AM auth_et auth_ev(* appev *)
-   end) ;;
-  ret appres. (* (appres, restev). *)
+  match authTok with
+  | evc auth_ev auth_et => 
+    appres <-
+    (match (requester_bound t fromPl auth_et) with
+     | false => ret mtc_app
+     | true => gen_appraise_AM auth_et auth_ev(* appev *)
+     end) ;;
+    ret appres
+  end.
 
 
-Definition am_serve_auth_tok_req (t:Term) (fromPl:Plc) (myPl:Plc) (auth_ev:RawEv) (auth_et:Evidence) (init_ev:RawEv): AM RawEv :=
-  v <- am_check_auth_tok t fromPl auth_ev auth_et ;;
+Definition am_serve_auth_tok_req (t:Term) (fromPl:Plc) (myPl:Plc) (authTok:ReqAuthTok) (init_ev:RawEv): AM RawEv :=
+  match authTok with
+  | evc auth_ev auth_et => 
+    v <- am_check_auth_tok t fromPl authTok ;;
     match (andb (requester_bound t fromPl auth_et) (appraise_auth_tok v)) with
     | true =>
       match (privPolicy fromPl t) with
       | true => ret (run_cvm_rawEv t myPl init_ev)
       | false => failm
       end
-                   
+        
     | false => failm
-    end.
+    end
+  end.
 
-Definition run_am_serve_auth_tok_req (t:Term) (fromPl:Plc) (myPl:Plc) (auth_ev:RawEv) (auth_et:Evidence) (init_ev:RawEv) : RawEv :=
-  run_am_app_comp (am_serve_auth_tok_req t fromPl myPl auth_ev auth_et init_ev) [].
+Definition run_am_serve_auth_tok_req (t:Term) (fromPl:Plc) (myPl:Plc) (authTok:ReqAuthTok) (init_ev:RawEv) : RawEv :=
+  run_am_app_comp (am_serve_auth_tok_req t fromPl myPl authTok init_ev) [].
   
 
 
