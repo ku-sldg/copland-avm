@@ -4,7 +4,7 @@ Record representing the CVM Monad state structure.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import ConcreteEvidence StMonad_Coq.
+Require Import ConcreteEvidence StMonad_Coq AbstractedTypes.
 Require Import List.
 Import ListNotations.
 
@@ -24,7 +24,7 @@ Record cvm_st : Type := mk_st
                            st_pl:Plc;
                            st_evid:Event_ID}.
 
-Definition empty_vmst := mk_st (evc [] mt) [] 0 0.
+Definition empty_vmst := mk_st (evc [] mt) [] min_id_type 0.
 
 (** CVM monad -- simple instantiation of the general St monad with cvm_st *)
 Definition CVM := St cvm_st.
