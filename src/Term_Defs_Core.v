@@ -19,7 +19,7 @@ University of California.  See license.txt for details. *)
 Require Export BS.
 Require Import String.
 
-Require Import List.
+Require Import List AbstractedTypes.
 Import List.ListNotations.
 
 (*
@@ -42,7 +42,7 @@ Module Export Term_Defs_Core.
     dependency, or parallel terms. *)
 
 (** [Plc] represents a place (or attestation domain). *)
-Definition Plc: Set := nat.
+Definition Plc: Set := ID_Type.
 (** [N_ID] represents a nonce identifier.  *)
 Definition N_ID: Set := nat.
 (** [Event_ID] represents Event identifiers *)
@@ -54,9 +54,9 @@ Definition Event_ID: Set := nat.
     [Arg] represents a custom argument for a given ASP 
           (defined and interpreted per-scenario/implementaiton).
 *)
-Definition ASP_ID: Set := string.
-Definition TARG_ID: Set := string.
-Definition Arg: Set := string.
+Definition ASP_ID: Set := ID_Type.
+Definition TARG_ID: Set := ID_Type.
+Definition Arg: Set := ID_Type.
 
 (** Grouping ASP parameters into one constructor *)
 Inductive ASP_PARAMS: Set :=
@@ -171,9 +171,8 @@ Notation "@ p [ ph ]" := (att p ph) (in custom copland_entry at level 50).
 Open Scope cop_ent_scope.
 Definition test1 := <{ __ -> {} }>.
 Example test1ex : test1 = (lseq (asp CPY) (asp NULL)). reflexivity. Defined.
-Definition test_enc := <{ __ -> * 2}>.
-Example testencex : test_enc = (lseq (asp CPY) (asp (ENC 2))). reflexivity. Defined.
-
+Definition test_enc := <{ __ -> * min_id_type}>.
+Example testencex : test_enc = (lseq (asp CPY) (asp (ENC min_id_type))). reflexivity. Defined.
 
 (** Copland Core_Term primitive datatypes *)
 Inductive ASP_Core: Set :=

@@ -1,13 +1,12 @@
 Require Import List.
 Import List.ListNotations.
+Require Import String.
 
-Require Import Params_Admits Term_Defs Eqb_Evidence.
+Require Import Params_Admits Term_Defs Eqb_Evidence AbstractedTypes EqClass.
 
 Require Import Example_Phrases_Demo Example_Phrases_Demo_Admits.  
 
-Require Import String.
 (* notation scope so that strings are interpreted correctly. *)
-Open Scope string_scope.
 
 
 (* here is the get_data term copied. We want to make sure that the get_data_aspid is only called when the target (0) requests from the source (1)*)
@@ -18,12 +17,13 @@ Definition get_data' : Term :=
 (* ASPIDs are defined by Definition. use eqb_aspid for string comparison *)
 
 (* privacy policy ensures that the sending place (place that sends the request aka the target) can recieve the requested data. In this case, the data should only be shared between source (O) and target (S O) . *)
-Fixpoint privPolicy (sendPlc:Plc) (t:Term) : bool := 
+Fixpoint privPolicy `{H : EqClass ID_Type} (sendPlc:Plc) (t:Term) : bool := 
     match t with 
-    | asp (ASPC _ _ (asp_paramsC aspid args rp tid)) => match eqb_aspid aspid get_data_aspid with 
-                                                        | true => if andb (Nat.eqb sendPlc dest_plc) (Nat.eqb rp source_plc) then true else false  
-                                                        | false => true 
-                                                        end
+    | asp (ASPC _ _ (asp_paramsC aspid args rp tid)) => 
+        match eqb_aspid aspid get_data_aspid with 
+        | true => andb (eqb sendPlc dest_plc) (eqb rp source_plc) 
+        | false => true 
+        end
     | asp _ => true
     | att p t => privPolicy sendPlc t
     | lseq t1 t2 => andb (privPolicy sendPlc t1) (privPolicy sendPlc t2)
@@ -33,9 +33,15 @@ Fixpoint privPolicy (sendPlc:Plc) (t:Term) : bool :=
 
 Global Hint Resolve privPolicy : core. 
 
-Example privCheck1 : privPolicy dest_plc get_data' = true.
-Proof. 
-  unfold privPolicy. simpl. rewrite eqb_refl. rewrite PeanoNat.Nat.eqb_refl. rewrite PeanoNat.Nat.eqb_refl. auto. 
+Example privCheck1 `{H : EqClass ID_Type} : privPolicy dest_plc get_data' = true.
+Proof.
+  destruct H; cbv. 
+  assert (eqb get_data_aspid get_data_aspid = true). rewrite eqb_leibniz; eauto.
+  rewrite H. 
+  assert (eqb dest_plc dest_plc = true). rewrite eqb_leibniz; eauto.
+  rewrite H0. 
+  assert (eqb source_plc source_plc = true). rewrite eqb_leibniz; eauto.
+  rewrite H1. eauto.
 Qed. 
 
 (*
@@ -48,8 +54,14 @@ Proof.
 Qed.
 *)
 
-Example privCheck2' : forall p: Plc, p <> dest_plc -> privPolicy p get_data' = false.
+Example privCheck2' `{H : EqClass ID_Type} : forall p: Plc, p <> dest_plc -> privPolicy p get_data' = false.
 Proof.
-  intros.
-  simpl. rewrite eqb_refl. rewrite PeanoNat.Nat.eqb_refl. apply PeanoNat.Nat.eqb_neq in H. rewrite H. auto.  
+  destruct H; cbv; intros. 
+  assert (eqb get_data_aspid get_data_aspid = true). rewrite eqb_leibniz; eauto.
+  rewrite H0.
+  assert (eqb p dest_plc = false). {
+    destruct (eqb p dest_plc) eqn:E; eauto.
+    destruct H; eapply eqb_leibniz. eauto.
+  }
+  rewrite H1. eauto.
 Qed.

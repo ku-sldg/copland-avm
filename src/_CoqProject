@@ -2,6 +2,8 @@
 Preamble.v
 More_lists.v
 StructTactics.v
+EqClass.v
+AbstractedTypes.v
 Defs.v
 BS.v
 OptMonad_Coq.v
@@ -37,7 +39,6 @@ Example_Phrases_Demo_Admits.v
 Example_Phrases_Demo.v
 Appraisal_IO_Stubs.v
 Appraisal_Defs.v
-EqClass.v
 Maps.v
 AM_St.v
 AM_Monad.v

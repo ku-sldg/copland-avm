@@ -4,13 +4,13 @@ Axioms and lemmas that capture the semantics of external CVM instances.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term_Defs Anno_Term_Defs Cvm_St Cvm_Impl Axioms_Io Helpers_CvmSemantics Cvm_Monad.
+Require Import Term_Defs Anno_Term_Defs Cvm_St Cvm_Impl Axioms_Io Helpers_CvmSemantics Cvm_Monad AbstractedTypes.
 
 Require Import List.
 Import ListNotations.
 
 
-Axiom build_cvm_external' : forall (t : Core_Term) (e : EvC) (n : nat) (tr:list Ev) (i:Event_ID),
+Axiom build_cvm_external' : forall (t : Core_Term) (e : EvC) (n : ID_Type) (tr:list Ev) (i:Event_ID),
     runSt 
       (build_cvm t)
       {| st_ev := e;
@@ -31,7 +31,7 @@ Axiom build_cvm_external' : forall (t : Core_Term) (e : EvC) (n : nat) (tr:list 
         st_evid := (i + event_id_span t)
      |}).
 
-Lemma build_cvm_external : forall (t : Core_Term) (e : EvC) (n : nat) i,
+Lemma build_cvm_external : forall (t : Core_Term) (e : EvC) (n : ID_Type) i,
     build_cvm t
                     {| st_ev := e;
                        st_trace := [];

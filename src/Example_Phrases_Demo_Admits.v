@@ -1,4 +1,4 @@
-Require Import Term_Defs.
+Require Import Term_Defs AbstractedTypes.
 
 Require Import List.
 Import ListNotations.
@@ -48,6 +48,9 @@ Definition ssl_sig_targid : ASP_ID. Admitted.
 Definition ssl_sig_aspid : ASP_ID. Admitted.
 Definition ssl_sig_args : list Arg. Admitted.
 
+
+Definition demo_plc_1 : ID_Type. Admitted.
+Definition demo_plc_2 : ID_Type. Admitted.
 
 Definition kim_meas_targid : ASP_ID. Admitted.
 Definition kim_meas_aspid : ASP_ID. Admitted.

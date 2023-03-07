@@ -1,4 +1,4 @@
-Require Import Term_Defs Example_Phrases_Demo_Admits.
+Require Import Term_Defs Example_Phrases_Demo_Admits AbstractedTypes.
 
 (*
 Require Import String.
@@ -51,10 +51,10 @@ Definition demo_phrase : Term :=
 Open Scope cop_ent_scope.
 
 Definition demo_phrase2 : Term :=
-  <{ @ 2 [kim_meas] }>.
+  <{ @ demo_plc_2 [kim_meas] }>.
 
 Definition demo_phrase3 : Term :=
-  <{ @ 2 [kim_meas -> @ 1 [kim_meas]] }>.
+  <{ @ demo_plc_2 [kim_meas -> @ demo_plc_1 [kim_meas]] }>.
 
 
 
