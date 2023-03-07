@@ -50,7 +50,7 @@ Definition do_start_par_thread (loc:Loc) (t:Core_Term) (e:RawEv) : IO unit :=
 Definition do_wait_par_thread (loc:Loc) (t:Core_Term) (p:Plc) (e:EvC) : IO EvC :=
   ret (parallel_vm_thread loc t p e).
 
-Definition requester_bound (t:Term) (fromPl:Plc) (auth_et:Evidence) : bool.
+Definition requester_bound (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) : bool.
 Admitted.
 
 Definition appraise_auth_tok (res:AppResultC) : bool.

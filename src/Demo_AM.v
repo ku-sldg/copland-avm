@@ -8,15 +8,9 @@ Import ListNotations.
 
 (* dest_plc = 0, source_plc = 3 *)
 Definition client_demo_am_comp (t:Term) : AppResultC :=
-  (*
-  run_am_sendReq_nonce_auth t dest_plc source_plc. 
-   *)
   run_am_sendReq_nonce t dest_plc source_plc.
 
 Definition client_demo_am_comp_auth (t:Term) : AppResultC :=
-  (*
-  run_am_sendReq_nonce_auth t dest_plc source_plc. 
-   *)
   run_am_sendReq_nonce_auth t dest_plc source_plc.
 
 

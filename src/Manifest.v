@@ -14,7 +14,11 @@ Require Import Term_Defs_Core.
 
       asps : list ASP_ID ;
       knowsOf : list Plc ; 
-      (* previously M*)
+      (* TO DO: Add privacy and selection policies to manifest *)
+                    }.
+
+
+  Record ConcreteManifest := {
 
 (*
       ; C : list string
@@ -22,6 +26,4 @@ Require Import Term_Defs_Core.
       ; address : nat
       ; tpm_init : nat
 *)
-
-(* TO DO: Add privacy and selection policies to manifest *)
     }.
