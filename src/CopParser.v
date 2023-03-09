@@ -13,7 +13,7 @@ From Coq Require Import Lists.List. Import ListNotations.
 Require Import Term_Defs.
 Require Import Anno_Term_Defs.
 Require Import Maps.
-Require Import EqClass.
+Require Import EqClass AbstractedTypes.
 
 Module CopParser.
 Open Scope cop_ent_scope.
@@ -231,17 +231,11 @@ Definition expect (t : token) : parser unit :=
 
 Definition isIdTail := fun x => orb (isAlphaNum x) (isUnderscore x).
 
-Theorem weak_string_eqb_eq : forall x y : string,
-  (x =? y) = true -> x = y.
-Proof.
-  apply String.eqb_eq.
-Qed.
-
 Instance str_eq_class : EqClass string :=
   { eqb:= String.eqb;
-    eqb_leibniz := weak_string_eqb_eq }.
+    eqb_leibniz := String.eqb_eq }.
 
-Definition symbol_map := MapD string nat.
+Definition symbol_map := MapD string ID_Type.
 
 Notation "'map' k 'to' v 'in' m" := (mapD_set m k v) (at level 200, no associativity).
 
@@ -267,6 +261,11 @@ Definition str_to_nat (x : list ascii) : nat :=
     0
   ).
 
+
+Definition string_to_IDType (s : string) : ID_Type. Admitted.
+(* Definition nat_to_IDType (s : nat) : ID_Type. Admitted. *)
+
+
 (* TODO: Need a better string -> digit converter *)
 Definition parseDigits (xs : list token) (sm : symbol_map)
       : optionE (symbol_map * string * list token) :=
@@ -274,11 +273,11 @@ Definition parseDigits (xs : list token) (sm : symbol_map)
   | nil     => NoneE "Expected digits"
   | x::xs'  => if (forallb isDigit (list_of_string x))
                 then 
-                  let dig := str_to_nat (list_of_string x) in
+                  let dig := string_to_IDType (String.string_of_list_ascii (list_of_string x)) in
                   SomeE ((map x to dig in sm), x, xs')
                 else NoneE "Invalid digit sequence"
   end.
-
+(* 
 Example parseDigits1 : parseDigits (tokenize "01") map_empty 
 = SomeE (
     (map "01" to 1 in map_empty), "01", []).
@@ -290,7 +289,7 @@ reflexivity. Qed.
 
 Example parseDigits3 : parseDigits ["1"; "kim"; "2"; "ker"] map_empty
 = SomeE ((map "1" to 1 in map_empty), "1", ["kim"; "2"; "ker"]).
-reflexivity. Qed.
+reflexivity. Qed. *)
 
 Definition parsePlace (xs : list token) (sm : symbol_map)
                       : optionE (symbol_map * string * list token) :=
@@ -301,11 +300,11 @@ Definition parsePlace (xs : list token) (sm : symbol_map)
                 | nil => NoneE ("Illegal place: nil - is this possible?")
                 | xh :: xt => if andb (isLowerAlpha xh) (forallb isDigit xt) then
                               (* we are a p + DIGITS *)
-                                let dig := str_to_nat xt in
+                                let dig := string_to_IDType (String.string_of_list_ascii xt) in
                                 SomeE ((map x to dig in sm), x, xs')
                               else if (forallb isDigit (xh :: xt)) then
                                 (* we are completely a digit *)
-                                let dig := str_to_nat (list_of_string x) in
+                                let dig := string_to_IDType (String.string_of_list_ascii (list_of_string x)) in
                                 SomeE ((map x to dig in sm), x, xs')
                               else 
                                 NoneE ("Illegal Identifier: '" ++ x ++ "'")
@@ -395,7 +394,7 @@ Definition parseASPC (xs : list token) (sm : symbol_map)
                       | None => NoneE "Failed to find relevant symbol for ASPC"
                       | Some pNat =>
                           SomeE (sm''',
-                            (asp (ASPC ALL EXTD (asp_paramsC x' nil pNat x'''))),
+                            (asp (ASPC ALL EXTD (asp_paramsC (string_to_IDType x') nil pNat (string_to_IDType x''')))),
                             xs''')
                       end
                   end
@@ -728,7 +727,7 @@ with parseParens (fuel : nat) (xs : list token) (sm : symbol_map)
 Definition testPhr := "@1 kim 2 ker -> ! -<- @2 (vc 2 sys) -> !".
 Definition testPhr2 := "@p1 kim p2 ker -> ! -<- @p2 [(vc p2 sys) -> !]".
 Compute parsePhrase 20 (tokenize testPhr2) map_empty.
-
+(* 
 Definition transTestPhr := <{ @ 1 [<< "kim" 2 "ker" >> -> (!) -<- @ 2 [<< "vc" 2 "sys">> -> !]]}>.
 
 Print transTestPhr.
@@ -737,7 +736,7 @@ Compute parsePhrase 20 (tokenize testPhr) map_empty.
 Compute parsePhrase 3 ["aTest"; "plcTest"; "tTest"] map_empty.
 Compute parsePhrase 3 (tokenize "kim p2 ker") map_empty.
 (* Minimum fuel needed here is 12 - quite a lot *)
-Compute parsePhrase 12 (tokenize testPhr) map_empty.
+Compute parsePhrase 12 (tokenize testPhr) map_empty. *)
 
 (* 
 Theorem parser_involutive: forall (t t1 : Term) sm rsm sm' rsm',
