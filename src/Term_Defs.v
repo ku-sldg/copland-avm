@@ -135,6 +135,9 @@ Inductive wf_ec : EvC -> Prop :=
 | wf_ec_c: forall (ls:RawEv) et,
     length ls = et_size et ->
     wf_ec (evc ls et).
+
+
+Definition ReqAuthTok := EvC.
     
     
 Definition splitEv_T_l (sp:Split) (e:Evidence) : Evidence :=
@@ -222,7 +225,7 @@ Definition ev x : nat :=
   | cvm_thread_start _ _ _ _ => 42
   | cvm_thread_end _ => 43
   end.
-
+(* 
 (** The natural number indicating the place where an event occured. *)
 Definition pl x : Plc :=
   match x with
@@ -235,7 +238,7 @@ Definition pl x : Plc :=
   | join _ p => p
   | cvm_thread_start _ p _ _ => p
   | cvm_thread_end _ => 45
-  end.
+  end. *)
 
 (** Events are used in a manner that ensures that
 [[

@@ -1531,14 +1531,14 @@ Qed.
 (** * Main correctness theorem about CVM events:  event orderings respect the 
       event system (partial order) reference semantics. *)
 Theorem cvm_respects_event_system :
-  forall atp annt t cvm_tr ev0 ev1 bits bits' et et' i i',
+  forall atp annt t cvm_tr ev0 ev1 bits bits' et et' i i' plc_id,
     annoP_indexed annt t i i' ->
     term_to_coreP t atp ->
     build_cvmP atp
-                     (mk_st (evc bits et) [] 0 i)
+                     (mk_st (evc bits et) [] plc_id i)
                      (Some tt)
-                     (mk_st (evc bits' et') cvm_tr 0 i') ->
-    prec (ev_sys annt 0 et) ev0 ev1 ->
+                     (mk_st (evc bits' et') cvm_tr plc_id i') ->
+    prec (ev_sys annt plc_id et) ev0 ev1 ->
     earlier cvm_tr ev0 ev1.
 Proof.
   intros.
@@ -1558,12 +1558,12 @@ Proof.
 Qed.
 
 Corollary cvm_respects_event_system_run :
-  forall atp annt t cvm_tr ev0 ev1 bits et i i',
+  forall atp annt t cvm_tr ev0 ev1 bits et i i' plc_id,
     annoP_indexed annt t i i' ->
     term_to_coreP t atp ->
-    st_trace (run_cvm atp (mk_st (evc bits et) [] 0 i)) = cvm_tr ->
+    st_trace (run_cvm atp (mk_st (evc bits et) [] plc_id i)) = cvm_tr ->
     
-    prec (ev_sys annt 0 et) ev0 ev1 ->
+    prec (ev_sys annt plc_id et) ev0 ev1 ->
     earlier cvm_tr ev0 ev1.
 Proof.
   intros.
@@ -1586,12 +1586,12 @@ Proof.
   econstructor; eassumption.
 Qed.
 
-Corollary cvm_respects_event_system_run' : forall atp annt t cvm_tr ev0 ev1 bits et,
+Corollary cvm_respects_event_system_run' : forall atp annt t cvm_tr ev0 ev1 bits et plc_id,
     annt = annotated t ->
     copland_compile t = atp ->
-    st_trace (run_cvm atp (mk_st (evc bits et) [] 0 0)) = cvm_tr ->
+    st_trace (run_cvm atp (mk_st (evc bits et) [] plc_id 0)) = cvm_tr ->
     
-    prec (ev_sys annt 0 et) ev0 ev1 ->
+    prec (ev_sys annt plc_id et) ev0 ev1 ->
     earlier cvm_tr ev0 ev1.
 Proof.
   intros.
