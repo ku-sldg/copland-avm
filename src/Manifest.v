@@ -5,10 +5,9 @@
 Require Import Term_Defs_Core.
 
 
-(** [Manifest] defines an attestation manger a list of ASPs and other
-   * managers it is aware of.  [Manifest] defines a single AM and its
-   * interconnections.  [add] simulates address information and [tpm]
-   * simulates cruft necessary to initialize its TPM.
+(** [Manifest] defines an attestation manger, a list of ASPs, and other
+   * managers it is aware of (a single AM and its
+   * interconnections).
    *)
   Record Manifest := {
 
@@ -17,7 +16,9 @@ Require Import Term_Defs_Core.
       (* TO DO: Add privacy and selection policies to manifest *)
                     }.
 
-
+ (* A ConcreteManifest is a refinement of Manifest with concrete parameters
+    more suitable for extraction and deployment 
+  *)
   Record ConcreteManifest := {
 
 (*

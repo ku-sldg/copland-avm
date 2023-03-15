@@ -6,7 +6,7 @@ Author:  Adam Petz, ampetz@ku.edu
 
 Require Import Term_Defs Anno_Term_Defs Term LTS Cvm_Impl Cvm_St Trace Main ConcreteEvidence.
 
-Require Import CvmSemantics Appraisal_Evidence Eqb_Evidence Auto.
+Require Import CvmSemantics Appraisal_Evidence Eqb_Evidence Auto AbstractedTypes EqClass Helpers_CvmSemantics.
 
 Require Import StructTactics.
 
@@ -24,9 +24,15 @@ Fixpoint evsubt_bool (e:Evidence) (e':Evidence): bool :=
   | true => true
   | false =>
     match e' with
+    | uu _ _ _ et' => evsubt_bool e et'
+    | ss e1 e2 => evsubt_bool e e1 || evsubt_bool e e2 
+                                
+      (*
     | gg _ _ et' => evsubt_bool e et'
     | hh _ _ et' => evsubt_bool e et'
     | ss e1 e2 => evsubt_bool e e1 || evsubt_bool e e2
+       *)
+      
     | _ => false
     end
   end.
@@ -34,13 +40,25 @@ Fixpoint evsubt_bool (e:Evidence) (e':Evidence): bool :=
 Lemma eqb_asp_params_refl: forall a,
     eqb_asp_params a a = true.
 Proof.
-  intros. apply eqb_asp_params_true_iff. auto.
+  intros. apply eqb_eq_asp_params. auto.
 Qed.
 
 Lemma eqb_evidence_refl: forall e,
     eqb_evidence e e = true.
 Proof.
   intros. apply eqb_eq_evidence. auto.
+Qed.
+
+Lemma eqb_plc_refl `{H : EqClass ID_Type} : forall (p:Plc),
+    eqb_plc p p = true.
+Proof.
+  intros. apply eqb_eq_plc. auto.
+Qed.
+
+Lemma eqb_fwd_refl : forall (f:FWD),
+    eqb_fwd f f = true.
+Proof.
+  intros. apply eqb_eq_fwd. auto.
 Qed.
 
 Lemma evsubt_prop_bool: forall e e',
@@ -50,6 +68,26 @@ Proof.
   generalizeEverythingElse e'.
   induction e'; intros;
     try (invc H; ff; try tauto; rewrite PeanoNat.Nat.eqb_refl; tauto).
+  - (* uu case *)
+    invc H.
+    +
+      ff.
+      (*
+    rewrite PeanoNat.Nat.eqb_refl. *)
+    rewrite eqb_asp_params_refl.
+    rewrite eqb_evidence_refl.
+    rewrite eqb_plc_refl.
+    rewrite eqb_fwd_refl.
+    ff.
+    
+    +
+      ff.
+      assert (evsubt_bool e e' = true) by eauto.
+      rewrite H.
+      ff.
+
+      (*
+  
   - (* gg case *)
     invc H.
     +
@@ -76,6 +114,9 @@ Proof.
       assert (evsubt_bool e e' = true) by eauto.
       rewrite H.
       ff.
+
+       *)
+      
   - (* ss case *)
     ff.
     invc H.
@@ -113,21 +154,23 @@ Proof.
     rewrite EqNat.beq_nat_true with (n:=n0) (m:=n).
     ff.
     eassumption.
-  -
+  - (* uu case *)
     ff.
     destruct e; ff.
     rewrite Bool.andb_true_iff in Heqb.
     rewrite Bool.andb_true_iff in Heqb.
     destruct_conjs.
     rewrite eqb_eq_asp_params in *.
-    Check  EqNat.beq_nat_true.
-    apply EqNat.beq_nat_true in H0.
+    rewrite Bool.andb_true_iff in H0.
+    invc H0.
+    apply eqb_eq_plc in H3.
+    apply eqb_eq_fwd in H4.
     apply eqb_eq_evidence in H1.
     subst.
-   
-
     eapply evsub_reflT.
-  -
+
+    (*
+  - 
     destruct e; ff.
     Search (if _ then _ else _).
     (*
@@ -158,6 +201,8 @@ Bool.orb_lazy_alt: forall a b : bool, (a || b)%bool = (if a then true else b)
 
     eapply evsub_reflT.
     eauto.
+     *)
+    
   - (* ss case *)
     ff.
 
@@ -243,7 +288,7 @@ Definition splitEv_mt (sp:SP) (e:Evidence) : Evidence :=
 
 Fixpoint term_discloses_to_remote (t:Term) (p:Plc) (e:Evidence) (r:(Plc*Evidence)) : bool :=
   match t with
-  | att q t' => (Nat.eqb q (fst r)) && (evsubt_bool (snd r) e) ||
+  | att q t' => (eqb_plc q (fst r)) && (evsubt_bool (snd r) e) ||
                (term_discloses_to_remote t' q e r)
   | lseq t1 t2 => (term_discloses_to_remote t1 p e r) ||
                  (term_discloses_to_remote t2 p (eval t1 p e) r)
@@ -253,6 +298,20 @@ Fixpoint term_discloses_to_remote (t:Term) (p:Plc) (e:Evidence) (r:(Plc*Evidence
                            (term_discloses_to_remote t2 p (splitEv_mt sp2 e) r)
   | _ => false
   end.
+
+Search (_ -> bool).
+
+Fixpoint orb_list (l:list bool) : bool :=
+      match l with
+      | nil => false
+      | b::l => orb b (orb_list l)
+      end.
+
+Check map.
+
+Definition term_discloses_to_remote_list (t:Term) (p:Plc) (e:Evidence) (l: list (Plc*Evidence)) : bool :=
+  let bool_list := map (term_discloses_to_remote t p e) l in
+  orb_list bool_list.
 
 Lemma term_remote_disclosures_correct_events: forall t p e r annt ev,
     term_discloses_to_remote t p e r = false -> 
@@ -268,17 +327,28 @@ Proof.
     invc H0.
     destruct_conjs.
     destruct a; ff.
-    repeat find_inversion.
+    +
     invc H1.
     invc H2.
+    +
     invc H1.
     invc H2.
+    +
+      
     invc H1.
     invc H2.
+    +
+      
     invc H1.
     invc H2.
+    +
+      
     invc H2.
     invc H1.
+    +
+      invc H1.
+      invc H2.
+      
   - (* @ case *)
     invc H0.
     destruct_conjs.
@@ -301,8 +371,11 @@ Proof.
     invc H2.
     assert (evsubt_bool e0 e = false).
     {
+      rewrite eqb_plc_refl in H.
+      (*
       rewrite <- EqNat.beq_nat_refl in H.
-      Search andb.
+      Search andb. *)
+      
       rewrite Bool.andb_true_l in H.
       eassumption.
     }
@@ -581,7 +654,7 @@ Lemma filter_remote_disclosures_correct_cvm:
     In t ts' -> 
     term_to_coreP t atp ->
     annoP_indexed annt t i i' ->
-    copland_compileP atp
+    build_cvmP atp
                      (mk_st (evc bits e) [] p i)
                      (Some tt)
                      (mk_st (evc bits' e') cvm_tr p' i') ->
@@ -616,6 +689,13 @@ Proof.
   econstructor.
   repeat eexists. eassumption.
 Qed.
+
+
+
+
+
+(*
+Commenting out ASP disclosure defs and proofs for now....
 
 
 
@@ -1091,6 +1171,11 @@ Qed.
 
 
 
+
+
+(* 
+END OF:  Commenting out ASP disclosure defs and proofs for now....
+*)  *)
 
 
 

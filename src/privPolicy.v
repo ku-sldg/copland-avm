@@ -12,7 +12,15 @@ Require Import Example_Phrases_Demo Example_Phrases_Demo_Admits.
 (* here is the get_data term copied. We want to make sure that the get_data_aspid is only called when the target (0) requests from the source (1)*)
 Definition get_data' : Term :=
   asp (
-  ASPC ALL EXTD (asp_paramsC get_data_aspid get_data_args source_plc get_data_targid)).
+      ASPC ALL EXTD (asp_paramsC get_data_aspid get_data_args source_plc get_data_targid)).
+
+
+
+
+
+
+
+
 
 (* ASPIDs are defined by Definition. use eqb_aspid for string comparison *)
 

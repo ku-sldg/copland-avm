@@ -235,6 +235,15 @@ Lemma eqb_eq_fwd: forall f1 f2,
 Proof.
 Admitted.
 
+Definition eqb_plc (p1 p2 : Plc) : bool.
+Admitted.
+
+Lemma eqb_eq_plc: forall `{H : EqClass ID_Type} p1 p2 ,
+    eqb_plc p1 p2 = true <->
+    p1 = p2.
+Proof.
+Admitted.
+
 (** Boolean equality for Evidence Types *)
 Fixpoint eqb_evidence `{H : EqClass ID_Type} (e:Evidence) (e':Evidence): bool :=
   match (e,e') with
@@ -246,7 +255,7 @@ Fixpoint eqb_evidence `{H : EqClass ID_Type} (e:Evidence) (e':Evidence): bool :=
     (Nat.eqb p p') && (eqb_asp_params params params') && (eqb_evidence e1 e2)
                  *)
   | (uu p fwd params e1, uu p' fwd' params' e2) =>
-    (eqb p p') && (eqb_fwd fwd fwd') && (eqb_asp_params params params') && (eqb_evidence e1 e2)
+    (eqb_plc p p') && (eqb_fwd fwd fwd') && (eqb_asp_params params params') && (eqb_evidence e1 e2)
   | (nn i, nn i') => (eqb i i')
   | (ss e1 e2, ss e1' e2') =>
     (eqb_evidence e1 e1') && (eqb_evidence e2 e2')
@@ -271,7 +280,11 @@ Proof.
       rewrite Bool.andb_true_iff in H.
       rewrite Bool.andb_true_iff in H.
       destruct_conjs.
+      rewrite eqb_eq_plc in H.
+      (*
       rewrite eqb_leibniz in H.
+       *)
+      
       specialize IHe1 with e2.
       concludes.
       rewrite eqb_eq_asp_params in H1.
@@ -328,7 +341,9 @@ Proof.
       cbn in *.
       repeat rewrite Bool.andb_true_iff.
       split. split. split. 
-      * eapply eqb_leibniz; eauto.
+      * eapply eqb_eq_plc; auto.
+        (*
+        eapply eqb_leibniz; eauto. *)
       * rewrite eqb_eq_fwd. tauto.
       * erewrite eqb_eq_asp_params. tauto.
       * eauto.

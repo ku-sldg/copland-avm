@@ -78,7 +78,10 @@ Extract Constant Nat.add => "(+)".
 *)
 
 Separate Extraction (* run_cvm_rawEv *) demo_phrase demo_phrase2 demo_phrase3 client_data_phrase ssl_sig (* run_gen_appraise_w_nonce *) client_demo_am_comp client_demo_am_comp_auth run_am_serve_auth_tok_req CoplandM.Manifest.Manifest. (* privPolicy *)
+
+(*
 Separate Extraction CopParser.parsePhrase.
+*)
 
 
 (* my_extracted. *)
