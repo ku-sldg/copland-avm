@@ -46,4 +46,5 @@ Impl_appraisal.v
 Demo_AM.v
 Appraisal_Semantics.v
 privPolicy.v
+CopParser.v
 Extraction_Cvm_Cake.v
