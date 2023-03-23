@@ -26,13 +26,6 @@ Fixpoint evsubt_bool (e:Evidence) (e':Evidence): bool :=
     match e' with
     | uu _ _ _ et' => evsubt_bool e et'
     | ss e1 e2 => evsubt_bool e e1 || evsubt_bool e e2 
-                                
-      (*
-    | gg _ _ et' => evsubt_bool e et'
-    | hh _ _ et' => evsubt_bool e et'
-    | ss e1 e2 => evsubt_bool e e1 || evsubt_bool e e2
-       *)
-      
     | _ => false
     end
   end.
@@ -85,37 +78,6 @@ Proof.
       assert (evsubt_bool e e' = true) by eauto.
       rewrite H.
       ff.
-
-      (*
-  
-  - (* gg case *)
-    invc H.
-    +
-    ff.
-    rewrite PeanoNat.Nat.eqb_refl.
-    rewrite eqb_asp_params_refl.
-    rewrite eqb_evidence_refl.
-    ff.
-    +
-      ff.
-      assert (evsubt_bool e e' = true) by eauto.
-      rewrite H.
-      ff.
-  - (* hh case *)
-    invc H.
-    +
-    ff.
-    rewrite PeanoNat.Nat.eqb_refl.
-    rewrite eqb_asp_params_refl.
-    rewrite eqb_evidence_refl.
-    ff.
-    +
-      ff.
-      assert (evsubt_bool e e' = true) by eauto.
-      rewrite H.
-      ff.
-
-       *)
       
   - (* ss case *)
     ff.
@@ -168,40 +130,6 @@ Proof.
     apply eqb_eq_evidence in H1.
     subst.
     eapply evsub_reflT.
-
-    (*
-  - 
-    destruct e; ff.
-    Search (if _ then _ else _).
-    (*
-Bool.orb_lazy_alt: forall a b : bool, (a || b)%bool = (if a then true else b)
-     *)
-    assert (
-        (orb ((p0 =? p) && eqb_asp_params a0 a && eqb_evidence e e')%bool
-            (evsubt_bool (hh p0 a0 e) e')) =
-    (if ((p0 =? p) && eqb_asp_params a0 a && eqb_evidence e e')%bool
-       then true
-     else evsubt_bool (hh p0 a0 e) e')).
-    {
-      apply Bool.orb_lazy_alt.
-    }
-    rewrite H in H0.
-    Search orb.
-    apply Bool.orb_prop in H0.
-    invc H0.
-     rewrite Bool.andb_true_iff in H1.
-    rewrite Bool.andb_true_iff in H1.
-    destruct_conjs.
-    rewrite eqb_eq_asp_params in *.
-    Check  EqNat.beq_nat_true.
-    apply EqNat.beq_nat_true in H0.
-    apply eqb_eq_evidence in H1.
-    subst.
-   
-
-    eapply evsub_reflT.
-    eauto.
-     *)
     
   - (* ss case *)
     ff.
@@ -259,6 +187,14 @@ Inductive discloses_to_remote: Ev -> (Plc*Evidence) -> Prop :=
     discloses_to_remote (req i p q t e) (q,e').
 
 
+
+Print EvSubT.
+Check sig_params.
+Definition src_plc : Plc.
+Admitted.
+
+Definition secret_evidence : Evidence :=
+  uu src_plc KEEP sig_params mt.
 
 
 Inductive discloses_to_asp: Ev -> (Plc*ASP_ID*Evidence) -> Prop :=

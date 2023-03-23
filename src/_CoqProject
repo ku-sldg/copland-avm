@@ -43,8 +43,10 @@ Maps.v
 AM_St.v
 AM_Monad.v
 Impl_appraisal.v
-Demo_AM.v
 Appraisal_Semantics.v
 privPolicy.v
+Client_AM.v
+Server_AM.v
+Demo_AM.v
 CopParser.v
 Extraction_Cvm_Cake.v
