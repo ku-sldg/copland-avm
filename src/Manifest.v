@@ -14,8 +14,7 @@ Require Import Term_Defs_Core.
       asps : list ASP_ID ;
       knowsOf : list Plc ; 
       context : list Plc ; 
-      policy : ASP -> Plc -> Prop ;
-      (* TO DO: Add privacy and selection policies to manifest *)
+      policy : ASP_ID -> Plc -> Prop ;
                     }.
 
  (* A ConcreteManifest is a refinement of Manifest with concrete parameters
