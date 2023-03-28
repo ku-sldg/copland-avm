@@ -2,7 +2,24 @@
    https://github.com/ku-sldg/negotiation20/blob/master/src/Manifest/Manifest.v
 *)
 
-Require Import Term_Defs_Core.
+Require Import Term_Defs_Core Maps.
+
+
+Definition AM_Address : Set.
+Admitted.
+
+Definition ASP_Address : Set.
+Admitted.
+
+Definition PublicKey : Set.
+Admitted.
+
+Definition PolicyT : Set.
+Admitted.
+
+(*
+Definition PlcMap := MapC Plc Address.
+*)
 
 
 (** [Manifest] defines an attestation manger, a list of ASPs, and other
@@ -11,20 +28,36 @@ Require Import Term_Defs_Core.
    *)
   Record Manifest := {
 
-      asps : list ASP_ID ;
-      knowsOf : list Plc ; 
-      (* TO DO: Add privacy and selection policies to manifest *)
+    local_asps : list ASP_ID ;
+    server_asps : list ASP_ID ;
+    knowsOf : list Plc ;
+    pubkeys : list Plc ;
+    policy : PolicyT
+    (* TO DO: Add privacy and selection policies to manifest? *)
                     }.
 
+
+
+
+
+  
+  Record SystemConfig := {
+    AM_Addresses : list AM_Address ;
+    ASP_Addresses : list ASP_Address ;
+                        }.
+                           
+
+
+
+  
  (* A ConcreteManifest is a refinement of Manifest with concrete parameters
     more suitable for extraction and deployment 
   *)
   Record ConcreteManifest := {
+        ASP_Server : ASP_Address ;
+        Pubkey_Server : ASP_Address;
+        Plc_Map : MapC Plc AM_Address;
+        Pubkey_Map : MapC Plc PublicKey
+                          
 
-(*
-      ; C : list string
-      ; key : string
-      ; address : nat
-      ; tpm_init : nat
-*)
     }.

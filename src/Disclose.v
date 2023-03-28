@@ -92,7 +92,6 @@ Proof.
     +
       erewrite IHe'2.
       ff.
-      Search orb.
       rewrite Bool.orb_true_r.
       ff.
       eassumption.
@@ -111,8 +110,10 @@ Proof.
   -
     ff.
     destruct e; ff.
+    (*
     Search (_ -> _ = _).
     Search PeanoNat.Nat.eqb_refl.
+     *)
     rewrite EqNat.beq_nat_true with (n:=n0) (m:=n).
     ff.
     eassumption.
@@ -188,6 +189,7 @@ Inductive discloses_to_remote: Ev -> (Plc*Evidence) -> Prop :=
 
 
 
+(*
 Print EvSubT.
 Check sig_params.
 Definition src_plc : Plc.
@@ -195,7 +197,11 @@ Admitted.
 
 Definition secret_evidence : Evidence :=
   uu src_plc KEEP sig_params mt.
+*)
 
+
+
+(*
 
 Inductive discloses_to_asp: Ev -> (Plc*ASP_ID*Evidence) -> Prop :=
 | asp_disclose: forall i p (asp_id:ASP_ID) args tpl tid e e',
@@ -203,6 +209,7 @@ Inductive discloses_to_asp: Ev -> (Plc*ASP_ID*Evidence) -> Prop :=
     discloses_to_asp
       (umeas i p (asp_paramsC asp_id args tpl tid) e)
       (p,asp_id,e').
+*)
 
 
 (*
@@ -240,8 +247,6 @@ Fixpoint orb_list (l:list bool) : bool :=
   | nil => false
   | b::l => orb b (orb_list l)
   end.
-
-Check existsb.
 
 Definition orb_list_alt (l:list bool) : bool := existsb (fun b => b) l.
 
@@ -514,13 +519,20 @@ Lemma filter_remote_disclosures_correct_events: forall rs p e ts ts' t annt r ev
   ~ (discloses_to_remote ev r).
 (*  ~ (In t ts'). *)
 Proof.
+
+  (*
   Check term_remote_disclosures_correct_events.
+   *)
   (*
      : forall (t : Term) (p : Plc) (e : Evidence) (r : Plc * Evidence) (annt : AnnoTerm) (ev : Ev),
        term_discloses_to_remote t p e r = false ->
        annoP annt t -> events annt p e ev -> ~ discloses_to_remote ev r
    *)
+
+  (*
   Check filter_In.
+   *)
+  
   (*
      : forall (A : Type) (f : A -> bool) (x : A) (l : list A), In x (filter f l) <-> In x l /\ f x = true
    *)
@@ -535,7 +547,11 @@ Proof.
   rewrite filter_In in H3.
   destruct_conjs. clear H.
   unfold term_discloses_to_remotes in *.
+
+  (*
   Check existsb_exists.
+   *)
+  
   (*
      : forall (A : Type) (f : A -> bool) (l : list A),
        existsb f l = true <-> (exists x : A, In x l /\ f x = true)
@@ -558,7 +574,7 @@ Proof.
       eassumption.
     }
     rewrite forallb_forall in H4.
-      Search negb.
+    (* Search negb. *)
   (*
 Bool.negb_false_iff: forall b : bool, negb b = false <-> b = true
 Bool.negb_true_iff: forall b : bool, negb b = true <-> b = false
