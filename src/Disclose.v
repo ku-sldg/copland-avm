@@ -235,15 +235,22 @@ Fixpoint term_discloses_to_remote (t:Term) (p:Plc) (e:Evidence) (r:(Plc*Evidence
   | _ => false
   end.
 
-Search (_ -> bool).
-
 Fixpoint orb_list (l:list bool) : bool :=
-      match l with
-      | nil => false
-      | b::l => orb b (orb_list l)
-      end.
+  match l with
+  | nil => false
+  | b::l => orb b (orb_list l)
+  end.
 
-Check map.
+Check existsb.
+
+Definition orb_list_alt (l:list bool) : bool := existsb (fun b => b) l.
+
+Lemma orb_list_alt_eq : forall (l:list bool),
+    orb_list l = orb_list_alt l.
+Proof.
+  intros.
+  induction l; trivial.
+Qed.
 
 Definition term_discloses_to_remote_list (t:Term) (p:Plc) (e:Evidence) (l: list (Plc*Evidence)) : bool :=
   let bool_list := map (term_discloses_to_remote t p e) l in
