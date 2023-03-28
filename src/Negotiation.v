@@ -1,0 +1,1 @@
+(* Functions surrounding Negotiation for DEMO *)
