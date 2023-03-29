@@ -14,7 +14,7 @@ Require Import String.
 Require Import List.
 Import ListNotations.
 Require Import Params_Admits Term_Defs Eqb_Evidence AbstractedTypes EqClass.
-
+Require Import Example_Phrases_Demo_Admits Example_Phrases_Demo.  
 
 (**** Ltac used *)
 
@@ -109,7 +109,7 @@ Defined.
    communicate from [k] to [p]
 *)
 
-Definition knowsOfe(k:Plc)(e:Environment)(p:Plc):Prop :=
+Definition knowsOfe `{H : EqClass ID_Type} (k:Plc)(e:Environment)(p:Plc):Prop :=
 match (e k) with
 | None => False
 | Some m => In p m.(knowsOf)
@@ -131,7 +131,7 @@ end.
 (** Prove knowsOfe is decidable. This means, for any enviornment [e] 
    either the current place [p] is aware of place [p] or it's not.  *)
 
-Theorem knowsOfe_dec:forall k e p, {(knowsOfe k e p)}+{~(knowsOfe k e p)}.
+Theorem knowsOfe_dec: forall k e p, {(knowsOfe k e p)}+{~(knowsOfe k e p)}.
 Proof.
   intros k e p.
   unfold knowsOfe.
@@ -223,11 +223,11 @@ match t with
             | ASPC _ _ p => match p with 
                             | asp_paramsC aspid _ _ _ => hasASPe k e aspid
                             end
-            | NULL => False
-            | CPY => False
-            | SIG => False
-            | HSH => False
-            | ENC p => False
+            | NULL => True
+            | CPY => True
+            | SIG => True
+            | HSH => True
+            | ENC p => True
             end
 | att p t => knowsOfe k e p -> executable t p e
 | lseq t1 t2 => executable t1 k e /\ executable t2 k e
@@ -242,7 +242,7 @@ Ltac right_dest_inverts := right; unfold not; intros H; inverts H. *)
 
 Theorem executable_dec:forall t k e,{(executable t k e)}+{~(executable t k e)}.
 intros.  generalize k. induction t; intros.
-+ destruct a; try auto. destruct a.  unfold executable.  apply hasASPe_dec.
++ destruct a; simpl; auto. destruct a.  unfold executable.  apply hasASPe_dec.
 + simpl. pose proof knowsOfe_dec k0 e p. destruct H.
 ++ destruct (IHt p).
 +++ left; auto.
@@ -265,7 +265,7 @@ Defined.
 
 (** Check environment [e] and see if place [p] has some policy 
  *  where the Policy allows p to run a. *)
-Definition checkASPPolicy(p:Plc)(e:Environment)(a:ASP):Prop :=
+Definition checkASPPolicy(p:Plc)(e:Environment)(a:ASP_ID):Prop :=
 match (e p) with (* Look for p in the environment *)
 | None => False
 | Some m => (policy m a p) (* Policy from m allows p to run a *)
@@ -274,7 +274,16 @@ end.
 (** Recursive policy check. *)
 Fixpoint checkTermPolicy(t:Term)(k:Plc)(e:Environment):Prop :=
   match t with
-  | asp a  => checkASPPolicy k e a
+  | asp a  => match a with 
+              | ASPC _ _ p => match p with 
+                              | asp_paramsC aspid _ _ _ => hasASPe k e aspid
+                              end
+              | NULL => True
+              | CPY => True
+              | SIG => True
+              | HSH => True
+              | ENC p => True
+              end
   | att r t0 => checkTermPolicy t0 k e
   | lseq t1 t2 => checkTermPolicy t1 k e /\ checkTermPolicy t2 k e
   | bseq _ t1 t2 => checkTermPolicy t1 k e /\ checkTermPolicy t2 k e
@@ -290,7 +299,7 @@ Proof.
   intros t k e.
   intros H.
   induction t.
-  + simpl. apply H.
+  + destruct a; simpl; auto. destruct a.  apply hasASPe_dec.
   + simpl. assumption.
   + simpl; destruct IHt1,IHt2.
   ++ left. split; assumption.
@@ -340,70 +349,42 @@ Proof.
 Defined.
 
 (** ***************************
- * EXAMPLE SYSTEM 
+ * DEMO SYSTEM 
  *****************************)
 
-(** Motivated by the Flexible Mechanisms for Remote Attestation, 
- * we have three present parties in this attestation scheme. 
- * These are used for example purposes.
- *)
+(* the target should be able to share: 
+   1. kim_meas_aspid wiht kim_meas_targid
+   2. the cal_ak_aspid with cal_ak_targid 
+   3. *)
 
-Notation P0 := "P0"%string.
-Notation P1 := "P1"%string.
-Notation P2 := "P2"%string.
+Inductive server_Policy : ASP_ID -> Plc -> Prop := 
+| p_kim : server_Policy kim_meas_aspid kim_meas_targid 
+| p_cal_ak : server_Policy cal_ak_aspid cal_ak_targid
+| p_pub_bc : server_Policy pub_bc_aspid pub_bc_targid
+| p_data : server_Policy get_data_aspid get_data_targid
+| p_tpm_sig : server_Policy tpm_sig_aspid tpm_sig_targid 
+| p_ssl_enc : server_Policy ssl_enc_aspid ssl_enc_targid. 
 
-(** Introducing three asps for testing purposes. *)
-Notation aVC :=
-  (ASPC ALL EXTD (asp_paramsC "aVC"%string ["x"%string] P1 P1)).
-Notation aHSH :=
-  (ASPC ALL EXTD (asp_paramsC "aHSH"%string ["x"%string] P1 P1)).
-Notation aSFS :=
-  (ASPC ALL EXTD (asp_paramsC "aSFS"%string ["x"%string] P2 P2)).
+Inductive client_Policy : ASP_ID -> Plc -> Prop :=
+| p_store : client_Policy store_clientData_aspid store_clientData_targid.
 
-(** Below are relational definitions of Policy. Within the definition, we
- * list each ASP on the AM and state who can recieve a measurement of said
- * ASP (ie doesn't expose sensitive information in the context).
- * 
- * The relying party (P0) has no measurement to write policy over. 
- * P1 can share the measurement aHSH and aVC with P0
- * P2 can share a measurement using aSFS with P1 
-*)
-
-Inductive tar_Policy : ASP -> Plc -> Prop := 
-| p_aHSH : tar_Policy aHSH P2 
-| p_SIG : forall p, tar_Policy SIG p. 
-
-Inductive P0_Policy : ASP -> Plc -> Prop :=.
-
-Inductive P1_Policy : ASP -> Plc -> Prop :=
-| aVC_p: P1_Policy aVC P0
-| aHSH_p: P1_Policy aHSH P0. 
-
-Inductive P2_Policy : ASP -> Plc -> Prop :=
-| aSFS_pL: P2_Policy aSFS P1.
-
-Global Hint Constructors P0_Policy : core.
-Global Hint Constructors P1_Policy : core.
-Global Hint Constructors P2_Policy : core.
+Global Hint Constructors server_Policy : core.
+Global Hint Constructors client_Policy : core.
 
 (** Definition of environments for use in examples and proofs.  
- * Note there are 3 communicating peer's present... 
- * P0, P1, and P2.
+ * Note there are 2 communicating peer's present... server and client
+ * assume client is source and server is destination??? 
  *)
 
 Definition e0 := e_empty.
-Definition e_P0 :=
-    e_update e_empty P0 (Some {| asps := []; K:= [P1] ; C := [] ; Policy := P0_Policy |}).
-Definition e_P1 :=
-    e_update e_P0 P1 (Some {| asps := [aVC;  aHSH]; K:= [P2] ; C := [] ; Policy := P1_Policy|}).
-Definition e_P2 :=
-    e_update e_P1 P2 (Some {| asps := [aSFS] ; K:= [] ; C := [P1] ; Policy := P2_Policy |}).
+Definition e_client :=
+    e_update e0 source_plc (Some {| asps := [store_clientData_aspid]; knowsOf:= [dest_plc] ; context := [] ; policy := client_Policy |}).
+Definition e_server :=
+    e_update e0 dest_plc (Some {| asps := [kim_meas_aspid;  cal_ak_aspid; pub_bc_aspid; get_data_aspid; tpm_sig_aspid; ssl_enc_aspid]; knowsOf:= [] ; context := [] ; policy := server_Policy|}).
 
-(** In our example, the system includes the relying party, the target,
- * and the appraiser
- *)
+(** In our example, the system includes client and server *)
 
-Definition example_sys_1 := [e_P0; e_P1; e_P2]. 
+Definition example_sys_1 := [ e_client; e_server]. 
 
 (** ***************************
   * EXAMPLE SYSTEM PROPERTIES
@@ -411,52 +392,14 @@ Definition example_sys_1 := [e_P0; e_P1; e_P2].
 
 (** Prove the P0 knows of P1 in P0's enviornment *)
 
-Example ex1: knowsOfe P0 e_P0 P1.
-Proof. unfold knowsOfe. simpl. left. reflexivity. Qed.
+Print Plc.
+Print eq_asp_id_dec.  
+Print knowsOfe.
 
-(** relying party does not have the ASP aVC *)
+Example ex1 : knowsOfe source_plc e_client dest_plc.
+Proof. unfold knowsOfe. 
+       assert (H: {source_plc = dest_plc} + {source_plc <> dest_plc}). { apply eq_asp_id_dec. }      
 
-Example ex2: hasASPe P0 e_P0 aVC -> False.
-Proof. unfold hasASPe. simpl. intros. inverts H. Qed.
-
-(** Prove the P1 can generate a term with aHSH within the system *)
-
-Example ex3: hasASPs P1 (example_sys_1) aVC.
-Proof. simpl. unfold hasASPe. simpl. auto. Qed. 
-
-(** the P0 knows of the target within system 1
- *)
-
-Example ex4: knowsOfs P0 example_sys_1 P1.
-Proof.
-unfold knowsOfs. simpl. left. unfold knowsOfe. simpl.  auto.
-Qed.
-
-(** the P0 does not directly know of the appraiser
- *)
-
-Example ex5: knowsOfe P0 e_P2 P2 -> False.
-Proof.
-  unfold knowsOfe. simpl. intros. destruct H. inversion H. assumption.
-Qed.
-
-(** the P0 does not knows of the P2 within the system... 
- * should be that P0 knows of P1 and P1
- * knows of P2....
- *)
-
-Example ex6: knowsOfs P0 example_sys_1 P2 -> False.
-Proof.
-unfold knowsOfs. simpl. unfold knowsOfe. simpl. intros. inverts H. inverts H0. inverts H. apply H. inverts H0. destruct H. inverts H. apply H. destruct H. inverts H. inverts H0. apply H0. apply H.
-Qed.
-
-(** if the P0 was it's own system, it would still be aware of
- *  P1 *)
-
-Example ex7: knowsOfs P0 [e_P0] P1.
-Proof.
-unfold knowsOfs,knowsOfe. simpl. auto.
-Qed.
 
 (** Proof tactic for executability
  *)
