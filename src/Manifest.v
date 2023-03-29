@@ -14,7 +14,7 @@ Require Import Term_Defs_Core.
       asps : list ASP_ID ;
       knowsOf : list Plc ; 
       context : list Plc ; 
-      policy : ASP_ID -> Plc -> Prop ;
+      policy : ASP_ID -> Plc -> bool ;
                     }.
 
  (* A ConcreteManifest is a refinement of Manifest with concrete parameters
