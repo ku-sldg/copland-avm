@@ -51,7 +51,7 @@ Definition System := list Environment.
 
 Search "In". 
 
-Fixpoint Inb `{H : EqClass ID_Type}  (a:ASP_ID) (l:list ASP_ID) : bool :=
+Fixpoint Inb `{H : EqClass ID_Type} (a:ASP_ID) (l:list ASP_ID) : bool :=
   match l with
     | [] => false
     | b :: m => orb (eqb b a) (Inb a m)
@@ -67,7 +67,7 @@ end.
    communicate from [k] to [p]
 *)
 
-Definition knowsOfe (k:Plc)(e:Environment)(p:Plc): bool :=
+Definition knowsOfe `{H: EqClass ID_Type} (k:Plc)(e:Environment)(p:Plc): bool :=
 match (e k) with
 | None => false
 | Some m => Inb p m.(knowsOf)
@@ -213,12 +213,26 @@ intros.
 eapply EqClass_impl_DecEq; eauto.
 Defined.
 
+
+Lemma eqb_refl : forall `{H: EqClass ID_Type} (x:ID_Type), eqb x x = true.
+  intros. destruct H. eapply eqb_leibniz. auto.
+Qed.    
+
+(* Anytime equality is needed for the admitted type, use this. *)
+Ltac eqbr var :=
+  let H := fresh "H" in
+  assert (H : (let (eqb, _) := Eq_Class_ID_Type in eqb) var
+  var = true); [eapply eqb_refl |]; rewrite H.
+  
 (** Prove the P0 knows of P1 in P0's enviornment *)
 
 Example ex1 : knowsOfe source_plc e_client dest_plc = true.
-Proof. unfold knowsOfe. simpl. 
-       assert (H: {source_plc = dest_plc} + {source_plc <> dest_plc}). { apply eq_asp_id_dec. } 
-Abort. 
+Proof.
+  cbv.
+  eqbr source_plc.
+  eqbr dest_plc.
+  eauto.
+Qed.
 
 (* Remove all other theorems for now.... *)
 
@@ -229,13 +243,13 @@ Abort.
 
 Print sound. 
 
-(* Definition sound' (t: Term) : bool := match sound_dec t dest_plc e_client with 
-                                      | left => true 
-                                      | right => false 
-                                      end. 
+(* Definition sound' (t: Term) : bool := sound t dest_plc e_client. *)
 
-Fixpoint negotiate (t: list Term ) (r: list Term): list Term := 
+Fixpoint negotiate' (t: list Term ) (r: list Term): list Term := 
   match t with 
   | [] => r
-  | h :: tl => if sound' h then negotiate tl (h++r) else negotiate tl r 
-  end.    *)
+  | h :: tl => if sound h dest_plc e_client then negotiate' tl ([h] ++ r) else negotiate' tl r 
+  end.
+
+Definition negotiate (t:list Term) : list Term := 
+  negotiate' t []. 
