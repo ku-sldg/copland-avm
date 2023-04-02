@@ -75,9 +75,6 @@ Definition args_matches_gen (genArgs:GenListArgs) (args:list Arg): bool :=
   | real_listargs args' => eqb args args'
   end.
 
-
-
-
 Fixpoint andb_list (l:list bool) : bool :=
   match l with
   | nil => true
@@ -93,8 +90,6 @@ Proof.
   induction l; trivial.
 Qed.
 
-
-
 Definition params_matches_gen (genParams:GenAspParams) (params:ASP_PARAMS) : bool :=
   match genParams with
   | wc_params genaspid genargs genplc gentargid =>
@@ -107,9 +102,6 @@ Definition params_matches_gen (genParams:GenAspParams) (params:ASP_PARAMS) : boo
                 (targid_matches_gen gentargid targid) ]
     end
   end.
-
-
-  
 
 Fixpoint evidence_matches_gen (genEv:GenEvidence) (ev:Evidence) : bool :=
   match genEv with
@@ -142,4 +134,7 @@ Fixpoint evidence_matches_gen (genEv:GenEvidence) (ev:Evidence) : bool :=
     end
 
   end.
+
+Definition specific_aspid_genEvidence (i:ASP_ID): GenEvidence :=
+  gen_uu wc_plc wc_fwd (wc_params (real_aspid i) wc_listargs wc_plc wc_targid) gen_wc.
         

@@ -6,7 +6,7 @@ Author:  Adam Petz, ampetz@ku.edu
 
 Require Import Term_Defs Anno_Term_Defs Term LTS Cvm_Impl Cvm_St Trace Main ConcreteEvidence.
 
-Require Import CvmSemantics Appraisal_Evidence Eqb_Evidence Auto AbstractedTypes EqClass Helpers_CvmSemantics.
+Require Import CvmSemantics Appraisal_Evidence Eqb_Evidence Auto AbstractedTypes EqClass Helpers_CvmSemantics Disclose_Gen.
 
 Require Import StructTactics.
 
@@ -187,6 +187,13 @@ Inductive discloses_to_remote: Ev -> (Plc*Evidence) -> Prop :=
     EvSubT e' e ->
     discloses_to_remote (req i p q t e) (q,e').
 
+Definition discloses_aspid_to_remote (q:Plc) (i:ASP_ID): Prop :=
+  let gen_aspid_evidence := (specific_aspid_genEvidence i) in
+  forall et i p t e,
+    ((evidence_matches_gen gen_aspid_evidence et) = true) /\
+    (discloses_to_remote (req i p q t e) (q, et)).
+                                                          
+
 
 
 (*
@@ -241,6 +248,26 @@ Fixpoint term_discloses_to_remote (t:Term) (p:Plc) (e:Evidence) (r:(Plc*Evidence
                            (term_discloses_to_remote t2 p (splitEv_mt sp2 e) r)
   | _ => false
   end.
+
+(*
+Definition discloses_aspid_to_remote (q:Plc) (i:ASP_ID): Prop :=
+  let gen_aspid_evidence := (specific_aspid_genEvidence i) in
+  forall et i p t e,
+    ((evidence_matches_gen gen_aspid_evidence et) = true) /\
+    (discloses_to_remote (req i p q t e) (q, et)).
+ *)
+
+Definition term_discloses_aspid_to_remote (t:Term) (p:Plc) (e:Evidence) (i:ASP_ID) (r:Plc) : Prop :=
+  let gen_aspid_evidence := (specific_aspid_genEvidence i) in
+  forall et,
+    ((evidence_matches_gen gen_aspid_evidence et) = true) /\
+    ((term_discloses_to_remote t p e (r,et)) = true).
+
+
+
+
+
+
 
 Fixpoint orb_list (l:list bool) : bool :=
   match l with
