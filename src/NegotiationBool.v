@@ -188,7 +188,10 @@ Definition client_Policy_bool `{H : EqClass ID_Type} (a: ASP_ID) (p:Plc) : bool 
 
 (** Definition of environments for use in examples and proofs.  
  * Note there are 2 communicating peer's present... server and client
- * assume client is source and server is destination??? 
+ * About the demo:  
+ ** client is source_plc 
+ ** server is dest_plc
+ ** client is appraising the server 
  *)
 
 Definition e0 := e_empty.
@@ -234,6 +237,18 @@ Proof.
   eauto.
 Qed.
 
+(** Prove server can share kim_meas (the demo phrase). 
+    AKA that it satisfies policy *)
+
+Theorem kim_meas_policy : server_Policy_bool kim_meas_aspid kim_meas_targid = true.
+Proof.
+  cbv. 
+  eqbr kim_meas_aspid.
+  eqbr kim_meas_targid.
+  auto. 
+Qed.
+
+
 (* Remove all other theorems for now.... *)
 
 (* Steps for negotiation 
@@ -243,13 +258,41 @@ Qed.
 
 Print sound. 
 
-(* Definition sound' (t: Term) : bool := sound t dest_plc e_client. *)
+(* Negotiate' 
+   * input : t is list of requested terms 
+             r is list of proposed terms 
+   * output : list of proposed terms 
+   * reasoning: check if requested term satisfies soundness
+                the soundness check is done  *)
 
 Fixpoint negotiate' (t: list Term ) (r: list Term): list Term := 
   match t with 
   | [] => r
-  | h :: tl => if sound h dest_plc e_client then negotiate' tl ([h] ++ r) else negotiate' tl r 
+  | h :: tl => if sound h dest_plc e_server then negotiate' tl ([h] ++ r) else negotiate' tl r 
   end.
 
+
+(* Negotiate. 
+   * input: list of terms. This is the request. 
+   * output : list of terms. This is the proposal. 
+   * reasoning: pass input to helper function negotiate 
+       to call soundness check with empty list as proposal *)  
 Definition negotiate (t:list Term) : list Term := 
   negotiate' t []. 
+
+(* demo phrase currently is a kim measurement *)
+Definition demo_phrase := kim_meas.
+
+Theorem negotiate_demo : negotiate [demo_phrase] = [kim_meas].
+Proof.
+  cbv. 
+  eqbr dest_plc.
+  eqbr kim_meas_aspid.
+  auto.
+Qed. 
+
+Definition selection (t : list Term) : option Term := 
+match t with 
+| [] => None 
+| h :: tl => Some h 
+end. 
