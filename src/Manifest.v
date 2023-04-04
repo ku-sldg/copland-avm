@@ -64,6 +64,9 @@ Definition PlcMap := MapC Plc Address.
     Plc_Server      : ASP_Address ;
   }.
 
+  (* TODO: For all of these functions, it would be nice to 
+    remove the requirement that the AM_Library stick around
+    for these to evaluate? *)
   Definition generate_ASP_dispatcher (al : AM_Library)
     : CakeML_ASPCallback.
   (* This function will be a dispatcher for either local ASPS to CakeMLCallback, or pass them off to the ASP_Server *)
