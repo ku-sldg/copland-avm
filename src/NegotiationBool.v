@@ -92,7 +92,7 @@ end.
 
 Print ASP_ID.
 
-Fixpoint executable(t:Term)(k:Plc)(e:Environment): bool :=
+Fixpoint executable (t:Term)(k:Plc)(e:Environment): bool :=
 match t with
 | asp a  => match a with 
             | ASPC _ _ p => match p with 
@@ -122,13 +122,12 @@ match (e p) with (* Look for p in the environment *)
 | Some m => (policy m a p) (* Policy from m allows p to run a *)
 end.
 
-(** Recursive policy check. *)
+(** Recursive policy check. 
+    Can term [t] be shared with place [p] on enviornement [e] *)
 Fixpoint checkTermPolicy(t:Term)(k:Plc)(e:Environment): bool :=
   match t with
   | asp a  => match a with 
-              | ASPC _ _ p => match p with 
-                              | asp_paramsC aspid _ _ _ => hasASPe k e aspid
-                              end
+              | ASPC _ _ (asp_paramsC aspid _ _ _) => checkASPPolicy k e aspid
               | NULL => true
               | CPY => true
               | SIG => true
@@ -150,9 +149,35 @@ Fixpoint checkTermPolicy(t:Term)(k:Plc)(e:Environment): bool :=
 Definition sound (t:Term)(k:Plc)(e:Environment) :=
   andb (executable t k e) (checkTermPolicy t k e).
 
+Print andb. (* if b1 then b2 else false *)
+
+
+(*****************************
+ * NEGOTIATION 
+ *****************************)
+
+(* Negotiate' 
+   * input : t is list of requested terms 
+             r is list of proposed terms
+             tar is the target place 
+             tar_env is the target's enviornment  
+   * output : list of proposed terms 
+   * reasoning: check if requested term satisfies soundness
+                the soundness check is done  *)
+
+Fixpoint negotiate' (t: list Term ) (r: list Term) (tar : Plc) (tar_env : Environment): list Term := 
+  match t with 
+  | [] => r
+  | h :: tl => if sound h tar tar_env then negotiate' tl ([h] ++ r) tar tar_env else negotiate' tl r tar tar_env
+  end.
+
+
 (** ***************************
  * DEMO SYSTEM 
  *****************************)
+
+Definition server_plc := dest_plc.
+Definition client_plc := source_plc.
 
 (* the target should be able to share: 
    1. kim_meas_aspid wiht kim_meas_targid
@@ -162,50 +187,42 @@ Definition sound (t:Term)(k:Plc)(e:Environment) :=
    5. tpm signature
    6. ssl encryption *)
 
-   (* might want to care who it discloses evidence to *)
-Inductive server_Policy : ASP_ID -> Plc -> Prop := 
-| p_kim : server_Policy kim_meas_aspid kim_meas_targid 
-| p_cal_ak : server_Policy cal_ak_aspid cal_ak_targid
-| p_pub_bc : server_Policy pub_bc_aspid pub_bc_targid
-| p_data : server_Policy get_data_aspid get_data_targid
-| p_tpm_sig : server_Policy tpm_sig_aspid tpm_sig_targid 
-| p_ssl_enc : server_Policy ssl_enc_aspid ssl_enc_targid. 
-
-(* Definition server_Policy_bool : forall a p, reflect (server_Policy a p). *)
-
 Notation "x && y" := (andb x y).
 Notation "x || y" := (orb x y).
 
-(* server can share data with source_plc (client) *)
+(* server can share data with client *)
 Definition server_Policy_bool  `{H : EqClass ID_Type} (a: ASP_ID) (p:Plc) : bool := 
-    (eqb a kim_meas_aspid && eqb p source_plc) || 
-    (eqb a cal_ak_aspid && eqb p source_plc) || 
-    (eqb a pub_bc_aspid && eqb p source_plc) || 
-    (eqb a get_data_aspid && eqb p source_plc) ||
-    (eqb a tpm_sig_aspid && eqb p source_plc) || 
-    (eqb a ssl_enc_aspid && eqb p source_plc) .
+    (eqb a kim_meas_aspid && eqb p client_plc).
 
-    (* client can share data with dest_plc (server) *)
+    (* client can share data with server *)
 Definition client_Policy_bool `{H : EqClass ID_Type} (a: ASP_ID) (p:Plc) : bool := 
- (eqb a store_clientData_aspid && eqb p dest_plc).
+ (eqb a store_clientData_aspid && eqb p server_plc).
 
 (** Definition of environments for use in examples and proofs.  
  * Note there are 2 communicating peer's present... server and client
  * About the demo:  
- ** client is source_plc 
- ** server is dest_plc
+ ** client is client_plc 
+ ** server is server_plc
  ** client is appraising the server 
  *)
 
 Definition e0 := e_empty.
 Definition e_client :=
-    e_update e0 source_plc (Some {| asps := [store_clientData_aspid]; knowsOf:= [dest_plc] ; context := [] ; policy := client_Policy_bool |}).
+    e_update e0 client_plc (Some {| asps := [store_clientData_aspid]; knowsOf:= [server_plc] ; context := [] ; policy := client_Policy_bool |}).
 Definition e_server :=
-    e_update e0 dest_plc (Some {| asps := [kim_meas_aspid;  cal_ak_aspid; pub_bc_aspid; get_data_aspid; tpm_sig_aspid; ssl_enc_aspid]; knowsOf:= [] ; context := [] ; policy := server_Policy_bool|}).
+    e_update e0 server_plc (Some {| asps := [kim_meas_aspid;  cal_ak_aspid; pub_bc_aspid; get_data_aspid; tpm_sig_aspid; ssl_enc_aspid]; knowsOf:= [] ; context := [] ; policy := server_Policy_bool|}).
 
 (** In our example, the system includes client and server *)
 
 Definition example_sys_1 := [ e_client; e_server]. 
+
+(* Negotiate 
+    * input: list of terms. This is the request. 
+    * output : list of terms. This is the proposal. 
+    * reasoning: pass input to helper function negotiate 
+        to call soundness check with empty list as proposal *)  
+Definition negotiate (t:list Term) : list Term := 
+  negotiate' t [] server_plc e_server. 
 
 (** ***************************
   * EXAMPLE SYSTEM PROPERTIES
@@ -219,10 +236,12 @@ intros.
 eapply EqClass_impl_DecEq; eauto.
 Defined.
 
-
 Lemma eqb_refl : forall `{H: EqClass ID_Type} (x:ID_Type), eqb x x = true.
   intros. destruct H. eapply eqb_leibniz. auto.
-Qed.    
+Qed. 
+
+Lemma eqb_not_refl : forall `{H: EqClass ID_Type} (x:ID_Type) (y:ID_Type), x <> y -> eqb x y = false.
+  intros. destruct H. Abort. 
 
 (* Anytime equality is needed for the admitted type, use this. *)
 Ltac eqbr var :=
@@ -230,9 +249,8 @@ Ltac eqbr var :=
   assert (H : (let (eqb, _) := Eq_Class_ID_Type in eqb) var
   var = true); [eapply eqb_refl |]; rewrite H.
   
-(** Prove the P0 knows of P1 in P0's enviornment *)
-
-Example ex1 : knowsOfe source_plc e_client dest_plc = true.
+(** Prove the client knows of server *)
+Example ex1 : knowsOfe client_plc e_client server_plc = true.
 Proof.
   cbv.
   eqbr source_plc.
@@ -240,10 +258,12 @@ Proof.
   eauto.
 Qed.
 
-(** Prove server can share kim_meas (the demo phrase) with the client. 
-    AKA that it satisfies policy *)
+(* demo phrase currently is a kim measurement *)
+Definition demo_phrase := kim_meas.
+Print kim_meas. (* <{ << kim_meas_aspid dest_plc kim_meas_targid >> }> *)
 
-Theorem kim_meas_policy : server_Policy_bool kim_meas_aspid source_plc = true.
+(** Server policy says kim measurement can be shared with client *)
+Theorem kim_meas_policy : server_Policy_bool kim_meas_aspid client_plc = true.
 Proof.
   cbv. 
   eqbr kim_meas_aspid.
@@ -251,47 +271,51 @@ Proof.
   auto. 
 Qed.
 
+Theorem demo_phrase_checkASPPolicy : checkASPPolicy server_plc e_server kim_meas_aspid = true.
+Proof.
+  cbv.
+  eqbr dest_plc.
+  eqbr kim_meas_aspid.
+     
 
-(* Remove all other theorems for now.... *)
-
-(* Steps for negotiation 
-   1. pass in protocol 
-   2. check executability and soundness
-   3. return protocol if passes check *)
-
-Print sound. 
-
-(* Negotiate' 
-   * input : t is list of requested terms 
-             r is list of proposed terms 
-   * output : list of proposed terms 
-   * reasoning: check if requested term satisfies soundness
-                the soundness check is done  *)
-
-Fixpoint negotiate' (t: list Term ) (r: list Term): list Term := 
-  match t with 
-  | [] => r
-  | h :: tl => if sound h dest_plc e_server then negotiate' tl ([h] ++ r) else negotiate' tl r 
-  end.
+(* demp phrase should pass policy check on server *)
+Theorem demo_phrase_checkTermPolicy : checkTermPolicy demo_phrase server_plc e_server = true.
+Proof.
+  cbv.
+  eqbr dest_plc. 
+  eqbr kim_meas_aspid.
+Qed.
 
 
-(* Negotiate. 
-   * input: list of terms. This is the request. 
-   * output : list of terms. This is the proposal. 
-   * reasoning: pass input to helper function negotiate 
-       to call soundness check with empty list as proposal *)  
-Definition negotiate (t:list Term) : list Term := 
-  negotiate' t []. 
+(* make sure phrase executable on server place *)
+Theorem demo_phrase_executable : executable demo_phrase server_plc e_server = true .
+Proof.
+  cbv.
+  eqbr dest_plc.
+  eqbr kim_meas_aspid. 
+  auto.
+Qed.
 
-(* demo phrase currently is a kim measurement *)
-Definition demo_phrase := kim_meas.
+(* soundness is executablity and policy *)
+Theorem demo_phrase_sound : sound demo_phrase server_plc e_server = true.
+Proof.
+  unfold sound.
+  rewrite demo_phrase_executable.
+  rewrite  
+  cbv.
+  eqbr dest_plc.
+  eqbr kim_meas_aspid.  
+  
+Qed.
+
 
 Theorem negotiate_demo : negotiate [demo_phrase] = [kim_meas].
 Proof.
   cbv. 
   eqbr dest_plc.
   eqbr kim_meas_aspid.
-  auto.
+  (* Coq doesn't know that *)
+  eauto.
 Qed. 
 
 Definition selection (t : list Term) : option Term := 
