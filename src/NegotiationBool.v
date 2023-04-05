@@ -162,6 +162,7 @@ Definition sound (t:Term)(k:Plc)(e:Environment) :=
    5. tpm signature
    6. ssl encryption *)
 
+   (* might want to care who it discloses evidence to *)
 Inductive server_Policy : ASP_ID -> Plc -> Prop := 
 | p_kim : server_Policy kim_meas_aspid kim_meas_targid 
 | p_cal_ak : server_Policy cal_ak_aspid cal_ak_targid
@@ -175,16 +176,18 @@ Inductive server_Policy : ASP_ID -> Plc -> Prop :=
 Notation "x && y" := (andb x y).
 Notation "x || y" := (orb x y).
 
+(* server can share data with source_plc (client) *)
 Definition server_Policy_bool  `{H : EqClass ID_Type} (a: ASP_ID) (p:Plc) : bool := 
-    (eqb a kim_meas_aspid && eqb p kim_meas_targid) || 
-    (eqb a cal_ak_aspid && eqb p cal_ak_targid) || 
-    (eqb a pub_bc_aspid && eqb p pub_bc_targid) || 
-    (eqb a get_data_aspid && eqb p get_data_targid) ||
-    (eqb a tpm_sig_aspid && eqb p tpm_sig_targid) || 
-    (eqb a ssl_enc_aspid && eqb p ssl_enc_targid) .
+    (eqb a kim_meas_aspid && eqb p source_plc) || 
+    (eqb a cal_ak_aspid && eqb p source_plc) || 
+    (eqb a pub_bc_aspid && eqb p source_plc) || 
+    (eqb a get_data_aspid && eqb p source_plc) ||
+    (eqb a tpm_sig_aspid && eqb p source_plc) || 
+    (eqb a ssl_enc_aspid && eqb p source_plc) .
 
+    (* client can share data with dest_plc (server) *)
 Definition client_Policy_bool `{H : EqClass ID_Type} (a: ASP_ID) (p:Plc) : bool := 
- (eqb a store_clientData_aspid && eqb p store_clientData_targid).
+ (eqb a store_clientData_aspid && eqb p dest_plc).
 
 (** Definition of environments for use in examples and proofs.  
  * Note there are 2 communicating peer's present... server and client
@@ -237,14 +240,14 @@ Proof.
   eauto.
 Qed.
 
-(** Prove server can share kim_meas (the demo phrase). 
+(** Prove server can share kim_meas (the demo phrase) with the client. 
     AKA that it satisfies policy *)
 
-Theorem kim_meas_policy : server_Policy_bool kim_meas_aspid kim_meas_targid = true.
+Theorem kim_meas_policy : server_Policy_bool kim_meas_aspid source_plc = true.
 Proof.
   cbv. 
   eqbr kim_meas_aspid.
-  eqbr kim_meas_targid.
+  eqbr source_plc.
   auto. 
 Qed.
 
