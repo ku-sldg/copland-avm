@@ -20,25 +20,6 @@ Ltac right_dest_contr H := right; unfold not; intros H; destruct H; contradictio
 Ltac right_intro_inverts := right; unfold not; intros H'; inverts H'.
 Ltac right_dest_inverts := right; unfold not; intros H; inverts H.
 
-(** [Environment] is a set of AM's each defined by a [Manifest].
-  The domain of an [Environment] provides names for each [Manifest].
-  Names should be the hash of their public key, but this restriction
-  is not enforced here. 
-*)
-
-Definition Environment : Type :=  Plc -> (option Manifest).
-
-Definition e_empty : Environment := (fun _ => None).
-
-Print Plc. 
-
-Definition e_update `{H : EqClass ID_Type} (m : Environment) (x : Plc) (v : (option Manifest)) :=
-  fun x' => if eqb x x' then v else m x'.
-
-(** A [System] is all attestation managers in the enviornement *)
-
-Definition System := list Environment.
-
 (** ****************************
   * REASONING ABOUT MANIFESTS
 *****************************)
@@ -51,33 +32,11 @@ Fixpoint Inb `{H : EqClass ID_Type} (a:ASP_ID) (l:list ASP_ID) : bool :=
   
 (** Within the manifest [m], does the AMß have ASP [a]? *)
 Definition hasASPm (m:Manifest) (a:ASP_ID) : bool :=
-  Inb a m.(asps).  
-
-(* same consideration but with the environment *)
-Definition hasASPe(k:Plc)(e:Environment)(a:ASP_ID) : bool :=
-match (e k) with
-| None => false
-| Some m => Inb a m.(asps)
-end.      
+  Inb a m.(asps).        
 
 (** Determine if manifest [m] knows how to communicate with [k] *)
 Definition knowsOfm (m:Manifest) (k:Plc) : bool :=
   Inb k m.(knowsOf).
-  
-(** Determine if manifest [k] from [e] knows how to communicate from [k] to [p] *)
-Definition knowsOfe `{H: EqClass ID_Type} (k:Plc)(e:Environment)(p:Plc): bool :=
-match (e k) with
-| None => false
-| Some m => Inb p m.(knowsOf)
-end.
-
-(** Determine if place [k] within the environment [e]  
-    depends on place [p] (the context relation) *)
-Definition dependsOne (k:Plc)(e:Environment)(p:Plc): bool  :=
-match (e k) with
-| None => false
-| Some m => Inb p m.(context)
-end.
 
 (** ***************************
     * EXECUTABILITY 
@@ -141,14 +100,6 @@ end.
 (** Check manifest [m] and see if place [p] can run a. *)
 Definition checkMPolicy (p:Plc) (m:Manifest) (a:ASP_ID) : bool := 
   policy m a p.  
-
-(** Check environment [e] and see if place [p] has some policy 
- *  where the Policy allows p to run a. *)
-Definition checkASPPolicy(p:Plc)(e:Environment)(a:ASP_ID):bool :=
-match (e p) with (* Look for p in the environment *)
-| None => false
-| Some m => (policy m a p) (* Policy from m allows p to run a *)
-end.
 
 (** Recursive policy check. *)
 Fixpoint checkTermPolicy(t:Term)(k:Plc)(m:Manifest): bool :=
@@ -268,5 +219,3 @@ Theorem demo_phrase_checkMPolicy : checkMPolicy server_plc m_server kim_meas_asp
 Proof.
   cbv.
   eqbr kim_meas_aspid.
-
-
