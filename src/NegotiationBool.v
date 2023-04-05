@@ -179,13 +179,8 @@ Fixpoint negotiate' (t: list Term ) (r: list Term) (tar : Plc) (tar_env : Enviro
 Definition server_plc := dest_plc.
 Definition client_plc := source_plc.
 
-(* the target should be able to share: 
-   1. kim_meas_aspid wiht kim_meas_targid
-   2. the cal_ak_aspid with cal_ak_targid 
-   3. the public key to bc (?)
-   4. data 
-   5. tpm signature
-   6. ssl encryption *)
+(* the server should be able to share: 
+   1. kim_meas_aspid with client  *)
 
 Notation "x && y" := (andb x y).
 Notation "x || y" := (orb x y).
@@ -276,7 +271,7 @@ Proof.
   cbv.
   eqbr dest_plc.
   eqbr kim_meas_aspid.
-     
+
 
 (* demp phrase should pass policy check on server *)
 Theorem demo_phrase_checkTermPolicy : checkTermPolicy demo_phrase server_plc e_server = true.
