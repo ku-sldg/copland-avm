@@ -189,9 +189,9 @@ Inductive discloses_to_remote: Ev -> (Plc*Evidence) -> Prop :=
 
 Definition discloses_aspid_to_remote (q:Plc) (i:ASP_ID): Prop :=
   let gen_aspid_evidence := (specific_aspid_genEvidence i) in
-  forall et i p t e,
+  forall et reqid p t e,
     ((evidence_matches_gen gen_aspid_evidence et) = true) /\
-    (discloses_to_remote (req i p q t e) (q, et)).
+    (discloses_to_remote (req reqid p q t e) (q, et)).
                                                           
 
 
@@ -264,6 +264,113 @@ Definition term_discloses_aspid_to_remote (t:Term) (p:Plc) (e:Evidence) (i:ASP_I
     ((term_discloses_to_remote t p e (r,et)) = true).
 
 
+
+(*
+Inductive discloses_to_remote: Ev -> (Plc*Evidence) -> Prop :=
+| at_disclose: forall i p q t e e',
+    EvSubT e' e ->
+    discloses_to_remote (req i p q t e) (q,e').
+*)
+
+
+
+
+      
+
+Definition cvm_trace_discloses_aspid_to_remote (tr:list Ev) (i:ASP_ID) (r:Plc) : Prop :=
+  let gen_aspid_evidence := (specific_aspid_genEvidence i) in
+  exists ev reqi p t e et,
+    (In ev tr) /\
+    ev = (req reqi p r t e) /\
+    (evidence_matches_gen gen_aspid_evidence et = true) /\
+    evsubt_bool et e = true.
+
+
+Definition events_discloses_aspid (t:Term) (p:Plc) (e:Evidence) (i:ASP_ID) (r:Plc): Prop :=
+  forall annt,
+    annoP annt t ->
+    let gen_aspid_evidence := (specific_aspid_genEvidence i) in
+    exists ev reqi reqp reqt reqe et,
+      (
+        events annt p e ev /\
+        ev = (req reqi reqp r reqt reqe) /\
+        (evidence_matches_gen gen_aspid_evidence et = true) /\
+        evsubt_bool et reqe = true
+      ).
+
+Lemma events_respects_term_disclosure_aspid: forall t p e i r,
+  ~ (term_discloses_aspid_to_remote t p e i r) ->
+
+  ~ (events_discloses_aspid t p e i r).
+Proof.
+Admitted.
+
+Lemma cvm_respects_events_disclosure_aspid:
+  forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi',
+    ~ (events_discloses_aspid t p e i r) ->
+    
+    term_to_coreP t atp ->
+    build_cvmP atp
+               (mk_st (evc bits e) [] p cvmi)
+               (Some tt)
+               (mk_st (evc bits' e') cvm_tr p' cvmi') ->
+
+    ~ (cvm_trace_discloses_aspid_to_remote cvm_tr i r).
+
+Proof.
+Admitted.
+
+Lemma cvm_respects_term_disclosure_aspid:
+  forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi',
+  ~ (term_discloses_aspid_to_remote t p e i r) ->
+  
+  term_to_coreP t atp ->
+  build_cvmP atp
+             (mk_st (evc bits e) [] p cvmi)
+             (Some tt)
+             (mk_st (evc bits' e') cvm_tr p' cvmi') ->
+
+  ~ (cvm_trace_discloses_aspid_to_remote cvm_tr i r).
+Proof.
+  intros.
+  eapply cvm_respects_events_disclosure_aspid.
+  eapply events_respects_term_disclosure_aspid.
+  eassumption.
+  eassumption.
+  eassumption.
+Qed.
+
+
+(*
+Lemma filter_remote_disclosures_correct_cvm:
+  forall rs p e ts ts' t annt r ev atp i i' bits bits' e' cvm_tr p',
+    filter_remote_disclosures rs p e ts = ts' ->
+    In t ts' -> 
+    term_to_coreP t atp ->
+    annoP_indexed annt t i i' ->
+    build_cvmP atp
+                     (mk_st (evc bits e) [] p i)
+                     (Some tt)
+                     (mk_st (evc bits' e') cvm_tr p' i') ->
+    
+    In ev cvm_tr ->
+    In r rs ->
+    ~ (discloses_to_remote ev r).
+Proof.
+*)
+    
+  
+
+
+
+(*
+Definition events_discloses_aspid_to_remote (t:Term) (p:Plc) (e:Evidence) (i:ASP_ID) (r:Plc) : Prop :=
+  forall reqp reqi annt ev,
+  annoP annt t ->
+  events annt p e ev ->
+  ev = (req reqi reqp r t e) ->
+  (discloses_to_remote ev r).
+*)
 
 
 
