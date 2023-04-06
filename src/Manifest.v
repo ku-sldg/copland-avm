@@ -55,59 +55,53 @@ Definition PlcMap := MapC Plc Address.
     Plc_Server      : ASP_Address ;
   }.
 
-  (* TODO: For all of these functions, it would be nice to 
-    remove the requirement that the AM_Library stick around
-    for these to evaluate? *)
-  Definition generate_ASP_dispatcher (al : AM_Library)
-    : CakeML_ASPCallback.
   (* This function will be a dispatcher for either local ASPS to CakeMLCallback, or pass them off to the ASP_Server *)
-  destruct al. (* break up the library *) 
-  (* Check is our parameter we are being called on is a local asp *)
-  intros par.
-  destruct par eqn:PAR. 
-  (* our function is being called on asp with id "a" *)
-  destruct (map_get Local_ASPS0 a).
-  - (* if it is local, use the local callback *)
-    eapply (c par).
-  - (* it is not local, so dispatch to server *)
-    destruct Lib_ASP_Server0.
-    eapply (c par).
-  Defined.
+  Definition generate_ASP_dispatcher (al : AM_Library) : CakeML_ASPCallback :=
+    let local_asps_map := al.(Local_ASPS) in
+    let (asp_server, asp_server_cb) := al.(Lib_ASP_Server) in
+    fun (par : ASP_PARAMS) =>
+      let (aspid, args, plc, targ) := par in
+        (* check is the ASPID is a local, with a callback *)
+        match (map_get local_asps_map aspid) with
+        | Some cb => (cb par)
+        | None => (asp_server_cb par)
+        end.
 
-  Definition generate_Plc_dispatcher (al : AM_Library) 
-    : CakeML_PlcCallback.
-  destruct al.
-  intros plc.
-  destruct (map_get Local_Plcs0 plc).
-  - eapply u.
-  - destruct Lib_Plc_Server0.
-    eapply (c plc).
-  Defined.
-
-  Definition generate_PubKey_dispatcher (al : AM_Library) 
-    : CakeML_PubKeyCallback.
-  destruct al.
-  intros plc.
-  destruct (map_get Local_PubKeys0 plc).
-  - eapply p.
-  - destruct Lib_PubKey_Server0.
-    eapply (c plc).
-  Defined.
+  (* This function will lookup for either local Plcs to UUID, or pass them off to the Plc Server *)
+  Definition generate_Plc_dispatcher (al : AM_Library) : CakeML_PlcCallback :=
+    let local_plc_map := al.(Local_Plcs) in
+    let (plc_server, plc_server_cb) := al.(Lib_Plc_Server) in
+    fun (p : Plc) =>
+      (* check is the plc "p" is local, with a reference *)
+      match (map_get local_plc_map p) with
+      | Some uuid => uuid
+      | None => (plc_server_cb p)
+      end.
+      
+  (* This function will lookup the PubKey either locally Plc -> PublicKey or pass off to PubKeyServer *)
+  Definition generate_PubKey_dispatcher (al : AM_Library) : CakeML_PubKeyCallback :=
+    let local_pubkey_map := al.(Local_PubKeys) in
+    let (pubkey_server, pubkey_server_cb) := al.(Lib_PubKey_Server) in
+    fun (p : Plc) =>
+      (* check is the plc "p" is local, with a reference in the pubkey server mapping *)
+      match (map_get local_pubkey_map p) with
+      | Some key => key
+      | None => (pubkey_server_cb p)
+      end.
 
   (* This is a rough type signature for the "manifest compiler".  Still some details to be ironed out... *)
   Definition manifest_compiler (m : Manifest) (al : AM_Library) 
     : (ConcreteManifest * CakeML_ASPCallback * 
-      CakeML_PlcCallback * CakeML_PubKeyCallback).
+      CakeML_PlcCallback * CakeML_PubKeyCallback) :=
   (* The output of this function is a Concrete manifest, and a 
   function that can be used like "check_asp_EXTD".
   This function will be used in extraction to either dispatch ASPs to the ASP server, or call a local callback *)
-  pose proof (generate_ASP_dispatcher al).
-  pose proof (generate_Plc_dispatcher al).
-  pose proof (generate_PubKey_dispatcher al).
-  split; [split; [split |]|]; eauto.
-  eapply (Build_ConcreteManifest 
-    m.(asps) m.(knowsOf) m.(pubkeys)
-    (fst (al.(Lib_ASP_Server))) (fst (al.(Lib_Plc_Server)))
-    (fst (al.(Lib_PubKey_Server)))).
-  Defined.
+    let asp_cb := (generate_ASP_dispatcher al) in
+    let plc_cb := (generate_Plc_dispatcher al) in
+    let pubkey_cb := (generate_PubKey_dispatcher al) in
+    let concrete_man := (Build_ConcreteManifest 
+        m.(asps) m.(knowsOf) m.(pubkeys)
+        (fst (al.(Lib_ASP_Server))) (fst (al.(Lib_Plc_Server)))
+        (fst (al.(Lib_PubKey_Server)))) in
+      (concrete_man, asp_cb, plc_cb, pubkey_cb).
 
