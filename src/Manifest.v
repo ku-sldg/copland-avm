@@ -2,16 +2,7 @@
    https://github.com/ku-sldg/negotiation20/blob/master/src/Manifest/Manifest.v
 *)
 
-Require Import Term_Defs_Core Maps Term_Defs.
-
-
-Definition ASP_Address : Set. Admitted.
-
-Definition UUID : Type. Admitted.
-
-Definition PublicKey : Set. Admitted.
-
-Definition PolicyT : Set. Admitted.
+Require Import Term_Defs_Core Maps Term_Defs Manifest_Admits.
 
 Definition CakeML_ASPCallback : Type := 
   ASP_PARAMS -> Plc -> BS -> RawEv -> BS.
