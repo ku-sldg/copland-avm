@@ -98,24 +98,24 @@ end.
 *******************************)
 
 (** Check manifest [m] and see if place [p] can run a. *)
-Definition checkMPolicy (p:Plc) (m:Manifest) (a:ASP_ID) : bool := 
-  policy m a p.  
+Definition checkMPolicy (rp:Plc) (p:Plc) (m:Manifest) (a:ASP_ID) : bool := 
+  policy m a rp.  
 
 (** Recursive policy check. *)
-Fixpoint checkTermPolicy(t:Term)(k:Plc)(m:Manifest): bool :=
+Fixpoint checkTermPolicy (rp:Plc)(t:Term)(k:Plc)(m:Manifest): bool :=
   match t with
   | asp a  => match a with 
-              | ASPC _ _ (asp_paramsC aspid _ _ _ )=> checkMPolicy k m aspid
+              | ASPC _ _ (asp_paramsC aspid _ _ _ )=> checkMPolicy rp k m aspid
               | NULL => true
               | CPY => true
               | SIG => true
               | HSH => true
               | ENC p => true
               end
-  | att r t0 => checkTermPolicy t0 k m
-  | lseq t1 t2 => andb (checkTermPolicy t1 k m) (checkTermPolicy t2 k m)
-  | bseq _ t1 t2 => andb (checkTermPolicy t1 k m) (checkTermPolicy t2 k m)
-  | bpar _ t1 t2 => andb (checkTermPolicy t1 k m) (checkTermPolicy t2 k m)
+  | att r t0 => checkTermPolicy rp t0 k m
+  | lseq t1 t2 => andb (checkTermPolicy rp t1 k m) (checkTermPolicy rp t2 k m)
+  | bseq _ t1 t2 => andb (checkTermPolicy rp t1 k m) (checkTermPolicy rp t2 k m)
+  | bpar _ t1 t2 => andb (checkTermPolicy rp t1 k m) (checkTermPolicy rp t2 k m)
   end.
 
 (*****************************
@@ -124,8 +124,8 @@ Fixpoint checkTermPolicy(t:Term)(k:Plc)(m:Manifest): bool :=
 
 (** Soundness is executability and policy adherence *)
 
-Definition sound (t:Term)(m:Manifest) (k:Plc) :=
-  andb (executable t m) (checkTermPolicy t k m).
+Definition sound (rp:Plc)(t:Term)(m:Manifest) (k:Plc) :=
+  andb (executable t m) (checkTermPolicy rp t k m).
 
 (*****************************
  * NEGOTIATION
@@ -138,10 +138,10 @@ Definition sound (t:Term)(m:Manifest) (k:Plc) :=
    * reasoning: check if requested term satisfies soundness
                 the soundness check is done  *)
 
-Fixpoint negotiate' (t: list Term ) (r: list Term) (m: Manifest) (tp : Plc): list Term := 
+Fixpoint negotiate' (rp:Plc)(t: list Term ) (r: list Term) (m: Manifest) (tp : Plc): list Term := 
   match t with 
   | [] => r
-  | h :: tl => if sound h m tp then negotiate' tl ([h] ++ r) m tp else negotiate' tl r m tp
+  | h :: tl => if sound rp h m tp then negotiate' rp tl ([h] ++ r) m tp else negotiate' rp tl r m tp
   end.
 
 (** ***************************
@@ -215,7 +215,21 @@ Proof.
   auto. 
 Qed.
 
-Theorem demo_phrase_checkMPolicy : checkMPolicy server_plc m_server kim_meas_aspid = true.
+Theorem demo_phrase_checkMPolicy : checkMPolicy client_plc server_plc m_server kim_meas_aspid = true.
 Proof.
   cbv.
   eqbr kim_meas_aspid.
+  eqbr source_plc.
+  auto.
+Qed. 
+
+Theorem demo_phrase_checkTermPolicy : checkTermPolicy client_plc demo_phrase server_plc m_server = true.
+Proof.
+  simpl.
+  cbv. 
+  eqbr kim_meas_aspid.
+  eqbr source_plc.
+  auto.
+  (* coq won't let me do this... 
+  rewrite <- kim_meas_aspid. *)
+Qed. 
