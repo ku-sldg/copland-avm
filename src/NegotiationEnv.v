@@ -5,7 +5,6 @@
    2. ensure protocol is sound and executable 
 
 *)
-
 Require Import Manifest. 
 Require Import Term.
 
