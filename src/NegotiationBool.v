@@ -116,28 +116,29 @@ end.
 
 (** Check environment [e] and see if place [p] has some policy 
  *  where the Policy allows p to run a. *)
-Definition checkASPPolicy(p:Plc)(e:Environment)(a:ASP_ID):bool :=
+Definition checkASPPolicy (rp:Plc) (p:Plc)(e:Environment)(a:ASP_ID):bool :=
 match (e p) with (* Look for p in the environment *)
 | None => false
-| Some m => (policy m a p) (* Policy from m allows p to run a *)
+| Some m => (policy m a rp) (* Policy from m allows p to run a *)
 end.
 
 (** Recursive policy check. 
     Can term [t] be shared with place [p] on enviornement [e] *)
-Fixpoint checkTermPolicy(t:Term)(k:Plc)(e:Environment): bool :=
+Fixpoint checkTermPolicy (rp:Plc) (t:Term)(k:Plc)(e:Environment): bool :=
   match t with
   | asp a  => match a with 
-              | ASPC _ _ (asp_paramsC aspid _ _ _) => checkASPPolicy k e aspid
+              | ASPC _ _ (asp_paramsC aspid _ _ _) => checkASPPolicy rp k e aspid
               | NULL => true
               | CPY => true
               | SIG => true
               | HSH => true
               | ENC p => true
               end
-  | att r t0 => checkTermPolicy t0 k e
-  | lseq t1 t2 => andb (checkTermPolicy t1 k e) (checkTermPolicy t2 k e)
-  | bseq _ t1 t2 => andb (checkTermPolicy t1 k e) (checkTermPolicy t2 k e)
-  | bpar _ t1 t2 => andb (checkTermPolicy t1 k e) (checkTermPolicy t2 k e)
+  (* question is... how does the att change the requesting place *)
+  | att r t0 => checkTermPolicy rp t0 k e
+  | lseq t1 t2 => andb (checkTermPolicy rp t1 k e) (checkTermPolicy rp t2 k e)
+  | bseq _ t1 t2 => andb (checkTermPolicy rp t1 k e) (checkTermPolicy rp t2 k e)
+  | bpar _ t1 t2 => andb (checkTermPolicy rp t1 k e) (checkTermPolicy rp t2 k e)
   end.
 
 (*****************************
@@ -146,8 +147,8 @@ Fixpoint checkTermPolicy(t:Term)(k:Plc)(e:Environment): bool :=
 
 (** Soundness is executability and policy adherence *)
 
-Definition sound (t:Term)(k:Plc)(e:Environment) :=
-  andb (executable t k e) (checkTermPolicy t k e).
+Definition sound (rp:Plc) (t:Term) (k:Plc) (e:Environment) :=
+  andb (executable t k e) (checkTermPolicy rp t k e).
 
 Print andb. (* if b1 then b2 else false *)
 
@@ -165,10 +166,10 @@ Print andb. (* if b1 then b2 else false *)
    * reasoning: check if requested term satisfies soundness
                 the soundness check is done  *)
 
-Fixpoint negotiate' (t: list Term ) (r: list Term) (tar : Plc) (tar_env : Environment): list Term := 
+Fixpoint negotiate' (rp : Plc) (t: list Term ) (r: list Term) (tar : Plc) (tar_env : Environment): list Term := 
   match t with 
   | [] => r
-  | h :: tl => if sound h tar tar_env then negotiate' tl ([h] ++ r) tar tar_env else negotiate' tl r tar tar_env
+  | h :: tl => if sound rp h tar tar_env then negotiate' rp tl ([h] ++ r) tar tar_env else negotiate' rp tl r tar tar_env
   end.
 
 
@@ -217,7 +218,7 @@ Definition example_sys_1 := [ e_client; e_server].
     * reasoning: pass input to helper function negotiate 
         to call soundness check with empty list as proposal *)  
 Definition negotiate (t:list Term) : list Term := 
-  negotiate' t [] server_plc e_server. 
+  negotiate' client_plc t [] server_plc e_server. 
 
 (** ***************************
   * EXAMPLE SYSTEM PROPERTIES
@@ -266,21 +267,25 @@ Proof.
   auto. 
 Qed.
 
-Theorem demo_phrase_checkASPPolicy : checkASPPolicy server_plc e_server kim_meas_aspid = true.
+(* kim_meas_aspid satisfies policy *)
+Theorem demo_phrase_checkASPPolicy : checkASPPolicy client_plc server_plc e_server kim_meas_aspid = true.
 Proof.
   cbv.
   eqbr dest_plc.
   eqbr kim_meas_aspid.
+  eqbr source_plc.
+  auto.
+Qed.  
 
-
-(* demp phrase should pass policy check on server *)
-Theorem demo_phrase_checkTermPolicy : checkTermPolicy demo_phrase server_plc e_server = true.
+(* demo_phrase satisfies policy *)
+Theorem demo_phrase_checkTermPolicy : checkTermPolicy client_plc demo_phrase server_plc e_server = true.
 Proof.
   cbv.
-  eqbr dest_plc. 
+  eqbr dest_plc.
   eqbr kim_meas_aspid.
-Qed.
-
+  eqbr source_plc.
+  auto.
+Qed.  
 
 (* make sure phrase executable on server place *)
 Theorem demo_phrase_executable : executable demo_phrase server_plc e_server = true .
@@ -292,25 +297,18 @@ Proof.
 Qed.
 
 (* soundness is executablity and policy *)
-Theorem demo_phrase_sound : sound demo_phrase server_plc e_server = true.
+Theorem demo_phrase_sound : sound client_plc demo_phrase server_plc e_server = true.
 Proof.
   unfold sound.
   rewrite demo_phrase_executable.
-  rewrite  
-  cbv.
-  eqbr dest_plc.
-  eqbr kim_meas_aspid.  
-  
+  rewrite demo_phrase_checkTermPolicy.
+  auto.
 Qed.
 
-
+(* prove that negotiate with the demo phrase returns the kim measurement *)
 Theorem negotiate_demo : negotiate [demo_phrase] = [kim_meas].
 Proof.
-  cbv. 
-  eqbr dest_plc.
-  eqbr kim_meas_aspid.
-  (* Coq doesn't know that *)
-  eauto.
+  unfold negotiate. unfold negotiate'. rewrite demo_phrase_sound. simpl. auto.
 Qed. 
 
 Definition selection (t : list Term) : option Term := 
