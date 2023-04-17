@@ -259,7 +259,7 @@ Definition discloses_aspid_to_remote (q:Plc) (i:ASP_ID): Prop :=
 
 Definition term_discloses_aspid_to_remote (t:Term) (p:Plc) (e:Evidence) (i:ASP_ID) (r:Plc) : Prop :=
   let gen_aspid_evidence := (specific_aspid_genEvidence i) in
-  forall et,
+  exists et,
     ((evidence_matches_gen gen_aspid_evidence et) = true) /\
     ((term_discloses_to_remote t p e (r,et)) = true).
 
@@ -303,6 +303,156 @@ Lemma events_respects_term_disclosure_aspid: forall t p e i r,
 
   ~ (events_discloses_aspid t p e i r).
 Proof.
+  intros.
+  unfold not in * ; intros.
+  unfold events_discloses_aspid in *.
+  assert (exists annt, annoP annt t). admit.
+  destruct_conjs.
+  specialize (H0 H1 H2).
+  destruct_conjs.
+  subst.
+
+  generalizeEverythingElse t.
+  induction t; intros.
+
+  - (* asp case *)
+    invc H2.
+    destruct_conjs.
+    repeat ff.
+  - (* at case *)
+
+  eapply H.
+  unfold term_discloses_aspid_to_remote.
+  exists H7.
+  split.
+  eassumption.
+  simpl.
+  invc H2.
+  destruct_conjs.
+  assert (exists rng t', H1 = aatt rng p t'). admit.
+  invc H12.
+  destruct_conjs.
+  subst.
+  invc H8.
+  +
+    admit.
+
+  +
+    assert (term_discloses_to_remote t p e (r, H7) = true).
+    {
+      assert False.
+      {
+        eapply IHt.
+        admit. (* TODO: use recursive at hyp (H) *)
+        Focus 2.
+        eassumption.
+        Focus 2.
+        eassumption.
+        Focus 2.
+        invc H9; repeat ff.
+        econstructor.
+        eexists. eexists.
+        apply Heqp1.
+        eassumption.
+      }
+      invc H1.
+    }
+    
+    rewrite H1.
+    admit.
+
+  (*
+
+
+  
+  assert (exists t', H1 = att p t'). admit.
+  destruct_conjs.
+  subst.
+  simpl.
+  admit.
+   *)
+  
+
+  - (* lseq case *)
+
+    invc H2; repeat ff.
+    destruct_conjs.
+
+    ff.
+
+    invc H8.
+    + (* left subterm *)
+      eapply IHt1 with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)).
+      admit. (* use recursive _ -> False hyp *)
+      eassumption.
+      eassumption.
+      eassumption.
+      econstructor.
+      repeat eexists.
+      eassumption.
+    +
+       (* right subterm *)
+      eapply IHt2 with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)).
+      admit. (* use recursive _ -> False hyp *)
+      eassumption.
+      eassumption.
+      eassumption.
+      econstructor.
+      repeat eexists.
+      eassumption.
+      
+  - (* bseq case *)
+     invc H2; repeat ff.
+    destruct_conjs.
+
+    ff.
+
+    invc H8.
+    + (* left subterm *)
+      eapply IHt1 with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)).
+      admit. (* use recursive _ -> False hyp *)
+      eassumption.
+      eassumption.
+      eassumption.
+      econstructor.
+      repeat eexists.
+      eassumption.
+    +
+       (* right subterm *)
+      eapply IHt2 with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)).
+      admit. (* use recursive _ -> False hyp *)
+      eassumption.
+      eassumption.
+      eassumption.
+      econstructor.
+      repeat eexists.
+      eassumption.
+  - (* bpar case *)
+     invc H2; repeat ff.
+    destruct_conjs.
+
+    ff.
+
+    invc H8.
+    + (* left subterm *)
+      eapply IHt1 with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)).
+      admit. (* use recursive _ -> False hyp *)
+      eassumption.
+      eassumption.
+      eassumption.
+      econstructor.
+      repeat eexists.
+      eassumption.
+    +
+       (* right subterm *)
+      eapply IHt2 with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)).
+      admit. (* use recursive _ -> False hyp *)
+      eassumption.
+      eassumption.
+      eassumption.
+      econstructor.
+      repeat eexists.
+      eassumption.
 Admitted.
 
 Lemma cvm_respects_events_disclosure_aspid:
