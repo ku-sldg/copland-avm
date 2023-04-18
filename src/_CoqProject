@@ -50,6 +50,5 @@ Appraisal_Semantics.v
 privPolicy.v
 Client_AM.v
 Server_AM.v
-Demo_AM.v
 CopParser.v
 Extraction_Cvm_Cake.v
