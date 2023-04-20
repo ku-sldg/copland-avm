@@ -6,7 +6,7 @@ Author:  Adam Petz, ampetz@ku.edu
 
 Require Import Term_Defs Anno_Term_Defs Term LTS Cvm_Impl Cvm_St Trace Main ConcreteEvidence.
 
-Require Import CvmSemantics Appraisal_Evidence Eqb_Evidence Auto AbstractedTypes EqClass Helpers_CvmSemantics Disclose_Gen.
+Require Import CvmSemantics Appraisal_Evidence Eqb_Evidence Auto AbstractedTypes EqClass Helpers_CvmSemantics Disclose_Gen External_Facts Axioms_Io.
 
 Require Import StructTactics.
 
@@ -286,29 +286,33 @@ Definition cvm_trace_discloses_aspid_to_remote (tr:list Ev) (i:ASP_ID) (r:Plc) :
     evsubt_bool et e = true.
 
 
-Definition events_discloses_aspid (t:Term) (p:Plc) (e:Evidence) (i:ASP_ID) (r:Plc): Prop :=
-  forall annt,
-    annoP annt t ->
+Definition events_discloses_aspid (annt:AnnoTerm) (* (p:Plc) *) (e:Evidence) (i:ASP_ID) (r:Plc): Prop :=
+  (*forall annt cvmi,
+    annoP_indexed annt t 0 cvmi-> *)
     let gen_aspid_evidence := (specific_aspid_genEvidence i) in
-    exists ev reqi reqp reqt reqe et,
+    exists ev reqi reqp reqt reqe et p,
       (
+        (* annoP annt t /\  *)
         events annt p e ev /\
         ev = (req reqi reqp r reqt reqe) /\
         (evidence_matches_gen gen_aspid_evidence et = true) /\
         evsubt_bool et reqe = true
       ).
 
-Lemma events_respects_term_disclosure_aspid: forall t p e i r,
+Lemma events_respects_term_disclosure_aspid: forall t p e i r annt,
+    annoP annt t -> 
+
   ~ (term_discloses_aspid_to_remote t p e i r) ->
 
-  ~ (events_discloses_aspid t p e i r).
+  ~ (events_discloses_aspid annt e i r).
 Proof.
   intros.
   unfold not in * ; intros.
   unfold events_discloses_aspid in *.
-  assert (exists annt, annoP annt t). admit.
+  (*
+  assert (exists annt cvmi, annoP_indexed annt t 0 cvmi). admit.
   destruct_conjs.
-  specialize (H0 H1 H2).
+  specialize (H0 H1 H2 H3). *)
   destruct_conjs.
   subst.
 
@@ -316,49 +320,74 @@ Proof.
   induction t; intros.
 
   - (* asp case *)
-    invc H2.
+    invc H.
     destruct_conjs.
     repeat ff.
   - (* at case *)
 
-  eapply H.
+  eapply H0.
   unfold term_discloses_aspid_to_remote.
-  exists H7.
+  exists H6.
   split.
   eassumption.
   simpl.
-  invc H2.
+
+  (*
+  invc H3.
   destruct_conjs.
   assert (exists rng t', H1 = aatt rng p t'). admit.
-  invc H12.
+  invc H0.
   destruct_conjs.
+  subst. *)
+  invc H.
+  destruct_conjs.
+  invc H9.
+  break_let.
+  inversion H13.
   subst.
+  clear H13.
   invc H8.
   +
     admit.
 
   +
-    assert (term_discloses_to_remote t p e (r, H7) = true).
+    (*
+    rewrite <- Heqe0 in *. clear Heqe0.
+    subst. *)
+    assert (term_discloses_to_remote t p e (r, H6) = true).
     {
       assert False.
       {
         eapply IHt.
+        econstructor.
+        repeat eexists.
+        eassumption.
         admit. (* TODO: use recursive at hyp (H) *)
         Focus 2.
         eassumption.
         Focus 2.
         eassumption.
+        eassumption.
+        (*
         Focus 2.
-        invc H9; repeat ff.
+        eassumption.
+        invc Heqp1.
+        econstructor.
+        repeat eexists.
+        eauto. *)
+      }
+      
+(*
+        eassumption.
+        invc H3; repeat ff.
         econstructor.
         eexists. eexists.
         apply Heqp1.
         eassumption.
-      }
-      invc H1.
+ } *)
+      solve_by_inversion.
     }
-    
-    rewrite H1.
+    find_rewrite.
     admit.
 
   (*
@@ -375,89 +404,130 @@ Proof.
 
   - (* lseq case *)
 
-    invc H2; repeat ff.
+    invc H.
     destruct_conjs.
 
-    ff.
+    invc H9.
+    repeat break_let.
+    invc H13.
 
     invc H8.
     + (* left subterm *)
-      eapply IHt1 with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)).
+      eapply IHt1. (* with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)). *)
+      econstructor.
+      repeat eexists.
+      eassumption.
       admit. (* use recursive _ -> False hyp *)
       eassumption.
       eassumption.
       eassumption.
+      (*
       econstructor.
       repeat eexists.
-      eassumption.
+      eassumption. *)
     +
        (* right subterm *)
-      eapply IHt2 with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)).
+      eapply IHt2. (* with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)). *)
+      econstructor.
+      repeat eexists.
+      eassumption.
       admit. (* use recursive _ -> False hyp *)
       eassumption.
       eassumption.
       eassumption.
+      (*
       econstructor.
       repeat eexists.
-      eassumption.
+      eassumption. *)
       
   - (* bseq case *)
-     invc H2; repeat ff.
-    destruct_conjs.
+     invc H.
+     destruct_conjs.
 
-    ff.
+     invc H9.
+     repeat break_let.
+     invc H13.
 
     invc H8.
     + (* left subterm *)
-      eapply IHt1 with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)).
+      eapply IHt1. (* with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)). *)
+      econstructor.
+      repeat eexists.
+      eassumption.
       admit. (* use recursive _ -> False hyp *)
       eassumption.
       eassumption.
       eassumption.
+      (*
       econstructor.
       repeat eexists.
-      eassumption.
+      eassumption. *)
     +
        (* right subterm *)
-      eapply IHt2 with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)).
+      eapply IHt2. (* with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)). *)
+      econstructor.
+      repeat eexists.
+      eassumption.
       admit. (* use recursive _ -> False hyp *)
       eassumption.
       eassumption.
       eassumption.
+      (*
       econstructor.
       repeat eexists.
-      eassumption.
+      eassumption. *)
   - (* bpar case *)
-     invc H2; repeat ff.
+    invc H.
     destruct_conjs.
 
-    ff.
+     invc H9.
+     repeat break_let.
+     invc H13.
 
     invc H8.
     + (* left subterm *)
-      eapply IHt1 with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)).
+      eapply IHt1. (* with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)). *)
+      econstructor.
+      repeat eexists.
+      eassumption.
       admit. (* use recursive _ -> False hyp *)
       eassumption.
       eassumption.
       eassumption.
+      (*
       econstructor.
       repeat eexists.
-      eassumption.
+      eassumption. *)
     +
        (* right subterm *)
-      eapply IHt2 with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)).
+      eapply IHt2. (* with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)). *)
+      econstructor.
+      repeat eexists.
+      eassumption.
       admit. (* use recursive _ -> False hyp *)
       eassumption.
       eassumption.
-      eassumption.
-      econstructor.
-      repeat eexists.
       eassumption.
 Admitted.
 
+Lemma cvm_implies_events: forall t annt e e' bits bits' p p' cvmi cvmi' cvm_tr ev,
+    annoP annt t ->
+
+    build_cvmP (copland_compile t)
+         {| st_ev := evc bits e; st_trace := []; st_pl := p; st_evid := cvmi |} 
+         (Some tt) {| st_ev := evc bits' e'; st_trace := cvm_tr; st_pl := p'; st_evid := cvmi' |} ->
+
+    In ev cvm_tr ->
+
+    events annt p e ev.
+Proof.
+Admitted.
+
 Lemma cvm_respects_events_disclosure_aspid:
-  forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi',
-    ~ (events_discloses_aspid t p e i r) ->
+  forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt,
+    
+    annoP annt t ->
+    ~ (events_discloses_aspid annt e i r) ->
     
     term_to_coreP t atp ->
     build_cvmP atp
@@ -468,7 +538,434 @@ Lemma cvm_respects_events_disclosure_aspid:
     ~ (cvm_trace_discloses_aspid_to_remote cvm_tr i r).
 
 Proof.
+  unfold not in *; intros.
+  apply H0.
+  invc H3.
+  destruct_conjs.
+  econstructor.
+  exists H4. exists H3. exists H5. exists H6. exists H7. exists p.
+  subst.
+  split.
+  invc H1.
+  
+  Focus 2.
+  split.
+  reflexivity.
+  split.
+  eassumption.
+  eassumption.
+
+  eapply cvm_implies_events; eassumption.
+Qed.
+
+
+
+
+
+
+(*
+  
+  eassumption.
+  Focus 2.
+  eassumption.
+  
+
+
+  
+  intros.
+  unfold not in *; intros.
+
+
+
+
+
+
+
+  
+  intros.
+  invc H1.
+  generalizeEverythingElse t.
+  induction t; intros; ff.
+  - (* asp case *)
+    unfold not in * ; intros.
+    destruct a; ff.
+    +
+      invc H.
+      destruct_conjs.
+      invc H4.
+      invc H2.
+      repeat ff.
+      invc H1.
+      destruct_conjs.
+      subst.
+      invc H6; solve_by_inversion.
+    +
+      invc H.
+      destruct_conjs.
+      invc H4.
+      invc H2.
+      repeat ff.
+      invc H1.
+      destruct_conjs.
+      subst.
+      invc H6; solve_by_inversion.
+    +
+      invc H.
+      destruct_conjs.
+      invc H4.
+      invc H2.
+      repeat ff.
+      ++
+      invc H1.
+      destruct_conjs.
+      subst.
+      invc H7;
+        solve_by_inversion.
+      ++
+        invc H1.
+      destruct_conjs.
+      subst.
+      invc H7;
+        solve_by_inversion.
+    +
+        invc H.
+      destruct_conjs.
+      invc H4.
+      invc H2.
+      repeat ff.
+      invc H1.
+      destruct_conjs.
+      subst.
+      invc H6; solve_by_inversion.
+    +
+        invc H.
+      destruct_conjs.
+      invc H4.
+      invc H2.
+      repeat ff.
+      invc H1.
+      destruct_conjs.
+      subst.
+      invc H6; solve_by_inversion.
+    +
+        invc H.
+      destruct_conjs.
+      invc H4.
+      invc H2.
+      repeat ff.
+      invc H1.
+      destruct_conjs.
+      subst.
+      invc H6; solve_by_inversion.
+  -
+    unfold not in *.
+    
+    invc H.
+    destruct_conjs.
+    invc H3; ff.
+    invc H2; ff.
+    intros.
+    invc H.
+    destruct_conjs.
+    apply H0.
+    assert (x = req cvmi p' p t e \/
+            In x (Axioms_Io.cvm_events t p e)).
+    admit.
+    door.
+    +
+      subst.
+      invc H11.
+      econstructor.
+
+      exists H1. exists p'. exists t. exists e. exists H6. exists p'.
+      split.
+      Focus 2.
+      split.
+      reflexivity.
+      split; eassumption.
+
+      Print events.
+      assert (t = unanno a).
+      admit.
+      subst.
+      apply evtsattreq.
+      reflexivity.
+    +
+      econstructor.
+      exists H2. exists H. exists H4. exists H5. exists H6. exists p'.
+      split.
+      Focus 2.
+      split.
+      reflexivity.
+      split.
+      eassumption.
+      eassumption.
+      subst.
+
+
+      assert (
+          exists i,
+              build_cvm (copland_compile t)
+                    {| st_ev := (evc bits e);
+                       st_trace := [];
+                       st_pl := p;
+                       st_evid := i|} =
+    (Some tt,
+     {| st_ev := cvm_evidence_core (copland_compile t) p (evc bits e);
+        st_trace := cvm_events_core (copland_compile t) p (get_et (evc bits e));
+        st_pl := p;
+        st_evid := (i + event_id_span (copland_compile t))
+     |})
+        ).
+      {
+        eexists.
+        eapply build_cvm_external.
+      }
+      destruct_conjs.
+
+      apply evtsatt.
+      
+
+
+      assert False.
+      eapply IHt.
+      econstructor.
+      repeat eexists.
+      eassumption.
+
+      admit.
+
+      destruct (cvm_evidence_core (copland_compile t) p (evc bits e)).
+      econstructor.
+      apply H12.
+      eassumption.
+
+
+      eassumption.
+      apply build_cvm_external.
+      do_remote.
+      Focus 4.
+      
+
+
+
+
+    
+    econstructor.
+    exists cvmi. exists p. exists t. exists H5. exists H6. exists p'.
+    split.
+    Focus 2.
+    split.
+    reflexivity.
+    split.
+    eassumption.
+    eassumption.
+
+    invc H7.
+    +
+      invc H11.
+
+
+
+    
+    invc H.
+    destruct_conjs.
+
+    assert (x = req cvmi p' p t e \/
+            In x (Axioms_Io.cvm_events t p e)).
+    admit.
+    door.
+    +
+      subst.
+      invc H10.
+      apply H.
+      unfold events_discloses_aspid.
+      exists (req cvmi p' p t e).
+      exists cvmi. exists p'. exists t. exists e. exists e. exists p.
+      exists 
+
+
+
+      
+      repeat eexists.
+      Focus 3.
+      eassumption.
+      Focus 3.
+      eassumption.
+      simpl.
+      break_let.
+      reflexivity.
+      ff.
+      reflexivity.
+
+
+
+
+
+
+
+      
+      intros.
+      inversion H0.
+      destruct_conjs.
+      subst.
+
+      exists (req 0 p' p t e).
+      exists 0. exists p'. exists t. exists e. exists H5. exists p'.
+      split.
+      Focus 2.
+      split.
+      auto.
+      split. eauto.
+      eauto.
+
+      invc H10.
+      ff.
+      repeat ff.
+      subst.
+
+      assert (t = unanno a).
+      admit.
+      subst.
+
+      Print events.
+
+      eapply evtsattreq.
+      subst.
+
+
+      
+      split; eauto.
+
+
+
+      
+
+      invc H0; ff.
+      destruct_conjs.
+
+      (*
+  a : AnnoTerm
+  Heqp0 : anno t (S H1) = (n, a)
+  ============================
+  events (aatt (H1, S n) p a) p' e
+       *)
+      
+
+
+      
+      repeat eexists.
+      Focus 2.
+      eassumption.
+      Focus 2.
+      eassumption.
+      repeat ff.
+      eapply evtsattreq.
+      econstructor.
+      invc H0.
+      destruct_conjs.
+      repeat ff.
+      Print events.
+      eapply evtsattreq.
+      econstructor.
+
+    
+
+
+
+
+    
+    apply H.
+
+
+
+    
+    invc H0.
+    destruct_conjs.
+
+    assert (x = req cvmi p' p t e \/
+            In x (Axioms_Io.cvm_events t p e)).
+    admit.
+    door.
+    +
+      subst.
+      invc H10.
+    destruct_conjs.
+
+    
+
+
+
+
+    
+    invc H6; ff.
+    repeat ff.
+    
+
+
+
+
+    Lemma at_discloses_lemma : forall t p p0 e i r,
+        events_discloses_aspid t p0 e i r ->
+        events_discloses_aspid <{ @ p [t] }> p0 e i r.
+    Proof.
+    Admitted.
+
+    eapply at_discloses_lemma. eassumption.
+
+    Focus 2.
+    eassumption.
+
+    eapply 
+
+    invc H0.
+
+
+
+
+    
+    Focus 2.
+    econstructor.
+    eassumption.
+    
+    intros.
+    eapply H.
+    econstructor.
+    repeat eexists.
+    eapply IHt.
+    unfold not in *.
+    unfold not; intros
+    invc H1; ff.
+    unfold not in *; intros.
+    apply H.
+    invc H0.
+    destruct_conjs.
+    invc H6; ff.
+    repeat ff.
+    eapply IHt.
+    
+      
+      
+      
+
+      
+      repeat ff.
+      solve_by_inversion.
+      solve_by_inversion.
+      destruct s; ff.
+      
+      
+      
+    solve_by_inversion.
+    econstructor
+    unfold not 
+    
+
+
+  
 Admitted.
+ *)
+
 
 Lemma cvm_respects_term_disclosure_aspid:
   forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi',
@@ -484,11 +981,18 @@ Lemma cvm_respects_term_disclosure_aspid:
 Proof.
   intros.
   eapply cvm_respects_events_disclosure_aspid.
+  Focus 2.
   eapply events_respects_term_disclosure_aspid.
+  Focus 2.
   eassumption.
+  admit.
+  Focus 2.
   eassumption.
+  Focus 2.
   eassumption.
-Qed.
+  econstructor.
+  admit.
+Abort.
 
 
 (*
