@@ -29,7 +29,8 @@ Definition am_sendReq_gen (t:Term) (pFrom:Plc) (pTo:Plc)
   evcIn <- gen_nonce_if_none initEv ;;
   auth_evc <- gen_authEvC_if_some authPhrase pFrom  ;;
   let '(evc init_ev init_et) := evcIn in
-  let resev := am_sendReq t pFrom pTo auth_evc init_ev aspCb pubKeyCb plcCb in
+  let targetUUID := plcCb pTo in
+  let resev := am_sendReq t targetUUID auth_evc init_ev in
   let expected_et := eval t pTo init_et in
   gen_appraise_AM expected_et resev.
 
@@ -48,6 +49,7 @@ Definition am_sendReq_auth (t:Term) (pFrom:Plc) (pTo:Plc) (initEv:RawEv)
   let initEv_et := mt in (* TODO:  make this a param? *)
   am_sendReq_gen t pFrom pTo (Some (evc initEv initEv_et)) (Some auth_phrase) aspCb pubKeyCb plcCb.
 
-  
-    
-
+Definition am_sendReq_dispatch (auth : bool) (t : Term) (source : Plc) (dest : Plc) (aspCb : CakeML_ASPCallback) (pubKeyCb : CakeML_PubKeyCallback) (plcCb : CakeML_PlcCallback) : AM AppResultC :=
+  if (auth)
+  then (am_sendReq_nonce_auth t source dest aspCb pubKeyCb plcCb)
+  else (am_sendReq_nonce t source dest aspCb pubKeyCb plcCb).
