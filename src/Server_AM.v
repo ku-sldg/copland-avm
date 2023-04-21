@@ -1,6 +1,6 @@
 Require Import Term IO_Stubs Cvm_Run.
 
-Require Import AM_Monad StMonad_Coq Impl_appraisal privPolicy.
+Require Import AM_Monad StMonad_Coq Impl_appraisal privPolicy Manifest Manifest_Admits.
 
 
 Require Import List.
@@ -19,19 +19,14 @@ Definition am_check_auth_tok (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) : AM App
     ret appres
   end.
 
-Definition am_serve_auth_tok_req (t:Term) (fromPl:Plc) (myPl:Plc) (authTok:ReqAuthTok) (init_ev:RawEv): AM RawEv :=
-  match authTok with
-  | evc auth_ev auth_et => 
-    v <- am_check_auth_tok t fromPl authTok ;;
-    match (andb (requester_bound t fromPl authTok) (appraise_auth_tok v)) with
-    | true =>
-      match (privPolicy fromPl t) with
-      | true => ret (run_cvm_rawEv t myPl init_ev)
-      | false => failm
-      end
-        
+Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc) (authTok:ReqAuthTok) (init_ev:RawEv): AM RawEv :=
+  v <- am_check_auth_tok t fromPl authTok ;;
+  match (andb (requester_bound t fromPl authTok) (appraise_auth_tok v)) with
+  | true =>
+    match (privPolicy fromPl t) with
+    | true => ret (run_cvm_rawEv t myPl init_ev)
     | false => failm
     end
+      
+  | false => failm
   end.
-
-

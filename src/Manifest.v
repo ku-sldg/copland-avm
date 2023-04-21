@@ -13,6 +13,9 @@ Definition CakeML_PubKeyCallback : Type :=
 Definition CakeML_PlcCallback : Type := 
   Plc -> UUID.
 
+Definition CakeML_uuidCallback : Type :=
+  UUID -> Plc.
+
 (*
 Definition PlcMap := MapC Plc Address.
 *)
@@ -22,6 +25,7 @@ Definition PlcMap := MapC Plc Address.
    * managers it is aware of (a single AM and its interconnections).
    *)
   Record Manifest := {
+    my_abstract_plc : Plc ; 
 
     asps : list ASP_ID ;
     (* server_asps : list ASP_ID ; *)
@@ -40,12 +44,15 @@ Definition PlcMap := MapC Plc Address.
     Lib_ASP_Server      : (ASP_Address * CakeML_ASPCallback) ;
     Lib_PubKey_Server   : (ASP_Address * CakeML_PubKeyCallback) ;
     Lib_Plc_Server      : (ASP_Address * CakeML_PlcCallback) ;
+    Lib_UUID_Server     : (ASP_Address * CakeML_uuidCallback) ;
   }.
 
   
  (* A ConcreteManifest is a refinement of Manifest with concrete parameters
     more suitable for extraction and deployment.  *)
   Record ConcreteManifest := {
+    my_plc          : Plc ; 
+
     concrete_asps   : list ASP_ID ;
     concrete_plcs   : list Plc ;
     concrete_pubkeys: list PublicKey ;
@@ -89,19 +96,31 @@ Definition PlcMap := MapC Plc Address.
       | None => (pubkey_server_cb p)
       end.
 
+  Definition generate_UUID_dispatcher (al : AM_Library) : CakeML_uuidCallback :=
+    let local_uuid_map := invert_map (al.(Local_Plcs)) in
+    let (uuid_server, uuid_server_cb) := al.(Lib_UUID_Server) in
+    fun (u : UUID) =>
+      (* check if uuid "u" is local, else dispatch to callback *)
+      match (map_get local_uuid_map u) with
+      | Some p => p
+      | None => (uuid_server_cb u)
+      end.
+
+
   (* This is a rough type signature for the "manifest compiler".  Still some details to be ironed out... *)
   Definition manifest_compiler (m : Manifest) (al : AM_Library) 
     : (ConcreteManifest * CakeML_ASPCallback * 
-      CakeML_PlcCallback * CakeML_PubKeyCallback) :=
+      CakeML_PlcCallback * CakeML_PubKeyCallback * CakeML_uuidCallback) :=
   (* The output of this function is a Concrete manifest, and a 
   function that can be used like "check_asp_EXTD".
   This function will be used in extraction to either dispatch ASPs to the ASP server, or call a local callback *)
     let asp_cb := (generate_ASP_dispatcher al) in
     let plc_cb := (generate_Plc_dispatcher al) in
     let pubkey_cb := (generate_PubKey_dispatcher al) in
+    let uuid_cb := (generate_UUID_dispatcher al) in
     let concrete_man := (Build_ConcreteManifest 
-        m.(asps) m.(knowsOf) m.(pubkeys)
+        m.(my_abstract_plc) m.(asps) m.(knowsOf) m.(pubkeys)
         (fst (al.(Lib_ASP_Server))) (fst (al.(Lib_Plc_Server)))
         (fst (al.(Lib_PubKey_Server)))) in
-      (concrete_man, asp_cb, plc_cb, pubkey_cb).
+      (concrete_man, asp_cb, plc_cb, pubkey_cb, uuid_cb).
 
