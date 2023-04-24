@@ -322,15 +322,14 @@ Proof.
                 repeat rewrite Bool.andb_true_r in H.
                 auto.
               }
-              admit.
+              eapply eqb_eq_aspid; eauto.
             }
             
             subst.
             rewrite H0.
             rewrite Bool.orb_true_r.
             auto.
-            
-Admitted.
+Qed.
 
 Lemma term_disc_lseq_l: forall t1 t2 p e i r,
           term_discloses_aspid_to_remote t1 p e i r ->
@@ -355,15 +354,14 @@ Proof.
                 repeat rewrite Bool.andb_true_r in H.
                 auto.
               }
-              admit.
+              eapply eqb_eq_aspid; eauto.
             }
             
             subst.
             rewrite H0.
             rewrite Bool.orb_true_l.
-            auto.
-            
-Admitted.
+            auto.         
+Qed.
 
 Lemma term_disc_lseq_r: forall t1 t2 p e i r,
           term_discloses_aspid_to_remote t2 p (eval t1 p e) i r ->
@@ -394,7 +392,7 @@ Proof.
                 repeat rewrite Bool.andb_true_r in H.
                 auto.
               }
-              admit.
+              eapply eqb_eq_aspid; eauto.
             }
             
             subst.
@@ -402,29 +400,11 @@ Proof.
             
             rewrite Bool.orb_true_r.
             auto.
-            
-Admitted.
-(*
-            rewrite H0.
-            rewrite Bool.orb_true_l.
-            auto.
-            
-Admitted.
- *)
-
-
-
-
+Qed.
 
 Lemma term_disc_bseq_l: forall t1 t2 p e i r s,
           term_discloses_aspid_to_remote t1 p (splitEv_T_l s e) i r ->
           term_discloses_aspid_to_remote (bseq s t1 t2) p e i r.
-
-(*
-  H : term_discloses_aspid_to_remote t1 p (splitEv_T_l s e) i r
-  ============================
-  term_discloses_aspid_to_remote (bseq s t1 t2) p e i r
- *)
 Proof.
           intros.
           invc H.
@@ -445,7 +425,7 @@ Proof.
                 repeat rewrite Bool.andb_true_r in H.
                 auto.
               }
-              admit.
+              eapply eqb_eq_aspid; eauto.
             }
             
             subst.
@@ -457,19 +437,11 @@ Proof.
             
             rewrite Bool.orb_true_l;
             auto.
-              
-            
-Admitted.
+Qed.
 
 Lemma term_disc_bseq_r: forall t1 t2 p e i r s,
           term_discloses_aspid_to_remote t2 p (splitEv_T_r s e) i r ->
           term_discloses_aspid_to_remote (bseq s t1 t2) p e i r.
-
-(*
-  H : term_discloses_aspid_to_remote t1 p (splitEv_T_l s e) i r
-  ============================
-  term_discloses_aspid_to_remote (bseq s t1 t2) p e i r
- *)
 Proof.
           intros.
           invc H.
@@ -490,7 +462,7 @@ Proof.
                 repeat rewrite Bool.andb_true_r in H.
                 auto.
               }
-              admit.
+              eapply eqb_eq_aspid; eauto.
             }
             
             subst.
@@ -501,10 +473,10 @@ Proof.
               destruct s0;
             
               simpl in *;
-            rewrite H0;
+              rewrite H0;
             
-            rewrite Bool.orb_true_r;
-            auto.
+              rewrite Bool.orb_true_r;
+              auto.
             +
               destruct s0;
             
@@ -513,20 +485,11 @@ Proof.
             
             rewrite Bool.orb_true_r;
             auto.
-              
-              
-            
-Admitted.
+Qed.
 
 Lemma term_disc_bpar_l: forall t1 t2 p e i r s,
           term_discloses_aspid_to_remote t1 p (splitEv_T_l s e) i r ->
           term_discloses_aspid_to_remote (bpar s t1 t2) p e i r.
-
-(*
-  H : term_discloses_aspid_to_remote t1 p (splitEv_T_l s e) i r
-  ============================
-  term_discloses_aspid_to_remote (bseq s t1 t2) p e i r
- *)
 Proof.
           intros.
           invc H.
@@ -547,7 +510,7 @@ Proof.
                 repeat rewrite Bool.andb_true_r in H.
                 auto.
               }
-              admit.
+              eapply eqb_eq_aspid; eauto.
             }
             
             subst.
@@ -559,20 +522,12 @@ Proof.
             
             rewrite Bool.orb_true_l;
             auto.
-              
-            
-Admitted.
+Qed.
 
 
 Lemma term_disc_bpar_r: forall t1 t2 p e i r s,
           term_discloses_aspid_to_remote t2 p (splitEv_T_r s e) i r ->
           term_discloses_aspid_to_remote (bpar s t1 t2) p e i r.
-
-(*
-  H : term_discloses_aspid_to_remote t1 p (splitEv_T_l s e) i r
-  ============================
-  term_discloses_aspid_to_remote (bseq s t1 t2) p e i r
- *)
 Proof.
           intros.
           invc H.
@@ -593,7 +548,7 @@ Proof.
                 repeat rewrite Bool.andb_true_r in H.
                 auto.
               }
-              admit.
+              eapply eqb_eq_aspid; eauto.
             }
             
             subst.
@@ -616,10 +571,7 @@ Proof.
             
             rewrite Bool.orb_true_r;
             auto.
-                       
-Admitted.
-
-
+Qed.
 
 Lemma events_respects_term_disclosure_aspid: forall t p e i r annt,
     annoP annt t -> 
@@ -672,7 +624,7 @@ Proof.
   +
     assert (eqb_plc r r = true).
     {
-      admit.
+      eapply eqb_eq_plc; eauto.
     }
 
     find_rewrite.
@@ -804,7 +756,10 @@ Proof.
       apply term_disc_lseq_r.
       assert (aeval a p e = eval t1 p e).
       {
-        admit.
+        erewrite eval_aeval.
+        rewrite Heqp0.
+        simpl.
+        tauto.
       }
       rewrite <- H8.
       
@@ -949,13 +904,7 @@ Proof.
       rewrite <- H8. *)
       
       eassumption.
-
-      (*
-      econstructor.
-      repeat eexists.
-      eassumption. *)
-
-Admitted.
+Qed.
 
 Lemma cvm_implies_events: forall t annt e e' bits bits' p p' cvmi cvmi' cvm_tr ev,
     annoP_indexed annt t cvmi cvmi'->
@@ -1011,7 +960,19 @@ Proof.
                ev = (rpy (cvmi + 1 + event_id_span' t) p' p
                          (get_et (IO_Stubs.doRemote_session t p (evc bits e))))
              ).
-      admit.
+      {
+
+        apply in_app_or in H0.
+        door.
+        +
+          left; eauto.
+        +
+          right.
+          invc H0;
+            try auto;
+            try solve_by_inversion.
+      }
+      
       door.
 
       assert (
@@ -1090,7 +1051,18 @@ Proof.
      
 
     assert (In ev H \/ In ev H6).
-    admit.
+    {
+      apply in_app_or in H1.
+        door.
+        +
+          left; eauto.
+        +
+          right.
+          invc H0;
+            try auto;
+            try solve_by_inversion.
+    }
+
     door.
     +
       Print events.
@@ -1171,7 +1143,26 @@ Proof.
             (In ev blah') \/
             (In ev blah) \/
             ev = join st_evid st_pl1).
-    admit.
+    {
+      apply in_app_or in H1.
+      door.
+      +
+        
+        apply in_app_or in H1.
+        door.
+        ++
+          apply in_app_or in H1.
+          door.
+          +++
+            invc H1; try eauto; try solve_by_inversion.
+          +++
+            eauto.
+        ++
+          eauto.
+      +
+        invc H1; try eauto; try solve_by_inversion.
+    }
+
     door.
     subst.
     Print events.
@@ -1235,7 +1226,25 @@ Proof.
             (In ev blah') \/
             (In ev blah) \/
             ev = join st_evid st_pl1).
-    admit.
+    {
+            apply in_app_or in H1.
+      door.
+      +
+        
+        apply in_app_or in H1.
+        door.
+        ++
+          apply in_app_or in H1.
+          door.
+          +++
+            invc H1; try eauto; try solve_by_inversion.
+          +++
+            eauto.
+        ++
+          eauto.
+      +
+        invc H1; try eauto; try solve_by_inversion.
+    }
     door.
     subst.
     Print events.
@@ -1299,7 +1308,25 @@ Proof.
             (In ev blah') \/
             (In ev blah) \/
             ev = join st_evid st_pl1).
-    admit.
+    {
+            apply in_app_or in H1.
+      door.
+      +
+        
+        apply in_app_or in H1.
+        door.
+        ++
+          apply in_app_or in H1.
+          door.
+          +++
+            invc H1; try eauto; try solve_by_inversion.
+          +++
+            eauto.
+        ++
+          eauto.
+      +
+        invc H1; try eauto; try solve_by_inversion.
+    }
     door.
     subst.
     Print events.
@@ -1363,7 +1390,25 @@ Proof.
             (In ev blah') \/
             (In ev blah) \/
             ev = join st_evid st_pl1).
-    admit.
+    {
+            apply in_app_or in H1.
+      door.
+      +
+        
+        apply in_app_or in H1.
+        door.
+        ++
+          apply in_app_or in H1.
+          door.
+          +++
+            invc H1; try eauto; try solve_by_inversion.
+          +++
+            eauto.
+        ++
+          eauto.
+      +
+        invc H1; try eauto; try solve_by_inversion.
+    }
     door.
     subst.
     Print events.
@@ -1436,34 +1481,49 @@ Proof.
             In ev ([cvm_thread_start 0 p (copland_compile t2) e] ++
                    blah ++ [cvm_thread_end 0]) \/
             ev = join (st_evid + event_id_span (copland_compile t2)) p).
-    admit.
+    {
+      apply in_app_or in H1.
+      door.
+      +
+      assert(
+           (([Term_Defs.split cvmi p;
+            cvm_thread_start 0 p (copland_compile t2) e] ++ blah) ++
+                                                                  [cvm_thread_end 0]) =
+            ([Term_Defs.split cvmi p] ++ 
+              ([(cvm_thread_start 0 p (copland_compile t2) e)] ++ blah ++
+                                                               [cvm_thread_end 0]))).
+      {
+        simpl.
+        tauto.
+      }
+      rewrite H3 in H1.
+
+        apply in_app_or in H1.
+        door.
+      ++
+        invc H1; try eauto; try solve_by_inversion.
+      ++
+        eauto.
+
+      + invc H1; try eauto; try solve_by_inversion.
+    }
+
 
     door.
     subst.
-
-    Print events.
 
     apply evtsbparsplit.
     auto.
     door.
     rewrite thread_bookend_peel in H3.
-    Print events.
-    (*
-  | evtsbparr : forall (r : Range) (s : Split) (e : Evidence)
-                  (t1 t2 : AnnoTerm) (ev : Ev) (p : Plc),
-                events t2 p (splitEv_T_r s e) ev ->
-                events (abpar r s t1 t2) p e ev
-     *)
 
     (* apply evtsbparr. *)
 
-    admit.
+    admit. (* TODO: axiom? *)
     eauto.
 
 
     subst.
-
-    Print events.
 
     apply evtsbparjoin.
     simpl.
@@ -1471,7 +1531,81 @@ Proof.
 
 
     +
-          assert (n = st_evid).
+      assert (n = st_evid).
+    {
+      assert (cvmi+1 = S cvmi) by lia.
+      find_rewrite.
+      invc Heqp0.
+      
+      eapply span_cvm; eauto.
+      econstructor; tauto.
+    }
+    subst.
+
+    assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
+    
+    subst. clear H7.
+    
+    
+    
+    do_suffix blah.
+
+    destruct_conjs; subst.
+    repeat do_restl.
+
+
+    assert (ev = Term_Defs.split cvmi p \/
+            In ev ([cvm_thread_start 0 p (lseqc (aspc CLEAR) (copland_compile t2)) e] ++ blah ++
+                   [cvm_thread_end 0]) \/
+            ev = join (st_evid + event_id_span (copland_compile t2)) p
+           ).
+    {
+      apply in_app_or in H1.
+      door.
+      +
+      assert(
+           (([Term_Defs.split cvmi p;
+            cvm_thread_start 0 p (lseqc (aspc CLEAR) (copland_compile t2)) e] ++ blah) ++
+                                                                  [cvm_thread_end 0]) =
+            ([Term_Defs.split cvmi p] ++ 
+              ([(cvm_thread_start 0 p (lseqc (aspc CLEAR) (copland_compile t2)) e)] ++ blah ++
+                                                               [cvm_thread_end 0]))).
+      {
+        simpl.
+        tauto.
+      }
+      rewrite H3 in H1.
+
+        apply in_app_or in H1.
+        door.
+      ++
+        invc H1; try eauto; try solve_by_inversion.
+      ++
+        eauto.
+
+      + invc H1; try eauto; try solve_by_inversion.
+    }
+  
+    door.
+    subst.
+
+    apply evtsbparsplit.
+    auto.
+    door.
+    rewrite thread_bookend_peel in H3.
+    
+    admit. (* TODO: axiom? *)
+    eauto.
+
+
+    subst.
+
+    apply evtsbparjoin.
+    simpl.
+    lia.
+
+    +
+      assert (n = st_evid).
     {
       assert (cvmi+1 = S cvmi) by lia.
       find_rewrite.
@@ -1497,39 +1631,53 @@ Proof.
             In ev ([cvm_thread_start 0 p (copland_compile t2) e] ++
                    blah ++ [cvm_thread_end 0]) \/
             ev = join (st_evid + event_id_span (copland_compile t2)) p).
-    admit.
+        {
+      apply in_app_or in H1.
+      door.
+      +
+      assert(
+           (([Term_Defs.split cvmi p;
+            cvm_thread_start 0 p (copland_compile t2) e] ++ blah) ++
+                                                                  [cvm_thread_end 0]) =
+            ([Term_Defs.split cvmi p] ++ 
+              ([(cvm_thread_start 0 p (copland_compile t2) e)] ++ blah ++
+                                                               [cvm_thread_end 0]))).
+      {
+        simpl.
+        tauto.
+      }
+      rewrite H3 in H1.
+
+        apply in_app_or in H1.
+        door.
+      ++
+        invc H1; try eauto; try solve_by_inversion.
+      ++
+        eauto.
+
+      + invc H1; try eauto; try solve_by_inversion.
+    }
 
     door.
     subst.
-
-    Print events.
 
     apply evtsbparsplit.
     auto.
     door.
     rewrite thread_bookend_peel in H3.
-    Print events.
-    (*
-  | evtsbparr : forall (r : Range) (s : Split) (e : Evidence)
-                  (t1 t2 : AnnoTerm) (ev : Ev) (p : Plc),
-                events t2 p (splitEv_T_r s e) ev ->
-                events (abpar r s t1 t2) p e ev
-     *)
 
-    admit.
+    admit. (* TODO: axiom? *)
     eauto.
 
 
     subst.
-
-    Print events.
 
     apply evtsbparjoin.
     simpl.
     lia.
 
     +
-          assert (n = st_evid).
+      assert (n = st_evid).
     {
       assert (cvmi+1 = S cvmi) by lia.
       find_rewrite.
@@ -1552,73 +1700,48 @@ Proof.
     repeat do_restl.
 
     assert (ev = Term_Defs.split cvmi p \/
-            In ev ([cvm_thread_start 0 p (copland_compile t2) e] ++
-                   blah ++ [cvm_thread_end 0]) \/
-            ev = join (st_evid + event_id_span (copland_compile t2)) p).
-    admit.
+            In ev ([cvm_thread_start 0 p (lseqc (aspc CLEAR) (copland_compile t2)) e] ++ blah ++
+                   [cvm_thread_end 0]) \/
+            ev = join (st_evid + event_id_span (copland_compile t2)) p
+           ).
+        {
+      apply in_app_or in H1.
+      door.
+      +
+      assert(
+           (([Term_Defs.split cvmi p;
+            cvm_thread_start 0 p (lseqc (aspc CLEAR) (copland_compile t2)) e] ++ blah) ++
+                                                                  [cvm_thread_end 0]) =
+            ([Term_Defs.split cvmi p] ++ 
+              ([(cvm_thread_start 0 p (lseqc (aspc CLEAR) (copland_compile t2)) e)] ++ blah ++
+                                                               [cvm_thread_end 0]))).
+      {
+        simpl.
+        tauto.
+      }
+      rewrite H3 in H1.
 
-    door.
-    subst.
+        apply in_app_or in H1.
+        door.
+      ++
+        invc H1; try eauto; try solve_by_inversion.
+      ++
+        eauto.
 
-    Print events.
-
-    apply evtsbparsplit.
-    auto.
-    door.
-    rewrite thread_bookend_peel in H3.
-    Print events.
-    (*
-  | evtsbparr : forall (r : Range) (s : Split) (e : Evidence)
-                  (t1 t2 : AnnoTerm) (ev : Ev) (p : Plc),
-                events t2 p (splitEv_T_r s e) ev ->
-                events (abpar r s t1 t2) p e ev
-     *)
-
-    admit.
-    eauto.
-
-
-    subst.
-
-    Print events.
-
-    apply evtsbparjoin.
-    simpl.
-    lia.
-
-    +
-          assert (n = st_evid).
-    {
-      assert (cvmi+1 = S cvmi) by lia.
-      find_rewrite.
-      invc Heqp0.
-      
-      eapply span_cvm; eauto.
-      econstructor; tauto.
+      + invc H1; try eauto; try solve_by_inversion.
     }
-    subst.
 
-    assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
-    
-    subst. clear H7.
-    
-    
-    
-    do_suffix blah.
-
-    destruct_conjs; subst.
-    repeat do_restl.
-
+    (*
     assert (ev = Term_Defs.split cvmi p \/
             In ev ([cvm_thread_start 0 p (copland_compile t2) mt] ++
                    blah ++ [cvm_thread_end 0]) \/
             ev = join (st_evid + event_id_span (copland_compile t2)) p).
     admit.
+     *)
+    
 
     door.
     subst.
-
-    Print events.
 
     apply evtsbparsplit.
     auto.
@@ -1627,7 +1750,7 @@ Proof.
 
     assert (In ev blah \/
             In ev (cvm_events_core (copland_compile t2) p mt)).
-    admit.
+    admit. (* TODO: axiom here? *)
     door.
 
     apply evtsbparl.
@@ -1643,18 +1766,6 @@ Proof.
     eassumption.
 
 
-
-
-
-    
-    Print events.
-    (*
-  | evtsbparr : forall (r : Range) (s : Split) (e : Evidence)
-                  (t1 t2 : AnnoTerm) (ev : Ev) (p : Plc),
-                events t2 p (splitEv_T_r s e) ev ->
-                events (abpar r s t1 t2) p e ev
-     *)
-
     apply evtsbparr.
     simpl.
 
@@ -1665,8 +1776,6 @@ Proof.
 
 
     subst.
-
-    Print events.
 
     apply evtsbparjoin.
     simpl.
@@ -2120,8 +2229,121 @@ Admitted.
  *)
 
 
+  Lemma can_annoP : forall t,
+      exists annt, annoP annt t.
+  Proof.
+  Admitted.
+
+    Lemma can_annoP_indexed: forall t atp bits bits' e e' p p' cvm_tr cvmi cvmi',
+    term_to_coreP t atp ->
+    build_cvmP atp {| st_ev := evc bits e; st_trace := []; st_pl := p; st_evid := cvmi |}
+               (Some tt) {| st_ev := evc bits' e'; st_trace := cvm_tr; st_pl := p'; st_evid := cvmi' |} ->
+    exists annt,
+      annoP_indexed annt t cvmi cvmi'.
+    Proof.
+      intros.
+      generalizeEverythingElse t.
+      induction t; intros; ff.
+      -
+        destruct a; invc H; invc H0; ff.
+
+        +
+          eexists. econstructor. simpl.
+          assert (S cvmi = cvmi + 1) by lia.
+          find_rewrite.
+          reflexivity.
+        +
+          eexists. econstructor. simpl.
+          assert (S cvmi = cvmi + 1) by lia.
+          find_rewrite.
+          reflexivity.
+        +
+          destruct s; ff; destruct f; ff.
+          ++
+          eexists. econstructor. simpl.
+          assert (S cvmi = cvmi + 1) by lia.
+          find_rewrite.
+          reflexivity.
+          ++
+             eexists. econstructor. simpl.
+          assert (S cvmi = cvmi + 1) by lia.
+          find_rewrite.
+          reflexivity.
+          ++
+             eexists. econstructor. simpl.
+          assert (S cvmi = cvmi + 1) by lia.
+          find_rewrite.
+          reflexivity.
+          ++
+             eexists. econstructor. simpl.
+          assert (S cvmi = cvmi + 1) by lia.
+          find_rewrite.
+          reflexivity.
+          ++
+             eexists. econstructor. simpl.
+          assert (S cvmi = cvmi + 1) by lia.
+          find_rewrite.
+          reflexivity.
+          ++
+             eexists. econstructor. simpl.
+          assert (S cvmi = cvmi + 1) by lia.
+          find_rewrite.
+          reflexivity.
+          ++
+             eexists. econstructor. simpl.
+          assert (S cvmi = cvmi + 1) by lia.
+          find_rewrite.
+          reflexivity.
+          ++ eexists. econstructor. simpl.
+          assert (S cvmi = cvmi + 1) by lia.
+          find_rewrite.
+          reflexivity.
+          ++
+             eexists. econstructor. simpl.
+          assert (S cvmi = cvmi + 1) by lia.
+          find_rewrite.
+          reflexivity.
+          ++
+             eexists. econstructor. simpl.
+          assert (S cvmi = cvmi + 1) by lia.
+          find_rewrite.
+          reflexivity.
+        +
+          eexists. econstructor. simpl.
+          assert (S cvmi = cvmi + 1) by lia.
+          find_rewrite.
+          reflexivity.
+        +
+           eexists. econstructor. simpl.
+          assert (S cvmi = cvmi + 1) by lia.
+          find_rewrite.
+          reflexivity.
+        +
+           eexists. econstructor. simpl.
+          assert (S cvmi = cvmi + 1) by lia.
+          find_rewrite.
+          reflexivity.
+      -
+        invc H0; ff.
+        invc H; ff.
+
+
+        eexists.
+        econstructor.
+        ff.
+        assert (S n = cvmi + 1 + event_id_span' t + 1).
+        {
+          admit.
+        }
+        find_rewrite.
+    Abort.
+
+
 Lemma cvm_respects_term_disclosure_aspid:
-  forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi',
+  forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt,
+
+    annoP_indexed annt t cvmi cvmi' ->
+
   ~ (term_discloses_aspid_to_remote t p e i r) ->
   
   term_to_coreP t atp ->
@@ -2133,19 +2355,26 @@ Lemma cvm_respects_term_disclosure_aspid:
   ~ (cvm_trace_discloses_aspid_to_remote cvm_tr i r).
 Proof.
   intros.
+  (*
+  assert (exists annt, annoP_indexed annt t cvmi cvmi').
+  {
+    eapply can_annoP_indexed; eauto.
+  }
+  destruct_conjs.
+   *)
+  
   eapply cvm_respects_events_disclosure_aspid.
-  Focus 2.
+  eassumption.
   eapply events_respects_term_disclosure_aspid.
-  Focus 2.
-  eassumption.
-  admit.
-  Focus 2.
-  eassumption.
-  Focus 2.
-  eassumption.
+  invc H.
   econstructor.
-  admit.
-Abort.
+  repeat eexists.
+  eassumption.
+  eassumption.
+  eassumption.
+  eassumption.
+Qed.
+
 
 
 (*
