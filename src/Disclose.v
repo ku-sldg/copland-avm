@@ -286,11 +286,11 @@ Definition cvm_trace_discloses_aspid_to_remote (tr:list Ev) (i:ASP_ID) (r:Plc) :
     evsubt_bool et e = true.
 
 
-Definition events_discloses_aspid (annt:AnnoTerm) (* (p:Plc) *) (e:Evidence) (i:ASP_ID) (r:Plc): Prop :=
+Definition events_discloses_aspid (annt:AnnoTerm) (p:Plc) (e:Evidence) (i:ASP_ID) (r:Plc): Prop :=
   (*forall annt cvmi,
     annoP_indexed annt t 0 cvmi-> *)
     let gen_aspid_evidence := (specific_aspid_genEvidence i) in
-    exists ev reqi reqp reqt reqe et p,
+    exists ev reqi reqp reqt reqe et (*p*),
       (
         (* annoP annt t /\  *)
         events annt p e ev /\
@@ -299,12 +299,334 @@ Definition events_discloses_aspid (annt:AnnoTerm) (* (p:Plc) *) (e:Evidence) (i:
         evsubt_bool et reqe = true
       ).
 
+Lemma term_disc_remote: forall t p e i r p0,
+          term_discloses_aspid_to_remote t p e i r ->
+          term_discloses_aspid_to_remote <{ @ p [t] }> p0 e i r.
+Proof.
+          intros.
+          invc H.
+          destruct_conjs.
+          econstructor.
+          split.
+          -
+            eassumption.
+          -
+            simpl in *.
+            destruct x; try solve_by_inversion.
+            destruct a; try solve_by_inversion.
+            assert (a = i).
+            {
+              assert (eqb a i = true).
+              {
+                Search "andb".
+                repeat rewrite Bool.andb_true_r in H.
+                auto.
+              }
+              admit.
+            }
+            
+            subst.
+            rewrite H0.
+            rewrite Bool.orb_true_r.
+            auto.
+            
+Admitted.
+
+Lemma term_disc_lseq_l: forall t1 t2 p e i r,
+          term_discloses_aspid_to_remote t1 p e i r ->
+          term_discloses_aspid_to_remote <{ t1 -> t2 }> p e i r.
+Proof.
+          intros.
+          invc H.
+          destruct_conjs.
+          econstructor.
+          split.
+          -
+            eassumption.
+          -
+            simpl in *.
+            destruct x; try solve_by_inversion.
+            destruct a; try solve_by_inversion.
+            assert (a = i).
+            {
+              assert (eqb a i = true).
+              {
+                Search "andb".
+                repeat rewrite Bool.andb_true_r in H.
+                auto.
+              }
+              admit.
+            }
+            
+            subst.
+            rewrite H0.
+            rewrite Bool.orb_true_l.
+            auto.
+            
+Admitted.
+
+Lemma term_disc_lseq_r: forall t1 t2 p e i r,
+          term_discloses_aspid_to_remote t2 p (eval t1 p e) i r ->
+          term_discloses_aspid_to_remote <{ t1 -> t2 }> p e i r.
+
+(*
+  H8 : term_discloses_aspid_to_remote t2 p (aeval a H7 e) i r
+  ============================
+  term_discloses_aspid_to_remote <{ t1 -> t2 }> p e i r
+*)
+Proof.
+          intros.
+          invc H.
+          destruct_conjs.
+          econstructor.
+          split.
+          -
+            eassumption.
+          -
+            simpl in *.
+            destruct x; try solve_by_inversion.
+            destruct a; try solve_by_inversion.
+            assert (a = i).
+            {
+              assert (eqb a i = true).
+              {
+                Search "andb".
+                repeat rewrite Bool.andb_true_r in H.
+                auto.
+              }
+              admit.
+            }
+            
+            subst.
+            rewrite H0.
+            
+            rewrite Bool.orb_true_r.
+            auto.
+            
+Admitted.
+(*
+            rewrite H0.
+            rewrite Bool.orb_true_l.
+            auto.
+            
+Admitted.
+ *)
+
+
+
+
+
+Lemma term_disc_bseq_l: forall t1 t2 p e i r s,
+          term_discloses_aspid_to_remote t1 p (splitEv_T_l s e) i r ->
+          term_discloses_aspid_to_remote (bseq s t1 t2) p e i r.
+
+(*
+  H : term_discloses_aspid_to_remote t1 p (splitEv_T_l s e) i r
+  ============================
+  term_discloses_aspid_to_remote (bseq s t1 t2) p e i r
+ *)
+Proof.
+          intros.
+          invc H.
+          destruct_conjs.
+          econstructor.
+          split.
+          -
+            eassumption.
+          -
+            simpl in *.
+            destruct x; try solve_by_inversion.
+            destruct a; try solve_by_inversion.
+            assert (a = i).
+            {
+              assert (eqb a i = true).
+              {
+                Search "andb".
+                repeat rewrite Bool.andb_true_r in H.
+                auto.
+              }
+              admit.
+            }
+            
+            subst.
+            destruct s.
+            destruct s;
+            
+              simpl in *;
+            rewrite H0;
+            
+            rewrite Bool.orb_true_l;
+            auto.
+              
+            
+Admitted.
+
+Lemma term_disc_bseq_r: forall t1 t2 p e i r s,
+          term_discloses_aspid_to_remote t2 p (splitEv_T_r s e) i r ->
+          term_discloses_aspid_to_remote (bseq s t1 t2) p e i r.
+
+(*
+  H : term_discloses_aspid_to_remote t1 p (splitEv_T_l s e) i r
+  ============================
+  term_discloses_aspid_to_remote (bseq s t1 t2) p e i r
+ *)
+Proof.
+          intros.
+          invc H.
+          destruct_conjs.
+          econstructor.
+          split.
+          -
+            eassumption.
+          -
+            simpl in *.
+            destruct x; try solve_by_inversion.
+            destruct a; try solve_by_inversion.
+            assert (a = i).
+            {
+              assert (eqb a i = true).
+              {
+                Search "andb".
+                repeat rewrite Bool.andb_true_r in H.
+                auto.
+              }
+              admit.
+            }
+            
+            subst.
+            destruct s.
+            destruct s.
+            
+            +
+              destruct s0;
+            
+              simpl in *;
+            rewrite H0;
+            
+            rewrite Bool.orb_true_r;
+            auto.
+            +
+              destruct s0;
+            
+              simpl in *;
+            rewrite H0;
+            
+            rewrite Bool.orb_true_r;
+            auto.
+              
+              
+            
+Admitted.
+
+Lemma term_disc_bpar_l: forall t1 t2 p e i r s,
+          term_discloses_aspid_to_remote t1 p (splitEv_T_l s e) i r ->
+          term_discloses_aspid_to_remote (bpar s t1 t2) p e i r.
+
+(*
+  H : term_discloses_aspid_to_remote t1 p (splitEv_T_l s e) i r
+  ============================
+  term_discloses_aspid_to_remote (bseq s t1 t2) p e i r
+ *)
+Proof.
+          intros.
+          invc H.
+          destruct_conjs.
+          econstructor.
+          split.
+          -
+            eassumption.
+          -
+            simpl in *.
+            destruct x; try solve_by_inversion.
+            destruct a; try solve_by_inversion.
+            assert (a = i).
+            {
+              assert (eqb a i = true).
+              {
+                Search "andb".
+                repeat rewrite Bool.andb_true_r in H.
+                auto.
+              }
+              admit.
+            }
+            
+            subst.
+            destruct s.
+            destruct s;
+            
+              simpl in *;
+            rewrite H0;
+            
+            rewrite Bool.orb_true_l;
+            auto.
+              
+            
+Admitted.
+
+
+Lemma term_disc_bpar_r: forall t1 t2 p e i r s,
+          term_discloses_aspid_to_remote t2 p (splitEv_T_r s e) i r ->
+          term_discloses_aspid_to_remote (bpar s t1 t2) p e i r.
+
+(*
+  H : term_discloses_aspid_to_remote t1 p (splitEv_T_l s e) i r
+  ============================
+  term_discloses_aspid_to_remote (bseq s t1 t2) p e i r
+ *)
+Proof.
+          intros.
+          invc H.
+          destruct_conjs.
+          econstructor.
+          split.
+          -
+            eassumption.
+          -
+            simpl in *.
+            destruct x; try solve_by_inversion.
+            destruct a; try solve_by_inversion.
+            assert (a = i).
+            {
+              assert (eqb a i = true).
+              {
+                Search "andb".
+                repeat rewrite Bool.andb_true_r in H.
+                auto.
+              }
+              admit.
+            }
+            
+            subst.
+            destruct s.
+            destruct s.
+            
+            +
+              destruct s0;
+            
+              simpl in *;
+            rewrite H0;
+            
+            rewrite Bool.orb_true_r;
+            auto.
+            +
+              destruct s0;
+            
+              simpl in *;
+            rewrite H0;
+            
+            rewrite Bool.orb_true_r;
+            auto.
+                       
+Admitted.
+
+
+
 Lemma events_respects_term_disclosure_aspid: forall t p e i r annt,
     annoP annt t -> 
 
   ~ (term_discloses_aspid_to_remote t p e i r) ->
 
-  ~ (events_discloses_aspid annt e i r).
+  ~ (events_discloses_aspid annt p e i r).
 Proof.
   intros.
   unfold not in * ; intros.
@@ -341,14 +663,22 @@ Proof.
   subst. *)
   invc H.
   destruct_conjs.
-  invc H9.
-  break_let.
-  inversion H13.
-  subst.
-  clear H13.
   invc H8.
+  break_let.
+  inversion H12.
+  subst.
+  clear H12.
+  invc H7.
   +
-    admit.
+    assert (eqb_plc r r = true).
+    {
+      admit.
+    }
+
+    find_rewrite.
+    find_rewrite.
+    simpl.
+    tauto.
 
   +
     (*
@@ -358,16 +688,33 @@ Proof.
     {
       assert False.
       {
-        eapply IHt.
+        eapply IHt with (p:=p).
         econstructor.
         repeat eexists.
         eassumption.
+
+
+
+
+        (*
         admit. (* TODO: use recursive at hyp (H) *)
-        Focus 2.
+         *)
+        Focus 3.
+        eassumption.
+        Focus 3.
         eassumption.
         Focus 2.
         eassumption.
-        eassumption.
+
+        intros.
+        apply H0.
+
+
+
+        apply term_disc_remote. eassumption.
+
+
+        
         (*
         Focus 2.
         eassumption.
@@ -388,7 +735,9 @@ Proof.
       solve_by_inversion.
     }
     find_rewrite.
-    admit.
+    Search "||".
+    rewrite Bool.orb_true_r.
+    auto.
 
   (*
 
@@ -407,34 +756,60 @@ Proof.
     invc H.
     destruct_conjs.
 
-    invc H9.
-    repeat break_let.
-    invc H13.
-
     invc H8.
+    repeat break_let.
+    invc H12.
+
+    invc H7.
     + (* left subterm *)
-      eapply IHt1. (* with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)). *)
+      eapply IHt1 with (p:=p). (* with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)). *)
       econstructor.
       repeat eexists.
       eassumption.
-      admit. (* use recursive _ -> False hyp *)
+
+      Focus 2.
       eassumption.
+      Focus 2.
       eassumption.
+      Focus 2.
       eassumption.
+
+      intros.
+      apply H0.
+
+      apply term_disc_lseq_l.
+      eassumption.
+
       (*
       econstructor.
       repeat eexists.
       eassumption. *)
     +
        (* right subterm *)
-      eapply IHt2. (* with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)). *)
+      eapply IHt2 with (p:=p). (* with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)). *)
       econstructor.
       repeat eexists.
       eassumption.
-      admit. (* use recursive _ -> False hyp *)
+
+      Focus 2.
       eassumption.
+      Focus 2.
       eassumption.
+      Focus 2.
       eassumption.
+
+      intros.
+      apply H0.
+
+      apply term_disc_lseq_r.
+      assert (aeval a p e = eval t1 p e).
+      {
+        admit.
+      }
+      rewrite <- H8.
+      
+      eassumption.
+      
       (*
       econstructor.
       repeat eexists.
@@ -444,70 +819,142 @@ Proof.
      invc H.
      destruct_conjs.
 
-     invc H9.
+     invc H8.
      repeat break_let.
-     invc H13.
+     invc H12.
 
-    invc H8.
+    invc H7.
     + (* left subterm *)
-      eapply IHt1. (* with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)). *)
+      eapply IHt1 with (p:=p). (* with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)). *)
       econstructor.
       repeat eexists.
       eassumption.
-      admit. (* use recursive _ -> False hyp *)
+
+      Focus 2.
       eassumption.
+      Focus 2.
       eassumption.
+      Focus 2.
       eassumption.
+
+      intros.
+      apply H0.
+
+      apply term_disc_bseq_l.
+      (*
+      assert (aeval a p e = eval t1 p e).
+      {
+        admit.
+      }
+      rewrite <- H8. *)
+      
+      eassumption.
+
       (*
       econstructor.
       repeat eexists.
       eassumption. *)
     +
-       (* right subterm *)
-      eapply IHt2. (* with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)). *)
+      eapply IHt2 with (p:=p). (* with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)). *)
       econstructor.
       repeat eexists.
       eassumption.
-      admit. (* use recursive _ -> False hyp *)
+
+      Focus 2.
       eassumption.
+      Focus 2.
       eassumption.
+      Focus 2.
       eassumption.
+
+      intros.
+      apply H0.
+
+      apply term_disc_bseq_r.
+      (*
+      assert (aeval a p e = eval t1 p e).
+      {
+        admit.
+      }
+      rewrite <- H8. *)
+      
+      eassumption.
+
       (*
       econstructor.
       repeat eexists.
       eassumption. *)
+
   - (* bpar case *)
     invc H.
-    destruct_conjs.
+     destruct_conjs.
 
-     invc H9.
+     invc H8.
      repeat break_let.
-     invc H13.
+     invc H12.
 
-    invc H8.
+    invc H7.
     + (* left subterm *)
-      eapply IHt1. (* with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)). *)
+      eapply IHt1 with (p:=p). (* with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)). *)
       econstructor.
       repeat eexists.
       eassumption.
-      admit. (* use recursive _ -> False hyp *)
+
+      Focus 2.
       eassumption.
+      Focus 2.
       eassumption.
+      Focus 2.
       eassumption.
+
+      intros.
+      apply H0.
+
+      apply term_disc_bpar_l. (* TODO: weird that "apply term_disc_bseq_l" works here just as well...must be evaluation happening inline *)
+      (*
+      assert (aeval a p e = eval t1 p e).
+      {
+        admit.
+      }
+      rewrite <- H8. *)
+      
+      eassumption.
+
       (*
       econstructor.
       repeat eexists.
       eassumption. *)
     +
-       (* right subterm *)
-      eapply IHt2. (* with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)). *)
+      eapply IHt2 with (p:=p). (* with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)). *)
       econstructor.
       repeat eexists.
       eassumption.
-      admit. (* use recursive _ -> False hyp *)
+
+      Focus 2.
       eassumption.
+      Focus 2.
       eassumption.
+      Focus 2.
       eassumption.
+
+      intros.
+      apply H0.
+
+      apply term_disc_bpar_r. (* TODO: weird that "apply term_disc_bseq_r" works here just as well...must be evaluation happening inline *)
+      (*
+      assert (aeval a p e = eval t1 p e).
+      {
+        admit.
+      }
+      rewrite <- H8. *)
+      
+      eassumption.
+
+      (*
+      econstructor.
+      repeat eexists.
+      eassumption. *)
+
 Admitted.
 
 Lemma cvm_implies_events: forall t annt e e' bits bits' p p' cvmi cvmi' cvm_tr ev,
@@ -1008,6 +1455,8 @@ Proof.
                 events (abpar r s t1 t2) p e ev
      *)
 
+    (* apply evtsbparr. *)
+
     admit.
     eauto.
 
@@ -1230,7 +1679,7 @@ Lemma cvm_respects_events_disclosure_aspid:
   forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt,
     
     annoP_indexed annt t cvmi cvmi' ->
-    ~ (events_discloses_aspid annt e i r) ->
+    ~ (events_discloses_aspid annt p e i r) ->
     
     term_to_coreP t atp ->
     build_cvmP atp
@@ -1246,7 +1695,7 @@ Proof.
   invc H3.
   destruct_conjs.
   econstructor.
-  exists H4. exists H3. exists H5. exists H6. exists H7. exists p.
+  exists H4. exists H3. exists H5. exists H6. exists H7.
   subst.
   split.
   invc H1.
