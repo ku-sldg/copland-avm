@@ -1,5 +1,6 @@
 -R . CoplandM
 Preamble.v
+Utilities.v
 More_lists.v
 StructTactics.v
 EqClass.v
@@ -19,6 +20,12 @@ Trace.v
 LTS.v
 Main.v
 Manifest.v
+NegotiationDefs.v
+NegotiationDefs_Prop.v
+NegotiationDefs_Bool.v
+Copland_AC.v
+Manifest_Neg.v
+Negotiation_Dec.v
 ConcreteEvidence.v
 StMonad_Coq.v
 Cvm_St.v

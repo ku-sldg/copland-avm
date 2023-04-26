@@ -28,4 +28,5 @@ Inductive Object: Set :=
    
  *)
 
-Definition AC_Policy : Permission -> Object -> Prop.
+
+Definition AC_Policy := Permission -> Object -> bool.
