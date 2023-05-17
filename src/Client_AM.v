@@ -25,7 +25,7 @@ Definition gen_authEvC_if_some (ot:option Term) (pFrom:Plc) : AM EvC :=
   
 
 Definition am_sendReq_gen (t:Term) (pFrom:Plc) (pTo:Plc)
-           (initEv:option EvC) (authPhrase:option Term) (aspCb : CakeML_ASPCallback) (pubKeyCb : CakeML_PubKeyCallback) (plcCb : CakeML_PlcCallback) : AM AppResultC :=
+           (initEv:option EvC) (authPhrase:option Term) (plcCb : CakeML_PlcCallback) : AM AppResultC :=
   evcIn <- gen_nonce_if_none initEv ;;
   auth_evc <- gen_authEvC_if_some authPhrase pFrom  ;;
   let '(evc init_ev init_et) := evcIn in
@@ -35,21 +35,20 @@ Definition am_sendReq_gen (t:Term) (pFrom:Plc) (pTo:Plc)
   gen_appraise_AM expected_et resev.
 
 
-Definition am_sendReq_nonce (t:Term) (pFrom:Plc) (pTo:Plc) (aspCb : CakeML_ASPCallback) (pubKeyCb : CakeML_PubKeyCallback) (plcCb : CakeML_PlcCallback) : AM AppResultC :=
-  am_sendReq_gen t pFrom pTo None None aspCb pubKeyCb plcCb.
+Definition am_sendReq_nonce (t:Term) (pFrom:Plc) (pTo:Plc) (plcCb : CakeML_PlcCallback) : AM AppResultC :=
+  am_sendReq_gen t pFrom pTo None None plcCb.
 
-Definition am_sendReq_nonce_auth (t:Term) (pFrom:Plc) (pTo:Plc) 
-    (aspCb : CakeML_ASPCallback) (pubKeyCb : CakeML_PubKeyCallback) (plcCb : CakeML_PlcCallback): AM AppResultC :=
+Definition am_sendReq_nonce_auth (t:Term) (pFrom:Plc) (pTo:Plc) (plcCb : CakeML_PlcCallback): AM AppResultC :=
   let auth_phrase := (* kim_meas *) ssl_sig in
-  am_sendReq_gen t pFrom pTo None (Some auth_phrase) aspCb pubKeyCb plcCb.
+  am_sendReq_gen t pFrom pTo None (Some auth_phrase) plcCb.
   
-Definition am_sendReq_auth (t:Term) (pFrom:Plc) (pTo:Plc) (initEv:RawEv) 
-    (aspCb : CakeML_ASPCallback) (pubKeyCb : CakeML_PubKeyCallback) (plcCb : CakeML_PlcCallback) : AM AppResultC :=
+Definition am_sendReq_auth (t:Term) (pFrom:Plc) (pTo:Plc) (initEv:RawEv) (plcCb : CakeML_PlcCallback) : AM AppResultC :=
   let auth_phrase := (* kim_meas *) ssl_sig in
   let initEv_et := mt in (* TODO:  make this a param? *)
-  am_sendReq_gen t pFrom pTo (Some (evc initEv initEv_et)) (Some auth_phrase) aspCb pubKeyCb plcCb.
+  am_sendReq_gen t pFrom pTo (Some (evc initEv initEv_et)) (Some auth_phrase) plcCb.
 
-Definition am_sendReq_dispatch (auth : bool) (t : Term) (source : Plc) (dest : Plc) (aspCb : CakeML_ASPCallback) (pubKeyCb : CakeML_PubKeyCallback) (plcCb : CakeML_PlcCallback) : AM AppResultC :=
+Definition am_sendReq_dispatch (auth : bool) (t : Term) (source : Plc) (dest : Plc) 
+    (plcCb : CakeML_PlcCallback) : AM AppResultC :=
   if (auth)
-  then (am_sendReq_nonce_auth t source dest aspCb pubKeyCb plcCb)
-  else (am_sendReq_nonce t source dest aspCb pubKeyCb plcCb).
+  then (am_sendReq_nonce_auth t source dest plcCb)
+  else (am_sendReq_nonce t source dest plcCb).
