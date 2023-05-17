@@ -4,9 +4,7 @@ Generic Typeclass for equality, plus some instances.
 Author:  Adam Petz, ampetz@ku.edu
  *)
 
-Require Import StructTactics.
-
-Require Import Coq.Arith.EqNat.
+ Require Import Setoid.
 
 Class EqClass (A : Type) :=
   { eqb : A -> A -> bool ;
@@ -16,9 +14,10 @@ Theorem EqClass_impl_DecEq: forall (A : Type) `{H : EqClass A},
     forall (x y : A), {x = y} + {x <> y}.
 Proof.
   intros.
-  destruct (eqb x y) eqn:E.
-  - left; eapply eqb_leibniz; eauto.
-  - right; erewrite <- eqb_leibniz; intros HC; congruence.
+  destruct H.
+  destruct (eqb0 x y) eqn:E.
+  - left; eapply eqb_leibniz0; eauto.
+  - right; erewrite <- eqb_leibniz0; intros HC; congruence.
 Qed.
 
 Fixpoint general_list_eq_class_eqb {A : Type} `{H : EqClass A} (l1 l2 : list A) : bool :=
@@ -32,13 +31,13 @@ Theorem general_list_eqb_leibniz : forall {A : Type} `{H : EqClass A},
   forall (a1 a2 : list A), general_list_eq_class_eqb a1 a2 = true <-> a1 = a2.
 Proof.
   induction a1; destruct a2; split; intros; simpl in *; eauto; try congruence.
-  - eapply Bool.andb_true_iff in H0. destruct H0.
-    erewrite eqb_leibniz in H0; subst. 
-    rewrite IHa1 in H1; subst; eauto.
-  - inv H0.
-    eapply Bool.andb_true_iff; split; eauto.
-    * eapply eqb_leibniz; eauto.
-    * erewrite IHa1; eauto.
+  - unfold andb in H0. destruct (eqb a a0) eqn:E.
+    * rewrite eqb_leibniz in E; subst. rewrite IHa1 in H0. subst; eauto.
+    * congruence.
+  - inversion H0; subst.
+    unfold andb. destruct (eqb a0 a0) eqn:E.
+    * eapply IHa1. eauto.
+    * pose proof (eqb_leibniz a0 a0). intuition. congruence.
 Qed.
 
 Global Instance EqClass_extends_to_list (A : Type) `{H : EqClass A} : EqClass (list A) := {
@@ -46,9 +45,19 @@ Global Instance EqClass_extends_to_list (A : Type) `{H : EqClass A} : EqClass (l
   eqb_leibniz := general_list_eqb_leibniz
 }.
 
+Lemma nat_eqb_eq : forall n1 n2 : nat,
+  Nat.eqb n1 n2 = true <-> n1 = n2.
+Proof.
+  induction n1; destruct n2; 
+  split; intros; eauto;
+  inversion H.
+  - rewrite IHn1 in H1. subst; eauto.
+  - subst. simpl. rewrite IHn1; eauto.
+Qed.
+
 Global Instance nat_EqClass : EqClass nat :=
-  { eqb:= PeanoNat.Nat.eqb;
-    eqb_leibniz := PeanoNat.Nat.eqb_eq }.
+  { eqb:= Nat.eqb;
+    eqb_leibniz := nat_eqb_eq }.
 
 Definition eqbPair{A B:Type}`{H:EqClass A}`{H':EqClass B} (p1:A*B) (p2:A*B) : bool :=
   match (p1,p2) with
@@ -60,36 +69,25 @@ Lemma beq_pair_true{A B:Type}`{H:EqClass A}`{H':EqClass B} : forall (p1 p2:(A*B)
 Proof.
   intros.
   unfold eqbPair in *.
-  repeat break_let.
+  destruct p1, p2.
   assert (a = a0).
   {
     assert (eqb a a0 = true).
     {
-      destruct (eqb a a0); try solve_by_inversion.
+      destruct (eqb a a0); eauto.
     }
     eapply eqb_leibniz; eauto.
   }
   
   assert (b = b0).
   {
-        assert (eqb b b0 = true).
-        {
-          destruct (eqb b b0); try reflexivity.
-          cbv in *.
-          repeat break_let.
-          break_if; solve_by_inversion.     
-        }
+    assert (eqb b b0 = true).
+    {
+      destruct (eqb b b0); eauto; subst;
+      unfold andb in H0; destruct (eqb a0 a0); congruence.
+    }
     eapply eqb_leibniz; eauto.
   }
   subst.
   reflexivity.
 Defined.
-
-                                                             
-
-(*
-#[global]
-Instance pair_EqClass{A B:Type}`{H:EqClass A}`{H':EqClass B} : EqClass (A*B) :=
-  { eqb:= eqbPair;
-    eqb_leibniz := beq_pair_true }.
-*)

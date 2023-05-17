@@ -17,23 +17,8 @@ modify it under the terms of the BSD License as published by the
 University of California.  See license.txt for details. *)
 
 Require Export BS.
-Require Import String.
 
-Require Import List AbstractedTypes.
-Import List.ListNotations.
-
-(*
-Set Nested Proofs Allowed.
- *)
-
-
-(*
-Module Export Term_Defs_Core.
- *)
-
-
-
-
+Require Import AbstractedTypes.
 
 (** * Terms and Evidence
 

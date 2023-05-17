@@ -66,6 +66,12 @@ Fixpoint map_vals{A B:Type} `{H : EqClass A} (m : MapC A B ) : list B :=
   | (k', v) :: m' => v :: map_vals m'
   end.
 
+Fixpoint invert_map {A B : Type} `{HA : EqClass A, HB : EqClass B} (m : MapC A B) : MapC B A :=
+  match m with
+  | [] => []
+  | (k', v') :: m' => (v', k') :: (invert_map m')
+  end.
+
 (* A two-way implementation of list maps, where you can lookup from a key, or value *)
 Definition MapD (A:Type) (B:Type) `{H : EqClass A} `{H1 : EqClass B} := list (A * B).
 

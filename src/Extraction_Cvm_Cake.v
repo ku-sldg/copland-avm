@@ -1,11 +1,11 @@
 Require Extraction.
 
-Require Import Term_Defs Cvm_Run IO_Stubs Example_Phrases_Demo.
+Require Import Term_Defs Term_Defs_Core Cvm_Run IO_Stubs Example_Phrases_Demo AM_Monad.
 Require Import CopParser.
 
 Require Import privPolicy Manifest.
 
-Require Import Demo_AM Client_AM Server_AM.
+Require Import Client_AM Server_AM.
 
 Extraction Language CakeML. (* OCaml. *) 
 
@@ -32,7 +32,10 @@ Extract Constant hsh_params => "( undefined () )".
 (* Extract Constant + => "add". *)
 (* Extract Constant Nat.add => "(+)". *)
 
-Separate Extraction demo_phrase demo_phrase2 demo_phrase3 client_data_phrase ssl_sig client_demo_am_comp client_demo_am_comp_auth run_am_serve_auth_tok_req CoplandM.Manifest.Manifest.
+Separate Extraction run_cvm CoplandM.Manifest.manifest_compiler am_sendReq_dispatch run_am_app_comp am_serve_auth_tok_req.
+
+(* 
+Separate Extraction demo_phrase demo_phrase2 demo_phrase3 client_data_phrase ssl_sig CoplandM.Manifest.Manifest CoplandM.Manifest.manifest_compiler Evidence AppResultC. *)
 
 (*
 Separate Extraction CopParser.parsePhrase.

@@ -12,7 +12,7 @@
     Appraisal_Defs.v).        
  *)
 
-Require Import Term_Defs ConcreteEvidence StMonad_Coq IO_Type.
+Require Import Term_Defs ConcreteEvidence StMonad_Coq IO_Type Manifest_Admits.
 
 (** * Stub to encode a sequence of BS values to a single BS value.
       Real implmenetation will depend on the instantition of BS *)
@@ -35,7 +35,7 @@ Admitted.
 
 
 (** * Stub for a top-level request from a remote client AM  *)
-Definition am_sendReq (t:Term) (pFrom:Plc) (pTo:Plc) (authTok:ReqAuthTok) (e:RawEv) : RawEv.
+Definition am_sendReq (t:Term) (u : UUID) (authTok:ReqAuthTok) (e:RawEv) : RawEv.
 Admitted.
 
 Definition do_asp' (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) : IO BS :=
