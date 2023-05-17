@@ -14,7 +14,7 @@ Definition hasASPe(k:Plc)(e:Environment)(a:ASP_ID):Prop :=
 Definition canRunAsp_Manifest(* (k:Plc) *) (m:Manifest)(params:ASP_PARAMS):Prop :=
   match params with
   | asp_paramsC aspid aspargs targplc targid =>
-    let '{| asps := aspsM; knowsOf := knowsOfM; context := _;
+    let '{| asps := aspsM; knowsOf := knowsOfM; pubkeys := _;
             policy := policyM; ac_policy := ac_policyM |} := m in
     In aspid aspsM /\
     can_measure_target ac_policyM targplc targid = true 
@@ -60,7 +60,7 @@ Fixpoint knowsOfs(k:Plc)(s:System)(p:Plc):Prop :=
 Definition dependsOne (k:Plc)(e:Environment)(p:Plc):Prop :=
   match (e k) with
   | None => False
-  | Some m => In p m.(context)
+  | Some m => In p m.(pubkeys)
   end.
 
 (** Determine if place [k] within the system [s]  

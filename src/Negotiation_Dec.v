@@ -1,7 +1,9 @@
 Require Import NegotiationDefs NegotiationDefs_Prop NegotiationDefs_Bool
-               Manifest_Neg Eqb_Evidence.
+               Manifest_Neg Eqb_Evidence Term_Defs_Core.
 
-Require Import Utilities.
+Require Import Example_Phrases_Admits Example_Phrases.
+
+Require Import Utilities EqClass Maps.
 
 
 Require Import StructTactics.
@@ -87,7 +89,7 @@ Proof with auto.
   intros k e p.
   unfold dependsOne.
   destruct (e k) ...
-  + induction (context m).
+  + induction (pubkeys m).
   ++ auto.
   ++ simpl. inversion IHl.
   +++ auto.
@@ -220,7 +222,102 @@ Proof.
     rewrite H.
     auto.
 Qed.
+
+
+(* Definition Environment : Type :=  Plc -> (option Manifest). *)
+Definition Environment : Type := MapC Plc Manifest.
+
+Definition e_empty : Environment := map_empty. (* (fun _ => None). *)
+  
+(*
+Definition e_update (e : Environment) (x : Plc) (v : (option Manifest)) : Environment :=
+    fun x' => if eqb x x' then v else e x'.
+
+Definition e_get (e : Environment) (x : Plc) : (option Manifest) := 
+  e x.
+  *)
+
+
+Definition aspid_manifest_update (i:ASP_ID) (m:Manifest) : Manifest := 
+  let '{| asps := oldasps; 
+          knowsOf := oldKnowsOf; 
+          pubkeys := oldContext; 
+          policy := oldPolicy; 
+          ac_policy := oldAcPol |} := m in
+  (mk_manifest (i::oldasps) oldKnowsOf oldContext oldPolicy oldAcPol).
+
+
+Definition asp_manifest_update (a:ASP) (m:Manifest) : Manifest :=
+  match a with 
+  | ASPC _ _ params => 
+      match params with
+      | asp_paramsC i _ targp targid => 
+          aspid_manifest_update i m
+      end
+  | _ => m 
+  end.
+        
     
+
+Definition asp_manifest_generator (a:ASP) (p:Plc) (e:Environment) : Environment :=
+  match (map_get e p) with
+  | Some m => 
+    let m' := asp_manifest_update a m in 
+      map_set e p m'
+  | _ => 
+    let m' := asp_manifest_update a empty_Manifest in 
+      map_set e p m'
+  end.
+
+
+Fixpoint manifest_generator' (t:Term) (p:Plc) (e:Environment) : Environment :=
+  match t with
+  | asp a => asp_manifest_generator a p e
+  | att q t' => manifest_generator' t' q e
+  | lseq t1 t2 => manifest_generator' t2 p (manifest_generator' t1 p e)
+  | bseq _ t1 t2 => manifest_generator' t2 p (manifest_generator' t1 p e)
+  | bpar _ t1 t2 => manifest_generator' t2 p (manifest_generator' t1 p e)
+  end.
+
+
+Definition manifest_generator (t:Term) (p:Plc) : Environment :=
+  manifest_generator' t p e_empty.
+
+
+Definition man_gen_run := manifest_generator cert_style P0.
+
+Definition fromSome{A:Type} (v:option A) (a:A) : A :=
+  match v with 
+  | Some v' => v'
+  | _ => a 
+  end.
+
+Definition res := (fromSome (map_get man_gen_run P1) empty_Manifest).
+Compute res.
+
+Compute man_gen_run.
+
+Example mytest : (man_gen_run = map_empty).
+Proof.
+  cbv.
+  break_let.
+  assert (eqb P2 P1 = false).
+  admit.
+  find_rewrite.
+  simpl.
+  pose proof (eqb_leibniz P2 P2). intuition.
+  find_rewrite.
+  Abort.
+
+
+Eval cbv iota in (fromSome (map_get man_gen_run P1) empty_Manifest).
+
+
+
+
+
+
+
     
 
 

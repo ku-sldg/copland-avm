@@ -25,6 +25,8 @@ NegotiationDefs_Prop.v
 NegotiationDefs_Bool.v
 Copland_AC.v
 Manifest_Neg.v
+Example_Phrases_Admits.v
+Example_Phrases.v
 Negotiation_Dec.v
 ConcreteEvidence.v
 StMonad_Coq.v

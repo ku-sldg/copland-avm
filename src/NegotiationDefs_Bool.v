@@ -6,7 +6,7 @@ Import ListNotations.
 Definition canRunAsp_ManifestB(* (k:Plc) *) (m:Manifest)(params:ASP_PARAMS):bool :=
   match params with
   | asp_paramsC aspid aspargs targplc targid =>
-        let '{| asps := aspsM; knowsOf := knowsOfM; context := _;
+        let '{| asps := aspsM; knowsOf := knowsOfM; pubkeys := _;
                 policy := policyM; ac_policy := ac_policyM |} := m in
         (existsb (eqb aspid) aspsM) &&
         (can_measure_target ac_policyM targplc targid)

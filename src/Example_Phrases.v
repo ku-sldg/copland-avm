@@ -3,29 +3,34 @@ Require Import Term_Defs Example_Phrases_Admits.
 Require Import List.
 Import ListNotations.
 
-Definition term1 := att 1 (asp SIG).
+(* Definition term1 := att 1 (asp SIG). *)
                               
 
-Definition P0 : Plc := 0.
-Definition P1 : Plc := 1.
-Definition P2 : Plc := 2.
-Definition P3 : Plc := 3.
-Definition P4 : Plc := 4.
+Definition P0 : Plc.
+Admitted.
+Definition P1 : Plc.
+Admitted.
+Definition P2 : Plc.
+Admitted.
+Definition P3 : Plc.
+Admitted.
+Definition P4 : Plc.
+Admitted.
 
 Definition attest (p:Plc) (targ: TARG_ID) :=
-  asp (ASPC (asp_paramsC attest_id [] p targ)).
+  asp (ASPC ALL EXTD (asp_paramsC attest_id [] p targ)).
 
 Definition appraise (p:Plc) (targ: TARG_ID) :=
-  asp (ASPC (asp_paramsC appraise_id [] p targ)).
+  asp (ASPC ALL EXTD (asp_paramsC appraise_id [] p targ)).
 
 Definition certificate (p:Plc) (targ: TARG_ID) :=
-  asp (ASPC (asp_paramsC cert_id [] p targ)).
+  asp (ASPC ALL EXTD (asp_paramsC cert_id [] p targ)).
 
 Definition store (p:Plc) (targ: TARG_ID) :=
-  asp (ASPC (asp_paramsC cache_id store_args p targ)).
+  asp (ASPC ALL EXTD (asp_paramsC cache_id store_args p targ)).
 
 Definition retrieve (p:Plc) (targ: TARG_ID) :=
-  asp (ASPC (asp_paramsC cache_id retrieve_args p targ)).
+  asp (ASPC ALL EXTD (asp_paramsC cache_id retrieve_args p targ)).
 
 
 (* 
@@ -34,7 +39,7 @@ pg 29:16 top, Certificate-Style section
 Definition cert_style_simple_sig : Term :=
   att P1 (lseq
             (attest P1 sys)
-            (att 2 (lseq
+            (att P2 (lseq
                       (appraise P2 sys)
                       (asp SIG)))).
 
@@ -44,7 +49,7 @@ pg 29:15, Certificate-Style section
 Definition cert_style : Term :=
   att P1 (lseq
            (attest P1 sys)
-           (att 2 (lseq
+           (att P2 (lseq
                     (appraise P2 sys)
                     (certificate P2 sys)))).
            
