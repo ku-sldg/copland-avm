@@ -22,6 +22,18 @@ Proof.
   destruct H. eapply eqb_leibniz.
 Qed.
 
+Definition eqb_plc `{H : EqClass ID_Type} (a1 a2 : Plc)  : bool :=
+  eqb a1 a2.
+
+(** Admitted Lemmas relating boolean to propositional equality for 
+   ASP ID and PARAMS *)
+Lemma eqb_eq_plc: forall `{H : EqClass ID_Type} i1 i2,
+    eqb_plc i1 i2 = true <-> i1 = i2.
+Proof.
+  intros.
+  split; eapply eqb_leibniz.
+Qed.
+
 Definition eqb_asp_params `{H : EqClass ID_Type} `{H : EqClass (list ID_Type)} (ap1 ap2 : ASP_PARAMS) : bool :=
   match ap1, ap2 with
   | (asp_paramsC a1 la1 p1 t1), (asp_paramsC a2 la2 p2 t2) =>
@@ -32,6 +44,25 @@ Definition eqb_asp_params `{H : EqClass ID_Type} `{H : EqClass (list ID_Type)} (
   end.
 
 (** Decidable equality proofs for various Copland datatypes *)
+
+Definition eq_plc_dec `{H : EqClass ID_Type} :
+  forall x y: Plc, {x = y} + {x <> y}.
+Proof.
+  intros.
+  (* try decide equality; subst; *)
+  eapply EqClass_impl_DecEq; eauto.
+Defined.
+
+Definition eq_aspid_dec `{H : EqClass ID_Type} :
+  forall x y: ASP_ID, {x = y} + {x <> y}.
+Proof.
+  intros.
+  (* try decide equality; subst; *)
+  eapply EqClass_impl_DecEq; eauto.
+Defined.
+
+
+
 Definition eq_asp_params_dec `{H : EqClass ID_Type} :
   forall x y: ASP_PARAMS, {x = y} + {x <> y}.
 Proof.
@@ -235,6 +266,8 @@ Lemma eqb_eq_fwd: forall f1 f2,
 Proof.
 Admitted.
 
+(* TODO:  remove these since implemented above...? *)
+(*
 Definition eqb_plc (p1 p2 : Plc) : bool.
 Admitted.
 
@@ -243,6 +276,7 @@ Lemma eqb_eq_plc: forall `{H : EqClass ID_Type} p1 p2 ,
     p1 = p2.
 Proof.
 Admitted.
+*)
 
 (** Boolean equality for Evidence Types *)
 Fixpoint eqb_evidence `{H : EqClass ID_Type} (e:Evidence) (e':Evidence): bool :=
