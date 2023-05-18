@@ -1,5 +1,5 @@
 Require Import NegotiationDefs NegotiationDefs_Prop NegotiationDefs_Bool
-               Manifest_Neg Eqb_Evidence Term_Defs_Core.
+               Manifest Eqb_Evidence Term_Defs_Core.
 
 Require Import Example_Phrases_Admits Example_Phrases.
 
@@ -9,6 +9,9 @@ Require Import Utilities EqClass Maps.
 Require Import StructTactics.
 
 Require Import Coq.Program.Tactics.
+
+Require Import List.
+Import ListNotations.
 
 
 (*
@@ -57,7 +60,7 @@ Proof.
   intros k e p.
   unfold knowsOfe.
   destruct (e k); auto.
-  induction (knowsOf m).
+  induction (uuidPlcs m).
   + right; auto. 
   + pose proof (eq_plc_dec p a); inverts H. 
   ++ left. simpl. auto.
@@ -89,7 +92,7 @@ Proof with auto.
   intros k e p.
   unfold dependsOne.
   destruct (e k) ...
-  + induction (pubkeys m).
+  + induction (pubKeyPlcs m).
   ++ auto.
   ++ simpl. inversion IHl.
   +++ auto.
@@ -227,7 +230,7 @@ Qed.
 (* Definition Environment : Type :=  Plc -> (option Manifest). *)
 Definition Environment : Type := MapC Plc Manifest.
 
-Definition e_empty : Environment := map_empty. (* (fun _ => None). *)
+Definition e_empty : Environment := [] (*map_empty *). (* (fun _ => None). *)
   
 (*
 Definition e_update (e : Environment) (x : Plc) (v : (option Manifest)) : Environment :=
@@ -239,12 +242,13 @@ Definition e_get (e : Environment) (x : Plc) : (option Manifest) :=
 
 
 Definition aspid_manifest_update (i:ASP_ID) (m:Manifest) : Manifest := 
-  let '{| asps := oldasps; 
-          knowsOf := oldKnowsOf; 
-          pubkeys := oldContext; 
-          policy := oldPolicy; 
-          ac_policy := oldAcPol |} := m in
-  (mk_manifest (i::oldasps) oldKnowsOf oldContext oldPolicy oldAcPol).
+  let '{| my_abstract_plc := oldPlc;
+          asps := oldasps; 
+          uuidPlcs := oldKnowsOf; 
+          pubKeyPlcs := oldContext; 
+          policy := oldPolicy (*; 
+          ac_policy := oldAcPol*) |} := m in
+  (Build_Manifest oldPlc (i::oldasps) oldKnowsOf oldContext oldPolicy (*oldAcPol*)).
 
 
 Definition asp_manifest_update (a:ASP) (m:Manifest) : Manifest :=
@@ -284,7 +288,7 @@ Definition manifest_generator (t:Term) (p:Plc) : Environment :=
   manifest_generator' t p e_empty.
 
 
-Definition man_gen_run := manifest_generator cert_style P0.
+Definition man_gen_run : Environment := manifest_generator cert_style P0.
 
 Definition fromSome{A:Type} (v:option A) (a:A) : A :=
   match v with 
@@ -292,8 +296,8 @@ Definition fromSome{A:Type} (v:option A) (a:A) : A :=
   | _ => a 
   end.
 
-Definition res := (fromSome (map_get man_gen_run P1) empty_Manifest).
-Compute res.
+Definition man_gen_res : Manifest := (fromSome (map_get man_gen_run P1) empty_Manifest).
+Compute man_gen_res.
 
 Compute man_gen_run.
 

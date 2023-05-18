@@ -1,6 +1,6 @@
-Require Import Term_Defs_Core NegotiationDefs Manifest_Neg.
+Require Import Term_Defs_Core NegotiationDefs Manifest.
 
-Require Import Lists.List.
+Require Import List.
 Import ListNotations.
 
 
@@ -14,10 +14,10 @@ Definition hasASPe(k:Plc)(e:Environment)(a:ASP_ID):Prop :=
 Definition canRunAsp_Manifest(* (k:Plc) *) (m:Manifest)(params:ASP_PARAMS):Prop :=
   match params with
   | asp_paramsC aspid aspargs targplc targid =>
-    let '{| asps := aspsM; knowsOf := knowsOfM; pubkeys := _;
-            policy := policyM; ac_policy := ac_policyM |} := m in
+    let '{| asps := aspsM; uuidPlcs := knowsOfM; pubKeyPlcs := _;
+            policy := policyM (*; ac_policy := ac_policyM *) |} := m in
     In aspid aspsM /\
-    can_measure_target ac_policyM targplc targid = true 
+    can_measure_target policyM(*ac_policyM*) targplc targid = true 
   end.
   
 (* Within the system s, does the AM located at place k have ASP a? *)
@@ -33,11 +33,11 @@ Fixpoint hasASPs(k:Plc)(s:System)(a:ASP_ID):Prop :=
 Definition knowsOfe(k:Plc)(e:Environment)(p:Plc):Prop :=
   match (e k) with
   | None => False
-  | Some m => In p m.(knowsOf)
+  | Some m => In p m.(uuidPlcs)
   end.
 
 Definition knowsOf_Manifest(*(k:Plc)*)(e:Manifest)(p:Plc):Prop :=
-  In p e.(knowsOf).
+  In p e.(uuidPlcs).
   (*
   match (e k) with
   | None => False
@@ -60,7 +60,7 @@ Fixpoint knowsOfs(k:Plc)(s:System)(p:Plc):Prop :=
 Definition dependsOne (k:Plc)(e:Environment)(p:Plc):Prop :=
   match (e k) with
   | None => False
-  | Some m => In p m.(pubkeys)
+  | Some m => In p m.(pubKeyPlcs)
   end.
 
 (** Determine if place [k] within the system [s]  

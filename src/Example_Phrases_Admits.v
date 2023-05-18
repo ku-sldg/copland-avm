@@ -1,5 +1,16 @@
 Require Import Term_Defs.
 
+Definition P0 : Plc.
+Admitted.
+Definition P1 : Plc.
+Admitted.
+Definition P2 : Plc.
+Admitted.
+Definition P3 : Plc.
+Admitted.
+Definition P4 : Plc.
+Admitted.
+
 Definition attest_id : ASP_ID.
 Admitted.
 

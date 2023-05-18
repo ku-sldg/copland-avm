@@ -1,5 +1,5 @@
-Require Import Term_Defs_Core Manifest_Neg Copland_AC.
-Require Import AbstractedTypes EqClass Eqb_Evidence Copland_AC.
+Require Import Term_Defs_Core Manifest (*Copland_AC*) Manifest_Admits.
+Require Import AbstractedTypes EqClass Eqb_Evidence.
 
 
 Require Import StructTactics.
@@ -19,9 +19,12 @@ Definition e_update (m : Environment) (x : Plc) (v : (option Manifest)) :=
 (* A System is all attestation managers in the enviornement *)
 Definition System := list Environment.
 
-
+(*
 Definition can_measure_target (pol:AC_Policy) (tplc:Plc) (targid:TARG_ID): bool :=
   pol READ (targ_obj tplc targid).
+  *)
+Definition can_measure_target (pol:PolicyT) (tplc:Plc) (targid:TARG_ID) : bool 
+  := true.
 
 
 

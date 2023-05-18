@@ -4,18 +4,7 @@ Require Import List.
 Import ListNotations.
 
 (* Definition term1 := att 1 (asp SIG). *)
-                              
 
-Definition P0 : Plc.
-Admitted.
-Definition P1 : Plc.
-Admitted.
-Definition P2 : Plc.
-Admitted.
-Definition P3 : Plc.
-Admitted.
-Definition P4 : Plc.
-Admitted.
 
 Definition attest (p:Plc) (targ: TARG_ID) :=
   asp (ASPC ALL EXTD (asp_paramsC attest_id [] p targ)).

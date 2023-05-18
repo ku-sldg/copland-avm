@@ -5,7 +5,7 @@ Require Import CopParser.
 
 Require Import privPolicy Manifest.
 
-Require Import Client_AM Server_AM.
+Require Import Client_AM Server_AM Negotiation_Dec.
 
 Extraction Language CakeML. (* OCaml. *) 
 
@@ -32,7 +32,7 @@ Extract Constant hsh_params => "( undefined () )".
 (* Extract Constant + => "add". *)
 (* Extract Constant Nat.add => "(+)". *)
 
-Separate Extraction run_cvm CoplandM.Manifest.manifest_compiler am_sendReq_dispatch run_am_app_comp am_serve_auth_tok_req.
+Separate Extraction run_cvm CoplandM.Manifest.manifest_compiler am_sendReq_dispatch run_am_app_comp am_serve_auth_tok_req man_gen_res.
 
 (* 
 Separate Extraction demo_phrase demo_phrase2 demo_phrase3 client_data_phrase ssl_sig CoplandM.Manifest.Manifest CoplandM.Manifest.manifest_compiler Evidence AppResultC. *)

@@ -2,7 +2,10 @@
    https://github.com/ku-sldg/negotiation20/blob/master/src/Manifest/Manifest.v
 *)
 
-Require Import AbstractedTypes Term_Defs_Core Maps Term_Defs Manifest_Admits EqClass List.
+Require Import AbstractedTypes Term_Defs_Core Maps Term_Defs Manifest_Admits EqClass.
+
+Require Import List.
+Import ListNotations.
 
 Definition CakeML_ASPCallback : Type := 
   ASP_PARAMS -> Plc -> BS -> RawEv -> BS.
@@ -33,6 +36,9 @@ Definition PlcMap := MapC Plc Address.
     policy            : PolicyT  ;
     (* TO DO: Add privacy and selection policies to manifest? *)
   }.
+
+  Definition empty_Manifest : Manifest :=
+    Build_Manifest empty_Manifest_Plc [] [] [] empty_PolicyT.
 
 (** Representation of a system's environment/resources used to populate a 
     ConcreteManifest based on an abstract Manifest. *)
