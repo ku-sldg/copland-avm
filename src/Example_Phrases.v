@@ -41,7 +41,15 @@ Definition cert_style : Term :=
            (att P2 (lseq
                     (appraise P2 sys)
                     (certificate P2 sys)))).
-           
+
+Definition cert_style_test : Term :=
+  att P1 (lseq
+            (attest P1 sys)
+            (lseq
+            (att P2 (lseq
+                      (appraise P2 sys)
+                      (certificate P2 sys)))
+            (att P3 (store P1 cache)))).
 
 (* 
 pg. 29:16 bottom, Certificate-Style section

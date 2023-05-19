@@ -250,6 +250,23 @@ Definition aspid_manifest_update (i:ASP_ID) (m:Manifest) : Manifest :=
           ac_policy := oldAcPol*) |} := m in
   (Build_Manifest oldPlc (i::oldasps) oldKnowsOf oldContext oldPolicy (*oldAcPol*)).
 
+Definition knowsof_manifest_update (toPlc:Plc) (m:Manifest) : Manifest := 
+    let '{| my_abstract_plc := oldPlc;
+            asps := oldasps; 
+            uuidPlcs := oldKnowsOf; 
+            pubKeyPlcs := oldContext; 
+            policy := oldPolicy (*; 
+            ac_policy := oldAcPol*) |} := m in
+    (Build_Manifest oldPlc oldasps (toPlc::oldKnowsOf) oldContext oldPolicy (*oldAcPol*)).
+
+Definition myPlc_manifest_update (p:Plc) (m:Manifest) : Manifest := 
+      let '{| my_abstract_plc := _;
+              asps := oldasps; 
+              uuidPlcs := oldKnowsOf; 
+              pubKeyPlcs := oldContext; 
+              policy := oldPolicy (*; 
+              ac_policy := oldAcPol*) |} := m in
+      (Build_Manifest p oldasps oldKnowsOf oldContext oldPolicy (*oldAcPol*)).
 
 Definition asp_manifest_update (a:ASP) (m:Manifest) : Manifest :=
   match a with 
@@ -261,8 +278,6 @@ Definition asp_manifest_update (a:ASP) (m:Manifest) : Manifest :=
   | _ => m 
   end.
         
-    
-
 Definition asp_manifest_generator (a:ASP) (p:Plc) (e:Environment) : Environment :=
   match (map_get e p) with
   | Some m => 
@@ -273,11 +288,23 @@ Definition asp_manifest_generator (a:ASP) (p:Plc) (e:Environment) : Environment 
       map_set e p m'
   end.
 
+  Definition plc_manifest_generator (fromPlc:Plc) (toPlc:Plc) (e:Environment) : Environment :=
+    match (map_get e fromPlc) with
+    | Some m => 
+      let m' := knowsof_manifest_update toPlc m in 
+        map_set e fromPlc m'
+    | _ => 
+      let m' := knowsof_manifest_update toPlc empty_Manifest in 
+        map_set e fromPlc m'
+    end.
+
 
 Fixpoint manifest_generator' (t:Term) (p:Plc) (e:Environment) : Environment :=
   match t with
   | asp a => asp_manifest_generator a p e
-  | att q t' => manifest_generator' t' q e
+  | att q t' => 
+      let e' := plc_manifest_generator p q e in 
+        manifest_generator' t' q e'
   | lseq t1 t2 => manifest_generator' t2 p (manifest_generator' t1 p e)
   | bseq _ t1 t2 => manifest_generator' t2 p (manifest_generator' t1 p e)
   | bpar _ t1 t2 => manifest_generator' t2 p (manifest_generator' t1 p e)
@@ -288,7 +315,18 @@ Definition manifest_generator (t:Term) (p:Plc) : Environment :=
   manifest_generator' t p e_empty.
 
 
-Definition man_gen_run : Environment := manifest_generator cert_style P0.
+Fixpoint places' (t:Term) (ls:list Plc) : list Plc :=
+  match t with
+  | asp _ => ls 
+  | att q t' => (q :: (places' t' ls))
+  | lseq t1 t2 => places' t2 (places' t1 ls)
+  | bseq _ t1 t2 => places' t2 (places' t1 ls)
+  | bpar _ t1 t2 => places' t2 (places' t1 ls)
+  end.
+
+Definition places (t:Term) (p:Plc) : list Plc := 
+  p :: (places' t []).
+
 
 Definition fromSome{A:Type} (v:option A) (a:A) : A :=
   match v with 
@@ -296,11 +334,40 @@ Definition fromSome{A:Type} (v:option A) (a:A) : A :=
   | _ => a 
   end.
 
+Definition get_manifest_env_default (e:Environment) (p:Plc) : Manifest :=
+  let m' := fromSome (map_get e p) empty_Manifest in
+    myPlc_manifest_update p m'.
+
+  Check List.map.
+  (* map
+	 : forall A B : Type, (A -> B) -> list A -> list B
+   *)
+
+Definition get_unique_manifests_env' (ps:list Plc) (e:Environment) : list Manifest :=
+  List.map (get_manifest_env_default e) ps.
+
+Definition get_unique_manifests_env (t:Term) (p:Plc) (e:Environment) : list Manifest :=
+  let ps := places t p in
+    get_unique_manifests_env' ps e.
+
+
+Definition man_gen_run : Environment := manifest_generator cert_style_test P0.
+
+Definition environment_to_manifest_list (e:Environment) : list Manifest :=
+  map_vals e.
+
+Definition example_man_gen_run : list Manifest := 
+  get_unique_manifests_env cert_style_test P0 man_gen_run.
+
+
+
 Definition man_gen_res : Manifest := (fromSome (map_get man_gen_run P1) empty_Manifest).
 Compute man_gen_res.
 
 Compute man_gen_run.
 
+
+(*
 Example mytest : (man_gen_run = map_empty).
 Proof.
   cbv.
@@ -312,6 +379,7 @@ Proof.
   pose proof (eqb_leibniz P2 P2). intuition.
   find_rewrite.
   Abort.
+*)
 
 
 Eval cbv iota in (fromSome (map_get man_gen_run P1) empty_Manifest).
