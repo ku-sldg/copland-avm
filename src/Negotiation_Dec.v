@@ -351,17 +351,17 @@ Definition get_unique_manifests_env (t:Term) (p:Plc) (e:Environment) : list Mani
     get_unique_manifests_env' ps e.
 
 
-Definition man_gen_run : Environment := manifest_generator cert_style_test P0.
+Definition man_gen_run (t:Term) (p:Plc) : Environment := manifest_generator t p.
 
 Definition environment_to_manifest_list (e:Environment) : list Manifest :=
   map_vals e.
 
-Definition example_man_gen_run : list Manifest := 
-  get_unique_manifests_env cert_style_test P0 man_gen_run.
+Definition demo_man_gen_run (t:Term) (p:Plc) : list Manifest := 
+  get_unique_manifests_env t p (man_gen_run t p).
 
 
 
-Definition man_gen_res : Manifest := (fromSome (map_get man_gen_run P1) empty_Manifest).
+Definition man_gen_res : Manifest := (fromSome (map_get (man_gen_run cert_style P0) P1) empty_Manifest).
 Compute man_gen_res.
 
 Compute man_gen_run.
@@ -382,7 +382,7 @@ Proof.
 *)
 
 
-Eval cbv iota in (fromSome (map_get man_gen_run P1) empty_Manifest).
+Eval cbv iota in (fromSome (map_get (man_gen_run cert_style P0) P1) empty_Manifest).
 
 
 
