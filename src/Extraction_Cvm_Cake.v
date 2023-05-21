@@ -34,7 +34,7 @@ Extract Constant hsh_params => "( undefined () )".
 (* Extract Constant + => "add". *)
 (* Extract Constant Nat.add => "(+)". *)
 
-Separate Extraction run_cvm CoplandM.Manifest.manifest_compiler am_sendReq_dispatch run_am_app_comp am_serve_auth_tok_req cert_style demo_man_gen_run.
+Separate Extraction run_cvm CoplandM.Manifest.manifest_compiler am_sendReq_dispatch run_am_app_comp am_serve_auth_tok_req cert_style cert_style_test demo_man_gen_run.
 
 (* man_gen_res environment_to_manifest_list *)
 
