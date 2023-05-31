@@ -260,3 +260,12 @@ Definition asp_event i x p e :=
 
 
 
+
+Inductive AM_Result: Set :=
+| am_rawev: RawEv -> AM_Result
+| am_appev: AppResultC -> AM_Result.
+
+Definition empty_am_result := am_rawev [].
+
+
+

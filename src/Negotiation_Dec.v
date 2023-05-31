@@ -259,6 +259,15 @@ Definition knowsof_manifest_update (toPlc:Plc) (m:Manifest) : Manifest :=
             ac_policy := oldAcPol*) |} := m in
     (Build_Manifest oldPlc oldasps (toPlc::oldKnowsOf) oldContext oldPolicy (*oldAcPol*)).
 
+Definition knowsof_myPlc_manifest_update (m:Manifest) : Manifest :=
+  let '{| my_abstract_plc := oldPlc;
+          asps := oldasps; 
+          uuidPlcs := oldKnowsOf; 
+          pubKeyPlcs := oldContext; 
+          policy := oldPolicy (*; 
+          ac_policy := oldAcPol*) |} := m in
+    (Build_Manifest oldPlc oldasps (oldPlc::oldKnowsOf) oldContext oldPolicy (*oldAcPol*)).
+
 Definition myPlc_manifest_update (p:Plc) (m:Manifest) : Manifest := 
       let '{| my_abstract_plc := _;
               asps := oldasps; 
@@ -350,6 +359,10 @@ Definition get_unique_manifests_env (t:Term) (p:Plc) (e:Environment) : list Mani
   let ps := places t p in
     get_unique_manifests_env' ps e.
 
+Definition get_final_manifests_env (t:Term) (p:Plc) (e:Environment) : list Manifest :=
+  let ms := get_unique_manifests_env t p e in 
+  List.map (knowsof_myPlc_manifest_update) ms.
+
 
 Definition man_gen_run (t:Term) (p:Plc) : Environment := manifest_generator t p.
 
@@ -357,7 +370,7 @@ Definition environment_to_manifest_list (e:Environment) : list Manifest :=
   map_vals e.
 
 Definition demo_man_gen_run (t:Term) (p:Plc) : list Manifest := 
-  get_unique_manifests_env t p (man_gen_run t p).
+  get_final_manifests_env t p (man_gen_run t p).
 
 
 

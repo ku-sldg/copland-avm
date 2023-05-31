@@ -30,3 +30,34 @@ Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc) (authTok:Req
       
   | false => failm
   end.
+
+Definition am_client_auth_tok_req (t:Term) (myPl:Plc) (init_ev:RawEv) (app_bool:bool): AM AM_Result :=
+  let att_res := run_cvm_rawEv t myPl init_ev in
+  match app_bool with
+  | true => 
+      let att_et := eval t myPl mt in
+        app_res <- gen_appraise_AM att_et att_res ;;
+        ret (am_appev app_res)
+  | false => ret (am_rawev att_res)
+  end.
+
+(*
+Definition am_client_auth_tok_req (t:Term) (myPl:Plc) (init_ev:RawEv) (app_bool:bool): AM AppResultC :=
+  match app_bool with
+  | true => 
+     v <- am_check_auth_tok t myPl mt_evc ;;
+     match (andb (requester_bound t myPl mt_evc) (appraise_auth_tok v)) with
+      | true =>
+        match (privPolicy myPl t) with
+        | true =>
+          let att_res := run_cvm_rawEv t myPl init_ev in
+          let att_et := eval t myPl mt in
+          gen_appraise_AM att_et att_res
+        | false => failm
+        end
+      
+      | false => failm
+     end
+| false => ret mtc_app
+end.
+*)
