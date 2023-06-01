@@ -7,11 +7,20 @@ Using any browser, open the html files in `src/html` to browse all definitions a
 
 ## Build Instructions
 
-To compile all the proof script dependencies in `src/` and step through them interactively, make sure you have [Coq](https://coq.inria.fr/opam-using.html) and [ProofGeneral](https://proofgeneral.github.io/) installed on your system (Tested on Coq versions 8.11 and 8.12), then type:
+To compile all the proof script dependencies in `src/` and step through them interactively, make sure you have:
+
+1.  [Coq](https://github.com/ku-sldg/coq/tree/cakeml-extraction) (Tested on [this](https://github.com/ku-sldg/coq/tree/cakeml-extraction) fork/branch that supports CakeML code extraction)
+    * Note:  Make sure this is a LOCAL install (and NOT one installed globally via opam).  This should require:
+        * gathering dependencies as specified [here](https://github.com/ku-sldg/coq/blob/cakeml-extraction/INSTALL.md#build-requirements), then 
+        *  Inside `<CoqPath>`/coq (top-level of forked Coq repo) run:   `make world`
+        *  Add `<CoqPath>/coq/_build/install/default/bin` to your PATH environment variable
+        *  Set the COQLIB environment variable to `<CoqPath>/coq/_build/install/default/lib/coq`
+        * IMPORTANT:  hide any previous opam-installed versions.  Usually requires deleting a line in your ~/.bashrc (or equivalent) that auto-loads opam tools for each new terminal session.
+1.  [ProofGeneral](https://proofgeneral.github.io/) (or your favorite Coq IDE) installed on your system, then type:
 
 `cd src ; make`
 
-Once compilation completes, open the desired `.v` file in `src/` to step through its definitions and proofs (`make` will also re-generate the pretty-printed html in `src/html` for quick browsing).
+Once compilation completes (may be some warnings, but no errors), open the desired `.v` file in `src/` to step through its definitions and proofs (`make` will also re-generate the pretty-printed html in `src/html` for quick browsing).
 
 ## Source File Descriptions
 
