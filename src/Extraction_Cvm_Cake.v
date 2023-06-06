@@ -3,7 +3,7 @@ Require Extraction.
 Require Import Term_Defs Term_Defs_Core Cvm_Run IO_Stubs AM_Monad.
 Require Import CopParser.
 
-Require Import Example_Phrases. (* Example_Phrases_Demo *)
+Require Import Example_Phrases Example_Phrases_Demo.
 
 Require Import privPolicy Manifest.
 
@@ -34,7 +34,9 @@ Extract Constant hsh_params => "( undefined () )".
 (* Extract Constant + => "add". *)
 (* Extract Constant Nat.add => "(+)". *)
 
-Separate Extraction run_cvm CoplandM.Manifest.manifest_compiler am_sendReq_dispatch run_am_app_comp am_serve_auth_tok_req am_client_auth_tok_req cert_style cert_style_test demo_man_gen_run empty_am_result.
+Separate Extraction run_cvm CoplandM.Manifest.manifest_compiler am_sendReq_dispatch 
+		    run_am_app_comp am_serve_auth_tok_req am_client_auth_tok_req 
+		    cert_style cert_style_test cert_style_trimmed ssl_sig_parameterized kim_meas demo_man_gen_run empty_am_result.
 
 (* man_gen_res environment_to_manifest_list *)
 

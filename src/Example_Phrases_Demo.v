@@ -10,9 +10,14 @@ Import ListNotations.
 
 
 
-
+(*
 Definition kim_meas : Term :=
   <{ << kim_meas_aspid dest_plc kim_meas_targid >> }>.
+ *)
+
+
+Definition kim_meas (p:Plc) (targ: TARG_ID) :=
+  asp (ASPC ALL EXTD (asp_paramsC kim_meas_aspid kim_meas_args p targ)).
 
 Definition create_and_load_ak : Term :=
   asp (
@@ -38,6 +43,8 @@ Definition ssl_enc : Term :=
            (asp_paramsC
               ssl_enc_aspid ssl_enc_args source_plc ssl_enc_targid)).
 
+
+(*
 Definition demo_phrase : Term :=
   <{ kim_meas ->
      create_and_load_ak ->
@@ -55,13 +62,18 @@ Definition demo_phrase2 : Term :=
 
 Definition demo_phrase3 : Term :=
   <{ @ demo_plc_2 [kim_meas -> @ demo_plc_1 [kim_meas]] }>.
+*)
+
+Definition ssl_sig_parameterized (p:Plc) : Term :=
+  asp (
+      ASPC ALL EXTD (asp_paramsC ssl_sig_aspid ssl_sig_args p ssl_sig_targid)).
 
 
-
+(*
 Definition ssl_sig : Term :=
   asp (
       ASPC ALL EXTD (asp_paramsC ssl_sig_aspid ssl_sig_args dest_plc ssl_sig_targid)).
-
+*)
 
 Definition client_data_phrase : Term :=
   asp (

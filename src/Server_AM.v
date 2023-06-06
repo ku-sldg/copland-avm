@@ -20,6 +20,7 @@ Definition am_check_auth_tok (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) : AM App
   end.
 
 Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc) (authTok:ReqAuthTok) (init_ev:RawEv): AM RawEv :=
+  let asdf := print_auth_tok authTok in
   v <- am_check_auth_tok t fromPl authTok ;;
   match (andb (requester_bound t fromPl authTok) (appraise_auth_tok v)) with
   | true =>
@@ -31,7 +32,8 @@ Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc) (authTok:Req
   | false => failm
   end.
 
-Definition am_client_auth_tok_req (t:Term) (myPl:Plc) (init_ev:RawEv) (app_bool:bool): AM AM_Result :=
+Definition am_client_auth_tok_req (t:Term) (myPl:Plc) (init_ev:RawEv) 
+                                  (app_bool:bool): AM AM_Result :=
   let att_res := run_cvm_rawEv t myPl init_ev in
   match app_bool with
   | true => 
