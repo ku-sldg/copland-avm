@@ -79,6 +79,13 @@ Definition cert_cache_p0 : Term :=
                (asp CPY))
          (asp SIG)).
   
+Definition cert_cache_p0_trimmed : Term :=
+    (lseq
+        (bseq (NONE,ALL)
+              (retrieve P1 cache)
+              (asp CPY))
+        (asp SIG)).
+
 (* 
 pg. 29:17, Background Check section 
  *)

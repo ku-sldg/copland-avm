@@ -11,6 +11,9 @@ Admitted.
 Definition P4 : Plc.
 Admitted.
 
+Definition default_place : Plc.
+Admitted.
+
 Definition attest_id : ASP_ID.
 Admitted.
 

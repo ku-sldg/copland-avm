@@ -17,3 +17,4 @@ src/*.mli
 src/.vscode
 src/_CoqProject.local
 .vscode
+.DS_Store

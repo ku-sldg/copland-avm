@@ -1,7 +1,7 @@
 Require Import NegotiationDefs NegotiationDefs_Prop NegotiationDefs_Bool
                Manifest Eqb_Evidence Term_Defs_Core.
 
-Require Import Example_Phrases_Admits Example_Phrases.
+Require Import Example_Phrases_Admits Example_Phrases Params_Admits.
 
 Require Import Utilities EqClass Maps.
 
@@ -293,6 +293,7 @@ Definition asp_manifest_update (a:ASP) (m:Manifest) : Manifest :=
       | asp_paramsC i _ targp targid => 
           aspid_manifest_update i m
       end
+  | SIG => aspid_manifest_update (sig_aspid) m
   | _ => m 
   end.
         
@@ -434,6 +435,27 @@ Definition environment_to_manifest_list (e:Environment) : list Manifest :=
 
 Definition demo_man_gen_run (ts:list Term) (p:Plc) : list Manifest := 
   get_final_manifests_env ts p (man_gen_run ts p).
+
+
+
+Definition attify (t:Term) (p:Plc) : Term := 
+  att p t.
+
+Definition attify_terms' (pr:(Term * Plc)) : Term := 
+  match pr with 
+  | (t, p) => attify t p
+  end.
+
+Definition attify_terms (ls:list (Term * Plc)) : list Term :=
+  List.map attify_terms' ls.
+
+
+Definition man_gen_run_attify (ls:list (Term*Plc)) : list Manifest := 
+  let plc_default := default_place in 
+  let ts := attify_terms ls in 
+    demo_man_gen_run ts plc_default.
+
+
 
 
 
