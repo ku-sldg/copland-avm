@@ -5,9 +5,9 @@ Require Import CopParser.
 
 Require Import Example_Phrases Example_Phrases_Demo.
 
-Require Import privPolicy Manifest.
+Require Import privPolicy Manifest Manifest_Generator.
 
-Require Import Client_AM Server_AM Negotiation_Dec.
+Require Import Client_AM Server_AM.
 
 Extraction Language CakeML. (* OCaml. *) 
 

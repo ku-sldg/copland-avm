@@ -1,7 +1,11 @@
-Require Import Term_Defs_Core Manifest EqClass Eqb_Evidence NegotiationDefs.
+Require Import Term_Defs_Core Manifest_Admits Manifest EqClass Eqb_Evidence (*NegotiationDefs*).
 
 Require Import Lists.List.
 Import ListNotations.
+
+
+Definition can_measure_target (pol:PolicyT) (tplc:Plc) (targid:TARG_ID) : bool 
+  := true.
 
 Definition canRunAsp_ManifestB(* (k:Plc) *) (m:Manifest)(params:ASP_PARAMS):bool :=
   match params with
