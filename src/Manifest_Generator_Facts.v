@@ -25,12 +25,50 @@ Fixpoint place_terms (t:Term) (top_plc:Plc) (p:Plc) : list Term :=
   | bpar _ t1 t2 => (place_terms t1 top_plc p) ++ (place_terms t2 top_plc p)
   end.
 
+Definition Environment := Plc -> option Manifest.
+
+Definition executable_static (t:Term) (p:Plc) (e:Environment) : Prop.
+Admitted.
+
+Definition distributed_executability (t:Term) (tp:Plc) (env_map:EnvironmentM) : Prop := 
+    forall (t_places:list Plc) (p:Plc) (t':Term), 
+        t_places = (places tp t) ->
+        In p t_places -> 
+        In t' (place_terms t tp p) ->
+        (exists (m:Manifest),
+            Maps.map_get env_map p = Some m /\
+            executable t' m
+        ).
+
+Definition envs_eq_at (e:Environment) (em:EnvironmentM) (ps:list Plc) : Prop := 
+    forall p, 
+        In p ps ->
+        e p = Maps.map_get em p.
+
+Theorem static_executability_implies_distributed : 
+    forall t p e em,
+      envs_eq_at e em (places p t) ->
+      executable_static t p e -> 
+      distributed_executability t p em.
+Proof.
+Abort.
+
+Theorem manifest_generator_executability :
+    forall (t:Term) (p:Plc), 
+        distributed_executability t p (manifest_generator t p).
+Proof.
+Abort.
+
+
+
+(*
 Theorem manifest_generator_executability :
     forall (t t':Term) (top_plc p:Plc) (t_places : list Plc) 
-           (env_map : Environment) (m:Manifest), 
+           (env_map : EnvironmentM) (m:Manifest), 
     env_map = (manifest_generator t top_plc) ->
     t_places = (places top_plc t) ->
     In p t_places -> 
     In t' (place_terms t top_plc p) ->
     Maps.map_get env_map p = Some m ->
     executable t' m.
+*)

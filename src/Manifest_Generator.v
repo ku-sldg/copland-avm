@@ -6,9 +6,9 @@ Require Import EqClass Maps.
 Require Import List.
 Import ListNotations.
 
-Definition Environment : Type := MapC Plc Manifest.
+Definition EnvironmentM : Type := MapC Plc Manifest.
 
-Definition e_empty : Environment := [].
+Definition e_empty : EnvironmentM := [].
 
 Definition aspid_manifest_update (i:ASP_ID) (m:Manifest) : Manifest := 
   let '{| my_abstract_plc := oldPlc;
@@ -66,7 +66,7 @@ Definition asp_manifest_update (a:ASP) (m:Manifest) : Manifest :=
   | _ => m 
   end.
         
-Definition asp_manifest_generator (a:ASP) (p:Plc) (e:Environment) : Environment :=
+Definition asp_manifest_generator (a:ASP) (p:Plc) (e:EnvironmentM) : EnvironmentM :=
   match (map_get e p) with
   | Some m => 
     let m' := asp_manifest_update a m in 
@@ -76,7 +76,7 @@ Definition asp_manifest_generator (a:ASP) (p:Plc) (e:Environment) : Environment 
       map_set e p m'
   end.
 
-  Definition plc_manifest_generator (fromPlc:Plc) (toPlc:Plc) (e:Environment) : Environment :=
+  Definition plc_manifest_generator (fromPlc:Plc) (toPlc:Plc) (e:EnvironmentM) : EnvironmentM :=
     match (map_get e fromPlc) with
     | Some m => 
       let m' := knowsof_manifest_update toPlc m in 
@@ -87,7 +87,7 @@ Definition asp_manifest_generator (a:ASP) (p:Plc) (e:Environment) : Environment 
     end.
 
 
-Fixpoint manifest_generator' (p:Plc) (t:Term) (e:Environment) : Environment :=
+Fixpoint manifest_generator' (p:Plc) (t:Term) (e:EnvironmentM) : EnvironmentM :=
   match t with
   | asp a => asp_manifest_generator a p e
   | att q t' => 
@@ -137,11 +137,11 @@ Fixpoint dedup_list (ps:list Plc) : list Plc :=
   end.
 
 
-Definition manifest_generator_terms (p:Plc) (ts:list Term) : Environment :=
+Definition manifest_generator_terms (p:Plc) (ts:list Term) : EnvironmentM :=
   fold_right (manifest_generator' p) e_empty ts.
 
 
-Definition manifest_generator (t:Term) (p:Plc) : Environment :=
+Definition manifest_generator (t:Term) (p:Plc) : EnvironmentM :=
   manifest_generator' p t e_empty.
 
 
@@ -169,25 +169,25 @@ Definition fromSome{A:Type} (v:option A) (a:A) : A :=
   | _ => a 
   end.
 
-Definition get_manifest_env_default (e:Environment) (p:Plc) : Manifest :=
+Definition get_manifest_env_default (e:EnvironmentM) (p:Plc) : Manifest :=
   let m' := fromSome (map_get e p) empty_Manifest in
     myPlc_manifest_update p m'.
 
-Definition get_unique_manifests_env' (ps:list Plc) (e:Environment) : list Manifest :=
+Definition get_unique_manifests_env' (ps:list Plc) (e:EnvironmentM) : list Manifest :=
   List.map (get_manifest_env_default e) ps.
 
-Definition get_unique_manifests_env (ts: list Term) (p:Plc) (e:Environment) : list Manifest :=
+Definition get_unique_manifests_env (ts: list Term) (p:Plc) (e:EnvironmentM) : list Manifest :=
   let ps := places_terms ts p in
     get_unique_manifests_env' ps e.
 
-Definition get_final_manifests_env (ts:list Term) (p:Plc) (e:Environment) : list Manifest :=
+Definition get_final_manifests_env (ts:list Term) (p:Plc) (e:EnvironmentM) : list Manifest :=
   let ms := get_unique_manifests_env ts p e in 
   let ms' := List.map (knowsof_myPlc_manifest_update) ms in
   List.map (pubkeys_manifest_update (places_terms ts p)) ms'.
 
-Definition man_gen_run (ts:list Term) (p:Plc) : Environment := manifest_generator_terms p ts.
+Definition man_gen_run (ts:list Term) (p:Plc) : EnvironmentM := manifest_generator_terms p ts.
 
-Definition environment_to_manifest_list (e:Environment) : list Manifest :=
+Definition environment_to_manifest_list (e:EnvironmentM) : list Manifest :=
   map_vals e.
 
 Definition demo_man_gen_run (ts:list Term) (p:Plc) : list Manifest := 
