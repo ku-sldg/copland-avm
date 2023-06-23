@@ -45,7 +45,7 @@ Fixpoint executable_static (t:Term) (k:Plc) (em:EnvironmentM) : Prop :=
   match t with
     | asp (ASPC _ _ (asp_paramsC asp_id _ _ _))  => canRunAsp_Env k em asp_id
     | asp _ => True
-    | att p t => knowsOf_Env k em p -> executable_static t k em
+    | att p t1 => knowsOf_Env k em p /\ executable_static t1 k em
     | lseq t1 t2 => executable_static t1 k em /\ executable_static t2 k em
     | bseq _ t1 t2 => executable_static t1 k em /\ executable_static t2 k em
     | bpar _ t1 t2 => executable_static t1 k em /\ executable_static t2 k em
@@ -95,13 +95,10 @@ Theorem static_executability_implies_dynamic :
       executable_static t p em -> 
       executable_dynamic t p em.
 Proof.
-  intros t. induction t.
+  intros t. induction t; try ( intros; inversion H; specialize IHt1 with p em; specialize IHt2 with p em; simpl; split; auto).
   + intros. auto. 
-  + intros. specialize IHt with p0 em. simpl in *. 
-  (* Now I'm not convinced this is true. If we can prove something is statically executable, then it is not necessarily dynamically executable. *)  
-Abort.
-
-
+  + intros. specialize IHt with p0 em. simpl in *. inversion H. apply H0.
+Qed. 
 
 (* Proof that the distributed notion of executability respects the static notion of executability. *)
 Theorem static_executability_implies_distributed : 
