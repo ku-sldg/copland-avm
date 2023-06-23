@@ -59,47 +59,13 @@ Proof.
     +
     assert (executable_static t p (manifest_generator' p t e_empty)).
     { eauto. }
-
-
-
-    assert ()
-    -
-
-    unfold map_get in *.
-    ff. 
-
-    assert (executable_static t p0 (manifest_generator' p0 t e_empty)).
-    { eauto. }
-
-
-    split.
-    +
-
-
-
-
-
-
-
-    Focus 2. admit.
-    intros.
-    unfold manifest_generator in IHt.
-    unfold e_empty in *.
-    ff.
-    Check map_set.
-    Locate map_set.
-    unfold executable_static.
-    fold manifest_generator.
-
-
-    cbn.
-    ff.
-    cbv.
-    ff.
-
-      simpl in *.
-      trivial.
-
+    admit.
+    - (* lseq case *) 
+      admit.   
+    - (* bseq case *) 
+      admit.
+    - (* bpar case *) 
+    admit.    
 
 Abort.
 

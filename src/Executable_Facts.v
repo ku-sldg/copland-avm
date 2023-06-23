@@ -3,8 +3,9 @@ Require Import Term_Defs_Core Manifest Manifest_Generator Manifest_Generator_Fac
 Require Import List.
 Import ListNotations.
 
-
+(*
 Definition Environment := Plc -> option Manifest.
+*)
 
 
 (********************
@@ -19,8 +20,10 @@ Definition Environment := Plc -> option Manifest.
   * and are necessary communications allowed?
   *)
 
+(*
 Print Manifest. 
 Print Environment.
+*)
 
 Definition canRunAsp_Env (k:Plc) (em:EnvironmentM) (a: ASP_ID) : Prop := 
   match (Maps.map_get em k) with 
@@ -63,10 +66,12 @@ Fixpoint executable_dynamic (t:Term) (k:Plc) (em:EnvironmentM) : Prop :=
     | bpar _ t1 t2 => executable_dynamic t1 k em /\ executable_dynamic t2 k em
   end.
 
+(*
 Definition envs_eq_at (e:Environment) (em:EnvironmentM) (ps:list Plc) : Prop := 
     forall p, 
         In p ps ->
         e p = Maps.map_get em p.
+*)
 
 (* Record Manifest : Set := Build_Manifest
                             { my_abstract_plc : Plc;
@@ -106,6 +111,7 @@ Theorem static_executability_implies_distributed :
       executable_static t p em -> 
       distributed_executability t p em.
 Proof.
+  (*
   intros. unfold distributed_executability. intros; subst.
   induction t.  
   + simpl in *. destruct a.
@@ -140,4 +146,5 @@ Proof.
   
   destruct em eqn:H'.
   ++ split with (x := []).  split with (x := a).
+  *)
 Abort.
