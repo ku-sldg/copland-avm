@@ -29,6 +29,7 @@ Example_Phrases.v
 Executable_Dec.v
 Manifest_Generator.v
 Manifest_Generator_Facts.v
+Executable_Facts_Map.v
 ConcreteEvidence.v
 StMonad_Coq.v
 Cvm_St.v
