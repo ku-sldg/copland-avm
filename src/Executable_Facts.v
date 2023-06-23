@@ -1,4 +1,4 @@
-Require Import Term_Defs_Core Manifest Manifest_Generator Manifest_Generator_Facts Executable_Defs_Prop Manifest_Admits.
+Require Import Term_Defs_Core Manifest Manifest_Generator Manifest_Generator_Facts Executable_Defs_Prop Manifest_Admits Eqb_Evidence.
 
 Require Import List.
 Import ListNotations.
@@ -25,7 +25,7 @@ Print Environment.
 Definition canRunAsp_Env (k:Plc) (em:EnvironmentM) (a: ASP_ID) : Prop := 
   match (Maps.map_get em k) with 
   | None => False 
-  | Some m => In k m.(asps)
+  | Some m => In a m.(asps)
   end. 
   
   
@@ -84,7 +84,26 @@ Definition build_manifest_helper p a p1 p2 pol : Manifest :=
     pubKeyPlcs := p2 ; 
     policy := pol |}. 
 
+Lemma eqb_plc_refl : forall p0, Eqb_Evidence.eqb_plc p0 p0 = true.
+Proof.
+  intros. apply eqb_eq_plc. auto.
+Qed.  
+
 (* Proof that the dynamic notion of executability respects the static notion of executability. *)
+Theorem static_executability_implies_dynamic : 
+    forall t p em,
+      executable_static t p em -> 
+      executable_dynamic t p em.
+Proof.
+  intros t. induction t.
+  + intros. auto. 
+  + intros. specialize IHt with p0 em. simpl in *. 
+  (* Now I'm not convinced this is true. If we can prove something is statically executable, then it is not necessarily dynamically executable. *)  
+Abort.
+
+
+
+(* Proof that the distributed notion of executability respects the static notion of executability. *)
 Theorem static_executability_implies_distributed : 
     forall t p em,
       executable_static t p em -> 
@@ -92,9 +111,20 @@ Theorem static_executability_implies_distributed :
 Proof.
   intros. unfold distributed_executability. intros; subst.
   induction t.  
-  + destruct a eqn:H'.
+  + simpl in *. destruct a.
+  ++ simpl in *.   
+  
+  
+  
+  
+  
+  
+  auto. destruct a eqn:H'.
   ++ induction em.
-  +++ simpl in *; auto. split with (x := (build_manifest_helper p0 [] [] [] empty_PolicyT) ).
+  +++ simpl in *; auto. remember (build_manifest_helper p0 [] [] [] empty_PolicyT) as m.
+      exists m. split.
+  ++++ inversion H1.
+  +++++ rewrite H0 in H2. pose proof eqb_plc_refl p0. rewrite H3 in H2. inversion H2.    apply eqb_plc_refl in H2.  Search "eqb_plc".     auto.  
   +++ left.    
   remember (build_manifest_helper p0 [] [] [] empty_PolicyT) as m.
 
