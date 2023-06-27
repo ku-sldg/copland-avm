@@ -18,17 +18,17 @@ Import ListNotations.
 *)
 Fixpoint place_terms (t:Term) (top_plc:Plc) (p:Plc) : list Term := 
   match t with
-  | asp a  => if(eqb_plc top_plc p) then [asp a] else []
-  | att q t' => place_terms t' q p 
+  | asp a  => if (eqb_plc top_plc p) then [asp a] else []
+  | att q t' => if (eqb_plc p q) then [t'] ++ place_terms t' q p else place_terms t' q p  
   | lseq t1 t2 => (place_terms t1 top_plc p) ++ (place_terms t2 top_plc p)
   | bseq _ t1 t2 => (place_terms t1 top_plc p) ++ (place_terms t2 top_plc p)
   | bpar _ t1 t2 => (place_terms t1 top_plc p) ++ (place_terms t2 top_plc p)
   end.
 
 Definition distributed_executability (t:Term) (tp:Plc) (env_map:EnvironmentM) : Prop := 
-    forall (t_places:list Plc) (p:Plc) (t':Term), 
-        t_places = (places tp t) ->
-        In p t_places -> 
+    forall (* (t_places:list Plc) *) (p:Plc) (t':Term), 
+(*         t_places = (places tp t) ->*)
+        In p (places tp t) -> 
         In t' (place_terms t tp p) ->
         (exists (m:Manifest),
             Maps.map_get env_map p = Some m /\
