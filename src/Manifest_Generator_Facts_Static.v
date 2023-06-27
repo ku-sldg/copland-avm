@@ -10,6 +10,18 @@ Require Import List.
 Import ListNotations.
 
 
+Definition manifest_subset (m1:Manifest) (m2:Manifest) : Prop :=
+  (forall i, In i (asps m1) -> In i (asps m2)) /\
+  (forall p, In p (uuidPlcs m1) -> In p (uuidPlcs m2)) /\
+  (forall q, In q (pubKeyPlcs m1) -> In q (pubKeyPlcs m2)).
+
+Definition Environment_subset (e1:EnvironmentM) (e2:EnvironmentM) : Prop := 
+  
+
+Check manifest_generator'.
+
+
+
 Theorem manifest_generator_executability_static :
     forall (t:Term) (p:Plc), 
         executable_static t p (manifest_generator t p).
@@ -26,7 +38,8 @@ Proof.
       ff.
       assert (eqb p p = true).
       {
-        admit.
+        rewrite eqb_leibniz.
+        auto.
       }
       find_rewrite.
       solve_by_inversion.

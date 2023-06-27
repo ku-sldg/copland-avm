@@ -26,14 +26,15 @@ Fixpoint place_terms (t:Term) (top_plc:Plc) (p:Plc) : list Term :=
   end.
 
 Definition distributed_executability (t:Term) (tp:Plc) (env_map:EnvironmentM) : Prop := 
-    forall (* (t_places:list Plc) *) (p:Plc) (t':Term), 
+    forall (* (t_places:list Plc) *) (p:Plc) (* (t':Term) *), 
 (*         t_places = (places tp t) ->*)
         In p (places tp t) -> 
+        (forall (t':Term),
         In t' (place_terms t tp p) ->
         (exists (m:Manifest),
             Maps.map_get env_map p = Some m /\
             executable t' m
-        ).
+        )).
 
 Theorem manifest_generator_executability :
     forall (t:Term) (p:Plc), 
