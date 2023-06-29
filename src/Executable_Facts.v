@@ -48,7 +48,7 @@ Fixpoint executable_static (t:Term) (k:Plc) (em:EnvironmentM) : Prop :=
   match t with
     | asp (ASPC _ _ (asp_paramsC asp_id _ _ _))  => canRunAsp_Env k em asp_id
     | asp _ => True
-    | att p t1 => knowsOf_Env k em p /\ executable_static t1 k em
+    | att p t1 => knowsOf_Env k em p /\ executable_static t1 p em
     | lseq t1 t2 => executable_static t1 k em /\ executable_static t2 k em
     | bseq _ t1 t2 => executable_static t1 k em /\ executable_static t2 k em
     | bpar _ t1 t2 => executable_static t1 k em /\ executable_static t2 k em
