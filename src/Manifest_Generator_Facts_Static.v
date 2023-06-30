@@ -6,6 +6,8 @@ Require Import Auto.
 
 Require Import StructTactics.
 
+Require Import Coq.Program.Tactics.
+
 Require Import List.
 Import ListNotations.
 
@@ -47,20 +49,618 @@ Proof.
   apply manifest_subset_refl.
 Qed.
 
-  (*
-  Lemma env_subset_trans : forall e1 e2 e3,
+
+Lemma env_subset_trans : forall e1 e2 e3,
   Environment_subset e1 e2 ->
   Environment_subset e2 e3 -> 
   Environment_subset e1 e3.
-  Proof.
-  Admitted.
-  *)
+Proof.
+Admitted.
+
+Lemma env_subset_set_man : forall e p m1 m2,
+map_get e p = Some m1 ->
+manifest_subset m1 m2 ->
+Environment_subset e (map_set e p m2).
+Proof.
+  intros.
+  unfold Environment_subset; intros.
+  destruct (eq_plc_dec p p0).
+  +
+    ff.
+    subst.
+    repeat find_rewrite.
+    invc H1.
+    assert (EqClass.eqb p0 p0 = true).
+    {
+      admit. 
+    }
+    find_rewrite.
+    exists m2.
+    split; eauto.
+  +
+    ff.
+    assert (EqClass.eqb p0 p = false).
+    {
+      admit. 
+    }
+    find_rewrite.
+    exists m0.
+    split.
+    ++
+      eauto.
+    ++
+      apply manifest_subset_refl.
+Admitted.
+
+Lemma env_subset_set : forall e p m,
+map_get e p = Some m ->
+Environment_subset e (map_set e p m).
+Proof.
+  intros.
+  apply env_subset_set_man with (m1:=m).
+  -
+    eassumption.
+  -
+    apply manifest_subset_refl.
+Qed. 
+
+Lemma env_subset_set_none : forall e p m,
+map_get e p = None ->
+Environment_subset e (map_set e p m).
+Proof.
+  intros.
+  unfold Environment_subset; intros.
+  assert (p <> p0).
+  {
+    unfold not; intros.
+    subst.
+    find_rewrite.
+    solve_by_inversion.
+  }
+
+  exists m1.
+  split.
+  +
+    apply mapC_get_distinct_keys; eauto.
+  +
+    apply manifest_subset_refl.
+Qed.
 
 Lemma manifest_generator_cumul : forall t p e1 e2,
     Environment_subset e1 e2 ->
     Environment_subset e1 (manifest_generator' p t e2).
-  Proof.
-  Admitted.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros; ff.
+  - (* asp case *)
+    destruct a; unfold asp_manifest_generator; ff;
+      try (apply env_subset_set; auto; tauto);
+      try (apply env_subset_set_none; auto; tauto).
+      +
+        unfold Environment_subset; intros.
+        destruct (eq_plc_dec p p0).
+        ++
+        subst.
+        exists m.
+        split.
+        apply mapC_get_works.
+        unfold Environment_subset in H.
+        specialize H with (m1:= m1) (p:= p0).
+        apply H in H0.
+        destruct_conjs.
+        repeat find_rewrite.
+        ff.
+        ++
+        
+        unfold Environment_subset in H.
+        specialize H with (m1:= m1) (p:=p0).
+        apply H in H0.
+        destruct_conjs.
+        exists H0.
+        split.
+        +++
+        apply mapC_get_distinct_keys; eauto.
+        +++
+        eassumption.
+
+      +
+        unfold Environment_subset; intros.
+        unfold Environment_subset in H.
+        specialize H with (m1:=m1) (p:=p0).
+        apply H in H0.
+        destruct_conjs.
+        exists H0.
+        split.
+        ++
+          assert (p <> p0).
+          {
+            admit. 
+          }
+
+          apply mapC_get_distinct_keys.
+          eassumption.
+          eassumption.
+        ++
+        eassumption.
+      +
+      unfold Environment_subset; intros.
+      unfold Environment_subset in H.
+      specialize H with (m1:=m1) (p:=p0).
+      apply H in H0.
+      destruct_conjs.
+      exists H0.
+      split.
+      ++
+        assert (p <> p0).
+        {
+          admit. 
+        }
+
+        apply mapC_get_distinct_keys.
+        eassumption.
+        eassumption.
+      ++
+      eassumption.
+
+
+
+    +
+    unfold Environment_subset; intros.
+    unfold Environment_subset in H.
+    specialize H with (m1:=m1) (p:=p0).
+    apply H in H0.
+    destruct_conjs.
+    exists H0.
+    split.
+    ++
+      assert (p <> p0).
+      {
+        admit. 
+      }
+
+      apply mapC_get_distinct_keys.
+      eassumption.
+      eassumption.
+    ++
+    eassumption.
+
+
+
+    + 
+      admit. 
+    +
+      admit. 
+    +
+
+    unfold Environment_subset; intros.
+    unfold Environment_subset in H.
+    specialize H with (m1:=m1) (p:=p0).
+    apply H in H0.
+    destruct_conjs.
+    exists H0.
+    split.
+    ++
+      assert (p <> p0).
+      {
+        admit. 
+      }
+
+      apply mapC_get_distinct_keys.
+      eassumption.
+      eassumption.
+    ++
+    eassumption.
+    +
+    
+    unfold Environment_subset; intros.
+    unfold Environment_subset in H.
+    specialize H with (m1:=m1) (p:=p0).
+    apply H in H0.
+    destruct_conjs.
+    exists H0.
+    split.
+    ++
+      assert (p <> p0).
+      {
+        admit. 
+      }
+
+      apply mapC_get_distinct_keys.
+      eassumption.
+      eassumption.
+    ++
+    eassumption.
+
+  +
+  unfold Environment_subset; intros.
+  unfold Environment_subset in H.
+  specialize H with (m1:=m1) (p:=p0).
+  apply H in H0.
+  destruct_conjs.
+  exists H0.
+  split.
+  ++
+    assert (p <> p0).
+    {
+      admit. 
+    }
+
+    apply mapC_get_distinct_keys.
+    eassumption.
+    eassumption.
+  ++
+  eassumption.
+
+  +
+  unfold Environment_subset; intros.
+  unfold Environment_subset in H.
+  specialize H with (m1:=m1) (p:=p0).
+  apply H in H0.
+  destruct_conjs.
+  exists H0.
+  split.
+  ++
+    assert (p <> p0).
+    {
+      admit. 
+    }
+
+    apply mapC_get_distinct_keys.
+    eassumption.
+    eassumption.
+  ++
+  eassumption.
+
+  +
+  unfold Environment_subset; intros.
+  unfold Environment_subset in H.
+  specialize H with (m1:=m1) (p:=p1).
+  apply H in H0.
+  destruct_conjs.
+  exists H0.
+  split.
+  ++
+    assert (p <> p1).
+    {
+      admit. 
+    }
+
+    apply mapC_get_distinct_keys.
+    eassumption.
+    eassumption.
+  ++
+  eassumption.
+
+  +
+
+  unfold Environment_subset; intros.
+  unfold Environment_subset in H.
+  specialize H with (m1:=m1) (p:=p1).
+  apply H in H0.
+  destruct_conjs.
+  exists H0.
+  split.
+  ++
+    assert (p <> p1).
+    {
+      admit. 
+    }
+
+    apply mapC_get_distinct_keys.
+    eassumption.
+    eassumption.
+  ++
+  eassumption.
+
+
+  - (* at case *)
+
+  (*
+  assert (Environment_subset e 
+  (manifest_generator' p t e)) by eauto.
+  clear IHt.
+  *)
+
+  unfold plc_manifest_generator.
+  ff.
+    +
+      unfold knowsof_manifest_update; 
+        ff; subst.
+
+      apply IHt.
+      eapply env_subset_trans.
+      eassumption.
+      unfold Environment_subset; intros.
+
+      destruct (eq_plc_dec p0 p1).
+      ++
+        subst.
+        find_rewrite.
+        ff.
+        assert (EqClass.eqb p1 p1 = true).
+        {
+          admit. 
+        }
+        find_rewrite.
+        eexists.
+        split.
+        reflexivity.
+        unfold manifest_subset; intros; ff.
+        split; eauto.
+      ++
+        exists m1.
+        split.
+        apply mapC_get_distinct_keys; eauto.
+        apply manifest_subset_refl.
+    +
+    unfold knowsof_manifest_update; 
+    ff; subst.
+
+  apply IHt.
+  eapply env_subset_trans.
+  eassumption.
+  unfold Environment_subset; intros.
+
+  destruct (eq_plc_dec p0 p1).
+  ++
+    subst.
+    find_rewrite.
+    ff.
+
+    (*
+    assert (EqClass.eqb p1 p1 = true).
+    {
+      admit. 
+    }
+    find_rewrite.
+    eexists.
+    split.
+    reflexivity.
+    unfold manifest_subset; intros; ff.
+    split; eauto. *)
+  ++
+    exists m1.
+    split.
+    apply mapC_get_distinct_keys; eauto.
+    apply manifest_subset_refl.
+  - (* lseq case *)
+
+    eauto.
+  -
+    eauto.
+  -
+    eauto.
+Admitted.
+
+Lemma manifest_generator_cumul' : forall t p e,
+  Environment_subset e (manifest_generator' p t e).
+Proof.
+  intros.
+  apply manifest_generator_cumul.
+  apply env_subset_refl.
+Qed.
+
+
+
+
+(*
+
+
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros; ff.
+  - (* asp case *)
+    destruct a; unfold asp_manifest_generator; ff;
+      try (apply env_subset_set; auto; tauto);
+      try (apply env_subset_set_none; auto; tauto).
+      +
+        subst.
+        unfold aspid_manifest_update.
+        ff.
+        unfold Environment_subset; intros.
+        ff.
+        subst.
+        destruct (eq_plc_dec p1 p).
+        ++
+          subst.
+          rewrite H in *.
+          inversion Heqo; clear Heqo.
+          subst.
+          assert (EqClass.eqb p p = true).
+          {
+            admit. 
+          }
+          find_rewrite.
+          eexists.
+          split.
+          reflexivity.
+
+          unfold manifest_subset; intros.
+          ff.
+          split.
+          +++
+            intros.
+            right; eauto.
+          +++
+            split.
+            ++++
+              intros.
+              eassumption.
+            ++++
+              intros.
+              eassumption.
+        ++
+          assert (EqClass.eqb p1 p = false).
+          {
+            admit. 
+          }
+          find_rewrite.
+          exists m1.
+          split.
+          eassumption.
+          apply manifest_subset_refl.
+      +
+      subst.
+      unfold aspid_manifest_update.
+      ff.
+      unfold Environment_subset; intros.
+      ff.
+      subst.
+      destruct (eq_plc_dec p0 p).
+      ++
+        subst.
+        rewrite H in *.
+        inversion Heqo; clear Heqo.
+        subst.
+        assert (EqClass.eqb p p = true).
+        {
+          admit. 
+        }
+        find_rewrite.
+        eexists.
+        split.
+        reflexivity.
+
+        unfold manifest_subset; intros.
+        ff.
+        split.
+        +++
+          intros.
+          right; eauto.
+        +++
+          split.
+          ++++
+            intros.
+            eassumption.
+          ++++
+            intros.
+            eassumption.
+      ++
+        assert (EqClass.eqb p0 p = false).
+        {
+          admit. 
+        }
+        find_rewrite.
+        exists m1.
+        split.
+        eassumption.
+        apply manifest_subset_refl.
+  - (* at case *)
+        assert (Environment_subset e 
+                  (manifest_generator' p t e)) by eauto.
+        clear IHt.
+
+        unfold plc_manifest_generator.
+        ff.
+        +
+          unfold knowsof_manifest_update; 
+            ff; subst.
+
+          
+
+
+          assert (
+          Environment_subset e 
+          
+
+          (map_set e p0
+          (
+        {|
+          my_abstract_plc := my_abstract_plc;
+          asps := asps;
+          uuidPlcs := p :: uuidPlcs;
+          pubKeyPlcs := pubKeyPlcs;
+          policy := policy
+        |}))
+
+          
+          ).
+
+          {
+
+          eapply env_subset_set_man.
+          ++
+          eassumption.
+          ++
+          unfold manifest_subset; intros; ff.
+          split; try auto.
+
+          }
+          
+
+          
+          
+          eapply env_subset_trans with (e2:= e).
+          eassumption.
+
+
+
+
+
+
+
+        unfold Environment_subset in *; intros.
+        unfold plc_manifest_generator; ff.
+        +
+          destruct (eq_plc_dec p0 p).
+            ++
+              subst.
+              exists m1.
+              split.
+              +++
+                unfold knowsof_manifest_update; ff.
+                subst.
+
+
+
+              destruct (eq_plc_dec p p1).
+                +++
+                  subst.
+                  find_rewrite.
+                  ff.
+              subst.
+
+        apply H.
+
+
+          unfold knowsof_manifest_update; ff.
+          subst.
+          destruct (eq_plc_dec p0 p).
+          ++
+            subst.
+            rewrite H0 in *.
+            ff.
+            apply H.
+            specialize H with (m1:= )
+            exists 
+            
+            split.
+
+
+
+
+
+
+
+              
+
+
+
+Admitted.
+
+Lemma manifest_generator_cumul : forall t p e1 e2,
+    Environment_subset e1 e2 ->
+    Environment_subset e1 (manifest_generator' p t e2).
+Proof.
+    intros.
+    assert (Environment_subset e2 (manifest_generator' p t e2)).
+    {
+      apply manifest_generator_cumul'.
+    }
+    eapply env_subset_trans; eassumption.
+Qed.
+*)
 
   Lemma exec_static_cumul : forall t p e1 e2,
     executable_static t p e1 -> 
@@ -75,7 +675,24 @@ Lemma manifest_generator_cumul : forall t p e1 e2,
                        (manifest_generator' p t e2).
   Proof.
     intros.
+    
+
+
+
+
+
+
+
+
+
+
+
+
+    (*
     apply manifest_generator_cumul.
+    *)
+
+    (*
 
     generalizeEverythingElse t.
     induction t; intros; ff.
@@ -104,8 +721,8 @@ Lemma manifest_generator_cumul : forall t p e1 e2,
       rewrite eqb_eq_plc in *.
       subst.
       asdf.
-
-  Admitted.
+*)
+Admitted.
 
 
 Theorem manifest_generator_executability_static :

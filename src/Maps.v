@@ -72,6 +72,48 @@ Fixpoint invert_map {A B : Type} `{HA : EqClass A, HB : EqClass B} (m : MapC A B
   | (k', v') :: m' => (v', k') :: (invert_map m')
   end.
 
+Theorem mapC_get_works{A B:Type} `{H : EqClass A} : forall m (x:A) (v:B),
+  map_get (map_set m x v) x = Some v.
+Proof.
+  intros.
+  induction m; simpl.
+  -
+    specialize eqb_leibniz with (x:=x) (y:=x).
+    assert (eqb x x = true).
+    {
+      rewrite eqb_leibniz.
+      eauto.
+    }
+    rewrite H0.
+    eauto.
+  -
+  specialize eqb_leibniz with (x:=x) (y:=x).
+  assert (eqb x x = true).
+  {
+    rewrite eqb_leibniz.
+    eauto.
+  }
+
+    find_rewrite.
+    eauto.
+Qed.
+
+Lemma mapC_get_distinct_keys{A B:Type} `{H : EqClass A} : 
+  forall m (k1 k2:A) (v1 v2:B),
+  k1 <> k2 ->
+  map_get m k2 = Some v2 ->
+  map_get (map_set m k1 v1) k2 = Some v2.
+Proof.
+Admitted.
+
+Lemma map_set_id{A B:Type} `{H : EqClass A} : 
+  forall e (p:A) (m:B),
+map_get e p = Some m ->
+e = map_set e p m.
+Admitted.
+
+
+
 (* A two-way implementation of list maps, where you can lookup from a key, or value *)
 Definition MapD (A:Type) (B:Type) `{H : EqClass A} `{H1 : EqClass B} := list (A * B).
 
