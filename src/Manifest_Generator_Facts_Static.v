@@ -38,6 +38,13 @@ Proof.
   split; intros; ff.
 Qed.
 
+Lemma manifest_subset_trans : forall m1 m2 m3,
+  manifest_subset m1 m2 ->
+  manifest_subset m2 m3 ->
+  manifest_subset m1 m3.
+Proof.
+Admitted.
+
 Lemma env_subset_refl : forall e, 
   Environment_subset e e.
 Proof.
@@ -64,15 +71,16 @@ Environment_subset e (map_set e p m2).
 Proof.
   intros.
   unfold Environment_subset; intros.
-  destruct (eq_plc_dec p p0).
+  destruct (eq_plc_dec p0 p).
   +
     ff.
     subst.
     repeat find_rewrite.
     invc H1.
-    assert (EqClass.eqb p0 p0 = true).
+    assert (EqClass.eqb p p = true).
     {
-      admit. 
+      rewrite EqClass.eqb_leibniz.
+      tauto.
     }
     find_rewrite.
     exists m2.
@@ -81,7 +89,18 @@ Proof.
     ff.
     assert (EqClass.eqb p0 p = false).
     {
-      admit. 
+      unfold not in *.
+      destruct (EqClass.eqb p0 p) eqn:hi.
+      ++
+      assert False.
+      {
+        apply n.
+        apply EqClass.eqb_leibniz.
+        eauto.
+      }
+      solve_by_inversion.
+      ++
+      eauto.
     }
     find_rewrite.
     exists m0.
@@ -90,7 +109,7 @@ Proof.
       eauto.
     ++
       apply manifest_subset_refl.
-Admitted.
+Qed.
 
 Lemma env_subset_set : forall e p m,
 map_get e p = Some m ->
@@ -117,7 +136,6 @@ Proof.
     find_rewrite.
     solve_by_inversion.
   }
-
   exists m1.
   split.
   +
@@ -175,7 +193,9 @@ Proof.
         ++
           assert (p <> p0).
           {
-            admit. 
+            unfold not; intros; subst.
+            find_rewrite.
+            ff.
           }
 
           apply mapC_get_distinct_keys.
@@ -192,14 +212,35 @@ Proof.
       exists H0.
       split.
       ++
+
+        destruct (eq_plc_dec p p0).
+        +++
+        subst.
+        find_rewrite.
+        ff.
+        assert (EqClass.eqb p0 p0 = true).
+        {
+          rewrite EqClass.eqb_leibniz.
+          tauto.
+        }
+        rewrite H1.
+        tauto.
+        +++
+          apply mapC_get_distinct_keys;
+            eassumption.
+
+      (*
         assert (p <> p0).
         {
-          admit. 
+          unfold not; intros; subst.
+          find_rewrite.
+          ff.
         }
 
         apply mapC_get_distinct_keys.
         eassumption.
         eassumption.
+        *)
       ++
       eassumption.
 
@@ -216,7 +257,9 @@ Proof.
     ++
       assert (p <> p0).
       {
-        admit. 
+        unfold not; intros; subst.
+        find_rewrite.
+        ff. 
       }
 
       apply mapC_get_distinct_keys.
@@ -228,11 +271,63 @@ Proof.
 
 
     + 
-      admit. 
+      unfold aspid_manifest_update; ff.
+      subst.
+      eapply env_subset_trans.
+      eassumption.
+      eapply env_subset_set_man.
+      eassumption.
+      unfold manifest_subset; intros; ff.
+      split; eauto.
     +
-      admit. 
+      subst.
+      
+      eapply env_subset_trans.
+      eassumption.
+      eapply env_subset_set_none.
+      eassumption. 
     +
 
+    unfold Environment_subset; intros.
+    unfold Environment_subset in H.
+    specialize H with (m1:=m1) (p:=p0).
+    apply H in H0.
+    destruct_conjs.
+
+    destruct (eq_plc_dec p p0).
+    +++
+      subst.
+      find_rewrite.
+      ff.
+      assert (EqClass.eqb p0 p0 = true).
+      {
+        rewrite EqClass.eqb_leibniz.
+        tauto.
+      }
+      rewrite H1; clear H1.
+      unfold aspid_manifest_update; ff.
+
+      eexists.
+      split.
+      reflexivity.
+
+      eapply manifest_subset_trans.
+      eassumption.
+      
+      unfold manifest_subset; intros; ff.
+      split; eauto.
+
+      +++
+      
+    exists H0.
+    split.
+    ++++
+    apply mapC_get_distinct_keys; eauto.
+    ++++
+    eassumption.
+
+  +
+    
     unfold Environment_subset; intros.
     unfold Environment_subset in H.
     specialize H with (m1:=m1) (p:=p0).
@@ -243,7 +338,9 @@ Proof.
     ++
       assert (p <> p0).
       {
-        admit. 
+        unfold not; intros; subst.
+        find_rewrite.
+        ff. 
       }
 
       apply mapC_get_distinct_keys.
@@ -251,6 +348,51 @@ Proof.
       eassumption.
     ++
     eassumption.
+
+
+    +
+
+    unfold Environment_subset; intros.
+    unfold Environment_subset in H.
+    specialize H with (m1:=m1) (p:=p0).
+    apply H in H0.
+    destruct_conjs.
+
+    destruct (eq_plc_dec p p0).
+    +++
+      subst.
+      find_rewrite.
+      ff.
+      assert (EqClass.eqb p0 p0 = true).
+      {
+        rewrite EqClass.eqb_leibniz.
+        tauto.
+      }
+      rewrite H1; clear H1.
+      unfold aspid_manifest_update; ff.
+
+      eexists.
+      split.
+      reflexivity.
+      eassumption.
+(*
+      eapply manifest_subset_trans.
+      eassumption.
+      
+      unfold manifest_subset; intros; ff.
+      split; eauto.
+      *)
+
+      +++
+      
+    exists H0.
+    split.
+    ++++
+    apply mapC_get_distinct_keys; eauto.
+    ++++
+    eassumption.
+
+(*
     +
     
     unfold Environment_subset; intros.
@@ -263,7 +405,9 @@ Proof.
     ++
       assert (p <> p0).
       {
-        admit. 
+        unfold not; intros; subst.
+        find_rewrite.
+        ff. 
       }
 
       apply mapC_get_distinct_keys.
@@ -272,6 +416,8 @@ Proof.
     ++
     eassumption.
 
+    *)
+
   +
   unfold Environment_subset; intros.
   unfold Environment_subset in H.
@@ -283,7 +429,9 @@ Proof.
   ++
     assert (p <> p0).
     {
-      admit. 
+      unfold not; intros; subst.
+        find_rewrite.
+        ff. 
     }
 
     apply mapC_get_distinct_keys.
@@ -292,24 +440,43 @@ Proof.
   ++
   eassumption.
 
+
   +
+
   unfold Environment_subset; intros.
   unfold Environment_subset in H.
-  specialize H with (m1:=m1) (p:=p0).
+  specialize H with (m1:=m1) (p:=p1).
   apply H in H0.
   destruct_conjs.
+
+  destruct (eq_plc_dec p p1).
+  +++
+    subst.
+    find_rewrite.
+    ff.
+    assert (EqClass.eqb p1 p1 = true).
+    {
+      rewrite EqClass.eqb_leibniz.
+      tauto.
+    }
+    rewrite H1; clear H1.
+    unfold aspid_manifest_update; ff.
+
+    eexists.
+    split.
+    reflexivity.
+
+    eapply manifest_subset_trans.
+    eassumption.
+    apply manifest_subset_refl.
+
+    +++
+
   exists H0.
   split.
-  ++
-    assert (p <> p0).
-    {
-      admit. 
-    }
-
-    apply mapC_get_distinct_keys.
-    eassumption.
-    eassumption.
-  ++
+  ++++
+  apply mapC_get_distinct_keys; eauto.
+  ++++
   eassumption.
 
   +
@@ -323,7 +490,9 @@ Proof.
   ++
     assert (p <> p1).
     {
-      admit. 
+      unfold not; intros; subst.
+        find_rewrite.
+        ff. 
     }
 
     apply mapC_get_distinct_keys.
@@ -331,28 +500,6 @@ Proof.
     eassumption.
   ++
   eassumption.
-
-  +
-
-  unfold Environment_subset; intros.
-  unfold Environment_subset in H.
-  specialize H with (m1:=m1) (p:=p1).
-  apply H in H0.
-  destruct_conjs.
-  exists H0.
-  split.
-  ++
-    assert (p <> p1).
-    {
-      admit. 
-    }
-
-    apply mapC_get_distinct_keys.
-    eassumption.
-    eassumption.
-  ++
-  eassumption.
-
 
   - (* at case *)
 
@@ -380,7 +527,8 @@ Proof.
         ff.
         assert (EqClass.eqb p1 p1 = true).
         {
-          admit. 
+          rewrite EqClass.eqb_leibniz.
+          tauto.
         }
         find_rewrite.
         eexists.
@@ -431,7 +579,7 @@ Proof.
     eauto.
   -
     eauto.
-Admitted.
+Qed.
 
 Lemma manifest_generator_cumul' : forall t p e,
   Environment_subset e (manifest_generator' p t e).
