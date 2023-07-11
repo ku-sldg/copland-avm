@@ -20,10 +20,13 @@ Definition canRunAsp_ManifestB(* (k:Plc) *) (m:Manifest)(params:ASP_PARAMS):bool
 Definition knowsOf_ManifestB(*(k:Plc)*)(e:Manifest)(p:Plc):bool :=
   existsb (eqb_plc p) e.(uuidPlcs).
 
+Definition knowsPub_ManifestB(*(k:Plc)*)(e:Manifest)(p:Plc):bool :=
+    existsb (eqb_plc p) e.(pubKeyPlcs).
 
 Fixpoint executableB(t:Term)(*(k:Plc)*)(e:Manifest):bool :=
   match t with
   | asp (ASPC _ _ params)  => canRunAsp_ManifestB e params
+  | asp (ENC p) => knowsPub_ManifestB e p
   | asp _ => true
   | att p t => knowsOf_ManifestB e p (* -> executableB t k e *)
   | lseq t1 t2 => executableB t1 e && executableB t2 e

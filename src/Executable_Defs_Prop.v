@@ -18,9 +18,13 @@ Definition canRunAsp_Manifest(* (k:Plc) *) (m:Manifest)(params:ASP_PARAMS):Prop 
 Definition knowsOf_Manifest(*(k:Plc)*)(e:Manifest)(p:Plc):Prop :=
   In p e.(uuidPlcs).
 
+Definition knowsPub_Manifest (e:Manifest)(p:Plc): Prop :=
+  In p e.(pubKeyPlcs).
+
 Fixpoint executable(t:Term)(*(k:Plc)*)(e:Manifest):Prop :=
   match t with
   | asp (ASPC _ _ params)  => canRunAsp_Manifest e params
+  | asp (ENC p) => knowsPub_Manifest e p
   | asp _ => True
   | att p t => knowsOf_Manifest e p (* -> executable t k e *)
   | lseq t1 t2 => executable t1 e /\ executable t2 e

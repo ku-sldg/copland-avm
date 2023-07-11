@@ -54,6 +54,7 @@ Definition knowsOf_Env (k:Plc)(em:EnvironmentM)(p:Plc):Prop :=
 Fixpoint executable_static (t:Term) (k:Plc) (em:EnvironmentM) : Prop := 
   match t with
     | asp (ASPC _ _ (asp_paramsC asp_id _ _ _))  => canRunAsp_Env k em asp_id
+    | asp (ENC p) => exists m, Maps.map_get em k = Some m /\ (knowsPub_Manifest m p)
     | asp _ => exists m, Maps.map_get em k = Some m
     | att p t1 => knowsOf_Env k em p /\ executable_static t1 p em
     | lseq t1 t2 => executable_static t1 k em /\ executable_static t2 k em
@@ -143,22 +144,22 @@ Proof.
     ff.
     left.
     congruence.
-    Qed.
+Qed.
 
-    Lemma places'_cumul : forall t p ls,
+Lemma places'_cumul : forall t p ls,
     In p ls ->
     In p (places' t ls).
-    Proof.
+Proof.
       intros.
       generalizeEverythingElse t.
       induction t; intros; 
       try (destruct a);
         ff; eauto.
-    Qed.
+Qed.
 
-    Lemma In_dec_tplc : forall (p:Plc) ls,
+Lemma In_dec_tplc : forall (p:Plc) ls,
     In p ls \/ ~ In p ls.
-    Proof.
+Proof.
       intros.
       assert ({In p ls} + {~ In p ls}).
       { 
@@ -167,13 +168,13 @@ Proof.
         destruct (eq_plc_dec x y); eauto.
       }
       destruct H; eauto.
-    Qed. 
+Qed. 
 
-    Lemma places_app_cumul : forall p t ls ls',
+Lemma places_app_cumul : forall p t ls ls',
       In p (places' t ls) -> 
       ~ In p ls ->
       In p (places' t ls').
-    Proof.
+Proof.
       intros.
       generalizeEverythingElse t.
       induction t; intros; ff.
@@ -229,10 +230,10 @@ Proof.
     eassumption.
 Qed.
 
-  Lemma places'_cumul' : forall t p ls,
+Lemma places'_cumul' : forall t p ls,
     In p (places' t []) ->
     In p (places' t ls).
-    Proof.
+Proof.
       intros.
       generalizeEverythingElse t.
       induction t; intros; 
@@ -955,8 +956,6 @@ Proof.
       exists x.
       split; try eauto.
       door; ff; subst.
-      unfold executable.
-      trivial.
   - (* at case *)
     simpl in *.
     invc H.

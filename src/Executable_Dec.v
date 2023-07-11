@@ -115,6 +115,16 @@ Proof.
     apply existsb_eq_iff_In; auto.
 Qed.
 
+Lemma knowsPub_Manifest_prop_iff_bool: forall e a,
+    knowsPub_ManifestB e a = true <-> knowsPub_Manifest e a.
+Proof.
+  intros.
+  split;
+    unfold knowsOf_Manifest in * ;
+    unfold knowsOf_ManifestB in * ;
+    apply existsb_eq_iff_In; auto.
+Qed.
+
 Lemma executable_prop_iff_bool : forall t e,
     executableB t e = true <-> executable t e.
 Proof.
@@ -141,6 +151,9 @@ Proof.
     ++
       rewrite <- canRunAsp_Manifest_prop_iff_bool.
       eauto.
+    ++
+      rewrite <- knowsPub_Manifest_prop_iff_bool.
+      eauto.
   + (* at case *)
     simpl in *.
     rewrite <- knowsOf_Manifest_prop_iff_bool.
@@ -164,6 +177,9 @@ Proof.
       destruct a; simpl in *; try tauto.
       ++
         rewrite canRunAsp_Manifest_prop_iff_bool.
+        eauto.
+      ++
+        rewrite knowsPub_Manifest_prop_iff_bool.
         eauto.
     + (* at case *)
       simpl in *.
