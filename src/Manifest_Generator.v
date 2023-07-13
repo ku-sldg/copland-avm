@@ -15,76 +15,102 @@ Definition aspid_manifest_update (i:ASP_ID) (m:Manifest) : Manifest :=
           asps := oldasps; 
           uuidPlcs := oldKnowsOf; 
           pubKeyPlcs := oldContext; 
-          policy := oldPolicy (*; 
-          ac_policy := oldAcPol*) |} := m in
-  (Build_Manifest oldPlc (i::oldasps) oldKnowsOf oldContext oldPolicy (*oldAcPol*)).
+          policy := oldPolicy |} := m in
+  (Build_Manifest oldPlc (i::oldasps) oldKnowsOf oldContext oldPolicy).
 
 Definition knowsof_manifest_update (toPlc:Plc) (m:Manifest) : Manifest := 
     let '{| my_abstract_plc := oldPlc;
             asps := oldasps; 
             uuidPlcs := oldKnowsOf; 
             pubKeyPlcs := oldContext; 
-            policy := oldPolicy (*; 
-            ac_policy := oldAcPol*) |} := m in
-    (Build_Manifest oldPlc oldasps (toPlc::oldKnowsOf) oldContext oldPolicy (*oldAcPol*)).
+            policy := oldPolicy |} := m in
+    (Build_Manifest oldPlc oldasps (toPlc::oldKnowsOf) oldContext oldPolicy).
 
 Definition knowsof_myPlc_manifest_update (m:Manifest) : Manifest :=
-  let '{| my_abstract_plc := oldPlc;
-          asps := oldasps; 
-          uuidPlcs := oldKnowsOf; 
-          pubKeyPlcs := oldContext; 
-          policy := oldPolicy (*; 
-          ac_policy := oldAcPol*) |} := m in
-    (Build_Manifest oldPlc oldasps (oldPlc::oldKnowsOf) oldContext oldPolicy (*oldAcPol*)).
+  knowsof_manifest_update (my_abstract_plc m) m.
 
 Definition myPlc_manifest_update (p:Plc) (m:Manifest) : Manifest := 
       let '{| my_abstract_plc := _;
               asps := oldasps; 
               uuidPlcs := oldKnowsOf; 
               pubKeyPlcs := oldContext; 
-              policy := oldPolicy (*; 
-              ac_policy := oldAcPol*) |} := m in
-      (Build_Manifest p oldasps oldKnowsOf oldContext oldPolicy (*oldAcPol*)).
+              policy := oldPolicy |} := m in
+      (Build_Manifest p oldasps oldKnowsOf oldContext oldPolicy).
+
+Definition pubkey_manifest_update (p:Plc) (m:Manifest) : Manifest := 
+        let '{| my_abstract_plc := oldPlc;
+                asps := oldasps; 
+                uuidPlcs := oldKnowsOf; 
+                pubKeyPlcs := oldContext; 
+                policy := oldPolicy |} := m in
+        (Build_Manifest oldPlc oldasps oldKnowsOf (p::oldContext) oldPolicy).
 
 Definition pubkeys_manifest_update (ps:list Plc) (m:Manifest) : Manifest := 
         let '{| my_abstract_plc := oldMyPlc;
                 asps := oldasps; 
                 uuidPlcs := oldKnowsOf; 
                 pubKeyPlcs := _; 
-                policy := oldPolicy (*; 
-                ac_policy := oldAcPol*) |} := m in
-        (Build_Manifest oldMyPlc oldasps oldKnowsOf ps oldPolicy (*oldAcPol*)).
+                policy := oldPolicy |} := m in
+        (Build_Manifest oldMyPlc oldasps oldKnowsOf ps oldPolicy).
 
+(*
+Definition asp_manifest_update (a:ASP) (m:Manifest) : Manifest :=
+  let (i, m') := 
+  match a with 
+  | ASPC _ _ params => 
+              match params with
+              | asp_paramsC i _ targp targid => 
+                  (i,m)
+              end
+          | SIG  => (sig_aspid, m)
+          | HSH  => (hsh_aspid, m)
+          | ENC p  => (enc_aspid, m)
+          | NULL => (0,m 
+          | CPY  => m
+  end in 
+    aspid_manifest_update i m'.
+    *)
+
+Definition update_manifest_policy_targ (targp:Plc) (targid:Plc) (m:Manifest) : Manifest :=
+  m.
+
+  
 Definition asp_manifest_update (a:ASP) (m:Manifest) : Manifest :=
   match a with 
   | ASPC _ _ params => 
       match params with
       | asp_paramsC i _ targp targid => 
-          aspid_manifest_update i m
+        let m' := update_manifest_policy_targ targp targid m in
+          aspid_manifest_update i m'
       end
   | SIG => aspid_manifest_update (sig_aspid) m
-  | _ => m 
+  | HSH => aspid_manifest_update (hsh_aspid) m
+  | ENC p => 
+      let m' := pubkey_manifest_update p m in
+        aspid_manifest_update (enc_aspid) m'
+  | NULL => m 
+  | CPY => m
   end.
         
 Definition asp_manifest_generator (a:ASP) (p:Plc) (e:EnvironmentM) : EnvironmentM :=
-  match (map_get e p) with
-  | Some m => 
-    let m' := asp_manifest_update a m in 
-      map_set e p m'
-  | _ => 
-    let m' := asp_manifest_update a empty_Manifest in 
-      map_set e p m'
-  end.
+  let m := 
+    match (map_get e p) with
+    | Some mm => mm
+    | None => empty_Manifest
+    end in
 
-  Definition plc_manifest_generator (fromPlc:Plc) (toPlc:Plc) (e:EnvironmentM) : EnvironmentM :=
+    let m' := asp_manifest_update a m in 
+      map_set e p m'.
+
+Definition plc_manifest_generator (fromPlc:Plc) (toPlc:Plc) 
+                                    (e:EnvironmentM) : EnvironmentM :=
+  let m := 
     match (map_get e fromPlc) with
-    | Some m => 
+    | Some mm => mm 
+    | None => empty_Manifest 
+    end in 
       let m' := knowsof_manifest_update toPlc m in 
-        map_set e fromPlc m'
-    | _ => 
-      let m' := knowsof_manifest_update toPlc empty_Manifest in 
-        map_set e fromPlc m'
-    end.
+        map_set e fromPlc m'.
 
 
 Fixpoint manifest_generator' (p:Plc) (t:Term) (e:EnvironmentM) : EnvironmentM :=

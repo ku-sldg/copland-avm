@@ -1,5 +1,6 @@
 Require Import Term_Defs_Core Manifest_Admits Manifest EqClass Eqb_Evidence (*NegotiationDefs*).
 
+Require Import Params_Admits.
 Require Import Lists.List.
 Import ListNotations.
 
@@ -17,6 +18,9 @@ Definition canRunAsp_ManifestB(* (k:Plc) *) (m:Manifest)(params:ASP_PARAMS):bool
         
   end.
 
+Definition canRun_aspidB (m:Manifest) (i:ASP_ID):bool :=
+  existsb (eqb_aspid i) m.(asps).
+
 Definition knowsOf_ManifestB(*(k:Plc)*)(e:Manifest)(p:Plc):bool :=
   existsb (eqb_plc p) e.(uuidPlcs).
 
@@ -27,6 +31,8 @@ Fixpoint executableB(t:Term)(*(k:Plc)*)(e:Manifest):bool :=
   match t with
   | asp (ASPC _ _ params)  => canRunAsp_ManifestB e params
   | asp (ENC p) => knowsPub_ManifestB e p
+  | asp SIG => canRun_aspidB e (sig_aspid)
+  | asp HSH => canRun_aspidB e (hsh_aspid)
   | asp _ => true
   | att p t => knowsOf_ManifestB e p (* -> executableB t k e *)
   | lseq t1 t2 => executableB t1 e && executableB t2 e

@@ -14,9 +14,8 @@ Require Import List.
 Import ListNotations.
 
 
-(*
+
 Set Nested Proofs Allowed.
-*)
 
 
 
@@ -151,6 +150,17 @@ Proof.
     ++
       rewrite <- canRunAsp_Manifest_prop_iff_bool.
       eauto.
+    ++ 
+      Lemma canRun_aspid_prop_iff_bool : forall m i,
+        canRun_aspid m i <-> canRun_aspidB m i = true.
+        Proof.
+          Admitted.
+
+      rewrite canRun_aspid_prop_iff_bool.
+      eauto.
+    ++
+    rewrite canRun_aspid_prop_iff_bool.
+    eauto.
     ++
       rewrite <- knowsPub_Manifest_prop_iff_bool.
       eauto.
@@ -177,6 +187,12 @@ Proof.
       destruct a; simpl in *; try tauto.
       ++
         rewrite canRunAsp_Manifest_prop_iff_bool.
+        eauto.
+      ++
+        rewrite <- canRun_aspid_prop_iff_bool.
+        eauto.
+      ++
+        rewrite <- canRun_aspid_prop_iff_bool.
         eauto.
       ++
         rewrite knowsPub_Manifest_prop_iff_bool.

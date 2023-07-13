@@ -21,8 +21,13 @@ Definition sig_params : ASP_PARAMS :=
 
 
 
+Definition hsh_aspid : ASP_ID.
+Admitted.
 Definition hsh_params : ASP_PARAMS.
 Admitted.
 
+
+Definition enc_aspid : ASP_ID.
+Admitted.
 Definition enc_params : Plc -> ASP_PARAMS.
 Admitted.

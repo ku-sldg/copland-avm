@@ -324,11 +324,13 @@ Proof.
     + 
       unfold aspid_manifest_update; ff.
       subst.
+      unfold update_manifest_policy_targ in *; ff.
       eapply env_subset_trans.
       eassumption.
       eapply env_subset_set_man.
       eassumption.
       unfold manifest_subset; intros; ff.
+      subst.
       split; eauto.
     +
       subst.
@@ -425,7 +427,10 @@ Proof.
       eexists.
       split.
       reflexivity.
+      eapply manifest_subset_trans.
       eassumption.
+      unfold manifest_subset.
+      split; ff; eauto.
 (*
       eapply manifest_subset_trans.
       eassumption.
@@ -519,7 +524,10 @@ Proof.
 
     eapply manifest_subset_trans.
     eassumption.
+    unfold pubkey_manifest_update in *; ff.
+    eapply manifest_subset_trans.
     apply manifest_subset_refl.
+    unfold manifest_subset; ff; eauto.
 
     +++
 
@@ -883,6 +891,8 @@ Qed.
       find_rewrite.
       ff.
       unfold manifest_subset in *; ff.
+      unfold canRunAsp_Manifest in *; ff;
+        destruct_conjs; ff.
       ++
       unfold Environment_subset in *; ff.
       specialize H0 with (m1:=m) (p:=p).
@@ -890,6 +900,63 @@ Qed.
       destruct_conjs.
       find_rewrite.
       solve_by_inversion.
+    + (* SIG case *)
+    unfold Environment_subset in *; ff.
+    unfold canRun_aspid_Env in *; ff.
+    unfold canRun_aspid in *; ff.
+    specialize H0 with (m1:=m0) (p:=p).
+    apply H0 in Heqo0.
+    destruct_conjs.
+    find_rewrite.
+    ff.
+    unfold manifest_subset in *; ff.
+
+    unfold Environment_subset in *; ff.
+    specialize H0 with (m1:=m) (p:=p).
+    apply H0 in Heqo0.
+    destruct_conjs.
+    find_rewrite.
+    solve_by_inversion.
+    + (* HSH case *)
+    unfold Environment_subset in *; ff.
+    unfold canRun_aspid_Env in *; ff.
+    unfold canRun_aspid in *; ff.
+    specialize H0 with (m1:=m0) (p:=p).
+    apply H0 in Heqo0.
+    destruct_conjs.
+    find_rewrite.
+    ff.
+    unfold manifest_subset in *; ff.
+
+    unfold Environment_subset in *; ff.
+    specialize H0 with (m1:=m) (p:=p).
+    apply H0 in Heqo0.
+    destruct_conjs.
+    find_rewrite.
+    solve_by_inversion.
+    
+    + (* ENC case *)
+    unfold Environment_subset in *; ff.
+    unfold knowsPub_Env in *; ff.
+    specialize H0 with (m1:=m0) (p:=p).
+    apply H0 in Heqo0.
+    destruct_conjs.
+    find_rewrite.
+    ff.
+    unfold manifest_subset in *; ff.
+
+    destruct_conjs.
+    eauto.
+
+
+
+    unfold Environment_subset in *; ff.
+    specialize H0 with (m1:=m) (p:=p).
+    apply H0 in Heqo0.
+    destruct_conjs.
+    find_rewrite.
+    solve_by_inversion. 
+
   - (* at case *)
     destruct_conjs.
     ff.
@@ -1293,6 +1360,9 @@ Lemma fafafa : forall t p e1 e2,
         }
         repeat find_rewrite; ff.
 
+        unfold update_manifest_policy_targ in *; 
+        subst.
+
 
         specialize H with (m1:= {|
           my_abstract_plc := my_abstract_plc;
@@ -1333,6 +1403,7 @@ Lemma fafafa : forall t p e1 e2,
       repeat find_rewrite; ff.
   ++
     unfold Environment_subset in H; ff.
+    unfold update_manifest_policy_targ in *; subst.
     specialize H with (m1:={|
       my_abstract_plc := my_abstract_plc;
       asps := asps;
@@ -1580,6 +1651,26 @@ destruct (eq_plc_dec p0 p).
   }
   repeat find_rewrite; ff.
 
+  specialize H with (m1:= {|
+    my_abstract_plc := my_abstract_plc;
+    asps := asps;
+    uuidPlcs := uuidPlcs;
+    pubKeyPlcs := pubKeyPlcs;
+    policy := policy
+  |} ) (p:=p).
+
+  apply H in Heqo.
+  destruct_conjs.
+  find_rewrite.
+  ff.
+
+  eexists.
+  split; eauto.
+
+  unfold manifest_subset; subst; ff; intros.
+  split; ff; eauto; intros.
+  door; ff.
+
 
   (*
 
@@ -1630,7 +1721,13 @@ repeat find_rewrite; ff.
 
 unfold Environment_subset in H; ff.
 
-specialize H with (m1:=m) (p:=p).
+specialize H with (m1:={|
+  my_abstract_plc := my_abstract_plc;
+  asps := asps;
+  uuidPlcs := uuidPlcs;
+  pubKeyPlcs := pubKeyPlcs;
+  policy := policy
+|}) (p:=p).
 
 
 (*
@@ -1672,6 +1769,7 @@ destruct (eq_plc_dec p0 p).
     unfold manifest_subset; intros; ff.
     split; intros.
     ++++
+    door; eauto.
       solve_by_inversion.
       (*
     door.
@@ -1719,10 +1817,11 @@ repeat find_rewrite; ff.
 
 
 
-+ (* HSH case *)
++ (* ENC case *)
 
   unfold asp_manifest_generator; ff;
-  ff; subst; unfold aspid_manifest_update; ff; subst.
+  ff; subst; unfold aspid_manifest_update; ff; subst;
+  unfold pubkey_manifest_update in *; ff; subst.
 ++
 unfold Environment_subset in *; intros; ff.
 
@@ -1739,6 +1838,39 @@ destruct (eq_plc_dec p1 p).
           tauto.
   }
   repeat find_rewrite; ff.
+
+
+
+  specialize H with (m1:={|
+  my_abstract_plc := my_abstract_plc;
+  asps := asps;
+  uuidPlcs := uuidPlcs;
+  pubKeyPlcs := pubKeyPlcs2;
+  policy := policy
+|}) (p:=p).
+
+
+apply H in Heqo.
+destruct_conjs.
+repeat find_rewrite.
+ff.
+
+eexists.
+split; eauto.
+unfold manifest_subset; ff.
+split; ff; intros; eauto.
+
+door; ff; eauto.
+
+split; intros; ff; eauto.
+
+unfold manifest_subset in *; ff; eauto.
+destruct_conjs; eauto.
+door; eauto.
+
+
+unfold manifest_subset in *; ff; eauto.
+destruct_conjs; ff; eauto.
 
 
   (*
@@ -1790,7 +1922,13 @@ repeat find_rewrite; ff.
 
 unfold Environment_subset in H; ff.
 
-specialize H with (m1:=m) (p:=p).
+specialize H with (m1:= {|
+  my_abstract_plc := my_abstract_plc;
+  asps := asps;
+  uuidPlcs := uuidPlcs;
+  pubKeyPlcs := pubKeyPlcs0;
+  policy := policy
+|}) (p:=p).
 
 
 (*
@@ -1832,6 +1970,7 @@ destruct (eq_plc_dec p1 p).
     unfold manifest_subset; intros; ff.
     split; intros.
     ++++
+    door;
       solve_by_inversion.
       (*
     door.
@@ -1840,7 +1979,8 @@ destruct (eq_plc_dec p1 p).
       +++++
         solve_by_inversion. *)
     ++++
-      split; intros; solve_by_inversion.
+      split; intros; try solve_by_inversion.
+      door; solve_by_inversion.
 +++
 assert (EqClass.eqb p1 p = false).
 {
@@ -1940,6 +2080,8 @@ Proof.
   ff.
 Qed.
 
+Locate executable_static.
+
 Theorem manifest_generator_executability_static :
     forall (t:Term) (p:Plc), 
         executable_static t p (manifest_generator t p).
@@ -1961,6 +2103,37 @@ Proof.
       }
       find_rewrite.
       solve_by_inversion.
+    +
+    cbv.
+    ff.
+    assert (eqb p p = true).
+    {
+      rewrite eqb_leibniz.
+      auto.
+    }
+    find_rewrite.
+    solve_by_inversion.
+    +
+    cbv.
+    ff.
+    assert (eqb p p = true).
+    {
+      rewrite eqb_leibniz.
+      auto.
+    }
+    find_rewrite.
+    solve_by_inversion.
+    +
+    cbv.
+    ff.
+    assert (eqb p p = true).
+    {
+      rewrite eqb_leibniz.
+      auto.
+    }
+    find_rewrite.
+    solve_by_inversion.
+
   - (* at case *)
 
     unfold manifest_generator in *.
@@ -2007,6 +2180,13 @@ Proof.
           }
 
           destruct_conjs.
+          ff.
+          unfold plc_manifest_generator in Heqo.
+          unfold knowsof_manifest_update in Heqo.
+          break_let.
+          ff.
+          unfold empty_Manifest in *.
+          ff.
           find_rewrite.
 
           solve_by_inversion.
