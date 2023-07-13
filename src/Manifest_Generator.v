@@ -91,8 +91,24 @@ Definition asp_manifest_update (a:ASP) (m:Manifest) : Manifest :=
   | NULL => m 
   | CPY => m
   end.
+
+Definition manifest_update_env (p:Plc) (e:EnvironmentM) 
+                               (f:Manifest -> Manifest) : EnvironmentM := 
+  let m := 
+    match (map_get e p) with
+    | Some mm => mm
+    | None => empty_Manifest
+    end in
+
+    let m' := (f m) in 
+      map_set e p m'.
+
         
 Definition asp_manifest_generator (a:ASP) (p:Plc) (e:EnvironmentM) : EnvironmentM :=
+  manifest_update_env p e (asp_manifest_update a).
+
+(*
+
   let m := 
     match (map_get e p) with
     | Some mm => mm
@@ -101,9 +117,13 @@ Definition asp_manifest_generator (a:ASP) (p:Plc) (e:EnvironmentM) : Environment
 
     let m' := asp_manifest_update a m in 
       map_set e p m'.
+*)
 
-Definition plc_manifest_generator (fromPlc:Plc) (toPlc:Plc) 
+Definition at_manifest_generator (fromPlc:Plc) (toPlc:Plc) 
                                     (e:EnvironmentM) : EnvironmentM :=
+  manifest_update_env fromPlc e (knowsof_manifest_update toPlc).
+
+(*
   let m := 
     match (map_get e fromPlc) with
     | Some mm => mm 
@@ -111,13 +131,14 @@ Definition plc_manifest_generator (fromPlc:Plc) (toPlc:Plc)
     end in 
       let m' := knowsof_manifest_update toPlc m in 
         map_set e fromPlc m'.
+  *)
 
 
 Fixpoint manifest_generator' (p:Plc) (t:Term) (e:EnvironmentM) : EnvironmentM :=
   match t with
   | asp a => asp_manifest_generator a p e
   | att q t' => 
-      let e' := plc_manifest_generator p q e in 
+      let e' := at_manifest_generator p q e in 
         manifest_generator' q t' e'
   | lseq t1 t2 => manifest_generator' p t2 (manifest_generator' p t1 e)
   | bseq _ t1 t2 => manifest_generator' p t2 (manifest_generator' p t1 e)

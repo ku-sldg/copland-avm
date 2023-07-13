@@ -204,361 +204,551 @@ Proof.
   induction t; intros; ff.
   - (* asp case *)
     destruct a; unfold asp_manifest_generator; ff;
+    try (unfold asp_manifest_update);
+      try (unfold manifest_update_env);
       try (apply env_subset_set; auto; tauto);
       try (apply env_subset_set_none; auto; tauto).
-      +
-        unfold Environment_subset; intros.
-        destruct (eq_plc_dec p p0).
-        ++
-        subst.
-        exists m.
-        split.
-        apply mapC_get_works.
-        unfold Environment_subset in H.
-        specialize H with (m1:= m1) (p:= p0).
-        apply H in H0.
-        destruct_conjs.
-        repeat find_rewrite.
+      + (* NULL case *)
         ff.
         ++
-        
-        unfold Environment_subset in H.
-        specialize H with (m1:= m1) (p:=p0).
-        apply H in H0.
-        destruct_conjs.
-        exists H0.
-        split.
-        +++
-        apply mapC_get_distinct_keys; eauto.
-        +++
-        eassumption.
 
-      +
+
+
         unfold Environment_subset; intros.
+        destruct (eq_plc_dec p p0) eqn:hee.
+        +++
+        subst.
+        unfold manifest_update_env.
+        unfold asp_manifest_update.
+
+        ff.
+            rewrite eqb_plc_refl.
+            exists m.
+            split; eauto.
+            unfold Environment_subset in H.
+            specialize H with (m1:= m1) (p:=p0).
+            apply H in H0.
+            destruct_conjs.
+            repeat find_rewrite.
+            ff.
+          +++
+            unfold Environment_subset in H.
+            specialize H with (m1:=m1) (p:=p0).
+            apply H in H0.
+            destruct_conjs.
+            repeat find_rewrite.
+            ff.
+            assert (EqClass.eqb p0 p = false).
+            {
+              apply plc_ne; auto.
+            }
+            find_rewrite.
+            exists H0.
+            split.
+            ++++
+              eassumption.
+            ++++
+              eauto.
+        ++
+
+
+
+        unfold Environment_subset; intros.
+        destruct (eq_plc_dec p p0) eqn:hee.
+        +++
+        subst.
+
         unfold Environment_subset in H.
         specialize H with (m1:=m1) (p:=p0).
         apply H in H0.
         destruct_conjs.
+        repeat find_rewrite.
+        solve_by_inversion.
+        +++
+          ff.
+          assert (EqClass.eqb p0 p = false).
+          {
+            apply plc_ne; auto. 
+          }
+          find_rewrite.
+
+          unfold Environment_subset in H.
+          specialize H with (m1:=m1) (p:=p0).
+          apply H in H0.
+          destruct_conjs.
+          repeat find_rewrite.
+
+
+          exists H0.
+          split.
+          ++++
+          auto.
+          ++++
+            eauto.
+
+
+
+
+
+
+    + (* CPY case *)
+
+    ff.
+    ++
+
+
+
+    unfold Environment_subset; intros.
+    destruct (eq_plc_dec p p0) eqn:hee.
+    +++
+    subst.
+    unfold manifest_update_env.
+    unfold asp_manifest_update.
+
+    ff.
+        rewrite eqb_plc_refl.
+        exists m.
+        split; eauto.
+        unfold Environment_subset in H.
+        specialize H with (m1:= m1) (p:=p0).
+        apply H in H0.
+        destruct_conjs.
+        repeat find_rewrite.
+        ff.
+      +++
+        unfold Environment_subset in H.
+        specialize H with (m1:=m1) (p:=p0).
+        apply H in H0.
+        destruct_conjs.
+        repeat find_rewrite.
+        ff.
+        assert (EqClass.eqb p0 p = false).
+        {
+          apply plc_ne; auto. 
+        }
+        find_rewrite.
         exists H0.
         split.
-        ++
-          assert (p <> p0).
-          {
-            unfold not; intros; subst.
-            find_rewrite.
-            ff.
-          }
+        ++++
+          eassumption.
+        ++++
+          eauto.
+    ++
 
-          apply mapC_get_distinct_keys.
-          eassumption.
-          eassumption.
-        ++
-        eassumption.
-      +
-      unfold Environment_subset; intros.
+
+
+    unfold Environment_subset; intros.
+    destruct (eq_plc_dec p p0) eqn:hee.
+    +++
+    subst.
+
+    unfold Environment_subset in H.
+    specialize H with (m1:=m1) (p:=p0).
+    apply H in H0.
+    destruct_conjs.
+    repeat find_rewrite.
+    solve_by_inversion.
+    +++
+      ff.
+      assert (EqClass.eqb p0 p = false).
+      {
+        apply plc_ne; auto. 
+      }
+      find_rewrite.
+
       unfold Environment_subset in H.
       specialize H with (m1:=m1) (p:=p0).
       apply H in H0.
       destruct_conjs.
+      repeat find_rewrite.
+
+
       exists H0.
       split.
-      ++
+      ++++
+      auto.
+      ++++
+        eauto.
 
-        destruct (eq_plc_dec p p0).
-        +++
-        subst.
-        find_rewrite.
-        ff.
-        assert (EqClass.eqb p0 p0 = true).
-        {
-          rewrite EqClass.eqb_leibniz.
-          tauto.
-        }
-        rewrite H1.
-        tauto.
-        +++
-          apply mapC_get_distinct_keys;
-            eassumption.
-
-      (*
-        assert (p <> p0).
-        {
-          unfold not; intros; subst.
-          find_rewrite.
-          ff.
-        }
-
-        apply mapC_get_distinct_keys.
-        eassumption.
-        eassumption.
-        *)
-      ++
-      eassumption.
-
-
-
-    +
-    unfold Environment_subset; intros.
-    unfold Environment_subset in H.
-    specialize H with (m1:=m1) (p:=p0).
-    apply H in H0.
-    destruct_conjs.
-    exists H0.
-    split.
-    ++
-      assert (p <> p0).
-      {
-        unfold not; intros; subst.
-        find_rewrite.
-        ff. 
-      }
-
-      apply mapC_get_distinct_keys.
-      eassumption.
-      eassumption.
-    ++
-    eassumption.
-
-
-
-    + 
-      unfold aspid_manifest_update; ff.
-      subst.
-      unfold update_manifest_policy_targ in *; ff.
-      eapply env_subset_trans.
-      eassumption.
-      eapply env_subset_set_man.
-      eassumption.
-      unfold manifest_subset; intros; ff.
-      subst.
-      split; eauto.
-    +
-      subst.
-      
-      eapply env_subset_trans.
-      eassumption.
-      eapply env_subset_set_none.
-      eassumption. 
-    +
-
-    unfold Environment_subset; intros.
-    unfold Environment_subset in H.
-    specialize H with (m1:=m1) (p:=p0).
-    apply H in H0.
-    destruct_conjs.
-
-    destruct (eq_plc_dec p p0).
-    +++
-      subst.
-      find_rewrite.
-      ff.
-      assert (EqClass.eqb p0 p0 = true).
-      {
-        rewrite EqClass.eqb_leibniz.
-        tauto.
-      }
-      rewrite H1; clear H1.
-      unfold aspid_manifest_update; ff.
-
-      eexists.
-      split.
-      reflexivity.
-
-      eapply manifest_subset_trans.
-      eassumption.
-      
-      unfold manifest_subset; intros; ff.
-      split; eauto.
-
-      +++
-      
-    exists H0.
-    split.
-    ++++
-    apply mapC_get_distinct_keys; eauto.
-    ++++
-    eassumption.
-
-  +
-    
-    unfold Environment_subset; intros.
-    unfold Environment_subset in H.
-    specialize H with (m1:=m1) (p:=p0).
-    apply H in H0.
-    destruct_conjs.
-    exists H0.
-    split.
-    ++
-      assert (p <> p0).
-      {
-        unfold not; intros; subst.
-        find_rewrite.
-        ff. 
-      }
-
-      apply mapC_get_distinct_keys.
-      eassumption.
-      eassumption.
-    ++
-    eassumption.
-
-
-    +
-
-    unfold Environment_subset; intros.
-    unfold Environment_subset in H.
-    specialize H with (m1:=m1) (p:=p0).
-    apply H in H0.
-    destruct_conjs.
-
-    destruct (eq_plc_dec p p0).
-    +++
-      subst.
-      find_rewrite.
-      ff.
-      assert (EqClass.eqb p0 p0 = true).
-      {
-        rewrite EqClass.eqb_leibniz.
-        tauto.
-      }
-      rewrite H1; clear H1.
-      unfold aspid_manifest_update; ff.
-
-      eexists.
-      split.
-      reflexivity.
-      eapply manifest_subset_trans.
-      eassumption.
-      unfold manifest_subset.
-      split; ff; eauto.
-(*
-      eapply manifest_subset_trans.
-      eassumption.
-      
-      unfold manifest_subset; intros; ff.
-      split; eauto.
-      *)
-
-      +++
-      
-    exists H0.
-    split.
-    ++++
-    apply mapC_get_distinct_keys; eauto.
-    ++++
-    eassumption.
-
-(*
-    +
-    
-    unfold Environment_subset; intros.
-    unfold Environment_subset in H.
-    specialize H with (m1:=m1) (p:=p0).
-    apply H in H0.
-    destruct_conjs.
-    exists H0.
-    split.
-    ++
-      assert (p <> p0).
-      {
-        unfold not; intros; subst.
-        find_rewrite.
-        ff. 
-      }
-
-      apply mapC_get_distinct_keys.
-      eassumption.
-      eassumption.
-    ++
-    eassumption.
+        (*
+  + (* ASPC case *)
+    admit.
 
     *)
 
-  +
+
+  + (* ASPC case *) 
+
+          ff.
+          unfold update_manifest_policy_targ.
+          unfold aspid_manifest_update; ff; subst.
+          ++
+        
+        
+        
+          unfold Environment_subset; intros.
+          destruct (eq_plc_dec p p1) eqn:hee.
+          +++
+          subst.
+          unfold manifest_update_env.
+          unfold asp_manifest_update.
+        
+          ff.
+              rewrite eqb_plc_refl.
+              eexists.
+              split; eauto.
+              unfold Environment_subset in H.
+              specialize H with (m1:= m1) (p:=p1).
+              apply H in H0.
+              destruct_conjs.
+              repeat find_rewrite.
+              ff.
+              eapply manifest_subset_trans.
+              eassumption.
+              unfold aspid_manifest_update.
+              ff.
+              unfold pubkey_manifest_update in *.
+              ff.
+              unfold manifest_subset; intros.
+              split; ff; intros; eauto.
+        
+        
+        
+        
+            +++
+              unfold Environment_subset in H.
+              specialize H with (m1:=m1) (p:=p1).
+              apply H in H0.
+              destruct_conjs.
+              repeat find_rewrite.
+              ff.
+              assert (EqClass.eqb p1 p = false).
+              {
+                apply plc_ne; auto. 
+              }
+              repeat find_rewrite.
+              
+              exists H0.
+
+              split.
+              ++++
+                tauto.
+              ++++
+                eauto.
+          ++
+        
+        
+        
+          unfold Environment_subset; intros.
+          destruct (eq_plc_dec p p1) eqn:hee.
+          +++
+          subst.
+        
+          unfold Environment_subset in H.
+          specialize H with (m1:=m1) (p:=p1).
+          apply H in H0.
+          destruct_conjs.
+          repeat find_rewrite.
+          solve_by_inversion.
+          +++
+            ff.
+            assert (EqClass.eqb p1 p = false).
+            {
+              apply plc_ne; auto. 
+            }
+            find_rewrite.
+        
+            unfold Environment_subset in H.
+            specialize H with (m1:=m1) (p:=p1).
+            apply H in H0.
+            destruct_conjs.
+            repeat find_rewrite.
+        
+        
+            exists H0.
+            split.
+            ++++
+            auto.
+            ++++
+              eauto.
+
+
+
+
+
+
+  + (* SIG case *) 
+
+  ff.
+  ++
+
+
+
   unfold Environment_subset; intros.
+  destruct (eq_plc_dec p p0) eqn:hee.
+  +++
+  subst.
+  unfold manifest_update_env.
+  unfold asp_manifest_update.
+
+  ff.
+      rewrite eqb_plc_refl.
+      eexists.
+      split; eauto.
+      unfold Environment_subset in H.
+      specialize H with (m1:= m1) (p:=p0).
+      apply H in H0.
+      destruct_conjs.
+      repeat find_rewrite.
+      ff.
+      eapply manifest_subset_trans.
+      eassumption.
+      unfold aspid_manifest_update.
+      ff.
+      unfold manifest_subset; intros.
+      split; ff; intros; eauto.
+
+
+
+
+    +++
+      unfold Environment_subset in H.
+      specialize H with (m1:=m1) (p:=p0).
+      apply H in H0.
+      destruct_conjs.
+      repeat find_rewrite.
+      ff.
+      assert (EqClass.eqb p0 p = false).
+      {
+        apply plc_ne; auto.  
+      }
+      find_rewrite.
+      exists H0.
+      split.
+      ++++
+        eassumption.
+      ++++
+        eauto.
+  ++
+
+
+
+  unfold Environment_subset; intros.
+  destruct (eq_plc_dec p p0) eqn:hee.
+  +++
+  subst.
+
   unfold Environment_subset in H.
   specialize H with (m1:=m1) (p:=p0).
   apply H in H0.
   destruct_conjs.
-  exists H0.
-  split.
-  ++
-    assert (p <> p0).
-    {
-      unfold not; intros; subst.
-        find_rewrite.
-        ff. 
-    }
-
-    apply mapC_get_distinct_keys.
-    eassumption.
-    eassumption.
-  ++
-  eassumption.
-
-
-  +
-
-  unfold Environment_subset; intros.
-  unfold Environment_subset in H.
-  specialize H with (m1:=m1) (p:=p1).
-  apply H in H0.
-  destruct_conjs.
-
-  destruct (eq_plc_dec p p1).
+  repeat find_rewrite.
+  solve_by_inversion.
   +++
-    subst.
-    find_rewrite.
     ff.
-    assert (EqClass.eqb p1 p1 = true).
+    assert (EqClass.eqb p0 p = false).
     {
-      rewrite EqClass.eqb_leibniz.
-      tauto.
+      apply plc_ne; auto. 
     }
-    rewrite H1; clear H1.
-    unfold aspid_manifest_update; ff.
+    find_rewrite.
 
-    eexists.
+    unfold Environment_subset in H.
+    specialize H with (m1:=m1) (p:=p0).
+    apply H in H0.
+    destruct_conjs.
+    repeat find_rewrite.
+
+
+    exists H0.
     split.
-    reflexivity.
+    ++++
+    auto.
+    ++++
+      eauto.
 
-    eapply manifest_subset_trans.
-    eassumption.
-    unfold pubkey_manifest_update in *; ff.
-    eapply manifest_subset_trans.
-    apply manifest_subset_refl.
-    unfold manifest_subset; ff; eauto.
 
-    +++
+      + (* HSH case *) 
 
-  exists H0.
-  split.
-  ++++
-  apply mapC_get_distinct_keys; eauto.
-  ++++
-  eassumption.
-
-  +
-  unfold Environment_subset; intros.
-  unfold Environment_subset in H.
-  specialize H with (m1:=m1) (p:=p1).
-  apply H in H0.
-  destruct_conjs.
-  exists H0.
-  split.
-  ++
-    assert (p <> p1).
-    {
-      unfold not; intros; subst.
+      ff.
+      ++
+    
+    
+    
+      unfold Environment_subset; intros.
+      destruct (eq_plc_dec p p0) eqn:hee.
+      +++
+      subst.
+      unfold manifest_update_env.
+      unfold asp_manifest_update.
+    
+      ff.
+          rewrite eqb_plc_refl.
+          eexists.
+          split; eauto.
+          unfold Environment_subset in H.
+          specialize H with (m1:= m1) (p:=p0).
+          apply H in H0.
+          destruct_conjs.
+          repeat find_rewrite.
+          ff.
+          eapply manifest_subset_trans.
+          eassumption.
+          unfold aspid_manifest_update.
+          ff.
+          unfold manifest_subset; intros.
+          split; ff; intros; eauto.
+    
+    
+    
+    
+        +++
+          unfold Environment_subset in H.
+          specialize H with (m1:=m1) (p:=p0).
+          apply H in H0.
+          destruct_conjs.
+          repeat find_rewrite.
+          ff.
+          assert (EqClass.eqb p0 p = false).
+          {
+            apply plc_ne; auto. 
+          }
+          find_rewrite.
+          exists H0.
+          split.
+          ++++
+            eassumption.
+          ++++
+            eauto.
+      ++
+    
+    
+    
+      unfold Environment_subset; intros.
+      destruct (eq_plc_dec p p0) eqn:hee.
+      +++
+      subst.
+    
+      unfold Environment_subset in H.
+      specialize H with (m1:=m1) (p:=p0).
+      apply H in H0.
+      destruct_conjs.
+      repeat find_rewrite.
+      solve_by_inversion.
+      +++
+        ff.
+        assert (EqClass.eqb p0 p = false).
+        {
+          apply plc_ne; auto. 
+        }
         find_rewrite.
-        ff. 
-    }
+    
+        unfold Environment_subset in H.
+        specialize H with (m1:=m1) (p:=p0).
+        apply H in H0.
+        destruct_conjs.
+        repeat find_rewrite.
+    
+    
+        exists H0.
+        split.
+        ++++
+        auto.
+        ++++
+          eauto.
 
-    apply mapC_get_distinct_keys.
-    eassumption.
-    eassumption.
-  ++
-  eassumption.
+
+  + (* ENC case *) 
+
+          ff.
+          ++
+        
+        
+        
+          unfold Environment_subset; intros.
+          destruct (eq_plc_dec p p1) eqn:hee.
+          +++
+          subst.
+          unfold manifest_update_env.
+          unfold asp_manifest_update.
+        
+          ff.
+              rewrite eqb_plc_refl.
+              eexists.
+              split; eauto.
+              unfold Environment_subset in H.
+              specialize H with (m1:= m1) (p:=p1).
+              apply H in H0.
+              destruct_conjs.
+              repeat find_rewrite.
+              ff.
+              eapply manifest_subset_trans.
+              eassumption.
+              unfold aspid_manifest_update.
+              ff.
+              unfold pubkey_manifest_update in *.
+              ff.
+              unfold manifest_subset; intros.
+              split; ff; intros; eauto.
+        
+        
+        
+        
+            +++
+              unfold Environment_subset in H.
+              specialize H with (m1:=m1) (p:=p1).
+              apply H in H0.
+              destruct_conjs.
+              repeat find_rewrite.
+              ff.
+              assert (EqClass.eqb p1 p = false).
+              {
+                apply plc_ne; auto. 
+              }
+              repeat find_rewrite.
+              
+              exists H0.
+
+              split.
+              ++++
+                tauto.
+              ++++
+                eauto.
+          ++
+        
+        
+        
+          unfold Environment_subset; intros.
+          destruct (eq_plc_dec p p1) eqn:hee.
+          +++
+          subst.
+        
+          unfold Environment_subset in H.
+          specialize H with (m1:=m1) (p:=p1).
+          apply H in H0.
+          destruct_conjs.
+          repeat find_rewrite.
+          solve_by_inversion.
+          +++
+            ff.
+            assert (EqClass.eqb p1 p = false).
+            {
+              apply plc_ne; auto. 
+            }
+            find_rewrite.
+        
+            unfold Environment_subset in H.
+            specialize H with (m1:=m1) (p:=p1).
+            apply H in H0.
+            destruct_conjs.
+            repeat find_rewrite.
+        
+        
+            exists H0.
+            split.
+            ++++
+            auto.
+            ++++
+              eauto.
 
   - (* at case *)
 
@@ -568,7 +758,8 @@ Proof.
   clear IHt.
   *)
 
-  unfold plc_manifest_generator.
+  unfold at_manifest_generator.
+  unfold manifest_update_env.
   ff.
     +
       unfold knowsof_manifest_update; 
@@ -1002,11 +1193,11 @@ Qed.
 Lemma env_subset_plc_manifest_gen: forall e1 e2 p0 p,
 Environment_subset e1 e2 ->
 Environment_subset 
-  (plc_manifest_generator p0 p e1) 
-  (plc_manifest_generator p0 p e2).
+  (at_manifest_generator p0 p e1) 
+  (at_manifest_generator p0 p e2).
 Proof.
   intros.
-  unfold plc_manifest_generator; ff.
+  unfold at_manifest_generator; ff.
   -
     unfold knowsof_manifest_update; ff; subst; ff.
     unfold Environment_subset; intros; ff.
@@ -1031,7 +1222,7 @@ Proof.
         policy := policy
       |}) (p:=p0).
 
-      apply H in Heqo.
+      apply H in Heqo0.
       clear H.
       destruct_conjs.
 
@@ -1055,12 +1246,45 @@ Proof.
           eauto.
         +++
           eauto.
+      ++
+        unfold empty_Manifest in *.
+        ff.
+        eexists.
+        split; try reflexivity.
+        unfold manifest_subset; ff; intros.
+        split; intros; eauto; try solve_by_inversion.
+        split; intros; eauto.
+        door; eauto; try solve_by_inversion.
+        solve_by_inversion.
+
+      ++
+        unfold Environment_subset in H.
+        specialize H with (m1 :=  {|
+          my_abstract_plc := my_abstract_plc;
+          asps := asps;
+          uuidPlcs := uuidPlcs;
+          pubKeyPlcs := pubKeyPlcs;
+          policy := policy
+        |}) (p:=p0).
+        apply H in Heqo0.
+        destruct_conjs.
+        repeat find_rewrite.
+        ff.
+      ++
+        unfold empty_Manifest in *; ff.
+        eexists.
+        split; eauto.
+        apply manifest_subset_refl.
+
     +
     assert (EqClass.eqb p1 p0 = false).
     {
       apply plc_ne; auto.
     }
     repeat find_rewrite; ff.
+Qed.
+
+(* 
 -
   unfold Environment_subset in H.
   specialize H with (m1:= m) (p:=p0).
@@ -1133,6 +1357,8 @@ assert (EqClass.eqb p1 p0 = false).
 repeat find_rewrite; ff.
 Qed.
 
+*)
+
 Lemma empty_manifest_always_sub: forall m,
 manifest_subset empty_Manifest m.
 Proof.
@@ -1154,7 +1380,9 @@ Lemma fafafa : forall t p e1 e2,
     - (* asp case *)
       destruct a; ff.
         + (* NULL *)
-          unfold asp_manifest_generator; ff.
+          unfold asp_manifest_generator;
+          unfold manifest_update_env; 
+          unfold asp_manifest_update; ff.
           ++
             unfold Environment_subset in *; ff; intros.
             destruct (eq_plc_dec p p0).
@@ -1247,7 +1475,9 @@ Lemma fafafa : forall t p e1 e2,
 
           repeat find_rewrite; ff.
   + (* CPY case *)
-  unfold asp_manifest_generator; ff.
+  unfold asp_manifest_generator;
+  unfold manifest_update_env; 
+  unfold asp_manifest_update; ff.
   ++
     unfold Environment_subset in *; ff; intros.
     destruct (eq_plc_dec p p0).
@@ -1342,6 +1572,9 @@ Lemma fafafa : forall t p e1 e2,
 
   + (* ASPC case *)
     unfold asp_manifest_generator; 
+    unfold asp_manifest_generator;
+    unfold manifest_update_env; 
+    unfold asp_manifest_update; 
       ff; subst; unfold aspid_manifest_update; ff; subst.
     ++
       unfold Environment_subset in *; intros; ff.
@@ -1485,8 +1718,16 @@ repeat find_rewrite; ff.
 
 + (* SIG case *)
 
+(*
   unfold asp_manifest_generator; ff;
   ff; subst; unfold aspid_manifest_update; ff; subst.
+  *)
+
+  unfold asp_manifest_generator; 
+  unfold asp_manifest_generator;
+  unfold manifest_update_env; 
+  unfold asp_manifest_update; 
+    ff; subst; unfold aspid_manifest_update; ff; subst.
 ++
 unfold Environment_subset in *; intros; ff.
 
@@ -1632,8 +1873,15 @@ repeat find_rewrite; ff.
 
 + (* HSH case *)
 
+(*
   unfold asp_manifest_generator; ff;
   ff; subst; unfold aspid_manifest_update; ff; subst.
+  *)
+  unfold asp_manifest_generator; 
+  unfold asp_manifest_generator;
+  unfold manifest_update_env; 
+  unfold asp_manifest_update; 
+    ff; subst; unfold aspid_manifest_update; ff; subst.
 ++
 unfold Environment_subset in *; intros; ff.
 
@@ -1819,9 +2067,17 @@ repeat find_rewrite; ff.
 
 + (* ENC case *)
 
+(*
   unfold asp_manifest_generator; ff;
   ff; subst; unfold aspid_manifest_update; ff; subst;
   unfold pubkey_manifest_update in *; ff; subst.
+  *)
+  unfold asp_manifest_generator; 
+  unfold asp_manifest_generator;
+  unfold manifest_update_env; 
+  unfold asp_manifest_update; 
+  unfold pubkey_manifest_update in *;
+    ff; subst; unfold aspid_manifest_update; ff; subst.
 ++
 unfold Environment_subset in *; intros; ff.
 
@@ -1845,12 +2101,12 @@ destruct (eq_plc_dec p1 p).
   my_abstract_plc := my_abstract_plc;
   asps := asps;
   uuidPlcs := uuidPlcs;
-  pubKeyPlcs := pubKeyPlcs2;
+  pubKeyPlcs := pubKeyPlcs;
   policy := policy
 |}) (p:=p).
 
 
-apply H in Heqo.
+apply H in Heqo0.
 destruct_conjs.
 repeat find_rewrite.
 ff.
@@ -1918,9 +2174,29 @@ assert (EqClass.eqb p1 p = false).
 }
 repeat find_rewrite; ff.
 
+
+
+(* 
 ++
 
+(*
 unfold Environment_subset in H; ff.
+*)
+
+unfold empty_Manifest in *.
+ff.
+
+unfold Environment_subset; intros.
+
+eexists.
+
+
+
+
+
+
+
+(*
 
 specialize H with (m1:= {|
   my_abstract_plc := my_abstract_plc;
@@ -1929,6 +2205,7 @@ specialize H with (m1:= {|
   pubKeyPlcs := pubKeyPlcs0;
   policy := policy
 |}) (p:=p).
+*)
 
 
 (*
@@ -1944,6 +2221,9 @@ apply H in Heqo.
 destruct_conjs.
 repeat find_rewrite.
 solve_by_inversion.
+
+*)
+
 
 
 ++
@@ -1963,6 +2243,7 @@ destruct (eq_plc_dec p1 p).
     tauto.
   }
   repeat find_rewrite; ff.
+  unfold empty_Manifest in *; ff.
 
   eexists.
   split.
@@ -1990,7 +2271,25 @@ repeat find_rewrite; ff.
 
 
 ++
-unfold Environment_subset in *; intros; ff.
+unfold Environment_subset in H.
+specialize H with (m1:=  {|
+  my_abstract_plc := my_abstract_plc;
+  asps := asps;
+  uuidPlcs := uuidPlcs;
+  pubKeyPlcs := pubKeyPlcs;
+  policy := policy
+|}) (p:=p).
+
+apply H in Heqo0.
+destruct_conjs.
+repeat find_rewrite.
+solve_by_inversion.
+
+++
+  unfold empty_Manifest in *; ff.
+
+  unfold Environment_subset; intros; ff.
+
 
 destruct (eq_plc_dec p1 p).
 +++
@@ -2002,6 +2301,7 @@ destruct (eq_plc_dec p1 p).
     tauto.
   }
   repeat find_rewrite; ff.
+  unfold empty_Manifest in *; ff.
 
   eexists.
   split.
@@ -2181,7 +2481,8 @@ Proof.
 
           destruct_conjs.
           ff.
-          unfold plc_manifest_generator in Heqo.
+          unfold at_manifest_generator in Heqo.
+          unfold manifest_update_env in *.
           unfold knowsof_manifest_update in Heqo.
           break_let.
           ff.
