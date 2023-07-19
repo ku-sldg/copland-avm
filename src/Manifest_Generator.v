@@ -107,31 +107,9 @@ Definition manifest_update_env (p:Plc) (e:EnvironmentM)
 Definition asp_manifest_generator (a:ASP) (p:Plc) (e:EnvironmentM) : EnvironmentM :=
   manifest_update_env p e (asp_manifest_update a).
 
-(*
-
-  let m := 
-    match (map_get e p) with
-    | Some mm => mm
-    | None => empty_Manifest
-    end in
-
-    let m' := asp_manifest_update a m in 
-      map_set e p m'.
-*)
-
 Definition at_manifest_generator (fromPlc:Plc) (toPlc:Plc) 
                                     (e:EnvironmentM) : EnvironmentM :=
   manifest_update_env fromPlc e (knowsof_manifest_update toPlc).
-
-(*
-  let m := 
-    match (map_get e fromPlc) with
-    | Some mm => mm 
-    | None => empty_Manifest 
-    end in 
-      let m' := knowsof_manifest_update toPlc m in 
-        map_set e fromPlc m'.
-  *)
 
 
 Fixpoint manifest_generator' (p:Plc) (t:Term) (e:EnvironmentM) : EnvironmentM :=

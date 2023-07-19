@@ -15,131 +15,6 @@ Import ListNotations.
 Set Nested Proofs Allowed.
 *)
 
-
-(*
-Definition Environment := Plc -> option Manifest.
-*)
-
-
-(********************
-  *   EXECUTABLE 
-  ********************)
-
-(** Static guarentee that states: 
-  * Is term [t] exectuable on the    
-  * attestation manager named [k] in
-  * environment [e]?  
-  * Are ASPs available at the right attesation managers
-  * and are necessary communications allowed?
-  *)
-
-(*
-Print Manifest. 
-Print Environment.
-*)
-
-(*
-Definition canRunAsp_Env (k:Plc) (em:EnvironmentM) (a: ASP_ID) : Prop := 
-  match (Maps.map_get em k) with 
-  | None => False 
-  | Some m => In a m.(asps)
-  end. 
-*)
-
-
-Definition canRunAsp_Env (k:Plc) (em:EnvironmentM) (ps: ASP_PARAMS) : Prop := 
-    match (Maps.map_get em k) with 
-    | None => False 
-    | Some m => canRunAsp_Manifest m ps
-end. 
-
-Definition knowsOf_Env (k:Plc)(em:EnvironmentM)(p:Plc):Prop :=
-  match (Maps.map_get em k) with 
-  | None => False
-  | Some m => In p m.(uuidPlcs)
-  end.
-
-
-  (*
-(* Statically, we have a global view so we can use the environement to reason about the system *)
-Fixpoint executable_static (t:Term) (k:Plc) (em:EnvironmentM) : Prop := 
-  match t with
-    | asp (ASPC _ _ (asp_paramsC asp_id _ _ _))  => canRunAsp_Env k em asp_id
-    | asp (ENC p) => exists m, Maps.map_get em k = Some m /\ (knowsPub_Manifest m p)
-    | asp _ => exists m, Maps.map_get em k = Some m
-    | att p t1 => knowsOf_Env k em p /\ executable_static t1 p em
-    | lseq t1 t2 => executable_static t1 k em /\ executable_static t2 k em
-    | bseq _ t1 t2 => executable_static t1 k em /\ executable_static t2 k em
-    | bpar _ t1 t2 => executable_static t1 k em /\ executable_static t2 k em
-  end.
-  *)
-
-  Fixpoint executable_static (t:Term) (k:Plc) (em:EnvironmentM) : Prop := 
-    match t with
-      | asp (ASPC _ _ ps)  => canRunAsp_Env k em ps
-      | asp SIG => canRun_aspid_Env k em (sig_aspid)
-      | asp HSH => canRun_aspid_Env k em (hsh_aspid)
-      | asp (ENC p) => knowsPub_Env k em p
-      | asp _ => exists m, Maps.map_get em k = Some m
-      | att p t1 => knowsOf_Env k em p /\ executable_static t1 p em
-      | lseq t1 t2 => executable_static t1 k em /\ executable_static t2 k em
-      | bseq _ t1 t2 => executable_static t1 k em /\ executable_static t2 k em
-      | bpar _ t1 t2 => executable_static t1 k em /\ executable_static t2 k em
-    end.
-
-
-(* A dynamic version of executabiilty. 
-   At runtime, we cannot know if an att term can be executed on a remote place. *)
-
-   Fixpoint executable_dynamic (t:Term) (k:Plc) (em:EnvironmentM) : Prop := 
-    match t with
-      (* | asp (ASPC _ _ (asp_paramsC asp_id _ _ _))  => canRunAsp_Env k em asp_id
-      | asp _ => True *)
-      | asp (ASPC _ _ ps)  => canRunAsp_Env k em ps
-      | asp SIG => canRun_aspid_Env k em (sig_aspid)
-      | asp HSH => canRun_aspid_Env k em (hsh_aspid)
-      | asp (ENC p) => knowsPub_Env k em p
-      | asp _ => True
-      | att p t => knowsOf_Env k em p
-      | lseq t1 t2 => executable_dynamic t1 k em /\ executable_dynamic t2 k em
-      | bseq _ t1 t2 => executable_dynamic t1 k em /\ executable_dynamic t2 k em
-      | bpar _ t1 t2 => executable_dynamic t1 k em /\ executable_dynamic t2 k em
-    end.
-(*
-Fixpoint executable_dynamic (t:Term) (k:Plc) (em:EnvironmentM) : Prop := 
-  match t with
-    | asp (ASPC _ _ (asp_paramsC asp_id _ _ _))  => canRunAsp_Env k em asp_id
-    | asp _ => True
-    | att p t => knowsOf_Env k em p
-    | lseq t1 t2 => executable_dynamic t1 k em /\ executable_dynamic t2 k em
-    | bseq _ t1 t2 => executable_dynamic t1 k em /\ executable_dynamic t2 k em
-    | bpar _ t1 t2 => executable_dynamic t1 k em /\ executable_dynamic t2 k em
-  end.
-  *)
-
-(*
-Definition envs_eq_at (e:Environment) (em:EnvironmentM) (ps:list Plc) : Prop := 
-    forall p, 
-        In p ps ->
-        e p = Maps.map_get em p.
-*)
-
-(* Record Manifest : Set := Build_Manifest
-                            { my_abstract_plc : Plc;
-                              asps : list ASP_ID;
-                              uuidPlcs : list Plc;
-                              pubKeyPlcs : list Plc;
-                              policy : Manifest_Admits.PolicyT }.*)
-
-(* Try to build a manifest. *)
-
-Definition build_manifest_helper p a p1 p2 pol : Manifest := 
-{|  my_abstract_plc := p ; 
-    asps :=  a ;
-    uuidPlcs := p1 ; 
-    pubKeyPlcs := p2 ; 
-    policy := pol |}. 
-
 Lemma eqb_plc_refl : forall p0, Eqb_Evidence.eqb_plc p0 p0 = true.
 Proof.
   intros. apply eqb_eq_plc. auto.
@@ -628,103 +503,103 @@ Proof.
   inversion H.
   -
   congruence.
-  Qed.
+Qed.
 
 Lemma dist_exec_lseq : forall p t1 t2 em,
                 distributed_executability t1 p em ->
                 distributed_executability t2 p em -> 
                 distributed_executability (lseq t1 t2) p em.
 Proof.
-                intros.
-                unfold distributed_executability in *; intros.
-                destruct_conjs.
-                cbn in H2.
+  intros.
+  unfold distributed_executability in *; intros.
+  destruct_conjs.
+  cbn in H2.
                 
-                destruct (eqb_plc p p0) eqn:hi.
-                -
-                  invc H2; ff.
-                  door.
-                  +
-                    subst.
-                    edestruct H.
-                    split.
-                    left.
-                    reflexivity.
-                    apply top_plc_refl.
+  destruct (eqb_plc p p0) eqn:hi.
+  -
+    invc H2; ff.
+    door.
+    +
+      subst.
+      edestruct H.
+      split.
+      left.
+      reflexivity.
+      apply top_plc_refl.
 
-                    edestruct H0.
-                    split.
-                    left.
-                    reflexivity.
-                    apply top_plc_refl.
-                    destruct_conjs.
-                    assert (x = x0) by congruence.
-                    subst.
-                    exists x0.
-                    split; eauto.
-                +
-                edestruct H.
-                    split.
-                    left.
-                    reflexivity.
-                    apply top_plc_refl.
+      edestruct H0.
+      split.
+      left.
+      reflexivity.
+      apply top_plc_refl.
+      destruct_conjs.
+      assert (x = x0) by congruence.
+      subst.
+      exists x0.
+      split; eauto.
+  +
+  edestruct H.
+      split.
+      left.
+      reflexivity.
+      apply top_plc_refl.
 
-                    edestruct H0.
-                    split.
-                    left.
-                    reflexivity.
-                    apply top_plc_refl.
-                    destruct_conjs.
-                    assert (x = x0) by congruence.
-                    subst.
-                    exists x0.
-                    split; eauto.
-                    rewrite eqb_eq_plc in *.
-                    subst.
-                    eauto.
-                -
-                  ff.
-                  assert (In t' (place_terms t1 p p0) \/ 
-                          In t' (place_terms t2 p p0)).
-                  {
-                    apply in_app_or.
-                    eassumption.
-                  }
-                
-                  door.
-                    +
+      edestruct H0.
+      split.
+      left.
+      reflexivity.
+      apply top_plc_refl.
+      destruct_conjs.
+      assert (x = x0) by congruence.
+      subst.
+      exists x0.
+      split; eauto.
+      rewrite eqb_eq_plc in *.
+      subst.
+      eauto.
+  -
+    ff.
+    assert (In t' (place_terms t1 p p0) \/ 
+            In t' (place_terms t2 p p0)).
+    {
+      apply in_app_or.
+      eassumption.
+    }
+  
+    door.
+      +
 
-                    apply H.
-                    split.
-                    right.
-                    assert (In p0 (places p t1)).
-                      
-                   apply in_plc_term.
+      apply H.
+      split.
+      right.
+      assert (In p0 (places p t1)).
+        
+      apply in_plc_term.
 
-                  eapply in_not_nil; eauto.
-                   unfold places in H4.
-                   invc H4.
-                   rewrite eqb_plc_refl in *; solve_by_inversion.
-                  
-                   eassumption.
-            
-                   eassumption.
-                +
-                apply H0.
-                    split.
-                    right.
-                    assert (In p0 (places p t2)).
-                     
-                   apply in_plc_term.
+    eapply in_not_nil; eauto.
+      unfold places in H4.
+      invc H4.
+      rewrite eqb_plc_refl in *; solve_by_inversion.
+    
+      eassumption.
 
-                   eapply in_not_nil; eauto.
-                   unfold places in H4.
-                   invc H4.
-                   rewrite eqb_plc_refl in *; solve_by_inversion.
-                  
-                   eassumption.
-            
-                   eassumption.
+      eassumption.
+  +
+  apply H0.
+      split.
+      right.
+      assert (In p0 (places p t2)).
+        
+      apply in_plc_term.
+
+      eapply in_not_nil; eauto.
+      unfold places in H4.
+      invc H4.
+      rewrite eqb_plc_refl in *; solve_by_inversion.
+    
+      eassumption.
+
+      eassumption.
 Qed.
 
 Lemma dist_exec_bseq : forall p t1 t2 em s,
@@ -1094,6 +969,15 @@ Proof.
 
   apply dist_exec_bpar; eauto.
   Qed.
+
+Theorem manifest_generator_executability_distributed :
+    forall (t:Term) (p:Plc), 
+        distributed_executability t p (manifest_generator t p).
+Proof.
+  intros.
+  apply static_executability_implies_distributed.
+  apply manifest_generator_executability_static.
+Qed.
 
 
 

@@ -1071,6 +1071,19 @@ Qed.
     - (* asp case *)
     destruct a; ff.
     +
+      destruct_conjs.
+      unfold Environment_subset in *.
+      specialize H0 with (m1:=H) (p:=p).
+      apply H0 in H1.
+      destruct_conjs.
+      eauto.
+    + destruct_conjs.
+    unfold Environment_subset in *.
+    specialize H0 with (m1:=H) (p:=p).
+    apply H0 in H1.
+    destruct_conjs.
+    eauto.
+    +
       subst.
       unfold canRunAsp_Env in *.
       ff.
@@ -1368,6 +1381,33 @@ unfold manifest_subset; intros; ff.
 split; intros; try solve_by_inversion.
 split; intros; try solve_by_inversion.
 Qed.
+
+(*
+Lemma fafafa : forall t p e1 e2,
+    Environment_subset e1 e2 ->
+    Environment_subset (manifest_generator' p t e1)
+                       (manifest_generator' p t e2).
+  Proof.
+    intros.
+    assert (Environment_subset e1 (manifest_generator' p t e1)).
+    {
+      apply manifest_generator_cumul.
+      apply env_subset_refl.
+    }
+    assert (Environment_subset e2 (manifest_generator' p t e2)).
+    {
+      apply manifest_generator_cumul.
+      apply env_subset_refl.
+    }
+    assert (Environment_subset e1 (manifest_generator' p t e2)).
+    {
+      eapply env_subset_trans.
+      apply H.
+      eauto.
+    }
+    eapply env_subset_trans.
+    apply manifest_generator_cumul.
+    *)
 
 Lemma fafafa : forall t p e1 e2,
     Environment_subset e1 e2 ->
@@ -2392,6 +2432,15 @@ Proof.
   - (* asp case *)
     destruct a; 
     try (simpl in *; trivial).
+    +
+      eexists.
+      rewrite eqb_plc_refl.
+      eauto. 
+
+
+    + eexists.
+    rewrite eqb_plc_refl.
+    eauto. 
     +
       destruct a.
       cbv.

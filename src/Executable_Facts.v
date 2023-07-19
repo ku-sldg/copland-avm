@@ -57,7 +57,7 @@ Fixpoint executable_static (t:Term) (k:Plc) (em:EnvironmentM) : Prop :=
     | asp SIG => canRun_aspid_Env k em (sig_aspid)
     | asp HSH => canRun_aspid_Env k em (hsh_aspid)
     | asp (ENC p) => knowsPub_Env k em p
-    | asp _ => True
+    | asp _ => exists m, Maps.map_get em k = Some m(* asp _ => True *)
     | att p t1 => knowsOf_Env k em p /\ executable_static t1 p em
     | lseq t1 t2 => executable_static t1 k em /\ executable_static t2 k em
     | bseq _ t1 t2 => executable_static t1 k em /\ executable_static t2 k em
@@ -74,7 +74,7 @@ Fixpoint executable_dynamic (t:Term) (k:Plc) (em:EnvironmentM) : Prop :=
     | asp SIG => canRun_aspid_Env k em (sig_aspid)
     | asp HSH => canRun_aspid_Env k em (hsh_aspid)
     | asp (ENC p) => knowsPub_Env k em p
-    | asp _ => True
+    | asp _ =>  exists m, Maps.map_get em k = Some m (* True *)
     | att p t => knowsOf_Env k em p
     | lseq t1 t2 => executable_dynamic t1 k em /\ executable_dynamic t2 k em
     | bseq _ t1 t2 => executable_dynamic t1 k em /\ executable_dynamic t2 k em
