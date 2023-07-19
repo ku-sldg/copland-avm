@@ -3,12 +3,10 @@ Require Import Term_Defs_Core Params_Admits Manifest Executable_Dec
 
 Require Import EqClass Maps.
 
+Require Export EnvironmentM.
+
 Require Import List.
 Import ListNotations.
-
-Definition EnvironmentM : Type := MapC Plc Manifest.
-
-Definition e_empty : EnvironmentM := [].
 
 Definition aspid_manifest_update (i:ASP_ID) (m:Manifest) : Manifest := 
   let '{| my_abstract_plc := oldPlc;
@@ -52,24 +50,6 @@ Definition pubkeys_manifest_update (ps:list Plc) (m:Manifest) : Manifest :=
                 pubKeyPlcs := _; 
                 policy := oldPolicy |} := m in
         (Build_Manifest oldMyPlc oldasps oldKnowsOf ps oldPolicy).
-
-(*
-Definition asp_manifest_update (a:ASP) (m:Manifest) : Manifest :=
-  let (i, m') := 
-  match a with 
-  | ASPC _ _ params => 
-              match params with
-              | asp_paramsC i _ targp targid => 
-                  (i,m)
-              end
-          | SIG  => (sig_aspid, m)
-          | HSH  => (hsh_aspid, m)
-          | ENC p  => (enc_aspid, m)
-          | NULL => (0,m 
-          | CPY  => m
-  end in 
-    aspid_manifest_update i m'.
-    *)
 
 Definition update_manifest_policy_targ (targp:Plc) (targid:Plc) (m:Manifest) : Manifest :=
   m.
@@ -123,35 +103,6 @@ Fixpoint manifest_generator' (p:Plc) (t:Term) (e:EnvironmentM) : EnvironmentM :=
   | bpar _ t1 t2 => manifest_generator' p t2 (manifest_generator' p t1 e)
   end.
 
-
-(*
-Check List.fold_left.
-  (*
-  fold_left
-	 : forall A B : Type, (A -> B -> A) -> list B -> A -> A
-  *)
-Check List.fold_right.
-  (*
-    fold_right
-	 : forall A B : Type, (B -> A -> A) -> A -> list B -> A
-   *)
-
-Check List.map.
-   (* map
-    : forall A B : Type, (A -> B) -> list A -> list B
-    *)
-
-Check List.remove.
-Check List.count_occ.
-
-
-Definition plc_list : list Plc := [P0; P1; P2].
-
-Compute (List.count_occ eq_plc_dec plc_list P1 ).
-Check Nat.leb.
-Check negb.
-*)
-
 Fixpoint dedup_list (ps:list Plc) : list Plc := 
   match ps with
   | [] => ps
@@ -161,14 +112,11 @@ Fixpoint dedup_list (ps:list Plc) : list Plc :=
     else dedup_list ps'
   end.
 
-
 Definition manifest_generator_terms (p:Plc) (ts:list Term) : EnvironmentM :=
   fold_right (manifest_generator' p) e_empty ts.
 
-
 Definition manifest_generator (t:Term) (p:Plc) : EnvironmentM :=
   manifest_generator' p t e_empty.
-
 
 Fixpoint places' (t:Term) (ls:list Plc) : list Plc :=
   match t with
@@ -233,29 +181,3 @@ Definition man_gen_run_attify (ls:list (Term*Plc)) : list Manifest :=
   let plc_default := default_place in 
   let ts := attify_terms ls in 
     demo_man_gen_run ts plc_default.
-
-
-
-(*
-
-Definition man_gen_res : Manifest := (fromSome (map_get (man_gen_run [cert_style] P0) P1) empty_Manifest).
-Compute man_gen_res.
-
-Compute man_gen_run.
-
-Example mytest : (man_gen_run [cert_style] P0 = map_empty).
-Proof.
-  cbv.
-  break_let.
-  assert (eqb P2 P1 = false).
-  admit.
-  find_rewrite.
-  simpl.
-  pose proof (eqb_leibniz P2 P2). intuition.
-  find_rewrite.
-  Abort.
-
-Eval cbv iota in (fromSome (map_get (man_gen_run [cert_style] P0) P1) empty_Manifest).
-
-*)
-

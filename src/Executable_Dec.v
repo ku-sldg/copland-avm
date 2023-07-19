@@ -14,8 +14,9 @@ Require Import List.
 Import ListNotations.
 
 
-
+(*
 Set Nested Proofs Allowed.
+*)
 
 
 
@@ -32,10 +33,6 @@ Proof.
     +
       solve_by_inversion.
     +
-      (* Search "||". *)
-      (*
-Bool.orb_prop: forall a b : bool, (a || b)%bool = true -> a = true \/ b = true
-       *)
       find_apply_lem_hyp Bool.orb_prop.
       destruct H0.
       ++
@@ -124,8 +121,18 @@ Proof.
     apply existsb_eq_iff_In; auto.
 Qed.
 
+Lemma canRun_aspid_prop_iff_bool : forall m i,
+canRun_aspid m i <-> canRun_aspidB m i = true.
+Proof.
+  intros.
+  split;
+    unfold canRun_aspid in *;
+    unfold canRun_aspidB in *;
+    apply existsb_eq_iff_In; auto.
+Qed.
+
 Lemma executable_prop_iff_bool : forall t e,
-    executableB t e = true <-> executable t e.
+    executableB t e = true <-> executable_local t e.
 Proof.
   intros.
   split.
@@ -151,11 +158,6 @@ Proof.
       rewrite <- canRunAsp_Manifest_prop_iff_bool.
       eauto.
     ++ 
-      Lemma canRun_aspid_prop_iff_bool : forall m i,
-        canRun_aspid m i <-> canRun_aspidB m i = true.
-        Proof.
-          Admitted.
-
       rewrite canRun_aspid_prop_iff_bool.
       eauto.
     ++
@@ -204,7 +206,7 @@ Proof.
 Qed.
 
 
-Theorem executable_dec : forall t e, {executable t e} + {~ executable t e}.
+Theorem executable_dec : forall t e, {executable_local t e} + {~ executable_local t e}.
 Proof.
   intros.
   destruct (executableB t e) eqn:H.
