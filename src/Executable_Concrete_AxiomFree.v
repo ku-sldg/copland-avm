@@ -1,4 +1,8 @@
 Require Import List Manifest_Generator Term_Defs_Core Executable_Facts Manifest.
+Require Import Maps EqClass.
+
+Definition properlyCompiledASPIDs : Prop :=
+  True.
 
 Fixpoint concrete_executable (t : Term) (k : Plc) 
     (compiler_output : (ConcreteManifest * 
@@ -41,8 +45,6 @@ Definition lib_supports_manifest (al : AM_Library) (am : Manifest) : Prop :=
   (forall (up : Plc), In up am.(uuidPlcs) -> Maps.map_get al.(Local_Plcs) up <> None) /\
   (forall (pkp : Plc), In pkp am.(pubKeyPlcs) -> Maps.map_get al.(Local_PubKeys) pkp <> None) /\
   (forall addr, forall params plcs bss ev, al.(ASPServer_Cb) addr params plcs bss ev = failed_bs).
-
-Require Import Maps EqClass.
 
 Lemma minifyRetrieval : forall {A B : Type} `{H : EqClass A} (m : MapC A B) asps a,
   In a asps ->
