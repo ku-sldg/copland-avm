@@ -55,4 +55,3 @@ Proof.
     rewrite H0 in H; eauto.
   - unfold knowsOf_Env in H0; rewrite H in H0; eauto.
 Qed.
-
