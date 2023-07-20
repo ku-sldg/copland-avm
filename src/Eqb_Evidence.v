@@ -397,3 +397,9 @@ Proof.
       split;
         eauto.
 Defined.
+
+
+Lemma eqb_plc_refl : forall p0, Eqb_Evidence.eqb_plc p0 p0 = true.
+Proof.
+  intros. apply eqb_eq_plc. auto.
+Qed.  

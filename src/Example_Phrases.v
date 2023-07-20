@@ -121,10 +121,15 @@ Definition layered_bg' : Term :=
        (attest P3 att_tid)
        (attest P4 att_tid)).
 
-Definition layered_bg'' : Term :=
+Definition layered_bg''' : Term :=
   bpar (ALL,ALL)
        (att P3 (attest P3 sys))
        (att P4 (attest P4 sys)).
+
+Definition layered_bg'' : Term :=
+        bseq (ALL,ALL)
+             (att P3 (attest P3 sys))
+             (att P4 (attest P4 sys)).
 
 Definition layered_bg_weak : Term :=
   att P1
