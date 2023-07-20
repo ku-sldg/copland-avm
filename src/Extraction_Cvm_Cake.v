@@ -5,7 +5,7 @@ Require Import CopParser.
 
 Require Import Example_Phrases Example_Phrases_Demo.
 
-Require Import privPolicy Manifest Manifest_Generator.
+Require Import privPolicy (*Manifest*) Manifest_Generator Manifest_Compiler.
 
 Require Import Client_AM Server_AM.
 
@@ -34,7 +34,7 @@ Extract Constant hsh_params => "( undefined () )".
 (* Extract Constant + => "add". *)
 (* Extract Constant Nat.add => "(+)". *)
 
-Separate Extraction run_cvm CoplandM.Manifest.manifest_compiler am_sendReq_dispatch 
+Separate Extraction run_cvm manifest_compiler am_sendReq_dispatch 
 		    run_am_app_comp am_serve_auth_tok_req am_client_auth_tok_req 
 		    cert_style cert_style_test cert_style_trimmed ssl_sig_parameterized kim_meas
 		    cert_cache_p1 cert_cache_p0 cert_cache_p0_trimmed

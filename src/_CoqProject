@@ -22,6 +22,7 @@ LTS.v
 Main.v
 Manifest_Admits.v
 Manifest.v
+Manifest_Compiler.v
 EnvironmentM.v
 Copland_AC.v
 Executable_Defs_Prop.v
