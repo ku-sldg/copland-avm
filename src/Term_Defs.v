@@ -138,6 +138,12 @@ Inductive wf_ec : EvC -> Prop :=
 
 
 Definition ReqAuthTok := EvC.
+
+Inductive CvmInMessage: Set :=
+| CVM_IN: Term -> RawEv -> CvmInMessage.
+  
+Inductive CvmOutMessage: Set := 
+| CVM_OUT: RawEv -> CvmOutMessage. 
     
     
 Definition splitEv_T_l (sp:Split) (e:Evidence) : Evidence :=

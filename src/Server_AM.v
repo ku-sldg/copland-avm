@@ -1,4 +1,4 @@
-Require Import Term IO_Stubs Cvm_Run.
+Require Import Term IO_Stubs Cvm_Run CvmJson.
 
 Require Import AM_Monad StMonad_Coq Impl_appraisal privPolicy Manifest Manifest_Admits.
 
@@ -25,7 +25,7 @@ Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc) (authTok:Req
   match (andb (requester_bound t fromPl authTok) (appraise_auth_tok v)) with
   | true =>
     match (privPolicy fromPl t) with
-    | true => ret (run_cvm_rawEv t myPl init_ev)
+    | true => ret (run_cvm_json_full t init_ev (* run_cvm_rawEv t myPl init_ev *))
     | false => failm
     end
       
@@ -34,7 +34,7 @@ Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc) (authTok:Req
 
 Definition am_client_auth_tok_req (t:Term) (myPl:Plc) (init_ev:RawEv) 
                                   (app_bool:bool): AM AM_Result :=
-  let att_res := run_cvm_rawEv t myPl init_ev in
+  let att_res := run_cvm_json_full t init_ev (* run_cvm_rawEv t myPl init_ev *) in
   match app_bool with
   | true => 
       let att_et := eval t myPl mt in

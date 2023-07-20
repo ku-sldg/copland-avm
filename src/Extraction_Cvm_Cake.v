@@ -2,6 +2,7 @@ Require Extraction.
 
 Require Import Term_Defs Term_Defs_Core Cvm_Run IO_Stubs AM_Monad.
 Require Import CopParser.
+Require Import CvmJson.
 
 Require Import Example_Phrases Example_Phrases_Demo.
 
@@ -39,7 +40,8 @@ Separate Extraction run_cvm manifest_compiler am_sendReq_dispatch
 		    cert_style cert_style_test cert_style_trimmed ssl_sig_parameterized kim_meas
 		    cert_cache_p1 cert_cache_p0 cert_cache_p0_trimmed
 		    par_mut_p0 par_mut_p1 layered_bg_strong
-		    (* demo_man_gen_run *) man_gen_run_attify empty_am_result.
+		    (* demo_man_gen_run *) man_gen_run_attify empty_am_result
+			run_cvm_json_full.
 
 (* man_gen_res environment_to_manifest_list *)
 
