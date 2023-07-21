@@ -53,7 +53,8 @@ Definition evalJson (s:StringT) : JsonT :=
 
 Definition am_client_auth_tok_req (t:Term) (myPl:Plc) (init_ev:RawEv) 
                                   (app_bool:bool): AM AM_Result :=
-  let att_res := run_cvm_json_full t init_ev (* run_cvm_rawEv t myPl init_ev *) in
+  let auth_tok := mt_evc in 
+  let att_res := am_sendReq t myPl auth_tok init_ev (* run_cvm_json_full t init_ev *) (* run_cvm_rawEv t myPl init_ev *) in
   match app_bool with
   | true => 
       let att_et := eval t myPl mt in

@@ -27,12 +27,12 @@ Definition gen_authEvC_if_some (ot:option Term) (pFrom:Plc) : AM EvC :=
 
 Definition am_sendReq_gen (t:Term) (pFrom:Plc) (pTo:Plc)
   (initEv:option EvC) (authPhrase:option Term) 
-  (plcCb : CakeML_PlcCallback) (app_bool:bool) : AM AM_Result :=
+  (* (plcCb : CakeML_PlcCallback) *) (app_bool:bool) : AM AM_Result :=
 evcIn <- gen_nonce_if_none initEv ;;
 auth_evc <- gen_authEvC_if_some authPhrase pFrom  ;;
 let '(evc init_ev init_et) := evcIn in
-let targetUUID := plcCb pTo in
-let resev := am_sendReq t targetUUID auth_evc init_ev in 
+(* let targetUUID := plcCb pTo in *)
+let resev := am_sendReq t pTo(*targetUUID*) auth_evc init_ev in 
 (*
 let resev := run_cvm_rawEv t pFrom init_ev in *)
 match app_bool with
@@ -63,22 +63,22 @@ Definition am_sendReq_gen (t:Term) (pFrom:Plc) (pTo:Plc)
 
 Definition am_sendReq_dispatch (maybeAuthTerm : option Term) (nonceB:bool) (t : Term) 
                                (source : Plc) (dest : Plc) (app_bool:bool)
-                               (plcCb : CakeML_PlcCallback) : AM AM_Result :=
+                               (* (plcCb : CakeML_PlcCallback) *) : AM AM_Result :=
   let nonce_param := 
     if(nonceB) 
     then None 
     else (Some (evc [] mt)) in
-    am_sendReq_gen t source dest nonce_param maybeAuthTerm plcCb app_bool.
+    am_sendReq_gen t source dest nonce_param maybeAuthTerm (*plcCb*) app_bool.
 
 
 Definition am_sendReq_dispatch_default_auth (t : Term) (source : Plc) (dest : Plc) 
-    (plcCb : CakeML_PlcCallback) (auth : bool) (app_bool:bool) : AM AM_Result :=
+    (* (plcCb : CakeML_PlcCallback) *) (auth : bool) (app_bool:bool) : AM AM_Result :=
     let auth_term := (ssl_sig_parameterized source) in
       let auth_param := 
        if(auth)
        then (Some auth_term)
        else None in
-          am_sendReq_dispatch auth_param true t source dest app_bool plcCb.
+          am_sendReq_dispatch auth_param true t source dest app_bool (*plcCb*) .
 
 
 

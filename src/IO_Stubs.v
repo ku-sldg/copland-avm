@@ -35,7 +35,7 @@ Admitted.
 
 
 (** * Stub for a top-level request from a remote client AM  *)
-Definition am_sendReq (t:Term) (u : UUID) (authTok:ReqAuthTok) (e:RawEv) : RawEv.
+Definition am_sendReq (t:Term) (p : Plc) (authTok:ReqAuthTok) (e:RawEv) : RawEv.
 Admitted.
 
 Definition do_asp' (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) : IO BS :=
