@@ -1,4 +1,4 @@
-Require Import Term IO_Stubs Cvm_Run CvmJson.
+Require Import Term IO_Stubs Cvm_Run CvmJson CvmJson_Admits Example_Phrases_Admits.
 
 Require Import AM_Monad StMonad_Coq Impl_appraisal privPolicy Manifest Manifest_Admits.
 
@@ -19,7 +19,8 @@ Definition am_check_auth_tok (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) : AM App
     ret appres
   end.
 
-Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc) (authTok:ReqAuthTok) (init_ev:RawEv): AM RawEv :=
+Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc) 
+                                 (authTok:ReqAuthTok) (init_ev:RawEv): AM RawEv :=
   let asdf := print_auth_tok authTok in
   v <- am_check_auth_tok t fromPl authTok ;;
   match (andb (requester_bound t fromPl authTok) (appraise_auth_tok v)) with
@@ -31,6 +32,24 @@ Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc) (authTok:Req
       
   | false => failm
   end.
+
+Definition run_am_server_auth_tok_req (t:Term) (fromPlc:Plc) (myPl:Plc) 
+            (authTok:ReqAuthTok) (init_ev:RawEv) : RawEv :=
+              run_am_app_comp (am_serve_auth_tok_req t fromPlc myPl authTok init_ev) [].
+                            
+
+Definition evalJson (s:StringT) : JsonT :=
+  let js := strToJson s in 
+  let req := jsonToRequest js in 
+  let fromPlc := default_place in 
+  let myPlc := default_place in
+  match req with 
+  | REQ t tok ev => 
+    let asdf := print_auth_tok tok in 
+      let resev := run_am_server_auth_tok_req t fromPlc myPlc tok ev in 
+        responseToJson (RES resev)
+  end.
+
 
 Definition am_client_auth_tok_req (t:Term) (myPl:Plc) (init_ev:RawEv) 
                                   (app_bool:bool): AM AM_Result :=

@@ -139,6 +139,13 @@ Inductive wf_ec : EvC -> Prop :=
 
 Definition ReqAuthTok := EvC.
 
+Inductive CvmRequestMessage: Set :=
+| REQ: Term -> ReqAuthTok -> RawEv -> CvmRequestMessage.
+
+Inductive CvmResponseMessage: Set := 
+| RES: RawEv -> CvmResponseMessage.
+
+
 Inductive CvmInMessage: Set :=
 | CVM_IN: Term -> RawEv -> CvmInMessage.
   
