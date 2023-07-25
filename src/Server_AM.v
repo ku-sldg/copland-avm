@@ -26,7 +26,7 @@ Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc)
   match (andb (requester_bound t fromPl authTok) (appraise_auth_tok v)) with
   | true =>
     match (privPolicy fromPl t) with
-    | true => ret (run_cvm_json_full t init_ev (* run_cvm_rawEv t myPl init_ev *))
+    | true => ret (* (run_cvm_json_full t init_ev *) (run_cvm_rawEv t myPl init_ev)
     | false => failm
     end
       
@@ -38,16 +38,41 @@ Definition run_am_server_auth_tok_req (t:Term) (fromPlc:Plc) (myPl:Plc)
               run_am_app_comp (am_serve_auth_tok_req t fromPlc myPl authTok init_ev) [].
                             
 
-Definition evalJson (s:StringT) : JsonT :=
-  let js := strToJson s in 
-  let req := jsonToRequest js in 
+Definition do_cvm_session (req:CvmRequestMessage): CvmResponseMessage := 
   let fromPlc := default_place in 
   let myPlc := default_place in
   match req with 
   | REQ t tok ev => 
     let asdf := print_auth_tok tok in 
       let resev := run_am_server_auth_tok_req t fromPlc myPlc tok ev in 
-        responseToJson (RES resev)
+        (RES resev)
+  end.
+
+
+Definition do_appraisal_session (appreq:AppraisalRequestMessage): 
+                                AppraisalResponseMessage :=
+  let appres := 
+    match appreq with
+    | REQ_APP t p et ev => 
+        let expected_et := eval t p et in 
+        let comp := gen_appraise_AM expected_et ev in 
+          run_am_app_comp comp mtc_app
+    end in 
+      (RES_APP appres).
+
+
+
+
+Definition evalJson (s:StringT) : JsonT :=
+  let js := strToJson s in 
+  let am_req := jsonToAmRequest js in 
+  match am_req with 
+  | CVM_REQ r => 
+    let cvm_resp := (do_cvm_session r) in 
+      responseToJson cvm_resp
+  | APP_REQ appreq => 
+    let app_resp := (do_appraisal_session appreq) in 
+      appResponseToJson app_resp
   end.
 
 
@@ -57,9 +82,14 @@ Definition am_client_auth_tok_req (t:Term) (myPl:Plc) (init_ev:RawEv)
   let att_res := am_sendReq t myPl auth_tok init_ev (* run_cvm_json_full t init_ev *) (* run_cvm_rawEv t myPl init_ev *) in
   match app_bool with
   | true => 
+    let app_res := am_sendReq_app t myPl mt att_res in 
+      ret (am_appev app_res)
+
+  (*
       let att_et := eval t myPl mt in
         app_res <- gen_appraise_AM att_et att_res ;;
         ret (am_appev app_res)
+  *)
   | false => ret (am_rawev att_res)
   end.
 

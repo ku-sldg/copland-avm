@@ -2,6 +2,7 @@ Require Import Term Example_Phrases_Demo Cvm_Run Manifest.
 
 Require Import Impl_appraisal Appraisal_IO_Stubs IO_Stubs AM_Monad StMonad_Coq.
 
+Require Import CvmJson_Admits.
 Require Import List.
 Import ListNotations.
 
@@ -23,7 +24,10 @@ Definition gen_authEvC_if_some (ot:option Term) (pFrom:Plc) : AM EvC :=
   | None => ret (evc [] mt)
   end.
 
-  Print AM_Result.
+Definition run_appraisal_client (t:Term) (p:Plc) (e:Evidence) (re:RawEv) : AppResultC :=
+    let expected_et := eval t p e in 
+    let comp := gen_appraise_AM expected_et re in
+    run_am_app_comp comp mtc_app.
 
 Definition am_sendReq_gen (t:Term) (pFrom:Plc) (pTo:Plc)
   (initEv:option EvC) (authPhrase:option Term) 
@@ -37,12 +41,18 @@ let resev := am_sendReq t pTo(*targetUUID*) auth_evc init_ev in
 let resev := run_cvm_rawEv t pFrom init_ev in *)
 match app_bool with
 | true => 
-let expected_et := eval t pTo init_et in
-app_res <- gen_appraise_AM expected_et resev ;;
+(*
+let expected_et := eval t pTo init_et in *)
+let app_res := run_appraisal_client t pTo init_et resev in
+(* app_res <- gen_appraise_AM expected_et resev ;; *)
  ret (am_appev app_res)
 | false => ret (am_rawev resev)
 end.
   
+
+
+
+
 (*
 Definition am_sendReq_gen (t:Term) (pFrom:Plc) (pTo:Plc)
            (initEv:option EvC) (authPhrase:option Term) 

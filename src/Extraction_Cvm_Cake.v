@@ -41,7 +41,7 @@ Separate Extraction run_cvm manifest_compiler am_sendReq_dispatch
 		    cert_cache_p1 cert_cache_p0 cert_cache_p0_trimmed
 		    par_mut_p0 par_mut_p1 layered_bg_strong
 		    (* demo_man_gen_run *) man_gen_run_attify empty_am_result
-			run_cvm_json_full.
+			run_cvm_json_full AM_RequestMessage AppraisalResponseMessage.
 
 (* man_gen_res environment_to_manifest_list *)
 

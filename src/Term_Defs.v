@@ -145,6 +145,16 @@ Inductive CvmRequestMessage: Set :=
 Inductive CvmResponseMessage: Set := 
 | RES: RawEv -> CvmResponseMessage.
 
+Inductive AppraisalRequestMessage: Set := 
+| REQ_APP: Term -> Plc -> Evidence -> RawEv -> AppraisalRequestMessage.
+
+Inductive AppraisalResponseMessage: Set := 
+| RES_APP:  AppResultC -> AppraisalResponseMessage.
+
+Inductive AM_RequestMessage: Set := 
+| CVM_REQ: CvmRequestMessage       -> AM_RequestMessage
+| APP_REQ: AppraisalRequestMessage -> AM_RequestMessage.
+
 
 Inductive CvmInMessage: Set :=
 | CVM_IN: Term -> RawEv -> CvmInMessage.
