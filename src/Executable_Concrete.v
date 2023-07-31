@@ -1,4 +1,4 @@
-Require Import List Manifest_Generator Term_Defs_Core Executable_Facts Manifest.
+Require Import List Manifest_Generator Term_Defs_Core Executable_Defs_Prop Manifest Manifest_Compiler.
 
 Definition properlyCompiledASPIDs : Prop :=
   True.
@@ -40,7 +40,7 @@ Definition lib_supports_manifest (al : AM_Library) (am : Manifest) : Prop :=
 
 Theorem manifest_compiler_soundness : 
   forall (em : EnvironmentM) (t : Term) (p : Plc),
-    executable_static t p em ->
+    executable_global t p em ->
     (forall (am : Manifest),
       Maps.map_get em p = Some am ->
       forall (al : AM_Library), 

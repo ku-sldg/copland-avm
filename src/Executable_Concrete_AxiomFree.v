@@ -1,4 +1,4 @@
-Require Import List Manifest_Generator Term_Defs_Core Executable_Facts Manifest.
+Require Import List Manifest_Generator Term_Defs_Core Executable_Facts Executable_Defs_Prop Manifest Manifest_Compiler.
 Require Import Maps EqClass.
 
 Definition properlyCompiledASPIDs : Prop :=
@@ -63,7 +63,7 @@ Qed.
 
 Theorem manifest_compiler_soundness : 
   forall (em : EnvironmentM) (t : Term) (p : Plc),
-    executable_static t p em ->
+    executable_global t p em ->
     (forall (am : Manifest),
       Maps.map_get em p = Some am ->
       forall (al : AM_Library), 
