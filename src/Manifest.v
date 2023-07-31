@@ -68,8 +68,9 @@ Definition PlcMap := MapC Plc Address.
     my_plc          : Plc ; 
 
     (* Local Mappings *)
-    Concrete_Plcs        : MapD Plc UUID ;
-    Concrete_PubKeys     : MapD Plc PublicKey ;
+    Concrete_ASPs         : list ASP_ID ;
+    Concrete_Plcs         : MapD Plc UUID ;
+    Concrete_PubKeys      : MapD Plc PublicKey ;
 (* 
     concrete_asps   : list ASP_ID ;
     concrete_plcs   : list Plc ;

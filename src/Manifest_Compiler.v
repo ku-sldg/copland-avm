@@ -84,9 +84,6 @@ Import ListNotations.
         | None => (uuid_server_cb local_uuid_addr u)
         end.
 
-
-
-
   (* This is a rough type signature for the "manifest compiler".  Still some details to be ironed out... *)
   Definition manifest_compiler (m : Manifest) (al : AM_Library) 
     : (ConcreteManifest * 
@@ -104,6 +101,7 @@ Import ListNotations.
     let concrete_man := {|
       my_plc := m.(my_abstract_plc) ;
 
+      Concrete_ASPs := m.(asps) ;
       Concrete_Plcs := al.(Local_Plcs) ;
       Concrete_PubKeys := al.(Local_PubKeys) ;
 
