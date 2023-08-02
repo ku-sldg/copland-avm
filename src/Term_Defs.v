@@ -154,15 +154,9 @@ Inductive AppraisalResponseMessage: Set :=
 Inductive AM_RequestMessage: Set := 
 | CVM_REQ: CvmRequestMessage       -> AM_RequestMessage
 | APP_REQ: AppraisalRequestMessage -> AM_RequestMessage.
+    
 
 
-Inductive CvmInMessage: Set :=
-| CVM_IN: Term -> RawEv -> CvmInMessage.
-  
-Inductive CvmOutMessage: Set := 
-| CVM_OUT: RawEv -> CvmOutMessage. 
-    
-    
 Definition splitEv_T_l (sp:Split) (e:Evidence) : Evidence :=
   match sp with
   | (ALL,_) => e

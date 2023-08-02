@@ -1,5 +1,6 @@
 Require Import CvmJson_Admits Example_Phrases_Admits Term_Defs Cvm_Run.
 
+(*
 Definition run_cvm_json (j:JsonT) : JsonT := 
 let cvmIn := jsonToCvmIn j in 
     match cvmIn with 
@@ -15,4 +16,5 @@ Definition run_cvm_json_full (t:Term) (ev:RawEv) : RawEv :=
     let cvmout_json := run_cvm_json cvmin_json in 
     match (jsonToCvmOut cvmout_json) with 
     | CVM_OUT ev' => ev'
-    end.
+ end. // UNMATCHED !!
+ *)

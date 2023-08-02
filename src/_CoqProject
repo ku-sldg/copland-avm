@@ -45,7 +45,6 @@ Cvm_Monad.v
 Cvm_Impl.v
 Cvm_Run.v
 CvmJson_Admits.v
-CvmJson.v
 Auto.v
 AutoApp.v
 Helpers_CvmSemantics.v

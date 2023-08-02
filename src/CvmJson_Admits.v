@@ -10,18 +10,6 @@ Admitted.
 Definition strToJson (s:StringT): JsonT.
 Admitted.
 
-Definition jsonToCvmIn (j:JsonT) : CvmInMessage.
-Admitted.
-
-Definition jsonToCvmOut (j:JsonT) : CvmOutMessage.
-Admitted.
-
-Definition cvmInMessageToJson (cvmin:CvmInMessage) : JsonT.
-Admitted.
-
-Definition cvmOutMessageToJson (cvmout:CvmOutMessage): JsonT.
-Admitted.
-
 Definition requestToJson (req:CvmRequestMessage): JsonT.
 Admitted.
 
@@ -42,15 +30,3 @@ Admitted.
 
 Definition jsonToAmRequest (j:JsonT): AM_RequestMessage.
 Admitted.
-
-(*
-Definition run_appraisal_client (t:Term) (p:Plc) (e:Evidence) (re:RawEv) : AppResultC.
-Admitted.
-*)
-
-(*
-Definition run_appraisal_client (t:Term) (p:Plc) (e:Evidence) (re:RawEv) : AppResultC :=
-    let expected_et := eval t p e in 
-    let comp := gen_appraise_AM expected_et re in
-    run_am_app_comp comp mtc_app.
-*)

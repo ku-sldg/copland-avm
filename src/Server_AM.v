@@ -1,4 +1,4 @@
-Require Import Term IO_Stubs Cvm_Run CvmJson CvmJson_Admits Example_Phrases_Admits.
+Require Import Term IO_Stubs Cvm_Run CvmJson_Admits Example_Phrases_Admits.
 
 Require Import AM_Monad StMonad_Coq Impl_appraisal privPolicy Manifest Manifest_Admits.
 
