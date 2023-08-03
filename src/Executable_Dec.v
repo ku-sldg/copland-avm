@@ -84,9 +84,8 @@ Proof.
     + 
       eapply existsb_eq_iff_In.
       eassumption.
-    +
-    cbv.
-    eauto.
+    + unfold can_measure_target_prop, can_measure_target in *; simpl in *; 
+      eapply existsb_eq_iff_In; eauto.
 
   - (* <- case *)
     unfold canRunAsp_Manifest.
@@ -95,10 +94,9 @@ Proof.
     destruct a.
     intros.
     destruct_conjs.
-    unfold can_measure_target.
-    rewrite <- existsb_eq_iff_In in H.
-    rewrite Bool.andb_true_r.
-    eassumption.
+    unfold can_measure_target, can_measure_target_prop in *.
+    rewrite <- existsb_eq_iff_In in *; simpl in *.
+    eauto with *.
 Qed.
 
 Lemma knowsOf_Manifest_prop_iff_bool: forall e a,

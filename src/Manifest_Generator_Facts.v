@@ -42,7 +42,8 @@ Definition distributed_executability
 Definition manifest_subset (m1:Manifest) (m2:Manifest) : Prop :=
   (forall i, In i (asps m1) -> In i (asps m2)) /\
   (forall p, In p (uuidPlcs m1) -> In p (uuidPlcs m2)) /\
-  (forall q, In q (pubKeyPlcs m1) -> In q (pubKeyPlcs m2)).
+  (forall q, In q (pubKeyPlcs m1) -> In q (pubKeyPlcs m2)) /\
+  (forall p, In p (targetPlcs m1) -> In p (targetPlcs m2)).
 
 Definition Environment_subset (e1:EnvironmentM) (e2:EnvironmentM) : Prop := 
   forall m1 p, 
@@ -66,10 +67,7 @@ Lemma manifest_subset_trans : forall m1 m2 m3,
   manifest_subset m2 m3 ->
   manifest_subset m1 m3.
 Proof.
-  intros.
-  unfold manifest_subset in *; ff.
-  split; intros; destruct_conjs; eauto.
-  split; intros; destruct_conjs; eauto.
+  intros; unfold manifest_subset in *; intuition.
 Qed.
 
 Lemma env_subset_refl : forall e, 
@@ -768,9 +766,7 @@ Proof.
   apply H0 in H1.
   destruct_conjs.
   eauto.
-  +
-    subst.
-    unfold canRunAsp_Env in *.
+  + unfold canRunAsp_Env in *; simpl in *.
     ff.
     ++
     unfold Environment_subset in *; ff.
@@ -781,7 +777,7 @@ Proof.
     ff.
     unfold manifest_subset in *; ff.
     unfold canRunAsp_Manifest in *; ff;
-      destruct_conjs; ff.
+      destruct_conjs; ff; subst.
     ++
     unfold Environment_subset in *; ff.
     specialize H0 with (m1:=m) (p:=p).
@@ -915,6 +911,7 @@ Proof.
         asps := asps;
         uuidPlcs := uuidPlcs;
         pubKeyPlcs := pubKeyPlcs;
+        targetPlcs := targetPlcs;
         policy := policy
       |}) (p:=p0).
 
@@ -949,22 +946,13 @@ Proof.
         split; try reflexivity.
         unfold manifest_subset; ff; intros.
         split; intros; eauto; try solve_by_inversion.
-        split; intros; eauto.
-        door; eauto; try solve_by_inversion.
-        solve_by_inversion.
+        split; intros; eauto; intuition.
 
       ++
-        unfold Environment_subset in H.
-        specialize H with (m1 :=  {|
-          my_abstract_plc := my_abstract_plc;
-          asps := asps;
-          uuidPlcs := uuidPlcs;
-          pubKeyPlcs := pubKeyPlcs;
-          policy := policy
-        |}) (p:=p0).
-        apply H in Heqo0.
-        destruct_conjs.
-        repeat find_rewrite.
+        unfold Environment_subset in H; 
+        apply H in Heqo0;
+        destruct_conjs;
+        repeat find_rewrite;
         ff.
       ++
         unfold empty_Manifest in *; ff.
@@ -983,11 +971,9 @@ Qed.
 Lemma empty_manifest_always_sub: forall m,
 manifest_subset empty_Manifest m.
 Proof.
-intros.
-unfold empty_Manifest.
-unfold manifest_subset; intros; ff.
-split; intros; try solve_by_inversion.
-split; intros; try solve_by_inversion.
+intros;
+unfold empty_Manifest; unfold manifest_subset; intros; 
+intuition; try solve_by_inversion.
 Qed.
 
 Lemma fafafa : forall t p e1 e2,
@@ -1217,14 +1203,6 @@ Lemma fafafa : forall t p e1 e2,
         unfold update_manifest_policy_targ in *; 
         subst.
 
-
-        specialize H with (m1:= {|
-          my_abstract_plc := my_abstract_plc;
-          asps := asps;
-          uuidPlcs := uuidPlcs;
-          pubKeyPlcs := pubKeyPlcs;
-          policy := policy
-        |}) (p:=p).
         apply H in Heqo.
         destruct_conjs.
         rewrite H0 in *.
@@ -1233,20 +1211,12 @@ Lemma fafafa : forall t p e1 e2,
         clear H.
 
         eexists.
-        split.
-        ++++
-          reflexivity.
-        ++++
-        unfold manifest_subset in *; intros; ff.
-        destruct_conjs.
-        
-        split; intros; eauto.
-        door.
-        +++++
-          eauto.
-        +++++
-        right.
-        eauto.
+        split; eauto;
+        unfold manifest_subset in *; intros; 
+        intuition; 
+        destruct m0, m; simpl in *; 
+        inv Heqm0; inv Heqm1;
+        destruct_conjs; simpl in *; intuition; eauto.
     +++
       assert (EqClass.eqb p1 p = false).
       {
@@ -1256,14 +1226,6 @@ Lemma fafafa : forall t p e1 e2,
   ++
     unfold Environment_subset in H; ff.
     unfold update_manifest_policy_targ in *; subst.
-    specialize H with (m1:={|
-      my_abstract_plc := my_abstract_plc;
-      asps := asps;
-      uuidPlcs := uuidPlcs;
-      pubKeyPlcs := pubKeyPlcs;
-      policy := policy
-    |}) (p:=p).
-
     apply H in Heqo.
     destruct_conjs.
     repeat find_rewrite.
@@ -1285,16 +1247,10 @@ Lemma fafafa : forall t p e1 e2,
     eexists.
     split.
       reflexivity.
-      unfold manifest_subset; intros; ff.
-      split; intros.
-      ++++
-      door.
-        +++++
-          left; eauto.
-        +++++
-          solve_by_inversion.
-      ++++
-        split; intros; solve_by_inversion.
+      unfold manifest_subset; intros; intuition; ff;
+      destruct H0; subst; intuition; eauto.
+      * unfold update_manifest_policy_targ in *; 
+        destruct m; simpl in *; inv Heqm0; eauto with *.
   +++
   assert (EqClass.eqb p1 p = false).
   {
@@ -1356,14 +1312,6 @@ destruct (eq_plc_dec p0 p).
   }
   repeat find_rewrite; ff.
 
-
-  specialize H with (m1:= {|
-    my_abstract_plc := my_abstract_plc;
-    asps := asps;
-    uuidPlcs := uuidPlcs;
-    pubKeyPlcs := pubKeyPlcs;
-    policy := policy
-  |}) (p:=p).
   apply H in Heqo.
   destruct_conjs.
   rewrite H0 in *.
@@ -1398,13 +1346,6 @@ repeat find_rewrite; ff.
 ++
 
 unfold Environment_subset in H; ff.
-specialize H with (m1:={|
-  my_abstract_plc := my_abstract_plc;
-  asps := asps;
-  uuidPlcs := uuidPlcs;
-  pubKeyPlcs := pubKeyPlcs;
-  policy := policy
-|}) (p:=p).
 
 apply H in Heqo.
 destruct_conjs.
@@ -1430,16 +1371,8 @@ destruct (eq_plc_dec p0 p).
   eexists.
   split.
     reflexivity.
-    unfold manifest_subset; intros; ff.
-    split; intros.
-    ++++
-    door.
-      +++++
-        left; eauto.
-      +++++
-        solve_by_inversion.
-    ++++
-      split; intros; solve_by_inversion.
+      unfold manifest_subset; intros; intuition; ff;
+      destruct H0; subst; intuition; eauto.
 +++
 assert (EqClass.eqb p0 p = false).
 {
@@ -1499,14 +1432,6 @@ destruct (eq_plc_dec p0 p).
   }
   repeat find_rewrite; ff.
 
-  specialize H with (m1:= {|
-    my_abstract_plc := my_abstract_plc;
-    asps := asps;
-    uuidPlcs := uuidPlcs;
-    pubKeyPlcs := pubKeyPlcs;
-    policy := policy
-  |} ) (p:=p).
-
   apply H in Heqo.
   destruct_conjs.
   find_rewrite.
@@ -1530,14 +1455,6 @@ repeat find_rewrite; ff.
 
 unfold Environment_subset in H; ff.
 
-specialize H with (m1:={|
-  my_abstract_plc := my_abstract_plc;
-  asps := asps;
-  uuidPlcs := uuidPlcs;
-  pubKeyPlcs := pubKeyPlcs;
-  policy := policy
-|}) (p:=p).
-
 apply H in Heqo.
 destruct_conjs.
 repeat find_rewrite.
@@ -1560,13 +1477,8 @@ destruct (eq_plc_dec p0 p).
   eexists.
   split.
     reflexivity.
-    unfold manifest_subset; intros; ff.
-    split; intros.
-    ++++
-    door; eauto.
-      solve_by_inversion.
-    ++++
-      split; intros; solve_by_inversion.
+    unfold manifest_subset; intros; intuition; ff;
+    destruct H0; subst; intuition; eauto.
 +++
 assert (EqClass.eqb p0 p = false).
 {
@@ -1628,15 +1540,6 @@ destruct (eq_plc_dec p1 p).
   }
   repeat find_rewrite; ff.
 
-  specialize H with (m1:={|
-  my_abstract_plc := my_abstract_plc;
-  asps := asps;
-  uuidPlcs := uuidPlcs;
-  pubKeyPlcs := pubKeyPlcs;
-  policy := policy
-|}) (p:=p).
-
-
 apply H in Heqo0.
 destruct_conjs.
 repeat find_rewrite.
@@ -1644,21 +1547,9 @@ ff.
 
 eexists.
 split; eauto.
-unfold manifest_subset; ff.
-split; ff; intros; eauto.
 
-door; ff; eauto.
-
-split; intros; ff; eauto.
-
-unfold manifest_subset in *; ff; eauto.
-destruct_conjs; eauto.
-door; eauto.
-
-
-unfold manifest_subset in *; ff; eauto.
-destruct_conjs; ff; eauto.
-
+unfold manifest_subset in *; intros; intuition; ff; 
+intuition; eauto with *.
 +++
 assert (EqClass.eqb p1 p = false).
 {
@@ -1684,15 +1575,9 @@ destruct (eq_plc_dec p1 p).
 
   eexists.
   split.
-    reflexivity.
-    unfold manifest_subset; intros; ff.
-    split; intros.
-    ++++
-    door;
-      solve_by_inversion.
-    ++++
-      split; intros; try solve_by_inversion.
-      door; solve_by_inversion.
+  reflexivity.
+  unfold manifest_subset; intros; intuition; ff;
+  destruct H0; subst; intuition; eauto.
 +++
 assert (EqClass.eqb p1 p = false).
 {
@@ -1702,13 +1587,6 @@ repeat find_rewrite; ff.
 
 ++
 unfold Environment_subset in H.
-specialize H with (m1:=  {|
-  my_abstract_plc := my_abstract_plc;
-  asps := asps;
-  uuidPlcs := uuidPlcs;
-  pubKeyPlcs := pubKeyPlcs;
-  policy := policy
-|}) (p:=p).
 
 apply H in Heqo0.
 destruct_conjs.
@@ -1875,8 +1753,8 @@ Proof.
     cbn.
     intros.
     unfold knowsOf_Env in *.
-    ff.
-    Focus 2.
+    ff; eauto.
+    2: {
 
     assert (
       exists v,
@@ -1890,6 +1768,7 @@ Proof.
             asps := [];
             uuidPlcs := [p];
             pubKeyPlcs := [];
+            targetPlcs := [];
             policy := Manifest_Admits.empty_PolicyT
           |})) p0 = Some v).
           {
@@ -1902,6 +1781,7 @@ Proof.
                  asps := [];
                  uuidPlcs := [p];
                  pubKeyPlcs := [];
+                 targetPlcs := [];
                  policy := Manifest_Admits.empty_PolicyT
                |}) p0 = Some v).
                {
@@ -1926,6 +1806,7 @@ Proof.
           find_rewrite.
 
           solve_by_inversion.
+    }
 
     split.
     +
@@ -1940,6 +1821,7 @@ Proof.
                 asps := [];
                 uuidPlcs := [p];
                 pubKeyPlcs := [];
+                targetPlcs := [];
                 policy := Manifest_Admits.empty_PolicyT
               |}
 
@@ -1955,6 +1837,7 @@ Proof.
         asps := [];
         uuidPlcs := [p];
         pubKeyPlcs := [];
+        targetPlcs := [];
         policy := Manifest_Admits.empty_PolicyT
       |})])
 
@@ -1965,6 +1848,7 @@ Proof.
                 asps := [];
                 uuidPlcs := [p];
                 pubKeyPlcs := [];
+                targetPlcs := [];
                 policy := Manifest_Admits.empty_PolicyT
               |})]) 
 

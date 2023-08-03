@@ -3,8 +3,8 @@ Require Import Term_Defs_Core Manifest_Admits Manifest Params_Admits Environment
 Require Import List.
 Import ListNotations.
 
-Definition can_measure_target_prop (pol:PolicyT) (tplc:Plc) (targid:TARG_ID) : Prop
-  := True.
+Definition can_measure_target_prop (m : Manifest) (pol:PolicyT) (tplc:Plc) (targid:TARG_ID) : Prop
+  := In tplc m.(targetPlcs).
 
 Definition canRunAsp_Manifest (m:Manifest)(params:ASP_PARAMS) : Prop :=
   match params with
@@ -12,7 +12,7 @@ Definition canRunAsp_Manifest (m:Manifest)(params:ASP_PARAMS) : Prop :=
     let '{| asps := aspsM; uuidPlcs := knowsOfM; pubKeyPlcs := _;
             policy := policyM |} := m in
     In aspid aspsM /\
-    can_measure_target_prop policyM targplc targid 
+    can_measure_target_prop m policyM targplc targid 
   end.
 
 Definition canRun_aspid (m:Manifest) (i:ASP_ID):Prop :=

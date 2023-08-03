@@ -104,6 +104,7 @@ Import ListNotations.
       Concrete_ASPs := m.(asps) ;
       Concrete_Plcs := al.(Local_Plcs) ;
       Concrete_PubKeys := al.(Local_PubKeys) ;
+      Concrete_Targets := m.(targetPlcs) ;
 
       ASP_Server := al.(ASPServer_Addr) ;
       PubKey_Server := al.(PubKeyServer_Addr);
