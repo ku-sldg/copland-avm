@@ -10,6 +10,9 @@ Admitted.
 Definition strToJson (s:StringT): JsonT.
 Admitted.
 
+Definition jsonToStr (js:JsonT): StringT.
+Admitted.
+
 Definition requestToJson (req:CvmRequestMessage): JsonT.
 Admitted.
 

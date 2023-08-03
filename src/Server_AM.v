@@ -48,7 +48,6 @@ Definition do_cvm_session (req:CvmRequestMessage): CvmResponseMessage :=
         (RES resev)
   end.
 
-
 Definition do_appraisal_session (appreq:AppraisalRequestMessage): 
                                 AppraisalResponseMessage :=
   let appres := 
@@ -60,56 +59,16 @@ Definition do_appraisal_session (appreq:AppraisalRequestMessage):
     end in 
       (RES_APP appres).
 
-
-
-
-Definition evalJson (s:StringT) : JsonT :=
+Definition handle_AM_request (s:StringT) : StringT :=
   let js := strToJson s in 
   let am_req := jsonToAmRequest js in 
-  match am_req with 
-  | CVM_REQ r => 
-    let cvm_resp := (do_cvm_session r) in 
-      responseToJson cvm_resp
-  | APP_REQ appreq => 
-    let app_resp := (do_appraisal_session appreq) in 
-      appResponseToJson app_resp
-  end.
-
-
-Definition am_client_auth_tok_req (t:Term) (myPl:Plc) (init_ev:RawEv) 
-                                  (app_bool:bool): AM AM_Result :=
-  let auth_tok := mt_evc in 
-  let att_res := am_sendReq t myPl auth_tok init_ev (* run_cvm_json_full t init_ev *) (* run_cvm_rawEv t myPl init_ev *) in
-  match app_bool with
-  | true => 
-    let app_res := am_sendReq_app t myPl mt att_res in 
-      ret (am_appev app_res)
-
-  (*
-      let att_et := eval t myPl mt in
-        app_res <- gen_appraise_AM att_et att_res ;;
-        ret (am_appev app_res)
-  *)
-  | false => ret (am_rawev att_res)
-  end.
-
-(*
-Definition am_client_auth_tok_req (t:Term) (myPl:Plc) (init_ev:RawEv) (app_bool:bool): AM AppResultC :=
-  match app_bool with
-  | true => 
-     v <- am_check_auth_tok t myPl mt_evc ;;
-     match (andb (requester_bound t myPl mt_evc) (appraise_auth_tok v)) with
-      | true =>
-        match (privPolicy myPl t) with
-        | true =>
-          let att_res := run_cvm_rawEv t myPl init_ev in
-          let att_et := eval t myPl mt in
-          gen_appraise_AM att_et att_res
-        | false => failm
-        end
-      
-      | false => failm
-     end
-| false => ret mtc_app
-end.
-*)
+  let json_resp := 
+    match am_req with 
+    | CVM_REQ r => 
+      let cvm_resp := (do_cvm_session r) in 
+        responseToJson cvm_resp
+    | APP_REQ appreq => 
+      let app_resp := (do_appraisal_session appreq) in 
+        appResponseToJson app_resp
+    end in 
+    jsonToStr json_resp.
