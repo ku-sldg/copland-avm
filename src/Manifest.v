@@ -33,12 +33,13 @@ Definition PlcMap := MapC Plc Address.
     asps              : list ASP_ID ;
     uuidPlcs          : list Plc ;
     pubKeyPlcs        : list Plc ;
+    targetPlcs        : list Plc ;
     policy            : PolicyT  ;
     (* TO DO: Add privacy and selection policies to manifest? *)
   }.
 
   Definition empty_Manifest : Manifest :=
-    Build_Manifest empty_Manifest_Plc [] [] [] empty_PolicyT.
+    Build_Manifest empty_Manifest_Plc [] [] [] [] empty_PolicyT.
 
 (** Representation of a system's environment/resources used to populate a 
     ConcreteManifest based on an abstract Manifest. *)
@@ -71,11 +72,9 @@ Definition PlcMap := MapC Plc Address.
     Concrete_ASPs         : list ASP_ID ;
     Concrete_Plcs         : MapD Plc UUID ;
     Concrete_PubKeys      : MapD Plc PublicKey ;
-(* 
-    concrete_asps   : list ASP_ID ;
-    concrete_plcs   : list Plc ;
-    concrete_pubkeys: list PublicKey ; *)
+    Concrete_Targets      : list Plc ;
 
+    (* Servers *)
     ASP_Server      : ASP_Address ;
     PubKey_Server   : ASP_Address ;
     Plc_Server      : ASP_Address ;

@@ -5,8 +5,8 @@ Require Import Lists.List.
 Import ListNotations.
 
 
-Definition can_measure_target (pol:PolicyT) (tplc:Plc) (targid:TARG_ID) : bool 
-  := true.
+Definition can_measure_target (m : Manifest) (pol:PolicyT) (tplc:Plc) (targid:TARG_ID) : bool 
+  := existsb (eqb_plc tplc) m.(targetPlcs).
 
 Definition canRunAsp_ManifestB (m:Manifest) (params:ASP_PARAMS) : bool :=
   match params with
@@ -14,7 +14,7 @@ Definition canRunAsp_ManifestB (m:Manifest) (params:ASP_PARAMS) : bool :=
         let '{| asps := aspsM; uuidPlcs := knowsOfM; pubKeyPlcs := _;
                 policy := policyM |} := m in
         (existsb (eqb aspid) aspsM) &&
-        (can_measure_target policyM targplc targid)
+        (can_measure_target m policyM targplc targid)
   end.
 
 Definition canRun_aspidB (m:Manifest) (i:ASP_ID) : bool :=
