@@ -5,9 +5,13 @@ Require Import CopParser.
 
 Require Import Example_Phrases Example_Phrases_Demo.
 
-Require Import privPolicy (*Manifest*) Manifest_Generator Manifest_Compiler.
+Require Import privPolicy Manifest_Generator Manifest_Compiler.
 
 Require Import Client_AM Server_AM.
+
+
+Require Import List.
+Import ListNotations.
 
 Extraction Language CakeML. (* OCaml. *) 
 
@@ -34,20 +38,12 @@ Extract Constant hsh_params => "( undefined () )".
 (* Extract Constant + => "add". *)
 (* Extract Constant Nat.add => "(+)". *)
 
-Separate Extraction run_cvm manifest_compiler am_sendReq_dispatch 
-		    run_am_app_comp handle_AM_request am_client_auth_tok_req 
-		    cert_style cert_style_test cert_style_trimmed ssl_sig_parameterized kim_meas
-		    cert_cache_p1 cert_cache_p0 cert_cache_p0_trimmed
+Definition term_list : list Term := 
+	[cert_style; cert_style_test; cert_style_trimmed; cert_cache_p1; cert_cache_p0; cert_cache_p0_trimmed].
+
+Separate Extraction run_cvm manifest_compiler  
+		    run_am_app_comp 
+			handle_AM_request am_client_auth am_client_gen 
+			term_list ssl_sig_parameterized kim_meas
 		    par_mut_p0 par_mut_p1 layered_bg_strong
 		    man_gen_run_attify empty_am_result.
-			(* AM_RequestMessage AppraisalResponseMessage. *)
-			(* am_serve_auth_tok_req *) 
-
-(* man_gen_res environment_to_manifest_list *)
-
-(* 
-Separate Extraction demo_phrase demo_phrase2 demo_phrase3 client_data_phrase ssl_sig CoplandM.Manifest.Manifest CoplandM.Manifest.manifest_compiler Evidence AppResultC. *)
-
-(*
-Separate Extraction CopParser.parsePhrase.
-*)

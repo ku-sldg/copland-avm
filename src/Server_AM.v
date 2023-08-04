@@ -23,10 +23,10 @@ Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc)
                                  (authTok:ReqAuthTok) (init_ev:RawEv): AM RawEv :=
   let asdf := print_auth_tok authTok in
   v <- am_check_auth_tok t fromPl authTok ;;
-  match (andb (requester_bound t fromPl authTok) (appraise_auth_tok v)) with
+  match ((appraise_auth_tok v)) with
   | true =>
     match (privPolicy fromPl t) with
-    | true => ret (* (run_cvm_json_full t init_ev *) (run_cvm_rawEv t myPl init_ev)
+    | true => ret (run_cvm_rawEv t myPl init_ev)
     | false => failm
     end
       
