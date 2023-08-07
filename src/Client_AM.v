@@ -26,6 +26,13 @@ Definition gen_authEvC_if_some (ot:option Term) (myPlc:Plc) (init_evc:EvC) : AM 
   | None => ret (evc [] mt)
   end.
 
+Definition am_appraise (t:Term) (toPlc:Plc) (init_et:Evidence) (cvm_ev:RawEv) : AM AppResultC :=
+  (* let app_res := run_appraisal_client t pTo init_et cvm_ev in *)
+  let expected_et := eval t toPlc init_et in
+  app_res <- gen_appraise_AM expected_et cvm_ev ;;
+  ret (app_res).
+
+
 Definition am_client_gen (t:Term) (myPlc:Plc) (pTo:Plc) (initEvOpt:option EvC) 
     (authPhrase:option Term) (app_bool:bool) : AM AM_Result :=
 evcIn <- gen_nonce_if_none initEvOpt ;;
@@ -33,10 +40,8 @@ auth_evc <- gen_authEvC_if_some authPhrase myPlc mt_evc  ;;
 let '(evc init_ev init_et) := evcIn in
 let resev := am_sendReq t pTo auth_evc init_ev in 
 match app_bool with
-| true => 
-  let expected_et := eval t pTo init_et in
-  (* let app_res := run_appraisal_client t pTo init_et resev in *)
-  app_res <- gen_appraise_AM expected_et resev ;;
+| true =>  
+  app_res <- am_appraise t pTo init_et resev ;; 
   ret (am_appev app_res)
 | false => ret (am_rawev resev)
 end.
