@@ -108,7 +108,6 @@ Fixpoint et_size (e:Evidence): nat :=
   | ss e1 e2 => (et_size e1) + (et_size e2)
   end.
 
-
 (** Raw Evidence representaiton:  a list of binary (BS) values. *)
 Definition RawEv := list BS.
 

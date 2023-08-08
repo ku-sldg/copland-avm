@@ -4,7 +4,7 @@ Record representing the CVM Monad state structure.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import ConcreteEvidence StMonad_Coq AbstractedTypes.
+Require Import ConcreteEvidence ErrorStMonad_Coq AbstractedTypes.
 Require Import List.
 Import ListNotations.
 
@@ -27,7 +27,7 @@ Record cvm_st : Type := mk_st
 Definition empty_vmst := mk_st (evc [] mt) [] min_id_type 0.
 
 (** CVM monad -- simple instantiation of the general St monad with cvm_st *)
-Definition CVM := St cvm_st.
+Definition CVM := Err cvm_st.
 
 (* Look for cvm_st hyps and destruct them *)
 Ltac vmsts :=

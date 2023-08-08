@@ -1,20 +1,22 @@
-Require Import StMonad_Coq AM_St BS Maps Term_Defs_Core Term_Defs Cvm_Run.
+Require Import ErrorStMonad_Coq AM_St BS Maps Term_Defs_Core Term_Defs Cvm_Run.
+
+Require Import ErrorStringConstants.
 
 Require Import List.
 Import ListNotations.
 
 
 
-Definition AM := St AM_St.
+Definition AM := Err AM_St.
 
-Definition fromSome{A:Type} (default:A) (opt:option A): A :=
+Definition fromSome{A:Type} (default:A) (opt:ErrorT A): A :=
   match opt with
-  | Some x => x
+  | errRetC x => x
   | _ => default
   end.
 
 Definition run_am_app_comp{A:Type} (am_comp:AM A) (default_A:A) : A :=
-  let optRes := evalSt am_comp empty_amst in
+  let optRes := evalErr am_comp empty_amst in
   fromSome default_A optRes.
 
 Definition am_newNonce (bs:BS) : AM nat :=
@@ -26,15 +28,13 @@ Definition am_newNonce (bs:BS) : AM nat :=
   put (mkAM_St newMap newId) ;;
   ret oldId.
 
-Check map_get.
-
 Definition am_getNonce (nid:nat) : AM BS :=
   oldSt <- get ;;
   let oldMap := am_nonceMap oldSt in
   let resopt := map_get oldMap nid in
   match resopt with
   | Some res => ret res
-  | None => failm
+  | None => failm errStr_amNonce
   end.
 
 

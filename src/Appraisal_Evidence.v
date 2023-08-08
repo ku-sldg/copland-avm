@@ -1,5 +1,6 @@
 Require Import ConcreteEvidence AutoApp Auto Helpers_CvmSemantics Term_Defs Anno_Term_Defs Cvm_St Cvm_Impl Defs StructTactics OptMonad_Coq IO_Stubs Evidence_Bundlers Axioms_Io External_Facts. (* Cvm_Monad *)
 
+(* Require Import ErrorStMonad_Coq. *)
 Require Import List.
 Import ListNotations.
 
@@ -8,8 +9,8 @@ Require Import Lia Coq.Program.Tactics.
 
 Definition peel_bs (ls:RawEv) : Opt (BS * RawEv) :=
   match ls with
-  | bs :: ls' => ret (bs, ls')
-  | _ => failm
+  | bs :: ls' => OptMonad_Coq.ret (bs, ls')
+  | _ => OptMonad_Coq.failm
   end.
 
 Lemma firstn_long: forall (e:list BS) x,
@@ -1331,6 +1332,8 @@ Fixpoint cvm_evidence_denote (t:AnnoTerm) (p:Plc) (ec:EvidenceC) : EvidenceC :=
                          (cvm_evidence_denote t2 p ((splitEvr s ec)))
   end.
 
+Require Import ErrorStMonad_Coq.
+
 
 (** * Assert an arbitrary (remote) CVM execution.  
       Uses uninterpreted functions for "simulated" CVM evidence and events. *)
@@ -1338,7 +1341,7 @@ Ltac do_assert_remote t e p i :=
   assert (
       build_cvm t
                       {| st_ev := e; st_trace := []; st_pl := p; st_evid := i|} =
-      (Some tt,
+      (errRetC tt,
        {| st_ev := cvm_evidence_core t p e;
                    st_trace := cvm_events_core t p (get_et e);
                                st_pl := p; st_evid :=  (i + event_id_span t)
@@ -1373,6 +1376,10 @@ Proof.
     destruct s0; ff; lia. *)
 Qed.
 
+
+
+
+
 (** * Lemma:  CVM increases event IDs according to event_id_span' denotation. *)
 Lemma cvm_spans: forall t pt e tr p i e' tr' p' i',
     term_to_coreP t pt ->
@@ -1382,7 +1389,7 @@ Lemma cvm_spans: forall t pt e tr p i e' tr' p' i',
          st_trace := tr;
          st_pl := p;
          st_evid := i |}
-      (Some tt)
+      (errRetC tt)
       {|
         st_ev := e';
         st_trace := tr';
@@ -1569,7 +1576,7 @@ Lemma span_cvm: forall atp t annt i j e e' tr tr' p p' i',
          st_trace := tr;
          st_pl := p;
          st_evid := i |} 
-      (Some tt)
+      (errRetC tt)
       {| st_ev := e';
          st_trace := tr';
          st_pl := p';
@@ -1611,7 +1618,7 @@ Lemma anno_span_cvm: forall t pt annt i i' e e' p p' tr tr' st_evid1,
                        st_trace := tr ;
                        st_pl := p;
                        st_evid := i
-                     |} (Some tt)
+                     |} (errRetC tt)
                      {|
                        st_ev := e';
                        st_trace := tr';
@@ -1696,7 +1703,7 @@ Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' p p' i i',
     wf_ec e ->
         build_cvmP t1
                     {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |}
-                    (Some tt)
+                    (errRetC tt)
                     {| st_ev := e'; st_trace := tr'; st_pl := p'; st_evid := i' |} ->
     wf_ec (e').
 Proof.
@@ -1780,9 +1787,9 @@ Proof.
 
     erewrite app_length.
 
-    assert (wf_ec (evc r0 e1)).
+    assert (wf_ec (evc r0 e2)).
     {
-      rewrite <- Heqe1.
+      rewrite <- Heqe2.
       eapply wf_ec_preserved_par.
       econstructor; eassumption.
     }
@@ -1797,7 +1804,7 @@ Ltac do_wfec_preserved :=
           H2: wf_ec ?stev,
               H3: build_cvmP ?t
                                    {| st_ev := ?stev; st_trace := _; st_pl := _; st_evid := _ |}
-                                   (Some tt)
+                                   (errRetC tt)
                                    {| st_ev := ?stev'; st_trace := _; st_pl := _; st_evid := _ |}
        |- _ ] =>
       assert_new_proof_by (wf_ec stev')
@@ -1849,7 +1856,7 @@ Defined.
 (** * Lemma:  CVM execution always succeeds *)
 Lemma exists_some_cc: forall t st,
     exists st',
-      build_cvm t st = (Some tt, st').
+      build_cvm t st = (errRetC tt, st').
 Proof.
   intros.
   destruct (build_cvm t st) eqn:ee.
@@ -1860,7 +1867,7 @@ Defined.
 
 Ltac do_exists_some_cc t st :=
     assert_new_proof_by
-      (exists st', build_cvm t st = (Some tt, st') )
+      (exists st', build_cvm t st = (errRetC tt, st') )
       ltac:(eapply exists_some_cc);
     destruct_conjs.
 
@@ -1871,7 +1878,7 @@ Ltac do_exists_some_cc t st :=
 Lemma st_trace_cumul'' : forall t m k e p v_full v_suffix o_suffix i,
     build_cvmP t
                {| st_ev := e; st_trace := m ++ k; st_pl := p; st_evid := i |}
-               (Some tt) v_full ->
+               (errRetC tt) v_full ->
     
     build_cvmP t
                      {| st_ev := e; st_trace := k; st_pl := p; st_evid := i |}
@@ -1928,7 +1935,7 @@ Defined.
 Lemma st_trace_cumul' : forall t m e p v_full v_suffix o_suffix i,
     build_cvmP t
                {| st_ev := e; st_trace := m; st_pl := p; st_evid := i |}
-               (Some tt) v_full ->
+               (errRetC tt) v_full ->
     
     build_cvmP t
                      {| st_ev := e; st_trace := []; st_pl := p; st_evid := i |}
@@ -1953,7 +1960,7 @@ Lemma suffix_prop : forall t e e' tr tr' p p' i i',
               st_trace := tr;
               st_pl := p;
               st_evid := i |}
-           (Some tt)
+           (errRetC tt)
            {|
              st_ev := e';
              st_trace := tr';
@@ -1987,7 +1994,7 @@ Ltac do_suffix name :=
   match goal with
   | [H': build_cvmP ?t
          {| st_ev := _; st_trace := ?tr; st_pl := _; st_evid := _ |}
-         (Some tt)
+         (errRetC tt)
          {| st_ev := _; st_trace := ?tr'; st_pl := _; st_evid := _ |}
          (*H2: well_formed_r ?t*) |- _] =>
     assert_new_proof_as_by
@@ -2008,7 +2015,7 @@ Lemma alseq_decomp : forall t1' t2' e e'' p p'' tr i i'',
          st_trace := [];
          st_pl := p;
          st_evid := i |}
-      (Some tt)
+      (errRetC tt)
       {| st_ev := e'';
          st_trace := tr;
          st_pl := p'';
@@ -2021,7 +2028,7 @@ Lemma alseq_decomp : forall t1' t2' e e'' p p'' tr i i'',
            st_trace := [];
            st_pl := p;
            st_evid := i |}
-        (Some  tt)
+        (errRetC  tt)
         {| st_ev := e';
            st_trace := tr';
            st_pl := p';
@@ -2033,7 +2040,7 @@ Lemma alseq_decomp : forall t1' t2' e e'' p p'' tr i i'',
              st_trace := [];
              st_pl := p';
              st_evid := i' |}
-          (Some tt)
+          (errRetC tt)
           {| st_ev := e'';
              st_trace := tr'';
              st_pl := p'';
@@ -2074,12 +2081,12 @@ Defined.
 Lemma restl : forall t e e' x tr p p' i i',
     build_cvmP t
                      {| st_ev := e; st_trace := x; st_pl := p; st_evid := i|}
-                     (Some tt)
+                     (errRetC tt)
                      {| st_ev := e'; st_trace := x ++ tr; st_pl := p'; st_evid := i' |} ->
 
     build_cvmP t
                      {| st_ev := e; st_trace := []; st_pl := p; st_evid := i |}
-                     (Some tt)
+                     (errRetC tt)
                      {| st_ev := e'; st_trace := tr; st_pl := p'; st_evid := i' |}.
 Proof.
   intros.
@@ -2111,13 +2118,13 @@ Ltac do_restl :=
   match goal with
   | [H: build_cvmP ?t
         {| st_ev := ?e; st_trace := ?tr; st_pl := ?p; st_evid := ?i |}
-        (Some tt)
+        (errRetC tt)
         {| st_ev := ?e'; st_trace := ?tr ++ ?x; st_pl := ?p'; st_evid := ?i' |}
         (*H2: well_formed_r ?t*) |- _] =>
     assert_new_proof_by
       (build_cvmP t
                         {| st_ev := e; st_trace := []; st_pl := p; st_evid := i|}
-                        (Some tt)
+                        (errRetC tt)
                         {| st_ev := e'; st_trace := x; st_pl := p'; st_evid := i' |})
       ltac:(eapply restl; [apply H])
   end.
@@ -2166,7 +2173,7 @@ Axiom par_evidence_clear: forall l p bits et t2,
 Lemma cvm_refines_lts_evidence' : forall t tr tr' bits bits' et et' p p' i i',
     build_cvmP (copland_compile t)
                      (mk_st (evc bits et) tr p i)
-                     (Some tt)
+                     (errRetC tt)
                      (mk_st (evc bits' et') tr' p' i') ->
     et' = (Term_Defs.eval t p et).
 Proof.
@@ -2224,27 +2231,27 @@ Proof.
     destruct s0; destruct s1; ff.
     +
       wrap_ccp.
-      assert (e = eval t1 st_pl1 et) by eauto.
+      assert (e4 = eval t1 st_pl1 et) by eauto.
 
-      assert (e0 = eval t2 st_pl1 et) by eauto.
+      assert (e5 = eval t2 st_pl1 et) by eauto.
       congruence.
     +
       wrap_ccp.
-      assert (e = eval t1 st_pl1 et) by eauto.
+      assert (e4 = eval t1 st_pl1 et) by eauto.
 
-      assert (e0 = eval t2 st_pl1 mt) by eauto.
+      assert (e5 = eval t2 st_pl1 mt) by eauto.
       congruence.
     +
       wrap_ccp.
-      assert (e = eval t1 st_pl1 mt) by eauto.
+      assert (e4 = eval t1 st_pl1 mt) by eauto.
 
-      assert (e0 = eval t2 st_pl1 et) by eauto.
+      assert (e5 = eval t2 st_pl1 et) by eauto.
       congruence.
     +
       wrap_ccp.
-      assert (e = eval t1 st_pl1 mt) by eauto.
+      assert (e4 = eval t1 st_pl1 mt) by eauto.
 
-      assert (e0 = eval t2 st_pl1 mt) by eauto.
+      assert (e5 = eval t2 st_pl1 mt) by eauto.
       congruence.
       
    - (* abpar case *)
@@ -2258,9 +2265,9 @@ Proof.
     destruct s0; destruct s1; ff.
     +
       wrap_ccp.
-      assert (e = eval t1 p et) by eauto.
+      assert (e0 = eval t1 p et) by eauto.
 
-      assert (e0 = eval t2 p et).
+      assert (e1 = eval t2 p et).
       {
         eapply par_evidence_r.
         eassumption.
@@ -2269,11 +2276,11 @@ Proof.
       
     +
       wrap_ccp.
-      assert (e = eval t1 p et) by eauto.
+      assert (e0 = eval t1 p et) by eauto.
 
-      assert (e0 = eval t2 p mt).
+      assert (e1 = eval t2 p mt).
       {
-        rewrite par_evidence_clear in Heqe0.
+        rewrite par_evidence_clear in Heqe1.
 
         eapply par_evidence_r.
         eassumption.
@@ -2282,9 +2289,9 @@ Proof.
       congruence.
     +
       wrap_ccp.
-      assert (e = eval t1 p mt) by eauto.
+      assert (e0 = eval t1 p mt) by eauto.
 
-      assert (e0 = eval t2 p et).
+      assert (e1 = eval t2 p et).
       {
         eapply par_evidence_r.
         eassumption.
@@ -2292,11 +2299,11 @@ Proof.
       congruence.
     +
       wrap_ccp.
-      assert (e = eval t1 p mt) by eauto.
+      assert (e0 = eval t1 p mt) by eauto.
 
-      assert (e0 = eval t2 p mt).
+      assert (e1 = eval t2 p mt).
       {
-        rewrite par_evidence_clear in Heqe0.
+        rewrite par_evidence_clear in Heqe1.
 
         eapply par_evidence_r.
         eassumption.
@@ -2310,7 +2317,7 @@ Lemma cvm_refines_lts_evidence :
     term_to_coreP t t' ->
     build_cvmP t'
                      (mk_st (evc bits et) tr p i)
-                     (Some tt)
+                     (errRetC tt)
                      (mk_st (evc bits' et') tr' p' i') ->
     et' = (Term_Defs.eval t p et).
 Proof.
@@ -2335,7 +2342,7 @@ Lemma cvm_raw_evidence_denote_fact :
   forall t annt t' tr tr' bits bits' et et' p p' i i' ec ec',
     build_cvmP t
                      (mk_st (evc bits et) tr p i)
-                     (Some tt)
+                     (errRetC tt)
                      (mk_st (evc bits' et') tr' p' i') ->
     term_to_coreP t' t ->
     annoP_indexed annt t' i i' ->
@@ -2616,13 +2623,13 @@ Proof.
       clear_skipn_firstn.
       
 
-      assert (reconstruct_evP (evc r e) e1).
+      assert (reconstruct_evP (evc r e4) e).
       {
         econstructor.
         ff.
       }
 
-    assert (reconstruct_evP (evc r0 e0) e2).
+    assert (reconstruct_evP (evc r0 e5) e0).
     {
       econstructor.
       ff.
@@ -2642,7 +2649,7 @@ Proof.
       }
       dd.
 
-    assert (cvm_evidence_denote a st_pl1 ec = e1).
+    assert (cvm_evidence_denote a st_pl1 ec = e).
     {
       eapply IHt'1.
       apply Heqp2.
@@ -2654,7 +2661,7 @@ Proof.
       eassumption.
     }
 
-     assert (cvm_evidence_denote a0 st_pl1 ec = e2).
+     assert (cvm_evidence_denote a0 st_pl1 ec = e0).
     {
       eapply IHt'2.
       eassumption.
@@ -2696,13 +2703,13 @@ Proof.
       clear_skipn_firstn.
       
 
-      assert (reconstruct_evP (evc r e) e1).
+      assert (reconstruct_evP (evc r e4) e).
       {
         econstructor.
         ff.
       }
 
-    assert (reconstruct_evP (evc r0 e0) e2).
+    assert (reconstruct_evP (evc r0 e5) e0).
     {
       econstructor.
       ff.
@@ -2722,7 +2729,7 @@ Proof.
       }
       dd.
 
-    assert (cvm_evidence_denote a st_pl1 ec = e1).
+    assert (cvm_evidence_denote a st_pl1 ec = e).
     {
       eapply IHt'1.
       apply Heqp2.
@@ -2734,7 +2741,7 @@ Proof.
       eassumption.
     }
 
-     assert (cvm_evidence_denote a0 st_pl1 mtc = e2).
+     assert (cvm_evidence_denote a0 st_pl1 mtc = e0).
     {
       eapply IHt'2.
       eassumption.
@@ -2779,13 +2786,13 @@ Proof.
       clear_skipn_firstn.
       
 
-      assert (reconstruct_evP (evc r e) e1).
+      assert (reconstruct_evP (evc r e4) e).
       {
         econstructor.
         ff.
       }
 
-    assert (reconstruct_evP (evc r0 e0) e2).
+    assert (reconstruct_evP (evc r0 e5) e0).
     {
       econstructor.
       ff.
@@ -2805,7 +2812,7 @@ Proof.
       }
       dd.
 
-    assert (cvm_evidence_denote a st_pl1 mtc = e1).
+    assert (cvm_evidence_denote a st_pl1 mtc = e).
     {
       eapply IHt'1.
       apply Heqp8.
@@ -2817,7 +2824,7 @@ Proof.
       eassumption.
     }
 
-     assert (cvm_evidence_denote a0 st_pl1 ec = e2).
+     assert (cvm_evidence_denote a0 st_pl1 ec = e0).
     {
       eapply IHt'2.
       eassumption.
@@ -2863,13 +2870,13 @@ Proof.
       clear_skipn_firstn.
       
 
-      assert (reconstruct_evP (evc r e) e1).
+      assert (reconstruct_evP (evc r e4) e).
       {
         econstructor.
         ff.
       }
 
-    assert (reconstruct_evP (evc r0 e0) e2).
+    assert (reconstruct_evP (evc r0 e5) e0).
     {
       econstructor.
       ff.
@@ -2889,7 +2896,7 @@ Proof.
       }
       dd.
 
-    assert (cvm_evidence_denote a st_pl1 mtc = e1).
+    assert (cvm_evidence_denote a st_pl1 mtc = e).
     {
       eapply IHt'1.
       apply Heqp9.
@@ -2901,7 +2908,7 @@ Proof.
       eassumption.
     }
 
-     assert (cvm_evidence_denote a0 st_pl1 mtc = e2).
+     assert (cvm_evidence_denote a0 st_pl1 mtc = e0).
     {
       eapply IHt'2.
       eassumption.
@@ -2951,13 +2958,13 @@ Proof.
       clear_skipn_firstn.
       
 
-      assert (reconstruct_evP (evc r e) e1).
+      assert (reconstruct_evP (evc r e0) e).
       {
         econstructor.
         ff.
       }
 
-    assert (reconstruct_evP (evc r0 e0) e2).
+    assert (reconstruct_evP (evc r0 e1) e2).
     {
       econstructor.
       ff.
@@ -2977,7 +2984,7 @@ Proof.
       }
       dd.
 
-    assert (cvm_evidence_denote a p ec = e1).
+    assert (cvm_evidence_denote a p ec = e).
     {
       eapply IHt'1.
       apply Heqp2.
@@ -2996,7 +3003,7 @@ Proof.
     rewrite par_evidence in *.
 
     unfold cvm_evidence in *.
-    rewrite Heqe0 in *.
+    rewrite Heqe1 in *.
 
     assert (cvm_evidence_denote a0 p ec = e2).
     {
@@ -3042,13 +3049,13 @@ Proof.
       clear_skipn_firstn.
       
 
-      assert (reconstruct_evP (evc r e) e1).
+      assert (reconstruct_evP (evc r e0) e).
       {
         econstructor.
         ff.
       }
 
-    assert (reconstruct_evP (evc r0 e0) e2).
+    assert (reconstruct_evP (evc r0 e1) e2).
     {
       econstructor.
       ff.
@@ -3068,7 +3075,7 @@ Proof.
       }
       dd.
 
-    assert (cvm_evidence_denote a p ec = e1).
+    assert (cvm_evidence_denote a p ec = e).
     {
       eapply IHt'1.
       apply Heqp2.
@@ -3089,7 +3096,7 @@ Proof.
     rewrite par_evidence in *.
 
     unfold cvm_evidence in *.
-    rewrite Heqe0 in *.
+    rewrite Heqe1 in *.
 
 
      assert (cvm_evidence_denote a0 p mtc = e2).
@@ -3142,13 +3149,13 @@ Proof.
       clear_skipn_firstn.
       
 
-      assert (reconstruct_evP (evc r e) e1).
+      assert (reconstruct_evP (evc r e0) e).
       {
         econstructor.
         ff.
       }
 
-    assert (reconstruct_evP (evc r0 e0) e2).
+    assert (reconstruct_evP (evc r e0) e).
     {
       econstructor.
       ff.
@@ -3168,7 +3175,7 @@ Proof.
       }
       dd.
 
-    assert (cvm_evidence_denote a p mtc = e1).
+    assert (cvm_evidence_denote a p mtc = e).
     {
       eapply IHt'1.
       apply Heqp3.
@@ -3187,7 +3194,7 @@ Proof.
     rewrite par_evidence in *.
 
     unfold cvm_evidence in *.
-    rewrite Heqe0 in *.
+    rewrite Heqe1 in *.
 
 
      assert (cvm_evidence_denote a0 p ec = e2).
@@ -3207,7 +3214,7 @@ Proof.
 
       eassumption.
       eassumption.
-      eassumption.
+      econstructor; eauto.
     }
     
       
@@ -3241,13 +3248,13 @@ Proof.
       clear_skipn_firstn.
       
 
-      assert (reconstruct_evP (evc r e) e1).
+      assert (reconstruct_evP (evc r e0) e).
       {
         econstructor.
         ff.
       }
 
-    assert (reconstruct_evP (evc r0 e0) e2).
+    assert (reconstruct_evP (evc r0 e1) e2).
     {
       econstructor.
       ff.
@@ -3267,7 +3274,7 @@ Proof.
       }
       dd.
 
-    assert (cvm_evidence_denote a p mtc = e1).
+    assert (cvm_evidence_denote a p mtc = e).
     {
       eapply IHt'1.
       apply Heqp3.
@@ -3288,7 +3295,7 @@ Proof.
     rewrite par_evidence in *.
 
     unfold cvm_evidence in *.
-    rewrite Heqe0 in *.
+    rewrite Heqe1 in *.
 
 
      assert (cvm_evidence_denote a0 p mtc = e2).
@@ -3321,7 +3328,7 @@ Lemma cvm_raw_evidence_denote_fact_eval :
   forall t annt t' tr tr' bits bits' et et' p p' i i' ec ec',
     build_cvmP t
                      (mk_st (evc bits et) tr p i)
-                     (Some tt)
+                     (errRetC tt)
                      (mk_st (evc bits' et') tr' p' i') ->
     term_to_coreP t' t ->
     annoP_indexed annt t' i i' ->

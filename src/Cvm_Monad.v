@@ -12,7 +12,7 @@ Require Import Coq.Program.Tactics Lia.
 Require Import List.
 Import ListNotations.
 
-Require Export Cvm_St StMonad_Coq IO_Stubs.
+Require Export Cvm_St ErrorStMonad_Coq IO_Stubs.
 
 
 (** * CVM monadic primitive operations *)
@@ -196,7 +196,7 @@ Definition wait_par_thread (loc:Loc) (t:Core_Term) (e:EvC) : CVM EvC :=
    
 Ltac monad_unfold :=
   repeat unfold
-  execSt,  
+  execErr,  
   do_prim,
   invoke_ASP,
   clearEv,

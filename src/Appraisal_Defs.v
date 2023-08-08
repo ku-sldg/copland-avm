@@ -1,6 +1,6 @@
 Require Import Term_Defs_Core Term_Defs. (* OptMonad_Coq. *)
 
-Require Import Appraisal_IO_Stubs StMonad_Coq AM_Monad.
+Require Import Appraisal_IO_Stubs ErrorStMonad_Coq AM_Monad.
 
 (*
 Definition checkASP (params:ASP_PARAMS) (bs:BS) : Opt BS :=

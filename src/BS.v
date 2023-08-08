@@ -10,3 +10,6 @@ Definition passed_bs : BS.
 Admitted.
 Definition failed_bs : BS.
 Admitted.
+
+Definition StringT : Set.
+Admitted. 

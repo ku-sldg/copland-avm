@@ -10,6 +10,8 @@ Require Import CvmSemantics Appraisal_Evidence Eqb_Evidence Auto AbstractedTypes
 
 Require Import StructTactics.
 
+Require Import ErrorStMonad_Coq.
+
 Require Import Coq.Program.Tactics PeanoNat Lia.
 
 Require Import List.
@@ -1448,7 +1450,7 @@ Lemma cvm_implies_events: forall t annt e e' bits bits' p p' cvmi cvmi' cvm_tr e
 
     build_cvmP (copland_compile t)
          {| st_ev := evc bits e; st_trace := []; st_pl := p; st_evid := cvmi |} 
-         (Some tt) {| st_ev := evc bits' e'; st_trace := cvm_tr; st_pl := p'; st_evid := cvmi' |} ->
+         (errRetC tt) {| st_ev := evc bits' e'; st_trace := cvm_tr; st_pl := p'; st_evid := cvmi' |} ->
 
     In ev cvm_tr ->
 
@@ -1518,7 +1520,7 @@ Proof.
                        st_trace := [];
                        st_pl := p;
                        st_evid := (S cvmi)|} =
-    (Some tt,
+    (errRetC tt,
      {| st_ev := cvm_evidence_core (copland_compile t) p (evc bits e);
         st_trace := cvm_events_core (copland_compile t) p (get_et (evc bits e));
         st_pl := p;
@@ -2330,7 +2332,7 @@ Lemma cvm_respects_events_disclosure_aspid:
     term_to_coreP t atp ->
     build_cvmP atp
                (mk_st (evc bits e) [] p cvmi)
-               (Some tt)
+               (errRetC tt)
                (mk_st (evc bits' e') cvm_tr p' cvmi') ->
 
     ~ (cvm_trace_discloses_aspid_to_remote cvm_tr i r).
@@ -2781,7 +2783,7 @@ Admitted.
     Lemma can_annoP_indexed: forall t atp bits bits' e e' p p' cvm_tr cvmi cvmi',
     term_to_coreP t atp ->
     build_cvmP atp {| st_ev := evc bits e; st_trace := []; st_pl := p; st_evid := cvmi |}
-               (Some tt) {| st_ev := evc bits' e'; st_trace := cvm_tr; st_pl := p'; st_evid := cvmi' |} ->
+               (errRetC tt) {| st_ev := evc bits' e'; st_trace := cvm_tr; st_pl := p'; st_evid := cvmi' |} ->
     exists annt,
       annoP_indexed annt t cvmi cvmi'.
     Proof.
@@ -2893,7 +2895,7 @@ Lemma cvm_respects_term_disclosure_aspid:
   term_to_coreP t atp ->
   build_cvmP atp
              (mk_st (evc bits e) [] p cvmi)
-             (Some tt)
+             (errRetC tt)
              (mk_st (evc bits' e') cvm_tr p' cvmi') ->
 
   ~ (cvm_trace_discloses_aspid_to_remote cvm_tr i r).
@@ -3347,7 +3349,7 @@ Lemma filter_remote_disclosures_correct_cvm:
     annoP_indexed annt t i i' ->
     build_cvmP atp
                      (mk_st (evc bits e) [] p i)
-                     (Some tt)
+                     (errRetC tt)
                      (mk_st (evc bits' e') cvm_tr p' i') ->
     
     In ev cvm_tr ->

@@ -18,7 +18,7 @@ Set Nested Proofs Allowed.
 (* Lemma stating the CVM st_pl parameter ends up where it started execution *)
 Lemma pl_immut : forall t e tr p i,
     st_pl
-      (execSt
+      (execErr
          (build_cvm t)
          {|
            st_ev := e;
@@ -57,6 +57,8 @@ Proof.
     (*
     do_wf_pieces. *)
     annogo.
+    Locate annogo.
+    Locate vmsts.
     df.
     
     repeat break_match;
@@ -79,13 +81,13 @@ Proof.
 
     congruence.
     +
-      assert (p = st_pl).
+      assert (p = st_pl0).
       {
         edestruct IHt1.
         jkjk_s; eauto.
       }
 
-      assert (st_pl = st_pl0).
+      assert (st_pl0 = st_pl).
       {
         edestruct IHt2.
         jkjk_s; eauto.
@@ -93,13 +95,36 @@ Proof.
 
       congruence.
     +
-      symmetry.
+    assert (p = st_pl).
+    {
       edestruct IHt1.
       jkjk_s; eauto.
+    }
+
+    assert (st_pl = st_pl0).
+    {
+      edestruct IHt2.
+      jkjk_s; eauto.
+    }
+
+    congruence.
+
     +
-      symmetry.
+    assert (p = st_pl0).
+    {
       edestruct IHt1.
       jkjk_s; eauto.
+    }
+
+    assert (st_pl0 = st_pl).
+    {
+      edestruct IHt2.
+      jkjk_s; eauto.
+    }
+
+    congruence.
+
+
 
   -
     annogo.
@@ -132,7 +157,7 @@ Defined.
 Ltac do_pl_immut :=
   let tac H :=
        erewrite <- pl_immut;
-        [ unfold execSt;
+        [ unfold execErr;
           rewrite H;
           reflexivity (*| 
           apply H2*)] in
@@ -178,9 +203,9 @@ Ltac anhl :=
    for possibly the trace, then all of those final parameters should also be equal. *)
 Lemma st_trace_irrel : forall t e e' e'' x x' y y' p p' p'' i i' i'',
     build_cvm t {| st_ev := e; st_trace := x; st_pl := p; st_evid := i |} =
-    (Some tt, {| st_ev := e'; st_trace := x'; st_pl := p'; st_evid := i' |}) ->
+    (errRetC tt, {| st_ev := e'; st_trace := x'; st_pl := p'; st_evid := i' |}) ->
     build_cvm t {| st_ev := e; st_trace := y; st_pl := p; st_evid := i |} =
-    (Some tt, {| st_ev := e''; st_trace := y'; st_pl := p''; st_evid := i'' |}) ->
+    (errRetC tt, {| st_ev := e''; st_trace := y'; st_pl := p''; st_evid := i'' |}) ->
     (e' = e'' /\ p' = p'' /\ i' = i'').
 Proof.
   induction t; intros.
@@ -219,8 +244,12 @@ Proof.
     dosome.
     df.
 
+    ff.
+
+    (*
     annogo.
     simpl in *.
+    ff. *)
 
     repeat anhl.
     repeat (find_inversion).
@@ -255,10 +284,10 @@ Ltac dohi :=
 Lemma trace_irrel_pl : forall t tr1 tr1' tr2 e e' p1' p1 i i',
     build_cvm t
            {| st_ev := e; st_trace := tr1; st_pl := p1; st_evid := i |} =
-    (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_evid := i' |}) ->
+    (errRetC tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_evid := i' |}) ->
     
     st_pl
-      (execSt (build_cvm t)
+      (execErr (build_cvm t)
            {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i |}) = p1'.
 Proof.
   intros.
@@ -278,10 +307,10 @@ Defined.
 Lemma trace_irrel_ev : forall t tr1 tr1' tr2 e e' p1' p1 i i',
     build_cvm t
            {| st_ev := e; st_trace := tr1; st_pl := p1; st_evid := i|} =
-    (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_evid := i' |}) ->
+    (errRetC tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_evid := i' |}) ->
     
     st_ev
-      (execSt (build_cvm t)
+      (execErr (build_cvm t)
            {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i |}) = e'.
 Proof.
   intros.
@@ -301,10 +330,10 @@ Defined.
 Lemma trace_irrel_evid : forall t tr1 tr1' tr2 e e' p1' p1 i i',
     build_cvm t
            {| st_ev := e; st_trace := tr1; st_pl := p1; st_evid := i|} =
-    (Some tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_evid := i' |}) ->
+    (errRetC tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_evid := i' |}) ->
     
     st_evid
-      (execSt (build_cvm t)
+      (execErr (build_cvm t)
            {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i |}) = i'.
 Proof.
   intros.
@@ -346,7 +375,7 @@ Ltac find_rw_in_goal :=
   end.
 
 Inductive build_cvmP :
-  Core_Term -> cvm_st -> (option unit) -> cvm_st ->  Prop :=
+  Core_Term -> cvm_st -> (ErrorT unit) -> cvm_st ->  Prop :=
 | ccp: forall t st st' res,
     build_cvm t st = (res, st') ->
     build_cvmP t st res st'.
@@ -484,6 +513,8 @@ Ltac wrap_ccp_anno :=
   repeat do_pl_immut;
   try (unfold OptMonad_Coq.ret in * );
   try (unfold OptMonad_Coq.bind in * );
+  try (unfold ErrorStMonad_Coq.bind in * );
+  try (unfold ErrorStMonad_Coq.ret in * );
   dd;
   try rewrite ccp_iff_cc in *.
 
@@ -493,10 +524,10 @@ Ltac cumul_ih :=
   match goal with
   | [H: context[(st_trace _ = _ ++ st_trace _)],
         H': build_cvmP ?t1 {| st_ev := _; st_trace := ?m ++ ?k; st_pl := _; st_evid := _ |}
-                             (Some tt)
+                             (errRetC tt)
                              ?v_full,
             H'': build_cvmP ?t1 {| st_ev := _; st_trace := ?k; st_pl := _; st_evid := _ |}
-                                  (Some tt)
+                                  (errRetC tt)
                                   ?v_suffix
      |- _] =>
     assert_new_proof_by (st_trace v_full = m ++ st_trace v_suffix) eauto

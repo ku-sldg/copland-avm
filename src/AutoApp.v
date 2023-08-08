@@ -1,6 +1,6 @@
 (* Misc automation tactics.  Some of these might be repeats or overlap. *)
 
-Require Import StructTactics Auto (* Helpers_CvmSemantics *) Cvm_St Cvm_Monad StMonad_Coq Cvm_Impl.
+Require Import StructTactics Auto (* Helpers_CvmSemantics *) Cvm_St Cvm_Monad ErrorStMonad_Coq Cvm_Impl.
 Require Import List.
 
 Ltac dosome_eq y :=
@@ -84,11 +84,15 @@ Ltac do_inv_head :=
     end.
 
 
-(* CVM execution always succeeds.  
-   Note:  This may need revisiting if we consider more robust models of CVM failure. *)
+(* Characterizing results of CVM execution. 
+   TODO:  Need to revisit this to incoporate error results.
+   TODO:  Perhaps make assumptions about input manifest fields and executability?
+
+   Noted when CVM used just a State (no Error) Monad: 
+      This may need revisiting if we consider more robust models of CVM failure. *)
 Lemma always_some : forall t vm_st vm_st' op,
     build_cvm t vm_st = (op, vm_st') ->
-    op = Some tt.
+    op = errRetC tt (* Some tt *).
 Proof.
   induction t; intros.
   -
@@ -101,7 +105,7 @@ Proof.
   -
     df.
     
-    destruct o eqn:hhh;
+    destruct e eqn:hhh;
       try (df; eauto).
   -
     df.
@@ -111,11 +115,11 @@ Proof.
           df; eauto).
   -
     df.
-    dohtac.
+    try dohtac.
     df.
     simpl.
 
-    assert (o = Some tt) by eauto.
+    assert (e = errRetC tt) by eauto.
     subst.
     vmsts.
     df.
@@ -126,7 +130,7 @@ Ltac do_somett :=
   match goal with
   | [H: build_cvm ?t _ = (?o, _)
      |- _] =>
-    assert_new_proof_by (o = Some tt) ltac:(eapply always_some; [apply H])
+    assert_new_proof_by (o = errRetC tt) ltac:(eapply always_some; [apply H])
   end.
 
 

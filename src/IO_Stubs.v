@@ -12,7 +12,7 @@
     Appraisal_Defs.v).        
  *)
 
-Require Import Term_Defs ConcreteEvidence StMonad_Coq IO_Type Manifest_Admits.
+Require Import Term_Defs ConcreteEvidence ErrorStMonad_Coq IO_Type Manifest_Admits.
 
 (** * Stub to encode a sequence of BS values to a single BS value.
       Real implmenetation will depend on the instantition of BS *)

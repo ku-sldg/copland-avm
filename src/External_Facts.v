@@ -11,19 +11,19 @@ Import ListNotations.
 
 
 Axiom build_cvm_external' : forall (t : Core_Term) (e : EvC) (n : ID_Type) (tr:list Ev) (i:Event_ID),
-    runSt 
+    runErr 
       (build_cvm t)
       {| st_ev := e;
          st_trace := tr;
          st_pl := n;
          st_evid := i |} =
-    (Some tt,
+    (errRetC tt,
      {| st_ev := cvm_evidence_core t n e;
         st_trace := tr ++ (cvm_events_core t n (get_et e));
         st_pl :=
           st_pl
             (
-              execSt (build_cvm t)
+              execErr (build_cvm t)
                      {| st_ev := e;
                         st_trace := [];
                         st_pl := n;
@@ -37,7 +37,7 @@ Lemma build_cvm_external : forall (t : Core_Term) (e : EvC) (n : ID_Type) i,
                        st_trace := [];
                        st_pl := n;
                        st_evid := i|} =
-    (Some tt,
+    (errRetC tt,
      {| st_ev := cvm_evidence_core t n e;
         st_trace := cvm_events_core t n (get_et e);
         st_pl := n;
@@ -48,7 +48,7 @@ Proof.
   assert ([] ++ (cvm_events_core t n (get_et e)) = (cvm_events_core t n (get_et e))) by eauto.
   assert (n = st_pl
             (
-              execSt
+              execErr
                 (build_cvm t)
                 {| st_ev := e;
                      st_trace := [];
