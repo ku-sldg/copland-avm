@@ -26,8 +26,12 @@ Record cvm_st : Type := mk_st
 
 Definition empty_vmst := mk_st (evc [] mt) [] min_id_type 0.
 
-(** CVM monad -- simple instantiation of the general St monad with cvm_st *)
-Definition CVM := Err cvm_st.
+Inductive CVM_Error : Type := 
+| asp_error : ASP_PARAMS -> RawEv -> StringT -> CVM_Error
+| at_error : Term -> Plc -> RawEv -> StringT -> CVM_Error.
+
+(** CVM monad -- instantiation of the general ResultT monad with cvm_st *)
+Definition CVM A := Err cvm_st A CVM_Error.
 
 (* Look for cvm_st hyps and destruct them *)
 Ltac vmsts :=

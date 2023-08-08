@@ -92,7 +92,7 @@ Ltac do_inv_head :=
       This may need revisiting if we consider more robust models of CVM failure. *)
 Lemma always_some : forall t vm_st vm_st' op,
     build_cvm t vm_st = (op, vm_st') ->
-    op = errRetC tt (* Some tt *).
+    op = resultC tt (* Some tt *).
 Proof.
   induction t; intros.
   -
@@ -104,9 +104,7 @@ Proof.
     tauto.
   -
     df.
-    
-    destruct e eqn:hhh;
-      try (df; eauto).
+    break_match; df; eauto.
   -
     df.
 
@@ -119,18 +117,14 @@ Proof.
     df.
     simpl.
 
-    assert (e = errRetC tt) by eauto.
-    subst.
-    vmsts.
-    df.
-    tauto.
+    break_match; ff; eauto.
 Defined.
 
 Ltac do_somett :=
   match goal with
   | [H: build_cvm ?t _ = (?o, _)
      |- _] =>
-    assert_new_proof_by (o = errRetC tt) ltac:(eapply always_some; [apply H])
+    assert_new_proof_by (o = resultC tt) ltac:(eapply always_some; [apply H])
   end.
 
 

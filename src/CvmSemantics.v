@@ -205,7 +205,7 @@ Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' p p' i i',
     wf_ec e ->
         build_cvmP t1
                     {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |}
-                    (errRetC tt)
+                    (resultC tt)
                     {| st_ev := e'; st_trace := tr'; st_pl := p'; st_evid := i' |} ->
     wf_ec (e').
 Proof.
@@ -288,9 +288,9 @@ Proof.
 
     erewrite app_length.
 
-    assert (wf_ec (evc r0 e2)).
+    assert (wf_ec (evc r1 e1)).
     {
-      rewrite <- Heqe2.
+      rewrite <- Heqe1.
       eapply wf_ec_preserved_par.
       econstructor; eassumption.
     }
@@ -305,7 +305,7 @@ Ltac do_wfec_preserved :=
           H2: wf_ec ?stev,
               H3: build_cvmP ?t
                                    {| st_ev := ?stev; st_trace := _; st_pl := _; st_evid := _ |}
-                                   (errRetC tt)
+                                   (resultC tt)
                                    {| st_ev := ?stev'; st_trace := _; st_pl := _; st_evid := _ |}
        |- _ ] =>
       assert_new_proof_by (wf_ec stev')
@@ -378,7 +378,7 @@ Lemma cvm_spans: forall t pt e tr p i e' tr' p' i',
          st_trace := tr;
          st_pl := p;
          st_evid := i |}
-      (errRetC tt)
+      (resultC tt)
       {|
         st_ev := e';
         st_trace := tr';
@@ -560,7 +560,7 @@ Lemma span_cvm: forall atp t annt i j e e' tr tr' p p' i',
          st_trace := tr;
          st_pl := p;
          st_evid := i |} 
-      (errRetC tt)
+      (resultC tt)
       {| st_ev := e';
          st_trace := tr';
          st_pl := p';
@@ -601,7 +601,7 @@ Lemma anno_span_cvm: forall t pt annt i i' e e' p p' tr tr' st_evid1,
                        st_trace := tr ;
                        st_pl := p;
                        st_evid := i
-                     |} (errRetC tt)
+                     |} (resultC tt)
                      {|
                        st_ev := e';
                        st_trace := tr';
@@ -627,7 +627,7 @@ Theorem cvm_refines_lts_events :
     annoP_indexed annt t i i' ->
     build_cvmP atp
                      (mk_st (evc bits et) [] p i)
-                     (errRetC tt)
+                     (resultC tt)
                      (mk_st (evc bits' et') cvm_tr p' i') ->
     lstar (conf annt p et) cvm_tr (stop p (aeval annt p et)).
 Proof.
@@ -1536,7 +1536,7 @@ Theorem cvm_respects_event_system :
     term_to_coreP t atp ->
     build_cvmP atp
                      (mk_st (evc bits et) [] plc_id i)
-                     (errRetC tt)
+                     (resultC tt)
                      (mk_st (evc bits' et') cvm_tr plc_id i') ->
     prec (ev_sys annt plc_id et) ev0 ev1 ->
     earlier cvm_tr ev0 ev1.

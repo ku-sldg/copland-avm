@@ -16,7 +16,7 @@ Import ListNotations.
 Definition peel_bs_am (ls:RawEv) : AM (BS * RawEv) :=
   match ls with
   | bs :: ls' => ret (bs, ls')
-  | _ => failm errStr_peel_bs_am
+  | _ => failm (am_error errStr_peel_bs_am)
   end.
 
 Fixpoint gen_appraise_AM (et:Evidence) (ls:RawEv) : AM AppResultC :=

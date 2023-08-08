@@ -17,7 +17,7 @@ Axiom build_cvm_external' : forall (t : Core_Term) (e : EvC) (n : ID_Type) (tr:l
          st_trace := tr;
          st_pl := n;
          st_evid := i |} =
-    (errRetC tt,
+    (resultC tt,
      {| st_ev := cvm_evidence_core t n e;
         st_trace := tr ++ (cvm_events_core t n (get_et e));
         st_pl :=
@@ -37,7 +37,7 @@ Lemma build_cvm_external : forall (t : Core_Term) (e : EvC) (n : ID_Type) i,
                        st_trace := [];
                        st_pl := n;
                        st_evid := i|} =
-    (errRetC tt,
+    (resultC tt,
      {| st_ev := cvm_evidence_core t n e;
         st_trace := cvm_events_core t n (get_et e);
         st_pl := n;

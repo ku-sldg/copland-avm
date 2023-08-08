@@ -6,60 +6,54 @@ Author:  Adam Petz, ampetz@ku.edu
 
 Require Import Term_Defs.
 
-Print option.
-Locate option.
+Inductive ResultT (A:Type) (E:Type) : Type := 
+| errC : E -> ResultT A E
+| resultC : A -> ResultT A E.
 
-Inductive ErrorT (A:Type) : Type := 
-| errStrC : StringT -> ErrorT A
-| errRetC : A -> ErrorT A.
+Arguments errC {A} {E} e.
+Arguments resultC {A} {E} a.
 
-Arguments errStrC {A} s.
-Arguments errRetC {A} a.
+(* Generalized Error + State Monad *)
+Definition Err(S A E: Type) : Type := S -> (ResultT A E) * S % type.
 
-(* Generalized State Monad *)
-Definition Err(S A : Type) : Type := S -> (ErrorT A) * S % type.
+Definition ret {S A E : Type} (a : A) : Err S A E := fun s => (resultC a, s).
 
-Definition ret {S A : Type} (a : A) : Err S A := fun s => (errRetC a, s).
-
-Definition bind {S A B : Type} (m : Err S A) (f : A -> Err S B) : Err S B :=
+Definition bind {S A B E : Type} (m : Err S A E) (f : A -> Err S B E) : Err S B E :=
   fun s =>
     let '(a, s') := m s in
     match a with
-    | errRetC v =>
+    | resultC v =>
       let '(b, s'') := f v s' in
       (b, s'')
-    | errStrC str => (errStrC str,s')
+    | errC e => (errC e,s')
     end.
 
-Definition failm {S A : Type} (str:StringT) : Err S A := fun s => (errStrC str, s).
+Definition failm {S A E : Type} (e:E) : Err S A E := fun s => (errC e, s).
       
 
 (* alias for ret *)
 (*Definition write_output {S O} (o : O) : GenHandler1 S O := ret o.*)
 
-Definition modify {S} (f : S -> S) : Err S unit := fun s => (errRetC tt, f s).
+Definition modify {S E} (f : S -> S) : Err S unit E := fun s => (resultC tt, f s).
 
-Definition put {S} (s : S) : Err S unit := fun _ => (errRetC tt, s).
+Definition put {S E} (s : S) : Err S unit E := fun _ => (resultC tt, s).
 
-Definition get {S} : Err S S := fun s => (errRetC s, s).
+Definition get {S E} : Err S S E := fun s => (resultC s, s).
 
-Definition runErr {S A} (h : Err S A) (s : S)  : (ErrorT A) * S % type :=
+Definition runErr {S A E} (h : Err S A E) (s : S)  : (ResultT A E) * S % type :=
   h s.
 
-Definition evalErr {S A} (h : Err S A) (s : S) : ErrorT A :=
+Definition evalErr {S A E} (h : Err S A E) (s : S) : ResultT A E :=
  fst (runErr h s).
 
-Definition execErr {S A} (h : Err S A) (s : S) : S :=
+Definition execErr {S A E} (h : Err S A E) (s : S) : S :=
   snd (h s).
 
-
-
-
-Definition nop {S : Type} := @ret S _ tt.
+Definition nop {S E: Type} := @ret S _ E tt.
 
 Notation "a >> b" := (bind a (fun _ => b)) (at level 50).
 
-Notation "x <- c1 ;; c2" := (@bind _ _ _ c1 (fun x => c2))
+Notation "x <- c1 ;; c2" := (@bind _ _ _ _ c1 (fun x => c2))
                               (at level 100, c1 at next level, right associativity).
 
 Notation "e1 ;; e2" := (_ <- e1 ;; e2)
@@ -69,9 +63,9 @@ Notation "' pat <- c1 ;; c2" :=
     (@bind _ _ c1 (fun x => match x with pat => c2 end))
     (at level 100, pat pattern, c1 at next level, right associativity).
 
-Definition gets {S} {A} (f:S -> A) : Err S A :=
+Definition gets {S} {A} {E} (f:S -> A) : Err S A E :=
   st <- get ;;
   ret (f st).
 
-Definition when {S A} (b : bool) (m : Err S A) : Err S unit :=
+Definition when {S A E} (b : bool) (m : Err S A E) : Err S unit E :=
   if b then m ;; ret tt else nop.

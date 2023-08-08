@@ -1,17 +1,15 @@
-Require Import ErrorStMonad_Coq AM_St BS Maps Term_Defs_Core Term_Defs Cvm_Run.
+Require Import ErrorStMonad_Coq BS Maps Term_Defs_Core Term_Defs Cvm_Run.
 
 Require Import ErrorStringConstants.
+
+Require Export AM_St.
 
 Require Import List.
 Import ListNotations.
 
-
-
-Definition AM := Err AM_St.
-
-Definition fromSome{A:Type} (default:A) (opt:ErrorT A): A :=
+Definition fromSome{A E:Type} (default:A) (opt:ResultT A E): A :=
   match opt with
-  | errRetC x => x
+  | resultC x => x
   | _ => default
   end.
 
@@ -34,7 +32,7 @@ Definition am_getNonce (nid:nat) : AM BS :=
   let resopt := map_get oldMap nid in
   match resopt with
   | Some res => ret res
-  | None => failm errStr_amNonce
+  | None => failm (am_error errStr_amNonce)
   end.
 
 
