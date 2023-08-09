@@ -4,7 +4,7 @@ Record representing the CVM Monad state structure.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import ConcreteEvidence ErrorStMonad_Coq AbstractedTypes.
+Require Import ConcreteEvidence ErrorStMonad_Coq AbstractedTypes Manifest_Admits.
 Require Import List.
 Import ListNotations.
 
@@ -26,9 +26,11 @@ Record cvm_st : Type := mk_st
 
 Definition empty_vmst := mk_st (evc [] mt) [] min_id_type 0.
 
+
+
 Inductive CVM_Error : Type := 
-| asp_error : ASP_PARAMS -> RawEv -> StringT -> CVM_Error
-| at_error : Term -> Plc -> RawEv -> StringT -> CVM_Error.
+| at_error_static : Term -> Plc -> EvC -> CVM_Error
+| at_error_dynamic : Term -> UUID -> EvC -> CVM_Error.
 
 (** CVM monad -- instantiation of the general ResultT monad with cvm_st *)
 Definition CVM A := Err cvm_st A CVM_Error.
