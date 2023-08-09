@@ -13,7 +13,7 @@ Inductive CallBackErrors : Type :=
 | Runtime : CallBackErrors.
 
 Definition CakeML_ASPCallback : Type := 
-  ASP_PARAMS -> ResultT (Plc -> BS -> RawEv -> BS) CallBackErrors.
+  ASP_PARAMS -> Plc -> BS -> RawEv -> ResultT BS CallBackErrors.
 
 Definition CakeML_PubKeyCallback : Type := 
   Plc -> ResultT PublicKey CallBackErrors.

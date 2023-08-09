@@ -42,7 +42,7 @@ Definition emptyConcreteMan : ConcreteManifest := {|
 Definition empty_am_config : AM_Config :=
   mkAmConfig 
     emptyConcreteMan 
-    (fun x => errC Unavailable)
+    (fun x => fun _ => fun _ => fun _ => errC Unavailable)
     (fun x => errC Unavailable)
     (fun x => errC Unavailable)
     (fun x => errC Unavailable).
@@ -61,7 +61,8 @@ Definition empty_vmst : cvm_st := mk_st (evc [] mt) [] min_id_type 0 empty_am_co
 
 Inductive CVM_Error : Type := 
 | at_error_static : Term -> Plc -> EvC -> CVM_Error
-| at_error_dynamic : Term -> UUID -> EvC -> CVM_Error.
+| at_error_dynamic : Term -> UUID -> EvC -> CVM_Error
+| callback_error : CallBackErrors -> CVM_Error.
 
 (** CVM monad -- instantiation of the general ResultT monad with cvm_st *)
 Definition CVM A := Err cvm_st A CVM_Error.

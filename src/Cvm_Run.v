@@ -6,7 +6,7 @@ Require Import List.
 Import ListNotations.
 
 Definition run_cvm (t:Core_Term) st : cvm_st :=
-  execErr (build_cvm t) st.
+  execErr (build_cvm t (st.(st_AM_config))) st.
 
 Definition run_cvm' (t:Term) st : cvm_st :=
   run_cvm (copland_compile t) st.

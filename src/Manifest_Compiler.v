@@ -25,7 +25,7 @@ Import ListNotations.
       : ConcreteManifest -> CakeML_ASPCallback :=
     let local_asps_map := al.(Local_ASPS) in
     let abstract_asps := am.(asps) in
-    let shrunk_map := 
+    let shrunk_map : (MapC ASP_ID CakeML_ASPCallback) := 
       minify_mapC local_asps_map (fun x => if (in_dec (EqClass_impl_DecEq _) x abstract_asps) then true else false) in
     let asp_server_cb := al.(ASPServer_Cb) in
     fun (cman : ConcreteManifest) =>
@@ -35,7 +35,7 @@ Import ListNotations.
           (* check is the ASPID is a local, with a callback *)
           match (map_get shrunk_map aspid) with
           | Some cb => (cb par)
-          | None => errC Unavailable 
+          | None => fun _ => fun _ => fun _ => errC Unavailable 
             (* (asp_server_cb asp_server_addr par) *)
           end.
 

@@ -95,11 +95,11 @@ Definition fwd_asp (fwd:FWD) (bs:BS) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
 
 (* Simulates invoking an arbitrary ASP.  Tags the event, builds and returns 
    the new evidence bundle. *)
-Definition invoke_ASP (fwd:FWD) (params:ASP_PARAMS) : CVM EvC :=
+Definition invoke_ASP (fwd:FWD) (params:ASP_PARAMS) (ac : AM_Config) : CVM EvC :=
   e <- get_ev ;;
   p <- get_pl ;;
   x <- tag_ASP params p e ;;
-  bs <- do_asp' params (get_bits e) p x ;;
+  bs <- do_asp' params (get_bits e) p x ac ;;
   ret (fwd_asp fwd bs e p params).
 
 Definition copyEv : CVM EvC :=
@@ -118,12 +118,12 @@ Definition clearEv : unit -> CVM EvC :=
   fun _ => ret mt_evc.
 
 (* Helper that interprets primitive core terms in the CVM.  *)
-Definition do_prim (a:ASP_Core) : CVM EvC :=
+Definition do_prim (a:ASP_Core) (ac : AM_Config) : CVM EvC :=
   match a with
   | NULLC => nullEv
   | CLEAR => clearEv tt
   | CPYC => copyEv
-  | ASPCC fwd params => invoke_ASP fwd params
+  | ASPCC fwd params => invoke_ASP fwd params ac
   end.
 
 

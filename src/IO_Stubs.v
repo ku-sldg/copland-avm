@@ -12,7 +12,7 @@
     Appraisal_Defs.v).        
  *)
 
-Require Import Term_Defs ConcreteEvidence ErrorStMonad_Coq IO_Type Manifest_Admits.
+Require Import Term_Defs ConcreteEvidence ErrorStMonad_Coq IO_Type Manifest Manifest_Admits Cvm_St.
 
 (** * Stub to encode a sequence of BS values to a single BS value.
       Real implmenetation will depend on the instantition of BS *)
@@ -22,8 +22,8 @@ Admitted.
 (** * Stub for invoking external ASP procedures.  
       Extracted code should not need to use the Plc or Event_ID parameters 
       (those can be erased upon extraction). *)
-Definition do_asp (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) : BS.
-Admitted.
+Definition do_asp (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) (ac : AM_Config) : ResultT BS CallBackErrors :=
+  ac.(aspCb) params mpl (encodeEvRaw e) e.
 
 (** * Stub for completing a remote communication session with an external AM. *)
 Definition doRemote_session (t:Term) (pTo:Plc) (e:EvC) : EvC.
@@ -41,8 +41,11 @@ Admitted.
 Definition am_sendReq_app (t:Term) (p:Plc) (e:Evidence) (ev:RawEv): AppResultC.
 Admitted.
 
-Definition do_asp' (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) : IO BS :=
-  ret (do_asp params e mpl x).
+Definition do_asp' (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) (ac : AM_Config) : CVM BS :=
+  match (do_asp params e mpl x ac) with
+  | resultC r => ret r
+  | errC e => failm (callback_error e)
+  end.
 
 Definition doRemote_session' (t:Term) (pTo:Plc) (e:EvC) : IO EvC :=
   ret (doRemote_session t pTo e).

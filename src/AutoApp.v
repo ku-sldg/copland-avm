@@ -83,22 +83,21 @@ Ltac do_inv_head :=
     | [H: ?ls ++ ?xs = ?ls ++ ?ys |- _] => assert_new_proof_by (xs = ys) tac
     end.
 
-
+(* 
 (* Characterizing results of CVM execution. 
    TODO:  Need to revisit this to incoporate error results.
    TODO:  Perhaps make assumptions about input manifest fields and executability?
 
    Noted when CVM used just a State (no Error) Monad: 
       This may need revisiting if we consider more robust models of CVM failure. *)
-Lemma always_some : forall t vm_st vm_st' op,
-    build_cvm t vm_st = (op, vm_st') ->
+Lemma always_some : forall t vm_st vm_st' op ac,
+    build_cvm t ac vm_st = (op, vm_st') ->
     op = resultC tt (* Some tt *).
 Proof.
   induction t; intros.
-  -
-    destruct a; (* asp *)
+  - destruct a; (* asp *)
       try destruct a; (* asp params *)
-      try (df; tauto).
+      try (df; tauto). simpl in *.
   -
     repeat (df; try dohtac; df).
     tauto.
@@ -118,14 +117,14 @@ Proof.
     simpl.
 
     break_match; ff; eauto.
-Defined.
-
+Defined. *)
+(* 
 Ltac do_somett :=
   match goal with
   | [H: build_cvm ?t _ = (?o, _)
      |- _] =>
     assert_new_proof_by (o = resultC tt) ltac:(eapply always_some; [apply H])
-  end.
+  end. *)
 
 
 Ltac clear_triv :=
@@ -133,12 +132,12 @@ Ltac clear_triv :=
   | [H: ?x = ?x |- _] => clear H
   end.
 
-Ltac do_asome := repeat do_somett; repeat clear_triv.
+(* Ltac do_asome := repeat do_somett; repeat clear_triv. *)
 
 Ltac dd :=
   repeat (
       df;
       annogo;
       dosome;
-      do_asome;
+      (* do_asome; *)
       subst).

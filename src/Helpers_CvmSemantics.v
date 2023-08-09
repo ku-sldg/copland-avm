@@ -19,7 +19,7 @@ Set Nested Proofs Allowed.
 Lemma pl_immut : forall t e tr p i ac,
     st_pl
       (execErr
-         (build_cvm t)
+         (build_cvm t ac)
          {|
            st_ev := e;
            st_trace := tr;
@@ -31,7 +31,8 @@ Proof.
   -
     destruct a; (* asp *)
       try destruct a; (* asp params *)    
-      try reflexivity.
+      try reflexivity; simpl in *.
+      
   -
     df.
     reflexivity.
