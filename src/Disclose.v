@@ -1445,12 +1445,12 @@ Qed.
 
 *)
 
-Lemma cvm_implies_events: forall t annt e e' bits bits' p p' cvmi cvmi' cvm_tr ev,
+Lemma cvm_implies_events: forall t annt e e' bits bits' p p' cvmi cvmi' cvm_tr ev ac ac',
     annoP_indexed annt t cvmi cvmi'->
 
     build_cvmP (copland_compile t)
-         {| st_ev := evc bits e; st_trace := []; st_pl := p; st_evid := cvmi |} 
-         (resultC tt) {| st_ev := evc bits' e'; st_trace := cvm_tr; st_pl := p'; st_evid := cvmi' |} ->
+         {| st_ev := evc bits e; st_trace := []; st_pl := p; st_evid := cvmi; st_AM_config := ac |} 
+         (resultC tt) {| st_ev := evc bits' e'; st_trace := cvm_tr; st_pl := p'; st_evid := cvmi'; st_AM_config := ac' |} ->
 
     In ev cvm_tr ->
 
@@ -1519,12 +1519,13 @@ Proof.
                     {| st_ev := (evc bits e);
                        st_trace := [];
                        st_pl := p;
-                       st_evid := (S cvmi)|} =
+                       st_evid := (S cvmi); st_AM_config := ac' |} =
     (resultC tt,
      {| st_ev := cvm_evidence_core (copland_compile t) p (evc bits e);
         st_trace := cvm_events_core (copland_compile t) p (get_et (evc bits e));
         st_pl := p;
-        st_evid := ( (S cvmi) + event_id_span (copland_compile t))
+        st_evid := ( (S cvmi) + event_id_span (copland_compile t));
+        st_AM_config := ac'
      |})).
       apply build_cvm_external.
 
@@ -1575,13 +1576,8 @@ Proof.
     
     assert (n = H4).
     {
-      eapply anno_span_cvm.
-      econstructor.
-      apply Heqp2.
-      2: {
-        apply H5.
-      }
-      econstructor; tauto.
+      eapply anno_span_cvm; eauto;
+      econstructor; eauto.
     }
     subst.
 
@@ -1589,7 +1585,7 @@ Proof.
     destruct x.
      
 
-    assert (In ev H \/ In ev H6).
+    assert (In ev H \/ In ev H7).
     {
       apply in_app_or in H1.
         door.
@@ -1628,15 +1624,15 @@ Proof.
     }
     eapply cvm_refines_lts_evidence.
     econstructor; eauto.
-    rewrite <- H8.
+    rewrite <- H9.
     eassumption.
       }
-      rewrite H8 in H7.
+      rewrite H9 in H8.
       
 
       assert (p = H3).
       {
-        invc H5.
+        invc H6.
         Print do_pl_immut.
         do_pl_immut.
         congruence.
@@ -2131,10 +2127,9 @@ Proof.
     apply evtsbparsplit.
     auto.
     door.
-    rewrite thread_bookend_peel in H3.
+    rewrite thread_bookend_peel in H3; eauto.
     
     admit. (* TODO: axiom? *)
-    eauto.
 
 
     subst.
@@ -2324,16 +2319,16 @@ Admitted.
 
 
 Lemma cvm_respects_events_disclosure_aspid:
-  forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt,
+  forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt ac ac',
     
     annoP_indexed annt t cvmi cvmi' ->
     ~ (events_discloses_aspid annt p e i r) ->
     
     term_to_coreP t atp ->
     build_cvmP atp
-               (mk_st (evc bits e) [] p cvmi)
+               (mk_st (evc bits e) [] p cvmi ac)
                (resultC tt)
-               (mk_st (evc bits' e') cvm_tr p' cvmi') ->
+               (mk_st (evc bits' e') cvm_tr p' cvmi' ac') ->
 
     ~ (cvm_trace_discloses_aspid_to_remote cvm_tr i r).
 
@@ -2780,10 +2775,10 @@ Admitted.
   Proof.
   Admitted.
 
-    Lemma can_annoP_indexed: forall t atp bits bits' e e' p p' cvm_tr cvmi cvmi',
+    Lemma can_annoP_indexed: forall t atp bits bits' e e' p p' cvm_tr cvmi cvmi' ac ac',
     term_to_coreP t atp ->
-    build_cvmP atp {| st_ev := evc bits e; st_trace := []; st_pl := p; st_evid := cvmi |}
-               (resultC tt) {| st_ev := evc bits' e'; st_trace := cvm_tr; st_pl := p'; st_evid := cvmi' |} ->
+    build_cvmP atp {| st_ev := evc bits e; st_trace := []; st_pl := p; st_evid := cvmi; st_AM_config := ac |}
+               (resultC tt) {| st_ev := evc bits' e'; st_trace := cvm_tr; st_pl := p'; st_evid := cvmi'; st_AM_config := ac' |} ->
     exists annt,
       annoP_indexed annt t cvmi cvmi'.
     Proof.
@@ -2886,7 +2881,7 @@ Admitted.
 
 
 Lemma cvm_respects_term_disclosure_aspid:
-  forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt,
+  forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt ac ac',
 
     annoP_indexed annt t cvmi cvmi' ->
 
@@ -2894,9 +2889,9 @@ Lemma cvm_respects_term_disclosure_aspid:
   
   term_to_coreP t atp ->
   build_cvmP atp
-             (mk_st (evc bits e) [] p cvmi)
+             (mk_st (evc bits e) [] p cvmi ac)
              (resultC tt)
-             (mk_st (evc bits' e') cvm_tr p' cvmi') ->
+             (mk_st (evc bits' e') cvm_tr p' cvmi' ac') ->
 
   ~ (cvm_trace_discloses_aspid_to_remote cvm_tr i r).
 Proof.
@@ -3342,15 +3337,15 @@ Admitted.
 *)
 
 Lemma filter_remote_disclosures_correct_cvm:
-  forall rs p e ts ts' t annt r ev atp i i' bits bits' e' cvm_tr p',
+  forall rs p e ts ts' t annt r ev atp i i' bits bits' e' cvm_tr p' ac ac',
     filter_remote_disclosures rs p e ts = ts' ->
     In t ts' -> 
     term_to_coreP t atp ->
     annoP_indexed annt t i i' ->
     build_cvmP atp
-                     (mk_st (evc bits e) [] p i)
+                     (mk_st (evc bits e) [] p i ac)
                      (resultC tt)
-                     (mk_st (evc bits' e') cvm_tr p' i') ->
+                     (mk_st (evc bits' e') cvm_tr p' i' ac') ->
     
     In ev cvm_tr ->
     In r rs ->

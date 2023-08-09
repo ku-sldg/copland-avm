@@ -201,12 +201,12 @@ Axiom wf_ec_preserved_par: forall e l t2 p,
 
 (** * Lemma:  CVM execution preserves well-formedness of EvC bundles 
       (Evidence Type of sufficient length for raw evidence). *)
-Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' p p' i i',
+Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' p p' i i' ac ac',
     wf_ec e ->
         build_cvmP t1
-                    {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |}
+                    {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i; st_AM_config := ac |}
                     (resultC tt)
-                    {| st_ev := e'; st_trace := tr'; st_pl := p'; st_evid := i' |} ->
+                    {| st_ev := e'; st_trace := tr'; st_pl := p'; st_evid := i'; st_AM_config := ac' |} ->
     wf_ec (e').
 Proof.
   intros.
@@ -370,20 +370,22 @@ Proof.
 Qed.
 
 (** * Lemma:  CVM increases event IDs according to event_id_span' denotation. *)
-Lemma cvm_spans: forall t pt e tr p i e' tr' p' i',
+Lemma cvm_spans: forall t pt e tr p i e' tr' p' i' ac ac',
     term_to_coreP t pt ->
     build_cvmP
       pt
       {| st_ev := e;
          st_trace := tr;
          st_pl := p;
-         st_evid := i |}
+         st_evid := i;
+         st_AM_config := ac |}
       (resultC tt)
       {|
         st_ev := e';
         st_trace := tr';
         st_pl := p';
-        st_evid := i'
+        st_evid := i';
+        st_AM_config := ac'
       |} ->
     i' = i + event_id_span' t.
 Proof.
@@ -553,18 +555,20 @@ Defined.
 Qed.
   
 (** * CVM event ID span same as annotated term range *)
-Lemma span_cvm: forall atp t annt i j e e' tr tr' p p' i',
+Lemma span_cvm: forall atp t annt i j e e' tr tr' p p' i' ac ac',
     build_cvmP
       atp
       {| st_ev := e;
          st_trace := tr;
          st_pl := p;
-         st_evid := i |} 
+         st_evid := i;
+         st_AM_config := ac |} 
       (resultC tt)
       {| st_ev := e';
          st_trace := tr';
          st_pl := p';
-         st_evid := i' |} ->
+         st_evid := i';
+         st_AM_config := ac' |} ->
     
     term_to_coreP t atp -> 
     anno t i = (j, annt) ->
@@ -592,7 +596,7 @@ Proof.
 Defined.
 
 (** * Propositional version of span_cvm *)
-Lemma anno_span_cvm: forall t pt annt i i' e e' p p' tr tr' st_evid1,
+Lemma anno_span_cvm: forall t pt annt i i' e e' p p' tr tr' st_evid1 ac ac',
     annoP_indexed annt t i i' ->
     term_to_coreP t pt ->
     build_cvmP pt
@@ -600,13 +604,14 @@ Lemma anno_span_cvm: forall t pt annt i i' e e' p p' tr tr' st_evid1,
                        st_ev := e ;
                        st_trace := tr ;
                        st_pl := p;
-                       st_evid := i
+                       st_evid := i;
+                       st_AM_config := ac
                      |} (resultC tt)
                      {|
                        st_ev := e';
                        st_trace := tr';
                        st_pl := p';
-                       st_evid := st_evid1
+                       st_evid := st_evid1; st_AM_config := ac'
                      |} ->
     i' = st_evid1.
 Proof.
@@ -622,22 +627,21 @@ Axiom events_cvm_to_core_mt : forall t p e,
 (** * Theorem:  Main Theorem stating that for an arbitrary Copland phrase, all of its execution traces 
       in the CVM are also captured in the LTS reference semantics. *)
 Theorem cvm_refines_lts_events :
-  forall t atp annt cvm_tr bits bits' et et' p p' i i',
+  forall t atp annt cvm_tr bits bits' et et' p p' i i' ac ac',
     term_to_coreP t atp ->
     annoP_indexed annt t i i' ->
     build_cvmP atp
-                     (mk_st (evc bits et) [] p i)
+                     (mk_st (evc bits et) [] p i ac)
                      (resultC tt)
-                     (mk_st (evc bits' et') cvm_tr p' i') ->
+                     (mk_st (evc bits' et') cvm_tr p' i' ac') ->
     lstar (conf annt p et) cvm_tr (stop p (aeval annt p et)).
 Proof.
-  intros t atp annt cvm_tr bits bits' et et' p p' i i' annoParPH annPH H'.
+  intros t atp annt cvm_tr bits bits' et et' p p' i i' ac ac' annoParPH annPH H'.
   generalizeEverythingElse t.
   induction t; intros.
   
   - (* aasp case *)
     wrap_ccp_anno.
-
     
     destruct a; invc annoParPH; ff;
     wrap_ccp_anno;
@@ -766,7 +770,7 @@ Proof.
       econstructor.
       invc Heqp0.
       eassumption.
-      2: { apply H2. }
+      2: { eauto. }
       econstructor; tauto.
     }
     subst.
@@ -778,9 +782,7 @@ Proof.
     eapply lstar_transitive.
     eapply lstar_stls.
     
-    eapply IHt1.
-    2: { eassumption. }
-    2: { apply H2. }
+    eapply IHt1; eauto.
     econstructor; tauto.
 
     (*
@@ -801,37 +803,25 @@ Proof.
       symmetry.
       invc Heqp0.
       erewrite <- anno_unanno.
-      rewrite H5.
+      rewrite H6.
       tauto.
     }
     eapply cvm_refines_lts_evidence.
     econstructor; eauto.
-    rewrite <- H5.
+    rewrite <- H6.
     eassumption.
      }
 
      assert (p = H0).
     {
-      invc H2.
+      invc H3.
       do_pl_immut.
       congruence.
     }
+    subst.
 
-    rewrite H5 in *; clear H5.
-    rewrite H6 in *; clear H6.
+    eapply IHt2; eauto. (*with (e:= x). *)
 
-
-    
-
-    eapply IHt2. (*with (e:= x). *)
-
-    2: { eassumption. }
-
-
-
-    2: {
-      eassumption.
-    }
     econstructor; tauto.
 
   - (* abseq case *)
@@ -874,10 +864,8 @@ Proof.
     {
       assert (i + 1 = S i) by lia.
       find_rewrite.
-      eapply IHt1.
+      eapply IHt1; eauto.
       econstructor; tauto.
-      eassumption.
-      eassumption.
     }
 
     assert (
@@ -888,10 +876,8 @@ Proof.
       find_rewrite.
 
       subst.
-      eapply IHt2.
+      eapply IHt2; eauto.
       econstructor; tauto.
-      eassumption.
-      eassumption.
 
     }
 
@@ -909,16 +895,13 @@ Proof.
     eassumption.
 
     assert (st_evid = Nat.pred (st_evid + 1)) by lia.
-    rewrite H5 at 2.
+    rewrite H5 in *.
 
     
-    econstructor.
-
-    eapply stbsrstop.
-    econstructor.
-
-
-        +
+    econstructor; eauto; simpl in *.
+    assert (Nat.pred (st_evid + 1) + 1 = st_evid + 1) by lia.
+    rewrite H6 in *; eauto. 
+    +
 
     assert (n = st_evid1).
     {
@@ -953,10 +936,8 @@ Proof.
     {
       assert (i + 1 = S i) by lia.
       find_rewrite.
-      eapply IHt1.
+      eapply IHt1; eauto.
       econstructor; tauto.
-      eassumption.
-      eassumption.
     }
 
     assert (
@@ -1490,18 +1471,18 @@ Qed.
 
 (** * Slight reformulation of cvm_refines_events, in terms of st_trace. *)
 Corollary cvm_refines_lts_event_ordering_corrolary :
-  forall t annt atp cvm_tr bits et p i i',
+  forall t annt atp cvm_tr bits et p i i' ac,
     annoP_indexed annt t i i' ->
     term_to_coreP t atp ->
     st_trace (run_cvm atp
-                      (mk_st (evc bits et) [] p i)) = cvm_tr ->
+                      (mk_st (evc bits et) [] p i ac)) = cvm_tr ->
     lstar (conf annt p et) cvm_tr (stop p (aeval annt p et)).
 Proof.
   intros.
   destruct (build_cvm atp {| st_ev := (evc bits et);
                                    st_trace := [];
                                    st_pl := p;
-                                   st_evid := i |}) eqn:hi.
+                                   st_evid := i; st_AM_config := ac |}) eqn:hi.
   simpl in *.
   vmsts.
   simpl in *.
@@ -1531,13 +1512,13 @@ Qed.
 (** * Main correctness theorem about CVM events:  event orderings respect the 
       event system (partial order) reference semantics. *)
 Theorem cvm_respects_event_system :
-  forall atp annt t cvm_tr ev0 ev1 bits bits' et et' i i' plc_id,
+  forall atp annt t cvm_tr ev0 ev1 bits bits' et et' i i' plc_id ac ac',
     annoP_indexed annt t i i' ->
     term_to_coreP t atp ->
     build_cvmP atp
-                     (mk_st (evc bits et) [] plc_id i)
+                     (mk_st (evc bits et) [] plc_id i ac)
                      (resultC tt)
-                     (mk_st (evc bits' et') cvm_tr plc_id i') ->
+                     (mk_st (evc bits' et') cvm_tr plc_id i' ac') ->
     prec (ev_sys annt plc_id et) ev0 ev1 ->
     earlier cvm_tr ev0 ev1.
 Proof.
@@ -1558,10 +1539,10 @@ Proof.
 Qed.
 
 Corollary cvm_respects_event_system_run :
-  forall atp annt t cvm_tr ev0 ev1 bits et i i' plc_id,
+  forall atp annt t cvm_tr ev0 ev1 bits et i i' plc_id ac,
     annoP_indexed annt t i i' ->
     term_to_coreP t atp ->
-    st_trace (run_cvm atp (mk_st (evc bits et) [] plc_id i)) = cvm_tr ->
+    st_trace (run_cvm atp (mk_st (evc bits et) [] plc_id i ac)) = cvm_tr ->
     
     prec (ev_sys annt plc_id et) ev0 ev1 ->
     earlier cvm_tr ev0 ev1.
@@ -1586,10 +1567,10 @@ Proof.
   econstructor; eassumption.
 Qed.
 
-Corollary cvm_respects_event_system_run' : forall atp annt t cvm_tr ev0 ev1 bits et plc_id,
+Corollary cvm_respects_event_system_run' : forall atp annt t cvm_tr ev0 ev1 bits et plc_id ac,
     annt = annotated t ->
     copland_compile t = atp ->
-    st_trace (run_cvm atp (mk_st (evc bits et) [] plc_id 0)) = cvm_tr ->
+    st_trace (run_cvm atp (mk_st (evc bits et) [] plc_id 0 ac)) = cvm_tr ->
     
     prec (ev_sys annt plc_id et) ev0 ev1 ->
     earlier cvm_tr ev0 ev1.

@@ -1,4 +1,4 @@
-Require Import ErrorStMonad_Coq BS Maps Term_Defs_Core Term_Defs Cvm_Run.
+Require Import ErrorStMonad_Coq BS Maps Term_Defs_Core Term_Defs Cvm_Run Cvm_St.
 
 Require Import ErrorStringConstants.
 
@@ -36,6 +36,6 @@ Definition am_getNonce (nid:nat) : AM BS :=
   end.
 
 
-Definition am_runCvm_nonce (t:Term) (p:Plc) (bs:BS) : AM (nat * RawEv) :=
+Definition am_runCvm_nonce (t:Term) (p:Plc) (bs:BS) (ac : AM_Config) : AM (nat * RawEv) :=
   nid <- am_newNonce bs ;;
-  ret (nid, run_cvm_rawEv t p [bs]).
+  ret (nid, run_cvm_rawEv t p [bs] ac).

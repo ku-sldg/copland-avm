@@ -22,14 +22,16 @@ Definition put_ev (e:EvC) : CVM unit :=
      let tr' := st_trace st in
      let p' := st_pl st in
      let i := st_evid st in
-     put (mk_st e tr' p' i).
+     let ac := st_AM_config st in
+     put (mk_st e tr' p' i ac).
 
 Definition put_pl (p:Plc) : CVM unit :=
   st <- get ;;
      let tr' := st_trace st in
      let e' := st_ev st in
      let i := st_evid st in
-     put (mk_st e' tr' p i).
+     let ac := st_AM_config st in
+     put (mk_st e' tr' p i ac).
 
 Definition get_ev : CVM EvC :=
   st <- get ;;
@@ -45,18 +47,19 @@ Definition inc_id : CVM Event_ID :=
     let e' := st_ev st in
     let p' := st_pl st in
     let i := st_evid st in
-    put (mk_st e' tr' p' (Nat.add i (S O))) ;;
+    let ac := st_AM_config st in
+    put (mk_st e' tr' p' (Nat.add i (S O)) ac) ;;
     ret i.
   
 
 Definition modify_evm (f:EvC -> EvC) : CVM unit :=
   st <- get ;;
-  let '{| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |} := st in
-  put (mk_st (f e) tr p i).
+  let '{| st_ev := e; st_trace := tr; st_pl := p; st_evid := i; st_AM_config := ac |} := st in
+  put (mk_st (f e) tr p i ac).
 
 Definition add_trace (tr':list Ev) : cvm_st -> cvm_st :=
-  fun '{| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |} =>
-    mk_st e (tr ++ tr') p i.
+  fun '{| st_ev := e; st_trace := tr; st_pl := p; st_evid := i; st_AM_config := ac |} =>
+    mk_st e (tr ++ tr') p i ac.
 
 Definition add_tracem (tr:list Ev) : CVM unit :=
   modify (add_trace tr).
@@ -136,7 +139,8 @@ Definition inc_remote_event_ids (t:Term) : CVM unit :=
     let p' := st_pl st in
     let i := st_evid st in
     let new_i := Nat.add i (event_id_span' t) in
-    put (mk_st e' tr' p' new_i).
+    let ac := st_AM_config st in
+    put (mk_st e' tr' p' new_i ac).
 
 (* Monadic helper function to simulate a span of parallel event IDs 
    corresponding to the size of a Core_Term *)
@@ -147,7 +151,8 @@ Definition inc_par_event_ids (t:Core_Term) : CVM unit :=
     let p' := st_pl st in
     let i := st_evid st in
     let new_i := Nat.add i (event_id_span t) in
-    put (mk_st e' tr' p' new_i).
+    let ac := st_AM_config st in
+    put (mk_st e' tr' p' new_i ac).
   
 (* Primitive monadic communication primitives 
    (some rely on Admitted IO Stubs). *)
