@@ -4,7 +4,7 @@ Record representing the CVM Monad state structure.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import ConcreteEvidence ErrorStMonad_Coq AbstractedTypes Manifest_Admits.
+Require Import ConcreteEvidence ErrorStMonad_Coq AbstractedTypes Manifest Manifest_Admits.
 Require Import List.
 Import ListNotations.
 
@@ -18,13 +18,44 @@ Import ListNotations.
     st_evid - Monotonic event ID counter.  Incremented after each 
               attestation-relevant event/invocation.
  *)
+Record AM_Config : Type := 
+  mkAmConfig {
+    concMan : ConcreteManifest ;
+    aspCb : CakeML_ASPCallback ;
+    plcCb : CakeML_PlcCallback ;
+    pubKeyCb : CakeML_PubKeyCallback ;
+    uuidCb : CakeML_uuidCallback ;
+  }.
+
+Definition emptyConcreteMan : ConcreteManifest := {|
+  my_plc := min_id_type;
+  Concrete_ASPs := nil;
+  Concrete_Plcs := nil;
+  Concrete_PubKeys := nil;
+  Concrete_Targets := nil;
+  ASP_Server := empty_ASP_Address;
+  PubKey_Server := empty_ASP_Address;
+  Plc_Server := empty_ASP_Address;
+  UUID_Server := empty_ASP_Address;
+|}.
+
+Definition empty_am_config : AM_Config :=
+  mkAmConfig 
+    emptyConcreteMan 
+    (fun x => errC Unavailable)
+    (fun x => errC Unavailable)
+    (fun x => errC Unavailable)
+    (fun x => errC Unavailable).
+
 Record cvm_st : Type := mk_st
                           {st_ev:EvC ;
                            st_trace:list Ev ;
                            st_pl:Plc;
-                           st_evid:Event_ID}.
+                           st_evid:Event_ID ;
+                           st_AM_config : AM_Config ;
+                           }.
 
-Definition empty_vmst := mk_st (evc [] mt) [] min_id_type 0.
+Definition empty_vmst : cvm_st := mk_st (evc [] mt) [] min_id_type 0 empty_am_config.
 
 
 

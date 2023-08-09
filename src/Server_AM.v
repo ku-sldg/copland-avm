@@ -1,6 +1,6 @@
 Require Import Term IO_Stubs Cvm_Run CvmJson_Admits Example_Phrases_Admits.
 
-Require Import AM_Monad ErrorStMonad_Coq Impl_appraisal privPolicy Manifest Manifest_Admits.
+Require Import AM_Monad ErrorStMonad_Coq Impl_appraisal privPolicy Manifest Manifest_Admits Cvm_St.
 
 Require Import ErrorStringConstants.
 
@@ -21,13 +21,13 @@ Definition am_check_auth_tok (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) : AM App
   end.
 
 Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc) 
-                                 (authTok:ReqAuthTok) (init_ev:RawEv): AM RawEv :=
+                                 (authTok:ReqAuthTok) (init_ev:RawEv) (ac : AM_Config) : AM RawEv :=
   let asdf := print_auth_tok authTok in
   v <- am_check_auth_tok t fromPl authTok ;;
   match ((appraise_auth_tok v)) with
   | true =>
     match (privPolicy fromPl t) with
-    | true => ret (run_cvm_rawEv t myPl init_ev)
+    | true => ret (run_cvm_rawEv t myPl init_ev ac)
     | false => failm (am_error errStr_privPolicy)
     end
       
@@ -35,17 +35,17 @@ Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc)
   end.
 
 Definition run_am_server_auth_tok_req (t:Term) (fromPlc:Plc) (myPl:Plc) 
-            (authTok:ReqAuthTok) (init_ev:RawEv) : RawEv :=
-              run_am_app_comp (am_serve_auth_tok_req t fromPlc myPl authTok init_ev) [].
+            (authTok:ReqAuthTok) (init_ev:RawEv) (ac : AM_Config) : RawEv :=
+              run_am_app_comp (am_serve_auth_tok_req t fromPlc myPl authTok init_ev ac) [].
                             
 
-Definition do_cvm_session (req:CvmRequestMessage): CvmResponseMessage := 
+Definition do_cvm_session (req:CvmRequestMessage) (ac : AM_Config): CvmResponseMessage := 
   let fromPlc := default_place in 
   let myPlc := default_place in
   match req with 
   | REQ t tok ev => 
     let asdf := print_auth_tok tok in 
-      let resev := run_am_server_auth_tok_req t fromPlc myPlc tok ev in 
+      let resev := run_am_server_auth_tok_req t fromPlc myPlc tok ev ac in 
         (RES resev)
   end.
 
@@ -60,13 +60,13 @@ Definition do_appraisal_session (appreq:AppraisalRequestMessage):
     end in 
       (RES_APP appres).
 
-Definition handle_AM_request (s:StringT) : StringT :=
+Definition handle_AM_request (s:StringT) (ac : AM_Config) : StringT :=
   let js := strToJson s in 
   let am_req := jsonToAmRequest js in 
   let json_resp := 
     match am_req with 
     | CVM_REQ r => 
-      let cvm_resp := (do_cvm_session r) in 
+      let cvm_resp := (do_cvm_session r ac) in 
         responseToJson cvm_resp
     | APP_REQ appreq => 
       let app_resp := (do_appraisal_session appreq) in 

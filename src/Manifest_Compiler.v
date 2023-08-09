@@ -1,5 +1,6 @@
   
-Require Import Maps AbstractedTypes EqClass Term_Defs_Core Manifest_Admits Manifest.
+Require Import Maps AbstractedTypes EqClass Term_Defs_Core Manifest_Admits Manifest
+  ErrorStMonad_Coq.
   
 
 Require Import List.
@@ -34,7 +35,8 @@ Import ListNotations.
           (* check is the ASPID is a local, with a callback *)
           match (map_get shrunk_map aspid) with
           | Some cb => (cb par)
-          | None => (asp_server_cb asp_server_addr par)
+          | None => errC Unavailable 
+            (* (asp_server_cb asp_server_addr par) *)
           end.
 
   (* This function will lookup for either local Plcs to UUID, or pass them off to the Plc Server *)
@@ -50,8 +52,9 @@ Import ListNotations.
       fun (p : Plc) =>
         (* check is the plc "p" is local, with a reference *)
         match (map_get shrunk_map p) with
-        | Some uuid => uuid
-        | None => (plc_server_cb plc_server_addr p)
+        | Some uuid => resultC uuid
+        | None => errC Unavailable
+          (* (plc_server_cb plc_server_addr p) *)
         end.
       
   (* This function will lookup the PubKey either locally Plc -> PublicKey or pass off to PubKeyServer *)
@@ -67,8 +70,9 @@ Import ListNotations.
       fun (p : Plc) =>
         (* check is the plc "p" is local, with a reference in the pubkey server mapping *)
         match (map_get shrunk_map p) with
-        | Some key => key
-        | None => (pubkey_server_cb pubkey_server_addr p)
+        | Some key => resultC key
+        | None => errC Unavailable
+          (* (pubkey_server_cb pubkey_server_addr p) *)
         end.
 
   Definition generate_UUID_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest)  
@@ -80,8 +84,9 @@ Import ListNotations.
       fun (u : UUID) =>
         (* check if uuid "u" is local, else dispatch to callback *)
         match (mapD_get_key local_plc_map u) with
-        | Some p => p
-        | None => (uuid_server_cb local_uuid_addr u)
+        | Some p => resultC p
+        | None => errC Unavailable
+          (* (uuid_server_cb local_uuid_addr u) *)
         end.
 
   (* This is a rough type signature for the "manifest compiler".  Still some details to be ironed out... *)

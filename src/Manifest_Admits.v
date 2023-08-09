@@ -2,6 +2,8 @@ Require Import EqClass Term_Defs_Core.
 
 Definition ASP_Address : Set. Admitted.
 
+Definition empty_ASP_Address : ASP_Address. Admitted.
+
 Definition UUID : Type. Admitted.
 
 Global Instance Eq_Class_uuid : EqClass UUID. Admitted.

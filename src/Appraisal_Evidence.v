@@ -1337,14 +1337,16 @@ Require Import ErrorStMonad_Coq.
 
 (** * Assert an arbitrary (remote) CVM execution.  
       Uses uninterpreted functions for "simulated" CVM evidence and events. *)
-Ltac do_assert_remote t e p i :=
+Ltac do_assert_remote t e p i ac :=
   assert (
       build_cvm t
-                      {| st_ev := e; st_trace := []; st_pl := p; st_evid := i|} =
+                      {| st_ev := e; st_trace := []; st_pl := p; st_evid := i; st_AM_config := ac |} =
       (resultC tt,
        {| st_ev := cvm_evidence_core t p e;
-                   st_trace := cvm_events_core t p (get_et e);
-                               st_pl := p; st_evid :=  (i + event_id_span t)
+          st_trace := cvm_events_core t p (get_et e);
+          st_pl := p; 
+          st_evid :=  (i + event_id_span t); 
+          st_AM_config := ac
        |})
     ) by (eapply build_cvm_external).
 
@@ -1381,20 +1383,22 @@ Qed.
 
 
 (** * Lemma:  CVM increases event IDs according to event_id_span' denotation. *)
-Lemma cvm_spans: forall t pt e tr p i e' tr' p' i',
+Lemma cvm_spans: forall t pt e tr p i e' tr' p' i' ac ac',
     term_to_coreP t pt ->
     build_cvmP
       pt
       {| st_ev := e;
          st_trace := tr;
          st_pl := p;
-         st_evid := i |}
+         st_evid := i;
+         st_AM_config := ac |}
       (resultC tt)
       {|
         st_ev := e';
         st_trace := tr';
         st_pl := p';
-        st_evid := i'
+        st_evid := i';
+        st_AM_config := ac'
       |} ->
     i' = i + event_id_span' t.
 Proof.
@@ -1569,18 +1573,20 @@ Qed.
 
   
 (** * CVM event ID span same as annotated term range *)
-Lemma span_cvm: forall atp t annt i j e e' tr tr' p p' i',
+Lemma span_cvm: forall atp t annt i j e e' tr tr' p p' i' ac ac',
     build_cvmP
       atp
       {| st_ev := e;
          st_trace := tr;
          st_pl := p;
-         st_evid := i |} 
+         st_evid := i;
+         st_AM_config := ac |} 
       (resultC tt)
       {| st_ev := e';
          st_trace := tr';
          st_pl := p';
-         st_evid := i' |} ->
+         st_evid := i';
+         st_AM_config := ac' |} ->
     
     term_to_coreP t atp -> 
     anno t i = (j, annt) ->
@@ -1609,7 +1615,7 @@ Defined.
 
 
 (** * Propositional version of span_cvm *)
-Lemma anno_span_cvm: forall t pt annt i i' e e' p p' tr tr' st_evid1,
+Lemma anno_span_cvm: forall t pt annt i i' e e' p p' tr tr' st_evid1 ac ac',
     annoP_indexed annt t i i' ->
     term_to_coreP t pt ->
     build_cvmP pt
@@ -1617,13 +1623,15 @@ Lemma anno_span_cvm: forall t pt annt i i' e e' p p' tr tr' st_evid1,
                        st_ev := e ;
                        st_trace := tr ;
                        st_pl := p;
-                       st_evid := i
+                       st_evid := i;
+                       st_AM_config := ac
                      |} (resultC tt)
                      {|
                        st_ev := e';
                        st_trace := tr';
                        st_pl := p';
-                       st_evid := st_evid1
+                       st_evid := st_evid1;
+                       st_AM_config := ac'
                      |} ->
     i' = st_evid1.
 Proof.
@@ -1699,12 +1707,14 @@ Axiom wf_ec_preserved_par: forall e l t2 p,
 
 (** * Lemma:  CVM execution preserves well-formedness of EvC bundles 
       (Evidence Type of sufficient length for raw evidence). *)
-Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' p p' i i',
+Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' p p' i i' ac ac',
     wf_ec e ->
         build_cvmP t1
-                    {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |}
+                    {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i;
+                       st_AM_config := ac |}
                     (resultC tt)
-                    {| st_ev := e'; st_trace := tr'; st_pl := p'; st_evid := i' |} ->
+                    {| st_ev := e'; st_trace := tr'; st_pl := p'; st_evid := i';
+                       st_AM_config := ac' |} ->
     wf_ec (e').
 Proof.
   intros.
@@ -1875,13 +1885,15 @@ Ltac do_exists_some_cc t st :=
 
 (** * Helper Lemma stating: CVM traces are "cumulative" (or monotonic).  
       Traces are only ever extended--prefixes are maintained. *)
-Lemma st_trace_cumul'' : forall t m k e p v_full v_suffix o_suffix i,
+Lemma st_trace_cumul'' : forall t m k e p v_full v_suffix o_suffix i ac,
     build_cvmP t
-               {| st_ev := e; st_trace := m ++ k; st_pl := p; st_evid := i |}
+               {| st_ev := e; st_trace := m ++ k; st_pl := p; st_evid := i;
+                       st_AM_config := ac |}
                (resultC tt) v_full ->
     
     build_cvmP t
-                     {| st_ev := e; st_trace := k; st_pl := p; st_evid := i |}
+                     {| st_ev := e; st_trace := k; st_pl := p; st_evid := i;
+                       st_AM_config := ac |}
                      o_suffix v_suffix ->
 
     st_trace v_full = m ++ st_trace v_suffix.
@@ -1932,13 +1944,13 @@ Defined.
 
 
 (** * Instance of st_trace_cumul'' where k=[] *)
-Lemma st_trace_cumul' : forall t m e p v_full v_suffix o_suffix i,
+Lemma st_trace_cumul' : forall t m e p v_full v_suffix o_suffix i ac,
     build_cvmP t
-               {| st_ev := e; st_trace := m; st_pl := p; st_evid := i |}
+               {| st_ev := e; st_trace := m; st_pl := p; st_evid := i; st_AM_config := ac |}
                (resultC tt) v_full ->
     
     build_cvmP t
-                     {| st_ev := e; st_trace := []; st_pl := p; st_evid := i |}
+                     {| st_ev := e; st_trace := []; st_pl := p; st_evid := i; st_AM_config := ac |}
                      o_suffix v_suffix ->
 
     st_trace v_full = m ++ st_trace v_suffix.
@@ -1954,23 +1966,23 @@ Defined.
       Traces are only ever extended--prefixes are maintained. 
       TODO:  rename to st_trace_cumul 
 *) 
-Lemma suffix_prop : forall t e e' tr tr' p p' i i',
+Lemma suffix_prop : forall t e e' tr tr' p p' i i' ac ac',
     build_cvmP t
            {| st_ev := e;
               st_trace := tr;
               st_pl := p;
-              st_evid := i |}
+              st_evid := i; st_AM_config := ac |}
            (resultC tt)
            {|
              st_ev := e';
              st_trace := tr';
              st_pl := p';
-             st_evid := i' |} ->
+             st_evid := i'; st_AM_config := ac' |} ->
     exists l, tr' = tr ++ l.
 Proof.
   intros.
 
-  do_exists_some_cc t {| st_ev := e; st_trace := []; st_pl := p; st_evid := i |}.
+  do_exists_some_cc t {| st_ev := e; st_trace := []; st_pl := p; st_evid := i; st_AM_config := ac |}.
   wrap_ccp.
   (*
 
@@ -2008,43 +2020,43 @@ Ltac do_suffix name :=
 
       Useful for leveraging induction hypotheses in the lseq case of induction that require empty traces in the 
       initial CVM state. *)
-Lemma alseq_decomp : forall t1' t2' e e'' p p'' tr i i'',
+Lemma alseq_decomp : forall t1' t2' e e'' p p'' tr i i'' ac ac'',
     build_cvmP
       (lseqc t1' t2')
       {| st_ev := e;
          st_trace := [];
          st_pl := p;
-         st_evid := i |}
+         st_evid := i; st_AM_config := ac |}
       (resultC tt)
       {| st_ev := e'';
          st_trace := tr;
          st_pl := p'';
-         st_evid := i'' |} ->
+         st_evid := i''; st_AM_config := ac'' |} ->
 
-    exists e' tr' p' i',
+    exists e' tr' p' i' ac',
       build_cvmP
         t1'
         {| st_ev := e;
            st_trace := [];
            st_pl := p;
-           st_evid := i |}
+           st_evid := i; st_AM_config := ac |}
         (resultC  tt)
         {| st_ev := e';
            st_trace := tr';
            st_pl := p';
-           st_evid := i' |} /\
+           st_evid := i'; st_AM_config := ac' |} /\
       exists tr'',
         build_cvmP
           t2'
           {| st_ev := e';
              st_trace := [];
              st_pl := p';
-             st_evid := i' |}
+             st_evid := i'; st_AM_config := ac' |}
           (resultC tt)
           {| st_ev := e'';
              st_trace := tr'';
              st_pl := p'';
-             st_evid := i'' |} /\
+             st_evid := i''; st_AM_config := ac'' |} /\
         tr = tr' ++ tr''.     
 Proof.
   intros.
@@ -2054,12 +2066,13 @@ Proof.
   eexists.
   eexists.
   eexists.
+  eexists.
 
   split.
   +
     eassumption.
   +
-    do_exists_some_cc t2' {| st_ev := st_ev0; st_trace := []; st_pl := st_pl0; st_evid := st_evid0 |}.
+    do_exists_some_cc t2' {| st_ev := st_ev0; st_trace := []; st_pl := st_pl0; st_evid := st_evid0; st_AM_config := st_AM_config0 |}.
     vmsts.
 
     eexists.
@@ -2078,20 +2091,20 @@ Defined.
 
 
 (** Structural convenience lemma:  reconfigures CVM execution to use an empty initial trace *)
-Lemma restl : forall t e e' x tr p p' i i',
+Lemma restl : forall t e e' x tr p p' i i' ac ac',
     build_cvmP t
-                     {| st_ev := e; st_trace := x; st_pl := p; st_evid := i|}
+                     {| st_ev := e; st_trace := x; st_pl := p; st_evid := i; st_AM_config := ac|}
                      (resultC tt)
-                     {| st_ev := e'; st_trace := x ++ tr; st_pl := p'; st_evid := i' |} ->
+                     {| st_ev := e'; st_trace := x ++ tr; st_pl := p'; st_evid := i'; st_AM_config := ac' |} ->
 
     build_cvmP t
-                     {| st_ev := e; st_trace := []; st_pl := p; st_evid := i |}
+                     {| st_ev := e; st_trace := []; st_pl := p; st_evid := i; st_AM_config := ac |}
                      (resultC tt)
-                     {| st_ev := e'; st_trace := tr; st_pl := p'; st_evid := i' |}.
+                     {| st_ev := e'; st_trace := tr; st_pl := p'; st_evid := i'; st_AM_config := ac' |}.
 Proof.
   intros.
 
-  do_exists_some_cc t  {| st_ev := e; st_trace := []; st_pl := p; st_evid := i |}.
+  do_exists_some_cc t  {| st_ev := e; st_trace := []; st_pl := p; st_evid := i; st_AM_config := ac |}.
   wrap_ccp_dohi.
 
   assert (st_trace = tr).
@@ -2100,11 +2113,10 @@ Proof.
     rewrite H0; clear H0.
     assert (tr = st_trace).
     {
-      assert (Cvm_St.st_trace {| st_ev := st_ev; st_trace := x ++ tr; st_pl := st_pl; st_evid := st_evid|} =
-              x ++ Cvm_St.st_trace {| st_ev := st_ev; st_trace := st_trace; st_pl := st_pl; st_evid := st_evid |}).
+      assert (Cvm_St.st_trace {| st_ev := st_ev; st_trace := x ++ tr; st_pl := st_pl; st_evid := st_evid; st_AM_config := st_AM_config|} =
+              x ++ Cvm_St.st_trace {| st_ev := st_ev; st_trace := st_trace; st_pl := st_pl; st_evid := st_evid; st_AM_config := st_AM_config |}).
       {
-        eapply st_trace_cumul'; 
-        eassumption.
+        eapply st_trace_cumul'; eauto.
       }
       simpl in *.
       eapply app_inv_head; eauto.
@@ -2117,15 +2129,15 @@ Defined.
 Ltac do_restl :=
   match goal with
   | [H: build_cvmP ?t
-        {| st_ev := ?e; st_trace := ?tr; st_pl := ?p; st_evid := ?i |}
+        {| st_ev := ?e; st_trace := ?tr; st_pl := ?p; st_evid := ?i; st_AM_config := ?ac |}
         (resultC tt)
-        {| st_ev := ?e'; st_trace := ?tr ++ ?x; st_pl := ?p'; st_evid := ?i' |}
+        {| st_ev := ?e'; st_trace := ?tr ++ ?x; st_pl := ?p'; st_evid := ?i'; st_AM_config := ?ac' |}
         (*H2: well_formed_r ?t*) |- _] =>
     assert_new_proof_by
       (build_cvmP t
-                        {| st_ev := e; st_trace := []; st_pl := p; st_evid := i|}
+                        {| st_ev := e; st_trace := []; st_pl := p; st_evid := i; st_AM_config := ac|}
                         (resultC tt)
-                        {| st_ev := e'; st_trace := x; st_pl := p'; st_evid := i' |})
+                        {| st_ev := e'; st_trace := x; st_pl := p'; st_evid := i'; st_AM_config := ac' |})
       ltac:(eapply restl; [apply H])
   end.
 
@@ -2170,11 +2182,11 @@ Axiom par_evidence_clear: forall l p bits et t2,
 
 (** * Main Lemma:  CVM execution maintains the Evidence Type reference semantics (eval) for 
       its internal evidence bundle. *)
-Lemma cvm_refines_lts_evidence' : forall t tr tr' bits bits' et et' p p' i i',
+Lemma cvm_refines_lts_evidence' : forall t tr tr' bits bits' et et' p p' i i' ac ac',
     build_cvmP (copland_compile t)
-                     (mk_st (evc bits et) tr p i)
+                     (mk_st (evc bits et) tr p i ac)
                      (resultC tt)
-                     (mk_st (evc bits' et') tr' p' i') ->
+                     (mk_st (evc bits' et') tr' p' i' ac') ->
     et' = (Term_Defs.eval t p et).
 Proof.
   intros.
@@ -2291,12 +2303,12 @@ Qed.
 
 (** * Propositional version of CVM Evidence Type preservation. *)
 Lemma cvm_refines_lts_evidence :
-  forall t t' tr tr' bits bits' et et' p p' i i',
+  forall t t' tr tr' bits bits' et et' p p' i i' ac ac',
     term_to_coreP t t' ->
     build_cvmP t'
-                     (mk_st (evc bits et) tr p i)
+                     (mk_st (evc bits et) tr p i ac)
                      (resultC tt)
-                     (mk_st (evc bits' et') tr' p' i') ->
+                     (mk_st (evc bits' et') tr' p' i' ac') ->
     et' = (Term_Defs.eval t p et).
 Proof.
   intros.
@@ -2317,11 +2329,11 @@ TODO: try this lemma again after getting appraisal Lemmas settled
 
 (** * Lemma:  relating reconstructed CVM EvC bundles via the EvidenceC evidence denotation. *)
 Lemma cvm_raw_evidence_denote_fact :
-  forall t annt t' tr tr' bits bits' et et' p p' i i' ec ec',
+  forall t annt t' tr tr' bits bits' et et' p p' i i' ec ec' ac ac',
     build_cvmP t
-                     (mk_st (evc bits et) tr p i)
+                     (mk_st (evc bits et) tr p i ac)
                      (resultC tt)
-                     (mk_st (evc bits' et') tr' p' i') ->
+                     (mk_st (evc bits' et') tr' p' i' ac') ->
     term_to_coreP t' t ->
     annoP_indexed annt t' i i' ->
 
@@ -2502,7 +2514,7 @@ Proof.
     ff.
     wrap_ccp_anno.
 
-    do_assert_remote (copland_compile t') (evc bits et) p (S i).
+    do_assert_remote (copland_compile t') (evc bits et) p (S i) ac'.
 
     assert (evc bits' et' = cvm_evidence_core (copland_compile t') p (evc bits et)). {
 
@@ -2946,7 +2958,7 @@ Proof.
       econstructor; eauto.
     }
 
-    do_assert_remote (copland_compile t'2) (evc bits et) p (st_evid).
+    do_assert_remote (copland_compile t'2) (evc bits et) p (st_evid) ac'.
 
     wrap_ccp_anno.
 
@@ -3026,7 +3038,7 @@ Proof.
       econstructor; eauto.
     }
 
-     do_assert_remote (copland_compile t'2) mt_evc p (st_evid).
+     do_assert_remote (copland_compile t'2) mt_evc p (st_evid) ac'.
 
     wrap_ccp_anno.
 
@@ -3116,7 +3128,7 @@ Proof.
       econstructor; eauto.
     }
 
-     do_assert_remote (copland_compile t'2) (evc bits et) p (st_evid).
+     do_assert_remote (copland_compile t'2) (evc bits et) p (st_evid) ac'.
 
     wrap_ccp_anno.
 
@@ -3202,7 +3214,7 @@ Proof.
       econstructor; eauto.
     }
 
-     do_assert_remote (copland_compile t'2) mt_evc p (st_evid).
+     do_assert_remote (copland_compile t'2) mt_evc p (st_evid) ac'.
 
     wrap_ccp_anno.
 
@@ -3241,11 +3253,11 @@ Qed.
 
 
 Lemma cvm_raw_evidence_denote_fact_eval :
-  forall t annt t' tr tr' bits bits' et et' p p' i i' ec ec',
+  forall t annt t' tr tr' bits bits' et et' p p' i i' ec ec' ac ac',
     build_cvmP t
-                     (mk_st (evc bits et) tr p i)
+                     (mk_st (evc bits et) tr p i ac)
                      (resultC tt)
-                     (mk_st (evc bits' et') tr' p' i') ->
+                     (mk_st (evc bits' et') tr' p' i' ac') ->
     term_to_coreP t' t ->
     annoP_indexed annt t' i i' ->
 

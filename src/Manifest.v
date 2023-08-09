@@ -2,22 +2,27 @@
    https://github.com/ku-sldg/negotiation20/blob/master/src/Manifest/Manifest.v
 *)
 
-Require Import AbstractedTypes Term_Defs_Core Maps Term_Defs Manifest_Admits EqClass.
+Require Import AbstractedTypes Term_Defs_Core Maps 
+  Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq.
 
 Require Import List.
 Import ListNotations.
 
+Inductive CallBackErrors : Type :=
+| Unavailable : CallBackErrors
+| Runtime : CallBackErrors.
+
 Definition CakeML_ASPCallback : Type := 
-  ASP_PARAMS -> Plc -> BS -> RawEv -> BS.
+  ASP_PARAMS -> ResultT (Plc -> BS -> RawEv -> BS) CallBackErrors.
 
 Definition CakeML_PubKeyCallback : Type := 
-  Plc -> PublicKey.
+  Plc -> ResultT PublicKey CallBackErrors.
 
 Definition CakeML_PlcCallback : Type := 
-  Plc -> UUID.
+  Plc -> ResultT UUID CallBackErrors.
 
 Definition CakeML_uuidCallback : Type :=
-  UUID -> Plc.
+  UUID -> ResultT Plc CallBackErrors.
 
 (*
 Definition PlcMap := MapC Plc Address.

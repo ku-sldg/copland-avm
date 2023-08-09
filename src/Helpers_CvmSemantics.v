@@ -16,7 +16,7 @@ Set Nested Proofs Allowed.
 *)
 
 (* Lemma stating the CVM st_pl parameter ends up where it started execution *)
-Lemma pl_immut : forall t e tr p i,
+Lemma pl_immut : forall t e tr p i ac,
     st_pl
       (execErr
          (build_cvm t)
@@ -24,7 +24,8 @@ Lemma pl_immut : forall t e tr p i,
            st_ev := e;
            st_trace := tr;
            st_pl := p;
-           st_evid := i|}) = p.
+           st_evid := i;
+           st_AM_config := ac |}) = p.
 Proof.
   induction t; intros.
   -
@@ -176,12 +177,13 @@ Ltac do_pl_immut :=
       end.
 
 Lemma st_congr :
-  forall st tr e p i,
+  forall st tr e p i ac,
     st_ev st = e ->
     st_trace st = tr ->
     st_pl st = p ->
     st_evid st = i ->
-    st =  {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |}.
+    st_AM_config st = ac ->
+    st =  {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i; st_AM_config := ac |}.
 Proof.
   intros.
   subst; destruct st; auto.
@@ -201,12 +203,12 @@ Ltac anhl :=
 
 (* Lemma stating the following:  If all starting parameters to the cvm_st are the same, except 
    for possibly the trace, then all of those final parameters should also be equal. *)
-Lemma st_trace_irrel : forall t e e' e'' x x' y y' p p' p'' i i' i'',
-    build_cvm t {| st_ev := e; st_trace := x; st_pl := p; st_evid := i |} =
-    (resultC tt, {| st_ev := e'; st_trace := x'; st_pl := p'; st_evid := i' |}) ->
-    build_cvm t {| st_ev := e; st_trace := y; st_pl := p; st_evid := i |} =
-    (resultC tt, {| st_ev := e''; st_trace := y'; st_pl := p''; st_evid := i'' |}) ->
-    (e' = e'' /\ p' = p'' /\ i' = i'').
+Lemma st_trace_irrel : forall t e e' e'' x x' y y' p p' p'' i i' i'' ac ac' ac'',
+    build_cvm t {| st_ev := e; st_trace := x; st_pl := p; st_evid := i; st_AM_config := ac |} =
+    (resultC tt, {| st_ev := e'; st_trace := x'; st_pl := p'; st_evid := i'; st_AM_config := ac' |}) ->
+    build_cvm t {| st_ev := e; st_trace := y; st_pl := p; st_evid := i; st_AM_config := ac |} =
+    (resultC tt, {| st_ev := e''; st_trace := y'; st_pl := p''; st_evid := i''; st_AM_config := ac'' |}) ->
+    (e' = e'' /\ p' = p'' /\ i' = i'' /\ ac' = ac'').
 Proof.
   induction t; intros.
   - destruct a; (* asp *)
@@ -263,12 +265,12 @@ Ltac dohi'' :=
   annogo;
   let tac H H' := eapply st_trace_irrel; [apply H | apply H'] in
   match goal with
-  | [H : build_cvm ?t1 {| st_ev := ?e; st_trace := _; st_pl := ?p; st_evid := ?i |} =
-         (?opt, {| st_ev := ?e'; st_trace := _; st_pl := ?p'; st_evid := ?i' |}),
-         H' : build_cvm ?t1 {| st_ev := ?e; st_trace := _; st_pl := ?p; st_evid := ?i |} =
-              (?opt, {| st_ev := ?e''; st_trace := _; st_pl := ?p''; st_evid := ?i'' |})
+  | [H : build_cvm ?t1 {| st_ev := ?e; st_trace := _; st_pl := ?p; st_evid := ?i; st_AM_config := ?ac |} =
+         (?opt, {| st_ev := ?e'; st_trace := _; st_pl := ?p'; st_evid := ?i'; st_AM_config := ?ac' |}),
+         H' : build_cvm ?t1 {| st_ev := ?e; st_trace := _; st_pl := ?p; st_evid := ?i; st_AM_config := ?ac |} =
+              (?opt, {| st_ev := ?e''; st_trace := _; st_pl := ?p''; st_evid := ?i''; st_AM_config := ?ac'' |})
      |- _] =>
-    assert_new_proof_by (e' = e'' /\ p' = p'' /\ i' = i'') ltac:(tac H H')
+    assert_new_proof_by (e' = e'' /\ p' = p'' /\ i' = i'' /\ ac' = ac'') ltac:(tac H H')
   end.
 
 Ltac dohi :=
@@ -281,17 +283,17 @@ Ltac dohi :=
 
 (* States that the resulting place (st_pl) is unaffected by the initial trace.
    This is a simple corollary of the Lemma hihi above. *)
-Lemma trace_irrel_pl : forall t tr1 tr1' tr2 e e' p1' p1 i i',
+Lemma trace_irrel_pl : forall t tr1 tr1' tr2 e e' p1' p1 i i' ac ac',
     build_cvm t
-           {| st_ev := e; st_trace := tr1; st_pl := p1; st_evid := i |} =
-    (resultC tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_evid := i' |}) ->
+           {| st_ev := e; st_trace := tr1; st_pl := p1; st_evid := i; st_AM_config := ac |} =
+    (resultC tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_evid := i'; st_AM_config := ac' |}) ->
     
     st_pl
       (execErr (build_cvm t)
-           {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i |}) = p1'.
+           {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i; st_AM_config := ac |}) = p1'.
 Proof.
   intros.
-  destruct (build_cvm t {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i |}) eqn:ff.
+  destruct (build_cvm t {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i; st_AM_config := ac |}) eqn:ff.
   simpl.
   vmsts.
   simpl.
@@ -299,22 +301,22 @@ Proof.
   subst.
   dohi.
   df.
-  tauto.
+  pose proof (st_trace_irrel _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H Heqp); intuition.
 Defined.
 
 (* States that the resulting evidence (st_ev) is unaffected by the initial trace.
    This is a simple corollary of the Lemma hihi above. *)
-Lemma trace_irrel_ev : forall t tr1 tr1' tr2 e e' p1' p1 i i',
+Lemma trace_irrel_ev : forall t tr1 tr1' tr2 e e' p1' p1 i i' ac ac',
     build_cvm t
-           {| st_ev := e; st_trace := tr1; st_pl := p1; st_evid := i|} =
-    (resultC tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_evid := i' |}) ->
+           {| st_ev := e; st_trace := tr1; st_pl := p1; st_evid := i; st_AM_config := ac |} =
+    (resultC tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_evid := i'; st_AM_config := ac' |}) ->
     
     st_ev
       (execErr (build_cvm t)
-           {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i |}) = e'.
+           {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i; st_AM_config := ac |}) = e'.
 Proof.
   intros.
-  destruct (build_cvm t {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i |}) eqn:ff.
+  destruct (build_cvm t {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i; st_AM_config := ac |}) eqn:ff.
   simpl.
   vmsts.
   simpl.
@@ -322,22 +324,22 @@ Proof.
   subst.
   dohi.
   df.
-  tauto.
+  pose proof (st_trace_irrel _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H Heqp); intuition.
 Defined.
 
 (* States that the resulting event id counter (st_evid) is unaffected by the initial trace.
    This is a simple corollary of the Lemma hihi above. *)
-Lemma trace_irrel_evid : forall t tr1 tr1' tr2 e e' p1' p1 i i',
+Lemma trace_irrel_evid : forall t tr1 tr1' tr2 e e' p1' p1 i i' ac ac',
     build_cvm t
-           {| st_ev := e; st_trace := tr1; st_pl := p1; st_evid := i|} =
-    (resultC tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_evid := i' |}) ->
+           {| st_ev := e; st_trace := tr1; st_pl := p1; st_evid := i; st_AM_config := ac|} =
+    (resultC tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_evid := i'; st_AM_config := ac' |}) ->
     
     st_evid
       (execErr (build_cvm t)
-           {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i |}) = i'.
+           {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i; st_AM_config := ac |}) = i'.
 Proof.
   intros.
-  destruct (build_cvm t {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i |}) eqn:ff.
+  destruct (build_cvm t {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i; st_AM_config := ac |}) eqn:ff.
   simpl.
   vmsts.
   simpl.
@@ -345,25 +347,48 @@ Proof.
   subst.
   dohi.
   df.
-  tauto.
+  pose proof (st_trace_irrel _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H Heqp); intuition.
 Defined.
 
 
+(* States that the resulting evidence (st_ev) is unaffected by the initial trace.
+   This is a simple corollary of the Lemma hihi above. *)
+Lemma trace_irrel_ac : forall t tr1 tr1' tr2 e e' p1' p1 i i' ac ac',
+    build_cvm t
+           {| st_ev := e; st_trace := tr1; st_pl := p1; st_evid := i; st_AM_config := ac |} =
+    (resultC tt, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_evid := i'; st_AM_config := ac' |}) ->
+    
+    st_AM_config
+      (execErr (build_cvm t)
+           {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i; st_AM_config := ac |}) = ac'.
+Proof.
+  intros.
+  destruct (build_cvm t {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i; st_AM_config := ac |}) eqn:ff.
+  simpl.
+  vmsts.
+  simpl.
+  do_asome.
+  subst.
+  dohi.
+  df.
+  pose proof (st_trace_irrel _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H Heqp); intuition.
+Defined.
+
 Ltac do_st_trace :=
   match goal with
-  | [H': context[{| st_ev := ?e; st_trace := ?tr; st_pl := ?p; st_evid := ?i |}]
+  | [H': context[{| st_ev := ?e; st_trace := ?tr; st_pl := ?p; st_evid := ?i; st_AM_config := ?ac |}]
      |- context[?tr]] =>
     assert_new_proof_by
-      (tr = st_trace {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |} )
+      (tr = st_trace {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i; st_AM_config := ac |} )
       tauto
   end.
 
 Ltac do_st_trace_assumps :=
   match goal with
-  | [H': context[{| st_ev := ?e; st_trace := ?tr; st_pl := ?p; st_evid := ?i |}]
+  | [H': context[{| st_ev := ?e; st_trace := ?tr; st_pl := ?p; st_evid := ?i; st_AM_config := ?ac |}]
      |- _] =>
     assert_new_proof_by
-      (tr = st_trace {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |} )
+      (tr = st_trace {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i; st_AM_config := ac |} )
       tauto
   end.
 
@@ -523,10 +548,10 @@ Ltac wrap_ccp_anno :=
 Ltac cumul_ih :=
   match goal with
   | [H: context[(st_trace _ = _ ++ st_trace _)],
-        H': build_cvmP ?t1 {| st_ev := _; st_trace := ?m ++ ?k; st_pl := _; st_evid := _ |}
+        H': build_cvmP ?t1 {| st_ev := _; st_trace := ?m ++ ?k; st_pl := _; st_evid := _; st_AM_config := _ |}
                              (resultC tt)
                              ?v_full,
-            H'': build_cvmP ?t1 {| st_ev := _; st_trace := ?k; st_pl := _; st_evid := _ |}
+            H'': build_cvmP ?t1 {| st_ev := _; st_trace := ?k; st_pl := _; st_evid := _; st_AM_config := _ |}
                                   (resultC tt)
                                   ?v_suffix
      |- _] =>
