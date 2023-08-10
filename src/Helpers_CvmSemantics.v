@@ -317,13 +317,13 @@ Proof.
     subst; clear E1 E2; eauto.
 Qed.
 
-Lemma cvm_errors_deterministic :  forall t e tr1 tr2 p i1 i2 ac r1 r2 st1 st2,
+Lemma cvm_errors_deterministic :  forall t e tr1 tr2 p i ac r1 r2 st1 st2,
   build_cvm t
     {|
       st_ev := e;
       st_trace := tr1;
       st_pl := p;
-      st_evid := i1;
+      st_evid := i;
       st_AM_config := ac
     |} =
   (r1, st1) -> 
@@ -333,70 +333,33 @@ Lemma cvm_errors_deterministic :  forall t e tr1 tr2 p i1 i2 ac r1 r2 st1 st2,
       st_ev := e;
       st_trace := tr2;
       st_pl := p;
-      st_evid := i2;
+      st_evid := i;
       st_AM_config := ac
     |} =
   (r2, st2) -> 
 
-  ((r1 = r2) \/ (r1 = errC (callback_error Runtime) \/ (r2 = errC (callback_error Runtime)))).
+  (r1 = r2 /\ st1.(st_ev) = st2.(st_ev) /\ st1.(st_pl) = st2.(st_pl) /\ st1.(st_AM_config) = st2.(st_AM_config) /\
+    st1.(st_evid) = st2.(st_evid)).
 Proof.
   induction t; intros; monad_simp.
-  - destruct a; monad_simp; invc H; invc H0; eauto.
+  - destruct a; monad_simp; invc H; invc H0; 
+    simpl in *; intuition;
+    try (rewrite H; eauto);
+    try (invc H; eauto);
     destruct (aspCb ac a p (encodeEvRaw (get_bits e)) (get_bits e)); 
-    invc H1; invc H2; eauto.
-  - invc H; invc H0; eauto.
-  - destruct (build_cvm t1 {| st_ev := e; st_trace := tr1; st_pl := p; st_evid := i1; st_AM_config := ac |}) eqn:E1,
-      (build_cvm t1 {| st_ev := e; st_trace := tr2; st_pl := p; st_evid := i2; st_AM_config := ac |}) eqn:E2, r, r0;
-    simpl in *; invc H; invc H0; eauto;
-    destruct (IHt1 _ _ _ _ _ _ _ _ _ _ _ E1 E2) as [H | [H | H]]; eauto; try congruence.
-    invc H; destruct c, c0; simpl in *.
-    assert (st_AM_config = st_AM_config0). {
-      pose proof (ac_immut t1 e tr2 p i2 ac); monad_unfold;
-      pose proof (ac_immut t1 e tr1 p i1 ac); monad_unfold.
-      rewrite E1, E2 in *; simpl in *; subst; eauto.
-    }
-    assert (st_pl = st_pl0). {
-      pose proof (pl_immut t1 e tr2 p i2 ac); monad_unfold;
-      pose proof (pl_immut t1 e tr1 p i1 ac); monad_unfold.
-      rewrite E1, E2 in *; simpl in *; subst; eauto.
-    }
-    assert (st_ev = st_ev0). {
-      destruct u0.
-      pose proof (evidence_deterministic_output_on_results t1 e tr1 tr2 p i1 i2 ac _ _ E1 E2); eauto.
-    }
-    subst; clear E1 E2.
-    destruct (build_cvm t2 {| st_ev := st_ev0; st_trace := st_trace; st_pl := st_pl0; st_evid := st_evid; st_AM_config := st_AM_config0 |}) eqn:E1, (build_cvm t2 {| st_ev := st_ev0; st_trace := st_trace0; st_pl := st_pl0; st_evid := st_evid0; st_AM_config := st_AM_config0 |}) eqn:E2; invc H1; invc H2; eauto.
-
-  - destruct (build_cvm t1 {| st_ev := e; st_trace := tr1 ++ [Term_Defs.split i1 p]; st_pl := p; st_evid := i1 + 1; st_AM_config := ac |}) eqn:E1,
-      (build_cvm t1 {| st_ev := e; st_trace := tr2 ++ [Term_Defs.split i2 p]; st_pl := p; st_evid := i2 + 1; st_AM_config := ac |}) eqn:E2, r, r0;
-    simpl in *; invc H; invc H0; eauto;
-    destruct (IHt1 _ _ _ _ _ _ _ _ _ _ _ E1 E2) as [H | [H | H]]; eauto; try congruence.
-    invc H; destruct c, c0; simpl in *.
-    assert (st_AM_config = st_AM_config0). {
-      pose proof (ac_immut t1 e (tr2 ++ [Term_Defs.split i2 p]) p (i2 + 1) ac); monad_unfold;
-      pose proof (ac_immut t1 e (tr1 ++ [Term_Defs.split i1 p]) p (i1 + 1) ac); monad_unfold;
-      rewrite E1, E2 in *; simpl in *; subst; eauto.
-    }
-    assert (st_pl = st_pl0). {
-      pose proof (pl_immut t1 e (tr2 ++ [Term_Defs.split i2 p]) p (i2 + 1) ac); monad_unfold;
-      pose proof (pl_immut t1 e (tr1 ++ [Term_Defs.split i1 p]) p (i1 + 1) ac); monad_unfold;
-      rewrite E1, E2 in *; simpl in *; subst; eauto.
-    }
-    assert (st_ev = st_ev0). {
-      destruct u0.
-      pose proof (evidence_deterministic_output_on_results t1 e 
-        (tr1 ++ [Term_Defs.split i1 p]) (tr2 ++ [Term_Defs.split i2 p]) p (i1 + 1) (i2 + 1) ac _ _ E1 E2); eauto.
-    }
-    subst; clear E1 E2.
-    destruct (build_cvm t2 {| st_ev := e; st_trace := st_trace; st_pl := st_pl0; st_evid := st_evid; st_AM_config := st_AM_config0 |}) eqn:E1, (build_cvm t2 {| st_ev := e; st_trace := st_trace0; st_pl := st_pl0; st_evid := st_evid0; st_AM_config := st_AM_config0 |}) eqn:E2, r, r0; simpl in *; invc H1; invc H2;
-    pose proof (IHt2 _ _ _ _ _ _ _ _ _ _ _ E1 E2); eauto;
-    destruct H as [H | [H | H]]; eauto; try congruence.
-  
-  - destruct (build_cvm t1 {| st_ev := e; st_trace := (tr1 ++ [Term_Defs.split i1 p]) ++ [cvm_thread_start l p t2 (get_et e)]; st_pl := p; st_evid := i1 + 1; st_AM_config := ac |}) eqn:E1,
-      (build_cvm t1 {| st_ev := e; st_trace := (tr2 ++ [Term_Defs.split i2 p]) ++ [cvm_thread_start l p t2 (get_et e)]; st_pl := p; st_evid := i2 + 1; st_AM_config := ac |} ) eqn:E2, r, r0;
-    simpl in *; invc H; invc H0; eauto;
-    destruct (IHt1 _ _ _ _ _ _ _ _ _ _ _ E1 E2) as [H | [H | H]]; eauto; try congruence.
-Qed.
+    monad_simp; invc H1; invc H2; eauto; simpl in *;
+    try (rewrite H3; eauto).
+  - invc H; invc H0; simpl in *; 
+    intuition; eauto;
+    try (rewrite H; eauto);
+    invc H; eauto.
+  - ff; eauto.
+    * eapply IHt1 in Heqp1; eauto; intuition; try congruence.
+    * eapply IHt1 in Heqp2; eauto; intuition; try congruence.
+    * admit.
+  - ff; eauto; admit.
+  - ff; eauto; admit.
+Admitted.
 
 (* Lemma stating the following:  If all starting parameters to the cvm_st are the same, except 
    for possibly the trace, then all of those final parameters should also be equal. *)
@@ -405,210 +368,10 @@ Lemma st_trace_irrel : forall t e e' e'' x x' y y' p p' p'' i i' i'' ac ac' ac''
     (res (* resultC tt *), {| st_ev := e'; st_trace := x'; st_pl := p'; st_evid := i'; st_AM_config := ac' |}) ->
     build_cvm t {| st_ev := e; st_trace := y; st_pl := p; st_evid := i; st_AM_config := ac |} =
     (res (* resultC tt *), {| st_ev := e''; st_trace := y'; st_pl := p''; st_evid := i''; st_AM_config := ac'' |}) ->
-    ((e' = e'' /\ p' = p'' /\ i' = i'' /\ ac' = ac'') \/ (res = errC (callback_error Runtime))).
+    (e' = e'' /\ p' = p'' /\ i' = i'' /\ ac' = ac'').
 Proof.
-  induction t; intros.
-  - destruct a; (* asp *)
-      try destruct a; (* asp params *)
-      df; eauto.
-      repeat ff.
-  - (* at case *)
-    repeat (df; try dohtac; df); eauto.
-
-  - (* lseq case *)
-
-    simpl in *.
-    monad_unfold.
-    repeat break_let;
-    destruct r, r1; monad_simp;
-    invc H; invc H0; monad_simp;
-    destruct (cvm_errors_deterministic t1 e x y p i i ac _ _ _ _ Heqp2 Heqp0) as [H | [H | H]]; 
-    try congruence; invc H; intuition;
-    destruct c1, c, u; monad_simp.
-    pose proof (ac_immut t1 e x p i ac);
-    pose proof (ac_immut t1 e y p i ac);
-    pose proof (pl_immut t1 e x p i ac);
-    pose proof (pl_immut t1 e y p i ac);
-    monad_unfold; rewrite Heqp2, Heqp0 in *; simpl in *; subst.
-    pose proof (IHt1 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ Heqp2 Heqp0); intuition; subst; eauto;
-    try congruence.
-
-
-  - (* bseq case *)
-
-    simpl in *.
-    monad_unfold;
-    repeat break_let;
-    destruct r, r1; monad_simp; 
-    invc H; invc H0; invc Heqp4; invc Heqp1; invc Heqp3; invc Heqp0;
-    invc Heqp11; invc Heqp10; invc Heqp7; monad_simp;
-    destruct r8, r12, r5; invc Heqp5;
-    invc Heqp12; invc Heqp8; eauto;
-    destruct (cvm_errors_deterministic _ _ _ _ _ _ _ _ _ _ _ _ Heqp9 Heqp2) as [H | [H | H]];
-    eauto; try congruence; invc H; intuition;
-    destruct c1, c8; monad_simp.
-    * 
-    pose proof (ac_immut t1 );
-    pose proof (ac_immut t1 );
-    pose proof (pl_immut t1 );
-    pose proof (pl_immut t1 );
-    monad_simp.
-    * 
-    
-    * eapply IHt2; eauto.
-    invc H; invc H0; monad_simp; subst;
-    invc 
-    destruct (cvm_errors_deterministic t1 e x y p i i ac _ _ _ _ Heqp2 Heqp0) as [H | [H | H]]; 
-    try congruence; invc H; intuition;
-    destruct c1, c, u; monad_simp.
-    pose proof (ac_immut t1 e x p i ac);
-    pose proof (ac_immut t1 e y p i ac);
-    pose proof (pl_immut t1 e x p i ac);
-    pose proof (pl_immut t1 e y p i ac);
-    monad_unfold; rewrite Heqp2, Heqp0 in *; simpl in *; subst.
-    pose proof (IHt1 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ Heqp2 Heqp0); intuition; subst; eauto;
-    try congruence.
-    simpl in *.
-    monad_unfold.
-    repeat break_let.
-    assert (r = res). ff.
-    assert (c = {| st_ev := e''; st_trace := y'; st_pl := p''; st_evid := i''; st_AM_config := ac'' |}) by ff.
-    subst.
-    invc H0.
-    invc Heqp0.
-    invc Heqp3.
-    invc Heqp4.
-
-    destruct r1.
-    + (* t1 term successful *)
-      invc Heqp1.
-      df.
-
-      destruct r5.
-      ++ (* t2 term successful *)
-        df. 
-        destruct r12; df. 
-        destruct r8; df. 
-        anhl; ff.
-
-        assert (errC c = resultC tt).
-        {
-      eapply cvm_errors_deterministic.
-      apply Heqp2.
-      apply Heqp9.
-        }
-        solve_by_inversion.
-
-        destruct r8; df.
-
-        anhl; ff.
-
-      ++ (* t2 term failed *)
-        df.
-        destruct r12; df. 
-        +++
-        destruct c8; destruct c9; df.
-
-        do_pl_immut.
-        subst.
-        do_pl_immut.
-        subst.
-        do_pl_immut.
-        subst.
-        repeat do_pl_immut.
-        subst.
-        assert (ac'' = st_AM_config).
-        {
-          assert (ac = st_AM_config). 
-          {
-            eapply ac_config_immut; apply Heqp9.
-          }
-          subst.
-          symmetry.
-          
-          eapply ac_config_immut. apply Heqp2.
-        }
-        subst.
-
-        assert (resultC tt = errC c0).
-        {
-      eapply cvm_errors_deterministic.
-      apply Heqp6.
-      apply Heqp13.
-        }
-        solve_by_inversion.
-
-        +++
-          ff.
-          anhl.
-          ff.
-    + (* t1 term failed *)
-      df. 
-      ff.
-      ++
-      assert (resultC tt = errC c).
-      {
-      eapply cvm_errors_deterministic.
-      apply Heqp2.
-      apply Heqp9.
-      }
-      solve_by_inversion.
-  
-      ++
-      assert (resultC tt = errC c).
-      {
-      eapply cvm_errors_deterministic.
-      apply Heqp2.
-      apply Heqp9.
-      }
-      solve_by_inversion.
-
-      ++
-      ff.
-      anhl.
-      ff.
-      anhl.
-      ff.
-      ++
-      ff.
-      anhl.
-      ff.
-      ff.
-      anhl.
-      ff.
-      ff.
-  - (* bpar case *)
-    cbn in *.
-    monad_unfold.
-    repeat break_let.
-    simpl in *.
-
-    dosome.
-    df.
-    dosome.
-    dosome.
-    df.
-
-    ff.
-    +
-
-    (*
-    annogo.
-    simpl in *.
-    ff. *)
-
-    repeat anhl.
-    repeat (find_inversion).
-    repeat find_rewrite.
-    df.
-    tauto.
-    +
-
-    repeat anhl.
-    repeat (find_inversion).
-    repeat find_rewrite.
-    df. 
-    tauto.
+  intros; find_eapply_lem_hyp cvm_errors_deterministic; 
+  [ | eapply H]; intuition; simpl in *; eauto.
 Defined.
 
 
