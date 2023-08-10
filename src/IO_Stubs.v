@@ -41,12 +41,6 @@ Admitted.
 Definition am_sendReq_app (t:Term) (p:Plc) (e:Evidence) (ev:RawEv): AppResultC.
 Admitted.
 
-Definition do_asp' (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) (ac : AM_Config) : CVM BS :=
-  match (do_asp params e mpl x ac) with
-  | resultC r => ret r
-  | errC e => failm (callback_error e)
-  end.
-
 Definition doRemote_session' (t:Term) (pTo:Plc) (e:EvC) : IO EvC :=
   ret (doRemote_session t pTo e).
 

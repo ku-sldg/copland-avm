@@ -27,8 +27,10 @@ Extract Inductive unit => unit [ "()" ].
 Extract Inductive list => list [ "[]" "( :: )" ].
 (*Extract Inductive prod => "( * )" [ "" ]. *)
 
+(*
 Extraction Implicit do_asp [3 4].
-Extraction Implicit do_asp' [3 4].
+Extraction Implicit do_asp' [3 4]. 
+*)
 Extraction Implicit parallel_vm_thread [2 3 4].
 Extraction Implicit do_wait_par_thread [2 3 4].
 

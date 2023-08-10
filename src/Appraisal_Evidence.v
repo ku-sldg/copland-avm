@@ -1,4 +1,6 @@
-Require Import ConcreteEvidence AutoApp Auto Helpers_CvmSemantics Term_Defs Anno_Term_Defs Cvm_St Cvm_Impl Defs StructTactics OptMonad_Coq IO_Stubs Evidence_Bundlers Axioms_Io External_Facts. (* Cvm_Monad *)
+Require Import ConcreteEvidence AutoApp Auto Helpers_CvmSemantics Term_Defs Anno_Term_Defs Cvm_St Cvm_Impl Defs StructTactics OptMonad_Coq IO_Stubs Evidence_Bundlers Axioms_Io External_Facts.
+
+(* Require Imort Cvm_Monad. *)
 
 (* Require Import ErrorStMonad_Coq. *)
 Require Import List.
@@ -439,7 +441,7 @@ Ltac do_rewrap_reconP :=
   | [H: reconstruct_evP (evc _ (?cc _)) _
      |- _] =>
     invc H;
-    repeat ff;
+    repeat Auto.ff;
     try rewrite fold_recev in *;
     do_wrap_reconP
   end.
@@ -1290,6 +1292,9 @@ Definition spc_ev (sp:SP) (e:EvidenceC) : EvidenceC :=
 TODO: try this again after appraisal lemmas settled 
 *)
 
+Definition do_asp_nofail (ps:ASP_PARAMS) (ev:RawEv) (p:Plc) (x:Event_ID): BS.
+Admitted. (* TODO:  fill this in with some sort of callback + default value? *)
+
 Definition cvm_evidence_denote_asp (a:ASP) (p:Plc) (e:EvidenceC) (x:Event_ID): EvidenceC :=
   match a with
   | NULL => mtc
@@ -1297,25 +1302,25 @@ Definition cvm_evidence_denote_asp (a:ASP) (p:Plc) (e:EvidenceC) (x:Event_ID): E
   | ASPC sp fwd params =>
     match fwd with
     | COMP => hhc p params
-                 (do_asp params (encodeEv (spc_ev sp e)) p x)
+                 (do_asp_nofail params (encodeEv (spc_ev sp e)) p x)
                  (sp_ev sp (et_fun e))
     | EXTD => ggc p params
-                 (do_asp params (encodeEv (spc_ev sp e)) p x)
+                 (do_asp_nofail params (encodeEv (spc_ev sp e)) p x)
                  (spc_ev sp e)
     | ENCR => eec p params
-                 (do_asp params (encodeEv (spc_ev sp e)) p x)
+                 (do_asp_nofail params (encodeEv (spc_ev sp e)) p x)
                  (sp_ev sp (et_fun e))
     | KEEP => (spc_ev sp e)
     | KILL => mtc (* kkc p params (sp_ev sp (et_fun e)) *)
     end
   | SIG => ggc p sig_params
-              (do_asp sig_params (encodeEv e) p x)
+              (do_asp_nofail sig_params (encodeEv e) p x)
               e
   | HSH => hhc p hsh_params
-              (do_asp hsh_params (encodeEv e) p x)
+              (do_asp_nofail hsh_params (encodeEv e) p x)
               (et_fun e)
   | ENC q => eec p (enc_params q)
-                (do_asp (enc_params q) (encodeEv e) p x)
+                (do_asp_nofail (enc_params q) (encodeEv e) p x)
                 (et_fun e)
   end.
 
@@ -1332,7 +1337,7 @@ Fixpoint cvm_evidence_denote (t:AnnoTerm) (p:Plc) (ec:EvidenceC) : EvidenceC :=
                          (cvm_evidence_denote t2 p ((splitEvr s ec)))
   end.
 
-Require Import ErrorStMonad_Coq.
+Require Import Cvm_Monad.
 
 
 (** * Assert an arbitrary (remote) CVM execution.  
@@ -1419,7 +1424,7 @@ Proof.
 Defined.
   *)
    
-  -
+  - (* asp case *)
     destruct a;
       try destruct a;
       ff; try tauto.
@@ -1444,10 +1449,16 @@ Defined.
       
       
   
-  -
+  - (* at case *)
     lia.
-  -
+  - (* lseq case *)
     wrap_ccp_anno.
+
+    destruct r; ff.
+    destruct u; ff.
+
+
+
     assert (st_evid0 = i + event_id_span' t1).
     eapply IHt1.
     2: { eassumption. }
@@ -1462,6 +1473,12 @@ Defined.
     destruct s0; destruct s1.
     +
       wrap_ccp_anno.
+      try destruct r; ff; 
+      try destruct r3; ff;
+      try destruct r0; ff;
+      try destruct u; ff;
+      try destruct u0; ff.
+
 
       assert (st_evid1 = (i + 1) +  event_id_span' t1).
     eapply IHt1.
@@ -1476,6 +1493,12 @@ Defined.
     lia.
     +
       wrap_ccp_anno.
+      try destruct r; ff; 
+      try destruct r3; ff;
+      try destruct r0; ff;
+      try destruct u; ff;
+      try destruct u0; ff.
+
       assert (st_evid1 = (i + 1) +  event_id_span' t1).
     eapply IHt1.
     2: { eassumption. }
@@ -1489,6 +1512,12 @@ Defined.
     lia.
     +
       wrap_ccp_anno.
+      try destruct r; ff; 
+      try destruct r3; ff;
+      try destruct r0; ff;
+      try destruct u; ff;
+      try destruct u0; ff.
+
       assert (st_evid1 = (i + 1) +  event_id_span' t1).
     eapply IHt1.
     2: { eassumption. }
@@ -1502,6 +1531,12 @@ Defined.
     lia.
     +
       wrap_ccp_anno.
+      try destruct r; ff; 
+      try destruct r3; ff;
+      try destruct r0; ff;
+      try destruct u; ff;
+      try destruct u0; ff.
+
       assert (st_evid1 = (i + 1) +  event_id_span' t1).
     eapply IHt1.
     2: { eassumption. }
@@ -1517,6 +1552,10 @@ Defined.
     destruct s0; destruct s1.
     +
       wrap_ccp_anno.
+      try destruct r; ff;
+      try destruct r3; ff;
+      try destruct u; ff;
+      try destruct u0; ff.
 
       assert (st_evid = (i + 1) +  event_id_span' t1).
     eapply IHt1.
@@ -1530,19 +1569,10 @@ Defined.
     lia.
     +
       wrap_ccp_anno.
-
-      assert (st_evid = (i + 1) +  event_id_span' t1).
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    assert (event_id_span' t2 = event_id_span (copland_compile t2)).
-    {
-      eapply event_id_spans_same.
-    }
-    lia.
-    +
-            wrap_ccp_anno.
+      try destruct r; ff;
+      try destruct r3; ff;
+      try destruct u; ff;
+      try destruct u0; ff.
 
       assert (st_evid = (i + 1) +  event_id_span' t1).
     eapply IHt1.
@@ -1556,6 +1586,27 @@ Defined.
     lia.
     +
       wrap_ccp_anno.
+      try destruct r; ff;
+      try destruct r3; ff;
+      try destruct u; ff;
+      try destruct u0; ff.
+
+      assert (st_evid = (i + 1) +  event_id_span' t1).
+    eapply IHt1.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    assert (event_id_span' t2 = event_id_span (copland_compile t2)).
+    {
+      eapply event_id_spans_same.
+    }
+    lia.
+    +
+      wrap_ccp_anno.
+      try destruct r; ff;
+      try destruct r3; ff;
+      try destruct u; ff;
+      try destruct u0; ff.
 
       assert (st_evid = (i + 1) +  event_id_span' t1).
     eapply IHt1.
@@ -1707,12 +1758,12 @@ Axiom wf_ec_preserved_par: forall e l t2 p,
 
 (** * Lemma:  CVM execution preserves well-formedness of EvC bundles 
       (Evidence Type of sufficient length for raw evidence). *)
-Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' p p' i i' ac ac',
+Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' p p' i i' ac ac' res,
     wf_ec e ->
         build_cvmP t1
                     {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i;
                        st_AM_config := ac |}
-                    (resultC tt)
+                    (res)
                     {| st_ev := e'; st_trace := tr'; st_pl := p'; st_evid := i';
                        st_AM_config := ac' |} ->
     wf_ec (e').
@@ -1720,7 +1771,7 @@ Proof.
   intros.
   generalizeEverythingElse t1.
   induction t1; intros.
-  -
+  - (* asp case *)
     rewrite <- ccp_iff_cc in *.
     destruct a; (* asp *)
       try destruct a; (* asp params *)
@@ -1732,41 +1783,24 @@ Proof.
           try tauto;
           try congruence).
     +
-      destruct f.
-      ++
+      destruct f; 
+        repeat Auto.ff;
+        try (econstructor; eauto).
+
         ff.
-        econstructor.
-        ff.
-      ++
-        ff.
-        econstructor.
-        ff.
-      ++
-        ff.
-        econstructor.
-        ff.
-        (* 
-        congruence. *)
-      ++
-        ff.
-        econstructor.
-        ff.
-      ++
-        ff.
-        econstructor.
-        ff.
-        
-        
-  -
+    
+  - (* at case *)
     wrap_ccp.
 
     eapply wf_ec_preserved_remote; eauto.
 
-  -
+  - (* lseq case *)
     wrap_ccp.
-    eauto.
-  -
+    ff; eauto.
+  - (* bseq case *)
     wrap_ccp.
+
+    ff; eauto.
 
     (*
 
@@ -1780,8 +1814,9 @@ Proof.
     repeat jkjke'.
     eapply app_length.
 
-  -
+  - (* bpar case *)
     wrap_ccp.
+    ff; eauto.
 
     (*
     
@@ -1865,19 +1900,19 @@ Defined.
 
 (** * Lemma:  CVM execution always succeeds *)
 Lemma exists_some_cc: forall t st,
-    exists st',
-      build_cvm t st = (resultC tt, st').
+    exists st' res,
+      build_cvm t st = (res, st').
 Proof.
   intros.
   destruct (build_cvm t st) eqn:ee.
-  do_asome.
+  (* do_asome. *)
   subst.
   eauto.
 Defined.
 
 Ltac do_exists_some_cc t st :=
     assert_new_proof_by
-      (exists st', build_cvm t st = (resultC tt, st') )
+      (exists st' res, build_cvm t st = (res, st') )
       ltac:(eapply exists_some_cc);
     destruct_conjs.
 
@@ -1885,73 +1920,167 @@ Ltac do_exists_some_cc t st :=
 
 (** * Helper Lemma stating: CVM traces are "cumulative" (or monotonic).  
       Traces are only ever extended--prefixes are maintained. *)
-Lemma st_trace_cumul'' : forall t m k e p v_full v_suffix o_suffix i ac,
+Lemma st_trace_cumul'' : forall t m k e p v_full v_suffix res i ac,
     build_cvmP t
                {| st_ev := e; st_trace := m ++ k; st_pl := p; st_evid := i;
                        st_AM_config := ac |}
-               (resultC tt) v_full ->
+               (res) v_full ->
     
     build_cvmP t
                      {| st_ev := e; st_trace := k; st_pl := p; st_evid := i;
                        st_AM_config := ac |}
-                     o_suffix v_suffix ->
+                     res v_suffix ->
 
     st_trace v_full = m ++ st_trace v_suffix.
 Proof.
   induction t; intros.
-  -
+  - (* asp case *)
     wrap_ccp.
+    ff; eauto; intuition.
+(*
     
     destruct a; (* asp *)
       try destruct a; (* asp params *)
       simpl;
       df;
       repeat rewrite app_assoc;
-      reflexivity.
-  -
+      reflexivity. *)
+  - (* at case *)
     wrap_ccp.
     repeat rewrite app_assoc.
     reflexivity.
 
   - (* alseq case *)
+  repeat ff.
+  (*
+  Locate wrap_ccp_dohi.
+  Locate annogo.
+  *)
     wrap_ccp_dohi.
-     
+    ff.
+    +
+    repeat ff; eauto.
+    ff. eauto.
+    cumul_ih.
+    dd.
+    repeat do_st_trace.
+    repeat find_rw_in_goal.
+    eauto.
+    +
+    wrap_ccp_dohi.
+    repeat ff; eauto.
+    ff. eauto.
+    assert (resultC tt = errC c). 
+    {
+      rewrite <- ccp_iff_cc in *.
+      eapply cvm_errors_deterministic.
+      apply Heqp2.
+      eassumption.
+    }
+    solve_by_inversion.
+    +
+    wrap_ccp_dohi.
+    repeat ff; eauto.
+    ff. eauto.
+    assert (resultC tt = errC c). 
+    {
+      symmetry.
+      rewrite <- ccp_iff_cc in *.
+      eapply cvm_errors_deterministic.
+      apply Heqp2.
+      eassumption.
+    }
+    solve_by_inversion.
+
+    +
+    wrap_ccp_dohi.
+    ff.
+
     cumul_ih.
     dd.
     repeat do_st_trace.
     repeat find_rw_in_goal.
     eauto.
 
-  - (* abseq case *)
+  - (* bseq case *)
     wrap_ccp_dohi.
+    ff.
+
+    +
     repeat rewrite <- app_assoc in *.
     cumul_ih.
     dd.
     cumul_ih.
     dd.
-    rewrite app_assoc.
-    eauto.
-    
-  - (* abpar case *)
-    wrap_ccp_dohi.
+    intuition.
+    +
+    admit.
+    +
+    admit.
+    +
+    admit.
+    +
     repeat rewrite <- app_assoc in *.
     cumul_ih.
     dd.
-    repeat rewrite app_assoc.
-    eauto.
-Defined.
+    cumul_ih.
+    dd.
+    intuition.
+    +
+    admit.
+    +
+    admit.
+    +
+    admit.
+    +
+    repeat rewrite <- app_assoc in *.
+    wrap_ccp_dohi.
+    cumul_ih.
+    dd.
+    cumul_ih.
+    dd.
+    intuition.
+    +
+    repeat rewrite <- app_assoc in *.
+    wrap_ccp_dohi.
+    cumul_ih.
+    dd.
+    cumul_ih.
+    dd.
+    intuition.
+
+  - (* bpar base *)
+  wrap_ccp_dohi.
+  ff.
+
+  +
+  repeat rewrite <- app_assoc in *.
+  cumul_ih.
+  dd.
+  cumul_ih.
+  dd.
+  intuition.
+  +
+  wrap_ccp_dohi.
+  repeat rewrite <- app_assoc in *.
+  cumul_ih.
+  dd.
+  cumul_ih.
+  dd.
+  intuition.
+Admitted.
 
 
 
 (** * Instance of st_trace_cumul'' where k=[] *)
-Lemma st_trace_cumul' : forall t m e p v_full v_suffix o_suffix i ac,
+Lemma st_trace_cumul' : forall t m e p v_full v_suffix res i ac,
     build_cvmP t
                {| st_ev := e; st_trace := m; st_pl := p; st_evid := i; st_AM_config := ac |}
-               (resultC tt) v_full ->
+               (res) v_full ->
     
     build_cvmP t
                      {| st_ev := e; st_trace := []; st_pl := p; st_evid := i; st_AM_config := ac |}
-                     o_suffix v_suffix ->
+                     res v_suffix ->
 
     st_trace v_full = m ++ st_trace v_suffix.
 Proof.
@@ -1966,13 +2095,13 @@ Defined.
       Traces are only ever extended--prefixes are maintained. 
       TODO:  rename to st_trace_cumul 
 *) 
-Lemma suffix_prop : forall t e e' tr tr' p p' i i' ac ac',
+Lemma suffix_prop : forall t e e' tr tr' p p' i i' ac ac' res,
     build_cvmP t
            {| st_ev := e;
               st_trace := tr;
               st_pl := p;
               st_evid := i; st_AM_config := ac |}
-           (resultC tt)
+           (res)
            {|
              st_ev := e';
              st_trace := tr';
@@ -1999,14 +2128,26 @@ Proof.
   simpl.
   tauto.
   rewrite app_nil_r.
-  eassumption.
-Defined.
+  ff.
+  destruct H1; destruct res; ff.
+  +
+    assert (c = c0). admit.
+    subst.
+    eassumption.
+  +
+    admit.
+  +
+   admit.
+  +
+    wrap_ccp_dohi.
+    eassumption.
+Admitted.
 
 Ltac do_suffix name :=
   match goal with
   | [H': build_cvmP ?t
          {| st_ev := _; st_trace := ?tr; st_pl := _; st_evid := _ |}
-         (resultC tt)
+         (_)
          {| st_ev := _; st_trace := ?tr'; st_pl := _; st_evid := _ |}
          (*H2: well_formed_r ?t*) |- _] =>
     assert_new_proof_as_by
@@ -2061,6 +2202,8 @@ Lemma alseq_decomp : forall t1' t2' e e'' p p'' tr i i'' ac ac'',
 Proof.
   intros.
   wrap_ccp_dohi.
+  repeat ff.
+  wrap_ccp_dohi.
   
   eexists.
   eexists.
@@ -2069,11 +2212,17 @@ Proof.
   eexists.
 
   split.
-  +
+  -
     eassumption.
-  +
+  -
     do_exists_some_cc t2' {| st_ev := st_ev0; st_trace := []; st_pl := st_pl0; st_evid := st_evid0; st_AM_config := st_AM_config0 |}.
     vmsts.
+    repeat ff.
+    destruct H0; ff.
+    +
+    admit.
+    +
+    ff.
 
     eexists.
 
@@ -2087,25 +2236,36 @@ Proof.
       repeat find_rw_in_goal.
       eapply st_trace_cumul'; 
         eassumption.
-Defined.
+Admitted.
 
 
 (** Structural convenience lemma:  reconfigures CVM execution to use an empty initial trace *)
-Lemma restl : forall t e e' x tr p p' i i' ac ac',
+Lemma restl : forall t e e' x tr p p' i i' ac ac' res,
     build_cvmP t
                      {| st_ev := e; st_trace := x; st_pl := p; st_evid := i; st_AM_config := ac|}
-                     (resultC tt)
+                     (res)
                      {| st_ev := e'; st_trace := x ++ tr; st_pl := p'; st_evid := i'; st_AM_config := ac' |} ->
 
     build_cvmP t
                      {| st_ev := e; st_trace := []; st_pl := p; st_evid := i; st_AM_config := ac |}
-                     (resultC tt)
+                     (res)
                      {| st_ev := e'; st_trace := tr; st_pl := p'; st_evid := i'; st_AM_config := ac' |}.
 Proof.
   intros.
 
   do_exists_some_cc t  {| st_ev := e; st_trace := []; st_pl := p; st_evid := i; st_AM_config := ac |}.
   wrap_ccp_dohi.
+
+  assert (res = H1).
+  {
+    wrap_ccp_dohi.
+    eapply cvm_errors_deterministic.
+    invc H.
+    apply H0.
+    invc H2.
+    eassumption.
+  }
+  subst.
 
   assert (st_trace = tr).
   {
@@ -2117,12 +2277,16 @@ Proof.
               x ++ Cvm_St.st_trace {| st_ev := st_ev; st_trace := st_trace; st_pl := st_pl; st_evid := st_evid; st_AM_config := st_AM_config |}).
       {
         eapply st_trace_cumul'; eauto.
+        wrap_ccp_dohi.
+        eassumption.
       }
       simpl in *.
       eapply app_inv_head; eauto.
     }
     jkjke.
   }
+
+  wrap_ccp_dohi.
   congruence.
 Defined.
 
@@ -2130,13 +2294,13 @@ Ltac do_restl :=
   match goal with
   | [H: build_cvmP ?t
         {| st_ev := ?e; st_trace := ?tr; st_pl := ?p; st_evid := ?i; st_AM_config := ?ac |}
-        (resultC tt)
+        ?res
         {| st_ev := ?e'; st_trace := ?tr ++ ?x; st_pl := ?p'; st_evid := ?i'; st_AM_config := ?ac' |}
         (*H2: well_formed_r ?t*) |- _] =>
     assert_new_proof_by
       (build_cvmP t
                         {| st_ev := e; st_trace := []; st_pl := p; st_evid := i; st_AM_config := ac|}
-                        (resultC tt)
+                        ?res
                         {| st_ev := e'; st_trace := x; st_pl := p'; st_evid := i'; st_AM_config := ac' |})
       ltac:(eapply restl; [apply H])
   end.
@@ -2195,19 +2359,10 @@ Proof.
   
   - (* aasp case *)
     rewrite <- ccp_iff_cc in *.
-    subst.
+
+    Auto.ff.
     destruct a;
-      (try dd; eauto).
-    +
-      destruct s; dd.
-      destruct f; dd; eauto.
-      unfold mt_evc in *.
-      ff.
-      destruct f; dd; eauto.
-      unfold mt_evc in *.
-      ff.
-      unfold mt_evc in *.
-      ff.
+      (try dd; eauto); try (repeat Auto.ff).
 
       
 
@@ -2240,9 +2395,12 @@ Proof.
 
     wrap_ccp.
 
-    destruct s0; destruct s1; ff; 
+
+
+    destruct s0; destruct s1; Auto.ff; 
       wrap_ccp;
-      repeat find_apply_hyp_hyp; congruence.
+      repeat Auto.ff;
+      repeat find_apply_hyp_hyp; try congruence.
       
    - (* abpar case *)
 
@@ -2252,10 +2410,11 @@ Proof.
 
     wrap_ccp.
 
-    destruct s0; destruct s1; ff.
+    destruct s0; destruct s1; Auto.ff.
 
     +
       wrap_ccp.
+      Auto.ff.
       find_apply_hyp_hyp.
 
       assert (e0 = eval t2 p et).
@@ -2267,6 +2426,7 @@ Proof.
       
     +
       wrap_ccp.
+      Auto.ff.
       find_apply_hyp_hyp.
 
       assert (e0 = eval t2 p mt).
@@ -2279,6 +2439,7 @@ Proof.
       congruence.
     +
       wrap_ccp.
+      Auto.ff.
       find_apply_hyp_hyp.
 
       assert (e0 = eval t2 p et).
@@ -2289,6 +2450,7 @@ Proof.
       congruence.
     +
       wrap_ccp.
+      Auto.ff.
       find_apply_hyp_hyp.
 
       assert (e0 = eval t2 p mt).
@@ -2383,11 +2545,15 @@ Proof.
         eapply etfun_reconstruct.
         eassumption.
       }
+      (*
       congruence.
+      *)
+      admit. (* TODO: figure out how to deal with do_asp_nofail or equivalent *)
       ++ (* COMP NONE case *)
         wrap_ccp_anno.
         invc H3.
         ff.
+        admit. (* TODO: figure out how to deal with do_asp_nofail or equivalent *)
       ++ (* ENCR ALL case *)
         wrap_ccp_anno.
         invc H3.
@@ -2408,12 +2574,14 @@ Proof.
         eapply etfun_reconstruct.
         eassumption.
       }
-      congruence.
+      (* congruence. *)
+      admit. (* TODO: figure out how to deal with do_asp_nofail or equivalent *)
 
       ++ (* ENCR NONE case *)
         wrap_ccp_anno.
         invc H3.
         ff.
+        admit. (* TODO: figure out how to deal with do_asp_nofail or equivalent *)
         
       ++ (* EXTD ALL case *)
         wrap_ccp_anno.
@@ -2431,11 +2599,13 @@ Proof.
           eassumption.
         }
         subst.
-        tauto.
+        admit. (* TODO: figure out how to deal with do_asp_nofail or equivalent *)
+        (* tauto. *)
       ++ (* EXTD NONE case *)
         wrap_ccp_anno.
         invc H3.
         ff.
+        admit. (* TODO: figure out how to deal with do_asp_nofail or equivalent *)
       ++ (* KILL ALL case *)
         wrap_ccp_anno.
         invc H3.
@@ -2470,11 +2640,13 @@ Proof.
       dd.
       invc H3; invc H2.
       dd.
+      Auto.ff.
       jkjke'.
       dd.
       (* Search (encodeEv _ = _). *)
       rewrite recon_encodeEv with (bits:=bits) (et:=et).
-      tauto.
+      admit. (* TODO: figure out how to deal with do_asp_nofail or equivalent *)
+      (* tauto. *)
       econstructor; eassumption.
 
     +
@@ -2490,7 +2662,8 @@ Proof.
       }
 
       rewrite recon_encodeEv  with (bits:=bits) (et:=et).
-      congruence.
+      admit. (* TODO: figure out how to deal with do_asp_nofail or equivalent *)
+      (* congruence. *)
       econstructor; eassumption.
     +
       wrap_ccp.
@@ -2505,11 +2678,12 @@ Proof.
       }
 
       rewrite recon_encodeEv  with (bits:=bits) (et:=et).
-      congruence.
+      admit. (* TODO: figure out how to deal with do_asp_nofail or equivalent *)
+      (* congruence. *)
       econstructor; eassumption.
       
 
-  -
+  - (* at case *)
     wrap_ccp_anno.
     ff.
     wrap_ccp_anno.
@@ -2569,11 +2743,11 @@ Proof.
 
     do_somerecons.
     
-    assert ((cvm_evidence_denote a p ec) = H8).
+    assert ((cvm_evidence_denote a p' ec) = H9).
     {
       eapply IHt'1.
       
-      eassumption.
+      apply Heqp0.
       econstructor; eauto.
       eassumption.
 
@@ -2595,14 +2769,25 @@ Proof.
       wrap_ccp_anno.
     
     +
-      do_rewrap_reconP.
-      ff.
+    Auto.ff.
+    invc H2; invc H3.
+    Auto.ff.
+    try rewrite fold_recev in *.
+    repeat Auto.ff.
+    unfold OptMonad_Coq.bind in *.
+    Auto.ff.
+
+    try rewrite fold_recev in *.
+    repeat do_wrap_reconP.
+    Auto.ff.
+      Auto.ff.
       unfold OptMonad_Coq.bind in *.
-      ff.
+      Auto.ff.
 
       assert (wf_ec (evc bits et)).
       {
         eapply wfec_recon; eauto.
+        econstructor; eauto.
       }
 
       do_wfec_preserved.
@@ -2611,10 +2796,6 @@ Proof.
       do_wfec_skipn.
 
       clear_skipn_firstn.
-
-      Print do_inv_recon.
-
-      Print do_recon_inv.
 
       do_somerecons.
 
@@ -2646,19 +2827,22 @@ Proof.
       }
       dd.
 
-    assert (cvm_evidence_denote a st_pl1 ec = e1).
+    assert (cvm_evidence_denote a st_pl0 ec = e1).
     {
+      repeat do_wrap_reconP.
+      try rewrite fold_recev in *.
+      repeat do_wrap_reconP.
       eapply IHt'1.
       apply Heqp2.
       econstructor; eauto.
       
 
       eassumption.
-      eassumption.
       econstructor; eauto.
+      eassumption.
     }
 
-    assert (cvm_evidence_denote a0 st_pl1 ec = e2).
+    assert (cvm_evidence_denote a0 st_pl0 ec = e2).
     {
       eapply IHt'2.
       eassumption.
@@ -2674,20 +2858,33 @@ Proof.
       dd.
 
       eassumption.
-      eassumption.
       econstructor; eauto.
+      eassumption.
     } 
     dd.
     congruence.
+
+
     +
-            do_rewrap_reconP.
-      ff.
+    Auto.ff.
+    invc H2; invc H3.
+    Auto.ff.
+    try rewrite fold_recev in *.
+    repeat Auto.ff.
+    unfold OptMonad_Coq.bind in *.
+    Auto.ff.
+
+    try rewrite fold_recev in *.
+    repeat do_wrap_reconP.
+    Auto.ff.
+      Auto.ff.
       unfold OptMonad_Coq.bind in *.
-      ff.
+      Auto.ff.
 
       assert (wf_ec (evc bits et)).
       {
         eapply wfec_recon; eauto.
+        econstructor; eauto.
       }
 
       do_wfec_preserved.
@@ -2696,7 +2893,8 @@ Proof.
       do_wfec_skipn.
 
       clear_skipn_firstn.
-      
+
+      do_somerecons.
 
       (*
       assert (reconstruct_evP (evc r e4) e).
@@ -2709,9 +2907,8 @@ Proof.
     {
       econstructor.
       ff.
-    }
+    } 
     *)
-    do_somerecons.
 
     assert (i + 1 = S i) as H13 by lia.
     rewrite H13 in *; clear H13.
@@ -2727,19 +2924,28 @@ Proof.
       }
       dd.
 
-    assert (cvm_evidence_denote a st_pl1 ec = e1).
+    assert (cvm_evidence_denote a st_pl0 ec = e1).
     {
+      repeat do_wrap_reconP.
+      try rewrite fold_recev in *.
+      repeat do_wrap_reconP.
       eapply IHt'1.
       apply Heqp2.
       econstructor; eauto.
       
 
       eassumption.
-      eassumption.
       econstructor; eauto.
+      eassumption.
     }
 
-    assert (cvm_evidence_denote a0 st_pl1 mtc = e2).
+    assert (wf_ec mt_evc).
+    {
+      econstructor.
+      ff.
+    }
+
+    assert (cvm_evidence_denote a0 st_pl0 mtc = e2).
     {
       eapply IHt'2.
       eassumption.
@@ -2755,26 +2961,39 @@ Proof.
       dd.
 
       eassumption.
-      econstructor. ff.
       econstructor; eauto.
-    }
-    
+      invc H11.
+      eassumption.
+    } 
     dd.
     congruence.
 
+
+
     +
-      do_rewrap_reconP.
-      ff.
-      unfold OptMonad_Coq.bind in *.
-      ff.
+    Auto.ff.
+    invc H2; invc H3.
+    Auto.ff.
+    try rewrite fold_recev in *.
+    repeat Auto.ff.
+    unfold OptMonad_Coq.bind in *.
+    Auto.ff.
+
+    try rewrite fold_recev in *.
+    repeat do_wrap_reconP.
 
       assert (wf_ec mt_evc).
       {
         econstructor.
-        ff.
+        eauto.
       }
 
+
+
       do_wfec_preserved.
+      repeat do_wrap_reconP.
+
+      Print do_wfec_firstn.
 
       do_wfec_firstn.
       do_wfec_skipn.
@@ -2782,6 +3001,20 @@ Proof.
       clear_skipn_firstn.
 
       do_somerecons.
+
+      (*
+      assert (reconstruct_evP (evc r e4) e).
+      {
+        econstructor.
+        ff.
+      }
+
+    assert (reconstruct_evP (evc r0 e5) e0).
+    {
+      econstructor.
+      ff.
+    } 
+    *)
 
     assert (i + 1 = S i) as H13 by lia.
     rewrite H13 in *; clear H13.
@@ -2797,8 +3030,11 @@ Proof.
       }
       dd.
 
-    assert (cvm_evidence_denote a st_pl1 mtc = e1).
+    assert (cvm_evidence_denote a st_pl0 mtc = e1).
     {
+      repeat do_wrap_reconP.
+      try rewrite fold_recev in *.
+      repeat do_wrap_reconP.
       eapply IHt'1.
       apply Heqp8.
       econstructor; eauto.
@@ -2806,10 +3042,16 @@ Proof.
 
       eassumption.
       econstructor; eauto.
-      econstructor; eauto.
+      eassumption.
     }
 
-     assert (cvm_evidence_denote a0 st_pl1 ec = e2).
+    assert (wf_ec mt_evc).
+    {
+      econstructor.
+      ff.
+    }
+
+    assert (cvm_evidence_denote a0 st_pl0 ec = e2).
     {
       eapply IHt'2.
       eassumption.
@@ -2825,36 +3067,58 @@ Proof.
       dd.
 
       eassumption.
-      econstructor. ff.
       econstructor; eauto.
-    }
-
+      invc H11.
+      eassumption.
+    } 
     dd.
     congruence.
-    
-
 
     +
-      do_rewrap_reconP.
-      ff.
-      unfold OptMonad_Coq.bind in *.
-      ff.
+    Auto.ff.
+    invc H2; invc H3.
+    Auto.ff.
+    try rewrite fold_recev in *.
+    repeat Auto.ff.
+    unfold OptMonad_Coq.bind in *.
+    Auto.ff.
+
+    try rewrite fold_recev in *.
+    repeat do_wrap_reconP.
 
       assert (wf_ec mt_evc).
       {
         econstructor.
-        ff.
+        eauto.
       }
 
+
+
       do_wfec_preserved.
+      repeat do_wrap_reconP.
+
+      Print do_wfec_firstn.
 
       do_wfec_firstn.
       do_wfec_skipn.
 
       clear_skipn_firstn.
-      
 
-    do_somerecons.
+      do_somerecons.
+
+      (*
+      assert (reconstruct_evP (evc r e4) e).
+      {
+        econstructor.
+        ff.
+      }
+
+    assert (reconstruct_evP (evc r0 e5) e0).
+    {
+      econstructor.
+      ff.
+    } 
+    *)
 
     assert (i + 1 = S i) as H13 by lia.
     rewrite H13 in *; clear H13.
@@ -2870,8 +3134,11 @@ Proof.
       }
       dd.
 
-    assert (cvm_evidence_denote a st_pl1 mtc = e1).
+    assert (cvm_evidence_denote a st_pl0 mtc = e1).
     {
+      repeat do_wrap_reconP.
+      try rewrite fold_recev in *.
+      repeat do_wrap_reconP.
       eapply IHt'1.
       apply Heqp9.
       econstructor; eauto.
@@ -2879,10 +3146,16 @@ Proof.
 
       eassumption.
       econstructor; eauto.
-      econstructor; eauto.
+      eassumption.
     }
 
-     assert (cvm_evidence_denote a0 st_pl1 mtc = e2).
+    assert (wf_ec mt_evc).
+    {
+      econstructor.
+      ff.
+    }
+
+    assert (cvm_evidence_denote a0 st_pl0 mtc = e2).
     {
       eapply IHt'2.
       eassumption.
@@ -2898,18 +3171,18 @@ Proof.
       dd.
 
       eassumption.
-      econstructor. ff.
       econstructor; eauto.
-    }
+      invc H11.
+      eassumption.
+    } 
     dd.
     congruence.
 
-
-
   - (* bpar case *)
     wrap_ccp_anno;
-      ff;
-      wrap_ccp_anno.
+      Auto.ff;
+      wrap_ccp_anno; 
+      Auto.ff.
     
     +
       do_rewrap_reconP.
@@ -3249,7 +3522,7 @@ Proof.
       
     dd.
     congruence.
-Qed.
+Admitted.
 
 
 Lemma cvm_raw_evidence_denote_fact_eval :

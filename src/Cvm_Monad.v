@@ -41,6 +41,12 @@ Definition get_pl : CVM Plc :=
   st <- get ;;
   ret (st_pl st).
 
+Definition get_amConfig : CVM AM_Config :=
+  (* TODO:  consider moving this functionality to a Reader-like monad 
+        i.e. an 'ask' primitive *)
+  st <- get ;;
+  ret (st_AM_config st).
+
 Definition inc_id : CVM Event_ID :=
   st <- get ;;
     let tr' := st_trace st in
@@ -93,13 +99,21 @@ Definition fwd_asp (fwd:FWD) (bs:BS) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
   | KEEP => e
   end.
 
+Definition do_asp' (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) (* (ac : AM_Config) *) : CVM BS :=
+
+  ac <- get_amConfig ;;
+  match (do_asp params e mpl x ac) with
+  | resultC r => ret r
+  | errC e => failm (callback_error e)
+  end.
+
 (* Simulates invoking an arbitrary ASP.  Tags the event, builds and returns 
    the new evidence bundle. *)
-Definition invoke_ASP (fwd:FWD) (params:ASP_PARAMS) (ac : AM_Config) : CVM EvC :=
+Definition invoke_ASP (fwd:FWD) (params:ASP_PARAMS) (* (ac : AM_Config) *) : CVM EvC :=
   e <- get_ev ;;
   p <- get_pl ;;
   x <- tag_ASP params p e ;;
-  bs <- do_asp' params (get_bits e) p x ac ;;
+  bs <- do_asp' params (get_bits e) p x ;;
   ret (fwd_asp fwd bs e p params).
 
 Definition copyEv : CVM EvC :=
@@ -118,12 +132,12 @@ Definition clearEv : unit -> CVM EvC :=
   fun _ => ret mt_evc.
 
 (* Helper that interprets primitive core terms in the CVM.  *)
-Definition do_prim (a:ASP_Core) (ac : AM_Config) : CVM EvC :=
+Definition do_prim (a:ASP_Core) (* (ac : AM_Config) *) : CVM EvC :=
   match a with
   | NULLC => nullEv
   | CLEAR => clearEv tt
   | CPYC => copyEv
-  | ASPCC fwd params => invoke_ASP fwd params ac
+  | ASPCC fwd params => invoke_ASP fwd params
   end.
 
 

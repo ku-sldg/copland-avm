@@ -9,6 +9,7 @@ Require Import Coq.Arith.Peano_dec Lia.
 
 Require Export Defs.
 
+
 (* destruct unit-typed hyps *)
 Ltac dunit :=
   match goal with

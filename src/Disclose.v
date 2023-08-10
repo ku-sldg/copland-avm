@@ -1460,9 +1460,11 @@ Proof.
   generalizeEverythingElse t.
   induction t; intros.
   - (* asp case *)
-    wrap_ccp_anno.
-    destruct a; invc H; ff;
+    wrap_ccp_anno;
+    repeat Auto.ff;
+    destruct a; invc H; repeat Auto.ff;
       wrap_ccp_anno;
+      repeat Auto.ff;
       try destruct s; wrap_ccp_anno;
       try destruct f;
       try destruct H1;
@@ -1649,8 +1651,9 @@ Proof.
       eassumption.
   - (* abseq case *)
     wrap_ccp_anno;
-    ff;
-    wrap_ccp_anno.
+    repeat Auto.ff;
+    wrap_ccp_anno;
+    repeat Auto.ff.
     +
 
     assert (n = st_evid1).
@@ -1674,28 +1677,28 @@ Proof.
     destruct_conjs; subst.
     repeat do_restl.
 
-    assert (ev = Term_Defs.split cvmi st_pl1 \/
+    assert (ev = Term_Defs.split cvmi st_pl0 \/
             (In ev blah') \/
             (In ev blah) \/
-            ev = join st_evid st_pl1).
+            ev = join st_evid st_pl0).
     {
       apply in_app_or in H1.
       door.
       +
         
-        apply in_app_or in H1.
+        apply in_app_or in H0.
         door.
         ++
-          apply in_app_or in H1.
+          apply in_app_or in H0.
           door.
           +++
-            invc H1; try eauto; try solve_by_inversion.
+            invc H0; try eauto; try solve_by_inversion.
           +++
             eauto.
         ++
           eauto.
       +
-        invc H1; try eauto; try solve_by_inversion.
+        invc H0; try eauto; try solve_by_inversion.
     }
 
     door.
@@ -1710,10 +1713,17 @@ Proof.
     apply evtsbseql.
     simpl.
     assert (S cvmi = cvmi + 1) by lia.
-    rewrite <- H5 in *.
+    rewrite <- H3 in *.
     subst.
     eapply IHt1.
     eassumption.
+    eapply restl.
+    assert (Term_Defs.split cvmi st_pl0 :: blah' = 
+    [Term_Defs.split cvmi st_pl0] ++ blah'). 
+    {
+      intuition.
+    }
+    repeat find_rewrite.
     eassumption.
     eassumption.
 
@@ -1725,6 +1735,7 @@ Proof.
 
     eapply IHt2.
     eassumption.
+    eapply restl.
     eassumption.
     eassumption.
 
@@ -1757,28 +1768,28 @@ Proof.
     destruct_conjs; subst.
     repeat do_restl.
 
-    assert (ev = Term_Defs.split cvmi st_pl1 \/
+    assert (ev = Term_Defs.split cvmi st_pl0 \/
             (In ev blah') \/
             (In ev blah) \/
-            ev = join st_evid st_pl1).
+            ev = join st_evid st_pl0).
     {
             apply in_app_or in H1.
       door.
       +
         
-        apply in_app_or in H1.
+        apply in_app_or in H0.
         door.
         ++
-          apply in_app_or in H1.
+          apply in_app_or in H0.
           door.
           +++
-            invc H1; try eauto; try solve_by_inversion.
+            invc H0; try eauto; try solve_by_inversion.
           +++
             eauto.
         ++
           eauto.
       +
-        invc H1; try eauto; try solve_by_inversion.
+        invc H0; try eauto; try solve_by_inversion.
     }
     door.
     subst.
@@ -1792,10 +1803,17 @@ Proof.
     apply evtsbseql.
     simpl.
     assert (S cvmi = cvmi + 1) by lia.
-    rewrite <- H5 in *.
+    rewrite <- H3 in *.
     subst.
     eapply IHt1.
     eassumption.
+    eapply restl.
+    assert (Term_Defs.split cvmi st_pl0 :: blah' = 
+    [Term_Defs.split cvmi st_pl0] ++ blah'). 
+    {
+      intuition.
+    }
+    repeat find_rewrite.
     eassumption.
     eassumption.
 
@@ -1807,6 +1825,7 @@ Proof.
 
     eapply IHt2.
     eassumption.
+    eapply restl.
     eassumption.
     eassumption.
 
@@ -1839,28 +1858,28 @@ Proof.
     destruct_conjs; subst.
     repeat do_restl.
 
-    assert (ev = Term_Defs.split cvmi st_pl1 \/
+    assert (ev = Term_Defs.split cvmi st_pl0 \/
             (In ev blah') \/
             (In ev blah) \/
-            ev = join st_evid st_pl1).
+            ev = join st_evid st_pl0).
     {
             apply in_app_or in H1.
       door.
       +
         
-        apply in_app_or in H1.
+        apply in_app_or in H0.
         door.
         ++
-          apply in_app_or in H1.
+          apply in_app_or in H0.
           door.
           +++
-            invc H1; try eauto; try solve_by_inversion.
+            invc H0; try eauto; try solve_by_inversion.
           +++
             eauto.
         ++
           eauto.
       +
-        invc H1; try eauto; try solve_by_inversion.
+        invc H0; try eauto; try solve_by_inversion.
     }
     door.
     subst.
@@ -1874,10 +1893,17 @@ Proof.
     apply evtsbseql.
     simpl.
     assert (S cvmi = cvmi + 1) by lia.
-    rewrite <- H5 in *.
+    rewrite <- H3 in *.
     subst.
     eapply IHt1.
     eassumption.
+    eapply restl.
+    assert (Term_Defs.split cvmi st_pl0 :: blah' = 
+    [Term_Defs.split cvmi st_pl0] ++ blah'). 
+    {
+      intuition.
+    }
+    repeat find_rewrite.
     eassumption.
     eassumption.
 
@@ -1889,6 +1915,7 @@ Proof.
 
     eapply IHt2.
     eassumption.
+    eapply restl.
     eassumption.
     eassumption.
 
@@ -1921,28 +1948,28 @@ Proof.
     destruct_conjs; subst.
     repeat do_restl.
 
-    assert (ev = Term_Defs.split cvmi st_pl1 \/
+    assert (ev = Term_Defs.split cvmi st_pl0 \/
             (In ev blah') \/
             (In ev blah) \/
-            ev = join st_evid st_pl1).
+            ev = join st_evid st_pl0).
     {
             apply in_app_or in H1.
       door.
       +
         
-        apply in_app_or in H1.
+        apply in_app_or in H0.
         door.
         ++
-          apply in_app_or in H1.
+          apply in_app_or in H0.
           door.
           +++
-            invc H1; try eauto; try solve_by_inversion.
+            invc H0; try eauto; try solve_by_inversion.
           +++
             eauto.
         ++
           eauto.
       +
-        invc H1; try eauto; try solve_by_inversion.
+        invc H0; try eauto; try solve_by_inversion.
     }
     door.
     subst.
@@ -1956,10 +1983,17 @@ Proof.
     apply evtsbseql.
     simpl.
     assert (S cvmi = cvmi + 1) by lia.
-    rewrite <- H5 in *.
+    rewrite <- H3 in *.
     subst.
     eapply IHt1.
     eassumption.
+    eapply restl.
+    assert (Term_Defs.split cvmi st_pl0 :: blah' = 
+    [Term_Defs.split cvmi st_pl0] ++ blah'). 
+    {
+      intuition.
+    }
+    repeat find_rewrite.
     eassumption.
     eassumption.
 
@@ -1971,6 +2005,7 @@ Proof.
 
     eapply IHt2.
     eassumption.
+    eapply restl.
     eassumption.
     eassumption.
 
@@ -1985,8 +2020,9 @@ Proof.
   - (* abpar case *)
 
     wrap_ccp_anno;
-    ff;
-    wrap_ccp_anno.
+    Auto.ff;
+    wrap_ccp_anno;
+    Auto.ff.
 
     +
 
@@ -1997,13 +2033,14 @@ Proof.
       invc Heqp0.
       
       eapply span_cvm; eauto.
+      
       econstructor; tauto.
     }
     subst.
 
     assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
     
-    subst. clear H7.
+    subst. clear H6.
     
     
     
@@ -2031,16 +2068,16 @@ Proof.
         simpl.
         tauto.
       }
-      rewrite H3 in H1.
+      rewrite H1 in H0.
 
-        apply in_app_or in H1.
+        apply in_app_or in H0.
         door.
       ++
-        invc H1; try eauto; try solve_by_inversion.
+        invc H0; try eauto; try solve_by_inversion.
       ++
         eauto.
 
-      + invc H1; try eauto; try solve_by_inversion.
+      + invc H0; try eauto; try solve_by_inversion.
     }
 
 
@@ -2050,7 +2087,7 @@ Proof.
     apply evtsbparsplit.
     auto.
     door.
-    rewrite thread_bookend_peel in H3.
+    rewrite thread_bookend_peel in H0.
 
     (* apply evtsbparr. *)
 
@@ -2079,7 +2116,7 @@ Proof.
 
     assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
     
-    subst. clear H7.
+    subst. clear H6.
     
     
     
@@ -2109,16 +2146,16 @@ Proof.
         simpl.
         tauto.
       }
-      rewrite H3 in H1.
+      rewrite H1 in H0.
 
-        apply in_app_or in H1.
+        apply in_app_or in H0.
         door.
       ++
-        invc H1; try eauto; try solve_by_inversion.
+        invc H0; try eauto; try solve_by_inversion.
       ++
         eauto.
 
-      + invc H1; try eauto; try solve_by_inversion.
+      + invc H0; try eauto; try solve_by_inversion.
     }
   
     door.
@@ -2127,7 +2164,7 @@ Proof.
     apply evtsbparsplit.
     auto.
     door.
-    rewrite thread_bookend_peel in H3; eauto.
+    rewrite thread_bookend_peel in H0; eauto.
     
     admit. (* TODO: axiom? *)
 
@@ -2152,7 +2189,7 @@ Proof.
 
     assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
     
-    subst. clear H7.
+    subst. clear H6.
     
     
     
@@ -2180,16 +2217,16 @@ Proof.
         simpl.
         tauto.
       }
-      rewrite H3 in H1.
+      rewrite H1 in H0.
 
-        apply in_app_or in H1.
+        apply in_app_or in H0.
         door.
       ++
-        invc H1; try eauto; try solve_by_inversion.
+        invc H0; try eauto; try solve_by_inversion.
       ++
         eauto.
 
-      + invc H1; try eauto; try solve_by_inversion.
+      + invc H0; try eauto; try solve_by_inversion.
     }
 
     door.
@@ -2198,7 +2235,7 @@ Proof.
     apply evtsbparsplit.
     auto.
     door.
-    rewrite thread_bookend_peel in H3.
+    rewrite thread_bookend_peel in H0.
 
     admit. (* TODO: axiom? *)
     eauto.
@@ -2224,7 +2261,7 @@ Proof.
 
     assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
     
-    subst. clear H7.
+    subst. clear H6.
     
     
     
@@ -2253,16 +2290,16 @@ Proof.
         simpl.
         tauto.
       }
-      rewrite H3 in H1.
+      rewrite H1 in H0.
 
-        apply in_app_or in H1.
+        apply in_app_or in H0.
         door.
       ++
-        invc H1; try eauto; try solve_by_inversion.
+        invc H0; try eauto; try solve_by_inversion.
       ++
         eauto.
 
-      + invc H1; try eauto; try solve_by_inversion.
+      + invc H0; try eauto; try solve_by_inversion.
     }
 
     (*
@@ -2280,7 +2317,7 @@ Proof.
     apply evtsbparsplit.
     auto.
     door.
-    rewrite thread_bookend_peel in H3.
+    rewrite thread_bookend_peel in H0.
 
     assert (In ev blah \/
             In ev (cvm_events_core (copland_compile t2) p mt)).
@@ -2292,11 +2329,19 @@ Proof.
     simpl in *.
     unfold mt_evc in *.
     assert (S cvmi = cvmi + 1) by lia.
-    rewrite <- H5 in *.
+    rewrite <- H4 in *.
 
     eapply IHt1.
     eassumption.
-    eassumption.
+    eapply restl.
+    (* 
+    assert ((Term_Defs.split cvmi p :: cvm_thread_start 0 p <<core>{ CLR -> (copland_compile t2) }> e :: blah) = 
+    ([Term_Defs.split cvmi p :: cvm_thread_start 0 p <<core>{ CLR -> (copland_compile t2) }> e] ++ blah)).
+    {
+      intuition.
+    }
+    *)
+    admit.
     eassumption.
 
 
@@ -2784,9 +2829,9 @@ Admitted.
     Proof.
       intros.
       generalizeEverythingElse t.
-      induction t; intros; ff.
+      induction t; intros; repeat Auto.ff.
       -
-        destruct a; invc H; invc H0; ff.
+        destruct a; invc H; invc H0; repeat Auto.ff.
 
         +
           eexists. econstructor. simpl.
@@ -2799,7 +2844,35 @@ Admitted.
           find_rewrite.
           reflexivity.
         +
-          destruct s; ff; destruct f; ff.
+        eexists. econstructor. simpl.
+          assert (S cvmi = cvmi + 1) by lia.
+          find_rewrite.
+          reflexivity.
+        +
+        eexists. econstructor. simpl.
+          assert (S cvmi = cvmi + 1) by lia.
+          find_rewrite.
+          reflexivity.
+        +
+        eexists. econstructor. simpl.
+          assert (S cvmi = cvmi + 1) by lia.
+          find_rewrite.
+          reflexivity.
+        +
+        eexists. econstructor. simpl.
+          assert (S cvmi = cvmi + 1) by lia.
+          find_rewrite.
+          reflexivity.
+        
+        +
+        eexists. econstructor. simpl.
+          assert (S cvmi = cvmi + 1) by lia.
+          find_rewrite.
+          reflexivity.
+
+          (*
+        +
+          destruct s; repeat Auto.ff; destruct f; repeat Auto.ff.
           ++
           eexists. econstructor. simpl.
           assert (S cvmi = cvmi + 1) by lia.
@@ -2864,6 +2937,7 @@ Admitted.
           assert (S cvmi = cvmi + 1) by lia.
           find_rewrite.
           reflexivity.
+          *)
       -
         invc H0; ff.
         invc H; ff.

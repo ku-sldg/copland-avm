@@ -255,9 +255,11 @@ Proof.
 
   -
     wrap_ccp.
+    Auto.ff.
     eauto.
   -
     wrap_ccp.
+    Auto.ff.
 
     (*
 
@@ -273,6 +275,7 @@ Proof.
 
   -
     wrap_ccp.
+    Auto.ff.
 
     (*
     
@@ -409,7 +412,7 @@ Defined.
   -
     destruct a;
       try destruct a;
-      ff; try tauto.
+      Auto.ff; try tauto.
     +
       wrap_ccp_anno; ff.
     +
@@ -417,21 +420,22 @@ Defined.
     +
       destruct s.
       ++
-        wrap_ccp_anno; ff.
+        wrap_ccp_anno; repeat Auto.ff.
       ++
-        wrap_ccp_anno; ff.
+        wrap_ccp_anno; repeat Auto.ff.
     +
-      wrap_ccp_anno; ff.
+      wrap_ccp_anno; repeat Auto.ff.
     +
-      wrap_ccp_anno; ff.
+      wrap_ccp_anno; repeat Auto.ff.
     +
-      wrap_ccp_anno; ff.
+      wrap_ccp_anno; repeat Auto.ff.
       
   
   -
     lia.
   -
     wrap_ccp_anno.
+    repeat Auto.ff.
     assert (st_evid0 = i + event_id_span' t1).
     eapply IHt1.
     2: { eassumption. }
@@ -446,6 +450,7 @@ Defined.
     destruct s0; destruct s1.
     +
       wrap_ccp_anno.
+      repeat Auto.ff.
 
       assert (st_evid1 = (i + 1) +  event_id_span' t1).
     eapply IHt1.
@@ -460,6 +465,7 @@ Defined.
     lia.
     +
       wrap_ccp_anno.
+      repeat Auto.ff.
       assert (st_evid1 = (i + 1) +  event_id_span' t1).
     eapply IHt1.
     2: { eassumption. }
@@ -473,6 +479,7 @@ Defined.
     lia.
     +
       wrap_ccp_anno.
+      repeat Auto.ff.
       assert (st_evid1 = (i + 1) +  event_id_span' t1).
     eapply IHt1.
     2: { eassumption. }
@@ -486,6 +493,7 @@ Defined.
     lia.
     +
       wrap_ccp_anno.
+      repeat Auto.ff.
       assert (st_evid1 = (i + 1) +  event_id_span' t1).
     eapply IHt1.
     2: { eassumption. }
@@ -501,6 +509,7 @@ Defined.
     destruct s0; destruct s1.
     +
       wrap_ccp_anno.
+      repeat Auto.ff.
 
       assert (st_evid = (i + 1) +  event_id_span' t1).
     eapply IHt1.
@@ -514,19 +523,7 @@ Defined.
     lia.
     +
       wrap_ccp_anno.
-
-      assert (st_evid = (i + 1) +  event_id_span' t1).
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    assert (event_id_span' t2 = event_id_span (copland_compile t2)).
-    {
-      eapply event_id_spans_same.
-    }
-    lia.
-    +
-            wrap_ccp_anno.
+      repeat Auto.ff.
 
       assert (st_evid = (i + 1) +  event_id_span' t1).
     eapply IHt1.
@@ -540,6 +537,21 @@ Defined.
     lia.
     +
       wrap_ccp_anno.
+      repeat Auto.ff.
+
+      assert (st_evid = (i + 1) +  event_id_span' t1).
+    eapply IHt1.
+    2: { eassumption. }
+    econstructor; eauto.
+
+    assert (event_id_span' t2 = event_id_span (copland_compile t2)).
+    {
+      eapply event_id_spans_same.
+    }
+    lia.
+    +
+      wrap_ccp_anno.
+      repeat Auto.ff.
 
       assert (st_evid = (i + 1) +  event_id_span' t1).
     eapply IHt1.
@@ -652,42 +664,65 @@ Proof.
       ff.
       ++
         wrap_ccp_anno.
+        repeat Auto.ff.
         try (econstructor; econstructor; reflexivity).
       ++
          wrap_ccp_anno.
+         repeat Auto.ff.
          try (econstructor; econstructor; reflexivity).
     +
       ff.
       ++
         wrap_ccp_anno.
+        repeat Auto.ff.
         try (econstructor; econstructor; reflexivity).
       ++
          wrap_ccp_anno.
+         repeat Auto.ff.
          try (econstructor; econstructor; reflexivity).
     +
       ff.
       ++
         wrap_ccp_anno.
+        repeat Auto.ff.
         try (econstructor; econstructor; reflexivity).
       ++
          wrap_ccp_anno.
+         repeat Auto.ff.
          try (econstructor; econstructor; reflexivity).
     +
       ff.
        ++
         wrap_ccp_anno.
+        repeat Auto.ff.
         try (econstructor; econstructor; reflexivity).
       ++
          wrap_ccp_anno.
+         repeat Auto.ff.
          try (econstructor; econstructor; reflexivity).
     +
       ff.
       ++
          wrap_ccp_anno.
+         repeat Auto.ff.
         try (econstructor; econstructor; reflexivity).
       ++
          wrap_ccp_anno.
+         repeat Auto.ff.
          try (econstructor; econstructor; reflexivity).
+    +
+         wrap_ccp_anno.
+         repeat Auto.ff.
+        try (econstructor; econstructor; reflexivity).
+   +
+    wrap_ccp_anno.
+    repeat Auto.ff.
+   try (econstructor; econstructor; reflexivity).
+   +
+   wrap_ccp_anno.
+         repeat Auto.ff.
+        try (econstructor; econstructor; reflexivity).
+    
       
       
       
@@ -827,9 +862,12 @@ Proof.
   - (* abseq case *)
 
     wrap_ccp_anno;
-    ff;
-    wrap_ccp_anno.
+    repeat Auto.ff;
+    wrap_ccp_anno;
+    repeat Auto.ff.
     +
+
+
 
     assert (n = st_evid1).
     {
@@ -859,17 +897,19 @@ Proof.
     simpl.
 
     assert (
-        lstar (conf a st_pl1 et) blah' (stop st_pl1 (aeval a st_pl1 et))
+        lstar (conf a st_pl0 et) blah' (stop st_pl0 (aeval a st_pl0 et))
       ).
     {
       assert (i + 1 = S i) by lia.
       find_rewrite.
       eapply IHt1; eauto.
       econstructor; tauto.
+      eapply restl.
+      eassumption.
     }
 
     assert (
-      lstar (conf a0 st_pl1  et) blah (stop st_pl1 (aeval a0 st_pl1  et))
+      lstar (conf a0 st_pl0  et) blah (stop st_pl0 (aeval a0 st_pl0  et))
     ).
     {
       assert (i + 1 = S i) by lia.
@@ -878,6 +918,8 @@ Proof.
       subst.
       eapply IHt2; eauto.
       econstructor; tauto.
+      eapply restl.
+      eauto.
 
     }
 
@@ -895,12 +937,12 @@ Proof.
     eassumption.
 
     assert (st_evid = Nat.pred (st_evid + 1)) by lia.
-    rewrite H5 in *.
+    rewrite H2 in *.
 
     
     econstructor; eauto; simpl in *.
     assert (Nat.pred (st_evid + 1) + 1 = st_evid + 1) by lia.
-    rewrite H6 in *; eauto. 
+    rewrite H3 in *; eauto. 
     +
 
     assert (n = st_evid1).
@@ -931,17 +973,19 @@ Proof.
     simpl.
 
     assert (
-        lstar (conf a st_pl1 et) blah' (stop st_pl1 (aeval a st_pl1 et))
+        lstar (conf a st_pl0 et) blah' (stop st_pl0 (aeval a st_pl0 et))
       ).
     {
       assert (i + 1 = S i) by lia.
       find_rewrite.
       eapply IHt1; eauto.
       econstructor; tauto.
+      eapply restl.
+      eauto.
     }
 
     assert (
-      lstar (conf a0 st_pl1  mt) blah (stop st_pl1 (aeval a0 st_pl1  mt))
+      lstar (conf a0 st_pl0  mt) blah (stop st_pl0 (aeval a0 st_pl0 mt))
     ).
     {
       assert (i + 1 = S i) by lia.
@@ -951,6 +995,7 @@ Proof.
       eapply IHt2.
       econstructor; tauto.
       eassumption.
+      eapply restl.
       eassumption.
 
     }
@@ -969,7 +1014,7 @@ Proof.
     eassumption.
 
     assert (st_evid = Nat.pred (st_evid + 1)) by lia.
-    rewrite H5 at 2.
+    rewrite H2 at 2.
 
     
     econstructor.
@@ -1007,7 +1052,7 @@ Proof.
     simpl.
 
     assert (
-        lstar (conf a st_pl1 mt) blah' (stop st_pl1 (aeval a st_pl1 mt))
+        lstar (conf a st_pl0 mt) blah' (stop st_pl0 (aeval a st_pl0 mt))
       ).
     {
       assert (i + 1 = S i) by lia.
@@ -1015,11 +1060,12 @@ Proof.
       eapply IHt1.
       econstructor; tauto.
       eassumption.
+      eapply restl.
       eassumption.
     }
 
     assert (
-      lstar (conf a0 st_pl1  et) blah (stop st_pl1 (aeval a0 st_pl1  et))
+      lstar (conf a0 st_pl0  et) blah (stop st_pl0 (aeval a0 st_pl0  et))
     ).
     {
       assert (i + 1 = S i) by lia.
@@ -1029,6 +1075,7 @@ Proof.
       eapply IHt2.
       econstructor; tauto.
       eassumption.
+      eapply restl.
       eassumption.
 
     }
@@ -1047,7 +1094,7 @@ Proof.
     eassumption.
 
     assert (st_evid = Nat.pred (st_evid + 1)) by lia.
-    rewrite H5 at 2.
+    rewrite H2 at 2.
 
     
     econstructor.
@@ -1085,7 +1132,7 @@ Proof.
     simpl.
 
     assert (
-        lstar (conf a st_pl1 mt) blah' (stop st_pl1 (aeval a st_pl1 mt))
+        lstar (conf a st_pl0 mt) blah' (stop st_pl0 (aeval a st_pl0 mt))
       ).
     {
       assert (i + 1 = S i) by lia.
@@ -1093,11 +1140,12 @@ Proof.
       eapply IHt1.
       econstructor; tauto.
       eassumption.
+      eapply restl.
       eassumption.
     }
 
     assert (
-      lstar (conf a0 st_pl1  mt) blah (stop st_pl1 (aeval a0 st_pl1  mt))
+      lstar (conf a0 st_pl0  mt) blah (stop st_pl0 (aeval a0 st_pl0  mt))
     ).
     {
       assert (i + 1 = S i) by lia.
@@ -1107,6 +1155,7 @@ Proof.
       eapply IHt2.
       econstructor; tauto.
       eassumption.
+      eapply restl.
       eassumption.
 
     }
@@ -1125,7 +1174,7 @@ Proof.
     eassumption.
 
     assert (st_evid = Nat.pred (st_evid + 1)) by lia.
-    rewrite H5 at 2.
+    rewrite H2 at 2.
 
     
     econstructor.
@@ -1141,8 +1190,9 @@ Proof.
   - (* abpar case *)
 
     wrap_ccp_anno;
-    ff;
-    wrap_ccp_anno.
+    repeat Auto.ff;
+    wrap_ccp_anno;
+    repeat Auto.ff.
 
     +
 
@@ -1179,6 +1229,7 @@ Proof.
       eapply IHt1.
       econstructor; tauto.
       eassumption.
+      eapply restl.
       eassumption.
 
     }
@@ -1222,7 +1273,7 @@ Proof.
       eassumption.
 
       assert ((st_evid + event_id_span (copland_compile t2)) = Nat.pred ((st_evid + event_id_span (copland_compile t2)) + 1)) by lia.
-      rewrite H3 at 2.
+      rewrite H2 at 2.
 
       eapply lstar_tran.
 
@@ -1266,6 +1317,7 @@ Proof.
       eapply IHt1.
       econstructor; tauto.
       eassumption.
+      eapply restl.
       eassumption.
 
     }
@@ -1288,7 +1340,7 @@ Proof.
       }
 
       repeat rewrite app_assoc in *.
-      rewrite H2.
+      rewrite H1.
    
       rewrite events_cvm_to_core_mt.
       
@@ -1301,7 +1353,7 @@ Proof.
       eassumption.
 
       assert ((st_evid + event_id_span (copland_compile t2)) = Nat.pred ((st_evid + event_id_span (copland_compile t2)) + 1)) by lia.
-      rewrite H3 at 2.
+      rewrite H2 at 2.
 
       eapply lstar_tran.
 
@@ -1345,6 +1397,7 @@ Proof.
       eapply IHt1.
       econstructor; tauto.
       eassumption.
+      eapply restl.
       eassumption.
 
     }
@@ -1367,7 +1420,7 @@ Proof.
       }
 
       repeat rewrite app_assoc in *.
-      rewrite H2.
+      rewrite H1.
       
       eapply lstar_transitive.
 
@@ -1378,7 +1431,7 @@ Proof.
       eassumption.
 
       assert ((st_evid + event_id_span (copland_compile t2)) = Nat.pred ((st_evid + event_id_span (copland_compile t2)) + 1)) by lia.
-      rewrite H3 at 2.
+      rewrite H2 at 2.
 
       eapply lstar_tran.
 
@@ -1423,6 +1476,7 @@ Proof.
       eapply IHt1.
       econstructor; tauto.
       eassumption.
+      eapply restl.
       eassumption.
 
     }
@@ -1445,7 +1499,7 @@ Proof.
       }
 
       repeat rewrite app_assoc in *.
-      rewrite H2.
+      rewrite H1.
    
       rewrite events_cvm_to_core_mt.
       
@@ -1458,7 +1512,7 @@ Proof.
       eassumption.
 
       assert ((st_evid + event_id_span (copland_compile t2)) = Nat.pred ((st_evid + event_id_span (copland_compile t2)) + 1)) by lia.
-      rewrite H3 at 2.
+      rewrite H2 at 2.
 
       eapply lstar_tran.
 
@@ -1468,6 +1522,12 @@ Proof.
       econstructor.
 Qed.
 
+
+
+(*
+
+NOTE:  this no longer holds with error results of CVM execution
+TODO:  see if lemma can be generalized (i.e. to trace prefixes?)
 
 (** * Slight reformulation of cvm_refines_events, in terms of st_trace. *)
 Corollary cvm_refines_lts_event_ordering_corrolary :
@@ -1486,7 +1546,7 @@ Proof.
   simpl in *.
   vmsts.
   simpl in *.
-  do_asome.
+  (* do_asome. *)
   subst.
   
   destruct st_ev.
@@ -1500,6 +1560,7 @@ Proof.
   {
     eapply anno_span_cvm; eauto.
     econstructor.
+    eapply restl.
     eassumption.
   }
   subst.
@@ -1507,6 +1568,8 @@ Proof.
   eapply cvm_refines_lts_events; eauto.
   econstructor; eauto.
 Qed.
+
+*)
 
 
 (** * Main correctness theorem about CVM events:  event orderings respect the 
@@ -1538,6 +1601,12 @@ Proof.
   eassumption.
 Qed.
 
+
+(*
+
+NOTE:  this no longer holds with error results of CVM execution
+See note above for cvm_refines_lts_event_ordering_corrolary
+
 Corollary cvm_respects_event_system_run :
   forall atp annt t cvm_tr ev0 ev1 bits et i i' plc_id ac,
     annoP_indexed annt t i i' ->
@@ -1550,7 +1619,7 @@ Proof.
   intros.
   unfold run_cvm in *.
   ff.
-  do_somett.
+  (* do_somett. *)
   vmsts.
   subst.
   simpl.
@@ -1588,4 +1657,6 @@ Proof.
   ff.
   econstructor. eassumption.
 Qed.
+
+*)
   
