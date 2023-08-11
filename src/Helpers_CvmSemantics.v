@@ -353,13 +353,31 @@ Proof.
     intuition; eauto;
     try (rewrite H; eauto);
     invc H; eauto.
-  - ff; eauto.
-    * eapply IHt1 in Heqp1; eauto; intuition; try congruence.
-    * eapply IHt1 in Heqp2; eauto; intuition; try congruence.
-    * admit.
-  - ff; eauto; admit.
-  - ff; eauto; admit.
-Admitted.
+  - ff; eauto;
+    repeat match goal with
+    | x : cvm_st |- _ => destruct x
+    | H1 : build_cvm t1 _ = (_, _), H2 : build_cvm t1 _ = (_, _) |- _ =>
+      eapply IHt1 in H1; eauto; simpl in *; intuition; subst; try congruence; eauto
+    | H1 : build_cvm t2 _ = (_, _), H2 : build_cvm t2 _ = (_, _) |- _ =>
+      eapply IHt2 in H1; eauto; simpl in *; intuition; subst; try congruence; eauto
+    end.
+  - ff; eauto;
+    repeat match goal with
+    | x : cvm_st |- _ => destruct x
+    | H1 : build_cvm t1 _ = (_, _), H2 : build_cvm t1 _ = (_, _) |- _ =>
+      eapply IHt1 in H1; eauto; simpl in *; intuition; subst; try congruence; eauto
+    | H1 : build_cvm t2 _ = (_, _), H2 : build_cvm t2 _ = (_, _) |- _ =>
+      eapply IHt2 in H1; eauto; simpl in *; intuition; subst; try congruence; eauto
+    end.
+  - ff; eauto;
+    repeat match goal with
+    | x : cvm_st |- _ => destruct x
+    | H1 : build_cvm t1 _ = (_, _), H2 : build_cvm t1 _ = (_, _) |- _ =>
+      eapply IHt1 in H1; eauto; simpl in *; intuition; subst; try congruence; eauto
+    | H1 : build_cvm t2 _ = (_, _), H2 : build_cvm t2 _ = (_, _) |- _ =>
+      eapply IHt2 in H1; eauto; simpl in *; intuition; subst; try congruence; eauto
+    end.
+Qed.
 
 (* Lemma stating the following:  If all starting parameters to the cvm_st are the same, except 
    for possibly the trace, then all of those final parameters should also be equal. *)
