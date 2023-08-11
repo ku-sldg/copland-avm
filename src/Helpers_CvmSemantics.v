@@ -30,7 +30,8 @@ Lemma ac_immut : forall t e tr p i ac,
 Proof.
   induction t; repeat (monad_unfold; simpl in *); intuition.
   - destruct a; monad_unfold; eauto.
-    destruct (aspCb ac a p (encodeEvRaw (get_bits e)) (get_bits e)) eqn:E1; simpl in *; eauto.
+    destruct (aspCb ac a p (encodeEvRaw (get_bits e)) (get_bits e)) eqn:E1; simpl in *; eauto;
+    destruct c; eauto.
   - pose proof (IHt1 e tr p i ac).
     destruct (build_cvm t1 {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i; st_AM_config := ac |}) eqn:C1;
     simpl in *; eauto;
@@ -258,7 +259,8 @@ Proof.
   induction t; intros; monad_simp.
   - destruct a; monad_simp; invc H; invc H0; eauto;
     destruct (aspCb ac a p (encodeEvRaw (get_bits e)) (get_bits e)); 
-    simpl in *; invc H1; invc H2; eauto.
+    simpl in *; invc H1; invc H2; eauto;
+    destruct c; invc H0; invc H1; eauto.
   - invc H; invc H0; eauto.
   - destruct (build_cvm t1 {| st_ev := e; st_trace := tr1; st_pl := p; st_evid := i1; st_AM_config := ac |}) eqn:E1;
     destruct (build_cvm t1 {| st_ev := e; st_trace := tr2; st_pl := p; st_evid := i2; st_AM_config := ac |}) eqn:E2;
@@ -348,7 +350,7 @@ Proof.
     try (invc H; eauto);
     destruct (aspCb ac a p (encodeEvRaw (get_bits e)) (get_bits e)); 
     monad_simp; invc H1; invc H2; eauto; simpl in *;
-    try (rewrite H3; eauto).
+    try (rewrite H3; eauto); ff; eauto.
   - invc H; invc H0; simpl in *; 
     intuition; eauto;
     try (rewrite H; eauto);

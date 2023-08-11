@@ -2,27 +2,30 @@
    https://github.com/ku-sldg/negotiation20/blob/master/src/Manifest/Manifest.v
 *)
 
-Require Import AbstractedTypes Term_Defs_Core Maps 
+Require Import AbstractedTypes Term_Defs_Core Maps String
   Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq.
 
 Require Import List.
 Import ListNotations.
 
-Inductive CallBackErrors : Type :=
-| Unavailable : CallBackErrors
-| Runtime : CallBackErrors.
+Inductive DispatcherErrors : Type :=
+| Unavailable   : DispatcherErrors
+| Runtime       : DispatcherErrors.
 
-Definition CakeML_ASPCallback : Type := 
-  ASP_PARAMS -> Plc -> BS -> RawEv -> ResultT BS CallBackErrors.
+Inductive CallBackErrors : Type := 
+| messageLift   : string -> CallBackErrors.
+
+Definition CakeML_ASPCallback (ErrType : Type) : Type := 
+  ASP_PARAMS -> Plc -> BS -> RawEv -> ResultT BS ErrType.
 
 Definition CakeML_PubKeyCallback : Type := 
-  Plc -> ResultT PublicKey CallBackErrors.
+  Plc -> ResultT PublicKey DispatcherErrors.
 
 Definition CakeML_PlcCallback : Type := 
-  Plc -> ResultT UUID CallBackErrors.
+  Plc -> ResultT UUID DispatcherErrors.
 
 Definition CakeML_uuidCallback : Type :=
-  UUID -> ResultT Plc CallBackErrors.
+  UUID -> ResultT Plc DispatcherErrors.
 
 (*
 Definition PlcMap := MapC Plc Address.
@@ -49,7 +52,7 @@ Definition PlcMap := MapC Plc Address.
 (** Representation of a system's environment/resources used to populate a 
     ConcreteManifest based on an abstract Manifest. *)
   Record AM_Library := {
-    ASPServer_Cb        : ASP_Address -> CakeML_ASPCallback ;
+    ASPServer_Cb        : ASP_Address -> (CakeML_ASPCallback CallBackErrors) ;
     PubKeyServer_Cb     : ASP_Address -> CakeML_PubKeyCallback ;
     PlcServer_Cb        : ASP_Address -> CakeML_PlcCallback ;
     UUIDServer_Cb       : ASP_Address -> CakeML_uuidCallback ;
@@ -61,7 +64,7 @@ Definition PlcMap := MapC Plc Address.
     UUIDServer_Addr   : ASP_Address ;
 
     (* Local Mappings *)
-    Local_ASPS        : MapC ASP_ID CakeML_ASPCallback ;
+    Local_ASPS        : MapC ASP_ID (CakeML_ASPCallback CallBackErrors) ;
 
     Local_Plcs        : MapD Plc UUID ;
     Local_PubKeys     : MapD Plc PublicKey ;
@@ -86,5 +89,12 @@ Definition PlcMap := MapC Plc Address.
     UUID_Server     : ASP_Address ;
   }.
 
-
+Record AM_Config : Type := 
+  mkAmConfig {
+    concMan : ConcreteManifest ;
+    aspCb : (CakeML_ASPCallback DispatcherErrors) ;
+    plcCb : CakeML_PlcCallback ;
+    pubKeyCb : CakeML_PubKeyCallback ;
+    uuidCb : CakeML_uuidCallback ;
+  }.
 

@@ -1,6 +1,6 @@
   
 Require Import Maps AbstractedTypes EqClass Term_Defs_Core Manifest_Admits Manifest
-  ErrorStMonad_Coq.
+  ErrorStMonad_Coq Term_Defs.
   
 
 Require Import List.
@@ -22,20 +22,25 @@ Import ListNotations.
 
   (* This function will be a dispatcher for either local ASPS to CakeMLCallback, or pass them off to the ASP_Server *)
   Definition generate_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest)
-      : ConcreteManifest -> CakeML_ASPCallback :=
+      : ConcreteManifest -> (CakeML_ASPCallback DispatcherErrors) :=
     let local_asps_map := al.(Local_ASPS) in
     let abstract_asps := am.(asps) in
-    let shrunk_map : (MapC ASP_ID CakeML_ASPCallback) := 
+    let shrunk_map : (MapC ASP_ID (CakeML_ASPCallback CallBackErrors)) := 
       minify_mapC local_asps_map (fun x => if (in_dec (EqClass_impl_DecEq _) x abstract_asps) then true else false) in
     let asp_server_cb := al.(ASPServer_Cb) in
     fun (cman : ConcreteManifest) =>
       let asp_server_addr := cman.(ASP_Server) in
-      fun (par : ASP_PARAMS) =>
+      fun (par : ASP_PARAMS) (p : Plc) (bs : BS) (rawEv : RawEv) =>
         let (aspid, args, plc, targ) := par in
           (* check is the ASPID is a local, with a callback *)
           match (map_get shrunk_map aspid) with
-          | Some cb => (cb par)
-          | None => fun _ => fun _ => fun _ => errC Unavailable 
+          | Some cb => 
+            match (cb par p bs rawEv) with
+            | resultC r => resultC r
+            | errC (messageLift msg) => (* TODO: Do something with msg *)
+                errC Runtime
+            end
+          | None => errC Unavailable 
             (* (asp_server_cb asp_server_addr par) *)
           end.
 
@@ -90,20 +95,11 @@ Import ListNotations.
         end.
 
   (* This is a rough type signature for the "manifest compiler".  Still some details to be ironed out... *)
-  Definition manifest_compiler (m : Manifest) (al : AM_Library) 
-    : (ConcreteManifest * 
-      (ConcreteManifest -> CakeML_ASPCallback) * 
-      (ConcreteManifest -> CakeML_PlcCallback) * 
-      (ConcreteManifest -> CakeML_PubKeyCallback) * 
-      (ConcreteManifest -> CakeML_uuidCallback)) :=
+  Definition manifest_compiler (m : Manifest) (al : AM_Library) : AM_Config :=
   (* The output of this function is a Concrete manifest, and a 
   function that can be used like "check_asp_EXTD".
   This function will be used in extraction to either dispatch ASPs to the ASP server, or call a local callback *)
-    let asp_cb := (generate_ASP_dispatcher al m) in
-    let plc_cb := (generate_Plc_dispatcher al m) in
-    let pubkey_cb := (generate_PubKey_dispatcher al m) in
-    let uuid_cb := (generate_UUID_dispatcher al m) in
-    let concrete_man := {|
+  let cm := {|
       my_plc := m.(my_abstract_plc) ;
 
       Concrete_ASPs := m.(asps) ;
@@ -116,4 +112,10 @@ Import ListNotations.
       Plc_Server := al.(PlcServer_Addr) ;
       UUID_Server := al.(UUIDServer_Addr);
     |} in
-      (concrete_man, asp_cb, plc_cb, pubkey_cb, uuid_cb).
+  {|
+    concMan   := cm ;
+    aspCb     := (generate_ASP_dispatcher al m) cm ;
+    plcCb     := (generate_Plc_dispatcher al m) cm ;
+    pubKeyCb  := (generate_PubKey_dispatcher al m) cm ;
+    uuidCb    := (generate_UUID_dispatcher al m) cm ;
+  |}.

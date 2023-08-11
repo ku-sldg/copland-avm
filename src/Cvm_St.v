@@ -8,6 +8,8 @@ Require Import ConcreteEvidence ErrorStMonad_Coq AbstractedTypes Manifest Manife
 Require Import List.
 Import ListNotations.
 
+Require Export Manifest.
+
 (** CVM monad state structure.
 
     st_ev - Evidence bundle.  Holds raw evidence sequence along with its 
@@ -18,14 +20,7 @@ Import ListNotations.
     st_evid - Monotonic event ID counter.  Incremented after each 
               attestation-relevant event/invocation.
  *)
-Record AM_Config : Type := 
-  mkAmConfig {
-    concMan : ConcreteManifest ;
-    aspCb : CakeML_ASPCallback ;
-    plcCb : CakeML_PlcCallback ;
-    pubKeyCb : CakeML_PubKeyCallback ;
-    uuidCb : CakeML_uuidCallback ;
-  }.
+
 
 Definition emptyConcreteMan : ConcreteManifest := {|
   my_plc := min_id_type;
@@ -62,7 +57,8 @@ Definition empty_vmst : cvm_st := mk_st (evc [] mt) [] min_id_type 0 empty_am_co
 Inductive CVM_Error : Type := 
 | at_error_static : Term -> Plc -> EvC -> CVM_Error
 | at_error_dynamic : Term -> UUID -> EvC -> CVM_Error
-| callback_error : CallBackErrors -> CVM_Error.
+| dispatch_error : DispatcherErrors -> CVM_Error.
+(* | callback_error : CallBackErrors -> CVM_Error. *)
 
 (** CVM monad -- instantiation of the general ResultT monad with cvm_st *)
 Definition CVM A := Err cvm_st A CVM_Error.

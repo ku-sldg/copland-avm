@@ -22,7 +22,7 @@ Admitted.
 (** * Stub for invoking external ASP procedures.  
       Extracted code should not need to use the Plc or Event_ID parameters 
       (those can be erased upon extraction). *)
-Definition do_asp (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) (ac : AM_Config) : ResultT BS CallBackErrors :=
+Definition do_asp (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) (ac : AM_Config) : ResultT BS DispatcherErrors :=
   ac.(aspCb) params mpl (encodeEvRaw e) e.
 
 (** * Stub for completing a remote communication session with an external AM. *)

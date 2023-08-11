@@ -99,12 +99,11 @@ Definition fwd_asp (fwd:FWD) (bs:BS) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
   | KEEP => e
   end.
 
-Definition do_asp' (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) (* (ac : AM_Config) *) : CVM BS :=
-
+Definition do_asp' (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) : CVM BS :=
   ac <- get_amConfig ;;
   match (do_asp params e mpl x ac) with
   | resultC r => ret r
-  | errC e => failm (callback_error e)
+  | errC e => failm (dispatch_error e)
   end.
 
 (* Simulates invoking an arbitrary ASP.  Tags the event, builds and returns 

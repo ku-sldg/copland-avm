@@ -20,6 +20,13 @@ Proof.
   - right; erewrite <- eqb_leibniz0; intros HC; congruence.
 Qed.
 
+Theorem eqb_refl : forall {A : Type} `{EqClass A} a,
+  eqb a a = true.
+Proof.
+  intros;
+  erewrite eqb_leibniz; eauto.
+Qed.
+
 Fixpoint general_list_eq_class_eqb {A : Type} `{H : EqClass A} (l1 l2 : list A) : bool :=
   match l1, l2 with
   | nil, nil => true
