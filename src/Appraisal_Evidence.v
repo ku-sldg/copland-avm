@@ -2014,11 +2014,41 @@ Proof.
     dd.
     intuition.
     +
-    admit.
+      assert (errC c0 = resultC u).
+      {
+        wrap_ccp_dohi. ff.
+        invc Heqp6. invc Heqp11.
+        edestruct cvm_errors_deterministic.
+        apply H0.
+        apply H.
+        ff.
+
+      }
+    solve_by_inversion.
     +
-    admit.
+    assert (errC c = resultC u).
+      {
+        wrap_ccp_dohi. ff.
+        invc Heqp0. invc Heqp7.
+        edestruct cvm_errors_deterministic.
+        apply H0.
+        apply H.
+        ff.
+
+      }
+    solve_by_inversion.
     +
-    admit.
+    assert (errC c1 = resultC u).
+      {
+        wrap_ccp_dohi. ff.
+        invc Heqp6. invc Heqp11.
+        edestruct cvm_errors_deterministic.
+        apply H0.
+        apply H.
+        ff.
+
+      }
+    solve_by_inversion.
     +
     repeat rewrite <- app_assoc in *.
     cumul_ih.
@@ -2027,11 +2057,39 @@ Proof.
     dd.
     intuition.
     +
-    admit.
+    assert (errC c = resultC u0).
+      {
+        wrap_ccp_dohi. ff.
+        invc Heqp0. invc Heqp7.
+        edestruct cvm_errors_deterministic.
+        apply H0.
+        apply H.
+        ff.
+      }
+    solve_by_inversion.
     +
-    admit.
+    assert (errC c = resultC u).
+      {
+        wrap_ccp_dohi. ff.
+        invc Heqp0. invc Heqp7.
+        edestruct cvm_errors_deterministic.
+        apply H0.
+        apply H.
+        ff.
+      }
+    solve_by_inversion.
     +
-    admit.
+    assert (errC c = resultC tt).
+      {
+        wrap_ccp_dohi. ff.
+        invc Heqp0. invc Heqp7.
+        edestruct cvm_errors_deterministic.
+        apply H0.
+        apply H.
+        ff.
+
+      }
+    solve_by_inversion.
     +
     repeat rewrite <- app_assoc in *.
     wrap_ccp_dohi.
@@ -2068,9 +2126,7 @@ Proof.
   cumul_ih.
   dd.
   intuition.
-Admitted.
-
-
+Qed.
 
 (** * Instance of st_trace_cumul'' where k=[] *)
 Lemma st_trace_cumul' : forall t m e p v_full v_suffix res i ac,
@@ -2131,17 +2187,45 @@ Proof.
   ff.
   destruct H1; destruct res; ff.
   +
-    assert (c = c0). admit.
+    assert (c = c0).
+    {
+      edestruct cvm_errors_deterministic.
+      invc H2.
+      invc H.
+      apply H1.
+      invc H2.
+      apply H0.
+      ff.
+
+    }
     subst.
     eassumption.
   +
-    admit.
+  assert (errC c = resultC tt).
+  {
+    wrap_ccp_dohi. ff.
+    invc H2. invc H.
+    edestruct cvm_errors_deterministic.
+    apply H0.
+    apply H1.
+    ff.
+  }
+solve_by_inversion.
   +
-   admit.
+  assert (errC c = resultC tt).
+  {
+    wrap_ccp_dohi. ff.
+    invc H2. invc H.
+    edestruct cvm_errors_deterministic.
+    apply H0.
+    apply H1.
+    ff.
+  }
+solve_by_inversion.
   +
     wrap_ccp_dohi.
     eassumption.
-Admitted.
+Qed.
 
 Ltac do_suffix name :=
   match goal with
@@ -2220,7 +2304,16 @@ Proof.
     repeat ff.
     destruct H0; ff.
     +
-    admit.
+    assert (errC c = resultC tt).
+    {
+      wrap_ccp_dohi. ff.
+      invc H1. invc Heqp1.
+      edestruct cvm_errors_deterministic.
+      apply H.
+      apply H0.
+      ff.
+    }
+  solve_by_inversion.
     +
     ff.
 
@@ -2236,7 +2329,7 @@ Proof.
       repeat find_rw_in_goal.
       eapply st_trace_cumul'; 
         eassumption.
-Admitted.
+Qed.
 
 
 (** Structural convenience lemma:  reconfigures CVM execution to use an empty initial trace *)
