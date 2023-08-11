@@ -1474,6 +1474,7 @@ Proof.
       try (econstructor; econstructor; reflexivity).
   -
     wrap_ccp_anno.
+    repeat ff.
 
     assert (n = cvmi + event_id_span' t + 1) by lia.
     subst.
@@ -1498,8 +1499,8 @@ Proof.
       auto.
     +
       assert ( (In ev (cvm_events t p e)) \/
-               ev = (rpy (cvmi + 1 + event_id_span' t) p' p
-                         (get_et (IO_Stubs.doRemote_session t p (evc bits e))))
+               ev = (rpy (cvmi + 1 + event_id_span' t) p' p (eval t p e)
+                         (* (get_et (IO_Stubs.doRemote_session t p (evc bits e))) *) )
              ).
       {
 
@@ -1547,8 +1548,9 @@ Proof.
       eassumption.
       Focus 2.
       subst.
+      (*
       Print remote_Evidence_Type_Axiom.
-      rewrite remote_Evidence_Type_Axiom.
+      rewrite remote_Evidence_Type_Axiom. *)
       rewrite eval_aeval'.
       Print events.
       apply evtsattrpy.
@@ -1562,7 +1564,7 @@ Proof.
       simpl in *.
       assert (S (cvmi + event_id_span' (unanno a)) =
               cvmi + event_id_span' (unanno a) + 1) by lia.
-      rewrite H5.
+      rewrite H4.
       eassumption.
   - (* alseq case *)
     invc H.

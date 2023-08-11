@@ -179,6 +179,13 @@ Definition tag_RPY (p:Plc) (q:Plc) (e:EvC) : CVM unit :=
   rpyi <- inc_id ;;
   add_tracem [rpy rpyi p q (get_et e)].
 
+Definition doRemote_session' (t:Term) (pTo:Plc) (e:EvC) : CVM EvC := 
+  ac <- get_amConfig ;;
+  match (do_remote t pTo e ac) with 
+  | resultC ev => ret (evc ev (eval t pTo (get_et e)))  
+  | errC e => failm (callback_error e)
+  end.
+
 Definition remote_session (t:Term) (p:Plc) (q:Plc) (e:EvC) : CVM EvC :=
   tag_REQ t p q e ;;
   e' <- doRemote_session' t q e ;;

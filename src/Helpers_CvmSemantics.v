@@ -31,6 +31,10 @@ Proof.
   induction t; repeat (monad_unfold; simpl in *); intuition.
   - destruct a; monad_unfold; eauto.
     destruct (aspCb ac a p (encodeEvRaw (get_bits e)) (get_bits e)) eqn:E1; simpl in *; eauto.
+
+  - (* at case *)
+    repeat ff. 
+
   - pose proof (IHt1 e tr p i ac).
     destruct (build_cvm t1 {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i; st_AM_config := ac |}) eqn:C1;
     simpl in *; eauto;
@@ -39,7 +43,8 @@ Proof.
     pose proof (IHt2 st_ev st_trace st_pl st_evid st_AM_config).
     destruct (build_cvm t2 {| st_ev := st_ev; st_trace := st_trace; st_pl := st_pl; st_evid := st_evid; st_AM_config := st_AM_config |}) eqn:C2;
     simpl in *; subst; eauto.
-  - monad_unfold; simpl in *.
+  - 
+    monad_unfold; simpl in *.
     pose proof (IHt1 e (tr ++ [Term_Defs.split i p]) p (i + 1) ac).
     destruct (build_cvm t1 {| st_ev := e; st_trace := tr ++ [Term_Defs.split i p]; st_pl := p; st_evid := (i + 1); st_AM_config := ac |}) eqn:C1;
     simpl in *; eauto;
@@ -76,9 +81,8 @@ Proof.
       try reflexivity; simpl in *.
       repeat ff.
       
-  -
-    df.
-    reflexivity.
+  - (* at case *)
+    repeat ff.
   -
     simpl in *.
     monad_unfold.
@@ -233,8 +237,6 @@ Proof.
   subst; destruct st; auto.
 Defined.
 
-Print build_cvm.
-
 (* Hack to apply a specific induction hypothesis in some proofs *)
 Ltac anhl :=
   annogo;
@@ -259,7 +261,7 @@ Proof.
   - destruct a; monad_simp; invc H; invc H0; eauto;
     destruct (aspCb ac a p (encodeEvRaw (get_bits e)) (get_bits e)); 
     simpl in *; invc H1; invc H2; eauto.
-  - invc H; invc H0; eauto.
+  - repeat ff.
   - destruct (build_cvm t1 {| st_ev := e; st_trace := tr1; st_pl := p; st_evid := i1; st_AM_config := ac |}) eqn:E1;
     destruct (build_cvm t1 {| st_ev := e; st_trace := tr2; st_pl := p; st_evid := i2; st_AM_config := ac |}) eqn:E2;
     destruct r, r0; invc H; invc H0; destruct u, u0, c, c0.
@@ -349,10 +351,12 @@ Proof.
     destruct (aspCb ac a p (encodeEvRaw (get_bits e)) (get_bits e)); 
     monad_simp; invc H1; invc H2; eauto; simpl in *;
     try (rewrite H3; eauto).
+  - repeat ff.
+  (*
   - invc H; invc H0; simpl in *; 
     intuition; eauto;
     try (rewrite H; eauto);
-    invc H; eauto.
+    invc H; eauto. *)
   - ff; eauto;
     repeat match goal with
     | x : cvm_st |- _ => destruct x

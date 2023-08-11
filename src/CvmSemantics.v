@@ -250,6 +250,8 @@ Proof.
         
   -
     wrap_ccp.
+    repeat ff.
+    unfold do_remote in *; repeat ff.
 
     eapply wf_ec_preserved_remote; eauto.
 
@@ -432,6 +434,7 @@ Defined.
       
   
   -
+    repeat ff.
     lia.
   -
     wrap_ccp_anno.
@@ -729,10 +732,11 @@ Proof.
     
   - (* aatt case *)
     wrap_ccp_anno.
+    repeat ff.
 
     assert (n = i + event_id_span' t + 1) by lia.
     subst.
-    clear H2.
+    (* clear H2. *)
    
     assert (t = unanno a) as H3.
     {
@@ -762,6 +766,12 @@ Proof.
     eassumption.
 
     simpl.
+    assert (aeval a p et = eval (unanno a) p et).
+    {
+      rewrite <- eval_aeval'.
+      tauto.
+    }
+    (*
     assert (et' = (aeval a p et)).
     {
       rewrite <- eval_aeval'.
@@ -769,19 +779,28 @@ Proof.
       rewrite <- H3.
       rewrite H0.
       tauto.
-    }
+    } *)
+    repeat find_rewrite.
+    
     rewrite <- H3.
+    (*
     rewrite <- H1.
 
-    rewrite H0.
+    rewrite H0. *)
     simpl.
 
     assert (((i + 1 + event_id_span' t)) = Nat.pred (S (i + event_id_span' t + 1))) by lia.
+
+    repeat find_rewrite.
+    (*     rewrite H2 at 1. 
+    econstructor. *)
     
     
-    rewrite H2 at 1.
+
     
     econstructor.
+
+    Print stattstop.
     
     apply stattstop.
     econstructor.
