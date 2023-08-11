@@ -1450,6 +1450,7 @@ Defined.
       
   
   - (* at case *)
+    repeat ff.
     lia.
   - (* lseq case *)
     wrap_ccp_anno.
@@ -1791,7 +1792,9 @@ Proof.
     
   - (* at case *)
     wrap_ccp.
-
+    repeat ff.
+    unfold do_remote in *.
+    ff.
     eapply wf_ec_preserved_remote; eauto.
 
   - (* lseq case *)
@@ -1947,7 +1950,8 @@ Proof.
       reflexivity. *)
   - (* at case *)
     wrap_ccp.
-    repeat rewrite app_assoc.
+    repeat ff;
+    repeat rewrite app_assoc;
     reflexivity.
 
   - (* alseq case *)
@@ -2014,11 +2018,41 @@ Proof.
     dd.
     intuition.
     +
-    admit.
+      assert (errC c0 = resultC u).
+      {
+        wrap_ccp_dohi. ff.
+        invc Heqp6. invc Heqp11.
+        edestruct cvm_errors_deterministic.
+        apply H0.
+        apply H.
+        ff.
+
+      }
+    solve_by_inversion.
     +
-    admit.
+    assert (errC c = resultC u).
+      {
+        wrap_ccp_dohi. ff.
+        invc Heqp0. invc Heqp7.
+        edestruct cvm_errors_deterministic.
+        apply H0.
+        apply H.
+        ff.
+
+      }
+    solve_by_inversion.
     +
-    admit.
+    assert (errC c1 = resultC u).
+      {
+        wrap_ccp_dohi. ff.
+        invc Heqp6. invc Heqp11.
+        edestruct cvm_errors_deterministic.
+        apply H0.
+        apply H.
+        ff.
+
+      }
+    solve_by_inversion.
     +
     repeat rewrite <- app_assoc in *.
     cumul_ih.
@@ -2027,11 +2061,39 @@ Proof.
     dd.
     intuition.
     +
-    admit.
+    assert (errC c = resultC u0).
+      {
+        wrap_ccp_dohi. ff.
+        invc Heqp0. invc Heqp7.
+        edestruct cvm_errors_deterministic.
+        apply H0.
+        apply H.
+        ff.
+      }
+    solve_by_inversion.
     +
-    admit.
+    assert (errC c = resultC u).
+      {
+        wrap_ccp_dohi. ff.
+        invc Heqp0. invc Heqp7.
+        edestruct cvm_errors_deterministic.
+        apply H0.
+        apply H.
+        ff.
+      }
+    solve_by_inversion.
     +
-    admit.
+    assert (errC c = resultC tt).
+      {
+        wrap_ccp_dohi. ff.
+        invc Heqp0. invc Heqp7.
+        edestruct cvm_errors_deterministic.
+        apply H0.
+        apply H.
+        ff.
+
+      }
+    solve_by_inversion.
     +
     repeat rewrite <- app_assoc in *.
     wrap_ccp_dohi.
@@ -2068,9 +2130,7 @@ Proof.
   cumul_ih.
   dd.
   intuition.
-Admitted.
-
-
+Qed.
 
 (** * Instance of st_trace_cumul'' where k=[] *)
 Lemma st_trace_cumul' : forall t m e p v_full v_suffix res i ac,
@@ -2131,17 +2191,45 @@ Proof.
   ff.
   destruct H1; destruct res; ff.
   +
-    assert (c = c0). admit.
+    assert (c = c0).
+    {
+      edestruct cvm_errors_deterministic.
+      invc H2.
+      invc H.
+      apply H1.
+      invc H2.
+      apply H0.
+      ff.
+
+    }
     subst.
     eassumption.
   +
-    admit.
+  assert (errC c = resultC tt).
+  {
+    wrap_ccp_dohi. ff.
+    invc H2. invc H.
+    edestruct cvm_errors_deterministic.
+    apply H0.
+    apply H1.
+    ff.
+  }
+solve_by_inversion.
   +
-   admit.
+  assert (errC c = resultC tt).
+  {
+    wrap_ccp_dohi. ff.
+    invc H2. invc H.
+    edestruct cvm_errors_deterministic.
+    apply H0.
+    apply H1.
+    ff.
+  }
+solve_by_inversion.
   +
     wrap_ccp_dohi.
     eassumption.
-Admitted.
+Qed.
 
 Ltac do_suffix name :=
   match goal with
@@ -2220,7 +2308,16 @@ Proof.
     repeat ff.
     destruct H0; ff.
     +
-    admit.
+    assert (errC c = resultC tt).
+    {
+      wrap_ccp_dohi. ff.
+      invc H1. invc Heqp1.
+      edestruct cvm_errors_deterministic.
+      apply H.
+      apply H0.
+      ff.
+    }
+  solve_by_inversion.
     +
     ff.
 
@@ -2236,7 +2333,7 @@ Proof.
       repeat find_rw_in_goal.
       eapply st_trace_cumul'; 
         eassumption.
-Admitted.
+Qed.
 
 
 (** Structural convenience lemma:  reconfigures CVM execution to use an empty initial trace *)
@@ -2320,7 +2417,9 @@ Defined.
 
 
 
-
+Axiom cvm_evidence_correct_type : forall t p e e',
+  cvm_evidence t p e = e' -> 
+  get_et e' = eval t p (get_et e).
 
 
 (** * Lemma:  parallel CVM threads preserve the reference Evidence Type semantics (eval). *)
@@ -2330,11 +2429,22 @@ Lemma par_evidence_r: forall l p bits bits' et et' t2,
 Proof.
   intros.
   rewrite par_evidence in H.
+  assert (get_et (evc bits' et') = eval t2 p (get_et (evc bits et))).
+  {
+    eapply cvm_evidence_correct_type; eauto.
+  }
+  ff.
+
+  (*
+  edestruct cvm_evidence_correct_type.
+  eassumption.
   rewrite <- at_evidence in H.
   rewrite <- remote_Evidence_Type_Axiom with (bits := bits).
   rewrite H.
   simpl.
   tauto.
+  *) 
+
 Qed.
          
 (** * Axiom about "simulated" parallel semantics of CVM execution:
@@ -2369,8 +2479,10 @@ Proof.
   - (* at case *)
     rewrite <- ccp_iff_cc in *.
     dd.
+    repeat ff.
+    (*
     erewrite <- remote_Evidence_Type_Axiom.
-    jkjke.
+    jkjke. *)
 
   - (* alseq case *)
     do_suffix blah.
@@ -2685,22 +2797,41 @@ Proof.
 
   - (* at case *)
     wrap_ccp_anno.
-    ff.
+    repeat ff.
     wrap_ccp_anno.
+    repeat ff.
 
     do_assert_remote (copland_compile t') (evc bits et) p (S i) ac'.
 
-    assert (evc bits' et' = cvm_evidence_core (copland_compile t') p (evc bits et)). {
+    
+    assert (evc bits' (eval t' p et) = cvm_evidence_core (copland_compile t') p (evc bits et)). {
 
+    Axiom cvm_evidence_core_at : forall t p bits bits' et ac,
+    do_remote t p (evc bits et) ac = resultC bits' -> 
+    cvm_evidence_core (copland_compile t) p (evc bits et) = evc bits' (eval t p et).
+
+    symmetry.
+
+    eapply cvm_evidence_core_at.
+    eauto.
+
+    (*
+    Axiom cvm_evidence_correct_type : forall t p e e',
+  cvm_evidence t p e = e' -> 
+  get_et e' = eval t p (get_et e).
+    *)
+
+    (*
       rewrite at_evidence in *.
       unfold cvm_evidence in *.
       rewrite H5.
-      tauto.
+      tauto.  *)
     }
 
     eapply IHt'.
     econstructor.
-    rewrite <- H7 in H4.
+    
+    rewrite <- H5 in H4.
     eassumption.
     econstructor; eauto.
     assert (n = (S i + event_id_span (copland_compile t'))).

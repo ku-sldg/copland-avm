@@ -14,6 +14,10 @@
 
 Require Import Term_Defs ConcreteEvidence ErrorStMonad_Coq IO_Type Manifest Manifest_Admits Cvm_St.
 
+
+Require Import List.
+Import ListNotations.
+
 (** * Stub to encode a sequence of BS values to a single BS value.
       Real implmenetation will depend on the instantition of BS *)
 Definition encodeEvRaw(e:RawEv): BS.
@@ -25,9 +29,25 @@ Admitted.
 Definition do_asp (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) (ac : AM_Config) : ResultT BS DispatcherErrors :=
   ac.(aspCb) params mpl (encodeEvRaw e) e.
 
+(*
 (** * Stub for completing a remote communication session with an external AM. *)
 Definition doRemote_session (t:Term) (pTo:Plc) (e:EvC) : EvC.
 Admitted.
+*)
+
+Definition doRemote_uuid (t:Term) (uuid:UUID) (ev:RawEv) : ResultT RawEv CallBackErrors.
+Admitted.
+
+Definition do_remote (t:Term) (pTo:Plc) (e:EvC) (ac: AM_Config) : ResultT RawEv DispatcherErrors := 
+  let remote_uuid_res : ResultT UUID DispatcherErrors := ac.(plcCb) pTo in
+    match remote_uuid_res with 
+    | resultC uuid => 
+        match doRemote_uuid t uuid (get_bits e) with
+        | resultC v => resultC v
+        | errC (messageLift msg) => errC Runtime
+        end
+    | errC e => errC e
+    end.
 
 (** * Stub to simulate evidence collected by a parallel CVM instance *)
 Definition parallel_vm_thread (l:Loc) (t:Core_Term) (p:Plc) (e:EvC) : EvC.
@@ -41,8 +61,10 @@ Admitted.
 Definition am_sendReq_app (t:Term) (p:Plc) (e:Evidence) (ev:RawEv): AppResultC.
 Admitted.
 
+(*
 Definition doRemote_session' (t:Term) (pTo:Plc) (e:EvC) : IO EvC :=
   ret (doRemote_session t pTo e).
+*)
 
 Definition do_start_par_thread (loc:Loc) (t:Core_Term) (e:RawEv) : IO unit :=
   ret tt.
