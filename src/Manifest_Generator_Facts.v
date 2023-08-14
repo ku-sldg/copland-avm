@@ -1931,3 +1931,182 @@ Proof.
     apply manifest_generator_cumul.
     apply env_subset_refl.  
 Qed.
+
+Lemma knows_of_helper : forall stEnv p p' t,
+  knowsOf_Env p' (manifest_generator' p t (at_manifest_generator p' p stEnv)) p.
+Proof.
+  unfold at_manifest_generator, knowsOf_Env, manifest_update_env, map_set, 
+    knowsof_manifest_update; simpl in *. intros.
+  destruct (map_get stEnv p') eqn:E; simpl in *; eauto.
+  - destruct m.
+    pose proof (manifest_generator_cumul t p ((p',
+         {|
+           my_abstract_plc := my_abstract_plc;
+           asps := asps;
+           uuidPlcs := p :: uuidPlcs;
+           pubKeyPlcs := pubKeyPlcs;
+           targetPlcs := targetPlcs;
+           policy := policy
+         |}) :: stEnv) ((p',
+         {|
+           my_abstract_plc := my_abstract_plc;
+           asps := asps;
+           uuidPlcs := p :: uuidPlcs;
+           pubKeyPlcs := pubKeyPlcs;
+           targetPlcs := targetPlcs;
+           policy := policy
+         |}) :: stEnv)); simpl in *;
+    pose proof (env_subset_refl ((p',
+        {|
+          my_abstract_plc := my_abstract_plc;
+          asps := asps;
+          uuidPlcs := p :: uuidPlcs;
+          pubKeyPlcs := pubKeyPlcs;
+          targetPlcs := targetPlcs;
+          policy := policy
+        |}) :: stEnv)); intuition; clear H0;
+    unfold Environment_subset, manifest_subset in *; simpl in *;
+    pose proof (H1 {|
+           my_abstract_plc := my_abstract_plc;
+           asps := asps;
+           uuidPlcs := p :: uuidPlcs;
+           pubKeyPlcs := pubKeyPlcs;
+           targetPlcs := targetPlcs;
+           policy := policy
+         |} p'); rewrite EqClass.eqb_refl in *; intuition.
+    destruct H0; clear H1; intuition; simpl in *;
+    rewrite H0; eauto.
+  - pose proof (manifest_generator_cumul t p ((p',
+         {|
+           my_abstract_plc := Manifest_Admits.empty_Manifest_Plc;
+           asps := [];
+           uuidPlcs := [p];
+           pubKeyPlcs := [];
+           targetPlcs := [];
+           policy := Manifest_Admits.empty_PolicyT
+         |}) :: stEnv) ((p',
+         {|
+           my_abstract_plc := Manifest_Admits.empty_Manifest_Plc;
+           asps := [];
+           uuidPlcs := [p];
+           pubKeyPlcs := [];
+           targetPlcs := [];
+           policy := Manifest_Admits.empty_PolicyT
+         |}) :: stEnv)); simpl in *; 
+    pose proof (env_subset_refl ((p',
+         {|
+           my_abstract_plc := Manifest_Admits.empty_Manifest_Plc;
+           asps := [];
+           uuidPlcs := [p];
+           pubKeyPlcs := [];
+           targetPlcs := [];
+           policy := Manifest_Admits.empty_PolicyT
+         |}) :: stEnv)); intuition; clear H0;
+    unfold Environment_subset, manifest_subset in *; simpl in *.
+    pose proof (H1 {|
+           my_abstract_plc := Manifest_Admits.empty_Manifest_Plc;
+           asps := [];
+           uuidPlcs := [p];
+           pubKeyPlcs := [];
+           targetPlcs := [];
+           policy := Manifest_Admits.empty_PolicyT
+         |} p'). rewrite EqClass.eqb_refl in *; intuition;
+    destruct H0; clear H1; intuition; simpl in *;
+    rewrite H0; eauto.
+Qed.
+
+Theorem manifest_generator_executability_static' :
+    forall (t:Term) (p:Plc) stEnv, 
+        executable_global t p (manifest_generator' p t stEnv).
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  - (* asp case *)
+    destruct a; 
+    try (simpl in *; trivial).
+    +
+      eexists.
+      rewrite eqb_plc_refl.
+      eauto. 
+
+    + eexists.
+    rewrite eqb_plc_refl.
+    eauto. 
+    +
+      destruct a.
+      unfold canRunAsp_Env, asp_manifest_generator, manifest_update_env, 
+        asp_manifest_update, update_manifest_policy_targ, aspid_manifest_update, canRunAsp_Manifest, 
+        can_measure_target_prop, map_set; simpl in *;
+      repeat break_let; repeat break_match; repeat find_injection; simpl in *;
+      intuition; eauto; try congruence;
+      exfalso; pose proof (EqClass.eqb_leibniz p p); intuition; eauto;
+      find_rewrite; congruence.
+    +
+    cbv.
+    ff; intuition; eauto; try congruence;
+    exfalso; pose proof (eqb_leibniz p p); intuition; eauto;
+      find_rewrite; try congruence.
+    +
+    cbv.
+    ff; intuition; eauto; try congruence;
+    exfalso; pose proof (eqb_leibniz p p); intuition; eauto;
+      find_rewrite; try congruence.
+    +
+    cbv.
+    ff; intuition; eauto; try congruence;
+    exfalso; pose proof (eqb_leibniz p p); intuition; eauto;
+      find_rewrite; try congruence.
+
+  - (* at case *)
+    simpl in *; intuition; eauto.
+    eapply knows_of_helper.
+  - (* lseq case *)
+    unfold manifest_generator in *.
+    ff.
+    split.
+    +
+    eapply exec_static_cumul.
+    apply IHt1.
+    apply manifest_generator_cumul.
+    apply env_subset_refl.
+    +
+    eapply exec_static_cumul.
+    apply IHt2.
+    apply fafafa.
+    apply manifest_generator_cumul.
+    apply env_subset_refl.
+
+
+  - (* bseq case *)
+    unfold manifest_generator in *.
+    ff.
+    split.
+    +
+    eapply exec_static_cumul.
+    apply IHt1.
+    apply manifest_generator_cumul.
+    apply env_subset_refl.
+    +
+    eapply exec_static_cumul.
+    apply IHt2.
+    apply fafafa.
+    apply manifest_generator_cumul.
+    apply env_subset_refl.
+
+  - (* bpar case *)
+    unfold manifest_generator in *.
+    ff.
+    split.
+    +
+    eapply exec_static_cumul.
+    apply IHt1.
+    apply manifest_generator_cumul.
+    apply env_subset_refl.
+    +
+    eapply exec_static_cumul.
+    apply IHt2.
+    apply fafafa.
+    apply manifest_generator_cumul.
+    apply env_subset_refl.  
+Qed.

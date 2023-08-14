@@ -129,6 +129,13 @@ Definition manifest_generator_terms (p:Plc) (ts:list Term) : EnvironmentM :=
 Definition manifest_generator (t:Term) (p:Plc) : EnvironmentM :=
   manifest_generator' p t e_empty.
 
+Lemma manifest_generator_never_empty : forall t p e,
+  manifest_generator' p t e <> nil.
+Proof.
+  induction t; simpl in *; intuition; eauto.
+  - destruct a; try inversion H.
+Qed.
+
 Fixpoint places' (t:Term) (ls:list Plc) : list Plc :=
   match t with
   | asp _ => ls 
