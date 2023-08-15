@@ -34,14 +34,6 @@ Proof.
   intros; repeat erewrite eqb_leibniz; intuition.
 Qed.
 
-Theorem eqb_false_symm : forall {A : Type} `{EqClass A} a1 a2,
-  eqb a1 a2 = false <->
-  eqb a2 a1 = false.
-Proof.
-  intuition;
-  destruct (EqClass_impl_DecEq A a1 a2); subst; eauto.
-  intuition; seto
-
 Theorem eqb_transitive : forall {A : Type} `{EqClass A} a1 a2 a3,
   eqb a1 a2 = true ->
   eqb a2 a3 = true ->
