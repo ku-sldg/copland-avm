@@ -34,7 +34,8 @@ Admitted.
 Definition doRemote_session_dynamic (t:Term) (uuidTo:UUID) (e:EvC) : CVM EvC := 
   match (doRemote_session t uuidTo e) with 
   | Some e => ret e 
-  | None => failm (at_error_dynamic t uuidTo e)
+  | None => failm (at_error_dynamic t uuidTo e) 
+  (* /\ Neither should it reach this line if CVM configured properly *)
   end.
 
 (** * Stub to simulate evidence collected by a parallel CVM instance *)

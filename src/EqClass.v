@@ -27,6 +27,29 @@ Proof.
   erewrite eqb_leibniz; eauto.
 Qed.
 
+Theorem eqb_symm: forall {A : Type} `{EqClass A} a1 a2,
+  eqb a1 a2 = true <->
+  eqb a2 a1 = true.
+Proof.
+  intros; repeat erewrite eqb_leibniz; intuition.
+Qed.
+
+Theorem eqb_false_symm : forall {A : Type} `{EqClass A} a1 a2,
+  eqb a1 a2 = false <->
+  eqb a2 a1 = false.
+Proof.
+  intuition;
+  destruct (EqClass_impl_DecEq A a1 a2); subst; eauto.
+  intuition; seto
+
+Theorem eqb_transitive : forall {A : Type} `{EqClass A} a1 a2 a3,
+  eqb a1 a2 = true ->
+  eqb a2 a3 = true ->
+  eqb a1 a3 = true.
+Proof.
+  intros; repeat erewrite eqb_leibniz in *; subst; eauto.
+Qed.
+
 Fixpoint general_list_eq_class_eqb {A : Type} `{H : EqClass A} (l1 l2 : list A) : bool :=
   match l1, l2 with
   | nil, nil => true

@@ -33,7 +33,6 @@ Definition distributed_executability
     forall p t', 
       In p (places tp t) /\ 
       In t' (place_terms t tp p) ->
-  
       (exists (m:Manifest),
         Maps.map_get env_map p = Some m /\
         executable_local t' m).
