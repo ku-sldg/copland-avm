@@ -205,14 +205,16 @@ Proof.
     match goal with
       | H:  context[ map_get (minify_mapC ?l ?filt) ?a],
         H1: forall a' : ASP_ID, (exists x : _, map_get _ _ = Some x) |- _ => 
-        assert (CO : exists x, map_get (minify_mapC l filt) a = Some x);
+        assert (CO : exists x, map_get (minify_mapC l filt) a = Some x)
+        (* ;
         [
           eapply filter_resolver; eauto;
           repeat break_match; intuition; try congruence
           | 
           rewrite H in CO; destruct CO; congruence
-        ]
+        ] *)
     end.
+    * eapply filter_resolver; eauto.
   - edestruct IHt; intuition; eauto;
     repeat break_match; repeat break_if;
     repeat find_injection; repeat find_inversion;
