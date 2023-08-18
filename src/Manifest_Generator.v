@@ -139,38 +139,6 @@ Proof.
     try (destruct p0; break_if; congruence);
     try (destruct p1; break_if; congruence).
 Qed.
-(* 
-Definition p1 : Plc. Admitted.
-Definition p2 : Plc. Admitted.
-Definition asp1 : ASP_ID. Admitted.
-Definition asp2 : ASP_ID. Admitted.
-Example p1_neq_p2 : eqb p2 p1 = false. Admitted.
-Example p1_neq_p2' : eqb p1 p2 = false. Admitted.
-Definition test_term := (att p1 (att p2 (asp (ASPC ALL COMP (asp_paramsC asp1 nil p2 asp2))))).
-
-Example test1 :
-  forall envM,
-    manifest_generator test_term p2 = envM ->
-    exists absMan, map_get envM p2 = Some absMan ->
-    In p2 (uuidPlcs absMan).
-Proof.
-  intros.
-  unfold test_term, manifest_generator in *.
-  simpl in *.
-  repeat unfold asp_manifest_generator, manifest_update_env, at_manifest_generator,
-    knowsof_manifest_update, asp_manifest_update, aspid_manifest_update,
-    update_manifest_policy_targ in *; simpl in *.
-    try rewrite p1_neq_p2 in *;
-    try rewrite p1_neq_p2' in *; simpl in *.
-    rewrite eqb_refl in *; invc H; simpl in *.
-    try rewrite p1_neq_p2 in *;
-    try rewrite p1_neq_p2' in *; simpl in *.
-    rewrite p1_neq_p2' in *.
-    rewrite eqb_refl.
-  destruct envM; intros;
-  simpl in *.
-  - exfalso. eapply manifest_generator_never_empty; eauto.
-  - repeat break_match. *)
 
 Fixpoint add_to_list {A : Type} `{EqClass A} (l : list A) (v : A) : list A :=
   match l with
@@ -249,6 +217,18 @@ Fixpoint generate_manifest' (t : Term) (p : Plc)
       generate_manifest' t2 p (generate_manifest' t1 p m)
   end.
 
+Definition generate_manifest (t : Term) (p : Plc) :=
+  generate_manifest' t p (
+    {|
+      my_abstract_plc := p ;
+
+      asps := empty_Manifest.(asps) ;
+      uuidPlcs := empty_Manifest.(uuidPlcs) ;
+      pubKeyPlcs := empty_Manifest.(pubKeyPlcs) ;
+      targetPlcs := empty_Manifest.(targetPlcs) ;
+      policy := empty_Manifest.(policy) ;
+    |}
+  ).
 
 Fixpoint places' (t:Term) (ls:list Plc) : list Plc :=
   match t with
