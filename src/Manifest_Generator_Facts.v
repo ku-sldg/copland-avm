@@ -762,6 +762,84 @@ Proof.
   intuition; find_rewrite; eauto.
 Qed.
 
+Lemma man_gen_self_map_getter : forall t u p st backEnv,
+  map_get backEnv p = Some st ->
+  exists st', 
+    (map_get (manifest_generator' u t backEnv) p = Some st') /\
+    (forall x, In x st.(uuidPlcs) -> In x st'.(uuidPlcs)) /\
+    (forall x, In x st.(asps) -> In x st'.(asps)) /\
+    (forall x, In x st.(pubKeyPlcs) -> In x st'.(pubKeyPlcs)).
+Proof.
+  induction t; simpl in *; intuition; eauto.
+  - unfold asp_manifest_generator, manifest_update_env, asp_manifest_update,
+      aspid_manifest_update, update_manifest_policy_targ, pubkey_manifest_update in *;
+    simpl in *;
+    repeat break_match; destruct (eqb u p) eqn:E;
+    try rewrite eqb_leibniz in *; subst;
+    repeat find_rewrite; repeat find_injection; try congruence; eauto;
+    try (rewrite mapC_get_works; eexists; intuition; simpl in *; intuition; eauto; congruence);
+    try (match goal with
+    | H1 : eqb ?x ?y = false |- _ =>
+        assert (x <> y) by (intros HC; rewrite <- eqb_leibniz in *; congruence)
+    end); try (erewrite mapC_get_distinct_keys; eauto; fail).
+  - unfold at_manifest_generator, manifest_update_env, knowsof_manifest_update in *;
+    simpl in *; repeat break_match.
+    * destruct (eqb u p0) eqn:E.
+      ** rewrite eqb_leibniz in *; subst.
+        pose proof (man_gen_map_getter t p p0 {|
+            my_abstract_plc := my_abstract_plc;
+            asps := asps;
+            uuidPlcs := p :: uuidPlcs;
+            pubKeyPlcs := pubKeyPlcs;
+            targetPlcs := targetPlcs;
+            policy := policy
+          |} backEnv). simpl in *.
+        destruct H0; intuition; eauto.
+        repeat find_rewrite; repeat find_injection; simpl in *;
+        exists x; intuition; eauto.
+      ** subst. eapply IHt; eauto.
+          eapply mapC_get_distinct_keys; eauto.
+          match goal with
+          | H1 : eqb ?x ?y = false |- _ =>
+              assert (x <> y) by (intros HC; rewrite <- eqb_leibniz in *; congruence)
+          end; eauto.
+    * unfold empty_Manifest in *; find_injection.
+      destruct (eqb u p0) eqn:E.
+      ** rewrite eqb_leibniz in *; subst.
+        pose proof (man_gen_map_getter t p p0 {|
+            my_abstract_plc := Manifest_Admits.empty_Manifest_Plc;
+            asps := [];
+            uuidPlcs := [p];
+            pubKeyPlcs := [];
+            targetPlcs := [];
+            policy := Manifest_Admits.empty_PolicyT
+          |} backEnv). simpl in *.
+        destruct H0; intuition; eauto.
+        repeat find_rewrite; repeat find_injection; simpl in *;
+        exists x; intuition; eauto; try congruence.
+      ** subst. eapply IHt; eauto.
+          eapply mapC_get_distinct_keys; eauto.
+          match goal with
+          | H1 : eqb ?x ?y = false |- _ =>
+              assert (x <> y) by (intros HC; rewrite <- eqb_leibniz in *; congruence)
+          end; eauto.
+  - pose proof (IHt1 u _ _ _ H);
+    destruct H0; intuition;
+    pose proof (IHt2 u _ _ _ H1);
+    destruct H3; intuition;
+    exists x0; intuition; eauto.
+  - pose proof (IHt1 u _ _ _ H);
+    destruct H0; intuition;
+    pose proof (IHt2 u _ _ _ H1);
+    destruct H3; intuition;
+    exists x0; intuition; eauto.
+  - pose proof (IHt1 u _ _ _ H);
+    destruct H0; intuition;
+    pose proof (IHt2 u _ _ _ H1);
+    destruct H3; intuition;
+    exists x0; intuition; eauto.
+Qed.
+
 Theorem manifest_generator_executability_static' :
     forall (t:Term) (p:Plc) stEnv, 
         executable_global t p (manifest_generator' p t stEnv).

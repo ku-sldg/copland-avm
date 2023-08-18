@@ -1,4 +1,4 @@
-Require Import Manifest Manifest_Compiler Manifest_Generator 
+Require Import Manifest Manifest_Compiler Manifest_Generator AbstractedTypes
   Maps Term_Defs List Cvm_St Cvm_Impl ErrorStMonad_Coq StructTactics Cvm_Monad EqClass Manifest_Admits.
 Require Import Manifest_Generator_Facts Executable_Defs_Prop Executable_Facts_Dist.
 
@@ -1249,6 +1249,132 @@ Proof.
     simpl in *; subst; eauto.
 Qed.
 
+Theorem generate_manifest'_preserves_pubKeyPlcs : forall t p st x st',
+  p = my_abstract_plc st ->
+  In x (pubKeyPlcs st) ->
+  generate_manifest' t p st = st' ->
+  In x (pubKeyPlcs st').
+Proof.
+  induction t; simpl in *; intuition; eauto;
+  subst; try rewrite eqb_refl in *; simpl in *;
+    repeat break_match; simpl in *;
+    try find_injection; eauto.
+  - destruct (generate_manifest' t1 (my_abstract_plc st) st) eqn:E1;
+    simpl in *.
+    eapply IHt1 in E1 as H'; eauto.
+    destruct (generate_manifest' t2 (Manifest.my_abstract_plc st) {|
+          my_abstract_plc := my_abstract_plc;
+          asps := asps;
+          uuidPlcs := uuidPlcs;
+          pubKeyPlcs := pubKeyPlcs;
+          targetPlcs := targetPlcs;
+          policy := policy
+        |}) eqn:E2; simpl in *; eauto.
+    eapply IHt2 in E2; eauto.
+    simpl in *.
+    eapply generate_manifest'_preserves_plc in E1;
+    eapply generate_manifest'_preserves_plc in E2;
+    simpl in *; subst; eauto.
+  - destruct (generate_manifest' t1 (my_abstract_plc st) st) eqn:E1;
+    simpl in *.
+    eapply IHt1 in E1 as H'; eauto.
+    destruct (generate_manifest' t2 (Manifest.my_abstract_plc st) {|
+          my_abstract_plc := my_abstract_plc;
+          asps := asps;
+          uuidPlcs := uuidPlcs;
+          pubKeyPlcs := pubKeyPlcs;
+          targetPlcs := targetPlcs;
+          policy := policy
+        |}) eqn:E2; simpl in *; eauto.
+    eapply IHt2 in E2; eauto.
+    simpl in *.
+    eapply generate_manifest'_preserves_plc in E1;
+    eapply generate_manifest'_preserves_plc in E2;
+    simpl in *; subst; eauto.
+  - destruct (generate_manifest' t1 (my_abstract_plc st) st) eqn:E1;
+    simpl in *.
+    eapply IHt1 in E1 as H'; eauto.
+    destruct (generate_manifest' t2 (Manifest.my_abstract_plc st) {|
+          my_abstract_plc := my_abstract_plc;
+          asps := asps;
+          uuidPlcs := uuidPlcs;
+          pubKeyPlcs := pubKeyPlcs;
+          targetPlcs := targetPlcs;
+          policy := policy
+        |}) eqn:E2; simpl in *; eauto.
+    eapply IHt2 in E2; eauto.
+    simpl in *.
+    eapply generate_manifest'_preserves_plc in E1;
+    eapply generate_manifest'_preserves_plc in E2;
+    simpl in *; subst; eauto.
+Qed.
+
+
+Theorem generate_manifest'_preserves_uuidPlcs : forall t p st x st',
+  p = my_abstract_plc st ->
+  In x (uuidPlcs st) ->
+  generate_manifest' t p st = st' ->
+  In x (uuidPlcs st').
+Proof.
+  induction t; simpl in *; intuition; eauto;
+  subst; try rewrite eqb_refl in *; simpl in *;
+    repeat break_match; simpl in *;
+    try find_injection; eauto.
+  - destruct (generate_manifest' t1 (my_abstract_plc st) st) eqn:E1;
+    simpl in *.
+    eapply IHt1 in E1 as H'; eauto.
+    destruct (generate_manifest' t2 (Manifest.my_abstract_plc st) {|
+          my_abstract_plc := my_abstract_plc;
+          asps := asps;
+          uuidPlcs := uuidPlcs;
+          pubKeyPlcs := pubKeyPlcs;
+          targetPlcs := targetPlcs;
+          policy := policy
+        |}) eqn:E2; simpl in *; eauto.
+    eapply IHt2 in E2; eauto.
+    simpl in *.
+    eapply generate_manifest'_preserves_plc in E1;
+    eapply generate_manifest'_preserves_plc in E2;
+    simpl in *; subst; eauto.
+  - destruct (generate_manifest' t1 (my_abstract_plc st) st) eqn:E1;
+    simpl in *.
+    eapply IHt1 in E1 as H'; eauto.
+    destruct (generate_manifest' t2 (Manifest.my_abstract_plc st) {|
+          my_abstract_plc := my_abstract_plc;
+          asps := asps;
+          uuidPlcs := uuidPlcs;
+          pubKeyPlcs := pubKeyPlcs;
+          targetPlcs := targetPlcs;
+          policy := policy
+        |}) eqn:E2; simpl in *; eauto.
+    eapply IHt2 in E2; eauto.
+    simpl in *.
+    eapply generate_manifest'_preserves_plc in E1;
+    eapply generate_manifest'_preserves_plc in E2;
+    simpl in *; subst; eauto.
+  - destruct (generate_manifest' t1 (my_abstract_plc st) st) eqn:E1;
+    simpl in *.
+    eapply IHt1 in E1 as H'; eauto.
+    destruct (generate_manifest' t2 (Manifest.my_abstract_plc st) {|
+          my_abstract_plc := my_abstract_plc;
+          asps := asps;
+          uuidPlcs := uuidPlcs;
+          pubKeyPlcs := pubKeyPlcs;
+          targetPlcs := targetPlcs;
+          policy := policy
+        |}) eqn:E2; simpl in *; eauto.
+    eapply IHt2 in E2; eauto.
+    simpl in *.
+    eapply generate_manifest'_preserves_plc in E1;
+    eapply generate_manifest'_preserves_plc in E2;
+    simpl in *; subst; eauto.
+Qed.
+
+Local Hint Resolve generate_manifest'_preserves_asps : core.
+Local Hint Resolve generate_manifest'_preserves_plc : core.
+Local Hint Resolve generate_manifest'_preserves_pubKeyPlcs : core. 
+Local Hint Resolve generate_manifest'_preserves_uuidPlcs : core.
+
 Theorem lib_supports_cumul : 
   forall t p st,
   forall amLib absMan,
@@ -1734,6 +1860,7 @@ Theorem manifest_generator_compiler_soundess : forall t p absMan amLib amConf,
   lib_supports_manifest amLib absMan ->
   manifest_compiler absMan amLib = amConf ->
   forall st,
+    (* Note, this should be trivial typically as amConf = st.(st_AM_config) and refl works *)
     supports_am amConf (st.(st_AM_config)) ->  
     exists st', 
       build_cvm (copland_compile t) st = (resultC tt, st') \/
@@ -1749,3 +1876,276 @@ Proof.
   - eapply supports_am_refl.
 Qed.
 
+Definition manifest_support_am_config (m : Manifest) (ac : AM_Config) : Prop :=
+  (forall a, In a (m.(asps)) -> 
+    forall l targ targid p' ev ev',
+    (exists res, ac.(aspCb) (asp_paramsC a l targ targid) p' ev ev' = resultC res) \/
+    (ac.(aspCb) (asp_paramsC a l targ targid) p' ev ev' = errC Runtime)) /\
+  (forall p, In p (m.(uuidPlcs)) ->
+    (exists res, ac.(plcCb) p = resultC res) \/
+    (ac.(plcCb) p = errC Runtime)) /\
+  (forall p, In p (m.(pubKeyPlcs)) ->
+    (exists res, ac.(pubKeyCb) p = resultC res) \/
+    (ac.(pubKeyCb) p = errC Runtime)).
+  
+(* 
+
+Theorem manifest_support_am_config_from_man_gen : forall t,
+  generate_manifest' t p backMan = absMan ->
+
+  manifest_support_am_config absMan () *)
+
+Theorem manifest_support_am_config_compiler : forall absMan amLib,
+  lib_supports_manifest amLib absMan ->
+  manifest_support_am_config absMan (manifest_compiler absMan amLib).
+Proof.
+  unfold lib_supports_manifest, manifest_support_am_config, 
+    manifest_compiler, generate_PubKey_dispatcher, generate_Plc_dispatcher in *;
+  simpl in *; intuition;
+  repeat break_match; simpl in *; intuition; eauto;
+  match goal with
+  | H:  context[ map_get (minify_mapC ?l ?filt) ?a],
+    H1: forall a' : Plc, _ -> (exists x : _, map_get _ _ = Some x) |- _ => 
+    assert (CO : exists x, map_get (minify_mapC l filt) a = Some x)
+    ;
+      [
+      eapply filter_resolver; eauto;
+      repeat break_match; intuition; try congruence
+      | 
+      rewrite H in CO; destruct CO; congruence
+    ]
+  | H:  context[ map_get (minify_mapD ?l ?filt) ?a],
+    H1: forall a' : Plc, _ -> (exists x : _, map_get _ _ = Some x) |- _ => 
+    assert (CO : exists x, map_get (minify_mapD l filt) a = Some x)
+    ;
+      [
+      eapply filter_resolver_mapd; eauto;
+      repeat break_match; intuition; try congruence
+      | 
+      rewrite H in CO; destruct CO; congruence
+    ]
+  end.
+Qed.
+
+Fixpoint manifest_support_term (m : Manifest) (t : Term) : Prop :=
+  match t with
+  | asp a =>
+      match a with
+      | NULL => True
+      | CPY => True
+      | SIG => 
+          In sig_aspid (m.(asps))
+      | HSH =>
+          In hsh_aspid (m.(asps))
+      | ENC p =>
+          In enc_aspid (m.(asps)) /\
+          In p (m.(pubKeyPlcs))
+      | ASPC _ _ (asp_paramsC aspid _ _ _) =>
+          In aspid (m.(asps))
+      end
+  | att p' t' =>
+      In p' (m.(uuidPlcs))
+  | lseq t1 t2 =>
+      manifest_support_term m t1 /\
+      manifest_support_term m t2
+  | bseq _ t1 t2 =>
+      manifest_support_term m t1 /\
+      manifest_support_term m t2
+  | bpar _ t1 t2 =>
+      manifest_support_term m t1 /\
+      manifest_support_term m t2
+  end.
+
+Theorem manifest_support_am_config_impl_am_config: forall t p absMan amConf,
+  manifest_support_am_config absMan amConf ->
+  manifest_support_term absMan t ->
+  am_config_support_exec t p amConf.
+Proof.
+  induction t; simpl in *; intuition; eauto;
+  unfold manifest_support_am_config in *; intuition; eauto;
+  repeat (try break_match; simpl in *; intuition; eauto).
+  - pose proof (IHt1 p absMan amConf); 
+    pose proof (IHt2 p absMan amConf); intuition;
+    exists amConf, amConf; eauto.
+  - pose proof (IHt1 p absMan amConf); 
+    pose proof (IHt2 p absMan amConf); intuition;
+    exists amConf, amConf; eauto.
+  - pose proof (IHt1 p absMan amConf); 
+    pose proof (IHt2 p absMan amConf); intuition;
+    exists amConf, amConf; eauto.
+Qed.
+
+Lemma manifest_support_term_unfold : forall t p backMan t',
+  manifest_support_term backMan t ->
+  p = (my_abstract_plc backMan) ->
+  manifest_support_term (generate_manifest' t' p backMan) t.
+Proof.
+  induction t; simpl in *; intuition; eauto;
+  repeat break_match; simpl in *; intuition; eauto.
+Qed.
+
+Theorem man_gen_always_supports : forall t p backMan,
+  p = (my_abstract_plc backMan) ->
+  manifest_support_term (generate_manifest' t p backMan) t.
+Proof.
+  induction t; intuition; try (simpl in *; eauto; fail);
+  try (simpl in *; intuition; eauto; [
+    eapply manifest_support_term_unfold; eauto | ];
+    rewrite H; eauto).
+  - repeat (try break_match; simpl in *; try congruence; eauto);
+    try (subst; rewrite eqb_refl in *; congruence).
+Qed.
+
+(* This proof tries to instead leverage the manifest_support notions *)
+Theorem man_gen_soundness' : forall t p absMan amLib amConf,
+  generate_manifest t p = absMan ->
+  lib_supports_manifest amLib absMan ->
+  manifest_compiler absMan amLib = amConf ->
+  forall st,
+    (* Note, this should be trivial typically as amConf = st.(st_AM_config) and refl works *)
+    supports_am amConf (st.(st_AM_config)) ->  
+  exists st', 
+    build_cvm (copland_compile t) st = (resultC tt, st') \/
+    build_cvm (copland_compile t) st = (errC (dispatch_error Runtime), st').
+Proof.
+  intros.
+  eapply well_formed_am_config_impl_executable.
+  - unfold generate_manifest, empty_Manifest in *; simpl in *.
+    eapply manifest_support_am_config_impl_am_config.
+    * eapply manifest_support_am_config_compiler; eauto.
+    * (* NOTE: This is the important one, substitute proof of any manifest here *)
+      rewrite <- H; eapply man_gen_always_supports; simpl in *; eauto.
+  - rewrite H1; eauto.
+  Unshelve. eapply min_id_type.
+Qed.
+
+
+Lemma manifest_support_term_unfold_old' : forall t p backEnv t' absMan absMan',
+  map_get backEnv p = Some absMan ->
+  manifest_support_term absMan t ->
+  map_get (manifest_generator' p t' backEnv) p = Some absMan' ->
+  manifest_support_term absMan' t.
+Proof.
+  induction t; intuition.
+  - simpl in *;
+    repeat break_match; simpl in *; intuition; eauto;
+    eapply man_gen_self_map_getter in H;
+    destruct H; intuition; eauto;
+    find_rewrite; find_injection; eauto.
+  - simpl in *;
+    eapply man_gen_self_map_getter in H;
+    destruct H; intuition; eauto;
+    find_rewrite; find_injection; eauto.
+  - simpl in *; intuition; eauto.
+  - simpl in *; intuition; eauto.
+  - simpl in *; intuition; eauto.
+Qed.
+
+Theorem map_get_man_gen_self_never_none : forall p t backMan,
+  exists res, map_get (manifest_generator' p t backMan) p = Some res.
+Proof.
+  induction t; simpl in *; intuition; eauto.
+  - unf; repeat break_match; simpl in *; eauto; subst; try congruence;
+    try (rewrite mapC_get_works; eexists; intuition; eauto; congruence).
+  - unfold at_manifest_generator, manifest_update_env, knowsof_manifest_update in *.
+    pose proof (man_gen_map_getter t p0 p (let
+           '{|
+              my_abstract_plc := oldPlc;
+              asps := oldasps;
+              uuidPlcs := oldKnowsOf;
+              pubKeyPlcs := oldContext;
+              targetPlcs := oldTargets;
+              policy := oldPolicy
+            |} := match map_get backMan p with
+                  | Some mm => mm
+                  | None => empty_Manifest
+                  end in
+            {|
+              my_abstract_plc := oldPlc;
+              asps := oldasps;
+              uuidPlcs := p0 :: oldKnowsOf;
+              pubKeyPlcs := oldContext;
+              targetPlcs := oldTargets;
+              policy := oldPolicy
+            |}) backMan). destruct H; intuition; eauto.
+Qed.
+
+
+Theorem man_gen_old_always_supports : forall t p backMan absMan,
+  map_get (manifest_generator' p t backMan) p = Some absMan ->
+  manifest_support_term absMan t.
+Proof.
+  induction t; intuition.
+  - repeat (try break_match; 
+      unfold asp_manifest_generator, manifest_update_env, knowsof_manifest_update,
+        aspid_manifest_update, update_manifest_policy_targ, pubkey_manifest_update in *;
+      subst; simpl in *; intuition; eauto; try congruence;
+      repeat find_rewrite;
+      repeat find_injection;
+      simpl in *);
+    try (rewrite mapC_get_works in *; simpl in *; repeat find_injection; simpl in *; intuition; eauto).
+
+  - simpl in *; unfold at_manifest_generator, manifest_update_env, knowsof_manifest_update in *; simpl in *;
+    repeat break_match; subst; simpl in *; eauto; try congruence.
+    * pose proof (man_gen_map_getter t p p0 {|
+               my_abstract_plc := my_abstract_plc;
+               asps := asps;
+               uuidPlcs := p :: uuidPlcs;
+               pubKeyPlcs := pubKeyPlcs;
+               targetPlcs := targetPlcs;
+               policy := policy
+             |} backMan) as H'; simpl in *;
+      destruct H'; intuition; simpl in *;
+      repeat find_rewrite; find_injection; eauto.
+    * unfold empty_Manifest in *; find_injection; simpl in *.
+      pose proof (man_gen_map_getter t p p0 {|
+               my_abstract_plc := empty_Manifest_Plc;
+               asps := [];
+               uuidPlcs := [p];
+               pubKeyPlcs := [];
+               targetPlcs := [];
+               policy := empty_PolicyT
+             |} backMan) as H'; simpl in *;
+      destruct H'; intuition; simpl in *;
+      repeat find_rewrite; find_injection; eauto.
+  - simpl in *; unfold at_manifest_generator, manifest_update_env, knowsof_manifest_update in *; simpl in *;
+    repeat break_match; subst; simpl in *; eauto; try congruence; intuition.
+    * destruct (map_get (manifest_generator' p t1 backMan) p) eqn:M1.
+      ** pose proof (manifest_support_term_unfold_old' t1 p (manifest_generator' p t1 backMan) t2 m absMan); eauto.
+      ** destruct (map_get_man_gen_self_never_none p t1 backMan); congruence.
+    * eapply IHt2 in H as H2'; eauto.
+  - simpl in *; unfold at_manifest_generator, manifest_update_env, knowsof_manifest_update in *; simpl in *;
+    repeat break_match; subst; simpl in *; eauto; try congruence; intuition.
+    * destruct (map_get (manifest_generator' p t1 backMan) p) eqn:M1.
+      ** pose proof (manifest_support_term_unfold_old' t1 p (manifest_generator' p t1 backMan) t2 m absMan); eauto.
+      ** destruct (map_get_man_gen_self_never_none p t1 backMan); congruence.
+    * eapply IHt2 in H as H2'; eauto.
+  - simpl in *; unfold at_manifest_generator, manifest_update_env, knowsof_manifest_update in *; simpl in *;
+    repeat break_match; subst; simpl in *; eauto; try congruence; intuition.
+    * destruct (map_get (manifest_generator' p t1 backMan) p) eqn:M1.
+      ** pose proof (manifest_support_term_unfold_old' t1 p (manifest_generator' p t1 backMan) t2 m absMan); eauto.
+      ** destruct (map_get_man_gen_self_never_none p t1 backMan); congruence.
+    * eapply IHt2 in H as H2'; eauto.
+Qed.
+
+Theorem manifest_generator_compiler_soundness_old : forall t p absMan amLib amConf,
+  map_get (manifest_generator t p) p = Some absMan ->
+  lib_supports_manifest amLib absMan ->
+  manifest_compiler absMan amLib = amConf ->
+  forall st,
+    (* Note, this should be trivial typically as amConf = st.(st_AM_config) and refl works *)
+    supports_am amConf (st.(st_AM_config)) ->  
+  exists st', 
+    build_cvm (copland_compile t) st = (resultC tt, st') \/
+    build_cvm (copland_compile t) st = (errC (dispatch_error Runtime), st').
+Proof.
+  intros.
+  eapply well_formed_am_config_impl_executable.
+  - unfold manifest_generator, e_empty in *; simpl in *.
+    eapply manifest_support_am_config_impl_am_config.
+    * eapply manifest_support_am_config_compiler; eauto.
+    * (* NOTE: This is the important one, substitute proof of any manifest here *)
+      eapply man_gen_old_always_supports; eauto.
+  - rewrite H1; eauto.
+  Unshelve. eapply min_id_type.
+Qed.
