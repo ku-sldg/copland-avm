@@ -123,6 +123,21 @@ Proof.
     repeat find_rewrite; eauto.
 Qed.
 
+
+Lemma map_distinct_key_rw {A B:Type} `{H : EqClass A} : 
+  forall m (k1 k2:A) (v1 v2:B),
+  k1 <> k2 ->
+  map_get (map_set m k1 v1) k2 = map_get m k2.
+Proof.
+  induction m; simpl in *; intuition; eauto; try congruence.
+  - break_match; eauto; rewrite eqb_leibniz in *; congruence.
+  - repeat break_if; repeat find_injection;
+    repeat rewrite eqb_leibniz in *; subst; eauto;
+    try congruence; simpl in *;
+    try find_rewrite; eauto;
+    rewrite eqb_refl; eauto.
+Qed.
+
 Theorem map_has_buried : forall {A B : Type} `{EqClass A} (pre : list (A * B)) key val post,
   exists val', map_get (pre ++ (key, val) :: post) key = Some val'.
 Proof.

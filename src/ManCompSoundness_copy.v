@@ -65,6 +65,19 @@ Fixpoint knowsOf_uuid'' (tp : Plc) (p:Plc) (t:Term)  : list Plc :=
      knowsOf_uuid'' tp p t1 ++ knowsOf_uuid'' tp p t2
   end.
 
+Fixpoint mentioned_places (t : Term) : list Plc :=
+  match t with
+  | asp a => nil
+  | att p' t' => 
+      p' :: mentioned_places t'
+  | lseq t1 t2 =>
+      mentioned_places t1 ++ mentioned_places t2
+  | bseq _ t1 t2 =>
+      mentioned_places t1 ++ mentioned_places t2
+  | bpar _ t1 t2 =>
+      mentioned_places t1 ++ mentioned_places t2
+  end.
+
 Definition p1 : Plc. Admitted.
 Definition p2 : Plc. Admitted.
 Definition p3 : Plc. Admitted.
@@ -117,7 +130,9 @@ Fixpoint static_executable_manifest (t : Term) (m : Manifest) : Prop :=
   end.
 
 Ltac grind :=
-  repeat (try break_match; simpl in *; intuition; subst; eauto; try congruence).
+  repeat (try break_match; simpl in *; intuition; subst; eauto; try congruence);
+  repeat find_injection; subst;
+  simpl in *; intuition; eauto.
 
 Ltac breq l r :=
   let E := fresh "Heq" in
@@ -126,6 +141,256 @@ Ltac breq l r :=
   try (rewrite eqb_leibniz in *; subst; simpl in *; intuition; eauto; try congruence);
   try (rewrite eqb_refl in *; subst; simpl in *; intuition; eauto; try congruence);
   try (assert (l <> r) by (intros HC; rewrite <- eqb_leibniz in *; congruence)).
+
+Ltac unf :=
+  repeat (unfold asp_manifest_generator,
+    at_manifest_generator, knowsof_manifest_update,
+    asp_manifest_update, manifest_update_env,
+    aspid_manifest_update, update_manifest_policy_targ,
+    empty_Manifest in *
+  ); simpl in *; try (intuition; eauto; congruence).
+
+Theorem manifest_generator'_knows_plcs : forall t p backEnv envM,
+  manifest_generator' p t backEnv = envM ->
+  (forall p',
+    map_get backEnv p' = None ->
+    (In p' (p :: (knowsOf_uuid' p p' t)) <->
+    exists absMan, map_get envM p' = Some absMan)
+  ).
+Proof.
+  induction t; simpl in *; intros.
+  - intuition; subst; eauto.
+    * unf; break_match; subst; try congruence;
+      try rewrite mapC_get_works; eauto.
+    * unf; repeat break_match; subst; simpl in *;
+      breq p p'; eauto;
+      erewrite map_distinct_key_rw in *; eauto;
+      try (eapply empty_Manifest); 
+      try (find_rewrite); eauto; 
+      try (destruct H1; congruence).
+  - intuition; subst; eauto.
+    * unf; repeat break_match; subst; simpl in *;
+      try congruence; breq p p'; eauto;
+      repeat find_injection; try congruence.
+      ** pose proof (man_gen_map_getter t p' p' ({|
+            my_abstract_plc := empty_Manifest_Plc;
+            asps := [];
+            uuidPlcs := [p'];
+            pubKeyPlcs := [];
+            targetPlcs := [];
+            policy := empty_PolicyT
+          |}) backEnv).
+        destruct H; intuition; eauto.
+      ** pose proof (man_gen_map_getter t p p' ({|
+            my_abstract_plc := empty_Manifest_Plc;
+            asps := [];
+            uuidPlcs := [p];
+            pubKeyPlcs := [];
+            targetPlcs := [];
+            policy := empty_PolicyT
+          |}) backEnv).
+        destruct H1; intuition; eauto.
+    * unf. repeat break_match; subst;
+      try (rewrite eqb_leibniz in *; subst; eauto; try congruence).
+      ** destruct ((manifest_generator' p t
+       (map_set backEnv p0
+          {|
+            my_abstract_plc := my_abstract_plc;
+            asps := asps;
+            uuidPlcs := p :: uuidPlcs;
+            pubKeyPlcs := pubKeyPlcs;
+            targetPlcs := targetPlcs;
+            policy := policy
+          |}))) eqn:E;
+        try (exfalso; eapply manifest_generator_never_empty; eauto; fail).
+        assert ( map_get
+      (map_set backEnv p0
+         {|
+           my_abstract_plc := my_abstract_plc;
+           asps := asps;
+           uuidPlcs := p :: uuidPlcs;
+           pubKeyPlcs := pubKeyPlcs;
+           targetPlcs := targetPlcs;
+           policy := policy
+         |}) p' = None). erewrite map_distinct_key_rw; eauto;
+         try (eapply empty_Manifest); intros HC;
+         rewrite <- eqb_leibniz in *; try congruence.
+        pose proof (IHt _ _ _ E p' H); intuition;
+        breq p p'; eauto.
+        eapply H5.
+        destruct t; simpl in *; try congruence; eauto.
+        assert ( map_get
+      (map_set backEnv p0
+         {|
+           my_abstract_plc := my_abstract_plc;
+           asps := asps;
+           uuidPlcs := p :: uuidPlcs;
+           pubKeyPlcs := pubKeyPlcs;
+           targetPlcs := targetPlcs;
+           policy := policy
+         |}) p' = None). erewrite map_distinct_key_rw; eauto;
+         try (eapply empty_Manifest); intros HC;
+         rewrite <- eqb_leibniz in *; try congruence;
+         
+
+    ; repeat break_match; subst; simpl in *;
+      try congruence; breq p p'; eauto;
+      repeat find_injection; try congruence.
+        destruct ((manifest_generator' p t
+          (map_set backEnv p'
+              {|
+                my_abstract_plc := empty_Manifest_Plc;
+                asps := [];
+                uuidPlcs := [p];
+                pubKeyPlcs := [];
+                targetPlcs := [];
+                policy := empty_PolicyT
+              |}))) eqn:E; 
+          try (exfalso; eapply manifest_generator_never_empty; eauto; fail).
+          pose proof (IHt _ _ _ E p').
+
+      erewrite map_distinct_key_rw in *; eauto;
+      try (eapply empty_Manifest); 
+      try (find_rewrite); eauto; 
+      try (destruct H1; congruence).
+
+    
+
+Theorem man_gen_only_available_if_known : forall t p backEnv envM,
+  map_get backEnv p = None ->
+  manifest_generator' p t backEnv = envM ->
+  (* manifest_generator t p = envM -> *)
+  (forall p',
+    map_get backEnv p' = None ->
+    (exists man, map_get envM p' = Some man) <-> 
+    (p = p' \/ In p' (mentioned_places t))
+  ).
+Proof.
+  induction t; simpl in *; intros; unf; subst.
+  - intuition; eauto.
+    * repeat break_match; try congruence; subst;
+      breq p p';
+      rewrite map_distinct_key_rw in H0; eauto;
+      try eapply empty_Manifest;
+      find_rewrite;
+      destruct H0; congruence.
+    * subst; rewrite mapC_get_works; eauto.
+  - repeat break_match; subst; simpl in *; try congruence;
+    repeat find_injection; subst.
+    destruct ((manifest_generator' p t
+      (map_set backEnv p0
+          {|
+            my_abstract_plc := empty_Manifest_Plc;
+            asps := [];
+            uuidPlcs := [p];
+            pubKeyPlcs := [];
+            targetPlcs := [];
+            policy := empty_PolicyT
+          |}))) eqn:E;
+    try (exfalso; eapply manifest_generator_never_empty; eauto; fail).
+    intuition; eauto.
+    * erewrite IHt in H0; eauto.
+    assert (map_get (map_set backEnv p0
+         {|
+           my_abstract_plc := empty_Manifest_Plc;
+           asps := [];
+           uuidPlcs := [p];
+           pubKeyPlcs := [];
+           targetPlcs := [];
+           policy := empty_PolicyT
+         |}) p = None). admit.
+    pose proof (IHt _ _ _ H0 E p').
+      
+    destruct ((manifest_generator' p t
+        (map_set backEnv p0
+           (let
+            '{|
+               my_abstract_plc := oldPlc;
+               asps := oldasps;
+               uuidPlcs := oldKnowsOf;
+               pubKeyPlcs := oldContext;
+               targetPlcs := oldTargets;
+               policy := oldPolicy
+             |} :=
+             match map_get backEnv p0 with
+             | Some mm => mm
+             | None =>
+                 {|
+                   my_abstract_plc := empty_Manifest_Plc;
+                   asps := [];
+                   uuidPlcs := [];
+                   pubKeyPlcs := [];
+                   targetPlcs := [];
+                   policy := empty_PolicyT
+                 |}
+             end in
+             {|
+               my_abstract_plc := oldPlc;
+               asps := oldasps;
+               uuidPlcs := p :: oldKnowsOf;
+               pubKeyPlcs := oldContext;
+               targetPlcs := oldTargets;
+               policy := oldPolicy
+             |})))) eqn:E;
+    
+
+  induction t; simpl in *; intuition; subst; eauto; try congruence;
+  unf; grind; try (rewrite eqb_leibniz in *; subst; eauto);
+  try (
+    match goal with
+    | H : exists m, None = Some _ |- _ => 
+        destruct H; try (find_rewrite);
+        intuition; congruence
+    end
+  );
+  try (rewrite eqb_refl in *; congruence).
+
+  induction t; simpl in *; intuition; subst; eauto; try congruence.
+  - destruct a; simpl in *; 
+    repeat break_match; intuition; eauto;
+    try (rewrite eqb_leibniz in *; eauto);
+    try (destruct H0; congruence).
+  - destruct a; simpl in *;
+    repeat break_match; intuition; eauto;
+    rewrite eqb_refl in *; congruence.
+  - unfold manifest_generator. simpl.
+    destruct (eqb p p') eqn:E; eauto.
+    destruct a; simpl in *; intuition.
+    * admit.
+    * 
+    destruct a; simpl in *; 
+    repeat break_match; intuition; eauto;
+    try (rewrite eqb_leibniz in *; eauto).
+    try (destruct H0; congruence);
+    simpl in *; intuition; subst; eauto.
+
+  induction t; intuition; eauto; subst; eauto;
+  try (breq p p'; intuition; eauto; try congruence);
+  try (repeat break_match; simpl in *; intuition; subst; unf;
+    repeat break_match; simpl in *; intuition; eauto;
+    try congruence;
+    rewrite mapC_get_works; eauto; fail).
+  - destruct a; simpl in *; unf; break_match; subst;
+    try (erewrite map_distinct_key_rw in H2; eauto;
+    try (eapply empty_Manifest);
+    find_rewrite; 
+    destruct H2; congruence; fail).
+  - destruct a; simpl in *; try (exfalso; eauto; fail); unf;
+    repeat break_match; simpl in *;
+    repeat find_injection; intuition; eauto; subst;
+    try congruence.
+    * 
+    rewrite mapC_get_works; eauto.
+  - repeat break_match; simpl in *; intuition; subst; unf;
+    repeat break_match; simpl in *; intuition; eauto;
+    rewrite mapC_get_works; eauto.
+  - 
+    * unf.
+      destruct a; simpl in *; intuition; subst; unf.
+      unf; repeat break_match; repeat find_injection;
+      simpl in *.
+      ** 
+
 
 
 Theorem man_gen_only_available_if_known : forall t p backEnv envM p',
