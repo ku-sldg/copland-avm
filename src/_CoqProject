@@ -67,5 +67,4 @@ ManCompSoundness.v
 Client_AM.v
 Server_AM.v
 CopParser.v
-Executable_Concrete.v
 Extraction_Cvm_Cake.v
