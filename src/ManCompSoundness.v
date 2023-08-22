@@ -2088,17 +2088,425 @@ Admitted.
 *)
 
 
+Lemma places_decomp: forall t1 t2 p tp,
+In p (places' t2 (places' t1 [])) -> 
+(In p (places tp t1) \/ 
+      In p (places tp t2)).
+Proof.
+intros.
+
+assert (In p (places' t2 []) \/ In p (places' t1 [])).
+{
+  assert (In p (places' t1 []) \/ (~ In p (places' t1 []))).
+  { 
+      apply In_dec_tplc.
+  }
+  door.
+  +
+    eauto.
+  +             
+    assert (In p (places' t2 [])).
+    {
+      eapply places_app_cumul.
+      apply H.
+      eassumption.
+    }
+    eauto.
+}
+door.
+right.
+unfold places.
+right.
+eauto.
+
+left.
+right.
+eauto.
+Qed.
+
+
+Lemma places_env_has_manifest : forall t p tp e,
+In p (places tp t) -> 
+exists m, 
+map_get (manifest_generator' tp t e) p = Some m.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros.
+  -
+    ff.
+    door; try solve_by_inversion.
+    subst.
+    destruct a; 
+    unfold asp_manifest_generator;
+    unfold asp_manifest_update;
+    unfold manifest_update_env;
+    ff;
+    eexists;
+    eapply mapC_get_works.
+
+  - (* at case *)
+
+    ff.
+    door; ff.
+    subst.
+    unfold at_manifest_generator.
+    unfold knowsof_manifest_update.
+    ff.
+    unfold manifest_update_env.
+    ff.
+    +
+      subst.
+
+      assert (Environment_subset 
+      (map_set e p0
+          {|
+            my_abstract_plc := my_abstract_plc;
+            asps := asps;
+            uuidPlcs := p :: uuidPlcs;
+            pubKeyPlcs := pubKeyPlcs;
+            targetPlcs := targetPlcs;
+            policy := policy
+          |})
+
+          (manifest_generator' p t
+       (map_set e p0
+          {|
+            my_abstract_plc := my_abstract_plc;
+            asps := asps;
+            uuidPlcs := p :: uuidPlcs;
+            pubKeyPlcs := pubKeyPlcs;
+            targetPlcs := targetPlcs;
+            policy := policy
+          |}))
+      
+      ).
+      {
+        eapply manifest_generator_cumul'.
+      }
+      unfold Environment_subset in *.
+
+
+      assert (
+        map_get
+      (map_set e p0
+         {|
+           my_abstract_plc := my_abstract_plc;
+           asps := asps;
+           uuidPlcs := p :: uuidPlcs;
+           pubKeyPlcs := pubKeyPlcs;
+           targetPlcs := targetPlcs;
+           policy := policy
+         |}) p0 = Some {|
+         my_abstract_plc := my_abstract_plc;
+         asps := asps;
+         uuidPlcs := p :: uuidPlcs;
+         pubKeyPlcs := pubKeyPlcs;
+         targetPlcs := targetPlcs;
+         policy := policy
+       |}
+      ).
+      {
+        eapply mapC_get_works.
+
+      }
+
+      specialize H with (m1 := {|
+        my_abstract_plc := my_abstract_plc;
+        asps := asps;
+        uuidPlcs := p :: uuidPlcs;
+        pubKeyPlcs := pubKeyPlcs;
+        targetPlcs := targetPlcs;
+        policy := policy
+      |}) (p := p0).
+      find_apply_hyp_hyp.
+      destruct_conjs.
+
+      exists H0.
+      eauto.
+
+
+      +
+
+      subst.
+
+      assert (Environment_subset 
+      (map_set e p0
+          {|
+            my_abstract_plc := my_abstract_plc;
+            asps := asps;
+            uuidPlcs := p :: uuidPlcs;
+            pubKeyPlcs := pubKeyPlcs;
+            targetPlcs := targetPlcs;
+            policy := policy
+          |})
+
+          (manifest_generator' p t
+       (map_set e p0
+          {|
+            my_abstract_plc := my_abstract_plc;
+            asps := asps;
+            uuidPlcs := p :: uuidPlcs;
+            pubKeyPlcs := pubKeyPlcs;
+            targetPlcs := targetPlcs;
+            policy := policy
+          |}))
+      
+      ).
+      {
+        eapply manifest_generator_cumul'.
+      }
+      unfold Environment_subset in *.
+
+
+      assert (
+        map_get
+      (map_set e p0
+         {|
+           my_abstract_plc := my_abstract_plc;
+           asps := asps;
+           uuidPlcs := p :: uuidPlcs;
+           pubKeyPlcs := pubKeyPlcs;
+           targetPlcs := targetPlcs;
+           policy := policy
+         |}) p0 = Some {|
+         my_abstract_plc := my_abstract_plc;
+         asps := asps;
+         uuidPlcs := p :: uuidPlcs;
+         pubKeyPlcs := pubKeyPlcs;
+         targetPlcs := targetPlcs;
+         policy := policy
+       |}
+      ).
+      {
+        eapply mapC_get_works.
+
+      }
+
+      specialize H with (m1 := {|
+        my_abstract_plc := my_abstract_plc;
+        asps := asps;
+        uuidPlcs := p :: uuidPlcs;
+        pubKeyPlcs := pubKeyPlcs;
+        targetPlcs := targetPlcs;
+        policy := policy
+      |}) (p := p0).
+      find_apply_hyp_hyp.
+      destruct_conjs.
+
+      exists H0.
+      eauto.
+
+    - (* lseq case *)
+      ff.
+      door; ff.
+
+
+
+
+      assert (In p (places tp t1) \/ 
+              In p (places tp t2)).
+              {
+                eapply places_decomp; eauto.
+              }
+      door.
+      +
+        assert (exists mm, 
+                map_get (manifest_generator' tp t1 e) p = Some mm).
+        {
+          eauto.
+        }
+        destruct_conjs.
+
+        assert (Environment_subset 
+        (manifest_generator' tp t1 e)
+        (manifest_generator' tp t2
+         (manifest_generator' tp t1 e))
+        ).
+        {
+          eapply manifest_generator_cumul'.
+        }
+
+        unfold Environment_subset in *.
+        specialize H3 with (m1:=H1) (p:=p).
+        find_apply_hyp_hyp.
+        destruct_conjs.
+        eexists.
+        eassumption.
+
+      +
+      eapply IHt2.
+      unfold places in H0.
+      invc H0.
+      eauto.
+      eauto.
+
+
+      - (* lseq case *)
+      ff.
+      door; ff.
+
+
+
+
+      assert (In p (places tp t1) \/ 
+              In p (places tp t2)).
+              {
+                eapply places_decomp; eauto.
+              }
+      door.
+      +
+        assert (exists mm, 
+                map_get (manifest_generator' tp t1 e) p = Some mm).
+        {
+          eauto.
+        }
+        destruct_conjs.
+
+        assert (Environment_subset 
+        (manifest_generator' tp t1 e)
+        (manifest_generator' tp t2
+         (manifest_generator' tp t1 e))
+        ).
+        {
+          eapply manifest_generator_cumul'.
+        }
+
+        unfold Environment_subset in *.
+        specialize H3 with (m1:=H1) (p:=p).
+        find_apply_hyp_hyp.
+        destruct_conjs.
+        eexists.
+        eassumption.
+
+      +
+      eapply IHt2.
+      unfold places in H0.
+      invc H0.
+      eauto.
+      eauto.
+
+
+
+      - (* lseq case *)
+      ff.
+      door; ff.
+
+
+
+
+      assert (In p (places tp t1) \/ 
+              In p (places tp t2)).
+              {
+                eapply places_decomp; eauto.
+              }
+      door.
+      +
+        assert (exists mm, 
+                map_get (manifest_generator' tp t1 e) p = Some mm).
+        {
+          eauto.
+        }
+        destruct_conjs.
+
+        assert (Environment_subset 
+        (manifest_generator' tp t1 e)
+        (manifest_generator' tp t2
+         (manifest_generator' tp t1 e))
+        ).
+        {
+          eapply manifest_generator_cumul'.
+        }
+
+        unfold Environment_subset in *.
+        specialize H3 with (m1:=H1) (p:=p).
+        find_apply_hyp_hyp.
+        destruct_conjs.
+        eexists.
+        eassumption.
+
+      +
+      eapply IHt2.
+      unfold places in H0.
+      invc H0.
+      eauto.
+      eauto.
+Qed.
+
+
+
 (* TODO:  this is likely not provable forall p ... 
    TODO:  perhaps generalize to something like:  
             forall p, In p ((places t1 tp) ++ places e) ?? *)
-Lemma asdf : forall t1 t2 tp p absMan e,
+Lemma asdf : forall t1 t2 tp p' absMan e,
 map_get (manifest_generator' tp t2 
-            (manifest_generator' tp t1 e)) p = Some absMan -> 
+            (manifest_generator' tp t1 e)) p' = Some absMan -> 
+In p' (places tp t1) ->
 exists m', 
-map_get (manifest_generator' tp t1 e) p = Some m' /\ 
+map_get (manifest_generator' tp t1 e) p' = Some m' /\ 
 manifest_subset m' absMan.
 Proof.
-Admitted.
+  intros.
+
+  assert (Environment_subset 
+          (manifest_generator' tp t1 e)
+          (manifest_generator' tp t2
+            (manifest_generator' tp t1 e))
+          
+  ).
+  {
+    eapply manifest_generator_cumul'.
+    (*
+    Lemma manifest_generator_cumul : forall t p e1 e2,
+    Environment_subset e1 e2 ->
+    Environment_subset e1 (manifest_generator' p t e2).
+Proof.
+    
+    *)
+  }
+
+  eapply places_env_has_manifest in H0.
+  destruct_conjs.
+
+  unfold Environment_subset in *.
+
+  specialize H1 with (m1 := H0) (p:=p').
+
+  assert (
+    exists m2 : Manifest,
+       map_get
+         (manifest_generator' tp t2
+            (manifest_generator' tp t1 e)) p' =
+       Some m2 /\ manifest_subset H0 m2
+  ).
+  {
+    eapply H1.
+    eassumption.
+  }
+
+  destruct_conjs.
+  exists H0.
+  split; eauto.
+  find_rewrite.
+  ff.
+Qed.
+
+Lemma asdf_easy : forall t1 t2 tp absMan e,
+map_get (manifest_generator' tp t2 
+            (manifest_generator' tp t1 e)) tp = Some absMan -> 
+            
+exists m', (* p', 
+In p' (places tp t1) /\
+*)
+map_get (manifest_generator' tp t1 e) tp = Some m' /\ 
+manifest_subset m' absMan.
+Proof.
+  intros.
+  eapply asdf.
+  eassumption.
+  ff.
+  eauto.
+Qed.
 
 Lemma manifest_supports_term_sub : forall m1 m2 t,
 manifest_subset m1 m2 ->
@@ -2174,12 +2582,38 @@ Qed.
 
 Require Import Eqb_Evidence.
 
+Check places.
+(*
+places
+	 : Plc -> Term -> list Plc
+*)
+
+(*
+Check fromSome.
+fromSome (map_get (manifest_generator' tp t backMan) p) empty_Manifest = absMan ->
+*)
 
 Theorem man_gen_old_always_supports : forall t t' tp p backMan absMan,
   map_get (manifest_generator' tp t backMan) p = Some absMan ->
+  In p (places tp t) ->
   In t' (place_terms t tp p) ->
   manifest_support_term absMan t'.
 Proof.
+  (*
+  intros.
+  assert ((map_get (manifest_generator' tp t backMan) p) = Some absMan).
+  {
+    admit.
+  }
+  unfold fromSome in *.
+  find_rewrite.
+
+  generalizeEverythingElse t.
+
+  *)
+
+
+
   induction t; intuition.
   - repeat (try break_match; 
       unfold asp_manifest_generator, manifest_update_env, knowsof_manifest_update,
@@ -2190,6 +2624,7 @@ Proof.
       simpl in * );
     try (rewrite mapC_get_works in *; simpl in *; repeat find_injection; simpl in *; intuition; eauto).
 
+    (*
     +
     assert (tp = p).
     {
@@ -2313,6 +2748,7 @@ Proof.
     rewrite Maps.mapC_get_works in H.
     ff.
     eauto.
+    *)
 
 
   - (* at case *)
@@ -2407,7 +2843,415 @@ Proof.
     simpl.
     eauto.
   +
+    door; eauto.
+    subst.
+    rewrite eqb_plc_refl in *.
+    solve_by_inversion.
+
+  - (* lseq case *)
+
+  ff.
+  ff.
+  +
+  door; try solve_by_inversion.
+  subst.
+  ff.
+  assert (tp = p).
+  {
+    eapply eqb_eq_plc; eauto.
+  }
+  subst.
+
+
+
+  split.
+    ++
+
+
+    find_apply_lem_hyp asdf_easy.
+    destruct_conjs.
+
+    eapply manifest_supports_term_sub.
+    eassumption.
+
+
+    eapply IHt1.
+    eassumption.
     eauto.
+    apply top_plc_refl.
+
+  ++
+  eapply IHt2.
+  eassumption.
+  eauto.
+  apply top_plc_refl.
+
+  (*
+
+  Lemma in_plc_term : forall p p0 t,
+place_terms t p p0 <> [] ->
+In p0 (places p t).
+  
+  *)
+
+
+  + (* tp <> p *)
+    destruct H0.
+    ++
+      subst.
+      rewrite eqb_plc_refl in *.
+      solve_by_inversion.
+    ++
+
+(*
+    find_apply_lem_hyp asdf.
+    *)
+
+    (*
+    assert (In p (places' t1 []) \/ In p (places' t2 [])).
+    {
+      admit.
+    }
+
+    clear H0.
+    *)
+
+  
+  
+
+  assert ((In t' (place_terms t1 tp p)) \/ (In t' (place_terms t2 tp p))).
+  {
+    eapply in_app_or; eauto.
+  }
+  clear H1.
+
+  destruct H2.
+  +++ (* In t' (place_terms t1 tp p) *)
+  assert (In p (places tp t1)).
+  {
+    apply in_plc_term.
+    eapply in_not_nil.
+    eassumption.
+  }
+    find_apply_lem_hyp asdf.
+    ++++
+    destruct_conjs.
+
+
+
+    eapply manifest_supports_term_sub.
+    eassumption.
+    eapply IHt1.
+    eassumption.
+    eauto.
+    eassumption.
+
+    ++++
+    right.
+    unfold places in *.
+    invc H2.
+    +++++
+    rewrite eqb_plc_refl in Heqb.
+    solve_by_inversion.
+    +++++
+    eauto.
+  +++ (* In t' (place_terms t2 tp p) *)
+    simpl.
+
+    assert (In p (places tp t2)).
+  {
+    apply in_plc_term.
+    eapply in_not_nil; eauto.
+  }
+
+    eapply IHt2.
+    ++++
+    eassumption.
+    ++++
+    right.
+    unfold places in H2.
+    eauto.
+
+    invc H2.
+    +++++
+      rewrite eqb_plc_refl in *.
+      solve_by_inversion.
+    +++++
+      eassumption.
+    ++++
+    eassumption.
+
+    - 
+
+    ff.
+    ff.
+    +
+    door; try solve_by_inversion.
+    subst.
+    ff.
+    assert (tp = p).
+    {
+      eapply eqb_eq_plc; eauto.
+    }
+    subst.
+  
+  
+  
+    split.
+      ++
+  
+  
+      find_apply_lem_hyp asdf_easy.
+      destruct_conjs.
+  
+      eapply manifest_supports_term_sub.
+      eassumption.
+  
+  
+      eapply IHt1.
+      eassumption.
+      eauto.
+      apply top_plc_refl.
+  
+    ++
+    eapply IHt2.
+    eassumption.
+    eauto.
+    apply top_plc_refl.
+  
+    (*
+  
+    Lemma in_plc_term : forall p p0 t,
+  place_terms t p p0 <> [] ->
+  In p0 (places p t).
+    
+    *)
+  
+  
+    + (* tp <> p *)
+      destruct H0.
+      ++
+        subst.
+        rewrite eqb_plc_refl in *.
+        solve_by_inversion.
+      ++
+  
+  (*
+      find_apply_lem_hyp asdf.
+      *)
+  
+      (*
+      assert (In p (places' t1 []) \/ In p (places' t2 [])).
+      {
+        admit.
+      }
+  
+      clear H0.
+      *)
+  
+    
+    
+  
+    assert ((In t' (place_terms t1 tp p)) \/ (In t' (place_terms t2 tp p))).
+    {
+      eapply in_app_or; eauto.
+    }
+    clear H1.
+  
+    destruct H2.
+    +++ (* In t' (place_terms t1 tp p) *)
+    assert (In p (places tp t1)).
+    {
+      apply in_plc_term.
+      eapply in_not_nil.
+      eassumption.
+    }
+      find_apply_lem_hyp asdf.
+      ++++
+      destruct_conjs.
+  
+  
+  
+      eapply manifest_supports_term_sub.
+      eassumption.
+      eapply IHt1.
+      eassumption.
+      eauto.
+      eassumption.
+  
+      ++++
+      right.
+      unfold places in *.
+      invc H2.
+      +++++
+      rewrite eqb_plc_refl in Heqb.
+      solve_by_inversion.
+      +++++
+      eauto.
+    +++ (* In t' (place_terms t2 tp p) *)
+      simpl.
+  
+      assert (In p (places tp t2)).
+    {
+      apply in_plc_term.
+      eapply in_not_nil; eauto.
+    }
+  
+      eapply IHt2.
+      ++++
+      eassumption.
+      ++++
+      right.
+      unfold places in H2.
+      eauto.
+  
+      invc H2.
+      +++++
+        rewrite eqb_plc_refl in *.
+        solve_by_inversion.
+      +++++
+        eassumption.
+      ++++
+      eassumption.
+
+
+  - (* bpar case *)
+
+  ff.
+  ff.
+  +
+  door; try solve_by_inversion.
+  subst.
+  ff.
+  assert (tp = p).
+  {
+    eapply eqb_eq_plc; eauto.
+  }
+  subst.
+
+
+
+  split.
+    ++
+
+
+    find_apply_lem_hyp asdf_easy.
+    destruct_conjs.
+
+    eapply manifest_supports_term_sub.
+    eassumption.
+
+
+    eapply IHt1.
+    eassumption.
+    eauto.
+    apply top_plc_refl.
+
+  ++
+  eapply IHt2.
+  eassumption.
+  eauto.
+  apply top_plc_refl.
+
+  (*
+
+  Lemma in_plc_term : forall p p0 t,
+place_terms t p p0 <> [] ->
+In p0 (places p t).
+  
+  *)
+
+
+  + (* tp <> p *)
+    destruct H0.
+    ++
+      subst.
+      rewrite eqb_plc_refl in *.
+      solve_by_inversion.
+    ++
+
+(*
+    find_apply_lem_hyp asdf.
+    *)
+
+    (*
+    assert (In p (places' t1 []) \/ In p (places' t2 [])).
+    {
+      admit.
+    }
+
+    clear H0.
+    *)
+
+  
+  
+
+  assert ((In t' (place_terms t1 tp p)) \/ (In t' (place_terms t2 tp p))).
+  {
+    eapply in_app_or; eauto.
+  }
+  clear H1.
+
+  destruct H2.
+  +++ (* In t' (place_terms t1 tp p) *)
+  assert (In p (places tp t1)).
+  {
+    apply in_plc_term.
+    eapply in_not_nil.
+    eassumption.
+  }
+    find_apply_lem_hyp asdf.
+    ++++
+    destruct_conjs.
+
+
+
+    eapply manifest_supports_term_sub.
+    eassumption.
+    eapply IHt1.
+    eassumption.
+    eauto.
+    eassumption.
+
+    ++++
+    right.
+    unfold places in *.
+    invc H2.
+    +++++
+    rewrite eqb_plc_refl in Heqb.
+    solve_by_inversion.
+    +++++
+    eauto.
+  +++ (* In t' (place_terms t2 tp p) *)
+    simpl.
+
+    assert (In p (places tp t2)).
+  {
+    apply in_plc_term.
+    eapply in_not_nil; eauto.
+  }
+
+    eapply IHt2.
+    ++++
+    eassumption.
+    ++++
+    right.
+    unfold places in H2.
+    eauto.
+
+    invc H2.
+    +++++
+      rewrite eqb_plc_refl in *.
+      solve_by_inversion.
+    +++++
+      eassumption.
+    ++++
+    eassumption.
+Qed.
+
+
+  (*
+
   - (* lseq case *) 
   ff.
   ff.
@@ -2643,10 +3487,12 @@ Proof.
     eassumption.
     eassumption.
 
-Stopped here basdfasdfasdf
 
 
-Qed.
+
+Admitted.
+
+*)
 
 
 (*
@@ -2786,6 +3632,7 @@ Qed.
 
 Theorem manifest_generator_compiler_soundness_distributed : forall t tp p absMan amLib amConf,
   map_get (manifest_generator t tp) p = Some absMan ->
+  In p (places tp t) ->
   lib_supports_manifest amLib absMan ->
   manifest_compiler absMan amLib = amConf ->
   forall st,
@@ -2808,8 +3655,22 @@ Proof.
     eapply manifest_support_am_config_impl_am_config.
     * eapply manifest_support_am_config_compiler; eauto.
     * (* NOTE: This is the important one, substitute proof of any manifest here *)
-      Check man_gen_old_always_supports.
-      eapply man_gen_old_always_supports; eauto.
-  - rewrite H1; eauto.
+      eapply man_gen_old_always_supports.
+      eassumption.
+      door.
+      +
+        subst.
+        unfold places.
+        left.
+        eauto.
+      +
+        unfold places.
+        right.
+        eauto.
+      +
+        subst.
+        eassumption.
+  - 
+    find_rewrite; eauto.
   Unshelve. eapply min_id_type.
 Qed.
