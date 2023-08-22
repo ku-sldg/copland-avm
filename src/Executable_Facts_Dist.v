@@ -1,6 +1,6 @@
 Require Import Term_Defs_Core Manifest Manifest_Generator Manifest_Generator_Facts Executable_Defs_Prop Manifest_Admits Eqb_Evidence.
 
-Require Import Executable_Facts Params_Admits.
+Require Import Params_Admits.
 
 Require Import StructTactics Auto.
 
