@@ -15,6 +15,7 @@ Import ListNotations.
 Set Nested Proofs Allowed.
 *)
 
+(*
 Fixpoint place_terms (t:Term) (tp:Plc) (p:Plc) : list Term := 
   if(eqb_plc tp p)
   then [t]
@@ -26,16 +27,7 @@ Fixpoint place_terms (t:Term) (tp:Plc) (p:Plc) : list Term :=
     | bseq _ t1 t2 => (place_terms t1 tp p) ++ (place_terms t2 tp p)
     | bpar _ t1 t2 => (place_terms t1 tp p) ++ (place_terms t2 tp p)
     end).
-
-
-Definition distributed_executability 
-    (t:Term) (tp:Plc) (env_map:EnvironmentM) : Prop := 
-    forall p t', 
-      In p (places tp t) /\ 
-      In t' (place_terms t tp p) ->
-      (exists (m:Manifest),
-        Maps.map_get env_map p = Some m /\
-        executable_local t' m).
+*)
 
 
 Definition manifest_subset (m1:Manifest) (m2:Manifest) : Prop :=

@@ -1,5 +1,6 @@
 Require Import Term_Defs_Core Params_Admits Manifest Executable_Dec
-               Example_Phrases_Admits Example_Phrases Eqb_Evidence.
+               Example_Phrases_Admits Example_Phrases Eqb_Evidence
+               Executable_Defs_Prop.
 
 Require Import EqClass Maps StructTactics.
 
@@ -230,6 +231,7 @@ Definition generate_manifest (t : Term) (p : Plc) :=
     |}
   ).
 
+(*
 Fixpoint places' (t:Term) (ls:list Plc) : list Plc :=
   match t with
   | asp _ => ls 
@@ -241,6 +243,14 @@ Fixpoint places' (t:Term) (ls:list Plc) : list Plc :=
 
 Definition places (p:Plc) (t:Term): list Plc := 
   p :: (places' t []).
+
+Definition places_terms' (ts: list Term) (p:Plc) : list (list Plc) :=
+  List.map (places p) ts.
+
+Definition places_terms (ts:list Term) (p:Plc) : list Plc :=
+  dedup_list (List.concat (places_terms' ts p)).
+
+*)
 
 Definition places_terms' (ts: list Term) (p:Plc) : list (list Plc) :=
   List.map (places p) ts.
