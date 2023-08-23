@@ -541,12 +541,6 @@ Proof.
       invc H.
       repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff.
     + (* ENCR case *)
-      (*
-      Print et_fun.
-      Print do_inv_recon_ee.
-      Print do_inv_recon_ee.
-      Locate reconstruct_ev.
-       *)
       
       invc H.
       unfold reconstruct_ev in *.
@@ -3124,8 +3118,6 @@ Proof.
       do_wfec_preserved.
       repeat do_wrap_reconP.
 
-      Print do_wfec_firstn.
-
       do_wfec_firstn.
       do_wfec_skipn.
 
@@ -3227,8 +3219,6 @@ Proof.
 
       do_wfec_preserved.
       repeat do_wrap_reconP.
-
-      Print do_wfec_firstn.
 
       do_wfec_firstn.
       do_wfec_skipn.

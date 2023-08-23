@@ -11,7 +11,7 @@ University of California.  See license.txt for details. *)
 
 (** More facts about lists. *)
 
-Require Import List PeanoNat Compare_dec Lia.
+Require Import List Compare_dec Lia.
 Import List.ListNotations.
 Open Scope list_scope.
 
@@ -31,7 +31,7 @@ Section More_lists.
     - destruct l1 as [|x xs].
       * unfold skipn at 2, length.
         repeat rewrite app_nil_l.
-        rewrite <- Minus.minus_n_O.
+        rewrite PeanoNat.Nat.sub_0_r.
         auto.
       * rewrite <- app_comm_cons. simpl. apply iHk.
   Qed.
@@ -277,7 +277,7 @@ Section More_lists.
       rewrite skipn_app in H0.
       pose proof (le_lt_dec i (length l)) as G.
       destruct G as [G|G].
-      + rewrite <- Nat.sub_0_le in G; auto.
+      + rewrite <- PeanoNat.Nat.sub_0_le in G; auto.
         rewrite G in *.
         simpl in *.
         rewrite app_nil_r in H.
