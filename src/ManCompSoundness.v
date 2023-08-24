@@ -1019,6 +1019,7 @@ Proof.
           {|
             my_abstract_plc := my_abstract_plc;
             asps := asps;
+            appraisal_asps := appraisal_asps;
             uuidPlcs := p :: uuidPlcs;
             pubKeyPlcs := pubKeyPlcs;
             targetPlcs := targetPlcs;
@@ -1030,6 +1031,7 @@ Proof.
           {|
             my_abstract_plc := my_abstract_plc;
             asps := asps;
+            appraisal_asps := appraisal_asps;
             uuidPlcs := p :: uuidPlcs;
             pubKeyPlcs := pubKeyPlcs;
             targetPlcs := targetPlcs;
@@ -1049,6 +1051,7 @@ Proof.
          {|
            my_abstract_plc := my_abstract_plc;
            asps := asps;
+           appraisal_asps := appraisal_asps;
            uuidPlcs := p :: uuidPlcs;
            pubKeyPlcs := pubKeyPlcs;
            targetPlcs := targetPlcs;
@@ -1056,6 +1059,7 @@ Proof.
          |}) p0 = Some {|
          my_abstract_plc := my_abstract_plc;
          asps := asps;
+         appraisal_asps := appraisal_asps;
          uuidPlcs := p :: uuidPlcs;
          pubKeyPlcs := pubKeyPlcs;
          targetPlcs := targetPlcs;
@@ -1070,6 +1074,7 @@ Proof.
       specialize H with (m1 := {|
         my_abstract_plc := my_abstract_plc;
         asps := asps;
+        appraisal_asps := appraisal_asps;
         uuidPlcs := p :: uuidPlcs;
         pubKeyPlcs := pubKeyPlcs;
         targetPlcs := targetPlcs;
@@ -1091,6 +1096,7 @@ Proof.
           {|
             my_abstract_plc := my_abstract_plc;
             asps := asps;
+            appraisal_asps := appraisal_asps;
             uuidPlcs := p :: uuidPlcs;
             pubKeyPlcs := pubKeyPlcs;
             targetPlcs := targetPlcs;
@@ -1102,6 +1108,7 @@ Proof.
           {|
             my_abstract_plc := my_abstract_plc;
             asps := asps;
+            appraisal_asps := appraisal_asps;
             uuidPlcs := p :: uuidPlcs;
             pubKeyPlcs := pubKeyPlcs;
             targetPlcs := targetPlcs;
@@ -1121,6 +1128,7 @@ Proof.
          {|
            my_abstract_plc := my_abstract_plc;
            asps := asps;
+           appraisal_asps := appraisal_asps;
            uuidPlcs := p :: uuidPlcs;
            pubKeyPlcs := pubKeyPlcs;
            targetPlcs := targetPlcs;
@@ -1128,6 +1136,7 @@ Proof.
          |}) p0 = Some {|
          my_abstract_plc := my_abstract_plc;
          asps := asps;
+         appraisal_asps := appraisal_asps;
          uuidPlcs := p :: uuidPlcs;
          pubKeyPlcs := pubKeyPlcs;
          targetPlcs := targetPlcs;
@@ -1142,6 +1151,7 @@ Proof.
       specialize H with (m1 := {|
         my_abstract_plc := my_abstract_plc;
         asps := asps;
+        appraisal_asps := appraisal_asps;
         uuidPlcs := p :: uuidPlcs;
         pubKeyPlcs := pubKeyPlcs;
         targetPlcs := targetPlcs;
@@ -1474,6 +1484,7 @@ Proof.
               {|
                 my_abstract_plc := my_abstract_plc;
                 asps := asps;
+                appraisal_asps := appraisal_asps;
                 uuidPlcs := p :: uuidPlcs;
                 pubKeyPlcs := pubKeyPlcs;
                 targetPlcs := targetPlcs;
@@ -1497,6 +1508,7 @@ Proof.
               {|
                 my_abstract_plc := empty_Manifest_Plc;
                 asps := [];
+                appraisal_asps := [];
                 uuidPlcs := [p];
                 pubKeyPlcs := [];
                 targetPlcs := [];

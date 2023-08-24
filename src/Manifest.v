@@ -39,6 +39,7 @@ Definition PlcMap := MapC Plc Address.
     my_abstract_plc   : Plc ; 
 
     asps              : list ASP_ID ;
+    appraisal_asps    : list (Plc * ASP_ID) ;
     uuidPlcs          : list Plc ;
     pubKeyPlcs        : list Plc ;
     targetPlcs        : list Plc ;
@@ -47,7 +48,7 @@ Definition PlcMap := MapC Plc Address.
   }.
 
   Definition empty_Manifest : Manifest :=
-    Build_Manifest empty_Manifest_Plc [] [] [] [] empty_PolicyT.
+    Build_Manifest empty_Manifest_Plc [] [] [] [] [] empty_PolicyT.
 
 (** Representation of a system's environment/resources used to populate a 
     ConcreteManifest based on an abstract Manifest. *)

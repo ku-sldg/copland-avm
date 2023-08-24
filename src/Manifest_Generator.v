@@ -12,20 +12,22 @@ Import ListNotations.
 Definition aspid_manifest_update (i:ASP_ID) (m:Manifest) : Manifest := 
   let '{| my_abstract_plc := oldPlc;
           asps := oldasps; 
+          appraisal_asps := old_app_asps;
           uuidPlcs := oldKnowsOf; 
           pubKeyPlcs := oldContext; 
           targetPlcs := oldTargets ;
           policy := oldPolicy |} := m in
-  (Build_Manifest oldPlc (i::oldasps) oldKnowsOf oldContext oldTargets oldPolicy).
+  (Build_Manifest oldPlc (i::oldasps) old_app_asps oldKnowsOf oldContext oldTargets oldPolicy).
 
 Definition knowsof_manifest_update (toPlc:Plc) (m:Manifest) : Manifest := 
     let '{| my_abstract_plc := oldPlc;
             asps := oldasps; 
+            appraisal_asps := old_app_asps;
             uuidPlcs := oldKnowsOf; 
             pubKeyPlcs := oldContext; 
             targetPlcs := oldTargets ;
             policy := oldPolicy |} := m in
-    (Build_Manifest oldPlc oldasps (toPlc::oldKnowsOf) oldContext oldTargets oldPolicy).
+    (Build_Manifest oldPlc oldasps old_app_asps (toPlc::oldKnowsOf) oldContext oldTargets oldPolicy).
 
 Definition knowsof_myPlc_manifest_update (m:Manifest) : Manifest :=
   knowsof_manifest_update (my_abstract_plc m) m.
@@ -33,38 +35,42 @@ Definition knowsof_myPlc_manifest_update (m:Manifest) : Manifest :=
 Definition myPlc_manifest_update (p:Plc) (m:Manifest) : Manifest := 
   let '{| my_abstract_plc := _;
           asps := oldasps; 
+          appraisal_asps := old_app_asps;
           uuidPlcs := oldKnowsOf; 
           pubKeyPlcs := oldContext; 
           targetPlcs := oldTargets; 
           policy := oldPolicy |} := m in
-  (Build_Manifest p oldasps oldKnowsOf oldContext oldTargets oldPolicy).
+  (Build_Manifest p oldasps old_app_asps oldKnowsOf oldContext oldTargets oldPolicy).
 
 Definition pubkey_manifest_update (p:Plc) (m:Manifest) : Manifest := 
   let '{| my_abstract_plc := oldPlc;
           asps := oldasps; 
+          appraisal_asps := old_app_asps;
           uuidPlcs := oldKnowsOf; 
           pubKeyPlcs := oldContext; 
           targetPlcs := oldTargets ;
           policy := oldPolicy |} := m in
-  (Build_Manifest oldPlc oldasps oldKnowsOf (p::oldContext) oldTargets oldPolicy).
+  (Build_Manifest oldPlc oldasps old_app_asps oldKnowsOf (p::oldContext) oldTargets oldPolicy).
 
 Definition pubkeys_manifest_update (ps:list Plc) (m:Manifest) : Manifest := 
         let '{| my_abstract_plc := oldMyPlc;
                 asps := oldasps; 
+                appraisal_asps := old_app_asps;
                 uuidPlcs := oldKnowsOf; 
                 pubKeyPlcs := _; 
                 targetPlcs := oldTargets ;
                 policy := oldPolicy |} := m in
-        (Build_Manifest oldMyPlc oldasps oldKnowsOf ps oldTargets oldPolicy).
+        (Build_Manifest oldMyPlc oldasps old_app_asps oldKnowsOf ps oldTargets oldPolicy).
 
 Definition update_manifest_policy_targ (targp:Plc) (targid:Plc) (m:Manifest) : Manifest :=
   let '{| my_abstract_plc := oldMyPlc;
           asps := oldasps; 
+          appraisal_asps := old_app_asps;
           uuidPlcs := oldKnowsOf; 
           pubKeyPlcs := oldContext ; 
           targetPlcs := oldTargets ;
           policy := oldPolicy |} := m in
-  (Build_Manifest oldMyPlc oldasps oldKnowsOf oldContext (targp :: oldTargets) oldPolicy).
+  (Build_Manifest oldMyPlc oldasps old_app_asps oldKnowsOf oldContext (targp :: oldTargets) oldPolicy).
 
   
 Definition asp_manifest_update (a:ASP) (m:Manifest) : Manifest :=

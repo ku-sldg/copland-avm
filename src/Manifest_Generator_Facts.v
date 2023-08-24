@@ -31,6 +31,7 @@ Fixpoint place_terms (t:Term) (tp:Plc) (p:Plc) : list Term :=
 
 Definition manifest_subset (m1:Manifest) (m2:Manifest) : Prop :=
   (forall i, In i (asps m1) -> In i (asps m2)) /\
+  (forall pr, In pr (appraisal_asps m1) -> In pr (appraisal_asps m2)) /\
   (forall p, In p (uuidPlcs m1) -> In p (uuidPlcs m2)) /\
   (forall q, In q (pubKeyPlcs m1) -> In q (pubKeyPlcs m2)) /\
   (forall p, In p (targetPlcs m1) -> In p (targetPlcs m2)).
@@ -186,7 +187,7 @@ Proof.
       destruct a; simpl in *; eauto.
     * assert (p <> p0). intros HC. rewrite <- eqb_leibniz in HC. 
       rewrite eqb_symm in HC; congruence.
-      erewrite (mapC_get_distinct_keys e2 p p0 _ _ H5 H2); eexists; intuition; eauto.
+      erewrite (mapC_get_distinct_keys e2 p p0 _ _ H6 H2); eexists; intuition; eauto.
 
   - (* at case *)
     eapply IHt; clear IHt; unfold Environment_subset in *; intuition.
@@ -330,8 +331,7 @@ Proof.
       ff.
       unfold manifest_subset in H3.
       destruct_conjs.
-      apply H4.
-      eassumption.
+      eauto.
     ++
     unfold Environment_subset in *; ff.
     specialize H0 with (m1:=m) (p:=p0).
@@ -369,10 +369,130 @@ Proof.
   - rewrite eqb_leibniz in *; subst;
     rewrite mapC_get_works in *; ff;
     try (eexists; simpl in *; intuition; simpl in *; eauto; fail);
+    simpl in *; intuition; eauto; 
+    try
     destruct (H _ _ Heqo0); simpl in *; intuition; eauto.
     * find_rewrite; find_injection;
       eexists; simpl in *; intuition; simpl in *; eauto.
+
+    * find_injection.
+    eexists; simpl in *; intuition; simpl in *; eauto.
+
+      * find_rewrite; congruence.
+      * find_rewrite; find_injection.
+        eexists; simpl in *; intuition; simpl in *; eauto.
+
+
+(*
+
     * find_rewrite; congruence.
+
+
+
+
+
+
+
+
+
+
+unfold Environment_subset, manifest_subset, at_manifest_generator,
+knowsof_manifest_update, manifest_update_env, empty_Manifest in *; 
+simpl in *; intuition.
+destruct (eqb p0 p1) eqn:E.
+- rewrite eqb_leibniz in *; subst;
+rewrite mapC_get_works in *; ff;
+try (eexists; simpl in *; intuition; simpl in *; eauto; fail);
+try destruct (H _ _ Heqo0); simpl in *; intuition; eauto.
+* find_rewrite; find_injection;
+  eexists; simpl in *; intuition; simpl in *; eauto.
+* 
+  Print find_injection.
+
+
+find_injection.
+
+admit. 
+* find_rewrite; congruence.
+* find_rewrite.
+  find_rewrite.
+  invc Heqm.
+  invc Heqm0.
+  eexists; simpl in *; intuition; simpl in *; eauto.
+
+
+  Locate find_injection.
+  
+  find_injection.
+  find_rewrite.
+  ff.
+
+
+find_rewrite; find_injection;
+  eexists; simpl in *; intuition; simpl in *; eauto.
+* find_rewrite; congruence.
+
+
+
+
+
+
+
+
+
+
+
+
+
+  unfold Environment_subset, manifest_subset, at_manifest_generator,
+    knowsof_manifest_update, manifest_update_env, empty_Manifest in *; 
+  simpl in *; intuition.
+  destruct (eqb p0 p1) eqn:E.
+  - rewrite eqb_leibniz in *; subst;
+    rewrite mapC_get_works in *; ff;
+    try (eexists; simpl in *; intuition; simpl in *; eauto; fail).
+
+    * destruct (H _ _ Heqo0); simpl in *; intuition; eauto.
+      eexists.
+      split; try reflexivity.
+      split; intros; simpl; try eauto.
+      ff.
+      find_rewrite.
+      ff.
+      find_rewrite.
+      ff.
+      split;
+      eauto.
+      split; eauto.
+      intros.
+      door; eauto.
+
+
+    * invc Heqm0.
+      eexists.
+      split; try reflexivity.
+      split; simpl;  try intuition.
+
+    * destruct (H _ _ Heqo0); simpl in *; intuition; eauto.
+      eexists.
+      split; try reflexivity.
+      split; intros; simpl; try eauto.
+      ff.
+      find_rewrite.
+      ff.
+      find_rewrite.
+      ff.
+
+      * invc Heqm0.
+      eexists.
+      split; try reflexivity.
+      split; simpl;  try intuition.
+
+*)
+
+
+
+
   - ff; subst; simpl in *;
     try (eexists; simpl in *; intuition; simpl in *; eauto; fail);
     assert (p0 <> p1) by (intros HC; rewrite <- eqb_leibniz in HC; congruence);
@@ -558,6 +678,7 @@ Proof.
             my_abstract_plc :=
               Manifest_Admits.empty_Manifest_Plc;
             asps := [];
+            appraisal_asps := [];
             uuidPlcs := [p];
             pubKeyPlcs := [];
             targetPlcs := [];
@@ -571,6 +692,7 @@ Proof.
                  my_abstract_plc :=
                    Manifest_Admits.empty_Manifest_Plc;
                  asps := [];
+                 appraisal_asps := [];
                  uuidPlcs := [p];
                  pubKeyPlcs := [];
                  targetPlcs := [];
@@ -602,6 +724,7 @@ Proof.
     {|
                 my_abstract_plc := Manifest_Admits.empty_Manifest_Plc;
                 asps := [];
+                appraisal_asps := [];
                 uuidPlcs := [p];
                 pubKeyPlcs := [];
                 targetPlcs := [];
@@ -618,6 +741,7 @@ Proof.
       {|
         my_abstract_plc := Manifest_Admits.empty_Manifest_Plc;
         asps := [];
+        appraisal_asps := [];
         uuidPlcs := [p];
         pubKeyPlcs := [];
         targetPlcs := [];
@@ -629,6 +753,7 @@ Proof.
               {|
                 my_abstract_plc := Manifest_Admits.empty_Manifest_Plc;
                 asps := [];
+                appraisal_asps := [];
                 uuidPlcs := [p];
                 pubKeyPlcs := [];
                 targetPlcs := [];
@@ -649,8 +774,7 @@ Proof.
       }
       unfold manifest_subset in H; ff.
       destruct_conjs.
-      apply H0.
-      left; eauto.
+      eauto.
     +
     assert (executable_global t p (manifest_generator' p t e_empty)).
     { eauto. }
@@ -721,6 +845,7 @@ Lemma man_gen_map_getter' : forall t u preEnv p st postEnv,
     (map_get (manifest_generator' u t (preEnv ++ (p, st) :: postEnv)) p = Some st') /\
     (forall x, In x st.(uuidPlcs) -> In x st'.(uuidPlcs)) /\
     (forall x, In x st.(asps) -> In x st'.(asps)) /\
+    (forall x, In x st.(appraisal_asps) -> In x st'.(appraisal_asps)) /\
     (forall x, In x st.(pubKeyPlcs) -> In x st'.(pubKeyPlcs)).
 Proof.
   intros.
@@ -746,6 +871,7 @@ Lemma man_gen_map_getter : forall t u p st stEnv,
     (map_get (manifest_generator' u t (map_set stEnv p st)) p = Some st') /\
     (forall x, In x st.(uuidPlcs) -> In x st'.(uuidPlcs)) /\
     (forall x, In x st.(asps) -> In x st'.(asps)) /\
+    (forall x, In x st.(appraisal_asps) -> In x st'.(appraisal_asps)) /\
     (forall x, In x st.(pubKeyPlcs) -> In x st'.(pubKeyPlcs)).
 Proof.
   intuition;
@@ -753,12 +879,15 @@ Proof.
   intuition; find_rewrite; eauto.
 Qed.
 
+(*
+
 Lemma man_gen_self_map_getter : forall t u p st backEnv,
   map_get backEnv p = Some st ->
   exists st', 
     (map_get (manifest_generator' u t backEnv) p = Some st') /\
     (forall x, In x st.(uuidPlcs) -> In x st'.(uuidPlcs)) /\
     (forall x, In x st.(asps) -> In x st'.(asps)) /\
+    (forall x, In x st.(appraisal_asps) -> In x st'.(appraisal_asps)) /\
     (forall x, In x st.(pubKeyPlcs) -> In x st'.(pubKeyPlcs)).
 Proof.
   induction t; simpl in *; intuition; eauto.
@@ -830,6 +959,7 @@ Proof.
     destruct H3; intuition;
     exists x0; intuition; eauto.
 Qed.
+*)
 
 Theorem manifest_generator_executability_static' :
     forall (t:Term) (p:Plc) stEnv, 
@@ -854,6 +984,7 @@ Proof.
       '{|
         my_abstract_plc := oldPlc;
         asps := oldasps;
+        appraisal_asps := old_app_asps;
         uuidPlcs := oldKnowsOf;
         pubKeyPlcs := oldContext;
         targetPlcs := oldTargets;
@@ -865,6 +996,7 @@ Proof.
       {|
         my_abstract_plc := oldPlc;
         asps := oldasps;
+        appraisal_asps := old_app_asps;
         uuidPlcs := p :: oldKnowsOf;
         pubKeyPlcs := oldContext;
         targetPlcs := oldTargets;
