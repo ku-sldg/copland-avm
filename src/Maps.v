@@ -52,13 +52,20 @@ Definition map_empty{A B:Type} `{H : EqClass A} : MapC A B := [].
 Fixpoint map_get{A B:Type} `{H : EqClass A} (m : MapC A B ) x : option B :=
   match m with
   | [] => None
-  | (k, v) :: m' => if eqb x k then Some v else map_get m' x
+  | (k, v) :: m' => if eqb k x then Some v else map_get m' x
   end.
 
 (** To [set] the binding of an identifier, we just need to [cons] 
     it at the front of the list. *) 
 
-Definition map_set{A B:Type} `{H : EqClass A} (m:MapC A B) (x:A) (v:B) : MapC A B := (x, v) :: m.
+Fixpoint map_set{A B:Type} `{H : EqClass A} (m:MapC A B) (x:A) (v:B) : MapC A B := 
+  match m with
+  | nil => (x,v) :: nil
+  | (hk, hv) :: t =>
+      if (eqb hk x)
+      then (hk, v) :: t
+      else (hk, hv) :: (map_set t x v)
+  end.
 
 Fixpoint map_vals{A B:Type} `{H : EqClass A} (m : MapC A B ) : list B :=
   match m with
@@ -75,27 +82,10 @@ Fixpoint invert_map {A B : Type} `{HA : EqClass A, HB : EqClass B} (m : MapC A B
 Theorem mapC_get_works{A B:Type} `{H : EqClass A} : forall m (x:A) (v:B),
   map_get (map_set m x v) x = Some v.
 Proof.
-  intros.
-  induction m; simpl.
-  -
-    specialize eqb_leibniz with (x:=x) (y:=x).
-    assert (eqb x x = true).
-    {
-      rewrite eqb_leibniz.
-      eauto.
-    }
-    rewrite H0.
-    eauto.
-  -
-  specialize eqb_leibniz with (x:=x) (y:=x).
-  assert (eqb x x = true).
-  {
-    rewrite eqb_leibniz.
-    eauto.
-  }
-
-    find_rewrite.
-    eauto.
+  induction m; simpl in *; intuition; eauto.
+  - rewrite eqb_refl; eauto.
+  - destruct (eqb a0 x) eqn:E;
+    simpl in *; rewrite E; eauto.
 Qed.
 
 Lemma mapC_get_distinct_keys{A B:Type} `{H : EqClass A} : 
@@ -104,15 +94,130 @@ Lemma mapC_get_distinct_keys{A B:Type} `{H : EqClass A} :
   map_get m k2 = Some v2 ->
   map_get (map_set m k1 v1) k2 = Some v2.
 Proof.
-Admitted.
+  induction m; simpl in *; intuition; eauto; try congruence.
+  repeat break_if; repeat find_injection;
+  repeat rewrite eqb_leibniz in *; subst; eauto;
+  try congruence; simpl in *;
+  try find_rewrite; eauto;
+  rewrite eqb_refl; eauto.
+Qed.
 
-Lemma map_set_id{A B:Type} `{H : EqClass A} : 
-  forall e (p:A) (m:B),
-map_get e p = Some m ->
-e = map_set e p m.
-Admitted.
+Lemma map_set_id{A B:Type} `{H : EqClass A} : forall e (p:A) (m:B),
+  map_get e p = Some m ->
+  e = map_set e p m.
+Proof.
+  induction e; simpl in *; intuition; eauto; try congruence;
+  repeat break_if; repeat find_injection; eauto.
+  erewrite <- IHe; eauto.
+Qed.
+
+Lemma mapC_get_distinct_keys_from_set {A B :Type} `{H : EqClass A} : forall (m : MapC A B) k1 k2 v1 v2,
+  k1 <> k2 ->
+  map_get (map_set m k1 v1) k2 = Some v2 ->
+  map_get m k2 = Some v2.
+Proof.
+  induction m; simpl in *; intuition; eauto; try congruence.
+  - break_if; try rewrite eqb_leibniz in *; intuition.
+  - repeat break_if; repeat (rewrite eqb_leibniz in *; subst); intuition; eauto;
+    simpl in *; try rewrite eqb_refl in *; repeat find_injection; eauto;
+    repeat find_rewrite; eauto.
+Qed.
 
 
+Lemma map_distinct_key_rw {A B:Type} `{H : EqClass A} : 
+  forall m (k1 k2:A) (v1 v2:B),
+  k1 <> k2 ->
+  map_get (map_set m k1 v1) k2 = map_get m k2.
+Proof.
+  induction m; simpl in *; intuition; eauto; try congruence.
+  - break_match; eauto; rewrite eqb_leibniz in *; congruence.
+  - repeat break_if; repeat find_injection;
+    repeat rewrite eqb_leibniz in *; subst; eauto;
+    try congruence; simpl in *;
+    try find_rewrite; eauto;
+    rewrite eqb_refl; eauto.
+Qed.
+
+Theorem map_has_buried : forall {A B : Type} `{EqClass A} (pre : list (A * B)) key val post,
+  exists val', map_get (pre ++ (key, val) :: post) key = Some val'.
+Proof.
+  induction pre; simpl in *; intuition; eauto.
+  - rewrite eqb_refl; eauto.
+  - break_if; try find_injection; try congruence; eauto.
+Qed.
+
+Theorem map_app_unfolder: forall {A B : Type} `{EqClass A} 
+    (pre : list (A * B)) key val post val',
+  map_get (pre ++ (key, val) :: post) key = Some val' ->
+  map_get pre key = None ->
+  val = val'.
+Proof.
+  induction pre; simpl in *; intuition; eauto.
+  - rewrite eqb_refl in *; find_injection; eauto.
+  - break_if; try find_injection; try congruence; eauto.
+Qed.
+
+Theorem map_sandwich_not_none: forall {A B : Type} `{EqClass A} 
+    (pre : list (A * B)) key val post,
+  map_get (pre ++ (key, val) :: post) key = None -> False.
+Proof.
+  induction pre; simpl in *; intuition; eauto.
+  - rewrite eqb_refl in *; congruence.
+  - break_if; try find_injection; try congruence; eauto.
+Qed.
+
+Lemma map_set_sandwiched : forall {A B : Type} `{EqClass A},
+  forall (m : MapC A B) k v,
+  exists preM postM, 
+    map_set m k v = preM ++ (k, v) :: postM /\
+    map_get preM k = None.
+Proof.
+  induction m; simpl in *; intuition; eauto.
+  - exists nil, nil; simpl in *; eauto.
+  - destruct (IHm k v) as [preM' [postM' H']].
+    break_match.
+    * rewrite eqb_leibniz in *; subst;
+      exists nil, m; eauto.
+    * exists ((a0,b) :: preM'), (postM'); 
+      intuition.
+      ** rewrite H0; eauto.
+      ** simpl; rewrite Heqb0; eauto.
+Qed.
+
+Theorem map_set_unfolder : forall {A B : Type} `{EqClass A},
+  forall (m : MapC A B) k1 k2 v1 v2,
+  k1 <> k2 ->
+  map_get m k1 = None ->
+  map_get (map_set m k2 v2) k1 = Some v1 ->
+  False.
+Proof.
+  induction m; intuition; eauto.
+  - simpl in *; repeat break_match; 
+    repeat find_injection; try (rewrite eqb_leibniz in *; subst);
+    try congruence.
+  - destruct (eqb a0 k1) eqn:E.
+    * rewrite eqb_leibniz in *; subst.
+      simpl in *; rewrite eqb_refl in *; congruence.
+    * destruct (eqb a0 k2) eqn:E1.
+      ** rewrite eqb_leibniz in *; subst.
+          simpl in *; repeat find_rewrite.
+          rewrite eqb_refl in *.
+          assert (map_get (map_set m k2 v2) k1 = Some v1). {
+            simpl in *; find_rewrite; congruence.
+          }
+          eauto.
+      ** simpl in *; repeat find_rewrite; simpl in *.
+         find_rewrite; eauto.
+Qed.
+
+Theorem map_get_none_iff_not_some : forall {A B : Type} `{EqClass A},
+  forall (m : MapC A B) k,
+  map_get m k = None <-> (forall v, map_get m k = Some v -> False).
+Proof.
+  induction m; simpl in *; intuition; eauto; try congruence.
+  break_match; try congruence.
+  erewrite IHm; eauto.
+Qed.
 
 (* A two-way implementation of list maps, where you can lookup from a key, or value *)
 Definition MapD (A:Type) (B:Type) `{H : EqClass A} `{H1 : EqClass B} := list (A * B).
@@ -220,7 +325,7 @@ Proof.
     destruct IHm.
     * (* bound_to m x a *)
       destruct a.
-      destruct (eqb x a) eqn:E.
+      destruct (eqb a x) eqn:E.
       ** (* x = a *)
          left. exists b. econstructor. simpl. 
          rewrite E. auto.
@@ -233,7 +338,7 @@ Proof.
         left. auto.
     * (* ~ (exists a, bound_to m x a )*)
       destruct a.
-      destruct (eqb x a) eqn:E.
+      destruct (eqb a x) eqn:E.
       ** (* x = a *)
          left. exists b. econstructor; simpl; rewrite E; auto.
       ** (* x <> a *)

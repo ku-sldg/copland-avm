@@ -338,22 +338,6 @@ Proof.
       inv_in; try solve_by_inversion.
       apply evtsattrpy.
       lia.
-      (*   
-      eauto.
-      eapply IHtrace.
-      eassumption.
-      repeat find_rewrite.
-      Print evtsattrpy.
-
-      
-      econstructor.
-      apply evtsattrpy; auto.
-      econstructor.
-      
-      apply evtsatt; auto.
-      inv H; try inv H1.
-      rewrite H9; simpl.
-      apply evtsattrpy; auto. *)
     +
       rewrite in_app_iff in *.
       destruct_disjunct.

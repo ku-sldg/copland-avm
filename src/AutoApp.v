@@ -1,6 +1,6 @@
 (* Misc automation tactics.  Some of these might be repeats or overlap. *)
 
-Require Import StructTactics Auto (* Helpers_CvmSemantics *) Cvm_St Cvm_Monad StMonad_Coq Cvm_Impl.
+Require Import StructTactics Auto (* Helpers_CvmSemantics *) Cvm_St Cvm_Monad ErrorStMonad_Coq Cvm_Impl.
 Require Import List.
 
 Ltac dosome_eq y :=
@@ -83,26 +83,27 @@ Ltac do_inv_head :=
     | [H: ?ls ++ ?xs = ?ls ++ ?ys |- _] => assert_new_proof_by (xs = ys) tac
     end.
 
+(* 
+(* Characterizing results of CVM execution. 
+   TODO:  Need to revisit this to incoporate error results.
+   TODO:  Perhaps make assumptions about input manifest fields and executability?
 
-(* CVM execution always succeeds.  
-   Note:  This may need revisiting if we consider more robust models of CVM failure. *)
-Lemma always_some : forall t vm_st vm_st' op,
-    build_cvm t vm_st = (op, vm_st') ->
-    op = Some tt.
+   Noted when CVM used just a State (no Error) Monad: 
+      This may need revisiting if we consider more robust models of CVM failure. *)
+Lemma always_some : forall t vm_st vm_st' op ac,
+    build_cvm t ac vm_st = (op, vm_st') ->
+    op = resultC tt (* Some tt *).
 Proof.
   induction t; intros.
-  -
-    destruct a; (* asp *)
+  - destruct a; (* asp *)
       try destruct a; (* asp params *)
-      try (df; tauto).
+      try (df; tauto). simpl in *.
   -
     repeat (df; try dohtac; df).
     tauto.
   -
     df.
-    
-    destruct o eqn:hhh;
-      try (df; eauto).
+    break_match; df; eauto.
   -
     df.
 
@@ -111,23 +112,19 @@ Proof.
           df; eauto).
   -
     df.
-    dohtac.
+    try dohtac.
     df.
     simpl.
 
-    assert (o = Some tt) by eauto.
-    subst.
-    vmsts.
-    df.
-    tauto.
-Defined.
-
+    break_match; ff; eauto.
+Defined. *)
+(* 
 Ltac do_somett :=
   match goal with
   | [H: build_cvm ?t _ = (?o, _)
      |- _] =>
-    assert_new_proof_by (o = Some tt) ltac:(eapply always_some; [apply H])
-  end.
+    assert_new_proof_by (o = resultC tt) ltac:(eapply always_some; [apply H])
+  end. *)
 
 
 Ltac clear_triv :=
@@ -135,12 +132,12 @@ Ltac clear_triv :=
   | [H: ?x = ?x |- _] => clear H
   end.
 
-Ltac do_asome := repeat do_somett; repeat clear_triv.
+(* Ltac do_asome := repeat do_somett; repeat clear_triv. *)
 
 Ltac dd :=
   repeat (
       df;
       annogo;
       dosome;
-      do_asome;
+      (* do_asome; *)
       subst).

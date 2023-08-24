@@ -6,6 +6,8 @@ Author:  Adam Petz, ampetz@ku.edu
 
 Require Import Term_Defs Anno_Term_Defs LTS IO_Stubs.
 
+Require Import ErrorStMonad_Coq.
+
 Require Import List.
 Import ListNotations.
 
@@ -39,14 +41,15 @@ Axiom remote_LTS: forall t annt n et i i',
     annoP_indexed annt t i i' ->
     lstar (conf annt n et) (cvm_events t n et) (stop n (aeval annt n et)).
 
-
+(*
 Axiom remote_Evidence_Type_Axiom: forall t n bits et,
     get_et (doRemote_session t n (evc bits et)) = eval t n et.
+*)
 
-
+(*
 Axiom at_evidence : forall t (p:Plc) (e:EvC),
     doRemote_session t p e = cvm_evidence t p e.
-
+*)
 
 Axiom par_evidence : forall t (p:Plc) (e:EvC) loc,
     parallel_vm_thread loc (copland_compile t) p e = cvm_evidence t p e.
@@ -67,7 +70,13 @@ Axiom thread_bookend_peel: forall (t:AnnoTerm) p (*et*) etr l (a:Core_Term) tr,
      (shuffled_events tr (cvm_events_core a p etr))
     ).
 
-
+(*
 Axiom wf_ec_preserved_remote: forall a n e,
     wf_ec e ->
     wf_ec (doRemote_session a n e).
+    *)
+
+Axiom wf_ec_preserved_remote: forall t p u ev1 ev1' evc1 r0,
+    doRemote_uuid t u (get_bits ev1) = resultC ev1' -> 
+    wf_ec evc1 -> 
+    wf_ec (evc r0 (eval t p (get_et evc1))).

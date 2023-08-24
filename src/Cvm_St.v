@@ -4,9 +4,11 @@ Record representing the CVM Monad state structure.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import ConcreteEvidence StMonad_Coq AbstractedTypes.
+Require Import ConcreteEvidence ErrorStMonad_Coq AbstractedTypes Manifest Manifest_Admits.
 Require Import List.
 Import ListNotations.
+
+Require Export Manifest.
 
 (** CVM monad state structure.
 
@@ -18,16 +20,48 @@ Import ListNotations.
     st_evid - Monotonic event ID counter.  Incremented after each 
               attestation-relevant event/invocation.
  *)
+
+
+Definition emptyConcreteMan : ConcreteManifest := {|
+  my_plc := min_id_type;
+  Concrete_ASPs := nil;
+  Concrete_Plcs := nil;
+  Concrete_PubKeys := nil;
+  Concrete_Targets := nil;
+  ASP_Server := empty_ASP_Address;
+  PubKey_Server := empty_ASP_Address;
+  Plc_Server := empty_ASP_Address;
+  UUID_Server := empty_ASP_Address;
+|}.
+
+Definition empty_am_config : AM_Config :=
+  mkAmConfig 
+    emptyConcreteMan 
+    (fun x => fun _ => fun _ => fun _ => errC Unavailable)
+    (fun x => errC Unavailable)
+    (fun x => errC Unavailable)
+    (fun x => errC Unavailable).
+
 Record cvm_st : Type := mk_st
                           {st_ev:EvC ;
                            st_trace:list Ev ;
                            st_pl:Plc;
-                           st_evid:Event_ID}.
+                           st_evid:Event_ID ;
+                           st_AM_config : AM_Config ;
+                           }.
 
-Definition empty_vmst := mk_st (evc [] mt) [] min_id_type 0.
+Definition empty_vmst : cvm_st := mk_st (evc [] mt) [] min_id_type 0 empty_am_config.
 
-(** CVM monad -- simple instantiation of the general St monad with cvm_st *)
-Definition CVM := St cvm_st.
+
+
+Inductive CVM_Error : Type := 
+| at_error_static : Term -> Plc -> EvC -> CVM_Error
+| at_error_dynamic : Term -> UUID -> EvC -> CVM_Error
+| dispatch_error : DispatcherErrors -> CVM_Error.
+(* | callback_error : CallBackErrors -> CVM_Error. *)
+
+(** CVM monad -- instantiation of the general ResultT monad with cvm_st *)
+Definition CVM A := Err cvm_st A CVM_Error.
 
 (* Look for cvm_st hyps and destruct them *)
 Ltac vmsts :=

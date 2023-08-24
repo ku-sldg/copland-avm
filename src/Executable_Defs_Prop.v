@@ -1,5 +1,6 @@
 Require Import Term_Defs_Core Manifest_Admits Manifest Params_Admits EnvironmentM.
 
+Require Import Eqb_Evidence.
 Require Import List.
 Import ListNotations.
 
@@ -36,6 +37,41 @@ Fixpoint executable_local (t:Term) (e:Manifest) : Prop :=
   | bseq _ t1 t2 => executable_local t1 e /\ executable_local t2 e
   | bpar _ t1 t2 => executable_local t1 e /\ executable_local t2 e
   end.
+
+  Fixpoint places' (t:Term) (ls:list Plc) : list Plc :=
+  match t with
+  | asp _ => ls 
+  | att q t' => (q :: (places' t' ls))
+  | lseq t1 t2 => places' t2 (places' t1 ls)
+  | bseq _ t1 t2 => places' t2 (places' t1 ls)
+  | bpar _ t1 t2 => places' t2 (places' t1 ls)
+  end.
+
+Definition places (p:Plc) (t:Term): list Plc := 
+  p :: (places' t []).
+
+  Fixpoint place_terms (t:Term) (tp:Plc) (p:Plc) : list Term := 
+    if(eqb_plc tp p)
+    then [t]
+    else (
+      match t with 
+      | asp a => []
+      | att q t' => place_terms t' q p (* if (eqb_plc p q) then ([t'] ++ (place_terms t' q p)) else (place_terms t' q p) *)
+      | lseq t1 t2 => (place_terms t1 tp p) ++ (place_terms t2 tp p)
+      | bseq _ t1 t2 => (place_terms t1 tp p) ++ (place_terms t2 tp p)
+      | bpar _ t1 t2 => (place_terms t1 tp p) ++ (place_terms t2 tp p)
+      end).
+
+
+
+  Definition distributed_executability 
+  (t:Term) (tp:Plc) (env_map:EnvironmentM) : Prop := 
+  forall p t', 
+    In p (places tp t) /\ 
+    In t' (place_terms t tp p) ->
+    (exists (m:Manifest),
+      Maps.map_get env_map p = Some m /\
+      executable_local t' m).
 
 Definition canRunAsp_Env (k:Plc) (em:EnvironmentM) (ps: ASP_PARAMS) : Prop := 
 match (Maps.map_get em k) with 

@@ -1,7 +1,8 @@
 Require Import Term_Defs_Core Params_Admits Manifest Executable_Dec
-               Example_Phrases_Admits Example_Phrases Eqb_Evidence.
+               Example_Phrases_Admits Example_Phrases Eqb_Evidence
+               Executable_Defs_Prop.
 
-Require Import EqClass Maps.
+Require Import EqClass Maps StructTactics.
 
 Require Export EnvironmentM.
 
@@ -129,6 +130,24 @@ Definition manifest_generator_terms (p:Plc) (ts:list Term) : EnvironmentM :=
 Definition manifest_generator (t:Term) (p:Plc) : EnvironmentM :=
   manifest_generator' p t e_empty.
 
+Lemma manifest_generator_never_empty : forall t p e,
+  manifest_generator' p t e <> nil.
+Proof.
+  induction t; simpl in *; intuition; eauto.
+  - destruct a; unfold asp_manifest_generator, 
+      manifest_update_env, asp_manifest_update in *; 
+    repeat break_match; destruct e; simpl in *; try congruence;
+    try (destruct p0; break_if; congruence);
+    try (destruct p1; break_if; congruence).
+Qed.
+
+
+
+
+
+
+
+(*
 Fixpoint places' (t:Term) (ls:list Plc) : list Plc :=
   match t with
   | asp _ => ls 
@@ -140,6 +159,14 @@ Fixpoint places' (t:Term) (ls:list Plc) : list Plc :=
 
 Definition places (p:Plc) (t:Term): list Plc := 
   p :: (places' t []).
+
+Definition places_terms' (ts: list Term) (p:Plc) : list (list Plc) :=
+  List.map (places p) ts.
+
+Definition places_terms (ts:list Term) (p:Plc) : list Plc :=
+  dedup_list (List.concat (places_terms' ts p)).
+
+*)
 
 Definition places_terms' (ts: list Term) (p:Plc) : list (list Plc) :=
   List.map (places p) ts.

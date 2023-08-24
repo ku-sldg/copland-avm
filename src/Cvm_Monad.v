@@ -12,7 +12,7 @@ Require Import Coq.Program.Tactics Lia.
 Require Import List.
 Import ListNotations.
 
-Require Export Cvm_St StMonad_Coq IO_Stubs.
+Require Export Cvm_St ErrorStMonad_Coq IO_Stubs.
 
 
 (** * CVM monadic primitive operations *)
@@ -22,14 +22,16 @@ Definition put_ev (e:EvC) : CVM unit :=
      let tr' := st_trace st in
      let p' := st_pl st in
      let i := st_evid st in
-     put (mk_st e tr' p' i).
+     let ac := st_AM_config st in
+     put (mk_st e tr' p' i ac).
 
 Definition put_pl (p:Plc) : CVM unit :=
   st <- get ;;
      let tr' := st_trace st in
      let e' := st_ev st in
      let i := st_evid st in
-     put (mk_st e' tr' p i).
+     let ac := st_AM_config st in
+     put (mk_st e' tr' p i ac).
 
 Definition get_ev : CVM EvC :=
   st <- get ;;
@@ -39,24 +41,31 @@ Definition get_pl : CVM Plc :=
   st <- get ;;
   ret (st_pl st).
 
+Definition get_amConfig : CVM AM_Config :=
+  (* TODO:  consider moving this functionality to a Reader-like monad 
+        i.e. an 'ask' primitive *)
+  st <- get ;;
+  ret (st_AM_config st).
+
 Definition inc_id : CVM Event_ID :=
   st <- get ;;
     let tr' := st_trace st in
     let e' := st_ev st in
     let p' := st_pl st in
     let i := st_evid st in
-    put (mk_st e' tr' p' (Nat.add i (S O))) ;;
+    let ac := st_AM_config st in
+    put (mk_st e' tr' p' (Nat.add i (S O)) ac) ;;
     ret i.
   
 
 Definition modify_evm (f:EvC -> EvC) : CVM unit :=
   st <- get ;;
-  let '{| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |} := st in
-  put (mk_st (f e) tr p i).
+  let '{| st_ev := e; st_trace := tr; st_pl := p; st_evid := i; st_AM_config := ac |} := st in
+  put (mk_st (f e) tr p i ac).
 
 Definition add_trace (tr':list Ev) : cvm_st -> cvm_st :=
-  fun '{| st_ev := e; st_trace := tr; st_pl := p; st_evid := i |} =>
-    mk_st e (tr ++ tr') p i.
+  fun '{| st_ev := e; st_trace := tr; st_pl := p; st_evid := i; st_AM_config := ac |} =>
+    mk_st e (tr ++ tr') p i ac.
 
 Definition add_tracem (tr:list Ev) : CVM unit :=
   modify (add_trace tr).
@@ -90,9 +99,16 @@ Definition fwd_asp (fwd:FWD) (bs:BS) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
   | KEEP => e
   end.
 
+Definition do_asp' (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) : CVM BS :=
+  ac <- get_amConfig ;;
+  match (do_asp params e mpl x ac) with
+  | resultC r => ret r
+  | errC e => failm (dispatch_error e)
+  end.
+
 (* Simulates invoking an arbitrary ASP.  Tags the event, builds and returns 
    the new evidence bundle. *)
-Definition invoke_ASP (fwd:FWD) (params:ASP_PARAMS) : CVM EvC :=
+Definition invoke_ASP (fwd:FWD) (params:ASP_PARAMS) (* (ac : AM_Config) *) : CVM EvC :=
   e <- get_ev ;;
   p <- get_pl ;;
   x <- tag_ASP params p e ;;
@@ -115,7 +131,7 @@ Definition clearEv : unit -> CVM EvC :=
   fun _ => ret mt_evc.
 
 (* Helper that interprets primitive core terms in the CVM.  *)
-Definition do_prim (a:ASP_Core) : CVM EvC :=
+Definition do_prim (a:ASP_Core) (* (ac : AM_Config) *) : CVM EvC :=
   match a with
   | NULLC => nullEv
   | CLEAR => clearEv tt
@@ -136,7 +152,8 @@ Definition inc_remote_event_ids (t:Term) : CVM unit :=
     let p' := st_pl st in
     let i := st_evid st in
     let new_i := Nat.add i (event_id_span' t) in
-    put (mk_st e' tr' p' new_i).
+    let ac := st_AM_config st in
+    put (mk_st e' tr' p' new_i ac).
 
 (* Monadic helper function to simulate a span of parallel event IDs 
    corresponding to the size of a Core_Term *)
@@ -147,7 +164,8 @@ Definition inc_par_event_ids (t:Core_Term) : CVM unit :=
     let p' := st_pl st in
     let i := st_evid st in
     let new_i := Nat.add i (event_id_span t) in
-    put (mk_st e' tr' p' new_i).
+    let ac := st_AM_config st in
+    put (mk_st e' tr' p' new_i ac).
   
 (* Primitive monadic communication primitives 
    (some rely on Admitted IO Stubs). *)
@@ -159,6 +177,13 @@ Definition tag_REQ (t:Term) (p:Plc) (q:Plc) (e:EvC) : CVM unit :=
 Definition tag_RPY (p:Plc) (q:Plc) (e:EvC) : CVM unit :=
   rpyi <- inc_id ;;
   add_tracem [rpy rpyi p q (get_et e)].
+
+Definition doRemote_session' (t:Term) (pTo:Plc) (e:EvC) : CVM EvC := 
+  ac <- get_amConfig ;;
+  match (do_remote t pTo e ac) with 
+  | resultC ev => ret (evc ev (eval t pTo (get_et e)))  
+  | errC e => failm (dispatch_error e)
+  end.
 
 Definition remote_session (t:Term) (p:Plc) (q:Plc) (e:EvC) : CVM EvC :=
   tag_REQ t p q e ;;
@@ -196,9 +221,11 @@ Definition wait_par_thread (loc:Loc) (t:Core_Term) (e:EvC) : CVM EvC :=
    
 Ltac monad_unfold :=
   repeat unfold
-  execSt,  
+  execErr,  
   do_prim,
   invoke_ASP,
+  do_asp',
+  do_asp,
   clearEv,
   copyEv,
   

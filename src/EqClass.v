@@ -20,6 +20,37 @@ Proof.
   - right; erewrite <- eqb_leibniz0; intros HC; congruence.
 Qed.
 
+Theorem eqb_refl : forall {A : Type} `{EqClass A} a,
+  eqb a a = true.
+Proof.
+  intros;
+  erewrite eqb_leibniz; eauto.
+Qed.
+
+Theorem eqb_symm_true : forall {A : Type} `{EqClass A} a1 a2,
+  eqb a1 a2 = true <->
+  eqb a2 a1 = true.
+Proof.
+  intros; repeat erewrite eqb_leibniz; intuition.
+Qed.
+
+Theorem eqb_symm : forall {A : Type} `{EqClass A} a1 a2,
+  eqb a1 a2 = eqb a2 a1.
+Proof.
+  intros.
+  destruct (eqb a1 a2) eqn:E1, (eqb a2 a1) eqn:E2; eauto;
+  erewrite eqb_leibniz in *; subst;
+  erewrite eqb_refl in *; congruence.
+Qed.
+
+Theorem eqb_transitive : forall {A : Type} `{EqClass A} a1 a2 a3,
+  eqb a1 a2 = true ->
+  eqb a2 a3 = true ->
+  eqb a1 a3 = true.
+Proof.
+  intros; repeat erewrite eqb_leibniz in *; subst; eauto.
+Qed.
+
 Fixpoint general_list_eq_class_eqb {A : Type} `{H : EqClass A} (l1 l2 : list A) : bool :=
   match l1, l2 with
   | nil, nil => true

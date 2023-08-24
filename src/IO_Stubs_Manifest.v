@@ -12,11 +12,9 @@
     Appraisal_Defs.v).        
  *)
 
-Require Import Term_Defs ConcreteEvidence ErrorStMonad_Coq IO_Type Manifest Manifest_Admits Cvm_St.
+Require Import Term_Defs ConcreteEvidence ErrorStMonad_Coq IO_Type Manifest_Admits.
 
-
-Require Import List.
-Import ListNotations.
+Require Import Maps Cvm_St.
 
 (** * Stub to encode a sequence of BS values to a single BS value.
       Real implmenetation will depend on the instantition of BS *)
@@ -26,28 +24,19 @@ Admitted.
 (** * Stub for invoking external ASP procedures.  
       Extracted code should not need to use the Plc or Event_ID parameters 
       (those can be erased upon extraction). *)
-Definition do_asp (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) (ac : AM_Config) : ResultT BS DispatcherErrors :=
-  ac.(aspCb) params mpl (encodeEvRaw e) e.
+Definition do_asp (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) : BS.
+Admitted.
 
-(*
 (** * Stub for completing a remote communication session with an external AM. *)
-Definition doRemote_session (t:Term) (pTo:Plc) (e:EvC) : EvC.
-Admitted.
-*)
-
-Definition doRemote_uuid (t:Term) (uuid:UUID) (ev:RawEv) : ResultT RawEv CallBackErrors.
+Definition doRemote_session (t:Term) (uuidTo:UUID) (e:EvC) : option EvC.
 Admitted.
 
-Definition do_remote (t:Term) (pTo:Plc) (e:EvC) (ac: AM_Config) : ResultT RawEv DispatcherErrors := 
-  let remote_uuid_res : ResultT UUID DispatcherErrors := ac.(plcCb) pTo in
-    match remote_uuid_res with 
-    | resultC uuid => 
-        match doRemote_uuid t uuid (get_bits e) with
-        | resultC v => resultC v
-        | errC (messageLift msg) => errC Runtime
-        end
-    | errC e => errC e
-    end.
+Definition doRemote_session_dynamic (t:Term) (uuidTo:UUID) (e:EvC) : CVM EvC := 
+  match (doRemote_session t uuidTo e) with 
+  | Some e => ret e 
+  | None => failm (at_error_dynamic t uuidTo e) 
+  (* /\ Neither should it reach this line if CVM configured properly *)
+  end.
 
 (** * Stub to simulate evidence collected by a parallel CVM instance *)
 Definition parallel_vm_thread (l:Loc) (t:Core_Term) (p:Plc) (e:EvC) : EvC.
@@ -61,10 +50,19 @@ Admitted.
 Definition am_sendReq_app (t:Term) (p:Plc) (e:Evidence) (ev:RawEv): AppResultC.
 Admitted.
 
-(*
-Definition doRemote_session' (t:Term) (pTo:Plc) (e:EvC) : IO EvC :=
-  ret (doRemote_session t pTo e).
-*)
+Definition do_asp' (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) : IO BS :=
+  ret (do_asp params e mpl x).
+
+
+Definition read_plc_map : CVM (MapD Plc UUID). Admitted.
+
+Definition doRemote_session' (t:Term) (pTo:Plc) (e:EvC) : CVM EvC :=
+  plc_map <- read_plc_map ;;
+    match (mapD_get_value plc_map pTo) with 
+    | Some v => doRemote_session_dynamic t v e
+    | None => failm (at_error_static t pTo e) (* Should not reach this line if CVM configured 
+                                                  properly via manifest compiler.  *)
+    end.
 
 Definition do_start_par_thread (loc:Loc) (t:Core_Term) (e:RawEv) : IO unit :=
   ret tt.

@@ -252,8 +252,6 @@ Definition parseSymbol (xs : list token) (sm : symbol_map)
                 end
     end.
 
-Compute parseSymbol ["b1hello_bob";"world"; ","; "this"; "is";"a";"(";"simple";")";"test";"!";"var";"bob";";";"var";"b_b"; ";";"var";"";"icansay";"123"] map_empty % string.
-
 Definition str_to_nat (x : list ascii) : nat :=
   (fold_left 
     (fun n d => 10 * n + (nat_of_ascii d - nat_of_ascii "0"%char))
@@ -310,8 +308,6 @@ Definition parsePlace (xs : list token) (sm : symbol_map)
                                 NoneE ("Illegal Identifier: '" ++ x ++ "'")
                 end
     end.
-
-Compute parsePlace (tokenize "p2") map_empty.
 
 Definition spToStr (s : SP) :=
   match s with
@@ -401,8 +397,6 @@ Definition parseASPC (xs : list token) (sm : symbol_map)
         end
     end.
 
-Compute parseASPC (tokenize "p2 p0 kim") map_empty.
-
 Definition parseSign (xs : list token) sm : optionE (symbol_map * Term * list token) := 
   match xs with
   | nil => NoneE "Expected a sign"
@@ -473,9 +467,6 @@ Definition parseASP (xs : list token) (sm : symbol_map)
             end
         end
     end. 
-
-Compute parseASP (tokenize "hello 189 d_1").
-Compute parseASP (tokenize "kim p2 ker") map_empty.
 
 Definition parseBranch (xs : list token) (prevT : Term) (sm : symbol_map)
                 : optionE (symbol_map * (Term -> Term) * list token) :=
@@ -548,8 +539,6 @@ Definition parseAT_Place (xs : list token) (sm : symbol_map)
               NoneE "Expected @ symbol"
         end
   end.
-
-Compute parseAT_Place (tokenize " @1029 cow ham cheese").
 
 Fixpoint parsePhrase (fuel : nat) (xs : list token) (sm : symbol_map)
               : optionE (symbol_map * Term * list token) :=
@@ -723,54 +712,5 @@ with parseParens (fuel : nat) (xs : list token) (sm : symbol_map)
       end
   end
 .
-
-Definition testPhr := "@1 kim 2 ker -> ! -<- @2 (vc 2 sys) -> !".
-Definition testPhr2 := "@p1 kim p2 ker -> ! -<- @p2 [(vc p2 sys) -> !]".
-Compute parsePhrase 20 (tokenize testPhr2) map_empty.
-(* 
-Definition transTestPhr := <{ @ 1 [<< "kim" 2 "ker" >> -> (!) -<- @ 2 [<< "vc" 2 "sys">> -> !]]}>.
-
-Print transTestPhr.
-Compute parsePhrase 20 (tokenize "") map_empty.
-Compute parsePhrase 20 (tokenize testPhr) map_empty.
-Compute parsePhrase 3 ["aTest"; "plcTest"; "tTest"] map_empty.
-Compute parsePhrase 3 (tokenize "kim p2 ker") map_empty.
-(* Minimum fuel needed here is 12 - quite a lot *)
-Compute parsePhrase 12 (tokenize testPhr) map_empty. *)
-
-(* 
-Theorem parser_involutive: forall (t t1 : Term) sm rsm sm' rsm',
-  exists n, parsePhrase n (tokenize (termToCopString t rsm')) sm rsm = SomeE (sm', rsm', t1, nil) ->
-  termToCopString t = termToCopString t1.
-Proof.
-  intros t.
-  induction t; intros.
-  - destruct a.
-    * exists 2. simpl. intros. qinv H. reflexivity.
-    * exists 2. simpl. intros H. qinv H. reflexivity.
-    * destruct a. destruct p.
-      ** simpl.
-      ** exists 2. destruct p. 
-        *** destruct a.
-          **** simpl. intros. discriminate.
-          **** simpl. intros. 
-  induction t.
-  - simpl. destruct a. 
-    * simpl. unfold tokenize. simpl. exists 10. simpl. reflexivity.
-    * simpl. unfold tokenize. simpl. exists 10. reflexivity.
-    * destruct a. admit. (* dies on computation? *)
-    * simpl. unfold tokenize. simpl. exists 10. reflexivity.
-    * simpl. unfold tokenize. simpl. exists 10. reflexivity.
-  - induction p.
-    * simpl. unfold tokenize. simpl. destruct IHt.
-      exists (x + 2). simpl. admit.
-    * admit.
-  - simpl. unfold tokenize. simpl. destruct IHt1.
-    destruct IHt2. exists (x + x0 + 2).
-    simpl. admit.
-  - simpl. destruct s.
-  
-Qed. *)
-
 
 End CopParser.

@@ -1,5 +1,6 @@
   
-Require Import Maps AbstractedTypes EqClass Term_Defs_Core Manifest_Admits Manifest.
+Require Import Maps AbstractedTypes EqClass Term_Defs_Core Manifest_Admits Manifest
+  ErrorStMonad_Coq Term_Defs.
   
 
 Require Import List.
@@ -21,20 +22,26 @@ Import ListNotations.
 
   (* This function will be a dispatcher for either local ASPS to CakeMLCallback, or pass them off to the ASP_Server *)
   Definition generate_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest)
-      : ConcreteManifest -> CakeML_ASPCallback :=
+      : ConcreteManifest -> (CakeML_ASPCallback DispatcherErrors) :=
     let local_asps_map := al.(Local_ASPS) in
     let abstract_asps := am.(asps) in
-    let shrunk_map := 
+    let shrunk_map : (MapC ASP_ID (CakeML_ASPCallback CallBackErrors)) := 
       minify_mapC local_asps_map (fun x => if (in_dec (EqClass_impl_DecEq _) x abstract_asps) then true else false) in
     let asp_server_cb := al.(ASPServer_Cb) in
     fun (cman : ConcreteManifest) =>
       let asp_server_addr := cman.(ASP_Server) in
-      fun (par : ASP_PARAMS) =>
+      fun (par : ASP_PARAMS) (p : Plc) (bs : BS) (rawEv : RawEv) =>
         let (aspid, args, plc, targ) := par in
           (* check is the ASPID is a local, with a callback *)
           match (map_get shrunk_map aspid) with
-          | Some cb => (cb par)
-          | None => (asp_server_cb asp_server_addr par)
+          | Some cb => 
+            match (cb par p bs rawEv) with
+            | resultC r => resultC r
+            | errC (messageLift msg) => (* TODO: Do something with msg *)
+                errC Runtime
+            end
+          | None => errC Unavailable 
+            (* (asp_server_cb asp_server_addr par) *)
           end.
 
   (* This function will lookup for either local Plcs to UUID, or pass them off to the Plc Server *)
@@ -50,8 +57,9 @@ Import ListNotations.
       fun (p : Plc) =>
         (* check is the plc "p" is local, with a reference *)
         match (map_get shrunk_map p) with
-        | Some uuid => uuid
-        | None => (plc_server_cb plc_server_addr p)
+        | Some uuid => resultC uuid
+        | None => errC Unavailable
+          (* (plc_server_cb plc_server_addr p) *)
         end.
       
   (* This function will lookup the PubKey either locally Plc -> PublicKey or pass off to PubKeyServer *)
@@ -67,8 +75,9 @@ Import ListNotations.
       fun (p : Plc) =>
         (* check is the plc "p" is local, with a reference in the pubkey server mapping *)
         match (map_get shrunk_map p) with
-        | Some key => key
-        | None => (pubkey_server_cb pubkey_server_addr p)
+        | Some key => resultC key
+        | None => errC Unavailable
+          (* (pubkey_server_cb pubkey_server_addr p) *)
         end.
 
   Definition generate_UUID_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest)  
@@ -80,25 +89,17 @@ Import ListNotations.
       fun (u : UUID) =>
         (* check if uuid "u" is local, else dispatch to callback *)
         match (mapD_get_key local_plc_map u) with
-        | Some p => p
-        | None => (uuid_server_cb local_uuid_addr u)
+        | Some p => resultC p
+        | None => errC Unavailable
+          (* (uuid_server_cb local_uuid_addr u) *)
         end.
 
   (* This is a rough type signature for the "manifest compiler".  Still some details to be ironed out... *)
-  Definition manifest_compiler (m : Manifest) (al : AM_Library) 
-    : (ConcreteManifest * 
-      (ConcreteManifest -> CakeML_ASPCallback) * 
-      (ConcreteManifest -> CakeML_PlcCallback) * 
-      (ConcreteManifest -> CakeML_PubKeyCallback) * 
-      (ConcreteManifest -> CakeML_uuidCallback)) :=
+  Definition manifest_compiler (m : Manifest) (al : AM_Library) : AM_Config :=
   (* The output of this function is a Concrete manifest, and a 
   function that can be used like "check_asp_EXTD".
   This function will be used in extraction to either dispatch ASPs to the ASP server, or call a local callback *)
-    let asp_cb := (generate_ASP_dispatcher al m) in
-    let plc_cb := (generate_Plc_dispatcher al m) in
-    let pubkey_cb := (generate_PubKey_dispatcher al m) in
-    let uuid_cb := (generate_UUID_dispatcher al m) in
-    let concrete_man := {|
+  let cm := {|
       my_plc := m.(my_abstract_plc) ;
 
       Concrete_ASPs := m.(asps) ;
@@ -111,4 +112,10 @@ Import ListNotations.
       Plc_Server := al.(PlcServer_Addr) ;
       UUID_Server := al.(UUIDServer_Addr);
     |} in
-      (concrete_man, asp_cb, plc_cb, pubkey_cb, uuid_cb).
+  {|
+    concMan   := cm ;
+    aspCb     := (generate_ASP_dispatcher al m) cm ;
+    plcCb     := (generate_Plc_dispatcher al m) cm ;
+    pubKeyCb  := (generate_PubKey_dispatcher al m) cm ;
+    uuidCb    := (generate_UUID_dispatcher al m) cm ;
+  |}.

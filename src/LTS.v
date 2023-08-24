@@ -178,7 +178,7 @@ Inductive lstar: St -> list Ev -> St -> Prop :=
     step st0 (Some e) st1 -> lstar st1 tr st2 -> lstar st0 (e :: tr) st2
 | lstar_silent_tran: forall st0 st1 tr st2,
     step st0 None st1 -> lstar st1 tr st2 -> lstar st0 tr st2.
-#[export] Hint Resolve lstar_refl : core.
+Global Hint Resolve lstar_refl : core.
 
 Lemma lstar_transitive:
   forall st0 tr0 st1 tr1 st2,
@@ -202,7 +202,7 @@ Inductive star: St -> St -> Prop :=
 | star_refl: forall st, star st st
 | star_tran: forall st0 e st1 st2,
     step st0 e st1 -> star st1 st2 -> star st0 st2.
-#[export] Hint Resolve star_refl : core.
+Global Hint Resolve star_refl : core.
 
 Lemma star_transitive:
   forall st0 st1 st2,
@@ -516,7 +516,7 @@ Inductive nstar: nat -> St -> St -> Prop :=
 | nstar_refl: forall st, nstar 0 st st
 | nstar_tran: forall st0 st1 st2 e n,
     nstar n st0 st1 -> step st1 e st2 -> nstar (S n) st0 st2.
-#[export] Hint Resolve nstar_refl : core.
+Global Hint Resolve nstar_refl : core.
 
 Lemma nstar_transitive:
   forall m n st0 st1 st2,
@@ -642,7 +642,7 @@ Inductive nlstar: nat -> St -> list Ev -> St -> Prop :=
     step st0 (Some e) st1 -> nlstar n st1 tr st2 -> nlstar (S n) st0 (e :: tr) st2
 | nlstar_silent_tran: forall n st0 st1 tr st2,
     step st0 None st1 -> nlstar n st1 tr st2 -> nlstar (S n) st0 tr st2.
-#[export] Hint Resolve nlstar_refl : core.
+Global Hint Resolve nlstar_refl : core.
 
 Lemma nlstar_transitive:
   forall m n st0 tr0 st1 tr1 st2,
@@ -708,13 +708,13 @@ Proof.
   - pose proof H as G.
     apply step_size in G.
     rewrite <- G.
-    rewrite <- minus_Sn_m.
+    erewrite Nat.sub_succ_l.
     + eapply nlstar_tran; eauto.
     + apply nlstar_step_size in IHlstar; auto.
   - pose proof H as G.
     apply step_size in G.
     rewrite <- G.
-    rewrite <- minus_Sn_m.
+    erewrite Nat.sub_succ_l.
     + eapply nlstar_silent_tran; eauto.
     + apply nlstar_step_size in IHlstar; auto.
 Qed.
@@ -729,7 +729,7 @@ Inductive rlstar: nat -> St -> list Ev -> St -> Prop :=
 | rlstar_silent_tran: forall n st0 st1 tr st2,
     rlstar n st0 tr st1 -> step st1 None st2 ->
     rlstar (S n) st0 tr st2.
-#[export] Hint Resolve rlstar_refl : core.
+Global Hint Resolve rlstar_refl : core.
 
 Lemma rlstar_transitive:
   forall m n st0 tr0 st1 tr1 st2,

@@ -109,10 +109,12 @@ Qed.
 
 Lemma top_plc_refl: forall t' p1,  In t' (place_terms t' p1 p1).
 Proof.
-  induction t'.
-  + intros; simpl. pose proof eqb_plc_refl. specialize H with p1. rewrite H. simpl. left. auto.
-  + intros. simpl in *.
-Admitted. 
+  intros.
+  destruct t';
+  unfold place_terms;
+  rewrite eqb_plc_refl;
+  repeat ff.
+Qed.
 
 (* Proof that the distributed notion of executability respects the static notion of executability. *)
 Theorem static_executability_implies_distributed : 

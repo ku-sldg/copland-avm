@@ -1,6 +1,8 @@
-Require Import Term ConcreteEvidence StMonad_Coq.
+Require Import Term ConcreteEvidence ErrorStMonad_Coq.
 
 Require Import Example_Phrases_Demo.
+
+Require Import ErrorStringConstants.
 
 Require Import Appraisal_Defs Appraisal_IO_Stubs AM_Monad AM_St.
 
@@ -14,7 +16,7 @@ Import ListNotations.
 Definition peel_bs_am (ls:RawEv) : AM (BS * RawEv) :=
   match ls with
   | bs :: ls' => ret (bs, ls')
-  | _ => failm
+  | _ => failm (am_error errStr_peel_bs_am)
   end.
 
 Fixpoint gen_appraise_AM (et:Evidence) (ls:RawEv) : AM AppResultC :=

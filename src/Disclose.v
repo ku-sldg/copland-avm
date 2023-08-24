@@ -10,6 +10,8 @@ Require Import CvmSemantics Appraisal_Evidence Eqb_Evidence Auto AbstractedTypes
 
 Require Import StructTactics.
 
+Require Import ErrorStMonad_Coq.
+
 Require Import Coq.Program.Tactics PeanoNat Lia.
 
 Require Import List.
@@ -110,13 +112,8 @@ Proof.
   -
     ff.
     destruct e; ff.
-    (*
-    Search (_ -> _ = _).
-    Search PeanoNat.Nat.eqb_refl.
-     *)
-    rewrite EqNat.beq_nat_true with (n:=n0) (m:=n).
+    rewrite Nat.eqb_eq in *.
     ff.
-    eassumption.
   - (* uu case *)
     ff.
     destruct e; ff.
@@ -194,18 +191,6 @@ Definition discloses_aspid_to_remote (q:Plc) (i:ASP_ID): Prop :=
     EvSubT et e ->
     (discloses_to_remote (req reqid p q t e) (q, et)).
                                                           
-
-
-
-(*
-Print EvSubT.
-Check sig_params.
-Definition src_plc : Plc.
-Admitted.
-
-Definition secret_evidence : Evidence :=
-  uu src_plc KEEP sig_params mt.
-*)
 
 
 
@@ -357,7 +342,6 @@ Proof.
     {
       assert (eqb a i = true).
       {
-        Search "andb".
         repeat rewrite Bool.andb_true_r in H.
         auto.
       }
@@ -390,7 +374,6 @@ Proof.
     {
       assert (eqb a i = true).
       {
-        Search "andb".
         repeat rewrite Bool.andb_true_r in H.
         auto.
       }
@@ -429,7 +412,6 @@ Proof.
     {
       assert (eqb a i = true).
       {
-        Search "andb".
         repeat rewrite Bool.andb_true_r in H.
         auto.
       }
@@ -462,7 +444,6 @@ Proof.
     {
       assert (eqb a i = true).
       {
-        Search "andb".
         repeat rewrite Bool.andb_true_r in H.
         auto.
       }
@@ -500,7 +481,6 @@ Proof.
     {
       assert (eqb a i = true).
       {
-        Search "andb".
         repeat rewrite Bool.andb_true_r in H.
         auto.
       }
@@ -539,7 +519,6 @@ Proof.
     {
       assert (eqb a i = true).
       {
-        Search "andb".
         repeat rewrite Bool.andb_true_r in H.
         auto.
       }
@@ -578,7 +557,6 @@ Proof.
     {
       assert (eqb a i = true).
       {
-        Search "andb".
         repeat rewrite Bool.andb_true_r in H.
         auto.
       }
@@ -1222,7 +1200,6 @@ Qed.
       solve_by_inversion.
     }
     find_rewrite.
-    Search "||".
     rewrite Bool.orb_true_r.
     auto.
 
@@ -1443,12 +1420,12 @@ Qed.
 
 *)
 
-Lemma cvm_implies_events: forall t annt e e' bits bits' p p' cvmi cvmi' cvm_tr ev,
+Lemma cvm_implies_events: forall t annt e e' bits bits' p p' cvmi cvmi' cvm_tr ev ac ac',
     annoP_indexed annt t cvmi cvmi'->
 
     build_cvmP (copland_compile t)
-         {| st_ev := evc bits e; st_trace := []; st_pl := p; st_evid := cvmi |} 
-         (Some tt) {| st_ev := evc bits' e'; st_trace := cvm_tr; st_pl := p'; st_evid := cvmi' |} ->
+         {| st_ev := evc bits e; st_trace := []; st_pl := p; st_evid := cvmi; st_AM_config := ac |} 
+         (resultC tt) {| st_ev := evc bits' e'; st_trace := cvm_tr; st_pl := p'; st_evid := cvmi'; st_AM_config := ac' |} ->
 
     In ev cvm_tr ->
 
@@ -1458,9 +1435,11 @@ Proof.
   generalizeEverythingElse t.
   induction t; intros.
   - (* asp case *)
-    wrap_ccp_anno.
-    destruct a; invc H; ff;
+    wrap_ccp_anno;
+    repeat Auto.ff;
+    destruct a; invc H; repeat Auto.ff;
       wrap_ccp_anno;
+      repeat Auto.ff;
       try destruct s; wrap_ccp_anno;
       try destruct f;
       try destruct H1;
@@ -1470,6 +1449,7 @@ Proof.
       try (econstructor; econstructor; reflexivity).
   -
     wrap_ccp_anno.
+    repeat ff.
 
     assert (n = cvmi + event_id_span' t + 1) by lia.
     subst.
@@ -1489,13 +1469,12 @@ Proof.
     +
       rewrite <- H0.
       rewrite H11.
-      Print events.
       apply evtsattreq.
       auto.
     +
       assert ( (In ev (cvm_events t p e)) \/
-               ev = (rpy (cvmi + 1 + event_id_span' t) p' p
-                         (get_et (IO_Stubs.doRemote_session t p (evc bits e))))
+               ev = (rpy (cvmi + 1 + event_id_span' t) p' p (eval t p e)
+                         (* (get_et (IO_Stubs.doRemote_session t p (evc bits e))) *) )
              ).
       {
 
@@ -1517,12 +1496,13 @@ Proof.
                     {| st_ev := (evc bits e);
                        st_trace := [];
                        st_pl := p;
-                       st_evid := (S cvmi)|} =
-    (Some tt,
+                       st_evid := (S cvmi); st_AM_config := ac' |} =
+    (resultC tt,
      {| st_ev := cvm_evidence_core (copland_compile t) p (evc bits e);
         st_trace := cvm_events_core (copland_compile t) p (get_et (evc bits e));
         st_pl := p;
-        st_evid := ( (S cvmi) + event_id_span (copland_compile t))
+        st_evid := ( (S cvmi) + event_id_span (copland_compile t));
+        st_AM_config := ac'
      |})).
       apply build_cvm_external.
 
@@ -1533,22 +1513,11 @@ Proof.
       
       econstructor.
 
-      eapply IHt.
-      Focus 3.
-      eassumption.
-      Focus 2.
-      simpl in H2.
-      econstructor.
-      eassumption.
-      Focus 2.
-      subst.
-      Print remote_Evidence_Type_Axiom.
-      rewrite remote_Evidence_Type_Axiom.
-      rewrite eval_aeval'.
-      Print events.
-      apply evtsattrpy.
-      simpl.
-      lia.
+      eapply IHt; [ | simpl in *; econstructor; eauto | eauto ].
+      2: {
+        subst; rewrite eval_aeval'; apply evtsattrpy;
+        simpl; lia.
+      }
       econstructor.
 
       invc Heqp1.
@@ -1557,7 +1526,7 @@ Proof.
       simpl in *.
       assert (S (cvmi + event_id_span' (unanno a)) =
               cvmi + event_id_span' (unanno a) + 1) by lia.
-      rewrite H5.
+      rewrite H4.
       eassumption.
   - (* alseq case *)
     invc H.
@@ -1573,13 +1542,8 @@ Proof.
     
     assert (n = H4).
     {
-      eapply anno_span_cvm.
-      econstructor.
-      apply Heqp2.
-      2: {
-        apply H5.
-      }
-      econstructor; tauto.
+      eapply anno_span_cvm; eauto;
+      econstructor; eauto.
     }
     subst.
 
@@ -1587,7 +1551,7 @@ Proof.
     destruct x.
      
 
-    assert (In ev H \/ In ev H6).
+    assert (In ev H \/ In ev H7).
     {
       apply in_app_or in H1.
         door.
@@ -1602,7 +1566,6 @@ Proof.
 
     door.
     +
-      Print events.
       apply evtslseql.
       eapply IHt1.
       econstructor.
@@ -1626,16 +1589,15 @@ Proof.
     }
     eapply cvm_refines_lts_evidence.
     econstructor; eauto.
-    rewrite <- H8.
+    rewrite <- H9.
     eassumption.
       }
-      rewrite H8 in H7.
+      rewrite H9 in H8.
       
 
       assert (p = H3).
       {
-        invc H5.
-        Print do_pl_immut.
+        invc H6.
         do_pl_immut.
         congruence.
       }
@@ -1651,8 +1613,9 @@ Proof.
       eassumption.
   - (* abseq case *)
     wrap_ccp_anno;
-    ff;
-    wrap_ccp_anno.
+    repeat Auto.ff;
+    wrap_ccp_anno;
+    repeat Auto.ff.
     +
 
     assert (n = st_evid1).
@@ -1676,33 +1639,32 @@ Proof.
     destruct_conjs; subst.
     repeat do_restl.
 
-    assert (ev = Term_Defs.split cvmi st_pl1 \/
+    assert (ev = Term_Defs.split cvmi st_pl0 \/
             (In ev blah') \/
             (In ev blah) \/
-            ev = join st_evid st_pl1).
+            ev = join st_evid st_pl0).
     {
       apply in_app_or in H1.
       door.
       +
         
-        apply in_app_or in H1.
+        apply in_app_or in H0.
         door.
         ++
-          apply in_app_or in H1.
+          apply in_app_or in H0.
           door.
           +++
-            invc H1; try eauto; try solve_by_inversion.
+            invc H0; try eauto; try solve_by_inversion.
           +++
             eauto.
         ++
           eauto.
       +
-        invc H1; try eauto; try solve_by_inversion.
+        invc H0; try eauto; try solve_by_inversion.
     }
 
     door.
     subst.
-    Print events.
     apply evtsbseqsplit.
     tauto.
 
@@ -1712,10 +1674,17 @@ Proof.
     apply evtsbseql.
     simpl.
     assert (S cvmi = cvmi + 1) by lia.
-    rewrite <- H5 in *.
+    rewrite <- H3 in *.
     subst.
     eapply IHt1.
     eassumption.
+    eapply restl.
+    assert (Term_Defs.split cvmi st_pl0 :: blah' = 
+    [Term_Defs.split cvmi st_pl0] ++ blah'). 
+    {
+      intuition.
+    }
+    repeat find_rewrite.
     eassumption.
     eassumption.
 
@@ -1727,12 +1696,12 @@ Proof.
 
     eapply IHt2.
     eassumption.
+    eapply restl.
     eassumption.
     eassumption.
 
     subst.
 
-    Print events.
     apply evtsbseqjoin.
     simpl.
     lia.
@@ -1759,32 +1728,31 @@ Proof.
     destruct_conjs; subst.
     repeat do_restl.
 
-    assert (ev = Term_Defs.split cvmi st_pl1 \/
+    assert (ev = Term_Defs.split cvmi st_pl0 \/
             (In ev blah') \/
             (In ev blah) \/
-            ev = join st_evid st_pl1).
+            ev = join st_evid st_pl0).
     {
             apply in_app_or in H1.
       door.
       +
         
-        apply in_app_or in H1.
+        apply in_app_or in H0.
         door.
         ++
-          apply in_app_or in H1.
+          apply in_app_or in H0.
           door.
           +++
-            invc H1; try eauto; try solve_by_inversion.
+            invc H0; try eauto; try solve_by_inversion.
           +++
             eauto.
         ++
           eauto.
       +
-        invc H1; try eauto; try solve_by_inversion.
+        invc H0; try eauto; try solve_by_inversion.
     }
     door.
     subst.
-    Print events.
     apply evtsbseqsplit.
     tauto.
 
@@ -1794,10 +1762,17 @@ Proof.
     apply evtsbseql.
     simpl.
     assert (S cvmi = cvmi + 1) by lia.
-    rewrite <- H5 in *.
+    rewrite <- H3 in *.
     subst.
     eapply IHt1.
     eassumption.
+    eapply restl.
+    assert (Term_Defs.split cvmi st_pl0 :: blah' = 
+    [Term_Defs.split cvmi st_pl0] ++ blah'). 
+    {
+      intuition.
+    }
+    repeat find_rewrite.
     eassumption.
     eassumption.
 
@@ -1809,12 +1784,12 @@ Proof.
 
     eapply IHt2.
     eassumption.
+    eapply restl.
     eassumption.
     eassumption.
 
     subst.
 
-    Print events.
     apply evtsbseqjoin.
     simpl.
     lia.
@@ -1841,32 +1816,31 @@ Proof.
     destruct_conjs; subst.
     repeat do_restl.
 
-    assert (ev = Term_Defs.split cvmi st_pl1 \/
+    assert (ev = Term_Defs.split cvmi st_pl0 \/
             (In ev blah') \/
             (In ev blah) \/
-            ev = join st_evid st_pl1).
+            ev = join st_evid st_pl0).
     {
             apply in_app_or in H1.
       door.
       +
         
-        apply in_app_or in H1.
+        apply in_app_or in H0.
         door.
         ++
-          apply in_app_or in H1.
+          apply in_app_or in H0.
           door.
           +++
-            invc H1; try eauto; try solve_by_inversion.
+            invc H0; try eauto; try solve_by_inversion.
           +++
             eauto.
         ++
           eauto.
       +
-        invc H1; try eauto; try solve_by_inversion.
+        invc H0; try eauto; try solve_by_inversion.
     }
     door.
     subst.
-    Print events.
     apply evtsbseqsplit.
     tauto.
 
@@ -1876,10 +1850,17 @@ Proof.
     apply evtsbseql.
     simpl.
     assert (S cvmi = cvmi + 1) by lia.
-    rewrite <- H5 in *.
+    rewrite <- H3 in *.
     subst.
     eapply IHt1.
     eassumption.
+    eapply restl.
+    assert (Term_Defs.split cvmi st_pl0 :: blah' = 
+    [Term_Defs.split cvmi st_pl0] ++ blah'). 
+    {
+      intuition.
+    }
+    repeat find_rewrite.
     eassumption.
     eassumption.
 
@@ -1891,12 +1872,12 @@ Proof.
 
     eapply IHt2.
     eassumption.
+    eapply restl.
     eassumption.
     eassumption.
 
     subst.
 
-    Print events.
     apply evtsbseqjoin.
     simpl.
     lia.
@@ -1923,32 +1904,31 @@ Proof.
     destruct_conjs; subst.
     repeat do_restl.
 
-    assert (ev = Term_Defs.split cvmi st_pl1 \/
+    assert (ev = Term_Defs.split cvmi st_pl0 \/
             (In ev blah') \/
             (In ev blah) \/
-            ev = join st_evid st_pl1).
+            ev = join st_evid st_pl0).
     {
             apply in_app_or in H1.
       door.
       +
         
-        apply in_app_or in H1.
+        apply in_app_or in H0.
         door.
         ++
-          apply in_app_or in H1.
+          apply in_app_or in H0.
           door.
           +++
-            invc H1; try eauto; try solve_by_inversion.
+            invc H0; try eauto; try solve_by_inversion.
           +++
             eauto.
         ++
           eauto.
       +
-        invc H1; try eauto; try solve_by_inversion.
+        invc H0; try eauto; try solve_by_inversion.
     }
     door.
     subst.
-    Print events.
     apply evtsbseqsplit.
     tauto.
 
@@ -1958,10 +1938,17 @@ Proof.
     apply evtsbseql.
     simpl.
     assert (S cvmi = cvmi + 1) by lia.
-    rewrite <- H5 in *.
+    rewrite <- H3 in *.
     subst.
     eapply IHt1.
     eassumption.
+    eapply restl.
+    assert (Term_Defs.split cvmi st_pl0 :: blah' = 
+    [Term_Defs.split cvmi st_pl0] ++ blah'). 
+    {
+      intuition.
+    }
+    repeat find_rewrite.
     eassumption.
     eassumption.
 
@@ -1973,12 +1960,12 @@ Proof.
 
     eapply IHt2.
     eassumption.
+    eapply restl.
     eassumption.
     eassumption.
 
     subst.
 
-    Print events.
     apply evtsbseqjoin.
     simpl.
     lia.
@@ -1987,8 +1974,9 @@ Proof.
   - (* abpar case *)
 
     wrap_ccp_anno;
-    ff;
-    wrap_ccp_anno.
+    Auto.ff;
+    wrap_ccp_anno;
+    Auto.ff.
 
     +
 
@@ -1999,13 +1987,14 @@ Proof.
       invc Heqp0.
       
       eapply span_cvm; eauto.
+      
       econstructor; tauto.
     }
     subst.
 
     assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
     
-    subst. clear H7.
+    subst. clear H6.
     
     
     
@@ -2033,16 +2022,16 @@ Proof.
         simpl.
         tauto.
       }
-      rewrite H3 in H1.
+      rewrite H1 in H0.
 
-        apply in_app_or in H1.
+        apply in_app_or in H0.
         door.
       ++
-        invc H1; try eauto; try solve_by_inversion.
+        invc H0; try eauto; try solve_by_inversion.
       ++
         eauto.
 
-      + invc H1; try eauto; try solve_by_inversion.
+      + invc H0; try eauto; try solve_by_inversion.
     }
 
 
@@ -2052,9 +2041,7 @@ Proof.
     apply evtsbparsplit.
     auto.
     door.
-    rewrite thread_bookend_peel in H3.
-
-    (* apply evtsbparr. *)
+    rewrite thread_bookend_peel in H0.
 
     admit. (* TODO: axiom? *)
     eauto.
@@ -2081,7 +2068,7 @@ Proof.
 
     assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
     
-    subst. clear H7.
+    subst. clear H6.
     
     
     
@@ -2111,16 +2098,16 @@ Proof.
         simpl.
         tauto.
       }
-      rewrite H3 in H1.
+      rewrite H1 in H0.
 
-        apply in_app_or in H1.
+        apply in_app_or in H0.
         door.
       ++
-        invc H1; try eauto; try solve_by_inversion.
+        invc H0; try eauto; try solve_by_inversion.
       ++
         eauto.
 
-      + invc H1; try eauto; try solve_by_inversion.
+      + invc H0; try eauto; try solve_by_inversion.
     }
   
     door.
@@ -2129,10 +2116,9 @@ Proof.
     apply evtsbparsplit.
     auto.
     door.
-    rewrite thread_bookend_peel in H3.
+    rewrite thread_bookend_peel in H0; eauto.
     
     admit. (* TODO: axiom? *)
-    eauto.
 
 
     subst.
@@ -2155,7 +2141,7 @@ Proof.
 
     assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
     
-    subst. clear H7.
+    subst. clear H6.
     
     
     
@@ -2183,16 +2169,16 @@ Proof.
         simpl.
         tauto.
       }
-      rewrite H3 in H1.
+      rewrite H1 in H0.
 
-        apply in_app_or in H1.
+        apply in_app_or in H0.
         door.
       ++
-        invc H1; try eauto; try solve_by_inversion.
+        invc H0; try eauto; try solve_by_inversion.
       ++
         eauto.
 
-      + invc H1; try eauto; try solve_by_inversion.
+      + invc H0; try eauto; try solve_by_inversion.
     }
 
     door.
@@ -2201,7 +2187,7 @@ Proof.
     apply evtsbparsplit.
     auto.
     door.
-    rewrite thread_bookend_peel in H3.
+    rewrite thread_bookend_peel in H0.
 
     admit. (* TODO: axiom? *)
     eauto.
@@ -2227,7 +2213,7 @@ Proof.
 
     assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
     
-    subst. clear H7.
+    subst. clear H6.
     
     
     
@@ -2256,26 +2242,17 @@ Proof.
         simpl.
         tauto.
       }
-      rewrite H3 in H1.
+      rewrite H1 in H0.
 
-        apply in_app_or in H1.
+        apply in_app_or in H0.
         door.
       ++
-        invc H1; try eauto; try solve_by_inversion.
+        invc H0; try eauto; try solve_by_inversion.
       ++
         eauto.
 
-      + invc H1; try eauto; try solve_by_inversion.
+      + invc H0; try eauto; try solve_by_inversion.
     }
-
-    (*
-    assert (ev = Term_Defs.split cvmi p \/
-            In ev ([cvm_thread_start 0 p (copland_compile t2) mt] ++
-                   blah ++ [cvm_thread_end 0]) \/
-            ev = join (st_evid + event_id_span (copland_compile t2)) p).
-    admit.
-     *)
-    
 
     door.
     subst.
@@ -2283,7 +2260,7 @@ Proof.
     apply evtsbparsplit.
     auto.
     door.
-    rewrite thread_bookend_peel in H3.
+    rewrite thread_bookend_peel in H0.
 
     assert (In ev blah \/
             In ev (cvm_events_core (copland_compile t2) p mt)).
@@ -2295,11 +2272,19 @@ Proof.
     simpl in *.
     unfold mt_evc in *.
     assert (S cvmi = cvmi + 1) by lia.
-    rewrite <- H5 in *.
+    rewrite <- H4 in *.
 
     eapply IHt1.
     eassumption.
-    eassumption.
+    eapply restl.
+    (* 
+    assert ((Term_Defs.split cvmi p :: cvm_thread_start 0 p <<core>{ CLR -> (copland_compile t2) }> e :: blah) = 
+    ([Term_Defs.split cvmi p :: cvm_thread_start 0 p <<core>{ CLR -> (copland_compile t2) }> e] ++ blah)).
+    {
+      intuition.
+    }
+    *)
+    admit.
     eassumption.
 
 
@@ -2322,16 +2307,16 @@ Admitted.
 
 
 Lemma cvm_respects_events_disclosure_aspid:
-  forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt,
+  forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt ac ac',
     
     annoP_indexed annt t cvmi cvmi' ->
     ~ (events_discloses_aspid annt p e i r) ->
     
     term_to_coreP t atp ->
     build_cvmP atp
-               (mk_st (evc bits e) [] p cvmi)
-               (Some tt)
-               (mk_st (evc bits' e') cvm_tr p' cvmi') ->
+               (mk_st (evc bits e) [] p cvmi ac)
+               (resultC tt)
+               (mk_st (evc bits' e') cvm_tr p' cvmi' ac') ->
 
     ~ (cvm_trace_discloses_aspid_to_remote cvm_tr i r).
 
@@ -2355,536 +2340,51 @@ Proof.
   econstructor.
   exists H7. exists H6. exists H8.
   split.
-  Focus 2.
-  reflexivity.
+  2: { 
+    reflexivity.
+  }
   invc H1.
-  eapply cvm_implies_events.
-  eassumption.
-  eassumption.
-  eassumption.
+  eapply cvm_implies_events; eauto.
 Qed.
 
-
-
-
-
-
-(*
-  
-  eassumption.
-  Focus 2.
-  eassumption.
-  
-
-
-  
-  intros.
-  unfold not in *; intros.
-
-
-
-
-
-
-
-  
-  intros.
-  invc H1.
-  generalizeEverythingElse t.
-  induction t; intros; ff.
-  - (* asp case *)
-    unfold not in * ; intros.
-    destruct a; ff.
-    +
-      invc H.
-      destruct_conjs.
-      invc H4.
-      invc H2.
-      repeat ff.
-      invc H1.
-      destruct_conjs.
-      subst.
-      invc H6; solve_by_inversion.
-    +
-      invc H.
-      destruct_conjs.
-      invc H4.
-      invc H2.
-      repeat ff.
-      invc H1.
-      destruct_conjs.
-      subst.
-      invc H6; solve_by_inversion.
-    +
-      invc H.
-      destruct_conjs.
-      invc H4.
-      invc H2.
-      repeat ff.
-      ++
-      invc H1.
-      destruct_conjs.
-      subst.
-      invc H7;
-        solve_by_inversion.
-      ++
-        invc H1.
-      destruct_conjs.
-      subst.
-      invc H7;
-        solve_by_inversion.
-    +
-        invc H.
-      destruct_conjs.
-      invc H4.
-      invc H2.
-      repeat ff.
-      invc H1.
-      destruct_conjs.
-      subst.
-      invc H6; solve_by_inversion.
-    +
-        invc H.
-      destruct_conjs.
-      invc H4.
-      invc H2.
-      repeat ff.
-      invc H1.
-      destruct_conjs.
-      subst.
-      invc H6; solve_by_inversion.
-    +
-        invc H.
-      destruct_conjs.
-      invc H4.
-      invc H2.
-      repeat ff.
-      invc H1.
-      destruct_conjs.
-      subst.
-      invc H6; solve_by_inversion.
-  -
-    unfold not in *.
-    
-    invc H.
-    destruct_conjs.
-    invc H3; ff.
-    invc H2; ff.
-    intros.
-    invc H.
-    destruct_conjs.
-    apply H0.
-    assert (x = req cvmi p' p t e \/
-            In x (Axioms_Io.cvm_events t p e)).
-    admit.
-    door.
-    +
-      subst.
-      invc H11.
-      econstructor.
-
-      exists H1. exists p'. exists t. exists e. exists H6. exists p'.
-      split.
-      Focus 2.
-      split.
-      reflexivity.
-      split; eassumption.
-
-      Print events.
-      assert (t = unanno a).
-      admit.
-      subst.
-      apply evtsattreq.
-      reflexivity.
-    +
-      econstructor.
-      exists H2. exists H. exists H4. exists H5. exists H6. exists p'.
-      split.
-      Focus 2.
-      split.
-      reflexivity.
-      split.
-      eassumption.
-      eassumption.
-      subst.
-
-
-      assert (
-          exists i,
-              build_cvm (copland_compile t)
-                    {| st_ev := (evc bits e);
-                       st_trace := [];
-                       st_pl := p;
-                       st_evid := i|} =
-    (Some tt,
-     {| st_ev := cvm_evidence_core (copland_compile t) p (evc bits e);
-        st_trace := cvm_events_core (copland_compile t) p (get_et (evc bits e));
-        st_pl := p;
-        st_evid := (i + event_id_span (copland_compile t))
-     |})
-        ).
-      {
-        eexists.
-        eapply build_cvm_external.
-      }
-      destruct_conjs.
-
-      apply evtsatt.
-      
-
-
-      assert False.
-      eapply IHt.
-      econstructor.
-      repeat eexists.
-      eassumption.
-
-      admit.
-
-      destruct (cvm_evidence_core (copland_compile t) p (evc bits e)).
-      econstructor.
-      apply H12.
-      eassumption.
-
-
-      eassumption.
-      apply build_cvm_external.
-      do_remote.
-      Focus 4.
-      
-
-
-
-
-    
-    econstructor.
-    exists cvmi. exists p. exists t. exists H5. exists H6. exists p'.
-    split.
-    Focus 2.
-    split.
-    reflexivity.
-    split.
-    eassumption.
-    eassumption.
-
-    invc H7.
-    +
-      invc H11.
-
-
-
-    
-    invc H.
-    destruct_conjs.
-
-    assert (x = req cvmi p' p t e \/
-            In x (Axioms_Io.cvm_events t p e)).
-    admit.
-    door.
-    +
-      subst.
-      invc H10.
-      apply H.
-      unfold events_discloses_aspid.
-      exists (req cvmi p' p t e).
-      exists cvmi. exists p'. exists t. exists e. exists e. exists p.
-      exists 
-
-
-
-      
-      repeat eexists.
-      Focus 3.
-      eassumption.
-      Focus 3.
-      eassumption.
-      simpl.
-      break_let.
-      reflexivity.
-      ff.
-      reflexivity.
-
-
-
-
-
-
-
-      
-      intros.
-      inversion H0.
-      destruct_conjs.
-      subst.
-
-      exists (req 0 p' p t e).
-      exists 0. exists p'. exists t. exists e. exists H5. exists p'.
-      split.
-      Focus 2.
-      split.
-      auto.
-      split. eauto.
-      eauto.
-
-      invc H10.
-      ff.
-      repeat ff.
-      subst.
-
-      assert (t = unanno a).
-      admit.
-      subst.
-
-      Print events.
-
-      eapply evtsattreq.
-      subst.
-
-
-      
-      split; eauto.
-
-
-
-      
-
-      invc H0; ff.
-      destruct_conjs.
-
-      (*
-  a : AnnoTerm
-  Heqp0 : anno t (S H1) = (n, a)
-  ============================
-  events (aatt (H1, S n) p a) p' e
-       *)
-      
-
-
-      
-      repeat eexists.
-      Focus 2.
-      eassumption.
-      Focus 2.
-      eassumption.
-      repeat ff.
-      eapply evtsattreq.
-      econstructor.
-      invc H0.
-      destruct_conjs.
-      repeat ff.
-      Print events.
-      eapply evtsattreq.
-      econstructor.
-
-    
-
-
-
-
-    
-    apply H.
-
-
-
-    
-    invc H0.
-    destruct_conjs.
-
-    assert (x = req cvmi p' p t e \/
-            In x (Axioms_Io.cvm_events t p e)).
-    admit.
-    door.
-    +
-      subst.
-      invc H10.
-    destruct_conjs.
-
-    
-
-
-
-
-    
-    invc H6; ff.
-    repeat ff.
-    
-
-
-
-
-    Lemma at_discloses_lemma : forall t p p0 e i r,
-        events_discloses_aspid t p0 e i r ->
-        events_discloses_aspid <{ @ p [t] }> p0 e i r.
-    Proof.
-    Admitted.
-
-    eapply at_discloses_lemma. eassumption.
-
-    Focus 2.
-    eassumption.
-
-    eapply 
-
-    invc H0.
-
-
-
-
-    
-    Focus 2.
-    econstructor.
-    eassumption.
-    
-    intros.
-    eapply H.
-    econstructor.
-    repeat eexists.
-    eapply IHt.
-    unfold not in *.
-    unfold not; intros
-    invc H1; ff.
-    unfold not in *; intros.
-    apply H.
-    invc H0.
-    destruct_conjs.
-    invc H6; ff.
-    repeat ff.
-    eapply IHt.
-    
-      
-      
-      
-
-      
-      repeat ff.
-      solve_by_inversion.
-      solve_by_inversion.
-      destruct s; ff.
-      
-      
-      
-    solve_by_inversion.
-    econstructor
-    unfold not 
-    
-
-
-  
+Lemma can_annoP : forall t,
+    exists annt, annoP annt t.
+Proof.
 Admitted.
- *)
+
+Lemma can_annoP_indexed: forall t atp bits bits' e e' p p' cvm_tr cvmi cvmi' ac ac',
+term_to_coreP t atp ->
+build_cvmP atp {| st_ev := evc bits e; st_trace := []; st_pl := p; st_evid := cvmi; st_AM_config := ac |}
+          (resultC tt) {| st_ev := evc bits' e'; st_trace := cvm_tr; st_pl := p'; st_evid := cvmi'; st_AM_config := ac' |} ->
+exists annt,
+  annoP_indexed annt t cvmi cvmi'.
+Proof.
+  intros.
+  generalizeEverythingElse t.
+  induction t; intros; repeat Auto.ff.
+  -
+    destruct a; invc H; invc H0; repeat Auto.ff;
+    eexists; econstructor; simpl;
+    assert (S cvmi = cvmi + 1) by lia;
+    find_rewrite; reflexivity.
+  -
+    invc H0; ff.
+    invc H; ff.
 
 
-  Lemma can_annoP : forall t,
-      exists annt, annoP annt t.
-  Proof.
-  Admitted.
-
-    Lemma can_annoP_indexed: forall t atp bits bits' e e' p p' cvm_tr cvmi cvmi',
-    term_to_coreP t atp ->
-    build_cvmP atp {| st_ev := evc bits e; st_trace := []; st_pl := p; st_evid := cvmi |}
-               (Some tt) {| st_ev := evc bits' e'; st_trace := cvm_tr; st_pl := p'; st_evid := cvmi' |} ->
-    exists annt,
-      annoP_indexed annt t cvmi cvmi'.
-    Proof.
-      intros.
-      generalizeEverythingElse t.
-      induction t; intros; ff.
-      -
-        destruct a; invc H; invc H0; ff.
-
-        +
-          eexists. econstructor. simpl.
-          assert (S cvmi = cvmi + 1) by lia.
-          find_rewrite.
-          reflexivity.
-        +
-          eexists. econstructor. simpl.
-          assert (S cvmi = cvmi + 1) by lia.
-          find_rewrite.
-          reflexivity.
-        +
-          destruct s; ff; destruct f; ff.
-          ++
-          eexists. econstructor. simpl.
-          assert (S cvmi = cvmi + 1) by lia.
-          find_rewrite.
-          reflexivity.
-          ++
-             eexists. econstructor. simpl.
-          assert (S cvmi = cvmi + 1) by lia.
-          find_rewrite.
-          reflexivity.
-          ++
-             eexists. econstructor. simpl.
-          assert (S cvmi = cvmi + 1) by lia.
-          find_rewrite.
-          reflexivity.
-          ++
-             eexists. econstructor. simpl.
-          assert (S cvmi = cvmi + 1) by lia.
-          find_rewrite.
-          reflexivity.
-          ++
-             eexists. econstructor. simpl.
-          assert (S cvmi = cvmi + 1) by lia.
-          find_rewrite.
-          reflexivity.
-          ++
-             eexists. econstructor. simpl.
-          assert (S cvmi = cvmi + 1) by lia.
-          find_rewrite.
-          reflexivity.
-          ++
-             eexists. econstructor. simpl.
-          assert (S cvmi = cvmi + 1) by lia.
-          find_rewrite.
-          reflexivity.
-          ++ eexists. econstructor. simpl.
-          assert (S cvmi = cvmi + 1) by lia.
-          find_rewrite.
-          reflexivity.
-          ++
-             eexists. econstructor. simpl.
-          assert (S cvmi = cvmi + 1) by lia.
-          find_rewrite.
-          reflexivity.
-          ++
-             eexists. econstructor. simpl.
-          assert (S cvmi = cvmi + 1) by lia.
-          find_rewrite.
-          reflexivity.
-        +
-          eexists. econstructor. simpl.
-          assert (S cvmi = cvmi + 1) by lia.
-          find_rewrite.
-          reflexivity.
-        +
-           eexists. econstructor. simpl.
-          assert (S cvmi = cvmi + 1) by lia.
-          find_rewrite.
-          reflexivity.
-        +
-           eexists. econstructor. simpl.
-          assert (S cvmi = cvmi + 1) by lia.
-          find_rewrite.
-          reflexivity.
-      -
-        invc H0; ff.
-        invc H; ff.
-
-
-        eexists.
-        econstructor.
-        ff.
-        assert (S n = cvmi + 1 + event_id_span' t + 1).
-        {
-          admit.
-        }
-        find_rewrite.
-    Abort.
+    eexists.
+    econstructor.
+    ff.
+    assert (S n = cvmi + 1 + event_id_span' t + 1).
+    {
+      admit.
+    }
+    find_rewrite.
+Abort.
 
 
 Lemma cvm_respects_term_disclosure_aspid:
-  forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt,
+  forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt ac ac',
 
     annoP_indexed annt t cvmi cvmi' ->
 
@@ -2892,9 +2392,9 @@ Lemma cvm_respects_term_disclosure_aspid:
   
   term_to_coreP t atp ->
   build_cvmP atp
-             (mk_st (evc bits e) [] p cvmi)
-             (Some tt)
-             (mk_st (evc bits' e') cvm_tr p' cvmi') ->
+             (mk_st (evc bits e) [] p cvmi ac)
+             (resultC tt)
+             (mk_st (evc bits' e') cvm_tr p' cvmi' ac') ->
 
   ~ (cvm_trace_discloses_aspid_to_remote cvm_tr i r).
 Proof.
@@ -3031,22 +2531,6 @@ Proof.
     +
     simpl in *.
     invc H2.
-
-    (*
-    assert (evsubt_bool e0 e = false).
-    {
-      rewrite eqb_plc_refl in H.
-      (*
-      rewrite <- EqNat.beq_nat_refl in H.
-      Search andb. *)
-      
-      rewrite Bool.andb_true_l in H.
-      eassumption.
-    }
-    rewrite evsubt_bool_prop_iff in H4.
-    rewrite H4 in H1. solve_by_inversion.
-
-     *)
 
     assert (eqb_plc p1 p1 = true).
     {
@@ -3306,14 +2790,9 @@ Proof.
       eassumption.
     }
     rewrite forallb_forall in H4.
-    (* Search negb. *)
-  (*
-Bool.negb_false_iff: forall b : bool, negb b = false <-> b = true
-Bool.negb_true_iff: forall b : bool, negb b = true <-> b = false
-   *)
-      rewrite <- Bool.negb_true_iff.
-      eapply H4.
-      eassumption.
+    rewrite <- Bool.negb_true_iff.
+    eapply H4.
+    eassumption.
   }
 
   eapply H3. eassumption.
@@ -3340,15 +2819,15 @@ Admitted.
 *)
 
 Lemma filter_remote_disclosures_correct_cvm:
-  forall rs p e ts ts' t annt r ev atp i i' bits bits' e' cvm_tr p',
+  forall rs p e ts ts' t annt r ev atp i i' bits bits' e' cvm_tr p' ac ac',
     filter_remote_disclosures rs p e ts = ts' ->
     In t ts' -> 
     term_to_coreP t atp ->
     annoP_indexed annt t i i' ->
     build_cvmP atp
-                     (mk_st (evc bits e) [] p i)
-                     (Some tt)
-                     (mk_st (evc bits' e') cvm_tr p' i') ->
+                     (mk_st (evc bits e) [] p i ac)
+                     (resultC tt)
+                     (mk_st (evc bits' e') cvm_tr p' i' ac') ->
     
     In ev cvm_tr ->
     In r rs ->
@@ -3797,7 +3276,6 @@ Proof.
       eassumption.
     }
     rewrite forallb_forall in H5.
-      Search negb.
   (*
 Bool.negb_false_iff: forall b : bool, negb b = false <-> b = true
 Bool.negb_true_iff: forall b : bool, negb b = true <-> b = false
