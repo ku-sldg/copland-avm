@@ -106,8 +106,6 @@ Proof.
     (*
     do_wf_pieces. *)
     annogo.
-    Locate annogo.
-    Locate vmsts.
     df.
     
     repeat break_match;
