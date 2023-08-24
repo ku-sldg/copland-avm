@@ -376,8 +376,6 @@ destruct (eqb_plc p p0) eqn:hi.
     assert (place_terms t1 p p0 <> [] \/ 
             place_terms t2 p p0 <> []).
             {
-              (* Search (_ ++ _ <> []). *)
-  
               apply app_not_empty.
               eassumption.
             }

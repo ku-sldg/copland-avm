@@ -103,14 +103,6 @@ Proof.
   reflexivity.
 
   destruct_conjs.
-    (*
-    assert (e0 = et_fun H2).
-    {
-      Search (_ = et_fun _).
-      eapply etfun_reconstruct; eauto.
-    }
-    subst.
-     *)
 
   apply uuc_app in H5.
 

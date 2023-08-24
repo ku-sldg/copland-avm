@@ -112,13 +112,8 @@ Proof.
   -
     ff.
     destruct e; ff.
-    (*
-    Search (_ -> _ = _).
-    Search PeanoNat.Nat.eqb_refl.
-     *)
-    rewrite EqNat.beq_nat_true with (n:=n0) (m:=n).
+    rewrite Nat.eqb_eq in *.
     ff.
-    eassumption.
   - (* uu case *)
     ff.
     destruct e; ff.
@@ -347,7 +342,6 @@ Proof.
     {
       assert (eqb a i = true).
       {
-        Search "andb".
         repeat rewrite Bool.andb_true_r in H.
         auto.
       }
@@ -380,7 +374,6 @@ Proof.
     {
       assert (eqb a i = true).
       {
-        Search "andb".
         repeat rewrite Bool.andb_true_r in H.
         auto.
       }
@@ -419,7 +412,6 @@ Proof.
     {
       assert (eqb a i = true).
       {
-        Search "andb".
         repeat rewrite Bool.andb_true_r in H.
         auto.
       }
@@ -452,7 +444,6 @@ Proof.
     {
       assert (eqb a i = true).
       {
-        Search "andb".
         repeat rewrite Bool.andb_true_r in H.
         auto.
       }
@@ -490,7 +481,6 @@ Proof.
     {
       assert (eqb a i = true).
       {
-        Search "andb".
         repeat rewrite Bool.andb_true_r in H.
         auto.
       }
@@ -529,7 +519,6 @@ Proof.
     {
       assert (eqb a i = true).
       {
-        Search "andb".
         repeat rewrite Bool.andb_true_r in H.
         auto.
       }
@@ -568,7 +557,6 @@ Proof.
     {
       assert (eqb a i = true).
       {
-        Search "andb".
         repeat rewrite Bool.andb_true_r in H.
         auto.
       }
@@ -1212,7 +1200,6 @@ Qed.
       solve_by_inversion.
     }
     find_rewrite.
-    Search "||".
     rewrite Bool.orb_true_r.
     auto.
 
@@ -2353,13 +2340,11 @@ Proof.
   econstructor.
   exists H7. exists H6. exists H8.
   split.
-  Focus 2.
-  reflexivity.
+  2: { 
+    reflexivity.
+  }
   invc H1.
-  eapply cvm_implies_events.
-  eassumption.
-  eassumption.
-  eassumption.
+  eapply cvm_implies_events; eauto.
 Qed.
 
 Lemma can_annoP : forall t,
@@ -2546,22 +2531,6 @@ Proof.
     +
     simpl in *.
     invc H2.
-
-    (*
-    assert (evsubt_bool e0 e = false).
-    {
-      rewrite eqb_plc_refl in H.
-      (*
-      rewrite <- EqNat.beq_nat_refl in H.
-      Search andb. *)
-      
-      rewrite Bool.andb_true_l in H.
-      eassumption.
-    }
-    rewrite evsubt_bool_prop_iff in H4.
-    rewrite H4 in H1. solve_by_inversion.
-
-     *)
 
     assert (eqb_plc p1 p1 = true).
     {
@@ -2821,14 +2790,9 @@ Proof.
       eassumption.
     }
     rewrite forallb_forall in H4.
-    (* Search negb. *)
-  (*
-Bool.negb_false_iff: forall b : bool, negb b = false <-> b = true
-Bool.negb_true_iff: forall b : bool, negb b = true <-> b = false
-   *)
-      rewrite <- Bool.negb_true_iff.
-      eapply H4.
-      eassumption.
+    rewrite <- Bool.negb_true_iff.
+    eapply H4.
+    eassumption.
   }
 
   eapply H3. eassumption.
@@ -3312,7 +3276,6 @@ Proof.
       eassumption.
     }
     rewrite forallb_forall in H5.
-      Search negb.
   (*
 Bool.negb_false_iff: forall b : bool, negb b = false <-> b = true
 Bool.negb_true_iff: forall b : bool, negb b = true <-> b = false

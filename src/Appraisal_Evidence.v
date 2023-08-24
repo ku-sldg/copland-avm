@@ -1,8 +1,5 @@
 Require Import ConcreteEvidence AutoApp Auto Helpers_CvmSemantics Term_Defs Anno_Term_Defs Cvm_St Cvm_Impl Defs StructTactics OptMonad_Coq IO_Stubs Evidence_Bundlers Axioms_Io External_Facts.
 
-(* Require Imort Cvm_Monad. *)
-
-(* Require Import ErrorStMonad_Coq. *)
 Require Import List.
 Import ListNotations.
 
@@ -1331,7 +1328,9 @@ Fixpoint cvm_evidence_denote (t:AnnoTerm) (p:Plc) (ec:EvidenceC) : EvidenceC :=
                          (cvm_evidence_denote t2 p ((splitEvr s ec)))
   end.
 
+Set Warnings "-notation-overridden".
 Require Import Cvm_Monad.
+Set Warnings "notations-overridden".
 
 
 (** * Assert an arbitrary (remote) CVM execution.  
@@ -1421,27 +1420,8 @@ Defined.
   - (* asp case *)
     destruct a;
       try destruct a;
-      ff; try tauto.
-    +
-      wrap_ccp_anno; ff.
-    +
-      wrap_ccp_anno; ff.
-    +
-      destruct s.
-      ++
-        wrap_ccp_anno; ff.
-      ++
-        wrap_ccp_anno; ff.
-    +
-      wrap_ccp_anno; ff.
-    +
-      wrap_ccp_anno; ff.
-    +
-      wrap_ccp_anno; ff.
-    +
-      wrap_ccp_anno; ff.
-      
-      
+      ff; try tauto;
+      try (wrap_ccp_anno; ff).
   
   - (* at case *)
     repeat ff.
@@ -1933,7 +1913,7 @@ Proof.
   induction t; intros.
   - (* asp case *)
     wrap_ccp.
-    ff; eauto; intuition.
+    ff; eauto; auto with *.
 (*
     
     destruct a; (* asp *)
@@ -2103,7 +2083,7 @@ Proof.
     dd.
     cumul_ih.
     dd.
-    intuition.
+    auto with *.
 
   - (* bpar base *)
   wrap_ccp_dohi.
@@ -2123,7 +2103,7 @@ Proof.
   dd.
   cumul_ih.
   dd.
-  intuition.
+  auto with *.
 Qed.
 
 (** * Instance of st_trace_cumul'' where k=[] *)
@@ -2749,7 +2729,6 @@ Proof.
       Auto.ff.
       jkjke'.
       dd.
-      (* Search (encodeEv _ = _). *)
       rewrite recon_encodeEv with (bits:=bits) (et:=et).
       admit. (* TODO: figure out how to deal with do_asp_nofail or equivalent *)
       (* tauto. *)
