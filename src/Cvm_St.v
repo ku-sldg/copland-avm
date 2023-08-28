@@ -22,26 +22,6 @@ Require Export Manifest.
  *)
 
 
-Definition emptyConcreteMan : ConcreteManifest := {|
-  my_plc := min_id_type;
-  Concrete_ASPs := nil;
-  Concrete_Plcs := nil;
-  Concrete_PubKeys := nil;
-  Concrete_Targets := nil;
-  ASP_Server := empty_ASP_Address;
-  PubKey_Server := empty_ASP_Address;
-  Plc_Server := empty_ASP_Address;
-  UUID_Server := empty_ASP_Address;
-|}.
-
-Definition empty_am_config : AM_Config :=
-  mkAmConfig 
-    emptyConcreteMan 
-    (fun x => fun _ => fun _ => fun _ => errC Unavailable)
-    (fun x => errC Unavailable)
-    (fun x => errC Unavailable)
-    (fun x => errC Unavailable).
-
 Record cvm_st : Type := mk_st
                           {st_ev:EvC ;
                            st_trace:list Ev ;

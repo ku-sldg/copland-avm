@@ -1834,8 +1834,14 @@ Theorem manifest_generator_compiler_soundness_distributed : forall t tp p absMan
   lib_supports_manifest amLib absMan ->
   manifest_compiler absMan amLib = amConf ->
   forall st,
+
+  st.(st_AM_config) = amConf ->
+
+  (*
     (* Note, this should be trivial typically as amConf = st.(st_AM_config) and refl works *)
     supports_am amConf (st.(st_AM_config)) ->  
+
+    *)
 
     (  forall t', 
          In t' (place_terms t tp p) -> 
@@ -1848,6 +1854,7 @@ Theorem manifest_generator_compiler_soundness_distributed : forall t tp p absMan
     ).
 Proof.
   intros.
+  assert (supports_am amConf (st.(st_AM_config))) by ff.
   assert (In p (places tp t)) by 
             (eapply has_manifest_env_places_env_has_manifest; eauto).
   eapply well_formed_am_config_impl_executable.
@@ -1870,7 +1877,7 @@ Proof.
       +
         subst.
         eassumption.
-  - 
-    find_rewrite; eauto.
+  -
+    rewrite H1; eauto. 
   Unshelve. eapply min_id_type.
 Qed.

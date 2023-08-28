@@ -17,13 +17,21 @@ Definition run_am_app_comp{A:Type} (am_comp:AM A) (default_A:A) : A :=
   let optRes := evalErr am_comp empty_amst in
   fromSome default_A optRes.
 
+
+Definition get_amConfig : AM AM_Config :=
+    (* TODO:  consider moving this functionality to a Reader-like monad 
+          i.e. an 'ask' primitive *)
+    st <- get ;;
+    ret (amConfig st).
+
 Definition am_newNonce (bs:BS) : AM nat :=
   oldSt <- get ;;
   let oldMap := am_nonceMap oldSt in
   let oldId := am_nonceId oldSt in
+  let oldAMConfig := amConfig oldSt in
   let newMap := map_set oldMap oldId bs in
   let newId := oldId + 1 in
-  put (mkAM_St newMap newId) ;;
+  put (mkAM_St newMap newId oldAMConfig) ;;
   ret oldId.
 
 Definition am_getNonce (nid:nat) : AM BS :=

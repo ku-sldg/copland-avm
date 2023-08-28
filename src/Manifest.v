@@ -66,6 +66,7 @@ Definition PlcMap := MapC Plc Address.
 
     (* Local Mappings *)
     Local_ASPS        : MapC ASP_ID (CakeML_ASPCallback CallBackErrors) ;
+    Local_Appraisal_ASPS : MapC (Plc * ASP_ID) (CakeML_ASPCallback CallBackErrors) ;
 
     Local_Plcs        : MapD Plc UUID ;
     Local_PubKeys     : MapD Plc PublicKey ;
@@ -90,12 +91,34 @@ Definition PlcMap := MapC Plc Address.
     UUID_Server     : ASP_Address ;
   }.
 
+  Definition emptyConcreteMan : ConcreteManifest := {|
+    my_plc := min_id_type;
+    Concrete_ASPs := nil;
+    Concrete_Plcs := nil;
+    Concrete_PubKeys := nil;
+    Concrete_Targets := nil;
+    ASP_Server := empty_ASP_Address;
+    PubKey_Server := empty_ASP_Address;
+    Plc_Server := empty_ASP_Address;
+    UUID_Server := empty_ASP_Address;
+  |}.
+
 Record AM_Config : Type := 
   mkAmConfig {
     concMan : ConcreteManifest ;
     aspCb : (CakeML_ASPCallback DispatcherErrors) ;
+    app_aspCb : (CakeML_ASPCallback DispatcherErrors) ;
     plcCb : CakeML_PlcCallback ;
     pubKeyCb : CakeML_PubKeyCallback ;
     uuidCb : CakeML_uuidCallback ;
   }.
+
+  Definition empty_am_config : AM_Config :=
+  mkAmConfig 
+    emptyConcreteMan 
+    (fun x => fun _ => fun _ => fun _ => errC Unavailable)
+    (fun x => fun _ => fun _ => fun _ => errC Unavailable)
+    (fun x => errC Unavailable)
+    (fun x => errC Unavailable)
+    (fun x => errC Unavailable).
 

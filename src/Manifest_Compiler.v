@@ -44,6 +44,30 @@ Import ListNotations.
             (* (asp_server_cb asp_server_addr par) *)
           end.
 
+  (* This function will be a dispatcher for either local ASPS to CakeMLCallback, or pass them off to the ASP_Server *)
+  Definition generate_appraisal_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest)
+      : ConcreteManifest -> (CakeML_ASPCallback DispatcherErrors) :=
+    let local_app_asps_map := al.(Local_Appraisal_ASPS) in
+    let abstract_app_asps := am.(appraisal_asps) in
+    let shrunk_map : (MapC (Plc*ASP_ID) (CakeML_ASPCallback CallBackErrors)) := 
+      minify_mapC local_app_asps_map (fun x => if (in_dec (EqClass_impl_DecEq _) x abstract_app_asps) then true else false) in
+    let asp_server_cb := al.(ASPServer_Cb) in
+    fun (cman : ConcreteManifest) =>
+      let asp_server_addr := cman.(ASP_Server) in
+      fun (par : ASP_PARAMS) (p : Plc) (bs : BS) (rawEv : RawEv) =>
+        let (aspid, args, plc, targ) := par in
+          (* check is the ASPID is a local, with a callback *)
+          match (map_get shrunk_map (p,aspid)) with
+          | Some cb => 
+            match (cb par p bs rawEv) with
+            | resultC r => resultC r
+            | errC (messageLift msg) => (* TODO: Do something with msg *)
+                errC Runtime
+            end
+          | None => errC Unavailable 
+            (* (asp_server_cb asp_server_addr par) *)
+          end.
+
   (* This function will lookup for either local Plcs to UUID, or pass them off to the Plc Server *)
   Definition generate_Plc_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest) 
       : ConcreteManifest -> CakeML_PlcCallback :=
@@ -115,6 +139,7 @@ Import ListNotations.
   {|
     concMan   := cm ;
     aspCb     := (generate_ASP_dispatcher al m) cm ;
+    app_aspCb := (generate_appraisal_ASP_dispatcher al m) cm;
     plcCb     := (generate_Plc_dispatcher al m) cm ;
     pubKeyCb  := (generate_PubKey_dispatcher al m) cm ;
     uuidCb    := (generate_UUID_dispatcher al m) cm ;

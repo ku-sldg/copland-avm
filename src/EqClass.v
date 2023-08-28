@@ -122,3 +122,25 @@ Proof.
   subst.
   reflexivity.
 Defined.
+
+Require Import StructTactics.
+
+Lemma pair_eqb_eq{A B:Type}`{H:EqClass A}`{H':EqClass B} : forall (p1 p2:(A*B)),
+    eqbPair p1 p2 = true <-> p1 = p2.
+Proof.
+  intros.
+  split.
+  -
+    eapply beq_pair_true; eauto.
+  -
+    intros.
+    subst.
+    unfold eqbPair.
+    break_let.
+    repeat rewrite eqb_refl in *.
+    trivial.
+Qed.
+
+Global Instance pair_EqClass{A B:Type}`{H:EqClass A}`{H':EqClass B} : EqClass (A*B) :=
+  { eqb:= eqbPair;
+    eqb_leibniz := pair_eqb_eq }.
