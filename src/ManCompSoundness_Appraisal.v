@@ -162,6 +162,215 @@ Qed.
 Require Import Appraisal_Defs.
 
 
+Lemma firstn_works{A:Type}: forall (ls:list A) n,
+length ls >= n -> 
+n = length (firstn n ls).
+Proof.
+intros.
+symmetry.
+eapply firstn_length_le.
+lia.
+Qed.
+
+Lemma decrypt_amst_immut : forall st st' b ps et res,
+decrypt_bs_to_rawev' b ps et st = (res, st') -> 
+st = st'.
+Proof.
+intros.
+unfold decrypt_bs_to_rawev' in *.
+monad_unfold.
+ff; eauto.
+Qed.
+
+Lemma peel_bs_am_works : forall ls st st' r,
+length ls > 0 -> 
+peel_bs_am ls st = (r,st') ->
+exists res, 
+r = resultC res.
+Proof.
+intros.
+destruct ls; ff.
+eexists. eauto.
+Qed.
+
+
+Lemma has_nonces_cumul : forall et ls m,
+has_nonces (nonce_ids_et' et ls) m -> 
+has_nonces ls m.
+Proof.
+  induction et; intros; ff.
+  unfold has_nonces in *.
+  ff.
+  intros.
+  ff.
+Qed.
+
+Lemma has_nonces_cumul' : forall et ls ls' m,
+has_nonces (nonce_ids_et' et ls) m -> 
+has_nonces ls' m ->
+has_nonces (nonce_ids_et' et ls') m.
+Proof.
+  induction et; intros; ff.
+  -
+  unfold has_nonces in *.
+  ff.
+  intros.
+  ff.
+  -
+  unfold has_nonces in *.
+  ff.
+  intros.
+  ff.
+  eauto.
+  -
+    assert (has_nonces (nonce_ids_et' et1 ls) m).
+    eapply has_nonces_cumul.
+    eassumption.
+
+    eapply IHet2.
+    eassumption.
+    eapply has_nonces_cumul; eauto.
+Qed.
+
+Lemma gen_appraise_AM_immut : forall et ls st st' r,
+gen_appraise_AM et ls st = (r, st') -> 
+st = st'.
+Proof.
+  intros.
+  generalizeEverythingElse et. 
+  induction et; intros.
+  -
+    ff.
+  -
+    ff.
+    ff.
+      +
+        eapply peel_bs_am_immut; eauto.
+      +
+        assert (st = a).
+        {
+          eapply peel_bs_am_immut; eauto.
+        }
+        subst.
+
+        unfold checkNonce' in *.
+        repeat ff.
+      +
+      assert (st = a).
+      {
+        eapply peel_bs_am_immut; eauto.
+      }
+      subst.
+
+      unfold checkNonce' in *.
+      repeat ff.
+  -
+    cbn in *.
+    break_match.
+    +
+    ff.
+    + (* ENCR *)
+    monad_unfold.
+    break_let.
+    break_match.
+    ++
+    ff.
+    eapply peel_bs_am_immut; eauto.
+    ++
+    break_let.
+    break_let.
+    break_let.
+    subst.
+    invc H.
+    break_match.
+    +++
+    assert (st = a0) by (eapply peel_bs_am_immut; eauto).
+    subst.
+    invc Heqp1.
+    eapply decrypt_amst_immut; eauto.
+    +++
+    break_let.
+    break_let.
+    invc Heqp1.
+    assert (a0 = a2).
+    {
+      eapply decrypt_amst_immut; eauto.
+    }
+    subst.
+    assert (st = a2) by (eapply peel_bs_am_immut; eauto).
+    subst.
+    break_match.
+    ++++
+      invc Heqp2.
+      eauto.
+    ++++
+      invc Heqp2.
+      eauto.
+  + (* EXTD *)
+  monad_unfold.
+  break_let.
+  break_match.
+  ++
+  ff.
+  eapply peel_bs_am_immut; eauto.
+  ++
+  break_let.
+  break_let.
+  break_let.
+  subst.
+  invc H.
+  break_match.
+  +++
+  assert (st = a0) by (eapply peel_bs_am_immut; eauto).
+  subst.
+  invc Heqp1.
+  unfold check_asp_EXTD' in *.
+  monad_unfold.
+  break_let.
+  ff.
+  eauto.
+  +++
+  break_let.
+  break_let.
+  invc Heqp1.
+  assert (a0 = a2).
+  {
+    invc Heqp3.
+    unfold check_asp_EXTD' in *.
+    monad_unfold.
+    break_let.
+    ff; eauto.
+  }
+  subst.
+  assert (st = a2) by (eapply peel_bs_am_immut; eauto).
+  subst.
+  break_match.
+  ++++
+    invc Heqp2.
+    eauto.
+  ++++
+    invc Heqp2.
+    eauto.
+
+  +
+  subst.
+  ff.
+  +
+  eauto.
+
+  -
+  ff.
+  ff.
+  eauto.
+  assert (st = a) by eauto.
+  subst.
+  eauto.
+  assert (st = a) by eauto.
+  subst.
+  eauto.
+Qed.
+
+
 Theorem well_formed_am_config_impl_executable_app : forall et amConf ls,
   am_config_support_exec_app et amConf ->
   et_size et = length ls -> 
@@ -233,16 +442,6 @@ Proof.
 
         assert (exists res, r = resultC res).
         {
-          Lemma peel_bs_am_works : forall ls st st' r,
-            length ls > 0 -> 
-            peel_bs_am ls st = (r,st') ->
-            exists res, 
-              r = resultC res.
-          Proof.
-            intros.
-            destruct ls; ff.
-            eexists. eauto.
-          Qed.
 
           eapply peel_bs_am_works; eauto; lia.
 
@@ -293,16 +492,6 @@ Proof.
 
           assert (a = a2).
           {
-            Lemma decrypt_amst_immut : forall st st' b ps et res,
-            decrypt_bs_to_rawev' b ps et st = (res, st') -> 
-            st = st'.
-            Proof.
-              intros.
-              unfold decrypt_bs_to_rawev' in *.
-              monad_unfold.
-              ff; eauto.
-            Qed.
-
             eapply decrypt_amst_immut; eauto.
           }
           subst.
@@ -428,12 +617,7 @@ Proof.
 
       assert (a0 = a2).
       {
-        admit.
-      }
-      subst.
-      assert (a2 = a3).
-      {
-        admit.
+        ff.
       }
       subst.
 
@@ -492,7 +676,9 @@ Proof.
       split; eauto.
     }
     2: {
-      admit. (* TODO: has_nonces cumul lemma *)
+      unfold nonce_ids_et.
+      eapply has_nonces_cumul.
+      eassumption.
     }
 
     Search firstn.
@@ -503,16 +689,6 @@ Proof.
   n <= length l -> length (firstn n l) = n
     
     *)
-
-    Lemma firstn_works{A:Type}: forall (ls:list A) n,
-      length ls >= n -> 
-      n = length (firstn n ls).
-    Proof.
-      intros.
-      symmetry.
-      eapply firstn_length_le.
-      lia.
-    Qed.
 
     eapply firstn_works.
     lia.
@@ -540,7 +716,8 @@ Proof.
     }
 
     2: {
-      admit. (* nonces *)
+      eapply has_nonces_cumul'.
+      eassumption.
     }
 
     Search skipn.
@@ -559,17 +736,19 @@ Proof.
     ++
       assert (st = H8).
       {
-        admit.
+        eapply gen_appraise_AM_immut; eauto.
       }
       subst.
+      
       assert (H8 = a0).
       {
-        admit.
+        eapply gen_appraise_AM_immut; eauto.
       }
       subst.
+
       assert (a0 = H9). 
       {
-        admit.
+        eapply gen_appraise_AM_immut; eauto.
       }
       subst.
     find_rewrite.
@@ -581,12 +760,12 @@ Proof.
   ++
     assert (H8 = a0).
     {
-      admit.
+      eapply gen_appraise_AM_immut; eauto.
     }
     subst.
     assert (st = a0).
     {
-      admit.
+      eapply gen_appraise_AM_immut; eauto.
     }
     subst.
     find_rewrite.
@@ -607,7 +786,7 @@ Proof.
   exact mtc_app.
   exact mtc_app. 
   exact mtc_app.
-Admitted.
+Qed.
 
 Require Import ManCompSoundness.
 
