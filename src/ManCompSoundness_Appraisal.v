@@ -4,11 +4,11 @@ Require Import Manifest Manifest_Compiler Manifest_Generator AbstractedTypes
 Require Import Manifest_Generator_Facts Executable_Defs_Prop 
   Executable_Facts_Dist Eqb_Evidence.
 
-Require Import Coq.Program.Tactics.
+Require Import Coq.Program.Tactics Lia.
 
 Import ListNotations.
 
-(* Set Nested Proofs Allowed. *)
+Set Nested Proofs Allowed.
 
 
 
@@ -20,7 +20,14 @@ Definition supports_am_app (ac1 ac2 : AM_Config) : Prop :=
       ac2.(app_aspCb) (asp_paramsC aid l targ targid) p' ev ev' = resultC res)) /\
   (forall aid l targ targid p' ev ev',
       ac1.(app_aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC Runtime ->
-      ac2.(app_aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC Runtime).
+      ac2.(app_aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC Runtime) /\ 
+  (forall p,
+      (forall res, 
+      ac1.(pubKeyCb) p = resultC res ->
+      ac2.(pubKeyCb) p = resultC res)) /\
+  (forall p,
+      ac1.(pubKeyCb) p = errC Runtime ->
+      ac2.(pubKeyCb) p = errC Runtime).
 
 Theorem supports_am_app_refl : forall ac1,
   supports_am_app ac1 ac1.
@@ -40,7 +47,9 @@ Local Hint Resolve supports_am_app_refl : core.
 Local Hint Resolve supports_am_app_trans : core.
 
 Definition lib_supports_manifest_app (al : AM_Library) (am : Manifest) : Prop :=
-  (forall (a : (Plc*ASP_ID)), In a am.(appraisal_asps) -> exists cb, Maps.map_get al.(Local_Appraisal_ASPS) a = Some cb).
+  (forall (a : (Plc*ASP_ID)), In a am.(appraisal_asps) -> exists cb, Maps.map_get al.(Local_Appraisal_ASPS) a = Some cb) /\ 
+  (forall (p : Plc), In p am.(pubKeyPlcs) -> exists cb, Maps.map_get al.(Local_PubKeys) p = Some cb).
+
 
 (*
 Inductive Evidence: Set :=
@@ -65,7 +74,29 @@ Fixpoint am_config_support_exec_app (e : Evidence) (ac : AM_Config) : Prop :=
     match e with
     | mt => True 
     | nn _ => True (* TODO: how to account for nonce handling? *)
-    | uu p fwd ps e' => True 
+    | uu p fwd ps e' => 
+        match fwd with 
+        | ENCR => 
+            match ps with 
+            | asp_paramsC _ _ p _ => 
+                ((exists res, 
+                  ac.(pubKeyCb) p = resultC res) \/ 
+                ac.(pubKeyCb) p = errC Runtime) /\ 
+                am_config_support_exec_app e' ac
+            end
+        | EXTD => 
+            forall bs ls, 
+            (
+            ( exists res, ac.(app_aspCb) ps p bs ls = resultC res) \/
+              ac.(app_aspCb) ps p bs ls = errC Runtime) /\ 
+
+            am_config_support_exec_app e' ac
+        | KEEP => 
+            am_config_support_exec_app e' ac
+        | _ => True
+        end
+        
+        
             (*
             | ASPC _ _ (asp_paramsC aspid _ _ _) =>
             (forall l targ targid p' ev ev',
@@ -76,23 +107,64 @@ Fixpoint am_config_support_exec_app (e : Evidence) (ac : AM_Config) : Prop :=
     | ss e1 e2 => 
         exists ac1 ac2, 
         (am_config_support_exec_app e1 ac1) /\ 
-        (am_config_support_exec_app e1 ac1) /\ 
+        (am_config_support_exec_app e2 ac1) /\ 
         supports_am_app ac1 ac /\
         supports_am_app ac2 ac
     end.
 
 Require Import AM_St Impl_appraisal.
 
-Fixpoint nonce_ids_et (et:Evidence) : list N_ID.
-Admitted.
+Print Evidence.
 
-Definition has_nonces (nids: list N_ID) (m:MapC N_ID BS) : Prop.
-Admitted.
+Fixpoint nonce_ids_et' (et:Evidence) (ls:list N_ID) : list N_ID :=
+  match et with
+  | mt => ls
+  | nn nid => nid :: ls 
+  | ss et1 et2 => (nonce_ids_et' et2 (nonce_ids_et' et1 ls))
+  | uu _ _ _ et' => nonce_ids_et' et' ls
+  end.
+
+Definition nonce_ids_et (et:Evidence) : list N_ID :=
+  nonce_ids_et' et [].
+
+Definition has_nonces (nids: list N_ID) (m:MapC N_ID BS) : Prop := 
+  forall nid, 
+  In nid nids -> 
+  (
+    exists bs, 
+    map_get m nid = Some bs
+  ).
+
+Lemma peel_bs_am_contra : forall ls st st' e (P:Prop),
+  length ls > 0 -> 
+  peel_bs_am ls st = (errC e, st') -> 
+  P. 
+Proof.
+  intros.
+  assert (exists v, ls = [v]).
+  {
+    destruct ls; ff.
+  }
+  destruct_conjs.
+  subst.
+  unfold peel_bs_am in *.
+  solve_by_inversion.
+Qed.
+
+Lemma peel_bs_am_immut : forall ls st x st',
+peel_bs_am ls st = (x, st') -> 
+st = st'.
+Proof.
+intros.
+destruct ls; ff.
+Qed.
+
+Require Import Appraisal_Defs.
 
 
 Theorem well_formed_am_config_impl_executable_app : forall et amConf ls,
   am_config_support_exec_app et amConf ->
-  length ls = et_size et -> 
+  et_size et = length ls -> 
   forall st,
   supports_am_app amConf (st.(amConfig)) ->
   has_nonces (nonce_ids_et et) (st.(am_nonceMap)) -> 
@@ -100,6 +172,441 @@ Theorem well_formed_am_config_impl_executable_app : forall et amConf ls,
         (gen_appraise_AM et ls) st = (resultC ec, st') \/ 
         (gen_appraise_AM et ls) st = (errC (dispatch_error Runtime), st'). 
 Proof.
+  intros.
+  generalizeEverythingElse et.
+  induction et; intros.
+  - (* mt case *)
+    repeat eexists.
+    left.
+    ff.
+    reflexivity.
+  - (* nn case *)
+    ff.
+    destruct r.
+    +
+      eapply peel_bs_am_contra; try eauto; try lia.
+    +
+      ff.
+      ++
+        unfold has_nonces in *.
+        unfold Appraisal_Defs.checkNonce' in *.
+        ff.
+        ff.
+        specialize H2 with (nid:=n).
+        assert (n = n) by reflexivity. 
+        assert (exists bs, map_get (am_nonceMap st) n = Some bs).
+        eauto.
+        destruct_conjs.
+        assert (st = a0).
+        {
+          eapply peel_bs_am_immut; eauto.
+        }
+        subst.
+        find_rewrite.
+        solve_by_inversion.
+      ++
+        eexists.
+        eauto.
+  - (* uu case *)
+
+    simpl in *.
+    repeat break_match; simpl in *; subst; cbn.
+
+    + (* COMP case *)
+      repeat eexists.
+      repeat ff.
+    + (* ENCR case *)
+      simpl in *.
+      destruct_conjs.
+
+      door.
+      ++ (* pubkey configured/available *)
+        simpl in *.
+        monad_unfold.
+        break_let.
+
+        assert (st = a).
+        {
+          eapply peel_bs_am_immut; eauto.
+        }
+        subst.
+
+        assert (exists res, r = resultC res).
+        {
+          Lemma peel_bs_am_works : forall ls st st' r,
+            length ls > 0 -> 
+            peel_bs_am ls st = (r,st') ->
+            exists res, 
+              r = resultC res.
+          Proof.
+            intros.
+            destruct ls; ff.
+            eexists. eauto.
+          Qed.
+
+          eapply peel_bs_am_works; eauto; lia.
+
+        }
+
+        destruct_conjs.
+        subst.
+        repeat break_let.
+
+        break_match.
+        +++ (* decrypt error *)
+          invc Heqp0.
+          unfold decrypt_bs_to_rawev' in *.
+          monad_unfold.
+          ff.
+
+          ++++
+            unfold supports_am_app in *.
+            destruct_conjs.
+            specialize H6 with (p:=p0) (res:=H).
+            find_apply_hyp_hyp.
+            find_rewrite.
+            solve_by_inversion.
+
+          ++++
+            ff.
+            assert (d = Runtime).
+            {
+              eapply decrypt_prim_runtime; eauto.
+            }
+            subst.
+            repeat eexists.
+            eauto.
+          ++++
+            unfold check_et_size in *.
+            ff.
+            repeat eexists.
+            eauto.
+      +++ (* decrypt success *)
+        break_let.
+        break_let.
+        invc Heqp0.
+
+        break_match.
+        ++++
+          subst.
+          invc Heqp3.
+
+          assert (a = a2).
+          {
+            Lemma decrypt_amst_immut : forall st st' b ps et res,
+            decrypt_bs_to_rawev' b ps et st = (res, st') -> 
+            st = st'.
+            Proof.
+              intros.
+              unfold decrypt_bs_to_rawev' in *.
+              monad_unfold.
+              ff; eauto.
+            Qed.
+
+            eapply decrypt_amst_immut; eauto.
+          }
+          subst.
+
+          assert (exists ec st', 
+                    gen_appraise_AM et r2 a2  = (resultC ec, st') \/ 
+                    gen_appraise_AM et r2 a2 = (errC (dispatch_error Runtime), st')
+          ).
+          {
+            eapply IHet.
+            3: {
+              eassumption.
+            }
+            3: {
+              eauto.
+            }
+            eassumption.
+
+            unfold decrypt_bs_to_rawev' in *.
+            monad_unfold.
+            break_let.
+            ff.
+            unfold check_et_size in *.
+            ff.
+            Search (Nat.eqb _ _ = true -> _).
+            eapply EqNat.beq_nat_true_stt.
+            eassumption.
+          }
+          destruct_conjs.
+          door.
+          +++++
+            find_rewrite.
+            solve_by_inversion.
+          +++++
+          find_rewrite.
+          invc H7.
+          eauto.
+      ++++
+      invc Heqp3.
+      eauto.
+    ++ (* pubkey NOT configured/available *)
+      monad_unfold.
+      break_let.
+
+      assert (st = a).
+      {
+        eapply peel_bs_am_immut; eauto.
+      }
+      subst.
+
+      assert (exists res, r = resultC res).
+      {
+        eapply peel_bs_am_works; eauto; lia.
+      }
+      destruct_conjs.
+      subst.
+      break_let.
+      break_let.
+      unfold decrypt_bs_to_rawev' in *.
+      monad_unfold.
+      break_let.
+      invc Heqp2.
+
+      assert (pubKeyCb (amConfig a) p0 = errC Runtime).
+      {
+        unfold supports_am_app in *.
+        destruct_conjs.
+        specialize H6 with (p:=p0).
+        eauto.
+      }
+      find_rewrite.
+      ff.
+      eauto.
+  + (* EXTD case *)
+    ff.
+
+    assert (st = a0).
+    {
+      eapply peel_bs_am_immut; eauto.
+    }
+    subst.
+
+    assert (exists res, r = resultC res).
+    {
+      eapply peel_bs_am_works; eauto; lia.
+    }
+    destruct_conjs.
+    subst.
+    repeat break_let.
+    invc Heqp2.
+
+    break_match.
+    ++ (* check_asp_EXTD error *)
+      ff.
+      unfold check_asp_EXTD in *.
+
+      specialize H with (bs:= b) (ls:=r0).
+      destruct_conjs.
+      door.
+      +++
+        ff.
+        unfold supports_am_app in *.
+        destruct_conjs.
+        destruct a.
+        specialize H5 with (aid:=a) (l:=l) (targ:=p0) (targid:=t) (p':=p) (ev:=b) (ev':=r0).
+        find_apply_hyp_hyp.
+        find_rewrite.
+        solve_by_inversion.
+      +++
+      ff.
+      unfold supports_am_app in *.
+      destruct_conjs.
+      destruct a.
+      specialize H4 with (aid:=a) (l:=l) (targ:=p0) (targid:=t) (p':=p) (ev:=b) (ev':=r0).
+      find_apply_hyp_hyp.
+      find_rewrite.
+      ff.
+      eauto.
+    ++ (* check_asp_EXTD succeeds *)
+      subst.
+      break_let.
+      invc Heqp1.
+
+      assert (a0 = a2).
+      {
+        admit.
+      }
+      subst.
+      assert (a2 = a3).
+      {
+        admit.
+      }
+      subst.
+
+      specialize H with (bs:=b) (ls:=r0).
+      destruct_conjs.
+      edestruct IHet.
+      eassumption.
+      2: {
+        eassumption.
+      }
+      2: {
+        eassumption.
+      }
+
+      assert (et_size et = length r0).
+      {
+        assert (length ls = S (length r0)).
+        {
+          unfold peel_bs_am in *.
+          destruct ls; ff.
+        }
+        lia.
+      }
+      eassumption.
+
+      destruct_conjs.
+      destruct H5.
+      +++
+        find_rewrite.
+        ff.
+        eauto.
+      +++
+      find_rewrite.
+      ff.
+      eauto.
+  + (* KILL case *)
+    repeat eexists.
+    ff.
+    eauto.
+  + (* KEEP case *)
+    ff.
+    eauto.
+
+  - (* ss case *)
+    cbn in *.
+    destruct_conjs.
+
+    edestruct IHet1 with (ls := firstn (et_size et1) ls).
+    eassumption.
+    2: {
+      unfold supports_am_app in *.
+      destruct_conjs.
+      split; try eauto.
+      split.
+      eauto.
+      split; eauto.
+    }
+    2: {
+      admit. (* TODO: has_nonces cumul lemma *)
+    }
+
+    Search firstn.
+
+    (* 
+    firstn_length_le:
+  forall [A : Type] (l : list A) [n : nat],
+  n <= length l -> length (firstn n l) = n
+    
+    *)
+
+    Lemma firstn_works{A:Type}: forall (ls:list A) n,
+      length ls >= n -> 
+      n = length (firstn n ls).
+    Proof.
+      intros.
+      symmetry.
+      eapply firstn_length_le.
+      lia.
+    Qed.
+
+    eapply firstn_works.
+    lia.
+
+    destruct_conjs.
+
+    monad_unfold.
+    break_let.
+    door.
+    +
+    invc H9.
+    break_let.
+    break_let.
+
+    edestruct IHet2 with (ls := skipn (et_size et1) ls).
+    eassumption.
+
+    2: {
+      unfold supports_am_app in *.
+      destruct_conjs.
+      split; try eauto.
+      split.
+      eauto.
+      split; eauto.
+    }
+
+    2: {
+      admit. (* nonces *)
+    }
+
+    Search skipn.
+
+    Search (length (skipn _ _)).
+
+    assert (length (skipn (et_size et1) ls) = length ls - (et_size et1)).
+    {
+      eapply skipn_length.
+    }
+    lia.
+
+    destruct_conjs.
+
+    door.
+    ++
+      assert (st = H8).
+      {
+        admit.
+      }
+      subst.
+      assert (H8 = a0).
+      {
+        admit.
+      }
+      subst.
+      assert (a0 = H9). 
+      {
+        admit.
+      }
+      subst.
+    find_rewrite.
+    ff.
+
+    repeat eexists.
+    eauto.
+
+  ++
+    assert (H8 = a0).
+    {
+      admit.
+    }
+    subst.
+    assert (st = a0).
+    {
+      admit.
+    }
+    subst.
+    find_rewrite.
+    ff.
+    repeat eexists.
+    eauto.
+
+  +
+  ff.
+  repeat eexists.
+  eauto.
+  Unshelve.
+  exact mtc_app.
+  exact mtc_app.
+  exact mtc_app.
+  exact mtc_app.
+  exact mtc_app.
+  exact mtc_app.
+  exact mtc_app. 
+  exact mtc_app.
 Admitted.
 
 Require Import ManCompSoundness.
@@ -108,7 +615,13 @@ Definition manifest_support_am_config_app (m : Manifest) (ac : AM_Config) : Prop
   (forall p a, In (p,a) (m.(appraisal_asps)) -> 
     forall l targ targid ev ev',
     (exists res, ac.(app_aspCb) (asp_paramsC a l targ targid) p ev ev' = resultC res) \/
-    (ac.(app_aspCb) (asp_paramsC a l targ targid) p ev ev' = errC Runtime)).
+    (ac.(app_aspCb) (asp_paramsC a l targ targid) p ev ev' = errC Runtime)) /\ 
+
+    (forall p, In p (m.(pubKeyPlcs)) -> 
+    (exists res, ac.(pubKeyCb) p = resultC res) \/
+    (ac.(pubKeyCb) p = errC Runtime)).
+
+
 
 Theorem manifest_support_am_config_compiler_app : forall absMan amLib,
     lib_supports_manifest_app amLib absMan ->
@@ -147,9 +660,24 @@ Fixpoint manifest_support_term_app (m : Manifest) (e : Evidence) : Prop :=
     | mt => True 
     | nn _ => True (* TODO: should we account for nonce presence here? *)
     | uu p fwd ps e' => 
+        match fwd with 
+        | EXTD => 
+          match ps with 
+          | asp_paramsC a _ _ _ => 
+              In (p,a) m.(appraisal_asps) /\ 
+              manifest_support_term_app m e'
+          end
+        | ENCR => 
         match ps with 
-        | asp_paramsC a _ _ _ => 
-            In (a,p) m.(appraisal_asps)
+        | asp_paramsC _ _ p _ =>
+            In p m.(pubKeyPlcs) /\ 
+            manifest_support_term_app m e'
+        end
+
+        | KEEP => 
+            manifest_support_term_app m e'
+
+        | _ => True
         end
         (* TODO:  support other fwd types here in the future... *)
     | ss e1 e2 => 
@@ -166,6 +694,7 @@ Proof.
     induction et; simpl in *; intuition; eauto;
     unfold manifest_support_am_config_app in *; intuition; eauto;
     repeat (try break_match; simpl in *; intuition; eauto).
+
     - pose proof (IHet1 absMan amConf); 
         pose proof (IHet2 absMan amConf); intuition;
         exists amConf, amConf; eauto.
@@ -179,32 +708,291 @@ Proof.
   intros.
   generalizeEverythingElse et.
   induction et; intros; ff.
-  -
+  - (* asp case *)
     subst.
     unfold manifest_subset in H. 
     destruct_conjs.
-    ff.  
+    ff.
+    + (* ENCR *)
+      subst.
+      destruct_conjs.
+      split; eauto.
+      eapply IHet with (m1:=m1).
+      unfold manifest_subset.
+      eauto.
+      ff.  
+    +
+      subst.
+      subst.
+      destruct_conjs.
+      split; eauto.
+      eapply IHet with (m1:=m1).
+      unfold manifest_subset.
+      eauto.
+      ff.
+    + 
+    subst.
+    destruct_conjs.
+    eapply IHet with (m1:=m1).
+    unfold manifest_subset.
+    eauto.
+    ff.
   -
     split; 
     destruct_conjs; ff; eauto.
 Qed.
 
-Fixpoint manifest_generator_app' (et:Evidence) : Manifest. 
-Admitted.
+Definition app_aspid_manifest_update (i:ASP_ID) (p:Plc) (m:Manifest) : Manifest := 
+  let '{| my_abstract_plc := oldPlc;
+          asps := oldasps; 
+          appraisal_asps := old_app_asps;
+          uuidPlcs := oldKnowsOf; 
+          pubKeyPlcs := oldContext; 
+          targetPlcs := oldTargets ;
+          policy := oldPolicy |} := m in
+  (Build_Manifest oldPlc oldasps ((i,p) :: old_app_asps) oldKnowsOf oldContext oldTargets oldPolicy).
 
-Theorem man_gen_old_always_supports_app : forall et absMan,
+Fixpoint manifest_generator_app' (et:Evidence) (m:Manifest) : Manifest :=
+  match et with 
+  | mt => m 
+  | nn _ => m (* TODO: account for nonce handling here? *)
+  | uu p fwd ps e' => 
+    match fwd with 
+    | EXTD => 
+      match ps with 
+      | asp_paramsC a _ _ _ =>
+          manifest_generator_app' e' 
+            (app_aspid_manifest_update p a m)
+      end 
+    | ENCR => 
+      match ps with 
+      | asp_paramsC _ _ p' _ =>
+          manifest_generator_app' e' 
+            (pubkey_manifest_update p' m)
+      end
+    | KEEP => manifest_generator_app' e' m
+    | _ => m
+    end
+  | ss e1 e2 => 
+      manifest_generator_app' e2 (manifest_generator_app' e1 m)
+  end.
+
+Definition manifest_generator_app (et:Evidence) : Manifest := 
+  manifest_generator_app' et empty_Manifest.
+
+Lemma manifest_generator_app_cumul : forall et m1 m2,
+  manifest_subset m1 m2 ->
+  manifest_subset m1 (manifest_generator_app' et m2).
+Proof.
+  intros.
+  generalizeEverythingElse et.
+  induction et; intros; ff.
+  - (* uu case *)
+    subst.
+
+    ff.
+    + (* ENCR *)
+
+    subst.
+
+    unfold pubkey_manifest_update.
+    break_let.
+    subst.
+    unfold manifest_subset in *.
+    simpl in *.
+    destruct_conjs.
+
+    edestruct IHet.
+    split; eauto.
+
+    destruct_conjs.
+
+    split.
+
+    intros.
+    eauto.
+
+    split; intros; eauto.
+
+    simpl in *.
+
+    split; eauto.
+
+    split; eauto.
+
+    + (* EXTD *)
+
+
+
+    unfold app_aspid_manifest_update.
+    break_let.
+    subst.
+    unfold manifest_subset in *.
+    simpl in *.
+    destruct_conjs.
+
+    edestruct IHet.
+    split; eauto.
+
+    destruct_conjs.
+
+    split.
+
+    intros.
+    eauto.
+
+    split; intros; eauto.
+
+    simpl in *.
+
+    eapply H5.
+    simpl.
+    right; eauto.
+
+    split; eauto.
+    split; eauto.
+
+  - (* ss case *)
+    eauto.
+Qed.
+
+Lemma manifest_generator_app_cumul' : forall et m1, 
+  manifest_subset m1 (manifest_generator_app' et m1).
+Proof.
+  intros.
+  eapply manifest_generator_app_cumul.
+  eapply manifest_subset_refl.
+Qed.
+
+
+Lemma asdf_app : forall et1 et2 absMan m,
+    manifest_generator_app' et2 
+        (manifest_generator_app' et1 m) = absMan -> 
+              
+  exists m',
+  manifest_generator_app' et1 m = m' /\ 
+  manifest_subset m' absMan.
+  Proof.
+    intros.
+    eexists.
+    split; try reflexivity.
+    rewrite <- H.
+    eapply manifest_generator_app_cumul'.
+Qed.
+
+Theorem man_gen_old_always_supports_app : forall et oldMan absMan,
   (* map_get (manifest_generator' tp t backMan) p = Some absMan -> *)
-  manifest_generator_app' et = absMan ->
+  manifest_generator_app' et oldMan = absMan ->
   manifest_support_term_app absMan et.
 Proof.
-Admitted.
+  induction et; intuition;
+    repeat (try break_match; 
+      unfold app_aspid_manifest_update in *;
+      unfold pubkey_manifest_update in *;
+      subst; simpl in *; intuition; eauto; try congruence;
+      repeat find_rewrite;
+      repeat find_injection;
+      simpl in * );
+    try (rewrite mapC_get_works in *; simpl in *; repeat find_injection; simpl in *; intuition; eauto; congruence).
 
-Theorem manifest_generator_compiler_soundness_app : forall et ls absMan amLib amConf,
+  - (* ENCR case *)
+    ff.
+    assert (manifest_subset {|
+      my_abstract_plc := my_abstract_plc;
+      asps := asps;
+      appraisal_asps := appraisal_asps;
+      uuidPlcs := uuidPlcs;
+      pubKeyPlcs := p0 :: pubKeyPlcs;
+      targetPlcs := targetPlcs;
+      policy := policy
+    |}
+    
+    (manifest_generator_app' et
+        {|
+          my_abstract_plc := my_abstract_plc;
+          asps := asps;
+          appraisal_asps := appraisal_asps;
+          uuidPlcs := uuidPlcs;
+          pubKeyPlcs := p0 :: pubKeyPlcs;
+          targetPlcs := targetPlcs;
+          policy := policy
+        |})
+
+
+    ).
+    eapply manifest_generator_app_cumul'.
+    unfold manifest_subset in *.
+    destruct_conjs.
+    eapply H2.
+    simpl.
+    eauto.
+    - (* EXTD case *)
+
+    ff.
+    assert (manifest_subset  {|
+      my_abstract_plc := my_abstract_plc;
+      asps := asps;
+      appraisal_asps := (p, a0) :: appraisal_asps;
+      uuidPlcs := uuidPlcs;
+      pubKeyPlcs := pubKeyPlcs;
+      targetPlcs := targetPlcs;
+      policy := policy
+    |}
+    
+    (manifest_generator_app' et
+    {|
+      my_abstract_plc := my_abstract_plc;
+      asps := asps;
+      appraisal_asps := (p, a0) :: appraisal_asps;
+      uuidPlcs := uuidPlcs;
+      pubKeyPlcs := pubKeyPlcs;
+      targetPlcs := targetPlcs;
+      policy := policy
+    |})
+
+
+    ).
+    eapply manifest_generator_app_cumul'.
+    unfold manifest_subset in *.
+    destruct_conjs.
+    eauto.
+    eapply H0.
+    simpl.
+    eauto.
+
+
+
+  - (* ss case *)
+    ff.
+    pose (asdf_app et1 et2 (manifest_generator_app' et2 
+    (manifest_generator_app' et1 oldMan)) oldMan).
+
+    assert (
+      manifest_generator_app' et2
+     (manifest_generator_app' et1 oldMan) =
+   manifest_generator_app' et2
+     (manifest_generator_app' et1 oldMan)
+    ) by reflexivity.
+
+    apply e in H.
+    destruct_conjs.
+
+    assert (manifest_support_term_app H et1).
+    {
+      eauto.
+    }
+
+    eapply manifest_supports_term_sub_app.
+    eapply H1.
+    eassumption.
+Qed.
+
+Theorem manifest_generator_compiler_soundness_app : forall et ls oldMan absMan amLib amConf,
   (* map_get (manifest_generator t tp) p = Some absMan -> *)
-  manifest_generator_app' et = absMan ->
+  manifest_generator_app' et oldMan = absMan ->
   lib_supports_manifest_app amLib absMan ->
   manifest_compiler absMan amLib = amConf ->
-  length ls = et_size et ->
+  et_size et = length ls ->
   forall st,
 
   st.(amConfig) = amConf ->

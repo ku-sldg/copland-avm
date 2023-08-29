@@ -37,7 +37,7 @@ Fixpoint gen_appraise_AM (et:Evidence) (ls:RawEv) : AM AppResultC :=
       v <- peel_bs_am ls ;;
       match v with
         (bs, ls') => 
-        decrypted_ls <- decrypt_bs_to_rawev' bs params ;;
+        decrypted_ls <- decrypt_bs_to_rawev' bs params et' ;;
         rest <- gen_appraise_AM et' decrypted_ls ;;
         ret (eec_app p params passed_bs rest)
       (* TODO: consider encoding success/failure  of decryption for bs param 

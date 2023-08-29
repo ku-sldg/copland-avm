@@ -34,7 +34,9 @@ Definition enc_aspargs : list Arg. Admitted.
 
 Definition enc_targid : ASP_ID. Admitted.
 
+(*
 Definition enc_targplc : Plc. Admitted.
+*)
 
 Definition enc_params : Plc -> ASP_PARAMS :=
-  fun p => asp_paramsC enc_aspid enc_aspargs enc_targplc enc_targid.
+  fun p => asp_paramsC enc_aspid enc_aspargs p enc_targid.
