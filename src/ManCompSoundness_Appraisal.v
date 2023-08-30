@@ -377,9 +377,10 @@ Theorem well_formed_am_config_impl_executable_app : forall et amConf ls,
   forall st,
   supports_am_app amConf (st.(amConfig)) ->
   has_nonces (nonce_ids_et et) (st.(am_nonceMap)) -> 
-    exists ec st',
-        (gen_appraise_AM et ls) st = (resultC ec, st') \/ 
-        (gen_appraise_AM et ls) st = (errC (dispatch_error Runtime), st'). 
+    (exists ec st',
+        (gen_appraise_AM et ls) st = (resultC ec, st')) \/ 
+    (exists st',
+        (gen_appraise_AM et ls) st = (errC (dispatch_error Runtime), st')).
 Proof.
   intros.
   generalizeEverythingElse et.
@@ -388,7 +389,7 @@ Proof.
     repeat eexists.
     left.
     ff.
-    reflexivity.
+    repeat eexists.
   - (* nn case *)
     ff.
     destruct r.
@@ -414,6 +415,7 @@ Proof.
         find_rewrite.
         solve_by_inversion.
       ++
+        left.
         eexists.
         eauto.
   - (* uu case *)
@@ -422,8 +424,8 @@ Proof.
     repeat break_match; simpl in *; subst; cbn.
 
     + (* COMP case *)
+      left.
       repeat eexists.
-      repeat ff.
     + (* ENCR case *)
       simpl in *.
       destruct_conjs.
@@ -496,9 +498,10 @@ Proof.
           }
           subst.
 
-          assert (exists ec st', 
-                    gen_appraise_AM et r2 a2  = (resultC ec, st') \/ 
-                    gen_appraise_AM et r2 a2 = (errC (dispatch_error Runtime), st')
+          assert ((exists ec st', 
+                    gen_appraise_AM et r2 a2  = (resultC ec, st')) \/ 
+                  (exists st', 
+                    gen_appraise_AM et r2 a2 = (errC (dispatch_error Runtime), st'))
           ).
           {
             eapply IHet.
@@ -527,7 +530,7 @@ Proof.
             solve_by_inversion.
           +++++
           find_rewrite.
-          invc H7.
+          invc H6.
           eauto.
       ++++
       invc Heqp3.
@@ -697,9 +700,21 @@ Proof.
 
     monad_unfold.
     break_let.
+    rewrite H10 in *.
+
+    break_match.
+    subst.
+    solve_by_inversion.
+
+(*
+    subst.
+    invc H10.
+    ff.
     door.
     +
     invc H9.
+    *)
+
     break_let.
     break_let.
 
@@ -718,6 +733,9 @@ Proof.
     2: {
       eapply has_nonces_cumul'.
       eassumption.
+      unfold has_nonces.
+      intros.
+      solve_by_inversion.
     }
 
     Search skipn.
@@ -732,60 +750,75 @@ Proof.
 
     destruct_conjs.
 
+    (*
+
+    find_rewrite.
+
+
+
+
+
     door.
     ++
-      assert (st = H8).
+    *)
+
+      assert (st = H12).
       {
         eapply gen_appraise_AM_immut; eauto.
       }
       subst.
+
+      assert (a = a2).
+      {
+        eapply gen_appraise_AM_immut; eauto.
+      }
+      subst.
+      invc H10.
       
-      assert (H8 = a0).
+      assert (H12 = H9).
       {
         eapply gen_appraise_AM_immut; eauto.
       }
       subst.
 
-      assert (a0 = H9). 
+      find_rewrite.
+      ff.
+      
+      left.
+      eauto.
+
+
+      destruct_conjs.
+
+
+      invc H10.
+
+      assert (H9 = a2).
       {
         eapply gen_appraise_AM_immut; eauto.
       }
       subst.
-    find_rewrite.
-    ff.
 
-    repeat eexists.
-    eauto.
+      assert (st = a2).
+      {
+        eapply gen_appraise_AM_immut; eauto.
+      }
+      subst.
 
-  ++
-    assert (H8 = a0).
-    {
-      eapply gen_appraise_AM_immut; eauto.
-    }
-    subst.
-    assert (st = a0).
-    {
-      eapply gen_appraise_AM_immut; eauto.
-    }
-    subst.
-    find_rewrite.
-    ff.
-    repeat eexists.
-    eauto.
+      rewrite H12 in *.
 
-  +
-  ff.
-  repeat eexists.
-  eauto.
-  Unshelve.
-  exact mtc_app.
-  exact mtc_app.
-  exact mtc_app.
-  exact mtc_app.
-  exact mtc_app.
-  exact mtc_app.
-  exact mtc_app. 
-  exact mtc_app.
+      ff.
+
+      right. eauto.
+
+      destruct_conjs.
+
+      monad_unfold.
+
+      break_let.
+      right.
+      ff.
+      eauto.
 Qed.
 
 Require Import ManCompSoundness.
@@ -921,6 +954,8 @@ Proof.
     destruct_conjs; ff; eauto.
 Qed.
 
+
+(*
 Definition app_aspid_manifest_update (i:ASP_ID) (p:Plc) (m:Manifest) : Manifest := 
   let '{| my_abstract_plc := oldPlc;
           asps := oldasps; 
@@ -958,6 +993,8 @@ Fixpoint manifest_generator_app' (et:Evidence) (m:Manifest) : Manifest :=
 
 Definition manifest_generator_app (et:Evidence) : Manifest := 
   manifest_generator_app' et empty_Manifest.
+
+*)
 
 Lemma manifest_generator_app_cumul : forall et m1 m2,
   manifest_subset m1 m2 ->
@@ -1181,7 +1218,8 @@ Theorem manifest_generator_compiler_soundness_app : forall et ls oldMan absMan a
     ( 
 
     exists ec st',
-         (gen_appraise_AM et ls) st = (resultC ec, st') \/ 
+         (gen_appraise_AM et ls) st = (resultC ec, st')) \/ 
+    (exists st',
          (gen_appraise_AM et ls) st = (errC (dispatch_error Runtime), st')
     ).
 Proof.

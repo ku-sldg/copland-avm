@@ -24,6 +24,14 @@ Definition get_amConfig : AM AM_Config :=
     st <- get ;;
     ret (amConfig st).
 
+(* This should only be used sparingly for now...
+    may need a more principled interface for this... *)
+  Definition put_amConfig (ac:AM_Config) : AM unit :=
+    oldSt <- get ;;
+    let oldMap := am_nonceMap oldSt in
+    let oldId := am_nonceId oldSt in
+    put (mkAM_St oldMap oldId ac).
+
 Definition am_newNonce (bs:BS) : AM nat :=
   oldSt <- get ;;
   let oldMap := am_nonceMap oldSt in
@@ -47,3 +55,22 @@ Definition am_getNonce (nid:nat) : AM BS :=
 Definition am_runCvm_nonce (t:Term) (p:Plc) (bs:BS) (ac : AM_Config) : AM (nat * RawEv) :=
   nid <- am_newNonce bs ;;
   ret (nid, run_cvm_rawEv t p [bs] ac).
+
+
+  Ltac am_monad_unfold :=
+    repeat unfold
+    get_amConfig,
+    put_amConfig,
+    am_newNonce,
+    am_getNonce,
+  
+
+    failm,
+    get,
+    when,
+    put,
+    nop,
+    modify,
+    bind,
+    ret in * ;
+    simpl in * .

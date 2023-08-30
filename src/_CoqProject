@@ -63,6 +63,7 @@ Impl_appraisal.v
 Appraisal_Semantics.v
 privPolicy.v
 ManCompSoundness.v
+ManCompSoundness_Appraisal.v
 Client_AM.v
 Server_AM.v
 CopParser.v
