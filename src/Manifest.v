@@ -15,16 +15,16 @@ Inductive DispatcherErrors : Type :=
 Inductive CallBackErrors : Type := 
 | messageLift   : string -> CallBackErrors.
 
-Definition CakeML_ASPCallback (ErrType : Type) : Type := 
+Definition ASPCallback (ErrType : Type) : Type := 
   ASP_PARAMS -> Plc -> BS -> RawEv -> ResultT BS ErrType.
 
-Definition CakeML_PubKeyCallback : Type := 
+Definition PubKeyCallback : Type := 
   Plc -> ResultT PublicKey DispatcherErrors.
 
-Definition CakeML_PlcCallback : Type := 
+Definition PlcCallback : Type := 
   Plc -> ResultT UUID DispatcherErrors.
 
-Definition CakeML_uuidCallback : Type :=
+Definition UUIDCallback : Type :=
   UUID -> ResultT Plc DispatcherErrors.
 
 (*
@@ -53,10 +53,10 @@ Definition PlcMap := MapC Plc Address.
 (** Representation of a system's environment/resources used to populate a 
     ConcreteManifest based on an abstract Manifest. *)
   Record AM_Library := {
-    ASPServer_Cb        : ASP_Address -> (CakeML_ASPCallback CallBackErrors) ;
-    PubKeyServer_Cb     : ASP_Address -> CakeML_PubKeyCallback ;
-    PlcServer_Cb        : ASP_Address -> CakeML_PlcCallback ;
-    UUIDServer_Cb       : ASP_Address -> CakeML_uuidCallback ;
+    ASPServer_Cb        : ASP_Address -> (ASPCallback CallBackErrors) ;
+    PubKeyServer_Cb     : ASP_Address -> PubKeyCallback ;
+    PlcServer_Cb        : ASP_Address -> PlcCallback ;
+    UUIDServer_Cb       : ASP_Address -> UUIDCallback ;
 
     (* Server Addresses *)
     ASPServer_Addr    : ASP_Address ;
@@ -65,8 +65,8 @@ Definition PlcMap := MapC Plc Address.
     UUIDServer_Addr   : ASP_Address ;
 
     (* Local Mappings *)
-    Local_ASPS        : MapC ASP_ID (CakeML_ASPCallback CallBackErrors) ;
-    Local_Appraisal_ASPS : MapC (Plc * ASP_ID) (CakeML_ASPCallback CallBackErrors) ;
+    Local_ASPS        : MapC ASP_ID (ASPCallback CallBackErrors) ;
+    Local_Appraisal_ASPS : MapC (Plc * ASP_ID) (ASPCallback CallBackErrors) ;
 
     Local_Plcs        : MapD Plc UUID ;
     Local_PubKeys     : MapD Plc PublicKey ;
@@ -106,11 +106,11 @@ Definition PlcMap := MapC Plc Address.
 Record AM_Config : Type := 
   mkAmConfig {
     concMan : ConcreteManifest ;
-    aspCb : (CakeML_ASPCallback DispatcherErrors) ;
-    app_aspCb : (CakeML_ASPCallback DispatcherErrors) ;
-    plcCb : CakeML_PlcCallback ;
-    pubKeyCb : CakeML_PubKeyCallback ;
-    uuidCb : CakeML_uuidCallback ;
+    aspCb : (ASPCallback DispatcherErrors) ;
+    app_aspCb : (ASPCallback DispatcherErrors) ;
+    plcCb : PlcCallback ;
+    pubKeyCb : PubKeyCallback ;
+    uuidCb : UUIDCallback ;
   }.
 
   Definition empty_am_config : AM_Config :=

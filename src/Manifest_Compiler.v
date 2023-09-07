@@ -22,10 +22,10 @@ Import ListNotations.
 
   (* This function will be a dispatcher for either local ASPS to CakeMLCallback, or pass them off to the ASP_Server *)
   Definition generate_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest)
-      : ConcreteManifest -> (CakeML_ASPCallback DispatcherErrors) :=
+      : ConcreteManifest -> (ASPCallback DispatcherErrors) :=
     let local_asps_map := al.(Local_ASPS) in
     let abstract_asps := am.(asps) in
-    let shrunk_map : (MapC ASP_ID (CakeML_ASPCallback CallBackErrors)) := 
+    let shrunk_map : (MapC ASP_ID (ASPCallback CallBackErrors)) := 
       minify_mapC local_asps_map (fun x => if (in_dec (EqClass_impl_DecEq _) x abstract_asps) then true else false) in
     let asp_server_cb := al.(ASPServer_Cb) in
     fun (cman : ConcreteManifest) =>
@@ -46,10 +46,10 @@ Import ListNotations.
 
   (* This function will be a dispatcher for either local ASPS to CakeMLCallback, or pass them off to the ASP_Server *)
   Definition generate_appraisal_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest)
-      : ConcreteManifest -> (CakeML_ASPCallback DispatcherErrors) :=
+      : ConcreteManifest -> (ASPCallback DispatcherErrors) :=
     let local_app_asps_map := al.(Local_Appraisal_ASPS) in
     let abstract_app_asps := am.(appraisal_asps) in
-    let shrunk_map : (MapC (Plc*ASP_ID) (CakeML_ASPCallback CallBackErrors)) := 
+    let shrunk_map : (MapC (Plc*ASP_ID) (ASPCallback CallBackErrors)) := 
       minify_mapC local_app_asps_map (fun x => if (in_dec (EqClass_impl_DecEq _) x abstract_app_asps) then true else false) in
     let asp_server_cb := al.(ASPServer_Cb) in
     fun (cman : ConcreteManifest) =>
@@ -70,7 +70,7 @@ Import ListNotations.
 
   (* This function will lookup for either local Plcs to UUID, or pass them off to the Plc Server *)
   Definition generate_Plc_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest) 
-      : ConcreteManifest -> CakeML_PlcCallback :=
+      : ConcreteManifest -> PlcCallback :=
     let plc_server_cb := al.(PlcServer_Cb) in
     fun (cman : ConcreteManifest) =>
       let local_plc_map := cman.(Concrete_Plcs) in
@@ -88,7 +88,7 @@ Import ListNotations.
       
   (* This function will lookup the PubKey either locally Plc -> PublicKey or pass off to PubKeyServer *)
   Definition generate_PubKey_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest) 
-      : ConcreteManifest -> CakeML_PubKeyCallback :=
+      : ConcreteManifest -> PubKeyCallback :=
     let pubkey_server_cb := al.(PubKeyServer_Cb) in
     fun (cman : ConcreteManifest) =>
       let local_pubkey_map := cman.(Concrete_PubKeys) in
@@ -105,7 +105,7 @@ Import ListNotations.
         end.
 
   Definition generate_UUID_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest)  
-      : ConcreteManifest -> CakeML_uuidCallback :=
+      : ConcreteManifest -> UUIDCallback :=
     let uuid_server_cb := al.(UUIDServer_Cb) in
     fun (cman : ConcreteManifest) =>
       let local_plc_map := cman.(Concrete_Plcs) in

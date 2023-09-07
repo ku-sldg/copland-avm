@@ -142,6 +142,14 @@ Definition layered_bg_weak : Term :=
                  (appraise P2 it)
                  (asp SIG)))).
          
+Fixpoint cop_phrase_depth (t : Term) : nat :=
+  match t with
+  | (asp _) => 1
+  | (att _ t') => cop_phrase_depth t'
+  | (lseq t1 t2) => 1 + max (cop_phrase_depth t1) (cop_phrase_depth t2)
+  | (bseq _ t1 t2) => 1 + max (cop_phrase_depth t1) (cop_phrase_depth t2)
+  | (bpar _ t1 t2) => 1 + max (cop_phrase_depth t1) (cop_phrase_depth t2)
+  end.
 
 (*
 pg. 29:20, Layered Background Check section 

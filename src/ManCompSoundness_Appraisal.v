@@ -114,8 +114,6 @@ Fixpoint am_config_support_exec_app (e : Evidence) (ac : AM_Config) : Prop :=
 
 Require Import AM_St Impl_appraisal.
 
-Print Evidence.
-
 Fixpoint nonce_ids_et' (et:Evidence) (ls:list N_ID) : list N_ID :=
   match et with
   | mt => ls
@@ -519,7 +517,6 @@ Proof.
             ff.
             unfold check_et_size in *.
             ff.
-            Search (Nat.eqb _ _ = true -> _).
             eapply EqNat.beq_nat_true_stt.
             eassumption.
           }
@@ -684,8 +681,6 @@ Proof.
       eassumption.
     }
 
-    Search firstn.
-
     (* 
     firstn_length_le:
   forall [A : Type] (l : list A) [n : nat],
@@ -737,10 +732,6 @@ Proof.
       intros.
       solve_by_inversion.
     }
-
-    Search skipn.
-
-    Search (length (skipn _ _)).
 
     assert (length (skipn (et_size et1) ls) = length ls - (et_size et1)).
     {
