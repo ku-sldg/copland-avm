@@ -19,6 +19,8 @@ Import ListNotations.
 
 Set Nested Proofs Allowed.
 
+Locate evsubt_bool.
+
 
 Axiom cvm_thread_in_ev : forall n p ev t e blah,
 In ev ([cvm_thread_start n p (copland_compile t) e] ++ blah ++ [cvm_thread_end 0]) -> 
@@ -45,6 +47,56 @@ Fixpoint evsubt_bool (e:Evidence) (e':Evidence): bool :=
     | _ => false
     end
   end.
+
+Definition get_targ_plc (ps:ASP_PARAMS) : Plc := 
+  match ps with 
+  | asp_paramsC _ _ tp _ => tp 
+  end.
+
+(** Evidence Type subterm relation modulo encryption *)
+Inductive EvSubTEnc: Evidence -> Evidence -> Plc -> Prop :=
+| evsub_reflT_enc : forall (e : Evidence) q, EvSubTEnc e e q
+| uuSubT_enc_enc: forall e e' p q ps,
+    EvSubTEnc e e' q -> 
+    get_targ_plc ps = q -> 
+    EvSubTEnc e (uu p ENCR ps e') q
+| uuSubT_enc_noenc: forall e e' p q fwd ps,
+    EvSubTEnc e e' q -> 
+    fwd <> ENCR -> 
+    EvSubTEnc e (uu p fwd ps e') q
+| ssSublT: forall e e' e'' q,
+    EvSubTEnc e e' q ->
+    EvSubTEnc e (ss e' e'') q
+| ssSubrT: forall e e' e'' q,
+    EvSubTEnc e e'' q ->
+    EvSubTEnc e (ss e' e'') q.
+#[export] Hint Constructors EvSubTEnc : core.
+
+
+Definition evsubt_enc_bool (e:Evidence) (e':Evidence) (q:Plc): bool.
+Admitted.
+
+Lemma evsubt_enc_prop_bool: forall e e' q,
+    EvSubTEnc e e' q -> evsubt_enc_bool e e' q = true.
+Proof.
+Admitted.
+
+Lemma evsubt_enc_bool_prop: forall e e' q,
+  evsubt_enc_bool e e' q = true -> EvSubTEnc e e' q.
+Proof.
+Admitted.
+
+Lemma evsubt_enc_bool_prop_iff: forall e e' q,
+    EvSubTEnc e e' q <-> evsubt_enc_bool e e' q = true.
+Proof.
+  intros; split.
+  apply evsubt_enc_prop_bool.
+  apply evsubt_enc_bool_prop.
+Qed.
+
+
+
+
 
 Lemma eqb_asp_params_refl: forall a,
     eqb_asp_params a a = true.
@@ -172,6 +224,8 @@ Proof.
         ff.
 Qed.
 
+Locate EvSubT.
+
 Lemma evsubt_bool_prop_iff: forall e e',
     EvSubT e e' <-> evsubt_bool e e' = true.
 Proof.
@@ -204,6 +258,14 @@ Definition discloses_aspid_to_remote (q:Plc) (i:ASP_ID): Prop :=
     ((evidence_matches_gen gen_aspid_evidence et) = true) /\
     EvSubT et e ->
     (discloses_to_remote (req reqid p q t e) (q, et)).
+
+
+Definition discloses_aspid_to_remote_enc (q:Plc) (i:ASP_ID) : Prop :=
+      let gen_aspid_evidence := (specific_aspid_genEvidence i) in
+      forall et reqid p t e,
+        ((evidence_matches_gen gen_aspid_evidence et) = true) /\
+        EvSubTEnc et e q ->  (* TODO: check ok to use q here and not freshly quantified var... *)
+        (discloses_to_remote (req reqid p q t e) (q, et)).
                                                           
 
 
@@ -265,6 +327,59 @@ Definition term_discloses_aspid_to_remote (t:Term) (p:Plc) (e:Evidence) (i:ASP_I
     EvSubT et e' /\
     ((term_discloses_to_remote t p e (r,e')) = true).
 
+Definition term_discloses_aspid_to_remote_enc (t:Term) (p:Plc) (e:Evidence) (i:ASP_ID) (r:Plc) : Prop :=
+      let gen_aspid_evidence := (specific_aspid_genEvidence i) in
+      exists et e',
+        ((evidence_matches_gen gen_aspid_evidence et) = true) /\
+        EvSubTEnc et e' r /\
+        ((term_discloses_to_remote t p e (r,e')) = true).
+
+Definition enum_evtype_enc_subset (et:Evidence) : list Evidence.
+Admitted.
+
+Check existsb.
+
+(*
+Fixpoint term_discloses_aspid_to_remote_enc_bool (t:Term) (p:Plc) (e:Evidence) (i:ASP_ID) (r:Plc) : bool := 
+    match t with
+    | att q t' => (eqb_plc q (fst r)) &&  (evsubt_enc_bool (snd r) e (fst r)) ||
+                 (term_discloses_to_remote t' q e r)
+    | lseq t1 t2 => (term_discloses_to_remote t1 p e r) ||
+                   (term_discloses_to_remote t2 p (eval t1 p e) r)
+    | bseq (sp1,sp2) t1 t2 => (term_discloses_to_remote t1 p (splitEv_mt sp1 e) r) ||
+                             (term_discloses_to_remote t2 p (splitEv_mt sp2 e) r)
+    | bpar (sp1,sp2) t1 t2 => (term_discloses_to_remote t1 p (splitEv_mt sp1 e) r) ||
+                             (term_discloses_to_remote t2 p (splitEv_mt sp2 e) r)
+    | _ => false
+    end.
+*)
+
+Definition term_discloses_aspid_to_remote_enc_bool (t:Term) (p:Plc) (e:Evidence) (i:ASP_ID) (r:Plc) : bool.
+Admitted.
+
+(* 
+Fixpoint evidence_matches_gen (genEv:GenEvidence) (ev:Evidence) : bool :=
+*)
+
+Definition evidence_matches_gen_aspid_bool (e:Evidence) (i:ASP_ID) : bool. 
+Admitted.
+
+Lemma ev_matches_gen_aspid_prop_bool_iff : forall i et,
+  let gen_aspid_evidence := (specific_aspid_genEvidence i) in
+    (exists et, 
+      evidence_matches_gen gen_aspid_evidence et = true) <->
+    evidence_matches_gen_aspid_bool et i = true.
+Proof.
+Admitted.
+    
+
+Lemma term_discloses_aspid_to_remote_enc_prop_bool_iff : 
+forall t p e i r, 
+term_discloses_aspid_to_remote_enc t p e i r <-> 
+term_discloses_aspid_to_remote_enc_bool t p e i r = true.
+Proof.
+Admitted.
+
 
 
 (*
@@ -299,6 +414,14 @@ Definition cvm_trace_discloses_aspid_to_remote (tr:list Ev) (i:ASP_ID) (r:Plc) :
     (evidence_matches_gen gen_aspid_evidence et = true) /\
     evsubt_bool et e = true.
  *)
+
+
+ Definition cvm_trace_discloses_aspid_to_remote_enc (tr:list Ev) (i:ASP_ID) (r:Plc) : Prop :=
+  let gen_aspid_evidence := (specific_aspid_genEvidence i) in
+  exists e et,
+     (evidence_matches_gen gen_aspid_evidence et = true) /\
+     evsubt_enc_bool et e r = true /\
+     cvm_trace_discloses_to_remote tr r e.
 
 Definition events_discloses (annt:AnnoTerm) (p:Plc) (e:Evidence) (* (i:ASP_ID) *) (r:Plc) (e':Evidence): Prop :=
   (*forall annt cvmi,
@@ -336,9 +459,51 @@ Definition events_discloses_aspid (annt:AnnoTerm) (p:Plc) (e:Evidence) (i:ASP_ID
       ).
 *)
 
+
+Definition events_discloses_aspid_enc (annt:AnnoTerm) (p:Plc) (e:Evidence) (i:ASP_ID) (r:Plc): Prop :=
+  (*forall annt cvmi,
+    annoP_indexed annt t 0 cvmi-> *)
+  let gen_aspid_evidence := (specific_aspid_genEvidence i) in
+  exists et reqe,
+     (evidence_matches_gen gen_aspid_evidence et = true) /\
+     evsubt_enc_bool et reqe r = true /\
+     events_discloses annt p e r reqe.
+
 Lemma term_disc_remote: forall t p e i r p0,
           term_discloses_aspid_to_remote t p e i r ->
           term_discloses_aspid_to_remote <{ @ p [t] }> p0 e i r.
+Proof.
+  intros.
+  invc H.
+  destruct_conjs.
+  econstructor.
+  exists H0.
+  split.
+  -
+    eassumption.
+  -
+    simpl in *.
+    destruct x; try solve_by_inversion.
+    destruct a; try solve_by_inversion.
+    assert (a = i).
+    {
+      assert (eqb a i = true).
+      {
+        repeat rewrite Bool.andb_true_r in H.
+        auto.
+      }
+      eapply eqb_eq_aspid; eauto.
+    }
+    
+    subst.
+    find_rewrite.
+    rewrite Bool.orb_true_r.
+    auto.
+Qed.
+
+Lemma term_disc_remote_enc: forall t p e i r p0,
+          term_discloses_aspid_to_remote_enc t p e i r ->
+          term_discloses_aspid_to_remote_enc <{ @ p [t] }> p0 e i r.
 Proof.
   intros.
   invc H.
@@ -400,15 +565,73 @@ Proof.
     auto.
 Qed.
 
+Lemma term_disc_lseq_l_end: forall t1 t2 p e i r,
+          term_discloses_aspid_to_remote_enc t1 p e i r ->
+          term_discloses_aspid_to_remote_enc <{ t1 -> t2 }> p e i r.
+Proof.
+  intros.
+  invc H.
+  destruct_conjs.
+  econstructor.
+  exists H0.
+  split.
+  -
+    eassumption.
+  -
+    simpl in *.
+    destruct x; try solve_by_inversion.
+    destruct a; try solve_by_inversion.
+    assert (a = i).
+    {
+      assert (eqb a i = true).
+      {
+        repeat rewrite Bool.andb_true_r in H.
+        auto.
+      }
+      eapply eqb_eq_aspid; eauto.
+    }
+    
+    subst.
+    find_rewrite.
+    rewrite Bool.orb_true_l.
+    auto.
+Qed.
+
 Lemma term_disc_lseq_r: forall t1 t2 p e i r,
           term_discloses_aspid_to_remote t2 p (eval t1 p e) i r ->
           term_discloses_aspid_to_remote <{ t1 -> t2 }> p e i r.
+Proof.
+  intros.
+  invc H.
+  destruct_conjs.
+  econstructor.
+  exists H0.
+  split.
+  -
+    eassumption.
+  -
+    simpl in *.
+    destruct x; try solve_by_inversion.
+    destruct a; try solve_by_inversion.
+    assert (a = i).
+    {
+      assert (eqb a i = true).
+      {
+        repeat rewrite Bool.andb_true_r in H.
+        auto.
+      }
+      eapply eqb_eq_aspid; eauto.
+    }
+    
+    subst.
+    find_rewrite.
+    rewrite Bool.orb_true_r.
+    auto.
+Qed.
 
-(*
-  H8 : term_discloses_aspid_to_remote t2 p (aeval a H7 e) i r
-  ============================
-  term_discloses_aspid_to_remote <{ t1 -> t2 }> p e i r
-*)
+Lemma term_disc_lseq_r_enc: forall t1 t2 p e i r,
+          term_discloses_aspid_to_remote_enc t2 p (eval t1 p e) i r ->
+          term_discloses_aspid_to_remote_enc <{ t1 -> t2 }> p e i r.
 Proof.
   intros.
   invc H.
@@ -475,9 +698,84 @@ Proof.
       auto.
 Qed.
 
+Lemma term_disc_bseq_l_enc: forall t1 t2 p e i r s,
+          term_discloses_aspid_to_remote_enc t1 p (splitEv_T_l s e) i r ->
+          term_discloses_aspid_to_remote_enc (bseq s t1 t2) p e i r.
+Proof.
+  intros.
+  invc H.
+  destruct_conjs.
+  econstructor.
+  exists H0.
+  split.
+  -
+    eassumption.
+  -
+    simpl in *.
+    destruct x; try solve_by_inversion.
+    destruct a; try solve_by_inversion.
+    assert (a = i).
+    {
+      assert (eqb a i = true).
+      {
+        repeat rewrite Bool.andb_true_r in H.
+        auto.
+      }
+      eapply eqb_eq_aspid; eauto.
+    }
+    
+    subst.
+    destruct s.
+    destruct s;
+      
+      simpl in *;
+      rewrite H2;
+      
+      rewrite Bool.orb_true_l;
+      auto.
+Qed.
+
 Lemma term_disc_bseq_r: forall t1 t2 p e i r s,
           term_discloses_aspid_to_remote t2 p (splitEv_T_r s e) i r ->
           term_discloses_aspid_to_remote (bseq s t1 t2) p e i r.
+Proof.
+  intros.
+  invc H.
+  destruct_conjs.
+  econstructor.
+  exists H0.
+  split.
+  -
+    eassumption.
+  -
+    simpl in *.
+    destruct x; try solve_by_inversion.
+    destruct a; try solve_by_inversion.
+    assert (a = i).
+    {
+      assert (eqb a i = true).
+      {
+        repeat rewrite Bool.andb_true_r in H.
+        auto.
+      }
+      eapply eqb_eq_aspid; eauto.
+    }
+    
+    subst.
+    destruct s;
+      destruct s;
+      destruct s0;
+
+      simpl in *;
+      rewrite H2;
+      
+      rewrite Bool.orb_true_r;
+      auto.
+Qed.
+
+Lemma term_disc_bseq_r_enc: forall t1 t2 p e i r s,
+          term_discloses_aspid_to_remote_enc t2 p (splitEv_T_r s e) i r ->
+          term_discloses_aspid_to_remote_enc (bseq s t1 t2) p e i r.
 Proof.
   intros.
   invc H.
@@ -551,9 +849,85 @@ Proof.
       auto.
 Qed.
 
+Lemma term_disc_bpar_l_enc: forall t1 t2 p e i r s,
+          term_discloses_aspid_to_remote_enc t1 p (splitEv_T_l s e) i r ->
+          term_discloses_aspid_to_remote_enc (bpar s t1 t2) p e i r.
+Proof.
+  intros.
+  invc H.
+  destruct_conjs.
+  econstructor.
+  exists H0.
+  split.
+  -
+    eassumption.
+  -
+    simpl in *.
+    destruct x; try solve_by_inversion.
+    destruct a; try solve_by_inversion.
+    assert (a = i).
+    {
+      assert (eqb a i = true).
+      {
+        repeat rewrite Bool.andb_true_r in H.
+        auto.
+      }
+      eapply eqb_eq_aspid; eauto.
+    }
+    
+    subst.
+    destruct s;
+      destruct s;
+      destruct s0;
+
+      simpl in *;
+      rewrite H2;
+      
+      rewrite Bool.orb_true_l;
+      auto.
+Qed.
+
 Lemma term_disc_bpar_r: forall t1 t2 p e i r s,
           term_discloses_aspid_to_remote t2 p (splitEv_T_r s e) i r ->
           term_discloses_aspid_to_remote (bpar s t1 t2) p e i r.
+Proof.
+  intros.
+  invc H.
+  destruct_conjs.
+  econstructor.
+  exists H0.
+  split.
+  -
+    eassumption.
+  -
+    simpl in *.
+    destruct x; try solve_by_inversion.
+    destruct a; try solve_by_inversion.
+    assert (a = i).
+    {
+      assert (eqb a i = true).
+      {
+        repeat rewrite Bool.andb_true_r in H.
+        auto.
+      }
+      eapply eqb_eq_aspid; eauto.
+    }
+    
+    subst.
+    destruct s;
+      destruct s;
+      destruct s0;
+
+      simpl in *;
+      rewrite H2;
+      
+      rewrite Bool.orb_true_r;
+      auto.
+Qed.
+
+Lemma term_disc_bpar_r_enc: forall t1 t2 p e i r s,
+          term_discloses_aspid_to_remote_enc t2 p (splitEv_T_r s e) i r ->
+          term_discloses_aspid_to_remote_enc (bpar s t1 t2) p e i r.
 Proof.
   intros.
   invc H.
@@ -1096,6 +1470,30 @@ Proof.
   split; try eassumption.
   split.
   rewrite evsubt_bool_prop_iff.
+  eassumption.
+
+  eapply term_discloses_respects_events; eauto.
+Qed.
+
+Lemma events_respects_term_disclosure_aspid_enc: forall t p e i r annt,
+    annoP annt t -> 
+
+  ~ (term_discloses_aspid_to_remote_enc t p e i r) ->
+
+  ~ (events_discloses_aspid_enc annt p e i r).
+Proof.
+  intros.
+  unfold term_discloses_aspid_to_remote_enc in *.
+  unfold events_discloses_aspid_enc in *.
+  unfold not in H0.
+  unfold not in *.
+  intros.
+  apply H0.
+  destruct_conjs.
+  exists H1. exists H2.
+  split; try eassumption.
+  split.
+  rewrite evsubt_enc_bool_prop_iff.
   eassumption.
 
   eapply term_discloses_respects_events; eauto.
@@ -2755,6 +3153,52 @@ Proof.
   eapply cvm_implies_events; eauto.
 Qed.
 
+Lemma cvm_respects_events_disclosure_aspid_enc:
+  forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt ac ac',
+    
+    annoP_indexed annt t cvmi cvmi' ->
+    ~ (events_discloses_aspid_enc annt p e i r) ->
+    
+    term_to_coreP t atp ->
+    build_cvmP atp
+               (mk_st (evc bits e) [] p cvmi ac)
+               (resultC tt)
+               (mk_st (evc bits' e') cvm_tr p' cvmi' ac') ->
+
+    ~ (cvm_trace_discloses_aspid_to_remote_enc cvm_tr i r).
+
+Proof.
+  unfold not in *; intros.
+  apply H0.
+  invc H3.
+  destruct_conjs.
+  unfold events_discloses_aspid_enc.
+  exists H4. exists x. (* exists H3. exists H5. exists H6. exists H7. *)
+  split.
+  invc H1.
+  eassumption.
+
+  split.
+  eassumption.
+
+  invc H6.
+  destruct_conjs.
+
+  econstructor.
+  exists H7. exists H6. exists H8.
+  split.
+  2: { 
+    reflexivity.
+  }
+  invc H1.
+  eapply cvm_implies_events; eauto.
+Qed.
+
+
+
+
+
+
 
 
 (*
@@ -2911,6 +3355,48 @@ Proof.
   eassumption.
   eassumption.
 Qed.
+
+
+Lemma cvm_respects_term_disclosure_aspid_enc:
+  forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt ac ac',
+
+    annoP_indexed annt t cvmi cvmi' ->
+
+  ~ (term_discloses_aspid_to_remote_enc t p e i r) ->
+  
+  term_to_coreP t atp ->
+  build_cvmP atp
+             (mk_st (evc bits e) [] p cvmi ac)
+             (resultC tt)
+             (mk_st (evc bits' e') cvm_tr p' cvmi' ac') ->
+
+  ~ (cvm_trace_discloses_aspid_to_remote_enc cvm_tr i r).
+Proof.
+  intros.
+  (*
+  assert (exists annt, annoP_indexed annt t cvmi cvmi').
+  {
+    eapply can_annoP_indexed; eauto.
+  }
+  destruct_conjs.
+   *)
+  
+  eapply cvm_respects_events_disclosure_aspid_enc.
+  eassumption.
+  eapply events_respects_term_disclosure_aspid_enc.
+  invc H.
+  econstructor.
+  repeat eexists.
+  eassumption.
+  eassumption.
+  eassumption.
+  eassumption.
+Qed.
+
+
+
+
+
 
 
 
