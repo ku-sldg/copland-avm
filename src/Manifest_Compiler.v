@@ -125,6 +125,7 @@ Import ListNotations.
   This function will be used in extraction to either dispatch ASPs to the ASP server, or call a local callback *)
   let cm := {|
       my_plc := m.(my_abstract_plc) ;
+      Concrete_policy := m.(policy) ;
 
       Concrete_ASPs := m.(asps) ;
       Concrete_Plcs := al.(Local_Plcs) ;
