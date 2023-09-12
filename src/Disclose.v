@@ -444,6 +444,8 @@ Fixpoint term_discloses_aspid_to_remote_enc_bool (t:Term) (p:Plc) (e:Evidence) (
     end.
 *)
 
+(*
+
 Definition term_discloses_aspid_to_remote_enc_bool (t:Term) (p:Plc) (e:Evidence) (i:ASP_ID) (r:Plc) : bool.
 Admitted.
 
@@ -453,6 +455,8 @@ Definition policy_supports_term (t:Term) (p:Plc) (e:Evidence) (ls:list (ASP_ID *
 
 Definition policy_list_not_disclosed (t:Term) (p:Plc) (e:Evidence) (ls:list (ASP_ID * Plc)) : bool := 
   forallb (fun pr => negb (term_discloses_aspid_to_remote_enc_bool t p e (fst pr) (snd pr))) ls.
+
+*)
 
 (* 
 Fixpoint evidence_matches_gen (genEv:GenEvidence) (ev:Evidence) : bool :=
@@ -2513,7 +2517,9 @@ Proof.
       try (econstructor; econstructor; reflexivity).
   -
     wrap_ccp_anno.
-    repeat ff.
+    ff.
+    unfold Cvm_Monad.doRemote_session' in *;
+    repeat Auto.ff.
 
     assert (n = cvmi + event_id_span' t + 1) by lia.
     subst.

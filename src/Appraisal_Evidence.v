@@ -1424,7 +1424,13 @@ Defined.
       try (wrap_ccp_anno; ff).
   
   - (* at case *)
-    repeat ff.
+  repeat ff;
+  unfold doRemote_session' in *;
+  repeat ff.
+  repeat ff.
+  monad_unfold.
+  repeat ff.
+  invc Heqp3.
     lia.
   - (* lseq case *)
     wrap_ccp_anno.
@@ -1768,7 +1774,18 @@ Proof.
     wrap_ccp.
     repeat ff.
     unfold do_remote in *.
-    ff.
+    repeat ff;
+    unfold doRemote_session' in *;
+    repeat ff.
+    monad_unfold.
+    repeat ff.
+    unfold doRemote_session' in *;
+    repeat ff.
+    monad_unfold.
+    repeat ff.
+    invc Heqp3.
+    unfold do_remote in *.
+    repeat ff.
     eapply wf_ec_preserved_remote; eauto.
 
   - (* lseq case *)
@@ -1924,9 +1941,18 @@ Proof.
       reflexivity. *)
   - (* at case *)
     wrap_ccp.
-    repeat ff;
+    repeat Auto.ff.
+
+
+    unfold doRemote_session' in *;
+    repeat Auto.ff; 
     repeat rewrite app_assoc;
-    reflexivity.
+    eauto.
+
+    unfold doRemote_session' in *;
+    repeat Auto.ff; 
+    repeat rewrite app_assoc;
+    eauto.
 
   - (* alseq case *)
   repeat ff.
@@ -2453,7 +2479,9 @@ Proof.
   - (* at case *)
     rewrite <- ccp_iff_cc in *.
     dd.
-    repeat ff.
+    repeat Auto.ff.
+    unfold doRemote_session' in *; 
+    repeat Auto.ff.
     (*
     erewrite <- remote_Evidence_Type_Axiom.
     jkjke. *)
@@ -2574,6 +2602,8 @@ Qed.
 TODO: try this lemma again after getting appraisal Lemmas settled 
 *)
 
+
+(*
 
 (** * Lemma:  relating reconstructed CVM EvC bundles via the EvidenceC evidence denotation. *)
 Lemma cvm_raw_evidence_denote_fact :
@@ -3649,6 +3679,10 @@ Proof.
   eapply cvm_raw_evidence_denote_fact; eauto.
   congruence.
 Qed.
+
+
+
+*)
   
 
 

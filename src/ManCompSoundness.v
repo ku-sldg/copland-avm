@@ -306,7 +306,7 @@ Proof.
     end.
   - subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
-      unfold remote_session, doRemote_session', do_remote in *;
+      unfold remote_session, doRemote_session', do_remote, check_cvm_policy in *;
       try break_match;
       try monad_unfold;
       try break_match
@@ -317,11 +317,12 @@ Proof.
       simpl in *; subst; intuition; 
       eauto; try congruence);
     unfold supports_am in *; intuition.
-    destruct H0;
-    erewrite H2 in *; try congruence; eauto.
+    +
+      destruct H0;
+      erewrite H2 in *; try congruence; eauto.
   - subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
-      unfold remote_session, doRemote_session', do_remote in *;
+      unfold remote_session, doRemote_session', do_remote, check_cvm_policy in *;
       try break_match;
       try monad_unfold;
       try break_match

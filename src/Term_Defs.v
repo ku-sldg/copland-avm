@@ -284,4 +284,15 @@ Inductive AM_Result: Set :=
 Definition empty_am_result := am_rawev [].
 
 
+Definition term_discloses_aspid_to_remote_enc_bool (t:Term) (p:Plc) (e:Evidence) (i:ASP_ID) (r:Plc) : bool.
+Admitted.
+
+Definition policy_supports_term (t:Term) (p:Plc) (e:Evidence) (ls:list (ASP_ID * Plc)) : bool := 
+  forallb (fun pr => (term_discloses_aspid_to_remote_enc_bool t p e (fst pr) (snd pr))) ls.
+
+
+Definition policy_list_not_disclosed (t:Term) (p:Plc) (e:Evidence) (ls:list (ASP_ID * Plc)) : bool := 
+  forallb (fun pr => negb (term_discloses_aspid_to_remote_enc_bool t p e (fst pr) (snd pr))) ls.
+
+
 
