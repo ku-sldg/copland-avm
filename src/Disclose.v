@@ -19,9 +19,6 @@ Import ListNotations.
 
 Set Nested Proofs Allowed.
 
-Locate evsubt_bool.
-
-
 Axiom cvm_thread_in_ev : forall n p ev t e blah,
 In ev ([cvm_thread_start n p (copland_compile t) e] ++ blah ++ [cvm_thread_end 0]) -> 
 (In ev (cvm_events_core (copland_compile t) p e) \/ 
@@ -57,9 +54,6 @@ Definition get_asp_id (ps:ASP_PARAMS) : ASP_ID :=
     match ps with 
     | asp_paramsC i _ _ _ => i 
     end.
-
-Print eval.
-Print eval_asp.
 
 (** Evidence Type "subterm" relation modulo encryption. 
     The relation (EvSubTAspEnc e' i p) states that Evidence Type e' 
@@ -297,8 +291,6 @@ Proof.
         ff.
 Qed.
 
-Locate EvSubT.
-
 Lemma evsubt_bool_prop_iff: forall e e',
     EvSubT e e' <-> evsubt_bool e e' = true.
 Proof.
@@ -426,8 +418,6 @@ Definition term_discloses_aspid_to_remote_enc (t:Term) (p:Plc) (e:Evidence) (i:A
 
 Definition enum_evtype_enc_subset (et:Evidence) : list Evidence.
 Admitted.
-
-Check existsb.
 
 (*
 Fixpoint term_discloses_aspid_to_remote_enc_bool (t:Term) (p:Plc) (e:Evidence) (i:ASP_ID) (r:Plc) : bool := 
@@ -3121,12 +3111,12 @@ Proof.
 
     invc H1.
     left; eauto.
-    intuition.
+    auto with *.
 
     assert (In ev ([cvm_thread_start 0 p (copland_compile t2) e] ++ blah ++ [cvm_thread_end 0]) \/ 
             In ev [join (st_evid + event_id_span (copland_compile t2)) p]).
             {
-              intuition.
+              auto with *.
             }
 
             invc H1.
@@ -3289,7 +3279,7 @@ Proof.
 
 invc H1.
 left; eauto.
-intuition.
+auto with *.
 
 
 
@@ -3306,7 +3296,7 @@ assert (In ev ([cvm_thread_start 0 p (copland_compile t2) mt] ++ blah ++ [cvm_th
             }
             rewrite H1 in *; clear H1.
 
-            intuition.
+            auto with *.
 
         }
 
@@ -3472,12 +3462,12 @@ eauto.
 
 invc H1.
 left; eauto.
-intuition.
+auto with *.
 
 assert (In ev ([cvm_thread_start 0 p (copland_compile t2) e] ++ blah ++ [cvm_thread_end 0]) \/ 
         In ev [join (st_evid + event_id_span (copland_compile t2)) p]).
         {
-          intuition.
+          auto with *.
         }
 
         invc H1.

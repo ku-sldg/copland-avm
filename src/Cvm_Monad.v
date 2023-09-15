@@ -184,8 +184,6 @@ Definition get_cvm_policy : CVM PolicyT :=
   ac <- get_amConfig ;; 
   ret (Concrete_policy (concMan ac)).
 
-Locate dispatch_error.
-
 Definition check_cvm_policy (t:Term) (pTo:Plc) (et:Evidence) : CVM unit := 
   pol <- get_cvm_policy ;;
     match (policy_list_not_disclosed t pTo et pol) with
