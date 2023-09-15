@@ -80,8 +80,8 @@ Definition PlcMap := MapC Plc Address.
 
     (* Local Mappings *)
     Concrete_ASPs         : list ASP_ID ;
-    Concrete_Plcs         : MapD Plc UUID ;
-    Concrete_PubKeys      : MapD Plc PublicKey ;
+    Concrete_Plcs         : list Plc ;
+    Concrete_PubKeys      : list Plc ;
     Concrete_Targets      : list Plc ;
 
     (* Servers *)

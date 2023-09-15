@@ -1506,7 +1506,7 @@ Proof.
     pose (manifest_generator_cumul' t p 
             ((map_set backMan p0
               {|
-                my_abstract_plc := empty_Manifest_Plc;
+                my_abstract_plc := p0;
                 asps := [];
                 appraisal_asps := [];
                 uuidPlcs := [p];
@@ -1845,8 +1845,6 @@ Theorem manifest_generator_compiler_soundness_distributed : forall t tp p absMan
 
     (  forall t', 
          In t' (place_terms t tp p) -> 
-         st.(st_pl) = p -> 
-        
          exists st', 
         
         build_cvm (copland_compile t') st = (resultC tt, st') \/

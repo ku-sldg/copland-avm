@@ -675,8 +675,7 @@ Proof.
     (manifest_generator' p t
        (map_set e_empty p0
           {|
-            my_abstract_plc :=
-              Manifest_Admits.empty_Manifest_Plc;
+            my_abstract_plc := p0 ;
             asps := [];
             appraisal_asps := [];
             uuidPlcs := [p];
@@ -689,8 +688,7 @@ Proof.
             assert ( exists v,
               map_get (map_set e_empty p0
                {|
-                 my_abstract_plc :=
-                   Manifest_Admits.empty_Manifest_Plc;
+                 my_abstract_plc := p0 ; 
                  asps := [];
                  appraisal_asps := [];
                  uuidPlcs := [p];
@@ -722,7 +720,7 @@ Proof.
 
   assert (manifest_subset 
     {|
-                my_abstract_plc := Manifest_Admits.empty_Manifest_Plc;
+                my_abstract_plc := p0;
                 asps := [];
                 appraisal_asps := [];
                 uuidPlcs := [p];
@@ -739,7 +737,7 @@ Proof.
 
       ([(p0,
       {|
-        my_abstract_plc := Manifest_Admits.empty_Manifest_Plc;
+        my_abstract_plc := p0;
         asps := [];
         appraisal_asps := [];
         uuidPlcs := [p];
@@ -751,7 +749,7 @@ Proof.
       (manifest_generator' p t
             [(p0,
               {|
-                my_abstract_plc := Manifest_Admits.empty_Manifest_Plc;
+                my_abstract_plc := p0 ;
                 asps := [];
                 appraisal_asps := [];
                 uuidPlcs := [p];
@@ -991,7 +989,15 @@ Proof.
         policy := oldPolicy
       |} := match map_get stEnv p0 with
             | Some mm => mm
-            | None => empty_Manifest
+            | None => {|
+                  my_abstract_plc := p0;
+                  asps := [];
+                  appraisal_asps := [];
+                  uuidPlcs := [];
+                  pubKeyPlcs := [];
+                  targetPlcs := [];
+                  policy := Manifest_Admits.empty_PolicyT
+                |}
             end in
       {|
         my_abstract_plc := oldPlc;

@@ -73,7 +73,7 @@ Import ListNotations.
       : ConcreteManifest -> PlcCallback :=
     let plc_server_cb := al.(PlcServer_Cb) in
     fun (cman : ConcreteManifest) =>
-      let local_plc_map := cman.(Concrete_Plcs) in
+      let local_plc_map := al.(Local_Plcs) in
       let abstract_plcs := am.(uuidPlcs) in
       let shrunk_map := 
         minify_mapD local_plc_map (fun x => if (in_dec (EqClass_impl_DecEq _) x abstract_plcs) then true else false) in
@@ -91,7 +91,7 @@ Import ListNotations.
       : ConcreteManifest -> PubKeyCallback :=
     let pubkey_server_cb := al.(PubKeyServer_Cb) in
     fun (cman : ConcreteManifest) =>
-      let local_pubkey_map := cman.(Concrete_PubKeys) in
+      let local_pubkey_map := al.(Local_PubKeys) in
       let abstract_plcs := am.(pubKeyPlcs) in
       let shrunk_map := 
         minify_mapD local_pubkey_map (fun x => if (in_dec (EqClass_impl_DecEq _) x abstract_plcs) then true else false) in
@@ -108,7 +108,7 @@ Import ListNotations.
       : ConcreteManifest -> UUIDCallback :=
     let uuid_server_cb := al.(UUIDServer_Cb) in
     fun (cman : ConcreteManifest) =>
-      let local_plc_map := cman.(Concrete_Plcs) in
+      let local_plc_map := al.(Local_Plcs) in
       let local_uuid_addr := cman.(UUID_Server) in
       fun (u : UUID) =>
         (* check if uuid "u" is local, else dispatch to callback *)
@@ -127,8 +127,8 @@ Import ListNotations.
       my_plc := m.(my_abstract_plc) ;
 
       Concrete_ASPs := m.(asps) ;
-      Concrete_Plcs := al.(Local_Plcs) ;
-      Concrete_PubKeys := al.(Local_PubKeys) ;
+      Concrete_Plcs := m.(uuidPlcs) ;
+      Concrete_PubKeys := m.(pubKeyPlcs) ;
       Concrete_Targets := m.(targetPlcs) ;
 
       ASP_Server := al.(ASPServer_Addr) ;
