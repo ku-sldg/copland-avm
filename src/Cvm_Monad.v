@@ -9,6 +9,8 @@ Require Import StructTactics.
 
 Require Import Coq.Program.Tactics Lia.
 
+Require Import Manifest_Admits.
+
 Require Import List.
 Import ListNotations.
 
@@ -178,7 +180,21 @@ Definition tag_RPY (p:Plc) (q:Plc) (e:EvC) : CVM unit :=
   rpyi <- inc_id ;;
   add_tracem [rpy rpyi p q (get_et e)].
 
+Definition get_cvm_policy : CVM PolicyT := 
+  ac <- get_amConfig ;; 
+  ret (Concrete_policy (concMan ac)).
+
+Locate dispatch_error.
+
+Definition check_cvm_policy (t:Term) (pTo:Plc) (et:Evidence) : CVM unit := 
+  pol <- get_cvm_policy ;;
+    match (policy_list_not_disclosed t pTo et pol) with
+    | true => ret tt
+    | false => failm (dispatch_error Runtime)
+    end.
+
 Definition doRemote_session' (t:Term) (pTo:Plc) (e:EvC) : CVM EvC := 
+  check_cvm_policy t pTo (get_et e) ;;
   ac <- get_amConfig ;;
   match (do_remote t pTo e ac) with 
   | resultC ev => ret (evc ev (eval t pTo (get_et e)))  

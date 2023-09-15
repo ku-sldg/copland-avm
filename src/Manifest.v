@@ -77,6 +77,7 @@ Definition PlcMap := MapC Plc Address.
     more suitable for extraction and deployment.  *)
   Record ConcreteManifest := {
     my_plc          : Plc ; 
+    Concrete_policy : PolicyT;
 
     (* Local Mappings *)
     Concrete_ASPs         : list ASP_ID ;
@@ -93,6 +94,7 @@ Definition PlcMap := MapC Plc Address.
 
   Definition emptyConcreteMan : ConcreteManifest := {|
     my_plc := min_id_type;
+    Concrete_policy := nil;
     Concrete_ASPs := nil;
     Concrete_Plcs := nil;
     Concrete_PubKeys := nil;

@@ -250,8 +250,10 @@ Proof.
         
   -
     wrap_ccp.
-    repeat ff.
-    unfold do_remote in *; repeat ff.
+    repeat Auto.ff.
+    unfold doRemote_session' in *; repeat Auto.ff.
+
+    unfold do_remote in *; Auto.ff.
 
     eapply wf_ec_preserved_remote; eauto.
 
@@ -434,7 +436,8 @@ Defined.
       
   
   -
-    repeat ff.
+    repeat Auto.ff.
+    unfold doRemote_session' in *; repeat Auto.ff.
     lia.
   -
     wrap_ccp_anno.
@@ -732,6 +735,7 @@ Proof.
     
   - (* aatt case *)
     wrap_ccp_anno.
+    unfold doRemote_session' in *;
     repeat ff.
 
     assert (n = i + event_id_span' t + 1) by lia.

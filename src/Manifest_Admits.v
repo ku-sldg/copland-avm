@@ -1,5 +1,9 @@
 Require Import EqClass Term_Defs_Core.
 
+Require Import List.
+Import ListNotations.
+
+
 Definition ASP_Address : Set. Admitted.
 
 Definition empty_ASP_Address : ASP_Address. Admitted.
@@ -22,10 +26,9 @@ Definition PrivateKey : Set. Admitted.
 
 Global Instance Eq_Class_private_key : EqClass PrivateKey. Admitted.
 
-Definition PolicyT : Set. Admitted.
+Definition PolicyT : Set := list (ASP_ID * Plc).
 
-Definition empty_PolicyT : PolicyT.
-Admitted.
+Definition empty_PolicyT : PolicyT := [].
 
 Definition empty_Manifest_Plc : Plc.
 Admitted.

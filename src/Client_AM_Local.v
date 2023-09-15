@@ -4,7 +4,7 @@ Require Import Impl_appraisal Appraisal_IO_Stubs IO_Stubs AM_Monad ErrorStMonad_
 
 Require Import CvmJson_Admits Manifest_Generator Manifest_Compiler Maps.
 
-Require Import ManCompSoundness_Appraisal.
+Require Import ManCompSoundness_Appraisal Manifest_Admits Disclose.
 
 Require Import StructTactics.
 
@@ -135,12 +135,25 @@ Definition check_et_length (et:Evidence) (ls:RawEv) : AM unit :=
   then ret tt 
   else (failm (dispatch_error Runtime)).
 
+
+Definition get_am_policy : AM PolicyT := 
+  st <- get ;; 
+  ret (Concrete_policy (concMan (amConfig st))).
+
+Definition check_disclosure_policy (t:Term) (p:Plc) (e:Evidence) : AM unit := 
+  policy <- get_am_policy ;; 
+  if (policy_list_not_disclosed t p e policy)
+  then ret tt 
+  else (failm (dispatch_error Runtime)).
+
 Definition am_client_gen_local (t:Term) (myPlc:Plc) (initEvOpt:option EvC) 
     (* (authPhrase:option Term) *) (amLib:AM_Library) : AM AM_Result := 
   evcIn <- gen_nonce_if_none_local initEvOpt ;; 
   (* auth_evc <- gen_authEvC_if_some_local authPhrase myPlc mt_evc ;;  *)
   let '(evc init_ev init_et) := evcIn in 
   config_AM_if_lib_supported t myPlc amLib ;; 
+
+  check_disclosure_policy t myPlc init_et ;;
   resev <- run_cvm_local_am t myPlc init_ev ;; 
 
   let expected_et := eval t myPlc init_et in 
@@ -971,6 +984,14 @@ Proof.
     eauto.
 
   -
+    ff. 
+    unfold check_et_length in *.
+    ff.
+    right.
+    eauto.
+
+
+  -
     unfold config_AM_if_lib_supported_app in *.
 
     ff.
@@ -986,12 +1007,12 @@ Proof.
     rewrite lib_support_app_bool_iff_prop in *.
 
 
-    assert (et_size (eval t p e0) = length (run_cvm_rawEv t p r1 (amConfig a1))).
+    assert (et_size (eval t p e0) = length (run_cvm_rawEv t p r1 (amConfig a3))).
     {
       unfold check_et_length in *.
       ff.
       Search (Nat.eqb _ _ = true -> _).
-      apply EqNat.beq_nat_true_stt in Heqb0.
+      apply EqNat.beq_nat_true_stt in Heqb1.
       eauto.
     }
 
@@ -1020,10 +1041,11 @@ Proof.
     *)
 
     Require Import ManCompSoundness_Appraisal.
+    Check manifest_generator_compiler_soundness_app.
 
     pose (manifest_generator_compiler_soundness_app 
             (eval t p e0) 
-            (run_cvm_rawEv t p r1 (amConfig a1))
+            (run_cvm_rawEv t p r1 (amConfig a3))
             empty_Manifest
             (manifest_generator_app (eval t p e0))
             amLib 
@@ -1032,8 +1054,8 @@ Proof.
 
     specialize o with (st:= 
     {|
-      am_nonceMap := am_nonceMap a4;
-      am_nonceId := am_nonceId a4;
+      am_nonceMap := am_nonceMap a6;
+      am_nonceId := am_nonceId a6;
       amConfig := manifest_compiler (manifest_generator_app (eval t p e0)) amLib
     |}
     ).
@@ -1069,12 +1091,12 @@ Proof.
       am_monad_unfold.
       invc Heqp0.
 
-      assert (a1 = a4).
+      assert (a3 = a6).
       {
         unfold check_et_length in *.
         assert (
           Nat.eqb (et_size (eval t p (nn (am_nonceId st))))
-            (length (run_cvm_rawEv t p [gen_nonce_bits] (amConfig a1))) = 
+            (length (run_cvm_rawEv t p [gen_nonce_bits] (amConfig a3))) = 
             true
         ).
         {
@@ -1118,7 +1140,7 @@ Proof.
     rewrite lib_support_app_bool_iff_prop in *.
 
 
-    assert (et_size (eval t p e0) = length (run_cvm_rawEv t p r1 (amConfig a1))).
+    assert (et_size (eval t p e0) = length (run_cvm_rawEv t p r1 (amConfig a3))).
     {
       unfold check_et_length in *.
       ff.
@@ -1129,7 +1151,7 @@ Proof.
 
     pose (manifest_generator_compiler_soundness_app 
             (eval t p e0) 
-            (run_cvm_rawEv t p r1 (amConfig a1))
+            (run_cvm_rawEv t p r1 (amConfig a3))
             empty_Manifest
             (manifest_generator_app (eval t p e0))
             amLib 
@@ -1138,8 +1160,8 @@ Proof.
 
     specialize o with (st:= 
     {|
-      am_nonceMap := am_nonceMap a4;
-      am_nonceId := am_nonceId a4;
+      am_nonceMap := am_nonceMap a6;
+      am_nonceId := am_nonceId a6;
       amConfig := manifest_compiler (manifest_generator_app (eval t p e0)) amLib
     |}
     ).
@@ -1174,12 +1196,12 @@ Proof.
       am_monad_unfold.
       invc Heqp0.
 
-      assert (a1 = a4).
+      assert (a3 = a6).
       {
         unfold check_et_length in *.
         assert (
           Nat.eqb (et_size (eval t p (nn (am_nonceId st))))
-            (length (run_cvm_rawEv t p [gen_nonce_bits] (amConfig a1))) = 
+            (length (run_cvm_rawEv t p [gen_nonce_bits] (amConfig a3))) = 
             true
         ).
         {
