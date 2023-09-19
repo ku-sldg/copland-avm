@@ -3762,6 +3762,82 @@ Proof.
 Qed.
 *)
 
+
+
+Lemma cvm_respects_events_disclosure:
+  forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt ac ac',
+    
+    annoP_indexed annt t cvmi cvmi' ->
+    ~ (events_discloses annt p e i r) ->
+    
+    term_to_coreP t atp ->
+    build_cvmP atp
+               (mk_st (evc bits e) [] p cvmi ac)
+               (resultC tt)
+               (mk_st (evc bits' e') cvm_tr p' cvmi' ac') ->
+
+    ~ (cvm_trace_discloses_to_remote cvm_tr i r).
+
+Proof.
+  unfold not in *; intros.
+  apply H0.
+  invc H3.
+  destruct_conjs.
+  unfold events_discloses.
+  (*exists H4. *) exists x. (* exists H3. exists H5. exists H6. exists H7. *)
+  split.
+  invc H1.
+  eapply cvm_implies_events.
+  eassumption.
+  eassumption.
+  apply H3.
+  eassumption.
+Qed.
+
+Lemma cvm_respects_term_disclosure:
+  forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt ac ac',
+
+    annoP_indexed annt t cvmi cvmi' ->
+
+  ~ (term_discloses_to_remote t p e (r,i) = true) ->
+  
+  term_to_coreP t atp ->
+  build_cvmP atp
+             (mk_st (evc bits e) [] p cvmi ac)
+             (resultC tt)
+             (mk_st (evc bits' e') cvm_tr p' cvmi' ac') ->
+
+  ~ (cvm_trace_discloses_to_remote cvm_tr r i).
+Proof.
+  intros.
+  (*
+  assert (exists annt, annoP_indexed annt t cvmi cvmi').
+  {
+    eapply can_annoP_indexed; eauto.
+  }
+  destruct_conjs.
+   *)
+
+  eapply cvm_respects_events_disclosure.
+  
+  eassumption.
+  eapply events_respects_term_disclosure.
+  invc H.
+  econstructor.
+  repeat eexists.
+  eassumption.
+  eassumption.
+  eassumption.
+  eassumption.
+Qed.
+
+
+
+
+
+
+
+
 Lemma cvm_respects_events_disclosure_aspid_enc:
   forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt ac ac',
     
@@ -4279,7 +4355,6 @@ Proof.
         simpl. eassumption.
         eassumption.
 Qed.
-
 
 Definition term_discloses_to_remotes (rs: list (Plc*Evidence)) (t:Term) (p:Plc) (e:Evidence) : bool :=
   existsb (term_discloses_to_remote t p e) rs.

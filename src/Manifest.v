@@ -93,7 +93,7 @@ Definition PlcMap := MapC Plc Address.
   }.
 
   Definition emptyConcreteMan : ConcreteManifest := {|
-    my_plc := min_id_type;
+    my_plc := empty_Manifest_Plc; (* min_id_type; *)
     Concrete_policy := nil;
     Concrete_ASPs := nil;
     Concrete_Plcs := nil;

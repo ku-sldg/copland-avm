@@ -40,3 +40,7 @@ Definition enc_targplc : Plc. Admitted.
 
 Definition enc_params : Plc -> ASP_PARAMS :=
   fun p => asp_paramsC enc_aspid enc_aspargs p enc_targid.
+
+
+Definition term_discloses_aspid_to_remote_enc_bool (t:Term) (p:Plc) (e:Evidence) (i:ASP_ID) (r:Plc) : bool.
+Admitted.
