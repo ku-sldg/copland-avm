@@ -1430,7 +1430,7 @@ Defined.
   repeat ff.
   monad_unfold.
   repeat ff.
-  invc Heqp3.
+  invc Heqr3.
     lia.
   - (* lseq case *)
     wrap_ccp_anno.
@@ -1783,7 +1783,7 @@ Proof.
     repeat ff.
     monad_unfold.
     repeat ff.
-    invc Heqp3.
+    invc Heqr0.
     unfold do_remote in *.
     repeat ff.
     eapply wf_ec_preserved_remote; eauto.
@@ -2480,8 +2480,13 @@ Proof.
     rewrite <- ccp_iff_cc in *.
     dd.
     repeat Auto.ff.
+    (*
     unfold doRemote_session' in *; 
     repeat Auto.ff.
+    *)
+
+
+    
     (*
     erewrite <- remote_Evidence_Type_Axiom.
     jkjke. *)

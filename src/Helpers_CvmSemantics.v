@@ -267,8 +267,10 @@ Proof.
   repeat ff;
   unfold doRemote_session' in *;
   repeat ff.
+  (*
   find_rewrite.
   ff.
+  *)
   - destruct (build_cvm t1 {| st_ev := e; st_trace := tr1; st_pl := p; st_evid := i1; st_AM_config := ac |}) eqn:E1;
     destruct (build_cvm t1 {| st_ev := e; st_trace := tr2; st_pl := p; st_evid := i2; st_AM_config := ac |}) eqn:E2;
     destruct r, r0; invc H; invc H0; destruct u, u0, c, c0.

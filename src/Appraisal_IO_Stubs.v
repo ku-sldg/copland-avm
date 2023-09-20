@@ -1,6 +1,6 @@
 Require Import Term_Defs_Core Term_Defs.
 
-Require Import AM_Monad.
+Require Import AM_Monad Manifest_Admits ErrorStMonad_Coq Cvm_St.
 
 
 (*
@@ -19,6 +19,9 @@ Admitted.
  *)
 
 Definition gen_nonce_bits : BS.
+Admitted.
+
+Definition decrypt_bs_to_rawev_prim (bs:BS) (params:ASP_PARAMS) (pk:PublicKey) : ResultT RawEv DispatcherErrors.
 Admitted.
 
 

@@ -17,12 +17,15 @@ Definition run_am_app_comp{A:Type} (am_comp:AM A) (default_A:A) : A :=
   let optRes := evalErr am_comp empty_amst in
   fromSome default_A optRes.
 
-
+(*
 Definition get_amConfig : AM AM_Config :=
     (* TODO:  consider moving this functionality to a Reader-like monad 
           i.e. an 'ask' primitive *)
     st <- get ;;
     ret (amConfig st).
+*)
+
+
 
 (* This should only be used sparingly for now...
     may need a more principled interface for this... *)
@@ -59,7 +62,7 @@ Definition am_runCvm_nonce (t:Term) (p:Plc) (bs:BS) (ac : AM_Config) : AM (nat *
 
   Ltac am_monad_unfold :=
     repeat unfold
-    get_amConfig,
+    (* get_amConfig, *)
     put_amConfig,
     am_newNonce,
     am_getNonce,

@@ -1,7 +1,7 @@
 Require Extraction.
 
-Require Import Term_Defs Term_Defs_Core Cvm_Run IO_Stubs AM_Monad.
-Require Import CopParser.
+Require Import Term_Defs Term_Defs_Core Cvm_Run IO_Stubs AM_Monad Cvm_Monad.
+(* Require Import CopParser. *)
 
 Require Import Example_Phrases Example_Phrases_Demo.
 
@@ -39,6 +39,24 @@ Extract Constant sig_params => "( undefined () )".
 Extract Constant hsh_params => "( undefined () )".
 (* Extract Constant + => "add". *)
 (* Extract Constant Nat.add => "(+)". *)
+
+
+(*
+Extract Constant get_ev => "bind get (fn st => ret (st_ev st)) : cvm_st -> coq_EvC".
+(* "st <- (@get cvm_st CVM_Error) ;; ret (st_ev st)". *)
+
+*)
+
+(*
+  bind get (fn st =>
+    let val ac = let val Coq_mkAM_St _ _ amConfig = st in amConfig end in
+    (case decrypt_bs_to_rawev bs params ac of
+       Coq_errC e => failm (Coq_dispatch_error e)
+     | Coq_resultC r =>
+       (case check_et_size et r of
+          Coq_errC e => failm (Coq_dispatch_error e)
+        | Coq_resultC _ => ret r)) end)
+		*)
 
 Definition term_list : list Term := 
 	[cert_style; cert_style_test; cert_style_trimmed; cert_cache_p1; cert_cache_p0; cert_cache_p0_trimmed].

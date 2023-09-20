@@ -26,9 +26,9 @@ Definition PrivateKey : Set. Admitted.
 
 Global Instance Eq_Class_private_key : EqClass PrivateKey. Admitted.
 
-Definition PolicyT : Set := list (ASP_ID * Plc).
+Definition PolicyT : Set := bool. (* list (ASP_ID * Plc). *)
 
-Definition empty_PolicyT : PolicyT := [].
+Definition empty_PolicyT : PolicyT := true. (* []. *)
 
 Definition empty_Manifest_Plc : Plc.
 Admitted.

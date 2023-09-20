@@ -292,8 +292,10 @@ Definition policy_supports_term (t:Term) (p:Plc) (e:Evidence) (ls:list (ASP_ID *
   forallb (fun pr => (term_discloses_aspid_to_remote_enc_bool t p e (fst pr) (snd pr))) ls.
 
 
-Definition policy_list_not_disclosed (t:Term) (p:Plc) (e:Evidence) (ls:list (ASP_ID * Plc)) : bool := 
+Definition policy_list_not_disclosed (t:Term) (p:Plc) (e:Evidence) (pol: bool (* list (ASP_ID * Plc) *)) : bool := 
+  true.
+  (*
   forallb (fun pr => negb (term_discloses_aspid_to_remote_enc_bool t p e (fst pr) (snd pr))) ls.
-
+*)
 
 

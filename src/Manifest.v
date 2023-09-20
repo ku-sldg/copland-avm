@@ -94,7 +94,7 @@ Definition PlcMap := MapC Plc Address.
 
   Definition emptyConcreteMan : ConcreteManifest := {|
     my_plc := empty_Manifest_Plc; (* min_id_type; *)
-    Concrete_policy := nil;
+    Concrete_policy := empty_PolicyT;
     Concrete_ASPs := nil;
     Concrete_Plcs := nil;
     Concrete_PubKeys := nil;
@@ -115,11 +115,14 @@ Record AM_Config : Type :=
     uuidCb : UUIDCallback ;
   }.
 
+Definition empty_aspCb (ps:ASP_PARAMS) (p:Plc) (bs:BS) (rawev:RawEv) : ResultT BS DispatcherErrors := 
+  errC Unavailable.
+
   Definition empty_am_config : AM_Config :=
   mkAmConfig 
     emptyConcreteMan 
-    (fun x => fun _ => fun _ => fun _ => errC Unavailable)
-    (fun x => fun _ => fun _ => fun _ => errC Unavailable)
+    empty_aspCb
+    empty_aspCb
     (fun x => errC Unavailable)
     (fun x => errC Unavailable)
     (fun x => errC Unavailable).
