@@ -1,11 +1,12 @@
 Require Import ErrorStMonad_Coq BS Maps Term_Defs_Core Term_Defs Cvm_Run Cvm_St.
 
-Require Import ErrorStringConstants.
+Require Import ErrorStringConstants Appraisal_IO_Stubs.
 
 Require Export AM_St.
 
 Require Import List.
 Import ListNotations.
+
 
 Definition fromSome{A E:Type} (default:A) (opt:ResultT A E): A :=
   match opt with
@@ -13,9 +14,23 @@ Definition fromSome{A E:Type} (default:A) (opt:ResultT A E): A :=
   | _ => default
   end.
 
-Definition run_am_app_comp{A:Type} (am_comp:AM A) (default_A:A) : A :=
+Definition run_am_app_comp{A:Type} (am_comp:AM A) (default_A:A) (b:bool): A :=
+  if (b) 
+  then (
   let optRes := evalErr am_comp empty_amst in
-  fromSome default_A optRes.
+  let v := 
+    match optRes with 
+    | resultC _ => (negb b)
+    | errC e => print_am_error e b
+    end in 
+  if(v)
+  then 
+  (fromSome default_A optRes) 
+  else 
+  (default_A)
+  ) 
+  else 
+  (default_A).
 
 (*
 Definition get_amConfig : AM AM_Config :=

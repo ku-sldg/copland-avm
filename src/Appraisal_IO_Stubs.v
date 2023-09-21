@@ -1,6 +1,9 @@
 Require Import Term_Defs_Core Term_Defs.
 
-Require Import AM_Monad Manifest_Admits ErrorStMonad_Coq Cvm_St.
+Require Import (*AM_Monad *) Manifest_Admits ErrorStMonad_Coq Cvm_St AM_St.
+
+Require Import ErrorStringConstants.
+
 
 
 (*
@@ -35,3 +38,40 @@ Admitted.
 
 Definition checkNonce (nonceGolden:BS) (nonceCandidate:BS) : BS.
 Admitted.
+
+Definition print_string (s:StringT) : unit. 
+Admitted.
+
+Definition print_am_error (err:AM_Error) (b:bool): bool := 
+    if(b)
+    then 
+    (
+    match err with 
+    | am_error s => 
+        if(b)
+        then 
+        (let v:= print_string s in b)
+        else 
+        (negb b)
+    | am_dispatch_error e => 
+        if(b)
+        then
+        (let v:= print_string errStr_dispatch_error in b) 
+        else 
+        (negb b)
+    | cvm_error e => 
+        if(b) 
+        then 
+        (let v := print_string errStr_cvm_error in b) 
+        else 
+        (negb b)
+    end)
+    else (negb b).
+
+
+(*
+Inductive AM_Error : Type := 
+| cvm_error : CVM_Error -> AM_Error
+| am_error : StringT -> AM_Error
+| am_dispatch_error : DispatcherErrors -> AM_Error.
+*)

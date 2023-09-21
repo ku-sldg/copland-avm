@@ -9,3 +9,7 @@ Definition errStr_requester_bound : StringT. Admitted.
 Definition errStr_privPolicy : StringT. Admitted.
 
 Definition errStr_app_auth_tok : StringT. Admitted.
+
+Definition errStr_dispatch_error : StringT. Admitted.
+
+Definition errStr_cvm_error : StringT. Admitted.

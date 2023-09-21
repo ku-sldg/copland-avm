@@ -36,7 +36,7 @@ Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc)
 
 Definition run_am_server_auth_tok_req (t:Term) (fromPlc:Plc) (myPl:Plc) 
             (authTok:ReqAuthTok) (init_ev:RawEv) (ac : AM_Config) : RawEv :=
-              run_am_app_comp (am_serve_auth_tok_req t fromPlc myPl authTok init_ev ac) [].
+              run_am_app_comp (am_serve_auth_tok_req t fromPlc myPl authTok init_ev ac) [] true.
                             
 
 Definition do_cvm_session (req:CvmRequestMessage) (ac : AM_Config): CvmResponseMessage := 
@@ -56,7 +56,7 @@ Definition do_appraisal_session (appreq:AppraisalRequestMessage):
     | REQ_APP t p et ev => 
         let expected_et := eval t p et in 
         let comp := gen_appraise_AM expected_et ev in 
-          run_am_app_comp comp mtc_app
+          run_am_app_comp comp mtc_app true
     end in 
       (RES_APP appres).
 
