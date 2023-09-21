@@ -80,3 +80,9 @@ Admitted.
 
 Definition print_auth_tok (tok:ReqAuthTok) : unit.
 Admitted.
+
+Definition lib_supports_manifest_bool (amlib:AM_Library) (m:Manifest) : bool.
+Admitted.
+
+Definition lib_supports_manifest_app_bool (amlib:AM_Library) (m:Manifest) : bool.
+Admitted.

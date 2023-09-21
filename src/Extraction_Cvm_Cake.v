@@ -7,7 +7,7 @@ Require Import Example_Phrases Example_Phrases_Demo.
 
 Require Import privPolicy Manifest_Generator Manifest_Compiler.
 
-Require Import Client_AM Server_AM.
+Require Import Client_AM Server_AM Client_AM_Local.
 
 
 Require Import List.
@@ -66,4 +66,5 @@ Separate Extraction run_cvm manifest_compiler
 			handle_AM_request am_client_auth am_client_gen 
 			term_list ssl_sig_parameterized kim_meas
 		    par_mut_p0 par_mut_p1 layered_bg_strong
-		    man_gen_run_attify empty_am_result.
+		    man_gen_run_attify empty_am_result
+        am_client_gen_local.

@@ -68,6 +68,7 @@ Appraisal_Semantics.v
 ManCompSoundness.v
 ManCompSoundness_Appraisal.v
 Client_AM.v
+Client_AM_Local.v
 Server_AM.v
 CopParser.v
 Extraction_Cvm_Cake.v

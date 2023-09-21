@@ -1,4 +1,4 @@
-Require Import Term Example_Phrases_Demo Cvm_Run Manifest.
+Require Import Term Example_Phrases_Demo Cvm_Run Manifest EqClass.
 
 Require Import Impl_appraisal Appraisal_IO_Stubs IO_Stubs AM_Monad ErrorStMonad_Coq.
 
@@ -76,11 +76,14 @@ Definition get_my_absman_generated (t:Term) (myPlc:Plc) : Manifest :=
   let maybe_absMan := map_get env myPlc in 
     fromSomeOption empty_Manifest maybe_absMan.
 
-Definition lib_supports_manifest_bool (amlib:AM_Library) (m:Manifest) : bool :=
-  true.  (* Admitted. *)
+(*
+Note:  Moved these to IO_Stubs.v
+Definition lib_supports_manifest_bool (amlib:AM_Library) (m:Manifest) : bool.
+Admitted.
 
-Definition lib_supports_manifest_app_bool (amlib:AM_Library) (m:Manifest) : bool :=
-  true. (* Admitted. *)
+Definition lib_supports_manifest_app_bool (amlib:AM_Library) (m:Manifest) : bool.
+Admitted.
+*)
 
 Lemma lib_support_app_bool_iff_prop : forall amLib absMan,
 (lib_supports_manifest_app_bool amLib absMan = true) <->
@@ -90,8 +93,8 @@ Admitted.
 
 
 Definition run_cvm_local_am (t:Term) (myPlc:Plc) (ls:RawEv) : AM RawEv := 
-  ac <- get_amConfig ;; 
-  ret (run_cvm_rawEv t myPlc ls ac).
+  st <- get ;; 
+  ret (run_cvm_rawEv t myPlc ls (amConfig st)).
 
 Definition config_AM_if_lib_supported (t:Term) (myPlc:Plc) (amLib:AM_Library) : AM unit := 
   let absMan := get_my_absman_generated t myPlc in 
@@ -102,7 +105,7 @@ Definition config_AM_if_lib_supported (t:Term) (myPlc:Plc) (amLib:AM_Library) : 
       put_amConfig amConf
     )
     else (
-      am_failm (dispatch_error Runtime)
+      am_failm (am_dispatch_error Runtime)
     ).
 
 Definition config_AM_if_lib_supported_app (et:Evidence) (amLib:AM_Library) : AM unit := 
@@ -114,7 +117,7 @@ Definition config_AM_if_lib_supported_app (et:Evidence) (amLib:AM_Library) : AM 
       put_amConfig amConf
     )
     else (
-      am_failm (dispatch_error Runtime)
+      am_failm (am_dispatch_error Runtime)
     ).
 
 
@@ -131,9 +134,9 @@ Definition gen_authEvC_if_some_local (ot:option Term) (myPlc:Plc) (init_evc:EvC)
   end.
 
 Definition check_et_length (et:Evidence) (ls:RawEv) : AM unit := 
-  if (Nat.eqb (et_size et) (length ls)) 
+  if (eqb (et_size et) (length ls)) 
   then ret tt 
-  else (am_failm (dispatch_error Runtime)).
+  else (am_failm (am_dispatch_error Runtime)).
 
 
 Definition get_am_policy : AM PolicyT := 
@@ -144,7 +147,7 @@ Definition check_disclosure_policy (t:Term) (p:Plc) (e:Evidence) : AM unit :=
   policy <- get_am_policy ;; 
   if (policy_list_not_disclosed t p e policy)
   then ret tt 
-  else (am_failm (dispatch_error Runtime)).
+  else (am_failm (am_dispatch_error Runtime)).
 
 Definition am_client_gen_local (t:Term) (myPlc:Plc) (initEvOpt:option EvC) 
     (* (authPhrase:option Term) *) (amLib:AM_Library) : AM AM_Result := 
@@ -959,7 +962,7 @@ Example client_gen_executable : forall t p initEvOpt amLib st,
   (am_client_gen_local t p initEvOpt amLib) st = (resultC res, st')) \/ 
 
   (exists st', 
-    (am_client_gen_local t p initEvOpt amLib) st = (errC (dispatch_error Runtime), st')
+    (am_client_gen_local t p initEvOpt amLib) st = (errC (am_dispatch_error Runtime), st')
   ).
 Proof.
   intros.
@@ -971,17 +974,26 @@ Proof.
   destruct initEvOpt; ff.
   -
     unfold config_AM_if_lib_supported in *.
+    ff.
+    (*
     find_rewrite.
 
     am_monad_unfold.
 
     solve_by_inversion.
+    *)
 
   -
     unfold check_et_length in *.
     ff.
+    unfold am_failm in *.
+    ff. 
     right.
     eauto.
+
+    (*
+
+    
 
   -
     ff. 
@@ -990,10 +1002,14 @@ Proof.
     right.
     eauto.
 
+    *)
+
 
   -
     unfold config_AM_if_lib_supported_app in *.
 
+    ff.
+    unfold am_failm in *.
     ff.
 
     right.
@@ -1007,12 +1023,12 @@ Proof.
     rewrite lib_support_app_bool_iff_prop in *.
 
 
-    assert (et_size (eval t p e0) = length (run_cvm_rawEv t p r1 (amConfig a3))).
+    assert (et_size (eval t p e0) = length (run_cvm_rawEv t p r1 (amConfig a1))).
     {
       unfold check_et_length in *.
       ff.
       Search (Nat.eqb _ _ = true -> _).
-      apply EqNat.beq_nat_true_stt in Heqb1.
+      apply EqNat.beq_nat_true_stt in Heqb0.
       eauto.
     }
 
@@ -1043,9 +1059,11 @@ Proof.
     Require Import ManCompSoundness_Appraisal.
     Check manifest_generator_compiler_soundness_app.
 
+    Print get_my_absman_generated.
+
     pose (manifest_generator_compiler_soundness_app 
             (eval t p e0) 
-            (run_cvm_rawEv t p r1 (amConfig a3))
+            (run_cvm_rawEv t p r1 (amConfig a1))
             empty_Manifest
             (manifest_generator_app (eval t p e0))
             amLib 
@@ -1054,8 +1072,8 @@ Proof.
 
     specialize o with (st:= 
     {|
-      am_nonceMap := am_nonceMap a6;
-      am_nonceId := am_nonceId a6;
+      am_nonceMap := am_nonceMap a5;
+      am_nonceId := am_nonceId a5;
       amConfig := manifest_compiler (manifest_generator_app (eval t p e0)) amLib
     |}
     ).
@@ -1091,12 +1109,12 @@ Proof.
       am_monad_unfold.
       invc Heqp0.
 
-      assert (a3 = a6).
+      assert (a1 = a5).
       {
         unfold check_et_length in *.
         assert (
           Nat.eqb (et_size (eval t p (nn (am_nonceId st))))
-            (length (run_cvm_rawEv t p [gen_nonce_bits] (amConfig a3))) = 
+            (length (run_cvm_rawEv t p [gen_nonce_bits] (amConfig a1))) = 
             true
         ).
         {
@@ -1140,7 +1158,7 @@ Proof.
     rewrite lib_support_app_bool_iff_prop in *.
 
 
-    assert (et_size (eval t p e0) = length (run_cvm_rawEv t p r1 (amConfig a3))).
+    assert (et_size (eval t p e0) = length (run_cvm_rawEv t p r1 (amConfig a1))).
     {
       unfold check_et_length in *.
       ff.
@@ -1151,7 +1169,7 @@ Proof.
 
     pose (manifest_generator_compiler_soundness_app 
             (eval t p e0) 
-            (run_cvm_rawEv t p r1 (amConfig a3))
+            (run_cvm_rawEv t p r1 (amConfig a1))
             empty_Manifest
             (manifest_generator_app (eval t p e0))
             amLib 
@@ -1160,8 +1178,8 @@ Proof.
 
     specialize o with (st:= 
     {|
-      am_nonceMap := am_nonceMap a6;
-      am_nonceId := am_nonceId a6;
+      am_nonceMap := am_nonceMap a5;
+      am_nonceId := am_nonceId a5;
       amConfig := manifest_compiler (manifest_generator_app (eval t p e0)) amLib
     |}
     ).
@@ -1196,12 +1214,12 @@ Proof.
       am_monad_unfold.
       invc Heqp0.
 
-      assert (a3 = a6).
+      assert (a1 = a5).
       {
         unfold check_et_length in *.
         assert (
           Nat.eqb (et_size (eval t p (nn (am_nonceId st))))
-            (length (run_cvm_rawEv t p [gen_nonce_bits] (amConfig a3))) = 
+            (length (run_cvm_rawEv t p [gen_nonce_bits] (amConfig a1))) = 
             true
         ).
         {
