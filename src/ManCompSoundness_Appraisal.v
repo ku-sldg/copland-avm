@@ -177,7 +177,7 @@ Proof.
 intros.
 unfold decrypt_bs_to_rawev' in *.
 monad_unfold.
-ff; eauto.
+repeat (ff; try unfold am_falim in * ; eauto).
 Qed.
 
 Lemma peel_bs_am_works : forall ls st st' r,
@@ -326,7 +326,8 @@ Proof.
   monad_unfold.
   break_let.
   ff.
-  eauto.
+  unfold am_failm in *.
+  ff.
   +++
   break_let.
   break_let.
@@ -337,7 +338,7 @@ Proof.
     unfold check_asp_EXTD' in *.
     monad_unfold.
     break_let.
-    ff; eauto.
+    repeat (ff;   unfold am_failm in * ; eauto).
   }
   subst.
   assert (st = a2) by (eapply peel_bs_am_immut; eauto).
@@ -378,7 +379,7 @@ Theorem well_formed_am_config_impl_executable_app : forall et amConf ls,
     (exists ec st',
         (gen_appraise_AM et ls) st = (resultC ec, st')) \/ 
     (exists st',
-        (gen_appraise_AM et ls) st = (errC (dispatch_error Runtime), st')).
+        (gen_appraise_AM et ls) st = (errC (am_dispatch_error Runtime), st')).
 Proof.
   intros.
   generalizeEverythingElse et.
@@ -407,9 +408,13 @@ Proof.
         destruct_conjs.
         assert (st = a0).
         {
+          unfold am_failm in *.
+          ff.
           eapply peel_bs_am_immut; eauto.
         }
         subst.
+        unfold am_failm in *.
+        ff.
         find_rewrite.
         solve_by_inversion.
       ++
@@ -473,10 +478,14 @@ Proof.
               eapply decrypt_prim_runtime; eauto.
             }
             subst.
+            unfold am_failm in *.
+            ff.
             repeat eexists.
             eauto.
           ++++
             unfold check_et_size in *.
+            ff.
+            unfold am_failm in *.
             ff.
             repeat eexists.
             eauto.
@@ -499,7 +508,7 @@ Proof.
           assert ((exists ec st', 
                     gen_appraise_AM et r2 a2  = (resultC ec, st')) \/ 
                   (exists st', 
-                    gen_appraise_AM et r2 a2 = (errC (dispatch_error Runtime), st'))
+                    gen_appraise_AM et r2 a2 = (errC (am_dispatch_error Runtime), st'))
           ).
           {
             eapply IHet.
@@ -515,7 +524,17 @@ Proof.
             monad_unfold.
             break_let.
             ff.
+            unfold am_failm in *.
+            ff.
             unfold check_et_size in *.
+            ff.
+            unfold am_failm in *.
+            ff.
+            unfold am_failm in *.
+            ff.
+            unfold check_et_size in *.
+            ff.
+            unfold am_failm in *.
             ff.
             eapply EqNat.beq_nat_true_stt.
             eassumption.
@@ -564,6 +583,8 @@ Proof.
       }
       find_rewrite.
       ff.
+      unfold am_failm in *.
+      ff.
       eauto.
   + (* EXTD case *)
     ff.
@@ -608,6 +629,8 @@ Proof.
       specialize H4 with (aid:=a) (l:=l) (targ:=p0) (targid:=t) (p':=p) (ev:=b) (ev':=r0).
       find_apply_hyp_hyp.
       find_rewrite.
+      ff.
+      unfold am_failm in *.
       ff.
       eauto.
     ++ (* check_asp_EXTD succeeds *)
@@ -1211,7 +1234,7 @@ Theorem manifest_generator_compiler_soundness_app : forall et ls oldMan absMan a
     exists ec st',
          (gen_appraise_AM et ls) st = (resultC ec, st')) \/ 
     (exists st',
-         (gen_appraise_AM et ls) st = (errC (dispatch_error Runtime), st')
+         (gen_appraise_AM et ls) st = (errC (am_dispatch_error Runtime), st')
     ).
 Proof.
   intros.

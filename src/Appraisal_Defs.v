@@ -48,9 +48,9 @@ Definition decrypt_bs_to_rawev' (bs:BS) (params:ASP_PARAMS) (et:Evidence) : AM R
   | resultC r => 
     match (check_et_size et r) with
     | resultC tt => ret r
-    | errC e => failm (dispatch_error e) 
+    | errC e => am_failm (am_dispatch_error e) 
     end
-  | errC e => failm (dispatch_error e) 
+  | errC e => am_failm (am_dispatch_error e) 
   end.
 
 Definition check_asp_EXTD (params:ASP_PARAMS) (p:Plc) (sig:BS) (ls:RawEv) (ac : AM_Config) : ResultT BS DispatcherErrors :=
@@ -62,7 +62,7 @@ Definition check_asp_EXTD' (params:ASP_PARAMS) (p:Plc) (sig:BS) (ls:RawEv) : AM 
   let ac := (amConfig st) in
   match (check_asp_EXTD params p sig ls ac) with
   | resultC r => ret r
-  | errC e => failm (dispatch_error e)
+  | errC e => am_failm (am_dispatch_error e)
   end.
 
 Definition checkNonce' (nid:nat) (nonceCandidate:BS) : AM BS :=

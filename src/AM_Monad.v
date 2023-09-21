@@ -51,7 +51,7 @@ Definition am_getNonce (nid:nat) : AM BS :=
   let resopt := map_get oldMap nid in
   match resopt with
   | Some res => ret res
-  | None => failm (am_error errStr_amNonce)
+  | None => am_failm (am_error errStr_amNonce)
   end.
 
 
@@ -68,7 +68,7 @@ Definition am_runCvm_nonce (t:Term) (p:Plc) (bs:BS) (ac : AM_Config) : AM (nat *
     am_getNonce,
   
 
-    failm,
+    am_failm,
     get,
     when,
     put,

@@ -53,6 +53,8 @@ Helpers_CvmSemantics.v
 External_Facts.v
 Appraisal_Evidence.v
 CvmSemantics.v
+Disclose_Gen.v
+Disclose.v
 Example_Phrases_Demo_Admits.v
 Example_Phrases_Demo.v
 AM_St.v
@@ -63,6 +65,9 @@ privPolicy.v
 Impl_appraisal.v
 CvmJson_Admits.v
 Appraisal_Semantics.v
+ManCompSoundness.v
+ManCompSoundness_Appraisal.v
 Client_AM.v
 Server_AM.v
+CopParser.v
 Extraction_Cvm_Cake.v

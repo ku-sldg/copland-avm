@@ -76,11 +76,11 @@ Definition get_my_absman_generated (t:Term) (myPlc:Plc) : Manifest :=
   let maybe_absMan := map_get env myPlc in 
     fromSomeOption empty_Manifest maybe_absMan.
 
-Definition lib_supports_manifest_bool (amlib:AM_Library) (m:Manifest) : bool. 
-Admitted.
+Definition lib_supports_manifest_bool (amlib:AM_Library) (m:Manifest) : bool :=
+  true.  (* Admitted. *)
 
-Definition lib_supports_manifest_app_bool (amlib:AM_Library) (m:Manifest) : bool. 
-Admitted.
+Definition lib_supports_manifest_app_bool (amlib:AM_Library) (m:Manifest) : bool :=
+  true. (* Admitted. *)
 
 Lemma lib_support_app_bool_iff_prop : forall amLib absMan,
 (lib_supports_manifest_app_bool amLib absMan = true) <->
@@ -102,7 +102,7 @@ Definition config_AM_if_lib_supported (t:Term) (myPlc:Plc) (amLib:AM_Library) : 
       put_amConfig amConf
     )
     else (
-      failm (dispatch_error Runtime)
+      am_failm (dispatch_error Runtime)
     ).
 
 Definition config_AM_if_lib_supported_app (et:Evidence) (amLib:AM_Library) : AM unit := 
@@ -114,7 +114,7 @@ Definition config_AM_if_lib_supported_app (et:Evidence) (amLib:AM_Library) : AM 
       put_amConfig amConf
     )
     else (
-      failm (dispatch_error Runtime)
+      am_failm (dispatch_error Runtime)
     ).
 
 
@@ -133,7 +133,7 @@ Definition gen_authEvC_if_some_local (ot:option Term) (myPlc:Plc) (init_evc:EvC)
 Definition check_et_length (et:Evidence) (ls:RawEv) : AM unit := 
   if (Nat.eqb (et_size et) (length ls)) 
   then ret tt 
-  else (failm (dispatch_error Runtime)).
+  else (am_failm (dispatch_error Runtime)).
 
 
 Definition get_am_policy : AM PolicyT := 
@@ -144,7 +144,7 @@ Definition check_disclosure_policy (t:Term) (p:Plc) (e:Evidence) : AM unit :=
   policy <- get_am_policy ;; 
   if (policy_list_not_disclosed t p e policy)
   then ret tt 
-  else (failm (dispatch_error Runtime)).
+  else (am_failm (dispatch_error Runtime)).
 
 Definition am_client_gen_local (t:Term) (myPlc:Plc) (initEvOpt:option EvC) 
     (* (authPhrase:option Term) *) (amLib:AM_Library) : AM AM_Result := 

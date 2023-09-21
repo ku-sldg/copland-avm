@@ -14,7 +14,7 @@ Definition am_check_auth_tok (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) : AM App
   | evc auth_ev auth_et => 
     appres <-
     (match (requester_bound t fromPl authTok) with
-     | false => failm (am_error errStr_requester_bound)
+     | false => am_failm (am_error errStr_requester_bound)
      | true => gen_appraise_AM auth_et auth_ev
      end) ;;
     ret appres
@@ -28,10 +28,10 @@ Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc)
   | true =>
     match (privPolicy fromPl t) with
     | true => ret (run_cvm_rawEv t myPl init_ev ac)
-    | false => failm (am_error errStr_privPolicy)
+    | false => am_failm (am_error errStr_privPolicy)
     end
       
-  | false => failm (am_error errStr_app_auth_tok)
+  | false => am_failm (am_error errStr_app_auth_tok)
   end.
 
 Definition run_am_server_auth_tok_req (t:Term) (fromPlc:Plc) (myPl:Plc) 

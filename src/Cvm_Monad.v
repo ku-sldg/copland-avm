@@ -46,6 +46,7 @@ Definition get_ev : CVM EvC :=
   st <- (@get cvm_st CVM_Error) ;;
   ret (st_ev st).
   *)
+Check get_ev.
 
 Definition get_pl : CVM Plc :=
   st <- (@get cvm_st CVM_Error) ;;

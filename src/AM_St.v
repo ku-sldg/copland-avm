@@ -24,9 +24,11 @@ Definition empty_amst :=
 Inductive AM_Error : Type := 
 | cvm_error : CVM_Error -> AM_Error
 | am_error : StringT -> AM_Error
-| dispatch_error : DispatcherErrors -> AM_Error.
+| am_dispatch_error : DispatcherErrors -> AM_Error.
   (*
   | term_disclosure_error : Term -> AM_Error
   | manifest_asp_unavailable : ASP_ID ->   *)
+
+Definition am_failm {A: Type} (e:AM_Error) : Err AM_St A AM_Error := fun s => (errC e, s).
   
 Definition AM A := Err AM_St A AM_Error.
