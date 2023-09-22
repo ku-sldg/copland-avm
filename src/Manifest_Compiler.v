@@ -32,7 +32,7 @@ Import ListNotations.
             match (cb par p bs rawEv) with
             | resultC r => resultC r
             | errC (messageLift msg) => (* TODO: Do something with msg *)
-                errC Runtime
+                errC (Runtime msg)
             end
           | None => errC Unavailable 
             (* (asp_server_cb asp_server_addr par) *)
@@ -40,9 +40,8 @@ Import ListNotations.
 
   (* This function will be a dispatcher for either local ASPS to CakeMLCallback, or pass them off to the ASP_Server *)
   Definition generate_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest)
-      : ConcreteManifest -> (ASPCallback DispatcherErrors) :=
+      : (ASPCallback DispatcherErrors) :=
     (* let asp_server_cb := al.(ASPServer_Cb) in *)
-    fun (cman : ConcreteManifest) =>
       (* let asp_server_addr := cman.(ASP_Server) in *)
       (generate_ASP_dispatcher' al am). 
 
@@ -60,7 +59,7 @@ Import ListNotations.
         match (cb par p bs rawEv) with
         | resultC r => resultC r
         | errC (messageLift msg) => (* TODO: Do something with msg *)
-            errC Runtime
+            errC (Runtime msg)
         end
       | None => errC Unavailable 
         (* (asp_server_cb asp_server_addr par) *)
@@ -68,23 +67,21 @@ Import ListNotations.
 
 
   Definition generate_appraisal_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest)
-  : ConcreteManifest -> (ASPCallback DispatcherErrors) :=
+  : (ASPCallback DispatcherErrors) :=
 (* let asp_server_cb := al.(ASPServer_Cb) in *)
-fun (cman : ConcreteManifest) =>
   (* let asp_server_addr := cman.(ASP_Server) in *)
   (generate_appraisal_ASP_dispatcher' al am). 
 
 
   (* This function will lookup for either local Plcs to UUID, or pass them off to the Plc Server *)
   Definition generate_Plc_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest) 
-      : ConcreteManifest -> PlcCallback :=
-    let plc_server_cb := al.(PlcServer_Cb) in
-    fun (cman : ConcreteManifest) =>
+      : PlcCallback :=
+    (* let plc_server_cb := al.(PlcServer_Cb) in *)
       let local_plc_map := al.(Local_Plcs) in
       let abstract_plcs := am.(uuidPlcs) in
       let shrunk_map := 
         minify_mapD local_plc_map (fun x => if (in_dec (EqClass_impl_DecEq _) x abstract_plcs) then true else false) in
-      let plc_server_addr := cman.(Plc_Server) in
+      (* let plc_server_addr := cman.(Plc_Server) in *)
       fun (p : Plc) =>
         (* check is the plc "p" is local, with a reference *)
         match (map_get shrunk_map p) with
@@ -95,14 +92,13 @@ fun (cman : ConcreteManifest) =>
       
   (* This function will lookup the PubKey either locally Plc -> PublicKey or pass off to PubKeyServer *)
   Definition generate_PubKey_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest) 
-      : ConcreteManifest -> PubKeyCallback :=
-    let pubkey_server_cb := al.(PubKeyServer_Cb) in
-    fun (cman : ConcreteManifest) =>
+      : PubKeyCallback :=
+    (* let pubkey_server_cb := al.(PubKeyServer_Cb) in *)
       let local_pubkey_map := al.(Local_PubKeys) in
       let abstract_plcs := am.(pubKeyPlcs) in
       let shrunk_map := 
         minify_mapD local_pubkey_map (fun x => if (in_dec (EqClass_impl_DecEq _) x abstract_plcs) then true else false) in
-      let pubkey_server_addr := cman.(PubKey_Server) in
+      (* let pubkey_server_addr := cman.(PubKey_Server) in *)
       fun (p : Plc) =>
         (* check is the plc "p" is local, with a reference in the pubkey server mapping *)
         match (map_get shrunk_map p) with
@@ -112,11 +108,10 @@ fun (cman : ConcreteManifest) =>
         end.
 
   Definition generate_UUID_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest)  
-      : ConcreteManifest -> UUIDCallback :=
-    let uuid_server_cb := al.(UUIDServer_Cb) in
-    fun (cman : ConcreteManifest) =>
+      : UUIDCallback :=
+    (* let uuid_server_cb := al.(UUIDServer_Cb) in *)
       let local_plc_map := al.(Local_Plcs) in
-      let local_uuid_addr := cman.(UUID_Server) in
+      (* let local_uuid_addr := cman.(UUID_Server) in *)
       fun (u : UUID) =>
         (* check if uuid "u" is local, else dispatch to callback *)
         match (mapD_get_key local_plc_map u) with
@@ -130,25 +125,11 @@ fun (cman : ConcreteManifest) =>
   (* The output of this function is a Concrete manifest, and a 
   function that can be used like "check_asp_EXTD".
   This function will be used in extraction to either dispatch ASPs to the ASP server, or call a local callback *)
-  let cm := {|
-      my_plc := m.(my_abstract_plc) ;
-      Concrete_policy := m.(policy) ;
-
-      Concrete_ASPs := m.(asps) ;
-      Concrete_Plcs := m.(uuidPlcs) ;
-      Concrete_PubKeys := m.(pubKeyPlcs) ;
-      Concrete_Targets := m.(targetPlcs) ;
-
-      ASP_Server := al.(ASPServer_Addr) ;
-      PubKey_Server := al.(PubKeyServer_Addr);
-      Plc_Server := al.(PlcServer_Addr) ;
-      UUID_Server := al.(UUIDServer_Addr);
-    |} in
   {|
-    concMan   := cm ;
-    aspCb     := (generate_ASP_dispatcher al m) cm ;
-    app_aspCb := (generate_appraisal_ASP_dispatcher al m) cm;
-    plcCb     := (generate_Plc_dispatcher al m) cm ;
-    pubKeyCb  := (generate_PubKey_dispatcher al m) cm ;
-    uuidCb    := (generate_UUID_dispatcher al m) cm ;
+    absMan   := m ;
+    aspCb     := (generate_ASP_dispatcher al m) ;
+    app_aspCb := (generate_appraisal_ASP_dispatcher al m);
+    plcCb     := (generate_Plc_dispatcher al m);
+    pubKeyCb  := (generate_PubKey_dispatcher al m);
+    uuidCb    := (generate_UUID_dispatcher al m);
   |}.

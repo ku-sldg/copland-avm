@@ -4,7 +4,9 @@ Require Import Impl_appraisal Appraisal_IO_Stubs IO_Stubs AM_Monad ErrorStMonad_
 
 Require Import CvmJson_Admits Manifest_Generator Manifest_Compiler Maps.
 
-Require Import ManCompSoundness_Appraisal Manifest_Admits Disclose.
+Require Import ManCompSoundness Manifest_Admits Disclose ErrorStringConstants.
+
+Require Import ManCompSoundness_Appraisal.
 
 Require Import StructTactics.
 
@@ -85,9 +87,9 @@ Definition lib_supports_manifest_app_bool (amlib:AM_Library) (m:Manifest) : bool
 Admitted.
 *)
 
-Lemma lib_support_app_bool_iff_prop : forall amLib absMan,
-(lib_supports_manifest_app_bool amLib absMan = true) <->
-lib_supports_manifest_app amLib absMan.
+Lemma lib_support_bool_iff_prop : forall amLib absMan,
+(lib_supports_manifest_bool amLib absMan = true) <->
+lib_supports_manifest amLib absMan.
 Proof.
 Admitted.
 
@@ -105,19 +107,20 @@ Definition config_AM_if_lib_supported (t:Term) (myPlc:Plc) (amLib:AM_Library) : 
       put_amConfig amConf
     )
     else (
-      am_failm (am_dispatch_error Runtime)
+      am_failm (am_dispatch_error (Runtime errStr_lib_supports_man_check))
     ).
+
 
 Definition config_AM_if_lib_supported_app (et:Evidence) (amLib:AM_Library) : AM unit := 
   let absMan := manifest_generator_app et in 
-  let supportsB := lib_supports_manifest_app_bool amLib absMan in 
+  let supportsB := lib_supports_manifest_bool amLib absMan in 
     if (supportsB) 
     then (
       let amConf := manifest_compiler absMan amLib in 
       put_amConfig amConf
     )
     else (
-      am_failm (am_dispatch_error Runtime)
+      am_failm (am_dispatch_error (Runtime errStr_lib_supports_man_app_check))
     ).
 
 
@@ -136,18 +139,18 @@ Definition gen_authEvC_if_some_local (ot:option Term) (myPlc:Plc) (init_evc:EvC)
 Definition check_et_length (et:Evidence) (ls:RawEv) : AM unit := 
   if (eqb (et_size et) (length ls)) 
   then ret tt 
-  else (am_failm (am_dispatch_error Runtime)).
+  else (am_failm (am_dispatch_error (Runtime errStr_et_size))).
 
 
 Definition get_am_policy : AM PolicyT := 
   st <- get ;; 
-  ret (Concrete_policy (concMan (amConfig st))).
+  ret (policy (absMan (amConfig st))).
 
 Definition check_disclosure_policy (t:Term) (p:Plc) (e:Evidence) : AM unit := 
   policy <- get_am_policy ;; 
   if (policy_list_not_disclosed t p e policy)
   then ret tt 
-  else (am_failm (am_dispatch_error Runtime)).
+  else (am_failm (am_dispatch_error (Runtime errStr_privPolicy))).
 
 Definition am_client_gen_local (t:Term) (myPlc:Plc) (initEvOpt:option EvC) 
     (* (authPhrase:option Term) *) (amLib:AM_Library) : AM AM_Result := 
@@ -961,8 +964,8 @@ Example client_gen_executable : forall t p initEvOpt amLib st,
   (exists res st', 
   (am_client_gen_local t p initEvOpt amLib) st = (resultC res, st')) \/ 
 
-  (exists st', 
-    (am_client_gen_local t p initEvOpt amLib) st = (errC (am_dispatch_error Runtime), st')
+  (exists st' str, 
+    (am_client_gen_local t p initEvOpt amLib) st = (errC (am_dispatch_error (Runtime str)), st')
   ).
 Proof.
   intros.
@@ -1020,7 +1023,7 @@ Proof.
     unfold config_AM_if_lib_supported_app in *.
     ff.
 
-    rewrite lib_support_app_bool_iff_prop in *.
+    rewrite lib_support_bool_iff_prop in *.
 
 
     assert (et_size (eval t p e0) = length (run_cvm_rawEv t p r1 (amConfig a1))).
@@ -1155,7 +1158,7 @@ Proof.
     unfold config_AM_if_lib_supported_app in *.
     ff.
 
-    rewrite lib_support_app_bool_iff_prop in *.
+    rewrite lib_support_bool_iff_prop in *.
 
 
     assert (et_size (eval t p e0) = length (run_cvm_rawEv t p r1 (amConfig a1))).

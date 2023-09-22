@@ -9,7 +9,7 @@ Require Import StructTactics.
 
 Require Import Coq.Program.Tactics Lia.
 
-Require Import Manifest_Admits.
+Require Import Manifest_Admits ErrorStringConstants.
 
 Require Import List.
 Import ListNotations.
@@ -199,13 +199,13 @@ Definition get_cvm_policy : CVM PolicyT :=
   (*
   st <- (@get cvm_st CVM_Error) ;;
   let ac := (st_AM_config st) in *)
-  ret (Concrete_policy (concMan ac)).
+  ret (policy (absMan ac)).
 
 Definition check_cvm_policy (t:Term) (pTo:Plc) (et:Evidence) : CVM unit := 
   pol <- get_cvm_policy ;;
     match (policy_list_not_disclosed t pTo et pol) with
     | true => ret tt
-    | false => failm (dispatch_error Runtime)
+    | false => failm (dispatch_error (Runtime errStr_privPolicy))
     end.
 
 Definition doRemote_session' (t:Term) (pTo:Plc) (e:EvC) : CVM EvC := 

@@ -44,7 +44,7 @@ Definition do_remote (t:Term) (pTo:Plc) (e:EvC) (ac: AM_Config) : ResultT RawEv 
     | resultC uuid => 
         match doRemote_uuid t uuid (get_bits e) with
         | resultC v => resultC v
-        | errC (messageLift msg) => errC Runtime
+        | errC (messageLift msg) => errC (Runtime msg)
         end
     | errC e => errC e
     end.

@@ -18,16 +18,16 @@ Definition supports_am_app (ac1 ac2 : AM_Config) : Prop :=
       (forall res, 
       ac1.(app_aspCb) (asp_paramsC aid l targ targid) p' ev ev' = resultC res ->
       ac2.(app_aspCb) (asp_paramsC aid l targ targid) p' ev ev' = resultC res)) /\
-  (forall aid l targ targid p' ev ev',
-      ac1.(app_aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC Runtime ->
-      ac2.(app_aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC Runtime) /\ 
+  (forall aid l targ targid p' ev ev' errStr,
+      ac1.(app_aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC (Runtime errStr) ->
+      ac2.(app_aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC (Runtime errStr)) /\ 
   (forall p,
       (forall res, 
       ac1.(pubKeyCb) p = resultC res ->
       ac2.(pubKeyCb) p = resultC res)) /\
-  (forall p,
-      ac1.(pubKeyCb) p = errC Runtime ->
-      ac2.(pubKeyCb) p = errC Runtime).
+  (forall p errStr,
+      ac1.(pubKeyCb) p = errC (Runtime errStr) ->
+      ac2.(pubKeyCb) p = errC (Runtime errStr)).
 
 Theorem supports_am_app_refl : forall ac1,
   supports_am_app ac1 ac1.
@@ -46,26 +46,10 @@ Qed.
 Local Hint Resolve supports_am_app_refl : core.
 Local Hint Resolve supports_am_app_trans : core.
 
+(*
 Definition lib_supports_manifest_app (al : AM_Library) (am : Manifest) : Prop :=
   (forall (a : (Plc*ASP_ID)), In a am.(appraisal_asps) -> exists cb, Maps.map_get al.(Local_Appraisal_ASPS) a = Some cb) /\ 
   (forall (p : Plc), In p am.(pubKeyPlcs) -> exists cb, Maps.map_get al.(Local_PubKeys) p = Some cb).
-
-
-(*
-Inductive Evidence: Set :=
-| mt: Evidence
-| nn: N_ID -> Evidence
-| uu: Plc -> FWD -> ASP_PARAMS -> Evidence -> Evidence
-| ss: Evidence -> Evidence -> Evidence.
-*)
-
-(*
-  | lseq t1 t2 =>
-      exists ac1 ac2,
-      (am_config_support_exec t1 p ac1) /\
-      (am_config_support_exec t2 p ac2) /\
-      supports_am ac1 ac /\
-      supports_am ac2 ac
 *)
 
 
@@ -81,14 +65,14 @@ Fixpoint am_config_support_exec_app (e : Evidence) (ac : AM_Config) : Prop :=
             | asp_paramsC _ _ p _ => 
                 ((exists res, 
                   ac.(pubKeyCb) p = resultC res) \/ 
-                ac.(pubKeyCb) p = errC Runtime) /\ 
+                (exists errStr, ac.(pubKeyCb) p = errC (Runtime errStr))) /\ 
                 am_config_support_exec_app e' ac
             end
         | EXTD => 
             forall bs ls, 
             (
             ( exists res, ac.(app_aspCb) ps p bs ls = resultC res) \/
-              ac.(app_aspCb) ps p bs ls = errC Runtime) /\ 
+              (exists errStr, ac.(app_aspCb) ps p bs ls = errC (Runtime errStr))) /\ 
 
             am_config_support_exec_app e' ac
         | KEEP => 
@@ -378,8 +362,8 @@ Theorem well_formed_am_config_impl_executable_app : forall et amConf ls,
   has_nonces (nonce_ids_et et) (st.(am_nonceMap)) -> 
     (exists ec st',
         (gen_appraise_AM et ls) st = (resultC ec, st')) \/ 
-    (exists st',
-        (gen_appraise_AM et ls) st = (errC (am_dispatch_error Runtime), st')).
+    (exists st' errStr,
+        (gen_appraise_AM et ls) st = (errC (am_dispatch_error (Runtime errStr)), st')).
 Proof.
   intros.
   generalizeEverythingElse et.
@@ -473,11 +457,9 @@ Proof.
 
           ++++
             ff.
-            assert (d = Runtime).
-            {
-              eapply decrypt_prim_runtime; eauto.
-            }
+            pose decrypt_prim_runtime.
             subst.
+            find_apply_hyp_hyp.
             unfold am_failm in *.
             ff.
             repeat eexists.
@@ -507,8 +489,8 @@ Proof.
 
           assert ((exists ec st', 
                     gen_appraise_AM et r2 a2  = (resultC ec, st')) \/ 
-                  (exists st', 
-                    gen_appraise_AM et r2 a2 = (errC (am_dispatch_error Runtime), st'))
+                  (exists st' errStr, 
+                    gen_appraise_AM et r2 a2 = (errC (am_dispatch_error (Runtime errStr)), st'))
           ).
           {
             eapply IHet.
@@ -546,10 +528,10 @@ Proof.
             solve_by_inversion.
           +++++
           find_rewrite.
-          invc H6.
+          find_injection.
           eauto.
       ++++
-      invc Heqp3.
+      find_injection.
       eauto.
     ++ (* pubkey NOT configured/available *)
       monad_unfold.
@@ -574,7 +556,7 @@ Proof.
       break_let.
       invc Heqp2.
 
-      assert (pubKeyCb (amConfig a) p0 = errC Runtime).
+      assert (pubKeyCb (amConfig a) p0 = errC (Runtime H)). (* TODO: add errStr *)
       {
         unfold supports_am_app in *.
         destruct_conjs.
@@ -626,7 +608,7 @@ Proof.
       unfold supports_am_app in *.
       destruct_conjs.
       destruct a.
-      specialize H4 with (aid:=a) (l:=l) (targ:=p0) (targid:=t) (p':=p) (ev:=b) (ev':=r0).
+      specialize H1 with (aid:=a) (l:=l) (targ:=p0) (targid:=t) (p':=p) (ev:=b) (ev':=r0).
       find_apply_hyp_hyp.
       find_rewrite.
       ff.
@@ -819,8 +801,13 @@ Proof.
       }
       subst.
 
-      rewrite H12 in *.
+      find_rewrite.
 
+      (*
+
+      rewrite H12 in *.
+      
+      *)
       ff.
 
       right. eauto.
@@ -837,15 +824,17 @@ Qed.
 
 Require Import ManCompSoundness.
 
+(*
+
 Definition manifest_support_am_config_app (m : Manifest) (ac : AM_Config) : Prop :=
   (forall p a, In (p,a) (m.(appraisal_asps)) -> 
     forall l targ targid ev ev',
-    (exists res, ac.(app_aspCb) (asp_paramsC a l targ targid) p ev ev' = resultC res) \/
-    (ac.(app_aspCb) (asp_paramsC a l targ targid) p ev ev' = errC Runtime)) /\ 
+    (exists res errStr, ac.(app_aspCb) (asp_paramsC a l targ targid) p ev ev' = resultC res) \/
+    (ac.(app_aspCb) (asp_paramsC a l targ targid) p ev ev' = errC (Runtime errStr))) /\ 
 
     (forall p, In p (m.(pubKeyPlcs)) -> 
-    (exists res, ac.(pubKeyCb) p = resultC res) \/
-    (ac.(pubKeyCb) p = errC Runtime)).
+    (exists res errStr, ac.(pubKeyCb) p = resultC res) \/
+    (ac.(pubKeyCb) p = errC (Runtime errStr))).
 
 
 
@@ -881,6 +870,8 @@ Proof.
   end.
 Qed.
 
+*)
+
 Fixpoint manifest_support_term_app (m : Manifest) (e : Evidence) : Prop :=
     match e with
     | mt => True 
@@ -913,12 +904,12 @@ Fixpoint manifest_support_term_app (m : Manifest) (e : Evidence) : Prop :=
 
 
 Theorem manifest_support_am_config_impl_am_config_app: forall et absMan amConf,
-    manifest_support_am_config_app absMan amConf ->
+    manifest_support_am_config absMan amConf ->
     manifest_support_term_app absMan et ->
     am_config_support_exec_app et amConf.
 Proof.
     induction et; simpl in *; intuition; eauto;
-    unfold manifest_support_am_config_app in *; intuition; eauto;
+    unfold manifest_support_am_config in *; intuition; eauto;
     repeat (try break_match; simpl in *; intuition; eauto).
 
     - pose proof (IHet1 absMan amConf); 
@@ -1220,7 +1211,7 @@ Qed.
 Theorem manifest_generator_compiler_soundness_app : forall et ls oldMan absMan amLib amConf,
   (* map_get (manifest_generator t tp) p = Some absMan -> *)
   manifest_generator_app' et oldMan = absMan ->
-  lib_supports_manifest_app amLib absMan ->
+  lib_supports_manifest amLib absMan ->
   manifest_compiler absMan amLib = amConf ->
   et_size et = length ls ->
   forall st,
@@ -1233,8 +1224,8 @@ Theorem manifest_generator_compiler_soundness_app : forall et ls oldMan absMan a
 
     exists ec st',
          (gen_appraise_AM et ls) st = (resultC ec, st')) \/ 
-    (exists st',
-         (gen_appraise_AM et ls) st = (errC (am_dispatch_error Runtime), st')
+    (exists st' errStr,
+         (gen_appraise_AM et ls) st = (errC (am_dispatch_error (Runtime errStr)), st')
     ).
 Proof.
   intros.
@@ -1243,7 +1234,7 @@ Proof.
   eapply well_formed_am_config_impl_executable_app.
   - unfold manifest_generator, e_empty in *; simpl in *.
     eapply manifest_support_am_config_impl_am_config_app.
-    * eapply manifest_support_am_config_compiler_app; eauto.
+    * eapply manifest_support_am_config_compiler; eauto.
 
 
     * (* NOTE: This is the important one, substitute proof of any manifest here *)

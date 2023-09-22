@@ -1,6 +1,6 @@
 Require Import Term_Defs_Core Term_Defs Manifest AM_St EqClass. (* OptMonad_Coq. *)
 
-Require Import Appraisal_IO_Stubs ErrorStMonad_Coq AM_Monad AM_St Manifest_Admits.
+Require Import Appraisal_IO_Stubs ErrorStMonad_Coq AM_Monad AM_St Manifest_Admits ErrorStringConstants.
 
 (*
 Definition checkASP (params:ASP_PARAMS) (bs:BS) : Opt BS :=
@@ -23,12 +23,12 @@ Admitted.
 *)
 
 Axiom decrypt_prim_runtime : forall bs params pk e,
-  decrypt_bs_to_rawev_prim bs params pk = errC e -> e = Runtime.
+  decrypt_bs_to_rawev_prim bs params pk = errC e -> e = (Runtime errStr_decryption_prim).
 
 Definition check_et_size (et:Evidence) (ls:RawEv) : ResultT unit DispatcherErrors := 
   match (eqb (et_size et) (length ls)) with 
   | true => resultC tt 
-  | false => errC Runtime
+  | false => errC (Runtime errStr_et_size)
   end.
 
 Definition decrypt_bs_to_rawev (bs:BS) (params:ASP_PARAMS) (ac:AM_Config) : ResultT RawEv DispatcherErrors :=

@@ -10,10 +10,10 @@ Import ListNotations.
 
 Inductive DispatcherErrors : Type :=
 | Unavailable   : DispatcherErrors
-| Runtime       : DispatcherErrors.
+| Runtime       : StringT -> DispatcherErrors.
 
 Inductive CallBackErrors : Type := 
-| messageLift   : string -> CallBackErrors.
+| messageLift   : StringT -> CallBackErrors.
 
 Definition ASPCallback (ErrType : Type) : Type := 
   ASP_PARAMS -> Plc -> BS -> RawEv -> ResultT BS ErrType.
@@ -72,7 +72,8 @@ Definition PlcMap := MapC Plc Address.
     Local_PubKeys     : MapD Plc PublicKey ;
   }.
 
-  
+
+  (*
  (* A ConcreteManifest is a refinement of Manifest with concrete parameters
     more suitable for extraction and deployment.  *)
   Record ConcreteManifest := {
@@ -92,6 +93,7 @@ Definition PlcMap := MapC Plc Address.
     UUID_Server     : ASP_Address ;
   }.
 
+
   Definition emptyConcreteMan : ConcreteManifest := {|
     my_plc := empty_Manifest_Plc; (* min_id_type; *)
     Concrete_policy := empty_PolicyT;
@@ -105,9 +107,11 @@ Definition PlcMap := MapC Plc Address.
     UUID_Server := empty_ASP_Address;
   |}.
 
+*)
+
 Record AM_Config : Type := 
   mkAmConfig {
-    concMan : ConcreteManifest ;
+    absMan : Manifest ;
     aspCb : (ASPCallback DispatcherErrors) ;
     app_aspCb : (ASPCallback DispatcherErrors) ;
     plcCb : PlcCallback ;
@@ -120,7 +124,7 @@ Definition empty_aspCb (ps:ASP_PARAMS) (p:Plc) (bs:BS) (rawev:RawEv) : ResultT B
 
   Definition empty_am_config : AM_Config :=
   mkAmConfig 
-    emptyConcreteMan 
+    empty_Manifest
     empty_aspCb
     empty_aspCb
     (fun x => errC Unavailable)
