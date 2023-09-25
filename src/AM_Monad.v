@@ -25,9 +25,9 @@ Definition run_am_app_comp{A:Type} (am_comp:AM A) (default_A:A) (b:bool): A :=
     end in 
   if(v)
   then 
-  (fromSome default_A optRes) 
-  else 
   (default_A)
+  else 
+  (fromSome default_A optRes)
   ) 
   else 
   (default_A).
