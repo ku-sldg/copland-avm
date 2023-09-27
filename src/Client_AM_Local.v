@@ -8,8 +8,12 @@ Require Import ManCompSoundness Manifest_Admits Disclose ErrorStringConstants.
 
 Require Import ManCompSoundness_Appraisal.
 
-Require Import StructTactics.
+Require Import Auto StructTactics.
 
+Require Import AM_Helpers.
+
+
+Require Import Coq.Program.Tactics.
 
 Require Import List.
 Import ListNotations.
@@ -67,61 +71,77 @@ Definition am_client_auth (t:Term) (myPlc:Plc) (pTo:Plc)
       Locate fromSome.
 *)
 
-Definition fromSomeOption{A:Type} (default:A) (opt:option A): A :=
-  match opt with
-  | Some x => x
-  | _ => default
-  end.
 
-Definition get_my_absman_generated (t:Term) (myPlc:Plc) : Manifest := 
-  let env := manifest_generator t myPlc in 
-  let maybe_absMan := map_get env myPlc in 
-    fromSomeOption empty_Manifest maybe_absMan.
 
-(*
-Note:  Moved these to IO_Stubs.v
-Definition lib_supports_manifest_bool (amlib:AM_Library) (m:Manifest) : bool.
-Admitted.
 
-Definition lib_supports_manifest_app_bool (amlib:AM_Library) (m:Manifest) : bool.
-Admitted.
-*)
+
+
+
+
+
+
+
+
+
+Ltac unfold_libsupports_defs := 
+  try (unfold 
+        lib_supports_aspids_bool, 
+        aspid_in_amlib_bool, 
+        lib_supports_uuid_plcs_bool,
+        uuid_plc_in_amlib_bool,
+        lib_supports_pubkey_plcs_bool,
+        pubkey_plc_in_amlib_bool,
+        lib_supports_appraisal_aspids_bool,
+        appraisal_aspid_in_amlib_bool in * ).
+
 
 Lemma lib_support_bool_iff_prop : forall amLib absMan,
 (lib_supports_manifest_bool amLib absMan = true) <->
 lib_supports_manifest amLib absMan.
 Proof.
-Admitted.
+  intros.
+  split; intros.
+  -
+    unfold lib_supports_manifest_bool in *.
+    unfold lib_supports_manifest in *.
+    repeat rewrite Bool.andb_true_iff in *.
+    destruct_conjs.
+
+    repeat (
+    split; intros;
+        unfold_libsupports_defs;
+        try rewrite forallb_forall in *;
+        try find_apply_hyp_hyp;
+        ff;
+        eauto).
+
+  -
+  unfold lib_supports_manifest_bool in *.
+  unfold lib_supports_manifest in *.
+  repeat rewrite Bool.andb_true_iff in *.
+  destruct_conjs.
+
+  split; intros;
+
+    repeat (
+        repeat (split; intros);
+        unfold_libsupports_defs;
+        rewrite forallb_forall in *;
+        intros;
+        unfold_libsupports_defs;
+        find_apply_hyp_hyp;
+        ff;
+        destruct_conjs;
+        solve_by_inversion).
+Qed.
+
 
 
 Definition run_cvm_local_am (t:Term) (myPlc:Plc) (ls:RawEv) : AM RawEv := 
   st <- get ;; 
   ret (run_cvm_rawEv t myPlc ls (amConfig st)).
 
-Definition config_AM_if_lib_supported (t:Term) (myPlc:Plc) (amLib:AM_Library) : AM unit := 
-  let absMan := get_my_absman_generated t myPlc in 
-  let supportsB := lib_supports_manifest_bool amLib absMan in 
-    if (supportsB) 
-    then (
-      let amConf := manifest_compiler absMan amLib in 
-      put_amConfig amConf
-    )
-    else (
-      am_failm (am_dispatch_error (Runtime errStr_lib_supports_man_check))
-    ).
 
-
-Definition config_AM_if_lib_supported_app (et:Evidence) (amLib:AM_Library) : AM unit := 
-  let absMan := manifest_generator_app et in 
-  let supportsB := lib_supports_manifest_bool amLib absMan in 
-    if (supportsB) 
-    then (
-      let amConf := manifest_compiler absMan amLib in 
-      put_amConfig amConf
-    )
-    else (
-      am_failm (am_dispatch_error (Runtime errStr_lib_supports_man_app_check))
-    ).
 
 
 Definition gen_authEvC_if_some_local (ot:option Term) (myPlc:Plc) (init_evc:EvC) (amLib:AM_Library) : AM EvC :=
