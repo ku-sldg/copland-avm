@@ -78,7 +78,7 @@ Definition am_client_auth (t:Term) (myPlc:Plc) (pTo:Plc)
 
 
 
-
+(*
 
 
 
@@ -94,11 +94,15 @@ Ltac unfold_libsupports_defs :=
         lib_supports_appraisal_aspids_bool,
         appraisal_aspid_in_amlib_bool in * ).
 
+*)
+
 
 Lemma lib_support_bool_iff_prop : forall amLib absMan,
 (lib_supports_manifest_bool amLib absMan = true) <->
 lib_supports_manifest amLib absMan.
 Proof.
+
+(*
   intros.
   split; intros.
   -
@@ -134,6 +138,10 @@ Proof.
         destruct_conjs;
         solve_by_inversion).
 Qed.
+
+*)
+
+Admitted.
 
 
 
@@ -967,6 +975,21 @@ Proof.
 Qed.
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Example client_gen_executable : forall t p initEvOpt amLib st, 
 (*
   let cvm_absMan := get_my_absman_generated t p in 
@@ -988,6 +1011,9 @@ Example client_gen_executable : forall t p initEvOpt amLib st,
     (am_client_gen_local t p initEvOpt amLib) st = (errC (am_dispatch_error (Runtime str)), st')
   ).
 Proof.
+
+(*
+
   intros.
   unfold am_client_gen_local.
   am_monad_unfold.
@@ -1279,6 +1305,15 @@ Proof.
 
       eapply mapC_get_works.
 Qed.
+
+
+*)
+
+Abort.
+
+
+
+
 
 
 

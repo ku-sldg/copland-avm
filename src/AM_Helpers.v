@@ -85,6 +85,7 @@ Definition appraisal_aspid_in_amlib_bool (al:AM_Library) (pr:Plc*ASP_ID)  : bool
   | None => false 
   end.
 
+(*
 
 Definition lib_supports_aspids_bool (ls:list ASP_ID) (al:AM_Library) : bool := 
   forallb (aspid_in_amlib_bool al) ls.
@@ -98,10 +99,50 @@ Definition lib_supports_pubkey_plcs_bool (ls:list Plc) (al:AM_Library) : bool :=
 Definition lib_supports_appraisal_aspids_bool (ls:list (Plc*ASP_ID)) (al:AM_Library) : bool := 
   forallb (appraisal_aspid_in_amlib_bool al) ls.
 
-  Search (list bool -> bool).
+*)
+
+
+Definition lib_omits_aspids (ls:list ASP_ID) (al:AM_Library) : list ASP_ID := 
+    List.filter (fun i => (negb (aspid_in_amlib_bool al i))) ls.
+
+Definition lib_omits_uuid_plcs (ls:list Plc) (al:AM_Library) : list Plc := 
+    List.filter (fun p => (negb (uuid_plc_in_amlib_bool al p))) ls.
+
+Definition lib_omits_pubkey_plcs (ls:list Plc) (al:AM_Library) : list Plc := 
+    List.filter (fun p => (negb (pubkey_plc_in_amlib_bool al p))) ls.
+
+Definition lib_omits_appraisal_aspids (ls:list (Plc*ASP_ID)) (al:AM_Library) : list (Plc*ASP_ID) := 
+    List.filter (fun i => (negb (appraisal_aspid_in_amlib_bool al i))) ls.
+
+Definition lib_omits_manifest (al:AM_Library) (am:Manifest) : Manifest := 
+    let aspid_list := am.(asps) in 
+    let uuid_plcs_list := am.(uuidPlcs) in 
+    let pubkey_plcs_list := am.(pubKeyPlcs) in 
+    let appraisal_asps_list := am.(appraisal_asps) in  
+
+        Build_Manifest 
+            am.(my_abstract_plc)
+            (lib_omits_aspids aspid_list al)
+            (lib_omits_appraisal_aspids appraisal_asps_list al)
+            (lib_omits_uuid_plcs uuid_plcs_list al)
+            (lib_omits_pubkey_plcs pubkey_plcs_list al)    
+            [] 
+            empty_PolicyT.
+                        
+
+
+Definition manifest_none_omitted (m:Manifest) : bool := 
+    match m with 
+    | Build_Manifest _ [] [] [] [] _ _ => true 
+    | _ => false 
+    end.
 
 
 Definition lib_supports_manifest_bool (al:AM_Library) (am:Manifest) : bool := 
+    manifest_none_omitted (lib_omits_manifest al am).
+
+(*
+
   let aspid_list := am.(asps) in 
   let uuid_plcs_list := am.(uuidPlcs) in 
   let pubkey_plcs_list := am.(pubKeyPlcs) in 
@@ -113,29 +154,43 @@ Definition lib_supports_manifest_bool (al:AM_Library) (am:Manifest) : bool :=
   let appraisal_aspids_list_bool := lib_supports_appraisal_aspids_bool appraisal_asps_list al in 
 
     andb (andb (andb aspid_list_bool uuid_plcs_list_bool) pubkey_plcs_list_bool) appraisal_aspids_list_bool.
+*)
+
+(*
+Definition lib_omits_manifest_am (al:AM_Library) (am:Manifest) : AM unit := 
+    let om := lib_omits_manifest al am in 
+    match (manifest_none_omitted om) with
+    | true => ret tt 
+    | false => am_failm (am_dispatch_error (Runtime (pretty_print_manifest om)))
+    end.
+*)
 
 
 Definition config_AM_if_lib_supported (t:Term) (myPlc:Plc) (amLib:AM_Library) : AM unit := 
     let absMan := get_my_absman_generated t myPlc in 
-    let supportsB := lib_supports_manifest_bool amLib absMan in 
+    let om := lib_omits_manifest amLib absMan in
+    let supportsB := manifest_none_omitted om (* lib_supports_manifest_bool amLib absMan *) in 
         if (supportsB) 
         then (
-        let amConf := manifest_compiler absMan amLib in 
-        put_amConfig amConf
+            let amConf := manifest_compiler absMan amLib in 
+                put_amConfig amConf
         )
         else (
-        am_failm (am_dispatch_error (Runtime errStr_lib_supports_man_check))
+            am_failm (am_dispatch_error (Runtime (pretty_print_manifest om)))
+        (* am_failm (am_dispatch_error (Runtime errStr_lib_supports_man_check)) *)
         ).
     
     
-    Definition config_AM_if_lib_supported_app (et:Evidence) (amLib:AM_Library) : AM unit := 
-    let absMan := manifest_generator_app et in 
-    let supportsB := lib_supports_manifest_bool amLib absMan in 
-        if (supportsB) 
-        then (
+Definition config_AM_if_lib_supported_app (et:Evidence) (amLib:AM_Library) : AM unit := 
+let absMan := manifest_generator_app et in 
+let om := lib_omits_manifest amLib absMan in
+let supportsB := manifest_none_omitted om (* lib_supports_manifest_bool amLib absMan *) in 
+    if (supportsB) 
+    then (
         let amConf := manifest_compiler absMan amLib in 
-        put_amConfig amConf
-        )
-        else (
-        am_failm (am_dispatch_error (Runtime errStr_lib_supports_man_app_check))
-        ).
+            put_amConfig amConf
+    )
+    else (
+        am_failm (am_dispatch_error (Runtime (pretty_print_manifest om)))
+    (* am_failm (am_dispatch_error (Runtime errStr_lib_supports_man_app_check)) *)
+    ).

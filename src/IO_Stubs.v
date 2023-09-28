@@ -80,3 +80,6 @@ Admitted.
 
 Definition print_auth_tok (tok:ReqAuthTok) : unit.
 Admitted.
+
+Definition pretty_print_manifest (m:Manifest) : StringT.
+Admitted.
