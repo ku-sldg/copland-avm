@@ -40,7 +40,7 @@ Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc)
     
     
     ret (run_cvm_rawEv t myPl init_ev ac)
-    | false => am_failm (am_error errStr_privPolicy)
+    | false => am_failm (am_error errStr_disclosePolicy)
     end
       
   | false => am_failm (am_error errStr_app_auth_tok)

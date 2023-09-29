@@ -1426,12 +1426,9 @@ Defined.
   - (* at case *)
   repeat ff;
   unfold doRemote_session' in *;
-  repeat ff.
-  repeat ff.
-  monad_unfold.
-  repeat ff.
-  invc Heqr3.
-    lia.
+  repeat Auto.ff.
+  lia.
+
   - (* lseq case *)
     wrap_ccp_anno.
 
@@ -1772,8 +1769,8 @@ Proof.
     
   - (* at case *)
     wrap_ccp.
-    repeat ff.
-    unfold do_remote in *.
+    repeat Auto.ff.
+    (* unfold do_remote in *. *)
     repeat ff;
     unfold doRemote_session' in *;
     repeat ff.
@@ -1781,9 +1778,8 @@ Proof.
     repeat ff.
     unfold doRemote_session' in *;
     repeat ff.
-    monad_unfold.
-    repeat ff.
-    invc Heqr0.
+    repeat monad_unfold.
+    (* invc Heqr0. *)
     unfold do_remote in *.
     repeat ff.
     eapply wf_ec_preserved_remote; eauto.
@@ -2480,10 +2476,8 @@ Proof.
     rewrite <- ccp_iff_cc in *.
     dd.
     repeat Auto.ff.
-    (*
     unfold doRemote_session' in *; 
     repeat Auto.ff.
-    *)
 
 
     

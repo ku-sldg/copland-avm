@@ -187,7 +187,7 @@ Definition check_cvm_policy (t:Term) (pTo:Plc) (et:Evidence) : CVM unit :=
   pol <- get_cvm_policy ;;
     match (policy_list_not_disclosed t pTo et pol) with
     | true => ret tt
-    | false => failm (dispatch_error (Runtime errStr_privPolicy))
+    | false => failm (dispatch_error (Runtime errStr_disclosePolicy))
     end.
 
 Definition doRemote_session' (t:Term) (pTo:Plc) (e:EvC) : CVM EvC := 

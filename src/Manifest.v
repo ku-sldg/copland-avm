@@ -5,6 +5,8 @@
 Require Import AbstractedTypes Term_Defs_Core Maps String
   Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq.
 
+Require Import Example_Phrases_Admits.
+
 Require Import List.
 Import ListNotations.
 
@@ -35,6 +37,7 @@ Definition PlcMap := MapC Plc Address.
 Definition PolicyT : Set :=  list (Plc * ASP_ID).
 
 Definition empty_PolicyT : PolicyT := [].
+  (* [(P0, attest_id)]. *)
 
 
 (** [Manifest] defines an attestation manger, a list of ASPs, and other

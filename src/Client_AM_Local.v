@@ -178,7 +178,7 @@ Definition check_disclosure_policy (t:Term) (p:Plc) (e:Evidence) : AM unit :=
   policy <- get_am_policy ;; 
   if (policy_list_not_disclosed t p e policy)
   then ret tt 
-  else (am_failm (am_dispatch_error (Runtime errStr_privPolicy))).
+  else (am_failm (am_dispatch_error (Runtime errStr_disclosePolicy))).
 
 Definition am_client_gen_local (t:Term) (myPlc:Plc) (initEvOpt:option EvC) 
     (* (authPhrase:option Term) *) (amLib:AM_Library) : AM AM_Result := 
