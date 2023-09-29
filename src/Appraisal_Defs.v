@@ -41,9 +41,9 @@ match params with
 end.
 
 Definition decrypt_bs_to_rawev' (bs:BS) (params:ASP_PARAMS) (et:Evidence) : AM RawEv :=
-  (* ac <- get_amConfig ;; *)
-  st <- (@get AM_St AM_Error) ;;
-  let ac := (amConfig st) in
+  ac <- get_AM_amConfig ;;
+  (* st <- (@get AM_St AM_Error) ;;
+  let ac := (amConfig st) in *)
   match (decrypt_bs_to_rawev bs params ac) with 
   | resultC r => 
     match (check_et_size et r) with
@@ -57,9 +57,10 @@ Definition check_asp_EXTD (params:ASP_PARAMS) (p:Plc) (sig:BS) (ls:RawEv) (ac : 
   ac.(app_aspCb) params p sig ls.
 
 Definition check_asp_EXTD' (params:ASP_PARAMS) (p:Plc) (sig:BS) (ls:RawEv) : AM BS :=
-  (* ac <- get_amConfig ;; *)
+  ac <- get_AM_amConfig ;;
+  (*
   st <- (@get AM_St AM_Error) ;;
-  let ac := (amConfig st) in
+  let ac := (amConfig st) in *)
   match (check_asp_EXTD params p sig ls ac) with
   | resultC r => ret r
   | errC e => am_failm (am_dispatch_error e)

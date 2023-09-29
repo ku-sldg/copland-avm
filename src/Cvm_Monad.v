@@ -20,55 +20,49 @@ Require Export Cvm_St ErrorStMonad_Coq IO_Stubs.
 (** * CVM monadic primitive operations *)
 
 Definition put_ev (e:EvC) : CVM unit :=
-  st <- (@get cvm_st CVM_Error) ;;
+  st <- get ;;
      let tr' := st_trace st in
      let p' := st_pl st in
      let i := st_evid st in
      let ac := st_AM_config st in
-     (@put cvm_st CVM_Error) (mk_st e tr' p' i ac).
+     put (mk_st e tr' p' i ac).
 
 Definition put_pl (p:Plc) : CVM unit :=
-  st <- (@get cvm_st CVM_Error) ;;
+  st <- get ;;
      let tr' := st_trace st in
      let e' := st_ev st in
      let i := st_evid st in
      let ac := st_AM_config st in
-     (@put cvm_st CVM_Error) (mk_st e' tr' p i ac).
+     put (mk_st e' tr' p i ac).
 
 Definition get_ev : CVM EvC :=
-  @bind cvm_st cvm_st EvC CVM_Error (@get cvm_st CVM_Error) (fun st => (ret (st_ev st))).
-  (*
-  st <- (@get cvm_st CVM_Error) ;;
+  st <- get ;;
   ret (st_ev st).
-  *)
-Check get_ev.
 
 Definition get_pl : CVM Plc :=
-  st <- (@get cvm_st CVM_Error) ;;
+  st <- get ;;
   ret (st_pl st).
 
-
-
-Definition get_amConfig : CVM AM_Config :=
+Definition get_CVM_amConfig : CVM AM_Config :=
   (* TODO:  consider moving this functionality to a Reader-like monad 
         i.e. an 'ask' primitive *)
-  st <- (@get cvm_st CVM_Error) ;;
+  st <- get ;;
   ret (st_AM_config st).
 
 Definition inc_id : CVM Event_ID :=
-  st <- (@get cvm_st CVM_Error) ;;
+  st <- get ;;
     let tr' := st_trace st in
     let e' := st_ev st in
     let p' := st_pl st in
     let i := st_evid st in
     let ac := st_AM_config st in
-    (@put cvm_st CVM_Error) (mk_st e' tr' p' (Nat.add i (S O)) ac) ;;
+    put (mk_st e' tr' p' (Nat.add i (S O)) ac) ;;
     ret i.
 
 Definition modify_evm (f:EvC -> EvC) : CVM unit :=
-  st <- (@get cvm_st CVM_Error) ;;
+  st <- get ;;
   let '{| st_ev := e; st_trace := tr; st_pl := p; st_evid := i; st_AM_config := ac |} := st in
-  (@put cvm_st CVM_Error) (mk_st (f e) tr p i ac).
+  put (mk_st (f e) tr p i ac).
 
 Definition add_trace (tr':list Ev) : cvm_st -> cvm_st :=
   fun '{| st_ev := e; st_trace := tr; st_pl := p; st_evid := i; st_AM_config := ac |} =>
@@ -107,11 +101,7 @@ Definition fwd_asp (fwd:FWD) (bs:BS) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
   end.
 
 Definition do_asp' (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) : CVM BS :=
-  ac <- get_amConfig  ;;
-  (*
-  st <- (@get cvm_st CVM_Error) ;;
-  let ac := (st_AM_config st) in
-  *)
+  ac <- get_CVM_amConfig  ;;
   match (do_asp params e mpl x ac) with
   | resultC r => ret r
   | errC e => failm (dispatch_error e)
@@ -157,26 +147,26 @@ Definition do_prim (a:ASP_Core) (* (ac : AM_Config) *) : CVM EvC :=
 (* Monadic helper function to simulate a span of remote event IDs 
    corresponding to the size of a Term *)
 Definition inc_remote_event_ids (t:Term) : CVM unit :=
-  st <- (@get cvm_st CVM_Error) ;;
+  st <- get ;;
     let tr' := st_trace st in
     let e' := st_ev st in
     let p' := st_pl st in
     let i := st_evid st in
     let new_i := Nat.add i (event_id_span' t) in
     let ac := st_AM_config st in
-    (@put cvm_st CVM_Error) (mk_st e' tr' p' new_i ac).
+    put (mk_st e' tr' p' new_i ac).
 
 (* Monadic helper function to simulate a span of parallel event IDs 
    corresponding to the size of a Core_Term *)
 Definition inc_par_event_ids (t:Core_Term) : CVM unit :=
-  st <- (@get cvm_st CVM_Error) ;;
+  st <- get ;;
     let tr' := st_trace st in
     let e' := st_ev st in
     let p' := st_pl st in
     let i := st_evid st in
     let new_i := Nat.add i (event_id_span t) in
     let ac := st_AM_config st in
-    (@put cvm_st CVM_Error) (mk_st e' tr' p' new_i ac).
+    put (mk_st e' tr' p' new_i ac).
   
 (* Primitive monadic communication primitives 
    (some rely on Admitted IO Stubs). *)
@@ -190,10 +180,7 @@ Definition tag_RPY (p:Plc) (q:Plc) (e:EvC) : CVM unit :=
   add_tracem [rpy rpyi p q (get_et e)].
 
 Definition get_cvm_policy : CVM PolicyT := 
-  ac <- get_amConfig ;;
-  (*
-  st <- (@get cvm_st CVM_Error) ;;
-  let ac := (st_AM_config st) in *)
+  ac <- get_CVM_amConfig ;;
   ret (policy (absMan ac)).
 
 Definition check_cvm_policy (t:Term) (pTo:Plc) (et:Evidence) : CVM unit := 
@@ -205,11 +192,7 @@ Definition check_cvm_policy (t:Term) (pTo:Plc) (et:Evidence) : CVM unit :=
 
 Definition doRemote_session' (t:Term) (pTo:Plc) (e:EvC) : CVM EvC := 
   check_cvm_policy t pTo (get_et e) ;;
-  ac <- get_amConfig ;;
-  (*
-  st <- (@get cvm_st CVM_Error) ;;
-  let ac := (st_AM_config st) in
-  *)
+  ac <- get_CVM_amConfig ;;
   match (do_remote t pTo e ac) with 
   | resultC ev => ret (evc ev (eval t pTo (get_et e)))  
   | errC e => failm (dispatch_error e)
@@ -263,6 +246,7 @@ Ltac monad_unfold :=
 
   get_ev,
   get_pl,
+  get_CVM_amConfig,
   add_tracem,
   modify_evm,
   add_trace,

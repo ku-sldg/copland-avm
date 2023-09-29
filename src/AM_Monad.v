@@ -32,23 +32,22 @@ Definition run_am_app_comp{A:Type} (am_comp:AM A) (default_A:A) (b:bool): A :=
   else 
   (default_A).
 
-(*
-Definition get_amConfig : AM AM_Config :=
+
+Definition get_AM_amConfig : AM AM_Config :=
     (* TODO:  consider moving this functionality to a Reader-like monad 
           i.e. an 'ask' primitive *)
     st <- get ;;
     ret (amConfig st).
-*)
 
 
 
 (* This should only be used sparingly for now...
-    may need a more principled interface for this... *)
-  Definition put_amConfig (ac:AM_Config) : AM unit :=
-    oldSt <- get ;;
-    let oldMap := am_nonceMap oldSt in
-    let oldId := am_nonceId oldSt in
-    put (mkAM_St oldMap oldId ac).
+  may need a more principled interface for this... *)
+Definition put_amConfig (ac:AM_Config) : AM unit :=
+  oldSt <- get ;;
+  let oldMap := am_nonceMap oldSt in
+  let oldId := am_nonceId oldSt in
+  put (mkAM_St oldMap oldId ac).
 
 Definition am_newNonce (bs:BS) : AM nat :=
   oldSt <- get ;;
@@ -77,7 +76,7 @@ Definition am_runCvm_nonce (t:Term) (p:Plc) (bs:BS) (ac : AM_Config) : AM (nat *
 
   Ltac am_monad_unfold :=
     repeat unfold
-    (* get_amConfig, *)
+    get_AM_amConfig,
     put_amConfig,
     am_newNonce,
     am_getNonce,
