@@ -17,10 +17,6 @@ Import ListNotations.
 Require Export Cvm_St ErrorStMonad_Coq IO_Stubs.
 
 
-Check get.
-Check Err.
-
-
 (** * CVM monadic primitive operations *)
 
 Definition put_ev (e:EvC) : CVM unit :=
@@ -39,7 +35,6 @@ Definition put_pl (p:Plc) : CVM unit :=
      let ac := st_AM_config st in
      (@put cvm_st CVM_Error) (mk_st e' tr' p i ac).
 
-Check @bind.
 Definition get_ev : CVM EvC :=
   @bind cvm_st cvm_st EvC CVM_Error (@get cvm_st CVM_Error) (fun st => (ret (st_ev st))).
   (*

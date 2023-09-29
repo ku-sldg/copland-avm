@@ -681,7 +681,7 @@ Proof.
             uuidPlcs := [p];
             pubKeyPlcs := [];
             targetPlcs := [];
-            policy := Manifest_Admits.empty_PolicyT
+            policy := empty_PolicyT
           |})) p0 = Some v).
           {
 
@@ -694,7 +694,7 @@ Proof.
                  uuidPlcs := [p];
                  pubKeyPlcs := [];
                  targetPlcs := [];
-                 policy := Manifest_Admits.empty_PolicyT
+                 policy := empty_PolicyT
                |}) p0 = Some v).
                {
                 eexists.
@@ -726,7 +726,7 @@ Proof.
                 uuidPlcs := [p];
                 pubKeyPlcs := [];
                 targetPlcs := [];
-                policy := Manifest_Admits.empty_PolicyT
+                policy := empty_PolicyT
               |}
 
               m).
@@ -743,7 +743,7 @@ Proof.
         uuidPlcs := [p];
         pubKeyPlcs := [];
         targetPlcs := [];
-        policy := Manifest_Admits.empty_PolicyT
+        policy := empty_PolicyT
       |})])
 
       (manifest_generator' p t
@@ -755,7 +755,7 @@ Proof.
                 uuidPlcs := [p];
                 pubKeyPlcs := [];
                 targetPlcs := [];
-                policy := Manifest_Admits.empty_PolicyT
+                policy := empty_PolicyT
               |})]) 
 
 
@@ -996,7 +996,7 @@ Proof.
                   uuidPlcs := [];
                   pubKeyPlcs := [];
                   targetPlcs := [];
-                  policy := Manifest_Admits.empty_PolicyT
+                  policy := empty_PolicyT
                 |}
             end in
       {|

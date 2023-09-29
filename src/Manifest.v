@@ -32,6 +32,11 @@ Definition PlcMap := MapC Plc Address.
 *)
 
 
+Definition PolicyT : Set :=  list (Plc * ASP_ID).
+
+Definition empty_PolicyT : PolicyT := [].
+
+
 (** [Manifest] defines an attestation manger, a list of ASPs, and other
    * managers it is aware of (a single AM and its interconnections).
    *)
