@@ -122,7 +122,7 @@ Import ListNotations.
 
   (* This is a rough type signature for the "manifest compiler".  Still some details to be ironed out... *)
   Definition manifest_compiler (m : Manifest) (al : AM_Library) : AM_Config :=
-  (* The output of this function is a Concrete manifest, and a 
+  (* The output of this function is an AM Config, and a 
   function that can be used like "check_asp_EXTD".
   This function will be used in extraction to either dispatch ASPs to the ASP server, or call a local callback *)
   {|

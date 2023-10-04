@@ -58,8 +58,8 @@ Definition empty_PolicyT : PolicyT := [].
   Definition empty_Manifest : Manifest :=
     Build_Manifest empty_Manifest_Plc [] [] [] [] [] empty_PolicyT.
 
-(** Representation of a system's environment/resources used to populate a 
-    ConcreteManifest based on an abstract Manifest. *)
+(** Representation of a system's environment/resources used to populate an 
+    AM Config based on a Manifest. *)
   Record AM_Library := {
     ASPServer_Cb        : ASP_Address -> (ASPCallback CallBackErrors) ;
     PubKeyServer_Cb     : ASP_Address -> PubKeyCallback ;
@@ -79,43 +79,6 @@ Definition empty_PolicyT : PolicyT := [].
     Local_Plcs        : MapD Plc UUID ;
     Local_PubKeys     : MapD Plc PublicKey ;
   }.
-
-
-  (*
- (* A ConcreteManifest is a refinement of Manifest with concrete parameters
-    more suitable for extraction and deployment.  *)
-  Record ConcreteManifest := {
-    my_plc          : Plc ; 
-    Concrete_policy : PolicyT;
-
-    (* Local Mappings *)
-    Concrete_ASPs         : list ASP_ID ;
-    Concrete_Plcs         : list Plc ;
-    Concrete_PubKeys      : list Plc ;
-    Concrete_Targets      : list Plc ;
-
-    (* Servers *)
-    ASP_Server      : ASP_Address ;
-    PubKey_Server   : ASP_Address ;
-    Plc_Server      : ASP_Address ;
-    UUID_Server     : ASP_Address ;
-  }.
-
-
-  Definition emptyConcreteMan : ConcreteManifest := {|
-    my_plc := empty_Manifest_Plc; (* min_id_type; *)
-    Concrete_policy := empty_PolicyT;
-    Concrete_ASPs := nil;
-    Concrete_Plcs := nil;
-    Concrete_PubKeys := nil;
-    Concrete_Targets := nil;
-    ASP_Server := empty_ASP_Address;
-    PubKey_Server := empty_ASP_Address;
-    Plc_Server := empty_ASP_Address;
-    UUID_Server := empty_ASP_Address;
-  |}.
-
-*)
 
 Record AM_Config : Type := 
   mkAmConfig {
