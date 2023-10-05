@@ -65,7 +65,7 @@ Separate Extraction run_cvm manifest_compiler
 		    run_am_app_comp 
 			handle_AM_request am_client_auth am_client_gen 
 			term_list ssl_sig_parameterized kim_meas
-		    par_mut_p0 par_mut_p1 layered_bg_strong
+		    par_mut_p0 par_mut_p1 layered_bg_strong cm_meas
 		    man_gen_run_attify empty_am_result
         am_client_gen_local
         run_am_app_comp.

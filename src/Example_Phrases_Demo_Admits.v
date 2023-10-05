@@ -56,6 +56,10 @@ Definition kim_meas_targid : ASP_ID. Admitted.
 Definition kim_meas_aspid : ASP_ID. Admitted.
 Definition kim_meas_args : list Arg. Admitted.
 
+Definition cm_targid : ASP_ID. Admitted.
+Definition cm_aspid : ASP_ID. Admitted.
+Definition cm_args : list Arg. Admitted.
+
 
 (*
 Definition cal_ak_targid : ASP_ID := "" % string.
