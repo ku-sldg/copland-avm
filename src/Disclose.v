@@ -17,7 +17,9 @@ Require Import Coq.Program.Tactics PeanoNat Lia.
 Require Import List.
 Import ListNotations.
 
+(*
 Set Nested Proofs Allowed.
+*)
 
 Axiom cvm_thread_in_ev : forall n p ev t e blah,
 In ev ([cvm_thread_start n p (copland_compile t) e] ++ blah ++ [cvm_thread_end 0]) -> 

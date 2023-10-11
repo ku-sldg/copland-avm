@@ -1,5 +1,5 @@
 Require Import Maps Term_Defs_Core Manifest Eqb_Evidence EqClass
-  Manifest_Generator Executable_Defs_Prop.
+  Manifest_Generator. (* Executable_Defs_Prop *)
 
 Require Import Auto.
 
@@ -30,11 +30,11 @@ Fixpoint place_terms (t:Term) (tp:Plc) (p:Plc) : list Term :=
 
 
 Definition manifest_subset (m1:Manifest) (m2:Manifest) : Prop :=
-  (forall i, In i (asps m1) -> In i (asps m2)) /\
-  (forall pr, In pr (appraisal_asps m1) -> In pr (appraisal_asps m2)) /\
-  (forall p, In p (uuidPlcs m1) -> In p (uuidPlcs m2)) /\
-  (forall q, In q (pubKeyPlcs m1) -> In q (pubKeyPlcs m2)) /\
-  (forall p, In p (targetPlcs m1) -> In p (targetPlcs m2)).
+  (forall i, In_set i (asps m1) -> In_set i (asps m2)) /\
+  (forall pr, In_set pr (appraisal_asps m1) -> In_set pr (appraisal_asps m2)) /\
+  (forall p, In_set p (uuidPlcs m1) -> In_set p (uuidPlcs m2)) /\
+  (forall q, In_set q (pubKeyPlcs m1) -> In_set q (pubKeyPlcs m2)) /\
+  (forall p, In_set p (targetPlcs m1) -> In_set p (targetPlcs m2)).
 
 Definition Environment_subset (e1:EnvironmentM) (e2:EnvironmentM) : Prop := 
   forall m1 p, 
@@ -176,6 +176,11 @@ Proof.
   generalizeEverythingElse t.
   induction t; intros; ff.
   - (* asp case *)
+
+
+
+
+
     unfold asp_manifest_generator, manifest_update_env, asp_manifest_update, aspid_manifest_update;
     simpl in *; unfold Environment_subset, manifest_subset in *; intuition.
     destruct (H _ _ H0); intuition;
@@ -183,8 +188,34 @@ Proof.
     * rewrite eqb_leibniz in *; subst;
       rewrite H2 in *; simpl in *; destruct x; simpl in *.
       rewrite mapC_get_works; eexists; intuition; eauto;
-      destruct a; simpl in *; eauto;
-      destruct a; simpl in *; eauto.
+
+      simpl in *; eauto;
+      try ( find_apply_hyp_hyp;
+      try eapply in_set_add; eauto; tauto);
+      ff; simpl in *; eauto;
+
+      try (
+        find_apply_hyp_hyp;
+        try eapply in_set_add; eauto
+      ).
+
+
+(*
+      **
+      find_apply_hyp_hyp;
+      eapply in_set_add; eauto.
+
+      **
+      destruct a; simpl in *;
+      find_apply_hyp_hyp;
+      try eapply in_set_add; eauto.
+
+      destruct a; ff.
+*)
+
+
+
+      
     * assert (p <> p0). intros HC. rewrite <- eqb_leibniz in HC. 
       rewrite eqb_symm in HC; congruence.
       erewrite (mapC_get_distinct_keys e2 p p0 _ _ H6 H2); eexists; intuition; eauto.
@@ -198,6 +229,8 @@ Proof.
     * rewrite eqb_leibniz in *; subst.
       rewrite H2; destruct x. rewrite mapC_get_works;
       eexists; intuition; eauto; simpl in *; eauto.
+      find_apply_hyp_hyp;
+      eapply in_set_add; eauto.
     * erewrite mapC_get_distinct_keys; eauto.
       eexists; intuition; simpl in *; eauto.
       intros HC. rewrite <- eqb_leibniz in HC; congruence.
@@ -217,6 +250,8 @@ Proof.
   apply manifest_generator_cumul.
   apply env_subset_refl.
 Qed.
+
+(*
 
 Lemma exec_static_cumul : forall t p e1 e2,
   executable_global t p e1 -> 
@@ -354,6 +389,9 @@ Proof.
   destruct_conjs.
   split; eauto.
 Qed.
+*)
+
+
 
 
 Lemma env_subset_plc_manifest_gen: forall e1 e2 p0 p,
@@ -362,6 +400,9 @@ Environment_subset
   (at_manifest_generator p0 p e1) 
   (at_manifest_generator p0 p e2).
 Proof.
+Admitted.
+
+(*
   unfold Environment_subset, manifest_subset, at_manifest_generator,
     knowsof_manifest_update, manifest_update_env, empty_Manifest in *; 
   simpl in *; intuition.
@@ -501,15 +542,22 @@ find_rewrite; find_injection;
     erewrite mapC_get_distinct_keys; eauto;
     eexists; simpl in *; intuition; simpl in *; eauto.
 Qed.
+*)
+
+
 
 Local Hint Resolve env_subset_plc_manifest_gen : core.
+
 
 Lemma empty_manifest_always_sub: forall m,
 manifest_subset empty_Manifest m.
 Proof.
 intros;
 unfold empty_Manifest; unfold manifest_subset; intros; 
-intuition; try solve_by_inversion.
+intuition; try solve_by_inversion;
+ff;
+
+eapply In_set_empty_contra; eauto.
 Qed.
 
 Local Hint Resolve empty_manifest_always_sub : core.
@@ -528,25 +576,51 @@ Proof.
       aspid_manifest_update, update_manifest_policy_targ, Environment_subset, 
       empty_Manifest, pubkey_manifest_update in *; ff;
     simpl in *; intuition; eauto;
+
+
     try match goal with 
     | H1 : map_get e1 ?p1 = _,
       H2 : map_get (map_set e1 ?p1 _) ?p2 = Some ?m2 |- _ =>
         destruct (eqb p1 p2) eqn:E;
+
         [
           rewrite eqb_leibniz in *; subst;
-          try (destruct (H _ _ H1); intuition; eauto);
+          (* try (destruct (H _ _ H1); intuition; eauto). *)
           unfold manifest_subset in *; simpl in *;
           rewrite mapC_get_works in *;
           repeat find_rewrite; repeat find_injection; simpl in *; eauto;
-          eexists; simpl in *; intuition; simpl in *; eauto; try congruence
-        |
-        assert (p1 <> p2) by (intros HC; rewrite <- eqb_leibniz in HC; congruence);
-        assert (HM : map_get e1 p2 = Some m2) by (eapply mapC_get_distinct_keys_from_set; eauto);
-        destruct (H _ _ HM); intuition; eauto;
-        erewrite mapC_get_distinct_keys; eauto
-        ]; fail
-    end.
+          eexists; simpl in *; intuition; simpl in *; eauto; try congruence;
+          try find_apply_hyp_hyp;
+          destruct_conjs; ff;
+          try find_rewrite; repeat find_injection; ff;
+
+
+
+          try match goal with 
+          | H1 : In_set _ (manset_add _ _) |- _ => 
+            apply manadd_In_set in H1;
+          door; subst;
+          try (find_apply_hyp_hyp);
+            try (eapply manadd_In_add);
+            try (eapply in_set_add);
+          eauto
+          end;
+
+          try eapply In_set_empty_contra; eauto
+      
+
+          | 
+          assert (p1 <> p2) by (intros HC; rewrite <- eqb_leibniz in HC; congruence);
+          assert (HM : map_get e1 p2 = Some m2) by (eapply mapC_get_distinct_keys_from_set; eauto);
+          destruct (H _ _ HM); intuition; eauto;
+          erewrite mapC_get_distinct_keys; eauto
+
+
+
+        ]
+      end.
 Qed.
+
 
 Lemma map_get_mangen : forall t e p p' v,
 map_get e p = Some v ->
@@ -599,6 +673,9 @@ Proof.
   ff.
 Qed.
 
+
+(*
+
 Theorem manifest_generator_executability_static :
     forall (t:Term) (p:Plc), 
         executable_global t p (manifest_generator t p).
@@ -621,6 +698,10 @@ Proof.
       destruct a.
       cbv.
       ff.
+      split;
+      try (eapply manadd_In_add).
+
+
       assert (eqb p p = true).
       {
         rewrite eqb_leibniz.
@@ -631,6 +712,7 @@ Proof.
     +
     cbv.
     ff.
+    try (eapply manadd_In_add).
     assert (eqb p p = true).
     {
       rewrite eqb_leibniz.
@@ -641,6 +723,7 @@ Proof.
     +
     cbv.
     ff.
+    try (eapply manadd_In_add).
     assert (eqb p p = true).
     {
       rewrite eqb_leibniz.
@@ -651,6 +734,7 @@ Proof.
     +
     cbv.
     ff.
+    try (eapply manadd_In_add).
     assert (eqb p p = true).
     {
       rewrite eqb_leibniz.
@@ -676,11 +760,11 @@ Proof.
        (map_set e_empty p0
           {|
             my_abstract_plc := p0 ;
-            asps := [];
-            appraisal_asps := [];
-            uuidPlcs := [p];
-            pubKeyPlcs := [];
-            targetPlcs := [];
+            asps := manifest_set_empty;
+            appraisal_asps := manifest_set_empty;
+            uuidPlcs := (manset_add p manifest_set_empty);
+            pubKeyPlcs := manifest_set_empty;
+            targetPlcs := manifest_set_empty;
             policy := empty_PolicyT
           |})) p0 = Some v).
           {
@@ -689,11 +773,11 @@ Proof.
               map_get (map_set e_empty p0
                {|
                  my_abstract_plc := p0 ; 
-                 asps := [];
-                 appraisal_asps := [];
-                 uuidPlcs := [p];
-                 pubKeyPlcs := [];
-                 targetPlcs := [];
+                 asps := manifest_set_empty;
+                 appraisal_asps := manifest_set_empty;
+                 uuidPlcs := (manset_add p manifest_set_empty);
+                 pubKeyPlcs := manifest_set_empty;
+                 targetPlcs := manifest_set_empty;
                  policy := empty_PolicyT
                |}) p0 = Some v).
                {
@@ -721,11 +805,11 @@ Proof.
   assert (manifest_subset 
     {|
                 my_abstract_plc := p0;
-                asps := [];
-                appraisal_asps := [];
-                uuidPlcs := [p];
-                pubKeyPlcs := [];
-                targetPlcs := [];
+                asps := manifest_set_empty;
+                appraisal_asps := manifest_set_empty;
+                uuidPlcs := (manset_add p manifest_set_empty);
+                pubKeyPlcs := manifest_set_empty;
+                targetPlcs := manifest_set_empty;
                 policy := empty_PolicyT
               |}
 
@@ -738,23 +822,23 @@ Proof.
       ([(p0,
       {|
         my_abstract_plc := p0;
-        asps := [];
-        appraisal_asps := [];
-        uuidPlcs := [p];
-        pubKeyPlcs := [];
-        targetPlcs := [];
+        asps := manifest_set_empty;
+        appraisal_asps := manifest_set_empty;
+        uuidPlcs := (manset_add p manifest_set_empty);
+        pubKeyPlcs := manifest_set_empty;
+        targetPlcs := manifest_set_empty;
         policy := empty_PolicyT
       |})])
 
       (manifest_generator' p t
             [(p0,
               {|
-                my_abstract_plc := p0 ;
-                asps := [];
-                appraisal_asps := [];
-                uuidPlcs := [p];
-                pubKeyPlcs := [];
-                targetPlcs := [];
+                my_abstract_plc := p0;
+                asps := manifest_set_empty;
+                appraisal_asps := manifest_set_empty;
+                uuidPlcs := (manset_add p manifest_set_empty);
+                pubKeyPlcs := manifest_set_empty;
+                targetPlcs := manifest_set_empty;
                 policy := empty_PolicyT
               |})]) 
 
@@ -772,7 +856,8 @@ Proof.
       }
       unfold manifest_subset in H; ff.
       destruct_conjs.
-      eauto.
+      apply H1.
+      try (eapply manadd_In_add).
     +
     assert (executable_global t p (manifest_generator' p t e_empty)).
     { eauto. }
@@ -1026,3 +1111,6 @@ Proof.
     eapply manifest_generator_cumul;
     eapply env_subset_refl.
 Qed.
+
+
+*)

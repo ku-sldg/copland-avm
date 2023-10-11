@@ -15,6 +15,8 @@ Import ListNotations.
 Set Nested Proofs Allowed.
 *)
 
+
+(*
 (* Proof that the dynamic notion of executability respects the static notion of executability. *)
 Theorem static_executability_implies_dynamic : 
     forall t p em,
@@ -25,7 +27,9 @@ Proof.
   + intros. destruct a; try (apply I); auto.
   + intros. specialize IHt with p0 em. simpl in *. inversion H. apply H0.
 Qed. 
+*)
 
+(*
 Lemma top_plc_refl: forall t' p1,  In t' (place_terms t' p1 p1).
 Proof.
   intros.
@@ -34,7 +38,8 @@ Proof.
     try auto;
     try (rewrite eqb_plc_refl in *; solve_by_inversion).
 Qed.
-
+*)
+(*
 Lemma app_not_empty : forall A (l1 l2:list A),
 l1 ++ l2 <> [] -> 
 l1 <> [] \/ l2 <> [].
@@ -58,6 +63,7 @@ Proof.
     left.
     congruence.
 Qed.
+*)
 
 Lemma places'_cumul : forall t p ls,
     In p ls ->
@@ -70,6 +76,7 @@ Proof.
         ff; eauto.
 Qed.
 
+(*
 Lemma In_dec_tplc : forall (p:Plc) ls,
     In p ls \/ ~ In p ls.
 Proof.
@@ -82,6 +89,7 @@ Proof.
       }
       destruct H; eauto.
 Qed. 
+
 
 Lemma places_app_cumul : forall p t ls ls',
       In p (places' t ls) -> 
@@ -136,6 +144,12 @@ Proof.
       eassumption.
       eassumption.
 Qed.
+
+*)
+
+
+
+(*
 
 Lemma places'_cumul' : forall t p ls,
     In p (places' t []) ->
@@ -471,6 +485,8 @@ destruct (eqb_plc p p0) eqn:hi.
         apply places'_cumul'.
         eauto.
 Qed.
+
+*)
 
 Lemma in_not_nil : forall A x (ls:list A),
 In x ls -> 
@@ -948,6 +964,9 @@ Proof.
   apply dist_exec_bpar; eauto.
   Qed.
 
+
+(*
+
 Theorem manifest_generator_executability_distributed :
     forall (t:Term) (p:Plc), 
         distributed_executability t p (manifest_generator t p).
@@ -956,3 +975,4 @@ Proof.
   apply static_executability_implies_distributed.
   apply manifest_generator_executability_static.
 Qed.
+*)

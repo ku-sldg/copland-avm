@@ -1,6 +1,6 @@
-Require Import Term_Defs_Core Params_Admits Manifest Executable_Dec
-               Example_Phrases_Admits Example_Phrases Eqb_Evidence
-               Executable_Defs_Prop.
+Require Import Term_Defs_Core Params_Admits Manifest (* Executable_Dec *)
+               Example_Phrases_Admits Example_Phrases Eqb_Evidence.
+               (* Executable_Defs_Prop. *)
 
 Require Import EqClass Maps StructTactics.
 
@@ -17,7 +17,7 @@ Definition aspid_manifest_update (i:ASP_ID) (m:Manifest) : Manifest :=
           pubKeyPlcs := oldContext; 
           targetPlcs := oldTargets ;
           policy := oldPolicy |} := m in
-  (Build_Manifest oldPlc (i::oldasps) old_app_asps oldKnowsOf oldContext oldTargets oldPolicy).
+  (Build_Manifest oldPlc (manset_add i oldasps) old_app_asps oldKnowsOf oldContext oldTargets oldPolicy).
 
 Definition knowsof_manifest_update (toPlc:Plc) (m:Manifest) : Manifest := 
     let '{| my_abstract_plc := oldPlc;
@@ -27,7 +27,7 @@ Definition knowsof_manifest_update (toPlc:Plc) (m:Manifest) : Manifest :=
             pubKeyPlcs := oldContext; 
             targetPlcs := oldTargets ;
             policy := oldPolicy |} := m in
-    (Build_Manifest oldPlc oldasps old_app_asps (toPlc::oldKnowsOf) oldContext oldTargets oldPolicy).
+    (Build_Manifest oldPlc oldasps old_app_asps (manset_add toPlc oldKnowsOf) oldContext oldTargets oldPolicy).
 
 Definition knowsof_myPlc_manifest_update (m:Manifest) : Manifest :=
   knowsof_manifest_update (my_abstract_plc m) m.
@@ -50,9 +50,9 @@ Definition pubkey_manifest_update (p:Plc) (m:Manifest) : Manifest :=
           pubKeyPlcs := oldContext; 
           targetPlcs := oldTargets ;
           policy := oldPolicy |} := m in
-  (Build_Manifest oldPlc oldasps old_app_asps oldKnowsOf (p::oldContext) oldTargets oldPolicy).
+  (Build_Manifest oldPlc oldasps old_app_asps oldKnowsOf (manset_add p oldContext) oldTargets oldPolicy).
 
-Definition pubkeys_manifest_update (ps:list Plc) (m:Manifest) : Manifest := 
+Definition pubkeys_manifest_update (ps:manifest_set Plc) (m:Manifest) : Manifest := 
         let '{| my_abstract_plc := oldMyPlc;
                 asps := oldasps; 
                 appraisal_asps := old_app_asps;
@@ -70,7 +70,7 @@ Definition update_manifest_policy_targ (targp:Plc) (targid:Plc) (m:Manifest) : M
           pubKeyPlcs := oldContext ; 
           targetPlcs := oldTargets ;
           policy := oldPolicy |} := m in
-  (Build_Manifest oldMyPlc oldasps old_app_asps oldKnowsOf oldContext (targp :: oldTargets) oldPolicy).
+  (Build_Manifest oldMyPlc oldasps old_app_asps oldKnowsOf oldContext (manset_add targp oldTargets) oldPolicy).
 
   
 Definition asp_manifest_update (a:ASP) (m:Manifest) : Manifest :=
@@ -210,7 +210,7 @@ Definition get_unique_manifests_env (ts: list Term) (p:Plc) (e:EnvironmentM) : l
 Definition get_final_manifests_env (ts:list Term) (p:Plc) (e:EnvironmentM) : list Manifest :=
   let ms := get_unique_manifests_env ts p e in 
   let ms' := List.map (knowsof_myPlc_manifest_update) ms in
-  List.map (pubkeys_manifest_update (places_terms ts p)) ms'.
+  List.map (pubkeys_manifest_update (list_to_manset (places_terms ts p))) ms'.
 
 Definition man_gen_run (ts:list Term) (p:Plc) : EnvironmentM := manifest_generator_terms p ts.
 
@@ -248,7 +248,7 @@ Definition man_gen_run_attify (ls:list (Term*Plc)) : list Manifest :=
               pubKeyPlcs := oldContext; 
               targetPlcs := oldTargets ;
               policy := oldPolicy |} := m in
-      (Build_Manifest oldPlc oldasps ((i,p) :: old_app_asps) oldKnowsOf oldContext oldTargets oldPolicy).
+      (Build_Manifest oldPlc oldasps (manset_add (i,p) old_app_asps) oldKnowsOf oldContext oldTargets oldPolicy).
     
     Fixpoint manifest_generator_app' (et:Evidence) (m:Manifest) : Manifest :=
       match et with 

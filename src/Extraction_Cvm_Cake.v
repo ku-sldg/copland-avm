@@ -7,7 +7,7 @@ Require Import Example_Phrases Example_Phrases_Demo.
 
 Require Import privPolicy Manifest_Generator Manifest_Compiler.
 
-Require Import Client_AM Server_AM Client_AM_Local.
+Require Import Server_AM Client_AM_Local.
 
 
 Require Import List.

@@ -23,7 +23,9 @@ Open Scope list_scope.
 
 Require Import Lia.
 
+(*
 Set Nested Proofs Allowed.
+*)
 (** The traces associated with a state. *)
 
 Inductive traceS: St -> list Ev -> Prop :=

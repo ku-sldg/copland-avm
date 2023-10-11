@@ -18,7 +18,9 @@ Require Import Coq.Program.Tactics.
 Require Import List.
 Import ListNotations.
 
+(*
 Set Nested Proofs Allowed.
+*)
 
 Definition gen_nonce_if_none_local (initEv:option EvC) : AM EvC :=
   match initEv with

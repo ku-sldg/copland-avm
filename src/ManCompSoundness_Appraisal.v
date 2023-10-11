@@ -1,14 +1,15 @@
 Require Import Manifest Manifest_Compiler Manifest_Generator AbstractedTypes
   Maps Term_Defs List Cvm_St Cvm_Impl ErrorStMonad_Coq StructTactics 
   Cvm_Monad EqClass Manifest_Admits Auto.
-Require Import Manifest_Generator_Facts Executable_Defs_Prop 
-  Executable_Facts_Dist Eqb_Evidence.
+Require Import Manifest_Generator_Facts (* Executable_Defs_Prop *) Eqb_Evidence.
 
 Require Import Coq.Program.Tactics Lia.
 
 Import ListNotations.
 
+(*
 Set Nested Proofs Allowed.
+*)
 
 
 
@@ -881,13 +882,13 @@ Fixpoint manifest_support_term_app (m : Manifest) (e : Evidence) : Prop :=
         | EXTD => 
           match ps with 
           | asp_paramsC a _ _ _ => 
-              In (p,a) m.(appraisal_asps) /\ 
+              In_set (p,a) m.(appraisal_asps) /\ 
               manifest_support_term_app m e'
           end
         | ENCR => 
         match ps with 
         | asp_paramsC _ _ p _ =>
-            In p m.(pubKeyPlcs) /\ 
+            In_set p m.(pubKeyPlcs) /\ 
             manifest_support_term_app m e'
         end
 
@@ -1028,18 +1029,19 @@ Proof.
 
     destruct_conjs.
 
-    split.
-
-    intros.
-    eauto.
+    split; intros; eauto.
 
     split; intros; eauto.
 
-    simpl in *.
+    split; intros; eauto.
 
-    split; eauto.
+    split; intros; eauto.
 
-    split; eauto.
+    find_apply_hyp_hyp.
+
+    eapply H7.
+    ff.
+    eapply in_set_add; eauto.
 
     + (* EXTD *)
 
@@ -1066,12 +1068,15 @@ Proof.
 
     simpl in *.
 
+    find_apply_hyp_hyp.
+
     eapply H5.
-    simpl.
-    right; eauto.
+    eapply in_set_add; eauto.
 
     split; eauto.
+
     split; eauto.
+    
 
   - (* ss case *)
     eauto.
@@ -1123,7 +1128,7 @@ Proof.
       asps := asps;
       appraisal_asps := appraisal_asps;
       uuidPlcs := uuidPlcs;
-      pubKeyPlcs := p0 :: pubKeyPlcs;
+      pubKeyPlcs := manset_add p0 pubKeyPlcs;
       targetPlcs := targetPlcs;
       policy := policy
     |}
@@ -1134,7 +1139,7 @@ Proof.
           asps := asps;
           appraisal_asps := appraisal_asps;
           uuidPlcs := uuidPlcs;
-          pubKeyPlcs := p0 :: pubKeyPlcs;
+          pubKeyPlcs := manset_add p0 pubKeyPlcs;
           targetPlcs := targetPlcs;
           policy := policy
         |})
@@ -1146,14 +1151,15 @@ Proof.
     destruct_conjs.
     eapply H2.
     simpl.
-    eauto.
+    eapply manadd_In_add.
+
     - (* EXTD case *)
 
     ff.
     assert (manifest_subset  {|
       my_abstract_plc := my_abstract_plc;
       asps := asps;
-      appraisal_asps := (p, a0) :: appraisal_asps;
+      appraisal_asps := manset_add (p, a0) appraisal_asps;
       uuidPlcs := uuidPlcs;
       pubKeyPlcs := pubKeyPlcs;
       targetPlcs := targetPlcs;
@@ -1164,7 +1170,7 @@ Proof.
     {|
       my_abstract_plc := my_abstract_plc;
       asps := asps;
-      appraisal_asps := (p, a0) :: appraisal_asps;
+      appraisal_asps := manset_add (p, a0) appraisal_asps;
       uuidPlcs := uuidPlcs;
       pubKeyPlcs := pubKeyPlcs;
       targetPlcs := targetPlcs;
@@ -1179,9 +1185,7 @@ Proof.
     eauto.
     eapply H0.
     simpl.
-    eauto.
-
-
+    eapply manadd_In_add.
 
   - (* ss case *)
     ff.

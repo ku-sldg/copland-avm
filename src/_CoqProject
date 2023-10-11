@@ -34,7 +34,6 @@ Executable_Defs_Prop.v
 Executable_Defs_Bool.v
 Example_Phrases_Admits.v
 Example_Phrases.v
-Executable_Dec.v
 ConcreteEvidence.v
 Cvm_St.v
 IO_Type.v
@@ -47,7 +46,6 @@ Cvm_Run.v
 Auto.v
 Manifest_Generator.v
 Manifest_Generator_Facts.v
-Executable_Facts_Dist.v
 AutoApp.v
 Helpers_CvmSemantics.v
 External_Facts.v
@@ -64,12 +62,10 @@ Appraisal_Defs.v
 privPolicy.v
 Impl_appraisal.v
 CvmJson_Admits.v
-Appraisal_Semantics.v
+ManCompSoundness_Helpers.v
 ManCompSoundness.v
 ManCompSoundness_Appraisal.v
-Client_AM.v
 AM_Helpers.v
 Client_AM_Local.v
 Server_AM.v
-CopParser.v
 Extraction_Cvm_Cake.v
