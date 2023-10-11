@@ -2,7 +2,8 @@ Require Import Manifest Manifest_Compiler Manifest_Generator AbstractedTypes
   Maps Term_Defs List Cvm_St Cvm_Impl ErrorStMonad_Coq StructTactics 
   Cvm_Monad EqClass Manifest_Admits Auto.
 Require Import Manifest_Generator_Facts (* Executable_Defs_Prop  *)
-  (* Executable_Facts_Dist *) Eqb_Evidence.
+  (* Executable_Facts_Dist *) Eqb_Evidence
+  Manifest_Generator_Helpers.
 
 Require Import ManCompSoundness_Helpers.
 

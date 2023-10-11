@@ -6,7 +6,7 @@ Require Import ErrorStringConstants.
 
 Require Import Appraisal_Defs Appraisal_IO_Stubs AM_Monad AM_St.
 
-Require Import IO_Stubs privPolicy Cvm_Run.
+Require Import IO_Stubs Cvm_Run.
 
 Require Import List.
 Import ListNotations.

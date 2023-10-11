@@ -5,7 +5,7 @@ Require Import Term_Defs Term_Defs_Core Cvm_Run IO_Stubs AM_Monad Cvm_Monad.
 
 Require Import Example_Phrases Example_Phrases_Demo.
 
-Require Import privPolicy Manifest_Generator Manifest_Compiler.
+Require Import Manifest_Generator Manifest_Compiler.
 
 Require Import Server_AM Client_AM_Local.
 
@@ -63,7 +63,7 @@ Definition term_list : list Term :=
 
 Separate Extraction run_cvm manifest_compiler  
 		    run_am_app_comp 
-			handle_AM_request am_client_auth am_client_gen 
+			handle_AM_request (* am_client_auth am_client_gen *)
 			term_list ssl_sig_parameterized kim_meas
 		    par_mut_p0 par_mut_p1 layered_bg_strong cm_meas
 		    man_gen_run_attify empty_am_result

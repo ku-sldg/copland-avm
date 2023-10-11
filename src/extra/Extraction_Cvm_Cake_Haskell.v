@@ -3,7 +3,7 @@ Require Extraction.
 Require Import Term_Defs Cvm_Run IO_Stubs Example_Phrases_Demo.
 Require Import CopParser.
 
-Require Import privPolicy Manifest.
+Require Import Manifest.
 
 Require Import Demo_AM Client_AM Server_AM.
 

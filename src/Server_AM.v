@@ -1,6 +1,6 @@
 Require Import Term IO_Stubs Cvm_Run CvmJson_Admits Example_Phrases_Admits.
 
-Require Import AM_Monad ErrorStMonad_Coq Impl_appraisal privPolicy Manifest Manifest_Admits Cvm_St.
+Require Import AM_Monad ErrorStMonad_Coq Impl_appraisal Manifest Manifest_Admits Cvm_St.
 
 Require Import ErrorStringConstants.
 
@@ -28,6 +28,8 @@ Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc)
   v <- am_check_auth_tok t fromPl authTok ;;
   match ((appraise_auth_tok v)) with
   | true =>
+
+  (*
     match (privPolicy fromPl t) with
     | true => 
 
@@ -37,11 +39,14 @@ Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc)
     check_disclosure_policy t myPlc init_et ;;
     (* TODO: decide how to get initial Evidence type here for server AMs...  *)
     *)
+
+    *)
     
     
     ret (run_cvm_rawEv t myPl init_ev ac)
+    (*
     | false => am_failm (am_error errStr_disclosePolicy)
-    end
+    end *)
       
   | false => am_failm (am_error errStr_app_auth_tok)
   end.

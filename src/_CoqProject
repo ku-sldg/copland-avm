@@ -29,9 +29,6 @@ ErrorStMonad_Coq.v
 Manifest.v
 Manifest_Compiler.v
 EnvironmentM.v
-Copland_AC.v
-Executable_Defs_Prop.v
-Executable_Defs_Bool.v
 Example_Phrases_Admits.v
 Example_Phrases.v
 ConcreteEvidence.v
@@ -44,6 +41,7 @@ Cvm_Monad.v
 Cvm_Impl.v
 Cvm_Run.v
 Auto.v
+Manifest_Generator_Helpers.v
 Manifest_Generator.v
 Manifest_Generator_Facts.v
 AutoApp.v
@@ -59,7 +57,6 @@ AM_St.v
 Appraisal_IO_Stubs.v
 AM_Monad.v
 Appraisal_Defs.v
-privPolicy.v
 Impl_appraisal.v
 CvmJson_Admits.v
 ManCompSoundness_Helpers.v

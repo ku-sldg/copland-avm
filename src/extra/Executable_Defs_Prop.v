@@ -38,6 +38,7 @@ Fixpoint executable_local (t:Term) (e:Manifest) : Prop :=
   | bpar _ t1 t2 => executable_local t1 e /\ executable_local t2 e
   end.
 
+  (*
   Fixpoint places' (t:Term) (ls:list Plc) : list Plc :=
   match t with
   | asp _ => ls 
@@ -61,6 +62,8 @@ Definition places (p:Plc) (t:Term): list Plc :=
       | bseq _ t1 t2 => (place_terms t1 tp p) ++ (place_terms t2 tp p)
       | bpar _ t1 t2 => (place_terms t1 tp p) ++ (place_terms t2 tp p)
       end).
+
+  *)
 
 
 

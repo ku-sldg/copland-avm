@@ -1,4 +1,4 @@
-Require Import Term Example_Phrases_Demo Cvm_Run Manifest EqClass.
+Require Import Term Example_Phrases_Demo Cvm_Run Manifest AbstractedTypes EqClass.
 
 Require Import Impl_appraisal Appraisal_IO_Stubs IO_Stubs AM_Monad ErrorStMonad_Coq.
 
