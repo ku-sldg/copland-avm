@@ -12,7 +12,7 @@
     Appraisal_Defs.v).        
  *)
 
-Require Import Term_Defs ConcreteEvidence ErrorStMonad_Coq IO_Type Manifest Manifest_Admits Cvm_St.
+Require Import Term_Defs ConcreteEvidence ErrorStMonad_Coq Manifest Manifest_Admits Cvm_St.
 
 
 Require Import List.
@@ -66,10 +66,10 @@ Definition doRemote_session' (t:Term) (pTo:Plc) (e:EvC) : IO EvC :=
   ret (doRemote_session t pTo e).
 *)
 
-Definition do_start_par_thread (loc:Loc) (t:Core_Term) (e:RawEv) : IO unit :=
+Definition do_start_par_thread (loc:Loc) (t:Core_Term) (e:RawEv) : CVM unit :=
   ret tt.
 
-Definition do_wait_par_thread (loc:Loc) (t:Core_Term) (p:Plc) (e:EvC) : IO EvC :=
+Definition do_wait_par_thread (loc:Loc) (t:Core_Term) (p:Plc) (e:EvC) : CVM EvC :=
   ret (parallel_vm_thread loc t p e).
 
 Definition requester_bound (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) : bool.

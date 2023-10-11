@@ -26,6 +26,7 @@ Trace.v
 Main.v
 Manifest_Admits.v
 ErrorStMonad_Coq.v
+Manifest_Set.v
 Manifest.v
 Manifest_Compiler.v
 EnvironmentM.v
@@ -33,7 +34,6 @@ Example_Phrases_Admits.v
 Example_Phrases.v
 ConcreteEvidence.v
 Cvm_St.v
-IO_Type.v
 IO_Stubs.v
 Axioms_Io.v
 Evidence_Bundlers.v

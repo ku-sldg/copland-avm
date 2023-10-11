@@ -152,9 +152,6 @@ Definition lib_supports_appraisal_aspids_bool (ls:list (Plc*ASP_ID)) (al:AM_Libr
 
 *)
 
-Definition filter_manset{A:Type} (f:A -> bool) (s:manifest_set A) : manifest_set A.
-Admitted.
-
 
 Definition lib_omits_aspids (ls:manifest_set ASP_ID) (al:AM_Library) : manifest_set ASP_ID := 
   filter_manset (fun i => (negb (aspid_in_amlib_bool al i))) ls.
@@ -182,9 +179,6 @@ Definition lib_omits_manifest (al:AM_Library) (am:Manifest) : Manifest :=
             (lib_omits_pubkey_plcs pubkey_plcs_list al)    
             manifest_set_empty 
             empty_PolicyT.
-                        
-Definition is_empty_manset{A:Type} (s:manifest_set A) : bool.
-Admitted.
 
 Definition manifest_none_omitted (m:Manifest) : bool := 
     match m with 
