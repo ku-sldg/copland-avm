@@ -7,23 +7,26 @@ Require Import List.
 Import ListNotations.
 
 
-Definition manifest_set (A:Type) : Set.
-Admitted.
+Definition manifest_set (A:Type) := list A.
 
-Definition manifest_set_empty {A:Type} : manifest_set A.
-Admitted.
+Definition manifest_set_empty {A:Type} : manifest_set A := [].
 
-Definition manset_add{A:Type} (x:A) (s:manifest_set A) : manifest_set A.
-Admitted.
+Definition manset_add{A:Type} (x:A) (s:manifest_set A) : manifest_set A := 
+    x :: s.
 
-Definition list_to_manset{A:Type} : list A -> manifest_set A.
-Admitted.
+Definition list_to_manset{A:Type} (ls:list A) : manifest_set A := ls.
 
-Definition filter_manset{A:Type} (f:A -> bool) (s:manifest_set A) : manifest_set A.
-Admitted.
+Check List.filter.
 
-Definition is_empty_manset{A:Type} (s:manifest_set A) : bool.
-Admitted.
+Definition filter_manset{A:Type} (f:A -> bool) (s:manifest_set A) : manifest_set A := 
+    List.filter f s.
+
+Scheme Equality for list.
+
+Check list_beq.
+
+Definition is_empty_manset{A:Type} `{H : EqClass A} (s:manifest_set A) : bool := 
+    list_beq A (eqb) s manifest_set_empty.
 
 
 (*
@@ -40,13 +43,12 @@ in_dec
        forall (a : A) (l : list A), {In a l} + {~ In a l}
 *)
 
-Definition In_set{A:Type} : A -> manifest_set A -> Prop.
-Admitted.
+Definition In_set{A:Type} (x:A) (s:manifest_set A) : Prop := 
+    In x s.
 
-Definition in_dec_set {A:Type} :
-(forall x y : A, {x = y} + {x <> y}) ->
-forall (a : A) (l : manifest_set A), {In_set a l} + {~ In_set a l}.
-Admitted.
+Definition in_dec_set {A:Type}
+(H: forall x y : A, {x = y} + {x <> y})
+(a : A) (l : manifest_set A) : {In_set a l} + {~ In_set a l} := in_dec H a l.
 
 Lemma In_set_empty_contra{A:Type} : forall (i:A) (P:Prop),
   In_set i manifest_set_empty -> P.
@@ -76,8 +78,8 @@ Check existsb.
 existsb
 	 : forall A : Type, (A -> bool) -> list A -> bool
 *)
-Definition existsb_set{A:Type} : (A -> bool) -> manifest_set A -> bool.
-Admitted.
+Definition existsb_set{A:Type} (f: A -> bool) (s:manifest_set A) : bool := 
+    existsb f s.
 
 (*
 Check existsb_eq_iff_In

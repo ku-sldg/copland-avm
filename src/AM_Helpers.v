@@ -229,7 +229,6 @@ Definition config_AM_if_lib_supported (t:Term) (myPlc:Plc) (amLib:AM_Library) : 
         )
         else (
             am_failm (am_dispatch_error (Runtime (pretty_print_manifest om)))
-        (* am_failm (am_dispatch_error (Runtime errStr_lib_supports_man_check)) *)
         ).
     
     
