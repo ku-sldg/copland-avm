@@ -1137,7 +1137,7 @@ Proof.
         my_abstract_plc := my_abstract_plc;
         asps := asps;
         appraisal_asps := appraisal_asps;
-        uuidPlcs := manset_add p uuidPlcs;
+        uuidPlcs := @manset_add _ Eq_Class_ID_Type p uuidPlcs;
         pubKeyPlcs := pubKeyPlcs;
         targetPlcs := targetPlcs;
         policy := policy
@@ -1214,7 +1214,7 @@ Proof.
         my_abstract_plc := my_abstract_plc;
         asps := asps;
         appraisal_asps := appraisal_asps;
-        uuidPlcs := manset_add p uuidPlcs;
+        uuidPlcs := @manset_add _ Eq_Class_ID_Type p uuidPlcs;
         pubKeyPlcs := pubKeyPlcs;
         targetPlcs := targetPlcs;
         policy := policy
@@ -1580,7 +1580,7 @@ Proof.
 
     eapply fdsa; eauto.
     simpl.
-    eapply manadd_In_add.
+    auto.
   +
     door; eauto.
     subst.
