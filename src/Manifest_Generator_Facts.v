@@ -607,7 +607,7 @@ Proof.
           eauto
           end;
 
-          try eapply In_set_empty_contra; eauto
+          try (apply manadd_In_add); try (subst; apply manadd_In_add)
       
 
           | 
