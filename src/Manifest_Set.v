@@ -6,7 +6,6 @@ Require Import Example_Phrases_Admits.
 Require Import List.
 Import ListNotations.
 
-
 Definition manifest_set (A : Type) := list A.
 
 Definition manifest_set_empty {A : Type} : manifest_set A := nil.
@@ -113,6 +112,7 @@ Check existsb.
 existsb
 	 : forall A : Type, (A -> bool) -> list A -> bool
 *)
+
 Definition existsb_set {A:Type} (f : A -> bool) (s: manifest_set A) : bool :=
   existsb f s.
 

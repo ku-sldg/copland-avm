@@ -5,7 +5,7 @@ Require Import Term_Defs_Core Params_Admits Manifest (* Executable_Dec *)
 
 Require Import EqClass Maps StructTactics.
 
-Require Export EnvironmentM.
+Require Export EnvironmentM Manifest_Set.
 
 Require Import List.
 Import ListNotations.

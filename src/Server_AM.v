@@ -33,15 +33,14 @@ Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc)
     match (privPolicy fromPl t) with
     | true => 
 
+  *)
+
     config_AM_if_lib_supported t myPl al ;; 
   
     (*
     check_disclosure_policy t myPlc init_et ;;
     (* TODO: decide how to get initial Evidence type here for server AMs...  *)
     *)
-
-    *)
-    
     
     ret (run_cvm_rawEv t myPl init_ev ac)
     (*

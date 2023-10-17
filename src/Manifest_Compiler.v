@@ -1,6 +1,8 @@
   
 Require Import Maps AbstractedTypes EqClass Term_Defs_Core Manifest_Admits Manifest
   ErrorStMonad_Coq Term_Defs.
+
+Require Import Manifest_Set.
   
 
 Require Import List.

@@ -49,7 +49,7 @@ Theorem man_gen_aspid_in : forall a m,
   In_set a (asps (aspid_manifest_update a m)).
 Proof.
   induction m; simpl in *; eauto.
-  eapply manadd_In_add.
+  (* eapply manadd_In_add. *)
 Qed.
 
 Global Hint Resolve man_gen_aspid_in : core.
