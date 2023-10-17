@@ -229,9 +229,9 @@ Proof.
     * rewrite eqb_leibniz in *; subst.
       rewrite H2; destruct x. rewrite mapC_get_works;
       eexists; intuition; eauto; simpl in *; eauto.
-      (*
+      
       find_apply_hyp_hyp;
-      eapply in_set_add; eauto. *)
+      eapply in_set_add; eauto.
     * erewrite mapC_get_distinct_keys; eauto.
       eexists; intuition; simpl in *; eauto.
       intros HC. rewrite <- eqb_leibniz in HC; congruence.
