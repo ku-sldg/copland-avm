@@ -121,15 +121,15 @@ Definition at_manifest_generator (fromPlc:Plc) (toPlc:Plc)
   manifest_update_env fromPlc e (knowsof_manifest_update toPlc).
 
 
-Fixpoint manifest_generator' (p:Plc) (t:Term) (e:EnvironmentM) : EnvironmentM :=
+Fixpoint manifest_generator' (t:Term) (p:Plc) (e:EnvironmentM) : EnvironmentM :=
   match t with
   | asp a => asp_manifest_generator a p e
   | att q t' => 
       let e' := at_manifest_generator p q e in 
-        manifest_generator' q t' e'
-  | lseq t1 t2 => manifest_generator' p t2 (manifest_generator' p t1 e)
-  | bseq _ t1 t2 => manifest_generator' p t2 (manifest_generator' p t1 e)
-  | bpar _ t1 t2 => manifest_generator' p t2 (manifest_generator' p t1 e)
+        manifest_generator' t' q e'
+  | lseq t1 t2 => manifest_generator' t2 p (manifest_generator' t1 p e)
+  | bseq _ t1 t2 => manifest_generator' t2 p (manifest_generator' t1 p e)
+  | bpar _ t1 t2 => manifest_generator' t2 p (manifest_generator' t1 p e)
   end.
 
 Fixpoint dedup_list (ps:list Plc) : list Plc := 
@@ -142,13 +142,13 @@ Fixpoint dedup_list (ps:list Plc) : list Plc :=
   end.
 
 Definition manifest_generator_terms (p:Plc) (ts:list Term) : EnvironmentM :=
-  fold_right (manifest_generator' p) e_empty ts.
+  fold_right (fun t => manifest_generator' t p) e_empty ts.
 
 Definition manifest_generator (t:Term) (p:Plc) : EnvironmentM :=
-  manifest_generator' p t e_empty.
+  manifest_generator' t p e_empty.
 
 Lemma manifest_generator_never_empty : forall t p e,
-  manifest_generator' p t e <> nil.
+  manifest_generator' t p e <> nil.
 Proof.
   induction t; simpl in *; intuition; eauto.
   - destruct a; unfold asp_manifest_generator, 

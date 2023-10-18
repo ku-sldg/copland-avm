@@ -27,6 +27,7 @@ Main.v
 Manifest_Admits.v
 ErrorStMonad_Coq.v
 Manifest_Set.v
+Manifest_Union.v
 Manifest.v
 Manifest_Compiler.v
 EnvironmentM.v
@@ -43,6 +44,7 @@ Cvm_Run.v
 Auto.v
 Manifest_Generator_Helpers.v
 Manifest_Generator.v
+Manifest_Generator_Union.v
 Manifest_Generator_Facts.v
 AutoApp.v
 Helpers_CvmSemantics.v

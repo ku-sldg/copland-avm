@@ -170,7 +170,7 @@ Qed.
 
 Lemma manifest_generator_cumul : forall t p e1 e2,
     Environment_subset e1 e2 ->
-    Environment_subset e1 (manifest_generator' p t e2).
+    Environment_subset e1 (manifest_generator' t p e2).
 Proof.
   intros.
   generalizeEverythingElse t.
@@ -245,7 +245,7 @@ Proof.
 Qed.
 
 Lemma manifest_generator_cumul' : forall t p e,
-  Environment_subset e (manifest_generator' p t e).
+  Environment_subset e (manifest_generator' t p e).
 Proof.
   intros.
   apply manifest_generator_cumul.
@@ -565,8 +565,8 @@ Local Hint Resolve empty_manifest_always_sub : core.
 
 Lemma fafafa : forall t p e1 e2,
     Environment_subset e1 e2 ->
-    Environment_subset (manifest_generator' p t e1)
-                       (manifest_generator' p t e2).
+    Environment_subset (manifest_generator' t p e1)
+                       (manifest_generator' t p e2).
 Proof.
   intros.
   generalizeEverythingElse t.

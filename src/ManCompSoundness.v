@@ -764,7 +764,7 @@ eauto.
 Qed.
 
 Lemma has_manifest_env_places_env_has_manifest' : forall t p tp m e,
-map_get (manifest_generator' tp t e) p = Some m ->
+map_get (manifest_generator' t tp e) p = Some m ->
 (exists m', map_get e p = Some m') \/ 
 In p (places tp t).
 Proof.
@@ -1046,7 +1046,7 @@ Qed.
 Lemma places_env_has_manifest : forall t p tp e,
 In p (places tp t) -> 
 exists m, 
-map_get (manifest_generator' tp t e) p = Some m.
+map_get (manifest_generator' t tp e) p = Some m.
 Proof.
   intros.
   generalizeEverythingElse t.
@@ -1088,7 +1088,7 @@ Proof.
             policy := policy
           |})
 
-          (manifest_generator' p t
+          (manifest_generator' t p
        (map_set e p0
           {|
             my_abstract_plc := my_abstract_plc;
@@ -1165,7 +1165,7 @@ Proof.
             policy := policy
           |})
 
-          (manifest_generator' p t
+          (manifest_generator' t p
        (map_set e p0
           {|
             my_abstract_plc := my_abstract_plc;
@@ -1240,16 +1240,16 @@ Proof.
       door.
       +
         assert (exists mm, 
-                map_get (manifest_generator' tp t1 e) p = Some mm).
+                map_get (manifest_generator' t1 tp e) p = Some mm).
         {
           eauto.
         }
         destruct_conjs.
 
         assert (Environment_subset 
-        (manifest_generator' tp t1 e)
-        (manifest_generator' tp t2
-         (manifest_generator' tp t1 e))
+        (manifest_generator' t1 tp e)
+        (manifest_generator' t2 tp
+         (manifest_generator' t1 tp e))
         ).
         {
           eapply manifest_generator_cumul'.
@@ -1285,16 +1285,16 @@ Proof.
       door.
       +
         assert (exists mm, 
-                map_get (manifest_generator' tp t1 e) p = Some mm).
+                map_get (manifest_generator' t1 tp e) p = Some mm).
         {
           eauto.
         }
         destruct_conjs.
 
         assert (Environment_subset 
-        (manifest_generator' tp t1 e)
-        (manifest_generator' tp t2
-         (manifest_generator' tp t1 e))
+        (manifest_generator' t1 tp e)
+        (manifest_generator' t2 tp
+         (manifest_generator' t1 tp e))
         ).
         {
           eapply manifest_generator_cumul'.
@@ -1331,16 +1331,16 @@ Proof.
       door.
       +
         assert (exists mm, 
-                map_get (manifest_generator' tp t1 e) p = Some mm).
+                map_get (manifest_generator' t1 tp e) p = Some mm).
         {
           eauto.
         }
         destruct_conjs.
 
         assert (Environment_subset 
-        (manifest_generator' tp t1 e)
-        (manifest_generator' tp t2
-         (manifest_generator' tp t1 e))
+        (manifest_generator' t1 tp e)
+        (manifest_generator' t2 tp
+         (manifest_generator' t1 tp e))
         ).
         {
           eapply manifest_generator_cumul'.
@@ -1367,19 +1367,19 @@ Qed.
    TODO:  perhaps generalize to something like:  
             forall p, In p ((places t1 tp) ++ places e) ?? *)
 Lemma asdf : forall t1 t2 tp p' absMan e,
-map_get (manifest_generator' tp t2 
-            (manifest_generator' tp t1 e)) p' = Some absMan -> 
+map_get (manifest_generator' t2 tp 
+            (manifest_generator' t1 tp e)) p' = Some absMan -> 
 In p' (places tp t1) ->
 exists m', 
-map_get (manifest_generator' tp t1 e) p' = Some m' /\ 
+map_get (manifest_generator' t1 tp e) p' = Some m' /\ 
 manifest_subset m' absMan.
 Proof.
   intros.
 
   assert (Environment_subset 
-          (manifest_generator' tp t1 e)
-          (manifest_generator' tp t2
-            (manifest_generator' tp t1 e))
+          (manifest_generator' t1 tp e)
+          (manifest_generator' t2 tp
+            (manifest_generator' t1 tp e))
           
   ).
   {
@@ -1396,8 +1396,8 @@ Proof.
   assert (
     exists m2 : Manifest,
        map_get
-         (manifest_generator' tp t2
-            (manifest_generator' tp t1 e)) p' =
+         (manifest_generator' t2 tp
+            (manifest_generator' t1 tp e)) p' =
        Some m2 /\ manifest_subset H0 m2
   ).
   {
@@ -1413,13 +1413,13 @@ Proof.
 Qed.
 
 Lemma asdf_easy : forall t1 t2 tp absMan e,
-map_get (manifest_generator' tp t2 
-            (manifest_generator' tp t1 e)) tp = Some absMan -> 
+map_get (manifest_generator' t2 tp 
+            (manifest_generator' t1 tp e)) tp = Some absMan -> 
             
 exists m', (* p', 
 In p' (places tp t1) /\
 *)
-map_get (manifest_generator' tp t1 e) tp = Some m' /\ 
+map_get (manifest_generator' t1 tp e) tp = Some m' /\ 
 manifest_subset m' absMan.
 Proof.
   intros.
@@ -1502,7 +1502,7 @@ Proof.
 Qed.
 
 Theorem man_gen_old_always_supports : forall t t' tp p backMan absMan,
-  map_get (manifest_generator' tp t backMan) p = Some absMan ->
+  map_get (manifest_generator' t tp backMan) p = Some absMan ->
   In p (places tp t) ->
   In t' (place_terms t tp p) ->
   manifest_support_term absMan t'.
@@ -1542,7 +1542,7 @@ Proof.
       }
       subst.
 
-      pose (manifest_generator_cumul' t p 
+      pose (manifest_generator_cumul' t p
               (map_set backMan p0
               {|
                 my_abstract_plc := my_abstract_plc;
@@ -1566,7 +1566,7 @@ Proof.
     subst.
 
 
-    pose (manifest_generator_cumul' t p 
+    pose (manifest_generator_cumul' t p
             ((map_set backMan p0
               {|
                 my_abstract_plc := p0;
@@ -1892,6 +1892,65 @@ Proof.
           eassumption.
 Qed.
 
+Theorem manifest_generator_compiler_soundness_distributed' : forall t tp p absMan amLib amConf,
+  map_get (manifest_generator t tp) p = Some absMan ->
+  lib_supports_manifest amLib absMan ->
+  manifest_compiler absMan amLib = amConf ->
+  forall st,
+
+  (*
+  st.(st_AM_config) = amConf ->
+  *)
+  (supports_am amConf (st.(st_AM_config))) -> 
+
+  (*
+    (* Note, this should be trivial typically as amConf = st.(st_AM_config) and refl works *)
+    supports_am amConf (st.(st_AM_config)) ->  
+
+    *)
+
+    (  forall t', 
+         In t' (place_terms t tp p) -> 
+        (exists st', 
+        
+        build_cvm (copland_compile t') st = (resultC tt, st')) \/
+        
+        (exists st' errStr,
+        build_cvm (copland_compile t') st = (errC (dispatch_error (Runtime errStr)), st'))
+    ).
+Proof.
+    intros.
+    (*
+    assert (supports_am amConf (st.(st_AM_config))) by ff. *)
+    assert (In p (places tp t)) by 
+              (eapply has_manifest_env_places_env_has_manifest; eauto).
+    eapply well_formed_am_config_impl_executable.
+    - unfold manifest_generator, e_empty in *; simpl in *.
+      eapply manifest_support_am_config_impl_am_config.
+      * eapply manifest_support_am_config_compiler; eauto.
+      * (* NOTE: This is the important one, substitute proof of any manifest here *)
+        eapply man_gen_old_always_supports.
+        eassumption.
+        door.
+        +
+          subst.
+          unfold places.
+          left.
+          eauto.
+        +
+          unfold places.
+          right.
+          eauto.
+        +
+          subst.
+          eassumption.
+    -
+      rewrite H1; eauto. 
+    Unshelve. eapply min_id_type.
+  Qed.
+
+
+
 Theorem manifest_generator_compiler_soundness_distributed : forall t tp p absMan amLib amConf,
   map_get (manifest_generator t tp) p = Some absMan ->
   lib_supports_manifest amLib absMan ->
@@ -1918,29 +1977,5 @@ Theorem manifest_generator_compiler_soundness_distributed : forall t tp p absMan
 Proof.
   intros.
   assert (supports_am amConf (st.(st_AM_config))) by ff.
-  assert (In p (places tp t)) by 
-            (eapply has_manifest_env_places_env_has_manifest; eauto).
-  eapply well_formed_am_config_impl_executable.
-  - unfold manifest_generator, e_empty in *; simpl in *.
-    eapply manifest_support_am_config_impl_am_config.
-    * eapply manifest_support_am_config_compiler; eauto.
-    * (* NOTE: This is the important one, substitute proof of any manifest here *)
-      eapply man_gen_old_always_supports.
-      eassumption.
-      door.
-      +
-        subst.
-        unfold places.
-        left.
-        eauto.
-      +
-        unfold places.
-        right.
-        eauto.
-      +
-        subst.
-        eassumption.
-  -
-    rewrite H1; eauto. 
-  Unshelve. eapply min_id_type.
+  eapply manifest_generator_compiler_soundness_distributed'; eauto.
 Qed.
