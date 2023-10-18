@@ -1,4 +1,4 @@
-Require Import Term_Defs AM_Monad Impl_appraisal.
+Require Import Term_Defs AM_Monad Impl_appraisal StringT.
 
 Definition JsonT : Set. Admitted.
 

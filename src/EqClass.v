@@ -1,7 +1,8 @@
 (*
 Generic Typeclass for equality, plus some instances.
 
-Author:  Adam Petz, ampetz@ku.edu
+Authors:  Adam Petz, ampetz@ku.edu
+          Will Thomas, 30wthomas@ku.edu
  *)
 
  Require Import Setoid.

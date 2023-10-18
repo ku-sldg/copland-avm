@@ -7,7 +7,7 @@ Require Import AbstractedTypes Term_Defs_Core Maps String
 
 Require Import Example_Phrases_Admits.
 
-Require Import Manifest_Set.
+Require Import Manifest_Set StringT.
 
 Require Import List.
 Import ListNotations.

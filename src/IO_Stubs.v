@@ -12,7 +12,8 @@
     Appraisal_Defs.v).        
  *)
 
-Require Import Term_Defs ConcreteEvidence ErrorStMonad_Coq Manifest Manifest_Admits Cvm_St.
+Require Import Term_Defs ConcreteEvidence ErrorStMonad_Coq 
+  Manifest Manifest_Admits Cvm_St StringT.
 
 
 Require Import List.

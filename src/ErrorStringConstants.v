@@ -1,4 +1,4 @@
-Require Import Term_Defs.
+Require Import Term_Defs StringT.
 
 Definition errStr_amNonce : StringT. Admitted.
 

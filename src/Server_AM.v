@@ -2,9 +2,7 @@ Require Import Term IO_Stubs Cvm_Run CvmJson_Admits Example_Phrases_Admits.
 
 Require Import AM_Monad ErrorStMonad_Coq Impl_appraisal Manifest Manifest_Admits Cvm_St.
 
-Require Import ErrorStringConstants.
-
-Require Import AM_Helpers.
+Require Import StringT ErrorStringConstants AM_Helpers.
 
 Require Import List.
 Import ListNotations.

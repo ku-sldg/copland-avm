@@ -1,12 +1,12 @@
 -R . CoplandM
 Preamble.v
-Utilities.v
 More_lists.v
 StructTactics.v
 EqClass.v
 AbstractedTypes.v
 Defs.v
 BS.v
+StringT.v
 OptMonad_Coq.v
 Maps.v
 Term_Defs_Core.v

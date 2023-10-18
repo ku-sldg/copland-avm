@@ -1,4 +1,4 @@
-Require Import Maps BS Term_Defs_Core Cvm_St ErrorStMonad_Coq.
+Require Import Maps BS Term_Defs_Core Cvm_St ErrorStMonad_Coq StringT.
 
 
 Require Import List.

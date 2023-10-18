@@ -2,7 +2,8 @@
 Polymorphic, list-based implementation of finite maps, borrowed/tweaked from here:
 https://softwarefoundations.cis.upenn.edu/qc-current/TImp.html
 
-Author:  Adam Petz, ampetz@ku.edu
+Authors:  Adam Petz, ampetz@ku.edu
+          Will Thomas, 30wthomas@ku.edu
  *)
 
 Require Import EqClass.

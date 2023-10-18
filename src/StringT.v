@@ -1,0 +1,2 @@
+Definition StringT : Set.
+Admitted. 

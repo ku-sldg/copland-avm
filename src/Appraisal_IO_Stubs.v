@@ -2,7 +2,7 @@ Require Import Term_Defs_Core Term_Defs.
 
 Require Import (*AM_Monad *) Manifest_Admits ErrorStMonad_Coq Cvm_St AM_St.
 
-Require Import ErrorStringConstants.
+Require Import StringT ErrorStringConstants.
 
 
 
