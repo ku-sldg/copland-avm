@@ -15,9 +15,6 @@ This proof script is free software: you can redistribute it and/or
 modify it under the terms of the BSD License as published by the
 University of California.  See license.txt for details. *)
 
-(*
-Require Export BS.
-Require Export String. *)
 
 Require Import List.
 Import List.ListNotations.
@@ -26,7 +23,6 @@ Require Export Params_Admits.
 
 Require Export Term_Defs_Core.
 
-(* sig_params, hsh_params, defs were here *)
 
 (**  Translating a primitive Copland phrase to its Core_Term equivalent *)
 Definition asp_term_to_core (a:ASP) : Core_Term :=
@@ -276,24 +272,13 @@ Definition asp_event i x p e :=
 
 
 
+(* TODO:  find more logical places for the following defs:  *)
 
 Inductive AM_Result: Set :=
 | am_rawev: RawEv -> AM_Result
 | am_appev: AppResultC -> AM_Result.
 
 Definition empty_am_result := am_rawev [].
-
-(*
-Definition term_discloses_aspid_to_remote_enc_bool (t:Term) (p:Plc) (e:Evidence) (i:ASP_ID) (r:Plc) : bool.
-Admitted.
-*)
-
-(*
-
-Definition policy_supports_term (t:Term) (p:Plc) (e:Evidence) (ls:list (ASP_ID * Plc)) : bool := 
-  forallb (fun pr => (term_discloses_aspid_to_remote_enc_bool t p e (fst pr) (snd pr))) ls.
-*)
-
 
 Definition policy_list_not_disclosed (t:Term) (p:Plc) (e:Evidence) (ls: list (Plc * ASP_ID)) : bool :=   (* true. *)
   forallb (fun pr => negb (term_discloses_aspid_to_remote_enc_bool t p e (fst pr) (snd pr))) ls.
