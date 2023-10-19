@@ -27,7 +27,7 @@ Import ListNotations.
         let abstract_asps := am.(asps) in
         let local_asps_map := al.(Local_ASPS) in
         let shrunk_map : (MapC ASP_ID (ASPCallback CallBackErrors)) := 
-        minify_mapC local_asps_map (fun x => if (in_dec_set (EqClass_impl_DecEq _) x abstract_asps) then true else false) in
+        minify_mapC local_asps_map (fun x => if (in_dec_set x abstract_asps) then true else false) in
           (* check is the ASPID is a local, with a callback *)
           match (map_get shrunk_map aspid) with
           | Some cb => 
@@ -53,7 +53,7 @@ Import ListNotations.
     let abstract_asps := am.(appraisal_asps) in
     let local_asps_map := al.(Local_Appraisal_ASPS) in
     let shrunk_map : (MapC (Plc*ASP_ID) (ASPCallback CallBackErrors)) :=  
-    minify_mapC local_asps_map (fun x => if (in_dec_set (EqClass_impl_DecEq _) x abstract_asps) then true else false) in
+    minify_mapC local_asps_map (fun x => if (in_dec_set x abstract_asps) then true else false) in
       (* check is the ASPID is a local, with a callback *)
       match (map_get shrunk_map (p,aspid)) with
       | Some cb => 
@@ -80,7 +80,7 @@ Import ListNotations.
       let local_plc_map := al.(Local_Plcs) in
       let abstract_plcs := am.(uuidPlcs) in
       let shrunk_map := 
-        minify_mapD local_plc_map (fun x => if (in_dec_set (EqClass_impl_DecEq _) x abstract_plcs) then true else false) in
+        minify_mapD local_plc_map (fun x => if (in_dec_set x abstract_plcs) then true else false) in
 
       fun (p : Plc) =>
         (* check is the plc "p" is local, with a reference *)
@@ -97,7 +97,7 @@ Import ListNotations.
       let local_pubkey_map := al.(Local_PubKeys) in
       let abstract_plcs := am.(pubKeyPlcs) in
       let shrunk_map := 
-        minify_mapD local_pubkey_map (fun x => if (in_dec_set (EqClass_impl_DecEq _) x abstract_plcs) then true else false) in
+        minify_mapD local_pubkey_map (fun x => if (in_dec_set x abstract_plcs) then true else false) in
 
       fun (p : Plc) =>
         (* check is the plc "p" is local, with a reference in the pubkey server mapping *)
@@ -111,10 +111,13 @@ Import ListNotations.
       : UUIDCallback :=
     (* let uuid_server_cb := al.(UUIDServer_Cb) in *)
       let local_plc_map := al.(Local_Plcs) in
+      let abstract_plcs := am.(uuidPlcs) in
+      let shrunk_map :=
+        minify_mapD local_plc_map (fun x => if (in_dec_set x abstract_plcs) then true else false) in
 
       fun (u : UUID) =>
         (* check if uuid "u" is local, else dispatch to callback *)
-        match (mapD_get_key local_plc_map u) with
+        match (mapD_get_key shrunk_map u) with
         | Some p => resultC p
         | None => errC Unavailable
           (* (uuid_server_cb local_uuid_addr u) *)
