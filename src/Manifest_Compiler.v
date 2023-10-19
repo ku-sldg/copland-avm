@@ -33,7 +33,7 @@ Import ListNotations.
           | Some cb => 
             match (cb par p bs rawEv) with
             | resultC r => resultC r
-            | errC (messageLift msg) => (* TODO: Do something with msg *)
+            | errC (messageLift msg) => 
                 errC (Runtime msg)
             end
           | None => errC Unavailable 
@@ -60,7 +60,7 @@ Import ListNotations.
       | Some cb => 
         match (cb par p bs rawEv) with
         | resultC r => resultC r
-        | errC (messageLift msg) => (* TODO: Do something with msg *)
+        | errC (messageLift msg) => 
             errC (Runtime msg)
         end
       | None => errC Unavailable 

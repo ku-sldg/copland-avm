@@ -54,16 +54,8 @@ in_dec
 Definition In_set {A : Type} (a : A) (s : manifest_set A) : Prop :=
   In a s.
 
-Definition in_dec_set {A : Type} `{HA : EqClass A}:
-  (forall x y : A, {x = y} + {x <> y}) ->
-  forall (a : A) (s : manifest_set A), {In_set a s} + {~ In_set a s}.
-Proof.
-  intros. induction s; auto.
-  - destruct IHs as [IHs | IHs].
-    + left. simpl. intuition.
-    + destruct (EqClass_impl_DecEq _ a a0);
-      [left | right]; simpl; intuition.
-Qed.
+Definition in_dec_set {A : Type} `{HA : EqClass A} (a : A) (s : manifest_set A) : {In_set a s} + {~ In_set a s} :=
+  in_dec (EqClass_impl_DecEq A) a s.
 
 Lemma In_set_empty_contra {A : Type} : forall (a : A) (P : Prop),
   In_set a manifest_set_empty -> P.
