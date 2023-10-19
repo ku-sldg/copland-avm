@@ -125,20 +125,6 @@ Proof.
     {
       destruct e'; try solve_by_inversion.
     }
-    (*
-    assert (e' = mtc \/ (exists p ps et', e' = kkc p ps et')).
-    {
-      destruct e'; try solve_by_inversion.
-      eauto.
-    }
-    door.
-    +
-    subst.
-    ff.
-    +
-      subst.
-      ff.
-     *)
     subst.
     ff.
       

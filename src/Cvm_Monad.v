@@ -270,7 +270,7 @@ Ltac pairs :=
     | [H: (Some _, _) =
           (Some _, _) |- _ ] => invc H; monad_unfold
                                                           
-    | [H: {| st_ev := _; st_trace := _; st_pl := _(*; st_store := _*); st_evid := _ |} =
-          {| st_ev := _; st_trace := _; st_pl := _ (*; st_store := _*); st_evid := _ |} |- _ ] =>
+    | [H: {| st_ev := _; st_trace := _; st_pl := _; st_evid := _ |} =
+          {| st_ev := _; st_trace := _; st_pl := _; st_evid := _ |} |- _ ] =>
       invc H; monad_unfold
     end; destruct_conjs; monad_unfold.

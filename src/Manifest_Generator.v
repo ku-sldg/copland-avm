@@ -159,32 +159,6 @@ Proof.
 Qed.
 
 
-
-
-
-
-
-(*
-Fixpoint places' (t:Term) (ls:list Plc) : list Plc :=
-  match t with
-  | asp _ => ls 
-  | att q t' => (q :: (places' t' ls))
-  | lseq t1 t2 => places' t2 (places' t1 ls)
-  | bseq _ t1 t2 => places' t2 (places' t1 ls)
-  | bpar _ t1 t2 => places' t2 (places' t1 ls)
-  end.
-
-Definition places (p:Plc) (t:Term): list Plc := 
-  p :: (places' t []).
-
-Definition places_terms' (ts: list Term) (p:Plc) : list (list Plc) :=
-  List.map (places p) ts.
-
-Definition places_terms (ts:list Term) (p:Plc) : list Plc :=
-  dedup_list (List.concat (places_terms' ts p)).
-
-*)
-
 Definition places_terms' (ts: list Term) (p:Plc) : list (list Plc) :=
   List.map (places p) ts.
 
