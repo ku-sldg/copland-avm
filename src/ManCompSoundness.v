@@ -110,7 +110,7 @@ Proof.
   intuition.
   pose proof (H0 _ H1).
   assert ((fun x : ASP_ID =>
-             if in_dec_set (EqClass_impl_DecEq ASP_ID) x asps
+             if in_dec_set x asps
              then true
              else false) x = true).
   repeat break_match; eauto.
@@ -122,7 +122,7 @@ Proof.
     H2 : (fun _ => _) _ = _
   |- _ => 
       pose proof (filter_resolver _ _ ((fun x : ASP_ID =>
-      if in_dec_set (EqClass_impl_DecEq ASP_ID) x asps
+      if in_dec_set x asps
       then true
       else false)) H1 H2) as HH
   end.

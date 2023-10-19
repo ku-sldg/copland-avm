@@ -40,7 +40,6 @@ Extract Constant hsh_params => "( undefined () )".
 (* Extract Constant + => "add". *)
 (* Extract Constant Nat.add => "(+)". *)
 
-
 (*
 Extract Constant get_ev => "bind get (fn st => ret (st_ev st)) : cvm_st -> coq_EvC".
 (* "st <- (@get cvm_st CVM_Error) ;; ret (st_ev st)". *)
