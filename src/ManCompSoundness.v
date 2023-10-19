@@ -1,26 +1,15 @@
 Require Import Manifest Manifest_Compiler Manifest_Generator AbstractedTypes
   Maps Term_Defs List Cvm_St Cvm_Impl ErrorStMonad_Coq StructTactics 
   Cvm_Monad EqClass Manifest_Admits Auto.
-Require Import Manifest_Generator_Facts (* Executable_Defs_Prop  *)
-  (* Executable_Facts_Dist *) Eqb_Evidence
-  Manifest_Generator_Helpers.
+Require Import Manifest_Generator_Facts Eqb_Evidence.
 
-Require Import ManCompSoundness_Helpers.
+Require Import Manifest_Generator_Helpers ManCompSoundness_Helpers.
 
 Require Import Coq.Program.Tactics.
 
 Import ListNotations.
 
 (* Set Nested Proofs Allowed. *)
-
-
-(*
-Fixpoint add_to_list {A : Type} `{EqClass A} (l : list A) (v : A) : list A :=
-  match l with
-  | nil => v :: nil
-  | h :: t => if (eqb h v) then (h :: t) else h :: (add_to_list t v)
-  end.
-*)
 
 
 Definition lib_supports_manifest (al : AM_Library) (am : Manifest) : Prop :=
@@ -101,17 +90,6 @@ Global Hint Resolve filter_resolver : core.
 
 Require Import Helpers_CvmSemantics.
 
-
-(*
-
-  match goal with
-  | H1 : forall _, _,
-    H2 : aspCb _ (asp_paramsC ?a ?l ?targ ?tid) ?p' ?ev ?ev' = _
-    |- _ => 
-  end.
-
-*)
-
 Lemma callbacks_work_asps : forall absMan amLib amConf,
   lib_supports_manifest amLib absMan ->
   manifest_compiler absMan amLib = amConf ->
@@ -154,39 +132,6 @@ Proof.
   jkjke'.
   congruence.
 Qed.
-
-
-(*
-
-Lemma add_to_list_works : forall {A} `{EqClass A} (l : list A) x,
-  In x (add_to_list l x).
-Proof.
-  induction l; simpl in *; intuition; eauto;
-  break_match; simpl in *; eauto.
-  - rewrite eqb_leibniz in *; subst; eauto.
-Qed.
-
-Local Hint Resolve add_to_list_works : core.
-*)
-
-
-
-
-(*
-Lemma ac_immut : forall t e tr p i ac,
-  st_AM_config 
-    (execErr 
-      (build_cvm t)
-      {|
-        st_ev := e;
-        st_trace := tr;
-        st_pl := p;
-        st_evid := i;
-        st_AM_config := ac
-      |}) = ac.
-Proof.
-
-*)
 
 Lemma never_change_am_conf : forall t st res st',
   build_cvm (copland_compile t) st = (res, st') ->
@@ -542,92 +487,6 @@ Proof.
   (* Unshelve. (* Weirdly, we have trivial existentials left *)
   all: try (eapply default_bs); try (eapply default_UUID). *)
 Qed.
-
-
-(*
-
-Lemma in_add_to_list : forall {A} `{EqClass A} (l : list A) x x',
-  In x l ->
-  In x (add_to_list l x').
-Proof.
-  induction l; simpl in *; intuition; eauto;
-  subst; eauto; break_match; simpl in *; eauto.
-Qed.
-
-Local Hint Resolve in_add_to_list : core.
-
-Lemma in_add_to_list_rev : forall {A} `{EqClass A} (l : list A) (a a' : A),
-  a <> a' ->
-  In a (add_to_list l a') ->
-  In a l.
-Proof.
-  induction l; simpl in *; intuition; eauto.
-  break_match; simpl in *; intuition; eauto.
-Qed.
-
-Lemma in_dec_add_to_list : forall {A} `{EqClass A} l a a',
-  a <> a' ->
-  (if (in_dec (EqClass_impl_DecEq A) a l) then true else false) =  
-  if (in_dec (EqClass_impl_DecEq A) a (add_to_list l a')) then true else false.
-Proof.
-  intuition; repeat break_match; eauto.
-  - destruct n; eapply in_add_to_list; eauto.
-  - destruct n; eapply in_add_to_list_rev; eauto.
-Qed.
-
-
-Lemma cannot_be_in_filter_map : forall {A B} `{EqClass A} (l : MapC A B) l' a,
-  ~ (In a l') ->
-  map_get (minify_mapC l 
-    (fun x : A => if in_dec (EqClass_impl_DecEq A) x l' then true else false)) a = None.
-Proof.
-  induction l; simpl in *; intuition; eauto;
-  repeat (break_match; simpl in *; eauto; try congruence);
-  rewrite eqb_leibniz in *; congruence.
-Qed.
-
-Lemma cannot_be_in_filter_mapd : forall {A B} `{EqClass A, EqClass B} (l : MapD A B) l' a,
-  ~ (In a l') ->
-  map_get (minify_mapD l 
-    (fun x : A => if in_dec (EqClass_impl_DecEq A) x l' then true else false)) a = None.
-Proof.
-  induction l; simpl in *; intuition; eauto;
-  repeat (break_match; simpl in *; eauto; try congruence);
-  rewrite eqb_leibniz in *; congruence.
-Qed.
-
-Lemma map_get_minify_eq_under_add_to_list : forall {A B} `{EqClass A} (l : MapC A B) l' a a' v,
-  map_get (minify_mapC l 
-    (fun x : A => if in_dec (EqClass_impl_DecEq A) x l' then true else false)) a = Some v ->
-  map_get (minify_mapC l 
-    (fun x : A => if in_dec (EqClass_impl_DecEq A) x (add_to_list l' a') then true else false)) a = Some v.
-Proof.
-  induction l; simpl in *; intuition; eauto;
-  repeat (break_match; simpl in *; auto with *; eauto; try congruence);
-  rewrite eqb_leibniz in *; subst.
-  - assert (Some v = None). {
-      rewrite <- H0; eapply cannot_be_in_filter_map; eauto.
-    }
-    congruence.
-Qed.
-
-
-Lemma mapD_get_minify_eq_under_add_to_list : forall {A B} `{EqClass A, EqClass B} (l : MapD A B) l' a a' v,
-  map_get (minify_mapD l 
-    (fun x : A => if in_dec (EqClass_impl_DecEq A) x l' then true else false)) a = Some v ->
-  map_get (minify_mapD l 
-    (fun x : A => if in_dec (EqClass_impl_DecEq A) x (add_to_list l' a') then true else false)) a = Some v.
-Proof.
-  induction l; simpl in *; intuition; eauto;
-  repeat (break_match; simpl in *; auto with *; eauto; try congruence);
-  rewrite eqb_leibniz in *; subst.
-  - assert (Some v = None). {
-      rewrite <- H1; eapply cannot_be_in_filter_mapd; eauto.
-    }
-    congruence.
-Qed.
-
-*)
 
 Definition manifest_support_am_config (m : Manifest) (ac : AM_Config) : Prop :=
   (forall a, In_set a (m.(asps)) -> 
@@ -1903,7 +1762,6 @@ Theorem manifest_generator_compiler_soundness_distributed : forall t tp p absMan
   (*
     (* Note, this should be trivial typically as amConf = st.(st_AM_config) and refl works *)
     supports_am amConf (st.(st_AM_config)) ->  
-
     *)
 
     (  forall t', 

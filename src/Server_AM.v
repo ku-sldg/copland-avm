@@ -8,7 +8,6 @@ Require Import List.
 Import ListNotations.
 
 
-
 Definition am_check_auth_tok (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) : AM AppResultC :=
   match authTok with
   | evc auth_ev auth_et => 
@@ -26,12 +25,6 @@ Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc)
   v <- am_check_auth_tok t fromPl authTok ;;
   match ((appraise_auth_tok v)) with
   | true =>
-
-  (*
-    match (privPolicy fromPl t) with
-    | true => 
-
-  *)
 
     config_AM_if_lib_supported t myPl al ;; 
   

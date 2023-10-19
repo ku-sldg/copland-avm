@@ -9,16 +9,10 @@ Import ListNotations.
 Record AM_St : Type := mkAM_St
                          { am_nonceMap : MapC N_ID BS;
                            am_nonceId : N_ID; 
-                           amConfig : AM_Config;
-                           
-                           (* ;
-                           st_aspmap : asp_map;
-                           st_sigmap : sig_map;
-                           (*am_pl : Plc *)(*;
-                           checked : list nat*) *) }.
+                           amConfig : AM_Config }.
 
 Definition empty_amst :=
-  mkAM_St map_empty 0 empty_am_config (* [] [] *) .
+  mkAM_St map_empty 0 empty_am_config.
 
 
 Inductive AM_Error : Type := 

@@ -1,7 +1,7 @@
 Require Import Manifest Manifest_Compiler Manifest_Generator AbstractedTypes
   Maps Term_Defs List Cvm_St Cvm_Impl ErrorStMonad_Coq StructTactics 
   Cvm_Monad EqClass Manifest_Admits Auto.
-Require Import Manifest_Generator_Facts (* Executable_Defs_Prop *) Eqb_Evidence.
+Require Import Manifest_Generator_Facts Eqb_Evidence.
 
 Require Import Coq.Program.Tactics Lia.
 
@@ -10,8 +10,6 @@ Import ListNotations.
 (*
 Set Nested Proofs Allowed.
 *)
-
-
 
 
 Definition supports_am_app (ac1 ac2 : AM_Config) : Prop :=
@@ -47,13 +45,6 @@ Qed.
 Local Hint Resolve supports_am_app_refl : core.
 Local Hint Resolve supports_am_app_trans : core.
 
-(*
-Definition lib_supports_manifest_app (al : AM_Library) (am : Manifest) : Prop :=
-  (forall (a : (Plc*ASP_ID)), In a am.(appraisal_asps) -> exists cb, Maps.map_get al.(Local_Appraisal_ASPS) a = Some cb) /\ 
-  (forall (p : Plc), In p am.(pubKeyPlcs) -> exists cb, Maps.map_get al.(Local_PubKeys) p = Some cb).
-*)
-
-
 
 Fixpoint am_config_support_exec_app (e : Evidence) (ac : AM_Config) : Prop :=
     match e with
@@ -80,15 +71,6 @@ Fixpoint am_config_support_exec_app (e : Evidence) (ac : AM_Config) : Prop :=
             am_config_support_exec_app e' ac
         | _ => True
         end
-        
-        
-            (*
-            | ASPC _ _ (asp_paramsC aspid _ _ _) =>
-            (forall l targ targid p' ev ev',
-            ((exists res, 
-            ac.(aspCb) (asp_paramsC aspid l targ targid) p' ev ev' = resultC res) \/ 
-            ac.(aspCb) (asp_paramsC aspid l targ targid) p' ev ev' = errC Runtime))
-            *)
     | ss e1 e2 => 
         exists ac1 ac2, 
         (am_config_support_exec_app e1 ac1) /\ 
@@ -747,18 +729,6 @@ Proof.
 
     destruct_conjs.
 
-    (*
-
-    find_rewrite.
-
-
-
-
-
-    door.
-    ++
-    *)
-
       assert (st = H12).
       {
         eapply gen_appraise_AM_immut; eauto.
@@ -804,11 +774,6 @@ Proof.
 
       find_rewrite.
 
-      (*
-
-      rewrite H12 in *.
-      
-      *)
       ff.
 
       right. eauto.
@@ -824,54 +789,6 @@ Proof.
 Qed.
 
 Require Import ManCompSoundness.
-
-(*
-
-Definition manifest_support_am_config_app (m : Manifest) (ac : AM_Config) : Prop :=
-  (forall p a, In (p,a) (m.(appraisal_asps)) -> 
-    forall l targ targid ev ev',
-    (exists res errStr, ac.(app_aspCb) (asp_paramsC a l targ targid) p ev ev' = resultC res) \/
-    (ac.(app_aspCb) (asp_paramsC a l targ targid) p ev ev' = errC (Runtime errStr))) /\ 
-
-    (forall p, In p (m.(pubKeyPlcs)) -> 
-    (exists res errStr, ac.(pubKeyCb) p = resultC res) \/
-    (ac.(pubKeyCb) p = errC (Runtime errStr))).
-
-
-
-Theorem manifest_support_am_config_compiler_app : forall absMan amLib,
-    lib_supports_manifest_app amLib absMan ->
-    manifest_support_am_config_app absMan (manifest_compiler absMan amLib).
-Proof.
-  unfold lib_supports_manifest_app, manifest_support_am_config_app, 
-    manifest_compiler, generate_PubKey_dispatcher, generate_Plc_dispatcher, generate_appraisal_ASP_dispatcher in *;
-  simpl in *; intuition;
-  repeat break_match; simpl in *; intuition; eauto;
-  match goal with
-  | H:  context[ map_get (minify_mapC ?l ?filt) ?a],
-    H1: forall a' : (Plc*ASP_ID), _ -> (exists x : _, map_get _ _ = Some x) |- _ => 
-    assert (CO : exists x, map_get (minify_mapC l filt) a = Some x)
-    ;
-      [
-      eapply filter_resolver; eauto;
-      repeat break_match; intuition; try congruence
-      | 
-      rewrite H in CO; destruct CO; congruence
-    ]
-  | H:  context[ map_get (minify_mapD ?l ?filt) ?a],
-    H1: forall a' : Plc, _ -> (exists x : _, map_get _ _ = Some x) |- _ => 
-    assert (CO : exists x, map_get (minify_mapD l filt) a = Some x)
-    ;
-      [
-      eapply filter_resolver_mapd; eauto;
-      repeat break_match; intuition; try congruence
-      | 
-      rewrite H in CO; destruct CO; congruence
-    ]
-  end.
-Qed.
-
-*)
 
 Fixpoint manifest_support_term_app (m : Manifest) (e : Evidence) : Prop :=
     match e with
@@ -960,48 +877,6 @@ Proof.
     destruct_conjs; ff; eauto.
 Qed.
 
-
-(*
-Definition app_aspid_manifest_update (i:ASP_ID) (p:Plc) (m:Manifest) : Manifest := 
-  let '{| my_abstract_plc := oldPlc;
-          asps := oldasps; 
-          appraisal_asps := old_app_asps;
-          uuidPlcs := oldKnowsOf; 
-          pubKeyPlcs := oldContext; 
-          targetPlcs := oldTargets ;
-          policy := oldPolicy |} := m in
-  (Build_Manifest oldPlc oldasps ((i,p) :: old_app_asps) oldKnowsOf oldContext oldTargets oldPolicy).
-
-Fixpoint manifest_generator_app' (et:Evidence) (m:Manifest) : Manifest :=
-  match et with 
-  | mt => m 
-  | nn _ => m (* TODO: account for nonce handling here? *)
-  | uu p fwd ps e' => 
-    match fwd with 
-    | EXTD => 
-      match ps with 
-      | asp_paramsC a _ _ _ =>
-          manifest_generator_app' e' 
-            (app_aspid_manifest_update p a m)
-      end 
-    | ENCR => 
-      match ps with 
-      | asp_paramsC _ _ p' _ =>
-          manifest_generator_app' e' 
-            (pubkey_manifest_update p' m)
-      end
-    | KEEP => manifest_generator_app' e' m
-    | _ => m
-    end
-  | ss e1 e2 => 
-      manifest_generator_app' e2 (manifest_generator_app' e1 m)
-  end.
-
-Definition manifest_generator_app (et:Evidence) : Manifest := 
-  manifest_generator_app' et empty_Manifest.
-
-*)
-
 Lemma manifest_generator_app_cumul : forall et m1 m2,
   manifest_subset m1 m2 ->
   manifest_subset m1 (manifest_generator_app' et m2).
@@ -1045,8 +920,6 @@ Proof.
 
     + (* EXTD *)
 
-
-
     unfold app_aspid_manifest_update.
     break_let.
     subst.
@@ -1077,7 +950,6 @@ Proof.
 
     split; eauto.
     
-
   - (* ss case *)
     eauto.
 Qed.

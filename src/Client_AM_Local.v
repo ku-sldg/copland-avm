@@ -24,7 +24,7 @@ Set Nested Proofs Allowed.
 
 Definition gen_nonce_if_none_local (initEv:option EvC) : AM EvC :=
   match initEv with
-      | Some (evc ebits et) => ret mt_evc(* (evc ebits et) *)
+      | Some (evc ebits et) => ret mt_evc
       | None =>
         let nonce_bits := gen_nonce_bits in
         nid <- am_newNonce nonce_bits ;;
@@ -36,7 +36,6 @@ Definition gen_authEvC_if_some (ot:option Term) (myPlc:Plc) (init_evc:EvC) : AM 
   | Some auth_phrase =>
     let '(evc init_rawev_auth init_et_auth) := init_evc in
     let auth_rawev := am_sendReq auth_phrase myPlc mt_evc init_rawev_auth in
-                        (* run_cvm_rawEv auth_phrase pFrom [] *)
     let auth_et := eval auth_phrase myPlc init_et_auth in
       ret (evc auth_rawev auth_et)
   | None => ret (evc [] mt)
@@ -49,42 +48,8 @@ Definition am_appraise (t:Term) (toPlc:Plc) (init_et:Evidence) (cvm_ev:RawEv) : 
   ret (app_res).
 
 
-(*
-
-Definition am_client_gen (t:Term) (myPlc:Plc) (pTo:Plc) (initEvOpt:option EvC) 
-    (authPhrase:option Term) (app_bool:bool) : AM AM_Result :=
-evcIn <- gen_nonce_if_none initEvOpt ;;
-auth_evc <- gen_authEvC_if_some authPhrase myPlc mt_evc  ;;
-let '(evc init_ev init_et) := evcIn in
-let resev := am_sendReq t pTo auth_evc init_ev in 
-match app_bool with
-| true =>  
-  app_res <- am_appraise t pTo init_et resev ;; 
-  ret (am_appev app_res)
-| false => ret (am_rawev resev)
-end.
-
-Definition am_client_auth (t:Term) (myPlc:Plc) (pTo:Plc) 
-    (authPhrase:Term) (nonceB:bool) (appraiseB:bool) : AM AM_Result :=
-    let init_evc_opt := (if(nonceB) then None else (Some mt_evc)) in
-      am_client_gen t myPlc pTo init_evc_opt (Some authPhrase) appraiseB.
-
-      Check OptMonad_Coq.fromSome.
-      Locate fromSome.
-*)
-
-
-
-
-
-
-
 
 (*
-
-
-
-
 Ltac unfold_libsupports_defs := 
   try (unfold 
         lib_supports_aspids_bool, 
@@ -95,7 +60,6 @@ Ltac unfold_libsupports_defs :=
         pubkey_plc_in_amlib_bool,
         lib_supports_appraisal_aspids_bool,
         appraisal_aspid_in_amlib_bool in * ).
-
 *)
 
 
@@ -150,9 +114,6 @@ Admitted.
 Definition run_cvm_local_am (t:Term) (myPlc:Plc) (ls:RawEv) : AM RawEv := 
   st <- get ;; 
   ret (run_cvm_rawEv t myPlc ls (amConfig st)).
-
-
-
 
 Definition gen_authEvC_if_some_local (ot:option Term) (myPlc:Plc) (init_evc:EvC) (amLib:AM_Library) : AM EvC :=
   match ot with
@@ -381,319 +342,6 @@ Proof.
   econstructor.
 Qed.
 
-
-
-(*
-Lemma no_nonces : forall t p ,
-nonce_ids_et (eval t p mt) = [].
-Proof.
-  induction t; intros; try (ff; congruence).
-  -
-    ff.
-    unfold eval_asp in *.
-    ff; subst; destruct s; ff.
-  -
-    eauto.
-  -
-    assert (nonce_ids_et (eval t1 p mt) = []) by eauto.
-    assert (nonce_ids_et (eval t2 p mt) = []) by eauto.
-    
-    unfold nonce_ids_et in *.
-
-    ff.
-    admit.
-  -
-  Admitted.
-  *)
-
-
-  (*
-
-    Lemma nonce_ids_et_eval_cumul : forall t p et,
-      nonce_ids_et' et [] = [] ->
-      nonce_ids_et' (eval t p mt) [] = [] -> 
-      nonce_ids_et' (eval t p et) [] = [].
-    Proof.
-      induction t; intros; ff.
-      -
-        destruct a; ff.
-        ff; destruct s; ff.
-      -
-        ff.
-      -
-
-        eapply IHt2.
-        eapply IHt1.
-        eassumption.
-        apply no_nonces.
-        apply no_nonces.
-
-      - (* bseq case *)
-        destruct s.
-        destruct s; destruct s0; ff.
-
-        +
-
-        assert (nonce_ids_et' (eval t1 p et) [] = []) as HH.
-        {
-          eapply IHt1.
-          eassumption.
-          eapply no_nonces''.
-          eapply no_nonces_eval.
-          econstructor.
-        }
-        rewrite HH.
-        
-        eapply IHt2.
-        eassumption.
-
-        eapply no_nonces''.
-
-        eapply no_nonces_eval.
-        econstructor.
-
-      +
-
-
-      assert (nonce_ids_et' (eval t1 p et) [] = []) as HH.
-      {
-        eapply IHt1.
-        eassumption.
-        eapply no_nonces''.
-        eapply no_nonces_eval.
-        econstructor.
-      }
-      rewrite HH.
-      
-      eapply IHt2.
-      ff.
-
-      eapply no_nonces''.
-
-      eapply no_nonces_eval.
-      econstructor.
-
-      +
-
-      assert (nonce_ids_et' (eval t1 p mt) [] = []) as HH.
-      {
-        eapply IHt1.
-        ff.
-        eapply no_nonces''.
-        eapply no_nonces_eval.
-        econstructor.
-      }
-      rewrite HH.
-      
-      eapply IHt2.
-      eassumption.
-
-      eapply no_nonces''.
-
-      eapply no_nonces_eval.
-      econstructor.
-
-      -
-        destruct s.
-        destruct s; destruct s0; ff.
-
-        +
-
-        assert (nonce_ids_et' (eval t1 p et) [] = []) as HH.
-        {
-          eapply IHt1.
-          eassumption.
-          eapply no_nonces''.
-          eapply no_nonces_eval.
-          econstructor.
-        }
-        rewrite HH.
-        
-        eapply IHt2.
-        eassumption.
-
-        eapply no_nonces''.
-
-        eapply no_nonces_eval.
-        econstructor.
-
-      +
-
-
-      assert (nonce_ids_et' (eval t1 p et) [] = []) as HH.
-      {
-        eapply IHt1.
-        eassumption.
-        eapply no_nonces''.
-        eapply no_nonces_eval.
-        econstructor.
-      }
-      rewrite HH.
-      
-      eapply IHt2.
-      ff.
-
-      eapply no_nonces''.
-
-      eapply no_nonces_eval.
-      econstructor.
-
-      +
-
-      assert (nonce_ids_et' (eval t1 p mt) [] = []) as HH.
-      {
-        eapply IHt1.
-        ff.
-        eapply no_nonces''.
-        eapply no_nonces_eval.
-        econstructor.
-      }
-      rewrite HH.
-      
-      eapply IHt2.
-      eassumption.
-
-      eapply no_nonces''.
-
-      eapply no_nonces_eval.
-      econstructor.
-Qed.
-
-
-*)
-
-
-
-(*
-
-    -
-
-
-        erewrite IHt1.
-
-        eapply IHt2.
-        eassumption.
-
-        eapply IHt2.
-        ff.
-
-        eapply IHt2.
-        ff.
-        eassumption.
-        eassumption.
-
-
-        eapply IHt2.
-
-        eapply IHt2.
-        eapply IHt1.
-        eassumption.
-        apply no_nonces.
-        apply no_nonces.
-
-
-        assert (nonce_ids_et' (eval t1 p mt) [] = []).
-        {
-          eapply IHt1.
-          ff.
-        }
-
-        edestruct IHt1.
-        ff.
-    Admitted.
-
-    eapply nonce_ids_et_eval_cumul; eauto.
-
-
-
-
-    (*
-
-    Lemma nil_app {A:Type} : forall (l: list A),
-    l = [] -> 
-    l = l ++ l.
-    Proof.
-    Admitted.
-
-    Lemma nil_app2 {A:Type} : forall (l: list A),
-    l = [] -> 
-    l = l ++ l ++ l.
-    Proof.
-    Admitted.
-
-    erewrite nil_app2; eauto.
-
-
-    (*
-
-    H: nonce_ids_et' (eval t1 p mt) [] = []
-H0: nonce_ids_et' (eval t2 p mt) [] = []
-1/1
-nonce_ids_et' (eval t2 p (eval t1 p mt)) [] = [] ++ []
-    
-    
-    *)
-
-    Lemma nonce_ids_eval_cumul : forall t p et et' ls ls' ls'',
-      nonce_ids_et' et [] = ls -> 
-      nonce_ids_et' et' [] = ls' -> 
-      nonce_ids_et' (eval t p et') [] = ls'' -> 
-      nonce_ids_et' (eval t p et) [] = ls ++ ls' ++ ls''.
-    Proof.
-      induction t; intros; ff.
-      -
-        destruct a; ff.
-        +
-        subst.
-    Admitted.
-
-
-
-
-    eapply nonce_ids_eval_cumul.
-    eassumption.
-    2: {
-      eassumption.
-    }
-    simpl.
-    tauto.
-
-
-    *)
-
-    -
-    assert (nonce_ids_et (eval t1 p mt) = []) by eauto.
-    assert (nonce_ids_et (eval t2 p mt) = []) by eauto.
-    
-    unfold nonce_ids_et in *.
-
-    ff.
-
-    destruct s; destruct s0; ff; destruct s; ff;
-
-
-
-    eapply nonce_ids_eval_cumul; eauto.
-
-  -
-
-  assert (nonce_ids_et (eval t1 p mt) = []) by eauto.
-  assert (nonce_ids_et (eval t2 p mt) = []) by eauto.
-  
-  unfold nonce_ids_et in *.
-
-  ff.
-
-  destruct s; destruct s0; ff; destruct s; ff;
-
-
-
-  eapply nonce_ids_eval_cumul; eauto.
-Qed.
-
-
-*)
-
 Lemma nonce_ids_et_cumul : forall et ls nid,
   In nid ls -> 
   In nid (nonce_ids_et' et ls).
@@ -724,8 +372,6 @@ Proof.
 
     eauto.
 Qed.
-
-
 
 Lemma nonce_ids_ss_decom : forall nid et1 et2 ls,
 In nid (nonce_ids_et' et2 (nonce_ids_et' et1 ls)) -> 
@@ -764,53 +410,6 @@ Proof.
     eapply nonce_ids_et_cumul; eauto.
     eauto.
     Qed.
-
-    (*
-
-    apply H0 in IHet1.
-
-    find_apply_hyp_hyp.
-
-    eauto.
-
-
-    eauto.
-
-
-
-    apply nid_in_gen with (ls':=[]) in H.
-    door.
-    
-    assert (In nid (nonce_ids_et' et1 ls)) by eauto.
-
-    eauto.
-
-    eapply IHet2.
-
-    eauto.
-
-
-
-    assert (In nid (nonce_ids_et' et1 ls)).
-    eauto.
-
-
-    eapply IHet2.
-    eauto./
-
-
-    apply H in IHet1.
-    solve_by_inversion.
-    eapply IHet2.
-    eauto.
-
-
-
-Admitted.
-
-*)
-
-
 
 Lemma nid_nonce_ids_eval : forall t p et ls nid,
   In nid (nonce_ids_et' (eval t p et) ls) -> 
@@ -977,34 +576,12 @@ Proof.
 Qed.
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 Example client_gen_executable : forall t p initEvOpt amLib st, 
-(*
-  let cvm_absMan := get_my_absman_generated t p in 
-  let init_et := 
-  let expected_et := eval t p 
-  let app_absMan := manifest_
-*)
+
   lib_supports_manifest_bool amLib (get_my_absman_generated t p) = true -> 
 (*
   lib_supports_manifest_bool amLib (manifest_generator_app (eval ))
 *)
-
-
 
   (exists res st', 
   (am_client_gen_local t p initEvOpt amLib) st = (resultC res, st')) \/ 

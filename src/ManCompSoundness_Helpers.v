@@ -1,5 +1,5 @@
 Require Import Term_Defs_Core Manifest Manifest_Generator Manifest_Generator_Helpers
-  Manifest_Generator_Facts (* Executable_Defs_Prop *) Manifest_Admits Eqb_Evidence.
+  Manifest_Generator_Facts Manifest_Admits Eqb_Evidence.
 
 Require Import Params_Admits.
 
@@ -39,8 +39,6 @@ Proof.
 Qed. 
 
 
-
-
 Lemma places_app_cumul : forall p t ls ls',
       In p (places' t ls) -> 
       ~ In p ls ->
@@ -52,23 +50,19 @@ Proof.
       - (* asp case *)
       congruence.
       - (* at case *)
-        door.
-        +
-          eauto.
-        +
+        door; 
           eauto.
       - (* lseq case *)
-
-      destruct (In_dec_tplc p (places' t1 ls)).
-      +
-        assert (In p (places' t1 ls')) by eauto.
-        apply places'_cumul.
-        eassumption.
-      +
-        assert (In p (places' t2 ls)) by eauto.
-        eapply IHt2.
-        eassumption.
-        eassumption.
+        destruct (In_dec_tplc p (places' t1 ls)).
+        +
+          assert (In p (places' t1 ls')) by eauto.
+          apply places'_cumul.
+          eassumption.
+        +
+          assert (In p (places' t2 ls)) by eauto.
+          eapply IHt2.
+          eassumption.
+          eassumption.
     - (* bseq case *)
 
     destruct (In_dec_tplc p (places' t1 ls)).
@@ -95,8 +89,6 @@ Proof.
       eassumption.
 Qed.
 
-
-
 Lemma top_plc_refl: forall t' p1,  In t' (place_terms t' p1 p1).
 Proof.
   intros.
@@ -105,7 +97,6 @@ Proof.
     try auto;
     try (rewrite eqb_plc_refl in *; solve_by_inversion).
 Qed.
-
 
 Lemma app_not_empty : forall A (l1 l2:list A),
 l1 ++ l2 <> [] -> 
