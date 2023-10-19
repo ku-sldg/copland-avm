@@ -25,23 +25,12 @@ Admitted.
 
 Definition cache_id : ASP_ID.
 Admitted.
-(*
-Definition store_id : ASP_ID.
-Admitted.
-
-Definition retrieve_id : ASP_ID.
-Admitted.
-*)
-
-
 
 Definition store_args : list Arg.
 Admitted.
 
 Definition retrieve_args : list Arg.
 Admitted.
-
-
 
 Definition sys : TARG_ID.
 Admitted.

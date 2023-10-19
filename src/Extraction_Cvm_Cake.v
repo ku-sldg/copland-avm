@@ -47,25 +47,11 @@ Extract Constant get_ev => "bind get (fn st => ret (st_ev st)) : cvm_st -> coq_E
 
 *)
 
-(*
-  bind get (fn st =>
-    let val ac = let val Coq_mkAM_St _ _ amConfig = st in amConfig end in
-    (case decrypt_bs_to_rawev bs params ac of
-       Coq_errC e => failm (Coq_dispatch_error e)
-     | Coq_resultC r =>
-       (case check_et_size et r of
-          Coq_errC e => failm (Coq_dispatch_error e)
-        | Coq_resultC _ => ret r)) end)
-		*)
-
 Definition term_list : list Term := 
-	[cert_style; cert_style_test; cert_style_trimmed; cert_cache_p1; cert_cache_p0; cert_cache_p0_trimmed].
+	[cert_style; cert_cache_p1; cert_cache_p0; par_mut_p0; par_mut_p1; layered_bg_strong].
 
 Separate Extraction run_cvm manifest_compiler  
-		    run_am_app_comp 
-			handle_AM_request (* am_client_auth am_client_gen *)
-			term_list ssl_sig_parameterized kim_meas
-		    par_mut_p0 par_mut_p1 layered_bg_strong cm_meas
-		    man_gen_run_attify empty_am_result
-        am_client_gen_local
-        run_am_app_comp.
+        empty_am_result run_am_app_comp 
+			  handle_AM_request am_client_gen_local
+			  term_list ssl_sig_parameterized kim_meas cm_meas
+		    man_gen_run_attify.

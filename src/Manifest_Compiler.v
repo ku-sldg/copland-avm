@@ -44,7 +44,6 @@ Import ListNotations.
   Definition generate_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest)
       : (ASPCallback DispatcherErrors) :=
     (* let asp_server_cb := al.(ASPServer_Cb) in *)
-      (* let asp_server_addr := cman.(ASP_Server) in *)
       (generate_ASP_dispatcher' al am). 
 
 
@@ -71,7 +70,6 @@ Import ListNotations.
   Definition generate_appraisal_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest)
   : (ASPCallback DispatcherErrors) :=
 (* let asp_server_cb := al.(ASPServer_Cb) in *)
-  (* let asp_server_addr := cman.(ASP_Server) in *)
   (generate_appraisal_ASP_dispatcher' al am). 
 
 
@@ -83,7 +81,7 @@ Import ListNotations.
       let abstract_plcs := am.(uuidPlcs) in
       let shrunk_map := 
         minify_mapD local_plc_map (fun x => if (in_dec_set (EqClass_impl_DecEq _) x abstract_plcs) then true else false) in
-      (* let plc_server_addr := cman.(Plc_Server) in *)
+
       fun (p : Plc) =>
         (* check is the plc "p" is local, with a reference *)
         match (map_get shrunk_map p) with
@@ -100,7 +98,7 @@ Import ListNotations.
       let abstract_plcs := am.(pubKeyPlcs) in
       let shrunk_map := 
         minify_mapD local_pubkey_map (fun x => if (in_dec_set (EqClass_impl_DecEq _) x abstract_plcs) then true else false) in
-      (* let pubkey_server_addr := cman.(PubKey_Server) in *)
+
       fun (p : Plc) =>
         (* check is the plc "p" is local, with a reference in the pubkey server mapping *)
         match (map_get shrunk_map p) with
@@ -113,7 +111,7 @@ Import ListNotations.
       : UUIDCallback :=
     (* let uuid_server_cb := al.(UUIDServer_Cb) in *)
       let local_plc_map := al.(Local_Plcs) in
-      (* let local_uuid_addr := cman.(UUID_Server) in *)
+
       fun (u : UUID) =>
         (* check if uuid "u" is local, else dispatch to callback *)
         match (mapD_get_key local_plc_map u) with

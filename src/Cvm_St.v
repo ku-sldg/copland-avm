@@ -19,6 +19,8 @@ Require Export Manifest.
     st_pl - Current "executing place".
     st_evid - Monotonic event ID counter.  Incremented after each 
               attestation-relevant event/invocation.
+    st_AM_config - AM Configuration (typically produced by the Manifest Compiler).  
+                   Provides callback functions used by the CVM to interpret Copland.
  *)
 
 

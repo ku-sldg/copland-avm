@@ -362,11 +362,7 @@ Proof.
   unfold doRemote_session' in *;
   repeat ff;
   find_rewrite; ff.
-  (*
-  - invc H; invc H0; simpl in *; 
-    intuition; eauto;
-    try (rewrite H; eauto);
-    invc H; eauto. *)
+
   - ff; eauto;
     repeat match goal with
     | x : cvm_st |- _ => destruct x
@@ -397,9 +393,9 @@ Qed.
    for possibly the trace, then all of those final parameters should also be equal. *)
 Lemma st_trace_irrel : forall t e e' e'' x x' y y' p p' p'' i i' i'' ac ac' ac'' res,
     build_cvm t {| st_ev := e; st_trace := x; st_pl := p; st_evid := i; st_AM_config := ac |} =
-    (res (* resultC tt *), {| st_ev := e'; st_trace := x'; st_pl := p'; st_evid := i'; st_AM_config := ac' |}) ->
+    (res, {| st_ev := e'; st_trace := x'; st_pl := p'; st_evid := i'; st_AM_config := ac' |}) ->
     build_cvm t {| st_ev := e; st_trace := y; st_pl := p; st_evid := i; st_AM_config := ac |} =
-    (res (* resultC tt *), {| st_ev := e''; st_trace := y'; st_pl := p''; st_evid := i''; st_AM_config := ac'' |}) ->
+    (res, {| st_ev := e''; st_trace := y'; st_pl := p''; st_evid := i''; st_AM_config := ac'' |}) ->
     (e' = e'' /\ p' = p'' /\ i' = i'' /\ ac' = ac'').
 Proof.
   intros; find_eapply_lem_hyp cvm_errors_deterministic; 
@@ -432,7 +428,7 @@ Ltac dohi :=
 Lemma trace_irrel_pl : forall t tr1 tr1' tr2 e e' p1' p1 i i' ac ac' res,
     build_cvm t
            {| st_ev := e; st_trace := tr1; st_pl := p1; st_evid := i; st_AM_config := ac |} =
-    (res(*resultC tt *), {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_evid := i'; st_AM_config := ac' |}) ->
+    (res, {| st_ev := e'; st_trace := tr1'; st_pl := p1'; st_evid := i'; st_AM_config := ac' |}) ->
     
     st_pl
       (execErr (build_cvm t)
@@ -443,7 +439,6 @@ Proof.
   simpl.
   vmsts.
   simpl.
-  (* do_asome. *)
   subst.
   dohi.
   df.
@@ -481,7 +476,6 @@ destruct (build_cvm t {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i;
 simpl.
 vmsts.
 simpl.
-(* do_asome. *)
 subst.
 dohi.
 df.
@@ -517,7 +511,6 @@ destruct (build_cvm t {| st_ev := e; st_trace := tr2; st_pl := p1; st_evid := i;
 simpl.
 vmsts.
 simpl.
-(* do_asome. *)
 subst.
 dohi.
 df.
@@ -553,7 +546,6 @@ Proof.
   simpl.
   vmsts.
   simpl.
-  (* do_asome. *)
   subst.
   dohi.
   df.
@@ -747,10 +739,10 @@ Ltac cumul_ih :=
   match goal with
   | [H: context[(st_trace _ = _ ++ st_trace _)],
         H': build_cvmP ?t1 {| st_ev := _; st_trace := ?m ++ ?k; st_pl := _; st_evid := _; st_AM_config := _ |}
-                             (?res(*resultC tt*))
+                             (?res)
                              ?v_full,
             H'': build_cvmP ?t1 {| st_ev := _; st_trace := ?k; st_pl := _; st_evid := _; st_AM_config := _ |}
-                                  (?res(*resultC tt*))
+                                  (?res)
                                   ?v_suffix
      |- _] =>
     assert_new_proof_by (st_trace v_full = m ++ st_trace v_suffix) eauto

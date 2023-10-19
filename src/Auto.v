@@ -87,6 +87,5 @@ Ltac fail_no_match_some :=
   end.
 
 Ltac dohtac := fail_no_match_some;
-               (*try htac''; *)
                try rewrite PeanoNat.Nat.eqb_refl in *;
                try rewrite PeanoNat.Nat.eqb_eq in *.

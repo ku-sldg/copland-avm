@@ -37,20 +37,6 @@ Definition is_empty_manset {A : Type} (s:manifest_set A) : bool :=
 Lemma manempty_is_empty {A : Type} : is_empty_manset (@manifest_set_empty A) = true.
 Proof. auto. Qed.
 
-(*
-Check In.
-In
-	 : forall A : Type, A -> list A -> Prop
-*)
-
-(*
-Check in_dec.
-in_dec
-	 : forall A : Type,
-       (forall x y : A, {x = y} + {x <> y}) ->
-       forall (a : A) (l : list A), {In a l} + {~ In a l}
-*)
-
 Definition In_set {A : Type} (a : A) (s : manifest_set A) : Prop :=
   In a s.
 
@@ -106,22 +92,9 @@ Proof.
     + simpl; simpl in H. destruct H; auto.
 Qed.
 
-(*
-Check existsb.
-
-existsb
-	 : forall A : Type, (A -> bool) -> list A -> bool
-*)
-
 Definition existsb_set {A:Type} (f : A -> bool) (s: manifest_set A) : bool :=
   existsb f s.
 
-(*
-Check existsb_eq_iff_In
-existsb_eq_iff_In
-	 : forall (l : list ID_Type) (a : ID_Type),
-       existsb (eqb a) l = true <-> In a l
-*)
 Definition existsb_eq_iff_In_set: forall (s : manifest_set ID_Type) (a : ID_Type),
   existsb_set (eqb a) s = true <-> In_set a s.
 Proof.

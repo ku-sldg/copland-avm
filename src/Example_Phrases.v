@@ -3,8 +3,6 @@ Require Import Term_Defs Example_Phrases_Admits.
 Require Import List.
 Import ListNotations.
 
-(* Definition term1 := att 1 (asp SIG). *)
-
 
 Definition attest (p:Plc) (targ: TARG_ID) :=
   asp (ASPC ALL EXTD (asp_paramsC attest_id [] p targ)).
@@ -42,22 +40,6 @@ Definition cert_style : Term :=
                     (appraise P2 sys)
                     (certificate P2 sys)))).
 
-Definition cert_style_trimmed : Term :=
-  lseq
-    (attest P1 sys)
-    (att P2 (lseq
-              (appraise P2 sys)
-              (certificate P2 sys))).
-
-Definition cert_style_test : Term :=
-  att P1 (lseq
-            (attest P1 sys)
-            (lseq
-            (att P2 (lseq
-                      (appraise P2 sys)
-                      (certificate P2 sys)))
-            (att P3 (store P1 cache)))).
-
 (* 
 pg. 29:16 bottom, Certificate-Style section
 *)
@@ -78,13 +60,6 @@ Definition cert_cache_p0 : Term :=
                (retrieve P1 cache)
                (asp CPY))
          (asp SIG)).
-  
-Definition cert_cache_p0_trimmed : Term :=
-    (lseq
-        (bseq (NONE,ALL)
-              (retrieve P1 cache)
-              (asp CPY))
-        (asp SIG)).
 
 (* 
 pg. 29:17, Background Check section 
@@ -164,14 +139,4 @@ Definition layered_bg_strong : Term :=
               (lseq
                  (appraise P2 it)
                  (asp SIG)))).
-  
-
-
-
-Definition test_par_nested : Term :=
-  bpar (ALL,ALL)
-       (asp SIG)
-       (bpar (ALL,ALL)
-             (asp SIG)
-             (asp SIG)).
        

@@ -31,11 +31,6 @@ Definition PlcCallback : Type :=
 Definition UUIDCallback : Type :=
   UUID -> ResultT Plc DispatcherErrors.
 
-(*
-Definition PlcMap := MapC Plc Address.
-*)
-
-
 Definition PolicyT : Set :=  list (Plc * ASP_ID).
 
 Definition empty_PolicyT : PolicyT := [].

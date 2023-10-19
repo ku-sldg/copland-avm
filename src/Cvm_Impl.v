@@ -10,7 +10,7 @@ Require Import List.
 Import ListNotations.
 
 (** Monadic CVM implementation (top-level) *)
-Fixpoint build_cvm (t:Core_Term) (* (ac : AM_Config) *) : CVM unit :=
+Fixpoint build_cvm (t:Core_Term) : CVM unit :=
   match t with
   | aspc a =>
       e <- do_prim a ;;
