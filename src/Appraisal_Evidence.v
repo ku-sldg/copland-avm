@@ -240,13 +240,6 @@ Proof.
   intros.
   invc H.
   destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff; destruct ls; try solve_by_inversion.
-                               (*
-                               -
-                                 right. eauto.
-                               -
-                                 right. eauto. *)
-                                 
-                                 
 Defined.
 
 Ltac do_inv_recon_hh :=
@@ -262,25 +255,13 @@ Ltac do_inv_recon_hh :=
 
 Lemma inv_recon_ee: forall p ps ls et (*et'*) n ec',
     reconstruct_evP (evc ls et) (eec p ps n (*et'*) ec') ->
-    (* (exists et', et = uu p ENCR ps et' ) /\ ls = [n]. *)
-    (exists et', et = uu p ENCR ps et' /\ ls = [n]) (* \/ (exists p ps et', et = uu p KEEP ps et') *) .
+    (exists et', et = uu p ENCR ps et' /\ ls = [n]).
 Proof.
   intros.
   invc H.
-  destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff; destruct ls; try solve_by_inversion.
-                               -
-                                 (*
-                                 left. *)
-                               repeat eexists.
-                               ff.
-                               (*
-                               -
-                                 right. eauto.
-                               -
-                                 right. eauto. *)
-                                 
-                                 
-                               
+  destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); 
+  repeat ff; destruct ls; try solve_by_inversion;
+  repeat eexists; ff.
 Defined.
 
 Ltac do_inv_recon_ee :=
@@ -294,43 +275,15 @@ Ltac do_inv_recon_ee :=
   destruct_conjs;
   subst.
 
-(*
-Lemma inv_recon_kk: forall p ps ls et et',
-    reconstruct_evP (evc ls et) (kkc p ps et') ->
-    (et = uu p KILL ps et' ) /\ ls = [].
-Proof.
-  intros.
-  invc H.
-  destruct et; repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff; destruct ls; try solve_by_inversion.
-Defined.
-
-Ltac do_inv_recon_kk :=
-  match goal with
-  | [H: reconstruct_evP (evc ?ls ?et) (kkc ?p ?ps ?et')
-
-     |- _] =>
-    assert_new_proof_by (et = uu p KILL ps et' /\ ls = [])
-                        ltac:(eapply inv_recon_kk; apply H)
-  end;
-  destruct_conjs;
-  subst.
-*)
-
 Lemma inv_recon_ss: forall ls et ec1 ec2,
     reconstruct_evP (evc ls et) (ssc ec1 ec2) ->
     (exists et1 et2, et = ss et1 et2) (* \/ (exists p ps et', et = uu p KEEP ps et') *) .
 Proof.
   intros.
   invc H.
-  destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff; try solve_by_inversion.
-                               -
-                                 (*
-                                 right. *)  eauto.
-                                            (* 
-                               -
-                               left. eauto.
-                                             *)
-                                            
+  destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); 
+  repeat ff; try solve_by_inversion;
+  eauto.
 Defined.
 
 Ltac do_inv_recon_ss :=
@@ -517,20 +470,6 @@ Proof.
   - (* nn case *)
     invc H.
     repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff.
-    
-    
-    
-
-  (* 
-    try (
-    do_inv_recon;
-    ff;
-    invc H;
-    repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff;
-    rewrite fold_recev in *;
-    do_wrap_reconP;
-    repeat jkjke).
-   *)
   
   - (* uu case *)
     destruct f; ff.
@@ -557,19 +496,7 @@ Proof.
       econstructor.
       ff.
       }
-      (*
-      door.
-      ++ *)
-        
       congruence.
-      (*
-      ++
-        
-        
-      subst.
-      
-      
-      congruence. *)
     + (* KILL case *)
       invc H.
       unfold reconstruct_ev in *.
@@ -1112,133 +1039,6 @@ Proof.
     }
     destruct_conjs.
     congruence.
-
-
-
-
-    (*
-
-
-
-    
-     +
-       inv_wfec.
-       ff.
-       assert (exists v, r = [v]).
-       {
-         destruct r; ff.
-         destruct r; ff. }
-       destruct_conjs. subst.
-       ff.
-     +
-       inv_wfec.
-       assert (r = []).
-       {
-         destruct r; ff. }
-       subst.
-       ff.
-     +
-       inv_wfec.
-       ff.
-       assert (exists v, r = [v]).
-       { destruct r; ff.
-       destruct r; ff. }
-       destruct_conjs.
-       subst.
-       ff.
-     +
-       inv_wfec.
-       ff.
-       assert (exists v, r = [v]).
-       { destruct r; ff. }
-       destruct_conjs.
-       subst.
-       ff.
-     +
-       inv_wfec.
-       ff.
-       destruct r; ff.
-       unfold OptMonad_Coq.ret in *.
-       ff.
-       assert (exists ee, Some ee = reconstruct_ev' r0 e).
-       { eapply IHe.
-         econstructor. eassumption. }
-       destruct_conjs.
-       rewrite <- H1 in *.
-       solve_by_inversion.
-     +
-       inv_wfec.
-       ff.
-       assert (r = []).
-       {
-         destruct r; ff.
-       }
-       subst.
-       ff.
-     +
-       inv_wfec.
-       ff.
-       
-       
-       
-       
-       
-       
-      (* 
-       
-       
-     
-     +
-       inv_wfec.
-       ff.
-       eapply peel_fact.
-     eauto.
-     +
-       inv_wfec.
-       assert (wf_ec (evc r0 e)).
-       {
-         eapply peel_fact; eauto.
-       }
-       ff.
-     +
-       destruct r; try solve_by_inversion.
-       ff.
-       invc H.
-       ff.
-
-         -
-    repeat ff.
-    (unfold OptMonad_Coq.bind in * ).
-     repeat ff.
-     +
-     eauto.
-     +
-       inv_wfec.
-       ff.
-       destruct r; try solve_by_inversion.
-       ff.
-       unfold OptMonad_Coq.ret in *.
-       repeat ff.
-       
-
-     +
-       destruct r; try solve_by_inversion.
-       ff.
-       invc H.
-       ff.
-       *)
-     +
-       inv_wfec.
-       ff.
-       edestruct IHe.
-       econstructor.
-       eassumption.
-       asdf
-       
-       *)
-         
-       
-    
      - (* ss case *)
        try (ff; eauto; tauto).
        inv_wfec; ff.
@@ -1330,7 +1130,7 @@ Fixpoint cvm_evidence_denote (t:AnnoTerm) (p:Plc) (ec:EvidenceC) : EvidenceC :=
 
 Set Warnings "-notation-overridden".
 Require Import Cvm_Monad.
-Set Warnings "notations-overridden".
+Set Warnings "+notation-overridden".
 
 
 (** * Assert an arbitrary (remote) CVM execution.  
@@ -1349,14 +1149,6 @@ Ltac do_assert_remote t e p i ac :=
     ) by (eapply build_cvm_external).
 
 
-(*
-Ltac do_assume_remote t e p i (* x *) :=
-  (* do_t_at_zero t x; *)
-  do_assert_remote (*x*) t e p i (* ;
-  do_assert_unannoPar t x *) .
- *)
-
-
 (**  * Event ID spans same for a term and its corresponding core term. *)
 Lemma event_id_spans_same : forall t,
     event_id_span' t = event_id_span (copland_compile t).
@@ -1365,15 +1157,6 @@ Proof.
   induction t; ff.
   -
     destruct a; ff; try tauto.
-    (* 
-    +
-      destruct s; ff.
-  -
-    jkjke'.
-  -
-    destruct s0; ff; lia.
-  -
-    destruct s0; ff; lia. *)
 Qed.
 
 
@@ -1726,9 +1509,6 @@ Ltac clear_skipn_firstn :=
   end.
 
 
-
-
-
 (** * Axiom:  assume parallel CVM threads preserve well-formedness of EvC bundles *)
 Axiom wf_ec_preserved_par: forall e l t2 p,
     wf_ec e ->
@@ -1927,14 +1707,6 @@ Proof.
   - (* asp case *)
     wrap_ccp.
     ff; eauto; auto with *.
-(*
-    
-    destruct a; (* asp *)
-      try destruct a; (* asp params *)
-      simpl;
-      df;
-      repeat rewrite app_assoc;
-      reflexivity. *)
   - (* at case *)
     wrap_ccp.
     repeat Auto.ff.
@@ -1951,11 +1723,7 @@ Proof.
     eauto.
 
   - (* alseq case *)
-  repeat ff.
-  (*
-  Locate wrap_ccp_dohi.
-  Locate annogo.
-  *)
+    repeat ff.
     wrap_ccp_dohi.
     ff.
     +
@@ -2430,17 +2198,6 @@ Proof.
     eapply cvm_evidence_correct_type; eauto.
   }
   ff.
-
-  (*
-  edestruct cvm_evidence_correct_type.
-  eassumption.
-  rewrite <- at_evidence in H.
-  rewrite <- remote_Evidence_Type_Axiom with (bits := bits).
-  rewrite H.
-  simpl.
-  tauto.
-  *) 
-
 Qed.
          
 (** * Axiom about "simulated" parallel semantics of CVM execution:
@@ -2479,12 +2236,6 @@ Proof.
     unfold doRemote_session' in *; 
     repeat Auto.ff.
 
-
-    
-    (*
-    erewrite <- remote_Evidence_Type_Axiom.
-    jkjke. *)
-
   - (* alseq case *)
     do_suffix blah.
     destruct_conjs.
@@ -2501,11 +2252,6 @@ Proof.
     repeat jkjke'.
     
   - (* abseq case *)
-
-    (*
-    do_suffix blah.
-    do_suffix blah'. *)
-
     wrap_ccp.
 
 
@@ -2517,20 +2263,14 @@ Proof.
       
    - (* abpar case *)
 
-    (*
-    do_suffix blah.
-    do_suffix blah'. *)
-
-    wrap_ccp.
-
-    destruct s0; destruct s1; Auto.ff.
+    destruct s; repeat Auto.ff.
 
     +
       wrap_ccp.
       Auto.ff.
       find_apply_hyp_hyp.
 
-      assert (e0 = eval t2 p et).
+      assert (e0 = eval t2 p' et).
       {
         eapply par_evidence_r.
         eassumption.
@@ -2542,7 +2282,7 @@ Proof.
       Auto.ff.
       find_apply_hyp_hyp.
 
-      assert (e0 = eval t2 p mt).
+      assert (e0 = eval t2 p' mt).
       {
         rewrite par_evidence_clear in *.
         eapply par_evidence_r.
@@ -2555,7 +2295,7 @@ Proof.
       Auto.ff.
       find_apply_hyp_hyp.
 
-      assert (e0 = eval t2 p et).
+      assert (e0 = eval t2 p' et).
       {
         eapply par_evidence_r.
         eassumption.
@@ -2566,7 +2306,7 @@ Proof.
       Auto.ff.
       find_apply_hyp_hyp.
 
-      assert (e0 = eval t2 p mt).
+      assert (e0 = eval t2 p' mt).
       {
         rewrite par_evidence_clear in *.
 
