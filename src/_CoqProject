@@ -30,6 +30,7 @@ Manifest_Set.v
 Manifest.v
 Manifest_Compiler.v
 EnvironmentM.v
+Manifest_Union.v
 Example_Phrases_Admits.v
 Example_Phrases.v
 ConcreteEvidence.v
@@ -61,6 +62,7 @@ CvmJson_Admits.v
 ManCompSoundness_Helpers.v
 ManCompSoundness.v
 ManCompSoundness_Appraisal.v
+Manifest_Generator_Union.v
 AM_Helpers.v
 Client_AM_Local.v
 Server_AM.v

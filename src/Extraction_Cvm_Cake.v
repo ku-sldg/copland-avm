@@ -9,6 +9,8 @@ Require Import Manifest_Generator Manifest_Compiler.
 
 Require Import Server_AM Client_AM_Local.
 
+Require Import Manifest_Generator_Union.
+
 
 Require Import List.
 Import ListNotations.
@@ -54,4 +56,4 @@ Separate Extraction
 		run_cvm manifest_compiler  
         empty_am_result run_am_app_comp 
 		handle_AM_request am_client_gen_local
-		man_gen_run_attify.
+		end_to_end_mangen_final.

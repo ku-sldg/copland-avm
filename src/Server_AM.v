@@ -26,7 +26,7 @@ Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc)
   match ((appraise_auth_tok v)) with
   | true =>
 
-    config_AM_if_lib_supported t myPl al ;; 
+    config_AM_if_lib_supported (absMan ac) al ;; 
   
     (*
     check_disclosure_policy t myPlc init_et ;;

@@ -5,6 +5,8 @@ Require Import Term_Defs_Core Params_Admits Manifest (* Executable_Dec *)
 
 Require Import EqClass Maps StructTactics.
 
+Require Import Manifest_Union.
+
 Require Export EnvironmentM Manifest_Set.
 
 Require Import List.
@@ -212,43 +214,41 @@ Definition man_gen_run_attify (ls:list (Term*Plc)) : list Manifest :=
     demo_man_gen_run ts plc_default.
 
 
-
-
-
-    Definition app_aspid_manifest_update (i:ASP_ID) (p:Plc) (m:Manifest) : Manifest := 
-      let '{| my_abstract_plc := oldPlc;
-              asps := oldasps; 
-              appraisal_asps := old_app_asps;
-              uuidPlcs := oldKnowsOf; 
-              pubKeyPlcs := oldContext; 
-              targetPlcs := oldTargets ;
-              policy := oldPolicy |} := m in
-      (Build_Manifest oldPlc oldasps (manset_add (i,p) old_app_asps) oldKnowsOf oldContext oldTargets oldPolicy).
     
-    Fixpoint manifest_generator_app' (et:Evidence) (m:Manifest) : Manifest :=
-      match et with 
-      | mt => m 
-      | nn _ => m (* TODO: account for nonce handling here? *)
-      | uu p fwd ps e' => 
-        match fwd with 
-        | EXTD => 
-          match ps with 
-          | asp_paramsC a _ _ _ =>
-              manifest_generator_app' e' 
-                (app_aspid_manifest_update p a m)
-          end 
-        | ENCR => 
-          match ps with 
-          | asp_paramsC _ _ p' _ =>
-              manifest_generator_app' e' 
-                (pubkey_manifest_update p' m)
-          end
-        | KEEP => manifest_generator_app' e' m
-        | _ => m
-        end
-      | ss e1 e2 => 
-          manifest_generator_app' e2 (manifest_generator_app' e1 m)
-      end.
-    
-    Definition manifest_generator_app (et:Evidence) : Manifest := 
-      manifest_generator_app' et empty_Manifest.
+Definition app_aspid_manifest_update (i:ASP_ID) (p:Plc) (m:Manifest) : Manifest := 
+  let '{| my_abstract_plc := oldPlc;
+          asps := oldasps; 
+          appraisal_asps := old_app_asps;
+          uuidPlcs := oldKnowsOf; 
+          pubKeyPlcs := oldContext; 
+          targetPlcs := oldTargets ;
+          policy := oldPolicy |} := m in
+  (Build_Manifest oldPlc oldasps (manset_add (i,p) old_app_asps) oldKnowsOf oldContext oldTargets oldPolicy).
+
+Fixpoint manifest_generator_app' (et:Evidence) (m:Manifest) : Manifest :=
+  match et with 
+  | mt => m 
+  | nn _ => m (* TODO: account for nonce handling here? *)
+  | uu p fwd ps e' => 
+    match fwd with 
+    | EXTD => 
+      match ps with 
+      | asp_paramsC a _ _ _ =>
+          manifest_generator_app' e' 
+            (app_aspid_manifest_update p a m)
+      end 
+    | ENCR => 
+      match ps with 
+      | asp_paramsC _ _ p' _ =>
+          manifest_generator_app' e' 
+            (pubkey_manifest_update p' m)
+      end
+    | KEEP => manifest_generator_app' e' m
+    | _ => m
+    end
+  | ss e1 e2 => 
+      manifest_generator_app' e2 (manifest_generator_app' e1 m)
+  end.
+
+Definition manifest_generator_app (et:Evidence) : Manifest := 
+  manifest_generator_app' et empty_Manifest.

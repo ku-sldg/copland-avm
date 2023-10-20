@@ -115,12 +115,12 @@ Definition run_cvm_local_am (t:Term) (myPlc:Plc) (ls:RawEv) : AM RawEv :=
   st <- get ;; 
   ret (run_cvm_rawEv t myPlc ls (amConfig st)).
 
-Definition gen_authEvC_if_some_local (ot:option Term) (myPlc:Plc) (init_evc:EvC) (amLib:AM_Library) : AM EvC :=
+Definition gen_authEvC_if_some_local (ot:option Term) (myPlc:Plc) (init_evc:EvC) (absMan:Manifest) (amLib:AM_Library) : AM EvC :=
   match ot with
   | Some auth_phrase =>
       let '(evc init_rawev_auth init_et_auth) := init_evc in
 
-      config_AM_if_lib_supported auth_phrase myPlc amLib ;; 
+      config_AM_if_lib_supported (* auth_phrase myPlc *) absMan amLib ;; 
       resev <- run_cvm_local_am auth_phrase myPlc init_rawev_auth ;;
       let auth_et := eval auth_phrase myPlc init_et_auth in 
       ret (evc resev auth_et)
@@ -144,11 +144,11 @@ Definition check_disclosure_policy (t:Term) (p:Plc) (e:Evidence) : AM unit :=
   else (am_failm (am_dispatch_error (Runtime errStr_disclosePolicy))).
 
 Definition am_client_gen_local (t:Term) (myPlc:Plc) (initEvOpt:option EvC) 
-    (* (authPhrase:option Term) *) (amLib:AM_Library) : AM AM_Result := 
+    (* (authPhrase:option Term) *) (absMan:Manifest) (amLib:AM_Library) : AM AM_Result := 
   evcIn <- gen_nonce_if_none_local initEvOpt ;; 
   (* auth_evc <- gen_authEvC_if_some_local authPhrase myPlc mt_evc ;;  *)
   let '(evc init_ev init_et) := evcIn in 
-  config_AM_if_lib_supported t myPlc amLib ;; 
+  config_AM_if_lib_supported absMan amLib ;; 
 
   check_disclosure_policy t myPlc init_et ;;
   resev <- run_cvm_local_am t myPlc init_ev ;; 
@@ -157,7 +157,6 @@ Definition am_client_gen_local (t:Term) (myPlc:Plc) (initEvOpt:option EvC)
 
   check_et_length expected_et resev ;;
 
-  config_AM_if_lib_supported_app expected_et amLib ;; 
   app_res <- gen_appraise_AM expected_et resev ;; 
   ret (am_appev app_res).
 
@@ -584,10 +583,10 @@ Example client_gen_executable : forall t p initEvOpt amLib st,
 *)
 
   (exists res st', 
-  (am_client_gen_local t p initEvOpt amLib) st = (resultC res, st')) \/ 
+  (am_client_gen_local t p initEvOpt (get_my_absman_generated t p) amLib) st = (resultC res, st')) \/ 
 
   (exists st' str, 
-    (am_client_gen_local t p initEvOpt amLib) st = (errC (am_dispatch_error (Runtime str)), st')
+    (am_client_gen_local t p initEvOpt (get_my_absman_generated t p) amLib) st = (errC (am_dispatch_error (Runtime str)), st')
   ).
 Proof.
 

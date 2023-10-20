@@ -137,8 +137,7 @@ Definition manifest_none_omitted (m:Manifest) : bool :=
 Definition lib_supports_manifest_bool (al:AM_Library) (am:Manifest) : bool := 
     manifest_none_omitted (lib_omits_manifest al am).
 
-Definition config_AM_if_lib_supported (t:Term) (myPlc:Plc) (amLib:AM_Library) : AM unit := 
-    let absMan := get_my_absman_generated t myPlc in 
+Definition config_AM_if_lib_supported (absMan:Manifest) (amLib:AM_Library) : AM unit := 
     let om := lib_omits_manifest amLib absMan in
     let supportsB := manifest_none_omitted om in 
         if (supportsB) 
@@ -149,16 +148,3 @@ Definition config_AM_if_lib_supported (t:Term) (myPlc:Plc) (amLib:AM_Library) : 
         else (
             am_failm (am_dispatch_error (Runtime (pretty_print_manifest om)))
         ).
-
-Definition config_AM_if_lib_supported_app (et:Evidence) (amLib:AM_Library) : AM unit := 
-let absMan := manifest_generator_app et in 
-let om := lib_omits_manifest amLib absMan in
-let supportsB := manifest_none_omitted om in 
-    if (supportsB) 
-    then (
-        let amConf := manifest_compiler absMan amLib in 
-            put_amConfig amConf
-    )
-    else (
-        am_failm (am_dispatch_error (Runtime (pretty_print_manifest om)))
-    ).
