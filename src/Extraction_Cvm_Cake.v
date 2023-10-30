@@ -49,7 +49,9 @@ Extract Constant get_ev => "bind get (fn st => ret (st_ev st)) : cvm_st -> coq_E
 *)
 
 Definition term_list : list Term := 
-	[cert_style; cert_cache_p1; cert_cache_p0; par_mut_p0; par_mut_p1; layered_bg_strong].
+	[cert_style; cert_cache_p1; cert_cache_p0; 
+	 par_mut_p0; par_mut_p1; layered_bg_strong; 
+	 example_phrase].
 
 Separate Extraction 
 		term_list ssl_sig_parameterized kim_meas cm_meas

@@ -139,4 +139,64 @@ Definition layered_bg_strong : Term :=
               (lseq
                  (appraise P2 it)
                  (asp SIG)))).
-       
+
+
+(*
+Definition attest : ASP_ID. Admitted.
+*)
+
+
+(*
+Definition attest1 : ASP_ID. Admitted.
+Definition attest2 : ASP_ID. Admitted.
+*)
+
+
+
+(*
+Definition appraise : ASP_ID. Admitted.
+Definition certificate : ASP_ID. Admitted.
+Definition sys : TARG_ID. Admitted.
+Require Import Manifest_Admits.
+Definition BASE_ADDR : ASP_Address. Admitted.
+*)
+
+
+(*
+Definition cert_style : Term :=
+  att P1 (lseq
+           (attest P1 sys)
+           (att P2 (lseq
+                    (appraise P2 sys)
+                    (certificate P2 sys)))).
+
+*)
+
+(* This should be identical to cert_style above (modulo Coq notations...) *)
+Definition example_phrase_basic : Term := 
+  <{
+    @ P1 [
+      (<< attest_id P1 sys >>) -> 
+      @ P2 [
+        << appraise_id P2 sys >> ->
+        << cert_id P2 sys >>
+      ]
+    ]
+  }>.
+
+Example example_basic_eq_cert_style : 
+  example_phrase_basic = cert_style.
+Proof.
+  reflexivity.
+Qed.
+
+Definition example_phrase : Term := 
+  <{
+    @ P1 [
+      (<< attest1_id P1 sys >> +<+ << attest2_id P1 sys >>) -> 
+      @ P2 [
+        << appraise_id P2 sys >> ->
+        << cert_id P2 sys >>
+      ]
+    ]
+  }>.

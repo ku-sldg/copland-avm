@@ -26,6 +26,13 @@ Admitted.
 Definition cache_id : ASP_ID.
 Admitted.
 
+
+Definition attest1_id : ASP_ID. Admitted.
+
+Definition attest2_id : ASP_ID. Admitted.
+
+
+
 Definition store_args : list Arg.
 Admitted.
 
