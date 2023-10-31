@@ -39,7 +39,7 @@ Definition check_asp_EXTD' (params:ASP_PARAMS) (p:Plc) (sig:BS) (ls:RawEv) : AM 
   ac <- get_AM_amConfig ;;
   match (check_asp_EXTD params p sig ls ac) with
   | resultC r => ret r
-  | errC e => am_failm (am_dispatch_error e)
+  | errC e => am_failm (am_dispatch_error (Runtime errStr_amNonce)) (* am_failm (am_dispatch_error e) *)
   end.
 
 Definition checkNonce' (nid:nat) (nonceCandidate:BS) : AM BS :=

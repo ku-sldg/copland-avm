@@ -32,6 +32,24 @@ Definition run_am_app_comp{A:Type} (am_comp:AM A) (default_A:A) (b:bool): A :=
   else 
   (default_A).
 
+Definition run_am_app_comp_init{A:Type} (am_comp:AM A) (st:AM_St) (default_A:A) (b:bool): A :=
+  if (b) 
+  then (
+  let optRes := evalErr am_comp st in
+  let v := 
+    match optRes with 
+    | resultC _ => (negb b)
+    | errC e => print_am_error e b
+    end in 
+  if(v)
+  then 
+  (default_A)
+  else 
+  (fromSome default_A optRes)
+  ) 
+  else 
+  (default_A).
+
 
 Definition get_AM_amConfig : AM AM_Config :=
     (* TODO:  consider moving this functionality to a Reader-like monad 

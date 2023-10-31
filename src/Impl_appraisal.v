@@ -1,12 +1,17 @@
-Require Import Term ConcreteEvidence ErrorStMonad_Coq.
+Require Import (* Term *) ConcreteEvidence ErrorStMonad_Coq.
 
+(*
 Require Import Example_Phrases_Demo.
+*)
 
-Require Import ErrorStringConstants.
+Require Import ErrorStringConstants. 
 
-Require Import Appraisal_Defs Appraisal_IO_Stubs AM_Monad AM_St.
 
+Require Import Appraisal_Defs (* Appraisal_IO_Stubs *) (* AM_Monad *) AM_St.
+
+(*
 Require Import IO_Stubs Cvm_Run.
+*)
 
 Require Import List.
 Import ListNotations.
