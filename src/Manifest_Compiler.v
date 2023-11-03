@@ -130,6 +130,7 @@ Import ListNotations.
   This function will be used in extraction to either dispatch ASPs to the ASP server, or call a local callback *)
   {|
     absMan   := m ;
+    am_clone_addr := (UUID_AM_Clone al) ;
     aspCb     := (generate_ASP_dispatcher al m) ;
     app_aspCb := (generate_appraisal_ASP_dispatcher al m);
     plcCb     := (generate_Plc_dispatcher al m);

@@ -67,6 +67,8 @@ Definition env_list_union (ls:list EnvironmentM) : EnvironmentM :=
 Definition mangen_plcTerm_list_union (ls:list (Term*Plc)) : EnvironmentM := 
     env_list_union (manifest_generator_plcTerm_list ls).
 
+(*
+(* NOTE:  This is now defined in Manifest_Generator.v   (consider deleting here)   *)
 Definition empty_Manifest_plc (myPlc:Plc) : Manifest :=
   Build_Manifest 
       myPlc 
@@ -76,9 +78,10 @@ Definition empty_Manifest_plc (myPlc:Plc) : Manifest :=
       manifest_set_empty
       manifest_set_empty
       empty_PolicyT.
+*)
 
 Definition mangen_app_plc (et:Evidence) (p:Plc) : Manifest := 
-  manifest_union (empty_Manifest_plc p) (manifest_generator_app et).
+  manifest_union (empty_Manifest_plc p) (manifest_generator_app et p).
 
 Definition lift_manifest_to_env (m:Manifest) : EnvironmentM := 
   map_set e_empty (my_abstract_plc m) m.
@@ -126,6 +129,42 @@ Definition end_to_end_mangen (ls:list (Evidence*Plc)) (ts: list (Term*Plc)) : En
     let att_env := mangen_plcTerm_list_union ts in 
     environment_union app_env att_env.
 
+Definition appraiser_evidence_demo_phrase : Evidence := 
+  eval example_phrase P0 (nn O).
+
+Definition test_end_to_end_mangen : EnvironmentM := 
+  let ets : list (Evidence*Plc) := [(appraiser_evidence_demo_phrase, P4)] in 
+  let ts : list (Term*Plc) := [(example_phrase, P0)] in
+  end_to_end_mangen ets ts.
+
+
+(*
+Check map_get.
+Check fromSome.
+
+Eval cbv in (fromSome (map_get test_end_to_end_mangen P0) empty_Manifest).
+*)
+
+(*
+Example end_to_end_test_prop :
+  exists m, 
+  map_get test_end_to_end_mangen P0 = Some m.
+Proof.
+  intros.
+  eexists.
+  cbn.
+  unfold env_union_helper.
+  unfold environment_union''.
+  cbn.
+  simpl.
+  break_match.
+  cbv.
+  ff.
+  
+*)
+
+
+
 (*
 asdf 
 TODO:  generalize singleton_plc_appraisal_environmentM for multiple appraisal places 
@@ -133,15 +172,16 @@ TODO:  generalize singleton_plc_appraisal_environmentM for multiple appraisal pl
 *)
 
 
-Definition get_all_unique_places (ls: list (Term*Plc)) : list Plc := 
+Definition get_all_unique_places (ls: list (Term*Plc)) (ets: list (Evidence*Plc)) : list Plc := 
     let lss := map (fun '(t,p) => places p t) ls in 
-    let res_dup := concat lss in 
-    dedup_list res_dup.
+    let ets_ps := map (fun '(et,p) => p) ets in
+    let ts_res_dup := concat lss in 
+    dedup_list (ts_res_dup ++ ets_ps).
 
 
 Definition end_to_end_mangen_final (ls:list (Evidence*Plc)) (ts: list (Term*Plc)) : list Manifest := 
     let env : EnvironmentM := end_to_end_mangen ls ts in 
-    let unique_plcs : list Plc := get_all_unique_places ts in 
+    let unique_plcs : list Plc := get_all_unique_places ts ls in 
     let res' := map knowsof_myPlc_manifest_update (get_unique_manifests_env' unique_plcs env) in 
         map (pubkeys_manifest_update (list_to_manset unique_plcs)) res'. 
 

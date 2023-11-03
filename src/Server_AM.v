@@ -56,18 +56,23 @@ Definition do_cvm_session (req:CvmRequestMessage) (ac : AM_Config) (al:AM_Librar
         (RES resev)
   end.
 
-Definition do_appraisal_session (appreq:AppraisalRequestMessage): 
+Check run_am_app_comp_init.
+
+Definition do_appraisal_session (appreq:AppraisalRequestMessage) (ac:AM_Config) (nonceVal:BS): 
                                 AppraisalResponseMessage :=
   let appres := 
     match appreq with
     | REQ_APP t p et ev => 
         let expected_et := eval t p et in 
         let comp := gen_appraise_AM expected_et ev in 
-          run_am_app_comp comp mtc_app true
+        let init_noncemap := [(O, nonceVal)] in
+        let init_nonceid := (S O) in
+        let my_amst := (mkAM_St init_noncemap init_nonceid ac) in
+          run_am_app_comp_init comp my_amst mtc_app true
     end in 
       (RES_APP appres).
 
-Definition handle_AM_request (s:StringT) (ac : AM_Config) (al:AM_Library) : StringT :=
+Definition handle_AM_request (s:StringT) (ac : AM_Config) (al:AM_Library) (nonceVal:BS) : StringT :=
   let js := strToJson s in 
   let am_req := jsonToAmRequest js in 
   let json_resp := 
@@ -76,7 +81,7 @@ Definition handle_AM_request (s:StringT) (ac : AM_Config) (al:AM_Library) : Stri
       let cvm_resp := (do_cvm_session r ac al) in 
         responseToJson cvm_resp
     | APP_REQ appreq => 
-      let app_resp := (do_appraisal_session appreq) in 
+      let app_resp := (do_appraisal_session appreq ac nonceVal) in 
         appResponseToJson app_resp
     end in 
     jsonToStr json_resp.

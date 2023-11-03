@@ -7,7 +7,7 @@ Require Import AbstractedTypes Term_Defs_Core Maps String
 
 Require Import Example_Phrases_Admits.
 
-Require Import Manifest_Set StringT.
+Require Import Manifest_Set StringT ErrorStringConstants.
 
 Require Import List.
 Import ListNotations.
@@ -70,6 +70,8 @@ Definition empty_PolicyT : PolicyT := [].
     PlcServer_Cb        : ASP_Address -> PlcCallback ;
     UUIDServer_Cb       : ASP_Address -> UUIDCallback ;
 
+    UUID_AM_Clone : UUID ;
+
     (* Server Addresses *)
     ASPServer_Addr    : ASP_Address ;
     PubKeyServer_Addr : ASP_Address ;
@@ -87,6 +89,7 @@ Definition empty_PolicyT : PolicyT := [].
 Record AM_Config : Type := 
   mkAmConfig {
     absMan : Manifest ;
+    am_clone_addr : UUID ;
     aspCb : (ASPCallback DispatcherErrors) ;
     app_aspCb : (ASPCallback DispatcherErrors) ;
     plcCb : PlcCallback ;
@@ -100,6 +103,7 @@ Definition empty_aspCb (ps:ASP_PARAMS) (p:Plc) (bs:BS) (rawev:RawEv) : ResultT B
   Definition empty_am_config : AM_Config :=
   mkAmConfig 
     empty_Manifest
+    default_uuid
     empty_aspCb
     empty_aspCb
     (fun x => errC Unavailable)

@@ -41,11 +41,46 @@ Definition gen_authEvC_if_some (ot:option Term) (myPlc:Plc) (init_evc:EvC) : AM 
   | None => ret (evc [] mt)
   end.
 
+Definition run_appraisal_client (t:Term) (p:Plc) (et:Evidence) (re:RawEv) (addr:UUID) : AppResultC :=
+  let expected_et := eval t p et in 
+  am_sendReq'_app addr t p et re.
+  (*
+  let comp := gen_appraise_AM expected_et re in
+  run_am_app_comp comp mtc_app.
+  *)
+
+Definition get_am_clone_uuid : AM UUID := 
+  ac <- get_AM_amConfig ;; 
+  ret ( am_clone_addr ac).
+
+Definition check_et_length (et:Evidence) (ls:RawEv) : AM unit := 
+if (eqb (et_size et) (length ls)) 
+then ret tt 
+else (am_failm (am_dispatch_error (Runtime errStr_et_size))).
+
 Definition am_appraise (t:Term) (toPlc:Plc) (init_et:Evidence) (cvm_ev:RawEv) : AM AppResultC :=
-  (* let app_res := run_appraisal_client t pTo init_et cvm_ev in *)
   let expected_et := eval t toPlc init_et in
-  app_res <- gen_appraise_AM expected_et cvm_ev ;;
+  check_et_length expected_et cvm_ev ;;
+  uuid <- get_am_clone_uuid ;;
+  let app_res := run_appraisal_client t toPlc init_et cvm_ev uuid in
+  (*
+  let expected_et := eval t toPlc init_et in
+  app_res <- gen_appraise_AM expected_et cvm_ev ;; *)
   ret (app_res).
+
+
+
+(*
+  resev <- run_cvm_local_am t myPlc init_ev ;; 
+
+  let expected_et := eval t myPlc init_et in 
+
+  check_et_length expected_et resev ;;
+
+  app_res <- gen_appraise_AM expected_et resev ;; 
+  ret (am_appev app_res).
+
+*)
 
 
 
@@ -127,12 +162,6 @@ Definition gen_authEvC_if_some_local (ot:option Term) (myPlc:Plc) (init_evc:EvC)
   | None => ret (evc [] mt)
   end.
 
-Definition check_et_length (et:Evidence) (ls:RawEv) : AM unit := 
-  if (eqb (et_size et) (length ls)) 
-  then ret tt 
-  else (am_failm (am_dispatch_error (Runtime errStr_et_size))).
-
-
 Definition get_am_policy : AM PolicyT := 
   st <- get ;; 
   ret (policy (absMan (amConfig st))).
@@ -153,11 +182,21 @@ Definition am_client_gen_local (t:Term) (myPlc:Plc) (initEvOpt:option EvC)
   check_disclosure_policy t myPlc init_et ;;
   resev <- run_cvm_local_am t myPlc init_ev ;; 
 
+  (*
   let expected_et := eval t myPlc init_et in 
-
   check_et_length expected_et resev ;;
-
   app_res <- gen_appraise_AM expected_et resev ;; 
+  *)
+
+  (*
+
+  (t:Term) (toPlc:Plc) (init_et:Evidence) (cvm_ev:RawEv) : AM AppResultC :=
+  
+  *)
+
+  app_res <- am_appraise t myPlc init_et resev ;;
+
+
   ret (am_appev app_res).
 
 Require Import Auto.

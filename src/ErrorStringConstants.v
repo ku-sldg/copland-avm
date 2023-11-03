@@ -1,5 +1,7 @@
 Require Import (* Term_Defs *) StringT.
 
+Definition empty_string : StringT. Admitted.
+
 Definition errStr_amNonce : StringT. Admitted.
 
 Definition errStr_peel_bs_am : StringT. Admitted.

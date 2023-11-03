@@ -59,6 +59,9 @@ Admitted.
 Definition am_sendReq (t:Term) (p : Plc) (authTok:ReqAuthTok) (e:RawEv) : RawEv.
 Admitted.
 
+Definition am_sendReq'_app (uuid:UUID) (t:Term) (p:Plc) (e:Evidence) (ev:RawEv): AppResultC.
+Admitted.
+
 Definition am_sendReq_app (t:Term) (p:Plc) (e:Evidence) (ev:RawEv): AppResultC.
 Admitted.
 

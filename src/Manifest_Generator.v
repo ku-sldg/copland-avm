@@ -250,5 +250,16 @@ Fixpoint manifest_generator_app' (et:Evidence) (m:Manifest) : Manifest :=
       manifest_generator_app' e2 (manifest_generator_app' e1 m)
   end.
 
-Definition manifest_generator_app (et:Evidence) : Manifest := 
-  manifest_generator_app' et empty_Manifest.
+
+Definition empty_Manifest_plc (myPlc:Plc) : Manifest :=
+  Build_Manifest 
+      myPlc 
+      manifest_set_empty
+      manifest_set_empty
+      manifest_set_empty
+      manifest_set_empty
+      manifest_set_empty
+      empty_PolicyT.
+
+Definition manifest_generator_app (et:Evidence) (p:Plc) : Manifest := 
+  manifest_generator_app' et (empty_Manifest_plc p).

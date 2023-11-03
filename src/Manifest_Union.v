@@ -67,7 +67,7 @@ Definition environment_union' (e1:EnvironmentM) (e2:EnvironmentM) (p:Plc) (e':En
 Definition environment_union'' (p:Plc) (m1:Manifest) (e2:EnvironmentM) : EnvironmentM := 
   match (map_get e2 p) with 
   | Some m2 => 
-    let new_man := manifest_union m1 m2 in 
+    let new_man := manifest_union m2 m1 in  (* m2 first here to preserve plc *)
       map_set e2 p new_man 
   | None => map_set e2 p m1
   end.
