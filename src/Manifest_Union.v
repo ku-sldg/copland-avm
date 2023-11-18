@@ -7,25 +7,6 @@ Require Import Manifest Manifest_Set EnvironmentM.
 Require Import List.
 Import ListNotations.
 
-
-(*
-Fixpoint manset_add {A : Type} `{HA : EqClass A} (a : A) (s : manifest_set A) : manifest_set A :=
-  match s with
-  | nil => a :: nil
-  | h :: t =>
-    if eqb a h
-    then h :: t
-    else h :: manset_add a t
-  end.
-
-*)
-
-Fixpoint manifest_set_union{A:Type} `{HA : EqClass A}  (s1:manifest_set A) (s2:manifest_set A) : manifest_set A := 
-  match s1 with 
-  | nil => s2 
-  | h :: t => manifest_set_union t (manset_add h s2) 
-  end.
-
 Definition manifest_union (m1:Manifest) (m2:Manifest) : Manifest := 
     match (m1, m2) with 
     | ((Build_Manifest myPlc asps1 app_asps1 uuidPlcs1 pubKeyPlcs1 targPlcs1 myPol),
@@ -33,11 +14,11 @@ Definition manifest_union (m1:Manifest) (m2:Manifest) : Manifest :=
 
        Build_Manifest
         myPlc 
-        (manifest_set_union asps1 asps2)
-        (manifest_set_union app_asps1 app_asps2)
-        (manifest_set_union uuidPlcs1 uuidPlcs2)
-        (manifest_set_union pubKeyPlcs1 pubKeyPlcs2)
-        (manifest_set_union targPlcs1 targPlcs2)
+        (manset_union asps1 asps2)
+        (manset_union app_asps1 app_asps2)
+        (manset_union uuidPlcs1 uuidPlcs2)
+        (manset_union pubKeyPlcs1 pubKeyPlcs2)
+        (manset_union targPlcs1 targPlcs2)
         myPol
     end.
 
