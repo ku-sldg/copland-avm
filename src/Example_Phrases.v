@@ -10,6 +10,11 @@ Definition attest (p:Plc) (targ: TARG_ID) :=
 Definition appraise (p:Plc) (targ: TARG_ID) :=
   asp (ASPC ALL EXTD (asp_paramsC appraise_id [] p targ)).
 
+(*
+Definition appraise_inline (p:Plc) (targ: TARG_ID) :=
+  asp (ASPC ALL EXTD (asp_paramsC appraise_inline_id [] p targ)).
+*)
+
 Definition certificate (p:Plc) (targ: TARG_ID) :=
   asp (ASPC ALL EXTD (asp_paramsC cert_id [] p targ)).
 
@@ -195,7 +200,7 @@ Definition example_phrase : Term :=
     @ P1 [
       (<< attest1_id P1 sys >> +<+ << attest2_id P1 sys >>) -> 
       @ P2 [
-        << appraise_id P2 sys >> ->
+        << appraise_inline_id P2 sys >> ->
         << cert_id P2 sys >>
       ]
     ]

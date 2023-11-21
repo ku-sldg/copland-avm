@@ -20,6 +20,9 @@ Admitted.
 Definition appraise_id : ASP_ID.
 Admitted.
 
+Definition appraise_inline_id : ASP_ID.
+Admitted.
+
 Definition cert_id : ASP_ID.
 Admitted.
 
