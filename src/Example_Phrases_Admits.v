@@ -53,3 +53,6 @@ Admitted.
 
 Definition it : TARG_ID.
 Admitted.
+
+Definition check_ssl_sig_aspid : ASP_ID. 
+Admitted.
