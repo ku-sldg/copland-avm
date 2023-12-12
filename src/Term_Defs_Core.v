@@ -152,6 +152,12 @@ Notation "'<<' x y z '>>'" := (asp (ASPC ALL EXTD (asp_paramsC x nil y z)))
                       (in custom copland_entry at level 98).
 (* @ plc phrase *)
 Notation "@ p [ ph ]" := (att p ph) (in custom copland_entry at level 50).
+Notation "'\t1<' T a1 '>'" := (T a1) (in custom copland_entry at level 99).
+Notation "'\t2<' T a1 a2 '>'" := (T a1 a2) (in custom copland_entry at level 99).
+Notation "'\t3<' T a1 a2 a3 '>'" := (T a1 a2 a3) (in custom copland_entry at level 99).
+Notation "'\t4<' T a1 a2 a3 a4 '>'" := (T a1 a2 a3 a4) (in custom copland_entry at level 99).
+Notation "'\t5<' T a1 a2 a3 a4 a5 '>'" := (T a1 a2 a3 a4 a5) (in custom copland_entry at level 99).
+Notation "'\t6<' T a1 a2 a3 a4 a5 a6 '>'" := (T a1 a2 a3 a4 a5 a6) (in custom copland_entry at level 99).
 
 Open Scope cop_ent_scope.
 Definition test1 := <{ __ -> {} }>.
