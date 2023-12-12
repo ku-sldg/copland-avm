@@ -1,7 +1,10 @@
 Require Import Term_Defs.
 
+(*
 Definition P0 : Plc.
 Admitted.
+*)
+
 (*
 Definition P1 : Plc.
 Admitted.
@@ -45,6 +48,9 @@ Definition retrieve_args : list Arg.
 Admitted.
 
 Definition appraise_inline_args : list Arg.
+Admitted.
+
+Definition check_ssl_sig_args : list Arg.
 Admitted.
 
 (*

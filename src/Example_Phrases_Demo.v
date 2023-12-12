@@ -1,4 +1,4 @@
-Require Import Term_Defs Example_Phrases_Demo_Admits AbstractedTypes.
+Require Import Term_Defs Example_Phrases_Demo_Admits Example_Phrases_Pre_Admits AbstractedTypes.
 
 Require Import List.
 Import ListNotations.

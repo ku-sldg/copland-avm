@@ -34,7 +34,7 @@ Definition store_clientData_aspid : ASP_ID. Admitted.
 Definition store_clientData_args : list Arg. Admitted.
 
 Definition ssl_sig_targid : ASP_ID. Admitted.
-Definition ssl_sig_aspid : ASP_ID. Admitted.
+(* Definition ssl_sig_aspid : ASP_ID. Admitted. *)
 Definition ssl_sig_args : list Arg. Admitted.
 
 

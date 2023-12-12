@@ -227,16 +227,16 @@ Definition example_phrase : Term :=
         )).
 
 
-  Definition example_phrase_orig : Term := 
-    <{
-      @ P1 [
-        (<< attest1_id P1 sys >> +<+ << attest2_id P1 sys >>) -> 
-        @ P2 [
-          << appraise_inline_id P2 sys >> ->
-          << cert_id P2 sys >>
-        ]
+Definition example_phrase_orig : Term := 
+  <{
+    @ P1 [
+      (<< attest1_id P1 sys >> +<+ << attest2_id P1 sys >>) -> 
+      @ P2 [
+        << appraise_inline_id P2 sys >> ->
+        << cert_id P2 sys >>
       ]
-    }>.
+    ]
+  }>.
 
 Example test_ex_phrase : example_phrase = example_phrase_orig.
 Proof.
@@ -252,12 +252,32 @@ Definition example_phrase_p2_appraise : Term :=
   }>.
 *)
 
+
+(*
+
+Definition check_ssl_sig_args : list Arg.
+Admitted.
+
+Definition example_phrase : Term := 
+  <{
+    @ P1 [
+      (<< attest1_id P1 sys >> +<+ << attest2_id P1 sys >>) -> 
+      @ P2 [
+        \t3< appraise_inline_asp_with_args P2 sys appraise_inlines_args > ->
+        << cert_id P2 sys >>
+      ]
+    ]
+  }>.
+
+*)
+
 Definition inline_auth_phrase : Term := 
   <{
     (<< ssl_sig_aspid P0 sys >>) -> 
 
     @ P1 [
-      (<< check_ssl_sig_aspid P0 sys >>) -> 
+      \t3< appraise_inline_asp_with_args P0 sys check_ssl_sig_args > ->
+      (* (<< check_ssl_sig_aspid P0 sys >>)  ->  *)
       (<< attest_id P1 sys >>) -> 
       @ P2 [
         << appraise_id P2 sys >> ->
