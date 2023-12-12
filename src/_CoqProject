@@ -31,6 +31,8 @@ Manifest.v
 Manifest_Compiler.v
 EnvironmentM.v
 Manifest_Union.v
+Example_Phrases_Pre_Admits.v
+Example_Phrases_Pre.v
 Example_Phrases_Admits.v
 Example_Phrases.v
 ConcreteEvidence.v

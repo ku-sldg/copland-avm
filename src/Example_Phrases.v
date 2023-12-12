@@ -1,5 +1,7 @@
 Require Import Term_Defs Example_Phrases_Admits Example_Phrases_Demo_Admits.
 
+Require Import Example_Phrases_Pre_Admits.
+
 Require Import List.
 Import ListNotations.
 
@@ -9,6 +11,12 @@ Definition attest (p:Plc) (targ: TARG_ID) :=
 
 Definition appraise (p:Plc) (targ: TARG_ID) :=
   asp (ASPC ALL EXTD (asp_paramsC appraise_id [] p targ)).
+
+Definition attest1 (p:Plc) (targ: TARG_ID) :=
+    asp (ASPC ALL EXTD (asp_paramsC attest1_id [] p targ)).
+
+Definition attest2 (p:Plc) (targ: TARG_ID) :=
+  asp (ASPC ALL EXTD (asp_paramsC attest2_id [] p targ)).
 
 (*
 Definition appraise_inline (p:Plc) (targ: TARG_ID) :=
@@ -195,22 +203,54 @@ Proof.
   reflexivity.
 Qed.
 
-Definition example_phrase : Term := 
-  <{
-    @ P1 [
-      (<< attest1_id P1 sys >> +<+ << attest2_id P1 sys >>) -> 
-      @ P2 [
-        << appraise_inline_id P2 sys >> ->
-        << cert_id P2 sys >>
-      ]
-    ]
-  }>.
+Definition appraise_inline_asp_with_args (p:Plc) (targ: TARG_ID) (args:list Arg) : Term := 
+  asp (ASPC ALL EXTD (asp_paramsC appraise_inline_id args p targ)).
 
+
+Definition sub1 : Term := 
+  <{ << attest1_id P1 sys >> +<+ << attest2_id P1 sys >> }>.
+
+Definition sub2 : Term := 
+  <{ << cert_id P2 sys >> }>.
+
+Definition example_phrase : Term := 
+    att P1 (
+      lseq 
+        sub1 
+        (
+          att P2 
+            (
+              lseq 
+                (appraise_inline_asp_with_args P2 sys appraise_inline_args)
+                sub2
+            )
+        )).
+
+
+  Definition example_phrase_orig : Term := 
+    <{
+      @ P1 [
+        (<< attest1_id P1 sys >> +<+ << attest2_id P1 sys >>) -> 
+        @ P2 [
+          << appraise_inline_id P2 sys >> ->
+          << cert_id P2 sys >>
+        ]
+      ]
+    }>.
+
+Example test_ex_phrase : example_phrase = example_phrase_orig.
+Proof.
+intros.
+cbv.
+Abort.
+
+(*
 Definition example_phrase_p2_appraise : Term := 
   <{
     @ P1 [
       (<< attest1_id P1 sys >> +<+ << attest2_id P1 sys >>) ] 
   }>.
+*)
 
 Definition inline_auth_phrase : Term := 
   <{
