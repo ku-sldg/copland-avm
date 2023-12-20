@@ -1,4 +1,4 @@
-Require Import AbstractedTypes EqClass Term_Defs.
+Require Import AbstractedTypes (* EqClass *) Term_Defs.
 
 Require Import StructTactics.
 
@@ -10,91 +10,120 @@ Set Nested Proofs Allowed.
  *)
 
 
-Definition eqb_aspid `{H : EqClass ID_Type} (a1 a2 : ASP_ID)  : bool :=
-  eqb a1 a2.
+Definition eqb_aspid (*`{H : EqClass ID_Type} *) (a1 a2 : ASP_ID)  : bool :=
+  Nat.eqb a1 a2.
 
 (** Admitted Lemmas relating boolean to propositional equality for 
    ASP ID and PARAMS *)
-Lemma eqb_eq_aspid: forall `{H : EqClass ID_Type} i1 i2,
-    eqb_aspid i1 i2 = true -> i1 = i2.
+Lemma eqb_eq_aspid: forall (* `{H : EqClass ID_Type} *) i1 i2,
+    Nat.eqb i1 i2 = true -> i1 = i2.
 Proof.
+Admitted.
+(*
   unfold eqb_aspid.
   destruct H. eapply eqb_leibniz.
 Qed.
+*)
 
-Definition eqb_plc `{H : EqClass ID_Type} (a1 a2 : Plc)  : bool :=
-  eqb a1 a2.
+Definition eqb_plc (* `{H : EqClass ID_Type} *) (a1 a2 : Plc)  : bool :=
+  Nat.eqb a1 a2.
 
 (** Admitted Lemmas relating boolean to propositional equality for 
    ASP ID and PARAMS *)
-Lemma eqb_eq_plc: forall `{H : EqClass ID_Type} i1 i2,
+Lemma eqb_eq_plc: forall (* `{H : EqClass ID_Type} *) i1 i2,
     eqb_plc i1 i2 = true <-> i1 = i2.
 Proof.
+Admitted.
+(*
   intros.
   split; eapply eqb_leibniz.
 Qed.
+*)
 
-Definition eqb_asp_params `{H : EqClass ID_Type} `{H : EqClass (list ID_Type)} (ap1 ap2 : ASP_PARAMS) : bool :=
+Fixpoint nat_list_eqb (* {A : Type} `{H : EqClass A} *) (l1 l2 : list nat) : bool :=
+  match l1, l2 with
+  | nil, nil => true
+  | cons h1 t1, cons h2 t2 => andb (Nat.eqb h1 h2) (nat_list_eqb t1 t2)
+  | _, _ => false
+  end.
+
+Definition eqb_asp_params (* `{H : EqClass ID_Type} `{H : EqClass (list ID_Type)} *) (ap1 ap2 : ASP_PARAMS) : bool :=
   match ap1, ap2 with
   | (asp_paramsC a1 la1 p1 t1), (asp_paramsC a2 la2 p2 t2) =>
       andb (eqb_aspid a1 a2) 
-        (andb (eqb la1 la2)
-          (andb (eqb p1 p2) 
-                (eqb t1 t2)))
+        (andb (nat_list_eqb la1 la2)
+          (andb (Nat.eqb p1 p2) 
+                (Nat.eqb t1 t2)))
   end.
 
 (** Decidable equality proofs for various Copland datatypes *)
 
-Definition eq_plc_dec `{H : EqClass ID_Type} :
+Definition eq_plc_dec (* `{H : EqClass ID_Type} *) :
   forall x y: Plc, {x = y} + {x <> y}.
 Proof.
+Admitted.
+(*
   intros.
   (* try decide equality; subst; *)
   eapply EqClass_impl_DecEq; eauto.
 Defined.
+*)
 
-Definition eq_aspid_dec `{H : EqClass ID_Type} :
+Definition eq_aspid_dec (* `{H : EqClass ID_Type} *) :
   forall x y: ASP_ID, {x = y} + {x <> y}.
 Proof.
+Admitted.
+(*
   intros.
   (* try decide equality; subst; *)
   eapply EqClass_impl_DecEq; eauto.
 Defined.
+*)
 
 
 
-Definition eq_asp_params_dec `{H : EqClass ID_Type} :
+Definition eq_asp_params_dec (* `{H : EqClass ID_Type} *) :
   forall x y: ASP_PARAMS, {x = y} + {x <> y}.
 Proof.
+Admitted.
+(*
   intros.
   decide equality; subst;
   eapply EqClass_impl_DecEq; eauto.
   eapply EqClass_extends_to_list; eauto.
 Defined.
+*)
 
-Lemma eqb_eq_asp_params: forall `{H : EqClass ID_Type} a a0 ,
+Lemma eqb_eq_asp_params: forall (* `{H : EqClass ID_Type} *) a a0 ,
     eqb_asp_params a a0 = true <->
     a = a0.
 Proof.
+Admitted.
+(*
   induction a; destruct a0; simpl;
   repeat (rewrite Bool.andb_true_iff);
   repeat split; eauto; try inv H0;
   try rewrite eqb_leibniz; eauto;
   try (eapply EqClass_extends_to_list; eauto).
   - intros; destruct_conjs; subst.
-    repeat (rewrite eqb_leibniz in *); subst.
+    repeat (rewrite eqb_leibniz in * ) ; subst.
     eapply general_list_eqb_leibniz in H1; subst; eauto.
   - eapply eqb_leibniz; eauto.
 Qed.
+*)
 
+(*
 Global Instance EqClassASP_PARAMS `{H : EqClass ID_Type} : EqClass ASP_PARAMS := {
   eqb := eqb_asp_params ;
   eqb_leibniz := eqb_eq_asp_params
 }.
+*)
 
-Definition eq_evidence_dec : forall `{H : EqClass ID_Type},
+Definition eq_evidence_dec : (* forall `{H : EqClass ID_Type} , *)
   forall x y : Evidence, {x = y} + {x <> y}.
 Proof.
+Admitted.
+(*
   intros.
   decide equality; subst;
   try (try eapply EqClass_impl_DecEq; eauto;
@@ -102,10 +131,13 @@ Proof.
   - eapply eq_asp_params_dec.
   - destruct f, f0; eauto; right; intros HC; congruence.
 Qed.
+*)
 
-Definition eq_term_dec : forall `{H : EqClass ID_Type},
+Definition eq_term_dec : (* forall `{H : EqClass ID_Type}, *)
   forall x y : Term, {x = y} + {x <> y}.
 Proof.
+Admitted.
+(*
   intros.
   decide equality; subst;
   try (try eapply EqClass_impl_DecEq; eauto;
@@ -118,10 +150,13 @@ Proof.
   - destruct s, s0, s, s1, s0, s2; eauto; try (right; intros HC; congruence).
   - destruct s, s0, s, s1, s0, s2; eauto; try (right; intros HC; congruence).
 Qed.
+*)
 
-Definition eq_core_term_dec : forall `{H : EqClass ID_Type},
+Definition eq_core_term_dec : (* forall `{H : EqClass ID_Type}, *)
   forall x y : Core_Term, {x = y} + {x <> y}.
 Proof.
+Admitted.
+(*
   intros.
   decide equality; subst;
   try (try eapply EqClass_impl_DecEq; eauto;
@@ -131,10 +166,13 @@ Proof.
       destruct f, f0; eauto; try (right; intros HC; congruence).
   - eapply eq_term_dec.
 Qed.
+*)
 
-Definition eq_ev_dec: forall `{H : EqClass ID_Type},
+Definition eq_ev_dec: (* forall `{H : EqClass ID_Type}, *)
   forall x y: Ev, {x = y} + {x <> y}.
 Proof.
+Admitted.
+(*
   intros;
   decide equality; subst;
   try (try eapply EqClass_impl_DecEq; eauto;
@@ -150,10 +188,10 @@ Proof.
   - eapply eq_evidence_dec.
   - eapply eq_core_term_dec.
 Qed.
+*)
 #[local] Hint Resolve eq_ev_dec : core.
 
 #[local] Hint Resolve eq_evidence_dec : core.
-
 
 (** list equality Lemmas *)
 Scheme Equality for list.
