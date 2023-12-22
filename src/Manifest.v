@@ -3,9 +3,9 @@
 *)
 
 Require Import AbstractedTypes Term_Defs_Core Maps String
-  Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq.
+  Term_Defs Manifest_Admits (* EqClass *) ErrorStMonad_Coq.
 
-Require Import Example_Phrases_Admits.
+(* Require Import Example_Phrases_Admits. *)
 
 Require Import Manifest_Set StringT ErrorStringConstants.
 
@@ -82,8 +82,8 @@ Definition empty_PolicyT : PolicyT := [].
     Local_ASPS        : MapC ASP_ID (ASPCallback CallBackErrors) ;
     Local_Appraisal_ASPS : MapC (Plc * ASP_ID) (ASPCallback CallBackErrors) ;
 
-    Local_Plcs        : MapD Plc UUID ;
-    Local_PubKeys     : MapD Plc PublicKey ;
+    Local_Plcs        : MapC Plc UUID ;
+    Local_PubKeys     : MapC Plc PublicKey ;
   }.
 
 Record AM_Config : Type := 

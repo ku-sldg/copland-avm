@@ -1,11 +1,11 @@
 Require Import Term_Defs_Core Params_Admits Manifest (* Executable_Dec *)
-               Example_Phrases_Admits Example_Phrases Eqb_Evidence
+               (* Example_Phrases_Admits Example_Phrases *) Eqb_Evidence
                Manifest_Generator_Helpers.
                (* Executable_Defs_Prop. *)
 
-Require Import EqClass Maps StructTactics.
+Require Import (* EqClass *) Maps StructTactics.
 
-Require Import Manifest_Union.
+(* Require Import Manifest_Union. *)
 
 Require Export EnvironmentM Manifest_Set.
 
@@ -106,7 +106,7 @@ Definition manifest_set_my_plc (p : Plc) (m : Manifest) : Manifest :=
 Definition manifest_update_env (p:Plc) (e:EnvironmentM) 
                                (f:Manifest -> Manifest) : EnvironmentM := 
   let m := 
-    match (map_get e p) with
+    match (map_get_nat e p) with
     | Some mm => mm
     | None => (manifest_set_my_plc p empty_Manifest)
     end in
@@ -138,7 +138,7 @@ Fixpoint dedup_list (ps:list Plc) : list Plc :=
   match ps with
   | [] => ps
   | (p::ps') =>
-    if (eqb (List.count_occ eq_plc_dec ps' p) O)
+    if (Nat.eqb (List.count_occ eq_plc_dec ps' p) O)
     then (p::(dedup_list ps'))
     else dedup_list ps'
   end.
@@ -174,7 +174,7 @@ Definition fromSome{A:Type} (v:option A) (a:A) : A :=
   end.
 
 Definition get_manifest_env_default (e:EnvironmentM) (p:Plc) : Manifest :=
-  let m' := fromSome (map_get e p) empty_Manifest in
+  let m' := fromSome (map_get_nat e p) empty_Manifest in
     myPlc_manifest_update p m'.
 
 Definition get_unique_manifests_env' (ps:list Plc) (e:EnvironmentM) : list Manifest :=
@@ -223,7 +223,7 @@ Definition app_aspid_manifest_update (i:ASP_ID) (p:Plc) (m:Manifest) : Manifest 
           pubKeyPlcs := oldContext; 
           targetPlcs := oldTargets ;
           policy := oldPolicy |} := m in
-  (Build_Manifest oldPlc oldasps (manset_add (i,p) old_app_asps) oldKnowsOf oldContext oldTargets oldPolicy).
+  (Build_Manifest oldPlc oldasps (manset_add_plcAsp (i,p) old_app_asps) oldKnowsOf oldContext oldTargets oldPolicy).
 
 Fixpoint manifest_generator_app' (et:Evidence) (m:Manifest) : Manifest :=
   match et with 

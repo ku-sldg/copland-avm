@@ -1,6 +1,6 @@
 Require Import AbstractedTypes Term_Defs_Core Maps String
-  Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq
-  Example_Phrases_Admits.
+  Term_Defs Manifest_Admits (* EqClass *) ErrorStMonad_Coq.
+  (* Example_Phrases_Admits. *)
 
 Require Import Manifest Manifest_Set EnvironmentM.
 
@@ -15,7 +15,7 @@ Definition manifest_union (m1:Manifest) (m2:Manifest) : Manifest :=
        Build_Manifest
         myPlc 
         (manset_union asps1 asps2)
-        (manset_union app_asps1 app_asps2)
+        (manset_union_plcAsp app_asps1 app_asps2)
         (manset_union uuidPlcs1 uuidPlcs2)
         (manset_union pubKeyPlcs1 pubKeyPlcs2)
         (manset_union targPlcs1 targPlcs2)
@@ -46,7 +46,7 @@ Definition environment_union' (e1:EnvironmentM) (e2:EnvironmentM) (p:Plc) (e':En
 *)
 
 Definition environment_union'' (p:Plc) (m1:Manifest) (e2:EnvironmentM) : EnvironmentM := 
-  match (map_get e2 p) with 
+  match (map_get_nat e2 p) with 
   | Some m2 => 
     let new_man := manifest_union m2 m1 in  (* m2 first here to preserve plc *)
       map_set e2 p new_man 

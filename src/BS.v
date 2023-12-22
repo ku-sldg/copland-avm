@@ -1,9 +1,9 @@
 (* Defining (abstract) representation for binary data values.
    BS stands for "Binary String".   *)
 
-Definition BS : Set.
-Admitted.
+Definition BS := nat. (* : Set.
+Admitted. *)
 
-Definition default_bs : BS. Admitted.
-Definition passed_bs  : BS. Admitted.
-Definition failed_bs  : BS. Admitted.
+Definition default_bs : BS := O.
+Definition passed_bs  : BS := O.
+Definition failed_bs  : BS := S O.

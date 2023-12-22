@@ -6,7 +6,7 @@ Authors:  Adam Petz, ampetz@ku.edu
           Will Thomas, 30wthomas@ku.edu
  *)
 
-Require Import EqClass.
+(* Require Import EqClass. *)
 
 Require Import List.
 Import ListNotations.
@@ -40,47 +40,69 @@ Require Import StructTactics.
  the one that appears first in the list;
     that is, later bindings can be shadowed. *)
 
-Definition MapC (A:Type) (B:Type) `{H : EqClass A} := list (A * B).
+Definition MapC (A:Type) (B:Type) (* `{H : EqClass A} *) := list (A * B).
 
 (** The [empty] map is the empty list. *)
 
-Definition map_empty{A B:Type} `{H : EqClass A} : MapC A B := [].
+Definition map_empty{A B:Type} (* `{H : EqClass A} *) : MapC A B := [].
 
 (** To [get] the binding of an identifier [x], we just need to walk 
     through the list and find the first [cons] cell where the key 
     is equal to [x], if any. *)
 
-Fixpoint map_get{A B:Type} `{H : EqClass A} (m : MapC A B ) x : option B :=
+Fixpoint map_get_nat{B:Type} (*`{H : EqClass A}*) (m : MapC nat B ) x : option B :=
   match m with
   | [] => None
-  | (k, v) :: m' => if eqb k x then Some v else map_get m' x
+  | (k, v) :: m' => if Nat.eqb k x then Some v else map_get_nat m' x
+  end.
+
+Definition plcAsp_pair_beq (a : (nat * nat)) (b: (nat * nat)) : bool := true.
+(* Admitted. *)
+(* TODO:  fill in this impl? *)
+
+Fixpoint map_get_plcAsp{B:Type} (*`{H : EqClass A}*) (m : MapC (nat * nat) B ) x : option B :=
+  match m with
+  | [] => None
+  | (k, v) :: m' => if plcAsp_pair_beq k x then Some v else map_get_plcAsp m' x
   end.
 
 (** To [set] the binding of an identifier, we just need to [cons] 
     it at the front of the list. *) 
 
-Fixpoint map_set{A B:Type} `{H : EqClass A} (m:MapC A B) (x:A) (v:B) : MapC A B := 
+Fixpoint map_set{B:Type} (* `{H : EqClass A} *) (m:MapC nat B) (x:nat) (v:B) : MapC nat B := 
   match m with
   | nil => (x,v) :: nil
   | (hk, hv) :: t =>
-      if (eqb hk x)
+      if (Nat.eqb hk x)
       then (hk, v) :: t
       else (hk, hv) :: (map_set t x v)
   end.
 
-Fixpoint map_vals{A B:Type} `{H : EqClass A} (m : MapC A B ) : list B :=
+Fixpoint map_set_plcAsp{B:Type} (*`{H : EqClass A} *) (m:MapC (nat * nat) B) (x:(nat * nat)) (v:B) : MapC (nat * nat) B := 
+  match m with
+  | nil => (x,v) :: nil
+  | (hk, hv) :: t =>
+      if (plcAsp_pair_beq hk x)
+      then (hk, v) :: t
+      else (hk, hv) :: (map_set_plcAsp t x v)
+  end.
+
+
+
+Fixpoint map_vals{A B:Type} (*`{H : EqClass A}*) (m : MapC A B ) : list B :=
   match m with
   | [] => []
   | (k', v) :: m' => v :: map_vals m'
   end.
 
-Fixpoint invert_map {A B : Type} `{HA : EqClass A, HB : EqClass B} (m : MapC A B) : MapC B A :=
+Fixpoint invert_map {A B : Type} (*`{HA : EqClass A, HB : EqClass B} *) (m : MapC A B) : MapC B A :=
   match m with
   | [] => []
   | (k', v') :: m' => (v', k') :: (invert_map m')
   end.
 
-Theorem mapC_get_works{A B:Type} `{H : EqClass A} : forall m (x:A) (v:B),
+(*
+Theorem mapC_get_works{A B:Type} (*`{H : EqClass A}*) : forall m (x:A) (v:B),
   map_get (map_set m x v) x = Some v.
 Proof.
   induction m; simpl in *; intuition; eauto.
@@ -219,6 +241,13 @@ Proof.
   break_match; try congruence.
   erewrite IHm; eauto.
 Qed.
+*)
+
+
+
+(*
+
+
 
 (* A two-way implementation of list maps, where you can lookup from a key, or value *)
 Definition MapD (A:Type) (B:Type) `{H : EqClass A} `{H1 : EqClass B} := list (A * B).
@@ -300,6 +329,16 @@ Fixpoint map_dom {K V} (m:MapC K V) : list K :=
   end.
 *)
 
+
+
+*)
+
+
+
+
+(*
+
+
 (** We next introduce a simple inductive relation, [bound_to m x a], that 
     holds precisely when the binding of some identifier [x] is equal to [a] in 
     [m] *)
@@ -351,3 +390,4 @@ Proof.
          right. auto.
 Qed.
     
+*)

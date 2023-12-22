@@ -1,2 +1,1 @@
-Definition StringT : Set.
-Admitted. 
+Definition StringT := nat.

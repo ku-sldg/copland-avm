@@ -1,7 +1,7 @@
 Require Import AbstractedTypes Term_Defs_Core Maps String
-  Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq.
+  Term_Defs Manifest_Admits (* EqClass *) ErrorStMonad_Coq.
 
-Require Import Example_Phrases_Admits.
+(* Require Import Example_Phrases_Admits. *)
 
 Require Import List.
 Import ListNotations.
@@ -10,93 +10,118 @@ Definition manifest_set (A : Type) := list A.
 
 Definition manifest_set_empty {A : Type} : manifest_set A := nil.
 
-Fixpoint manset_add {A : Type} `{HA : EqClass A} (a : A) (s : manifest_set A) : manifest_set A :=
+Fixpoint manset_add (* {A : Type} `{HA : EqClass A} *) (a : nat) (s : manifest_set nat) : manifest_set nat :=
   match s with
   | nil => a :: nil
   | h :: t =>
-    if eqb a h
+    if Nat.eqb a h
     then s
     else h :: manset_add a t
   end.
 
-Lemma manset_add_not_nil {A : Type} `{HA : EqClass A} (a : A) (s : manifest_set A) :
+Fixpoint manset_add_plcAsp (* {A : Type} `{HA : EqClass A} *) (a : (Plc * ASP_ID)) (s : manifest_set (Plc * ASP_ID)) : manifest_set (Plc * ASP_ID) :=
+  match s with
+  | nil => a :: nil
+  | h :: t =>
+    if plcAsp_pair_beq a h
+    then s
+    else h :: manset_add_plcAsp a t
+  end.
+
+Lemma manset_add_not_nil (* {A : Type} `{HA : EqClass A} *) (a : nat) (s : manifest_set nat) :
   manset_add a s <> nil.
 Proof.
   intro. induction s.
   - simpl in *; congruence.
-  - simpl in *. destruct (eqb a a0) eqn:E; congruence.
+  - simpl in *. destruct (Nat.eqb a a0) eqn:E; congruence.
 Qed.
 
-Fixpoint list_to_manset' {A : Type} `{HA : EqClass A} (l : list A) : manifest_set A :=
+Fixpoint list_to_manset' (* {A : Type} `{HA : EqClass A} *) (l : list nat) : manifest_set nat :=
   match l with
   | nil => nil
   | h :: t => manset_add h (list_to_manset' t)
   end.
 
-Definition list_to_manset {A : Type} `{HA : EqClass A} (l : list A) : manifest_set A :=
+Definition list_to_manset (* {A : Type} `{HA : EqClass A} *) (l : list nat) : manifest_set nat :=
   rev (list_to_manset' l).
 
-Definition filter_manset {A : Type} (f : A -> bool) (s : manifest_set A) : manifest_set A :=
+Definition filter_manset (* {A : Type} *) (f : nat -> bool) (s : manifest_set nat) : manifest_set nat :=
   filter f s.
 
-Definition is_empty_manset {A : Type} (s:manifest_set A) : bool :=
+Definition is_empty_manset (* {A : Type} *) (s:manifest_set nat) : bool :=
   match s with
   | nil => true
   | _ => false
   end.
 
-Lemma manempty_is_empty {A : Type} : is_empty_manset (@manifest_set_empty A) = true.
+Lemma manempty_is_empty (*{A : Type} *) : is_empty_manset (@manifest_set_empty nat) = true.
 Proof. auto. Qed.
 
-Definition In_set {A : Type} (a : A) (s : manifest_set A) : Prop :=
+Definition In_set_nat (* {A : Type} *) (a : nat) (s : manifest_set nat) : Prop :=
   In a s.
 
-Definition in_dec_set {A : Type} `{HA : EqClass A} (a : A) (s : manifest_set A) : {In_set a s} + {~ In_set a s} :=
-  in_dec (EqClass_impl_DecEq A) a s.
 
-Lemma In_set_empty_contra {A : Type} : forall (a : A) (P : Prop),
-  In_set a manifest_set_empty -> P.
+Definition In_set_plcAsp (* {A : Type} *) (a : (Plc*ASP_ID)) (s : manifest_set (Plc*ASP_ID)) : Prop :=
+    In a s.
+
+
+Lemma in_dec_set_nat (* {A : Type} `{HA : EqClass A} *) (a : nat) (s : manifest_set nat) : {In_set_nat a s} + {~ In_set_nat a s}.
+Admitted.
+(* in_dec (EqClass_impl_DecEq nat) a s. *)
+
+Definition in_dec_set_nat_bool (* {A : Type} `{HA : EqClass A} *) (a : nat) (s : manifest_set nat) : bool := true.
+
+Lemma in_dec_set_plc_asp_pair (* {A : Type} `{HA : EqClass A} *) (a : (Plc*ASP_ID)) (s : manifest_set (Plc*ASP_ID)) : {In_set_plcAsp a s} + {~ In_set_plcAsp a s}.
+Admitted.
+
+Definition in_dec_set_plc_asp_pair_bool (* {A : Type} `{HA : EqClass A} *) (a : (Plc*ASP_ID)) (s : manifest_set (Plc*ASP_ID)) : bool := true.
+
+Lemma In_set_empty_contra (* {A : Type} *) : forall (a : nat) (P : Prop),
+  In_set_nat a manifest_set_empty -> P.
 Proof.
   intros a P Contra. inversion Contra.
 Qed.
 
-Lemma manadd_In_set {A : Type} `{HA : EqClass A}: forall (s : manifest_set A) i j,
-  In_set i (manset_add j s) ->
-  i = j \/ In_set i s.
+Lemma manadd_In_set (* {A : Type} `{HA : EqClass A} *) : forall (s : manifest_set nat) i j,
+  In_set_nat i (manset_add j s) ->
+  i = j \/ In_set_nat i s.
 Proof.
   intros s i j H. generalize dependent j. generalize dependent i. induction s;
   intros; simpl in H; intuition.
-  - destruct (eqb j a).
+  - destruct (Nat.eqb j a).
     + intuition.
     + simpl in *. destruct H.
       * subst. simpl. eauto.
       * simpl. apply IHs in H. destruct H; eauto.
 Qed.
 
-Lemma manadd_In_add {A : Type} `{HA : EqClass A} : forall (s : manifest_set A) i,
-  In_set i (manset_add i s).
+Lemma manadd_In_add (* {A : Type} `{HA : EqClass A} *) : forall (s : manifest_set nat) i,
+  In_set_nat i (manset_add i s).
 Proof.
+Admitted.
+(*
   intros. induction s.
   - simpl; auto.
   - simpl.
-    destruct (eqb i a) eqn:Eia.
+    destruct (Nat.eqb i a) eqn:Eia.
     + rewrite eqb_leibniz in Eia. subst; simpl; auto.
     + simpl; auto.
 Qed.
+*)
 
-Lemma in_set_add {A : Type} `{HA : EqClass A} : forall (s : manifest_set A) i j,
-  In_set i s ->
-  In_set i (manset_add j s).
+Lemma in_set_add (* {A : Type} `{HA : EqClass A} *) : forall (s : manifest_set nat) i j,
+  In_set_nat i s ->
+  In_set_nat i (manset_add j s).
 Proof.
   intros s i j H. induction s.
   - simpl; auto.
-  - simpl. destruct (eqb j a).
+  - simpl. destruct (Nat.eqb j a).
     + subst; simpl; auto.
     + simpl; simpl in H. destruct H; auto.
 Qed.
 
-Lemma in_list_to_set {A : Type} `{HA : EqClass A} : forall (a: A) (l : list A),
-  In a l <-> In_set a (list_to_manset l).
+Lemma in_list_to_set (* {A : Type} `{HA : EqClass A} *) : forall (a: nat) (l : list nat),
+  In a l <-> In_set_nat a (list_to_manset l).
 Proof.
   split; intros H; induction l; auto.
   - simpl in *. destruct H as [H | H].
@@ -107,40 +132,46 @@ Proof.
     apply -> in_rev in H. auto.
 Qed.
 
-Definition existsb_set {A:Type} (f : A -> bool) (s: manifest_set A) : bool :=
+Definition existsb_set (* {A:Type} *) (f : nat -> bool) (s: manifest_set nat) : bool :=
   existsb f s.
 
-Definition existsb_eq_iff_In_set: forall (s : manifest_set ID_Type) (a : ID_Type),
-  existsb_set (eqb a) s = true <-> In_set a s.
+Lemma existsb_eq_iff_In_set: forall (s : manifest_set ID_Type) (a : ID_Type),
+  existsb_set (Nat.eqb a) s = true <-> In_set_nat a s.
 Proof.
+Admitted.
+(*
   split; intros H.
   - induction s.
     + inversion H.
-    + simpl in H. simpl. destruct (eqb a a0) eqn:Eaa0.
+    + simpl in H. simpl. destruct (Nat.eqb a a0) eqn:Eaa0.
       * rewrite eqb_leibniz in Eaa0; auto.
       * right. apply IHs. simpl in H; auto.
   - induction s.
     + inversion H.
-    + simpl in *. destruct (eqb a a0) eqn:Eaa0; auto.
+    + simpl in *. destruct (Nat.eqb a a0) eqn:Eaa0; auto.
       * simpl. apply IHs. destruct H; auto.
         -- subst. rewrite eqb_refl in Eaa0. congruence.
 Qed.
+*)
 
-Lemma nodup_manset_add {A : Type} `{HA : EqClass A} (a : A) (s : manifest_set A) :
+Lemma nodup_manset_add (* {A : Type} `{HA : EqClass A} *) (a : nat) (s : manifest_set nat) :
   NoDup s ->
   NoDup (manset_add a s).
 Proof.
+Admitted.
+(*
   intro H. induction s; simpl.
   - constructor. auto. constructor.
-  - destruct (eqb a a0) eqn:Eaa0; eauto.
+  - destruct (Nat.eqb a a0) eqn:Eaa0; eauto.
     + constructor.
       * intro H0. inversion H. subst.
         assert (a <> a0) by (intro HC; apply eqb_leibniz in HC; congruence).
         apply manadd_In_set in H0. intuition.
       * inversion H; auto.
 Qed.
+*)
 
-Lemma nodup_list_to_manset {A : Type} `{HA : EqClass A} (l : list A) :
+Lemma nodup_list_to_manset (* {A : Type} `{HA : EqClass A} *) (l : list nat) :
   NoDup (list_to_manset l).
 Proof.
   induction l; simpl.
@@ -150,19 +181,24 @@ Proof.
     auto.
 Qed.
 
-Lemma manset_add_result {A : Type} `{HA : EqClass A} (a : A) (s : manifest_set A) :
+Lemma manset_add_result (* {A : Type} `{HA : EqClass A} *) (a : nat) (s : manifest_set nat) :
   manset_add a s = s \/ manset_add a s = app s (a :: nil).
 Proof.
+Admitted.
+(*
   generalize dependent a. induction s.
   - right. simpl. auto.
   - intros. destruct (IHs a0) as [H | H];
-      destruct (eqb a a0) eqn:E;
+      destruct (Nat.eqb a a0) eqn:E;
         simpl; rewrite eqb_symm in E; rewrite E; try rewrite H; auto.
 Qed. 
+*)
 
-Lemma manset_add_same_dup {A : Type} `{HA : EqClass A} (a : A) (s : manifest_set A) :
-  manset_add a s = s -> In_set a s /\ ~NoDup (a::s).
+Lemma manset_add_same_dup (* {A : Type} `{HA : EqClass A} *) (a : nat) (s : manifest_set nat) :
+  manset_add a s = s -> In_set_nat a s /\ ~NoDup (a::s).
 Proof.
+Admitted.
+(*
   split.
   - generalize dependent a. induction s; intros a0 H.
     + inversion H.
@@ -179,8 +215,9 @@ Proof.
         assert (G: (a0 :: a :: s = app (a0 :: nil) (a :: s))) by reflexivity.
         rewrite G in H2. apply NoDup_remove_1 in H2. simpl in H2. auto.
 Qed.
+*)
 
-Lemma nodup_preserves_manset {A : Type} `{HA : EqClass A} (l : list A) :
+Lemma nodup_preserves_manset (* {A : Type} `{HA : EqClass A} *) (l : list nat) :
   NoDup l -> list_to_manset l = l.
 Proof.
   intros. induction l; auto.
@@ -197,24 +234,34 @@ Proof.
       f_equal. simpl. auto.
 Qed.
 
-Fixpoint manset_union {A : Type} `{HA : EqClass A} (a b : manifest_set A) : manifest_set A :=
+Fixpoint manset_union (* {A : Type} `{HA : EqClass A} *) (a b : manifest_set nat) : manifest_set nat :=
   match b with
   | nil => a
   | h :: t => (*manset_union t (manset_add h b)*)
               manset_union (manset_add h a) t
   end.
 
-Lemma manset_add_not_in {A : Type} `{HA : EqClass A} (a : A) (s : manifest_set A) :
-  ~In_set a s -> manset_add a s = s ++ [a].
+Fixpoint manset_union_plcAsp (* {A : Type} `{HA : EqClass A} *) (a b : manifest_set (Plc * ASP_ID)) : manifest_set (Plc * ASP_ID) :=
+  match b with
+  | nil => a
+  | h :: t => (*manset_union t (manset_add h b)*)
+              manset_union_plcAsp (manset_add_plcAsp h a) t
+  end.
+
+Lemma manset_add_not_in (* {A : Type} `{HA : EqClass A} *) (a : nat) (s : manifest_set nat) :
+  ~In_set_nat a s -> manset_add a s = s ++ [a].
 Proof.
+Admitted.
+(*
   intros. induction s; auto.
   - simpl. simpl in H. intuition.
     destruct (eqb a a0) eqn:E.
     + apply eqb_leibniz in E. symmetry in E. intuition.
     + rewrite H. auto.
 Qed.
+*)
 
-Lemma NoDup_app_single {A : Type} (a : A) (a0 : list A) :
+Lemma NoDup_app_single (* {A : Type} *) (a : nat) (a0 : list nat) :
   NoDup (a0 ++ [a]) <-> NoDup (a :: a0).
 Proof.
   split.
@@ -239,9 +286,9 @@ Proof.
 Qed.
 
 
-Theorem exclusive_set_unification {A : Type} `{HA : EqClass A} (a b : manifest_set A) :
+Theorem exclusive_set_unification (* {A : Type} `{HA : EqClass A} *) (a b : manifest_set nat) :
   NoDup a -> NoDup b ->
-  (forall x, In_set x a -> ~In_set x b) -> (forall y, In_set y b -> ~In_set y a) ->
+  (forall x, In_set_nat x a -> ~In_set_nat x b) -> (forall y, In_set_nat y b -> ~In_set_nat y a) ->
   manset_union a b = a ++ b.
 Proof.
   intros. generalize dependent a. induction b; intros.
@@ -253,27 +300,27 @@ Proof.
     + inversion H0; auto.
     + simpl in H3; intuition. apply NoDup_app_single. constructor; auto.
     + intuition. apply in_app_or in H5; intuition.
-      * unfold In_set in *. pose proof (H2 x); auto with *.
+      * unfold In_set_nat in *. pose proof (H2 x); auto with *.
       * simpl in H7. destruct H7; subst; auto. inversion H0; subst; auto.
     + intuition. apply in_app_or in H6; intuition.
-      * unfold In_set in *. pose proof (H1 y); auto with *.
+      * unfold In_set_nat in *. pose proof (H1 y); auto with *.
       * simpl in H7. destruct H7; subst; auto; inversion H0; subst; auto.
 Qed.
 
-Lemma manset_union_nil_r {A : Type} `{HA : EqClass A} (s : manifest_set A) :
+Lemma manset_union_nil_r (* {A : Type} `{HA : EqClass A} *) (s : manifest_set nat) :
   NoDup s ->
   manset_union [] s = s.
 Proof.
   intros. apply exclusive_set_unification; auto. constructor.
 Qed.
 
-Lemma manset_union_nil_l {A : Type} `{HA : EqClass A} (s : manifest_set A) :
+Lemma manset_union_nil_l (* {A : Type} `{HA : EqClass A} *) (s : manifest_set nat) :
   manset_union s [] = s.
 Proof.
   auto.
 Qed.
 
-Theorem nodup_manset_union {A : Type} `{HA : EqClass A} (a b : manifest_set A) :
+Theorem nodup_manset_union (* {A : Type} `{HA : EqClass A} *) (a b : manifest_set nat) :
   NoDup a ->
   NoDup (manset_union a b).
 Proof.
@@ -281,15 +328,15 @@ Proof.
   - simpl. auto using nodup_manset_add.
 Qed.
 
-Theorem union_inclusion_l {A : Type} `{HA : EqClass A} (a b : manifest_set A) :
-  forall x, In_set x a -> In_set x (manset_union a b).
+Theorem union_inclusion_l (* {A : Type} `{HA : EqClass A} *) (a b : manifest_set nat) :
+  forall x, In_set_nat x a -> In_set_nat x (manset_union a b).
 Proof.
   generalize dependent a. induction b; intros; auto.
   - simpl. apply (in_set_add _ _ a) in H. auto.
 Qed.
 
-Theorem union_inclusion_r {A : Type} `{HA : EqClass A} (a b : manifest_set A) :
-  forall y, In_set y b -> In_set y (manset_union a b).
+Theorem union_inclusion_r (* {A : Type} `{HA : EqClass A} *) (a b : manifest_set nat) :
+  forall y, In_set_nat y b -> In_set_nat y (manset_union a b).
 Proof.
   generalize dependent a. induction b; intros; auto.
   - inversion H.
@@ -297,12 +344,15 @@ Proof.
     + apply union_inclusion_l. apply manadd_In_add.
 Qed.
 
-Lemma union_inclusion {A : Type} `{HA : EqClass A} (a b : manifest_set A) :
-  forall z, In_set z a \/ In_set z b <-> In_set z (manset_union a b).
+Lemma union_inclusion (* {A : Type} `{HA : EqClass A} *) (a b : manifest_set nat) :
+  forall z, In_set_nat z a \/ In_set_nat z b <-> In_set_nat z (manset_union a b).
 Proof.
+Admitted.
+(*
   split; intros.
   - intuition; auto using union_inclusion_l, union_inclusion_r.
   - generalize dependent a. induction b; intros; auto.
     simpl in H; apply IHb in H; destruct H; auto with *.
     + apply manadd_In_set in H; destruct H; subst; auto with *.       
 Qed.
+*)

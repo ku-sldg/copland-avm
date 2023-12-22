@@ -61,7 +61,10 @@ Definition eqb_asp_params (* `{H : EqClass ID_Type} `{H : EqClass (list ID_Type)
 Definition eq_plc_dec (* `{H : EqClass ID_Type} *) :
   forall x y: Plc, {x = y} + {x <> y}.
 Proof.
-Admitted.
+intros.
+apply Nat.eq_dec.
+Defined.
+
 (*
   intros.
   (* try decide equality; subst; *)
@@ -72,7 +75,9 @@ Defined.
 Definition eq_aspid_dec (* `{H : EqClass ID_Type} *) :
   forall x y: ASP_ID, {x = y} + {x <> y}.
 Proof.
-Admitted.
+intros.
+apply Nat.eq_dec.
+Defined.
 (*
   intros.
   (* try decide equality; subst; *)
@@ -82,7 +87,7 @@ Defined.
 
 
 
-Definition eq_asp_params_dec (* `{H : EqClass ID_Type} *) :
+Lemma eq_asp_params_dec (* `{H : EqClass ID_Type} *) :
   forall x y: ASP_PARAMS, {x = y} + {x <> y}.
 Proof.
 Admitted.
@@ -119,7 +124,7 @@ Global Instance EqClassASP_PARAMS `{H : EqClass ID_Type} : EqClass ASP_PARAMS :=
 }.
 *)
 
-Definition eq_evidence_dec : (* forall `{H : EqClass ID_Type} , *)
+Lemma eq_evidence_dec : (* forall `{H : EqClass ID_Type} , *)
   forall x y : Evidence, {x = y} + {x <> y}.
 Proof.
 Admitted.
@@ -133,7 +138,7 @@ Admitted.
 Qed.
 *)
 
-Definition eq_term_dec : (* forall `{H : EqClass ID_Type}, *)
+Lemma eq_term_dec : (* forall `{H : EqClass ID_Type}, *)
   forall x y : Term, {x = y} + {x <> y}.
 Proof.
 Admitted.
@@ -152,7 +157,7 @@ Admitted.
 Qed.
 *)
 
-Definition eq_core_term_dec : (* forall `{H : EqClass ID_Type}, *)
+Lemma eq_core_term_dec : (* forall `{H : EqClass ID_Type}, *)
   forall x y : Core_Term, {x = y} + {x <> y}.
 Proof.
 Admitted.
@@ -168,7 +173,7 @@ Admitted.
 Qed.
 *)
 
-Definition eq_ev_dec: (* forall `{H : EqClass ID_Type}, *)
+Lemma eq_ev_dec: (* forall `{H : EqClass ID_Type}, *)
   forall x y: Ev, {x = y} + {x <> y}.
 Proof.
 Admitted.
@@ -295,8 +300,8 @@ Proof.
       eapply list_beq_refl; eauto.
 Defined.
 
-Definition eqb_fwd (fwd1 fwd2 : FWD) : bool.
-Admitted.
+Definition eqb_fwd (fwd1 fwd2 : FWD) : bool := true.
+(* Admitted. *)
 
 Lemma eqb_eq_fwd: forall f1 f2,
     eqb_fwd f1 f2 = true <->
@@ -306,12 +311,12 @@ Admitted.
 
 
 (** Boolean equality for Evidence Types *)
-Fixpoint eqb_evidence `{H : EqClass ID_Type} (e:Evidence) (e':Evidence): bool :=
+Fixpoint eqb_evidence (* `{H : EqClass ID_Type} *) (e:Evidence) (e':Evidence): bool :=
   match (e,e') with
   | (mt,mt) => true
   | (uu p fwd params e1, uu p' fwd' params' e2) =>
     (eqb_plc p p') && (eqb_fwd fwd fwd') && (eqb_asp_params params params') && (eqb_evidence e1 e2)
-  | (nn i, nn i') => (eqb i i')
+  | (nn i, nn i') => (Nat.eqb i i')
   | (ss e1 e2, ss e1' e2') =>
     (eqb_evidence e1 e1') && (eqb_evidence e2 e2')
   | _ => false
