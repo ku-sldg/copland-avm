@@ -58,11 +58,18 @@ if (eqb (et_size et) (length ls))
 then ret tt 
 else (am_failm (am_dispatch_error (Runtime errStr_et_size))).
 
-Definition am_appraise (t:Term) (toPlc:Plc) (init_et:Evidence) (cvm_ev:RawEv) : AM AppResultC :=
+Definition am_appraise (t:Term) (toPlc:Plc) (init_et:Evidence) (cvm_ev:RawEv) (local_appraisal:bool) : AM AppResultC :=
   let expected_et := eval t toPlc init_et in
   check_et_length expected_et cvm_ev ;;
   uuid <- get_am_clone_uuid ;;
-  let app_res := run_appraisal_client t toPlc init_et cvm_ev uuid in
+
+  app_res <- 
+    (match local_appraisal with 
+    | true => 
+       let expected_et := eval t toPlc init_et in
+        gen_appraise_AM expected_et cvm_ev 
+    | false => ret (run_appraisal_client t toPlc init_et cvm_ev uuid)
+    end) ;;
   (*
   let expected_et := eval t toPlc init_et in
   app_res <- gen_appraise_AM expected_et cvm_ev ;; *)
@@ -194,7 +201,7 @@ Definition am_client_gen_local (t:Term) (myPlc:Plc) (initEvOpt:option EvC)
   
   *)
 
-  app_res <- am_appraise t myPlc init_et resev ;;
+  app_res <- am_appraise t myPlc init_et resev (is_local_appraisal amLib) ;;
 
 
   ret (am_appev app_res).

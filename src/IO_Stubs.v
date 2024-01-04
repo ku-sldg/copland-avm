@@ -82,6 +82,9 @@ Admitted.
 Definition appraise_auth_tok (res:AppResultC) : bool.
 Admitted.
 
+Definition is_local_appraisal (res:AM_Library) : bool.
+Admitted.
+
 Definition print_auth_tok (tok:ReqAuthTok) : unit.
 Admitted.
 
