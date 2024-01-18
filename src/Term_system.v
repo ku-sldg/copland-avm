@@ -1,4 +1,5 @@
-(* Copland specific event systems *)
+(* Copland-specific event systems (instantiated with the Copland Event type Ev
+    and computed from Annotated Terms). *)
 
 (* LICENSE NOTICE
 
@@ -8,8 +9,6 @@ All Rights Reserved.
 This proof script is free software: you can redistribute it and/or
 modify it under the terms of the BSD License as published by the
 University of California.  See license.txt for details. *)
-
-(** Copland specific event systems. *)
 
 Require Import Preamble More_lists StructTactics Defs Term_Defs Term Event_system.
 

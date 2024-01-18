@@ -1,3 +1,9 @@
+(* Definition and general properties of Annotated Copland Terms (AnnoTerm).
+    Includes annotation and "un-annotation" functions, well-formedness predicates, 
+    event identifier "span" computations, and their formal properties.
+*)
+
+
 Require Import Term_Defs OptMonad_Coq BS Preamble.
 Require Import StructTactics Defs.
 

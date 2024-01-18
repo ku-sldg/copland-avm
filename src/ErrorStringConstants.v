@@ -1,4 +1,8 @@
-Require Import (* Term_Defs *) StringT.
+(* Abstract place-holders for error string constant definitions.
+    Once instantiated, these should provide descriptive error messages for 
+    dynamic error cases in Coq-extracted code. *)
+
+Require Import StringT.
 
 Definition empty_string : StringT. Admitted.
 

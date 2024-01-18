@@ -1,5 +1,5 @@
-(** This file contains the basic definitions for Copland terms, Core terms, 
-   Evidence Types, and Copland events. *)
+(** Basic definitions for Copland Terms, Core Terms, 
+   Evidence, Remote Request/Response structures, Copland events (Ev). *)
 
 (*
    These definitions have been adapted from an earlier version, archived 

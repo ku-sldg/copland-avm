@@ -1,3 +1,7 @@
+(* Boolean and Propositional equality definitions and lemmas for core Copland 
+    datatypes, manily Evidence.  Includes decidability of equality lemmas.
+*) 
+
 Require Import AbstractedTypes EqClass Term_Defs.
 
 Require Import StructTactics.

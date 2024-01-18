@@ -1,7 +1,7 @@
-(*  This file contains structural lemmas about well-formedness of annotated 
-    phrases and their ranges, associated automation, the `events` relation 
-    --a denotational semantics for phrase events, and lemmas/automation related 
-    to `events` *)
+(*  --Structural lemmas about well-formedness of annotated Copland
+    phrases and their event ID ranges, associated automation.
+    --The `events` relation --a denotational semantics for phrase events.
+    --Lemmas/automation related to `events` *)
 
 Require Import Defs Eqb_Evidence.
 Require Import Preamble More_lists StructTactics.
