@@ -1,7 +1,8 @@
 (*
-Proofs about the Copland Virtual Machine implementation, linking it to the Copland reference semantics.
+  Primary results/proofs about the Copland Virtual Machine implementation, 
+    linking it to the Copland reference semantics.
 
-Author:  Adam Petz, ampetz@ku.edu
+  Author:  Adam Petz, ampetz@ku.edu
 *)
 
 Require Import More_lists Defs Term_Defs Anno_Term_Defs ConcreteEvidence LTS Event_system Term_system Main Appraisal_Evidence AutoApp.

@@ -1,7 +1,8 @@
 (*
-Definition of the CVM Monad + monadic helper functions.
+  Definition of the CVM Monad + monadic helper functions.
+  Also included:  core simplification/automation tactics for the CVM Monad.
 
-Author:  Adam Petz, ampetz@ku.edu
+  Author:  Adam Petz, ampetz@ku.edu
 *)
 
 Require Import Term_Defs Term ConcreteEvidence Axioms_Io Evidence_Bundlers Defs.

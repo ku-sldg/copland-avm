@@ -1,4 +1,6 @@
-  
+(* Implementation of the Manifest Compiler.
+    Takes a Manifest + AM_Library to an AM_Config.  *)
+
 Require Import Maps AbstractedTypes EqClass Term_Defs_Core Manifest_Admits Manifest
   ErrorStMonad_Coq Term_Defs.
 

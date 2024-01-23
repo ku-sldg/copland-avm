@@ -1,3 +1,7 @@
+(* Definition of the manifest_set datatype, its operations, and related properties.  
+    This datatype is used for "collection" manifest fields, and should act like a 
+    traditional mathematical set (e.g. cumulative, non-duplicating, ...) *)
+
 Require Import AbstractedTypes Term_Defs_Core Maps String
   Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq.
 

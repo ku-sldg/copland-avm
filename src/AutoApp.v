@@ -1,4 +1,5 @@
-(* Misc automation tactics.  Some of these might be repeats or overlap. *)
+(* Misc automation tactics.  
+    TODO:  Some of these might be repeats or overlap. *)
 
 Require Import StructTactics Auto Cvm_St Cvm_Monad ErrorStMonad_Coq Cvm_Impl.
 Require Import List.

@@ -1,7 +1,10 @@
-Require Import Term_Defs_Core Params_Admits Manifest (* Executable_Dec *)
+(* Implementation of the Manifest Generator.
+    Includes separate (but similar) versions of the generator for both 
+    attestation (manifest_generator) and appraisal (manifest_generator_app) scenarios. *)
+
+Require Import Term_Defs_Core Params_Admits Manifest
                Example_Phrases_Admits Example_Phrases Eqb_Evidence
                Manifest_Generator_Helpers.
-               (* Executable_Defs_Prop. *)
 
 Require Import EqClass Maps StructTactics.
 

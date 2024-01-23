@@ -1,9 +1,10 @@
-Require Import Maps Term_Defs_Core Manifest Eqb_Evidence EqClass
-  Manifest_Generator. (* Executable_Defs_Prop *)
+(* Core properties about the Manifest Generator output.
+    Also included:  manifest and environment subset definitions and associated properties. 
+    TODO: consider renaming some of these lemmas (e.g. fafafa, afafafa, ...) *)
 
-Require Import Auto.
+Require Import Maps Term_Defs_Core Manifest Eqb_Evidence EqClass Manifest_Generator.
 
-Require Import StructTactics.
+Require Import Auto StructTactics.
 
 Require Import Coq.Program.Tactics.
 

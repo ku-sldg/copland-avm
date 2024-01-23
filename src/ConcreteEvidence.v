@@ -1,10 +1,11 @@
 (*
-Evidence structure that models concrete results of Copland phrase execution.
+  Evidence structure (EvidenceC) that encapsulates and describes concrete results of 
+    Copland phrase execution.  Also included: Evidence subterm defintions and related properties.
 
-Author:  Adam Petz, ampetz@ku.edu
+  Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import StructTactics Defs. (*AutoPrim. *)
+Require Import StructTactics Defs.
 
 Require Import Coq.Program.Tactics.
 
@@ -41,6 +42,30 @@ Fixpoint et_fun (ec:EvidenceC) : Evidence :=
                        
   | nnc ni _ => nn ni
   | ssc ec1 ec2 => ss (et_fun ec1) (et_fun ec2)
+  end.
+
+Definition splitEv_l (sp:Split) (e:EvC): EvC :=
+  match sp with
+  | (ALL, _) => e
+  | _ => mt_evc
+  end.
+
+Definition splitEv_r (sp:Split) (e:EvC): EvC :=
+  match sp with
+  | (_,ALL) => e
+  | _ => mt_evc
+  end.
+
+Definition splitEvl (sp:Split) (e:EvidenceC) : EvidenceC :=
+  match sp with
+  | (ALL,_) => e
+  | _ => mtc
+  end.
+
+Definition splitEvr (sp:Split) (e:EvidenceC) : EvidenceC :=
+  match sp with
+  | (_,ALL) => e
+  | _ => mtc
   end.
 
 (** Evidence Type subterm relation *)
@@ -175,27 +200,3 @@ Proof.
   generalizeEverythingElse e''.
   induction e''; intros; ff; invc H0; eauto.
 Defined.
-
-Definition splitEv_l (sp:Split) (e:EvC): EvC :=
-  match sp with
-  | (ALL, _) => e
-  | _ => mt_evc
-  end.
-
-Definition splitEv_r (sp:Split) (e:EvC): EvC :=
-  match sp with
-  | (_,ALL) => e
-  | _ => mt_evc
-  end.
-
-Definition splitEvl (sp:Split) (e:EvidenceC) : EvidenceC :=
-  match sp with
-  | (ALL,_) => e
-  | _ => mtc
-  end.
-
-Definition splitEvr (sp:Split) (e:EvidenceC) : EvidenceC :=
-  match sp with
-  | (_,ALL) => e
-  | _ => mtc
-  end.

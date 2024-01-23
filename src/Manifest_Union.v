@@ -1,3 +1,5 @@
+(* Defining union operations for Manifests and Manifest Environments. *)
+
 Require Import AbstractedTypes Term_Defs_Core Maps String
   Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq
   Example_Phrases_Admits.
@@ -66,12 +68,3 @@ Definition env_union_helper (pr:(Plc*Manifest)) (e:EnvironmentM) : EnvironmentM 
 
 Definition environment_union (e1:EnvironmentM) (e2:EnvironmentM) : EnvironmentM :=
   fold_right env_union_helper e2 e1.
-
-
-
-(*
-Check fold_right.
-
-fold_right
-	 : forall A B : Type, (B -> A -> A) -> A -> list B -> A
-*)

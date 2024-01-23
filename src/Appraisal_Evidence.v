@@ -1,3 +1,9 @@
+(* Definitions, properties, and associated automation related to 
+    Appraisal and Evidence examination/reconstruction.
+
+    Also included:  properties about CVM internal Evidence and Event handling.  
+    TODO:  This file has become quite bloated.  May need to refactor/decompose.  *)
+
 Require Import ConcreteEvidence AutoApp Auto Helpers_CvmSemantics Term_Defs Anno_Term_Defs Cvm_St Cvm_Impl Defs StructTactics OptMonad_Coq IO_Stubs Evidence_Bundlers Axioms_Io External_Facts.
 
 Require Import List.

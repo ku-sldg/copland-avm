@@ -1,7 +1,7 @@
 (*
-Automation scripts.  Some generic, but most specific to this development.
+  Automation scripts.  Some attempt to be generic, but most are specific to this development.
 
-Author:  Adam Petz, ampetz@ku.edu
+  Author:  Adam Petz, ampetz@ku.edu
 *)
 
 Require Import StructTactics Cvm_Monad Term_Defs Term.

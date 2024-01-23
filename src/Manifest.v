@@ -1,4 +1,7 @@
-(* Adapted from:  
+(* 
+   Core definitions of the Manifest, AM_Library, and AM_Config datatypes.
+
+   Adapted from:  
    https://github.com/ku-sldg/negotiation20/blob/master/src/Manifest/Manifest.v
 *)
 

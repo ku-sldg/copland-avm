@@ -1,15 +1,14 @@
-(** Abstract definitions of IO Stub signatures.  The functions with monadic 
-    return types (i.e. do_asp') can be replaced by concrete monadic functions
-    in the target language upon extraction.  Alternatively,
+(** Abstract definitions of IO Stub signatures.  Functions with monadic 
+    return types (i.e. do_start_par_thread) should be replaced by concrete monadic 
+    functions in the target language upon extraction.  Alternatively,
     if the target language does not have built-in monadic support, one can
-    instantiate the non-monadic versions of the stubs instead (i.e. do_asp).
+    instantiate a non-monadic version of the stub instead.
 
-    The non-monadic stubs (i.e. do_asp) remain abstract (Admitted) in Coq 
+    The non-monadic stubs (i.e. doRemote_uuid) remain abstract (Admitted) in Coq 
     because they are either too low-level to reason about, or require external 
     IO capabilities not modeled first-class in our spec.  The abstract binary
     and evidence value results support specification of correctness properties 
-    for Appraisal (see usage of do_asp in appEvent_EvidenceC of 
-    Appraisal_Defs.v).        
+    for Appraisal.        
  *)
 
 Require Import Term_Defs ConcreteEvidence ErrorStMonad_Coq 

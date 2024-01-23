@@ -1,7 +1,10 @@
 (*
-Implementation of the Copland Virtual Machine (CVM).
+  Implementation of the Copland Virtual Machine (CVM).
+    Acts as the top-level interpreter of (core) Copland terms by dispatching to monadic helpers.
+    Note:  No meaningful return type (unit).  The real work happens within the monadic state that 
+    invokes services and bundles evidence.
 
-Author:  Adam Petz, ampetz@ku.edu
+  Author:  Adam Petz, ampetz@ku.edu
 *)
 
 Require Import Term_Defs Anno_Term_Defs Cvm_Monad.

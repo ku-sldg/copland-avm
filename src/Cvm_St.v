@@ -1,5 +1,7 @@
 (*
-Record representing the CVM Monad state structure.
+Record representing the CVM Monad state structure:  cvm_st 
+
+CVM Monad definition.
 
 Author:  Adam Petz, ampetz@ku.edu
 *)

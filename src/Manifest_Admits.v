@@ -1,3 +1,5 @@
+(*  Admitted types, definitions, and typeclass instances related to Manifests *)
+
 Require Import EqClass Term_Defs_Core.
 
 Require Import List.

@@ -1,3 +1,5 @@
+(* Definition of a Manifest Environment mapping (EnvironmentM).  *)
+
 Require Import Term_Defs_Core Manifest Maps.
 
 Require Import List.

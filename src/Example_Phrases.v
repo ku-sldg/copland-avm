@@ -1,3 +1,7 @@
+(* Example phrases.  Some of these are inspired by the 
+    Copland "Flexible Mechanisms" work:  https://dl.acm.org/doi/10.1145/3470535 *)
+
+
 Require Import Term_Defs Example_Phrases_Admits Example_Phrases_Demo_Admits.
 
 Require Import Example_Phrases_Pre_Admits.
