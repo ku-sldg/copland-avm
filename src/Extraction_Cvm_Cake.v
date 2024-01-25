@@ -1,3 +1,5 @@
+(*  Configuring and invoking custom CakeML code extraction.  *)
+
 Require Extraction.
 
 Require Import Term_Defs Term_Defs_Core Cvm_Run IO_Stubs AM_Monad Cvm_Monad.
@@ -9,7 +11,7 @@ Require Import Example_Phrases_Pre Example_Phrases_Pre_Admits.
 
 Require Import Manifest_Generator Manifest_Compiler.
 
-Require Import Server_AM Client_AM_Local AM_Helpers.
+Require Import AM_Helpers Server_AM Client_AM.
 
 Require Import Manifest_Generator_Union.
 

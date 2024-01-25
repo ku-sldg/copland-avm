@@ -1,17 +1,9 @@
-Require Import (* Term *) ConcreteEvidence ErrorStMonad_Coq.
+(* Generalized appraisal implementation:  
+    Top-level evidence unbundling and appraisal ASP dispatch.   *)
 
-(*
-Require Import Example_Phrases_Demo.
-*)
+Require Import ConcreteEvidence ErrorStMonad_Coq.
 
-Require Import ErrorStringConstants. 
-
-
-Require Import Appraisal_Defs (* Appraisal_IO_Stubs *) (* AM_Monad *) AM_St.
-
-(*
-Require Import IO_Stubs Cvm_Run.
-*)
+Require Import ErrorStringConstants Appraisal_Defs AM_St.
 
 Require Import List.
 Import ListNotations.

@@ -1,3 +1,6 @@
+(*  Implementation of a top-level Client (initiator) thread for Client AMs in
+      end-to-end Copland Attestation + Appraisal protocols.  *)
+
 Require Import Term Example_Phrases_Demo Cvm_Run Manifest EqClass.
 
 Require Import Impl_appraisal Appraisal_IO_Stubs IO_Stubs AM_Monad ErrorStMonad_Coq.
@@ -6,14 +9,9 @@ Require Import CvmJson_Admits Manifest_Generator Manifest_Compiler Maps.
 
 Require Import ManCompSoundness Manifest_Admits Disclose ErrorStringConstants.
 
-Require Import ManCompSoundness_Appraisal.
+Require Import ManCompSoundness_Appraisal AM_Helpers Auto.
 
-Require Import Auto StructTactics.
-
-Require Import AM_Helpers.
-
-
-Require Import Coq.Program.Tactics.
+Require Import StructTactics Coq.Program.Tactics.
 
 Require Import List.
 Import ListNotations.

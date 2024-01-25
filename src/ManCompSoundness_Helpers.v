@@ -1,3 +1,5 @@
+(*  Helper Lemmas in support of Manifest Compiler Soundness proofs.  *)
+
 Require Import Term_Defs_Core Manifest Manifest_Generator Manifest_Generator_Helpers
   Manifest_Generator_Facts Manifest_Admits Eqb_Evidence.
 

@@ -1,3 +1,5 @@
+(* Admitted parameters for extracted example phrases. *)
+
 Require Import Term_Defs AbstractedTypes.
 
 Require Import List.

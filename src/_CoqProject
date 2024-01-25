@@ -66,6 +66,6 @@ ManCompSoundness.v
 ManCompSoundness_Appraisal.v
 Manifest_Generator_Union.v
 AM_Helpers.v
-Client_AM_Local.v
+Client_AM.v
 Server_AM.v
 Extraction_Cvm_Cake.v

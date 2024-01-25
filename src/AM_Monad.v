@@ -1,3 +1,5 @@
+(* Monadic helpers and custom automation for the AM Monad (AM) *)
+
 Require Import ErrorStMonad_Coq BS Maps Term_Defs_Core Term_Defs Cvm_Run Cvm_St.
 
 Require Import ErrorStringConstants Appraisal_IO_Stubs.

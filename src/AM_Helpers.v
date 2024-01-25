@@ -1,3 +1,5 @@
+(*  Helper definitions for AM Client and Server implementations.  *)
+
 Require Import Term Example_Phrases_Demo Cvm_Run Manifest AbstractedTypes EqClass.
 
 Require Import Impl_appraisal Appraisal_IO_Stubs IO_Stubs AM_Monad ErrorStMonad_Coq.
@@ -27,50 +29,50 @@ Definition get_my_absman_generated (t:Term) (myPlc:Plc) : Manifest :=
 
 (* Helper lemma for proving equivalence of propositional vs boolean list membership.  
        TODO:  consider moving this somewhwere else? *)
-       Lemma existsb_eq_iff_In: forall `{H : EqClass ID_Type} l a,
-       existsb (eqb a) l = true <-> In a l.
-   Proof.
-     intros.
-     split.
-     -
-       generalizeEverythingElse l.
-       induction l; intros; simpl in *.
-       +
-         solve_by_inversion.
-       +
-         find_apply_lem_hyp Bool.orb_prop.
-         destruct H0.
-         ++
-           left.
-           symmetry.
-           apply eqb_leibniz.
-           eassumption.
-         ++
-           right.
-           eauto.
-     -
-       generalizeEverythingElse l.
-       induction l; intros; simpl in *.
-       +
-         solve_by_inversion.
-       +
-         destruct H0.
-         ++
-           subst.
-           assert (eqb a0 a0 = true).
-           {
-             apply eqb_leibniz.
-             auto.
-           }
-           find_rewrite.
-           eauto.
-         ++
-           assert (existsb (eqb a0) l = true) by eauto.
-           find_rewrite.
-           simpl.
-    
-           apply Bool.orb_true_r.
-   Qed.
+Lemma existsb_eq_iff_In: forall `{H : EqClass ID_Type} l a,
+  existsb (eqb a) l = true <-> In a l.
+Proof.
+    intros.
+    split.
+    -
+      generalizeEverythingElse l.
+      induction l; intros; simpl in *.
+      +
+        solve_by_inversion.
+      +
+        find_apply_lem_hyp Bool.orb_prop.
+        destruct H0.
+        ++
+          left.
+          symmetry.
+          apply eqb_leibniz.
+          eassumption.
+        ++
+          right.
+          eauto.
+    -
+      generalizeEverythingElse l.
+      induction l; intros; simpl in *.
+      +
+        solve_by_inversion.
+      +
+        destruct H0.
+        ++
+          subst.
+          assert (eqb a0 a0 = true).
+          {
+            apply eqb_leibniz.
+            auto.
+          }
+          find_rewrite.
+          eauto.
+        ++
+          assert (existsb (eqb a0) l = true) by eauto.
+          find_rewrite.
+          simpl.
+  
+          apply Bool.orb_true_r.
+  Qed.
 
 Definition aspid_in_amlib_bool (al:AM_Library) (i:ASP_ID)  : bool := 
   match (Maps.map_get al.(Local_ASPS) i) with 

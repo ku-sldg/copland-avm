@@ -1,3 +1,6 @@
+(* Example phrases. 
+    Note: Some of these use custom notation defined in Term_Defs_Core.v    *)
+
 Require Import Term_Defs Example_Phrases_Demo_Admits Example_Phrases_Pre_Admits AbstractedTypes.
 
 Require Import List.

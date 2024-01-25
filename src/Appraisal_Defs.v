@@ -1,3 +1,5 @@
+(* Appraisal primitive implementations:  evidence unbundling, nonce generation, appraisal ASP dispatch.  *)
+
 Require Import Term_Defs_Core Term_Defs Manifest AM_St EqClass.
 
 Require Import Appraisal_IO_Stubs ErrorStMonad_Coq AM_Monad AM_St Manifest_Admits ErrorStringConstants.
@@ -32,6 +34,10 @@ Definition decrypt_bs_to_rawev' (bs:BS) (params:ASP_PARAMS) (et:Evidence) : AM R
   | errC e => am_failm (am_dispatch_error e) 
   end.
 
+Definition checkNonce' (nid:nat) (nonceCandidate:BS) : AM BS :=
+  nonceGolden <- am_getNonce nid ;;
+  ret (checkNonce nonceGolden nonceCandidate).
+
 Definition check_asp_EXTD (params:ASP_PARAMS) (p:Plc) (sig:BS) (ls:RawEv) (ac : AM_Config) : ResultT BS DispatcherErrors :=
   ac.(app_aspCb) params p sig ls.
 
@@ -42,6 +48,4 @@ Definition check_asp_EXTD' (params:ASP_PARAMS) (p:Plc) (sig:BS) (ls:RawEv) : AM 
   | errC e => am_failm (am_dispatch_error e) (* (Runtime errStr_amNonce))  am_failm (am_dispatch_error e)) *)
   end.
 
-Definition checkNonce' (nid:nat) (nonceCandidate:BS) : AM BS :=
-  nonceGolden <- am_getNonce nid ;;
-  ret (checkNonce nonceGolden nonceCandidate).
+

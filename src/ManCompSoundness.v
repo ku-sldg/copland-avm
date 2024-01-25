@@ -1,3 +1,7 @@
+(*  Primary results of Manifest Compiler Soundness (for Attestation).
+      Namely, that the compiler outputs a collection of manifests that support 
+      execution of the input protocols.  *)
+
 Require Import Manifest Manifest_Compiler Manifest_Generator AbstractedTypes
   Maps Term_Defs List Cvm_St Cvm_Impl ErrorStMonad_Coq StructTactics 
   Cvm_Monad EqClass Manifest_Admits Auto.

@@ -1,3 +1,6 @@
+(*  Implementation of a top-level Server (listener) thread for Server AMs in
+      end-to-end Copland Attestation + Appraisal protocols.  *)
+
 Require Import Term IO_Stubs Cvm_Run CvmJson_Admits Example_Phrases_Admits.
 
 Require Import AM_Monad ErrorStMonad_Coq Impl_appraisal Manifest Manifest_Admits Cvm_St.
