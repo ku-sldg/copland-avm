@@ -12,16 +12,6 @@ Import List.ListNotations.
 
 Require Import Coq.Program.Tactics.
 
-(*
-Ltac dff :=
-  repeat (
-      cbn in *;
-      repeat break_let;
-      repeat (cbn in *; find_inversion);
-      unfold snd in * ).
-
-Ltac fff := repeat break_match; try solve_by_inversion; dff.
-*)
 
 (* rewrite (existentially) an arbitrary hypothesis and attempt eauto *)
 Ltac jkjke :=

@@ -5,25 +5,25 @@ Require Import List.
 Import ListNotations.
 
 Definition can_measure_target_prop (m : Manifest) (pol:PolicyT) (tplc:Plc) (targid:TARG_ID) : Prop
-  := In tplc m.(targetPlcs).
+  := In_set tplc m.(targetPlcs).
 
 Definition canRunAsp_Manifest (m:Manifest)(params:ASP_PARAMS) : Prop :=
   match params with
   | asp_paramsC aspid aspargs targplc targid =>
     let '{| asps := aspsM; uuidPlcs := knowsOfM; pubKeyPlcs := _;
             policy := policyM |} := m in
-    In aspid aspsM /\
+    In_set aspid aspsM /\
     can_measure_target_prop m policyM targplc targid 
   end.
 
 Definition canRun_aspid (m:Manifest) (i:ASP_ID):Prop :=
-  In i m.(asps).
+  In_set i m.(asps).
 
 Definition knowsOf_Manifest (e:Manifest)(p:Plc) : Prop :=
-  In p e.(uuidPlcs).
+  In_set p e.(uuidPlcs).
 
 Definition knowsPub_Manifest (e:Manifest)(p:Plc): Prop :=
-  In p e.(pubKeyPlcs).
+  In_set p e.(pubKeyPlcs).
 
 Fixpoint executable_local (t:Term) (e:Manifest) : Prop :=
   match t with
@@ -38,6 +38,7 @@ Fixpoint executable_local (t:Term) (e:Manifest) : Prop :=
   | bpar _ t1 t2 => executable_local t1 e /\ executable_local t2 e
   end.
 
+  (*
   Fixpoint places' (t:Term) (ls:list Plc) : list Plc :=
   match t with
   | asp _ => ls 
@@ -61,6 +62,8 @@ Definition places (p:Plc) (t:Term): list Plc :=
       | bseq _ t1 t2 => (place_terms t1 tp p) ++ (place_terms t2 tp p)
       | bpar _ t1 t2 => (place_terms t1 tp p) ++ (place_terms t2 tp p)
       end).
+
+  *)
 
 
 
@@ -88,13 +91,13 @@ Definition canRun_aspid_Env (k:Plc) (em:EnvironmentM) (i:ASP_ID) : Prop :=
 Definition knowsOf_Env (k:Plc)(em:EnvironmentM)(p:Plc):Prop :=
   match (Maps.map_get em k) with 
   | None => False
-  | Some m => In p m.(uuidPlcs)
+  | Some m => In_set p m.(uuidPlcs)
   end.
 
 Definition knowsPub_Env (k:Plc)(em:EnvironmentM)(p:Plc):Prop :=
     match (Maps.map_get em k) with 
     | None => False
-    | Some m => In p m.(pubKeyPlcs)
+    | Some m => In_set p m.(pubKeyPlcs)
     end.
 
 

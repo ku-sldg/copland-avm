@@ -1,4 +1,9 @@
-Require Import Term_Defs AM_Monad Impl_appraisal.
+(* Admitted definitions of JSON types and conversions to/from strings 
+    and Copland datatypes at the boundary of AMs.
+    
+    At the moment, these are too low-level to represent faithfully in the Coq development.   *)
+
+Require Import Term_Defs StringT.
 
 Definition JsonT : Set. Admitted.
 

@@ -1,4 +1,8 @@
-(* Main theorems *)
+(* Main theorems about the Copland Reference Semantics. *)
+
+(** This chapter contains the proof that traces generated from the small-step (operational) 
+      semantics are compatible with the related (denotational) event system.
+    *)
 
 (* LICENSE NOTICE
 
@@ -9,9 +13,6 @@ This proof script is free software: you can redistribute it and/or
 modify it under the terms of the BSD License as published by the
 University of California.  See license.txt for details. *)
 
-(** This chapter contains the proof that traces generated from the
-    small-step semantics are compatible with the related event system.
-    *)
 
 Require Import Preamble More_lists Term_Defs Term LTS Event_system Term_system Trace Defs.
 
@@ -23,7 +24,9 @@ Open Scope list_scope.
 
 Require Import Lia.
 
+(*
 Set Nested Proofs Allowed.
+*)
 (** The traces associated with a state. *)
 
 Inductive traceS: St -> list Ev -> Prop :=
@@ -104,12 +107,6 @@ Proof.
       repeat find_apply_lem_hyp shuffle_length;
       try lia.
 Defined.
-
-(*
-Ltac jkjk'e :=
-  match goal with
-  | [H: _ = ?X |-  context[?X] ] => erewrite <- H
-  end. *)
 
 Lemma step_silent_tr:
   forall st st' tr,

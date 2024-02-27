@@ -1,8 +1,13 @@
+(*  Primary results of Manifest Compiler Soundness (for Attestation).
+      Namely, that the compiler outputs a collection of manifests that support 
+      execution of the input protocols.  *)
+
 Require Import Manifest Manifest_Compiler Manifest_Generator AbstractedTypes
   Maps Term_Defs List Cvm_St Cvm_Impl ErrorStMonad_Coq StructTactics 
   Cvm_Monad EqClass Manifest_Admits Auto.
-Require Import Manifest_Generator_Facts Executable_Defs_Prop 
-  Executable_Facts_Dist Eqb_Evidence.
+Require Import Manifest_Generator_Facts Eqb_Evidence.
+
+Require Import Manifest_Generator_Helpers ManCompSoundness_Helpers.
 
 Require Import Coq.Program.Tactics.
 
@@ -10,17 +15,13 @@ Import ListNotations.
 
 (* Set Nested Proofs Allowed. *)
 
-Fixpoint add_to_list {A : Type} `{EqClass A} (l : list A) (v : A) : list A :=
-  match l with
-  | nil => v :: nil
-  | h :: t => if (eqb h v) then (h :: t) else h :: (add_to_list t v)
-  end.
-
 
 Definition lib_supports_manifest (al : AM_Library) (am : Manifest) : Prop :=
-  (forall (a : ASP_ID), In a am.(asps) -> exists cb, Maps.map_get al.(Local_ASPS) a = Some cb) /\
-  (forall (up : Plc), In up am.(uuidPlcs) -> exists b, Maps.map_get al.(Local_Plcs) up = Some b) /\
-  (forall (pkp : Plc), In pkp am.(pubKeyPlcs) -> exists b, Maps.map_get al.(Local_PubKeys) pkp = Some b).
+  (forall (a : ASP_ID), In_set a am.(asps) -> exists cb, Maps.map_get al.(Local_ASPS) a = Some cb) /\
+  (forall (up : Plc), In_set up am.(uuidPlcs) -> exists b, Maps.map_get al.(Local_Plcs) up = Some b) /\
+  (forall (pkp : Plc), In_set pkp am.(pubKeyPlcs) -> exists b, Maps.map_get al.(Local_PubKeys) pkp = Some b) /\
+  (forall (a : (Plc*ASP_ID)), In_set a am.(appraisal_asps) -> 
+    exists cb, Maps.map_get al.(Local_Appraisal_ASPS) a = Some cb).
 
 Ltac unfolds :=
   (* repeat monad_unfold; *)
@@ -38,9 +39,10 @@ Ltac unfolds :=
   intuition.
 
 Theorem man_gen_aspid_in : forall a m,
-  In a (asps (aspid_manifest_update a m)).
+  In_set a (asps (aspid_manifest_update a m)).
 Proof.
   induction m; simpl in *; eauto.
+  eapply manadd_In_add.
 Qed.
 
 Global Hint Resolve man_gen_aspid_in : core.
@@ -95,10 +97,10 @@ Require Import Helpers_CvmSemantics.
 Lemma callbacks_work_asps : forall absMan amLib amConf,
   lib_supports_manifest amLib absMan ->
   manifest_compiler absMan amLib = amConf ->
-  (forall x, In x absMan.(asps) -> 
+  (forall x, In_set x absMan.(asps) -> 
     forall l p t p' ev ev' res,
       aspCb amConf (asp_paramsC x l p t) p' ev ev' = res ->
-      res = errC Runtime \/ exists r, res = resultC r
+      (exists errStr, res = errC (Runtime errStr)) \/ (exists r, res = resultC r)
   ).
 Proof.
   induction absMan; simpl in *; intuition;
@@ -112,45 +114,28 @@ Proof.
   intuition.
   pose proof (H0 _ H1).
   assert ((fun x : ASP_ID =>
-             if in_dec (EqClass_impl_DecEq ASP_ID) x asps
+             if in_dec_set x asps
              then true
              else false) x = true).
   repeat break_match; eauto.
-  pose proof (filter_resolver _ _ ((fun x : ASP_ID =>
-             if in_dec (EqClass_impl_DecEq ASP_ID) x asps
-             then true
-             else false)) H3 H5).
-  destruct H6. 
-  assert (Some x0 = None). 
-  rewrite <- H6. rewrite <- Heqo; eauto.
+
+  let HH := fresh "HH" in
+  let xx := fresh "xx" in
+  match goal with
+  | H1 : exists _, _,
+    H2 : (fun _ => _) _ = _
+  |- _ => 
+      pose proof (filter_resolver _ _ ((fun x : ASP_ID =>
+      if in_dec_set x asps
+      then true
+      else false)) H1 H2) as HH
+  end.
+  destruct HH as [xx].
+  
+  assert (Some xx = None).
+  jkjke'.
   congruence.
 Qed.
-
-Lemma add_to_list_works : forall {A} `{EqClass A} (l : list A) x,
-  In x (add_to_list l x).
-Proof.
-  induction l; simpl in *; intuition; eauto;
-  break_match; simpl in *; eauto.
-  - rewrite eqb_leibniz in *; subst; eauto.
-Qed.
-
-Local Hint Resolve add_to_list_works : core.
-
-(*
-Lemma ac_immut : forall t e tr p i ac,
-  st_AM_config 
-    (execErr 
-      (build_cvm t)
-      {|
-        st_ev := e;
-        st_trace := tr;
-        st_pl := p;
-        st_evid := i;
-        st_AM_config := ac
-      |}) = ac.
-Proof.
-
-*)
 
 Lemma never_change_am_conf : forall t st res st',
   build_cvm (copland_compile t) st = (res, st') ->
@@ -176,15 +161,15 @@ Definition supports_am (ac1 ac2 : AM_Config) : Prop :=
   (forall p, (forall res, 
       ac1.(plcCb) p = resultC res ->
       ac2.(plcCb) p = resultC res)) /\
-  (forall aid l targ targid p' ev ev',
-      ac1.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC Runtime ->
-      ac2.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC Runtime) /\
-  (forall p, 
-      ac1.(pubKeyCb) p = errC Runtime ->
-      ac2.(pubKeyCb) p = errC Runtime) /\
-  (forall p, 
-      ac1.(plcCb) p = errC Runtime ->
-      ac2.(plcCb) p = errC Runtime).
+  (forall aid l targ targid p' ev ev' errStr,
+      ac1.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC (Runtime errStr) ->
+      ac2.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC (Runtime errStr)) /\
+  (forall p errStr, 
+      ac1.(pubKeyCb) p = errC (Runtime errStr) ->
+      ac2.(pubKeyCb) p = errC (Runtime errStr)) /\
+  (forall p errStr, 
+      ac1.(plcCb) p = errC (Runtime errStr) ->
+      ac2.(plcCb) p = errC (Runtime errStr)).
 
 Theorem supports_am_refl : forall ac1,
   supports_am ac1 ac1.
@@ -215,28 +200,28 @@ Fixpoint am_config_support_exec (t : Term)
           forall l targ targid p' ev ev',
           ((exists res, 
           ac.(aspCb) (asp_paramsC sig_aspid l targ targid) p' ev ev' = resultC res) \/ 
-          ac.(aspCb) (asp_paramsC sig_aspid l targ targid) p' ev ev' = errC Runtime)
+          (exists errStr, ac.(aspCb) (asp_paramsC sig_aspid l targ targid) p' ev ev' = errC (Runtime errStr)))
       | HSH =>
           forall l targ targid p' ev ev',
           ((exists res, 
           ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) p' ev ev' = resultC res) \/ 
-          ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) p' ev ev' = errC Runtime)
+          (exists errStr, ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) p' ev ev' = errC (Runtime errStr)))
       | ENC p =>
           (forall l targ targid p' ev ev',
           ((exists res, 
           ac.(aspCb) (asp_paramsC enc_aspid l targ targid) p' ev ev' = resultC res) \/ 
-          ac.(aspCb) (asp_paramsC enc_aspid l targ targid) p' ev ev' = errC Runtime)) /\
+          (exists errStr, ac.(aspCb) (asp_paramsC enc_aspid l targ targid) p' ev ev' = errC (Runtime errStr)))) /\
           ((exists res, ac.(pubKeyCb) p = resultC res) \/ 
-          ac.(pubKeyCb) p = errC Runtime)
+          (exists errStr, ac.(pubKeyCb) p = errC (Runtime errStr)))
       | ASPC _ _ (asp_paramsC aspid _ _ _) =>
           (forall l targ targid p' ev ev',
           ((exists res, 
           ac.(aspCb) (asp_paramsC aspid l targ targid) p' ev ev' = resultC res) \/ 
-          ac.(aspCb) (asp_paramsC aspid l targ targid) p' ev ev' = errC Runtime)) 
+          (exists errStr, ac.(aspCb) (asp_paramsC aspid l targ targid) p' ev ev' = errC (Runtime errStr))))
       end
   | att p' t' =>
       ((exists res, ac.(plcCb) p' = resultC res) \/ 
-      ac.(plcCb) p' = errC Runtime)
+      (exists errStr, ac.(plcCb) p' = errC (Runtime errStr)))
       (* /\ am_config_support_exec t' p' ac *)
   | lseq t1 t2 =>
       exists ac1 ac2,
@@ -262,9 +247,10 @@ Theorem well_formed_am_config_impl_executable : forall t p amConf,
   am_config_support_exec t p amConf ->
   forall st,
   supports_am amConf (st.(st_AM_config)) ->
-  exists st', 
-    build_cvm (copland_compile t) st = (resultC tt, st') \/
-    build_cvm (copland_compile t) st = (errC (dispatch_error Runtime), st').
+  (exists st', 
+    build_cvm (copland_compile t) st = (resultC tt, st')) \/
+  (exists st' errStr, 
+    build_cvm (copland_compile t) st = (errC (dispatch_error (Runtime errStr)), st')).
 Proof.
   induction t; simpl in *; intuition; eauto.
   - destruct a;
@@ -281,10 +267,12 @@ Proof.
       simpl in *; subst; intuition; 
       eauto; try congruence);
     unfold supports_am, sig_params, enc_params, hsh_params in *; intuition;
+
+
     match goal with
     | H1 : forall _, _,
       H2 : aspCb _ (asp_paramsC ?a ?l ?targ ?tid) ?p' ?ev ?ev' = _,
-      H3 : context[ aspCb _ _ _ _ _ = errC Runtime -> _],
+      H3 : context[ aspCb _ _ _ _ _ = errC (Runtime _) -> _],
       H4 : context[ aspCb _ _ _ _ _ = resultC _ -> _]
       |- _ =>
         let H := fresh "H" in
@@ -300,13 +288,15 @@ Proof.
           erewrite H' in *; eauto; congruence
           |
           (* err side *)
-          pose proof (H3 a l targ tid p' ev ev') as H';
+          destruct H as [errStr H''];
+          pose proof (H3 a l targ tid p' ev ev' errStr) as H';
           intuition; find_rewrite; find_injection; eauto
         ]
     end.
+
   - subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
-      unfold remote_session, doRemote_session', do_remote in *;
+      unfold remote_session, doRemote_session', do_remote, check_cvm_policy in *;
       try break_match;
       try monad_unfold;
       try break_match
@@ -317,23 +307,32 @@ Proof.
       simpl in *; subst; intuition; 
       eauto; try congruence);
     unfold supports_am in *; intuition.
-    destruct H0;
-    erewrite H2 in *; try congruence; eauto.
+    +
+      destruct H0;
+      erewrite H2 in *; try congruence; eauto.
   - subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
-      unfold remote_session, doRemote_session', do_remote in *;
+      unfold remote_session, doRemote_session', do_remote, check_cvm_policy in *;
       try break_match;
       try monad_unfold;
       try break_match
       try find_injection;
       try find_contradiction;
       try find_injection;
+      destruct_conjs;
       (* repeat find_rewrite; *)
       simpl in *; subst; intuition; 
+      destruct_conjs;
       eauto; try congruence);
     unfold supports_am in *; intuition;
-    erewrite H6 in *; try congruence;
-    find_injection; eauto.
+
+    erewrite H7 in *; try congruence;
+    try find_injection; eauto.
+
+    right.
+    repeat eexists.
+    erewrite H6.
+    eauto.
   - subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
       try break_match;
@@ -493,97 +492,23 @@ Proof.
   all: try (eapply default_bs); try (eapply default_UUID). *)
 Qed.
 
-Lemma in_add_to_list : forall {A} `{EqClass A} (l : list A) x x',
-  In x l ->
-  In x (add_to_list l x').
-Proof.
-  induction l; simpl in *; intuition; eauto;
-  subst; eauto; break_match; simpl in *; eauto.
-Qed.
-
-Local Hint Resolve in_add_to_list : core.
-
-Lemma in_add_to_list_rev : forall {A} `{EqClass A} (l : list A) (a a' : A),
-  a <> a' ->
-  In a (add_to_list l a') ->
-  In a l.
-Proof.
-  induction l; simpl in *; intuition; eauto.
-  break_match; simpl in *; intuition; eauto.
-Qed.
-
-Lemma in_dec_add_to_list : forall {A} `{EqClass A} l a a',
-  a <> a' ->
-  (if (in_dec (EqClass_impl_DecEq A) a l) then true else false) =  
-  if (in_dec (EqClass_impl_DecEq A) a (add_to_list l a')) then true else false.
-Proof.
-  intuition; repeat break_match; eauto.
-  - destruct n; eapply in_add_to_list; eauto.
-  - destruct n; eapply in_add_to_list_rev; eauto.
-Qed.
-
-Lemma cannot_be_in_filter_map : forall {A B} `{EqClass A} (l : MapC A B) l' a,
-  ~ (In a l') ->
-  map_get (minify_mapC l 
-    (fun x : A => if in_dec (EqClass_impl_DecEq A) x l' then true else false)) a = None.
-Proof.
-  induction l; simpl in *; intuition; eauto;
-  repeat (break_match; simpl in *; eauto; try congruence);
-  rewrite eqb_leibniz in *; congruence.
-Qed.
-
-Lemma cannot_be_in_filter_mapd : forall {A B} `{EqClass A, EqClass B} (l : MapD A B) l' a,
-  ~ (In a l') ->
-  map_get (minify_mapD l 
-    (fun x : A => if in_dec (EqClass_impl_DecEq A) x l' then true else false)) a = None.
-Proof.
-  induction l; simpl in *; intuition; eauto;
-  repeat (break_match; simpl in *; eauto; try congruence);
-  rewrite eqb_leibniz in *; congruence.
-Qed.
-
-Lemma map_get_minify_eq_under_add_to_list : forall {A B} `{EqClass A} (l : MapC A B) l' a a' v,
-  map_get (minify_mapC l 
-    (fun x : A => if in_dec (EqClass_impl_DecEq A) x l' then true else false)) a = Some v ->
-  map_get (minify_mapC l 
-    (fun x : A => if in_dec (EqClass_impl_DecEq A) x (add_to_list l' a') then true else false)) a = Some v.
-Proof.
-  induction l; simpl in *; intuition; eauto;
-  repeat (break_match; simpl in *; auto with *; eauto; try congruence);
-  rewrite eqb_leibniz in *; subst.
-  - assert (Some v = None). {
-      rewrite <- H0; eapply cannot_be_in_filter_map; eauto.
-    }
-    congruence.
-Qed.
-
-
-Lemma mapD_get_minify_eq_under_add_to_list : forall {A B} `{EqClass A, EqClass B} (l : MapD A B) l' a a' v,
-  map_get (minify_mapD l 
-    (fun x : A => if in_dec (EqClass_impl_DecEq A) x l' then true else false)) a = Some v ->
-  map_get (minify_mapD l 
-    (fun x : A => if in_dec (EqClass_impl_DecEq A) x (add_to_list l' a') then true else false)) a = Some v.
-Proof.
-  induction l; simpl in *; intuition; eauto;
-  repeat (break_match; simpl in *; auto with *; eauto; try congruence);
-  rewrite eqb_leibniz in *; subst.
-  - assert (Some v = None). {
-      rewrite <- H1; eapply cannot_be_in_filter_mapd; eauto.
-    }
-    congruence.
-Qed.
-
 Definition manifest_support_am_config (m : Manifest) (ac : AM_Config) : Prop :=
-  (forall a, In a (m.(asps)) -> 
+  (forall a, In_set a (m.(asps)) -> 
     forall l targ targid p' ev ev',
     (exists res, ac.(aspCb) (asp_paramsC a l targ targid) p' ev ev' = resultC res) \/
-    (ac.(aspCb) (asp_paramsC a l targ targid) p' ev ev' = errC Runtime)) /\
-  (forall p, In p (m.(uuidPlcs)) ->
+    (exists errStr, ac.(aspCb) (asp_paramsC a l targ targid) p' ev ev' = errC (Runtime errStr))) /\
+  (forall p, In_set p (m.(uuidPlcs)) ->
     (exists res, ac.(plcCb) p = resultC res) \/
-    (ac.(plcCb) p = errC Runtime)) /\
-  (forall p, In p (m.(pubKeyPlcs)) ->
+    (exists errStr, ac.(plcCb) p = errC (Runtime errStr))) /\
+  (forall p, In_set p (m.(pubKeyPlcs)) ->
     (exists res, ac.(pubKeyCb) p = resultC res) \/
-    (ac.(pubKeyCb) p = errC Runtime)).
+    (exists errStr, ac.(pubKeyCb) p = errC (Runtime errStr))) /\
+
+    (forall p a, In_set (p,a) (m.(appraisal_asps)) -> 
+    forall l targ targid ev ev',
+    (exists res, ac.(app_aspCb) (asp_paramsC a l targ targid) p ev ev' = resultC res) \/
+    (exists errStr, ac.(app_aspCb) (asp_paramsC a l targ targid) p ev ev' = errC (Runtime errStr))).
+
 
 Theorem manifest_support_am_config_compiler : forall absMan amLib,
   lib_supports_manifest amLib absMan ->
@@ -624,17 +549,17 @@ Fixpoint manifest_support_term (m : Manifest) (t : Term) : Prop :=
       | NULL => True
       | CPY => True
       | SIG => 
-          In sig_aspid (m.(asps))
+          In_set sig_aspid (m.(asps))
       | HSH =>
-          In hsh_aspid (m.(asps))
+          In_set hsh_aspid (m.(asps))
       | ENC p =>
-          In enc_aspid (m.(asps)) /\
-          In p (m.(pubKeyPlcs))
+          In_set enc_aspid (m.(asps)) /\
+          In_set p (m.(pubKeyPlcs))
       | ASPC _ _ (asp_paramsC aspid _ _ _) =>
-          In aspid (m.(asps))
+          In_set aspid (m.(asps))
       end
   | att p' t' =>
-      In p' (m.(uuidPlcs))
+      In_set p' (m.(uuidPlcs))
   | lseq t1 t2 =>
       manifest_support_term m t1 /\
       manifest_support_term m t2
@@ -1019,7 +944,8 @@ Proof.
           {|
             my_abstract_plc := my_abstract_plc;
             asps := asps;
-            uuidPlcs := p :: uuidPlcs;
+            appraisal_asps := appraisal_asps;
+            uuidPlcs := manset_add p uuidPlcs;
             pubKeyPlcs := pubKeyPlcs;
             targetPlcs := targetPlcs;
             policy := policy
@@ -1030,7 +956,8 @@ Proof.
           {|
             my_abstract_plc := my_abstract_plc;
             asps := asps;
-            uuidPlcs := p :: uuidPlcs;
+            appraisal_asps := appraisal_asps;
+            uuidPlcs := manset_add p uuidPlcs;
             pubKeyPlcs := pubKeyPlcs;
             targetPlcs := targetPlcs;
             policy := policy
@@ -1049,14 +976,16 @@ Proof.
          {|
            my_abstract_plc := my_abstract_plc;
            asps := asps;
-           uuidPlcs := p :: uuidPlcs;
+           appraisal_asps := appraisal_asps;
+           uuidPlcs := manset_add p uuidPlcs;
            pubKeyPlcs := pubKeyPlcs;
            targetPlcs := targetPlcs;
            policy := policy
          |}) p0 = Some {|
          my_abstract_plc := my_abstract_plc;
          asps := asps;
-         uuidPlcs := p :: uuidPlcs;
+         appraisal_asps := appraisal_asps;
+         uuidPlcs := manset_add p uuidPlcs;
          pubKeyPlcs := pubKeyPlcs;
          targetPlcs := targetPlcs;
          policy := policy
@@ -1070,7 +999,8 @@ Proof.
       specialize H with (m1 := {|
         my_abstract_plc := my_abstract_plc;
         asps := asps;
-        uuidPlcs := p :: uuidPlcs;
+        appraisal_asps := appraisal_asps;
+        uuidPlcs := @manset_add _ Eq_Class_ID_Type p uuidPlcs;
         pubKeyPlcs := pubKeyPlcs;
         targetPlcs := targetPlcs;
         policy := policy
@@ -1091,7 +1021,8 @@ Proof.
           {|
             my_abstract_plc := my_abstract_plc;
             asps := asps;
-            uuidPlcs := p :: uuidPlcs;
+            appraisal_asps := appraisal_asps;
+            uuidPlcs := manset_add p uuidPlcs;
             pubKeyPlcs := pubKeyPlcs;
             targetPlcs := targetPlcs;
             policy := policy
@@ -1102,7 +1033,8 @@ Proof.
           {|
             my_abstract_plc := my_abstract_plc;
             asps := asps;
-            uuidPlcs := p :: uuidPlcs;
+            appraisal_asps := appraisal_asps;
+            uuidPlcs := manset_add p uuidPlcs;
             pubKeyPlcs := pubKeyPlcs;
             targetPlcs := targetPlcs;
             policy := policy
@@ -1121,14 +1053,16 @@ Proof.
          {|
            my_abstract_plc := my_abstract_plc;
            asps := asps;
-           uuidPlcs := p :: uuidPlcs;
+           appraisal_asps := appraisal_asps;
+           uuidPlcs := manset_add p uuidPlcs;
            pubKeyPlcs := pubKeyPlcs;
            targetPlcs := targetPlcs;
            policy := policy
          |}) p0 = Some {|
          my_abstract_plc := my_abstract_plc;
          asps := asps;
-         uuidPlcs := p :: uuidPlcs;
+         appraisal_asps := appraisal_asps;
+         uuidPlcs := manset_add p uuidPlcs;
          pubKeyPlcs := pubKeyPlcs;
          targetPlcs := targetPlcs;
          policy := policy
@@ -1142,7 +1076,8 @@ Proof.
       specialize H with (m1 := {|
         my_abstract_plc := my_abstract_plc;
         asps := asps;
-        uuidPlcs := p :: uuidPlcs;
+        appraisal_asps := appraisal_asps;
+        uuidPlcs := @manset_add _ Eq_Class_ID_Type p uuidPlcs;
         pubKeyPlcs := pubKeyPlcs;
         targetPlcs := targetPlcs;
         policy := policy
@@ -1411,8 +1346,8 @@ Environment_subset
   (map_set e p0 m) 
   (e2) -> 
 map_get e2 p0 = Some absMan -> 
-In p (uuidPlcs m) -> 
-In p (uuidPlcs absMan).
+In_set p (uuidPlcs m) -> 
+In_set p (uuidPlcs absMan).
 Proof.
   intros.
   assert (map_get (map_set e p0 m) p0 = Some m).
@@ -1444,7 +1379,8 @@ Proof.
       repeat find_rewrite;
       repeat find_injection;
       simpl in * );
-    try (rewrite mapC_get_works in *; simpl in *; repeat find_injection; simpl in *; intuition; eauto).
+    try (rewrite mapC_get_works in *; simpl in *; repeat find_injection; simpl in *; intuition; eauto);
+    try (eapply manadd_In_add).
 
 
   - (* at case *)
@@ -1474,7 +1410,8 @@ Proof.
               {|
                 my_abstract_plc := my_abstract_plc;
                 asps := asps;
-                uuidPlcs := p :: uuidPlcs;
+                appraisal_asps := appraisal_asps;
+                uuidPlcs := manset_add p uuidPlcs;
                 pubKeyPlcs := pubKeyPlcs;
                 targetPlcs := targetPlcs;
                 policy := policy
@@ -1482,7 +1419,7 @@ Proof.
 
     eapply fdsa; eauto.
     simpl.
-    eauto.
+    eapply manadd_In_add.
 
     ++
     assert (tp = p0).
@@ -1495,17 +1432,18 @@ Proof.
     pose (manifest_generator_cumul' t p 
             ((map_set backMan p0
               {|
-                my_abstract_plc := empty_Manifest_Plc;
-                asps := [];
-                uuidPlcs := [p];
-                pubKeyPlcs := [];
-                targetPlcs := [];
+                my_abstract_plc := p0;
+                asps := manifest_set_empty;
+                appraisal_asps := manifest_set_empty;
+                uuidPlcs := manset_add p manifest_set_empty;
+                pubKeyPlcs := manifest_set_empty;
+                targetPlcs := manifest_set_empty; (* v; *)
                 policy := empty_PolicyT
               |}))).
 
     eapply fdsa; eauto.
     simpl.
-    eauto.
+    auto.
   +
     door; eauto.
     subst.
@@ -1822,20 +1760,26 @@ Theorem manifest_generator_compiler_soundness_distributed : forall t tp p absMan
   lib_supports_manifest amLib absMan ->
   manifest_compiler absMan amLib = amConf ->
   forall st,
+
+  st.(st_AM_config) = amConf ->
+
+  (*
     (* Note, this should be trivial typically as amConf = st.(st_AM_config) and refl works *)
     supports_am amConf (st.(st_AM_config)) ->  
+    *)
 
     (  forall t', 
          In t' (place_terms t tp p) -> 
-         st.(st_pl) = p -> 
+        (exists st', 
         
-         exists st', 
+        build_cvm (copland_compile t') st = (resultC tt, st')) \/
         
-        build_cvm (copland_compile t') st = (resultC tt, st') \/
-        build_cvm (copland_compile t') st = (errC (dispatch_error Runtime), st')
+        (exists st' errStr,
+        build_cvm (copland_compile t') st = (errC (dispatch_error (Runtime errStr)), st'))
     ).
 Proof.
   intros.
+  assert (supports_am amConf (st.(st_AM_config))) by ff.
   assert (In p (places tp t)) by 
             (eapply has_manifest_env_places_env_has_manifest; eauto).
   eapply well_formed_am_config_impl_executable.
@@ -1858,7 +1802,7 @@ Proof.
       +
         subst.
         eassumption.
-  - 
-    find_rewrite; eauto.
+  -
+    rewrite H1; eauto. 
   Unshelve. eapply min_id_type.
 Qed.

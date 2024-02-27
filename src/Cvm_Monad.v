@@ -1,13 +1,16 @@
 (*
-Definition of the CVM Monad + monadic helper functions.
+  Definition of the CVM Monad + monadic helper functions.
+  Also included:  core simplification/automation tactics for the CVM Monad.
 
-Author:  Adam Petz, ampetz@ku.edu
+  Author:  Adam Petz, ampetz@ku.edu
 *)
 
 Require Import Term_Defs Term ConcreteEvidence Axioms_Io Evidence_Bundlers Defs.
 Require Import StructTactics.
 
 Require Import Coq.Program.Tactics Lia.
+
+Require Import Manifest_Admits ErrorStringConstants.
 
 Require Import List.
 Import ListNotations.
@@ -41,7 +44,7 @@ Definition get_pl : CVM Plc :=
   st <- get ;;
   ret (st_pl st).
 
-Definition get_amConfig : CVM AM_Config :=
+Definition get_CVM_amConfig : CVM AM_Config :=
   (* TODO:  consider moving this functionality to a Reader-like monad 
         i.e. an 'ask' primitive *)
   st <- get ;;
@@ -56,7 +59,6 @@ Definition inc_id : CVM Event_ID :=
     let ac := st_AM_config st in
     put (mk_st e' tr' p' (Nat.add i (S O)) ac) ;;
     ret i.
-  
 
 Definition modify_evm (f:EvC -> EvC) : CVM unit :=
   st <- get ;;
@@ -100,7 +102,7 @@ Definition fwd_asp (fwd:FWD) (bs:BS) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
   end.
 
 Definition do_asp' (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) : CVM BS :=
-  ac <- get_amConfig ;;
+  ac <- get_CVM_amConfig  ;;
   match (do_asp params e mpl x ac) with
   | resultC r => ret r
   | errC e => failm (dispatch_error e)
@@ -178,8 +180,20 @@ Definition tag_RPY (p:Plc) (q:Plc) (e:EvC) : CVM unit :=
   rpyi <- inc_id ;;
   add_tracem [rpy rpyi p q (get_et e)].
 
+Definition get_cvm_policy : CVM PolicyT := 
+  ac <- get_CVM_amConfig ;;
+  ret (policy (absMan ac)).
+
+Definition check_cvm_policy (t:Term) (pTo:Plc) (et:Evidence) : CVM unit := 
+  pol <- get_cvm_policy ;;
+    match (policy_list_not_disclosed t pTo et pol) with
+    | true => ret tt
+    | false => failm (dispatch_error (Runtime errStr_disclosePolicy))
+    end.
+
 Definition doRemote_session' (t:Term) (pTo:Plc) (e:EvC) : CVM EvC := 
-  ac <- get_amConfig ;;
+  check_cvm_policy t pTo (get_et e) ;;
+  ac <- get_CVM_amConfig ;;
   match (do_remote t pTo e ac) with 
   | resultC ev => ret (evc ev (eval t pTo (get_et e)))  
   | errC e => failm (dispatch_error e)
@@ -233,6 +247,7 @@ Ltac monad_unfold :=
 
   get_ev,
   get_pl,
+  get_CVM_amConfig,
   add_tracem,
   modify_evm,
   add_trace,
@@ -256,7 +271,7 @@ Ltac pairs :=
     | [H: (Some _, _) =
           (Some _, _) |- _ ] => invc H; monad_unfold
                                                           
-    | [H: {| st_ev := _; st_trace := _; st_pl := _(*; st_store := _*); st_evid := _ |} =
-          {| st_ev := _; st_trace := _; st_pl := _ (*; st_store := _*); st_evid := _ |} |- _ ] =>
+    | [H: {| st_ev := _; st_trace := _; st_pl := _; st_evid := _ |} =
+          {| st_ev := _; st_trace := _; st_pl := _; st_evid := _ |} |- _ ] =>
       invc H; monad_unfold
     end; destruct_conjs; monad_unfold.

@@ -1,8 +1,11 @@
+
+(** Abstract definitions for cryptographic ASP parameters.
+        These act as default parameters to cryptographic functions (e.g. signing, hashing)
+        that should be instantiated on a per-AM/per-platform basis. *)
+
 Require Import Term_Defs_Core.
 
 
-(** Abstract definitions for signing and hashing parameters.  
-    May instantiate these during compilation in the future. *)
 
 Definition sig_aspid : ASP_ID. Admitted.
 
@@ -34,7 +37,11 @@ Definition enc_aspargs : list Arg. Admitted.
 
 Definition enc_targid : ASP_ID. Admitted.
 
-Definition enc_targplc : Plc. Admitted.
-
 Definition enc_params : Plc -> ASP_PARAMS :=
-  fun p => asp_paramsC enc_aspid enc_aspargs enc_targplc enc_targid.
+  fun enc_targplc => asp_paramsC enc_aspid enc_aspargs enc_targplc enc_targid.
+
+
+(* This is an (for now, somewhat ad-hoc) ASP evidence disclosure predicate.
+    TODO:  move this somewhere more logical??  *)
+Definition term_discloses_aspid_to_remote_enc_bool (t:Term) (p:Plc) (e:Evidence) (i:ASP_ID) (r:Plc) : bool.
+Admitted.

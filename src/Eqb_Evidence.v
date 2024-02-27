@@ -1,3 +1,7 @@
+(* Boolean and Propositional equality definitions and lemmas for core Copland 
+    datatypes, manily Evidence.  Includes decidability of equality lemmas.
+*) 
+
 Require Import AbstractedTypes EqClass Term_Defs.
 
 Require Import StructTactics.
@@ -266,28 +270,11 @@ Lemma eqb_eq_fwd: forall f1 f2,
 Proof.
 Admitted.
 
-(* TODO:  remove these since implemented above...? *)
-(*
-Definition eqb_plc (p1 p2 : Plc) : bool.
-Admitted.
-
-Lemma eqb_eq_plc: forall `{H : EqClass ID_Type} p1 p2 ,
-    eqb_plc p1 p2 = true <->
-    p1 = p2.
-Proof.
-Admitted.
-*)
 
 (** Boolean equality for Evidence Types *)
 Fixpoint eqb_evidence `{H : EqClass ID_Type} (e:Evidence) (e':Evidence): bool :=
   match (e,e') with
   | (mt,mt) => true
-                (*
-  | (gg p params e1, gg p' params' e2) =>
-    (Nat.eqb p p') && (eqb_asp_params params params') && (eqb_evidence e1 e2)
-  | (hh p params e1, hh p' params' e2) =>
-    (Nat.eqb p p') && (eqb_asp_params params params') && (eqb_evidence e1 e2)
-                 *)
   | (uu p fwd params e1, uu p' fwd' params' e2) =>
     (eqb_plc p p') && (eqb_fwd fwd fwd') && (eqb_asp_params params params') && (eqb_evidence e1 e2)
   | (nn i, nn i') => (eqb i i')
@@ -315,48 +302,13 @@ Proof.
       rewrite Bool.andb_true_iff in H.
       destruct_conjs.
       rewrite eqb_eq_plc in H.
-      (*
-      rewrite eqb_leibniz in H.
-       *)
+      (* rewrite eqb_leibniz in H. *)
       
       specialize IHe1 with e2.
       concludes.
       rewrite eqb_eq_asp_params in H1.
       rewrite eqb_eq_fwd in H2.
       congruence.
-
-
-(*
-      
-    +
-      cbn in *.
-      rewrite Bool.andb_true_iff in H.
-      rewrite Bool.andb_true_iff in H.
-      destruct_conjs.
-      apply EqNat.beq_nat_true in H.
-      subst.
-      specialize IHe1 with e2.
-      concludes.
-      assert (a = a0).
-      {
-        erewrite <- eqb_eq_asp_params.
-        eassumption.
-      }       
-      congruence.  
-      
-    +
-      cbn in *.
-      rewrite Bool.andb_true_iff in H.
-      rewrite Bool.andb_true_iff in H.
-      destruct_conjs.
-      apply EqNat.beq_nat_true in H.
-      specialize IHe1 with e2.
-      concludes.
-      rewrite eqb_eq_asp_params in H1.
-      congruence.
-*)
-
-
     +
       cbn in *.
       rewrite Bool.andb_true_iff in H.
@@ -376,20 +328,10 @@ Proof.
       repeat rewrite Bool.andb_true_iff.
       split. split. split. 
       * eapply eqb_eq_plc; auto.
-        (*
-        eapply eqb_leibniz; eauto. *)
+        (* eapply eqb_leibniz; eauto. *)
       * rewrite eqb_eq_fwd. tauto.
       * erewrite eqb_eq_asp_params. tauto.
       * eauto.
-      (*
-    +
-      invc H.
-      cbn in *.
-      repeat rewrite Bool.andb_true_iff.
-      split. split.
-      apply Nat.eqb_refl.
-      erewrite eqb_eq_asp_params. tauto.
-      eauto. *)
     +
       invc H.
       cbn in *.

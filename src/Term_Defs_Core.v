@@ -1,4 +1,4 @@
-(** This file contains the basic definitions for Copland terms, Core terms, 
+(** Basic definitions for Copland terms, Core terms, 
    Evidence Types, and Copland events. *)
 
 (*
@@ -20,11 +20,7 @@ Require Export BS.
 
 Require Import AbstractedTypes.
 
-(** * Terms and Evidence
-
-    A term is either an atomic ASP, a remote call, a sequence of terms
-    with data a dependency, a sequence of terms with no data
-    dependency, or parallel terms. *)
+(** * Terms and Evidence *)
 
 (** [Plc] represents a place (or attestation domain). *)
 Definition Plc: Set := ID_Type.
@@ -33,7 +29,7 @@ Definition N_ID: Set := nat.
 (** [Event_ID] represents Event identifiers *)
 Definition Event_ID: Set := nat.
 
-(** [ASP_ID], [TARG_ID], and [Arg] are all string-typed parameters to ASPs 
+(** [ASP_ID], [TARG_ID], and [Arg] are all identifiers and parameters to ASP terms
     [ASP_ID] identifies the procedure invoked.
     [TARG_ID] identifies the target (when a target makes sense).
     [Arg] represents a custom argument for a given ASP 
@@ -73,7 +69,7 @@ Inductive FWD: Set :=
 
     mt:  Empty evidence 
     nn:  Nonce evidence (with an ID)
-    uu:  ASP evidence 
+    uu:  ASP evidence bundle
     ss:  evidence pairing (composition)
 *)
 Inductive Evidence: Set :=
@@ -116,7 +112,10 @@ Inductive ASP: Set :=
     of branching phrases *)
 Definition Split: Set := (SP * SP).
 
-(** Main Copland phrase datatype definition *)
+(** Main Copland phrase datatype definition.
+        A term is either an atomic ASP (Attestation Service Provider), 
+        a remote call (att), a sequence of terms with data a dependency (lseq),
+        a sequence of terms with no data dependency, or parallel terms. *)
 Inductive Term: Set :=
 | asp: ASP -> Term
 | att: Plc -> Term -> Term
@@ -152,6 +151,12 @@ Notation "'<<' x y z '>>'" := (asp (ASPC ALL EXTD (asp_paramsC x nil y z)))
                       (in custom copland_entry at level 98).
 (* @ plc phrase *)
 Notation "@ p [ ph ]" := (att p ph) (in custom copland_entry at level 50).
+Notation "'\t1<' T a1 '>'" := (T a1) (in custom copland_entry at level 99).
+Notation "'\t2<' T a1 a2 '>'" := (T a1 a2) (in custom copland_entry at level 99).
+Notation "'\t3<' T a1 a2 a3 '>'" := (T a1 a2 a3) (in custom copland_entry at level 99).
+Notation "'\t4<' T a1 a2 a3 a4 '>'" := (T a1 a2 a3 a4) (in custom copland_entry at level 99).
+Notation "'\t5<' T a1 a2 a3 a4 a5 '>'" := (T a1 a2 a3 a4 a5) (in custom copland_entry at level 99).
+Notation "'\t6<' T a1 a2 a3 a4 a5 a6 '>'" := (T a1 a2 a3 a4 a5 a6) (in custom copland_entry at level 99).
 
 Open Scope cop_ent_scope.
 Definition test1 := <{ __ -> {} }>.

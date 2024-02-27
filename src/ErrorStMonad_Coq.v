@@ -1,11 +1,14 @@
 (*
-General definition of a state monad with error + monadic notations, borrowed/tweaked from:  https://github.com/uwplse/verdi/blob/master/core/StateMachineHandlerMonad.v
+General definition of a state monad with error + monadic notations, 
+  borrowed/tweaked from:  https://github.com/uwplse/verdi/blob/master/core/StateMachineHandlerMonad.v
 
-Author:  Adam Petz, ampetz@ku.edu
+Primary Author:  Adam Petz, ampetz@ku.edu
 *)
 
 Require Import Term_Defs.
 
+(* Generic result type.  Parameterized by the success type (A) 
+    and the error type (E). *)
 Inductive ResultT (A:Type) (E:Type) : Type := 
 | errC : E -> ResultT A E
 | resultC : A -> ResultT A E.

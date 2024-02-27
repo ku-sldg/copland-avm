@@ -1,15 +1,11 @@
-(* Defining (abstract) representation for binary data values.
-   BS stands for "Binary String".   *)
+(* Defining (abstract) representation for raw binary data values.
+   BS stands for "Binary String".  May be instantiated with 
+   types like strings and byte buffers in concrete implementations.    *)
 
 Definition BS : Set.
 Admitted.
-Definition default_bs : BS.
-Admitted.
 
-Definition passed_bs : BS.
-Admitted.
-Definition failed_bs : BS.
-Admitted.
-
-Definition StringT : Set.
-Admitted. 
+(* Some default/reserved BS values *)
+Definition default_bs : BS. Admitted.
+Definition passed_bs  : BS. Admitted.
+Definition failed_bs  : BS. Admitted.

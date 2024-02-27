@@ -9,7 +9,6 @@ This proof script is free software: you can redistribute it and/or
 modify it under the terms of the BSD License as published by the
 University of California.  See license.txt for details. *)
 
-(** Traces and their relation to event systems. *)
 
 Require Import Preamble More_lists Defs Term_Defs Term Event_system Term_system StructTactics.
 

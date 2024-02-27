@@ -61,13 +61,13 @@ Lemma stupid_map_killer : forall a Local_ASPS st_pl st_ev p t m l d,
         | Some cb =>
             match cb (asp_paramsC a l p t) st_pl (encodeEvRaw (get_bits st_ev)) (get_bits st_ev) with
             | errC c => match c with
-                        | messageLift _ => errC Runtime
+                        | messageLift msg => errC (Runtime msg)
                         end
             | resultC r => resultC r
             end
         | None => errC Unavailable
         end = errC d) ->
-  d = Runtime.
+  (exists errStr, d = (Runtime errStr)).
 Proof.
   destruct d; eauto; intros; repeat break_match; 
   try congruence; clear H0.
@@ -174,9 +174,10 @@ Theorem manifest_compiler_sound : forall t p backEnv envM,
       manifest_compiler absMan amLib = amConf ->
       (forall st,
         st.(st_AM_config) = amConf ->
-        exists st', 
-          build_cvm (copland_compile t) st = (resultC tt, st') \/
-          build_cvm (copland_compile t) st = (errC (dispatch_error Runtime), st')
+        (exists st', 
+          build_cvm (copland_compile t) st = (resultC tt, st')) \/
+        (exists st' errStr, 
+          build_cvm (copland_compile t) st = (errC (dispatch_error (Runtime errStr)), st'))
       )
     )
   )

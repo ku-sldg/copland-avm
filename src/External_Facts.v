@@ -1,5 +1,5 @@
 (*
-Axioms and lemmas that capture the semantics of external CVM instances.
+Axioms and derived lemmas that capture the semantics of external CVM instances.
 
 Author:  Adam Petz, ampetz@ku.edu
 *)

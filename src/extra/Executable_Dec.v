@@ -18,7 +18,7 @@ Import ListNotations.
 Set Nested Proofs Allowed.
 *)
 
-
+(*
 
 (* Helper lemma for proving equivalence of propositional vs boolean list membership.  
        TODO:  consider moving this somewhwere else? *)
@@ -67,6 +67,8 @@ Proof.
         apply Bool.orb_true_r.
 Qed.
 
+*)
+
 Lemma canRunAsp_Manifest_prop_iff_bool : forall e a,
     canRunAsp_ManifestB e a = true <-> canRunAsp_Manifest e a.
 Proof.
@@ -81,11 +83,14 @@ Proof.
     find_apply_lem_hyp andb_prop.
     destruct_conjs.
     split.
-    + 
+    +
+      eapply existsb_eq_iff_In_set.
+      (*
       eapply existsb_eq_iff_In.
+      *)
       eassumption.
     + unfold can_measure_target_prop, can_measure_target in *; simpl in *; 
-      eapply existsb_eq_iff_In; eauto.
+      eapply existsb_eq_iff_In_set; eauto.
 
   - (* <- case *)
     unfold canRunAsp_Manifest.
@@ -95,7 +100,7 @@ Proof.
     intros.
     destruct_conjs.
     unfold can_measure_target, can_measure_target_prop in *.
-    rewrite <- existsb_eq_iff_In in *; simpl in *.
+    rewrite <- existsb_eq_iff_In_set in *; simpl in *.
     eauto with *.
 Qed.
 
@@ -106,7 +111,7 @@ Proof.
   split;
     unfold knowsOf_Manifest in * ;
     unfold knowsOf_ManifestB in * ;
-    apply existsb_eq_iff_In; auto.
+    apply existsb_eq_iff_In_set; auto.
 Qed.
 
 Lemma knowsPub_Manifest_prop_iff_bool: forall e a,
@@ -116,7 +121,7 @@ Proof.
   split;
     unfold knowsOf_Manifest in * ;
     unfold knowsOf_ManifestB in * ;
-    apply existsb_eq_iff_In; auto.
+    apply existsb_eq_iff_In_set; auto.
 Qed.
 
 Lemma canRun_aspid_prop_iff_bool : forall m i,
@@ -126,7 +131,7 @@ Proof.
   split;
     unfold canRun_aspid in *;
     unfold canRun_aspidB in *;
-    apply existsb_eq_iff_In; auto.
+    apply existsb_eq_iff_In_set; auto.
 Qed.
 
 Lemma executable_prop_iff_bool : forall t e,

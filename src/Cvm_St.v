@@ -1,5 +1,7 @@
 (*
-Record representing the CVM Monad state structure.
+Record representing the CVM Monad state structure:  cvm_st 
+
+CVM Monad definition.
 
 Author:  Adam Petz, ampetz@ku.edu
 *)
@@ -19,28 +21,10 @@ Require Export Manifest.
     st_pl - Current "executing place".
     st_evid - Monotonic event ID counter.  Incremented after each 
               attestation-relevant event/invocation.
+    st_AM_config - AM Configuration (typically produced by the Manifest Compiler).  
+                   Provides callback functions used by the CVM to interpret Copland.
  *)
 
-
-Definition emptyConcreteMan : ConcreteManifest := {|
-  my_plc := min_id_type;
-  Concrete_ASPs := nil;
-  Concrete_Plcs := nil;
-  Concrete_PubKeys := nil;
-  Concrete_Targets := nil;
-  ASP_Server := empty_ASP_Address;
-  PubKey_Server := empty_ASP_Address;
-  Plc_Server := empty_ASP_Address;
-  UUID_Server := empty_ASP_Address;
-|}.
-
-Definition empty_am_config : AM_Config :=
-  mkAmConfig 
-    emptyConcreteMan 
-    (fun x => fun _ => fun _ => fun _ => errC Unavailable)
-    (fun x => errC Unavailable)
-    (fun x => errC Unavailable)
-    (fun x => errC Unavailable).
 
 Record cvm_st : Type := mk_st
                           {st_ev:EvC ;

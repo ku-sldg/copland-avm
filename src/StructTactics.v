@@ -615,6 +615,7 @@ Ltac injc H :=
     performs [injc]. *)
 Ltac find_injection :=
   match goal with
+    | [ H : ?X _ _ _ _ _ _ _ = ?X _ _ _ _ _ _ _ |- _ ] => injc H
     | [ H : ?X _ _ _ _ _ _ = ?X _ _ _ _ _ _ |- _ ] => injc H
     | [ H : ?X _ _ _ _ _ = ?X _ _ _ _ _ |- _ ] => injc H
     | [ H : ?X _ _ _ _ = ?X _ _ _ _ |- _ ] => injc H

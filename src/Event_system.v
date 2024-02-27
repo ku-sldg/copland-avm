@@ -1,4 +1,4 @@
-(* Abstract event systems *)
+(* Abstract event systems:  strict partial orders of events. *)
 
 (* LICENSE NOTICE
 
@@ -8,8 +8,6 @@ All Rights Reserved.
 This proof script is free software: you can redistribute it and/or
 modify it under the terms of the BSD License as published by the
 University of California.  See license.txt for details. *)
-
-(** Abstract event systems. *)
 
 Require Import PeanoNat Lia Preamble.
 

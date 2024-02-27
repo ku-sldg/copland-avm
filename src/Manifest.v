@@ -1,35 +1,43 @@
-(* Adapted from:  
+(* 
+   Core definitions of the Manifest, AM_Library, and AM_Config datatypes.
+
+   Adapted from:  
    https://github.com/ku-sldg/negotiation20/blob/master/src/Manifest/Manifest.v
 *)
 
 Require Import AbstractedTypes Term_Defs_Core Maps String
   Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq.
 
+Require Import Example_Phrases_Admits.
+
+Require Import Manifest_Set StringT ErrorStringConstants.
+
 Require Import List.
 Import ListNotations.
 
 Inductive DispatcherErrors : Type :=
 | Unavailable   : DispatcherErrors
-| Runtime       : DispatcherErrors.
+| Runtime       : StringT -> DispatcherErrors.
 
 Inductive CallBackErrors : Type := 
-| messageLift   : string -> CallBackErrors.
+| messageLift   : StringT -> CallBackErrors.
 
-Definition CakeML_ASPCallback (ErrType : Type) : Type := 
+Definition ASPCallback (ErrType : Type) : Type := 
   ASP_PARAMS -> Plc -> BS -> RawEv -> ResultT BS ErrType.
 
-Definition CakeML_PubKeyCallback : Type := 
+Definition PubKeyCallback : Type := 
   Plc -> ResultT PublicKey DispatcherErrors.
 
-Definition CakeML_PlcCallback : Type := 
+Definition PlcCallback : Type := 
   Plc -> ResultT UUID DispatcherErrors.
 
-Definition CakeML_uuidCallback : Type :=
+Definition UUIDCallback : Type :=
   UUID -> ResultT Plc DispatcherErrors.
 
-(*
-Definition PlcMap := MapC Plc Address.
-*)
+Definition PolicyT : Set :=  list (Plc * ASP_ID).
+
+Definition empty_PolicyT : PolicyT := [].
+  (* [(P0, attest_id)]. *)
 
 
 (** [Manifest] defines an attestation manger, a list of ASPs, and other
@@ -38,24 +46,34 @@ Definition PlcMap := MapC Plc Address.
   Record Manifest := {
     my_abstract_plc   : Plc ; 
 
-    asps              : list ASP_ID ;
-    uuidPlcs          : list Plc ;
-    pubKeyPlcs        : list Plc ;
-    targetPlcs        : list Plc ;
+    asps              : manifest_set ASP_ID; (* list ASP_ID ; *)
+    appraisal_asps    : manifest_set (Plc * ASP_ID) ;
+    uuidPlcs          : manifest_set Plc ;
+    pubKeyPlcs        : manifest_set Plc ;
+    targetPlcs        : manifest_set Plc ;
     policy            : PolicyT  ;
     (* TO DO: Add privacy and selection policies to manifest? *)
   }.
 
   Definition empty_Manifest : Manifest :=
-    Build_Manifest empty_Manifest_Plc [] [] [] [] empty_PolicyT.
+    Build_Manifest 
+      empty_Manifest_Plc 
+      manifest_set_empty
+      manifest_set_empty
+      manifest_set_empty
+      manifest_set_empty
+      manifest_set_empty
+      empty_PolicyT.
 
-(** Representation of a system's environment/resources used to populate a 
-    ConcreteManifest based on an abstract Manifest. *)
+(** Representation of a system's environment/resources used to populate an 
+    AM Config based on a Manifest. *)
   Record AM_Library := {
-    ASPServer_Cb        : ASP_Address -> (CakeML_ASPCallback CallBackErrors) ;
-    PubKeyServer_Cb     : ASP_Address -> CakeML_PubKeyCallback ;
-    PlcServer_Cb        : ASP_Address -> CakeML_PlcCallback ;
-    UUIDServer_Cb       : ASP_Address -> CakeML_uuidCallback ;
+    ASPServer_Cb        : ASP_Address -> (ASPCallback CallBackErrors) ;
+    PubKeyServer_Cb     : ASP_Address -> PubKeyCallback ;
+    PlcServer_Cb        : ASP_Address -> PlcCallback ;
+    UUIDServer_Cb       : ASP_Address -> UUIDCallback ;
+
+    UUID_AM_Clone : UUID ;
 
     (* Server Addresses *)
     ASPServer_Addr    : ASP_Address ;
@@ -64,37 +82,34 @@ Definition PlcMap := MapC Plc Address.
     UUIDServer_Addr   : ASP_Address ;
 
     (* Local Mappings *)
-    Local_ASPS        : MapC ASP_ID (CakeML_ASPCallback CallBackErrors) ;
+    Local_ASPS        : MapC ASP_ID (ASPCallback CallBackErrors) ;
+    Local_Appraisal_ASPS : MapC (Plc * ASP_ID) (ASPCallback CallBackErrors) ;
 
     Local_Plcs        : MapD Plc UUID ;
     Local_PubKeys     : MapD Plc PublicKey ;
   }.
 
-  
- (* A ConcreteManifest is a refinement of Manifest with concrete parameters
-    more suitable for extraction and deployment.  *)
-  Record ConcreteManifest := {
-    my_plc          : Plc ; 
-
-    (* Local Mappings *)
-    Concrete_ASPs         : list ASP_ID ;
-    Concrete_Plcs         : MapD Plc UUID ;
-    Concrete_PubKeys      : MapD Plc PublicKey ;
-    Concrete_Targets      : list Plc ;
-
-    (* Servers *)
-    ASP_Server      : ASP_Address ;
-    PubKey_Server   : ASP_Address ;
-    Plc_Server      : ASP_Address ;
-    UUID_Server     : ASP_Address ;
-  }.
-
 Record AM_Config : Type := 
   mkAmConfig {
-    concMan : ConcreteManifest ;
-    aspCb : (CakeML_ASPCallback DispatcherErrors) ;
-    plcCb : CakeML_PlcCallback ;
-    pubKeyCb : CakeML_PubKeyCallback ;
-    uuidCb : CakeML_uuidCallback ;
+    absMan : Manifest ;
+    am_clone_addr : UUID ;
+    aspCb : (ASPCallback DispatcherErrors) ;
+    app_aspCb : (ASPCallback DispatcherErrors) ;
+    plcCb : PlcCallback ;
+    pubKeyCb : PubKeyCallback ;
+    uuidCb : UUIDCallback ;
   }.
+
+Definition empty_aspCb (ps:ASP_PARAMS) (p:Plc) (bs:BS) (rawev:RawEv) : ResultT BS DispatcherErrors := 
+  errC Unavailable.
+
+  Definition empty_am_config : AM_Config :=
+  mkAmConfig 
+    empty_Manifest
+    default_uuid
+    empty_aspCb
+    empty_aspCb
+    (fun x => errC Unavailable)
+    (fun x => errC Unavailable)
+    (fun x => errC Unavailable).
 

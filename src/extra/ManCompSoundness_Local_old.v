@@ -756,7 +756,7 @@ Lemma callbacks_work_asps : forall absMan amLib amConf,
   (forall x, In x absMan.(asps) -> 
     forall l p t p' ev ev' res,
       aspCb amConf (asp_paramsC x l p t) p' ev ev' = res ->
-      res = errC Runtime \/ exists r, res = resultC r
+      (exists errStr, res = errC (Runtime errStr)) \/ (exists r, res = resultC r)
   ).
 Proof.
   induction absMan; simpl in *; intuition;
@@ -851,12 +851,12 @@ Definition supports_am (ac1 ac2 : AM_Config) : Prop :=
   (forall aid l targ targid p' ev ev',
       ac1.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC Runtime ->
       ac2.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC Runtime) /\
-  (forall p, 
-      ac1.(pubKeyCb) p = errC Runtime ->
-      ac2.(pubKeyCb) p = errC Runtime) /\
-  (forall p, 
-      ac1.(plcCb) p = errC Runtime ->
-      ac2.(plcCb) p = errC Runtime).
+  (forall p errStr, 
+      ac1.(pubKeyCb) p = errC (Runtime errStr) ->
+      ac2.(pubKeyCb) p = errC (Runtime errStr)) /\
+  (forall p errStr, 
+      ac1.(plcCb) p = errC (Runtime errStr) ->
+      ac2.(plcCb) p = errC (Runtime errStr)).
 
 Theorem supports_am_refl : forall ac1,
   supports_am ac1 ac1.
@@ -887,28 +887,28 @@ Fixpoint am_config_support_exec (t : Term)
           forall l targ targid p' ev ev',
           ((exists res, 
           ac.(aspCb) (asp_paramsC sig_aspid l targ targid) p' ev ev' = resultC res) \/ 
-          ac.(aspCb) (asp_paramsC sig_aspid l targ targid) p' ev ev' = errC Runtime)
+          (exists errStr, ac.(aspCb) (asp_paramsC sig_aspid l targ targid) p' ev ev' = errC (Runtime errStr)))
       | HSH =>
           forall l targ targid p' ev ev',
           ((exists res, 
           ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) p' ev ev' = resultC res) \/ 
-          ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) p' ev ev' = errC Runtime)
+          (exists errStr, ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) p' ev ev' = errC (Runtime errStr)))
       | ENC p =>
           (forall l targ targid p' ev ev',
           ((exists res, 
           ac.(aspCb) (asp_paramsC enc_aspid l targ targid) p' ev ev' = resultC res) \/ 
-          ac.(aspCb) (asp_paramsC enc_aspid l targ targid) p' ev ev' = errC Runtime)) /\
+          (exists errStr, ac.(aspCb) (asp_paramsC enc_aspid l targ targid) p' ev ev' = errC (Runtime errStr)))) /\
           ((exists res, ac.(pubKeyCb) p = resultC res) \/ 
-          ac.(pubKeyCb) p = errC Runtime)
+          (exists errStr, ac.(pubKeyCb) p = errC (Runtime errStr)))
       | ASPC _ _ (asp_paramsC aspid _ _ _) =>
           (forall l targ targid p' ev ev',
           ((exists res, 
           ac.(aspCb) (asp_paramsC aspid l targ targid) p' ev ev' = resultC res) \/ 
-          ac.(aspCb) (asp_paramsC aspid l targ targid) p' ev ev' = errC Runtime)) 
+          (exists errStr, ac.(aspCb) (asp_paramsC aspid l targ targid) p' ev ev' = errC (Runtime errStr))))
       end
   | att p' t' =>
       ((exists res, ac.(plcCb) p' = resultC res) \/ 
-      ac.(plcCb) p' = errC Runtime)
+      (exists errStr, ac.(plcCb) p' = errC (Runtime errStr)))
       (* /\ am_config_support_exec t' p' ac *)
   | lseq t1 t2 =>
       exists ac1 ac2,
@@ -934,9 +934,10 @@ Theorem well_formed_am_config_impl_executable : forall t p amConf,
   am_config_support_exec t p amConf ->
   forall st,
   supports_am amConf (st.(st_AM_config)) ->
-  exists st', 
-    build_cvm (copland_compile t) st = (resultC tt, st') \/
-    build_cvm (copland_compile t) st = (errC (dispatch_error Runtime), st').
+  (exists st', 
+    build_cvm (copland_compile t) st = (resultC tt, st')) \/
+  (exists st' errStr,
+    build_cvm (copland_compile t) st = (errC (dispatch_error (Runtime errStr)), st')).
 Proof.
   induction t; simpl in *; intuition; eauto.
   - destruct a;
@@ -956,7 +957,7 @@ Proof.
     match goal with
     | H1 : forall _, _,
       H2 : aspCb _ (asp_paramsC ?a ?l ?targ ?tid) ?p' ?ev ?ev' = _,
-      H3 : context[ aspCb _ _ _ _ _ = errC Runtime -> _],
+      H3 : context[ aspCb _ _ _ _ _ = errC (Runtime _) -> _],
       H4 : context[ aspCb _ _ _ _ _ = resultC _ -> _]
       |- _ =>
         let H := fresh "H" in
@@ -1893,13 +1894,13 @@ Definition manifest_support_am_config (m : Manifest) (ac : AM_Config) : Prop :=
   (forall a, In a (m.(asps)) -> 
     forall l targ targid p' ev ev',
     (exists res, ac.(aspCb) (asp_paramsC a l targ targid) p' ev ev' = resultC res) \/
-    (ac.(aspCb) (asp_paramsC a l targ targid) p' ev ev' = errC Runtime)) /\
+    (exists errStr, ac.(aspCb) (asp_paramsC a l targ targid) p' ev ev' = errC (Runtime errStr))) /\
   (forall p, In p (m.(uuidPlcs)) ->
     (exists res, ac.(plcCb) p = resultC res) \/
-    (ac.(plcCb) p = errC Runtime)) /\
+    (exists errStr, ac.(plcCb) p = errC (Runtime errStr))) /\
   (forall p, In p (m.(pubKeyPlcs)) ->
     (exists res, ac.(pubKeyCb) p = resultC res) \/
-    (ac.(pubKeyCb) p = errC Runtime)).
+    (exists errStr, ac.(pubKeyCb) p = errC (Runtime errStr))).
   
 (* 
 
@@ -3266,10 +3267,10 @@ Theorem manifest_generator_compiler_soundness_distributed : forall t tp p absMan
          In t' (place_terms t tp p) -> 
          st.(st_pl) = p -> 
         
-         exists st', 
-        
-        build_cvm (copland_compile t') st = (resultC tt, st') \/
-        build_cvm (copland_compile t') st = (errC (dispatch_error Runtime), st')
+        (exists st', 
+          build_cvm (copland_compile t') st = (resultC tt, st')) \/
+        (exists st' errStr, 
+          build_cvm (copland_compile t') st = (errC (dispatch_error (Runtime errStr)), st'))
     ).
 Proof.
   intros.

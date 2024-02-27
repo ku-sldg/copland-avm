@@ -7,7 +7,9 @@ Require Import Coq.Program.Tactics.
 Require Import List.
 Import ListNotations.
 
+(*
 Set Nested Proofs Allowed.
+*)
 
 Ltac amsts' :=
   repeat match goal with
