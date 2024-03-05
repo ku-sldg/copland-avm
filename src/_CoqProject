@@ -20,9 +20,6 @@ Event_system.v
 Term_system.v
 Trace.v
 LTS.v
-Event_system.v
-Term_system.v
-Trace.v
 Main.v
 Manifest_Admits.v
 ErrorStMonad_Coq.v
