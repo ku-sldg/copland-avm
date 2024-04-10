@@ -10,9 +10,9 @@ Require Export EnvironmentM.
 Require Import List.
 Import ListNotations.
 
-(* places p t -- enumerates places (includes duplicates) discovered in a given 
-    Term (t) executed at top-level place (p). *)
 
+(* places' t ls -- helper function for places below.  Term (t) is the term 
+    being walked, ls is the accumulated list of places. *)
 Fixpoint places' (t:Term) (ls:list Plc) : list Plc :=
   match t with
   | asp _ => ls 
@@ -22,6 +22,8 @@ Fixpoint places' (t:Term) (ls:list Plc) : list Plc :=
   | bpar _ t1 t2 => places' t2 (places' t1 ls)
   end.
   
+(* places p t -- enumerates places (includes duplicates) discovered in a given 
+    Term (t) executed at top-level place (p). *)
 Definition places (p:Plc) (t:Term): list Plc := 
   p :: (places' t []).
 

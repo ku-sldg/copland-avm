@@ -38,7 +38,12 @@ Proof.
   split; eapply eqb_leibniz.
 Qed.
 
-Definition eqb_asp_params `{H : EqClass ID_Type} `{H : EqClass (list ID_Type)} (ap1 ap2 : ASP_PARAMS) : bool :=
+(*
+(* Assumed equality for identifiers.  TODO:  complete this impl. *)
+Global Instance Eq_Class_Resource_ID_Arg_Type : EqClass Resource_ID_Arg. Admitted.
+*)
+
+Definition eqb_asp_params `{H : EqClass ID_Type} `{H : EqClass Arg} `{H : EqClass Resource_ID_Arg} (ap1 ap2 : ASP_PARAMS) : bool :=
   match ap1, ap2 with
   | (asp_paramsC a1 la1 p1 t1), (asp_paramsC a2 la2 p2 t2) =>
       andb (eqb_aspid a1 a2) 
@@ -66,8 +71,7 @@ Proof.
 Defined.
 
 
-
-Definition eq_asp_params_dec `{H : EqClass ID_Type} :
+Definition eq_asp_params_dec `{H : EqClass ID_Type} `{H2 : EqClass Arg}:
   forall x y: ASP_PARAMS, {x = y} + {x <> y}.
 Proof.
   intros.
@@ -76,7 +80,7 @@ Proof.
   eapply EqClass_extends_to_list; eauto.
 Defined.
 
-Lemma eqb_eq_asp_params: forall `{H : EqClass ID_Type} a a0 ,
+Lemma eqb_eq_asp_params `{H : EqClass ID_Type} `{H1: EqClass Arg} `{H2 : EqClass Resource_ID_Arg}: forall  a a0 ,
     eqb_asp_params a a0 = true <->
     a = a0.
 Proof.
@@ -87,16 +91,16 @@ Proof.
   try (eapply EqClass_extends_to_list; eauto).
   - intros; destruct_conjs; subst.
     repeat (rewrite eqb_leibniz in *); subst.
-    eapply general_list_eqb_leibniz in H1; subst; eauto.
+    eapply general_list_eqb_leibniz in H3; subst; eauto.
   - eapply eqb_leibniz; eauto.
 Qed.
 
-Global Instance EqClassASP_PARAMS `{H : EqClass ID_Type} : EqClass ASP_PARAMS := {
+Global Instance EqClassASP_PARAMS `{H : EqClass ID_Type} `{H1: EqClass Arg} `{H2 : EqClass Resource_ID_Arg} : EqClass ASP_PARAMS := {
   eqb := eqb_asp_params ;
   eqb_leibniz := eqb_eq_asp_params
 }.
 
-Definition eq_evidence_dec : forall `{H : EqClass ID_Type},
+Definition eq_evidence_dec : forall `{H : EqClass ID_Type} `{H1: EqClass Arg},
   forall x y : Evidence, {x = y} + {x <> y}.
 Proof.
   intros.
@@ -107,7 +111,7 @@ Proof.
   - destruct f, f0; eauto; right; intros HC; congruence.
 Qed.
 
-Definition eq_term_dec : forall `{H : EqClass ID_Type},
+Definition eq_term_dec : forall `{H : EqClass ID_Type} `{H1: EqClass Arg},
   forall x y : Term, {x = y} + {x <> y}.
 Proof.
   intros.
@@ -123,7 +127,7 @@ Proof.
   - destruct s, s0, s, s1, s0, s2; eauto; try (right; intros HC; congruence).
 Qed.
 
-Definition eq_core_term_dec : forall `{H : EqClass ID_Type},
+Definition eq_core_term_dec : forall `{H : EqClass ID_Type} `{H1: EqClass Arg},
   forall x y : Core_Term, {x = y} + {x <> y}.
 Proof.
   intros.
@@ -136,7 +140,7 @@ Proof.
   - eapply eq_term_dec.
 Qed.
 
-Definition eq_ev_dec: forall `{H : EqClass ID_Type},
+Definition eq_ev_dec: forall `{H : EqClass ID_Type} `{H1: EqClass Arg},
   forall x y: Ev, {x = y} + {x <> y}.
 Proof.
   intros;
@@ -272,7 +276,7 @@ Admitted.
 
 
 (** Boolean equality for Evidence Types *)
-Fixpoint eqb_evidence `{H : EqClass ID_Type} (e:Evidence) (e':Evidence): bool :=
+Fixpoint eqb_evidence `{H : EqClass ID_Type} `{H1: EqClass (Arg)} `{H2 : EqClass Resource_ID_Arg} (e:Evidence) (e':Evidence): bool :=
   match (e,e') with
   | (mt,mt) => true
   | (uu p fwd params e1, uu p' fwd' params' e2) =>
@@ -285,7 +289,7 @@ Fixpoint eqb_evidence `{H : EqClass ID_Type} (e:Evidence) (e':Evidence): bool :=
 
 
 (**  Lemma relating boolean to propositional equality for Evidence Types *)
-Lemma eqb_eq_evidence: forall e1 e2,
+Lemma eqb_eq_evidence `{H: EqClass Arg} `{H1: EqClass (list Arg)} `{H2 : EqClass Resource_ID_Arg}: forall e1 e2,
     eqb_evidence e1 e2 = true <-> e1 = e2.
 Proof.
   
@@ -295,35 +299,36 @@ Proof.
     generalizeEverythingElse e1.
     induction e1; destruct e2; intros;
       try (cbn in *; repeat break_match; try solve_by_inversion; eauto).
-    + rewrite Nat.eqb_eq in H; eauto.
+    + rewrite Nat.eqb_eq in H0; eauto.
     + cbn in *.
-      rewrite Bool.andb_true_iff in H.
-      rewrite Bool.andb_true_iff in H.
-      rewrite Bool.andb_true_iff in H.
+      rewrite Bool.andb_true_iff in H0.
+      rewrite Bool.andb_true_iff in H0.
+      rewrite Bool.andb_true_iff in H0.
       destruct_conjs.
-      rewrite eqb_eq_plc in H.
+      rewrite eqb_eq_plc in H0.
+      rewrite eqb_eq_fwd in H5.
+      rewrite eqb_eq_asp_params in H4.
       (* rewrite eqb_leibniz in H. *)
       
-      specialize IHe1 with e2.
+      specialize IHe1 with H H2 e2.
       concludes.
-      rewrite eqb_eq_asp_params in H1.
-      rewrite eqb_eq_fwd in H2.
+      eapply IHe1 in H3.
       congruence.
+
     +
       cbn in *.
-      rewrite Bool.andb_true_iff in H.
+      rewrite Bool.andb_true_iff in H0.
       destruct_conjs.
-      specialize IHe1_1 with e2_1.
-      specialize IHe1_2 with e2_2.
-      concludes.
-      concludes.
-      congruence.
+      specialize IHe1_1 with H H2 e2_1.
+      specialize IHe1_2 with H H2 e2_2.
+      repeat concludes; try congruence.
+
   -
     generalizeEverythingElse e1.
     induction e1; destruct e2; intros;
       try (cbn in * ; repeat break_match; try solve_by_inversion; eauto).
-    + invc H. rewrite Nat.eqb_eq; eauto.
-    + invc H.
+    + invc H0. rewrite Nat.eqb_eq; eauto.
+    + invc H0.
       cbn in *.
       repeat rewrite Bool.andb_true_iff.
       split. split. split. 
@@ -333,7 +338,7 @@ Proof.
       * erewrite eqb_eq_asp_params. tauto.
       * eauto.
     +
-      invc H.
+      invc H0.
       cbn in *.
       repeat rewrite Bool.andb_true_iff.
       split;

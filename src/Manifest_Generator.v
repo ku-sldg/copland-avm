@@ -96,8 +96,9 @@ Definition asp_manifest_update (a:ASP) (m:Manifest) : Manifest :=
   | CPY => m
   end.
 
+  (*
 Definition manifest_set_my_plc (p : Plc) (m : Manifest) : Manifest :=
-  let '{| my_abstract_plc := oldMyPlc;
+  let '{| my_abstract_plc := _ ;
           asps := oldasps; 
           appraisal_asps := old_app_asps;
           uuidPlcs := oldKnowsOf; 
@@ -105,13 +106,14 @@ Definition manifest_set_my_plc (p : Plc) (m : Manifest) : Manifest :=
           targetPlcs := oldTargets ;
           policy := oldPolicy |} := m in
   (Build_Manifest p oldasps old_app_asps oldKnowsOf oldContext oldTargets oldPolicy).
+  *)
   
 Definition manifest_update_env (p:Plc) (e:EnvironmentM) 
                                (f:Manifest -> Manifest) : EnvironmentM := 
   let m := 
     match (map_get e p) with
     | Some mm => mm
-    | None => (manifest_set_my_plc p empty_Manifest)
+    | None => (myPlc_manifest_update p empty_Manifest)
     end in
 
     let m' := (f m) in 
@@ -162,7 +164,6 @@ Proof.
     try (destruct p0; break_if; congruence);
     try (destruct p1; break_if; congruence).
 Qed.
-
 
 Definition places_terms' (ts: list Term) (p:Plc) : list (list Plc) :=
   List.map (places p) ts.

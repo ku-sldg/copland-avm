@@ -37,7 +37,14 @@ Definition Event_ID: Set := nat.
 *)
 Definition ASP_ID: Set := ID_Type.
 Definition TARG_ID: Set := ID_Type.
-Definition Arg: Set := ID_Type.
+
+Inductive Resource_ID_Arg: Set := 
+| Rid_Arg_C1
+| Rid_Arg_C2.
+
+Inductive Arg: Set := 
+| Arg_ID : ID_Type -> Arg
+| Arg_ResID : Resource_ID_Arg -> Arg.
 
 (** Grouping ASP parameters into one constructor *)
 Inductive ASP_PARAMS: Set :=

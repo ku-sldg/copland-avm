@@ -21,7 +21,7 @@ Import ListNotations.
 Set Nested Proofs Allowed.
 *)
 
-Fixpoint evsubt_bool (e:Evidence) (e':Evidence): bool :=
+Fixpoint evsubt_bool `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg} (e:Evidence) (e':Evidence): bool :=
   match (eqb_evidence e e') with
   | true => true
   | false =>
@@ -100,13 +100,13 @@ Qed.
 
 
 
-Lemma eqb_asp_params_refl: forall a,
+Lemma eqb_asp_params_refl `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg}: forall a,
     eqb_asp_params a a = true.
 Proof.
   intros. apply eqb_eq_asp_params. auto.
 Qed.
 
-Lemma eqb_evidence_refl: forall e,
+Lemma eqb_evidence_refl `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg}: forall e,
     eqb_evidence e e = true.
 Proof.
   intros. apply eqb_eq_evidence. auto.
@@ -124,35 +124,39 @@ Proof.
   intros. apply eqb_eq_fwd. auto.
 Qed.
 
-Lemma evsubt_prop_bool: forall e e',
+Lemma evsubt_prop_bool `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg}: forall e e',
     EvSubT e e' -> evsubt_bool e e' = true.
 Proof.
   intros.
   generalizeEverythingElse e'.
   induction e'; intros;
-    try (invc H; ff; try tauto; rewrite PeanoNat.Nat.eqb_refl; tauto).
+    try (invc H0; ff; try tauto; rewrite PeanoNat.Nat.eqb_refl; tauto).
   - (* uu case *)
-    invc H.
+    invc H0.
     +
       ff.
+      
+      
       rewrite eqb_asp_params_refl.
       rewrite eqb_evidence_refl.
       rewrite eqb_plc_refl.
       rewrite eqb_fwd_refl.
       ff.
+      
     
     +
       ff.
       assert (evsubt_bool e e' = true) by eauto.
-      rewrite H.
+      rewrite H0.
       ff.
       
   - (* ss case *)
     ff.
-    invc H.
+    invc H0.
     +
       rewrite eqb_evidence_refl.
       ff.
+      
     +
       erewrite IHe'1.
       ff.
@@ -166,7 +170,7 @@ Proof.
 Qed.
 
 
-Lemma evsubt_bool_prop: forall e e',
+Lemma evsubt_bool_prop `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg}: forall e e',
     evsubt_bool e e' = true -> EvSubT e e'.
 Proof.
   intros.
@@ -182,16 +186,20 @@ Proof.
     ff.
   - (* uu case *)
     ff.
-    destruct e; ff.
+    destruct e; ff; eauto.
+
+
+
+
+    rewrite Bool.andb_true_iff in Heqb.
     rewrite Bool.andb_true_iff in Heqb.
     rewrite Bool.andb_true_iff in Heqb.
     destruct_conjs.
     rewrite eqb_eq_asp_params in *.
-    rewrite Bool.andb_true_iff in H0.
     invc H0.
-    apply eqb_eq_plc in H3.
-    apply eqb_eq_fwd in H4.
-    apply eqb_eq_evidence in H1.
+    rewrite eqb_eq_plc in *.
+    rewrite eqb_eq_fwd in *.
+    rewrite eqb_eq_evidence in *.
     subst.
     eapply evsub_reflT.
     
@@ -207,7 +215,8 @@ Proof.
      {
        apply Bool.orb_lazy_alt.
      }
-     rewrite H in H0.
+     (*
+     rewrite H in H0. *)
 
      apply Bool.orb_prop in H0.
      invc H0.
@@ -216,15 +225,11 @@ Proof.
       apply eqb_eq_evidence in Heqb.
       ff.
     +
-      apply Bool.orb_prop in H1.
-      invc H1.
-      ++
-        ff.
-      ++
-        ff.
+      apply Bool.orb_prop in H3.
+      invc H3; eauto.
 Qed.
 
-Lemma evsubt_bool_prop_iff: forall e e',
+Lemma evsubt_bool_prop_iff `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg}: forall e e',
     EvSubT e e' <-> evsubt_bool e e' = true.
 Proof.
   intros; split.
@@ -258,7 +263,7 @@ Definition splitEv_mt (sp:SP) (e:Evidence) : Evidence :=
   | NONE => mt
   end.
 
-Fixpoint term_discloses_to_remote (t:Term) (p:Plc) (e:Evidence) (r:(Plc*Evidence)) : bool :=
+Fixpoint term_discloses_to_remote `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg} (t:Term) (p:Plc) (e:Evidence) (r:(Plc*Evidence)) : bool :=
   match t with
   | att q t' => ((eqb_plc q (fst r)) && (eqb_evidence (snd r) e))  ||      (* (evsubt_bool (snd r) e) *)
                 ((eqb_plc p (fst r)) && (eqb_evidence (snd r) (eval t' q e))) ||
@@ -272,12 +277,12 @@ Fixpoint term_discloses_to_remote (t:Term) (p:Plc) (e:Evidence) (r:(Plc*Evidence
   | _ => false
   end.
 
-Definition term_discloses_aspid_to_remote_enc (t:Term) (p:Plc) (e:Evidence) (i:ASP_ID) (r:Plc) : Prop :=
+Definition term_discloses_aspid_to_remote_enc `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg} (t:Term) (p:Plc) (e:Evidence) (i:ASP_ID) (r:Plc) : Prop :=
       exists e',
         EvSubTAspEnc e' i r /\
         ((term_discloses_to_remote t p e (r,e')) = true).
 
-Lemma term_discloses_aspid_to_remote_enc_prop_bool_iff : 
+Lemma term_discloses_aspid_to_remote_enc_prop_bool_iff `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg} : 
 forall t p e i r, 
 term_discloses_aspid_to_remote_enc t p e i r <-> 
 term_discloses_aspid_to_remote_enc_bool t p e i r = true.
@@ -321,12 +326,12 @@ Definition events_discloses_aspid_enc (annt:AnnoTerm) (p:Plc) (e:Evidence) (i:AS
      events_discloses annt p e r reqe.
 
 
-Lemma term_disc_remote_enc: forall t p e i r p0,
+Lemma term_disc_remote_enc `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg}: forall t p e i r p0,
           term_discloses_aspid_to_remote_enc t p e i r ->
           term_discloses_aspid_to_remote_enc <{ @ p [t] }> p0 e i r.
 Proof.
   intros.
-  invc H.
+  invc H0.
   destruct_conjs.
   econstructor.
   split.
@@ -338,12 +343,12 @@ Proof.
     apply Bool.orb_true_r.
 Qed.
 
-Lemma term_disc_lseq_l_enc: forall t1 t2 p e i r,
+Lemma term_disc_lseq_l_enc `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg}: forall t1 t2 p e i r,
           term_discloses_aspid_to_remote_enc t1 p e i r ->
           term_discloses_aspid_to_remote_enc <{ t1 -> t2 }> p e i r.
 Proof.
   intros.
-  invc H.
+  invc H0.
   destruct_conjs.
   econstructor.
   split.
@@ -355,12 +360,12 @@ Proof.
     apply Bool.orb_true_l.
 Qed.
 
-Lemma term_disc_lseq_r_enc: forall t1 t2 p e i r,
+Lemma term_disc_lseq_r_enc `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg}: forall t1 t2 p e i r,
           term_discloses_aspid_to_remote_enc t2 p (eval t1 p e) i r ->
           term_discloses_aspid_to_remote_enc <{ t1 -> t2 }> p e i r.
 Proof.
   intros.
-  invc H.
+  invc H0.
   destruct_conjs.
   econstructor.
   split.
@@ -372,12 +377,12 @@ Proof.
     apply Bool.orb_true_r.
 Qed.
 
-Lemma term_disc_bseq_l_enc: forall t1 t2 p e i r s,
+Lemma term_disc_bseq_l_enc `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg}: forall t1 t2 p e i r s,
           term_discloses_aspid_to_remote_enc t1 p (splitEv_T_l s e) i r ->
           term_discloses_aspid_to_remote_enc (bseq s t1 t2) p e i r.
 Proof.
   intros.
-  invc H.
+  invc H0.
   destruct_conjs.
   econstructor.
   split.
@@ -390,18 +395,19 @@ Proof.
     destruct s1;
       
       simpl in *;
-      rewrite H0;
+      (* rewrite H0; *)
+      find_rewrite;
       
       rewrite Bool.orb_true_l;
       auto.
 Qed.
 
-Lemma term_disc_bseq_r_enc: forall t1 t2 p e i r s,
+Lemma term_disc_bseq_r_enc `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg}: forall t1 t2 p e i r s,
           term_discloses_aspid_to_remote_enc t2 p (splitEv_T_r s e) i r ->
           term_discloses_aspid_to_remote_enc (bseq s t1 t2) p e i r.
 Proof.
   intros.
-  invc H.
+  invc H0.
   destruct_conjs.
   econstructor.
   split.
@@ -414,18 +420,18 @@ Proof.
     destruct s1;
       
       simpl in *;
-      rewrite H0;
+      find_rewrite; 
       
       rewrite Bool.orb_true_r;
       auto.
 Qed.
 
-Lemma term_disc_bpar_l_enc: forall t1 t2 p e i r s,
+Lemma term_disc_bpar_l_enc `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg}: forall t1 t2 p e i r s,
           term_discloses_aspid_to_remote_enc t1 p (splitEv_T_l s e) i r ->
           term_discloses_aspid_to_remote_enc (bpar s t1 t2) p e i r.
 Proof.
   intros.
-  invc H.
+  invc H0.
   destruct_conjs.
   econstructor.
   split.
@@ -438,19 +444,19 @@ Proof.
     destruct s1;
       
       simpl in *;
-      rewrite H0;
+      find_rewrite;
       
       rewrite Bool.orb_true_l;
       auto.
 Qed.
 
 
-Lemma term_disc_bpar_r_enc: forall t1 t2 p e i r s,
+Lemma term_disc_bpar_r_enc `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg}: forall t1 t2 p e i r s,
           term_discloses_aspid_to_remote_enc t2 p (splitEv_T_r s e) i r ->
           term_discloses_aspid_to_remote_enc (bpar s t1 t2) p e i r.
 Proof.
   intros.
-  invc H.
+  invc H0.
   destruct_conjs.
   econstructor.
   split.
@@ -463,13 +469,13 @@ Proof.
     destruct s1;
       
       simpl in *;
-      rewrite H0;
+      find_rewrite;
       
       rewrite Bool.orb_true_r;
       auto.
 Qed.
 
-Lemma term_discloses_respects_events : forall annt t p e r H2,
+Lemma term_discloses_respects_events `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg}: forall annt t p e r H2,
       annoP annt t -> 
       events_discloses annt p e r H2 ->
       term_discloses_to_remote t p e (r, H2) = true.
@@ -490,26 +496,26 @@ Proof.
   induction t; intros.
 
   - (* asp case *)
-    invc H.
-    destruct_conjs.
     invc H0.
+    destruct_conjs.
+    invc H3.
     destruct_conjs.
     door;
     repeat ff.
   - (* at case *)
-    invc H0.
+    invc H3.
     destruct_conjs.
 
     door.
     + (* req case *)
 
     ff.
-    invc H.
+    invc H0.
     destruct_conjs.
 
-    invc H5; try solve_by_inversion.
+    invc H7; try solve_by_inversion.
     ff.
-    invc H0.
+    invc H3.
     ++
        assert (eqb_plc r r = true).
     {
@@ -544,12 +550,12 @@ Proof.
     + (* rpy case *)
 
     ff.
-    invc H.
+    invc H0.
     destruct_conjs.
 
-    invc H4.
+    invc H6.
     ff.
-    invc H0.
+    invc H3.
     ++ 
 
     assert (term_discloses_to_remote t p e (r, H2) = true).
@@ -574,7 +580,7 @@ Proof.
     {
       eapply eqb_eq_plc; eauto.
     }
-        assert (eqb_evidence (aeval a H3 e) (eval t H3 e) = true).
+        assert (eqb_evidence (aeval a H5 e) (eval t H5 e) = true).
     {
       erewrite eval_aeval.
       rewrite Heqp1.
@@ -590,21 +596,21 @@ Proof.
 
   - (* lseq case *)
 
-    invc H.
+    invc H0.
     destruct_conjs.
 
-    invc H3.
+    invc H5.
     repeat break_let.
     ff.
 
-    invc H0.
+    invc H3.
     destruct_conjs.
 
     door.
     + (* req case *)
 
     subst.
-    invc H0.
+    invc H3.
     ++
 
       assert (term_discloses_to_remote t1 p e (r, H2) = true).
@@ -636,7 +642,7 @@ Proof.
         simpl.
         tauto.
       }
-      rewrite <- H0.
+      rewrite <- H3.
       eapply IHt2 with (p:=p). (* with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)). *)
       econstructor.
       repeat eexists.
@@ -655,7 +661,7 @@ Proof.
    + (* rpy case *)
 
     subst.
-    invc H0.
+    invc H3.
     ++
 
       assert (term_discloses_to_remote t1 p e (r, H2) = true).
@@ -687,7 +693,7 @@ Proof.
         simpl.
         tauto.
       }
-      rewrite <- H0.
+      rewrite <- H3.
       eapply IHt2 with (p:=p). (* with (H7 := (uu p0 f (asp_paramsC a0 l p1 t) e0)). *)
       econstructor.
       repeat eexists.
@@ -705,14 +711,14 @@ Proof.
 
   - (* bseq case *)
 
-    invc H.
+    invc H0.
     destruct_conjs.
 
-    invc H3.
+    invc H5.
     repeat break_let.
     ff.
 
-    invc H0.
+    invc H3.
     destruct_conjs.
     subst.
     destruct s0; destruct s1; ff.
@@ -723,7 +729,7 @@ Proof.
 
     ++ (* req case *)
       
-      invc H.
+      invc H0.
       +++
 
       assert (term_discloses_to_remote t1 p e (r, H2) = true).
@@ -765,7 +771,7 @@ Proof.
     ++ (* rpy case *)
 
 
-    invc H.
+    invc H0.
     +++
   
 
@@ -813,7 +819,7 @@ Proof.
    
        ++ (* req case *)
          
-         invc H.
+         invc H0.
          +++
        
    
@@ -856,7 +862,7 @@ Proof.
        ++ (* rpy case *)
    
    
-       invc H.
+       invc H0.
        +++
      
    
@@ -903,7 +909,7 @@ Proof.
       
           ++ (* req case *)
             
-            invc H.
+            invc H0.
             +++
           
       
@@ -946,7 +952,7 @@ Proof.
           ++ (* rpy case *)
       
       
-          invc H.
+          invc H0.
           +++
         
       
@@ -992,7 +998,7 @@ Proof.
          
              ++ (* req case *)
                
-               invc H.
+               invc H0.
                +++
          
                assert (term_discloses_to_remote t1 p mt (r, H2) = true).
@@ -1034,7 +1040,7 @@ Proof.
              ++ (* rpy case *)
          
          
-             invc H.
+             invc H0.
              +++
            
          
@@ -1076,14 +1082,14 @@ Proof.
 
     - (* bpar case *)
 
-    invc H.
+    invc H0.
     destruct_conjs.
 
-    invc H3.
+    invc H5.
     repeat break_let.
     ff.
 
-    invc H0.
+    invc H3.
     destruct_conjs.
     subst.
     destruct s0; destruct s1; ff.
@@ -1094,7 +1100,7 @@ Proof.
 
     ++ (* req case *)
       
-      invc H.
+      invc H0.
       +++
     
 
@@ -1137,7 +1143,7 @@ Proof.
     ++ (* rpy case *)
 
 
-    invc H.
+    invc H0.
     +++
   
     assert (term_discloses_to_remote t1 p e (r, H2) = true).
@@ -1181,7 +1187,7 @@ Proof.
     
         ++ (* req case *)
           
-          invc H.
+          invc H0.
           +++
       
           assert (term_discloses_to_remote t1 p e (r, H2) = true).
@@ -1223,7 +1229,7 @@ Proof.
         ++ (* rpy case *)
     
     
-        invc H.
+        invc H0.
         +++
         
         assert (term_discloses_to_remote t1 p e (r, H2) = true).
@@ -1267,7 +1273,7 @@ Proof.
       
           ++ (* req case *)
             
-            invc H.
+            invc H0.
             +++
           
             assert (term_discloses_to_remote t1 p mt (r, H2) = true).
@@ -1309,7 +1315,7 @@ Proof.
           ++ (* rpy case *)
       
       
-          invc H.
+          invc H0.
           +++
         
       
@@ -1354,7 +1360,7 @@ Proof.
           
               ++ (* req case *)
                 
-                invc H.
+                invc H0.
                 +++
                       
                 assert (term_discloses_to_remote t1 p mt (r, H2) = true).
@@ -1396,7 +1402,7 @@ Proof.
               ++ (* rpy case *)
           
           
-              invc H.
+              invc H0.
               +++
             
           
@@ -1448,14 +1454,14 @@ Proof.
   apply H0. apply H. eassumption.
 Qed.
 
-Lemma events_respects_term_disclosure: forall t p q e r annt,
+Lemma events_respects_term_disclosure `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg}: forall t p q e r annt,
     annoP annt t -> 
 
   (~ (term_discloses_to_remote t p e (q,r) = true)) ->
 
   ~ (events_discloses annt p e q r).
 Proof.
-  intros t p q e r annt H.
+  intros t p q e r annt H4.
   apply fdfdfd.
   intros.
   eapply term_discloses_respects_events; eauto.
@@ -1487,7 +1493,7 @@ Proof.
 Qed.
 *)
 
-Lemma events_respects_term_disclosure_aspid_enc: forall t p e i r annt,
+Lemma events_respects_term_disclosure_aspid_enc `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg}: forall t p e i r annt,
     annoP annt t -> 
 
   ~ (term_discloses_aspid_to_remote_enc t p e i r) ->
@@ -1500,9 +1506,9 @@ Proof.
   unfold not in H0.
   unfold not in *.
   intros.
-  apply H0.
+  apply H2.
   destruct_conjs.
-  exists H1.
+  exists H3.
   split; try eassumption.
 
   rewrite evsubt_asp_enc_bool_prop_iff.
@@ -1541,7 +1547,7 @@ Proof.
   eassumption.
 Qed.
 
-Lemma cvm_respects_term_disclosure:
+Lemma cvm_respects_term_disclosure `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg}:
   forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt ac ac',
 
     annoP_indexed annt t cvmi cvmi' ->
@@ -1562,7 +1568,7 @@ Proof.
   
   eassumption.
   eapply events_respects_term_disclosure.
-  invc H.
+  invc H0.
   econstructor.
   repeat eexists.
   eassumption.
@@ -1608,7 +1614,7 @@ Proof.
 Qed.
 
 
-Lemma cvm_respects_term_disclosure_aspid_enc:
+Lemma cvm_respects_term_disclosure_aspid_enc `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg}:
   forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt ac ac',
 
     annoP_indexed annt t cvmi cvmi' ->
@@ -1628,7 +1634,7 @@ Proof.
   eapply cvm_respects_events_disclosure_aspid_enc.
   eassumption.
   eapply events_respects_term_disclosure_aspid_enc.
-  invc H.
+  invc H0.
   econstructor.
   repeat eexists.
   eassumption.

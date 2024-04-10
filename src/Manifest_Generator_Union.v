@@ -152,3 +152,5 @@ Definition end_to_end_mangen_final (ls:list (Evidence*Plc)) (ts: list (Term*Plc)
     let unique_plcs : list Plc := get_all_unique_places ts ls in 
     let res' := map knowsof_myPlc_manifest_update (get_unique_manifests_env' unique_plcs env) in 
         map (pubkeys_manifest_update (list_to_manset unique_plcs)) res'. 
+
+Locate get_unique_manifests_env'.
