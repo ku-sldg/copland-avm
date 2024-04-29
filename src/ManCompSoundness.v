@@ -1811,8 +1811,6 @@ Require Import Manifest_Generator_Union.
 
 Close Scope cop_ent_scope.
 
-Set Nested Proofs Allowed.
-
 Lemma end_to_end_mangen_subsumes : forall ls ts t p tp m,
   map_get (end_to_end_mangen ls ts) p = Some m ->
   In (t,tp) ts ->
@@ -1820,9 +1818,15 @@ Lemma end_to_end_mangen_subsumes : forall ls ts t p tp m,
   manifest_subset m' m).
 Proof.
   intros.
-  unfold end_to_end_mangen in *.
-  unfold mangen_plcTerm_list_union in *.
-  unfold manifest_generator_plcTerm_list in *.
+  induction ts; simpl in *; intuition; subst; eauto.
+
+
+  simpl in *.
+  unfold end_to_end_mangen, mangen_plcTerm_list_union,
+    manifest_generator_plcTerm_list, 
+    mangen_plcEvidence_list_union,
+    manifest_generator_plcEvidence_list in *.
+  induction ts; simpl in *; intuition; subst; eauto.
 Admitted.
 
 Lemma lib_supports_manifest_subset : forall al m m',
@@ -1830,45 +1834,106 @@ Lemma lib_supports_manifest_subset : forall al m m',
   manifest_subset m' m -> 
   lib_supports_manifest al m'.
 Proof.
-  intros.
-  generalizeEverythingElse m.
-  induction m; intros.
-  unfold lib_supports_manifest in *.
-  simpl in *.
-  destruct_conjs.
-
-  split.
-  -
-    ff.
-  -
-    split.
-    +
-      intros.
-      unfold manifest_subset in *.
-      destruct_conjs.
-      ff.
-    +
-      split.
-      ++
-      intros.
-      unfold manifest_subset in *.
-      destruct_conjs.
-      ff.
-
-      ++
-      intros.
-      unfold manifest_subset in *.
-      destruct_conjs.
-      ff.
+  unfold lib_supports_manifest, manifest_subset; intuition.
 Qed.
+Global Hint Resolve lib_supports_manifest_subset : core.
 
+Lemma man_supports_am_man_subset: forall m m' ac,
+  manifest_support_am_config m ac -> 
+  manifest_subset m' m ->
+  manifest_support_am_config m' ac.
+Proof.
+  unfold manifest_support_am_config, manifest_subset;
+  intuition.
+Qed.
+Global Hint Resolve man_supports_am_man_subset : core.
 
-Lemma supports_am_mancomp_subset: forall m m' al ac,
+Lemma mapC_get_filtered_impossible : forall T `{EqClass T} B (a : B) (aid : T) al f,
+  map_get (minify_mapC al f) aid = Some a ->
+  f aid = false ->
+  False.
+Proof.
+  induction al; intuition; simpl in *; try congruence.
+  break_if; simpl in *; intuition; ff; eauto.
+  rewrite eqb_leibniz in Heqb1; subst; congruence.
+Qed.
+Global Hint Resolve mapC_get_filtered_impossible : core.
+
+Lemma mapD_get_filtered_impossible : forall T B `{EqClass T, EqClass B} (a : B) (aid : T) al f,
+  map_get (minify_mapD al f) aid = Some a ->
+  f aid = false ->
+  False.
+Proof.
+  induction al; intuition; simpl in *; try congruence.
+  break_if; simpl in *; intuition; ff; eauto.
+  rewrite eqb_leibniz in Heqb1; subst; congruence.
+Qed.
+Global Hint Resolve mapD_get_filtered_impossible : core.
+
+Lemma mapC_get_subset : forall T `{EqClass T} B (a : B) (aid : T) al s1 s2,
+  (forall i : T, In i s1 -> In i s2) ->
+  map_get (minify_mapC al (fun x : T => if in_dec_set x s1 then true else false)) aid = Some a ->
+  map_get (minify_mapC al (fun x : T => if in_dec_set x s2 then true else false)) aid = Some a.
+Proof.
+  intuition.
+  induction al; repeat ff.
+  - (* Provable because aid \not\in s1 but map get got some*)
+    intuition.
+    destruct H;
+    rewrite eqb_leibniz in Heqb2; subst.
+    eapply mapC_get_filtered_impossible in H1; intuition.
+    break_if; intuition.
+  - pose proof (H0 t i); intuition.
+Qed.
+Global Hint Resolve mapC_get_subset : core.
+
+Lemma mapD_get_subset : forall T B `{EqClass T, EqClass B} (a : B) (aid : T) al s1 s2,
+  (forall i : T, In i s1 -> In i s2) ->
+  map_get (minify_mapD al (fun x : T => if in_dec_set x s1 then true else false)) aid = Some a ->
+  map_get (minify_mapD al (fun x : T => if in_dec_set x s2 then true else false)) aid = Some a.
+Proof.
+  intuition.
+  induction al; repeat ff.
+  - (* Provable because aid \not\in s1 but map get got some*)
+    intuition.
+    destruct H;
+    rewrite eqb_leibniz in Heqb2; subst.
+    eapply mapD_get_filtered_impossible in H2; intuition.
+    break_if; intuition.
+  - pose proof (H1 t i); intuition.
+Qed.
+Global Hint Resolve mapD_get_subset : core.
+
+Lemma supports_am_mancomp_subset: forall al m m' ac,
   supports_am (manifest_compiler m al) ac -> 
   manifest_subset m' m ->
   supports_am (manifest_compiler m' al) ac.
 Proof.
-Admitted.
+  intuition.
+  unfold supports_am, manifest_subset,
+    generate_Plc_dispatcher, generate_PubKey_dispatcher in *;
+  intuition; simpl in *; eauto;
+  repeat break_match; simpl in *; intuition; subst; eauto;
+  unfold supports_am, manifest_subset,
+    generate_Plc_dispatcher, generate_PubKey_dispatcher in *;
+  try congruence; eauto; try find_injection;
+  repeat break_match; simpl in *; intuition; subst; eauto;
+  try congruence;
+  match goal with
+  | [ H : forall x : ?t, In_set _ _ -> _ , H1 : map_get (minify_mapC _ (fun x : ?t => _)) _ = Some _ , H2 : forall (x : ?t), _ |- _ ]
+      =>
+        pose proof (mapC_get_subset _ _ _ _ _ _ _ H H1);
+        eapply H2
+
+  | [ H : forall x : ?t, In_set _ _ -> _ , H1 : map_get (minify_mapD _ (fun x : ?t => _)) _ = Some _, H2 : forall (x : ?t), _ |- _ ]
+      =>
+        pose proof (mapD_get_subset _ _ _ _ _ _ _ H H1);
+        eapply H2
+  end; repeat break_match; simpl in *; intuition; subst; eauto;
+  try congruence.
+Qed.
+Global Hint Resolve supports_am_mancomp_subset : core.
+
 
 Theorem manifest_generator_compiler_soundness_distributed_multiterm : forall t ts ls tp p absMan amLib amConf,
   (* map_get (manifest_generator t tp) p = Some absMan -> *)
@@ -1898,37 +1963,13 @@ Theorem manifest_generator_compiler_soundness_distributed_multiterm : forall t t
 Proof.
   intros.
 
-
-
-
-
   pose proof end_to_end_mangen_subsumes.
   specialize H5 with (ls:=ls) (ts:=ts) (t:=t) (p:=p) (tp:=tp) (m:=absMan).
   find_apply_hyp_hyp.
   destruct_conjs.
-
-  
-  eapply manifest_generator_compiler_soundness_distributed.
-  Focus 5.
-  eassumption.
-  eassumption.
-
-
-
-  eapply lib_supports_manifest_subset.
-  eassumption.
-  eassumption.
-  reflexivity.
-
-
   rewrite <- H2 in H3.
-
-
-
-  eapply supports_am_mancomp_subset.
-  eassumption.
-  eassumption.
-
+  
+  eapply manifest_generator_compiler_soundness_distributed; eauto.
 Qed.
 
 
