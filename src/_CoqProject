@@ -44,6 +44,7 @@ Auto.v
 Manifest_Generator_Helpers.v
 Manifest_Generator.v
 Manifest_Generator_Facts.v
+Manifest_Generator_Union.v
 AutoApp.v
 Helpers_CvmSemantics.v
 External_Facts.v

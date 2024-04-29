@@ -325,6 +325,7 @@ Definition events_discloses_aspid_enc (annt:AnnoTerm) (p:Plc) (e:Evidence) (i:AS
      evsubt_asp_enc_bool reqe i r = true /\
      events_discloses annt p e r reqe.
 
+Open Scope cop_ent_scope.
 
 Lemma term_disc_remote_enc `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg}: forall t p e i r p0,
           term_discloses_aspid_to_remote_enc t p e i r ->
@@ -376,6 +377,8 @@ Proof.
     find_rewrite.
     apply Bool.orb_true_r.
 Qed.
+
+Close Scope cop_ent_scope.
 
 Lemma term_disc_bseq_l_enc `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg}: forall t1 t2 p e i r s,
           term_discloses_aspid_to_remote_enc t1 p (splitEv_T_l s e) i r ->

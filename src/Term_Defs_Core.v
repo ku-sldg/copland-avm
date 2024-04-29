@@ -130,6 +130,9 @@ Inductive Term: Set :=
 | bseq: Split -> Term -> Term -> Term
 | bpar: Split -> Term -> Term -> Term.
 
+
+
+
 (* Adapted from Imp language Notation in Software Foundations (Pierce) *)
 Declare Custom Entry copland_entry.
 Declare Scope cop_ent_scope.
@@ -156,20 +159,26 @@ Notation "'__'" := (asp CPY) (in custom copland_entry at level 98).
 Notation "'{}'" := (asp NULL) (in custom copland_entry at level 98).
 Notation "'<<' x y z '>>'" := (asp (ASPC ALL EXTD (asp_paramsC x nil y z))) 
                       (in custom copland_entry at level 98).
+
+
 (* @ plc phrase *)
 Notation "@ p [ ph ]" := (att p ph) (in custom copland_entry at level 50).
+
+(*
 Notation "'\t1<' T a1 '>'" := (T a1) (in custom copland_entry at level 99).
 Notation "'\t2<' T a1 a2 '>'" := (T a1 a2) (in custom copland_entry at level 99).
 Notation "'\t3<' T a1 a2 a3 '>'" := (T a1 a2 a3) (in custom copland_entry at level 99).
 Notation "'\t4<' T a1 a2 a3 a4 '>'" := (T a1 a2 a3 a4) (in custom copland_entry at level 99).
 Notation "'\t5<' T a1 a2 a3 a4 a5 '>'" := (T a1 a2 a3 a4 a5) (in custom copland_entry at level 99).
 Notation "'\t6<' T a1 a2 a3 a4 a5 a6 '>'" := (T a1 a2 a3 a4 a5 a6) (in custom copland_entry at level 99).
-
+*)
 Open Scope cop_ent_scope.
 Definition test1 := <{ __ -> {} }>.
 Example test1ex : test1 = (lseq (asp CPY) (asp NULL)). reflexivity. Defined.
 Definition test_enc := <{ __ -> * min_id_type}>.
 Example testencex : test_enc = (lseq (asp CPY) (asp (ENC min_id_type))). reflexivity. Defined.
+
+Close Scope cop_ent_scope.
 
 (** Copland Core_Term primitive datatypes *)
 Inductive ASP_Core: Set :=

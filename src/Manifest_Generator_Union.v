@@ -12,7 +12,7 @@ Require Import EnvironmentM Manifest_Set.
 
 Require Import Manifest_Union Manifest_Generator Cvm_St Cvm_Impl.
 
-Require Import Manifest ManCompSoundness Manifest_Compiler Manifest_Generator_Facts.
+Require Import Manifest Manifest_Compiler Manifest_Generator_Facts.
 
 Require Import Coq.Program.Tactics.
 Require Import List.
@@ -132,6 +132,11 @@ Definition end_to_end_mangen (ls:list (Evidence*Plc)) (ts: list (Term*Plc)) : En
     let att_env := mangen_plcTerm_list_union ts in 
     environment_union app_env att_env.
 
+Definition end_to_end_mangen_final (ls:list (Evidence*Plc)) (ts: list (Term*Plc)) : list Manifest :=
+  environment_to_manifest_list (end_to_end_mangen ls ts).
+
+
+(*
 Definition appraiser_evidence_demo_phrase : Evidence := 
   eval example_phrase P0 (nn O).
 
@@ -146,7 +151,7 @@ Definition get_all_unique_places (ls: list (Term*Plc)) (ets: list (Evidence*Plc)
     let ts_res_dup := concat lss in 
     dedup_list (ts_res_dup ++ ets_ps).
 
-
+ 
 Definition end_to_end_mangen_final (ls:list (Evidence*Plc)) (ts: list (Term*Plc)) : list Manifest := 
     let env : EnvironmentM := end_to_end_mangen ls ts in 
     let unique_plcs : list Plc := get_all_unique_places ts ls in 
@@ -154,3 +159,5 @@ Definition end_to_end_mangen_final (ls:list (Evidence*Plc)) (ts: list (Term*Plc)
         map (pubkeys_manifest_update (list_to_manset unique_plcs)) res'. 
 
 Locate get_unique_manifests_env'.
+
+*)

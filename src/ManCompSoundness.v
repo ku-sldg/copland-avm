@@ -1761,12 +1761,12 @@ Theorem manifest_generator_compiler_soundness_distributed : forall t tp p absMan
   manifest_compiler absMan amLib = amConf ->
   forall st,
 
-  st.(st_AM_config) = amConf ->
+  (* st.(st_AM_config) = amConf -> *)
 
-  (*
+  
     (* Note, this should be trivial typically as amConf = st.(st_AM_config) and refl works *)
     supports_am amConf (st.(st_AM_config)) ->  
-    *)
+
 
     (  forall t', 
          In t' (place_terms t tp p) -> 
@@ -1806,3 +1806,98 @@ Proof.
     rewrite H1; eauto. 
   Unshelve. eapply min_id_type.
 Qed.
+
+Require Import Manifest_Generator_Union.
+
+Close Scope cop_ent_scope.
+
+Set Nested Proofs Allowed.
+
+Lemma end_to_end_mangen_subsumes : forall ls ts t p tp m,
+  map_get (end_to_end_mangen ls ts) p = Some m ->
+  In (t,tp) ts ->
+  (exists m', map_get (manifest_generator t tp) p = Some m' /\ 
+  manifest_subset m' m).
+Proof.
+  intros.
+  unfold end_to_end_mangen in *.
+  unfold mangen_plcTerm_list_union in *.
+  unfold manifest_generator_plcTerm_list in *.
+Admitted.
+
+Lemma lib_supports_manifest_subset : forall al m m',
+  lib_supports_manifest al m -> 
+  manifest_subset m' m -> 
+  lib_supports_manifest al m'.
+Proof.
+Admitted.
+
+Lemma supports_am_mancomp_subset: forall m m' al ac,
+  supports_am (manifest_compiler m al) ac -> 
+  manifest_subset m' m ->
+  supports_am (manifest_compiler m' al) ac.
+Proof.
+Admitted.
+
+Theorem manifest_generator_compiler_soundness_distributed_multiterm : forall t ts ls tp p absMan amLib amConf,
+  (* map_get (manifest_generator t tp) p = Some absMan -> *)
+  map_get (end_to_end_mangen ls ts) p = Some absMan -> 
+  In (t,tp) ts ->
+  lib_supports_manifest amLib absMan ->
+  manifest_compiler absMan amLib = amConf ->
+  forall st,
+
+  (* st.(st_AM_config) = amConf -> *)
+  supports_am amConf (st.(st_AM_config)) ->
+
+  (*
+    (* Note, this should be trivial typically as amConf = st.(st_AM_config) and refl works *)
+    supports_am amConf (st.(st_AM_config)) ->  
+    *)
+
+    (  forall t', 
+         In t' (place_terms t tp p) -> 
+        (exists st', 
+        
+        build_cvm (copland_compile t') st = (resultC tt, st')) \/
+        
+        (exists st' errStr,
+        build_cvm (copland_compile t') st = (errC (dispatch_error (Runtime errStr)), st'))
+    ).
+Proof.
+  intros.
+
+
+
+
+
+  pose proof end_to_end_mangen_subsumes.
+  specialize H5 with (ls:=ls) (ts:=ts) (t:=t) (p:=p) (tp:=tp) (m:=absMan).
+  find_apply_hyp_hyp.
+  destruct_conjs.
+
+  
+  eapply manifest_generator_compiler_soundness_distributed.
+  Focus 5.
+  eassumption.
+  eassumption.
+
+
+
+  eapply lib_supports_manifest_subset.
+  eassumption.
+  eassumption.
+  reflexivity.
+
+
+  rewrite <- H2 in H3.
+
+
+
+  eapply supports_am_mancomp_subset.
+  eassumption.
+  eassumption.
+
+Qed.
+
+

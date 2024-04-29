@@ -189,6 +189,8 @@ Definition cert_style : Term :=
 
 *)
 
+Open Scope cop_ent_scope.
+
 (* This should be identical to cert_style above (modulo Coq notations...) *)
 Definition example_phrase_basic : Term := 
   <{
@@ -275,12 +277,15 @@ Definition example_phrase : Term :=
 
 *)
 
+Definition appinlinet := appraise_inline_asp_with_args P0 sys check_ssl_sig_args.
+
 Definition inline_auth_phrase : Term := 
   <{
     (<< ssl_sig_aspid P0 sys >>) -> 
 
     @ P1 [
-      \t3< appraise_inline_asp_with_args P0 sys check_ssl_sig_args > ->
+      appinlinet
+      (* \t3< appraise_inline_asp_with_args P0 sys check_ssl_sig_args > *) ->
       (* (<< check_ssl_sig_aspid P0 sys >>)  ->  *)
       (<< attest_id P1 sys >>) -> 
       @ P2 [
@@ -290,4 +295,5 @@ Definition inline_auth_phrase : Term :=
     ]
   }>.
 
+Close Scope cop_ent_scope.
 
