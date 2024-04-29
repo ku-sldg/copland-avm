@@ -1830,7 +1830,38 @@ Lemma lib_supports_manifest_subset : forall al m m',
   manifest_subset m' m -> 
   lib_supports_manifest al m'.
 Proof.
-Admitted.
+  intros.
+  generalizeEverythingElse m.
+  induction m; intros.
+  unfold lib_supports_manifest in *.
+  simpl in *.
+  destruct_conjs.
+
+  split.
+  -
+    ff.
+  -
+    split.
+    +
+      intros.
+      unfold manifest_subset in *.
+      destruct_conjs.
+      ff.
+    +
+      split.
+      ++
+      intros.
+      unfold manifest_subset in *.
+      destruct_conjs.
+      ff.
+
+      ++
+      intros.
+      unfold manifest_subset in *.
+      destruct_conjs.
+      ff.
+Qed.
+
 
 Lemma supports_am_mancomp_subset: forall m m' al ac,
   supports_am (manifest_compiler m al) ac -> 
