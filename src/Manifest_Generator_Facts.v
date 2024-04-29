@@ -39,6 +39,7 @@ Proof.
   unfold manifest_subset; intros.
   split; intros; ff.
 Qed.
+Global Hint Resolve manifest_subset_refl : core.
 
 Lemma manifest_subset_trans : forall m1 m2 m3,
   manifest_subset m1 m2 ->
