@@ -354,7 +354,7 @@ Theorem well_formed_am_config_impl_executable_app : forall et amConf ls,
 Proof.
   intros.
   generalizeEverythingElse et.
-  induction et; intros.
+  induction et; intros; intuition; subst; eauto.
   - (* mt case *)
     repeat eexists.
     left.
@@ -363,22 +363,14 @@ Proof.
   - (* nn case *)
     ff.
     destruct r.
-    +
-      eapply peel_bs_am_contra; try eauto; try lia.
-    +
-      ff.
-      ++
-        unfold has_nonces in *.
-        unfold Appraisal_Defs.checkNonce' in *.
-        ff.
-        ff.
-        specialize H2 with (nid:=n).
-        assert (n = n) by reflexivity. 
-        assert (exists bs, map_get (am_nonceMap st) n = Some bs).
-        eauto.
-        destruct_conjs.
+    + eapply peel_bs_am_contra; try eauto; try lia.
+    + repeat ff; intuition; eauto.
+      unfold has_nonces, Appraisal_Defs.checkNonce' in *.
+      repeat ff; intuition; eauto.
+      assert (exists bs, map_get (am_nonceMap st) n = Some bs) by eauto.
         assert (st = a0).
         {
+          intuition; eauto.
           unfold am_failm in *.
           ff.
           eapply peel_bs_am_immut; eauto.
@@ -386,140 +378,135 @@ Proof.
         subst.
         unfold am_failm in *.
         ff.
-        find_rewrite.
-        solve_by_inversion.
-      ++
-        left.
-        eexists.
-        eauto.
+        find_rewrite; break_exists; congruence.
   - (* uu case *)
 
     simpl in *.
-    repeat break_match; simpl in *; subst; cbn.
+    repeat break_match; simpl in *; subst; cbn;
+    intuition; eauto;
+    try (left; eauto; congruence).
 
     + (* COMP case *)
       left.
       repeat eexists.
     + (* ENCR case *)
       simpl in *.
+      destruct_conjs;
+      simpl in *; intuition; eauto.
+
+      (* pubkey configured/available *)
+      simpl in *.
+      monad_unfold.
+      break_let.
+
+      assert (st = a).
+      {
+        eapply peel_bs_am_immut; eauto.
+      }
+      subst.
+
+      assert (exists res, r = resultC res).
+      {
+
+        eapply peel_bs_am_works; eauto; lia.
+
+      }
+
       destruct_conjs.
+      subst.
+      repeat break_let.
 
-      door.
-      ++ (* pubkey configured/available *)
-        simpl in *.
+      break_match.
+      +++ (* decrypt error *)
+        invc Heqp0.
+        unfold decrypt_bs_to_rawev' in *.
         monad_unfold.
-        break_let.
+        ff.
 
-        assert (st = a).
+        ++++
+          unfold supports_am_app in *.
+          destruct_conjs.
+          specialize H6 with (p:=p0) (res:=H).
+          find_apply_hyp_hyp.
+          find_rewrite.
+          solve_by_inversion.
+
+        ++++
+          ff.
+          pose decrypt_prim_runtime.
+          subst.
+          find_apply_hyp_hyp.
+          unfold am_failm in *.
+          ff.
+          repeat eexists.
+          eauto.
+        ++++
+          unfold check_et_size in *.
+          ff.
+          unfold am_failm in *.
+          ff.
+          repeat eexists.
+          eauto.
+    +++ (* decrypt success *)
+      break_let.
+      break_let.
+      invc Heqp0.
+
+      break_match.
+      ++++
+        subst.
+        invc Heqp3.
+
+        assert (a = a2).
         {
-          eapply peel_bs_am_immut; eauto.
+          eapply decrypt_amst_immut; eauto.
         }
         subst.
 
-        assert (exists res, r = resultC res).
+        assert ((exists ec st', 
+                  gen_appraise_AM et r2 a2  = (resultC ec, st')) \/ 
+                (exists st' errStr, 
+                  gen_appraise_AM et r2 a2 = (errC (am_dispatch_error (Runtime errStr)), st'))
+        ).
         {
+          eapply IHet.
+          3: {
+            eassumption.
+          }
+          3: {
+            eauto.
+          }
+          eassumption.
 
-          eapply peel_bs_am_works; eauto; lia.
-
-        }
-
-        destruct_conjs.
-        subst.
-        repeat break_let.
-
-        break_match.
-        +++ (* decrypt error *)
-          invc Heqp0.
           unfold decrypt_bs_to_rawev' in *.
           monad_unfold.
+          break_let.
           ff.
-
-          ++++
-            unfold supports_am_app in *.
-            destruct_conjs.
-            specialize H6 with (p:=p0) (res:=H).
-            find_apply_hyp_hyp.
-            find_rewrite.
-            solve_by_inversion.
-
-          ++++
-            ff.
-            pose decrypt_prim_runtime.
-            subst.
-            find_apply_hyp_hyp.
-            unfold am_failm in *.
-            ff.
-            repeat eexists.
-            eauto.
-          ++++
-            unfold check_et_size in *.
-            ff.
-            unfold am_failm in *.
-            ff.
-            repeat eexists.
-            eauto.
-      +++ (* decrypt success *)
-        break_let.
-        break_let.
-        invc Heqp0.
-
-        break_match.
-        ++++
-          subst.
-          invc Heqp3.
-
-          assert (a = a2).
-          {
-            eapply decrypt_amst_immut; eauto.
-          }
-          subst.
-
-          assert ((exists ec st', 
-                    gen_appraise_AM et r2 a2  = (resultC ec, st')) \/ 
-                  (exists st' errStr, 
-                    gen_appraise_AM et r2 a2 = (errC (am_dispatch_error (Runtime errStr)), st'))
-          ).
-          {
-            eapply IHet.
-            3: {
-              eassumption.
-            }
-            3: {
-              eauto.
-            }
-            eassumption.
-
-            unfold decrypt_bs_to_rawev' in *.
-            monad_unfold.
-            break_let.
-            ff.
-            unfold am_failm in *.
-            ff.
-            unfold check_et_size in *.
-            ff.
-            unfold am_failm in *.
-            ff.
-            unfold am_failm in *.
-            ff.
-            unfold check_et_size in *.
-            ff.
-            unfold am_failm in *.
-            ff.
-            eapply EqNat.beq_nat_true_stt.
-            eassumption.
-          }
-          destruct_conjs.
-          door.
-          +++++
-            find_rewrite.
-            solve_by_inversion.
-          +++++
+          unfold am_failm in *.
+          ff.
+          unfold check_et_size in *.
+          ff.
+          unfold am_failm in *.
+          ff.
+          unfold am_failm in *.
+          ff.
+          unfold check_et_size in *.
+          ff.
+          rewrite PeanoNat.Nat.eqb_eq in Heqb0; eauto.
+        }
+        destruct_conjs.
+        door.
+        +++++
           find_rewrite.
-          find_injection.
-          eauto.
-      ++++
-      find_injection.
-      eauto.
+          solve_by_inversion.
+        +++++
+        find_rewrite.
+        find_injection.
+        eauto.
+    ++++
+    find_injection.
+    eauto.
+  +   
     ++ (* pubkey NOT configured/available *)
       monad_unfold.
       break_let.
@@ -649,9 +636,6 @@ Proof.
     repeat eexists.
     ff.
     eauto.
-  + (* KEEP case *)
-    ff.
-    eauto.
 
   - (* ss case *)
     cbn in *.
@@ -692,15 +676,6 @@ Proof.
     break_match.
     subst.
     solve_by_inversion.
-
-(*
-    subst.
-    invc H10.
-    ff.
-    door.
-    +
-    invc H9.
-    *)
 
     break_let.
     break_let.
