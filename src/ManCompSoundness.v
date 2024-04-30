@@ -1811,77 +1811,6 @@ Require Import Manifest_Generator_Union.
 
 Close Scope cop_ent_scope.
 
-(* Lemma end_to_end_mangen_supports_all : forall ts t t' p tp absMan,
-  map_get (mangen_plcTerm_list_union ts) p = Some absMan ->
-  In (t, tp) ts ->
-  In p (places tp t) ->
-  In t' (place_terms t tp p) ->
-  manifest_support_term absMan t'.
-Proof.
-  induction ts; simpl in *; intuition; eauto.
-  - find_injection. 
-    unfold mangen_plcTerm_list_union, env_list_union in *.
-
-
-Lemma end_to_end_mangen_supports_all : forall ts ls t t' p tp absMan,
-  map_get (end_to_end_mangen ls ts) p = Some absMan ->
-  In (t, tp) ts ->
-  In p (places tp t) ->
-  In t' (place_terms t tp p) ->
-  manifest_support_term absMan t'.
-  (* map_get (manifest_generator' tp t backMan) p = Some absMan ->
-  In p (places tp t) ->
-  In t' (place_terms t tp p) ->
-  manifest_support_term absMan t'. *)
-Proof.
-  intuition.
-  repeat unfold end_to_end_mangen, Manifest_Union.environment_union,
-    mangen_plcTerm_list_union,
-    mangen_plcEvidence_list_union,
-    manifest_generator_plcTerm_list,
-    manifest_generator_plcEvidence_list,
-    Manifest_Union.env_union_helper,
-    Manifest_Union.environment_union'',
-    env_list_union,
-    Manifest_Union.manifest_union
-    in *.
-  repeat break_match.
-  simpl in *.
-  induction ts; simpl in *; repeat ff;
-  intuition; ff.
-  - eapply IHts; eauto. 
-
-
-Admitted. *)
-
-  (* intuition.
-  eapply man_gen_old_always_supports; intuition; eauto.
-  unfold end_to_end_mangen.
-  induction ts; simpl in *; intuition; eauto.
-  - find_injection. 
-    simpl in *. unfold mangen_plcTerm_list_union in *.
-    simpl in *.
-  induction t; simpl in *; intuition; eauto.
-  induction t'; simpl in *; intuition; eauto.
-  - ff; subst; simpl in *; intuition; eauto. 
-  induction ts; simpl in *; intuition; try find_injection;
-  simpl in *; intuition; eauto.
-  - destruct t'.  *)
-(* Lemma end_to_end_mangen_subsumes : forall env env' p m a0 b,
-  a0 <> p ->
-  map_get (Manifest_Union.environment_union'' a0 b (Manifest_Union.environment_union env env')) p = Some m ->
-  (exists m', map_get env p = Some m' /\ manifest_subset m' m) \/
-  (exists m', map_get env' p = Some m' /\ manifest_subset m' m).
-Proof.
-  intuition.
-  unfold Manifest_Union.environment_union'' in *.
-  repeat break_match; simpl in *; intuition; eauto.
-  Search (map_get).
-  - eapply mapC_get_distinct_keys_from_set in H0; eauto.
-  admit.
-  - pose proof @mapC_get_distinct_keys.
-  simpl in *.
-Admitted. *)
 Lemma manifest_subset_union_l : forall m1 m2,
   manifest_subset m1 (Manifest_Union.manifest_union m1 m2).
 Proof.
@@ -1924,8 +1853,8 @@ Proof.
       eauto; intuition; subst; rewrite eqb_refl in E; congruence.
 Qed.
 
-Lemma man_env_union_not_none : forall env env' p,
-  map_get env p <> None \/ map_get env' p <> None ->
+Lemma man_env_union_not_none_fwd : forall env env' p,
+  (map_get env p <> None \/ map_get env' p <> None) ->
   map_get (Manifest_Union.environment_union env env') p <> None.
 Proof.
   induction env; destruct env'; simpl in *; intuition; eauto.
@@ -1963,6 +1892,51 @@ Proof.
     * pose proof (IHenv ((a, b0) :: env') p);
       simpl in *; find_rewrite; intuition. 
 Qed.
+Global Hint Resolve man_env_union_not_none_fwd : core.
+
+Lemma man_env_union_not_none_rev : forall env env' p,
+  map_get (Manifest_Union.environment_union env env') p <> None ->
+  (map_get env p <> None \/ map_get env' p <> None).
+Proof.
+  induction env; destruct env'; simpl in *; intuition; eauto.
+  - destruct (eqb a0 p) eqn:E; simpl in *; intuition; eauto;
+    try rewrite eqb_leibniz in *; subst; eauto;
+    unfold Manifest_Union.env_union_helper,
+      Manifest_Union.environment_union'' in *; simpl in *;
+    repeat break_match; simpl in *; intuition; eauto;
+    try (left; intuition; congruence).
+    * rewrite map_distinct_key_rw in H; intuition; eauto;
+      try eapply IHenv in H; intuition; eauto;
+      subst; rewrite eqb_refl in E; congruence.
+    * rewrite map_distinct_key_rw in H; intuition; eauto;
+      try eapply IHenv in H; intuition; eauto;
+      subst; rewrite eqb_refl in E; congruence.
+  - destruct (eqb a0 p) eqn:E; simpl in *; intuition; eauto;
+    try rewrite eqb_leibniz in *; subst; eauto;
+    unfold Manifest_Union.env_union_helper,
+      Manifest_Union.environment_union'' in *; simpl in *;
+    repeat break_match; simpl in *; intuition; eauto;
+    try (left; intuition; congruence);
+    try (right; intuition; congruence);
+    try rewrite eqb_leibniz in *; subst; eauto;
+    intuition; eauto.
+    * rewrite map_distinct_key_rw in H; intuition; eauto;
+      try eapply IHenv in H; intuition; eauto;
+      simpl in *; find_rewrite; intuition;
+      subst; rewrite eqb_refl in E; congruence.
+    * rewrite map_distinct_key_rw in H; intuition; eauto;
+      try eapply IHenv in H; intuition; eauto;
+      simpl in *; find_rewrite; intuition;
+      subst; rewrite eqb_refl in E; congruence.
+Qed.
+Global Hint Resolve man_env_union_not_none_rev : core.
+
+Lemma man_env_union_not_none : forall env env' p,
+  map_get (Manifest_Union.environment_union env env') p <> None <->
+  (map_get env p <> None \/ map_get env' p <> None).
+Proof.
+  split; eauto.
+Qed.
 Global Hint Resolve man_env_union_not_none : core.
 
 Lemma manifest_env_union_always_subset : forall env env' p m,
@@ -1999,7 +1973,7 @@ Proof.
         eapply H1 in H0.
         eapply manifest_subset_trans; eauto.
       ** rewrite mapC_get_works in H; find_injection. 
-        edestruct (man_env_union_not_none); intuition; eauto.
+        edestruct (man_env_union_not_none_fwd); intuition; eauto.
         right; intuition; congruence.
     * repeat break_match; simpl in *.
       ** eapply mapC_get_distinct_keys_from_set in H; 
@@ -2013,6 +1987,154 @@ Proof.
 Qed. 
 Global Hint Resolve manifest_env_union_always_subset : core.
 
+Lemma manifest_env_union_map_one_fwd : forall env env' p m,
+  map_get (Manifest_Union.environment_union env env') p = Some m ->
+  (exists m', (map_get env p = Some m' \/
+  map_get env' p = Some m')).
+Proof.
+  induction env; simpl in *; intuition; eauto;
+  destruct (eqb a0 p) eqn:E; simpl in *; intuition; eauto.
+  unfold Manifest_Union.env_union_helper, Manifest_Union.environment_union'' in H;
+  simpl in *; repeat break_match; simpl in *; intuition; eauto;
+  break_exists.
+  - eapply mapC_get_distinct_keys_from_set in H; intuition; eauto;
+    subst; rewrite eqb_refl in *; congruence. 
+  - eapply mapC_get_distinct_keys_from_set in H; intuition; eauto;
+    subst; rewrite eqb_refl in *; congruence.
+Qed.
+Global Hint Resolve manifest_env_union_map_one_fwd : core.
+
+Lemma manifest_env_union_map_one : forall env env' p,
+  (exists m, map_get (Manifest_Union.environment_union env env') p = Some m) <->
+  (exists m', (map_get env p = Some m' \/
+  map_get env' p = Some m')).
+Proof.
+  intuition;
+  pose proof (man_env_union_not_none env env' p);
+  break_exists; repeat find_rewrite.
+  - destruct (map_get env p); eauto;
+    destruct (map_get env' p); eauto.
+    assert (Some x <> None) by congruence.
+    rewrite H0 in H1; intuition.
+  - destruct H; repeat find_rewrite;
+    destruct (map_get (Manifest_Union.environment_union env env') p);
+    eauto; assert (Some x <> None) by congruence;
+    assert (@None Manifest <> None) by (erewrite H0; eauto);
+    congruence.
+Qed.
+(* 
+  split.
+  * induction env; simpl in *; intuition; eauto;
+    break_let; simpl in *; destruct a;
+    find_injection;
+    destruct (eqb p0 p) eqn:E; simpl in *; intuition; eauto.
+    unfold Manifest_Union.env_union_helper, Manifest_Union.environment_union'' in H;
+    simpl in *; repeat break_match; simpl in *; intuition; eauto;
+    break_exists.
+    - eapply mapC_get_distinct_keys_from_set in H; intuition; eauto;
+      subst; rewrite eqb_refl in *; congruence. 
+    - eapply mapC_get_distinct_keys_from_set in H; intuition; eauto;
+      subst; rewrite eqb_refl in *; congruence.
+  * intuition; break_exists; eauto;
+    pose proof (man_env_union_not_none env env' p);
+    destruct (map_get (Manifest_Union.environment_union env env') p);
+    intuition; find_rewrite; eauto; exfalso;
+    try (eapply H1; intuition; congruence).
+    - eapply H1; intuition; congruence. 
+    - eapply H2; intuition; congruence. 
+Qed. *)
+Global Hint Resolve manifest_env_union_map_one : core.
+
+Lemma manifest_part_of_fold_impl_fold : forall env_start p m',
+  map_get env_start p = Some m' ->
+  (forall envs, 
+    exists m,
+    map_get (fold_right Manifest_Union.environment_union env_start envs) p = Some m /\
+    manifest_subset m' m
+  ).
+Proof.
+  intuition.
+  induction envs; simpl in *; intuition; eauto.
+  - exists m'; intuition; eapply manifest_subset_refl. 
+  - break_exists; intuition; simpl in *.
+    pose proof (manifest_env_union_map_one a (fold_right Manifest_Union.environment_union env_start envs) p).
+    assert ((exists m : Manifest, map_get (Manifest_Union.environment_union a (fold_right Manifest_Union.environment_union env_start envs)) p = Some m)) by (rewrite H0; eauto).
+    clear H0.
+    break_exists.
+    eapply manifest_env_union_always_subset in H0 as H'; intuition.
+    exists x0; intuition; eauto.
+    eapply manifest_subset_trans; eauto.
+Qed.
+Global Hint Resolve manifest_part_of_fold_impl_fold : core.
+
+Lemma manifest_part_of_fold_ind_impl_fold : forall envs env p m',
+  In env envs ->
+  map_get env p = Some m' ->
+  (forall env_start, 
+    exists m,
+    map_get (fold_right Manifest_Union.environment_union env_start envs) p = Some m /\
+    manifest_subset m' m
+  ).
+Proof.
+  induction envs; intros; eauto with *; simpl in *; eauto; intuition;
+  subst; eauto.
+  - pose proof (manifest_env_union_map_one env (fold_right Manifest_Union.environment_union env_start envs) p). 
+    assert ((exists m' : Manifest, map_get env p = Some m' \/ map_get (fold_right Manifest_Union.environment_union env_start envs) p = Some m')) by (rewrite H0; eauto).
+    rewrite <- H in H1.
+    break_exists.
+    eapply manifest_env_union_always_subset in H1 as H'';
+    destruct H''.
+    eapply H2 in H0 as H'.
+    exists x; intuition; eauto.
+  - pose proof (IHenvs _ _ _ H1 H0 env_start).
+    break_exists; intuition; eauto.
+    pose proof (manifest_env_union_map_one a (fold_right Manifest_Union.environment_union env_start envs) p).
+    assert ((exists m' : Manifest, map_get a p = Some m' \/ map_get (fold_right Manifest_Union.environment_union env_start envs) p = Some m')) by (rewrite H2; eauto).
+    rewrite <- H in H4.
+    break_exists.
+    eapply manifest_env_union_always_subset in H4 as H'.
+    destruct H'.
+    eapply H6 in H2 as H''.
+    exists x0; intuition; eauto.
+    eapply manifest_subset_trans; eauto.
+Qed.
+Global Hint Resolve manifest_part_of_fold_ind_impl_fold : core.
+(* 
+Lemma manifest_part_of_fold_ind_impl_fold : forall env_start envs p m,
+  map_get (fold_right Manifest_Union.environment_union env_start envs) p = Some m ->
+  (forall env,
+      In env envs ->
+      exists m', map_get env p = Some m'
+  ). *)
+
+Lemma manifest_fold_env_union_subsumes : forall envs env_start p m,
+  map_get (fold_right Manifest_Union.environment_union env_start envs) p = Some m ->
+  ((forall m',
+    map_get env_start p = Some m' ->
+    manifest_subset m' m) /\
+  (forall env m', 
+    In env envs ->
+    map_get env p = Some m' ->
+    manifest_subset m' m)).
+Proof.
+  intuition.
+  - pose proof (manifest_part_of_fold_impl_fold env_start p m' H0 envs).
+    setoid_rewrite H in H1.
+    break_exists; intuition; find_injection; eauto.
+  - pose proof (manifest_part_of_fold_ind_impl_fold envs env p m' H0 H1 env_start). 
+    setoid_rewrite H in H2;
+    break_exists; intuition; find_injection; eauto.
+Qed.
+Global Hint Resolve manifest_fold_env_union_subsumes : core.
+
+Lemma exists_weaken : forall {T : Type} (P Q : T -> Prop),
+  (exists x, P x \/ Q x) ->
+  (exists x, P x) \/ (exists x, Q x).
+Proof.
+  intuition.
+  break_exists; intuition; eauto.
+Qed.
+
 Lemma manifest_env_list_union_subsumes : forall envs p m,
   map_get (env_list_union envs) p = Some m ->
   (forall env m', 
@@ -2020,50 +2142,140 @@ Lemma manifest_env_list_union_subsumes : forall envs p m,
     map_get env p = Some m' ->
     manifest_subset m' m).
 Proof.
+  intros envs p m HM;
+  eapply manifest_fold_env_union_subsumes in HM; 
   intuition.
+Qed.
+Global Hint Resolve manifest_env_list_union_subsumes : core.
+
+(* Lemma manifest_env_list_union_exists : forall envs p m,
+  map_get (env_list_union envs) p = Some m ->
+  (forall env, 
+    In env envs ->
+    exists m', map_get env p = Some m').
+Proof.
+  intros.
   unfold env_list_union in *.
-  simpl in *.
-  induction envs; simpl in *; intuition; subst; eauto;
-  eapply manifest_env_union_always_subset in H; intuition; eauto.
-  - eapply manifest_env_union_works in H0; intuition; eauto.
+
+  induction envs; eauto with *; simpl in *; intuition; subst; eauto.
+  - pose proof (manifest_env_union_map_one env (env_list_union envs) p).
+    assert ((exists m : Manifest, map_get (Manifest_Union.environment_union env (env_list_union envs)) p = Some m)). 
+    rewrite H.
+    rewrite H0 in H1.
     break_exists; intuition; eauto.
-    unfold Manifest_Union.environment_union,
-      Manifest_Union.env_union_helper,
-      Manifest_Union.environment_union'' in *.
-    unfold Manifest_Union.env_union_helper,
-      Manifest_Union.environment_union in *.
+    clear H2 H3.
+    eapply IHenvs in H0; eauto. *)
 
+Lemma mangen_plcTerm_list_spec : forall ts t tp,
+  In (t, tp) ts ->
+  In (manifest_generator t tp) (manifest_generator_plcTerm_list ts).
+Proof.
+  induction ts; simpl in *; intuition; subst; eauto;
+  find_injection; eauto.
+Qed.
+Global Hint Resolve mangen_plcTerm_list_spec : core.
 
-Lemma end_to_end_mangen_subsumes : forall ls ts t p tp m,
-  map_get (end_to_end_mangen ls ts) p = Some m ->
-  In (t,tp) ts ->
-  (exists m', map_get (manifest_generator t tp) p = Some m' /\ 
-  manifest_subset m' m).
+Lemma mangen_plcTerm_list_exists : forall ts t tp p m,
+  In (t, tp) ts ->
+  map_get (manifest_generator t tp) p = Some m ->
+  exists m', map_get (mangen_plcTerm_list_union ts) p = Some m'.
 Proof.
   intuition.
-  unfold end_to_end_mangen in *.
-  eapply manifest_env_union_works in H; intuition; eauto.
-  - admit.
-  - break_exists; intuition. 
-    unfold mangen_plcTerm_list_union in *.
-  unfold Manifest_Union.environment_union,
-    Manifest_Union.env_union_helper,
-    Manifest_Union.environment_union'' in *.
-  simpl in *.
-  eapply manifest_env_union_works in H; intuition; eauto.
+  unfold mangen_plcTerm_list_union.
   induction ts; simpl in *; intuition; subst; eauto.
-  - destruct ls; simpl in *; repeat ff; intuition; eauto.
-  unfold end_to_end_mangen, mangen_plcTerm_list_union,
-    manifest_generator_plcTerm_list, 
-    mangen_plcEvidence_list_union,
-    manifest_generator_plcEvidence_list in *.
-  simpl in *.
-  induction ts; simpl in *; intuition; subst; eauto.
+  - erewrite manifest_env_union_map_one; eauto. 
+  - erewrite manifest_env_union_map_one; 
+    break_exists; eauto. 
+Qed.
+Global Hint Resolve mangen_plcTerm_list_exists : core.
 
+Lemma mangen_plcTerm_list_subsumes : forall ts p m,
+  map_get (mangen_plcTerm_list_union ts) p = Some m ->
+  (forall t tp,
+    In (t,tp) ts ->
+    (forall m', 
+      map_get (manifest_generator t tp) p = Some m' ->
+      manifest_subset m' m
+    )
+  ).
+Proof.
+  intuition; unfold mangen_plcTerm_list_union in *.
+  eapply (manifest_env_list_union_subsumes _ _ _ H
+    (manifest_generator t tp) m'); eauto.
+Qed.
+Global Hint Resolve mangen_plcTerm_list_subsumes : core.
 
-  simpl in *.
-  induction ts; simpl in *; intuition; subst; eauto.
-Admitted.
+Lemma mangen_plcTerm_subset_end_to_end_mangen : forall ts t tp,
+  In (t, tp) ts ->
+  (forall m m' p,
+    map_get (mangen_plcTerm_list_union ts) p = Some m' ->
+    forall ls, map_get (end_to_end_mangen ls ts) p = Some m ->
+    manifest_subset m' m
+  ).
+Proof.
+  intuition; unfold end_to_end_mangen in *;
+  eapply manifest_env_union_always_subset in H1; intuition.
+Qed.
+Global Hint Resolve mangen_plcTerm_subset_end_to_end_mangen : core.
+
+Lemma mangen_subset_end_to_end_mangen : forall ts t tp,
+  In (t, tp) ts ->
+  (forall m m' p,
+    map_get (manifest_generator t tp) p = Some m' ->
+    forall ls, map_get (end_to_end_mangen ls ts) p = Some m ->
+    manifest_subset m' m
+  ).
+Proof.
+  intuition.
+  assert (exists m'', map_get (mangen_plcTerm_list_union ts) p = Some m''). eapply mangen_plcTerm_list_exists; eauto.
+  break_exists.
+  pose proof (mangen_plcTerm_list_subsumes ts p x H2 t tp H _ H0).
+  pose proof (mangen_plcTerm_subset_end_to_end_mangen ts t tp H m x p H2 ls H1).
+  eapply manifest_subset_trans; eauto.
+Qed.
+Global Hint Resolve mangen_subset_end_to_end_mangen : core.
+
+Lemma mangen_subsets_of_end_to_end_mangen : forall ts t tp,
+  In (t, tp) ts ->
+  (forall m m' p,
+    map_get (manifest_generator t tp) p = Some m' ->
+    forall ls, map_get (end_to_end_mangen ls ts) p = Some m ->
+    manifest_subset m' m
+  ).
+Proof.
+  intuition.
+  assert (exists m'', map_get (mangen_plcTerm_list_union ts) p = Some m''). eapply mangen_plcTerm_list_exists; eauto.
+  break_exists.
+  pose proof (mangen_plcTerm_list_subsumes ts p x H2 t tp H _ H0).
+  pose proof (mangen_plcTerm_subset_end_to_end_mangen ts t tp H m x p H2 ls H1).
+  eapply manifest_subset_trans; eauto.
+Qed.
+Global Hint Resolve mangen_subsets_of_end_to_end_mangen : core.
+
+Lemma always_a_man_gen_exists : forall t p tp,
+  In p (places tp t) ->
+  exists m', map_get (manifest_generator t tp) p = Some m'.
+Proof.
+  intuition.
+  pose proof (places_env_has_manifest t p tp e_empty);
+  intuition.
+Qed.
+Global Hint Resolve always_a_man_gen_exists : core.
+
+Lemma mangen_exists_end_to_end_mangen : forall ts ls p m,
+  map_get (end_to_end_mangen ls ts) p = Some m ->
+  (forall t tp,
+    In (t, tp) ts ->
+    In p (places tp t) ->
+    (forall t',
+      In t' (place_terms t tp p) ->
+      exists m', map_get (manifest_generator t tp) p = Some m'
+    )
+  ).
+Proof.
+  intuition.
+Qed.
+Global Hint Resolve mangen_exists_end_to_end_mangen : core.
 
 Lemma lib_supports_manifest_subset : forall al m m',
   lib_supports_manifest al m -> 
@@ -2170,11 +2382,31 @@ Proof.
 Qed.
 Global Hint Resolve supports_am_mancomp_subset : core.
 
+Lemma end_to_end_mangen_supports_all : forall ts ls p m,
+  map_get (end_to_end_mangen ls ts) p = Some m ->
+  (forall t tp, 
+    In (t, tp) ts ->
+    In p (places tp t) ->
+    (forall t',
+      In t' (place_terms t tp p) ->
+      manifest_support_term m t'
+    )
+  ).
+Proof.
+  intuition.
+  pose proof (mangen_exists_end_to_end_mangen _ _ _ _ H _ _ H0 H1 _ H2).
+  break_exists.
+  pose proof (mangen_subset_end_to_end_mangen _ _ _ H0 _ _ _ H3 _ H).
+  pose proof manifest_supports_term_sub.
+  eapply (man_gen_old_always_supports) in H3 as H'; eauto.
+Qed.
+Global Hint Resolve end_to_end_mangen_supports_all : core.
 
 Theorem manifest_generator_compiler_soundness_distributed_multiterm : forall t ts ls tp p absMan amLib amConf,
   (* map_get (manifest_generator t tp) p = Some absMan -> *)
   map_get (end_to_end_mangen ls ts) p = Some absMan -> 
   In (t,tp) ts ->
+  (* In p (places tp t) -> *)
   lib_supports_manifest amLib absMan ->
   manifest_compiler absMan amLib = amConf ->
   forall st,
@@ -2197,19 +2429,26 @@ Theorem manifest_generator_compiler_soundness_distributed_multiterm : forall t t
         build_cvm (copland_compile t') st = (errC (dispatch_error (Runtime errStr)), st'))
     ).
 Proof.
+  (* Search place_terms. *)
   intros.
-  (* eapply well_formed_am_config_impl_executable.
+  (* assert (In p (places tp t)) by 
+            (eapply has_manifest_env_places_env_has_manifest; eauto). *)
+  eapply well_formed_am_config_impl_executable.
   - unfold manifest_generator, e_empty in *; simpl in *.
     eapply manifest_support_am_config_impl_am_config.
     * eapply manifest_support_am_config_compiler; eauto.
     * (* NOTE: This is the important one, substitute proof of any manifest here *)
+      assert (In p (places tp t)). {
+        eapply in_plc_term; intuition; subst.
+        rewrite H5 in H4; simpl in *; intuition.
+      }
       eapply end_to_end_mangen_supports_all; eauto.
-  - subst; eauto.
-  Unshelve. eapply min_id_type. *)
+  - find_rewrite; eauto.
+  Unshelve. eapply min_id_type.
   (* eapply end_to_end_mangen_subsumes in H0; eauto;
-  destruct_conjs; rewrite <- H2 in H3. *)
+  destruct_conjs; rewrite <- H2 in H3.
   
-  eapply manifest_generator_compiler_soundness_distributed; eauto.
+  eapply manifest_generator_compiler_soundness_distributed; eauto. *)
 Qed.
 
 

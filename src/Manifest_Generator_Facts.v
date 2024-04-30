@@ -39,7 +39,6 @@ Proof.
   unfold manifest_subset; intros.
   split; intros; ff.
 Qed.
-Global Hint Resolve manifest_subset_refl : core.
 
 Lemma manifest_subset_trans : forall m1 m2 m3,
   manifest_subset m1 m2 ->
@@ -56,10 +55,8 @@ Proof.
   unfold Environment_subset; intros.
   exists m1.
   split; ff.
-  
-  apply manifest_subset_refl.
+  eapply manifest_subset_refl.
 Qed.
-
 
 Lemma env_subset_trans : forall e1 e2 e3,
   Environment_subset e1 e2 ->
