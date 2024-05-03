@@ -83,15 +83,21 @@ Definition empty_Manifest_plc (myPlc:Plc) : Manifest :=
       empty_PolicyT.
 *)
 
+(*
 Definition mangen_app_plc (et:Evidence) (p:Plc) : Manifest := 
   manifest_union (empty_Manifest_plc p) (manifest_generator_app et p).
+  *)
 
 Definition lift_manifest_to_env (m:Manifest) : EnvironmentM := 
   map_set e_empty (my_abstract_plc m) m.
 
 Definition manifest_generator_plcEvidence_list (ls:list (Evidence*Plc)) : list EnvironmentM := 
+  List.map (fun '(et,p) => manifest_generator_app et p) ls.
+
+(*
   let ms : list Manifest := List.map (fun '(et,p) => mangen_app_plc et p) ls in 
     List.map lift_manifest_to_env ms.
+*)
 
 
 Definition mangen_plcEvidence_list_union (ls:list (Evidence*Plc)) : EnvironmentM := 

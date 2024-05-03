@@ -109,7 +109,7 @@ Definition manifest_set_my_plc (p : Plc) (m : Manifest) : Manifest :=
   *)
   
 Definition manifest_update_env (p:Plc) (e:EnvironmentM) 
-                               (f:Manifest -> Manifest) : EnvironmentM := 
+            (f:Manifest -> Manifest) : EnvironmentM := 
   let m := 
     match (map_get e p) with
     | Some mm => mm
@@ -229,7 +229,7 @@ Definition app_aspid_manifest_update (i:ASP_ID) (p:Plc) (m:Manifest) : Manifest 
           policy := oldPolicy |} := m in
   (Build_Manifest oldPlc oldasps (manset_add (i,p) old_app_asps) oldKnowsOf oldContext oldTargets oldPolicy).
 
-Fixpoint manifest_generator_app' (et:Evidence) (m:Manifest) : Manifest :=
+Fixpoint manifest_generator_app'' (et:Evidence) (m:Manifest) : Manifest :=
   match et with 
   | mt => m 
   | nn _ => m (* TODO: account for nonce handling here? *)
@@ -238,23 +238,23 @@ Fixpoint manifest_generator_app' (et:Evidence) (m:Manifest) : Manifest :=
     | EXTD => 
       match ps with 
       | asp_paramsC a _ _ _ =>
-          manifest_generator_app' e' 
+          manifest_generator_app'' e' 
             (app_aspid_manifest_update p a m)
       end 
     | ENCR => 
       match ps with 
       | asp_paramsC _ _ p' _ =>
-          manifest_generator_app' e' 
+          manifest_generator_app'' e' 
             (pubkey_manifest_update p' m)
       end
-    | KEEP => manifest_generator_app' e' m
+    | KEEP => manifest_generator_app'' e' m
     | _ => m
     end
   | ss e1 e2 => 
-      manifest_generator_app' e2 (manifest_generator_app' e1 m)
+      manifest_generator_app'' e2 (manifest_generator_app'' e1 m)
   end.
 
-
+(*
 Definition empty_Manifest_plc (myPlc:Plc) : Manifest :=
   Build_Manifest 
       myPlc 
@@ -264,6 +264,12 @@ Definition empty_Manifest_plc (myPlc:Plc) : Manifest :=
       manifest_set_empty
       manifest_set_empty
       empty_PolicyT.
+*)
 
-Definition manifest_generator_app (et:Evidence) (p:Plc) : Manifest := 
-  manifest_generator_app' et (empty_Manifest_plc p).
+
+Definition manifest_generator_app' (p:Plc) (et:Evidence) (env:EnvironmentM) : EnvironmentM :=
+  manifest_update_env p env (manifest_generator_app'' et).
+
+
+Definition manifest_generator_app (et:Evidence) (p:Plc) : EnvironmentM := 
+  manifest_generator_app' p et e_empty.
