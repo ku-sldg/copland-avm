@@ -26,8 +26,14 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
-      - run: opam install -y dune, coq, lablgtk3-sourceview3
-
+      - run: opam install -y dune coq lablgtk3-sourceview3
+      
+      - name: Cache OCaml install
+        uses: actions/cache@v3
+        with:
+          path: ~/.opam
+          key: ${{ runner.OS }}
+            
       - name: Checkout and build external library
         run: |
           git clone https://github.com/ku-sldg/coq.git
