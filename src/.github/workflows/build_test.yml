@@ -1,0 +1,49 @@
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        ocaml-compiler:
+          - "4.14.1"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Setup Ocaml ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+      - run: opam install -y dune, coq, lablgtk3-sourceview3
+
+      - name: Checkout and build external library
+        run: |
+          git clone https://github.com/ku-sldg/coq.git
+          cd coq
+          git switch cakeml-extraction
+          make world
+          cd ..
+
+      - name: Setup Coq Bin Path
+        run: export COQBIN=~/coq/_build/install/default/bin/
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Test Build
+        run: |
+          cd copland-avm/src
+          $COQBIN/coq_makefile -f _CoqProject -o MAKEPRIME
+          make -f MAKEPRIME
