@@ -26,13 +26,15 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
-      - run: opam install -y dune coq lablgtk3-sourceview3
+      - run: opam install -y dune 
+      - run: opam install -y coq 
+      - run: opam install -y lablgtk3-sourceview3
       
       - name: Cache OCaml install
         uses: actions/cache@v3
         with:
           path: ~/.opam
-          key: ${{ runner.OS }}
+          key: ${{ runner.OS }}-${{ matrix.ocaml-compiler }}
             
       - name: Checkout and build external library
         run: |
