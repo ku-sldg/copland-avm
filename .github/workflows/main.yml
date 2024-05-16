@@ -39,8 +39,9 @@ jobs:
           opam init
           opam install -y dune coq lablgtk3-sourceview3
       
-      - name: Opam Cache Installs
+      - name: Opam Cache Save
         id: opam-cache-install
+        if: steps.opam-cache-restore.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: ~/.opam
@@ -73,8 +74,9 @@ jobs:
           git switch $COQ_REPO_BRANCH
           make world
       
-      - name: Coq Cache Installs
+      - name: Coq Cache Save
         id: coq-cache-install
+        if: steps.coq-cache-restore.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: ~/coq
