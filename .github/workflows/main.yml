@@ -31,7 +31,7 @@ jobs:
         with:
           path: ~/.opam
           key: ${{ runner.OS }}-OPAM-$OCAML_VERSION
-          restore-key: ${{ runner.OS }}-OPAM-
+          restore-keys: ${{ runner.OS }}-OPAM-
       
       - name: Opam Setup
         if: steps.opam-cache-restore.outputs.cache-hit != 'true'
@@ -60,7 +60,7 @@ jobs:
         with:
           path: ~/coq
           key: ${{ runner.OS }}-COQ-${{ env.COMMIT_HASH }}
-          restore-key: ${{ runner.OS }}-COQ-
+          restore-keys: ${{ runner.OS }}-COQ-
       
 # We only need to setup the coq library again if it didnt get pulled from cache properly
       - name: Checkout and build Coq
