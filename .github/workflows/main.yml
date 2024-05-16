@@ -44,7 +44,7 @@ jobs:
           eval $(opam env)
           git clone ${{ matrix.coq-repo-url }}
           cd coq
-          echo "DIRECTORY_PATH=$(pwd)" >> $GITHUB_ENV
+          echo "DIRECTORY_PATH=$(pwd)" >> $ENV
           echo "Directory path is $DIRECTORY_PATH"
           pwd
           git switch cakeml-extraction
@@ -69,6 +69,9 @@ jobs:
       - name: Test Build
         run: |
           pwd
+          echo $COQBIN
+          export COQBINN=~/coq/_build/install/default/bin/
+          echo $COQBINN
           cd ${{ github.workspace }}/src
           $COQBIN/coq_makefile -f _CoqProject -o MAKEPRIME
           make -f MAKEPRIME
