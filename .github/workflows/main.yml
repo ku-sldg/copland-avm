@@ -50,7 +50,7 @@ jobs:
         run: |
           cd ~
           eval $(opam env)
-          git clone https://github.com/$COQ_REPO_URL.git
+          git clone https://github.com/$COQ_REPO_PATH.git
           cd coq
           git switch $COQ_REPO_BRANCH
           make world
