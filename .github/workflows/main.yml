@@ -50,9 +50,9 @@ jobs:
           git clone https://github.com/ku-sldg/coq.git
           cd coq
           git switch cakeml-extraction
-          make coq-core.install
-          make coq-stdlib.install
-          make coq.install
+          dune build coq-core.install
+          dune build coq-stdlib.install
+          dune build coq.install
           cd ..
       
       - name: Cache Installs
