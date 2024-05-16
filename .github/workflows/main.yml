@@ -38,18 +38,17 @@ jobs:
       - run: opam init
       - run: opam install -y dune coq lablgtk3-sourceview3
 
+# We only need to setup the coq library again if it didnt get pulled from cache properly
+# TODO: Ultimately this should be dependent on if this repo changes, but not important for now
       - name: Checkout and build external library
+        if: steps.cache-restore.outputs.cache-hit != 'true'
         run: |
           cd ~
           eval $(opam env)
           git clone ${{ matrix.coq-repo-url }}
           cd coq
-          export DIRECTORY_PATH=$(pwd)
-          echo "Directory path is $DIRECTORY_PATH"
-          pwd
           git switch cakeml-extraction
           make world
-          cd ..
       
       - name: Cache Installs
         id: cache-install
@@ -60,18 +59,13 @@ jobs:
             ~/coq
           key: ${{ runner.OS }}-${{ matrix.ocaml-compiler }}
 
-      - name: Setup Coq Bin Path
-        run: export COQBIN=~/coq/_build/install/default/bin/
-
       - name: Checkout code
         uses: actions/checkout@v2
 
       - name: Test Build
         run: |
-          pwd
-          echo $COQBIN
-          export COQBINN=~/coq/_build/install/default/bin/
-          echo $COQBINN
+          export COQBIN=~/coq/_build/install/default/bin/
+          echo "COQBIN is $COQBIN"
           cd ${{ github.workspace }}/src
           $COQBIN/coq_makefile -f _CoqProject -o MAKEPRIME
           make -f MAKEPRIME
