@@ -70,6 +70,6 @@ jobs:
 
       - name: Test Build
         run: |
-          cd ~/copland-avm/src
+          cd ${{ github.workspace }}/src
           $COQBIN/coq_makefile -f _CoqProject -o MAKEPRIME
           make -f MAKEPRIME
