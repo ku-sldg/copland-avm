@@ -44,7 +44,7 @@ jobs:
           eval $(opam env)
           git clone ${{ matrix.coq-repo-url }}
           cd coq
-          echo "DIRECTORY_PATH=$(pwd)" >> $ENV
+          export DIRECTORY_PATH=$(pwd)
           echo "Directory path is $DIRECTORY_PATH"
           pwd
           git switch cakeml-extraction
