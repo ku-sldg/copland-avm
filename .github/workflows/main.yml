@@ -63,6 +63,6 @@ jobs:
 
       - name: Test Build
         run: |
-          cd copland-avm/src
+          cd ~/copland-avm/src
           $COQBIN/coq_makefile -f _CoqProject -o MAKEPRIME
           make -f MAKEPRIME
