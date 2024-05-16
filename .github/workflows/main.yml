@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Setup pre-deps
-        run: sudo apt install opam
+        run: sudo apt install libgtk-3-0 libgtk-3-dev libgtksourceview-3.0-common libgtksourceview-3.0-dev
 
       - run: opam init
         
@@ -41,7 +41,7 @@ jobs:
 #        with:
 #          ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
-      - run: opam install -y dune
+      - run: opam install -y dune coq lablgtk3-sourceview3
 
 # NONDOC_INSTALL_TARGETS:=coq-core.install coq-stdlib.install coqide-server.install coqide.install coq.install
       - name: Checkout and build external library
@@ -50,9 +50,7 @@ jobs:
           git clone https://github.com/ku-sldg/coq.git
           cd coq
           git switch cakeml-extraction
-          dune build coq-core.install
-          dune build coq-stdlib.install
-          dune build coq.install
+          make world
           cd ..
       
       - name: Cache Installs
