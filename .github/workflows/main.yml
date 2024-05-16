@@ -48,7 +48,7 @@ jobs:
             
       - name: Checkout and build external library
         run: |
-          eval $(opam env --switch=default)
+          eval $(opam env)
           git clone https://github.com/ku-sldg/coq.git
           cd coq
           git switch cakeml-extraction
