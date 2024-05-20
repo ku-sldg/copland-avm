@@ -354,7 +354,7 @@ Theorem well_formed_am_config_impl_executable_app : forall et amConf ls,
 Proof.
   intros.
   generalizeEverythingElse et.
-  induction et; intros.
+  induction et; intros; intuition; subst; eauto.
   - (* mt case *)
     repeat eexists.
     left.
@@ -363,22 +363,14 @@ Proof.
   - (* nn case *)
     ff.
     destruct r.
-    +
-      eapply peel_bs_am_contra; try eauto; try lia.
-    +
-      ff.
-      ++
-        unfold has_nonces in *.
-        unfold Appraisal_Defs.checkNonce' in *.
-        ff.
-        ff.
-        specialize H2 with (nid:=n).
-        assert (n = n) by reflexivity. 
-        assert (exists bs, map_get (am_nonceMap st) n = Some bs).
-        eauto.
-        destruct_conjs.
+    + eapply peel_bs_am_contra; try eauto; try lia.
+    + repeat ff; intuition; eauto.
+      unfold has_nonces, Appraisal_Defs.checkNonce' in *.
+      repeat ff; intuition; eauto.
+      assert (exists bs, map_get (am_nonceMap st) n = Some bs) by eauto.
         assert (st = a0).
         {
+          intuition; eauto.
           unfold am_failm in *.
           ff.
           eapply peel_bs_am_immut; eauto.
@@ -386,140 +378,135 @@ Proof.
         subst.
         unfold am_failm in *.
         ff.
-        find_rewrite.
-        solve_by_inversion.
-      ++
-        left.
-        eexists.
-        eauto.
+        find_rewrite; break_exists; congruence.
   - (* uu case *)
 
     simpl in *.
-    repeat break_match; simpl in *; subst; cbn.
+    repeat break_match; simpl in *; subst; cbn;
+    intuition; eauto;
+    try (left; eauto; congruence).
 
     + (* COMP case *)
       left.
       repeat eexists.
     + (* ENCR case *)
       simpl in *.
+      destruct_conjs;
+      simpl in *; intuition; eauto.
+
+      (* pubkey configured/available *)
+      simpl in *.
+      monad_unfold.
+      break_let.
+
+      assert (st = a).
+      {
+        eapply peel_bs_am_immut; eauto.
+      }
+      subst.
+
+      assert (exists res, r = resultC res).
+      {
+
+        eapply peel_bs_am_works; eauto; lia.
+
+      }
+
       destruct_conjs.
+      subst.
+      repeat break_let.
 
-      door.
-      ++ (* pubkey configured/available *)
-        simpl in *.
+      break_match.
+      +++ (* decrypt error *)
+        invc Heqp0.
+        unfold decrypt_bs_to_rawev' in *.
         monad_unfold.
-        break_let.
+        ff.
 
-        assert (st = a).
+        ++++
+          unfold supports_am_app in *.
+          destruct_conjs.
+          specialize H6 with (p:=p0) (res:=H).
+          find_apply_hyp_hyp.
+          find_rewrite.
+          solve_by_inversion.
+
+        ++++
+          ff.
+          pose decrypt_prim_runtime.
+          subst.
+          find_apply_hyp_hyp.
+          unfold am_failm in *.
+          ff.
+          repeat eexists.
+          eauto.
+        ++++
+          unfold check_et_size in *.
+          ff.
+          unfold am_failm in *.
+          ff.
+          repeat eexists.
+          eauto.
+    +++ (* decrypt success *)
+      break_let.
+      break_let.
+      invc Heqp0.
+
+      break_match.
+      ++++
+        subst.
+        invc Heqp3.
+
+        assert (a = a2).
         {
-          eapply peel_bs_am_immut; eauto.
+          eapply decrypt_amst_immut; eauto.
         }
         subst.
 
-        assert (exists res, r = resultC res).
+        assert ((exists ec st', 
+                  gen_appraise_AM et r2 a2  = (resultC ec, st')) \/ 
+                (exists st' errStr, 
+                  gen_appraise_AM et r2 a2 = (errC (am_dispatch_error (Runtime errStr)), st'))
+        ).
         {
+          eapply IHet.
+          3: {
+            eassumption.
+          }
+          3: {
+            eauto.
+          }
+          eassumption.
 
-          eapply peel_bs_am_works; eauto; lia.
-
-        }
-
-        destruct_conjs.
-        subst.
-        repeat break_let.
-
-        break_match.
-        +++ (* decrypt error *)
-          invc Heqp0.
           unfold decrypt_bs_to_rawev' in *.
           monad_unfold.
+          break_let.
           ff.
-
-          ++++
-            unfold supports_am_app in *.
-            destruct_conjs.
-            specialize H6 with (p:=p0) (res:=H).
-            find_apply_hyp_hyp.
-            find_rewrite.
-            solve_by_inversion.
-
-          ++++
-            ff.
-            pose decrypt_prim_runtime.
-            subst.
-            find_apply_hyp_hyp.
-            unfold am_failm in *.
-            ff.
-            repeat eexists.
-            eauto.
-          ++++
-            unfold check_et_size in *.
-            ff.
-            unfold am_failm in *.
-            ff.
-            repeat eexists.
-            eauto.
-      +++ (* decrypt success *)
-        break_let.
-        break_let.
-        invc Heqp0.
-
-        break_match.
-        ++++
-          subst.
-          invc Heqp3.
-
-          assert (a = a2).
-          {
-            eapply decrypt_amst_immut; eauto.
-          }
-          subst.
-
-          assert ((exists ec st', 
-                    gen_appraise_AM et r2 a2  = (resultC ec, st')) \/ 
-                  (exists st' errStr, 
-                    gen_appraise_AM et r2 a2 = (errC (am_dispatch_error (Runtime errStr)), st'))
-          ).
-          {
-            eapply IHet.
-            3: {
-              eassumption.
-            }
-            3: {
-              eauto.
-            }
-            eassumption.
-
-            unfold decrypt_bs_to_rawev' in *.
-            monad_unfold.
-            break_let.
-            ff.
-            unfold am_failm in *.
-            ff.
-            unfold check_et_size in *.
-            ff.
-            unfold am_failm in *.
-            ff.
-            unfold am_failm in *.
-            ff.
-            unfold check_et_size in *.
-            ff.
-            unfold am_failm in *.
-            ff.
-            eapply EqNat.beq_nat_true_stt.
-            eassumption.
-          }
-          destruct_conjs.
-          door.
-          +++++
-            find_rewrite.
-            solve_by_inversion.
-          +++++
+          unfold am_failm in *.
+          ff.
+          unfold check_et_size in *.
+          ff.
+          unfold am_failm in *.
+          ff.
+          unfold am_failm in *.
+          ff.
+          unfold check_et_size in *.
+          ff.
+          rewrite PeanoNat.Nat.eqb_eq in Heqb0; eauto.
+        }
+        destruct_conjs.
+        door.
+        +++++
           find_rewrite.
-          find_injection.
-          eauto.
-      ++++
-      find_injection.
-      eauto.
+          solve_by_inversion.
+        +++++
+        find_rewrite.
+        find_injection.
+        eauto.
+    ++++
+    find_injection.
+    eauto.
+  +   
     ++ (* pubkey NOT configured/available *)
       monad_unfold.
       break_let.
@@ -649,9 +636,6 @@ Proof.
     repeat eexists.
     ff.
     eauto.
-  + (* KEEP case *)
-    ff.
-    eauto.
 
   - (* ss case *)
     cbn in *.
@@ -692,15 +676,6 @@ Proof.
     break_match.
     subst.
     solve_by_inversion.
-
-(*
-    subst.
-    invc H10.
-    ff.
-    door.
-    +
-    invc H9.
-    *)
 
     break_let.
     break_let.
@@ -883,7 +858,7 @@ Qed.
 
 Lemma manifest_generator_app_cumul : forall et m1 m2,
   manifest_subset m1 m2 ->
-  manifest_subset m1 (manifest_generator_app' et m2).
+  manifest_subset m1 (manifest_generator_app'' et m2).
 Proof.
   intros.
   generalizeEverythingElse et.
@@ -959,7 +934,7 @@ Proof.
 Qed.
 
 Lemma manifest_generator_app_cumul' : forall et m1, 
-  manifest_subset m1 (manifest_generator_app' et m1).
+  manifest_subset m1 (manifest_generator_app'' et m1).
 Proof.
   intros.
   eapply manifest_generator_app_cumul.
@@ -968,11 +943,11 @@ Qed.
 
 
 Lemma asdf_app : forall et1 et2 absMan m,
-    manifest_generator_app' et2 
-        (manifest_generator_app' et1 m) = absMan -> 
+    manifest_generator_app'' et2 
+        (manifest_generator_app'' et1 m) = absMan -> 
               
   exists m',
-  manifest_generator_app' et1 m = m' /\ 
+  manifest_generator_app'' et1 m = m' /\ 
   manifest_subset m' absMan.
   Proof.
     intros.
@@ -983,13 +958,16 @@ Lemma asdf_app : forall et1 et2 absMan m,
 Qed.
 
 Theorem man_gen_old_always_supports_app : forall et oldMan absMan,
-  (* map_get (manifest_generator' tp t backMan) p = Some absMan -> *)
-  manifest_generator_app' et oldMan = absMan ->
+  (*map_get (manifest_generator_app' tp et oldMan) tp = Some absMan -> *)
+  manifest_generator_app'' et oldMan = absMan ->
   manifest_support_term_app absMan et.
 Proof.
   induction et; intuition;
     repeat (try break_match; 
       unfold app_aspid_manifest_update in *;
+      (*
+      unfold manifest_generator_app' in *;
+      unfold manifest_generator_app'' in *; *)
       unfold pubkey_manifest_update in *;
       subst; simpl in *; intuition; eauto; try congruence;
       repeat find_rewrite;
@@ -1009,7 +987,7 @@ Proof.
       policy := policy
     |}
     
-    (manifest_generator_app' et
+    (manifest_generator_app'' et
         {|
           my_abstract_plc := my_abstract_plc;
           asps := asps;
@@ -1042,7 +1020,7 @@ Proof.
       policy := policy
     |}
     
-    (manifest_generator_app' et
+    (manifest_generator_app'' et
     {|
       my_abstract_plc := my_abstract_plc;
       asps := asps;
@@ -1065,14 +1043,14 @@ Proof.
 
   - (* ss case *)
     ff.
-    pose (asdf_app et1 et2 (manifest_generator_app' et2 
-    (manifest_generator_app' et1 oldMan)) oldMan).
+    pose (asdf_app et1 et2 (manifest_generator_app'' et2 
+    (manifest_generator_app'' et1 oldMan)) oldMan).
 
     assert (
-      manifest_generator_app' et2
-     (manifest_generator_app' et1 oldMan) =
-   manifest_generator_app' et2
-     (manifest_generator_app' et1 oldMan)
+      manifest_generator_app'' et2
+     (manifest_generator_app'' et1 oldMan) =
+   manifest_generator_app'' et2
+     (manifest_generator_app'' et1 oldMan)
     ) by reflexivity.
 
     apply e in H.
@@ -1090,7 +1068,7 @@ Qed.
 
 Theorem manifest_generator_compiler_soundness_app : forall et ls oldMan absMan amLib amConf,
   (* map_get (manifest_generator t tp) p = Some absMan -> *)
-  manifest_generator_app' et oldMan = absMan ->
+  manifest_generator_app'' et oldMan = absMan ->
   lib_supports_manifest amLib absMan ->
   manifest_compiler absMan amLib = amConf ->
   et_size et = length ls ->
@@ -1128,3 +1106,224 @@ Proof.
   - 
    eassumption.
 Qed. 
+
+Require Import Manifest_Generator_Union Manifest_Generator_Helpers.
+
+Lemma mangen_plcEvidence_list_exists : forall ls et tp p m,
+  In (et, tp) ls ->
+  map_get (manifest_generator_app et tp) p = Some m ->
+  exists m', map_get (mangen_plcEvidence_list_union ls) p = Some m'.
+Proof.
+  intuition.
+  unfold mangen_plcEvidence_list_union.
+  induction ls; simpl in *; intuition; subst; eauto.
+  - erewrite manifest_env_union_map_one; eauto. 
+  - erewrite manifest_env_union_map_one; 
+    break_exists; eauto. 
+Qed.
+Global Hint Resolve mangen_plcTerm_list_exists : core.
+
+Lemma mangen_plcEvidence_list_spec : forall ls et tp,
+  In (et, tp) ls ->
+  In (manifest_generator_app et tp) (manifest_generator_plcEvidence_list ls).
+Proof.
+  induction ls; simpl in *; intuition; subst; eauto;
+  find_injection; eauto.
+Qed.
+Global Hint Resolve mangen_plcTerm_list_spec : core.
+
+Lemma mangen_plcEvidence_list_subsumes : forall ls p m,
+  map_get (mangen_plcEvidence_list_union ls) p = Some m ->
+  (forall et tp,
+    In (et,tp) ls ->
+    (forall m', 
+      map_get (manifest_generator_app et tp) p = Some m' ->
+      manifest_subset m' m
+    )
+  ).
+Proof.
+  intuition; unfold mangen_plcEvidence_list_union in *.
+  eapply (manifest_env_list_union_subsumes _ _ _ H
+    (manifest_generator_app et tp) m'); eauto.
+    + eapply mangen_plcEvidence_list_spec; eauto.
+Qed.
+Global Hint Resolve mangen_plcTerm_list_subsumes : core.
+
+
+Lemma mangen_plcEvidence_subset_end_to_end_mangen : forall ls et tp,
+  In (et, tp) ls ->
+  (forall m m' p,
+    map_get (mangen_plcEvidence_list_union ls) p = Some m' ->
+    forall ts, map_get (end_to_end_mangen' ls ts) p = Some m ->
+    manifest_subset m' m
+  ).
+Proof.
+  intuition; unfold end_to_end_mangen' in *;
+  eapply manifest_env_union_always_subset in H1; intuition.
+Qed.
+Global Hint Resolve mangen_plcTerm_subset_end_to_end_mangen : core.
+
+Lemma mangen_subset_end_to_end_mangen_app : forall ls et tp,
+  In (et, tp) ls ->
+  (forall m m' p,
+    map_get (manifest_generator_app et tp) p = Some m' ->
+    forall ts, map_get (end_to_end_mangen' ls ts) p = Some m ->
+    manifest_subset m' m
+  ).
+Proof.
+  intuition.
+  assert (exists m'', map_get (mangen_plcEvidence_list_union ls) p = Some m''). eapply mangen_plcEvidence_list_exists; eauto.
+  break_exists.
+  pose proof (mangen_plcEvidence_list_subsumes ls p x H2 et tp H _ H0).
+  pose proof (mangen_plcEvidence_subset_end_to_end_mangen ls et tp H m x p H2 ts H1).
+  eapply manifest_subset_trans; eauto.
+Qed.
+Global Hint Resolve mangen_subset_end_to_end_mangen : core.
+(*
+Lemma mangen_exists_end_to_end_mangen : forall ts ls p m,
+  map_get (end_to_end_mangen ls ts) p = Some m ->
+  (forall et tp,
+    In (et, tp) ls ->
+   (* In p (places tp t) -> *)
+    ((* forall t',
+      In t' (place_terms t tp p) -> *)
+      exists m', map_get (manifest_generator_app et tp) p = Some m'
+    )
+  ).
+Proof.
+  intuition.
+Qed.
+Global Hint Resolve mangen_exists_end_to_end_mangen : core.
+*)
+
+(*
+Lemma mangen_exists_end_to_end_mangen_app : forall ts ls p m,
+  map_get (end_to_end_mangen ls ts) p = Some m ->
+  (forall et tp,
+    In (et, tp) ls ->
+    (* In p (places tp t) -> *)
+    ((* forall t',
+      In t' (place_terms t tp p) -> *)
+      exists m', map_get (manifest_generator_app et tp) tp = Some m'
+    )
+  ).
+Proof.
+  intuition.
+  Admitted.
+Global Hint Resolve mangen_exists_end_to_end_mangen_app : core.
+*)
+
+Lemma mangen_exists_end_to_end_mangen_app :
+  (forall et tp,
+      exists m', map_get (manifest_generator_app et tp) tp = Some m'
+  ).
+Proof.
+  intuition.
+  unfold manifest_generator_app.
+  ff.
+  assert (eqb tp tp = true).
+  {
+    rewrite eqb_eq_plc.
+    auto.
+  }
+  ff.
+  eauto.
+Qed.
+Global Hint Resolve mangen_exists_end_to_end_mangen_app : core.
+
+
+
+Lemma mangen_app_tp_get : forall et tp x,
+  map_get (manifest_generator_app et tp) tp = Some x ->
+  manifest_generator_app'' et (myPlc_manifest_update tp empty_Manifest) = x.
+Proof.
+  intros.
+  unfold manifest_generator_app in *.
+  unfold manifest_generator_app' in *.
+  unfold manifest_update_env in *.
+  unfold e_empty in *.
+  ff.
+  assert (eqb tp tp = true).
+  {
+    rewrite eqb_eq_plc.
+    trivial.
+  }
+  rewrite H0 in *.
+  ff.
+Qed.
+
+Lemma end_to_end_mangen_supports_all_app : forall ts ls tp m,
+  map_get (end_to_end_mangen' ls ts) tp = Some m ->
+  (forall et, 
+    In (et, tp) ls ->
+    (* In p (places tp t) -> *)
+    ((* forall t',
+      In t' (place_terms t tp p) -> *)
+      manifest_support_term_app m et
+    )
+  ).
+Proof.
+  intuition.
+
+  (*
+  eapply man_gen_old_always_supports_app.
+  *)
+
+  (*
+  Lemma mangen_subset_end_to_end_mangen_app : forall ls et tp,
+  In (et, tp) ls ->
+  (forall m m' p,
+    map_get (manifest_generator_app et tp) p = Some m' ->
+    forall ts, map_get (end_to_end_mangen ls ts) p = Some m ->
+    manifest_subset m' m
+  ).
+  *)
+
+
+
+  pose proof (mangen_exists_end_to_end_mangen_app et tp).
+  break_exists.
+  pose proof (mangen_subset_end_to_end_mangen_app _ _ _ H0 _ _ _ H1 _ H).
+  pose proof manifest_supports_term_sub_app.
+  eapply H3.
+  eassumption.
+  eapply man_gen_old_always_supports_app.
+
+
+
+  eapply mangen_app_tp_get. eassumption.
+Qed.
+Global Hint Resolve end_to_end_mangen_supports_all : core.
+
+
+
+Theorem manifest_generator_compiler_soundness_distributed_multiterm_app : forall et ts ls bs tp absMan amLib amConf,
+  map_get (end_to_end_mangen' ls ts) tp = Some absMan -> 
+  In (et,tp) ls ->
+  lib_supports_manifest amLib absMan ->
+  manifest_compiler absMan amLib = amConf ->
+  et_size et = length bs ->
+  forall st,
+
+  supports_am_app amConf st.(amConfig)  ->
+
+  has_nonces (nonce_ids_et et) (st.(am_nonceMap)) -> 
+
+    ( 
+    exists ec st',
+         (gen_appraise_AM et bs) st = (resultC ec, st')) \/ 
+    (exists st' errStr,
+         (gen_appraise_AM et bs) st = (errC (am_dispatch_error (Runtime errStr)), st')
+    ).
+Proof.
+  intros.
+  eapply well_formed_am_config_impl_executable_app.
+  - unfold manifest_generator, e_empty in *; simpl in *.
+    eapply manifest_support_am_config_impl_am_config_app.
+    * eapply manifest_support_am_config_compiler; eauto.
+    * (* NOTE: This is the important one, substitute proof of any manifest here *)
+      eapply end_to_end_mangen_supports_all_app; eauto.
+  - find_rewrite; eauto.
+  - ff.
+  - eassumption.
+Qed.

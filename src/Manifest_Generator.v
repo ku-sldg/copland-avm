@@ -58,7 +58,7 @@ Definition pubkey_manifest_update (p:Plc) (m:Manifest) : Manifest :=
           policy := oldPolicy |} := m in
   (Build_Manifest oldPlc oldasps old_app_asps oldKnowsOf (manset_add p oldContext) oldTargets oldPolicy).
 
-Definition pubkeys_manifest_update (ps:manifest_set Plc) (m:Manifest) : Manifest := 
+Definition pubkeys_manifest_update_replace_all (ps:manifest_set Plc) (m:Manifest) : Manifest := 
         let '{| my_abstract_plc := oldMyPlc;
                 asps := oldasps; 
                 appraisal_asps := old_app_asps;
@@ -67,6 +67,18 @@ Definition pubkeys_manifest_update (ps:manifest_set Plc) (m:Manifest) : Manifest
                 targetPlcs := oldTargets ;
                 policy := oldPolicy |} := m in
         (Build_Manifest oldMyPlc oldasps old_app_asps oldKnowsOf ps oldTargets oldPolicy).
+
+Check fold_right.
+
+Definition pubkeys_manifest_update (ps:manifest_set Plc) (m:Manifest) : Manifest := 
+  let '{| my_abstract_plc := oldMyPlc;
+          asps := oldasps; 
+          appraisal_asps := old_app_asps;
+          uuidPlcs := oldKnowsOf; 
+          pubKeyPlcs := oldPubs; 
+          targetPlcs := oldTargets ;
+          policy := oldPolicy |} := m in
+  (Build_Manifest oldMyPlc oldasps old_app_asps oldKnowsOf (fold_right manset_add oldPubs ps) oldTargets oldPolicy).
 
 Definition update_manifest_policy_targ (targp:Plc) (targid:Plc) (m:Manifest) : Manifest :=
   let '{| my_abstract_plc := oldMyPlc;
@@ -96,8 +108,9 @@ Definition asp_manifest_update (a:ASP) (m:Manifest) : Manifest :=
   | CPY => m
   end.
 
+  (*
 Definition manifest_set_my_plc (p : Plc) (m : Manifest) : Manifest :=
-  let '{| my_abstract_plc := oldMyPlc;
+  let '{| my_abstract_plc := _ ;
           asps := oldasps; 
           appraisal_asps := old_app_asps;
           uuidPlcs := oldKnowsOf; 
@@ -105,13 +118,14 @@ Definition manifest_set_my_plc (p : Plc) (m : Manifest) : Manifest :=
           targetPlcs := oldTargets ;
           policy := oldPolicy |} := m in
   (Build_Manifest p oldasps old_app_asps oldKnowsOf oldContext oldTargets oldPolicy).
+  *)
   
 Definition manifest_update_env (p:Plc) (e:EnvironmentM) 
-                               (f:Manifest -> Manifest) : EnvironmentM := 
+            (f:Manifest -> Manifest) : EnvironmentM := 
   let m := 
     match (map_get e p) with
     | Some mm => mm
-    | None => (manifest_set_my_plc p empty_Manifest)
+    | None => (myPlc_manifest_update p empty_Manifest)
     end in
 
     let m' := (f m) in 
@@ -162,7 +176,6 @@ Proof.
     try (destruct p0; break_if; congruence);
     try (destruct p1; break_if; congruence).
 Qed.
-
 
 Definition places_terms' (ts: list Term) (p:Plc) : list (list Plc) :=
   List.map (places p) ts.
@@ -228,7 +241,7 @@ Definition app_aspid_manifest_update (i:ASP_ID) (p:Plc) (m:Manifest) : Manifest 
           policy := oldPolicy |} := m in
   (Build_Manifest oldPlc oldasps (manset_add (i,p) old_app_asps) oldKnowsOf oldContext oldTargets oldPolicy).
 
-Fixpoint manifest_generator_app' (et:Evidence) (m:Manifest) : Manifest :=
+Fixpoint manifest_generator_app'' (et:Evidence) (m:Manifest) : Manifest :=
   match et with 
   | mt => m 
   | nn _ => m (* TODO: account for nonce handling here? *)
@@ -237,23 +250,23 @@ Fixpoint manifest_generator_app' (et:Evidence) (m:Manifest) : Manifest :=
     | EXTD => 
       match ps with 
       | asp_paramsC a _ _ _ =>
-          manifest_generator_app' e' 
+          manifest_generator_app'' e' 
             (app_aspid_manifest_update p a m)
       end 
     | ENCR => 
       match ps with 
       | asp_paramsC _ _ p' _ =>
-          manifest_generator_app' e' 
+          manifest_generator_app'' e' 
             (pubkey_manifest_update p' m)
       end
-    | KEEP => manifest_generator_app' e' m
+    | KEEP => manifest_generator_app'' e' m
     | _ => m
     end
   | ss e1 e2 => 
-      manifest_generator_app' e2 (manifest_generator_app' e1 m)
+      manifest_generator_app'' e2 (manifest_generator_app'' e1 m)
   end.
 
-
+(*
 Definition empty_Manifest_plc (myPlc:Plc) : Manifest :=
   Build_Manifest 
       myPlc 
@@ -263,6 +276,12 @@ Definition empty_Manifest_plc (myPlc:Plc) : Manifest :=
       manifest_set_empty
       manifest_set_empty
       empty_PolicyT.
+*)
 
-Definition manifest_generator_app (et:Evidence) (p:Plc) : Manifest := 
-  manifest_generator_app' et (empty_Manifest_plc p).
+
+Definition manifest_generator_app' (p:Plc) (et:Evidence) (env:EnvironmentM) : EnvironmentM :=
+  manifest_update_env p env (manifest_generator_app'' et).
+
+
+Definition manifest_generator_app (et:Evidence) (p:Plc) : EnvironmentM := 
+  manifest_generator_app' p et e_empty.

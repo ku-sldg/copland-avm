@@ -55,10 +55,8 @@ Proof.
   unfold Environment_subset; intros.
   exists m1.
   split; ff.
-  
-  apply manifest_subset_refl.
+  eapply manifest_subset_refl.
 Qed.
-
 
 Lemma env_subset_trans : forall e1 e2 e3,
   Environment_subset e1 e2 ->

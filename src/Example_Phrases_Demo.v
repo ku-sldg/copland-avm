@@ -6,6 +6,7 @@ Require Import Term_Defs Example_Phrases_Demo_Admits Example_Phrases_Pre_Admits 
 Require Import List.
 Import ListNotations.
 
+Open Scope cop_ent_scope.
 
 Definition kim_meas (p:Plc) (targ: TARG_ID) :=
   asp (ASPC ALL EXTD (asp_paramsC kim_meas_aspid kim_meas_args p targ)).
@@ -47,3 +48,5 @@ Definition client_data_phrase : Term :=
 
 Definition cm_meas (p:Plc) (targ: TARG_ID) :=
   asp (ASPC ALL EXTD (asp_paramsC cm_aspid cm_args p targ)).
+
+Close Scope cop_ent_scope.

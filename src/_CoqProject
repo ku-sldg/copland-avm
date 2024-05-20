@@ -20,9 +20,6 @@ Event_system.v
 Term_system.v
 Trace.v
 LTS.v
-Event_system.v
-Term_system.v
-Trace.v
 Main.v
 Manifest_Admits.v
 ErrorStMonad_Coq.v
@@ -47,6 +44,7 @@ Auto.v
 Manifest_Generator_Helpers.v
 Manifest_Generator.v
 Manifest_Generator_Facts.v
+Manifest_Generator_Union.v
 AutoApp.v
 Helpers_CvmSemantics.v
 External_Facts.v
@@ -64,7 +62,6 @@ CvmJson_Admits.v
 ManCompSoundness_Helpers.v
 ManCompSoundness.v
 ManCompSoundness_Appraisal.v
-Manifest_Generator_Union.v
 AM_Helpers.v
 Client_AM.v
 Server_AM.v

@@ -12,7 +12,7 @@ Require Import EnvironmentM Manifest_Set.
 
 Require Import Manifest_Union Manifest_Generator Cvm_St Cvm_Impl.
 
-Require Import Manifest ManCompSoundness Manifest_Compiler Manifest_Generator_Facts.
+Require Import Manifest Manifest_Compiler Manifest_Generator_Facts.
 
 Require Import Coq.Program.Tactics.
 Require Import List.
@@ -83,15 +83,21 @@ Definition empty_Manifest_plc (myPlc:Plc) : Manifest :=
       empty_PolicyT.
 *)
 
+(*
 Definition mangen_app_plc (et:Evidence) (p:Plc) : Manifest := 
   manifest_union (empty_Manifest_plc p) (manifest_generator_app et p).
+  *)
 
 Definition lift_manifest_to_env (m:Manifest) : EnvironmentM := 
   map_set e_empty (my_abstract_plc m) m.
 
 Definition manifest_generator_plcEvidence_list (ls:list (Evidence*Plc)) : list EnvironmentM := 
+  List.map (fun '(et,p) => manifest_generator_app et p) ls.
+
+(*
   let ms : list Manifest := List.map (fun '(et,p) => mangen_app_plc et p) ls in 
     List.map lift_manifest_to_env ms.
+*)
 
 
 Definition mangen_plcEvidence_list_union (ls:list (Evidence*Plc)) : EnvironmentM := 
@@ -127,11 +133,50 @@ Definition singleton_plc_appraisal_environmentM (myPlc:Plc) (ls:list Evidence) :
 Definition manifest_generator_app (et:Evidence) : Manifest := ...
 *)
 
-Definition end_to_end_mangen (ls:list (Evidence*Plc)) (ts: list (Term*Plc)) : EnvironmentM := 
+(*
+Definition knowsof_myPlc_manifest_update (m:Manifest) : Manifest :=
+  knowsof_manifest_update (my_abstract_plc m) m.
+*)
+
+Definition knowsof_myPlc_manifest_update_env' (p:(Plc*Manifest)) : (Plc*Manifest) := 
+  (fst p, (knowsof_myPlc_manifest_update (snd p))).
+
+Definition update_knowsOf_myPlc_env (env:EnvironmentM) : EnvironmentM := map knowsof_myPlc_manifest_update_env' env.
+
+Check pubkeys_manifest_update.
+Definition update_pubkeys_env' (pubs:manifest_set Plc) (p:(Plc*Manifest)) : (Plc*Manifest) := 
+  (fst p, (pubkeys_manifest_update pubs (snd p))).
+
+Definition update_pubkeys_env (pubs:manifest_set Plc) (env:EnvironmentM) : EnvironmentM := 
+  map (update_pubkeys_env' pubs) env.
+
+Definition end_to_end_mangen' (ls:list (Evidence*Plc)) (ts: list (Term*Plc)) : EnvironmentM := 
     let app_env := mangen_plcEvidence_list_union ls in (* singleton_plc_appraisal_environmentM myPlc ls in  *)
     let att_env := mangen_plcTerm_list_union ts in 
-    environment_union app_env att_env.
+      environment_union app_env att_env.
 
+Definition manset_union_list{A : Type} `{HA : EqClass A} 
+  (lss: manifest_set (manifest_set A)) : manifest_set A := 
+    fold_right manset_union [] lss.
+
+Definition get_all_unique_places (ls: list (Term*Plc)) (ets: list (Evidence*Plc)) : manifest_set Plc := 
+  let lss := map (fun '(t,p) => places_manset p t) ls in 
+  let ts_ps := manset_union_list lss in
+  let ets_ps := map (fun '(et,p) => p) ets in
+  (* let ts_res_dup := concat lss in  *)
+  manset_union ts_ps ets_ps.
+
+Definition end_to_end_mangen (ls:list (Evidence*Plc)) (ts: list (Term*Plc)) : EnvironmentM := 
+  let ps := get_all_unique_places ts ls in 
+    update_pubkeys_env ps (update_knowsOf_myPlc_env (end_to_end_mangen' ls ts)).
+
+
+
+Definition end_to_end_mangen_final (ls:list (Evidence*Plc)) (ts: list (Term*Plc)) : list Manifest :=
+  environment_to_manifest_list (end_to_end_mangen ls ts).
+
+
+(*
 Definition appraiser_evidence_demo_phrase : Evidence := 
   eval example_phrase P0 (nn O).
 
@@ -146,9 +191,13 @@ Definition get_all_unique_places (ls: list (Term*Plc)) (ets: list (Evidence*Plc)
     let ts_res_dup := concat lss in 
     dedup_list (ts_res_dup ++ ets_ps).
 
-
+ 
 Definition end_to_end_mangen_final (ls:list (Evidence*Plc)) (ts: list (Term*Plc)) : list Manifest := 
     let env : EnvironmentM := end_to_end_mangen ls ts in 
     let unique_plcs : list Plc := get_all_unique_places ts ls in 
     let res' := map knowsof_myPlc_manifest_update (get_unique_manifests_env' unique_plcs env) in 
         map (pubkeys_manifest_update (list_to_manset unique_plcs)) res'. 
+
+Locate get_unique_manifests_env'.
+
+*)
