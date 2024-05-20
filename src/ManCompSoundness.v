@@ -2209,11 +2209,11 @@ Lemma mangen_plcTerm_subset_end_to_end_mangen : forall ts t tp,
   In (t, tp) ts ->
   (forall m m' p,
     map_get (mangen_plcTerm_list_union ts) p = Some m' ->
-    forall ls, map_get (end_to_end_mangen ls ts) p = Some m ->
+    forall ls, map_get (end_to_end_mangen' ls ts) p = Some m ->
     manifest_subset m' m
   ).
 Proof.
-  intuition; unfold end_to_end_mangen in *;
+  intuition; unfold end_to_end_mangen' in *;
   eapply manifest_env_union_always_subset in H1; intuition.
 Qed.
 Global Hint Resolve mangen_plcTerm_subset_end_to_end_mangen : core.
@@ -2222,7 +2222,7 @@ Lemma mangen_subset_end_to_end_mangen : forall ts t tp,
   In (t, tp) ts ->
   (forall m m' p,
     map_get (manifest_generator t tp) p = Some m' ->
-    forall ls, map_get (end_to_end_mangen ls ts) p = Some m ->
+    forall ls, map_get (end_to_end_mangen' ls ts) p = Some m ->
     manifest_subset m' m
   ).
 Proof.
@@ -2239,7 +2239,7 @@ Lemma mangen_subsets_of_end_to_end_mangen : forall ts t tp,
   In (t, tp) ts ->
   (forall m m' p,
     map_get (manifest_generator t tp) p = Some m' ->
-    forall ls, map_get (end_to_end_mangen ls ts) p = Some m ->
+    forall ls, map_get (end_to_end_mangen' ls ts) p = Some m ->
     manifest_subset m' m
   ).
 Proof.
@@ -2263,7 +2263,7 @@ Qed.
 Global Hint Resolve always_a_man_gen_exists : core.
 
 Lemma mangen_exists_end_to_end_mangen : forall ts ls p m,
-  map_get (end_to_end_mangen ls ts) p = Some m ->
+  map_get (end_to_end_mangen' ls ts) p = Some m ->
   (forall t tp,
     In (t, tp) ts ->
     In p (places tp t) ->
@@ -2383,7 +2383,7 @@ Qed.
 Global Hint Resolve supports_am_mancomp_subset : core.
 
 Lemma end_to_end_mangen_supports_all : forall ts ls p m,
-  map_get (end_to_end_mangen ls ts) p = Some m ->
+  map_get (end_to_end_mangen' ls ts) p = Some m ->
   (forall t tp, 
     In (t, tp) ts ->
     In p (places tp t) ->
@@ -2402,9 +2402,9 @@ Proof.
 Qed.
 Global Hint Resolve end_to_end_mangen_supports_all : core.
 
-Theorem manifest_generator_compiler_soundness_distributed_multiterm : forall t ts ls tp p absMan amLib amConf,
+Theorem manifest_generator_compiler_soundness_distributed_multiterm' : forall t ts ls tp p absMan amLib amConf,
   (* map_get (manifest_generator t tp) p = Some absMan -> *)
-  map_get (end_to_end_mangen ls ts) p = Some absMan -> 
+  map_get (end_to_end_mangen' ls ts) p = Some absMan -> 
   In (t,tp) ts ->
   (* In p (places tp t) -> *)
   lib_supports_manifest amLib absMan ->
@@ -2451,4 +2451,136 @@ Proof.
   eapply manifest_generator_compiler_soundness_distributed; eauto. *)
 Qed.
 
+Set Nested Proofs Allowed.
+
+Lemma manifest_subset_knowsof_myPlc_update_self : forall b,
+manifest_subset b (knowsof_myPlc_manifest_update b).
+Proof.
+  intros.
+  induction b; ff.
+  simpl.
+  unfold manifest_subset.
+  intuition.
+  ff.
+  eapply in_set_add.
+  eassumption.
+Qed.
+
+Lemma manifest_subset_pubkeys_update_self : forall b pubs,
+manifest_subset b (pubkeys_manifest_update pubs b).
+Proof.
+  intros.
+  induction b; ff.
+  simpl.
+  unfold manifest_subset.
+  intuition.
+  ff.
+  Lemma asdff{A : Type} `{HA : EqClass A} : forall (x:A) xs (ys:manifest_set A) f, 
+    In x xs -> 
+    In x (fold_right f xs ys).
+  Proof.
+  Admitted.
+
+  eapply asdff.
+  eassumption.
+Qed.
+
+(*
+Definition end_to_end_mangen (ls:list (Evidence*Plc)) (ts: list (Term*Plc)) : EnvironmentM := 
+  let ps := get_all_unique_places ts ls in 
+    update_pubkeys_env ps (update_knowsOf_myPlc_env (end_to_end_mangen' ls ts)).
+*)
+
+Lemma exists_manifest_subset_update_pubkeys_env : forall e p pubs absMan, 
+map_get (update_pubkeys_env pubs e) p = Some absMan -> 
+(exists absMan', map_get e p = Some absMan' 
+  /\ manifest_subset absMan' absMan).
+Proof.
+  induction e.
+  -
+  intuition.
+  ff.
+  -
+  intuition.
+  repeat ff.
+  rewrite eqb_leibniz in *.
+  subst.
+  intuition.
+  eexists.
+  split; eauto.
+  eapply manifest_subset_pubkeys_update_self.
+  eauto.
+Qed.
+
+Lemma exists_manifest_subset_update_knowsOf_myPlc_env : forall e p absMan, 
+map_get (update_knowsOf_myPlc_env e) p = Some absMan -> 
+(exists absMan', map_get e p = Some absMan' 
+  /\ manifest_subset absMan' absMan).
+Proof.
+  induction e.
+  -
+  intuition.
+  ff.
+  -
+  intuition.
+  repeat ff.
+  rewrite eqb_leibniz in *.
+  subst.
+  intuition.
+  eexists.
+  split; eauto.
+  eapply manifest_subset_knowsof_myPlc_update_self.
+Qed.
+
+
+Theorem manifest_generator_compiler_soundness_distributed_multiterm : forall t ts ls tp p absMan amLib amConf,
+  (* map_get (manifest_generator t tp) p = Some absMan -> *)
+  map_get (end_to_end_mangen ls ts) p = Some absMan -> 
+  In (t,tp) ts ->
+  (* In p (places tp t) -> *)
+  lib_supports_manifest amLib absMan ->
+  manifest_compiler absMan amLib = amConf ->
+  forall st,
+
+  (* st.(st_AM_config) = amConf -> *)
+  supports_am amConf (st.(st_AM_config)) ->
+
+  (*
+    (* Note, this should be trivial typically as amConf = st.(st_AM_config) and refl works *)
+    supports_am amConf (st.(st_AM_config)) ->  
+    *)
+
+    (  forall t', 
+         In t' (place_terms t tp p) -> 
+        (exists st', 
+        
+        build_cvm (copland_compile t') st = (resultC tt, st')) \/
+        
+        (exists st' errStr,
+        build_cvm (copland_compile t') st = (errC (dispatch_error (Runtime errStr)), st'))
+    ).
+Proof.
+  intros.
+  unfold end_to_end_mangen in H.
+  eapply exists_manifest_subset_update_pubkeys_env in H.
+  destruct_conjs.
+  eapply exists_manifest_subset_update_knowsOf_myPlc_env in H5.
+  destruct_conjs.
+  eapply manifest_generator_compiler_soundness_distributed_multiterm'.
+  eassumption.
+  eassumption.
+  eapply lib_supports_manifest_subset.
+  eassumption.
+  eapply manifest_subset_trans.
+  eassumption.
+  eassumption.
+  reflexivity.
+  eapply supports_am_mancomp_subset.
+  rewrite H2.
+  eassumption.
+  eapply manifest_subset_trans.
+  eassumption.
+  eassumption.
+  eassumption.
+Qed.
 

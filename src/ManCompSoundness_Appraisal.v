@@ -1154,11 +1154,11 @@ Lemma mangen_plcEvidence_subset_end_to_end_mangen : forall ls et tp,
   In (et, tp) ls ->
   (forall m m' p,
     map_get (mangen_plcEvidence_list_union ls) p = Some m' ->
-    forall ts, map_get (end_to_end_mangen ls ts) p = Some m ->
+    forall ts, map_get (end_to_end_mangen' ls ts) p = Some m ->
     manifest_subset m' m
   ).
 Proof.
-  intuition; unfold end_to_end_mangen in *;
+  intuition; unfold end_to_end_mangen' in *;
   eapply manifest_env_union_always_subset in H1; intuition.
 Qed.
 Global Hint Resolve mangen_plcTerm_subset_end_to_end_mangen : core.
@@ -1167,7 +1167,7 @@ Lemma mangen_subset_end_to_end_mangen_app : forall ls et tp,
   In (et, tp) ls ->
   (forall m m' p,
     map_get (manifest_generator_app et tp) p = Some m' ->
-    forall ts, map_get (end_to_end_mangen ls ts) p = Some m ->
+    forall ts, map_get (end_to_end_mangen' ls ts) p = Some m ->
     manifest_subset m' m
   ).
 Proof.
@@ -1253,7 +1253,7 @@ Proof.
 Qed.
 
 Lemma end_to_end_mangen_supports_all_app : forall ts ls tp m,
-  map_get (end_to_end_mangen ls ts) tp = Some m ->
+  map_get (end_to_end_mangen' ls ts) tp = Some m ->
   (forall et, 
     In (et, tp) ls ->
     (* In p (places tp t) -> *)
@@ -1298,7 +1298,7 @@ Global Hint Resolve end_to_end_mangen_supports_all : core.
 
 
 Theorem manifest_generator_compiler_soundness_distributed_multiterm_app : forall et ts ls bs tp absMan amLib amConf,
-  map_get (end_to_end_mangen ls ts) tp = Some absMan -> 
+  map_get (end_to_end_mangen' ls ts) tp = Some absMan -> 
   In (et,tp) ls ->
   lib_supports_manifest amLib absMan ->
   manifest_compiler absMan amLib = amConf ->

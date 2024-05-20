@@ -58,7 +58,7 @@ Definition pubkey_manifest_update (p:Plc) (m:Manifest) : Manifest :=
           policy := oldPolicy |} := m in
   (Build_Manifest oldPlc oldasps old_app_asps oldKnowsOf (manset_add p oldContext) oldTargets oldPolicy).
 
-Definition pubkeys_manifest_update (ps:manifest_set Plc) (m:Manifest) : Manifest := 
+Definition pubkeys_manifest_update_replace_all (ps:manifest_set Plc) (m:Manifest) : Manifest := 
         let '{| my_abstract_plc := oldMyPlc;
                 asps := oldasps; 
                 appraisal_asps := old_app_asps;
@@ -67,6 +67,18 @@ Definition pubkeys_manifest_update (ps:manifest_set Plc) (m:Manifest) : Manifest
                 targetPlcs := oldTargets ;
                 policy := oldPolicy |} := m in
         (Build_Manifest oldMyPlc oldasps old_app_asps oldKnowsOf ps oldTargets oldPolicy).
+
+Check fold_right.
+
+Definition pubkeys_manifest_update (ps:manifest_set Plc) (m:Manifest) : Manifest := 
+  let '{| my_abstract_plc := oldMyPlc;
+          asps := oldasps; 
+          appraisal_asps := old_app_asps;
+          uuidPlcs := oldKnowsOf; 
+          pubKeyPlcs := oldPubs; 
+          targetPlcs := oldTargets ;
+          policy := oldPolicy |} := m in
+  (Build_Manifest oldMyPlc oldasps old_app_asps oldKnowsOf (fold_right manset_add oldPubs ps) oldTargets oldPolicy).
 
 Definition update_manifest_policy_targ (targp:Plc) (targid:Plc) (m:Manifest) : Manifest :=
   let '{| my_abstract_plc := oldMyPlc;
