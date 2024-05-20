@@ -1,0 +1,95 @@
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build-and-test:
+    strategy:
+      fail-fast: false
+      
+    runs-on: ubuntu-latest
+
+    env:
+      COQ_REPO_PATH: "ku-sldg/coq"
+      OCAML_VERSION: "4.14.1"
+      COQ_REPO_BRANCH: "cakeml-extraction"
+
+    steps:
+      - name: Setup pre-deps
+        run: sudo apt install libgtk-3-0 libgtk-3-dev libgtksourceview-3.0-common libgtksourceview-3.0-dev opam
+
+############### OPAM STEPS
+      - name: Restore Opam Cache
+        id: opam-cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.opam
+          key: ${{ runner.OS }}-OPAM-$OCAML_VERSION
+          restore-keys: ${{ runner.OS }}-OPAM-
+      
+      - name: Opam Setup
+        if: steps.opam-cache-restore.outputs.cache-hit != 'true'
+        run: |
+          opam init
+          opam install -y dune coq lablgtk3-sourceview3
+      
+      - name: Opam Cache Save
+        id: opam-cache-install
+        if: steps.opam-cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.opam
+          key: ${{ runner.OS }}-OPAM-$OCAML_VERSION
+
+############### COQ STEPS
+      - name: Get latest commit hash of Coq Repo
+        id: get_commit_hash
+        run: |
+          response=$(curl -s "https://api.github.com/repos/$COQ_REPO_PATH/commits/$COQ_REPO_BRANCH")
+          commit_hash=$(echo "$response" | jq -r '.sha')
+          echo "COMMIT_HASH=$commit_hash" >> $GITHUB_ENV
+          
+      - name: Restore Coq Cache
+        id: coq-cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/coq
+          key: ${{ runner.OS }}-COQ-${{ env.COMMIT_HASH }}
+          restore-keys: ${{ runner.OS }}-COQ-
+      
+# We only need to setup the coq library again if it didnt get pulled from cache properly
+      - name: Checkout and build Coq
+        if: steps.coq-cache-restore.outputs.cache-hit != 'true'
+        run: |
+          cd ~
+          eval $(opam env)
+          git clone https://github.com/$COQ_REPO_PATH.git
+          cd coq
+          git switch $COQ_REPO_BRANCH
+          make world
+      
+      - name: Coq Cache Save
+        id: coq-cache-install
+        if: steps.coq-cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/coq
+          key: ${{ runner.OS }}-COQ-${{ env.COMMIT_HASH }}
+
+############### Final Testing Copland-AVM steps
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Test Build
+        run: |
+          export COQBIN=~/coq/_build/install/default/bin/
+          echo "COQBIN is $COQBIN"
+          cd ${{ github.workspace }}/src
+          $COQBIN/coq_makefile -f _CoqProject -o MAKEPRIME
+          make -f MAKEPRIME
