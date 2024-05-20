@@ -64,4 +64,4 @@ Separate Extraction
         empty_am_result run_am_app_comp run_am_app_comp_init
 		handle_AM_request am_client_gen_local
 		lib_omits_manifest manifest_none_omitted 
-		end_to_end_mangen_finall.
+		end_to_end_mangen_final.
