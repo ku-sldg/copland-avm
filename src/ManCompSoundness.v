@@ -2466,6 +2466,28 @@ Proof.
   eassumption.
 Qed.
 
+Definition fun_cumul{A : Type} `{HA : EqClass A} (f: A -> manifest_set A -> manifest_set A) :=
+  forall a x xs, 
+    In x xs -> 
+    In x (f a xs).
+
+Lemma asdff{A : Type} `{HA : EqClass A} : forall (x:A) xs (ys:manifest_set A) f, 
+  fun_cumul f ->
+  In x xs -> 
+  In x (fold_right f xs ys).
+Proof.
+intros.
+generalizeEverythingElse ys.
+induction ys.
+  - intuition.
+  - intuition.
+    ff.
+    eapply H.
+    eauto.
+Qed.
+
+
+
 Lemma manifest_subset_pubkeys_update_self : forall b pubs,
 manifest_subset b (pubkeys_manifest_update pubs b).
 Proof.
@@ -2475,15 +2497,15 @@ Proof.
   unfold manifest_subset.
   intuition.
   ff.
-  Lemma asdff{A : Type} `{HA : EqClass A} : forall (x:A) xs (ys:manifest_set A) f, 
-    In x xs -> 
-    In x (fold_right f xs ys).
-  Proof.
-  Admitted.
 
-  eapply asdff.
+  eapply asdff; eauto.
+
+  unfold fun_cumul.
+  intros.
+  eapply in_set_add.
   eassumption.
 Qed.
+
 
 (*
 Definition end_to_end_mangen (ls:list (Evidence*Plc)) (ts: list (Term*Plc)) : EnvironmentM := 
