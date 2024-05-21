@@ -250,8 +250,10 @@ Fixpoint manifest_generator_app'' (et:Evidence) (m:Manifest) : Manifest :=
     | EXTD => 
       match ps with 
       | asp_paramsC a _ _ _ =>
-          manifest_generator_app'' e' 
-            (app_aspid_manifest_update p a m)
+          let m' := (app_aspid_manifest_update p a m) in 
+          if (eqb a sig_aspid)
+          then (manifest_generator_app'' e' (pubkey_manifest_update p m'))
+          else manifest_generator_app'' e' m'
       end 
     | ENCR => 
       match ps with 
