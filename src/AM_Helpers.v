@@ -102,6 +102,11 @@ Definition appraisal_aspid_in_amlib_bool (al:AM_Library) (pr:Plc*ASP_ID)  : bool
 Definition lib_omits_aspids (ls:manifest_set ASP_ID) (al:AM_Library) : manifest_set ASP_ID := 
   filter_manset (fun i => (negb (aspid_in_amlib_bool al i))) ls.
 
+(*
+Definition lib_omits_aspids_external (ls:manifest_set ASP_ID) (al:AM_Library) : manifest_set ASP_ID := 
+  filter_manset (fun i => (negb (aspid_in_amlib_bool al i))) ls.
+*)
+
 Definition lib_omits_uuid_plcs (ls:manifest_set Plc) (al:AM_Library) : manifest_set Plc := 
   filter_manset (fun p => (negb (uuid_plc_in_amlib_bool al p))) ls.
 
@@ -120,6 +125,7 @@ Definition lib_omits_manifest (al:AM_Library) (am:Manifest) : Manifest :=
         Build_Manifest 
             am.(my_abstract_plc)
             (lib_omits_aspids aspid_list al)
+            manifest_set_empty
             (lib_omits_appraisal_aspids appraisal_asps_list al)
             (lib_omits_uuid_plcs uuid_plcs_list al)
             (lib_omits_pubkey_plcs pubkey_plcs_list al)    
@@ -128,7 +134,7 @@ Definition lib_omits_manifest (al:AM_Library) (am:Manifest) : Manifest :=
 
 Definition manifest_none_omitted (m:Manifest) : bool := 
     match m with 
-    | Build_Manifest _ asps app_asps uuids pubkeys _ _ => 
+    | Build_Manifest _ asps _ app_asps uuids pubkeys _ _ => 
         (is_empty_manset asps) && 
         (is_empty_manset app_asps) &&
         (is_empty_manset uuids) &&

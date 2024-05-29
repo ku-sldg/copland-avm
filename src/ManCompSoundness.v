@@ -944,6 +944,7 @@ Proof.
           {|
             my_abstract_plc := my_abstract_plc;
             asps := asps;
+            asps_external := asps_external;
             appraisal_asps := appraisal_asps;
             uuidPlcs := manset_add p uuidPlcs;
             pubKeyPlcs := pubKeyPlcs;
@@ -956,6 +957,7 @@ Proof.
           {|
             my_abstract_plc := my_abstract_plc;
             asps := asps;
+            asps_external := asps_external;
             appraisal_asps := appraisal_asps;
             uuidPlcs := manset_add p uuidPlcs;
             pubKeyPlcs := pubKeyPlcs;
@@ -976,6 +978,7 @@ Proof.
          {|
            my_abstract_plc := my_abstract_plc;
            asps := asps;
+           asps_external := asps_external;
            appraisal_asps := appraisal_asps;
            uuidPlcs := manset_add p uuidPlcs;
            pubKeyPlcs := pubKeyPlcs;
@@ -984,6 +987,7 @@ Proof.
          |}) p0 = Some {|
          my_abstract_plc := my_abstract_plc;
          asps := asps;
+         asps_external := asps_external;
          appraisal_asps := appraisal_asps;
          uuidPlcs := manset_add p uuidPlcs;
          pubKeyPlcs := pubKeyPlcs;
@@ -999,6 +1003,7 @@ Proof.
       specialize H with (m1 := {|
         my_abstract_plc := my_abstract_plc;
         asps := asps;
+        asps_external := asps_external;
         appraisal_asps := appraisal_asps;
         uuidPlcs := @manset_add _ Eq_Class_ID_Type p uuidPlcs;
         pubKeyPlcs := pubKeyPlcs;
@@ -1021,6 +1026,7 @@ Proof.
           {|
             my_abstract_plc := my_abstract_plc;
             asps := asps;
+            asps_external := asps_external;
             appraisal_asps := appraisal_asps;
             uuidPlcs := manset_add p uuidPlcs;
             pubKeyPlcs := pubKeyPlcs;
@@ -1033,6 +1039,7 @@ Proof.
           {|
             my_abstract_plc := my_abstract_plc;
             asps := asps;
+            asps_external := asps_external;
             appraisal_asps := appraisal_asps;
             uuidPlcs := manset_add p uuidPlcs;
             pubKeyPlcs := pubKeyPlcs;
@@ -1053,6 +1060,7 @@ Proof.
          {|
            my_abstract_plc := my_abstract_plc;
            asps := asps;
+           asps_external := asps_external;
            appraisal_asps := appraisal_asps;
            uuidPlcs := manset_add p uuidPlcs;
            pubKeyPlcs := pubKeyPlcs;
@@ -1061,6 +1069,7 @@ Proof.
          |}) p0 = Some {|
          my_abstract_plc := my_abstract_plc;
          asps := asps;
+         asps_external := asps_external;
          appraisal_asps := appraisal_asps;
          uuidPlcs := manset_add p uuidPlcs;
          pubKeyPlcs := pubKeyPlcs;
@@ -1076,6 +1085,7 @@ Proof.
       specialize H with (m1 := {|
         my_abstract_plc := my_abstract_plc;
         asps := asps;
+        asps_external := asps_external;
         appraisal_asps := appraisal_asps;
         uuidPlcs := @manset_add _ Eq_Class_ID_Type p uuidPlcs;
         pubKeyPlcs := pubKeyPlcs;
@@ -1379,8 +1389,10 @@ Proof.
       repeat find_rewrite;
       repeat find_injection;
       simpl in * );
+    try do_inv_manifest;
     try (rewrite mapC_get_works in *; simpl in *; repeat find_injection; simpl in *; intuition; eauto);
     try (eapply manadd_In_add).
+
 
 
   - (* at case *)
@@ -1410,6 +1422,7 @@ Proof.
               {|
                 my_abstract_plc := my_abstract_plc;
                 asps := asps;
+                asps_external := asps_external;
                 appraisal_asps := appraisal_asps;
                 uuidPlcs := manset_add p uuidPlcs;
                 pubKeyPlcs := pubKeyPlcs;
@@ -1434,6 +1447,7 @@ Proof.
               {|
                 my_abstract_plc := p0;
                 asps := manifest_set_empty;
+                asps_external := manifest_set_empty;
                 appraisal_asps := manifest_set_empty;
                 uuidPlcs := manset_add p manifest_set_empty;
                 pubKeyPlcs := manifest_set_empty;

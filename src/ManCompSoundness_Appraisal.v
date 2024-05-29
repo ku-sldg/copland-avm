@@ -1194,6 +1194,7 @@ Proof.
     assert (manifest_subset {|
       my_abstract_plc := my_abstract_plc;
       asps := asps;
+      asps_external := asps_external;
       appraisal_asps := appraisal_asps;
       uuidPlcs := uuidPlcs;
       pubKeyPlcs := manset_add p0 pubKeyPlcs;
@@ -1205,6 +1206,7 @@ Proof.
         {|
           my_abstract_plc := my_abstract_plc;
           asps := asps;
+          asps_external := asps_external;
           appraisal_asps := appraisal_asps;
           uuidPlcs := uuidPlcs;
           pubKeyPlcs := manset_add p0 pubKeyPlcs;
@@ -1224,9 +1226,11 @@ Proof.
     - (* EXTD case, aspid = sig_aspid *)
 
     ff.
+    do_inv_manifest.
     assert (manifest_subset  {|
       my_abstract_plc := my_abstract_plc;
       asps := asps;
+      asps_external := asps_external;
       appraisal_asps := manset_add (p, a0) appraisal_asps0;
       uuidPlcs := uuidPlcs;
       pubKeyPlcs := manset_add p pubKeyPlcs;
@@ -1238,6 +1242,7 @@ Proof.
     {|
       my_abstract_plc := my_abstract_plc;
       asps := asps;
+      asps_external := asps_external;
       appraisal_asps := manset_add (p, a0) appraisal_asps0;
       uuidPlcs := uuidPlcs;
       pubKeyPlcs := manset_add p pubKeyPlcs;
@@ -1264,6 +1269,7 @@ Proof.
     assert (manifest_subset  {|
       my_abstract_plc := my_abstract_plc;
       asps := asps;
+      asps_external := asps_external;
       appraisal_asps := manset_add (p, a0) appraisal_asps;
       uuidPlcs := uuidPlcs;
       pubKeyPlcs := pubKeyPlcs;
@@ -1275,6 +1281,7 @@ Proof.
     {|
       my_abstract_plc := my_abstract_plc;
       asps := asps;
+      asps_external := asps_external;
       appraisal_asps := manset_add (p, a0) appraisal_asps;
       uuidPlcs := uuidPlcs;
       pubKeyPlcs := pubKeyPlcs;
@@ -1294,9 +1301,11 @@ Proof.
 
   -
   ff.
+  do_inv_manifest.
   assert (manifest_subset  {|
     my_abstract_plc := my_abstract_plc;
     asps := asps;
+    asps_external := asps_external;
     appraisal_asps := manset_add (p, a0) appraisal_asps0;
     uuidPlcs := uuidPlcs;
     pubKeyPlcs := manset_add p pubKeyPlcs;
@@ -1308,6 +1317,7 @@ Proof.
   {|
     my_abstract_plc := my_abstract_plc;
     asps := asps;
+    asps_external := asps_external;
     appraisal_asps := manset_add (p, a0) appraisal_asps0;
     uuidPlcs := uuidPlcs;
     pubKeyPlcs := manset_add p pubKeyPlcs;
