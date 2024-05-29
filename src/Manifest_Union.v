@@ -11,12 +11,13 @@ Import ListNotations.
 
 Definition manifest_union (m1:Manifest) (m2:Manifest) : Manifest := 
     match (m1, m2) with 
-    | ((Build_Manifest myPlc asps1 app_asps1 uuidPlcs1 pubKeyPlcs1 targPlcs1 myPol),
-       (Build_Manifest _     asps2 app_asps2 uuidPlcs2 pubKeyPlcs2 targPlcs2 _    )) => 
+    | ((Build_Manifest myPlc asps1 asps_ext1 app_asps1 uuidPlcs1 pubKeyPlcs1 targPlcs1 myPol),
+       (Build_Manifest _     asps2 asps_ext2 app_asps2 uuidPlcs2 pubKeyPlcs2 targPlcs2 _    )) => 
 
        Build_Manifest
         myPlc 
         (manset_union asps1 asps2)
+        (manset_union asps_ext1 asps_ext2)
         (manset_union app_asps1 app_asps2)
         (manset_union uuidPlcs1 uuidPlcs2)
         (manset_union pubKeyPlcs1 pubKeyPlcs2)

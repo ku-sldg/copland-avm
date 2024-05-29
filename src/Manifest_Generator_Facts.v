@@ -378,6 +378,126 @@ Qed.
 
 Local Hint Resolve empty_manifest_always_sub : core.
 
+
+Ltac do_inv_manifest :=
+  match goal with
+  | [H: {| my_abstract_plc := _ |} = {| my_abstract_plc := _ |}
+
+     |- _] => invc H
+  end.
+
+
+  Ltac ddd :=
+    match goal with
+    | [H: In_set ?x (manset_add ?y _)
+  
+       |- _] => apply manadd_In_set in H 
+      end.
+
+      Ltac dddd :=
+        match goal with
+        | [H: eqb ?p ?p1 = false, 
+           H2: map_get (map_set ?e1 ?p _) ?p1 = Some ?m1
+      
+           |- _] => 
+      assert (p <> p1) by (intros HC; rewrite <- eqb_leibniz in HC; congruence); 
+      assert (HM : map_get e1 p1 = Some m1) by (eapply mapC_get_distinct_keys_from_set; eauto);
+      find_apply_hyp_hyp;
+      destruct_conjs;
+      erewrite mapC_get_distinct_keys; eauto
+  
+      end.
+  
+  
+    Ltac dd :=
+      match goal with
+      | [H: map_get (map_set ?e1 ?p _) ?p1 = Some ?m1 
+    
+         |- _] => 
+  
+      destruct (eqb p p1) eqn:E;
+  
+      [
+
+        rewrite eqb_leibniz in *; subst;
+        eexists;
+        intuition;
+          
+          try (eapply mapC_get_works);
+          unfold manifest_subset in *;
+         
+         try rewrite mapC_get_works in *; find_injection; eauto;
+         unfold manifest_subset in *;
+  
+         repeat (intuition; simpl in *; try intuition);
+  
+  
+          try ddd;
+  
+  
+          door; subst;
+          try (find_apply_hyp_hyp);
+            try (eapply manadd_In_add);
+            try (eapply in_set_add);
+          eauto
+  
+      |
+
+
+  dddd
+  
+      ]
+  end.
+
+
+
+
+  Ltac dd' :=
+    match goal with
+    | [H: map_get (map_set ?e1 ?p _) ?p1 = Some ?m1 
+  
+       |- _] => 
+
+    destruct (eqb p p1) eqn:E;
+
+    [
+    
+
+  rewrite eqb_leibniz in *; subst;
+  eexists;
+  intuition; 
+  try 
+    eapply mapC_get_works;
+  
+    (
+    rewrite mapC_get_works in *; find_injection;
+    unfold manifest_subset in *;
+    intuition;
+    simpl in *; try intuition
+    )
+
+    |
+
+
+dddd
+
+    ]
+end.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Lemma fafafa : forall t p e1 e2,
     Environment_subset e1 e2 ->
     Environment_subset (manifest_generator' p t e1)
@@ -392,6 +512,808 @@ Proof.
       aspid_manifest_update, update_manifest_policy_targ, Environment_subset, 
       empty_Manifest, pubkey_manifest_update in *; ff;
     simpl in *; intuition; eauto;
+    (
+    repeat do_inv_manifest;
+
+    
+    try find_apply_hyp_hyp;
+    destruct_conjs;
+    repeat find_rewrite;
+    try find_injection);
+
+    try (dd; tauto);
+    try (dd'; try congruence; subst; 
+        try eapply manadd_In_add; tauto).
+
+    dd'; congruence.
+
+    try (
+  
+    dd';
+    subst;
+    eapply manadd_In_add;
+    tauto);
+
+    try 
+    (
+    dd'; congruence).
+
+
+
+
+
+
+
+
+    + 
+    repeat do_inv_manifest;
+  
+      
+    try find_apply_hyp_hyp;
+    destruct_conjs;
+    repeat find_rewrite;
+    try find_injection.
+    dd'; congruence.
+
+
+
+    + 
+    repeat do_inv_manifest;
+  
+      
+    try find_apply_hyp_hyp;
+    destruct_conjs;
+    repeat find_rewrite;
+    try find_injection.
+    congruence.
+
+    +
+      repeat do_inv_manifest;
+  
+      
+      try find_apply_hyp_hyp;
+      destruct_conjs;
+      repeat find_rewrite;
+      try find_injection.
+
+      dd'. 
+      subst.
+      eapply manadd_In_add.
+      subst.
+      eapply manadd_In_add.
+
+    +
+    repeat do_inv_manifest;
+  
+      
+    try find_apply_hyp_hyp;
+    destruct_conjs;
+    repeat find_rewrite;
+    try find_injection.
+
+    dd';
+    congruence.
+
+
+   +
+   repeat do_inv_manifest;
+  
+      
+   try find_apply_hyp_hyp;
+   destruct_conjs;
+   repeat find_rewrite;
+   try find_injection.
+
+   dd';
+   congruence.
+
+   +
+   repeat do_inv_manifest;
+  
+      
+   try find_apply_hyp_hyp;
+   destruct_conjs;
+   repeat find_rewrite;
+   try find_injection.
+
+ 
+   dd'.
+   subst.
+
+    eapply manadd_In_add.
+
+  +
+  repeat do_inv_manifest;
+  
+      
+  try find_apply_hyp_hyp;
+  destruct_conjs;
+  repeat find_rewrite;
+  try find_injection.
+
+  congruence.
+
+ +
+ repeat do_inv_manifest;
+  
+      
+ try find_apply_hyp_hyp;
+ destruct_conjs;
+ repeat find_rewrite;
+ try find_injection.
+
+ dd'.
+
+
+ +
+ repeat do_inv_manifest;
+  
+      
+ try find_apply_hyp_hyp;
+ destruct_conjs;
+ repeat find_rewrite;
+ try find_injection. 
+
+ dd'.
+    subst.
+    eapply manadd_In_add.
+
+  +
+  repeat do_inv_manifest;
+  
+      
+  try find_apply_hyp_hyp;
+  destruct_conjs;
+  repeat find_rewrite;
+  try find_injection.
+
+  congruence.
+
+  +
+  repeat do_inv_manifest;
+  
+      
+  try find_apply_hyp_hyp;
+  destruct_conjs;
+  repeat find_rewrite;
+  try find_injection.
+
+  dd'.
+
+
+  +
+  repeat do_inv_manifest;
+  
+      
+  try find_apply_hyp_hyp;
+  destruct_conjs;
+  repeat find_rewrite;
+  try find_injection.
+
+  dd';
+  subst;
+  eapply manadd_In_add.
+
+  +
+  repeat do_inv_manifest;
+  
+      
+  try find_apply_hyp_hyp;
+  destruct_conjs;
+  repeat find_rewrite;
+  try find_injection.
+  dd'; congruence.
+
+
+  +
+  repeat do_inv_manifest;
+  
+      
+  try find_apply_hyp_hyp;
+  destruct_conjs;
+  repeat find_rewrite;
+  try find_injection.
+
+  dd'; congruence.
+
+Qed.
+
+
+
+
+
+      eauto.
+
+
+    + admit.
+    +
+    destruct (eqb p p0) eqn:E. 
+    ++
+    rewrite eqb_leibniz in *; subst.
+    eexists.
+    intuition; 
+    try 
+      eapply mapC_get_works.
+    
+      rewrite mapC_get_works in *; find_injection.
+      unfold manifest_subset in *.
+      intuition;
+      simpl in *; try intuition.
+  
+    ++
+    assert (p <> p0) by (intros HC; rewrite <- eqb_leibniz in HC; congruence).
+    assert (HM : map_get e1 p0 = Some m1) by (eapply mapC_get_distinct_keys_from_set; eauto).
+    destruct (H _ _ HM); intuition; eauto.
+  
+    erewrite mapC_get_distinct_keys; eauto.
+
+
+    +
+
+
+    (*
+
+    try (
+      find_apply_hyp_hyp;
+      destruct_conjs;
+      repeat find_rewrite;
+      congruence).
+
+      *)
+
+
+      (*
+
+
+      +
+      find_apply_hyp_hyp.
+      destruct_conjs.
+      repeat find_rewrite.
+      find_injection.
+  
+      destruct (eqb p p0) eqn:E. 
+        ++
+        rewrite eqb_leibniz in *; subst.
+        eexists.
+        split.
+          +++
+          eapply mapC_get_works.
+          +++
+          unfold manifest_subset in *.
+          intuition; try rewrite mapC_get_works in *; find_injection; eauto.
+          
+  
+        ++
+        assert (p <> p0) by (intros HC; rewrite <- eqb_leibniz in HC; congruence).
+        assert (HM : map_get e1 p0 = Some m1) by (eapply mapC_get_distinct_keys_from_set; eauto).
+        destruct (H _ _ HM); intuition; eauto.
+  
+        erewrite mapC_get_distinct_keys; eauto.
+
+
+*)
+
+
+
+
+
+
+
+
+
+
+
+
+
+    +
+    (*
+    find_apply_hyp_hyp.
+    destruct_conjs.
+    repeat find_rewrite.
+    find_injection. *)
+
+    destruct (eqb p p0) eqn:E. 
+      ++
+      rewrite eqb_leibniz in *; subst.
+      eexists.
+      intuition.
+        +++
+        eapply mapC_get_works.
+        +++
+        rewrite mapC_get_works in *; find_injection.
+        unfold manifest_subset in *.
+        intuition.
+        simpl in *; try intuition.
+        simpl in *; try intuition.
+        simpl in *; try intuition.
+        simpl in *; try intuition.
+        simpl in *; try intuition.
+
+      ++
+      assert (p <> p0) by (intros HC; rewrite <- eqb_leibniz in HC; congruence).
+      assert (HM : map_get e1 p0 = Some m1) by (eapply mapC_get_distinct_keys_from_set; eauto).
+      destruct (H _ _ HM); intuition; eauto.
+
+      erewrite mapC_get_distinct_keys; eauto.
+
+
+  + (* None, None *)
+  destruct (eqb p p0) eqn:E. 
+  ++
+  rewrite eqb_leibniz in *; subst.
+  eexists.
+  intuition.
+    +++
+    eapply mapC_get_works.
+    +++
+    rewrite mapC_get_works in *; find_injection.
+    unfold manifest_subset in *.
+    intuition.
+
+  ++
+  assert (p <> p0) by (intros HC; rewrite <- eqb_leibniz in HC; congruence).
+  assert (HM : map_get e1 p0 = Some m1) by (eapply mapC_get_distinct_keys_from_set; eauto).
+  destruct (H _ _ HM); intuition; eauto.
+
+  erewrite mapC_get_distinct_keys; eauto.
+
+
+  + (* Some, Some *)
+  find_apply_hyp_hyp.
+  destruct_conjs.
+  repeat find_rewrite.
+  find_injection.
+
+  destruct (eqb p p0) eqn:E. 
+    ++
+    rewrite eqb_leibniz in *; subst.
+    eexists.
+    split.
+      +++
+      eapply mapC_get_works.
+      +++
+      unfold manifest_subset in *.
+      intuition; try rewrite mapC_get_works in *; find_injection; eauto.
+      
+
+    ++
+    assert (p <> p0) by (intros HC; rewrite <- eqb_leibniz in HC; congruence).
+    assert (HM : map_get e1 p0 = Some m1) by (eapply mapC_get_distinct_keys_from_set; eauto).
+    destruct (H _ _ HM); intuition; eauto.
+
+    erewrite mapC_get_distinct_keys; eauto.
+
+
+  + (* None, Some *)
+  destruct (eqb p p0) eqn:E. 
+  ++
+  rewrite eqb_leibniz in *; subst.
+  eexists.
+  intuition.
+    +++
+    eapply mapC_get_works.
+    +++
+    rewrite mapC_get_works in *; find_injection.
+    unfold manifest_subset in *.
+    intuition.
+    simpl in *; try intuition.
+    simpl in *; try intuition.
+    simpl in *; try intuition.
+    simpl in *; try intuition.
+    simpl in *; try intuition.
+
+  ++
+  assert (p <> p0) by (intros HC; rewrite <- eqb_leibniz in HC; congruence).
+  assert (HM : map_get e1 p0 = Some m1) by (eapply mapC_get_distinct_keys_from_set; eauto).
+  destruct (H _ _ HM); intuition; eauto.
+
+  erewrite mapC_get_distinct_keys; eauto.
+
+  + (* None, None *)
+  destruct (eqb p p0) eqn:E. 
+  ++
+  rewrite eqb_leibniz in *; subst.
+  eexists.
+  intuition.
+    +++
+    eapply mapC_get_works.
+    +++
+    rewrite mapC_get_works in *; find_injection.
+    unfold manifest_subset in *.
+    intuition.
+
+  ++
+  assert (p <> p0) by (intros HC; rewrite <- eqb_leibniz in HC; congruence).
+  assert (HM : map_get e1 p0 = Some m1) by (eapply mapC_get_distinct_keys_from_set; eauto).
+  destruct (H _ _ HM); intuition; eauto.
+
+  erewrite mapC_get_distinct_keys; eauto.
+
+
+  + (* Some, Some, with extra pre-simplification... *)
+
+
+
+
+
+  repeat do_inv_manifest;
+
+    
+    find_apply_hyp_hyp;
+    destruct_conjs;
+    repeat find_rewrite;
+    find_injection.
+
+
+
+    try(
+    dd;
+    dddd).
+
+
+
+
+
+
+  Ltac dd :=
+    match goal with
+    | [H: map_get (map_set ?e1 ?p1 _) ?p2 = Some ?m1 
+  
+       |- _] => 
+
+    
+  
+    destruct (eqb p1 p2) eqn:E; 
+    [
+
+    (
+      rewrite eqb_leibniz in *; subst;
+      eexists;
+      split;  
+        try (eapply mapC_get_works);
+
+        (
+        unfold manifest_subset in *;
+        intuition; try rewrite mapC_get_works in *; find_injection; eauto;
+
+       
+        (
+        simpl in *;
+        try ddd;
+        (* apply manadd_In_set in H6; *)
+        door; subst;
+        try (find_apply_hyp_hyp);
+          try (eapply manadd_In_add);
+          try (eapply in_set_add);
+        eauto) 
+        )
+    )
+        
+    |
+    (
+    assert (p1 <> p2) by (intros HC; rewrite <- eqb_leibniz in HC; congruence);
+    assert (HM : map_get e1 p1 = Some m1) by (eapply mapC_get_distinct_keys_from_set; eauto);
+    destruct (H _ _ HM); intuition; eauto;
+
+    try erewrite mapC_get_distinct_keys; eauto)
+    ]
+    end.
+
+    dd.
+
+    assert (p <> p1) by (intros HC; rewrite <- eqb_leibniz in HC; congruence).
+    assert (HM : map_get e1 p1 = Some m1) by (eapply mapC_get_distinct_keys_from_set; eauto);
+    destruct (H _ _ HM); intuition; eauto;
+
+    erewrite mapC_get_distinct_keys; eauto.
+
+
+
+
+
+      + (* None, Some, some pre-simpls *)
+
+      invc Heqm1.
+      invc H1.
+      invc Heqm0.
+      invc Heqm.
+      invc Heqm2.
+
+
+
+      destruct (eqb my_abstract_plc p1) eqn:E. 
+      ++
+      rewrite eqb_leibniz in *; subst.
+      eexists.
+      intuition.
+        +++
+        eapply mapC_get_works.
+        +++
+        rewrite mapC_get_works in *; find_injection.
+        unfold manifest_subset in *.
+        intuition; simpl in *;
+
+        try (
+        door; subst;
+        try (find_apply_hyp_hyp);
+          try (eapply manadd_In_add);
+          try (eapply in_set_add);
+        eauto; try intuition); intuition.
+
+    
+
+    
+      ++
+      assert (my_abstract_plc <> p1) by (intros HC; rewrite <- eqb_leibniz in HC; congruence).
+      assert (HM : map_get e1 p1 = Some m1) by (eapply mapC_get_distinct_keys_from_set; eauto).
+      destruct (H _ _ HM); intuition; eauto.
+    
+      erewrite mapC_get_distinct_keys; eauto.
+
+
+      + (* None, None, some pre-simpl *)
+
+      repeat find_inversion.
+      invc Heqm0.
+      invc Heqm.
+      invc Heqm2.
+      invc Heqm1.
+
+
+
+
+      destruct (eqb my_abstract_plc0 p1) eqn:E. 
+      ++
+      rewrite eqb_leibniz in *; subst.
+      eexists.
+      intuition.
+        +++
+        eapply mapC_get_works.
+        +++
+        rewrite mapC_get_works in *; find_injection.
+        unfold manifest_subset in *.
+        intuition.
+    
+      ++
+      assert (my_abstract_plc0 <> p1) by (intros HC; rewrite <- eqb_leibniz in HC; congruence).
+      assert (HM : map_get e1 p1 = Some m1) by (eapply mapC_get_distinct_keys_from_set; eauto).
+      destruct (H _ _ HM); intuition; eauto.
+    
+      erewrite mapC_get_distinct_keys; eauto.
+
+      + (* Some, Some *)
+      find_apply_hyp_hyp.
+      destruct_conjs.
+      repeat find_rewrite.
+      find_injection.
+    
+      destruct (eqb p p0) eqn:E. 
+        ++
+        rewrite eqb_leibniz in *; subst.
+        eexists.
+        split.
+          +++
+          eapply mapC_get_works.
+          +++
+          unfold manifest_subset in *.
+          intuition; try rewrite mapC_get_works in *; find_injection; eauto.
+
+          apply manadd_In_set in H6.
+        door; subst;
+        try (find_apply_hyp_hyp);
+          try (eapply manadd_In_add);
+          try (eapply in_set_add);
+        eauto.
+
+          
+    
+        ++
+        assert (p <> p0) by (intros HC; rewrite <- eqb_leibniz in HC; congruence).
+        assert (HM : map_get e1 p0 = Some m1) by (eapply mapC_get_distinct_keys_from_set; eauto).
+        destruct (H _ _ HM); intuition; eauto.
+    
+        erewrite mapC_get_distinct_keys; eauto.
+    
+        + (* None, Some, some pre-simpls *)
+
+        invc Heqm0.
+        invc H1.
+        invc Heqm.
+  
+  
+  
+        destruct (eqb my_abstract_plc p0) eqn:E. 
+        ++
+        rewrite eqb_leibniz in *; subst.
+        eexists.
+        intuition.
+          +++
+          eapply mapC_get_works.
+          +++
+          rewrite mapC_get_works in *; find_injection.
+          unfold manifest_subset in *.
+          intuition; simpl in *;
+  
+          try (
+          door; subst;
+          try (find_apply_hyp_hyp);
+            try (eapply manadd_In_add);
+            try (eapply in_set_add);
+          eauto; try intuition); intuition.
+
+
+          ++
+          assert (my_abstract_plc <> p0) by (intros HC; rewrite <- eqb_leibniz in HC; congruence).
+          assert (HM : map_get e1 p0 = Some m1) by (eapply mapC_get_distinct_keys_from_set; eauto).
+          destruct (H _ _ HM); intuition; eauto.
+      
+          erewrite mapC_get_distinct_keys; eauto.
+
+          + (* None, Some, some pre-simpls *)
+
+          invc Heqm0.
+          invc Heqm.
+    
+    
+    
+          destruct (eqb my_abstract_plc p0) eqn:E. 
+          ++
+          rewrite eqb_leibniz in *; subst.
+          eexists.
+          intuition.
+            +++
+            eapply mapC_get_works.
+            +++
+            rewrite mapC_get_works in *; find_injection.
+            unfold manifest_subset in *.
+            intuition; simpl in *;
+    
+            try (
+            door; subst;
+            try (find_apply_hyp_hyp);
+              try (eapply manadd_In_add);
+              try (eapply in_set_add);
+            eauto; try intuition); intuition.
+
+            ++
+            assert (my_abstract_plc <> p0) by (intros HC; rewrite <- eqb_leibniz in HC; congruence).
+            assert (HM : map_get e1 p0 = Some m1) by (eapply mapC_get_distinct_keys_from_set; eauto).
+            destruct (H _ _ HM); intuition; eauto.
+        
+            erewrite mapC_get_distinct_keys; eauto.
+
+    +
+      admit.
+    +
+      admit.
+    +
+      admit.
+    +
+      admit.
+    +
+      admit.
+    +
+      admit.
+    +
+
+
+
+
+
+
+
+
+
+
+
+
+  +
+
+
+
+
+    +
+
+
+
+
+    (*
+
+    try match goal with 
+    | H1 : map_get e1 ?p1 = _,
+      H2 : map_get (map_set e1 ?p1 _) ?p2 = Some ?m2 |- _ =>
+        destruct (eqb p1 p2) eqn:E;
+
+        [
+          rewrite eqb_leibniz in *; subst;
+          (* try (destruct (H _ _ H1); intuition; eauto). *)
+          unfold manifest_subset in *; simpl in *;
+          rewrite mapC_get_works in *;
+          repeat find_rewrite; repeat find_injection; simpl in *; eauto;
+          eexists; simpl in *; intuition; simpl in *; eauto; try congruence;
+          try find_apply_hyp_hyp;
+          destruct_conjs; ff;
+          try find_rewrite; repeat find_injection; ff
+
+
+          (*
+
+
+
+          try match goal with 
+          | H1 : In_set _ (manset_add _ _) |- _ => 
+            apply manadd_In_set in H1;
+          door; subst;
+          try (find_apply_hyp_hyp);
+            try (eapply manadd_In_add);
+            try (eapply in_set_add);
+          eauto
+          end;
+
+          try (apply manadd_In_add); try (subst; apply manadd_In_add)
+          *)
+
+
+          | 
+          assert (p1 <> p2) by (intros HC; rewrite <- eqb_leibniz in HC; congruence);
+          assert (HM : map_get e1 p2 = Some m2) by (eapply mapC_get_distinct_keys_from_set; eauto);
+          destruct (H _ _ HM); intuition; eauto;
+          erewrite mapC_get_distinct_keys; eauto
+
+
+
+        ]
+      end.
+
+      *)
+
+
+
+    +
+    find_apply_hyp_hyp.
+    destruct_conjs.
+    repeat find_rewrite.
+    find_injection.
+
+    destruct (eqb p p0) eqn:E. 
+      ++
+      rewrite eqb_leibniz in *; subst.
+      eexists.
+      split.
+        +++
+        eapply mapC_get_works.
+        +++
+        unfold manifest_subset in *.
+        intuition; try rewrite mapC_get_works in *; find_injection; eauto.
+
+      ++
+      assert (p <> p0) by (intros HC; rewrite <- eqb_leibniz in HC; congruence).
+      assert (HM : map_get e1 p0 = Some m1) by (eapply mapC_get_distinct_keys_from_set; eauto).
+      destruct (H _ _ HM); intuition; eauto.
+
+      erewrite mapC_get_distinct_keys; eauto.
+
+    +
+
+    find_apply_hyp_hyp.
+    destruct_conjs.
+    repeat find_rewrite.
+    congruence.
+     
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
 
 
     try match goal with 

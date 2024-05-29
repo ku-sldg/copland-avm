@@ -47,6 +47,7 @@ Definition empty_PolicyT : PolicyT := [].
     my_abstract_plc   : Plc ; 
 
     asps              : manifest_set ASP_ID; (* list ASP_ID ; *)
+    asps_external     : manifest_set ASP_ID;
     appraisal_asps    : manifest_set (Plc * ASP_ID) ;
     uuidPlcs          : manifest_set Plc ;
     pubKeyPlcs        : manifest_set Plc ;
@@ -58,6 +59,7 @@ Definition empty_PolicyT : PolicyT := [].
   Definition empty_Manifest : Manifest :=
     Build_Manifest 
       empty_Manifest_Plc 
+      manifest_set_empty
       manifest_set_empty
       manifest_set_empty
       manifest_set_empty
@@ -87,6 +89,8 @@ Definition empty_PolicyT : PolicyT := [].
 
     Local_Plcs        : MapD Plc UUID ;
     Local_PubKeys     : MapD Plc PublicKey ;
+
+    External_ASPS : MapD ASP_ID UUID ;
   }.
 
 Record AM_Config : Type := 
