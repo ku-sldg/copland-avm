@@ -1093,10 +1093,86 @@ Defined.
   *)
    
   - (* asp case *)
-    destruct a;
-      try destruct a;
-      ff; try tauto;
-      try (wrap_ccp_anno; ff).
+    destruct a.
+    +
+    ff;
+    try destruct a;
+    wrap_ccp_anno;
+    ff.
+    +
+    ff;
+    try destruct a;
+    wrap_ccp_anno;
+    ff.
+    +
+    ff.
+    ff.
+    monad_unfold.
+    ff.
+    invc H.
+    ff.
+    ff.
+    destruct a.
+    monad_unfold.
+    ff.
+    invc H0.
+    ff.
+    monad_unfold.
+    repeat ff.
+    ff.
+    monad_unfold.
+    invc H0.
+    repeat ff.
+    monad_unfold.
+    repeat ff.
+
+    +
+    ff.
+    ff.
+    monad_unfold.
+    ff.
+    invc H.
+    ff.
+    ff.
+
+    monad_unfold.
+    ff.
+    invc H0.
+    ff.
+    monad_unfold.
+    repeat ff.
+
+    +
+    ff.
+    ff.
+    monad_unfold.
+    ff.
+    invc H.
+    ff.
+    ff.
+
+    monad_unfold.
+    ff.
+    invc H0.
+    ff.
+    monad_unfold.
+    repeat ff.
+
+    +
+    ff.
+    ff.
+    monad_unfold.
+    ff.
+    invc H.
+    ff.
+    ff.
+
+    monad_unfold.
+    ff.
+    invc H0.
+    ff.
+    monad_unfold.
+    repeat ff.
   
   - (* at case *)
   repeat ff;
@@ -1428,11 +1504,14 @@ Proof.
           try tauto;
           try congruence).
     +
-      destruct f; 
+      destruct f;
+      monad_unfold;
+      ff;
         repeat Auto.ff;
         try (econstructor; eauto).
 
         ff.
+        repeat ff.
     
   - (* at case *)
     wrap_ccp.
@@ -1587,8 +1666,422 @@ Lemma st_trace_cumul'' : forall t m k e p v_full v_suffix res i ac,
 Proof.
   induction t; intros.
   - (* asp case *)
+    monad_unfold.
+    destruct a.
+    +
     wrap_ccp.
     ff; eauto; auto with *.
+
+    +
+    wrap_ccp;
+    ff; eauto; auto with *.
+    +
+    wrap_ccp;
+    ff; eauto; auto with *.
+    +
+    destruct a; destruct f.
+  ++
+    monad_unfold.
+    invc H.
+    monad_unfold.
+    ff.
+    repeat ff.
+    monad_unfold.
+    repeat ff.
+    +++
+    eauto.
+    auto with *.
+    invc H0.
+    ff.
+    monad_unfold.
+    ff.
+    ff.
+    eauto.
+    auto with *. 
+    ff.
+    monad_unfold.
+    unfold not in *.
+    congruence.
+    +++
+    eauto.
+    auto with *.
+    invc H0.
+    ff.
+    monad_unfold.
+    ff.
+    ff.
+    eauto.
+    auto with *. 
+    ff.
+    monad_unfold.
+    unfold not in *.
+    congruence.
+    +++
+    eauto.
+    auto with *.
+    invc H0.
+    ff.
+    monad_unfold.
+    ff.
+    ff.
+    eauto.
+    auto with *. 
+    ff.
+    monad_unfold.
+    unfold not in *.
+    congruence.
+    auto with *.
+    +++
+    eauto.
+    auto with *.
+    invc H0.
+    ff.
+    monad_unfold.
+    ff.
+    ff.
+    eauto.
+    auto with *. 
+    ff.
+    monad_unfold.
+    unfold not in *.
+    congruence.
+    +++
+    eauto.
+    auto with *.
+    invc H0.
+    ff.
+    monad_unfold.
+    ff.
+    ff.
+    eauto.
+    auto with *. 
+    ff.
+    monad_unfold.
+    unfold not in *.
+    auto with *.
+  ++
+
+  monad_unfold.
+  invc H.
+  monad_unfold.
+  ff.
+  repeat ff.
+  monad_unfold.
+  repeat ff.
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  auto with *.
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  auto with *.
+
+  ++
+  monad_unfold.
+  invc H.
+  monad_unfold.
+  ff.
+  repeat ff.
+  monad_unfold.
+  repeat ff.
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  auto with *.
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  auto with *.
+
+
+  ++
+  monad_unfold.
+  invc H.
+  monad_unfold.
+  ff.
+  repeat ff.
+  monad_unfold.
+  repeat ff.
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  auto with *.
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  auto with *.
+
+  ++
+  monad_unfold.
+  invc H.
+  monad_unfold.
+  ff.
+  repeat ff.
+  monad_unfold.
+  repeat ff.
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  auto with *.
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  auto with *.
+
+
   - (* at case *)
     wrap_ccp.
     repeat Auto.ff.
@@ -2106,8 +2599,26 @@ Proof.
     rewrite <- ccp_iff_cc in *.
 
     Auto.ff.
-    destruct a;
+    destruct a.
+
+    +
       (try dd; eauto); try (repeat Auto.ff).
+    +
+    (try dd; eauto); try (repeat Auto.ff).
+    +
+      repeat dd;
+      repeat ff; eauto;
+      monad_unfold; ff.
+    +
+    repeat monad_unfold;
+    ff.
+    +
+    repeat monad_unfold;
+    ff.
+    +
+    repeat monad_unfold;
+    ff.
+
 
       
 

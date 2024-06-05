@@ -19,6 +19,7 @@ Import ListNotations.
 Definition lib_supports_manifest (al : AM_Library) (am : Manifest) : Prop :=
   (forall (a : ASP_ID), In_set a am.(asps) -> exists cb, Maps.map_get al.(Local_ASPS) a = Some cb) /\
   (forall (up : Plc), In_set up am.(uuidPlcs) -> exists b, Maps.map_get al.(Local_Plcs) up = Some b) /\
+  (forall (a : ASP_ID), In_set a am.(asps_external) -> exists b, Maps.map_get al.(External_ASPS) a = Some b) /\
   (forall (pkp : Plc), In_set pkp am.(pubKeyPlcs) -> exists b, Maps.map_get al.(Local_PubKeys) pkp = Some b) /\
   (forall (a : (Plc*ASP_ID)), In_set a am.(appraisal_asps) -> 
     exists cb, Maps.map_get al.(Local_Appraisal_ASPS) a = Some cb).
@@ -28,6 +29,7 @@ Ltac unfolds :=
   repeat unfold manifest_generator, manifest_compiler, generate_ASP_dispatcher, 
     generate_Plc_dispatcher, generate_PubKey_dispatcher,
     generate_UUID_dispatcher, lib_supports_manifest, aspid_manifest_update,
+    generate_external_ASP_dispatcher,
     sig_params, hsh_params, enc_params in *;
   simpl in *; 
   repeat (match goal with
@@ -106,15 +108,17 @@ Proof.
   induction absMan; simpl in *; intuition;
   destruct res; eauto; destruct d; eauto.
   destruct amConf; simpl in *;
-  destruct amLib; simpl in *.
+  destruct amLib; simpl in *;
+  try do_inv_amlib.
   unfold manifest_compiler in H0; repeat find_injection;
   simpl in *.
   repeat break_match; try congruence.
   unfold lib_supports_manifest in *; simpl in *;
+  try do_inv_amlib;
   intuition.
   pose proof (H0 _ H1).
-  assert ((fun x : ASP_ID =>
-             if in_dec_set x asps
+  assert ((fun x0 : ASP_ID =>
+             if in_dec_set x0 asps
              then true
              else false) x = true).
   repeat break_match; eauto.
@@ -125,16 +129,15 @@ Proof.
   | H1 : exists _, _,
     H2 : (fun _ => _) _ = _
   |- _ => 
-      pose proof (filter_resolver _ _ ((fun x : ASP_ID =>
-      if in_dec_set x asps
+      pose proof (filter_resolver _ _ ((fun x0 : ASP_ID =>
+      if in_dec_set x0 asps
       then true
       else false)) H1 H2) as HH
   end.
   destruct HH as [xx].
-  
-  assert (Some xx = None).
-  jkjke'.
-  congruence.
+
+  unfolds.
+  ff.
 Qed.
 
 Lemma never_change_am_conf : forall t st res st',
@@ -161,6 +164,9 @@ Definition supports_am (ac1 ac2 : AM_Config) : Prop :=
   (forall p, (forall res, 
       ac1.(plcCb) p = resultC res ->
       ac2.(plcCb) p = resultC res)) /\
+  (forall i, (forall res, 
+      ac1.(ext_aspCb) i = resultC res ->
+      ac2.(ext_aspCb) i = resultC res)) /\
   (forall aid l targ targid p' ev ev' errStr,
       ac1.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC (Runtime errStr) ->
       ac2.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC (Runtime errStr)) /\
@@ -169,7 +175,10 @@ Definition supports_am (ac1 ac2 : AM_Config) : Prop :=
       ac2.(pubKeyCb) p = errC (Runtime errStr)) /\
   (forall p errStr, 
       ac1.(plcCb) p = errC (Runtime errStr) ->
-      ac2.(plcCb) p = errC (Runtime errStr)).
+      ac2.(plcCb) p = errC (Runtime errStr)) /\
+  (forall p errStr, 
+      ac1.(ext_aspCb) p = errC (Runtime errStr) ->
+      ac2.(ext_aspCb) p = errC (Runtime errStr)).
 
 Theorem supports_am_refl : forall ac1,
   supports_am ac1 ac1.
@@ -189,6 +198,75 @@ Local Hint Resolve never_change_am_conf : core.
 Local Hint Resolve supports_am_refl : core.
 Local Hint Resolve supports_am_trans : core.
 
+
+
+Fixpoint am_config_support_exec (t : Term) 
+  (p : Plc) (ac : AM_Config) : Prop :=
+match t with
+| asp a =>
+    match a with
+    | NULL => True
+    | CPY => True
+    | SIG => 
+        (exists res, ac.(ext_aspCb) sig_aspid = resultC res)
+        \/
+        (
+        forall l targ targid p' ev ev',
+        ((exists res, 
+        ac.(aspCb) (asp_paramsC sig_aspid l targ targid) p' ev ev' = resultC res) \/ 
+        (exists errStr, ac.(aspCb) (asp_paramsC sig_aspid l targ targid) p' ev ev' = errC (Runtime errStr))))
+    | HSH =>
+        (exists res, ac.(ext_aspCb) hsh_aspid = resultC res) 
+        \/
+        (
+        forall l targ targid p' ev ev',
+        ((exists res, 
+        ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) p' ev ev' = resultC res) \/ 
+        (exists errStr, ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) p' ev ev' = errC (Runtime errStr))))
+    | ENC p =>
+        (exists res, ac.(ext_aspCb) enc_aspid = resultC res)
+        \/
+        (forall l targ targid p' ev ev',
+        ((exists res, 
+        ac.(aspCb) (asp_paramsC enc_aspid l targ targid) p' ev ev' = resultC res) \/ 
+        (exists errStr, ac.(aspCb) (asp_paramsC enc_aspid l targ targid) p' ev ev' = errC (Runtime errStr)))) /\
+        ((exists res, ac.(pubKeyCb) p = resultC res) \/ 
+        (exists errStr, ac.(pubKeyCb) p = errC (Runtime errStr)))
+    | ASPC _ _ (asp_paramsC aspid _ _ _) =>
+        (exists res, ac.(ext_aspCb) aspid = resultC res)
+        \/
+        (forall l targ targid p' ev ev',
+        ((exists res, 
+        ac.(aspCb) (asp_paramsC aspid l targ targid) p' ev ev' = resultC res) \/ 
+        (exists errStr, ac.(aspCb) (asp_paramsC aspid l targ targid) p' ev ev' = errC (Runtime errStr))))
+    end
+| att p' t' =>
+    ((exists res, ac.(plcCb) p' = resultC res) \/ 
+    (exists errStr, ac.(plcCb) p' = errC (Runtime errStr)))
+    (* /\ am_config_support_exec t' p' ac *)
+| lseq t1 t2 =>
+    exists ac1 ac2,
+    (am_config_support_exec t1 p ac1) /\
+    (am_config_support_exec t2 p ac2) /\
+    supports_am ac1 ac /\
+    supports_am ac2 ac
+| bseq _ t1 t2 =>
+    exists ac1 ac2,
+    (am_config_support_exec t1 p ac1) /\
+    (am_config_support_exec t2 p ac2) /\
+    supports_am ac1 ac /\
+    supports_am ac2 ac
+| bpar _ t1 t2 =>
+    exists ac1 ac2,
+    (am_config_support_exec t1 p ac1) /\
+    (am_config_support_exec t2 p ac2) /\
+    supports_am ac1 ac /\
+    supports_am ac2 ac
+end.
+
+
+(*
+
 Fixpoint am_config_support_exec (t : Term) 
     (p : Plc) (ac : AM_Config) : Prop :=
   match t with
@@ -200,23 +278,39 @@ Fixpoint am_config_support_exec (t : Term)
           forall l targ targid p' ev ev',
           ((exists res, 
           ac.(aspCb) (asp_paramsC sig_aspid l targ targid) p' ev ev' = resultC res) \/ 
+          (exists res, ac.(ext_aspCb) sig_aspid = resultC res) \/
           (exists errStr, ac.(aspCb) (asp_paramsC sig_aspid l targ targid) p' ev ev' = errC (Runtime errStr)))
       | HSH =>
           forall l targ targid p' ev ev',
           ((exists res, 
           ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) p' ev ev' = resultC res) \/ 
+          (exists res, ac.(ext_aspCb) hsh_aspid = resultC res) \/
           (exists errStr, ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) p' ev ev' = errC (Runtime errStr)))
       | ENC p =>
           (forall l targ targid p' ev ev',
           ((exists res, 
-          ac.(aspCb) (asp_paramsC enc_aspid l targ targid) p' ev ev' = resultC res) \/ 
-          (exists errStr, ac.(aspCb) (asp_paramsC enc_aspid l targ targid) p' ev ev' = errC (Runtime errStr)))) /\
+          ac.(aspCb) (asp_paramsC enc_aspid l targ targid) p' ev ev' = resultC res) 
+          /\
+          ((exists res, ac.(pubKeyCb) p = resultC res) \/ 
+          (exists errStr, ac.(pubKeyCb) p = errC (Runtime errStr))))
+          \/ 
+          (exists res, ac.(ext_aspCb) enc_aspid = resultC res)
+          \/ 
+          (exists errStr, ac.(aspCb) (asp_paramsC enc_aspid l targ targid) p' ev ev' = errC (Runtime errStr)))
+
+
+          (*  
+          \/
+          (exists res, ac.(ext_aspCb) enc_aspid = resultC res)) /\
           ((exists res, ac.(pubKeyCb) p = resultC res) \/ 
           (exists errStr, ac.(pubKeyCb) p = errC (Runtime errStr)))
+
+          *)
       | ASPC _ _ (asp_paramsC aspid _ _ _) =>
           (forall l targ targid p' ev ev',
           ((exists res, 
           ac.(aspCb) (asp_paramsC aspid l targ targid) p' ev ev' = resultC res) \/ 
+          (exists res, ac.(ext_aspCb) aspid = resultC res) \/
           (exists errStr, ac.(aspCb) (asp_paramsC aspid l targ targid) p' ev ev' = errC (Runtime errStr))))
       end
   | att p' t' =>
@@ -243,6 +337,8 @@ Fixpoint am_config_support_exec (t : Term)
       supports_am ac2 ac
   end.
 
+*)
+
 Theorem well_formed_am_config_impl_executable : forall t p amConf,
   am_config_support_exec t p amConf ->
   forall st,
@@ -252,6 +348,287 @@ Theorem well_formed_am_config_impl_executable : forall t p amConf,
   (exists st' errStr, 
     build_cvm (copland_compile t) st = (errC (dispatch_error (Runtime errStr)), st')).
 Proof.
+induction t; simpl in *; intuition; eauto.
+- destruct a;
+  try (simpl in *; monad_unfold; eauto; fail); (* NULL, CPY *)
+  subst; simpl in *; try rewrite eqb_refl in *;
+  repeat (
+    try break_match;
+    try monad_unfold;
+    try break_match
+    try find_injection;
+    try find_contradiction;
+    try find_injection;
+    (* repeat find_rewrite; *)
+    simpl in *; subst; intuition; 
+    eauto; try congruence);
+  unfold supports_am, sig_params, enc_params, hsh_params in *; intuition; 
+
+  try
+
+  match goal with
+  | H1 : forall _, _,
+    H2 : aspCb _ (asp_paramsC ?a ?l ?targ ?tid) ?p' ?ev ?ev' = _,
+    H3 : context[ aspCb _ _ _ _ _ = errC (Runtime _) -> _],
+    H4 : context[ aspCb _ _ _ _ _ = resultC _ -> _]
+    |- _ =>
+      let H := fresh "H" in
+      let H' := fresh "Hx" in
+      let H'' := fresh "Hx" in
+      let res := fresh "res" in
+      destruct (H1 l targ tid p' ev ev') as [H | H];
+      [
+        (* result side *)
+        destruct H as [res H''];
+        pose proof (H4 a l targ tid p' ev ev') as H';
+        erewrite H' in *; eauto; congruence
+        |
+        (* err side *)
+        destruct H as [errStr H''];
+        pose proof (H3 a l targ tid p' ev ev' errStr) as H';
+        intuition; find_rewrite; find_injection; eauto
+      ]
+  end.
+
+  admit.
+  admit.
+  admit.
+  admit.
+
+  (*
+
+  match goal with
+  | H1 : forall _, _,
+    H2 : aspCb _ (asp_paramsC ?a ?l ?targ ?tid) ?p' ?ev ?ev' = _,
+    H3 : context[ aspCb _ _ _ _ _ = errC (Runtime _) -> _],
+    H4 : context[ aspCb _ _ _ _ _ = resultC _ -> _]
+    |- _ =>
+      let H := fresh "H" in
+      let H' := fresh "Hx" in
+      let H'' := fresh "Hx" in
+      let res := fresh "res" in
+      destruct (H1 l targ tid p' ev ev') as [BLAH | [H | H]]; 
+      [
+        (* result side *)
+        destruct H as [res H''];
+        pose proof (H4 a l targ tid p' ev ev') as H';
+        erewrite H' in *; eauto; congruence
+        |
+        (* err side *)
+        destruct H as [errStr H''];
+        pose proof (H3 a l targ tid p' ev ev' errStr) as H';
+        intuition; find_rewrite; find_injection; eauto
+      ]
+  end.
+  *)
+
+- subst; simpl in *; try rewrite eqb_refl in *;
+  repeat (
+    unfold remote_session, doRemote_session', do_remote, check_cvm_policy in *;
+    try break_match;
+    try monad_unfold;
+    try break_match
+    try find_injection;
+    try find_contradiction;
+    try find_injection;
+    (* repeat find_rewrite; *)
+    simpl in *; subst; intuition; 
+    eauto; try congruence);
+  unfold supports_am in *; intuition.
+  +
+    destruct H0;
+    erewrite H2 in *; try congruence; eauto.
+- subst; simpl in *; try rewrite eqb_refl in *;
+  repeat (
+    unfold remote_session, doRemote_session', do_remote, check_cvm_policy in *;
+    try break_match;
+    try monad_unfold;
+    try break_match
+    try find_injection;
+    try find_contradiction;
+    try find_injection;
+    destruct_conjs;
+    (* repeat find_rewrite; *)
+    simpl in *; subst; intuition; 
+    destruct_conjs;
+    eauto; try congruence);
+  unfold supports_am in *; intuition;
+
+  erewrite H7 in *; try congruence;
+  try find_injection; eauto.
+
+  right.
+  repeat eexists.
+  jkjke.
+
+- subst; simpl in *; try rewrite eqb_refl in *;
+  repeat (
+    try break_match;
+    try monad_unfold;
+    try break_match
+    try find_injection;
+    try find_contradiction;
+    try find_injection;
+    (* repeat find_rewrite; *)
+    simpl in *; subst; intuition; 
+    eauto; try congruence);
+    match goal with
+    | H1 : exists _ _ : AM_Config, _
+      |- _ =>
+        let ac1 := fresh "ac" in
+        let ac2 := fresh "ac" in
+        let AS1 := fresh "AS" in
+        let AS2 := fresh "AS" in
+        let S1 := fresh "S" in
+        let S2 := fresh "S" in
+        destruct H1 as [ac1 [ac2 [AS1 [AS2 [S1 S2]]]]]
+        ;
+        match goal with
+        | H2 : build_cvm (copland_compile t1) ?st = _
+          |- _ =>
+            let A := fresh "A" in
+            assert (A : supports_am ac1 (st_AM_config st)); [ 
+              simpl in *; eauto
+              |
+              destruct (IHt1 p ac1 AS1 st A);
+              intuition; repeat find_rewrite;
+              repeat find_injection;
+              try congruence; eauto
+            ]
+        end;
+        match goal with
+        | H3 : build_cvm (copland_compile t2) ?st = _
+          |- _ =>
+            let A := fresh "A" in
+            assert (A : supports_am ac2 (st_AM_config st)); [ 
+              repeat find_eapply_lem_hyp never_change_am_conf;
+              repeat find_rewrite;
+              simpl in *; eauto
+              |
+              destruct (IHt2 p ac2 AS2 st A);
+              intuition; repeat find_rewrite;
+              repeat find_injection;
+              try congruence; eauto
+            ]
+        end
+    end. 
+- subst; simpl in *; try rewrite eqb_refl in *;
+  repeat (
+    try break_match;
+    try monad_unfold;
+    try break_match
+    try find_injection;
+    try find_contradiction;
+    try find_injection;
+    (* repeat find_rewrite; *)
+    simpl in *; subst; intuition; 
+    eauto; try congruence);
+  match goal with
+  | H1 : exists _ _ : AM_Config, _
+    |- _ =>
+      let ac1 := fresh "ac" in
+      let ac2 := fresh "ac" in
+      let AS1 := fresh "AS" in
+      let AS2 := fresh "AS" in
+      let S1 := fresh "S" in
+      let S2 := fresh "S" in
+      destruct H1 as [ac1 [ac2 [AS1 [AS2 [S1 S2]]]]]
+      ;
+      match goal with
+      | H2 : build_cvm (copland_compile t1) ?st = _
+        |- _ =>
+          let A := fresh "A" in
+          assert (A : supports_am ac1 (st_AM_config st)); [ 
+            simpl in *; eauto
+            |
+            destruct (IHt1 p ac1 AS1 st A);
+            intuition; repeat find_rewrite;
+            repeat find_injection;
+            try congruence; eauto
+          ]
+      end;
+      match goal with
+      | H3 : build_cvm (copland_compile t2) ?st = _
+        |- _ =>
+          let A := fresh "A" in
+          assert (A : supports_am ac2 (st_AM_config st)); [ 
+            repeat find_eapply_lem_hyp never_change_am_conf;
+            repeat find_rewrite;
+            simpl in *; eauto
+            |
+            destruct (IHt2 p ac2 AS2 st A);
+            intuition; repeat find_rewrite;
+            repeat find_injection;
+            try congruence; eauto
+          ]
+      end;
+      repeat find_rewrite; eauto
+  end.
+- subst; simpl in *; try rewrite eqb_refl in *;
+  repeat (
+    try break_match;
+    try monad_unfold;
+    try break_match
+    try find_injection;
+    try find_contradiction;
+    try find_injection;
+    (* repeat find_rewrite; *)
+    simpl in *; subst; intuition; 
+    eauto; try congruence);
+  match goal with
+  | H1 : exists _ _ : AM_Config, _
+    |- _ =>
+      let ac1 := fresh "ac" in
+      let ac2 := fresh "ac" in
+      let AS1 := fresh "AS" in
+      let AS2 := fresh "AS" in
+      let S1 := fresh "S" in
+      let S2 := fresh "S" in
+      destruct H1 as [ac1 [ac2 [AS1 [AS2 [S1 S2]]]]]
+      ;
+      match goal with
+      | H2 : build_cvm (copland_compile t1) ?st = _
+        |- _ =>
+          let A := fresh "A" in
+          assert (A : supports_am ac1 (st_AM_config st)); [ 
+            simpl in *; eauto
+            |
+            destruct (IHt1 p ac1 AS1 st A);
+            intuition; repeat find_rewrite;
+            repeat find_injection;
+            try congruence; eauto
+          ]
+      end;
+      match goal with
+      | H3 : build_cvm (copland_compile t2) ?st = _
+        |- _ =>
+          let A := fresh "A" in
+          assert (A : supports_am ac2 (st_AM_config st)); [ 
+            repeat find_eapply_lem_hyp never_change_am_conf;
+            repeat find_rewrite;
+            simpl in *; eauto
+            |
+            destruct (IHt2 p ac2 AS2 st A);
+            intuition; repeat find_rewrite;
+            repeat find_injection;
+            try congruence; eauto
+          ]
+      end;
+      repeat find_rewrite; eauto
+  end.
+(* Unshelve. (* Weirdly, we have trivial existentials left *)
+all: try (eapply default_bs); try (eapply default_UUID). *)
+Qed.
+
+
+
+
+
+
+
+
+
+(*
   induction t; simpl in *; intuition; eauto.
   - destruct a;
     try (simpl in *; monad_unfold; eauto; fail); (* NULL, CPY *)
@@ -268,7 +645,34 @@ Proof.
       eauto; try congruence);
     unfold supports_am, sig_params, enc_params, hsh_params in *; intuition;
 
+    (*
 
+  +
+
+    destruct (H l p0 t (st_pl st) (encodeEvRaw (get_bits (st_ev st))) (get_bits (st_ev st))).
+
+  ++
+      destruct H7 as [res H77].
+      pose proof (H1 a0 l p0 t (st_pl st) (encodeEvRaw (get_bits (st_ev st))) (get_bits (st_ev st))).
+      erewrite H7 in *; eauto; congruence.
+  ++
+    destruct H7 as [H'' | H'''].
+
+    +++
+    admit.
+
+    +++
+
+
+    destruct H''' as [errStr H''].
+    pose proof (H4 a0 l p0 t (st_pl st) (encodeEvRaw (get_bits (st_ev st))) (get_bits (st_ev st)) errStr);
+    intuition; find_rewrite; try find_injection; eauto.
+
+  +
+
+  *)
+
+try
     match goal with
     | H1 : forall _, _,
       H2 : aspCb _ (asp_paramsC ?a ?l ?targ ?tid) ?p' ?ev ?ev' = _,
@@ -279,13 +683,16 @@ Proof.
         let H' := fresh "Hx" in
         let H'' := fresh "Hx" in
         let res := fresh "res" in
-        destruct (H1 l targ tid p' ev ev') as [H | H]
-        ; 
+        destruct (H1 l targ tid p' ev ev') as [H | [HHH | H]];
+        
         [
           (* result side *)
           destruct H as [res H''];
           pose proof (H4 a l targ tid p' ev ev') as H';
           erewrite H' in *; eauto; congruence
+          |
+
+          admit 
           |
           (* err side *)
           destruct H as [errStr H''];
@@ -293,6 +700,28 @@ Proof.
           intuition; find_rewrite; find_injection; eauto
         ]
     end.
+
+
+    destruct (H enc_aspargs  p0 enc_targid (st_pl st) 
+                                 (encodeEvRaw (get_bits (st_ev st)))
+                                 (get_bits (st_ev st))) as [HH | [HHH | HH]].
+
+    ++
+    destruct_conjs.
+    pose proof (H1 enc_aspid enc_aspargs p0 enc_targid (st_pl st) 
+    (encodeEvRaw (get_bits (st_ev st)))
+    (get_bits (st_ev st))).
+    erewrite H11 in *; eauto; congruence.
+    ++
+    destruct HHH as [errStr H''].
+    admit.
+    ++
+      destruct HH as [errStr H''].
+      pose proof (H4 enc_aspid enc_aspargs p0 enc_targid (st_pl st) 
+      (encodeEvRaw (get_bits (st_ev st))) (get_bits (st_ev st)) errStr).
+      intuition; find_rewrite; find_injection; eauto.
+
+  
 
   - subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
@@ -331,7 +760,7 @@ Proof.
 
     right.
     repeat eexists.
-    erewrite H6.
+    rewrite H8.
     eauto.
   - subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
@@ -490,7 +919,19 @@ Proof.
     end.
   (* Unshelve. (* Weirdly, we have trivial existentials left *)
   all: try (eapply default_bs); try (eapply default_UUID). *)
-Qed.
+Admitted.
+*)
+
+
+
+
+
+
+
+
+
+
+
 
 Definition manifest_support_am_config (m : Manifest) (ac : AM_Config) : Prop :=
   (forall a, In_set a (m.(asps)) -> 

@@ -99,6 +99,7 @@ Record AM_Config : Type :=
     am_clone_addr : UUID ;
     aspCb : (ASPCallback DispatcherErrors) ;
     app_aspCb : (ASPCallback DispatcherErrors) ;
+    ext_aspCb : PlcCallback ;
     plcCb : PlcCallback ;
     pubKeyCb : PubKeyCallback ;
     uuidCb : UUIDCallback ;
@@ -113,6 +114,7 @@ Definition empty_aspCb (ps:ASP_PARAMS) (p:Plc) (bs:BS) (rawev:RawEv) : ResultT B
     default_uuid
     empty_aspCb
     empty_aspCb
+    (fun x => errC Unavailable)
     (fun x => errC Unavailable)
     (fun x => errC Unavailable)
     (fun x => errC Unavailable).

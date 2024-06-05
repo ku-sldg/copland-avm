@@ -386,6 +386,13 @@ Ltac do_inv_manifest :=
      |- _] => invc H
   end.
 
+Ltac do_inv_amlib :=
+  match goal with
+  | [H: {| absMan := _ |} = {| absMan := _ |}
+
+      |- _] => invc H
+  end.
+
 
 Ltac ddd :=
   match goal with

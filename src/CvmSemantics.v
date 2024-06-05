@@ -160,39 +160,84 @@ Proof.
   induction t1; intros.
   -
     rewrite <- ccp_iff_cc in *.
-    destruct a; (* asp *)
-      try destruct a; (* asp params *)
-      ff;
+    destruct a.
+    +
+    monad_unfold.
+    ff.
+    inv_wfec.
+    econstructor.
+    ff.
+    +
+    monad_unfold.
+    ff.
+    econstructor.
+    ff.
+    +
+    monad_unfold.
+    ff.
+    +
+    monad_unfold.
+    destruct a; monad_unfold; ff.
+    ++
+    ff.
+    destruct f; ff;
+
+    monad_unfold;
+    cbv;
+    ff;
+    econstructor; ff.
+
+    inv_wfec.
+    ff.
+
+    ++
+    ff.
+    destruct f; ff;
+
+    monad_unfold;
+    cbv;
+    ff;
+    econstructor; ff.
+
+    inv_wfec.
+    ff.
+
+    (*
+
+    (* asp *)
+      try destruct a;
+      monad_unfold; (* asp params *)
+      Auto.ff;
       inv_wfec;
       try (
           econstructor;
-          ff;
+          Auto.ff;
           try tauto;
           try congruence).
     +
       destruct f.
       ++
-        ff.
-        econstructor.
+        ff;
+        econstructor;
+        repeat ff.
+      ++
+        ff;
+        econstructor;
         ff.
       ++
-        ff.
-        econstructor.
-        ff.
-      ++
-        ff.
-        econstructor.
-        ff.        
+        ff;
+        econstructor;
+        ff;        
         congruence.
       ++
-        ff.
-        econstructor.
+        ff;
+        econstructor;
         ff.
       ++
+        ff;
+        econstructor;
         ff.
-        econstructor.
-        ff.
-        
+        *)
         
   -
     wrap_ccp.
@@ -364,18 +409,14 @@ Defined.
     +
       wrap_ccp_anno; ff.
     +
-      destruct s.
-      ++
-        wrap_ccp_anno; repeat Auto.ff.
-      ++
-        wrap_ccp_anno; repeat Auto.ff.
-    +
-      wrap_ccp_anno; repeat Auto.ff.
-    +
-      wrap_ccp_anno; repeat Auto.ff.
-    +
-      wrap_ccp_anno; repeat Auto.ff.
-      
+      destruct s;
+    
+        destruct f; invc H0; monad_simp; repeat ff. 
+    + invc H0; monad_simp; repeat ff.
+    
+    + invc H0; monad_simp; repeat ff.
+
+    + invc H0; monad_simp; repeat ff.
   
   -
     repeat Auto.ff.
@@ -603,76 +644,165 @@ Proof.
   - (* aasp case *)
     wrap_ccp_anno.
     
-    destruct a; invc annoParPH; ff;
-    wrap_ccp_anno;
-    
+    destruct a; 
+    repeat (monad_unfold; invc annoParPH; ff;
+    monad_unfold
+    wrap_ccp_anno).
+
+
+    +
+
     try (econstructor; econstructor; reflexivity).
-    destruct f.
+
+    invc H'. 
+    ff.
+    try (econstructor; econstructor; reflexivity).
+
     +
-      ff.
-      ++
-        wrap_ccp_anno.
-        repeat Auto.ff.
-        try (econstructor; econstructor; reflexivity).
-      ++
-         wrap_ccp_anno.
-         repeat Auto.ff.
-         try (econstructor; econstructor; reflexivity).
+    try (econstructor; econstructor; reflexivity).
+
+    invc H'. 
+    ff.
+    try (econstructor; econstructor; reflexivity).
+
     +
-      ff.
+      destruct f.
       ++
-        wrap_ccp_anno.
-        repeat Auto.ff.
-        try (econstructor; econstructor; reflexivity).
+      repeat ff; subst. 
+      +++
+      invc H'.
+      monad_simp.
+      repeat ff.
+      try (econstructor; econstructor; reflexivity).
+      try (econstructor; econstructor; reflexivity).
+      +++
+      invc H'.
+      monad_simp.
+      repeat ff.
+      try (econstructor; econstructor; reflexivity).
+      try (econstructor; econstructor; reflexivity). 
+
       ++
-         wrap_ccp_anno.
-         repeat Auto.ff.
-         try (econstructor; econstructor; reflexivity).
+      repeat ff; subst. 
+      +++
+      invc H'.
+      monad_simp.
+      repeat ff.
+      try (econstructor; econstructor; reflexivity).
+      try (econstructor; econstructor; reflexivity).
+      +++
+      invc H'.
+      monad_simp.
+      repeat ff.
+      try (econstructor; econstructor; reflexivity).
+      try (econstructor; econstructor; reflexivity). 
+
+    ++
+    repeat ff; subst. 
+    +++
+    invc H'.
+    monad_simp.
+    repeat ff.
+    try (econstructor; econstructor; reflexivity).
+    try (econstructor; econstructor; reflexivity).
+    +++
+    invc H'.
+    monad_simp.
+    repeat ff.
+    try (econstructor; econstructor; reflexivity).
+    try (econstructor; econstructor; reflexivity). 
+
+    ++
+
+    repeat ff; subst. 
+    +++
+    invc H'.
+    monad_simp.
+    repeat ff.
+    try (econstructor; econstructor; reflexivity).
+    try (econstructor; econstructor; reflexivity).
+    +++
+    invc H'.
+    monad_simp.
+    repeat ff.
+    try (econstructor; econstructor; reflexivity).
+    try (econstructor; econstructor; reflexivity). 
+
+
+    ++
+    repeat ff; subst. 
+    +++
+    invc H'.
+    monad_simp.
+    repeat ff.
+    try (econstructor; econstructor; reflexivity).
+    try (econstructor; econstructor; reflexivity).
+    +++
+    invc H'.
+    monad_simp.
+    repeat ff.
+    try (econstructor; econstructor; reflexivity).
+    try (econstructor; econstructor; reflexivity). 
+
     +
-      ff.
-      ++
-        wrap_ccp_anno.
-        repeat Auto.ff.
-        try (econstructor; econstructor; reflexivity).
-      ++
-         wrap_ccp_anno.
-         repeat Auto.ff.
-         try (econstructor; econstructor; reflexivity).
+    invc H'.
+    monad_simp.
+    repeat ff.
+    auto with *. 
+
+    try (econstructor; econstructor; reflexivity).
+
+    try (econstructor; econstructor; reflexivity).
+
     +
-      ff.
-       ++
-        wrap_ccp_anno.
-        repeat Auto.ff.
-        try (econstructor; econstructor; reflexivity).
-      ++
-         wrap_ccp_anno.
-         repeat Auto.ff.
-         try (econstructor; econstructor; reflexivity).
+    invc H'.
+    monad_simp.
+    repeat ff.
+    auto with *. 
+
+    try (econstructor; econstructor; reflexivity).
+
+    try (econstructor; econstructor; reflexivity).
+
     +
-      ff.
-      ++
-         wrap_ccp_anno.
-         repeat Auto.ff.
-        try (econstructor; econstructor; reflexivity).
-      ++
-         wrap_ccp_anno.
-         repeat Auto.ff.
-         try (econstructor; econstructor; reflexivity).
-    +
-         wrap_ccp_anno.
-         repeat Auto.ff.
-        try (econstructor; econstructor; reflexivity).
-   +
-    wrap_ccp_anno.
-    repeat Auto.ff.
-   try (econstructor; econstructor; reflexivity).
-   +
-   wrap_ccp_anno.
-         repeat Auto.ff.
-        try (econstructor; econstructor; reflexivity).
-    
-      
-      
+    invc H'.
+    monad_simp.
+    repeat ff.
+    auto with *. 
+
+    try (econstructor; econstructor; reflexivity).
+
+    try (econstructor; econstructor; reflexivity).
+
+(*
+
+    destruct f;
+    repeat (
+      ff;
+      repeat (
+        wrap_ccp_anno;
+        repeat Auto.ff;
+        try (econstructor; econstructor; reflexivity))).
+
+        ff;
+        repeat (
+          wrap_ccp_anno;
+          repeat Auto.ff;
+          try (econstructor; econstructor; reflexivity)).
+
+          ff;
+          repeat (
+            wrap_ccp_anno;
+            repeat Auto.ff;
+            try (econstructor; econstructor; reflexivity)).
+
+            ff;
+      repeat (
+        wrap_ccp_anno;
+        repeat Auto.ff;
+        try (econstructor; econstructor; reflexivity)).
+
+  *)
       
     
   - (* aatt case *)
@@ -1539,17 +1669,177 @@ Proof.
   induction t; intros.
   - (* asp case *)
     wrap_ccp_anno;
-    repeat Auto.ff;
-    destruct a; invc H; repeat Auto.ff;
-      wrap_ccp_anno;
-      repeat Auto.ff;
-      try destruct s; wrap_ccp_anno;
-      try destruct f;
-      try destruct H1;
-      subst;
-      try solve_by_inversion;
-    
-      try (econstructor; econstructor; reflexivity).
+    repeat Auto.ff.
+    destruct a; invc H; repeat Auto.ff.
+
+    +
+    invc H0.
+    monad_simp.
+    ff.
+    door; ff.
+    +
+    invc H0.
+    monad_simp.
+    ff.
+    door; ff.
+    +
+    invc H0.
+    destruct f.
+    ++
+    monad_simp;
+    repeat ff.
+    +++
+    rewrite <- H2 in *.
+    simpl in *.
+    door; ff.
+    +++
+    rewrite <- H2 in *.
+    simpl in *.
+    door; ff.
+    ++
+    monad_simp;
+    repeat ff.
+    +++
+    rewrite <- H2 in *.
+    simpl in *.
+    door; ff.
+    +++
+    rewrite <- H2 in *.
+    simpl in *.
+    door; ff.
+
+    ++
+    monad_simp;
+    repeat ff.
+    +++
+    rewrite <- H2 in *.
+    simpl in *.
+    door; ff.
+    +++
+    rewrite <- H2 in *.
+    simpl in *.
+    door; ff.
+
+    ++
+    monad_simp;
+    repeat ff.
+    +++
+    rewrite <- H2 in *.
+    simpl in *.
+    door; ff.
+    +++
+    rewrite <- H2 in *.
+    simpl in *.
+    door; ff.
+
+    ++
+    monad_simp;
+    repeat ff.
+    +++
+    rewrite <- H2 in *.
+    simpl in *.
+    door; ff.
+    +++
+    rewrite <- H2 in *.
+    simpl in *.
+    door; ff.
+
++
+invc H0.
+destruct f.
+++
+monad_simp;
+repeat ff.
++++
+rewrite <- H2 in *.
+simpl in *.
+door; ff.
++++
+rewrite <- H2 in *.
+simpl in *.
+door; ff.
+++
+monad_simp;
+repeat ff.
++++
+rewrite <- H2 in *.
+simpl in *.
+door; ff.
++++
+rewrite <- H2 in *.
+simpl in *.
+door; ff.
+
+++
+monad_simp;
+repeat ff.
++++
+rewrite <- H2 in *.
+simpl in *.
+door; ff.
++++
+rewrite <- H2 in *.
+simpl in *.
+door; ff.
+
+++
+monad_simp;
+repeat ff.
++++
+rewrite <- H2 in *.
+simpl in *.
+door; ff.
++++
+rewrite <- H2 in *.
+simpl in *.
+door; ff.
+
+++
+monad_simp;
+repeat ff.
++++
+rewrite <- H2 in *.
+simpl in *.
+door; ff.
++++
+rewrite <- H2 in *.
+simpl in *.
+door; ff.
+
+
++
+invc H0.
+monad_simp.
+ff.
+rewrite <- H2 in *.
+simpl in *.
+door; ff.
+rewrite <- H2 in *.
+simpl in *.
+door; ff.
+
++
+invc H0.
+monad_simp.
+ff.
+rewrite <- H2 in *.
+simpl in *.
+door; ff.
+rewrite <- H2 in *.
+simpl in *.
+door; ff.
+
++
+invc H0.
+monad_simp.
+ff.
+rewrite <- H2 in *.
+simpl in *.
+door; ff.
+rewrite <- H2 in *.
+simpl in *.
+door; ff.
+
   -
     wrap_ccp_anno.
     ff.

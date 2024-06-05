@@ -12,7 +12,7 @@
  *)
 
 Require Import Term_Defs ConcreteEvidence ErrorStMonad_Coq 
-  Manifest Manifest_Admits Cvm_St StringT.
+  Manifest Manifest_Set Manifest_Admits Cvm_St StringT.
 
 
 Require Import List.
@@ -23,11 +23,41 @@ Import ListNotations.
 Definition encodeEvRaw(e:RawEv): BS.
 Admitted.
 
+(*
+Inductive ASP_PARAMS: Set :=
+| asp_paramsC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP_PARAMS.
+*)
+
+Definition get_asp_params_id (params:ASP_PARAMS) : ASP_ID := 
+  match params with
+  | asp_paramsC i _ _ _ => i
+  end.
+
+Definition doAsp_uuid (uuid:UUID) (ev:RawEv) : ResultT BS CallBackErrors.
+Admitted.
+
+
+
 (** * Stub for invoking external ASP procedures.  
       Extracted code should not need to use the Plc or Event_ID parameters 
       (those can be erased upon extraction). *)
 Definition do_asp (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) (ac : AM_Config) : ResultT BS DispatcherErrors :=
-  ac.(aspCb) params mpl (encodeEvRaw e) e.
+  let m := absMan ac in 
+  let ext_asps := asps_external m in 
+  let i := get_asp_params_id params in
+  let in_exts := in_dec_set i ext_asps in 
+    if (in_exts)
+    then ( let asp_uuid_res := ac.(ext_aspCb) i in 
+            match asp_uuid_res with 
+            | resultC asp_uuid => 
+              match doAsp_uuid asp_uuid e with
+              | resultC v => resultC v
+              | errC (messageLift msg) => errC (Runtime msg)
+              end 
+            | errC e => errC e 
+            end)
+
+    else (ac.(aspCb) params mpl (encodeEvRaw e) e).
 
 (*
 (** * Stub for completing a remote communication session with an external AM. *)
