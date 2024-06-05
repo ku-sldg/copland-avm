@@ -69,8 +69,26 @@ Fixpoint am_config_support_exec_app (e : Evidence) (ac : AM_Config) : Prop :=
             (
             ( exists res, ac.(app_aspCb) ps p bs ls = resultC res) \/
               (exists errStr, ac.(app_aspCb) ps p bs ls = errC (Runtime errStr))) /\ 
+              (
+                match ps with
+                | asp_paramsC i _ _ _ => 
+    
+                if (eqb i sig_aspid)
+                then (
+                    ((exists res, 
+                     ac.(pubKeyCb) p = resultC res) \/ 
+                      (exists errStr, ac.(pubKeyCb) p = errC (Runtime errStr)))
+                )
+                else True
+    
+                end
+              )
+              /\
+              am_config_support_exec_app e' ac
 
+              (*
             am_config_support_exec_app e' ac
+            *)
         | KEEP => 
             am_config_support_exec_app e' ac
         | _ => True
@@ -545,7 +563,7 @@ Proof.
   + (* EXTD case *)
     ff.
 
-    assert (st = a0).
+    assert (st = a).
     {
       eapply peel_bs_am_immut; eauto.
     }
@@ -560,6 +578,13 @@ Proof.
     repeat break_let.
     invc Heqp2.
 
+    assert (a0 = sig_aspid).
+    {
+      eapply eqb_leibniz.
+      eassumption.
+    }
+    subst.
+
     break_match.
     ++ (* check_asp_EXTD error *)
       ff.
@@ -567,13 +592,13 @@ Proof.
 
       specialize H with (bs:= b) (ls:=r0).
       destruct_conjs.
-      door.
+      destruct H.
       +++
         ff.
         unfold supports_am_app in *.
         destruct_conjs.
-        destruct a.
-        specialize H5 with (aid:=a) (l:=l) (targ:=p0) (targid:=t) (p':=p) (ev:=b) (ev':=r0).
+        destruct a1.
+        specialize H5 with (aid:=sig_aspid) (l:=l) (targ:=p0) (targid:=t) (p':=p) (ev:=b) (ev':=r0).
         find_apply_hyp_hyp.
         find_rewrite.
         solve_by_inversion.
@@ -581,8 +606,8 @@ Proof.
       ff.
       unfold supports_am_app in *.
       destruct_conjs.
-      destruct a.
-      specialize H1 with (aid:=a) (l:=l) (targ:=p0) (targid:=t) (p':=p) (ev:=b) (ev':=r0).
+      destruct a1.
+      specialize H5 with (aid:=sig_aspid) (l:=l) (targ:=p0) (targid:=t) (p':=p) (ev:=b) (ev':=r0).
       find_apply_hyp_hyp.
       find_rewrite.
       ff.
@@ -597,6 +622,13 @@ Proof.
       assert (a0 = a2).
       {
         ff.
+        symmetry.
+        eapply gen_appraise_AM_immut.
+        eauto.
+
+        symmetry.
+        eapply gen_appraise_AM_immut.
+        eauto.
       }
       subst.
 
@@ -623,15 +655,139 @@ Proof.
       eassumption.
 
       destruct_conjs.
-      destruct H5.
+      destruct H7.
       +++
         find_rewrite.
         ff.
+        find_rewrite.
+        eauto.
         eauto.
       +++
       find_rewrite.
       ff.
+      ff.
       eauto.
+
+      + (* EXTD case, aspid <> sig_aspid *)
+
+      ff.
+    
+      assert (st = a).
+      {
+        eapply peel_bs_am_immut; eauto.
+      }
+      subst.
+    
+      assert (exists res, r = resultC res).
+      {
+        eapply peel_bs_am_works; eauto; lia.
+      }
+      destruct_conjs.
+      subst.
+      repeat break_let.
+      invc Heqp2.
+    
+      (*
+      assert (a0 = sig_aspid).
+      {
+        admit.
+      }
+      subst.
+    
+      *)
+    
+    
+    
+    
+      break_match.
+      ++ (* check_asp_EXTD error *)
+        ff.
+        unfold check_asp_EXTD in *.
+    
+        specialize H with (bs:= b) (ls:=r0).
+        destruct_conjs.
+        destruct H; destruct_conjs.
+    
+        +++
+          ff.
+          unfold supports_am_app in *.
+          destruct_conjs.
+          destruct a1.
+          specialize H6 with (aid:=sig_aspid) (l:=l) (targ:=p0) (targid:=t) (p':=p) (ev:=b) (ev':=r0).
+          find_apply_hyp_hyp.
+          find_rewrite.
+          ff.
+    
+        +++
+        ff.
+        unfold supports_am_app in *.
+        destruct_conjs.
+        destruct a.
+        specialize H6 with (aid:=a0) (l:=l) (targ:=p0) (targid:=t) (p':=p) (ev:=b) (ev':=r0).
+        ff.
+        find_apply_hyp_hyp.
+        find_rewrite.
+        ff. 
+        unfold am_failm in *.
+        ff.
+        find_rewrite.
+        ff.
+        eauto.
+    
+    
+      ++ (* check_asp_EXTD succeeds *)
+        subst.
+        break_let.
+        invc Heqp0.
+    
+        (*
+        assert (a0 = a2).
+        {
+          ff.
+        }
+        subst.
+        *)
+    
+    
+        specialize H with (bs:=b) (ls:=r0).
+        destruct_conjs.
+        edestruct IHet.
+        eassumption.
+        2: {
+          eassumption.
+        }
+        2: {
+          eassumption.
+        }
+    
+        assert (et_size et = length r0).
+        {
+          assert (length ls = S (length r0)).
+          {
+            unfold peel_bs_am in *.
+            destruct ls; ff.
+          }
+          lia.
+        }
+        eassumption.
+    
+        destruct_conjs.
+        ff.
+        find_rewrite.
+        solve_by_inversion.
+        eauto.
+        ff.
+        find_rewrite.
+        ff.
+        destruct_conjs.
+        ff.
+        eauto.
+
+
+
+
+
+
   + (* KILL case *)
     repeat eexists.
     ff.
@@ -779,6 +935,10 @@ Fixpoint manifest_support_term_app (m : Manifest) (e : Evidence) : Prop :=
           match ps with 
           | asp_paramsC a _ _ _ => 
               In_set (p,a) m.(appraisal_asps) /\ 
+              (
+              if (eqb a sig_aspid)
+              then (In_set p m.(pubKeyPlcs)) 
+              else True ) /\
               manifest_support_term_app m e'
           end
         | ENCR => 
@@ -835,15 +995,29 @@ Proof.
       unfold manifest_subset.
       eauto.
       ff.  
-    +
+
+      + (* EXTD, aspid = sig_aspid *)
       subst.
       subst.
       destruct_conjs.
+      split; eauto.
+      split.
+      eauto.
+      eapply IHet with (m1:=m1).
+      unfold manifest_subset.
+      eauto.
+      ff.
+    + (* EXTD, aspid <> sig_aspid *)
+      subst.
+      subst.
+      destruct_conjs.
+      split; eauto.
       split; eauto.
       eapply IHet with (m1:=m1).
       unfold manifest_subset.
       eauto.
       ff.
+
     + 
     subst.
     destruct_conjs.
@@ -897,6 +1071,87 @@ Proof.
     ff.
     eapply in_set_add; eauto.
 
+
+    + (* EXTD, aspid = sig_aspid *)
+
+    unfold app_aspid_manifest_update.
+    break_let.
+    subst.
+    unfold manifest_subset in *.
+    simpl in *.
+    destruct_conjs.
+
+    edestruct IHet.
+    split; eauto.
+
+    destruct_conjs.
+
+    split.
+
+    intros.
+    eauto.
+
+    split; intros; eauto.
+
+    simpl in *.
+
+    find_apply_hyp_hyp.
+
+    eapply H5.
+    eapply in_set_add; eauto.
+
+    split; eauto.
+
+    split; eauto.
+
+    simpl in *.
+    simpl.
+
+    intros.
+
+
+    eapply H7.
+    eapply in_set_add; eauto.
+
+
+
+    
+    + (* EXTD, aspid <> sig_aspid *)
+
+    unfold app_aspid_manifest_update.
+    break_let.
+    subst.
+    unfold manifest_subset in *.
+    simpl in *.
+    destruct_conjs.
+
+    edestruct IHet.
+    split; eauto.
+
+    destruct_conjs.
+
+    split.
+
+    intros.
+    eauto.
+
+    split; intros; eauto.
+
+    simpl in *.
+
+    find_apply_hyp_hyp.
+
+    eapply H5.
+    eapply in_set_add; eauto.
+
+    split; eauto.
+
+    split; eauto.
+
+
+
+    (*
+
     + (* EXTD *)
 
     unfold app_aspid_manifest_update.
@@ -928,6 +1183,8 @@ Proof.
     split; eauto.
 
     split; eauto.
+
+    *)
     
   - (* ss case *)
     eauto.
@@ -1007,6 +1264,50 @@ Proof.
     simpl.
     eapply manadd_In_add.
 
+
+    - (* EXTD case, aspid = sig_aspid *)
+
+    ff.
+    (*
+    do_inv_manifest.
+    *)
+    assert (manifest_subset  {|
+      my_abstract_plc := my_abstract_plc;
+      asps := asps;
+      (* asps_external := asps_external; *)
+      appraisal_asps := manset_add (p, a0) appraisal_asps0;
+      uuidPlcs := uuidPlcs;
+      pubKeyPlcs := manset_add p pubKeyPlcs;
+      targetPlcs := targetPlcs;
+      policy := policy
+    |}
+
+    (manifest_generator_app'' et
+    {|
+      my_abstract_plc := my_abstract_plc;
+      asps := asps;
+      (* asps_external := asps_external; *)
+      appraisal_asps := manset_add (p, a0) appraisal_asps0;
+      uuidPlcs := uuidPlcs;
+      pubKeyPlcs := manset_add p pubKeyPlcs;
+      targetPlcs := targetPlcs;
+      policy := policy
+    |})
+
+
+    ).
+    {
+    eapply manifest_generator_app_cumul'.
+    }
+    unfold manifest_subset in *.
+    destruct_conjs.
+    eauto.
+
+    eapply H0.
+    simpl.
+    eapply manadd_In_add.
+    
+
     - (* EXTD case *)
 
     ff.
@@ -1040,6 +1341,52 @@ Proof.
     eapply H0.
     simpl.
     eapply manadd_In_add.
+
+
+    - (* EXTD case, aspid = sig_aspid *)
+
+    ff.
+    (*
+    do_inv_manifest.
+    *)
+    assert (manifest_subset  {|
+      my_abstract_plc := my_abstract_plc;
+      asps := asps;
+      (* asps_external := asps_external; *)
+      appraisal_asps := manset_add (p, a0) appraisal_asps0;
+      uuidPlcs := uuidPlcs;
+      pubKeyPlcs := manset_add p pubKeyPlcs;
+      targetPlcs := targetPlcs;
+      policy := policy
+    |}
+
+    (manifest_generator_app'' et
+    {|
+      my_abstract_plc := my_abstract_plc;
+      asps := asps;
+      (* asps_external := asps_external; *)
+      appraisal_asps := manset_add (p, a0) appraisal_asps0;
+      uuidPlcs := uuidPlcs;
+      pubKeyPlcs := manset_add p pubKeyPlcs;
+      targetPlcs := targetPlcs;
+      policy := policy
+    |})
+
+
+    ).
+    {
+    eapply manifest_generator_app_cumul'.
+    }
+    unfold manifest_subset in *.
+    destruct_conjs.
+    eauto.
+
+    eapply H2.
+    simpl.
+    eapply manadd_In_add.
+
+
+    
 
   - (* ss case *)
     ff.
