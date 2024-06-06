@@ -13,9 +13,12 @@ To compile all the proof script dependencies in `src/` and step through them int
     * Note:  Make sure this is a LOCAL install (and NOT one installed globally via opam).  This should require:
         * gathering dependencies as specified [here](https://github.com/ku-sldg/coq/blob/cakeml-extraction/INSTALL.md#build-requirements), then 
         *  Inside `<CoqPath>`/coq (top-level of forked Coq repo) run:   `make world`
-        *  Add `<CoqPath>/coq/_build/install/default/bin` to your PATH environment variable
-        *  Set the COQLIB environment variable to `<CoqPath>/coq/_build/install/default/lib/coq`
-        * IMPORTANT:  hide any previous opam-installed versions.  This usually requires deleting a line in your ~/.bashrc (or equivalent) that auto-loads opam tools for each new terminal session.
+        *  **Path Level Configuration**
+			* Add `<CoqPath>/coq/_build/install/default/bin` to your PATH environment variable
+        	* Set the COQLIB environment variable to `<CoqPath>/coq/_build/install/default/lib/coq`
+        	* IMPORTANT:  hide any previous opam-installed versions.  This usually requires deleting a line in your ~/.bashrc (or equivalent) that auto-loads opam tools for each new terminal session.
+		* **Manual Configuration**
+			* Alternatively to adding the Coq install to your PATH, you can instead use `export COQBIN=<CoqPath>/coq/_build/install/default/bin` before running `make`
 1.  [VS Code](https://code.visualstudio.com/) (with VSCoq extension), [ProofGeneral](https://proofgeneral.github.io/), or your favorite Coq IDE
 
 Then type:  `cd src ; make`
