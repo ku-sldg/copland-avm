@@ -91,5 +91,4 @@ jobs:
           export COQBIN=~/coq/_build/install/default/bin/
           echo "COQBIN is $COQBIN"
           cd ${{ github.workspace }}/src
-          $COQBIN/coq_makefile -f _CoqProject -o MAKEPRIME
-          make -f MAKEPRIME
+          make 
