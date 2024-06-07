@@ -7,6 +7,8 @@ on:
   pull_request:
     branches:
       - master
+  schedule:
+    - cron: '0 0 * * 0' # Running at midnight every Sunday (to preserve caches mostly)
 
 jobs:
   build-and-test:
@@ -30,7 +32,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.opam
-          key: ${{ runner.OS }}-OPAM-$OCAML_VERSION
+          key: ${{ runner.OS }}-OPAM-${{ env.OCAML_VERSION }}
           restore-keys: ${{ runner.OS }}-OPAM-
       
       - name: Opam Setup
@@ -45,7 +47,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ~/.opam
-          key: ${{ runner.OS }}-OPAM-$OCAML_VERSION
+          key: ${{ runner.OS }}-OPAM-${{ env.OCAML_VERSION }}
 
 ############### COQ STEPS
       - name: Get latest commit hash of Coq Repo
@@ -84,12 +86,11 @@ jobs:
 
 ############### Final Testing Copland-AVM steps
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Test Build
         run: |
           export COQBIN=~/coq/_build/install/default/bin/
           echo "COQBIN is $COQBIN"
           cd ${{ github.workspace }}/src
-          $COQBIN/coq_makefile -f _CoqProject -o MAKEPRIME
-          make -f MAKEPRIME
+          make 

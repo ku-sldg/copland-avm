@@ -10,12 +10,18 @@ PROJ	= _CoqProject
 # Generated makefile
 COQMK	= coq.mk
 
+COQBIN?=
+ifneq (,$(COQBIN))
+# add an ending /
+COQBIN:=$(COQBIN)/
+endif
+
 all:	$(COQMK)
 	$(MAKE) -f $(COQMK)
 	$(MAKE) -f $(COQMK) $(DOC)
 
 $(COQMK): $(PROJ)
-	coq_makefile -o $(COQMK) -f $(PROJ)
+	$(COQBIN)coq_makefile -o $(COQMK) -f $(PROJ)
 
 $(PROJ):
 	@echo make $@
