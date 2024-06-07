@@ -1511,7 +1511,9 @@ Proof.
         try (econstructor; eauto).
 
         ff.
+        (*
         repeat ff.
+        *)
     
   - (* at case *)
     wrap_ccp.
@@ -1697,11 +1699,45 @@ Proof.
     ff.
     ff.
     eauto.
+    auto with *.
+    (* 
+    ff. 
+    monad_unfold.
+    unfold not in *.
+    congruence. *)
+    +++
+    eauto.
+    auto with *.
+    invc H0.
+    ff.
+    monad_unfold.
+    ff.
+    ff.
+    eauto.
+    auto with *. 
+    (*
+    ff.
+    monad_unfold.
+    unfold not in *.
+    congruence.
+    *)
+
+    (*
+    +++
+    eauto.
+    auto with *.
+    invc H0.
+    ff.
+    monad_unfold.
+    ff.
+    ff.
+    eauto.
     auto with *. 
     ff.
     monad_unfold.
     unfold not in *.
     congruence.
+    auto with *.
     +++
     eauto.
     auto with *.
@@ -1729,36 +1765,8 @@ Proof.
     ff.
     monad_unfold.
     unfold not in *.
-    congruence.
     auto with *.
-    +++
-    eauto.
-    auto with *.
-    invc H0.
-    ff.
-    monad_unfold.
-    ff.
-    ff.
-    eauto.
-    auto with *. 
-    ff.
-    monad_unfold.
-    unfold not in *.
-    congruence.
-    +++
-    eauto.
-    auto with *.
-    invc H0.
-    ff.
-    monad_unfold.
-    ff.
-    ff.
-    eauto.
-    auto with *. 
-    ff.
-    monad_unfold.
-    unfold not in *.
-    auto with *.
+    *)
   ++
 
   monad_unfold.
@@ -1778,10 +1786,45 @@ Proof.
   ff.
   eauto.
   auto with *. 
+  (*
   ff.
   monad_unfold.
   unfold not in *.
   congruence.
+  *)
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *.
+  (* 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  *)
+
+  (*
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  auto with *.
   +++
   eauto.
   auto with *.
@@ -1809,36 +1852,8 @@ Proof.
   ff.
   monad_unfold.
   unfold not in *.
-  congruence.
   auto with *.
-  +++
-  eauto.
-  auto with *.
-  invc H0.
-  ff.
-  monad_unfold.
-  ff.
-  ff.
-  eauto.
-  auto with *. 
-  ff.
-  monad_unfold.
-  unfold not in *.
-  congruence.
-  +++
-  eauto.
-  auto with *.
-  invc H0.
-  ff.
-  monad_unfold.
-  ff.
-  ff.
-  eauto.
-  auto with *. 
-  ff.
-  monad_unfold.
-  unfold not in *.
-  auto with *.
+  *)
 
   ++
   monad_unfold.
@@ -1857,11 +1872,46 @@ Proof.
   ff.
   ff.
   eauto.
+  auto with *.
+  (* 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  *)
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  (*
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  *)
+
+  (*
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
   auto with *. 
   ff.
   monad_unfold.
   unfold not in *.
   congruence.
+  auto with *.
   +++
   eauto.
   auto with *.
@@ -1889,36 +1939,8 @@ Proof.
   ff.
   monad_unfold.
   unfold not in *.
-  congruence.
   auto with *.
-  +++
-  eauto.
-  auto with *.
-  invc H0.
-  ff.
-  monad_unfold.
-  ff.
-  ff.
-  eauto.
-  auto with *. 
-  ff.
-  monad_unfold.
-  unfold not in *.
-  congruence.
-  +++
-  eauto.
-  auto with *.
-  invc H0.
-  ff.
-  monad_unfold.
-  ff.
-  ff.
-  eauto.
-  auto with *. 
-  ff.
-  monad_unfold.
-  unfold not in *.
-  auto with *.
+  *)
 
 
   ++
@@ -1939,10 +1961,45 @@ Proof.
   ff.
   eauto.
   auto with *. 
+  (*
   ff.
   monad_unfold.
   unfold not in *.
   congruence.
+  *)
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  (*
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  *)
+
+  (*
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  auto with *.
   +++
   eauto.
   auto with *.
@@ -1970,36 +2027,8 @@ Proof.
   ff.
   monad_unfold.
   unfold not in *.
-  congruence.
   auto with *.
-  +++
-  eauto.
-  auto with *.
-  invc H0.
-  ff.
-  monad_unfold.
-  ff.
-  ff.
-  eauto.
-  auto with *. 
-  ff.
-  monad_unfold.
-  unfold not in *.
-  congruence.
-  +++
-  eauto.
-  auto with *.
-  invc H0.
-  ff.
-  monad_unfold.
-  ff.
-  ff.
-  eauto.
-  auto with *. 
-  ff.
-  monad_unfold.
-  unfold not in *.
-  auto with *.
+  *)
 
   ++
   monad_unfold.
@@ -2019,10 +2048,45 @@ Proof.
   ff.
   eauto.
   auto with *. 
+  (*
   ff.
   monad_unfold.
   unfold not in *.
   congruence.
+  *)
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  (*
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  *)
+
+  (*
+  +++
+  eauto.
+  auto with *.
+  invc H0.
+  ff.
+  monad_unfold.
+  ff.
+  ff.
+  eauto.
+  auto with *. 
+  ff.
+  monad_unfold.
+  unfold not in *.
+  congruence.
+  auto with *.
   +++
   eauto.
   auto with *.
@@ -2050,36 +2114,8 @@ Proof.
   ff.
   monad_unfold.
   unfold not in *.
-  congruence.
   auto with *.
-  +++
-  eauto.
-  auto with *.
-  invc H0.
-  ff.
-  monad_unfold.
-  ff.
-  ff.
-  eauto.
-  auto with *. 
-  ff.
-  monad_unfold.
-  unfold not in *.
-  congruence.
-  +++
-  eauto.
-  auto with *.
-  invc H0.
-  ff.
-  monad_unfold.
-  ff.
-  ff.
-  eauto.
-  auto with *. 
-  ff.
-  monad_unfold.
-  unfold not in *.
-  auto with *.
+  *)
 
 
   - (* at case *)

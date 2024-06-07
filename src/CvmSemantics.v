@@ -190,6 +190,8 @@ Proof.
     inv_wfec.
     ff.
 
+    (*
+
     ++
     ff.
     destruct f; ff;
@@ -201,6 +203,8 @@ Proof.
 
     inv_wfec.
     ff.
+
+    *)
 
     (*
 
@@ -662,7 +666,7 @@ Proof.
     try (econstructor; econstructor; reflexivity).
 
     invc H'. 
-    ff.
+    ff;
     try (econstructor; econstructor; reflexivity).
 
     +
@@ -672,45 +676,58 @@ Proof.
       +++
       invc H'.
       monad_simp.
-      repeat ff.
+      repeat ff;
       try (econstructor; econstructor; reflexivity).
+
+      (*
       try (econstructor; econstructor; reflexivity).
+      *)
       +++
       invc H'.
       monad_simp.
-      repeat ff.
+      repeat ff;
       try (econstructor; econstructor; reflexivity).
+      (*
       try (econstructor; econstructor; reflexivity). 
+      *)
 
       ++
       repeat ff; subst. 
       +++
       invc H'.
       monad_simp.
-      repeat ff.
+      repeat ff;
       try (econstructor; econstructor; reflexivity).
+      (*
       try (econstructor; econstructor; reflexivity).
+      *)
       +++
       invc H'.
       monad_simp.
-      repeat ff.
+      repeat ff;
       try (econstructor; econstructor; reflexivity).
+      (*
       try (econstructor; econstructor; reflexivity). 
+      *)
 
     ++
     repeat ff; subst. 
     +++
     invc H'.
     monad_simp.
-    repeat ff.
+    repeat ff;
     try (econstructor; econstructor; reflexivity).
+    (*
     try (econstructor; econstructor; reflexivity).
+    *)
     +++
     invc H'.
     monad_simp.
-    repeat ff.
+    repeat ff;
     try (econstructor; econstructor; reflexivity).
+    (*
     try (econstructor; econstructor; reflexivity). 
+    *)
 
     ++
 
@@ -718,15 +735,19 @@ Proof.
     +++
     invc H'.
     monad_simp.
-    repeat ff.
+    repeat ff;
     try (econstructor; econstructor; reflexivity).
+    (*
     try (econstructor; econstructor; reflexivity).
+    *)
     +++
     invc H'.
     monad_simp.
-    repeat ff.
+    repeat ff;
     try (econstructor; econstructor; reflexivity).
+    (*
     try (econstructor; econstructor; reflexivity). 
+    *)
 
 
     ++
@@ -734,45 +755,55 @@ Proof.
     +++
     invc H'.
     monad_simp.
-    repeat ff.
+    repeat ff;
     try (econstructor; econstructor; reflexivity).
+    (*
     try (econstructor; econstructor; reflexivity).
+    *)
     +++
     invc H'.
     monad_simp.
-    repeat ff.
+    repeat ff;
     try (econstructor; econstructor; reflexivity).
+    (*
     try (econstructor; econstructor; reflexivity). 
+    *)
 
     +
     invc H'.
     monad_simp.
-    repeat ff.
-    auto with *. 
+    repeat ff;
+    auto with *;
 
     try (econstructor; econstructor; reflexivity).
 
+    (*
     try (econstructor; econstructor; reflexivity).
+    *)
 
     +
     invc H'.
     monad_simp.
-    repeat ff.
-    auto with *. 
+    repeat ff;
+    auto with *;
 
     try (econstructor; econstructor; reflexivity).
 
+    (*
     try (econstructor; econstructor; reflexivity).
+    *)
 
     +
     invc H'.
     monad_simp.
-    repeat ff.
-    auto with *. 
+    repeat ff;
+    auto with *; 
 
     try (econstructor; econstructor; reflexivity).
 
+    (*
     try (econstructor; econstructor; reflexivity).
+    *)
 
 (*
 
@@ -1692,10 +1723,12 @@ Proof.
     rewrite <- H2 in *.
     simpl in *.
     door; ff.
+    (*
     +++
     rewrite <- H2 in *.
     simpl in *.
     door; ff.
+    *)
     ++
     monad_simp;
     repeat ff.
@@ -1703,10 +1736,12 @@ Proof.
     rewrite <- H2 in *.
     simpl in *.
     door; ff.
+    (*
     +++
     rewrite <- H2 in *.
     simpl in *.
     door; ff.
+    *)
 
     ++
     monad_simp;
@@ -1715,10 +1750,12 @@ Proof.
     rewrite <- H2 in *.
     simpl in *.
     door; ff.
+    (*
     +++
     rewrite <- H2 in *.
     simpl in *.
     door; ff.
+    *)
 
     ++
     monad_simp;
@@ -1727,10 +1764,12 @@ Proof.
     rewrite <- H2 in *.
     simpl in *.
     door; ff.
+    (*
     +++
     rewrite <- H2 in *.
     simpl in *.
     door; ff.
+    *)
 
     ++
     monad_simp;
@@ -1739,10 +1778,12 @@ Proof.
     rewrite <- H2 in *.
     simpl in *.
     door; ff.
+    (*
     +++
     rewrite <- H2 in *.
     simpl in *.
     door; ff.
+    *)
 
 +
 invc H0.
@@ -1754,10 +1795,12 @@ repeat ff.
 rewrite <- H2 in *.
 simpl in *.
 door; ff.
+(*
 +++
 rewrite <- H2 in *.
 simpl in *.
 door; ff.
+*)
 ++
 monad_simp;
 repeat ff.
@@ -1765,10 +1808,12 @@ repeat ff.
 rewrite <- H2 in *.
 simpl in *.
 door; ff.
+(*
 +++
 rewrite <- H2 in *.
 simpl in *.
 door; ff.
+*)
 
 ++
 monad_simp;
@@ -1777,10 +1822,12 @@ repeat ff.
 rewrite <- H2 in *.
 simpl in *.
 door; ff.
+(*
 +++
 rewrite <- H2 in *.
 simpl in *.
 door; ff.
+*)
 
 ++
 monad_simp;
@@ -1789,10 +1836,12 @@ repeat ff.
 rewrite <- H2 in *.
 simpl in *.
 door; ff.
+(*
 +++
 rewrite <- H2 in *.
 simpl in *.
 door; ff.
+*)
 
 ++
 monad_simp;
@@ -1801,10 +1850,12 @@ repeat ff.
 rewrite <- H2 in *.
 simpl in *.
 door; ff.
+(*
 +++
 rewrite <- H2 in *.
 simpl in *.
 door; ff.
+*)
 
 
 +
@@ -1814,9 +1865,11 @@ ff.
 rewrite <- H2 in *.
 simpl in *.
 door; ff.
+(*
 rewrite <- H2 in *.
 simpl in *.
 door; ff.
+*)
 
 +
 invc H0.
@@ -1825,9 +1878,11 @@ ff.
 rewrite <- H2 in *.
 simpl in *.
 door; ff.
+(*
 rewrite <- H2 in *.
 simpl in *.
 door; ff.
+*)
 
 +
 invc H0.
@@ -1836,9 +1891,11 @@ ff.
 rewrite <- H2 in *.
 simpl in *.
 door; ff.
+(*
 rewrite <- H2 in *.
 simpl in *.
 door; ff.
+*)
 
   -
     wrap_ccp_anno.

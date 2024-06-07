@@ -4,7 +4,7 @@
 
 Require Import Term_Defs Example_Phrases_Admits Example_Phrases_Demo_Admits.
 
-Require Import Example_Phrases_Pre_Admits.
+Require Import Example_Phrases_Pre_Admits Example_Phrases_Pre.
 
 Require Import List.
 Import ListNotations.
@@ -212,9 +212,6 @@ Qed.
 Definition appraise_inline_asp_with_args (p:Plc) (targ: TARG_ID) (args:list Arg) : Term := 
   asp (ASPC ALL EXTD (asp_paramsC appraise_inline_id args p targ)).
 
-
-Definition sub1 : Term := 
-  <{ << attest1_id P1 sys >> +<+ << attest2_id P1 sys >> }>.
 
 Definition sub2 : Term := 
   <{ << cert_id P2 sys >> }>.

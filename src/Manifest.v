@@ -46,8 +46,8 @@ Definition empty_PolicyT : PolicyT := [].
   Record Manifest := {
     my_abstract_plc   : Plc ; 
 
-    asps              : manifest_set ASP_ID; (* list ASP_ID ; *)
-    asps_external     : manifest_set ASP_ID;
+    asps              : manifest_set ASP_ID;
+    (* asps_external     : manifest_set ASP_ID; *)
     appraisal_asps    : manifest_set (Plc * ASP_ID) ;
     uuidPlcs          : manifest_set Plc ;
     pubKeyPlcs        : manifest_set Plc ;
@@ -59,7 +59,7 @@ Definition empty_PolicyT : PolicyT := [].
   Definition empty_Manifest : Manifest :=
     Build_Manifest 
       empty_Manifest_Plc 
-      manifest_set_empty
+      (* manifest_set_empty *)
       manifest_set_empty
       manifest_set_empty
       manifest_set_empty
@@ -90,7 +90,7 @@ Definition empty_PolicyT : PolicyT := [].
     Local_Plcs        : MapD Plc UUID ;
     Local_PubKeys     : MapD Plc PublicKey ;
 
-    External_ASPS : MapD ASP_ID UUID ;
+    (* External_ASPS : MapD ASP_ID UUID ; *)
   }.
 
 Record AM_Config : Type := 
@@ -99,7 +99,7 @@ Record AM_Config : Type :=
     am_clone_addr : UUID ;
     aspCb : (ASPCallback DispatcherErrors) ;
     app_aspCb : (ASPCallback DispatcherErrors) ;
-    ext_aspCb : PlcCallback ;
+    (* ext_aspCb : PlcCallback ; *)
     plcCb : PlcCallback ;
     pubKeyCb : PubKeyCallback ;
     uuidCb : UUIDCallback ;
@@ -114,7 +114,7 @@ Definition empty_aspCb (ps:ASP_PARAMS) (p:Plc) (bs:BS) (rawev:RawEv) : ResultT B
     default_uuid
     empty_aspCb
     empty_aspCb
-    (fun x => errC Unavailable)
+    (* (fun x => errC Unavailable) *)
     (fun x => errC Unavailable)
     (fun x => errC Unavailable)
     (fun x => errC Unavailable).

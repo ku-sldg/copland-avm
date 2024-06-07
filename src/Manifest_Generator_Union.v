@@ -166,8 +166,12 @@ Definition get_all_unique_places (ls: list (Term*Plc)) (ets: list (Evidence*Plc)
   manset_union ts_ps ets_ps.
 
 Definition end_to_end_mangen (ls:list (Evidence*Plc)) (ts: list (Term*Plc)) : EnvironmentM := 
+  update_knowsOf_myPlc_env (end_to_end_mangen' ls ts).
+
+(*
   let ps := get_all_unique_places ts ls in 
     update_pubkeys_env ps (update_knowsOf_myPlc_env (end_to_end_mangen' ls ts)).
+*)
 
 
 

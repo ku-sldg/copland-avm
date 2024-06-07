@@ -93,6 +93,9 @@ Import ListNotations.
           (* (plc_server_cb plc_server_addr p) *)
         end.
 
+
+(*
+
 (* This function will lookup for either local Plcs to UUID, or pass them off to the Plc Server *)
 Definition generate_external_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest) 
     : PlcCallback :=
@@ -109,6 +112,8 @@ Definition generate_external_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Li
       | None => errC Unavailable
         (* (plc_server_cb plc_server_addr p) *)
       end.
+
+  *)
       
   (* This function will lookup the PubKey either locally Plc -> PublicKey or pass off to PubKeyServer *)
   Definition generate_PubKey_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest) 
@@ -153,7 +158,7 @@ Definition generate_external_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Li
     am_clone_addr := (UUID_AM_Clone al);
     aspCb     := (generate_ASP_dispatcher al m);
     app_aspCb := (generate_appraisal_ASP_dispatcher al m);
-    ext_aspCb := (generate_external_ASP_dispatcher al m);
+    (* ext_aspCb := (generate_external_ASP_dispatcher al m); *)
     plcCb     := (generate_Plc_dispatcher al m);
     pubKeyCb  := (generate_PubKey_dispatcher al m);
     uuidCb    := (generate_UUID_dispatcher al m);

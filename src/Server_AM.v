@@ -59,8 +59,6 @@ Definition do_cvm_session (req:CvmRequestMessage) (ac : AM_Config) (al:AM_Librar
         (RES resev)
   end.
 
-Check run_am_app_comp_init.
-
 Definition do_appraisal_session (appreq:AppraisalRequestMessage) (ac:AM_Config) (nonceVal:BS): 
                                 AppraisalResponseMessage :=
   let appres := 

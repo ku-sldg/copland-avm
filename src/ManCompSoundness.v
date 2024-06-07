@@ -19,7 +19,7 @@ Import ListNotations.
 Definition lib_supports_manifest (al : AM_Library) (am : Manifest) : Prop :=
   (forall (a : ASP_ID), In_set a am.(asps) -> exists cb, Maps.map_get al.(Local_ASPS) a = Some cb) /\
   (forall (up : Plc), In_set up am.(uuidPlcs) -> exists b, Maps.map_get al.(Local_Plcs) up = Some b) /\
-  (forall (a : ASP_ID), In_set a am.(asps_external) -> exists b, Maps.map_get al.(External_ASPS) a = Some b) /\
+ (* (forall (a : ASP_ID), In_set a am.(asps_external) -> exists b, Maps.map_get al.(External_ASPS) a = Some b) /\ *)
   (forall (pkp : Plc), In_set pkp am.(pubKeyPlcs) -> exists b, Maps.map_get al.(Local_PubKeys) pkp = Some b) /\
   (forall (a : (Plc*ASP_ID)), In_set a am.(appraisal_asps) -> 
     exists cb, Maps.map_get al.(Local_Appraisal_ASPS) a = Some cb).
@@ -29,7 +29,7 @@ Ltac unfolds :=
   repeat unfold manifest_generator, manifest_compiler, generate_ASP_dispatcher, 
     generate_Plc_dispatcher, generate_PubKey_dispatcher,
     generate_UUID_dispatcher, lib_supports_manifest, aspid_manifest_update,
-    generate_external_ASP_dispatcher,
+    (* generate_external_ASP_dispatcher, *)
     sig_params, hsh_params, enc_params in *;
   simpl in *; 
   repeat (match goal with
@@ -109,12 +109,12 @@ Proof.
   destruct res; eauto; destruct d; eauto.
   destruct amConf; simpl in *;
   destruct amLib; simpl in *;
-  try do_inv_amlib.
+  (*try do_inv_amlib. *)
   unfold manifest_compiler in H0; repeat find_injection;
   simpl in *.
   repeat break_match; try congruence.
   unfold lib_supports_manifest in *; simpl in *;
-  try do_inv_amlib;
+  (* try do_inv_amlib; *)
   intuition.
   pose proof (H0 _ H1).
   assert ((fun x0 : ASP_ID =>
@@ -136,8 +136,9 @@ Proof.
   end.
   destruct HH as [xx].
 
-  unfolds.
-  ff.
+  assert (Some xx = None).
+  jkjke'.
+  congruence.
 Qed.
 
 Lemma never_change_am_conf : forall t st res st',
@@ -164,9 +165,11 @@ Definition supports_am (ac1 ac2 : AM_Config) : Prop :=
   (forall p, (forall res, 
       ac1.(plcCb) p = resultC res ->
       ac2.(plcCb) p = resultC res)) /\
+      (*
   (forall i, (forall res, 
       ac1.(ext_aspCb) i = resultC res ->
       ac2.(ext_aspCb) i = resultC res)) /\
+      *)
   (forall aid l targ targid p' ev ev' errStr,
       ac1.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC (Runtime errStr) ->
       ac2.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC (Runtime errStr)) /\
@@ -175,10 +178,13 @@ Definition supports_am (ac1 ac2 : AM_Config) : Prop :=
       ac2.(pubKeyCb) p = errC (Runtime errStr)) /\
   (forall p errStr, 
       ac1.(plcCb) p = errC (Runtime errStr) ->
-      ac2.(plcCb) p = errC (Runtime errStr)) /\
+      ac2.(plcCb) p = errC (Runtime errStr)).
+      (*
+      /\
   (forall p errStr, 
       ac1.(ext_aspCb) p = errC (Runtime errStr) ->
       ac2.(ext_aspCb) p = errC (Runtime errStr)).
+      *)
 
 Theorem supports_am_refl : forall ac1,
   supports_am ac1 ac1.
@@ -208,24 +214,30 @@ match t with
     | NULL => True
     | CPY => True
     | SIG => 
+      (*
         (exists res, ac.(ext_aspCb) sig_aspid = resultC res)
         \/
+      *)
         (
         forall l targ targid p' ev ev',
         ((exists res, 
         ac.(aspCb) (asp_paramsC sig_aspid l targ targid) p' ev ev' = resultC res) \/ 
         (exists errStr, ac.(aspCb) (asp_paramsC sig_aspid l targ targid) p' ev ev' = errC (Runtime errStr))))
     | HSH =>
+    (*
         (exists res, ac.(ext_aspCb) hsh_aspid = resultC res) 
         \/
+    *)
         (
         forall l targ targid p' ev ev',
         ((exists res, 
         ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) p' ev ev' = resultC res) \/ 
         (exists errStr, ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) p' ev ev' = errC (Runtime errStr))))
     | ENC p =>
+    (*
         (exists res, ac.(ext_aspCb) enc_aspid = resultC res)
         \/
+    *)
         (forall l targ targid p' ev ev',
         ((exists res, 
         ac.(aspCb) (asp_paramsC enc_aspid l targ targid) p' ev ev' = resultC res) \/ 
@@ -233,8 +245,10 @@ match t with
         ((exists res, ac.(pubKeyCb) p = resultC res) \/ 
         (exists errStr, ac.(pubKeyCb) p = errC (Runtime errStr)))
     | ASPC _ _ (asp_paramsC aspid _ _ _) =>
+    (*
         (exists res, ac.(ext_aspCb) aspid = resultC res)
         \/
+    *)
         (forall l targ targid p' ev ev',
         ((exists res, 
         ac.(aspCb) (asp_paramsC aspid l targ targid) p' ev ev' = resultC res) \/ 
@@ -390,6 +404,9 @@ induction t; simpl in *; intuition; eauto.
       ]
   end.
 
+
+  (*
+
   admit.
   admit.
   admit.
@@ -420,6 +437,9 @@ induction t; simpl in *; intuition; eauto.
         intuition; find_rewrite; find_injection; eauto
       ]
   end.
+  *)
+
+
   *)
 
 - subst; simpl in *; try rewrite eqb_refl in *;
@@ -1385,7 +1405,7 @@ Proof.
           {|
             my_abstract_plc := my_abstract_plc;
             asps := asps;
-            asps_external := asps_external;
+            (* asps_external := asps_external; *)
             appraisal_asps := appraisal_asps;
             uuidPlcs := manset_add p uuidPlcs;
             pubKeyPlcs := pubKeyPlcs;
@@ -1398,7 +1418,7 @@ Proof.
           {|
             my_abstract_plc := my_abstract_plc;
             asps := asps;
-            asps_external := asps_external;
+            (* asps_external := asps_external; *)
             appraisal_asps := appraisal_asps;
             uuidPlcs := manset_add p uuidPlcs;
             pubKeyPlcs := pubKeyPlcs;
@@ -1419,7 +1439,7 @@ Proof.
          {|
            my_abstract_plc := my_abstract_plc;
            asps := asps;
-           asps_external := asps_external;
+           (* asps_external := asps_external; *)
            appraisal_asps := appraisal_asps;
            uuidPlcs := manset_add p uuidPlcs;
            pubKeyPlcs := pubKeyPlcs;
@@ -1428,7 +1448,7 @@ Proof.
          |}) p0 = Some {|
          my_abstract_plc := my_abstract_plc;
          asps := asps;
-         asps_external := asps_external;
+         (* asps_external := asps_external; *)
          appraisal_asps := appraisal_asps;
          uuidPlcs := manset_add p uuidPlcs;
          pubKeyPlcs := pubKeyPlcs;
@@ -1444,7 +1464,7 @@ Proof.
       specialize H with (m1 := {|
         my_abstract_plc := my_abstract_plc;
         asps := asps;
-        asps_external := asps_external;
+        (* asps_external := asps_external; *)
         appraisal_asps := appraisal_asps;
         uuidPlcs := @manset_add _ Eq_Class_ID_Type p uuidPlcs;
         pubKeyPlcs := pubKeyPlcs;
@@ -1467,7 +1487,7 @@ Proof.
           {|
             my_abstract_plc := my_abstract_plc;
             asps := asps;
-            asps_external := asps_external;
+            (* asps_external := asps_external; *)
             appraisal_asps := appraisal_asps;
             uuidPlcs := manset_add p uuidPlcs;
             pubKeyPlcs := pubKeyPlcs;
@@ -1480,7 +1500,7 @@ Proof.
           {|
             my_abstract_plc := my_abstract_plc;
             asps := asps;
-            asps_external := asps_external;
+            (* asps_external := asps_external; *)
             appraisal_asps := appraisal_asps;
             uuidPlcs := manset_add p uuidPlcs;
             pubKeyPlcs := pubKeyPlcs;
@@ -1501,7 +1521,7 @@ Proof.
          {|
            my_abstract_plc := my_abstract_plc;
            asps := asps;
-           asps_external := asps_external;
+           (* asps_external := asps_external; *)
            appraisal_asps := appraisal_asps;
            uuidPlcs := manset_add p uuidPlcs;
            pubKeyPlcs := pubKeyPlcs;
@@ -1510,7 +1530,7 @@ Proof.
          |}) p0 = Some {|
          my_abstract_plc := my_abstract_plc;
          asps := asps;
-         asps_external := asps_external;
+         (* asps_external := asps_external; *)
          appraisal_asps := appraisal_asps;
          uuidPlcs := manset_add p uuidPlcs;
          pubKeyPlcs := pubKeyPlcs;
@@ -1526,7 +1546,7 @@ Proof.
       specialize H with (m1 := {|
         my_abstract_plc := my_abstract_plc;
         asps := asps;
-        asps_external := asps_external;
+        (* asps_external := asps_external; *)
         appraisal_asps := appraisal_asps;
         uuidPlcs := @manset_add _ Eq_Class_ID_Type p uuidPlcs;
         pubKeyPlcs := pubKeyPlcs;
@@ -1863,7 +1883,7 @@ Proof.
               {|
                 my_abstract_plc := my_abstract_plc;
                 asps := asps;
-                asps_external := asps_external;
+                (* asps_external := asps_external; *)
                 appraisal_asps := appraisal_asps;
                 uuidPlcs := manset_add p uuidPlcs;
                 pubKeyPlcs := pubKeyPlcs;
@@ -1888,7 +1908,7 @@ Proof.
               {|
                 my_abstract_plc := p0;
                 asps := manifest_set_empty;
-                asps_external := manifest_set_empty;
+                (* asps_external := manifest_set_empty; *)
                 appraisal_asps := manifest_set_empty;
                 uuidPlcs := manset_add p manifest_set_empty;
                 pubKeyPlcs := manifest_set_empty;
@@ -3039,24 +3059,30 @@ Theorem manifest_generator_compiler_soundness_distributed_multiterm : forall t t
 Proof.
   intros.
   unfold end_to_end_mangen in H.
+  (*
   eapply exists_manifest_subset_update_pubkeys_env in H.
   destruct_conjs.
-  eapply exists_manifest_subset_update_knowsOf_myPlc_env in H5.
+  *)
+  eapply exists_manifest_subset_update_knowsOf_myPlc_env in H.
   destruct_conjs.
   eapply manifest_generator_compiler_soundness_distributed_multiterm'.
   eassumption.
   eassumption.
   eapply lib_supports_manifest_subset.
   eassumption.
+  (*
   eapply manifest_subset_trans.
   eassumption.
+  *)
   eassumption.
   reflexivity.
   eapply supports_am_mancomp_subset.
   rewrite H2.
   eassumption.
+  (*
   eapply manifest_subset_trans.
   eassumption.
+  *)
   eassumption.
   eassumption.
 Qed.

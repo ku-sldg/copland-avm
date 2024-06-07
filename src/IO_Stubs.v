@@ -42,8 +42,11 @@ Admitted.
       Extracted code should not need to use the Plc or Event_ID parameters 
       (those can be erased upon extraction). *)
 Definition do_asp (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) (ac : AM_Config) : ResultT BS DispatcherErrors :=
+  (ac.(aspCb) params mpl (encodeEvRaw e) e).
+
+(*
   let m := absMan ac in 
-  let ext_asps := asps_external m in 
+  let ext_asps := asps_external m in
   let i := get_asp_params_id params in
   let in_exts := in_dec_set i ext_asps in 
     if (in_exts)
@@ -58,6 +61,8 @@ Definition do_asp (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) (ac : AM
             end)
 
     else (ac.(aspCb) params mpl (encodeEvRaw e) e).
+
+*)
 
 (*
 (** * Stub for completing a remote communication session with an external AM. *)

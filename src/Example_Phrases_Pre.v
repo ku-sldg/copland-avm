@@ -9,10 +9,18 @@ Import ListNotations.
 
 Open Scope cop_ent_scope.
 
+Definition mysig := asp SIG.
+
+Definition sub1 : Term := 
+  <{ << attest1_id P1 sys >> +<+ (mysig) }>.
+
 Definition example_phrase_p2_appraise : Term := 
   <{
-    @ P1 [
-      (<< attest1_id P1 sys >> +<+ << attest2_id P1 sys >>) ] 
+    @ P1 [ sub1 ]
+
+    (*
+      (<< attest1_id P1 sys >> +<+ (mysig)(* << attest2_id P1 sys >> *)) ] 
+      *)
   }>.
 
 Close Scope cop_ent_scope.
