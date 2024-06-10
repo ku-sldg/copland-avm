@@ -15,8 +15,7 @@ This proof script is free software: you can redistribute it and/or
 modify it under the terms of the BSD License as published by the
 University of California.  See license.txt for details. *)
 
-
-Require Import List.
+Require Import Maps EqClass List String BS.
 Import List.ListNotations.
 
 Require Export Params_Admits.
@@ -107,10 +106,21 @@ Fixpoint et_size (e:Evidence): nat :=
 (** Raw Evidence representaiton:  a list of binary (BS) values. *)
 Definition RawEv := list BS.
 
+Fixpoint RawEv_to_string' (e:RawEv) : string :=
+  match e with
+  | [] => ""
+  | b::bs => (BS_to_string b) ++ (RawEv_to_string' bs)
+  end.
+
+Definition RawEv_to_string (e:RawEv) : string :=
+  "[" ++ (RawEv_to_string' e) ++ "]".
+
 (**  Type-Tagged Raw Evidence representation.  Used as the internal evidence
      type managed by the CVM to track evidence contents and its structure. *)
 Inductive EvC: Set :=
 | evc: RawEv -> Evidence -> EvC.
+
+Definition EvC_to_string (e:EvC) : string. Admitted.
 
 Definition mt_evc: EvC := (evc [] mt).
 
@@ -128,29 +138,82 @@ Definition get_bits (e:EvC): list BS :=
     has the proper size (calculated over the Evidence Type portion). *)
 Inductive wf_ec : EvC -> Prop :=
 | wf_ec_c: forall (ls:RawEv) et,
-    length ls = et_size et ->
+    List.length ls = et_size et ->
     wf_ec (evc ls et).
 
+Definition ASP_ARGS := MapC string string.
+Definition ASP_Info := string.
 
 Definition ReqAuthTok := EvC.
 
-Inductive CvmRequestMessage: Set :=
-| REQ: Term -> ReqAuthTok -> RawEv -> CvmRequestMessage.
+Record ProtocolRunRequest := 
+  mkPRReq {
+    prreq_term: Term;
+    prreq_authTok: ReqAuthTok;
+    prreq_ev: RawEv;
+  }.
 
-Inductive CvmResponseMessage: Set := 
-| RES: RawEv -> CvmResponseMessage.
+Record ProtocolRunResponse := 
+  mkPRResp {
+    prresp_success: bool;
+    prresp_ev: RawEv;
+  }.
 
-Inductive AppraisalRequestMessage: Set := 
-| REQ_APP: Term -> Plc -> Evidence -> RawEv -> AppraisalRequestMessage.
+Record ProtocolNegotiateRequest := 
+  mkPNReq {
+    pnreq_term: Term;
+  }.
 
-Inductive AppraisalResponseMessage: Set := 
-| RES_APP:  AppResultC -> AppraisalResponseMessage.
+Record ProtocolNegotiateResponse := 
+  mkPNResp {
+    pnresp_success: bool;
+    pnresp_term: Term;
+  }.
 
-Inductive AM_RequestMessage: Set := 
-| CVM_REQ: CvmRequestMessage       -> AM_RequestMessage
-| APP_REQ: AppraisalRequestMessage -> AM_RequestMessage.
-    
+Record ProtocolAppraiseRequest :=
+  mkPAReq {
+    pareq_term: Term;
+    pareq_authTok: ReqAuthTok;
+    pareq_ev: RawEv;
+  }.
 
+Record ProtocolAppraiseResponse :=
+  mkPAResp {
+    paresp_success: bool;
+    paresp_result: AppResultC;
+  }.
+
+Record ASPRunRequest := 
+  mkASPRReq {
+    asprreq_asp_id : ASP_ID;
+    asprreq_asp_args: ASP_ARGS;
+  }.
+
+Record ASPRunResponse := 
+  mkASPRResp {
+    asprresp_success: bool;
+    asprresp_ev: RawEv;
+  }.
+
+Record ASPInfoRequest := 
+  mkASPIReq {
+    aspireq_asp_id : ASP_ID;
+  }.
+
+Record ASPInfoResponse :=
+  mkASPIResp {
+    aspiresp_success: bool;
+    aspiresp_info: ASP_Info;
+  }.
+
+Inductive AM_Protocol_Interface :=
+| Protocol_Run: ProtocolRunRequest -> ProtocolRunResponse -> AM_Protocol_Interface
+| Protocol_Negotiate: ProtocolNegotiateRequest -> ProtocolNegotiateResponse -> AM_Protocol_Interface
+| Protocol_Appraise: ProtocolAppraiseRequest -> ProtocolAppraiseResponse -> AM_Protocol_Interface.
+
+Inductive AM_ASP_Interface :=
+| ASP_Run_Interface: ASPRunRequest -> ASPRunResponse -> AM_ASP_Interface
+| ASP_Info_Interface: ASPInfoRequest -> ASPInfoResponse -> AM_ASP_Interface.
 
 Definition splitEv_T_l (sp:Split) (e:Evidence) : Evidence :=
   match sp with
@@ -222,6 +285,8 @@ Inductive Ev: Set :=
 | join:  nat -> Plc -> Ev
 | cvm_thread_start: Loc -> Plc -> Core_Term -> Evidence -> Ev
 | cvm_thread_end: Loc -> Ev.
+
+Fixpoint Ev_to_string (e:Ev) : string. Admitted.
 
 (** The natural number used to distinguish events. *)
 

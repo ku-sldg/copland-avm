@@ -132,8 +132,6 @@ Inductive Term: Set :=
 
 Fixpoint Term_to_string (t : Term) : string. Admitted.
 
-
-
 (* Adapted from Imp language Notation in Software Foundations (Pierce) *)
 Declare Custom Entry copland_entry.
 Declare Scope cop_ent_scope.

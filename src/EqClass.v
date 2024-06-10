@@ -5,7 +5,7 @@ Authors:  Adam Petz, ampetz@ku.edu
           Will Thomas, 30wthomas@ku.edu
  *)
 
- Require Import Setoid.
+Require Import Setoid String.
 
 Class EqClass (A : Type) :=
   { eqb : A -> A -> bool ;
@@ -86,6 +86,11 @@ Proof.
   - rewrite IHn1 in H1. subst; eauto.
   - subst. simpl. rewrite IHn1; eauto.
 Qed.
+
+Global Instance str_eq_class : EqClass string :=
+  { eqb:= String.eqb;
+    eqb_leibniz := String.eqb_eq }.
+
 
 Global Instance nat_EqClass : EqClass nat :=
   { eqb:= Nat.eqb;

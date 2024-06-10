@@ -49,7 +49,7 @@ Definition run_am_server_auth_tok_req (t:Term) (fromPlc:Plc) (myPl:Plc)
               run_am_app_comp (am_serve_auth_tok_req t fromPlc myPl authTok init_ev ac al) [] true.
                             
 
-Definition do_cvm_session (req:CvmRequestMessage) (ac : AM_Config) (al:AM_Library): CvmResponseMessage := 
+Definition do_cvm_session (req:ProtocolRunRequest) (ac : AM_Config) (al:AM_Library): ProtocolRunResponse := 
   let fromPlc := default_place in 
   let myPlc := default_place in
   match req with 
@@ -61,8 +61,8 @@ Definition do_cvm_session (req:CvmRequestMessage) (ac : AM_Config) (al:AM_Librar
 
 Check run_am_app_comp_init.
 
-Definition do_appraisal_session (appreq:AppraisalRequestMessage) (ac:AM_Config) (nonceVal:BS): 
-                                AppraisalResponseMessage :=
+Definition do_appraisal_session (appreq:ProtocolAppraiseRequest) (ac:AM_Config) (nonceVal:BS): 
+                                ProtocolAppraiseResponse :=
   let appres := 
     match appreq with
     | REQ_APP t p et ev => 
