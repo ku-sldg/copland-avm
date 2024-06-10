@@ -18,7 +18,7 @@ University of California.  See license.txt for details. *)
 
 Require Export BS.
 
-Require Import AbstractedTypes.
+Require Import AbstractedTypes String.
 
 (** * Terms and Evidence *)
 
@@ -130,6 +130,7 @@ Inductive Term: Set :=
 | bseq: Split -> Term -> Term -> Term
 | bpar: Split -> Term -> Term -> Term.
 
+Fixpoint Term_to_string (t : Term) : string. Admitted.
 
 
 
