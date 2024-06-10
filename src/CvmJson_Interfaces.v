@@ -6,8 +6,7 @@
 Require Import Term_Defs_Core Term_Defs StringT List.
 From JSON Require Import JSON Lexer Printer.
 Import ListNotations.
-Require Export ExtLib.Structures.Monads.
-Export MonadNotation.
+Require Import ExtLib.Structures.Monads.
 
 Definition strToJson (s:StringT): option json := 
   match from_string (StringT_to_string s) with
@@ -70,17 +69,20 @@ Definition Json_to_ProtocolNegotiateResponse (resp : json): option ProtocolNegot
 Definition ProtocolAppraiseRequest_to_Json (req: ProtocolAppraiseRequest): json :=
   JSON__Object 
     [("term", (JSON__String (Term_to_string (pareq_term req))));
-    ("authTok", (JSON__String (EvC_to_string (pareq_authTok req))));
+    ("plc", (JSON__String (Plc_to_string (pareq_plc req))));
+    ("evidence", (JSON__String (Evidence_to_string (pareq_evidence req))));
     ("ev", (JSON__String (RawEv_to_string (pareq_ev req))))].
 
 Definition Json_to_ProtocolAppraiseRequest (req : json): option ProtocolAppraiseRequest :=
   temp_term <- get_string "term" req ;;
-  temp_authTok <- get_string "authTok" req ;;
+  temp_plc <- get_string "plc" req ;;
+  temp_evidence <- get_string "ev" req ;;
   temp_ev <- get_string "ev" req ;;
   term <- string_to_Term temp_term ;;
-  authTok <- string_to_EvC temp_authTok ;;
+  plc <- string_to_Plc temp_plc ;;
+  evidence <- string_to_Evidence temp_evidence ;;
   ev <- string_to_RawEv temp_ev ;;
-  Some (mkPAReq term authTok ev).
+  Some (mkPAReq term plc evidence ev).
 
 Definition ProtocolAppraiseResponse_to_Json (resp: ProtocolAppraiseResponse): json :=
   JSON__Object 

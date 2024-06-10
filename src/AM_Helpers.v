@@ -4,7 +4,7 @@ Require Import Term Example_Phrases_Demo Cvm_Run Manifest AbstractedTypes EqClas
 
 Require Import Impl_appraisal Appraisal_IO_Stubs IO_Stubs AM_Monad ErrorStMonad_Coq.
 
-Require Import CvmJson_Admits Manifest_Generator Manifest_Compiler Maps Auto StructTactics.
+Require Import CvmJson_Interfaces Manifest_Generator Manifest_Compiler Maps Auto StructTactics.
 
 Require Import ManCompSoundness Manifest_Admits Disclose ErrorStringConstants
     ManCompSoundness_Appraisal.

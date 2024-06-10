@@ -1,7 +1,7 @@
 (*  Implementation of a top-level Server (listener) thread for Server AMs in
       end-to-end Copland Attestation + Appraisal protocols.  *)
 
-Require Import Term IO_Stubs Cvm_Run CvmJson_Admits Example_Phrases_Admits.
+Require Import Term IO_Stubs Cvm_Run CvmJson_Interfaces Example_Phrases_Admits.
 
 Require Import AM_Monad ErrorStMonad_Coq Impl_appraisal Manifest Manifest_Admits Cvm_St.
 
@@ -52,17 +52,13 @@ Definition run_am_server_auth_tok_req (t:Term) (fromPlc:Plc) (myPl:Plc)
 Definition do_cvm_session (req:ProtocolRunRequest) (ac : AM_Config) (al:AM_Library): ProtocolRunResponse := 
   let fromPlc := default_place in 
   let myPlc := default_place in
-  match req with 
-  | REQ t tok ev => 
-    let asdf := print_auth_tok tok in 
-      let resev := run_am_server_auth_tok_req t fromPlc myPlc tok ev ac al in 
-        (RES resev)
-  end.
+  let '(mkPRReq t tok ev) := req in
+  let asdf := print_auth_tok tok in 
+  let resev := run_am_server_auth_tok_req t fromPlc myPlc tok ev ac al in 
+    mkPRResp true resev.
 
-Check run_am_app_comp_init.
-
-Definition do_appraisal_session (appreq:ProtocolAppraiseRequest) (ac:AM_Config) (nonceVal:BS): 
-                                ProtocolAppraiseResponse :=
+Definition do_appraisal_session (appreq:ProtocolAppraiseRequest) (ac:AM_Config) (nonceVal:BS): ProtocolAppraiseResponse :=
+  let '(mkPAReq t tok ev) := appreq in
   let appres := 
     match appreq with
     | REQ_APP t p et ev => 
@@ -77,7 +73,7 @@ Definition do_appraisal_session (appreq:ProtocolAppraiseRequest) (ac:AM_Config) 
 
 Definition handle_AM_request (s:StringT) (ac : AM_Config) (al:AM_Library) (nonceVal:BS) : StringT :=
   let js := strToJson s in 
-  let am_req := jsonToAmRequest js in 
+  let am_req := Json_to_AM_Protocol_Interface js in 
   let json_resp := 
     match am_req with 
     | CVM_REQ r => 

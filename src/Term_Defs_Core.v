@@ -24,6 +24,8 @@ Require Import AbstractedTypes String.
 
 (** [Plc] represents a place (or attestation domain). *)
 Definition Plc: Set := ID_Type.
+Definition Plc_to_string (p:Plc) : string := ID_Type_to_string p.
+Definition string_to_Plc (s:string) : option Plc := string_to_ID_Type s.
 (** [N_ID] represents a nonce identifier.  *)
 Definition N_ID: Set := nat.
 (** [Event_ID] represents Event identifiers *)
@@ -36,6 +38,8 @@ Definition Event_ID: Set := nat.
           (defined and interpreted per-scenario/implementaiton).
 *)
 Definition ASP_ID: Set := ID_Type.
+Definition ASP_ID_to_string (a:ASP_ID) : string := ID_Type_to_string a.
+Definition string_to_ASP_ID (s:string) : option ASP_ID := string_to_ID_Type s.
 Definition TARG_ID: Set := ID_Type.
 
 Inductive Resource_ID_Arg: Set := 
@@ -84,6 +88,9 @@ Inductive Evidence: Set :=
 | nn: N_ID -> Evidence
 | uu: Plc -> FWD -> ASP_PARAMS -> Evidence -> Evidence
 | ss: Evidence -> Evidence -> Evidence.
+
+Definition Evidence_to_string (e:Evidence) : string. Admitted.
+Definition string_to_Evidence (s:string) : option Evidence. Admitted.
 
 (** Evidene routing types:  
       ALL:   pass through all evidence

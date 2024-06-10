@@ -176,7 +176,8 @@ Record ProtocolNegotiateResponse :=
 Record ProtocolAppraiseRequest :=
   mkPAReq {
     pareq_term: Term;
-    pareq_authTok: ReqAuthTok;
+    pareq_plc: Plc;
+    pareq_evidence: Evidence;
     pareq_ev: RawEv;
   }.
 

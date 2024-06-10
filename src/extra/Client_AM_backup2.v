@@ -2,7 +2,7 @@ Require Import Term Example_Phrases_Demo Cvm_Run Manifest.
 
 Require Import Impl_appraisal Appraisal_IO_Stubs IO_Stubs AM_Monad StMonad_Coq.
 
-Require Import CvmJson_Admits.
+Require Import CvmJson_Interfaces.
 Require Import List.
 Import ListNotations.
 

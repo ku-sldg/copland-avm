@@ -1,4 +1,4 @@
-Require Import CvmJson_Admits Example_Phrases_Admits Term_Defs Cvm_Run.
+Require Import CvmJson_Interfaces Example_Phrases_Admits Term_Defs Cvm_Run.
 
 (*
 Definition run_cvm_json (j:JsonT) : JsonT := 

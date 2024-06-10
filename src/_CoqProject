@@ -58,7 +58,7 @@ Appraisal_IO_Stubs.v
 AM_Monad.v
 Appraisal_Defs.v
 Impl_appraisal.v
-CvmJson_Admits.v
+CvmJson_Interfaces.v
 ManCompSoundness_Helpers.v
 ManCompSoundness.v
 ManCompSoundness_Appraisal.v
