@@ -115,12 +115,15 @@ Fixpoint RawEv_to_string' (e:RawEv) : string :=
 Definition RawEv_to_string (e:RawEv) : string :=
   "[" ++ (RawEv_to_string' e) ++ "]".
 
+Definition string_to_RawEv (s:string) : option RawEv. Admitted.
+
 (**  Type-Tagged Raw Evidence representation.  Used as the internal evidence
      type managed by the CVM to track evidence contents and its structure. *)
 Inductive EvC: Set :=
 | evc: RawEv -> Evidence -> EvC.
 
 Definition EvC_to_string (e:EvC) : string. Admitted.
+Definition string_to_EvC (s:string) : option EvC. Admitted.
 
 Definition mt_evc: EvC := (evc [] mt).
 
@@ -206,14 +209,25 @@ Record ASPInfoResponse :=
     aspiresp_info: ASP_Info;
   }.
 
+Inductive AM_Protocol_Requests :=
+| Protocol_Run_Request: ProtocolRunRequest -> AM_Protocol_Requests
+| Protocol_Negotiate_Request: ProtocolNegotiateRequest -> AM_Protocol_Requests
+| Protocol_Appraise_Request: ProtocolAppraiseRequest -> AM_Protocol_Requests.
+
+Inductive AM_Protocol_Responses :=
+| Protocol_Run_Response : ProtocolRunResponse -> AM_Protocol_Responses
+| Protocol_Negotiate_Response: ProtocolNegotiateResponse -> AM_Protocol_Responses
+| Protocol_Appraise_Response: ProtocolAppraiseResponse -> AM_Protocol_Responses.
+
 Inductive AM_Protocol_Interface :=
-| Protocol_Run: ProtocolRunRequest -> ProtocolRunResponse -> AM_Protocol_Interface
-| Protocol_Negotiate: ProtocolNegotiateRequest -> ProtocolNegotiateResponse -> AM_Protocol_Interface
-| Protocol_Appraise: ProtocolAppraiseRequest -> ProtocolAppraiseResponse -> AM_Protocol_Interface.
+| AM_Protocol_Request_Interface: AM_Protocol_Requests -> AM_Protocol_Interface
+| AM_Protocol_Response_Interface: AM_Protocol_Responses -> AM_Protocol_Interface.
 
 Inductive AM_ASP_Interface :=
-| ASP_Run_Interface: ASPRunRequest -> ASPRunResponse -> AM_ASP_Interface
-| ASP_Info_Interface: ASPInfoRequest -> ASPInfoResponse -> AM_ASP_Interface.
+| ASP_Run_Request: ASPRunRequest -> AM_ASP_Interface
+| ASP_Run_Response : ASPRunResponse -> AM_ASP_Interface
+| ASP_Info_Request: ASPInfoRequest -> AM_ASP_Interface
+| ASP_Info_Response: ASPInfoResponse -> AM_ASP_Interface.
 
 Definition splitEv_T_l (sp:Split) (e:Evidence) : Evidence :=
   match sp with

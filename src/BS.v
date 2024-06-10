@@ -8,6 +8,7 @@ Definition BS : Set.
 Admitted.
 
 Definition BS_to_string (bs:BS) : string. Admitted.
+Definition string_to_BS (s:string) : option BS. Admitted.
 
 (* Some default/reserved BS values *)
 Definition default_bs : BS. Admitted.

@@ -131,6 +131,7 @@ Inductive Term: Set :=
 | bpar: Split -> Term -> Term -> Term.
 
 Fixpoint Term_to_string (t : Term) : string. Admitted.
+Fixpoint string_to_Term (s : string) : option Term. Admitted.
 
 (* Adapted from Imp language Notation in Software Foundations (Pierce) *)
 Declare Custom Entry copland_entry.
@@ -234,6 +235,8 @@ Inductive AppResultC: Set :=
 | eec_app: Plc -> ASP_PARAMS -> BS -> AppResultC ->(* Evidence -> *) AppResultC
 | ssc_app: AppResultC -> AppResultC -> AppResultC.
 
+Fixpoint AppResultC_to_string (res:AppResultC) : string. Admitted.
+Fixpoint string_to_AppResultC (s:string) : option AppResultC. Admitted.
 
 Fixpoint appresultc_size (res:AppResultC) : nat :=
   match res with
