@@ -69,20 +69,24 @@ Definition do_appraisal_session (appreq:ProtocolAppraiseRequest) (ac:AM_Config) 
 
 Open Scope string_scope.
 
+Definition handle_AM_request_Json (js : Json) (ac : AM_Config) (al:AM_Library) (nonceVal:BS) : Json :=
+  match Json_to_AM_Protocol_Request js with 
+  | None => ErrorResponseJson "Invalid Request Format"
+  | Some (Protocol_Run_Request r) => 
+    let cvm_resp := (do_cvm_session r ac al) in 
+      ProtocolRunResponse_to_Json cvm_resp
+
+  | Some (Protocol_Appraise_Request appreq) => 
+    let app_resp := (do_appraisal_session appreq ac nonceVal) in 
+      ProtocolAppraiseResponse_to_Json app_resp
+
+  | Some (Protocol_Negotiate_Request r) => 
+    (* TODO: Fill this in when negotiation is implemented *)
+    ErrorResponseJson "Negotiation not implemented yet"
+  end.
+
 Definition handle_AM_request (s:StringT) (ac : AM_Config) (al:AM_Library) (nonceVal:BS) : StringT :=
   match strToJson s with
-  | None => (jsonToStr (ErrorResponseJson "Invalid JSON"))
-  | Some js =>
-    match Json_to_AM_Protocol_Request js with 
-    | None => (jsonToStr (ErrorResponseJson "Invalid Request Format"))
-    | Some (Protocol_Run_Request r) => 
-      let cvm_resp := (do_cvm_session r ac al) in 
-        jsonToStr (ProtocolRunResponse_to_Json cvm_resp)
-    | Some (Protocol_Appraise_Request appreq) => 
-      let app_resp := (do_appraisal_session appreq ac nonceVal) in 
-        jsonToStr (ProtocolAppraiseResponse_to_Json app_resp)
-    | Some (Protocol_Negotiate_Request r) => 
-      (* TODO: Fill this in when negotiation is implemented *)
-      jsonToStr (ErrorResponseJson "Negotiation not implemented yet")
-    end
+  | None => jsonToStr (ErrorResponseJson "Invalid JSON")
+  | Some js => jsonToStr (handle_AM_request_Json js ac al nonceVal)
   end.

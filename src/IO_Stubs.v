@@ -10,10 +10,8 @@
     and evidence value results support specification of correctness properties 
     for Appraisal.        
  *)
-
 Require Import Term_Defs ConcreteEvidence ErrorStMonad_Coq 
-  Manifest Manifest_Admits Cvm_St StringT.
-
+  Manifest Manifest_Admits Cvm_St StringT CvmJson_Interfaces.
 
 Require Import List.
 Import ListNotations.
@@ -22,6 +20,8 @@ Import ListNotations.
       Real implmenetation will depend on the instantition of BS *)
 Definition encodeEvRaw(e:RawEv): BS.
 Admitted.
+
+Definition make_JSON_Request (uuid : UUID) (js : Json) : Json. Admitted.
 
 (** * Stub for invoking external ASP procedures.  
       Extracted code should not need to use the Plc or Event_ID parameters 
