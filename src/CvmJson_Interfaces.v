@@ -151,3 +151,9 @@ Definition Json_to_AM_Protocol_Interface (msg : json): option AM_Protocol_Interf
     Some (AM_Protocol_Response_Interface temp_msg)
   | _ => None
   end.
+
+(* Error Response *)
+Definition ErrorResponseJson (msg: string): json :=
+  JSON__Object 
+    [("success", JSON__False);
+    ("payload", (JSON__String msg))].

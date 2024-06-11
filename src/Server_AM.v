@@ -7,7 +7,7 @@ Require Import AM_Monad ErrorStMonad_Coq Impl_appraisal Manifest Manifest_Admits
 
 Require Import StringT ErrorStringConstants AM_Helpers.
 
-Require Import List.
+Require Import List String.
 Import ListNotations.
 
 
@@ -58,29 +58,31 @@ Definition do_cvm_session (req:ProtocolRunRequest) (ac : AM_Config) (al:AM_Libra
     mkPRResp true resev.
 
 Definition do_appraisal_session (appreq:ProtocolAppraiseRequest) (ac:AM_Config) (nonceVal:BS): ProtocolAppraiseResponse :=
-  let '(mkPAReq t tok ev) := appreq in
-  let appres := 
-    match appreq with
-    | REQ_APP t p et ev => 
-        let expected_et := eval t p et in 
-        let comp := gen_appraise_AM expected_et ev in 
-        let init_noncemap := [(O, nonceVal)] in
-        let init_nonceid := (S O) in
-        let my_amst := (mkAM_St init_noncemap init_nonceid ac) in
-          run_am_app_comp_init comp my_amst mtc_app true
-    end in 
-      (RES_APP appres).
+  let '(mkPAReq t p et ev) := appreq in
+  let expected_et := eval t p et in 
+  let comp := gen_appraise_AM expected_et ev in 
+  let init_noncemap := [(O, nonceVal)] in
+  let init_nonceid := (S O) in
+  let my_amst := (mkAM_St init_noncemap init_nonceid ac) in
+  let appres := run_am_app_comp_init comp my_amst mtc_app true in
+    mkPAResp true appres.
+
+Open Scope string_scope.
 
 Definition handle_AM_request (s:StringT) (ac : AM_Config) (al:AM_Library) (nonceVal:BS) : StringT :=
-  let js := strToJson s in 
-  let am_req := Json_to_AM_Protocol_Interface js in 
-  let json_resp := 
-    match am_req with 
-    | CVM_REQ r => 
+  match strToJson s with
+  | None => (jsonToStr (ErrorResponseJson "Invalid JSON"))
+  | Some js =>
+    match Json_to_AM_Protocol_Request js with 
+    | None => (jsonToStr (ErrorResponseJson "Invalid Request Format"))
+    | Some (Protocol_Run_Request r) => 
       let cvm_resp := (do_cvm_session r ac al) in 
-        responseToJson cvm_resp
-    | APP_REQ appreq => 
+        jsonToStr (ProtocolRunResponse_to_Json cvm_resp)
+    | Some (Protocol_Appraise_Request appreq) => 
       let app_resp := (do_appraisal_session appreq ac nonceVal) in 
-        appResponseToJson app_resp
-    end in 
-    jsonToStr json_resp.
+        jsonToStr (ProtocolAppraiseResponse_to_Json app_resp)
+    | Some (Protocol_Negotiate_Request r) => 
+      (* TODO: Fill this in when negotiation is implemented *)
+      jsonToStr (ErrorResponseJson "Negotiation not implemented yet")
+    end
+  end.
