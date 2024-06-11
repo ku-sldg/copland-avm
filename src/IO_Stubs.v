@@ -53,22 +53,6 @@ Definition do_remote (t:Term) (pTo:Plc) (e:EvC) (ac: AM_Config) : ResultT RawEv 
 Definition parallel_vm_thread (l:Loc) (t:Core_Term) (p:Plc) (e:EvC) : EvC.
 Admitted.
 
-
-(** * Stub for a top-level request from a remote client AM  *)
-Definition am_sendReq (t:Term) (p : Plc) (authTok:ReqAuthTok) (e:RawEv) : RawEv.
-Admitted.
-
-Definition am_sendReq'_app (uuid:UUID) (t:Term) (p:Plc) (e:Evidence) (ev:RawEv): AppResultC.
-Admitted.
-
-Definition am_sendReq_app (t:Term) (p:Plc) (e:Evidence) (ev:RawEv): AppResultC.
-Admitted.
-
-(*
-Definition doRemote_session' (t:Term) (pTo:Plc) (e:EvC) : IO EvC :=
-  ret (doRemote_session t pTo e).
-*)
-
 Definition do_start_par_thread (loc:Loc) (t:Core_Term) (e:RawEv) : CVM unit :=
   ret tt.
 

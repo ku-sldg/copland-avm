@@ -1,7 +1,8 @@
 (*  Implementation of a top-level Client (initiator) thread for Client AMs in
       end-to-end Copland Attestation + Appraisal protocols.  *)
+Require Import String.
 
-Require Import Term Example_Phrases_Demo Cvm_Run Manifest EqClass.
+Require Import Term Example_Phrases_Demo Cvm_Run Manifest EqClass StringT.
 
 Require Import Impl_appraisal Appraisal_IO_Stubs IO_Stubs AM_Monad ErrorStMonad_Coq.
 
@@ -20,6 +21,28 @@ Import ListNotations.
 Set Nested Proofs Allowed.
 *)
 
+Definition am_sendReq (t:Term) (uuid : UUID) (authTok:ReqAuthTok) (e:RawEv) : option RawEv :=
+  let req := mkPRReq t authTok e in 
+  let js := ProtocolRunRequest_to_Json req in
+  let js_res := make_JSON_Request uuid js in
+  match Json_to_ProtocolRunResponse js_res with
+  | None => None
+  | Some res =>
+    let '(mkPRResp success ev) := res in
+    if success then Some ev else None
+  end.
+
+Definition am_sendReq_app (uuid : UUID) (t:Term) (p:Plc) (e:Evidence) (ev:RawEv) : option AppResultC :=
+  let req := mkPAReq t p e ev in
+  let js := ProtocolAppraiseRequest_to_Json req in
+  let js_res := make_JSON_Request uuid js in
+  match Json_to_ProtocolAppraiseResponse js_res with
+  | None => None
+  | Some res =>
+    let '(mkPAResp success result) := res in
+    if success then Some result else None
+  end.
+
 Definition gen_nonce_if_none_local (initEv:option EvC) : AM EvC :=
   match initEv with
       | Some (evc ebits et) => ret mt_evc
@@ -29,19 +52,22 @@ Definition gen_nonce_if_none_local (initEv:option EvC) : AM EvC :=
         ret (evc [nonce_bits] (nn nid))
   end.
 
-Definition gen_authEvC_if_some (ot:option Term) (myPlc:Plc) (init_evc:EvC) : AM EvC :=
+Definition gen_authEvC_if_some (ot:option Term) (uuid : UUID) (myPlc:Plc) (init_evc:EvC) : AM EvC :=
   match ot with
   | Some auth_phrase =>
     let '(evc init_rawev_auth init_et_auth) := init_evc in
-    let auth_rawev := am_sendReq auth_phrase myPlc mt_evc init_rawev_auth in
-    let auth_et := eval auth_phrase myPlc init_et_auth in
-      ret (evc auth_rawev auth_et)
+    match am_sendReq auth_phrase uuid mt_evc init_rawev_auth with
+    | None => ret (evc [] mt)
+    | Some auth_rawev =>
+      let auth_et := eval auth_phrase myPlc init_et_auth in
+        ret (evc auth_rawev auth_et)
+    end
   | None => ret (evc [] mt)
   end.
 
-Definition run_appraisal_client (t:Term) (p:Plc) (et:Evidence) (re:RawEv) (addr:UUID) : AppResultC :=
+Definition run_appraisal_client (t:Term) (p:Plc) (et:Evidence) (re:RawEv) (addr:UUID) : option AppResultC :=
   let expected_et := eval t p et in 
-  am_sendReq'_app addr t p et re.
+  am_sendReq_app addr t p et re.
   (*
   let comp := gen_appraise_AM expected_et re in
   run_am_app_comp comp mtc_app.
@@ -66,7 +92,11 @@ Definition am_appraise (t:Term) (toPlc:Plc) (init_et:Evidence) (cvm_ev:RawEv) (l
     | true => 
        let expected_et := eval t toPlc init_et in
         gen_appraise_AM expected_et cvm_ev 
-    | false => ret (run_appraisal_client t toPlc init_et cvm_ev uuid)
+    | false => 
+      match run_appraisal_client t toPlc init_et cvm_ev uuid with
+      | None => am_failm (am_dispatch_error (Runtime (string_to_StringT "Error in run_appraisal_client"%string)))
+      | Some res => ret res
+      end
     end) ;;
   (*
   let expected_et := eval t toPlc init_et in
@@ -148,8 +178,6 @@ Qed.
 *)
 
 Admitted.
-
-
 
 Definition run_cvm_local_am (t:Term) (myPlc:Plc) (ls:RawEv) : AM RawEv := 
   st <- get ;; 
