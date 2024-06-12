@@ -1030,14 +1030,13 @@ Set Warnings "+notation-overridden".
 
 (** * Assert an arbitrary (remote) CVM execution.  
       Uses uninterpreted functions for "simulated" CVM evidence and events. *)
-Ltac do_assert_remote t e p i ac :=
+Ltac do_assert_remote t e i ac :=
   assert (
       build_cvm t
-                      {| st_ev := e; st_trace := []; st_pl := p; st_evid := i; st_AM_config := ac |} =
+                      {| st_ev := e; st_trace := []; st_evid := i; st_AM_config := ac |} =
       (resultC tt,
-       {| st_ev := cvm_evidence_core t p e;
-          st_trace := cvm_events_core t p (get_et e);
-          st_pl := p; 
+       {| st_ev := cvm_evidence_core t (my_abstract_plc (absMan ac)) e;
+          st_trace := cvm_events_core t (my_abstract_plc (absMan ac)) (get_et e);
           st_evid :=  (i + event_id_span t); 
           st_AM_config := ac
        |})
@@ -1056,20 +1055,18 @@ Qed.
 
 
 (** * Lemma:  CVM increases event IDs according to event_id_span' denotation. *)
-Lemma cvm_spans: forall t pt e tr p i e' tr' p' i' ac ac',
+Lemma cvm_spans: forall t pt e tr i e' tr' i' ac ac',
     term_to_coreP t pt ->
     build_cvmP
       pt
       {| st_ev := e;
          st_trace := tr;
-         st_pl := p;
          st_evid := i;
          st_AM_config := ac |}
       (resultC tt)
       {|
         st_ev := e';
         st_trace := tr';
-        st_pl := p';
         st_evid := i';
         st_AM_config := ac'
       |} ->
@@ -1275,18 +1272,16 @@ Defined.
 Qed.
 
 (** * CVM event ID span same as annotated term range *)
-Lemma span_cvm: forall atp t annt i j e e' tr tr' p p' i' ac ac',
+Lemma span_cvm: forall atp t annt i j e e' tr tr' i' ac ac',
     build_cvmP
       atp
       {| st_ev := e;
          st_trace := tr;
-         st_pl := p;
          st_evid := i;
          st_AM_config := ac |} 
       (resultC tt)
       {| st_ev := e';
          st_trace := tr';
-         st_pl := p';
          st_evid := i';
          st_AM_config := ac' |} ->
     
@@ -1317,21 +1312,19 @@ Defined.
 
 
 (** * Propositional version of span_cvm *)
-Lemma anno_span_cvm: forall t pt annt i i' e e' p p' tr tr' st_evid1 ac ac',
+Lemma anno_span_cvm: forall t pt annt i i' e e' tr tr' st_evid1 ac ac',
     annoP_indexed annt t i i' ->
     term_to_coreP t pt ->
     build_cvmP pt
                      {|
                        st_ev := e ;
                        st_trace := tr ;
-                       st_pl := p;
                        st_evid := i;
                        st_AM_config := ac
                      |} (resultC tt)
                      {|
                        st_ev := e';
                        st_trace := tr';
-                       st_pl := p';
                        st_evid := st_evid1;
                        st_AM_config := ac'
                      |} ->
@@ -1401,13 +1394,6 @@ Axiom wf_ec_preserved_par: forall e l t2 p,
     wf_ec e ->
     wf_ec (parallel_vm_thread l t2 p e).
 
-Lemma check_cvm_policy_preserves_plc : forall t p evt st1 u st1',
-  check_cvm_policy t p evt st1 = (resultC u, st1') ->
-  st_pl st1 = st_pl st1'.
-Proof.
-  induction t; simpl in *; intuition; eauto; ff.
-Qed.
-
 Lemma check_cvm_policy_preserves_amConf : forall t p evt st1 u st1',
   check_cvm_policy t p evt st1 = (resultC u, st1') ->
   st_AM_config st1 = st_AM_config st1'.
@@ -1415,57 +1401,19 @@ Proof.
   induction t; simpl in *; intuition; eauto; ff.
 Qed.
 
-Lemma doRemote_session'_plc_immut : forall t1 pto e st1 res st2,
-  doRemote_session' t1 pto e st1 = (res, st2) ->
-  st_pl st1 = st_pl st2.
-Proof.
-  unfold doRemote_session'; intuition; monad_unfold;
-  simpl in *; repeat ff.
-Qed.
-
-Lemma build_cvmP_plc_immut : forall t1 st1 st2 res,
-  build_cvmP t1 st1 res st2 ->
-  st_pl st1 = st_pl st2.
-Proof.
-  intuition.
-  rewrite <- ccp_iff_cc in H.
-  generalizeEverythingElse t1.
-  induction t1; simpl in *; intuition; eauto; ff.
-  - monad_unfold; destruct a; ff.
-  - repeat (monad_unfold; simpl in *; intuition; eauto; ff);
-    eapply doRemote_session'_plc_immut in Heqp0; eauto.
-  - repeat (monad_unfold; simpl in *; intuition; eauto; ff).
-    eapply IHt1_1 in Heqp; find_rewrite.
-    eapply IHt1_2 in Heqp0; find_rewrite.
-    eauto.
-  - repeat (monad_unfold; simpl in *; intuition; eauto; ff).
-    * eapply IHt1_1 in Heqp; eauto.
-    * eapply IHt1_1 in Heqp; simpl in *; subst.
-      eapply IHt1_2 in Heqp4; simpl in *; eauto.
-      find_rewrite; eauto.
-    * eapply IHt1_1 in Heqp; simpl in *; subst.
-      eapply IHt1_2 in Heqp4; simpl in *; eauto.
-      find_rewrite; eauto.
-  - repeat (monad_unfold; simpl in *; intuition; eauto; ff).
-    * eapply IHt1_1 in Heqp; eauto.
-    * subst; simpl in *. 
-      eapply IHt1_1 in Heqp; eauto.
-Qed.
-
 (** * Lemma:  CVM execution preserves well-formedness of EvC bundles 
       (Evidence Type of sufficient length for raw evidence). *)
-Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' p p' i i' ac ac' res,
+Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' i i' ac ac' res,
     wf_ec e ->
     build_cvmP t1
-                {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i;
+                {| st_ev := e; st_trace := tr; st_evid := i;
                     st_AM_config := ac |}
                 (res)
-                {| st_ev := e'; st_trace := tr'; st_pl := p'; st_evid := i';
+                {| st_ev := e'; st_trace := tr'; st_evid := i';
                     st_AM_config := ac' |} ->
     wf_ec (e').
 Proof.
   intros.
-  eapply build_cvmP_plc_immut in H0 as HP; simpl in *; subst.
   generalizeEverythingElse t1.
   induction t1; intros.
   - (* asp case *)
@@ -1479,7 +1427,6 @@ Proof.
           ff;
           try tauto;
           try congruence).
-    +
       destruct f; 
         repeat Auto.ff;
         try (econstructor; eauto).
@@ -1516,8 +1463,10 @@ Proof.
     break_match; subst; eauto; try congruence.
     simpl in *.
     break_match; subst; eauto.
+    pose proof (wf_ec_preserved_remote _ p u0).
     break_match; subst; eauto; try congruence.
     find_injection.
+    eapply wf_ec_preserved_remote; eauto.
     eapply check_cvm_policy_preserves_amConf in Heqp1 as AMC.
     eapply check_cvm_policy_preserves_plc in Heqp1 as PLC.
     simpl in *; subst.

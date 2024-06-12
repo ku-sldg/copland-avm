@@ -24,26 +24,13 @@ Require Export Cvm_St ErrorStMonad_Coq IO_Stubs CvmJson_Interfaces StringT.
 Definition put_ev (e:EvC) : CVM unit :=
   st <- get ;;
      let tr' := st_trace st in
-     let p' := st_pl st in
      let i := st_evid st in
      let ac := st_AM_config st in
-     put (mk_st e tr' p' i ac).
-
-Definition put_pl (p:Plc) : CVM unit :=
-  st <- get ;;
-     let tr' := st_trace st in
-     let e' := st_ev st in
-     let i := st_evid st in
-     let ac := st_AM_config st in
-     put (mk_st e' tr' p i ac).
+     put (mk_st e tr' i ac).
 
 Definition get_ev : CVM EvC :=
   st <- get ;;
   ret (st_ev st).
-
-Definition get_pl : CVM Plc :=
-  st <- get ;;
-  ret (st_pl st).
 
 Definition get_CVM_amConfig : CVM AM_Config :=
   (* TODO:  consider moving this functionality to a Reader-like monad 
@@ -51,24 +38,27 @@ Definition get_CVM_amConfig : CVM AM_Config :=
   st <- get ;;
   ret (st_AM_config st).
 
+Definition get_pl : CVM Plc :=
+  ac <- get_CVM_amConfig ;;
+  ret (my_abstract_plc (absMan ac)).
+
 Definition inc_id : CVM Event_ID :=
   st <- get ;;
     let tr' := st_trace st in
     let e' := st_ev st in
-    let p' := st_pl st in
     let i := st_evid st in
     let ac := st_AM_config st in
-    put (mk_st e' tr' p' (Nat.add i (S O)) ac) ;;
+    put (mk_st e' tr' (Nat.add i (S O)) ac) ;;
     ret i.
 
 Definition modify_evm (f:EvC -> EvC) : CVM unit :=
   st <- get ;;
-  let '{| st_ev := e; st_trace := tr; st_pl := p; st_evid := i; st_AM_config := ac |} := st in
-  put (mk_st (f e) tr p i ac).
+  let '{| st_ev := e; st_trace := tr; st_evid := i; st_AM_config := ac |} := st in
+  put (mk_st (f e) tr i ac).
 
 Definition add_trace (tr':list Ev) : cvm_st -> cvm_st :=
-  fun '{| st_ev := e; st_trace := tr; st_pl := p; st_evid := i; st_AM_config := ac |} =>
-    mk_st e (tr ++ tr') p i ac.
+  fun '{| st_ev := e; st_trace := tr; st_evid := i; st_AM_config := ac |} =>
+    mk_st e (tr ++ tr') i ac.
 
 Definition add_tracem (tr:list Ev) : CVM unit :=
   modify (add_trace tr).
@@ -158,11 +148,10 @@ Definition inc_remote_event_ids (t:Term) : CVM unit :=
   st <- get ;;
     let tr' := st_trace st in
     let e' := st_ev st in
-    let p' := st_pl st in
     let i := st_evid st in
     let new_i := Nat.add i (event_id_span' t) in
     let ac := st_AM_config st in
-    put (mk_st e' tr' p' new_i ac).
+    put (mk_st e' tr' new_i ac).
 
 (* Monadic helper function to simulate a span of parallel event IDs 
    corresponding to the size of a Core_Term *)
@@ -170,11 +159,10 @@ Definition inc_par_event_ids (t:Core_Term) : CVM unit :=
   st <- get ;;
     let tr' := st_trace st in
     let e' := st_ev st in
-    let p' := st_pl st in
     let i := st_evid st in
     let new_i := Nat.add i (event_id_span t) in
     let ac := st_AM_config st in
-    put (mk_st e' tr' p' new_i ac).
+    put (mk_st e' tr' new_i ac).
   
 (* Primitive monadic communication primitives 
    (some rely on Admitted IO Stubs). *)
@@ -298,7 +286,7 @@ Ltac pairs :=
     | [H: (Some _, _) =
           (Some _, _) |- _ ] => invc H; monad_unfold
                                                           
-    | [H: {| st_ev := _; st_trace := _; st_pl := _; st_evid := _ |} =
-          {| st_ev := _; st_trace := _; st_pl := _; st_evid := _ |} |- _ ] =>
+    | [H: {| st_ev := _; st_trace := _; st_evid := _; st_AM_config := _ |} =
+          {| st_ev := _; st_trace := _; st_evid := _; st_AM_config := _ |} |- _ ] =>
       invc H; monad_unfold
     end; destruct_conjs; monad_unfold.
