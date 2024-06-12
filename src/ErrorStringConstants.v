@@ -27,3 +27,9 @@ Definition errStr_et_size : StringT. Admitted.
 Definition errStr_lib_supports_man_check : StringT. Admitted.
 
 Definition errStr_lib_supports_man_app_check : StringT. Admitted.
+
+Definition errStr_remote_am_failure : StringT. Admitted.
+
+Definition errStr_incorrect_resp_type : StringT. Admitted.
+
+Definition errStr_json_parsing : StringT. Admitted.

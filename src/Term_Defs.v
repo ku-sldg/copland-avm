@@ -151,6 +151,7 @@ Definition ReqAuthTok := EvC.
 
 Record ProtocolRunRequest := 
   mkPRReq {
+    prreq_req_plc: Plc;
     prreq_term: Term;
     prreq_authTok: ReqAuthTok;
     prreq_ev: RawEv;

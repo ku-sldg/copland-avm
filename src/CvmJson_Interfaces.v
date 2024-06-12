@@ -24,18 +24,21 @@ Definition jsonToStr (js: Json): StringT :=
 (* Protocol Run Section *)
 Definition ProtocolRunRequest_to_Json (req: ProtocolRunRequest): Json :=
   JSON__Object 
-    [("term", (JSON__String (Term_to_string (prreq_term req)))); 
+    [("req_plc", (JSON__String (Plc_to_string (prreq_req_plc req))));
+    ("term", (JSON__String (Term_to_string (prreq_term req)))); 
     ("authTok", (JSON__String (EvC_to_string (prreq_authTok req)))); 
     ("ev", (JSON__String (RawEv_to_string (prreq_ev req))))].
 
 Definition Json_to_ProtocolRunRequest (req : Json): option ProtocolRunRequest :=
+  temp_plc <- get_string "req_plc" req ;;
   temp_term <- get_string "term" req ;;
   temp_authTok <- get_string "authTok" req ;;
   temp_ev <- get_string "ev" req ;;
+  req_plc <- string_to_Plc temp_plc ;;
   term <- string_to_Term temp_term ;;
   authTok <- string_to_EvC temp_authTok ;;
   ev <- string_to_RawEv temp_ev ;;
-  Some (mkPRReq term authTok ev).
+  Some (mkPRReq req_plc term authTok ev).
 
 Definition ProtocolRunResponse_to_Json (resp: ProtocolRunResponse): Json :=
   JSON__Object 

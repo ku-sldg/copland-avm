@@ -11,17 +11,6 @@ Require Import List String.
 Import ListNotations.
 
 
-Definition am_check_auth_tok (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) : AM AppResultC :=
-  match authTok with
-  | evc auth_ev auth_et => 
-    appres <-
-    (match (requester_bound t fromPl authTok) with
-     | false => am_failm (am_error errStr_requester_bound)
-     | true => gen_appraise_AM auth_et auth_ev
-     end) ;;
-    ret appres
-  end.
-
 Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) (myPl:Plc) 
                                  (authTok:ReqAuthTok) (init_ev:RawEv) (ac : AM_Config) (al:AM_Library) : AM RawEv :=
   let asdf := print_auth_tok authTok in
@@ -68,22 +57,6 @@ Definition do_appraisal_session (appreq:ProtocolAppraiseRequest) (ac:AM_Config) 
     mkPAResp true appres.
 
 Open Scope string_scope.
-
-Definition handle_AM_request_Json (js : Json) (ac : AM_Config) (al:AM_Library) (nonceVal:BS) : Json :=
-  match Json_to_AM_Protocol_Request js with 
-  | None => ErrorResponseJson "Invalid Request Format"
-  | Some (Protocol_Run_Request r) => 
-    let cvm_resp := (do_cvm_session r ac al) in 
-      ProtocolRunResponse_to_Json cvm_resp
-
-  | Some (Protocol_Appraise_Request appreq) => 
-    let app_resp := (do_appraisal_session appreq ac nonceVal) in 
-      ProtocolAppraiseResponse_to_Json app_resp
-
-  | Some (Protocol_Negotiate_Request r) => 
-    (* TODO: Fill this in when negotiation is implemented *)
-    ErrorResponseJson "Negotiation not implemented yet"
-  end.
 
 Definition handle_AM_request (s:StringT) (ac : AM_Config) (al:AM_Library) (nonceVal:BS) : StringT :=
   match strToJson s with

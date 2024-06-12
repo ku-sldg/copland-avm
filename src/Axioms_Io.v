@@ -4,9 +4,7 @@ Uninterpreted functions and rewrite rules that model external (remote and local 
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term_Defs Anno_Term_Defs LTS IO_Stubs.
-
-Require Import ErrorStMonad_Coq.
+Require Import Term_Defs Anno_Term_Defs LTS IO_Stubs CvmJson_Interfaces ErrorStMonad_Coq.
 
 Require Import List.
 Import ListNotations.
@@ -76,7 +74,14 @@ Axiom wf_ec_preserved_remote: forall a n e,
     wf_ec (doRemote_session a n e).
     *)
 
-Axiom wf_ec_preserved_remote: forall t p u ev1 ev1' evc1 r0,
-    doRemote_uuid t u (get_bits ev1) = resultC ev1' -> 
+Axiom wf_ec_preserved_remote: forall u t p tok evc1 resp r0,
+    (* doRemote t u (get_bits ev1) = resultC ev1' ->  *)
+    (* do_remote t p e ac = resultC ev1' -> *)
+    Json_to_AM_Protocol_Response (
+      make_JSON_Request u (
+        ProtocolRunRequest_to_Json (
+          mkPRReq p t tok (get_bits evc1)
+        ))) = Some resp ->
+    resp = Protocol_Run_Response (mkPRResp true r0) ->
     wf_ec evc1 -> 
     wf_ec (evc r0 (eval t p (get_et evc1))).

@@ -5,7 +5,8 @@
   Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term_Defs Term ConcreteEvidence Axioms_Io Evidence_Bundlers Defs.
+Require Import String.
+Require Import Term_Defs Term ConcreteEvidence Evidence_Bundlers Defs Axioms_Io.
 Require Import StructTactics.
 
 Require Import Coq.Program.Tactics Lia.
@@ -15,7 +16,7 @@ Require Import Manifest_Admits ErrorStringConstants.
 Require Import List.
 Import ListNotations.
 
-Require Export Cvm_St ErrorStMonad_Coq IO_Stubs.
+Require Export Cvm_St ErrorStMonad_Coq IO_Stubs CvmJson_Interfaces StringT.
 
 
 (** * CVM monadic primitive operations *)
@@ -101,9 +102,15 @@ Definition fwd_asp (fwd:FWD) (bs:BS) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
   | KEEP => e
   end.
 
-Definition do_asp' (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) : CVM BS :=
+(** * Stub for invoking external ASP procedures.  
+      Extracted code should not need to use the Plc or Event_ID parameters 
+      (those can be erased upon extraction). *)
+(* Definition do_asp (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) (ac : AM_Config) : ResultT BS DispatcherErrors :=
+  ac.(aspCb) params mpl (encodeEvRaw e) e. *)
+
+Definition do_asp (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) : CVM BS :=
   ac <- get_CVM_amConfig  ;;
-  match (do_asp params e mpl x ac) with
+  match (ac.(aspCb) params mpl (encodeEvRaw e) e) with
   | resultC r => ret r
   | errC e => failm (dispatch_error e)
   end.
@@ -114,7 +121,7 @@ Definition invoke_ASP (fwd:FWD) (params:ASP_PARAMS) (* (ac : AM_Config) *) : CVM
   e <- get_ev ;;
   p <- get_pl ;;
   x <- tag_ASP params p e ;;
-  bs <- do_asp' params (get_bits e) p x ;;
+  bs <- do_asp params (get_bits e) p x ;;
   ret (fwd_asp fwd bs e p params).
 
 Definition copyEv : CVM EvC :=
@@ -191,6 +198,29 @@ Definition check_cvm_policy (t:Term) (pTo:Plc) (et:Evidence) : CVM unit :=
     | false => failm (dispatch_error (Runtime errStr_disclosePolicy))
     end.
 
+Definition do_remote (t:Term) (pTo:Plc) (e:EvC) (ac: AM_Config) : ResultT RawEv DispatcherErrors := 
+  let remote_uuid_res : ResultT UUID DispatcherErrors := ac.(plcCb) pTo in
+    match remote_uuid_res with 
+    | resultC uuid => 
+        let my_plc := (my_abstract_plc (absMan ac)) in
+        let remote_req := (mkPRReq my_plc t (evc (get_bits e) (get_et e)) (get_bits e)) in
+        let js_req := ProtocolRunRequest_to_Json remote_req in
+        let js_resp := make_JSON_Request uuid js_req in
+        match Json_to_AM_Protocol_Response js_resp with
+        | Some resp => 
+            match resp with
+            | Protocol_Run_Response prresp => 
+                let '(mkPRResp success ev) := prresp in
+                if success 
+                then resultC ev 
+                else errC (Runtime errStr_remote_am_failure)
+            | _ => errC (Runtime errStr_incorrect_resp_type)
+            end
+        | None => errC (Runtime errStr_json_parsing)
+        end
+    | errC e => errC e
+    end.
+
 Definition doRemote_session' (t:Term) (pTo:Plc) (e:EvC) : CVM EvC := 
   check_cvm_policy t pTo (get_et e) ;;
   ac <- get_CVM_amConfig ;;
@@ -238,13 +268,10 @@ Ltac monad_unfold :=
   execErr,  
   do_prim,
   invoke_ASP,
-  do_asp',
   do_asp,
   clearEv,
   copyEv,
   
-  doRemote,
-
   get_ev,
   get_pl,
   get_CVM_amConfig,

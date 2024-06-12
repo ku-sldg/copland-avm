@@ -1449,6 +1449,10 @@ Proof.
     (* invc Heqr0. *)
     unfold do_remote in *.
     repeat ff.
+    eapply (wf_ec_preserved_remote u0); eauto.
+    simpl in *.
+    cbv.
+    repeat ff.
     eapply wf_ec_preserved_remote; eauto.
 
   - (* lseq case *)
