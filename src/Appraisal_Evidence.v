@@ -1401,19 +1401,71 @@ Axiom wf_ec_preserved_par: forall e l t2 p,
     wf_ec e ->
     wf_ec (parallel_vm_thread l t2 p e).
 
+Lemma check_cvm_policy_preserves_plc : forall t p evt st1 u st1',
+  check_cvm_policy t p evt st1 = (resultC u, st1') ->
+  st_pl st1 = st_pl st1'.
+Proof.
+  induction t; simpl in *; intuition; eauto; ff.
+Qed.
+
+Lemma check_cvm_policy_preserves_amConf : forall t p evt st1 u st1',
+  check_cvm_policy t p evt st1 = (resultC u, st1') ->
+  st_AM_config st1 = st_AM_config st1'.
+Proof.
+  induction t; simpl in *; intuition; eauto; ff.
+Qed.
+
+Lemma doRemote_session'_plc_immut : forall t1 pto e st1 res st2,
+  doRemote_session' t1 pto e st1 = (res, st2) ->
+  st_pl st1 = st_pl st2.
+Proof.
+  unfold doRemote_session'; intuition; monad_unfold;
+  simpl in *; repeat ff.
+Qed.
+
+Lemma build_cvmP_plc_immut : forall t1 st1 st2 res,
+  build_cvmP t1 st1 res st2 ->
+  st_pl st1 = st_pl st2.
+Proof.
+  intuition.
+  rewrite <- ccp_iff_cc in H.
+  generalizeEverythingElse t1.
+  induction t1; simpl in *; intuition; eauto; ff.
+  - monad_unfold; destruct a; ff.
+  - repeat (monad_unfold; simpl in *; intuition; eauto; ff);
+    eapply doRemote_session'_plc_immut in Heqp0; eauto.
+  - repeat (monad_unfold; simpl in *; intuition; eauto; ff).
+    eapply IHt1_1 in Heqp; find_rewrite.
+    eapply IHt1_2 in Heqp0; find_rewrite.
+    eauto.
+  - repeat (monad_unfold; simpl in *; intuition; eauto; ff).
+    * eapply IHt1_1 in Heqp; eauto.
+    * eapply IHt1_1 in Heqp; simpl in *; subst.
+      eapply IHt1_2 in Heqp4; simpl in *; eauto.
+      find_rewrite; eauto.
+    * eapply IHt1_1 in Heqp; simpl in *; subst.
+      eapply IHt1_2 in Heqp4; simpl in *; eauto.
+      find_rewrite; eauto.
+  - repeat (monad_unfold; simpl in *; intuition; eauto; ff).
+    * eapply IHt1_1 in Heqp; eauto.
+    * subst; simpl in *. 
+      eapply IHt1_1 in Heqp; eauto.
+Qed.
+
 (** * Lemma:  CVM execution preserves well-formedness of EvC bundles 
       (Evidence Type of sufficient length for raw evidence). *)
 Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' p p' i i' ac ac' res,
     wf_ec e ->
-        build_cvmP t1
-                    {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i;
-                       st_AM_config := ac |}
-                    (res)
-                    {| st_ev := e'; st_trace := tr'; st_pl := p'; st_evid := i';
-                       st_AM_config := ac' |} ->
+    build_cvmP t1
+                {| st_ev := e; st_trace := tr; st_pl := p; st_evid := i;
+                    st_AM_config := ac |}
+                (res)
+                {| st_ev := e'; st_trace := tr'; st_pl := p'; st_evid := i';
+                    st_AM_config := ac' |} ->
     wf_ec (e').
 Proof.
   intros.
+  eapply build_cvmP_plc_immut in H0 as HP; simpl in *; subst.
   generalizeEverythingElse t1.
   induction t1; intros.
   - (* asp case *)
@@ -1448,6 +1500,39 @@ Proof.
     repeat monad_unfold.
     (* invc Heqr0. *)
     unfold do_remote in *.
+    break_match; eauto.
+    break_match; subst; eauto.
+    ff.
+    break_match; eauto.
+    break_match; eauto.
+    break_match; eauto.
+    break_match; eauto.
+    ff.
+    ff.
+    break_match; eauto.
+    ff.
+    break_match; eauto; [ | ff].
+    repeat find_injection.
+    break_match; subst; eauto; try congruence.
+    simpl in *.
+    break_match; subst; eauto.
+    break_match; subst; eauto; try congruence.
+    find_injection.
+    eapply check_cvm_policy_preserves_amConf in Heqp1 as AMC.
+    eapply check_cvm_policy_preserves_plc in Heqp1 as PLC.
+    simpl in *; subst.
+    eapply wf_ec_preserved_remote; eauto.
+    assert (p = my_abstract_plc (absMan ac')). {
+      clear Heqo Heqr2.
+
+    }
+    Search check_cvm_policy.
+    eapply Heqo.
+    repeat find_injection.
+    break_match; subst; eauto.
+    
+    ff.
+     
     repeat ff.
     eapply (wf_ec_preserved_remote u0); eauto.
     simpl in *.
