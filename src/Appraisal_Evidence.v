@@ -1463,32 +1463,11 @@ Proof.
     break_match; subst; eauto; try congruence.
     simpl in *.
     break_match; subst; eauto.
-    pose proof (wf_ec_preserved_remote _ p u0).
     break_match; subst; eauto; try congruence.
     find_injection.
-    eapply wf_ec_preserved_remote; eauto.
-    eapply check_cvm_policy_preserves_amConf in Heqp1 as AMC.
-    eapply check_cvm_policy_preserves_plc in Heqp1 as PLC.
-    simpl in *; subst.
-    eapply wf_ec_preserved_remote; eauto.
-    assert (p = my_abstract_plc (absMan ac')). {
-      clear Heqo Heqr2.
-
-    }
-    Search check_cvm_policy.
-    eapply Heqo.
-    repeat find_injection.
-    break_match; subst; eauto.
-    
-    ff.
-     
-    repeat ff.
-    eapply (wf_ec_preserved_remote u0); eauto.
-    simpl in *.
-    cbv.
-    repeat ff.
-    eapply wf_ec_preserved_remote; eauto.
-
+    eapply check_cvm_policy_preserves_amConf in Heqp0; simpl in *; 
+    subst;
+    eapply (wf_ec_preserved_remote {| st_ev := e; st_trace := tr ++ [req i (my_abstract_plc (absMan ac')) p t (get_et e)]; st_evid := i + 1; st_AM_config := ac' |}); simpl in *; eauto.
   - (* lseq case *)
     wrap_ccp.
     ff; eauto.
@@ -1537,11 +1516,11 @@ Ltac do_wfec_preserved :=
   repeat
     match goal with
     | [(*H: well_formed_r ?t, *)
-          H2: wf_ec ?stev,
-              H3: build_cvmP ?t
-                                   {| st_ev := ?stev; st_trace := _; st_pl := _; st_evid := _ |}
-                                   (resultC tt)
-                                   {| st_ev := ?stev'; st_trace := _; st_pl := _; st_evid := _ |}
+        H2: wf_ec ?stev,
+        H3: build_cvmP ?t
+            {| st_ev := ?stev; st_trace := _; st_evid := _; st_AM_config := _ |}
+            (resultC tt)
+            {| st_ev := ?stev'; st_trace := _; st_evid := _; st_AM_config := _ |}
        |- _ ] =>
       assert_new_proof_by (wf_ec stev')
                           ltac:(eapply wf_ec_preserved_by_cvm; [(*apply H |*) apply H2 | apply H3])
@@ -1610,16 +1589,14 @@ Ltac do_exists_some_cc t st :=
 
 (** * Helper Lemma stating: CVM traces are "cumulative" (or monotonic).  
       Traces are only ever extended--prefixes are maintained. *)
-Lemma st_trace_cumul'' : forall t m k e p v_full v_suffix res i ac,
+Lemma st_trace_cumul'' : forall t m k e v_full v_suffix res i ac,
     build_cvmP t
-               {| st_ev := e; st_trace := m ++ k; st_pl := p; st_evid := i;
-                       st_AM_config := ac |}
-               (res) v_full ->
+      {| st_ev := e; st_trace := m ++ k; st_evid := i; st_AM_config := ac |}
+      (res) v_full ->
     
     build_cvmP t
-                     {| st_ev := e; st_trace := k; st_pl := p; st_evid := i;
-                       st_AM_config := ac |}
-                     res v_suffix ->
+      {| st_ev := e; st_trace := k; st_evid := i; st_AM_config := ac |}
+      res v_suffix ->
 
     st_trace v_full = m ++ st_trace v_suffix.
 Proof.
@@ -1629,14 +1606,7 @@ Proof.
     ff; eauto; auto with *.
   - (* at case *)
     wrap_ccp.
-    repeat Auto.ff.
-
-
-    unfold doRemote_session' in *;
-    repeat Auto.ff; 
-    repeat rewrite app_assoc;
-    eauto.
-
+    repeat Auto.ff;
     unfold doRemote_session' in *;
     repeat Auto.ff; 
     repeat rewrite app_assoc;
@@ -1661,9 +1631,7 @@ Proof.
     assert (resultC tt = errC c). 
     {
       rewrite <- ccp_iff_cc in *.
-      eapply cvm_errors_deterministic.
-      apply Heqp2.
-      eassumption.
+      eapply cvm_errors_deterministic; eauto.
     }
     solve_by_inversion.
     +
@@ -1675,7 +1643,7 @@ Proof.
       symmetry.
       rewrite <- ccp_iff_cc in *.
       eapply cvm_errors_deterministic.
-      apply Heqp2.
+      apply Heqp1.
       eassumption.
     }
     solve_by_inversion.
@@ -1704,37 +1672,28 @@ Proof.
     +
       assert (errC c0 = resultC u).
       {
-        wrap_ccp_dohi. ff.
-        invc Heqp6. invc Heqp11.
-        edestruct cvm_errors_deterministic.
-        apply H0.
-        apply H.
-        ff.
-
+        wrap_ccp_dohi. ff;
+        rewrite <- ccp_iff_cc in *.
+        eapply cvm_errors_deterministic.
+        eapply Heqp5.
+        eassumption.
       }
     solve_by_inversion.
     +
     assert (errC c = resultC u).
       {
         wrap_ccp_dohi. ff.
-        invc Heqp0. invc Heqp7.
-        edestruct cvm_errors_deterministic.
-        apply H0.
-        apply H.
-        ff.
-
+        rewrite <- ccp_iff_cc in *.
+        eapply cvm_errors_deterministic; eauto.
       }
     solve_by_inversion.
     +
     assert (errC c1 = resultC u).
       {
         wrap_ccp_dohi. ff.
-        invc Heqp6. invc Heqp11.
-        edestruct cvm_errors_deterministic.
-        apply H0.
-        apply H.
-        ff.
-
+        rewrite <- ccp_iff_cc in *.
+        eapply cvm_errors_deterministic.
+        eapply Heqp10. eauto.
       }
     solve_by_inversion.
     +
@@ -1748,34 +1707,26 @@ Proof.
     assert (errC c = resultC u0).
       {
         wrap_ccp_dohi. ff.
-        invc Heqp0. invc Heqp7.
-        edestruct cvm_errors_deterministic.
-        apply H0.
-        apply H.
-        ff.
+        rewrite <- ccp_iff_cc in *.
+        eapply cvm_errors_deterministic; eauto.
       }
     solve_by_inversion.
     +
     assert (errC c = resultC u).
       {
         wrap_ccp_dohi. ff.
-        invc Heqp0. invc Heqp7.
-        edestruct cvm_errors_deterministic.
-        apply H0.
-        apply H.
-        ff.
+        rewrite <- ccp_iff_cc in *.
+        eapply cvm_errors_deterministic.
+        eapply Heqp6. eauto.
       }
     solve_by_inversion.
     +
     assert (errC c = resultC tt).
       {
         wrap_ccp_dohi. ff.
-        invc Heqp0. invc Heqp7.
-        edestruct cvm_errors_deterministic.
-        apply H0.
-        apply H.
-        ff.
-
+        rewrite <- ccp_iff_cc in *.
+        eapply cvm_errors_deterministic.
+        eapply Heqp6. eauto.
       }
     solve_by_inversion.
     +
@@ -1817,14 +1768,14 @@ Proof.
 Qed.
 
 (** * Instance of st_trace_cumul'' where k=[] *)
-Lemma st_trace_cumul' : forall t m e p v_full v_suffix res i ac,
+Lemma st_trace_cumul' : forall t m e v_full v_suffix res i ac,
     build_cvmP t
-               {| st_ev := e; st_trace := m; st_pl := p; st_evid := i; st_AM_config := ac |}
-               (res) v_full ->
+      {| st_ev := e; st_trace := m; st_evid := i; st_AM_config := ac |}
+      (res) v_full ->
     
     build_cvmP t
-                     {| st_ev := e; st_trace := []; st_pl := p; st_evid := i; st_AM_config := ac |}
-                     res v_suffix ->
+      {| st_ev := e; st_trace := []; st_evid := i; st_AM_config := ac |}
+      res v_suffix ->
 
     st_trace v_full = m ++ st_trace v_suffix.
 Proof.
@@ -1839,23 +1790,21 @@ Defined.
       Traces are only ever extended--prefixes are maintained. 
       TODO:  rename to st_trace_cumul 
 *) 
-Lemma suffix_prop : forall t e e' tr tr' p p' i i' ac ac' res,
+Lemma suffix_prop : forall t e e' tr tr' i i' ac ac' res,
     build_cvmP t
            {| st_ev := e;
               st_trace := tr;
-              st_pl := p;
               st_evid := i; st_AM_config := ac |}
            (res)
            {|
              st_ev := e';
              st_trace := tr';
-             st_pl := p';
              st_evid := i'; st_AM_config := ac' |} ->
     exists l, tr' = tr ++ l.
 Proof.
   intros.
 
-  do_exists_some_cc t {| st_ev := e; st_trace := []; st_pl := p; st_evid := i; st_AM_config := ac |}.
+  do_exists_some_cc t {| st_ev := e; st_trace := []; st_evid := i; st_AM_config := ac |}.
   wrap_ccp.
   (*
 
@@ -1918,9 +1867,9 @@ Qed.
 Ltac do_suffix name :=
   match goal with
   | [H': build_cvmP ?t
-         {| st_ev := _; st_trace := ?tr; st_pl := _; st_evid := _ |}
+         {| st_ev := _; st_trace := ?tr; st_evid := _; st_AM_config := _ |}
          (_)
-         {| st_ev := _; st_trace := ?tr'; st_pl := _; st_evid := _ |}
+         {| st_ev := _; st_trace := ?tr'; st_evid := _; st_AM_config := _ |}
          (*H2: well_formed_r ?t*) |- _] =>
     assert_new_proof_as_by
       (exists l, tr' = tr ++ l)
@@ -1933,42 +1882,36 @@ Ltac do_suffix name :=
 
       Useful for leveraging induction hypotheses in the lseq case of induction that require empty traces in the 
       initial CVM state. *)
-Lemma alseq_decomp : forall t1' t2' e e'' p p'' tr i i'' ac ac'',
+Lemma alseq_decomp : forall t1' t2' e e'' tr i i'' ac ac'',
     build_cvmP
       (lseqc t1' t2')
       {| st_ev := e;
          st_trace := [];
-         st_pl := p;
          st_evid := i; st_AM_config := ac |}
       (resultC tt)
       {| st_ev := e'';
          st_trace := tr;
-         st_pl := p'';
          st_evid := i''; st_AM_config := ac'' |} ->
 
-    exists e' tr' p' i' ac',
+    exists e' tr' i' ac',
       build_cvmP
         t1'
         {| st_ev := e;
            st_trace := [];
-           st_pl := p;
            st_evid := i; st_AM_config := ac |}
         (resultC  tt)
         {| st_ev := e';
            st_trace := tr';
-           st_pl := p';
            st_evid := i'; st_AM_config := ac' |} /\
       exists tr'',
         build_cvmP
           t2'
           {| st_ev := e';
              st_trace := [];
-             st_pl := p';
              st_evid := i'; st_AM_config := ac' |}
           (resultC tt)
           {| st_ev := e'';
              st_trace := tr'';
-             st_pl := p'';
              st_evid := i''; st_AM_config := ac'' |} /\
         tr = tr' ++ tr''.     
 Proof.
@@ -1984,10 +1927,10 @@ Proof.
   eexists.
 
   split.
-  -
+  - rewrite <- ccp_iff_cc in *.
     eassumption.
   -
-    do_exists_some_cc t2' {| st_ev := st_ev0; st_trace := []; st_pl := st_pl0; st_evid := st_evid0; st_AM_config := st_AM_config0 |}.
+    do_exists_some_cc t2' {| st_ev := st_ev0; st_trace := []; st_evid := st_evid0; st_AM_config := st_AM_config0 |}.
     vmsts.
     repeat ff.
     destruct H0; ff.
@@ -1995,11 +1938,8 @@ Proof.
     assert (errC c = resultC tt).
     {
       wrap_ccp_dohi. ff.
-      invc H1. invc Heqp1.
-      edestruct cvm_errors_deterministic.
-      apply H.
-      apply H0.
-      ff.
+      rewrite <- ccp_iff_cc in *.
+      eapply cvm_errors_deterministic; eauto.
     }
   solve_by_inversion.
     +
@@ -2021,20 +1961,20 @@ Qed.
 
 
 (** Structural convenience lemma:  reconfigures CVM execution to use an empty initial trace *)
-Lemma restl : forall t e e' x tr p p' i i' ac ac' res,
+Lemma restl : forall t e e' x tr i i' ac ac' res,
     build_cvmP t
-                     {| st_ev := e; st_trace := x; st_pl := p; st_evid := i; st_AM_config := ac|}
-                     (res)
-                     {| st_ev := e'; st_trace := x ++ tr; st_pl := p'; st_evid := i'; st_AM_config := ac' |} ->
+      {| st_ev := e; st_trace := x; st_evid := i; st_AM_config := ac|}
+      (res)
+      {| st_ev := e'; st_trace := x ++ tr; st_evid := i'; st_AM_config := ac' |} ->
 
     build_cvmP t
-                     {| st_ev := e; st_trace := []; st_pl := p; st_evid := i; st_AM_config := ac |}
-                     (res)
-                     {| st_ev := e'; st_trace := tr; st_pl := p'; st_evid := i'; st_AM_config := ac' |}.
+      {| st_ev := e; st_trace := []; st_evid := i; st_AM_config := ac |}
+      (res)
+      {| st_ev := e'; st_trace := tr; st_evid := i'; st_AM_config := ac' |}.
 Proof.
   intros.
 
-  do_exists_some_cc t  {| st_ev := e; st_trace := []; st_pl := p; st_evid := i; st_AM_config := ac |}.
+  do_exists_some_cc t  {| st_ev := e; st_trace := []; st_evid := i; st_AM_config := ac |}.
   wrap_ccp_dohi.
 
   assert (res = H1).
@@ -2054,8 +1994,8 @@ Proof.
     rewrite H0; clear H0.
     assert (tr = st_trace).
     {
-      assert (Cvm_St.st_trace {| st_ev := st_ev; st_trace := x ++ tr; st_pl := st_pl; st_evid := st_evid; st_AM_config := st_AM_config|} =
-              x ++ Cvm_St.st_trace {| st_ev := st_ev; st_trace := st_trace; st_pl := st_pl; st_evid := st_evid; st_AM_config := st_AM_config |}).
+      assert (Cvm_St.st_trace {| st_ev := st_ev; st_trace := x ++ tr; st_evid := st_evid; st_AM_config := st_AM_config|} =
+              x ++ Cvm_St.st_trace {| st_ev := st_ev; st_trace := st_trace; st_evid := st_evid; st_AM_config := st_AM_config |}).
       {
         eapply st_trace_cumul'; eauto.
         wrap_ccp_dohi.
@@ -2074,20 +2014,17 @@ Defined.
 Ltac do_restl :=
   match goal with
   | [H: build_cvmP ?t
-        {| st_ev := ?e; st_trace := ?tr; st_pl := ?p; st_evid := ?i; st_AM_config := ?ac |}
+        {| st_ev := ?e; st_trace := ?tr; st_evid := ?i; st_AM_config := ?ac |}
         ?res
-        {| st_ev := ?e'; st_trace := ?tr ++ ?x; st_pl := ?p'; st_evid := ?i'; st_AM_config := ?ac' |}
+        {| st_ev := ?e'; st_trace := ?tr ++ ?x; st_evid := ?i'; st_AM_config := ?ac' |}
         (*H2: well_formed_r ?t*) |- _] =>
     assert_new_proof_by
       (build_cvmP t
-                        {| st_ev := e; st_trace := []; st_pl := p; st_evid := i; st_AM_config := ac|}
-                        ?res
-                        {| st_ev := e'; st_trace := x; st_pl := p'; st_evid := i'; st_AM_config := ac' |})
+        {| st_ev := e; st_trace := []; st_evid := i; st_AM_config := ac|}
+        ?res
+        {| st_ev := e'; st_trace := x; st_evid := i'; st_AM_config := ac' |})
       ltac:(eapply restl; [apply H])
   end.
-
-
-
 
 (** * Lemma:  evidence semantics same for annotated and un-annotated terms *)
 Lemma eval_aeval': forall t1 p et,
@@ -2097,9 +2034,6 @@ Proof.
     repeat ff;
     repeat jkjke.
 Defined.
-
-
-
 
 Axiom cvm_evidence_correct_type : forall t p e e',
   cvm_evidence t p e = e' -> 
@@ -2127,16 +2061,62 @@ Axiom par_evidence_clear: forall l p bits et t2,
     parallel_vm_thread l (lseqc (aspc CLEAR) t2) p (evc bits et) =
     parallel_vm_thread l t2 p mt_evc.
 
+Lemma doRemote_session'_ac_immut : forall t st st' res p ev,
+    doRemote_session' t p ev st = (res, st') ->
+    st_AM_config st = st_AM_config st'.
+Proof.
+  unfold doRemote_session'.
+  intuition.
+  monad_unfold.
+  ff.
+Qed.
+
+Lemma build_cvm_ac_immut : forall t st st' res,
+    build_cvm t st = (res, st') ->
+    st_AM_config st = st_AM_config st'.
+Proof.
+  induction t; simpl in *; intuition; eauto; ff.
+  - monad_unfold; destruct a; ff.
+  - repeat (monad_unfold; simpl in *; intuition; eauto; ff);
+    eapply doRemote_session'_ac_immut in Heqp0; eauto.
+  - monad_unfold; ff; eauto;
+    try eapply IHt1 in Heqp;
+    try eapply IHt2 in Heqp0;
+    find_rewrite; eauto.
+  - monad_unfold; ff; eauto;
+    try eapply IHt1 in Heqp;
+    try eapply IHt2 in Heqp4; 
+    simpl in *; eauto; 
+    find_rewrite; eauto.
+  - monad_unfold; ff; eauto;
+    try eapply IHt1 in Heqp;
+    try eapply IHt2 in Heqp4; 
+    simpl in *; eauto; 
+    find_rewrite; eauto.
+    unfold add_trace; simpl in *.
+    destruct c; simpl in *; eauto.
+Qed.
+
+Lemma build_cvmP_ac_immut : forall t st st' res,
+    build_cvmP t st res st' ->
+    st_AM_config st = st_AM_config st'.
+Proof.
+  setoid_rewrite <- ccp_iff_cc.
+  eapply build_cvm_ac_immut.
+Qed.
+
 (** * Main Lemma:  CVM execution maintains the Evidence Type reference semantics (eval) for 
       its internal evidence bundle. *)
-Lemma cvm_refines_lts_evidence' : forall t tr tr' bits bits' et et' p p' i i' ac ac',
+Lemma cvm_refines_lts_evidence' : forall t tr tr' bits bits' et et' i i' ac ac',
     build_cvmP (copland_compile t)
-                     (mk_st (evc bits et) tr p i ac)
-                     (resultC tt)
-                     (mk_st (evc bits' et') tr' p' i' ac') ->
-    et' = (Term_Defs.eval t p et).
+        (mk_st (evc bits et) tr i ac)
+        (resultC tt)
+        (mk_st (evc bits' et') tr' i' ac') ->
+    et' = (Term_Defs.eval t (my_abstract_plc (absMan ac)) et).
 Proof.
-  intros.
+  intuition.
+  eapply build_cvmP_ac_immut in H as H'.
+  simpl in *; subst.
   generalizeEverythingElse t.
   induction t; intros.
   
@@ -2146,7 +2126,6 @@ Proof.
     Auto.ff.
     destruct a;
       (try dd; eauto); try (repeat Auto.ff).
-
       
 
   - (* at case *)
@@ -2164,23 +2143,51 @@ Proof.
     edestruct alseq_decomp.
     eapply restl.
     eassumption.
+    fold copland_compile in *.
     destruct_conjs.
-
-    wrap_ccp.
-    
-    destruct x.
-    repeat jkjke'.
+    repeat match goal with
+    | x : EvC |- _ =>
+      destruct x
+    | H : build_cvmP (copland_compile t1) _ _ _ |- _ =>
+      let AC := fresh "AC" in
+      let Ho := fresh "Ho" in
+      eapply build_cvmP_ac_immut in H as AC;
+      simpl in *; try rewrite AC in *; clear AC;
+      eapply IHt1 in H as Ho;
+      simpl in *; subst; clear H
+    | H2 : build_cvmP (copland_compile t2) _ _ _ |- _ =>
+      let AC := fresh "AC" in
+      let Ho := fresh "Ho" in
+      eapply build_cvmP_ac_immut in H2 as AC;
+      simpl in *; try rewrite AC in *; clear AC;
+      eapply IHt2 in H2 as Ho;
+      simpl in *; subst; clear H2
+    end; eauto.
     
   - (* abseq case *)
-    wrap_ccp.
+    simpl in *; repeat ff; subst;
+    wrap_ccp; repeat ff;
+    repeat match goal with
+    | x : EvC |- _ =>
+      destruct x
+    | u : unit |- _ =>
+      destruct u
+    | H : build_cvmP (copland_compile t1) _ _ _ |- _ =>
+      let AC := fresh "AC" in
+      let Ho := fresh "Ho" in
+      eapply build_cvmP_ac_immut in H as AC;
+      simpl in *; try rewrite AC in *; clear AC;
+      eapply IHt1 in H as Ho;
+      simpl in *; subst; clear H
+    | H2 : build_cvmP (copland_compile t2) _ _ _ |- _ =>
+      let AC := fresh "AC" in
+      let Ho := fresh "Ho" in
+      eapply build_cvmP_ac_immut in H2 as AC;
+      simpl in *; try rewrite AC in *; clear AC;
+      eapply IHt2 in H2 as Ho;
+      simpl in *; subst; clear H2
+    end; eauto.
 
-
-
-    destruct s0; destruct s1; Auto.ff; 
-      wrap_ccp;
-      repeat Auto.ff;
-      repeat find_apply_hyp_hyp; try congruence.
-      
    - (* abpar case *)
 
     destruct s; repeat Auto.ff.
@@ -2190,10 +2197,10 @@ Proof.
       Auto.ff.
       find_apply_hyp_hyp.
 
-      assert (e0 = eval t2 p' et).
+
+      assert (e0 = eval t2 (my_abstract_plc (absMan ac')) et).
       {
-        eapply par_evidence_r.
-        eassumption.
+        eapply par_evidence_r; eauto.
       }
       congruence.
       
@@ -2202,11 +2209,10 @@ Proof.
       Auto.ff.
       find_apply_hyp_hyp.
 
-      assert (e0 = eval t2 p' mt).
+      assert (e0 = eval t2 (my_abstract_plc (absMan ac')) mt).
       {
         rewrite par_evidence_clear in *.
-        eapply par_evidence_r.
-        eassumption.
+        eapply par_evidence_r; eauto.
       }
       
       congruence.
@@ -2215,10 +2221,9 @@ Proof.
       Auto.ff.
       find_apply_hyp_hyp.
 
-      assert (e0 = eval t2 p' et).
+      assert (e0 = eval t2 (my_abstract_plc (absMan ac')) et).
       {
-        eapply par_evidence_r.
-        eassumption.
+        eapply par_evidence_r; eauto.
       }
       congruence.
     +
@@ -2226,25 +2231,24 @@ Proof.
       Auto.ff.
       find_apply_hyp_hyp.
 
-      assert (e0 = eval t2 p' mt).
+      assert (e0 = eval t2 (my_abstract_plc (absMan ac')) mt).
       {
         rewrite par_evidence_clear in *.
 
-        eapply par_evidence_r.
-        eassumption.
+        eapply par_evidence_r; eauto.
       }
       congruence.
 Qed.
 
 (** * Propositional version of CVM Evidence Type preservation. *)
 Lemma cvm_refines_lts_evidence :
-  forall t t' tr tr' bits bits' et et' p p' i i' ac ac',
+  forall t t' tr tr' bits bits' et et' i i' ac ac',
     term_to_coreP t t' ->
     build_cvmP t'
-                     (mk_st (evc bits et) tr p i ac)
-                     (resultC tt)
-                     (mk_st (evc bits' et') tr' p' i' ac') ->
-    et' = (Term_Defs.eval t p et).
+      (mk_st (evc bits et) tr i ac)
+      (resultC tt)
+      (mk_st (evc bits' et') tr' i' ac') ->
+    et' = (Term_Defs.eval t (my_abstract_plc (absMan ac)) et).
 Proof.
   intros.
   invc H.
