@@ -9,10 +9,10 @@ Import ListNotations ResultNotation.
 
 (* Protocol Run Section *)
 Definition ProtocolRunRequest_to_JSON (req: ProtocolRunRequest): JSON :=
-  JSON__Object 
-    [(STR_REQ_PLC, (JSON__String (Plc_to_stringT (prreq_req_plc req))));
-    (STR_TERM, (JSON__String (Term_to_stringT (prreq_term req)))); 
-    (STR_EV, (JSON__String (RawEv_to_stringT (prreq_ev req))))].
+  JSON_Object 
+    [(STR_REQ_PLC, (JSON_String (Plc_to_stringT (prreq_req_plc req))));
+    (STR_TERM, (JSON_String (Term_to_stringT (prreq_term req)))); 
+    (STR_EV, (JSON_String (RawEv_to_stringT (prreq_ev req))))].
 
 Definition JSON_to_ProtocolRunRequest (req : JSON): ResultT ProtocolRunRequest StringT :=
   temp_term <- JSON_get_stringT STR_TERM req ;;
@@ -24,9 +24,9 @@ Definition JSON_to_ProtocolRunRequest (req : JSON): ResultT ProtocolRunRequest S
   resultC (mkPRReq term req_plc ev).
 
 Definition ProtocolRunResponse_to_JSON (resp: ProtocolRunResponse): JSON :=
-  JSON__Object 
-    [(STR_SUCCESS, (JSON__Boolean (prresp_success resp)));
-    (STR_PAYLOAD, (JSON__String (RawEv_to_stringT (prresp_ev resp))))].
+  JSON_Object 
+    [(STR_SUCCESS, (JSON_Boolean (prresp_success resp)));
+    (STR_PAYLOAD, (JSON_String (RawEv_to_stringT (prresp_ev resp))))].
 
 Definition JSON_to_ProtocolRunResponse (resp : JSON): ResultT ProtocolRunResponse StringT :=
   temp_success <- JSON_get_bool STR_SUCCESS resp ;;
@@ -36,8 +36,8 @@ Definition JSON_to_ProtocolRunResponse (resp : JSON): ResultT ProtocolRunRespons
 
 (* Protocol Negotiate Section *)
 Definition ProtocolNegotiateRequest_to_JSON (req: ProtocolNegotiateRequest): JSON :=
-  JSON__Object 
-    [(STR_TERM, (JSON__String (Term_to_stringT (pnreq_term req))))].
+  JSON_Object 
+    [(STR_TERM, (JSON_String (Term_to_stringT (pnreq_term req))))].
 
 Definition JSON_to_ProtocolNegotiateRequest (req : JSON): 
     ResultT ProtocolNegotiateRequest StringT :=
@@ -46,9 +46,9 @@ Definition JSON_to_ProtocolNegotiateRequest (req : JSON):
   resultC (mkPNReq term).
 
 Definition ProtocolNegotiateResponse_to_JSON (resp: ProtocolNegotiateResponse): JSON :=
-  JSON__Object 
-    [(STR_SUCCESS, (JSON__Boolean (pnresp_success resp)));
-    (STR_PAYLOAD, (JSON__String (Term_to_stringT (pnresp_term resp))))].
+  JSON_Object 
+    [(STR_SUCCESS, (JSON_Boolean (pnresp_success resp)));
+    (STR_PAYLOAD, (JSON_String (Term_to_stringT (pnresp_term resp))))].
 
 Definition JSON_to_ProtocolNegotiateResponse (resp : JSON): 
     ResultT ProtocolNegotiateResponse StringT :=
@@ -59,11 +59,11 @@ Definition JSON_to_ProtocolNegotiateResponse (resp : JSON):
 
 (* Protocol Appraise Section *)
 Definition ProtocolAppraiseRequest_to_JSON (req: ProtocolAppraiseRequest): JSON :=
-  JSON__Object 
-    [(STR_TERM, (JSON__String (Term_to_stringT (pareq_term req))));
-    (STR_REQ_PLC, (JSON__String (Plc_to_stringT (pareq_plc req))));
-    (STR_EVIDENCE, (JSON__String (Evidence_to_stringT (pareq_evidence req))));
-    (STR_EV, (JSON__String (RawEv_to_stringT (pareq_ev req))))].
+  JSON_Object 
+    [(STR_TERM, (JSON_String (Term_to_stringT (pareq_term req))));
+    (STR_REQ_PLC, (JSON_String (Plc_to_stringT (pareq_plc req))));
+    (STR_EVIDENCE, (JSON_String (Evidence_to_stringT (pareq_evidence req))));
+    (STR_EV, (JSON_String (RawEv_to_stringT (pareq_ev req))))].
 
 Definition JSON_to_ProtocolAppraiseRequest (req : JSON): 
     ResultT ProtocolAppraiseRequest StringT :=
@@ -78,9 +78,9 @@ Definition JSON_to_ProtocolAppraiseRequest (req : JSON):
   resultC (mkPAReq term plc evidence ev).
 
 Definition ProtocolAppraiseResponse_to_JSON (resp: ProtocolAppraiseResponse): JSON :=
-  JSON__Object 
-    [(STR_SUCCESS, (JSON__Boolean (paresp_success resp)));
-    (STR_PAYLOAD, (JSON__String (AppResultC_to_stringT (paresp_result resp))))].
+  JSON_Object 
+    [(STR_SUCCESS, (JSON_Boolean (paresp_success resp)));
+    (STR_PAYLOAD, (JSON_String (AppResultC_to_stringT (paresp_result resp))))].
 
 Definition JSON_to_ProtocolAppraiseResponse (resp : JSON): 
     ResultT ProtocolAppraiseResponse StringT :=
@@ -153,6 +153,6 @@ Definition JSON_to_AM_Protocol_Interface (msg : JSON):
 
 (* Error Response *)
 Definition ErrorResponseJSON (msg: StringT): JSON :=
-  JSON__Object 
-    [(STR_SUCCESS, JSON__Boolean false);
-    (STR_PAYLOAD, (JSON__String msg))].
+  JSON_Object 
+    [(STR_SUCCESS, JSON_Boolean false);
+    (STR_PAYLOAD, (JSON_String msg))].
