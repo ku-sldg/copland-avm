@@ -17,7 +17,9 @@ Import ListNotations.
 
 
 Definition lib_supports_manifest (al : AM_Library) (am : Manifest) : Prop :=
-  (forall (a : ASP_ID), In_set a am.(asps) -> exists cb, Maps.map_get al.(Local_ASPS) a = Some cb) /\
+  (forall (a : ASP_ID), In_set a am.(asps) -> 
+      (exists cb, Maps.map_get al.(Local_ASPS) a = Some cb) \/
+      (exists b, Maps.map_get al.(External_ASPS) a = Some b)) /\
   (forall (up : Plc), In_set up am.(uuidPlcs) -> exists b, Maps.map_get al.(Local_Plcs) up = Some b) /\
  (* (forall (a : ASP_ID), In_set a am.(asps_external) -> exists b, Maps.map_get al.(External_ASPS) a = Some b) /\ *)
   (forall (pkp : Plc), In_set pkp am.(pubKeyPlcs) -> exists b, Maps.map_get al.(Local_PubKeys) pkp = Some b) /\
@@ -29,7 +31,7 @@ Ltac unfolds :=
   repeat unfold manifest_generator, manifest_compiler, generate_ASP_dispatcher, 
     generate_Plc_dispatcher, generate_PubKey_dispatcher,
     generate_UUID_dispatcher, lib_supports_manifest, aspid_manifest_update,
-    (* generate_external_ASP_dispatcher, *)
+    generate_external_ASP_dispatcher,
     sig_params, hsh_params, enc_params in *;
   simpl in *; 
   repeat (match goal with
@@ -96,32 +98,46 @@ Global Hint Resolve filter_resolver : core.
 
 Require Import Helpers_CvmSemantics.
 
+(*
+
 Lemma callbacks_work_asps : forall absMan amLib amConf,
   lib_supports_manifest amLib absMan ->
   manifest_compiler absMan amLib = amConf ->
   (forall x, In_set x absMan.(asps) -> 
+  (
     forall l p t p' ev ev' res,
       aspCb amConf (asp_paramsC x l p t) p' ev ev' = res ->
       (exists errStr, res = errC (Runtime errStr)) \/ (exists r, res = resultC r)
+  )
+  \/
+  (
+    blah (* statement about ext_aspCb here ... *)
+    (exists errStr, res = errC (Runtime errStr)) \/ (exists r, res = resultC r)
+  )
+
   ).
 Proof.
   induction absMan; simpl in *; intuition;
   destruct res; eauto; destruct d; eauto.
   destruct amConf; simpl in *;
   destruct amLib; simpl in *;
-  (*try do_inv_amlib. *)
+  try do_inv_amlib;
   unfold manifest_compiler in H0; repeat find_injection;
-  simpl in *.
-  repeat break_match; try congruence.
+  simpl in *;
+  repeat break_match; try congruence;
   unfold lib_supports_manifest in *; simpl in *;
-  (* try do_inv_amlib; *)
+  try do_inv_amlib;
   intuition.
-  pose proof (H0 _ H1).
+  pose proof (H0 _ H1);
   assert ((fun x0 : ASP_ID =>
              if in_dec_set x0 asps
              then true
-             else false) x = true).
+             else false) x = true);
   repeat break_match; eauto.
+
+  destruct H4.
+
+  +
 
   let HH := fresh "HH" in
   let xx := fresh "xx" in
@@ -135,11 +151,33 @@ Proof.
       else false)) H1 H2) as HH
   end.
   destruct HH as [xx].
+  monad_simp.
+  ff.
 
-  assert (Some xx = None).
+
+  +
+  let HH := fresh "HH" in
+  let xx := fresh "xx" in
+  match goal with
+  | H1 : exists _, _,
+    H2 : (fun _ => _) _ = _
+  |- _ => 
+      pose proof (filter_resolver _ _ ((fun x0 : ASP_ID =>
+      if in_dec_set x0 asps
+      then true
+      else false)) H1 H2) as HH
+  end.
+  destruct HH as [xx].
+  monad_simp.
+  ff.
+  destruct H4.
+  rewrite <- Heqo in *.
   jkjke'.
-  congruence.
+  repeat ff.
+
 Qed.
+
+*)
 
 Lemma never_change_am_conf : forall t st res st',
   build_cvm (copland_compile t) st = (res, st') ->
@@ -165,11 +203,9 @@ Definition supports_am (ac1 ac2 : AM_Config) : Prop :=
   (forall p, (forall res, 
       ac1.(plcCb) p = resultC res ->
       ac2.(plcCb) p = resultC res)) /\
-      (*
   (forall i, (forall res, 
       ac1.(ext_aspCb) i = resultC res ->
       ac2.(ext_aspCb) i = resultC res)) /\
-      *)
   (forall aid l targ targid p' ev ev' errStr,
       ac1.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC (Runtime errStr) ->
       ac2.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC (Runtime errStr)) /\
@@ -178,13 +214,11 @@ Definition supports_am (ac1 ac2 : AM_Config) : Prop :=
       ac2.(pubKeyCb) p = errC (Runtime errStr)) /\
   (forall p errStr, 
       ac1.(plcCb) p = errC (Runtime errStr) ->
-      ac2.(plcCb) p = errC (Runtime errStr)).
-      (*
+      ac2.(plcCb) p = errC (Runtime errStr))
       /\
   (forall p errStr, 
       ac1.(ext_aspCb) p = errC (Runtime errStr) ->
       ac2.(ext_aspCb) p = errC (Runtime errStr)).
-      *)
 
 Theorem supports_am_refl : forall ac1,
   supports_am ac1 ac1.
@@ -204,6 +238,14 @@ Local Hint Resolve never_change_am_conf : core.
 Local Hint Resolve supports_am_refl : core.
 Local Hint Resolve supports_am_trans : core.
 
+Definition aspid_support_exec (ac:AM_Config) (i:ASP_ID) : Prop := 
+  (forall l targ targid p' ev ev',
+  ( (exists res, 
+      ac.(aspCb) (asp_paramsC i l targ targid) p' ev ev' = resultC res) \/ 
+    (exists errStr, ac.(aspCb) (asp_paramsC i l targ targid) p' ev ev' = errC (Runtime errStr))))
+  \/
+  ( (exists res, ac.(ext_aspCb) i = resultC res) \/ 
+    (exists errStr, ac.(ext_aspCb) i = errC (Runtime errStr))).
 
 
 Fixpoint am_config_support_exec (t : Term) 
@@ -214,45 +256,51 @@ match t with
     | NULL => True
     | CPY => True
     | SIG => 
-      (*
-        (exists res, ac.(ext_aspCb) sig_aspid = resultC res)
+        aspid_support_exec ac sig_aspid
+    (*
+        (forall l targ targid p' ev ev',
+        ( (exists res, 
+            ac.(aspCb) (asp_paramsC sig_aspid l targ targid) p' ev ev' = resultC res) \/ 
+          (exists errStr, ac.(aspCb) (asp_paramsC sig_aspid l targ targid) p' ev ev' = errC (Runtime errStr))))
         \/
+        ( (exists res, ac.(ext_aspCb) sig_aspid = resultC res) \/ 
+          (exists errStr, ac.(ext_aspCb) sig_aspid = errC (Runtime errStr)))
       *)
-        (
-        forall l targ targid p' ev ev',
-        ((exists res, 
-        ac.(aspCb) (asp_paramsC sig_aspid l targ targid) p' ev ev' = resultC res) \/ 
-        (exists errStr, ac.(aspCb) (asp_paramsC sig_aspid l targ targid) p' ev ev' = errC (Runtime errStr))))
     | HSH =>
+      aspid_support_exec ac hsh_aspid
     (*
-        (exists res, ac.(ext_aspCb) hsh_aspid = resultC res) 
+        (forall l targ targid p' ev ev',
+        ( (exists res, 
+           ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) p' ev ev' = resultC res) \/ 
+          (exists errStr, ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) p' ev ev' = errC (Runtime errStr))))
         \/
-    *)
-        (
-        forall l targ targid p' ev ev',
-        ((exists res, 
-        ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) p' ev ev' = resultC res) \/ 
-        (exists errStr, ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) p' ev ev' = errC (Runtime errStr))))
+        ((exists res, ac.(ext_aspCb) hsh_aspid = resultC res) \/ 
+        (exists errStr, ac.(ext_aspCb) hsh_aspid = errC (Runtime errStr)))
+      *)
+        
     | ENC p =>
-    (*
-        (exists res, ac.(ext_aspCb) enc_aspid = resultC res)
-        \/
-    *)
+      (
         (forall l targ targid p' ev ev',
         ((exists res, 
-        ac.(aspCb) (asp_paramsC enc_aspid l targ targid) p' ev ev' = resultC res) \/ 
+          ac.(aspCb) (asp_paramsC enc_aspid l targ targid) p' ev ev' = resultC res) \/ 
         (exists errStr, ac.(aspCb) (asp_paramsC enc_aspid l targ targid) p' ev ev' = errC (Runtime errStr)))) /\
         ((exists res, ac.(pubKeyCb) p = resultC res) \/ 
         (exists errStr, ac.(pubKeyCb) p = errC (Runtime errStr)))
+      )
+      \/
+      ( (exists res, ac.(ext_aspCb) enc_aspid = resultC res) \/ 
+        (exists errStr, ac.(ext_aspCb) enc_aspid = errC (Runtime errStr)))
     | ASPC _ _ (asp_paramsC aspid _ _ _) =>
+      aspid_support_exec ac aspid
     (*
-        (exists res, ac.(ext_aspCb) aspid = resultC res)
-        \/
-    *)
         (forall l targ targid p' ev ev',
         ((exists res, 
         ac.(aspCb) (asp_paramsC aspid l targ targid) p' ev ev' = resultC res) \/ 
         (exists errStr, ac.(aspCb) (asp_paramsC aspid l targ targid) p' ev ev' = errC (Runtime errStr))))
+        \/
+        ((exists res, ac.(ext_aspCb) aspid = resultC res) \/ 
+        (exists errStr, ac.(ext_aspCb) aspid = errC (Runtime errStr)))
+      *)
     end
 | att p' t' =>
     ((exists res, ac.(plcCb) p' = resultC res) \/ 
@@ -373,11 +421,13 @@ induction t; simpl in *; intuition; eauto.
     try find_injection;
     try find_contradiction;
     try find_injection;
-    (* repeat find_rewrite; *)
+    repeat find_rewrite; 
     simpl in *; subst; intuition; 
     eauto; try congruence);
-  unfold supports_am, sig_params, enc_params, hsh_params in *; intuition; 
+  unfold supports_am, aspid_support_exec, sig_params, enc_params, hsh_params in *; intuition; 
 
+
+  (*
   try
 
   match goal with
@@ -404,6 +454,8 @@ induction t; simpl in *; intuition; eauto.
       ]
   end.
 
+  *)
+
 
   (*
 
@@ -411,8 +463,9 @@ induction t; simpl in *; intuition; eauto.
   admit.
   admit.
   admit.
+  *)
 
-  (*
+  try
 
   match goal with
   | H1 : forall _, _,
@@ -424,7 +477,8 @@ induction t; simpl in *; intuition; eauto.
       let H' := fresh "Hx" in
       let H'' := fresh "Hx" in
       let res := fresh "res" in
-      destruct (H1 l targ tid p' ev ev') as [BLAH | [H | H]]; 
+      destruct (H1 l targ tid p' ev ev') as [[H | H] | BLAH]; 
+
       [
         (* result side *)
         destruct H as [res H''];
@@ -434,13 +488,143 @@ induction t; simpl in *; intuition; eauto.
         (* err side *)
         destruct H as [errStr H''];
         pose proof (H3 a l targ tid p' ev ev' errStr) as H';
-        intuition; find_rewrite; find_injection; eauto
+        intuition; find_rewrite; find_injection; eauto; congruence
       ]
   end.
-  *)
 
 
-  *)
+  +
+    destruct (H7 l p0 t (st_pl st) (encodeEvRaw (get_bits (st_ev st))) (get_bits (st_ev st))).
+
+    ++
+    destruct H as [res H''].
+    pose proof (H1 a0 l p0 t (st_pl st) (encodeEvRaw (get_bits (st_ev st))) (get_bits (st_ev st)) res) as H'. 
+    erewrite H' in *; eauto; congruence.
+    ++
+    destruct H as [errStr H''].
+    pose proof (H4 a0 l p0 t (st_pl st) (encodeEvRaw (get_bits (st_ev st))) (get_bits (st_ev st)) errStr) as H'.
+    intuition; find_rewrite; try find_injection; eauto; congruence.
+  + 
+  destruct_conjs.
+  find_apply_hyp_hyp.
+  find_rewrite.
+  solve_by_inversion.
+  +
+  destruct_conjs.
+  find_apply_hyp_hyp.
+  find_rewrite.
+  find_injection.
+  eauto.
+
+  +
+  destruct (H7 l p0 t (st_pl st) (encodeEvRaw []) []);
+  destruct_conjs;
+  find_apply_hyp_hyp;
+  find_rewrite;
+  solve_by_inversion.
+  +
+    destruct_conjs.
+    find_apply_hyp_hyp.
+    find_rewrite.
+    solve_by_inversion.
+
+  +
+    destruct_conjs.
+    find_apply_hyp_hyp.
+    find_rewrite.
+    find_injection.
+    eauto.
+
+  +
+  destruct (H7 sig_aspargs sig_targplc sig_targid (st_pl st) (encodeEvRaw (get_bits (st_ev st))) 
+  (get_bits (st_ev st)));
+  destruct_conjs;
+  find_apply_hyp_hyp;
+  find_rewrite;
+  solve_by_inversion.
+
+  +
+  destruct_conjs.
+  find_apply_hyp_hyp.
+  find_rewrite.
+  solve_by_inversion.
+
+  +
+  destruct_conjs.
+  find_apply_hyp_hyp.
+  find_rewrite.
+  find_injection.
+  eauto.
+
+  +
+  destruct (H7 hsh_aspargs hsh_targplc hsh_targid (st_pl st) (encodeEvRaw (get_bits (st_ev st))) 
+  (get_bits (st_ev st)));
+  destruct_conjs;
+  find_apply_hyp_hyp;
+  find_rewrite;
+  solve_by_inversion.
+
+  +
+  destruct_conjs.
+  find_apply_hyp_hyp.
+  find_rewrite.
+  solve_by_inversion.
+
+  +
+  destruct_conjs.
+  find_apply_hyp_hyp.
+  find_rewrite.
+  find_injection.
+  eauto.
+
+
+  +
+  destruct (H enc_aspargs p0 enc_targid (st_pl st) (encodeEvRaw (get_bits (st_ev st))) 
+  (get_bits (st_ev st)));
+  destruct_conjs;
+  find_apply_hyp_hyp;
+  find_rewrite;
+  solve_by_inversion.
+
+  +
+  destruct (H enc_aspargs p0 enc_targid (st_pl st) (encodeEvRaw (get_bits (st_ev st))) 
+  (get_bits (st_ev st)));
+  destruct_conjs;
+  find_apply_hyp_hyp;
+  find_rewrite;
+  solve_by_inversion.
+
+  +
+  destruct_conjs.
+  find_apply_hyp_hyp.
+  find_rewrite.
+  solve_by_inversion.
+
+  +
+  destruct_conjs.
+  find_apply_hyp_hyp.
+  find_rewrite.
+  find_injection.
+  eauto.
+
+(*
+  jkjke.
+  jkjke'.
+  jkjke'.
+  find_rewrite.
+  solve_by_inversion.
+
+  ++
+  destruct H as [res H''].
+  pose proof (H1 a0 l p0 t (st_pl st) (encodeEvRaw (get_bits (st_ev st))) (get_bits (st_ev st)) res) as H'. 
+  find_apply_hyp_hyp.
+  erewrite H' in *; eauto; congruence.
+  ++
+  destruct H as [errStr H''].
+  pose proof (H4 a0 l p0 t (st_pl st) (encodeEvRaw (get_bits (st_ev st))) (get_bits (st_ev st)) errStr) as H'.
+  intuition; find_rewrite; try find_injection; eauto; congruence.
+
+*)
 
 - subst; simpl in *; try rewrite eqb_refl in *;
   repeat (
@@ -955,9 +1139,17 @@ Admitted.
 
 Definition manifest_support_am_config (m : Manifest) (ac : AM_Config) : Prop :=
   (forall a, In_set a (m.(asps)) -> 
+  (
     forall l targ targid p' ev ev',
     (exists res, ac.(aspCb) (asp_paramsC a l targ targid) p' ev ev' = resultC res) \/
-    (exists errStr, ac.(aspCb) (asp_paramsC a l targ targid) p' ev ev' = errC (Runtime errStr))) /\
+    (exists errStr, ac.(aspCb) (asp_paramsC a l targ targid) p' ev ev' = errC (Runtime errStr)))
+
+    \/
+    ( (exists res, ac.(ext_aspCb) a = resultC res) (* \/ 
+    (exists errStr, ac.(ext_aspCb) a = errC (Runtime errStr))) *) ))
+    
+    
+    /\
   (forall p, In_set p (m.(uuidPlcs)) ->
     (exists res, ac.(plcCb) p = resultC res) \/
     (exists errStr, ac.(plcCb) p = errC (Runtime errStr))) /\
@@ -976,7 +1168,7 @@ Theorem manifest_support_am_config_compiler : forall absMan amLib,
   manifest_support_am_config absMan (manifest_compiler absMan amLib).
 Proof.
   unfold lib_supports_manifest, manifest_support_am_config, 
-    manifest_compiler, generate_PubKey_dispatcher, generate_Plc_dispatcher in *;
+    manifest_compiler, generate_PubKey_dispatcher, generate_Plc_dispatcher, generate_external_ASP_dispatcher in *;
   simpl in *; intuition;
   repeat break_match; simpl in *; intuition; eauto;
   match goal with
@@ -1001,7 +1193,11 @@ Proof.
       rewrite H in CO; destruct CO; congruence
     ]
   end.
-Qed.
+
+  - admit.
+  - admit.
+
+Admitted.
 
 Fixpoint manifest_support_term (m : Manifest) (t : Term) : Prop :=
   match t with
@@ -1038,8 +1234,20 @@ Theorem manifest_support_am_config_impl_am_config: forall t p absMan amConf,
   am_config_support_exec t p amConf.
 Proof.
   induction t; simpl in *; intuition; eauto;
-  unfold manifest_support_am_config in *; intuition; eauto;
+  unfold manifest_support_am_config, aspid_support_exec in *; intuition; eauto;
   repeat (try break_match; simpl in *; intuition; eauto).
+  -
+  subst.
+  destruct (H1 a1); eauto.
+  -
+  subst.
+  destruct (H1 sig_aspid); eauto.
+  -
+  subst.
+  destruct (H1 hsh_aspid); eauto.
+  -
+  subst.
+  destruct (H1 enc_aspid); eauto.
   - pose proof (IHt1 p absMan amConf); 
     pose proof (IHt2 p absMan amConf); intuition;
     exists amConf, amConf; eauto.
@@ -2834,11 +3042,11 @@ Lemma supports_am_mancomp_subset: forall al m m' ac,
 Proof.
   intuition.
   unfold supports_am, manifest_subset,
-    generate_Plc_dispatcher, generate_PubKey_dispatcher in *;
+    generate_Plc_dispatcher, generate_PubKey_dispatcher, generate_external_ASP_dispatcher in *;
   intuition; simpl in *; eauto;
   repeat break_match; simpl in *; intuition; subst; eauto;
   unfold supports_am, manifest_subset,
-    generate_Plc_dispatcher, generate_PubKey_dispatcher in *;
+    generate_Plc_dispatcher, generate_PubKey_dispatcher, generate_external_ASP_dispatcher in *;
   try congruence; eauto; try find_injection;
   repeat break_match; simpl in *; intuition; subst; eauto;
   try congruence;

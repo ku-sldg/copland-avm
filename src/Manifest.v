@@ -90,7 +90,7 @@ Definition empty_PolicyT : PolicyT := [].
     Local_Plcs        : MapD Plc UUID ;
     Local_PubKeys     : MapD Plc PublicKey ;
 
-    (* External_ASPS : MapD ASP_ID UUID ; *)
+    External_ASPS : MapD ASP_ID UUID ;
   }.
 
 Record AM_Config : Type := 
@@ -99,10 +99,10 @@ Record AM_Config : Type :=
     am_clone_addr : UUID ;
     aspCb : (ASPCallback DispatcherErrors) ;
     app_aspCb : (ASPCallback DispatcherErrors) ;
-    (* ext_aspCb : PlcCallback ; *)
     plcCb : PlcCallback ;
     pubKeyCb : PubKeyCallback ;
     uuidCb : UUIDCallback ;
+    ext_aspCb : PlcCallback ;
   }.
 
 Definition empty_aspCb (ps:ASP_PARAMS) (p:Plc) (bs:BS) (rawev:RawEv) : ResultT BS DispatcherErrors := 
@@ -114,7 +114,7 @@ Definition empty_aspCb (ps:ASP_PARAMS) (p:Plc) (bs:BS) (rawev:RawEv) : ResultT B
     default_uuid
     empty_aspCb
     empty_aspCb
-    (* (fun x => errC Unavailable) *)
+    (fun x => errC Unavailable)
     (fun x => errC Unavailable)
     (fun x => errC Unavailable)
     (fun x => errC Unavailable).

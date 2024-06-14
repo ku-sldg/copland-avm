@@ -27,22 +27,24 @@ Admitted.
 Inductive ASP_PARAMS: Set :=
 | asp_paramsC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP_PARAMS.
 *)
-
+(*
 Definition get_asp_params_id (params:ASP_PARAMS) : ASP_ID := 
   match params with
   | asp_paramsC i _ _ _ => i
   end.
+*)
 
 Definition doAsp_uuid (uuid:UUID) (ev:RawEv) : ResultT BS CallBackErrors.
 Admitted.
 
-
+(*
 
 (** * Stub for invoking external ASP procedures.  
       Extracted code should not need to use the Plc or Event_ID parameters 
       (those can be erased upon extraction). *)
 Definition do_asp (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) (ac : AM_Config) : ResultT BS DispatcherErrors :=
   (ac.(aspCb) params mpl (encodeEvRaw e) e).
+*)
 
 (*
   let m := absMan ac in 
@@ -73,6 +75,7 @@ Admitted.
 Definition doRemote_uuid (t:Term) (uuid:UUID) (ev:RawEv) : ResultT RawEv CallBackErrors.
 Admitted.
 
+(*
 Definition do_remote (t:Term) (pTo:Plc) (e:EvC) (ac: AM_Config) : ResultT RawEv DispatcherErrors := 
   let remote_uuid_res : ResultT UUID DispatcherErrors := ac.(plcCb) pTo in
     match remote_uuid_res with 
@@ -83,6 +86,7 @@ Definition do_remote (t:Term) (pTo:Plc) (e:EvC) (ac: AM_Config) : ResultT RawEv 
         end
     | errC e => errC e
     end.
+*)
 
 (** * Stub to simulate evidence collected by a parallel CVM instance *)
 Definition parallel_vm_thread (l:Loc) (t:Core_Term) (p:Plc) (e:EvC) : EvC.
@@ -103,12 +107,13 @@ Admitted.
 Definition doRemote_session' (t:Term) (pTo:Plc) (e:EvC) : IO EvC :=
   ret (doRemote_session t pTo e).
 *)
-
+(*
 Definition do_start_par_thread (loc:Loc) (t:Core_Term) (e:RawEv) : CVM unit :=
   ret tt.
 
 Definition do_wait_par_thread (loc:Loc) (t:Core_Term) (p:Plc) (e:EvC) : CVM EvC :=
   ret (parallel_vm_thread loc t p e).
+*)
 
 Definition requester_bound (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) : bool.
 Admitted.

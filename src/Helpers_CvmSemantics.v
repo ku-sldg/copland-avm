@@ -31,10 +31,10 @@ Proof.
   induction t; repeat (monad_unfold; simpl in *); intuition.
   - destruct a; monad_unfold; eauto.
     destruct (aspCb ac a p (encodeEvRaw (get_bits e)) (get_bits e)) eqn:E1; simpl in *; eauto.
-    (*
+    
     repeat ff.
-    repeat ff.
-    *)
+    (* repeat ff. *)
+    
 
   - (* at case *)
     repeat ff;
@@ -270,8 +270,9 @@ Proof.
   - destruct a; monad_simp; invc H; invc H0; eauto;
     destruct (aspCb ac a p (encodeEvRaw (get_bits e)) (get_bits e)); 
     simpl in *; invc H1; invc H2; eauto.
-    (*
+    
     repeat ff.
+    (*
     repeat ff.
     *)
   - 
