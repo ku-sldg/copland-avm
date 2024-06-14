@@ -21,26 +21,27 @@ Import ListNotations.
 Set Nested Proofs Allowed.
 *)
 
-Definition am_sendReq (req_plc : Plc) (t:Term) (uuid : UUID) (authTok:ReqAuthTok) (e:RawEv) : option RawEv :=
-  let req := mkPRReq req_plc t authTok e in 
-  let js := ProtocolRunRequest_to_Json req in
-  let js_res := make_JSON_Request uuid js in
-  match Json_to_ProtocolRunResponse js_res with
-  | None => None
-  | Some res =>
+Definition am_sendReq (req_plc : Plc) (t:Term) (uuid : UUID) (authTok:ReqAuthTok) (e:RawEv) : ResultT RawEv StringT :=
+  let req := mkPRReq t req_plc e in 
+  let js := ProtocolRunRequest_to_JSON req in
+  let js_res := make_JSON_Network_Request uuid js in
+  match JSON_to_ProtocolRunResponse js_res with
+  | errC msg => errC msg
+  | resultC res =>
     let '(mkPRResp success ev) := res in
-    if success then Some ev else None
+    if success then resultC ev else errC errStr_remote_am_failure
   end.
 
-Definition am_sendReq_app (uuid : UUID) (t:Term) (p:Plc) (e:Evidence) (ev:RawEv) : option AppResultC :=
+Definition am_sendReq_app (uuid : UUID) (t:Term) (p:Plc) (e:Evidence) (ev:RawEv) : 
+    ResultT AppResultC StringT :=
   let req := mkPAReq t p e ev in
-  let js := ProtocolAppraiseRequest_to_Json req in
-  let js_res := make_JSON_Request uuid js in
-  match Json_to_ProtocolAppraiseResponse js_res with
-  | None => None
-  | Some res =>
+  let js := ProtocolAppraiseRequest_to_JSON req in
+  let js_res := make_JSON_Network_Request uuid js in
+  match JSON_to_ProtocolAppraiseResponse js_res with
+  | errC msg => errC msg
+  | resultC res =>
     let '(mkPAResp success result) := res in
-    if success then Some result else None
+    if success then resultC result else errC errStr_remote_am_failure
   end.
 
 Definition gen_nonce_if_none_local (initEv:option EvC) : AM EvC :=
@@ -57,15 +58,15 @@ Definition gen_authEvC_if_some (ot:option Term) (uuid : UUID) (myPlc:Plc) (init_
   | Some auth_phrase =>
     let '(evc init_rawev_auth init_et_auth) := init_evc in
     match am_sendReq myPlc auth_phrase uuid mt_evc init_rawev_auth with
-    | None => ret (evc [] mt)
-    | Some auth_rawev =>
+    | errC msg => ret (evc [] mt)
+    | resultC auth_rawev =>
       let auth_et := eval auth_phrase myPlc init_et_auth in
         ret (evc auth_rawev auth_et)
     end
   | None => ret (evc [] mt)
   end.
 
-Definition run_appraisal_client (t:Term) (p:Plc) (et:Evidence) (re:RawEv) (addr:UUID) : option AppResultC :=
+Definition run_appraisal_client (t:Term) (p:Plc) (et:Evidence) (re:RawEv) (addr:UUID) : ResultT AppResultC StringT :=
   let expected_et := eval t p et in 
   am_sendReq_app addr t p et re.
   (*
@@ -94,8 +95,8 @@ Definition am_appraise (t:Term) (toPlc:Plc) (init_et:Evidence) (cvm_ev:RawEv) (l
         gen_appraise_AM expected_et cvm_ev 
     | false => 
       match run_appraisal_client t toPlc init_et cvm_ev uuid with
-      | None => am_failm (am_dispatch_error (Runtime (string_to_StringT "Error in run_appraisal_client"%string)))
-      | Some res => ret res
+      | errC msg => am_failm (am_dispatch_error (Runtime msg))
+      | resultC res => ret res
       end
     end) ;;
   (*

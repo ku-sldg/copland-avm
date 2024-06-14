@@ -84,10 +84,11 @@ Axiom wf_ec_preserved_remote: forall st pTarg uuid ac ev1,
     JSON_to_AM_Protocol_Response (
       make_JSON_Network_Request uuid (
         ProtocolRunRequest_to_JSON (
-          mkPRReq (
+          (mkPRReq 
             t 
-            my_abstract_plc (absMan (st_AM_config st))) 
+            (my_abstract_plc (absMan (st_AM_config st)))
             (get_bits ev1)
-        ))) = Some (Protocol_Run_Response (mkPRResp true rawEv)) -> 
+          )
+        ))) = resultC (Protocol_Run_Response (mkPRResp true rawEv)) -> 
     wf_ec ev1 -> 
     wf_ec (evc rawEv (eval t pTarg (get_et ev1))).

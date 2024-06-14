@@ -6,7 +6,7 @@
 *)
 
 Require Import More_lists Defs Term_Defs Anno_Term_Defs ConcreteEvidence LTS Event_system Term_system Main Appraisal_Evidence AutoApp.
-Require Import Term Cvm_Monad StructTactics Auto.
+Require Import ResultT Term Cvm_Monad StructTactics Auto.
 Require Import Axioms_Io Cvm_Impl Cvm_Run External_Facts Helpers_CvmSemantics Evidence_Bundlers.
 
 Require Import List.

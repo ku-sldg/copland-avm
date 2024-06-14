@@ -6,6 +6,7 @@ Primary Author:  Adam Petz, ampetz@ku.edu
 *)
 
 Require Import Term_Defs ResultT.
+Export ResultT.
 
 (* Generalized Error + State Monad *)
 Definition Err(S A E: Type) : Type := S -> (ResultT A E) * S % type.

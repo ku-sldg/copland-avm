@@ -4,7 +4,7 @@ Helper lemmas for proofs about the CVM semantics.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Anno_Term_Defs Cvm_Monad Cvm_Impl Term_Defs Auto StructTactics AutoApp Manifest.
+Require Import Anno_Term_Defs Cvm_Monad Cvm_Impl Term_Defs Auto StructTactics AutoApp Manifest ResultT.
 
 Require Import Coq.Program.Tactics Coq.Program.Equality.
 

@@ -1,6 +1,6 @@
 (* Definitions for AM Monad State (AM_St) and AM Monad (AM).  *)
 
-Require Import Maps BS Term_Defs_Core Cvm_St ErrorStMonad_Coq StringT.
+Require Import Maps ResultT BS Term_Defs_Core Cvm_St ErrorStMonad_Coq StringT.
 
 
 Require Import List.

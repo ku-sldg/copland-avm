@@ -5,7 +5,7 @@
   Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import String.
+Require Import String ResultT.
 Require Import Term_Defs Term ConcreteEvidence Evidence_Bundlers Defs Axioms_Io.
 Require Import StructTactics.
 
@@ -191,11 +191,11 @@ Definition do_remote (t:Term) (pTo:Plc) (e:EvC) (ac: AM_Config) : ResultT RawEv 
     match remote_uuid_res with 
     | resultC uuid => 
         let my_plc := (my_abstract_plc (absMan ac)) in
-        let remote_req := (mkPRReq my_plc t (evc (get_bits e) (get_et e)) (get_bits e)) in
-        let js_req := ProtocolRunRequest_to_Json remote_req in
-        let js_resp := make_JSON_Request uuid js_req in
-        match Json_to_AM_Protocol_Response js_resp with
-        | Some resp => 
+        let remote_req := (mkPRReq t my_plc (get_bits e)) in
+        let js_req := ProtocolRunRequest_to_JSON remote_req in
+        let js_resp := make_JSON_Network_Request uuid js_req in
+        match JSON_to_AM_Protocol_Response js_resp with
+        | resultC resp => 
             match resp with
             | Protocol_Run_Response prresp => 
                 let '(mkPRResp success ev) := prresp in
@@ -204,7 +204,7 @@ Definition do_remote (t:Term) (pTo:Plc) (e:EvC) (ac: AM_Config) : ResultT RawEv 
                 else errC (Runtime errStr_remote_am_failure)
             | _ => errC (Runtime errStr_incorrect_resp_type)
             end
-        | None => errC (Runtime errStr_json_parsing)
+        | errC msg => errC (Runtime msg)
         end
     | errC e => errC e
     end.

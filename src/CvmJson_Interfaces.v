@@ -4,6 +4,7 @@
     At the moment, these are too low-level to represent faithfully in the Coq development.   *)
 
 Require Import Term_Defs_Core Term_Defs StringT List JSON Interface_Types ResultT ErrorStringConstants.
+Export Interface_Types JSON.
 Import ListNotations ResultNotation.
 
 (* Protocol Run Section *)

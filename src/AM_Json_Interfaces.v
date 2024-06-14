@@ -1,6 +1,6 @@
 Require Import List.
 Import ListNotations.
-Require Import BS Manifest Term_Defs CvmJson_Interfaces String IO_Stubs Manifest_Admits ErrorStMonad_Coq AM_Monad.
+Require Import BS Manifest Term_Defs CvmJson_Interfaces StringT IO_Stubs Manifest_Admits ErrorStMonad_Coq AM_Monad.
 Require Import ErrorStringConstants AM_Helpers Impl_appraisal Cvm_Run.
 
 Definition am_check_auth_tok (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) 
@@ -51,45 +51,45 @@ Definition do_appraisal_session (appreq:ProtocolAppraiseRequest) (ac:AM_Config) 
   let appres := run_am_app_comp_init comp my_amst mtc_app true in
     mkPAResp true appres.
 
-Definition handle_AM_request_Json (js : Json) (ac : AM_Config) (al:AM_Library) (nonceVal:BS) : Json :=
-  match Json_to_AM_Protocol_Request js with 
-  | None => ErrorResponseJson "Invalid Request Format"
-  | Some (Protocol_Run_Request r) => 
-    let '(mkPRReq from_plc cop_term tok ev) := r in
+Definition handle_AM_request_JSON (js : JSON) (ac : AM_Config) (al:AM_Library) (nonceVal:BS) : JSON :=
+  match JSON_to_AM_Protocol_Request js with 
+  | errC msg => ErrorResponseJSON msg
+  | resultC (Protocol_Run_Request r) => 
+    let '(mkPRReq cop_term from_plc ev) := r in
     let my_plc := (my_abstract_plc (absMan ac)) in
-    let test_print := print_auth_tok tok in
     (* NOTE: Skipping auth tok checking for now, not sure how it should work *)
     (* v <- am_check_auth_tok cop_term from_plc tok ;;
     match (appraise_auth_tok v) with
     | true => 
       let asdf := config_AM_if_lib_supported (absMan ac) al in
       let resev := run_cvm_rawEv cop_term ev ac in
-      ProtocolRunResponse_to_Json (mkPRResp true resev)
-    | false => ErrorResponseJson "Appraisal failed"
+      ProtocolRunResponse_to_JSON (mkPRResp true resev)
+    | false => ErrorResponseJSON "Appraisal failed"
     end *)
     let cvm_resp := (run_cvm_rawEv cop_term ev ac) in
-      ProtocolRunResponse_to_Json (mkPRResp true cvm_resp)
+      ProtocolRunResponse_to_JSON (mkPRResp true cvm_resp)
 
-  | Some (Protocol_Appraise_Request appreq) => 
+  | resultC (Protocol_Appraise_Request appreq) => 
     let app_resp := (do_appraisal_session appreq ac nonceVal) in 
-      ProtocolAppraiseResponse_to_Json app_resp
+      ProtocolAppraiseResponse_to_JSON app_resp
 
-  | Some (Protocol_Negotiate_Request r) => 
+  | resultC (Protocol_Negotiate_Request r) => 
     (* TODO: Fill this in when negotiation is implemented *)
-    ErrorResponseJson "Negotiation not implemented yet"
+    ErrorResponseJSON errStr_negotiation_not_implemented
   end.
 
-Definition make_AM_Protocol_Run_request_json 
+Definition make_AM_Protocol_Run_request_JSON 
     (t:Term) (targ_uuid : UUID) (tok:ReqAuthTok) (ev:RawEv) (from_plc : Plc)
-    : option RawEv :=
-  let req := (mkPRReq from_plc t tok ev) in
-  let js_req := ProtocolRunRequest_to_Json req in
-  let js_resp := make_JSON_Request targ_uuid js_req in
-  match Json_to_AM_Protocol_Response js_resp with
-  | Some (Protocol_Run_Response prresp) => 
+    : ResultT RawEv StringT :=
+  let req := (mkPRReq t from_plc ev) in
+  let js_req := ProtocolRunRequest_to_JSON req in
+  let js_resp := make_JSON_Network_Request targ_uuid js_req in
+  match JSON_to_AM_Protocol_Response js_resp with
+  | resultC (Protocol_Run_Response prresp) => 
     let '(mkPRResp success ev) := prresp in
     if success 
-    then Some ev 
-    else None
-  | _ => None
+    then resultC ev 
+    else errC errStr_remote_am_failure
+  | errC msg => errC msg
+  | _ => errC errStr_invalid_request_type
   end.

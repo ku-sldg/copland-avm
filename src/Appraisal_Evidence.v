@@ -4,7 +4,7 @@
     Also included:  properties about CVM internal Evidence and Event handling.  
     TODO:  This file has become quite bloated.  May need to refactor/decompose.  *)
 
-Require Import ConcreteEvidence AutoApp Auto Helpers_CvmSemantics Term_Defs Anno_Term_Defs Cvm_St Cvm_Impl Defs StructTactics OptMonad_Coq IO_Stubs Evidence_Bundlers Axioms_Io External_Facts.
+Require Import ConcreteEvidence AutoApp Auto ResultT Helpers_CvmSemantics Term_Defs Anno_Term_Defs Cvm_St Cvm_Impl Defs StructTactics OptMonad_Coq IO_Stubs Evidence_Bundlers Axioms_Io External_Facts.
 
 Require Import List.
 Import ListNotations.
@@ -1459,14 +1459,7 @@ Proof.
     break_match; eauto.
     ff.
     break_match; eauto; [ | ff].
-    repeat find_injection.
-    break_match; subst; eauto; try congruence.
-    simpl in *.
-    break_match; subst; eauto.
-    break_match; subst; eauto; try congruence.
-    find_injection.
-    eapply check_cvm_policy_preserves_amConf in Heqp0; simpl in *; 
-    subst;
+    repeat find_injection; try congruence.
     eapply (wf_ec_preserved_remote {| st_ev := e; st_trace := tr ++ [req i (my_abstract_plc (absMan ac')) p t (get_et e)]; st_evid := i + 1; st_AM_config := ac' |}); simpl in *; eauto.
   - (* lseq case *)
     wrap_ccp.

@@ -37,3 +37,5 @@ Definition errStr_incorrect_resp_type : StringT. Admitted.
 Definition errStr_json_parsing : StringT. Admitted.
 
 Definition errStr_invalid_request_type : StringT. Admitted.
+
+Definition errStr_negotiation_not_implemented : StringT. Admitted.
