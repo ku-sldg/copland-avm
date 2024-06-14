@@ -1162,14 +1162,14 @@ Qed.
 (** * Main correctness theorem about CVM events:  event orderings respect the 
       event system (partial order) reference semantics. *)
 Theorem cvm_respects_event_system :
-  forall atp annt t cvm_tr ev0 ev1 bits bits' et et' i i' plc_id ac ac',
+  forall atp annt t cvm_tr ev0 ev1 bits bits' et et' i i' ac ac',
     annoP_indexed annt t i i' ->
     term_to_coreP t atp ->
     build_cvmP atp
-                     (mk_st (evc bits et) [] plc_id i ac)
+                     (mk_st (evc bits et) [] i ac)
                      (resultC tt)
-                     (mk_st (evc bits' et') cvm_tr plc_id i' ac') ->
-    prec (ev_sys annt plc_id et) ev0 ev1 ->
+                     (mk_st (evc bits' et') cvm_tr i' ac') ->
+    prec (ev_sys annt (my_abstract_plc (absMan ac)) et) ev0 ev1 ->
     earlier cvm_tr ev0 ev1.
 Proof.
   intros.
@@ -1193,11 +1193,11 @@ Qed.
 
 
 Lemma fufu : forall t1 cvmi p ct e ac ac' st_evid r0 e0 blah, 
+p = my_abstract_plc (absMan ac) ->
 build_cvmP (copland_compile t1)
     {|
       st_ev := evc [] mt;
       st_trace := [Term_Defs.split cvmi p; cvm_thread_start 0 p ct e];
-      st_pl := p;
       st_evid := S cvmi;
       st_AM_config := ac
     |} (resultC tt)
@@ -1205,7 +1205,6 @@ build_cvmP (copland_compile t1)
       st_ev := evc r0 e0;
       st_trace :=
         Term_Defs.split cvmi p :: (cvm_thread_start 0 p ct e) :: blah;
-      st_pl := p;
       st_evid := st_evid;
       st_AM_config := ac'
     |}
@@ -1214,7 +1213,6 @@ build_cvmP (copland_compile t1)
     {|
       st_ev := evc [] mt;
       st_trace := [Term_Defs.split cvmi p; cvm_thread_start 0 p ct e];
-      st_pl := p;
       st_evid := S cvmi;
       st_AM_config := ac
     |} (resultC tt)
@@ -1222,7 +1220,6 @@ build_cvmP (copland_compile t1)
       st_ev := evc r0 e0;
       st_trace :=
         ([Term_Defs.split cvmi p; cvm_thread_start 0 p ct e] ++ blah);
-      st_pl := p;
       st_evid := st_evid;
       st_AM_config := ac'
     |}.
@@ -1245,16 +1242,17 @@ Axiom cvm_evidence_exists_remote : forall t p e,
   cvm_evidence_core t p e = evc b et.
 
 
-Lemma cvm_implies_events: forall t annt e e' bits bits' p p' cvmi cvmi' cvm_tr ev ac ac',
+Lemma cvm_implies_events: forall t annt e e' bits bits' cvmi cvmi' cvm_tr ev ac ac',
     annoP_indexed annt t cvmi cvmi'->
 
     build_cvmP (copland_compile t)
-         {| st_ev := evc bits e; st_trace := []; st_pl := p; st_evid := cvmi; st_AM_config := ac |} 
-         (resultC tt) {| st_ev := evc bits' e'; st_trace := cvm_tr; st_pl := p'; st_evid := cvmi'; st_AM_config := ac' |} ->
+      {| st_ev := evc bits e; st_trace := []; st_evid := cvmi; st_AM_config := ac |} 
+      (resultC tt) 
+      {| st_ev := evc bits' e'; st_trace := cvm_tr; st_evid := cvmi'; st_AM_config := ac' |} ->
 
     In ev cvm_tr ->
 
-    events annt p e ev.
+    events annt (my_abstract_plc (absMan ac)) e ev.
 Proof.
   intros.
   generalizeEverythingElse t.
@@ -1280,11 +1278,11 @@ Proof.
 
     assert (n = cvmi + event_id_span' t + 1) by lia.
     subst.
-    clear H6.
+    clear H5.
    
     assert (t = unanno a) as H11.
     {
-      invc Heqp1.
+      invc Heqp0.
       
       erewrite <- anno_unanno at 1.
       rewrite H0.
@@ -1300,7 +1298,7 @@ Proof.
       auto.
     +
       assert ( (In ev (cvm_events t p e)) \/
-               ev = (rpy (cvmi + 1 + event_id_span' t) p' p (eval t p e)
+               ev = (rpy (cvmi + 1 + event_id_span' t) (my_abstract_plc (absMan ac')) p (eval t p e)
                          (* (get_et (IO_Stubs.doRemote_session t p (evc bits e))) *) )
              ).
       {
@@ -1316,35 +1314,33 @@ Proof.
             try solve_by_inversion.
       }
       
-      door.
+      door; ff; eauto.
 
       assert (
-              build_cvm (copland_compile t)
-                    {| st_ev := (evc bits e);
-                       st_trace := [];
-                       st_pl := p;
-                       st_evid := (S cvmi); st_AM_config := ac' |} =
-    (resultC tt,
-     {| st_ev := cvm_evidence_core (copland_compile t) p (evc bits e);
-        st_trace := cvm_events_core (copland_compile t) p (get_et (evc bits e));
-        st_pl := p;
-        st_evid := ( (S cvmi) + event_id_span (copland_compile t));
-        st_AM_config := ac'
-     |})).
-      apply build_cvm_external.
+        build_cvm (copland_compile t)
+              {| st_ev := (evc bits e);
+                  st_trace := [];
+                  st_evid := (S cvmi); st_AM_config := ac' |} =
+      (resultC tt,
+      {| st_ev := cvm_evidence_core (copland_compile t) (my_abstract_plc (absMan ac')) (evc bits e);
+          st_trace := cvm_events_core (copland_compile t) (my_abstract_plc (absMan ac')) (get_et (evc bits e));
+          st_evid := ( (S cvmi) + event_id_span (copland_compile t));
+          st_AM_config := ac'
+      |})). { 
+        apply build_cvm_external.
+      }
 
       destruct (cvm_evidence_core (copland_compile t) p (evc bits e)).
       unfold cvm_events in *.
 
-
-      
       econstructor.
-
-      eapply IHt; [ | simpl in *; econstructor; eauto | eauto ].
-      2: {
+      admit.
+      
+      (* eapply IHt; admit. [ | simpl in *; econstructor; eauto | eauto ].
+      2: { *)
         subst; rewrite eval_aeval'; apply evtsattrpy;
         simpl; lia.
-      }
+      (* }
       econstructor.
 
       invc Heqp1.
@@ -1354,7 +1350,7 @@ Proof.
       assert (S (cvmi + event_id_span' (unanno a)) =
               cvmi + event_id_span' (unanno a) + 1) by lia.
       rewrite H4.
-      eassumption.
+      eassumption. *)
   - (* alseq case *)
     invc H.
     edestruct alseq_decomp; eauto.
@@ -1366,8 +1362,10 @@ Proof.
     ff.
     do_anno_indexed_redo.
     do_anno_indexed_redo.
+
+    repeat do_ac_immut.
     
-    assert (n = H4).
+    assert (n = H3).
     {
       eapply anno_span_cvm; eauto;
       econstructor; eauto.
@@ -1378,7 +1376,7 @@ Proof.
     destruct x.
      
 
-    assert (In ev H \/ In ev H7).
+    assert (In ev H \/ In ev H6).
     {
       apply in_app_or in H1.
         door.
@@ -1403,7 +1401,7 @@ Proof.
 
       
 
-    assert (e0 = aeval a p e).
+    assert (e0 = aeval a (my_abstract_plc (absMan ac')) e).
       {
       rewrite <- eval_aeval'.
       assert (t1 = unanno a).
@@ -1411,27 +1409,18 @@ Proof.
       symmetry.
       invc Heqp1.
       erewrite <- anno_unanno.
-      rewrite Heqp2.
+      rewrite H9.
       tauto.
     }
     eapply cvm_refines_lts_evidence.
     econstructor; eauto.
-    rewrite <- H9.
+    rewrite <- H8.
     eassumption.
       }
-      rewrite H9 in H8.
+      find_rewrite.
       
 
-      assert (p = H3).
-      {
-        invc H6.
-        do_pl_immut.
-        congruence.
-      }
-      
-
-      
-      invc Heqp3.
+      invc Heqp2.
       apply evtslseqr.
       eapply IHt2.
       econstructor.
@@ -1442,7 +1431,8 @@ Proof.
     wrap_ccp_anno;
     repeat Auto.ff;
     wrap_ccp_anno;
-    repeat Auto.ff.
+    repeat Auto.ff;
+    repeat do_ac_immut.
     +
 
     assert (n = st_evid1).
@@ -1452,7 +1442,7 @@ Proof.
       eapply span_cvm.
       eassumption.
       econstructor; tauto.
-      invc Heqp0.
+      invc Heqp.
       eassumption.
     }
     subst.
@@ -1466,10 +1456,10 @@ Proof.
     destruct_conjs; subst.
     repeat do_restl.
 
-    assert (ev = Term_Defs.split cvmi st_pl0 \/
+    assert (ev = Term_Defs.split cvmi (my_abstract_plc (absMan ac')) \/
             (In ev blah') \/
             (In ev blah) \/
-            ev = join st_evid st_pl0).
+            ev = join st_evid (my_abstract_plc (absMan ac'))).
     {
       apply in_app_or in H1.
       door.
@@ -1506,8 +1496,8 @@ Proof.
     eapply IHt1.
     eassumption.
     eapply restl.
-    assert (Term_Defs.split cvmi st_pl0 :: blah' = 
-    [Term_Defs.split cvmi st_pl0] ++ blah'). 
+    assert (Term_Defs.split cvmi (my_abstract_plc (absMan ac')) :: blah' = 
+    [Term_Defs.split cvmi (my_abstract_plc (absMan ac'))] ++ blah'). 
     {
       intuition.
     }
@@ -1541,7 +1531,7 @@ Proof.
       eapply span_cvm.
       eassumption.
       econstructor; tauto.
-      invc Heqp0.
+      invc Heqp.
       eassumption.
     }
     subst.
@@ -1555,10 +1545,10 @@ Proof.
     destruct_conjs; subst.
     repeat do_restl.
 
-    assert (ev = Term_Defs.split cvmi st_pl0 \/
+    assert (ev = Term_Defs.split cvmi (my_abstract_plc (absMan ac')) \/
             (In ev blah') \/
             (In ev blah) \/
-            ev = join st_evid st_pl0).
+            ev = join st_evid (my_abstract_plc (absMan ac'))).
     {
             apply in_app_or in H1.
       door.
@@ -1594,8 +1584,8 @@ Proof.
     eapply IHt1.
     eassumption.
     eapply restl.
-    assert (Term_Defs.split cvmi st_pl0 :: blah' = 
-    [Term_Defs.split cvmi st_pl0] ++ blah'). 
+    assert (Term_Defs.split cvmi (my_abstract_plc (absMan ac')) :: blah' = 
+    [Term_Defs.split cvmi (my_abstract_plc (absMan ac'))] ++ blah'). 
     {
       intuition.
     }
@@ -1629,7 +1619,7 @@ Proof.
       eapply span_cvm.
       eassumption.
       econstructor; tauto.
-      invc Heqp0.
+      invc Heqp.
       eassumption.
     }
     subst.
@@ -1643,10 +1633,10 @@ Proof.
     destruct_conjs; subst.
     repeat do_restl.
 
-    assert (ev = Term_Defs.split cvmi st_pl0 \/
+    assert (ev = Term_Defs.split cvmi (my_abstract_plc (absMan ac')) \/
             (In ev blah') \/
             (In ev blah) \/
-            ev = join st_evid st_pl0).
+            ev = join st_evid (my_abstract_plc (absMan ac'))).
     {
             apply in_app_or in H1.
       door.
@@ -1682,8 +1672,8 @@ Proof.
     eapply IHt1.
     eassumption.
     eapply restl.
-    assert (Term_Defs.split cvmi st_pl0 :: blah' = 
-    [Term_Defs.split cvmi st_pl0] ++ blah'). 
+    assert (Term_Defs.split cvmi (my_abstract_plc (absMan ac')) :: blah' = 
+    [Term_Defs.split cvmi (my_abstract_plc (absMan ac'))] ++ blah'). 
     {
       intuition.
     }
@@ -1717,7 +1707,7 @@ Proof.
       eapply span_cvm.
       eassumption.
       econstructor; tauto.
-      invc Heqp0.
+      invc Heqp.
       eassumption.
     }
     subst.
@@ -1731,10 +1721,10 @@ Proof.
     destruct_conjs; subst.
     repeat do_restl.
 
-    assert (ev = Term_Defs.split cvmi st_pl0 \/
+    assert (ev = Term_Defs.split cvmi (my_abstract_plc (absMan ac')) \/
             (In ev blah') \/
             (In ev blah) \/
-            ev = join st_evid st_pl0).
+            ev = join st_evid (my_abstract_plc (absMan ac'))).
     {
             apply in_app_or in H1.
       door.
@@ -1770,8 +1760,8 @@ Proof.
     eapply IHt1.
     eassumption.
     eapply restl.
-    assert (Term_Defs.split cvmi st_pl0 :: blah' = 
-    [Term_Defs.split cvmi st_pl0] ++ blah'). 
+    assert (Term_Defs.split cvmi (my_abstract_plc (absMan ac')) :: blah' = 
+    [Term_Defs.split cvmi (my_abstract_plc (absMan ac'))] ++ blah'). 
     {
       intuition.
     }
@@ -1803,7 +1793,8 @@ Proof.
     wrap_ccp_anno;
     Auto.ff;
     wrap_ccp_anno;
-    Auto.ff.
+    Auto.ff;
+    repeat do_ac_immut.
 
     +
 
@@ -1811,7 +1802,7 @@ Proof.
     {
       assert (cvmi+1 = S cvmi) by lia.
       find_rewrite.
-      invc Heqp0.
+      invc Heqp.
       
       eapply span_cvm; eauto.
       
@@ -1830,20 +1821,20 @@ Proof.
     destruct_conjs; subst.
     repeat do_restl.
 
-    assert (ev = Term_Defs.split cvmi p \/
-            In ev ([cvm_thread_start 0 p (copland_compile t2) e] ++
+    assert (ev = Term_Defs.split cvmi (my_abstract_plc (absMan ac')) \/
+            In ev ([cvm_thread_start 0 (my_abstract_plc (absMan ac')) (copland_compile t2) e] ++
                    blah ++ [cvm_thread_end 0]) \/
-            ev = join (st_evid + event_id_span (copland_compile t2)) p).
+            ev = join (st_evid + event_id_span (copland_compile t2)) (my_abstract_plc (absMan ac'))).
     {
       apply in_app_or in H1.
       door.
       +
       assert(
-           (([Term_Defs.split cvmi p;
-            cvm_thread_start 0 p (copland_compile t2) e] ++ blah) ++
+           (([Term_Defs.split cvmi (my_abstract_plc (absMan ac'));
+            cvm_thread_start 0 (my_abstract_plc (absMan ac')) (copland_compile t2) e] ++ blah) ++
                                                                   [cvm_thread_end 0]) =
-            ([Term_Defs.split cvmi p] ++ 
-              ([(cvm_thread_start 0 p (copland_compile t2) e)] ++ blah ++
+            ([Term_Defs.split cvmi (my_abstract_plc (absMan ac'))] ++ 
+              ([(cvm_thread_start 0 (my_abstract_plc (absMan ac')) (copland_compile t2) e)] ++ blah ++
                                                                [cvm_thread_end 0]))).
       {
         simpl.
@@ -1870,25 +1861,25 @@ Proof.
     door.
     rewrite thread_bookend_peel in H0.
 
-    assert (In ev [Term_Defs.split cvmi p] \/ 
-            In ev (cvm_events_core (copland_compile t2) p e) \/ 
+    assert (In ev [Term_Defs.split cvmi (my_abstract_plc (absMan ac'))] \/ 
+            In ev (cvm_events_core (copland_compile t2) (my_abstract_plc (absMan ac')) e) \/ 
             In ev blah \/ 
-            In ev [join (st_evid + event_id_span (copland_compile t2)) p]).
+            In ev [join (st_evid + event_id_span (copland_compile t2)) (my_abstract_plc (absMan ac'))]).
     {
 
     invc H1.
     left; eauto.
     auto with *.
 
-    assert (In ev ([cvm_thread_start 0 p (copland_compile t2) e] ++ blah ++ [cvm_thread_end 0]) \/ 
-            In ev [join (st_evid + event_id_span (copland_compile t2)) p]).
+    assert (In ev ([cvm_thread_start 0 (my_abstract_plc (absMan ac')) (copland_compile t2) e] ++ blah ++ [cvm_thread_end 0]) \/ 
+            In ev [join (st_evid + event_id_span (copland_compile t2)) (my_abstract_plc (absMan ac'))]).
             {
               auto with *.
             }
 
             invc H1.
 
-            assert (In ev (cvm_events_core (copland_compile t2) p e) \/ 
+            assert (In ev (cvm_events_core (copland_compile t2) (my_abstract_plc (absMan ac')) e) \/ 
                     In ev blah).
                     {
                       eapply cvm_thread_in_ev; eassumption.
@@ -1908,9 +1899,9 @@ Proof.
 
     eapply evtsbparr.
 
-    pose (build_cvm_external (copland_compile t2) (evc bits e) p st_evid ac).
+    pose (build_cvm_external (copland_compile t2) (evc bits e) st_evid ac').
 
-    assert (exists b et, cvm_evidence_core (copland_compile t2) p (evc bits e) = 
+    assert (exists b et, cvm_evidence_core (copland_compile t2) (my_abstract_plc (absMan ac')) (evc bits e) = 
     evc b et).
     {
       eapply cvm_evidence_exists_remote.
@@ -1970,7 +1961,7 @@ Proof.
     {
       assert (cvmi+1 = S cvmi) by lia.
       find_rewrite.
-      invc Heqp0.
+      invc Heqp.
       
       eapply span_cvm; eauto.
       econstructor; tauto.
@@ -1989,21 +1980,21 @@ Proof.
     repeat do_restl.
 
 
-    assert (ev = Term_Defs.split cvmi p \/
-            In ev ([cvm_thread_start 0 p (lseqc (aspc CLEAR) (copland_compile t2)) e] ++ blah ++
+    assert (ev = Term_Defs.split cvmi (my_abstract_plc (absMan ac')) \/
+            In ev ([cvm_thread_start 0 (my_abstract_plc (absMan ac')) (lseqc (aspc CLEAR) (copland_compile t2)) e] ++ blah ++
                    [cvm_thread_end 0]) \/
-            ev = join (st_evid + event_id_span (copland_compile t2)) p
+            ev = join (st_evid + event_id_span (copland_compile t2)) (my_abstract_plc (absMan ac'))
            ).
     {
       apply in_app_or in H1.
       door.
       +
       assert(
-           (([Term_Defs.split cvmi p;
-            cvm_thread_start 0 p (lseqc (aspc CLEAR) (copland_compile t2)) e] ++ blah) ++
+           (([Term_Defs.split cvmi (my_abstract_plc (absMan ac'));
+            cvm_thread_start 0 (my_abstract_plc (absMan ac')) (lseqc (aspc CLEAR) (copland_compile t2)) e] ++ blah) ++
                                                                   [cvm_thread_end 0]) =
-            ([Term_Defs.split cvmi p] ++ 
-              ([(cvm_thread_start 0 p (lseqc (aspc CLEAR) (copland_compile t2)) e)] ++ blah ++
+            ([Term_Defs.split cvmi (my_abstract_plc (absMan ac'))] ++ 
+              ([(cvm_thread_start 0 (my_abstract_plc (absMan ac')) (lseqc (aspc CLEAR) (copland_compile t2)) e)] ++ blah ++
                                                                [cvm_thread_end 0]))).
       {
         simpl.
@@ -2030,10 +2021,10 @@ Proof.
     rewrite thread_bookend_peel in H0; eauto.
 
 
-    assert (In ev [Term_Defs.split cvmi p] \/ 
-    In ev (cvm_events_core (copland_compile t2) p mt) \/ 
+    assert (In ev [Term_Defs.split cvmi (my_abstract_plc (absMan ac'))] \/ 
+    In ev (cvm_events_core (copland_compile t2) (my_abstract_plc (absMan ac')) mt) \/ 
     In ev blah \/ 
-    In ev [join (st_evid + event_id_span (copland_compile t2)) p]).
+    In ev [join (st_evid + event_id_span (copland_compile t2)) (my_abstract_plc (absMan ac'))]).
 {
 
 invc H1.
@@ -2044,12 +2035,12 @@ auto with *.
 
 Unset Printing Notations.
 
-assert (In ev ([cvm_thread_start 0 p (copland_compile t2) mt] ++ blah ++ [cvm_thread_end 0]) \/ 
-        In ev [join (st_evid + event_id_span (copland_compile t2)) p]).
+assert (In ev ([cvm_thread_start 0 (my_abstract_plc (absMan ac')) (copland_compile t2) mt] ++ blah ++ [cvm_thread_end 0]) \/ 
+        In ev [join (st_evid + event_id_span (copland_compile t2)) (my_abstract_plc (absMan ac'))]).
         {
           assert (
-            (cvm_thread_start 0 p (lseqc (aspc CLEAR) (copland_compile t2)) e) = 
-            (cvm_thread_start 0 p (copland_compile t2)) mt).
+            (cvm_thread_start 0 (my_abstract_plc (absMan ac')) (lseqc (aspc CLEAR) (copland_compile t2)) e) = 
+            (cvm_thread_start 0 (my_abstract_plc (absMan ac')) (copland_compile t2)) mt).
             {
               eapply cvm_thread_start_clear.
             }
@@ -2061,7 +2052,7 @@ assert (In ev ([cvm_thread_start 0 p (copland_compile t2) mt] ++ blah ++ [cvm_th
 
         invc H1.
 
-        assert (In ev (cvm_events_core (copland_compile t2) p mt) \/ 
+        assert (In ev (cvm_events_core (copland_compile t2) (my_abstract_plc (absMan ac')) mt) \/ 
                 In ev blah).
                 {
                   eapply cvm_thread_in_ev; eassumption.
@@ -2082,9 +2073,9 @@ door.
 
 eapply evtsbparr.
 
-pose (build_cvm_external (copland_compile t2) (evc bits mt) p st_evid ac).
+pose (build_cvm_external (copland_compile t2) (evc bits mt) st_evid ac').
 
-assert (exists b et, cvm_evidence_core (copland_compile t2) p (evc bits mt) = 
+assert (exists b et, cvm_evidence_core (copland_compile t2) (my_abstract_plc (absMan ac')) (evc bits mt) = 
 evc b et).
 {
   eapply cvm_evidence_exists_remote.
@@ -2148,7 +2139,7 @@ eauto.
     {
       assert (cvmi+1 = S cvmi) by lia.
       find_rewrite.
-      invc Heqp0.
+      invc Heqp.
       
       eapply span_cvm; eauto.
       econstructor; tauto.
@@ -2166,20 +2157,20 @@ eauto.
     destruct_conjs; subst.
     repeat do_restl.
 
-    assert (ev = Term_Defs.split cvmi p \/
-            In ev ([cvm_thread_start 0 p (copland_compile t2) e] ++
+    assert (ev = Term_Defs.split cvmi (my_abstract_plc (absMan ac')) \/
+            In ev ([cvm_thread_start 0 (my_abstract_plc (absMan ac')) (copland_compile t2) e] ++
                    blah ++ [cvm_thread_end 0]) \/
-            ev = join (st_evid + event_id_span (copland_compile t2)) p).
+            ev = join (st_evid + event_id_span (copland_compile t2)) (my_abstract_plc (absMan ac'))).
         {
       apply in_app_or in H1.
       door.
       +
       assert(
-           (([Term_Defs.split cvmi p;
-            cvm_thread_start 0 p (copland_compile t2) e] ++ blah) ++
+           (([Term_Defs.split cvmi (my_abstract_plc (absMan ac'));
+            cvm_thread_start 0 (my_abstract_plc (absMan ac')) (copland_compile t2) e] ++ blah) ++
                                                                   [cvm_thread_end 0]) =
-            ([Term_Defs.split cvmi p] ++ 
-              ([(cvm_thread_start 0 p (copland_compile t2) e)] ++ blah ++
+            ([Term_Defs.split cvmi (my_abstract_plc (absMan ac'))] ++ 
+              ([(cvm_thread_start 0 (my_abstract_plc (absMan ac')) (copland_compile t2) e)] ++ blah ++
                                                                [cvm_thread_end 0]))).
       {
         simpl.
@@ -2208,25 +2199,25 @@ eauto.
 
 
 
-    assert (In ev [Term_Defs.split cvmi p] \/ 
-    In ev (cvm_events_core (copland_compile t2) p e) \/ 
+    assert (In ev [Term_Defs.split cvmi (my_abstract_plc (absMan ac'))] \/ 
+    In ev (cvm_events_core (copland_compile t2) (my_abstract_plc (absMan ac')) e) \/ 
     In ev blah \/ 
-    In ev [join (st_evid + event_id_span (copland_compile t2)) p]).
+    In ev [join (st_evid + event_id_span (copland_compile t2)) (my_abstract_plc (absMan ac'))]).
 {
 
 invc H1.
 left; eauto.
 auto with *.
 
-assert (In ev ([cvm_thread_start 0 p (copland_compile t2) e] ++ blah ++ [cvm_thread_end 0]) \/ 
-        In ev [join (st_evid + event_id_span (copland_compile t2)) p]).
+assert (In ev ([cvm_thread_start 0 (my_abstract_plc (absMan ac')) (copland_compile t2) e] ++ blah ++ [cvm_thread_end 0]) \/ 
+        In ev [join (st_evid + event_id_span (copland_compile t2)) (my_abstract_plc (absMan ac'))]).
         {
           auto with *.
         }
 
         invc H1.
 
-        assert (In ev (cvm_events_core (copland_compile t2) p e) \/ 
+        assert (In ev (cvm_events_core (copland_compile t2) (my_abstract_plc (absMan ac')) e) \/ 
                 In ev blah).
                 {
                   eapply cvm_thread_in_ev; eassumption.
@@ -2249,9 +2240,9 @@ eapply evtsbparr.
 
 
 
-pose (build_cvm_external (copland_compile t2) (evc bits e) p st_evid ac).
+pose (build_cvm_external (copland_compile t2) (evc bits e) st_evid ac').
 
-assert (exists b et, cvm_evidence_core (copland_compile t2) p (evc bits e) = 
+assert (exists b et, cvm_evidence_core (copland_compile t2) (my_abstract_plc (absMan ac')) (evc bits e) = 
 evc b et).
 {
   eapply cvm_evidence_exists_remote.
@@ -2317,7 +2308,7 @@ eauto.
     {
       assert (cvmi+1 = S cvmi) by lia.
       find_rewrite.
-      invc Heqp0.
+      invc Heqp.
       
       eapply span_cvm; eauto.
       econstructor; tauto.
@@ -2335,21 +2326,21 @@ eauto.
     destruct_conjs; subst.
     repeat do_restl.
 
-    assert (ev = Term_Defs.split cvmi p \/
-            In ev ([cvm_thread_start 0 p (lseqc (aspc CLEAR) (copland_compile t2)) e] ++ blah ++
+    assert (ev = Term_Defs.split cvmi (my_abstract_plc (absMan ac')) \/
+            In ev ([cvm_thread_start 0 (my_abstract_plc (absMan ac')) (lseqc (aspc CLEAR) (copland_compile t2)) e] ++ blah ++
                    [cvm_thread_end 0]) \/
-            ev = join (st_evid + event_id_span (copland_compile t2)) p
+            ev = join (st_evid + event_id_span (copland_compile t2)) (my_abstract_plc (absMan ac'))
            ).
         {
       apply in_app_or in H1.
       door.
       +
       assert(
-           (([Term_Defs.split cvmi p;
-            cvm_thread_start 0 p (lseqc (aspc CLEAR) (copland_compile t2)) e] ++ blah) ++
+           (([Term_Defs.split cvmi (my_abstract_plc (absMan ac'));
+            cvm_thread_start 0 (my_abstract_plc (absMan ac')) (lseqc (aspc CLEAR) (copland_compile t2)) e] ++ blah) ++
                                                                   [cvm_thread_end 0]) =
-            ([Term_Defs.split cvmi p] ++ 
-              ([(cvm_thread_start 0 p (lseqc (aspc CLEAR) (copland_compile t2)) e)] ++ blah ++
+            ([Term_Defs.split cvmi (my_abstract_plc (absMan ac'))] ++ 
+              ([(cvm_thread_start 0 (my_abstract_plc (absMan ac')) (lseqc (aspc CLEAR) (copland_compile t2)) e)] ++ blah ++
                                                                [cvm_thread_end 0]))).
       {
         simpl.
@@ -2376,15 +2367,15 @@ eauto.
     Unset Printing Notations.
 
     assert (
-      (cvm_thread_start 0 p (lseqc (aspc CLEAR) (copland_compile t2)) e) = 
-      (cvm_thread_start 0 p (copland_compile t2)) mt).
+      (cvm_thread_start 0 (my_abstract_plc (absMan ac')) (lseqc (aspc CLEAR) (copland_compile t2)) e) = 
+      (cvm_thread_start 0 (my_abstract_plc (absMan ac')) (copland_compile t2)) mt).
       {
         eapply cvm_thread_start_clear.
       }
       rewrite H3 in *; clear H1.
 
     assert (
-            In ev (cvm_events_core (copland_compile t2) p mt) \/ 
+            In ev (cvm_events_core (copland_compile t2) (my_abstract_plc (absMan ac')) mt) \/ 
             In ev blah).
             {
 
@@ -2406,9 +2397,10 @@ eauto.
 
     eapply IHt1.
     eassumption.
-    eapply restl.
+    eapply restl; eauto.
 
-    rewrite fufu in Heqp3.
+    rewrite fufu in Heqp2; eauto.
+    eauto.
 
 
 
@@ -2428,9 +2420,6 @@ eauto.
     admit.
 
     *)
-    eassumption.
-
-    eassumption.
 
     }
 
@@ -2439,9 +2428,9 @@ eauto.
 
 
 
-    pose (build_cvm_external (copland_compile t2) (evc bits mt) p st_evid ac).
+    pose (build_cvm_external (copland_compile t2) (evc bits mt) st_evid ac').
 
-assert (exists b et, cvm_evidence_core (copland_compile t2) p (evc bits mt) = 
+assert (exists b et, cvm_evidence_core (copland_compile t2) (my_abstract_plc (absMan ac')) (evc bits mt) = 
 evc b et).
 {
   eapply cvm_evidence_exists_remote.
@@ -2471,7 +2460,9 @@ rewrite H6 in *.
     apply evtsbparjoin.
     simpl.
     lia.
-Qed.
+(* TODO: We need to just fix the remote call one, I am not really sure how it should be working, it seems a bit odd the actual output statement? *)
+Admitted.
+(* Qed. *)
 
 
 
