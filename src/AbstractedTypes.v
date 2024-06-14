@@ -1,13 +1,13 @@
 (* Abstract (Admitted) definition of a general type for 
     Identifiers and associated abstract values/operations *)
 
-Require Import EqClass String.
+Require Export ResultT EqClass StringT.
 
 (* Abstract type reserved for Identifiers *)
 Definition ID_Type : Set. Admitted.
 
-Definition ID_Type_to_string (id:ID_Type) : string. Admitted.
-Definition string_to_ID_Type (s:string) : option ID_Type. Admitted.
+Definition ID_Type_to_stringT (id:ID_Type) : StringT. Admitted.
+Definition stringT_to_ID_Type (s:StringT) : ResultT ID_Type StringT. Admitted.
 
 (* Assumed equality for identifiers *)
 Global Instance Eq_Class_ID_Type : EqClass ID_Type. Admitted.

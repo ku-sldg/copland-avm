@@ -3,164 +3,154 @@
     
     At the moment, these are too low-level to represent faithfully in the Coq development.   *)
 
-Require Import Term_Defs_Core Term_Defs StringT List.
-From JSON Require Import Lexer Printer.
-Import ListNotations.
-
-(* JSON Types *)
-Definition Json := json.
-
-(* JSON Conversion Functions *)
-
-Definition strToJson (s:StringT): option Json := 
-  match from_string (StringT_to_string s) with
-  | inl e => None
-  | inr j => Some j
-  end.
-
-Definition jsonToStr (js: Json): StringT := 
-  string_to_StringT (to_string js).
+Require Import Term_Defs_Core Term_Defs StringT List JSON Interface_Types ResultT.
+Import ListNotations ResultNotation.
 
 (* Protocol Run Section *)
-Definition ProtocolRunRequest_to_Json (req: ProtocolRunRequest): Json :=
+Definition ProtocolRunRequest_to_JSON (req: ProtocolRunRequest): JSON :=
   JSON__Object 
-    [("req_plc", (JSON__String (Plc_to_string (prreq_req_plc req))));
-    ("term", (JSON__String (Term_to_string (prreq_term req)))); 
-    ("authTok", (JSON__String (EvC_to_string (prreq_authTok req)))); 
-    ("ev", (JSON__String (RawEv_to_string (prreq_ev req))))].
+    [(STR_REQ_PLC, (JSON__String (Plc_to_stringT (prreq_req_plc req))));
+    (STR_TERM, (JSON__String (Term_to_stringT (prreq_term req)))); 
+    (STR_EV, (JSON__String (RawEv_to_stringT (prreq_ev req))))].
 
-Definition Json_to_ProtocolRunRequest (req : Json): option ProtocolRunRequest :=
-  temp_plc <- get_string "req_plc" req ;;
-  temp_term <- get_string "term" req ;;
-  temp_authTok <- get_string "authTok" req ;;
-  temp_ev <- get_string "ev" req ;;
-  req_plc <- string_to_Plc temp_plc ;;
-  term <- string_to_Term temp_term ;;
-  authTok <- string_to_EvC temp_authTok ;;
-  ev <- string_to_RawEv temp_ev ;;
-  Some (mkPRReq req_plc term authTok ev).
+Definition JSON_to_ProtocolRunRequest (req : JSON): ResultT ProtocolRunRequest StringT :=
+  temp_term <- JSON_get_stringT STR_TERM req ;;
+  temp_req_plc <- JSON_get_stringT STR_REQ_PLC req ;;
+  temp_ev <- JSON_get_stringT STR_EV req ;;
+  term <- stringT_to_Term temp_term ;;
+  req_plc <- stringT_to_Plc temp_req_plc ;;
+  ev <- stringT_to_RawEv temp_ev ;;
+  resultC (mkPRReq term req_plc ev).
 
-Definition ProtocolRunResponse_to_Json (resp: ProtocolRunResponse): Json :=
+Definition ProtocolRunResponse_to_JSON (resp: ProtocolRunResponse): JSON :=
   JSON__Object 
-    [("success", (if (prresp_success resp) then JSON__True else JSON__False));
-    ("payload", (JSON__String (RawEv_to_string (prresp_ev resp))))].
+    [(STR_SUCCESS, (JSON__Boolean (prresp_success resp)));
+    (STR_PAYLOAD, (JSON__String (RawEv_to_stringT (prresp_ev resp))))].
 
-Definition Json_to_ProtocolRunResponse (resp : Json): option ProtocolRunResponse :=
-  temp_success <- get_bool "success" resp ;;
-  temp_ev <- get_string "payload" resp ;;
-  ev <- string_to_RawEv temp_ev ;;
-  Some (mkPRResp temp_success ev).
+Definition JSON_to_ProtocolRunResponse (resp : JSON): ResultT ProtocolRunResponse StringT :=
+  temp_success <- JSON_get_bool STR_SUCCESS resp ;;
+  temp_ev <- JSON_get_stringT STR_PAYLOAD resp ;;
+  ev <- stringT_to_RawEv temp_ev ;;
+  resultC (mkPRResp temp_success ev).
 
 (* Protocol Negotiate Section *)
-Definition ProtocolNegotiateRequest_to_Json (req: ProtocolNegotiateRequest): Json :=
+Definition ProtocolNegotiateRequest_to_JSON (req: ProtocolNegotiateRequest): JSON :=
   JSON__Object 
-    [("term", (JSON__String (Term_to_string (pnreq_term req))))].
+    [(STR_TERM, (JSON__String (Term_to_stringT (pnreq_term req))))].
 
-Definition Json_to_ProtocolNegotiateRequest (req : Json): option ProtocolNegotiateRequest :=
-  temp_term <- get_string "term" req ;;
-  term <- string_to_Term temp_term ;;
-  Some (mkPNReq term).
+Definition JSON_to_ProtocolNegotiateRequest (req : JSON): 
+    ResultT ProtocolNegotiateRequest StringT :=
+  temp_term <- JSON_get_stringT STR_TERM req ;;
+  term <- stringT_to_Term temp_term ;;
+  resultC (mkPNReq term).
 
-Definition ProtocolNegotiateResponse_to_Json (resp: ProtocolNegotiateResponse): Json :=
+Definition ProtocolNegotiateResponse_to_JSON (resp: ProtocolNegotiateResponse): JSON :=
   JSON__Object 
-    [("success", (if (pnresp_success resp) then JSON__True else JSON__False));
-    ("payload", (JSON__String (Term_to_string (pnresp_term resp))))].
+    [(STR_SUCCESS, (JSON__Boolean (pnresp_success resp)));
+    (STR_PAYLOAD, (JSON__String (Term_to_stringT (pnresp_term resp))))].
 
-Definition Json_to_ProtocolNegotiateResponse (resp : Json): option ProtocolNegotiateResponse :=
-  temp_success <- get_bool "success" resp ;;
-  temp_term <- get_string "payload" resp ;;
-  term <- string_to_Term temp_term ;;
-  Some (mkPNResp temp_success term).
+Definition JSON_to_ProtocolNegotiateResponse (resp : JSON): 
+    ResultT ProtocolNegotiateResponse StringT :=
+  temp_success <- JSON_get_bool STR_SUCCESS resp ;;
+  temp_term <- JSON_get_stringT STR_PAYLOAD resp ;;
+  term <- stringT_to_Term temp_term ;;
+  resultC (mkPNResp temp_success term).
 
 (* Protocol Appraise Section *)
-Definition ProtocolAppraiseRequest_to_Json (req: ProtocolAppraiseRequest): Json :=
+Definition ProtocolAppraiseRequest_to_JSON (req: ProtocolAppraiseRequest): JSON :=
   JSON__Object 
-    [("term", (JSON__String (Term_to_string (pareq_term req))));
-    ("plc", (JSON__String (Plc_to_string (pareq_plc req))));
-    ("evidence", (JSON__String (Evidence_to_string (pareq_evidence req))));
-    ("ev", (JSON__String (RawEv_to_string (pareq_ev req))))].
+    [(STR_TERM, (JSON__String (Term_to_stringT (pareq_term req))));
+    (STR_REQ_PLC, (JSON__String (Plc_to_stringT (pareq_plc req))));
+    (STR_EVIDENCE, (JSON__String (Evidence_to_stringT (pareq_evidence req))));
+    (STR_EV, (JSON__String (RawEv_to_stringT (pareq_ev req))))].
 
-Definition Json_to_ProtocolAppraiseRequest (req : Json): option ProtocolAppraiseRequest :=
-  temp_term <- get_string "term" req ;;
-  temp_plc <- get_string "plc" req ;;
-  temp_evidence <- get_string "ev" req ;;
-  temp_ev <- get_string "ev" req ;;
-  term <- string_to_Term temp_term ;;
-  plc <- string_to_Plc temp_plc ;;
-  evidence <- string_to_Evidence temp_evidence ;;
-  ev <- string_to_RawEv temp_ev ;;
-  Some (mkPAReq term plc evidence ev).
+Definition JSON_to_ProtocolAppraiseRequest (req : JSON): 
+    ResultT ProtocolAppraiseRequest StringT :=
+  temp_term <- JSON_get_stringT STR_TERM req ;;
+  temp_plc <- JSON_get_stringT STR_REQ_PLC req ;;
+  temp_evidence <- JSON_get_stringT STR_EVIDENCE req ;;
+  temp_ev <- JSON_get_stringT STR_EV req ;;
+  term <- stringT_to_Term temp_term ;;
+  plc <- stringT_to_Plc temp_plc ;;
+  evidence <- stringT_to_Evidence temp_evidence ;;
+  ev <- stringT_to_RawEv temp_ev ;;
+  resultC (mkPAReq term plc evidence ev).
 
-Definition ProtocolAppraiseResponse_to_Json (resp: ProtocolAppraiseResponse): Json :=
+Definition ProtocolAppraiseResponse_to_JSON (resp: ProtocolAppraiseResponse): JSON :=
   JSON__Object 
-    [("success", (if (paresp_success resp) then JSON__True else JSON__False));
-    ("payload", (JSON__String (AppResultC_to_string (paresp_result resp))))].
+    [(STR_SUCCESS, (JSON__Boolean (paresp_success resp)));
+    (STR_PAYLOAD, (JSON__String (AppResultC_to_stringT (paresp_result resp))))].
 
-Definition Json_to_ProtocolAppraiseResponse (resp : Json): option ProtocolAppraiseResponse :=
-  temp_success <- get_bool "success" resp ;;
-  temp_result <- get_string "payload" resp ;;
-  result <- string_to_AppResultC temp_result ;;
-  Some (mkPAResp temp_success result).
+Definition JSON_to_ProtocolAppraiseResponse (resp : JSON): 
+    ResultT ProtocolAppraiseResponse StringT :=
+  temp_success <- JSON_get_bool STR_SUCCESS resp ;;
+  temp_result <- JSON_get_stringT STR_PAYLOAD resp ;;
+  result <- stringT_to_AppResultC temp_result ;;
+  resultC (mkPAResp temp_success result).
+
+(* TODO: These are commented because they are excessive and not too necessary
 
 (* AM Protocol Request Section *)
-Definition AM_Protocol_Request_to_Json (req: AM_Protocol_Requests): Json :=
+Definition AM_Protocol_Request_to_JSON (req: AM_Protocol_Requests): JSON :=
   match req with
-  | Protocol_Run_Request r => ProtocolRunRequest_to_Json r
-  | Protocol_Appraise_Request r => ProtocolAppraiseRequest_to_Json r
-  | Protocol_Negotiate_Request r => ProtocolNegotiateRequest_to_Json r
+  | Protocol_Run_Request r => ProtocolRunRequest_to_JSON r
+  | Protocol_Appraise_Request r => ProtocolAppraiseRequest_to_JSON r
+  | Protocol_Negotiate_Request r => ProtocolNegotiateRequest_to_JSON r
   end.
 
-Definition Json_to_AM_Protocol_Request (req : Json): option AM_Protocol_Requests :=
-  temp_type <- get_string "action" req ;;
+Definition JSON_to_AM_Protocol_Request (req : JSON): option AM_Protocol_Requests :=
+  temp_type <- JSON_get_stringT "action" req ;;
   match temp_type with
-  | "RUN" => temp_req <- Json_to_ProtocolRunRequest req ;;
+  | "RUN" => temp_req <- JSON_to_ProtocolRunRequest req ;;
     Some (Protocol_Run_Request temp_req)
-  | "NEGOTIATE" => temp_req <- Json_to_ProtocolAppraiseRequest req ;;
+  | "NEGOTIATE" => temp_req <- JSON_to_ProtocolAppraiseRequest req ;;
     Some (Protocol_Appraise_Request temp_req)
-  | "APPRAISE" => temp_req <- Json_to_ProtocolNegotiateRequest req ;;
+  | "APPRAISE" => temp_req <- JSON_to_ProtocolNegotiateRequest req ;;
     Some (Protocol_Negotiate_Request temp_req)
   | _ => None
   end.
 
 (* AM Protocol Response Section *)
-Definition AM_Protocol_Response_to_Json (resp: AM_Protocol_Responses): Json :=
+Definition AM_Protocol_Response_to_JSON (resp: AM_Protocol_Responses): JSON :=
   match resp with
-  | Protocol_Run_Response r => ProtocolRunResponse_to_Json r
-  | Protocol_Appraise_Response r => ProtocolAppraiseResponse_to_Json r
-  | Protocol_Negotiate_Response r => ProtocolNegotiateResponse_to_Json r
+  | Protocol_Run_Response r => ProtocolRunResponse_to_JSON r
+  | Protocol_Appraise_Response r => ProtocolAppraiseResponse_to_JSON r
+  | Protocol_Negotiate_Response r => ProtocolNegotiateResponse_to_JSON r
   end.
 
-Definition Json_to_AM_Protocol_Response (resp : Json): option AM_Protocol_Responses :=
-  temp_type <- get_string "action" resp ;;
+Definition JSON_to_AM_Protocol_Response (resp : JSON): option AM_Protocol_Responses :=
+  temp_type <- JSON_get_stringT "action" resp ;;
   match temp_type with
-  | "RUN" => temp_resp <- Json_to_ProtocolRunResponse resp ;;
+  | "RUN" => temp_resp <- JSON_to_ProtocolRunResponse resp ;;
     Some (Protocol_Run_Response temp_resp)
-  | "NEGOTIATE" => temp_resp <- Json_to_ProtocolAppraiseResponse resp ;;
+  | "NEGOTIATE" => temp_resp <- JSON_to_ProtocolAppraiseResponse resp ;;
     Some (Protocol_Appraise_Response temp_resp)
-  | "APPRAISE" => temp_resp <- Json_to_ProtocolNegotiateResponse resp ;;
+  | "APPRAISE" => temp_resp <- JSON_to_ProtocolNegotiateResponse resp ;;
     Some (Protocol_Negotiate_Response temp_resp)
   | _ => None
   end.
 
 (* AM Protocol Interface Section *)
-Definition AM_Protocol_Interface_to_Json (msg: AM_Protocol_Interface): Json :=
+Definition AM_Protocol_Interface_to_JSON (msg: AM_Protocol_Interface): JSON :=
   match msg with
-  | AM_Protocol_Request_Interface r => AM_Protocol_Request_to_Json r
-  | AM_Protocol_Response_Interface r => AM_Protocol_Response_to_Json r
+  | AM_Protocol_Request_Interface r => AM_Protocol_Request_to_JSON r
+  | AM_Protocol_Response_Interface r => AM_Protocol_Response_to_JSON r
   end.
 
-Definition Json_to_AM_Protocol_Interface (msg : Json): option AM_Protocol_Interface :=
-  temp_type <- get_string "type" msg ;;
+Definition JSON_to_AM_Protocol_Interface (msg : JSON): option AM_Protocol_Interface :=
+  temp_type <- JSON_get_stringT "type" msg ;;
   match temp_type with
-  | "REQUEST" => temp_msg <- Json_to_AM_Protocol_Request msg ;;
+  | "REQUEST" => temp_msg <- JSON_to_AM_Protocol_Request msg ;;
     Some (AM_Protocol_Request_Interface temp_msg)
-  | "RESPONSE" => temp_msg <- Json_to_AM_Protocol_Response msg ;;
+  | "RESPONSE" => temp_msg <- JSON_to_AM_Protocol_Response msg ;;
     Some (AM_Protocol_Response_Interface temp_msg)
   | _ => None
   end.
 
+*)
+
 (* Error Response *)
-Definition ErrorResponseJson (msg: string): Json :=
+Definition ErrorResponseJSON (msg: StringT): JSON :=
   JSON__Object 
-    [("success", JSON__False);
-    ("payload", (JSON__String msg))].
+    [(STR_SUCCESS, JSON__Boolean false);
+    (STR_PAYLOAD, (JSON__String msg))].

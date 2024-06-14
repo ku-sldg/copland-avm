@@ -1,5 +1,6 @@
 -R . CoplandM
 Preamble.v
+ResultT.v
 More_lists.v
 StructTactics.v
 EqClass.v
@@ -7,11 +8,15 @@ AbstractedTypes.v
 Defs.v
 BS.v
 StringT.v
+JSON_Type.v
+JSON_Admits.v
+JSON.v
 OptMonad_Coq.v
 Maps.v
 Term_Defs_Core.v
 Params_Admits.v
 Term_Defs.v
+Interface_Types.v
 ErrorStringConstants.v
 Anno_Term_Defs.v
 Eqb_Evidence.v

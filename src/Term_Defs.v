@@ -15,7 +15,7 @@ This proof script is free software: you can redistribute it and/or
 modify it under the terms of the BSD License as published by the
 University of California.  See license.txt for details. *)
 
-Require Import Maps EqClass List String BS.
+Require Import Maps EqClass List AbstractedTypes.
 Import List.ListNotations.
 
 Require Export Params_Admits.
@@ -106,24 +106,17 @@ Fixpoint et_size (e:Evidence): nat :=
 (** Raw Evidence representaiton:  a list of binary (BS) values. *)
 Definition RawEv := list BS.
 
-Fixpoint RawEv_to_string' (e:RawEv) : string :=
-  match e with
-  | [] => ""
-  | b::bs => (BS_to_string b) ++ (RawEv_to_string' bs)
-  end.
+Definition RawEv_to_stringT (e:RawEv) : StringT. Admitted.
 
-Definition RawEv_to_string (e:RawEv) : string :=
-  "[" ++ (RawEv_to_string' e) ++ "]".
-
-Definition string_to_RawEv (s:string) : option RawEv. Admitted.
+Definition stringT_to_RawEv (s:StringT) : ResultT RawEv StringT. Admitted.
 
 (**  Type-Tagged Raw Evidence representation.  Used as the internal evidence
      type managed by the CVM to track evidence contents and its structure. *)
 Inductive EvC: Set :=
 | evc: RawEv -> Evidence -> EvC.
 
-Definition EvC_to_string (e:EvC) : string. Admitted.
-Definition string_to_EvC (s:string) : option EvC. Admitted.
+Definition EvC_to_stringT (e:EvC) : StringT. Admitted.
+Definition stringT_to_EvC (s:StringT) : ResultT EvC StringT. Admitted.
 
 Definition mt_evc: EvC := (evc [] mt).
 
@@ -144,92 +137,10 @@ Inductive wf_ec : EvC -> Prop :=
     List.length ls = et_size et ->
     wf_ec (evc ls et).
 
-Definition ASP_ARGS := MapC string string.
-Definition ASP_Info := string.
+Definition ASP_ARGS := MapC StringT StringT.
+Definition ASP_Info := StringT.
 
 Definition ReqAuthTok := EvC.
-
-Record ProtocolRunRequest := 
-  mkPRReq {
-    prreq_req_plc: Plc;
-    prreq_term: Term;
-    prreq_authTok: ReqAuthTok;
-    prreq_ev: RawEv;
-  }.
-
-Record ProtocolRunResponse := 
-  mkPRResp {
-    prresp_success: bool;
-    prresp_ev: RawEv;
-  }.
-
-Record ProtocolNegotiateRequest := 
-  mkPNReq {
-    pnreq_term: Term;
-  }.
-
-Record ProtocolNegotiateResponse := 
-  mkPNResp {
-    pnresp_success: bool;
-    pnresp_term: Term;
-  }.
-
-Record ProtocolAppraiseRequest :=
-  mkPAReq {
-    pareq_term: Term;
-    pareq_plc: Plc;
-    pareq_evidence: Evidence;
-    pareq_ev: RawEv;
-  }.
-
-Record ProtocolAppraiseResponse :=
-  mkPAResp {
-    paresp_success: bool;
-    paresp_result: AppResultC;
-  }.
-
-Record ASPRunRequest := 
-  mkASPRReq {
-    asprreq_asp_id : ASP_ID;
-    asprreq_asp_args: ASP_ARGS;
-  }.
-
-Record ASPRunResponse := 
-  mkASPRResp {
-    asprresp_success: bool;
-    asprresp_ev: RawEv;
-  }.
-
-Record ASPInfoRequest := 
-  mkASPIReq {
-    aspireq_asp_id : ASP_ID;
-  }.
-
-Record ASPInfoResponse :=
-  mkASPIResp {
-    aspiresp_success: bool;
-    aspiresp_info: ASP_Info;
-  }.
-
-Inductive AM_Protocol_Requests :=
-| Protocol_Run_Request: ProtocolRunRequest -> AM_Protocol_Requests
-| Protocol_Negotiate_Request: ProtocolNegotiateRequest -> AM_Protocol_Requests
-| Protocol_Appraise_Request: ProtocolAppraiseRequest -> AM_Protocol_Requests.
-
-Inductive AM_Protocol_Responses :=
-| Protocol_Run_Response : ProtocolRunResponse -> AM_Protocol_Responses
-| Protocol_Negotiate_Response: ProtocolNegotiateResponse -> AM_Protocol_Responses
-| Protocol_Appraise_Response: ProtocolAppraiseResponse -> AM_Protocol_Responses.
-
-Inductive AM_Protocol_Interface :=
-| AM_Protocol_Request_Interface: AM_Protocol_Requests -> AM_Protocol_Interface
-| AM_Protocol_Response_Interface: AM_Protocol_Responses -> AM_Protocol_Interface.
-
-Inductive AM_ASP_Interface :=
-| ASP_Run_Request: ASPRunRequest -> AM_ASP_Interface
-| ASP_Run_Response : ASPRunResponse -> AM_ASP_Interface
-| ASP_Info_Request: ASPInfoRequest -> AM_ASP_Interface
-| ASP_Info_Response: ASPInfoResponse -> AM_ASP_Interface.
 
 Definition splitEv_T_l (sp:Split) (e:Evidence) : Evidence :=
   match sp with
@@ -302,7 +213,7 @@ Inductive Ev: Set :=
 | cvm_thread_start: Loc -> Plc -> Core_Term -> Evidence -> Ev
 | cvm_thread_end: Loc -> Ev.
 
-Fixpoint Ev_to_string (e:Ev) : string. Admitted.
+Fixpoint Ev_to_stringT (e:Ev) : StringT. Admitted.
 
 (** The natural number used to distinguish events. *)
 

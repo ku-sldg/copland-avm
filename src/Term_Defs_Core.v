@@ -18,14 +18,14 @@ University of California.  See license.txt for details. *)
 
 Require Export BS.
 
-Require Import AbstractedTypes String.
+Require Import AbstractedTypes.
 
 (** * Terms and Evidence *)
 
 (** [Plc] represents a place (or attestation domain). *)
 Definition Plc: Set := ID_Type.
-Definition Plc_to_string (p:Plc) : string := ID_Type_to_string p.
-Definition string_to_Plc (s:string) : option Plc := string_to_ID_Type s.
+Definition Plc_to_stringT (p: Plc) : StringT := ID_Type_to_stringT p.
+Definition stringT_to_Plc (s: StringT) : ResultT Plc StringT := stringT_to_ID_Type s.
 (** [N_ID] represents a nonce identifier.  *)
 Definition N_ID: Set := nat.
 (** [Event_ID] represents Event identifiers *)
@@ -38,8 +38,8 @@ Definition Event_ID: Set := nat.
           (defined and interpreted per-scenario/implementaiton).
 *)
 Definition ASP_ID: Set := ID_Type.
-Definition ASP_ID_to_string (a:ASP_ID) : string := ID_Type_to_string a.
-Definition string_to_ASP_ID (s:string) : option ASP_ID := string_to_ID_Type s.
+Definition ASP_ID_to_stringT (a:ASP_ID) : StringT := ID_Type_to_stringT a.
+Definition stringT_to_ASP_ID (s:StringT) : ResultT ASP_ID StringT := stringT_to_ID_Type s.
 Definition TARG_ID: Set := ID_Type.
 
 Inductive Resource_ID_Arg: Set := 
@@ -89,8 +89,8 @@ Inductive Evidence: Set :=
 | uu: Plc -> FWD -> ASP_PARAMS -> Evidence -> Evidence
 | ss: Evidence -> Evidence -> Evidence.
 
-Definition Evidence_to_string (e:Evidence) : string. Admitted.
-Definition string_to_Evidence (s:string) : option Evidence. Admitted.
+Definition Evidence_to_stringT (e:Evidence) : StringT. Admitted.
+Definition stringT_to_Evidence (s:StringT) : ResultT Evidence StringT. Admitted.
 
 (** Evidene routing types:  
       ALL:   pass through all evidence
@@ -137,8 +137,8 @@ Inductive Term: Set :=
 | bseq: Split -> Term -> Term -> Term
 | bpar: Split -> Term -> Term -> Term.
 
-Fixpoint Term_to_string (t : Term) : string. Admitted.
-Fixpoint string_to_Term (s : string) : option Term. Admitted.
+Fixpoint Term_to_stringT (t : Term) : StringT. Admitted.
+Definition stringT_to_Term (s : StringT) : ResultT Term StringT. Admitted.
 
 (* Adapted from Imp language Notation in Software Foundations (Pierce) *)
 Declare Custom Entry copland_entry.
@@ -242,8 +242,8 @@ Inductive AppResultC: Set :=
 | eec_app: Plc -> ASP_PARAMS -> BS -> AppResultC ->(* Evidence -> *) AppResultC
 | ssc_app: AppResultC -> AppResultC -> AppResultC.
 
-Fixpoint AppResultC_to_string (res:AppResultC) : string. Admitted.
-Fixpoint string_to_AppResultC (s:string) : option AppResultC. Admitted.
+Fixpoint AppResultC_to_stringT (res: AppResultC) : StringT. Admitted.
+Definition stringT_to_AppResultC (s: StringT) : ResultT AppResultC StringT. Admitted.
 
 Fixpoint appresultc_size (res:AppResultC) : nat :=
   match res with
