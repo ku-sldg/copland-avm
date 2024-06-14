@@ -3,7 +3,7 @@
     
     At the moment, these are too low-level to represent faithfully in the Coq development.   *)
 
-Require Import Term_Defs_Core Term_Defs StringT List JSON Interface_Types ResultT.
+Require Import Term_Defs_Core Term_Defs StringT List JSON Interface_Types ResultT ErrorStringConstants.
 Import ListNotations ResultNotation.
 
 (* Protocol Run Section *)
@@ -88,8 +88,6 @@ Definition JSON_to_ProtocolAppraiseResponse (resp : JSON):
   result <- stringT_to_AppResultC temp_result ;;
   resultC (mkPAResp temp_success result).
 
-(* TODO: These are commented because they are excessive and not too necessary
-
 (* AM Protocol Request Section *)
 Definition AM_Protocol_Request_to_JSON (req: AM_Protocol_Requests): JSON :=
   match req with
@@ -98,17 +96,19 @@ Definition AM_Protocol_Request_to_JSON (req: AM_Protocol_Requests): JSON :=
   | Protocol_Negotiate_Request r => ProtocolNegotiateRequest_to_JSON r
   end.
 
-Definition JSON_to_AM_Protocol_Request (req : JSON): option AM_Protocol_Requests :=
-  temp_type <- JSON_get_stringT "action" req ;;
-  match temp_type with
-  | "RUN" => temp_req <- JSON_to_ProtocolRunRequest req ;;
-    Some (Protocol_Run_Request temp_req)
-  | "NEGOTIATE" => temp_req <- JSON_to_ProtocolAppraiseRequest req ;;
-    Some (Protocol_Appraise_Request temp_req)
-  | "APPRAISE" => temp_req <- JSON_to_ProtocolNegotiateRequest req ;;
-    Some (Protocol_Negotiate_Request temp_req)
-  | _ => None
-  end.
+Definition JSON_to_AM_Protocol_Request (req : JSON): 
+    ResultT AM_Protocol_Requests StringT :=
+  temp_type <- JSON_get_stringT STR_ACTION req ;;
+  if (eqb temp_type STR_RUN)
+  then (temp_req <- JSON_to_ProtocolRunRequest req ;;
+        resultC (Protocol_Run_Request temp_req))
+  else if (eqb temp_type STR_NEGOTIATE)
+  then (temp_req <- JSON_to_ProtocolAppraiseRequest req ;;
+        resultC (Protocol_Appraise_Request temp_req))
+  else if (eqb temp_type STR_APPRAISE)
+  then (temp_req <- JSON_to_ProtocolNegotiateRequest req ;;
+        resultC (Protocol_Negotiate_Request temp_req))
+  else errC errStr_invalid_request_type.
 
 (* AM Protocol Response Section *)
 Definition AM_Protocol_Response_to_JSON (resp: AM_Protocol_Responses): JSON :=
@@ -118,17 +118,19 @@ Definition AM_Protocol_Response_to_JSON (resp: AM_Protocol_Responses): JSON :=
   | Protocol_Negotiate_Response r => ProtocolNegotiateResponse_to_JSON r
   end.
 
-Definition JSON_to_AM_Protocol_Response (resp : JSON): option AM_Protocol_Responses :=
-  temp_type <- JSON_get_stringT "action" resp ;;
-  match temp_type with
-  | "RUN" => temp_resp <- JSON_to_ProtocolRunResponse resp ;;
-    Some (Protocol_Run_Response temp_resp)
-  | "NEGOTIATE" => temp_resp <- JSON_to_ProtocolAppraiseResponse resp ;;
-    Some (Protocol_Appraise_Response temp_resp)
-  | "APPRAISE" => temp_resp <- JSON_to_ProtocolNegotiateResponse resp ;;
-    Some (Protocol_Negotiate_Response temp_resp)
-  | _ => None
-  end.
+Definition JSON_to_AM_Protocol_Response (resp : JSON): 
+    ResultT AM_Protocol_Responses StringT :=
+  temp_type <- JSON_get_stringT STR_ACTION resp ;;
+  if (eqb temp_type STR_RUN)
+  then (temp_resp <- JSON_to_ProtocolRunResponse resp ;;
+        resultC (Protocol_Run_Response temp_resp))
+  else if (eqb temp_type STR_NEGOTIATE)
+  then (temp_resp <- JSON_to_ProtocolAppraiseResponse resp ;;
+        resultC (Protocol_Appraise_Response temp_resp))
+  else if (eqb temp_type STR_APPRAISE)
+  then (temp_resp <- JSON_to_ProtocolNegotiateResponse resp ;;
+        resultC (Protocol_Negotiate_Response temp_resp))
+  else errC errStr_invalid_request_type.
 
 (* AM Protocol Interface Section *)
 Definition AM_Protocol_Interface_to_JSON (msg: AM_Protocol_Interface): JSON :=
@@ -137,17 +139,16 @@ Definition AM_Protocol_Interface_to_JSON (msg: AM_Protocol_Interface): JSON :=
   | AM_Protocol_Response_Interface r => AM_Protocol_Response_to_JSON r
   end.
 
-Definition JSON_to_AM_Protocol_Interface (msg : JSON): option AM_Protocol_Interface :=
-  temp_type <- JSON_get_stringT "type" msg ;;
-  match temp_type with
-  | "REQUEST" => temp_msg <- JSON_to_AM_Protocol_Request msg ;;
-    Some (AM_Protocol_Request_Interface temp_msg)
-  | "RESPONSE" => temp_msg <- JSON_to_AM_Protocol_Response msg ;;
-    Some (AM_Protocol_Response_Interface temp_msg)
-  | _ => None
-  end.
-
-*)
+Definition JSON_to_AM_Protocol_Interface (msg : JSON): 
+    ResultT AM_Protocol_Interface StringT :=
+  temp_type <- JSON_get_stringT STR_TYPE msg ;;
+  if (eqb temp_type STR_REQUEST)
+  then (temp_msg <- JSON_to_AM_Protocol_Request msg ;;
+        resultC (AM_Protocol_Request_Interface temp_msg))
+  else if (eqb temp_type STR_RESPONSE)
+  then (temp_msg <- JSON_to_AM_Protocol_Response msg ;;
+        resultC (AM_Protocol_Response_Interface temp_msg))
+  else errC errStr_incorrect_resp_type.
 
 (* Error Response *)
 Definition ErrorResponseJSON (msg: StringT): JSON :=

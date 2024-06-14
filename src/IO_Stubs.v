@@ -11,21 +11,21 @@
     for Appraisal.        
  *)
 Require Import Term_Defs ConcreteEvidence ErrorStMonad_Coq 
-  Manifest Manifest_Admits Cvm_St StringT CvmJson_Interfaces.
+  Manifest Manifest_Admits Cvm_St StringT JSON.
 
 Require Import List.
 Import ListNotations.
 
 (** * Stub to encode a sequence of BS values to a single BS value.
       Real implmenetation will depend on the instantition of BS *)
-Definition encodeEvRaw(e:RawEv): BS.
-Admitted.
+Definition encodeEvRaw(e:RawEv): BS.  Admitted.
 
-Definition make_JSON_Request (uuid : UUID) (js : Json) : Json. Admitted.
+Definition make_JSON_Network_Request (uuid : UUID) (js : JSON) : JSON. Admitted.
+
+Definition make_JSON_Local_Request (uuid : UUID) (js : JSON) : JSON. Admitted.
 
 (** * Stub to simulate evidence collected by a parallel CVM instance *)
-Definition parallel_vm_thread (l:Loc) (t:Core_Term) (p:Plc) (e:EvC) : EvC.
-Admitted.
+Definition parallel_vm_thread (l:Loc) (t:Core_Term) (p:Plc) (e:EvC) : EvC.  Admitted.
 
 Definition do_start_par_thread (loc:Loc) (t:Core_Term) (e:RawEv) : CVM unit :=
   ret tt.
@@ -33,17 +33,12 @@ Definition do_start_par_thread (loc:Loc) (t:Core_Term) (e:RawEv) : CVM unit :=
 Definition do_wait_par_thread (loc:Loc) (t:Core_Term) (p:Plc) (e:EvC) : CVM EvC :=
   ret (parallel_vm_thread loc t p e).
 
-Definition requester_bound (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) : bool.
-Admitted.
+Definition requester_bound (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) : bool.  Admitted.
 
-Definition appraise_auth_tok (res:AppResultC) : bool.
-Admitted.
+Definition appraise_auth_tok (res:AppResultC) : bool.  Admitted.
 
-Definition is_local_appraisal (res:AM_Library) : bool.
-Admitted.
+Definition is_local_appraisal (res:AM_Library) : bool.  Admitted.
 
-Definition print_auth_tok (tok:ReqAuthTok) : unit.
-Admitted.
+Definition print_auth_tok (tok:ReqAuthTok) : unit.  Admitted.
 
-Definition pretty_print_manifest (m:Manifest) : StringT.
-Admitted.
+Definition pretty_print_manifest (m:Manifest) : StringT.  Admitted.

@@ -4,7 +4,7 @@ Uninterpreted functions and rewrite rules that model external (remote and local 
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term_Defs Anno_Term_Defs LTS IO_Stubs CvmJson_Interfaces ErrorStMonad_Coq Manifest Cvm_St.
+Require Import Term_Defs Anno_Term_Defs Interface_Types LTS IO_Stubs CvmJson_Interfaces ResultT Manifest Cvm_St.
 
 Require Import List.
 Import ListNotations.
@@ -80,14 +80,13 @@ Axiom wf_ec_preserved_remote: forall st pTarg uuid ac ev1,
     (st_AM_config st) = ac ->
     (st_ev st) = ev1 ->
     (plcCb ac) pTarg = resultC uuid ->
-    forall t tok rawEv,
-    Json_to_AM_Protocol_Response (
-      make_JSON_Request uuid (
-        ProtocolRunRequest_to_Json (
+    forall t rawEv,
+    JSON_to_AM_Protocol_Response (
+      make_JSON_Network_Request uuid (
+        ProtocolRunRequest_to_JSON (
           mkPRReq (
-            my_abstract_plc (absMan (st_AM_config st))) 
             t 
-            tok 
+            my_abstract_plc (absMan (st_AM_config st))) 
             (get_bits ev1)
         ))) = Some (Protocol_Run_Response (mkPRResp true rawEv)) -> 
     wf_ec ev1 -> 
