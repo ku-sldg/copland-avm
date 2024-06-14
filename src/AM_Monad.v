@@ -89,9 +89,9 @@ Definition am_getNonce (nid:nat) : AM BS :=
   end.
 
 
-Definition am_runCvm_nonce (t:Term) (p:Plc) (bs:BS) (ac : AM_Config) : AM (nat * RawEv) :=
+Definition am_runCvm_nonce (t:Term) (bs:BS) (ac : AM_Config) : AM (nat * RawEv) :=
   nid <- am_newNonce bs ;;
-  ret (nid, run_cvm_rawEv t p [bs] ac).
+  ret (nid, run_cvm_rawEv t [bs] ac).
 
 
   Ltac am_monad_unfold :=

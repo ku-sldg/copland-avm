@@ -21,8 +21,8 @@ Import ListNotations.
 Set Nested Proofs Allowed.
 *)
 
-Definition am_sendReq (t:Term) (uuid : UUID) (authTok:ReqAuthTok) (e:RawEv) : option RawEv :=
-  let req := mkPRReq t authTok e in 
+Definition am_sendReq (req_plc : Plc) (t:Term) (uuid : UUID) (authTok:ReqAuthTok) (e:RawEv) : option RawEv :=
+  let req := mkPRReq req_plc t authTok e in 
   let js := ProtocolRunRequest_to_Json req in
   let js_res := make_JSON_Request uuid js in
   match Json_to_ProtocolRunResponse js_res with
@@ -56,7 +56,7 @@ Definition gen_authEvC_if_some (ot:option Term) (uuid : UUID) (myPlc:Plc) (init_
   match ot with
   | Some auth_phrase =>
     let '(evc init_rawev_auth init_et_auth) := init_evc in
-    match am_sendReq auth_phrase uuid mt_evc init_rawev_auth with
+    match am_sendReq myPlc auth_phrase uuid mt_evc init_rawev_auth with
     | None => ret (evc [] mt)
     | Some auth_rawev =>
       let auth_et := eval auth_phrase myPlc init_et_auth in
@@ -179,9 +179,9 @@ Qed.
 
 Admitted.
 
-Definition run_cvm_local_am (t:Term) (myPlc:Plc) (ls:RawEv) : AM RawEv := 
+Definition run_cvm_local_am (t:Term) (ls:RawEv) : AM RawEv := 
   st <- get ;; 
-  ret (run_cvm_rawEv t myPlc ls (amConfig st)).
+  ret (run_cvm_rawEv t ls (amConfig st)).
 
 Definition gen_authEvC_if_some_local (ot:option Term) (myPlc:Plc) (init_evc:EvC) (absMan:Manifest) (amLib:AM_Library) : AM EvC :=
   match ot with
@@ -189,7 +189,7 @@ Definition gen_authEvC_if_some_local (ot:option Term) (myPlc:Plc) (init_evc:EvC)
       let '(evc init_rawev_auth init_et_auth) := init_evc in
 
       config_AM_if_lib_supported (* auth_phrase myPlc *) absMan amLib ;; 
-      resev <- run_cvm_local_am auth_phrase myPlc init_rawev_auth ;;
+      resev <- run_cvm_local_am auth_phrase init_rawev_auth ;;
       let auth_et := eval auth_phrase myPlc init_et_auth in 
       ret (evc resev auth_et)
   | None => ret (evc [] mt)
@@ -213,7 +213,7 @@ Definition am_client_gen_local (t:Term) (myPlc:Plc) (initEvOpt:option EvC)
   config_AM_if_lib_supported absMan amLib ;; 
 
   check_disclosure_policy t myPlc init_et ;;
-  resev <- run_cvm_local_am t myPlc init_ev ;; 
+  resev <- run_cvm_local_am t init_ev ;; 
 
   (*
   let expected_et := eval t myPlc init_et in 

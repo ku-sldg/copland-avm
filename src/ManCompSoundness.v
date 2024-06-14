@@ -296,7 +296,7 @@ Proof.
 
   - subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
-      unfold remote_session, doRemote_session', do_remote, check_cvm_policy in *;
+      unfold remote_session, doRemote, doRemote_session', do_remote, check_cvm_policy in *;
       try break_match;
       try monad_unfold;
       try break_match
@@ -308,11 +308,11 @@ Proof.
       eauto; try congruence);
     unfold supports_am in *; intuition.
     +
-      destruct H0;
+      destruct H0; 
       erewrite H2 in *; try congruence; eauto.
   - subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
-      unfold remote_session, doRemote_session', do_remote, check_cvm_policy in *;
+      unfold remote_session, doRemote, doRemote_session', do_remote, check_cvm_policy in *;
       try break_match;
       try monad_unfold;
       try break_match
@@ -2450,8 +2450,6 @@ Proof.
   
   eapply manifest_generator_compiler_soundness_distributed; eauto. *)
 Qed.
-
-Set Nested Proofs Allowed.
 
 Lemma manifest_subset_knowsof_myPlc_update_self : forall b,
 manifest_subset b (knowsof_myPlc_manifest_update b).

@@ -1521,16 +1521,16 @@ Proof.
 Qed.
 
 Lemma cvm_respects_events_disclosure:
-  forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt ac ac',
+  forall t e i r atp bits bits' e' cvm_tr cvmi cvmi' annt ac ac',
     
     annoP_indexed annt t cvmi cvmi' ->
-    ~ (events_discloses annt p e i r) ->
+    ~ (events_discloses annt (my_abstract_plc (absMan ac)) e i r) ->
     
     term_to_coreP t atp ->
     build_cvmP atp
-               (mk_st (evc bits e) [] p cvmi ac)
+               (mk_st (evc bits e) [] cvmi ac)
                (resultC tt)
-               (mk_st (evc bits' e') cvm_tr p' cvmi' ac') ->
+               (mk_st (evc bits' e') cvm_tr cvmi' ac') ->
 
     ~ (cvm_trace_discloses_to_remote cvm_tr i r).
 
@@ -1551,17 +1551,17 @@ Proof.
 Qed.
 
 Lemma cvm_respects_term_disclosure `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg}:
-  forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt ac ac',
+  forall t e i r atp bits bits' e' cvm_tr cvmi cvmi' annt ac ac',
 
     annoP_indexed annt t cvmi cvmi' ->
 
-  ~ (term_discloses_to_remote t p e (r,i) = true) ->
+  ~ (term_discloses_to_remote t (my_abstract_plc (absMan ac)) e (r,i) = true) ->
   
   term_to_coreP t atp ->
   build_cvmP atp
-             (mk_st (evc bits e) [] p cvmi ac)
+             (mk_st (evc bits e) [] cvmi ac)
              (resultC tt)
-             (mk_st (evc bits' e') cvm_tr p' cvmi' ac') ->
+             (mk_st (evc bits' e') cvm_tr cvmi' ac') ->
 
   ~ (cvm_trace_discloses_to_remote cvm_tr r i).
 Proof.
@@ -1583,16 +1583,16 @@ Qed.
 
 
 Lemma cvm_respects_events_disclosure_aspid_enc:
-forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt ac ac',
+forall t e i r atp bits bits' e' cvm_tr cvmi cvmi' annt ac ac',
   
   annoP_indexed annt t cvmi cvmi' ->
-  ~ (events_discloses_aspid_enc annt p e i r) ->
+  ~ (events_discloses_aspid_enc annt (my_abstract_plc (absMan ac)) e i r) ->
   
   term_to_coreP t atp ->
   build_cvmP atp
-              (mk_st (evc bits e) [] p cvmi ac)
+              (mk_st (evc bits e) [] cvmi ac)
               (resultC tt)
-              (mk_st (evc bits' e') cvm_tr p' cvmi' ac') ->
+              (mk_st (evc bits' e') cvm_tr cvmi' ac') ->
 
   ~ (cvm_trace_discloses_aspid_to_remote_enc cvm_tr i r).
 
@@ -1618,17 +1618,17 @@ Qed.
 
 
 Lemma cvm_respects_term_disclosure_aspid_enc `{H : EqClass Arg} `{H1 : EqClass Resource_ID_Arg}:
-  forall t p e i r atp bits bits' p' e' cvm_tr cvmi cvmi' annt ac ac',
+  forall t e i r atp bits bits' e' cvm_tr cvmi cvmi' annt ac ac',
 
     annoP_indexed annt t cvmi cvmi' ->
 
-  ~ (term_discloses_aspid_to_remote_enc t p e i r) ->
+  ~ (term_discloses_aspid_to_remote_enc t (my_abstract_plc (absMan ac)) e i r) ->
   
   term_to_coreP t atp ->
   build_cvmP atp
-             (mk_st (evc bits e) [] p cvmi ac)
+             (mk_st (evc bits e) [] cvmi ac)
              (resultC tt)
-             (mk_st (evc bits' e') cvm_tr p' cvmi' ac') ->
+             (mk_st (evc bits' e') cvm_tr cvmi' ac') ->
 
   ~ (cvm_trace_discloses_aspid_to_remote_enc cvm_tr i r).
 Proof.
