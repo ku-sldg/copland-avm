@@ -10,7 +10,9 @@ Import ListNotations ResultNotation.
 (* Protocol Run Section *)
 Definition ProtocolRunRequest_to_JSON (req: ProtocolRunRequest): JSON :=
   JSON_Object 
-    [(STR_REQ_PLC, (JSON_String (Plc_to_stringT (prreq_req_plc req))));
+    [(STR_TYPE, (JSON_String STR_REQUEST));
+    (STR_ACTION, (JSON_String STR_RUN));
+    (STR_REQ_PLC, (JSON_String (Plc_to_stringT (prreq_req_plc req))));
     (STR_TERM, (JSON_String (Term_to_stringT (prreq_term req)))); 
     (STR_EV, (JSON_String (RawEv_to_stringT (prreq_ev req))))].
 
@@ -25,7 +27,9 @@ Definition JSON_to_ProtocolRunRequest (req : JSON): ResultT ProtocolRunRequest S
 
 Definition ProtocolRunResponse_to_JSON (resp: ProtocolRunResponse): JSON :=
   JSON_Object 
-    [(STR_SUCCESS, (JSON_Boolean (prresp_success resp)));
+    [(STR_TYPE, (JSON_String STR_RESPONSE));
+    (STR_ACTION, (JSON_String STR_RUN));
+    (STR_SUCCESS, (JSON_Boolean (prresp_success resp)));
     (STR_PAYLOAD, (JSON_String (RawEv_to_stringT (prresp_ev resp))))].
 
 Definition JSON_to_ProtocolRunResponse (resp : JSON): ResultT ProtocolRunResponse StringT :=
@@ -37,7 +41,9 @@ Definition JSON_to_ProtocolRunResponse (resp : JSON): ResultT ProtocolRunRespons
 (* Protocol Negotiate Section *)
 Definition ProtocolNegotiateRequest_to_JSON (req: ProtocolNegotiateRequest): JSON :=
   JSON_Object 
-    [(STR_TERM, (JSON_String (Term_to_stringT (pnreq_term req))))].
+    [(STR_TYPE, (JSON_String STR_REQUEST));
+    (STR_ACTION, (JSON_String STR_NEGOTIATE));
+      (STR_TERM, (JSON_String (Term_to_stringT (pnreq_term req))))].
 
 Definition JSON_to_ProtocolNegotiateRequest (req : JSON): 
     ResultT ProtocolNegotiateRequest StringT :=
@@ -47,7 +53,9 @@ Definition JSON_to_ProtocolNegotiateRequest (req : JSON):
 
 Definition ProtocolNegotiateResponse_to_JSON (resp: ProtocolNegotiateResponse): JSON :=
   JSON_Object 
-    [(STR_SUCCESS, (JSON_Boolean (pnresp_success resp)));
+    [(STR_TYPE, (JSON_String STR_RESPONSE));
+    (STR_ACTION, (JSON_String STR_NEGOTIATE));
+      (STR_SUCCESS, (JSON_Boolean (pnresp_success resp)));
     (STR_PAYLOAD, (JSON_String (Term_to_stringT (pnresp_term resp))))].
 
 Definition JSON_to_ProtocolNegotiateResponse (resp : JSON): 
@@ -60,7 +68,9 @@ Definition JSON_to_ProtocolNegotiateResponse (resp : JSON):
 (* Protocol Appraise Section *)
 Definition ProtocolAppraiseRequest_to_JSON (req: ProtocolAppraiseRequest): JSON :=
   JSON_Object 
-    [(STR_TERM, (JSON_String (Term_to_stringT (pareq_term req))));
+    [(STR_TYPE, (JSON_String STR_REQUEST));
+    (STR_ACTION, (JSON_String STR_APPRAISE));
+    (STR_TERM, (JSON_String (Term_to_stringT (pareq_term req))));
     (STR_REQ_PLC, (JSON_String (Plc_to_stringT (pareq_plc req))));
     (STR_EVIDENCE, (JSON_String (Evidence_to_stringT (pareq_evidence req))));
     (STR_EV, (JSON_String (RawEv_to_stringT (pareq_ev req))))].
@@ -79,7 +89,9 @@ Definition JSON_to_ProtocolAppraiseRequest (req : JSON):
 
 Definition ProtocolAppraiseResponse_to_JSON (resp: ProtocolAppraiseResponse): JSON :=
   JSON_Object 
-    [(STR_SUCCESS, (JSON_Boolean (paresp_success resp)));
+    [(STR_TYPE, (JSON_String STR_RESPONSE));
+    (STR_ACTION, (JSON_String STR_APPRAISE));
+    (STR_SUCCESS, (JSON_Boolean (paresp_success resp)));
     (STR_PAYLOAD, (JSON_String (AppResultC_to_stringT (paresp_result resp))))].
 
 Definition JSON_to_ProtocolAppraiseResponse (resp : JSON): 
@@ -103,10 +115,10 @@ Definition JSON_to_AM_Protocol_Request (req : JSON):
   if (eqb temp_type STR_RUN)
   then (temp_req <- JSON_to_ProtocolRunRequest req ;;
         resultC (Protocol_Run_Request temp_req))
-  else if (eqb temp_type STR_NEGOTIATE)
+  else if (eqb temp_type STR_APPRAISE)
   then (temp_req <- JSON_to_ProtocolAppraiseRequest req ;;
         resultC (Protocol_Appraise_Request temp_req))
-  else if (eqb temp_type STR_APPRAISE)
+  else if (eqb temp_type STR_NEGOTIATE)
   then (temp_req <- JSON_to_ProtocolNegotiateRequest req ;;
         resultC (Protocol_Negotiate_Request temp_req))
   else errC errStr_invalid_request_type.
@@ -125,10 +137,10 @@ Definition JSON_to_AM_Protocol_Response (resp : JSON):
   if (eqb temp_type STR_RUN)
   then (temp_resp <- JSON_to_ProtocolRunResponse resp ;;
         resultC (Protocol_Run_Response temp_resp))
-  else if (eqb temp_type STR_NEGOTIATE)
+  else if (eqb temp_type STR_APPRAISE)
   then (temp_resp <- JSON_to_ProtocolAppraiseResponse resp ;;
         resultC (Protocol_Appraise_Response temp_resp))
-  else if (eqb temp_type STR_APPRAISE)
+  else if (eqb temp_type STR_NEGOTIATE)
   then (temp_resp <- JSON_to_ProtocolNegotiateResponse resp ;;
         resultC (Protocol_Negotiate_Response temp_resp))
   else errC errStr_invalid_request_type.
