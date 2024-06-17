@@ -3,7 +3,7 @@
     
     At the moment, these are too low-level to represent faithfully in the Coq development.   *)
 
-Require Import Term_Defs_Core Term_Defs StringT List JSON Interface_Types ResultT ErrorStringConstants.
+Require Import Term_Defs_Core Term_Defs StringT List JSON Interface_Types ResultT ErrorStringConstants Term_Defs_Admits.
 Export Interface_Types JSON.
 Import ListNotations ResultNotation.
 

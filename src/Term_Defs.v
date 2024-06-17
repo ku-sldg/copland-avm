@@ -106,17 +106,10 @@ Fixpoint et_size (e:Evidence): nat :=
 (** Raw Evidence representaiton:  a list of binary (BS) values. *)
 Definition RawEv := list BS.
 
-Definition RawEv_to_stringT (e:RawEv) : StringT. Admitted.
-
-Definition stringT_to_RawEv (s:StringT) : ResultT RawEv StringT. Admitted.
-
 (**  Type-Tagged Raw Evidence representation.  Used as the internal evidence
      type managed by the CVM to track evidence contents and its structure. *)
 Inductive EvC: Set :=
 | evc: RawEv -> Evidence -> EvC.
-
-Definition EvC_to_stringT (e:EvC) : StringT. Admitted.
-Definition stringT_to_EvC (s:StringT) : ResultT EvC StringT. Admitted.
 
 Definition mt_evc: EvC := (evc [] mt).
 
@@ -212,8 +205,6 @@ Inductive Ev: Set :=
 | join:  nat -> Plc -> Ev
 | cvm_thread_start: Loc -> Plc -> Core_Term -> Evidence -> Ev
 | cvm_thread_end: Loc -> Ev.
-
-Fixpoint Ev_to_stringT (e:Ev) : StringT. Admitted.
 
 (** The natural number used to distinguish events. *)
 

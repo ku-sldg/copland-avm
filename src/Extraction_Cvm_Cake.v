@@ -37,6 +37,10 @@ Extract Inductive list => list [ "[]" "( :: )" ].
 Extraction Implicit do_asp [3 4].
 Extraction Implicit do_asp' [3 4]. 
 *)
+(* TODO: At some point this might be a good approach to take
+Extract Constant stringT_to_ID_Type => "fun x => x".
+Extract Constant stringT_to_ID_Type => "fun x => x". *)
+
 Extraction Implicit parallel_vm_thread [2 3 4].
 Extraction Implicit do_wait_par_thread [2 3 4].
 

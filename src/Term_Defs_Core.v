@@ -89,9 +89,6 @@ Inductive Evidence: Set :=
 | uu: Plc -> FWD -> ASP_PARAMS -> Evidence -> Evidence
 | ss: Evidence -> Evidence -> Evidence.
 
-Definition Evidence_to_stringT (e:Evidence) : StringT. Admitted.
-Definition stringT_to_Evidence (s:StringT) : ResultT Evidence StringT. Admitted.
-
 (** Evidene routing types:  
       ALL:   pass through all evidence
       NONE   pass through empty evidence
@@ -137,8 +134,6 @@ Inductive Term: Set :=
 | bseq: Split -> Term -> Term -> Term
 | bpar: Split -> Term -> Term -> Term.
 
-Fixpoint Term_to_stringT (t : Term) : StringT. Admitted.
-Definition stringT_to_Term (s : StringT) : ResultT Term StringT. Admitted.
 
 (* Adapted from Imp language Notation in Software Foundations (Pierce) *)
 Declare Custom Entry copland_entry.
@@ -242,8 +237,6 @@ Inductive AppResultC: Set :=
 | eec_app: Plc -> ASP_PARAMS -> BS -> AppResultC ->(* Evidence -> *) AppResultC
 | ssc_app: AppResultC -> AppResultC -> AppResultC.
 
-Fixpoint AppResultC_to_stringT (res: AppResultC) : StringT. Admitted.
-Definition stringT_to_AppResultC (s: StringT) : ResultT AppResultC StringT. Admitted.
 
 Fixpoint appresultc_size (res:AppResultC) : nat :=
   match res with
