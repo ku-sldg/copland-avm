@@ -5,7 +5,7 @@
    https://github.com/ku-sldg/negotiation20/blob/master/src/Manifest/Manifest.v
 *)
 
-Require Import AbstractedTypes Term_Defs_Core Maps (* String *)
+Require Import AbstractedTypes Term_Defs_Core Maps
   Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq.
 
 Require Import Example_Phrases_Admits.
@@ -31,11 +31,6 @@ Definition PubKeyCallback : Type :=
 Definition PlcCallback : Type := 
   Plc -> ResultT UUID DispatcherErrors.
 
-  (*
-Definition UUIDCallback : Type :=
-  UUID -> ResultT Plc DispatcherErrors.
-  *)
-
 Definition PolicyT : Set :=  list (Plc * ASP_ID).
 
 Definition empty_PolicyT : PolicyT := [].
@@ -49,7 +44,6 @@ Definition empty_PolicyT : PolicyT := [].
     my_abstract_plc   : Plc ; 
 
     asps              : manifest_set ASP_ID;
-    (* asps_external     : manifest_set ASP_ID; *)
     appraisal_asps    : manifest_set (Plc * ASP_ID) ;
     uuidPlcs          : manifest_set Plc ;
     pubKeyPlcs        : manifest_set Plc ;
@@ -61,7 +55,6 @@ Definition empty_PolicyT : PolicyT := [].
   Definition empty_Manifest : Manifest :=
     Build_Manifest 
       empty_Manifest_Plc 
-      (* manifest_set_empty *)
       manifest_set_empty
       manifest_set_empty
       manifest_set_empty
@@ -73,34 +66,13 @@ Definition empty_PolicyT : PolicyT := [].
     AM Config based on a Manifest. *)
   Record AM_Library := {
 
-  (*
-    ASPServer_Cb        : ASP_Address -> (ASPCallback CallBackErrors) ;
-    PubKeyServer_Cb     : ASP_Address -> PubKeyCallback ;
-    PlcServer_Cb        : ASP_Address -> PlcCallback ;
-    UUIDServer_Cb       : ASP_Address -> UUIDCallback ;
-  *)
-
     UUID_AM_Clone : UUID ;
-
-    (*
-
-    (* Server Addresses *)
-    ASPServer_Addr    : ASP_Address ;
-    PubKeyServer_Addr : ASP_Address ;
-    PlcServer_Addr    : ASP_Address ;
-    UUIDServer_Addr   : ASP_Address ;
-
-    *)
 
     (* Local Mappings *)
     Local_ASPS        : MapC ASP_ID UUID ;
     Local_Appraisal_ASPS : MapC (Plc * ASP_ID) UUID ;
     Local_Plcs        : MapD Plc UUID ;
     Local_PubKeys     : MapD Plc PublicKey ;
-
-    (*
-    External_ASPS : MapD ASP_ID UUID ;
-    *)
   }.
 
 Record AM_Config : Type := 
@@ -111,9 +83,6 @@ Record AM_Config : Type :=
     app_aspCb : (ASPCallback DispatcherErrors) ;
     plcCb : PlcCallback ;
     pubKeyCb : PubKeyCallback ;
-    (* uuidCb : UUIDCallback ; 
-    ext_aspCb : PlcCallback ;
-    *)
   }.
 
 Definition empty_aspCb (ps:ASP_PARAMS) (p:Plc) (bs:BS) (rawev:RawEv) : ResultT BS DispatcherErrors := 

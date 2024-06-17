@@ -33,7 +33,6 @@ Import ListNotations.
               (bs:BS) (rawEv : RawEv) : ResultT BS DispatcherErrors :=
         let (aspid, _, _, _) := ps in
         let abstract_asps := am.(asps) in
-        (* let external_asps := am.(External_ASPS) in *)
         let local_asps_map := al.(Local_ASPS) in
         let shrunk_map : (MapC ASP_ID UUID) := 
         minify_mapC local_asps_map (fun x => if (in_dec_set x abstract_asps) then true else false) in
@@ -46,16 +45,12 @@ Import ListNotations.
                 errC (Runtime msg)
             end
           | None => errC Unavailable 
-            (* (asp_server_cb asp_server_addr par) *)
           end.
 
   (* This function will be a dispatcher for either local ASPS to CakeMLCallback, or pass them off to the ASP_Server *)
   Definition generate_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest)
       : (ASPCallback DispatcherErrors) :=
-    (* let asp_server_cb := al.(ASPServer_Cb) in *)
-      (generate_ASP_dispatcher' al am). 
-
-
+          (generate_ASP_dispatcher' al am). 
 
   Definition generate_appraisal_ASP_dispatcher' (al : AM_Library) (am : Manifest) 
               (ps : ASP_PARAMS) (p : Plc) 
@@ -75,18 +70,6 @@ Import ListNotations.
         | None => errC Unavailable 
       end.
 
-      (*
-      | Some cb => 
-        match (cb par p bs rawEv) with
-        | resultC r => resultC r
-        | errC (messageLift msg) => 
-            errC (Runtime msg)
-        end
-      | None => errC Unavailable 
-        (* (asp_server_cb asp_server_addr par) *)
-      end.
-      *)
-
   Definition generate_appraisal_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest)
   : (ASPCallback DispatcherErrors) :=
   (generate_appraisal_ASP_dispatcher' al am). 
@@ -95,7 +78,6 @@ Import ListNotations.
   (* This function will lookup for either local Plcs to UUID, or pass them off to the Plc Server *)
   Definition generate_Plc_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest) 
       : PlcCallback :=
-    (* let plc_server_cb := al.(PlcServer_Cb) in *)
       let local_plc_map := al.(Local_Plcs) in
       let abstract_plcs := am.(uuidPlcs) in
       let shrunk_map := 
@@ -106,31 +88,11 @@ Import ListNotations.
         match (map_get shrunk_map p) with
         | Some uuid => resultC uuid
         | None => errC Unavailable
-          (* (plc_server_cb plc_server_addr p) *)
         end.
-
-(*
-
-(* This function will lookup for either local Plcs to UUID, or pass them off to the Plc Server *)
-Definition generate_external_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest) 
-    : PlcCallback :=
-  (* let plc_server_cb := al.(PlcServer_Cb) in *)
-    let external_asp_map := al.(External_ASPS) in
-    let abstract_asps := am.(asps) in
-    let shrunk_map := 
-      minify_mapD external_asp_map (fun x => if (in_dec_set x abstract_asps) then true else false) in
-
-    fun (i : ASP_ID) =>
-      match (map_get shrunk_map i) with
-      | Some uuid => resultC uuid
-      | None => errC Unavailable
-      end.
-*)
       
   (* This function will lookup the PubKey either locally Plc -> PublicKey or pass off to PubKeyServer *)
   Definition generate_PubKey_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest) 
       : PubKeyCallback :=
-    (* let pubkey_server_cb := al.(PubKeyServer_Cb) in *)
       let local_pubkey_map := al.(Local_PubKeys) in
       let abstract_plcs := am.(pubKeyPlcs) in
       let shrunk_map := 
@@ -141,32 +103,10 @@ Definition generate_external_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Li
         match (map_get shrunk_map p) with
         | Some key => resultC key
         | None => errC Unavailable
-          (* (pubkey_server_cb pubkey_server_addr p) *)
         end.
 
-        (*
-  Definition generate_UUID_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest)  
-      : UUIDCallback :=
-    (* let uuid_server_cb := al.(UUIDServer_Cb) in *)
-      let local_plc_map := al.(Local_Plcs) in
-      let abstract_plcs := am.(uuidPlcs) in
-      let shrunk_map :=
-        minify_mapD local_plc_map (fun x => if (in_dec_set x abstract_plcs) then true else false) in
-
-      fun (u : UUID) =>
-        (* check if uuid "u" is local, else dispatch to callback *)
-        match (mapD_get_key shrunk_map u) with
-        | Some p => resultC p
-        | None => errC Unavailable
-          (* (uuid_server_cb local_uuid_addr u) *)
-        end.
-        *)
-
-  (* This is a rough type signature for the "manifest compiler".  Still some details to be ironed out... *)
+  (* This is the top-level definition for the "manifest compiler".  *)
   Definition manifest_compiler (m : Manifest) (al : AM_Library) : AM_Config :=
-  (* The output of this function is an AM Config, and a 
-  function that can be used like "check_asp_EXTD".
-  This function will be used in extraction to either dispatch ASPs to the ASP server, or call a local callback *)
   {|
     absMan   := m ;
     am_clone_addr := (UUID_AM_Clone al);
@@ -174,7 +114,4 @@ Definition generate_external_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Li
     app_aspCb := (generate_appraisal_ASP_dispatcher al m);
     plcCb     := (generate_Plc_dispatcher al m);
     pubKeyCb  := (generate_PubKey_dispatcher al m);
-    (* uuidCb    := (generate_UUID_dispatcher al m); 
-    ext_aspCb := (generate_external_ASP_dispatcher al m); 
-    *)
   |}.

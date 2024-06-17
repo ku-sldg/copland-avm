@@ -23,80 +23,17 @@ Import ListNotations.
 Definition encodeEvRaw(e:RawEv): BS.
 Admitted.
 
-(*
-Inductive ASP_PARAMS: Set :=
-| asp_paramsC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP_PARAMS.
-*)
-(*
-Definition get_asp_params_id (params:ASP_PARAMS) : ASP_ID := 
-  match params with
-  | asp_paramsC i _ _ _ => i
-  end.
-*)
-
-(*
-Definition doAsp_uuid (uuid:UUID) (ev:RawEv) : ResultT BS CallBackErrors.
-Admitted.
-*)
-
+(** * Stub for invoking/dispatching externally-configured ASP procedures. *)
 Definition invoke_asp_uuid (uuid:UUID) (ps:ASP_PARAMS) (bs:BS) (ev:RawEv) : ResultT BS CallBackErrors.
 Admitted.
 
-(*
-
-(** * Stub for invoking external ASP procedures.  
-      Extracted code should not need to use the Plc or Event_ID parameters 
-      (those can be erased upon extraction). *)
-Definition do_asp (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) (ac : AM_Config) : ResultT BS DispatcherErrors :=
-  (ac.(aspCb) params mpl (encodeEvRaw e) e).
-*)
-
-(*
-  let m := absMan ac in 
-  let ext_asps := asps_external m in
-  let i := get_asp_params_id params in
-  let in_exts := in_dec_set i ext_asps in 
-    if (in_exts)
-    then ( let asp_uuid_res := ac.(ext_aspCb) i in 
-            match asp_uuid_res with 
-            | resultC asp_uuid => 
-              match doAsp_uuid asp_uuid e with
-              | resultC v => resultC v
-              | errC (messageLift msg) => errC (Runtime msg)
-              end 
-            | errC e => errC e 
-            end)
-
-    else (ac.(aspCb) params mpl (encodeEvRaw e) e).
-
-*)
-
-(*
-(** * Stub for completing a remote communication session with an external AM. *)
-Definition doRemote_session (t:Term) (pTo:Plc) (e:EvC) : EvC.
-Admitted.
-*)
-
+(** * Stub for dispatching protocol terms to remote AMs. *)
 Definition doRemote_uuid (t:Term) (uuid:UUID) (ev:RawEv) : ResultT RawEv CallBackErrors.
 Admitted.
-
-(*
-Definition do_remote (t:Term) (pTo:Plc) (e:EvC) (ac: AM_Config) : ResultT RawEv DispatcherErrors := 
-  let remote_uuid_res : ResultT UUID DispatcherErrors := ac.(plcCb) pTo in
-    match remote_uuid_res with 
-    | resultC uuid => 
-        match doRemote_uuid t uuid (get_bits e) with
-        | resultC v => resultC v
-        | errC (messageLift msg) => errC (Runtime msg)
-        end
-    | errC e => errC e
-    end.
-*)
 
 (** * Stub to simulate evidence collected by a parallel CVM instance *)
 Definition parallel_vm_thread (l:Loc) (t:Core_Term) (p:Plc) (e:EvC) : EvC.
 Admitted.
-
 
 (** * Stub for a top-level request from a remote client AM  *)
 Definition am_sendReq (t:Term) (p : Plc) (authTok:ReqAuthTok) (e:RawEv) : RawEv.
@@ -107,18 +44,6 @@ Admitted.
 
 Definition am_sendReq_app (t:Term) (p:Plc) (e:Evidence) (ev:RawEv): AppResultC.
 Admitted.
-
-(*
-Definition doRemote_session' (t:Term) (pTo:Plc) (e:EvC) : IO EvC :=
-  ret (doRemote_session t pTo e).
-*)
-(*
-Definition do_start_par_thread (loc:Loc) (t:Core_Term) (e:RawEv) : CVM unit :=
-  ret tt.
-
-Definition do_wait_par_thread (loc:Loc) (t:Core_Term) (p:Plc) (e:EvC) : CVM EvC :=
-  ret (parallel_vm_thread loc t p e).
-*)
 
 Definition requester_bound (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) : bool.
 Admitted.
