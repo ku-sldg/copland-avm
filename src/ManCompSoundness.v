@@ -18,20 +18,19 @@ Import ListNotations.
 
 Definition lib_supports_manifest (al : AM_Library) (am : Manifest) : Prop :=
   (forall (a : ASP_ID), In_set a am.(asps) -> 
-      (exists cb, Maps.map_get al.(Local_ASPS) a = Some cb) \/
-      (exists b, Maps.map_get al.(External_ASPS) a = Some b)) /\
-  (forall (up : Plc), In_set up am.(uuidPlcs) -> exists b, Maps.map_get al.(Local_Plcs) up = Some b) /\
- (* (forall (a : ASP_ID), In_set a am.(asps_external) -> exists b, Maps.map_get al.(External_ASPS) a = Some b) /\ *)
-  (forall (pkp : Plc), In_set pkp am.(pubKeyPlcs) -> exists b, Maps.map_get al.(Local_PubKeys) pkp = Some b) /\
+    exists b, Maps.map_get al.(Local_ASPS) a = Some b) /\
+  (forall (up : Plc), In_set up am.(uuidPlcs) -> 
+    exists b, Maps.map_get al.(Local_Plcs) up = Some b) /\
+  (forall (pkp : Plc), In_set pkp am.(pubKeyPlcs) -> 
+    exists b, Maps.map_get al.(Local_PubKeys) pkp = Some b) /\
   (forall (a : (Plc*ASP_ID)), In_set a am.(appraisal_asps) -> 
-    exists cb, Maps.map_get al.(Local_Appraisal_ASPS) a = Some cb).
+    exists b, Maps.map_get al.(Local_Appraisal_ASPS) a = Some b).
 
 Ltac unfolds :=
   (* repeat monad_unfold; *)
   repeat unfold manifest_generator, manifest_compiler, generate_ASP_dispatcher, 
     generate_Plc_dispatcher, generate_PubKey_dispatcher,
-    generate_UUID_dispatcher, lib_supports_manifest, aspid_manifest_update,
-    generate_external_ASP_dispatcher,
+    lib_supports_manifest, aspid_manifest_update,
     sig_params, hsh_params, enc_params in *;
   simpl in *; 
   repeat (match goal with
@@ -65,6 +64,7 @@ Proof.
     rewrite eqb_symm; rewrite E; eauto.
 Qed.
 
+(*
 Theorem filter_resolver_mapd : forall {A B} `{EqClass A, EqClass B} (m : MapC A B) a (filt : A -> bool),
   (exists x, map_get m a = Some x) ->
   filt a = true ->
@@ -80,9 +80,12 @@ Proof.
     repeat (find_rewrite; intuition; eauto; try congruence).
     rewrite eqb_symm in E; congruence.
 Qed.
+*)
 
 Global Hint Resolve filter_resolver : core.
+(*
 Global Hint Resolve filter_resolver_mapd : core.
+*)
 
 Lemma in_dec_helper : forall {A B} `{EqClass A} X l l' a (c : B),
   map_get (minify_mapC l (fun x : A => if in_dec X x l' then true else false)) a = Some c ->
@@ -203,9 +206,11 @@ Definition supports_am (ac1 ac2 : AM_Config) : Prop :=
   (forall p, (forall res, 
       ac1.(plcCb) p = resultC res ->
       ac2.(plcCb) p = resultC res)) /\
+      (*
   (forall i, (forall res, 
       ac1.(ext_aspCb) i = resultC res ->
       ac2.(ext_aspCb) i = resultC res)) /\
+      *)
   (forall aid l targ targid p' ev ev' errStr,
       ac1.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC (Runtime errStr) ->
       ac2.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC (Runtime errStr)) /\
@@ -214,11 +219,13 @@ Definition supports_am (ac1 ac2 : AM_Config) : Prop :=
       ac2.(pubKeyCb) p = errC (Runtime errStr)) /\
   (forall p errStr, 
       ac1.(plcCb) p = errC (Runtime errStr) ->
-      ac2.(plcCb) p = errC (Runtime errStr))
+      ac2.(plcCb) p = errC (Runtime errStr)).
+      (*
       /\
   (forall p errStr, 
       ac1.(ext_aspCb) p = errC (Runtime errStr) ->
       ac2.(ext_aspCb) p = errC (Runtime errStr)).
+      *)
 
 Theorem supports_am_refl : forall ac1,
   supports_am ac1 ac1.
@@ -242,10 +249,19 @@ Definition aspid_support_exec (ac:AM_Config) (i:ASP_ID) : Prop :=
   (forall l targ targid p' ev ev',
   ( (exists res, 
       ac.(aspCb) (asp_paramsC i l targ targid) p' ev ev' = resultC res) \/ 
+    (exists errStr, 
+      ac.(aspCb) (asp_paramsC i l targ targid) p' ev ev' = errC (Runtime errStr)))).
+
+
+(*
+  (forall l targ targid p' ev ev',
+  ( (exists res, 
+      ac.(aspCb) (asp_paramsC i l targ targid) p' ev ev' = resultC res) \/ 
     (exists errStr, ac.(aspCb) (asp_paramsC i l targ targid) p' ev ev' = errC (Runtime errStr))))
   \/
   ( (exists res, ac.(ext_aspCb) i = resultC res) \/ 
     (exists errStr, ac.(ext_aspCb) i = errC (Runtime errStr))).
+    *)
 
 
 Fixpoint am_config_support_exec (t : Term) 
@@ -287,9 +303,11 @@ match t with
         ((exists res, ac.(pubKeyCb) p = resultC res) \/ 
         (exists errStr, ac.(pubKeyCb) p = errC (Runtime errStr)))
       )
+      (*
       \/
       ( (exists res, ac.(ext_aspCb) enc_aspid = resultC res) \/ 
         (exists errStr, ac.(ext_aspCb) enc_aspid = errC (Runtime errStr)))
+      *)
     | ASPC _ _ (asp_paramsC aspid _ _ _) =>
       aspid_support_exec ac aspid
     (*
@@ -493,17 +511,21 @@ induction t; simpl in *; intuition; eauto.
   end.
 
 
+
+  
   +
-    destruct (H7 l p0 t (st_pl st) (encodeEvRaw (get_bits (st_ev st))) (get_bits (st_ev st))).
+    destruct (H l p0 t (st_pl st) (encodeEvRaw (get_bits (st_ev st))) (get_bits (st_ev st))).
 
     ++
-    destruct H as [res H''].
+    destruct H5 as [res H''].
     pose proof (H1 a0 l p0 t (st_pl st) (encodeEvRaw (get_bits (st_ev st))) (get_bits (st_ev st)) res) as H'. 
     erewrite H' in *; eauto; congruence.
     ++
-    destruct H as [errStr H''].
-    pose proof (H4 a0 l p0 t (st_pl st) (encodeEvRaw (get_bits (st_ev st))) (get_bits (st_ev st)) errStr) as H'.
+    destruct H5 as [errStr H''].
+    pose proof (H3 a0 l p0 t (st_pl st) (encodeEvRaw (get_bits (st_ev st))) (get_bits (st_ev st)) errStr) as H'.
     intuition; find_rewrite; try find_injection; eauto; congruence.
+
+  (*
   + 
   destruct_conjs.
   find_apply_hyp_hyp.
@@ -515,96 +537,62 @@ induction t; simpl in *; intuition; eauto.
   find_rewrite.
   find_injection.
   eauto.
+  *)
 
   +
-  destruct (H7 l p0 t (st_pl st) (encodeEvRaw []) []);
+  destruct (H l p0 t (st_pl st) (encodeEvRaw []) ([])).
+
+  ++
+  destruct H5 as [res H''].
+  pose proof (H1 a0 l p0 t (st_pl st) (encodeEvRaw ([])) ([]) res) as H'. 
+  erewrite H' in *; eauto; congruence.
+  ++
+  destruct H5 as [errStr H''].
+  pose proof (H3 a0 l p0 t (st_pl st) (encodeEvRaw ([])) ([]) errStr) as H'.
+  intuition; find_rewrite; try find_injection; eauto; congruence.
+
+  +
+  destruct (H sig_aspargs sig_targplc sig_targid (st_pl st) 
+            (encodeEvRaw (get_bits (st_ev st))) 
+            (get_bits (st_ev st)));
   destruct_conjs;
   find_apply_hyp_hyp;
-  find_rewrite;
-  solve_by_inversion.
-  +
-    destruct_conjs.
-    find_apply_hyp_hyp.
-    find_rewrite.
-    solve_by_inversion.
-
-  +
-    destruct_conjs.
-    find_apply_hyp_hyp.
-    find_rewrite.
-    find_injection.
-    eauto.
-
-  +
-  destruct (H7 sig_aspargs sig_targplc sig_targid (st_pl st) (encodeEvRaw (get_bits (st_ev st))) 
-  (get_bits (st_ev st)));
-  destruct_conjs;
-  find_apply_hyp_hyp;
-  find_rewrite;
-  solve_by_inversion.
-
-  +
-  destruct_conjs.
-  find_apply_hyp_hyp.
-  find_rewrite.
-  solve_by_inversion.
-
-  +
-  destruct_conjs.
-  find_apply_hyp_hyp.
-  find_rewrite.
-  find_injection.
+  try find_rewrite;
+  try solve_by_inversion.
+  invc H7.
   eauto.
 
   +
-  destruct (H7 hsh_aspargs hsh_targplc hsh_targid (st_pl st) (encodeEvRaw (get_bits (st_ev st))) 
-  (get_bits (st_ev st)));
+  destruct (H hsh_aspargs hsh_targplc hsh_targid (st_pl st) 
+            (encodeEvRaw (get_bits (st_ev st))) 
+            (get_bits (st_ev st)));
   destruct_conjs;
   find_apply_hyp_hyp;
-  find_rewrite;
-  solve_by_inversion.
-
-  +
-  destruct_conjs.
-  find_apply_hyp_hyp.
-  find_rewrite.
-  solve_by_inversion.
-
-  +
-  destruct_conjs.
-  find_apply_hyp_hyp.
-  find_rewrite.
-  find_injection.
+  try find_rewrite;
+  try solve_by_inversion.
+  invc H7.
   eauto.
 
-
   +
-  destruct (H enc_aspargs p0 enc_targid (st_pl st) (encodeEvRaw (get_bits (st_ev st))) 
-  (get_bits (st_ev st)));
+  destruct (H1 enc_aspargs p0 enc_targid (st_pl st) 
+            (encodeEvRaw (get_bits (st_ev st))) 
+            (get_bits (st_ev st)));
   destruct_conjs;
   find_apply_hyp_hyp;
-  find_rewrite;
-  solve_by_inversion.
+  try find_rewrite;
+  try solve_by_inversion.
+  invc H8.
+  eauto.
 
   +
-  destruct (H enc_aspargs p0 enc_targid (st_pl st) (encodeEvRaw (get_bits (st_ev st))) 
-  (get_bits (st_ev st)));
+  destruct (H1 enc_aspargs p0 enc_targid (st_pl st) 
+            (encodeEvRaw (get_bits (st_ev st))) 
+            (get_bits (st_ev st)));
   destruct_conjs;
   find_apply_hyp_hyp;
-  find_rewrite;
-  solve_by_inversion.
-
-  +
-  destruct_conjs.
-  find_apply_hyp_hyp.
-  find_rewrite.
-  solve_by_inversion.
-
-  +
-  destruct_conjs.
-  find_apply_hyp_hyp.
-  find_rewrite.
-  find_injection.
+  try find_rewrite;
+  try solve_by_inversion.
+  invc H8.
   eauto.
 
 (*
@@ -1143,10 +1131,12 @@ Definition manifest_support_am_config (m : Manifest) (ac : AM_Config) : Prop :=
     forall l targ targid p' ev ev',
     (exists res, ac.(aspCb) (asp_paramsC a l targ targid) p' ev ev' = resultC res) \/
     (exists errStr, ac.(aspCb) (asp_paramsC a l targ targid) p' ev ev' = errC (Runtime errStr)))
-
+  )
+    (*
     \/
     ( (exists res, ac.(ext_aspCb) a = resultC res) (* \/ 
     (exists errStr, ac.(ext_aspCb) a = errC (Runtime errStr))) *) ))
+    *)
     
     
     /\
@@ -1168,7 +1158,7 @@ Theorem manifest_support_am_config_compiler : forall absMan amLib,
   manifest_support_am_config absMan (manifest_compiler absMan amLib).
 Proof.
   unfold lib_supports_manifest, manifest_support_am_config, 
-    manifest_compiler, generate_PubKey_dispatcher, generate_Plc_dispatcher, generate_external_ASP_dispatcher in *;
+    manifest_compiler, generate_PubKey_dispatcher, generate_Plc_dispatcher in *;
   simpl in *; intuition;
   repeat break_match; simpl in *; intuition; eauto;
   match goal with
@@ -1182,6 +1172,7 @@ Proof.
       | 
       rewrite H in CO; destruct CO; congruence
     ]
+    (*
   | H:  context[ map_get (minify_mapD ?l ?filt) ?a],
     H1: forall a' : Plc, _ -> (exists x : _, map_get _ _ = Some x) |- _ => 
     assert (CO : exists x, map_get (minify_mapD l filt) a = Some x)
@@ -1192,12 +1183,9 @@ Proof.
       | 
       rewrite H in CO; destruct CO; congruence
     ]
+    *)
   end.
-
-  - admit.
-  - admit.
-
-Admitted.
+Qed.
 
 Fixpoint manifest_support_term (m : Manifest) (t : Term) : Prop :=
   match t with
@@ -1236,6 +1224,7 @@ Proof.
   induction t; simpl in *; intuition; eauto;
   unfold manifest_support_am_config, aspid_support_exec in *; intuition; eauto;
   repeat (try break_match; simpl in *; intuition; eauto).
+  (*
   -
   subst.
   destruct (H1 a1); eauto.
@@ -1245,9 +1234,11 @@ Proof.
   -
   subst.
   destruct (H1 hsh_aspid); eauto.
+  
   -
   subst.
   destruct (H1 enc_aspid); eauto.
+  *)
   - pose proof (IHt1 p absMan amConf); 
     pose proof (IHt2 p absMan amConf); intuition;
     exists amConf, amConf; eauto.
@@ -2990,6 +2981,7 @@ Proof.
 Qed.
 Global Hint Resolve mapC_get_filtered_impossible : core.
 
+(*
 Lemma mapD_get_filtered_impossible : forall T B `{EqClass T, EqClass B} (a : B) (aid : T) al f,
   map_get (minify_mapD al f) aid = Some a ->
   f aid = false ->
@@ -3000,6 +2992,7 @@ Proof.
   rewrite eqb_leibniz in Heqb1; subst; congruence.
 Qed.
 Global Hint Resolve mapD_get_filtered_impossible : core.
+*)
 
 Lemma mapC_get_subset : forall T `{EqClass T} B (a : B) (aid : T) al s1 s2,
   (forall i : T, In i s1 -> In i s2) ->
@@ -3018,6 +3011,8 @@ Proof.
 Qed.
 Global Hint Resolve mapC_get_subset : core.
 
+(*
+
 Lemma mapD_get_subset : forall T B `{EqClass T, EqClass B} (a : B) (aid : T) al s1 s2,
   (forall i : T, In i s1 -> In i s2) ->
   map_get (minify_mapD al (fun x : T => if in_dec_set x s1 then true else false)) aid = Some a ->
@@ -3034,6 +3029,7 @@ Proof.
   - pose proof (H1 t i); intuition.
 Qed.
 Global Hint Resolve mapD_get_subset : core.
+*)
 
 Lemma supports_am_mancomp_subset: forall al m m' ac,
   supports_am (manifest_compiler m al) ac -> 
@@ -3042,11 +3038,11 @@ Lemma supports_am_mancomp_subset: forall al m m' ac,
 Proof.
   intuition.
   unfold supports_am, manifest_subset,
-    generate_Plc_dispatcher, generate_PubKey_dispatcher, generate_external_ASP_dispatcher in *;
+    generate_Plc_dispatcher, generate_PubKey_dispatcher in *;
   intuition; simpl in *; eauto;
   repeat break_match; simpl in *; intuition; subst; eauto;
   unfold supports_am, manifest_subset,
-    generate_Plc_dispatcher, generate_PubKey_dispatcher, generate_external_ASP_dispatcher in *;
+    generate_Plc_dispatcher, generate_PubKey_dispatcher in *;
   try congruence; eauto; try find_injection;
   repeat break_match; simpl in *; intuition; subst; eauto;
   try congruence;
@@ -3055,11 +3051,11 @@ Proof.
       =>
         pose proof (mapC_get_subset _ _ _ _ _ _ _ H H1);
         eapply H2
-
+(*
   | [ H : forall x : ?t, In_set _ _ -> _ , H1 : map_get (minify_mapD _ (fun x : ?t => _)) _ = Some _, H2 : forall (x : ?t), _ |- _ ]
       =>
         pose proof (mapD_get_subset _ _ _ _ _ _ _ H H1);
-        eapply H2
+        eapply H2 *)
   end; repeat break_match; simpl in *; intuition; subst; eauto;
   try congruence.
 Qed.

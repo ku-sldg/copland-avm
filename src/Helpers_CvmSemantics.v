@@ -32,7 +32,7 @@ Proof.
   - destruct a; monad_unfold; eauto.
     destruct (aspCb ac a p (encodeEvRaw (get_bits e)) (get_bits e)) eqn:E1; simpl in *; eauto.
     
-    repeat ff.
+    (* repeat ff. *)
     (* repeat ff. *)
     
 
@@ -271,7 +271,9 @@ Proof.
     destruct (aspCb ac a p (encodeEvRaw (get_bits e)) (get_bits e)); 
     simpl in *; invc H1; invc H2; eauto.
     
+    (*
     repeat ff.
+    *)
     (*
     repeat ff.
     *)

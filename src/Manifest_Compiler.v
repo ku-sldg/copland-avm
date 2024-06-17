@@ -1,10 +1,12 @@
 (* Implementation of the Manifest Compiler.
     Takes a Manifest + AM_Library to an AM_Config.  *)
 
-Require Import Maps AbstractedTypes EqClass Term_Defs_Core Manifest_Admits Manifest
-  ErrorStMonad_Coq Term_Defs.
+Require Import Maps AbstractedTypes EqClass Term_Defs_Core 
+               Manifest_Admits Manifest
+               ErrorStMonad_Coq Term_Defs.
 
 Require Import Manifest_Set.
+Require Import IO_Stubs.
   
 
 Require Import List.
@@ -17,24 +19,28 @@ Import ListNotations.
     | cons (k,v) tl => if (f k) then cons (k,v) (minify_mapC tl f) else minify_mapC tl f
     end.
 
+    (*
   (* Reduces a MapD to only include elements that satisfy the condition "f" *)
   Fixpoint minify_mapD {A B : Type} `{HA : EqClass A} `{HB : EqClass B} (m : MapD A B) (f : A -> bool) : (MapD A B) :=
     match m with
     | nil => nil
     | cons (k,v) tl => if (f k) then cons (k,v) (minify_mapD tl f) else minify_mapD tl f
     end.
+    *)
 
-  Definition generate_ASP_dispatcher' (al : AM_Library) (am : Manifest) (par : ASP_PARAMS) (p : Plc) (bs : BS) (rawEv : RawEv) :=
-        let (aspid, args, plc, targ) := par in
+  Definition generate_ASP_dispatcher' (al : AM_Library) (am : Manifest) 
+              (ps : ASP_PARAMS) (p:Plc)
+              (bs:BS) (rawEv : RawEv) : ResultT BS DispatcherErrors :=
+        let (aspid, _, _, _) := ps in
         let abstract_asps := am.(asps) in
         (* let external_asps := am.(External_ASPS) in *)
         let local_asps_map := al.(Local_ASPS) in
-        let shrunk_map : (MapC ASP_ID (ASPCallback CallBackErrors)) := 
+        let shrunk_map : (MapC ASP_ID UUID) := 
         minify_mapC local_asps_map (fun x => if (in_dec_set x abstract_asps) then true else false) in
           (* check is the ASPID is a local, with a callback *)
           match (map_get shrunk_map aspid) with
-          | Some cb => 
-            match (cb par p bs rawEv) with
+          | Some uuid => 
+            match (invoke_asp_uuid uuid ps bs rawEv) with
             | resultC r => resultC r
             | errC (messageLift msg) => 
                 errC (Runtime msg)
@@ -51,14 +57,25 @@ Import ListNotations.
 
 
 
-  Definition generate_appraisal_ASP_dispatcher' (al : AM_Library) (am : Manifest) (par : ASP_PARAMS) (p : Plc) (bs : BS) (rawEv : RawEv) :=
-    let (aspid, args, plc, targ) := par in
+  Definition generate_appraisal_ASP_dispatcher' (al : AM_Library) (am : Manifest) 
+              (ps : ASP_PARAMS) (p : Plc) 
+              (bs : BS) (rawEv : RawEv) : ResultT BS DispatcherErrors :=
+    let (aspid, _, _, _) := ps in
     let abstract_asps := am.(appraisal_asps) in
     let local_asps_map := al.(Local_Appraisal_ASPS) in
-    let shrunk_map : (MapC (Plc*ASP_ID) (ASPCallback CallBackErrors)) :=  
+    let shrunk_map : (MapC (Plc*ASP_ID) UUID) :=  
     minify_mapC local_asps_map (fun x => if (in_dec_set x abstract_asps) then true else false) in
       (* check is the ASPID is a local, with a callback *)
       match (map_get shrunk_map (p,aspid)) with
+        | Some uuid => 
+          match (invoke_asp_uuid uuid ps bs rawEv) with
+          | resultC r => resultC r
+          | errC (messageLift msg) => errC (Runtime msg)
+          end
+        | None => errC Unavailable 
+      end.
+
+      (*
       | Some cb => 
         match (cb par p bs rawEv) with
         | resultC r => resultC r
@@ -68,11 +85,10 @@ Import ListNotations.
       | None => errC Unavailable 
         (* (asp_server_cb asp_server_addr par) *)
       end.
-
+      *)
 
   Definition generate_appraisal_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest)
   : (ASPCallback DispatcherErrors) :=
-(* let asp_server_cb := al.(ASPServer_Cb) in *)
   (generate_appraisal_ASP_dispatcher' al am). 
 
 
@@ -83,7 +99,7 @@ Import ListNotations.
       let local_plc_map := al.(Local_Plcs) in
       let abstract_plcs := am.(uuidPlcs) in
       let shrunk_map := 
-        minify_mapD local_plc_map (fun x => if (in_dec_set x abstract_plcs) then true else false) in
+        minify_mapC local_plc_map (fun x => if (in_dec_set x abstract_plcs) then true else false) in
 
       fun (p : Plc) =>
         (* check is the plc "p" is local, with a reference *)
@@ -93,6 +109,7 @@ Import ListNotations.
           (* (plc_server_cb plc_server_addr p) *)
         end.
 
+(*
 
 (* This function will lookup for either local Plcs to UUID, or pass them off to the Plc Server *)
 Definition generate_external_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest) 
@@ -108,6 +125,7 @@ Definition generate_external_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Li
       | Some uuid => resultC uuid
       | None => errC Unavailable
       end.
+*)
       
   (* This function will lookup the PubKey either locally Plc -> PublicKey or pass off to PubKeyServer *)
   Definition generate_PubKey_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest) 
@@ -116,7 +134,7 @@ Definition generate_external_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Li
       let local_pubkey_map := al.(Local_PubKeys) in
       let abstract_plcs := am.(pubKeyPlcs) in
       let shrunk_map := 
-        minify_mapD local_pubkey_map (fun x => if (in_dec_set x abstract_plcs) then true else false) in
+        minify_mapC local_pubkey_map (fun x => if (in_dec_set x abstract_plcs) then true else false) in
 
       fun (p : Plc) =>
         (* check is the plc "p" is local, with a reference in the pubkey server mapping *)
@@ -126,6 +144,7 @@ Definition generate_external_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Li
           (* (pubkey_server_cb pubkey_server_addr p) *)
         end.
 
+        (*
   Definition generate_UUID_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest)  
       : UUIDCallback :=
     (* let uuid_server_cb := al.(UUIDServer_Cb) in *)
@@ -141,6 +160,7 @@ Definition generate_external_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Li
         | None => errC Unavailable
           (* (uuid_server_cb local_uuid_addr u) *)
         end.
+        *)
 
   (* This is a rough type signature for the "manifest compiler".  Still some details to be ironed out... *)
   Definition manifest_compiler (m : Manifest) (al : AM_Library) : AM_Config :=
@@ -154,6 +174,7 @@ Definition generate_external_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Li
     app_aspCb := (generate_appraisal_ASP_dispatcher al m);
     plcCb     := (generate_Plc_dispatcher al m);
     pubKeyCb  := (generate_PubKey_dispatcher al m);
-    uuidCb    := (generate_UUID_dispatcher al m);
+    (* uuidCb    := (generate_UUID_dispatcher al m); 
     ext_aspCb := (generate_external_ASP_dispatcher al m); 
+    *)
   |}.

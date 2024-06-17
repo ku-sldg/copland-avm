@@ -34,7 +34,12 @@ Definition get_asp_params_id (params:ASP_PARAMS) : ASP_ID :=
   end.
 *)
 
+(*
 Definition doAsp_uuid (uuid:UUID) (ev:RawEv) : ResultT BS CallBackErrors.
+Admitted.
+*)
+
+Definition invoke_asp_uuid (uuid:UUID) (ps:ASP_PARAMS) (bs:BS) (ev:RawEv) : ResultT BS CallBackErrors.
 Admitted.
 
 (*

@@ -190,8 +190,7 @@ Proof.
     inv_wfec.
     ff.
 
-    
-
+    (*
     ++
     ff.
     destruct f; ff;
@@ -203,6 +202,7 @@ Proof.
 
     inv_wfec.
     ff.
+    *)
 
     
 
@@ -1723,11 +1723,14 @@ Proof.
     jkjke'.
     ff.
     door; ff.
+
+    (*
     
     +++
     jkjke'.
     ff.
     door; ff.
+    *)
     
     ++
     monad_simp;

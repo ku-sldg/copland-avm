@@ -107,11 +107,8 @@ Definition fwd_asp (fwd:FWD) (bs:BS) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
 Definition do_asp (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) (ac : AM_Config) : ResultT BS DispatcherErrors :=
   (ac.(aspCb) params mpl (encodeEvRaw e) e).
 
-  Check dispatch_error.
-  Locate dispatch_error.
 
-  Print ASP_PARAMS.
-
+(*
 Definition do_ext_asp (ps:ASP_PARAMS) (ac: AM_Config) (e:RawEv) : ResultT BS DispatcherErrors := 
   match ps with 
   | asp_paramsC i _ _ _ => 
@@ -127,9 +124,16 @@ Definition do_ext_asp (ps:ASP_PARAMS) (ac: AM_Config) (e:RawEv) : ResultT BS Dis
     end
 
   end.
+*)
 
 Definition do_asp' (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) : CVM BS :=
   ac <- get_CVM_amConfig  ;;
+  match (do_asp params e mpl x ac) with
+  | resultC v => ret v
+  | errC err => failm (dispatch_error err)
+  end.
+
+  (*
   match (do_asp params e mpl x ac) with
   | resultC v => ret v
   | errC err => 
@@ -142,6 +146,7 @@ Definition do_asp' (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) : CVM B
     | Runtime s => failm (dispatch_error (Runtime s))
     end
   end.
+  *)
 
 (* Simulates invoking an arbitrary ASP.  Tags the event, builds and returns 
    the new evidence bundle. *)
@@ -292,7 +297,7 @@ Ltac monad_unfold :=
   do_prim,
   invoke_ASP,
   do_asp',
-  do_ext_asp,
+  (* do_ext_asp, *)
   do_asp,
   clearEv,
   copyEv,
