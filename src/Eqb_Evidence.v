@@ -109,7 +109,8 @@ Proof.
   try (try eapply EqClass_impl_DecEq; eauto;
   try eapply nat_EqClass; eauto; fail).
   - eapply eq_asp_params_dec.
-  - destruct f, f0; eauto; right; intros HC; congruence.
+  - destruct f, f0; eauto; try (right; intros HC; congruence).
+    destEq n n0; eauto; try (right; intros HC; congruence).
 Qed.
 
 Definition eqb_evidence `{H : EqClass ID_Type} (x y : Evidence): bool :=
@@ -136,7 +137,8 @@ Proof.
   try eapply nat_EqClass; eauto; fail).
   - destruct a, a0; eauto; try (right; intros HC; congruence).
     * destruct (eq_asp_params_dec a a0); subst; eauto;
-      destruct s, s0, f, f0; eauto; try (right; intros HC; congruence).
+      destruct s, s0, f, f0; eauto; try (right; intros HC; congruence);
+      destEq n n0; eauto; try (right; intros HC; congruence).
     * destruct (@EqClass_impl_DecEq Plc H p p0); subst; eauto.
       right; intros HC; congruence.
   - destruct s, s0, s, s1, s0, s2; eauto; try (right; intros HC; congruence).
@@ -168,6 +170,7 @@ Proof.
   - destruct a, a0; eauto; try (right; intros HC; congruence).
     * destruct (eq_asp_params_dec a a0); subst; eauto;
       destruct f, f0; eauto; try (right; intros HC; congruence).
+      destEq n n0; eauto; try (right; intros HC; congruence).
   - eapply eq_term_dec.
 Qed.
 
@@ -210,22 +213,22 @@ Scheme Equality for list.
 Lemma list_beq_refl {A:Type}: forall f y,
     (forall a b, f a b = true <-> a = b) ->
     list_beq A f y y = true.
- Proof.
-   intros.
-   generalizeEverythingElse y.
-   induction y; intros.
-   -
-     cbn.
-     tauto.
-   -
-     cbn.
-     eapply andb_true_intro.
-     split.
-     +
-       eapply H; eauto.
-     +
-       eauto.
- Defined.
+Proof.
+  intros.
+  generalizeEverythingElse y.
+  induction y; intros.
+  -
+    cbn.
+    tauto.
+  -
+    cbn.
+    eapply andb_true_intro.
+    split.
+    +
+      eapply H; eauto.
+    +
+      eauto.
+Defined.
 
 Lemma eqb_eq_list {A:Type}:
   forall x y f,
@@ -310,7 +313,7 @@ Definition eqb_fwd (fwd1 fwd2 : FWD) : bool :=
   match fwd1, fwd2 with
   | COMP, COMP => true
   | ENCR, ENCR => true
-  | EXTD, EXTD => true
+  | (EXTD n), (EXTD n') => eqb n n'
   | KILL, KILL => true
   | KEEP, KEEP => true
   | _ , _ => false
@@ -321,7 +324,9 @@ Lemma eqb_eq_fwd: forall f1 f2,
     f1 = f2.
 Proof.
   unfold eqb_fwd; intuition;
-  destruct f1, f2; eauto; congruence.
+  destruct f1, f2; eauto; try congruence.
+  - rewrite Nat.eqb_eq in H; eauto. 
+  - find_injection; rewrite eqb_leibniz; eauto.
 Qed.
 
 (* NOTE: Better impl above 

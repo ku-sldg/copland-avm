@@ -83,11 +83,11 @@ Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) (e:EvC) : CVM Event_ID :=
 
 (* Helper function that builds a new internal evidence bundle based on 
    the evidence extension parameter of an ASP term. *)
-Definition fwd_asp (fwd:FWD) (bs:BS) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
+Definition fwd_asp (fwd:FWD) (rwev : RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
   match fwd with
-  | COMP => cons_hsh bs e p ps
-  | EXTD => cons_gg bs e p ps
-  | ENCR => cons_enc bs e p ps
+  | COMP => cons_hsh rwev e p ps
+  | EXTD => cons_gg rwev e p ps
+  | ENCR => cons_enc rwev e p ps
   | KILL => mt_evc
   | KEEP => e
   end.
@@ -98,9 +98,9 @@ Definition fwd_asp (fwd:FWD) (bs:BS) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
 (* Definition do_asp (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) (ac : AM_Config) : ResultT BS DispatcherErrors :=
   ac.(aspCb) params mpl (encodeEvRaw e) e. *)
 
-Definition do_asp (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) : CVM BS :=
+Definition do_asp (params :ASP_PARAMS) (e:RawEv) (x:Event_ID) : CVM BS :=
   ac <- get_CVM_amConfig  ;;
-  match (ac.(aspCb) params mpl (encodeEvRaw e) e) with
+  match (ac.(aspCb) params e) with
   | resultC r => ret r
   | errC e => failm (dispatch_error e)
   end.
@@ -111,8 +111,8 @@ Definition invoke_ASP (fwd:FWD) (params:ASP_PARAMS) (* (ac : AM_Config) *) : CVM
   e <- get_ev ;;
   p <- get_pl ;;
   x <- tag_ASP params p e ;;
-  bs <- do_asp params (get_bits e) p x ;;
-  ret (fwd_asp fwd bs e p params).
+  rawev <- do_asp params (get_bits e) x ;;
+  ret (fwd_asp fwd rawev e p params).
 
 Definition copyEv : CVM EvC :=
   p <- get_pl ;;

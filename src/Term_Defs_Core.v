@@ -78,7 +78,7 @@ KEEP:  [b1, b2, ..., bn] ==> [b1, b2, ..., bn]
 Inductive FWD: Set :=
 | COMP
 | ENCR
-| EXTD
+| EXTD : nat -> FWD
 | KILL
 | KEEP.
 

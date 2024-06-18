@@ -3,7 +3,7 @@
     
     At the moment, these are too low-level to represent faithfully in the Coq development.   *)
 
-Require Import Term_Defs_Core Term_Defs StringT List JSON Interface_Types ResultT ErrorStringConstants Term_Defs_Admits.
+Require Import Term_Defs_Core Term_Defs StringT List JSON Interface_Types ResultT ErrorStringConstants Term_Defs_Admits BS.
 Export Interface_Types JSON.
 Import ListNotations ResultNotation.
 
@@ -193,13 +193,13 @@ Definition ASPRunResponse_to_JSON (resp: ASPRunResponse): JSON :=
     [(STR_TYPE, (JSON_String STR_RESPONSE));
     (STR_ACTION, (JSON_String STR_ASP_RUN));
     (STR_SUCCESS, (JSON_Boolean (asprresp_success resp)));
-    (STR_PAYLOAD, (JSON_String (BS_to_StringT (asprresp_bs resp))))].
+    (STR_PAYLOAD, (JSON_String (BS_to_stringT (asprresp_bs resp))))].
 
 Definition JSON_to_ASPRunResponse (resp : JSON): ResultT ASPRunResponse StringT :=
   temp_success <- JSON_get_bool STR_SUCCESS resp ;;
-  temp_ev <- JSON_get_stringT STR_PAYLOAD resp ;;
-  ev <- stringT_to_RawEv temp_ev ;;
-  resultC (mkASPRResp temp_success ev).
+  temp_bs <- JSON_get_stringT STR_PAYLOAD resp ;;
+  bs <- stringT_to_BS temp_bs ;;
+  resultC (mkASPRResp temp_success bs).
 
 (* AM ASP Interface Section *)
 

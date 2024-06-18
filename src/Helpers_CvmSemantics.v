@@ -29,7 +29,7 @@ Lemma ac_immut : forall t e tr i ac,
 Proof.
   induction t; repeat (monad_unfold; simpl in *); intuition.
   - destruct a; monad_unfold; eauto.
-    destruct (aspCb ac a (my_abstract_plc (absMan ac)) (encodeEvRaw (get_bits e)) (get_bits e)) eqn:E1; simpl in *; eauto.
+    destruct (aspCb ac a (get_bits e)) eqn:E1; simpl in *; eauto.
 
   - (* at case *)
     repeat ff;
@@ -97,7 +97,7 @@ Theorem evidence_deterministic_output_on_results : forall t e tr1 tr2 i1 i2 ac s
 Proof.
   induction t; intros; monad_simp.
   - destruct a; monad_simp; invc H; invc H0; eauto;
-    destruct (aspCb ac a (my_abstract_plc (absMan ac)) (encodeEvRaw (get_bits e)) (get_bits e)); 
+    destruct (aspCb ac a (get_bits e)); 
     simpl in *; invc H1; invc H2; eauto.
   - 
   repeat ff;
@@ -174,7 +174,7 @@ Proof.
     simpl in *; intuition;
     try (rewrite H; eauto);
     try (invc H; eauto);
-    destruct (aspCb ac a (my_abstract_plc (absMan ac)) (encodeEvRaw (get_bits e)) (get_bits e)); 
+    destruct (aspCb ac a (get_bits e)); 
     monad_simp; invc H1; invc H2; eauto; simpl in *;
     try (rewrite H3; eauto).
   -     repeat ff;

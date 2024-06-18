@@ -33,7 +33,7 @@ Definition asp_term_to_core (a:ASP) : Core_Term :=
     | NONE => lseqc (aspc CLEAR) (aspc (ASPCC fwd params))
     | ALL => (aspc (ASPCC fwd params))
     end                
-  | SIG => aspc (ASPCC EXTD sig_params)
+  | SIG => aspc (ASPCC (EXTD 1) sig_params)
   | HSH => aspc (ASPCC COMP hsh_params)
   | ENC q => aspc (ASPCC ENCR (enc_params q))
   end.
@@ -95,7 +95,7 @@ Fixpoint et_size (e:Evidence): nat :=
     match fwd with
     | COMP => 1
     | ENCR => 1
-    | EXTD => 1 + et_size e'
+    | (EXTD n) => n + et_size e'
     | KILL => 0
     | KEEP => et_size e'
     end 
@@ -161,7 +161,7 @@ Definition eval_asp t p e :=
     | KILL => mt
     | _ => uu p fwd params (sp_ev sp e)
     end
-  | SIG => uu p EXTD sig_params e
+  | SIG => uu p (EXTD 1) sig_params e
   | HSH => uu p COMP hsh_params e
   | ENC q => uu p ENCR (enc_params q) e
   end.

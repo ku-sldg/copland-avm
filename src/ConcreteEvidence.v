@@ -23,7 +23,7 @@ Require Export Term_Defs.
 Inductive EvidenceC :=
 | mtc: EvidenceC
 | nnc: N_ID -> BS -> EvidenceC
-| ggc: Plc -> ASP_PARAMS -> BS -> EvidenceC -> EvidenceC
+| ggc: Plc -> nat -> ASP_PARAMS -> BS -> EvidenceC -> EvidenceC
 | hhc: Plc -> ASP_PARAMS -> BS -> Evidence -> EvidenceC
 | eec: Plc -> ASP_PARAMS -> BS -> Evidence -> EvidenceC
 | kkc: Plc -> ASP_PARAMS -> Evidence -> EvidenceC
@@ -34,7 +34,7 @@ Inductive EvidenceC :=
 Fixpoint et_fun (ec:EvidenceC) : Evidence :=
   match ec with
   | mtc => mt
-  | ggc p params _ ec' => uu p EXTD params (et_fun ec')
+  | ggc p n params _ ec' => uu p (EXTD n) params (et_fun ec')
   | hhc p params _ et => uu p COMP params et
   | eec p params _ et => uu p ENCR params et (* (et_fun ec') *)
   | kkc p params et' => uu p KILL params et'
@@ -105,9 +105,9 @@ Defined.
 (** Typed Concrete Evidence subterm relation *)
 Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
 | evsub_refl : forall e : EvidenceC, EvSub e e
-| ggSub: forall e e' p ps bs,
+| ggSub: forall e e' p ps bs n,
     EvSub e e' ->
-    EvSub e (ggc p ps bs e')
+    EvSub e (ggc p n ps bs e')
           (* TODO: encrypt case here? *)
 | ssSubl: forall e e' e'',
     EvSub e e' ->

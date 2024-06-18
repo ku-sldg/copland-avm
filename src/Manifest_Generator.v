@@ -68,8 +68,6 @@ Definition pubkeys_manifest_update_replace_all (ps:manifest_set Plc) (m:Manifest
                 policy := oldPolicy |} := m in
         (Build_Manifest oldMyPlc oldasps old_app_asps oldKnowsOf ps oldTargets oldPolicy).
 
-Check fold_right.
-
 Definition pubkeys_manifest_update (ps:manifest_set Plc) (m:Manifest) : Manifest := 
   let '{| my_abstract_plc := oldMyPlc;
           asps := oldasps; 
