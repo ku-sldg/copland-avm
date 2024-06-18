@@ -209,7 +209,7 @@ Proof.
   reflexivity.
 Qed.
 
-Definition appraise_inline_asp_with_args (p:Plc) (targ: TARG_ID) (args:list Arg) : Term := 
+Definition appraise_inline_asp_with_args (p:Plc) (targ: TARG_ID) (args:ASP_ARGS) : Term := 
   asp (ASPC ALL EXTD (asp_paramsC appraise_inline_id args p targ)).
 
 
@@ -261,7 +261,7 @@ Definition example_phrase_p2_appraise : Term :=
 
 (*
 
-Definition check_ssl_sig_args : list Arg.
+Definition check_ssl_sig_args : ASP_ARGS.
 Admitted.
 
 Definition example_phrase : Term := 

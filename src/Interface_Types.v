@@ -45,12 +45,15 @@ Record ASPRunRequest :=
   mkASPRReq {
     asprreq_asp_id : ASP_ID;
     asprreq_asp_args: ASP_ARGS;
+    asprreq_targ_plc : Plc ;
+    asprreq_targ : TARG_ID ;
+    asprreq_rawev : RawEv;
   }.
 
 Record ASPRunResponse := 
   mkASPRResp {
     asprresp_success: bool;
-    asprresp_ev: RawEv;
+    asprresp_bs: BS;
   }.
 
 Record ASPInfoRequest := 
@@ -80,6 +83,7 @@ Inductive AM_Protocol_Interface :=
 
 Inductive AM_ASP_Interface :=
 | ASP_Run_Request: ASPRunRequest -> AM_ASP_Interface
-| ASP_Run_Response : ASPRunResponse -> AM_ASP_Interface
+| ASP_Run_Response : ASPRunResponse -> AM_ASP_Interface.
+(* NOTE: Eventually we will add these
 | ASP_Info_Request: ASPInfoRequest -> AM_ASP_Interface
-| ASP_Info_Response: ASPInfoResponse -> AM_ASP_Interface.
+| ASP_Info_Response: ASPInfoResponse -> AM_ASP_Interface. *)

@@ -16,7 +16,7 @@ Theorem EqClass_impl_DecEq: forall (A : Type) `{H : EqClass A},
 Proof.
   intros.
   destruct H.
-  destruct (eqb0 x y) eqn:E.
+  destruct (eqb0 x y) eqn:E; eauto.
   - left; eapply eqb_leibniz0; eauto.
   - right; erewrite <- eqb_leibniz0; intros HC; congruence.
 Qed.
@@ -51,6 +51,33 @@ Theorem eqb_transitive : forall {A : Type} `{EqClass A} a1 a2 a3,
 Proof.
   intros; repeat erewrite eqb_leibniz in *; subst; eauto.
 Qed.
+
+Theorem neqb_leibniz : forall {A : Type} `{EqClass A} a b,
+  eqb a b = false <-> a <> b.
+Proof.
+  intuition; eauto; subst.
+  - pose proof (eqb_leibniz b b); intuition; congruence.
+  - destruct (eqb a b) eqn:E; eauto;
+    rewrite eqb_leibniz in *; intuition.
+Qed.
+
+Ltac destEq t1 t2 :=
+  let E := fresh "E" in
+  destruct (eqb t1 t2) eqn:E;
+  [apply eqb_leibniz in E; subst | 
+    apply neqb_leibniz in E
+  ].
+
+Ltac break_eqs :=
+  match goal with
+  | p1 : ?T, p2 : ?T |- _ => 
+      tryif (match goal with
+              | HP : p1 <> p2 |- _ => fail
+              | HP' : p1 = p2 |- _ => fail
+              end)
+      then fail
+      else destEq p1 p2
+  end.
 
 Fixpoint general_list_eq_class_eqb {A : Type} `{H : EqClass A} (l1 l2 : list A) : bool :=
   match l1, l2 with

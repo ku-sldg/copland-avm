@@ -5,10 +5,9 @@ Require Import EqClass Term_Defs_Core.
 Require Import List.
 Import ListNotations.
 
+Definition FS_Location : Set. Admitted.
 
-Definition ASP_Address : Set. Admitted.
-
-Definition empty_ASP_Address : ASP_Address. Admitted.
+Definition empty_FS_Location : FS_Location. Admitted.
 
 Definition UUID : Type. Admitted.
 
@@ -28,5 +27,4 @@ Definition PrivateKey : Set. Admitted.
 
 Global Instance Eq_Class_private_key : EqClass PrivateKey. Admitted.
 
-Definition empty_Manifest_Plc : Plc.
-Admitted.
+Definition empty_Manifest_Plc : Plc.  Admitted.

@@ -20,7 +20,7 @@ Require Export Term_Defs.
     along with concrete binary (BS) values collected during attestation.
 *)
 
-Inductive EvidenceC: Set :=
+Inductive EvidenceC :=
 | mtc: EvidenceC
 | nnc: N_ID -> BS -> EvidenceC
 | ggc: Plc -> ASP_PARAMS -> BS -> EvidenceC -> EvidenceC

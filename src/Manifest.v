@@ -5,7 +5,7 @@
    https://github.com/ku-sldg/negotiation20/blob/master/src/Manifest/Manifest.v
 *)
 
-Require Import AbstractedTypes Term_Defs_Core Maps String
+Require Import AbstractedTypes Term_Defs_Core Maps
   Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq.
 
 Require Import Example_Phrases_Admits.
@@ -15,6 +15,10 @@ Require Import Manifest_Set StringT ErrorStringConstants.
 Require Import List.
 Import ListNotations.
 
+Inductive ASP_Locator :=
+| Local_ASP : FS_Location -> ASP_Locator
+| Remote_ASP : UUID -> ASP_Locator.
+
 Inductive DispatcherErrors : Type :=
 | Unavailable   : DispatcherErrors
 | Runtime       : StringT -> DispatcherErrors.
@@ -23,7 +27,7 @@ Inductive CallBackErrors : Type :=
 | messageLift   : StringT -> CallBackErrors.
 
 Definition ASPCallback (ErrType : Type) : Type := 
-  ASP_PARAMS -> Plc -> BS -> RawEv -> ResultT BS ErrType.
+  ASP_PARAMS -> RawEv -> ResultT RawEv ErrType.
 
 Definition PubKeyCallback : Type := 
   Plc -> ResultT PublicKey DispatcherErrors.
@@ -46,7 +50,7 @@ Definition empty_PolicyT : PolicyT := [].
   Record Manifest := {
     my_abstract_plc   : Plc ; 
 
-    asps              : manifest_set ASP_ID; (* list ASP_ID ; *)
+    asps              : manifest_set ASP_ID; 
     appraisal_asps    : manifest_set (Plc * ASP_ID) ;
     uuidPlcs          : manifest_set Plc ;
     pubKeyPlcs        : manifest_set Plc ;
@@ -68,25 +72,14 @@ Definition empty_PolicyT : PolicyT := [].
 (** Representation of a system's environment/resources used to populate an 
     AM Config based on a Manifest. *)
   Record AM_Library := {
-    ASPServer_Cb        : ASP_Address -> (ASPCallback CallBackErrors) ;
-    PubKeyServer_Cb     : ASP_Address -> PubKeyCallback ;
-    PlcServer_Cb        : ASP_Address -> PlcCallback ;
-    UUIDServer_Cb       : ASP_Address -> UUIDCallback ;
-
+    (* NOTE: What is this and why is it necessary? *)
     UUID_AM_Clone : UUID ;
 
-    (* Server Addresses *)
-    ASPServer_Addr    : ASP_Address ;
-    PubKeyServer_Addr : ASP_Address ;
-    PlcServer_Addr    : ASP_Address ;
-    UUIDServer_Addr   : ASP_Address ;
-
     (* Local Mappings *)
-    Local_ASPS        : MapC ASP_ID (ASPCallback CallBackErrors) ;
-    Local_Appraisal_ASPS : MapC (Plc * ASP_ID) (ASPCallback CallBackErrors) ;
-
-    Local_Plcs        : MapD Plc UUID ;
-    Local_PubKeys     : MapD Plc PublicKey ;
+    Lib_ASPS            : MapC ASP_ID ASP_Locator ;
+    Lib_Appraisal_ASPS  : MapC (Plc * ASP_ID) ASP_Locator ;
+    Lib_Plcs            : MapD Plc UUID ;
+    Lib_PubKeys         : MapD Plc PublicKey ;
   }.
 
 Record AM_Config : Type := 
@@ -97,10 +90,10 @@ Record AM_Config : Type :=
     app_aspCb : (ASPCallback DispatcherErrors) ;
     plcCb : PlcCallback ;
     pubKeyCb : PubKeyCallback ;
-    uuidCb : UUIDCallback ;
   }.
 
-Definition empty_aspCb (ps:ASP_PARAMS) (p:Plc) (bs:BS) (rawev:RawEv) : ResultT BS DispatcherErrors := 
+Definition empty_aspCb (ps:ASP_PARAMS) (rawev:RawEv) 
+    : ResultT RawEv DispatcherErrors := 
   errC Unavailable.
 
   Definition empty_am_config : AM_Config :=
@@ -109,7 +102,6 @@ Definition empty_aspCb (ps:ASP_PARAMS) (p:Plc) (bs:BS) (rawev:RawEv) : ResultT B
     default_uuid
     empty_aspCb
     empty_aspCb
-    (fun x => errC Unavailable)
     (fun x => errC Unavailable)
     (fun x => errC Unavailable).
 

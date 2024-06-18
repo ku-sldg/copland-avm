@@ -24,7 +24,7 @@ Import List.ListNotations.
 
 Definition Range: Set := nat * nat.
 
-Inductive AnnoTerm: Set :=
+Inductive AnnoTerm :=
 | aasp: Range -> ASP -> AnnoTerm
 | aatt: Range -> Plc -> AnnoTerm -> AnnoTerm
 | alseq: Range -> AnnoTerm -> AnnoTerm -> AnnoTerm

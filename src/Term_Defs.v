@@ -108,7 +108,7 @@ Definition RawEv := list BS.
 
 (**  Type-Tagged Raw Evidence representation.  Used as the internal evidence
      type managed by the CVM to track evidence contents and its structure. *)
-Inductive EvC: Set :=
+Inductive EvC :=
 | evc: RawEv -> Evidence -> EvC.
 
 Definition mt_evc: EvC := (evc [] mt).
@@ -129,9 +129,6 @@ Inductive wf_ec : EvC -> Prop :=
 | wf_ec_c: forall (ls:RawEv) et,
     List.length ls = et_size et ->
     wf_ec (evc ls et).
-
-Definition ASP_ARGS := MapC StringT StringT.
-Definition ASP_Info := StringT.
 
 Definition ReqAuthTok := EvC.
 
@@ -195,7 +192,7 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
     natural number.
  *)
 
-Inductive Ev: Set :=
+Inductive Ev :=
 | null: nat -> Plc -> Ev
 | copy:  nat -> Plc -> Ev 
 | umeas: nat -> Plc -> ASP_PARAMS -> Evidence -> Ev
@@ -257,7 +254,7 @@ Definition asp_event i x p e :=
 
 (* TODO:  find more logical places for the following defs:  *)
 
-Inductive AM_Result: Set :=
+Inductive AM_Result :=
 | am_rawev: RawEv -> AM_Result
 | am_appev: AppResultC -> AM_Result.
 

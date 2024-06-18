@@ -43,7 +43,7 @@ Qed.
 Global Instance Eq_Class_Resource_ID_Arg_Type : EqClass Resource_ID_Arg. Admitted.
 *)
 
-Definition eqb_asp_params `{H : EqClass ID_Type} `{H : EqClass Arg} `{H : EqClass Resource_ID_Arg} (ap1 ap2 : ASP_PARAMS) : bool :=
+Definition eqb_asp_params `{H : EqClass ID_Type} (ap1 ap2 : ASP_PARAMS) : bool :=
   match ap1, ap2 with
   | (asp_paramsC a1 la1 p1 t1), (asp_paramsC a2 la2 p2 t2) =>
       andb (eqb_aspid a1 a2) 
@@ -71,36 +71,37 @@ Proof.
 Defined.
 
 
-Definition eq_asp_params_dec `{H : EqClass ID_Type} `{H2 : EqClass Arg}:
+Definition eq_asp_params_dec `{H : EqClass ID_Type} : 
   forall x y: ASP_PARAMS, {x = y} + {x <> y}.
 Proof.
   intros.
   decide equality; subst;
   eapply EqClass_impl_DecEq; eauto.
   eapply EqClass_extends_to_list; eauto.
+  eapply pair_EqClass.
 Defined.
 
-Lemma eqb_eq_asp_params `{H : EqClass ID_Type} `{H1: EqClass Arg} `{H2 : EqClass Resource_ID_Arg}: forall  a a0 ,
+Lemma eqb_eq_asp_params `{H : EqClass ID_Type} : forall  a a0 ,
     eqb_asp_params a a0 = true <->
     a = a0.
 Proof.
-  induction a; destruct a0; simpl;
-  repeat (rewrite Bool.andb_true_iff);
-  repeat split; eauto; try inv H0;
-  try rewrite eqb_leibniz; eauto;
-  try (eapply EqClass_extends_to_list; eauto).
-  - intros; destruct_conjs; subst.
-    repeat (rewrite eqb_leibniz in *); subst.
-    eapply general_list_eqb_leibniz in H3; subst; eauto.
-  - eapply eqb_leibniz; eauto.
+  intuition; subst; eauto;
+  unfold eqb_asp_params in *;
+  repeat match goal with
+  | a : ASP_PARAMS |- _ => destruct a
+  end;
+  repeat rewrite Bool.andb_true_iff in *;
+  intuition; repeat rewrite eqb_leibniz in *;
+  subst; eauto;
+  eapply eqb_leibniz; eauto.
 Qed.
 
-Global Instance EqClassASP_PARAMS `{H : EqClass ID_Type} `{H1: EqClass Arg} `{H2 : EqClass Resource_ID_Arg} : EqClass ASP_PARAMS := {
+Global Instance EqClassASP_PARAMS `{H : EqClass ID_Type} : EqClass ASP_PARAMS := {
   eqb := eqb_asp_params ;
   eqb_leibniz := eqb_eq_asp_params
 }.
 
-Definition eq_evidence_dec : forall `{H : EqClass ID_Type} `{H1: EqClass Arg},
+Definition eq_evidence_dec : forall `{H : EqClass ID_Type},
   forall x y : Evidence, {x = y} + {x <> y}.
 Proof.
   intros.
@@ -111,7 +112,22 @@ Proof.
   - destruct f, f0; eauto; right; intros HC; congruence.
 Qed.
 
-Definition eq_term_dec : forall `{H : EqClass ID_Type} `{H1: EqClass Arg},
+Definition eqb_evidence `{H : EqClass ID_Type} (x y : Evidence): bool :=
+  if @eq_evidence_dec H x y then true else false.
+
+Lemma eqb_leibniz_evidence `{H : EqClass ID_Type} : forall x y,
+  eqb_evidence x y = true <-> x = y.
+Proof.
+  unfold eqb_evidence; intuition; 
+  destruct eq_evidence_dec; eauto; congruence.
+Qed.
+
+Global Instance EqClass_Evidence `{H : EqClass ID_Type} : EqClass Evidence := {
+  eqb := eqb_evidence ;
+  eqb_leibniz := eqb_leibniz_evidence
+}.
+
+Definition eq_term_dec : forall `{H : EqClass ID_Type},
   forall x y : Term, {x = y} + {x <> y}.
 Proof.
   intros.
@@ -127,7 +143,22 @@ Proof.
   - destruct s, s0, s, s1, s0, s2; eauto; try (right; intros HC; congruence).
 Qed.
 
-Definition eq_core_term_dec : forall `{H : EqClass ID_Type} `{H1: EqClass Arg},
+Definition eqb_term `{H : EqClass ID_Type} (x y : Term): bool :=
+  if @eq_term_dec H x y then true else false.
+
+Lemma eqb_leibniz_term `{H : EqClass ID_Type} : forall x y,
+  eqb_term x y = true <-> x = y.
+Proof.
+  unfold eqb_term; intuition;
+  destruct eq_term_dec; eauto; congruence.
+Qed.
+
+Global Instance EqClass_Term `{H : EqClass ID_Type} : EqClass Term := {
+  eqb := eqb_term ;
+  eqb_leibniz := eqb_leibniz_term
+}.
+
+Definition eq_core_term_dec : forall `{H : EqClass ID_Type},
   forall x y : Core_Term, {x = y} + {x <> y}.
 Proof.
   intros.
@@ -140,27 +171,37 @@ Proof.
   - eapply eq_term_dec.
 Qed.
 
-Definition eq_ev_dec: forall `{H : EqClass ID_Type} `{H1: EqClass Arg},
+Definition eqb_core_term `{H : EqClass ID_Type} (x y : Core_Term): bool :=
+  if @eq_core_term_dec H x y then true else false.
+
+Lemma eqb_leibniz_core_term `{H : EqClass ID_Type} : forall x y,
+  eqb_core_term x y = true <-> x = y.
+Proof.
+  unfold eqb_core_term; intuition;
+  destruct eq_core_term_dec; eauto; congruence.
+Qed.
+
+Global Instance EqClass_Core_Term `{H : EqClass ID_Type} : EqClass Core_Term := {
+  eqb := eqb_core_term ;
+  eqb_leibniz := eqb_leibniz_core_term
+}.
+
+Definition eq_ev_dec: forall `{H : EqClass ID_Type},
   forall x y: Ev, {x = y} + {x <> y}.
 Proof.
-  intros;
-  decide equality; subst;
-  try (try eapply EqClass_impl_DecEq; eauto;
-  try eapply nat_EqClass; 
-  try eapply EqClassASP_Params; eauto; fail).
-  repeat decide equality; subst;
-  try (try eapply EqClass_impl_DecEq; eauto;
-  try eapply nat_EqClass; eauto; fail).
-  - eapply eq_asp_params_dec.
-  - eapply eq_evidence_dec.
-  - eapply eq_term_dec.
-  - eapply eq_evidence_dec.
-  - eapply eq_evidence_dec.
-  - eapply eq_core_term_dec.
+  intuition; subst; eauto;
+  repeat match goal with
+  | a : Ev |- _ => destruct a
+  end; try (right; intros HC; congruence);
+  repeat (break_eqs; [ eauto | right; intros ?; congruence]).
+  - destEq n n0; destEq p1 p; destEq p2 p0; 
+    try (right; intros ?; congruence); eauto.
+  - destEq n n0; destEq p1 p; destEq p2 p0; 
+    try (right; intros ?; congruence); eauto.
 Qed.
-#[local] Hint Resolve eq_ev_dec : core.
+Local Hint Resolve eq_ev_dec : core.
 
-#[local] Hint Resolve eq_evidence_dec : core.
+Local Hint Resolve eq_evidence_dec : core.
 
 
 (** list equality Lemmas *)
@@ -265,18 +306,27 @@ Proof.
       eapply list_beq_refl; eauto.
 Defined.
 
-Definition eqb_fwd (fwd1 fwd2 : FWD) : bool.
-Admitted.
+Definition eqb_fwd (fwd1 fwd2 : FWD) : bool :=
+  match fwd1, fwd2 with
+  | COMP, COMP => true
+  | ENCR, ENCR => true
+  | EXTD, EXTD => true
+  | KILL, KILL => true
+  | KEEP, KEEP => true
+  | _ , _ => false
+  end.
 
 Lemma eqb_eq_fwd: forall f1 f2,
     eqb_fwd f1 f2 = true <->
     f1 = f2.
 Proof.
-Admitted.
+  unfold eqb_fwd; intuition;
+  destruct f1, f2; eauto; congruence.
+Qed.
 
-
+(* NOTE: Better impl above 
 (** Boolean equality for Evidence Types *)
-Fixpoint eqb_evidence `{H : EqClass ID_Type} `{H1: EqClass (Arg)} `{H2 : EqClass Resource_ID_Arg} (e:Evidence) (e':Evidence): bool :=
+Fixpoint eqb_evidence `{H : EqClass ID_Type} (e:Evidence) (e':Evidence): bool :=
   match (e,e') with
   | (mt,mt) => true
   | (uu p fwd params e1, uu p' fwd' params' e2) =>
@@ -344,9 +394,9 @@ Proof.
       split;
         eauto.
 Defined.
-
+*)
 
 Lemma eqb_plc_refl : forall p0, Eqb_Evidence.eqb_plc p0 p0 = true.
 Proof.
-  intros. apply eqb_eq_plc. auto.
+  intros; apply eqb_eq_plc; auto.
 Qed.  

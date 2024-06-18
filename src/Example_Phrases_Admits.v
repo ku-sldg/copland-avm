@@ -27,16 +27,16 @@ Admitted.
 Definition cache_id : ASP_ID.
 Admitted.
 
-Definition store_args : list Arg.
+Definition store_args : ASP_ARGS.
 Admitted.
 
-Definition retrieve_args : list Arg.
+Definition retrieve_args : ASP_ARGS.
 Admitted.
 
-Definition appraise_inline_args : list Arg.
+Definition appraise_inline_args : ASP_ARGS.
 Admitted.
 
-Definition check_ssl_sig_args : list Arg.
+Definition check_ssl_sig_args : ASP_ARGS.
 Admitted.
 
 Definition cache : TARG_ID.

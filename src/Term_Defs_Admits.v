@@ -17,3 +17,6 @@ Definition stringT_to_EvC (s:StringT) : ResultT EvC StringT. Admitted.
 
 Fixpoint Ev_to_stringT (e:Ev) : StringT. Admitted.
 Definition stringT_to_Ev (s:StringT) : ResultT Ev StringT. Admitted.
+
+Definition ASP_ARGS_to_stringT (args:ASP_ARGS) : StringT. Admitted.
+Definition stringT_to_ASP_ARGS (s:StringT) : ResultT ASP_ARGS StringT. Admitted.

@@ -18,7 +18,7 @@ University of California.  See license.txt for details. *)
 
 Require Export BS.
 
-Require Import AbstractedTypes.
+Require Import AbstractedTypes Maps EqClass.
 
 (** * Terms and Evidence *)
 
@@ -42,17 +42,23 @@ Definition ASP_ID_to_stringT (a:ASP_ID) : StringT := ID_Type_to_stringT a.
 Definition stringT_to_ASP_ID (s:StringT) : ResultT ASP_ID StringT := stringT_to_ID_Type s.
 Definition TARG_ID: Set := ID_Type.
 
-Inductive Resource_ID_Arg: Set := 
+Definition TARG_ID_to_stringT (t:TARG_ID) : StringT := ID_Type_to_stringT t.
+Definition stringT_to_TARG_ID (s:StringT) : ResultT TARG_ID StringT := stringT_to_ID_Type s.
+
+Definition ASP_ARGS := MapC StringT StringT.
+Definition ASP_Info := StringT.
+
+(* Inductive Resource_ID_Arg: Set := 
 | Rid_Arg_C1
 | Rid_Arg_C2.
 
 Inductive Arg: Set := 
 | Arg_ID : ID_Type -> Arg
-| Arg_ResID : Resource_ID_Arg -> Arg.
+| Arg_ResID : Resource_ID_Arg -> Arg. *)
 
 (** Grouping ASP parameters into one constructor *)
-Inductive ASP_PARAMS: Set :=
-| asp_paramsC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP_PARAMS.
+Inductive ASP_PARAMS: Type :=
+| asp_paramsC: ASP_ID -> ASP_ARGS -> Plc -> TARG_ID -> ASP_PARAMS.
 
 (** Evidence extension types for ASPs:
       COMP:  Compact evidence down to a single value (i.e. a hash).
@@ -83,7 +89,7 @@ Inductive FWD: Set :=
     uu:  ASP evidence bundle
     ss:  evidence pairing (composition)
 *)
-Inductive Evidence: Set :=
+Inductive Evidence :=
 | mt: Evidence
 | nn: N_ID -> Evidence
 | uu: Plc -> FWD -> ASP_PARAMS -> Evidence -> Evidence
@@ -111,7 +117,7 @@ Inductive SP: Set :=
     HSH:     Hash primitive 
     ENC q:   Encryption primitive using public key associated with place q.
 *)
-Inductive ASP: Set :=
+Inductive ASP :=
 | NULL: ASP
 | CPY: ASP
 | ASPC: SP -> FWD -> ASP_PARAMS -> ASP
@@ -127,7 +133,7 @@ Definition Split: Set := (SP * SP).
         A term is either an atomic ASP (Attestation Service Provider), 
         a remote call (att), a sequence of terms with data a dependency (lseq),
         a sequence of terms with no data dependency, or parallel terms. *)
-Inductive Term: Set :=
+Inductive Term :=
 | asp: ASP -> Term
 | att: Plc -> Term -> Term
 | lseq: Term -> Term -> Term
@@ -183,7 +189,7 @@ Example testencex : test_enc = (lseq (asp CPY) (asp (ENC min_id_type))). reflexi
 Close Scope cop_ent_scope.
 
 (** Copland Core_Term primitive datatypes *)
-Inductive ASP_Core: Set :=
+Inductive ASP_Core :=
 | NULLC: ASP_Core
 | CLEAR: ASP_Core
 | CPYC: ASP_Core
@@ -196,7 +202,7 @@ Definition Locs: Set := list Loc.
 
 (** Copland Core_Term definition.  Compilation target of the Copland Compiler, 
     execution language of the Copland VM (CVM). *)
-Inductive Core_Term: Set :=
+Inductive Core_Term :=
 | aspc: ASP_Core -> Core_Term
 | attc: Plc -> Term -> Core_Term
 | lseqc: Core_Term -> Core_Term -> Core_Term
@@ -229,7 +235,7 @@ Example test2ex : test2 = (lseqc (aspc CPYC) (aspc NULLC)). reflexivity. Defined
 Example test3 : <<core>{ CLR -> {}}> = (lseqc (aspc CLEAR) (aspc NULLC)). reflexivity. Defined.
 
 
-Inductive AppResultC: Set :=
+Inductive AppResultC :=
 | mtc_app: AppResultC
 | nnc_app: N_ID -> BS -> AppResultC
 | ggc_app: Plc -> ASP_PARAMS -> BS -> AppResultC -> AppResultC

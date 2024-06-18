@@ -18,7 +18,7 @@ Require Import PeanoNat Lia Preamble Term_Defs Term.
 
 (** * States *)
 
-Inductive St: Set :=
+Inductive St :=
 | stop: Plc -> Evidence -> St
 | conf: AnnoTerm -> Plc -> Evidence -> St
 | rem: nat -> Plc -> St -> St

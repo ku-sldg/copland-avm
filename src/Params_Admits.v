@@ -5,11 +5,9 @@
 
 Require Import Term_Defs_Core.
 
-
-
 Definition sig_aspid : ASP_ID. Admitted.
 
-Definition sig_aspargs : list Arg. Admitted.
+Definition sig_aspargs : ASP_ARGS. Admitted.
 
 Definition sig_targid : ASP_ID. Admitted.
 
@@ -21,7 +19,7 @@ Definition sig_params : ASP_PARAMS :=
 
 Definition hsh_aspid : ASP_ID. Admitted.
 
-Definition hsh_aspargs : list Arg. Admitted.
+Definition hsh_aspargs : ASP_ARGS. Admitted.
 
 Definition hsh_targid : ASP_ID. Admitted.
 
@@ -33,7 +31,7 @@ Definition hsh_params : ASP_PARAMS :=
 
 Definition enc_aspid : ASP_ID. Admitted.
 
-Definition enc_aspargs : list Arg. Admitted.
+Definition enc_aspargs : ASP_ARGS. Admitted.
 
 Definition enc_targid : ASP_ID. Admitted.
 

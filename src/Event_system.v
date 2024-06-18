@@ -21,17 +21,17 @@ Section Event_system.
 
   (** The sort of an event. *)
 
-  Variable A: Set.
+  Variable A: Type.
 
   (** The number associated with an event. *)
 
   Variable ev: A -> nat.
 
-  Definition ES_Range: Set := nat * nat.
+  Definition ES_Range : Type := nat * nat.
 
   (** An event system. *)
 
-  Inductive EvSys: Set :=
+  Inductive EvSys :=
   | leaf: ES_Range -> A -> EvSys
   | before: ES_Range -> EvSys -> EvSys -> EvSys
   | merge: ES_Range -> EvSys -> EvSys -> EvSys.

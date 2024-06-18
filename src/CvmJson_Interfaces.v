@@ -163,6 +163,68 @@ Definition JSON_to_AM_Protocol_Interface (msg : JSON):
         resultC (AM_Protocol_Response_Interface temp_msg))
   else errC errStr_incorrect_resp_type.
 
+
+(* ASP Run Request Section *)
+Definition ASPRunRequest_to_JSON (req: ASPRunRequest): JSON :=
+  JSON_Object 
+    [(STR_TYPE, (JSON_String STR_REQUEST));
+    (STR_ACTION, (JSON_String STR_ASP_RUN));
+    (STR_ASP_ID, (JSON_String (ASP_ID_to_stringT (asprreq_asp_id req))));
+    (STR_ASP_ARGS, (JSON_String (ASP_ARGS_to_stringT (asprreq_asp_args req))));
+    (STR_TARG_PLC, (JSON_String (Plc_to_stringT (asprreq_targ_plc req))));
+    (STR_TARG, (JSON_String (TARG_ID_to_stringT (asprreq_targ req))));
+    (STR_EV, (JSON_String (RawEv_to_stringT (asprreq_rawev req))))].
+
+Definition JSON_to_ASPRunRequest (req : JSON): ResultT ASPRunRequest StringT :=
+  temp_asp_id <- JSON_get_stringT STR_ASP_ID req ;;
+  temp_asp_args <- JSON_get_stringT STR_ASP_ARGS req ;;
+  temp_targ_plc <- JSON_get_stringT STR_TARG_PLC req ;;
+  temp_targ <- JSON_get_stringT STR_TARG req ;;
+  temp_ev <- JSON_get_stringT STR_EV req ;;
+  asp_id <- stringT_to_ASP_ID temp_asp_id ;;
+  asp_args <- stringT_to_ASP_ARGS temp_asp_args ;;
+  targ_plc <- stringT_to_Plc temp_targ_plc ;;
+  targ <- stringT_to_TARG_ID temp_targ ;;
+  ev <- stringT_to_RawEv temp_ev ;;
+  resultC (mkASPRReq asp_id asp_args targ_plc targ ev).
+
+Definition ASPRunResponse_to_JSON (resp: ASPRunResponse): JSON :=
+  JSON_Object 
+    [(STR_TYPE, (JSON_String STR_RESPONSE));
+    (STR_ACTION, (JSON_String STR_ASP_RUN));
+    (STR_SUCCESS, (JSON_Boolean (asprresp_success resp)));
+    (STR_PAYLOAD, (JSON_String (BS_to_StringT (asprresp_bs resp))))].
+
+Definition JSON_to_ASPRunResponse (resp : JSON): ResultT ASPRunResponse StringT :=
+  temp_success <- JSON_get_bool STR_SUCCESS resp ;;
+  temp_ev <- JSON_get_stringT STR_PAYLOAD resp ;;
+  ev <- stringT_to_RawEv temp_ev ;;
+  resultC (mkASPRResp temp_success ev).
+
+(* AM ASP Interface Section *)
+
+Definition AM_ASP_Interface_to_JSON (msg: AM_ASP_Interface): JSON :=
+  match msg with
+  | ASP_Run_Request r => ASPRunRequest_to_JSON r
+  | ASP_Run_Response r => ASPRunResponse_to_JSON r
+  end.
+
+Definition JSON_to_AM_ASP_Interface (msg : JSON): 
+    ResultT AM_ASP_Interface StringT :=
+  temp_type <- JSON_get_stringT STR_TYPE msg ;;
+  temp_action <- JSON_get_stringT STR_ACTION msg ;;
+  if (eqb temp_type STR_REQUEST)
+  then if (eqb temp_action STR_ASP_RUN)
+       then (temp_msg <- JSON_to_ASPRunRequest msg ;;
+             resultC (ASP_Run_Request temp_msg))
+       else errC errStr_invalid_request_type
+  else if (eqb temp_type STR_RESPONSE)
+      then if (eqb temp_action STR_ASP_RUN)
+          then (temp_msg <- JSON_to_ASPRunResponse msg ;;
+                resultC (ASP_Run_Response temp_msg))
+          else errC errStr_invalid_request_type
+  else errC errStr_incorrect_resp_type.
+
 (* Error Response *)
 Definition ErrorResponseJSON (msg: StringT): JSON :=
   JSON_Object 

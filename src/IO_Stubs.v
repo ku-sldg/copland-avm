@@ -22,7 +22,7 @@ Definition encodeEvRaw(e:RawEv): BS.  Admitted.
 
 Definition make_JSON_Network_Request (uuid : UUID) (js : JSON) : JSON. Admitted.
 
-Definition make_JSON_Local_Request (uuid : UUID) (js : JSON) : JSON. Admitted.
+Definition make_JSON_FS_Location_Request (fsl : FS_Location) (js : JSON) : JSON. Admitted.
 
 (** * Stub to simulate evidence collected by a parallel CVM instance *)
 Definition parallel_vm_thread (l:Loc) (t:Core_Term) (p:Plc) (e:EvC) : EvC.  Admitted.
