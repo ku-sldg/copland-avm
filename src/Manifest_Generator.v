@@ -227,8 +227,6 @@ Definition man_gen_run_attify (ls:list (Term*Plc)) : list Manifest :=
   let ts := attify_terms ls in 
     demo_man_gen_run ts plc_default.
 
-
-    
 Definition app_aspid_manifest_update (i:ASP_ID) (p:Plc) (m:Manifest) : Manifest := 
   let '{| my_abstract_plc := oldPlc;
           asps := oldasps; 
@@ -245,7 +243,7 @@ Fixpoint manifest_generator_app'' (et:Evidence) (m:Manifest) : Manifest :=
   | nn _ => m (* TODO: account for nonce handling here? *)
   | uu p fwd ps e' => 
     match fwd with 
-    | EXTD => 
+    | (EXTD n) => 
       match ps with 
       | asp_paramsC a _ _ _ =>
           manifest_generator_app'' e' 
@@ -263,19 +261,6 @@ Fixpoint manifest_generator_app'' (et:Evidence) (m:Manifest) : Manifest :=
   | ss e1 e2 => 
       manifest_generator_app'' e2 (manifest_generator_app'' e1 m)
   end.
-
-(*
-Definition empty_Manifest_plc (myPlc:Plc) : Manifest :=
-  Build_Manifest 
-      myPlc 
-      manifest_set_empty
-      manifest_set_empty
-      manifest_set_empty
-      manifest_set_empty
-      manifest_set_empty
-      empty_PolicyT.
-*)
-
 
 Definition manifest_generator_app' (p:Plc) (et:Evidence) (env:EnvironmentM) : EnvironmentM :=
   manifest_update_env p env (manifest_generator_app'' et).

@@ -165,7 +165,8 @@ Notation "* p" := (asp (ENC p)) (in custom copland_entry at level 98).
 Notation "$" := (asp KILL) (in custom copland_entry at level 98).
 Notation "'__'" := (asp CPY) (in custom copland_entry at level 98).
 Notation "'{}'" := (asp NULL) (in custom copland_entry at level 98).
-Notation "'<<' x y z '>>'" := (asp (ASPC ALL EXTD (asp_paramsC x nil y z))) 
+(* TODO: Surely we need something more robust than they are ALL EXTD 1, but uhhhh *)
+Notation "'<<' x y z '>>'" := (asp (ASPC ALL (EXTD 1) (asp_paramsC x nil y z))) 
                       (in custom copland_entry at level 98).
 
 

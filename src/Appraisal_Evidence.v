@@ -11,11 +11,22 @@ Import ListNotations.
 
 Require Import Lia Coq.Program.Tactics.
 
-
 Definition peel_bs (ls:RawEv) : Opt (BS * RawEv) :=
   match ls with
   | bs :: ls' => OptMonad_Coq.ret (bs, ls')
   | _ => OptMonad_Coq.failm
+  end.
+
+Fixpoint peel_n (n : nat) (ls : RawEv) : Opt (RawEv * RawEv) :=
+  match n with
+  | 0 => OptMonad_Coq.ret ([], ls)
+  | S n' =>
+      match ls with
+      | [] => OptMonad_Coq.failm
+      | x :: ls' =>
+          '(ls1, ls2) <- peel_n n' ls' ;;
+          OptMonad_Coq.ret (x :: ls1, ls2)
+      end
   end.
 
 Lemma firstn_long: forall (e:list BS) x,
@@ -63,7 +74,7 @@ Fixpoint encodeEv (e:EvidenceC) : RawEv :=
   match e with
   | mtc => []
   | nnc _ bs => [bs]
-  | ggc _ _ bs e' => bs :: (encodeEv e')
+  | ggc _ _ rawev e' => rawev ++ (encodeEv e')
   | hhc _ _ bs _ => [bs]
   | eec _ _ bs _ => [bs]
   | kkc _ _ _ => []
@@ -80,10 +91,10 @@ Fixpoint reconstruct_ev' (ls:RawEv) (et:Evidence) : Opt EvidenceC :=
     end
   | uu p fwd ps et' =>
     match fwd with
-    | EXTD => 
-      '(bs, ls') <- peel_bs ls ;;
+    | (EXTD n) => 
+      '(rawEv, ls') <- peel_n n ls ;;
       x <- reconstruct_ev' ls' et' ;;
-      Some (ggc p ps bs x)
+      Some (ggc p ps rawEv x)
     | COMP =>
       '(bs, ls') <- peel_bs ls ;;
       match ls' with
@@ -192,17 +203,27 @@ Ltac do_inv_recon_nn :=
   destruct_conjs;
   subst.
 
+Lemma peel_n_spec : forall n ls ls1 ls2,
+  peel_n n ls = Some (ls1, ls2) ->
+  ls = ls1 ++ ls2 /\ length ls1 = n.
+Proof.
+  induction n; intuition; repeat ff; subst;
+  unfold OptMonad_Coq.ret, OptMonad_Coq.bind in *; repeat ff; eauto.
+  - eapply IHn in Heqo; intuition; subst; eauto. 
+  - eapply IHn in Heqo; intuition; subst; eauto. 
+Qed.
+
 Lemma inv_recon_gg: forall p ps ls et n ec,
     reconstruct_evP (evc ls et) (ggc p ps n ec) ->
-    (exists ls' et', et = uu p EXTD ps et' /\
-                ls = n :: ls') .
+    (exists ls' et', et = uu p (EXTD (length n)) ps et' /\
+                ls = n ++ ls') .
 Proof.
-  intros.
-  invc H.
-  destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff; try solve_by_inversion.
-                               -
-                                 repeat eexists.
-                                 destruct ls; ff.                         
+  intuition; invc H.
+  generalizeEverythingElse et.
+  destruct et; repeat ff; intuition; 
+  try (unfold OptMonad_Coq.bind, OptMonad_Coq.ret in *); 
+  repeat ff; try solve_by_inversion.
+  eapply peel_n_spec in Heqo; intuition; subst; eauto.
 Defined.
 
 Ltac do_inv_recon_gg :=
@@ -210,9 +231,12 @@ Ltac do_inv_recon_gg :=
   | [H: reconstruct_evP (evc ?ls ?et) (ggc ?p ?ps ?n _)
 
      |- _] =>
-    assert_new_proof_by ((exists ls' et', et = uu p EXTD ps et' /\
-                                    ls = n :: ls') )
+    assert_new_proof_by ((exists ls' et', et = uu p (EXTD (length n)) ps et' /\
+                                    ls = n ++ ls') )
                         ltac:(eapply inv_recon_gg; apply H)
+  | H : peel_n _ _ = Some _ |- _ => 
+      apply peel_n_spec in H; intuition; subst; eauto;
+      find_apply_lem_hyp app_inv_head_iff; subst; eauto
   end;
   destruct_conjs;
   subst.
@@ -293,7 +317,7 @@ Ltac do_inv_recon :=
 
 Lemma recon_inv_gg: forall sig ls p ps et e,
     reconstruct_evP
-      (evc (sig :: ls) (uu p EXTD ps et))
+      (evc (sig ++ ls) (uu p (EXTD (length sig)) ps et))
       (ggc p ps sig e) ->
     reconstruct_evP (evc ls et) e.
 Proof.
@@ -301,8 +325,8 @@ Proof.
   invc H.
   repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff;
   econstructor.
-  symmetry.
-  tauto.
+  find_apply_lem_hyp peel_n_spec; intuition;
+  find_apply_lem_hyp app_inv_head_iff; subst; eauto.
 Defined.
 
 Ltac do_recon_inv_gg :=
@@ -312,6 +336,9 @@ Ltac do_recon_inv_gg :=
           (ggc _ _ _ ?e)
      |- _] =>
     assert_new_proof_by (reconstruct_evP (evc ls et) e) ltac:(eapply recon_inv_gg; apply H)
+  | H : peel_n _ _ = Some _ |- _ => 
+      apply peel_n_spec in H; intuition; subst; eauto;
+      find_apply_lem_hyp app_inv_head_iff; subst; eauto
   end.
 
 Lemma recon_inv_ss: forall ls H1 H2 ec1 ec2,
@@ -417,7 +444,7 @@ Proof.
       econstructor.
       ff.
       }
-      congruence.
+      find_apply_lem_hyp peel_n_spec; intuition; subst; eauto.
     + (* KILL case *)
       invc H.
       unfold reconstruct_ev in *.
@@ -507,12 +534,13 @@ Proof.
     repeat ff.
     unfold OptMonad_Coq.bind in *.
     ff.
-    assert (reconstruct_evP (evc H0 H1) e).
+    find_apply_lem_hyp peel_n_spec; intuition; subst;
+    find_apply_lem_hyp app_inv_head_iff; subst.
+    assert (reconstruct_evP (evc r1 H1) e).
     {
       econstructor; eauto.
     }
-    assert (encodeEv e = H0) by eauto.
-    congruence.
+    find_apply_hyp_hyp; subst; eauto.
   - (* hhc case *)
     do_inv_recon.
     ff.
@@ -641,7 +669,8 @@ Proof.
     ff.
     unfold OptMonad_Coq.bind in *.
     ff.
-    assert (wf_ec (evc H0 H1)).
+    do_inv_recon.
+    assert (wf_ec (evc r1 H1)).
     {
       apply IHec.
       econstructor.
@@ -650,6 +679,7 @@ Proof.
     econstructor.
     dd.
     invc H.
+    rewrite app_length.
     lia.
 
   - (* hhc case *)
@@ -791,6 +821,17 @@ Ltac do_rcih :=
             try (econstructor; first [eapply firstn_long | eapply skipn_long]; try eauto; try lia))      
   end.
 
+Lemma peel_n_none_spec : forall n ls,
+  peel_n n ls = None ->
+  length ls < n.
+Proof.
+  induction n; intuition; simpl in *;
+  repeat ff; try lia;
+  unfold OptMonad_Coq.ret, OptMonad_Coq.bind in *; repeat ff; eauto.
+  eapply IHn in Heqo.
+  lia.
+Qed.
+
 (** * Lemma:  well-formed EvC bundles can be successfully reconstructed to a Typed Concrete Evidence (EvidenceC) value. *)
 Lemma some_recons : forall (e:EvC),
     wf_ec e ->
@@ -887,34 +928,29 @@ Proof.
       inv_wfec.
       ff.
       unfold OptMonad_Coq.bind in * ;
-        repeat ff; eauto.
+        repeat ff; eauto;
+        subst; eauto;
+        try do_inv_recon.
       ++
-        assert (wf_ec (evc r0 e)).
+        find_apply_lem_hyp peel_n_spec; intuition; subst; eauto.
+        rewrite app_length in *;
+        intuition.
+        assert (length r1 = et_size e). lia.
+        assert (wf_ec (evc r1 e)).
         {
-          eapply peel_fact.
-          eassumption.
-          eassumption.
-          tauto.
+          econstructor; eauto.
         }
-       
-          
-          
-        assert (exists ee, Some ee = reconstruct_ev' r0 e).
+        assert (exists ee, Some ee = reconstruct_ev' r1 e).
         {
           invc H.
           eapply IHe.
          econstructor. eassumption. }
-        destruct_conjs.
-        ff.
-      ++
-         inv_wfec.
-       ff.
-       assert (r = []).
-       {
-         destruct r; ff.
-       }
-       subst.
-       ff.
+        
+        destruct_conjs; congruence.
+      ++ assert (r = []). {
+          eapply peel_n_none_spec in Heqo; lia. }
+       subst; simpl in *; destruct n; simpl in *; try lia;
+       unfold OptMonad_Coq.ret in *; congruence.
     + (* KILL case *)
       inv_wfec.
       ff.
@@ -978,7 +1014,7 @@ Definition spc_ev (sp:SP) (e:EvidenceC) : EvidenceC :=
 TODO: try this again after appraisal lemmas settled 
 *)
 
-Definition do_asp_nofail (ps:ASP_PARAMS) (ev:RawEv) (p:Plc) (x:Event_ID): BS.
+Definition do_asp_nofail (ps:ASP_PARAMS) (ev:RawEv) (p:Plc) (x:Event_ID): RawEv.
 Admitted. (* TODO:  fill this in with some sort of callback + default value? *)
 
 Definition cvm_evidence_denote_asp (a:ASP) (p:Plc) (e:EvidenceC) (x:Event_ID): EvidenceC :=
@@ -990,7 +1026,7 @@ Definition cvm_evidence_denote_asp (a:ASP) (p:Plc) (e:EvidenceC) (x:Event_ID): E
     | COMP => hhc p params
                  (do_asp_nofail params (encodeEv (spc_ev sp e)) p x)
                  (sp_ev sp (et_fun e))
-    | EXTD => ggc p params
+    | (EXTD n) => ggc p params
                  (do_asp_nofail params (encodeEv (spc_ev sp e)) p x)
                  (spc_ev sp e)
     | ENCR => eec p params

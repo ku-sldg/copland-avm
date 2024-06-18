@@ -21,14 +21,14 @@ Definition encodeEvBits (e:EvC): BS :=
 (** Extends raw evidence by prepending one value to the front.
     Also updates underlying Evidence Type.
     An example is digital signatures, where the signature value is prepended *)
-Definition cons_gg (sig: RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
+Definition extd_bundle (sig: RawEv) (e:EvC) (p:Plc) (n : nat) (ps:ASP_PARAMS): EvC :=
   match e with
-  | evc bits et => evc (sig ++ bits) (uu p EXTD ps et)
+  | evc bits et => evc (sig ++ bits) (uu p (EXTD n) ps et)
   end.
 
 (** Collapses raw evidence by replacing the entire sequence with the input 
     binary hash value.  Updates underlying Evidence Type to reflect the hash. *)
-Definition cons_hsh (hsh: RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
+Definition comp_bundle (hsh: RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
   match e with
   | evc _ et => evc hsh (uu p COMP ps et)
   end.
@@ -36,7 +36,7 @@ Definition cons_hsh (hsh: RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
 (** Collapses raw evidence by replacing the entire sequence with the input 
     encrypted value blob.  Updates underlying Evidence Type to reflect the
     encryption. *)
-Definition cons_enc (enc: RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
+Definition encr_bundle (enc: RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
   match e with
   | evc _ et => evc enc (uu p ENCR ps et)
   end.

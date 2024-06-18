@@ -53,7 +53,7 @@ Record ASPRunRequest :=
 Record ASPRunResponse := 
   mkASPRResp {
     asprresp_success: bool;
-    asprresp_bs: BS;
+    asprresp_rawev: RawEv;
   }.
 
 Record ASPInfoRequest := 

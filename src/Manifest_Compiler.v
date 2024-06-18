@@ -22,7 +22,7 @@ Fixpoint minify_mapD {A B : Type} `{HA : EqClass A} `{HB : EqClass B} (m : MapD 
   | cons (k,v) tl => if (f k) then cons (k,v) (minify_mapD tl f) else minify_mapD tl f
   end.
 
-Definition generate_ASP_dispatcher' (al : AM_Library) (am : Manifest) (par : ASP_PARAMS) (rawEv : RawEv) : ResultT BS DispatcherErrors :=
+Definition generate_ASP_dispatcher' (al : AM_Library) (am : Manifest) (par : ASP_PARAMS) (rawEv : RawEv) : ResultT RawEv DispatcherErrors :=
   let (aspid, args, targ_plc, targ) := par in
   let abstract_asps := am.(asps) in
   let local_asps_map := al.(Lib_ASPS) in

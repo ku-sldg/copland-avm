@@ -143,7 +143,6 @@ Definition knowsof_myPlc_manifest_update_env' (p:(Plc*Manifest)) : (Plc*Manifest
 
 Definition update_knowsOf_myPlc_env (env:EnvironmentM) : EnvironmentM := map knowsof_myPlc_manifest_update_env' env.
 
-Check pubkeys_manifest_update.
 Definition update_pubkeys_env' (pubs:manifest_set Plc) (p:(Plc*Manifest)) : (Plc*Manifest) := 
   (fst p, (pubkeys_manifest_update pubs (snd p))).
 

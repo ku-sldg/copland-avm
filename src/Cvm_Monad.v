@@ -5,9 +5,7 @@
   Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import String ResultT.
-Require Import Term_Defs Term ConcreteEvidence Evidence_Bundlers Defs Axioms_Io.
-Require Import StructTactics.
+Require Import ResultT Term_Defs Term ConcreteEvidence Evidence_Bundlers Defs Axioms_Io StructTactics.
 
 Require Import Coq.Program.Tactics Lia.
 
@@ -85,9 +83,9 @@ Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) (e:EvC) : CVM Event_ID :=
    the evidence extension parameter of an ASP term. *)
 Definition fwd_asp (fwd:FWD) (rwev : RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
   match fwd with
-  | COMP => cons_hsh rwev e p ps
-  | EXTD => cons_gg rwev e p ps
-  | ENCR => cons_enc rwev e p ps
+  | COMP => comp_bundle rwev e p ps
+  | EXTD n => extd_bundle rwev e p n ps
+  | ENCR => encr_bundle rwev e p ps
   | KILL => mt_evc
   | KEEP => e
   end.
@@ -98,7 +96,7 @@ Definition fwd_asp (fwd:FWD) (rwev : RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC
 (* Definition do_asp (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) (ac : AM_Config) : ResultT BS DispatcherErrors :=
   ac.(aspCb) params mpl (encodeEvRaw e) e. *)
 
-Definition do_asp (params :ASP_PARAMS) (e:RawEv) (x:Event_ID) : CVM BS :=
+Definition do_asp (params :ASP_PARAMS) (e:RawEv) (x:Event_ID) : CVM RawEv :=
   ac <- get_CVM_amConfig  ;;
   match (ac.(aspCb) params e) with
   | resultC r => ret r

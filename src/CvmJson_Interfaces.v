@@ -193,13 +193,13 @@ Definition ASPRunResponse_to_JSON (resp: ASPRunResponse): JSON :=
     [(STR_TYPE, (JSON_String STR_RESPONSE));
     (STR_ACTION, (JSON_String STR_ASP_RUN));
     (STR_SUCCESS, (JSON_Boolean (asprresp_success resp)));
-    (STR_PAYLOAD, (JSON_String (BS_to_stringT (asprresp_bs resp))))].
+    (STR_PAYLOAD, (JSON_String (RawEv_to_stringT (asprresp_rawev resp))))].
 
 Definition JSON_to_ASPRunResponse (resp : JSON): ResultT ASPRunResponse StringT :=
   temp_success <- JSON_get_bool STR_SUCCESS resp ;;
-  temp_bs <- JSON_get_stringT STR_PAYLOAD resp ;;
-  bs <- stringT_to_BS temp_bs ;;
-  resultC (mkASPRResp temp_success bs).
+  temp_rawev <- JSON_get_stringT STR_PAYLOAD resp ;;
+  rawev <- stringT_to_RawEv temp_rawev ;;
+  resultC (mkASPRResp temp_success rawev).
 
 (* AM ASP Interface Section *)
 

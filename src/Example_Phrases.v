@@ -11,30 +11,30 @@ Import ListNotations.
 
 
 Definition attest (p:Plc) (targ: TARG_ID) :=
-  asp (ASPC ALL EXTD (asp_paramsC attest_id [] p targ)).
+  asp (ASPC ALL (EXTD 1) (asp_paramsC attest_id [] p targ)).
 
 Definition appraise (p:Plc) (targ: TARG_ID) :=
-  asp (ASPC ALL EXTD (asp_paramsC appraise_id [] p targ)).
+  asp (ASPC ALL (EXTD 1) (asp_paramsC appraise_id [] p targ)).
 
 Definition attest1 (p:Plc) (targ: TARG_ID) :=
-    asp (ASPC ALL EXTD (asp_paramsC attest1_id [] p targ)).
+    asp (ASPC ALL (EXTD 1) (asp_paramsC attest1_id [] p targ)).
 
 Definition attest2 (p:Plc) (targ: TARG_ID) :=
-  asp (ASPC ALL EXTD (asp_paramsC attest2_id [] p targ)).
+  asp (ASPC ALL (EXTD 1) (asp_paramsC attest2_id [] p targ)).
 
 (*
 Definition appraise_inline (p:Plc) (targ: TARG_ID) :=
-  asp (ASPC ALL EXTD (asp_paramsC appraise_inline_id [] p targ)).
+  asp (ASPC ALL (EXTD 1) (asp_paramsC appraise_inline_id [] p targ)).
 *)
 
 Definition certificate (p:Plc) (targ: TARG_ID) :=
-  asp (ASPC ALL EXTD (asp_paramsC cert_id [] p targ)).
+  asp (ASPC ALL (EXTD 1) (asp_paramsC cert_id [] p targ)).
 
 Definition store (p:Plc) (targ: TARG_ID) :=
-  asp (ASPC ALL EXTD (asp_paramsC cache_id store_args p targ)).
+  asp (ASPC ALL (EXTD 1) (asp_paramsC cache_id store_args p targ)).
 
 Definition retrieve (p:Plc) (targ: TARG_ID) :=
-  asp (ASPC ALL EXTD (asp_paramsC cache_id retrieve_args p targ)).
+  asp (ASPC ALL (EXTD 1) (asp_paramsC cache_id retrieve_args p targ)).
 
 
 (* 
@@ -210,7 +210,7 @@ Proof.
 Qed.
 
 Definition appraise_inline_asp_with_args (p:Plc) (targ: TARG_ID) (args:ASP_ARGS) : Term := 
-  asp (ASPC ALL EXTD (asp_paramsC appraise_inline_id args p targ)).
+  asp (ASPC ALL (EXTD 1) (asp_paramsC appraise_inline_id args p targ)).
 
 
 Definition sub1 : Term := 
