@@ -70,7 +70,7 @@ Inductive ASP_PARAMS: Type :=
 
 COMP:  [b1, b2, ..., bn] ==> [hash([b1, b2, ..., bn])]
 ENCR:  [b1, b2, ..., bn] ==> [encrypt([b1, b2, ..., bn])]
-EXTD:  [b1, b2, ..., bn] ==> [f([b1, b2, ..., bn]), b1, b2, ..., bn]], 
+EXTD:  [b1, b2, ..., bn] ==> f([b1, b2, ..., bn]) ++ [b1, b2, ..., bn]], 
             where f represents the ASP's functional result over an input evidence bundle.
 KILL:  [b1, b2, ..., bn] ==> []
 KEEP:  [b1, b2, ..., bn] ==> [b1, b2, ..., bn]

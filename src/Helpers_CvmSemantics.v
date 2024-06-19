@@ -11,11 +11,6 @@ Require Import Coq.Program.Tactics Coq.Program.Equality.
 Require Import List.
 Import ListNotations.
 
-(*
-Set Nested Proofs Allowed.
-*)
-
-
 Lemma ac_immut : forall t e tr i ac,
   st_AM_config 
     (execErr 
@@ -28,8 +23,9 @@ Lemma ac_immut : forall t e tr i ac,
       |}) = ac.
 Proof.
   induction t; repeat (monad_unfold; simpl in *); intuition.
-  - destruct a; monad_unfold; eauto.
+  - destruct a; monad_unfold; eauto;
     destruct (aspCb ac a (get_bits e)) eqn:E1; simpl in *; eauto.
+    repeat ff.
 
   - (* at case *)
     repeat ff;
@@ -99,6 +95,7 @@ Proof.
   - destruct a; monad_simp; invc H; invc H0; eauto;
     destruct (aspCb ac a (get_bits e)); 
     simpl in *; invc H1; invc H2; eauto.
+    repeat ff.
   - 
   repeat ff;
   unfold doRemote_session' in *;
@@ -176,7 +173,8 @@ Proof.
     try (invc H; eauto);
     destruct (aspCb ac a (get_bits e)); 
     monad_simp; invc H1; invc H2; eauto; simpl in *;
-    try (rewrite H3; eauto).
+    try (rewrite H3; eauto);
+    repeat ff.
   -     repeat ff;
   unfold doRemote_session' in *;
   repeat ff;

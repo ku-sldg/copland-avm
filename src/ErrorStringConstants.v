@@ -28,6 +28,12 @@ Definition errStr_lib_supports_man_check : StringT. Admitted.
 
 Definition errStr_lib_supports_man_app_check : StringT. Admitted.
 
+(* Evidence Bundling Errors *)
+Definition errStr_empty_raw_ev : StringT. Admitted.
+
+Definition errStr_raw_evidence_too_long : StringT. Admitted.
+
+Definition errStr_raw_evidence_wrong_length_comp : StringT. Admitted.
 
 (* JSON Interface Error String *)
 Definition errStr_remote_am_failure : StringT. Admitted.

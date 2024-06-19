@@ -685,6 +685,8 @@ Proof.
   - (* hhc case *)
     do_inv_recon.
     invc H.
+    econstructor.
+    simpl in *.
     dd.
     econstructor; tauto.
   - (* eec case *)
@@ -1013,9 +1015,17 @@ Definition spc_ev (sp:SP) (e:EvidenceC) : EvidenceC :=
 (*
 TODO: try this again after appraisal lemmas settled 
 *)
-
-Definition do_asp_nofail (ps:ASP_PARAMS) (ev:RawEv) (p:Plc) (x:Event_ID): RawEv.
+Definition do_asp_nofail (ps:ASP_PARAMS) (ev:RawEv) (p:Plc) (x:Event_ID): BS.
 Admitted. (* TODO:  fill this in with some sort of callback + default value? *)
+
+Definition do_asp_EXTD_nofail (ps:ASP_PARAMS) (n : nat) (ev:RawEv) (p:Plc) (x:Event_ID): RawEv.
+Admitted. (* TODO:  fill this in with some sort of callback + default value? *)
+
+(* This may seem a bit un-intuitive, but its a matter of 
+  the new returned RawEv will be of length 'n'
+*)
+Axiom do_asp_EXTD_nofail_length_spec : forall ps n ev p x,
+    length (do_asp_EXTD_nofail ps n ev p x) = n.
 
 Definition cvm_evidence_denote_asp (a:ASP) (p:Plc) (e:EvidenceC) (x:Event_ID): EvidenceC :=
   match a with
@@ -1027,7 +1037,7 @@ Definition cvm_evidence_denote_asp (a:ASP) (p:Plc) (e:EvidenceC) (x:Event_ID): E
                  (do_asp_nofail params (encodeEv (spc_ev sp e)) p x)
                  (sp_ev sp (et_fun e))
     | (EXTD n) => ggc p params
-                 (do_asp_nofail params (encodeEv (spc_ev sp e)) p x)
+                 (do_asp_EXTD_nofail params n (encodeEv (spc_ev sp e)) p x)
                  (spc_ev sp e)
     | ENCR => eec p params
                  (do_asp_nofail params (encodeEv (spc_ev sp e)) p x)
@@ -1036,7 +1046,7 @@ Definition cvm_evidence_denote_asp (a:ASP) (p:Plc) (e:EvidenceC) (x:Event_ID): E
     | KILL => mtc (* kkc p params (sp_ev sp (et_fun e)) *)
     end
   | SIG => ggc p sig_params
-              (do_asp_nofail sig_params (encodeEv e) p x)
+              (do_asp_EXTD_nofail sig_params 1 (encodeEv e) p x)
               e
   | HSH => hhc p hsh_params
               (do_asp_nofail hsh_params (encodeEv e) p x)
@@ -1453,21 +1463,13 @@ Proof.
   generalizeEverythingElse t1.
   induction t1; intros.
   - (* asp case *)
-    rewrite <- ccp_iff_cc in *.
-    destruct a; (* asp *)
-      try destruct a; (* asp params *)
-      ff;
-      inv_wfec;
-      try (
-          econstructor;
-          ff;
-          try tauto;
-          try congruence).
-      destruct f; 
-        repeat Auto.ff;
-        try (econstructor; eauto).
-
-        ff.
+    rewrite <- ccp_iff_cc in *;
+    simpl in *; monad_unfold; simpl in *.
+    repeat ff; try (econstructor; simpl in *; eauto; fail).
+    ff; econstructor; simpl in *; eauto.
+    rewrite app_length.
+    invc H; find_injection; find_rewrite.
+    rewrite nat_eqb_eq in *; eauto.
     
   - (* at case *)
     wrap_ccp.
@@ -1571,12 +1573,9 @@ Proof.
   induction annt; intros.
   -
     dd.
-    destruct a; dd;
-      try eauto.
-    +
-      destruct f; ff.
-      destruct s; ff.
-      destruct s; ff.
+    destruct a; simpl in *; eauto; repeat ff; subst; simpl in *;
+    try rewrite do_asp_EXTD_nofail_length_spec; simpl in *; eauto;
+    unfold spc_ev, sp_ev; repeat ff.
   -
     dd.
     eauto.
@@ -1632,7 +1631,6 @@ Proof.
   induction t; intros.
   - (* asp case *)
     wrap_ccp.
-    ff; eauto; auto with *.
   - (* at case *)
     wrap_ccp.
     repeat Auto.ff;

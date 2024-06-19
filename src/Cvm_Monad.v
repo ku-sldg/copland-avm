@@ -81,13 +81,25 @@ Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) (e:EvC) : CVM Event_ID :=
 
 (* Helper function that builds a new internal evidence bundle based on 
    the evidence extension parameter of an ASP term. *)
-Definition fwd_asp (fwd:FWD) (rwev : RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
+Definition fwd_asp (fwd:FWD) (rwev : RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): CVM EvC :=
   match fwd with
-  | COMP => comp_bundle rwev e p ps
-  | EXTD n => extd_bundle rwev e p n ps
-  | ENCR => encr_bundle rwev e p ps
-  | KILL => mt_evc
-  | KEEP => e
+  | COMP => 
+      match comp_bundle rwev e p ps with
+      | resultC e' => ret e'
+      | errC e => failm (dispatch_error (Runtime e))
+      end
+  | EXTD n => 
+      match extd_bundle rwev e p n ps with
+      | resultC e' => ret e'
+      | errC e => failm (dispatch_error (Runtime e))
+      end
+  | ENCR => 
+      match encr_bundle rwev e p ps with
+      | resultC e' => ret e'
+      | errC e => failm (dispatch_error (Runtime e))
+      end
+  | KILL => ret mt_evc
+  | KEEP => ret e
   end.
 
 (** * Stub for invoking external ASP procedures.  
@@ -110,7 +122,8 @@ Definition invoke_ASP (fwd:FWD) (params:ASP_PARAMS) (* (ac : AM_Config) *) : CVM
   p <- get_pl ;;
   x <- tag_ASP params p e ;;
   rawev <- do_asp params (get_bits e) x ;;
-  ret (fwd_asp fwd rawev e p params).
+  outev <- fwd_asp fwd rawev e p params ;;
+  ret outev.
 
 Definition copyEv : CVM EvC :=
   p <- get_pl ;;
@@ -254,6 +267,10 @@ Ltac monad_unfold :=
   execErr,  
   do_prim,
   invoke_ASP,
+  fwd_asp,
+  extd_bundle,
+  comp_bundle,
+  encr_bundle,
   do_asp,
   clearEv,
   copyEv,
