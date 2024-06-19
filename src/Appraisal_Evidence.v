@@ -632,17 +632,6 @@ Proof.
     congruence.
 Qed.
 
-Lemma recon_encodeEv_Raw: forall ec bits et,
-    reconstruct_evP (evc bits et) ec ->
-    encodeEvRaw (encodeEv ec) = encodeEvBits (evc bits et).
-Proof.
-  intros.
-  unfold encodeEvBits.
-  erewrite recon_encodeEv.
-  tauto.
-  eauto.
-Defined.
-
 Lemma wfec_recon: forall (ee:EvC) (ec:EvidenceC),
     reconstruct_evP ee ec ->
     wf_ec ee.

@@ -105,9 +105,6 @@ Definition fwd_asp (fwd:FWD) (rwev : RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): CVM
 (** * Stub for invoking external ASP procedures.  
       Extracted code should not need to use the Plc or Event_ID parameters 
       (those can be erased upon extraction). *)
-(* Definition do_asp (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) (ac : AM_Config) : ResultT BS DispatcherErrors :=
-  ac.(aspCb) params mpl (encodeEvRaw e) e. *)
-
 Definition do_asp (params :ASP_PARAMS) (e:RawEv) (x:Event_ID) : CVM RawEv :=
   ac <- get_CVM_amConfig  ;;
   match (ac.(aspCb) params e) with

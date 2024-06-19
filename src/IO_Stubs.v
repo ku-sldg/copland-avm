@@ -16,10 +16,6 @@ Require Import Term_Defs ConcreteEvidence ErrorStMonad_Coq
 Require Import List.
 Import ListNotations.
 
-(** * Stub to encode a sequence of BS values to a single BS value.
-      Real implmenetation will depend on the instantition of BS *)
-Definition encodeEvRaw(e:RawEv): BS.  Admitted.
-
 Definition make_JSON_Network_Request (uuid : UUID) (js : JSON) : JSON. Admitted.
 
 Definition make_JSON_FS_Location_Request (fsl : FS_Location) (js : JSON) : JSON. Admitted.
