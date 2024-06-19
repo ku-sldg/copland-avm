@@ -1630,7 +1630,34 @@ Lemma st_trace_cumul'' : forall t m k e v_full v_suffix res i ac,
 Proof.
   induction t; intros.
   - (* asp case *)
+    (* NOTE: This got really ugly, unfortunately it is quite complex *)
     wrap_ccp.
+    match goal with
+    | A : ASP_Core |- _ => destruct A
+    end; simpl in *; eauto.
+    * unfold nullEv in *; monad_unfold; ff; rewrite app_assoc; eauto.
+    * ff. 
+    * ff; rewrite app_assoc; eauto. 
+    * simpl in *; 
+      destruct (aspCb ac a (get_bits e)); simpl in *; eauto;
+      repeat find_injection; try rewrite app_assoc; eauto;
+      destruct e;
+      repeat (match goal with
+      | F : FWD |- _ => destruct f
+      | R : ResultT _ _ |- _ => destruct R
+      | R' : RawEv |- _ => destruct R'
+      end; simpl in *; eauto;
+        repeat find_injection;
+        try rewrite app_assoc; eauto;
+        try congruence);
+      try (destruct r1; simpl in *; repeat find_injection; eauto;
+        try congruence; rewrite app_assoc; eauto);
+      try (destruct n; simpl in *; repeat find_injection; 
+        try congruence; try rewrite app_assoc; eauto;
+        destruct (Nat.eqb (length r1) n); simpl in *;
+        repeat find_injection; eauto;
+        try congruence; try rewrite app_assoc; eauto
+        ).
   - (* at case *)
     wrap_ccp.
     repeat Auto.ff;
