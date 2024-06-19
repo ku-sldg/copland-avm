@@ -10,6 +10,8 @@ Definition errStr_amNonce : StringT. Admitted.
 
 Definition errStr_peel_bs_am : StringT. Admitted.
 
+Definition errStr_peel_n_am : StringT. Admitted.
+
 Definition errStr_requester_bound : StringT. Admitted.
 
 Definition errStr_disclosePolicy : StringT. Admitted.

@@ -9,7 +9,7 @@ Import ListNotations.
 Open Scope cop_ent_scope.
 
 Definition kim_meas (p:Plc) (targ: TARG_ID) :=
-  asp (ASPC ALL EXTD (asp_paramsC kim_meas_aspid kim_meas_args p targ)).
+  asp (ASPC ALL (EXTD 1) (asp_paramsC kim_meas_aspid kim_meas_args p targ)).
 
 Definition create_and_load_ak : Term :=
   asp (
@@ -38,7 +38,7 @@ Definition ssl_enc : Term :=
 
 Definition ssl_sig_parameterized (p:Plc) : Term :=
   asp (
-      ASPC ALL EXTD (asp_paramsC ssl_sig_aspid ssl_sig_args p ssl_sig_targid)).
+      ASPC ALL (EXTD 1) (asp_paramsC ssl_sig_aspid ssl_sig_args p ssl_sig_targid)).
 
 Definition client_data_phrase : Term :=
   asp (
@@ -47,6 +47,6 @@ Definition client_data_phrase : Term :=
 
 
 Definition cm_meas (p:Plc) (targ: TARG_ID) :=
-  asp (ASPC ALL EXTD (asp_paramsC cm_aspid cm_args p targ)).
+  asp (ASPC ALL (EXTD 1) (asp_paramsC cm_aspid cm_args p targ)).
 
 Close Scope cop_ent_scope.

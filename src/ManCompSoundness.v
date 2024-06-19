@@ -17,17 +17,20 @@ Import ListNotations.
 
 
 Definition lib_supports_manifest (al : AM_Library) (am : Manifest) : Prop :=
-  (forall (a : ASP_ID), In_set a am.(asps) -> exists cb, Maps.map_get al.(Local_ASPS) a = Some cb) /\
-  (forall (up : Plc), In_set up am.(uuidPlcs) -> exists b, Maps.map_get al.(Local_Plcs) up = Some b) /\
-  (forall (pkp : Plc), In_set pkp am.(pubKeyPlcs) -> exists b, Maps.map_get al.(Local_PubKeys) pkp = Some b) /\
+  (forall (a : ASP_ID), In_set a am.(asps) -> 
+    exists aloc, Maps.map_get al.(Lib_ASPS) a = Some aloc) /\
+  (forall (up : Plc), In_set up am.(uuidPlcs) -> 
+    exists b, Maps.map_get al.(Lib_Plcs) up = Some b) /\
+  (forall (pkp : Plc), In_set pkp am.(pubKeyPlcs) -> 
+    exists b, Maps.map_get al.(Lib_PubKeys) pkp = Some b) /\
   (forall (a : (Plc*ASP_ID)), In_set a am.(appraisal_asps) -> 
-    exists cb, Maps.map_get al.(Local_Appraisal_ASPS) a = Some cb).
+    exists aloc, Maps.map_get al.(Lib_Appraisal_ASPS) a = Some aloc).
 
 Ltac unfolds :=
   (* repeat monad_unfold; *)
   repeat unfold manifest_generator, manifest_compiler, generate_ASP_dispatcher, 
     generate_Plc_dispatcher, generate_PubKey_dispatcher,
-    generate_UUID_dispatcher, lib_supports_manifest, aspid_manifest_update,
+    lib_supports_manifest, aspid_manifest_update,
     sig_params, hsh_params, enc_params in *;
   simpl in *; 
   repeat (match goal with
@@ -94,12 +97,27 @@ Global Hint Resolve filter_resolver : core.
 
 Require Import Helpers_CvmSemantics.
 
+Ltac kill_map_none :=
+  match goal with
+  | H1 : In_set ?x ?l,
+    H3 : map_get (_ ?l' ?fn) ?x = None,
+    H4 : forall _ : _, In_set _ ?l -> _
+      |- _ => 
+    let H' := fresh "H'" in
+    let H'' := fresh "H'" in
+    let H''' := fresh "H'" in
+    eapply H4 in H1 as H';
+    assert (H'' : fn x = true) by ff;
+    pose proof (filter_resolver _ _ _ H' H'') as H''';
+    destruct H'''; find_rewrite; congruence
+  end.
+
 Lemma callbacks_work_asps : forall absMan amLib amConf,
   lib_supports_manifest amLib absMan ->
   manifest_compiler absMan amLib = amConf ->
   (forall x, In_set x absMan.(asps) -> 
-    forall l p t p' ev ev' res,
-      aspCb amConf (asp_paramsC x l p t) p' ev ev' = res ->
+    forall l p t ev res,
+      aspCb amConf (asp_paramsC x l p t) ev = res ->
       (exists errStr, res = errC (Runtime errStr)) \/ (exists r, res = resultC r)
   ).
 Proof.
@@ -112,29 +130,7 @@ Proof.
   repeat break_match; try congruence.
   unfold lib_supports_manifest in *; simpl in *;
   intuition.
-  pose proof (H0 _ H1).
-  assert ((fun x : ASP_ID =>
-             if in_dec_set x asps
-             then true
-             else false) x = true).
-  repeat break_match; eauto.
-
-  let HH := fresh "HH" in
-  let xx := fresh "xx" in
-  match goal with
-  | H1 : exists _, _,
-    H2 : (fun _ => _) _ = _
-  |- _ => 
-      pose proof (filter_resolver _ _ ((fun x : ASP_ID =>
-      if in_dec_set x asps
-      then true
-      else false)) H1 H2) as HH
-  end.
-  destruct HH as [xx].
-  
-  assert (Some xx = None).
-  jkjke'.
-  congruence.
+  kill_map_none.
 Qed.
 
 Lemma never_change_am_conf : forall t st res st',
@@ -151,19 +147,19 @@ Proof.
 Qed.
 
 Definition supports_am (ac1 ac2 : AM_Config) : Prop :=
-  (forall aid l targ targid p' ev ev',
+  (forall aid l targ targid ev, 
       (forall res, 
-      ac1.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = resultC res ->
-      ac2.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = resultC res)) /\
+      ac1.(aspCb) (asp_paramsC aid l targ targid) ev = resultC res ->
+      ac2.(aspCb) (asp_paramsC aid l targ targid) ev = resultC res)) /\
   (forall p, (forall res, 
       ac1.(pubKeyCb) p = resultC res ->
       ac2.(pubKeyCb) p = resultC res)) /\
   (forall p, (forall res, 
       ac1.(plcCb) p = resultC res ->
       ac2.(plcCb) p = resultC res)) /\
-  (forall aid l targ targid p' ev ev' errStr,
-      ac1.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC (Runtime errStr) ->
-      ac2.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC (Runtime errStr)) /\
+  (forall aid l targ targid ev errStr,
+      ac1.(aspCb) (asp_paramsC aid l targ targid) ev = errC (Runtime errStr) ->
+      ac2.(aspCb) (asp_paramsC aid l targ targid) ev = errC (Runtime errStr)) /\
   (forall p errStr, 
       ac1.(pubKeyCb) p = errC (Runtime errStr) ->
       ac2.(pubKeyCb) p = errC (Runtime errStr)) /\
@@ -197,27 +193,27 @@ Fixpoint am_config_support_exec (t : Term)
       | NULL => True
       | CPY => True
       | SIG => 
-          forall l targ targid p' ev ev',
+          forall l targ targid ev,
           ((exists res, 
-          ac.(aspCb) (asp_paramsC sig_aspid l targ targid) p' ev ev' = resultC res) \/ 
-          (exists errStr, ac.(aspCb) (asp_paramsC sig_aspid l targ targid) p' ev ev' = errC (Runtime errStr)))
+          ac.(aspCb) (asp_paramsC sig_aspid l targ targid) ev = resultC res) \/ 
+          (exists errStr, ac.(aspCb) (asp_paramsC sig_aspid l targ targid) ev = errC (Runtime errStr)))
       | HSH =>
-          forall l targ targid p' ev ev',
+          forall l targ targid ev,
           ((exists res, 
-          ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) p' ev ev' = resultC res) \/ 
-          (exists errStr, ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) p' ev ev' = errC (Runtime errStr)))
+          ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) ev = resultC res) \/ 
+          (exists errStr, ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) ev = errC (Runtime errStr)))
       | ENC p =>
-          (forall l targ targid p' ev ev',
+          (forall l targ targid ev,
           ((exists res, 
-          ac.(aspCb) (asp_paramsC enc_aspid l targ targid) p' ev ev' = resultC res) \/ 
-          (exists errStr, ac.(aspCb) (asp_paramsC enc_aspid l targ targid) p' ev ev' = errC (Runtime errStr)))) /\
+          ac.(aspCb) (asp_paramsC enc_aspid l targ targid) ev = resultC res) \/ 
+          (exists errStr, ac.(aspCb) (asp_paramsC enc_aspid l targ targid) ev = errC (Runtime errStr)))) /\
           ((exists res, ac.(pubKeyCb) p = resultC res) \/ 
           (exists errStr, ac.(pubKeyCb) p = errC (Runtime errStr)))
       | ASPC _ _ (asp_paramsC aspid _ _ _) =>
-          (forall l targ targid p' ev ev',
+          (forall l targ targid ev,
           ((exists res, 
-          ac.(aspCb) (asp_paramsC aspid l targ targid) p' ev ev' = resultC res) \/ 
-          (exists errStr, ac.(aspCb) (asp_paramsC aspid l targ targid) p' ev ev' = errC (Runtime errStr))))
+          ac.(aspCb) (asp_paramsC aspid l targ targid) ev = resultC res) \/ 
+          (exists errStr, ac.(aspCb) (asp_paramsC aspid l targ targid) ev = errC (Runtime errStr))))
       end
   | att p' t' =>
       ((exists res, ac.(plcCb) p' = resultC res) \/ 
@@ -271,25 +267,25 @@ Proof.
 
     match goal with
     | H1 : forall _, _,
-      H2 : aspCb _ (asp_paramsC ?a ?l ?targ ?tid) ?p' ?ev ?ev' = _,
-      H3 : context[ aspCb _ _ _ _ _ = errC (Runtime _) -> _],
-      H4 : context[ aspCb _ _ _ _ _ = resultC _ -> _]
+      H2 : aspCb _ (asp_paramsC ?a ?l ?targ ?tid) ?ev = _,
+      H3 : context[ aspCb _ _ _ = errC (Runtime _) -> _],
+      H4 : context[ aspCb _ _ _ = resultC _ -> _]
       |- _ =>
         let H := fresh "H" in
         let H' := fresh "Hx" in
         let H'' := fresh "Hx" in
         let res := fresh "res" in
-        destruct (H1 l targ tid p' ev ev') as [H | H]
+        destruct (H1 l targ tid ev) as [H | H]
         ; 
         [
           (* result side *)
           destruct H as [res H''];
-          pose proof (H4 a l targ tid p' ev ev') as H';
+          pose proof (H4 a l targ tid ev) as H';
           erewrite H' in *; eauto; congruence
           |
           (* err side *)
           destruct H as [errStr H''];
-          pose proof (H3 a l targ tid p' ev ev' errStr) as H';
+          pose proof (H3 a l targ tid ev errStr) as H';
           intuition; find_rewrite; find_injection; eauto
         ]
     end.
@@ -494,9 +490,9 @@ Qed.
 
 Definition manifest_support_am_config (m : Manifest) (ac : AM_Config) : Prop :=
   (forall a, In_set a (m.(asps)) -> 
-    forall l targ targid p' ev ev',
-    (exists res, ac.(aspCb) (asp_paramsC a l targ targid) p' ev ev' = resultC res) \/
-    (exists errStr, ac.(aspCb) (asp_paramsC a l targ targid) p' ev ev' = errC (Runtime errStr))) /\
+    forall l targ targid ev,
+    (exists res, ac.(aspCb) (asp_paramsC a l targ targid) ev = resultC res) \/
+    (exists errStr, ac.(aspCb) (asp_paramsC a l targ targid) ev = errC (Runtime errStr))) /\
   (forall p, In_set p (m.(uuidPlcs)) ->
     (exists res, ac.(plcCb) p = resultC res) \/
     (exists errStr, ac.(plcCb) p = errC (Runtime errStr))) /\
@@ -505,9 +501,9 @@ Definition manifest_support_am_config (m : Manifest) (ac : AM_Config) : Prop :=
     (exists errStr, ac.(pubKeyCb) p = errC (Runtime errStr))) /\
 
     (forall p a, In_set (p,a) (m.(appraisal_asps)) -> 
-    forall l targ targid ev ev',
-    (exists res, ac.(app_aspCb) (asp_paramsC a l targ targid) p ev ev' = resultC res) \/
-    (exists errStr, ac.(app_aspCb) (asp_paramsC a l targ targid) p ev ev' = errC (Runtime errStr))).
+    forall l targid ev,
+    (exists res, ac.(app_aspCb) (asp_paramsC a l p targid) ev = resultC res) \/
+    (exists errStr, ac.(app_aspCb) (asp_paramsC a l p targid) ev = errC (Runtime errStr))).
 
 
 Theorem manifest_support_am_config_compiler : forall absMan amLib,

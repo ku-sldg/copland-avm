@@ -103,9 +103,6 @@ Fixpoint et_size (e:Evidence): nat :=
   | ss e1 e2 => (et_size e1) + (et_size e2)
   end.
 
-(** Raw Evidence representaiton:  a list of binary (BS) values. *)
-Definition RawEv := list BS.
-
 (**  Type-Tagged Raw Evidence representation.  Used as the internal evidence
      type managed by the CVM to track evidence contents and its structure. *)
 Inductive EvC :=

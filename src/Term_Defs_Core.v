@@ -235,11 +235,13 @@ Definition test2 := <<core>{ __ -> {} }>.
 Example test2ex : test2 = (lseqc (aspc CPYC) (aspc NULLC)). reflexivity. Defined.
 Example test3 : <<core>{ CLR -> {}}> = (lseqc (aspc CLEAR) (aspc NULLC)). reflexivity. Defined.
 
+(** Raw Evidence representaiton:  a list of binary (BS) values. *)
+Definition RawEv := list BS.
 
 Inductive AppResultC :=
 | mtc_app: AppResultC
 | nnc_app: N_ID -> BS -> AppResultC
-| ggc_app: Plc -> ASP_PARAMS -> BS -> AppResultC -> AppResultC
+| ggc_app: Plc -> ASP_PARAMS -> RawEv -> AppResultC -> AppResultC
 | hhc_app: Plc -> ASP_PARAMS -> BS -> AppResultC -> (* Evidence -> *) AppResultC
 | eec_app: Plc -> ASP_PARAMS -> BS -> AppResultC ->(* Evidence -> *) AppResultC
 | ssc_app: AppResultC -> AppResultC -> AppResultC.
@@ -249,7 +251,7 @@ Fixpoint appresultc_size (res:AppResultC) : nat :=
   match res with
   | mtc_app => 0
   | nnc_app _ _ => 1
-  | ggc_app _ _ _ res' => Nat.add 1 (appresultc_size res')
+  | ggc_app _ _ rawEv res' => Nat.add (length rawEv) (appresultc_size res')
   | hhc_app _ _ _ res' => Nat.add 1 (appresultc_size res')
   | eec_app _ _ _ res' => Nat.add 1 (appresultc_size res')
   | ssc_app res1 res2 => Nat.add (appresultc_size res1) (appresultc_size res2)
