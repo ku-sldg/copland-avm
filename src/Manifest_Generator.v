@@ -245,9 +245,9 @@ Fixpoint manifest_generator_app'' (et:Evidence) (m:Manifest) : Manifest :=
     match fwd with 
     | (EXTD n) => 
       match ps with 
-      | asp_paramsC a _ _ _ =>
+      | asp_paramsC a _ targ _ =>
           manifest_generator_app'' e' 
-            (app_aspid_manifest_update p a m)
+            (app_aspid_manifest_update targ a m)
       end 
     | ENCR => 
       match ps with 

@@ -75,25 +75,25 @@ Proof.
   Qed.
 
 Definition aspid_in_amlib_bool (al:AM_Library) (i:ASP_ID)  : bool := 
-  match (Maps.map_get al.(Local_ASPS) i) with 
+  match (Maps.map_get al.(Lib_ASPS) i) with 
   | Some v => true 
   | None => false 
   end.
 
 Definition uuid_plc_in_amlib_bool (al:AM_Library) (p:Plc)  : bool := 
-  match (Maps.map_get al.(Local_Plcs) p) with 
+  match (Maps.map_get al.(Lib_Plcs) p) with 
   | Some v => true 
   | None => false 
   end.
 
 Definition pubkey_plc_in_amlib_bool (al:AM_Library) (p:Plc)  : bool := 
-  match (Maps.map_get al.(Local_PubKeys) p) with 
+  match (Maps.map_get al.(Lib_PubKeys) p) with 
   | Some v => true 
   | None => false 
   end.
 
 Definition appraisal_aspid_in_amlib_bool (al:AM_Library) (pr:Plc*ASP_ID)  : bool := 
-  match (Maps.map_get al.(Local_Appraisal_ASPS) pr) with 
+  match (Maps.map_get al.(Lib_Appraisal_ASPS) pr) with 
   | Some v => true 
   | None => false 
   end.
