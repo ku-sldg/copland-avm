@@ -17,7 +17,7 @@ Import ListNotations.
 Definition extd_bundle (sig: RawEv) (e:EvC) (p:Plc) (n : nat) (ps:ASP_PARAMS): ResultT EvC StringT :=
   match e with
   | evc bits et => 
-      if (Nat.eqb (length sig) n)
+      if (eqb (length sig) n)
       then resultC (evc (sig ++ bits) (uu p (EXTD n) ps et))
       else errC errStr_raw_evidence_too_long
   end.
