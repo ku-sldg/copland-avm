@@ -5,8 +5,8 @@ Require Import List ResultT.
 Import ListNotations.
 Open Scope string_scope.
 
-Definition handle_AM_request (s:StringT) (ac : AM_Config) (al:AM_Library) (nonceVal:BS) : StringT :=
+Definition handle_AM_request (s:StringT) (ac : AM_Config) (nonceVal:BS) : StringT :=
   match stringT_to_JSON s with
   | errC msg => JSON_to_stringT (ErrorResponseJSON msg)
-  | resultC js => JSON_to_stringT (handle_AM_request_JSON js ac al nonceVal)
+  | resultC js => JSON_to_stringT (handle_AM_request_JSON js ac nonceVal)
   end.

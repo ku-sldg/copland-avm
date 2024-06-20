@@ -51,7 +51,7 @@ Definition do_appraisal_session (appreq:ProtocolAppraiseRequest) (ac:AM_Config) 
   let appres := run_am_app_comp_init comp my_amst mtc_app true in
     mkPAResp true appres.
 
-Definition handle_AM_request_JSON (js : JSON) (ac : AM_Config) (al:AM_Library) (nonceVal:BS) : JSON :=
+Definition handle_AM_request_JSON (js : JSON) (ac : AM_Config) (nonceVal:BS) : JSON :=
   match JSON_to_AM_Protocol_Request js with 
   | errC msg => ErrorResponseJSON msg
   | resultC (Protocol_Run_Request r) => 
