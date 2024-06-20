@@ -33,10 +33,6 @@ Record cvm_st : Type := mk_st
                            st_AM_config : AM_Config ;
                            }.
 
-Definition empty_vmst : cvm_st := mk_st (evc [] mt) [] 0 empty_am_config.
-
-
-
 Inductive CVM_Error : Type := 
 | at_error_static : Term -> Plc -> EvC -> CVM_Error
 | at_error_dynamic : Term -> UUID -> EvC -> CVM_Error

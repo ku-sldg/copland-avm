@@ -47,3 +47,10 @@ Definition errStr_json_parsing : StringT. Admitted.
 Definition errStr_invalid_request_type : StringT. Admitted.
 
 Definition errStr_negotiation_not_implemented : StringT. Admitted.
+
+(* Run CVM Error Strings *)
+Definition errStr_run_cvm_at_error_dynamic : StringT. Admitted.
+
+Definition errStr_run_cvm_at_error_static : StringT. Admitted.
+
+Definition errStr_run_cvm_dispatch_unavailable : StringT. Admitted.
