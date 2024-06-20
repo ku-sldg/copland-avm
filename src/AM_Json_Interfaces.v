@@ -14,7 +14,7 @@ Definition am_check_auth_tok (t:Term) (fromPl:Plc) (authTok:ReqAuthTok)
      end) ;;
     ret appres
   end.
-
+(* 
 Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) 
                                  (authTok:ReqAuthTok) (init_ev:RawEv) (ac : AM_Config) (al:AM_Library) : AM RawEv :=
   let test_print := print_auth_tok authTok in
@@ -35,21 +35,20 @@ Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc)
     end *)
       
   | false => am_failm (am_error errStr_app_auth_tok)
-  end.
+  end. *)
 
-(* Definition run_am_server_auth_tok_req (t:Term) (fromPlc:Plc) 
-            (authTok:ReqAuthTok) (init_ev:RawEv) (ac : AM_Config) (al:AM_Library) : RawEv :=
-  run_am_app_comp (am_serve_auth_tok_req t fromPlc authTok init_ev ac al) [] true. *)
-
-Definition do_appraisal_session (appreq:ProtocolAppraiseRequest) (ac:AM_Config) (nonceVal:BS): ProtocolAppraiseResponse :=
+Definition do_appraisal_session (appreq:ProtocolAppraiseRequest) (ac:AM_Config) (nonceVal:BS): ResultT ProtocolAppraiseResponse StringT :=
   let '(mkPAReq t p et ev) := appreq in
   let expected_et := eval t p et in 
-  let comp := gen_appraise_AM expected_et ev in 
+  let app_am := gen_appraise_AM expected_et ev in 
   let init_noncemap := [(O, nonceVal)] in
   let init_nonceid := (S O) in
   let my_amst := (mkAM_St init_noncemap init_nonceid ac) in
-  let appres := run_am_app_comp_init comp my_amst mtc_app true in
-    mkPAResp true appres.
+  match run_am_app_comp_init app_am my_amst with
+  | errC e => errC e
+  | resultC appres =>
+      resultC (mkPAResp true appres)
+  end.
 
 Definition handle_AM_request_JSON (js : JSON) (ac : AM_Config) (nonceVal:BS) : JSON :=
   match JSON_to_AM_Protocol_Request js with 
@@ -67,11 +66,19 @@ Definition handle_AM_request_JSON (js : JSON) (ac : AM_Config) (nonceVal:BS) : J
     | false => ErrorResponseJSON "Appraisal failed"
     end *)
     let cvm_resp := (run_cvm_rawEv cop_term ev ac) in
-      ProtocolRunResponse_to_JSON (mkPRResp true cvm_resp)
+    match cvm_resp with
+    | errC e => ErrorResponseJSON e
+    | resultC res_ev => 
+        ProtocolRunResponse_to_JSON (mkPRResp true res_ev)
+    end
 
   | resultC (Protocol_Appraise_Request appreq) => 
     let app_resp := (do_appraisal_session appreq ac nonceVal) in 
+    match app_resp with
+    | errC e => ErrorResponseJSON e
+    | resultC app_resp =>
       ProtocolAppraiseResponse_to_JSON app_resp
+    end
 
   | resultC (Protocol_Negotiate_Request r) => 
     (* TODO: Fill this in when negotiation is implemented *)

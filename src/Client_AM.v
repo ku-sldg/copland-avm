@@ -2,7 +2,7 @@
       end-to-end Copland Attestation + Appraisal protocols.  *)
 Require Import String.
 
-Require Import Term Example_Phrases_Demo Cvm_Run Manifest EqClass StringT.
+Require Import Term Example_Phrases_Demo Cvm_Run Manifest EqClass StringT Cvm_St.
 
 Require Import Impl_appraisal Appraisal_IO_Stubs IO_Stubs AM_Monad ErrorStMonad_Coq.
 
@@ -182,7 +182,10 @@ Admitted.
 
 Definition run_cvm_local_am (t:Term) (ls:RawEv) : AM RawEv := 
   st <- get ;; 
-  ret (run_cvm_rawEv t ls (amConfig st)).
+  match (run_cvm_w_config t ls (amConfig st)) with
+  | resultC cvm_st => ret (get_bits (st_ev cvm_st))
+  | errC e => am_failm (cvm_error e)
+  end.
 
 Definition gen_authEvC_if_some_local (ot:option Term) (myPlc:Plc) (init_evc:EvC) (absMan:Manifest) (amLib:AM_Library) : AM EvC :=
   match ot with
