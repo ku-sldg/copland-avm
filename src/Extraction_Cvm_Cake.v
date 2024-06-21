@@ -65,7 +65,7 @@ Definition term_list : list Term :=
 Separate Extraction 
 		term_list ssl_sig_parameterized kim_meas cm_meas
 		run_cvm manifest_compiler  
-        empty_am_result run_am_app_comp run_am_app_comp_init
+        empty_am_result 
 		handle_AM_request am_client_gen_local
 		lib_omits_manifest manifest_none_omitted 
 		end_to_end_mangen_final.
