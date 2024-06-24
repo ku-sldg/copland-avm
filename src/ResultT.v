@@ -28,3 +28,15 @@ Notation "' pat <- c1 ;; c2" :=
     (at level 100, pat pattern, c1 at next level, right associativity).
 
 End ResultNotation.
+
+Import ResultNotation.
+
+Fixpoint result_map {A B E : Type} (f : A -> ResultT B E) (l : list A) 
+    : ResultT (list B) E :=
+  match l with
+  | nil => resultC nil
+  | (cons h t) =>
+      v <- f h;;
+      vs <- result_map f t;;
+      resultC (cons v vs)
+  end.

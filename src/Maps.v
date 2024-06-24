@@ -6,7 +6,7 @@ Authors:  Adam Petz, ampetz@ku.edu
           Will Thomas, 30wthomas@ku.edu
  *)
 
-Require Import EqClass.
+Require Import EqClass AbstractedTypes.
 
 Require Import List.
 Import ListNotations.
@@ -88,6 +88,32 @@ Proof.
   - destruct (eqb a0 x) eqn:E;
     simpl in *; rewrite E; eauto.
 Qed.
+
+Fixpoint map_map {A B C : Type} `{HA : EqClass A} (f : B -> C) (m : MapC A B) : MapC A C :=
+  match m with
+  | [] => []
+  | (k, v) :: m' => (k, f v) :: (map_map f m')
+  end.
+
+Fixpoint id_map_to_string_map {B : Type} (m : MapC ID_Type B) : MapC StringT B :=
+  match m with
+  | [] => []
+  | (k, v) :: m' => (ID_Type_to_stringT k, v) :: (id_map_to_string_map m')
+  end.
+
+Fixpoint string_map_to_id_map {B : Type} (m : MapC StringT B) : ResultT (MapC ID_Type B) StringT :=
+  match m with
+  | [] => resultC []
+  | (k, v) :: m' => 
+    match (stringT_to_ID_Type k) with
+    | errC e => errC e
+    | resultC k' => 
+      match (string_map_to_id_map m') with
+      | errC e => errC e
+      | resultC m'' => resultC ((k', v) :: m'')
+      end
+    end
+  end.
 
 Lemma mapC_get_distinct_keys{A B:Type} `{H : EqClass A} : 
   forall m (k1 k2:A) (v1 v2:B),
@@ -283,12 +309,10 @@ Proof.
   - destruct a; simpl; rewrite IHm; reflexivity.
 Qed.
 
-Theorem mapD_get_works : forall m x v,
+Theorem mapD_get_works : forall {A B : Type} `{HA : EqClass A} `{HB : EqClass B} (m : MapD A B) x v,
   mapD_get_key (mapD_set m x v) v = Some x.
 Proof.
-  intros.
-  induction x; simpl;
-  rewrite Nat.eqb_refl; reflexivity.
+  induction m; simpl in *; intuition; destEq v v; intuition.
 Qed.
 
 (*

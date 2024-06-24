@@ -6,7 +6,7 @@
 *)
 
 Require Import AbstractedTypes Term_Defs_Core Maps
-  Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq.
+  Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq JSON.
 
 Require Import Example_Phrases_Admits.
 
@@ -18,6 +18,32 @@ Import ListNotations.
 Inductive ASP_Locator :=
 | Local_ASP : FS_Location -> ASP_Locator
 | Remote_ASP : UUID -> ASP_Locator.
+
+Global Instance jsonifiable_ASP_Locator : Jsonifiable ASP_Locator :=
+  {
+    to_JSON := (fun v => 
+                  match v with
+                  | Local_ASP loc => JSON_Object [(JSON_Local_ASP, to_JSON loc)]
+                  | Remote_ASP uuid => JSON_Object [(JSON_Remote_ASP, to_JSON uuid)]
+                  end);
+    from_JSON := (fun js => 
+                    match (JSON_get_JSON JSON_Local_ASP js) with
+                    | resultC loc => 
+                      match (from_JSON loc) with
+                      | resultC loc' => resultC (Local_ASP loc')
+                      | errC e => errC e
+                      end
+                    | errC e => 
+                      match (JSON_get_JSON JSON_Remote_ASP js) with
+                      | resultC uuid =>
+                        match (from_JSON uuid) with
+                        | resultC uuid' => resultC (Remote_ASP uuid')
+                        | errC e => errC e
+                        end
+                      | errC e => errC e
+                      end
+                    end)
+  }.
 
 Inductive DispatcherErrors : Type :=
 | Unavailable   : DispatcherErrors
@@ -78,8 +104,8 @@ Definition empty_PolicyT : PolicyT := [].
     (* Local Mappings *)
     Lib_ASPS            : MapC ASP_ID ASP_Locator ;
     Lib_Appraisal_ASPS  : MapC (Plc * ASP_ID) ASP_Locator ;
-    Lib_Plcs            : MapD Plc UUID ;
-    Lib_PubKeys         : MapD Plc PublicKey ;
+    Lib_Plcs            : MapC Plc UUID ;
+    Lib_PubKeys         : MapC Plc PublicKey ;
   }.
 
 Record AM_Config : Type := 

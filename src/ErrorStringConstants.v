@@ -54,3 +54,14 @@ Definition errStr_run_cvm_at_error_dynamic : StringT. Admitted.
 Definition errStr_run_cvm_at_error_static : StringT. Admitted.
 
 Definition errStr_run_cvm_dispatch_unavailable : StringT. Admitted.
+
+(* JSON Converter Strings *)
+Definition errStr_json_to_manifest_set : StringT. Admitted.
+
+Definition errStr_json_to_map : StringT. Admitted.
+
+Definition errStr_json_to_id_type : StringT. Admitted.
+
+Definition errStr_json_to_manifest : StringT. Admitted.
+
+Definition errStr_json_to_ASP_Locator : StringT. Admitted.

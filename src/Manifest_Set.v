@@ -2,8 +2,8 @@
     This datatype is used for "collection" manifest fields, and should act like a 
     traditional mathematical set (e.g. cumulative, non-duplicating, ...) *)
 
-Require Import AbstractedTypes Term_Defs_Core Maps String
-  Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq.
+Require Import AbstractedTypes Term_Defs_Core Maps 
+  Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq ErrorStringConstants JSON.
 
 Require Import Example_Phrases_Admits.
 
@@ -11,6 +11,21 @@ Require Import List.
 Import ListNotations.
 
 Definition manifest_set (A : Type) := list A.
+
+Definition manifest_set_to_JSON {A : Type} `{Jsonifiable A} (m : manifest_set A) : JSON :=
+  JSON_Array (map to_JSON m).
+
+Definition JSON_to_manifest_set {A : Type} `{Jsonifiable A} (js : JSON) : ResultT (manifest_set A) StringT :=
+  match js with
+  | JSON_Array m => result_map from_JSON m
+  | _ => errC errStr_json_to_manifest_set
+  end.
+
+Global Instance jsonifiable_manifest_set (A : Type) `{Jsonifiable A} : Jsonifiable (manifest_set A) :=
+  {|
+    to_JSON := manifest_set_to_JSON;
+    from_JSON := JSON_to_manifest_set
+  |}.
 
 Definition manifest_set_empty {A : Type} : manifest_set A := nil.
 
