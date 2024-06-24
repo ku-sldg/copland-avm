@@ -26,6 +26,21 @@ Global Instance jsonifiable_string : Jsonifiable StringT :=
     (* canonical_serialization := canonical_serialization_stringT *)
   }.
 
+(* The Pair JSONIFIABLE Class *)
+Global Instance jsonifiable_pair (A B : Type) `{Jsonifiable A, Jsonifiable B} : Jsonifiable (A * B) :=
+  {
+    to_JSON := (fun '(a, b) => JSON_Array (cons (to_JSON a) (cons (to_JSON b) nil)));
+    from_JSON := (fun js => 
+                    match js with
+                    | JSON_Array (cons a (cons b nil)) =>
+                        match from_JSON a, from_JSON b with
+                        | resultC a', resultC b' => resultC (a', b')
+                        | errC e, _ => errC e
+                        | _, errC e => errC e
+                        end
+                    | _ => errC errStr_json_to_pair
+                    end)
+  }.
 (* Lemma canonical_serialization_id_type : forall (js : JSON) (a : ID_Type), 
   JSON_String (ID_Type_to_stringT a) = js <-> (match js with | JSON_String s => stringT_to_ID_Type s | _ => errC errStr_json_to_id_type end = @resultC _ StringT a).
 Proof.
