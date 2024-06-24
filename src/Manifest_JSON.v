@@ -51,3 +51,25 @@ Definition AM_Lib_to_JSON (am : AM_Library) : JSON :=
       (AM_LIB_PUBKEYS, to_JSON lib_pubkeys)
     ].
 
+Definition JSON_to_AM_Lib (js : JSON) : ResultT AM_Library StringT :=
+  match js with
+  | JSON_Object m =>
+      temp_CLONE_UUID <- JSON_get_stringT AM_CLONE_UUID js;;
+      temp_LIB_ASPS <- JSON_get_JSON AM_LIB_ASPS js;;
+      temp_LIB_APPR_ASPS <- JSON_get_JSON AM_LIB_APPR_ASPS js;;
+      temp_LIB_PLCS <- JSON_get_JSON AM_LIB_PLCS js;;
+      temp_LIB_PUBKEYS <- JSON_get_JSON AM_LIB_PUBKEYS js;;
+      CLONE_UUID <- stringT_to_UUID temp_CLONE_UUID;;
+      LIB_ASPS <- from_JSON temp_LIB_ASPS;;
+      LIB_APPR_ASPS <- from_JSON temp_LIB_APPR_ASPS;;
+      LIB_PLCS <- from_JSON temp_LIB_PLCS;;
+      LIB_PUBKEYS <- from_JSON temp_LIB_PUBKEYS;;
+      resultC (Build_AM_Library CLONE_UUID LIB_ASPS LIB_APPR_ASPS LIB_PLCS LIB_PUBKEYS)
+
+  | _ => errC errStr_json_to_am_lib
+  end.
+
+Global Instance Jsonifiable_AM_Library : Jsonifiable AM_Library :=
+  { to_JSON := AM_Lib_to_JSON;
+    from_JSON := JSON_to_AM_Lib
+  }.

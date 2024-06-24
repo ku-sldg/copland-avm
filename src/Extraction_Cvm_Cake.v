@@ -66,6 +66,7 @@ Separate Extraction
 		term_list ssl_sig_parameterized kim_meas cm_meas
 		run_cvm manifest_compiler  
         empty_am_result 
+    Jsonifiable_AM_Library Jsonifiable_Manifest
 		handle_AM_request am_client_gen_local
 		lib_omits_manifest manifest_none_omitted 
 		end_to_end_mangen_final.

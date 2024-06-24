@@ -6,7 +6,8 @@
 *)
 
 Require Import AbstractedTypes Term_Defs_Core Maps
-  Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq JSON.
+  Term_Defs EqClass ErrorStMonad_Coq JSON.
+Require Export Manifest_Admits.
 
 Require Import Example_Phrases_Admits.
 

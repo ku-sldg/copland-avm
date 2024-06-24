@@ -1,6 +1,6 @@
 (*  Admitted types, definitions, and typeclass instances related to Manifests *)
 
-Require Import EqClass Term_Defs_Core JSON.
+Require Import EqClass Term_Defs_Core JSON StringT.
 
 Require Import List.
 Import ListNotations.
@@ -17,6 +17,8 @@ Global Instance jsonifiable_FS_Location : Jsonifiable FS_Location. Admitted.
 Definition empty_FS_Location : FS_Location. Admitted.
 
 Definition UUID : Type. Admitted.
+
+Definition stringT_to_UUID (s : StringT) : ResultT UUID StringT. Admitted.
 
 Global Instance jsonifiable_uuid : Jsonifiable UUID. Admitted.
 

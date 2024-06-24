@@ -65,3 +65,5 @@ Definition errStr_json_to_id_type : StringT. Admitted.
 Definition errStr_json_to_manifest : StringT. Admitted.
 
 Definition errStr_json_to_ASP_Locator : StringT. Admitted.
+
+Definition errStr_json_to_am_lib : StringT. Admitted.
