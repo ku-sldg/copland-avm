@@ -19,24 +19,10 @@ Require Import Manifest_Generator_Union Manifest_JSON.
 Require Import List.
 Import ListNotations.
 
+Require Import ExtrCakeMLNativeString.
+
 Extraction Language CakeML. (* OCaml. *) 
 
-(*
-Unset Extraction Optimize.
-*)
-
-Extract Inductive nat => "nat" ["O" "S"].
-Extract Inductive bool => "bool" ["True" "False"].
-Extract Inductive option => "option" ["Some" "None"].
-
-Extract Inductive unit => unit [ "()" ].
-Extract Inductive list => list [ "[]" "( :: )" ].
-(*Extract Inductive prod => "( * )" [ "" ]. *)
-
-(*
-Extraction Implicit do_asp [3 4].
-Extraction Implicit do_asp' [3 4]. 
-*)
 (* TODO: At some point this might be a good approach to take
 Extract Constant stringT_to_ID_Type => "fun x => x".
 Extract Constant stringT_to_ID_Type => "fun x => x". *)
