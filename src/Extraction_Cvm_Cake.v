@@ -59,14 +59,10 @@ Extract Constant get_ev => "bind get (fn st => ret (st_ev st)) : cvm_st -> coq_E
 Definition term_list : list Term := 
 	[cert_style; cert_cache_p1; cert_cache_p0; 
 	 par_mut_p0; par_mut_p1; layered_bg_strong; 
-	 example_phrase; example_phrase_p2_appraise; 
-	 inline_auth_phrase].
+	 example_phrase_p2_appraise].
 
 Separate Extraction 
 		term_list ssl_sig_parameterized kim_meas cm_meas
-		run_cvm manifest_compiler  
-        empty_am_result 
+		run_cvm manifest_compiler  empty_am_result 
     Jsonifiable_AM_Library Jsonifiable_Manifest
-		handle_AM_request am_client_gen_local
-		lib_omits_manifest manifest_none_omitted 
-		end_to_end_mangen_final.
+		handle_AM_request end_to_end_mangen_final.

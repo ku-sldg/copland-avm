@@ -1,9 +1,5 @@
 Require Import StringT JSON.
 
-(* The Pair JSONIFIABLE Class *)
-Global Instance jsonifiable_pair (A B : Type) `{Jsonifiable A, Jsonifiable B} : Jsonifiable (A * B).
-Admitted.
-
 (* Manifest Admits *)
 Definition MAN_ABS_PLC : StringT. Admitted.
 
