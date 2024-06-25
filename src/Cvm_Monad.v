@@ -105,7 +105,7 @@ Definition fwd_asp (fwd:FWD) (bs:BS) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
       Extracted code should not need to use the Plc or Event_ID parameters 
       (those can be erased upon extraction). *)
 Definition do_asp (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) (ac : AM_Config) : ResultT BS DispatcherErrors :=
-  (ac.(aspCb) params mpl (encodeEvRaw e) e).
+  (ac.(aspCb) params mpl e).
 
 
 (*

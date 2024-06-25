@@ -29,8 +29,8 @@ Import ListNotations.
     *)
 
   Definition generate_ASP_dispatcher' (al : AM_Library) (am : Manifest) 
-              (ps : ASP_PARAMS) (p:Plc)
-              (bs:BS) (rawEv : RawEv) : ResultT BS DispatcherErrors :=
+              (ps : ASP_PARAMS) (p:Plc) 
+              (rawEv : RawEv) : ResultT BS DispatcherErrors :=
         let (aspid, _, _, _) := ps in
         let abstract_asps := am.(asps) in
         let local_asps_map := al.(Local_ASPS) in
@@ -39,7 +39,7 @@ Import ListNotations.
           (* check is the ASPID is a local, with a callback *)
           match (map_get shrunk_map aspid) with
           | Some uuid => 
-            match (invoke_asp_uuid uuid ps bs rawEv) with
+            match (invoke_asp_uuid uuid ps rawEv) with
             | resultC r => resultC r
             | errC (messageLift msg) => 
                 errC (Runtime msg)
@@ -54,7 +54,7 @@ Import ListNotations.
 
   Definition generate_appraisal_ASP_dispatcher' (al : AM_Library) (am : Manifest) 
               (ps : ASP_PARAMS) (p : Plc) 
-              (bs : BS) (rawEv : RawEv) : ResultT BS DispatcherErrors :=
+              (rawEv : RawEv) : ResultT BS DispatcherErrors :=
     let (aspid, _, _, _) := ps in
     let abstract_asps := am.(appraisal_asps) in
     let local_asps_map := al.(Local_Appraisal_ASPS) in
@@ -63,7 +63,7 @@ Import ListNotations.
       (* check is the ASPID is a local, with a callback *)
       match (map_get shrunk_map (p,aspid)) with
         | Some uuid => 
-          match (invoke_asp_uuid uuid ps bs rawEv) with
+          match (invoke_asp_uuid uuid ps rawEv) with
           | resultC r => resultC r
           | errC (messageLift msg) => errC (Runtime msg)
           end

@@ -45,7 +45,7 @@ Fixpoint gen_appraise_AM (et:Evidence) (ls:RawEv) : AM AppResultC :=
       v <- peel_bs_am ls ;;
       match v with
         (bs, ls') => 
-        v <- check_asp_EXTD' params p bs ls' ;;
+        v <- check_asp_EXTD' params p ls ;;
         rest <- gen_appraise_AM et' ls' ;;
         ret (ggc_app p params v rest)
       end

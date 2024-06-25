@@ -17,13 +17,13 @@ Set Nested Proofs Allowed.
 
 
 Definition supports_am_app (ac1 ac2 : AM_Config) : Prop :=
-  (forall aid l targ targid p' ev ev',
+  (forall aid l targ targid p' ev,
       (forall res, 
-      ac1.(app_aspCb) (asp_paramsC aid l targ targid) p' ev ev' = resultC res ->
-      ac2.(app_aspCb) (asp_paramsC aid l targ targid) p' ev ev' = resultC res)) /\
-  (forall aid l targ targid p' ev ev' errStr,
-      ac1.(app_aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC (Runtime errStr) ->
-      ac2.(app_aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC (Runtime errStr)) /\ 
+      ac1.(app_aspCb) (asp_paramsC aid l targ targid) p' ev = resultC res ->
+      ac2.(app_aspCb) (asp_paramsC aid l targ targid) p' ev = resultC res)) /\
+  (forall aid l targ targid p' ev errStr,
+      ac1.(app_aspCb) (asp_paramsC aid l targ targid) p' ev = errC (Runtime errStr) ->
+      ac2.(app_aspCb) (asp_paramsC aid l targ targid) p' ev = errC (Runtime errStr)) /\ 
   (forall p,
       (forall res, 
       ac1.(pubKeyCb) p = resultC res ->
@@ -65,10 +65,10 @@ Fixpoint am_config_support_exec_app (e : Evidence) (ac : AM_Config) : Prop :=
                 am_config_support_exec_app e' ac
             end
         | EXTD => 
-            forall bs ls, 
+            forall ls, 
             (
-            ( exists res, ac.(app_aspCb) ps p bs ls = resultC res) \/
-              (exists errStr, ac.(app_aspCb) ps p bs ls = errC (Runtime errStr))) /\ 
+            ( exists res, ac.(app_aspCb) ps p ls = resultC res) \/
+              (exists errStr, ac.(app_aspCb) ps p ls = errC (Runtime errStr))) /\ 
 
           (
             match ps with
@@ -591,7 +591,7 @@ Proof.
       ff.
       unfold check_asp_EXTD in *.
 
-      specialize H with (bs:= b) (ls:=r0).
+      specialize H with (ls:=ls).
       destruct_conjs.
       destruct H.
 
@@ -600,7 +600,7 @@ Proof.
         unfold supports_am_app in *.
         destruct_conjs.
         destruct a1.
-        specialize H5 with (aid:=sig_aspid) (l:=l) (targ:=p0) (targid:=t) (p':=p) (ev:=b) (ev':=r0).
+        specialize H1 with (aid:=sig_aspid) (l:=l) (targ:=p0) (targid:=t) (p':=p) (ev:=ls) (res:=H).
         find_apply_hyp_hyp.
         find_rewrite.
         ff.
@@ -610,7 +610,7 @@ Proof.
       unfold supports_am_app in *.
       destruct_conjs.
       destruct a.
-      specialize H5 with (aid:=sig_aspid) (l:=l) (targ:=p0) (targid:=t) (p':=p) (ev:=b) (ev':=r0).
+      specialize H1 with (aid:=sig_aspid) (l:=l) (targ:=p0) (targid:=t) (p':=p) (ev:=ls) (res:=b).
       find_apply_hyp_hyp.
       find_rewrite.
       ff.
@@ -635,7 +635,7 @@ Proof.
       }
       subst.
 
-      specialize H with (bs:=b) (ls:=r0).
+      specialize H with (ls:=ls).
       destruct_conjs.
       edestruct IHet.
       eassumption.
@@ -707,7 +707,7 @@ Proof.
     ff.
     unfold check_asp_EXTD in *.
 
-    specialize H with (bs:= b) (ls:=r0).
+    specialize H with  (ls:=ls).
     destruct_conjs.
     destruct H; destruct_conjs.
 
@@ -716,7 +716,7 @@ Proof.
       unfold supports_am_app in *.
       destruct_conjs.
       destruct a1.
-      specialize H6 with (aid:=sig_aspid) (l:=l) (targ:=p0) (targid:=t) (p':=p) (ev:=b) (ev':=r0).
+      specialize H6 with (aid:=sig_aspid) (l:=l) (targ:=p0) (targid:=t) (p':=p) (ev:=ls).
       find_apply_hyp_hyp.
       find_rewrite.
       ff.
@@ -726,7 +726,7 @@ Proof.
     unfold supports_am_app in *.
     destruct_conjs.
     destruct a.
-    specialize H6 with (aid:=a0) (l:=l) (targ:=p0) (targid:=t) (p':=p) (ev:=b) (ev':=r0).
+    specialize H6 with (aid:=a0) (l:=l) (targ:=p0) (targid:=t) (p':=p) (ev:=ls).
     ff.
     find_apply_hyp_hyp.
     find_rewrite.
@@ -752,7 +752,7 @@ Proof.
     *)
     
 
-    specialize H with (bs:=b) (ls:=r0).
+    specialize H with (ls:=r0).
     destruct_conjs.
     edestruct IHet.
     eassumption.

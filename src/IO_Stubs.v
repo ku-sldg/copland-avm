@@ -24,7 +24,7 @@ Definition encodeEvRaw(e:RawEv): BS.
 Admitted.
 
 (** * Stub for invoking/dispatching externally-configured ASP procedures. *)
-Definition invoke_asp_uuid (uuid:UUID) (ps:ASP_PARAMS) (bs:BS) (ev:RawEv) : ResultT BS CallBackErrors.
+Definition invoke_asp_uuid (uuid:UUID) (ps:ASP_PARAMS) (ev:RawEv) : ResultT BS CallBackErrors.
 Admitted.
 
 (** * Stub for dispatching protocol terms to remote AMs. *)

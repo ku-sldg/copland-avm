@@ -23,7 +23,7 @@ Inductive CallBackErrors : Type :=
 | messageLift   : StringT -> CallBackErrors.
 
 Definition ASPCallback (ErrType : Type) : Type := 
-  ASP_PARAMS -> Plc -> BS -> RawEv -> ResultT BS ErrType.
+  ASP_PARAMS -> Plc -> RawEv -> ResultT BS ErrType.
 
 Definition PubKeyCallback : Type := 
   Plc -> ResultT PublicKey DispatcherErrors.
@@ -85,7 +85,7 @@ Record AM_Config : Type :=
     pubKeyCb : PubKeyCallback ;
   }.
 
-Definition empty_aspCb (ps:ASP_PARAMS) (p:Plc) (bs:BS) (rawev:RawEv) : ResultT BS DispatcherErrors := 
+Definition empty_aspCb (ps:ASP_PARAMS) (p:Plc) (rawev:RawEv) : ResultT BS DispatcherErrors := 
   errC Unavailable.
 
   Definition empty_am_config : AM_Config :=
