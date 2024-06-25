@@ -1,5 +1,5 @@
 Require Import String.
-Require Import JSON Manifest Term_Defs_Core Manifest_JSON_Admits List ErrorStringConstants.
+Require Import JSON Manifest Term_Defs_Core Manifest_JSON_Vars List ErrorStringConstants.
 Import ListNotations ResultNotation.
 
 Definition Manifest_to_JSON (m : Manifest) : JSON :=
@@ -54,7 +54,7 @@ Definition JSON_to_AM_Lib (js : JSON) : ResultT AM_Library string :=
   temp_LIB_APPR_ASPS <- JSON_get_JSON AM_LIB_APPR_ASPS js;;
   temp_LIB_PLCS <- JSON_get_JSON AM_LIB_PLCS js;;
   temp_LIB_PUBKEYS <- JSON_get_JSON AM_LIB_PUBKEYS js;;
-  CLONE_UUID <- string_to_UUID temp_CLONE_UUID;;
+  CLONE_UUID <- string_to_uuid temp_CLONE_UUID;;
   LIB_ASPS <- from_JSON temp_LIB_ASPS;;
   LIB_APPR_ASPS <- from_JSON temp_LIB_APPR_ASPS;;
   LIB_PLCS <- from_JSON temp_LIB_PLCS;;

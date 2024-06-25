@@ -18,7 +18,7 @@ Definition empty_FS_Location : FS_Location. Admitted.
 
 Definition UUID : Type. Admitted.
 
-Definition string_to_UUID (s : string) : ResultT UUID string. Admitted.
+Definition string_to_uuid (s : string) : ResultT UUID string. Admitted.
 
 Global Instance jsonifiable_uuid : Jsonifiable UUID. Admitted.
 

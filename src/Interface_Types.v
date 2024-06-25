@@ -1,5 +1,5 @@
 Require Import JSON Term_Defs String.
-Require Export Interface_Strings_Admits.
+Require Export Interface_Strings_Vars.
 
 
 (* Interface Types *)
