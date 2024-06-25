@@ -1,4 +1,4 @@
-Require Import JSON Term_Defs StringT.
+Require Import JSON Term_Defs String.
 Require Export Interface_Strings_Admits.
 
 

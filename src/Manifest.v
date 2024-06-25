@@ -11,7 +11,7 @@ Require Export Manifest_Admits.
 
 Require Import Example_Phrases_Admits.
 
-Require Import Manifest_Set StringT ErrorStringConstants.
+Require Import Manifest_Set String ErrorStringConstants.
 
 Require Import List.
 Import ListNotations.
@@ -48,10 +48,10 @@ Global Instance jsonifiable_ASP_Locator : Jsonifiable ASP_Locator :=
 
 Inductive DispatcherErrors : Type :=
 | Unavailable   : DispatcherErrors
-| Runtime       : StringT -> DispatcherErrors.
+| Runtime       : string -> DispatcherErrors.
 
 Inductive CallBackErrors : Type := 
-| messageLift   : StringT -> CallBackErrors.
+| messageLift   : string -> CallBackErrors.
 
 Definition ASPCallback (ErrType : Type) : Type := 
   ASP_PARAMS -> RawEv -> ResultT RawEv ErrType.

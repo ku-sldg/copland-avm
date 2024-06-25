@@ -11,10 +11,10 @@ Require Import Coq.Program.Tactics Lia.
 
 Require Import Manifest_Admits ErrorStringConstants.
 
-Require Import List.
+Require Import String List.
 Import ListNotations.
 
-Require Export Cvm_St ErrorStMonad_Coq IO_Stubs CvmJson_Interfaces StringT.
+Require Export Cvm_St ErrorStMonad_Coq IO_Stubs CvmJson_Interfaces.
 
 
 (** * CVM monadic primitive operations *)

@@ -1,13 +1,13 @@
 (*  Admitted types, definitions, and typeclass instances related to Manifests *)
 
-Require Import EqClass Term_Defs_Core JSON StringT.
+Require Import EqClass Term_Defs_Core JSON String.
 
 Require Import List.
 Import ListNotations.
 
 (* ASP Locator JSON Admits *)
-Definition JSON_Local_ASP : StringT. Admitted.
-Definition JSON_Remote_ASP : StringT. Admitted.
+Definition JSON_Local_ASP : string. Admitted.
+Definition JSON_Remote_ASP : string. Admitted.
 
 
 Definition FS_Location : Set. Admitted.
@@ -18,7 +18,7 @@ Definition empty_FS_Location : FS_Location. Admitted.
 
 Definition UUID : Type. Admitted.
 
-Definition stringT_to_UUID (s : StringT) : ResultT UUID StringT. Admitted.
+Definition string_to_UUID (s : string) : ResultT UUID string. Admitted.
 
 Global Instance jsonifiable_uuid : Jsonifiable UUID. Admitted.
 

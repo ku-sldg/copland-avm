@@ -4,27 +4,26 @@
 
     Matching on the Evidence Type param is only for verification.  
     Extracted code could be simplified to only the raw evidence operation. *)
+Require Import List String.
 
-Require Import ConcreteEvidence IO_Stubs ResultT StringT ErrorStringConstants.
-
-Require Import List.
+Require Import ConcreteEvidence IO_Stubs ResultT ErrorStringConstants EqClass.
 
 Import ListNotations.
 
 (** Extends raw evidence by prepending 'n' values to the front.
     Also updates underlying Evidence Type.
     An example is digital signatures, where the signature value is prepended *)
-Definition extd_bundle (sig: RawEv) (e:EvC) (p:Plc) (n : nat) (ps:ASP_PARAMS): ResultT EvC StringT :=
+Definition extd_bundle (sig: RawEv) (e:EvC) (p:Plc) (n : nat) (ps:ASP_PARAMS): ResultT EvC string :=
   match e with
   | evc bits et => 
-      if (eqb (length sig) n)
+      if (eqb (List.length sig) n)
       then resultC (evc (sig ++ bits) (uu p (EXTD n) ps et))
       else errC errStr_raw_evidence_too_long
   end.
 
 (** Collapses raw evidence by replacing the entire sequence with the input 
     binary hash value.  Updates underlying Evidence Type to reflect the hash. *)
-Definition comp_bundle (hsh: RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): ResultT EvC StringT :=
+Definition comp_bundle (hsh: RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): ResultT EvC string :=
   match e with
   | evc _ et => 
     match hsh with
@@ -37,7 +36,7 @@ Definition comp_bundle (hsh: RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): ResultT EvC
 (** Collapses raw evidence by replacing the entire sequence with the input 
     encrypted value blob.  Updates underlying Evidence Type to reflect the
     encryption. *)
-Definition encr_bundle (enc: RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): ResultT EvC StringT :=
+Definition encr_bundle (enc: RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): ResultT EvC string :=
   match e with
   | evc _ et => 
     match enc with

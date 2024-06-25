@@ -1,6 +1,6 @@
 (* Top-level definitions for running CVM monad computations.  *)
 
-Require Import Term_Defs Anno_Term_Defs Cvm_Impl Cvm_St ErrorStMonad_Coq StringT
+Require Import Term_Defs Anno_Term_Defs Cvm_Impl Cvm_St ErrorStMonad_Coq String
   ErrorStringConstants.
 
 Require Import List.
@@ -21,7 +21,7 @@ Definition run_cvm_w_config (t:Term) (e:RawEv) (ac : AM_Config)
   run_cvm t (mk_st (evc e mt) [] 0 ac).
 
 Definition run_cvm_rawEv (t:Term) (e:RawEv) (ac : AM_Config) 
-    : ResultT RawEv StringT :=
+    : ResultT RawEv string :=
   match (run_cvm_w_config t e ac) with
   | resultC st => resultC (get_bits (st_ev st))
   | errC e => 

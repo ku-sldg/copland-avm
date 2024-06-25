@@ -18,14 +18,14 @@ University of California.  See license.txt for details. *)
 
 Require Export BS.
 
-Require Import AbstractedTypes Maps EqClass.
+Require Import AbstractedTypes Maps String EqClass.
 
 (** * Terms and Evidence *)
 
 (** [Plc] represents a place (or attestation domain). *)
 Definition Plc: Set := ID_Type.
-Definition Plc_to_stringT (p: Plc) : StringT := ID_Type_to_stringT p.
-Definition stringT_to_Plc (s: StringT) : ResultT Plc StringT := stringT_to_ID_Type s.
+Definition Plc_to_string (p: Plc) : string := ID_Type_to_string p.
+Definition string_to_Plc (s: string) : ResultT Plc string := string_to_ID_Type s.
 (** [N_ID] represents a nonce identifier.  *)
 Definition N_ID: Set := nat.
 (** [Event_ID] represents Event identifiers *)
@@ -38,15 +38,15 @@ Definition Event_ID: Set := nat.
           (defined and interpreted per-scenario/implementaiton).
 *)
 Definition ASP_ID: Set := ID_Type.
-Definition ASP_ID_to_stringT (a:ASP_ID) : StringT := ID_Type_to_stringT a.
-Definition stringT_to_ASP_ID (s:StringT) : ResultT ASP_ID StringT := stringT_to_ID_Type s.
+Definition ASP_ID_to_string (a:ASP_ID) : string := ID_Type_to_string a.
+Definition string_to_ASP_ID (s:string) : ResultT ASP_ID string := string_to_ID_Type s.
 Definition TARG_ID: Set := ID_Type.
 
-Definition TARG_ID_to_stringT (t:TARG_ID) : StringT := ID_Type_to_stringT t.
-Definition stringT_to_TARG_ID (s:StringT) : ResultT TARG_ID StringT := stringT_to_ID_Type s.
+Definition TARG_ID_to_string (t:TARG_ID) : string := ID_Type_to_string t.
+Definition string_to_TARG_ID (s:string) : ResultT TARG_ID string := string_to_ID_Type s.
 
-Definition ASP_ARGS := MapC StringT StringT.
-Definition ASP_Info := StringT.
+Definition ASP_ARGS := MapC string string.
+Definition ASP_Info := string.
 
 (* Inductive Resource_ID_Arg: Set := 
 | Rid_Arg_C1
@@ -251,7 +251,7 @@ Fixpoint appresultc_size (res:AppResultC) : nat :=
   match res with
   | mtc_app => 0
   | nnc_app _ _ => 1
-  | ggc_app _ _ rawEv res' => Nat.add (length rawEv) (appresultc_size res')
+  | ggc_app _ _ rawEv res' => Nat.add (List.length rawEv) (appresultc_size res')
   | hhc_app _ _ _ res' => Nat.add 1 (appresultc_size res')
   | eec_app _ _ _ res' => Nat.add 1 (appresultc_size res')
   | ssc_app res1 res2 => Nat.add (appresultc_size res1) (appresultc_size res2)

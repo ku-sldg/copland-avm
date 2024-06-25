@@ -6,9 +6,9 @@ Authors:  Adam Petz, ampetz@ku.edu
           Will Thomas, 30wthomas@ku.edu
  *)
 
+Require Import String List.
 Require Import EqClass AbstractedTypes.
 
-Require Import List.
 Import ListNotations.
 Require Import Coq.Arith.EqNat Coq.Program.Tactics PeanoNat.
 
@@ -50,7 +50,7 @@ Definition map_empty{A B:Type} `{H : EqClass A} : MapC A B := [].
     through the list and find the first [cons] cell where the key 
     is equal to [x], if any. *)
 
-Fixpoint map_get{A B:Type} `{H : EqClass A} (m : MapC A B ) x : option B :=
+Fixpoint map_get{A B:Type} `{H : EqClass A} (m : MapC A B ) (x : A) : option B :=
   match m with
   | [] => None
   | (k, v) :: m' => if eqb k x then Some v else map_get m' x
@@ -95,17 +95,17 @@ Fixpoint map_map {A B C : Type} `{HA : EqClass A} (f : B -> C) (m : MapC A B) : 
   | (k, v) :: m' => (k, f v) :: (map_map f m')
   end.
 
-Fixpoint id_map_to_string_map {B : Type} (m : MapC ID_Type B) : MapC StringT B :=
+Fixpoint id_map_to_string_map {B : Type} (m : MapC ID_Type B) : MapC string B :=
   match m with
   | [] => []
-  | (k, v) :: m' => (ID_Type_to_stringT k, v) :: (id_map_to_string_map m')
+  | (k, v) :: m' => (ID_Type_to_string k, v) :: (id_map_to_string_map m')
   end.
 
-Fixpoint string_map_to_id_map {B : Type} (m : MapC StringT B) : ResultT (MapC ID_Type B) StringT :=
+Fixpoint string_map_to_id_map {B : Type} (m : MapC string B) : ResultT (MapC ID_Type B) string :=
   match m with
   | [] => resultC []
   | (k, v) :: m' => 
-    match (stringT_to_ID_Type k) with
+    match (string_to_ID_Type k) with
     | errC e => errC e
     | resultC k' => 
       match (string_map_to_id_map m') with

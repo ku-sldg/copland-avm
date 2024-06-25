@@ -1,15 +1,15 @@
-Require Import JSON_Type StringT ResultT.
+Require Import JSON_Type String ResultT.
 
-Definition JSON_to_stringT (js : JSON) : StringT. Admitted.
+Definition JSON_to_string (js : JSON) : string. Admitted.
 
-Definition stringT_to_JSON (s : StringT) : ResultT JSON StringT. Admitted.
+Definition string_to_JSON (s : string) : ResultT JSON string. Admitted.
 
-Axiom canonical_serialization_json_stringT : forall (s : StringT) (js : JSON),
-  JSON_String s = js <-> (JSON_to_stringT js = s).
+Axiom canonical_serialization_json_string : forall (s : string) (js : JSON),
+  JSON_String s = js <-> (JSON_to_string js = s).
 
-Definition JSON_get_JSON (key : StringT) (js : JSON) : ResultT JSON StringT. Admitted.
+Definition JSON_get_JSON (key : string) (js : JSON) : ResultT JSON string. Admitted.
 
-Definition JSON_get_stringT (key : StringT) (js : JSON) : ResultT StringT StringT. Admitted.
+Definition JSON_get_string (key : string) (js : JSON) : ResultT string string. Admitted.
 
-Definition JSON_get_bool (key : StringT) (js : JSON) : ResultT bool StringT. Admitted.
+Definition JSON_get_bool (key : string) (js : JSON) : ResultT bool string. Admitted.
 

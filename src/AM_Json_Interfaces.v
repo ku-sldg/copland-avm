@@ -1,6 +1,6 @@
 Require Import List.
 Import ListNotations.
-Require Import BS Manifest Term_Defs CvmJson_Interfaces StringT IO_Stubs Manifest_Admits ErrorStMonad_Coq AM_Monad.
+Require Import BS Manifest Term_Defs CvmJson_Interfaces String IO_Stubs Manifest_Admits ErrorStMonad_Coq AM_Monad.
 Require Import ErrorStringConstants AM_Helpers Impl_appraisal Cvm_Run.
 
 Definition am_check_auth_tok (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) 
@@ -37,7 +37,7 @@ Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc)
   | false => am_failm (am_error errStr_app_auth_tok)
   end. *)
 
-Definition do_appraisal_session (appreq:ProtocolAppraiseRequest) (ac:AM_Config) (nonceVal:BS): ResultT ProtocolAppraiseResponse StringT :=
+Definition do_appraisal_session (appreq:ProtocolAppraiseRequest) (ac:AM_Config) (nonceVal:BS): ResultT ProtocolAppraiseResponse string :=
   let '(mkPAReq t p et ev) := appreq in
   let expected_et := eval t p et in 
   let app_am := gen_appraise_AM expected_et ev in 
@@ -87,7 +87,7 @@ Definition handle_AM_request_JSON (js : JSON) (ac : AM_Config) (nonceVal:BS) : J
 
 Definition make_AM_Protocol_Run_request_JSON 
     (t:Term) (targ_uuid : UUID) (tok:ReqAuthTok) (ev:RawEv) (from_plc : Plc)
-    : ResultT RawEv StringT :=
+    : ResultT RawEv string :=
   let req := (mkPRReq t from_plc ev) in
   let js_req := ProtocolRunRequest_to_JSON req in
   let js_resp := make_JSON_Network_Request targ_uuid js_req in

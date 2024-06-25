@@ -7,7 +7,6 @@ EqClass.v
 AbstractedTypes.v
 Defs.v
 BS.v
-StringT.v
 ErrorStringConstants.v
 Maps.v
 JSON_Type.v

@@ -1,13 +1,13 @@
 (* Definition of the manifest_set datatype, its operations, and related properties.  
     This datatype is used for "collection" manifest fields, and should act like a 
     traditional mathematical set (e.g. cumulative, non-duplicating, ...) *)
+Require Import List String.
 
 Require Import AbstractedTypes Term_Defs_Core Maps 
   Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq ErrorStringConstants JSON.
 
 Require Import Example_Phrases_Admits.
 
-Require Import List.
 Import ListNotations.
 
 Definition manifest_set (A : Type) := list A.
@@ -15,7 +15,7 @@ Definition manifest_set (A : Type) := list A.
 Definition manifest_set_to_JSON {A : Type} `{Jsonifiable A} (m : manifest_set A) : JSON :=
   JSON_Array (map to_JSON m).
 
-Definition JSON_to_manifest_set {A : Type} `{Jsonifiable A} (js : JSON) : ResultT (manifest_set A) StringT :=
+Definition JSON_to_manifest_set {A : Type} `{Jsonifiable A} (js : JSON) : ResultT (manifest_set A) string :=
   match js with
   | JSON_Array m => result_map from_JSON m
   | _ => errC errStr_json_to_manifest_set

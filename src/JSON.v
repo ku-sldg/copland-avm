@@ -1,29 +1,29 @@
 (* The Main interface for JSON that exports its sub-properties *)
 
-Require Export JSON_Type JSON_Admits ResultT StringT.
-Require Import Maps ErrorStringConstants AbstractedTypes.
+Require Export JSON_Type JSON_Admits ResultT.
+Require Import String Maps ErrorStringConstants AbstractedTypes.
 
 Class Jsonifiable (A : Type) :=
   {
     to_JSON : A -> JSON;
-    from_JSON : JSON -> ResultT A StringT;
+    from_JSON : JSON -> ResultT A string;
     (* canonical_serialization
       : forall (js : JSON) (a : A), to_JSON a = js <-> (from_JSON js = resultC a); *)
   }.
 
-(* Lemma canonical_serialization_stringT : forall (js : JSON) (a : StringT), 
-  JSON_String a = js <-> (resultC (JSON_to_stringT js) = @resultC _ StringT a).
+(* Lemma canonical_serialization_string : forall (js : JSON) (a : string), 
+  JSON_String a = js <-> (resultC (JSON_to_string js) = @resultC _ string a).
 Proof.
-  setoid_rewrite canonical_serialization_json_stringT; intuition; eauto.
+  setoid_rewrite canonical_serialization_json_string; intuition; eauto.
   - rewrite H; eauto. 
   - inversion H; eauto. 
 Qed. *)
 
-Global Instance jsonifiable_string : Jsonifiable StringT :=
+Global Instance jsonifiable_string : Jsonifiable string :=
   {
     to_JSON := JSON_String;
-    from_JSON := (fun v => resultC (JSON_to_stringT v));
-    (* canonical_serialization := canonical_serialization_stringT *)
+    from_JSON := (fun v => resultC (JSON_to_string v));
+    (* canonical_serialization := canonical_serialization_string *)
   }.
 
 (* The Pair JSONIFIABLE Class *)
@@ -42,36 +42,36 @@ Global Instance jsonifiable_pair (A B : Type) `{Jsonifiable A, Jsonifiable B} : 
                     end)
   }.
 (* Lemma canonical_serialization_id_type : forall (js : JSON) (a : ID_Type), 
-  JSON_String (ID_Type_to_stringT a) = js <-> (match js with | JSON_String s => stringT_to_ID_Type s | _ => errC errStr_json_to_id_type end = @resultC _ StringT a).
+  JSON_String (ID_Type_to_string a) = js <-> (match js with | JSON_String s => string_to_ID_Type s | _ => errC errStr_json_to_id_type end = @resultC _ string a).
 Proof.
   intuition; simpl in *.
-  - pose proof (canonical_serialization_stringT js (ID_Type_to_stringT a)); intuition.
+  - pose proof (canonical_serialization_string js (ID_Type_to_string a)); intuition.
     inversion H0.
     rewrite H3.
-    pose proof (canonical_string_id_type (ID_Type_to_stringT a) a); intuition.
-  - pose proof (canonical_string_id_type (JSON_to_stringT js) a).
+    pose proof (canonical_string_id_type (ID_Type_to_string a) a); intuition.
+  - pose proof (canonical_string_id_type (JSON_to_string js) a).
     intuition.
     rewrite H0.
-    pose proof (canonical_serialization js (JSON_to_stringT js)).
+    pose proof (canonical_serialization js (JSON_to_string js)).
     simpl in *; intuition.
 Qed. *)
 
 Global Instance jsonifiable_ID_type : Jsonifiable ID_Type :=
   {
-    to_JSON := (fun v => JSON_String (ID_Type_to_stringT v));
+    to_JSON := (fun v => JSON_String (ID_Type_to_string v));
     from_JSON := (fun v => 
                     match v with
-                    | JSON_String s => stringT_to_ID_Type s
+                    | JSON_String s => string_to_ID_Type s
                     | _ => errC errStr_json_to_id_type
                     end);
     (* canonical_serialization := canonical_serialization_id_type *)
   }.
 
-Definition string_map_to_JSON {B : Type} `{Jsonifiable B} (m : MapC StringT B) : JSON :=
+Definition string_map_to_JSON {B : Type} `{Jsonifiable B} (m : MapC string B) : JSON :=
   JSON_Object (map_map to_JSON m).
 
 Definition JSON_to_string_map {B : Type} `{Jsonifiable B} (js : JSON) 
-    : ResultT (MapC StringT B) StringT :=
+    : ResultT (MapC string B) string :=
   match js with
   | JSON_Object m => 
       result_map 
@@ -83,7 +83,7 @@ Definition JSON_to_string_map {B : Type} `{Jsonifiable B} (js : JSON)
   | _ => errC errStr_json_to_map
   end.
 
-Global Instance jsonifiable_string_map (A : Type) `{Jsonifiable A} : Jsonifiable (MapC StringT A) :=
+Global Instance jsonifiable_string_map (A : Type) `{Jsonifiable A} : Jsonifiable (MapC string A) :=
   {
     to_JSON := string_map_to_JSON;
     from_JSON := JSON_to_string_map

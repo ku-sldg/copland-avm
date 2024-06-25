@@ -118,7 +118,6 @@ Global Instance str_eq_class : EqClass string :=
   { eqb:= String.eqb;
     eqb_leibniz := String.eqb_eq }.
 
-
 Global Instance nat_EqClass : EqClass nat :=
   { eqb:= Nat.eqb;
     eqb_leibniz := nat_eqb_eq }.

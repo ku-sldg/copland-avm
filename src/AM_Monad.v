@@ -1,15 +1,15 @@
 (* Monadic helpers and custom automation for the AM Monad (AM) *)
+Require Import List String.
 
-Require Import ErrorStMonad_Coq BS Maps Term_Defs_Core Term_Defs Cvm_Run Cvm_St StringT.
+Require Import ErrorStMonad_Coq BS Maps Term_Defs_Core Term_Defs Cvm_Run Cvm_St.
 
 Require Import ErrorStringConstants Appraisal_IO_Stubs.
 
 Require Export AM_St.
 
-Require Import List.
 Import ListNotations.
 
-Definition am_error_to_stringT (err:AM_Error) : StringT :=
+Definition am_error_to_string (err:AM_Error) : string :=
   match err with 
   | am_error s => s
   | am_dispatch_error e => errStr_dispatch_error
@@ -58,10 +58,10 @@ Definition run_am_app_comp_init_with_default{A:Type} (am_comp:AM A) (st:AM_St) (
   else 
   (default_A).
 
-Definition run_am_app_comp_init {A:Type} (am_comp:AM A) (st:AM_St) : ResultT A StringT :=
+Definition run_am_app_comp_init {A:Type} (am_comp:AM A) (st:AM_St) : ResultT A string :=
   match (fst (am_comp st)) with
   | resultC x => resultC x
-  | errC e => errC (am_error_to_stringT e)
+  | errC e => errC (am_error_to_string e)
   end.
 
 Definition get_AM_amConfig : AM AM_Config :=

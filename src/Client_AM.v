@@ -1,8 +1,8 @@
 (*  Implementation of a top-level Client (initiator) thread for Client AMs in
       end-to-end Copland Attestation + Appraisal protocols.  *)
-Require Import String.
+Require Import String List.
 
-Require Import Term Example_Phrases_Demo Cvm_Run Manifest EqClass StringT Cvm_St.
+Require Import Term Example_Phrases_Demo Cvm_Run Manifest EqClass Cvm_St.
 
 Require Import Impl_appraisal Appraisal_IO_Stubs IO_Stubs AM_Monad ErrorStMonad_Coq.
 
@@ -14,14 +14,13 @@ Require Import ManCompSoundness_Appraisal AM_Helpers Auto.
 
 Require Import StructTactics Coq.Program.Tactics.
 
-Require Import List.
 Import ListNotations.
 
 (*
 Set Nested Proofs Allowed.
 *)
 
-Definition am_sendReq (req_plc : Plc) (t:Term) (uuid : UUID) (authTok:ReqAuthTok) (e:RawEv) : ResultT RawEv StringT :=
+Definition am_sendReq (req_plc : Plc) (t:Term) (uuid : UUID) (authTok:ReqAuthTok) (e:RawEv) : ResultT RawEv string :=
   let req := mkPRReq t req_plc e in 
   let js := ProtocolRunRequest_to_JSON req in
   let js_res := make_JSON_Network_Request uuid js in
@@ -33,7 +32,7 @@ Definition am_sendReq (req_plc : Plc) (t:Term) (uuid : UUID) (authTok:ReqAuthTok
   end.
 
 Definition am_sendReq_app (uuid : UUID) (t:Term) (p:Plc) (e:Evidence) (ev:RawEv) : 
-    ResultT AppResultC StringT :=
+    ResultT AppResultC string :=
   let req := mkPAReq t p e ev in
   let js := ProtocolAppraiseRequest_to_JSON req in
   let js_res := make_JSON_Network_Request uuid js in
@@ -66,7 +65,7 @@ Definition gen_authEvC_if_some (ot:option Term) (uuid : UUID) (myPlc:Plc) (init_
   | None => ret (evc [] mt)
   end.
 
-Definition run_appraisal_client (t:Term) (p:Plc) (et:Evidence) (re:RawEv) (addr:UUID) : ResultT AppResultC StringT :=
+Definition run_appraisal_client (t:Term) (p:Plc) (et:Evidence) (re:RawEv) (addr:UUID) : ResultT AppResultC string :=
   let expected_et := eval t p et in 
   am_sendReq_app addr t p et re.
   (*

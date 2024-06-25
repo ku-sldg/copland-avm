@@ -4,7 +4,7 @@ Require Import ResultT Term_Defs_Core Term_Defs.
 
 Require Import Manifest_Admits ErrorStMonad_Coq Cvm_St AM_St.
 
-Require Import StringT ErrorStringConstants.
+Require Import String ErrorStringConstants.
 
 
 Definition gen_nonce_bits : BS.
@@ -16,7 +16,7 @@ Admitted.
 Definition checkNonce (nonceGolden:BS) (nonceCandidate:BS) : BS.
 Admitted.
 
-Definition print_string (s:StringT) : unit. 
+Definition print_string (s:string) : unit. 
 Admitted.
 
 (* The boolean parameter here is a hack to force evaluation in 

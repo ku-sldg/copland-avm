@@ -1,3 +1,4 @@
+Require Import String.
 Require Import JSON Manifest Term_Defs_Core Manifest_JSON_Admits List ErrorStringConstants.
 Import ListNotations ResultNotation.
 
@@ -14,15 +15,15 @@ Definition Manifest_to_JSON (m : Manifest) : JSON :=
       (MAN_POLICY, to_JSON policy)
     ].
 
-Definition JSON_to_Manifest (js : JSON) : ResultT Manifest StringT :=
-  temp_ABS_PLC <- JSON_get_stringT MAN_ABS_PLC js;;
+Definition JSON_to_Manifest (js : JSON) : ResultT Manifest string :=
+  temp_ABS_PLC <- JSON_get_string MAN_ABS_PLC js;;
   temp_ASPS <- JSON_get_JSON MAN_ASPS js;;
   temp_APPR_ASPS <- JSON_get_JSON MAN_APPR_ASPS js;;
   temp_UUID_PLCS <- JSON_get_JSON MAN_UUID_PLCS js;;
   temp_PUBKEY_PLCS <- JSON_get_JSON MAN_PUBKEY_PLCS js;;
   temp_TARGET_PLCS <- JSON_get_JSON MAN_TARGET_PLCS js;;
   temp_POLICY <- JSON_get_JSON MAN_POLICY js;;
-  ABS_PLC <- stringT_to_Plc temp_ABS_PLC;;
+  ABS_PLC <- string_to_Plc temp_ABS_PLC;;
   ASPS <- from_JSON temp_ASPS;;
   APPR_ASPS <- from_JSON temp_APPR_ASPS;;
   UUID_PLCS <- from_JSON temp_UUID_PLCS;;
@@ -47,13 +48,13 @@ Definition AM_Lib_to_JSON (am : AM_Library) : JSON :=
       (AM_LIB_PUBKEYS, to_JSON lib_pubkeys)
     ].
 
-Definition JSON_to_AM_Lib (js : JSON) : ResultT AM_Library StringT :=
-  temp_CLONE_UUID <- JSON_get_stringT AM_CLONE_UUID js;;
+Definition JSON_to_AM_Lib (js : JSON) : ResultT AM_Library string :=
+  temp_CLONE_UUID <- JSON_get_string AM_CLONE_UUID js;;
   temp_LIB_ASPS <- JSON_get_JSON AM_LIB_ASPS js;;
   temp_LIB_APPR_ASPS <- JSON_get_JSON AM_LIB_APPR_ASPS js;;
   temp_LIB_PLCS <- JSON_get_JSON AM_LIB_PLCS js;;
   temp_LIB_PUBKEYS <- JSON_get_JSON AM_LIB_PUBKEYS js;;
-  CLONE_UUID <- stringT_to_UUID temp_CLONE_UUID;;
+  CLONE_UUID <- string_to_UUID temp_CLONE_UUID;;
   LIB_ASPS <- from_JSON temp_LIB_ASPS;;
   LIB_APPR_ASPS <- from_JSON temp_LIB_APPR_ASPS;;
   LIB_PLCS <- from_JSON temp_LIB_PLCS;;

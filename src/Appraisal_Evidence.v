@@ -1458,7 +1458,7 @@ Proof.
     ff; econstructor; simpl in *; eauto.
     rewrite app_length.
     invc H; find_injection; find_rewrite.
-    rewrite nat_eqb_eq in *; eauto.
+    rewrite EqClass.nat_eqb_eq in *; eauto.
     
   - (* at case *)
     wrap_ccp.
