@@ -18,7 +18,8 @@ University of California.  See license.txt for details. *)
 
 Require Export BS.
 
-Require Import AbstractedTypes Maps String EqClass.
+Require Import List AbstractedTypes Maps EqClass JSON Serializable Serializable_Class_Admits.
+Import ListNotations.
 
 (** * Terms and Evidence *)
 
@@ -51,7 +52,14 @@ Global Instance Serializable_TARG_ID : Serializable TARG_ID := {
   from_string := from_string;
 }.
 
+Open Scope string_scope.
+
 Definition ASP_ARGS := MapC string string.
+Global Instance Jsonifiable_ASP_ARGS : Jsonifiable ASP_ARGS := {
+  to_JSON := string_string_map_to_JSON;
+  from_JSON := JSON_to_string_string_map
+}.
+
 Definition ASP_Info := string.
 
 (* Inductive Resource_ID_Arg: Set := 
@@ -65,6 +73,29 @@ Inductive Arg: Set :=
 (** Grouping ASP parameters into one constructor *)
 Inductive ASP_PARAMS: Type :=
 | asp_paramsC: ASP_ID -> ASP_ARGS -> Plc -> TARG_ID -> ASP_PARAMS.
+
+Global Instance Jsonifiable_ASP_Params : Jsonifiable ASP_PARAMS := {
+  to_JSON := (fun asp_params => 
+                match asp_params with
+                | asp_paramsC asp_id args plc targ_id => 
+                    JSON_Object [
+                      ("ASP_ID", InJSON_String (to_string asp_id));
+                      ("ASP_ARGS", InJSON_Object (to_JSON args));
+                      ("ASP_PLC", InJSON_String (to_string plc));
+                      ("ASP_TARG_ID", InJSON_String (to_string targ_id))
+                    ]
+                end);
+  from_JSON := (fun js => 
+                  match (JSON_get_string "ASP_ID" js), (JSON_get_Object "ASP_ARGS" js), 
+                        (JSON_get_string "ASP_PLC" js), (JSON_get_string "ASP_TARG_ID" js) with
+                  | resultC asp_id, resultC args, resultC plc, resultC targ_id => 
+                      match (from_string asp_id), (from_JSON args), (from_string plc), (from_string targ_id) with
+                      | resultC asp_id, resultC args, resultC plc, resultC targ_id => resultC (asp_paramsC asp_id args plc targ_id)
+                      | _, _, _, _ => errC "Parsing ASP_PARAMS not successful"
+                      end
+                  | _, _, _, _ => errC "Invalid ASP_PARAMS JSON"
+                  end)
+}.
 
 (** Evidence extension types for ASPs:
       COMP:  Compact evidence down to a single value (i.e. a hash).
@@ -88,6 +119,34 @@ Inductive FWD: Set :=
 | KILL
 | KEEP.
 
+Global Instance Jsonifiable_FWD : Jsonifiable FWD := {
+  to_JSON := (fun fwd => 
+                match fwd with
+                | COMP => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "COMP")]
+                | ENCR => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "ENCR")]
+                | EXTD n => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "EXTD"); ("EXTD_N", InJSON_String (to_string n))]
+                | KILL => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "KILL")]
+                | KEEP => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "KEEP")]
+                end);
+  from_JSON := (fun js => 
+                  match (JSON_get_string "FWD_CONSTRUCTOR" js) with
+                  | resultC "COMP" => resultC COMP
+                  | resultC "ENCR" => resultC ENCR
+                  | resultC "EXTD" => 
+                      match (JSON_get_string "EXTD_N" js) with
+                      | resultC n => 
+                        match (from_string n) with
+                        | resultC n => resultC (EXTD n)
+                        | errC e => errC e
+                        end
+                      | _ => errC "Parsing EXTD not successful"
+                      end
+                  | resultC "KILL" => resultC KILL
+                  | resultC "KEEP" => resultC KEEP
+                  | _ => errC "Invalid FWD JSON"
+                  end)
+}.
+
 (** The structure of evidence. 
 
     mt:  Empty evidence 
@@ -101,6 +160,70 @@ Inductive Evidence :=
 | uu: Plc -> FWD -> ASP_PARAMS -> Evidence -> Evidence
 | ss: Evidence -> Evidence -> Evidence.
 
+Fixpoint Evidence_to_JSON (e : Evidence) : JSON := 
+  match e with
+  | mt => JSON_Object [("EVIDENCE_CONSTRUCTOR", InJSON_String "mt")]
+  | nn n => 
+      JSON_Object [
+        ("EVIDENCE_CONSTRUCTOR", InJSON_String "nn"); 
+        ("N_ID", InJSON_String (to_string n))
+      ]
+  | uu plc fwd ps e' => 
+      JSON_Object [
+        ("EVIDENCE_CONSTRUCTOR", InJSON_String "uu");
+        ("PLC", InJSON_String (to_string plc));
+        ("FWD", InJSON_Object (to_JSON fwd));
+        ("ASP_PARAMS", InJSON_Object (to_JSON ps));
+        ("EVIDENCE", InJSON_Object (Evidence_to_JSON e'))
+      ]
+  | ss e1 e2 =>
+      JSON_Object [
+        ("EVIDENCE_CONSTRUCTOR", InJSON_String "ss");
+        ("EVIDENCE1", InJSON_Object (Evidence_to_JSON e1));
+        ("EVIDENCE2", InJSON_Object (Evidence_to_JSON e2))
+      ]
+  end.
+
+Fixpoint Evidence_from_JSON (js : JSON) : ResultT Evidence string :=
+  match js with
+  | JSON_Object [("EVIDENCE_CONSTRUCTOR", InJSON_String "mt")] => resultC mt
+  | JSON_Object [
+        ("EVIDENCE_CONSTRUCTOR", InJSON_String "nn"); 
+        ("N_ID", InJSON_String nVal)
+      ] =>
+    match (from_string nVal) with
+    | resultC n => resultC (nn n)
+    | errC e => errC e
+    end
+  | JSON_Object [
+        ("EVIDENCE_CONSTRUCTOR", InJSON_String "uu");
+        ("PLC", InJSON_String plcVal);
+        ("FWD", InJSON_Object fwdJs);
+        ("ASP_PARAMS", InJSON_Object psJs);
+        ("EVIDENCE", InJSON_Object eJs)
+      ] =>
+    match (from_string plcVal), (from_JSON fwdJs), (from_JSON psJs), (Evidence_from_JSON eJs) with
+    | resultC plc, resultC fwd, resultC ps, resultC e =>
+      resultC (uu plc fwd ps e)
+    | _, _, _, _ => errC "Evidence_from_JSON: error parsing uu"
+    end
+  | JSON_Object [
+        ("EVIDENCE_CONSTRUCTOR", InJSON_String "ss");
+        ("EVIDENCE1", InJSON_Object e1Js);
+        ("EVIDENCE2", InJSON_Object e2Js)
+      ] =>
+    match (Evidence_from_JSON e1Js), (Evidence_from_JSON e2Js) with
+    | resultC e1, resultC e2 => resultC (ss e1 e2)
+    | _, _ => errC "Parsing ss not successful"
+    end
+  | _ => errC "Invalid Evidence JSON"
+  end.
+
+Global Instance Jsonifiable_Evidence : Jsonifiable Evidence := {
+  to_JSON := Evidence_to_JSON;
+  from_JSON := Evidence_from_JSON
+}.
+
 (** Evidene routing types:  
       ALL:   pass through all evidence
       NONE   pass through empty evidence
@@ -108,6 +231,21 @@ Inductive Evidence :=
 Inductive SP: Set :=
 | ALL
 | NONE.
+
+
+Global Instance Serializable_SP : Serializable SP := {
+  to_string := (fun sp => 
+                  match sp with
+                  | ALL => "ALL"
+                  | NONE => "NONE"
+                  end);
+  from_string := (fun s => 
+                    match s with
+                    | "ALL" => resultC ALL
+                    | "NONE" => resultC NONE
+                    | _ => errC "Invalid SP string"
+                    end)
+}.
 
 
 (** Primitive Copland phases 
@@ -131,9 +269,79 @@ Inductive ASP :=
 | HSH: ASP
 | ENC: Plc -> ASP.
 
+Global Instance Jsonifiable_ASP : Jsonifiable ASP := {
+  to_JSON := (fun a => 
+                match a with
+                | NULL => JSON_Object [("ASP_CONSTRUCTOR", InJSON_String "NULL")]
+                | CPY => JSON_Object [("ASP_CONSTRUCTOR", InJSON_String "CPY")]
+                | ASPC sp fwd ps => 
+                    JSON_Object [
+                      ("ASP_CONSTRUCTOR", InJSON_String "ASPC");
+                      ("ASP_SP", InJSON_String (to_string sp));
+                      ("ASP_FWD", InJSON_Object (to_JSON fwd));
+                      ("ASP_PARAMS", InJSON_Object (to_JSON ps))
+                    ]
+                | SIG => JSON_Object [("ASP_CONSTRUCTOR", InJSON_String "SIG")]
+                | HSH => JSON_Object [("ASP_CONSTRUCTOR", InJSON_String "HSH")]
+                | ENC q => 
+                    JSON_Object [
+                      ("ASP_CONSTRUCTOR", InJSON_String "ENC");
+                      ("ENC_PLC", InJSON_String (to_string q))
+                    ]
+                end);
+  from_JSON := (fun js => 
+                  match (JSON_get_string "ASP_CONSTRUCTOR" js) with
+                  | resultC "NULL" => resultC NULL
+                  | resultC "CPY" => resultC CPY
+                  | resultC "ASPC" =>
+                      match (JSON_get_string "ASP_SP" js), (JSON_get_Object "ASP_FWD" js), (JSON_get_Object "ASP_PARAMS" js) with
+                      | resultC sp, resultC fwd, resultC ps =>
+                          match (from_string sp), (from_JSON fwd), (from_JSON ps) with
+                          | resultC sp, resultC fwd, resultC ps => 
+                              resultC (ASPC sp fwd ps)
+                          | _, _, _ => errC "Parsing ASPC not successful"
+                          end
+                      | _, _, _ => errC "Parsing ASPC not successful"
+                      end
+                  | resultC "SIG" => resultC SIG
+                  | resultC "HSH" => resultC HSH
+                  | resultC "ENC" => 
+                      match (JSON_get_string "ENC_PLC" js) with
+                      | resultC q => 
+                          match (from_string q) with
+                          | resultC q => resultC (ENC q)
+                          | _ => errC "Parsing ENC PLC from string not successful"
+                          end
+                      | _ => errC "Parsing ENC not successful"
+                      end
+                  | _ => errC "Invalid JSON ASP Constructor Name"
+                  end)
+}.
+
+
 (** Pair of evidence splitters that indicate routing evidence to subterms 
     of branching phrases *)
 Definition Split: Set := (SP * SP).
+
+Global Instance Jsonifiable_Split : Jsonifiable Split := {
+  to_JSON := (fun '(s1, s2) => 
+                JSON_Object [
+                  ("split1", InJSON_String (to_string s1));
+                  ("split2", InJSON_String (to_string s2))
+                ]);
+  from_JSON := (fun js => 
+                  match (JSON_get_string "split1" js), (JSON_get_string "split2" js) with
+                  | resultC s1, resultC s2 => 
+                      match (from_string s1), (from_string s2) with
+                      | resultC s1, resultC s2 => resultC (s1, s2) 
+                      | _, _ => errC "Parsing split not successful"
+                      end
+                  | _, _ => errC "Invalid Split JSON"
+                  end)
+}.
+
+(** Pair of evidence splitters that indicate routing evidence to subterms 
+    of branching phrases *)
 
 (** Main Copland phrase datatype definition.
         A term is either an atomic ASP (Attestation Service Provider), 
@@ -146,6 +354,122 @@ Inductive Term :=
 | bseq: Split -> Term -> Term -> Term
 | bpar: Split -> Term -> Term -> Term.
 
+(* NOTE: Very lame on Coq's part, we have to do a list
+encoding of the TERM_BODY because it cannot understand
+how the recursive calls are truly on subterms otherwise *)
+Fixpoint Term_to_JSON (t : Term) : JSON :=
+  match t with
+  | asp a => 
+    JSON_Object [
+      ("TERM_CONSTRUCTOR", InJSON_String "asp"); 
+      ("TERM_BODY", InJSON_Object (to_JSON a))
+    ]
+  | att p t1 => 
+    JSON_Object [
+      ("TERM_CONSTRUCTOR", InJSON_String "att");
+      ("TERM_BODY", InJSON_Array [
+          (InJSON_String (to_string p)); 
+          (InJSON_Object (Term_to_JSON t1))
+        ]
+      )
+    ]
+  | lseq t1 t2 => 
+    JSON_Object [
+      ("TERM_CONSTRUCTOR", InJSON_String "lseq");
+      ("TERM_BODY", InJSON_Array [
+          (InJSON_Object (Term_to_JSON t1));
+          (InJSON_Object (Term_to_JSON t2))
+        ]
+      )
+    ]
+  | bseq s t1 t2 => 
+    JSON_Object [
+      ("TERM_CONSTRUCTOR", InJSON_String "bseq");
+      ("TERM_BODY", InJSON_Array [
+          (InJSON_Object (to_JSON s));
+          (InJSON_Object (Term_to_JSON t1));
+          (InJSON_Object (Term_to_JSON t2))
+        ]
+      )
+    ]
+  | bpar s t1 t2 => 
+    JSON_Object [
+      ("TERM_CONSTRUCTOR", InJSON_String "bpar");
+      ("TERM_BODY", InJSON_Array [
+          (InJSON_Object (to_JSON s));
+          (InJSON_Object (Term_to_JSON t1));
+          (InJSON_Object (Term_to_JSON t2))
+        ]
+      )
+    ]
+  end.
+
+Fixpoint Term_from_JSON (js : JSON) : ResultT Term string :=
+  match (JSON_get_string "TERM_CONSTRUCTOR" js) with
+  | resultC "asp" => 
+      match (JSON_get_Object "TERM_BODY" js) with
+      | resultC js' => 
+          match (from_JSON js') with
+          | resultC a => resultC (asp a)
+          | errC e => errC e
+          end
+      | errC e => errC e
+      end
+  | resultC "att" => 
+      (*! I hate this, but only viable way without going full wf recursion *)
+      let '(JSON_Object js_map) := js in
+      match js_map with
+      | [("TERM_CONSTRUCTOR", InJSON_String "att"); ("TERM_BODY", InJSON_Array [InJSON_String plc; InJSON_Object js'])] =>
+          match (from_string plc), (Term_from_JSON js') with
+          | resultC plc, resultC t => resultC (att plc t)
+          | _, _ => errC "Parsing att not successful"
+          end
+      (* NOTE: We could maybe add these permutations? 
+      | [("TERM_BODY", InJSON_Array [InJSON_String plc; InJSON_Object js']); ("TERM_CONSTRUCTOR", InJSON_String "att")] =>
+          match (from_string plc), (Term_from_JSON js') with
+          | resultC plc, resultC t => resultC (att plc t)
+          | _, _ => errC "Parsing att not successful"
+          end *)
+      | _ => errC "Invalid att JSON: REMEMBER IT MUST BE IN A SPECIFIC FORMAT AND ORDER"
+      end
+  | resultC "lseq" =>
+      let '(JSON_Object js_map) := js in
+      match js_map with
+      | [("TERM_CONSTRUCTOR", InJSON_String "lseq"); ("TERM_BODY", InJSON_Array [InJSON_Object t1js; InJSON_Object t2js])] =>
+          match (Term_from_JSON t1js), (Term_from_JSON t2js) with
+          | resultC t1, resultC t2 => resultC (lseq t1 t2)
+          | _, _ => errC "Parsing lseq not successful"
+          end
+      | _ => errC "Invalid lseq JSON: REMEMBER IT MUST BE IN A SPECIFIC FORMAT AND ORDER"
+      end
+  | resultC "bseq" =>
+      let '(JSON_Object js_map) := js in
+      match js_map with
+      | [("TERM_CONSTRUCTOR", InJSON_String "bseq"); ("TERM_BODY", InJSON_Array [InJSON_Object spjs; InJSON_Object t1js; InJSON_Object t2js])] =>
+          match (from_JSON spjs), (Term_from_JSON t1js), (Term_from_JSON t2js) with
+          | resultC s, resultC t1, resultC t2 => resultC (bseq s t1 t2)
+          | _, _, _ => errC "Parsing bseq not successful"
+          end
+      | _ => errC "Invalid bseq JSON: REMEMBER IT MUST BE IN A SPECIFIC FORMAT AND ORDER"
+      end
+  | resultC "bpar" =>
+      let '(JSON_Object js_map) := js in
+      match js_map with
+      | [("TERM_CONSTRUCTOR", InJSON_String "bpar"); ("TERM_BODY", InJSON_Array [InJSON_Object spjs; InJSON_Object t1js; InJSON_Object t2js])] =>
+          match (from_JSON spjs), (Term_from_JSON t1js), (Term_from_JSON t2js) with
+          | resultC s, resultC t1, resultC t2 => resultC (bpar s t1 t2)
+          | _, _, _ => errC "Parsing bpar not successful"
+          end
+      | _ => errC "Invalid bpar JSON: REMEMBER IT MUST BE IN A SPECIFIC FORMAT AND ORDER"
+      end
+  | resultC _ => errC "Invalid TERM CONSTRUCTOR in Term_from_JSON"
+  | errC e => errC e
+  end.
+
+Global Instance Jsonifiable_Term : Jsonifiable Term := {
+  to_JSON := Term_to_JSON;
+  from_JSON := Term_from_JSON
+}.
 
 (* Adapted from Imp language Notation in Software Foundations (Pierce) *)
 Declare Custom Entry copland_entry.
@@ -244,6 +568,29 @@ Example test3 : <<core>{ CLR -> {}}> = (lseqc (aspc CLEAR) (aspc NULLC)). reflex
 (** Raw Evidence representaiton:  a list of binary (BS) values. *)
 Definition RawEv := list BS.
 
+Global Instance Jsonifiable_RawEv : Jsonifiable RawEv := {
+  to_JSON := (fun ev => 
+                JSON_Object [
+                  ("RawEv", InJSON_Array (map (fun bs => InJSON_String (to_string bs)) ev))
+                ]);
+  from_JSON := (fun js => 
+                  match (JSON_get_Array "RawEv" js) with
+                  | resultC js' => 
+                      result_map (fun js' => 
+                                    match js' with
+                                    | InJSON_String s => 
+                                        match (from_string s) with
+                                        | resultC bs => resultC bs
+                                        | errC e => errC e
+                                        end
+                                    | _ => errC "Invalid RawEv JSON"
+                                    end) js'
+                  | errC e => errC e
+                  end)
+}.
+
+(** AppResultC represents the result of a Copland Core_Term execution. *)
+
 Inductive AppResultC :=
 | mtc_app: AppResultC
 | nnc_app: N_ID -> BS -> AppResultC
@@ -252,6 +599,110 @@ Inductive AppResultC :=
 | eec_app: Plc -> ASP_PARAMS -> BS -> AppResultC ->(* Evidence -> *) AppResultC
 | ssc_app: AppResultC -> AppResultC -> AppResultC.
 
+Fixpoint AppResultC_to_Json (a : AppResultC) : JSON :=
+  match a with
+  | mtc_app => JSON_Object [("AppResultC_CONSTRUCTOR", InJSON_String "mtc_app")]
+  | nnc_app n bs => 
+      JSON_Object [
+        ("AppResultC_CONSTRUCTOR", InJSON_String "nnc_app");
+        ("N_ID", InJSON_String (to_string n));
+        ("BS", InJSON_String (to_string bs))
+      ]
+  | ggc_app plc ps rawEv res => 
+      JSON_Object [
+        ("AppResultC_CONSTRUCTOR", InJSON_String "ggc_app");
+        ("PLC", InJSON_String (to_string plc));
+        ("ASP_PARAMS", InJSON_Object (to_JSON ps));
+        ("RawEv", InJSON_Object (to_JSON rawEv));
+        ("AppResultC", InJSON_Object (AppResultC_to_Json res))
+      ]
+  | hhc_app plc ps bs res => 
+      JSON_Object [
+        ("AppResultC_CONSTRUCTOR", InJSON_String "hhc_app");
+        ("PLC", InJSON_String (to_string plc));
+        ("ASP_PARAMS", InJSON_Object (to_JSON ps));
+        ("BS", InJSON_String (to_string bs));
+        ("AppResultC", InJSON_Object (AppResultC_to_Json res))
+      ]
+  | eec_app plc ps bs res => 
+      JSON_Object [
+        ("AppResultC_CONSTRUCTOR", InJSON_String "eec_app");
+        ("PLC", InJSON_String (to_string plc));
+        ("ASP_PARAMS", InJSON_Object (to_JSON ps));
+        ("BS", InJSON_String (to_string bs));
+        ("AppResultC", InJSON_Object (AppResultC_to_Json res))
+      ]
+  | ssc_app res1 res2 => 
+      JSON_Object [
+        ("AppResultC_CONSTRUCTOR", InJSON_String "ssc_app");
+        ("AppResultC1", InJSON_Object (AppResultC_to_Json res1));
+        ("AppResultC2", InJSON_Object (AppResultC_to_Json res2))
+      ]
+  end.
+
+Fixpoint AppResultC_from_JSON (js : JSON) : ResultT AppResultC string :=
+  match js with
+  | JSON_Object [("AppResultC_CONSTRUCTOR", InJSON_String "mtc_app")] => resultC mtc_app
+  | JSON_Object [
+        ("AppResultC_CONSTRUCTOR", InJSON_String "nnc_app");
+        ("N_ID", InJSON_String nVal);
+        ("BS", InJSON_String bsVal)
+      ] =>
+    match (from_string nVal), (from_string bsVal) with
+    | resultC n, resultC bs => resultC (nnc_app n bs)
+    | _, _ => errC "Parsing nnc_app not successful"
+    end
+  | JSON_Object [
+        ("AppResultC_CONSTRUCTOR", InJSON_String "ggc_app");
+        ("PLC", InJSON_String plcVal);
+        ("ASP_PARAMS", InJSON_Object psJs);
+        ("RawEv", InJSON_Object rawEvJs);
+        ("AppResultC", InJSON_Object resJs)
+      ] =>
+    match (from_string plcVal), (from_JSON psJs), (from_JSON rawEvJs), (AppResultC_from_JSON resJs) with
+    | resultC plc, resultC ps, resultC rawEv, resultC res => resultC (ggc_app plc ps rawEv res)
+    | _, _, _, _ => errC "Parsing ggc_app not successful"
+    end
+  | JSON_Object [
+        ("AppResultC_CONSTRUCTOR", InJSON_String "hhc_app");
+        ("PLC", InJSON_String plcVal);
+        ("ASP_PARAMS", InJSON_Object psJs);
+        ("BS", InJSON_String bsVal);
+        ("AppResultC", InJSON_Object resJs)
+      ] =>
+    match (from_string plcVal), (from_JSON psJs), (from_string bsVal), (AppResultC_from_JSON resJs) with
+    | resultC plc, resultC ps, resultC bs, resultC res => resultC (hhc_app plc ps bs res)
+    | _, _, _, _ => errC "Parsing hhc_app not successful"
+    end
+  | JSON_Object [
+        ("AppResultC_CONSTRUCTOR", InJSON_String "eec_app");
+        ("PLC", InJSON_String plcVal);
+        ("ASP_PARAMS", InJSON_Object psJs);
+        ("BS", InJSON_String bsVal);
+        ("AppResultC", InJSON_Object resJs)
+      ] =>
+    match (from_string plcVal), (from_JSON psJs), (from_string bsVal), (AppResultC_from_JSON resJs) with
+    | resultC plc, resultC ps, resultC bs, resultC res => resultC (eec_app plc ps bs res)
+    | _, _, _, _ => errC "Parsing eec_app not successful"
+    end
+  | JSON_Object [
+        ("AppResultC_CONSTRUCTOR", InJSON_String "ssc_app");
+        ("AppResultC1", InJSON_Object res1Js);
+        ("AppResultC2", InJSON_Object res2Js)
+      ] =>
+    match (AppResultC_from_JSON res1Js), (AppResultC_from_JSON res2Js) with
+    | resultC res1, resultC res2 => resultC (ssc_app res1 res2)
+    | _, _ => errC "Parsing ssc_app not successful"
+    end
+  | _ => errC "Invalid AppResultC JSON"
+  end.
+
+Global Instance Jsonifiable_AppResultC : Jsonifiable AppResultC := {
+  to_JSON := AppResultC_to_Json;
+  from_JSON := AppResultC_from_JSON
+}.
+
+Close Scope string_scope.
 
 Fixpoint appresultc_size (res:AppResultC) : nat :=
   match res with

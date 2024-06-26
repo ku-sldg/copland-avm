@@ -70,8 +70,8 @@ Definition errStr_json_to_am_lib : string := "errStr_json_to_am_lib".
 
 Definition errStr_json_to_pair : string := "errStr_json_to_pair".
 
-Definition errStr_json_get_json_key_not_found : string := "errStr_json_get_json_key_not_found".
-Definition errStr_json_get_json_not_a_json : string := "errStr_json_get_json_not_a_json".
+Definition errStr_JSON_get_Object_key_not_found : string := "errStr_JSON_get_Object_key_not_found".
+Definition errStr_JSON_get_Object_not_a_json : string := "errStr_JSON_get_Object_not_a_json".
 
 Definition errStr_json_get_array_key_not_found : string := "errStr_json_get_array_key_not_found".
 Definition errStr_json_get_array_not_an_array : string := "errStr_json_get_array_not_an_array".

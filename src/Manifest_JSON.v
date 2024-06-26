@@ -59,10 +59,10 @@ Definition AM_Lib_to_JSON (am : AM_Library) : JSON :=
 
 Definition JSON_to_AM_Lib (js : JSON) : ResultT AM_Library string :=
   temp_CLONE_UUID <- JSON_get_string AM_CLONE_UUID js;;
-  temp_LIB_ASPS <- JSON_get_JSON AM_LIB_ASPS js;;
+  temp_LIB_ASPS <- JSON_get_Object AM_LIB_ASPS js;;
   temp_LIB_APPR_ASPS <- JSON_get_Array AM_LIB_APPR_ASPS js;;
-  temp_LIB_PLCS <- JSON_get_JSON AM_LIB_PLCS js;;
-  temp_LIB_PUBKEYS <- JSON_get_JSON AM_LIB_PUBKEYS js;;
+  temp_LIB_PLCS <- JSON_get_Object AM_LIB_PLCS js;;
+  temp_LIB_PUBKEYS <- JSON_get_Object AM_LIB_PUBKEYS js;;
 
   CLONE_UUID <- from_string temp_CLONE_UUID;;
   LIB_ASPS <- from_JSON temp_LIB_ASPS;;

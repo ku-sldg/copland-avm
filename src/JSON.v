@@ -13,17 +13,31 @@ Class Jsonifiable (A : Type) :=
       : forall (js : JSON) (a : A), to_JSON a = js <-> (from_JSON js = resultC a); *)
   }.
 
-Definition JSON_get_JSON (key : string) (js : JSON) : ResultT JSON string :=
+Open Scope string_scope.
+
+Definition JSON_get_Object (key : string) (js : JSON) : ResultT JSON string :=
   match js with
   | JSON_Object m => 
       match map_get m key with
       | Some ijs => 
           match ijs with
           | InJSON_Object v => resultC v
-          | _ => errC errStr_json_get_json_not_a_json
+          | _ => errC "JSON_get_Object: NOT AN OBJECT"
           end
-      | None => errC errStr_json_get_json_key_not_found
+      | None => errC "JSON_get_Object: KEY NOT FOUND"
       end
+  end.
+
+Fixpoint JSON_map_get_Object_rec_safe (key : string) (js_map : MapC string InnerJSON) : ResultT JSON string :=
+  match js_map with
+  | [] => errC ("NO OBJECT """ ++ key ++ """")
+  | (key', val) :: js_map' =>
+      if (eqb key key') 
+      then (match val with
+            | InJSON_Object v => resultC v
+            | _ => errC "JSON_map_get_Object_rec_safe: NOT AN OBJECT"
+            end)
+      else JSON_map_get_Object_rec_safe key js_map'
   end.
 
 Definition JSON_get_Array (key : string) (js : JSON) : ResultT (list InnerJSON) string :=
