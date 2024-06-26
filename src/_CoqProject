@@ -3,11 +3,12 @@ Preamble.v
 ResultT.v
 Serializable.v
 Serializable_Class_Admits.v
-More_lists.v
-StructTactics.v
+; Indented Files mean they are not utilized in extraction
+  More_lists.v
+  StructTactics.v
 EqClass.v
 AbstractedTypes.v
-Defs.v
+  Defs.v
 BS.v
 ErrorStringConstants.v
 Maps.v

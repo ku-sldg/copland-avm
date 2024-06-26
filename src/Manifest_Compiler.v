@@ -35,14 +35,18 @@ Definition generate_ASP_dispatcher' (al : AM_Library) (am : Manifest) (par : ASP
       let asp_req := (mkASPRReq aspid args targ_plc targ rawEv) in
       let js_req := ASPRunRequest_to_JSON asp_req in
       (* Used to tell difference between local and remote ASPs *)
-      let js_resp := (match loc with
+      let resp_res := (match loc with
                       | Local_ASP fsLoc => make_JSON_FS_Location_Request fsLoc js_req
                       | Remote_ASP uuid => make_JSON_Network_Request uuid js_req
                       end) in
-      match JSON_to_ASPRunResponse js_resp with
-      | resultC r => 
-          let '(mkASPRResp succ bs) := r in
-          resultC bs
+      match resp_res with
+      | resultC js_resp =>
+          match JSON_to_ASPRunResponse js_resp with
+          | resultC r => 
+              let '(mkASPRResp succ bs) := r in
+              resultC bs
+          | errC msg => errC (Runtime msg)
+          end
       | errC msg => errC (Runtime msg)
       end
     | None => errC Unavailable
@@ -66,14 +70,18 @@ Definition generate_appraisal_ASP_dispatcher' (al : AM_Library) (am : Manifest) 
       let asp_req := (mkASPRReq aspid args targ_plc targ rawEv) in
       let js_req := ASPRunRequest_to_JSON asp_req in
       (* Used to tell difference between local and remote ASPs *)
-      let js_resp := (match loc with
+      let resp_res := (match loc with
                       | Local_ASP fsLoc => make_JSON_FS_Location_Request fsLoc js_req
                       | Remote_ASP uuid => make_JSON_Network_Request uuid js_req
                       end) in
-      match JSON_to_ASPRunResponse js_resp with
-      | resultC r => 
-          let '(mkASPRResp succ ev) := r in
-          resultC ev
+      match resp_res with
+      | resultC js_resp =>
+          match JSON_to_ASPRunResponse js_resp with
+          | resultC r => 
+              let '(mkASPRResp succ ev) := r in
+              resultC ev
+          | errC msg => errC (Runtime msg)
+          end
       | errC msg => errC (Runtime msg)
       end
     | None => errC Unavailable

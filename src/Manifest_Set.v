@@ -362,6 +362,6 @@ Fixpoint list_InJson_to_manifest_set_pairs {A B :Type} `{Serializable A}
           end
       | errC e => errC e
       end
-    | _ => errC "Error: Invalid JSON type in manifest set from paris, only can handle json objects."%string
+    | _ => errC "Error: Invalid JSON type in manifest set from pairs, only can handle json objects."%string
     end
   end.

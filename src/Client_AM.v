@@ -23,24 +23,32 @@ Set Nested Proofs Allowed.
 Definition am_sendReq (req_plc : Plc) (t:Term) (uuid : UUID) (authTok:ReqAuthTok) (e:RawEv) : ResultT RawEv string :=
   let req := mkPRReq t req_plc e in 
   let js := ProtocolRunRequest_to_JSON req in
-  let js_res := make_JSON_Network_Request uuid js in
-  match JSON_to_ProtocolRunResponse js_res with
+  let resp_res := make_JSON_Network_Request uuid js in
+  match resp_res with
+  | resultC js_res =>
+      match JSON_to_ProtocolRunResponse js_res with
+      | errC msg => errC msg
+      | resultC res =>
+        let '(mkPRResp success ev) := res in
+        if success then resultC ev else errC errStr_remote_am_failure
+      end
   | errC msg => errC msg
-  | resultC res =>
-    let '(mkPRResp success ev) := res in
-    if success then resultC ev else errC errStr_remote_am_failure
   end.
 
 Definition am_sendReq_app (uuid : UUID) (t:Term) (p:Plc) (e:Evidence) (ev:RawEv) : 
     ResultT AppResultC string :=
   let req := mkPAReq t p e ev in
   let js := ProtocolAppraiseRequest_to_JSON req in
-  let js_res := make_JSON_Network_Request uuid js in
-  match JSON_to_ProtocolAppraiseResponse js_res with
+  let resp_res := make_JSON_Network_Request uuid js in
+  match resp_res with
+  | resultC js_res =>
+    match JSON_to_ProtocolAppraiseResponse js_res with
+    | errC msg => errC msg
+    | resultC res =>
+      let '(mkPAResp success result) := res in
+      if success then resultC result else errC errStr_remote_am_failure
+    end
   | errC msg => errC msg
-  | resultC res =>
-    let '(mkPAResp success result) := res in
-    if success then resultC result else errC errStr_remote_am_failure
   end.
 
 Definition gen_nonce_if_none_local (initEv:option EvC) : AM EvC :=

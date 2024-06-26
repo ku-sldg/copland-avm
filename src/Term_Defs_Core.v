@@ -130,6 +130,28 @@ Global Instance Jsonifiable_FWD : Jsonifiable FWD := {
                 end);
   from_JSON := (fun js => 
                   match (JSON_get_string "FWD_CONSTRUCTOR" js) with
+                  | resultC cons_name =>
+                      if (eqb cons_name "COMP") 
+                      then resultC COMP
+                      else if (eqb cons_name "ENCR") 
+                      then resultC ENCR
+                      else if (eqb cons_name "KILL") 
+                      then resultC KILL
+                      else if (eqb cons_name "KEEP") 
+                      then resultC KEEP
+                      else if (eqb cons_name "EXTD")
+                        then match (JSON_get_string "EXTD_N" js) with
+                             | resultC n_str => 
+                                match (from_string n_str) with
+                                | resultC n => resultC (EXTD n)
+                                | errC e => errC e
+                                end
+                             | _ => errC "Parsing EXTD not successful"
+                             end
+                      else errC "Invalid FWD JSON"
+                  | errC e => errC e
+                  end)
+                  (* match (JSON_get_string "FWD_CONSTRUCTOR" js) with
                   | resultC "COMP" => resultC COMP
                   | resultC "ENCR" => resultC ENCR
                   | resultC "EXTD" => 
@@ -144,7 +166,7 @@ Global Instance Jsonifiable_FWD : Jsonifiable FWD := {
                   | resultC "KILL" => resultC KILL
                   | resultC "KEEP" => resultC KEEP
                   | _ => errC "Invalid FWD JSON"
-                  end)
+                  end) *)
 }.
 
 (** The structure of evidence. 
@@ -185,38 +207,50 @@ Fixpoint Evidence_to_JSON (e : Evidence) : JSON :=
   end.
 
 Fixpoint Evidence_from_JSON (js : JSON) : ResultT Evidence string :=
-  match js with
-  | JSON_Object [("EVIDENCE_CONSTRUCTOR", InJSON_String "mt")] => resultC mt
-  | JSON_Object [
-        ("EVIDENCE_CONSTRUCTOR", InJSON_String "nn"); 
-        ("N_ID", InJSON_String nVal)
-      ] =>
-    match (from_string nVal) with
-    | resultC n => resultC (nn n)
-    | errC e => errC e
-    end
-  | JSON_Object [
-        ("EVIDENCE_CONSTRUCTOR", InJSON_String "uu");
-        ("PLC", InJSON_String plcVal);
-        ("FWD", InJSON_Object fwdJs);
-        ("ASP_PARAMS", InJSON_Object psJs);
-        ("EVIDENCE", InJSON_Object eJs)
-      ] =>
-    match (from_string plcVal), (from_JSON fwdJs), (from_JSON psJs), (Evidence_from_JSON eJs) with
-    | resultC plc, resultC fwd, resultC ps, resultC e =>
-      resultC (uu plc fwd ps e)
-    | _, _, _, _ => errC "Evidence_from_JSON: error parsing uu"
-    end
-  | JSON_Object [
-        ("EVIDENCE_CONSTRUCTOR", InJSON_String "ss");
-        ("EVIDENCE1", InJSON_Object e1Js);
-        ("EVIDENCE2", InJSON_Object e2Js)
-      ] =>
-    match (Evidence_from_JSON e1Js), (Evidence_from_JSON e2Js) with
-    | resultC e1, resultC e2 => resultC (ss e1 e2)
-    | _, _ => errC "Parsing ss not successful"
-    end
-  | _ => errC "Invalid Evidence JSON"
+  match (JSON_get_string "EVIDENCE_CONSTRUCTOR" js) with
+  | resultC cons_name =>
+      if (eqb cons_name "mt") 
+      then resultC mt
+      else if (eqb cons_name "nn") 
+      then  match (JSON_get_string "N_ID" js) with
+            | resultC nVal => 
+              match (from_string nVal) with
+              | resultC n => resultC (nn n)
+              | errC e => errC e
+              end
+            | _ => errC "Parsing nn not successful"
+            end
+      else if (eqb cons_name "uu") 
+      then  match js with
+            | JSON_Object [
+                ev_cons; 
+                (_,InJSON_String plc); 
+                (_, InJSON_Object fwd); 
+                (_, InJSON_Object asp_par); 
+                (_, InJSON_Object ev')
+              ] =>
+                match (from_string plc), (from_JSON fwd), (from_JSON asp_par), (Evidence_from_JSON ev') with
+                | resultC plc, resultC fwd, resultC ps, resultC e =>
+                  resultC (uu plc fwd ps e)
+                | _, _, _, _ => errC "Evidence_from_JSON: error parsing uu"
+                end
+            | _ => errC "Parsing uu not successful"
+            end
+      else if (eqb cons_name "ss") 
+      then  match js with
+            | JSON_Object [
+                ev_cons; 
+                (_,InJSON_Object ev1); 
+                (_,InJSON_Object ev2)
+              ] =>
+                match (Evidence_from_JSON ev1), (Evidence_from_JSON ev2) with
+                | resultC e1, resultC e2 => resultC (ss e1 e2)
+                | _, _ => errC "Parsing ss not successful"
+                end
+            | _ => errC "Parsing ss not successful"
+            end
+      else errC "Invalid Evidence JSON constructor name"
+  | errC e => errC e
   end.
 
 Global Instance Jsonifiable_Evidence : Jsonifiable Evidence := {
@@ -240,11 +274,11 @@ Global Instance Serializable_SP : Serializable SP := {
                   | NONE => "NONE"
                   end);
   from_string := (fun s => 
-                    match s with
-                    | "ALL" => resultC ALL
-                    | "NONE" => resultC NONE
-                    | _ => errC "Invalid SP string"
-                    end)
+                    if (eqb s "ALL")
+                    then resultC ALL
+                    else if (eqb s "NONE")
+                    then resultC NONE
+                    else errC "Invalid SP string")
 }.
 
 
@@ -291,29 +325,35 @@ Global Instance Jsonifiable_ASP : Jsonifiable ASP := {
                 end);
   from_JSON := (fun js => 
                   match (JSON_get_string "ASP_CONSTRUCTOR" js) with
-                  | resultC "NULL" => resultC NULL
-                  | resultC "CPY" => resultC CPY
-                  | resultC "ASPC" =>
-                      match (JSON_get_string "ASP_SP" js), (JSON_get_Object "ASP_FWD" js), (JSON_get_Object "ASP_PARAMS" js) with
-                      | resultC sp, resultC fwd, resultC ps =>
-                          match (from_string sp), (from_JSON fwd), (from_JSON ps) with
-                          | resultC sp, resultC fwd, resultC ps => 
-                              resultC (ASPC sp fwd ps)
-                          | _, _, _ => errC "Parsing ASPC not successful"
-                          end
-                      | _, _, _ => errC "Parsing ASPC not successful"
-                      end
-                  | resultC "SIG" => resultC SIG
-                  | resultC "HSH" => resultC HSH
-                  | resultC "ENC" => 
-                      match (JSON_get_string "ENC_PLC" js) with
-                      | resultC q => 
-                          match (from_string q) with
-                          | resultC q => resultC (ENC q)
-                          | _ => errC "Parsing ENC PLC from string not successful"
-                          end
-                      | _ => errC "Parsing ENC not successful"
-                      end
+                  | resultC cons_name =>
+                      if (eqb cons_name "NULL")
+                      then resultC NULL
+                      else if (eqb cons_name "CPY")
+                      then resultC CPY
+                      else if (eqb cons_name "ASPC")
+                      then match (JSON_get_string "ASP_SP" js), (JSON_get_Object "ASP_FWD" js), (JSON_get_Object "ASP_PARAMS" js) with
+                           | resultC sp, resultC fwd, resultC ps =>
+                              match (from_string sp), (from_JSON fwd), (from_JSON ps) with
+                              | resultC sp, resultC fwd, resultC ps => 
+                                  resultC (ASPC sp fwd ps)
+                              | _, _, _ => errC "Parsing ASPC not successful"
+                              end
+                           | _, _, _ => errC "Parsing ASPC not successful"
+                           end
+                      else if (eqb cons_name "SIG")
+                      then resultC SIG
+                      else if (eqb cons_name "HSH")
+                      then resultC HSH
+                      else if (eqb cons_name "ENC")
+                      then match (JSON_get_string "ENC_PLC" js) with
+                           | resultC q => 
+                              match (from_string q) with
+                              | resultC q => resultC (ENC q)
+                              | _ => errC "Parsing ENC PLC from string not successful"
+                              end
+                           | _ => errC "Parsing ENC not successful"
+                           end
+                      else errC "Invalid JSON ASP Constructor Name"
                   | _ => errC "Invalid JSON ASP Constructor Name"
                   end)
 }.
@@ -406,63 +446,66 @@ Fixpoint Term_to_JSON (t : Term) : JSON :=
 
 Fixpoint Term_from_JSON (js : JSON) : ResultT Term string :=
   match (JSON_get_string "TERM_CONSTRUCTOR" js) with
-  | resultC "asp" => 
-      match (JSON_get_Object "TERM_BODY" js) with
-      | resultC js' => 
-          match (from_JSON js') with
-          | resultC a => resultC (asp a)
-          | errC e => errC e
+  | resultC cons_name =>
+      if (eqb cons_name "asp")
+      then  match (JSON_get_Object "TERM_BODY" js) with
+            | resultC js' => 
+                match (from_JSON js') with
+                | resultC a => resultC (asp a)
+                | errC e => errC e
+                end
+            | errC e => errC e
+            end
+      else if (eqb cons_name "att")
+      then (*! I hate this, but only viable way without going wf recursion *)
+          match js with
+          | JSON_Object [
+              term_cons; 
+              (_, InJSON_Array [InJSON_String plc; InJSON_Object js'])
+            ] =>
+              match (from_string plc), (Term_from_JSON js') with
+              | resultC plc, resultC t => resultC (att plc t)
+              | _, _ => errC "Parsing att not successful"
+              end
+          | _ => errC "Invalid att JSON: REMEMBER IT MUST BE IN A SPECIFIC FORMAT AND ORDER"
           end
-      | errC e => errC e
-      end
-  | resultC "att" => 
-      (*! I hate this, but only viable way without going full wf recursion *)
-      let '(JSON_Object js_map) := js in
-      match js_map with
-      | [("TERM_CONSTRUCTOR", InJSON_String "att"); ("TERM_BODY", InJSON_Array [InJSON_String plc; InJSON_Object js'])] =>
-          match (from_string plc), (Term_from_JSON js') with
-          | resultC plc, resultC t => resultC (att plc t)
-          | _, _ => errC "Parsing att not successful"
-          end
-      (* NOTE: We could maybe add these permutations? 
-      | [("TERM_BODY", InJSON_Array [InJSON_String plc; InJSON_Object js']); ("TERM_CONSTRUCTOR", InJSON_String "att")] =>
-          match (from_string plc), (Term_from_JSON js') with
-          | resultC plc, resultC t => resultC (att plc t)
-          | _, _ => errC "Parsing att not successful"
-          end *)
-      | _ => errC "Invalid att JSON: REMEMBER IT MUST BE IN A SPECIFIC FORMAT AND ORDER"
-      end
-  | resultC "lseq" =>
-      let '(JSON_Object js_map) := js in
-      match js_map with
-      | [("TERM_CONSTRUCTOR", InJSON_String "lseq"); ("TERM_BODY", InJSON_Array [InJSON_Object t1js; InJSON_Object t2js])] =>
-          match (Term_from_JSON t1js), (Term_from_JSON t2js) with
-          | resultC t1, resultC t2 => resultC (lseq t1 t2)
-          | _, _ => errC "Parsing lseq not successful"
-          end
-      | _ => errC "Invalid lseq JSON: REMEMBER IT MUST BE IN A SPECIFIC FORMAT AND ORDER"
-      end
-  | resultC "bseq" =>
-      let '(JSON_Object js_map) := js in
-      match js_map with
-      | [("TERM_CONSTRUCTOR", InJSON_String "bseq"); ("TERM_BODY", InJSON_Array [InJSON_Object spjs; InJSON_Object t1js; InJSON_Object t2js])] =>
-          match (from_JSON spjs), (Term_from_JSON t1js), (Term_from_JSON t2js) with
-          | resultC s, resultC t1, resultC t2 => resultC (bseq s t1 t2)
-          | _, _, _ => errC "Parsing bseq not successful"
-          end
-      | _ => errC "Invalid bseq JSON: REMEMBER IT MUST BE IN A SPECIFIC FORMAT AND ORDER"
-      end
-  | resultC "bpar" =>
-      let '(JSON_Object js_map) := js in
-      match js_map with
-      | [("TERM_CONSTRUCTOR", InJSON_String "bpar"); ("TERM_BODY", InJSON_Array [InJSON_Object spjs; InJSON_Object t1js; InJSON_Object t2js])] =>
-          match (from_JSON spjs), (Term_from_JSON t1js), (Term_from_JSON t2js) with
-          | resultC s, resultC t1, resultC t2 => resultC (bpar s t1 t2)
-          | _, _, _ => errC "Parsing bpar not successful"
-          end
-      | _ => errC "Invalid bpar JSON: REMEMBER IT MUST BE IN A SPECIFIC FORMAT AND ORDER"
-      end
-  | resultC _ => errC "Invalid TERM CONSTRUCTOR in Term_from_JSON"
+      else if (eqb cons_name "lseq")
+      then  match js with
+            | JSON_Object [
+                term_cons; 
+                (_, InJSON_Array [InJSON_Object t1js; InJSON_Object t2js])
+              ] =>
+                match (Term_from_JSON t1js), (Term_from_JSON t2js) with
+                | resultC t1, resultC t2 => resultC (lseq t1 t2)
+                | _, _ => errC "Parsing lseq not successful"
+                end
+            | _ => errC "Invalid lseq JSON: REMEMBER IT MUST BE IN A SPECIFIC FORMAT AND ORDER"
+            end
+      else if (eqb cons_name "bseq")
+      then  match js with
+            | JSON_Object [
+                term_cons; 
+                (_, InJSON_Array [InJSON_Object spjs; InJSON_Object t1js; InJSON_Object t2js])
+              ] =>
+                match (from_JSON spjs), (Term_from_JSON t1js), (Term_from_JSON t2js) with
+                | resultC s, resultC t1, resultC t2 => resultC (bseq s t1 t2)
+                | _, _, _ => errC "Parsing bseq not successful"
+                end
+            | _ => errC "Invalid bseq JSON: REMEMBER IT MUST BE IN A SPECIFIC FORMAT AND ORDER"
+            end
+      else if (eqb cons_name "bpar")
+      then  match js with
+            | JSON_Object [
+                term_cons; 
+                (_, InJSON_Array [InJSON_Object spjs; InJSON_Object t1js; InJSON_Object t2js])
+              ] =>
+                match (from_JSON spjs), (Term_from_JSON t1js), (Term_from_JSON t2js) with
+                | resultC s, resultC t1, resultC t2 => resultC (bpar s t1 t2)
+                | _, _, _ => errC "Parsing bpar not successful"
+                end
+            | _ => errC "Invalid bpar JSON: REMEMBER IT MUST BE IN A SPECIFIC FORMAT AND ORDER"
+            end
+      else errC "Invalid TERM CONSTRUCTOR in Term_from_JSON"
   | errC e => errC e
   end.
 
@@ -641,59 +684,82 @@ Fixpoint AppResultC_to_Json (a : AppResultC) : JSON :=
   end.
 
 Fixpoint AppResultC_from_JSON (js : JSON) : ResultT AppResultC string :=
-  match js with
-  | JSON_Object [("AppResultC_CONSTRUCTOR", InJSON_String "mtc_app")] => resultC mtc_app
-  | JSON_Object [
-        ("AppResultC_CONSTRUCTOR", InJSON_String "nnc_app");
-        ("N_ID", InJSON_String nVal);
-        ("BS", InJSON_String bsVal)
-      ] =>
-    match (from_string nVal), (from_string bsVal) with
-    | resultC n, resultC bs => resultC (nnc_app n bs)
-    | _, _ => errC "Parsing nnc_app not successful"
-    end
-  | JSON_Object [
-        ("AppResultC_CONSTRUCTOR", InJSON_String "ggc_app");
-        ("PLC", InJSON_String plcVal);
-        ("ASP_PARAMS", InJSON_Object psJs);
-        ("RawEv", InJSON_Object rawEvJs);
-        ("AppResultC", InJSON_Object resJs)
-      ] =>
-    match (from_string plcVal), (from_JSON psJs), (from_JSON rawEvJs), (AppResultC_from_JSON resJs) with
-    | resultC plc, resultC ps, resultC rawEv, resultC res => resultC (ggc_app plc ps rawEv res)
-    | _, _, _, _ => errC "Parsing ggc_app not successful"
-    end
-  | JSON_Object [
-        ("AppResultC_CONSTRUCTOR", InJSON_String "hhc_app");
-        ("PLC", InJSON_String plcVal);
-        ("ASP_PARAMS", InJSON_Object psJs);
-        ("BS", InJSON_String bsVal);
-        ("AppResultC", InJSON_Object resJs)
-      ] =>
-    match (from_string plcVal), (from_JSON psJs), (from_string bsVal), (AppResultC_from_JSON resJs) with
-    | resultC plc, resultC ps, resultC bs, resultC res => resultC (hhc_app plc ps bs res)
-    | _, _, _, _ => errC "Parsing hhc_app not successful"
-    end
-  | JSON_Object [
-        ("AppResultC_CONSTRUCTOR", InJSON_String "eec_app");
-        ("PLC", InJSON_String plcVal);
-        ("ASP_PARAMS", InJSON_Object psJs);
-        ("BS", InJSON_String bsVal);
-        ("AppResultC", InJSON_Object resJs)
-      ] =>
-    match (from_string plcVal), (from_JSON psJs), (from_string bsVal), (AppResultC_from_JSON resJs) with
-    | resultC plc, resultC ps, resultC bs, resultC res => resultC (eec_app plc ps bs res)
-    | _, _, _, _ => errC "Parsing eec_app not successful"
-    end
-  | JSON_Object [
-        ("AppResultC_CONSTRUCTOR", InJSON_String "ssc_app");
-        ("AppResultC1", InJSON_Object res1Js);
-        ("AppResultC2", InJSON_Object res2Js)
-      ] =>
-    match (AppResultC_from_JSON res1Js), (AppResultC_from_JSON res2Js) with
-    | resultC res1, resultC res2 => resultC (ssc_app res1 res2)
-    | _, _ => errC "Parsing ssc_app not successful"
-    end
+  match (JSON_get_string "AppResultC_CONSTRUCTOR" js) with
+  | resultC cons_name =>
+      if (eqb cons_name "mt_app")
+      then resultC mtc_app
+      else if (eqb cons_name "nnc_app")
+      then  match js with
+            | JSON_Object [
+                _;
+                (_, InJSON_String n);
+                (_, InJSON_String bs)
+              ] => 
+                match (from_string n), (from_string bs) with
+                | resultC n, resultC bs => resultC (nnc_app n bs)
+                | _, _ => errC "Parsing nnc_app not successful"
+                end
+            | _ => errC "Parsing nnc_app not successful"
+            end
+      else if (eqb cons_name "ggc_app")
+      then  match js with
+            | JSON_Object [
+                _;
+                (_, InJSON_String plc);
+                (_, InJSON_Object ps);
+                (_, InJSON_Object rawEv);
+                (_, InJSON_Object res)
+              ] =>
+                match (from_string plc), (from_JSON ps), (from_JSON rawEv), (AppResultC_from_JSON res) with
+                | resultC plc, resultC ps, resultC rawEv, resultC res => resultC (ggc_app plc ps rawEv res)
+                | _, _, _, _ => errC "Parsing ggc_app not successful"
+                end
+            | _ => errC "Parsing ggc_app not successful"
+            end
+      else if (eqb cons_name "hhc_app")
+      then  match js with
+            | JSON_Object [
+                _;
+                (_, InJSON_String plc);
+                (_, InJSON_Object ps);
+                (_, InJSON_String bs);
+                (_, InJSON_Object res)
+              ] =>
+                  match (from_string plc), (from_JSON ps), (from_string bs), (AppResultC_from_JSON res) with
+                  | resultC plc, resultC ps, resultC bs, resultC res => resultC (hhc_app plc ps bs res)
+                  | _, _, _, _ => errC "Parsing hhc_app not successful"
+                  end
+            | _ => errC "Parsing hhc_app not successful"
+            end
+      else if (eqb cons_name "eec_app")
+      then  match js with
+            | JSON_Object [
+                _;
+                (_, InJSON_String plc);
+                (_, InJSON_Object ps);
+                (_, InJSON_String bs);
+                (_, InJSON_Object res)
+              ] =>
+                match (from_string plc), (from_JSON ps), (from_string bs), (AppResultC_from_JSON res) with
+                | resultC plc, resultC ps, resultC bs, resultC res => resultC (eec_app plc ps bs res)
+                | _, _, _, _ => errC "Parsing eec_app not successful"
+                end
+            | _ => errC "Parsing eec_app not successful"
+            end
+      else if (eqb cons_name "ssc_app")
+      then  match js with
+            | JSON_Object [
+                _;
+                (_, InJSON_Object res1);
+                (_, InJSON_Object res2)
+              ] =>
+                match (AppResultC_from_JSON res1), (AppResultC_from_JSON res2) with
+                | resultC res1, resultC res2 => resultC (ssc_app res1 res2)
+                | _, _ => errC "Parsing ssc_app not successful"
+                end
+            | _ => errC "Parsing ssc_app not successful"
+            end
+      else errC "Invalid AppResultC JSON"
   | _ => errC "Invalid AppResultC JSON"
   end.
 

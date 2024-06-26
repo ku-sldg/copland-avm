@@ -90,13 +90,17 @@ Definition make_AM_Protocol_Run_request_JSON
     : ResultT RawEv string :=
   let req := (mkPRReq t from_plc ev) in
   let js_req := ProtocolRunRequest_to_JSON req in
-  let js_resp := make_JSON_Network_Request targ_uuid js_req in
-  match JSON_to_AM_Protocol_Response js_resp with
-  | resultC (Protocol_Run_Response prresp) => 
-    let '(mkPRResp success ev) := prresp in
-    if success 
-    then resultC ev 
-    else errC errStr_remote_am_failure
+  let resp_res := make_JSON_Network_Request targ_uuid js_req in
+  match resp_res with
+  | resultC js_resp =>
+      match JSON_to_AM_Protocol_Response js_resp with
+      | resultC (Protocol_Run_Response prresp) => 
+        let '(mkPRResp success ev) := prresp in
+        if success 
+        then resultC ev 
+        else errC errStr_remote_am_failure
+      | errC msg => errC msg
+      | _ => errC errStr_invalid_request_type
+      end
   | errC msg => errC msg
-  | _ => errC errStr_invalid_request_type
   end.

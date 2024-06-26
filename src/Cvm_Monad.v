@@ -201,16 +201,20 @@ Definition do_remote (t:Term) (pTo:Plc) (e:EvC) (ac: AM_Config) : ResultT RawEv 
         let my_plc := (my_abstract_plc (absMan ac)) in
         let remote_req := (mkPRReq t my_plc (get_bits e)) in
         let js_req := ProtocolRunRequest_to_JSON remote_req in
-        let js_resp := make_JSON_Network_Request uuid js_req in
-        match JSON_to_AM_Protocol_Response js_resp with
-        | resultC resp => 
-            match resp with
-            | Protocol_Run_Response prresp => 
-                let '(mkPRResp success ev) := prresp in
-                if success 
-                then resultC ev 
-                else errC (Runtime errStr_remote_am_failure)
-            | _ => errC (Runtime errStr_incorrect_resp_type)
+        let resp_res := make_JSON_Network_Request uuid js_req in
+        match resp_res with
+        | resultC js_resp =>
+            match JSON_to_AM_Protocol_Response js_resp with
+            | resultC resp => 
+                match resp with
+                | Protocol_Run_Response prresp => 
+                    let '(mkPRResp success ev) := prresp in
+                    if success 
+                    then resultC ev 
+                    else errC (Runtime errStr_remote_am_failure)
+                | _ => errC (Runtime errStr_incorrect_resp_type)
+                end
+            | errC msg => errC (Runtime msg)
             end
         | errC msg => errC (Runtime msg)
         end
