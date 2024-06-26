@@ -12,20 +12,6 @@ Import ListNotations.
 
 Definition manifest_set (A : Type) := list A.
 
-Definition manifest_set_to_JSON {A : Type} `{Jsonifiable A} (m : manifest_set A) : JSON :=
-  JSON_Array (map to_JSON m).
-
-Definition JSON_to_manifest_set {A : Type} `{Jsonifiable A} (js : JSON) : ResultT (manifest_set A) string :=
-  match js with
-  | JSON_Array m => result_map from_JSON m
-  | _ => errC errStr_json_to_manifest_set
-  end.
-
-Global Instance jsonifiable_manifest_set (A : Type) `{Jsonifiable A} : Jsonifiable (manifest_set A) :=
-  {|
-    to_JSON := manifest_set_to_JSON;
-    from_JSON := JSON_to_manifest_set
-  |}.
 
 Definition manifest_set_empty {A : Type} : manifest_set A := nil.
 
@@ -325,3 +311,57 @@ Proof.
     simpl in H; apply IHb in H; destruct H; auto with *.
     + apply manadd_In_set in H; destruct H; subst; auto with *.       
 Qed.
+
+Fixpoint manifest_set_to_list_InJson {A :Type} `{Serializable A} 
+    (m : manifest_set A) : list InnerJSON :=
+  match m with
+  | nil => []
+  | h :: t => (InJSON_String (to_string h)) :: (manifest_set_to_list_InJson t)
+  end.
+
+Fixpoint list_InJson_to_manifest_set {A :Type} `{Serializable A} `{EqClass A}
+    (l : list InnerJSON) : ResultT (manifest_set A) string :=
+  match l with
+  | nil => resultC []
+  | h :: t => 
+    match h with
+    | InJSON_String s =>
+      match (list_InJson_to_manifest_set t) with
+      | resultC t' => 
+          match (from_string s) with
+          | resultC h' => resultC (manset_add h' t')
+          | errC e => errC e
+          end
+      | errC e => errC e
+      end
+    | _ => errC "Error: Invalid JSON type in manifest set, only can handle strings."%string
+    end
+  end.
+
+Fixpoint manifest_set_pairs_to_list_InJson {A B : Type} `{Serializable A} 
+    `{Serializable B} (m : manifest_set (A * B)) : list InnerJSON :=
+  match m with
+  | [] => []
+  | h :: t => 
+        (InJSON_Object (to_JSON h)) :: (manifest_set_pairs_to_list_InJson t)
+  end.
+
+Fixpoint list_InJson_to_manifest_set_pairs {A B :Type} `{Serializable A} 
+    `{Serializable B} `{EqClass A} `{EqClass B}
+    (l : list InnerJSON) : ResultT (manifest_set (A * B)) string :=
+  match l with
+  | nil => resultC []
+  | h :: t => 
+    match h with
+    | InJSON_Object js =>
+      match (list_InJson_to_manifest_set_pairs t) with
+      | resultC t' => 
+          match (from_JSON js) with
+          | resultC h' => resultC (manset_add h' t')
+          | errC e => errC e
+          end
+      | errC e => errC e
+      end
+    | _ => errC "Error: Invalid JSON type in manifest set from paris, only can handle json objects."%string
+    end
+  end.

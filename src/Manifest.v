@@ -16,6 +16,10 @@ Require Import Manifest_Set String ErrorStringConstants.
 Require Import List.
 Import ListNotations.
 
+(* ASP Locator JSON Admits *)
+Definition JSON_Local_ASP : string := "Local_ASP". 
+Definition JSON_Remote_ASP : string := "Remote_ASP".
+
 Inductive ASP_Locator :=
 | Local_ASP : FS_Location -> ASP_Locator
 | Remote_ASP : UUID -> ASP_Locator.
@@ -24,20 +28,24 @@ Global Instance jsonifiable_ASP_Locator : Jsonifiable ASP_Locator :=
   {
     to_JSON := (fun v => 
                   match v with
-                  | Local_ASP loc => JSON_Object [(JSON_Local_ASP, to_JSON loc)]
-                  | Remote_ASP uuid => JSON_Object [(JSON_Remote_ASP, to_JSON uuid)]
+                  | Local_ASP loc => 
+                      JSON_Object 
+                        [(JSON_Local_ASP, (InJSON_String (to_string loc)))]
+                  | Remote_ASP uuid => 
+                      JSON_Object 
+                        [(JSON_Remote_ASP, (InJSON_String (to_string uuid)))]
                   end);
     from_JSON := (fun js => 
-                    match (JSON_get_JSON JSON_Local_ASP js) with
+                    match (JSON_get_string JSON_Local_ASP js) with
                     | resultC loc => 
-                      match (from_JSON loc) with
+                      match (from_string loc) with
                       | resultC loc' => resultC (Local_ASP loc')
                       | errC e => errC e
                       end
                     | errC e => 
-                      match (JSON_get_JSON JSON_Remote_ASP js) with
+                      match (JSON_get_string JSON_Remote_ASP js) with
                       | resultC uuid =>
-                        match (from_JSON uuid) with
+                        match (from_string uuid) with
                         | resultC uuid' => resultC (Remote_ASP uuid')
                         | errC e => errC e
                         end

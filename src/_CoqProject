@@ -1,6 +1,7 @@
 -R . CoplandM
 Preamble.v
 ResultT.v
+Serializable.v
 More_lists.v
 StructTactics.v
 EqClass.v

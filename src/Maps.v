@@ -9,10 +9,11 @@ Authors:  Adam Petz, ampetz@ku.edu
 Require Import String List.
 Require Import EqClass AbstractedTypes.
 
-Import ListNotations.
 Require Import Coq.Arith.EqNat Coq.Program.Tactics PeanoNat.
 
 Require Import StructTactics.
+Import ListNotations.
+Open Scope list_scope.
 
 (* ================================================================= *)
 (** ** List-Based Maps *)
@@ -95,17 +96,17 @@ Fixpoint map_map {A B C : Type} `{HA : EqClass A} (f : B -> C) (m : MapC A B) : 
   | (k, v) :: m' => (k, f v) :: (map_map f m')
   end.
 
-Fixpoint id_map_to_string_map {B : Type} (m : MapC ID_Type B) : MapC string B :=
+Fixpoint id_map_to_string_map `{Serializable ID_Type} {B : Type} (m : MapC ID_Type B) : MapC string B :=
   match m with
   | [] => []
-  | (k, v) :: m' => (ID_Type_to_string k, v) :: (id_map_to_string_map m')
+  | (k, v) :: m' => (to_string k, v) :: (id_map_to_string_map m')
   end.
 
-Fixpoint string_map_to_id_map {B : Type} (m : MapC string B) : ResultT (MapC ID_Type B) string :=
+Fixpoint string_map_to_id_map `{Serializable ID_Type} {B : Type} (m : MapC string B) : ResultT (MapC ID_Type B) string :=
   match m with
   | [] => resultC []
   | (k, v) :: m' => 
-    match (string_to_ID_Type k) with
+    match (from_string k) with
     | errC e => errC e
     | resultC k' => 
       match (string_map_to_id_map m') with
@@ -292,7 +293,7 @@ Fixpoint mapD_keys{A B : Type} `{H : EqClass A} `{H1 : EqClass B} (m : MapD A B)
 
 (* TODO: Update these proofs to be more general *)
 Lemma mapD_key_values_length : forall m,
-  length (mapD_vals m) = length (mapD_keys m).
+  List.length (mapD_vals m) = List.length (mapD_keys m).
 Proof.
   intros.
   induction m; simpl.
@@ -301,7 +302,7 @@ Proof.
 Qed.
 
 Theorem mapD_kv_len_match: forall m,
-  length (mapD_vals m) = length m.
+  List.length (mapD_vals m) = List.length m.
 Proof.
   intros.
   induction m; simpl.

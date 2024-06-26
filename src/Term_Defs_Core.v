@@ -24,8 +24,10 @@ Require Import AbstractedTypes Maps String EqClass.
 
 (** [Plc] represents a place (or attestation domain). *)
 Definition Plc: Set := ID_Type.
-Definition Plc_to_string (p: Plc) : string := ID_Type_to_string p.
-Definition string_to_Plc (s: string) : ResultT Plc string := string_to_ID_Type s.
+Global Instance Serializable_Plc : Serializable Plc := {
+  to_string := to_string;
+  from_string := from_string;
+}.
 (** [N_ID] represents a nonce identifier.  *)
 Definition N_ID: Set := nat.
 (** [Event_ID] represents Event identifiers *)
@@ -38,12 +40,16 @@ Definition Event_ID: Set := nat.
           (defined and interpreted per-scenario/implementaiton).
 *)
 Definition ASP_ID: Set := ID_Type.
-Definition ASP_ID_to_string (a:ASP_ID) : string := ID_Type_to_string a.
-Definition string_to_ASP_ID (s:string) : ResultT ASP_ID string := string_to_ID_Type s.
-Definition TARG_ID: Set := ID_Type.
+Global Instance Serializable_ASP_ID : Serializable ASP_ID := {
+  to_string := to_string;
+  from_string := from_string;
+}.
 
-Definition TARG_ID_to_string (t:TARG_ID) : string := ID_Type_to_string t.
-Definition string_to_TARG_ID (s:string) : ResultT TARG_ID string := string_to_ID_Type s.
+Definition TARG_ID: Set := ID_Type.
+Global Instance Serializable_TARG_ID : Serializable TARG_ID := {
+  to_string := to_string;
+  from_string := from_string;
+}.
 
 Definition ASP_ARGS := MapC string string.
 Definition ASP_Info := string.
