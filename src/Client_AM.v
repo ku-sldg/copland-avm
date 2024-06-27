@@ -2,7 +2,7 @@
       end-to-end Copland Attestation + Appraisal protocols.  *)
 Require Import String List.
 
-Require Import Term Example_Phrases_Demo Cvm_Run Manifest EqClass Cvm_St.
+Require Import Term Cvm_Run Manifest EqClass Cvm_St.
 
 Require Import Impl_appraisal Appraisal_IO_Stubs IO_Stubs AM_Monad ErrorStMonad_Coq.
 

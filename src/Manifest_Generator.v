@@ -2,8 +2,7 @@
     Includes separate (but similar) versions of the generator for both 
     attestation (manifest_generator) and appraisal (manifest_generator_app) scenarios. *)
 
-Require Import Term_Defs_Core Params_Admits Manifest
-               Example_Phrases_Admits Example_Phrases Eqb_Evidence
+Require Import Term_Defs_Core Params_Admits Manifest Eqb_Evidence
                Manifest_Generator_Helpers.
 
 Require Import EqClass Maps StructTactics.
@@ -221,11 +220,6 @@ Definition attify_terms' (pr:(Term * Plc)) : Term :=
 
 Definition attify_terms (ls:list (Term * Plc)) : list Term :=
   List.map attify_terms' ls.
-
-Definition man_gen_run_attify (ls:list (Term*Plc)) : list Manifest := 
-  let plc_default := default_place in 
-  let ts := attify_terms ls in 
-    demo_man_gen_run ts plc_default.
 
 Definition app_aspid_manifest_update (i:ASP_ID) (p:Plc) (m:Manifest) : Manifest := 
   let '{| my_abstract_plc := oldPlc;

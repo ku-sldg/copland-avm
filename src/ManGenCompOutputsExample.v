@@ -1,5 +1,3 @@
-Require Import Example_Phrases_Admits Example_Phrases.
-
 Require Import Manifest_Admits Manifest BS Term_Defs_Core Term.
 
 Require Import Maps String ErrorStMonad_Coq.

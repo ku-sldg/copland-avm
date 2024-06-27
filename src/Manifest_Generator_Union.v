@@ -2,8 +2,7 @@
       Uses the (as-yet-unverified) manifest environment union operation to merge manifests 
       generated for combined Attestation and Appraisal scenarios.        *)
 
-Require Import Term_Defs_Core Params_Admits Manifest
-               Example_Phrases_Admits Example_Phrases_Pre_Admits Example_Phrases Eqb_Evidence
+Require Import Term_Defs_Core Params_Admits Manifest Eqb_Evidence
                Manifest_Generator_Helpers Term_Defs ErrorStMonad_Coq.
 
 Require Import EqClass Maps StructTactics.

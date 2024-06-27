@@ -6,8 +6,6 @@ Require Import List String.
 Require Import AbstractedTypes Term_Defs_Core Maps 
   Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq ErrorStringConstants JSON.
 
-Require Import Example_Phrases_Admits.
-
 Import ListNotations.
 
 Definition manifest_set (A : Type) := list A.
