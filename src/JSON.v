@@ -219,9 +219,6 @@ Fixpoint map_flatten {A B C : Type} `{EqClass A, EqClass B}
   | ((k1, k2), v) :: m' => (k1,k2,v) :: map_flatten m'
   end.
 
-Definition map_pair_to_InnerJSON {A B C : Type} `{Serializable A, EqClass A, EqClass B, Serializable B, Jsonifiable C} (m : MapC (A * B) C) : list InnerJSON :=
-  List.map (fun '(k1, k2, v) => InJSON_Array [InJSON_String (to_string k1); InJSON_String (to_string k2); InJSON_Object (to_JSON v)]) (map_flatten m).
-
 Fixpoint result_map_pairs {A B C : Type} `{EqClass A, EqClass B} (f : InnerJSON -> ResultT ((A * B) * C) string) (l : list InnerJSON)
     : ResultT (MapC (A * B) C) string :=
   match l with
@@ -236,6 +233,25 @@ Fixpoint result_map_pairs {A B C : Type} `{EqClass A, EqClass B} (f : InnerJSON 
           end
       end
   end.
+
+Definition map_pair_to_InnerJSON_string {A B C : Type} `{Serializable A, EqClass A, EqClass B, Serializable B, Serializable C} (m : MapC (A * B) C) : list InnerJSON :=
+  List.map (fun '(k1, k2, v) => InJSON_Array [InJSON_String (to_string k1); InJSON_String (to_string k2); InJSON_String (to_string v)]) (map_flatten m).
+
+Definition InnerJson_string_to_map_pair {A B C : Type} `{Serializable A, EqClass A, EqClass B, Serializable B, Serializable C} (js : list InnerJSON) 
+    : ResultT (MapC (A * B) C) string :=
+  result_map_pairs 
+    (fun js' => 
+        match js' with
+        | InJSON_Array [InJSON_String k1; InJSON_String k2; InJSON_String v] =>
+          match (from_string k1), (from_string k2), (from_string v) with
+          | resultC k1, resultC k2, resultC v => resultC ((k1, k2), v)
+          | _, _, _ => errC errStr_json_to_map
+          end
+        | _ => errC errStr_json_to_map
+        end) js.
+
+Definition map_pair_to_InnerJSON {A B C : Type} `{Serializable A, EqClass A, EqClass B, Serializable B, Jsonifiable C} (m : MapC (A * B) C) : list InnerJSON :=
+  List.map (fun '(k1, k2, v) => InJSON_Array [InJSON_String (to_string k1); InJSON_String (to_string k2); InJSON_Object (to_JSON v)]) (map_flatten m).
 
 Definition InnerJson_to_map_pair {A B C : Type} `{Serializable A, EqClass A, EqClass B, Serializable B, Jsonifiable C} (js : list InnerJSON) 
     : ResultT (MapC (A * B) C) string :=

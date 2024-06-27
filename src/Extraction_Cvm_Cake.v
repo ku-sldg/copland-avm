@@ -30,7 +30,6 @@ Extract Constant string_to_ID_Type => "fun x => x". *)
 Extraction Implicit parallel_vm_thread [2 3 4].
 Extraction Implicit do_wait_par_thread [2 3 4].
 
-
 Extract Constant sig_params => "( undefined () )".
 Extract Constant hsh_params => "( undefined () )".
 (* Extract Constant + => "add". *)

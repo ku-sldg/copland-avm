@@ -52,7 +52,7 @@ Definition AM_Lib_to_JSON (am : AM_Library) : JSON :=
     JSON_Object [
       (AM_CLONE_UUID, (InJSON_String (to_string clone_uuid)));
       (AM_LIB_ASPS, (InJSON_Object (to_JSON lib_asps)));
-      (AM_LIB_APPR_ASPS, (InJSON_Array (map_pair_to_InnerJSON lib_appr_asps)));
+      (AM_LIB_APPR_ASPS, (InJSON_Array (map_pair_to_InnerJSON_string lib_appr_asps)));
       (AM_LIB_PLCS, (InJSON_Object (to_JSON lib_plcs)));
       (AM_LIB_PUBKEYS, (InJSON_Object (to_JSON lib_pubkeys)))
     ].
@@ -66,7 +66,7 @@ Definition JSON_to_AM_Lib (js : JSON) : ResultT AM_Library string :=
 
   CLONE_UUID <- from_string temp_CLONE_UUID;;
   LIB_ASPS <- from_JSON temp_LIB_ASPS;;
-  LIB_APPR_ASPS <- InnerJson_to_map_pair temp_LIB_APPR_ASPS;;
+  LIB_APPR_ASPS <- InnerJson_string_to_map_pair temp_LIB_APPR_ASPS;;
   LIB_PLCS <- from_JSON temp_LIB_PLCS;;
   LIB_PUBKEYS <- from_JSON temp_LIB_PUBKEYS;;
   resultC (Build_AM_Library CLONE_UUID LIB_ASPS LIB_APPR_ASPS LIB_PLCS LIB_PUBKEYS).

@@ -17,6 +17,7 @@ Require Import List.
 Import ListNotations.
 
 (* ASP Locator JSON Admits *)
+(* NOTE: Dropping this concept for now, it is viable, but does not have real use
 Definition JSON_Local_ASP : string := "Local_ASP". 
 Definition JSON_Remote_ASP : string := "Remote_ASP".
 
@@ -53,6 +54,7 @@ Global Instance jsonifiable_ASP_Locator : Jsonifiable ASP_Locator :=
                       end
                     end)
   }.
+*)
 
 Inductive DispatcherErrors : Type :=
 | Unavailable   : DispatcherErrors
@@ -111,8 +113,8 @@ Definition empty_PolicyT : PolicyT := [].
     UUID_AM_Clone : UUID ;
 
     (* Local Mappings *)
-    Lib_ASPS            : MapC ASP_ID ASP_Locator ;
-    Lib_Appraisal_ASPS  : MapC (Plc * ASP_ID) ASP_Locator ;
+    Lib_ASPS            : MapC ASP_ID FS_Location ;
+    Lib_Appraisal_ASPS  : MapC (Plc * ASP_ID) FS_Location ;
     Lib_Plcs            : MapC Plc UUID ;
     Lib_PubKeys         : MapC Plc PublicKey ;
   }.

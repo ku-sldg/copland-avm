@@ -26,7 +26,7 @@ Definition generate_ASP_dispatcher' (al : AM_Library) (am : Manifest) (par : ASP
   let (aspid, args, targ_plc, targ) := par in
   let abstract_asps := am.(asps) in
   let local_asps_map := al.(Lib_ASPS) in
-  let shrunk_map : (MapC ASP_ID ASP_Locator) := 
+  let shrunk_map : (MapC ASP_ID FS_Location) := 
   minify_mapC local_asps_map (fun x => if (in_dec_set x abstract_asps) then true else false) 
   in
     (* check is the ASPID is available *) 
@@ -35,10 +35,7 @@ Definition generate_ASP_dispatcher' (al : AM_Library) (am : Manifest) (par : ASP
       let asp_req := (mkASPRReq aspid args targ_plc targ rawEv) in
       let js_req := ASPRunRequest_to_JSON asp_req in
       (* Used to tell difference between local and remote ASPs *)
-      let resp_res := (match loc with
-                      | Local_ASP fsLoc => make_JSON_FS_Location_Request fsLoc js_req
-                      | Remote_ASP uuid => make_JSON_Network_Request uuid js_req
-                      end) in
+      let resp_res := make_JSON_FS_Location_Request loc js_req in
       match resp_res with
       | resultC js_resp =>
           match JSON_to_ASPRunResponse js_resp with
@@ -62,7 +59,7 @@ Definition generate_appraisal_ASP_dispatcher' (al : AM_Library) (am : Manifest) 
   let (aspid, args, targ_plc, targ) := par in
   let abstract_asps := am.(appraisal_asps) in
   let local_asps_map := al.(Lib_Appraisal_ASPS) in
-  let shrunk_map : (MapC (Plc*ASP_ID) ASP_Locator) :=  
+  let shrunk_map : (MapC (Plc*ASP_ID) FS_Location) :=  
   minify_mapC local_asps_map (fun x => if (in_dec_set x abstract_asps) then true else false) in
     (* check is the ASPID is a local, with a callback *)
     match (map_get shrunk_map (targ_plc,aspid)) with
@@ -70,10 +67,7 @@ Definition generate_appraisal_ASP_dispatcher' (al : AM_Library) (am : Manifest) 
       let asp_req := (mkASPRReq aspid args targ_plc targ rawEv) in
       let js_req := ASPRunRequest_to_JSON asp_req in
       (* Used to tell difference between local and remote ASPs *)
-      let resp_res := (match loc with
-                      | Local_ASP fsLoc => make_JSON_FS_Location_Request fsLoc js_req
-                      | Remote_ASP uuid => make_JSON_Network_Request uuid js_req
-                      end) in
+      let resp_res := make_JSON_FS_Location_Request loc js_req in
       match resp_res with
       | resultC js_resp =>
           match JSON_to_ASPRunResponse js_resp with
