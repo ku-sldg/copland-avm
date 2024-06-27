@@ -50,4 +50,5 @@ Separate Extraction
 		term_list ssl_sig_parameterized kim_meas cm_meas
 		run_cvm manifest_compiler  empty_am_result 
     Jsonifiable_AM_Library Jsonifiable_Manifest
-		handle_AM_request end_to_end_mangen_final.
+		handle_AM_request end_to_end_mangen_final
+    Jsonifiable_Evidence_Plc_list Jsonifiable_Term_Plc_list.
