@@ -343,7 +343,7 @@ Fixpoint manifest_set_pairs_to_list_InJson {A B : Type} `{Serializable A}
   match m with
   | [] => []
   | h :: t => 
-        (InJSON_Object (to_JSON h)) :: (manifest_set_pairs_to_list_InJson t)
+        (pair_to_JSON_Array h) :: (manifest_set_pairs_to_list_InJson t)
   end.
 
 Fixpoint list_InJson_to_manifest_set_pairs {A B :Type} `{Serializable A} 
@@ -352,16 +352,12 @@ Fixpoint list_InJson_to_manifest_set_pairs {A B :Type} `{Serializable A}
   match l with
   | nil => resultC []
   | h :: t => 
-    match h with
-    | InJSON_Object js =>
+    match (InnerJSON_to_pair h) with
+    | resultC h' =>
       match (list_InJson_to_manifest_set_pairs t) with
-      | resultC t' => 
-          match (from_JSON js) with
-          | resultC h' => resultC (manset_add h' t')
-          | errC e => errC e
-          end
+      | resultC t' => resultC (manset_add h' t')
       | errC e => errC e
       end
-    | _ => errC "Error: Invalid JSON type in manifest set from pairs, only can handle json objects."%string
+    | errC e => errC e
     end
   end.

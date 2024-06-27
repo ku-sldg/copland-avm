@@ -86,31 +86,22 @@ Proof.
   - rewrite H; eauto. 
   - inversion H; eauto. 
 Qed. *)
-Open Scope string_scope.
-
-Definition JSON_PAIR_FST := "PAIR_FST".
-Definition JSON_PAIR_SND := "PAIR_SND".
+Close Scope string_scope.
 
 (* The Pair JSONIFIABLE Class *)
-Global Instance jsonifiable_serializable_pair (A B : Type) `{Serializable A, Serializable B} : Jsonifiable (A * B) :=
-  {
-    to_JSON := (fun '(a, b) => 
-        JSON_Object [
-          (JSON_PAIR_FST, InJSON_String (to_string a));
-          (JSON_PAIR_SND, InJSON_String (to_string b))
-        ]);
-    from_JSON := (fun js => 
-                    let '(JSON_Object m) := js in
-                    match (JSON_get_string JSON_PAIR_FST js), (JSON_get_string JSON_PAIR_SND js) with
-                    | resultC l, resultC r =>
-                      match (from_string l), (from_string r) with
-                      | resultC l, resultC r => resultC (l, r)
-                      | _, _ => errC errStr_json_to_pair
-                      end
-                    | _, _ => errC errStr_json_to_pair
-                    end)
-  }.
-Close Scope string_scope.
+Definition pair_to_JSON_Array {A B : Type} `{Serializable A, Serializable B} (v : (A * B)) : InnerJSON :=
+  InJSON_Array [InJSON_String (to_string (fst v)); InJSON_String (to_string (snd v))].
+
+Definition InnerJSON_to_pair {A B : Type} `{Serializable A, Serializable B} (js : InnerJSON) : ResultT (A * B) string :=
+  match js with
+  | InJSON_Array [InJSON_String a; InJSON_String b] =>
+      match (from_string a), (from_string b) with
+      | resultC a, resultC b => resultC (a, b)
+      | _, _ => errC errStr_json_to_pair
+      end
+  | _ => errC errStr_json_to_pair
+  end.
+
 (* Lemma canonical_serialization_id_type : forall (js : JSON) (a : ID_Type), 
   JSON_String (ID_Type_to_string a) = js <-> (match js with | JSON_String s => string_to_ID_Type s | _ => errC errStr_json_to_id_type end = @resultC _ string a).
 Proof.
