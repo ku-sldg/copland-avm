@@ -124,7 +124,7 @@ Lemma mapC_get_distinct_keys{A B:Type} `{H : EqClass A} :
 Proof.
   induction m; simpl in *; intuition; eauto; try congruence.
   repeat break_if; repeat find_injection;
-  repeat rewrite eqb_leibniz in *; subst; eauto;
+  repeat rewrite eqb_eq in *; subst; eauto;
   try congruence; simpl in *;
   try find_rewrite; eauto;
   rewrite eqb_refl; eauto.
@@ -145,8 +145,8 @@ Lemma mapC_get_distinct_keys_from_set {A B :Type} `{H : EqClass A} : forall (m :
   map_get m k2 = Some v2.
 Proof.
   induction m; simpl in *; intuition; eauto; try congruence.
-  - break_if; try rewrite eqb_leibniz in *; intuition.
-  - repeat break_if; repeat (rewrite eqb_leibniz in *; subst); intuition; eauto;
+  - break_if; try rewrite eqb_eq in *; intuition.
+  - repeat break_if; repeat (rewrite eqb_eq in *; subst); intuition; eauto;
     simpl in *; try rewrite eqb_refl in *; repeat find_injection; eauto;
     repeat find_rewrite; eauto.
 Qed.
@@ -158,9 +158,9 @@ Lemma map_distinct_key_rw {A B:Type} `{H : EqClass A} :
   map_get (map_set m k1 v1) k2 = map_get m k2.
 Proof.
   induction m; simpl in *; intuition; eauto; try congruence.
-  - break_match; eauto; rewrite eqb_leibniz in *; congruence.
+  - break_match; eauto; rewrite eqb_eq in *; congruence.
   - repeat break_if; repeat find_injection;
-    repeat rewrite eqb_leibniz in *; subst; eauto;
+    repeat rewrite eqb_eq in *; subst; eauto;
     try congruence; simpl in *;
     try find_rewrite; eauto;
     rewrite eqb_refl; eauto.
@@ -204,7 +204,7 @@ Proof.
   - exists nil, nil; simpl in *; eauto.
   - destruct (IHm k v) as [preM' [postM' H']].
     break_match.
-    * rewrite eqb_leibniz in *; subst;
+    * rewrite eqb_eq in *; subst;
       exists nil, m; eauto.
     * exists ((a0,b) :: preM'), (postM'); 
       intuition.
@@ -221,13 +221,13 @@ Theorem map_set_unfolder : forall {A B : Type} `{EqClass A},
 Proof.
   induction m; intuition; eauto.
   - simpl in *; repeat break_match; 
-    repeat find_injection; try (rewrite eqb_leibniz in *; subst);
+    repeat find_injection; try (rewrite eqb_eq in *; subst);
     try congruence.
   - destruct (eqb a0 k1) eqn:E.
-    * rewrite eqb_leibniz in *; subst.
+    * rewrite eqb_eq in *; subst.
       simpl in *; rewrite eqb_refl in *; congruence.
     * destruct (eqb a0 k2) eqn:E1.
-      ** rewrite eqb_leibniz in *; subst.
+      ** rewrite eqb_eq in *; subst.
           simpl in *; repeat find_rewrite.
           rewrite eqb_refl in *.
           assert (map_get (map_set m k2 v2) k1 = Some v1). {

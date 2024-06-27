@@ -23,7 +23,7 @@ Lemma eqb_eq_aspid: forall `{H : EqClass ID_Type} i1 i2,
     eqb_aspid i1 i2 = true -> i1 = i2.
 Proof.
   unfold eqb_aspid.
-  destruct H. eapply eqb_leibniz.
+  destruct H. eapply eqb_eq.
 Qed.
 
 Definition eqb_plc `{H : EqClass ID_Type} (a1 a2 : Plc)  : bool :=
@@ -35,7 +35,7 @@ Lemma eqb_eq_plc: forall `{H : EqClass ID_Type} i1 i2,
     eqb_plc i1 i2 = true <-> i1 = i2.
 Proof.
   intros.
-  split; eapply eqb_leibniz.
+  split; eapply eqb_eq.
 Qed.
 
 (*
@@ -91,14 +91,14 @@ Proof.
   | a : ASP_PARAMS |- _ => destruct a
   end;
   repeat rewrite Bool.andb_true_iff in *;
-  intuition; repeat rewrite eqb_leibniz in *;
+  intuition; repeat rewrite eqb_eq in *;
   subst; eauto;
-  eapply eqb_leibniz; eauto.
+  eapply eqb_eq; eauto.
 Qed.
 
 Global Instance EqClassASP_PARAMS `{H : EqClass ID_Type} : EqClass ASP_PARAMS := {
   eqb := eqb_asp_params ;
-  eqb_leibniz := eqb_eq_asp_params
+  eqb_eq := eqb_eq_asp_params
 }.
 
 Definition eq_evidence_dec : forall `{H : EqClass ID_Type},
@@ -116,7 +116,7 @@ Qed.
 Definition eqb_evidence `{H : EqClass ID_Type} (x y : Evidence): bool :=
   if @eq_evidence_dec H x y then true else false.
 
-Lemma eqb_leibniz_evidence `{H : EqClass ID_Type} : forall x y,
+Lemma eqb_eq_evidence `{H : EqClass ID_Type} : forall x y,
   eqb_evidence x y = true <-> x = y.
 Proof.
   unfold eqb_evidence; intuition; 
@@ -125,7 +125,7 @@ Qed.
 
 Global Instance EqClass_Evidence `{H : EqClass ID_Type} : EqClass Evidence := {
   eqb := eqb_evidence ;
-  eqb_leibniz := eqb_leibniz_evidence
+  eqb_eq := eqb_eq_evidence
 }.
 
 Definition eq_term_dec : forall `{H : EqClass ID_Type},
@@ -148,7 +148,7 @@ Qed.
 Definition eqb_term `{H : EqClass ID_Type} (x y : Term): bool :=
   if @eq_term_dec H x y then true else false.
 
-Lemma eqb_leibniz_term `{H : EqClass ID_Type} : forall x y,
+Lemma eqb_eq_term `{H : EqClass ID_Type} : forall x y,
   eqb_term x y = true <-> x = y.
 Proof.
   unfold eqb_term; intuition;
@@ -157,7 +157,7 @@ Qed.
 
 Global Instance EqClass_Term `{H : EqClass ID_Type} : EqClass Term := {
   eqb := eqb_term ;
-  eqb_leibniz := eqb_leibniz_term
+  eqb_eq := eqb_eq_term
 }.
 
 Definition eq_core_term_dec : forall `{H : EqClass ID_Type},
@@ -177,7 +177,7 @@ Qed.
 Definition eqb_core_term `{H : EqClass ID_Type} (x y : Core_Term): bool :=
   if @eq_core_term_dec H x y then true else false.
 
-Lemma eqb_leibniz_core_term `{H : EqClass ID_Type} : forall x y,
+Lemma eqb_eq_core_term `{H : EqClass ID_Type} : forall x y,
   eqb_core_term x y = true <-> x = y.
 Proof.
   unfold eqb_core_term; intuition;
@@ -186,7 +186,7 @@ Qed.
 
 Global Instance EqClass_Core_Term `{H : EqClass ID_Type} : EqClass Core_Term := {
   eqb := eqb_core_term ;
-  eqb_leibniz := eqb_leibniz_core_term
+  eqb_eq := eqb_eq_core_term
 }.
 
 Definition eq_ev_dec: forall `{H : EqClass ID_Type},
@@ -326,7 +326,7 @@ Proof.
   unfold eqb_fwd; intuition;
   destruct f1, f2; eauto; try congruence.
   - rewrite Nat.eqb_eq in H; eauto. 
-  - find_injection; rewrite eqb_leibniz; eauto.
+  - find_injection; rewrite eqb_eq; eauto.
 Qed.
 
 (* NOTE: Better impl above 
@@ -363,7 +363,7 @@ Proof.
       rewrite eqb_eq_plc in H0.
       rewrite eqb_eq_fwd in H5.
       rewrite eqb_eq_asp_params in H4.
-      (* rewrite eqb_leibniz in H. *)
+      (* rewrite eqb_eq in H. *)
       
       specialize IHe1 with H H2 e2.
       concludes.
@@ -388,7 +388,7 @@ Proof.
       repeat rewrite Bool.andb_true_iff.
       split. split. split. 
       * eapply eqb_eq_plc; auto.
-        (* eapply eqb_leibniz; eauto. *)
+        (* eapply eqb_eq; eauto. *)
       * rewrite eqb_eq_fwd. tauto.
       * erewrite eqb_eq_asp_params. tauto.
       * eauto.

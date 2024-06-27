@@ -83,7 +83,7 @@ Proof.
   - simpl; auto.
   - simpl.
     destruct (eqb i a) eqn:Eia.
-    + rewrite eqb_leibniz in Eia. subst; simpl; auto.
+    + rewrite eqb_eq in Eia. subst; simpl; auto.
     + simpl; auto.
 Qed.
 
@@ -120,7 +120,7 @@ Proof.
   - induction s.
     + inversion H.
     + simpl in H. simpl. destruct (eqb a a0) eqn:Eaa0.
-      * rewrite eqb_leibniz in Eaa0; auto.
+      * rewrite eqb_eq in Eaa0; auto.
       * right. apply IHs. simpl in H; auto.
   - induction s.
     + inversion H.
@@ -138,7 +138,7 @@ Proof.
   - destruct (eqb a a0) eqn:Eaa0; eauto.
     + constructor.
       * intro H0. inversion H. subst.
-        assert (a <> a0) by (intro HC; apply eqb_leibniz in HC; congruence).
+        assert (a <> a0) by (intro HC; apply eqb_eq in HC; congruence).
         apply manadd_In_set in H0. intuition.
       * inversion H; auto.
 Qed.
@@ -170,12 +170,12 @@ Proof.
   - generalize dependent a. induction s; intros a0 H.
     + inversion H.
     + simpl in H. destruct (eqb a0 a) eqn:E.
-      * apply eqb_leibniz in E. simpl. auto.
+      * apply eqb_eq in E. simpl. auto.
       * simpl. injection H. intros H0. apply IHs in H0. right. auto.
   - generalize dependent a. induction s; intros a0 H.
     + inversion H.
     + simpl in H. destruct (eqb a0 a) eqn:E.
-      * apply eqb_leibniz in E. subst. intro H0. inversion H0.
+      * apply eqb_eq in E. subst. intro H0. inversion H0.
         simpl in H3. intuition.
       * injection H. intro H0. pose proof (IHs a0 H0) as H1. intro H2. apply H1.
         inversion H2 as [H2' | x l H3 H4]. subst. intuition.
@@ -213,7 +213,7 @@ Proof.
   intros. induction s; auto.
   - simpl. simpl in H. intuition.
     destruct (eqb a a0) eqn:E.
-    + apply eqb_leibniz in E. symmetry in E. intuition.
+    + apply eqb_eq in E. symmetry in E. intuition.
     + rewrite H. auto.
 Qed.
 

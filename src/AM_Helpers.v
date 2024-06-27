@@ -45,7 +45,7 @@ Proof.
         ++
           left.
           symmetry.
-          apply eqb_leibniz.
+          apply eqb_eq.
           eassumption.
         ++
           right.
@@ -61,7 +61,7 @@ Proof.
           subst.
           assert (eqb a0 a0 = true).
           {
-            apply eqb_leibniz.
+            apply eqb_eq.
             auto.
           }
           find_rewrite.

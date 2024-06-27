@@ -233,7 +233,7 @@ Definition isIdTail := fun x => orb (isAlphaNum x) (isUnderscore x).
 
 Local Instance str_eq_class : EqClass string :=
   { eqb:= String.eqb;
-    eqb_leibniz := String.eqb_eq }.
+    eqb_eq := String.eqb_eq }.
 
 Definition symbol_map := MapD string ID_Type.
 

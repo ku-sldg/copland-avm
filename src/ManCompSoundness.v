@@ -57,7 +57,7 @@ Theorem filter_resolver : forall {A B} `{EqClass A} (m : MapC A B) a (filt : A -
 Proof.
   induction m; intuition; simpl in *;
   destruct (eqb a a0) eqn:E.
-  - rewrite eqb_leibniz in E; subst. rewrite H1; simpl in *; rewrite eqb_refl; eauto.
+  - rewrite eqb_eq in E; subst. rewrite H1; simpl in *; rewrite eqb_refl; eauto.
   - repeat break_match; simpl in *; 
     try (pose proof eqb_symm; congruence);
     simpl in *; eauto.
@@ -71,7 +71,7 @@ Theorem filter_resolver_mapd : forall {A B} `{EqClass A, EqClass B} (m : MapC A 
 Proof.
   induction m; intuition; simpl in *;
   destruct (eqb a a0) eqn:E.
-  - rewrite eqb_leibniz in E; subst; destruct H1; simpl in *; 
+  - rewrite eqb_eq in E; subst; destruct H1; simpl in *; 
     repeat find_injection; rewrite H2; simpl in *; rewrite eqb_refl; eauto.
   - repeat break_match; simpl in *; 
     try (pose proof eqb_symm; congruence);
@@ -89,7 +89,7 @@ Lemma in_dec_helper : forall {A B} `{EqClass A} X l l' a (c : B),
 Proof.
   induction l; simpl in *; intuition; try congruence;
   repeat break_if; eauto; simpl in *; 
-  repeat break_if; eauto; try rewrite eqb_leibniz in Heqb1; 
+  repeat break_if; eauto; try rewrite eqb_eq in Heqb1; 
   subst; eauto; congruence.
 Qed.
 
@@ -1839,7 +1839,7 @@ Proof.
     unfold Manifest_Union.env_union_helper,
       Manifest_Union.environment_union'' in *;
     repeat break_match; simpl in *; intuition; eauto; try congruence;
-    try rewrite eqb_leibniz in *; subst.
+    try rewrite eqb_eq in *; subst.
     * erewrite mapC_get_works in H; find_injection; eauto.
     * erewrite mapC_get_works in H; find_injection; 
       left; eexists; intuition; eapply manifest_subset_refl.
@@ -1855,7 +1855,7 @@ Lemma man_env_union_not_none_fwd : forall env env' p,
 Proof.
   induction env; destruct env'; simpl in *; intuition; eauto.
   - destruct (eqb a0 p) eqn:E; simpl in *; intuition; eauto;
-    try rewrite eqb_leibniz in *; subst; eauto;
+    try rewrite eqb_eq in *; subst; eauto;
     unfold Manifest_Union.env_union_helper,
       Manifest_Union.environment_union'' in *; simpl in *;
     repeat break_match; simpl in *; intuition; eauto;
@@ -1863,7 +1863,7 @@ Proof.
     rewrite map_distinct_key_rw in H0; intuition; eauto;
     subst; rewrite eqb_refl in E; congruence.
   - destruct (eqb a0 p) eqn:E; simpl in *; intuition; eauto;
-    try rewrite eqb_leibniz in *; subst; eauto;
+    try rewrite eqb_eq in *; subst; eauto;
     unfold Manifest_Union.env_union_helper,
       Manifest_Union.environment_union'' in *; simpl in *;
     repeat break_match; simpl in *; intuition; eauto;
@@ -1872,7 +1872,7 @@ Proof.
     subst; rewrite eqb_refl in E; congruence.
   - destruct (eqb a0 p) eqn:E, (eqb a p) eqn:E2;
     simpl in *; intuition; eauto;
-    try rewrite eqb_leibniz in *; subst; eauto;
+    try rewrite eqb_eq in *; subst; eauto;
     unfold Manifest_Union.env_union_helper,
       Manifest_Union.environment_union'' in *; simpl in *;
     repeat break_match; simpl in *; intuition; eauto;
@@ -1896,7 +1896,7 @@ Lemma man_env_union_not_none_rev : forall env env' p,
 Proof.
   induction env; destruct env'; simpl in *; intuition; eauto.
   - destruct (eqb a0 p) eqn:E; simpl in *; intuition; eauto;
-    try rewrite eqb_leibniz in *; subst; eauto;
+    try rewrite eqb_eq in *; subst; eauto;
     unfold Manifest_Union.env_union_helper,
       Manifest_Union.environment_union'' in *; simpl in *;
     repeat break_match; simpl in *; intuition; eauto;
@@ -1908,13 +1908,13 @@ Proof.
       try eapply IHenv in H; intuition; eauto;
       subst; rewrite eqb_refl in E; congruence.
   - destruct (eqb a0 p) eqn:E; simpl in *; intuition; eauto;
-    try rewrite eqb_leibniz in *; subst; eauto;
+    try rewrite eqb_eq in *; subst; eauto;
     unfold Manifest_Union.env_union_helper,
       Manifest_Union.environment_union'' in *; simpl in *;
     repeat break_match; simpl in *; intuition; eauto;
     try (left; intuition; congruence);
     try (right; intuition; congruence);
-    try rewrite eqb_leibniz in *; subst; eauto;
+    try rewrite eqb_eq in *; subst; eauto;
     intuition; eauto.
     * rewrite map_distinct_key_rw in H; intuition; eauto;
       try eapply IHenv in H; intuition; eauto;
@@ -1946,7 +1946,7 @@ Proof.
   - destruct (eqb a0 p) eqn:E; simpl in *;
     unfold Manifest_Union.env_union_helper, 
       Manifest_Union.environment_union'' in *;
-    simpl in *; eauto; try rewrite eqb_leibniz in E; subst.
+    simpl in *; eauto; try rewrite eqb_eq in E; subst.
     * repeat break_match; simpl in *; find_injection; 
       rewrite mapC_get_works in H; find_injection; eauto;
       eapply manifest_subset_refl.
@@ -1962,7 +1962,7 @@ Proof.
   - destruct (eqb a0 p) eqn:E; simpl in *;
     unfold Manifest_Union.env_union_helper, 
       Manifest_Union.environment_union'' in *;
-    simpl in *; eauto; try rewrite eqb_leibniz in E; subst.
+    simpl in *; eauto; try rewrite eqb_eq in E; subst.
     * repeat break_match; simpl in *.
       ** rewrite mapC_get_works in H; find_injection. 
         eapply IHenv in Heqo; intuition.
@@ -2299,7 +2299,7 @@ Lemma mapC_get_filtered_impossible : forall T `{EqClass T} B (a : B) (aid : T) a
 Proof.
   induction al; intuition; simpl in *; try congruence.
   break_if; simpl in *; intuition; ff; eauto.
-  rewrite eqb_leibniz in Heqb1; subst; congruence.
+  rewrite eqb_eq in Heqb1; subst; congruence.
 Qed.
 Global Hint Resolve mapC_get_filtered_impossible : core.
 
@@ -2310,7 +2310,7 @@ Lemma mapD_get_filtered_impossible : forall T B `{EqClass T, EqClass B} (a : B) 
 Proof.
   induction al; intuition; simpl in *; try congruence.
   break_if; simpl in *; intuition; ff; eauto.
-  rewrite eqb_leibniz in Heqb1; subst; congruence.
+  rewrite eqb_eq in Heqb1; subst; congruence.
 Qed.
 Global Hint Resolve mapD_get_filtered_impossible : core.
 
@@ -2324,7 +2324,7 @@ Proof.
   - (* Provable because aid \not\in s1 but map get got some*)
     intuition.
     destruct H;
-    rewrite eqb_leibniz in Heqb2; subst.
+    rewrite eqb_eq in Heqb2; subst.
     eapply mapC_get_filtered_impossible in H1; intuition.
     break_if; intuition.
   - pose proof (H0 t i); intuition.
@@ -2341,7 +2341,7 @@ Proof.
   - (* Provable because aid \not\in s1 but map get got some*)
     intuition.
     destruct H;
-    rewrite eqb_leibniz in Heqb2; subst.
+    rewrite eqb_eq in Heqb2; subst.
     eapply mapD_get_filtered_impossible in H2; intuition.
     break_if; intuition.
   - pose proof (H1 t i); intuition.
@@ -2519,7 +2519,7 @@ Proof.
   -
   intuition.
   repeat ff.
-  rewrite eqb_leibniz in *.
+  rewrite eqb_eq in *.
   subst.
   intuition.
   eexists.
@@ -2540,7 +2540,7 @@ Proof.
   -
   intuition.
   repeat ff.
-  rewrite eqb_leibniz in *.
+  rewrite eqb_eq in *.
   subst.
   intuition.
   eexists.

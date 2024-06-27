@@ -106,7 +106,7 @@ Proof.
   induction e'; intuition; invc H; repeat ff; eauto;
   try match goal with
   | H : eqb_evidence ?x ?x = false |- _ => 
-      destruct (eqb_leibniz_evidence x x); intuition; congruence
+      destruct (eqb_eq_evidence x x); intuition; congruence
   end;
   eapply Bool.orb_true_iff; eauto.
 Qed.
@@ -118,15 +118,15 @@ Proof.
   generalizeEverythingElse e'.
   induction e'; intros.
   - destruct e; repeat ff;
-    rewrite eqb_leibniz_evidence in Heqb; congruence.
+    rewrite eqb_eq_evidence in Heqb; congruence.
   - destruct e; repeat ff;
-    rewrite eqb_leibniz_evidence in Heqb; try congruence;
+    rewrite eqb_eq_evidence in Heqb; try congruence;
     find_injection; ff.
   - destruct e; repeat ff;
-    rewrite eqb_leibniz_evidence in Heqb; try congruence;
+    rewrite eqb_eq_evidence in Heqb; try congruence;
     find_injection; ff.
   - destruct e; repeat ff;
-    try rewrite eqb_leibniz_evidence in Heqb; try congruence;
+    try rewrite eqb_eq_evidence in Heqb; try congruence;
     repeat rewrite Bool.orb_true_iff in *; 
     intuition;
     find_injection; ff.
@@ -429,7 +429,7 @@ Proof.
     }
       assert (eqb_evidence H2 H2 = true).
     {
-      eapply eqb_leibniz_evidence; eauto.
+      eapply eqb_eq_evidence; eauto.
     }
 
     find_rewrite.
@@ -496,7 +496,7 @@ Proof.
       erewrite eval_aeval.
       rewrite Heqp1.
       simpl.
-      eapply eqb_leibniz_evidence; eauto.
+      eapply eqb_eq_evidence; eauto.
     }
 
     find_rewrite.
