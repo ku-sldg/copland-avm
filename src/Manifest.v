@@ -5,7 +5,7 @@
    https://github.com/ku-sldg/negotiation20/blob/master/src/Manifest/Manifest.v
 *)
 
-Require Import AbstractedTypes Term_Defs_Core Maps
+Require Import ID_Type Term_Defs_Core Maps
   Term_Defs EqClass ErrorStMonad_Coq JSON.
 Require Export Manifest_Admits.
 

@@ -4,7 +4,7 @@ Axioms and derived lemmas that capture the semantics of external CVM instances.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term_Defs Anno_Term_Defs Cvm_St Cvm_Impl Axioms_Io Helpers_CvmSemantics Cvm_Monad AbstractedTypes.
+Require Import Term_Defs Anno_Term_Defs Cvm_St Cvm_Impl Axioms_Io Helpers_CvmSemantics Cvm_Monad ID_Type.
 
 Require Import List.
 Import ListNotations.

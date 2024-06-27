@@ -6,7 +6,7 @@ Author:  Adam Petz, ampetz@ku.edu
 
 Require Import Term_Defs Anno_Term_Defs Term LTS Cvm_Impl Cvm_St Trace Main ConcreteEvidence.
 
-Require Import CvmSemantics Appraisal_Evidence Eqb_Evidence Auto AbstractedTypes EqClass Helpers_CvmSemantics (* Disclose_Gen *) External_Facts Axioms_Io.
+Require Import CvmSemantics Appraisal_Evidence Eqb_Evidence Auto ID_Type EqClass Helpers_CvmSemantics (* Disclose_Gen *) External_Facts Axioms_Io.
 
 Require Import StructTactics.
 
@@ -423,7 +423,7 @@ Proof.
     ff.
     invc H0.
     ++
-       assert (eqb_plc r r = true).
+    assert (eqb r r = true).
     {
       eapply eqb_eq_plc; eauto.
     }
@@ -432,10 +432,7 @@ Proof.
       eapply eqb_eq_evidence; eauto.
     }
 
-    find_rewrite.
-    find_rewrite.
-    simpl.
-    tauto.
+    repeat (simpl in *; find_rewrite); eauto.
     ++
       assert (term_discloses_to_remote t p e (r, H2) = true).
       {
@@ -487,11 +484,11 @@ Proof.
 
     ++
 
-    assert (eqb_plc r r = true).
+    assert (eqb r r = true).
     {
       eapply eqb_eq_plc; eauto.
     }
-        assert (eqb_evidence (aeval a H3 e) (eval t H3 e) = true).
+    assert (eqb_evidence (aeval a H3 e) (eval t H3 e) = true).
     {
       erewrite eval_aeval.
       rewrite Heqp1.
@@ -499,11 +496,8 @@ Proof.
       eapply eqb_eq_evidence; eauto.
     }
 
-    find_rewrite.
-    find_rewrite.
-    rewrite Bool.orb_true_r.
-    simpl.
-    tauto.
+    repeat (simpl in *; find_rewrite); eauto.
+    rewrite Bool.orb_true_r; eauto.
 
   - (* lseq case *)
 

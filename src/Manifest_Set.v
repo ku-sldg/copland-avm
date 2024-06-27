@@ -3,7 +3,7 @@
     traditional mathematical set (e.g. cumulative, non-duplicating, ...) *)
 Require Import List String.
 
-Require Import AbstractedTypes Term_Defs_Core Maps 
+Require Import ID_Type Term_Defs_Core Maps 
   Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq ErrorStringConstants JSON.
 
 Import ListNotations.
@@ -116,17 +116,10 @@ Definition existsb_set {A:Type} (f : A -> bool) (s: manifest_set A) : bool :=
 Definition existsb_eq_iff_In_set: forall (s : manifest_set ID_Type) (a : ID_Type),
   existsb_set (eqb a) s = true <-> In_set a s.
 Proof.
-  split; intros H.
-  - induction s.
-    + inversion H.
-    + simpl in H. simpl. destruct (eqb a a0) eqn:Eaa0.
-      * rewrite eqb_eq in Eaa0; auto.
-      * right. apply IHs. simpl in H; auto.
-  - induction s.
-    + inversion H.
-    + simpl in *. destruct (eqb a a0) eqn:Eaa0; auto.
-      * simpl. apply IHs. destruct H; auto.
-        -- subst. rewrite eqb_refl in Eaa0. congruence.
+  intuition; simpl in *; unfold existsb_set, In_set in *; simpl in *;
+  rewrite existsb_exists in *;
+  [destruct H | exists a]; intuition; 
+  rewrite String.eqb_eq in *; subst; eauto.
 Qed.
 
 Lemma nodup_manset_add {A : Type} `{HA : EqClass A} (a : A) (s : manifest_set A) :

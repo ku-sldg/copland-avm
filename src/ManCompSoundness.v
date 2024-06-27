@@ -2,7 +2,7 @@
       Namely, that the compiler outputs a collection of manifests that support 
       execution of the input protocols.  *)
 
-Require Import Manifest Manifest_Compiler Manifest_Generator AbstractedTypes
+Require Import Manifest Manifest_Compiler Manifest_Generator ID_Type
   Maps Term_Defs List Cvm_St Cvm_Impl ErrorStMonad_Coq StructTactics 
   Cvm_Monad EqClass Manifest_Admits Auto.
 Require Import Manifest_Generator_Facts Eqb_Evidence.
@@ -1800,7 +1800,7 @@ Proof.
         eassumption.
   -
     rewrite H1; eauto. 
-  Unshelve. eapply min_id_type.
+  Unshelve. eapply "PLC"%string.
 Qed.
 
 Require Import Manifest_Generator_Union.
@@ -1835,18 +1835,18 @@ Proof.
   try congruence.
   - right; eauto; eexists; intuition; eauto;
     eapply manifest_subset_refl.
-  - destruct (eqb a0 p) eqn:E; simpl in *;
+  - destruct (String.eqb a0 p) eqn:E; simpl in *;
     unfold Manifest_Union.env_union_helper,
       Manifest_Union.environment_union'' in *;
     repeat break_match; simpl in *; intuition; eauto; try congruence;
-    try rewrite eqb_eq in *; subst.
+    try rewrite String.eqb_eq in *; subst.
     * erewrite mapC_get_works in H; find_injection; eauto.
     * erewrite mapC_get_works in H; find_injection; 
       left; eexists; intuition; eapply manifest_subset_refl.
     * eapply IHenv; eapply mapC_get_distinct_keys_from_set in H; 
-      eauto; intuition; subst; rewrite eqb_refl in E; congruence.
+      eauto; intuition; subst; rewrite String.eqb_refl in E; congruence.
     * eapply IHenv; eapply mapC_get_distinct_keys_from_set in H; 
-      eauto; intuition; subst; rewrite eqb_refl in E; congruence.
+      eauto; intuition; subst; rewrite String.eqb_refl in E; congruence.
 Qed.
 
 Lemma man_env_union_not_none_fwd : forall env env' p,
@@ -1854,35 +1854,35 @@ Lemma man_env_union_not_none_fwd : forall env env' p,
   map_get (Manifest_Union.environment_union env env') p <> None.
 Proof.
   induction env; destruct env'; simpl in *; intuition; eauto.
-  - destruct (eqb a0 p) eqn:E; simpl in *; intuition; eauto;
-    try rewrite eqb_eq in *; subst; eauto;
+  - destruct (String.eqb a0 p) eqn:E; simpl in *; intuition; eauto;
+    try rewrite String.eqb_eq in *; subst; eauto;
     unfold Manifest_Union.env_union_helper,
       Manifest_Union.environment_union'' in *; simpl in *;
     repeat break_match; simpl in *; intuition; eauto;
     try (rewrite mapC_get_works in H0; congruence);
     rewrite map_distinct_key_rw in H0; intuition; eauto;
-    subst; rewrite eqb_refl in E; congruence.
-  - destruct (eqb a0 p) eqn:E; simpl in *; intuition; eauto;
-    try rewrite eqb_eq in *; subst; eauto;
+    subst; rewrite String.eqb_refl in E; congruence.
+  - destruct (String.eqb a0 p) eqn:E; simpl in *; intuition; eauto;
+    try rewrite String.eqb_eq in *; subst; eauto;
     unfold Manifest_Union.env_union_helper,
       Manifest_Union.environment_union'' in *; simpl in *;
     repeat break_match; simpl in *; intuition; eauto;
     try (rewrite mapC_get_works in H0; congruence);
     rewrite map_distinct_key_rw in H0; intuition; eauto;
-    subst; rewrite eqb_refl in E; congruence.
-  - destruct (eqb a0 p) eqn:E, (eqb a p) eqn:E2;
+    subst; rewrite String.eqb_refl in E; congruence.
+  - destruct (String.eqb a0 p) eqn:E, (String.eqb a p) eqn:E2;
     simpl in *; intuition; eauto;
-    try rewrite eqb_eq in *; subst; eauto;
+    try rewrite String.eqb_eq in *; subst; eauto;
     unfold Manifest_Union.env_union_helper,
       Manifest_Union.environment_union'' in *; simpl in *;
     repeat break_match; simpl in *; intuition; eauto;
     try (rewrite mapC_get_works in H0; congruence);
     rewrite map_distinct_key_rw in H0; intuition; eauto;
-    try (subst; rewrite eqb_refl in E; congruence).
+    try (subst; rewrite String.eqb_refl in E; congruence).
     * pose proof (IHenv ((p, b0) :: env') p);
-      simpl in *; rewrite eqb_refl in *; intuition. 
+      simpl in *; rewrite String.eqb_refl in *; intuition. 
     * pose proof (IHenv ((p, b0) :: env') p);
-      simpl in *; rewrite eqb_refl in *; intuition. 
+      simpl in *; rewrite String.eqb_refl in *; intuition. 
     * pose proof (IHenv ((a, b0) :: env') p);
       simpl in *; find_rewrite; intuition. 
     * pose proof (IHenv ((a, b0) :: env') p);
@@ -1895,35 +1895,35 @@ Lemma man_env_union_not_none_rev : forall env env' p,
   (map_get env p <> None \/ map_get env' p <> None).
 Proof.
   induction env; destruct env'; simpl in *; intuition; eauto.
-  - destruct (eqb a0 p) eqn:E; simpl in *; intuition; eauto;
-    try rewrite eqb_eq in *; subst; eauto;
+  - destruct (String.eqb a0 p) eqn:E; simpl in *; intuition; eauto;
+    try rewrite String.eqb_eq in *; subst; eauto;
     unfold Manifest_Union.env_union_helper,
       Manifest_Union.environment_union'' in *; simpl in *;
     repeat break_match; simpl in *; intuition; eauto;
     try (left; intuition; congruence).
     * rewrite map_distinct_key_rw in H; intuition; eauto;
       try eapply IHenv in H; intuition; eauto;
-      subst; rewrite eqb_refl in E; congruence.
+      subst; rewrite String.eqb_refl in E; congruence.
     * rewrite map_distinct_key_rw in H; intuition; eauto;
       try eapply IHenv in H; intuition; eauto;
-      subst; rewrite eqb_refl in E; congruence.
-  - destruct (eqb a0 p) eqn:E; simpl in *; intuition; eauto;
-    try rewrite eqb_eq in *; subst; eauto;
+      subst; rewrite String.eqb_refl in E; congruence.
+  - destruct (String.eqb a0 p) eqn:E; simpl in *; intuition; eauto;
+    try rewrite String.eqb_eq in *; subst; eauto;
     unfold Manifest_Union.env_union_helper,
       Manifest_Union.environment_union'' in *; simpl in *;
     repeat break_match; simpl in *; intuition; eauto;
     try (left; intuition; congruence);
     try (right; intuition; congruence);
-    try rewrite eqb_eq in *; subst; eauto;
+    try rewrite String.eqb_eq in *; subst; eauto;
     intuition; eauto.
     * rewrite map_distinct_key_rw in H; intuition; eauto;
       try eapply IHenv in H; intuition; eauto;
       simpl in *; find_rewrite; intuition;
-      subst; rewrite eqb_refl in E; congruence.
+      subst; rewrite String.eqb_refl in E; congruence.
     * rewrite map_distinct_key_rw in H; intuition; eauto;
       try eapply IHenv in H; intuition; eauto;
       simpl in *; find_rewrite; intuition;
-      subst; rewrite eqb_refl in E; congruence.
+      subst; rewrite String.eqb_refl in E; congruence.
 Qed.
 Global Hint Resolve man_env_union_not_none_rev : core.
 
@@ -1943,10 +1943,10 @@ Proof.
   induction env; simpl in *; intuition; eauto.
   - eexists; intuition; try congruence.
   - find_rewrite; find_injection; eapply manifest_subset_refl.
-  - destruct (eqb a0 p) eqn:E; simpl in *;
+  - destruct (String.eqb a0 p) eqn:E; simpl in *;
     unfold Manifest_Union.env_union_helper, 
       Manifest_Union.environment_union'' in *;
-    simpl in *; eauto; try rewrite eqb_eq in E; subst.
+    simpl in *; eauto; try rewrite String.eqb_eq in E; subst.
     * repeat break_match; simpl in *; find_injection; 
       rewrite mapC_get_works in H; find_injection; eauto;
       eapply manifest_subset_refl.
@@ -1954,15 +1954,15 @@ Proof.
       + eapply mapC_get_distinct_keys_from_set in H; 
         eauto; intuition; subst; eauto.
         eapply IHenv in H; intuition.
-        rewrite eqb_refl in E; congruence.
+        rewrite String.eqb_refl in E; congruence.
       + eapply mapC_get_distinct_keys_from_set in H; 
         eauto; intuition; subst; eauto.
         eapply IHenv in H; intuition.
-        rewrite eqb_refl in E; congruence.
-  - destruct (eqb a0 p) eqn:E; simpl in *;
+        rewrite String.eqb_refl in E; congruence.
+  - destruct (String.eqb a0 p) eqn:E; simpl in *;
     unfold Manifest_Union.env_union_helper, 
       Manifest_Union.environment_union'' in *;
-    simpl in *; eauto; try rewrite eqb_eq in E; subst.
+    simpl in *; eauto; try rewrite String.eqb_eq in E; subst.
     * repeat break_match; simpl in *.
       ** rewrite mapC_get_works in H; find_injection. 
         eapply IHenv in Heqo; intuition.
@@ -1975,11 +1975,11 @@ Proof.
       ** eapply mapC_get_distinct_keys_from_set in H; 
         intuition; eauto.
         eapply IHenv in H; intuition.
-        subst; rewrite eqb_refl in *; congruence.
+        subst; rewrite String.eqb_refl in *; congruence.
       ** eapply mapC_get_distinct_keys_from_set in H; 
         intuition; eauto. 
         eapply IHenv in H; intuition.
-        subst; rewrite eqb_refl in *; congruence.
+        subst; rewrite String.eqb_refl in *; congruence.
 Qed. 
 Global Hint Resolve manifest_env_union_always_subset : core.
 
@@ -1989,14 +1989,14 @@ Lemma manifest_env_union_map_one_fwd : forall env env' p m,
   map_get env' p = Some m')).
 Proof.
   induction env; simpl in *; intuition; eauto;
-  destruct (eqb a0 p) eqn:E; simpl in *; intuition; eauto.
+  destruct (String.eqb a0 p) eqn:E; simpl in *; intuition; eauto.
   unfold Manifest_Union.env_union_helper, Manifest_Union.environment_union'' in H;
   simpl in *; repeat break_match; simpl in *; intuition; eauto;
   break_exists.
   - eapply mapC_get_distinct_keys_from_set in H; intuition; eauto;
-    subst; rewrite eqb_refl in *; congruence. 
+    subst; rewrite String.eqb_refl in *; congruence. 
   - eapply mapC_get_distinct_keys_from_set in H; intuition; eauto;
-    subst; rewrite eqb_refl in *; congruence.
+    subst; rewrite String.eqb_refl in *; congruence.
 Qed.
 Global Hint Resolve manifest_env_union_map_one_fwd : core.
 
@@ -2440,7 +2440,7 @@ Proof.
       }
       eapply end_to_end_mangen_supports_all; eauto.
   - find_rewrite; eauto.
-  Unshelve. eapply min_id_type.
+  Unshelve. eapply "Plc"%string.
   (* eapply end_to_end_mangen_subsumes in H0; eauto;
   destruct_conjs; rewrite <- H2 in H3.
   
@@ -2519,7 +2519,7 @@ Proof.
   -
   intuition.
   repeat ff.
-  rewrite eqb_eq in *.
+  rewrite String.eqb_eq in *.
   subst.
   intuition.
   eexists.
@@ -2540,7 +2540,7 @@ Proof.
   -
   intuition.
   repeat ff.
-  rewrite eqb_eq in *.
+  rewrite String.eqb_eq in *.
   subst.
   intuition.
   eexists.

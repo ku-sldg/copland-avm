@@ -2,7 +2,7 @@
     datatypes, manily Evidence.  Includes decidability of equality lemmas.
 *) 
 
-Require Import AbstractedTypes EqClass Term_Defs.
+Require Import ID_Type EqClass Term_Defs.
 
 Require Import StructTactics.
 

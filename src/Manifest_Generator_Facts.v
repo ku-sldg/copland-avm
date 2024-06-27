@@ -481,7 +481,7 @@ Proof.
   specialize H0 with (m1:=m') (p:=p0).
   assert (map_get [(p0, m')] p0 = Some m').
   {
-    simpl in *; rewrite eqb_refl; eauto.
+    simpl in *; rewrite String.eqb_refl; eauto.
   }
   apply H0 in H1.
   destruct_conjs.

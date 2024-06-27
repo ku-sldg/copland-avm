@@ -7,9 +7,7 @@ Authors:  Adam Petz, ampetz@ku.edu
  *)
 
 Require Import String List.
-Require Import EqClass AbstractedTypes.
-
-Require Import Coq.Arith.EqNat Coq.Program.Tactics PeanoNat.
+Require Import EqClass ID_Type.
 
 Require Import StructTactics.
 Import ListNotations.
@@ -94,26 +92,6 @@ Fixpoint map_map {A B C : Type} `{HA : EqClass A} (f : B -> C) (m : MapC A B) : 
   match m with
   | [] => []
   | (k, v) :: m' => (k, f v) :: (map_map f m')
-  end.
-
-Fixpoint id_map_to_string_map `{Serializable ID_Type} {B : Type} (m : MapC ID_Type B) : MapC string B :=
-  match m with
-  | [] => []
-  | (k, v) :: m' => (to_string k, v) :: (id_map_to_string_map m')
-  end.
-
-Fixpoint string_map_to_id_map `{Serializable ID_Type} {B : Type} (m : MapC string B) : ResultT (MapC ID_Type B) string :=
-  match m with
-  | [] => resultC []
-  | (k, v) :: m' => 
-    match (from_string k) with
-    | errC e => errC e
-    | resultC k' => 
-      match (string_map_to_id_map m') with
-      | errC e => errC e
-      | resultC m'' => resultC ((k', v) :: m'')
-      end
-    end
   end.
 
 Lemma mapC_get_distinct_keys{A B:Type} `{H : EqClass A} : 
@@ -331,48 +309,15 @@ Fixpoint map_dom {K V} (m:MapC K V) : list K :=
 
 Inductive bound_to{A B:Type} `{H : EqClass A} : MapC A B -> A -> B -> Prop :=
 | Bind : forall x m a, map_get m x = Some a -> bound_to m x a.
+Local Hint Constructors bound_to : map_bound_to.
 
 Lemma bound_to_eq_dec {A B: Type} `{H: EqClass A}:
   forall m x,
     {(exists (a:B), bound_to m x a)} + {not (exists (a:B), bound_to m x a)}.
 Proof.
-  intros.
-  generalizeEverythingElse m.
-  induction m; intros.
-  -
-    right.
-    unfold not.
-    intros.
-    destruct_conjs.
-    invc H1.
-    simpl in *.
-    solve_by_inversion.
-  - specialize IHm with x.
-    destruct IHm.
-    * (* bound_to m x a *)
-      destruct a.
-      destruct (eqb a x) eqn:E.
-      ** (* x = a *)
-         left. exists b. econstructor. simpl. 
-         rewrite E. auto.
-      ** (* x <> a *)
-        assert (exists a0, bound_to ((a,b) :: m) x a0). {
-          destruct e. exists x0.
-          inversion H0; subst. econstructor. simpl.
-          rewrite E. auto.
-        }
-        left. auto.
-    * (* ~ (exists a, bound_to m x a )*)
-      destruct a.
-      destruct (eqb a x) eqn:E.
-      ** (* x = a *)
-         left. exists b. econstructor; simpl; rewrite E; auto.
-      ** (* x <> a *)
-         assert (~ (exists a0, bound_to ((a,b) :: m) x a0)). {
-          intros Contra. destruct Contra. inversion H0. subst.
-          unfold map_get in H1. rewrite E in H1. simpl in *.
-          destruct n. exists x0. econstructor. apply H1.
-         }
-         right. auto.
+  intuition;
+  destruct (map_get m x) eqn:E;
+  try (right; intros HC; destruct HC as [a HC]; inversion HC; congruence);
+  eauto with map_bound_to.
 Qed.
     

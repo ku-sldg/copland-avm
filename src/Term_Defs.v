@@ -15,8 +15,8 @@ This proof script is free software: you can redistribute it and/or
 modify it under the terms of the BSD License as published by the
 University of California.  See license.txt for details. *)
 
-Require Import Maps EqClass List AbstractedTypes.
-Import List.ListNotations.
+Require Import Maps EqClass List ID_Type.
+Import ListNotations.
 
 Require Export Params_Admits.
 

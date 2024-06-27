@@ -18,7 +18,7 @@ University of California.  See license.txt for details. *)
 
 Require Export BS.
 
-Require Import List AbstractedTypes Maps EqClass JSON Serializable Serializable_Class_Admits.
+Require Import List ID_Type Maps EqClass JSON Serializable Serializable_Class_Admits.
 Import ListNotations.
 
 (** * Terms and Evidence *)
@@ -56,19 +56,11 @@ Open Scope string_scope.
 
 Definition ASP_ARGS := MapC string string.
 Global Instance Jsonifiable_ASP_ARGS : Jsonifiable ASP_ARGS := {
-  to_JSON := string_string_map_to_JSON;
-  from_JSON := JSON_to_string_string_map
+  to_JSON := to_JSON;
+  from_JSON := from_JSON;
 }.
 
 Definition ASP_Info := string.
-
-(* Inductive Resource_ID_Arg: Set := 
-| Rid_Arg_C1
-| Rid_Arg_C2.
-
-Inductive Arg: Set := 
-| Arg_ID : ID_Type -> Arg
-| Arg_ResID : Resource_ID_Arg -> Arg. *)
 
 (** Grouping ASP parameters into one constructor *)
 Inductive ASP_PARAMS: Type :=
@@ -151,22 +143,6 @@ Global Instance Jsonifiable_FWD : Jsonifiable FWD := {
                       else errC "Invalid FWD JSON"
                   | errC e => errC e
                   end)
-                  (* match (JSON_get_string "FWD_CONSTRUCTOR" js) with
-                  | resultC "COMP" => resultC COMP
-                  | resultC "ENCR" => resultC ENCR
-                  | resultC "EXTD" => 
-                      match (JSON_get_string "EXTD_N" js) with
-                      | resultC n => 
-                        match (from_string n) with
-                        | resultC n => resultC (EXTD n)
-                        | errC e => errC e
-                        end
-                      | _ => errC "Parsing EXTD not successful"
-                      end
-                  | resultC "KILL" => resultC KILL
-                  | resultC "KEEP" => resultC KEEP
-                  | _ => errC "Invalid FWD JSON"
-                  end) *)
 }.
 
 (** The structure of evidence. 
@@ -545,22 +521,6 @@ Notation "'<<' x y z '>>'" := (asp (ASPC ALL (EXTD 1) (asp_paramsC x nil y z)))
 
 (* @ plc phrase *)
 Notation "@ p [ ph ]" := (att p ph) (in custom copland_entry at level 50).
-
-(*
-Notation "'\t1<' T a1 '>'" := (T a1) (in custom copland_entry at level 99).
-Notation "'\t2<' T a1 a2 '>'" := (T a1 a2) (in custom copland_entry at level 99).
-Notation "'\t3<' T a1 a2 a3 '>'" := (T a1 a2 a3) (in custom copland_entry at level 99).
-Notation "'\t4<' T a1 a2 a3 a4 '>'" := (T a1 a2 a3 a4) (in custom copland_entry at level 99).
-Notation "'\t5<' T a1 a2 a3 a4 a5 '>'" := (T a1 a2 a3 a4 a5) (in custom copland_entry at level 99).
-Notation "'\t6<' T a1 a2 a3 a4 a5 a6 '>'" := (T a1 a2 a3 a4 a5 a6) (in custom copland_entry at level 99).
-*)
-Open Scope cop_ent_scope.
-Definition test1 := <{ __ -> {} }>.
-Example test1ex : test1 = (lseq (asp CPY) (asp NULL)). reflexivity. Defined.
-Definition test_enc := <{ __ -> * min_id_type}>.
-Example testencex : test_enc = (lseq (asp CPY) (asp (ENC min_id_type))). reflexivity. Defined.
-
-Close Scope cop_ent_scope.
 
 (** Copland Core_Term primitive datatypes *)
 Inductive ASP_Core :=

@@ -13,7 +13,7 @@ From Coq Require Import Lists.List. Import ListNotations.
 Require Import Term_Defs.
 Require Import Anno_Term_Defs.
 Require Import Maps.
-Require Import EqClass AbstractedTypes.
+Require Import EqClass ID_Type.
 
 Module CopParser.
 Open Scope cop_ent_scope.

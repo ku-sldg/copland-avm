@@ -2,7 +2,7 @@
       Namely, that the compiler outputs a collection of manifests that support 
       appraisal execution over the input evidence.  *)
 
-Require Import Manifest Manifest_Compiler Manifest_Generator AbstractedTypes
+Require Import Manifest Manifest_Compiler Manifest_Generator ID_Type
   Maps Term_Defs List Cvm_St Cvm_Impl ErrorStMonad_Coq StructTactics 
   Cvm_Monad EqClass Manifest_Admits Auto.
 Require Import Manifest_Generator_Facts Eqb_Evidence.
@@ -1245,9 +1245,9 @@ Proof.
   intuition.
   unfold manifest_generator_app.
   ff.
-  assert (eqb tp tp = true).
+  assert (String.eqb tp tp = true).
   {
-    rewrite eqb_eq_plc.
+    rewrite String.eqb_eq.
     auto.
   }
   ff.
@@ -1267,9 +1267,9 @@ Proof.
   unfold manifest_update_env in *.
   unfold e_empty in *.
   ff.
-  assert (eqb tp tp = true).
+  assert (String.eqb tp tp = true).
   {
-    rewrite eqb_eq_plc.
+    rewrite String.eqb_eq.
     trivial.
   }
   rewrite H0 in *.
