@@ -63,12 +63,12 @@ jobs:
         with:
           path: ~/coq
           key: ${{ runner.OS }}-COQ-${{ env.COMMIT_HASH }}
-          restore-keys: ${{ runner.OS }}-COQ-
       
 # We only need to setup the coq library again if it didnt get pulled from cache properly
       - name: Checkout and build Coq
         if: steps.coq-cache-restore.outputs.cache-hit != 'true'
         run: |
+          rm -rf ~/coq
           cd ~
           eval $(opam env)
           git clone https://github.com/$COQ_REPO_PATH.git
