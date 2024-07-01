@@ -77,18 +77,45 @@ Inductive EvSubTAspEnc: Evidence -> ASP_ID -> Plc -> Prop :=
 #[export] Hint Constructors EvSubTAspEnc : core.
 
 
-Definition evsubt_asp_enc_bool (e:Evidence) (i:ASP_ID) (q:Plc): bool.
-Admitted.
+Fixpoint evsubt_asp_enc_bool (e:Evidence) (i:ASP_ID) (q:Plc): bool :=
+  match e with 
+  | (uu p fwd ps e') =>
+    match fwd with
+    | ENCR =>
+        orb 
+          (andb (eqb (get_asp_id ps) i) (eqb (get_targ_plc ps) q))
+          (andb (eqb (get_targ_plc ps) q) (evsubt_asp_enc_bool e' i q))
+    | _ => orb (eqb (get_asp_id ps) i) (evsubt_asp_enc_bool e' i q)
+    end
+  | (ss e' e'') =>
+    orb (evsubt_asp_enc_bool e' i q) (evsubt_asp_enc_bool e'' i q)
+  | _ => false
+  end.
 
 Lemma evsubt_asp_enc_prop_bool: forall e i q,
     EvSubTAspEnc e i q -> evsubt_asp_enc_bool e i q = true.
 Proof.
-Admitted.
+  induction e; intuition; simpl in *; invc H; repeat ff; subst; eauto;
+  repeat rewrite String.eqb_refl; eauto;
+  find_eapply_hyp_hyp; find_rewrite;
+  repeat rewrite Bool.orb_true_iff; eauto.
+Qed.
 
 Lemma evsubt_asp_enc_bool_prop: forall e i q,
   evsubt_asp_enc_bool e i q = true -> EvSubTAspEnc e i q.
 Proof.
-Admitted.
+  induction e; intros; simpl in *; try congruence;
+  repeat ff; subst; eauto;
+  repeat rewrite Bool.orb_true_iff in *; repeat ff;
+  repeat rewrite Bool.andb_true_iff in *; repeat ff;
+  repeat match goal with
+  | H : _ /\ _ |- _ => destruct H
+  | H : _ \/ _ |- _ => destruct H
+  | [ H : (_ =? _)%string = true |- _ ] => 
+      rewrite String.eqb_eq in *; subst
+  end; eauto;
+  try (econstructor; eauto; intros HC; congruence).
+Qed.
 
 Lemma evsubt_asp_enc_bool_prop_iff: forall e i q,
     EvSubTAspEnc e i q <-> evsubt_asp_enc_bool e i q = true.
@@ -185,12 +212,20 @@ Definition term_discloses_aspid_to_remote_enc (t:Term) (p:Plc) (e:Evidence) (i:A
         EvSubTAspEnc e' i r /\
         ((term_discloses_to_remote t p e (r,e')) = true).
 
+(* Search existsb.
+
+(* This is an (for now, somewhat ad-hoc) ASP evidence disclosure predicate.
+    TODO:  move this somewhere more logical??  *)
+Definition term_discloses_aspid_to_remote_enc_bool (t:Term) (p:Plc) (e:Evidence) (i:ASP_ID) (r:Plc) : bool :=
+  existsb (fun e' => andb (evsubt_asp_enc_bool e' i r) (term_discloses_to_remote t p e (r,e'))).
+Admitted.
+
 Lemma term_discloses_aspid_to_remote_enc_prop_bool_iff : 
   forall t p e i r, 
     term_discloses_aspid_to_remote_enc t p e i r <-> 
     term_discloses_aspid_to_remote_enc_bool t p e i r = true.
 Proof.
-Admitted.
+Admitted. *)
 
 
 Definition cvm_trace_discloses_to_remote (tr:list Ev) (r:Plc) (e:Evidence) : Prop :=
