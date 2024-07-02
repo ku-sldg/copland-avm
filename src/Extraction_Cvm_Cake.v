@@ -18,10 +18,6 @@ Require Import ExtrCakeMLNativeString.
 
 Extraction Language CakeML. (* OCaml. *) 
 
-(* TODO: At some point this might be a good approach to take
-Extract Constant string_to_ID_Type => "fun x => x".
-Extract Constant string_to_ID_Type => "fun x => x". *)
-
 Extraction Implicit parallel_vm_thread [2 3 4].
 Extraction Implicit do_wait_par_thread [2 3 4].
 
@@ -33,7 +29,6 @@ Extract Constant hsh_params => "( undefined () )".
 (*
 Extract Constant get_ev => "bind get (fn st => ret (st_ev st)) : cvm_st -> coq_EvC".
 (* "st <- (@get cvm_st CVM_Error) ;; ret (st_ev st)". *)
-
 *)
 
 Separate Extraction 
