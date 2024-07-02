@@ -7,7 +7,7 @@ Record ProtocolRunRequest :=
   mkPRReq {
     prreq_term: Term;
     prreq_req_plc: Plc;
-    prreq_ev: RawEv;
+    prreq_rawev: RawEv;
   }.
 
 Record ProtocolRunResponse := 

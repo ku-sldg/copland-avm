@@ -14,12 +14,12 @@ Definition ProtocolRunRequest_to_JSON (req: ProtocolRunRequest): JSON :=
     (STR_ACTION, (InJSON_String STR_RUN));
     (STR_REQ_PLC, (InJSON_String (to_string (prreq_req_plc req))));
     (STR_TERM, (InJSON_Object (to_JSON (prreq_term req)))); 
-    (STR_EV, (InJSON_Object (to_JSON (prreq_ev req))))].
+    (STR_RAWEV, (InJSON_Object (to_JSON (prreq_rawev req))))].
 
 Definition JSON_to_ProtocolRunRequest (req : JSON): ResultT ProtocolRunRequest string :=
   temp_term <- JSON_get_Object STR_TERM req ;;
   temp_req_plc <- JSON_get_string STR_REQ_PLC req ;;
-  temp_ev <- JSON_get_Object STR_EV req ;;
+  temp_ev <- JSON_get_Object STR_RAWEV req ;;
 
   term <- from_JSON temp_term ;;
   req_plc <- from_string temp_req_plc ;;
@@ -77,13 +77,13 @@ Definition ProtocolAppraiseRequest_to_JSON (req: ProtocolAppraiseRequest): JSON 
     (STR_TERM, (InJSON_Object (to_JSON (pareq_term req))));
     (STR_REQ_PLC, (InJSON_String (to_string (pareq_plc req))));
     (STR_EVIDENCE, (InJSON_Object (to_JSON (pareq_evidence req))));
-    (STR_EV, (InJSON_Object (to_JSON (pareq_ev req))))].
+    (STR_RAWEV, (InJSON_Object (to_JSON (pareq_ev req))))].
 
 Definition JSON_to_ProtocolAppraiseRequest (req : JSON): ResultT ProtocolAppraiseRequest string :=
   temp_term <- JSON_get_Object STR_TERM req ;;
   temp_plc <- JSON_get_string STR_REQ_PLC req ;;
   temp_evidence <- JSON_get_Object STR_EVIDENCE req ;;
-  temp_ev <- JSON_get_Object STR_EV req ;;
+  temp_ev <- JSON_get_Object STR_RAWEV req ;;
 
   term <- from_JSON temp_term ;;
   plc <- from_string temp_plc ;;
@@ -179,7 +179,7 @@ Definition ASPRunRequest_to_JSON (req: ASPRunRequest): JSON :=
     (STR_ASP_ARGS, (InJSON_Object (to_JSON (asprreq_asp_args req))));
     (STR_TARG_PLC, (InJSON_String (to_string (asprreq_targ_plc req))));
     (STR_TARG, (InJSON_String (to_string (asprreq_targ req))));
-    (STR_EV, (InJSON_Object (to_JSON (asprreq_rawev req))))
+    (STR_RAWEV, (InJSON_Object (to_JSON (asprreq_rawev req))))
   ].
 
 Definition JSON_to_ASPRunRequest (req : JSON): ResultT ASPRunRequest string :=
@@ -187,7 +187,7 @@ Definition JSON_to_ASPRunRequest (req : JSON): ResultT ASPRunRequest string :=
   temp_asp_args <- JSON_get_Object STR_ASP_ARGS req ;;
   temp_targ_plc <- JSON_get_string STR_TARG_PLC req ;;
   temp_targ <- JSON_get_string STR_TARG req ;;
-  temp_ev <- JSON_get_Object STR_EV req ;;
+  temp_ev <- JSON_get_Object STR_RAWEV req ;;
 
   asp_id <- from_string temp_asp_id ;;
   asp_args <- from_JSON temp_asp_args ;;
