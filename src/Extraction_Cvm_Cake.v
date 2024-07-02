@@ -9,7 +9,7 @@ Require Import Manifest_Generator Manifest_Compiler.
 
 Require Import AM_Helpers Server_AM Client_AM.
 
-Require Import Manifest_Generator_Union Manifest_JSON.
+Require Import Manifest_Generator_Union Manifest_JSON Flexible_Mechanisms.
 
 Require Import List.
 Import ListNotations.
@@ -36,14 +36,8 @@ Extract Constant get_ev => "bind get (fn st => ret (st_ev st)) : cvm_st -> coq_E
 
 *)
 
-(* Definition term_list : list Term := 
-	[cert_style; cert_cache_p1; cert_cache_p0; 
-	 par_mut_p0; par_mut_p1; layered_bg_strong; 
-	 example_phrase_p2_appraise]. *)
-
 Separate Extraction 
-		(* term_list ssl_sig_parameterized kim_meas cm_meas *)
-		run_cvm manifest_compiler empty_am_result 
+    flexible_mechanisms run_cvm manifest_compiler 
     Jsonifiable_AM_Library Jsonifiable_Manifest
 		handle_AM_request end_to_end_mangen_final
     Jsonifiable_Evidence_Plc_list Jsonifiable_Term_Plc_list.
