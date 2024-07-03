@@ -111,8 +111,6 @@ Definition empty_PolicyT : PolicyT := [].
     UUID_AM_Clone : UUID ;
 
     (* Local Mappings *)
-    Lib_ASPS            : MapC ASP_ID FS_Location ;
-    Lib_Appraisal_ASPS  : MapC (Plc * ASP_ID) FS_Location ;
     Lib_Plcs            : MapC Plc UUID ;
     Lib_PubKeys         : MapC Plc PublicKey ;
   }.

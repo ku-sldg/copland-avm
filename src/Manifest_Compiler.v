@@ -22,20 +22,15 @@ Fixpoint minify_mapD {A B : Type} `{HA : EqClass A} `{HB : EqClass B} (m : MapD 
   | cons (k,v) tl => if (f k) then cons (k,v) (minify_mapD tl f) else minify_mapD tl f
   end.
 
-Definition generate_ASP_dispatcher' (al : AM_Library) (am : Manifest) (par : ASP_PARAMS) (rawEv : RawEv) : ResultT RawEv DispatcherErrors :=
+Definition generate_ASP_dispatcher' (am : Manifest) (aspBin : FS_Location) (par : ASP_PARAMS) (rawEv : RawEv) : ResultT RawEv DispatcherErrors :=
   let (aspid, args, targ_plc, targ) := par in
-  let abstract_asps := am.(asps) in
-  let local_asps_map := al.(Lib_ASPS) in
-  let shrunk_map : (MapC ASP_ID FS_Location) := 
-  minify_mapC local_asps_map (fun x => if (in_dec_set x abstract_asps) then true else false) 
-  in
+  let asps := am.(asps) in
     (* check is the ASPID is available *) 
-    match (map_get shrunk_map aspid) with
-    | Some loc => 
+    if (in_dec_set aspid asps) 
+    then
       let asp_req := (mkASPRReq aspid args targ_plc targ rawEv) in
       let js_req := ASPRunRequest_to_JSON asp_req in
-      (* Used to tell difference between local and remote ASPs *)
-      let resp_res := make_JSON_FS_Location_Request loc js_req in
+      let resp_res := make_JSON_FS_Location_Request aspBin aspid js_req in
       match resp_res with
       | resultC js_resp =>
           match JSON_to_ASPRunResponse js_resp with
@@ -46,28 +41,20 @@ Definition generate_ASP_dispatcher' (al : AM_Library) (am : Manifest) (par : ASP
           end
       | errC msg => errC (Runtime msg)
       end
-    | None => errC Unavailable
-    end.
+    else errC Unavailable.
 
 (* This function will be a dispatcher for either local ASPS to CakeMLCallback, or pass them off to the ASP_Server *)
-Definition generate_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest)
-    : (ASPCallback DispatcherErrors) :=
-  (* let asp_server_cb := al.(ASPServer_Cb) in *)
-    (generate_ASP_dispatcher' al am). 
+Definition generate_ASP_dispatcher `{HID : EqClass ID_Type} (am : Manifest) (aspBin : FS_Location) : (ASPCallback DispatcherErrors) :=
+  (generate_ASP_dispatcher' am aspBin). 
 
-Definition generate_appraisal_ASP_dispatcher' (al : AM_Library) (am : Manifest) (par : ASP_PARAMS) (rawEv : RawEv) :=
+Definition generate_appraisal_ASP_dispatcher' (am : Manifest) (aspBin : FS_Location) (par : ASP_PARAMS) (rawEv : RawEv) :=
   let (aspid, args, targ_plc, targ) := par in
-  let abstract_asps := am.(appraisal_asps) in
-  let local_asps_map := al.(Lib_Appraisal_ASPS) in
-  let shrunk_map : (MapC (Plc*ASP_ID) FS_Location) :=  
-  minify_mapC local_asps_map (fun x => if (in_dec_set x abstract_asps) then true else false) in
-    (* check is the ASPID is a local, with a callback *)
-    match (map_get shrunk_map (targ_plc,aspid)) with
-    | Some loc => 
+  let asps := am.(appraisal_asps) in
+    if (in_dec_set (targ_plc, aspid) asps) 
+    then
       let asp_req := (mkASPRReq aspid args targ_plc targ rawEv) in
       let js_req := ASPRunRequest_to_JSON asp_req in
-      (* Used to tell difference between local and remote ASPs *)
-      let resp_res := make_JSON_FS_Location_Request loc js_req in
+      let resp_res := make_JSON_FS_Location_Request aspBin aspid js_req in
       match resp_res with
       | resultC js_resp =>
           match JSON_to_ASPRunResponse js_resp with
@@ -78,14 +65,10 @@ Definition generate_appraisal_ASP_dispatcher' (al : AM_Library) (am : Manifest) 
           end
       | errC msg => errC (Runtime msg)
       end
-    | None => errC Unavailable
-    end.
+    else errC Unavailable.
 
-
-Definition generate_appraisal_ASP_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest)
-: (ASPCallback DispatcherErrors) :=
-(* let asp_server_cb := al.(ASPServer_Cb) in *)
-(generate_appraisal_ASP_dispatcher' al am). 
+Definition generate_appraisal_ASP_dispatcher `{HID : EqClass ID_Type} (am : Manifest) (aspBin : FS_Location) : (ASPCallback DispatcherErrors) :=
+  (generate_appraisal_ASP_dispatcher' am aspBin). 
 
 
 (* This function will lookup for either local Plcs to UUID, or pass them off to the Plc Server *)
@@ -123,15 +106,15 @@ Definition generate_PubKey_dispatcher `{HID : EqClass ID_Type} (al : AM_Library)
       end.
 
 (* This is a rough type signature for the "manifest compiler".  Still some details to be ironed out... *)
-Definition manifest_compiler (m : Manifest) (al : AM_Library) : AM_Config :=
+Definition manifest_compiler (m : Manifest) (al : AM_Library) (aspBin : FS_Location) : AM_Config :=
 (* The output of this function is an AM Config, and a 
 function that can be used like "check_asp_EXTD".
 This function will be used in extraction to either dispatch ASPs to the ASP server, or call a local callback *)
 {|
   absMan   := m ;
   am_clone_addr := (UUID_AM_Clone al) ;
-  aspCb     := (generate_ASP_dispatcher al m) ;
-  app_aspCb := (generate_appraisal_ASP_dispatcher al m);
+  aspCb     := (generate_ASP_dispatcher m aspBin) ;
+  app_aspCb := (generate_appraisal_ASP_dispatcher m aspBin);
   plcCb     := (generate_Plc_dispatcher al m);
   pubKeyCb  := (generate_PubKey_dispatcher al m);
 |}.

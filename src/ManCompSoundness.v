@@ -17,14 +17,15 @@ Import ListNotations.
 
 
 Definition lib_supports_manifest (al : AM_Library) (am : Manifest) : Prop :=
-  (forall (a : ASP_ID), In_set a am.(asps) -> 
-    exists aloc, Maps.map_get al.(Lib_ASPS) a = Some aloc) /\
+  (* (forall (a : ASP_ID), In_set a am.(asps) -> 
+    exists aloc, Maps.map_get al.(Lib_ASPS) a = Some aloc) /\ *)
   (forall (up : Plc), In_set up am.(uuidPlcs) -> 
     exists b, Maps.map_get al.(Lib_Plcs) up = Some b) /\
   (forall (pkp : Plc), In_set pkp am.(pubKeyPlcs) -> 
-    exists b, Maps.map_get al.(Lib_PubKeys) pkp = Some b) /\
+    exists b, Maps.map_get al.(Lib_PubKeys) pkp = Some b).
+     (* /\
   (forall (a : (Plc*ASP_ID)), In_set a am.(appraisal_asps) -> 
-    exists aloc, Maps.map_get al.(Lib_Appraisal_ASPS) a = Some aloc).
+    exists aloc, Maps.map_get al.(Lib_Appraisal_ASPS) a = Some aloc). *)
 
 Ltac unfolds :=
   (* repeat monad_unfold; *)
@@ -112,9 +113,9 @@ Ltac kill_map_none :=
     destruct H'''; find_rewrite; congruence
   end.
 
-Lemma callbacks_work_asps : forall absMan amLib amConf,
+Lemma callbacks_work_asps : forall absMan amLib amConf aspBin,
   lib_supports_manifest amLib absMan ->
-  manifest_compiler absMan amLib = amConf ->
+  manifest_compiler absMan amLib aspBin = amConf ->
   (forall x, In_set x absMan.(asps) -> 
     forall l p t ev res,
       aspCb amConf (asp_paramsC x l p t) ev = res ->
@@ -126,18 +127,14 @@ Proof.
   destruct amConf; simpl in *;
   destruct amLib; simpl in *.
   unfold manifest_compiler in H0; repeat find_injection;
-  simpl in *.
-  repeat break_match; try congruence.
-  unfold lib_supports_manifest in *; simpl in *;
-  intuition.
-  kill_map_none.
+  simpl in *; repeat ff; try congruence.
 Qed.
 
 Lemma never_change_am_conf : forall t st res st',
   build_cvm (copland_compile t) st = (res, st') ->
   st_AM_config st = st_AM_config st'.
 Proof.
-  intros.
+  intros;
   destruct st.
   simpl. 
   edestruct ac_immut.
@@ -506,9 +503,9 @@ Definition manifest_support_am_config (m : Manifest) (ac : AM_Config) : Prop :=
     (exists errStr, ac.(app_aspCb) (asp_paramsC a l p targid) ev = errC (Runtime errStr))).
 
 
-Theorem manifest_support_am_config_compiler : forall absMan amLib,
+Theorem manifest_support_am_config_compiler : forall absMan amLib aspBin,
   lib_supports_manifest amLib absMan ->
-  manifest_support_am_config absMan (manifest_compiler absMan amLib).
+  manifest_support_am_config absMan (manifest_compiler absMan amLib aspBin).
 Proof.
   unfold lib_supports_manifest, manifest_support_am_config, 
     manifest_compiler, generate_PubKey_dispatcher, generate_Plc_dispatcher in *;
@@ -1751,10 +1748,10 @@ Proof.
           eassumption.
 Qed.
 
-Theorem manifest_generator_compiler_soundness_distributed : forall t tp p absMan amLib amConf,
+Theorem manifest_generator_compiler_soundness_distributed : forall t tp p absMan amLib amConf aspBin,
   map_get (manifest_generator t tp) p = Some absMan ->
   lib_supports_manifest amLib absMan ->
-  manifest_compiler absMan amLib = amConf ->
+  manifest_compiler absMan amLib aspBin = amConf ->
   forall st,
 
   (* st.(st_AM_config) = amConf -> *)
@@ -2348,10 +2345,10 @@ Proof.
 Qed.
 Global Hint Resolve mapD_get_subset : core.
 
-Lemma supports_am_mancomp_subset: forall al m m' ac,
-  supports_am (manifest_compiler m al) ac -> 
+Lemma supports_am_mancomp_subset: forall al m m' ac aspBin,
+  supports_am (manifest_compiler m al aspBin) ac -> 
   manifest_subset m' m ->
-  supports_am (manifest_compiler m' al) ac.
+  supports_am (manifest_compiler m' al aspBin) ac.
 Proof.
   intuition.
   unfold supports_am, manifest_subset,
@@ -2363,7 +2360,7 @@ Proof.
   try congruence; eauto; try find_injection;
   repeat break_match; simpl in *; intuition; subst; eauto;
   try congruence;
-  match goal with
+  try match goal with
   | [ H : forall x : ?t, In_set _ _ -> _ , H1 : map_get (minify_mapC _ (fun x : ?t => _)) _ = Some _ , H2 : forall (x : ?t), _ |- _ ]
       =>
         pose proof (mapC_get_subset _ _ _ _ _ _ _ H H1);
@@ -2373,8 +2370,21 @@ Proof.
       =>
         pose proof (mapD_get_subset _ _ _ _ _ _ _ H H1);
         eapply H2
-  end; repeat break_match; simpl in *; intuition; subst; eauto;
-  try congruence.
+  end; repeat break_match; simpl in *; intuition; subst; eauto; 
+  try congruence;
+  repeat match goal with
+  | [H : forall (x : ASP_ID) (l : ASP_ARGS) (targ : Plc) (targid : TARG_ID) (ev : RawEv), _,
+    H1 : make_JSON_FS_Location_Request _ _ (_ {| asprreq_asp_id := ?a; asprreq_asp_args := ?l; asprreq_targ_plc := ?targ; asprreq_targ := ?targid; asprreq_rawev := ?ev |}) = _ |- _] =>
+      let H' := fresh "H'" in
+      pose proof (H a l targ targid ev) as H';
+      clear H;
+      rewrite H1 in H';
+      try match goal with
+      | H2 : JSON_to_ASPRunResponse _ = _ |- _ => 
+          rewrite H2 in H'
+      end;
+      simpl in *
+  end; repeat ff; eauto with *.
 Qed.
 Global Hint Resolve supports_am_mancomp_subset : core.
 
@@ -2398,13 +2408,13 @@ Proof.
 Qed.
 Global Hint Resolve end_to_end_mangen_supports_all : core.
 
-Theorem manifest_generator_compiler_soundness_distributed_multiterm' : forall t ts ls tp p absMan amLib amConf,
+Theorem manifest_generator_compiler_soundness_distributed_multiterm' : forall t ts ls tp p absMan amLib amConf aspBin,
   (* map_get (manifest_generator t tp) p = Some absMan -> *)
   map_get (end_to_end_mangen' ls ts) p = Some absMan -> 
   In (t,tp) ts ->
   (* In p (places tp t) -> *)
   lib_supports_manifest amLib absMan ->
-  manifest_compiler absMan amLib = amConf ->
+  manifest_compiler absMan amLib aspBin = amConf ->
   forall st,
 
   (* st.(st_AM_config) = amConf -> *)
@@ -2439,7 +2449,9 @@ Proof.
         rewrite H5 in H4; simpl in *; intuition.
       }
       eapply end_to_end_mangen_supports_all; eauto.
-  - find_rewrite; eauto.
+  - match goal with
+    | H : manifest_compiler _ _ _ = _ |- _ => rewrite H
+  end; eauto.
   Unshelve. eapply "Plc"%string.
   (* eapply end_to_end_mangen_subsumes in H0; eauto;
   destruct_conjs; rewrite <- H2 in H3.
@@ -2549,13 +2561,13 @@ Proof.
 Qed.
 
 
-Theorem manifest_generator_compiler_soundness_distributed_multiterm : forall t ts ls tp p absMan amLib amConf,
+Theorem manifest_generator_compiler_soundness_distributed_multiterm : forall t ts ls tp p absMan amLib amConf aspBin,
   (* map_get (manifest_generator t tp) p = Some absMan -> *)
   map_get (end_to_end_mangen ls ts) p = Some absMan -> 
   In (t,tp) ts ->
   (* In p (places tp t) -> *)
   lib_supports_manifest amLib absMan ->
-  manifest_compiler absMan amLib = amConf ->
+  manifest_compiler absMan amLib aspBin = amConf ->
   forall st,
 
   (* st.(st_AM_config) = amConf -> *)

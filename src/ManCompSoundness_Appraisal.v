@@ -1090,11 +1090,11 @@ Proof.
     eassumption.
 Qed.
 
-Theorem manifest_generator_compiler_soundness_app : forall et ls oldMan absMan amLib amConf,
+Theorem manifest_generator_compiler_soundness_app : forall et ls oldMan absMan amLib amConf aspBin,
   (* map_get (manifest_generator t tp) p = Some absMan -> *)
   manifest_generator_app'' et oldMan = absMan ->
   lib_supports_manifest amLib absMan ->
-  manifest_compiler absMan amLib = amConf ->
+  manifest_compiler absMan amLib aspBin = amConf ->
   et_size et = length ls ->
   forall st,
 
@@ -1321,11 +1321,11 @@ Global Hint Resolve end_to_end_mangen_supports_all : core.
 
 
 
-Theorem manifest_generator_compiler_soundness_distributed_multiterm_app : forall et ts ls bs tp absMan amLib amConf,
+Theorem manifest_generator_compiler_soundness_distributed_multiterm_app : forall et ts ls bs tp absMan amLib amConf aspBin,
   map_get (end_to_end_mangen' ls ts) tp = Some absMan -> 
   In (et,tp) ls ->
   lib_supports_manifest amLib absMan ->
-  manifest_compiler absMan amLib = amConf ->
+  manifest_compiler absMan amLib aspBin = amConf ->
   et_size et = length bs ->
   forall st,
 
@@ -1348,6 +1348,8 @@ Proof.
     * (* NOTE: This is the important one, substitute proof of any manifest here *)
       eapply end_to_end_mangen_supports_all_app; eauto.
   - find_rewrite; eauto.
-  - ff.
-  - eassumption.
+  - match goal with
+    | H: manifest_compiler _ _ _ = _ |- _ => rewrite H; eauto
+    end.
+  - eauto.
 Qed.

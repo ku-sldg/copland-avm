@@ -74,12 +74,6 @@ Proof.
           apply Bool.orb_true_r.
   Qed.
 
-Definition aspid_in_amlib_bool (al:AM_Library) (i:ASP_ID)  : bool := 
-  match (Maps.map_get al.(Lib_ASPS) i) with 
-  | Some v => true 
-  | None => false 
-  end.
-
 Definition uuid_plc_in_amlib_bool (al:AM_Library) (p:Plc)  : bool := 
   match (Maps.map_get al.(Lib_Plcs) p) with 
   | Some v => true 
@@ -92,24 +86,11 @@ Definition pubkey_plc_in_amlib_bool (al:AM_Library) (p:Plc)  : bool :=
   | None => false 
   end.
 
-Definition appraisal_aspid_in_amlib_bool (al:AM_Library) (pr:Plc*ASP_ID)  : bool := 
-  match (Maps.map_get al.(Lib_Appraisal_ASPS) pr) with 
-  | Some v => true 
-  | None => false 
-  end.
-
-
-Definition lib_omits_aspids (ls:manifest_set ASP_ID) (al:AM_Library) : manifest_set ASP_ID := 
-  filter_manset (fun i => (negb (aspid_in_amlib_bool al i))) ls.
-
 Definition lib_omits_uuid_plcs (ls:manifest_set Plc) (al:AM_Library) : manifest_set Plc := 
   filter_manset (fun p => (negb (uuid_plc_in_amlib_bool al p))) ls.
 
 Definition lib_omits_pubkey_plcs (ls:manifest_set Plc) (al:AM_Library) : manifest_set Plc := 
   filter_manset (fun p => (negb (pubkey_plc_in_amlib_bool al p))) ls.
-
-Definition lib_omits_appraisal_aspids (ls:manifest_set (Plc*ASP_ID)) (al:AM_Library) : manifest_set (Plc*ASP_ID) := 
-  filter_manset (fun i => (negb (appraisal_aspid_in_amlib_bool al i))) ls.
 
 Definition lib_omits_manifest (al:AM_Library) (am:Manifest) : Manifest := 
     let aspid_list := am.(asps) in 
@@ -119,8 +100,8 @@ Definition lib_omits_manifest (al:AM_Library) (am:Manifest) : Manifest :=
 
         Build_Manifest 
             am.(my_abstract_plc)
-            (lib_omits_aspids aspid_list al)
-            (lib_omits_appraisal_aspids appraisal_asps_list al)
+            aspid_list
+            appraisal_asps_list
             (lib_omits_uuid_plcs uuid_plcs_list al)
             (lib_omits_pubkey_plcs pubkey_plcs_list al)    
             manifest_set_empty 
@@ -139,12 +120,12 @@ Definition manifest_none_omitted (m:Manifest) : bool :=
 Definition lib_supports_manifest_bool (al:AM_Library) (am:Manifest) : bool := 
     manifest_none_omitted (lib_omits_manifest al am).
 
-Definition config_AM_if_lib_supported (absMan:Manifest) (amLib:AM_Library) : AM unit := 
+Definition config_AM_if_lib_supported (absMan:Manifest) (amLib:AM_Library) (aspBin : FS_Location): AM unit := 
     let om := lib_omits_manifest amLib absMan in
     let supportsB := manifest_none_omitted om in 
         if (supportsB) 
         then (
-            let amConf := manifest_compiler absMan amLib in 
+            let amConf := manifest_compiler absMan amLib aspBin in 
                 put_amConfig amConf
         )
         else (
