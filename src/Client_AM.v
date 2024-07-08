@@ -1,11 +1,12 @@
 (*  Implementation of a top-level Client (initiator) thread for Client AMs in
       end-to-end Copland Attestation + Appraisal protocols.  *)
+Require Import String List.
 
-Require Import Term Example_Phrases_Demo Cvm_Run Manifest EqClass.
+Require Import Term Cvm_Run Manifest EqClass Cvm_St.
 
 Require Import Impl_appraisal Appraisal_IO_Stubs IO_Stubs AM_Monad ErrorStMonad_Coq.
 
-Require Import CvmJson_Admits Manifest_Generator Manifest_Compiler Maps.
+Require Import CvmJson_Interfaces Manifest_Generator Manifest_Compiler Maps.
 
 Require Import ManCompSoundness Manifest_Admits Disclose ErrorStringConstants.
 
@@ -13,12 +14,42 @@ Require Import ManCompSoundness_Appraisal AM_Helpers Auto.
 
 Require Import StructTactics Coq.Program.Tactics.
 
-Require Import List.
 Import ListNotations.
 
 (*
 Set Nested Proofs Allowed.
 *)
+
+Definition am_sendReq (req_plc : Plc) (t:Term) (uuid : UUID) (authTok:ReqAuthTok) (e:RawEv) : ResultT RawEv string :=
+  let req := mkPRReq t req_plc e in 
+  let js := ProtocolRunRequest_to_JSON req in
+  let resp_res := make_JSON_Network_Request uuid js in
+  match resp_res with
+  | resultC js_res =>
+      match JSON_to_ProtocolRunResponse js_res with
+      | errC msg => errC msg
+      | resultC res =>
+        let '(mkPRResp success ev) := res in
+        if success then resultC ev else errC errStr_remote_am_failure
+      end
+  | errC msg => errC msg
+  end.
+
+Definition am_sendReq_app (uuid : UUID) (t:Term) (p:Plc) (e:Evidence) (ev:RawEv) : 
+    ResultT AppResultC string :=
+  let req := mkPAReq t p e ev in
+  let js := ProtocolAppraiseRequest_to_JSON req in
+  let resp_res := make_JSON_Network_Request uuid js in
+  match resp_res with
+  | resultC js_res =>
+    match JSON_to_ProtocolAppraiseResponse js_res with
+    | errC msg => errC msg
+    | resultC res =>
+      let '(mkPAResp success result) := res in
+      if success then resultC result else errC errStr_remote_am_failure
+    end
+  | errC msg => errC msg
+  end.
 
 Definition gen_nonce_if_none_local (initEv:option EvC) : AM EvC :=
   match initEv with
@@ -29,19 +60,22 @@ Definition gen_nonce_if_none_local (initEv:option EvC) : AM EvC :=
         ret (evc [nonce_bits] (nn nid))
   end.
 
-Definition gen_authEvC_if_some (ot:option Term) (myPlc:Plc) (init_evc:EvC) : AM EvC :=
+Definition gen_authEvC_if_some (ot:option Term) (uuid : UUID) (myPlc:Plc) (init_evc:EvC) : AM EvC :=
   match ot with
   | Some auth_phrase =>
     let '(evc init_rawev_auth init_et_auth) := init_evc in
-    let auth_rawev := am_sendReq auth_phrase myPlc mt_evc init_rawev_auth in
-    let auth_et := eval auth_phrase myPlc init_et_auth in
-      ret (evc auth_rawev auth_et)
+    match am_sendReq myPlc auth_phrase uuid mt_evc init_rawev_auth with
+    | errC msg => ret (evc [] mt)
+    | resultC auth_rawev =>
+      let auth_et := eval auth_phrase myPlc init_et_auth in
+        ret (evc auth_rawev auth_et)
+    end
   | None => ret (evc [] mt)
   end.
 
-Definition run_appraisal_client (t:Term) (p:Plc) (et:Evidence) (re:RawEv) (addr:UUID) : AppResultC :=
+Definition run_appraisal_client (t:Term) (p:Plc) (et:Evidence) (re:RawEv) (addr:UUID) : ResultT AppResultC string :=
   let expected_et := eval t p et in 
-  am_sendReq'_app addr t p et re.
+  am_sendReq_app addr t p et re.
   (*
   let comp := gen_appraise_AM expected_et re in
   run_am_app_comp comp mtc_app.
@@ -66,7 +100,11 @@ Definition am_appraise (t:Term) (toPlc:Plc) (init_et:Evidence) (cvm_ev:RawEv) (l
     | true => 
        let expected_et := eval t toPlc init_et in
         gen_appraise_AM expected_et cvm_ev 
-    | false => ret (run_appraisal_client t toPlc init_et cvm_ev uuid)
+    | false => 
+      match run_appraisal_client t toPlc init_et cvm_ev uuid with
+      | errC msg => am_failm (am_dispatch_error (Runtime msg))
+      | resultC res => ret res
+      end
     end) ;;
   (*
   let expected_et := eval t toPlc init_et in
@@ -149,19 +187,20 @@ Qed.
 
 Admitted.
 
-
-
-Definition run_cvm_local_am (t:Term) (myPlc:Plc) (ls:RawEv) : AM RawEv := 
+Definition run_cvm_local_am (t:Term) (ls:RawEv) : AM RawEv := 
   st <- get ;; 
-  ret (run_cvm_rawEv t myPlc ls (amConfig st)).
+  match (run_cvm_w_config t ls (amConfig st)) with
+  | resultC cvm_st => ret (get_bits (st_ev cvm_st))
+  | errC e => am_failm (cvm_error e)
+  end.
 
-Definition gen_authEvC_if_some_local (ot:option Term) (myPlc:Plc) (init_evc:EvC) (absMan:Manifest) (amLib:AM_Library) : AM EvC :=
+Definition gen_authEvC_if_some_local (ot:option Term) (myPlc:Plc) (init_evc:EvC) (absMan:Manifest) (amLib:AM_Library) (aspBin : FS_Location) : AM EvC :=
   match ot with
   | Some auth_phrase =>
       let '(evc init_rawev_auth init_et_auth) := init_evc in
 
-      config_AM_if_lib_supported (* auth_phrase myPlc *) absMan amLib ;; 
-      resev <- run_cvm_local_am auth_phrase myPlc init_rawev_auth ;;
+      config_AM_if_lib_supported absMan amLib aspBin ;; 
+      resev <- run_cvm_local_am auth_phrase init_rawev_auth ;;
       let auth_et := eval auth_phrase myPlc init_et_auth in 
       ret (evc resev auth_et)
   | None => ret (evc [] mt)
@@ -178,14 +217,14 @@ Definition check_disclosure_policy (t:Term) (p:Plc) (e:Evidence) : AM unit :=
   else (am_failm (am_dispatch_error (Runtime errStr_disclosePolicy))).
 
 Definition am_client_gen_local (t:Term) (myPlc:Plc) (initEvOpt:option EvC) 
-    (* (authPhrase:option Term) *) (absMan:Manifest) (amLib:AM_Library) : AM AM_Result := 
+    (absMan:Manifest) (amLib:AM_Library) (aspBin : FS_Location) : AM AM_Result := 
   evcIn <- gen_nonce_if_none_local initEvOpt ;; 
   (* auth_evc <- gen_authEvC_if_some_local authPhrase myPlc mt_evc ;;  *)
   let '(evc init_ev init_et) := evcIn in 
-  config_AM_if_lib_supported absMan amLib ;; 
+  config_AM_if_lib_supported absMan amLib aspBin ;; 
 
   check_disclosure_policy t myPlc init_et ;;
-  resev <- run_cvm_local_am t myPlc init_ev ;; 
+  resev <- run_cvm_local_am t init_ev ;; 
 
   (*
   let expected_et := eval t myPlc init_et in 
@@ -619,7 +658,7 @@ Proof.
 Qed.
 
 
-Example client_gen_executable : forall t p initEvOpt amLib st, 
+Example client_gen_executable : forall t p initEvOpt amLib st aspBin,
 
   lib_supports_manifest_bool amLib (get_my_absman_generated t p) = true -> 
 (*
@@ -627,10 +666,10 @@ Example client_gen_executable : forall t p initEvOpt amLib st,
 *)
 
   (exists res st', 
-  (am_client_gen_local t p initEvOpt (get_my_absman_generated t p) amLib) st = (resultC res, st')) \/ 
+  (am_client_gen_local t p initEvOpt (get_my_absman_generated t p) amLib aspBin) st = (resultC res, st')) \/ 
 
   (exists st' str, 
-    (am_client_gen_local t p initEvOpt (get_my_absman_generated t p) amLib) st = (errC (am_dispatch_error (Runtime str)), st')
+    (am_client_gen_local t p initEvOpt (get_my_absman_generated t p) amLib aspBin) st = (errC (am_dispatch_error (Runtime str)), st')
   ).
 Proof.
 

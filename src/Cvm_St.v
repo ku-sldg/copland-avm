@@ -6,7 +6,7 @@ CVM Monad definition.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import ConcreteEvidence ErrorStMonad_Coq AbstractedTypes Manifest Manifest_Admits.
+Require Import ConcreteEvidence ErrorStMonad_Coq ID_Type Manifest Manifest_Admits.
 Require Import List.
 Import ListNotations.
 
@@ -29,14 +29,9 @@ Require Export Manifest.
 Record cvm_st : Type := mk_st
                           {st_ev:EvC ;
                            st_trace:list Ev ;
-                           st_pl:Plc;
                            st_evid:Event_ID ;
                            st_AM_config : AM_Config ;
                            }.
-
-Definition empty_vmst : cvm_st := mk_st (evc [] mt) [] min_id_type 0 empty_am_config.
-
-
 
 Inductive CVM_Error : Type := 
 | at_error_static : Term -> Plc -> EvC -> CVM_Error

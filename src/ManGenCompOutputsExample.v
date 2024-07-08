@@ -1,8 +1,6 @@
-Require Import Example_Phrases_Admits Example_Phrases.
-
 Require Import Manifest_Admits Manifest BS Term_Defs_Core Term.
 
-Require Import Maps StringT ErrorStMonad_Coq.
+Require Import Maps String ErrorStMonad_Coq.
 
 Require Import Manifest_Generator Manifest_Generator_Union Manifest_Compiler.
 
@@ -39,7 +37,7 @@ Definition BASE_ADDR : ASP_Address. Admitted.
 
 Definition passed_bs : BS. Admitted.
 
-Definition ERR_STR : StringT. Admitted.
+Definition ERR_STR : string. Admitted.
 Definition P0_UUID : UUID. Admitted.
 Definition P1_UUID : UUID. Admitted.
 Definition P2_UUID : UUID. Admitted.

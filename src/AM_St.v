@@ -1,6 +1,6 @@
 (* Definitions for AM Monad State (AM_St) and AM Monad (AM).  *)
 
-Require Import Maps BS Term_Defs_Core Cvm_St ErrorStMonad_Coq StringT.
+Require Import Maps ResultT BS Term_Defs_Core Cvm_St ErrorStMonad_Coq String.
 
 
 Require Import List.
@@ -19,7 +19,7 @@ Definition empty_amst :=
 
 Inductive AM_Error : Type := 
 | cvm_error : CVM_Error -> AM_Error
-| am_error : StringT -> AM_Error
+| am_error : string -> AM_Error
 | am_dispatch_error : DispatcherErrors -> AM_Error.
   (*
   | term_disclosure_error : Term -> AM_Error

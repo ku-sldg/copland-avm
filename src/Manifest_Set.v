@@ -1,16 +1,15 @@
 (* Definition of the manifest_set datatype, its operations, and related properties.  
     This datatype is used for "collection" manifest fields, and should act like a 
     traditional mathematical set (e.g. cumulative, non-duplicating, ...) *)
+Require Import List String.
 
-Require Import AbstractedTypes Term_Defs_Core Maps String
-  Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq.
+Require Import ID_Type Term_Defs_Core Maps 
+  Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq ErrorStringConstants JSON.
 
-Require Import Example_Phrases_Admits.
-
-Require Import List.
 Import ListNotations.
 
 Definition manifest_set (A : Type) := list A.
+
 
 Definition manifest_set_empty {A : Type} : manifest_set A := nil.
 
@@ -84,7 +83,7 @@ Proof.
   - simpl; auto.
   - simpl.
     destruct (eqb i a) eqn:Eia.
-    + rewrite eqb_leibniz in Eia. subst; simpl; auto.
+    + rewrite eqb_eq in Eia. subst; simpl; auto.
     + simpl; auto.
 Qed.
 
@@ -117,17 +116,10 @@ Definition existsb_set {A:Type} (f : A -> bool) (s: manifest_set A) : bool :=
 Definition existsb_eq_iff_In_set: forall (s : manifest_set ID_Type) (a : ID_Type),
   existsb_set (eqb a) s = true <-> In_set a s.
 Proof.
-  split; intros H.
-  - induction s.
-    + inversion H.
-    + simpl in H. simpl. destruct (eqb a a0) eqn:Eaa0.
-      * rewrite eqb_leibniz in Eaa0; auto.
-      * right. apply IHs. simpl in H; auto.
-  - induction s.
-    + inversion H.
-    + simpl in *. destruct (eqb a a0) eqn:Eaa0; auto.
-      * simpl. apply IHs. destruct H; auto.
-        -- subst. rewrite eqb_refl in Eaa0. congruence.
+  intuition; simpl in *; unfold existsb_set, In_set in *; simpl in *;
+  rewrite existsb_exists in *;
+  [destruct H | exists a]; intuition; 
+  rewrite String.eqb_eq in *; subst; eauto.
 Qed.
 
 Lemma nodup_manset_add {A : Type} `{HA : EqClass A} (a : A) (s : manifest_set A) :
@@ -139,7 +131,7 @@ Proof.
   - destruct (eqb a a0) eqn:Eaa0; eauto.
     + constructor.
       * intro H0. inversion H. subst.
-        assert (a <> a0) by (intro HC; apply eqb_leibniz in HC; congruence).
+        assert (a <> a0) by (intro HC; apply eqb_eq in HC; congruence).
         apply manadd_In_set in H0. intuition.
       * inversion H; auto.
 Qed.
@@ -171,12 +163,12 @@ Proof.
   - generalize dependent a. induction s; intros a0 H.
     + inversion H.
     + simpl in H. destruct (eqb a0 a) eqn:E.
-      * apply eqb_leibniz in E. simpl. auto.
+      * apply eqb_eq in E. simpl. auto.
       * simpl. injection H. intros H0. apply IHs in H0. right. auto.
   - generalize dependent a. induction s; intros a0 H.
     + inversion H.
     + simpl in H. destruct (eqb a0 a) eqn:E.
-      * apply eqb_leibniz in E. subst. intro H0. inversion H0.
+      * apply eqb_eq in E. subst. intro H0. inversion H0.
         simpl in H3. intuition.
       * injection H. intro H0. pose proof (IHs a0 H0) as H1. intro H2. apply H1.
         inversion H2 as [H2' | x l H3 H4]. subst. intuition.
@@ -214,7 +206,7 @@ Proof.
   intros. induction s; auto.
   - simpl. simpl in H. intuition.
     destruct (eqb a a0) eqn:E.
-    + apply eqb_leibniz in E. symmetry in E. intuition.
+    + apply eqb_eq in E. symmetry in E. intuition.
     + rewrite H. auto.
 Qed.
 
@@ -310,3 +302,53 @@ Proof.
     simpl in H; apply IHb in H; destruct H; auto with *.
     + apply manadd_In_set in H; destruct H; subst; auto with *.       
 Qed.
+
+Fixpoint manifest_set_to_list_InJson {A :Type} `{Serializable A} 
+    (m : manifest_set A) : list InnerJSON :=
+  match m with
+  | nil => []
+  | h :: t => (InJSON_String (to_string h)) :: (manifest_set_to_list_InJson t)
+  end.
+
+Fixpoint list_InJson_to_manifest_set {A :Type} `{Serializable A} `{EqClass A}
+    (l : list InnerJSON) : ResultT (manifest_set A) string :=
+  match l with
+  | nil => resultC []
+  | h :: t => 
+    match h with
+    | InJSON_String s =>
+      match (list_InJson_to_manifest_set t) with
+      | resultC t' => 
+          match (from_string s) with
+          | resultC h' => resultC (manset_add h' t')
+          | errC e => errC e
+          end
+      | errC e => errC e
+      end
+    | _ => errC "Error: Invalid JSON type in manifest set, only can handle strings."%string
+    end
+  end.
+
+Fixpoint manifest_set_pairs_to_list_InJson {A B : Type} `{Serializable A} 
+    `{Serializable B} (m : manifest_set (A * B)) : list InnerJSON :=
+  match m with
+  | [] => []
+  | h :: t => 
+        (pair_to_JSON_Array h) :: (manifest_set_pairs_to_list_InJson t)
+  end.
+
+Fixpoint list_InJson_to_manifest_set_pairs {A B :Type} `{Serializable A} 
+    `{Serializable B} `{EqClass A} `{EqClass B}
+    (l : list InnerJSON) : ResultT (manifest_set (A * B)) string :=
+  match l with
+  | nil => resultC []
+  | h :: t => 
+    match (InnerJSON_to_pair h) with
+    | resultC h' =>
+      match (list_InJson_to_manifest_set_pairs t) with
+      | resultC t' => resultC (manset_add h' t')
+      | errC e => errC e
+      end
+    | errC e => errC e
+    end
+  end.

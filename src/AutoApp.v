@@ -69,10 +69,10 @@ Ltac dosome_eq' y :=
   end.
 
 Ltac dothat :=
-  unfold Cvm_St.st_ev, Cvm_St.st_pl, Cvm_St.st_trace in *;
+  unfold Cvm_St.st_ev, Cvm_St.st_trace, Cvm_St.st_AM_config in *;
   try unfold st_ev in *;
-  try unfold st_pl in *;
-  try unfold st_trace in * .
+  try unfold st_trace in * ;
+  try unfold st_AM_config in * .
 
 Ltac ff' :=
   repeat break_match; try solve_by_inversion.

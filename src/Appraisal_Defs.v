@@ -38,12 +38,12 @@ Definition checkNonce' (nid:nat) (nonceCandidate:BS) : AM BS :=
   nonceGolden <- am_getNonce nid ;;
   ret (checkNonce nonceGolden nonceCandidate).
 
-Definition check_asp_EXTD (params:ASP_PARAMS) (p:Plc) (sig:BS) (ls:RawEv) (ac : AM_Config) : ResultT BS DispatcherErrors :=
-  ac.(app_aspCb) params p sig ls.
+Definition check_asp_EXTD (params:ASP_PARAMS) (ls:RawEv) (ac : AM_Config) : ResultT RawEv DispatcherErrors :=
+  ac.(app_aspCb) params ls.
 
-Definition check_asp_EXTD' (params:ASP_PARAMS) (p:Plc) (sig:BS) (ls:RawEv) : AM BS :=
+Definition check_asp_EXTD' (params:ASP_PARAMS) (p:Plc) (sig:RawEv) (ls:RawEv) : AM RawEv :=
   ac <- get_AM_amConfig ;;
-  match (check_asp_EXTD params p sig ls ac) with
+  match (check_asp_EXTD params (app sig ls) ac) with
   | resultC r => ret r
   | errC e => am_failm (am_dispatch_error e) (* (Runtime errStr_amNonce))  am_failm (am_dispatch_error e)) *)
   end.

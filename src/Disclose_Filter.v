@@ -1,6 +1,6 @@
 Require Import Term_Defs Anno_Term_Defs Term LTS Cvm_Impl Cvm_St Trace Main ConcreteEvidence.
 
-Require Import CvmSemantics Appraisal_Evidence Eqb_Evidence Auto AbstractedTypes EqClass Helpers_CvmSemantics (* Disclose_Gen *) External_Facts Axioms_Io.
+Require Import CvmSemantics Appraisal_Evidence Eqb_Evidence Auto ID_Type EqClass Helpers_CvmSemantics (* Disclose_Gen *) External_Facts Axioms_Io.
 
 Require Import StructTactics.
 

@@ -13,7 +13,7 @@ From Coq Require Import Lists.List. Import ListNotations.
 Require Import Term_Defs.
 Require Import Anno_Term_Defs.
 Require Import Maps.
-Require Import EqClass AbstractedTypes.
+Require Import EqClass ID_Type.
 
 Module CopParser.
 Open Scope cop_ent_scope.
@@ -233,7 +233,7 @@ Definition isIdTail := fun x => orb (isAlphaNum x) (isUnderscore x).
 
 Local Instance str_eq_class : EqClass string :=
   { eqb:= String.eqb;
-    eqb_leibniz := String.eqb_eq }.
+    eqb_eq := String.eqb_eq }.
 
 Definition symbol_map := MapD string ID_Type.
 

@@ -1,7 +1,6 @@
 (*  Helper Lemmas in support of Manifest Compiler Soundness proofs.  *)
 
-Require Import Term_Defs_Core Manifest Manifest_Generator Manifest_Generator_Helpers
-  Manifest_Generator_Facts Manifest_Admits Eqb_Evidence.
+Require Import Term_Defs_Core Manifest Manifest_Generator Manifest_Generator_Helpers EqClass Manifest_Generator_Facts Manifest_Admits Eqb_Evidence.
 
 Require Import Params_Admits.
 
@@ -235,76 +234,16 @@ Proof.
   generalizeEverythingElse t.
   induction t; intros.
   -
-    destruct a; ff.
-    +
-    destruct (eqb_plc p p0) eqn:hi.
-      ++
-      left.
-      rewrite <- eqb_eq_plc.
-      eassumption.
-      ++
-      solve_by_inversion.
-    +
-      destruct (eqb_plc p p0) eqn:hi.
-      ++
-      left.
-      rewrite <- eqb_eq_plc.
-      eassumption.
-      ++
-      solve_by_inversion.
-    +
-      destruct (eqb_plc p p0) eqn:hi.
-      ++
-      left.
-      rewrite <- eqb_eq_plc.
-      eassumption.
-      ++
-      solve_by_inversion.
-    +
-    destruct (eqb_plc p p0) eqn:hi.
-      ++
-      left.
-      rewrite <- eqb_eq_plc.
-      eassumption.
-      ++
-      solve_by_inversion.
-    +
-    destruct (eqb_plc p p0) eqn:hi.
-      ++
-      left.
-      rewrite <- eqb_eq_plc.
-      eassumption.
-      ++
-      solve_by_inversion.
-    +
-    destruct (eqb_plc p p0) eqn:hi.
-      ++
-      left.
-      rewrite <- eqb_eq_plc.
-      eassumption.
-      ++
-      solve_by_inversion.
+    destruct a; repeat ff;
+    rewrite String.eqb_eq in *; eauto.
 - (* at case *)
-ff.
-destruct (eqb_plc p0 p1) eqn:hi.
-+
-  left.
-  rewrite eqb_eq_plc in *.
-  auto.
-+
-  apply IHt in H.
-  door.
-  ++
-    eauto.
-  ++
-    eauto.
+  repeat ff; eauto;
+  rewrite String.eqb_eq in *; eauto.
 - (* lseq case *)
-ff.
-destruct (eqb_plc p p0) eqn:hi.
+repeat ff.
 +
   left.
-  rewrite eqb_eq_plc in *.
-  auto.
+  rewrite String.eqb_eq in *; eauto.
 +
   right.
 
@@ -352,12 +291,10 @@ destruct (eqb_plc p p0) eqn:hi.
       eauto.
 
 - (* bseq case *)
-  ff.
-  destruct (eqb_plc p p0) eqn:hi.
+  repeat ff.
   +
     left.
-    rewrite eqb_eq_plc in *.
-    auto.
+    rewrite String.eqb_eq in *; eauto.
   +
     right.
   
@@ -407,12 +344,10 @@ destruct (eqb_plc p p0) eqn:hi.
             eauto.
 
 - (* bpar case *)
-  ff.
-  destruct (eqb_plc p p0) eqn:hi.
+  repeat ff.
   +
     left.
-    rewrite eqb_eq_plc in *.
-    auto.
+    rewrite String.eqb_eq in *; eauto.
   +
     right.
   

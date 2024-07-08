@@ -16,6 +16,21 @@ Definition peel_bs_am (ls:RawEv) : AM (BS * RawEv) :=
   | _ => am_failm (am_error errStr_peel_bs_am)
   end.
 
+Fixpoint peel_n_am (n : nat) (ls : RawEv) : AM (RawEv * RawEv) :=
+  match n with
+  | 0 => ret ([], ls)
+  | S n' =>
+      match ls with
+      | [] => am_failm (am_error errStr_peel_n_am)
+      | x :: ls' =>
+          v <- peel_n_am n' ls' ;;
+          match v with
+          | (ls1, ls2) => ret (x :: ls1, ls2)
+          end
+      end
+  end.
+
+
 Fixpoint gen_appraise_AM (et:Evidence) (ls:RawEv) : AM AppResultC :=
   match et with
   | mt => ret mtc_app
@@ -41,11 +56,11 @@ Fixpoint gen_appraise_AM (et:Evidence) (ls:RawEv) : AM AppResultC :=
          (instead of default_bs)  *)
       end
 
-    | EXTD =>
-      v <- peel_bs_am ls ;;
+    | (EXTD n) =>
+      v <- peel_n_am n ls ;;
       match v with
-        (bs, ls') => 
-        v <- check_asp_EXTD' params p bs ls' ;;
+        (rawEv, ls') => 
+        v <- check_asp_EXTD' params p rawEv ls' ;;
         rest <- gen_appraise_AM et' ls' ;;
         ret (ggc_app p params v rest)
       end

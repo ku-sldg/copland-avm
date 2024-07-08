@@ -5,17 +5,16 @@
   Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term_Defs Term ConcreteEvidence Axioms_Io Evidence_Bundlers Defs.
-Require Import StructTactics.
+Require Import ResultT Term_Defs Term ConcreteEvidence Evidence_Bundlers Defs Axioms_Io StructTactics.
 
 Require Import Coq.Program.Tactics Lia.
 
 Require Import Manifest_Admits ErrorStringConstants.
 
-Require Import List.
+Require Import String List.
 Import ListNotations.
 
-Require Export Cvm_St ErrorStMonad_Coq IO_Stubs.
+Require Export Cvm_St ErrorStMonad_Coq IO_Stubs CvmJson_Interfaces.
 
 
 (** * CVM monadic primitive operations *)
@@ -23,26 +22,13 @@ Require Export Cvm_St ErrorStMonad_Coq IO_Stubs.
 Definition put_ev (e:EvC) : CVM unit :=
   st <- get ;;
      let tr' := st_trace st in
-     let p' := st_pl st in
      let i := st_evid st in
      let ac := st_AM_config st in
-     put (mk_st e tr' p' i ac).
-
-Definition put_pl (p:Plc) : CVM unit :=
-  st <- get ;;
-     let tr' := st_trace st in
-     let e' := st_ev st in
-     let i := st_evid st in
-     let ac := st_AM_config st in
-     put (mk_st e' tr' p i ac).
+     put (mk_st e tr' i ac).
 
 Definition get_ev : CVM EvC :=
   st <- get ;;
   ret (st_ev st).
-
-Definition get_pl : CVM Plc :=
-  st <- get ;;
-  ret (st_pl st).
 
 Definition get_CVM_amConfig : CVM AM_Config :=
   (* TODO:  consider moving this functionality to a Reader-like monad 
@@ -50,24 +36,27 @@ Definition get_CVM_amConfig : CVM AM_Config :=
   st <- get ;;
   ret (st_AM_config st).
 
+Definition get_pl : CVM Plc :=
+  ac <- get_CVM_amConfig ;;
+  ret (my_abstract_plc (absMan ac)).
+
 Definition inc_id : CVM Event_ID :=
   st <- get ;;
     let tr' := st_trace st in
     let e' := st_ev st in
-    let p' := st_pl st in
     let i := st_evid st in
     let ac := st_AM_config st in
-    put (mk_st e' tr' p' (Nat.add i (S O)) ac) ;;
+    put (mk_st e' tr' (Nat.add i (S O)) ac) ;;
     ret i.
 
 Definition modify_evm (f:EvC -> EvC) : CVM unit :=
   st <- get ;;
-  let '{| st_ev := e; st_trace := tr; st_pl := p; st_evid := i; st_AM_config := ac |} := st in
-  put (mk_st (f e) tr p i ac).
+  let '{| st_ev := e; st_trace := tr; st_evid := i; st_AM_config := ac |} := st in
+  put (mk_st (f e) tr i ac).
 
 Definition add_trace (tr':list Ev) : cvm_st -> cvm_st :=
-  fun '{| st_ev := e; st_trace := tr; st_pl := p; st_evid := i; st_AM_config := ac |} =>
-    mk_st e (tr ++ tr') p i ac.
+  fun '{| st_ev := e; st_trace := tr; st_evid := i; st_AM_config := ac |} =>
+    mk_st e (tr ++ tr') i ac.
 
 Definition add_tracem (tr:list Ev) : CVM unit :=
   modify (add_trace tr).
@@ -92,18 +81,33 @@ Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) (e:EvC) : CVM Event_ID :=
 
 (* Helper function that builds a new internal evidence bundle based on 
    the evidence extension parameter of an ASP term. *)
-Definition fwd_asp (fwd:FWD) (bs:BS) (e:EvC) (p:Plc) (ps:ASP_PARAMS): EvC :=
+Definition fwd_asp (fwd:FWD) (rwev : RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): CVM EvC :=
   match fwd with
-  | COMP => cons_hsh bs e p ps
-  | EXTD => cons_gg bs e p ps
-  | ENCR => cons_enc bs e p ps
-  | KILL => mt_evc
-  | KEEP => e
+  | COMP => 
+      match comp_bundle rwev e p ps with
+      | resultC e' => ret e'
+      | errC e => failm (dispatch_error (Runtime e))
+      end
+  | EXTD n => 
+      match extd_bundle rwev e p n ps with
+      | resultC e' => ret e'
+      | errC e => failm (dispatch_error (Runtime e))
+      end
+  | ENCR => 
+      match encr_bundle rwev e p ps with
+      | resultC e' => ret e'
+      | errC e => failm (dispatch_error (Runtime e))
+      end
+  | KILL => ret mt_evc
+  | KEEP => ret e
   end.
 
-Definition do_asp' (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) : CVM BS :=
+(** * Stub for invoking external ASP procedures.  
+      Extracted code should not need to use the Plc or Event_ID parameters 
+      (those can be erased upon extraction). *)
+Definition do_asp (params :ASP_PARAMS) (e:RawEv) (x:Event_ID) : CVM RawEv :=
   ac <- get_CVM_amConfig  ;;
-  match (do_asp params e mpl x ac) with
+  match (ac.(aspCb) params e) with
   | resultC r => ret r
   | errC e => failm (dispatch_error e)
   end.
@@ -114,8 +118,9 @@ Definition invoke_ASP (fwd:FWD) (params:ASP_PARAMS) (* (ac : AM_Config) *) : CVM
   e <- get_ev ;;
   p <- get_pl ;;
   x <- tag_ASP params p e ;;
-  bs <- do_asp' params (get_bits e) p x ;;
-  ret (fwd_asp fwd bs e p params).
+  rawev <- do_asp params (get_bits e) x ;;
+  outev <- fwd_asp fwd rawev e p params ;;
+  ret outev.
 
 Definition copyEv : CVM EvC :=
   p <- get_pl ;;
@@ -151,11 +156,10 @@ Definition inc_remote_event_ids (t:Term) : CVM unit :=
   st <- get ;;
     let tr' := st_trace st in
     let e' := st_ev st in
-    let p' := st_pl st in
     let i := st_evid st in
     let new_i := Nat.add i (event_id_span' t) in
     let ac := st_AM_config st in
-    put (mk_st e' tr' p' new_i ac).
+    put (mk_st e' tr' new_i ac).
 
 (* Monadic helper function to simulate a span of parallel event IDs 
    corresponding to the size of a Core_Term *)
@@ -163,11 +167,10 @@ Definition inc_par_event_ids (t:Core_Term) : CVM unit :=
   st <- get ;;
     let tr' := st_trace st in
     let e' := st_ev st in
-    let p' := st_pl st in
     let i := st_evid st in
     let new_i := Nat.add i (event_id_span t) in
     let ac := st_AM_config st in
-    put (mk_st e' tr' p' new_i ac).
+    put (mk_st e' tr' new_i ac).
   
 (* Primitive monadic communication primitives 
    (some rely on Admitted IO Stubs). *)
@@ -189,6 +192,33 @@ Definition check_cvm_policy (t:Term) (pTo:Plc) (et:Evidence) : CVM unit :=
     match (policy_list_not_disclosed t pTo et pol) with
     | true => ret tt
     | false => failm (dispatch_error (Runtime errStr_disclosePolicy))
+    end.
+
+Definition do_remote (t:Term) (pTo:Plc) (e:EvC) (ac: AM_Config) : ResultT RawEv DispatcherErrors := 
+  let remote_uuid_res : ResultT UUID DispatcherErrors := ac.(plcCb) pTo in
+    match remote_uuid_res with 
+    | resultC uuid => 
+        let my_plc := (my_abstract_plc (absMan ac)) in
+        let remote_req := (mkPRReq t my_plc (get_bits e)) in
+        let js_req := ProtocolRunRequest_to_JSON remote_req in
+        let resp_res := make_JSON_Network_Request uuid js_req in
+        match resp_res with
+        | resultC js_resp =>
+            match JSON_to_AM_Protocol_Response js_resp with
+            | resultC resp => 
+                match resp with
+                | Protocol_Run_Response prresp => 
+                    let '(mkPRResp success ev) := prresp in
+                    if success 
+                    then resultC ev 
+                    else errC (Runtime errStr_remote_am_failure)
+                | _ => errC (Runtime errStr_incorrect_resp_type)
+                end
+            | errC msg => errC (Runtime msg)
+            end
+        | errC msg => errC (Runtime msg)
+        end
+    | errC e => errC e
     end.
 
 Definition doRemote_session' (t:Term) (pTo:Plc) (e:EvC) : CVM EvC := 
@@ -238,13 +268,14 @@ Ltac monad_unfold :=
   execErr,  
   do_prim,
   invoke_ASP,
-  do_asp',
+  fwd_asp,
+  extd_bundle,
+  comp_bundle,
+  encr_bundle,
   do_asp,
   clearEv,
   copyEv,
   
-  doRemote,
-
   get_ev,
   get_pl,
   get_CVM_amConfig,
@@ -271,7 +302,7 @@ Ltac pairs :=
     | [H: (Some _, _) =
           (Some _, _) |- _ ] => invc H; monad_unfold
                                                           
-    | [H: {| st_ev := _; st_trace := _; st_pl := _; st_evid := _ |} =
-          {| st_ev := _; st_trace := _; st_pl := _; st_evid := _ |} |- _ ] =>
+    | [H: {| st_ev := _; st_trace := _; st_evid := _; st_AM_config := _ |} =
+          {| st_ev := _; st_trace := _; st_evid := _; st_AM_config := _ |} |- _ ] =>
       invc H; monad_unfold
     end; destruct_conjs; monad_unfold.

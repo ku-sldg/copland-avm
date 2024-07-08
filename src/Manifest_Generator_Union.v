@@ -2,13 +2,12 @@
       Uses the (as-yet-unverified) manifest environment union operation to merge manifests 
       generated for combined Attestation and Appraisal scenarios.        *)
 
-Require Import Term_Defs_Core Params_Admits Manifest
-               Example_Phrases_Admits Example_Phrases_Pre_Admits Example_Phrases Eqb_Evidence
+Require Import Term_Defs_Core Params_Admits Manifest Eqb_Evidence
                Manifest_Generator_Helpers Term_Defs ErrorStMonad_Coq.
 
 Require Import EqClass Maps StructTactics.
 
-Require Import EnvironmentM Manifest_Set.
+Require Import EnvironmentM Manifest_Set JSON Serializable.
 
 Require Import Manifest_Union Manifest_Generator Cvm_St Cvm_Impl.
 
@@ -71,19 +70,6 @@ Definition mangen_plcTerm_list_union (ls:list (Term*Plc)) : EnvironmentM :=
     env_list_union (manifest_generator_plcTerm_list ls).
 
 (*
-(* NOTE:  This is now defined in Manifest_Generator.v   (consider deleting here)   *)
-Definition empty_Manifest_plc (myPlc:Plc) : Manifest :=
-  Build_Manifest 
-      myPlc 
-      manifest_set_empty
-      manifest_set_empty
-      manifest_set_empty
-      manifest_set_empty
-      manifest_set_empty
-      empty_PolicyT.
-*)
-
-(*
 Definition mangen_app_plc (et:Evidence) (p:Plc) : Manifest := 
   manifest_union (empty_Manifest_plc p) (manifest_generator_app et p).
   *)
@@ -102,12 +88,6 @@ Definition manifest_generator_plcEvidence_list (ls:list (Evidence*Plc)) : list E
 
 Definition mangen_plcEvidence_list_union (ls:list (Evidence*Plc)) : EnvironmentM := 
   env_list_union (manifest_generator_plcEvidence_list ls).
-
-
-
-
-
-
 
 
 (*
@@ -138,19 +118,103 @@ Definition knowsof_myPlc_manifest_update (m:Manifest) : Manifest :=
   knowsof_manifest_update (my_abstract_plc m) m.
 *)
 
+Definition Evidence_Plc_list := list (Evidence*Plc).
+Open Scope string_scope.
+
+Definition Evidence_Plc_list_to_JSON (ls: Evidence_Plc_list) : JSON :=
+  JSON_Object [
+    ("Evidence_Plc_list",
+      (InJSON_Array 
+        (List.map 
+          (fun '(et,p) => 
+            InJSON_Array [
+              InJSON_Object (to_JSON et); 
+              InJSON_String (to_string p)
+            ]
+          ) ls)
+      )
+    )].
+
+Definition Evidence_Plc_list_from_JSON (js : JSON) 
+    : ResultT Evidence_Plc_list string :=
+  match (JSON_get_Array "Evidence_Plc_list" js) with
+  | resultC jsArr =>
+    let res := result_map (fun js => 
+      match js with
+      | InJSON_Array [InJSON_Object jsEt; InJSON_String jsP] =>
+        match (from_JSON jsEt), (from_string jsP) with
+        | resultC et,resultC p => resultC (et, p)
+        | _, _ => errC "Error in parsing Evidence_Plc_list"
+        end
+      | _ => errC "Not a pair"
+      end
+    ) jsArr in
+    match res with
+    | resultC res => resultC res
+    | errC e => errC e
+    end
+  | errC e => errC e 
+  end.
+
+Global Instance Jsonifiable_Evidence_Plc_list : Jsonifiable Evidence_Plc_list := {
+  to_JSON := Evidence_Plc_list_to_JSON;
+  from_JSON := Evidence_Plc_list_from_JSON
+}.
+
+Definition Term_Plc_list := list (Term*Plc).
+
+Definition Term_Plc_list_to_JSON (ls: Term_Plc_list) : JSON :=
+  JSON_Object [
+    ("Term_Plc_list",
+      (InJSON_Array 
+        (List.map 
+          (fun '(et,p) => 
+            InJSON_Array [
+              InJSON_Object (to_JSON et); 
+              InJSON_String (to_string p)
+            ]
+          ) ls)
+      )
+    )].
+
+Definition Term_Plc_list_from_JSON (js : JSON) 
+    : ResultT Term_Plc_list string :=
+  match (JSON_get_Array "Term_Plc_list" js) with
+  | resultC jsArr =>
+    let res := result_map (fun js => 
+      match js with
+      | InJSON_Array [InJSON_Object jsTerm; InJSON_String jsP] =>
+        match (from_JSON jsTerm), (from_string jsP) with
+        | resultC et,resultC p => resultC (et, p)
+        | _, _ => errC "Error in parsing Term_Plc_list"
+        end
+      | _ => errC "Not a pair"
+      end
+    ) jsArr in
+    match res with
+    | resultC res => resultC res
+    | errC e => errC e
+    end
+  | errC e => errC e 
+  end.
+
+Global Instance Jsonifiable_Term_Plc_list : Jsonifiable Term_Plc_list := {
+  to_JSON := Term_Plc_list_to_JSON;
+  from_JSON := Term_Plc_list_from_JSON
+}.
+
 Definition knowsof_myPlc_manifest_update_env' (p:(Plc*Manifest)) : (Plc*Manifest) := 
   (fst p, (knowsof_myPlc_manifest_update (snd p))).
 
 Definition update_knowsOf_myPlc_env (env:EnvironmentM) : EnvironmentM := map knowsof_myPlc_manifest_update_env' env.
 
-Check pubkeys_manifest_update.
 Definition update_pubkeys_env' (pubs:manifest_set Plc) (p:(Plc*Manifest)) : (Plc*Manifest) := 
   (fst p, (pubkeys_manifest_update pubs (snd p))).
 
 Definition update_pubkeys_env (pubs:manifest_set Plc) (env:EnvironmentM) : EnvironmentM := 
   map (update_pubkeys_env' pubs) env.
 
-Definition end_to_end_mangen' (ls:list (Evidence*Plc)) (ts: list (Term*Plc)) : EnvironmentM := 
+Definition end_to_end_mangen' (ls: Evidence_Plc_list) (ts: Term_Plc_list) : EnvironmentM := 
     let app_env := mangen_plcEvidence_list_union ls in (* singleton_plc_appraisal_environmentM myPlc ls in  *)
     let att_env := mangen_plcTerm_list_union ts in 
       environment_union app_env att_env.
@@ -159,20 +223,20 @@ Definition manset_union_list{A : Type} `{HA : EqClass A}
   (lss: manifest_set (manifest_set A)) : manifest_set A := 
     fold_right manset_union [] lss.
 
-Definition get_all_unique_places (ls: list (Term*Plc)) (ets: list (Evidence*Plc)) : manifest_set Plc := 
+Definition get_all_unique_places (ls: Term_Plc_list) (ets: Evidence_Plc_list) : manifest_set Plc := 
   let lss := map (fun '(t,p) => places_manset p t) ls in 
   let ts_ps := manset_union_list lss in
   let ets_ps := map (fun '(et,p) => p) ets in
   (* let ts_res_dup := concat lss in  *)
   manset_union ts_ps ets_ps.
 
-Definition end_to_end_mangen (ls:list (Evidence*Plc)) (ts: list (Term*Plc)) : EnvironmentM := 
+Definition end_to_end_mangen (ls: Evidence_Plc_list) (ts: Term_Plc_list) : EnvironmentM := 
   let ps := get_all_unique_places ts ls in 
     update_pubkeys_env ps (update_knowsOf_myPlc_env (end_to_end_mangen' ls ts)).
 
 
 
-Definition end_to_end_mangen_final (ls:list (Evidence*Plc)) (ts: list (Term*Plc)) : list Manifest :=
+Definition end_to_end_mangen_final (ls: Evidence_Plc_list) (ts: Term_Plc_list) : list Manifest :=
   environment_to_manifest_list (end_to_end_mangen ls ts).
 
 

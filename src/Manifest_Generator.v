@@ -2,8 +2,7 @@
     Includes separate (but similar) versions of the generator for both 
     attestation (manifest_generator) and appraisal (manifest_generator_app) scenarios. *)
 
-Require Import Term_Defs_Core Params_Admits Manifest
-               Example_Phrases_Admits Example_Phrases Eqb_Evidence
+Require Import Term_Defs_Core Params_Admits Manifest Eqb_Evidence
                Manifest_Generator_Helpers.
 
 Require Import EqClass Maps StructTactics.
@@ -67,8 +66,6 @@ Definition pubkeys_manifest_update_replace_all (ps:manifest_set Plc) (m:Manifest
                 targetPlcs := oldTargets ;
                 policy := oldPolicy |} := m in
         (Build_Manifest oldMyPlc oldasps old_app_asps oldKnowsOf ps oldTargets oldPolicy).
-
-Check fold_right.
 
 Definition pubkeys_manifest_update (ps:manifest_set Plc) (m:Manifest) : Manifest := 
   let '{| my_abstract_plc := oldMyPlc;
@@ -224,13 +221,6 @@ Definition attify_terms' (pr:(Term * Plc)) : Term :=
 Definition attify_terms (ls:list (Term * Plc)) : list Term :=
   List.map attify_terms' ls.
 
-Definition man_gen_run_attify (ls:list (Term*Plc)) : list Manifest := 
-  let plc_default := default_place in 
-  let ts := attify_terms ls in 
-    demo_man_gen_run ts plc_default.
-
-
-    
 Definition app_aspid_manifest_update (i:ASP_ID) (p:Plc) (m:Manifest) : Manifest := 
   let '{| my_abstract_plc := oldPlc;
           asps := oldasps; 
@@ -247,11 +237,11 @@ Fixpoint manifest_generator_app'' (et:Evidence) (m:Manifest) : Manifest :=
   | nn _ => m (* TODO: account for nonce handling here? *)
   | uu p fwd ps e' => 
     match fwd with 
-    | EXTD => 
+    | (EXTD n) => 
       match ps with 
-      | asp_paramsC a _ _ _ =>
+      | asp_paramsC a _ targ _ =>
           manifest_generator_app'' e' 
-            (app_aspid_manifest_update p a m)
+            (app_aspid_manifest_update targ a m)
       end 
     | ENCR => 
       match ps with 
@@ -265,19 +255,6 @@ Fixpoint manifest_generator_app'' (et:Evidence) (m:Manifest) : Manifest :=
   | ss e1 e2 => 
       manifest_generator_app'' e2 (manifest_generator_app'' e1 m)
   end.
-
-(*
-Definition empty_Manifest_plc (myPlc:Plc) : Manifest :=
-  Build_Manifest 
-      myPlc 
-      manifest_set_empty
-      manifest_set_empty
-      manifest_set_empty
-      manifest_set_empty
-      manifest_set_empty
-      empty_PolicyT.
-*)
-
 
 Definition manifest_generator_app' (p:Plc) (et:Evidence) (env:EnvironmentM) : EnvironmentM :=
   manifest_update_env p env (manifest_generator_app'' et).

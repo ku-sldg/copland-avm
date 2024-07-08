@@ -1,7 +1,6 @@
 (* Helper functions used by the Manifest Generator implementation. *)
 
-Require Import Term_Defs_Core Params_Admits Manifest
-               Example_Phrases_Admits Example_Phrases Eqb_Evidence.
+Require Import Term_Defs_Core Params_Admits Manifest Eqb_Evidence.
 
 Require Import EqClass Maps StructTactics Auto.
 

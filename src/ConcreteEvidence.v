@@ -20,10 +20,10 @@ Require Export Term_Defs.
     along with concrete binary (BS) values collected during attestation.
 *)
 
-Inductive EvidenceC: Set :=
+Inductive EvidenceC :=
 | mtc: EvidenceC
 | nnc: N_ID -> BS -> EvidenceC
-| ggc: Plc -> ASP_PARAMS -> BS -> EvidenceC -> EvidenceC
+| ggc: Plc -> ASP_PARAMS -> RawEv -> EvidenceC -> EvidenceC
 | hhc: Plc -> ASP_PARAMS -> BS -> Evidence -> EvidenceC
 | eec: Plc -> ASP_PARAMS -> BS -> Evidence -> EvidenceC
 | kkc: Plc -> ASP_PARAMS -> Evidence -> EvidenceC
@@ -34,7 +34,7 @@ Inductive EvidenceC: Set :=
 Fixpoint et_fun (ec:EvidenceC) : Evidence :=
   match ec with
   | mtc => mt
-  | ggc p params _ ec' => uu p EXTD params (et_fun ec')
+  | ggc p params rawev ec' => uu p (EXTD (length rawev)) params (et_fun ec')
   | hhc p params _ et => uu p COMP params et
   | eec p params _ et => uu p ENCR params et (* (et_fun ec') *)
   | kkc p params et' => uu p KILL params et'

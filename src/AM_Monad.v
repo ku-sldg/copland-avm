@@ -1,4 +1,5 @@
 (* Monadic helpers and custom automation for the AM Monad (AM) *)
+Require Import List String.
 
 Require Import ErrorStMonad_Coq BS Maps Term_Defs_Core Term_Defs Cvm_Run Cvm_St.
 
@@ -6,9 +7,14 @@ Require Import ErrorStringConstants Appraisal_IO_Stubs.
 
 Require Export AM_St.
 
-Require Import List.
 Import ListNotations.
 
+Definition am_error_to_string (err:AM_Error) : string :=
+  match err with 
+  | am_error s => s
+  | am_dispatch_error e => errStr_dispatch_error
+  | cvm_error e => errStr_cvm_error
+  end.
 
 Definition fromSome{A E:Type} (default:A) (opt:ResultT A E): A :=
   match opt with
@@ -16,7 +22,7 @@ Definition fromSome{A E:Type} (default:A) (opt:ResultT A E): A :=
   | _ => default
   end.
 
-Definition run_am_app_comp{A:Type} (am_comp:AM A) (default_A:A) (b:bool): A :=
+Definition run_am_app_comp_with_default{A:Type} (am_comp:AM A) (default_A:A) (b:bool): A :=
   if (b) 
   then (
   let optRes := evalErr am_comp empty_amst in
@@ -34,7 +40,7 @@ Definition run_am_app_comp{A:Type} (am_comp:AM A) (default_A:A) (b:bool): A :=
   else 
   (default_A).
 
-Definition run_am_app_comp_init{A:Type} (am_comp:AM A) (st:AM_St) (default_A:A) (b:bool): A :=
+Definition run_am_app_comp_init_with_default{A:Type} (am_comp:AM A) (st:AM_St) (default_A:A) (b:bool): A :=
   if (b) 
   then (
   let optRes := evalErr am_comp st in
@@ -52,14 +58,17 @@ Definition run_am_app_comp_init{A:Type} (am_comp:AM A) (st:AM_St) (default_A:A) 
   else 
   (default_A).
 
+Definition run_am_app_comp_init {A:Type} (am_comp:AM A) (st:AM_St) : ResultT A string :=
+  match (fst (am_comp st)) with
+  | resultC x => resultC x
+  | errC e => errC (am_error_to_string e)
+  end.
 
 Definition get_AM_amConfig : AM AM_Config :=
     (* TODO:  consider moving this functionality to a Reader-like monad 
           i.e. an 'ask' primitive *)
     st <- get ;;
     ret (amConfig st).
-
-
 
 (* This should only be used sparingly for now...
   may need a more principled interface for this... *)
@@ -89,10 +98,12 @@ Definition am_getNonce (nid:nat) : AM BS :=
   end.
 
 
-Definition am_runCvm_nonce (t:Term) (p:Plc) (bs:BS) (ac : AM_Config) : AM (nat * RawEv) :=
+Definition am_runCvm_nonce (t:Term) (bs:BS) (ac : AM_Config) : AM (nat * RawEv) :=
   nid <- am_newNonce bs ;;
-  ret (nid, run_cvm_rawEv t p [bs] ac).
-
+  match run_cvm_w_config t [bs] ac with
+  | resultC res_st => ret (nid, (get_bits (st_ev res_st)))
+  | errC e => am_failm (cvm_error e)
+  end.
 
   Ltac am_monad_unfold :=
     repeat unfold

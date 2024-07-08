@@ -1,8 +1,7 @@
 (* Defining union operations for Manifests and Manifest Environments. *)
 
-Require Import AbstractedTypes Term_Defs_Core Maps String
-  Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq
-  Example_Phrases_Admits.
+Require Import ID_Type Term_Defs_Core Maps String
+  Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq.
 
 Require Import Manifest Manifest_Set EnvironmentM.
 

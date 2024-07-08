@@ -15,9 +15,8 @@ This proof script is free software: you can redistribute it and/or
 modify it under the terms of the BSD License as published by the
 University of California.  See license.txt for details. *)
 
-
-Require Import List.
-Import List.ListNotations.
+Require Import Maps EqClass List ID_Type.
+Import ListNotations.
 
 Require Export Params_Admits.
 
@@ -34,7 +33,7 @@ Definition asp_term_to_core (a:ASP) : Core_Term :=
     | NONE => lseqc (aspc CLEAR) (aspc (ASPCC fwd params))
     | ALL => (aspc (ASPCC fwd params))
     end                
-  | SIG => aspc (ASPCC EXTD sig_params)
+  | SIG => aspc (ASPCC (EXTD 1) sig_params)
   | HSH => aspc (ASPCC COMP hsh_params)
   | ENC q => aspc (ASPCC ENCR (enc_params q))
   end.
@@ -96,7 +95,7 @@ Fixpoint et_size (e:Evidence): nat :=
     match fwd with
     | COMP => 1
     | ENCR => 1
-    | EXTD => 1 + et_size e'
+    | (EXTD n) => n + et_size e'
     | KILL => 0
     | KEEP => et_size e'
     end 
@@ -104,12 +103,9 @@ Fixpoint et_size (e:Evidence): nat :=
   | ss e1 e2 => (et_size e1) + (et_size e2)
   end.
 
-(** Raw Evidence representaiton:  a list of binary (BS) values. *)
-Definition RawEv := list BS.
-
 (**  Type-Tagged Raw Evidence representation.  Used as the internal evidence
      type managed by the CVM to track evidence contents and its structure. *)
-Inductive EvC: Set :=
+Inductive EvC :=
 | evc: RawEv -> Evidence -> EvC.
 
 Definition mt_evc: EvC := (evc [] mt).
@@ -128,29 +124,10 @@ Definition get_bits (e:EvC): list BS :=
     has the proper size (calculated over the Evidence Type portion). *)
 Inductive wf_ec : EvC -> Prop :=
 | wf_ec_c: forall (ls:RawEv) et,
-    length ls = et_size et ->
+    List.length ls = et_size et ->
     wf_ec (evc ls et).
 
-
 Definition ReqAuthTok := EvC.
-
-Inductive CvmRequestMessage: Set :=
-| REQ: Term -> ReqAuthTok -> RawEv -> CvmRequestMessage.
-
-Inductive CvmResponseMessage: Set := 
-| RES: RawEv -> CvmResponseMessage.
-
-Inductive AppraisalRequestMessage: Set := 
-| REQ_APP: Term -> Plc -> Evidence -> RawEv -> AppraisalRequestMessage.
-
-Inductive AppraisalResponseMessage: Set := 
-| RES_APP:  AppResultC -> AppraisalResponseMessage.
-
-Inductive AM_RequestMessage: Set := 
-| CVM_REQ: CvmRequestMessage       -> AM_RequestMessage
-| APP_REQ: AppraisalRequestMessage -> AM_RequestMessage.
-    
-
 
 Definition splitEv_T_l (sp:Split) (e:Evidence) : Evidence :=
   match sp with
@@ -181,7 +158,7 @@ Definition eval_asp t p e :=
     | KILL => mt
     | _ => uu p fwd params (sp_ev sp e)
     end
-  | SIG => uu p EXTD sig_params e
+  | SIG => uu p (EXTD 1) sig_params e
   | HSH => uu p COMP hsh_params e
   | ENC q => uu p ENCR (enc_params q) e
   end.
@@ -212,7 +189,7 @@ Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
     natural number.
  *)
 
-Inductive Ev: Set :=
+Inductive Ev :=
 | null: nat -> Plc -> Ev
 | copy:  nat -> Plc -> Ev 
 | umeas: nat -> Plc -> ASP_PARAMS -> Evidence -> Ev
@@ -274,7 +251,7 @@ Definition asp_event i x p e :=
 
 (* TODO:  find more logical places for the following defs:  *)
 
-Inductive AM_Result: Set :=
+Inductive AM_Result :=
 | am_rawev: RawEv -> AM_Result
 | am_appev: AppResultC -> AM_Result.
 

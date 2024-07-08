@@ -2,7 +2,7 @@
       Namely, that the compiler outputs a collection of manifests that support 
       execution of the input protocols.  *)
 
-Require Import Manifest Manifest_Compiler Manifest_Generator AbstractedTypes
+Require Import Manifest Manifest_Compiler Manifest_Generator ID_Type
   Maps Term_Defs List Cvm_St Cvm_Impl ErrorStMonad_Coq StructTactics 
   Cvm_Monad EqClass Manifest_Admits Auto.
 Require Import Manifest_Generator_Facts Eqb_Evidence.
@@ -17,17 +17,21 @@ Import ListNotations.
 
 
 Definition lib_supports_manifest (al : AM_Library) (am : Manifest) : Prop :=
-  (forall (a : ASP_ID), In_set a am.(asps) -> exists cb, Maps.map_get al.(Local_ASPS) a = Some cb) /\
-  (forall (up : Plc), In_set up am.(uuidPlcs) -> exists b, Maps.map_get al.(Local_Plcs) up = Some b) /\
-  (forall (pkp : Plc), In_set pkp am.(pubKeyPlcs) -> exists b, Maps.map_get al.(Local_PubKeys) pkp = Some b) /\
+  (* (forall (a : ASP_ID), In_set a am.(asps) -> 
+    exists aloc, Maps.map_get al.(Lib_ASPS) a = Some aloc) /\ *)
+  (forall (up : Plc), In_set up am.(uuidPlcs) -> 
+    exists b, Maps.map_get al.(Lib_Plcs) up = Some b) /\
+  (forall (pkp : Plc), In_set pkp am.(pubKeyPlcs) -> 
+    exists b, Maps.map_get al.(Lib_PubKeys) pkp = Some b).
+     (* /\
   (forall (a : (Plc*ASP_ID)), In_set a am.(appraisal_asps) -> 
-    exists cb, Maps.map_get al.(Local_Appraisal_ASPS) a = Some cb).
+    exists aloc, Maps.map_get al.(Lib_Appraisal_ASPS) a = Some aloc). *)
 
 Ltac unfolds :=
   (* repeat monad_unfold; *)
   repeat unfold manifest_generator, manifest_compiler, generate_ASP_dispatcher, 
     generate_Plc_dispatcher, generate_PubKey_dispatcher,
-    generate_UUID_dispatcher, lib_supports_manifest, aspid_manifest_update,
+    lib_supports_manifest, aspid_manifest_update,
     sig_params, hsh_params, enc_params in *;
   simpl in *; 
   repeat (match goal with
@@ -54,7 +58,7 @@ Theorem filter_resolver : forall {A B} `{EqClass A} (m : MapC A B) a (filt : A -
 Proof.
   induction m; intuition; simpl in *;
   destruct (eqb a a0) eqn:E.
-  - rewrite eqb_leibniz in E; subst. rewrite H1; simpl in *; rewrite eqb_refl; eauto.
+  - rewrite eqb_eq in E; subst. rewrite H1; simpl in *; rewrite eqb_refl; eauto.
   - repeat break_match; simpl in *; 
     try (pose proof eqb_symm; congruence);
     simpl in *; eauto.
@@ -68,7 +72,7 @@ Theorem filter_resolver_mapd : forall {A B} `{EqClass A, EqClass B} (m : MapC A 
 Proof.
   induction m; intuition; simpl in *;
   destruct (eqb a a0) eqn:E.
-  - rewrite eqb_leibniz in E; subst; destruct H1; simpl in *; 
+  - rewrite eqb_eq in E; subst; destruct H1; simpl in *; 
     repeat find_injection; rewrite H2; simpl in *; rewrite eqb_refl; eauto.
   - repeat break_match; simpl in *; 
     try (pose proof eqb_symm; congruence);
@@ -86,7 +90,7 @@ Lemma in_dec_helper : forall {A B} `{EqClass A} X l l' a (c : B),
 Proof.
   induction l; simpl in *; intuition; try congruence;
   repeat break_if; eauto; simpl in *; 
-  repeat break_if; eauto; try rewrite eqb_leibniz in Heqb1; 
+  repeat break_if; eauto; try rewrite eqb_eq in Heqb1; 
   subst; eauto; congruence.
 Qed.
 
@@ -94,12 +98,27 @@ Global Hint Resolve filter_resolver : core.
 
 Require Import Helpers_CvmSemantics.
 
-Lemma callbacks_work_asps : forall absMan amLib amConf,
+Ltac kill_map_none :=
+  match goal with
+  | H1 : In_set ?x ?l,
+    H3 : map_get (_ ?l' ?fn) ?x = None,
+    H4 : forall _ : _, In_set _ ?l -> _
+      |- _ => 
+    let H' := fresh "H'" in
+    let H'' := fresh "H'" in
+    let H''' := fresh "H'" in
+    eapply H4 in H1 as H';
+    assert (H'' : fn x = true) by ff;
+    pose proof (filter_resolver _ _ _ H' H'') as H''';
+    destruct H'''; find_rewrite; congruence
+  end.
+
+Lemma callbacks_work_asps : forall absMan amLib amConf aspBin,
   lib_supports_manifest amLib absMan ->
-  manifest_compiler absMan amLib = amConf ->
+  manifest_compiler absMan amLib aspBin = amConf ->
   (forall x, In_set x absMan.(asps) -> 
-    forall l p t p' ev ev' res,
-      aspCb amConf (asp_paramsC x l p t) p' ev ev' = res ->
+    forall l p t ev res,
+      aspCb amConf (asp_paramsC x l p t) ev = res ->
       (exists errStr, res = errC (Runtime errStr)) \/ (exists r, res = resultC r)
   ).
 Proof.
@@ -108,40 +127,14 @@ Proof.
   destruct amConf; simpl in *;
   destruct amLib; simpl in *.
   unfold manifest_compiler in H0; repeat find_injection;
-  simpl in *.
-  repeat break_match; try congruence.
-  unfold lib_supports_manifest in *; simpl in *;
-  intuition.
-  pose proof (H0 _ H1).
-  assert ((fun x : ASP_ID =>
-             if in_dec_set x asps
-             then true
-             else false) x = true).
-  repeat break_match; eauto.
-
-  let HH := fresh "HH" in
-  let xx := fresh "xx" in
-  match goal with
-  | H1 : exists _, _,
-    H2 : (fun _ => _) _ = _
-  |- _ => 
-      pose proof (filter_resolver _ _ ((fun x : ASP_ID =>
-      if in_dec_set x asps
-      then true
-      else false)) H1 H2) as HH
-  end.
-  destruct HH as [xx].
-  
-  assert (Some xx = None).
-  jkjke'.
-  congruence.
+  simpl in *; repeat ff; try congruence.
 Qed.
 
 Lemma never_change_am_conf : forall t st res st',
   build_cvm (copland_compile t) st = (res, st') ->
   st_AM_config st = st_AM_config st'.
 Proof.
-  intros.
+  intros;
   destruct st.
   simpl. 
   edestruct ac_immut.
@@ -151,19 +144,19 @@ Proof.
 Qed.
 
 Definition supports_am (ac1 ac2 : AM_Config) : Prop :=
-  (forall aid l targ targid p' ev ev',
+  (forall aid l targ targid ev, 
       (forall res, 
-      ac1.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = resultC res ->
-      ac2.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = resultC res)) /\
+      ac1.(aspCb) (asp_paramsC aid l targ targid) ev = resultC res ->
+      ac2.(aspCb) (asp_paramsC aid l targ targid) ev = resultC res)) /\
   (forall p, (forall res, 
       ac1.(pubKeyCb) p = resultC res ->
       ac2.(pubKeyCb) p = resultC res)) /\
   (forall p, (forall res, 
       ac1.(plcCb) p = resultC res ->
       ac2.(plcCb) p = resultC res)) /\
-  (forall aid l targ targid p' ev ev' errStr,
-      ac1.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC (Runtime errStr) ->
-      ac2.(aspCb) (asp_paramsC aid l targ targid) p' ev ev' = errC (Runtime errStr)) /\
+  (forall aid l targ targid ev errStr,
+      ac1.(aspCb) (asp_paramsC aid l targ targid) ev = errC (Runtime errStr) ->
+      ac2.(aspCb) (asp_paramsC aid l targ targid) ev = errC (Runtime errStr)) /\
   (forall p errStr, 
       ac1.(pubKeyCb) p = errC (Runtime errStr) ->
       ac2.(pubKeyCb) p = errC (Runtime errStr)) /\
@@ -197,27 +190,27 @@ Fixpoint am_config_support_exec (t : Term)
       | NULL => True
       | CPY => True
       | SIG => 
-          forall l targ targid p' ev ev',
+          forall l targ targid ev,
           ((exists res, 
-          ac.(aspCb) (asp_paramsC sig_aspid l targ targid) p' ev ev' = resultC res) \/ 
-          (exists errStr, ac.(aspCb) (asp_paramsC sig_aspid l targ targid) p' ev ev' = errC (Runtime errStr)))
+          ac.(aspCb) (asp_paramsC sig_aspid l targ targid) ev = resultC res) \/ 
+          (exists errStr, ac.(aspCb) (asp_paramsC sig_aspid l targ targid) ev = errC (Runtime errStr)))
       | HSH =>
-          forall l targ targid p' ev ev',
+          forall l targ targid ev,
           ((exists res, 
-          ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) p' ev ev' = resultC res) \/ 
-          (exists errStr, ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) p' ev ev' = errC (Runtime errStr)))
+          ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) ev = resultC res) \/ 
+          (exists errStr, ac.(aspCb) (asp_paramsC hsh_aspid l targ targid) ev = errC (Runtime errStr)))
       | ENC p =>
-          (forall l targ targid p' ev ev',
+          (forall l targ targid ev,
           ((exists res, 
-          ac.(aspCb) (asp_paramsC enc_aspid l targ targid) p' ev ev' = resultC res) \/ 
-          (exists errStr, ac.(aspCb) (asp_paramsC enc_aspid l targ targid) p' ev ev' = errC (Runtime errStr)))) /\
+          ac.(aspCb) (asp_paramsC enc_aspid l targ targid) ev = resultC res) \/ 
+          (exists errStr, ac.(aspCb) (asp_paramsC enc_aspid l targ targid) ev = errC (Runtime errStr)))) /\
           ((exists res, ac.(pubKeyCb) p = resultC res) \/ 
           (exists errStr, ac.(pubKeyCb) p = errC (Runtime errStr)))
       | ASPC _ _ (asp_paramsC aspid _ _ _) =>
-          (forall l targ targid p' ev ev',
+          (forall l targ targid ev,
           ((exists res, 
-          ac.(aspCb) (asp_paramsC aspid l targ targid) p' ev ev' = resultC res) \/ 
-          (exists errStr, ac.(aspCb) (asp_paramsC aspid l targ targid) p' ev ev' = errC (Runtime errStr))))
+          ac.(aspCb) (asp_paramsC aspid l targ targid) ev = resultC res) \/ 
+          (exists errStr, ac.(aspCb) (asp_paramsC aspid l targ targid) ev = errC (Runtime errStr))))
       end
   | att p' t' =>
       ((exists res, ac.(plcCb) p' = resultC res) \/ 
@@ -271,32 +264,32 @@ Proof.
 
     match goal with
     | H1 : forall _, _,
-      H2 : aspCb _ (asp_paramsC ?a ?l ?targ ?tid) ?p' ?ev ?ev' = _,
-      H3 : context[ aspCb _ _ _ _ _ = errC (Runtime _) -> _],
-      H4 : context[ aspCb _ _ _ _ _ = resultC _ -> _]
+      H2 : aspCb _ (asp_paramsC ?a ?l ?targ ?tid) ?ev = _,
+      H3 : context[ aspCb _ _ _ = errC (Runtime _) -> _],
+      H4 : context[ aspCb _ _ _ = resultC _ -> _]
       |- _ =>
         let H := fresh "H" in
         let H' := fresh "Hx" in
         let H'' := fresh "Hx" in
         let res := fresh "res" in
-        destruct (H1 l targ tid p' ev ev') as [H | H]
+        destruct (H1 l targ tid ev) as [H | H]
         ; 
         [
           (* result side *)
           destruct H as [res H''];
-          pose proof (H4 a l targ tid p' ev ev') as H';
+          pose proof (H4 a l targ tid ev) as H';
           erewrite H' in *; eauto; congruence
           |
           (* err side *)
           destruct H as [errStr H''];
-          pose proof (H3 a l targ tid p' ev ev' errStr) as H';
+          pose proof (H3 a l targ tid ev errStr) as H';
           intuition; find_rewrite; find_injection; eauto
         ]
     end.
 
   - subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
-      unfold remote_session, doRemote_session', do_remote, check_cvm_policy in *;
+      unfold remote_session, doRemote, doRemote_session', do_remote, check_cvm_policy in *;
       try break_match;
       try monad_unfold;
       try break_match
@@ -308,11 +301,11 @@ Proof.
       eauto; try congruence);
     unfold supports_am in *; intuition.
     +
-      destruct H0;
+      destruct H0; 
       erewrite H2 in *; try congruence; eauto.
   - subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
-      unfold remote_session, doRemote_session', do_remote, check_cvm_policy in *;
+      unfold remote_session, doRemote, doRemote_session', do_remote, check_cvm_policy in *;
       try break_match;
       try monad_unfold;
       try break_match
@@ -494,9 +487,9 @@ Qed.
 
 Definition manifest_support_am_config (m : Manifest) (ac : AM_Config) : Prop :=
   (forall a, In_set a (m.(asps)) -> 
-    forall l targ targid p' ev ev',
-    (exists res, ac.(aspCb) (asp_paramsC a l targ targid) p' ev ev' = resultC res) \/
-    (exists errStr, ac.(aspCb) (asp_paramsC a l targ targid) p' ev ev' = errC (Runtime errStr))) /\
+    forall l targ targid ev,
+    (exists res, ac.(aspCb) (asp_paramsC a l targ targid) ev = resultC res) \/
+    (exists errStr, ac.(aspCb) (asp_paramsC a l targ targid) ev = errC (Runtime errStr))) /\
   (forall p, In_set p (m.(uuidPlcs)) ->
     (exists res, ac.(plcCb) p = resultC res) \/
     (exists errStr, ac.(plcCb) p = errC (Runtime errStr))) /\
@@ -505,14 +498,14 @@ Definition manifest_support_am_config (m : Manifest) (ac : AM_Config) : Prop :=
     (exists errStr, ac.(pubKeyCb) p = errC (Runtime errStr))) /\
 
     (forall p a, In_set (p,a) (m.(appraisal_asps)) -> 
-    forall l targ targid ev ev',
-    (exists res, ac.(app_aspCb) (asp_paramsC a l targ targid) p ev ev' = resultC res) \/
-    (exists errStr, ac.(app_aspCb) (asp_paramsC a l targ targid) p ev ev' = errC (Runtime errStr))).
+    forall l targid ev,
+    (exists res, ac.(app_aspCb) (asp_paramsC a l p targid) ev = resultC res) \/
+    (exists errStr, ac.(app_aspCb) (asp_paramsC a l p targid) ev = errC (Runtime errStr))).
 
 
-Theorem manifest_support_am_config_compiler : forall absMan amLib,
+Theorem manifest_support_am_config_compiler : forall absMan amLib aspBin,
   lib_supports_manifest amLib absMan ->
-  manifest_support_am_config absMan (manifest_compiler absMan amLib).
+  manifest_support_am_config absMan (manifest_compiler absMan amLib aspBin).
 Proof.
   unfold lib_supports_manifest, manifest_support_am_config, 
     manifest_compiler, generate_PubKey_dispatcher, generate_Plc_dispatcher in *;
@@ -1755,10 +1748,10 @@ Proof.
           eassumption.
 Qed.
 
-Theorem manifest_generator_compiler_soundness_distributed : forall t tp p absMan amLib amConf,
+Theorem manifest_generator_compiler_soundness_distributed : forall t tp p absMan amLib amConf aspBin,
   map_get (manifest_generator t tp) p = Some absMan ->
   lib_supports_manifest amLib absMan ->
-  manifest_compiler absMan amLib = amConf ->
+  manifest_compiler absMan amLib aspBin = amConf ->
   forall st,
 
   (* st.(st_AM_config) = amConf -> *)
@@ -1804,7 +1797,7 @@ Proof.
         eassumption.
   -
     rewrite H1; eauto. 
-  Unshelve. eapply min_id_type.
+  Unshelve. eapply "PLC"%string.
 Qed.
 
 Require Import Manifest_Generator_Union.
@@ -1839,18 +1832,18 @@ Proof.
   try congruence.
   - right; eauto; eexists; intuition; eauto;
     eapply manifest_subset_refl.
-  - destruct (eqb a0 p) eqn:E; simpl in *;
+  - destruct (String.eqb a0 p) eqn:E; simpl in *;
     unfold Manifest_Union.env_union_helper,
       Manifest_Union.environment_union'' in *;
     repeat break_match; simpl in *; intuition; eauto; try congruence;
-    try rewrite eqb_leibniz in *; subst.
+    try rewrite String.eqb_eq in *; subst.
     * erewrite mapC_get_works in H; find_injection; eauto.
     * erewrite mapC_get_works in H; find_injection; 
       left; eexists; intuition; eapply manifest_subset_refl.
     * eapply IHenv; eapply mapC_get_distinct_keys_from_set in H; 
-      eauto; intuition; subst; rewrite eqb_refl in E; congruence.
+      eauto; intuition; subst; rewrite String.eqb_refl in E; congruence.
     * eapply IHenv; eapply mapC_get_distinct_keys_from_set in H; 
-      eauto; intuition; subst; rewrite eqb_refl in E; congruence.
+      eauto; intuition; subst; rewrite String.eqb_refl in E; congruence.
 Qed.
 
 Lemma man_env_union_not_none_fwd : forall env env' p,
@@ -1858,35 +1851,35 @@ Lemma man_env_union_not_none_fwd : forall env env' p,
   map_get (Manifest_Union.environment_union env env') p <> None.
 Proof.
   induction env; destruct env'; simpl in *; intuition; eauto.
-  - destruct (eqb a0 p) eqn:E; simpl in *; intuition; eauto;
-    try rewrite eqb_leibniz in *; subst; eauto;
+  - destruct (String.eqb a0 p) eqn:E; simpl in *; intuition; eauto;
+    try rewrite String.eqb_eq in *; subst; eauto;
     unfold Manifest_Union.env_union_helper,
       Manifest_Union.environment_union'' in *; simpl in *;
     repeat break_match; simpl in *; intuition; eauto;
     try (rewrite mapC_get_works in H0; congruence);
     rewrite map_distinct_key_rw in H0; intuition; eauto;
-    subst; rewrite eqb_refl in E; congruence.
-  - destruct (eqb a0 p) eqn:E; simpl in *; intuition; eauto;
-    try rewrite eqb_leibniz in *; subst; eauto;
+    subst; rewrite String.eqb_refl in E; congruence.
+  - destruct (String.eqb a0 p) eqn:E; simpl in *; intuition; eauto;
+    try rewrite String.eqb_eq in *; subst; eauto;
     unfold Manifest_Union.env_union_helper,
       Manifest_Union.environment_union'' in *; simpl in *;
     repeat break_match; simpl in *; intuition; eauto;
     try (rewrite mapC_get_works in H0; congruence);
     rewrite map_distinct_key_rw in H0; intuition; eauto;
-    subst; rewrite eqb_refl in E; congruence.
-  - destruct (eqb a0 p) eqn:E, (eqb a p) eqn:E2;
+    subst; rewrite String.eqb_refl in E; congruence.
+  - destruct (String.eqb a0 p) eqn:E, (String.eqb a p) eqn:E2;
     simpl in *; intuition; eauto;
-    try rewrite eqb_leibniz in *; subst; eauto;
+    try rewrite String.eqb_eq in *; subst; eauto;
     unfold Manifest_Union.env_union_helper,
       Manifest_Union.environment_union'' in *; simpl in *;
     repeat break_match; simpl in *; intuition; eauto;
     try (rewrite mapC_get_works in H0; congruence);
     rewrite map_distinct_key_rw in H0; intuition; eauto;
-    try (subst; rewrite eqb_refl in E; congruence).
+    try (subst; rewrite String.eqb_refl in E; congruence).
     * pose proof (IHenv ((p, b0) :: env') p);
-      simpl in *; rewrite eqb_refl in *; intuition. 
+      simpl in *; rewrite String.eqb_refl in *; intuition. 
     * pose proof (IHenv ((p, b0) :: env') p);
-      simpl in *; rewrite eqb_refl in *; intuition. 
+      simpl in *; rewrite String.eqb_refl in *; intuition. 
     * pose proof (IHenv ((a, b0) :: env') p);
       simpl in *; find_rewrite; intuition. 
     * pose proof (IHenv ((a, b0) :: env') p);
@@ -1899,35 +1892,35 @@ Lemma man_env_union_not_none_rev : forall env env' p,
   (map_get env p <> None \/ map_get env' p <> None).
 Proof.
   induction env; destruct env'; simpl in *; intuition; eauto.
-  - destruct (eqb a0 p) eqn:E; simpl in *; intuition; eauto;
-    try rewrite eqb_leibniz in *; subst; eauto;
+  - destruct (String.eqb a0 p) eqn:E; simpl in *; intuition; eauto;
+    try rewrite String.eqb_eq in *; subst; eauto;
     unfold Manifest_Union.env_union_helper,
       Manifest_Union.environment_union'' in *; simpl in *;
     repeat break_match; simpl in *; intuition; eauto;
     try (left; intuition; congruence).
     * rewrite map_distinct_key_rw in H; intuition; eauto;
       try eapply IHenv in H; intuition; eauto;
-      subst; rewrite eqb_refl in E; congruence.
+      subst; rewrite String.eqb_refl in E; congruence.
     * rewrite map_distinct_key_rw in H; intuition; eauto;
       try eapply IHenv in H; intuition; eauto;
-      subst; rewrite eqb_refl in E; congruence.
-  - destruct (eqb a0 p) eqn:E; simpl in *; intuition; eauto;
-    try rewrite eqb_leibniz in *; subst; eauto;
+      subst; rewrite String.eqb_refl in E; congruence.
+  - destruct (String.eqb a0 p) eqn:E; simpl in *; intuition; eauto;
+    try rewrite String.eqb_eq in *; subst; eauto;
     unfold Manifest_Union.env_union_helper,
       Manifest_Union.environment_union'' in *; simpl in *;
     repeat break_match; simpl in *; intuition; eauto;
     try (left; intuition; congruence);
     try (right; intuition; congruence);
-    try rewrite eqb_leibniz in *; subst; eauto;
+    try rewrite String.eqb_eq in *; subst; eauto;
     intuition; eauto.
     * rewrite map_distinct_key_rw in H; intuition; eauto;
       try eapply IHenv in H; intuition; eauto;
       simpl in *; find_rewrite; intuition;
-      subst; rewrite eqb_refl in E; congruence.
+      subst; rewrite String.eqb_refl in E; congruence.
     * rewrite map_distinct_key_rw in H; intuition; eauto;
       try eapply IHenv in H; intuition; eauto;
       simpl in *; find_rewrite; intuition;
-      subst; rewrite eqb_refl in E; congruence.
+      subst; rewrite String.eqb_refl in E; congruence.
 Qed.
 Global Hint Resolve man_env_union_not_none_rev : core.
 
@@ -1947,10 +1940,10 @@ Proof.
   induction env; simpl in *; intuition; eauto.
   - eexists; intuition; try congruence.
   - find_rewrite; find_injection; eapply manifest_subset_refl.
-  - destruct (eqb a0 p) eqn:E; simpl in *;
+  - destruct (String.eqb a0 p) eqn:E; simpl in *;
     unfold Manifest_Union.env_union_helper, 
       Manifest_Union.environment_union'' in *;
-    simpl in *; eauto; try rewrite eqb_leibniz in E; subst.
+    simpl in *; eauto; try rewrite String.eqb_eq in E; subst.
     * repeat break_match; simpl in *; find_injection; 
       rewrite mapC_get_works in H; find_injection; eauto;
       eapply manifest_subset_refl.
@@ -1958,15 +1951,15 @@ Proof.
       + eapply mapC_get_distinct_keys_from_set in H; 
         eauto; intuition; subst; eauto.
         eapply IHenv in H; intuition.
-        rewrite eqb_refl in E; congruence.
+        rewrite String.eqb_refl in E; congruence.
       + eapply mapC_get_distinct_keys_from_set in H; 
         eauto; intuition; subst; eauto.
         eapply IHenv in H; intuition.
-        rewrite eqb_refl in E; congruence.
-  - destruct (eqb a0 p) eqn:E; simpl in *;
+        rewrite String.eqb_refl in E; congruence.
+  - destruct (String.eqb a0 p) eqn:E; simpl in *;
     unfold Manifest_Union.env_union_helper, 
       Manifest_Union.environment_union'' in *;
-    simpl in *; eauto; try rewrite eqb_leibniz in E; subst.
+    simpl in *; eauto; try rewrite String.eqb_eq in E; subst.
     * repeat break_match; simpl in *.
       ** rewrite mapC_get_works in H; find_injection. 
         eapply IHenv in Heqo; intuition.
@@ -1979,11 +1972,11 @@ Proof.
       ** eapply mapC_get_distinct_keys_from_set in H; 
         intuition; eauto.
         eapply IHenv in H; intuition.
-        subst; rewrite eqb_refl in *; congruence.
+        subst; rewrite String.eqb_refl in *; congruence.
       ** eapply mapC_get_distinct_keys_from_set in H; 
         intuition; eauto. 
         eapply IHenv in H; intuition.
-        subst; rewrite eqb_refl in *; congruence.
+        subst; rewrite String.eqb_refl in *; congruence.
 Qed. 
 Global Hint Resolve manifest_env_union_always_subset : core.
 
@@ -1993,14 +1986,14 @@ Lemma manifest_env_union_map_one_fwd : forall env env' p m,
   map_get env' p = Some m')).
 Proof.
   induction env; simpl in *; intuition; eauto;
-  destruct (eqb a0 p) eqn:E; simpl in *; intuition; eauto.
+  destruct (String.eqb a0 p) eqn:E; simpl in *; intuition; eauto.
   unfold Manifest_Union.env_union_helper, Manifest_Union.environment_union'' in H;
   simpl in *; repeat break_match; simpl in *; intuition; eauto;
   break_exists.
   - eapply mapC_get_distinct_keys_from_set in H; intuition; eauto;
-    subst; rewrite eqb_refl in *; congruence. 
+    subst; rewrite String.eqb_refl in *; congruence. 
   - eapply mapC_get_distinct_keys_from_set in H; intuition; eauto;
-    subst; rewrite eqb_refl in *; congruence.
+    subst; rewrite String.eqb_refl in *; congruence.
 Qed.
 Global Hint Resolve manifest_env_union_map_one_fwd : core.
 
@@ -2303,7 +2296,7 @@ Lemma mapC_get_filtered_impossible : forall T `{EqClass T} B (a : B) (aid : T) a
 Proof.
   induction al; intuition; simpl in *; try congruence.
   break_if; simpl in *; intuition; ff; eauto.
-  rewrite eqb_leibniz in Heqb1; subst; congruence.
+  rewrite eqb_eq in Heqb1; subst; congruence.
 Qed.
 Global Hint Resolve mapC_get_filtered_impossible : core.
 
@@ -2314,7 +2307,7 @@ Lemma mapD_get_filtered_impossible : forall T B `{EqClass T, EqClass B} (a : B) 
 Proof.
   induction al; intuition; simpl in *; try congruence.
   break_if; simpl in *; intuition; ff; eauto.
-  rewrite eqb_leibniz in Heqb1; subst; congruence.
+  rewrite eqb_eq in Heqb1; subst; congruence.
 Qed.
 Global Hint Resolve mapD_get_filtered_impossible : core.
 
@@ -2328,7 +2321,7 @@ Proof.
   - (* Provable because aid \not\in s1 but map get got some*)
     intuition.
     destruct H;
-    rewrite eqb_leibniz in Heqb2; subst.
+    rewrite eqb_eq in Heqb2; subst.
     eapply mapC_get_filtered_impossible in H1; intuition.
     break_if; intuition.
   - pose proof (H0 t i); intuition.
@@ -2345,17 +2338,17 @@ Proof.
   - (* Provable because aid \not\in s1 but map get got some*)
     intuition.
     destruct H;
-    rewrite eqb_leibniz in Heqb2; subst.
+    rewrite eqb_eq in Heqb2; subst.
     eapply mapD_get_filtered_impossible in H2; intuition.
     break_if; intuition.
   - pose proof (H1 t i); intuition.
 Qed.
 Global Hint Resolve mapD_get_subset : core.
 
-Lemma supports_am_mancomp_subset: forall al m m' ac,
-  supports_am (manifest_compiler m al) ac -> 
+Lemma supports_am_mancomp_subset: forall al m m' ac aspBin,
+  supports_am (manifest_compiler m al aspBin) ac -> 
   manifest_subset m' m ->
-  supports_am (manifest_compiler m' al) ac.
+  supports_am (manifest_compiler m' al aspBin) ac.
 Proof.
   intuition.
   unfold supports_am, manifest_subset,
@@ -2367,7 +2360,7 @@ Proof.
   try congruence; eauto; try find_injection;
   repeat break_match; simpl in *; intuition; subst; eauto;
   try congruence;
-  match goal with
+  try match goal with
   | [ H : forall x : ?t, In_set _ _ -> _ , H1 : map_get (minify_mapC _ (fun x : ?t => _)) _ = Some _ , H2 : forall (x : ?t), _ |- _ ]
       =>
         pose proof (mapC_get_subset _ _ _ _ _ _ _ H H1);
@@ -2377,8 +2370,21 @@ Proof.
       =>
         pose proof (mapD_get_subset _ _ _ _ _ _ _ H H1);
         eapply H2
-  end; repeat break_match; simpl in *; intuition; subst; eauto;
-  try congruence.
+  end; repeat break_match; simpl in *; intuition; subst; eauto; 
+  try congruence;
+  repeat match goal with
+  | [H : forall (x : ASP_ID) (l : ASP_ARGS) (targ : Plc) (targid : TARG_ID) (ev : RawEv), _,
+    H1 : make_JSON_FS_Location_Request _ _ (_ {| asprreq_asp_id := ?a; asprreq_asp_args := ?l; asprreq_targ_plc := ?targ; asprreq_targ := ?targid; asprreq_rawev := ?ev |}) = _ |- _] =>
+      let H' := fresh "H'" in
+      pose proof (H a l targ targid ev) as H';
+      clear H;
+      rewrite H1 in H';
+      try match goal with
+      | H2 : JSON_to_ASPRunResponse _ = _ |- _ => 
+          rewrite H2 in H'
+      end;
+      simpl in *
+  end; repeat ff; eauto with *.
 Qed.
 Global Hint Resolve supports_am_mancomp_subset : core.
 
@@ -2402,13 +2408,13 @@ Proof.
 Qed.
 Global Hint Resolve end_to_end_mangen_supports_all : core.
 
-Theorem manifest_generator_compiler_soundness_distributed_multiterm' : forall t ts ls tp p absMan amLib amConf,
+Theorem manifest_generator_compiler_soundness_distributed_multiterm' : forall t ts ls tp p absMan amLib amConf aspBin,
   (* map_get (manifest_generator t tp) p = Some absMan -> *)
   map_get (end_to_end_mangen' ls ts) p = Some absMan -> 
   In (t,tp) ts ->
   (* In p (places tp t) -> *)
   lib_supports_manifest amLib absMan ->
-  manifest_compiler absMan amLib = amConf ->
+  manifest_compiler absMan amLib aspBin = amConf ->
   forall st,
 
   (* st.(st_AM_config) = amConf -> *)
@@ -2443,15 +2449,15 @@ Proof.
         rewrite H5 in H4; simpl in *; intuition.
       }
       eapply end_to_end_mangen_supports_all; eauto.
-  - find_rewrite; eauto.
-  Unshelve. eapply min_id_type.
+  - match goal with
+    | H : manifest_compiler _ _ _ = _ |- _ => rewrite H
+  end; eauto.
+  Unshelve. eapply "Plc"%string.
   (* eapply end_to_end_mangen_subsumes in H0; eauto;
   destruct_conjs; rewrite <- H2 in H3.
   
   eapply manifest_generator_compiler_soundness_distributed; eauto. *)
 Qed.
-
-Set Nested Proofs Allowed.
 
 Lemma manifest_subset_knowsof_myPlc_update_self : forall b,
 manifest_subset b (knowsof_myPlc_manifest_update b).
@@ -2525,7 +2531,7 @@ Proof.
   -
   intuition.
   repeat ff.
-  rewrite eqb_leibniz in *.
+  rewrite String.eqb_eq in *.
   subst.
   intuition.
   eexists.
@@ -2546,7 +2552,7 @@ Proof.
   -
   intuition.
   repeat ff.
-  rewrite eqb_leibniz in *.
+  rewrite String.eqb_eq in *.
   subst.
   intuition.
   eexists.
@@ -2555,13 +2561,13 @@ Proof.
 Qed.
 
 
-Theorem manifest_generator_compiler_soundness_distributed_multiterm : forall t ts ls tp p absMan amLib amConf,
+Theorem manifest_generator_compiler_soundness_distributed_multiterm : forall t ts ls tp p absMan amLib amConf aspBin,
   (* map_get (manifest_generator t tp) p = Some absMan -> *)
   map_get (end_to_end_mangen ls ts) p = Some absMan -> 
   In (t,tp) ts ->
   (* In p (places tp t) -> *)
   lib_supports_manifest amLib absMan ->
-  manifest_compiler absMan amLib = amConf ->
+  manifest_compiler absMan amLib aspBin = amConf ->
   forall st,
 
   (* st.(st_AM_config) = amConf -> *)

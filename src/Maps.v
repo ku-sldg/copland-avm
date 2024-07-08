@@ -6,13 +6,12 @@ Authors:  Adam Petz, ampetz@ku.edu
           Will Thomas, 30wthomas@ku.edu
  *)
 
-Require Import EqClass.
-
-Require Import List.
-Import ListNotations.
-Require Import Coq.Arith.EqNat Coq.Program.Tactics PeanoNat.
+Require Import String List.
+Require Import EqClass ID_Type.
 
 Require Import StructTactics.
+Import ListNotations.
+Open Scope list_scope.
 
 (* ================================================================= *)
 (** ** List-Based Maps *)
@@ -50,7 +49,7 @@ Definition map_empty{A B:Type} `{H : EqClass A} : MapC A B := [].
     through the list and find the first [cons] cell where the key 
     is equal to [x], if any. *)
 
-Fixpoint map_get{A B:Type} `{H : EqClass A} (m : MapC A B ) x : option B :=
+Fixpoint map_get{A B:Type} `{H : EqClass A} (m : MapC A B ) (x : A) : option B :=
   match m with
   | [] => None
   | (k, v) :: m' => if eqb k x then Some v else map_get m' x
@@ -89,6 +88,12 @@ Proof.
     simpl in *; rewrite E; eauto.
 Qed.
 
+Fixpoint map_map {A B C : Type} `{HA : EqClass A} (f : B -> C) (m : MapC A B) : MapC A C :=
+  match m with
+  | [] => []
+  | (k, v) :: m' => (k, f v) :: (map_map f m')
+  end.
+
 Lemma mapC_get_distinct_keys{A B:Type} `{H : EqClass A} : 
   forall m (k1 k2:A) (v1 v2:B),
   k1 <> k2 ->
@@ -97,7 +102,7 @@ Lemma mapC_get_distinct_keys{A B:Type} `{H : EqClass A} :
 Proof.
   induction m; simpl in *; intuition; eauto; try congruence.
   repeat break_if; repeat find_injection;
-  repeat rewrite eqb_leibniz in *; subst; eauto;
+  repeat rewrite eqb_eq in *; subst; eauto;
   try congruence; simpl in *;
   try find_rewrite; eauto;
   rewrite eqb_refl; eauto.
@@ -118,8 +123,8 @@ Lemma mapC_get_distinct_keys_from_set {A B :Type} `{H : EqClass A} : forall (m :
   map_get m k2 = Some v2.
 Proof.
   induction m; simpl in *; intuition; eauto; try congruence.
-  - break_if; try rewrite eqb_leibniz in *; intuition.
-  - repeat break_if; repeat (rewrite eqb_leibniz in *; subst); intuition; eauto;
+  - break_if; try rewrite eqb_eq in *; intuition.
+  - repeat break_if; repeat (rewrite eqb_eq in *; subst); intuition; eauto;
     simpl in *; try rewrite eqb_refl in *; repeat find_injection; eauto;
     repeat find_rewrite; eauto.
 Qed.
@@ -131,9 +136,9 @@ Lemma map_distinct_key_rw {A B:Type} `{H : EqClass A} :
   map_get (map_set m k1 v1) k2 = map_get m k2.
 Proof.
   induction m; simpl in *; intuition; eauto; try congruence.
-  - break_match; eauto; rewrite eqb_leibniz in *; congruence.
+  - break_match; eauto; rewrite eqb_eq in *; congruence.
   - repeat break_if; repeat find_injection;
-    repeat rewrite eqb_leibniz in *; subst; eauto;
+    repeat rewrite eqb_eq in *; subst; eauto;
     try congruence; simpl in *;
     try find_rewrite; eauto;
     rewrite eqb_refl; eauto.
@@ -177,7 +182,7 @@ Proof.
   - exists nil, nil; simpl in *; eauto.
   - destruct (IHm k v) as [preM' [postM' H']].
     break_match.
-    * rewrite eqb_leibniz in *; subst;
+    * rewrite eqb_eq in *; subst;
       exists nil, m; eauto.
     * exists ((a0,b) :: preM'), (postM'); 
       intuition.
@@ -194,13 +199,13 @@ Theorem map_set_unfolder : forall {A B : Type} `{EqClass A},
 Proof.
   induction m; intuition; eauto.
   - simpl in *; repeat break_match; 
-    repeat find_injection; try (rewrite eqb_leibniz in *; subst);
+    repeat find_injection; try (rewrite eqb_eq in *; subst);
     try congruence.
   - destruct (eqb a0 k1) eqn:E.
-    * rewrite eqb_leibniz in *; subst.
+    * rewrite eqb_eq in *; subst.
       simpl in *; rewrite eqb_refl in *; congruence.
     * destruct (eqb a0 k2) eqn:E1.
-      ** rewrite eqb_leibniz in *; subst.
+      ** rewrite eqb_eq in *; subst.
           simpl in *; repeat find_rewrite.
           rewrite eqb_refl in *.
           assert (map_get (map_set m k2 v2) k1 = Some v1). {
@@ -266,7 +271,7 @@ Fixpoint mapD_keys{A B : Type} `{H : EqClass A} `{H1 : EqClass B} (m : MapD A B)
 
 (* TODO: Update these proofs to be more general *)
 Lemma mapD_key_values_length : forall m,
-  length (mapD_vals m) = length (mapD_keys m).
+  List.length (mapD_vals m) = List.length (mapD_keys m).
 Proof.
   intros.
   induction m; simpl.
@@ -275,7 +280,7 @@ Proof.
 Qed.
 
 Theorem mapD_kv_len_match: forall m,
-  length (mapD_vals m) = length m.
+  List.length (mapD_vals m) = List.length m.
 Proof.
   intros.
   induction m; simpl.
@@ -283,12 +288,10 @@ Proof.
   - destruct a; simpl; rewrite IHm; reflexivity.
 Qed.
 
-Theorem mapD_get_works : forall m x v,
+Theorem mapD_get_works : forall {A B : Type} `{HA : EqClass A} `{HB : EqClass B} (m : MapD A B) x v,
   mapD_get_key (mapD_set m x v) v = Some x.
 Proof.
-  intros.
-  induction x; simpl;
-  rewrite Nat.eqb_refl; reflexivity.
+  induction m; simpl in *; intuition; destEq v v; intuition.
 Qed.
 
 (*
@@ -306,48 +309,15 @@ Fixpoint map_dom {K V} (m:MapC K V) : list K :=
 
 Inductive bound_to{A B:Type} `{H : EqClass A} : MapC A B -> A -> B -> Prop :=
 | Bind : forall x m a, map_get m x = Some a -> bound_to m x a.
+Local Hint Constructors bound_to : map_bound_to.
 
 Lemma bound_to_eq_dec {A B: Type} `{H: EqClass A}:
   forall m x,
     {(exists (a:B), bound_to m x a)} + {not (exists (a:B), bound_to m x a)}.
 Proof.
-  intros.
-  generalizeEverythingElse m.
-  induction m; intros.
-  -
-    right.
-    unfold not.
-    intros.
-    destruct_conjs.
-    invc H1.
-    simpl in *.
-    solve_by_inversion.
-  - specialize IHm with x.
-    destruct IHm.
-    * (* bound_to m x a *)
-      destruct a.
-      destruct (eqb a x) eqn:E.
-      ** (* x = a *)
-         left. exists b. econstructor. simpl. 
-         rewrite E. auto.
-      ** (* x <> a *)
-        assert (exists a0, bound_to ((a,b) :: m) x a0). {
-          destruct e. exists x0.
-          inversion H0; subst. econstructor. simpl.
-          rewrite E. auto.
-        }
-        left. auto.
-    * (* ~ (exists a, bound_to m x a )*)
-      destruct a.
-      destruct (eqb a x) eqn:E.
-      ** (* x = a *)
-         left. exists b. econstructor; simpl; rewrite E; auto.
-      ** (* x <> a *)
-         assert (~ (exists a0, bound_to ((a,b) :: m) x a0)). {
-          intros Contra. destruct Contra. inversion H0. subst.
-          unfold map_get in H1. rewrite E in H1. simpl in *.
-          destruct n. exists x0. econstructor. apply H1.
-         }
-         right. auto.
+  intuition;
+  destruct (map_get m x) eqn:E;
+  try (right; intros HC; destruct HC as [a HC]; inversion HC; congruence);
+  eauto with map_bound_to.
 Qed.
     

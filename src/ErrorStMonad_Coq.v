@@ -5,16 +5,8 @@ General definition of a state monad with error + monadic notations,
 Primary Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term_Defs.
-
-(* Generic result type.  Parameterized by the success type (A) 
-    and the error type (E). *)
-Inductive ResultT (A:Type) (E:Type) : Type := 
-| errC : E -> ResultT A E
-| resultC : A -> ResultT A E.
-
-Arguments errC {A} {E} e.
-Arguments resultC {A} {E} a.
+Require Import Term_Defs ResultT.
+Export ResultT.
 
 (* Generalized Error + State Monad *)
 Definition Err(S A E: Type) : Type := S -> (ResultT A E) * S % type.
@@ -54,6 +46,8 @@ Definition execErr {S A E} (h : Err S A E) (s : S) : S :=
 
 Definition nop {S E: Type} := @ret S _ E tt.
 
+Module ErrNotation.
+
 Notation "a >> b" := (bind a (fun _ => b)) (at level 50).
 
 Notation "x <- c1 ;; c2" := (@bind _ _ _ _ c1 (fun x => c2))
@@ -65,6 +59,10 @@ Notation "e1 ;; e2" := (_ <- e1 ;; e2)
 Notation "' pat <- c1 ;; c2" :=
     (@bind _ _ c1 (fun x => match x with pat => c2 end))
     (at level 100, pat pattern, c1 at next level, right associativity).
+
+End ErrNotation.
+
+Export ErrNotation.
 
 Definition gets {S} {A} {E} (f:S -> A) : Err S A E :=
   st <- get ;;

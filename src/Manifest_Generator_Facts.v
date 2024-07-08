@@ -88,7 +88,7 @@ Proof.
   assert False.
   {
     apply H0.
-    apply eqb_leibniz.
+    apply eqb_eq.
     eauto.
   }
   solve_by_inversion.
@@ -102,7 +102,7 @@ manifest_subset m1 m2 ->
 Environment_subset e (map_set e p m2).
 Proof.
   induction e; simpl in *; intuition; eauto; try congruence;
-  ff; repeat (rewrite eqb_leibniz in *); subst.
+  ff; repeat (rewrite eqb_eq in *); subst.
   - unfold Environment_subset; intuition; simpl in *;
     ff; eauto.
     exists m0; intuition; eauto; eapply manifest_subset_refl.
@@ -110,11 +110,11 @@ Proof.
     ff; eauto.
     * exists m0; intuition; eauto; eapply manifest_subset_refl.
     * destruct (eqb p p0) eqn:E.
-      ** rewrite eqb_leibniz in *; subst.
+      ** rewrite eqb_eq in *; subst.
           rewrite mapC_get_works; exists m2; intuition; eauto.
           find_rewrite; find_injection; eauto.
       ** 
-        assert (p <> p0). intros HC. rewrite <- eqb_leibniz in HC; congruence.
+        assert (p <> p0). intros HC. rewrite <- eqb_eq in HC; congruence.
           pose proof (mapC_get_distinct_keys e p p0 m2 m0 H2 H1).
           rewrite H3; eexists; intuition; eauto.
           eapply manifest_subset_refl.
@@ -170,7 +170,7 @@ Proof.
     simpl in *; unfold Environment_subset, manifest_subset in *; intuition.
     destruct (H _ _ H0); intuition;
     destruct (eqb p0 p) eqn:E.
-    * rewrite eqb_leibniz in *; subst;
+    * rewrite eqb_eq in *; subst;
       rewrite H2 in *; simpl in *; destruct x; simpl in *.
       rewrite mapC_get_works; eexists; intuition; eauto;
 
@@ -184,7 +184,7 @@ Proof.
         try eapply in_set_add; eauto
       ).
   
-    * assert (p <> p0). intros HC. rewrite <- eqb_leibniz in HC. 
+    * assert (p <> p0). intros HC. rewrite <- eqb_eq in HC. 
       rewrite eqb_symm in HC; congruence.
       erewrite (mapC_get_distinct_keys e2 p p0 _ _ H6 H2); eexists; intuition; eauto.
 
@@ -194,7 +194,7 @@ Proof.
     simpl in *;
     destruct (H _ _ H0); intuition; clear H H0; unfold manifest_subset in *; intuition; eauto.
     destruct (eqb p0 p1) eqn:E.
-    * rewrite eqb_leibniz in *; subst.
+    * rewrite eqb_eq in *; subst.
       rewrite H2; destruct x. rewrite mapC_get_works;
       eexists; intuition; eauto; simpl in *; eauto.
       
@@ -202,7 +202,7 @@ Proof.
       eapply in_set_add; eauto.
     * erewrite mapC_get_distinct_keys; eauto.
       eexists; intuition; simpl in *; eauto.
-      intros HC. rewrite <- eqb_leibniz in HC; congruence.
+      intros HC. rewrite <- eqb_eq in HC; congruence.
 
   - (* lseq case *)
     eauto.
@@ -233,7 +233,7 @@ Admitted.
     knowsof_manifest_update, manifest_update_env, empty_Manifest in *; 
   simpl in *; intuition.
   destruct (eqb p0 p1) eqn:E.
-  - rewrite eqb_leibniz in *; subst;
+  - rewrite eqb_eq in *; subst;
     rewrite mapC_get_works in *; ff;
     try (eexists; simpl in *; intuition; simpl in *; eauto; fail);
     simpl in *; intuition; eauto; 
@@ -267,7 +267,7 @@ unfold Environment_subset, manifest_subset, at_manifest_generator,
 knowsof_manifest_update, manifest_update_env, empty_Manifest in *; 
 simpl in *; intuition.
 destruct (eqb p0 p1) eqn:E.
-- rewrite eqb_leibniz in *; subst;
+- rewrite eqb_eq in *; subst;
 rewrite mapC_get_works in *; ff;
 try (eexists; simpl in *; intuition; simpl in *; eauto; fail);
 try destruct (H _ _ Heqo0); simpl in *; intuition; eauto.
@@ -305,7 +305,7 @@ find_rewrite; find_injection;
     knowsof_manifest_update, manifest_update_env, empty_Manifest in *; 
   simpl in *; intuition.
   destruct (eqb p0 p1) eqn:E.
-  - rewrite eqb_leibniz in *; subst;
+  - rewrite eqb_eq in *; subst;
     rewrite mapC_get_works in *; ff;
     try (eexists; simpl in *; intuition; simpl in *; eauto; fail).
 
@@ -352,7 +352,7 @@ find_rewrite; find_injection;
 
   - ff; subst; simpl in *;
     try (eexists; simpl in *; intuition; simpl in *; eauto; fail);
-    assert (p0 <> p1) by (intros HC; rewrite <- eqb_leibniz in HC; congruence);
+    assert (p0 <> p1) by (intros HC; rewrite <- eqb_eq in HC; congruence);
     assert (map_get e1 p1 = Some m1) by (eapply mapC_get_distinct_keys_from_set; eauto); 
     destruct (H _ _ H2); intuition; eauto;
     erewrite mapC_get_distinct_keys; eauto;
@@ -400,7 +400,7 @@ Proof.
         destruct (eqb p1 p2) eqn:E;
 
         [
-          rewrite eqb_leibniz in *; subst;
+          rewrite eqb_eq in *; subst;
           (* try (destruct (H _ _ H1); intuition; eauto). *)
           unfold manifest_subset in *; simpl in *;
           rewrite mapC_get_works in *;
@@ -426,7 +426,7 @@ Proof.
       
 
           | 
-          assert (p1 <> p2) by (intros HC; rewrite <- eqb_leibniz in HC; congruence);
+          assert (p1 <> p2) by (intros HC; rewrite <- eqb_eq in HC; congruence);
           assert (HM : map_get e1 p2 = Some m2) by (eapply mapC_get_distinct_keys_from_set; eauto);
           destruct (H _ _ HM); intuition; eauto;
           erewrite mapC_get_distinct_keys; eauto
@@ -481,7 +481,7 @@ Proof.
   specialize H0 with (m1:=m') (p:=p0).
   assert (map_get [(p0, m')] p0 = Some m').
   {
-    simpl in *; rewrite eqb_refl; eauto.
+    simpl in *; rewrite String.eqb_refl; eauto.
   }
   apply H0 in H1.
   destruct_conjs.

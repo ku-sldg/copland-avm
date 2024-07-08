@@ -2,8 +2,11 @@
    BS stands for "Binary String".  May be instantiated with 
    types like strings and byte buffers in concrete implementations.    *)
 
-Definition BS : Set.
-Admitted.
+Require Import ResultT Serializable. 
+
+Definition BS : Set. Admitted.
+
+Global Instance Serializable_BS : Serializable BS. Admitted.
 
 (* Some default/reserved BS values *)
 Definition default_bs : BS. Admitted.

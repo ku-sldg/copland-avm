@@ -4,9 +4,7 @@ Uninterpreted functions and rewrite rules that model external (remote and local 
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term_Defs Anno_Term_Defs LTS IO_Stubs.
-
-Require Import ErrorStMonad_Coq.
+Require Import Term_Defs Anno_Term_Defs Interface_Types LTS IO_Stubs CvmJson_Interfaces ResultT Manifest Cvm_St.
 
 Require Import List.
 Import ListNotations.
@@ -76,7 +74,21 @@ Axiom wf_ec_preserved_remote: forall a n e,
     wf_ec (doRemote_session a n e).
     *)
 
-Axiom wf_ec_preserved_remote: forall t p u ev1 ev1' evc1 r0,
-    doRemote_uuid t u (get_bits ev1) = resultC ev1' -> 
-    wf_ec evc1 -> 
-    wf_ec (evc r0 (eval t p (get_et evc1))).
+Axiom wf_ec_preserved_remote: forall st pTarg uuid ac ev1,
+    (* doRemote t u (get_bits ev1) = resultC ev1' ->  *)
+    (* do_remote t p e ac = resultC ev1' -> *)
+    (st_AM_config st) = ac ->
+    (st_ev st) = ev1 ->
+    (plcCb ac) pTarg = resultC uuid ->
+    forall t rawEv js_resp,
+    make_JSON_Network_Request uuid (
+        ProtocolRunRequest_to_JSON (
+          (mkPRReq 
+            t 
+            (my_abstract_plc (absMan (st_AM_config st)))
+            (get_bits ev1)
+          )
+        )) = resultC js_resp ->
+    JSON_to_AM_Protocol_Response js_resp = resultC (Protocol_Run_Response (mkPRResp true rawEv)) -> 
+    wf_ec ev1 -> 
+    wf_ec (evc rawEv (eval t pTarg (get_et ev1))).
