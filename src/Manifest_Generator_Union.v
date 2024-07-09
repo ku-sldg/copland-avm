@@ -7,7 +7,7 @@ Require Import Term_Defs_Core Params_Admits Manifest Eqb_Evidence
 
 Require Import EqClass Maps StructTactics.
 
-Require Import EnvironmentM Manifest_Set JSON Serializable.
+Require Import EnvironmentM Manifest_Set JSON Stringifiable.
 
 Require Import Manifest_Union Manifest_Generator Cvm_St Cvm_Impl.
 
@@ -121,7 +121,7 @@ Definition knowsof_myPlc_manifest_update (m:Manifest) : Manifest :=
 Definition Evidence_Plc_list := list (Evidence*Plc).
 Open Scope string_scope.
 
-Definition Evidence_Plc_list_to_JSON (ls: Evidence_Plc_list) : JSON :=
+Definition Evidence_Plc_list_to_JSON `{Jsonifiable Evidence} (ls: Evidence_Plc_list) : JSON := 
   JSON_Object [
     ("Evidence_Plc_list",
       (InJSON_Array 
@@ -135,7 +135,7 @@ Definition Evidence_Plc_list_to_JSON (ls: Evidence_Plc_list) : JSON :=
       )
     )].
 
-Definition Evidence_Plc_list_from_JSON (js : JSON) 
+Definition Evidence_Plc_list_from_JSON `{Jsonifiable Evidence} (js : JSON) 
     : ResultT Evidence_Plc_list string :=
   match (JSON_get_Array "Evidence_Plc_list" js) with
   | resultC jsArr =>
@@ -156,14 +156,21 @@ Definition Evidence_Plc_list_from_JSON (js : JSON)
   | errC e => errC e 
   end.
 
-Global Instance Jsonifiable_Evidence_Plc_list : Jsonifiable Evidence_Plc_list := {
-  to_JSON := Evidence_Plc_list_to_JSON;
-  from_JSON := Evidence_Plc_list_from_JSON
-}.
+Global Instance Jsonifiable_Evidence_Plc_list `{Jsonifiable Evidence} : Jsonifiable Evidence_Plc_list.
+eapply Build_Jsonifiable with 
+  (to_JSON := Evidence_Plc_list_to_JSON)
+  (from_JSON := Evidence_Plc_list_from_JSON).
+unfold Evidence_Plc_list_to_JSON, Evidence_Plc_list_from_JSON;
+simpl in *.
+induction a; simpl in *; intuition;
+repeat (try break_match; simpl in *; subst; try congruence);
+repeat rewrite canonical_jsonification in *; try congruence;
+repeat find_injection; eauto.
+Defined.
 
 Definition Term_Plc_list := list (Term*Plc).
 
-Definition Term_Plc_list_to_JSON (ls: Term_Plc_list) : JSON :=
+Definition Term_Plc_list_to_JSON `{Jsonifiable Term} (ls: Term_Plc_list) : JSON :=
   JSON_Object [
     ("Term_Plc_list",
       (InJSON_Array 
@@ -177,7 +184,7 @@ Definition Term_Plc_list_to_JSON (ls: Term_Plc_list) : JSON :=
       )
     )].
 
-Definition Term_Plc_list_from_JSON (js : JSON) 
+Definition Term_Plc_list_from_JSON `{Jsonifiable Term} (js : JSON) 
     : ResultT Term_Plc_list string :=
   match (JSON_get_Array "Term_Plc_list" js) with
   | resultC jsArr =>
@@ -198,10 +205,17 @@ Definition Term_Plc_list_from_JSON (js : JSON)
   | errC e => errC e 
   end.
 
-Global Instance Jsonifiable_Term_Plc_list : Jsonifiable Term_Plc_list := {
-  to_JSON := Term_Plc_list_to_JSON;
-  from_JSON := Term_Plc_list_from_JSON
-}.
+Global Instance Jsonifiable_Term_Plc_list `{Jsonifiable Term} : Jsonifiable Term_Plc_list.
+eapply Build_Jsonifiable with 
+  (to_JSON := Term_Plc_list_to_JSON)
+  (from_JSON := Term_Plc_list_from_JSON).
+unfold Term_Plc_list_from_JSON, Term_Plc_list_to_JSON;
+simpl in *.
+induction a; simpl in *; intuition;
+repeat (try break_match; simpl in *; subst; try congruence);
+repeat rewrite canonical_jsonification in *; try congruence;
+repeat find_injection; eauto.
+Defined.
 
 Definition knowsof_myPlc_manifest_update_env' (p:(Plc*Manifest)) : (Plc*Manifest) := 
   (fst p, (knowsof_myPlc_manifest_update (snd p))).

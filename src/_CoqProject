@@ -1,10 +1,10 @@
 -R . CoplandM
+StructTactics.v
 Preamble.v
 ResultT.v
-Serializable.v
-Serializable_Class_Admits.v
+Stringifiable.v
+Stringifiable_Class_Admits.v
 More_lists.v
-StructTactics.v
 EqClass.v
 ID_Type.v
 Defs.v

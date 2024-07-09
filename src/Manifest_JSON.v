@@ -1,5 +1,5 @@
-Require Import Serializable.
-Require Import JSON Manifest Manifest_Set Term_Defs_Core Manifest_JSON_Vars List ErrorStringConstants.
+Require Import Stringifiable.
+Require Import JSON Manifest Manifest_Set Term_Defs_Core Manifest_JSON_Vars List ErrorStringConstants EqClass.
 Import ListNotations ResultNotation.
 
 
@@ -41,10 +41,17 @@ Definition JSON_to_Manifest (js : JSON) : ResultT Manifest string :=
   POLICY <- list_InJson_to_manifest_set_pairs temp_POLICY;;
   resultC (Build_Manifest ABS_PLC ASPS APPR_ASPS UUID_PLCS PUBKEY_PLCS TARGET_PLCS POLICY).
 
-Global Instance Jsonifiable_Manifest : Jsonifiable Manifest :=
-  { to_JSON := Manifest_to_JSON;
-    from_JSON := JSON_to_Manifest
-  }.
+Global Instance Jsonifiable_Manifest : Jsonifiable Manifest. 
+eapply Build_Jsonifiable with 
+  (to_JSON := Manifest_to_JSON)
+  (from_JSON := JSON_to_Manifest).
+intuition; destruct a; simpl in *.
+unfold JSON_to_Manifest, res_bind; simpl in *;
+repeat (try break_match; simpl in *; subst; try find_injection; try find_rewrite; eauto; try congruence);
+repeat rewrite canonical_list_injson_to_manset in *;
+repeat rewrite canonical_list_injson_to_manset_pairs in *;
+try congruence; repeat find_injection; eauto.
+Defined.
 
 Definition AM_Lib_to_JSON (am : AM_Library) : JSON :=
   let '(Build_AM_Library clone_uuid lib_plcs lib_pubkeys) := am
@@ -65,7 +72,27 @@ Definition JSON_to_AM_Lib (js : JSON) : ResultT AM_Library string :=
   LIB_PUBKEYS <- from_JSON temp_LIB_PUBKEYS;;
   resultC (Build_AM_Library CLONE_UUID LIB_PLCS LIB_PUBKEYS).
 
-Global Instance Jsonifiable_AM_Library : Jsonifiable AM_Library :=
-  { to_JSON := AM_Lib_to_JSON;
-    from_JSON := JSON_to_AM_Lib
-  }.
+Global Instance Jsonifiable_AM_Library : Jsonifiable AM_Library.
+eapply Build_Jsonifiable with
+  (to_JSON := AM_Lib_to_JSON)
+  (from_JSON := JSON_to_AM_Lib).
+intuition; destruct a; simpl in *.
+unfold JSON_to_AM_Lib, res_bind; simpl in *;
+repeat rewrite canonical_stringification in *;
+repeat (try break_match; simpl in *; subst; try find_injection; try find_rewrite; eauto; try congruence);
+repeat match goal with
+| H : result_map _ (map _ ?l) = errC _ |- _ => 
+    induction l; simpl in *; intuition; try congruence;
+    unfold res_bind in *; repeat (try break_match; simpl in *; subst; intuition; eauto; try find_injection; try find_rewrite; try congruence);
+    repeat rewrite canonical_stringification in *; congruence
+| H : result_map _ (map _ ?l) = resultC ?l' |- _ => 
+    let IH' := fresh "IH'" in
+    assert (l = l') by (
+      generalize dependent l';
+      induction l as [| ? l IH']; simpl in *; intuition; try congruence;
+      unfold res_bind in *; repeat (try break_match; simpl in *; subst; intuition; eauto; try find_injection; try find_rewrite; try congruence);
+      repeat rewrite canonical_stringification in *; try congruence;
+      repeat find_injection; eauto;
+      erewrite IH'; eauto); subst; clear H; eauto
+end.
+Defined.

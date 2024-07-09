@@ -9,9 +9,11 @@ This proof script is free software: you can redistribute it and/or
 modify it under the terms of the BSD License as published by the
 University of California.  See license.txt for details. *)
 
+Require Export StructTactics.
+
 (** Tactics that provide useful automation. *)
 
-Ltac inv H := inversion H; clear H; subst.
+Ltac old_inv H := inversion H; clear H; subst.
 
 (** Expand let expressions in both the antecedent and the
     conclusion. *)

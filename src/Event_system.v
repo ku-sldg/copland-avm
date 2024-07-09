@@ -79,7 +79,7 @@ Section Event_system.
       well_structured es ->
       snd (es_range es) = fst (es_range es) + es_size es.
   Proof.
-    induction es; simpl; intros; inv H; simpl; auto;
+    induction es; simpl; intros; old_inv H; simpl; auto;
       try rewrite Nat.add_1_r; auto;
         apply IHes1 in H3;
         apply IHes2 in H4;
@@ -148,8 +148,8 @@ Section Event_system.
     clear G.
     revert H0.
     revert e.
-    induction es; intros; simpl in *; inv H; simpl in *;
-      inv H0; simpl; try lia.
+    induction es; intros; simpl in *; old_inv H; simpl in *;
+      old_inv H0; simpl; try lia.
     - apply IHes1 in H2; auto; lia.
     - apply IHes2 in H2; auto.
       apply well_structured_range in H4.
@@ -174,8 +174,8 @@ Section Event_system.
     revert ev1.
     revert ev0.
     induction H; intros; simpl in *.
-    - inv H1; inv H2; auto.
-    - inv H3; inv H4.
+    - old_inv H1; old_inv H2; auto.
+    - old_inv H3; old_inv H4.
       + eapply IHwell_structured1 in H8; eauto.
       + apply ws_evsys_range in H8; auto.
         apply ws_evsys_range in H6; auto.
@@ -184,7 +184,7 @@ Section Event_system.
         apply ws_evsys_range in H6; auto.
         lia.
       + eapply IHwell_structured2 in H8; eauto.
-    - inv H3; inv H4.
+    - old_inv H3; old_inv H4.
       + eapply IHwell_structured1 in H8; eauto.
       + apply ws_evsys_range in H8; auto.
         apply ws_evsys_range in H6; auto.
@@ -203,7 +203,7 @@ Section Event_system.
       well_structured es ->
       ~prec es ev ev.
   Proof.
-    induction es; intros; intro; inv H; inv H0.
+    induction es; intros; intro; old_inv H; old_inv H0.
     - apply ws_evsys_range in H8; auto.
       apply ws_evsys_range in H9; auto.
       lia.
@@ -221,10 +221,10 @@ Section Event_system.
       prec es ev0 ev2.
   Proof.
     induction es; intros.
-    - inv H0.
-    - inv H.
-      inv H0.
-      + inv H1.
+    - old_inv H0.
+    - old_inv H.
+      old_inv H0.
+      + old_inv H1.
         * apply ws_evsys_range in H10; auto.
         * apply prec_in_left in H7.
           apply ws_evsys_range in H7; auto.
@@ -233,13 +233,13 @@ Section Event_system.
         * apply prec_in_right in H7; auto.
       + assert (G: ev_in ev0 es1). apply prec_in_left in H9; auto.
         assert (F: ev_in ev1 es1). apply prec_in_right in H9; auto.
-        inv H1; auto.
+        old_inv H1; auto.
         eapply IHes1 in H7; eauto.
         apply prseq; auto.
         apply prec_in_right in H7; auto.
       + assert (G: ev_in ev0 es2). apply prec_in_left in H9; auto.
         assert (F: ev_in ev1 es2). apply prec_in_right in H9; auto.
-        inv H1.
+        old_inv H1.
         * apply ws_evsys_range in H7; auto.
           apply ws_evsys_range in F; auto.
           lia.
@@ -248,9 +248,9 @@ Section Event_system.
           apply ws_evsys_range in F; auto.
           lia.
         * eapply IHes2 in H7; eauto.
-    - inv H.
-      inv H0.
-      + inv H1.
+    - old_inv H.
+      old_inv H0.
+      + old_inv H1.
         * eapply IHes1 in H7; eauto.
         * apply prec_in_left in H7.
           apply prec_in_right in H9.
@@ -259,7 +259,7 @@ Section Event_system.
           lia.
       + assert (G: ev_in ev0 es2). apply prec_in_left in H9; auto.
         assert (F: ev_in ev1 es2). apply prec_in_right in H9; auto.
-        inv H1.
+        old_inv H1.
         * apply prec_in_left in H7.
           apply ws_evsys_range in H7; auto.
           apply ws_evsys_range in F; auto.
@@ -280,7 +280,7 @@ Section Event_system.
       well_structured (merge (fst r, snd s) x (merge s y z)).
   Proof.
     intros r s x y z Hr Hs.
-    inv Hr; inv Hs.
+    old_inv Hr; old_inv Hs.
     constructor; simpl; auto; lia.
   Qed.
 
@@ -291,7 +291,7 @@ Section Event_system.
       well_structured (merge (fst r, snd s) (merge r x y) z).
   Proof.
     intros r s x y z Hr Hs.
-    inv Hr; inv Hs.
+    old_inv Hr; old_inv Hs.
     constructor; simpl; auto; lia.
   Qed.
 
@@ -301,12 +301,12 @@ Section Event_system.
                (merge (fst r, snd s) (merge r x y) z).
   Proof.
     intros r s x y z.
-    split; intro; inv H.
+    split; intro; old_inv H.
     - apply prparl; apply prparl; auto.
-    - inv H5.
+    - old_inv H5.
       + apply prparl; apply prparr; auto.
       + apply prparr; auto.
-    - inv H5.
+    - old_inv H5.
       + apply prparl; auto.
       + apply prparr; apply prparl; auto.
     - apply prparr; apply prparr; auto.
@@ -332,7 +332,7 @@ Section Event_system.
       well_structured (before (fst r, snd s) x (before s y z)).
   Proof.
     intros r s x y z Hr Hs.
-    inv Hr; inv Hs.
+    old_inv Hr; old_inv Hs.
     constructor; simpl; auto; lia.
   Qed.
 
@@ -343,7 +343,7 @@ Section Event_system.
       well_structured (before (fst r, snd s) (before r x y) z).
   Proof.
     intros r s x y z Hr Hs.
-    inv Hr; inv Hs.
+    old_inv Hr; old_inv Hs.
     constructor; simpl; auto; lia.
   Qed.
 
@@ -353,19 +353,19 @@ Section Event_system.
                (before (fst r, snd s) (before r x y) z).
   Proof.
     intros r s x y z.
-    split; intro; inv H.
-    - inv H6.
+    split; intro; old_inv H.
+    - old_inv H6.
       + apply prseql; auto.
       + apply prseq; auto.
     - apply prseql; apply prseql; auto.
-    - inv H5.
+    - old_inv H5.
       + apply prseq; auto.
       + apply prseql; apply prseqr; auto.
       + apply prseqr; auto.
-    - inv H5.
+    - old_inv H5.
       + apply prseq; auto.
       + apply prseqr; apply prseq; auto.
-    - inv H5.
+    - old_inv H5.
       + apply prseq; auto.
       + apply prseql; auto.
       + apply prseqr; apply prseql; auto.
@@ -420,7 +420,7 @@ Section Event_system.
       sup (before r x y) e -> sup y e.
   Proof.
     intros.
-    inv H.
+    old_inv H.
     auto.
   Qed.
 
@@ -431,18 +431,18 @@ Section Event_system.
   Proof.
     unfold supreme; split.
     -  induction H; intros.
-       + inv H1.
+       + old_inv H1.
          split; auto; intros; intro.
-         inv H1.
+         old_inv H1.
          apply evsys_irreflexive in H2; auto.
-       + inv H1.
-         inv H3.
+       + old_inv H1.
+         old_inv H3.
          apply IHwell_structured2 in H7.
          destruct H7.
          split.
          * apply ein_beforer; auto.
          * intros; intro.
-           inv H4; inv H5.
+           old_inv H4; old_inv H5.
            -- apply ws_evsys_range in H8; auto.
               apply ws_evsys_range in H12; auto.
               lia.
@@ -463,13 +463,13 @@ Section Event_system.
               lia.
            -- apply H3 in H8.
               tauto.
-       + inv H3.
+       + old_inv H3.
          * apply IHwell_structured1 in H8.
            destruct H8.
            split.
            -- apply ein_mergel; auto.
            -- intros; intro.
-              inv H4; inv H5.
+              old_inv H4; old_inv H5.
               ++ apply H3 in H8; tauto.
               ++ apply prec_in_right in H11.
                  apply ws_evsys_range in H8; auto.
@@ -488,7 +488,7 @@ Section Event_system.
            split.
            -- apply ein_merger; auto.
            -- intros; intro.
-              inv H4; inv H5.
+              old_inv H4; old_inv H5.
               ++ apply prec_in_left in H11.
                  apply ws_evsys_range in H1; auto.
                  apply ws_evsys_range in H11; auto.
@@ -504,8 +504,8 @@ Section Event_system.
               ++ apply H3 in H8; tauto.
     - intro; destruct H0.
       induction H; intros.
-      + inv H0; auto.
-      + inv H0; auto.
+      + old_inv H0; auto.
+      + old_inv H0; auto.
         * cut (exists f, ev_in f y).
           -- intros.
              destruct H0 as [f].
@@ -523,7 +523,7 @@ Section Event_system.
                        (before (fst (es_range x), snd (es_range y)) x y) e e0).
           apply prseqr; auto.
           apply H1 in G; auto; tauto.
-      + inv H0.
+      + old_inv H0.
         * apply IHwell_structured1 in H7; auto.
           intros; intro.
           assert (G: prec
