@@ -18,17 +18,17 @@ University of California.  See license.txt for details. *)
 
 Require Export BS.
 
-Require Import List ID_Type Maps EqClass JSON Serializable Serializable_Class_Admits.
+Require Import List ID_Type Maps EqClass JSON Stringifiable Stringifiable_Class_Admits StructTactics.
 Import ListNotations.
 
 (** * Terms and Evidence *)
 
 (** [Plc] represents a place (or attestation domain). *)
 Definition Plc: Set := ID_Type.
-Global Instance Serializable_Plc : Serializable Plc := {
+(* Global Instance Stringifiable_Plc : Stringifiable Plc := {
   to_string := to_string;
   from_string := from_string;
-}.
+}. *)
 (** [N_ID] represents a nonce identifier.  *)
 Definition N_ID: Set := nat.
 (** [Event_ID] represents Event identifiers *)
@@ -41,24 +41,24 @@ Definition Event_ID: Set := nat.
           (defined and interpreted per-scenario/implementaiton).
 *)
 Definition ASP_ID: Set := ID_Type.
-Global Instance Serializable_ASP_ID : Serializable ASP_ID := {
+(* Global Instance Stringifiable_ASP_ID : Stringifiable ASP_ID := {
   to_string := to_string;
   from_string := from_string;
-}.
+}. *)
 
 Definition TARG_ID: Set := ID_Type.
-Global Instance Serializable_TARG_ID : Serializable TARG_ID := {
+(* Global Instance Stringifiable_TARG_ID : Stringifiable TARG_ID := {
   to_string := to_string;
   from_string := from_string;
-}.
+}. *)
 
 Open Scope string_scope.
 
 Definition ASP_ARGS := MapC string string.
-Global Instance Jsonifiable_ASP_ARGS : Jsonifiable ASP_ARGS := {
+(* Global Instance Jsonifiable_ASP_ARGS : Jsonifiable ASP_ARGS := {
   to_JSON := to_JSON;
   from_JSON := from_JSON;
-}.
+}. *)
 
 Definition ASP_Info := string.
 
@@ -66,8 +66,9 @@ Definition ASP_Info := string.
 Inductive ASP_PARAMS: Type :=
 | asp_paramsC: ASP_ID -> ASP_ARGS -> Plc -> TARG_ID -> ASP_PARAMS.
 
-Global Instance Jsonifiable_ASP_Params : Jsonifiable ASP_PARAMS := {
-  to_JSON := (fun asp_params => 
+Global Instance Jsonifiable_ASP_Params `{Jsonifiable ASP_ARGS} : Jsonifiable ASP_PARAMS. 
+eapply Build_Jsonifiable with 
+  (to_JSON := (fun asp_params => 
                 match asp_params with
                 | asp_paramsC asp_id args plc targ_id => 
                     JSON_Object [
@@ -76,8 +77,8 @@ Global Instance Jsonifiable_ASP_Params : Jsonifiable ASP_PARAMS := {
                       ("ASP_PLC", InJSON_String (to_string plc));
                       ("ASP_TARG_ID", InJSON_String (to_string targ_id))
                     ]
-                end);
-  from_JSON := (fun js => 
+                end)) 
+  (from_JSON := (fun js => 
                   match (JSON_get_string "ASP_ID" js), (JSON_get_Object "ASP_ARGS" js), 
                         (JSON_get_string "ASP_PLC" js), (JSON_get_string "ASP_TARG_ID" js) with
                   | resultC asp_id, resultC args, resultC plc, resultC targ_id => 
@@ -86,8 +87,12 @@ Global Instance Jsonifiable_ASP_Params : Jsonifiable ASP_PARAMS := {
                       | _, _, _, _ => errC "Parsing ASP_PARAMS not successful"
                       end
                   | _, _, _, _ => errC "Invalid ASP_PARAMS JSON"
-                  end)
-}.
+                  end)).
+intuition; simpl in *.
+repeat break_match; simpl in *; try congruence;
+repeat find_injection;
+rewrite canonical_jsonification in *; try congruence; try find_injection.
+Defined.
 
 (** Evidence extension types for ASPs:
       COMP:  Compact evidence down to a single value (i.e. a hash).
@@ -111,16 +116,17 @@ Inductive FWD: Set :=
 | KILL
 | KEEP.
 
-Global Instance Jsonifiable_FWD : Jsonifiable FWD := {
-  to_JSON := (fun fwd => 
+Global Instance Jsonifiable_FWD : Jsonifiable FWD.
+eapply Build_Jsonifiable with 
+  (to_JSON := (fun fwd => 
                 match fwd with
                 | COMP => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "COMP")]
                 | ENCR => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "ENCR")]
                 | EXTD n => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "EXTD"); ("EXTD_N", InJSON_String (to_string n))]
                 | KILL => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "KILL")]
                 | KEEP => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "KEEP")]
-                end);
-  from_JSON := (fun js => 
+                end))
+  (from_JSON := (fun js => 
                   match (JSON_get_string "FWD_CONSTRUCTOR" js) with
                   | resultC cons_name =>
                       if (eqb cons_name "COMP") 
@@ -142,8 +148,12 @@ Global Instance Jsonifiable_FWD : Jsonifiable FWD := {
                              end
                       else errC "Invalid FWD JSON"
                   | errC e => errC e
-                  end)
-}.
+                  end)).
+intuition; simpl in *.
+repeat break_match; simpl in *; try congruence;
+repeat find_injection; simpl in *; try congruence;
+rewrite canonical_stringification in *; try congruence; try find_injection.
+Defined.
 
 (** The structure of evidence. 
 
@@ -229,10 +239,20 @@ Fixpoint Evidence_from_JSON (js : JSON) : ResultT Evidence string :=
   | errC e => errC e
   end.
 
-Global Instance Jsonifiable_Evidence : Jsonifiable Evidence := {
-  to_JSON := Evidence_to_JSON;
-  from_JSON := Evidence_from_JSON
-}.
+Global Instance Jsonifiable_Evidence : Jsonifiable Evidence.
+eapply Build_Jsonifiable with (to_JSON := Evidence_to_JSON) (from_JSON := Evidence_from_JSON).
+induction a; simpl in *; intuition.
+- rewrite canonical_stringification; eauto.
+- rewrite IHa.
+  clear IHa.
+  destruct f; simpl in *;
+  try rewrite canonical_stringification; eauto;
+  destruct a; simpl in *; intuition;
+  induction a1; simpl in *; intuition; eauto; 
+  repeat break_match; simpl in *; intuition;
+  repeat find_injection; try congruence.
+- rewrite IHa1, IHa2; eauto. 
+Defined.
 
 (** Evidene routing types:  
       ALL:   pass through all evidence
@@ -243,7 +263,7 @@ Inductive SP: Set :=
 | NONE.
 
 
-Global Instance Serializable_SP : Serializable SP := {
+Global Instance Stringifiable_SP : Stringifiable SP := {
   to_string := (fun sp => 
                   match sp with
                   | ALL => "ALL"
@@ -254,9 +274,12 @@ Global Instance Serializable_SP : Serializable SP := {
                     then resultC ALL
                     else if (eqb s "NONE")
                     then resultC NONE
-                    else errC "Invalid SP string")
+                    else errC "Invalid SP string");
+  canonical_stringification := fun s => match s with
+                                        | ALL => eq_refl
+                                        | NONE => eq_refl
+                                        end
 }.
-
 
 (** Primitive Copland phases 
 
@@ -279,8 +302,9 @@ Inductive ASP :=
 | HSH: ASP
 | ENC: Plc -> ASP.
 
-Global Instance Jsonifiable_ASP : Jsonifiable ASP := {
-  to_JSON := (fun a => 
+Global Instance Jsonifiable_ASP : Jsonifiable ASP.
+eapply (Build_Jsonifiable) with 
+  (to_JSON := (fun a => 
                 match a with
                 | NULL => JSON_Object [("ASP_CONSTRUCTOR", InJSON_String "NULL")]
                 | CPY => JSON_Object [("ASP_CONSTRUCTOR", InJSON_String "CPY")]
@@ -298,8 +322,8 @@ Global Instance Jsonifiable_ASP : Jsonifiable ASP := {
                       ("ASP_CONSTRUCTOR", InJSON_String "ENC");
                       ("ENC_PLC", InJSON_String (to_string q))
                     ]
-                end);
-  from_JSON := (fun js => 
+                end))
+  (from_JSON := (fun js => 
                   match (JSON_get_string "ASP_CONSTRUCTOR" js) with
                   | resultC cons_name =>
                       if (eqb cons_name "NULL")
@@ -331,8 +355,28 @@ Global Instance Jsonifiable_ASP : Jsonifiable ASP := {
                            end
                       else errC "Invalid JSON ASP Constructor Name"
                   | _ => errC "Invalid JSON ASP Constructor Name"
-                  end)
-}.
+                  end)).
+(* intuition.
+repeat (try break_match; subst; simpl in *; intuition; repeat find_injection; try congruence);
+try rewrite canonical_stringification in *; eauto; try congruence;
+match goal with
+| A : ASP_ARGS |- _ => induction A; simpl in *; intuition; eauto;
+                        repeat break_match; simpl in *; intuition; eauto;
+                        repeat find_injection; try congruence;
+                        try rewrite canonical_stringification in *; eauto; try congruence
+
+end.
+- simpl in *.  *)
+
+destruct a; simpl in *; intuition;
+destruct s; simpl in *; intuition;
+destruct f; simpl in *; intuition;
+destruct a; simpl in *; intuition;
+induction a0; simpl in *; intuition; eauto;
+repeat break_match; simpl in *; intuition;
+repeat find_injection; try congruence;
+rewrite canonical_stringification in *; eauto; congruence.
+Defined.
 
 
 (** Pair of evidence splitters that indicate routing evidence to subterms 
@@ -353,7 +397,13 @@ Global Instance Jsonifiable_Split : Jsonifiable Split := {
                       | _, _ => errC "Parsing split not successful"
                       end
                   | _, _ => errC "Invalid Split JSON"
-                  end)
+                  end);
+  canonical_jsonification := fun '(s1, s2) => 
+                              match s1, s2 with
+                              | ALL, ALL => eq_refl
+                              | NONE, NONE => eq_refl
+                              | _, _ => eq_refl
+                              end
 }.
 
 (** Pair of evidence splitters that indicate routing evidence to subterms 
@@ -485,10 +535,25 @@ Fixpoint Term_from_JSON (js : JSON) : ResultT Term string :=
   | errC e => errC e
   end.
 
-Global Instance Jsonifiable_Term : Jsonifiable Term := {
-  to_JSON := Term_to_JSON;
-  from_JSON := Term_from_JSON
-}.
+Global Instance Jsonifiable_Term : Jsonifiable Term. 
+eapply Build_Jsonifiable with (to_JSON := Term_to_JSON) (from_JSON := Term_from_JSON).
+induction a; simpl in *; intuition; eauto;
+repeat (
+  match goal with
+  | a : Split |- _ => destruct a
+  | a : ASP |- _ => destruct a
+  | a : FWD |- _ => destruct a
+  | a : ASP_PARAMS |- _ => destruct a
+  | a : SP |- _ => destruct a
+  | a : ASP_ARGS |- _ => 
+      induction a; simpl in *; intuition; eauto;
+      simpl in *;
+      repeat (break_match; simpl in *; try congruence);
+      repeat find_injection; eauto;
+      rewrite canonical_stringification in *; try congruence
+  end; simpl in *; intuition; eauto);
+repeat find_rewrite; eauto.
+Defined.
 
 (* Adapted from Imp language Notation in Software Foundations (Pierce) *)
 Declare Custom Entry copland_entry.
@@ -571,12 +636,12 @@ Example test3 : <<core>{ CLR -> {}}> = (lseqc (aspc CLEAR) (aspc NULLC)). reflex
 (** Raw Evidence representaiton:  a list of binary (BS) values. *)
 Definition RawEv := list BS.
 
-Global Instance Jsonifiable_RawEv : Jsonifiable RawEv := {
-  to_JSON := (fun ev => 
+Global Instance Jsonifiable_RawEv : Jsonifiable RawEv. 
+  eapply Build_Jsonifiable with (to_JSON := (fun ev => 
                 JSON_Object [
                   ("RawEv", InJSON_Array (map (fun bs => InJSON_String (to_string bs)) ev))
-                ]);
-  from_JSON := (fun js => 
+                ]))
+  (from_JSON := (fun js => 
                   match (JSON_get_Array "RawEv" js) with
                   | resultC js' => 
                       result_map (fun js' => 
@@ -589,8 +654,11 @@ Global Instance Jsonifiable_RawEv : Jsonifiable RawEv := {
                                     | _ => errC "Invalid RawEv JSON"
                                     end) js'
                   | errC e => errC e
-                  end)
-}.
+                  end)).
+induction a; simpl in *; intuition; eauto;
+repeat rewrite canonical_stringification in *; simpl in *;
+find_rewrite; eauto.
+Defined.
 
 (** AppResultC represents the result of a Copland Core_Term execution. *)
 
@@ -602,7 +670,7 @@ Inductive AppResultC :=
 | eec_app: Plc -> ASP_PARAMS -> BS -> AppResultC ->(* Evidence -> *) AppResultC
 | ssc_app: AppResultC -> AppResultC -> AppResultC.
 
-Fixpoint AppResultC_to_Json (a : AppResultC) : JSON :=
+Fixpoint AppResultC_to_Json `{Jsonifiable ASP_ARGS, Jsonifiable RawEv} (a : AppResultC) : JSON :=
   match a with
   | mtc_app => JSON_Object [("AppResultC_CONSTRUCTOR", InJSON_String "mtc_app")]
   | nnc_app n bs => 
@@ -643,10 +711,10 @@ Fixpoint AppResultC_to_Json (a : AppResultC) : JSON :=
       ]
   end.
 
-Fixpoint AppResultC_from_JSON (js : JSON) : ResultT AppResultC string :=
+Fixpoint AppResultC_from_JSON `{Jsonifiable ASP_ARGS, Jsonifiable RawEv} (js : JSON) : ResultT AppResultC string :=
   match (JSON_get_string "AppResultC_CONSTRUCTOR" js) with
   | resultC cons_name =>
-      if (eqb cons_name "mt_app")
+      if (eqb cons_name "mtc_app")
       then resultC mtc_app
       else if (eqb cons_name "nnc_app")
       then  match js with
@@ -720,13 +788,38 @@ Fixpoint AppResultC_from_JSON (js : JSON) : ResultT AppResultC string :=
             | _ => errC "Parsing ssc_app not successful"
             end
       else errC "Invalid AppResultC JSON"
-  | _ => errC "Invalid AppResultC JSON"
+  | _ => errC "Invalid AppResultC JSON: No Constructor"
   end.
 
-Global Instance Jsonifiable_AppResultC : Jsonifiable AppResultC := {
-  to_JSON := AppResultC_to_Json;
-  from_JSON := AppResultC_from_JSON
-}.
+Global Instance Jsonifiable_AppResultC `{Jsonifiable ASP_ARGS} : Jsonifiable AppResultC.
+eapply Build_Jsonifiable with (to_JSON := AppResultC_to_Json) (from_JSON := AppResultC_from_JSON).
+induction a; simpl in *; intuition; eauto;
+repeat find_rewrite; eauto;
+repeat rewrite canonical_stringification in *; eauto;
+clear IHa;
+repeat (
+  match goal with
+  | a : Split |- _ => destruct a
+  | a : ASP |- _ => destruct a
+  | a : FWD |- _ => destruct a
+  | a : ASP_PARAMS |- _ => destruct a
+  | a : SP |- _ => destruct a
+  | a : RawEv |- _ => 
+      induction a; simpl in *; intuition; eauto;
+      simpl in *;
+      repeat (break_match; simpl in *; try congruence);
+      repeat find_injection; eauto;
+      repeat rewrite canonical_stringification in *; eauto; try congruence;
+      repeat rewrite canonical_jsonification in *; eauto; try congruence
+  | a : ASP_ARGS |- _ => 
+      induction a; simpl in *; intuition; eauto;
+      simpl in *;
+      repeat (break_match; simpl in *; try congruence);
+      repeat find_injection; eauto;
+      rewrite canonical_stringification in *; try congruence
+  end; simpl in *; intuition; eauto;
+  repeat rewrite canonical_jsonification; eauto).
+Defined.
 
 Close Scope string_scope.
 
