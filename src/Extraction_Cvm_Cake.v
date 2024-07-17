@@ -32,7 +32,9 @@ Extract Constant get_ev => "bind get (fn st => ret (st_ev st)) : cvm_st -> coq_E
 *)
 
 Separate Extraction 
-    flexible_mechanisms run_cvm manifest_compiler 
+    flexible_mechanisms flexible_mechanisms_evidence
+    run_cvm manifest_compiler 
     Jsonifiable_AM_Library Jsonifiable_Manifest
 		handle_AM_request end_to_end_mangen_final
+    run_demo_client_AM
     Jsonifiable_Evidence_Plc_list Jsonifiable_Term_Plc_list.

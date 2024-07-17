@@ -20,7 +20,8 @@ Import ListNotations.
 Set Nested Proofs Allowed.
 *)
 
-Definition am_sendReq (req_plc : Plc) (t:Term) (uuid : UUID) (authTok:ReqAuthTok) (e:RawEv) : ResultT RawEv string :=
+Definition am_sendReq (req_plc : Plc) (t:Term) (uuid : UUID) (* (authTok:ReqAuthTok) *)
+   (e:RawEv) : ResultT RawEv string :=
   let req := mkPRReq t req_plc e in 
   let js := ProtocolRunRequest_to_JSON req in
   let resp_res := make_JSON_Network_Request uuid js in
@@ -64,7 +65,7 @@ Definition gen_authEvC_if_some (ot:option Term) (uuid : UUID) (myPlc:Plc) (init_
   match ot with
   | Some auth_phrase =>
     let '(evc init_rawev_auth init_et_auth) := init_evc in
-    match am_sendReq myPlc auth_phrase uuid mt_evc init_rawev_auth with
+    match am_sendReq myPlc auth_phrase uuid (* mt_evc *) init_rawev_auth with
     | errC msg => ret (evc [] mt)
     | resultC auth_rawev =>
       let auth_et := eval auth_phrase myPlc init_et_auth in
@@ -73,13 +74,24 @@ Definition gen_authEvC_if_some (ot:option Term) (uuid : UUID) (myPlc:Plc) (init_
   | None => ret (evc [] mt)
   end.
 
-Definition run_appraisal_client (t:Term) (p:Plc) (et:Evidence) (re:RawEv) (addr:UUID) : ResultT AppResultC string :=
+Definition run_appraisal_client (t:Term) (p:Plc) (et:Evidence) (re:RawEv) 
+  (addr:UUID) : ResultT AppResultC string :=
   let expected_et := eval t p et in 
   am_sendReq_app addr t p et re.
   (*
   let comp := gen_appraise_AM expected_et re in
   run_am_app_comp comp mtc_app.
   *)
+
+Definition run_demo_client_AM (t:Term) (top_plc:Plc) (att_plc:Plc) (et:Evidence) 
+  (re:RawEv) (attester_addr:UUID) (appraiser_addr:UUID) : ResultT AppResultC string :=
+    let att_result := am_sendReq top_plc t attester_addr re in 
+    match att_result with 
+    | errC msg => errC msg 
+    | resultC att_rawev => 
+        run_appraisal_client t att_plc et att_rawev appraiser_addr
+    end.
+
 
 Definition get_am_clone_uuid : AM UUID := 
   ac <- get_AM_amConfig ;; 
