@@ -39,7 +39,7 @@ Definition checkNonce' (nid:nat) (nonceCandidate:BS) : AM BS :=
   ret (checkNonce nonceGolden nonceCandidate).
 
 Definition check_asp_EXTD (params:ASP_PARAMS) (ls:RawEv) (ac : AM_Config) : ResultT RawEv DispatcherErrors :=
-  ac.(app_aspCb) params ls.
+  ac.(aspCb) params ls.
 
 Definition check_asp_EXTD' (params:ASP_PARAMS) (p:Plc) (sig:RawEv) (ls:RawEv) : AM RawEv :=
   ac <- get_AM_amConfig ;;

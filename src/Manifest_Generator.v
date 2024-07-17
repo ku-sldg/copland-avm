@@ -221,7 +221,7 @@ Definition attify_terms' (pr:(Term * Plc)) : Term :=
 Definition attify_terms (ls:list (Term * Plc)) : list Term :=
   List.map attify_terms' ls.
 
-Definition app_aspid_manifest_update (i:ASP_ID) (p:Plc) (m:Manifest) : Manifest := 
+Definition app_aspid_manifest_update (i:ASP_ID) (m:Manifest) : Manifest := 
   let '{| my_abstract_plc := oldPlc;
           asps := oldasps; 
           appraisal_asps := old_app_asps;
@@ -229,7 +229,7 @@ Definition app_aspid_manifest_update (i:ASP_ID) (p:Plc) (m:Manifest) : Manifest 
           pubKeyPlcs := oldContext; 
           targetPlcs := oldTargets ;
           policy := oldPolicy |} := m in
-  (Build_Manifest oldPlc oldasps (manset_add (i,p) old_app_asps) oldKnowsOf oldContext oldTargets oldPolicy).
+  (Build_Manifest oldPlc oldasps (manset_add i old_app_asps) oldKnowsOf oldContext oldTargets oldPolicy).
 
 Fixpoint manifest_generator_app'' (et:Evidence) (m:Manifest) : Manifest :=
   match et with 
@@ -240,8 +240,7 @@ Fixpoint manifest_generator_app'' (et:Evidence) (m:Manifest) : Manifest :=
     | (EXTD n) => 
       match ps with 
       | asp_paramsC a _ targ _ =>
-          manifest_generator_app'' e' 
-            (app_aspid_manifest_update targ a m)
+          manifest_generator_app'' e' (app_aspid_manifest_update a m)
       end 
     | ENCR => 
       match ps with 

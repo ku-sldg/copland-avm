@@ -22,54 +22,38 @@ Fixpoint minify_mapD {A B : Type} `{HA : EqClass A} `{HB : EqClass B} (m : MapD 
   | cons (k,v) tl => if (f k) then cons (k,v) (minify_mapD tl f) else minify_mapD tl f
   end.
 
-Definition generate_ASP_dispatcher' (am : Manifest) (aspBin : FS_Location) (par : ASP_PARAMS) (rawEv : RawEv) : ResultT RawEv DispatcherErrors :=
+Definition generate_ASP_dispatcher' (am : Manifest) (al : AM_Library) (aspBin : FS_Location) (par : ASP_PARAMS) (rawEv : RawEv) : ResultT RawEv DispatcherErrors :=
   let (aspid, args, targ_plc, targ) := par in
   let asps := am.(asps) in
+  let appr_asps := am.(appraisal_asps) in
+  let asp_to_concrete_map := al.(Lib_ASPs) in
+  let is_attest_asp := if (in_dec_set aspid asps) then true else false in
+  let is_appr_asp := if (in_dec_set aspid appr_asps) then true else false in
     (* check is the ASPID is available *) 
-    if (in_dec_set aspid asps) 
-    then
-      let asp_req := (mkASPRReq aspid args targ_plc targ rawEv) in
-      let js_req := ASPRunRequest_to_JSON asp_req in
-      let resp_res := make_JSON_FS_Location_Request aspBin aspid js_req in
-      match resp_res with
-      | resultC js_resp =>
-          match JSON_to_ASPRunResponse js_resp with
-          | resultC r => 
-              let '(mkASPRResp succ bs) := r in
-              resultC bs
+    if (orb is_attest_asp is_appr_asp)
+    then 
+      match (map_get asp_to_concrete_map aspid) with
+      | Some conc_asp_loc => 
+          let asp_req := (mkASPRReq aspid args targ_plc targ rawEv) in
+          let js_req := ASPRunRequest_to_JSON asp_req in
+          let resp_res := make_JSON_FS_Location_Request aspBin conc_asp_loc js_req in
+          match resp_res with
+          | resultC js_resp =>
+              match JSON_to_ASPRunResponse js_resp with
+              | resultC r => 
+                  let '(mkASPRResp succ bs) := r in
+                  resultC bs
+              | errC msg => errC (Runtime msg)
+              end
           | errC msg => errC (Runtime msg)
           end
-      | errC msg => errC (Runtime msg)
+      | None => errC Unavailable
       end
     else errC Unavailable.
 
 (* This function will be a dispatcher for either local ASPS to CakeMLCallback, or pass them off to the ASP_Server *)
-Definition generate_ASP_dispatcher `{HID : EqClass ID_Type} (am : Manifest) (aspBin : FS_Location) : (ASPCallback DispatcherErrors) :=
-  (generate_ASP_dispatcher' am aspBin). 
-
-Definition generate_appraisal_ASP_dispatcher' (am : Manifest) (aspBin : FS_Location) (par : ASP_PARAMS) (rawEv : RawEv) :=
-  let (aspid, args, targ_plc, targ) := par in
-  let asps := am.(appraisal_asps) in
-    if (in_dec_set (targ_plc, aspid) asps) 
-    then
-      let asp_req := (mkASPRReq aspid args targ_plc targ rawEv) in
-      let js_req := ASPRunRequest_to_JSON asp_req in
-      let resp_res := make_JSON_FS_Location_Request aspBin aspid js_req in
-      match resp_res with
-      | resultC js_resp =>
-          match JSON_to_ASPRunResponse js_resp with
-          | resultC r => 
-              let '(mkASPRResp succ ev) := r in
-              resultC ev
-          | errC msg => errC (Runtime msg)
-          end
-      | errC msg => errC (Runtime msg)
-      end
-    else errC Unavailable.
-
-Definition generate_appraisal_ASP_dispatcher `{HID : EqClass ID_Type} (am : Manifest) (aspBin : FS_Location) : (ASPCallback DispatcherErrors) :=
-  (generate_appraisal_ASP_dispatcher' am aspBin). 
-
+Definition generate_ASP_dispatcher `{HID : EqClass ID_Type} (am : Manifest) (al : AM_Library) (aspBin : FS_Location) : (ASPCallback DispatcherErrors) :=
+  (generate_ASP_dispatcher' am al aspBin). 
 
 (* This function will lookup for either local Plcs to UUID, or pass them off to the Plc Server *)
 Definition generate_Plc_dispatcher `{HID : EqClass ID_Type} (al : AM_Library) (am : Manifest) 
@@ -113,8 +97,7 @@ This function will be used in extraction to either dispatch ASPs to the ASP serv
 {|
   absMan   := m ;
   am_clone_addr := (UUID_AM_Clone al) ;
-  aspCb     := (generate_ASP_dispatcher m aspBin) ;
-  app_aspCb := (generate_appraisal_ASP_dispatcher m aspBin);
+  aspCb     := (generate_ASP_dispatcher m al aspBin) ;
   plcCb     := (generate_Plc_dispatcher al m);
   pubKeyCb  := (generate_PubKey_dispatcher al m);
 |}.

@@ -17,15 +17,14 @@ Import ListNotations.
 
 
 Definition lib_supports_manifest (al : AM_Library) (am : Manifest) : Prop :=
-  (* (forall (a : ASP_ID), In_set a am.(asps) -> 
-    exists aloc, Maps.map_get al.(Lib_ASPS) a = Some aloc) /\ *)
+  (forall (a : ASP_ID), In_set a am.(asps) -> 
+    exists aloc, Maps.map_get al.(Lib_ASPs) a = Some aloc) /\
   (forall (up : Plc), In_set up am.(uuidPlcs) -> 
     exists b, Maps.map_get al.(Lib_Plcs) up = Some b) /\
   (forall (pkp : Plc), In_set pkp am.(pubKeyPlcs) -> 
-    exists b, Maps.map_get al.(Lib_PubKeys) pkp = Some b).
-     (* /\
-  (forall (a : (Plc*ASP_ID)), In_set a am.(appraisal_asps) -> 
-    exists aloc, Maps.map_get al.(Lib_Appraisal_ASPS) a = Some aloc). *)
+    exists b, Maps.map_get al.(Lib_PubKeys) pkp = Some b) /\
+  (forall (a : ASP_ID), In_set a am.(appraisal_asps) -> 
+    exists aloc, Maps.map_get al.(Lib_ASPs) a = Some aloc).
 
 Ltac unfolds :=
   (* repeat monad_unfold; *)
@@ -101,6 +100,15 @@ Require Import Helpers_CvmSemantics.
 Ltac kill_map_none :=
   match goal with
   | H1 : In_set ?x ?l,
+    H3 : map_get ?l' ?x = None,
+    H4 : forall _ : _, In_set _ ?l -> _
+      |- _ => 
+    let H' := fresh "H'" in
+    let H'' := fresh "H'" in
+    let H''' := fresh "H'" in
+    eapply H4 in H1 as H';
+    destruct H'; find_rewrite; congruence
+  | H1 : In_set ?x ?l,
     H3 : map_get (_ ?l' ?fn) ?x = None,
     H4 : forall _ : _, In_set _ ?l -> _
       |- _ => 
@@ -127,7 +135,10 @@ Proof.
   destruct amConf; simpl in *;
   destruct amLib; simpl in *.
   unfold manifest_compiler in H0; repeat find_injection;
-  simpl in *; repeat ff; try congruence.
+  simpl in *; repeat ff; try congruence;
+  unfold lib_supports_manifest in H; intuition; 
+  simpl in *; intuition; eauto; try congruence;
+  kill_map_none.
 Qed.
 
 Lemma never_change_am_conf : forall t st res st',
@@ -497,10 +508,10 @@ Definition manifest_support_am_config (m : Manifest) (ac : AM_Config) : Prop :=
     (exists res, ac.(pubKeyCb) p = resultC res) \/
     (exists errStr, ac.(pubKeyCb) p = errC (Runtime errStr))) /\
 
-    (forall p a, In_set (p,a) (m.(appraisal_asps)) -> 
-    forall l targid ev,
-    (exists res, ac.(app_aspCb) (asp_paramsC a l p targid) ev = resultC res) \/
-    (exists errStr, ac.(app_aspCb) (asp_paramsC a l p targid) ev = errC (Runtime errStr))).
+    (forall a, In_set a (m.(appraisal_asps)) -> 
+    forall l targ targid ev,
+    (exists res, ac.(aspCb) (asp_paramsC a l targ targid) ev = resultC res) \/
+    (exists errStr, ac.(aspCb) (asp_paramsC a l targ targid) ev = errC (Runtime errStr))).
 
 
 Theorem manifest_support_am_config_compiler : forall absMan amLib aspBin,
@@ -509,8 +520,9 @@ Theorem manifest_support_am_config_compiler : forall absMan amLib aspBin,
 Proof.
   unfold lib_supports_manifest, manifest_support_am_config, 
     manifest_compiler, generate_PubKey_dispatcher, generate_Plc_dispatcher in *;
-  simpl in *; intuition;
-  repeat break_match; simpl in *; intuition; eauto;
+  simpl in *; repeat ff; intuition;
+  repeat break_match; simpl in *; eauto with *; intuition; eauto;
+  try kill_map_none;
   match goal with
   | H:  context[ map_get (minify_mapC ?l ?filt) ?a],
     H1: forall a' : Plc, _ -> (exists x : _, map_get _ _ = Some x) |- _ => 
@@ -2354,7 +2366,7 @@ Proof.
   unfold supports_am, manifest_subset,
     generate_Plc_dispatcher, generate_PubKey_dispatcher in *;
   intuition; simpl in *; eauto;
-  repeat break_match; simpl in *; intuition; subst; eauto;
+  repeat break_match; simpl in *; repeat ff; intuition; subst; eauto;
   unfold supports_am, manifest_subset,
     generate_Plc_dispatcher, generate_PubKey_dispatcher in *;
   try congruence; eauto; try find_injection;
@@ -2372,19 +2384,14 @@ Proof.
         eapply H2
   end; repeat break_match; simpl in *; intuition; subst; eauto; 
   try congruence;
-  repeat match goal with
-  | [H : forall (x : ASP_ID) (l : ASP_ARGS) (targ : Plc) (targid : TARG_ID) (ev : RawEv), _,
-    H1 : make_JSON_FS_Location_Request _ _ (_ {| asprreq_asp_id := ?a; asprreq_asp_args := ?l; asprreq_targ_plc := ?targ; asprreq_targ := ?targid; asprreq_rawev := ?ev |}) = _ |- _] =>
-      let H' := fresh "H'" in
-      pose proof (H a l targ targid ev) as H';
-      clear H;
-      rewrite H1 in H';
-      try match goal with
-      | H2 : JSON_to_ASPRunResponse _ = _ |- _ => 
-          rewrite H2 in H'
-      end;
-      simpl in *
-  end; repeat ff; eauto with *.
+  try match goal with
+  | H : context[ _ -> aspCb _ _ _ = errC _ ] |- aspCb _ _ _ = errC _ =>
+    eapply H; repeat ff; try congruence;
+    exfalso; eauto
+  | H : context[ _ -> aspCb _ _ _ = resultC _ ] |- aspCb _ _ _ = resultC _ =>
+    eapply H; repeat ff; try congruence;
+    exfalso; eauto
+  end.
 Qed.
 Global Hint Resolve supports_am_mancomp_subset : core.
 

@@ -5,50 +5,11 @@
 Require Import Manifest Manifest_Compiler Manifest_Generator ID_Type
   Maps Term_Defs List Cvm_St Cvm_Impl ErrorStMonad_Coq StructTactics 
   Cvm_Monad EqClass Manifest_Admits Auto.
-Require Import Manifest_Generator_Facts Eqb_Evidence.
+Require Import Manifest_Generator_Facts Eqb_Evidence ManCompSoundness.
 
 Require Import Coq.Program.Tactics Lia.
 
 Import ListNotations.
-
-(*
-Set Nested Proofs Allowed.
-*)
-
-
-Definition supports_am_app (ac1 ac2 : AM_Config) : Prop :=
-  (forall aid l targ targid ev,
-      (forall res, 
-      ac1.(app_aspCb) (asp_paramsC aid l targ targid) ev = resultC res ->
-      ac2.(app_aspCb) (asp_paramsC aid l targ targid) ev = resultC res)) /\
-  (forall aid l targ targid ev errStr,
-      ac1.(app_aspCb) (asp_paramsC aid l targ targid) ev = errC (Runtime errStr) ->
-      ac2.(app_aspCb) (asp_paramsC aid l targ targid) ev = errC (Runtime errStr)) /\ 
-  (forall p,
-      (forall res, 
-      ac1.(pubKeyCb) p = resultC res ->
-      ac2.(pubKeyCb) p = resultC res)) /\
-  (forall p errStr,
-      ac1.(pubKeyCb) p = errC (Runtime errStr) ->
-      ac2.(pubKeyCb) p = errC (Runtime errStr)).
-
-Theorem supports_am_app_refl : forall ac1,
-  supports_am_app ac1 ac1.
-Proof.
-  unfold supports_am_app; intuition.
-Qed.
-
-Theorem supports_am_app_trans : forall ac1 ac2 ac3,
-  supports_am_app ac1 ac2 ->
-  supports_am_app ac2 ac3 ->
-  supports_am_app ac1 ac3.
-Proof.
-  unfold supports_am_app; intuition.
-Qed.
-
-Local Hint Resolve supports_am_app_refl : core.
-Local Hint Resolve supports_am_app_trans : core.
-
 
 Fixpoint am_config_support_exec_app (e : Evidence) (ac : AM_Config) : Prop :=
     match e with
@@ -67,8 +28,8 @@ Fixpoint am_config_support_exec_app (e : Evidence) (ac : AM_Config) : Prop :=
         | (EXTD n) => 
             forall rawEv, 
             (
-            ( exists res, ac.(app_aspCb) ps rawEv = resultC res) \/
-              (exists errStr, ac.(app_aspCb) ps rawEv = errC (Runtime errStr))) /\ 
+            ( exists res, ac.(aspCb) ps rawEv = resultC res) \/
+              (exists errStr, ac.(aspCb) ps rawEv = errC (Runtime errStr))) /\ 
 
             am_config_support_exec_app e' ac
         | KEEP => 
@@ -79,8 +40,8 @@ Fixpoint am_config_support_exec_app (e : Evidence) (ac : AM_Config) : Prop :=
         exists ac1 ac2, 
         (am_config_support_exec_app e1 ac1) /\ 
         (am_config_support_exec_app e2 ac1) /\ 
-        supports_am_app ac1 ac /\
-        supports_am_app ac2 ac
+        supports_am ac1 ac /\
+        supports_am ac2 ac
     end.
 
 Require Import AM_St Impl_appraisal.
@@ -376,7 +337,7 @@ Theorem well_formed_am_config_impl_executable_app : forall et amConf ls,
   am_config_support_exec_app et amConf ->
   et_size et = length ls -> 
   forall st,
-  supports_am_app amConf (st.(amConfig)) ->
+  supports_am amConf (st.(amConfig)) ->
   has_nonces (nonce_ids_et et) (st.(am_nonceMap)) -> 
     (exists ec st',
         (gen_appraise_AM et ls) st = (resultC ec, st')) \/ 
@@ -455,10 +416,10 @@ Proof.
         ff.
 
         ++++
-          unfold supports_am_app in *.
+          unfold supports_am in *.
           destruct_conjs.
-          specialize H6 with (p:=p0) (res:=H).
-          find_apply_hyp_hyp.
+          (* specialize H6 with (p:=p0) (res:=H). *)
+          find_eapply_hyp_hyp.
           find_rewrite.
           solve_by_inversion.
 
@@ -563,9 +524,8 @@ Proof.
 
       assert (pubKeyCb (amConfig a) p0 = errC (Runtime H)). (* TODO: add errStr *)
       {
-        unfold supports_am_app in *.
+        unfold supports_am in *.
         destruct_conjs.
-        specialize H6 with (p:=p0).
         eauto.
       }
       find_rewrite.
@@ -602,14 +562,14 @@ Proof.
       door.
       +++
         ff.
-        unfold supports_am_app in *.
+        unfold supports_am in *.
         destruct_conjs.
         destruct a.
         find_eapply_hyp_hyp.
         find_rewrite; congruence.
       +++
       ff.
-      unfold supports_am_app in *.
+      unfold supports_am in *.
       destruct_conjs.
       destruct a.
       find_eapply_hyp_hyp.
@@ -669,12 +629,8 @@ Proof.
     edestruct IHet1 with (ls := firstn (et_size et1) ls).
     eassumption.
     2: {
-      unfold supports_am_app in *.
-      destruct_conjs.
-      split; try eauto.
-      split.
-      eauto.
-      split; eauto.
+      unfold supports_am in *.
+      destruct_conjs; repeat ff; intuition; eauto.
     }
     2: {
       unfold nonce_ids_et.
@@ -709,12 +665,8 @@ Proof.
     eassumption.
 
     2: {
-      unfold supports_am_app in *.
-      destruct_conjs.
-      split; try eauto.
-      split.
-      eauto.
-      split; eauto.
+      unfold supports_am in *.
+      destruct_conjs; repeat ff; intuition; eauto.
     }
 
     2: {
@@ -792,8 +744,6 @@ Proof.
       eauto.
 Qed.
 
-Require Import ManCompSoundness.
-
 Fixpoint manifest_support_term_app (m : Manifest) (e : Evidence) : Prop :=
     match e with
     | mt => True 
@@ -803,7 +753,7 @@ Fixpoint manifest_support_term_app (m : Manifest) (e : Evidence) : Prop :=
         | (EXTD n) => 
           match ps with 
           | asp_paramsC a _ targ  _ => 
-              In_set (targ,a) m.(appraisal_asps) /\ 
+              In_set a m.(appraisal_asps) /\ 
               manifest_support_term_app m e'
           end
         | ENCR => 
@@ -835,13 +785,13 @@ Proof.
   repeat (try break_match; simpl in *; intuition; eauto).
   - pose proof (IHet1 absMan amConf); 
       pose proof (IHet2 absMan amConf); intuition.
-      exists amConf, amConf; eauto.
+      repeat eexists; eauto.
 Qed.
 
 Lemma manifest_supports_term_sub_app : forall m1 m2 et,
-manifest_subset m1 m2 ->
-manifest_support_term_app m1 et -> 
-manifest_support_term_app m2 et.
+  manifest_subset m1 m2 ->
+  manifest_support_term_app m1 et -> 
+  manifest_support_term_app m2 et.
 Proof.
   intros.
   generalizeEverythingElse et.
@@ -1037,7 +987,7 @@ Proof.
     assert (manifest_subset  {|
       my_abstract_plc := my_abstract_plc;
       asps := asps;
-      appraisal_asps := manset_add (p0, a0) appraisal_asps;
+      appraisal_asps := manset_add a0 appraisal_asps;
       uuidPlcs := uuidPlcs;
       pubKeyPlcs := pubKeyPlcs;
       targetPlcs := targetPlcs;
@@ -1048,7 +998,7 @@ Proof.
     {|
       my_abstract_plc := my_abstract_plc;
       asps := asps;
-      appraisal_asps := manset_add (p0, a0) appraisal_asps;
+      appraisal_asps := manset_add a0 appraisal_asps;
       uuidPlcs := uuidPlcs;
       pubKeyPlcs := pubKeyPlcs;
       targetPlcs := targetPlcs;
@@ -1111,7 +1061,7 @@ Theorem manifest_generator_compiler_soundness_app : forall et ls oldMan absMan a
     ).
 Proof.
   intros.
-  assert (supports_am_app amConf (st.(amConfig))) by ff.
+  assert (supports_am amConf (st.(amConfig))) by (find_rewrite; eauto using supports_am_refl).
 
   eapply well_formed_am_config_impl_executable_app.
   - unfold manifest_generator, e_empty in *; simpl in *.
@@ -1329,7 +1279,7 @@ Theorem manifest_generator_compiler_soundness_distributed_multiterm_app : forall
   et_size et = length bs ->
   forall st,
 
-  supports_am_app amConf st.(amConfig)  ->
+  supports_am amConf st.(amConfig)  ->
 
   has_nonces (nonce_ids_et et) (st.(am_nonceMap)) -> 
 

@@ -18,7 +18,7 @@ Import ListNotations.
 
 Definition make_JSON_Network_Request (uuid : UUID) (js : JSON) : ResultT JSON string. Admitted.
 
-Definition make_JSON_FS_Location_Request (dir : FS_Location) (aspid : ASP_ID) (js : JSON) : ResultT JSON string. Admitted.
+Definition make_JSON_FS_Location_Request (dir : FS_Location) (aspid : Concrete_ASP_ID) (js : JSON) : ResultT JSON string. Admitted.
 
 (** * Stub to simulate evidence collected by a parallel CVM instance *)
 Definition parallel_vm_thread (l:Loc) (t:Core_Term) (p:Plc) (e:EvC) : EvC.  Admitted.
