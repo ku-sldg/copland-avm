@@ -83,6 +83,11 @@ Definition run_appraisal_client (t:Term) (p:Plc) (et:Evidence) (re:RawEv)
   run_am_app_comp comp mtc_app.
   *)
 
+Definition stringify_AppResultC_json (v:AppResultC) : string := 
+  let appres_json := AppResultC_to_Json v in 
+    JSON_to_string appres_json.
+
+
 Definition run_demo_client_AM (t:Term) (top_plc:Plc) (att_plc:Plc) (et:Evidence) 
   (re:RawEv) (attester_addr:UUID) (appraiser_addr:UUID) : ResultT AppResultC string :=
     let att_result := am_sendReq top_plc t attester_addr re in 
