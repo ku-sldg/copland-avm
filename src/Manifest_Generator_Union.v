@@ -62,7 +62,6 @@ Check fold_right.
 fold_right
 	 : forall A B : Type, (B -> A -> A) -> A -> list B -> A
 *)
-
 Definition env_list_union (ls:list EnvironmentM) : EnvironmentM := 
     fold_right environment_union e_empty ls.
 
@@ -77,8 +76,9 @@ Definition mangen_app_plc (et:Evidence) (p:Plc) : Manifest :=
 Definition lift_manifest_to_env (m:Manifest) : EnvironmentM := 
   map_set e_empty (my_abstract_plc m) m.
 
-Definition manifest_generator_plcEvidence_list (ls:list (Evidence*Plc)) : list EnvironmentM := 
-  List.map (fun '(et,p) => manifest_generator_app et p) ls.
+Definition manifest_generator_plcEvidence_list (ls:list (Evidence*Plc)) (al : AM_Library) 
+    : ResultT (list EnvironmentM) string := 
+  result_map (fun '(et,p) => manifest_generator_app et p al) ls.
 
 (*
   let ms : list Manifest := List.map (fun '(et,p) => mangen_app_plc et p) ls in 
@@ -86,8 +86,12 @@ Definition manifest_generator_plcEvidence_list (ls:list (Evidence*Plc)) : list E
 *)
 
 
-Definition mangen_plcEvidence_list_union (ls:list (Evidence*Plc)) : EnvironmentM := 
-  env_list_union (manifest_generator_plcEvidence_list ls).
+Definition mangen_plcEvidence_list_union (ls:list (Evidence*Plc)) (al : AM_Library)
+    : ResultT EnvironmentM string := 
+  match (manifest_generator_plcEvidence_list ls al) with
+  | resultC ls' => resultC (env_list_union ls')
+  | errC e => errC e
+  end.
 
 
 (*
@@ -228,10 +232,14 @@ Definition update_pubkeys_env' (pubs:manifest_set Plc) (p:(Plc*Manifest)) : (Plc
 Definition update_pubkeys_env (pubs:manifest_set Plc) (env:EnvironmentM) : EnvironmentM := 
   map (update_pubkeys_env' pubs) env.
 
-Definition end_to_end_mangen' (ls: Evidence_Plc_list) (ts: Term_Plc_list) : EnvironmentM := 
-    let app_env := mangen_plcEvidence_list_union ls in (* singleton_plc_appraisal_environmentM myPlc ls in  *)
+Definition end_to_end_mangen' (ls: Evidence_Plc_list) (ts: Term_Plc_list) 
+      (al : AM_Library) : ResultT EnvironmentM string := 
+    let app_env := mangen_plcEvidence_list_union ls al in
     let att_env := mangen_plcTerm_list_union ts in 
-      environment_union app_env att_env.
+    match app_env with
+    | resultC app_env => resultC (environment_union app_env att_env)
+    | errC e => errC e
+    end.
 
 Definition manset_union_list{A : Type} `{HA : EqClass A} 
   (lss: manifest_set (manifest_set A)) : manifest_set A := 
@@ -244,14 +252,20 @@ Definition get_all_unique_places (ls: Term_Plc_list) (ets: Evidence_Plc_list) : 
   (* let ts_res_dup := concat lss in  *)
   manset_union ts_ps ets_ps.
 
-Definition end_to_end_mangen (ls: Evidence_Plc_list) (ts: Term_Plc_list) : EnvironmentM := 
+Definition end_to_end_mangen (ls: Evidence_Plc_list) (ts: Term_Plc_list) 
+    (al : AM_Library) : ResultT EnvironmentM string := 
   let ps := get_all_unique_places ts ls in 
-    update_pubkeys_env ps (update_knowsOf_myPlc_env (end_to_end_mangen' ls ts)).
+  match (end_to_end_mangen' ls ts al) with
+  | resultC env => resultC (update_pubkeys_env ps (update_knowsOf_myPlc_env env))
+  | errC e => errC e
+  end.
 
-
-
-Definition end_to_end_mangen_final (ls: Evidence_Plc_list) (ts: Term_Plc_list) : list Manifest :=
-  environment_to_manifest_list (end_to_end_mangen ls ts).
+Definition end_to_end_mangen_final (ls: Evidence_Plc_list) (ts: Term_Plc_list) 
+    (al : AM_Library) : ResultT (list Manifest) string :=
+  match (end_to_end_mangen ls ts al) with
+  | resultC env => resultC (environment_to_manifest_list env)
+  | errC e => errC e
+  end.
 
 
 (*

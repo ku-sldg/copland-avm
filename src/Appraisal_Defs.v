@@ -1,15 +1,15 @@
 (* Appraisal primitive implementations:  evidence unbundling, nonce generation, appraisal ASP dispatch.  *)
 
-Require Import Term_Defs_Core Term_Defs Manifest AM_St EqClass.
+Require Import String Term_Defs_Core Term_Defs Manifest AM_St EqClass Maps.
 
-Require Import Appraisal_IO_Stubs ErrorStMonad_Coq AM_Monad AM_St Manifest_Admits ErrorStringConstants.
+Require Import Appraisal_IO_Stubs ErrorStMonad_Coq AM_Monad AM_St Manifest_Admits ErrorStringConstants Manifest.
 
 
 Axiom decrypt_prim_runtime : forall bs params pk e,
   decrypt_bs_to_rawev_prim bs params pk = errC e -> e = (Runtime errStr_decryption_prim).
 
 Definition check_et_size (et:Evidence) (ls:RawEv) : ResultT unit DispatcherErrors := 
-  match (eqb (et_size et) (length ls)) with 
+  match (eqb (et_size et) (List.length ls)) with 
   | true => resultC tt 
   | false => errC (Runtime errStr_et_size)
   end.
@@ -42,10 +42,15 @@ Definition check_asp_EXTD (params:ASP_PARAMS) (ls:RawEv) (ac : AM_Config) : Resu
   ac.(aspCb) params ls.
 
 Definition check_asp_EXTD' (params:ASP_PARAMS) (p:Plc) (sig:RawEv) (ls:RawEv) : AM RawEv :=
+  let '(asp_paramsC att_id args targ targid) := params in
   ac <- get_AM_amConfig ;;
-  match (check_asp_EXTD params (app sig ls) ac) with
-  | resultC r => ret r
-  | errC e => am_failm (am_dispatch_error e) (* (Runtime errStr_amNonce))  am_failm (am_dispatch_error e)) *)
+  match (map_get (ASP_to_APPR_ASP_Map ac) att_id) with
+  | Some appr_asp => 
+    match (check_asp_EXTD (asp_paramsC appr_asp args targ targid) (app sig ls) ac) with
+    | resultC r => ret r
+    | errC e => am_failm (am_dispatch_error e) 
+    end
+  | None => am_failm (am_dispatch_error (Runtime "We made it to appraisal without a translation for our attestation ASP"%string)) 
   end.
 
 

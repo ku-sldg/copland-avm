@@ -16,6 +16,18 @@ Fixpoint am_config_support_exec_app (e : Evidence) (ac : AM_Config) : Prop :=
     | mt => True 
     | nn _ => True (* TODO: how to account for nonce handling? *)
     | uu p fwd ps e' => 
+        let need_appr_asp :=
+          let '(asp_paramsC att_id arg targ targ_id) := ps in
+          match map_get (ASP_to_APPR_ASP_Map ac) att_id with
+          | Some appr_asp => 
+            (forall rawEv, 
+            (exists res, ac.(aspCb) (asp_paramsC appr_asp arg targ targ_id) rawEv = resultC res)
+            \/
+            (exists errStr, ac.(aspCb) (asp_paramsC appr_asp arg targ targ_id) rawEv = errC (Runtime errStr))
+            )
+          | None => False
+          end
+        in
         match fwd with 
         | ENCR => 
             match ps with 
@@ -23,17 +35,15 @@ Fixpoint am_config_support_exec_app (e : Evidence) (ac : AM_Config) : Prop :=
                 ((exists res, 
                   ac.(pubKeyCb) p = resultC res) \/ 
                 (exists errStr, ac.(pubKeyCb) p = errC (Runtime errStr))) /\ 
-                am_config_support_exec_app e' ac
+                am_config_support_exec_app e' ac /\
+                need_appr_asp
             end
         | (EXTD n) => 
-            forall rawEv, 
-            (
-            ( exists res, ac.(aspCb) ps rawEv = resultC res) \/
-              (exists errStr, ac.(aspCb) ps rawEv = errC (Runtime errStr))) /\ 
-
-            am_config_support_exec_app e' ac
+            am_config_support_exec_app e' ac /\
+            need_appr_asp
         | KEEP => 
-            am_config_support_exec_app e' ac
+            am_config_support_exec_app e' ac /\
+            need_appr_asp
         | _ => True
         end
     | ss e1 e2 => 
@@ -95,6 +105,7 @@ st = st'.
 Proof.
 induction n; intuition; repeat ff; eauto.
 Qed.
+Local Hint Resolve peel_n_am_immut : core.
 
 Require Import Appraisal_Defs.
 
@@ -118,6 +129,7 @@ unfold decrypt_bs_to_rawev' in *.
 monad_unfold.
 repeat (ff; try unfold am_falim in * ; eauto).
 Qed.
+Local Hint Resolve decrypt_amst_immut : core.
 
 Lemma peel_bs_am_works : forall ls st st' r,
 length ls > 0 -> 
@@ -194,143 +206,61 @@ Proof.
     eapply has_nonces_cumul; eauto.
 Qed.
 
+Lemma peel_bs_am_st_immut : forall ls st r st',
+  peel_bs_am ls st = (r, st') -> 
+  st = st'.
+Proof.
+  induction ls; simpl in *; intuition; eauto.
+  - invc H; eauto. 
+  - invc H; eauto. 
+Qed.
+Local Hint Resolve peel_bs_am_st_immut : core.
+
+Lemma checkNonce'_st_immut : forall n b st r st',
+  checkNonce' n b st = (r, st') -> 
+  st = st'.
+Proof.
+  unfold checkNonce'; repeat (ff; intuition; eauto).
+Qed.
+Local Hint Resolve checkNonce'_st_immut : core.
+
+Lemma check_asp_EXTD' : forall a p r1 r2 st st' r,
+  Appraisal_Defs.check_asp_EXTD' a p r1 r2 st = (r, st') -> 
+  st = st'.
+Proof.
+  unfold check_asp_EXTD'; repeat (ff; intuition; eauto).
+Qed.
+Local Hint Resolve check_asp_EXTD' : core.
+
 Lemma gen_appraise_AM_immut : forall et ls st st' r,
 gen_appraise_AM et ls st = (r, st') -> 
 st = st'.
 Proof.
   intros.
   generalizeEverythingElse et. 
-  induction et; intros.
-  -
-    ff.
-  -
-    ff.
-    ff.
-      +
-        eapply peel_bs_am_immut; eauto.
-      +
-        assert (st = a).
-        {
-          eapply peel_bs_am_immut; eauto.
-        }
-        subst.
-
-        unfold checkNonce' in *.
-        repeat ff.
-      +
-      assert (st = a).
-      {
-        eapply peel_bs_am_immut; eauto.
-      }
-      subst.
-
-      unfold checkNonce' in *.
-      repeat ff.
-  -
-    cbn in *.
-    break_match.
-    +
-    ff.
-    + (* ENCR *)
-    monad_unfold.
-    break_let.
-    break_match.
-    ++
-    ff.
-    eapply peel_bs_am_immut; eauto.
-    ++
-    break_let.
-    break_let.
-    break_let.
-    subst.
-    invc H.
-    break_match.
-    +++
-    assert (st = a0) by (eapply peel_bs_am_immut; eauto).
-    subst.
-    invc Heqp1.
-    eapply decrypt_amst_immut; eauto.
-    +++
-    break_let.
-    break_let.
-    invc Heqp1.
-    assert (a0 = a2).
-    {
-      eapply decrypt_amst_immut; eauto.
-    }
-    subst.
-    assert (st = a2) by (eapply peel_bs_am_immut; eauto).
-    subst.
-    break_match.
-    ++++
-      invc Heqp2.
-      eauto.
-    ++++
-      invc Heqp2.
-      eauto.
-  + (* EXTD *)
-  monad_unfold.
-  break_let.
-  break_match.
-  ++
-  ff.
-  eapply peel_n_am_immut; eauto.
-  ++
-  break_let.
-  break_let.
-  break_let.
-  subst.
-  invc H.
-  break_match.
-  +++
-  assert (st = a0) by (eapply peel_n_am_immut; eauto).
-  subst.
-  invc Heqp1.
-  unfold check_asp_EXTD' in *.
-  monad_unfold.
-  break_let.
-  ff.
-  unfold am_failm in *.
-  ff.
-  +++
-  break_let.
-  break_let.
-  invc Heqp1.
-  assert (a0 = a2).
-  {
-    invc Heqp3.
-    unfold check_asp_EXTD' in *.
-    monad_unfold.
-    break_let.
-    repeat (ff;   unfold am_failm in * ; eauto).
-  }
-  subst.
-  assert (st = a2) by (eapply peel_n_am_immut; eauto).
-  subst.
-  break_match.
-  ++++
-    invc Heqp2.
-    eauto.
-  ++++
-    invc Heqp2.
-    eauto.
-
-  +
-  subst.
-  ff.
-  +
-  eauto.
-
-  -
-  ff.
-  ff.
-  eauto.
-  assert (st = a) by eauto.
-  subst.
-  eauto.
-  assert (st = a) by eauto.
-  subst.
-  eauto.
+  induction et; intros; simpl in *; intuition; eauto.
+  - ff.
+  - repeat ff; simpl in *; eauto;
+    eapply peel_bs_am_st_immut in Heqp; subst; eauto. 
+  - repeat (break_match; try unfold res_bind, ";;", ret, am_failm in *; 
+      simpl in *; subst; intuition; eauto; 
+      try find_injection; try congruence); eauto;
+    repeat match goal with
+    | H : peel_n_am _ _ ?a = (_, ?a') |- _ =>
+        assert (a = a') by eauto; subst; eauto;
+        clear H
+    | H : Appraisal_Defs.check_asp_EXTD' _ _ _ _ ?a = (_, ?a') |- _ =>
+        assert (a = a') by eauto; subst; eauto;
+        clear H
+    | H : peel_bs_am _ ?a = (_, ?a') |- _ =>
+        assert (a = a') by eauto; subst; eauto;
+        clear H
+    | H : decrypt_bs_to_rawev' _ _ _ ?a = (_, ?a') |- _ =>
+        assert (a = a') by eauto; subst; eauto;
+        clear H
+    end.
+  - repeat ff;
+    repeat find_eapply_hyp_hyp; subst; eauto.
 Qed.
 
 Theorem well_formed_am_config_impl_executable_app : forall et amConf ls,
@@ -377,10 +307,9 @@ Proof.
     repeat break_match; simpl in *; subst; cbn;
     intuition; eauto;
     try (left; eauto; congruence).
-
     + (* COMP case *)
       left.
-      repeat eexists.
+      repeat eexists; eauto.
     + (* ENCR case *)
       simpl in *.
       destruct_conjs;
@@ -413,35 +342,17 @@ Proof.
         invc Heqp0.
         unfold decrypt_bs_to_rawev' in *.
         monad_unfold.
-        ff.
+        ff; eauto.
 
         ++++
-          unfold supports_am in *.
-          destruct_conjs.
-          (* specialize H6 with (p:=p0) (res:=H). *)
-          find_eapply_hyp_hyp.
-          find_rewrite.
-          solve_by_inversion.
+          eapply decrypt_prim_runtime in Heqr1.
+          subst; unfold am_failm in *; ff; eauto.
 
         ++++
           ff.
-          pose decrypt_prim_runtime.
-          subst.
-          find_apply_hyp_hyp.
-          unfold am_failm in *.
-          ff.
-          repeat eexists.
-          eauto.
-        ++++
-          unfold check_et_size in *.
-          ff.
-          unfold am_failm in *.
-          ff.
-          repeat eexists.
-          eauto.
+          unfold check_et_size, am_failm in *; ff; intuition; eauto.
     +++ (* decrypt success *)
-      break_let.
-      break_let.
+      repeat break_let.
       invc Heqp0.
 
       break_match.
@@ -449,21 +360,21 @@ Proof.
         subst.
         invc Heqp3.
 
-        assert (a = a3).
+        assert (a = a4).
         {
           eapply decrypt_amst_immut; eauto.
         }
         subst.
 
         assert ((exists ec st', 
-                  gen_appraise_AM et r2 a3  = (resultC ec, st')) \/ 
+                  gen_appraise_AM et r2 a4  = (resultC ec, st')) \/ 
                 (exists st' errStr, 
-                  gen_appraise_AM et r2 a3 = (errC (am_dispatch_error (Runtime errStr)), st'))
+                  gen_appraise_AM et r2 a4 = (errC (am_dispatch_error (Runtime errStr)), st'))
         ).
         {
           eapply IHet.
           3: {
-            eassumption.
+            eapply eq_refl.
           }
           3: {
             eauto.
@@ -521,22 +432,11 @@ Proof.
       monad_unfold.
       break_let.
       invc Heqp2.
-
-      assert (pubKeyCb (amConfig a) p0 = errC (Runtime H)). (* TODO: add errStr *)
-      {
-        unfold supports_am in *.
-        destruct_conjs.
-        eauto.
-      }
-      find_rewrite.
-      ff.
-      unfold am_failm in *.
-      ff.
-      eauto.
+      repeat ff; unfold am_failm in *; ff; eauto.
   + (* EXTD case *)
     ff.
 
-    assert (st = a0).
+    assert (st = a).
     {
       eapply peel_n_am_immut; eauto.
     }
@@ -544,7 +444,7 @@ Proof.
 
     assert (exists res, r = resultC res).
     {
-      eapply peel_n_am_works in Heqp0; eauto.
+      eapply peel_n_am_works in Heqp1; eauto.
       lia.
     }
     destruct_conjs.
@@ -552,47 +452,17 @@ Proof.
     repeat break_let.
     invc Heqp2.
 
-    break_match.
-    ++ (* check_asp_EXTD error *)
-      ff.
-      unfold check_asp_EXTD in *.
-
-      specialize H with (rawEv := (r0 ++ r1)).
-      destruct_conjs.
-      door.
-      +++
-        ff.
-        unfold supports_am in *.
-        destruct_conjs.
-        destruct a.
-        find_eapply_hyp_hyp.
-        find_rewrite; congruence.
-      +++
-      ff.
-      unfold supports_am in *.
-      destruct_conjs.
-      destruct a.
-      find_eapply_hyp_hyp.
-      find_rewrite; find_injection.
-      unfold am_failm in *; simpl in *;
-      find_injection; eauto.
+    repeat (ff; simpl in *; intuition; eauto).
+    ++ destruct (H3 (r0 ++ r1)); break_exists; repeat find_rewrite; eauto.
+      * unfold check_asp_EXTD in *; find_rewrite; congruence.
+      * unfold check_asp_EXTD in *; find_rewrite; find_injection; eauto;
+        unfold am_failm in *; ff; eauto.
     ++ (* check_asp_EXTD succeeds *)
-      subst.
-      break_let.
-      invc Heqp1.
-
-      assert (a0 = a2).
-      {
-        ff.
-      }
-      subst.
-
-      specialize H with (rawEv := (r0 ++ r1)).
-      destruct_conjs.
+      specialize H3 with (rawEv := (r0 ++ r1)).
       edestruct IHet.
       eassumption.
       2: {
-        eassumption.
+        eapply eq_refl.
       }
       2: {
         eassumption.
@@ -608,19 +478,9 @@ Proof.
       eassumption.
 
       destruct_conjs.
-      destruct H5.
-      +++
-        find_rewrite.
-        ff.
-        eauto.
-      +++
-      find_rewrite.
+      find_rewrite; try congruence.
       ff.
-      eauto.
-  + (* KILL case *)
-    repeat eexists.
-    ff.
-    eauto.
+  + repeat ff; eauto.
 
   - (* ss case *)
     cbn in *.
@@ -629,7 +489,6 @@ Proof.
     edestruct IHet1 with (ls := firstn (et_size et1) ls).
     eassumption.
     2: {
-      unfold supports_am in *.
       destruct_conjs; repeat ff; intuition; eauto.
     }
     2: {
@@ -744,46 +603,60 @@ Proof.
       eauto.
 Qed.
 
-Fixpoint manifest_support_term_app (m : Manifest) (e : Evidence) : Prop :=
+Fixpoint manifest_support_term_app (m : Manifest) (al : AM_Library) (e : Evidence) : Prop :=
     match e with
     | mt => True 
     | nn _ => True (* TODO: should we account for nonce presence here? *)
     | uu p fwd ps e' => 
+        let appr_asp_sup :=
+          let '(asp_paramsC att_id arg targ targ_id) := ps in
+          match map_get (ASP_Compat_Map al) att_id with
+          | Some appr_asp => 
+            In_set appr_asp m.(asps)
+          | None => False
+          end
+        in
         match fwd with 
         | (EXTD n) => 
           match ps with 
           | asp_paramsC a _ targ  _ => 
-              In_set a m.(appraisal_asps) /\ 
-              manifest_support_term_app m e'
+              manifest_support_term_app m al e' /\
+              appr_asp_sup
           end
         | ENCR => 
         match ps with 
         | asp_paramsC _ _ p _ =>
             In_set p m.(pubKeyPlcs) /\ 
-            manifest_support_term_app m e'
+            manifest_support_term_app m al e' /\
+            appr_asp_sup
         end
 
         | KEEP => 
-            manifest_support_term_app m e'
+            manifest_support_term_app m al e' /\
+            appr_asp_sup
 
         | _ => True
         end
         (* TODO:  support other fwd types here in the future... *)
     | ss e1 e2 => 
-        manifest_support_term_app m e1 /\ 
-        manifest_support_term_app m e2
+        manifest_support_term_app m al e1 /\ 
+        manifest_support_term_app m al e2
     end.
 
 
-Theorem manifest_support_am_config_impl_am_config_app: forall et absMan amConf,
+Theorem manifest_support_am_config_impl_am_config_app: forall et absMan amConf al,
     manifest_support_am_config absMan amConf ->
-    manifest_support_term_app absMan et ->
-    am_config_support_exec_app et amConf.
+    manifest_support_term_app absMan al et ->
+    am_config_support_exec_app et al amConf.
 Proof.
   induction et; simpl in *; intuition; eauto;
-  unfold manifest_support_am_config in *; intuition; eauto;
-  repeat (try break_match; simpl in *; intuition; eauto).
-  - pose proof (IHet1 absMan amConf); 
+  unfold manifest_support_am_config in *; intuition; eauto.
+  - repeat (try break_match; simpl in *; intuition; eauto).
+    edestruct (H1 _ H4); break_exists; eauto.
+    * subst. 
+    admit.
+  - repeat (try break_match; simpl in *; intuition; eauto).  
+    pose proof (IHet1 absMan amConf al); 
       pose proof (IHet2 absMan amConf); intuition.
       repeat eexists; eauto.
 Qed.

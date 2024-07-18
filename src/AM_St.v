@@ -13,10 +13,6 @@ Record AM_St : Type := mkAM_St
                            am_nonceId : N_ID; 
                            amConfig : AM_Config }.
 
-Definition empty_amst :=
-  mkAM_St map_empty 0 empty_am_config.
-
-
 Inductive AM_Error : Type := 
 | cvm_error : CVM_Error -> AM_Error
 | am_error : string -> AM_Error

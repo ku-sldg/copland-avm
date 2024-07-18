@@ -18,7 +18,6 @@ Set Nested Proofs Allowed.
 
 Definition manifest_subset (m1:Manifest) (m2:Manifest) : Prop :=
   (forall i, In_set i (asps m1) -> In_set i (asps m2)) /\
-  (forall pr, In_set pr (appraisal_asps m1) -> In_set pr (appraisal_asps m2)) /\
   (forall p, In_set p (uuidPlcs m1) -> In_set p (uuidPlcs m2)) /\
   (forall q, In_set q (pubKeyPlcs m1) -> In_set q (pubKeyPlcs m2)) /\
   (forall p, In_set p (targetPlcs m1) -> In_set p (targetPlcs m2)).
@@ -186,7 +185,7 @@ Proof.
   
     * assert (p <> p0). intros HC. rewrite <- eqb_eq in HC. 
       rewrite eqb_symm in HC; congruence.
-      erewrite (mapC_get_distinct_keys e2 p p0 _ _ H6 H2); eexists; intuition; eauto.
+      erewrite (mapC_get_distinct_keys e2 p p0 _ _ H5 H2); eexists; intuition; eauto.
 
   - (* at case *)
     eapply IHt; clear IHt; unfold Environment_subset in *; intuition.
@@ -208,8 +207,7 @@ Proof.
     eauto.
   -
     eauto.
-  -
-    eauto.
+  - eauto.
 Qed.
 
 Lemma manifest_generator_cumul' : forall t p e,
@@ -456,7 +454,7 @@ Proof.
   destruct_conjs.
   eexists.
   apply H1.
-  Qed.
+Qed.
 
 
 Lemma afafa : forall e p t p0 m m',

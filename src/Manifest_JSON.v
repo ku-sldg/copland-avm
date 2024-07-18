@@ -4,15 +4,13 @@ Import ListNotations ResultNotation.
 
 
 Definition Manifest_to_JSON (m : Manifest) : JSON :=
-  let '(Build_Manifest my_abstract_plc asps appr_asps uuidPlcs pubKeyPlcs targetPlcs policy) := m 
+  let '(Build_Manifest my_abstract_plc asps uuidPlcs pubKeyPlcs targetPlcs policy) := m 
   in
     JSON_Object [
       (MAN_ABS_PLC, 
         (InJSON_String (to_string my_abstract_plc)));
       (MAN_ASPS, 
         (InJSON_Array (manifest_set_to_list_InJson asps)));
-      (MAN_APPR_ASPS, 
-        (InJSON_Array (manifest_set_to_list_InJson appr_asps)));
       (MAN_UUID_PLCS, 
         (InJSON_Array (manifest_set_to_list_InJson uuidPlcs)));
       (MAN_PUBKEY_PLCS, 
@@ -26,7 +24,6 @@ Definition Manifest_to_JSON (m : Manifest) : JSON :=
 Definition JSON_to_Manifest (js : JSON) : ResultT Manifest string :=
   temp_ABS_PLC <- JSON_get_string MAN_ABS_PLC js;;
   temp_ASPS <- JSON_get_Array MAN_ASPS js;;
-  temp_APPR_ASPS <- JSON_get_Array MAN_APPR_ASPS js;;
   temp_UUID_PLCS <- JSON_get_Array MAN_UUID_PLCS js;;
   temp_PUBKEY_PLCS <- JSON_get_Array MAN_PUBKEY_PLCS js;;
   temp_TARGET_PLCS <- JSON_get_Array MAN_TARGET_PLCS js;;
@@ -34,12 +31,11 @@ Definition JSON_to_Manifest (js : JSON) : ResultT Manifest string :=
 
   ABS_PLC <- from_string temp_ABS_PLC;;
   ASPS <- list_InJson_to_manifest_set temp_ASPS;;
-  APPR_ASPS <- list_InJson_to_manifest_set temp_APPR_ASPS;;
   UUID_PLCS <- list_InJson_to_manifest_set temp_UUID_PLCS;;
   PUBKEY_PLCS <- list_InJson_to_manifest_set temp_PUBKEY_PLCS;;
   TARGET_PLCS <- list_InJson_to_manifest_set temp_TARGET_PLCS;;
   POLICY <- list_InJson_to_manifest_set_pairs temp_POLICY;;
-  resultC (Build_Manifest ABS_PLC ASPS APPR_ASPS UUID_PLCS PUBKEY_PLCS TARGET_PLCS POLICY).
+  resultC (Build_Manifest ABS_PLC ASPS UUID_PLCS PUBKEY_PLCS TARGET_PLCS POLICY).
 
 Global Instance Jsonifiable_Manifest : Jsonifiable Manifest. 
 eapply Build_Jsonifiable with 

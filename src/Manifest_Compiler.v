@@ -25,12 +25,9 @@ Fixpoint minify_mapD {A B : Type} `{HA : EqClass A} `{HB : EqClass B} (m : MapD 
 Definition generate_ASP_dispatcher' (am : Manifest) (al : AM_Library) (aspBin : FS_Location) (par : ASP_PARAMS) (rawEv : RawEv) : ResultT RawEv DispatcherErrors :=
   let (aspid, args, targ_plc, targ) := par in
   let asps := am.(asps) in
-  let appr_asps := am.(appraisal_asps) in
   let asp_to_concrete_map := al.(Lib_ASPs) in
-  let is_attest_asp := if (in_dec_set aspid asps) then true else false in
-  let is_appr_asp := if (in_dec_set aspid appr_asps) then true else false in
     (* check is the ASPID is available *) 
-    if (orb is_attest_asp is_appr_asp)
+    if (in_dec_set aspid asps)
     then 
       match (map_get asp_to_concrete_map aspid) with
       | Some conc_asp_loc => 
@@ -97,6 +94,7 @@ This function will be used in extraction to either dispatch ASPs to the ASP serv
 {|
   absMan   := m ;
   am_clone_addr := (UUID_AM_Clone al) ;
+  ASP_to_APPR_ASP_Map := (ASP_Compat_Map al);
   aspCb     := (generate_ASP_dispatcher m al aspBin) ;
   plcCb     := (generate_Plc_dispatcher al m);
   pubKeyCb  := (generate_PubKey_dispatcher al m);
