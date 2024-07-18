@@ -68,9 +68,24 @@ Definition filehash_auth_phrase : Term :=
 Definition filehash_demo_evidence_type : Evidence := 
   eval filehash_auth_phrase P0 (nn 0).
 
+Definition cert_demo_evidence_type : Evidence := 
+  eval certificate_style P0 (nn 0).
+
+Definition bg_demo_evidence_type : Evidence := 
+  eval background_check P0 (nn 0).
+
+Definition parmut_1_demo_evidence_type : Evidence := 
+  eval parallel_mutual_1 P0 (nn 0).
+
+Definition parmut_2_demo_evidence_type : Evidence := 
+    eval parallel_mutual_2 P0 (nn 0).
+
 Definition flexible_mechanisms := 
   [certificate_style; background_check; 
    parallel_mutual_1; parallel_mutual_2; layered_background_check; 
    filehash_auth_phrase].
 
-Definition flexible_mechanisms_evidence := [filehash_demo_evidence_type].
+Definition flexible_mechanisms_evidence :=
+   [filehash_demo_evidence_type; cert_demo_evidence_type; 
+    bg_demo_evidence_type; parmut_1_demo_evidence_type; 
+    parmut_2_demo_evidence_type].
