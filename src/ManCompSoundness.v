@@ -171,7 +171,13 @@ Definition supports_am (ac1 ac2 : AM_Config) : Prop :=
       ac2.(pubKeyCb) p = errC (Runtime errStr)) /\
   (forall p errStr, 
       ac1.(plcCb) p = errC (Runtime errStr) ->
-      ac2.(plcCb) p = errC (Runtime errStr)).
+      ac2.(plcCb) p = errC (Runtime errStr)) /\
+  (forall a a',
+      map_get ac1.(ASP_to_APPR_ASP_Map) a = Some a' ->
+      map_get ac2.(ASP_to_APPR_ASP_Map) a = Some a') /\
+  (forall a,
+      map_get ac1.(ASP_to_APPR_ASP_Map) a = None ->
+      map_get ac2.(ASP_to_APPR_ASP_Map) a = None).
 
 Theorem supports_am_refl : forall ac1,
   supports_am ac1 ac1.
@@ -326,15 +332,18 @@ Proof.
       simpl in *; subst; intuition; 
       destruct_conjs;
       eauto; try congruence);
-    unfold supports_am in *; intuition;
-
-    erewrite H7 in *; try congruence;
-    try find_injection; eauto.
-
-    right.
-    repeat eexists.
-    erewrite H6.
-    eauto.
+    unfold supports_am in *; intuition.
+    match goal with
+    | H : forall _ _, (plcCb ?ac1 _ = errC _ -> plcCb ?ac2 _ = errC _) |- _ =>
+      match goal with
+      | H1 : plcCb ac1 _ = errC _ ,
+        H2 : plcCb ac2 _ = errC _ |- _ =>
+          let H' := fresh "H'" in
+          pose proof (H _ _ H1) as H';
+          rewrite H2 in H';
+          try find_injection; eauto
+      end
+    end.
   - subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
       try break_match;

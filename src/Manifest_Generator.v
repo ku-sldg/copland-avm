@@ -245,10 +245,22 @@ Fixpoint manifest_generator_app'' (et:Evidence) (al : AM_Library) (m:Manifest)
       end 
     | ENCR => 
       match ps with 
-      | asp_paramsC _ _ p' _ =>
-          manifest_generator_app'' e' al (pubkey_manifest_update p' m)
+      | asp_paramsC a _ p' _ =>
+        match (map_get (ASP_Compat_Map al) a) with
+        | Some a' => 
+            manifest_generator_app'' e' al (
+              aspid_manifest_update a' (pubkey_manifest_update p' m)
+            )
+        | None => errC "Compatible Appraisal ASP not found in AM Library"%string
+        end
       end
-    | KEEP => manifest_generator_app'' e' al m
+    | KEEP => 
+      let '(asp_paramsC a _ _ _) := ps in
+      match (map_get (ASP_Compat_Map al) a) with
+      | Some a' => 
+          manifest_generator_app'' e' al (aspid_manifest_update a' m)
+      | None => errC "Compatible Appraisal ASP not found in AM Library"%string
+      end
     | _ => resultC m
     end
   | ss e1 e2 => 
