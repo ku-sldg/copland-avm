@@ -1,4 +1,4 @@
-Require Import JSON Term_Defs String.
+Require Import JSON Term_Defs String Term_Defs_Core.
 Require Export Interface_Strings_Vars.
 
 
@@ -87,3 +87,7 @@ Inductive AM_ASP_Interface :=
 (* NOTE: Eventually we will add these
 | ASP_Info_Request: ASPInfoRequest -> AM_ASP_Interface
 | ASP_Info_Response: ASPInfoResponse -> AM_ASP_Interface. *)
+
+Definition stringify_AppResultC_json (v:AppResultC) : string := 
+  let appres_json := AppResultC_to_Json v in 
+    JSON_to_string appres_json.

@@ -21,8 +21,9 @@ Set Nested Proofs Allowed.
 *)
 
 Definition am_sendReq (req_plc : Plc) (t:Term) (uuid : UUID) (* (authTok:ReqAuthTok) *)
-   (e:RawEv) : ResultT RawEv string :=
+   (e:RawEv) : ResultT (RawEv * string * string) string :=
   let req := mkPRReq t req_plc e in 
+  let reqString := print_attestation_request req uuid in
   let js := ProtocolRunRequest_to_JSON req in
   let resp_res := make_JSON_Network_Request uuid js in
   match resp_res with
@@ -31,24 +32,37 @@ Definition am_sendReq (req_plc : Plc) (t:Term) (uuid : UUID) (* (authTok:ReqAuth
       | errC msg => errC msg
       | resultC res =>
         let '(mkPRResp success ev) := res in
-        if success then resultC ev else errC errStr_remote_am_failure
+        if success 
+        then (
+          let respString := print_attestation_response res in 
+            resultC (ev, reqString, respString)
+        )
+        else errC errStr_remote_am_failure
       end
   | errC msg => errC msg
   end.
 
-Definition am_sendReq_app (uuid : UUID) (t:Term) (p:Plc) (e:Evidence) (ev:RawEv) : 
-    ResultT AppResultC string :=
+Definition am_sendReq_app (uuid : UUID) (t:Term) (p:Plc) (e:Evidence) (ev:RawEv) (strs:string * string) : 
+    ResultT (AppResultC * string * string * string * string) string :=
   let req := mkPAReq t p e ev in
+  let reqString := (print_appraisal_request req uuid) in
   let js := ProtocolAppraiseRequest_to_JSON req in
   let resp_res := make_JSON_Network_Request uuid js in
   match resp_res with
   | resultC js_res =>
-    match JSON_to_ProtocolAppraiseResponse js_res with
-    | errC msg => errC msg
-    | resultC res =>
-      let '(mkPAResp success result) := res in
-      if success then resultC result else errC errStr_remote_am_failure
-    end
+      match (JSON_to_ProtocolAppraiseResponse js_res) with
+      | errC msg => errC msg
+      | resultC res =>
+        (
+        let '(mkPAResp success result) := res in
+          if success 
+          then (
+            let respString := print_appraisal_response res in
+              (resultC (result, (fst strs), (snd strs), reqString, respString))
+          )
+          else (errC errStr_remote_am_failure)
+        )
+      end
   | errC msg => errC msg
   end.
 
@@ -67,7 +81,7 @@ Definition gen_authEvC_if_some (ot:option Term) (uuid : UUID) (myPlc:Plc) (init_
     let '(evc init_rawev_auth init_et_auth) := init_evc in
     match am_sendReq myPlc auth_phrase uuid (* mt_evc *) init_rawev_auth with
     | errC msg => ret (evc [] mt)
-    | resultC auth_rawev =>
+    | resultC (auth_rawev, _, _) =>
       let auth_et := eval auth_phrase myPlc init_et_auth in
         ret (evc auth_rawev auth_et)
     end
@@ -75,26 +89,22 @@ Definition gen_authEvC_if_some (ot:option Term) (uuid : UUID) (myPlc:Plc) (init_
   end.
 
 Definition run_appraisal_client (t:Term) (p:Plc) (et:Evidence) (re:RawEv) 
-  (addr:UUID) : ResultT AppResultC string :=
+  (addr:UUID) (strs: string * string) : ResultT (AppResultC * string * string * string * string) string :=
   let expected_et := eval t p et in 
-  am_sendReq_app addr t p et re.
+  am_sendReq_app addr t p et re (fst(strs), snd(strs)).
   (*
   let comp := gen_appraise_AM expected_et re in
   run_am_app_comp comp mtc_app.
   *)
 
-Definition stringify_AppResultC_json (v:AppResultC) : string := 
-  let appres_json := AppResultC_to_Json v in 
-    JSON_to_string appres_json.
-
 
 Definition run_demo_client_AM (t:Term) (top_plc:Plc) (att_plc:Plc) (et:Evidence) 
-  (re:RawEv) (attester_addr:UUID) (appraiser_addr:UUID) : ResultT AppResultC string :=
+  (re:RawEv) (attester_addr:UUID) (appraiser_addr:UUID) : ResultT (AppResultC * string * string * string * string) string :=
     let att_result := am_sendReq top_plc t attester_addr re in 
     match att_result with 
     | errC msg => errC msg 
-    | resultC att_rawev => 
-        run_appraisal_client t att_plc et att_rawev appraiser_addr
+    | resultC (att_rawev, attReqString, attRespString) => 
+          run_appraisal_client t att_plc et att_rawev appraiser_addr (attReqString, attRespString)
     end.
 
 
@@ -106,6 +116,8 @@ Definition check_et_length (et:Evidence) (ls:RawEv) : AM unit :=
 if (eqb (et_size et) (length ls)) 
 then ret tt 
 else (am_failm (am_dispatch_error (Runtime errStr_et_size))).
+
+(*
 
 Definition am_appraise (t:Term) (toPlc:Plc) (init_et:Evidence) (cvm_ev:RawEv) (local_appraisal:bool) : AM AppResultC :=
   let expected_et := eval t toPlc init_et in
@@ -127,6 +139,8 @@ Definition am_appraise (t:Term) (toPlc:Plc) (init_et:Evidence) (cvm_ev:RawEv) (l
   let expected_et := eval t toPlc init_et in
   app_res <- gen_appraise_AM expected_et cvm_ev ;; *)
   ret (app_res).
+
+  *)
 
 
 
@@ -233,6 +247,8 @@ Definition check_disclosure_policy (t:Term) (p:Plc) (e:Evidence) : AM unit :=
   then ret tt 
   else (am_failm (am_dispatch_error (Runtime errStr_disclosePolicy))).
 
+
+(*
 Definition am_client_gen_local (t:Term) (myPlc:Plc) (initEvOpt:option EvC) 
     (absMan:Manifest) (amLib:AM_Library) (aspBin : FS_Location) : AM AM_Result := 
   evcIn <- gen_nonce_if_none_local initEvOpt ;; 
@@ -259,6 +275,7 @@ Definition am_client_gen_local (t:Term) (myPlc:Plc) (initEvOpt:option EvC)
 
 
   ret (am_appev app_res).
+*)
 
 Require Import Auto.
 
@@ -674,6 +691,7 @@ Proof.
   ff.
 Qed.
 
+(*
 
 Example client_gen_executable : forall t p initEvOpt amLib st aspBin,
 
@@ -988,6 +1006,8 @@ Qed.
 *)
 
 Abort.
+
+*)
 
 
 

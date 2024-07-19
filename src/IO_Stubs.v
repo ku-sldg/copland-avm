@@ -11,7 +11,7 @@
     for Appraisal.        
  *)
 Require Import Term_Defs ConcreteEvidence ErrorStMonad_Coq 
-  Manifest Manifest_Admits Cvm_St String JSON.
+  Manifest Manifest_Admits Cvm_St String JSON Interface_Types.
 
 Require Import List.
 Import ListNotations.
@@ -38,3 +38,11 @@ Definition is_local_appraisal (res:AM_Library) : bool.  Admitted.
 Definition print_auth_tok (tok:ReqAuthTok) : unit.  Admitted.
 
 Definition pretty_print_manifest (m:Manifest) : string.  Admitted.
+
+Definition print_attestation_request (req:ProtocolRunRequest) (uuid:UUID) : string.  Admitted.
+
+Definition print_attestation_response (resp:ProtocolRunResponse) : string.  Admitted.
+
+Definition print_appraisal_request (req:ProtocolAppraiseRequest) (uuid:UUID) : string.  Admitted.
+
+Definition print_appraisal_response (resp:ProtocolAppraiseResponse) : string.  Admitted.

@@ -28,6 +28,7 @@ Manifest.v
 Manifest_JSON_Vars.v
 Manifest_JSON.v
 Cvm_St.v
+CvmJson_Interfaces.v
 IO_Stubs.v
 Anno_Term_Defs.v
 Eqb_Evidence.v
@@ -37,7 +38,6 @@ Term_system.v
 Trace.v
 LTS.v
 Main.v
-CvmJson_Interfaces.v
 Manifest_Compiler.v
 EnvironmentM.v
 Manifest_Union.v
@@ -50,6 +50,9 @@ Auto.v
 Manifest_Generator_Helpers.v
 Manifest_Generator.v
 Manifest_Generator_Facts.v
+ManCompSoundness_Helpers.v
+ManCompSoundness.v
+ManCompSoundness_Appraisal.v
 Manifest_Generator_Union.v
 AutoApp.v
 Helpers_CvmSemantics.v
@@ -62,9 +65,6 @@ Appraisal_IO_Stubs.v
 AM_Monad.v
 Appraisal_Defs.v
 Impl_appraisal.v
-ManCompSoundness_Helpers.v
-ManCompSoundness.v
-ManCompSoundness_Appraisal.v
 AM_Helpers.v
 AM_Json_Interfaces.v
 Client_AM.v

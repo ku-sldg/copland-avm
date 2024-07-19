@@ -239,3 +239,21 @@ Definition ErrorResponseJSON (msg: string): JSON :=
   JSON_Object 
     [(STR_SUCCESS, InJSON_Boolean false);
     (STR_PAYLOAD, (InJSON_String msg))].
+
+
+
+Definition stringify_ProtocolRunRequest_json (v:ProtocolRunRequest) : string := 
+  let appres_json := ProtocolRunRequest_to_JSON v in 
+    JSON_to_string appres_json.
+
+Definition stringify_ProtocolRunResponse_json (v:ProtocolRunResponse) : string := 
+  let appres_json := ProtocolRunResponse_to_JSON v in 
+    JSON_to_string appres_json.
+
+Definition stringify_ProtocolAppraiseRequest_json (v:ProtocolAppraiseRequest) : string := 
+  let appres_json := ProtocolAppraiseRequest_to_JSON v in 
+    JSON_to_string appres_json.
+
+Definition stringify_ProtocolAppraiseResponse_json (v:ProtocolAppraiseResponse) : string := 
+  let appres_json := ProtocolAppraiseResponse_to_JSON v in 
+    JSON_to_string appres_json.

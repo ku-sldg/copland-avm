@@ -38,4 +38,9 @@ Separate Extraction
 		handle_AM_request end_to_end_mangen_final
     run_demo_client_AM
     Jsonifiable_Evidence_Plc_list Jsonifiable_Term_Plc_list
-    stringify_AppResultC_json.
+    stringify_AppResultC_json
+    stringify_ProtocolRunRequest_json
+    stringify_ProtocolRunResponse_json
+    stringify_ProtocolAppraiseRequest_json
+    stringify_ProtocolAppraiseResponse_json.
+
