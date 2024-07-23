@@ -1,6 +1,6 @@
 (* Definitions for AM Monad State (AM_St) and AM Monad (AM).  *)
 
-Require Import Maps ResultT BS Term_Defs_Core Cvm_St ErrorStMonad_Coq String.
+Require Import Maps ResultT BS Term_Defs_Core Cvm_St ErrorStMonad_Coq String Attestation_Session.
 
 
 Require Import List.
@@ -11,7 +11,7 @@ Import ListNotations.
 Record AM_St : Type := mkAM_St
                          { am_nonceMap : MapC N_ID BS;
                            am_nonceId : N_ID; 
-                           amConfig : AM_Config }.
+                           am_config : Session_Config }.
 
 Inductive AM_Error : Type := 
 | cvm_error : CVM_Error -> AM_Error

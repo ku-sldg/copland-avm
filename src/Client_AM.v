@@ -2,15 +2,15 @@
       end-to-end Copland Attestation + Appraisal protocols.  *)
 Require Import String List.
 
-Require Import Term Cvm_Run Manifest EqClass Cvm_St.
+Require Import Term Cvm_Run EqClass Cvm_St.
 
 Require Import Impl_appraisal Appraisal_IO_Stubs IO_Stubs AM_Monad ErrorStMonad_Coq.
 
-Require Import CvmJson_Interfaces Manifest_Generator Manifest_Compiler Maps.
+Require Import Maps Attestation_Session Interface.
 
-Require Import ManCompSoundness Manifest_Admits Disclose ErrorStringConstants.
+Require Import Disclose ErrorStringConstants Manifest_Admits.
 
-Require Import ManCompSoundness_Appraisal AM_Helpers Auto.
+Require Import AM_Helpers Auto.
 
 Require Import StructTactics Coq.Program.Tactics.
 
@@ -92,20 +92,14 @@ Definition run_demo_client_AM (t:Term) (top_plc:Plc) (att_plc:Plc) (et:Evidence)
         run_appraisal_client t att_plc et att_rawev appraiser_addr
     end.
 
-
-Definition get_am_clone_uuid : AM UUID := 
-  ac <- get_AM_amConfig ;; 
-  ret ( am_clone_addr ac).
-
 Definition check_et_length (et:Evidence) (ls:RawEv) : AM unit := 
 if (eqb (et_size et) (length ls)) 
 then ret tt 
 else (am_failm (am_dispatch_error (Runtime errStr_et_size))).
 
-Definition am_appraise (t:Term) (toPlc:Plc) (init_et:Evidence) (cvm_ev:RawEv) (local_appraisal:bool) : AM AppResultC :=
+Definition am_appraise (t:Term) (toPlc:Plc) (init_et:Evidence) (cvm_ev:RawEv) (apprUUID : UUID) (local_appraisal:bool) : AM AppResultC :=
   let expected_et := eval t toPlc init_et in
   check_et_length expected_et cvm_ev ;;
-  uuid <- get_am_clone_uuid ;;
 
   app_res <- 
     (match local_appraisal with 
@@ -113,7 +107,7 @@ Definition am_appraise (t:Term) (toPlc:Plc) (init_et:Evidence) (cvm_ev:RawEv) (l
        let expected_et := eval t toPlc init_et in
         gen_appraise_AM expected_et cvm_ev 
     | false => 
-      match run_appraisal_client t toPlc init_et cvm_ev uuid with
+      match run_appraisal_client t toPlc init_et cvm_ev apprUUID with
       | errC msg => am_failm (am_dispatch_error (Runtime msg))
       | resultC res => ret res
       end
@@ -153,12 +147,11 @@ Ltac unfold_libsupports_defs :=
 *)
 
 
+(*
 Lemma lib_support_bool_iff_prop : forall amLib absMan,
 (lib_supports_manifest_bool amLib absMan = true) <->
 lib_supports_manifest amLib absMan.
 Proof.
-
-(*
   intros.
   split; intros.
   -
@@ -194,10 +187,8 @@ Proof.
         destruct_conjs;
         solve_by_inversion).
 Qed.
-
-*)
-
 Admitted.
+*)
 
 Definition run_cvm_local_am (t:Term) (ls:RawEv) : AM RawEv := 
   st <- get ;; 

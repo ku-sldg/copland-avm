@@ -4,7 +4,7 @@ Uninterpreted functions and rewrite rules that model external (remote and local 
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term_Defs Anno_Term_Defs Interface_Types LTS IO_Stubs CvmJson_Interfaces ResultT Manifest Cvm_St.
+Require Import Term_Defs Anno_Term_Defs Interface LTS IO_Stubs ResultT Cvm_St Attestation_Session Maps.
 
 Require Import List.
 Import ListNotations.
@@ -74,21 +74,24 @@ Axiom wf_ec_preserved_remote: forall a n e,
     wf_ec (doRemote_session a n e).
     *)
 
-Axiom wf_ec_preserved_remote: forall st pTarg uuid ac ev1,
+Axiom wf_ec_preserved_remote: forall st pTarg pFrom uuid sc ev1,
     (* doRemote t u (get_bits ev1) = resultC ev1' ->  *)
     (* do_remote t p e ac = resultC ev1' -> *)
-    (st_AM_config st) = ac ->
+    (st_config st) = sc ->
     (st_ev st) = ev1 ->
-    (plcCb ac) pTarg = resultC uuid ->
-    forall t rawEv js_resp,
+    map_get (plc_map sc) pTarg = Some uuid ->
+    forall t rawEv js_resp att_sess,
     make_JSON_Network_Request uuid (
-        ProtocolRunRequest_to_JSON (
+        to_JSON (
           (mkPRReq 
+            att_sess
             t 
-            (my_abstract_plc (absMan (st_AM_config st)))
+            pFrom
+            (* Temporarily putting in a plc but not good! *)
+            (* (my_abstract_plc (absMan (st_config st))) *)
             (get_bits ev1)
           )
         )) = resultC js_resp ->
-    JSON_to_AM_Protocol_Response js_resp = resultC (Protocol_Run_Response (mkPRResp true rawEv)) -> 
+    from_JSON js_resp = resultC (mkPRResp true rawEv) -> 
     wf_ec ev1 -> 
     wf_ec (evc rawEv (eval t pTarg (get_et ev1))).

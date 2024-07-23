@@ -10,7 +10,6 @@ Import ListNotations.
 
 Definition manifest_set (A : Type) := list A.
 
-
 Definition manifest_set_empty {A : Type} : manifest_set A := nil.
 
 Fixpoint manset_add {A : Type} `{HA : EqClass A} (a : A) (s : manifest_set A) : manifest_set A :=
@@ -25,9 +24,8 @@ Fixpoint manset_add {A : Type} `{HA : EqClass A} (a : A) (s : manifest_set A) : 
 Lemma manset_add_not_nil {A : Type} `{HA : EqClass A} (a : A) (s : manifest_set A) :
   manset_add a s <> nil.
 Proof.
-  intro. induction s.
-  - simpl in *; congruence.
-  - simpl in *. destruct (eqb a a0) eqn:E; congruence.
+  intuition; induction s; simpl in *; try congruence; eauto;
+  break_eqs; congruence.
 Qed.
 
 Fixpoint list_to_manset' {A : Type} `{HA : EqClass A} (l : list A) : manifest_set A :=
@@ -60,42 +58,31 @@ Definition in_dec_set {A : Type} `{HA : EqClass A} (a : A) (s : manifest_set A) 
 Lemma In_set_empty_contra {A : Type} : forall (a : A) (P : Prop),
   In_set a manifest_set_empty -> P.
 Proof.
-  intros a P Contra. inversion Contra.
+  intuition; invc H.
 Qed.
 
 Lemma manadd_In_set {A : Type} `{HA : EqClass A}: forall (s : manifest_set A) i j,
   In_set i (manset_add j s) ->
   i = j \/ In_set i s.
 Proof.
-  intros s i j H. generalize dependent j. generalize dependent i. induction s;
-  intros; simpl in H; intuition.
-  - destruct (eqb j a).
-    + intuition.
-    + simpl in *. destruct H.
-      * subst. simpl. eauto.
-      * simpl. apply IHs in H. destruct H; eauto.
+  induction s; simpl in *; intuition; eauto;
+  break_eqs; eauto; simpl in *; intuition; eauto;
+  find_eapply_hyp_hyp; intuition; eauto.
 Qed.
 
 Lemma manadd_In_add {A : Type} `{HA : EqClass A} : forall (s : manifest_set A) i,
   In_set i (manset_add i s).
 Proof.
-  intros. induction s.
-  - simpl; auto.
-  - simpl.
-    destruct (eqb i a) eqn:Eia.
-    + rewrite eqb_eq in Eia. subst; simpl; auto.
-    + simpl; auto.
+  induction s; simpl in *; intuition; eauto;
+  break_eqs; simpl in *; intuition.
 Qed.
 
 Lemma in_set_add {A : Type} `{HA : EqClass A} : forall (s : manifest_set A) i j,
   In_set i s ->
   In_set i (manset_add j s).
 Proof.
-  intros s i j H. induction s.
-  - simpl; auto.
-  - simpl. destruct (eqb j a).
-    + subst; simpl; auto.
-    + simpl; simpl in H. destruct H; auto.
+  induction s; simpl in *; intuition; eauto;
+  break_eqs; simpl in *; intuition; eauto.
 Qed.
 
 Lemma in_list_to_set {A : Type} `{HA : EqClass A} : forall (a: A) (l : list A),

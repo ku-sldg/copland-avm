@@ -6,11 +6,10 @@ CVM Monad definition.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import ConcreteEvidence ErrorStMonad_Coq ID_Type Manifest Manifest_Admits.
+Require Import ConcreteEvidence ErrorStMonad_Coq ID_Type Attestation_Session.
 Require Import List.
 Import ListNotations.
-
-Require Export Manifest.
+Require Import Manifest_Admits.
 
 (** CVM monad state structure.
 
@@ -21,7 +20,7 @@ Require Export Manifest.
     st_pl - Current "executing place".
     st_evid - Monotonic event ID counter.  Incremented after each 
               attestation-relevant event/invocation.
-    st_AM_config - AM Configuration (typically produced by the Manifest Compiler).  
+    st_config - AM Configuration (typically produced by the Manifest Compiler).  
                    Provides callback functions used by the CVM to interpret Copland.
  *)
 
@@ -30,7 +29,7 @@ Record cvm_st : Type := mk_st
                           {st_ev:EvC ;
                            st_trace:list Ev ;
                            st_evid:Event_ID ;
-                           st_AM_config : AM_Config ;
+                           st_config : Session_Config ;
                            }.
 
 Inductive CVM_Error : Type := 

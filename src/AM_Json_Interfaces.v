@@ -1,6 +1,6 @@
 Require Import List.
 Import ListNotations.
-Require Import BS Manifest Term_Defs CvmJson_Interfaces String IO_Stubs Manifest_Admits ErrorStMonad_Coq AM_Monad.
+Require Import BS Term_Defs Attestation_Session Interface String IO_Stubs Manifest_Admits ErrorStMonad_Coq AM_Monad.
 Require Import ErrorStringConstants AM_Helpers Impl_appraisal Cvm_Run.
 
 Definition am_check_auth_tok (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) 
@@ -37,7 +37,7 @@ Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc)
   | false => am_failm (am_error errStr_app_auth_tok)
   end. *)
 
-Definition do_appraisal_session (appreq:ProtocolAppraiseRequest) (ac:AM_Config) (nonceVal:BS): ResultT ProtocolAppraiseResponse string :=
+Definition do_appraisal_session (appreq:ProtocolAppraiseRequest) (ac: Session_Config) (nonceVal:BS): ResultT ProtocolAppraiseResponse string :=
   let '(mkPAReq t p et ev) := appreq in
   let expected_et := eval t p et in 
   let app_am := gen_appraise_AM expected_et ev in 
@@ -50,12 +50,12 @@ Definition do_appraisal_session (appreq:ProtocolAppraiseRequest) (ac:AM_Config) 
       resultC (mkPAResp true appres)
   end.
 
-Definition handle_AM_request_JSON (js : JSON) (ac : AM_Config) (nonceVal:BS) : JSON :=
+Definition handle_AM_request_JSON (js : JSON) (ac : Session_Config) (nonceVal:BS) : JSON :=
   match JSON_to_AM_Protocol_Request js with 
   | errC msg => ErrorResponseJSON msg
   | resultC (Protocol_Run_Request r) => 
     let '(mkPRReq cop_term from_plc ev) := r in
-    let my_plc := (my_abstract_plc (absMan ac)) in
+    let my_plc := (session_plc ac) in
     (* NOTE: Skipping auth tok checking for now, not sure how it should work *)
     (* v <- am_check_auth_tok cop_term from_plc tok ;;
     match (appraise_auth_tok v) with

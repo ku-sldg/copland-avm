@@ -11,14 +11,14 @@
     for Appraisal.        
  *)
 Require Import Term_Defs ConcreteEvidence ErrorStMonad_Coq 
-  Manifest Manifest_Admits Cvm_St String JSON.
+  Manifest_Admits Cvm_St String JSON.
 
 Require Import List.
 Import ListNotations.
 
 Definition make_JSON_Network_Request (uuid : UUID) (js : JSON) : ResultT JSON string. Admitted.
 
-Definition make_JSON_FS_Location_Request (dir : FS_Location) (aspid : Concrete_ASP_ID) (js : JSON) : ResultT JSON string. Admitted.
+Definition make_JSON_FS_Location_Request (dir : FS_Location) (aspid : FS_Location) (js : JSON) : ResultT JSON string. Admitted.
 
 (** * Stub to simulate evidence collected by a parallel CVM instance *)
 Definition parallel_vm_thread (l:Loc) (t:Core_Term) (p:Plc) (e:EvC) : EvC.  Admitted.
@@ -33,8 +33,4 @@ Definition requester_bound (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) : bool.  A
 
 Definition appraise_auth_tok (res:AppResultC) : bool.  Admitted.
 
-Definition is_local_appraisal (res:AM_Library) : bool.  Admitted.
-
 Definition print_auth_tok (tok:ReqAuthTok) : unit.  Admitted.
-
-Definition pretty_print_manifest (m:Manifest) : string.  Admitted.

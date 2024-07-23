@@ -141,12 +141,12 @@ Qed.
 
 Lemma never_change_am_conf : forall t st res st',
   build_cvm (copland_compile t) st = (res, st') ->
-  st_AM_config st = st_AM_config st'.
+  st_config st = st_config st'.
 Proof.
   intros;
   destruct st.
   simpl. 
-  edestruct ac_immut.
+  edestruct sc_immut.
   unfold execErr.
   rewrite H.
   simpl. eauto.
@@ -254,7 +254,7 @@ Fixpoint am_config_support_exec (t : Term)
 Theorem well_formed_am_config_impl_executable : forall t p amConf,
   am_config_support_exec t p amConf ->
   forall st,
-  supports_am amConf (st.(st_AM_config)) ->
+  supports_am amConf (st.(st_config)) ->
   (exists st', 
     build_cvm (copland_compile t) st = (resultC tt, st')) \/
   (exists st' errStr, 
@@ -370,7 +370,7 @@ Proof.
           | H2 : build_cvm (copland_compile t1) ?st = _
             |- _ =>
               let A := fresh "A" in
-              assert (A : supports_am ac1 (st_AM_config st)); [ 
+              assert (A : supports_am ac1 (st_config st)); [ 
                 simpl in *; eauto
                 |
                 destruct (IHt1 p ac1 AS1 st A);
@@ -383,7 +383,7 @@ Proof.
           | H3 : build_cvm (copland_compile t2) ?st = _
             |- _ =>
               let A := fresh "A" in
-              assert (A : supports_am ac2 (st_AM_config st)); [ 
+              assert (A : supports_am ac2 (st_config st)); [ 
                 repeat find_eapply_lem_hyp never_change_am_conf;
                 repeat find_rewrite;
                 simpl in *; eauto
@@ -421,7 +421,7 @@ Proof.
         | H2 : build_cvm (copland_compile t1) ?st = _
           |- _ =>
             let A := fresh "A" in
-            assert (A : supports_am ac1 (st_AM_config st)); [ 
+            assert (A : supports_am ac1 (st_config st)); [ 
               simpl in *; eauto
               |
               destruct (IHt1 p ac1 AS1 st A);
@@ -434,7 +434,7 @@ Proof.
         | H3 : build_cvm (copland_compile t2) ?st = _
           |- _ =>
             let A := fresh "A" in
-            assert (A : supports_am ac2 (st_AM_config st)); [ 
+            assert (A : supports_am ac2 (st_config st)); [ 
               repeat find_eapply_lem_hyp never_change_am_conf;
               repeat find_rewrite;
               simpl in *; eauto
@@ -473,7 +473,7 @@ Proof.
         | H2 : build_cvm (copland_compile t1) ?st = _
           |- _ =>
             let A := fresh "A" in
-            assert (A : supports_am ac1 (st_AM_config st)); [ 
+            assert (A : supports_am ac1 (st_config st)); [ 
               simpl in *; eauto
               |
               destruct (IHt1 p ac1 AS1 st A);
@@ -486,7 +486,7 @@ Proof.
         | H3 : build_cvm (copland_compile t2) ?st = _
           |- _ =>
             let A := fresh "A" in
-            assert (A : supports_am ac2 (st_AM_config st)); [ 
+            assert (A : supports_am ac2 (st_config st)); [ 
               repeat find_eapply_lem_hyp never_change_am_conf;
               repeat find_rewrite;
               simpl in *; eauto
@@ -1748,11 +1748,11 @@ Theorem manifest_generator_compiler_soundness_distributed : forall t tp p absMan
   manifest_compiler absMan amLib aspBin = amConf ->
   forall st,
 
-  (* st.(st_AM_config) = amConf -> *)
+  (* st.(st_config) = amConf -> *)
 
   
-    (* Note, this should be trivial typically as amConf = st.(st_AM_config) and refl works *)
-    supports_am amConf (st.(st_AM_config)) ->  
+    (* Note, this should be trivial typically as amConf = st.(st_config) and refl works *)
+    supports_am amConf (st.(st_config)) ->  
 
 
     (  forall t', 
@@ -1766,7 +1766,7 @@ Theorem manifest_generator_compiler_soundness_distributed : forall t tp p absMan
     ).
 Proof.
   intros.
-  assert (supports_am amConf (st.(st_AM_config))) by ff.
+  assert (supports_am amConf (st.(st_config))) by ff.
   assert (In p (places tp t)) by 
             (eapply has_manifest_env_places_env_has_manifest; eauto).
   eapply well_formed_am_config_impl_executable.
@@ -2398,12 +2398,12 @@ forall env,
   manifest_compiler absMan amLib aspBin = amConf ->
   forall st,
 
-  (* st.(st_AM_config) = amConf -> *)
-  supports_am amConf (st.(st_AM_config)) ->
+  (* st.(st_config) = amConf -> *)
+  supports_am amConf (st.(st_config)) ->
 
   (*
-    (* Note, this should be trivial typically as amConf = st.(st_AM_config) and refl works *)
-    supports_am amConf (st.(st_AM_config)) ->  
+    (* Note, this should be trivial typically as amConf = st.(st_config) and refl works *)
+    supports_am amConf (st.(st_config)) ->  
     *)
 
     (  forall t', 
@@ -2551,12 +2551,12 @@ Theorem manifest_generator_compiler_soundness_distributed_multiterm : forall t t
   manifest_compiler absMan amLib aspBin = amConf ->
   forall st,
 
-  (* st.(st_AM_config) = amConf -> *)
-  supports_am amConf (st.(st_AM_config)) ->
+  (* st.(st_config) = amConf -> *)
+  supports_am amConf (st.(st_config)) ->
 
   (*
-    (* Note, this should be trivial typically as amConf = st.(st_AM_config) and refl works *)
-    supports_am amConf (st.(st_AM_config)) ->  
+    (* Note, this should be trivial typically as amConf = st.(st_config) and refl works *)
+    supports_am amConf (st.(st_config)) ->  
     *)
 
     (  forall t', 

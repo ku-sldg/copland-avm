@@ -4,7 +4,7 @@ Experiments in stating "disclosure" properties of the CVM.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term_Defs Anno_Term_Defs Term LTS Cvm_Impl Cvm_St Trace Main ConcreteEvidence.
+Require Import Term_Defs Anno_Term_Defs Term LTS Cvm_Impl Cvm_St Trace Main ConcreteEvidence Attestation_Session.
 
 Require Import CvmSemantics Appraisal_Evidence Eqb_Evidence Auto ID_Type EqClass Helpers_CvmSemantics (* Disclose_Gen *) External_Facts Axioms_Io.
 
@@ -1513,7 +1513,7 @@ Lemma cvm_respects_events_disclosure:
   forall t e i r atp bits bits' e' cvm_tr cvmi cvmi' annt ac ac',
     
     annoP_indexed annt t cvmi cvmi' ->
-    ~ (events_discloses annt (my_abstract_plc (absMan ac)) e i r) ->
+    ~ (events_discloses annt (session_plc ac) e i r) ->
     
     term_to_coreP t atp ->
     build_cvmP atp
@@ -1544,7 +1544,7 @@ Lemma cvm_respects_term_disclosure :
 
     annoP_indexed annt t cvmi cvmi' ->
 
-  ~ (term_discloses_to_remote t (my_abstract_plc (absMan ac)) e (r,i) = true) ->
+  ~ (term_discloses_to_remote t (session_plc ac) e (r,i) = true) ->
   
   term_to_coreP t atp ->
   build_cvmP atp
@@ -1564,7 +1564,7 @@ Lemma cvm_respects_events_disclosure_aspid_enc:
 forall t e i r atp bits bits' e' cvm_tr cvmi cvmi' annt ac ac',
   
   annoP_indexed annt t cvmi cvmi' ->
-  ~ (events_discloses_aspid_enc annt (my_abstract_plc (absMan ac)) e i r) ->
+  ~ (events_discloses_aspid_enc annt (session_plc ac) e i r) ->
   
   term_to_coreP t atp ->
   build_cvmP atp
@@ -1600,7 +1600,7 @@ Lemma cvm_respects_term_disclosure_aspid_enc :
 
     annoP_indexed annt t cvmi cvmi' ->
 
-  ~ (term_discloses_aspid_to_remote_enc t (my_abstract_plc (absMan ac)) e i r) ->
+  ~ (term_discloses_aspid_to_remote_enc t (session_plc ac) e i r) ->
   
   term_to_coreP t atp ->
   build_cvmP atp

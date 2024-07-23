@@ -4,7 +4,7 @@
     Also included:  properties about CVM internal Evidence and Event handling.  
     TODO:  This file has become quite bloated.  May need to refactor/decompose.  *)
 
-Require Import ConcreteEvidence AutoApp Auto ResultT Helpers_CvmSemantics Term_Defs Anno_Term_Defs Cvm_St Cvm_Impl Defs StructTactics OptMonad_Coq IO_Stubs Evidence_Bundlers Axioms_Io External_Facts.
+Require Import ConcreteEvidence AutoApp Auto ResultT Helpers_CvmSemantics Term_Defs Anno_Term_Defs Cvm_St Cvm_Impl Defs StructTactics OptMonad_Coq IO_Stubs Evidence_Bundlers Axioms_Io External_Facts Attestation_Session.
 
 Require Import List.
 Import ListNotations.
@@ -1068,12 +1068,12 @@ Set Warnings "+notation-overridden".
 Ltac do_assert_remote t e i ac :=
   assert (
       build_cvm t
-                      {| st_ev := e; st_trace := []; st_evid := i; st_AM_config := ac |} =
+                      {| st_ev := e; st_trace := []; st_evid := i; st_config := ac |} =
       (resultC tt,
-       {| st_ev := cvm_evidence_core t (my_abstract_plc (absMan ac)) e;
-          st_trace := cvm_events_core t (my_abstract_plc (absMan ac)) (get_et e);
+       {| st_ev := cvm_evidence_core t (session_plc ac) e;
+          st_trace := cvm_events_core t (session_plc ac) (get_et e);
           st_evid :=  (i + event_id_span t); 
-          st_AM_config := ac
+          st_config := ac
        |})
     ) by (eapply build_cvm_external).
 
@@ -1097,13 +1097,13 @@ Lemma cvm_spans: forall t pt e tr i e' tr' i' ac ac',
       {| st_ev := e;
          st_trace := tr;
          st_evid := i;
-         st_AM_config := ac |}
+         st_config := ac |}
       (resultC tt)
       {|
         st_ev := e';
         st_trace := tr';
         st_evid := i';
-        st_AM_config := ac'
+        st_config := ac'
       |} ->
     i' = i + event_id_span' t.
 Proof.
@@ -1313,12 +1313,12 @@ Lemma span_cvm: forall atp t annt i j e e' tr tr' i' ac ac',
       {| st_ev := e;
          st_trace := tr;
          st_evid := i;
-         st_AM_config := ac |} 
+         st_config := ac |} 
       (resultC tt)
       {| st_ev := e';
          st_trace := tr';
          st_evid := i';
-         st_AM_config := ac' |} ->
+         st_config := ac' |} ->
     
     term_to_coreP t atp -> 
     anno t i = (j, annt) ->
@@ -1355,13 +1355,13 @@ Lemma anno_span_cvm: forall t pt annt i i' e e' tr tr' st_evid1 ac ac',
                        st_ev := e ;
                        st_trace := tr ;
                        st_evid := i;
-                       st_AM_config := ac
+                       st_config := ac
                      |} (resultC tt)
                      {|
                        st_ev := e';
                        st_trace := tr';
                        st_evid := st_evid1;
-                       st_AM_config := ac'
+                       st_config := ac'
                      |} ->
     i' = st_evid1.
 Proof.
@@ -1431,7 +1431,7 @@ Axiom wf_ec_preserved_par: forall e l t2 p,
 
 Lemma check_cvm_policy_preserves_amConf : forall t p evt st1 u st1',
   check_cvm_policy t p evt st1 = (resultC u, st1') ->
-  st_AM_config st1 = st_AM_config st1'.
+  st_config st1 = st_config st1'.
 Proof.
   induction t; simpl in *; intuition; eauto; ff.
 Qed.
@@ -1442,10 +1442,10 @@ Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' i i' ac ac' res,
     wf_ec e ->
     build_cvmP t1
                 {| st_ev := e; st_trace := tr; st_evid := i;
-                    st_AM_config := ac |}
+                    st_config := ac |}
                 (res)
                 {| st_ev := e'; st_trace := tr'; st_evid := i';
-                    st_AM_config := ac' |} ->
+                    st_config := ac' |} ->
     wf_ec (e').
 Proof.
   intros.
@@ -1487,7 +1487,7 @@ Proof.
     ff.
     break_match; eauto; [ | ff].
     repeat find_injection; try congruence.
-    eapply (wf_ec_preserved_remote {| st_ev := e; st_trace := tr ++ [req i (my_abstract_plc (absMan ac')) p t (get_et e)]; st_evid := i + 1; st_AM_config := ac' |}); simpl in *; eauto.
+    eapply (wf_ec_preserved_remote {| st_ev := e; st_trace := tr ++ [req i (session_plc ac') p t (get_et e)]; st_evid := i + 1; st_config := ac' |}); simpl in *; eauto.
   - (* lseq case *)
     wrap_ccp.
     ff; eauto.
@@ -1538,9 +1538,9 @@ Ltac do_wfec_preserved :=
     | [(*H: well_formed_r ?t, *)
         H2: wf_ec ?stev,
         H3: build_cvmP ?t
-            {| st_ev := ?stev; st_trace := _; st_evid := _; st_AM_config := _ |}
+            {| st_ev := ?stev; st_trace := _; st_evid := _; st_config := _ |}
             (resultC tt)
-            {| st_ev := ?stev'; st_trace := _; st_evid := _; st_AM_config := _ |}
+            {| st_ev := ?stev'; st_trace := _; st_evid := _; st_config := _ |}
        |- _ ] =>
       assert_new_proof_by (wf_ec stev')
                           ltac:(eapply wf_ec_preserved_by_cvm; [(*apply H |*) apply H2 | apply H3])
@@ -1608,11 +1608,11 @@ Ltac do_exists_some_cc t st :=
       Traces are only ever extended--prefixes are maintained. *)
 Lemma st_trace_cumul'' : forall t m k e v_full v_suffix res i ac,
     build_cvmP t
-      {| st_ev := e; st_trace := m ++ k; st_evid := i; st_AM_config := ac |}
+      {| st_ev := e; st_trace := m ++ k; st_evid := i; st_config := ac |}
       (res) v_full ->
     
     build_cvmP t
-      {| st_ev := e; st_trace := k; st_evid := i; st_AM_config := ac |}
+      {| st_ev := e; st_trace := k; st_evid := i; st_config := ac |}
       res v_suffix ->
 
     st_trace v_full = m ++ st_trace v_suffix.
@@ -1813,11 +1813,11 @@ Qed.
 (** * Instance of st_trace_cumul'' where k=[] *)
 Lemma st_trace_cumul' : forall t m e v_full v_suffix res i ac,
     build_cvmP t
-      {| st_ev := e; st_trace := m; st_evid := i; st_AM_config := ac |}
+      {| st_ev := e; st_trace := m; st_evid := i; st_config := ac |}
       (res) v_full ->
     
     build_cvmP t
-      {| st_ev := e; st_trace := []; st_evid := i; st_AM_config := ac |}
+      {| st_ev := e; st_trace := []; st_evid := i; st_config := ac |}
       res v_suffix ->
 
     st_trace v_full = m ++ st_trace v_suffix.
@@ -1837,17 +1837,17 @@ Lemma suffix_prop : forall t e e' tr tr' i i' ac ac' res,
     build_cvmP t
            {| st_ev := e;
               st_trace := tr;
-              st_evid := i; st_AM_config := ac |}
+              st_evid := i; st_config := ac |}
            (res)
            {|
              st_ev := e';
              st_trace := tr';
-             st_evid := i'; st_AM_config := ac' |} ->
+             st_evid := i'; st_config := ac' |} ->
     exists l, tr' = tr ++ l.
 Proof.
   intros.
 
-  do_exists_some_cc t {| st_ev := e; st_trace := []; st_evid := i; st_AM_config := ac |}.
+  do_exists_some_cc t {| st_ev := e; st_trace := []; st_evid := i; st_config := ac |}.
   wrap_ccp.
   (*
 
@@ -1910,9 +1910,9 @@ Qed.
 Ltac do_suffix name :=
   match goal with
   | [H': build_cvmP ?t
-         {| st_ev := _; st_trace := ?tr; st_evid := _; st_AM_config := _ |}
+         {| st_ev := _; st_trace := ?tr; st_evid := _; st_config := _ |}
          (_)
-         {| st_ev := _; st_trace := ?tr'; st_evid := _; st_AM_config := _ |}
+         {| st_ev := _; st_trace := ?tr'; st_evid := _; st_config := _ |}
          (*H2: well_formed_r ?t*) |- _] =>
     assert_new_proof_as_by
       (exists l, tr' = tr ++ l)
@@ -1930,32 +1930,32 @@ Lemma alseq_decomp : forall t1' t2' e e'' tr i i'' ac ac'',
       (lseqc t1' t2')
       {| st_ev := e;
          st_trace := [];
-         st_evid := i; st_AM_config := ac |}
+         st_evid := i; st_config := ac |}
       (resultC tt)
       {| st_ev := e'';
          st_trace := tr;
-         st_evid := i''; st_AM_config := ac'' |} ->
+         st_evid := i''; st_config := ac'' |} ->
 
     exists e' tr' i' ac',
       build_cvmP
         t1'
         {| st_ev := e;
            st_trace := [];
-           st_evid := i; st_AM_config := ac |}
+           st_evid := i; st_config := ac |}
         (resultC  tt)
         {| st_ev := e';
            st_trace := tr';
-           st_evid := i'; st_AM_config := ac' |} /\
+           st_evid := i'; st_config := ac' |} /\
       exists tr'',
         build_cvmP
           t2'
           {| st_ev := e';
              st_trace := [];
-             st_evid := i'; st_AM_config := ac' |}
+             st_evid := i'; st_config := ac' |}
           (resultC tt)
           {| st_ev := e'';
              st_trace := tr'';
-             st_evid := i''; st_AM_config := ac'' |} /\
+             st_evid := i''; st_config := ac'' |} /\
         tr = tr' ++ tr''.     
 Proof.
   intros.
@@ -1973,7 +1973,7 @@ Proof.
   - rewrite <- ccp_iff_cc in *.
     eassumption.
   -
-    do_exists_some_cc t2' {| st_ev := st_ev0; st_trace := []; st_evid := st_evid0; st_AM_config := st_AM_config0 |}.
+    do_exists_some_cc t2' {| st_ev := st_ev0; st_trace := []; st_evid := st_evid0; st_config := st_config0 |}.
     vmsts.
     repeat ff.
     destruct H0; ff.
@@ -2006,18 +2006,18 @@ Qed.
 (** Structural convenience lemma:  reconfigures CVM execution to use an empty initial trace *)
 Lemma restl : forall t e e' x tr i i' ac ac' res,
     build_cvmP t
-      {| st_ev := e; st_trace := x; st_evid := i; st_AM_config := ac|}
+      {| st_ev := e; st_trace := x; st_evid := i; st_config := ac|}
       (res)
-      {| st_ev := e'; st_trace := x ++ tr; st_evid := i'; st_AM_config := ac' |} ->
+      {| st_ev := e'; st_trace := x ++ tr; st_evid := i'; st_config := ac' |} ->
 
     build_cvmP t
-      {| st_ev := e; st_trace := []; st_evid := i; st_AM_config := ac |}
+      {| st_ev := e; st_trace := []; st_evid := i; st_config := ac |}
       (res)
-      {| st_ev := e'; st_trace := tr; st_evid := i'; st_AM_config := ac' |}.
+      {| st_ev := e'; st_trace := tr; st_evid := i'; st_config := ac' |}.
 Proof.
   intros.
 
-  do_exists_some_cc t  {| st_ev := e; st_trace := []; st_evid := i; st_AM_config := ac |}.
+  do_exists_some_cc t  {| st_ev := e; st_trace := []; st_evid := i; st_config := ac |}.
   wrap_ccp_dohi.
 
   assert (res = H1).
@@ -2037,8 +2037,8 @@ Proof.
     rewrite H0; clear H0.
     assert (tr = st_trace).
     {
-      assert (Cvm_St.st_trace {| st_ev := st_ev; st_trace := x ++ tr; st_evid := st_evid; st_AM_config := st_AM_config|} =
-              x ++ Cvm_St.st_trace {| st_ev := st_ev; st_trace := st_trace; st_evid := st_evid; st_AM_config := st_AM_config |}).
+      assert (Cvm_St.st_trace {| st_ev := st_ev; st_trace := x ++ tr; st_evid := st_evid; st_config := st_config|} =
+              x ++ Cvm_St.st_trace {| st_ev := st_ev; st_trace := st_trace; st_evid := st_evid; st_config := st_config |}).
       {
         eapply st_trace_cumul'; eauto.
         wrap_ccp_dohi.
@@ -2057,15 +2057,15 @@ Defined.
 Ltac do_restl :=
   match goal with
   | [H: build_cvmP ?t
-        {| st_ev := ?e; st_trace := ?tr; st_evid := ?i; st_AM_config := ?ac |}
+        {| st_ev := ?e; st_trace := ?tr; st_evid := ?i; st_config := ?ac |}
         ?res
-        {| st_ev := ?e'; st_trace := ?tr ++ ?x; st_evid := ?i'; st_AM_config := ?ac' |}
+        {| st_ev := ?e'; st_trace := ?tr ++ ?x; st_evid := ?i'; st_config := ?ac' |}
         (*H2: well_formed_r ?t*) |- _] =>
     assert_new_proof_by
       (build_cvmP t
-        {| st_ev := e; st_trace := []; st_evid := i; st_AM_config := ac|}
+        {| st_ev := e; st_trace := []; st_evid := i; st_config := ac|}
         ?res
-        {| st_ev := e'; st_trace := x; st_evid := i'; st_AM_config := ac' |})
+        {| st_ev := e'; st_trace := x; st_evid := i'; st_config := ac' |})
       ltac:(eapply restl; [apply H])
   end.
 
@@ -2104,9 +2104,9 @@ Axiom par_evidence_clear: forall l p bits et t2,
     parallel_vm_thread l (lseqc (aspc CLEAR) t2) p (evc bits et) =
     parallel_vm_thread l t2 p mt_evc.
 
-Lemma doRemote_session'_ac_immut : forall t st st' res p ev,
+Lemma doRemote_session'_sc_immut : forall t st st' res p ev,
     doRemote_session' t p ev st = (res, st') ->
-    st_AM_config st = st_AM_config st'.
+    st_config st = st_config st'.
 Proof.
   unfold doRemote_session'.
   intuition.
@@ -2114,14 +2114,14 @@ Proof.
   ff.
 Qed.
 
-Lemma build_cvm_ac_immut : forall t st st' res,
+Lemma build_cvm_sc_immut : forall t st st' res,
     build_cvm t st = (res, st') ->
-    st_AM_config st = st_AM_config st'.
+    st_config st = st_config st'.
 Proof.
   induction t; simpl in *; intuition; eauto; ff.
   - monad_unfold; destruct a; ff.
   - repeat (monad_unfold; simpl in *; intuition; eauto; ff);
-    eapply doRemote_session'_ac_immut in Heqp0; eauto.
+    eapply doRemote_session'_sc_immut in Heqp0; eauto.
   - monad_unfold; ff; eauto;
     try eapply IHt1 in Heqp;
     try eapply IHt2 in Heqp0;
@@ -2136,16 +2136,14 @@ Proof.
     try eapply IHt2 in Heqp4; 
     simpl in *; eauto; 
     find_rewrite; eauto.
-    unfold add_trace; simpl in *.
-    destruct c; simpl in *; eauto.
 Qed.
 
-Lemma build_cvmP_ac_immut : forall t st st' res,
+Lemma build_cvmP_sc_immut : forall t st st' res,
     build_cvmP t st res st' ->
-    st_AM_config st = st_AM_config st'.
+    st_config st = st_config st'.
 Proof.
   setoid_rewrite <- ccp_iff_cc.
-  eapply build_cvm_ac_immut.
+  eapply build_cvm_sc_immut.
 Qed.
 
 (** * Main Lemma:  CVM execution maintains the Evidence Type reference semantics (eval) for 
@@ -2155,10 +2153,10 @@ Lemma cvm_refines_lts_evidence' : forall t tr tr' bits bits' et et' i i' ac ac',
         (mk_st (evc bits et) tr i ac)
         (resultC tt)
         (mk_st (evc bits' et') tr' i' ac') ->
-    et' = (Term_Defs.eval t (my_abstract_plc (absMan ac)) et).
+    et' = (Term_Defs.eval t (session_plc ac) et).
 Proof.
   intuition.
-  eapply build_cvmP_ac_immut in H as H'.
+  eapply build_cvmP_sc_immut in H as H'.
   simpl in *; subst.
   generalizeEverythingElse t.
   induction t; intros.
@@ -2194,14 +2192,14 @@ Proof.
     | H : build_cvmP (copland_compile t1) _ _ _ |- _ =>
       let AC := fresh "AC" in
       let Ho := fresh "Ho" in
-      eapply build_cvmP_ac_immut in H as AC;
+      eapply build_cvmP_sc_immut in H as AC;
       simpl in *; try rewrite AC in *; clear AC;
       eapply IHt1 in H as Ho;
       simpl in *; subst; clear H
     | H2 : build_cvmP (copland_compile t2) _ _ _ |- _ =>
       let AC := fresh "AC" in
       let Ho := fresh "Ho" in
-      eapply build_cvmP_ac_immut in H2 as AC;
+      eapply build_cvmP_sc_immut in H2 as AC;
       simpl in *; try rewrite AC in *; clear AC;
       eapply IHt2 in H2 as Ho;
       simpl in *; subst; clear H2
@@ -2218,14 +2216,14 @@ Proof.
     | H : build_cvmP (copland_compile t1) _ _ _ |- _ =>
       let AC := fresh "AC" in
       let Ho := fresh "Ho" in
-      eapply build_cvmP_ac_immut in H as AC;
+      eapply build_cvmP_sc_immut in H as AC;
       simpl in *; try rewrite AC in *; clear AC;
       eapply IHt1 in H as Ho;
       simpl in *; subst; clear H
     | H2 : build_cvmP (copland_compile t2) _ _ _ |- _ =>
       let AC := fresh "AC" in
       let Ho := fresh "Ho" in
-      eapply build_cvmP_ac_immut in H2 as AC;
+      eapply build_cvmP_sc_immut in H2 as AC;
       simpl in *; try rewrite AC in *; clear AC;
       eapply IHt2 in H2 as Ho;
       simpl in *; subst; clear H2
@@ -2241,7 +2239,7 @@ Proof.
       find_apply_hyp_hyp.
 
 
-      assert (e0 = eval t2 (my_abstract_plc (absMan ac')) et).
+      assert (e0 = eval t2 (session_plc ac') et).
       {
         eapply par_evidence_r; eauto.
       }
@@ -2252,7 +2250,7 @@ Proof.
       Auto.ff.
       find_apply_hyp_hyp.
 
-      assert (e0 = eval t2 (my_abstract_plc (absMan ac')) mt).
+      assert (e0 = eval t2 (session_plc ac') mt).
       {
         rewrite par_evidence_clear in *.
         eapply par_evidence_r; eauto.
@@ -2264,7 +2262,7 @@ Proof.
       Auto.ff.
       find_apply_hyp_hyp.
 
-      assert (e0 = eval t2 (my_abstract_plc (absMan ac')) et).
+      assert (e0 = eval t2 (session_plc ac') et).
       {
         eapply par_evidence_r; eauto.
       }
@@ -2274,7 +2272,7 @@ Proof.
       Auto.ff.
       find_apply_hyp_hyp.
 
-      assert (e0 = eval t2 (my_abstract_plc (absMan ac')) mt).
+      assert (e0 = eval t2 (session_plc ac') mt).
       {
         rewrite par_evidence_clear in *.
 
@@ -2291,7 +2289,7 @@ Lemma cvm_refines_lts_evidence :
       (mk_st (evc bits et) tr i ac)
       (resultC tt)
       (mk_st (evc bits' et') tr' i' ac') ->
-    et' = (Term_Defs.eval t (my_abstract_plc (absMan ac)) et).
+    et' = (Term_Defs.eval t (session_plc ac) et).
 Proof.
   intros.
   invc H.

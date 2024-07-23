@@ -1,13 +1,12 @@
 (*  Helper definitions for AM Client and Server implementations.  *)
 
-Require Import Term Cvm_Run Manifest ID_Type EqClass.
+Require Import Term Cvm_Run Attestation_Session ID_Type EqClass.
 
 Require Import Impl_appraisal Appraisal_IO_Stubs IO_Stubs AM_Monad ErrorStMonad_Coq.
 
-Require Import CvmJson_Interfaces Manifest_Generator Manifest_Compiler Maps Auto StructTactics.
+Require Import Interface Maps Auto StructTactics.
 
-Require Import ManCompSoundness Manifest_Admits Disclose ErrorStringConstants
-    ManCompSoundness_Appraisal.
+Require Import Disclose ErrorStringConstants.
 
 Require Import Coq.Program.Tactics.
 
@@ -20,12 +19,6 @@ Definition fromSomeOption{A:Type} (default:A) (opt:option A): A :=
   | Some x => x
   | _ => default
   end.
-
-Definition get_my_absman_generated (t:Term) (myPlc:Plc) : Manifest := 
-  let env := manifest_generator t myPlc in 
-  let maybe_absMan := map_get env myPlc in 
-    fromSomeOption empty_Manifest maybe_absMan.
-
 
 (* Helper lemma for proving equivalence of propositional vs boolean list membership.  
        TODO:  consider moving this somewhwere else? *)
@@ -73,6 +66,9 @@ Proof.
   
           apply Bool.orb_true_r.
   Qed.
+
+(* NOTE: All of this is deprecated now due to the 
+Attestation Session being the identifier resolution method
 
 Definition uuid_plc_in_amlib_bool (al:AM_Library) (p:Plc)  : bool := 
   match (Maps.map_get al.(Lib_Plcs) p) with 
@@ -127,4 +123,4 @@ Definition config_AM_if_lib_supported (absMan:Manifest) (amLib:AM_Library) (aspB
         )
         else (
             am_failm (am_dispatch_error (Runtime (pretty_print_manifest om)))
-        ).
+        ). *)

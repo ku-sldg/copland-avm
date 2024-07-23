@@ -3,7 +3,7 @@ Require Import List String.
 
 Require Import ErrorStMonad_Coq BS Maps Term_Defs_Core Term_Defs Cvm_Run Cvm_St.
 
-Require Import ErrorStringConstants Appraisal_IO_Stubs.
+Require Import ErrorStringConstants Appraisal_IO_Stubs Attestation_Session.
 
 Require Export AM_St.
 
@@ -64,25 +64,17 @@ Definition run_am_app_comp_init {A:Type} (am_comp:AM A) (st:AM_St) : ResultT A s
   | errC e => errC (am_error_to_string e)
   end.
 
-Definition get_AM_amConfig : AM AM_Config :=
+Definition get_AM_config : AM Session_Config :=
     (* TODO:  consider moving this functionality to a Reader-like monad 
           i.e. an 'ask' primitive *)
     st <- get ;;
-    ret (amConfig st).
-
-(* This should only be used sparingly for now...
-  may need a more principled interface for this... *)
-Definition put_amConfig (ac:AM_Config) : AM unit :=
-  oldSt <- get ;;
-  let oldMap := am_nonceMap oldSt in
-  let oldId := am_nonceId oldSt in
-  put (mkAM_St oldMap oldId ac).
+    ret (am_config st).
 
 Definition am_newNonce (bs:BS) : AM nat :=
   oldSt <- get ;;
   let oldMap := am_nonceMap oldSt in
   let oldId := am_nonceId oldSt in
-  let oldAMConfig := amConfig oldSt in
+  let oldAMConfig := am_config oldSt in
   let newMap := map_set oldMap oldId bs in
   let newId := oldId + 1 in
   put (mkAM_St newMap newId oldAMConfig) ;;
@@ -98,7 +90,7 @@ Definition am_getNonce (nid:nat) : AM BS :=
   end.
 
 
-Definition am_runCvm_nonce (t:Term) (bs:BS) (ac : AM_Config) : AM (nat * RawEv) :=
+Definition am_runCvm_nonce (t:Term) (bs:BS) (ac : Session_Config) : AM (nat * RawEv) :=
   nid <- am_newNonce bs ;;
   match run_cvm_w_config t [bs] ac with
   | resultC res_st => ret (nid, (get_bits (st_ev res_st)))
@@ -107,8 +99,7 @@ Definition am_runCvm_nonce (t:Term) (bs:BS) (ac : AM_Config) : AM (nat * RawEv) 
 
   Ltac am_monad_unfold :=
     repeat unfold
-    get_AM_amConfig,
-    put_amConfig,
+    get_AM_config,
     am_newNonce,
     am_getNonce,
   

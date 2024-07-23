@@ -29,7 +29,7 @@ Theorem manifest_generator_compiler_soundness_distributed_list' :
 
   forall st,
 
-    supports_am amConf (st.(st_AM_config)) ->  
+    supports_am amConf (st.(st_config)) ->  
 
     (  forall t', 
          In t' (place_terms t tp p) -> 
@@ -58,7 +58,7 @@ Theorem manifest_generator_compiler_soundness_distributed_list :
   manifest_compiler absMan amLib = amConf ->
   forall st,
 
-  st.(st_AM_config) = amConf ->
+  st.(st_config) = amConf ->
 
     (  forall t', 
          In t' (place_terms t tp p) -> 

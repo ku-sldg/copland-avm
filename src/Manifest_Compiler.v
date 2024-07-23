@@ -2,7 +2,7 @@
     Takes a Manifest + AM_Library to an AM_Config.  *)
 
 Require Import Maps ID_Type EqClass Term_Defs_Core Manifest_Admits Manifest
-  ErrorStMonad_Coq Term_Defs Interface_Types CvmJson_Interfaces Manifest_Set
+  ErrorStMonad_Coq Term_Defs Interface Manifest_Set
   IO_Stubs.
 
 Require Import List.

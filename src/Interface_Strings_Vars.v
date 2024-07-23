@@ -17,6 +17,8 @@ Definition STR_APPRAISE : string := "APPRAISE".
 Definition STR_REQUEST : string := "REQUEST".
 Definition STR_RESPONSE : string := "RESPONSE".
 
+Definition STR_ATTEST_SESS : string := "ATTESTATION_SESSION".
+
 (* ASP String Admits *)
 Definition STR_ASP_RUN : string := "ASP_RUN".
 Definition STR_ASP_ID : string := "ASP_ID".
