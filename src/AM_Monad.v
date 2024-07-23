@@ -22,7 +22,7 @@ Definition fromSome{A E:Type} (default:A) (opt:ResultT A E): A :=
   | _ => default
   end.
 
-Definition run_am_app_comp_with_default{A:Type} (am_comp:AM A) (default_A:A) (b:bool): A :=
+(* Definition run_am_app_comp_with_default{A:Type} (am_comp:AM A) (default_A:A) (b:bool): A :=
   if (b) 
   then (
   let optRes := evalErr am_comp empty_amst in
@@ -38,7 +38,7 @@ Definition run_am_app_comp_with_default{A:Type} (am_comp:AM A) (default_A:A) (b:
   (fromSome default_A optRes)
   ) 
   else 
-  (default_A).
+  (default_A). *)
 
 Definition run_am_app_comp_init_with_default{A:Type} (am_comp:AM A) (st:AM_St) (default_A:A) (b:bool): A :=
   if (b) 

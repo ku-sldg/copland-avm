@@ -5,7 +5,7 @@
 Require Import Term_Defs_Core Params_Admits Manifest Eqb_Evidence
                Manifest_Generator_Helpers.
 
-Require Import EqClass Maps StructTactics.
+Require Import ResultT String EqClass Maps StructTactics.
 
 Require Import Manifest_Union.
 
@@ -17,22 +17,20 @@ Import ListNotations.
 Definition aspid_manifest_update (i:ASP_ID) (m:Manifest) : Manifest := 
   let '{| my_abstract_plc := oldPlc;
           asps := oldasps; 
-          appraisal_asps := old_app_asps;
           uuidPlcs := oldKnowsOf; 
           pubKeyPlcs := oldContext; 
           targetPlcs := oldTargets ;
           policy := oldPolicy |} := m in
-  (Build_Manifest oldPlc (manset_add i oldasps) old_app_asps oldKnowsOf oldContext oldTargets oldPolicy).
+  (Build_Manifest oldPlc (manset_add i oldasps) oldKnowsOf oldContext oldTargets oldPolicy).
 
 Definition knowsof_manifest_update (toPlc:Plc) (m:Manifest) : Manifest := 
     let '{| my_abstract_plc := oldPlc;
             asps := oldasps; 
-            appraisal_asps := old_app_asps;
             uuidPlcs := oldKnowsOf; 
             pubKeyPlcs := oldContext; 
             targetPlcs := oldTargets ;
             policy := oldPolicy |} := m in
-    (Build_Manifest oldPlc oldasps old_app_asps (manset_add toPlc oldKnowsOf) oldContext oldTargets oldPolicy).
+    (Build_Manifest oldPlc oldasps (manset_add toPlc oldKnowsOf) oldContext oldTargets oldPolicy).
 
 Definition knowsof_myPlc_manifest_update (m:Manifest) : Manifest :=
   knowsof_manifest_update (my_abstract_plc m) m.
@@ -40,52 +38,47 @@ Definition knowsof_myPlc_manifest_update (m:Manifest) : Manifest :=
 Definition myPlc_manifest_update (p:Plc) (m:Manifest) : Manifest := 
   let '{| my_abstract_plc := _;
           asps := oldasps; 
-          appraisal_asps := old_app_asps;
           uuidPlcs := oldKnowsOf; 
           pubKeyPlcs := oldContext; 
           targetPlcs := oldTargets; 
           policy := oldPolicy |} := m in
-  (Build_Manifest p oldasps old_app_asps oldKnowsOf oldContext oldTargets oldPolicy).
+  (Build_Manifest p oldasps oldKnowsOf oldContext oldTargets oldPolicy).
 
 Definition pubkey_manifest_update (p:Plc) (m:Manifest) : Manifest := 
   let '{| my_abstract_plc := oldPlc;
           asps := oldasps; 
-          appraisal_asps := old_app_asps;
           uuidPlcs := oldKnowsOf; 
           pubKeyPlcs := oldContext; 
           targetPlcs := oldTargets ;
           policy := oldPolicy |} := m in
-  (Build_Manifest oldPlc oldasps old_app_asps oldKnowsOf (manset_add p oldContext) oldTargets oldPolicy).
+  (Build_Manifest oldPlc oldasps oldKnowsOf (manset_add p oldContext) oldTargets oldPolicy).
 
 Definition pubkeys_manifest_update_replace_all (ps:manifest_set Plc) (m:Manifest) : Manifest := 
         let '{| my_abstract_plc := oldMyPlc;
                 asps := oldasps; 
-                appraisal_asps := old_app_asps;
                 uuidPlcs := oldKnowsOf; 
                 pubKeyPlcs := _; 
                 targetPlcs := oldTargets ;
                 policy := oldPolicy |} := m in
-        (Build_Manifest oldMyPlc oldasps old_app_asps oldKnowsOf ps oldTargets oldPolicy).
+        (Build_Manifest oldMyPlc oldasps oldKnowsOf ps oldTargets oldPolicy).
 
 Definition pubkeys_manifest_update (ps:manifest_set Plc) (m:Manifest) : Manifest := 
   let '{| my_abstract_plc := oldMyPlc;
           asps := oldasps; 
-          appraisal_asps := old_app_asps;
           uuidPlcs := oldKnowsOf; 
           pubKeyPlcs := oldPubs; 
           targetPlcs := oldTargets ;
           policy := oldPolicy |} := m in
-  (Build_Manifest oldMyPlc oldasps old_app_asps oldKnowsOf (fold_right manset_add oldPubs ps) oldTargets oldPolicy).
+  (Build_Manifest oldMyPlc oldasps oldKnowsOf (fold_right manset_add oldPubs ps) oldTargets oldPolicy).
 
 Definition update_manifest_policy_targ (targp:Plc) (targid:Plc) (m:Manifest) : Manifest :=
   let '{| my_abstract_plc := oldMyPlc;
           asps := oldasps; 
-          appraisal_asps := old_app_asps;
           uuidPlcs := oldKnowsOf; 
           pubKeyPlcs := oldContext ; 
           targetPlcs := oldTargets ;
           policy := oldPolicy |} := m in
-  (Build_Manifest oldMyPlc oldasps old_app_asps oldKnowsOf oldContext (manset_add targp oldTargets) oldPolicy).
+  (Build_Manifest oldMyPlc oldasps oldKnowsOf oldContext (manset_add targp oldTargets) oldPolicy).
 
   
 Definition asp_manifest_update (a:ASP) (m:Manifest) : Manifest :=
@@ -109,13 +102,27 @@ Definition asp_manifest_update (a:ASP) (m:Manifest) : Manifest :=
 Definition manifest_set_my_plc (p : Plc) (m : Manifest) : Manifest :=
   let '{| my_abstract_plc := _ ;
           asps := oldasps; 
-          appraisal_asps := old_app_asps;
+
           uuidPlcs := oldKnowsOf; 
           pubKeyPlcs := oldContext ; 
           targetPlcs := oldTargets ;
           policy := oldPolicy |} := m in
   (Build_Manifest p oldasps old_app_asps oldKnowsOf oldContext oldTargets oldPolicy).
   *)
+
+Definition manifest_update_env_res (p:Plc) (e:EnvironmentM) 
+            (f:Manifest -> ResultT Manifest string) 
+            : ResultT EnvironmentM string := 
+  let m := 
+    match (map_get e p) with
+    | Some mm => mm
+    | None => (myPlc_manifest_update p empty_Manifest)
+    end 
+  in
+  match (f m) with
+  | resultC m' => resultC (map_set e p m')
+  | errC e => errC e
+  end.
   
 Definition manifest_update_env (p:Plc) (e:EnvironmentM) 
             (f:Manifest -> Manifest) : EnvironmentM := 
@@ -221,44 +228,52 @@ Definition attify_terms' (pr:(Term * Plc)) : Term :=
 Definition attify_terms (ls:list (Term * Plc)) : list Term :=
   List.map attify_terms' ls.
 
-Definition app_aspid_manifest_update (i:ASP_ID) (p:Plc) (m:Manifest) : Manifest := 
-  let '{| my_abstract_plc := oldPlc;
-          asps := oldasps; 
-          appraisal_asps := old_app_asps;
-          uuidPlcs := oldKnowsOf; 
-          pubKeyPlcs := oldContext; 
-          targetPlcs := oldTargets ;
-          policy := oldPolicy |} := m in
-  (Build_Manifest oldPlc oldasps (manset_add (i,p) old_app_asps) oldKnowsOf oldContext oldTargets oldPolicy).
-
-Fixpoint manifest_generator_app'' (et:Evidence) (m:Manifest) : Manifest :=
+Fixpoint manifest_generator_app'' (et:Evidence) (al : AM_Library) (m:Manifest) 
+    : ResultT Manifest string :=
   match et with 
-  | mt => m 
-  | nn _ => m (* TODO: account for nonce handling here? *)
+  | mt => resultC m 
+  | nn _ => resultC m (* TODO: account for nonce handling here? *)
   | uu p fwd ps e' => 
     match fwd with 
     | (EXTD n) => 
       match ps with 
       | asp_paramsC a _ targ _ =>
-          manifest_generator_app'' e' 
-            (app_aspid_manifest_update targ a m)
+        match (map_get (ASP_Compat_Map al) a) with
+        | Some a' => manifest_generator_app'' e' al (aspid_manifest_update a' m)
+        | None => errC "Compatible Appraisal ASP not found in AM Library"%string
+        end
       end 
     | ENCR => 
       match ps with 
-      | asp_paramsC _ _ p' _ =>
-          manifest_generator_app'' e' 
-            (pubkey_manifest_update p' m)
+      | asp_paramsC a _ p' _ =>
+        match (map_get (ASP_Compat_Map al) a) with
+        | Some a' => 
+            manifest_generator_app'' e' al (
+              aspid_manifest_update a' (pubkey_manifest_update p' m)
+            )
+        | None => errC "Compatible Appraisal ASP not found in AM Library"%string
+        end
       end
-    | KEEP => manifest_generator_app'' e' m
-    | _ => m
+    | KEEP => 
+      let '(asp_paramsC a _ _ _) := ps in
+      match (map_get (ASP_Compat_Map al) a) with
+      | Some a' => 
+          manifest_generator_app'' e' al (aspid_manifest_update a' m)
+      | None => errC "Compatible Appraisal ASP not found in AM Library"%string
+      end
+    | _ => resultC m
     end
   | ss e1 e2 => 
-      manifest_generator_app'' e2 (manifest_generator_app'' e1 m)
+    match (manifest_generator_app'' e1 al m) with
+    | resultC m' => manifest_generator_app'' e2 al m'
+    | errC e => errC e
+    end
   end.
 
-Definition manifest_generator_app' (p:Plc) (et:Evidence) (env:EnvironmentM) : EnvironmentM :=
-  manifest_update_env p env (manifest_generator_app'' et).
+Definition manifest_generator_app' (p:Plc) (et:Evidence) (al : AM_Library) (env:EnvironmentM) : ResultT EnvironmentM string :=
+  manifest_update_env_res p env (manifest_generator_app'' et al).
 
 
-Definition manifest_generator_app (et:Evidence) (p:Plc) : EnvironmentM := 
-  manifest_generator_app' p et e_empty.
+Definition manifest_generator_app (et:Evidence) (p:Plc) (al : AM_Library)
+    : ResultT EnvironmentM string := 
+  manifest_generator_app' p et al e_empty.

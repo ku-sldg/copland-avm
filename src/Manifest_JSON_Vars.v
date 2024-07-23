@@ -20,8 +20,8 @@ Definition AM_CLONE_UUID : string := "CLONE_UUID".
 
 Definition AM_LIB_ASPS : string := "LIB_ASPS".
 
-Definition AM_LIB_APPR_ASPS : string := "LIB_APPR_ASPS".
-
 Definition AM_LIB_PLCS : string := "LIB_PLCS".
 
 Definition AM_LIB_PUBKEYS : string := "LIB_PUBKEYS".
+
+Definition AM_LIB_COMPAT_ASPS : string := "ASP_COMPAT_MAP".

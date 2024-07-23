@@ -17,15 +17,12 @@ Import ListNotations.
 
 
 Definition lib_supports_manifest (al : AM_Library) (am : Manifest) : Prop :=
-  (* (forall (a : ASP_ID), In_set a am.(asps) -> 
-    exists aloc, Maps.map_get al.(Lib_ASPS) a = Some aloc) /\ *)
+  (forall (a : ASP_ID), In_set a am.(asps) -> 
+    exists aloc, Maps.map_get al.(Lib_ASPs) a = Some aloc) /\
   (forall (up : Plc), In_set up am.(uuidPlcs) -> 
     exists b, Maps.map_get al.(Lib_Plcs) up = Some b) /\
   (forall (pkp : Plc), In_set pkp am.(pubKeyPlcs) -> 
     exists b, Maps.map_get al.(Lib_PubKeys) pkp = Some b).
-     (* /\
-  (forall (a : (Plc*ASP_ID)), In_set a am.(appraisal_asps) -> 
-    exists aloc, Maps.map_get al.(Lib_Appraisal_ASPS) a = Some aloc). *)
 
 Ltac unfolds :=
   (* repeat monad_unfold; *)
@@ -101,6 +98,15 @@ Require Import Helpers_CvmSemantics.
 Ltac kill_map_none :=
   match goal with
   | H1 : In_set ?x ?l,
+    H3 : map_get ?l' ?x = None,
+    H4 : forall _ : _, In_set _ ?l -> _
+      |- _ => 
+    let H' := fresh "H'" in
+    let H'' := fresh "H'" in
+    let H''' := fresh "H'" in
+    eapply H4 in H1 as H';
+    destruct H'; find_rewrite; congruence
+  | H1 : In_set ?x ?l,
     H3 : map_get (_ ?l' ?fn) ?x = None,
     H4 : forall _ : _, In_set _ ?l -> _
       |- _ => 
@@ -127,7 +133,10 @@ Proof.
   destruct amConf; simpl in *;
   destruct amLib; simpl in *.
   unfold manifest_compiler in H0; repeat find_injection;
-  simpl in *; repeat ff; try congruence.
+  simpl in *; repeat ff; try congruence;
+  unfold lib_supports_manifest in H; intuition; 
+  simpl in *; intuition; eauto; try congruence;
+  kill_map_none.
 Qed.
 
 Lemma never_change_am_conf : forall t st res st',
@@ -162,7 +171,13 @@ Definition supports_am (ac1 ac2 : AM_Config) : Prop :=
       ac2.(pubKeyCb) p = errC (Runtime errStr)) /\
   (forall p errStr, 
       ac1.(plcCb) p = errC (Runtime errStr) ->
-      ac2.(plcCb) p = errC (Runtime errStr)).
+      ac2.(plcCb) p = errC (Runtime errStr)) /\
+  (forall a a',
+      map_get ac1.(ASP_to_APPR_ASP_Map) a = Some a' ->
+      map_get ac2.(ASP_to_APPR_ASP_Map) a = Some a') /\
+  (forall a,
+      map_get ac1.(ASP_to_APPR_ASP_Map) a = None ->
+      map_get ac2.(ASP_to_APPR_ASP_Map) a = None).
 
 Theorem supports_am_refl : forall ac1,
   supports_am ac1 ac1.
@@ -317,15 +332,18 @@ Proof.
       simpl in *; subst; intuition; 
       destruct_conjs;
       eauto; try congruence);
-    unfold supports_am in *; intuition;
-
-    erewrite H7 in *; try congruence;
-    try find_injection; eauto.
-
-    right.
-    repeat eexists.
-    erewrite H6.
-    eauto.
+    unfold supports_am in *; intuition.
+    match goal with
+    | H : forall _ _, (plcCb ?ac1 _ = errC _ -> plcCb ?ac2 _ = errC _) |- _ =>
+      match goal with
+      | H1 : plcCb ac1 _ = errC _ ,
+        H2 : plcCb ac2 _ = errC _ |- _ =>
+          let H' := fresh "H'" in
+          pose proof (H _ _ H1) as H';
+          rewrite H2 in H';
+          try find_injection; eauto
+      end
+    end.
   - subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
       try break_match;
@@ -495,13 +513,7 @@ Definition manifest_support_am_config (m : Manifest) (ac : AM_Config) : Prop :=
     (exists errStr, ac.(plcCb) p = errC (Runtime errStr))) /\
   (forall p, In_set p (m.(pubKeyPlcs)) ->
     (exists res, ac.(pubKeyCb) p = resultC res) \/
-    (exists errStr, ac.(pubKeyCb) p = errC (Runtime errStr))) /\
-
-    (forall p a, In_set (p,a) (m.(appraisal_asps)) -> 
-    forall l targid ev,
-    (exists res, ac.(app_aspCb) (asp_paramsC a l p targid) ev = resultC res) \/
-    (exists errStr, ac.(app_aspCb) (asp_paramsC a l p targid) ev = errC (Runtime errStr))).
-
+    (exists errStr, ac.(pubKeyCb) p = errC (Runtime errStr))).
 
 Theorem manifest_support_am_config_compiler : forall absMan amLib aspBin,
   lib_supports_manifest amLib absMan ->
@@ -509,8 +521,9 @@ Theorem manifest_support_am_config_compiler : forall absMan amLib aspBin,
 Proof.
   unfold lib_supports_manifest, manifest_support_am_config, 
     manifest_compiler, generate_PubKey_dispatcher, generate_Plc_dispatcher in *;
-  simpl in *; intuition;
-  repeat break_match; simpl in *; intuition; eauto;
+  simpl in *; repeat ff; intuition;
+  repeat break_match; simpl in *; eauto with *; intuition; eauto;
+  try kill_map_none;
   match goal with
   | H:  context[ map_get (minify_mapC ?l ?filt) ?a],
     H1: forall a' : Plc, _ -> (exists x : _, map_get _ _ = Some x) |- _ => 
@@ -937,7 +950,6 @@ Proof.
           {|
             my_abstract_plc := my_abstract_plc;
             asps := asps;
-            appraisal_asps := appraisal_asps;
             uuidPlcs := manset_add p uuidPlcs;
             pubKeyPlcs := pubKeyPlcs;
             targetPlcs := targetPlcs;
@@ -949,7 +961,6 @@ Proof.
           {|
             my_abstract_plc := my_abstract_plc;
             asps := asps;
-            appraisal_asps := appraisal_asps;
             uuidPlcs := manset_add p uuidPlcs;
             pubKeyPlcs := pubKeyPlcs;
             targetPlcs := targetPlcs;
@@ -969,7 +980,6 @@ Proof.
          {|
            my_abstract_plc := my_abstract_plc;
            asps := asps;
-           appraisal_asps := appraisal_asps;
            uuidPlcs := manset_add p uuidPlcs;
            pubKeyPlcs := pubKeyPlcs;
            targetPlcs := targetPlcs;
@@ -977,7 +987,6 @@ Proof.
          |}) p0 = Some {|
          my_abstract_plc := my_abstract_plc;
          asps := asps;
-         appraisal_asps := appraisal_asps;
          uuidPlcs := manset_add p uuidPlcs;
          pubKeyPlcs := pubKeyPlcs;
          targetPlcs := targetPlcs;
@@ -992,7 +1001,6 @@ Proof.
       specialize H with (m1 := {|
         my_abstract_plc := my_abstract_plc;
         asps := asps;
-        appraisal_asps := appraisal_asps;
         uuidPlcs := @manset_add _ Eq_Class_ID_Type p uuidPlcs;
         pubKeyPlcs := pubKeyPlcs;
         targetPlcs := targetPlcs;
@@ -1007,30 +1015,28 @@ Proof.
 
       +
 
-      subst.
+      subst; simpl in *.
 
       assert (Environment_subset 
-      (map_set e p0
+      (map_set e my_abstract_plc
           {|
             my_abstract_plc := my_abstract_plc;
-            asps := asps;
-            appraisal_asps := appraisal_asps;
-            uuidPlcs := manset_add p uuidPlcs;
-            pubKeyPlcs := pubKeyPlcs;
-            targetPlcs := targetPlcs;
-            policy := policy
+            asps := manifest_set_empty;
+            uuidPlcs := [p];
+            pubKeyPlcs := manifest_set_empty;
+            targetPlcs := manifest_set_empty;
+            policy := empty_PolicyT;
           |})
 
           (manifest_generator' p t
-       (map_set e p0
+      (map_set e my_abstract_plc
           {|
             my_abstract_plc := my_abstract_plc;
-            asps := asps;
-            appraisal_asps := appraisal_asps;
-            uuidPlcs := manset_add p uuidPlcs;
-            pubKeyPlcs := pubKeyPlcs;
-            targetPlcs := targetPlcs;
-            policy := policy
+            asps := manifest_set_empty;
+            uuidPlcs := [p];
+            pubKeyPlcs := manifest_set_empty;
+            targetPlcs := manifest_set_empty;
+            policy := empty_PolicyT;
           |}))
       
       ).
@@ -1039,47 +1045,37 @@ Proof.
       }
       unfold Environment_subset in *.
 
-
       assert (
         map_get
-      (map_set e p0
+      (map_set e my_abstract_plc
          {|
            my_abstract_plc := my_abstract_plc;
-           asps := asps;
-           appraisal_asps := appraisal_asps;
-           uuidPlcs := manset_add p uuidPlcs;
-           pubKeyPlcs := pubKeyPlcs;
-           targetPlcs := targetPlcs;
-           policy := policy
-         |}) p0 = Some {|
-         my_abstract_plc := my_abstract_plc;
-         asps := asps;
-         appraisal_asps := appraisal_asps;
-         uuidPlcs := manset_add p uuidPlcs;
-         pubKeyPlcs := pubKeyPlcs;
-         targetPlcs := targetPlcs;
-         policy := policy
+           asps := manifest_set_empty;
+           uuidPlcs := [p];
+           pubKeyPlcs := manifest_set_empty;
+           targetPlcs := manifest_set_empty;
+           policy := empty_PolicyT;
+         |}) my_abstract_plc = Some {|
+           my_abstract_plc := my_abstract_plc;
+           asps := manifest_set_empty;
+           uuidPlcs := [p];
+           pubKeyPlcs := manifest_set_empty;
+           targetPlcs := manifest_set_empty;
+           policy := empty_PolicyT;
        |}
       ).
       {
         eapply mapC_get_works.
-
       }
 
-      specialize H with (m1 := {|
-        my_abstract_plc := my_abstract_plc;
-        asps := asps;
-        appraisal_asps := appraisal_asps;
-        uuidPlcs := @manset_add _ Eq_Class_ID_Type p uuidPlcs;
-        pubKeyPlcs := pubKeyPlcs;
-        targetPlcs := targetPlcs;
-        policy := policy
-      |}) (p := p0).
+      pose proof (H _ _ H0).
+
       find_apply_hyp_hyp.
       destruct_conjs.
+      eexists.
+      erewrite H2.
 
-      exists H0.
-      eauto.
+      simpl in *; intuition.
 
     - (* lseq case *)
       ff.
@@ -1403,7 +1399,6 @@ Proof.
               {|
                 my_abstract_plc := my_abstract_plc;
                 asps := asps;
-                appraisal_asps := appraisal_asps;
                 uuidPlcs := manset_add p uuidPlcs;
                 pubKeyPlcs := pubKeyPlcs;
                 targetPlcs := targetPlcs;
@@ -1427,7 +1422,6 @@ Proof.
               {|
                 my_abstract_plc := p0;
                 asps := manifest_set_empty;
-                appraisal_asps := manifest_set_empty;
                 uuidPlcs := manset_add p manifest_set_empty;
                 pubKeyPlcs := manifest_set_empty;
                 targetPlcs := manifest_set_empty; (* v; *)
@@ -2202,12 +2196,14 @@ Lemma mangen_plcTerm_subset_end_to_end_mangen : forall ts t tp,
   In (t, tp) ts ->
   (forall m m' p,
     map_get (mangen_plcTerm_list_union ts) p = Some m' ->
-    forall ls, map_get (end_to_end_mangen' ls ts) p = Some m ->
-    manifest_subset m' m
+    forall ls al env, 
+      end_to_end_mangen' ls ts al = resultC env ->
+      map_get env p = Some m ->
+      manifest_subset m' m
   ).
 Proof.
-  intuition; unfold end_to_end_mangen' in *;
-  eapply manifest_env_union_always_subset in H1; intuition.
+  intuition; unfold end_to_end_mangen' in *; ff;
+  find_eapply_lem_hyp manifest_env_union_always_subset; intuition.
 Qed.
 Global Hint Resolve mangen_plcTerm_subset_end_to_end_mangen : core.
 
@@ -2215,35 +2211,19 @@ Lemma mangen_subset_end_to_end_mangen : forall ts t tp,
   In (t, tp) ts ->
   (forall m m' p,
     map_get (manifest_generator t tp) p = Some m' ->
-    forall ls, map_get (end_to_end_mangen' ls ts) p = Some m ->
-    manifest_subset m' m
+    forall ls al env, 
+      end_to_end_mangen' ls ts al = resultC env ->
+      map_get env p = Some m ->
+      manifest_subset m' m
   ).
 Proof.
   intuition.
   assert (exists m'', map_get (mangen_plcTerm_list_union ts) p = Some m''). eapply mangen_plcTerm_list_exists; eauto.
   break_exists.
-  pose proof (mangen_plcTerm_list_subsumes ts p x H2 t tp H _ H0).
-  pose proof (mangen_plcTerm_subset_end_to_end_mangen ts t tp H m x p H2 ls H1).
+  pose proof (mangen_plcTerm_list_subsumes ts p x H3 t tp H _ H0).
   eapply manifest_subset_trans; eauto.
 Qed.
 Global Hint Resolve mangen_subset_end_to_end_mangen : core.
-
-Lemma mangen_subsets_of_end_to_end_mangen : forall ts t tp,
-  In (t, tp) ts ->
-  (forall m m' p,
-    map_get (manifest_generator t tp) p = Some m' ->
-    forall ls, map_get (end_to_end_mangen' ls ts) p = Some m ->
-    manifest_subset m' m
-  ).
-Proof.
-  intuition.
-  assert (exists m'', map_get (mangen_plcTerm_list_union ts) p = Some m''). eapply mangen_plcTerm_list_exists; eauto.
-  break_exists.
-  pose proof (mangen_plcTerm_list_subsumes ts p x H2 t tp H _ H0).
-  pose proof (mangen_plcTerm_subset_end_to_end_mangen ts t tp H m x p H2 ls H1).
-  eapply manifest_subset_trans; eauto.
-Qed.
-Global Hint Resolve mangen_subsets_of_end_to_end_mangen : core.
 
 Lemma always_a_man_gen_exists : forall t p tp,
   In p (places tp t) ->
@@ -2256,7 +2236,9 @@ Qed.
 Global Hint Resolve always_a_man_gen_exists : core.
 
 Lemma mangen_exists_end_to_end_mangen : forall ts ls p m,
-  map_get (end_to_end_mangen' ls ts) p = Some m ->
+  forall al env,
+    end_to_end_mangen' ls ts al = resultC env ->
+    map_get env p = Some m ->
   (forall t tp,
     In (t, tp) ts ->
     In p (places tp t) ->
@@ -2354,7 +2336,7 @@ Proof.
   unfold supports_am, manifest_subset,
     generate_Plc_dispatcher, generate_PubKey_dispatcher in *;
   intuition; simpl in *; eauto;
-  repeat break_match; simpl in *; intuition; subst; eauto;
+  repeat break_match; simpl in *; repeat ff; intuition; subst; eauto;
   unfold supports_am, manifest_subset,
     generate_Plc_dispatcher, generate_PubKey_dispatcher in *;
   try congruence; eauto; try find_injection;
@@ -2372,24 +2354,21 @@ Proof.
         eapply H2
   end; repeat break_match; simpl in *; intuition; subst; eauto; 
   try congruence;
-  repeat match goal with
-  | [H : forall (x : ASP_ID) (l : ASP_ARGS) (targ : Plc) (targid : TARG_ID) (ev : RawEv), _,
-    H1 : make_JSON_FS_Location_Request _ _ (_ {| asprreq_asp_id := ?a; asprreq_asp_args := ?l; asprreq_targ_plc := ?targ; asprreq_targ := ?targid; asprreq_rawev := ?ev |}) = _ |- _] =>
-      let H' := fresh "H'" in
-      pose proof (H a l targ targid ev) as H';
-      clear H;
-      rewrite H1 in H';
-      try match goal with
-      | H2 : JSON_to_ASPRunResponse _ = _ |- _ => 
-          rewrite H2 in H'
-      end;
-      simpl in *
-  end; repeat ff; eauto with *.
+  try match goal with
+  | H : context[ _ -> aspCb _ _ _ = errC _ ] |- aspCb _ _ _ = errC _ =>
+    eapply H; repeat ff; try congruence;
+    exfalso; eauto
+  | H : context[ _ -> aspCb _ _ _ = resultC _ ] |- aspCb _ _ _ = resultC _ =>
+    eapply H; repeat ff; try congruence;
+    exfalso; eauto
+  end.
 Qed.
 Global Hint Resolve supports_am_mancomp_subset : core.
 
 Lemma end_to_end_mangen_supports_all : forall ts ls p m,
-  map_get (end_to_end_mangen' ls ts) p = Some m ->
+  forall al env,
+    end_to_end_mangen' ls ts al = resultC env ->
+    map_get env p = Some m ->
   (forall t tp, 
     In (t, tp) ts ->
     In p (places tp t) ->
@@ -2400,17 +2379,19 @@ Lemma end_to_end_mangen_supports_all : forall ts ls p m,
   ).
 Proof.
   intuition.
-  pose proof (mangen_exists_end_to_end_mangen _ _ _ _ H _ _ H0 H1 _ H2).
+  pose proof (mangen_exists_end_to_end_mangen _ _ _ _ _ _ H H0 _ _ H1 H2 _ H3).
   break_exists.
-  pose proof (mangen_subset_end_to_end_mangen _ _ _ H0 _ _ _ H3 _ H).
+  pose proof (mangen_subset_end_to_end_mangen _ _ _ H1 _ _ _ H4 _ _ _ H H0).
   pose proof manifest_supports_term_sub.
-  eapply (man_gen_old_always_supports) in H3 as H'; eauto.
+  pose proof (man_gen_old_always_supports _ _ _ _ _ _ H4 H2 H3).
+  eauto.
 Qed.
 Global Hint Resolve end_to_end_mangen_supports_all : core.
 
 Theorem manifest_generator_compiler_soundness_distributed_multiterm' : forall t ts ls tp p absMan amLib amConf aspBin,
-  (* map_get (manifest_generator t tp) p = Some absMan -> *)
-  map_get (end_to_end_mangen' ls ts) p = Some absMan -> 
+forall env,
+  end_to_end_mangen' ls ts amLib = resultC env ->
+  map_get env p = Some absMan ->
   In (t,tp) ts ->
   (* In p (places tp t) -> *)
   lib_supports_manifest amLib absMan ->
@@ -2446,7 +2427,7 @@ Proof.
     * (* NOTE: This is the important one, substitute proof of any manifest here *)
       assert (In p (places tp t)). {
         eapply in_plc_term; intuition; subst.
-        rewrite H5 in H4; simpl in *; intuition.
+        find_rewrite; eauto.
       }
       eapply end_to_end_mangen_supports_all; eauto.
   - match goal with
@@ -2561,9 +2542,9 @@ Proof.
 Qed.
 
 
-Theorem manifest_generator_compiler_soundness_distributed_multiterm : forall t ts ls tp p absMan amLib amConf aspBin,
-  (* map_get (manifest_generator t tp) p = Some absMan -> *)
-  map_get (end_to_end_mangen ls ts) p = Some absMan -> 
+Theorem manifest_generator_compiler_soundness_distributed_multiterm : forall t ts ls tp p absMan amLib amConf aspBin env,
+  end_to_end_mangen ls ts amLib = resultC env ->
+  map_get env p = Some absMan -> 
   In (t,tp) ts ->
   (* In p (places tp t) -> *)
   lib_supports_manifest amLib absMan ->
@@ -2589,12 +2570,13 @@ Theorem manifest_generator_compiler_soundness_distributed_multiterm : forall t t
     ).
 Proof.
   intros.
-  unfold end_to_end_mangen in H.
-  eapply exists_manifest_subset_update_pubkeys_env in H.
+  unfold end_to_end_mangen in H; ff; simpl in *.
+  pose proof (exists_manifest_subset_update_pubkeys_env _ _ _ _ H0).
   destruct_conjs.
-  eapply exists_manifest_subset_update_knowsOf_myPlc_env in H5.
+  find_eapply_lem_hyp exists_manifest_subset_update_knowsOf_myPlc_env.
   destruct_conjs.
   eapply manifest_generator_compiler_soundness_distributed_multiterm'.
+  eassumption.
   eassumption.
   eassumption.
   eapply lib_supports_manifest_subset.
@@ -2604,7 +2586,6 @@ Proof.
   eassumption.
   reflexivity.
   eapply supports_am_mancomp_subset.
-  rewrite H2.
   eassumption.
   eapply manifest_subset_trans.
   eassumption.

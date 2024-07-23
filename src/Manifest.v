@@ -86,7 +86,6 @@ Definition empty_PolicyT : PolicyT := [].
     my_abstract_plc   : Plc ; 
 
     asps              : manifest_set ASP_ID; 
-    appraisal_asps    : manifest_set (Plc * ASP_ID) ;
     uuidPlcs          : manifest_set Plc ;
     pubKeyPlcs        : manifest_set Plc ;
     targetPlcs        : manifest_set Plc ;
@@ -101,7 +100,6 @@ Definition empty_PolicyT : PolicyT := [].
       manifest_set_empty
       manifest_set_empty
       manifest_set_empty
-      manifest_set_empty
       empty_PolicyT.
 
 (** Representation of a system's environment/resources used to populate an 
@@ -111,30 +109,19 @@ Definition empty_PolicyT : PolicyT := [].
     UUID_AM_Clone : UUID ;
 
     (* Local Mappings *)
+    Lib_ASPs            : MapC ASP_ID Concrete_ASP_ID ;
     Lib_Plcs            : MapC Plc UUID ;
     Lib_PubKeys         : MapC Plc PublicKey ;
+    (* Attest <-> Appraisal ASP Mapping *)
+    ASP_Compat_Map      : MapC ASP_ID ASP_ID ;
   }.
 
 Record AM_Config : Type := 
   mkAmConfig {
     absMan : Manifest ;
     am_clone_addr : UUID ;
+    ASP_to_APPR_ASP_Map : MapC ASP_ID ASP_ID ;
     aspCb : (ASPCallback DispatcherErrors) ;
-    app_aspCb : (ASPCallback DispatcherErrors) ;
     plcCb : PlcCallback ;
     pubKeyCb : PubKeyCallback ;
   }.
-
-Definition empty_aspCb (ps:ASP_PARAMS) (rawev:RawEv) 
-    : ResultT RawEv DispatcherErrors := 
-  errC Unavailable.
-
-  Definition empty_am_config : AM_Config :=
-  mkAmConfig 
-    empty_Manifest
-    default_uuid
-    empty_aspCb
-    empty_aspCb
-    (fun x => errC Unavailable)
-    (fun x => errC Unavailable).
-

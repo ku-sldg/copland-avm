@@ -12,6 +12,11 @@ Global Instance Stringifiable_FS_Location : Stringifiable FS_Location. Admitted.
 
 Definition empty_FS_Location : FS_Location. Admitted.
 
+Definition Concrete_ASP_ID : Set. Admitted.
+
+Global Instance Stringifiable_Concrete_ASP_ID : Stringifiable Concrete_ASP_ID. Admitted.
+
+
 Definition UUID : Type. Admitted.
 
 Global Instance Stringifiable_UUID : Stringifiable UUID. Admitted.

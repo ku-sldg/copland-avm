@@ -96,12 +96,10 @@ Definition lib_omits_manifest (al:AM_Library) (am:Manifest) : Manifest :=
     let aspid_list := am.(asps) in 
     let uuid_plcs_list := am.(uuidPlcs) in 
     let pubkey_plcs_list := am.(pubKeyPlcs) in 
-    let appraisal_asps_list := am.(appraisal_asps) in  
 
         Build_Manifest 
             am.(my_abstract_plc)
             aspid_list
-            appraisal_asps_list
             (lib_omits_uuid_plcs uuid_plcs_list al)
             (lib_omits_pubkey_plcs pubkey_plcs_list al)    
             manifest_set_empty 
@@ -109,9 +107,8 @@ Definition lib_omits_manifest (al:AM_Library) (am:Manifest) : Manifest :=
 
 Definition manifest_none_omitted (m:Manifest) : bool := 
     match m with 
-    | Build_Manifest _ asps app_asps uuids pubkeys _ _ => 
+    | Build_Manifest _ asps uuids pubkeys _ _ => 
         (is_empty_manset asps) && 
-        (is_empty_manset app_asps) &&
         (is_empty_manset uuids) &&
         (is_empty_manset pubkeys)
     end.

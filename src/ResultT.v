@@ -1,3 +1,4 @@
+Require Import List.
 (* Generic result type.  Parameterized by the success type (A) 
     and the error type (E). *)
 Inductive ResultT (A:Type) (E:Type) : Type := 
@@ -40,3 +41,23 @@ Fixpoint result_map {A B E : Type} (f : A -> ResultT B E) (l : list A)
       vs <- result_map f t;;
       resultC (cons v vs)
   end.
+
+Lemma result_map_spec : forall {X Y Z : Type} (l : list X) (f : X -> ResultT Y Z) x (res : list Y),
+  In x l ->
+  result_map f l = resultC res ->
+  (exists fx', (f x) = resultC fx' /\
+    In fx' res).
+Proof.
+  induction l; simpl in *; intuition; eauto;
+  unfold res_ret, res_bind in *; simpl in *; subst; intuition; eauto.
+  - destruct (f x); intuition; try congruence. 
+    destruct (result_map f l); intuition; try congruence.
+    inversion H0; subst;
+    exists y; simpl in *; eauto.
+  - destruct (f a) eqn:E1; intuition; try congruence. 
+    destruct (result_map f l) eqn:E2; intuition; try congruence.
+    pose proof (IHl _ _ _ H1 E2); eauto.
+    inversion H0; subst;
+    destruct H; intuition.
+    exists x0; simpl in *; eauto.
+Qed.
