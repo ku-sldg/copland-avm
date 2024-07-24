@@ -1483,11 +1483,9 @@ Proof.
     break_match; eauto.
     ff.
     ff.
-    break_match; eauto.
-    ff.
-    break_match; eauto; [ | ff].
-    repeat find_injection; try congruence.
-    eapply (wf_ec_preserved_remote {| st_ev := e; st_trace := tr ++ [req i (session_plc ac') p t (get_et e)]; st_evid := i + 1; st_config := ac' |}); simpl in *; eauto.
+    repeat (break_match; eauto; try congruence;
+      repeat find_rewrite; repeat find_injection).
+    eapply (wf_ec_preserved_remote {| st_ev := e; st_trace := tr ++ [req i (session_plc ac') p t (get_et e)]; st_evid := i + 1; st_config := ac' |}); eauto.
   - (* lseq case *)
     wrap_ccp.
     ff; eauto.

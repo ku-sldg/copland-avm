@@ -20,14 +20,14 @@ Import ListNotations.
 Set Nested Proofs Allowed.
 *)
 
-Definition am_sendReq (req_plc : Plc) (t:Term) (uuid : UUID) (* (authTok:ReqAuthTok) *)
+Definition am_sendReq (req_plc : Plc) (att_sess : Attestation_Session) (t:Term) (uuid : UUID) (* (authTok:ReqAuthTok) *)
    (e:RawEv) : ResultT RawEv string :=
-  let req := mkPRReq t req_plc e in 
-  let js := ProtocolRunRequest_to_JSON req in
+  let req := (mkPRReq att_sess t req_plc e) in 
+  let js := to_JSON req in
   let resp_res := make_JSON_Network_Request uuid js in
   match resp_res with
   | resultC js_res =>
-      match JSON_to_ProtocolRunResponse js_res with
+      match from_JSON js_res with
       | errC msg => errC msg
       | resultC res =>
         let '(mkPRResp success ev) := res in
@@ -36,14 +36,14 @@ Definition am_sendReq (req_plc : Plc) (t:Term) (uuid : UUID) (* (authTok:ReqAuth
   | errC msg => errC msg
   end.
 
-Definition am_sendReq_app (uuid : UUID) (t:Term) (p:Plc) (e:Evidence) (ev:RawEv) : 
+Definition am_sendReq_app (uuid : UUID) (att_sess : Attestation_Session) (t:Term) (p:Plc) (e:Evidence) (ev:RawEv) : 
     ResultT AppResultC string :=
-  let req := mkPAReq t p e ev in
-  let js := ProtocolAppraiseRequest_to_JSON req in
+  let req := (mkPAReq att_sess t p e ev) in
+  let js := to_JSON req in
   let resp_res := make_JSON_Network_Request uuid js in
   match resp_res with
   | resultC js_res =>
-    match JSON_to_ProtocolAppraiseResponse js_res with
+    match from_JSON js_res with
     | errC msg => errC msg
     | resultC res =>
       let '(mkPAResp success result) := res in
@@ -61,7 +61,7 @@ Definition gen_nonce_if_none_local (initEv:option EvC) : AM EvC :=
         ret (evc [nonce_bits] (nn nid))
   end.
 
-Definition gen_authEvC_if_some (ot:option Term) (uuid : UUID) (myPlc:Plc) (init_evc:EvC) : AM EvC :=
+(* Definition gen_authEvC_if_some (ot:option Term) (uuid : UUID) (myPlc:Plc) (init_evc:EvC) : AM EvC :=
   match ot with
   | Some auth_phrase =>
     let '(evc init_rawev_auth init_et_auth) := init_evc in
@@ -72,24 +72,24 @@ Definition gen_authEvC_if_some (ot:option Term) (uuid : UUID) (myPlc:Plc) (init_
         ret (evc auth_rawev auth_et)
     end
   | None => ret (evc [] mt)
-  end.
+  end. *)
 
-Definition run_appraisal_client (t:Term) (p:Plc) (et:Evidence) (re:RawEv) 
+Definition run_appraisal_client (att_sess : Attestation_Session) (t:Term) (p:Plc) (et:Evidence) (re:RawEv) 
   (addr:UUID) : ResultT AppResultC string :=
   let expected_et := eval t p et in 
-  am_sendReq_app addr t p et re.
+  am_sendReq_app addr att_sess t p et re.
   (*
   let comp := gen_appraise_AM expected_et re in
   run_am_app_comp comp mtc_app.
   *)
 
-Definition run_demo_client_AM (t:Term) (top_plc:Plc) (att_plc:Plc) (et:Evidence) 
+Definition run_demo_client_AM (t:Term) (top_plc:Plc) (att_plc:Plc) (et:Evidence) (att_sess : Attestation_Session)
   (re:RawEv) (attester_addr:UUID) (appraiser_addr:UUID) : ResultT AppResultC string :=
-    let att_result := am_sendReq top_plc t attester_addr re in 
+    let att_result := am_sendReq top_plc att_sess t attester_addr re in 
     match att_result with 
     | errC msg => errC msg 
     | resultC att_rawev => 
-        run_appraisal_client t att_plc et att_rawev appraiser_addr
+        run_appraisal_client att_sess t att_plc et att_rawev appraiser_addr
     end.
 
 Definition check_et_length (et:Evidence) (ls:RawEv) : AM unit := 
@@ -97,7 +97,7 @@ if (eqb (et_size et) (length ls))
 then ret tt 
 else (am_failm (am_dispatch_error (Runtime errStr_et_size))).
 
-Definition am_appraise (t:Term) (toPlc:Plc) (init_et:Evidence) (cvm_ev:RawEv) (apprUUID : UUID) (local_appraisal:bool) : AM AppResultC :=
+Definition am_appraise (att_sess : Attestation_Session) (t:Term) (toPlc:Plc) (init_et:Evidence) (cvm_ev:RawEv) (apprUUID : UUID) (local_appraisal:bool) : AM AppResultC :=
   let expected_et := eval t toPlc init_et in
   check_et_length expected_et cvm_ev ;;
 
@@ -107,7 +107,7 @@ Definition am_appraise (t:Term) (toPlc:Plc) (init_et:Evidence) (cvm_ev:RawEv) (a
        let expected_et := eval t toPlc init_et in
         gen_appraise_AM expected_et cvm_ev 
     | false => 
-      match run_appraisal_client t toPlc init_et cvm_ev apprUUID with
+      match run_appraisal_client att_sess t toPlc init_et cvm_ev apprUUID with
       | errC msg => am_failm (am_dispatch_error (Runtime msg))
       | resultC res => ret res
       end
@@ -190,14 +190,14 @@ Qed.
 Admitted.
 *)
 
-Definition run_cvm_local_am (t:Term) (ls:RawEv) : AM RawEv := 
+(* Definition run_cvm_local_am (t:Term) (ls:RawEv) : AM RawEv := 
   st <- get ;; 
   match (run_cvm_w_config t ls (amConfig st)) with
   | resultC cvm_st => ret (get_bits (st_ev cvm_st))
   | errC e => am_failm (cvm_error e)
-  end.
+  end. *)
 
-Definition gen_authEvC_if_some_local (ot:option Term) (myPlc:Plc) (init_evc:EvC) (absMan:Manifest) (amLib:AM_Library) (aspBin : FS_Location) : AM EvC :=
+(* Definition gen_authEvC_if_some_local (ot:option Term) (myPlc:Plc) (init_evc:EvC) (absMan:Manifest) (amLib:AM_Library) (aspBin : FS_Location) : AM EvC :=
   match ot with
   | Some auth_phrase =>
       let '(evc init_rawev_auth init_et_auth) := init_evc in
@@ -218,8 +218,9 @@ Definition check_disclosure_policy (t:Term) (p:Plc) (e:Evidence) : AM unit :=
   if (policy_list_not_disclosed t p e policy)
   then ret tt 
   else (am_failm (am_dispatch_error (Runtime errStr_disclosePolicy))).
+*)
 
-Definition am_client_gen_local (t:Term) (myPlc:Plc) (initEvOpt:option EvC) 
+(* Definition am_client_gen_local (t:Term) (myPlc:Plc) (initEvOpt:option EvC) 
     (absMan:Manifest) (amLib:AM_Library) (aspBin : FS_Location) : AM AM_Result := 
   evcIn <- gen_nonce_if_none_local initEvOpt ;; 
   (* auth_evc <- gen_authEvC_if_some_local authPhrase myPlc mt_evc ;;  *)
@@ -227,13 +228,12 @@ Definition am_client_gen_local (t:Term) (myPlc:Plc) (initEvOpt:option EvC)
   config_AM_if_lib_supported absMan amLib aspBin ;; 
 
   check_disclosure_policy t myPlc init_et ;;
-  resev <- run_cvm_local_am t init_ev ;; 
+  resev <- run_cvm_local_am t init_ev ;;  *)
 
   (*
   let expected_et := eval t myPlc init_et in 
   check_et_length expected_et resev ;;
   app_res <- gen_appraise_AM expected_et resev ;; 
-  *)
 
   (*
 
@@ -245,8 +245,21 @@ Definition am_client_gen_local (t:Term) (myPlc:Plc) (initEvOpt:option EvC)
 
 
   ret (am_appev app_res).
+*)
 
 Require Import Auto.
+
+Fixpoint nonce_ids_et' (et:Evidence) (ls:list N_ID) : list N_ID :=
+  match et with
+  | mt => ls
+  | nn nid => nid :: ls 
+  | ss et1 et2 => (nonce_ids_et' et2 (nonce_ids_et' et1 ls))
+  | uu _ _ _ et' => nonce_ids_et' et' ls
+  end.
+
+Definition nonce_ids_et (et:Evidence) : list N_ID :=
+  nonce_ids_et' et [].
+
 
 
 Inductive no_nonces_pred : Evidence -> Prop := 
@@ -661,6 +674,7 @@ Proof.
 Qed.
 
 
+(*
 Example client_gen_executable : forall t p initEvOpt amLib st aspBin,
 
   lib_supports_manifest_bool amLib (get_my_absman_generated t p) = true -> 
@@ -676,7 +690,6 @@ Example client_gen_executable : forall t p initEvOpt amLib st aspBin,
   ).
 Proof.
 
-(*
 
   intros.
   unfold am_client_gen_local.
@@ -972,8 +985,6 @@ Qed.
 
 
 *)
-
-Abort.
 
 
 

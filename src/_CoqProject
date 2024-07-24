@@ -71,7 +71,7 @@ Impl_appraisal.v
 # ManCompSoundness_Appraisal.v
 AM_Helpers.v
 AM_Json_Interfaces.v
-# Client_AM.v
+Client_AM.v
 Server_AM.v
 Flexible_Mechanisms_Vars.v
 Flexible_Mechanisms.v

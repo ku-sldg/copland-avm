@@ -92,27 +92,30 @@ eapply Build_Jsonifiable with
 Defined.
 
 (* Protocol Appraise Request *)
-Global Instance Jsonifiable_ProtocolAppraiseRequest `{Jsonifiable Term, Jsonifiable RawEv, Jsonifiable Evidence}: Jsonifiable ProtocolAppraiseRequest.
+Global Instance Jsonifiable_ProtocolAppraiseRequest `{Jsonifiable Term, Jsonifiable RawEv, Jsonifiable Evidence, Jsonifiable Attestation_Session}: Jsonifiable ProtocolAppraiseRequest.
 eapply Build_Jsonifiable with
 (to_JSON := fun req =>
   JSON_Object [
     (STR_TYPE, (InJSON_String STR_REQUEST));
     (STR_ACTION, (InJSON_String STR_APPRAISE));
+    (STR_ATTEST_SESS, (InJSON_Object (to_JSON (pareq_att_sess req))));
     (STR_TERM, (InJSON_Object (to_JSON (pareq_term req))));
     (STR_REQ_PLC, (InJSON_String (to_string (pareq_plc req))));
     (STR_EVIDENCE, (InJSON_Object (to_JSON (pareq_evidence req))));
     (STR_RAWEV, (InJSON_Object (to_JSON (pareq_ev req))))])
 (from_JSON := (fun j =>
+  temp_att_sess <- JSON_get_Object STR_ATTEST_SESS j ;;
   temp_term <- JSON_get_Object STR_TERM j ;;
   temp_plc <- JSON_get_string STR_REQ_PLC j ;;
   temp_evidence <- JSON_get_Object STR_EVIDENCE j ;;
   temp_ev <- JSON_get_Object STR_RAWEV j ;;
-
+  
+  att_sess <- from_JSON temp_att_sess ;;
   term <- from_JSON temp_term ;;
   plc <- from_string temp_plc ;;
   evidence <- from_JSON temp_evidence ;;
   ev <- from_JSON temp_ev ;;
-  resultC (mkPAReq term plc evidence ev))); solve_json.
+  resultC (mkPAReq att_sess term plc evidence ev))); solve_json.
 Defined.
 
 (* Protocol Appraise Response *)

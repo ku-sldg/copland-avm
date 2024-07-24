@@ -17,9 +17,9 @@ Definition check_et_size (et:Evidence) (ls:RawEv) : ResultT unit DispatcherError
 Definition decrypt_bs_to_rawev (bs:BS) (params:ASP_PARAMS) (ac:Session_Config) : ResultT RawEv DispatcherErrors :=
 match params with
 | asp_paramsC _ _ p _ => 
-    match (ac.(pubKeyCb) p) with 
-    | resultC pubkey => decrypt_bs_to_rawev_prim bs params pubkey 
-    | errC e => errC e
+    match (map_get (pubkey_map ac) p) with 
+    | Some pubkey => decrypt_bs_to_rawev_prim bs params pubkey 
+    | None => errC Unavailable
     end
 end.
 

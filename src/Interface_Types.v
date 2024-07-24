@@ -30,6 +30,7 @@ Record ProtocolNegotiateResponse :=
 
 Record ProtocolAppraiseRequest :=
   mkPAReq {
+    pareq_att_sess: Attestation_Session;
     pareq_term: Term;
     pareq_plc: Plc;
     pareq_evidence: Evidence;
