@@ -13,6 +13,22 @@ Class Jsonifiable (A : Type) :=
       from_JSON (to_JSON a) = resultC a
   }.
 
+Ltac simpl_json :=
+  unfold res_bind in *; simpl in *; intuition;
+  repeat (try rewrite canonical_jsonification in *;
+    try rewrite canonical_stringification in *;
+    simpl in *; intuition).
+
+
+Ltac solve_json := 
+  simpl_json; try congruence;
+  match goal with
+  | |- resultC ?x = resultC ?y => 
+    destruct y; simpl in *; subst; eauto
+  end.
+
+
+
 (* Global Instance Stringifiable_Jsonifiables {A : Type} `{Jsonifiable A} : Stringifiable A.
 pose proof (Build_Stringifiable A (fun a => JSON_to_string (to_JSON a)) (fun a => match string_to_JSON a with | errC e => errC e | resultC js => from_JSON js end)).
 intuition.

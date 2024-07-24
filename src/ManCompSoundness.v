@@ -1799,7 +1799,7 @@ Require Import Manifest_Generator_Union.
 Close Scope cop_ent_scope.
 
 Lemma manifest_subset_union_l : forall m1 m2,
-  manifest_subset m1 (Manifest_Union.manifest_union m1 m2).
+  manifest_subset m1 (Manifest_Union.manifest_union_asps m1 m2).
 Proof.
   induction m1; destruct m2; simpl in *; intuition; eauto;
   unfold manifest_subset; simpl in *; intuition; eauto;
@@ -1808,7 +1808,7 @@ Qed.
 Global Hint Resolve manifest_subset_union_l : core.
 
 Lemma manifest_subset_union_r : forall m1 m2,
-  manifest_subset m2 (Manifest_Union.manifest_union m1 m2).
+  manifest_subset m2 (Manifest_Union.manifest_union_asps m1 m2).
 Proof.
   induction m1; destruct m2; simpl in *; intuition; eauto;
   unfold manifest_subset; simpl in *; intuition; eauto;

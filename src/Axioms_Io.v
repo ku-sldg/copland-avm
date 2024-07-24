@@ -67,31 +67,3 @@ Axiom thread_bookend_peel: forall (t:AnnoTerm) p (*et*) etr l (a:Core_Term) tr,
     ([cvm_thread_start l p a etr] ++ tr ++ [cvm_thread_end l] =
      (shuffled_events tr (cvm_events_core a p etr))
     ).
-
-(*
-Axiom wf_ec_preserved_remote: forall a n e,
-    wf_ec e ->
-    wf_ec (doRemote_session a n e).
-    *)
-
-Axiom wf_ec_preserved_remote: forall st pTarg pFrom uuid sc ev1,
-    (* doRemote t u (get_bits ev1) = resultC ev1' ->  *)
-    (* do_remote t p e ac = resultC ev1' -> *)
-    (st_config st) = sc ->
-    (st_ev st) = ev1 ->
-    map_get (plc_map sc) pTarg = Some uuid ->
-    forall t rawEv js_resp att_sess,
-    make_JSON_Network_Request uuid (
-        to_JSON (
-          (mkPRReq 
-            att_sess
-            t 
-            pFrom
-            (* Temporarily putting in a plc but not good! *)
-            (* (my_abstract_plc (absMan (st_config st))) *)
-            (get_bits ev1)
-          )
-        )) = resultC js_resp ->
-    from_JSON js_resp = resultC (mkPRResp true rawEv) -> 
-    wf_ec ev1 -> 
-    wf_ec (evc rawEv (eval t pTarg (get_et ev1))).

@@ -207,11 +207,14 @@ Definition check_cvm_policy (t:Term) (pTo:Plc) (et:Evidence) : CVM unit :=
 Definition do_remote (t:Term) (pTo:Plc) (e:EvC) (sc : Session_Config) 
     : ResultT RawEv DispatcherErrors := 
   (* There is assuredly a better way to do it than this *)
-  let att_sess := (session_config_decompiler sc) in
-  match (map_get (plc_map sc) pTo) with 
+  let '(mkAtt_Sess my_plc plc_map pk_map) := (session_config_decompiler sc) in
+  (* We need  to update the Att Session to tell the next plc how
+  they should be tagging their stuff (basically who they are
+  in the protocol) *)
+  let new_att_sess := (mkAtt_Sess pTo plc_map pk_map) in
+  match (map_get plc_map pTo) with 
   | Some uuid => 
-      let my_plc := (session_plc sc) in
-      let remote_req := (mkPRReq att_sess t my_plc (get_bits e)) in
+      let remote_req := (mkPRReq new_att_sess t my_plc (get_bits e)) in
       let js_req := to_JSON remote_req in
       let resp_res := make_JSON_Network_Request uuid js_req in
       match resp_res with

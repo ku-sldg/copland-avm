@@ -73,6 +73,59 @@ Ltac anhl :=
 Ltac monad_simp := 
   repeat (monad_unfold; simpl in *; eauto).
 
+Lemma check_cvm_policy_preserves_state : forall t p evt st1 st1' r,
+  check_cvm_policy t p evt st1 = (r, st1') ->
+  st1 = st1'.
+Proof.
+  induction t; simpl in *; intuition; eauto; ff;
+  break_match; repeat find_injection; eauto.
+Qed.
+Global Hint Resolve check_cvm_policy_preserves_state : core.
+
+Require Import EqClass.
+
+(* Lemma policy_list_not_disclosed_same_outputs : forall a p evt pol1 pol2 r1 r2,
+  policy_list_not_disclosed a p evt pol1 = r1 ->
+  policy_list_not_disclosed a p evt pol2 = r2 ->
+  r1 = r2.
+Proof.
+  induction pol1; intuition; eauto; simpl in *; subst.
+  - induction pol2; simpl in *; intuition; eauto;
+    right; intros HC; invc HC. 
+  - induction pol2; simpl in *; intuition; eauto;
+    try (right; intros HC; invc HC; congruence).
+    * repeat find_rewrite; simpl in *;
+      destEq a1 a2; try (right; intros HC; invc HC; congruence).
+      destEq b b0; try (right; intros HC; invc HC; congruence).
+      destruct (term_discloses_aspid_to_remote_enc_bool a p evt a2 b0) eqn:E;
+      simpl in *; intuition; eauto.
+    * repeat find_rewrite; simpl in *;
+      destEq a1 a2; try (right; intros HC; invc HC; congruence).
+      destEq b b0; try (right; intros HC; invc HC; congruence).
+      destruct (term_discloses_aspid_to_remote_enc_bool a p evt a2 b0) eqn:E;
+      simpl in *; intuition; eauto.
+      destruct (policy_list_not_disclosed a p evt pol1) eqn:E1,
+        (policy_list_not_disclosed a p evt pol2) eqn:E2;
+      intuition; eauto.
+      ** eapply  
+      intuition; eauto.
+    *  
+  simpl in *; subst; eauto.
+  destruct pol2; simpl  *)
+
+Lemma check_cvm_policy_same_outputs : forall t p evt st1 st1' r1 st2 st2' r2,
+  check_cvm_policy t p evt st1 = (r1, st1') ->
+  check_cvm_policy t p evt st2 = (r2, st2') ->
+  (policy (st_config st1) = policy (st_config st2)) ->
+  r1 = r2 /\ st1 = st1' /\ st2 = st2'.
+Proof.
+  induction t; simpl in *; intuition; eauto;
+  unfold check_cvm_policy in *; monad_simp; eauto;
+  repeat (break_match; repeat find_rewrite; repeat find_injection; 
+    simpl in *; eauto).
+Qed.
+Global Hint Resolve check_cvm_policy_same_outputs : core.
+
 Theorem evidence_deterministic_output_on_results : forall t e tr1 tr2 i1 i2 ac st1 st2,
   build_cvm t {| st_ev := e; st_trace := tr1; st_evid := i1; st_config := ac |} = (resultC tt, st1) ->
   build_cvm t {| st_ev := e; st_trace := tr2; st_evid := i2; st_config := ac |} = (resultC tt, st2) ->
@@ -83,12 +136,11 @@ Proof.
     destruct (aspCb ac a (get_bits e)); 
     simpl in *; invc H1; invc H2; eauto.
     repeat ff.
-  - 
-  repeat ff;
-  unfold doRemote_session' in *;
-  repeat ff.
-  find_rewrite.
-  ff.
+  - ff;
+    unfold doRemote_session' in *;
+    repeat (break_match; try monad_unfold; repeat find_rewrite; repeat find_injection; try congruence; eauto);
+    repeat find_eapply_lem_hyp check_cvm_policy_preserves_state;
+    subst; simpl in *; repeat find_rewrite; repeat find_injection; eauto.
   - destruct (build_cvm t1 {| st_ev := e; st_trace := tr1; st_evid := i1; st_config := ac |}) eqn:E1;
     destruct (build_cvm t1 {| st_ev := e; st_trace := tr2; st_evid := i2; st_config := ac |}) eqn:E2;
     destruct r, r0; invc H; invc H0; destruct u, u0, c, c0.
@@ -162,10 +214,15 @@ Proof.
     monad_simp; invc H1; invc H2; eauto; simpl in *;
     try (rewrite H3; eauto);
     repeat ff.
-  -     repeat ff;
-  unfold doRemote_session' in *;
-  repeat ff;
-  find_rewrite; ff.
+  - ff; unfold doRemote_session' in *; 
+    repeat (break_match; try monad_unfold; repeat find_rewrite; repeat find_injection; try congruence; eauto);
+    match goal with
+    | H1 : check_cvm_policy _ _ _ _ = _,
+      H2 : check_cvm_policy _ _ _ _ = _ |- _ =>
+        eapply check_cvm_policy_same_outputs in H1; try eapply H2; eauto;
+        intuition; subst; simpl in *; subst; repeat find_rewrite;
+        repeat find_injection; eauto; try congruence
+    end.
 
   - ff; eauto;
     repeat match goal with

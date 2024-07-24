@@ -1,9 +1,10 @@
-Require Import Maps Term_Defs_Core Manifest_Admits.
+Require Import Maps Term_Defs_Core Manifest.
 Require Import String List ResultT.
 Require Import JSON Stringifiable.
 Import ListNotations.
 
-Record Attestation_Session := {
+Record Attestation_Session := 
+  mkAtt_Sess {
   Session_Plc     : Plc ;
   Plc_Mapping     : MapC Plc UUID;
   PubKey_Mapping  : MapC Plc PublicKey;
@@ -23,7 +24,7 @@ Definition PolicyT := list (Plc * ASP_ID).
 
 Record Session_Config := {
   session_plc         : Plc ;
-  ASP_to_APPR_ASP_Map : MapC ASP_ID ASP_ID ;
+  ASP_to_APPR_ASP_Map : ASP_Compat_MapT ;
   aspCb               : (ASPCallback DispatcherErrors) ;
   plc_map             : MapC Plc UUID ;
   pubkey_map          : MapC Plc PublicKey ;

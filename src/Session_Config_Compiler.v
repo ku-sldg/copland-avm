@@ -1,4 +1,4 @@
-Require Import Manifest Attestation_Session.
+Require Import Manifest Attestation_Session AM_Manager.
 Require Import EqClass.
 Require Import Term_Defs_Core ResultT ID_Type Manifest_Set Maps Interface.
 Require Import IO_Stubs.
@@ -34,14 +34,15 @@ Definition generate_ASP_dispatcher `{HID : EqClass ID_Type} (am : Manifest) (al 
     : (ASPCallback DispatcherErrors) :=
   (generate_ASP_dispatcher' am al aspBin). 
 
-Definition session_config_compiler (m : Manifest) (aspBin : FS_Location) (ats : Attestation_Session) : Session_Config :=
+Definition session_config_compiler (conf : AM_Manager_Config) (ats : Attestation_Session) : Session_Config :=
+let '(mkAM_Man_Conf man aspBin myUUID) := conf in
 {|
   session_plc := (Session_Plc ats) ;
-  ASP_to_APPR_ASP_Map := (ASP_Compat_Map m);
-  aspCb     := (generate_ASP_dispatcher m ats aspBin) ;
+  ASP_to_APPR_ASP_Map := (ASP_Compat_Map man);
+  aspCb     := (generate_ASP_dispatcher man ats aspBin) ;
   plc_map     := (Plc_Mapping ats);
   pubkey_map  := (PubKey_Mapping ats);
-  policy   := (man_policy m);
+  policy   := (man_policy man);
 |}.
 
 Definition session_config_decompiler (sc : Session_Config) : Attestation_Session :=

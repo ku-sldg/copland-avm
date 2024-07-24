@@ -8,24 +8,22 @@ Require Import Manifest Manifest_Set EnvironmentM.
 Require Import List.
 Import ListNotations.
 
-Definition manifest_union (m1:Manifest) (m2:Manifest) : Manifest := 
+Definition manifest_union_asps (m1:Manifest) (m2:Manifest) : Manifest := 
     match (m1, m2) with 
-    | ((Build_Manifest myPlc asps1 uuidPlcs1 pubKeyPlcs1 targPlcs1 myPol),
-       (Build_Manifest _     asps2 uuidPlcs2 pubKeyPlcs2 targPlcs2 _    )) => 
+    | ((Build_Manifest asps1 asp_comp_map1 asp_fs_map1 myPol1),
+       (Build_Manifest asps2 _ _ _)) =>
 
        Build_Manifest
-        myPlc 
         (manset_union asps1 asps2)
-        (manset_union uuidPlcs1 uuidPlcs2)
-        (manset_union pubKeyPlcs1 pubKeyPlcs2)
-        (manset_union targPlcs1 targPlcs2)
-        myPol
+        asp_comp_map1
+        asp_fs_map1
+        myPol1
     end.
 
 Definition environment_union'' (p:Plc) (m1:Manifest) (e2:EnvironmentM) : EnvironmentM := 
   match (map_get e2 p) with 
   | Some m2 => 
-    let new_man := manifest_union m2 m1 in  (* m2 first here to preserve plc *)
+    let new_man := manifest_union_asps m2 m1 in  (* m2 first here to preserve plc *)
       map_set e2 p new_man 
   | None => map_set e2 p m1
   end.

@@ -1429,12 +1429,11 @@ Axiom wf_ec_preserved_par: forall e l t2 p,
     wf_ec e ->
     wf_ec (parallel_vm_thread l t2 p e).
 
-Lemma check_cvm_policy_preserves_amConf : forall t p evt st1 u st1',
-  check_cvm_policy t p evt st1 = (resultC u, st1') ->
-  st_config st1 = st_config st1'.
-Proof.
-  induction t; simpl in *; intuition; eauto; ff.
-Qed.
+Axiom wf_ec_preserved_remote: forall t ev1,
+    wf_ec ev1 -> 
+    forall p rawEv ac,
+      do_remote t p ev1 ac = resultC rawEv ->
+      wf_ec (evc rawEv (eval t p (get_et ev1))).
 
 (** * Lemma:  CVM execution preserves well-formedness of EvC bundles 
       (Evidence Type of sufficient length for raw evidence). *)
@@ -1461,31 +1460,14 @@ Proof.
     rewrite EqClass.nat_eqb_eq in *; eauto.
     
   - (* at case *)
-    wrap_ccp.
-    repeat Auto.ff.
-    (* unfold do_remote in *. *)
-    repeat ff;
+    wrap_ccp;
     unfold doRemote_session' in *;
-    repeat ff.
-    monad_unfold.
-    repeat ff.
-    unfold doRemote_session' in *;
-    repeat ff.
-    repeat monad_unfold.
-    (* invc Heqr0. *)
-    unfold do_remote in *.
-    break_match; eauto.
-    break_match; subst; eauto.
-    ff.
-    break_match; eauto.
-    break_match; eauto.
-    break_match; eauto.
-    break_match; eauto.
-    ff.
-    ff.
-    repeat (break_match; eauto; try congruence;
-      repeat find_rewrite; repeat find_injection).
-    eapply (wf_ec_preserved_remote {| st_ev := e; st_trace := tr ++ [req i (session_plc ac') p t (get_et e)]; st_evid := i + 1; st_config := ac' |}); eauto.
+    monad_unfold;
+    repeat (break_match; subst; repeat find_rewrite;
+      repeat find_injection; intuition; eauto; try congruence);
+    find_eapply_lem_hyp check_cvm_policy_preserves_state;
+    simpl in *; repeat find_injection; eauto.
+    eapply wf_ec_preserved_remote; eauto.
   - (* lseq case *)
     wrap_ccp.
     ff; eauto.

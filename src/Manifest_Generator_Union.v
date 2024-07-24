@@ -11,7 +11,7 @@ Require Import EnvironmentM Manifest_Set JSON Stringifiable.
 
 Require Import Manifest_Union Manifest_Generator Cvm_St Cvm_Impl.
 
-Require Import Manifest Manifest_Compiler Manifest_Generator_Facts.
+Require Import Manifest Manifest_Generator_Facts.
 
 Require Import Coq.Program.Tactics.
 Require Import List.
@@ -54,73 +54,22 @@ map
 Definition manifest_generator_plcTerm_list (ls:list (Term*Plc)) : list EnvironmentM := 
     List.map (fun '(t,p) => manifest_generator t p) ls.
 
-(* fold_right (fun '(t,p) => manifest_generator' p t) e_empty ls. *)
-
-
-(*
-Check fold_right.
-fold_right
-	 : forall A B : Type, (B -> A -> A) -> A -> list B -> A
-*)
 Definition env_list_union (ls:list EnvironmentM) : EnvironmentM := 
     fold_right environment_union e_empty ls.
 
 Definition mangen_plcTerm_list_union (ls:list (Term*Plc)) : EnvironmentM := 
     env_list_union (manifest_generator_plcTerm_list ls).
 
-(*
-Definition mangen_app_plc (et:Evidence) (p:Plc) : Manifest := 
-  manifest_union (empty_Manifest_plc p) (manifest_generator_app et p).
-  *)
+Definition manifest_generator_plcEvidence_list (comp_map : ASP_Compat_MapT) 
+    (ls:list (Evidence*Plc)) : ResultT (list EnvironmentM) string := 
+  result_map (fun '(et,p) => manifest_generator_app comp_map et p) ls.
 
-Definition lift_manifest_to_env (m:Manifest) : EnvironmentM := 
-  map_set e_empty (my_abstract_plc m) m.
-
-Definition manifest_generator_plcEvidence_list (ls:list (Evidence*Plc)) (al : AM_Library) 
-    : ResultT (list EnvironmentM) string := 
-  result_map (fun '(et,p) => manifest_generator_app et p al) ls.
-
-(*
-  let ms : list Manifest := List.map (fun '(et,p) => mangen_app_plc et p) ls in 
-    List.map lift_manifest_to_env ms.
-*)
-
-
-Definition mangen_plcEvidence_list_union (ls:list (Evidence*Plc)) (al : AM_Library)
-    : ResultT EnvironmentM string := 
-  match (manifest_generator_plcEvidence_list ls al) with
+Definition mangen_plcEvidence_list_union (comp_map : ASP_Compat_MapT) 
+    (ls:list (Evidence*Plc)) : ResultT EnvironmentM string := 
+  match (manifest_generator_plcEvidence_list comp_map ls) with
   | resultC ls' => resultC (env_list_union ls')
   | errC e => errC e
   end.
-
-
-(*
-Definition man_list_union (myPlc:Plc) (ls: list Manifest) : Manifest := 
-    fold_right manifest_union (empty_Manifest_plc myPlc) ls.
-
-
-Definition manifest_generator_evidence_list (ls:list Evidence) : list Manifest := 
-    List.map (fun et => manifest_generator_app et) ls.
-
-Definition mangen_evidence_list_union (myPlc:Plc) (ls:list Evidence) : Manifest := 
-    man_list_union myPlc (manifest_generator_evidence_list ls). 
-
-Definition singleton_plc_appraisal_environmentM (myPlc:Plc) (ls:list Evidence) : EnvironmentM := 
-    let daMan := mangen_evidence_list_union myPlc ls in 
-    map_set e_empty myPlc daMan.
-
-*)
-
-
-
-(*
-Definition manifest_generator_app (et:Evidence) : Manifest := ...
-*)
-
-(*
-Definition knowsof_myPlc_manifest_update (m:Manifest) : Manifest :=
-  knowsof_manifest_update (my_abstract_plc m) m.
-*)
 
 Definition Evidence_Plc_list := list (Evidence*Plc).
 Open Scope string_scope.
@@ -139,7 +88,7 @@ Definition Evidence_Plc_list_to_JSON `{Jsonifiable Evidence} (ls: Evidence_Plc_l
       )
     )].
 
-Definition Evidence_Plc_list_from_JSON `{Jsonifiable Evidence} (js : JSON) 
+Definition Evidence_Plc_list_from_JSON `{Jsonifiable Evidence, Jsonifiable ASP_Compat_MapT} (js : JSON) 
     : ResultT Evidence_Plc_list string :=
   match (JSON_get_Array "Evidence_Plc_list" js) with
   | resultC jsArr =>
@@ -165,7 +114,6 @@ eapply Build_Jsonifiable with
   (to_JSON := Evidence_Plc_list_to_JSON)
   (from_JSON := Evidence_Plc_list_from_JSON).
 unfold Evidence_Plc_list_to_JSON, Evidence_Plc_list_from_JSON;
-simpl in *.
 induction a; simpl in *; intuition;
 repeat (try break_match; simpl in *; subst; try congruence);
 repeat rewrite canonical_jsonification in *; try congruence;
@@ -221,75 +169,24 @@ repeat rewrite canonical_jsonification in *; try congruence;
 repeat find_injection; eauto.
 Defined.
 
-Definition knowsof_myPlc_manifest_update_env' (p:(Plc*Manifest)) : (Plc*Manifest) := 
-  (fst p, (knowsof_myPlc_manifest_update (snd p))).
-
-Definition update_knowsOf_myPlc_env (env:EnvironmentM) : EnvironmentM := map knowsof_myPlc_manifest_update_env' env.
-
-Definition update_pubkeys_env' (pubs:manifest_set Plc) (p:(Plc*Manifest)) : (Plc*Manifest) := 
-  (fst p, (pubkeys_manifest_update pubs (snd p))).
-
-Definition update_pubkeys_env (pubs:manifest_set Plc) (env:EnvironmentM) : EnvironmentM := 
-  map (update_pubkeys_env' pubs) env.
-
-Definition end_to_end_mangen' (ls: Evidence_Plc_list) (ts: Term_Plc_list) 
-      (al : AM_Library) : ResultT EnvironmentM string := 
-    let app_env := mangen_plcEvidence_list_union ls al in
-    let att_env := mangen_plcTerm_list_union ts in 
-    match app_env with
-    | resultC app_env => resultC (environment_union app_env att_env)
-    | errC e => errC e
-    end.
+Definition end_to_end_mangen (comp_map : ASP_Compat_MapT) 
+    (ls: Evidence_Plc_list) (ts: Term_Plc_list) 
+    : ResultT EnvironmentM string := 
+  let app_env := mangen_plcEvidence_list_union comp_map ls in
+  let att_env := mangen_plcTerm_list_union ts in 
+  match app_env with
+  | resultC app_env => resultC (environment_union app_env att_env)
+  | errC e => errC e
+  end.
 
 Definition manset_union_list{A : Type} `{HA : EqClass A} 
   (lss: manifest_set (manifest_set A)) : manifest_set A := 
     fold_right manset_union [] lss.
 
-Definition get_all_unique_places (ls: Term_Plc_list) (ets: Evidence_Plc_list) : manifest_set Plc := 
-  let lss := map (fun '(t,p) => places_manset p t) ls in 
-  let ts_ps := manset_union_list lss in
-  let ets_ps := map (fun '(et,p) => p) ets in
-  (* let ts_res_dup := concat lss in  *)
-  manset_union ts_ps ets_ps.
-
-Definition end_to_end_mangen (ls: Evidence_Plc_list) (ts: Term_Plc_list) 
-    (al : AM_Library) : ResultT EnvironmentM string := 
-  let ps := get_all_unique_places ts ls in 
-  match (end_to_end_mangen' ls ts al) with
-  | resultC env => resultC (update_pubkeys_env ps (update_knowsOf_myPlc_env env))
-  | errC e => errC e
-  end.
-
-Definition end_to_end_mangen_final (ls: Evidence_Plc_list) (ts: Term_Plc_list) 
-    (al : AM_Library) : ResultT (list Manifest) string :=
-  match (end_to_end_mangen ls ts al) with
+Definition end_to_end_mangen_final (comp_map : ASP_Compat_MapT) 
+    (ls: Evidence_Plc_list) (ts: Term_Plc_list) 
+    : ResultT (list Manifest) string :=
+  match (end_to_end_mangen comp_map ls ts) with
   | resultC env => resultC (environment_to_manifest_list env)
   | errC e => errC e
   end.
-
-
-(*
-Definition appraiser_evidence_demo_phrase : Evidence := 
-  eval example_phrase P0 (nn O).
-
-Definition test_end_to_end_mangen : EnvironmentM := 
-  let ets : list (Evidence*Plc) := [(appraiser_evidence_demo_phrase, P4)] in 
-  let ts : list (Term*Plc) := [(example_phrase, P0)] in
-  end_to_end_mangen ets ts.
-
-Definition get_all_unique_places (ls: list (Term*Plc)) (ets: list (Evidence*Plc)) : list Plc := 
-    let lss := map (fun '(t,p) => places p t) ls in 
-    let ets_ps := map (fun '(et,p) => p) ets in
-    let ts_res_dup := concat lss in 
-    dedup_list (ts_res_dup ++ ets_ps).
-
- 
-Definition end_to_end_mangen_final (ls:list (Evidence*Plc)) (ts: list (Term*Plc)) : list Manifest := 
-    let env : EnvironmentM := end_to_end_mangen ls ts in 
-    let unique_plcs : list Plc := get_all_unique_places ts ls in 
-    let res' := map knowsof_myPlc_manifest_update (get_unique_manifests_env' unique_plcs env) in 
-        map (pubkeys_manifest_update (list_to_manset unique_plcs)) res'. 
-
-Locate get_unique_manifests_env'.
-
-*)

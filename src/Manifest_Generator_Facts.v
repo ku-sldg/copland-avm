@@ -17,10 +17,7 @@ Set Nested Proofs Allowed.
 
 
 Definition manifest_subset (m1:Manifest) (m2:Manifest) : Prop :=
-  (forall i, In_set i (asps m1) -> In_set i (asps m2)) /\
-  (forall p, In_set p (uuidPlcs m1) -> In_set p (uuidPlcs m2)) /\
-  (forall q, In_set q (pubKeyPlcs m1) -> In_set q (pubKeyPlcs m2)) /\
-  (forall p, In_set p (targetPlcs m1) -> In_set p (targetPlcs m2)).
+  (forall i, In_set i (asps m1) -> In_set i (asps m2)).
 
 Definition Environment_subset (e1:EnvironmentM) (e2:EnvironmentM) : Prop := 
   forall m1 p, 
@@ -34,9 +31,8 @@ Definition Environment_subset (e1:EnvironmentM) (e2:EnvironmentM) : Prop :=
 Lemma manifest_subset_refl : forall m,
   manifest_subset m m.
 Proof.
-  intros.
-  unfold manifest_subset; intros.
-  split; intros; ff.
+  intros; 
+  unfold manifest_subset; eauto.
 Qed.
 
 Lemma manifest_subset_trans : forall m1 m2 m3,
@@ -51,9 +47,8 @@ Lemma env_subset_refl : forall e,
   Environment_subset e e.
 Proof.
   intros.
-  unfold Environment_subset; intros.
-  exists m1.
-  split; ff.
+  unfold Environment_subset; intros; 
+  exists m1; intuition; eauto;
   eapply manifest_subset_refl.
 Qed.
 
@@ -76,29 +71,10 @@ Proof.
   eapply manifest_subset_trans; eauto.
 Qed.
 
-Lemma plc_ne{A:Type} `{H : EqClass A} : forall (p1 p2:A),
-p1 <> p2 -> 
-eqb p1 p2 = false.
-Proof.
-  intros.
-  unfold not in *.
-  destruct (eqb p1 p2) eqn:hi.
-  ++
-  assert False.
-  {
-    apply H0.
-    apply eqb_eq.
-    eauto.
-  }
-  solve_by_inversion.
-  ++
-  eauto.
-Qed.
-
 Lemma env_subset_set_man : forall e p m1 m2,
-map_get e p = Some m1 ->
-manifest_subset m1 m2 ->
-Environment_subset e (map_set e p m2).
+  map_get e p = Some m1 ->
+  manifest_subset m1 m2 ->
+  Environment_subset e (map_set e p m2).
 Proof.
   induction e; simpl in *; intuition; eauto; try congruence;
   ff; repeat (rewrite eqb_eq in *); subst.
@@ -158,56 +134,27 @@ Lemma manifest_generator_cumul : forall t p e1 e2,
 Proof.
   intros.
   generalizeEverythingElse t.
-  induction t; intros; ff.
+  induction t; intros; ff; eauto.
   - (* asp case *)
-
-
-
-
-
-    unfold asp_manifest_generator, manifest_update_env, asp_manifest_update, aspid_manifest_update;
-    simpl in *; unfold Environment_subset, manifest_subset in *; intuition.
-    destruct (H _ _ H0); intuition;
-    destruct (eqb p0 p) eqn:E.
-    * rewrite eqb_eq in *; subst;
-      rewrite H2 in *; simpl in *; destruct x; simpl in *.
-      rewrite mapC_get_works; eexists; intuition; eauto;
-
-      simpl in *; eauto;
-      try ( find_apply_hyp_hyp;
-      try eapply in_set_add; eauto; tauto);
-      ff; simpl in *; eauto;
-
-      try (
-        find_apply_hyp_hyp;
-        try eapply in_set_add; eauto
-      ).
-  
-    * assert (p <> p0). intros HC. rewrite <- eqb_eq in HC. 
-      rewrite eqb_symm in HC; congruence.
-      erewrite (mapC_get_distinct_keys e2 p p0 _ _ H5 H2); eexists; intuition; eauto.
-
-  - (* at case *)
-    eapply IHt; clear IHt; unfold Environment_subset in *; intuition.
-    unfold at_manifest_generator, manifest_update_env, knowsof_manifest_update; 
-    simpl in *;
-    destruct (H _ _ H0); intuition; clear H H0; unfold manifest_subset in *; intuition; eauto.
-    destruct (eqb p0 p1) eqn:E.
-    * rewrite eqb_eq in *; subst.
-      rewrite H2; destruct x. rewrite mapC_get_works;
-      eexists; intuition; eauto; simpl in *; eauto.
-      
-      find_apply_hyp_hyp;
-      eapply in_set_add; eauto.
-    * erewrite mapC_get_distinct_keys; eauto.
-      eexists; intuition; simpl in *; eauto.
-      intros HC. rewrite <- eqb_eq in HC; congruence.
-
-  - (* lseq case *)
-    eauto.
-  -
-    eauto.
-  - eauto.
+    unfold Environment_subset in *;
+    intuition.
+    unfold manifest_update_env, asp_manifest_update, 
+      aspid_manifest_update; try congruence.
+    ff; subst; find_apply_hyp_hyp; break_exists;
+    intuition; destEq p0 p;
+    repeat find_rewrite; repeat find_injection;
+    try rewrite mapC_get_works; eauto; try congruence;
+    try match goal with
+    | E : ?p0 <> ?p ,
+      H1 : map_get ?e ?p0 = ?r1,
+      H2 : map_get ?e ?p = ?r2 |- 
+      context [map_get (map_set ?e ?p ?m) ?p0] =>
+      erewrite map_distinct_key_rw; eauto
+    end;
+    eexists; intuition; eauto;
+    unfold manifest_subset in *; intuition; simpl in *;
+    find_apply_hyp_hyp; eauto;
+    eapply in_set_add; eauto.
 Qed.
 
 Lemma manifest_generator_cumul' : forall t p e,
@@ -218,160 +165,15 @@ Proof.
   apply env_subset_refl.
 Qed.
 
-Lemma env_subset_plc_manifest_gen: forall e1 e2 p0 p,
-Environment_subset e1 e2 ->
-Environment_subset 
-  (at_manifest_generator p0 p e1) 
-  (at_manifest_generator p0 p e2).
-Proof.
-Admitted.
-
-(*
-  unfold Environment_subset, manifest_subset, at_manifest_generator,
-    knowsof_manifest_update, manifest_update_env, empty_Manifest in *; 
-  simpl in *; intuition.
-  destruct (eqb p0 p1) eqn:E.
-  - rewrite eqb_eq in *; subst;
-    rewrite mapC_get_works in *; ff;
-    try (eexists; simpl in *; intuition; simpl in *; eauto; fail);
-    simpl in *; intuition; eauto; 
-    try
-    destruct (H _ _ Heqo0); simpl in *; intuition; eauto.
-    * find_rewrite; find_injection;
-      eexists; simpl in *; intuition; simpl in *; eauto.
-
-    * find_injection.
-    eexists; simpl in *; intuition; simpl in *; eauto.
-
-      * find_rewrite; congruence.
-      * find_rewrite; find_injection.
-        eexists; simpl in *; intuition; simpl in *; eauto.
-
-
-(*
-
-    * find_rewrite; congruence.
-
-
-
-
-
-
-
-
-
-
-unfold Environment_subset, manifest_subset, at_manifest_generator,
-knowsof_manifest_update, manifest_update_env, empty_Manifest in *; 
-simpl in *; intuition.
-destruct (eqb p0 p1) eqn:E.
-- rewrite eqb_eq in *; subst;
-rewrite mapC_get_works in *; ff;
-try (eexists; simpl in *; intuition; simpl in *; eauto; fail);
-try destruct (H _ _ Heqo0); simpl in *; intuition; eauto.
-* find_rewrite; find_injection;
-  eexists; simpl in *; intuition; simpl in *; eauto.
-* 
-  Print find_injection.
-
-
-find_injection.
-
-admit. 
-* find_rewrite; congruence.
-* find_rewrite.
-  find_rewrite.
-  invc Heqm.
-  invc Heqm0.
-  eexists; simpl in *; intuition; simpl in *; eauto.
-
-
-  Locate find_injection.
-  
-  find_injection.
-  find_rewrite.
-  ff.
-
-
-find_rewrite; find_injection;
-  eexists; simpl in *; intuition; simpl in *; eauto.
-* find_rewrite; congruence.
-
-
-
-  unfold Environment_subset, manifest_subset, at_manifest_generator,
-    knowsof_manifest_update, manifest_update_env, empty_Manifest in *; 
-  simpl in *; intuition.
-  destruct (eqb p0 p1) eqn:E.
-  - rewrite eqb_eq in *; subst;
-    rewrite mapC_get_works in *; ff;
-    try (eexists; simpl in *; intuition; simpl in *; eauto; fail).
-
-    * destruct (H _ _ Heqo0); simpl in *; intuition; eauto.
-      eexists.
-      split; try reflexivity.
-      split; intros; simpl; try eauto.
-      ff.
-      find_rewrite.
-      ff.
-      find_rewrite.
-      ff.
-      split;
-      eauto.
-      split; eauto.
-      intros.
-      door; eauto.
-
-
-    * invc Heqm0.
-      eexists.
-      split; try reflexivity.
-      split; simpl;  try intuition.
-
-    * destruct (H _ _ Heqo0); simpl in *; intuition; eauto.
-      eexists.
-      split; try reflexivity.
-      split; intros; simpl; try eauto.
-      ff.
-      find_rewrite.
-      ff.
-      find_rewrite.
-      ff.
-
-      * invc Heqm0.
-      eexists.
-      split; try reflexivity.
-      split; simpl;  try intuition.
-
-*)
-
-
-
-
-  - ff; subst; simpl in *;
-    try (eexists; simpl in *; intuition; simpl in *; eauto; fail);
-    assert (p0 <> p1) by (intros HC; rewrite <- eqb_eq in HC; congruence);
-    assert (map_get e1 p1 = Some m1) by (eapply mapC_get_distinct_keys_from_set; eauto); 
-    destruct (H _ _ H2); intuition; eauto;
-    erewrite mapC_get_distinct_keys; eauto;
-    eexists; simpl in *; intuition; simpl in *; eauto.
-Qed.
-*)
-
-
-
-Local Hint Resolve env_subset_plc_manifest_gen : core.
-
-
 Lemma empty_manifest_always_sub: forall m,
-manifest_subset empty_Manifest m.
+  manifest_subset empty_Manifest m.
 Proof.
-intros;
-unfold empty_Manifest; unfold manifest_subset; intros; 
-intuition; try solve_by_inversion;
-ff;
+  intros;
+  unfold empty_Manifest; unfold manifest_subset; intros; 
+  intuition; try solve_by_inversion;
+  ff;
 
-eapply In_set_empty_contra; eauto.
+  eapply In_set_empty_contra; eauto.
 Qed.
 
 Local Hint Resolve empty_manifest_always_sub : core.
@@ -386,9 +188,9 @@ Proof.
   induction t; intros; eauto.
   - (* asp case *)
     destruct a; ff;
-    unfold asp_manifest_generator, manifest_update_env, asp_manifest_update,
-      aspid_manifest_update, update_manifest_policy_targ, Environment_subset, 
-      empty_Manifest, pubkey_manifest_update in *; ff;
+    unfold manifest_update_env, asp_manifest_update,
+      aspid_manifest_update, Environment_subset, 
+      empty_Manifest in *; ff;
     simpl in *; intuition; eauto;
 
 
@@ -432,14 +234,13 @@ Proof.
 
 
         ]
-      end.
+      end. 
 Qed.
 
-
 Lemma map_get_mangen : forall t e p p' v,
-map_get e p = Some v ->
-exists v',
-map_get (manifest_generator' p' t e) p = Some v'.
+  map_get e p = Some v ->
+  exists v',
+  map_get (manifest_generator' p' t e) p = Some v'.
 Proof.
   intros.
   assert (Environment_subset e (manifest_generator' p' t e)).
@@ -458,9 +259,9 @@ Qed.
 
 
 Lemma afafa : forall e p t p0 m m',
-map_get (manifest_generator' p t e) p0 = Some m -> 
-e = [(p0, m')] ->
-manifest_subset m' m.
+  map_get (manifest_generator' p t e) p0 = Some m -> 
+  e = [(p0, m')] ->
+  manifest_subset m' m.
 Proof.
   intros.
   subst.

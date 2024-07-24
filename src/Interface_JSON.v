@@ -1,20 +1,6 @@
-Require Import Interface_Types JSON StructTactics Stringifiable Attestation_Session Term_Defs EqClass.
+Require Import Interface_Types StructTactics Stringifiable Attestation_Session Term_Defs EqClass.
 Require Export JSON List.
 Import ListNotations ResultNotation.
-
-Ltac simpl_json :=
-  unfold res_bind in *; simpl in *; intuition;
-  repeat (try rewrite canonical_jsonification in *;
-    try rewrite canonical_stringification in *;
-    simpl in *; intuition).
-
-
-Ltac solve_json := 
-  simpl_json; try congruence;
-  match goal with
-  | |- resultC ?x = resultC ?y => 
-    destruct y; simpl in *; subst; eauto
-  end.
 
 (* Protocol Run Request *)
 Global Instance Jsonifiable_ProtocolRunRequest `{Jsonifiable Term,

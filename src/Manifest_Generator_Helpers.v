@@ -9,9 +9,6 @@ Require Export EnvironmentM Manifest_Set.
 Require Import List.
 Import ListNotations.
 
-Set Nested Proofs Allowed.
-
-
 (* places' t ls -- helper function for places below.  Term (t) is the term 
     being walked, ls is the accumulated list of places. *)
 Fixpoint places' (t:Term) (ls:list Plc) : list Plc :=
