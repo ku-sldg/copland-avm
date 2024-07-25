@@ -68,7 +68,7 @@ Appraisal_Defs.v
 Impl_appraisal.v
 ManCompSoundness_Helpers.v
 ManCompSoundness.v
-# ManCompSoundness_Appraisal.v
+ManCompSoundness_Appraisal.v
 AM_Helpers.v
 AM_Json_Interfaces.v
 AM_Manager.v

@@ -94,6 +94,15 @@ Fixpoint map_map {A B C : Type} `{HA : EqClass A} (f : B -> C) (m : MapC A B) : 
   | (k, v) :: m' => (k, f v) :: (map_map f m')
   end.
 
+Theorem map_map_get_works : forall {A B C : Type} `{HA : EqClass A} (f : B -> C) m x v,
+  map_get m x = Some v ->
+  map_get (map_map f m) x = Some (f v).
+Proof.
+  induction m; simpl in *; intuition; try congruence;
+  break_match; repeat find_injection; simpl in *;
+  find_rewrite; eauto.
+Qed.
+
 Lemma mapC_get_distinct_keys{A B:Type} `{H : EqClass A} : 
   forall m (k1 k2:A) (v1 v2:B),
   k1 <> k2 ->

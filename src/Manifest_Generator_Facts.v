@@ -148,6 +148,18 @@ Proof.
     apply manifest_subset_refl.
 Qed.
 
+(* Lemma map_get_man_gen_cons : forall t tp e p m p' x,
+  map_get e tp = None ->
+  map_get (manifest_generator' p t e) p' = Some x ->
+  manifest_subset m x ->
+  forall anyM,
+  exists m',
+    map_get (manifest_generator' p t ((tp, anyM) :: e)) p' = Some m' /\
+    manifest_subset m m'.
+Proof.
+  induction t; simpl in *; intuition; eauto.
+Admitted.
+
 Lemma get_man_gen_env : forall t tp e p m,
   map_get e p = Some m ->
   exists m',
@@ -166,39 +178,56 @@ Proof.
     unfold manifest_subset; simpl in *; intuition; 
     pose proof @in_set_add;
     eauto.
-  - assert (exists m', map_get (manifest_update_env tp e (fun m : Manifest => Manifest_Union.manifest_union_asps m empty_Manifest)) p0 = Some m' /\
-    manifest_subset m m').
-    {
-      unfold manifest_update_env.
-      destEq tp p0;
-      try rewrite mapC_get_works; eauto;
-      try rewrite map_distinct_key_rw; eauto;
-      repeat find_rewrite;
-      eexists; intuition; try find_rewrite; eauto.
-      eapply manifest_subset_refl.
-    }
-    break_exists; intuition;
-    eapply IHt in H1; eauto;
-    break_exists; intuition.
-    exists x0; intuition; eauto.
-  - eapply IHt1 in H; break_exists;
-    intuition; 
-    eapply IHt2 in H0; break_exists;
-    intuition; eauto.
-  - eapply IHt1 in H; break_exists;
-    intuition; 
-    eapply IHt2 in H0; break_exists;
-    intuition; eauto.
-  - eapply IHt1 in H; break_exists;
-    intuition; 
-    eapply IHt2 in H0; break_exists;
-    intuition; eauto.
-Qed.
+  - break_match; eauto. 
+    eapply (IHt p) in H; break_exists; intuition.
+    clear IHt.
+    eapply map_get_man_gen_cons; eauto.
+    induction t; simpl in *; intuition; eauto.
+    * unfold manifest_update_env, asp_manifest_update,
+        aspid_manifest_update in *; 
+      simpl in *; repeat ff; repeat find_rewrite;
+      try rewrite String.eqb_eq in *;
+      try rewrite String.eqb_neq in *;
+      subst; repeat find_rewrite; try congruence;
+      try rewrite mapC_get_works in *; 
+      repeat find_injection; eauto; subst.
+      try match goal with
+      | H : ?p <> ?p0 
+        H1 : map_get (map_set _ ?p _) ?p0 = _
+        |- _ =>
+          erewrite map_distinct_key_rw in H1
+      end.
+      erewrite Heqb0 in *.
+      try rewrite map_distinct_key_rw in *; 
+      repeat find_rewrite; repeat find_injection;
+      eauto; try congruence.
+      Search (String.eqb _ _ = false).
+      ff; eauto. 
+  - eapply IHt1 in H; break_exists; intuition;
+    eapply IHt2 in H0; break_exists; intuition; eauto.
+  - eapply IHt1 in H; break_exists; intuition;
+    eapply IHt2 in H0; break_exists; intuition; eauto.
+  - eapply IHt1 in H; break_exists; intuition;
+    eapply IHt2 in H0; break_exists; intuition; eauto.
+Qed. *)
 
 Lemma manifest_union_asps_empty_r : forall m,
   Manifest_Union.manifest_union_asps m empty_Manifest = m.
 Proof.
   destruct m; reflexivity.
+Qed.
+
+Lemma env_subset_cons_none : forall e2 e1 p m,
+  map_get e2 p = None ->
+  Environment_subset e1 e2 ->
+  Environment_subset e1 ((p, m) :: e2).
+Proof.
+  intros.
+  unfold Environment_subset in *.
+  intuition.
+  eapply H0 in H1; break_exists; intuition.
+  simpl in *; ff; eauto;
+  rewrite String.eqb_eq in *; congruence.
 Qed.
 
 Lemma manifest_generator_cumul : forall t p e1 e2,
@@ -229,18 +258,10 @@ Proof.
     unfold manifest_subset in *; intuition; simpl in *;
     find_apply_hyp_hyp; eauto;
     eapply in_set_add; eauto.
-  - eapply (IHt p) in H; clear IHt.
-    unfold Environment_subset in *.
-    intuition.
-    eapply H in H0; clear H; simpl in *;
-    unfold manifest_update_env.
-    rewrite manifest_union_asps_empty_r.
-    destruct (map_get e2 p0) eqn:E;
-    simpl in *.
-    * eapply map_set_id in E; find_rewrite; eauto.
-    * admit.
-(* Qed. *)
-Admitted.
+  - simpl in *; ff.
+    eapply IHt;
+    eapply env_subset_cons_none; eauto.
+Qed.
 
 Lemma manifest_generator_cumul' : forall t p e,
   Environment_subset e (manifest_generator' p t e).
@@ -262,6 +283,28 @@ Proof.
 Qed.
 
 Local Hint Resolve empty_manifest_always_sub : core.
+
+Lemma env_subset_l_cons : forall e1 e2 p m m',
+  map_get e2 p = Some m ->
+  Environment_subset e1 e2 ->
+  manifest_subset m' m ->
+  Environment_subset ((p, m') :: e1) e2.
+Proof.
+  intuition;
+  unfold Environment_subset, manifest_subset in *;
+  simpl in *; intuition; ff; eauto;
+  rewrite String.eqb_eq in *; subst; eauto.
+Qed.
+
+Lemma env_subset_both_cons : forall e1 e2 p m,
+  Environment_subset e1 e2 ->
+  Environment_subset ((p, m) :: e1) ((p, m) :: e2).
+Proof.
+  intuition;
+  unfold Environment_subset, manifest_subset in *;
+  simpl in *; intuition; ff; eauto;
+  rewrite String.eqb_eq in *; subst; eauto.
+Qed.
 
 Lemma fafafa : forall t p e1 e2,
     Environment_subset e1 e2 ->
@@ -320,11 +363,13 @@ Proof.
 
         ]
       end. 
-  - simpl in *; unfold Manifest_Union.manifest_union_asps,
-    manifest_update_env.
-    eapply IHt.
-    admit.
-Admitted.
+  - simpl in *; ff; eapply IHt; eauto. 
+    * unfold Environment_subset in *; intuition.
+      eapply H in Heqo; break_exists; find_rewrite; 
+      intuition; congruence.
+    * eapply env_subset_l_cons; eauto.
+    * eapply env_subset_both_cons; eauto. 
+Qed.
 
 Lemma map_get_mangen : forall t e p p' v,
   map_get e p = Some v ->

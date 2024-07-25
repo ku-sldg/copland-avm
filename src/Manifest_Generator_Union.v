@@ -122,6 +122,7 @@ Definition Term_Plc_list_from_JSON `{Jsonifiable Term} (js : JSON)
     end
   | errC e => errC e 
   end.
+Close Scope string_scope.
 
 Global Instance Jsonifiable_Term_Plc_list `{Jsonifiable Term} : Jsonifiable Term_Plc_list.
 eapply Build_Jsonifiable with 
@@ -141,7 +142,8 @@ Definition end_to_end_mangen (comp_map : ASP_Compat_MapT)
   let app_env := mangen_plcEvidence_list_union comp_map ls in
   let att_env := mangen_plcTerm_list_union ts in 
   match app_env with
-  | resultC app_env => resultC (environment_union app_env att_env)
+  | resultC app_env => resultC (environment_union app_env 
+      (Maps.map_map (fun m => add_compat_map_manifest m comp_map) att_env))
   | errC e => errC e
   end.
 

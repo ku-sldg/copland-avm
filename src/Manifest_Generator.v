@@ -69,9 +69,10 @@ Fixpoint manifest_generator' (p:Plc) (t:Term) (e:EnvironmentM) : EnvironmentM :=
   match t with
   | asp a => manifest_update_env p e (asp_manifest_update a)
   | att q t' => 
-    manifest_generator' q t' 
-      (* Have to add an empty for self just to be safe *)
-      (manifest_update_env p e (fun m => manifest_union_asps m empty_Manifest))
+      match (map_get e p) with
+      | Some m => manifest_generator' q t' e
+      | None => manifest_generator' q t' ((p, empty_Manifest) :: e)
+      end
   | lseq t1 t2 => manifest_generator' p t2 (manifest_generator' p t1 e)
   | bseq _ t1 t2 => manifest_generator' p t2 (manifest_generator' p t1 e)
   | bpar _ t1 t2 => manifest_generator' p t2 (manifest_generator' p t1 e)
@@ -91,6 +92,7 @@ Proof.
     repeat break_match; destruct e; simpl in *; try congruence;
     try (destruct p0; break_if; congruence);
     try (destruct p1; break_if; congruence).
+  - break_match; intuition; eauto.
 Qed.
 
 Definition environment_to_manifest_list (e:EnvironmentM) : list Manifest :=
