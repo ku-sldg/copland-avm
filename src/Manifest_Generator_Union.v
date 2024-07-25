@@ -17,40 +17,6 @@ Require Import Coq.Program.Tactics.
 Require Import List.
 Import ListNotations.
 
-(*
-Set Nested Proofs Allowed.
-*)
-
-
-(*
-Definition manifest_generator_union (p:Plc) (t:Term) (e:EnvironmentM) : EnvironmentM :=
-  match t with
-  | asp a => asp_manifest_generator a p e
-  | att q t' => 
-      let e' := at_manifest_generator p q e in 
-        manifest_generator' q t' e'
-  | lseq t1 t2 => manifest_generator' p t2 (manifest_generator' p t1 e)
-  | bseq _ t1 t2 => manifest_generator' p t2 (manifest_generator' p t1 e)
-  | bpar _ t1 t2 => manifest_generator' p t2 (manifest_generator' p t1 e)
-  end.
-
-*)
-
-
-
-
-(*
-Definition manifest_generator_terms (p:Plc) (ts:list Term) : EnvironmentM :=
-  fold_right (manifest_generator' p) e_empty ts.
-*)
-
-
-(*
-Check map.
-map
-	 : forall A B : Type, (A -> B) -> list A -> list B
-*)
-             
 Definition manifest_generator_plcTerm_list (ls:list (Term*Plc)) : list EnvironmentM := 
     List.map (fun '(t,p) => manifest_generator t p) ls.
 

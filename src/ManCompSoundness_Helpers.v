@@ -227,15 +227,15 @@ Qed.
 
 
 Lemma in_plc_term : forall p p0 t,
-place_terms t p p0 <> [] ->
-In p0 (places p t).
+  place_terms t p p0 <> [] ->
+  In p0 (places p t).
 Proof.
   intros.
   generalizeEverythingElse t.
   induction t; intros.
   -
     destruct a; repeat ff;
-    rewrite String.eqb_eq in *; eauto.
+    rewrite String.eqb_eq in *; eauto; try congruence.
 - (* at case *)
   repeat ff; eauto;
   rewrite String.eqb_eq in *; eauto.

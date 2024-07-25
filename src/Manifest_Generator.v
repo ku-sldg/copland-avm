@@ -20,6 +20,13 @@ Definition aspid_manifest_update (i:ASP_ID) (m:Manifest) : Manifest :=
           ASP_Mapping := oldFSMap;
           man_policy := oldPolicy |} := m in
   (Build_Manifest (manset_add i oldasps) oldCompatMap oldFSMap oldPolicy).
+
+Definition add_compat_map_manifest (m : Manifest) (cm : ASP_Compat_MapT) : Manifest :=
+  let '{| asps := oldasps; 
+          ASP_Compat_Map := oldCompatMap;
+          ASP_Mapping := oldFSMap;
+          man_policy := oldPolicy |} := m in
+  (Build_Manifest oldasps cm oldFSMap oldPolicy).
   
 Definition asp_manifest_update (a:ASP) (m:Manifest) : Manifest :=
   match a with 
@@ -61,19 +68,13 @@ Definition manifest_update_env (p:Plc) (e:EnvironmentM)
 Fixpoint manifest_generator' (p:Plc) (t:Term) (e:EnvironmentM) : EnvironmentM :=
   match t with
   | asp a => manifest_update_env p e (asp_manifest_update a)
-  | att q t' => manifest_generator' q t' e
+  | att q t' => 
+    manifest_generator' q t' 
+      (* Have to add an empty for self just to be safe *)
+      (manifest_update_env p e (fun m => manifest_union_asps m empty_Manifest))
   | lseq t1 t2 => manifest_generator' p t2 (manifest_generator' p t1 e)
   | bseq _ t1 t2 => manifest_generator' p t2 (manifest_generator' p t1 e)
   | bpar _ t1 t2 => manifest_generator' p t2 (manifest_generator' p t1 e)
-  end.
-
-Fixpoint dedup_list (ps:list Plc) : list Plc := 
-  match ps with
-  | [] => ps
-  | (p::ps') =>
-    if (eqb (List.count_occ eq_plc_dec ps' p) O)
-    then (p::(dedup_list ps'))
-    else dedup_list ps'
   end.
 
 Definition manifest_generator_terms (p:Plc) (ts:list Term) : EnvironmentM :=
@@ -92,16 +93,10 @@ Proof.
     try (destruct p1; break_if; congruence).
 Qed.
 
-Definition places_terms' (ts: list Term) (p:Plc) : list (list Plc) :=
-  List.map (places p) ts.
-
-Definition places_terms (ts:list Term) (p:Plc) : list Plc :=
-  dedup_list (List.concat (places_terms' ts p)).
-
 Definition environment_to_manifest_list (e:EnvironmentM) : list Manifest :=
   map_vals e.
 
-Fixpoint manifest_generator_app'' (comp_map : ASP_Compat_MapT) 
+Fixpoint manifest_generator_app' (comp_map : ASP_Compat_MapT) 
     (et:Evidence) (m:Manifest) : ResultT Manifest string :=
   match et with 
   | mt => resultC m 
@@ -113,7 +108,7 @@ Fixpoint manifest_generator_app'' (comp_map : ASP_Compat_MapT)
       | asp_paramsC a _ targ _ =>
         match (map_get comp_map a) with
         | Some a' => 
-            manifest_generator_app'' comp_map e' (aspid_manifest_update a' m)
+            manifest_generator_app' comp_map e' (aspid_manifest_update a' m)
         | None => errC "Compatible Appraisal ASP not found in AM Library"%string
         end
       end 
@@ -122,7 +117,7 @@ Fixpoint manifest_generator_app'' (comp_map : ASP_Compat_MapT)
       | asp_paramsC a _ p' _ =>
         match (map_get comp_map a) with
         | Some a' => 
-            manifest_generator_app'' comp_map e' (aspid_manifest_update a' m)
+            manifest_generator_app' comp_map e' (aspid_manifest_update a' m)
         | None => errC "Compatible Appraisal ASP not found in AM Library"%string
         end
       end
@@ -130,23 +125,22 @@ Fixpoint manifest_generator_app'' (comp_map : ASP_Compat_MapT)
       let '(asp_paramsC a _ _ _) := ps in
       match (map_get comp_map a) with
       | Some a' => 
-          manifest_generator_app'' comp_map e' (aspid_manifest_update a' m)
+          manifest_generator_app' comp_map e' (aspid_manifest_update a' m)
       | None => errC "Compatible Appraisal ASP not found in AM Library"%string
       end
     | _ => resultC m
     end
   | ss e1 e2 => 
-    match (manifest_generator_app'' comp_map e1 m) with
-    | resultC m' => manifest_generator_app'' comp_map e2 m'
+    match (manifest_generator_app' comp_map e1 m) with
+    | resultC m' => manifest_generator_app' comp_map e2 m'
     | errC e => errC e
     end
   end.
 
-Definition manifest_generator_app' (comp_map : ASP_Compat_MapT) (p:Plc) 
-    (et:Evidence) (env:EnvironmentM) : ResultT EnvironmentM string :=
-  manifest_update_env_res p env (manifest_generator_app'' comp_map et).
-
-
+Import ResultNotation.
 Definition manifest_generator_app (comp_map : ASP_Compat_MapT) 
     (et:Evidence) (p:Plc) : ResultT EnvironmentM string := 
-  manifest_generator_app' comp_map p et e_empty.
+  env <- manifest_update_env_res p e_empty (manifest_generator_app' comp_map et) ;;
+  result_map 
+    (fun '(p,m) => resultC (p, add_compat_map_manifest m comp_map)) 
+    env.

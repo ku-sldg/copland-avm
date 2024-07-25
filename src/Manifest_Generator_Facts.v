@@ -43,6 +43,27 @@ Proof.
   intros; unfold manifest_subset in *; intuition.
 Qed.
 
+Global Hint Resolve manifest_subset_trans : core.
+
+Lemma manifest_subset_union_l : forall m1 m2,
+  manifest_subset m1 (Manifest_Union.manifest_union_asps m1 m2).
+Proof.
+  induction m1; destruct m2; simpl in *; intuition; eauto;
+  unfold manifest_subset; simpl in *; intuition; eauto;
+  try eapply union_inclusion_l; eauto.
+Qed.
+Global Hint Resolve manifest_subset_union_l : core.
+
+Lemma manifest_subset_union_r : forall m1 m2,
+  manifest_subset m2 (Manifest_Union.manifest_union_asps m1 m2).
+Proof.
+  induction m1; destruct m2; simpl in *; intuition; eauto;
+  unfold manifest_subset; simpl in *; intuition; eauto;
+  try eapply union_inclusion_r; eauto.
+Qed.
+Global Hint Resolve manifest_subset_union_r : core.
+
+
 Lemma env_subset_refl : forall e, 
   Environment_subset e e.
 Proof.
@@ -68,7 +89,6 @@ Proof.
   destruct_conjs.
   eexists.
   split; eauto.
-  eapply manifest_subset_trans; eauto.
 Qed.
 
 Lemma env_subset_set_man : forall e p m1 m2,
@@ -128,14 +148,68 @@ Proof.
     apply manifest_subset_refl.
 Qed.
 
+Lemma get_man_gen_env : forall t tp e p m,
+  map_get e p = Some m ->
+  exists m',
+    map_get (manifest_generator' tp t e) p = Some m' /\
+    manifest_subset m m'.
+Proof.
+  induction t; simpl in *; intuition; eauto.
+  - unfold manifest_update_env, asp_manifest_update,
+      aspid_manifest_update;
+    ff; subst; destEq p tp;
+    try rewrite mapC_get_works; eauto;
+    try rewrite map_distinct_key_rw; eauto;
+    repeat find_rewrite; repeat find_injection;
+    eauto using manifest_subset_refl; try congruence;
+    eexists; intuition; eauto;
+    unfold manifest_subset; simpl in *; intuition; 
+    pose proof @in_set_add;
+    eauto.
+  - assert (exists m', map_get (manifest_update_env tp e (fun m : Manifest => Manifest_Union.manifest_union_asps m empty_Manifest)) p0 = Some m' /\
+    manifest_subset m m').
+    {
+      unfold manifest_update_env.
+      destEq tp p0;
+      try rewrite mapC_get_works; eauto;
+      try rewrite map_distinct_key_rw; eauto;
+      repeat find_rewrite;
+      eexists; intuition; try find_rewrite; eauto.
+      eapply manifest_subset_refl.
+    }
+    break_exists; intuition;
+    eapply IHt in H1; eauto;
+    break_exists; intuition.
+    exists x0; intuition; eauto.
+  - eapply IHt1 in H; break_exists;
+    intuition; 
+    eapply IHt2 in H0; break_exists;
+    intuition; eauto.
+  - eapply IHt1 in H; break_exists;
+    intuition; 
+    eapply IHt2 in H0; break_exists;
+    intuition; eauto.
+  - eapply IHt1 in H; break_exists;
+    intuition; 
+    eapply IHt2 in H0; break_exists;
+    intuition; eauto.
+Qed.
+
+Lemma manifest_union_asps_empty_r : forall m,
+  Manifest_Union.manifest_union_asps m empty_Manifest = m.
+Proof.
+  destruct m; reflexivity.
+Qed.
+
 Lemma manifest_generator_cumul : forall t p e1 e2,
     Environment_subset e1 e2 ->
     Environment_subset e1 (manifest_generator' p t e2).
 Proof.
   intros.
   generalizeEverythingElse t.
-  induction t; intros; ff; eauto.
+  induction t; intros; try (ff; eauto; fail).
   - (* asp case *)
+    ff; eauto;
     unfold Environment_subset in *;
     intuition.
     unfold manifest_update_env, asp_manifest_update, 
@@ -155,7 +229,18 @@ Proof.
     unfold manifest_subset in *; intuition; simpl in *;
     find_apply_hyp_hyp; eauto;
     eapply in_set_add; eauto.
-Qed.
+  - eapply (IHt p) in H; clear IHt.
+    unfold Environment_subset in *.
+    intuition.
+    eapply H in H0; clear H; simpl in *;
+    unfold manifest_update_env.
+    rewrite manifest_union_asps_empty_r.
+    destruct (map_get e2 p0) eqn:E;
+    simpl in *.
+    * eapply map_set_id in E; find_rewrite; eauto.
+    * admit.
+(* Qed. *)
+Admitted.
 
 Lemma manifest_generator_cumul' : forall t p e,
   Environment_subset e (manifest_generator' p t e).
@@ -235,7 +320,11 @@ Proof.
 
         ]
       end. 
-Qed.
+  - simpl in *; unfold Manifest_Union.manifest_union_asps,
+    manifest_update_env.
+    eapply IHt.
+    admit.
+Admitted.
 
 Lemma map_get_mangen : forall t e p p' v,
   map_get e p = Some v ->

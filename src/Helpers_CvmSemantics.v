@@ -58,6 +58,18 @@ Proof.
     destruct r; simpl in *; intuition; eauto.
 Qed.
 
+Lemma sc_immut_better : forall t st r st',
+  build_cvm t st = (r, st') ->
+  st_config st = st_config st'.
+Proof.
+  intuition.
+  pose proof (sc_immut t (st_ev st) (st_trace st) (st_evid st) (st_config st)).
+  unfold execErr in *.
+  simpl in *.
+  destruct st; simpl in *.
+  find_rewrite; simpl in *; eauto.
+Qed.
+
 (* Hack to apply a specific induction hypothesis in some proofs *)
 Ltac anhl :=
   annogo;
