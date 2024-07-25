@@ -15,11 +15,15 @@ Definition attest_id : ASP_ID := "attest_id".
 Definition appraise_id : ASP_ID := "appraise_id".
 Definition certificate_id : ASP_ID := "certificate_id".
 Definition hashfile_id : ASP_ID := "hashfile_id".
+Definition aspx_id : ASP_ID := "aspx_id".
+Definition aspy_id : ASP_ID := "aspy_id".
 
 (* TARG IDs *)
 Definition sys_targ : TARG_ID := "sys_targ".
 Definition att_targ : TARG_ID := "att_targ".
 Definition it_targ : TARG_ID := "it_targ".
 Definition hashfile_targ : TARG_ID := "hashfile_targ".
+Definition aspx_targ : TARG_ID := "aspx_targ".
+Definition aspy_targ : TARG_ID := "aspy_targ".
 
 Close Scope string_scope.

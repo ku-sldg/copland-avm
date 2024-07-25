@@ -80,6 +80,17 @@ Definition parmut_1_demo_evidence_type : Evidence :=
 Definition parmut_2_demo_evidence_type : Evidence := 
     eval parallel_mutual_2 P0 (nn 0).
 
+
+Definition hash_xy_phrase : Term := 
+  att P1 
+    (lseq 
+      (asp (ASPC ALL (EXTD 1) (asp_paramsC aspx_id [] P1 aspx_targ)))
+      (lseq
+        (asp (ASPC ALL (EXTD 1) (asp_paramsC aspy_id [] P1 aspy_targ)))
+        (lseq 
+          (asp HSH)
+          (asp SIG)))).
+
 Definition flexible_mechanisms := 
   [certificate_style; background_check; 
    parallel_mutual_1; parallel_mutual_2; layered_background_check; 

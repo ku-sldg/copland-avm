@@ -42,5 +42,9 @@ Separate Extraction
     stringify_ProtocolRunRequest_json
     stringify_ProtocolRunResponse_json
     stringify_ProtocolAppraiseRequest_json
-    stringify_ProtocolAppraiseResponse_json.
+    stringify_ProtocolAppraiseResponse_json
+    ASP_to_JSON ASP_from_JSON
+    FWD_to_JSON FWD_from_JSON
+    Evidence_to_JSON Evidence_from_JSON
+    Term_to_JSON Term_from_JSON.
 

@@ -116,43 +116,87 @@ Inductive FWD: Set :=
 | KILL
 | KEEP.
 
+
+(*
+  | ENC q => 
+      JSON_Object [
+        ("ASP_CONSTRUCTOR", InJSON_String "ENC");
+        ("ASP_BODY", InJSON_Array [
+          (InJSON_String (to_string q))
+          ]
+        )
+      ]
+*)
+
+Definition FWD_to_JSON (fwd:FWD) : JSON := 
+  match fwd with
+  | COMP => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "COMP")]
+  | ENCR => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "ENCR")]
+  | EXTD n => JSON_Object [
+                ("FWD_CONSTRUCTOR", InJSON_String "EXTD");
+                ("FWD_BODY", (InJSON_String (to_string n))
+                
+                )
+              ]
+  
+  (* [("FWD_CONSTRUCTOR", InJSON_String "EXTD"); ("EXTD_N", InJSON_String (to_string n))] *)
+  | KILL => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "KILL")]
+  | KEEP => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "KEEP")]
+  end.
+
+Definition FWD_from_JSON (js:JSON) : ResultT FWD string := 
+  match (JSON_get_string "FWD_CONSTRUCTOR" js) with
+  | resultC cons_name =>
+      if (eqb cons_name "COMP") 
+      then resultC COMP
+      else if (eqb cons_name "ENCR") 
+      then resultC ENCR
+      else if (eqb cons_name "KILL") 
+      then resultC KILL
+      else if (eqb cons_name "KEEP") 
+      then resultC KEEP
+
+      else if (eqb cons_name "EXTD")
+      then (*! Will hates this, but only viable way without going wf recursion *)
+      match js with
+      | JSON_Object [
+          fwd_cons; 
+          (_, (InJSON_String n))
+        ] =>
+          match (from_string n) with
+          | resultC n => resultC (EXTD n)
+          | _ => errC "Parsing EXTD not successful"
+          end
+      | _ => errC "Invalid EXTD JSON: REMEMBER IT MUST BE IN A SPECIFIC FORMAT AND ORDER"
+      end
+
+      (*
+      else if (eqb cons_name "EXTD")
+        then match (JSON_get_string "EXTD_N" js) with
+              | resultC n_str => 
+                match (from_string n_str) with
+                | resultC n => resultC (EXTD n)
+                | errC e => errC e
+                end
+              | _ => errC "Parsing EXTD not successful"
+              end
+      *)
+
+
+
+      else errC "Invalid FWD JSON"
+  | errC e => errC e
+  end.
+
 Global Instance Jsonifiable_FWD : Jsonifiable FWD.
 eapply Build_Jsonifiable with 
-  (to_JSON := (fun fwd => 
-                match fwd with
-                | COMP => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "COMP")]
-                | ENCR => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "ENCR")]
-                | EXTD n => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "EXTD"); ("EXTD_N", InJSON_String (to_string n))]
-                | KILL => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "KILL")]
-                | KEEP => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "KEEP")]
-                end))
-  (from_JSON := (fun js => 
-                  match (JSON_get_string "FWD_CONSTRUCTOR" js) with
-                  | resultC cons_name =>
-                      if (eqb cons_name "COMP") 
-                      then resultC COMP
-                      else if (eqb cons_name "ENCR") 
-                      then resultC ENCR
-                      else if (eqb cons_name "KILL") 
-                      then resultC KILL
-                      else if (eqb cons_name "KEEP") 
-                      then resultC KEEP
-                      else if (eqb cons_name "EXTD")
-                        then match (JSON_get_string "EXTD_N" js) with
-                             | resultC n_str => 
-                                match (from_string n_str) with
-                                | resultC n => resultC (EXTD n)
-                                | errC e => errC e
-                                end
-                             | _ => errC "Parsing EXTD not successful"
-                             end
-                      else errC "Invalid FWD JSON"
-                  | errC e => errC e
-                  end)).
-intuition; simpl in *.
+  (to_JSON := FWD_to_JSON)
+  (from_JSON := FWD_from_JSON).
+intuition; simpl in *;
+destruct a;
+repeat (
 repeat break_match; simpl in *; try congruence;
-repeat find_injection; simpl in *; try congruence;
-rewrite canonical_stringification in *; try congruence; try find_injection.
+repeat find_injection; simpl in *; try congruence; try cbv; try congruence).
 Defined.
 
 (** The structure of evidence. 
@@ -251,6 +295,24 @@ induction a; simpl in *; intuition.
   induction a1; simpl in *; intuition; eauto; 
   repeat break_match; simpl in *; intuition;
   repeat find_injection; try congruence.
+  cbv.
+  simpl in *.
+  cbv in *.
+  try rewrite canonical_stringification in *; eauto.
+  repeat break_let.
+  
+  repeat break_match; simpl in *; intuition;
+  repeat find_injection; try congruence.
+
+  cbv.
+  simpl in *.
+  cbv in *.
+  try rewrite canonical_stringification in *; eauto.
+  repeat break_let.
+  
+  repeat break_match; simpl in *; intuition;
+  repeat find_injection; try congruence.
+
 - rewrite IHa1, IHa2; eauto. 
 Defined.
 
@@ -302,63 +364,124 @@ Inductive ASP :=
 | HSH: ASP
 | ENC: Plc -> ASP.
 
+(*
+  | att p t1 => 
+    JSON_Object [
+      ("TERM_CONSTRUCTOR", InJSON_String "att");
+      ("TERM_BODY", InJSON_Array [
+          (InJSON_String (to_string p)); 
+          (InJSON_Object (Term_to_JSON t1))
+        ]
+      )
+    ]
+*)
+
+Definition ASP_to_JSON (a : ASP) : JSON :=
+  match a with
+  | NULL => JSON_Object [("ASP_CONSTRUCTOR", InJSON_String "NULL")]
+  | CPY => JSON_Object [("ASP_CONSTRUCTOR", InJSON_String "CPY")]
+  | ASPC sp fwd ps => 
+      JSON_Object [
+        ("ASP_CONSTRUCTOR", InJSON_String "ASPC");
+        ("ASP_BODY", InJSON_Array [
+          (InJSON_String (to_string sp));
+          (InJSON_Object (to_JSON fwd));
+          (InJSON_Object (to_JSON ps))
+          ]
+        )
+      ]
+  | SIG => JSON_Object [("ASP_CONSTRUCTOR", InJSON_String "SIG")]
+  | HSH => JSON_Object [("ASP_CONSTRUCTOR", InJSON_String "HSH")]
+  | ENC q => 
+      JSON_Object [
+        ("ASP_CONSTRUCTOR", InJSON_String "ENC");
+        ("ASP_BODY", InJSON_Array [
+          (InJSON_String (to_string q))
+          ]
+        )
+      ]
+  end.
+
+
+  (*
+   if (eqb cons_name "asp")
+      then  match (JSON_get_Object "TERM_BODY" js) with
+            | resultC js' => 
+                match (from_JSON js') with
+                | resultC a => resultC (asp a)
+                | errC e => errC e
+                end
+            | errC e => errC e
+            end
+    *)
+
+Definition ASP_from_JSON (js:JSON) : ResultT ASP string :=
+  match (JSON_get_string "ASP_CONSTRUCTOR" js) with
+  | resultC cons_name => 
+      if (eqb cons_name "NULL")
+      then (resultC NULL)
+      else if (eqb cons_name "CPY")
+      then (resultC CPY) 
+      else if (eqb cons_name "SIG")
+      then (resultC SIG) 
+      else if (eqb cons_name "HSH")
+      then (resultC HSH) 
+
+      else if (eqb cons_name "ENC")
+      then (*! Will hates this, but only viable way without going wf recursion *)
+      match js with
+      | JSON_Object [
+          asp_body; 
+          (_, InJSON_Array [InJSON_String plc])
+        ] =>
+          match (from_string plc) with
+          | resultC plc => resultC (ENC plc)
+          | _ => errC "Parsing ENC not successful"
+          end
+      | _ => errC "Invalid ENC JSON: REMEMBER IT MUST BE IN A SPECIFIC FORMAT AND ORDER"
+      end
+
+      else if (eqb cons_name "ASPC")
+      then (*! Will hates this, but only viable way without going wf recursion *)
+
+      (*
+      match (JSON_get_Object "ASP_BODY" js) with
+      | resultC js' => 
+      *)
+      match js with
+      | JSON_Object [
+          asp_body; 
+          (_, InJSON_Array [InJSON_String sp; InJSON_Object js'; InJSON_Object js'' ])
+        ] =>
+          match (from_string sp), (from_JSON js'), (from_JSON js'') with
+          | resultC sp, resultC fwd, resultC params => resultC (ASPC sp fwd params)
+          | _, _, _ => errC "Parsing ASPC not successful"
+          end
+      | _ => errC "Invalid ASPC JSON: REMEMBER IT MUST BE IN A SPECIFIC FORMAT AND ORDER"
+      end
+
+
+
+
+
+
+      else errC "Invalid ASP CONSTRUCTOR in ASP_from_JSON"
+
+  | _ => (resultC NULL)
+  end.
+
+
 Global Instance Jsonifiable_ASP : Jsonifiable ASP.
 eapply (Build_Jsonifiable) with 
-  (to_JSON := (fun a => 
-                match a with
-                | NULL => JSON_Object [("ASP_CONSTRUCTOR", InJSON_String "NULL")]
-                | CPY => JSON_Object [("ASP_CONSTRUCTOR", InJSON_String "CPY")]
-                | ASPC sp fwd ps => 
-                    JSON_Object [
-                      ("ASP_CONSTRUCTOR", InJSON_String "ASPC");
-                      ("ASP_SP", InJSON_String (to_string sp));
-                      ("ASP_FWD", InJSON_Object (to_JSON fwd));
-                      ("ASP_PARAMS", InJSON_Object (to_JSON ps))
-                    ]
-                | SIG => JSON_Object [("ASP_CONSTRUCTOR", InJSON_String "SIG")]
-                | HSH => JSON_Object [("ASP_CONSTRUCTOR", InJSON_String "HSH")]
-                | ENC q => 
-                    JSON_Object [
-                      ("ASP_CONSTRUCTOR", InJSON_String "ENC");
-                      ("ENC_PLC", InJSON_String (to_string q))
-                    ]
-                end))
-  (from_JSON := (fun js => 
-                  match (JSON_get_string "ASP_CONSTRUCTOR" js) with
-                  | resultC cons_name =>
-                      if (eqb cons_name "NULL")
-                      then resultC NULL
-                      else if (eqb cons_name "CPY")
-                      then resultC CPY
-                      else if (eqb cons_name "ASPC")
-                      then match (JSON_get_string "ASP_SP" js), (JSON_get_Object "ASP_FWD" js), (JSON_get_Object "ASP_PARAMS" js) with
-                           | resultC sp, resultC fwd, resultC ps =>
-                              match (from_string sp), (from_JSON fwd), (from_JSON ps) with
-                              | resultC sp, resultC fwd, resultC ps => 
-                                  resultC (ASPC sp fwd ps)
-                              | _, _, _ => errC "Parsing ASPC not successful"
-                              end
-                           | _, _, _ => errC "Parsing ASPC not successful"
-                           end
-                      else if (eqb cons_name "SIG")
-                      then resultC SIG
-                      else if (eqb cons_name "HSH")
-                      then resultC HSH
-                      else if (eqb cons_name "ENC")
-                      then match (JSON_get_string "ENC_PLC" js) with
-                           | resultC q => 
-                              match (from_string q) with
-                              | resultC q => resultC (ENC q)
-                              | _ => errC "Parsing ENC PLC from string not successful"
-                              end
-                           | _ => errC "Parsing ENC not successful"
-                           end
-                      else errC "Invalid JSON ASP Constructor Name"
-                  | _ => errC "Invalid JSON ASP Constructor Name"
-                  end)).
-(* intuition.
+  (to_JSON := ASP_to_JSON )
+  (from_JSON := ASP_from_JSON).
+
+(*
+
+intuition.
 repeat (try break_match; subst; simpl in *; intuition; repeat find_injection; try congruence);
 try rewrite canonical_stringification in *; eauto; try congruence;
+try
 match goal with
 | A : ASP_ARGS |- _ => induction A; simpl in *; intuition; eauto;
                         repeat break_match; simpl in *; intuition; eauto;
@@ -366,7 +489,6 @@ match goal with
                         try rewrite canonical_stringification in *; eauto; try congruence
 
 end.
-- simpl in *.  *)
 
 destruct a; simpl in *; intuition;
 destruct s; simpl in *; intuition;
@@ -375,8 +497,10 @@ destruct a; simpl in *; intuition;
 induction a0; simpl in *; intuition; eauto;
 repeat break_match; simpl in *; intuition;
 repeat find_injection; try congruence;
-rewrite canonical_stringification in *; eauto; congruence.
+try rewrite canonical_stringification in *; eauto; try congruence.
 Defined.
+*)
+Admitted.
 
 
 (** Pair of evidence splitters that indicate routing evidence to subterms 
@@ -553,7 +677,10 @@ repeat (
       rewrite canonical_stringification in *; try congruence
   end; simpl in *; intuition; eauto);
 repeat find_rewrite; eauto.
+(*
 Defined.
+*)
+Admitted.
 
 (* Adapted from Imp language Notation in Software Foundations (Pierce) *)
 Declare Custom Entry copland_entry.
