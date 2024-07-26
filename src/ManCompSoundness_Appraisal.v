@@ -1077,6 +1077,39 @@ Proof.
   induction l; simpl in *; intuition; ff.
 Qed.
 
+Lemma map_get_fold_right_union : forall (P : EnvironmentM -> Prop) 
+  m1 m2,
+  NoDup (map fst m1) ->
+  (forall l', In l' m2 -> NoDup (map fst l')) ->
+  P m1 ->
+  (forall l', In l' m2 -> P l') ->
+  (forall l r,
+    NoDup (map fst l) ->
+    P l ->
+    NoDup (map fst r) ->
+    P r ->
+    P (Manifest_Union.environment_union l r)) ->
+  P (fold_right Manifest_Union.environment_union m1 m2).
+Proof.
+  intuition.
+  induction m2; simpl in *; intuition; eauto.
+  eapply H3; intuition.
+  eapply nodup_map_fold_right; eauto.
+Qed.
+
+Theorem result_map_in : forall {A B C : Type} (f : A -> ResultT B C) (l : list A) res r,
+  result_map f l = resultC res ->
+  In r res ->
+  exists v,
+    resultC r = f v /\ In v l.
+Proof.
+  induction l; simpl in *; intuition; eauto;
+  ff; intuition; eauto.
+  unfold res_bind in *; ff; intuition; subst; eauto.
+  eapply IHl in H; eauto; break_exists; intuition;
+  repeat find_rewrite; eauto.
+Qed.
+
 Lemma mangen_plcEvidence_list_union_comp_map : forall cm et res,
   mangen_plcEvidence_list_union cm et = resultC res ->
   (forall k v,
@@ -1084,7 +1117,39 @@ Lemma mangen_plcEvidence_list_union_comp_map : forall cm et res,
     cm = (ASP_Compat_Map v)
   ).
 Proof.
-Admitted.
+  unfold mangen_plcEvidence_list_union,
+    manifest_generator_plcEvidence_list;
+  intuition; ff.
+  assert (forall l', In l' l -> NoDup (map fst l')). {
+    intuition.
+    eapply result_map_in in Heqr; intuition; eauto;
+    break_exists;
+    intuition; ff; subst; eauto.
+    unfold manifest_generator_app in *;
+    unfold res_bind in *; ff.
+    unfold manifest_update_env_res in *; ff; 
+    econstructor; eauto; econstructor.
+  }
+  unfold env_list_union in *.
+  pose proof (map_get_fold_right_union (fun e => forall k v,
+    map_get e k = Some v -> cm = ASP_Compat_Map v) e_empty l );
+  simpl in *; intuition.
+  eapply H1; eauto; intuition; try congruence;
+  clear H1.
+  - econstructor. 
+  - eapply result_map_in in Heqr; eauto.
+    break_exists; intuition; ff; subst.
+    pose proof mangen_app_same_comp_map.
+    eapply H1; eauto.
+  - eapply manifest_env_union_all_cases in H6;
+    intuition; eauto;
+    break_exists; intuition; eauto.
+    repeat find_apply_hyp_hyp;
+    repeat find_rewrite; intuition.
+    destruct x0, x, v0; simpl in *;
+    unfold Manifest_Union.manifest_union_asps in *;
+    repeat find_injection; eauto.
+Qed.
  
 Lemma end_to_end_mangen_same_comp_map : forall et tp cm env,
   end_to_end_mangen cm et tp = resultC env ->
