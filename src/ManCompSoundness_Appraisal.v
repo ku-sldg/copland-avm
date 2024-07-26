@@ -939,18 +939,152 @@ Proof.
   destruct m; simpl in *; eauto.
 Qed.
 
-Lemma map_get_under_invariant : forall P m1 m2,
+Lemma map_get_under_invariant : forall (P : Manifest -> Prop) m1 m2,
+  NoDup (map fst m1) ->
+  NoDup (map fst m2) ->
   (forall k v, map_get m1 k = Some v -> P v) ->
   (forall k v, map_get m2 k = Some v -> P v) ->
   (forall v1 v2, P v1 -> P v2 -> P (Manifest_Union.manifest_union_asps v1 v2)) ->
   (forall k v, map_get (Manifest_Union.environment_union m1 m2) k = Some v -> P v).
 Proof.
   intuition.
-  eapply manifest_env_union_works in H.
-  Search (map_get (Manifest_Union.environment_union _ _) _ = _).
+  pose proof (manifest_env_union_all_cases _ _ _ _ H H0 H4);
+  intuition; eauto;
+  break_exists; intuition; subst; eauto.
+Qed.
 
-  (forall k v, map_get m k = Some v -> P k v) ->
-  P k v.
+Lemma nodup_map_set : forall {A B : Type} `{EqClass A}
+    (l : MapC A B),
+  NoDup (map fst l) ->
+  forall k v,
+  NoDup (map fst (map_set l k v)).
+Proof.
+  induction l; simpl in *; intuition; subst; eauto; ff;
+  subst.
+  - econstructor; eauto.
+  - invc H0.
+    eapply IHl in H4.
+    econstructor; eauto.
+    intros HC.
+    eapply H3.
+    clear IHl H3 H4.
+    induction l; simpl in *; intuition; subst; eauto;
+    ff; rewrite eqb_refl in *; congruence.
+Qed.
+Local Hint Resolve nodup_map_set : core.
+
+Lemma nodup_map_not_in : forall {A B : Type} `{EqClass A}
+    (l : MapC A B) k v,
+  NoDup (map fst l) ->
+  map_get l k = None ->
+  NoDup (map fst (map_set l k v)).
+Proof.
+  induction l; simpl in *; intuition; eauto.
+  - econstructor; eauto.
+  - ff; eauto. 
+    invc H0; econstructor; eauto.
+    intros HC.
+    eapply H4.
+    clear IHl H4 H5.
+    induction l; simpl in *; intuition; subst; eauto;
+    ff; rewrite eqb_refl in *; congruence.
+Qed.
+
+Lemma nodup_map : forall l1 l2,
+  NoDup (map fst l1) ->
+  NoDup (map fst l2) ->
+  NoDup (map fst (Manifest_Union.environment_union l1 l2)).
+Proof.
+  induction l1; simpl in *;
+  intuition; simpl in *.
+  invc H.
+  pose proof (IHl1 _ H4 H0).
+  unfold Manifest_Union.env_union_helper,
+    Manifest_Union.environment_union'';
+  ff; simpl in *; subst.
+Qed.
+
+Lemma nodup_map_fold_right : forall l1 l2,
+  NoDup (map fst l1) ->
+  (forall l',
+    In l' l2 ->
+    NoDup (map fst l')) ->
+  NoDup (map fst (fold_right Manifest_Union.environment_union l1 l2)).
+Proof.
+  induction l2; simpl in *; intuition; ff; eauto.
+  eapply nodup_map; eauto.
+Qed.
+
+Lemma nodup_output_mangen_plcevlist_union : forall cm et res,
+  mangen_plcEvidence_list_union cm et = resultC res ->
+  NoDup (map fst res).
+Proof.
+  unfold mangen_plcEvidence_list_union,
+    manifest_generator_plcEvidence_list;
+  intuition; ff.
+  generalize dependent l.
+  induction et; simpl in *.
+  - intuition; find_injection; simpl in *; econstructor.
+  - intuition; unfold res_bind in *; ff; eauto. 
+    pose proof (IHet l0 eq_refl).
+    clear IHet.
+    clear Heqr1.
+    assert (NoDup (map fst e)). {
+      clear H.
+      unfold manifest_generator_app,
+        res_bind, manifest_update_env_res in *;
+      simpl in *; ff; econstructor; eauto; econstructor.
+    }
+    eapply nodup_map; eauto.
+Qed.
+
+Lemma nodup_man_gen : forall t p backMan,
+  NoDup (map fst backMan) ->
+  NoDup (map fst (manifest_generator' p t backMan)).
+Proof.
+  induction t; simpl in *; intuition; 
+  unfold manifest_update_env; eauto; ff.
+  eapply IHt; simpl in *; eauto.
+  econstructor; eauto.
+  intros HC.
+  clear IHt H.
+  induction backMan; simpl in *; intuition; ff; subst.
+  rewrite String.eqb_refl in *; congruence.
+Qed.
+
+Lemma nodup_output_mangen_plctermlist_union : forall ts,
+  NoDup (map fst (mangen_plcTerm_list_union ts)).
+Proof.
+  unfold mangen_plcTerm_list_union.
+  unfold env_list_union.
+  intuition.
+  eapply nodup_map_fold_right; eauto; simpl in *; intuition.
+  - econstructor.
+  - induction ts; simpl in *; intuition; ff;
+    subst. 
+    unfold manifest_generator.
+    eapply nodup_man_gen.
+    simpl in *; econstructor.
+Qed.
+
+Lemma nodup_map_map : forall {A B : Type} `{EqClass A} (l : MapC A B) (f : B -> B),
+  NoDup (map fst l) ->
+  NoDup (map fst (Maps.map_map f l)).
+Proof.
+  induction l; simpl in *; intuition; eauto; ff.
+  invc H0; econstructor; eauto.
+  intros HC; eapply H3; clear IHl H3 H4.
+  induction l; simpl in *; intuition; ff.
+Qed.
+
+Lemma mangen_plcEvidence_list_union_comp_map : forall cm et res,
+  mangen_plcEvidence_list_union cm et = resultC res ->
+  (forall k v,
+    map_get res k = Some v ->
+    cm = (ASP_Compat_Map v)
+  ).
+Proof.
+Admitted.
  
 Lemma end_to_end_mangen_same_comp_map : forall et tp cm env,
   end_to_end_mangen cm et tp = resultC env ->
@@ -976,37 +1110,15 @@ Proof.
   assert (forall k v', 
     map_get e k = Some v' ->
     cm = ASP_Compat_Map v'). {
-      clear H H0.
-      unfold mangen_plcEvidence_list_union,
-        manifest_generator_plcEvidence_list in *;
-      ff; intuition.
-      generalize dependent l.
-      induction et; simpl in *; intuition; 
-      repeat find_rewrite; ff; try congruence.
-      unfold res_bind in *; ff; eauto.
-
-
-      Search (result_map).
-      eapply result_map_spec in Heqr0.
-      * break_exists; intuition. 
-        Search manifest_generator_app.
-
-      induction l; simpl in *; intuition; try congruence;
-      eauto.
-      eapply result_map_spec in Heqr0.
-      induction (mangen_plcTerm_list_union tp);
-      simpl in *; intuition; eauto; try congruence;
-      simpl in *; ff; eauto;
-      destruct b; simpl in *; eauto.
-  }
-  Search (map_get (Manifest_Union.environment_union _ _) _ = _).
-  eapply manifest_env_union_map_one_fwd in H0;
-  break_exists; intuition.
-  - admit. 
-  -  
-  unfold add_compat_map_manifest in *.
-  
-  destruct m; simpl in *; eauto.
+      eapply mangen_plcEvidence_list_union_comp_map; eauto.
+    }
+  eapply (map_get_under_invariant (fun v => cm = ASP_Compat_Map v) e (Maps.map_map (fun m : Manifest => add_compat_map_manifest m cm) (mangen_plcTerm_list_union tp))); eauto.
+  - eapply nodup_output_mangen_plcevlist_union; eauto.
+  - eapply nodup_map_map; 
+    eapply nodup_output_mangen_plctermlist_union.
+  - intuition. 
+    unfold Manifest_Union.manifest_union_asps;
+    simpl in *; destruct v1, v2; simpl in *; eauto. 
 Qed.
 
 (* Lemma add_compat_map_manifest_same : forall m x,
@@ -1043,31 +1155,9 @@ Proof.
     find_rewrite.
     eapply manifest_supports_term_sub_app; eauto.
     eauto.
-    * admit. 
-    * eapply add_compat_map_manifest_same in H5.
-
-    assert (cm = (ASP_Compat_Map x)).
-    {
-      eapply compat_map_never_change_mangen_app; eauto.
-    }
-    Search manifest_support_term_app.
-    eapply manifest_supports_term_sub_app; eauto.
-    * admit.  
-    * unfold manifest_generator_app in *.
-      unfold manifest_update_env_res in *.
-      unfold e_empty in *.
-      ff.
-      subst.
-      assert (String.eqb tp tp = true).
-      {
-        rewrite String.eqb_eq.
-        trivial.
-      }
-      repeat find_rewrite;
-      repeat find_injection.
-      clear H4.
-      admit.
-Admitted.
+    eapply end_to_end_mangen_same_comp_map in H; eauto;
+    intuition; repeat find_rewrite; eauto.
+Qed.
 (* 
       assert (cm = (ASP_Compat_Map x)). admit.
       eapply man_gen_old_always_supports_app in Heqr.

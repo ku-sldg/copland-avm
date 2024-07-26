@@ -1176,6 +1176,27 @@ Proof.
   rewrite eqb_eq in *; eauto.
 Qed.
 
+Lemma map_get_env_union_key : forall env env' p m,
+  map_get (Manifest_Union.environment_union env env') p = Some m ->
+  In p (map fst env) \/ In p (map fst env').
+Proof.
+  induction env; simpl in *; intuition; eauto.
+  - right; eapply map_get_some_impl_in; eauto. 
+  - unfold Manifest_Union.env_union_helper,
+      Manifest_Union.environment_union'' in *;
+    ff; simpl in *; repeat find_rewrite;
+    repeat find_injection; simpl in *;
+    subst.
+    * destEq a0 p; eauto;
+      erewrite map_distinct_key_rw in *;
+      eauto; find_apply_hyp_hyp;
+      eauto; intuition.
+    * destEq a0 p; eauto;
+      erewrite map_distinct_key_rw in *;
+      eauto; find_apply_hyp_hyp;
+      eauto; intuition.
+Qed.
+
 (* Global Hint Resolve manifest_subset_union_l : core. *)
 Lemma manifest_env_union_all_cases : forall env env' p m,
   NoDup (map fst env) ->
@@ -1197,8 +1218,7 @@ Proof.
     try rewrite map_distinct_key_rw in *; repeat find_injection;
     eauto; fail); eauto.
     assert (In a0 (map fst env) \/ In a0 (map fst env')). {
-      intuition.
-      admit.
+      eapply map_get_env_union_key; eauto.
     }
     intuition.
     rewrite String.eqb_eq in *; subst.
@@ -1210,51 +1230,7 @@ Proof.
       repeat eexists; eauto.
     * break_exists; intuition. 
       eapply map_get_some_impl_in in H1; congruence.
-      admit.
-    (* Need to make a statement about no duplicates in
-    environments, then we can show this is a contradiction.
-    
-    Currently it is saying that a0/p appearing in the
-    environment extension, as well as the rest of the environment *)
-    rewrite String.eqb_eq in *; subst.
-    pose proof H.
-    rewrite mapC_get_works in H0; find_injection;
-    simpl in *.
-    eauto.
-    eapply IHenv in Heqo; intuition; eauto.
-    * admit.
-    *  
-      repeat eexists; eauto. intuition; try eexists.
-    try right.
-  - unfold Manifest_Union.env_union_helper,
-      Manifest_Union.environment_union'' in *;
-    ff; subst; repeat find_rewrite; repeat find_injection;
-    eauto; try congruence. 
-    * rewrite String.eqb_eq in *; subst;
-      simpl in *. 
-      rewrite mapC_get_works in H; repeat find_injection;
-      simpl in *; intuition; eauto.
-      eapply IHenv in Heqo; intuition; eauto;
-      repeat find_rewrite; intuition; eauto.
-
-
-  - right; eauto; eexists; intuition; eauto;
-    eapply manifest_subset_refl.
-  - destruct (String.eqb a0 p) eqn:E; simpl in *;
-    unfold Manifest_Union.env_union_helper,
-      Manifest_Union.environment_union'' in *;
-    repeat break_match; simpl in *; intuition; eauto; try congruence;
-    try rewrite String.eqb_eq in *; subst.
-    * erewrite mapC_get_works in H; find_injection; eauto.
-    * erewrite mapC_get_works in H; find_injection; 
-      left; eexists; intuition; eapply manifest_subset_refl.
-    * eapply IHenv; eapply mapC_get_distinct_keys_from_set in H; 
-      eauto; intuition; subst; rewrite String.eqb_refl in E; congruence.
-    * eapply IHenv; eapply mapC_get_distinct_keys_from_set in H; 
-      eauto; intuition; subst; rewrite String.eqb_refl in E; congruence.
-
-  (exists m', map_get env p = Some m' /\ manifest_subset m' m) \/
-  (exists m', map_get env' p = Some m' /\ manifest_subset m' m).
+Qed.
 
 Lemma manifest_env_union_works : forall env env' p m,
   map_get (Manifest_Union.environment_union env env') p = Some m ->
