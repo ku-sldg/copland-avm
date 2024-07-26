@@ -5,7 +5,7 @@ Require Extraction.
 Require Import Term_Defs Term_Defs_Core Cvm_Run IO_Stubs AM_Monad Cvm_Monad.
 (* Require Import CopParser. *)
 
-Require Import Manifest_Generator Manifest_Compiler.
+Require Import Manifest_Generator Session_Config_Compiler.
 
 Require Import AM_Helpers Server_AM Client_AM.
 
@@ -33,8 +33,7 @@ Extract Constant get_ev => "bind get (fn st => ret (st_ev st)) : cvm_st -> coq_E
 
 Separate Extraction 
     flexible_mechanisms flexible_mechanisms_evidence
-    run_cvm manifest_compiler 
-    Jsonifiable_AM_Library Jsonifiable_Manifest
+    run_cvm session_config_compiler Jsonifiable_Manifest
 		handle_AM_request end_to_end_mangen_final
     run_demo_client_AM
     Jsonifiable_Evidence_Plc_list Jsonifiable_Term_Plc_list.
