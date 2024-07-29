@@ -10,23 +10,26 @@ Definition generate_ASP_dispatcher' (am : Manifest) (ats : Attestation_Session) 
     (* check is the ASPID is available *) 
     if (in_dec_set aspid asps)
     then 
-      match (map_get asp_map aspid) with
-      | Some conc_asp_loc => 
-          let asp_req := (mkASPRReq aspid args targ_plc targ rawEv) in
-          let js_req := to_JSON asp_req in
-          let resp_res := make_JSON_FS_Location_Request aspBin conc_asp_loc js_req in
-          match resp_res with
-          | resultC js_resp =>
-              match from_JSON js_resp with
-              | resultC r => 
-                  let '(mkASPRResp succ bs) := r in
-                  resultC bs
-              | errC msg => errC (Runtime msg)
-              end
-          | errC msg => errC (Runtime msg)
-          end
-      | None => errC Unavailable
-      end
+      let conc_asp_loc := 
+          match (map_get asp_map aspid) with
+          | Some conc_asp_loc => conc_asp_loc
+          (* If we dont find a translation, assume its the same name*)
+          | None => (aspid_to_fs_location aspid)
+          end 
+      in
+        let asp_req := (mkASPRReq aspid args targ_plc targ rawEv) in
+        let js_req := to_JSON asp_req in
+        let resp_res := make_JSON_FS_Location_Request aspBin conc_asp_loc js_req in
+        match resp_res with
+        | resultC js_resp =>
+            match from_JSON js_resp with
+            | resultC r => 
+                let '(mkASPRResp succ bs) := r in
+                resultC bs
+            | errC msg => errC (Runtime msg)
+            end
+        | errC msg => errC (Runtime msg)
+        end
     else errC Unavailable.
 
 (* This function will be a dispatcher for either local ASPS to CakeMLCallback, or pass them off to the ASP_Server *)
