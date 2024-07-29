@@ -41,8 +41,6 @@ Term_system.v
 Trace.v
 LTS.v
 Main.v
-# CvmJson_Interfaces.v
-# Manifest_Compiler.v
 EnvironmentM.v
 Manifest_Union.v
 Axioms_Io.v
@@ -76,4 +74,5 @@ Client_AM.v
 Server_AM.v
 Flexible_Mechanisms_Vars.v
 Flexible_Mechanisms.v
+Concrete_Extractables.v
 Extraction_Cvm_Cake.v
