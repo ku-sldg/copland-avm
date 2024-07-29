@@ -29,7 +29,7 @@ Extract Constant hsh_params => "( undefined () )".
 (* Extract Constant Nat.add => "(+)". *)
 
 Separate Extraction 
-    flexible_mechanisms flexible_mechanisms_evidence
+    full_flexible_mechanisms
     run_cvm session_config_compiler 
 		handle_AM_request end_to_end_mangen_final
     run_demo_client_AM concrete_Jsonifiable_Manifest

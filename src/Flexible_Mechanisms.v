@@ -1,5 +1,5 @@
 Require Import Term_Defs Flexible_Mechanisms_Vars.
-Require Import List. 
+Require Import List String. 
 Import ListNotations.
 
 (* Flexible Mechanisms *)
@@ -65,12 +65,18 @@ Definition filehash_auth_phrase : Term :=
       (asp SIG) 
     ).
 
-Definition filehash_demo_evidence_type : Evidence := 
-  eval filehash_auth_phrase P0 (nn 0).
+Open Scope string_scope.
+Definition flexible_mechanisms_map := 
+  [("cert", certificate_style); 
+   ("bg", background_check); 
+   ("parmut", parallel_mutual_1); 
+   ("parmut2", parallel_mutual_2); 
+   ("layered_bg", layered_background_check); 
+   ("filehash", filehash_auth_phrase)].
 
-Definition flexible_mechanisms := 
-  [certificate_style; background_check; 
-   parallel_mutual_1; parallel_mutual_2; layered_background_check; 
-   filehash_auth_phrase].
+Definition add_evidence_flexible_mechanisms := 
+  Maps.map_map (fun t => (t, eval t P0 (nn 0))) flexible_mechanisms_map.
 
-Definition flexible_mechanisms_evidence := [filehash_demo_evidence_type].
+Definition full_flexible_mechanisms :=
+  add_evidence_flexible_mechanisms.
+Close Scope string_scope.
