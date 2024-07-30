@@ -36,7 +36,7 @@ Proof.
   intros.
   eapply firstn_length_le.
   lia.
-Defined.
+Qed.
 
 Lemma skipn_long: forall (e:list BS) x y,
     length e = x + y ->
@@ -46,7 +46,7 @@ Proof.
   assert (length (skipn x e) = length e - x).
   { eapply skipn_length. }
   lia.
-Defined.
+Qed.
 
 Lemma peel_fact': forall e x y H,
     length e = S x ->
@@ -56,7 +56,7 @@ Proof.
   intros.
   destruct e;
     ff; eauto.
-Defined.
+Qed.
 
 Lemma peel_fact: forall e x y H et,
     length e = S x ->
@@ -68,7 +68,7 @@ Proof.
   econstructor.
   eapply peel_fact'; eauto.
   lia.
-Defined.
+Qed.
 
 Fixpoint encodeEv (e:EvidenceC) : RawEv :=
   match e with
@@ -154,7 +154,7 @@ Proof.
          -
            eauto.
                                    
-Defined.
+Qed.
 
 Ltac do_inv_recon_mt :=
   match goal with
@@ -172,7 +172,7 @@ Proof.
   intros.
   invc H.
   repeat ff; try solve_by_inversion; eauto.
-Defined.
+Qed.
 
 Ltac do_inv_recon_mt' :=
   match goal with
@@ -191,7 +191,7 @@ Proof.
   intros.
   invc H.
   destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff; destruct ls; try solve_by_inversion.                              
-Defined.
+Qed.
 
 Ltac do_inv_recon_nn :=
   match goal with
@@ -224,7 +224,7 @@ Proof.
   try (unfold OptMonad_Coq.bind, OptMonad_Coq.ret in *); 
   repeat ff; try solve_by_inversion.
   eapply peel_n_spec in Heqo; intuition; subst; eauto.
-Defined.
+Qed.
 
 Ltac do_inv_recon_gg :=
   match goal with
@@ -248,7 +248,7 @@ Proof.
   intros.
   invc H.
   destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff; destruct ls; try solve_by_inversion.
-Defined.
+Qed.
 
 Ltac do_inv_recon_hh :=
   match goal with
@@ -270,7 +270,7 @@ Proof.
   destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); 
   repeat ff; destruct ls; try solve_by_inversion;
   repeat eexists; ff.
-Defined.
+Qed.
 
 Ltac do_inv_recon_ee :=
   match goal with
@@ -292,7 +292,7 @@ Proof.
   destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); 
   repeat ff; try solve_by_inversion;
   eauto.
-Defined.
+Qed.
 
 Ltac do_inv_recon_ss :=
   match goal with
@@ -327,7 +327,7 @@ Proof.
   econstructor.
   find_apply_lem_hyp peel_n_spec; intuition;
   find_apply_lem_hyp app_inv_head_iff; subst; eauto.
-Defined.
+Qed.
 
 Ltac do_recon_inv_gg :=
   match goal with
@@ -379,14 +379,14 @@ Proof.
   intros.
   econstructor.
   congruence.
-Defined.
+Qed.
 
 Lemma fold_recev: forall e0 e1,
     reconstruct_ev' e0 e1 = reconstruct_ev (evc e0 e1).
 Proof.
   ff.
   tauto.
-Defined.
+Qed.
 
 Ltac do_wrap_reconP :=
   repeat
@@ -492,7 +492,7 @@ Proof.
   split;
     destruct s; ff; try unfold mt_evc; ff;
       econstructor; ff.
-Defined.
+Qed.
 
 Ltac do_wfec_split :=
   match goal with
@@ -761,7 +761,7 @@ Proof.
   invc H; invc H0.
   repeat jkjke'.
   ff.
-Defined.
+Qed.
 
 Ltac do_reconP_determ :=
   repeat 
@@ -790,7 +790,7 @@ Proof.
   intros.
   destruct e;
     ff; eauto.
-Defined.
+Qed.
 
 Ltac do_some_recons' :=
   match goal with
@@ -983,7 +983,7 @@ Proof.
   eexists.
   econstructor.
   eassumption.
-Defined.
+Qed.
 
 Ltac do_somerecons :=
   repeat
@@ -1121,7 +1121,7 @@ Proof.
     try (
         repeat find_apply_hyp_hyp;
         lia).
-Defined.
+Qed.
   *)
    
   - (* asp case *)
@@ -1343,7 +1343,7 @@ Proof.
   subst.
   symmetry.
   eapply cvm_spans; eauto.
-Defined.
+Qed.
 
 
 (** * Propositional version of span_cvm *)
@@ -1379,7 +1379,7 @@ Proof.
   inv_wfec.
   jkjke'.
   eapply More_lists.firstn_append.
-Defined.
+Qed.
 
 Ltac do_wfec_firstn :=
   match goal with
@@ -1401,7 +1401,7 @@ Proof.
   inv_wfec.
   jkjke'.
   eapply More_lists.skipn_append.
-Defined.
+Qed.
 
 Ltac do_wfec_skipn :=
   match goal with
@@ -1562,7 +1562,7 @@ Proof.
     jkjke.
     jkjke.
     destruct s; destruct s; destruct s0; eauto.
-Defined.
+Qed.
 
 
 (** * Lemma:  CVM execution always succeeds *)
@@ -1574,7 +1574,7 @@ Proof.
   destruct (build_cvm t st) eqn:ee.
   subst.
   eauto.
-Defined.
+Qed.
 
 Ltac do_exists_some_cc t st :=
     assert_new_proof_by
@@ -1806,7 +1806,7 @@ Proof.
   eapply st_trace_cumul''; eauto.
   repeat rewrite app_nil_r.
   eauto.
-Defined.
+Qed.
 
 
 (** * Lemma stating: CVM traces are "cumulative" (or monotonic).  
@@ -2032,7 +2032,7 @@ Proof.
 
   wrap_ccp_dohi.
   congruence.
-Defined.
+Qed.
 
 Ltac do_restl :=
   match goal with
@@ -2056,7 +2056,7 @@ Proof.
   induction t1; intros;
     repeat ff;
     repeat jkjke.
-Defined.
+Qed.
 
 Axiom cvm_evidence_correct_type : forall t p e e',
   cvm_evidence t p e = e' -> 
@@ -2324,7 +2324,7 @@ Proof.
   econstructor.
   eexists.
   jkjke.
-Defined.
+Qed.
 
 (*
 Lemma anno_parPloc_redo: forall t pt loc loc',
@@ -2334,7 +2334,7 @@ Proof.
   intros.
   econstructor.
   jkjke.
-Defined.
+Qed.
  *)
 Lemma anno_parPloc_redo: forall t pt loc loc',
     anno_par_list' t loc = Some (loc', pt) ->
@@ -2343,7 +2343,7 @@ Proof.
   intros.
   econstructor.
   jkjke.
-Defined.
+Qed.
 
  *)
 

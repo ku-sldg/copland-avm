@@ -87,7 +87,7 @@ Proof.
           try find_apply_lem_hyp shuffle_length;
           repeat find_apply_hyp_hyp;
           lia).
-Defined.
+Qed.
 
 Ltac inv_traceS :=
   match goal with
@@ -106,7 +106,7 @@ Proof.
       repeat find_apply_hyp_hyp;
       repeat find_apply_lem_hyp shuffle_length;
       try lia.
-Defined.
+Qed.
 
 Lemma step_silent_tr:
   forall st st' tr,

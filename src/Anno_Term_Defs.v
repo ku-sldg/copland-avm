@@ -85,7 +85,7 @@ Proof.
   generalizeEverythingElse t''.
   induction t'';
     intros H H0; ff.
-Defined.
+Qed.
 
 (** This function annotates a term.  It feeds a natural number
     throughout the computation so as to ensure each event has a unique
@@ -156,7 +156,7 @@ Proof.
     erewrite <- IHt2.
     jkjke.
     jkjke.
-Defined.
+Qed.
 
 (* Propositional versions of anno function equalities *)
 Inductive annoP: AnnoTerm -> Term -> Prop :=
@@ -197,7 +197,7 @@ Proof.
     repeat expand_let_pairs; simpl;
       try (repeat jkjk; auto;congruence);
       try (repeat jkjk'; auto).
-Defined.
+Qed.
 
 
 (** This predicate determines if an annotated term is well formed,
@@ -245,7 +245,7 @@ Proof.
   induction t; intros;
     try destruct a;
     ff.
-Defined.
+Qed.
   
 Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm),
   anno t i = (j,t') ->
@@ -255,7 +255,7 @@ Proof.
     ff;
     repeat find_apply_hyp_hyp;
     lia.
-Defined.
+Qed.
 #[export] Hint Resolve anno_mono : core.
 
 Lemma anno_range:
@@ -264,7 +264,7 @@ Lemma anno_range:
     range (t') = (i, j).
 Proof.
   induction x; intros; ff.
-Defined.
+Qed.
 
 
 (** Lemma stating that any annotated term produced via anno is well formed *)
@@ -394,7 +394,7 @@ Proof.
         eassumption.
       }
       tauto.     
-Defined.
+Qed.
 
 (* Computes the length of the "span" or range of event IDs for a given Term *)
 (* TODO: consider changing this to event_id_span_Term *)
@@ -488,4 +488,4 @@ Proof.
       split; eapply anno_mono; eauto.
     }
     lia.
-Defined.
+Qed.

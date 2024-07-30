@@ -27,7 +27,7 @@ Proof.
   intros.
   inversion H.
   tauto.
-Defined.
+Qed.
 
 Lemma wfr_at_pieces: forall t r p,
     well_formed_r_annt (aatt r p t) ->
@@ -36,7 +36,7 @@ Proof.
   intros.
   inversion H.
   tauto.
-Defined.
+Qed.
 
 Lemma wfr_bseq_pieces: forall r s t1 t2,
     well_formed_r_annt (abseq r s t1 t2) ->
@@ -45,7 +45,7 @@ Proof.
   intros.
   inversion H.
   tauto.
-Defined.
+Qed.
 
 Lemma wfr_bpar_pieces: forall r s t1 t2,
     well_formed_r_annt (abpar r s t1 t2) ->
@@ -54,7 +54,7 @@ Proof.
   intros.
   inversion H.
   tauto.
-Defined.
+Qed.
 
 Ltac do_wf_pieces :=
   match goal with
@@ -78,7 +78,7 @@ Proof.
     induction t;
     try (intros H; simpl; inv H; simpl;
          repeat find_apply_hyp_hyp; lia).
-Defined.
+Qed.
 
 Lemma esize_nonempty: forall t, esize t > 0.
 Proof.
@@ -86,7 +86,7 @@ Proof.
   induction t; intros;
     try (destruct a);
     (cbn; lia).
-Defined.
+Qed.
 
 Lemma wf_mono: forall t,
     well_formed_r_annt t ->
@@ -97,7 +97,7 @@ Proof.
   pose (esize_nonempty t).
   lia.
   eauto.
-Defined.
+Qed.
 
 Ltac do_mono :=
   (* let asdff := eapply anno_mono; eauto in *)
@@ -112,7 +112,7 @@ Lemma asp_lrange_irrel: forall a i a0 a1 n n',
 Proof.
   intros.
   destruct a; ff.
-Defined.
+Qed.
 
 (** This predicate specifies when a term, a place, and some initial
     evidence is related to an event.  In other words, it specifies the
@@ -227,7 +227,7 @@ Proof.
     try (inv_wfr; simpl in *; auto;
          repeat find_apply_hyp_hyp;
          repeat (find_apply_lem_hyp well_formed_range_r); lia).
-Defined.
+Qed.
 
 Lemma at_range:
   forall x r i,

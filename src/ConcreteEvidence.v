@@ -100,7 +100,7 @@ Proof.
   induction e''; intros;
     try evSubTFacts;
        eauto.
-Defined.
+Qed.
 
 (** Typed Concrete Evidence subterm relation *)
 Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
@@ -133,7 +133,7 @@ Proof.
   intros.
   induction H; intros;
     cbn in *; eauto.
-Defined.
+Qed.
 
 Lemma evsub_hh: forall e e' e0,
     EvSub e0 e' ->
@@ -199,4 +199,4 @@ Proof.
   intros e e' e'' H H0.
   generalizeEverythingElse e''.
   induction e''; intros; ff; invc H0; eauto.
-Defined.
+Qed.

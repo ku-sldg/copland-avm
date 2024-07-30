@@ -41,4 +41,4 @@ Proof.
   intros.
   assert ([] ++ (cvm_events_core t (session_plc ac) (get_et e)) = (cvm_events_core t (session_plc ac) (get_et e))) by eauto.
   eapply build_cvm_external'.
-Defined.
+Qed.

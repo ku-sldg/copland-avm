@@ -273,7 +273,7 @@ Lemma st_trace_irrel : forall t e e' e'' x x' y y' i i' i'' ac ac' ac'' res,
 Proof.
   intros; find_eapply_lem_hyp cvm_errors_deterministic; 
   [ | eapply H]; intuition; simpl in *; eauto.
-Defined.
+Qed.
 
 
 Ltac dohi'' :=
@@ -325,7 +325,7 @@ subst.
 
 apply Heqp.
 intuition. 
-Defined.
+Qed.
 
 (* States that the resulting event id counter (st_evid) is unaffected by the initial trace.
    This is a simple corollary of the Lemma hihi above. *)
@@ -360,7 +360,7 @@ subst.
 
 apply Heqp.
 intuition. 
-Defined.
+Qed.
 
 
 (* States that the resulting evidence (st_ev) is unaffected by the initial trace.
@@ -395,7 +395,7 @@ Proof.
 
   apply Heqp.
   intuition. 
-Defined.
+Qed.
 
 Ltac do_st_trace :=
   match goal with
@@ -434,7 +434,7 @@ Lemma ccp_implies_cc: forall t st st' res,
 Proof.
   intros.
   solve_by_inversion.
-Defined.
+Qed.
 
 Lemma cc_implies_ccp: forall t st st' res,
   build_cvm t st = (res,st') -> 
@@ -443,7 +443,7 @@ Proof.
   intros.
   econstructor.
   tauto.
-Defined.
+Qed.
 
 Lemma ccp_iff_cc: forall t st st' res,
   build_cvm t st = (res,st') <-> 
@@ -453,7 +453,7 @@ Proof.
   split; intros;
     try (eapply cc_implies_ccp; eauto);
     try (eapply ccp_implies_cc; eauto).
-Defined.
+Qed.
 
 Ltac inv_term_coreP :=
   match goal with
@@ -469,7 +469,7 @@ Proof.
   intros.
   econstructor.
   eauto.
-Defined.
+Qed.
 
 Ltac do_term_to_core_redo :=
   match goal with
@@ -488,7 +488,7 @@ Proof.
   econstructor.
   eexists.
   jkjke.
-Defined.
+Qed.
 
 Ltac do_anno_redo :=
   match goal with
@@ -512,7 +512,7 @@ Proof.
   intros.
   econstructor.
   jkjke.
-Defined.
+Qed.
 
 Ltac do_anno_indexed_redo :=
   match goal with

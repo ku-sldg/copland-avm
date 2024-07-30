@@ -26,7 +26,7 @@ Lemma splitEv_T_l_LEFT: forall e bits bits' es e0 sp,
 Proof.
   intros.
   ff.
-Defined.
+Qed.
 
 Lemma aeval_anno: forall a i n e0,
     (aeval (snd (anno (unanno a) i)) n e0 = aeval a n e0).
@@ -36,26 +36,26 @@ Proof.
   induction a; intros; ff;
     repeat jkjke';
     repeat jkjke.
-Defined.
+Qed.
 
 Lemma evc_inv: forall e,
     e = evc (get_bits e) (get_et e).
 Proof.
   destruct e; eauto.
-Defined.
+Qed.
 
 Lemma front_app{A} :
   forall (x:A) xs ys,    
     x :: xs ++ ys = [x] ++ xs ++ ys.
 Proof.
   tauto.
-Defined.
+Qed.
 
 Lemma back_app{A:Type}: forall (x y:A),
     [x; y] = [x] ++ [y].
 Proof.
   tauto.
-Defined.
+Qed.
 
 Ltac inv_wfec :=
   repeat
@@ -71,7 +71,7 @@ Proof.
   inv_wfec.
   jkjke'.
   eapply More_lists.firstn_append.
-Defined.
+Qed.
 
 Ltac do_wfec_firstn :=
   match goal with
@@ -93,7 +93,7 @@ Proof.
   inv_wfec.
   jkjke'.
   eapply More_lists.skipn_append.
-Defined.
+Qed.
 
 Ltac do_wfec_skipn :=
   match goal with
@@ -129,7 +129,7 @@ Proof.
          dd;
          try (erewrite app_length);
          jkjke).
-Defined.
+Qed.
 
 
 (* TODO:  this lemma does not hold for (Some eec ... = Some mtc) case
@@ -188,7 +188,7 @@ Proof.
   intros.
   destruct e;
     ff; eauto.
-Defined.
+Qed.
 
 Ltac do_some_recons' :=
   match goal with
@@ -269,7 +269,7 @@ Lemma span_cvm: forall atp t annt i j e e' tr tr' i' ac ac',
     j = i'.
 Proof.
   eapply span_cvm.
-Defined.
+Qed.
 
 (** * Propositional version of span_cvm *)
 Lemma anno_span_cvm: forall t pt annt i i' e e' tr tr' st_evid1 ac ac',

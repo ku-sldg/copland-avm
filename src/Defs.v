@@ -51,7 +51,7 @@ Lemma pairsinv : forall (a a' b b':nat),
 Proof.
   intros.
   congruence.
-Defined.
+Qed.
 
 
 (* Simplification hammer.  Used at beginning of many proofs in this 

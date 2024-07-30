@@ -288,7 +288,7 @@ Proof.
            try rewrite app_length; simpl in *;
            try find_apply_lem_hyp shuffle_length;
            lia).
-Defined.
+Qed.
 
 (** The events in a trace correspond to the events associated with an
     annotated term, a place, and some evidence. *)
@@ -814,4 +814,4 @@ Proof.
         eauto.
     +
       solve_by_inversion.
-Defined.
+Qed.
