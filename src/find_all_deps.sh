@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eu
 
 # Function to find dependencies using BFS
 find_dependencies_bfs() {
@@ -12,33 +13,24 @@ find_dependencies_bfs() {
     # Dequeue the first element
     local current="${queue[0]}"
     queue=("${queue[@]:1}")
-    # echo -e "Running Queue: \n${queue[@]}\n"
-    # echo -e "Running Seen: \n${seen[@]}\n"
-
-    # echo -e "Finding dependencies for $current\n"
 
     # Check if the file has already been processed or is in the initial seen_files
     if [[ " ${seen[@]} " =~ " ${current} " ]]; then
       # echo -e "SEEN: Already seen $current:\n"
       # We must need to reorder as something in seen depends on current
       # So drop current from past seen and it will be added to front after
-      seen=("${seen[@]/$current}")
+      new_array=()
+      for val in "${seen[@]}"; do
+        [[ $val != $current ]] && new_array+=("$val")
+      done
+      seen=("${new_array[@]}")
+      unset new_array
     fi
-      #  in ${seen[@]}\n"
-      # Reorder the seen list to put the current file at the front
-      # seen=("$current" "${seen[@]/$current}")
-      #continue
-    #fi 
-    # Mark the current file as seen
     seen=("$current" "${seen[@]}")
 
-
-	DEP_COM="./pretty_coq_deps.sh $current"
+    DEP_COM="./pretty_coq_deps.sh $current"
     # Get direct dependencies of the current file
-	deps=$($DEP_COM)
-	echo $deps
-    
-    # echo -e "Dependencies: $deps\n"
+    deps=$($DEP_COM)
 
     # Add new dependencies to the queue
     for dep in $deps; do
@@ -51,19 +43,20 @@ find_dependencies_bfs() {
         if [[ ! " ${seen[@]} " =~ " ${dep} " ]]; then
           queue+=("$dep")
         else
-          # echo "Not in queue, but in seen, so must be already processed: $dep"
           # We need to reorder seen as $current depends on $dep still
           queue+=("$dep")
-          seen=("$dep" "${seen[@]/$dep}")
+          new_array=()
+          for val in "${seen[@]}"; do
+            [[ $val != $dep ]] && new_array+=("$val")
+          done
+          seen=("$dep" "${new_array[@]}")
+          unset new_array
         fi
-      # else
-        # echo "Already in queue: $dep"
       fi
     done
   done
 
   # Print the results
-  echo "${seen[@]}"
   res_str=""
   for file in "${seen[@]}"; do
     if [[ -z "$file" ]]; then
