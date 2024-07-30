@@ -25,6 +25,7 @@ Extraction Implicit do_wait_par_thread [2 3 4].
 
 Extract Constant sig_params => "( undefined () )".
 Extract Constant hsh_params => "( undefined () )".
+Extract Inlined Constant Nat.eqb => "(op=)".
 (* Extract Constant + => "add". *)
 (* Extract Constant Nat.add => "(+)". *)
 
