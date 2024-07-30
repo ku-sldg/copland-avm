@@ -1,6 +1,8 @@
 #!/bin/bash
 set -eu
 
+TOOLS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 files_list=($(cat))
 len=${#files_list[@]}
 echo "Files list: ${files_list[@]}"
@@ -12,7 +14,7 @@ for((i=0; i<$len; i++)); do
   cur_value=${files_list[$i]}
 
   # Get direct dependencies of the current file
-  DEP_COM="./pretty_coq_deps.sh $cur_value"
+  DEP_COM="$TOOLS_DIR/pretty_coq_deps.sh $cur_value"
   deps=$($DEP_COM)
 
   # Check if all dependencies are in previous files_list

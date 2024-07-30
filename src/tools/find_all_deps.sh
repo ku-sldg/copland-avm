@@ -1,6 +1,8 @@
 #!/bin/bash
 set -eu
 
+TOOLS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Function to find dependencies using BFS
 find_dependencies_bfs() {
   local file="$1"
@@ -28,7 +30,7 @@ find_dependencies_bfs() {
     fi
     seen=("$current" "${seen[@]}")
 
-    DEP_COM="./pretty_coq_deps.sh $current"
+    DEP_COM="$TOOLS_DIR/pretty_coq_deps.sh $current"
     # Get direct dependencies of the current file
     deps=$($DEP_COM)
 
