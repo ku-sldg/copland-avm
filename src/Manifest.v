@@ -54,74 +54,21 @@ Global Instance jsonifiable_ASP_Locator : Jsonifiable ASP_Locator :=
   }.
 *)
 
-Inductive DispatcherErrors : Type :=
-| Unavailable   : DispatcherErrors
-| Runtime       : string -> DispatcherErrors.
+Definition PolicyT := list (Plc * ASP_ID).
 
-Inductive CallBackErrors : Type := 
-| messageLift   : string -> CallBackErrors.
-
-Definition ASPCallback (ErrType : Type) : Type := 
-  ASP_PARAMS -> RawEv -> ResultT RawEv ErrType.
-
-Definition PubKeyCallback : Type := 
-  Plc -> ResultT PublicKey DispatcherErrors.
-
-Definition PlcCallback : Type := 
-  Plc -> ResultT UUID DispatcherErrors.
-
-Definition UUIDCallback : Type :=
-  UUID -> ResultT Plc DispatcherErrors.
-
-Definition PolicyT : Set :=  list (Plc * ASP_ID).
-
-Definition empty_PolicyT : PolicyT := [].
-  (* [(P0, attest_id)]. *)
-
+Definition ASP_Compat_MapT := MapC ASP_ID ASP_ID.
 
 (** [Manifest] defines an attestation manger, a list of ASPs, and other
    * managers it is aware of (a single AM and its interconnections).
    *)
   Record Manifest := {
-    my_abstract_plc   : Plc ; 
-
     asps              : manifest_set ASP_ID; 
-    uuidPlcs          : manifest_set Plc ;
-    pubKeyPlcs        : manifest_set Plc ;
-    targetPlcs        : manifest_set Plc ;
-    policy            : PolicyT  ;
+    ASP_Compat_Map    : ASP_Compat_MapT;
+    ASP_Mapping       : MapC ASP_ID FS_Location;
+    man_policy        : PolicyT  ;
     (* TO DO: Add privacy and selection policies to manifest? *)
   }.
 
   Definition empty_Manifest : Manifest :=
-    Build_Manifest 
-      empty_Manifest_Plc 
-      manifest_set_empty
-      manifest_set_empty
-      manifest_set_empty
-      manifest_set_empty
-      empty_PolicyT.
+    Build_Manifest nil nil nil nil.
 
-(** Representation of a system's environment/resources used to populate an 
-    AM Config based on a Manifest. *)
-  Record AM_Library := {
-    (* NOTE: What is this and why is it necessary? *)
-    UUID_AM_Clone : UUID ;
-
-    (* Local Mappings *)
-    Lib_ASPs            : MapC ASP_ID Concrete_ASP_ID ;
-    Lib_Plcs            : MapC Plc UUID ;
-    Lib_PubKeys         : MapC Plc PublicKey ;
-    (* Attest <-> Appraisal ASP Mapping *)
-    ASP_Compat_Map      : MapC ASP_ID ASP_ID ;
-  }.
-
-Record AM_Config : Type := 
-  mkAmConfig {
-    absMan : Manifest ;
-    am_clone_addr : UUID ;
-    ASP_to_APPR_ASP_Map : MapC ASP_ID ASP_ID ;
-    aspCb : (ASPCallback DispatcherErrors) ;
-    plcCb : PlcCallback ;
-    pubKeyCb : PubKeyCallback ;
-  }.

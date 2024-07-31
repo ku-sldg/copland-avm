@@ -1,8 +1,8 @@
 (* Appraisal primitive implementations:  evidence unbundling, nonce generation, appraisal ASP dispatch.  *)
 
-Require Import String Term_Defs_Core Term_Defs Manifest AM_St EqClass Maps.
+Require Import String Term_Defs_Core Term_Defs AM_St EqClass Maps.
 
-Require Import Appraisal_IO_Stubs ErrorStMonad_Coq AM_Monad AM_St Manifest_Admits ErrorStringConstants Manifest.
+Require Import Appraisal_IO_Stubs ErrorStMonad_Coq AM_Monad AM_St Manifest_Admits ErrorStringConstants Attestation_Session.
 
 
 Axiom decrypt_prim_runtime : forall bs params pk e,
@@ -14,17 +14,17 @@ Definition check_et_size (et:Evidence) (ls:RawEv) : ResultT unit DispatcherError
   | false => errC (Runtime errStr_et_size)
   end.
 
-Definition decrypt_bs_to_rawev (bs:BS) (params:ASP_PARAMS) (ac:AM_Config) : ResultT RawEv DispatcherErrors :=
+Definition decrypt_bs_to_rawev (bs:BS) (params:ASP_PARAMS) (ac:Session_Config) : ResultT RawEv DispatcherErrors :=
 match params with
 | asp_paramsC _ _ p _ => 
-    match (ac.(pubKeyCb) p) with 
-    | resultC pubkey => decrypt_bs_to_rawev_prim bs params pubkey 
-    | errC e => errC e
+    match (map_get (pubkey_map ac) p) with 
+    | Some pubkey => decrypt_bs_to_rawev_prim bs params pubkey 
+    | None => errC Unavailable
     end
 end.
 
 Definition decrypt_bs_to_rawev' (bs:BS) (params:ASP_PARAMS) (et:Evidence) : AM RawEv :=
-  ac <- get_AM_amConfig ;;
+  ac <- get_AM_config ;;
   match (decrypt_bs_to_rawev bs params ac) with 
   | resultC r => 
     match (check_et_size et r) with
@@ -38,12 +38,12 @@ Definition checkNonce' (nid:nat) (nonceCandidate:BS) : AM BS :=
   nonceGolden <- am_getNonce nid ;;
   ret (checkNonce nonceGolden nonceCandidate).
 
-Definition check_asp_EXTD (params:ASP_PARAMS) (ls:RawEv) (ac : AM_Config) : ResultT RawEv DispatcherErrors :=
+Definition check_asp_EXTD (params:ASP_PARAMS) (ls:RawEv) (ac : Session_Config) : ResultT RawEv DispatcherErrors :=
   ac.(aspCb) params ls.
 
 Definition check_asp_EXTD' (params:ASP_PARAMS) (p:Plc) (sig:RawEv) (ls:RawEv) : AM RawEv :=
   let '(asp_paramsC att_id args targ targid) := params in
-  ac <- get_AM_amConfig ;;
+  ac <- get_AM_config ;;
   match (map_get (ASP_to_APPR_ASP_Map ac) att_id) with
   | Some appr_asp => 
     match (check_asp_EXTD (asp_paramsC appr_asp args targ targid) (app sig ls) ac) with

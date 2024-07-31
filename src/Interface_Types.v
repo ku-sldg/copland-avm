@@ -1,10 +1,11 @@
-Require Import JSON Term_Defs String.
+Require Import JSON Term_Defs String Attestation_Session.
 Require Export Interface_Strings_Vars.
 
 
 (* Interface Types *)
 Record ProtocolRunRequest := 
   mkPRReq {
+    prreq_att_sess : Attestation_Session;
     prreq_term: Term;
     prreq_req_plc: Plc;
     prreq_rawev: RawEv;
@@ -29,6 +30,7 @@ Record ProtocolNegotiateResponse :=
 
 Record ProtocolAppraiseRequest :=
   mkPAReq {
+    pareq_att_sess: Attestation_Session;
     pareq_term: Term;
     pareq_plc: Plc;
     pareq_evidence: Evidence;
@@ -56,7 +58,7 @@ Record ASPRunResponse :=
     asprresp_rawev: RawEv;
   }.
 
-Record ASPInfoRequest := 
+(* Record ASPInfoRequest := 
   mkASPIReq {
     aspireq_asp_id : ASP_ID;
   }.
@@ -65,25 +67,4 @@ Record ASPInfoResponse :=
   mkASPIResp {
     aspiresp_success: bool;
     aspiresp_info: ASP_Info;
-  }.
-
-Inductive AM_Protocol_Requests :=
-| Protocol_Run_Request: ProtocolRunRequest -> AM_Protocol_Requests
-| Protocol_Negotiate_Request: ProtocolNegotiateRequest -> AM_Protocol_Requests
-| Protocol_Appraise_Request: ProtocolAppraiseRequest -> AM_Protocol_Requests.
-
-Inductive AM_Protocol_Responses :=
-| Protocol_Run_Response : ProtocolRunResponse -> AM_Protocol_Responses
-| Protocol_Negotiate_Response: ProtocolNegotiateResponse -> AM_Protocol_Responses
-| Protocol_Appraise_Response: ProtocolAppraiseResponse -> AM_Protocol_Responses.
-
-Inductive AM_Protocol_Interface :=
-| AM_Protocol_Request_Interface: AM_Protocol_Requests -> AM_Protocol_Interface
-| AM_Protocol_Response_Interface: AM_Protocol_Responses -> AM_Protocol_Interface.
-
-Inductive AM_ASP_Interface :=
-| ASP_Run_Request: ASPRunRequest -> AM_ASP_Interface
-| ASP_Run_Response : ASPRunResponse -> AM_ASP_Interface.
-(* NOTE: Eventually we will add these
-| ASP_Info_Request: ASPInfoRequest -> AM_ASP_Interface
-| ASP_Info_Response: ASPInfoResponse -> AM_ASP_Interface. *)
+  }. *)

@@ -18,8 +18,11 @@ OptMonad_Coq.v
 Term_Defs_Core.v
 Params_Admits.v
 Term_Defs.v
+Attestation_Session.v
 Interface_Strings_Vars.v
 Interface_Types.v
+Interface_JSON.v
+Interface.v
 ErrorStMonad_Coq.v
 ConcreteEvidence.v
 Manifest_Admits.v
@@ -27,6 +30,7 @@ Manifest_Set.v
 Manifest.v
 Manifest_JSON_Vars.v
 Manifest_JSON.v
+Session_Config_Compiler.v
 Cvm_St.v
 IO_Stubs.v
 Anno_Term_Defs.v
@@ -37,8 +41,6 @@ Term_system.v
 Trace.v
 LTS.v
 Main.v
-CvmJson_Interfaces.v
-Manifest_Compiler.v
 EnvironmentM.v
 Manifest_Union.v
 Axioms_Io.v
@@ -67,8 +69,10 @@ ManCompSoundness.v
 ManCompSoundness_Appraisal.v
 AM_Helpers.v
 AM_Json_Interfaces.v
+AM_Manager.v
 Client_AM.v
 Server_AM.v
 Flexible_Mechanisms_Vars.v
 Flexible_Mechanisms.v
+Concrete_Extractables.v
 Extraction_Cvm_Cake.v

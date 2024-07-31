@@ -2,7 +2,7 @@
 
 Require Import ResultT Term_Defs_Core Term_Defs.
 
-Require Import Manifest_Admits ErrorStMonad_Coq Cvm_St AM_St.
+Require Import Manifest_Admits ErrorStMonad_Coq Cvm_St AM_St Attestation_Session.
 
 Require Import String ErrorStringConstants.
 

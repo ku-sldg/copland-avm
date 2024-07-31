@@ -71,6 +71,10 @@ Ltac destEq t1 t2 :=
 
 Ltac break_eqs :=
   match goal with
+  | H : context [ eqb ?p1 ?p2 ] |- _ =>
+      destEq p1 p2
+  | |- context [ eqb ?p1 ?p2 ] =>
+      destEq p1 p2
   | p1 : ?T, p2 : ?T |- _ => 
       tryif (match goal with
               | HP : p1 <> p2 |- _ => fail
