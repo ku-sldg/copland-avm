@@ -1,14 +1,8 @@
 (*  Helper Lemmas in support of Manifest Compiler Soundness proofs.  *)
 
-Require Import Term_Defs_Core Manifest Manifest_Generator Manifest_Generator_Helpers EqClass Manifest_Generator_Facts Manifest_Admits Eqb_Evidence.
-
-Require Import Params_Admits.
+Require Import Term_Defs_Core Manifest_Generator_Helpers Eqb_Evidence.
 
 Require Import StructTactics Auto.
-
-Require Import Coq.Program.Tactics.
-
-Require Import Coq.Program.Equality.
 
 Require Import List.
 Import ListNotations.

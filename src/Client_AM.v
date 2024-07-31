@@ -1,8 +1,8 @@
 (*  Implementation of a top-level Client (initiator) thread for Client AMs in
       end-to-end Copland Attestation + Appraisal protocols.  *)
-Require Import String List.
+Require Import String.
 
-Require Import Term Cvm_Run EqClass Cvm_St.
+Require Import Term EqClass.
 
 Require Import Impl_appraisal Appraisal_IO_Stubs IO_Stubs AM_Monad ErrorStMonad_Coq.
 
@@ -11,8 +11,6 @@ Require Import Maps Attestation_Session Interface.
 Require Import Disclose ErrorStringConstants Manifest_Admits.
 
 Require Import AM_Helpers Auto.
-
-Require Import StructTactics Coq.Program.Tactics.
 
 Import ListNotations.
 
@@ -246,8 +244,6 @@ Definition check_disclosure_policy (t:Term) (p:Plc) (e:Evidence) : AM unit :=
 
   ret (am_appev app_res).
 *)
-
-Require Import Auto.
 
 Fixpoint nonce_ids_et' (et:Evidence) (ls:list N_ID) : list N_ID :=
   match et with

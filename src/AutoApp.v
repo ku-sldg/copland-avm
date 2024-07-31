@@ -1,8 +1,7 @@
 (* Misc automation tactics.  
     TODO:  Some of these might be repeats or overlap. *)
 
-Require Import StructTactics Auto Cvm_St Cvm_Monad ErrorStMonad_Coq Cvm_Impl.
-Require Import List.
+Require Import StructTactics Auto Cvm_Monad.
 
 Ltac dosome_eq y :=
   match goal with
@@ -55,7 +54,7 @@ Ltac haaa :=
 
 Ltac stt :=
   cbn in *;
-  monad_unfold;
+  cvm_monad_unfold;
   try solve_by_inversion;
   repeat break_let;
   dosome;

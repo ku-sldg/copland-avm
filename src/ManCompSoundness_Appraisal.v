@@ -2,11 +2,10 @@
       Namely, that the compiler outputs a collection of manifests that support 
       appraisal execution over the input evidence.  *)
 
-Require Import Manifest Attestation_Session Session_Config_Compiler Manifest_Generator ID_Type
-  Maps Term_Defs List Cvm_St Cvm_Impl ErrorStMonad_Coq StructTactics 
-  Cvm_Monad EqClass Manifest_Admits Auto.
-Require Import Manifest_Generator_Facts Eqb_Evidence ManCompSoundness.
-Require Import Manifest_Generator_Union.
+Require Import Manifest Attestation_Session
+  Maps Term_Defs 
+  Cvm_Monad Auto.
+Require Import Manifest_Generator_Facts ManCompSoundness.
 
 Require Import Coq.Program.Tactics Lia.
 
@@ -126,7 +125,7 @@ st = st'.
 Proof.
 intros.
 unfold decrypt_bs_to_rawev' in *.
-monad_unfold.
+cvm_monad_unfold.
 repeat (ff; try unfold am_falim in * ; eauto).
 Qed.
 Local Hint Resolve decrypt_amst_immut : core.
@@ -306,7 +305,7 @@ Proof.
     try (left; repeat eexists; eauto; congruence);
     simpl in *; destruct_conjs; 
     simpl in *; intuition; eauto;
-    monad_unfold;
+    cvm_monad_unfold;
     simpl in *; repeat break_let;
     assert (st = a) by eauto; subst;
     assert (exists res, r = resultC res) by (
@@ -316,7 +315,7 @@ Proof.
     break_match; intuition; eauto; repeat find_injection;
     repeat find_rewrite; eauto;
     unfold decrypt_bs_to_rawev' in *;
-    monad_unfold; repeat ff; eauto;
+    cvm_monad_unfold; repeat ff; eauto;
     unfold am_failm, check_et_size, check_asp_EXTD in *;
     repeat find_injection; repeat find_rewrite; eauto; try congruence;
     try (find_apply_lem_hyp decrypt_prim_runtime; subst; eauto; congruence); eauto.
@@ -369,7 +368,7 @@ Proof.
 
     destruct_conjs.
 
-    monad_unfold.
+    cvm_monad_unfold.
     break_let.
     rewrite H10 in *.
 
@@ -455,7 +454,7 @@ Proof.
 
       destruct_conjs.
 
-      monad_unfold.
+      cvm_monad_unfold.
 
       break_let.
       right.
@@ -528,8 +527,6 @@ Fixpoint att_sess_supports_term_app (ats : Attestation_Session) (e : Evidence)
       att_sess_supports_term_app ats e1 /\ 
       att_sess_supports_term_app ats e2
   end.
-
-Require Import AM_Manager.
 
 Theorem manifest_support_sc_impl_sc_exec: forall t absMan ats,
   well_formed_manifest absMan ->

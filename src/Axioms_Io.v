@@ -4,9 +4,8 @@ Uninterpreted functions and rewrite rules that model external (remote and local 
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term_Defs Anno_Term_Defs Interface LTS IO_Stubs ResultT Cvm_St Attestation_Session Maps.
+Require Import Term_Defs Anno_Term_Defs Interface LTS IO_Stubs.
 
-Require Import List.
 Import ListNotations.
 
 (** IO Axioms *)

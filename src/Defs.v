@@ -12,6 +12,7 @@ Import List.ListNotations.
 
 Require Import Coq.Program.Tactics.
 
+Require Import Ltac2.Ltac2.
 
 (* rewrite (existentially) an arbitrary hypothesis and attempt eauto *)
 Ltac jkjke :=
@@ -46,22 +47,31 @@ Ltac door :=
     destruct H
   end; destruct_conjs.
 
-Lemma pairsinv : forall (a a' b b':nat),
-    a <> a' -> (a,b) <> (a',b').
-Proof.
-  intros.
-  congruence.
-Qed.
-
-
 (* Simplification hammer.  Used at beginning of many proofs in this 
    development.  Conservative simplification, break matches, 
    invert on resulting goals *)
 Ltac ff :=
-  repeat (cbn in *;
-          repeat break_match;
-          repeat find_inversion;
-          try solve_by_inversion).
+  repeat (
+    (* try cbn in *; *)
+    try simpl in *;
+    try break_match;
+    repeat (find_rewrite; clean);
+    repeat find_injection;
+    simpl in *; subst; eauto;
+    try congruence;
+    try solve_by_inversion
+  ).
+
+Ltac ffa :=
+  repeat (ff;
+    repeat find_apply_hyp_hyp;
+    ff).
+
+Tactic Notation "ffa" "using" tactic(tac) :=
+  repeat (ff;
+    repeat find_apply_hyp_hyp;
+    tac;
+    ff).
 
 Ltac fail_if_in_hyps_type t := 
   lazymatch goal with 
@@ -89,11 +99,6 @@ Ltac find_apply_hyp_hyp' :=
   | [ H : _ -> _ , H' : _ |- _ ] =>
     (*let x := fresh in *)
     pose_new_proof (H H')
-  end.
-
-Ltac find_apply_lem_hyp lem :=
-  match goal with
-  | [ H : _ |- _ ] => apply lem in H
   end.
 
 Ltac find_pose_new_lem_hyp lem :=

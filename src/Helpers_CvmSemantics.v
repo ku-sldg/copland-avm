@@ -4,70 +4,17 @@ Helper lemmas for proofs about the CVM semantics.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Anno_Term_Defs Cvm_Monad Cvm_Impl Term_Defs Auto StructTactics AutoApp Attestation_Session ResultT.
+Require Import Anno_Term_Defs Cvm_Monad Cvm_Impl Term_Defs Auto Attestation_Session StructTactics AutoApp.
+Require Import Coq.Program.Tactics.
 
-Require Import Coq.Program.Tactics Coq.Program.Equality.
-
-Require Import List.
 Import ListNotations.
-
-Lemma sc_immut : forall t e tr i ac,
-  st_config 
-    (execErr 
-      (build_cvm t)
-      {|
-        st_ev := e;
-        st_trace := tr;
-        st_evid := i;
-        st_config := ac
-      |}) = ac.
-Proof.
-  induction t; repeat (monad_unfold; simpl in *); intuition.
-  - destruct a; monad_unfold; eauto;
-    destruct (aspCb ac a (get_bits e)) eqn:E1; simpl in *; eauto.
-    repeat ff.
-
-  - (* at case *)
-    repeat ff;
-    unfold doRemote_session' in *;
-    repeat ff.
-
-  - pose proof (IHt1 e tr i ac).
-    destruct (build_cvm t1 {| st_ev := e; st_trace := tr; st_evid := i; st_config := ac |}) eqn:C1;
-    simpl in *; eauto;
-    destruct r; simpl in *; intuition; eauto.
-    destruct c; simpl in *.
-    pose proof (IHt2 st_ev st_trace st_evid st_config).
-    destruct (build_cvm t2 {| st_ev := st_ev; st_trace := st_trace; st_evid := st_evid; st_config := st_config |}) eqn:C2;
-    simpl in *; subst; eauto.
-  - 
-    monad_unfold; simpl in *.
-    pose proof (IHt1 e (tr ++ [Term_Defs.split i (session_plc ac)]) (i + 1) ac).
-    destruct (build_cvm t1 {| st_ev := e; st_trace := tr ++ [Term_Defs.split i (session_plc ac) ]; st_evid := (i + 1); st_config := ac |}) eqn:C1;
-    simpl in *; eauto;
-    destruct r; simpl in *; intuition; eauto.
-    destruct c; simpl in *.
-    pose proof (IHt2 e st_trace st_evid st_config).
-    destruct (build_cvm t2 {| st_ev := e; st_trace := st_trace; st_evid := st_evid; st_config := st_config |}) eqn:C2;
-    simpl in *; subst; eauto;
-    destruct r; simpl in *; eauto.
-  - monad_unfold; simpl in *.
-    pose proof (IHt1 e ((tr ++ [Term_Defs.split i (session_plc ac)]) ++ [cvm_thread_start l (session_plc ac) t2 (get_et e)]) (i + 1) ac).
-    destruct (build_cvm t1 {| st_ev := e; st_trace := (tr ++ [Term_Defs.split i (session_plc ac)]) ++ [cvm_thread_start l (session_plc ac) t2 (get_et e)]; st_evid := (i + 1); st_config := ac |}) eqn:C1;
-    simpl in *; eauto;
-    destruct r; simpl in *; intuition; eauto.
-Qed.
 
 Lemma sc_immut_better : forall t st r st',
   build_cvm t st = (r, st') ->
   st_config st = st_config st'.
 Proof.
-  intuition.
-  pose proof (sc_immut t (st_ev st) (st_trace st) (st_evid st) (st_config st)).
-  unfold execErr in *.
-  simpl in *.
-  destruct st; simpl in *.
-  find_rewrite; simpl in *; eauto.
+  induction t; repeat (cvm_monad_unfold; simpl in *); intuition;
+  ffa using cvm_monad_unfold.
 Qed.
 
 (* Hack to apply a specific induction hypothesis in some proofs *)
@@ -83,18 +30,15 @@ Ltac anhl :=
   end.
 
 Ltac monad_simp := 
-  repeat (monad_unfold; simpl in *; eauto).
+  repeat (cvm_monad_unfold; simpl in *; eauto).
 
 Lemma check_cvm_policy_preserves_state : forall t p evt st1 st1' r,
   check_cvm_policy t p evt st1 = (r, st1') ->
   st1 = st1'.
 Proof.
-  induction t; simpl in *; intuition; eauto; ff;
-  break_match; repeat find_injection; eauto.
+  induction t; simpl in *; intuition; eauto; ffa using cvm_monad_unfold.
 Qed.
 Global Hint Resolve check_cvm_policy_preserves_state : core.
-
-Require Import EqClass.
 
 (* Lemma policy_list_not_disclosed_same_outputs : forall a p evt pol1 pol2 r1 r2,
   policy_list_not_disclosed a p evt pol1 = r1 ->
@@ -131,10 +75,7 @@ Lemma check_cvm_policy_same_outputs : forall t p evt st1 st1' r1 st2 st2' r2,
   (policy (st_config st1) = policy (st_config st2)) ->
   r1 = r2 /\ st1 = st1' /\ st2 = st2'.
 Proof.
-  induction t; simpl in *; intuition; eauto;
-  unfold check_cvm_policy in *; monad_simp; eauto;
-  repeat (break_match; repeat find_rewrite; repeat find_injection; 
-    simpl in *; eauto).
+  induction t; simpl in *; intuition; eauto; ffa using cvm_monad_unfold.
 Qed.
 Global Hint Resolve check_cvm_policy_same_outputs : core.
 
@@ -143,56 +84,19 @@ Theorem evidence_deterministic_output_on_results : forall t e tr1 tr2 i1 i2 ac s
   build_cvm t {| st_ev := e; st_trace := tr2; st_evid := i2; st_config := ac |} = (resultC tt, st2) ->
   st1.(st_ev) = st2.(st_ev).
 Proof.
-  induction t; intros; monad_simp.
-  - destruct a; monad_simp; invc H; invc H0; eauto;
-    destruct (aspCb ac a (get_bits e)); 
-    simpl in *; invc H1; invc H2; eauto.
-    repeat ff.
-  - ff;
-    unfold doRemote_session' in *;
-    repeat (break_match; try monad_unfold; repeat find_rewrite; repeat find_injection; try congruence; eauto);
-    repeat find_eapply_lem_hyp check_cvm_policy_preserves_state;
-    subst; simpl in *; repeat find_rewrite; repeat find_injection; eauto.
-  - destruct (build_cvm t1 {| st_ev := e; st_trace := tr1; st_evid := i1; st_config := ac |}) eqn:E1;
-    destruct (build_cvm t1 {| st_ev := e; st_trace := tr2; st_evid := i2; st_config := ac |}) eqn:E2;
-    destruct r, r0; invc H; invc H0; destruct u, u0, c, c0.
-    pose proof (IHt1 _ _ _ _ _ _ _ _ E1 E2); simpl in *; subst.
-    assert (st_config = st_config0). {
-      pose proof (sc_immut t1 e tr2 i2 ac); monad_unfold;
-      pose proof (sc_immut t1 e tr1 i1 ac); monad_unfold.
-      rewrite E1, E2 in *; simpl in *; subst; eauto.
-    }
-    subst; clear E1 E2.
-    destruct (build_cvm t2 {| st_ev := st_ev0; st_trace := st_trace; st_evid := st_evid; st_config := st_config0 |}) eqn:E1;
-    destruct (build_cvm t2 {| st_ev := st_ev0; st_trace := st_trace0; st_evid := st_evid0; st_config := st_config0 |}) eqn:E2;
-    invc H1; invc H2; simpl in *; eauto.
-  - destruct (build_cvm t1 {| st_ev := e; st_trace := tr1 ++ [Term_Defs.split i1 (session_plc ac)]; st_evid := i1 + 1; st_config := ac |}) eqn:E1;
-    destruct (build_cvm t1 {| st_ev := e; st_trace := tr2 ++ [Term_Defs.split i2 (session_plc ac)]; st_evid := i2 + 1; st_config := ac |}) eqn:E2;
-    destruct r, r0; invc H; invc H0; destruct u, u0, c, c0.
-    pose proof (IHt1 _ _ _ _ _ _ _ _ E1 E2); simpl in *; subst.
-    assert (st_config = st_config0). {
-      pose proof (sc_immut t1 e (tr2 ++ [Term_Defs.split i2 (session_plc ac)]) (i2 + 1) ac); monad_unfold;
-      pose proof (sc_immut t1 e (tr1 ++ [Term_Defs.split i1 (session_plc ac)]) (i1 + 1) ac); monad_unfold;
-      rewrite E1, E2 in *; simpl in *; subst; eauto.
-    }
-    subst; clear E1 E2.
-    destruct (build_cvm t2 {| st_ev := e; st_trace := st_trace; st_evid := st_evid; st_config := st_config0 |}) eqn:E1;
-    destruct (build_cvm t2 {| st_ev := e; st_trace := st_trace0; st_evid := st_evid0; st_config := st_config0 |}) eqn:E2;
-    destruct r0, r;
-    invc H1; invc H2; simpl in *;
-    destruct u, u0.
-    pose proof (IHt2 _ _ _ _ _ _ _ _ E1 E2); simpl in *; subst; 
-    rewrite H; eauto.
-  - destruct (build_cvm t1 {| st_ev := e; st_trace := (tr1 ++ [Term_Defs.split i1 (session_plc ac)]) ++ [cvm_thread_start l (session_plc ac) t2 (get_et e)]; st_evid := i1 + 1; st_config := ac |}) eqn:E1;
-    destruct (build_cvm t1 {| st_ev := e; st_trace := (tr2 ++ [Term_Defs.split i2 (session_plc ac)]) ++ [cvm_thread_start l (session_plc ac) t2 (get_et e)]; st_evid := i2 + 1; st_config := ac |}) eqn:E2;
-    destruct r, r0; invc H; invc H0; destruct u, u0, c, c0.
-    pose proof (IHt1 _ _ _ _ _ _ _ _ E1 E2); simpl in *; subst.
-    assert (st_config = st_config0). {
-      pose proof (sc_immut t1 e ((tr1 ++ [Term_Defs.split i1 (session_plc ac)]) ++ [cvm_thread_start l (session_plc ac) t2 (get_et e)]) (i1 + 1) ac); monad_unfold;
-      pose proof (sc_immut t1 e ((tr2 ++ [Term_Defs.split i2 (session_plc ac)]) ++ [cvm_thread_start l (session_plc ac) t2 (get_et e)]) (i2 + 1) ac); monad_unfold.
-      rewrite E1, E2 in *; simpl in *; subst; eauto.
-    }
-    subst; clear E1 E2; eauto.
+  induction t; intros; monad_simp; ffa using cvm_monad_unfold;
+  repeat match goal with
+  | u : unit |- _ => destruct u
+  | st : cvm_st |- _ => destruct st
+  | H1 : build_cvm ?t ?st1 = (?res1, ?st1'),
+    H2 : build_cvm ?t ?st2 = (?res2, ?st2'),
+    IH : context[build_cvm ?t _ = _ -> _] |- _ =>
+      assert (Cvm_St.st_config st1 = Cvm_St.st_config st1') by (
+        eapply sc_immut_better in H1; ffa);
+      assert (Cvm_St.st_config st2 = Cvm_St.st_config st2') by (
+        eapply sc_immut_better in H2; ffa);
+      eapply IH in H1; [ | eapply H2]; ffa
+  end.
 Qed.
 
 Lemma cvm_errors_deterministic :  forall t e tr1 tr2 i ac r1 r2 st1 st2,
@@ -218,23 +122,8 @@ Lemma cvm_errors_deterministic :  forall t e tr1 tr2 i ac r1 r2 st1 st2,
     st1.(st_evid) = st2.(st_evid)).
 Proof.
   induction t; intros; monad_simp.
-  - destruct a; monad_simp; invc H; invc H0; 
-    simpl in *; intuition;
-    try (rewrite H; eauto);
-    try (invc H; eauto);
-    destruct (aspCb ac a (get_bits e)); 
-    monad_simp; invc H1; invc H2; eauto; simpl in *;
-    try (rewrite H3; eauto);
-    repeat ff.
-  - ff; unfold doRemote_session' in *; 
-    repeat (break_match; try monad_unfold; repeat find_rewrite; repeat find_injection; try congruence; eauto);
-    match goal with
-    | H1 : check_cvm_policy _ _ _ _ = _,
-      H2 : check_cvm_policy _ _ _ _ = _ |- _ =>
-        eapply check_cvm_policy_same_outputs in H1; try eapply H2; eauto;
-        intuition; subst; simpl in *; subst; repeat find_rewrite;
-        repeat find_injection; eauto; try congruence
-    end.
+  - ffa.
+  - ffa using cvm_monad_unfold.
 
   - ff; eauto;
     repeat match goal with
@@ -291,111 +180,6 @@ Ltac dohi'' :=
 Ltac dohi :=
   do 2 (repeat dohi''; destruct_conjs; subst);
   repeat clear_triv.
-
-(* States that the resulting evidence (st_ev) is unaffected by the initial trace.
-   This is a simple corollary of the Lemma hihi above. *)
-Lemma trace_irrel_ev : forall t tr1 tr1' tr2 e e' i i' ac ac' res,
-    build_cvm t
-           {| st_ev := e; st_trace := tr1; st_evid := i; st_config := ac |} =
-    (res, {| st_ev := e'; st_trace := tr1'; st_evid := i'; st_config := ac' |}) ->
-    
-    st_ev
-      (execErr (build_cvm t)
-           {| st_ev := e; st_trace := tr2; st_evid := i; st_config := ac |}) = e'.
-Proof.
-
-intros.
-destruct (build_cvm t {| st_ev := e; st_trace := tr2; st_evid := i; st_config := ac |}) eqn:ff.
-simpl.
-vmsts.
-simpl.
-subst.
-dohi.
-df.
-edestruct st_trace_irrel.
-apply H. 
-
-assert (r = res).
-{
-  eapply cvm_errors_deterministic.
-  apply Heqp.
-  apply H.
-}
-subst.
-
-apply Heqp.
-intuition. 
-Qed.
-
-(* States that the resulting event id counter (st_evid) is unaffected by the initial trace.
-   This is a simple corollary of the Lemma hihi above. *)
-Lemma trace_irrel_evid : forall t tr1 tr1' tr2 e e' i i' ac ac' res,
-    build_cvm t
-           {| st_ev := e; st_trace := tr1; st_evid := i; st_config := ac|} =
-    (res, {| st_ev := e'; st_trace := tr1'; st_evid := i'; st_config := ac' |}) ->
-    
-    st_evid
-      (execErr (build_cvm t)
-           {| st_ev := e; st_trace := tr2; st_evid := i; st_config := ac |}) = i'.
-Proof.
-
-intros.
-destruct (build_cvm t {| st_ev := e; st_trace := tr2; st_evid := i; st_config := ac |}) eqn:ff.
-simpl.
-vmsts.
-simpl.
-subst.
-dohi.
-df.
-edestruct st_trace_irrel.
-apply H. 
-
-assert (r = res).
-{
-  eapply cvm_errors_deterministic.
-  apply Heqp.
-  apply H.
-}
-subst.
-
-apply Heqp.
-intuition. 
-Qed.
-
-
-(* States that the resulting evidence (st_ev) is unaffected by the initial trace.
-   This is a simple corollary of the Lemma hihi above. *)
-Lemma trace_irrel_ac : forall t tr1 tr1' tr2 e e' i i' ac ac' res,
-    build_cvm t
-           {| st_ev := e; st_trace := tr1; st_evid := i; st_config := ac |} =
-    (res, {| st_ev := e'; st_trace := tr1'; st_evid := i'; st_config := ac' |}) ->
-    
-    st_config
-      (execErr (build_cvm t)
-           {| st_ev := e; st_trace := tr2; st_evid := i; st_config := ac |}) = ac'.
-Proof.
-  intros.
-  destruct (build_cvm t {| st_ev := e; st_trace := tr2; st_evid := i; st_config := ac |}) eqn:ff.
-  simpl.
-  vmsts.
-  simpl.
-  subst.
-  dohi.
-  df.
-  edestruct st_trace_irrel.
-  apply H. 
-
-  assert (r = res).
-  {
-    eapply cvm_errors_deterministic.
-    apply Heqp.
-    apply H.
-  }
-  subst.
-
-  apply Heqp.
-  intuition. 
-Qed.
 
 Ltac do_st_trace :=
   match goal with
@@ -478,8 +262,6 @@ Ltac do_term_to_core_redo :=
     eapply term_to_coreP_redo in H
   end.
 
-
-
 Lemma annoP_redo: forall t annt n n',
     anno t n = (n', annt) ->
     annoP annt t.
@@ -556,14 +338,9 @@ Ltac wrap_ccp_anno :=
   try wrap_annopar;
   try wrap_anno;
   try wrap_anno_indexed;
-  try (unfold OptMonad_Coq.ret in * );
-  try (unfold OptMonad_Coq.bind in * );
-  try (unfold ErrorStMonad_Coq.bind in * );
-  try (unfold ErrorStMonad_Coq.ret in * );
+  cvm_monad_unfold;
   dd;
   try rewrite ccp_iff_cc in *.
-
-
 
 Ltac cumul_ih :=
   match goal with

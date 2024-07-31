@@ -1,7 +1,7 @@
 Require Import List.
 Import ListNotations.
-Require Import BS Term_Defs Attestation_Session Interface String IO_Stubs Manifest_Admits ErrorStMonad_Coq AM_Monad Session_Config_Compiler Manifest.
-Require Import ErrorStringConstants AM_Helpers Impl_appraisal Cvm_Run AM_Manager.
+Require Import BS Term_Defs Attestation_Session Interface String IO_Stubs Manifest_Admits ErrorStMonad_Coq AM_Monad Session_Config_Compiler.
+Require Import ErrorStringConstants Impl_appraisal Cvm_Run AM_Manager.
 
 Definition am_check_auth_tok (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) 
     : AM AppResultC :=

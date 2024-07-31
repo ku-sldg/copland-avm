@@ -4,12 +4,11 @@
 *)
 
 
-Require Import Term_Defs OptMonad_Coq BS Preamble.
+Require Import Term_Defs Preamble.
 Require Import StructTactics Defs.
 
 
-Require Import Lia Coq.Program.Tactics.
-Require Import List.
+Require Import Lia.
 Import List.ListNotations.
 
 

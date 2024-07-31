@@ -2,15 +2,13 @@
       Namely, that the compiler outputs a collection of manifests that support 
       execution of the input protocols.  *)
 
-Require Import Manifest Manifest_Generator ID_Type
-  Maps Term_Defs List Cvm_St Cvm_Impl ErrorStMonad_Coq StructTactics 
-  Cvm_Monad EqClass Manifest_Admits Auto.
-Require Import Manifest_Generator_Facts Eqb_Evidence Attestation_Session.
+Require Import Manifest Manifest_Generator
+  Maps Term_Defs Cvm_Impl 
+  Cvm_Monad.
+Require Import Manifest_Generator_Facts Attestation_Session.
 
 Require Import Manifest_Generator_Helpers Session_Config_Compiler.
 Require Import Helpers_CvmSemantics.
-
-Require Import Coq.Program.Tactics.
 
 Import ListNotations.
 
@@ -109,7 +107,7 @@ Fixpoint session_config_supports_exec (t : Term) (sc : Session_Config) : Prop :=
   end.
 
 Ltac unfolds :=
-  (* repeat monad_unfold; *)
+  (* repeat cvm_monad_unfold; *)
   repeat unfold manifest_generator, generate_ASP_dispatcher, 
     aspid_manifest_update,
     sig_params, hsh_params, enc_params in *;
@@ -130,7 +128,6 @@ Proof.
 Qed.
 
 Global Hint Resolve man_gen_aspid_in : core.
-Require Import Manifest_Generator_Union Cvm_Run AM_Manager.
 
 
       (* 
@@ -246,11 +243,11 @@ Theorem well_formed_am_config_impl_executable : forall t sc,
 Proof.
   induction t; simpl in *; intuition; eauto.
   - destruct a;
-    try (simpl in *; monad_unfold; eauto; fail); (* NULL, CPY *)
+    try (simpl in *; cvm_monad_unfold; eauto; fail); (* NULL, CPY *)
     subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
       try break_match;
-      try monad_unfold;
+      try cvm_monad_unfold;
       try break_match
       try find_injection;
       try find_contradiction;
@@ -290,7 +287,7 @@ Proof.
     repeat (
       unfold remote_session, doRemote, doRemote_session', do_remote, check_cvm_policy in *;
       try break_match;
-      try monad_unfold;
+      try cvm_monad_unfold;
       try break_match
       try find_injection;
       try find_contradiction;
@@ -303,14 +300,14 @@ Proof.
       repeat find_apply_hyp_hyp; repeat find_rewrite; congruence.
   - break_exists; intuition.
     eapply IHt1 in H1; intuition; eauto;
-    monad_unfold; break_exists; find_rewrite; eauto.
+    cvm_monad_unfold; break_exists; find_rewrite; eauto.
     find_eapply_lem_hyp sc_immut_better; find_rewrite.
     eapply IHt2 in H; intuition; eauto; break_exists;
     repeat find_rewrite; eauto.
   - subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
       try break_match;
-      try monad_unfold;
+      try cvm_monad_unfold;
       try break_match
       try find_injection;
       try find_contradiction;
@@ -367,7 +364,7 @@ Proof.
   - subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
       try break_match;
-      try monad_unfold;
+      try cvm_monad_unfold;
       try break_match
       try find_injection;
       try find_contradiction;
@@ -555,7 +552,6 @@ Proof.
     find_apply_hyp_hyp; break_exists; congruence.
   - break_exists; intuition; eauto.
 Qed.
-Require Import ManCompSoundness_Helpers.
 
 Lemma places_decomp: forall t1 t2 p tp,
 In p (places' t2 (places' t1 [])) -> 
@@ -1162,8 +1158,6 @@ Proof.
     * eapply att_sess_supports_place_terms; eauto.
   Unshelve. eapply default_uuid.
 Qed.
-
-Require Import Manifest_Generator_Union.
 
 Close Scope cop_ent_scope.
 
@@ -2033,7 +2027,7 @@ Proof.
     unfold run_cvm_w_config, run_cvm, run_core_cvm;
     destruct a; simpl in *; eauto;
     repeat (break_match; subst; repeat find_rewrite; repeat find_injection;
-      simpl in *; intuition; eauto; try monad_unfold; try congruence).
+      simpl in *; intuition; eauto; try cvm_monad_unfold; try congruence).
     unfold generate_ASP_dispatcher, generate_ASP_dispatcher' in *; simpl in *; intuition.
     * unfold generate_ASP_dispatcher, generate_ASP_dispatcher' in *; simpl in *; intuition.  
       ff; simpl in *.

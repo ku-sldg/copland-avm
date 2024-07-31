@@ -4,15 +4,11 @@ Experiments in stating "disclosure" properties of the CVM.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term_Defs Anno_Term_Defs Term LTS Cvm_Impl Cvm_St Trace Main ConcreteEvidence Attestation_Session.
+Require Import Term_Defs.
 
-Require Import CvmSemantics Appraisal_Evidence Eqb_Evidence Auto ID_Type EqClass Helpers_CvmSemantics (* Disclose_Gen *) External_Facts Axioms_Io.
+Require Import CvmSemantics Auto ID_Type (* Disclose_Gen *).
 
 Require Import StructTactics.
-
-Require Import ErrorStMonad_Coq.
-
-Require Import Coq.Program.Tactics PeanoNat Lia.
 
 Require Import List.
 Import ListNotations.

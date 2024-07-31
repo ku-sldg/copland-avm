@@ -2,12 +2,9 @@
     Includes separate (but similar) versions of the generator for both 
     attestation (manifest_generator) and appraisal (manifest_generator_app) scenarios. *)
 
-Require Import Term_Defs_Core Params_Admits Manifest Eqb_Evidence
-               Manifest_Generator_Helpers.
+Require Import Term_Defs_Core Params_Admits Manifest.
 
-Require Import ResultT String EqClass Maps StructTactics.
-
-Require Import Manifest_Union.
+Require Import ResultT String Maps StructTactics.
 
 Require Export EnvironmentM Manifest_Set.
 

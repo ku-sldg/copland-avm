@@ -1,8 +1,8 @@
 (* Appraisal primitive implementations:  evidence unbundling, nonce generation, appraisal ASP dispatch.  *)
 
-Require Import String Term_Defs_Core Term_Defs AM_St EqClass Maps.
+Require Import String Term_Defs EqClass Maps.
 
-Require Import Appraisal_IO_Stubs ErrorStMonad_Coq AM_Monad AM_St Manifest_Admits ErrorStringConstants Attestation_Session.
+Require Import Appraisal_IO_Stubs ErrorStMonad_Coq AM_Monad ErrorStringConstants Attestation_Session.
 
 
 Axiom decrypt_prim_runtime : forall bs params pk e,

@@ -1,6 +1,6 @@
 (* Top-level definitions for running CVM monad computations.  *)
 
-Require Import Term_Defs Anno_Term_Defs Cvm_Impl Cvm_St ErrorStMonad_Coq String
+Require Import Term_Defs Cvm_Impl Cvm_St ErrorStMonad_Coq String
   ErrorStringConstants Attestation_Session.
 
 Require Import List.

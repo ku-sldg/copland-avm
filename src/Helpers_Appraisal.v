@@ -813,8 +813,8 @@ Proof.
   do_inv_recon_ss.
   invc H.
   repeat ff.
-    unfold OptMonad_Coq.bind in *.
-    unfold OptMonad_Coq.ret in *.
+    unfold opt_bind in *.
+    unfold opt_ret in *.
     repeat ff.
   rewrite fold_recev in *.
   split.
@@ -840,8 +840,8 @@ Proof.
   do_inv_recon_pp.
   invc H.
   repeat ff.
-    unfold OptMonad_Coq.bind in *.
-    unfold OptMonad_Coq.ret in *.
+    unfold opt_bind in *.
+    unfold opt_ret in *.
     repeat ff.
   rewrite fold_recev in *.
   split.

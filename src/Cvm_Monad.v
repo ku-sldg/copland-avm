@@ -5,9 +5,9 @@
   Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import ResultT Term_Defs Term ConcreteEvidence Evidence_Bundlers Defs Axioms_Io StructTactics Maps Session_Config_Compiler.
+Require Import ResultT Term Evidence_Bundlers Axioms_Io Maps Session_Config_Compiler.
 
-Require Import Coq.Program.Tactics Lia.
+Require Import Coq.Program.Tactics.
 
 Require Import Manifest_Admits ErrorStringConstants Attestation_Session.
 
@@ -16,56 +16,58 @@ Import ListNotations.
 
 Require Export Cvm_St ErrorStMonad_Coq IO_Stubs Interface.
 
+Import ErrNotation.
+
 
 (** * CVM monadic primitive operations *)
 
 Definition get_ev : CVM EvC :=
-  st <- get ;;
-  ret (st_ev st).
+  st <- err_get ;;
+  err_ret (st_ev st).
 
 Definition get_trace : CVM (list Ev) :=
-  st <- get ;;
-  ret (st_trace st).
+  st <- err_get ;;
+  err_ret (st_trace st).
 
 Definition get_evid : CVM Event_ID :=
-  st <- get ;;
-  ret (st_evid st).
+  st <- err_get ;;
+  err_ret (st_evid st).
 
 Definition get_config : CVM Session_Config :=
   (* TODO:  consider moving this functionality to a Reader-like monad 
         i.e. an 'ask' primitive *)
-  st <- get ;;
-  ret (st_config st).
+  st <- err_get ;;
+  err_ret (st_config st).
 
 Definition put_ev (e' : EvC) : CVM unit :=
   tr <- get_trace ;;
   i <- get_evid ;;
   sc <- get_config ;;
-  put (mk_st e' tr i sc).
+  err_put (mk_st e' tr i sc).
 
 Definition put_trace (tr' : list Ev) : CVM unit :=
   e <- get_ev ;;
   i <- get_evid ;;
   sc <- get_config ;;
-  put (mk_st e tr' i sc).
+  err_put (mk_st e tr' i sc).
 
 Definition put_evid (i' : Event_ID) : CVM unit :=
   e <- get_ev ;;
   tr <- get_trace ;;
   sc <- get_config ;;
-  put (mk_st e tr i' sc).
+  err_put (mk_st e tr i' sc).
 
 Definition get_pl : CVM Plc :=
   sc <- get_config ;;
-  ret (session_plc sc).
+  err_ret (session_plc sc).
 
 Definition inc_id : CVM Event_ID :=
   tr <- get_trace ;;
   e <- get_ev ;;
   i <- get_evid ;;
   sc <- get_config ;;
-  put (mk_st e tr (Nat.add i (S O)) sc) ;;
-  ret i.
+  err_put (mk_st e tr (Nat.add i (S O)) sc) ;;
+  err_ret i.
 
 Definition modify_evm (f:EvC -> EvC) : CVM unit :=
   e <- get_ev ;;
@@ -97,7 +99,7 @@ Definition split_ev : CVM unit :=
 Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) (e:EvC) : CVM Event_ID :=
   x <- inc_id ;;
   add_trace [umeas x mpl params (get_et e)] ;;
-  ret x.
+  err_ret x.
 
 (* Helper function that builds a new internal evidence bundle based on 
    the evidence extension parameter of an ASP term. *)
@@ -105,21 +107,21 @@ Definition fwd_asp (fwd:FWD) (rwev : RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): CVM
   match fwd with
   | COMP => 
       match comp_bundle rwev e p ps with
-      | resultC e' => ret e'
-      | errC e => failm (dispatch_error (Runtime e))
+      | resultC e' => err_ret e'
+      | errC e => err_failm (dispatch_error (Runtime e))
       end
   | EXTD n => 
       match extd_bundle rwev e p n ps with
-      | resultC e' => ret e'
-      | errC e => failm (dispatch_error (Runtime e))
+      | resultC e' => err_ret e'
+      | errC e => err_failm (dispatch_error (Runtime e))
       end
   | ENCR => 
       match encr_bundle rwev e p ps with
-      | resultC e' => ret e'
-      | errC e => failm (dispatch_error (Runtime e))
+      | resultC e' => err_ret e'
+      | errC e => err_failm (dispatch_error (Runtime e))
       end
-  | KILL => ret mt_evc
-  | KEEP => ret e
+  | KILL => err_ret mt_evc
+  | KEEP => err_ret e
   end.
 
 (** * Stub for invoking external ASP procedures.  
@@ -128,8 +130,8 @@ Definition fwd_asp (fwd:FWD) (rwev : RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): CVM
 Definition do_asp (params :ASP_PARAMS) (e:RawEv) (x:Event_ID) : CVM RawEv :=
   sc <- get_config  ;;
   match (sc.(aspCb) params e) with
-  | resultC r => ret r
-  | errC e => failm (dispatch_error e)
+  | resultC r => err_ret r
+  | errC e => err_failm (dispatch_error e)
   end.
 
 (* Simulates invoking an arbitrary ASP.  Tags the event, builds and returns 
@@ -140,7 +142,7 @@ Definition invoke_ASP (fwd:FWD) (params:ASP_PARAMS) (* (ac : AM_Config) *) : CVM
   x <- tag_ASP params p e ;;
   rawev <- do_asp params (get_bits e) x ;;
   outev <- fwd_asp fwd rawev e p params ;;
-  ret outev.
+  err_ret outev.
 
 Definition copyEv : CVM EvC :=
   p <- get_pl ;;
@@ -152,10 +154,10 @@ Definition nullEv : CVM EvC :=
   p <- get_pl ;;
   x <- inc_id ;;
   add_trace [null x p] ;;
-  ret mt_evc.
+  err_ret mt_evc.
 
 Definition clearEv : unit -> CVM EvC :=
-  fun _ => ret mt_evc.
+  fun _ => err_ret mt_evc.
 
 (* Helper that interprets primitive core terms in the CVM.  *)
 Definition do_prim (a:ASP_Core) (* (ac : AM_Config) *) : CVM EvC :=
@@ -195,13 +197,16 @@ Definition tag_RPY (p:Plc) (q:Plc) (e:EvC) : CVM unit :=
 
 Definition get_cvm_policy : CVM PolicyT := 
   sc <- get_config ;;
-  ret (policy sc).
+  err_ret (policy sc).
+
+Definition policy_list_not_disclosed (t:Term) (p:Plc) (e:Evidence) (ls: list (Plc * ASP_ID)) : bool :=   (* true. *)
+  forallb (fun pr => negb (term_discloses_aspid_to_remote_enc_bool t p e (fst pr) (snd pr))) ls.
 
 Definition check_cvm_policy (t:Term) (pTo:Plc) (et:Evidence) : CVM unit := 
   pol <- get_cvm_policy ;;
     match (policy_list_not_disclosed t pTo et pol) with
-    | true => ret tt
-    | false => failm (dispatch_error (Runtime errStr_disclosePolicy))
+    | true => err_ret tt
+    | false => err_failm (dispatch_error (Runtime errStr_disclosePolicy))
     end.
 
 Definition do_remote (t:Term) (pTo:Plc) (e:EvC) (sc : Session_Config) 
@@ -236,8 +241,8 @@ Definition doRemote_session' (t:Term) (pTo:Plc) (e:EvC) : CVM EvC :=
   check_cvm_policy t pTo (get_et e) ;;
   sc <- get_config ;;
   match (do_remote t pTo e sc) with 
-  | resultC ev => ret (evc ev (eval t pTo (get_et e)))  
-  | errC e => failm (dispatch_error e)
+  | resultC ev => err_ret (evc ev (eval t pTo (get_et e)))  
+  | errC e => err_failm (dispatch_error e)
   end.
 
 Definition remote_session (t:Term) (p:Plc) (q:Plc) (e:EvC) : CVM EvC :=
@@ -245,13 +250,13 @@ Definition remote_session (t:Term) (p:Plc) (q:Plc) (e:EvC) : CVM EvC :=
   e' <- doRemote_session' t q e ;;
   add_trace (cvm_events t q (get_et e)) ;;
   inc_remote_event_ids t ;;
-  ret e'.
+  err_ret e'.
 
 Definition doRemote (t:Term) (q:Plc) (e:EvC) : CVM EvC :=
   p <- get_pl ;;
   e' <- remote_session t p q e ;;
   tag_RPY p q e' ;;
-  ret e'.
+  err_ret e'.
 
 Definition join_seq (e1:EvC) (e2:EvC): CVM unit :=
   p <- get_pl ;;
@@ -272,12 +277,15 @@ Definition wait_par_thread (loc:Loc) (t:Core_Term) (e:EvC) : CVM EvC :=
   e' <- do_wait_par_thread loc t p e ;;
   add_trace [cvm_thread_end loc] ;;
   inc_par_event_ids t ;;
-  ret e'.
+  err_ret e'.
    
-Ltac monad_unfold :=
+Ltac cvm_monad_unfold :=
   repeat unfold
-  execErr,  
   do_prim,
+  doRemote,
+  remote_session,
+  doRemote_session',
+  check_cvm_policy,
   invoke_ASP,
   fwd_asp,
   extd_bundle,
@@ -286,21 +294,15 @@ Ltac monad_unfold :=
   do_asp,
   clearEv,
   copyEv,
+  nullEv,
   
   get_ev,
   get_pl,
   get_config,
   add_trace,
   modify_evm,
-  add_trace,
-  failm,
-  get,
-  when,
-  put,
-  nop,
-  modify,
-  bind,
-  ret in * ;
+  add_trace in * ;
+  repeat err_monad_unfold;
   simpl in * .
 
 (* Grouping together some common hypothesis normalizations.  Inverting pairs of
@@ -311,9 +313,9 @@ Ltac pairs :=
   repeat
     match goal with
     | [H: (Some _, _) =
-          (Some _, _) |- _ ] => invc H; monad_unfold
+          (Some _, _) |- _ ] => invc H; cvm_monad_unfold
                                                           
     | [H: {| st_ev := _; st_trace := _; st_evid := _; st_config := _ |} =
           {| st_ev := _; st_trace := _; st_evid := _; st_config := _ |} |- _ ] =>
-      invc H; monad_unfold
-    end; destruct_conjs; monad_unfold.
+      invc H; cvm_monad_unfold
+    end; destruct_conjs; cvm_monad_unfold.

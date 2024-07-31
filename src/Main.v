@@ -14,9 +14,7 @@ modify it under the terms of the BSD License as published by the
 University of California.  See license.txt for details. *)
 
 
-Require Import Preamble More_lists Term_Defs Term LTS Event_system Term_system Trace Defs.
-
-Require Import StructTactics.
+Require Export Preamble More_lists Term LTS Event_system Term_system Trace Defs.
 
 Require Import List.
 Import List.ListNotations.

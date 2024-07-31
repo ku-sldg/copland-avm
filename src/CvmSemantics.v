@@ -5,13 +5,12 @@
   Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import More_lists Defs Term_Defs Anno_Term_Defs ConcreteEvidence LTS Event_system Term_system Main Appraisal_Evidence AutoApp.
-Require Import ResultT Term Cvm_Monad StructTactics Auto.
-Require Import Axioms_Io Cvm_Impl Cvm_Run External_Facts Helpers_CvmSemantics Evidence_Bundlers Attestation_Session.
+Require Import Anno_Term_Defs ConcreteEvidence Appraisal_Evidence AutoApp Main.
+Require Import ResultT Cvm_Monad Auto.
+Require Import Axioms_Io Helpers_CvmSemantics Attestation_Session.
 
-Require Import List.
 Import ListNotations.
-Require Import Coq.Program.Tactics Coq.Program.Equality.
+Require Import Coq.Program.Tactics.
 Require Import Coq.Arith.Peano_dec Lia.
 
 
@@ -217,16 +216,7 @@ Lemma event_id_spans_same : forall t,
 Proof.
   intros.
   induction t; ff.
-  -
-    destruct a; ff; try tauto.
-    +
-      destruct s; ff.
-  -
-    jkjke'.
-  -
-    destruct s0; ff; lia.
-  -
-    destruct s0; ff; lia.
+  - unfold asp_term_to_core; ffa.
 Qed.
 
 (** * Lemma:  CVM increases event IDs according to event_id_span' denotation. *)
@@ -323,7 +313,7 @@ Theorem cvm_refines_lts_events :
 Proof.
   intros t atp annt cvm_tr bits bits' et et' i i' ac ac' annoParPH annPH H'.
   generalizeEverythingElse t.
-  induction t; intros.
+  induction t; intros; ffa.
   
   - (* aasp case *)
     wrap_ccp_anno.
@@ -331,85 +321,19 @@ Proof.
     destruct a; invc annoParPH; ff;
     wrap_ccp_anno;
     
-    try (econstructor; econstructor; reflexivity).
-    destruct f.
-    +
-      ff.
-      ++
-        wrap_ccp_anno.
-        repeat Auto.ff.
-        try (econstructor; econstructor; reflexivity).
-      ++
-         wrap_ccp_anno.
-         repeat Auto.ff.
-         try (econstructor; econstructor; reflexivity).
-    +
-      ff.
-      ++
-        wrap_ccp_anno.
-        repeat Auto.ff.
-        try (econstructor; econstructor; reflexivity).
-      ++
-         wrap_ccp_anno.
-         repeat Auto.ff.
-         try (econstructor; econstructor; reflexivity).
-    +
-      ff.
-      ++
-        wrap_ccp_anno.
-        repeat Auto.ff.
-        try (econstructor; econstructor; reflexivity).
-      ++
-         wrap_ccp_anno.
-         repeat Auto.ff.
-         try (econstructor; econstructor; reflexivity).
-    +
-      ff.
-       ++
-        wrap_ccp_anno.
-        repeat Auto.ff.
-        try (econstructor; econstructor; reflexivity).
-      ++
-         wrap_ccp_anno.
-         repeat Auto.ff.
-         try (econstructor; econstructor; reflexivity).
-    +
-      ff.
-      ++
-         wrap_ccp_anno.
-         repeat Auto.ff.
-        try (econstructor; econstructor; reflexivity).
-      ++
-         wrap_ccp_anno.
-         repeat Auto.ff.
-         try (econstructor; econstructor; reflexivity).
-    +
-         wrap_ccp_anno.
-         repeat Auto.ff.
-        try (econstructor; econstructor; reflexivity).
-   +
-    wrap_ccp_anno.
-    repeat Auto.ff.
-   try (econstructor; econstructor; reflexivity).
-   +
-   wrap_ccp_anno.
-         repeat Auto.ff.
-        try (econstructor; econstructor; reflexivity).
-
-
+    try (econstructor; econstructor; reflexivity); ffa;
+    wrap_ccp_anno; econstructor; econstructor.
 
  - (* aatt case *)
     wrap_ccp_anno.
-    unfold doRemote_session' in *;
-    repeat ff.
-
+    ff.
     assert (n = i + event_id_span' t + 1) by lia.
     subst.
     (* clear H2. *)
    
     assert (t = unanno a) as HN.
     {
-      invc Heqp3.
+      invc Heqp1.
       
       erewrite <- anno_unanno at 1.
       rewrite H.
@@ -523,9 +447,12 @@ Proof.
   - (* abseq case *)
 
     wrap_ccp_anno;
-    repeat Auto.ff;
+    repeat (try cbn in *; ff);
     wrap_ccp_anno;
-    repeat Auto.ff;
+    repeat (try cbn in *; ff);
+    repeat match goal with
+    | u : unit |- _ => destruct u
+    end;
     repeat do_sc_immut.
     +
 
@@ -595,13 +522,8 @@ Proof.
     eassumption.
 
     assert (st_evid = Nat.pred (st_evid + 1)) by lia.
-    rewrite H2 in *.
-
-    
+    ffa.
     econstructor; eauto; simpl in *.
-    assert (Nat.pred (st_evid + 1) + 1 = st_evid + 1) by lia.
-    rewrite H3 in *. 
-    eauto. 
     +
 
     assert (n = st_evid1).
@@ -673,7 +595,7 @@ Proof.
     eassumption.
 
     assert (st_evid = Nat.pred (st_evid + 1)) by lia.
-    rewrite H2 at 2.
+    ffa.
 
     
     econstructor.
@@ -753,7 +675,7 @@ Proof.
     eassumption.
 
     assert (st_evid = Nat.pred (st_evid + 1)) by lia.
-    rewrite H2 at 2.
+    ffa.
 
     
     econstructor.
@@ -833,7 +755,7 @@ Proof.
     eassumption.
 
     assert (st_evid = Nat.pred (st_evid + 1)) by lia.
-    rewrite H2 at 2.
+    ffa.
 
     
     econstructor.
@@ -844,10 +766,13 @@ Proof.
   - (* abpar case *)
 
     wrap_ccp_anno;
-    repeat Auto.ff;
+    repeat (try cbn in *; ff);
     wrap_ccp_anno;
-    repeat Auto.ff;
-    do_sc_immut.
+    repeat (try cbn in *; ff);
+    repeat match goal with
+    | u : unit |- _ => destruct u
+    end;
+    repeat do_sc_immut.
 
     +
 
@@ -864,7 +789,7 @@ Proof.
 
     assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
     
-    subst. clear H4.
+    subst. 
     
     
     
@@ -918,7 +843,7 @@ Proof.
       eassumption.
 
       assert ((st_evid + event_id_span (copland_compile t2)) = Nat.pred ((st_evid + event_id_span (copland_compile t2)) + 1)) by lia.
-      rewrite H2 at 2.
+      ffa.
 
       eapply lstar_tran.
 
@@ -940,7 +865,7 @@ Proof.
 
     assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
     
-    subst. clear H4.
+    subst.
     
     do_suffix blah.
 
@@ -981,7 +906,7 @@ Proof.
       }
 
       repeat rewrite app_assoc in *.
-      rewrite H1.
+      rewrite H2.
    
       rewrite events_cvm_to_core_mt.
       
@@ -994,7 +919,7 @@ Proof.
       eassumption.
 
       assert ((st_evid + event_id_span (copland_compile t2)) = Nat.pred ((st_evid + event_id_span (copland_compile t2)) + 1)) by lia.
-      rewrite H2 at 2.
+      ffa.
 
       eapply lstar_tran.
 
@@ -1016,7 +941,7 @@ Proof.
 
     assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
     
-    subst. clear H4.
+    subst.
     
     do_suffix blah.
 
@@ -1057,7 +982,7 @@ Proof.
       }
 
       repeat rewrite app_assoc in *.
-      rewrite H1.
+      rewrite H2.
       
       eapply lstar_transitive.
 
@@ -1068,7 +993,7 @@ Proof.
       eassumption.
 
       assert ((st_evid + event_id_span (copland_compile t2)) = Nat.pred ((st_evid + event_id_span (copland_compile t2)) + 1)) by lia.
-      rewrite H2 at 2.
+      ffa.
 
       eapply lstar_tran.
 
@@ -1091,7 +1016,7 @@ Proof.
 
     assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
     
-    subst. clear H4.
+    subst.
     
     
     
@@ -1134,7 +1059,7 @@ Proof.
       }
 
       repeat rewrite app_assoc in *.
-      rewrite H1.
+      rewrite H2.
    
       rewrite events_cvm_to_core_mt.
       
@@ -1147,7 +1072,7 @@ Proof.
       eassumption.
 
       assert ((st_evid + event_id_span (copland_compile t2)) = Nat.pred ((st_evid + event_id_span (copland_compile t2)) + 1)) by lia.
-      rewrite H2 at 2.
+      ffa.
 
       eapply lstar_tran.
 
@@ -1225,7 +1150,6 @@ build_cvmP (copland_compile t1)
     |}.
 Proof.
   ff.
-  eauto.
 Qed.
 
 Axiom cvm_thread_start_clear : forall t p e n,
@@ -1259,10 +1183,10 @@ Proof.
   induction t; intros.
   - (* asp case *)
     wrap_ccp_anno;
-    repeat Auto.ff;
-    destruct a; invc H; repeat Auto.ff;
+    repeat ff;
+    destruct a; invc H; repeat ff;
       wrap_ccp_anno;
-      repeat Auto.ff;
+      repeat ff;
       try destruct s; wrap_ccp_anno;
       try destruct f;
       try destruct H1;
@@ -1271,14 +1195,15 @@ Proof.
     
       try (econstructor; econstructor; reflexivity).
   -
-    wrap_ccp_anno.
-    ff.
-    unfold Cvm_Monad.doRemote_session' in *;
-    repeat Auto.ff.
+    wrap_ccp_anno; ffa using cvm_monad_unfold.
+    intuition; ffa using cvm_monad_unfold.
+    unfold do_remote in *.
+    ffa.
+    cvm_monad_unfold.
+    econstructor.
 
     assert (n = cvmi + event_id_span' t + 1) by lia.
     subst.
-    clear H5.
    
     assert (t = unanno a) as H11.
     {
@@ -1314,7 +1239,7 @@ Proof.
             try solve_by_inversion.
       }
       
-      door; ff; eauto.
+      door; ffa using cvm_monad_unfold; eauto.
 
       assert (
         build_cvm (copland_compile t)
@@ -1429,9 +1354,9 @@ Proof.
       eassumption.
   - (* abseq case *)
     wrap_ccp_anno;
-    repeat Auto.ff;
+    repeat ff;
     wrap_ccp_anno;
-    repeat Auto.ff;
+    repeat ff;
     repeat do_sc_immut.
     +
 
@@ -1791,9 +1716,9 @@ Proof.
   - (* abpar case *)
 
     wrap_ccp_anno;
-    Auto.ff;
+    ff;
     wrap_ccp_anno;
-    Auto.ff;
+    ff;
     repeat do_sc_immut.
 
     +

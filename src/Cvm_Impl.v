@@ -7,10 +7,8 @@
   Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term_Defs Anno_Term_Defs Cvm_Monad.
-
-Require Import List.
-Import ListNotations.
+Require Import Term_Defs Cvm_Monad ErrorStMonad_Coq.
+Import ErrNotation.
 
 (** Monadic CVM implementation (top-level) *)
 Fixpoint build_cvm (t:Core_Term) : CVM unit :=

@@ -257,7 +257,3 @@ Inductive AM_Result :=
 
 Definition empty_am_result := am_rawev [].
 
-Definition policy_list_not_disclosed (t:Term) (p:Plc) (e:Evidence) (ls: list (Plc * ASP_ID)) : bool :=   (* true. *)
-  forallb (fun pr => negb (term_discloses_aspid_to_remote_enc_bool t p e (fst pr) (snd pr))) ls.
-
-

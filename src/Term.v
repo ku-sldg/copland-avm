@@ -3,15 +3,13 @@
     --The `events` relation --a denotational semantics for phrase events.
     --Lemmas/automation related to `events` *)
 
-Require Import Defs Eqb_Evidence.
-Require Import Preamble More_lists StructTactics.
+Require Import Defs.
+Require Import Preamble.
 
 Require Import Compare_dec Coq.Program.Tactics.
-Require Import PeanoNat.
 
 Require Import Lia.
 
-Require Import List.
 Import List.ListNotations.
 
 Require Export Term_Defs Anno_Term_Defs.
