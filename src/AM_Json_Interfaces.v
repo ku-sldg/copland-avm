@@ -2,6 +2,7 @@ Require Import List.
 Import ListNotations.
 Require Import BS Term_Defs Attestation_Session Interface String IO_Stubs Manifest_Admits ErrorStMonad_Coq AM_Monad Session_Config_Compiler.
 Require Import ErrorStringConstants Impl_appraisal Cvm_Run AM_Manager.
+Import ErrNotation.
 
 Definition am_check_auth_tok (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) 
     : AM AppResultC :=
@@ -12,7 +13,7 @@ Definition am_check_auth_tok (t:Term) (fromPl:Plc) (authTok:ReqAuthTok)
      | false => am_failm (am_error errStr_requester_bound)
      | true => gen_appraise_AM auth_et auth_ev
      end) ;;
-    ret appres
+    err_ret appres
   end.
 (* 
 Definition am_serve_auth_tok_req (t:Term) (fromPl : Plc) 

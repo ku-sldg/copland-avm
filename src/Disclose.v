@@ -6,9 +6,9 @@ Author:  Adam Petz, ampetz@ku.edu
 
 Require Import Term_Defs.
 
-Require Import CvmSemantics Auto ID_Type (* Disclose_Gen *).
+Require Import Anno_Term_Defs ConcreteEvidence Eqb_Evidence CvmSemantics Auto EqClass Main Attestation_Session Helpers_CvmSemantics Cvm_St ResultT.
 
-Require Import StructTactics.
+Require Import StructTactics Coq.Program.Tactics.
 
 Require Import List.
 Import ListNotations.
@@ -107,7 +107,7 @@ Proof.
   repeat match goal with
   | H : _ /\ _ |- _ => destruct H
   | H : _ \/ _ |- _ => destruct H
-  | [ H : (_ =? _)%string = true |- _ ] => 
+  | [ H : String.eqb _ _ = true |- _ ] => 
       rewrite String.eqb_eq in *; subst
   end; eauto;
   try (econstructor; eauto; intros HC; congruence).
@@ -265,51 +265,27 @@ Lemma term_disc_remote_enc : forall t p e i r p0,
           term_discloses_aspid_to_remote_enc t p e i r ->
           term_discloses_aspid_to_remote_enc <{ @ p [t] }> p0 e i r.
 Proof.
-  intros.
-  invc H.
-  destruct_conjs.
-  econstructor.
-  split.
-  - 
-    eassumption.
-  -
-    ff.
-    find_rewrite.
-    apply Bool.orb_true_r.
+  intros; invc H; destruct_conjs; 
+  econstructor; split; eauto;
+  ff; rewrite Bool.orb_true_iff; ff.
 Qed.
 
 Lemma term_disc_lseq_l_enc : forall t1 t2 p e i r,
           term_discloses_aspid_to_remote_enc t1 p e i r ->
           term_discloses_aspid_to_remote_enc <{ t1 -> t2 }> p e i r.
 Proof.
-  intros.
-  invc H.
-  destruct_conjs.
-  econstructor.
-  split.
-  - 
-    eassumption.
-  -
-    ff.
-    find_rewrite.
-    apply Bool.orb_true_l.
+  intros; invc H; destruct_conjs; 
+  econstructor; split; eauto;
+  ff; rewrite Bool.orb_true_iff; ff.
 Qed.
 
 Lemma term_disc_lseq_r_enc : forall t1 t2 p e i r,
           term_discloses_aspid_to_remote_enc t2 p (eval t1 p e) i r ->
           term_discloses_aspid_to_remote_enc <{ t1 -> t2 }> p e i r.
 Proof.
-  intros.
-  invc H.
-  destruct_conjs.
-  econstructor.
-  split.
-  - 
-    eassumption.
-  -
-    ff.
-    find_rewrite.
-    apply Bool.orb_true_r.
+  intros; invc H; destruct_conjs; 
+  econstructor; split; eauto;
+  ff; rewrite Bool.orb_true_iff; ff.
 Qed.
 
 Close Scope cop_ent_scope.
@@ -318,73 +294,27 @@ Lemma term_disc_bseq_l_enc : forall t1 t2 p e i r s,
           term_discloses_aspid_to_remote_enc t1 p (splitEv_T_l s e) i r ->
           term_discloses_aspid_to_remote_enc (bseq s t1 t2) p e i r.
 Proof.
-  intros.
-  invc H.
-  destruct_conjs.
-  econstructor.
-  split.
-  - 
-    eassumption.
-  -
-    ff.
-    subst.
-    destruct s0;
-    destruct s1;
-      
-      simpl in *;
-      (* rewrite H0; *)
-      find_rewrite;
-      
-      rewrite Bool.orb_true_l;
-      auto.
+  intros; invc H; destruct_conjs; 
+  econstructor; split; eauto;
+  ff; rewrite Bool.orb_true_iff; ff.
 Qed.
 
 Lemma term_disc_bseq_r_enc : forall t1 t2 p e i r s,
           term_discloses_aspid_to_remote_enc t2 p (splitEv_T_r s e) i r ->
           term_discloses_aspid_to_remote_enc (bseq s t1 t2) p e i r.
 Proof.
-  intros.
-  invc H.
-  destruct_conjs.
-  econstructor.
-  split.
-  - 
-    eassumption.
-  -
-    ff.
-    subst.
-    destruct s0;
-    destruct s1;
-      
-      simpl in *;
-      find_rewrite; 
-      
-      rewrite Bool.orb_true_r;
-      auto.
+  intros; invc H; destruct_conjs; 
+  econstructor; split; eauto;
+  ff; rewrite Bool.orb_true_iff; ff.
 Qed.
 
 Lemma term_disc_bpar_l_enc : forall t1 t2 p e i r s,
           term_discloses_aspid_to_remote_enc t1 p (splitEv_T_l s e) i r ->
           term_discloses_aspid_to_remote_enc (bpar s t1 t2) p e i r.
 Proof.
-  intros.
-  invc H.
-  destruct_conjs.
-  econstructor.
-  split.
-  - 
-    eassumption.
-  -
-    ff.
-    subst.
-    destruct s0;
-    destruct s1;
-      
-      simpl in *;
-      find_rewrite;
-      
-      rewrite Bool.orb_true_l;
-      auto.
+  intros; invc H; destruct_conjs; 
+  econstructor; split; eauto;
+  ff; rewrite Bool.orb_true_iff; ff.
 Qed.
 
 
@@ -392,24 +322,9 @@ Lemma term_disc_bpar_r_enc : forall t1 t2 p e i r s,
           term_discloses_aspid_to_remote_enc t2 p (splitEv_T_r s e) i r ->
           term_discloses_aspid_to_remote_enc (bpar s t1 t2) p e i r.
 Proof.
-  intros.
-  invc H.
-  destruct_conjs.
-  econstructor.
-  split.
-  - 
-    eassumption.
-  -
-    ff.
-    subst.
-    destruct s0;
-    destruct s1;
-      
-      simpl in *;
-      find_rewrite;
-      
-      rewrite Bool.orb_true_r;
-      auto.
+  intros; invc H; destruct_conjs; 
+  econstructor; split; eauto;
+  ff; rewrite Bool.orb_true_iff; ff.
 Qed.
 
 Lemma term_discloses_respects_events : forall annt t p e r H2,
@@ -419,26 +334,15 @@ Lemma term_discloses_respects_events : forall annt t p e r H2,
 Proof.
   intros.
   unfold not in * ; intros.
-  (*
-  unfold events_discloses_aspid in *.
-  (*
-  assert (exists annt cvmi, annoP_indexed annt t 0 cvmi). admit.
-  destruct_conjs.
-  specialize (H0 H1 H2 H3). *)
-  destruct_conjs.
-  subst.
-  *)
-
   generalizeEverythingElse t.
   induction t; intros.
 
   - (* asp case *)
-    invc H.
-    destruct_conjs.
-    invc H0.
-    destruct_conjs.
-    door;
-    repeat ff.
+    invc H; 
+    destruct_conjs;
+    invc H0;
+    destruct_conjs;
+    door; ff.
   - (* at case *)
     invc H0.
     destruct_conjs.
@@ -450,7 +354,7 @@ Proof.
     invc H.
     destruct_conjs.
 
-    invc H5; try solve_by_inversion.
+    invc H6; try solve_by_inversion.
     ff.
     invc H0.
     ++

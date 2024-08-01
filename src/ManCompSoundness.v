@@ -4,11 +4,11 @@
 
 Require Import Manifest Manifest_Generator
   Maps Term_Defs Cvm_Impl 
-  Cvm_Monad.
+  Cvm_Monad Defs AM_Manager EqClass.
 Require Import Manifest_Generator_Facts Attestation_Session.
 
-Require Import Manifest_Generator_Helpers Session_Config_Compiler.
-Require Import Helpers_CvmSemantics.
+Require Import Manifest_Generator_Helpers Session_Config_Compiler ManCompSoundness_Helpers Manifest_Generator_Union.
+Require Import Helpers_CvmSemantics Coq.Program.Tactics StructTactics.
 
 Import ListNotations.
 
@@ -202,17 +202,6 @@ Ltac kill_map_none :=
     let H''' := fresh "H'" in
     eapply H4 in H1 as H';
     destruct H'; find_rewrite; congruence
-  (* | H1 : In_set ?x ?l,
-    H3 : map_get (_ ?l' ?fn) ?x = None,
-    H4 : forall _ : _, In_set _ ?l -> _
-      |- _ => 
-    let H' := fresh "H'" in
-    let H'' := fresh "H'" in
-    let H''' := fresh "H'" in
-    eapply H4 in H1 as H';
-    assert (H'' : fn x = true) by ff;
-    pose proof (filter_resolver _ _ _ H' H'') as H''';
-    destruct H'''; find_rewrite; congruence *)
   end.
 
 Lemma never_change_sess_conf : forall t st res st',
@@ -220,12 +209,8 @@ Lemma never_change_sess_conf : forall t st res st',
   st_config st = st_config st'.
 Proof.
   intros;
-  destruct st.
-  simpl; eauto. 
-  edestruct sc_immut; eauto.
-  unfold execErr.
-  rewrite H.
-  simpl; eauto.
+  destruct st;
+  find_apply_lem_hyp sc_immut_better; simpl in *; ff.
 Qed.
 
 Local Hint Resolve never_change_sess_conf : core.
@@ -564,7 +549,8 @@ assert (In p (places' t2 []) \/ In p (places' t1 [])).
 {
   assert (In p (places' t1 []) \/ (~ In p (places' t1 []))).
   { 
-      apply In_dec_tplc.
+
+    apply In_dec_tplc.
   }
   door.
   +
@@ -730,20 +716,16 @@ Proof.
 Qed.
 
 Lemma asdf_easy : forall t1 t2 tp absMan e,
-map_get (manifest_generator' tp t2 
-            (manifest_generator' tp t1 e)) tp = Some absMan -> 
-            
-exists m', (* p', 
-In p' (places tp t1) /\
-*)
-map_get (manifest_generator' tp t1 e) tp = Some m' /\ 
-manifest_subset m' absMan.
+  map_get (manifest_generator' tp t2 
+              (manifest_generator' tp t1 e)) tp = Some absMan -> 
+              
+  exists m', (* p', 
+  In p' (places tp t1) /\
+  *)
+  map_get (manifest_generator' tp t1 e) tp = Some m' /\ 
+  manifest_subset m' absMan.
 Proof.
-  intros.
-  eapply asdf.
-  eassumption.
-  ff.
-  eauto.
+  intros; eapply asdf; ff.
 Qed.
 
 Lemma manifest_supports_term_sub : forall m1 m2 t,
@@ -753,8 +735,7 @@ Lemma manifest_supports_term_sub : forall m1 m2 t,
 Proof.
   intros.
   generalizeEverythingElse t.
-  induction t; simpl in *; intuition; eauto;
-  repeat ff. 
+  induction t; simpl in *; intuition; eauto; ff. 
 Qed.
 
 Lemma env_subset_man_subset : forall e1 e2 p m m',
@@ -808,7 +789,7 @@ Proof.
   ff.
   assert (tp = p).
   {
-    eapply eqb_eq_plc; eauto.
+    rewrite String.eqb_eq in *; ff.
   }
   subst.
 
@@ -840,8 +821,7 @@ Proof.
     destruct H0.
     ++
       subst.
-      rewrite eqb_plc_refl in *.
-      solve_by_inversion.
+      rewrite String.eqb_refl in *; ff.
     ++
       assert ((In t' (place_terms t1 tp p)) \/ (In t' (place_terms t2 tp p))).
       {
@@ -872,7 +852,7 @@ Proof.
             unfold places in *.
             invc H2.
             +++++
-              rewrite eqb_plc_refl in Heqb.
+              rewrite String.eqb_refl in Heqb.
               solve_by_inversion.
             +++++
               eauto.
@@ -894,7 +874,7 @@ Proof.
           eauto.
           invc H2.
             +++++
-              rewrite eqb_plc_refl in *.
+              rewrite String.eqb_refl in *.
               solve_by_inversion.
             +++++
               eassumption.
@@ -911,7 +891,7 @@ Proof.
   ff.
   assert (tp = p).
   {
-    eapply eqb_eq_plc; eauto.
+    eapply String.eqb_eq; eauto.
   }
   subst.
 
@@ -939,7 +919,7 @@ Proof.
     destruct H0.
     ++
       subst.
-      rewrite eqb_plc_refl in *.
+      rewrite String.eqb_refl in *.
       solve_by_inversion.
     ++
       assert ((In t' (place_terms t1 tp p)) \/ (In t' (place_terms t2 tp p))).
@@ -972,7 +952,7 @@ Proof.
             unfold places in *.
             invc H2.
             +++++
-              rewrite eqb_plc_refl in Heqb.
+              rewrite String.eqb_refl in Heqb.
               solve_by_inversion.
             +++++
               eauto.
@@ -994,7 +974,7 @@ Proof.
           eauto.
           invc H2.
           +++++
-            rewrite eqb_plc_refl in *.
+            rewrite String.eqb_refl in *.
             solve_by_inversion.
           +++++
             eassumption.
@@ -1012,7 +992,7 @@ Proof.
   ff.
   assert (tp = p).
   {
-    eapply eqb_eq_plc; eauto.
+    eapply String.eqb_eq; eauto.
   }
   subst.
 
@@ -1040,7 +1020,7 @@ Proof.
     destruct H0.
     ++
       subst.
-      rewrite eqb_plc_refl in *.
+      rewrite String.eqb_refl in *.
       solve_by_inversion.
     ++
       assert ((In t' (place_terms t1 tp p)) \/ (In t' (place_terms t2 tp p))).
@@ -1073,7 +1053,7 @@ Proof.
             unfold places in *.
             invc H2.
             +++++
-              rewrite eqb_plc_refl in Heqb.
+              rewrite String.eqb_refl in Heqb.
               solve_by_inversion.
             +++++
               eauto.
@@ -1095,7 +1075,7 @@ Proof.
           eauto.
           invc H2.
           +++++
-            rewrite eqb_plc_refl in *.
+            rewrite String.eqb_refl in *.
             solve_by_inversion.
           +++++
             eassumption.

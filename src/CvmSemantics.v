@@ -6,7 +6,7 @@
 *)
 
 Require Import Anno_Term_Defs ConcreteEvidence Appraisal_Evidence AutoApp Main.
-Require Import ResultT Cvm_Monad Auto.
+Require Import ResultT Cvm_Monad Auto External_Facts.
 Require Import Axioms_Io Helpers_CvmSemantics Attestation_Session.
 
 Import ListNotations.
@@ -1195,12 +1195,8 @@ Proof.
     
       try (econstructor; econstructor; reflexivity).
   -
-    wrap_ccp_anno; ffa using cvm_monad_unfold.
-    intuition; ffa using cvm_monad_unfold.
-    unfold do_remote in *.
-    ffa.
-    cvm_monad_unfold.
-    econstructor.
+    wrap_ccp_anno.
+    ff.
 
     assert (n = cvmi + event_id_span' t + 1) by lia.
     subst.
@@ -1239,43 +1235,31 @@ Proof.
             try solve_by_inversion.
       }
       
-      door; ffa using cvm_monad_unfold; eauto.
-
-      assert (
-        build_cvm (copland_compile t)
-              {| st_ev := (evc bits e);
-                  st_trace := [];
-                  st_evid := (S cvmi); st_config := ac' |} =
-      (resultC tt,
-      {| st_ev := cvm_evidence_core (copland_compile t) (session_plc ac') (evc bits e);
-          st_trace := cvm_events_core (copland_compile t) (session_plc ac') (get_et (evc bits e));
-          st_evid := ( (S cvmi) + event_id_span (copland_compile t));
-          st_config := ac'
-      |})). { 
-        apply build_cvm_external.
+      door; ffa using cvm_monad_unfold; eauto;
+      try (subst; rewrite eval_aeval'; apply evtsattrpy; simpl; lia).
+      econstructor.
+      assert (exists ac, p = (session_plc ac)).
+      {
+        exists (Build_Session_Config p (ASP_to_APPR_ASP_Map ac')
+          (aspCb ac') (plc_map ac') (pubkey_map ac') (policy ac'));
+        ffa.
       }
-
-      destruct (cvm_evidence_core (copland_compile t) p (evc bits e)).
-      unfold cvm_events in *.
-
-      econstructor.
-      admit.
-      
-      (* eapply IHt; admit. [ | simpl in *; econstructor; eauto | eauto ].
-      2: { *)
-        subst; rewrite eval_aeval'; apply evtsattrpy;
-        simpl; lia.
-      (* }
-      econstructor.
-
-      invc Heqp1.
-      repeat ff.
-      rewrite <- event_id_spans_same.
+      break_exists.
+      ffa.
+      pose proof (build_cvm_external (copland_compile (unanno a))
+        (evc bits e) (S cvmi) x).
       simpl in *.
-      assert (S (cvmi + event_id_span' (unanno a)) =
-              cvmi + event_id_span' (unanno a) + 1) by lia.
-      rewrite H4.
-      eassumption. *)
+      rewrite ccp_iff_cc in *.
+      unfold cvm_events.
+      pose proof (cvm_evidence_exists_remote 
+        (copland_compile (unanno a)) (session_plc x) (evc bits e)).
+      break_exists.
+      find_rewrite.
+      repeat rewrite event_id_works in *.
+      repeat rewrite <- event_id_works in *.
+      rewrite PeanoNat.Nat.add_1_r in *.
+      eapply IHt; eauto.
+
   - (* alseq case *)
     invc H.
     edestruct alseq_decomp; eauto.
@@ -1316,12 +1300,7 @@ Proof.
 
     door.
     +
-      apply evtslseql.
-      eapply IHt1.
-      econstructor.
-      eassumption.
-      eassumption.
-      eassumption.
+      apply evtslseql; ffa.
     +
 
       
@@ -1332,10 +1311,11 @@ Proof.
       assert (t1 = unanno a).
     {
       symmetry.
-      invc Heqp1.
+      match goal with
+      | H : annoP_indexed _ t1 _ _ |- _ => invc H
+      end.
       erewrite <- anno_unanno.
-      rewrite H9.
-      tauto.
+      rewrite H8; ffa.
     }
     eapply cvm_refines_lts_evidence.
     econstructor; eauto.
@@ -1345,7 +1325,9 @@ Proof.
       find_rewrite.
       
 
-      invc Heqp2.
+      match goal with
+      | H : annoP_indexed _ t2 _ _ |- _ => invc H
+      end.
       apply evtslseqr.
       eapply IHt2.
       econstructor.
@@ -1354,10 +1336,14 @@ Proof.
       eassumption.
   - (* abseq case *)
     wrap_ccp_anno;
-    repeat ff;
+    repeat (try cbn in *; ff);
     wrap_ccp_anno;
-    repeat ff;
+    repeat (try cbn in *; ff);
+    repeat match goal with
+    | u : unit |- _ => destruct u
+    end;
     repeat do_sc_immut.
+
     +
 
     assert (n = st_evid1).
@@ -1716,10 +1702,14 @@ Proof.
   - (* abpar case *)
 
     wrap_ccp_anno;
-    ff;
+    repeat (try cbn in *; ff);
     wrap_ccp_anno;
-    ff;
+    repeat (try cbn in *; ff);
+    repeat match goal with
+    | u : unit |- _ => destruct u
+    end;
     repeat do_sc_immut.
+
 
     +
 
@@ -1737,7 +1727,7 @@ Proof.
 
     assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
     
-    subst. clear H6.
+    subst.
     
     
     
@@ -1818,7 +1808,7 @@ Proof.
 
     door.
 
-    invc H3; try solve_by_inversion.
+    invc H4; try solve_by_inversion.
 
     door.
 
@@ -1832,14 +1822,14 @@ Proof.
       eapply cvm_evidence_exists_remote.
     }
     destruct_conjs.
-    rewrite H6 in *.
+    rewrite H7 in *.
 
     eapply IHt2.
     eassumption.
     simpl.
     econstructor.
     eassumption.
-    apply H3.
+    ffa.
 
     door.
 
@@ -1849,34 +1839,16 @@ Proof.
     eassumption.
     simpl.
     assert (S cvmi =  cvmi + 1) by lia.
-    rewrite H4.
+    rewrite H5.
     eapply restl.
     eassumption.
     eassumption.
 
-    invc H3; try solve_by_inversion.
-
-    eapply evtsbparjoin.
-    simpl.
-    lia.
-
-    eauto.
-
-    (*
-
-    eapply evtsbparsplit.
-    simpl; eauto.
-    solve_by_inversion.
-
-    admit. (* TODO: axiom? *)
-    eauto.
-
-    *)
-
-
+    invc H4; try solve_by_inversion; subst.
+    auto.
     subst.
 
-    apply evtsbparjoin.
+    eapply evtsbparjoin.
     simpl.
     lia.
 
@@ -1895,7 +1867,7 @@ Proof.
 
     assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
     
-    subst. clear H6.
+    subst.
     
     
     
@@ -1950,114 +1922,88 @@ Proof.
     In ev (cvm_events_core (copland_compile t2) (session_plc ac') mt) \/ 
     In ev blah \/ 
     In ev [join (st_evid + event_id_span (copland_compile t2)) (session_plc ac')]).
-{
+  {
 
-invc H1.
-left; eauto.
-auto with *.
-
-
-
-Unset Printing Notations.
-
-assert (In ev ([cvm_thread_start 0 (session_plc ac') (copland_compile t2) mt] ++ blah ++ [cvm_thread_end 0]) \/ 
-        In ev [join (st_evid + event_id_span (copland_compile t2)) (session_plc ac')]).
-        {
-          assert (
-            (cvm_thread_start 0 (session_plc ac') (lseqc (aspc CLEAR) (copland_compile t2)) e) = 
-            (cvm_thread_start 0 (session_plc ac') (copland_compile t2)) mt).
-            {
-              eapply cvm_thread_start_clear.
-            }
-            rewrite H1 in *; clear H1.
-
-            auto with *.
-
-        }
-
-        invc H1.
-
-        assert (In ev (cvm_events_core (copland_compile t2) (session_plc ac') mt) \/ 
-                In ev blah).
-                {
-                  eapply cvm_thread_in_ev; eassumption.
-                }
-
-                door.
-                eauto.
-                eauto.
-                eauto.
-
-}
-
-door.
-
-invc H3; try solve_by_inversion.
-
-door.
-
-eapply evtsbparr.
-
-pose (build_cvm_external (copland_compile t2) (evc bits mt) st_evid ac').
-
-assert (exists b et, cvm_evidence_core (copland_compile t2) (session_plc ac') (evc bits mt) = 
-evc b et).
-{
-  eapply cvm_evidence_exists_remote.
-}
-destruct_conjs.
-rewrite H6 in *.
-
-eapply IHt2.
-eassumption.
-econstructor.
-simpl.
-eassumption.
-
-apply H3.
-
-
-door.
-
-apply evtsbparl.
-eapply IHt1.
-
-eassumption.
-simpl.
-assert (S cvmi =  cvmi + 1) by lia.
-rewrite H4.
-eapply restl.
-eassumption.
-eassumption.
-
-invc H3; try solve_by_inversion.
-
-eapply evtsbparjoin.
-simpl.
-lia.
+  invc H1.
+  left; eauto.
+  auto with *.
 
 
 
-eauto.
+  Unset Printing Notations.
 
-(*
+  assert (In ev ([cvm_thread_start 0 (session_plc ac') (copland_compile t2) mt] ++ blah ++ [cvm_thread_end 0]) \/ 
+          In ev [join (st_evid + event_id_span (copland_compile t2)) (session_plc ac')]).
+          {
+            assert (
+              (cvm_thread_start 0 (session_plc ac') (lseqc (aspc CLEAR) (copland_compile t2)) e) = 
+              (cvm_thread_start 0 (session_plc ac') (copland_compile t2)) mt).
+              {
+                eapply cvm_thread_start_clear.
+              }
+              rewrite H1 in *; clear H1.
 
-eapply evtsbparsplit.
-simpl; eauto.
-solve_by_inversion.
+              auto with *.
 
-admit. (* TODO: axiom? *)
-eauto.
+          }
 
-*)
+          invc H1.
+
+          assert (In ev (cvm_events_core (copland_compile t2) (session_plc ac') mt) \/ 
+                  In ev blah).
+                  {
+                    eapply cvm_thread_in_ev; eassumption.
+                  }
+
+                  door.
+                  eauto.
+                  eauto.
+                  eauto.
+
+  }
+
+  door.
+
+  invc H4; try solve_by_inversion.
+
+  door.
+
+  eapply evtsbparr.
+
+  pose (build_cvm_external (copland_compile t2) (evc bits mt) st_evid ac').
+
+  assert (exists b et, cvm_evidence_core (copland_compile t2) (session_plc ac') (evc bits mt) = 
+  evc b et).
+  {
+    eapply cvm_evidence_exists_remote.
+  }
+  destruct_conjs.
+  rewrite H7 in *.
+
+  eapply IHt2.
+  eassumption.
+  econstructor.
+  simpl.
+  eassumption.
+
+  apply H4.
 
 
+  door.
 
-    subst.
+  apply evtsbparl.
+  eapply IHt1.
 
-    apply evtsbparjoin.
-    simpl.
-    lia.
+  eassumption.
+  simpl.
+  assert (S cvmi =  cvmi + 1) by lia.
+  rewrite H5.
+  eapply restl.
+  eassumption.
+  eassumption.
+
+  invc H4; try solve_by_inversion.
+  ffa.
 
     +
       assert (n = st_evid).
@@ -2073,7 +2019,7 @@ eauto.
 
     assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
     
-    subst. clear H6.
+    subst.
     
     
     
@@ -2128,266 +2074,210 @@ eauto.
     In ev (cvm_events_core (copland_compile t2) (session_plc ac') e) \/ 
     In ev blah \/ 
     In ev [join (st_evid + event_id_span (copland_compile t2)) (session_plc ac')]).
-{
+  {
 
-invc H1.
-left; eauto.
-auto with *.
+  invc H1.
+  left; eauto.
+  auto with *.
 
-assert (In ev ([cvm_thread_start 0 (session_plc ac') (copland_compile t2) e] ++ blah ++ [cvm_thread_end 0]) \/ 
-        In ev [join (st_evid + event_id_span (copland_compile t2)) (session_plc ac')]).
-        {
-          auto with *.
-        }
+  assert (In ev ([cvm_thread_start 0 (session_plc ac') (copland_compile t2) e] ++ blah ++ [cvm_thread_end 0]) \/ 
+          In ev [join (st_evid + event_id_span (copland_compile t2)) (session_plc ac')]).
+          {
+            auto with *.
+          }
 
-        invc H1.
+          invc H1.
 
-        assert (In ev (cvm_events_core (copland_compile t2) (session_plc ac') e) \/ 
-                In ev blah).
-                {
-                  eapply cvm_thread_in_ev; eassumption.
-                }
+          assert (In ev (cvm_events_core (copland_compile t2) (session_plc ac') e) \/ 
+                  In ev blah).
+                  {
+                    eapply cvm_thread_in_ev; eassumption.
+                  }
 
-                door.
-                eauto.
-                eauto.
-                eauto.
+                  door.
+                  eauto.
+                  eauto.
+                  eauto.
 
-}
+  }
 
-door.
+  door.
 
-invc H3; try solve_by_inversion.
+  invc H4; try solve_by_inversion.
 
-door.
+  door.
 
-eapply evtsbparr.
-
-
-
-pose (build_cvm_external (copland_compile t2) (evc bits e) st_evid ac').
-
-assert (exists b et, cvm_evidence_core (copland_compile t2) (session_plc ac') (evc bits e) = 
-evc b et).
-{
-  eapply cvm_evidence_exists_remote.
-}
-destruct_conjs.
-rewrite H6 in *.
+  eapply evtsbparr.
 
 
 
-eapply IHt2.
-eassumption.
+  pose (build_cvm_external (copland_compile t2) (evc bits e) st_evid ac').
 
-simpl.
-econstructor.
-eassumption.
-
-apply H3.
-
-
-door.
-
-apply evtsbparl.
-eapply IHt1.
-
-eassumption.
-simpl.
-assert (S cvmi =  cvmi + 1) by lia.
-rewrite H4.
-eapply restl.
-eassumption.
-eassumption.
-
-invc H3; try solve_by_inversion.
-
-eapply evtsbparjoin.
-simpl.
-lia.
+  assert (exists b et, cvm_evidence_core (copland_compile t2) (session_plc ac') (evc bits e) = 
+  evc b et).
+  {
+    eapply cvm_evidence_exists_remote.
+  }
+  destruct_conjs.
+  rewrite H7 in *.
 
 
 
-eauto.
+  eapply IHt2.
+  eassumption.
 
-(*
+  simpl.
+  econstructor.
+  eassumption.
 
-eapply evtsbparsplit.
-simpl; eauto.
-solve_by_inversion.
-
-admit. (* TODO: axiom? *)
-eauto.
-
-*)
+  apply H4.
 
 
-    subst.
+  door.
 
-    apply evtsbparjoin.
-    simpl.
-    lia.
+  apply evtsbparl.
+  eapply IHt1.
 
-    +
-      assert (n = st_evid).
-    {
-      assert (cvmi+1 = S cvmi) by lia.
-      find_rewrite.
-      invc Heqp.
-      
-      eapply span_cvm; eauto.
-      econstructor; tauto.
-    }
-    subst.
+  eassumption.
+  simpl.
+  assert (S cvmi =  cvmi + 1) by lia.
+  rewrite H5.
+  eapply restl.
+  eassumption.
+  eassumption.
 
-    assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
-    
-    subst. clear H6.
-    
-    
-    
-    do_suffix blah.
+  invc H4; try solve_by_inversion.
+  auto.
+  ffa.
 
-    destruct_conjs; subst.
-    repeat do_restl.
-
-    assert (ev = Term_Defs.split cvmi (session_plc ac') \/
-            In ev ([cvm_thread_start 0 (session_plc ac') (lseqc (aspc CLEAR) (copland_compile t2)) e] ++ blah ++
-                   [cvm_thread_end 0]) \/
-            ev = join (st_evid + event_id_span (copland_compile t2)) (session_plc ac')
-           ).
-        {
-      apply in_app_or in H1.
-      door.
       +
-      assert(
-           (([Term_Defs.split cvmi (session_plc ac');
-            cvm_thread_start 0 (session_plc ac') (lseqc (aspc CLEAR) (copland_compile t2)) e] ++ blah) ++
-                                                                  [cvm_thread_end 0]) =
-            ([Term_Defs.split cvmi (session_plc ac')] ++ 
-              ([(cvm_thread_start 0 (session_plc ac') (lseqc (aspc CLEAR) (copland_compile t2)) e)] ++ blah ++
-                                                               [cvm_thread_end 0]))).
+        assert (n = st_evid).
       {
-        simpl.
-        tauto.
+        assert (cvmi+1 = S cvmi) by lia.
+        find_rewrite.
+        invc Heqp.
+        
+        eapply span_cvm; eauto.
+        econstructor; tauto.
       }
-      rewrite H1 in H0.
+      subst.
 
-        apply in_app_or in H0.
+      assert (n0 = st_evid + event_id_span (copland_compile t2)) by lia.
+      
+      subst.
+      
+      
+      
+      do_suffix blah.
+
+      destruct_conjs; subst.
+      repeat do_restl.
+
+      assert (ev = Term_Defs.split cvmi (session_plc ac') \/
+              In ev ([cvm_thread_start 0 (session_plc ac') (lseqc (aspc CLEAR) (copland_compile t2)) e] ++ blah ++
+                    [cvm_thread_end 0]) \/
+              ev = join (st_evid + event_id_span (copland_compile t2)) (session_plc ac')
+            ).
+          {
+        apply in_app_or in H1.
         door.
-      ++
-        invc H0; try eauto; try solve_by_inversion.
-      ++
-        eauto.
+        +
+        assert(
+            (([Term_Defs.split cvmi (session_plc ac');
+              cvm_thread_start 0 (session_plc ac') (lseqc (aspc CLEAR) (copland_compile t2)) e] ++ blah) ++
+                                                                    [cvm_thread_end 0]) =
+              ([Term_Defs.split cvmi (session_plc ac')] ++ 
+                ([(cvm_thread_start 0 (session_plc ac') (lseqc (aspc CLEAR) (copland_compile t2)) e)] ++ blah ++
+                                                                [cvm_thread_end 0]))).
+        {
+          simpl.
+          tauto.
+        }
+        rewrite H1 in H0.
 
-      + invc H0; try eauto; try solve_by_inversion.
-    }
+          apply in_app_or in H0.
+          door.
+        ++
+          invc H0; try eauto; try solve_by_inversion.
+        ++
+          eauto.
 
-    door.
-    subst.
-
-    apply evtsbparsplit.
-    auto.
-    door.
-    Unset Printing Notations.
-
-    assert (
-      (cvm_thread_start 0 (session_plc ac') (lseqc (aspc CLEAR) (copland_compile t2)) e) = 
-      (cvm_thread_start 0 (session_plc ac') (copland_compile t2)) mt).
-      {
-        eapply cvm_thread_start_clear.
+        + invc H0; try eauto; try solve_by_inversion.
       }
-      rewrite H3 in *; clear H1.
 
-    assert (
-            In ev (cvm_events_core (copland_compile t2) (session_plc ac') mt) \/ 
-            In ev blah).
-            {
+      door.
+      subst.
 
-              eapply cvm_thread_in_ev; eassumption.
+      apply evtsbparsplit.
+      auto.
+      door.
+      Unset Printing Notations.
 
+      assert (
+        (cvm_thread_start 0 (session_plc ac') (lseqc (aspc CLEAR) (copland_compile t2)) e) = 
+        (cvm_thread_start 0 (session_plc ac') (copland_compile t2)) mt).
+        {
+          eapply cvm_thread_start_clear.
+        }
+        rewrite H4 in *.
 
-            }
-    door.
+      assert (
+              In ev (cvm_events_core (copland_compile t2) (session_plc ac') mt) \/ 
+              In ev blah).
+              {
 
-    2: {
-
-    apply evtsbparl.
-
-    simpl in *.
-    unfold mt_evc in *.
-    assert (S cvmi = cvmi + 1) by lia.
-    rewrite <- H4 in *.
-
-
-    eapply IHt1.
-    eassumption.
-    eapply restl; eauto.
-
-    rewrite fufu in Heqp2; eauto.
-    eauto.
+                eapply cvm_thread_in_ev; eassumption.
 
 
+              }
+      door.
 
-(*
-    ff.
-    assert ((
-      (Term_Defs.split cvmi p :: (cvm_thread_start 0 p <<core>{ (CLR -> (copland_compile t2)) }> e)) :: blah) = 
-            [Term_Defs.split cvmi p :: (cvm_thread_start 0 p <<core>{ CLR -> (copland_compile t2) }> e)] ++ blah).
-    eassumption.
-    (* 
-    assert ((Term_Defs.split cvmi p :: cvm_thread_start 0 p <<core>{ CLR -> (copland_compile t2) }> e :: blah) = 
-    ([Term_Defs.split cvmi p :: cvm_thread_start 0 p <<core>{ CLR -> (copland_compile t2) }> e] ++ blah)).
-    {
-      intuition.
-    }
-    *)
-    admit.
+      2: {
 
-    *)
+      apply evtsbparl.
 
-    }
+      simpl in *.
+      unfold mt_evc in *.
+      assert (S cvmi = cvmi + 1) by lia.
+      rewrite <- H6 in *.
 
 
-    apply evtsbparr.
+      eapply IHt1.
+      eassumption.
+      eapply restl; eauto.
+
+      rewrite fufu in *; eauto.
+      eauto.
+      }
+
+
+      apply evtsbparr.
 
 
 
-    pose (build_cvm_external (copland_compile t2) (evc bits mt) st_evid ac').
+      pose (build_cvm_external (copland_compile t2) (evc bits mt) st_evid ac').
 
-assert (exists b et, cvm_evidence_core (copland_compile t2) (session_plc ac') (evc bits mt) = 
-evc b et).
-{
-  eapply cvm_evidence_exists_remote.
-}
-destruct_conjs.
-rewrite H6 in *.
+  assert (exists b et, cvm_evidence_core (copland_compile t2) (session_plc ac') (evc bits mt) = 
+  evc b et).
+  {
+    eapply cvm_evidence_exists_remote.
+  }
+  destruct_conjs.
+  rewrite H8 in *.
 
 
 
 
 
-    simpl.
+      simpl.
 
-    eapply IHt2.
-    eassumption.
+      eapply IHt2.
+      eassumption.
 
-    econstructor.
-    eassumption.
-
-    eauto.
-
-    eauto.
-
-
-    subst.
-
-    apply evtsbparjoin.
-    simpl.
-    lia.
-(* TODO: We need to just fix the remote call one, I am not really sure how it should be working, it seems a bit odd the actual output statement? *)
-Admitted.
-(* Qed. *)
+      econstructor; ffa.
+      ffa.
+      ffa.
+Qed.
 
 
 
