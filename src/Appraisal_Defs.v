@@ -1,8 +1,8 @@
 (* Appraisal primitive implementations:  evidence unbundling, nonce generation, appraisal ASP dispatch.  *)
 
-Require Import String Term_Defs_Core Term_Defs AM_St EqClass Maps.
+Require Import String Term_Defs EqClass Maps.
 
-Require Import Appraisal_IO_Stubs ErrorStMonad_Coq AM_Monad AM_St Manifest_Admits ErrorStringConstants Attestation_Session.
+Require Import Appraisal_IO_Stubs ErrorStMonad_Coq AM_Monad ErrorStringConstants Attestation_Session.
 
 
 Axiom decrypt_prim_runtime : forall bs params pk e,
@@ -23,12 +23,14 @@ match params with
     end
 end.
 
+Import ErrNotation.
+
 Definition decrypt_bs_to_rawev' (bs:BS) (params:ASP_PARAMS) (et:Evidence) : AM RawEv :=
   ac <- get_AM_config ;;
   match (decrypt_bs_to_rawev bs params ac) with 
   | resultC r => 
     match (check_et_size et r) with
-    | resultC tt => ret r
+    | resultC tt => err_ret r
     | errC e => am_failm (am_dispatch_error e) 
     end
   | errC e => am_failm (am_dispatch_error e) 
@@ -36,7 +38,7 @@ Definition decrypt_bs_to_rawev' (bs:BS) (params:ASP_PARAMS) (et:Evidence) : AM R
 
 Definition checkNonce' (nid:nat) (nonceCandidate:BS) : AM BS :=
   nonceGolden <- am_getNonce nid ;;
-  ret (checkNonce nonceGolden nonceCandidate).
+  err_ret (checkNonce nonceGolden nonceCandidate).
 
 Definition check_asp_EXTD (params:ASP_PARAMS) (ls:RawEv) (ac : Session_Config) : ResultT RawEv DispatcherErrors :=
   ac.(aspCb) params ls.
@@ -47,7 +49,7 @@ Definition check_asp_EXTD' (params:ASP_PARAMS) (p:Plc) (sig:RawEv) (ls:RawEv) : 
   match (map_get (ASP_to_APPR_ASP_Map ac) att_id) with
   | Some appr_asp => 
     match (check_asp_EXTD (asp_paramsC appr_asp args targ targid) (app sig ls) ac) with
-    | resultC r => ret r
+    | resultC r => err_ret r
     | errC e => am_failm (am_dispatch_error e) 
     end
   | None => am_failm (am_dispatch_error (Runtime "We made it to appraisal without a translation for our attestation ASP"%string)) 

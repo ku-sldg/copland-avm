@@ -5,11 +5,10 @@
    https://github.com/ku-sldg/negotiation20/blob/master/src/Manifest/Manifest.v
 *)
 
-Require Import ID_Type Term_Defs_Core Maps
-  Term_Defs EqClass ErrorStMonad_Coq JSON.
+Require Import ID_Type Term_Defs_Core Maps.
 Require Export Manifest_Admits.
 
-Require Import Manifest_Set String ErrorStringConstants.
+Require Import Manifest_Set.
 
 Require Import List.
 Import ListNotations.

@@ -10,7 +10,7 @@
     and evidence value results support specification of correctness properties 
     for Appraisal.        
  *)
-Require Import Term_Defs ConcreteEvidence ErrorStMonad_Coq 
+Require Import Term_Defs ErrorStMonad_Coq 
   Manifest_Admits Cvm_St String JSON.
 
 Require Import List.
@@ -26,10 +26,10 @@ Definition make_JSON_FS_Location_Request (dir : FS_Location) (aspid : FS_Locatio
 Definition parallel_vm_thread (l:Loc) (t:Core_Term) (p:Plc) (e:EvC) : EvC.  Admitted.
 
 Definition do_start_par_thread (loc:Loc) (t:Core_Term) (e:RawEv) : CVM unit :=
-  ret tt.
+  err_ret tt.
 
 Definition do_wait_par_thread (loc:Loc) (t:Core_Term) (p:Plc) (e:EvC) : CVM EvC :=
-  ret (parallel_vm_thread loc t p e).
+  err_ret (parallel_vm_thread loc t p e).
 
 Definition requester_bound (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) : bool.  Admitted.
 

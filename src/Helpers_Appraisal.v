@@ -143,7 +143,7 @@ Proof.
     rewrite H3 in *.
     rewrite Heqo in *.
     solve_by_inversion.
-Defined.
+Qed.
 *)
 
 Lemma uuc_app: forall e' e'' params p n,
@@ -159,7 +159,7 @@ Proof.
   generalizeEverythingElse e'.
   induction e'; intros;
     ff.
-Defined.
+Qed.
 
 (*
     
@@ -314,7 +314,7 @@ Defined.
       eassumption.
       destruct_conjs.
       eauto. *)
-Defined.
+Qed.
 *)
 
 Lemma hhc_app: forall e' p bs et,
@@ -328,7 +328,7 @@ Proof.
     ff;
     try evSubFacts;
     eauto.
-Defined.
+Qed.
 
 Ltac find_wfec :=
   repeat 
@@ -394,7 +394,7 @@ Proof.
   unfold not_none_none in *;
     unfold not in *.
   split; eauto.
-Defined.
+Qed.
 
 Lemma not_none_abseq_pieces: forall s t1 t2,
     not_none_none (bseq s t1 t2) ->
@@ -403,7 +403,7 @@ Proof.
   unfold not_none_none in *;
     unfold not in *.
   split; eauto.
-Defined.
+Qed.
 
 Lemma not_none_abpar_pieces: forall s t1 t2,
     not_none_none (bpar s t1 t2) ->
@@ -412,7 +412,7 @@ Proof.
   unfold not_none_none in *;
     unfold not in *.
   split; eauto.
-Defined.
+Qed.
 
 Lemma not_none_aatt_pieces: forall q t1,
     not_none_none (att q t1) ->
@@ -422,7 +422,7 @@ Proof.
     unfold not_none_none in *;
     unfold not in *.
   eauto.
-Defined.
+Qed.
 
 Lemma not_hshsig_alseq_pieces: forall t1 t2,
     not_hash_sig_term (lseq t1 t2) ->
@@ -432,7 +432,7 @@ Proof.
     unfold not_hash_sig_term in *;
     unfold not in *.
   split; eauto.
-Defined.
+Qed.
 
 Lemma not_hshsig_abseq_pieces: forall s t1 t2,
     not_hash_sig_term (bseq s t1 t2) ->
@@ -442,7 +442,7 @@ Proof.
     unfold not_hash_sig_term in *;
     unfold not in *.
   split; eauto.
-Defined.
+Qed.
 
 Lemma not_hshsig_abpar_pieces: forall s t1 t2,
     not_hash_sig_term (bpar s t1 t2) ->
@@ -452,7 +452,7 @@ Proof.
     unfold not_hash_sig_term in *;
     unfold not in *.
   split; eauto.
-Defined.
+Qed.
 
 Lemma not_hshsig_aatt_pieces: forall q t1,
     not_hash_sig_term (att q t1) ->
@@ -462,7 +462,7 @@ Proof.
     unfold not_hash_sig_term in *;
     unfold not in *.
   eauto.
-Defined.
+Qed.
 
 Ltac do_not_none_alseq_pieces :=
   match goal with
@@ -574,7 +574,7 @@ Proof.
   left.
   repeat eexists.
   eauto.
-Defined.
+Qed.
 
 Lemma not_none_none_contra_bpar: forall t1 t2 (P:Prop),
     not_none_none (bpar (NONE, NONE) t1 t2) ->
@@ -587,7 +587,7 @@ Proof.
   right.
   repeat eexists.
   eauto.
-Defined.
+Qed.
 
 Ltac do_none_none_contra_bseq :=
   match goal with
@@ -622,7 +622,7 @@ Proof.
     try eauto; (* aatt, alseq cases *)
     try (destruct s; destruct s; destruct s0; ff;
          do_none_none_contra). (* abseq, abpar cases  *)
-Defined.
+Qed.
 
 Lemma evsubt_preserved: forall t pt e e' et et' tr tr' p p' ett i i',
     not_none_none t ->
@@ -643,7 +643,7 @@ Proof.
   subst.
 
   eapply evsubt_preserved_eval; eauto.
-Defined.
+Qed.
 
 Lemma not_ev: forall t e,
     not_hash_sig_term_ev t e ->
@@ -652,7 +652,7 @@ Proof.
   intros; cbv in *.
   destruct_conjs.
   eauto.
-Defined.
+Qed.
 
 Lemma etfun_exists: forall y,
     exists y', y = et_fun y'.
@@ -685,7 +685,7 @@ Proof.
     destruct_conjs.
     exists (ppc IHy1 IHy2).
     ff.
-Defined.
+Qed.
 
 Lemma not_hshsig_uuc: forall e' params p x,
     not_hash_sig_ev e' ->
@@ -695,7 +695,7 @@ Proof.
   evSubFacts;
     try (destruct_conjs; solve_by_inversion);
     eauto.
-Defined.
+Qed.
 
 Lemma not_hshsig_ggc: forall e' n bs,
     not_hash_sig_ev e' ->
@@ -705,7 +705,7 @@ Proof.
   evSubFacts;
     try (destruct_conjs; solve_by_inversion);
     eauto.
-Defined.
+Qed.
 
 Lemma gg_recons: forall e ecc x y,
     reconstruct_evP ecc e ->
@@ -759,7 +759,7 @@ Proof.
       do_ggsub.
       repeat eexists.
       eauto.
-Defined.
+Qed.
 
 Lemma recon_evdenote_decomp: forall a p e,
     exists ecc,
@@ -799,7 +799,7 @@ Proof.
     eexists.
     econstructor.
     eapply recon_same.
-Defined.
+Qed.
       
 Lemma recon_evP_ssc_decomp: forall ecc' a p e e' a0,
     reconstruct_evP ecc'
@@ -813,8 +813,8 @@ Proof.
   do_inv_recon_ss.
   invc H.
   repeat ff.
-    unfold OptMonad_Coq.bind in *.
-    unfold OptMonad_Coq.ret in *.
+    unfold opt_bind in *.
+    unfold opt_ret in *.
     repeat ff.
   rewrite fold_recev in *.
   split.
@@ -826,7 +826,7 @@ Proof.
   econstructor.
   symmetry.
   eassumption.
-Defined.
+Qed.
 
 Lemma recon_evP_ppc_decomp: forall ecc' a p e e' a0,
     reconstruct_evP ecc'
@@ -840,8 +840,8 @@ Proof.
   do_inv_recon_pp.
   invc H.
   repeat ff.
-    unfold OptMonad_Coq.bind in *.
-    unfold OptMonad_Coq.ret in *.
+    unfold opt_bind in *.
+    unfold opt_ret in *.
     repeat ff.
   rewrite fold_recev in *.
   split.
@@ -853,7 +853,7 @@ Proof.
   econstructor.
   symmetry.
   eassumption.
-Defined.
+Qed.
 
 Ltac do_evsub_ih'' :=
   match goal with
@@ -1007,7 +1007,7 @@ Proof.
       repeat eexists; eauto.
     +
       do_none_none_contra.
-Defined.
+Qed.
 
 Ltac do_evaccum e' :=
   repeat 
@@ -1232,7 +1232,7 @@ Proof.
         eauto.
       right.
       eauto.
-Defined.
+Qed.
 
 Ltac do_sig_is He :=
   repeat 
@@ -1381,7 +1381,7 @@ Proof.
   eassumption.
   subst.
   eauto.
-Defined.
+Qed.
 
 Ltac do_nhst_lseqr :=
   match goal with
@@ -1501,7 +1501,7 @@ Proof.
       do_ggsub.
       repeat eexists.
       eauto.
-Defined.
+Qed.
 
 Lemma hshsig_ev_term_contra: forall t annt p e e',
 
@@ -2196,7 +2196,7 @@ Proof.
       ++
         exfalso.
         eapply not_none_none_contra_bpar; eauto.
-Defined.
+Qed.
 
 Lemma uu_preserved:
   forall t1 t2 annt p n p0 e e''' e' params et,
@@ -2271,7 +2271,7 @@ Proof.
       right; 
         repeat (eexists; eauto).
       jkjke'.
-Defined.
+Qed.
 
 Ltac do_ste :=
   try do_nhste_att;
@@ -2306,7 +2306,7 @@ Proof.
   eapply sig_term_ev_bseql.
   eassumption.
   destruct s; destruct s; destruct s0; ff.
-Defined.
+Qed.
 
 Ltac do_nhse_bseql_nosplit :=
   match goal with
@@ -2334,7 +2334,7 @@ Proof.
   eapply sig_term_ev_bseqr.
   eassumption.
   destruct s; destruct s; destruct s0; ff.
-Defined.
+Qed.
 
 Ltac do_nhse_bseqr_nosplit :=
   match goal with
@@ -2364,7 +2364,7 @@ Proof.
   eapply sig_term_ev_bparl.
   eassumption.
   destruct s; destruct s; destruct s0; ff.
-Defined.
+Qed.
 
 Ltac do_nhse_bparl_nosplit :=
   match goal with
@@ -2392,7 +2392,7 @@ Proof.
   eapply sig_term_ev_bparr.
   eassumption.
   destruct s; destruct s; destruct s0; ff.
-Defined.
+Qed.
 
 Ltac do_nhse_bparr_nosplit :=
   match goal with

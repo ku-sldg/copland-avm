@@ -1,5 +1,5 @@
 Require Import Stringifiable.
-Require Import JSON Manifest Manifest_Set Term_Defs_Core Manifest_JSON_Vars List ErrorStringConstants EqClass Maps.
+Require Import JSON Manifest Manifest_Set Term_Defs_Core Manifest_JSON_Vars List Maps.
 Import ListNotations ResultNotation.
 
 

@@ -10,9 +10,7 @@ modify it under the terms of the BSD License as published by the
 University of California.  See license.txt for details. *)
 
 
-Require Import Preamble More_lists Defs Term_Defs Term Event_system Term_system StructTactics.
-
-Require Import Coq.Program.Tactics.
+Require Import Preamble More_lists Defs Term Event_system Term_system.
 
 Require Import Lia.
 
@@ -288,7 +286,7 @@ Proof.
            try rewrite app_length; simpl in *;
            try find_apply_lem_hyp shuffle_length;
            lia).
-Defined.
+Qed.
 
 (** The events in a trace correspond to the events associated with an
     annotated term, a place, and some evidence. *)
@@ -814,4 +812,4 @@ Proof.
         eauto.
     +
       solve_by_inversion.
-Defined.
+Qed.

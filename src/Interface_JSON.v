@@ -1,4 +1,4 @@
-Require Import Interface_Types StructTactics Stringifiable Attestation_Session Term_Defs EqClass.
+Require Import Interface_Types Stringifiable Attestation_Session Term_Defs.
 Require Export JSON List.
 Import ListNotations ResultNotation.
 

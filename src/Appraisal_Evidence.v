@@ -4,28 +4,28 @@
     Also included:  properties about CVM internal Evidence and Event handling.  
     TODO:  This file has become quite bloated.  May need to refactor/decompose.  *)
 
-Require Import ConcreteEvidence AutoApp Auto ResultT Helpers_CvmSemantics Term_Defs Anno_Term_Defs Cvm_St Cvm_Impl Defs StructTactics OptMonad_Coq IO_Stubs Evidence_Bundlers Axioms_Io External_Facts Attestation_Session.
+Require Import ConcreteEvidence AutoApp Defs StructTactics OptMonad_Coq Anno_Term_Defs Cvm_Impl Cvm_St ResultT Axioms_Io Attestation_Session External_Facts Helpers_CvmSemantics Cvm_Monad More_lists Auto.
 
 Require Import List.
-Import ListNotations.
+Import ListNotations OptNotation.
 
 Require Import Lia Coq.Program.Tactics.
 
 Definition peel_bs (ls:RawEv) : Opt (BS * RawEv) :=
   match ls with
-  | bs :: ls' => OptMonad_Coq.ret (bs, ls')
-  | _ => OptMonad_Coq.failm
+  | bs :: ls' => opt_ret (bs, ls')
+  | _ => opt_failm
   end.
 
 Fixpoint peel_n (n : nat) (ls : RawEv) : Opt (RawEv * RawEv) :=
   match n with
-  | 0 => OptMonad_Coq.ret ([], ls)
+  | 0 => opt_ret ([], ls)
   | S n' =>
       match ls with
-      | [] => OptMonad_Coq.failm
+      | [] => opt_failm
       | x :: ls' =>
           '(ls1, ls2) <- peel_n n' ls' ;;
-          OptMonad_Coq.ret (x :: ls1, ls2)
+          opt_ret (x :: ls1, ls2)
       end
   end.
 
@@ -36,7 +36,7 @@ Proof.
   intros.
   eapply firstn_length_le.
   lia.
-Defined.
+Qed.
 
 Lemma skipn_long: forall (e:list BS) x y,
     length e = x + y ->
@@ -46,7 +46,7 @@ Proof.
   assert (length (skipn x e) = length e - x).
   { eapply skipn_length. }
   lia.
-Defined.
+Qed.
 
 Lemma peel_fact': forall e x y H,
     length e = S x ->
@@ -56,7 +56,7 @@ Proof.
   intros.
   destruct e;
     ff; eauto.
-Defined.
+Qed.
 
 Lemma peel_fact: forall e x y H et,
     length e = S x ->
@@ -68,7 +68,7 @@ Proof.
   econstructor.
   eapply peel_fact'; eauto.
   lia.
-Defined.
+Qed.
 
 Fixpoint encodeEv (e:EvidenceC) : RawEv :=
   match e with
@@ -147,14 +147,10 @@ Proof.
   invc H.
   destruct et;
     repeat ff;
-    try (unfold OptMonad_Coq.bind in *);
+    try (unfold opt_bind in *);
          repeat ff;
          try solve_by_inversion.
-                    
-         -
-           eauto.
-                                   
-Defined.
+Qed.
 
 Ltac do_inv_recon_mt :=
   match goal with
@@ -172,7 +168,7 @@ Proof.
   intros.
   invc H.
   repeat ff; try solve_by_inversion; eauto.
-Defined.
+Qed.
 
 Ltac do_inv_recon_mt' :=
   match goal with
@@ -190,8 +186,8 @@ Lemma inv_recon_nn: forall ls et n n0,
 Proof.
   intros.
   invc H.
-  destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff; destruct ls; try solve_by_inversion.                              
-Defined.
+  destruct et; repeat ff; try (unfold opt_bind in *); repeat ff; destruct ls; try solve_by_inversion.                              
+Qed.
 
 Ltac do_inv_recon_nn :=
   match goal with
@@ -208,7 +204,7 @@ Lemma peel_n_spec : forall n ls ls1 ls2,
   ls = ls1 ++ ls2 /\ length ls1 = n.
 Proof.
   induction n; intuition; repeat ff; subst;
-  unfold OptMonad_Coq.ret, OptMonad_Coq.bind in *; repeat ff; eauto.
+  unfold opt_ret, opt_bind in *; repeat ff; eauto.
   - eapply IHn in Heqo; intuition; subst; eauto. 
   - eapply IHn in Heqo; intuition; subst; eauto. 
 Qed.
@@ -221,10 +217,10 @@ Proof.
   intuition; invc H.
   generalizeEverythingElse et.
   destruct et; repeat ff; intuition; 
-  try (unfold OptMonad_Coq.bind, OptMonad_Coq.ret in *); 
+  try (unfold opt_bind, opt_ret in *); 
   repeat ff; try solve_by_inversion.
   eapply peel_n_spec in Heqo; intuition; subst; eauto.
-Defined.
+Qed.
 
 Ltac do_inv_recon_gg :=
   match goal with
@@ -247,8 +243,8 @@ Lemma inv_recon_hh: forall p ps ls et n et',
 Proof.
   intros.
   invc H.
-  destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff; destruct ls; try solve_by_inversion.
-Defined.
+  destruct et; repeat ff; try (unfold opt_bind in *); repeat ff; destruct ls; try solve_by_inversion.
+Qed.
 
 Ltac do_inv_recon_hh :=
   match goal with
@@ -267,10 +263,10 @@ Lemma inv_recon_ee: forall p ps ls et n ec',
 Proof.
   intros.
   invc H.
-  destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); 
+  destruct et; repeat ff; try (unfold opt_bind in *); 
   repeat ff; destruct ls; try solve_by_inversion;
   repeat eexists; ff.
-Defined.
+Qed.
 
 Ltac do_inv_recon_ee :=
   match goal with
@@ -289,10 +285,10 @@ Lemma inv_recon_ss: forall ls et ec1 ec2,
 Proof.
   intros.
   invc H.
-  destruct et; repeat ff; try (unfold OptMonad_Coq.bind in *); 
+  destruct et; repeat ff; try (unfold opt_bind in *); 
   repeat ff; try solve_by_inversion;
   eauto.
-Defined.
+Qed.
 
 Ltac do_inv_recon_ss :=
   match goal with
@@ -323,11 +319,11 @@ Lemma recon_inv_gg: forall sig ls p ps et e,
 Proof.
   intros.
   invc H.
-  repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff;
+  repeat ff; try (unfold opt_bind in *); repeat ff;
   econstructor.
   find_apply_lem_hyp peel_n_spec; intuition;
   find_apply_lem_hyp app_inv_head_iff; subst; eauto.
-Defined.
+Qed.
 
 Ltac do_recon_inv_gg :=
   match goal with
@@ -348,7 +344,7 @@ Lemma recon_inv_ss: forall ls H1 H2 ec1 ec2,
 Proof.
   intros.
   invc H.
-  repeat ff; try (unfold OptMonad_Coq.bind in *); repeat ff;
+  repeat ff; try (unfold opt_bind in *); repeat ff;
   split;
     econstructor;
     try 
@@ -379,14 +375,13 @@ Proof.
   intros.
   econstructor.
   congruence.
-Defined.
+Qed.
 
 Lemma fold_recev: forall e0 e1,
     reconstruct_ev' e0 e1 = reconstruct_ev (evc e0 e1).
 Proof.
-  ff.
-  tauto.
-Defined.
+  ffa.
+Qed.
 
 Ltac do_wrap_reconP :=
   repeat
@@ -401,7 +396,7 @@ Ltac do_rewrap_reconP :=
   | [H: reconstruct_evP (evc _ (?cc _)) _
      |- _] =>
     invc H;
-    repeat Auto.ff;
+    ffa;
     try rewrite fold_recev in *;
     do_wrap_reconP
   end.
@@ -416,28 +411,27 @@ Proof.
   - (* mt case *)
     invc H.
     ff.
-    tauto.
   - (* nn case *)
     invc H.
-    repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff.
+    repeat ff; try (unfold opt_bind in * ); repeat ff.
   
   - (* uu case *)
-    destruct f; ff.
+    destruct f; ffa.
     + (* COMP case *)
       invc H.
-      repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff.
+      repeat ff; try (unfold opt_bind in * ); repeat ff.
     + (* ENCR case *)
       
       invc H.
       unfold reconstruct_ev in *.
       unfold reconstruct_ev' in *.
-      unfold OptMonad_Coq.bind in *.
-      repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff.
+      unfold opt_bind in *.
+      repeat ff; try (unfold opt_bind in * ); repeat ff.
            
     + (* EXTD case *)
       invc H.
       ff.
-      repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff.
+      repeat ff; try (unfold opt_bind in * ); repeat ff.
       assert (e1 = et_fun e2 ).
       {
       eapply IHe1.
@@ -453,7 +447,7 @@ Proof.
       invc H.
       unfold reconstruct_ev in *.
       ff.
-      repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff.
+      repeat ff; try (unfold opt_bind in * ); repeat ff.
       assert (e1 = et_fun e2).
       { eapply IHe1.
         econstructor.
@@ -466,7 +460,7 @@ Proof.
   - (* ss case *)
     invc H.
     ff.
-    repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff.
+    repeat ff; try (unfold opt_bind in * ); repeat ff.
     assert (e1_1 = et_fun e1).
     {
       eapply IHe1_1.
@@ -492,7 +486,7 @@ Proof.
   split;
     destruct s; ff; try unfold mt_evc; ff;
       econstructor; ff.
-Defined.
+Qed.
 
 Ltac do_wfec_split :=
   match goal with
@@ -515,7 +509,7 @@ Lemma recon_encodeEv: forall bits et ec,
 Proof.
   intros.
   generalizeEverythingElse ec.
-  induction ec; intros.
+  induction ec; intros; ffa.
   -
     dd.
     do_inv_recon.
@@ -532,7 +526,7 @@ Proof.
     ff.
     invc H.
     repeat ff.
-    unfold OptMonad_Coq.bind in *.
+    unfold opt_bind in *.
     ff.
     find_apply_lem_hyp peel_n_spec; intuition; subst;
     find_apply_lem_hyp app_inv_head_iff; subst.
@@ -556,19 +550,13 @@ Proof.
     ff.
     unfold reconstruct_ev' in *.
     ff.
-    unfold OptMonad_Coq.bind in *.
+    unfold opt_bind in *.
     ff.
     rewrite fold_recev in *.
     unfold reconstruct_ev in *.
     unfold reconstruct_ev' in *.
-    destruct et; try solve_by_inversion.
-    ff.
-    unfold OptMonad_Coq.bind in *.
-    ff.
-    unfold OptMonad_Coq.bind in *.
-    ff.
-    unfold OptMonad_Coq.bind in *.
-    ff.
+    destruct et; try solve_by_inversion;
+    ffa using (unfold opt_bind in *).
 
 
   - (* kpc case *)
@@ -576,35 +564,14 @@ Proof.
 
     assert (exists et', et = uu p KEEP a et').
     {
-      destruct et; try solve_by_inversion.
-      +
-        invc H.
-        ff.
-      +
-        invc H.
-        ff.
-        repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff.
-      +
-        invc H.
-        ff.
-        repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff.
-        repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff.
-        repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff.
-        repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff.
-        eexists.
-        tauto.
-      +
-        invc H.
-        ff.
-        repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff.
+      destruct et; try solve_by_inversion;
+      invc H; ffa using (unfold opt_bind in *).
     }
     
     destruct_conjs.
     subst.
 
-    invc H.
-    ff.
-    repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff.
+    invc H; ffa using (unfold opt_bind in *).
     eapply IHec.
     econstructor.
     ff.
@@ -614,7 +581,7 @@ Proof.
     ff.
     invc H.
     ff.
-    unfold OptMonad_Coq.bind in *.
+    unfold opt_bind in *.
     ff.
     rewrite fold_recev in *.
     do_wrap_reconP.
@@ -656,7 +623,7 @@ Proof.
     invc H.
     dd.
     ff.
-    unfold OptMonad_Coq.bind in *.
+    unfold opt_bind in *.
     ff.
     do_inv_recon.
     assert (wf_ec (evc r1 H1)).
@@ -690,11 +657,11 @@ Proof.
     unfold reconstruct_ev' in *.
     destruct e0; try solve_by_inversion.
     ff.
-    unfold OptMonad_Coq.bind in *. ff.
-    unfold OptMonad_Coq.bind in *. ff.
+    unfold opt_bind in *. ff.
+    unfold opt_bind in *. ff.
     econstructor.
     ff.
-    unfold OptMonad_Coq.bind in *. ff.
+    unfold opt_bind in *. ff.
   - (* kpc case *)
     invc H.
     destruct e; try solve_by_inversion.
@@ -702,9 +669,9 @@ Proof.
       ff.
     +
       ff.
-      repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff.
+      repeat ff; try (unfold opt_bind in * ); repeat ff.
     +
-      repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff.
+      repeat ff; try (unfold opt_bind in * ); repeat ff.
       assert (wf_ec (evc r e)).
       {
         eapply IHec. econstructor.
@@ -713,14 +680,14 @@ Proof.
       ff.
     +
       ff.
-      repeat ff; try (unfold OptMonad_Coq.bind in * ); repeat ff.
+      repeat ff; try (unfold opt_bind in * ); repeat ff.
    
   -
     do_inv_recon.
     invc H.
     dd.
     ff.
-    unfold OptMonad_Coq.bind in *.
+    unfold opt_bind in *.
     
     ff.
 
@@ -761,7 +728,7 @@ Proof.
   invc H; invc H0.
   repeat jkjke'.
   ff.
-Defined.
+Qed.
 
 Ltac do_reconP_determ :=
   repeat 
@@ -790,7 +757,7 @@ Proof.
   intros.
   destruct e;
     ff; eauto.
-Defined.
+Qed.
 
 Ltac do_some_recons' :=
   match goal with
@@ -818,7 +785,7 @@ Lemma peel_n_none_spec : forall n ls,
 Proof.
   induction n; intuition; simpl in *;
   repeat ff; try lia;
-  unfold OptMonad_Coq.ret, OptMonad_Coq.bind in *; repeat ff; eauto.
+  unfold opt_ret, opt_bind in *; repeat ff; eauto.
   eapply IHn in Heqo.
   lia.
 Qed.
@@ -832,41 +799,11 @@ Proof.
   destruct e.
   generalizeEverythingElse e.
   induction e; intros.
-  -
-  try (repeat ff; eauto; tauto).
-    try
-      ( inv_wfec; ff;
-        do_some_recons');
-    try (
-        repeat do_rcih;
-        destruct_conjs;
-        repeat jkjke');
-    try ( inv_wfec; ff;
-          repeat do_rcih;
-          destruct_conjs;
-          repeat jkjke';
-          repeat ff; eauto).
+  - inv_wfec; ff.
 
   - (* nn case *)
-    repeat ff.
-    (unfold OptMonad_Coq.bind in * ).
-     repeat ff.
-     +
-     eauto.
-     +
-       inv_wfec.
-       ff.
-       destruct r; try solve_by_inversion.
-       ff.
-       unfold OptMonad_Coq.ret in *.
-       repeat ff.
-       
-
-     +
-       destruct r; try solve_by_inversion.
-       ff.
-       invc H.
-       ff.
+    ffa using (unfold opt_bind in * );
+    inv_wfec; destruct r.
 
   - (* uu case *)
 
@@ -877,7 +814,7 @@ Proof.
       inv_wfec.
       ff.
       repeat ff;
-    (unfold OptMonad_Coq.bind in * );
+    (unfold opt_bind in * );
     repeat ff; eauto.
 
       ++
@@ -899,7 +836,7 @@ Proof.
       inv_wfec.
       ff.
       repeat ff;
-    (unfold OptMonad_Coq.bind in * );
+    (unfold opt_bind in * );
     repeat ff; eauto.
       ++
          ff.
@@ -918,7 +855,7 @@ Proof.
     + (* EXTD case *)
       inv_wfec.
       ff.
-      unfold OptMonad_Coq.bind in * ;
+      unfold opt_bind in * ;
         repeat ff; eauto;
         subst; eauto;
         try do_inv_recon.
@@ -941,36 +878,34 @@ Proof.
       ++ assert (r = []). {
           eapply peel_n_none_spec in Heqo; lia. }
        subst; simpl in *; destruct n; simpl in *; try lia;
-       unfold OptMonad_Coq.ret in *; congruence.
+       unfold opt_ret in *; congruence.
     + (* KILL case *)
-      inv_wfec.
-      ff.
-      eauto.
+      inv_wfec; ff.
     + (* KEEP case *)
       inv_wfec.
       simpl in H1.
-      ff.
+      ffa using (unfold opt_bind in *).
 
-    repeat ff;
-    (unfold OptMonad_Coq.bind in * );
-    repeat ff; eauto.
     assert (exists ee, Some ee = reconstruct_ev' r e).
     { eapply IHe.
       econstructor.
       eassumption.
     }
-    destruct_conjs.
-    congruence.
-     - (* ss case *)
-       try (ff; eauto; tauto).
-       inv_wfec; ff.
-    do_rcih.
-    do_rcih.
-    destruct_conjs.
-    jkjke'.
-    jkjke'.
-    ff.
-    eauto.
+    ffa.
+  - (* ss case *)
+    assert (wf_ec (evc (firstn (et_size e1) r) e1)).
+    {
+      inv_wfec; econstructor;
+      simpl in *;
+      eapply firstn_length_le; lia.
+    }
+    assert (wf_ec (evc (skipn (et_size e1) r) e2)).
+    {
+      inv_wfec; econstructor;
+      simpl in *.
+      rewrite skipn_length; lia.
+    }
+    ffa using (try break_exists; unfold opt_bind in *).
 Qed.
 
 Lemma some_reconsP : forall e,
@@ -983,7 +918,7 @@ Proof.
   eexists.
   econstructor.
   eassumption.
-Defined.
+Qed.
 
 Ltac do_somerecons :=
   repeat
@@ -1059,7 +994,6 @@ Fixpoint cvm_evidence_denote (t:AnnoTerm) (p:Plc) (ec:EvidenceC) : EvidenceC :=
   end.
 
 Set Warnings "-notation-overridden".
-Require Import Cvm_Monad.
 Set Warnings "+notation-overridden".
 
 
@@ -1121,26 +1055,23 @@ Proof.
     try (
         repeat find_apply_hyp_hyp;
         lia).
-Defined.
+Qed.
   *)
    
   - (* asp case *)
     destruct a;
       try destruct a;
-      ff; try tauto;
+      ffa; try tauto;
       try (wrap_ccp_anno; ff).
   
   - (* at case *)
-  repeat ff;
-  unfold doRemote_session' in *;
-  repeat Auto.ff.
-  lia.
+    ffa using (cvm_monad_unfold; try lia).
 
   - (* lseq case *)
     wrap_ccp_anno.
 
-    destruct r; ff.
-    destruct u; ff.
+    destruct r; ffa.
+    destruct u; ffa.
 
 
 
@@ -1343,7 +1274,7 @@ Proof.
   subst.
   symmetry.
   eapply cvm_spans; eauto.
-Defined.
+Qed.
 
 
 (** * Propositional version of span_cvm *)
@@ -1378,8 +1309,8 @@ Proof.
   intros.
   inv_wfec.
   jkjke'.
-  eapply More_lists.firstn_append.
-Defined.
+  eapply firstn_append.
+Qed.
 
 Ltac do_wfec_firstn :=
   match goal with
@@ -1401,7 +1332,7 @@ Proof.
   inv_wfec.
   jkjke'.
   eapply More_lists.skipn_append.
-Defined.
+Qed.
 
 Ltac do_wfec_skipn :=
   match goal with
@@ -1452,64 +1383,33 @@ Proof.
   induction t1; intros.
   - (* asp case *)
     rewrite <- ccp_iff_cc in *;
-    simpl in *; monad_unfold; simpl in *.
-    repeat ff; try (econstructor; simpl in *; eauto; fail).
-    ff; econstructor; simpl in *; eauto.
-    rewrite app_length.
-    invc H; find_injection; find_rewrite.
-    rewrite EqClass.nat_eqb_eq in *; eauto.
+    simpl in *; cvm_monad_unfold; simpl in *.
+    ff; try (econstructor; simpl in *; eauto; fail).
+    econstructor.
+    rewrite app_length;
+    rewrite EqClass.nat_eqb_eq in *; subst;
+    ff.
     
   - (* at case *)
-    wrap_ccp;
-    unfold doRemote_session' in *;
-    monad_unfold;
-    repeat (break_match; subst; repeat find_rewrite;
-      repeat find_injection; intuition; eauto; try congruence);
-    find_eapply_lem_hyp check_cvm_policy_preserves_state;
-    simpl in *; repeat find_injection; eauto.
+    invc H0; repeat cvm_monad_unfold; ffa;
     eapply wf_ec_preserved_remote; eauto.
   - (* lseq case *)
     wrap_ccp.
     ff; eauto.
   - (* bseq case *)
-    wrap_ccp.
-
-    ff; eauto.
-
-    (* do_wfec_split. *)
-
-    find_apply_hyp_hyp.
-    find_apply_hyp_hyp.
-    econstructor.
-    dd.
-    inv_wfec.
-    repeat jkjke'.
-    eapply app_length.
+    wrap_ccp; ffa.
+    inv_wfec; econstructor;
+    rewrite app_length; ffa.
 
   - (* bpar case *)
-    wrap_ccp.
-    ff; eauto.
-
-    (* do_wfec_split. *)
-
-    find_apply_hyp_hyp.
-
-      inv_wfec;
-      ff;
-      econstructor;
-      dd;
-      repeat jkjke'.
-
-    erewrite app_length.
-
-    assert (wf_ec (evc r1 e1)).
+    wrap_ccp; ffa; cbn; ffa.
+    assert (wf_ec (evc r0 e1)).
     {
       rewrite <- Heqe1.
-      eapply wf_ec_preserved_par.
-      econstructor; eassumption.
+      eapply wf_ec_preserved_par; ffa.
     }
-
-    solve_by_inversion.
+    econstructor; inv_wfec; 
+    rewrite app_length; ffa.
 Qed.
 
 Ltac do_wfec_preserved :=
@@ -1552,17 +1452,15 @@ Proof.
     dd.
     assert (et_fun (cvm_evidence_denote annt1 p e) = aeval annt1 p (et_fun e)) by eauto.
     repeat jkjke.
-  -
-    dd.
+  - dd.
     jkjke.
     jkjke.
     destruct s; destruct s; destruct s0; eauto.
-  -
-    dd.
+  - dd.
     jkjke.
     jkjke.
     destruct s; destruct s; destruct s0; eauto.
-Defined.
+Qed.
 
 
 (** * Lemma:  CVM execution always succeeds *)
@@ -1574,15 +1472,13 @@ Proof.
   destruct (build_cvm t st) eqn:ee.
   subst.
   eauto.
-Defined.
+Qed.
 
 Ltac do_exists_some_cc t st :=
     assert_new_proof_by
       (exists st' res, build_cvm t st = (res, st') )
       ltac:(eapply exists_some_cc);
     destruct_conjs.
-
-
 
 (** * Helper Lemma stating: CVM traces are "cumulative" (or monotonic).  
       Traces are only ever extended--prefixes are maintained. *)
@@ -1604,7 +1500,7 @@ Proof.
     match goal with
     | A : ASP_Core |- _ => destruct A
     end; simpl in *; eauto.
-    * unfold nullEv in *; monad_unfold; ff; rewrite app_assoc; eauto.
+    * unfold nullEv in *; cvm_monad_unfold; ff; rewrite app_assoc; eauto.
     * ff. 
     * ff; rewrite app_assoc; eauto. 
     * simpl in *; 
@@ -1628,12 +1524,8 @@ Proof.
         try congruence; try rewrite app_assoc; eauto
         ).
   - (* at case *)
-    wrap_ccp.
-    repeat Auto.ff;
-    unfold doRemote_session' in *;
-    repeat Auto.ff; 
-    repeat rewrite app_assoc;
-    eauto.
+    invc H; invc H0;
+    repeat cvm_monad_unfold; ffa using (try rewrite app_assoc; eauto).
 
   - (* alseq case *)
     repeat ff.
@@ -1695,7 +1587,7 @@ Proof.
     +
       assert (errC c0 = resultC u).
       {
-        wrap_ccp_dohi. ff;
+        wrap_ccp_dohi; ff. 
         rewrite <- ccp_iff_cc in *.
         eapply cvm_errors_deterministic.
         eapply Heqp5.
@@ -1711,12 +1603,12 @@ Proof.
       }
     solve_by_inversion.
     +
-    assert (errC c1 = resultC u).
+    assert (errC c0 = resultC u).
       {
         wrap_ccp_dohi. ff.
         rewrite <- ccp_iff_cc in *.
-        eapply cvm_errors_deterministic.
-        eapply Heqp10. eauto.
+        eapply cvm_errors_deterministic;
+        ffa.
       }
     solve_by_inversion.
     +
@@ -1740,7 +1632,7 @@ Proof.
         wrap_ccp_dohi. ff.
         rewrite <- ccp_iff_cc in *.
         eapply cvm_errors_deterministic.
-        eapply Heqp6. eauto.
+        eapply Heqp8. eauto.
       }
     solve_by_inversion.
     +
@@ -1749,7 +1641,7 @@ Proof.
         wrap_ccp_dohi. ff.
         rewrite <- ccp_iff_cc in *.
         eapply cvm_errors_deterministic.
-        eapply Heqp6. eauto.
+        eapply Heqp8. eauto.
       }
     solve_by_inversion.
     +
@@ -1806,7 +1698,7 @@ Proof.
   eapply st_trace_cumul''; eauto.
   repeat rewrite app_nil_r.
   eauto.
-Defined.
+Qed.
 
 
 (** * Lemma stating: CVM traces are "cumulative" (or monotonic).  
@@ -1849,14 +1741,10 @@ Proof.
   +
     assert (c = c0).
     {
-      edestruct cvm_errors_deterministic.
-      invc H2.
-      invc H.
-      apply H1.
-      invc H2.
-      apply H0.
-      ff.
-
+      edestruct cvm_errors_deterministic; ffa.
+      invc H2; ffa.
+      invc H; ffa.
+      simpl in *; ffa.
     }
     subst.
     eassumption.
@@ -1894,10 +1782,8 @@ Ltac do_suffix name :=
          (_)
          {| st_ev := _; st_trace := ?tr'; st_evid := _; st_config := _ |}
          (*H2: well_formed_r ?t*) |- _] =>
-    assert_new_proof_as_by
-      (exists l, tr' = tr ++ l)
-      ltac:(eapply suffix_prop; [apply H'])
-             name
+    fail_if_in_hyps_type (exists l, tr' = tr ++ l);
+    assert (exists l, tr' = tr ++ l) as name by (eapply suffix_prop; [apply H'])
   end.
 
 (** * Structural Lemma:   Decomposes the CVM trace for the lseq phrase into the appending of the two traces
@@ -2032,7 +1918,7 @@ Proof.
 
   wrap_ccp_dohi.
   congruence.
-Defined.
+Qed.
 
 Ltac do_restl :=
   match goal with
@@ -2056,7 +1942,7 @@ Proof.
   induction t1; intros;
     repeat ff;
     repeat jkjke.
-Defined.
+Qed.
 
 Axiom cvm_evidence_correct_type : forall t p e e',
   cvm_evidence t p e = e' -> 
@@ -2090,7 +1976,7 @@ Lemma doRemote_session'_sc_immut : forall t st st' res p ev,
 Proof.
   unfold doRemote_session'.
   intuition.
-  monad_unfold.
+  cvm_monad_unfold.
   ff.
 Qed.
 
@@ -2098,24 +1984,7 @@ Lemma build_cvm_sc_immut : forall t st st' res,
     build_cvm t st = (res, st') ->
     st_config st = st_config st'.
 Proof.
-  induction t; simpl in *; intuition; eauto; ff.
-  - monad_unfold; destruct a; ff.
-  - repeat (monad_unfold; simpl in *; intuition; eauto; ff);
-    eapply doRemote_session'_sc_immut in Heqp0; eauto.
-  - monad_unfold; ff; eauto;
-    try eapply IHt1 in Heqp;
-    try eapply IHt2 in Heqp0;
-    find_rewrite; eauto.
-  - monad_unfold; ff; eauto;
-    try eapply IHt1 in Heqp;
-    try eapply IHt2 in Heqp4; 
-    simpl in *; eauto; 
-    find_rewrite; eauto.
-  - monad_unfold; ff; eauto;
-    try eapply IHt1 in Heqp;
-    try eapply IHt2 in Heqp4; 
-    simpl in *; eauto; 
-    find_rewrite; eauto.
+  induction t; simpl in *; intuition; eauto; ffa using cvm_monad_unfold.
 Qed.
 
 Lemma build_cvmP_sc_immut : forall t st st' res,
@@ -2143,18 +2012,14 @@ Proof.
   
   - (* aasp case *)
     rewrite <- ccp_iff_cc in *.
-
-    Auto.ff.
-    destruct a;
-      (try dd; eauto); try (repeat Auto.ff).
+    ffa.  
+    destruct a; (try dd; eauto); ffa using cvm_monad_unfold.
       
 
   - (* at case *)
     rewrite <- ccp_iff_cc in *.
     dd.
-    repeat Auto.ff.
-    unfold doRemote_session' in *; 
-    repeat Auto.ff.
+    repeat ffa.
 
   - (* alseq case *)
     do_suffix blah.
@@ -2187,7 +2052,7 @@ Proof.
     
   - (* abseq case *)
     simpl in *; repeat ff; subst;
-    wrap_ccp; repeat ff;
+    wrap_ccp; cbn in *; repeat ff; cbn in *;
     repeat match goal with
     | x : EvC |- _ =>
       destruct x
@@ -2211,23 +2076,20 @@ Proof.
 
    - (* abpar case *)
 
-    destruct s; repeat Auto.ff.
-
+    destruct s; repeat ffa;
+    wrap_ccp; cbn in *; repeat ff; cbn in *;
+    repeat (ffa; match goal with
+    | u : unit |- _ =>
+      destruct u
+    end).
     +
-      wrap_ccp.
-      Auto.ff.
-      find_apply_hyp_hyp.
-
-
       assert (e0 = eval t2 (session_plc ac') et).
       {
         eapply par_evidence_r; eauto.
       }
-      congruence.
+      ffa.
       
     +
-      wrap_ccp.
-      Auto.ff.
       find_apply_hyp_hyp.
 
       assert (e0 = eval t2 (session_plc ac') mt).
@@ -2235,13 +2097,10 @@ Proof.
         rewrite par_evidence_clear in *.
         eapply par_evidence_r; eauto.
       }
-      
       congruence.
     +
       wrap_ccp.
-      Auto.ff.
-      find_apply_hyp_hyp.
-
+      ffa.
       assert (e0 = eval t2 (session_plc ac') et).
       {
         eapply par_evidence_r; eauto.
@@ -2249,9 +2108,7 @@ Proof.
       congruence.
     +
       wrap_ccp.
-      Auto.ff.
-      find_apply_hyp_hyp.
-
+      ffa.
       assert (e0 = eval t2 (session_plc ac') mt).
       {
         rewrite par_evidence_clear in *.
@@ -2276,41 +2133,6 @@ Proof.
   eapply cvm_refines_lts_evidence'.
   eauto.
 Qed.
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 (** BEGIN Deprecated parallel annotated term stuff *)
@@ -2324,7 +2146,7 @@ Proof.
   econstructor.
   eexists.
   jkjke.
-Defined.
+Qed.
 
 (*
 Lemma anno_parPloc_redo: forall t pt loc loc',
@@ -2334,7 +2156,7 @@ Proof.
   intros.
   econstructor.
   jkjke.
-Defined.
+Qed.
  *)
 Lemma anno_parPloc_redo: forall t pt loc loc',
     anno_par_list' t loc = Some (loc', pt) ->
@@ -2343,7 +2165,7 @@ Proof.
   intros.
   econstructor.
   jkjke.
-Defined.
+Qed.
 
  *)
 

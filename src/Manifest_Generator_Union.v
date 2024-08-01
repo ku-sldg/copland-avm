@@ -2,18 +2,14 @@
       Uses the (as-yet-unverified) manifest environment union operation to merge manifests 
       generated for combined Attestation and Appraisal scenarios.        *)
 
-Require Import Term_Defs_Core Params_Admits Manifest Eqb_Evidence
-               Manifest_Generator_Helpers Term_Defs ErrorStMonad_Coq.
+Require Import Term_Defs_Core Manifest.
 
-Require Import EqClass Maps StructTactics.
+Require Import EqClass.
 
-Require Import EnvironmentM Manifest_Set JSON Stringifiable.
+Require Import EnvironmentM JSON Stringifiable.
 
-Require Import Manifest_Union Manifest_Generator Cvm_St Cvm_Impl.
+Require Import Manifest_Union Manifest_Generator.
 
-Require Import Manifest Manifest_Generator_Facts.
-
-Require Import Coq.Program.Tactics.
 Require Import List.
 Import ListNotations.
 
