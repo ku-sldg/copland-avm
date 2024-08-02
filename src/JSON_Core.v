@@ -1,4 +1,4 @@
-Require Import Term JSON List String  Stringifiable_Class_Admits ID_Type.
+Require Import Term JSON List String  Stringifiable_Class_Admits ID_Type Maps.
 
 Import ListNotations.
 
@@ -8,17 +8,17 @@ Definition ASP_PARAMS_to_JSON `{Jsonifiable ASP_ARGS} (t : ASP_PARAMS) : JSON :=
     match t with
     | asp_paramsC asp_id args plc targ_id => 
         JSON_Object [
-          ("ASP_ID", InJSON_String (to_string asp_id));
-          ("ASP_ARGS", InJSON_Object (to_JSON args));
-          ("ASP_PLC", InJSON_String (to_string plc));
-          ("ASP_TARG_ID", InJSON_String (to_string targ_id))
+          ("ASP_ID", JSON_String (to_string asp_id));
+          ("ASP_ARGS", (to_JSON args));
+          ("ASP_PLC", JSON_String (to_string plc));
+          ("ASP_TARG_ID", JSON_String (to_string targ_id))
         ]
     end.
 
 Definition ASP_PARAMS_from_JSON `{Jsonifiable ASP_ARGS} (js : JSON) : ResultT ASP_PARAMS string :=
-    match (JSON_get_string "ASP_ID" js), (JSON_get_Object "ASP_ARGS" js), 
-                        (JSON_get_string "ASP_PLC" js), (JSON_get_string "ASP_TARG_ID" js) with
-                  | resultC asp_id, resultC args, resultC plc, resultC targ_id => 
+    match (JSON_get_Object "ASP_ID" js), (JSON_get_Object "ASP_ARGS" js), 
+                        (JSON_get_Object "ASP_PLC" js), (JSON_get_Object "ASP_TARG_ID" js) with
+                  | resultC (JSON_String asp_id), resultC args, resultC (JSON_String plc), resultC (JSON_String targ_id) => 
                       match (from_string asp_id), (from_JSON args), (from_string plc), (from_string targ_id) with
                       | resultC asp_id, resultC args, resultC plc, resultC targ_id => resultC (asp_paramsC asp_id args plc targ_id)
                       | _, _, _, _ => errC "Parsing ASP_PARAMS not successful"
@@ -38,78 +38,283 @@ repeat find_injection;
 try rewrite canonical_jsonification in *; try congruence; try find_injection.
 Defined.
 
-Definition FWD_to_JSON (t : FWD) : JSON := 
-    match t with
-    | COMP => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "COMP")]
-    | ENCR => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "ENCR")]
-    | EXTD n => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "EXTD"); ("EXTD_N", InJSON_String (to_string n))]
-    | KILL => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "KILL")]
-    | KEEP => JSON_Object [("FWD_CONSTRUCTOR", InJSON_String "KEEP")]
+
+Definition type_string_constant : string := "CONSTRUCTOR".
+Definition body_string_constant : string := "BODY".
+
+Definition fwd_name_constant : string := "FWD".
+Definition comp_name_constant : string := "COMP".
+Definition encr_name_constant : string := "ENCR".
+Definition extd_name_constant : string := "EXTD".
+Definition kill_name_constant : string := "KILL".
+Definition keep_name_constant : string := "KEEP".
+
+Definition evidence_name_constant : string := "Evidence".
+Definition mt_name_constant : string := "mt".
+Definition nn_name_constant : string := "nn".
+Definition uu_name_constant : string := "uu".
+Definition ss_name_constant : string := "ss".
+
+Definition noArgConstructor_to_JSON (type_name : string) (cons_name : string) : JSON := 
+  JSON_Object [((type_name ++ "_" ++ type_string_constant), JSON_String cons_name)]. 
+
+Definition oneArgConstructor_to_JSON (type_name : string) (cons_name : string) (inner:JSON) : JSON := 
+    JSON_Object [
+      ((type_name ++ "_" ++ type_string_constant), JSON_String cons_name);
+      ((type_name ++ "_" ++ body_string_constant), inner)
+    ].
+
+Definition multiArgConstructor_to_JSON (type_name : string) (cons_name : string) (ls:list JSON) : JSON := 
+    JSON_Object [
+      ((type_name ++ "_" ++ type_string_constant), JSON_String cons_name);
+      ((type_name ++ "_" ++ body_string_constant), (JSON_Array ls))
+    ].
+
+Definition constructor_to_JSON_gen (type_name : string) (cons_name : string) (ls:list JSON) : JSON := 
+  match ls with 
+  | [] => noArgConstructor_to_JSON type_name cons_name 
+  | [v] => oneArgConstructor_to_JSON type_name cons_name v 
+  | _ => multiArgConstructor_to_JSON type_name cons_name ls
+  end.
+
+
+    (*
+Definition fourArgConstructor_to_JSON {A B C D:Type} `{Jsonifiable A} `{Jsonifiable B} `{Jsonifiable C} `{Jsonifiable D}
+(type_name : string) (cons_name : string) (innerA:A) (innerB:B) (innerC:C) (innerD:D) : JSON := 
+  JSON_Object [
+    ((type_name ++ "_" ++ type_string_constant), JSON_String cons_name);
+    ((type_name ++ "_" ++ body_string_constant), 
+          (JSON_Array [(to_JSON innerA); 
+                       (to_JSON innerB);
+                       (to_JSON innerC);
+                       (to_JSON innerD)]))
+  ].
+  *)
+
+  (*
+Definition multiArgConstructor_to_JSON (type_name : string) (cons_name : string) (jss:list JSON) : JSON := 
+  *)
+
+Global Instance Jsonifiable_nat : Jsonifiable nat.
+eapply Build_Jsonifiable with
+  (to_JSON := (fun s => 
+                JSON_String (to_string s)
+                ))
+  (from_JSON := (fun js => 
+                  match js with
+                  | JSON_String natString => 
+                    match (from_string natString) with 
+                    | resultC s => resultC s 
+                    | errC e => errC ("Error:  cannot interpret nat string in Jsonifiable_nat:  " ++ e)
+                    end
+                  | _ => errC "Invalid nat JSON (not a JSON String)"
+                  end)).
+intros.
+break_match;
+rewrite canonical_stringification in *; 
+try congruence.
+Defined.
+
+(*
+Definition oneArgConstructor_body_from_JSON (cons_name:string) (js:JSON) : ResultT JSON string := 
+  match (JSON_get_Object ((cons_name) ++ "_" ++ body_string_constant) js) with
+      | resultC js' => resultC js'
+      | _ => errC ("JSON Parsing " ++ cons_name ++ " ARGS not successful:  invalid JSON")
+  end.
+*)
+Definition constructor_body_from_JSON_gen (type_name:string) (js:JSON) : ResultT (list JSON) string := 
+  match (JSON_get_Object ((type_name) ++ "_" ++ body_string_constant) js) with
+  | resultC (JSON_Array ls) => resultC ls  (* 2+ constructor args case *)
+  | resultC jv => resultC [jv]             (* 1 arg case *)
+  | errC _ => resultC []                   (* 0 args case *)
+  end.
+
+Definition from_JSON_gen{A:Type} (type_name:string) (js:JSON) 
+  (cmap: (JSON -> ResultT A string) -> (MapC string (JSON -> (ResultT A string)))) (recf: JSON -> ResultT A string) : ResultT A string := 
+    match (JSON_get_Object (type_name ++ "_" ++ type_string_constant) js) with
+    | resultC (JSON_String cons_name) =>
+    match (map_get (cmap recf) cons_name) with 
+    | Some f => f js
+    | None => errC ("Invalid " ++ type_name ++ " JSON:  unrecognized constructor name: " ++ cons_name)
+    end
+    | resultC _ => errC ("Invalid " ++ type_name ++ " JSON:  no constructor name string")
+    | errC e => errC e
     end.
 
-Definition FWD_from_JSON (js : JSON) : ResultT FWD string :=
-    match (JSON_get_string "FWD_CONSTRUCTOR" js) with
-                  | resultC cons_name =>
-                      if (eqb cons_name "COMP") 
-                      then resultC COMP
-                      else if (eqb cons_name "ENCR") 
-                      then resultC ENCR
-                      else if (eqb cons_name "KILL") 
-                      then resultC KILL
-                      else if (eqb cons_name "KEEP") 
-                      then resultC KEEP
-                      else if (eqb cons_name "EXTD")
-                        then match (JSON_get_string "EXTD_N" js) with
-                             | resultC n_str => 
-                                match (from_string n_str) with
-                                | resultC n => resultC (EXTD n)
-                                | errC e => errC e
-                                end
-                             | _ => errC "Parsing EXTD not successful"
-                             end
-                      else errC "Invalid FWD JSON"
-                  | errC e => errC e
-                  end.
+Definition FWD_to_JSON (t : FWD) : JSON := 
+  match t with
+  | COMP =>   constructor_to_JSON_gen fwd_name_constant comp_name_constant []
+  | ENCR =>   constructor_to_JSON_gen fwd_name_constant encr_name_constant []
+  | EXTD n => constructor_to_JSON_gen fwd_name_constant extd_name_constant [(to_JSON n)]
+  | KILL =>   constructor_to_JSON_gen fwd_name_constant kill_name_constant []
+  | KEEP =>   constructor_to_JSON_gen fwd_name_constant keep_name_constant []
+  end.
+
+Definition noArgConstructor_from_JSON{A:Type} (cons_name:string) (res:A) : 
+              (string * (JSON -> (ResultT A string))) := (cons_name, (fun _ => (resultC res))).
+
+Definition multiArgConstructor_from_JSON{A:Type} (type_name:string) (cons_name:string) (f:(list JSON) -> ResultT A string) : 
+(string * (JSON -> (ResultT A string))) := 
+
+(cons_name, (fun js => 
+              match (constructor_body_from_JSON_gen type_name js) with 
+              | resultC args => f args 
+              | errC e => errC e 
+              end)).
+
+Definition extd_args_from_json (recf:JSON -> ResultT FWD string) (ls: list JSON) : ResultT FWD string := 
+  match ls with 
+  | [(JSON_String n_str)] => 
+      match (from_string n_str) with
+      | resultC n => resultC (EXTD n)
+      | errC e => errC e
+      end
+  | [_] => errC ("JSON Parsing " ++ extd_name_constant ++ " ARGS:  wrong JSON arg type (expected JSON_String)")
+  | _ =>   errC ("JSON Parsing " ++ extd_name_constant ++ " ARGS:  wrong number of JSON args (expected 1)")
+  end.
+
+Definition FWD_from_JSON_map (recf: JSON -> ResultT FWD string) : MapC string (JSON -> (ResultT FWD string)) := 
+  [(noArgConstructor_from_JSON comp_name_constant COMP);
+   (noArgConstructor_from_JSON encr_name_constant ENCR);
+   (noArgConstructor_from_JSON kill_name_constant KILL);
+   (noArgConstructor_from_JSON keep_name_constant KEEP);
+   (multiArgConstructor_from_JSON fwd_name_constant extd_name_constant (extd_args_from_json recf))].
+
+Fixpoint FWD_from_JSON (js : JSON) : ResultT FWD string :=
+   from_JSON_gen fwd_name_constant js FWD_from_JSON_map FWD_from_JSON.
+
+Ltac jsonifiable_hammer := 
+  repeat break_match; simpl in *; try congruence;
+  repeat find_injection; simpl in *; try congruence;
+  try rewrite canonical_stringification in *; try congruence; try find_injection; try auto.
 
 Global Instance Jsonifiable_FWD : Jsonifiable FWD.
 eapply Build_Jsonifiable with 
   (to_JSON := FWD_to_JSON)
   (from_JSON := FWD_from_JSON).
 intuition; simpl in *.
-unfold FWD_to_JSON; 
-unfold FWD_from_JSON;
-repeat break_match; simpl in *; try congruence;
-repeat find_injection; simpl in *; try congruence;
-rewrite canonical_stringification in *; try congruence; try find_injection.
+
+unfold FWD_to_JSON.
+unfold FWD_from_JSON.
+unfold from_JSON_gen in *.
+(*
+unfold noArgConstructor_to_JSON in *;
+unfold oneArgConstructor_to_JSON in *.
+*)
+repeat (jsonifiable_hammer;
+          unfold constructor_body_from_JSON_gen in *;
+        jsonifiable_hammer).
 Defined.
+
 
 Fixpoint Evidence_to_JSON (e : Evidence) : JSON := 
   match e with
-  | mt => JSON_Object [("EVIDENCE_CONSTRUCTOR", InJSON_String "mt")]
-  | nn n => 
+  | mt => constructor_to_JSON_gen evidence_name_constant mt_name_constant []
+  (* noArgConstructor_to_JSON evidence_name_constant mt_name_constant *)
+  (* JSON_Object [("EVIDENCE_CONSTRUCTOR", InJSON_String "mt")] *)
+  | nn n => constructor_to_JSON_gen evidence_name_constant nn_name_constant [(to_JSON n)]
+  (*
+    oneArgConstructor_to_JSON evidence_name_constant nn_name_constant n
+  *)
+(*
       JSON_Object [
-        ("EVIDENCE_CONSTRUCTOR", InJSON_String "nn"); 
-        ("N_ID", InJSON_String (to_string n))
+        ("EVIDENCE_CONSTRUCTOR", JSON_String "nn"); 
+        ("N_ID", JSON_String (to_string n))
       ]
-  | uu plc fwd ps e' => 
+*)
+  | uu plc fwd ps e' => constructor_to_JSON_gen evidence_name_constant uu_name_constant 
+                          [(JSON_String plc);
+                           (to_JSON fwd);
+                           (to_JSON ps);
+                           Evidence_to_JSON e'
+                          ]
+  (*
+  fourArgConstructor_to_JSON evidence_name_constant uu_name_constant 
+        plc fwd ps e'
+  *)
+(*
       JSON_Object [
-        ("EVIDENCE_CONSTRUCTOR", InJSON_String "uu");
-        ("PLC", InJSON_String (to_string plc));
-        ("FWD", InJSON_Object (to_JSON fwd));
-        ("ASP_PARAMS", InJSON_Object (to_JSON ps));
-        ("EVIDENCE", InJSON_Object (Evidence_to_JSON e'))
+        ("EVIDENCE_CONSTRUCTOR", JSON_String "uu");
+        ("PLC", JSON_String (to_string plc));
+        ("FWD", (to_JSON fwd));
+        ("ASP_PARAMS", (to_JSON ps));
+        ("EVIDENCE", (Evidence_to_JSON e'))
       ]
-  | ss e1 e2 =>
+    *)
+  | ss e1 e2 => constructor_to_JSON_gen evidence_name_constant ss_name_constant 
+                  [(Evidence_to_JSON e1);
+                   (Evidence_to_JSON e2)]
+  (*
       JSON_Object [
-        ("EVIDENCE_CONSTRUCTOR", InJSON_String "ss");
-        ("EVIDENCE1", InJSON_Object (Evidence_to_JSON e1));
-        ("EVIDENCE2", InJSON_Object (Evidence_to_JSON e2))
+        ("EVIDENCE_CONSTRUCTOR", JSON_String "ss");
+        ("EVIDENCE1", (Evidence_to_JSON e1));
+        ("EVIDENCE2", (Evidence_to_JSON e2))
       ]
+  *)
   end.
 
+
+Definition nn_args_from_json (ls: list JSON) : ResultT Evidence string := 
+  match ls with 
+  | [(JSON_String n_str)] => 
+      match (from_string n_str) with
+      | resultC n => resultC (nn n)
+      | errC e => errC e
+      end
+  | [_] => errC ("JSON Parsing " ++ nn_name_constant ++ " ARGS:  wrong JSON arg type (expected JSON_String)")
+  | _ =>   errC ("JSON Parsing " ++ nn_name_constant ++ " ARGS:  wrong number of JSON args (expected 1)")
+  end.
+
+Definition uu_args_from_json (recf:JSON -> ResultT Evidence string) (ls: list JSON) : ResultT Evidence string := 
+  match ls with 
+  | [(JSON_String plc);
+      fwd;
+      asp_par; 
+      ev' ] => 
+      match (from_string plc), (from_JSON fwd), (from_JSON asp_par), (recf ev') with
+      | resultC plcres, resultC fwdres, resultC parres, resultC evres => resultC (uu plcres fwdres parres evres)
+      | _, _, _, _ => errC "other"
+      end
+  | [_] => errC ("JSON Parsing " ++ nn_name_constant ++ " ARGS:  wrong JSON arg type (expected JSON_String)")
+  | _ =>   errC ("JSON Parsing " ++ nn_name_constant ++ " ARGS:  wrong number of JSON args (expected 1)")
+  end.
+
+Definition ss_args_from_json (recf:JSON -> ResultT Evidence string) (ls: list JSON) : ResultT Evidence string := 
+  match ls with 
+  | [ ev1; 
+      ev2 ] => 
+      match (recf ev1), (recf ev2) with
+      | resultC evres1, resultC evres2 => resultC (ss evres1 evres2)
+      | _, _ => errC "other"
+      end
+  | [_] => errC ("JSON Parsing " ++ nn_name_constant ++ " ARGS:  wrong JSON arg type (expected JSON_String)")
+  | _ =>   errC ("JSON Parsing " ++ nn_name_constant ++ " ARGS:  wrong number of JSON args (expected 1)")
+  end.
+
+
+Definition Evidence_from_JSON_map (recf: JSON -> ResultT Evidence string) : MapC string (JSON -> (ResultT Evidence string)) := 
+  [(noArgConstructor_from_JSON mt_name_constant mt);
+   (multiArgConstructor_from_JSON evidence_name_constant nn_name_constant nn_args_from_json);
+   (multiArgConstructor_from_JSON evidence_name_constant uu_name_constant (uu_args_from_json recf)) (*;
+   (multiArgConstructor_from_JSON evidence_name_constant ss_name_constant (ss_args_from_json recf)) *)
+   ].
+
+   (*
+
+   Fixpoint FWD_from_JSON (js : JSON) : ResultT FWD string :=
+   from_JSON_gen fwd_name_constant js FWD_from_JSON_map FWD_from_JSON.
+   *)
+
+
 Fixpoint Evidence_from_JSON (js : JSON) : ResultT Evidence string :=
-  match (JSON_get_string "EVIDENCE_CONSTRUCTOR" js) with
-  | resultC cons_name =>
+  from_JSON_gen evidence_name_constant js Evidence_from_JSON_map Evidence_from_JSON.
+
+
+(*
+
+Fixpoint Evidence_from_JSON (js : JSON) : ResultT Evidence string :=
+  match (JSON_get_Object "EVIDENCE_CONSTRUCTOR" js) with
+  | resultC (JSON_String cons_name) =>
       if (eqb cons_name "mt") 
       then resultC mt
       else if (eqb cons_name "nn") 
@@ -125,10 +330,10 @@ Fixpoint Evidence_from_JSON (js : JSON) : ResultT Evidence string :=
       then  match js with
             | JSON_Object [
                 ev_cons; 
-                (_,InJSON_String plc); 
-                (_, InJSON_Object fwd); 
-                (_, InJSON_Object asp_par); 
-                (_, InJSON_Object ev')
+                (_, JSON_String plc); 
+                (_, fwd); 
+                (_, asp_par); 
+                (_, ev')
               ] =>
                 match (from_string plc), (from_JSON fwd), (from_JSON asp_par), (Evidence_from_JSON ev') with
                 | resultC plc, resultC fwd, resultC ps, resultC e =>
@@ -141,8 +346,8 @@ Fixpoint Evidence_from_JSON (js : JSON) : ResultT Evidence string :=
       then  match js with
             | JSON_Object [
                 ev_cons; 
-                (_,InJSON_Object ev1); 
-                (_,InJSON_Object ev2)
+                (_, ev1); 
+                (_, ev2)
               ] =>
                 match (Evidence_from_JSON ev1), (Evidence_from_JSON ev2) with
                 | resultC e1, resultC e2 => resultC (ss e1 e2)
@@ -153,16 +358,23 @@ Fixpoint Evidence_from_JSON (js : JSON) : ResultT Evidence string :=
       else errC "Invalid Evidence JSON constructor name"
   | errC e => errC e
   end.
+*)
 
 Global Instance Jsonifiable_Evidence `{Jsonifiable ASP_ARGS} `{Jsonifiable FWD} : Jsonifiable Evidence.
 eapply Build_Jsonifiable with (to_JSON := Evidence_to_JSON) (from_JSON := Evidence_from_JSON).
 unfold Evidence_from_JSON;
 unfold Evidence_to_JSON;
 unfold ASP_PARAMS_from_JSON;
-unfold ASP_PARAMS_to_JSON;
+unfold ASP_PARAMS_to_JSON.
 induction a; simpl in *; intuition.
-- rewrite canonical_stringification; eauto.
-- rewrite IHa.
+-
+  cbn.
+  jsonifiable_hammer.
+- cbn.
+  jsonifiable_hammer.
+  unfold from_JSON_gen in *.
+  repeat jsonifiable_hammer.
+  rewrite IHa.
   clear IHa.
   destruct f; simpl in *;
   try rewrite canonical_stringification; eauto;
