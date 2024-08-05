@@ -22,16 +22,16 @@ with InnerJSON :=
 
 *)
 
-Definition sum_js_array (ls:list JSON) (f:JSON -> nat) : nat := 
-    fold_right (fun js acc => (acc + (f js))) 0 ls.
+Definition depth_js_array (ls:list JSON) (f:JSON -> nat) : nat := 
+    fold_right (fun js acc => max acc (f js)) 0 ls.
 
-Definition sum_js_object (m:MapC string JSON) (f:JSON -> nat) : nat := 
-    fold_right (fun pr acc => (acc + (f (snd pr)))) 0 m.
+Definition depth_js_map (m: MapC string JSON) (f:JSON -> nat) : nat := 
+    fold_right (fun pr acc => max acc (f (snd pr))) 0 m.
 
 Fixpoint JSON_depth (js:JSON) : nat := 
     match js with
     | JSON_Boolean _ => 1 
     | JSON_String _ => 1 
-    | JSON_Array ls => 1 + (sum_js_array ls JSON_depth)
-    | JSON_Object m => 1 + (sum_js_object m JSON_depth)
+    | JSON_Array ls => 1 + depth_js_array ls JSON_depth
+    | JSON_Object m => 1 + depth_js_map m JSON_depth
     end.
