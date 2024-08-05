@@ -12,7 +12,8 @@ Open Scope string_scope.
 Ltac jsonifiable_hammer := 
   repeat break_match; simpl in *; try congruence;
   repeat find_injection; simpl in *; try congruence;
-  try rewrite canonical_stringification in *; try congruence; try find_injection; try auto.
+  repeat rewrite canonical_stringification in *; try congruence; try find_injection; try auto;
+  repeat rewrite canonical_jsonification in *; try congruence; try find_injection; try auto.
 
 Theorem fold_right_spec : forall {A B : Type} (f : B -> A -> A) (ls : list B) (init : A) P,
   (forall x, P x -> forall y, P (f y x)) ->
@@ -95,9 +96,7 @@ eapply Build_Jsonifiable with
 unfold ASP_PARAMS_to_JSON; 
 unfold ASP_PARAMS_from_JSON;
 intuition; simpl in *;
-repeat break_match; simpl in *; try congruence;
-repeat find_injection;
-try rewrite canonical_jsonification in *; try congruence; try find_injection.
+jsonifiable_hammer.
 Defined.
 
 
@@ -329,7 +328,7 @@ jsonifiable_hammer.
 Defined.
 
 
-Fixpoint Evidence_to_JSON (e : Evidence) : JSON := 
+Fixpoint Evidence_to_JSON `{Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP_PARAMS} (e : Evidence) : JSON := 
   match e with
   | mt => 
       constructor_to_JSON evidence_name_constant mt_name_constant []
@@ -400,43 +399,14 @@ Definition uu_args_from_json {top_js} (recf: forall y : JSON, JSON_depth y < JSO
     rewrite Heq; simpl in *; subst; eauto. 
 Defined.
 
-Definition Evidence_from_JSON_map {top_js} (recf: forall y : JSON, JSON_depth y < JSON_depth top_js -> ResultT Evidence string) {HLT : forall ls, exists s', JSON_get_Object s' top_js = resultC (JSON_Array ls)} : MapC string (JSON -> (ResultT Evidence string)) :=
-  [(mt_name_constant, 
-    constructor_from_JSON evidence_name_constant (fun _ => resultC mt));
-   (nn_name_constant, 
-    constructor_from_JSON evidence_name_constant nn_args_from_json);
-   (uu_name_constant, 
-    fun top_js => @constructor_from_JSON_rec _ top_js evidence_name_constant (
-      fun ls => uu_args_from_json recf ls (HLT (proj1_sig ls))));
-   (ss_name_constant,
-    fun top_js =>
-    constructor_from_JSON_rec evidence_name_constant (
-      fun ls => ss_args_from_json recf ls (HLT (proj1_sig ls))))].
-
 Lemma json_depth_order_wf : well_founded (fun x y => lt (JSON_depth x) (JSON_depth y)).
 Proof.
   eapply Wf_nat.well_founded_ltof.
 Defined.
 
-Definition from_JSON_gen_rec {A:Type} (type_name:string) 
-  (cmap: (MapC string (JSON -> (ResultT A string)))) 
-    : JSON -> ResultT A string := 
-  fun js => 
-    match (JSON_get_Object (type_name ++ "_" ++ type_string_constant) js) as m' return m' = (JSON_get_Object (type_name ++ "_" ++ type_string_constant) js) -> ResultT A string with
-    | resultC (JSON_String cons_name) =>
-      match (map_get cmap cons_name) with 
-      | Some f => fun Heq => f js
-      | None => fun _ => errC ("Invalid " ++ type_name ++ " JSON:  unrecognized constructor name: " ++ cons_name)
-      end
-    | resultC _ => fun _ => errC ("Invalid " ++ type_name ++ " JSON:  no constructor name string")
-    | errC e => fun _ => errC e
-    end eq_refl.
 
 
-Program Fixpoint Evidence_from_JSON' (js : JSON) {measure (JSON_depth js)} : ResultT Evidence string :=
-  from_JSON_gen evidence_name_constant (@Evidence_from_JSON_map js Evidence_from_JSON') js.
-
-Definition Evidence_from_JSON (js : JSON) : ResultT Evidence string.
+Definition Evidence_from_JSON `{Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP_PARAMS} (js : JSON) : ResultT Evidence string.
 generalize js.
 refine (Fix json_depth_order_wf (fun _ => ResultT Evidence string)
   (
@@ -452,13 +422,12 @@ refine (Fix json_depth_order_wf (fun _ => ResultT Evidence string)
       else if (eqb cons_name nn_name_constant) 
       then 
           match (JSON_get_Object (type_name ++ "_" ++ body_string_constant) js) as m' return m' = (JSON_get_Object (type_name ++ "_" ++ body_string_constant) js) -> ResultT Evidence string with
-          | resultC (JSON_Array [(JSON_String n_str)]) => 
+          | resultC n_js => 
               fun _ =>
-              match (from_string n_str) with
+              match (from_JSON n_js) with
               | resultC n => resultC (nn n)
               | errC e => errC e
               end
-          | resultC _ =>  fun _ => errC ("JSON Parsing " ++ nn_name_constant ++ " ARGS:  wrong number of JSON args (expected 1)")
           | errC e => fun _ => errC e
           end eq_refl
       else if (eqb cons_name uu_name_constant) 
@@ -505,6 +474,37 @@ refine (Fix json_depth_order_wf (fun _ => ResultT Evidence string)
   eapply json_all_array_elements_smaller; eauto;
   simpl in *; eauto.
 Defined.
+
+(* Definition Evidence_from_JSON_map {top_js} (recf: forall y : JSON, JSON_depth y < JSON_depth top_js -> ResultT Evidence string) {HLT : forall ls, exists s', JSON_get_Object s' top_js = resultC (JSON_Array ls)} : MapC string (JSON -> (ResultT Evidence string)) :=
+  [(mt_name_constant, 
+    constructor_from_JSON evidence_name_constant (fun _ => resultC mt));
+   (nn_name_constant, 
+    constructor_from_JSON evidence_name_constant nn_args_from_json);
+   (uu_name_constant, 
+    fun top_js => @constructor_from_JSON_rec _ top_js evidence_name_constant (
+      fun ls => uu_args_from_json recf ls (HLT (proj1_sig ls))));
+   (ss_name_constant,
+    fun top_js =>
+    constructor_from_JSON_rec evidence_name_constant (
+      fun ls => ss_args_from_json recf ls (HLT (proj1_sig ls))))].
+
+Definition from_JSON_gen_rec {A:Type} (type_name:string) 
+  (cmap: (MapC string (JSON -> (ResultT A string)))) 
+    : JSON -> ResultT A string := 
+  fun js => 
+    match (JSON_get_Object (type_name ++ "_" ++ type_string_constant) js) as m' return m' = (JSON_get_Object (type_name ++ "_" ++ type_string_constant) js) -> ResultT A string with
+    | resultC (JSON_String cons_name) =>
+      match (map_get cmap cons_name) with 
+      | Some f => fun Heq => f js
+      | None => fun _ => errC ("Invalid " ++ type_name ++ " JSON:  unrecognized constructor name: " ++ cons_name)
+      end
+    | resultC _ => fun _ => errC ("Invalid " ++ type_name ++ " JSON:  no constructor name string")
+    | errC e => fun _ => errC e
+    end eq_refl.
+
+
+Program Fixpoint Evidence_from_JSON' (js : JSON) {measure (JSON_depth js)} : ResultT Evidence string :=
+  from_JSON_gen evidence_name_constant (@Evidence_from_JSON_map js Evidence_from_JSON') js. *)
 
 (*
 Definition Evidence_from_JSON' (js : JSON) (m:MapC string (JSON -> (ResultT Evidence string))) : ResultT Evidence string :=
@@ -582,7 +582,9 @@ Fixpoint Evidence_from_JSON (js : JSON) : ResultT Evidence string :=
   | errC e => errC e
   end.
 *)
-Theorem Evidence_from_JSON_eq : forall js,
+Require Import Coq.Program.Equality.
+
+Theorem Evidence_from_JSON_eq : forall `{Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP_PARAMS} (js : JSON),
   Evidence_from_JSON js = 
     let type_name := evidence_name_constant in
     match (JSON_get_Object (type_name ++ "_" ++ type_string_constant) js) with
@@ -592,13 +594,12 @@ Theorem Evidence_from_JSON_eq : forall js,
       else if (eqb cons_name nn_name_constant) 
       then 
           match (JSON_get_Object (type_name ++ "_" ++ body_string_constant) js) as m' return m' = (JSON_get_Object (type_name ++ "_" ++ body_string_constant) js) -> ResultT Evidence string with
-          | resultC (JSON_Array [(JSON_String n_str)]) => 
+          | resultC n_js => 
               fun _ =>
-              match (from_string n_str) with
+              match (from_JSON n_js) with
               | resultC n => resultC (nn n)
               | errC e => errC e
               end
-          | resultC _ =>  fun _ => errC ("JSON Parsing " ++ nn_name_constant ++ " ARGS:  wrong number of JSON args (expected 1)")
           | errC e => fun _ => errC e
           end eq_refl
       else if (eqb cons_name uu_name_constant) 
@@ -633,6 +634,15 @@ Theorem Evidence_from_JSON_eq : forall js,
     | errC e => errC e
     end.
 Proof.
+  intros; apply (Fix_eq json_depth_order_wf (fun _ => ResultT Evidence string)); intros; intuition.
+  (* setoid_rewrite H.
+
+
+  From Coq Require Import ssreflect.
+  rewrite p /test; move: eq_refl; case: {2 3}(eq_dec y y) => //.
+by rewrite eq_dec_correct'.
+
+
   intros; apply (Fix_eq json_depth_order_wf (fun _ => ResultT Evidence string)); intros; intuition; repeat (jsonifiable_hammer;
   try match goal with
     | [ |- context [ match ?X as _ return _ with _ => _ end ] ] =>
@@ -641,11 +651,27 @@ Proof.
     try rewrite String.eqb_eq in *; subst; 
     try rewrite String.eqb_neq in *; subst; try congruence;
     eauto).
-  - destruct x; simpl in *; intuition.
-    jsonifiable_hammer.
-    set (x := json_get_object_result_always_smaller _ _ _).
-    repeat jsonifiable_hammer.
-    destruct (JSON_get_Object (String (Ascii.Ascii true false true false false false true false) (String (Ascii.Ascii false true true false true true true false) (String (Ascii.Ascii true false false true false true true false) (String (Ascii.Ascii false false true false false true true false) (String (Ascii.Ascii true false true false false true true false) (String (Ascii.Ascii false true true true false true true false) (String (Ascii.Ascii true true false false false true true false) (String (Ascii.Ascii true false true false false true true false) (String (Ascii.Ascii true true true true true false true false) body_string_constant))))))))) x).
+  - destruct x eqn:?; simpl in *; jsonifiable_hammer;
+    destruct m eqn:?; simpl in *; jsonifiable_hammer.
+    * rewrite String.eqb_eq in Heqb1.
+      rewrite Heqb1 in *.
+      simpl in *.
+      destruct (map_get m0 (String (Ascii.Ascii true false true false false false true false) (String (Ascii.Ascii false true true false true true true false) (String (Ascii.Ascii true false false true false true true false) (String (Ascii.Ascii false false true false false true true false) (String (Ascii.Ascii true false true false false true true false) (String (Ascii.Ascii false true true true false true true false) (String (Ascii.Ascii true true false false false true true false) (String (Ascii.Ascii true false true false false true true false) (String (Ascii.Ascii true true true true true false true false) body_string_constant)))))))))).
+      (* subst.
+      simpl in *. *)
+      destruct m0 eqn:?; simpl in *; jsonifiable_hammer.
+      subst.
+    destruct s eqn:?; simpl in *; jsonifiable_hammer.
+    * break_if.
+
+    dependent destruction x.
+  
+  dependent destruction (JSON_get_Object (String (Ascii.Ascii true false true false false false true false) (String (Ascii.Ascii false true true false true true true false) (String (Ascii.Ascii true false false true false true true false) (String (Ascii.Ascii false false true false false true true false) (String (Ascii.Ascii true false true false false true true false) (String (Ascii.Ascii false true true true false true true false) (String (Ascii.Ascii true true false false false true true false) (String (Ascii.Ascii true false true false false true true false) (String (Ascii.Ascii true true true true true false true false) body_string_constant))))))))) x).
+    dependent destruction X.
+    *  repeat dependent rewrite x.
+    rewrite <- x.
+    subst.
+    find_rewrite.
     destruct x; simpl in *.
   match goal with
     | [ |- context [ match ?X as _ return _ with _ => _ end ] ] =>
@@ -655,41 +681,14 @@ Proof.
 
   try match goal with
     | [ |- context[match ?E with left _ => _ | right _ => _ end] ] => destruct E
-  end; simpl; f_equal; auto.
-Qed.
-  
-  if le_lt_dec 2 (length ls)
-    then let lss := split ls in
-      merge le (mergeSort le (fst lss)) (mergeSort le (snd lss))
-    else ls.
+  end; simpl; f_equal; auto. *)
+Admitted.
 
-Global Instance Jsonifiable_Evidence `{Jsonifiable ASP_ARGS} `{Jsonifiable FWD} : Jsonifiable Evidence.
+Global Instance Jsonifiable_Evidence `{Jsonifiable ASP_ARGS, Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP_PARAMS} : Jsonifiable Evidence.
 eapply Build_Jsonifiable with (to_JSON := Evidence_to_JSON) (from_JSON := Evidence_from_JSON).
-unfold Evidence_from_JSON;
-unfold Evidence_to_JSON;
-unfold ASP_PARAMS_from_JSON;
-unfold ASP_PARAMS_to_JSON.
-induction a; simpl in *; intuition; jsonifiable_hammer.
-eapply Fix_eq.
-Search Fix.
--
-  cbn.
-  jsonifiable_hammer.
-- cbn.
-  jsonifiable_hammer.
-  unfold from_JSON_gen in *.
-  repeat jsonifiable_hammer.
-  rewrite IHa.
-  clear IHa.
-  destruct f; simpl in *;
-  try rewrite canonical_stringification; eauto;
-  cbv;
-  destruct a; simpl in *; intuition;
-  induction a1; simpl in *; intuition; eauto; 
-  repeat break_match; simpl in *; intuition;
-  try rewrite canonical_stringification in *; eauto;
-  repeat find_injection; try congruence.
-- rewrite IHa1, IHa2; eauto. 
+induction a; rewrite Evidence_from_JSON_eq; simpl in *;
+jsonifiable_hammer; repeat rewrite canonical_jsonification in *;
+jsonifiable_hammer.
 Defined.
 
 Global Instance Stringifiable_SP : Stringifiable SP := {
