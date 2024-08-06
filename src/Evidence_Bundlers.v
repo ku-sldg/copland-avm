@@ -6,7 +6,7 @@
     Extracted code could be simplified to only the raw evidence operation. *)
 Require Import List String.
 
-Require Import ConcreteEvidence IO_Stubs ResultT ErrorStringConstants EqClass.
+Require Import ConcreteEvidence ResultT ErrorStringConstants EqClass.
 
 Import ListNotations.
 

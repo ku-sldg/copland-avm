@@ -1,4 +1,4 @@
-Require Import JSON Term_Defs String Attestation_Session.
+Require Import JSON Term_Defs Attestation_Session.
 Require Export Interface_Strings_Vars.
 
 

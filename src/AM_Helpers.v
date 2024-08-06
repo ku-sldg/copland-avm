@@ -1,16 +1,9 @@
 (*  Helper definitions for AM Client and Server implementations.  *)
 
-Require Import Term Cvm_Run Attestation_Session ID_Type EqClass.
+Require Import Term ID_Type.
 
-Require Import Impl_appraisal Appraisal_IO_Stubs IO_Stubs AM_Monad ErrorStMonad_Coq.
+Require Import Interface.
 
-Require Import Interface Maps Auto StructTactics.
-
-Require Import Disclose ErrorStringConstants.
-
-Require Import Coq.Program.Tactics.
-
-Require Import List.
 Import ListNotations.
 
 

@@ -1,8 +1,8 @@
 (*  Implementation of a top-level Client (initiator) thread for Client AMs in
       end-to-end Copland Attestation + Appraisal protocols.  *)
-Require Import String List.
+Require Import String.
 
-Require Import Term Cvm_Run EqClass Cvm_St.
+Require Import Term EqClass.
 
 Require Import Impl_appraisal Appraisal_IO_Stubs IO_Stubs AM_Monad ErrorStMonad_Coq.
 
@@ -12,9 +12,7 @@ Require Import Disclose ErrorStringConstants Manifest_Admits.
 
 Require Import AM_Helpers Auto.
 
-Require Import StructTactics Coq.Program.Tactics.
-
-Import ListNotations.
+Import ListNotations ErrNotation.
 
 (*
 Set Nested Proofs Allowed.
@@ -54,11 +52,11 @@ Definition am_sendReq_app (uuid : UUID) (att_sess : Attestation_Session) (t:Term
 
 Definition gen_nonce_if_none_local (initEv:option EvC) : AM EvC :=
   match initEv with
-      | Some (evc ebits et) => ret mt_evc
-      | None =>
-        let nonce_bits := gen_nonce_bits in
-        nid <- am_newNonce nonce_bits ;;
-        ret (evc [nonce_bits] (nn nid))
+  | Some (evc ebits et) => err_ret mt_evc
+  | None =>
+    let nonce_bits := gen_nonce_bits in
+    nid <- am_newNonce nonce_bits ;;
+    err_ret (evc [nonce_bits] (nn nid))
   end.
 
 (* Definition gen_authEvC_if_some (ot:option Term) (uuid : UUID) (myPlc:Plc) (init_evc:EvC) : AM EvC :=
@@ -94,7 +92,7 @@ Definition run_demo_client_AM (t:Term) (top_plc:Plc) (att_plc:Plc) (et:Evidence)
 
 Definition check_et_length (et:Evidence) (ls:RawEv) : AM unit := 
 if (eqb (et_size et) (length ls)) 
-then ret tt 
+then err_ret tt 
 else (am_failm (am_dispatch_error (Runtime errStr_et_size))).
 
 Definition am_appraise (att_sess : Attestation_Session) (t:Term) (toPlc:Plc) (init_et:Evidence) (cvm_ev:RawEv) (apprUUID : UUID) (local_appraisal:bool) : AM AppResultC :=
@@ -109,13 +107,13 @@ Definition am_appraise (att_sess : Attestation_Session) (t:Term) (toPlc:Plc) (in
     | false => 
       match run_appraisal_client att_sess t toPlc init_et cvm_ev apprUUID with
       | errC msg => am_failm (am_dispatch_error (Runtime msg))
-      | resultC res => ret res
+      | resultC res => err_ret res
       end
     end) ;;
   (*
   let expected_et := eval t toPlc init_et in
   app_res <- gen_appraise_AM expected_et cvm_ev ;; *)
-  ret (app_res).
+  err_ret (app_res).
 
 
 
@@ -247,8 +245,6 @@ Definition check_disclosure_policy (t:Term) (p:Plc) (e:Evidence) : AM unit :=
   ret (am_appev app_res).
 *)
 
-Require Import Auto.
-
 Fixpoint nonce_ids_et' (et:Evidence) (ls:list N_ID) : list N_ID :=
   match et with
   | mt => ls
@@ -276,13 +272,8 @@ Lemma no_nonces'' : forall et ls,
   no_nonces_pred et -> 
   nonce_ids_et' et ls = ls.
 Proof.
-  induction et; intros; ff.
-  -
-    invc H.
-    eauto.
-  -
-  invc H.
-  erewrite IHet1; eauto.
+  induction et; intros; ffa.
+  erewrite IHet1; ff.
 Qed.
 
 
@@ -290,40 +281,10 @@ Lemma no_nonces_eval : forall t p et,
 no_nonces_pred et -> 
 no_nonces_pred (eval t p et).
 Proof.
-  induction t; intros; ff.
-  -
-    destruct a; ff.
-    +
-      econstructor.
-    +
-      destruct f; ff.
-      ++
-      econstructor.
-      destruct s; ff.
-      econstructor.
-      ++
-        econstructor.
-        destruct s; ff.
-        econstructor.
-      ++
-      econstructor.
-      destruct s; ff.
-      econstructor.
-      ++
-      econstructor.
-      ++
-      destruct s; ff.
-      econstructor.
-    +
-      econstructor; eauto.
-    +
-    econstructor; eauto.
-    +
-    econstructor; eauto.
-  -
-    eauto.
-  -
-    eauto.
+  induction t; intros; ffa.
+  - destruct a; ffa using (econstructor).
+    simpl in *; ff; try econstructor; simpl in *;
+    destruct s; ff; econstructor.
   -
     destruct s. 
     destruct s; destruct s0; ff.
@@ -373,15 +334,12 @@ no_nonces_pred et ->
 nonce_ids_et' (eval t p et) ls = ls.
 Proof.
   induction t; intros; try (ff; congruence).
-  -
-    ff.
+  - ff.
     unfold eval_asp in *.
     destruct a;
     ff; subst; try destruct s; ff;
     try eapply no_nonces''; eauto.
 
-  -
-    eauto.
   -
     ff.
 
@@ -451,11 +409,8 @@ Lemma nid_in_gen : forall et ls nid ls',
   In nid (nonce_ids_et' et ls) -> 
   In nid ls \/ In nid (nonce_ids_et' et ls').
 Proof.
-  induction et; intros; ff.
-  -
-    door; ff.
-  -
-    eauto.
+  induction et; intros; ffa;
+  simpl in *.
   -
     edestruct IHet2.
     eassumption.
@@ -472,10 +427,10 @@ Proof.
 Qed.
 
 Lemma nonce_ids_ss_decom : forall nid et1 et2 ls,
-In nid (nonce_ids_et' et2 (nonce_ids_et' et1 ls)) -> 
-In nid ls \/
-In nid (nonce_ids_et' et1 []) \/ 
-In nid (nonce_ids_et' et2 []).
+  In nid (nonce_ids_et' et2 (nonce_ids_et' et1 ls)) -> 
+  In nid ls \/
+  In nid (nonce_ids_et' et1 []) \/ 
+  In nid (nonce_ids_et' et2 []).
 Proof.
   intros.
   eapply nid_in_gen with (ls' := []) in H.
@@ -486,18 +441,12 @@ Proof.
 Qed.
 
 Lemma nonce_ids_et_cumul_nil: forall nid et ls,
-In nid (nonce_ids_et' et []) ->
-In nid (nonce_ids_et' et ls).
+  In nid (nonce_ids_et' et []) ->
+  In nid (nonce_ids_et' et ls).
 Proof.
-  induction et; intros; ff.
+  induction et; intros; ffa using intuition.
   -
-    door; try solve_by_inversion.
-  -
-    eauto.
-  -
-    edestruct nonce_ids_ss_decom; eauto.
-
-    solve_by_inversion.
+    edestruct nonce_ids_ss_decom; ffa.
 
     door.
 
@@ -507,29 +456,15 @@ Proof.
 
     eapply nonce_ids_et_cumul; eauto.
     eauto.
-    Qed.
+Qed.
 
 Lemma nid_nonce_ids_eval : forall t p et ls nid,
   In nid (nonce_ids_et' (eval t p et) ls) -> 
   In nid ls \/ In nid (nonce_ids_et' et []).
 Proof.
   induction t; intros; ff.
-  -
-    destruct a; ff.
-    + 
-    eapply nid_in_gen; auto.
-    +
-      destruct f; ff; 
-      destruct s; ff;
-      eapply nid_in_gen; auto.
-    +
-    eapply nid_in_gen; auto.
-    +
-    eapply nid_in_gen; auto.
-    +
-    eapply nid_in_gen; auto.
-  -
-    eauto.
+  - destruct a; ffa; try eapply nid_in_gen; auto;
+    destruct s; ffa; eapply nonce_ids_et_cumul; eauto.
   -
     assert (
       In nid ls \/

@@ -2,11 +2,11 @@
       Namely, that the compiler outputs a collection of manifests that support 
       appraisal execution over the input evidence.  *)
 
-Require Import Manifest Attestation_Session Session_Config_Compiler Manifest_Generator ID_Type
-  Maps Term_Defs List Cvm_St Cvm_Impl ErrorStMonad_Coq StructTactics 
-  Cvm_Monad EqClass Manifest_Admits Auto.
-Require Import Manifest_Generator_Facts Eqb_Evidence ManCompSoundness.
-Require Import Manifest_Generator_Union.
+Require Import Manifest Attestation_Session
+  Maps Term_Defs 
+  Cvm_Monad AM_Monad Auto EqClass.
+Require Import Manifest_Generator_Facts ManCompSoundness
+  Appraisal_Defs Manifest_Set Session_Config_Compiler AM_Manager Manifest_Generator Manifest_Generator_Union.
 
 Require Import Coq.Program.Tactics Lia.
 
@@ -103,11 +103,10 @@ Lemma peel_n_am_immut : forall n ls st x st',
 peel_n_am n ls st = (x, st') -> 
 st = st'.
 Proof.
-induction n; intuition; repeat ff; eauto.
+  induction n; intuition; ffa using cvm_monad_unfold.
 Qed.
 Local Hint Resolve peel_n_am_immut : core.
 
-Require Import Appraisal_Defs.
 
 
 Lemma firstn_works{A:Type}: forall (ls:list A) n,
@@ -126,29 +125,28 @@ st = st'.
 Proof.
 intros.
 unfold decrypt_bs_to_rawev' in *.
-monad_unfold.
+cvm_monad_unfold.
 repeat (ff; try unfold am_falim in * ; eauto).
 Qed.
 Local Hint Resolve decrypt_amst_immut : core.
 
 Lemma peel_bs_am_works : forall ls st st' r,
-length ls > 0 -> 
-peel_bs_am ls st = (r,st') ->
-exists res, 
-r = resultC res.
+  length ls > 0 -> 
+  peel_bs_am ls st = (r,st') ->
+  exists res, 
+  r = resultC res.
 Proof.
-intros.
-destruct ls; ff.
-eexists. eauto.
+  intros.
+  destruct ls; ffa using cvm_monad_unfold.
 Qed.
 
 Lemma peel_n_am_works : forall n ls st st' r,
-length ls >= n -> 
-peel_n_am n ls st = (r,st') ->
-exists res, 
-r = resultC res.
+  length ls >= n -> 
+  peel_n_am n ls st = (r,st') ->
+  exists res, 
+  r = resultC res.
 Proof.
-  induction n; intuition; repeat ff; eauto.
+  induction n; intuition; ffa using cvm_monad_unfold.
   assert (length l >= n) by lia. eauto.
 Qed.
 
@@ -156,16 +154,15 @@ Lemma peel_n_am_res_spec : forall n ls st st' r0 r1,
   peel_n_am n ls st = (resultC (r0, r1),st') ->
   ls = r0 ++ r1 /\ length r0 = n.
 Proof.
-  induction n; intuition; repeat ff; eauto;
-  find_eapply_hyp_hyp; intuition; ff.
+  induction n; intuition; ffa using cvm_monad_unfold.
 Qed.
 
 Lemma peel_n_am_err_spec : forall n ls st st' s,
   peel_n_am n ls st = (errC s,st') ->
   length ls < n.
 Proof.
-  induction n; intuition; repeat ff; eauto; subst; 
-  try find_eapply_hyp_hyp; lia.
+  induction n; intuition; ffa using cvm_monad_unfold;
+  try lia. 
 Qed.
 
 Lemma has_nonces_cumul : forall et ls m,
@@ -175,8 +172,6 @@ Proof.
   induction et; intros; ff.
   unfold has_nonces in *.
   ff.
-  intros.
-  ff.
 Qed.
 
 Lemma has_nonces_cumul' : forall et ls ls' m,
@@ -184,26 +179,10 @@ has_nonces (nonce_ids_et' et ls) m ->
 has_nonces ls' m ->
 has_nonces (nonce_ids_et' et ls') m.
 Proof.
-  induction et; intros; ff.
-  -
-  unfold has_nonces in *.
-  ff.
-  intros.
-  ff.
-  -
-  unfold has_nonces in *.
-  ff.
-  intros.
-  ff.
-  eauto.
-  -
-    assert (has_nonces (nonce_ids_et' et1 ls) m).
-    eapply has_nonces_cumul.
-    eassumption.
-
-    eapply IHet2.
-    eassumption.
-    eapply has_nonces_cumul; eauto.
+  induction et; intros; ffa using (intuition; unfold has_nonces in *).
+  - assert (has_nonces (nonce_ids_et' et1 ls) m) by (
+      eapply has_nonces_cumul; eauto).
+    ffa.
 Qed.
 
 Lemma peel_bs_am_st_immut : forall ls st r st',
@@ -220,7 +199,9 @@ Lemma checkNonce'_st_immut : forall n b st r st',
   checkNonce' n b st = (r, st') -> 
   st = st'.
 Proof.
-  unfold checkNonce'; repeat (ff; intuition; eauto).
+  intuition.
+  unfold checkNonce' in *; 
+  ffa using am_monad_unfold.
 Qed.
 Local Hint Resolve checkNonce'_st_immut : core.
 
@@ -228,7 +209,9 @@ Lemma check_asp_EXTD' : forall a p r1 r2 st st' r,
   Appraisal_Defs.check_asp_EXTD' a p r1 r2 st = (r, st') -> 
   st = st'.
 Proof.
-  unfold check_asp_EXTD'; repeat (ff; intuition; eauto).
+  intuition;
+  unfold check_asp_EXTD' in *; 
+  ffa using am_monad_unfold.
 Qed.
 Local Hint Resolve check_asp_EXTD' : core.
 
@@ -240,9 +223,9 @@ Proof.
   generalizeEverythingElse et. 
   induction et; intros; simpl in *; intuition; eauto.
   - ff.
-  - repeat ff; simpl in *; eauto;
-    eapply peel_bs_am_st_immut in Heqp; subst; eauto. 
-  - repeat (break_match; try unfold res_bind, ";;", ret, am_failm in *; 
+  - ffa using cvm_monad_unfold.
+    all: find_apply_lem_hyp peel_bs_am_st_immut; subst; eauto.
+  - repeat (break_match; am_monad_unfold;
       simpl in *; subst; intuition; eauto; 
       try find_injection; try congruence); eauto;
     repeat match goal with
@@ -259,8 +242,7 @@ Proof.
         assert (a = a') by eauto; subst; eauto;
         clear H
     end.
-  - repeat ff;
-    repeat find_eapply_hyp_hyp; subst; eauto.
+  - ffa using cvm_monad_unfold.
 Qed.
 
 Theorem well_formed_am_config_impl_executable_app : forall et sc ls,
@@ -278,26 +260,19 @@ Proof.
   generalizeEverythingElse et.
   induction et; intros; intuition; subst; eauto.
   - (* mt case *)
-    ff; eauto.
+    ffa using am_monad_unfold.
   - (* nn case *)
-    ff.
-    destruct r.
+    ffa using am_monad_unfold.
     + eapply peel_bs_am_contra; try eauto; try lia.
-    + repeat ff; intuition; eauto.
-      unfold has_nonces, Appraisal_Defs.checkNonce' in *.
-      repeat ff; intuition; eauto.
+    + unfold has_nonces, checkNonce' in *.
+      ffa using am_monad_unfold. 
       assert (exists bs, map_get (am_nonceMap st) n = Some bs) by eauto.
         assert (st = a0).
         {
           intuition; eauto.
-          unfold am_failm in *.
-          ff.
-          eapply peel_bs_am_immut; eauto.
         }
-        subst.
-        unfold am_failm in *.
-        ff.
-        find_rewrite; break_exists; congruence.
+        break_exists.
+        ffa.
   - (* uu case *)
 
     simpl in *.
@@ -306,7 +281,7 @@ Proof.
     try (left; repeat eexists; eauto; congruence);
     simpl in *; destruct_conjs; 
     simpl in *; intuition; eauto;
-    monad_unfold;
+    am_monad_unfold;
     simpl in *; repeat break_let;
     assert (st = a) by eauto; subst;
     assert (exists res, r = resultC res) by (
@@ -316,8 +291,8 @@ Proof.
     break_match; intuition; eauto; repeat find_injection;
     repeat find_rewrite; eauto;
     unfold decrypt_bs_to_rawev' in *;
-    monad_unfold; repeat ff; eauto;
-    unfold am_failm, check_et_size, check_asp_EXTD in *;
+    am_monad_unfold; ffa using am_monad_unfold.
+    all: unfold am_failm, check_et_size, check_asp_EXTD in *;
     repeat find_injection; repeat find_rewrite; eauto; try congruence;
     try (find_apply_lem_hyp decrypt_prim_runtime; subst; eauto; congruence); eauto.
     * unfold session_config_subset in *; intuition;
@@ -357,19 +332,12 @@ Proof.
       eassumption.
     }
 
-    (* 
-    firstn_length_le:
-  forall [A : Type] (l : list A) [n : nat],
-  n <= length l -> length (firstn n l) = n
-    
-    *)
-
     eapply firstn_works.
     lia.
 
     destruct_conjs.
 
-    monad_unfold.
+    cvm_monad_unfold.
     break_let.
     rewrite H10 in *.
 
@@ -384,8 +352,8 @@ Proof.
     eassumption.
 
     2: {
-      unfold session_config_subset in *;
-      destruct_conjs; repeat ff; intuition; eauto.
+      unfold session_config_subset in *; destruct_conjs;
+      intuition.
     }
 
     2: {
@@ -425,13 +393,8 @@ Proof.
 
       find_rewrite.
       ff.
-      
-      left.
-      eauto.
-
 
       destruct_conjs.
-
 
       invc H10.
 
@@ -449,18 +412,15 @@ Proof.
 
       find_rewrite.
 
-      ff.
-
-      right. eauto.
+      ffa.
 
       destruct_conjs.
 
-      monad_unfold.
+      cvm_monad_unfold.
 
       break_let.
       right.
       ff.
-      eauto.
 Qed.
 
 Fixpoint manifest_support_term_app (m : Manifest) (e : Evidence) : Prop :=
@@ -529,8 +489,6 @@ Fixpoint att_sess_supports_term_app (ats : Attestation_Session) (e : Evidence)
       att_sess_supports_term_app ats e2
   end.
 
-Require Import AM_Manager.
-
 Theorem manifest_support_sc_impl_sc_exec: forall t absMan ats,
   well_formed_manifest absMan ->
   manifest_support_term_app absMan t ->
@@ -587,10 +545,6 @@ Proof.
   intros.
   generalizeEverythingElse et.
   induction et; intros; ff; eauto.
-  - (* uu case *)
-    subst; ff; eauto.
-  - (* ss case *)
-    ff; eauto.
 Qed.
 
 Lemma manifest_generator_app_cumul' : forall et m1 cm m1',
@@ -765,7 +719,7 @@ Proof.
   simpl in *;
   unfold manifest_generator_plcEvidence_list in *; simpl in *;
   ff;
-  unfold res_bind in *; repeat ff; eauto.
+  unfold res_bind in *; ffa using am_monad_unfold.
 Qed.
 Global Hint Resolve mangen_plcTerm_list_spec : core.
 
@@ -825,11 +779,6 @@ Proof.
   ff.
   pose proof (mangen_plcEvidence_list_spec _ _ _ _ _ _ H Heqr0 H0).
   destruct (map_get (env_list_union l) p) eqn:E; ff.
-  - pose proof (H2 _ eq_refl).
-    clear H2 H4.
-    unfold env_list_union in E.
-    pose proof (manifest_part_of_fold_ind_impl_fold _ _ _ _ H3 H1 e_empty); break_exists; intuition; repeat find_rewrite; 
-    try find_injection; eapply manifest_subset_trans; eauto.
   - unfold env_list_union in *.
     pose proof (manifest_part_of_fold_ind_impl_fold _ _ _ _ H3 H1 e_empty); break_exists; intuition; congruence.
 Qed.
@@ -934,7 +883,7 @@ Proof.
   intros.
   unfold manifest_generator_app,
     res_bind, manifest_update_env_res in *;
-  repeat ff.
+  ffa using am_monad_unfold.
   unfold add_compat_map_manifest; 
   destruct m; simpl in *; eauto.
 Qed.
@@ -1160,7 +1109,7 @@ Proof.
   intros.
   unfold end_to_end_mangen,
     res_bind, manifest_update_env_res in *;
-  repeat ff.
+  ffa using cvm_monad_unfold.
   assert (forall k v', 
     map_get (Maps.map_map (fun m : Manifest =>
     add_compat_map_manifest m cm) 
@@ -1215,7 +1164,7 @@ Proof.
     pose proof (mangen_app_same_comp_map _ _ _ _ E _ _ H2).
     unfold manifest_generator_app,
       res_bind, manifest_update_env_res in *;
-    repeat ff.
+    ffa using cvm_monad_unfold.
     eapply man_gen_old_always_supports_app in Heqr0.
     find_rewrite.
     eapply manifest_supports_term_sub_app; eauto.

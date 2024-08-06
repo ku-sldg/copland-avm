@@ -14,7 +14,7 @@ University of California.  See license.txt for details. *)
 Require Import List.
 Import List.ListNotations.
 Open Scope list_scope.
-Require Import PeanoNat Lia Preamble Term_Defs Term.
+Require Import PeanoNat Lia Preamble Term.
 
 (** * States *)
 
@@ -321,7 +321,7 @@ Proof.
   induction H; auto.
   eapply lstar_tran; eauto.
   eapply lstar_silent_tran; eauto.
-Defined.
+Qed.
 
 
 Lemma lstar_stbsl:
@@ -333,7 +333,7 @@ Proof.
   induction H; auto.
   eapply lstar_tran; eauto.
   eapply lstar_silent_tran; eauto.
-Defined.
+Qed.
 
 Lemma lstar_stbsr:
   forall st0 st1 j e tr,
@@ -344,7 +344,7 @@ Proof.
   induction H; auto.
   eapply lstar_tran; eauto.
   eapply lstar_silent_tran; eauto.
-Defined.
+Qed.
 
 Lemma lstar_stbparl:
   forall st0 st1 st2 j tr,
@@ -355,7 +355,7 @@ Proof.
   induction H; auto.
   eapply lstar_tran; eauto.
   eapply lstar_silent_tran; eauto.
-Defined.
+Qed.
 
 Lemma lstar_stbparr:
   forall st0 st1 st2 j tr,
@@ -366,7 +366,7 @@ Proof.
   induction H; auto.
   eapply lstar_tran; eauto.
   eapply lstar_silent_tran; eauto.
-Defined.
+Qed.
 
 Lemma star_stbp:
   forall st0 st1 st2 st3 j,

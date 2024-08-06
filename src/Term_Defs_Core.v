@@ -630,8 +630,8 @@ Notation "@ p [ ph ]" := (attc p ph) (in custom core_copland_entry at level 50).
 
 Open Scope core_cop_ent_scope.
 Definition test2 := <<core>{ __ -> {} }>.
-Example test2ex : test2 = (lseqc (aspc CPYC) (aspc NULLC)). reflexivity. Defined.
-Example test3 : <<core>{ CLR -> {}}> = (lseqc (aspc CLEAR) (aspc NULLC)). reflexivity. Defined.
+Example test2ex : test2 = (lseqc (aspc CPYC) (aspc NULLC)). reflexivity. Qed.
+Example test3 : <<core>{ CLR -> {}}> = (lseqc (aspc CLEAR) (aspc NULLC)). reflexivity. Qed.
 
 (** Raw Evidence representaiton:  a list of binary (BS) values. *)
 Definition RawEv := list BS.

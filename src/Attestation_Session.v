@@ -1,5 +1,5 @@
 Require Import Maps Term_Defs_Core Manifest.
-Require Import String List ResultT.
+Require Import String List.
 Require Import JSON Stringifiable.
 Import ListNotations.
 

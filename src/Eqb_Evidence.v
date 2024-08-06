@@ -228,7 +228,7 @@ Proof.
       eapply H; eauto.
     +
       eauto.
-Defined.
+Qed.
 
 Lemma eqb_eq_list {A:Type}:
   forall x y f,
@@ -307,7 +307,7 @@ Proof.
       eapply H.
       reflexivity.
       eapply list_beq_refl; eauto.
-Defined.
+Qed.
 
 Definition eqb_fwd (fwd1 fwd2 : FWD) : bool :=
   match fwd1, fwd2 with
@@ -398,10 +398,10 @@ Proof.
       repeat rewrite Bool.andb_true_iff.
       split;
         eauto.
-Defined.
+Qed.
 *)
 
-Lemma eqb_plc_refl : forall p0, Eqb_Evidence.eqb_plc p0 p0 = true.
+Lemma eqb_plc_refl : forall p0, eqb_plc p0 p0 = true.
 Proof.
   intros; apply eqb_eq_plc; auto.
 Qed.  

@@ -14,9 +14,7 @@ modify it under the terms of the BSD License as published by the
 University of California.  See license.txt for details. *)
 
 
-Require Import Preamble More_lists Term_Defs Term LTS Event_system Term_system Trace Defs.
-
-Require Import StructTactics.
+Require Export Preamble More_lists Term LTS Event_system Term_system Trace Defs.
 
 Require Import List.
 Import List.ListNotations.
@@ -87,7 +85,7 @@ Proof.
           try find_apply_lem_hyp shuffle_length;
           repeat find_apply_hyp_hyp;
           lia).
-Defined.
+Qed.
 
 Ltac inv_traceS :=
   match goal with
@@ -106,7 +104,7 @@ Proof.
       repeat find_apply_hyp_hyp;
       repeat find_apply_lem_hyp shuffle_length;
       try lia.
-Defined.
+Qed.
 
 Lemma step_silent_tr:
   forall st st' tr,

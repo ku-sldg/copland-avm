@@ -2,7 +2,7 @@
     Also included:  manifest and environment subset definitions and associated properties. 
     TODO: consider renaming some of these lemmas (e.g. fafafa, afafafa, ...) *)
 
-Require Import Maps Term_Defs_Core Manifest Eqb_Evidence EqClass Manifest_Generator.
+Require Import Maps Manifest EqClass Manifest_Generator Manifest_Union.
 
 Require Import Auto StructTactics.
 
@@ -46,7 +46,7 @@ Qed.
 Global Hint Resolve manifest_subset_trans : core.
 
 Lemma manifest_subset_union_l : forall m1 m2,
-  manifest_subset m1 (Manifest_Union.manifest_union_asps m1 m2).
+  manifest_subset m1 (manifest_union_asps m1 m2).
 Proof.
   induction m1; destruct m2; simpl in *; intuition; eauto;
   unfold manifest_subset; simpl in *; intuition; eauto;
@@ -55,7 +55,7 @@ Qed.
 Global Hint Resolve manifest_subset_union_l : core.
 
 Lemma manifest_subset_union_r : forall m1 m2,
-  manifest_subset m2 (Manifest_Union.manifest_union_asps m1 m2).
+  manifest_subset m2 (manifest_union_asps m1 m2).
 Proof.
   induction m1; destruct m2; simpl in *; intuition; eauto;
   unfold manifest_subset; simpl in *; intuition; eauto;
@@ -212,7 +212,7 @@ Proof.
 Qed. *)
 
 Lemma manifest_union_asps_empty_r : forall m,
-  Manifest_Union.manifest_union_asps m empty_Manifest = m.
+  manifest_union_asps m empty_Manifest = m.
 Proof.
   destruct m; reflexivity.
 Qed.

@@ -1,10 +1,10 @@
 (* Definition of the manifest_set datatype, its operations, and related properties.  
     This datatype is used for "collection" manifest fields, and should act like a 
     traditional mathematical set (e.g. cumulative, non-duplicating, ...) *)
-Require Import List String.
+Require Import List.
 
-Require Import ID_Type Term_Defs_Core Maps 
-  Term_Defs Manifest_Admits EqClass ErrorStMonad_Coq ErrorStringConstants JSON.
+Require Import ID_Type 
+  JSON.
 
 Import ListNotations.
 

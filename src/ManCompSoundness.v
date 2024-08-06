@@ -2,15 +2,13 @@
       Namely, that the compiler outputs a collection of manifests that support 
       execution of the input protocols.  *)
 
-Require Import Manifest Manifest_Generator ID_Type
-  Maps Term_Defs List Cvm_St Cvm_Impl ErrorStMonad_Coq StructTactics 
-  Cvm_Monad EqClass Manifest_Admits Auto.
-Require Import Manifest_Generator_Facts Eqb_Evidence Attestation_Session.
+Require Import Manifest Manifest_Generator
+  Maps Term_Defs Cvm_Impl 
+  Cvm_Monad Defs AM_Manager EqClass.
+Require Import Manifest_Generator_Facts Attestation_Session.
 
-Require Import Manifest_Generator_Helpers Session_Config_Compiler.
-Require Import Helpers_CvmSemantics.
-
-Require Import Coq.Program.Tactics.
+Require Import Manifest_Generator_Helpers Session_Config_Compiler ManCompSoundness_Helpers Manifest_Generator_Union.
+Require Import Helpers_CvmSemantics Coq.Program.Tactics StructTactics.
 
 Import ListNotations.
 
@@ -109,7 +107,7 @@ Fixpoint session_config_supports_exec (t : Term) (sc : Session_Config) : Prop :=
   end.
 
 Ltac unfolds :=
-  (* repeat monad_unfold; *)
+  (* repeat cvm_monad_unfold; *)
   repeat unfold manifest_generator, generate_ASP_dispatcher, 
     aspid_manifest_update,
     sig_params, hsh_params, enc_params in *;
@@ -130,7 +128,6 @@ Proof.
 Qed.
 
 Global Hint Resolve man_gen_aspid_in : core.
-Require Import Manifest_Generator_Union Cvm_Run AM_Manager.
 
 
       (* 
@@ -205,17 +202,6 @@ Ltac kill_map_none :=
     let H''' := fresh "H'" in
     eapply H4 in H1 as H';
     destruct H'; find_rewrite; congruence
-  (* | H1 : In_set ?x ?l,
-    H3 : map_get (_ ?l' ?fn) ?x = None,
-    H4 : forall _ : _, In_set _ ?l -> _
-      |- _ => 
-    let H' := fresh "H'" in
-    let H'' := fresh "H'" in
-    let H''' := fresh "H'" in
-    eapply H4 in H1 as H';
-    assert (H'' : fn x = true) by ff;
-    pose proof (filter_resolver _ _ _ H' H'') as H''';
-    destruct H'''; find_rewrite; congruence *)
   end.
 
 Lemma never_change_sess_conf : forall t st res st',
@@ -223,12 +209,8 @@ Lemma never_change_sess_conf : forall t st res st',
   st_config st = st_config st'.
 Proof.
   intros;
-  destruct st.
-  simpl; eauto. 
-  edestruct sc_immut; eauto.
-  unfold execErr.
-  rewrite H.
-  simpl; eauto.
+  destruct st;
+  find_apply_lem_hyp sc_immut_better; simpl in *; ff.
 Qed.
 
 Local Hint Resolve never_change_sess_conf : core.
@@ -246,11 +228,11 @@ Theorem well_formed_am_config_impl_executable : forall t sc,
 Proof.
   induction t; simpl in *; intuition; eauto.
   - destruct a;
-    try (simpl in *; monad_unfold; eauto; fail); (* NULL, CPY *)
+    try (simpl in *; cvm_monad_unfold; eauto; fail); (* NULL, CPY *)
     subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
       try break_match;
-      try monad_unfold;
+      try cvm_monad_unfold;
       try break_match
       try find_injection;
       try find_contradiction;
@@ -290,7 +272,7 @@ Proof.
     repeat (
       unfold remote_session, doRemote, doRemote_session', do_remote, check_cvm_policy in *;
       try break_match;
-      try monad_unfold;
+      try cvm_monad_unfold;
       try break_match
       try find_injection;
       try find_contradiction;
@@ -303,14 +285,14 @@ Proof.
       repeat find_apply_hyp_hyp; repeat find_rewrite; congruence.
   - break_exists; intuition.
     eapply IHt1 in H1; intuition; eauto;
-    monad_unfold; break_exists; find_rewrite; eauto.
+    cvm_monad_unfold; break_exists; find_rewrite; eauto.
     find_eapply_lem_hyp sc_immut_better; find_rewrite.
     eapply IHt2 in H; intuition; eauto; break_exists;
     repeat find_rewrite; eauto.
   - subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
       try break_match;
-      try monad_unfold;
+      try cvm_monad_unfold;
       try break_match
       try find_injection;
       try find_contradiction;
@@ -367,7 +349,7 @@ Proof.
   - subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
       try break_match;
-      try monad_unfold;
+      try cvm_monad_unfold;
       try break_match
       try find_injection;
       try find_contradiction;
@@ -555,7 +537,6 @@ Proof.
     find_apply_hyp_hyp; break_exists; congruence.
   - break_exists; intuition; eauto.
 Qed.
-Require Import ManCompSoundness_Helpers.
 
 Lemma places_decomp: forall t1 t2 p tp,
 In p (places' t2 (places' t1 [])) -> 
@@ -568,7 +549,8 @@ assert (In p (places' t2 []) \/ In p (places' t1 [])).
 {
   assert (In p (places' t1 []) \/ (~ In p (places' t1 []))).
   { 
-      apply In_dec_tplc.
+
+    apply In_dec_tplc.
   }
   door.
   +
@@ -734,20 +716,16 @@ Proof.
 Qed.
 
 Lemma asdf_easy : forall t1 t2 tp absMan e,
-map_get (manifest_generator' tp t2 
-            (manifest_generator' tp t1 e)) tp = Some absMan -> 
-            
-exists m', (* p', 
-In p' (places tp t1) /\
-*)
-map_get (manifest_generator' tp t1 e) tp = Some m' /\ 
-manifest_subset m' absMan.
+  map_get (manifest_generator' tp t2 
+              (manifest_generator' tp t1 e)) tp = Some absMan -> 
+              
+  exists m', (* p', 
+  In p' (places tp t1) /\
+  *)
+  map_get (manifest_generator' tp t1 e) tp = Some m' /\ 
+  manifest_subset m' absMan.
 Proof.
-  intros.
-  eapply asdf.
-  eassumption.
-  ff.
-  eauto.
+  intros; eapply asdf; ff.
 Qed.
 
 Lemma manifest_supports_term_sub : forall m1 m2 t,
@@ -757,8 +735,7 @@ Lemma manifest_supports_term_sub : forall m1 m2 t,
 Proof.
   intros.
   generalizeEverythingElse t.
-  induction t; simpl in *; intuition; eauto;
-  repeat ff. 
+  induction t; simpl in *; intuition; eauto; ff. 
 Qed.
 
 Lemma env_subset_man_subset : forall e1 e2 p m m',
@@ -812,7 +789,7 @@ Proof.
   ff.
   assert (tp = p).
   {
-    eapply eqb_eq_plc; eauto.
+    rewrite String.eqb_eq in *; ff.
   }
   subst.
 
@@ -844,8 +821,7 @@ Proof.
     destruct H0.
     ++
       subst.
-      rewrite eqb_plc_refl in *.
-      solve_by_inversion.
+      rewrite String.eqb_refl in *; ff.
     ++
       assert ((In t' (place_terms t1 tp p)) \/ (In t' (place_terms t2 tp p))).
       {
@@ -876,7 +852,7 @@ Proof.
             unfold places in *.
             invc H2.
             +++++
-              rewrite eqb_plc_refl in Heqb.
+              rewrite String.eqb_refl in Heqb.
               solve_by_inversion.
             +++++
               eauto.
@@ -898,7 +874,7 @@ Proof.
           eauto.
           invc H2.
             +++++
-              rewrite eqb_plc_refl in *.
+              rewrite String.eqb_refl in *.
               solve_by_inversion.
             +++++
               eassumption.
@@ -915,7 +891,7 @@ Proof.
   ff.
   assert (tp = p).
   {
-    eapply eqb_eq_plc; eauto.
+    eapply String.eqb_eq; eauto.
   }
   subst.
 
@@ -943,7 +919,7 @@ Proof.
     destruct H0.
     ++
       subst.
-      rewrite eqb_plc_refl in *.
+      rewrite String.eqb_refl in *.
       solve_by_inversion.
     ++
       assert ((In t' (place_terms t1 tp p)) \/ (In t' (place_terms t2 tp p))).
@@ -976,7 +952,7 @@ Proof.
             unfold places in *.
             invc H2.
             +++++
-              rewrite eqb_plc_refl in Heqb.
+              rewrite String.eqb_refl in Heqb.
               solve_by_inversion.
             +++++
               eauto.
@@ -998,7 +974,7 @@ Proof.
           eauto.
           invc H2.
           +++++
-            rewrite eqb_plc_refl in *.
+            rewrite String.eqb_refl in *.
             solve_by_inversion.
           +++++
             eassumption.
@@ -1016,7 +992,7 @@ Proof.
   ff.
   assert (tp = p).
   {
-    eapply eqb_eq_plc; eauto.
+    eapply String.eqb_eq; eauto.
   }
   subst.
 
@@ -1044,7 +1020,7 @@ Proof.
     destruct H0.
     ++
       subst.
-      rewrite eqb_plc_refl in *.
+      rewrite String.eqb_refl in *.
       solve_by_inversion.
     ++
       assert ((In t' (place_terms t1 tp p)) \/ (In t' (place_terms t2 tp p))).
@@ -1077,7 +1053,7 @@ Proof.
             unfold places in *.
             invc H2.
             +++++
-              rewrite eqb_plc_refl in Heqb.
+              rewrite String.eqb_refl in Heqb.
               solve_by_inversion.
             +++++
               eauto.
@@ -1099,7 +1075,7 @@ Proof.
           eauto.
           invc H2.
           +++++
-            rewrite eqb_plc_refl in *.
+            rewrite String.eqb_refl in *.
             solve_by_inversion.
           +++++
             eassumption.
@@ -1162,8 +1138,6 @@ Proof.
     * eapply att_sess_supports_place_terms; eauto.
   Unshelve. eapply default_uuid.
 Qed.
-
-Require Import Manifest_Generator_Union.
 
 Close Scope cop_ent_scope.
 
@@ -2033,7 +2007,7 @@ Proof.
     unfold run_cvm_w_config, run_cvm, run_core_cvm;
     destruct a; simpl in *; eauto;
     repeat (break_match; subst; repeat find_rewrite; repeat find_injection;
-      simpl in *; intuition; eauto; try monad_unfold; try congruence).
+      simpl in *; intuition; eauto; try cvm_monad_unfold; try congruence).
     unfold generate_ASP_dispatcher, generate_ASP_dispatcher' in *; simpl in *; intuition.
     * unfold generate_ASP_dispatcher, generate_ASP_dispatcher' in *; simpl in *; intuition.  
       ff; simpl in *.

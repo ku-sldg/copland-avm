@@ -1,8 +1,8 @@
 (* Admitted definitions of external IO operations required by Appraisal.    *)
 
-Require Import ResultT Term_Defs_Core Term_Defs.
+Require Import ResultT Term_Defs_Core.
 
-Require Import Manifest_Admits ErrorStMonad_Coq Cvm_St AM_St Attestation_Session.
+Require Import Manifest_Admits AM_St Attestation_Session.
 
 Require Import String ErrorStringConstants.
 
