@@ -18,6 +18,7 @@ OptMonad_Coq.v
 Term_Defs_Core.v
 Params_Admits.v
 Term_Defs.v
+CACL.v
 Attestation_Session.v
 Interface_Strings_Vars.v
 Interface_Types.v
