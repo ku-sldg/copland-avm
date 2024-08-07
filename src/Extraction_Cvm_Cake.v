@@ -37,4 +37,5 @@ Separate Extraction
     concrete_Jsonifiable_ASP_Compat_MapT
     concrete_Jsonifiable_Attestation_Session
     concrete_Jsonifiable_Term
+    concrete_Jsonifiable_Evidence
     Jsonifiable_Evidence_Plc_list Jsonifiable_Term_Plc_list.
