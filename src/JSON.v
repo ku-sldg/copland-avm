@@ -66,22 +66,28 @@ Fixpoint JSON_map_get_Object_rec_safe (key : string) (js_map : MapC string Inner
   end.
 *)
 
-Definition JSON_get_Array (js : JSON) : ResultT (list JSON) string :=
-  match js with
-  | JSON_Array v => resultC v
-  | _ => errC errStr_json_get_array_not_an_array
+Definition JSON_get_Array (key : string) (js : JSON) : ResultT (list JSON) string :=
+  match JSON_get_Object key js with
+  | resultC (JSON_Array v) => resultC v
+  | resultC js' => errC ("Key: '" ++ key ++ "' yields '" ++ (JSON_to_string js') ++ "' which is not an array")
+  | _ => errC ("Could not find key: '" ++ key ++ "' in Json object: '" ++
+    (JSON_to_string js) ++ "'")
   end.
 
-Definition JSON_get_string (js : JSON) : ResultT string string :=
-  match js with
-  | JSON_String v => resultC v
-  | _ => errC errStr_json_get_string_not_a_string
+Definition JSON_get_string (key : string) (js : JSON) : ResultT string string :=
+  match JSON_get_Object key js with
+  | resultC (JSON_String v) => resultC v
+  | resultC js' => errC ("Key: '" ++ key ++ "' yields '" ++ (JSON_to_string js') ++ "' which is not a string")
+  | _ => errC ("Could not find key: '" ++ key ++ "' in Json object: '" ++
+    (JSON_to_string js) ++ "'")
   end.
 
-Definition JSON_get_bool (js : JSON) : ResultT bool string :=
-  match js with
-  | JSON_Boolean v => resultC v
-  | _ => errC errStr_json_get_bool_not_a_bool
+Definition JSON_get_bool (key : string) (js : JSON) : ResultT bool string :=
+  match (JSON_get_Object key js) with
+  | resultC (JSON_Boolean v) => resultC v
+  | resultC js' => errC ("Key: '" ++ key ++ "' yields '" ++ (JSON_to_string js') ++ "' which is not a bool")
+  | _ => errC ("Could not find key: '" ++ key ++ "' in Json object: '" ++
+    (JSON_to_string js) ++ "'")
   end.
 
 (* Lemma canonical_serialization_string : forall (js : JSON) (a : string), 
@@ -93,10 +99,10 @@ Proof.
 Qed. *)
 
 (* The Pair JSONIFIABLE Class *)
-Definition pair_to_JSON_Array {A B : Type} `{Stringifiable A, Stringifiable B} (v : (A * B)) : JSON :=
+Definition str_pair_to_JSON {A B : Type} `{Stringifiable A, Stringifiable B} (v : (A * B)) : JSON :=
   JSON_Array [JSON_String (to_string (fst v)); JSON_String (to_string (snd v))].
 
-Definition JSON_to_pair {A B : Type} `{Stringifiable A, Stringifiable B} (js : JSON) : ResultT (A * B) string :=
+Definition str_pair_from_JSON {A B : Type} `{Stringifiable A, Stringifiable B} (js : JSON) : ResultT (A * B) string :=
   match js with
   | JSON_Array [JSON_String a; JSON_String b] =>
       match (from_string a), (from_string b) with
@@ -105,6 +111,15 @@ Definition JSON_to_pair {A B : Type} `{Stringifiable A, Stringifiable B} (js : J
       end
   | _ => errC errStr_json_to_pair
   end.
+
+Global Instance Jsonifiable_str_pair {A B : Type} `{Stringifiable A, Stringifiable B} : Jsonifiable (A * B).
+eapply Build_Jsonifiable with 
+  (to_JSON := str_pair_to_JSON)
+  (from_JSON := str_pair_from_JSON).
+simpl_json.
+Defined.
+
+(* The List JSONIFIABLE Class *)
 
 Definition map_serial_serial_to_JSON {A B : Type} `{Stringifiable A, Stringifiable B, EqClass A} (m : MapC A B) : JSON :=
   JSON_Object (

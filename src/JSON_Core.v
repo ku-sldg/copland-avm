@@ -33,7 +33,7 @@ Lemma map_get_impl_in : forall {A B : Type} `{EqClass A} (m : MapC A B) k v,
 Proof.
   induction m; simpl in *; intuition; try congruence; eauto.
   jsonifiable_hammer; rewrite eqb_eq in *; subst; eauto.
-Qed.
+Defined.
 
 Lemma json_get_object_result_always_smaller : forall js s js',
   JSON_get_Object s js = resultC js' ->
@@ -46,7 +46,7 @@ Proof.
   - lia.
   - right; exists (s, js'); simpl in *; split; try lia.
     eapply map_get_impl_in; eauto.
-Qed.
+Defined.
 
 Lemma json_all_map_elements_smaller : forall js m s,
   map_get m s = Some js ->
@@ -56,7 +56,7 @@ Proof.
   jsonifiable_hammer.
   - rewrite String.eqb_eq in *; subst; lia.
   - eapply IHm in H; lia.
-Qed.
+Defined.
 
 Lemma json_all_array_elements_smaller : forall js ls,
   In js ls ->
@@ -64,9 +64,7 @@ Lemma json_all_array_elements_smaller : forall js ls,
 Proof.
   induction ls; simpl in *; intuition; try congruence;
   jsonifiable_hammer; subst; try lia.
-Qed.
-
-
+Defined.
 
 Definition ASP_PARAMS_to_JSON `{Jsonifiable ASP_ARGS} (t : ASP_PARAMS) : JSON := 
     match t with
@@ -336,14 +334,11 @@ Fixpoint Evidence_to_JSON `{Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP_PA
       constructor_to_JSON evidence_name_constant nn_name_constant [(to_JSON n)]
   | uu plc fwd ps e' => 
       constructor_to_JSON evidence_name_constant uu_name_constant 
-        [(JSON_String plc);
-          (to_JSON fwd);
-          (to_JSON ps);
-          Evidence_to_JSON e']
+        [(JSON_String plc); (to_JSON fwd);
+          (to_JSON ps); Evidence_to_JSON e']
   | ss e1 e2 => 
       constructor_to_JSON evidence_name_constant ss_name_constant 
-        [(Evidence_to_JSON e1);
-          (Evidence_to_JSON e2)]
+        [(Evidence_to_JSON e1); (Evidence_to_JSON e2)]
   end.
 
 Definition nn_args_from_json (ls: list JSON) : ResultT Evidence string := 
@@ -532,58 +527,6 @@ Proof.
   jsonifiable_hammer.
 Qed.
 
-
-(*
-
-Fixpoint Evidence_from_JSON (js : JSON) : ResultT Evidence string :=
-  match (JSON_get_Object "EVIDENCE_CONSTRUCTOR" js) with
-  | resultC (JSON_String cons_name) =>
-      if (eqb cons_name "mt") 
-      then resultC mt
-      else if (eqb cons_name "nn") 
-      then  match (JSON_get_string "N_ID" js) with
-            | resultC nVal => 
-              match (from_string nVal) with
-              | resultC n => resultC (nn n)
-              | errC e => errC e
-              end
-            | _ => errC "Parsing nn not successful"
-            end
-      else if (eqb cons_name "uu") 
-      then  match js with
-            | JSON_Object [
-                ev_cons; 
-                (_, JSON_String plc); 
-                (_, fwd); 
-                (_, asp_par); 
-                (_, ev')
-              ] =>
-                match (from_string plc), (from_JSON fwd), (from_JSON asp_par), (Evidence_from_JSON ev') with
-                | resultC plc, resultC fwd, resultC ps, resultC e =>
-                  resultC (uu plc fwd ps e)
-                | _, _, _, _ => errC "Evidence_from_JSON: error parsing uu"
-                end
-            | _ => errC "Parsing uu not successful"
-            end
-      else if (eqb cons_name "ss") 
-      then  match js with
-            | JSON_Object [
-                ev_cons; 
-                (_, ev1); 
-                (_, ev2)
-              ] =>
-                match (Evidence_from_JSON ev1), (Evidence_from_JSON ev2) with
-                | resultC e1, resultC e2 => resultC (ss e1 e2)
-                | _, _ => errC "Parsing ss not successful"
-                end
-            | _ => errC "Parsing ss not successful"
-            end
-      else errC "Invalid Evidence JSON constructor name"
-  | errC e => errC e
-  end.
-*)
-Require Import Coq.Program.Equality.
-
 Theorem Evidence_from_JSON_eq : forall `{Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP_PARAMS} (js : JSON),
   Evidence_from_JSON js = 
     let type_name := evidence_name_constant in
@@ -634,54 +577,44 @@ Theorem Evidence_from_JSON_eq : forall `{Jsonifiable FWD, Jsonifiable nat, Jsoni
     | errC e => errC e
     end.
 Proof.
-  intros; apply (Fix_eq json_depth_order_wf (fun _ => ResultT Evidence string)); intros; intuition.
-  (* setoid_rewrite H.
-
-
-  From Coq Require Import ssreflect.
-  rewrite p /test; move: eq_refl; case: {2 3}(eq_dec y y) => //.
-by rewrite eq_dec_correct'.
-
-
-  intros; apply (Fix_eq json_depth_order_wf (fun _ => ResultT Evidence string)); intros; intuition; repeat (jsonifiable_hammer;
-  try match goal with
-    | [ |- context [ match ?X as _ return _ with _ => _ end ] ] =>
-      destruct X eqn:?
-  end;
+  intros; apply (Fix_eq json_depth_order_wf (fun _ => ResultT Evidence string)); intros; intuition;
+  repeat (break_match; eauto; intuition; eauto; try congruence;
     try rewrite String.eqb_eq in *; subst; 
-    try rewrite String.eqb_neq in *; subst; try congruence;
-    eauto).
-  - destruct x eqn:?; simpl in *; jsonifiable_hammer;
-    destruct m eqn:?; simpl in *; jsonifiable_hammer.
-    * rewrite String.eqb_eq in Heqb1.
-      rewrite Heqb1 in *.
-      simpl in *.
-      destruct (map_get m0 (String (Ascii.Ascii true false true false false false true false) (String (Ascii.Ascii false true true false true true true false) (String (Ascii.Ascii true false false true false true true false) (String (Ascii.Ascii false false true false false true true false) (String (Ascii.Ascii true false true false false true true false) (String (Ascii.Ascii false true true true false true true false) (String (Ascii.Ascii true true false false false true true false) (String (Ascii.Ascii true false true false false true true false) (String (Ascii.Ascii true true true true true false true false) body_string_constant)))))))))).
-      (* subst.
-      simpl in *. *)
-      destruct m0 eqn:?; simpl in *; jsonifiable_hammer.
-      subst.
-    destruct s eqn:?; simpl in *; jsonifiable_hammer.
-    * break_if.
-
-    dependent destruction x.
+    try rewrite String.eqb_neq in *; subst; try congruence
+  ).
+  - generalize (eq_refl ((JSON_get_Object (evidence_name_constant ++ "_" ++ body_string_constant) x))).
+    intros.
+    (* Print case_eq.
   
-  dependent destruction (JSON_get_Object (String (Ascii.Ascii true false true false false false true false) (String (Ascii.Ascii false true true false true true true false) (String (Ascii.Ascii true false false true false true true false) (String (Ascii.Ascii false false true false false true true false) (String (Ascii.Ascii true false true false false true true false) (String (Ascii.Ascii false true true true false true true false) (String (Ascii.Ascii true true false false false true true false) (String (Ascii.Ascii true false true false false true true false) (String (Ascii.Ascii true true true true true false true false) body_string_constant))))))))) x).
+  set (X := JSON_get_Object (evidence_name_constant ++ "_" ++ body_string_constant) x) in *.
     dependent destruction X.
-    *  repeat dependent rewrite x.
-    rewrite <- x.
+    * admit.
+    * subst. 
+      dependent rewrite <- x.
+    destruct x; try (simpl in *; congruence).
+    destruct m; try (simpl in *; congruence);
+    destruct p; try (simpl in *; congruence).
+    destruct s; try (simpl in *; congruence);
+    destruct j; try (simpl in *; congruence).
+    *  
+    destruct (JSON_get_Object (evidence_name_constant ++ "_" ++ body_string_constant) x).
+  
+  unfold JSON_get_Object.
+    destruct x.
+    * unfold map_get.
+    destruct (JSON_get_Object (evidence_name_constant ++ "_" ++ body_string_constant) x).
+  
+    generalize (evidence_name_constant ++ "_" ++ body_string_constant).
+    destruct (JSON_get_Object (evidence_name_constant ++ "_" ++ body_string_constant) x) eqn:?.
     subst.
-    find_rewrite.
-    destruct x; simpl in *.
-  match goal with
-    | [ |- context [ match ?X as _ return _ with _ => _ end ] ] =>
-      destruct X eqn:?
-  end.
-  - jsonifiable_hammer. 
+    * 
+    set (M := JSON_get_Object X1 x) in *.
+    generalize_eqs M.
+    destruct M.
+    destruct M.
+    destruct (JSON_get_Object X1 x) eqn:?; try congruence;
+    destruct j; try congruence; try find_injection. *)
 
-  try match goal with
-    | [ |- context[match ?E with left _ => _ | right _ => _ end] ] => destruct E
-  end; simpl; f_equal; auto. *)
 Admitted.
 
 Global Instance Jsonifiable_Evidence `{Jsonifiable ASP_ARGS, Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP_PARAMS} : Jsonifiable Evidence.
@@ -709,100 +642,68 @@ Global Instance Stringifiable_SP : Stringifiable SP := {
                                         end
 }.
 
-Definition ASP_to_JSON (t : ASP) : JSON := 
+Definition ASP_to_JSON `{Jsonifiable FWD, Stringifiable Plc, Stringifiable SP, Jsonifiable ASP_PARAMS} (t : ASP) : JSON := 
   match t with
-  | NULL => JSON_Object [("ASP_CONSTRUCTOR", InJSON_String "NULL")]
-  | CPY => JSON_Object [("ASP_CONSTRUCTOR", InJSON_String "CPY")]
+  | NULL => constructor_to_JSON "ASP" "NULL" []
+  | CPY => constructor_to_JSON "ASP" "CPY" []
   | ASPC sp fwd ps => 
-      JSON_Object [
-        ("ASP_CONSTRUCTOR", InJSON_String "ASPC");
-        ("ASP_SP", InJSON_String (to_string sp));
-        ("ASP_FWD", InJSON_Object (to_JSON fwd));
-        ("ASP_PARAMS", InJSON_Object (to_JSON ps))
-      ]
-  | SIG => JSON_Object [("ASP_CONSTRUCTOR", InJSON_String "SIG")]
-  | HSH => JSON_Object [("ASP_CONSTRUCTOR", InJSON_String "HSH")]
+      constructor_to_JSON "ASP" "ASPC" 
+        [(JSON_String (to_string sp)); (to_JSON fwd); (to_JSON ps)]
+  | SIG => constructor_to_JSON "ASP" "SIG" []
+  | HSH => constructor_to_JSON "ASP" "HSH" []
   | ENC q => 
-      JSON_Object [
-        ("ASP_CONSTRUCTOR", InJSON_String "ENC");
-        ("ENC_PLC", InJSON_String (to_string q))
-      ]
+      constructor_to_JSON "ASP" "ENC" 
+        [(JSON_String (to_string q))]
   end.
 
-Definition ASP_from_JSON (js : JSON) : ResultT ASP string :=
-  match (JSON_get_string "ASP_CONSTRUCTOR" js) with
-  | resultC cons_name =>
-      if (eqb cons_name "NULL")
-      then resultC NULL
-      else if (eqb cons_name "CPY")
-      then resultC CPY
-      else if (eqb cons_name "ASPC")
-      then match (JSON_get_string "ASP_SP" js), (JSON_get_Object "ASP_FWD" js), (JSON_get_Object "ASP_PARAMS" js) with
-           | resultC sp, resultC fwd, resultC ps =>
-              match (from_string sp), (from_JSON fwd), (from_JSON ps) with
-              | resultC sp, resultC fwd, resultC ps => 
-                  resultC (ASPC sp fwd ps)
-              | _, _, _ => errC "Parsing ASPC not successful"
-              end
-           | _, _, _ => errC "Parsing ASPC not successful"
-           end
-      else if (eqb cons_name "SIG")
-      then resultC SIG
-      else if (eqb cons_name "HSH")
-      then resultC HSH
-      else if (eqb cons_name "ENC")
-      then match (JSON_get_string "ENC_PLC" js) with
-           | resultC q => 
-              match (from_string q) with
-              | resultC q => resultC (ENC q)
-              | _ => errC "Parsing ENC PLC from string not successful"
-              end
-           | _ => errC "Parsing ENC not successful"
-           end
-      else errC "Invalid JSON ASP Constructor Name"
-  | _ => errC "Invalid JSON ASP Constructor Name"
-  end.
 
-Global Instance Jsonifiable_ASP : Jsonifiable ASP.
+Definition ASP_from_JSON_map `{Jsonifiable FWD, Stringifiable Plc, Stringifiable SP, Jsonifiable ASP_PARAMS}: MapC string (JSON -> (ResultT ASP string)) := 
+  [("NULL", constructor_from_JSON "ASP" (fun _ => resultC NULL));
+   ("CPY", constructor_from_JSON "ASP" (fun _ => resultC CPY));
+   ("ASPC", constructor_from_JSON "ASP" 
+      (fun ljs =>
+        match ljs with
+        | [JSON_String sp_js; fwd_js; ps_js] => 
+            match (from_string sp_js), (from_JSON fwd_js), (from_JSON ps_js) with
+            | resultC sp, resultC fwd, resultC ps => resultC (ASPC sp fwd ps)
+            | _, _, _ => errC "Parsing ASPC not successful"
+            end
+        | _ => errC "Parsing ASPC not successful"
+        end));
+   ("SIG", constructor_from_JSON "ASP" (fun _ => resultC SIG));
+   ("HSH", constructor_from_JSON "ASP" (fun _ => resultC HSH));
+   ("ENC", constructor_from_JSON "ASP" 
+      (fun ljs => 
+        match ljs with
+        | [JSON_String n_js] => 
+          match from_string n_js with
+          | resultC n => resultC (ENC n)
+          | _ => errC "Invalid JSON args for ENC"
+          end
+        | _ => errC "Invalid JSON args for ENC"
+        end))].
+
+Definition ASP_from_JSON `{Jsonifiable FWD, Jsonifiable ASP_PARAMS} (js : JSON) : ResultT ASP string :=
+   from_JSON_gen "ASP" ASP_from_JSON_map js.
+
+Global Instance Jsonifiable_ASP `{Jsonifiable FWD, Jsonifiable ASP_PARAMS}: Jsonifiable ASP.
 eapply (Build_Jsonifiable) with 
   (to_JSON := ASP_to_JSON)
   (from_JSON := ASP_from_JSON).
-(* intuition.
-repeat (try break_match; subst; simpl in *; intuition; repeat find_injection; try congruence);
-try rewrite canonical_stringification in *; eauto; try congruence;
-match goal with
-| A : ASP_ARGS |- _ => induction A; simpl in *; intuition; eauto;
-                        repeat break_match; simpl in *; intuition; eauto;
-                        repeat find_injection; try congruence;
-                        try rewrite canonical_stringification in *; eauto; try congruence
-
-end.
-- simpl in *.  *)
-
-unfold ASP_to_JSON in *;
-unfold ASP_from_JSON in *.
-
-destruct a; simpl in *; intuition.
-destruct a;
-destruct s; simpl in *; intuition;
-unfold FWD_to_JSON in *; 
-unfold FWD_from_JSON in *;
-destruct f; simpl in *; intuition;
-unfold ASP_PARAMS_to_JSON in *;
-unfold ASP_PARAMS_from_JSON in *;
-destruct a; simpl in *; intuition;
-induction a0; simpl in *; intuition; eauto;
-
-repeat break_match; simpl in *; intuition;
-repeat find_injection; try congruence;
-try rewrite canonical_stringification in *; eauto; try congruence.
-Qed.
+unfold ASP_to_JSON, ASP_from_JSON; intros a.
+break_match;
+eapply from_JSON_gen_constructor_to_JSON_works;
+unfold ASP_from_JSON_map; try reflexivity.
+unfold constructor_from_JSON, constructor_to_JSON,
+  oneArgConstructor_to_JSON, constructor_body_from_JSON_gen.
+repeat jsonifiable_hammer.
+Defined.
 
 Global Instance Jsonifiable_Split : Jsonifiable Split := {
   to_JSON := (fun '(s1, s2) => 
                 JSON_Object [
-                  ("split1", InJSON_String (to_string s1));
-                  ("split2", InJSON_String (to_string s2))
+                  ("split1", JSON_String (to_string s1));
+                  ("split2", JSON_String (to_string s2))
                 ]);
   from_JSON := (fun js => 
                   match (JSON_get_string "split1" js), (JSON_get_string "split2" js) with
@@ -821,154 +722,186 @@ Global Instance Jsonifiable_Split : Jsonifiable Split := {
                               end
 }.
 
-
-(* NOTE: Very lame on Coq's part, we have to do a list
-encoding of the TERM_BODY because it cannot understand
-how the recursive calls are truly on subterms otherwise *)
-Fixpoint Term_to_JSON (t : Term) : JSON :=
+Fixpoint Term_to_JSON `{Jsonifiable ASP, Jsonifiable Split} (t : Term) : JSON := 
   match t with
-  | asp a => 
-    JSON_Object [
-      ("TERM_CONSTRUCTOR", InJSON_String "asp"); 
-      ("TERM_BODY", InJSON_Object (to_JSON a))
-    ]
-  | att p t1 => 
-    JSON_Object [
-      ("TERM_CONSTRUCTOR", InJSON_String "att");
-      ("TERM_BODY", InJSON_Array [
-          (InJSON_String (to_string p)); 
-          (InJSON_Object (Term_to_JSON t1))
-        ]
-      )
-    ]
-  | lseq t1 t2 => 
-    JSON_Object [
-      ("TERM_CONSTRUCTOR", InJSON_String "lseq");
-      ("TERM_BODY", InJSON_Array [
-          (InJSON_Object (Term_to_JSON t1));
-          (InJSON_Object (Term_to_JSON t2))
-        ]
-      )
-    ]
-  | bseq s t1 t2 => 
-    JSON_Object [
-      ("TERM_CONSTRUCTOR", InJSON_String "bseq");
-      ("TERM_BODY", InJSON_Array [
-          (InJSON_Object (to_JSON s));
-          (InJSON_Object (Term_to_JSON t1));
-          (InJSON_Object (Term_to_JSON t2))
-        ]
-      )
-    ]
-  | bpar s t1 t2 => 
-    JSON_Object [
-      ("TERM_CONSTRUCTOR", InJSON_String "bpar");
-      ("TERM_BODY", InJSON_Array [
-          (InJSON_Object (to_JSON s));
-          (InJSON_Object (Term_to_JSON t1));
-          (InJSON_Object (Term_to_JSON t2))
-        ]
-      )
-    ]
+  | asp a => constructor_to_JSON "TERM" "asp" [(to_JSON a)]
+  | att p t' => constructor_to_JSON "TERM" "att" 
+      [(JSON_String (to_string p)); (Term_to_JSON t')]
+  | lseq t1 t2 => constructor_to_JSON "TERM" "lseq"
+      [(Term_to_JSON t1); (Term_to_JSON t2)]
+  | bseq sp t1 t2 => constructor_to_JSON "TERM" "bseq"
+      [(to_JSON sp); (Term_to_JSON t1); (Term_to_JSON t2)]
+  | bpar sp t1 t2 => constructor_to_JSON "TERM" "bpar"
+      [(to_JSON sp); (Term_to_JSON t1); (Term_to_JSON t2)]
   end.
 
-Fixpoint Term_from_JSON (js : JSON) : ResultT Term string :=
-  match (JSON_get_string "TERM_CONSTRUCTOR" js) with
-  | resultC cons_name =>
-      if (eqb cons_name "asp")
-      then  match (JSON_get_Object "TERM_BODY" js) with
-            | resultC js' => 
-                match (from_JSON js') with
-                | resultC a => resultC (asp a)
-                | errC e => errC e
-                end
-            | errC e => errC e
-            end
-      else if (eqb cons_name "att")
-      then (*! I hate this, but only viable way without going wf recursion *)
-          match js with
-          | JSON_Object [
-              term_cons; 
-              (_, InJSON_Array [InJSON_String plc; InJSON_Object js'])
-            ] =>
-              match (from_string plc), (Term_from_JSON js') with
-              | resultC plc, resultC t => resultC (att plc t)
-              | _, _ => errC "Parsing att not successful"
-              end
-          | _ => errC "Invalid att JSON: REMEMBER IT MUST BE IN A SPECIFIC FORMAT AND ORDER"
-          end
-      else if (eqb cons_name "lseq")
-      then  match js with
-            | JSON_Object [
-                term_cons; 
-                (_, InJSON_Array [InJSON_Object t1js; InJSON_Object t2js])
-              ] =>
-                match (Term_from_JSON t1js), (Term_from_JSON t2js) with
-                | resultC t1, resultC t2 => resultC (lseq t1 t2)
-                | _, _ => errC "Parsing lseq not successful"
-                end
-            | _ => errC "Invalid lseq JSON: REMEMBER IT MUST BE IN A SPECIFIC FORMAT AND ORDER"
-            end
-      else if (eqb cons_name "bseq")
-      then  match js with
-            | JSON_Object [
-                term_cons; 
-                (_, InJSON_Array [InJSON_Object spjs; InJSON_Object t1js; InJSON_Object t2js])
-              ] =>
-                match (from_JSON spjs), (Term_from_JSON t1js), (Term_from_JSON t2js) with
-                | resultC s, resultC t1, resultC t2 => resultC (bseq s t1 t2)
-                | _, _, _ => errC "Parsing bseq not successful"
-                end
-            | _ => errC "Invalid bseq JSON: REMEMBER IT MUST BE IN A SPECIFIC FORMAT AND ORDER"
-            end
-      else if (eqb cons_name "bpar")
-      then  match js with
-            | JSON_Object [
-                term_cons; 
-                (_, InJSON_Array [InJSON_Object spjs; InJSON_Object t1js; InJSON_Object t2js])
-              ] =>
-                match (from_JSON spjs), (Term_from_JSON t1js), (Term_from_JSON t2js) with
-                | resultC s, resultC t1, resultC t2 => resultC (bpar s t1 t2)
-                | _, _, _ => errC "Parsing bpar not successful"
-                end
-            | _ => errC "Invalid bpar JSON: REMEMBER IT MUST BE IN A SPECIFIC FORMAT AND ORDER"
-            end
-      else errC "Invalid TERM CONSTRUCTOR in Term_from_JSON"
-  | errC e => errC e
-  end.
+Import ResultNotation.
 
-Global Instance Jsonifiable_Term `{Jsonifiable ASP} : Jsonifiable Term. 
+Definition Term_from_JSON `{Jsonifiable ASP, Jsonifiable Split} (js : JSON) : ResultT Term string.
+generalize js.
+refine (Fix json_depth_order_wf (fun _ => ResultT Term string)
+  (
+    fun (js : JSON)
+      (rec : forall y : JSON,
+             lt (JSON_depth y) (JSON_depth js) ->
+             ResultT Term string) =>
+    let type_name := "TERM" in
+    let type_str := type_name ++ "_" ++ type_string_constant in
+    let body_str := type_name ++ "_" ++ body_string_constant in
+    match (JSON_get_Object type_str js) with
+    | resultC (JSON_String cons_name) =>
+      if (eqb cons_name "asp") 
+      then 
+        asp_js <- (JSON_get_Object body_str js) ;;
+        asp_val <- from_JSON asp_js ;;
+        resultC (asp asp_val)
+      else if (eqb cons_name "att") 
+      then 
+        match (JSON_get_Object body_str js) as m' return (JSON_get_Object body_str js) = m' -> ResultT Term string with
+        | resultC (JSON_Array [JSON_String plc; term']) =>
+            fun _ =>
+            plc_val <- from_string plc ;;
+            term_val <- (rec term' _) ;;
+            resultC (att plc_val term_val)
+        | resultC _ => fun _ => errC ("JSON Parsing 'att' ARGS: Incorrect number or wrong type of JSON args (expected [plc; term])")
+        | errC e => fun _ => errC e
+        end eq_refl
+      else if (eqb cons_name "lseq") 
+      then
+        match (JSON_get_Object body_str js) as m' return (JSON_get_Object body_str js) = m' -> ResultT Term string with
+        | resultC (JSON_Array [ term1; term2 ]) =>
+            fun _ =>
+            term1_val <- (rec term1 _) ;;
+            term2_val <- (rec term2 _) ;;
+            resultC (lseq term1_val term2_val)
+        | resultC _ => fun _ => errC ("JSON Parsing 'lseq' ARGS: Incorrect number or wrong type of JSON args (expected [term1; term2])")
+        | errC e => fun _ => errC e
+        end eq_refl
+      else if (eqb cons_name "bseq") 
+      then  
+        match (JSON_get_Object body_str js) as m' return (JSON_get_Object body_str js) = m' -> ResultT Term string with
+        | resultC (JSON_Array [ sp; term1; term2 ]) =>
+            fun _ =>
+            sp_val <- from_JSON sp ;;
+            term1_val <- (rec term1 _) ;;
+            term2_val <- (rec term2 _) ;;
+            resultC (bseq sp_val term1_val term2_val)
+        | resultC _ => fun _ => errC ("JSON Parsing 'bseq' ARGS: Incorrect number or wrong type of JSON args (expected [sp; term1; term2])")
+        | errC e => fun _ => errC e
+        end eq_refl
+      else if (eqb cons_name "bpar") 
+      then  
+        match (JSON_get_Object body_str js) as m' return (JSON_get_Object body_str js) = m' -> ResultT Term string with
+        | resultC (JSON_Array [ sp; term1; term2 ]) =>
+            fun _ =>
+            sp_val <- from_JSON sp ;;
+            term1_val <- (rec term1 _) ;;
+            term2_val <- (rec term2 _) ;;
+            resultC (bpar sp_val term1_val term2_val)
+        | resultC _ => fun _ => errC ("JSON Parsing 'bpar' ARGS: Incorrect number or wrong type of JSON args (expected [sp; term1; term2])")
+        | errC e => fun _ => errC e
+        end eq_refl
+      else errC "Invalid Term JSON constructor name"
+    | resultC _ => errC "Invalid Term type"
+    | errC e => errC e
+    end)); eapply json_get_object_result_always_smaller in e as E;
+  eapply PeanoNat.Nat.lt_trans; try eassumption;
+  eapply json_all_array_elements_smaller; 
+  simpl in *; eauto.
+Defined.
+
+Theorem Term_from_JSON_eq : forall `{Jsonifiable ASP, Jsonifiable Split} (js : JSON),
+  Term_from_JSON js = 
+    let type_name := "TERM" in
+    let type_str := type_name ++ "_" ++ type_string_constant in
+    let body_str := type_name ++ "_" ++ body_string_constant in
+    match (JSON_get_Object type_str js) with
+    | resultC (JSON_String cons_name) =>
+      if (eqb cons_name "asp") 
+      then 
+        asp_js <- (JSON_get_Object body_str js) ;;
+        asp_val <- from_JSON asp_js ;;
+        resultC (asp asp_val)
+      else if (eqb cons_name "att") 
+      then 
+        match (JSON_get_Object body_str js) as m' return (JSON_get_Object body_str js) = m' -> ResultT Term string with
+        | resultC (JSON_Array [JSON_String plc; term']) =>
+            fun _ =>
+            plc_val <- from_string plc ;;
+            term_val <- (Term_from_JSON term') ;;
+            resultC (att plc_val term_val)
+        | resultC _ => fun _ => errC ("JSON Parsing 'att' ARGS: Incorrect number or wrong type of JSON args (expected [plc; term])")
+        | errC e => fun _ => errC e
+        end eq_refl
+      else if (eqb cons_name "lseq") 
+      then
+        match (JSON_get_Object body_str js) as m' return (JSON_get_Object body_str js) = m' -> ResultT Term string with
+        | resultC (JSON_Array [ term1; term2 ]) =>
+            fun _ =>
+            term1_val <- (Term_from_JSON term1) ;;
+            term2_val <- (Term_from_JSON term2) ;;
+            resultC (lseq term1_val term2_val)
+        | resultC _ => fun _ => errC ("JSON Parsing 'lseq' ARGS: Incorrect number or wrong type of JSON args (expected [term1; term2])")
+        | errC e => fun _ => errC e
+        end eq_refl
+      else if (eqb cons_name "bseq") 
+      then  
+        match (JSON_get_Object body_str js) as m' return (JSON_get_Object body_str js) = m' -> ResultT Term string with
+        | resultC (JSON_Array [ sp; term1; term2 ]) =>
+            fun _ =>
+            sp_val <- from_JSON sp ;;
+            term1_val <- (Term_from_JSON term1) ;;
+            term2_val <- (Term_from_JSON term2) ;;
+            resultC (bseq sp_val term1_val term2_val)
+        | resultC _ => fun _ => errC ("JSON Parsing 'bseq' ARGS: Incorrect number or wrong type of JSON args (expected [sp; term1; term2])")
+        | errC e => fun _ => errC e
+        end eq_refl
+      else if (eqb cons_name "bpar") 
+      then  
+        match (JSON_get_Object body_str js) as m' return (JSON_get_Object body_str js) = m' -> ResultT Term string with
+        | resultC (JSON_Array [ sp; term1; term2 ]) =>
+            fun _ =>
+            sp_val <- from_JSON sp ;;
+            term1_val <- (Term_from_JSON term1) ;;
+            term2_val <- (Term_from_JSON term2) ;;
+            resultC (bpar sp_val term1_val term2_val)
+        | resultC _ => fun _ => errC ("JSON Parsing 'bpar' ARGS: Incorrect number or wrong type of JSON args (expected [sp; term1; term2])")
+        | errC e => fun _ => errC e
+        end eq_refl
+      else errC "Invalid Term JSON constructor name"
+    | resultC _ => errC "Invalid Term type"
+    | errC e => errC e
+    end.
+Proof.
+  intros; apply (Fix_eq json_depth_order_wf (fun _ => ResultT Term string)); intros; intuition;
+  repeat (break_match; eauto; intuition; eauto; try congruence;
+    try rewrite String.eqb_eq in *; subst; 
+    try rewrite String.eqb_neq in *; subst; try congruence
+  ).
+  - admit.
+  - admit. 
+  - admit.
+  - admit. 
+Admitted. 
+
+Global Instance Jsonifiable_Term `{Jsonifiable ASP, Jsonifiable Split} : Jsonifiable Term. 
 eapply Build_Jsonifiable with (to_JSON := Term_to_JSON) (from_JSON := Term_from_JSON).
-induction a; simpl in *; intuition; eauto;
-repeat (
-  match goal with
-  | a : Split |- _ => destruct a
-  | a : ASP |- _ => destruct a
-  | a : FWD |- _ => destruct a
-  | a : ASP_PARAMS |- _ => destruct a
-  | a : SP |- _ => destruct a
-  | a : ASP_ARGS |- _ => 
-      induction a; simpl in *; intuition; eauto;
-      simpl in *;
-      repeat (break_match; simpl in *; try congruence);
-      repeat find_injection; eauto;
-      rewrite canonical_stringification in *; try congruence
-  end; simpl in *; intuition; eauto);
-  try (rewrite canonical_jsonification in *; congruence);
-repeat find_rewrite; eauto.
+induction a; rewrite Term_from_JSON_eq; simpl in *;
+repeat (result_monad_unfold;
+jsonifiable_hammer; repeat rewrite canonical_jsonification in *).
 Defined.
 
 Global Instance Jsonifiable_RawEv : Jsonifiable RawEv. 
   eapply Build_Jsonifiable with (to_JSON := (fun ev => 
                 JSON_Object [
-                  ("RawEv", InJSON_Array (map (fun bs => InJSON_String (to_string bs)) ev))
+                  ("RawEv", JSON_Array (map (fun bs => JSON_String (to_string bs)) ev))
                 ]))
   (from_JSON := (fun js => 
                   match (JSON_get_Array "RawEv" js) with
                   | resultC js' => 
                       result_map (fun js' => 
                                     match js' with
-                                    | InJSON_String s => 
+                                    | JSON_String s => 
                                         match (from_string s) with
                                         | resultC bs => resultC bs
                                         | errC e => errC e
@@ -982,188 +915,200 @@ repeat rewrite canonical_stringification in *; simpl in *;
 find_rewrite; eauto.
 Defined.
 
-Fixpoint AppResultC_to_Json `{Jsonifiable ASP_ARGS, Jsonifiable RawEv} (a : AppResultC) : JSON :=
+Fixpoint AppResultC_to_JSON `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsonifiable RawEv} (a : AppResultC) : JSON := 
   match a with
-  | mtc_app => JSON_Object [("AppResultC_CONSTRUCTOR", InJSON_String "mtc_app")]
-  | nnc_app n bs => 
-      JSON_Object [
-        ("AppResultC_CONSTRUCTOR", InJSON_String "nnc_app");
-        ("N_ID", InJSON_String (to_string n));
-        ("BS", InJSON_String (to_string bs))
-      ]
-  | ggc_app plc ps rawEv res => 
-      JSON_Object [
-        ("AppResultC_CONSTRUCTOR", InJSON_String "ggc_app");
-        ("PLC", InJSON_String (to_string plc));
-        ("ASP_PARAMS", InJSON_Object (to_JSON ps));
-        ("RawEv", InJSON_Object (to_JSON rawEv));
-        ("AppResultC", InJSON_Object (AppResultC_to_Json res))
-      ]
-  | hhc_app plc ps bs res => 
-      JSON_Object [
-        ("AppResultC_CONSTRUCTOR", InJSON_String "hhc_app");
-        ("PLC", InJSON_String (to_string plc));
-        ("ASP_PARAMS", InJSON_Object (to_JSON ps));
-        ("BS", InJSON_String (to_string bs));
-        ("AppResultC", InJSON_Object (AppResultC_to_Json res))
-      ]
-  | eec_app plc ps bs res => 
-      JSON_Object [
-        ("AppResultC_CONSTRUCTOR", InJSON_String "eec_app");
-        ("PLC", InJSON_String (to_string plc));
-        ("ASP_PARAMS", InJSON_Object (to_JSON ps));
-        ("BS", InJSON_String (to_string bs));
-        ("AppResultC", InJSON_Object (AppResultC_to_Json res))
-      ]
-  | ssc_app res1 res2 => 
-      JSON_Object [
-        ("AppResultC_CONSTRUCTOR", InJSON_String "ssc_app");
-        ("AppResultC1", InJSON_Object (AppResultC_to_Json res1));
-        ("AppResultC2", InJSON_Object (AppResultC_to_Json res2))
-      ]
+  | mtc_app => constructor_to_JSON "AppResultC" "mtc_app" []
+  | nnc_app n bs => constructor_to_JSON "AppResultC" "nnc_app"
+      [(JSON_String (to_string n)); (JSON_String (to_string bs))]
+  | ggc_app plc ps rawev res =>
+      constructor_to_JSON "AppResultC" "ggc_app"
+      [(JSON_String (to_string plc)); (to_JSON ps);
+        (to_JSON rawev); (AppResultC_to_JSON res)]
+  | hhc_app plc ps bs res =>
+      constructor_to_JSON "AppResultC" "hhc_app"
+      [(JSON_String (to_string plc)); (to_JSON ps);
+        (JSON_String (to_string bs)); (AppResultC_to_JSON res)]
+  | eec_app plc ps bs res =>
+      constructor_to_JSON "AppResultC" "eec_app"
+      [(JSON_String (to_string plc)); (to_JSON ps);
+        (JSON_String (to_string bs)); (AppResultC_to_JSON res)]
+  | ssc_app res1 res2 =>
+      constructor_to_JSON "AppResultC" "ssc_app"
+      [(AppResultC_to_JSON res1); (AppResultC_to_JSON res2)]
   end.
 
-Fixpoint AppResultC_from_JSON `{Jsonifiable ASP_ARGS, Jsonifiable RawEv} (js : JSON) : ResultT AppResultC string :=
-  match (JSON_get_string "AppResultC_CONSTRUCTOR" js) with
-  | resultC cons_name =>
-      if (eqb cons_name "mtc_app")
-      then resultC mtc_app
-      else if (eqb cons_name "nnc_app")
-      then  match js with
-            | JSON_Object [
-                _;
-                (_, InJSON_String n);
-                (_, InJSON_String bs)
-              ] => 
-                match (from_string n), (from_string bs) with
-                | resultC n, resultC bs => resultC (nnc_app n bs)
-                | _, _ => errC "Parsing nnc_app not successful"
-                end
-            | _ => errC "Parsing nnc_app not successful"
-            end
-      else if (eqb cons_name "ggc_app")
-      then  match js with
-            | JSON_Object [
-                _;
-                (_, InJSON_String plc);
-                (_, InJSON_Object ps);
-                (_, InJSON_Object rawEv);
-                (_, InJSON_Object res)
-              ] =>
-                match (from_string plc), (from_JSON ps), (from_JSON rawEv), (AppResultC_from_JSON res) with
-                | resultC plc, resultC ps, resultC rawEv, resultC res => resultC (ggc_app plc ps rawEv res)
-                | _, _, _, _ => errC "Parsing ggc_app not successful"
-                end
-            | _ => errC "Parsing ggc_app not successful"
-            end
-      else if (eqb cons_name "hhc_app")
-      then  match js with
-            | JSON_Object [
-                _;
-                (_, InJSON_String plc);
-                (_, InJSON_Object ps);
-                (_, InJSON_String bs);
-                (_, InJSON_Object res)
-              ] =>
-                  match (from_string plc), (from_JSON ps), (from_string bs), (AppResultC_from_JSON res) with
-                  | resultC plc, resultC ps, resultC bs, resultC res => resultC (hhc_app plc ps bs res)
-                  | _, _, _, _ => errC "Parsing hhc_app not successful"
-                  end
-            | _ => errC "Parsing hhc_app not successful"
-            end
-      else if (eqb cons_name "eec_app")
-      then  match js with
-            | JSON_Object [
-                _;
-                (_, InJSON_String plc);
-                (_, InJSON_Object ps);
-                (_, InJSON_String bs);
-                (_, InJSON_Object res)
-              ] =>
-                match (from_string plc), (from_JSON ps), (from_string bs), (AppResultC_from_JSON res) with
-                | resultC plc, resultC ps, resultC bs, resultC res => resultC (eec_app plc ps bs res)
-                | _, _, _, _ => errC "Parsing eec_app not successful"
-                end
-            | _ => errC "Parsing eec_app not successful"
-            end
-      else if (eqb cons_name "ssc_app")
-      then  match js with
-            | JSON_Object [
-                _;
-                (_, InJSON_Object res1);
-                (_, InJSON_Object res2)
-              ] =>
-                match (AppResultC_from_JSON res1), (AppResultC_from_JSON res2) with
-                | resultC res1, resultC res2 => resultC (ssc_app res1 res2)
-                | _, _ => errC "Parsing ssc_app not successful"
-                end
-            | _ => errC "Parsing ssc_app not successful"
-            end
-      else errC "Invalid AppResultC JSON"
-  | _ => errC "Invalid AppResultC JSON: No Constructor"
-  end.
+Definition AppResultC_from_JSON `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsonifiable RawEv} (js : JSON) : ResultT AppResultC string.
+generalize js.
+refine (Fix json_depth_order_wf (fun _ => ResultT AppResultC string)
+  (
+    fun (js : JSON)
+      (rec : forall y : JSON,
+             lt (JSON_depth y) (JSON_depth js) ->
+             ResultT AppResultC string) =>
+    let type_name := "AppResultC" in
+    let type_str := type_name ++ "_" ++ type_string_constant in
+    let body_str := type_name ++ "_" ++ body_string_constant in
+    match (JSON_get_Object type_str js) with
+    | resultC (JSON_String cons_name) =>
+      if (eqb cons_name "mtc_app") 
+      then resultC (mtc_app)
+      else if (eqb cons_name "nnc_app") 
+      then 
+        match (JSON_get_Object body_str js) as m' return (JSON_get_Object body_str js) = m' -> ResultT AppResultC string with
+        | resultC (JSON_Array [JSON_String n; JSON_String bs]) =>
+            fun _ =>
+            n_val <- from_string n ;;
+            bs_val <- from_string bs ;;
+            resultC (nnc_app n_val bs_val)
+        | resultC _ => fun _ => errC ("JSON Parsing 'nnc_app' ARGS: Incorrect number or wrong type of JSON args (expected [n; bs])")
+        | errC e => fun _ => errC e
+        end eq_refl
+      else if (eqb cons_name "ggc_app") 
+      then
+        match (JSON_get_Object body_str js) as m' return (JSON_get_Object body_str js) = m' -> ResultT AppResultC string with
+        | resultC (JSON_Array [ JSON_String plc; ps; rawev; res ]) =>
+            fun _ =>
+            plc_val <- from_string plc ;;
+            ps_val <- from_JSON ps ;;
+            rawev_val <- from_JSON rawev ;;
+            res_val <- (rec res _) ;;
+            resultC (ggc_app plc_val ps_val rawev_val res_val)
+        | resultC _ => fun _ => errC ("JSON Parsing 'ggc_app' ARGS: Incorrect number or wrong type of JSON args (expected [plc; ps; rawev; res])")
+        | errC e => fun _ => errC e
+        end eq_refl
+      else if (eqb cons_name "hhc_app") 
+      then
+        match (JSON_get_Object body_str js) as m' return (JSON_get_Object body_str js) = m' -> ResultT AppResultC string with
+        | resultC (JSON_Array [ JSON_String plc; ps; JSON_String bs; res ]) =>
+            fun _ =>
+            plc_val <- from_string plc ;;
+            ps_val <- from_JSON ps ;;
+            bs_val <- from_string bs ;;
+            res_val <- (rec res _) ;;
+            resultC (hhc_app plc_val ps_val bs_val res_val)
+        | resultC _ => fun _ => errC ("JSON Parsing 'hhc_app' ARGS: Incorrect number or wrong type of JSON args (expected [plc; ps; bs; res])")
+        | errC e => fun _ => errC e
+        end eq_refl
+      else if (eqb cons_name "eec_app") 
+      then
+        match (JSON_get_Object body_str js) as m' return (JSON_get_Object body_str js) = m' -> ResultT AppResultC string with
+        | resultC (JSON_Array [ JSON_String plc; ps; JSON_String bs; res ]) =>
+            fun _ =>
+            plc_val <- from_string plc ;;
+            ps_val <- from_JSON ps ;;
+            bs_val <- from_string bs ;;
+            res_val <- (rec res _) ;;
+            resultC (eec_app plc_val ps_val bs_val res_val)
+        | resultC _ => fun _ => errC ("JSON Parsing 'eec_app' ARGS: Incorrect number or wrong type of JSON args (expected [plc; ps; bs; res])")
+        | errC e => fun _ => errC e
+        end eq_refl
+      else if (eqb cons_name "ssc_app") 
+      then
+        match (JSON_get_Object body_str js) as m' return (JSON_get_Object body_str js) = m' -> ResultT AppResultC string with
+        | resultC (JSON_Array [ res1 ; res2 ]) =>
+            fun _ =>
+            res1_val <- (rec res1 _) ;;
+            res2_val <- (rec res2 _) ;;
+            resultC (ssc_app res1_val res2_val)
+        | resultC _ => fun _ => errC ("JSON Parsing 'ssc_app' ARGS: Incorrect number or wrong type of JSON args (expected [ res1 ; res2 ])")
+        | errC e => fun _ => errC e
+        end eq_refl
+      else errC "Invalid AppResultC JSON constructor name"
+    | resultC _ => errC "Invalid AppResultC type"
+    | errC e => errC e
+    end)); eapply json_get_object_result_always_smaller in e as E;
+  eapply PeanoNat.Nat.lt_trans; try eassumption;
+  eapply json_all_array_elements_smaller; 
+  simpl in *; eauto.
+Defined.
 
-Global Instance Jsonifiable_AppResultC `{Jsonifiable ASP_ARGS} : Jsonifiable AppResultC.
-eapply Build_Jsonifiable with (to_JSON := AppResultC_to_Json) (from_JSON := AppResultC_from_JSON).
-induction a; simpl in *; intuition; eauto;
-repeat find_rewrite; eauto;
-repeat rewrite canonical_stringification in *; eauto;
-clear IHa;
-repeat (
-  match goal with
-  | a : Split |- _ => destruct a
-  | a : ASP |- _ => destruct a
-  | a : FWD |- _ => destruct a
-  | a : ASP_PARAMS |- _ => destruct a
-  | a : SP |- _ => destruct a
-  | a : RawEv |- _ => 
-      induction a; simpl in *; intuition; eauto;
-      simpl in *;
-      repeat (break_match; simpl in *; try congruence);
-      repeat find_injection; eauto;
-      repeat rewrite canonical_stringification in *; eauto; try congruence;
-      repeat rewrite canonical_jsonification in *; eauto; try congruence
-  | a : ASP_ARGS |- _ => 
-      induction a; simpl in *; intuition; eauto;
-      simpl in *;
-      repeat (break_match; simpl in *; try congruence);
-      repeat find_injection; eauto;
-      rewrite canonical_stringification in *; try congruence
-  end; simpl in *; intuition; eauto;
-  repeat rewrite canonical_jsonification; eauto).
+Theorem AppResultC_from_JSON_eq : forall `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsonifiable RawEv} (js : JSON),
+  AppResultC_from_JSON js = 
+    let type_name := "AppResultC" in
+    let type_str := type_name ++ "_" ++ type_string_constant in
+    let body_str := type_name ++ "_" ++ body_string_constant in
+    match (JSON_get_Object type_str js) with
+    | resultC (JSON_String cons_name) =>
+      if (eqb cons_name "mtc_app") 
+      then resultC (mtc_app)
+      else if (eqb cons_name "nnc_app") 
+      then 
+        match (JSON_get_Object body_str js) as m' return (JSON_get_Object body_str js) = m' -> ResultT AppResultC string with
+        | resultC (JSON_Array [JSON_String n; JSON_String bs]) =>
+            fun _ =>
+            n_val <- from_string n ;;
+            bs_val <- from_string bs ;;
+            resultC (nnc_app n_val bs_val)
+        | resultC _ => fun _ => errC ("JSON Parsing 'nnc_app' ARGS: Incorrect number or wrong type of JSON args (expected [n; bs])")
+        | errC e => fun _ => errC e
+        end eq_refl
+      else if (eqb cons_name "ggc_app") 
+      then
+        match (JSON_get_Object body_str js) as m' return (JSON_get_Object body_str js) = m' -> ResultT AppResultC string with
+        | resultC (JSON_Array [ JSON_String plc; ps; rawev; res ]) =>
+            fun _ =>
+            plc_val <- from_string plc ;;
+            ps_val <- from_JSON ps ;;
+            rawev_val <- from_JSON rawev ;;
+            res_val <- (AppResultC_from_JSON res) ;;
+            resultC (ggc_app plc_val ps_val rawev_val res_val)
+        | resultC _ => fun _ => errC ("JSON Parsing 'ggc_app' ARGS: Incorrect number or wrong type of JSON args (expected [plc; ps; rawev; res])")
+        | errC e => fun _ => errC e
+        end eq_refl
+      else if (eqb cons_name "hhc_app") 
+      then
+        match (JSON_get_Object body_str js) as m' return (JSON_get_Object body_str js) = m' -> ResultT AppResultC string with
+        | resultC (JSON_Array [ JSON_String plc; ps; JSON_String bs; res ]) =>
+            fun _ =>
+            plc_val <- from_string plc ;;
+            ps_val <- from_JSON ps ;;
+            bs_val <- from_string bs ;;
+            res_val <- (AppResultC_from_JSON res) ;;
+            resultC (hhc_app plc_val ps_val bs_val res_val)
+        | resultC _ => fun _ => errC ("JSON Parsing 'hhc_app' ARGS: Incorrect number or wrong type of JSON args (expected [plc; ps; bs; res])")
+        | errC e => fun _ => errC e
+        end eq_refl
+      else if (eqb cons_name "eec_app") 
+      then
+        match (JSON_get_Object body_str js) as m' return (JSON_get_Object body_str js) = m' -> ResultT AppResultC string with
+        | resultC (JSON_Array [ JSON_String plc; ps; JSON_String bs; res ]) =>
+            fun _ =>
+            plc_val <- from_string plc ;;
+            ps_val <- from_JSON ps ;;
+            bs_val <- from_string bs ;;
+            res_val <- (AppResultC_from_JSON res) ;;
+            resultC (eec_app plc_val ps_val bs_val res_val)
+        | resultC _ => fun _ => errC ("JSON Parsing 'eec_app' ARGS: Incorrect number or wrong type of JSON args (expected [plc; ps; bs; res])")
+        | errC e => fun _ => errC e
+        end eq_refl
+      else if (eqb cons_name "ssc_app") 
+      then
+        match (JSON_get_Object body_str js) as m' return (JSON_get_Object body_str js) = m' -> ResultT AppResultC string with
+        | resultC (JSON_Array [ res1 ; res2 ]) =>
+            fun _ =>
+            res1_val <- (AppResultC_from_JSON res1) ;;
+            res2_val <- (AppResultC_from_JSON res2) ;;
+            resultC (ssc_app res1_val res2_val)
+        | resultC _ => fun _ => errC ("JSON Parsing 'ssc_app' ARGS: Incorrect number or wrong type of JSON args (expected [ res1 ; res2 ])")
+        | errC e => fun _ => errC e
+        end eq_refl
+      else errC "Invalid AppResultC JSON constructor name"
+    | resultC _ => errC "Invalid AppResultC type"
+    | errC e => errC e
+    end.
+Proof.
+  intros; apply (Fix_eq json_depth_order_wf (fun _ => ResultT AppResultC string)); intros; intuition;
+  repeat (break_match; eauto; intuition; eauto; try congruence;
+    try rewrite String.eqb_eq in *; subst; 
+    try rewrite String.eqb_neq in *; subst; try congruence
+  ); admit.
+Admitted. 
 
-
-  unfold ASP_PARAMS_from_JSON in *.
-  
-  simpl in *; intuition; eauto;
-  repeat rewrite canonical_jsonification; eauto.
-  simpl in *;
-  repeat (break_match; simpl in *; try congruence);
-  repeat find_injection; eauto;
-  try rewrite canonical_stringification in *; try congruence;
-  simpl in *; intuition; eauto.
-  rewrite canonical_jsonification in *; try congruence.
-
-  unfold ASP_PARAMS_from_JSON in *.
-  
-  simpl in *; intuition; eauto;
-  repeat rewrite canonical_jsonification; eauto.
-  simpl in *;
-  repeat (break_match; simpl in *; try congruence);
-  repeat find_injection; eauto;
-  try rewrite canonical_stringification in *; try congruence;
-  simpl in *; intuition; eauto.
-  rewrite canonical_jsonification in *; try congruence.
-
-  unfold ASP_PARAMS_from_JSON in *.
-  
-  simpl in *; intuition; eauto;
-  repeat rewrite canonical_jsonification; eauto.
-
-  unfold ASP_PARAMS_from_JSON in *.
-  
-  simpl in *; intuition; eauto;
-  repeat rewrite canonical_jsonification; eauto.
+Global Instance Jsonifiable_AppResultC `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsonifiable RawEv} : Jsonifiable AppResultC.
+eapply Build_Jsonifiable with (to_JSON := AppResultC_to_JSON) (from_JSON := AppResultC_from_JSON).
+induction a; rewrite AppResultC_from_JSON_eq; simpl in *;
+repeat (result_monad_unfold;
+jsonifiable_hammer; repeat rewrite canonical_jsonification in *).
 Defined.
 
 Close Scope string_scope.
