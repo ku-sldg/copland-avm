@@ -36,9 +36,9 @@ Global Instance Jsonifiable_Attestation_Session `{Jsonifiable (MapC Plc UUID), J
 eapply Build_Jsonifiable with 
   (to_JSON := (fun v => 
                 JSON_Object [
-                  ("Session_Plc", InJSON_String (to_string (Session_Plc v)));
-                  ("Plc_Mapping", InJSON_Object (to_JSON (Plc_Mapping v)));
-                  ("PubKey_Mapping", InJSON_Object (to_JSON (PubKey_Mapping v)))])) 
+                  ("Session_Plc", JSON_String (to_string (Session_Plc v)));
+                  ("Plc_Mapping", to_JSON (Plc_Mapping v));
+                  ("PubKey_Mapping", to_JSON (PubKey_Mapping v))])) 
   (from_JSON := (fun j =>
     match (JSON_get_string "Session_Plc" j), (JSON_get_Object "Plc_Mapping" j), (JSON_get_Object "PubKey_Mapping" j) with
     | resultC plc, resultC plc_map, resultC pub_map =>

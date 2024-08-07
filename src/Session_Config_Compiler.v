@@ -1,5 +1,5 @@
 Require Import Manifest Attestation_Session AM_Manager.
-Require Import Term_Defs_Core ID_Type Manifest_Set Maps Interface.
+Require Import Term_Defs_Core JSON_Core ID_Type Manifest_Set Maps Interface.
 Require Import IO_Stubs.
 
 Definition generate_ASP_dispatcher' (am : Manifest) (ats : Attestation_Session) (aspBin : FS_Location) (par : ASP_PARAMS) (rawEv : RawEv) : ResultT RawEv DispatcherErrors :=

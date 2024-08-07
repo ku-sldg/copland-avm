@@ -1,4 +1,4 @@
-Require Import Manifest JSON Manifest_JSON Attestation_Session.
+Require Import Manifest JSON Manifest_JSON Attestation_Session Term_Defs JSON_Core.
 Require Import List.
 Import ListNotations.
 
@@ -14,6 +14,14 @@ solve [typeclasses eauto].
 Defined.
 
 Definition concrete_Jsonifiable_Attestation_Session : Jsonifiable Attestation_Session.
+solve [typeclasses eauto].
+Defined.
+
+Definition concrete_Jsonifiable_Term : Jsonifiable Term.
+solve [typeclasses eauto].
+Defined.
+
+Definition concrete_Jsonifiable_Evidence : Jsonifiable Evidence.
 solve [typeclasses eauto].
 Defined.
 

@@ -8,12 +8,12 @@ Global Instance Jsonifiable_ProtocolRunRequest `{Jsonifiable Term,
 eapply Build_Jsonifiable with
 (to_JSON := fun req =>
   JSON_Object 
-    [(STR_TYPE, (InJSON_String STR_REQUEST));
-    (STR_ACTION, (InJSON_String STR_RUN));
-    (STR_ATTEST_SESS, (InJSON_Object (to_JSON (prreq_att_sess req))));
-    (STR_REQ_PLC, (InJSON_String (to_string (prreq_req_plc req))));
-    (STR_TERM, (InJSON_Object (to_JSON (prreq_term req)))); 
-    (STR_RAWEV, (InJSON_Object (to_JSON (prreq_rawev req))))])
+    [(STR_TYPE, (JSON_String STR_REQUEST));
+    (STR_ACTION, (JSON_String STR_RUN));
+    (STR_ATTEST_SESS, (to_JSON (prreq_att_sess req)));
+    (STR_REQ_PLC, (JSON_String (to_string (prreq_req_plc req))));
+    (STR_TERM, (to_JSON (prreq_term req))); 
+    (STR_RAWEV, (to_JSON (prreq_rawev req)))])
 (from_JSON := (fun j =>
   temp_att_sess <- JSON_get_Object STR_ATTEST_SESS j ;;
   temp_term <- JSON_get_Object STR_TERM j ;;
@@ -33,10 +33,10 @@ Global Instance Jsonifiable_ProtocolRunResponse `{Jsonifiable RawEv}: Jsonifiabl
 eapply Build_Jsonifiable with
 (to_JSON := fun resp =>
   JSON_Object 
-    [(STR_TYPE, (InJSON_String STR_RESPONSE));
-    (STR_ACTION, (InJSON_String STR_RUN));
-    (STR_SUCCESS, (InJSON_Boolean (prresp_success resp)));
-    (STR_PAYLOAD, (InJSON_Object (to_JSON (prresp_ev resp))))])
+    [(STR_TYPE, (JSON_String STR_RESPONSE));
+    (STR_ACTION, (JSON_String STR_RUN));
+    (STR_SUCCESS, (JSON_Boolean (prresp_success resp)));
+    (STR_PAYLOAD, (to_JSON (prresp_ev resp)))])
 (from_JSON := (fun resp =>
   temp_success <- JSON_get_bool STR_SUCCESS resp ;;
   temp_ev <- JSON_get_Object STR_PAYLOAD resp ;;
@@ -50,9 +50,9 @@ Global Instance Jsonifiable_ProtocolNegotiateRequest `{Jsonifiable Term}: Jsonif
 eapply Build_Jsonifiable with
 (to_JSON := fun req =>
   JSON_Object 
-    [(STR_TYPE, (InJSON_String STR_REQUEST));
-    (STR_ACTION, (InJSON_String STR_NEGOTIATE));
-    (STR_TERM, (InJSON_Object (to_JSON (pnreq_term req))))])
+    [(STR_TYPE, (JSON_String STR_REQUEST));
+    (STR_ACTION, (JSON_String STR_NEGOTIATE));
+    (STR_TERM, (to_JSON (pnreq_term req)))])
 (from_JSON := (fun j =>
   temp_term <- JSON_get_Object STR_TERM j ;;
 
@@ -65,10 +65,10 @@ Global Instance Jsonifiable_ProtocolNegotiateResponse `{Jsonifiable Term}: Jsoni
 eapply Build_Jsonifiable with
 (to_JSON := fun resp =>
   JSON_Object 
-    [(STR_TYPE, (InJSON_String STR_RESPONSE));
-    (STR_ACTION, (InJSON_String STR_NEGOTIATE));
-    (STR_SUCCESS, (InJSON_Boolean (pnresp_success resp)));
-    (STR_PAYLOAD, (InJSON_Object (to_JSON (pnresp_term resp))))])
+    [(STR_TYPE, (JSON_String STR_RESPONSE));
+    (STR_ACTION, (JSON_String STR_NEGOTIATE));
+    (STR_SUCCESS, (JSON_Boolean (pnresp_success resp)));
+    (STR_PAYLOAD, (to_JSON (pnresp_term resp)))])
 (from_JSON := (fun resp =>
   temp_success <- JSON_get_bool STR_SUCCESS resp ;;
   temp_term <- JSON_get_Object STR_PAYLOAD resp ;;
@@ -82,13 +82,13 @@ Global Instance Jsonifiable_ProtocolAppraiseRequest `{Jsonifiable Term, Jsonifia
 eapply Build_Jsonifiable with
 (to_JSON := fun req =>
   JSON_Object [
-    (STR_TYPE, (InJSON_String STR_REQUEST));
-    (STR_ACTION, (InJSON_String STR_APPRAISE));
-    (STR_ATTEST_SESS, (InJSON_Object (to_JSON (pareq_att_sess req))));
-    (STR_TERM, (InJSON_Object (to_JSON (pareq_term req))));
-    (STR_REQ_PLC, (InJSON_String (to_string (pareq_plc req))));
-    (STR_EVIDENCE, (InJSON_Object (to_JSON (pareq_evidence req))));
-    (STR_RAWEV, (InJSON_Object (to_JSON (pareq_ev req))))])
+    (STR_TYPE, (JSON_String STR_REQUEST));
+    (STR_ACTION, (JSON_String STR_APPRAISE));
+    (STR_ATTEST_SESS, (to_JSON (pareq_att_sess req)));
+    (STR_TERM, (to_JSON (pareq_term req)));
+    (STR_REQ_PLC, (JSON_String (to_string (pareq_plc req))));
+    (STR_EVIDENCE, (to_JSON (pareq_evidence req)));
+    (STR_RAWEV, (to_JSON (pareq_ev req)))])
 (from_JSON := (fun j =>
   temp_att_sess <- JSON_get_Object STR_ATTEST_SESS j ;;
   temp_term <- JSON_get_Object STR_TERM j ;;
@@ -109,10 +109,10 @@ Global Instance Jsonifiable_ProtocolAppraiseResponse `{Jsonifiable AppResultC}: 
 eapply Build_Jsonifiable with
 (to_JSON := fun resp =>
   JSON_Object [
-    (STR_TYPE, (InJSON_String STR_RESPONSE));
-    (STR_ACTION, (InJSON_String STR_APPRAISE));
-    (STR_SUCCESS, (InJSON_Boolean (paresp_success resp)));
-    (STR_PAYLOAD, (InJSON_Object (to_JSON (paresp_result resp))))])
+    (STR_TYPE, (JSON_String STR_RESPONSE));
+    (STR_ACTION, (JSON_String STR_APPRAISE));
+    (STR_SUCCESS, (JSON_Boolean (paresp_success resp)));
+    (STR_PAYLOAD, (to_JSON (paresp_result resp)))])
 (from_JSON := (fun resp =>
   temp_success <- JSON_get_bool STR_SUCCESS resp ;;
   temp_result <- JSON_get_Object STR_PAYLOAD resp ;;
@@ -126,13 +126,13 @@ Global Instance Jsonifiable_ASPRunRequest `{Jsonifiable RawEv, Jsonifiable ASP_A
 eapply Build_Jsonifiable with
 (to_JSON := fun req =>
   JSON_Object [
-    (STR_TYPE, (InJSON_String STR_REQUEST));
-    (STR_ACTION, (InJSON_String STR_ASP_RUN));
-    (STR_ASP_ID, (InJSON_String (to_string (asprreq_asp_id req))));
-    (STR_ASP_ARGS, (InJSON_Object (to_JSON (asprreq_asp_args req))));
-    (STR_TARG_PLC, (InJSON_String (to_string (asprreq_targ_plc req))));
-    (STR_TARG, (InJSON_String (to_string (asprreq_targ req))));
-    (STR_RAWEV, (InJSON_Object (to_JSON (asprreq_rawev req))))])
+    (STR_TYPE, (JSON_String STR_REQUEST));
+    (STR_ACTION, (JSON_String STR_ASP_RUN));
+    (STR_ASP_ID, (JSON_String (to_string (asprreq_asp_id req))));
+    (STR_ASP_ARGS, (to_JSON (asprreq_asp_args req)));
+    (STR_TARG_PLC, (JSON_String (to_string (asprreq_targ_plc req))));
+    (STR_TARG, (JSON_String (to_string (asprreq_targ req))));
+    (STR_RAWEV, (to_JSON (asprreq_rawev req)))])
 (from_JSON := (fun j =>
   temp_asp_id <- JSON_get_string STR_ASP_ID j ;;
   temp_asp_args <- JSON_get_Object STR_ASP_ARGS j ;;
@@ -153,10 +153,10 @@ Global Instance Jsonifiable_ASPRunResponse `{Jsonifiable RawEv}: Jsonifiable ASP
 eapply Build_Jsonifiable with
 (to_JSON := fun resp =>
   JSON_Object 
-    [(STR_TYPE, (InJSON_String STR_RESPONSE));
-    (STR_ACTION, (InJSON_String STR_ASP_RUN));
-    (STR_SUCCESS, (InJSON_Boolean (asprresp_success resp)));
-    (STR_PAYLOAD, (InJSON_Object (to_JSON (asprresp_rawev resp))))])
+    [(STR_TYPE, (JSON_String STR_RESPONSE));
+    (STR_ACTION, (JSON_String STR_ASP_RUN));
+    (STR_SUCCESS, (JSON_Boolean (asprresp_success resp)));
+    (STR_PAYLOAD, (to_JSON (asprresp_rawev resp)))])
 (from_JSON := (fun resp =>
   temp_success <- JSON_get_bool STR_SUCCESS resp ;;
   temp_rawev <- JSON_get_Object STR_PAYLOAD resp ;;
@@ -168,5 +168,5 @@ Defined.
 (* Error Response *)
 Definition ErrorResponseJSON (msg: string): JSON :=
   JSON_Object 
-    [(STR_SUCCESS, InJSON_Boolean false);
-    (STR_PAYLOAD, (InJSON_String msg))].
+    [(STR_SUCCESS, JSON_Boolean false);
+    (STR_PAYLOAD, (JSON_String msg))].
