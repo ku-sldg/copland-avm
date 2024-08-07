@@ -36,4 +36,5 @@ Separate Extraction
     run_demo_client_AM concrete_Jsonifiable_Manifest
     concrete_Jsonifiable_ASP_Compat_MapT
     concrete_Jsonifiable_Attestation_Session
+    concrete_Jsonifiable_Term
     Jsonifiable_Evidence_Plc_list Jsonifiable_Term_Plc_list.
