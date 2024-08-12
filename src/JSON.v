@@ -47,7 +47,7 @@ Definition JSON_get_Object (key : string) (js : JSON) : ResultT JSON string :=
   | JSON_Object m => 
       match map_get m key with
       | Some v => resultC v 
-      | None => errC "JSON_get_Object: KEY NOT FOUND"
+      | None => errC ("JSON_get_Object: KEY NOT FOUND : " ++ key)
       end
   | _ => errC "JSON_get_Object: NOT AN OBJECT"
   end.

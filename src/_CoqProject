@@ -10,6 +10,7 @@ ID_Type.v
 Defs.v
 BS.v
 ErrorStringConstants.v
+Interface_Strings_Vars.v
 Maps.v
 JSON_Type.v
 JSON_Admits.v
@@ -20,7 +21,6 @@ JSON_Core.v
 Params_Admits.v
 Term_Defs.v
 Attestation_Session.v
-Interface_Strings_Vars.v
 Interface_Types.v
 Interface_JSON.v
 Interface.v
