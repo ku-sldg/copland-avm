@@ -105,7 +105,7 @@ Defined.
 Definition type_string_constant : string := "CONSTRUCTOR".
 Definition body_string_constant : string := "BODY".
 
-Definition fwd_name_constant : string := "FWD".
+Definition fwd_name_constant  : string := "FWD".
 Definition comp_name_constant : string := "COMP".
 Definition encr_name_constant : string := "ENCR".
 Definition extd_name_constant : string := "EXTD".
@@ -117,15 +117,15 @@ Definition nn_name_constant : string := "nn".
 Definition uu_name_constant : string := "uu".
 Definition ss_name_constant : string := "ss".
 
-Definition asp_name_constant : string := "asp".
+Definition asp_name_constant  : string := "asp".
 Definition null_name_constant : string := "NULL".
 Definition copy_name_constant : string := "CPY".
 Definition aspc_name_constant : string := "ASPC".
-Definition sig_name_constant : string := "SIG".
-Definition hsh_name_constant : string := "HSH".
-Definition enc_name_constant : string := "ENC".
+Definition sig_name_constant  : string := "SIG".
+Definition hsh_name_constant  : string := "HSH".
+Definition enc_name_constant  : string := "ENC".
 
-Definition att_name_constant : string := "att".
+Definition att_name_constant  : string := "att".
 Definition lseq_name_constant : string := "lseq".
 Definition bseq_name_constant : string := "bseq".
 Definition bpar_name_constant : string := "bpar".
@@ -133,14 +133,15 @@ Definition bpar_name_constant : string := "bpar".
 Definition rawev_name_constant : string := "RawEv".
 
 Definition appresult_name_constant : string := "AppResultC".
-Definition mtc_app_name_constant : string := "mtc_app".
-Definition nnc_app_name_constant : string := "nnc_app".
-Definition hhc_app_name_constant : string := "hhc_app".
-Definition ggc_app_name_constant : string := "ggc_app".
-Definition eec_app_name_constant : string := "eec_app".
-Definition ssc_app_name_constant : string := "ssc_app".
+Definition mtc_app_name_constant   : string := "mtc_app".
+Definition nnc_app_name_constant   : string := "nnc_app".
+Definition hhc_app_name_constant   : string := "hhc_app".
+Definition ggc_app_name_constant   : string := "ggc_app".
+Definition eec_app_name_constant   : string := "eec_app".
+Definition ssc_app_name_constant   : string := "ssc_app".
 
-Definition all_name_constant : string := "ALL".
+Definition sp_name_constant   : string := "SP".
+Definition all_name_constant  : string := "ALL".
 Definition none_name_constant : string := "NONE".
 
 
@@ -262,9 +263,9 @@ Definition FWD_from_JSON_map : MapC string (JSON -> (ResultT FWD string)) :=
         | [n_js] => 
           match from_JSON n_js with
           | resultC n => resultC (EXTD n)
-          | _ => errC "Invalid JSON args for EXTD"
+          | _ => errC ("Invalid JSON args for " ++ extd_name_constant)
           end
-        | _ => errC "Invalid JSON args for EXTD"
+        | _ => errC ("Invalid JSON args for " ++ extd_name_constant)
         end))].
 
 Definition FWD_from_JSON (js : JSON) : ResultT FWD string :=
@@ -430,7 +431,7 @@ Global Instance Stringifiable_SP : Stringifiable SP := {
                     then resultC ALL
                     else if (eqb s none_name_constant)
                     then resultC NONE
-                    else errC "Invalid SP string");
+                    else errC ("Invalid " ++ sp_name_constant ++ " string"));
   canonical_stringification := fun s => match s with
                                         | ALL => eq_refl
                                         | NONE => eq_refl
@@ -461,9 +462,9 @@ Definition ASP_from_JSON_map `{Jsonifiable FWD, Stringifiable Plc, Stringifiable
         | [JSON_String sp_js; fwd_js; ps_js] => 
             match (from_string sp_js), (from_JSON fwd_js), (from_JSON ps_js) with
             | resultC sp, resultC fwd, resultC ps => resultC (ASPC sp fwd ps)
-            | _, _, _ => errC "Parsing ASPC not successful"
+            | _, _, _ => errC ("Parsing " ++ aspc_name_constant ++ " not successful")
             end
-        | _ => errC "Parsing ASPC not successful"
+        | _ => errC ("Parsing " ++ aspc_name_constant ++ " not successful")
         end));
    (sig_name_constant, constructor_from_JSON STR_ASP (fun _ => resultC SIG));
    (hsh_name_constant, constructor_from_JSON STR_ASP (fun _ => resultC HSH));
@@ -473,9 +474,9 @@ Definition ASP_from_JSON_map `{Jsonifiable FWD, Stringifiable Plc, Stringifiable
         | [JSON_String n_js] => 
           match from_string n_js with
           | resultC n => resultC (ENC n)
-          | _ => errC "Invalid JSON args for ENC"
+          | _ => errC ("Invalid JSON args for " ++ enc_name_constant)
           end
-        | _ => errC "Invalid JSON args for ENC"
+        | _ => errC ("Invalid JSON args for " ++ enc_name_constant)
         end))].
 
 Definition ASP_from_JSON `{Jsonifiable FWD, Jsonifiable ASP_PARAMS} (js : JSON) : ResultT ASP string :=
@@ -550,7 +551,7 @@ Fixpoint Term_from_JSON `{Jsonifiable ASP, Jsonifiable Split} (js : JSON) : Resu
             plc_val <- from_string plc ;;
             term_val <- (Term_from_JSON term') ;;
             resultC (att plc_val term_val)
-        | _ => errC ("JSON Parsing 'att' ARGS: Incorrect number or wrong type of JSON args (expected [plc; term])")
+        | _ => errC ("JSON Parsing " ++ "'" ++ att_name_constant ++ "' ARGS: Incorrect number or wrong type of JSON args (expected [plc; term])")
         end
       else if (eqb cons_name lseq_name_constant) 
       then match js with
@@ -561,7 +562,7 @@ Fixpoint Term_from_JSON `{Jsonifiable ASP, Jsonifiable Split} (js : JSON) : Resu
             term1_val <- (Term_from_JSON term1) ;;
             term2_val <- (Term_from_JSON term2) ;;
             resultC (lseq term1_val term2_val)
-        | _ => errC ("JSON Parsing 'lseq' ARGS: Incorrect number or wrong type of JSON args (expected [term1; term2])")
+        | _ => errC ("JSON Parsing " ++ "'" ++ lseq_name_constant ++ "' ARGS: Incorrect number or wrong type of JSON args (expected [term1; term2])")
         end
       else if (eqb cons_name bseq_name_constant) 
       then match js with
@@ -573,7 +574,7 @@ Fixpoint Term_from_JSON `{Jsonifiable ASP, Jsonifiable Split} (js : JSON) : Resu
             term1_val <- (Term_from_JSON term1) ;;
             term2_val <- (Term_from_JSON term2) ;;
             resultC (bseq sp_val term1_val term2_val)
-        | _ => errC ("JSON Parsing 'bseq' ARGS: Incorrect number or wrong type of JSON args (expected [sp; term1; term2])")
+        | _ => errC ("JSON Parsing " ++ "'" ++ bseq_name_constant ++ "' ARGS: Incorrect number or wrong type of JSON args (expected [sp; term1; term2])")
         end
       else if (eqb cons_name bpar_name_constant) 
       then match js with
@@ -585,10 +586,10 @@ Fixpoint Term_from_JSON `{Jsonifiable ASP, Jsonifiable Split} (js : JSON) : Resu
             term1_val <- (Term_from_JSON term1) ;;
             term2_val <- (Term_from_JSON term2) ;;
             resultC (bpar sp_val term1_val term2_val)
-        | _ => errC ("JSON Parsing 'bpar' ARGS: Incorrect number or wrong type of JSON args (expected [sp; term1; term2])")
+        | _ => errC ("JSON Parsing " ++ "'" ++ bpar_name_constant ++ "' ARGS: Incorrect number or wrong type of JSON args (expected [sp; term1; term2])")
         end
-      else errC "Invalid Term JSON constructor name"
-    | resultC _ => errC "Invalid Term type"
+      else errC ("Invalid " ++ STR_TERM ++ " JSON constructor name")
+    | resultC _ => errC ("Invalid " ++ STR_TERM ++ " JSON type")
     | errC e => errC e
     end.
 
@@ -662,7 +663,7 @@ Fixpoint AppResultC_from_JSON `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsoni
             n_val <- from_string n ;;
             bs_val <- from_string bs ;;
             resultC (nnc_app n_val bs_val)
-        | _ => errC ("JSON Parsing 'nnc_app' ARGS: Incorrect number or wrong type of JSON args (expected [n; bs])")
+        | _ => errC ("JSON Parsing " ++ "'" ++ nnc_app_name_constant ++ "' ARGS: Incorrect number or wrong type of JSON args (expected [n; bs])")
         end
       else if (eqb cons_name ggc_app_name_constant) 
       then match js with
@@ -675,7 +676,7 @@ Fixpoint AppResultC_from_JSON `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsoni
             rawev_val <- from_JSON rawev ;;
             res_val <- (AppResultC_from_JSON res) ;;
             resultC (ggc_app plc_val ps_val rawev_val res_val)
-        | _ => errC ("JSON Parsing 'ggc_app' ARGS: Incorrect number or wrong type of JSON args (expected [plc; ps; rawev; res])")
+        | _ => errC ("JSON Parsing " ++ "'" ++ ggc_app_name_constant ++ "' ARGS: Incorrect number or wrong type of JSON args (expected [plc; ps; rawev; res])")
         end
       else if (eqb cons_name hhc_app_name_constant) 
       then match js with
@@ -688,7 +689,7 @@ Fixpoint AppResultC_from_JSON `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsoni
             bs_val <- from_string bs ;;
             res_val <- (AppResultC_from_JSON res) ;;
             resultC (hhc_app plc_val ps_val bs_val res_val)
-          | _ => errC ("JSON Parsing 'hhc_app' ARGS: Incorrect number or wrong type of JSON args (expected [plc; ps; bs; res])")
+          | _ => errC ("JSON Parsing " ++ "'" ++ hhc_app_name_constant ++ "' ARGS: Incorrect number or wrong type of JSON args (expected [plc; ps; bs; res])")
         end
       else if (eqb cons_name eec_app_name_constant) 
       then match js with
@@ -701,7 +702,7 @@ Fixpoint AppResultC_from_JSON `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsoni
             bs_val <- from_string bs ;;
             res_val <- (AppResultC_from_JSON res) ;;
             resultC (eec_app plc_val ps_val bs_val res_val)
-          | _ => errC ("JSON Parsing 'eec_app' ARGS: Incorrect number or wrong type of JSON args (expected [plc; ps; bs; res])")
+          | _ => errC ("JSON Parsing " ++ "'" ++ eec_app_name_constant ++ "' ARGS: Incorrect number or wrong type of JSON args (expected [plc; ps; bs; res])")
         end
       else if (eqb cons_name ssc_app_name_constant) 
       then match js with
@@ -712,10 +713,10 @@ Fixpoint AppResultC_from_JSON `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsoni
             res1_val <- (AppResultC_from_JSON res1) ;;
             res2_val <- (AppResultC_from_JSON res2) ;;
             resultC (ssc_app res1_val res2_val)
-        | _ => errC ("JSON Parsing 'ssc_app' ARGS: Incorrect number or wrong type of JSON args (expected [ res1 ; res2 ])")
+        | _ => errC ("JSON Parsing " ++ "'" ++ ssc_app_name_constant ++ "' ARGS: Incorrect number or wrong type of JSON args (expected [ res1 ; res2 ])")
         end
-      else errC "Invalid AppResultC JSON constructor name"
-    | resultC _ => errC "Invalid AppResultC type"
+      else errC ("Invalid " ++ appresult_name_constant ++ " JSON constructor name")
+    | resultC _ => errC ("Invalid " ++ appresult_name_constant ++ " JSON type")
     | errC e => errC e
     end.
 
