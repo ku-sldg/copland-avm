@@ -81,10 +81,10 @@ Definition ASP_PARAMS_to_JSON `{Jsonifiable ASP_ARGS} (t : ASP_PARAMS) : JSON :=
     end.
 
 Definition ASP_PARAMS_from_JSON `{Jsonifiable ASP_ARGS} (js : JSON) : ResultT ASP_PARAMS string :=
-  asp_id  <- JSON_get_string "ASP_ID" js ;;
-  args    <- JSON_get_Object "ASP_ARGS" js ;;
-  plc     <- JSON_get_string "ASP_PLC" js ;;
-  targ    <- JSON_get_string "ASP_TARG_ID" js ;;
+  asp_id  <- JSON_get_string STR_ASP_ID js ;;
+  args    <- JSON_get_Object STR_ASP_ARGS js ;;
+  plc     <- JSON_get_string STR_ASP_PLC js ;;
+  targ    <- JSON_get_string STR_ASP_TARG_ID js ;;
 
   asp_id' <- from_string asp_id ;;
   args'   <- from_JSON args ;;
@@ -531,7 +531,7 @@ Fixpoint Term_to_JSON `{Jsonifiable ASP, Jsonifiable Split} (t : Term) : JSON :=
   end.
 
 Fixpoint Term_from_JSON `{Jsonifiable ASP, Jsonifiable Split} (js : JSON) : ResultT Term string :=
-    let type_name := "TERM" in
+    let type_name := STR_TERM in
     let type_str := type_name ++ "_" ++ type_string_constant in
     let body_str := type_name ++ "_" ++ body_string_constant in
     match (JSON_get_Object type_str js) with
@@ -541,7 +541,7 @@ Fixpoint Term_from_JSON `{Jsonifiable ASP, Jsonifiable Split} (js : JSON) : Resu
         asp_js <- (JSON_get_Object body_str js) ;;
         asp_val <- from_JSON asp_js ;;
         resultC (asp asp_val)
-      else if (eqb cons_name "att") 
+      else if (eqb cons_name att_name_constant) 
       then match js with
         | (JSON_Object [
             _;
@@ -552,7 +552,7 @@ Fixpoint Term_from_JSON `{Jsonifiable ASP, Jsonifiable Split} (js : JSON) : Resu
             resultC (att plc_val term_val)
         | _ => errC ("JSON Parsing 'att' ARGS: Incorrect number or wrong type of JSON args (expected [plc; term])")
         end
-      else if (eqb cons_name "lseq") 
+      else if (eqb cons_name lseq_name_constant) 
       then match js with
         | JSON_Object [
             _;
@@ -563,7 +563,7 @@ Fixpoint Term_from_JSON `{Jsonifiable ASP, Jsonifiable Split} (js : JSON) : Resu
             resultC (lseq term1_val term2_val)
         | _ => errC ("JSON Parsing 'lseq' ARGS: Incorrect number or wrong type of JSON args (expected [term1; term2])")
         end
-      else if (eqb cons_name "bseq") 
+      else if (eqb cons_name bseq_name_constant) 
       then match js with
         | JSON_Object [
             _;
@@ -575,7 +575,7 @@ Fixpoint Term_from_JSON `{Jsonifiable ASP, Jsonifiable Split} (js : JSON) : Resu
             resultC (bseq sp_val term1_val term2_val)
         | _ => errC ("JSON Parsing 'bseq' ARGS: Incorrect number or wrong type of JSON args (expected [sp; term1; term2])")
         end
-      else if (eqb cons_name "bpar") 
+      else if (eqb cons_name bpar_name_constant) 
       then match js with
         | JSON_Object [
             _;
@@ -646,14 +646,14 @@ Fixpoint AppResultC_to_JSON `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsonifi
   end.
 
 Fixpoint AppResultC_from_JSON `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsonifiable RawEv} (js : JSON) : ResultT AppResultC string :=
-    let type_name := "AppResultC" in
+    let type_name := appresult_name_constant in
     let type_str := type_name ++ "_" ++ type_string_constant in
     let body_str := type_name ++ "_" ++ body_string_constant in
     match (JSON_get_Object type_str js) with
     | resultC (JSON_String cons_name) =>
       if (eqb cons_name mtc_app_name_constant) 
       then resultC (mtc_app)
-      else if (eqb cons_name "nnc_app") 
+      else if (eqb cons_name nnc_app_name_constant) 
       then match js with
         | JSON_Object [
             _;
@@ -664,7 +664,7 @@ Fixpoint AppResultC_from_JSON `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsoni
             resultC (nnc_app n_val bs_val)
         | _ => errC ("JSON Parsing 'nnc_app' ARGS: Incorrect number or wrong type of JSON args (expected [n; bs])")
         end
-      else if (eqb cons_name "ggc_app") 
+      else if (eqb cons_name ggc_app_name_constant) 
       then match js with
         | JSON_Object [
             _;
@@ -677,7 +677,7 @@ Fixpoint AppResultC_from_JSON `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsoni
             resultC (ggc_app plc_val ps_val rawev_val res_val)
         | _ => errC ("JSON Parsing 'ggc_app' ARGS: Incorrect number or wrong type of JSON args (expected [plc; ps; rawev; res])")
         end
-      else if (eqb cons_name "hhc_app") 
+      else if (eqb cons_name hhc_app_name_constant) 
       then match js with
         | JSON_Object [
             _;
@@ -690,7 +690,7 @@ Fixpoint AppResultC_from_JSON `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsoni
             resultC (hhc_app plc_val ps_val bs_val res_val)
           | _ => errC ("JSON Parsing 'hhc_app' ARGS: Incorrect number or wrong type of JSON args (expected [plc; ps; bs; res])")
         end
-      else if (eqb cons_name "eec_app") 
+      else if (eqb cons_name eec_app_name_constant) 
       then match js with
         | JSON_Object [
             _;
@@ -703,7 +703,7 @@ Fixpoint AppResultC_from_JSON `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsoni
             resultC (eec_app plc_val ps_val bs_val res_val)
           | _ => errC ("JSON Parsing 'eec_app' ARGS: Incorrect number or wrong type of JSON args (expected [plc; ps; bs; res])")
         end
-      else if (eqb cons_name "ssc_app") 
+      else if (eqb cons_name ssc_app_name_constant) 
       then match js with
         | JSON_Object [
             _;
