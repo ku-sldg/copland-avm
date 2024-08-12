@@ -130,14 +130,14 @@ eapply Build_Jsonifiable with
     (STR_ACTION, (JSON_String STR_ASP_RUN));
     (STR_ASP_ID, (JSON_String (to_string (asprreq_asp_id req))));
     (STR_ASP_ARGS, (to_JSON (asprreq_asp_args req)));
-    (STR_TARG_PLC, (JSON_String (to_string (asprreq_targ_plc req))));
-    (STR_TARG, (JSON_String (to_string (asprreq_targ req))));
+    (STR_ASP_PLC, (JSON_String (to_string (asprreq_targ_plc req))));
+    (STR_ASP_TARG_ID, (JSON_String (to_string (asprreq_targ req))));
     (STR_RAWEV, (to_JSON (asprreq_rawev req)))])
 (from_JSON := (fun j =>
   temp_asp_id <- JSON_get_string STR_ASP_ID j ;;
   temp_asp_args <- JSON_get_Object STR_ASP_ARGS j ;;
-  temp_targ_plc <- JSON_get_string STR_TARG_PLC j ;;
-  temp_targ <- JSON_get_string STR_TARG j ;;
+  temp_targ_plc <- JSON_get_string STR_ASP_PLC j ;;
+  temp_targ <- JSON_get_string STR_ASP_TARG_ID j ;;
   temp_ev <- JSON_get_Object STR_RAWEV j ;;
 
   asp_id <- from_string temp_asp_id ;;
