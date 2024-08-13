@@ -20,8 +20,9 @@ Definition STR_RESPONSE : string := "RESPONSE".
 Definition STR_ATTEST_SESS : string := "ATTESTATION_SESSION".
 
 (* ASP String Admits *)
+Definition STR_ASP : string := "ASP".
 Definition STR_ASP_RUN : string := "ASP_RUN".
 Definition STR_ASP_ID : string := "ASP_ID".
 Definition STR_ASP_ARGS : string := "ASP_ARGS".
-Definition STR_TARG_PLC : string := "TARG_PLC".
-Definition STR_TARG : string := "TARG".
+Definition STR_ASP_PLC : string := "ASP_PLC".
+Definition STR_ASP_TARG_ID : string := "ASP_TARG_ID".
