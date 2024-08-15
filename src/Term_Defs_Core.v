@@ -19,7 +19,7 @@ University of California.  See license.txt for details. *)
 Require Export BS.
 
 Require Import List ID_Type Maps EqClass JSON Stringifiable Stringifiable_Class_Admits StructTactics.
-Import ListNotations.
+Import ListNotations ResultNotation.
 
 (** * Terms and EvidenceT *)
 
@@ -81,13 +81,12 @@ Inductive FWD: Set :=
 Inductive EvidenceT :=
 | mt_evt      : EvidenceT
 | nonce_evt   : N_ID -> EvidenceT
-| asp_evt     : Plc -> FWD -> ASP_PARAMS -> EvidenceT -> EvidenceT
-| appr_evt    : EvidenceT -> EvidenceT -> EvidenceT
+| asp_evt     : Plc -> ASP_PARAMS -> EvidenceT -> EvidenceT
 | split_evt   : EvidenceT -> EvidenceT -> EvidenceT.
 
 (** Evidene routing types:  
-      ALL:   pasplit_evt through all EvidenceT
-      NONE   pasplit_evt through empty EvidenceT
+      ALL:   pass through all EvidenceT
+      NONE   pass through empty EvidenceT
 *)
 Inductive SP: Set :=
 | ALL
@@ -109,11 +108,13 @@ Inductive SP: Set :=
 Inductive ASP :=
 | NULL: ASP
 | CPY: ASP
-| ASPC: SP -> FWD -> ASP_PARAMS -> ASP
+| ASPC: SP -> ASP_PARAMS -> ASP
 | SIG: ASP
 | HSH: ASP
+| APPR : ASP
 | ENC: Plc -> ASP.
 
+Definition ASP_Type_Env := MapC ASP_ID FWD.
 
 (** Pair of EvidenceT splitters that indicate routing EvidenceT to subterms 
     of branching phrases *)
@@ -128,11 +129,69 @@ Definition Split: Set := (SP * SP).
         a sequence of terms with no data dependency, or parallel terms. *)
 Inductive Term :=
 | asp: ASP -> Term
-| appr : Term
 | att: Plc -> Term -> Term
 | lseq: Term -> Term -> Term
 | bseq: Split -> Term -> Term -> Term
 | bpar: Split -> Term -> Term -> Term.
+
+(**  Calculate the size of an EvidenceT type *)
+Fixpoint et_size (G : ASP_Type_Env) (e:EvidenceT)
+  : ResultT nat string :=
+  match e with
+  | mt_evt=> resultC 0
+  | nonce_evt _ => resultC 1
+  | asp_evt p par e' =>
+    let '(asp_paramsC asp_id args targ_plc targ) := par in
+    match (map_get G asp_id) with
+    | None => errC "ASP Type Signature not found in Environment"%string
+    | Some asp_fwd => 
+      match asp_fwd with
+      | COMP => resultC 1
+      | ENCR => resultC 1
+      | (EXTD n) => 
+        s' <- et_size G e' ;;
+        resultC (n + s')
+      | KILL => resultC 0
+      | KEEP => et_size G e'
+      end 
+    end
+  | split_evt e1 e2 => 
+    s1 <- et_size G e1 ;; 
+    s2 <- et_size G e2 ;;
+    resultC (s1 + s2)
+  end.
+
+
+(** Raw EvidenceT representaiton:  a list of binary (BS) values. *)
+Definition RawEv := list BS.
+
+(**  Type-Tagged Raw EvidenceT representation.  Used as the internal EvidenceT
+     type managed by the CVM to track EvidenceT contents and its structure. *)
+Inductive Evidence :=
+| evc: RawEv -> EvidenceT -> Evidence.
+
+Definition mt_evc: Evidence := (evc [] mt_evt).
+
+Definition get_et (e:Evidence) : EvidenceT :=
+  match e with
+  | evc ec et => et
+  end.
+
+Definition get_bits (e:Evidence): list BS :=
+  match e with
+  | evc ls _ => ls
+  end.
+
+(** A "well-formed" Evidence value is where the length of its raw EvidenceT portion
+    has the proper size (calculated over the EvidenceT Type portion). *)
+Inductive wf_Evidence : ASP_Type_Env -> Evidence -> Prop :=
+| wf_Evidence_c: forall (ls:RawEv) et G n,
+    List.length ls = n ->
+    et_size G et = resultC n ->
+    wf_Evidence G (evc ls et).
+
+Inductive CopPhrase :=
+| cop_phrase : Plc -> Evidence -> Term -> CopPhrase.
 
 (* Adapted from Imp language Notation in Software Foundations (Pierce) *)
 Declare Custom Entry copland_entry.
@@ -171,7 +230,7 @@ Inductive ASP_Core :=
 | NULLC: ASP_Core
 | CLEAR: ASP_Core
 | CPYC: ASP_Core
-| ASPCC: FWD -> ASP_PARAMS -> ASP_Core.
+| ASPCC: ASP_PARAMS -> ASP_Core.
 
 (** Abstract Location identifiers used to aid in management and execution 
     of parallel Copland phrases. *)
@@ -182,7 +241,6 @@ Definition Locs: Set := list Loc.
     execution language of the Copland VM (CVM). *)
 Inductive Core_Term :=
 | aspc: ASP_Core -> Core_Term
-| apprc : Core_Term
 | attc: Plc -> Term -> Core_Term
 | lseqc: Core_Term -> Core_Term -> Core_Term
 | bseqc: Core_Term -> Core_Term -> Core_Term
@@ -212,9 +270,6 @@ Open Scope core_cop_ent_scope.
 Definition test2 := <<core>{ __ -> {} }>.
 Example test2ex : test2 = (lseqc (aspc CPYC) (aspc NULLC)). reflexivity. Qed.
 Example test3 : <<core>{ CLR -> {}}> = (lseqc (aspc CLEAR) (aspc NULLC)). reflexivity. Qed.
-
-(** Raw EvidenceT representaiton:  a list of binary (BS) values. *)
-Definition RawEv := list BS.
 
 Close Scope string_scope.
 

@@ -26,15 +26,15 @@ Require Import Manifest_Admits.
 
 
 Record cvm_st : Type := mk_st
-                          {st_ev:EvC ;
+                          {st_ev:Evidence ;
                            st_trace:list Ev ;
                            st_evid:Event_ID ;
                            st_config : Session_Config ;
                            }.
 
 Inductive CVM_Error : Type := 
-| at_error_static : Term -> Plc -> EvC -> CVM_Error
-| at_error_dynamic : Term -> UUID -> EvC -> CVM_Error
+| at_error_static : Term -> Plc -> Evidence -> CVM_Error
+| at_error_dynamic : Term -> UUID -> Evidence -> CVM_Error
 | dispatch_error : DispatcherErrors -> CVM_Error.
 (* | callback_error : CallBackErrors -> CVM_Error. *)
 

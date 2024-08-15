@@ -99,94 +99,100 @@ Qed.
     set of events associated with a term, a place, and some initial
     EvidenceT. *)
 
-Inductive events: AnnoTerm -> Plc -> EvidenceT -> Ev -> Prop :=
+Inductive events: ASP_Type_Env -> ASP_Compat_MapT -> 
+    AnnoTerm -> Plc -> EvidenceT -> Ev -> Prop :=
+| evtsasp: forall G cm r i p e a ev,
+    fst r = i ->
+    asp_event cm i a p e = resultC ev ->
+    events G cm (aasp r a) p e ev
+(* 
 | evtsnull:
-    forall r i p e,
+    forall G cm r i p e,
       fst r = i ->
-      events (aasp r NULL) p e (null i p)
+      events G cm (aasp r NULL) p e (null i p)
 | evtscpy:
-    forall r i p e,
+    forall G cm r i p e,
       fst r = i ->
-      events (aasp r CPY) p e (copy i p)
+      events G cm (aasp r CPY) p e (copy i p)
 | evtsusm:
-    forall i r p e sp fwd ps,
+    forall G cm i r p e sp ps,
       fst r = i ->
-      events (aasp r (ASPC sp fwd ps)) p e (umeas i p ps (sp_ev sp e))
-| evtssig:
-    forall r i p e,
-      fst r = i ->
-      events (aasp r SIG) p e (umeas i p sig_params e) (* (sign i p e) *)
-| evtshsh:
-    forall r i p e,
-      fst r = i ->
-      events (aasp r HSH) p e (umeas i p hsh_params e) (* (hash i p e) *)
-| evtsenc:
-    forall r i p q e,
-      fst r = i ->
-      events (aasp r (ENC q)) p e (umeas i p (enc_params q) e) (* (hash i p e) *)
-
+      events G cm (aasp r (ASPC sp ps)) p e (umeas i p ps (sp_ev sp e))
 | evtsappr:
-    forall r i p e,
+    forall G cm r i p e,
       fst r = i ->
-      events (aappr r) p e (appr_ev i p e)
+      events G cm (aasp r APPR) p e (umeas i p sig_params e) (* (sign i p e) *)
+| evtssig:
+    forall G cm r i p e,
+      fst r = i ->
+      events G cm (aasp r SIG) p e (umeas i p sig_params e) (* (sign i p e) *)
+| evtshsh:
+    forall G cm r i p e,
+      fst r = i ->
+      events G cm (aasp r HSH) p e (umeas i p hsh_params e) (* (hash i p e) *)
+| evtsenc:
+    forall G cm r i p q e,
+      fst r = i ->
+      events G cm (aasp r (ENC q)) p e (umeas i p (enc_params q) e) (* (hash i p e) *)
+*)
 
 | evtsattreq:
-    forall r q t i p e,
+    forall G cm r q t i p e,
       fst r = i ->
-      events (aatt r q t) p e (req i p q (unanno t) e)
+      events G cm (aatt r q t) p e (req i p q (unanno t) e)
 | evtsatt:
-    forall r q t ev p e,
-      events t q e ev ->
-      events (aatt r q t) p e ev
+    forall G cm r q t ev p e,
+      events G cm t q e ev ->
+      events G cm (aatt r q t) p e ev
 | evtsattrpy:
-    forall r q t i p e cm et,
+    forall G cm r q t i p e et,
       snd r = S i ->
-      (aeval t q e cm) = resultC et ->
-      events (aatt r q t) p e (rpy i p q et)
+      aeval G cm t q e = resultC et ->
+      events G cm (aatt r q t) p e (rpy i p q et)
 | evtslseql:
-    forall r t1 t2 ev p e,
-      events t1 p e ev ->
-      events (alseq r t1 t2) p e ev
+    forall G cm r t1 t2 ev p e,
+      events G cm t1 p e ev ->
+      events G cm (alseq r t1 t2) p e ev
 | evtslseqr:
-    forall r t1 t2 ev p e cm e1,
-      aeval t1 p e cm = resultC e1 ->
-      events t2 p e1 ev ->
-      events (alseq r t1 t2) p e ev
+    forall G cm r t1 t2 ev p e e1,
+      aeval G cm t1 p e = resultC e1 ->
+      events G cm t2 p e1 ev ->
+      events G cm (alseq r t1 t2) p e ev
              
 | evtsbseqsplit:
-    forall r i s e t1 t2 p,
+    forall G cm r i s e t1 t2 p,
       fst r = i ->
-      events (abseq r s t1 t2) p e (Term_Defs.split i p)
+      events G cm (abseq r s t1 t2) p e (Term_Defs.split i p)
 | evtsbseql:
-    forall r s e t1 t2 ev p,
-      events t1 p (splitEv_T_l s e) ev ->
-      events (abseq r s t1 t2) p e ev
+    forall G cm r s e t1 t2 ev p,
+      events G cm t1 p (splitEv_T_l s e) ev ->
+      events G cm (abseq r s t1 t2) p e ev
 | evtsbseqr:
-    forall r s e t1 t2 ev p,
-      events t2 p (splitEv_T_r s e) ev ->
-      events (abseq r s t1 t2) p e ev
+    forall G cm r s e t1 t2 ev p,
+      events G cm t2 p (splitEv_T_r s e) ev ->
+      events G cm (abseq r s t1 t2) p e ev
 | evtsbseqjoin:
-    forall r i s e t1 t2 p,
+    forall G cm r i s e t1 t2 p,
       snd r = S i ->
-      events (abseq r s t1 t2) p e (join i p)
+      events G cm (abseq r s t1 t2) p e (join i p)
 
 | evtsbparsplit:
-    forall r i s e t1 t2 p,
+    forall G cm r i s e t1 t2 p,
       fst r = i ->
-      events (abpar r s t1 t2) p e
+      events G cm (abpar r s t1 t2) p e
              (Term_Defs.split i p)
 | evtsbparl:
-    forall r s e t1 t2 ev p,
-      events t1 p (splitEv_T_l s e) ev ->
-      events (abpar r s t1 t2) p e ev
+    forall G cm r s e t1 t2 ev p,
+      events G cm t1 p (splitEv_T_l s e) ev ->
+      events G cm (abpar r s t1 t2) p e ev
 | evtsbparr:
-    forall r s e t1 t2 ev p,
-      events t2 p (splitEv_T_r s e) ev ->
-      events (abpar r s t1 t2) p e ev
+    forall G cm r s e t1 t2 ev p,
+      events G cm t2 p (splitEv_T_r s e) ev ->
+      events G cm (abpar r s t1 t2) p e ev
 | evtsbparjoin:
-    forall r i s e t1 t2 p,
+    forall G cm r i s e t1 t2 p,
       snd r = S i ->
-      events (abpar r s t1 t2) p e
+      events G cm (abpar r s t1 t2) p e
              (join i  p).
 #[export] Hint Constructors events : core.
 
@@ -201,20 +207,33 @@ Ltac inv_wfr :=
   end.
 
 Lemma events_range:
-  forall t v p e,
+  forall G cm t v p e,
     well_formed_r_annt t ->
-    events t p e v ->
+    events G cm t p e v ->
     fst (range t) <= ev v < snd (range t).
 Proof.
-  intros t v p e H H0.
-  pose proof H as G.
-  apply well_formed_range_r in G.
-  rewrite G.
-  clear G.
+  intros G cm t v p e H H0.
+  pose proof H as H'.
+  apply well_formed_range_r in H'.
+  rewrite H'.
+  clear H'.
   induction H0;
     try (inv_wfr; simpl in *; auto;
          repeat find_apply_hyp_hyp;
          repeat (find_apply_lem_hyp well_formed_range_r); lia).
+  destruct a; ff; simpl in *;
+  try (destruct e; simpl in *; find_injection; simpl in *; lia).
+  induction e; simpl in *; try (find_injection; simpl in *; lia);
+  ff; try lia; result_monad_unfold; ff.
+  unfold res_bind in *; ff.
+  result_monad_unfold.
+  destruct e; simpl in *.
+  unfold Term_Defs.ev.
+  - destruct e; simpl in *; find_injection; simpl in *; lia.
+  - destruct e; simpl in *; find_injection; simpl in *; lia. 
+  cbn in *.
+  unfold asp_event in *.
+  find_apply_lem_hyp well_formed_range_r.
 Qed.
 
 Lemma at_range:
@@ -226,11 +245,6 @@ Lemma at_range:
     fst x <= i < snd x \/
     i = snd x.
 Proof.
-  intros.
-  pose proof lt_dec i (S (fst r)) as G.
-  destruct G as [G|G]; [left; lia| right].
-  pose proof lt_dec i (snd x) as F.
-  destruct F as [F|F]; [left; lia| right].
   lia.
 Qed.
 
@@ -241,9 +255,7 @@ Lemma lin_range:
     fst x <= i < snd x \/
     fst y <= i < snd y.
 Proof.
-  intros.
-  pose proof lt_dec i (snd x) as G.
-  destruct G; lia.
+  lia.
 Qed.
 
 Lemma bra_range:
@@ -257,7 +269,7 @@ Lemma bra_range:
     fst y <= i < snd y \/
     i = snd y.
 Proof.
-  destruct x, y, r; lia.
+  lia.
 Qed.
 
 Ltac dest_range :=
@@ -283,22 +295,22 @@ Ltac do_bra_range :=
 
 (** Properties of events. *)
 
-(* NOTE: New axiom introduced HERE!!!!
+(* (* NOTE: New axiom introduced HERE!!!!
 We need to be seriously considering 
 whether this should be an axiom or something that that
 can be carried about by some wf_* property.
 *)
 Axiom wf_r_annt_impl_aeval_success : forall t p e cm,
     well_formed_r_annt t ->
-    exists et, aeval t p e cm = resultC et.
+    exists et, aeval t p e cm = resultC et. *)
 
 Lemma events_range_event:
-  forall t p i e,
+  forall G cm t p i e,
     well_formed_r_annt t ->
     fst (range t) <= i < snd (range t) ->
-    exists v, events t p e v /\ ev v = i.
+    exists v, events G cm t p e v /\ ev v = i.
 Proof.
-  intros t p i e H; revert i; revert p; revert e.
+  intros G cm t p i e H; revert i; revert p; revert e.
   induction H; intros; simpl in *.
   - destruct x; try destruct a; eapply ex_intro; split; auto;
     simpl in *; try lia.

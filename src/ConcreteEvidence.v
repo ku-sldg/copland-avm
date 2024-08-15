@@ -44,13 +44,13 @@ Fixpoint et_fun (ec:EvidenceTC) : EvidenceT :=
   | ssc ec1 ec2 => split_evt (et_fun ec1) (et_fun ec2)
   end.
 
-Definition splitEv_l (sp:Split) (e:EvC): EvC :=
+Definition splitEv_l (sp:Split) (e:Evidence): Evidence :=
   match sp with
   | (ALL, _) => e
   | _ => mt_evc
   end.
 
-Definition splitEv_r (sp:Split) (e:EvC): EvC :=
+Definition splitEv_r (sp:Split) (e:Evidence): Evidence :=
   match sp with
   | (_,ALL) => e
   | _ => mt_evc

@@ -23,12 +23,12 @@ Definition aspid_to_fs_location (aspid : ASP_ID) : FS_Location. Admitted.
 Definition make_JSON_FS_Location_Request (dir : FS_Location) (aspid : FS_Location) (js : JSON) : ResultT JSON string. Admitted.
 
 (** * Stub to simulate EvidenceT collected by a parallel CVM instance *)
-Definition parallel_vm_thread (l:Loc) (t:Core_Term) (p:Plc) (e:EvC) : EvC.  Admitted.
+Definition parallel_vm_thread (l:Loc) (t:Core_Term) (p:Plc) (e:Evidence) : Evidence.  Admitted.
 
 Definition do_start_par_thread (loc:Loc) (t:Core_Term) (e:RawEv) : CVM unit :=
   err_ret tt.
 
-Definition do_wait_par_thread (loc:Loc) (t:Core_Term) (p:Plc) (e:EvC) : CVM EvC :=
+Definition do_wait_par_thread (loc:Loc) (t:Core_Term) (p:Plc) (e:Evidence) : CVM Evidence :=
   err_ret (parallel_vm_thread loc t p e).
 
 Definition requester_bound (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) : bool.  Admitted.

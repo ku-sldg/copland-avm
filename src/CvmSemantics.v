@@ -133,18 +133,18 @@ Qed.
 
 (* TODO:  this lemma does not hold for (Some eec ... = Some mtc) case
 
-(** * Recontstructing an EvC value computed by encoding it and computing its type is the same as the original. *)
+(** * Recontstructing an Evidence value computed by encoding it and computing its type is the same as the original. *)
 Lemma recon_same: forall e,
     Some e = reconstruct_ev (evc (encodeEv e) (et_fun e)).
 *)
 
 
-(** * Axiom:  assume parallel CVM threads preserve well-formednesplit_evt of EvC bundles *)
+(** * Axiom:  assume parallel CVM threads preserve well-formednesplit_evt of Evidence bundles *)
 Axiom wf_ec_preserved_par: forall e l t2 p,
     wf_ec e ->
     wf_ec (parallel_vm_thread l t2 p e).
 
-(** * Lemma:  CVM execution preserves well-formednesplit_evt of EvC bundles 
+(** * Lemma:  CVM execution preserves well-formednesplit_evt of Evidence bundles 
       (EvidenceT Type of sufficient length for raw EvidenceT). *)
 Lemma wf_ec_preserved_by_cvm_weak : forall e e' t1 tr tr' i i' ac ac',
     wf_ec e ->
@@ -175,7 +175,7 @@ Ltac do_wfec_preserved :=
 Ltac dest_evc :=
   repeat
     match goal with
-    | [H: EvC |-  _ ] => destruct H
+    | [H: Evidence |-  _ ] => destruct H
     end.
 
 

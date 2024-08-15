@@ -13,7 +13,7 @@ Import ListNotations.
 (** Extends raw EvidenceT by prepending 'n' values to the front.
     Also updates underlying EvidenceT Type.
     An example is digital signatures, where the signature value is prepended *)
-Definition extd_bundle (sig: RawEv) (e:EvC) (p:Plc) (n : nat) (ps:ASP_PARAMS): ResultT EvC string :=
+Definition extd_bundle (sig: RawEv) (e:Evidence) (p:Plc) (n : nat) (ps:ASP_PARAMS): ResultT Evidence string :=
   match e with
   | evc bits et => 
       if (eqb (List.length sig) n)
@@ -23,7 +23,7 @@ Definition extd_bundle (sig: RawEv) (e:EvC) (p:Plc) (n : nat) (ps:ASP_PARAMS): R
 
 (** Collapses raw EvidenceT by replacing the entire sequence with the input 
     binary hash value.  Updates underlying EvidenceT Type to reflect the hash. *)
-Definition comp_bundle (hsh: RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): ResultT EvC string :=
+Definition comp_bundle (hsh: RawEv) (e:Evidence) (p:Plc) (ps:ASP_PARAMS): ResultT Evidence string :=
   match e with
   | evc _ et => 
     match hsh with
@@ -36,7 +36,7 @@ Definition comp_bundle (hsh: RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): ResultT EvC
 (** Collapses raw EvidenceT by replacing the entire sequence with the input 
     encrypted value blob.  Updates underlying EvidenceT Type to reflect the
     encryption. *)
-Definition encr_bundle (enc: RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): ResultT EvC string :=
+Definition encr_bundle (enc: RawEv) (e:Evidence) (p:Plc) (ps:ASP_PARAMS): ResultT Evidence string :=
   match e with
   | evc _ et => 
     match enc with
@@ -47,7 +47,7 @@ Definition encr_bundle (enc: RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): ResultT EvC
   end.
 
 (** Appends raw EvidenceT and EvidenceT Types for the pair of input bundles *)
-Definition ss_cons (e1:EvC) (e2:EvC): EvC :=
+Definition ss_cons (e1:Evidence) (e2:Evidence): Evidence :=
   match (e1, e2) with
   | (evc bits1 et1, evc bits2 et2) => evc (bits1 ++ bits2) (split_evt et1 et2)
   end.

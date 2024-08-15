@@ -11,10 +11,10 @@ Import ListNotations.
 (** IO Axioms *)
 
 (*
-Definition doRemote_session (t:Term) (pTo:Plc) (e:EvC) : EvC.
+Definition doRemote_session (t:Term) (pTo:Plc) (e:Evidence) : Evidence.
 Admitted.
 
-Definition parallel_vm_thread (l:Loc) (t:Term) (p:Plc) (e:EvC) : EvC.
+Definition parallel_vm_thread (l:Loc) (t:Term) (p:Plc) (e:Evidence) : Evidence.
 Admitted.
 *)
 
@@ -24,13 +24,13 @@ Admitted.
 Definition cvm_events_core (t:Core_Term) (p:Plc) (e:EvidenceT) : list Ev. 
 Admitted.
 
-Definition cvm_EvidenceT_core (t:Core_Term) (p:Plc) (e:EvC) : EvC.
+Definition cvm_EvidenceT_core (t:Core_Term) (p:Plc) (e:Evidence) : Evidence.
 Admitted.
 
 Definition cvm_events (t:Term) (p:Plc) (e:EvidenceT) : list Ev :=
   cvm_events_core (copland_compile t) p e.
 
-Definition cvm_EvidenceT (t:Term) (p:Plc) (e:EvC) : EvC :=
+Definition cvm_EvidenceT (t:Term) (p:Plc) (e:Evidence) : Evidence :=
   cvm_EvidenceT_core (copland_compile t) p e.
 
 
@@ -44,11 +44,11 @@ Axiom remote_EvidenceT_Type_Axiom: forall t n bits et,
 *)
 
 (*
-Axiom at_EvidenceT : forall t (p:Plc) (e:EvC),
+Axiom at_EvidenceT : forall t (p:Plc) (e:Evidence),
     doRemote_session t p e = cvm_EvidenceT t p e.
 *)
 
-Axiom par_EvidenceT : forall t (p:Plc) (e:EvC) loc,
+Axiom par_EvidenceT : forall t (p:Plc) (e:Evidence) loc,
     parallel_vm_thread loc (copland_compile t) p e = cvm_EvidenceT t p e.
 
 

@@ -128,12 +128,12 @@ Fixpoint reconstruct_ev' (ls:RawEv) (et:EvidenceT) : Opt EvidenceTC :=
     Some (ssc e1 e2)
   end.
 
-Definition reconstruct_ev (e:EvC) : Opt EvidenceTC :=
+Definition reconstruct_ev (e:Evidence) : Opt EvidenceTC :=
   match e with
   | evc ls et => reconstruct_ev' ls et
   end.
 
-Inductive reconstruct_evP: EvC -> EvidenceTC -> Prop :=
+Inductive reconstruct_evP: Evidence -> EvidenceTC -> Prop :=
 | reconstruct_evC: forall e ee,
     Some ee = reconstruct_ev e ->
     reconstruct_evP e ee.
@@ -501,7 +501,7 @@ Ltac do_wfec_split :=
   end; destruct_conjs.
 
 
-(* Lemma:  Encoding an EvC bundle gives you the bits used 
+(* Lemma:  Encoding an Evidence bundle gives you the bits used 
    to (re)construct it. *)
 Lemma recon_encodeEv: forall bits et ec,
     reconstruct_evP (evc bits et) ec ->
@@ -599,7 +599,7 @@ Proof.
     congruence.
 Qed.
 
-Lemma wfec_recon: forall (ee:EvC) (ec:EvidenceTC),
+Lemma wfec_recon: forall (ee:Evidence) (ec:EvidenceTC),
     reconstruct_evP ee ec ->
     wf_ec ee.
 Proof.
@@ -790,8 +790,8 @@ Proof.
   lia.
 Qed.
 
-(** * Lemma:  well-formed EvC bundles can be successfully reconstructed to a Typed Concrete EvidenceT (EvidenceTC) value. *)
-Lemma some_recons : forall (e:EvC),
+(** * Lemma:  well-formed Evidence bundles can be successfully reconstructed to a Typed Concrete EvidenceT (EvidenceTC) value. *)
+Lemma some_recons : forall (e:Evidence),
     wf_ec e ->
     exists (ee:EvidenceTC), Some ee = reconstruct_ev e.
 Proof.
@@ -1355,7 +1355,7 @@ Ltac clear_skipn_firstn :=
   end.
 
 
-(** * Axiom:  assume parallel CVM threads preserve well-formednesplit_evt of EvC bundles *)
+(** * Axiom:  assume parallel CVM threads preserve well-formednesplit_evt of Evidence bundles *)
 Axiom wf_ec_preserved_par: forall e l t2 p,
     wf_ec e ->
     wf_ec (parallel_vm_thread l t2 p e).
@@ -1366,7 +1366,7 @@ Axiom wf_ec_preserved_remote: forall t ev1,
       do_remote t p ev1 ac = resultC rawEv ->
       wf_ec (evc rawEv (eval t p (get_et ev1))).
 
-(** * Lemma:  CVM execution preserves well-formednesplit_evt of EvC bundles 
+(** * Lemma:  CVM execution preserves well-formednesplit_evt of Evidence bundles 
       (EvidenceT Type of sufficient length for raw EvidenceT). *)
 Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' i i' ac ac' res,
     wf_ec e ->
@@ -2032,7 +2032,7 @@ Proof.
     fold copland_compile in *.
     destruct_conjs.
     repeat match goal with
-    | x : EvC |- _ =>
+    | x : Evidence |- _ =>
       destruct x
     | H : build_cvmP (copland_compile t1) _ _ _ |- _ =>
       let AC := fresh "AC" in
@@ -2054,7 +2054,7 @@ Proof.
     simpl in *; repeat ff; subst;
     wrap_ccp; cbn in *; repeat ff; cbn in *;
     repeat match goal with
-    | x : EvC |- _ =>
+    | x : Evidence |- _ =>
       destruct x
     | u : unit |- _ =>
       destruct u

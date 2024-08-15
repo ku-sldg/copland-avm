@@ -16,6 +16,12 @@ Definition sig_targplc : Plc. Admitted.
 Definition sig_params : ASP_PARAMS :=
     asp_paramsC sig_aspid sig_aspargs sig_targplc sig_targid.
 
+Definition check_nonce_aspid : ASP_ID. Admitted.
+Definition check_nonce_aspargs : ASP_ARGS. Admitted.
+Definition check_nonce_targid : ASP_ID. Admitted.
+Definition check_nonce_targplc : Plc. Admitted.
+Definition check_nonce_params : ASP_PARAMS :=
+    asp_paramsC check_nonce_aspid check_nonce_aspargs check_nonce_targplc check_nonce_targid.
 
 Definition hsh_aspid : ASP_ID. Admitted.
 

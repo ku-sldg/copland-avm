@@ -8,8 +8,7 @@ Require Import Term_Defs Preamble.
 Require Import StructTactics Defs ResultT String.
 
 Require Import Lia.
-Import List.ListNotations.
-Import ResultNotation.
+Import List.ListNotations ResultNotation.
 
 
 (** * Annotated Terms
@@ -25,28 +24,42 @@ Definition Range: Set := nat * nat.
 
 Inductive AnnoTerm :=
 | aasp: Range -> ASP -> AnnoTerm
-| aappr : Range -> AnnoTerm
 | aatt: Range -> Plc -> AnnoTerm -> AnnoTerm
 | alseq: Range -> AnnoTerm -> AnnoTerm -> AnnoTerm
 | abseq: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
 | abpar: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm.
 
 (* EvidenceT Type size *)
-Fixpoint esize t :=
+Fixpoint esize (G : ASP_Type_Env) (t : AnnoTerm) (e : EvidenceT) 
+    : ResultT nat string :=
   match t with
-  | aasp _ _ => 1
-  | aappr _ => 1
-  | aatt _ _ t1 => 2 + esize t1
-  | alseq _ t1 t2 => esize t1 + esize t2
-  | abseq _ _ t1 t2 => 2 + esize t1 + esize t2
-  | abpar _ _ t1 t2 => 2 + esize t1 + esize t2
+  | aasp _ a => 
+    match a with
+    | APPR => et_size G e
+    | _ => resultC 1
+    end
+  | aatt _ _ t1 => 
+    e' <- esize G t1 e ;;
+    resultC (2 + e')
+  | alseq _ t1 t2 => 
+    e1 <- esize G t1 e ;;
+    e2 <- esize G t2 e ;;
+    resultC (e1 + e2)
+  
+  | abseq _ _ t1 t2 => 
+    e1 <- esize G t1 e ;;
+    e2 <- esize G t2 e ;;
+    resultC (2 + e1 + e2)
+  | abpar _ _ t1 t2 => 
+    e1 <- esize G t1 e ;;
+    e2 <- esize G t2 e ;;
+    resultC (2 + e1 + e2)
   end.
 
 (* Extract Range from each annotated term *)
 Definition range x :=
   match x with
   | aasp r _ => r
-  | aappr r => r
   | aatt r _ _ => r
   | alseq r _ _ => r
   | abseq r _ _ _ => r
@@ -92,29 +105,36 @@ Qed.
 (** This function annotates a term.  It feeds a natural number
     throughout the computation so as to ensure each event has a unique
     natural number. *)
-Fixpoint anno (t: Term) (i:nat) : (nat * AnnoTerm) :=
+Fixpoint anno (e : EvidenceT) (t: Term) (i:nat) : (nat * AnnoTerm) :=
   match t with
-  | asp x => (S i, (aasp (i, S i) x))
+  | asp x => 
+    match x with
+    | NULL => (S i, aasp (i, S i) NULL)
+    | CPY => (S i, aasp (i, S i) CPY)
+    | ASPC sp par => (S i, (aasp (i, S i) (ASPC sp par)))
+    | SIG => (S i, aasp (i, S i) SIG)
+    | HSH => (S i, aasp (i, S i) HSH)
+    | APPR => 
+    | ENC p => (S i, aasp (i, S i) (ENC p))
+    end
   
-  | appr => (S i, aappr (i, S i))
-
   | att p x =>
-    let '(j,a) := anno x (S i)  in
+    let '(j,a) := anno e x (S i)  in
     (S j, aatt (i, S j) p a)
 
   | lseq x y =>
-    let '(j,a) := anno x i in
-    let '(k,bt) := anno y j in
+    let '(j,a) := anno e x i in
+    let '(k,bt) := anno e y j in
     (k, alseq (i, k) a bt)
 
   | bseq s x y =>
-    let '(j,a) := anno x (S i) in
-    let '(k,b) := anno y j in
+    let '(j,a) := anno e x (S i) in
+    let '(k,b) := anno e y j in
     (S k, abseq (i, S k) s a b)
 
   | bpar s x y =>
-    let '(j,a) := anno x (S i) in
-    let '(k,b) := anno y j in
+    let '(j,a) := anno e x (S i) in
+    let '(k,b) := anno e y j in
     (S k, abpar (i, S k) s a b)
   end.
 
@@ -124,7 +144,6 @@ Definition annotated x :=
 Fixpoint unanno a :=
   match a with
   | aasp _ a => asp a
-  | aappr _ => appr
   | aatt _ p t => att p (unanno t)
   | alseq _ a1 a2 => lseq (unanno a1) (unanno a2)                 
   | abseq _ spl a1 a2 => bseq spl (unanno a1) (unanno a2) 
@@ -141,29 +160,28 @@ Qed.
 
 (** eval (EvidenceT semantics) for annotated terms. *)
 
-Fixpoint aeval (t : AnnoTerm) (p : Plc) (e : EvidenceT) (cm : ASP_Compat_MapT) 
-    : ResultT EvidenceT string :=
+Fixpoint aeval (G : ASP_Type_Env) (cm : ASP_Compat_MapT) (t : AnnoTerm) 
+    (p : Plc) (e : EvidenceT) : ResultT EvidenceT string :=
   match t with
-  | aasp _ x => eval (asp x) p e cm
-  | aappr _ => eval appr p e cm
-  | aatt _ q x => aeval x q e cm
+  | aasp _ x => eval G cm (asp x) p e
+  | aatt _ q x => aeval G cm x q e 
   | alseq _ t1 t2 => 
-      e1 <- aeval t1 p e cm ;;
-      aeval t2 p e1 cm
+      e1 <- aeval G cm t1 p e ;;
+      aeval G cm t2 p e1 
   | abseq _ s t1 t2 => 
-      e1 <- aeval t1 p (splitEv_T_l s e) cm ;;
-      e2 <- aeval t2 p (splitEv_T_r s e) cm ;;
+      e1 <- aeval G cm t1 p (splitEv_T_l s e) ;;
+      e2 <- aeval G cm t2 p (splitEv_T_r s e) ;;
       resultC (split_evt e1 e2)
   | abpar _ s t1 t2 => 
-      e1 <- aeval t1 p (splitEv_T_l s e) cm ;;
-      e2 <- aeval t2 p (splitEv_T_r s e) cm ;;
+      e1 <- aeval G cm t1 p (splitEv_T_l s e) ;;
+      e2 <- aeval G cm t2 p (splitEv_T_r s e) ;;
       resultC (split_evt e1 e2)
   end.
 
 Lemma eval_aeval:
-  forall t p e i cm t',
+  forall t p e i G cm t',
     t' = snd (anno t i) ->
-    eval t p e cm = aeval t' p e cm.
+    eval G cm t p e = aeval G cm t' p e.
 Proof.
   induction t; simpl in *; intuition; eauto;
   ff;
@@ -183,10 +201,6 @@ Inductive well_formed_r_annt: AnnoTerm -> Prop :=
 | wf_asp_r_annt: forall r x,
     snd r = S (fst r) ->
     well_formed_r_annt (aasp r x)
-
-| wf_appr_r_annt: forall r,
-    snd r = S (fst r) ->
-    well_formed_r_annt (aappr r)
 
 | wf_att_r_annt: forall r p x,
     well_formed_r_annt x ->
@@ -259,7 +273,6 @@ Qed.
 Fixpoint event_id_span_Term (t: Term) : nat :=
   match t with
   | asp x => 1
-  | appr => 1
   | att p x => 2 + (event_id_span_Term x)
   | lseq x y => (event_id_span_Term x) + (event_id_span_Term y)
   | bseq s x y => 2 + (event_id_span_Term x) + (event_id_span_Term y)
@@ -270,7 +283,6 @@ Fixpoint event_id_span_Term (t: Term) : nat :=
 Fixpoint event_id_span_Core (t: Core_Term) : nat :=
   match t with
   | aspc CLEAR => 0
-  | apprc => 1
   | attc _ x => 2 + (event_id_span_Term x)
   | lseqc x y => (event_id_span_Core x) + (event_id_span_Core y)
   | bseqc x y => 2 + (event_id_span_Core x) + (event_id_span_Core y)

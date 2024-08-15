@@ -21,7 +21,7 @@ Import ErrNotation.
 
 (** * CVM monadic primitive operations *)
 
-Definition get_ev : CVM EvC :=
+Definition get_ev : CVM Evidence :=
   st <- err_get ;;
   err_ret (st_ev st).
 
@@ -39,7 +39,7 @@ Definition get_config : CVM Session_Config :=
   st <- err_get ;;
   err_ret (st_config st).
 
-Definition put_ev (e' : EvC) : CVM unit :=
+Definition put_ev (e' : Evidence) : CVM unit :=
   tr <- get_trace ;;
   i <- get_evid ;;
   sc <- get_config ;;
@@ -69,7 +69,7 @@ Definition inc_id : CVM Event_ID :=
   err_put (mk_st e tr (Nat.add i (S O)) sc) ;;
   err_ret i.
 
-Definition modify_evm (f:EvC -> EvC) : CVM unit :=
+Definition modify_evm (f:Evidence -> Evidence) : CVM unit :=
   e <- get_ev ;;
   put_ev (f e).
 
@@ -96,14 +96,14 @@ Definition split_ev : CVM unit :=
 (* Generates a new event ID and adds a measurement event with that ID to the 
    CVM internal trace.  Returns the new Event_ID (used to represent raw 
    EvidenceT, relevant for appraisal verification).  *)
-Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) (e:EvC) : CVM Event_ID :=
+Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) (e:Evidence) : CVM Event_ID :=
   x <- inc_id ;;
   add_trace [umeas x mpl params (get_et e)] ;;
   err_ret x.
 
 (* Helper function that builds a new internal EvidenceT bundle based on 
    the EvidenceT extension parameter of an ASP term. *)
-Definition fwd_asp (fwd:FWD) (rwev : RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): CVM EvC :=
+Definition fwd_asp (fwd:FWD) (rwev : RawEv) (e:Evidence) (p:Plc) (ps:ASP_PARAMS): CVM Evidence :=
   match fwd with
   | COMP => 
       match comp_bundle rwev e p ps with
@@ -136,7 +136,7 @@ Definition do_asp (params :ASP_PARAMS) (e:RawEv) (x:Event_ID) : CVM RawEv :=
 
 (* Simulates invoking an arbitrary ASP.  Tags the event, builds and returns 
    the new EvidenceT bundle. *)
-Definition invoke_ASP (fwd:FWD) (params:ASP_PARAMS) (* (ac : AM_Config) *) : CVM EvC :=
+Definition invoke_ASP (fwd:FWD) (params:ASP_PARAMS) (* (ac : AM_Config) *) : CVM Evidence :=
   e <- get_ev ;;
   p <- get_pl ;;
   x <- tag_ASP params p e ;;
@@ -144,23 +144,23 @@ Definition invoke_ASP (fwd:FWD) (params:ASP_PARAMS) (* (ac : AM_Config) *) : CVM
   outev <- fwd_asp fwd rawev e p params ;;
   err_ret outev.
 
-Definition copyEv : CVM EvC :=
+Definition copyEv : CVM Evidence :=
   p <- get_pl ;;
   x <- inc_id ;;
   add_trace [copy x p] ;;
   get_ev.
 
-Definition nullEv : CVM EvC :=
+Definition nullEv : CVM Evidence :=
   p <- get_pl ;;
   x <- inc_id ;;
   add_trace [null x p] ;;
   err_ret mt_evc.
 
-Definition clearEv : unit -> CVM EvC :=
+Definition clearEv : unit -> CVM Evidence :=
   fun _ => err_ret mt_evc.
 
 (* Helper that interprets primitive core terms in the CVM.  *)
-Definition do_prim (a:ASP_Core) (* (ac : AM_Config) *) : CVM EvC :=
+Definition do_prim (a:ASP_Core) (* (ac : AM_Config) *) : CVM Evidence :=
   match a with
   | NULLC => nullEv
   | CLEAR => clearEv tt
@@ -187,11 +187,11 @@ Definition inc_par_event_ids (t:Core_Term) : CVM unit :=
 (* Primitive monadic communication primitives 
    (some rely on Admitted IO Stubs). *)
 
-Definition tag_REQ (t:Term) (p:Plc) (q:Plc) (e:EvC) : CVM unit :=
+Definition tag_REQ (t:Term) (p:Plc) (q:Plc) (e:Evidence) : CVM unit :=
   reqi <- inc_id ;;
   add_trace [req reqi p q t (get_et e)].
 
-Definition tag_RPY (p:Plc) (q:Plc) (e:EvC) : CVM unit :=
+Definition tag_RPY (p:Plc) (q:Plc) (e:Evidence) : CVM unit :=
   rpyi <- inc_id ;;
   add_trace [rpy rpyi p q (get_et e)].
 
@@ -209,7 +209,7 @@ Definition check_cvm_policy (t:Term) (pTo:Plc) (et:EvidenceT) : CVM unit :=
     | false => err_failm (dispatch_error (Runtime errStr_disclosePolicy))
     end.
 
-Definition do_remote (t:Term) (pTo:Plc) (e:EvC) (sc : Session_Config) 
+Definition do_remote (t:Term) (pTo:Plc) (e:Evidence) (sc : Session_Config) 
     : ResultT RawEv DispatcherErrors := 
   (* There is assuredly a better way to do it than this *)
   let '(mkAtt_Sesplit_evt my_plc plc_map pk_map) := (session_config_decompiler sc) in
@@ -237,7 +237,7 @@ Definition do_remote (t:Term) (pTo:Plc) (e:EvC) (sc : Session_Config)
   | None => errC (Unavailable)
   end.
 
-Definition doRemote_session' (t:Term) (pTo:Plc) (e:EvC) : CVM EvC := 
+Definition doRemote_session' (t:Term) (pTo:Plc) (e:Evidence) : CVM Evidence := 
   check_cvm_policy t pTo (get_et e) ;;
   sc <- get_config ;;
   match (do_remote t pTo e sc) with 
@@ -245,20 +245,20 @@ Definition doRemote_session' (t:Term) (pTo:Plc) (e:EvC) : CVM EvC :=
   | errC e => err_failm (dispatch_error e)
   end.
 
-Definition remote_session (t:Term) (p:Plc) (q:Plc) (e:EvC) : CVM EvC :=
+Definition remote_session (t:Term) (p:Plc) (q:Plc) (e:Evidence) : CVM Evidence :=
   tag_REQ t p q e ;;
   e' <- doRemote_session' t q e ;;
   add_trace (cvm_events t q (get_et e)) ;;
   inc_remote_event_ids t ;;
   err_ret e'.
 
-Definition doRemote (t:Term) (q:Plc) (e:EvC) : CVM EvC :=
+Definition doRemote (t:Term) (q:Plc) (e:Evidence) : CVM Evidence :=
   p <- get_pl ;;
   e' <- remote_session t p q e ;;
   tag_RPY p q e' ;;
   err_ret e'.
 
-Definition join_seq (e1:EvC) (e2:EvC): CVM unit :=
+Definition join_seq (e1:Evidence) (e2:Evidence): CVM unit :=
   p <- get_pl ;;
   n <- inc_id ;;
   put_ev (ss_cons e1 e2) ;;
@@ -267,12 +267,12 @@ Definition join_seq (e1:EvC) (e2:EvC): CVM unit :=
 (* Primitive monadic parallel CVM thread primitives 
    (some rely on Admitted IO Stubs). *)
 
-Definition start_par_thread (loc:Loc) (t:Core_Term) (e:EvC) : CVM unit :=
+Definition start_par_thread (loc:Loc) (t:Core_Term) (e:Evidence) : CVM unit :=
   p <- get_pl ;;
   do_start_par_thread loc t (get_bits e) ;;
   add_trace [cvm_thread_start loc p t (get_et e)].
 
-Definition wait_par_thread (loc:Loc) (t:Core_Term) (e:EvC) : CVM EvC :=
+Definition wait_par_thread (loc:Loc) (t:Core_Term) (e:Evidence) : CVM Evidence :=
   p <- get_pl ;;
   e' <- do_wait_par_thread loc t p e ;;
   add_trace [cvm_thread_end loc] ;;

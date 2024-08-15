@@ -50,7 +50,7 @@ Definition am_sendReq_app (uuid : UUID) (att_sesplit_evt : Attestation_Session) 
   | errC msg => errC msg
   end.
 
-Definition gen_nonce_if_none_local (initEv:option EvC) : AM EvC :=
+Definition gen_nonce_if_none_local (initEv:option Evidence) : AM Evidence :=
   match initEv with
   | Some (evc ebits et) => err_ret mt_evc
   | None =>
@@ -59,7 +59,7 @@ Definition gen_nonce_if_none_local (initEv:option EvC) : AM EvC :=
     err_ret (evc [nonce_bits] (nonce_evt nid))
   end.
 
-(* Definition gen_authEvC_if_some (ot:option Term) (uuid : UUID) (myPlc:Plc) (init_evc:EvC) : AM EvC :=
+(* Definition gen_authEvidence_if_some (ot:option Term) (uuid : UUID) (myPlc:Plc) (init_evc:Evidence) : AM Evidence :=
   match ot with
   | Some auth_phrase =>
     let '(evc init_rawev_auth init_et_auth) := init_evc in
@@ -195,7 +195,7 @@ Admitted.
   | errC e => am_failm (cvm_error e)
   end. *)
 
-(* Definition gen_authEvC_if_some_local (ot:option Term) (myPlc:Plc) (init_evc:EvC) (absMan:Manifest) (amLib:AM_Library) (aspBin : FS_Location) : AM EvC :=
+(* Definition gen_authEvidence_if_some_local (ot:option Term) (myPlc:Plc) (init_evc:Evidence) (absMan:Manifest) (amLib:AM_Library) (aspBin : FS_Location) : AM Evidence :=
   match ot with
   | Some auth_phrase =>
       let '(evc init_rawev_auth init_et_auth) := init_evc in
@@ -218,10 +218,10 @@ Definition check_disclosure_policy (t:Term) (p:Plc) (e:EvidenceT) : AM unit :=
   else (am_failm (am_dispatch_error (Runtime errStr_disclosePolicy))).
 *)
 
-(* Definition am_client_gen_local (t:Term) (myPlc:Plc) (initEvOpt:option EvC) 
+(* Definition am_client_gen_local (t:Term) (myPlc:Plc) (initEvOpt:option Evidence) 
     (absMan:Manifest) (amLib:AM_Library) (aspBin : FS_Location) : AM AM_Result := 
   evcIn <- gen_nonce_if_none_local initEvOpt ;; 
-  (* auth_evc <- gen_authEvC_if_some_local authPhrase myPlc mt_evc ;;  *)
+  (* auth_evc <- gen_authEvidence_if_some_local authPhrase myPlc mt_evc ;;  *)
   let '(evc init_ev init_et) := evcIn in 
   config_AM_if_lib_supported absMan amLib aspBin ;; 
 
@@ -930,7 +930,7 @@ Qed.
 (*
 
 evcIn <- gen_nonce_if_none initEvOpt ;;
-auth_evc <- gen_authEvC_if_some authPhrase myPlc mt_evc  ;;
+auth_evc <- gen_authEvidence_if_some authPhrase myPlc mt_evc  ;;
 let '(evc init_ev init_et) := evcIn in
 let resev := am_sendReq t pTo auth_evc init_ev in 
 match app_bool with
