@@ -1,10 +1,10 @@
 (* Definitions, properties, and associated automation related to 
-    Appraisal and Evidence examination/reconstruction.
+    Appraisal and EvidenceT examination/reconstruction.
 
-    Also included:  properties about CVM internal Evidence and Event handling.  
+    Also included:  properties about CVM internal EvidenceT and Event handling.  
     TODO:  This file has become quite bloated.  May need to refactor/decompose.  *)
 
-Require Import ConcreteEvidence AutoApp Defs StructTactics OptMonad_Coq Anno_Term_Defs Cvm_Impl Cvm_St ResultT Axioms_Io Attestation_Session External_Facts Helpers_CvmSemantics Cvm_Monad More_lists Auto.
+Require Import ConcreteEvidenceT AutoApp Defs StructTactics OptMonad_Coq Anno_Term_Defs Cvm_Impl Cvm_St ResultT Axioms_Io Attestation_Session External_Facts Helpers_CvmSemantics Cvm_Monad More_lists Auto.
 
 Require Import List.
 Import ListNotations OptNotation.
@@ -70,7 +70,7 @@ Proof.
   lia.
 Qed.
 
-Fixpoint encodeEv (e:EvidenceC) : RawEv :=
+Fixpoint encodeEv (e:EvidenceTC) : RawEv :=
   match e with
   | mtc => []
   | nnc _ bs => [bs]
@@ -82,14 +82,14 @@ Fixpoint encodeEv (e:EvidenceC) : RawEv :=
   | ssc e1 e2 => (encodeEv e1) ++ (encodeEv e2)
   end.
 
-Fixpoint reconstruct_ev' (ls:RawEv) (et:Evidence) : Opt EvidenceC :=
+Fixpoint reconstruct_ev' (ls:RawEv) (et:EvidenceT) : Opt EvidenceTC :=
   match et with
-  | mt => 
+  | mt_evt=> 
     match ls with
     | [] => Some mtc
     | _ => None
     end
-  | uu p fwd ps et' =>
+  | asp_evt p fwd ps et' =>
     match fwd with
     | (EXTD n) => 
       '(rawEv, ls') <- peel_n n ls ;;
@@ -116,32 +116,32 @@ Fixpoint reconstruct_ev' (ls:RawEv) (et:Evidence) : Opt EvidenceC :=
       x <- reconstruct_ev' ls et' ;;
       Some (kpc p ps x)
     end
-  | nn i =>
+  | nonce_evt i =>
     '(bs, ls') <- peel_bs ls ;;
      match ls' with
     | [] => Some (nnc i bs)
     | _ => None
     end 
-  | ss et1 et2 =>
+  | split_evt et1 et2 =>
     e1 <- reconstruct_ev' (firstn (et_size et1) ls) et1 ;;
     e2 <- reconstruct_ev' (skipn (et_size et1) ls) et2 ;;
     Some (ssc e1 e2)
   end.
 
-Definition reconstruct_ev (e:EvC) : Opt EvidenceC :=
+Definition reconstruct_ev (e:EvC) : Opt EvidenceTC :=
   match e with
   | evc ls et => reconstruct_ev' ls et
   end.
 
-Inductive reconstruct_evP: EvC -> EvidenceC -> Prop :=
+Inductive reconstruct_evP: EvC -> EvidenceTC -> Prop :=
 | reconstruct_evC: forall e ee,
     Some ee = reconstruct_ev e ->
     reconstruct_evP e ee.
 
 
-Lemma inv_recon_mt: forall ls et,
+Lemma inv_recon_mt_evt: forall ls et,
     reconstruct_evP (evc ls et) mtc ->
-    (et = mt).
+    (et = mt_evt).
 Proof.
   intros.
   invc H.
@@ -152,17 +152,17 @@ Proof.
          try solve_by_inversion.
 Qed.
 
-Ltac do_inv_recon_mt :=
+Ltac do_inv_recon_mt_evt:=
   match goal with
   | [H: reconstruct_evP (evc _ ?et) mtc
 
      |- _] =>
-    assert_new_proof_by (et = mt) ltac:(eapply inv_recon_mt; apply H)
+    assert_new_proof_by (et = mt_evt) ltac:(eapply inv_recon_mt_evt; apply H)
   end;
   subst.
 
-Lemma inv_recon_mt': forall ls e,
-    reconstruct_evP (evc ls mt) e ->
+Lemma inv_recon_mt_evt': forall ls e,
+    reconstruct_evP (evc ls mt_evt) e ->
     e = mtc.
 Proof.
   intros.
@@ -170,31 +170,31 @@ Proof.
   repeat ff; try solve_by_inversion; eauto.
 Qed.
 
-Ltac do_inv_recon_mt' :=
+Ltac do_inv_recon_mt_evt' :=
   match goal with
-  | [H: reconstruct_evP (evc _ mt) ?e
+  | [H: reconstruct_evP (evc _ mt_evt) ?e
 
      |- _] =>
-    assert_new_proof_by (e = mtc) ltac:(eapply inv_recon_mt'; apply H)
+    assert_new_proof_by (e = mtc) ltac:(eapply inv_recon_mt_evt'; apply H)
   end;
   subst.
 
 
 Lemma inv_recon_nn: forall ls et n n0,
     reconstruct_evP (evc ls et) (nnc n n0) ->
-    ((et = nn n /\ ls = [n0])).
+    ((et = nonce_evt n /\ ls = [n0])).
 Proof.
   intros.
   invc H.
   destruct et; repeat ff; try (unfold opt_bind in *); repeat ff; destruct ls; try solve_by_inversion.                              
 Qed.
 
-Ltac do_inv_recon_nn :=
+Ltac do_inv_recon_nonce_evt :=
   match goal with
   | [H: reconstruct_evP (evc ?ls ?et) (nnc ?n ?nval)
 
      |- _] =>
-    assert_new_proof_by (et = nn n /\ ls = [nval] ) ltac:(eapply inv_recon_nn; apply H)
+    assert_new_proof_by (et = nonce_evt n /\ ls = [nval] ) ltac:(eapply inv_recon_nn; apply H)
   end;
   destruct_conjs;
   subst.
@@ -211,7 +211,7 @@ Qed.
 
 Lemma inv_recon_gg: forall p ps ls et n ec,
     reconstruct_evP (evc ls et) (ggc p ps n ec) ->
-    (exists ls' et', et = uu p (EXTD (length n)) ps et' /\
+    (exists ls' et', et = asp_evt p (EXTD (length n)) ps et' /\
                 ls = n ++ ls') .
 Proof.
   intuition; invc H.
@@ -227,7 +227,7 @@ Ltac do_inv_recon_gg :=
   | [H: reconstruct_evP (evc ?ls ?et) (ggc ?p ?ps ?n _)
 
      |- _] =>
-    assert_new_proof_by ((exists ls' et', et = uu p (EXTD (length n)) ps et' /\
+    assert_new_proof_by ((exists ls' et', et = asp_evt p (EXTD (length n)) ps et' /\
                                     ls = n ++ ls') )
                         ltac:(eapply inv_recon_gg; apply H)
   | H : peel_n _ _ = Some _ |- _ => 
@@ -239,7 +239,7 @@ Ltac do_inv_recon_gg :=
 
 Lemma inv_recon_hh: forall p ps ls et n et',
     reconstruct_evP (evc ls et) (hhc p ps n et') ->
-    ((et = uu p COMP ps et' ) /\ ls = [n]).
+    ((et = asp_evt p COMP ps et' ) /\ ls = [n]).
 Proof.
   intros.
   invc H.
@@ -251,7 +251,7 @@ Ltac do_inv_recon_hh :=
   | [H: reconstruct_evP (evc ?ls ?et) (hhc ?p ?ps ?hval ?et')
 
      |- _] =>
-    assert_new_proof_by ((et = uu p COMP ps et' /\ ls = [hval]))
+    assert_new_proof_by ((et = asp_evt p COMP ps et' /\ ls = [hval]))
                         ltac:(eapply inv_recon_hh; apply H)
   end;
   destruct_conjs;
@@ -259,7 +259,7 @@ Ltac do_inv_recon_hh :=
 
 Lemma inv_recon_ee: forall p ps ls et n ec',
     reconstruct_evP (evc ls et) (eec p ps n ec') ->
-    (exists et', et = uu p ENCR ps et' /\ ls = [n]).
+    (exists et', et = asp_evt p ENCR ps et' /\ ls = [n]).
 Proof.
   intros.
   invc H.
@@ -273,7 +273,7 @@ Ltac do_inv_recon_ee :=
   | [H: reconstruct_evP (evc ?ls ?et) (eec ?p ?ps ?hval (*_*) _)
 
      |- _] =>
-    assert_new_proof_by ( (exists et', et = uu p ENCR ps et' /\ ls = [hval]) )
+    assert_new_proof_by ( (exists et', et = asp_evt p ENCR ps et' /\ ls = [hval]) )
                         ltac:(eapply inv_recon_ee; apply H)
   end;
   destruct_conjs;
@@ -281,7 +281,7 @@ Ltac do_inv_recon_ee :=
 
 Lemma inv_recon_ss: forall ls et ec1 ec2,
     reconstruct_evP (evc ls et) (ssc ec1 ec2) ->
-    (exists et1 et2, et = ss et1 et2).
+    (exists et1 et2, et = split_evt et1 et2).
 Proof.
   intros.
   invc H.
@@ -290,12 +290,12 @@ Proof.
   eauto.
 Qed.
 
-Ltac do_inv_recon_ss :=
+Ltac do_inv_recon_split_evt :=
   match goal with
   | [H: reconstruct_evP (evc _ ?et) (ssc _ _)
 
      |- _] =>
-    assert_new_proof_by ((exists et1 et2, et = ss et1 et2) )
+    assert_new_proof_by ((exists et1 et2, et = split_evt et1 et2) )
                         ltac:(eapply inv_recon_ss; apply H)
   end;
   destruct_conjs;
@@ -303,8 +303,8 @@ Ltac do_inv_recon_ss :=
 
 
 Ltac do_inv_recon :=
-  try do_inv_recon_mt;
-  try do_inv_recon_mt';
+  try do_inv_recon_mt_evt;
+  try do_inv_recon_mt_evt';
   try do_inv_recon_nn;
   try do_inv_recon_gg;
   try do_inv_recon_hh;
@@ -313,7 +313,7 @@ Ltac do_inv_recon :=
 
 Lemma recon_inv_gg: forall sig ls p ps et e,
     reconstruct_evP
-      (evc (sig ++ ls) (uu p (EXTD (length sig)) ps et))
+      (evc (sig ++ ls) (asp_evt p (EXTD (length sig)) ps et))
       (ggc p ps sig e) ->
     reconstruct_evP (evc ls et) e.
 Proof.
@@ -328,7 +328,7 @@ Qed.
 Ltac do_recon_inv_gg :=
   match goal with
   | [H: reconstruct_evP
-          (evc (_ :: ?ls) (uu _ _ _ ?et))
+          (evc (_ :: ?ls) (asp_evt _ _ _ ?et))
           (ggc _ _ _ ?e)
      |- _] =>
     assert_new_proof_by (reconstruct_evP (evc ls et) e) ltac:(eapply recon_inv_gg; apply H)
@@ -338,7 +338,7 @@ Ltac do_recon_inv_gg :=
   end.
 
 Lemma recon_inv_ss: forall ls H1 H2 ec1 ec2,
-    reconstruct_evP (evc ls (ss H1 H2)) (ssc ec1 ec2) ->
+    reconstruct_evP (evc ls (split_evt H1 H2)) (ssc ec1 ec2) ->
     reconstruct_evP (evc (firstn (et_size H1) ls) H1) ec1 /\
     reconstruct_evP (evc (skipn (et_size H1) ls) H2)  ec2.
 Proof.
@@ -351,10 +351,10 @@ Proof.
       symmetry; eassumption.
 Qed.
 
-Ltac do_recon_inv_ss :=
+Ltac do_recon_inv_split_evt :=
   match goal with
   | [H: reconstruct_evP
-          (evc ?ls (ss ?H1 ?H2))
+          (evc ?ls (split_evt ?H1 ?H2))
           (ssc ?ec1 ?ec2) _
      |- _] =>
     assert_new_proof_by
@@ -408,14 +408,14 @@ Proof.
   intros.
   generalizeEverythingElse e1.
   induction e1; intros e e0 H.
-  - (* mt case *)
+  - (* mt_evtcase *)
     invc H.
     ff.
-  - (* nn case *)
+  - (* nonce_evt case *)
     invc H.
     repeat ff; try (unfold opt_bind in * ); repeat ff.
   
-  - (* uu case *)
+  - (* asp_evt case *)
     destruct f; ffa.
     + (* COMP case *)
       invc H.
@@ -457,7 +457,7 @@ Proof.
       }
       subst.
       tauto.
-  - (* ss case *)
+  - (* split_evt case *)
     invc H.
     ff.
     repeat ff; try (unfold opt_bind in * ); repeat ff.
@@ -562,7 +562,7 @@ Proof.
   - (* kpc case *)
     ff.
 
-    assert (exists et', et = uu p KEEP a et').
+    assert (exists et', et = asp_evt p KEEP a et').
     {
       destruct et; try solve_by_inversion;
       invc H; ffa using (unfold opt_bind in *).
@@ -599,7 +599,7 @@ Proof.
     congruence.
 Qed.
 
-Lemma wfec_recon: forall (ee:EvC) (ec:EvidenceC),
+Lemma wfec_recon: forall (ee:EvC) (ec:EvidenceTC),
     reconstruct_evP ee ec ->
     wf_ec ee.
 Proof.
@@ -749,7 +749,7 @@ Ltac inv_wfec :=
     | [H: wf_ec _ |-  _ ] => invc H
     end.
 
-(** * If a raw evidence sequence is non-empty, we can grab a first element. *)
+(** * If a raw EvidenceT sequence is non-empty, we can grab a first element. *)
 Lemma some_recons' : forall e x,
     length e = S x ->
     exists bs ls', peel_bs e = Some (bs, ls').
@@ -774,7 +774,7 @@ Ltac do_rcih :=
      |- context[reconstruct_ev' ?e' ?et] ] =>
     assert_new_proof_by
       (exists x, Some x = reconstruct_ev' e' et)
-      ltac:(eapply H with (r:=e'); (* TODO:  make r less one-off *)
+      ltac:(eapply H with (r:=e'); (* TODO:  make r lesplit_evt one-off *)
             try (eapply peel_fact; eauto; tauto);
             try (econstructor; first [eapply firstn_long | eapply skipn_long]; try eauto; try lia))      
   end.
@@ -790,10 +790,10 @@ Proof.
   lia.
 Qed.
 
-(** * Lemma:  well-formed EvC bundles can be successfully reconstructed to a Typed Concrete Evidence (EvidenceC) value. *)
+(** * Lemma:  well-formed EvC bundles can be successfully reconstructed to a Typed Concrete EvidenceT (EvidenceTC) value. *)
 Lemma some_recons : forall (e:EvC),
     wf_ec e ->
-    exists (ee:EvidenceC), Some ee = reconstruct_ev e.
+    exists (ee:EvidenceTC), Some ee = reconstruct_ev e.
 Proof.
   intros.
   destruct e.
@@ -801,11 +801,11 @@ Proof.
   induction e; intros.
   - inv_wfec; ff.
 
-  - (* nn case *)
+  - (* nonce_evt case *)
     ffa using (unfold opt_bind in * );
     inv_wfec; destruct r.
 
-  - (* uu case *)
+  - (* asp_evt case *)
 
     destruct f.
     
@@ -892,7 +892,7 @@ Proof.
       eassumption.
     }
     ffa.
-  - (* ss case *)
+  - (* split_evt case *)
     assert (wf_ec (evc (firstn (et_size e1) r) e1)).
     {
       inv_wfec; econstructor;
@@ -930,7 +930,7 @@ Ltac do_somerecons :=
         ltac:(eapply some_reconsP; apply H)     
     end; destruct_conjs.
 
-Definition spc_ev (sp:SP) (e:EvidenceC) : EvidenceC :=
+Definition spc_ev (sp:SP) (e:EvidenceTC) : EvidenceTC :=
   match sp with
   | ALL => e
   | NONE => mtc
@@ -951,7 +951,7 @@ Admitted. (* TODO:  fill this in with some sort of callback + default value? *)
 Axiom do_asp_EXTD_nofail_length_spec : forall ps n ev p x,
     length (do_asp_EXTD_nofail ps n ev p x) = n.
 
-Definition cvm_evidence_denote_asp (a:ASP) (p:Plc) (e:EvidenceC) (x:Event_ID): EvidenceC :=
+Definition cvm_EvidenceT_denote_asp (a:ASP) (p:Plc) (e:EvidenceTC) (x:Event_ID): EvidenceTC :=
   match a with
   | NULL => mtc
   | CPY => e
@@ -981,16 +981,16 @@ Definition cvm_evidence_denote_asp (a:ASP) (p:Plc) (e:EvidenceC) (x:Event_ID): E
   end.
 
 
-(** * Denotation function of a Typed Concrete Evidence value from an annotated term, initial place, initial evidence *)
-Fixpoint cvm_evidence_denote (t:AnnoTerm) (p:Plc) (ec:EvidenceC) : EvidenceC :=
+(** * Denotation function of a Typed Concrete EvidenceT value from an annotated term, initial place, initial EvidenceT *)
+Fixpoint cvm_EvidenceT_denote (t:AnnoTerm) (p:Plc) (ec:EvidenceTC) : EvidenceTC :=
   match t with
-  | aasp (i,_) x => cvm_evidence_denote_asp x p ec i
-  | aatt _ q x => cvm_evidence_denote x q ec
-  | alseq _ t1 t2 => cvm_evidence_denote t2 p (cvm_evidence_denote t1 p ec)
-  | abseq _ s t1 t2 => ssc (cvm_evidence_denote t1 p ((splitEvl s ec)))
-                         (cvm_evidence_denote t2 p ((splitEvr s ec)))
-  | abpar _ s t1 t2 => ssc (cvm_evidence_denote t1 p ((splitEvl s ec)))
-                         (cvm_evidence_denote t2 p ((splitEvr s ec)))
+  | aasp (i,_) x => cvm_EvidenceT_denote_asp x p ec i
+  | aatt _ q x => cvm_EvidenceT_denote x q ec
+  | alseq _ t1 t2 => cvm_EvidenceT_denote t2 p (cvm_EvidenceT_denote t1 p ec)
+  | abseq _ s t1 t2 => ssc (cvm_EvidenceT_denote t1 p ((splitEvl s ec)))
+                         (cvm_EvidenceT_denote t2 p ((splitEvr s ec)))
+  | abpar _ s t1 t2 => ssc (cvm_EvidenceT_denote t1 p ((splitEvl s ec)))
+                         (cvm_EvidenceT_denote t2 p ((splitEvr s ec)))
   end.
 
 Set Warnings "-notation-overridden".
@@ -998,13 +998,13 @@ Set Warnings "+notation-overridden".
 
 
 (** * Assert an arbitrary (remote) CVM execution.  
-      Uses uninterpreted functions for "simulated" CVM evidence and events. *)
+      Uses uninterpreted functions for "simulated" CVM EvidenceT and events. *)
 Ltac do_assert_remote t e i ac :=
   assert (
       build_cvm t
                       {| st_ev := e; st_trace := []; st_evid := i; st_config := ac |} =
       (resultC tt,
-       {| st_ev := cvm_evidence_core t (session_plc ac) e;
+       {| st_ev := cvm_EvidenceT_core t (session_plc ac) e;
           st_trace := cvm_events_core t (session_plc ac) (get_et e);
           st_evid :=  (i + event_id_span t); 
           st_config := ac
@@ -1279,7 +1279,7 @@ Qed.
 
 (** * Propositional version of span_cvm *)
 Lemma anno_span_cvm: forall t pt annt i i' e e' tr tr' st_evid1 ac ac',
-    annoP_indexed annt t i i' ->
+    anno t i = (i', annt) ->
     term_to_coreP t pt ->
     build_cvmP pt
                      {|
@@ -1355,7 +1355,7 @@ Ltac clear_skipn_firstn :=
   end.
 
 
-(** * Axiom:  assume parallel CVM threads preserve well-formedness of EvC bundles *)
+(** * Axiom:  assume parallel CVM threads preserve well-formednesplit_evt of EvC bundles *)
 Axiom wf_ec_preserved_par: forall e l t2 p,
     wf_ec e ->
     wf_ec (parallel_vm_thread l t2 p e).
@@ -1366,8 +1366,8 @@ Axiom wf_ec_preserved_remote: forall t ev1,
       do_remote t p ev1 ac = resultC rawEv ->
       wf_ec (evc rawEv (eval t p (get_et ev1))).
 
-(** * Lemma:  CVM execution preserves well-formedness of EvC bundles 
-      (Evidence Type of sufficient length for raw evidence). *)
+(** * Lemma:  CVM execution preserves well-formednesplit_evt of EvC bundles 
+      (EvidenceT Type of sufficient length for raw EvidenceT). *)
 Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' i i' ac ac' res,
     wf_ec e ->
     build_cvmP t1
@@ -1432,10 +1432,10 @@ Axiom ev_cvm_mtc: forall ct p e loc,
     parallel_vm_thread loc ct p mt_evc = parallel_vm_thread loc (lseqc (aspc CLEAR) ct) p e.
 
 
-(** * Lemma:  Evidence Type denotation respects evidence reference semantics  *)
+(** * Lemma:  EvidenceT Type denotation respects EvidenceT reference semantics  *)
 Lemma cvm_ev_denote_evtype: forall annt p e,
-    (*annoP annt t -> *)
-    et_fun (cvm_evidence_denote annt p e) = (aeval annt p (et_fun e)).
+    (*(exists n n', anno t n = (n',annt)) -> *)
+    et_fun (cvm_EvidenceT_denote annt p e) = (aeval annt p (et_fun e)).
 Proof.
   intros.
   generalizeEverythingElse annt.
@@ -1450,7 +1450,7 @@ Proof.
     eauto.
   -
     dd.
-    assert (et_fun (cvm_evidence_denote annt1 p e) = aeval annt1 p (et_fun e)) by eauto.
+    assert (et_fun (cvm_EvidenceT_denote annt1 p e) = aeval annt1 p (et_fun e)) by eauto.
     repeat jkjke.
   - dd.
     jkjke.
@@ -1935,7 +1935,7 @@ Ltac do_restl :=
       ltac:(eapply restl; [apply H])
   end.
 
-(** * Lemma:  evidence semantics same for annotated and un-annotated terms *)
+(** * Lemma:  EvidenceT semantics same for annotated and un-annotated terms *)
 Lemma eval_aeval': forall t1 p et,
     eval (unanno t1) p et = aeval t1 p et.
 Proof.
@@ -1944,29 +1944,29 @@ Proof.
     repeat jkjke.
 Qed.
 
-Axiom cvm_evidence_correct_type : forall t p e e',
-  cvm_evidence t p e = e' -> 
+Axiom cvm_EvidenceT_correct_type : forall t p e e',
+  cvm_EvidenceT t p e = e' -> 
   get_et e' = eval t p (get_et e).
 
 
-(** * Lemma:  parallel CVM threads preserve the reference Evidence Type semantics (eval). *)
-Lemma par_evidence_r: forall l p bits bits' et et' t2,
+(** * Lemma:  parallel CVM threads preserve the reference EvidenceT Type semantics (eval). *)
+Lemma par_EvidenceT_r: forall l p bits bits' et et' t2,
     parallel_vm_thread l (copland_compile t2) p (evc bits et) = evc bits' et' ->
     et' = eval t2 p et.
 Proof.
   intros.
-  rewrite par_evidence in H.
+  rewrite par_EvidenceT in H.
   assert (get_et (evc bits' et') = eval t2 p (get_et (evc bits et))).
   {
-    eapply cvm_evidence_correct_type; eauto.
+    eapply cvm_EvidenceT_correct_type; eauto.
   }
   ff.
 Qed.
          
 (** * Axiom about "simulated" parallel semantics of CVM execution:
-      Executing a "CLEAR" before a term is the same as executing that term with mt initial evidence.
+      Executing a "CLEAR" before a term is the same as executing that term with mt_evtinitial EvidenceT.
       TODO:  can we use existing axioms to prove this? *)
-Axiom par_evidence_clear: forall l p bits et t2,
+Axiom par_EvidenceT_clear: forall l p bits et t2,
     parallel_vm_thread l (lseqc (aspc CLEAR) t2) p (evc bits et) =
     parallel_vm_thread l t2 p mt_evc.
 
@@ -1995,9 +1995,9 @@ Proof.
   eapply build_cvm_sc_immut.
 Qed.
 
-(** * Main Lemma:  CVM execution maintains the Evidence Type reference semantics (eval) for 
-      its internal evidence bundle. *)
-Lemma cvm_refines_lts_evidence' : forall t tr tr' bits bits' et et' i i' ac ac',
+(** * Main Lemma:  CVM execution maintains the EvidenceT Type reference semantics (eval) for 
+      its internal EvidenceT bundle. *)
+Lemma cvm_refines_lts_EvidenceT' : forall t tr tr' bits bits' et et' i i' ac ac',
     build_cvmP (copland_compile t)
         (mk_st (evc bits et) tr i ac)
         (resultC tt)
@@ -2085,17 +2085,17 @@ Proof.
     +
       assert (e0 = eval t2 (session_plc ac') et).
       {
-        eapply par_evidence_r; eauto.
+        eapply par_EvidenceT_r; eauto.
       }
       ffa.
       
     +
       find_apply_hyp_hyp.
 
-      assert (e0 = eval t2 (session_plc ac') mt).
+      assert (e0 = eval t2 (session_plc ac') mt_evt).
       {
-        rewrite par_evidence_clear in *.
-        eapply par_evidence_r; eauto.
+        rewrite par_EvidenceT_clear in *.
+        eapply par_EvidenceT_r; eauto.
       }
       congruence.
     +
@@ -2103,23 +2103,23 @@ Proof.
       ffa.
       assert (e0 = eval t2 (session_plc ac') et).
       {
-        eapply par_evidence_r; eauto.
+        eapply par_EvidenceT_r; eauto.
       }
       congruence.
     +
       wrap_ccp.
       ffa.
-      assert (e0 = eval t2 (session_plc ac') mt).
+      assert (e0 = eval t2 (session_plc ac') mt_evt).
       {
-        rewrite par_evidence_clear in *.
+        rewrite par_EvidenceT_clear in *.
 
-        eapply par_evidence_r; eauto.
+        eapply par_EvidenceT_r; eauto.
       }
       congruence.
 Qed.
 
-(** * Propositional version of CVM Evidence Type preservation. *)
-Lemma cvm_refines_lts_evidence :
+(** * Propositional version of CVM EvidenceT Type preservation. *)
+Lemma cvm_refines_lts_EvidenceT :
   forall t t' tr tr' bits bits' et et' i i' ac ac',
     term_to_coreP t t' ->
     build_cvmP t'
@@ -2130,7 +2130,7 @@ Lemma cvm_refines_lts_evidence :
 Proof.
   intros.
   invc H.
-  eapply cvm_refines_lts_evidence'.
+  eapply cvm_refines_lts_EvidenceT'.
   eauto.
 Qed.
 

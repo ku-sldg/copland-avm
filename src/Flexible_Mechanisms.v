@@ -74,9 +74,9 @@ Definition flexible_mechanisms_map :=
    ("layered_bg", layered_background_check); 
    ("filehash", filehash_auth_phrase)].
 
-Definition add_evidence_flexible_mechanisms := 
-  Maps.map_map (fun t => (t, eval t P0 (nn 0))) flexible_mechanisms_map.
+Definition add_EvidenceT_flexible_mechanisms := 
+  Maps.map_map (fun t => (t, eval t P0 (nonce_evt 0))) flexible_mechanisms_map.
 
 Definition full_flexible_mechanisms :=
-  add_evidence_flexible_mechanisms.
+  add_EvidenceT_flexible_mechanisms.
 Close Scope string_scope.

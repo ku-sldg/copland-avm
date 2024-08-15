@@ -10,21 +10,21 @@ eapply Build_Jsonifiable with
   JSON_Object 
     [(STR_TYPE, (JSON_String STR_REQUEST));
     (STR_ACTION, (JSON_String STR_RUN));
-    (STR_ATTEST_SESS, (to_JSON (prreq_att_sess req)));
+    (STR_ATTEST_SESS, (to_JSON (prreq_att_sesplit_evt req)));
     (STR_REQ_PLC, (JSON_String (to_string (prreq_req_plc req))));
     (STR_TERM, (to_JSON (prreq_term req))); 
     (STR_RAWEV, (to_JSON (prreq_rawev req)))])
 (from_JSON := (fun j =>
-  temp_att_sess <- JSON_get_Object STR_ATTEST_SESS j ;;
+  temp_att_sesplit_evt <- JSON_get_Object STR_ATTEST_SESS j ;;
   temp_term <- JSON_get_Object STR_TERM j ;;
   temp_req_plc <- JSON_get_string STR_REQ_PLC j ;;
   temp_ev <- JSON_get_Object STR_RAWEV j ;;
 
-  att_sess <- from_JSON temp_att_sess ;;
+  att_sesplit_evt <- from_JSON temp_att_sesplit_evt ;;
   term <- from_JSON temp_term ;;
   req_plc <- from_string temp_req_plc ;;
   ev <- from_JSON temp_ev ;;
-  resultC (mkPRReq att_sess term req_plc ev)));
+  resultC (mkPRReq att_sesplit_evt term req_plc ev)));
 solve_json.
 Defined.
 
@@ -35,14 +35,14 @@ eapply Build_Jsonifiable with
   JSON_Object 
     [(STR_TYPE, (JSON_String STR_RESPONSE));
     (STR_ACTION, (JSON_String STR_RUN));
-    (STR_SUCCESS, (JSON_Boolean (prresp_success resp)));
+    (STR_SUCCESS, (JSON_Boolean (prresp_succesplit_evt resp)));
     (STR_PAYLOAD, (to_JSON (prresp_ev resp)))])
 (from_JSON := (fun resp =>
-  temp_success <- JSON_get_bool STR_SUCCESS resp ;;
+  temp_succesplit_evt <- JSON_get_bool STR_SUCCESS resp ;;
   temp_ev <- JSON_get_Object STR_PAYLOAD resp ;;
 
   ev <- from_JSON temp_ev ;;
-  resultC (mkPRResp temp_success ev))); solve_json.
+  resultC (mkPRResp temp_succesplit_evt ev))); solve_json.
 Defined.
 
 (* Protocol Negotiate Request *)
@@ -67,41 +67,41 @@ eapply Build_Jsonifiable with
   JSON_Object 
     [(STR_TYPE, (JSON_String STR_RESPONSE));
     (STR_ACTION, (JSON_String STR_NEGOTIATE));
-    (STR_SUCCESS, (JSON_Boolean (pnresp_success resp)));
+    (STR_SUCCESS, (JSON_Boolean (pnresp_succesplit_evt resp)));
     (STR_PAYLOAD, (to_JSON (pnresp_term resp)))])
 (from_JSON := (fun resp =>
-  temp_success <- JSON_get_bool STR_SUCCESS resp ;;
+  temp_succesplit_evt <- JSON_get_bool STR_SUCCESS resp ;;
   temp_term <- JSON_get_Object STR_PAYLOAD resp ;;
 
   term <- from_JSON temp_term ;;
-  resultC (mkPNResp temp_success term))); solve_json.
+  resultC (mkPNResp temp_succesplit_evt term))); solve_json.
 Defined.
 
 (* Protocol Appraise Request *)
-Global Instance Jsonifiable_ProtocolAppraiseRequest `{Jsonifiable Term, Jsonifiable RawEv, Jsonifiable Evidence, Jsonifiable Attestation_Session}: Jsonifiable ProtocolAppraiseRequest.
+Global Instance Jsonifiable_ProtocolAppraiseRequest `{Jsonifiable Term, Jsonifiable RawEv, Jsonifiable EvidenceT, Jsonifiable Attestation_Session}: Jsonifiable ProtocolAppraiseRequest.
 eapply Build_Jsonifiable with
 (to_JSON := fun req =>
   JSON_Object [
     (STR_TYPE, (JSON_String STR_REQUEST));
     (STR_ACTION, (JSON_String STR_APPRAISE));
-    (STR_ATTEST_SESS, (to_JSON (pareq_att_sess req)));
+    (STR_ATTEST_SESS, (to_JSON (pareq_att_sesplit_evt req)));
     (STR_TERM, (to_JSON (pareq_term req)));
     (STR_REQ_PLC, (JSON_String (to_string (pareq_plc req))));
-    (STR_EVIDENCE, (to_JSON (pareq_evidence req)));
+    (STR_EvidenceT, (to_JSON (pareq_EvidenceT req)));
     (STR_RAWEV, (to_JSON (pareq_ev req)))])
 (from_JSON := (fun j =>
-  temp_att_sess <- JSON_get_Object STR_ATTEST_SESS j ;;
+  temp_att_sesplit_evt <- JSON_get_Object STR_ATTEST_SESS j ;;
   temp_term <- JSON_get_Object STR_TERM j ;;
   temp_plc <- JSON_get_string STR_REQ_PLC j ;;
-  temp_evidence <- JSON_get_Object STR_EVIDENCE j ;;
+  temp_EvidenceT <- JSON_get_Object STR_EvidenceT j ;;
   temp_ev <- JSON_get_Object STR_RAWEV j ;;
   
-  att_sess <- from_JSON temp_att_sess ;;
+  att_sesplit_evt <- from_JSON temp_att_sesplit_evt ;;
   term <- from_JSON temp_term ;;
   plc <- from_string temp_plc ;;
-  evidence <- from_JSON temp_evidence ;;
+  EvidenceT <- from_JSON temp_EvidenceT ;;
   ev <- from_JSON temp_ev ;;
-  resultC (mkPAReq att_sess term plc evidence ev))); solve_json.
+  resultC (mkPAReq att_sesplit_evt term plc EvidenceT ev))); solve_json.
 Defined.
 
 (* Protocol Appraise Response *)
@@ -111,14 +111,14 @@ eapply Build_Jsonifiable with
   JSON_Object [
     (STR_TYPE, (JSON_String STR_RESPONSE));
     (STR_ACTION, (JSON_String STR_APPRAISE));
-    (STR_SUCCESS, (JSON_Boolean (paresp_success resp)));
+    (STR_SUCCESS, (JSON_Boolean (paresp_succesplit_evt resp)));
     (STR_PAYLOAD, (to_JSON (paresp_result resp)))])
 (from_JSON := (fun resp =>
-  temp_success <- JSON_get_bool STR_SUCCESS resp ;;
+  temp_succesplit_evt <- JSON_get_bool STR_SUCCESS resp ;;
   temp_result <- JSON_get_Object STR_PAYLOAD resp ;;
 
   result <- from_JSON temp_result ;;
-  resultC (mkPAResp temp_success result))); solve_json.
+  resultC (mkPAResp temp_succesplit_evt result))); solve_json.
 Defined.
 
 (* ASP Run Request *)
@@ -155,14 +155,14 @@ eapply Build_Jsonifiable with
   JSON_Object 
     [(STR_TYPE, (JSON_String STR_RESPONSE));
     (STR_ACTION, (JSON_String STR_ASP_RUN));
-    (STR_SUCCESS, (JSON_Boolean (asprresp_success resp)));
+    (STR_SUCCESS, (JSON_Boolean (asprresp_succesplit_evt resp)));
     (STR_PAYLOAD, (to_JSON (asprresp_rawev resp)))])
 (from_JSON := (fun resp =>
-  temp_success <- JSON_get_bool STR_SUCCESS resp ;;
+  temp_succesplit_evt <- JSON_get_bool STR_SUCCESS resp ;;
   temp_rawev <- JSON_get_Object STR_PAYLOAD resp ;;
 
   rawev <- from_JSON temp_rawev ;;
-  resultC (mkASPRResp temp_success rawev))); solve_json.
+  resultC (mkASPRResp temp_succesplit_evt rawev))); solve_json.
 Defined.
 
 (* Error Response *)

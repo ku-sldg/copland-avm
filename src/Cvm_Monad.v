@@ -5,7 +5,7 @@
   Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import ResultT Term Evidence_Bundlers Axioms_Io Maps Session_Config_Compiler.
+Require Import ResultT Term EvidenceT_Bundlers Axioms_Io Maps Session_Config_Compiler.
 
 Require Import Coq.Program.Tactics.
 
@@ -95,14 +95,14 @@ Definition split_ev : CVM unit :=
 
 (* Generates a new event ID and adds a measurement event with that ID to the 
    CVM internal trace.  Returns the new Event_ID (used to represent raw 
-   evidence, relevant for appraisal verification).  *)
+   EvidenceT, relevant for appraisal verification).  *)
 Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) (e:EvC) : CVM Event_ID :=
   x <- inc_id ;;
   add_trace [umeas x mpl params (get_et e)] ;;
   err_ret x.
 
-(* Helper function that builds a new internal evidence bundle based on 
-   the evidence extension parameter of an ASP term. *)
+(* Helper function that builds a new internal EvidenceT bundle based on 
+   the EvidenceT extension parameter of an ASP term. *)
 Definition fwd_asp (fwd:FWD) (rwev : RawEv) (e:EvC) (p:Plc) (ps:ASP_PARAMS): CVM EvC :=
   match fwd with
   | COMP => 
@@ -135,7 +135,7 @@ Definition do_asp (params :ASP_PARAMS) (e:RawEv) (x:Event_ID) : CVM RawEv :=
   end.
 
 (* Simulates invoking an arbitrary ASP.  Tags the event, builds and returns 
-   the new evidence bundle. *)
+   the new EvidenceT bundle. *)
 Definition invoke_ASP (fwd:FWD) (params:ASP_PARAMS) (* (ac : AM_Config) *) : CVM EvC :=
   e <- get_ev ;;
   p <- get_pl ;;
@@ -199,10 +199,10 @@ Definition get_cvm_policy : CVM PolicyT :=
   sc <- get_config ;;
   err_ret (policy sc).
 
-Definition policy_list_not_disclosed (t:Term) (p:Plc) (e:Evidence) (ls: list (Plc * ASP_ID)) : bool :=   (* true. *)
+Definition policy_list_not_disclosed (t:Term) (p:Plc) (e:EvidenceT) (ls: list (Plc * ASP_ID)) : bool :=   (* true. *)
   forallb (fun pr => negb (term_discloses_aspid_to_remote_enc_bool t p e (fst pr) (snd pr))) ls.
 
-Definition check_cvm_policy (t:Term) (pTo:Plc) (et:Evidence) : CVM unit := 
+Definition check_cvm_policy (t:Term) (pTo:Plc) (et:EvidenceT) : CVM unit := 
   pol <- get_cvm_policy ;;
     match (policy_list_not_disclosed t pTo et pol) with
     | true => err_ret tt
@@ -212,22 +212,22 @@ Definition check_cvm_policy (t:Term) (pTo:Plc) (et:Evidence) : CVM unit :=
 Definition do_remote (t:Term) (pTo:Plc) (e:EvC) (sc : Session_Config) 
     : ResultT RawEv DispatcherErrors := 
   (* There is assuredly a better way to do it than this *)
-  let '(mkAtt_Sess my_plc plc_map pk_map) := (session_config_decompiler sc) in
+  let '(mkAtt_Sesplit_evt my_plc plc_map pk_map) := (session_config_decompiler sc) in
   (* We need  to update the Att Session to tell the next plc how
   they should be tagging their stuff (basically who they are
   in the protocol) *)
-  let new_att_sess := (mkAtt_Sess pTo plc_map pk_map) in
+  let new_att_sesplit_evt := (mkAtt_Sesplit_evt pTo plc_map pk_map) in
   match (map_get plc_map pTo) with 
   | Some uuid => 
-      let remote_req := (mkPRReq new_att_sess t my_plc (get_bits e)) in
+      let remote_req := (mkPRReq new_att_sesplit_evt t my_plc (get_bits e)) in
       let js_req := to_JSON remote_req in
       let resp_res := make_JSON_Network_Request uuid js_req in
       match resp_res with
       | resultC js_resp =>
           match from_JSON js_resp with
           | resultC resp => 
-              let '(mkPRResp success ev) := resp in
-              if success 
+              let '(mkPRResp succesplit_evt ev) := resp in
+              if succesplit_evt 
               then resultC ev 
               else errC (Runtime errStr_remote_am_failure)
           | errC msg => errC (Runtime msg)

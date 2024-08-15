@@ -4,14 +4,14 @@ coqc StructTactics.v
 coqc AutoPrim.v
 coqc Defs.v
 coqc Term_Defs.v
-coqc Eqb_Evidence.v
+coqc Eqb_EvidenceT.v
 coqc Term.v
 coqc Event_system.v
 coqc Term_system.v
 coqc Trace.v
 coqc LTS.v
 coqc Main.v
-coqc ConcreteEvidence.v
+coqc ConcreteEvidenceT.v
 coqc Axioms_Io.v
 coqc EqClass.v
 coqc Maps.v

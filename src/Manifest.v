@@ -55,8 +55,6 @@ Global Instance jsonifiable_ASP_Locator : Jsonifiable ASP_Locator :=
 
 Definition PolicyT := list (Plc * ASP_ID).
 
-Definition ASP_Compat_MapT := MapC ASP_ID ASP_ID.
-
 (** [Manifest] defines an attestation manger, a list of ASPs, and other
    * managers it is aware of (a single AM and its interconnections).
    *)

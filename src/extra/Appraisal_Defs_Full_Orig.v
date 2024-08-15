@@ -1,4 +1,4 @@
-Require Import Term_Defs Term ConcreteEvidence (*OptMonad*) Auto More_lists Appraisal_Evidence CvmSemantics IO_Stubs Defs AutoApp Evidence_Bundlers.
+Require Import Term_Defs Term ConcreteEvidenceT (*OptMonad*) Auto More_lists Appraisal_EvidenceT CvmSemantics IO_Stubs Defs AutoApp EvidenceT_Bundlers.
 
 Require Import (*StAM*) OptMonad_Coq.
 
@@ -43,20 +43,20 @@ Admitted.
 Definition checkNonceF (nid:nat) (val:BS) : BS :=
   fromSome default_bs (checkNonce nid val).
 
-Definition checkSig (e:EvidenceC) (p:Plc) (sig:BS) : Opt BS :=
+Definition checkSig (e:EvidenceTC) (p:Plc) (sig:BS) : Opt BS :=
   checkSigBits (encodeEv e) p sig.
 
-Definition checkSigF (e:EvidenceC) (p:Plc) (sig:BS) : BS :=
+Definition checkSigF (e:EvidenceTC) (p:Plc) (sig:BS) : BS :=
   fromSome default_bs (checkSig e p sig).
 
-Fixpoint checkHash (e:Evidence) (p:Plc) (hash:BS) : Opt BS :=
+Fixpoint checkHash (e:EvidenceT) (p:Plc) (hash:BS) : Opt BS :=
   match e with
   | gg _ _ => failm
-  | mt => ret default_bs (* TODO: implement reconstruct_hash and ignore mt *)
-  | nn _ => ret default_bs (* TODO: reconstruct_hash will grab nonce value here *)
-  | uu _  _ e' => checkHash e' p hash
+  | mt_evt=> ret default_bs (* TODO: implement reconstruct_hash and ignore mt_evt*)
+  | nonce_evt _ => ret default_bs (* TODO: reconstruct_hash will grab nonce value here *)
+  | asp_evt _  _ e' => checkHash e' p hash
   | hh _ e' => checkHash e' p hash
-  | ss e1 e2 =>
+  | split_evt e1 e2 =>
     res1 <- checkHash e1 p hash ;;
     res2 <- checkHash e2 p hash ;;
     ret default_bs
@@ -66,38 +66,38 @@ Fixpoint checkHash (e:Evidence) (p:Plc) (hash:BS) : Opt BS :=
     ret default_bs
   end.
 
-Definition checkHashF (e:Evidence) (p:Plc) (hash:BS) : BS :=
+Definition checkHashF (e:EvidenceT) (p:Plc) (hash:BS) : BS :=
   fromSome default_bs (checkHash e p hash).
 
-Inductive evidenceEvent: Ev -> Prop :=
-| uev: forall n p ps e, evidenceEvent (umeas n p ps e).
+Inductive EvidenceTEvent: Ev -> Prop :=
+| uev: forall n p ps e, EvidenceTEvent (umeas n p ps e).
 
-Definition measEvent (t:AnnoTerm) (p:Plc) (e:Evidence) (ev:Ev) : Prop :=
-  events t p e ev /\ evidenceEvent ev.
+Definition measEvent (t:AnnoTerm) (p:Plc) (e:EvidenceT) (ev:Ev) : Prop :=
+  events t p e ev /\ EvidenceTEvent ev.
 
 Inductive sigEventP: Ev -> Prop :=
 | sev: forall n p e, sigEventP (sign n p e).
 
-Definition sigEvent (t:AnnoTerm) (p:Plc) (e:Evidence) (ev:Ev) : Prop :=
+Definition sigEvent (t:AnnoTerm) (p:Plc) (e:EvidenceT) (ev:Ev) : Prop :=
   events t p e ev /\ sigEventP ev.
 
-Inductive appEvent_EvidenceC : Ev -> EvidenceC -> Prop :=
+Inductive appEvent_EvidenceTC : Ev -> EvidenceTC -> Prop :=
 | aeuc: forall e e' e'' n p params,
     (*let params := (asp_paramsC i args tpl tid) in *)
     EvSub (uuc params p
                (checkASPF params
                           (do_asp params (encodeEv e') p n)) e'') e ->
-    appEvent_EvidenceC (umeas n p params (et_fun e')) e
+    appEvent_EvidenceTC (umeas n p params (et_fun e')) e
 | ahuc: forall ps e' et n p pi bs e,
-    EvSubT (uu ps p e') et ->
+    EvSubT (asp_evt ps p e') et ->
     EvSub (hhc pi (checkHashF et pi bs) et) e ->
-    appEvent_EvidenceC (umeas n p ps e') e.
+    appEvent_EvidenceTC (umeas n p ps e') e.
 
 (*
-Inductive appEvent_Sig_EvidenceC: Ev -> EvidenceC -> Prop :=
+Inductive appEvent_Sig_EvidenceTC: Ev -> EvidenceTC -> Prop :=
 | asigc: forall n p e e' e'' ee,
     EvSub (ggc p (checkSigF e' p (do_sig ee p n)) e'') e ->
-    appEvent_Sig_EvidenceC (sign n p (et_fun e')) e.
+    appEvent_Sig_EvidenceTC (sign n p (et_fun e')) e.
  *)
 
 (*
@@ -113,19 +113,19 @@ Definition signs_all_meas (t:AnnoTerm) (x:Event_ID) (bits:list BS) :=
   signs_meas t x v ->
   In v bits.
 
-Inductive appEvent_Sig_EvidenceC': AnnoTerm -> Ev -> EvidenceC -> Prop :=
+Inductive appEvent_Sig_EvidenceTC': AnnoTerm -> Ev -> EvidenceTC -> Prop :=
 | asigc: forall t n p e e'' bits et,
     (*let e' := (evc bits et) in *)
     signs_all_meas t n bits ->
     EvSub (ggc p (checkSigBitsF bits p (do_sig (encodeEvBits (evc bits et)) p n)) e'') e ->
-    appEvent_Sig_EvidenceC' t (sign n p et) e.
+    appEvent_Sig_EvidenceTC' t (sign n p et) e.
 *)
 
-Inductive appEvent_Sig_EvidenceC: Ev -> EvidenceC -> Prop :=
+Inductive appEvent_Sig_EvidenceTC: Ev -> EvidenceTC -> Prop :=
 | asigc: forall n p e e'' bits et,
     (*let e' := (evc bits et) in *)
     EvSub (ggc p (checkSigBitsF bits p (do_sig (encodeEvBits (evc bits et)) p n)) e'') e ->
-    appEvent_Sig_EvidenceC (sign n p et) e.
+    appEvent_Sig_EvidenceTC (sign n p et) e.
 
 Definition none_none_term (t:Term): Prop :=
   (exists t1 t2,
@@ -164,7 +164,7 @@ Inductive reaches_HSH : Term -> Prop :=
     reaches_HSH (bpar (sp1,ALL) t1 t2).
 Hint Constructors reaches_HSH : core. *)
 
-(* Essentially a sub-term, except only allows if evidence from t will reach ts *)
+(* Essentially a sub-term, except only allows if EvidenceT from t will reach ts *)
 Inductive ev_reaches (t : Term) (ts : Term) : Prop :=
 | ev_reaches_refl     : t = ts -> ev_reaches t ts
 | ev_reaches_bseq_aa  : forall t1 t2, t = (bseq (ALL,ALL) t1 t2)
@@ -196,31 +196,31 @@ Definition hash_sig_term (t:Term): Prop :=
   exists t1 t2,
   t = lseq t1 t2 /\
   term_sub (asp SIG) t1 /\
-  ev_reaches t2 (asp HSH). (* evidence will reach a HSH in t2*)
+  ev_reaches t2 (asp HSH). (* EvidenceT will reach a HSH in t2*)
 
 Definition not_hash_sig_term (t:Term) :=
   forall t',
     hash_sig_term t'  -> 
     ~ (term_sub t' t).
 
-Definition hash_sig_ev (e:EvidenceC): Prop :=
+Definition hash_sig_ev (e:EvidenceTC): Prop :=
   exists p p' bs et et',
     e = hhc p bs et /\ 
     EvSubT (gg p' et') et.
 
-Definition not_hash_sig_ev (e:EvidenceC) :=
+Definition not_hash_sig_ev (e:EvidenceTC) :=
   forall e',
     hash_sig_ev e' ->
     ~ (EvSub e' e).
 
-Definition gg_sub (e:EvidenceC) :=
+Definition gg_sub (e:EvidenceTC) :=
   exists p bs e'' e', e' = ggc p bs e'' /\
                  EvSub e' e.
 
 Definition hsh_subt (t:Term) :=
   term_sub (asp HSH) t.
 
-Definition not_hash_sig_term_ev (t:Term) (e:EvidenceC): Prop :=
+Definition not_hash_sig_term_ev (t:Term) (e:EvidenceTC): Prop :=
   not_hash_sig_term t /\
   not_hash_sig_ev e /\
   ((gg_sub e) -> ~ (ev_reaches t (asp HSH))).
@@ -372,7 +372,7 @@ Ltac measEventFacts :=
 
 Ltac evEventFacts :=
   match goal with
-  | [H: evidenceEvent _ |- _] => invc H
+  | [H: EvidenceTEvent _ |- _] => invc H
   end.
 
 Ltac invEvents :=
@@ -393,7 +393,7 @@ Proof.
     do_inv_recon.
     inv_wfec.
     destruct ls; try solve_by_inversion.
-  (* TODO: exclude mt case? *)
+  (* TODO: exclude mt_evtcase? *)
   -
     ff.
     do_inv_recon.

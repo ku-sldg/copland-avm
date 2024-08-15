@@ -6,13 +6,13 @@
 
     The non-monadic stubs (i.e. do_asp) remain abstract (Admitted) in Coq 
     because they are either too low-level to reason about, or require external 
-    IO capabilities not modeled first-class in our spec.  The abstract binary
-    and evidence value results support specification of correctness properties 
-    for Appraisal (see usage of do_asp in appEvent_EvidenceC of 
+    IO capabilities not modeled first-clasplit_evt in our spec.  The abstract binary
+    and EvidenceT value results support specification of correctnesplit_evt properties 
+    for Appraisal (see usage of do_asp in appEvent_EvidenceTC of 
     Appraisal_Defs.v).        
  *)
 
-Require Import Term_Defs ConcreteEvidence ErrorStMonad_Coq IO_Type Manifest_Admits.
+Require Import Term_Defs ConcreteEvidenceT ErrorStMonad_Coq IO_Type Manifest_Admits.
 
 Require Import Maps Cvm_St.
 
@@ -38,7 +38,7 @@ Definition doRemote_session_dynamic (t:Term) (uuidTo:UUID) (e:EvC) : CVM EvC :=
   (* /\ Neither should it reach this line if CVM configured properly *)
   end.
 
-(** * Stub to simulate evidence collected by a parallel CVM instance *)
+(** * Stub to simulate EvidenceT collected by a parallel CVM instance *)
 Definition parallel_vm_thread (l:Loc) (t:Core_Term) (p:Plc) (e:EvC) : EvC.
 Admitted.
 
@@ -47,7 +47,7 @@ Admitted.
 Definition am_sendReq (t:Term) (p : Plc) (authTok:ReqAuthTok) (e:RawEv) : RawEv.
 Admitted.
 
-Definition am_sendReq_app (t:Term) (p:Plc) (e:Evidence) (ev:RawEv): AppResultC.
+Definition am_sendReq_app (t:Term) (p:Plc) (e:EvidenceT) (ev:RawEv): AppResultC.
 Admitted.
 
 Definition do_asp' (params :ASP_PARAMS) (e:RawEv) (mpl:Plc) (x:Event_ID) : IO BS :=

@@ -1,9 +1,9 @@
-(*  --Structural lemmas about well-formedness of annotated Copland
+(*  --Structural lemmas about well-formednesplit_evt of annotated Copland
     phrases and their event ID ranges, associated automation.
     --The `events` relation --a denotational semantics for phrase events.
     --Lemmas/automation related to `events` *)
 
-Require Import Defs.
+Require Import Defs ResultT.
 Require Import Preamble.
 
 Require Import Compare_dec Coq.Program.Tactics.
@@ -14,44 +14,32 @@ Import List.ListNotations.
 
 Require Export Term_Defs Anno_Term_Defs.
 
-(*
-Set Nested Proofs Allowed.
-*)
-
 Lemma wfr_lseq_pieces: forall r t1 t2,
     well_formed_r_annt (alseq r t1 t2) ->
     well_formed_r_annt t1 /\ well_formed_r_annt t2.
 Proof.
-  intros.
-  inversion H.
-  tauto.
+  intros; ff.
 Qed.
 
 Lemma wfr_at_pieces: forall t r p,
     well_formed_r_annt (aatt r p t) ->
     well_formed_r_annt t.
 Proof.
-  intros.
-  inversion H.
-  tauto.
+  intros; ff.
 Qed.
 
 Lemma wfr_bseq_pieces: forall r s t1 t2,
     well_formed_r_annt (abseq r s t1 t2) ->
     well_formed_r_annt t1 /\ well_formed_r_annt t2.
 Proof.
-  intros.
-  inversion H.
-  tauto.
+  intros; ff.
 Qed.
 
 Lemma wfr_bpar_pieces: forall r s t1 t2,
     well_formed_r_annt (abpar r s t1 t2) ->
     well_formed_r_annt t1 /\ well_formed_r_annt t2.
 Proof.
-  intros.
-  inversion H.
-  tauto.
+  intros; ff.
 Qed.
 
 Ltac do_wf_pieces :=
@@ -73,17 +61,14 @@ Lemma well_formed_range_r:
     well_formed_r_annt t ->
     snd (range t) = fst (range t) + esize t.
 Proof.
-    induction t;
-    try (intros H; simpl; inv H; simpl;
-         repeat find_apply_hyp_hyp; lia).
+  induction t;
+  try (intros H; simpl; inv H; simpl;
+        repeat find_apply_hyp_hyp; lia).
 Qed.
 
 Lemma esize_nonempty: forall t, esize t > 0.
 Proof.
-  intros.
-  induction t; intros;
-    try (destruct a);
-    (cbn; lia).
+  intros; induction t; intros; simpl; lia.
 Qed.
 
 Lemma wf_mono: forall t,
@@ -91,10 +76,8 @@ Lemma wf_mono: forall t,
     snd (range t) > fst (range t).
 Proof.
   intros.
-  rewrite well_formed_range_r.
-  pose (esize_nonempty t).
-  lia.
-  eauto.
+  rewrite well_formed_range_r; ff;
+  pose proof (esize_nonempty t); lia.
 Qed.
 
 Ltac do_mono :=
@@ -108,16 +91,15 @@ Lemma asp_lrange_irrel: forall a i a0 a1 n n',
     anno (asp a) i = (n',a1) ->
     a0 = a1.
 Proof.
-  intros.
-  destruct a; ff.
+  intros; destruct a; ff.
 Qed.
 
 (** This predicate specifies when a term, a place, and some initial
-    evidence is related to an event.  In other words, it specifies the
+    EvidenceT is related to an event.  In other words, it specifies the
     set of events associated with a term, a place, and some initial
-    evidence. *)
+    EvidenceT. *)
 
-Inductive events: AnnoTerm -> Plc -> Evidence -> Ev -> Prop :=
+Inductive events: AnnoTerm -> Plc -> EvidenceT -> Ev -> Prop :=
 | evtsnull:
     forall r i p e,
       fst r = i ->
@@ -142,6 +124,12 @@ Inductive events: AnnoTerm -> Plc -> Evidence -> Ev -> Prop :=
     forall r i p q e,
       fst r = i ->
       events (aasp r (ENC q)) p e (umeas i p (enc_params q) e) (* (hash i p e) *)
+
+| evtsappr:
+    forall r i p e,
+      fst r = i ->
+      events (aappr r) p e (appr_ev i p e)
+
 | evtsattreq:
     forall r q t i p e,
       fst r = i ->
@@ -151,16 +139,18 @@ Inductive events: AnnoTerm -> Plc -> Evidence -> Ev -> Prop :=
       events t q e ev ->
       events (aatt r q t) p e ev
 | evtsattrpy:
-    forall r q t i p e,
+    forall r q t i p e cm et,
       snd r = S i ->
-      events (aatt r q t) p e (rpy i p q (aeval t q e))
+      (aeval t q e cm) = resultC et ->
+      events (aatt r q t) p e (rpy i p q et)
 | evtslseql:
     forall r t1 t2 ev p e,
       events t1 p e ev ->
       events (alseq r t1 t2) p e ev
 | evtslseqr:
-    forall r t1 t2 ev p e,
-      events t2 p (aeval t1 p e) ev ->
+    forall r t1 t2 ev p e cm e1,
+      aeval t1 p e cm = resultC e1 ->
+      events t2 p e1 ev ->
       events (alseq r t1 t2) p e ev
              
 | evtsbseqsplit:
@@ -267,13 +257,7 @@ Lemma bra_range:
     fst y <= i < snd y \/
     i = snd y.
 Proof.
-  intros.
-  pose proof lt_dec i (S (fst r)) as G.
-  destruct G as [G|G]; [left; lia| right].
-  pose proof lt_dec i (snd x) as F.
-  destruct F as [F|F]; [left; lia| right].
-  pose proof lt_dec i (snd y) as E.
-  destruct E; lia.
+  destruct x, y, r; lia.
 Qed.
 
 Ltac dest_range :=
@@ -299,6 +283,15 @@ Ltac do_bra_range :=
 
 (** Properties of events. *)
 
+(* NOTE: New axiom introduced HERE!!!!
+We need to be seriously considering 
+whether this should be an axiom or something that that
+can be carried about by some wf_* property.
+*)
+Axiom wf_r_annt_impl_aeval_success : forall t p e cm,
+    well_formed_r_annt t ->
+    exists et, aeval t p e cm = resultC et.
+
 Lemma events_range_event:
   forall t p i e,
     well_formed_r_annt t ->
@@ -308,21 +301,51 @@ Proof.
   intros t p i e H; revert i; revert p; revert e.
   induction H; intros; simpl in *.
   - destruct x; try destruct a; eapply ex_intro; split; auto;
-      (*destruct r as [j k];*) simpl in *; try lia.
-    (*
-    + admit.
-    + *)
+    simpl in *; try lia.
+  - destruct r; simpl in *; subst;
+    eexists; intuition; simpl in *; lia.
       
   - find_eapply_lem_hyp at_range; eauto.
-    repeat destruct_disjunct; subst; eauto.
-    (* + eapply ex_intro; split; auto. *)
+    repeat (destruct_disjunct; subst; eauto).
 
-    find_eapply_hyp_hyp.
-    (*apply IHwell_formed with (p:=p) in H2. *)
-    destruct_conjs.
-    eauto.
-  -
-    do_lin_range;       
+    find_eapply_hyp_hyp; eauto.
+    destruct_conjs; eauto.
+    eapply wf_r_annt_impl_aeval_success in H; eauto;
+    break_exists; eauto.
+    Unshelve. eapply nil.
+  - do_lin_range; eauto; try lia;
+    destruct H2.
+    * repeat find_eapply_lem_hyp wf_r_annt_impl_aeval_success.
+      eapply IHwell_formed_r_annt1 in H2.
+      destruct H2.
+      destruct H.
+      eexists; intuition; eauto; try lia.
+      Unshelve.  all: eauto; eapply nil.
+    * eapply IHwell_formed_r_annt2 in H2.
+      destruct H2 as [v [? ?]]. 
+      eapply wf_r_annt_impl_aeval_success in H0; eauto;
+      destruct H0 as [et ?].
+      pose proof (evtslseqr).
+      exists v; intuition; eauto.
+      eapply evtslseqr; eauto.
+      eapply wf_r_annt_impl_aeval_success in H; 
+      break_exists; eauto.
+      eapply H.
+      eapply H2.
+      eapply H2.
+      eexists; intuition; eauto; try lia.
+      eapply evtslseqr; eauto;
+      edestruct IHwell_formed_r_annt2; eauto; try lia.
+      Unshelve.  all: eauto; eapply nil.
+    destruct H.
+
+    eexists; eauto; try lia.
+    * split.
+      ** destruct H.
+      assert (fst (range x) <= i < snd (range x)) by lia.
+      eapply IHwell_formed_r_annt1 in H4; break_exists; 
+      intuition; eauto.
+    - 
       eauto;
       repeat destruct_disjunct;
       try lia;

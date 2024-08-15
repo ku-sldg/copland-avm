@@ -5,14 +5,14 @@ StructTactics.v
 AutoPrim.v
 Defs.v
 Term_Defs.v
-Eqb_Evidence.v
+Eqb_EvidenceT.v
 Term.v
 Event_system.v
 Term_system.v
 Trace.v
 LTS.v
 Main.v
-ConcreteEvidence.v
+ConcreteEvidenceT.v
 Axioms_Io.v
 EqClass.v
 Maps.v

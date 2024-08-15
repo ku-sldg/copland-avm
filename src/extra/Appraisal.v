@@ -1,4 +1,4 @@
-Require Import Event_system Term_system ConcreteEvidence Cvm_St.
+Require Import Event_system Term_system ConcreteEvidenceT Cvm_St.
 Require Import Cvm_Impl Helpers_CvmSemantics CvmSemantics.
 Require Import Axioms_Io External_Facts Auto AutoApp.
 
@@ -8,7 +8,7 @@ Require Import Anno_Term_Defs.
 
 Require Import Coq.Arith.Peano_dec.
 
-Require Import StructTactics Appraisal_Evidence Helpers_Appraisal.
+Require Import StructTactics Appraisal_EvidenceT Helpers_Appraisal.
 
 Require Import Lia Coq.Program.Tactics Coq.Program.Equality.
 
@@ -60,10 +60,10 @@ Lemma appraisal_correct_sig : forall t annt e e' p ev,
     annoP annt t ->
     not_none_none t ->
     not_hash_sig_term_ev t e ->
-    cvm_evidence_denote annt p e = e' ->
+    cvm_EvidenceT_denote annt p e = e' ->
 
     sigEvent annt p (et_fun e) ev ->
-    appEvent_Sig_EvidenceC ev (build_app_comp_evC e').
+    appEvent_Sig_EvidenceTC ev (build_app_comp_evC e').
 Proof.
   intros.
   sigEventFacts.
@@ -89,9 +89,9 @@ Defined.
 Lemma appraisal_correct : forall t annt e' p ev e,
     annoP annt t ->
     not_none_none t ->
-    cvm_evidence_denote annt p e = e' ->
+    cvm_EvidenceT_denote annt p e = e' ->
     measEvent annt p (et_fun e) ev ->
-    appEvent_EvidenceC ev (build_app_comp_evC e').
+    appEvent_EvidenceTC ev (build_app_comp_evC e').
 Proof.
   intros.
   measEventFacts.
@@ -152,7 +152,7 @@ Lemma appraisal_correct_sig_alt :
 
     sigEvent annt p (get_et ee) ev ->
     Some e' = Impl_appraisal.build_app_comp_evC et' bits' ->
-    appEvent_Sig_EvidenceC ev e'.
+    appEvent_Sig_EvidenceTC ev e'.
 Proof.
   intros.
   wrap_ccp.
@@ -174,7 +174,7 @@ Proof.
   eassumption.
 
  
-  eapply cvm_raw_evidence_denote_fact; eauto.
+  eapply cvm_raw_EvidenceT_denote_fact; eauto.
   eassumption.
   eassumption.
   eassumption.
@@ -200,7 +200,7 @@ Lemma appraisal_correct_sig_alt_et :
 
     sigEvent annt p et ev ->
     Some e' = Impl_appraisal.build_app_comp_evC et' bits' ->
-    appEvent_Sig_EvidenceC ev e'.
+    appEvent_Sig_EvidenceTC ev e'.
 Proof.
   intros.
   wrap_ccp.
@@ -217,7 +217,7 @@ Proof.
     }
     subst.
     
-    eapply cvm_refines_lts_evidence.
+    eapply cvm_refines_lts_EvidenceT.
     eassumption.
     eassumption.
   }
@@ -243,7 +243,7 @@ Lemma appraisal_correct_alt :
 
     measEvent annt p (get_et ee) ev ->
     Some e' = Impl_appraisal.build_app_comp_evC et' bits' ->
-    appEvent_EvidenceC ev e'.
+    appEvent_EvidenceTC ev e'.
 Proof.
   intros.
   wrap_ccp.
@@ -261,7 +261,7 @@ Proof.
   eapply appraisal_correct.
   econstructor. repeat eexists. invc H0. eassumption.
   eassumption.
-  eapply cvm_raw_evidence_denote_fact; eauto.
+  eapply cvm_raw_EvidenceT_denote_fact; eauto.
 
   eassumption.
   eassumption.
@@ -286,7 +286,7 @@ Lemma appraisal_correct_alt_et :
 
     measEvent annt p et ev ->
     Some e' = Impl_appraisal.build_app_comp_evC et' bits' ->
-    appEvent_EvidenceC ev e'.
+    appEvent_EvidenceTC ev e'.
 Proof.
   intros.
   wrap_ccp.
@@ -302,7 +302,7 @@ Proof.
     subst.
 
     erewrite <- eval_aeval'.
-    eapply cvm_refines_lts_evidence.
+    eapply cvm_refines_lts_EvidenceT.
     eassumption.
     eassumption.
   }

@@ -2,7 +2,7 @@ Require Import List.
 Import List.ListNotations.
 Require Import String.
 
-Require Import Params_Admits Term_Defs Eqb_Evidence AbstractedTypes EqClass.
+Require Import Params_Admits Term_Defs Eqb_EvidenceT AbstractedTypes EqClass.
 
 Require Import Example_Phrases_Demo Example_Phrases_Demo_Admits.  
 

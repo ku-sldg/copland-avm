@@ -79,7 +79,7 @@ Proof.
 Qed.
 Global Hint Resolve check_cvm_policy_same_outputs : core.
 
-Theorem evidence_deterministic_output_on_results : forall t e tr1 tr2 i1 i2 ac st1 st2,
+Theorem EvidenceT_deterministic_output_on_results : forall t e tr1 tr2 i1 i2 ac st1 st2,
   build_cvm t {| st_ev := e; st_trace := tr1; st_evid := i1; st_config := ac |} = (resultC tt, st1) ->
   build_cvm t {| st_ev := e; st_trace := tr2; st_evid := i2; st_config := ac |} = (resultC tt, st2) ->
   st1.(st_ev) = st2.(st_ev).
@@ -264,7 +264,7 @@ Ltac do_term_to_core_redo :=
 
 Lemma annoP_redo: forall t annt n n',
     anno t n = (n', annt) ->
-    annoP annt t.
+    (exists n n', anno t n = (n',annt)).
 Proof.
   intros.
   econstructor.
@@ -281,7 +281,7 @@ Ltac do_anno_redo :=
 
 Ltac inv_annoP :=
   match goal with
-  | [H: annoP _ _ (*_ (?c _) *)
+  | [H: (exists n n', anno _ n = (n',_)) (*_ (?c _) *)
      |- _ ] =>
     inversion H; subst
   end;
@@ -289,7 +289,7 @@ Ltac inv_annoP :=
 
 Lemma annoP_indexed_redo: forall t annt n n',
     anno t n = (n', annt) ->
-    annoP_indexed annt t n n'.
+    anno t n = (n', annt).
 Proof.
   intros.
   econstructor.

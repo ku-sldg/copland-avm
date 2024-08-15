@@ -31,7 +31,7 @@ Definition generate_ASP_dispatcher' (am : Manifest) (ats : Attestation_Session) 
         end
     else errC Unavailable.
 
-(* This function will be a dispatcher for either local ASPS to CakeMLCallback, or pass them off to the ASP_Server *)
+(* This function will be a dispatcher for either local ASPS to CakeMLCallback, or pasplit_evt them off to the ASP_Server *)
 Definition generate_ASP_dispatcher `{HID : EqClass ID_Type} (am : Manifest) (al : Attestation_Session) (aspBin : FS_Location) 
     : (ASPCallback DispatcherErrors) :=
   (generate_ASP_dispatcher' am al aspBin). 

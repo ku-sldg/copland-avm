@@ -1,4 +1,4 @@
-Require Import Term ConcreteEvidence Appraisal_Defs Cvm_St Cvm_Impl Impl_appraisal_alt Auto AutoApp External_Facts Helpers_CvmSemantics Appraisal_Evidence CvmSemantics Evidence_Bundlers Defs Axioms_Io IO_Stubs.
+Require Import Term ConcreteEvidenceT Appraisal_Defs Cvm_St Cvm_Impl Impl_appraisal_alt Auto AutoApp External_Facts Helpers_CvmSemantics Appraisal_EvidenceT CvmSemantics EvidenceT_Bundlers Defs Axioms_Io IO_Stubs.
 
 Require Import StructTactics.
 
@@ -358,7 +358,7 @@ Ltac do_evsub_ih :=
     
     assert_new_proof_by
       (EvSub e'' v \/
-       (exists (ett : Evidence) p'0 bs,
+       (exists (ett : EvidenceT) p'0 bs,
            EvSub (hhc p'0 bs ett) v /\ EvSubT (et_fun e'') ett))
       eauto
   end.
@@ -371,7 +371,7 @@ Ltac do_evsubh_ih :=
     
     assert_new_proof_by
       (EvSub (hhc H2 H3 H4) e' \/
-       (exists (ett : Evidence) p'0 bs,
+       (exists (ett : EvidenceT) p'0 bs,
            EvSub (hhc p'0 bs ett) e' /\ EvSubT (et_fun (hhc H2 H3 H4)) ett))
       eauto
   end.
@@ -638,7 +638,7 @@ Proof.
   
   assert (et' = eval t p et).
   {
-    eapply cvm_refines_lts_evidence; eauto.
+    eapply cvm_refines_lts_EvidenceT; eauto.
   }
   subst.
 
@@ -763,13 +763,13 @@ Qed.
 
 Lemma recon_evdenote_decomp: forall a p e,
     exists ecc,
-      reconstruct_evP ecc (cvm_evidence_denote a p e).
+      reconstruct_evP ecc (cvm_EvidenceT_denote a p e).
 Proof.
   intros.
   generalizeEverythingElse a.
   induction a; intros.
   -
-    exists (evc (encodeEv (cvm_evidence_denote (aasp r a) p e)) (et_fun (cvm_evidence_denote (aasp r a) p e))).
+    exists (evc (encodeEv (cvm_EvidenceT_denote (aasp r a) p e)) (et_fun (cvm_EvidenceT_denote (aasp r a) p e))).
     econstructor.
     eapply recon_same.
   -
@@ -782,7 +782,7 @@ Proof.
   -
     dd.
     edestruct IHa1 with (p:=p) (e:=e).
-    edestruct IHa2 with (p:=p) (e:= (cvm_evidence_denote a1 p e)).
+    edestruct IHa2 with (p:=p) (e:= (cvm_EvidenceT_denote a1 p e)).
     eexists.
     eassumption.
   -
@@ -803,10 +803,10 @@ Qed.
       
 Lemma recon_evP_ssc_decomp: forall ecc' a p e e' a0,
     reconstruct_evP ecc'
-                    (ssc (cvm_evidence_denote a p e)
-                         (cvm_evidence_denote a0 p e')) ->
-    (exists ecc, reconstruct_evP ecc (cvm_evidence_denote a p e)) /\
-    (exists ecc, reconstruct_evP ecc (cvm_evidence_denote a0 p e')).
+                    (ssc (cvm_EvidenceT_denote a p e)
+                         (cvm_EvidenceT_denote a0 p e')) ->
+    (exists ecc, reconstruct_evP ecc (cvm_EvidenceT_denote a p e)) /\
+    (exists ecc, reconstruct_evP ecc (cvm_EvidenceT_denote a0 p e')).
 Proof.
   intros.
   destruct ecc'; try solve_by_inversion.
@@ -830,10 +830,10 @@ Qed.
 
 Lemma recon_evP_ppc_decomp: forall ecc' a p e e' a0,
     reconstruct_evP ecc'
-                    (ppc (cvm_evidence_denote a p e)
-                         (cvm_evidence_denote a0 p e')) ->
-    (exists ecc, reconstruct_evP ecc (cvm_evidence_denote a p e)) /\
-    (exists ecc, reconstruct_evP ecc (cvm_evidence_denote a0 p e')).
+                    (ppc (cvm_EvidenceT_denote a p e)
+                         (cvm_EvidenceT_denote a0 p e')) ->
+    (exists ecc, reconstruct_evP ecc (cvm_EvidenceT_denote a p e)) /\
+    (exists ecc, reconstruct_evP ecc (cvm_EvidenceT_denote a0 p e')).
 Proof.
     intros.
   destruct ecc'; try solve_by_inversion.
@@ -863,7 +863,7 @@ Ltac do_evsub_ih'' :=
 
     assert
       (EvSub e'' v \/
-       (exists (ett : Evidence) p'0 bs,
+       (exists (ett : EvidenceT) p'0 bs,
            EvSub (hhc p'0 bs ett) v /\ EvSubT (et_fun e'') ett))
   end.
 
@@ -871,7 +871,7 @@ Lemma evAccum: forall t annt p e e' e'',
 
     annoP annt t -> 
     not_none_none t ->
-    cvm_evidence_denote annt p e = e' -> 
+    cvm_EvidenceT_denote annt p e = e' -> 
     EvSub e'' e ->
 
     (
@@ -927,9 +927,9 @@ Proof.
     ++
       
       assert
-        (EvSub (hhc H8 H9 H7) (cvm_evidence_denote a0 p (cvm_evidence_denote a p e)) \/
-         (exists (ett : Evidence) p'0 bs,
-             EvSub (hhc p'0 bs ett) (cvm_evidence_denote a0 p (cvm_evidence_denote a p e)) /\ EvSubT (et_fun (hhc H8 H9 H7)) ett)).
+        (EvSub (hhc H8 H9 H7) (cvm_EvidenceT_denote a0 p (cvm_EvidenceT_denote a p e)) \/
+         (exists (ett : EvidenceT) p'0 bs,
+             EvSub (hhc p'0 bs ett) (cvm_EvidenceT_denote a0 p (cvm_EvidenceT_denote a p e)) /\ EvSubT (et_fun (hhc H8 H9 H7)) ett)).
       {
         eapply IHt2;
           try eassumption;
@@ -1013,8 +1013,8 @@ Ltac do_evaccum e' :=
   repeat 
     match goal with
     | [H5: EvSub ?e'' _,
-           (*H6: cvm_evidence_denote ?annt _ ?e = ?e', *)
-           (*e': EvidenceC, *)
+           (*H6: cvm_EvidenceT_denote ?annt _ ?e = ?e', *)
+           (*e': EvidenceTC, *)
                H7: not_none_none ?t,
                    H8: annoP _ ?t
 
@@ -1022,7 +1022,7 @@ Ltac do_evaccum e' :=
       
       assert_new_proof_by
         (EvSub e'' e' \/
-         (exists (ett : Evidence) p'0 bs,
+         (exists (ett : EvidenceT) p'0 bs,
              EvSub (hhc p'0 bs ett) e' /\ EvSubT (et_fun e'') ett))
         ltac: (eapply evAccum; [apply H8 (*| apply H *) | apply H7 (*| apply H2 | apply H3 | apply H4*) | try eassumption; try reflexivity | apply H5])
     end.
@@ -1097,7 +1097,7 @@ Qed.
 Lemma sig_is: forall t annt e e' p,
 
     annoP annt t ->
-    cvm_evidence_denote annt p e = e' ->
+    cvm_EvidenceT_denote annt p e = e' ->
     gg_sub e' ->
     gg_sub e \/
     term_sub (asp SIG) t.
@@ -1134,7 +1134,7 @@ Proof.
     inv_annoP.
     dd.
 
-    assert (gg_sub (cvm_evidence_denote a p e) \/ term_sub (asp SIG) t2).
+    assert (gg_sub (cvm_EvidenceT_denote a p e) \/ term_sub (asp SIG) t2).
     {
       eapply IHt2.
       econstructor. repeat eexists. eassumption.
@@ -1239,7 +1239,7 @@ Ltac do_sig_is He :=
   match goal with
   | [ H': annoP ?annt ?t,
           H6: gg_sub ?e'
-              (*He: EvidenceC *)
+              (*He: EvidenceTC *)
      |- _] =>
     
     assert_new_proof_by
@@ -1260,7 +1260,7 @@ Proof.
 Qed.
 
 Lemma sig_term_ev_bseql: forall s (t1 t2 : Term)
-                           (e : EvidenceC),
+                           (e : EvidenceTC),
     not_hash_sig_term_ev (bseq s t1 t2) e ->
     
     not_hash_sig_term_ev t1 (splitEvl s e).
@@ -1274,7 +1274,7 @@ Proof.
 Qed.
 
 Lemma sig_term_ev_bseqr: forall s (t1 t2 : Term)
-                           (e : EvidenceC),
+                           (e : EvidenceTC),
     
     not_hash_sig_term_ev (bseq s t1 t2) e ->   
     not_hash_sig_term_ev t2 (splitEvr s e).
@@ -1297,7 +1297,7 @@ Proof.
 Qed.
 
 Lemma sig_term_ev_bparl: forall s (t1 t2 : Term)
-                           (e : EvidenceC),
+                           (e : EvidenceTC),
     
     not_hash_sig_term_ev (bpar s t1 t2) e ->
     not_hash_sig_term_ev t1 (splitEvl s e).
@@ -1312,7 +1312,7 @@ Proof.
 Qed.
 
 Lemma sig_term_ev_bparr: forall s (t1 t2 : Term)
-                           (e : EvidenceC),
+                           (e : EvidenceTC),
     
     not_hash_sig_term_ev (bpar s t1 t2) e ->
     not_hash_sig_term_ev t2 (splitEvr s e).
@@ -1507,7 +1507,7 @@ Lemma hshsig_ev_term_contra: forall t annt p e e',
 
     annoP annt t ->
     not_hash_sig_term_ev t e ->
-    cvm_evidence_denote annt p e = e' ->
+    cvm_EvidenceT_denote annt p e = e' ->
     not_hash_sig_ev e'.
 Proof.
   intros.
@@ -1522,7 +1522,7 @@ Proof.
     destruct_conjs.
     eassumption.
     +
-    unfold cons_uu in *.
+    unfold cons_asp_evt in *.
     repeat ff.
     unfold not_hash_sig_term_ev in *;
       destruct_conjs.
@@ -1582,7 +1582,7 @@ Proof.
         
     do_nhste_lseql.
     
-    assert (not_hash_sig_ev (cvm_evidence_denote a p e)) by eauto.
+    assert (not_hash_sig_ev (cvm_EvidenceT_denote a p e)) by eauto.
 
     do_nhst_lseqr.
 
@@ -1647,7 +1647,7 @@ Proof.
       destruct_conjs.
       solve_by_inversion.
     +
-      assert (not_hash_sig_ev (cvm_evidence_denote a p (splitEvl s e))).
+      assert (not_hash_sig_ev (cvm_EvidenceT_denote a p (splitEvl s e))).
       {
         eapply IHt1.
         eassumption.
@@ -1658,7 +1658,7 @@ Proof.
       eapply H3; eassumption.
 
     +
-      assert (not_hash_sig_ev (cvm_evidence_denote a0 p (splitEvr s e))) by eauto.
+      assert (not_hash_sig_ev (cvm_EvidenceT_denote a0 p (splitEvr s e))) by eauto.
       eapply H3; eassumption.
   - (* bpar case *)
     
@@ -1681,7 +1681,7 @@ Proof.
       destruct_conjs.
       solve_by_inversion.
     +
-      assert (not_hash_sig_ev (cvm_evidence_denote a p (splitEvl s e))).
+      assert (not_hash_sig_ev (cvm_EvidenceT_denote a p (splitEvl s e))).
       {
         eapply IHt1.
         eassumption.
@@ -1692,7 +1692,7 @@ Proof.
       eapply H3; eassumption.
 
     +
-      assert (not_hash_sig_ev (cvm_evidence_denote a0 p (splitEvr s e))) by eauto.
+      assert (not_hash_sig_ev (cvm_EvidenceT_denote a0 p (splitEvr s e))) by eauto.
       eapply H3; eassumption.
 Qed.
 
@@ -1701,7 +1701,7 @@ Ltac do_hste_contra He :=
   match goal with
   | [H': annoP ?annt ?t,
          H3: not_hash_sig_term_ev ?t ?e
-             (*He: EvidenceC *)
+             (*He: EvidenceTC *)
      |- _] =>
     
     assert_new_proof_by
@@ -1712,7 +1712,7 @@ Ltac do_hste_contra He :=
 Lemma sig_term_ev_lseqr: forall t1 t2 annt e e' p,
     annoP annt t1 ->
     not_hash_sig_term_ev (lseq t1 t2) e ->
-    cvm_evidence_denote annt p e = e' ->  
+    cvm_EvidenceT_denote annt p e = e' ->  
     not_hash_sig_term_ev t2 e'.
 Proof.
   intros.
@@ -1772,7 +1772,7 @@ Lemma uu_preserved': forall t annt p n p0 e e' params et,
     annoP annt t ->
     not_none_none t ->
     events annt p (et_fun e) (umeas n p0 params et) ->
-    cvm_evidence_denote annt p e = e' ->
+    cvm_EvidenceT_denote annt p e = e' ->
 
     (
       (exists bits'' e'',
@@ -1780,7 +1780,7 @@ Lemma uu_preserved': forall t annt p n p0 e e' params et,
           EvSub (uuc params p0 (do_asp params bits'' p0 n) e'') e')) \/
       (exists ett p' bs,
           EvSub (hhc p' bs ett) e' /\
-          EvSubT (uu params p0 et) ett)
+          EvSubT (asp_evt params p0 et) ett)
     ).
 Proof.
   intros.
@@ -1795,7 +1795,7 @@ Proof.
     +
       invEvents.
 
-      unfold cons_uu in *.
+      unfold cons_asp_evt in *.
       repeat ff.
       left.
       exists (encodeEv e).
@@ -1839,7 +1839,7 @@ Proof.
 
       destruct_conjs.
 
-      do_evaccum (cvm_evidence_denote a0 p (cvm_evidence_denote a p e)).
+      do_evaccum (cvm_EvidenceT_denote a0 p (cvm_EvidenceT_denote a p e)).
       door.
 
       ++
@@ -1859,7 +1859,7 @@ Proof.
       ++
         destruct_conjs.
 
-        do_evaccum (cvm_evidence_denote a0 p (cvm_evidence_denote a p e)).
+        do_evaccum (cvm_EvidenceT_denote a0 p (cvm_EvidenceT_denote a p e)).
         door.
         +++
           right.
@@ -1878,7 +1878,7 @@ Proof.
           
     + (* t2 case *)
 
-      assert (et_fun (cvm_evidence_denote a p e) = (aeval a p (et_fun e))).
+      assert (et_fun (cvm_EvidenceT_denote a p e) = (aeval a p (et_fun e))).
       {
         eapply cvm_ev_denote_evtype.
       }
@@ -1959,7 +1959,7 @@ Proof.
                right;
                repeat (eexists; eauto)).
       ++
-        assert (mt = et_fun mtc) by tauto.
+        assert (mt_evt= et_fun mtc) by tauto.
         edestruct IHt1.
         eassumption.
         eassumption.
@@ -2007,7 +2007,7 @@ Proof.
                right;
                repeat (eexists; eauto)).
       ++
-        assert (mt = et_fun mtc) by tauto.
+        assert (mt_evt= et_fun mtc) by tauto.
         edestruct IHt2.
         eassumption.
         eassumption.
@@ -2105,7 +2105,7 @@ Proof.
                right;
                repeat (eexists; eauto)).
       ++
-        assert (mt = et_fun mtc) by tauto.
+        assert (mt_evt= et_fun mtc) by tauto.
         edestruct IHt1.
         eassumption.
         eassumption.
@@ -2152,7 +2152,7 @@ Proof.
                right;
                repeat (eexists; eauto)).
       ++
-        assert (mt = et_fun mtc) by tauto.
+        assert (mt_evt= et_fun mtc) by tauto.
         edestruct IHt2.
         eassumption.
         eassumption.
@@ -2204,8 +2204,8 @@ Lemma uu_preserved:
     not_none_none t1 ->
     not_none_none t2 ->
     events annt p (et_fun e) (umeas n p0 params et) ->
-    cvm_evidence_denote annt p e = e''' ->
-    cvm_evidence_denote annt p e''' = e' ->
+    cvm_EvidenceT_denote annt p e = e''' ->
+    cvm_EvidenceT_denote annt p e''' = e' ->
     
     (
       (exists bits'' e'',
@@ -2213,7 +2213,7 @@ Lemma uu_preserved:
            EvSub (uuc params p0 (do_asp params bits'' p0 n) e'') e')) \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) e' /\
-          EvSubT (uu params p0 et') ett)
+          EvSubT (asp_evt params p0 et') ett)
     ).
 Proof.
   intros.
@@ -2224,7 +2224,7 @@ Proof.
            EvSub (uuc params p0 (do_asp params bits'' p0 n) e'') e''')) \/
       (exists ett p' bs,
           EvSub (hhc p' bs ett) e''' /\
-          EvSubT (uu params p0 et) ett)
+          EvSubT (asp_evt params p0 et) ett)
     ).
   {
     eapply uu_preserved'.
@@ -2236,7 +2236,7 @@ Proof.
   rewrite <- H3 in *; clear H3.
   door.
   +
-    do_evaccum (cvm_evidence_denote annt p (cvm_evidence_denote annt p e)).
+    do_evaccum (cvm_EvidenceT_denote annt p (cvm_EvidenceT_denote annt p e)).
     clear H7.
   
     door.
@@ -2253,14 +2253,14 @@ Proof.
       (repeat eexists; eauto).
     jkjke'.
   +
-    do_evaccum (cvm_evidence_denote annt p (cvm_evidence_denote annt p e)).
+    do_evaccum (cvm_EvidenceT_denote annt p (cvm_EvidenceT_denote annt p e)).
     door.
     ++
       right.
       repeat (eexists; eauto).
       jkjke'.
     ++
-      assert (EvSubT (uu params p0 et) H9).
+      assert (EvSubT (asp_evt params p0 et) H9).
       {
         eapply evsubT_transitive.
         apply hhSubT.
@@ -2297,7 +2297,7 @@ Ltac sigEventPFacts :=
 Lemma nhse_bseql_nosplit: forall t1 t2 annt s p e e',
     annoP annt t1 ->
     not_hash_sig_term_ev (bseq s t1 t2) e ->
-    cvm_evidence_denote annt p (splitEvl s e) = e' ->
+    cvm_EvidenceT_denote annt p (splitEvl s e) = e' ->
     not_hash_sig_ev e'.
 Proof.
   intros.
@@ -2312,7 +2312,7 @@ Ltac do_nhse_bseql_nosplit :=
   match goal with
   | [H': annoP ?annt ?t1,
             H4: not_hash_sig_term_ev (bseq ?s ?t1 _) _,
-                e': EvidenceC 
+                e': EvidenceTC 
      |- _] =>
     
     assert_new_proof_by
@@ -2325,7 +2325,7 @@ Ltac do_nhse_bseql_nosplit :=
 Lemma nhse_bseqr_nosplit: forall t1 t2 annt s p e e',
     annoP annt t2 ->
     not_hash_sig_term_ev (bseq s t1 t2) e ->
-    cvm_evidence_denote annt p (splitEvr s e) = e' ->
+    cvm_EvidenceT_denote annt p (splitEvr s e) = e' ->
     not_hash_sig_ev e'.
 Proof.
   intros.
@@ -2340,7 +2340,7 @@ Ltac do_nhse_bseqr_nosplit :=
   match goal with
   | [H': annoP ?annt ?t2,
             H4: not_hash_sig_term_ev (bseq ?s _ ?t2) _,
-                e': EvidenceC 
+                e': EvidenceTC 
      |- _] =>
     
     assert_new_proof_by
@@ -2355,7 +2355,7 @@ Ltac do_nhse_bseqr_nosplit :=
 Lemma nhse_bparl_nosplit: forall t1 t2 annt s p e e',
     annoP annt t1 ->
     not_hash_sig_term_ev (bpar s t1 t2) e ->
-    cvm_evidence_denote annt p (splitEvl s e) = e' ->
+    cvm_EvidenceT_denote annt p (splitEvl s e) = e' ->
     not_hash_sig_ev e'.
 Proof.
   intros.
@@ -2370,7 +2370,7 @@ Ltac do_nhse_bparl_nosplit :=
   match goal with
   | [H': annoP ?annt ?t1,
             H4: not_hash_sig_term_ev (bpar ?s ?t1 _) _,
-                e': EvidenceC 
+                e': EvidenceTC 
      |- _] =>
     
     assert_new_proof_by
@@ -2383,7 +2383,7 @@ Ltac do_nhse_bparl_nosplit :=
 Lemma nhse_bparr_nosplit: forall t1 t2 annt s p e e',
     annoP annt t2 ->
     not_hash_sig_term_ev (bpar s t1 t2) e ->
-    cvm_evidence_denote annt p (splitEvr s e) = e' ->
+    cvm_EvidenceT_denote annt p (splitEvr s e) = e' ->
     not_hash_sig_ev e'.
 Proof.
   intros.
@@ -2398,7 +2398,7 @@ Ltac do_nhse_bparr_nosplit :=
   match goal with
   | [H': annoP ?annt ?t2,
             H4: not_hash_sig_term_ev (bpar ?s _ ?t2) _,
-                e': EvidenceC 
+                e': EvidenceTC 
      |- _] =>
     
     assert_new_proof_by
@@ -2420,7 +2420,7 @@ Lemma gg_preserved':
     not_none_none t ->
     not_hash_sig_term_ev t e ->
     events annt p (et_fun e) (sign n p0 et') ->
-    cvm_evidence_denote annt p e = e' ->
+    cvm_EvidenceT_denote annt p e = e' ->
     
     (
       (exists bits e'', EvSub (ggc p0 (do_sig (encodeEvBits (evc bits et')) p0 n) e'') e' /\
@@ -2504,14 +2504,14 @@ Proof.
       try do_nhste_lseqr.
       destruct_conjs.
 
-      do_hste_contra (cvm_evidence_denote a0 p (cvm_evidence_denote a p e)).
+      do_hste_contra (cvm_EvidenceT_denote a0 p (cvm_EvidenceT_denote a p e)).
       
       edestruct IHt1; try eassumption; try reflexivity.
 
       destruct_conjs.
       subst.
 
-      do_evaccum (cvm_evidence_denote a0 p (cvm_evidence_denote a p e)).
+      do_evaccum (cvm_EvidenceT_denote a0 p (cvm_EvidenceT_denote a p e)).
       door.
 
       +++
@@ -2534,9 +2534,9 @@ Proof.
   
       do_ste.
       destruct_conjs.
-      do_hste_contra (cvm_evidence_denote a0 p (cvm_evidence_denote a p e)).
+      do_hste_contra (cvm_EvidenceT_denote a0 p (cvm_EvidenceT_denote a p e)).
       
-      assert (et_fun ((cvm_evidence_denote a p e)) =  (aeval a p (et_fun e))).
+      assert (et_fun ((cvm_EvidenceT_denote a p e)) =  (aeval a p (et_fun e))).
       {
         eapply cvm_ev_denote_evtype.
       }

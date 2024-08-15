@@ -30,12 +30,12 @@ Definition errStr_lib_supports_man_check : string := "errStr_lib_supports_man_ch
 
 Definition errStr_lib_supports_man_app_check : string := "errStr_lib_supports_man_app_check".
 
-(* Evidence Bundling Errors *)
+(* EvidenceT Bundling Errors *)
 Definition errStr_empty_raw_ev : string := "errStr_empty_raw_ev".
 
-Definition errStr_raw_evidence_too_long : string := "errStr_raw_evidence_too_long".
+Definition errStr_raw_EvidenceT_too_long : string := "errStr_raw_EvidenceT_too_long".
 
-Definition errStr_raw_evidence_wrong_length_comp : string := "errStr_raw_evidence_wrong_length_comp".
+Definition errStr_raw_EvidenceT_wrong_length_comp : string := "errStr_raw_EvidenceT_wrong_length_comp".
 
 (* JSON Interface Error String *)
 Definition errStr_remote_am_failure : string := "errStr_remote_am_failure".

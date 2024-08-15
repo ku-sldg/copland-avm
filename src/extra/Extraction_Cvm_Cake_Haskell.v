@@ -61,10 +61,10 @@ Extract Constant hsh_params => "( undefined () )".
 (* Extract Constant + => "add". *)
 
 (*
-Definition my_extracted (t:Term) (st:cvm_st) (et:Evidence) (ls:RawEv) :=
+Definition my_extracted (t:Term) (st:cvm_st) (et:EvidenceT) (ls:RawEv) :=
   let res := run_cvm' t st in
   let res' := build_app_comp_evC et ls in
-  let res'' := eval t 0 mt in
+  let res'' := eval t 0 mt_evtin
   (res, res', res'').
 *)
 

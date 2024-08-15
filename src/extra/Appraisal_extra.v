@@ -1,4 +1,4 @@
-Require Import GenStMonad MonadVM MonadAM ConcreteEvidence MonadVMFacts.
+Require Import GenStMonad MonadVM MonadAM ConcreteEvidenceT MonadVMFacts.
 Require Import StAM Axioms_Io Impl_vm Impl_appraisal Maps VmSemantics Event_system Term_system.
 Require Import Auto AutoApp AllMapped.
 
@@ -139,7 +139,7 @@ Ltac do_ba_st_const :=
   subst.
 
 Lemma build_app_some : forall a a_st p,
-    allMapped a a_st p mt ->
+    allMapped a a_st p mt_evt->
     exists o, build_app_comp a p a_st = (Some o, a_st).
 Proof.
   intros.
@@ -180,7 +180,7 @@ Proof.
     allMappedFacts.
     specialize IHa1 with (a_st:=a_st) (p:=p).
     specialize IHa2 with (a_st:=a_st) (p:=p).
-    assert (allMapped a2 a_st p mt).
+    assert (allMapped a2 a_st p mt_evt).
     eapply allMappedSub'; eauto.
     repeat concludes.
     destruct_conjs.
@@ -222,7 +222,7 @@ Defined.
  *)
 
 (*
-Inductive pickEv : AnnoTerm -> Evidence -> Evidence -> Prop :=
+Inductive pickEv : AnnoTerm -> EvidenceT -> EvidenceT -> Prop :=
 | pickEv_asp : forall r a e, pickEv (aasp r a) e e
 | pickEv_aatt : forall r p t e,  pickEv (aatt r p t) e e
 | pickEv_alseq : forall r t1 t2 e, pickEv (alseq r t1 t2) e e
@@ -449,7 +449,7 @@ Proof.
     +
       eauto.
     +
-      assert (Ev_Shape st_ev mt).
+      assert (Ev_Shape st_ev mt_evt).
       {
         eapply IHa2.
       eassumption.
@@ -465,7 +465,7 @@ Admitted.
 *)
 
 
-Lemma contratra : forall x (f:EvidenceC -> EvidenceC) (vmst vmst':vm_st),
+Lemma contratra : forall x (f:EvidenceTC -> EvidenceTC) (vmst vmst':vm_st),
     x = (None, vmst) ->
     x = (Some f, vmst') ->
     False.
@@ -776,7 +776,7 @@ Lemma same_ev_shape: forall t vmst vmst' e e_res et e_res_t p a_st x new_vmst ne
   Ev_Shape e et ->
   e_res = st_ev vmst' ->
   Ev_Shape e_res e_res_t ->
-  build_app_comp t p a_st = (Some x, a_st) -> (* x : VM (EvidenceC -> EvidenceC) *)
+  build_app_comp t p a_st = (Some x, a_st) -> (* x : VM (EvidenceTC -> EvidenceTC) *)
   runSt new_vmst x = (Some f, new_vmst') ->
   Ev_Shape e'' et ->
   app_ev = f e'' ->
@@ -998,14 +998,14 @@ Proof.
       eauto.
 Defined.
 
-Inductive evidenceEvent: Ev -> Prop :=
-| uev: forall n p i args, evidenceEvent (umeas n p i args)
-(*| sev: forall n p, evidenceEvent (sign n p)
-| hev: forall n p, evidenceEvent (hash n p)*) .
+Inductive EvidenceTEvent: Ev -> Prop :=
+| uev: forall n p i args, EvidenceTEvent (umeas n p i args)
+(*| sev: forall n p, EvidenceTEvent (sign n p)
+| hev: forall n p, EvidenceTEvent (hash n p)*) .
 
 
 Definition measEvent (t:AnnoTerm) (p:Plc) (ev:Ev) : Prop :=
-  events t p ev /\ evidenceEvent ev.
+  events t p ev /\ EvidenceTEvent ev.
 
 Inductive appEvent : Ev -> AM_St -> Ev -> Prop :=
 | aeu : forall p q i i' n n' m args st,
@@ -1020,7 +1020,7 @@ Ltac measEventFacts :=
 
 Ltac evEventFacts :=
   match goal with
-  | [H: evidenceEvent _ |- _] => invc H
+  | [H: EvidenceTEvent _ |- _] => invc H
   end.
 
 Ltac invEvents :=
@@ -1343,7 +1343,7 @@ Lemma appraisal_correct : forall t vmst vmst' p e_res new_vmst new_vmst' a_st x 
     p = st_pl vmst ->
     e_res = st_ev vmst' ->
     e_res = st_ev new_vmst ->
-    build_app_comp t p a_st = (Some x, a_st) -> (* x : VM (EvidenceC -> EvidenceC) *)
+    build_app_comp t p a_st = (Some x, a_st) -> (* x : VM (EvidenceTC -> EvidenceTC) *)
     runSt new_vmst x = (Some f, new_vmst') ->
     tr_app = st_trace new_vmst' ->
     measEvent t p ev ->
@@ -1756,17 +1756,17 @@ Definition fromOpt{A:Type} (o:option A) (a:A) : A :=
   | None => a
   end.
 
-Definition run_app_comp (t:AnnoTerm) (p:Plc) (a_st:AM_St) (e_in:EvidenceC) : (EvidenceC -> EvidenceC) :=
-  let acomp := build_app_comp t p in (* AM (VM (EvidenceC -> EvidenceC)) *)
-  let vcomp_opt := runSt a_st acomp in (* (option (VM (EvidenceC -> EvidenceC)) * AM_St) *)
-  let vcomp := fromOpt (fst vcomp_opt) (ret (fun _ => mtc)) in (* (VM (EvidenceC -> EvidenceC)) *)
-  let vres_opt := runSt (mk_st e_in [] 0 []) vcomp in (* (option (EvidenceC -> EvidenceC) * VM_St) *)
+Definition run_app_comp (t:AnnoTerm) (p:Plc) (a_st:AM_St) (e_in:EvidenceTC) : (EvidenceTC -> EvidenceTC) :=
+  let acomp := build_app_comp t p in (* AM (VM (EvidenceTC -> EvidenceTC)) *)
+  let vcomp_opt := runSt a_st acomp in (* (option (VM (EvidenceTC -> EvidenceTC)) * AM_St) *)
+  let vcomp := fromOpt (fst vcomp_opt) (ret (fun _ => mtc)) in (* (VM (EvidenceTC -> EvidenceTC)) *)
+  let vres_opt := runSt (mk_st e_in [] 0 []) vcomp in (* (option (EvidenceTC -> EvidenceTC) * VM_St) *)
   fromOpt (fst vres_opt) ((fun _ => mtc)).
 
-Definition run_app_comp' (t:AnnoTerm) (p:Plc) (st:AM_St) (e_in:EvidenceC) : ((option (EvidenceC -> EvidenceC)) * vm_st) :=
-  let acomp := build_app_comp t p in (* AM (VM (EvidenceC -> EvidenceC)) *)
-  let vcomp_opt := runSt st acomp in (* (option (VM (EvidenceC -> EvidenceC)) * AM_St) *)
-  let vcomp := fromOpt (fst vcomp_opt) (ret (fun _ => mtc)) in (* (VM (EvidenceC -> EvidenceC)) *)
+Definition run_app_comp' (t:AnnoTerm) (p:Plc) (st:AM_St) (e_in:EvidenceTC) : ((option (EvidenceTC -> EvidenceTC)) * vm_st) :=
+  let acomp := build_app_comp t p in (* AM (VM (EvidenceTC -> EvidenceTC)) *)
+  let vcomp_opt := runSt st acomp in (* (option (VM (EvidenceTC -> EvidenceTC)) * AM_St) *)
+  let vcomp := fromOpt (fst vcomp_opt) (ret (fun _ => mtc)) in (* (VM (EvidenceTC -> EvidenceTC)) *)
   let vres_opt := runSt (mk_st e_in [] 0 []) vcomp in
   vres_opt.
 
@@ -1797,17 +1797,17 @@ Compute run_app_comp aterm 0 ast aterm_ev.
 
 
 (*
-Definition run_app_comp (t:AnnoTerm) (p:Plc) (a_st:AM_St) (e_in:EvidenceC) : (EvidenceC -> EvidenceC) :=
-  let acomp := build_app_comp t p in (* AM (VM (EvidenceC -> EvidenceC)) *)
-  let vcomp_opt := runSt a_st acomp in (* (option (VM (EvidenceC -> EvidenceC)) * AM_St) *)
-  let vcomp := fromOpt (fst vcomp_opt) (ret (fun _ => mtc)) in (* (VM (EvidenceC -> EvidenceC)) *)
-  let vres_opt := runSt (mk_st e_in [] 0 []) vcomp in (* (option (EvidenceC -> EvidenceC) * VM_St) *)
+Definition run_app_comp (t:AnnoTerm) (p:Plc) (a_st:AM_St) (e_in:EvidenceTC) : (EvidenceTC -> EvidenceTC) :=
+  let acomp := build_app_comp t p in (* AM (VM (EvidenceTC -> EvidenceTC)) *)
+  let vcomp_opt := runSt a_st acomp in (* (option (VM (EvidenceTC -> EvidenceTC)) * AM_St) *)
+  let vcomp := fromOpt (fst vcomp_opt) (ret (fun _ => mtc)) in (* (VM (EvidenceTC -> EvidenceTC)) *)
+  let vres_opt := runSt (mk_st e_in [] 0 []) vcomp in (* (option (EvidenceTC -> EvidenceTC) * VM_St) *)
   fromOpt (fst vres_opt) ((fun _ => mtc)).
 
-Definition run_app_comp' (t:AnnoTerm) (p:Plc) (st:AM_St) (e_in:EvidenceC) : ((option (EvidenceC -> EvidenceC)) * vm_st) :=
-  let acomp := build_app_comp t p in (* AM (VM (EvidenceC -> EvidenceC)) *)
-  let vcomp_opt := runSt st acomp in (* (option (VM (EvidenceC -> EvidenceC)) * AM_St) *)
-  let vcomp := fromOpt (fst vcomp_opt) (ret (fun _ => mtc)) in (* (VM (EvidenceC -> EvidenceC)) *)
+Definition run_app_comp' (t:AnnoTerm) (p:Plc) (st:AM_St) (e_in:EvidenceTC) : ((option (EvidenceTC -> EvidenceTC)) * vm_st) :=
+  let acomp := build_app_comp t p in (* AM (VM (EvidenceTC -> EvidenceTC)) *)
+  let vcomp_opt := runSt st acomp in (* (option (VM (EvidenceTC -> EvidenceTC)) * AM_St) *)
+  let vcomp := fromOpt (fst vcomp_opt) (ret (fun _ => mtc)) in (* (VM (EvidenceTC -> EvidenceTC)) *)
   let vres_opt := runSt (mk_st e_in [] 0 []) vcomp in
   vres_opt.
  *)

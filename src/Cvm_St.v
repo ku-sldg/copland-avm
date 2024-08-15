@@ -6,15 +6,15 @@ CVM Monad definition.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import ConcreteEvidence ErrorStMonad_Coq Attestation_Session.
+Require Import ConcreteEvidenceT ErrorStMonad_Coq Attestation_Session.
 Require Import List.
 Import ListNotations.
 Require Import Manifest_Admits.
 
 (** CVM monad state structure.
 
-    st_ev - Evidence bundle.  Holds raw evidence sequence along with its 
-            Evidence Type.
+    st_ev - EvidenceT bundle.  Holds raw EvidenceT sequence along with its 
+            EvidenceT Type.
     st_trace - Event trace accumulated by the CVM (relevant only during 
                verification)
     st_pl - Current "executing place".

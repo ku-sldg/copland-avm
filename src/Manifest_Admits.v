@@ -1,4 +1,4 @@
-(*  Admitted types, definitions, and typeclass instances related to Manifests *)
+(*  Admitted types, definitions, and typeclasplit_evt instances related to Manifests *)
 
 Require Import EqClass Term_Defs_Core Stringifiable.
 

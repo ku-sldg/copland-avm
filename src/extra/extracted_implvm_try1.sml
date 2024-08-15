@@ -48,22 +48,22 @@ datatype term =
 | Bseq split term term
 | Bpar split term term
 
-datatype evidence =
+datatype EvidenceT =
   Mt 
-| Uu nat (nat list) nat nat evidence
-| Gg nat evidence
-| Hh nat evidence
+| Uu nat (nat list) nat nat EvidenceT
+| Gg nat EvidenceT
+| Hh nat EvidenceT
 | Nn nat
-| Ss evidence evidence
-| Pp evidence evidence
+| Ss EvidenceT EvidenceT
+| Pp EvidenceT EvidenceT
 
 datatype ev =
   Copy nat nat
 | Umeas nat nat nat (nat list) nat nat
-| Sign nat nat evidence
-| Hash nat nat evidence
-| Req nat nat nat term evidence
-| Rpy nat nat nat evidence
+| Sign nat nat EvidenceT
+| Hash nat nat EvidenceT
+| Req nat nat nat term EvidenceT
+| Rpy nat nat nat EvidenceT
 | Split nat nat
 | Join nat nat
 
@@ -118,14 +118,14 @@ fun get s =
 type evBits = nat list
 
 datatype evC =
-  Evc evBits evidence
+  Evc evBits EvidenceT
 
 (** val mt_evc : evC **)
 
 val mt_evc =
   Evc Nil Mt
 
-(** val get_et : evC -> evidence **)
+(** val get_et : evC -> EvidenceT **)
 
 fun get_et e = case e of
   Evc _ et => et
@@ -203,16 +203,16 @@ fun call_ASP i l tid tpl x =
   bind get_pl (fn p =>
     bind (add_tracem (Cons (Umeas x p i l tpl tid) Nil)) (fn _ => ret x))
 
-(** val cons_uu : nat -> evC -> nat -> nat list -> nat -> nat -> evC **)
+(** val cons_asp_evt : nat -> evC -> nat -> nat list -> nat -> nat -> evC **)
 
-fun cons_uu x e i l tpl tid =
+fun cons_asp_evt x e i l tpl tid =
   let val Evc bits et = e in Evc (Cons x bits) (Uu i l tpl tid et) end
 
 (** val invoke_ASP : nat -> nat list -> nat -> nat -> nat -> evC cVM **)
 
 fun invoke_ASP i l tpl tid x =
   bind (call_ASP i l tid tpl x) (fn bs =>
-    bind get_ev (fn e => ret (cons_uu bs e i l tpl tid)))
+    bind get_ev (fn e => ret (cons_asp_evt bs e i l tpl tid)))
 
 (** val encodeEv : evC -> nat **)
 

@@ -6,8 +6,8 @@
 
     The non-monadic stubs (i.e. doRemote_uuid) remain abstract (Admitted) in Coq 
     because they are either too low-level to reason about, or require external 
-    IO capabilities not modeled first-class in our spec.  The abstract binary
-    and evidence value results support specification of correctness properties 
+    IO capabilities not modeled first-clasplit_evt in our spec.  The abstract binary
+    and EvidenceT value results support specification of correctnesplit_evt properties 
     for Appraisal.        
  *)
 Require Import Term_Defs ErrorStMonad_Coq 
@@ -22,7 +22,7 @@ Definition aspid_to_fs_location (aspid : ASP_ID) : FS_Location. Admitted.
 
 Definition make_JSON_FS_Location_Request (dir : FS_Location) (aspid : FS_Location) (js : JSON) : ResultT JSON string. Admitted.
 
-(** * Stub to simulate evidence collected by a parallel CVM instance *)
+(** * Stub to simulate EvidenceT collected by a parallel CVM instance *)
 Definition parallel_vm_thread (l:Loc) (t:Core_Term) (p:Plc) (e:EvC) : EvC.  Admitted.
 
 Definition do_start_par_thread (loc:Loc) (t:Core_Term) (e:RawEv) : CVM unit :=

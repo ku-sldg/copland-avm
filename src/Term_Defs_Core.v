@@ -1,5 +1,5 @@
 (** Basic definitions for Copland terms, Core terms, 
-   Evidence Types, and Copland events. *)
+   EvidenceT Types, and Copland events. *)
 
 (*
    These definitions have been adapted from an earlier version, archived 
@@ -21,14 +21,10 @@ Require Export BS.
 Require Import List ID_Type Maps EqClass JSON Stringifiable Stringifiable_Class_Admits StructTactics.
 Import ListNotations.
 
-(** * Terms and Evidence *)
+(** * Terms and EvidenceT *)
 
 (** [Plc] represents a place (or attestation domain). *)
 Definition Plc: Set := ID_Type.
-(* Global Instance Stringifiable_Plc : Stringifiable Plc := {
-  to_string := to_string;
-  from_string := from_string;
-}. *)
 (** [N_ID] represents a nonce identifier.  *)
 Definition N_ID: Set := nat.
 (** [Event_ID] represents Event identifiers *)
@@ -41,43 +37,30 @@ Definition Event_ID: Set := nat.
           (defined and interpreted per-scenario/implementaiton).
 *)
 Definition ASP_ID: Set := ID_Type.
-(* Global Instance Stringifiable_ASP_ID : Stringifiable ASP_ID := {
-  to_string := to_string;
-  from_string := from_string;
-}. *)
+Definition ASP_Compat_MapT := MapC ASP_ID ASP_ID.
+Definition ASP_ARGS := MapC string string.
 
 Definition TARG_ID: Set := ID_Type.
-(* Global Instance Stringifiable_TARG_ID : Stringifiable TARG_ID := {
-  to_string := to_string;
-  from_string := from_string;
-}. *)
 
 Open Scope string_scope.
 
-Definition ASP_ARGS := MapC string string.
-(* Global Instance Jsonifiable_ASP_ARGS : Jsonifiable ASP_ARGS := {
-  to_JSON := to_JSON;
-  from_JSON := from_JSON;
-}. *)
-
-Definition ASP_Info := string.
 
 (** Grouping ASP parameters into one constructor *)
 Inductive ASP_PARAMS: Type :=
 | asp_paramsC: ASP_ID -> ASP_ARGS -> Plc -> TARG_ID -> ASP_PARAMS.
 
-(** Evidence extension types for ASPs:
-      COMP:  Compact evidence down to a single value (i.e. a hash).
+(** EvidenceT extension types for ASPs:
+      COMP:  Compact EvidenceT down to a single value (i.e. a hash).
       ENCR:  Like COMP, but the single value is semantically an ENCRYPTED one.
       EXTD:  Extend bundle (non-destructively) by prepending the new ASP result to the front.
-      KILL:  Ignore evidence produced by an ASP and put Mt evidence.
-      KEEP:  Ignore evidence produced by an ASP and keep the input evidence unchanged.
+      KILL:  Ignore EvidenceT produced by an ASP and put Mt EvidenceT.
+      KEEP:  Ignore EvidenceT produced by an ASP and keep the input EvidenceT unchanged.
 
 
 COMP:  [b1, b2, ..., bn] ==> [hash([b1, b2, ..., bn])]
 ENCR:  [b1, b2, ..., bn] ==> [encrypt([b1, b2, ..., bn])]
 EXTD:  [b1, b2, ..., bn] ==> f([b1, b2, ..., bn]) ++ [b1, b2, ..., bn]], 
-            where f represents the ASP's functional result over an input evidence bundle.
+            where f represents the ASP's functional result over an input EvidenceT bundle.
 KILL:  [b1, b2, ..., bn] ==> []
 KEEP:  [b1, b2, ..., bn] ==> [b1, b2, ..., bn]
 *)
@@ -88,22 +71,23 @@ Inductive FWD: Set :=
 | KILL
 | KEEP.
 
-(** The structure of evidence. 
+(** The structure of EvidenceT. 
 
-    mt:  Empty evidence 
-    nn:  Nonce evidence (with an ID)
-    uu:  ASP evidence bundle
-    ss:  evidence pairing (composition)
+    mt_evt:  Empty EvidenceT 
+    nn:  Nonce EvidenceT (with an ID)
+    uu:  ASP EvidenceT bundle
+    ss:  EvidenceT pairing (composition)
 *)
-Inductive Evidence :=
-| mt: Evidence
-| nn: N_ID -> Evidence
-| uu: Plc -> FWD -> ASP_PARAMS -> Evidence -> Evidence
-| ss: Evidence -> Evidence -> Evidence.
+Inductive EvidenceT :=
+| mt_evt      : EvidenceT
+| nonce_evt   : N_ID -> EvidenceT
+| asp_evt     : Plc -> FWD -> ASP_PARAMS -> EvidenceT -> EvidenceT
+| appr_evt    : EvidenceT -> EvidenceT -> EvidenceT
+| split_evt   : EvidenceT -> EvidenceT -> EvidenceT.
 
 (** Evidene routing types:  
-      ALL:   pass through all evidence
-      NONE   pass through empty evidence
+      ALL:   pasplit_evt through all EvidenceT
+      NONE   pasplit_evt through empty EvidenceT
 *)
 Inductive SP: Set :=
 | ALL
@@ -111,12 +95,12 @@ Inductive SP: Set :=
 
 (** Primitive Copland phases 
 
-    NULL:    Empty out evidence (optionally with a strong "zeroize" effect)
-    CPY:     Copy evidence (leave input evidence unchanged)
+    NULL:    Empty out EvidenceT (optionally with a strong "zeroize" effect)
+    CPY:     Copy EvidenceT (leave input EvidenceT unchanged)
     ASPC sp fwd ps:    
         Arbitrary ASPs:
-          sp indicates passing ALL or NONE as input evidence.
-          fwd indicates how to extend output evidence.
+          sp indicates passing ALL or NONE as input EvidenceT.
+          fwd indicates how to extend output EvidenceT.
           ps indicates the asp parameters structure
     SIG:     Signature primitive
     HSH:     Hash primitive 
@@ -131,11 +115,11 @@ Inductive ASP :=
 | ENC: Plc -> ASP.
 
 
-(** Pair of evidence splitters that indicate routing evidence to subterms 
+(** Pair of EvidenceT splitters that indicate routing EvidenceT to subterms 
     of branching phrases *)
 Definition Split: Set := (SP * SP).
 
-(** Pair of evidence splitters that indicate routing evidence to subterms 
+(** Pair of EvidenceT splitters that indicate routing EvidenceT to subterms 
     of branching phrases *)
 
 (** Main Copland phrase datatype definition.
@@ -144,6 +128,7 @@ Definition Split: Set := (SP * SP).
         a sequence of terms with no data dependency, or parallel terms. *)
 Inductive Term :=
 | asp: ASP -> Term
+| appr : Term
 | att: Plc -> Term -> Term
 | lseq: Term -> Term -> Term
 | bseq: Split -> Term -> Term -> Term
@@ -197,6 +182,7 @@ Definition Locs: Set := list Loc.
     execution language of the Copland VM (CVM). *)
 Inductive Core_Term :=
 | aspc: ASP_Core -> Core_Term
+| apprc : Core_Term
 | attc: Plc -> Term -> Core_Term
 | lseqc: Core_Term -> Core_Term -> Core_Term
 | bseqc: Core_Term -> Core_Term -> Core_Term
@@ -227,35 +213,8 @@ Definition test2 := <<core>{ __ -> {} }>.
 Example test2ex : test2 = (lseqc (aspc CPYC) (aspc NULLC)). reflexivity. Qed.
 Example test3 : <<core>{ CLR -> {}}> = (lseqc (aspc CLEAR) (aspc NULLC)). reflexivity. Qed.
 
-(** Raw Evidence representaiton:  a list of binary (BS) values. *)
+(** Raw EvidenceT representaiton:  a list of binary (BS) values. *)
 Definition RawEv := list BS.
-
-(** AppResultC represents the result of a Copland Core_Term execution. *)
-Inductive AppResultC :=
-| mtc_app: AppResultC
-| nnc_app: N_ID -> BS -> AppResultC
-| ggc_app: Plc -> ASP_PARAMS -> RawEv -> AppResultC -> AppResultC
-| hhc_app: Plc -> ASP_PARAMS -> BS -> AppResultC -> (* Evidence -> *) AppResultC
-| eec_app: Plc -> ASP_PARAMS -> BS -> AppResultC ->(* Evidence -> *) AppResultC
-| ssc_app: AppResultC -> AppResultC -> AppResultC.
 
 Close Scope string_scope.
 
-Fixpoint appresultc_size (res:AppResultC) : nat :=
-  match res with
-  | mtc_app => 0
-  | nnc_app _ _ => 1
-  | ggc_app _ _ rawEv res' => Nat.add (List.length rawEv) (appresultc_size res')
-  | hhc_app _ _ _ res' => Nat.add 1 (appresultc_size res')
-  | eec_app _ _ _ res' => Nat.add 1 (appresultc_size res')
-  | ssc_app res1 res2 => Nat.add (appresultc_size res1) (appresultc_size res2)
-  end.
-
-Definition appres_size_lt_zero (res:AppResultC) : bool :=
-  Nat.ltb (appresultc_size res) 0.
-
-
-
-(*
-End Term_Defs_Core.
-*)

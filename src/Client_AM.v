@@ -18,9 +18,9 @@ Import ListNotations ErrNotation.
 Set Nested Proofs Allowed.
 *)
 
-Definition am_sendReq (req_plc : Plc) (att_sess : Attestation_Session) (t:Term) (uuid : UUID) (* (authTok:ReqAuthTok) *)
+Definition am_sendReq (req_plc : Plc) (att_sesplit_evt : Attestation_Session) (t:Term) (uuid : UUID) (* (authTok:ReqAuthTok) *)
    (e:RawEv) : ResultT RawEv string :=
-  let req := (mkPRReq att_sess t req_plc e) in 
+  let req := (mkPRReq att_sesplit_evt t req_plc e) in 
   let js := to_JSON req in
   let resp_res := make_JSON_Network_Request uuid js in
   match resp_res with
@@ -28,15 +28,15 @@ Definition am_sendReq (req_plc : Plc) (att_sess : Attestation_Session) (t:Term) 
       match from_JSON js_res with
       | errC msg => errC msg
       | resultC res =>
-        let '(mkPRResp success ev) := res in
-        if success then resultC ev else errC errStr_remote_am_failure
+        let '(mkPRResp succesplit_evt ev) := res in
+        if succesplit_evt then resultC ev else errC errStr_remote_am_failure
       end
   | errC msg => errC msg
   end.
 
-Definition am_sendReq_app (uuid : UUID) (att_sess : Attestation_Session) (t:Term) (p:Plc) (e:Evidence) (ev:RawEv) : 
+Definition am_sendReq_app (uuid : UUID) (att_sesplit_evt : Attestation_Session) (t:Term) (p:Plc) (e:EvidenceT) (ev:RawEv) : 
     ResultT AppResultC string :=
-  let req := (mkPAReq att_sess t p e ev) in
+  let req := (mkPAReq att_sesplit_evt t p e ev) in
   let js := to_JSON req in
   let resp_res := make_JSON_Network_Request uuid js in
   match resp_res with
@@ -44,8 +44,8 @@ Definition am_sendReq_app (uuid : UUID) (att_sess : Attestation_Session) (t:Term
     match from_JSON js_res with
     | errC msg => errC msg
     | resultC res =>
-      let '(mkPAResp success result) := res in
-      if success then resultC result else errC errStr_remote_am_failure
+      let '(mkPAResp succesplit_evt result) := res in
+      if succesplit_evt then resultC result else errC errStr_remote_am_failure
     end
   | errC msg => errC msg
   end.
@@ -56,7 +56,7 @@ Definition gen_nonce_if_none_local (initEv:option EvC) : AM EvC :=
   | None =>
     let nonce_bits := gen_nonce_bits in
     nid <- am_newNonce nonce_bits ;;
-    err_ret (evc [nonce_bits] (nn nid))
+    err_ret (evc [nonce_bits] (nonce_evt nid))
   end.
 
 (* Definition gen_authEvC_if_some (ot:option Term) (uuid : UUID) (myPlc:Plc) (init_evc:EvC) : AM EvC :=
@@ -64,38 +64,38 @@ Definition gen_nonce_if_none_local (initEv:option EvC) : AM EvC :=
   | Some auth_phrase =>
     let '(evc init_rawev_auth init_et_auth) := init_evc in
     match am_sendReq myPlc auth_phrase uuid (* mt_evc *) init_rawev_auth with
-    | errC msg => ret (evc [] mt)
+    | errC msg => ret (evc [] mt_evt)
     | resultC auth_rawev =>
       let auth_et := eval auth_phrase myPlc init_et_auth in
         ret (evc auth_rawev auth_et)
     end
-  | None => ret (evc [] mt)
+  | None => ret (evc [] mt_evt)
   end. *)
 
-Definition run_appraisal_client (att_sess : Attestation_Session) (t:Term) (p:Plc) (et:Evidence) (re:RawEv) 
+Definition run_appraisal_client (att_sesplit_evt : Attestation_Session) (t:Term) (p:Plc) (et:EvidenceT) (re:RawEv) 
   (addr:UUID) : ResultT AppResultC string :=
   let expected_et := eval t p et in 
-  am_sendReq_app addr att_sess t p et re.
+  am_sendReq_app addr att_sesplit_evt t p et re.
   (*
   let comp := gen_appraise_AM expected_et re in
   run_am_app_comp comp mtc_app.
   *)
 
-Definition run_demo_client_AM (t:Term) (top_plc:Plc) (att_plc:Plc) (et:Evidence) (att_sess : Attestation_Session)
+Definition run_demo_client_AM (t:Term) (top_plc:Plc) (att_plc:Plc) (et:EvidenceT) (att_sesplit_evt : Attestation_Session)
   (re:RawEv) (attester_addr:UUID) (appraiser_addr:UUID) : ResultT AppResultC string :=
-    let att_result := am_sendReq top_plc att_sess t attester_addr re in 
+    let att_result := am_sendReq top_plc att_sesplit_evt t attester_addr re in 
     match att_result with 
     | errC msg => errC msg 
     | resultC att_rawev => 
-        run_appraisal_client att_sess t att_plc et att_rawev appraiser_addr
+        run_appraisal_client att_sesplit_evt t att_plc et att_rawev appraiser_addr
     end.
 
-Definition check_et_length (et:Evidence) (ls:RawEv) : AM unit := 
+Definition check_et_length (et:EvidenceT) (ls:RawEv) : AM unit := 
 if (eqb (et_size et) (length ls)) 
 then err_ret tt 
 else (am_failm (am_dispatch_error (Runtime errStr_et_size))).
 
-Definition am_appraise (att_sess : Attestation_Session) (t:Term) (toPlc:Plc) (init_et:Evidence) (cvm_ev:RawEv) (apprUUID : UUID) (local_appraisal:bool) : AM AppResultC :=
+Definition am_appraise (att_sesplit_evt : Attestation_Session) (t:Term) (toPlc:Plc) (init_et:EvidenceT) (cvm_ev:RawEv) (apprUUID : UUID) (local_appraisal:bool) : AM AppResultC :=
   let expected_et := eval t toPlc init_et in
   check_et_length expected_et cvm_ev ;;
 
@@ -105,7 +105,7 @@ Definition am_appraise (att_sess : Attestation_Session) (t:Term) (toPlc:Plc) (in
        let expected_et := eval t toPlc init_et in
         gen_appraise_AM expected_et cvm_ev 
     | false => 
-      match run_appraisal_client att_sess t toPlc init_et cvm_ev apprUUID with
+      match run_appraisal_client att_sesplit_evt t toPlc init_et cvm_ev apprUUID with
       | errC msg => am_failm (am_dispatch_error (Runtime msg))
       | resultC res => err_ret res
       end
@@ -204,14 +204,14 @@ Admitted.
       resev <- run_cvm_local_am auth_phrase init_rawev_auth ;;
       let auth_et := eval auth_phrase myPlc init_et_auth in 
       ret (evc resev auth_et)
-  | None => ret (evc [] mt)
+  | None => ret (evc [] mt_evt)
   end.
 
 Definition get_am_policy : AM PolicyT := 
   st <- get ;; 
   ret (policy (absMan (amConfig st))).
 
-Definition check_disclosure_policy (t:Term) (p:Plc) (e:Evidence) : AM unit := 
+Definition check_disclosure_policy (t:Term) (p:Plc) (e:EvidenceT) : AM unit := 
   policy <- get_am_policy ;; 
   if (policy_list_not_disclosed t p e policy)
   then ret tt 
@@ -235,7 +235,7 @@ Definition check_disclosure_policy (t:Term) (p:Plc) (e:Evidence) : AM unit :=
 
   (*
 
-  (t:Term) (toPlc:Plc) (init_et:Evidence) (cvm_ev:RawEv) : AM AppResultC :=
+  (t:Term) (toPlc:Plc) (init_et:EvidenceT) (cvm_ev:RawEv) : AM AppResultC :=
   
   *)
 
@@ -245,28 +245,28 @@ Definition check_disclosure_policy (t:Term) (p:Plc) (e:Evidence) : AM unit :=
   ret (am_appev app_res).
 *)
 
-Fixpoint nonce_ids_et' (et:Evidence) (ls:list N_ID) : list N_ID :=
+Fixpoint nonce_ids_et' (et:EvidenceT) (ls:list N_ID) : list N_ID :=
   match et with
-  | mt => ls
-  | nn nid => nid :: ls 
-  | ss et1 et2 => (nonce_ids_et' et2 (nonce_ids_et' et1 ls))
-  | uu _ _ _ et' => nonce_ids_et' et' ls
+  | mt_evt=> ls
+  | nonce_evt nid => nid :: ls 
+  | split_evt et1 et2 => (nonce_ids_et' et2 (nonce_ids_et' et1 ls))
+  | asp_evt _ _ _ et' => nonce_ids_et' et' ls
   end.
 
-Definition nonce_ids_et (et:Evidence) : list N_ID :=
+Definition nonce_ids_et (et:EvidenceT) : list N_ID :=
   nonce_ids_et' et [].
 
 
 
-Inductive no_nonces_pred : Evidence -> Prop := 
-| mt_no_nonce : no_nonces_pred mt 
+Inductive no_nonces_pred : EvidenceT -> Prop := 
+| mt_no_nonce : no_nonces_pred mt_evt
 | uu_no_nonce : forall p fwd ps et', 
     no_nonces_pred et' -> 
-    no_nonces_pred (uu p fwd ps et')
+    no_nonces_pred (asp_evt p fwd ps et')
 | ss_no_nonce : forall et1 et2,
     no_nonces_pred et1 -> 
     no_nonces_pred et2 -> 
-    no_nonces_pred (ss et1 et2).
+    no_nonces_pred (split_evt et1 et2).
 
 Lemma no_nonces'' : forall et ls,
   no_nonces_pred et -> 
@@ -391,7 +391,7 @@ Proof.
 Qed.
 
 Lemma no_nonces : forall t p ,
-nonce_ids_et (eval t p mt) = [].
+nonce_ids_et (eval t p mt_evt) = [].
 Proof.
   intros.
   eapply no_nonces'.
@@ -498,7 +498,7 @@ Proof.
     +
     assert (
       In nid (nonce_ids_et' (eval t1 p et) ls) \/ 
-      In nid (nonce_ids_et' mt [])
+      In nid (nonce_ids_et' mt_evt[])
 
     ).
     eapply IHt2.
@@ -511,7 +511,7 @@ Proof.
 
     +
     assert (
-      In nid (nonce_ids_et' (eval t1 p mt) ls) \/ 
+      In nid (nonce_ids_et' (eval t1 p mt_evt) ls) \/ 
       In nid (nonce_ids_et' et [])
 
     ).
@@ -526,8 +526,8 @@ Proof.
     solve_by_inversion.
     +
     assert (
-      In nid (nonce_ids_et' (eval t1 p mt) ls) \/ 
-      In nid (nonce_ids_et' mt [])
+      In nid (nonce_ids_et' (eval t1 p mt_evt) ls) \/ 
+      In nid (nonce_ids_et' mt_evt[])
 
     ).
     eapply IHt2.
@@ -563,7 +563,7 @@ Proof.
   +
   assert (
     In nid (nonce_ids_et' (eval t1 p et) ls) \/ 
-    In nid (nonce_ids_et' mt [])
+    In nid (nonce_ids_et' mt_evt[])
 
   ).
   eapply IHt2.
@@ -576,7 +576,7 @@ Proof.
 
   +
   assert (
-    In nid (nonce_ids_et' (eval t1 p mt) ls) \/ 
+    In nid (nonce_ids_et' (eval t1 p mt_evt) ls) \/ 
     In nid (nonce_ids_et' et [])
 
   ).
@@ -591,8 +591,8 @@ Proof.
   solve_by_inversion.
   +
   assert (
-    In nid (nonce_ids_et' (eval t1 p mt) ls) \/ 
-    In nid (nonce_ids_et' mt [])
+    In nid (nonce_ids_et' (eval t1 p mt_evt) ls) \/ 
+    In nid (nonce_ids_et' mt_evt[])
 
   ).
   eapply IHt2.
@@ -774,7 +774,7 @@ Proof.
       {
         unfold check_et_length in *.
         assert (
-          Nat.eqb (et_size (eval t p (nn (am_nonceId st))))
+          Nat.eqb (et_size (eval t p (nonce_evt (am_nonceId st))))
             (length (run_cvm_rawEv t p [gen_nonce_bits] (amConfig a1))) = 
             true
         ).
@@ -879,7 +879,7 @@ Proof.
       {
         unfold check_et_length in *.
         assert (
-          Nat.eqb (et_size (eval t p (nn (am_nonceId st))))
+          Nat.eqb (et_size (eval t p (nonce_evt (am_nonceId st))))
             (length (run_cvm_rawEv t p [gen_nonce_bits] (amConfig a1))) = 
             true
         ).

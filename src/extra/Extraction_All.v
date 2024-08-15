@@ -34,10 +34,10 @@ Extraction Implicit parallel_vm_thread [2 3 4].
 Extraction Implicit do_wait_par_thread [2 3 4].
 
 (*
-Definition my_extracted (t:Term) (st:cvm_st) (et:Evidence) (ls:RawEv) :=
+Definition my_extracted (t:Term) (st:cvm_st) (et:EvidenceT) (ls:RawEv) :=
   let res := run_cvm' t st in
   let res' := build_app_comp_evC et ls in
-  let res'' := eval t 0 mt in
+  let res'' := eval t 0 mt_evtin
   (res, res', res'').
 *)
 

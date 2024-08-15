@@ -12,8 +12,8 @@ Inductive Object: Set :=
 
 (* 
     asp:
-        READ - view all incoming evidence to specific ASP
-        WRITE - corrupt specific asp (including tampering w/ evidence)
+        READ - view all incoming EvidenceT to specific ASP
+        WRITE - corrupt specific asp (including tampering w/ EvidenceT)
         EXECUTE - invoke specific ASP via CVM
 
     plc:

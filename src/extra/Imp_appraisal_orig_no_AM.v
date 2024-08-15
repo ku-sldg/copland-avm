@@ -1,9 +1,9 @@
-Require Import Term ConcreteEvidence (*Appraisal_Evidence*) (*GenStMonad MonadVM MonadAM*) .
+Require Import Term ConcreteEvidenceT (*Appraisal_EvidenceT*) (*GenStMonad MonadVM MonadAM*) .
 
 (*
 Require Import Impl_vm StAM. *)
 
-Require Import Appraisal_Defs_New Appraisal_Evidence.
+Require Import Appraisal_Defs_New Appraisal_EvidenceT.
 
 Require Import List.
 Import ListNotations.
@@ -21,7 +21,7 @@ Admitted.
 Definition checkSig (ls:EvBits) (p:Plc) (sig:BS) : BS.
 Admitted.
 
-Definition checkHash (e:Evidence) (p:Plc) (hash:BS) : BS.
+Definition checkHash (e:EvidenceT) (p:Plc) (hash:BS) : BS.
 Admitted.
 
 
@@ -36,7 +36,7 @@ Definition peel_bs (ls:EvBits) : option (BS * EvBits) :=
 
 (*
 Definition checkASP_fwd (p:Plc) (f:FWD) (params:ASP_PARAMS)
-           (et:Evidence) (bs:BS) (ls:RawEv) : Opt EvidenceC :=
+           (et:EvidenceT) (bs:BS) (ls:RawEv) : Opt EvidenceTC :=
   match f with
   | COMP => res <- checkHH params bs ;;
            ret (hhc p params res et)
@@ -49,14 +49,14 @@ Definition checkASP_fwd (p:Plc) (f:FWD) (params:ASP_PARAMS)
  *)
 
 
-Fixpoint build_app_comp_evC (et:Evidence) (ls:RawEv) (nonceGolden:BS) : Opt AppResultC :=
+Fixpoint build_app_comp_evC (et:EvidenceT) (ls:RawEv) (nonceGolden:BS) : Opt AppResultC :=
   match et with
-  | mt => ret mtc_app
-  | nn nid =>
+  | mt_evt=> ret mtc_app
+  | nonce_evt nid =>
     '(bs, _) <- peel_bs ls ;;
     res <- checkNonce nonceGolden bs ;;  (* TODO: proper nonce check *)
     ret (nnc_app nid res)
-  | uu p fwd params et' =>
+  | asp_evt p fwd params et' =>
     match fwd with
     | COMP => ret mtc_app (* TODO hash check *)
       (*
@@ -77,17 +77,17 @@ Fixpoint build_app_comp_evC (et:Evidence) (ls:RawEv) (nonceGolden:BS) : Opt AppR
     | KILL => ret mtc_app (* Do we ever reach this case? *)
     | KEEP => build_app_comp_evC et' ls nonceGolden  (* ret mtc_app *) (* Do we ever reach this case? *)
     end
-  | ss et1 et2 => 
+  | split_evt et1 et2 => 
       x <- build_app_comp_evC et1 (firstn (et_size et1) ls) nonceGolden ;;
       y <- build_app_comp_evC et2 (skipn (et_size et1) ls) nonceGolden  ;;
       ret (ssc_app x y)
   end.
 
-Definition run_gen_appraise (t:Term) (p:Plc) (et:Evidence) (nonceGolden:BS) (ls:RawEv) :=
+Definition run_gen_appraise (t:Term) (p:Plc) (et:EvidenceT) (nonceGolden:BS) (ls:RawEv) :=
   fromSome mtc_app (build_app_comp_evC (eval t p et) ls nonceGolden).
 
 Definition run_gen_appraise_w_nonce (t:Term) (p:Plc) (nonceIn:BS) (ls:RawEv) :=
-  run_gen_appraise t p (nn 0) nonceIn ls.
+  run_gen_appraise t p (nonce_evt 0) nonceIn ls.
 
 
 
@@ -100,11 +100,11 @@ Definition run_gen_appraise_w_nonce (t:Term) (p:Plc) (nonceIn:BS) (ls:RawEv) :=
 
 
 (*
-Fixpoint build_app_comp_evC (et:Evidence) (ls:RawEv) : Opt EvidenceC :=
+Fixpoint build_app_comp_evC (et:EvidenceT) (ls:RawEv) : Opt EvidenceTC :=
   match et with
-  | mt => ret mtc
+  | mt_evt=> ret mtc
               
-  | uu params p et' =>
+  | asp_evt params p et' =>
     '(bs, ls') <- peel_bs ls ;;
     x <- build_app_comp_evC et' ls' ;;
     res <- checkASP params bs ;;
@@ -120,12 +120,12 @@ Fixpoint build_app_comp_evC (et:Evidence) (ls:RawEv) : Opt EvidenceC :=
     '(bs, _) <- peel_bs ls ;;
     res <- checkHash et p bs ;;
     ret (hhc p res et)
-  | nn nid =>
+  | nonce_evt nid =>
     '(bs, _) <- peel_bs ls ;;
     res <- checkNonce nid bs ;;
     ret (nnc nid res)
 
-  | ss et1 et2 =>
+  | split_evt et1 et2 =>
     x <- build_app_comp_evC et1 (firstn (et_size et1) ls) ;;
     y <- build_app_comp_evC et2 (skipn (et_size et1) ls) ;;
     ret (ssc x y)
@@ -152,7 +152,7 @@ Definition am_add_trace (tr':list Ev) : AM_St -> AM_St :=
 Definition am_add_tracem (tr:list Ev) : AM unit :=
   modify (am_add_trace tr).
 
-Definition am_run_cvm (annt:AnnoTerm) (e:EvidenceC) (et:Evidence) : AM EvidenceC :=
+Definition am_run_cvm (annt:AnnoTerm) (e:EvidenceTC) (et:EvidenceT) : AM EvidenceTC :=
   let start_st := (mk_st e et [] 0) in
   let end_st := (run_cvm annt start_st) in
   am_add_tracem (st_trace end_st) ;;
@@ -178,7 +178,7 @@ Definition am_get_hsh_gv (p:Plc) (i:ASP_ID) : AM BS :=
   end.
 
 
-Definition am_get_hsh_golden_val (p:Plc) (et:Evidence): AM BS :=
+Definition am_get_hsh_golden_val (p:Plc) (et:EvidenceT): AM BS :=
   (*
     m <- gets st_aspmap ;;
     let maybeId := map_get m (p,i) in

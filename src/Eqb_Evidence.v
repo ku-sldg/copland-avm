@@ -1,5 +1,5 @@
 (* Boolean and Propositional equality definitions and lemmas for core Copland 
-    datatypes, manily Evidence.  Includes decidability of equality lemmas.
+    datatypes, manily EvidenceT.  Includes decidability of equality lemmas.
 *) 
 
 Require Import ID_Type EqClass Term_Defs.
@@ -101,8 +101,8 @@ Global Instance EqClassASP_PARAMS `{H : EqClass ID_Type} : EqClass ASP_PARAMS :=
   eqb_eq := eqb_eq_asp_params
 }.
 
-Definition eq_evidence_dec : forall `{H : EqClass ID_Type},
-  forall x y : Evidence, {x = y} + {x <> y}.
+Definition eq_EvidenceT_dec : forall `{H : EqClass ID_Type},
+  forall x y : EvidenceT, {x = y} + {x <> y}.
 Proof.
   intros.
   decide equality; subst;
@@ -113,19 +113,19 @@ Proof.
     destEq n n0; eauto; try (right; intros HC; congruence).
 Qed.
 
-Definition eqb_evidence `{H : EqClass ID_Type} (x y : Evidence): bool :=
-  if @eq_evidence_dec H x y then true else false.
+Definition eqb_EvidenceT `{H : EqClass ID_Type} (x y : EvidenceT): bool :=
+  if @eq_EvidenceT_dec H x y then true else false.
 
-Lemma eqb_eq_evidence `{H : EqClass ID_Type} : forall x y,
-  eqb_evidence x y = true <-> x = y.
+Lemma eqb_eq_EvidenceT `{H : EqClass ID_Type} : forall x y,
+  eqb_EvidenceT x y = true <-> x = y.
 Proof.
-  unfold eqb_evidence; intuition; 
-  destruct eq_evidence_dec; eauto; congruence.
+  unfold eqb_EvidenceT; intuition; 
+  destruct eq_EvidenceT_dec; eauto; congruence.
 Qed.
 
-Global Instance EqClass_Evidence `{H : EqClass ID_Type} : EqClass Evidence := {
-  eqb := eqb_evidence ;
-  eqb_eq := eqb_eq_evidence
+Global Instance EqClass_EvidenceT `{H : EqClass ID_Type} : EqClass EvidenceT := {
+  eqb := eqb_EvidenceT ;
+  eqb_eq := eqb_eq_EvidenceT
 }.
 
 Definition eq_term_dec : forall `{H : EqClass ID_Type},
@@ -204,7 +204,7 @@ Proof.
 Qed.
 Local Hint Resolve eq_ev_dec : core.
 
-Local Hint Resolve eq_evidence_dec : core.
+Local Hint Resolve eq_EvidenceT_dec : core.
 
 
 (** list equality Lemmas *)
@@ -330,22 +330,22 @@ Proof.
 Qed.
 
 (* NOTE: Better impl above 
-(** Boolean equality for Evidence Types *)
-Fixpoint eqb_evidence `{H : EqClass ID_Type} (e:Evidence) (e':Evidence): bool :=
+(** Boolean equality for EvidenceT Types *)
+Fixpoint eqb_EvidenceT `{H : EqClass ID_Type} (e:EvidenceT) (e':EvidenceT): bool :=
   match (e,e') with
-  | (mt,mt) => true
-  | (uu p fwd params e1, uu p' fwd' params' e2) =>
-    (eqb_plc p p') && (eqb_fwd fwd fwd') && (eqb_asp_params params params') && (eqb_evidence e1 e2)
-  | (nn i, nn i') => (eqb i i')
-  | (ss e1 e2, ss e1' e2') =>
-    (eqb_evidence e1 e1') && (eqb_evidence e2 e2')
+  | (mt_evt,mt_evt) => true
+  | (asp_evt p fwd params e1, asp_evt p' fwd' params' e2) =>
+    (eqb_plc p p') && (eqb_fwd fwd fwd') && (eqb_asp_params params params') && (eqb_EvidenceT e1 e2)
+  | (nonce_evt i, nonce_evt i') => (eqb i i')
+  | (split_evt e1 e2, split_evt e1' e2') =>
+    (eqb_EvidenceT e1 e1') && (eqb_EvidenceT e2 e2')
   | _ => false
   end.
 
 
-(**  Lemma relating boolean to propositional equality for Evidence Types *)
-Lemma eqb_eq_evidence `{H: EqClass Arg} `{H1: EqClass (list Arg)} `{H2 : EqClass Resource_ID_Arg}: forall e1 e2,
-    eqb_evidence e1 e2 = true <-> e1 = e2.
+(**  Lemma relating boolean to propositional equality for EvidenceT Types *)
+Lemma eqb_eq_EvidenceT `{H: EqClass Arg} `{H1: EqClass (list Arg)} `{H2 : EqClass Resource_ID_Arg}: forall e1 e2,
+    eqb_EvidenceT e1 e2 = true <-> e1 = e2.
 Proof.
   
   intros.

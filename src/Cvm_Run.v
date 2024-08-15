@@ -18,7 +18,7 @@ Definition run_cvm (t:Term) st : ResultT cvm_st CVM_Error :=
 
 Definition run_cvm_w_config (t:Term) (e:RawEv) (ac : Session_Config) 
     : ResultT cvm_st CVM_Error :=
-  run_cvm t (mk_st (evc e mt) [] 0 ac).
+  run_cvm t (mk_st (evc e mt_evt) [] 0 ac).
 
 Definition run_cvm_rawEv (t:Term) (e:RawEv) (ac : Session_Config) 
     : ResultT RawEv string :=

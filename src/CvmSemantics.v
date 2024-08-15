@@ -5,7 +5,7 @@
   Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Anno_Term_Defs ConcreteEvidence Appraisal_Evidence AutoApp Main.
+Require Import Anno_Term_Defs ConcreteEvidenceT Appraisal_EvidenceT AutoApp Main.
 Require Import ResultT Cvm_Monad Auto External_Facts.
 Require Import Axioms_Io Helpers_CvmSemantics Attestation_Session.
 
@@ -139,13 +139,13 @@ Lemma recon_same: forall e,
 *)
 
 
-(** * Axiom:  assume parallel CVM threads preserve well-formedness of EvC bundles *)
+(** * Axiom:  assume parallel CVM threads preserve well-formednesplit_evt of EvC bundles *)
 Axiom wf_ec_preserved_par: forall e l t2 p,
     wf_ec e ->
     wf_ec (parallel_vm_thread l t2 p e).
 
-(** * Lemma:  CVM execution preserves well-formedness of EvC bundles 
-      (Evidence Type of sufficient length for raw evidence). *)
+(** * Lemma:  CVM execution preserves well-formednesplit_evt of EvC bundles 
+      (EvidenceT Type of sufficient length for raw EvidenceT). *)
 Lemma wf_ec_preserved_by_cvm_weak : forall e e' t1 tr tr' i i' ac ac',
     wf_ec e ->
         build_cvmP t1
@@ -179,7 +179,7 @@ Ltac dest_evc :=
     end.
 
 
-(** * If a raw evidence sequence is non-empty, we can grab a first element. *)
+(** * If a raw EvidenceT sequence is non-empty, we can grab a first element. *)
 Lemma some_recons' : forall e x,
     length e = S x ->
     exists bs ls', peel_bs e = Some (bs, ls').
@@ -204,7 +204,7 @@ Ltac do_rcih :=
      |- context[reconstruct_ev' ?e' ?et] ] =>
     assert_new_proof_by
       (exists x, Some x = reconstruct_ev' e' et)
-      ltac:(eapply H with (r:=e'); (* TODO:  make r less one-off *)
+      ltac:(eapply H with (r:=e'); (* TODO:  make r lesplit_evt one-off *)
             try (eapply peel_fact; eauto; tauto);
             try (econstructor; first [eapply firstn_long | eapply skipn_long]; try eauto; try lia))      
   end.
@@ -263,7 +263,7 @@ Qed.
 
 (** * Propositional version of span_cvm *)
 Lemma anno_span_cvm: forall t pt annt i i' e e' tr tr' st_evid1 ac ac',
-    annoP_indexed annt t i i' ->
+    anno t i = (i', annt) ->
     term_to_coreP t pt ->
     build_cvmP pt
       {|
@@ -284,8 +284,8 @@ Proof.
   eapply span_cvm; eauto.
 Qed.
 
-Axiom events_cvm_to_core_mt : forall t p e,
-    cvm_events_core (lseqc (aspc CLEAR) t) p e = cvm_events_core t p mt.
+Axiom events_cvm_to_core_mt_evt: forall t p e,
+    cvm_events_core (lseqc (aspc CLEAR) t) p e = cvm_events_core t p mt_evt.
 
 Ltac do_sc_immut := 
   match goal with
@@ -304,7 +304,7 @@ Ltac do_sc_immut :=
 Theorem cvm_refines_lts_events :
   forall t atp annt cvm_tr bits bits' et et' i i' ac ac',
     term_to_coreP t atp ->
-    annoP_indexed annt t i i' ->
+    anno t i = (i', annt) ->
     build_cvmP atp
                      (mk_st (evc bits et) [] i ac)
                      (resultC tt)
@@ -429,7 +429,7 @@ Proof.
     eapply build_cvmP_sc_immut in H2 as HAC1.
     eapply build_cvmP_sc_immut in H4 as HAC2;
     simpl in *.
-    eapply cvm_refines_lts_evidence.
+    eapply cvm_refines_lts_EvidenceT.
     econstructor; eauto.
     rewrite <- H5; eauto.
     subst; eauto.
@@ -566,7 +566,7 @@ Proof.
     }
 
     assert (
-      lstar (conf a0 (session_plc ac')  mt) blah (stop (session_plc ac') (aeval a0 (session_plc ac') mt))
+      lstar (conf a0 (session_plc ac')  mt_evt) blah (stop (session_plc ac') (aeval a0 (session_plc ac') mt_evt))
     ).
     {
       assert (i + 1 = S i) by lia.
@@ -633,7 +633,7 @@ Proof.
     simpl.
 
     assert (
-        lstar (conf a (session_plc ac') mt) blah' (stop (session_plc ac') (aeval a (session_plc ac') mt))
+        lstar (conf a (session_plc ac') mt_evt) blah' (stop (session_plc ac') (aeval a (session_plc ac') mt_evt))
       ).
     {
       assert (i + 1 = S i) by lia.
@@ -713,7 +713,7 @@ Proof.
     simpl.
 
     assert (
-        lstar (conf a (session_plc ac') mt) blah' (stop (session_plc ac') (aeval a (session_plc ac') mt))
+        lstar (conf a (session_plc ac') mt_evt) blah' (stop (session_plc ac') (aeval a (session_plc ac') mt_evt))
       ).
     {
       assert (i + 1 = S i) by lia.
@@ -726,7 +726,7 @@ Proof.
     }
 
     assert (
-      lstar (conf a0 (session_plc ac')  mt) blah (stop (session_plc ac') (aeval a0 (session_plc ac')  mt))
+      lstar (conf a0 (session_plc ac')  mt_evt) blah (stop (session_plc ac') (aeval a0 (session_plc ac')  mt_evt))
     ).
     {
       assert (i + 1 = S i) by lia.
@@ -908,7 +908,7 @@ Proof.
       repeat rewrite app_assoc in *.
       rewrite H2.
    
-      rewrite events_cvm_to_core_mt.
+      rewrite events_cvm_to_core_mt_evt.
       
       eapply lstar_transitive.
 
@@ -951,7 +951,7 @@ Proof.
     repeat rewrite <- app_assoc.
 
     assert (
-        lstar (conf a (session_plc ac') mt) blah (stop (session_plc ac') (aeval a (session_plc ac') mt))
+        lstar (conf a (session_plc ac') mt_evt) blah (stop (session_plc ac') (aeval a (session_plc ac') mt_evt))
       ).
     {
       assert (i + 1 = S i) by lia.
@@ -1028,7 +1028,7 @@ Proof.
     repeat rewrite <- app_assoc.
 
     assert (
-        lstar (conf a (session_plc ac') mt) blah (stop (session_plc ac') (aeval a (session_plc ac') mt))
+        lstar (conf a (session_plc ac') mt_evt) blah (stop (session_plc ac') (aeval a (session_plc ac') mt_evt))
       ).
     {
       assert (i + 1 = S i) by lia.
@@ -1061,7 +1061,7 @@ Proof.
       repeat rewrite app_assoc in *.
       rewrite H2.
    
-      rewrite events_cvm_to_core_mt.
+      rewrite events_cvm_to_core_mt_evt.
       
       eapply lstar_transitive.
 
@@ -1084,11 +1084,11 @@ Qed.
 
 
 
-(** * Main correctness theorem about CVM events:  event orderings respect the 
+(** * Main correctnesplit_evt theorem about CVM events:  event orderings respect the 
       event system (partial order) reference semantics. *)
 Theorem cvm_respects_event_system :
   forall atp annt t cvm_tr ev0 ev1 bits bits' et et' i i' ac ac',
-    annoP_indexed annt t i i' ->
+    anno t i = (i', annt) ->
     term_to_coreP t atp ->
     build_cvmP atp
                      (mk_st (evc bits et) [] i ac)
@@ -1121,7 +1121,7 @@ Lemma fufu : forall t1 cvmi p ct e ac ac' st_evid r0 e0 blah,
 p = (session_plc ac) ->
 build_cvmP (copland_compile t1)
     {|
-      st_ev := evc [] mt;
+      st_ev := evc [] mt_evt;
       st_trace := [Term_Defs.split cvmi p; cvm_thread_start 0 p ct e];
       st_evid := S cvmi;
       st_config := ac
@@ -1136,7 +1136,7 @@ build_cvmP (copland_compile t1)
     =
     build_cvmP (copland_compile t1)
     {|
-      st_ev := evc [] mt;
+      st_ev := evc [] mt_evt;
       st_trace := [Term_Defs.split cvmi p; cvm_thread_start 0 p ct e];
       st_evid := S cvmi;
       st_config := ac
@@ -1154,20 +1154,20 @@ Qed.
 
 Axiom cvm_thread_start_clear : forall t p e n,
 (cvm_thread_start n p (lseqc (aspc CLEAR) (copland_compile t)) e) = 
-(cvm_thread_start n p (copland_compile t)) mt.
+(cvm_thread_start n p (copland_compile t)) mt_evt.
 
 Axiom cvm_thread_in_ev : forall n p ev t e blah,
 In ev ([cvm_thread_start n p (copland_compile t) e] ++ blah ++ [cvm_thread_end 0]) -> 
 (In ev (cvm_events_core (copland_compile t) p e) \/ 
 In ev blah).
 
-Axiom cvm_evidence_exists_remote : forall t p e,
+Axiom cvm_EvidenceT_exists_remote : forall t p e,
   exists b et, 
-  cvm_evidence_core t p e = evc b et.
+  cvm_EvidenceT_core t p e = evc b et.
 
 
 Lemma cvm_implies_events: forall t annt e e' bits bits' cvmi cvmi' cvm_tr ev ac ac',
-    annoP_indexed annt t cvmi cvmi'->
+    anno t cvmi = (cvmi', annt)->
 
     build_cvmP (copland_compile t)
       {| st_ev := evc bits e; st_trace := []; st_evid := cvmi; st_config := ac |} 
@@ -1251,7 +1251,7 @@ Proof.
       simpl in *.
       rewrite ccp_iff_cc in *.
       unfold cvm_events.
-      pose proof (cvm_evidence_exists_remote 
+      pose proof (cvm_EvidenceT_exists_remote 
         (copland_compile (unanno a)) (session_plc x) (evc bits e)).
       break_exists.
       find_rewrite.
@@ -1317,7 +1317,7 @@ Proof.
       erewrite <- anno_unanno.
       rewrite H8; ffa.
     }
-    eapply cvm_refines_lts_evidence.
+    eapply cvm_refines_lts_EvidenceT.
     econstructor; eauto.
     rewrite <- H8.
     eassumption.
@@ -1816,10 +1816,10 @@ Proof.
 
     pose (build_cvm_external (copland_compile t2) (evc bits e) st_evid ac').
 
-    assert (exists b et, cvm_evidence_core (copland_compile t2) (session_plc ac') (evc bits e) = 
+    assert (exists b et, cvm_EvidenceT_core (copland_compile t2) (session_plc ac') (evc bits e) = 
     evc b et).
     {
-      eapply cvm_evidence_exists_remote.
+      eapply cvm_EvidenceT_exists_remote.
     }
     destruct_conjs.
     rewrite H7 in *.
@@ -1919,7 +1919,7 @@ Proof.
 
 
     assert (In ev [Term_Defs.split cvmi (session_plc ac')] \/ 
-    In ev (cvm_events_core (copland_compile t2) (session_plc ac') mt) \/ 
+    In ev (cvm_events_core (copland_compile t2) (session_plc ac') mt_evt) \/ 
     In ev blah \/ 
     In ev [join (st_evid + event_id_span (copland_compile t2)) (session_plc ac')]).
   {
@@ -1932,12 +1932,12 @@ Proof.
 
   Unset Printing Notations.
 
-  assert (In ev ([cvm_thread_start 0 (session_plc ac') (copland_compile t2) mt] ++ blah ++ [cvm_thread_end 0]) \/ 
+  assert (In ev ([cvm_thread_start 0 (session_plc ac') (copland_compile t2) mt_evt] ++ blah ++ [cvm_thread_end 0]) \/ 
           In ev [join (st_evid + event_id_span (copland_compile t2)) (session_plc ac')]).
           {
             assert (
               (cvm_thread_start 0 (session_plc ac') (lseqc (aspc CLEAR) (copland_compile t2)) e) = 
-              (cvm_thread_start 0 (session_plc ac') (copland_compile t2)) mt).
+              (cvm_thread_start 0 (session_plc ac') (copland_compile t2)) mt_evt).
               {
                 eapply cvm_thread_start_clear.
               }
@@ -1949,7 +1949,7 @@ Proof.
 
           invc H1.
 
-          assert (In ev (cvm_events_core (copland_compile t2) (session_plc ac') mt) \/ 
+          assert (In ev (cvm_events_core (copland_compile t2) (session_plc ac') mt_evt) \/ 
                   In ev blah).
                   {
                     eapply cvm_thread_in_ev; eassumption.
@@ -1970,12 +1970,12 @@ Proof.
 
   eapply evtsbparr.
 
-  pose (build_cvm_external (copland_compile t2) (evc bits mt) st_evid ac').
+  pose (build_cvm_external (copland_compile t2) (evc bits mt_evt) st_evid ac').
 
-  assert (exists b et, cvm_evidence_core (copland_compile t2) (session_plc ac') (evc bits mt) = 
+  assert (exists b et, cvm_EvidenceT_core (copland_compile t2) (session_plc ac') (evc bits mt_evt) = 
   evc b et).
   {
-    eapply cvm_evidence_exists_remote.
+    eapply cvm_EvidenceT_exists_remote.
   }
   destruct_conjs.
   rewrite H7 in *.
@@ -2113,10 +2113,10 @@ Proof.
 
   pose (build_cvm_external (copland_compile t2) (evc bits e) st_evid ac').
 
-  assert (exists b et, cvm_evidence_core (copland_compile t2) (session_plc ac') (evc bits e) = 
+  assert (exists b et, cvm_EvidenceT_core (copland_compile t2) (session_plc ac') (evc bits e) = 
   evc b et).
   {
-    eapply cvm_evidence_exists_remote.
+    eapply cvm_EvidenceT_exists_remote.
   }
   destruct_conjs.
   rewrite H7 in *.
@@ -2215,14 +2215,14 @@ Proof.
 
       assert (
         (cvm_thread_start 0 (session_plc ac') (lseqc (aspc CLEAR) (copland_compile t2)) e) = 
-        (cvm_thread_start 0 (session_plc ac') (copland_compile t2)) mt).
+        (cvm_thread_start 0 (session_plc ac') (copland_compile t2)) mt_evt).
         {
           eapply cvm_thread_start_clear.
         }
         rewrite H4 in *.
 
       assert (
-              In ev (cvm_events_core (copland_compile t2) (session_plc ac') mt) \/ 
+              In ev (cvm_events_core (copland_compile t2) (session_plc ac') mt_evt) \/ 
               In ev blah).
               {
 
@@ -2255,12 +2255,12 @@ Proof.
 
 
 
-      pose (build_cvm_external (copland_compile t2) (evc bits mt) st_evid ac').
+      pose (build_cvm_external (copland_compile t2) (evc bits mt_evt) st_evid ac').
 
-  assert (exists b et, cvm_evidence_core (copland_compile t2) (session_plc ac') (evc bits mt) = 
+  assert (exists b et, cvm_EvidenceT_core (copland_compile t2) (session_plc ac') (evc bits mt_evt) = 
   evc b et).
   {
-    eapply cvm_evidence_exists_remote.
+    eapply cvm_EvidenceT_exists_remote.
   }
   destruct_conjs.
   rewrite H8 in *.
@@ -2331,7 +2331,7 @@ TODO:  see if lemma can be generalized (i.e. to trace prefixes?)
 (** * Slight reformulation of cvm_refines_events, in terms of st_trace. *)
 Corollary cvm_refines_lts_event_ordering_corrolary :
   forall t annt atp cvm_tr bits et p i i' ac,
-    annoP_indexed annt t i i' ->
+    anno t i = (i', annt) ->
     term_to_coreP t atp ->
     st_trace (run_cvm atp
                       (mk_st (evc bits et) [] p i ac)) = cvm_tr ->
@@ -2378,7 +2378,7 @@ See note above for cvm_refines_lts_event_ordering_corrolary
 
 Corollary cvm_respects_event_system_run :
   forall atp annt t cvm_tr ev0 ev1 bits et i i' plc_id ac,
-    annoP_indexed annt t i i' ->
+    anno t i = (i', annt) ->
     term_to_coreP t atp ->
     st_trace (run_cvm atp (mk_st (evc bits et) [] plc_id i ac)) = cvm_tr ->
     

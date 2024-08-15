@@ -1,4 +1,4 @@
-(*  Primary results of Manifest Compiler Soundness (for Attestation).
+(*  Primary results of Manifest Compiler Soundnesplit_evt (for Attestation).
       Namely, that the compiler outputs a collection of manifests that support 
       execution of the input protocols.  *)
 
@@ -1113,8 +1113,8 @@ Theorem manifest_generator_compiler_soundness_distributed : forall t tp p absMan
   map_get (manifest_generator t tp) p = Some absMan ->
   well_formed_manifest absMan ->
   manifest_support_session_conf absMan sc ->
-  att_sess_supports_term att_sess t ->
-  session_config_compiler (mkAM_Man_Conf absMan aspBin uuid) att_sess = sc ->
+  att_sess_supports_term att_sesplit_evt t ->
+  session_config_compiler (mkAM_Man_Conf absMan aspBin uuid) att_sesplit_evt = sc ->
   forall st,
     session_config_subset sc (st.(st_config)) ->  
     (  forall t', 
@@ -1717,7 +1717,7 @@ Qed.
 Global Hint Resolve mapD_get_subset : core.
 *)
 (* 
-Lemma supports_am_mancomp_subset: forall m m' att_sess aspBin uuid sc,
+Lemma supports_am_mancomp_subset: forall m m' att_sesplit_evt aspBin uuid sc,
   session_config_subset 
     (session_config_compiler (mkAM_Man_Conf m aspBin uuid) att_sess) sc -> 
   manifest_subset m' m ->
@@ -1782,7 +1782,7 @@ Proof.
 Qed.
 Global Hint Resolve end_to_end_mangen_supports_all : core.
 
-Theorem manifest_generator_compiler_soundness_distributed_multiterm' : forall t ts ls tp p absMan aspBin cm sc att_sess uuid,
+Theorem manifest_generator_compiler_soundness_distributed_multiterm' : forall t ts ls tp p absMan aspBin cm sc att_sesplit_evt uuid,
 forall env,
   end_to_end_mangen cm ls ts = resultC env ->
   map_get env p = Some absMan ->
@@ -1790,8 +1790,8 @@ forall env,
   (* In p (places tp t) -> *)
   well_formed_manifest absMan ->
   manifest_support_session_conf absMan sc ->
-  att_sess_supports_term att_sess t ->
-  session_config_compiler (mkAM_Man_Conf absMan aspBin uuid) att_sess = sc ->
+  att_sess_supports_term att_sesplit_evt t ->
+  session_config_compiler (mkAM_Man_Conf absMan aspBin uuid) att_sesplit_evt = sc ->
   forall st,
 
     session_config_subset sc (st.(st_config)) ->  
@@ -1880,7 +1880,7 @@ Qed.
 
 
 (*
-Definition end_to_end_mangen (ls:list (Evidence*Plc)) (ts: list (Term*Plc)) : EnvironmentM := 
+Definition end_to_end_mangen (ls:list (EvidenceT*Plc)) (ts: list (Term*Plc)) : EnvironmentM := 
   let ps := get_all_unique_places ts ls in 
     update_pubkeys_env ps (update_knowsOf_myPlc_env (end_to_end_mangen' ls ts)).
 *)
@@ -1987,7 +1987,7 @@ Theorem manifest_generator_compiler_soundness_distributed_multiterm
     (* Note, this should be trivial typically as amConf = st.(st_config) and refl works *)
     supports_am amConf (st.(st_config)) ->  
     *)
-  (forall t' att_sess aspBin uuid conf ev,
+  (forall t' att_sesplit_evt aspBin uuid conf ev,
     In t' (place_terms t tp p) -> 
     conf = (mkAM_Man_Conf absMan aspBin uuid) ->
     (exists st',

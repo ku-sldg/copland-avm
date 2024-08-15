@@ -19,7 +19,7 @@ Set Nested Proofs Allowed.
 *)
 
 (** Construct an event system from an annotated term, place, and
-    evidence. *)
+    EvidenceT. *)
 
 Fixpoint ev_sys (t: AnnoTerm) p e: EvSys Ev :=
   match t with
@@ -88,7 +88,7 @@ Ltac do_evin :=
   end.
 
 (** The events in the event system correspond to the events associated
-    with a term, a place, and some evidence. *)
+    with a term, a place, and some EvidenceT. *)
 
 Lemma evsys_events:
   forall t p e ev,
@@ -209,7 +209,7 @@ Proof.
 Qed.
 
 (*
-(** Maximal event evidence output matches [aeval]. *)
+(** Maximal event EvidenceT output matches [aeval]. *)
 
 Definition out_ev v :=
   match v with

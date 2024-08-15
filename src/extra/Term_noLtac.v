@@ -15,7 +15,7 @@ University of California.  See license.txt for details. *)
 Require Import PeanoNat Compare_dec Lia.
 Require Import Preamble StructTactics.
 
-(** * Terms and Evidence
+(** * Terms and EvidenceT
 
     A term is either an atomic ASP, a remote call, a sequence of terms
     with data a dependency, a sequence of terms with no data
@@ -47,39 +47,39 @@ Inductive Term: Set :=
 | bseq: Split -> Term -> Term -> Term
 | bpar: Split -> Term -> Term -> Term.
 
-(** The structure of evidence. *)
+(** The structure of EvidenceT. *)
 
-Inductive Evidence: Set :=
-| mt: Evidence
-| uu: ASP_ID -> Plc -> Evidence -> Evidence
-| gg: Plc -> Evidence -> Evidence
-| hh: Plc -> Evidence -> Evidence
-| nn: N_ID -> Evidence -> Evidence
-| ss: Evidence -> Evidence -> Evidence
-| pp: Evidence -> Evidence -> Evidence.
+Inductive EvidenceT: Set :=
+| mt_evt: EvidenceT
+| uu: ASP_ID -> Plc -> EvidenceT -> EvidenceT
+| gg: Plc -> EvidenceT -> EvidenceT
+| hh: Plc -> EvidenceT -> EvidenceT
+| nn: N_ID -> EvidenceT -> EvidenceT
+| ss: EvidenceT -> EvidenceT -> EvidenceT
+| pp: EvidenceT -> EvidenceT -> EvidenceT.
 
-Definition splitEv_T (sp:SP) (e:Evidence) : Evidence :=
+Definition splitEv_T (sp:SP) (e:EvidenceT) : EvidenceT :=
   match sp with
   | ALL => e
-  | NONE => mt
+  | NONE => mt_evt
   end.
 
 Fixpoint eval_asp t p e :=
   match t with
   | CPY => e
-  | ASPC i _ => uu i p e
+  | ASPC i _ => asp_evt i p e
   | SIG => gg p e
   | HSH => hh p e
   end.
 
-(** The evidence associated with a term, a place, and some initial evidence. *)
+(** The EvidenceT associated with a term, a place, and some initial EvidenceT. *)
 
-Fixpoint eval (t:Term) (p:Plc) (e:Evidence) : Evidence :=
+Fixpoint eval (t:Term) (p:Plc) (e:EvidenceT) : EvidenceT :=
   match t with
   | asp a => eval_asp a p e
   | att q t1 => eval t1 q e
   | lseq t1 t2 => eval t2 p (eval t1 p e)
-  | bseq s t1 t2 => ss (eval t1 p (splitEv_T (fst s) e))
+  | bseq s t1 t2 => split_evt (eval t1 p (splitEv_T (fst s) e))
                        (eval t2 p (splitEv_T (snd s) e)) 
   | bpar s t1 t2 => pp (eval t1 p (splitEv_T (fst s) e))
                       (eval t2 p (splitEv_T (snd s) e))
@@ -113,7 +113,7 @@ Proof.
 Defined.
 Hint Resolve eq_ev_dec : core.
 
-(** The natural number used to distinguish evidence. *)
+(** The natural number used to distinguish EvidenceT. *)
 
 Definition ev x :=
   match x with
@@ -403,7 +403,7 @@ Fixpoint aeval t p e :=
   | aasp _ x => eval (asp x) p e
   | aatt _ q x => aeval x q e
   | alseq _ t1 t2 => aeval t2 p (aeval t1 p e)
-  | abseq _ s t1 t2 => ss (aeval t1 p ((splitEv_T (fst s)) e))
+  | abseq _ s t1 t2 => split_evt (aeval t1 p ((splitEv_T (fst s)) e))
                          (aeval t2 p ((splitEv_T (snd s)) e)) 
   | abpar _ s t1 t2 => pp (aeval t1 p ((splitEv_T (fst s)) e))
                          (aeval t2 p ((splitEv_T (snd s)) e)) 
@@ -431,9 +431,9 @@ Proof.
 Qed.
 
 (** This predicate specifies when a term, a place, and some initial
-    evidence is related to an event.  In other words, it specifies the
+    EvidenceT is related to an event.  In other words, it specifies the
     set of events associated with a term, a place, and some initial
-    evidence. *)
+    EvidenceT. *)
 
 Inductive events: AnnoTerm -> Plc -> Ev -> Prop :=
 | evtscpy:
@@ -741,11 +741,11 @@ Qed.
 
 
 
-Inductive splitEv_T_R : SP -> Evidence -> Evidence -> Prop :=
+Inductive splitEv_T_R : SP -> EvidenceT -> EvidenceT -> Prop :=
 | spAll: forall e, splitEv_T_R ALL e e
-| spNone: forall e, splitEv_T_R NONE e mt.
+| spNone: forall e, splitEv_T_R NONE e mt_evt.
 
-Inductive evalR : Term -> Plc -> Evidence -> Evidence -> Prop :=
+Inductive evalR : Term -> Plc -> EvidenceT -> EvidenceT -> Prop :=
 | evalR_asp: forall a p e,
     evalR (asp a) p e (eval_asp a p e)
 | evalR_att: forall t1 q e e' p,
@@ -760,7 +760,7 @@ Inductive evalR : Term -> Plc -> Evidence -> Evidence -> Prop :=
     splitEv_T_R (snd s) e e2 ->
     evalR t1 p e1 e1' ->
     evalR t2 p e2 e2' ->
-    evalR (bseq s t1 t2) p e (ss e1' e2')
+    evalR (bseq s t1 t2) p e (split_evt e1' e2')
 | evalR_bpar: forall s e e1 e2 e1' e2' p t1 t2,
     splitEv_T_R (fst s) e e1 ->
     splitEv_T_R (snd s) e e2 ->

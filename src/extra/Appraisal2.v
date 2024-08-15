@@ -1,4 +1,4 @@
-Require Import GenStMonad MonadVM MonadAM ConcreteEvidence.
+Require Import GenStMonad MonadVM MonadAM ConcreteEvidenceT.
 Require Import StAM VM_IO_Axioms Maps VmSemantics Event_system Term_system.
 
 Require Import Coq.Arith.Peano_dec.
@@ -9,14 +9,14 @@ Import ListNotations.
 
 Check map_get.
 
-Inductive evidenceEvent: Ev -> Prop :=
-| uev: forall n p i args, evidenceEvent (umeas n p i args)
-(*| sev: forall n p, evidenceEvent (sign n p)
-| hev: forall n p, evidenceEvent (hash n p)*) .
+Inductive EvidenceTEvent: Ev -> Prop :=
+| uev: forall n p i args, EvidenceTEvent (umeas n p i args)
+(*| sev: forall n p, EvidenceTEvent (sign n p)
+| hev: forall n p, EvidenceTEvent (hash n p)*) .
 
 Definition ioEvent (t:AnnoTerm) (p:Plc) (ev:Ev) : Prop :=
   let es := ev_sys t p in
-  ev_in ev es /\ evidenceEvent ev.
+  ev_in ev es /\ EvidenceTEvent ev.
 
 Check bound_to.
 
@@ -33,16 +33,16 @@ Definition am_get_app_asp (p:Plc) (i:ASP_ID) : AM ASP_ID :=
   | None => failm
   end.
 
-Fixpoint gen_appraisal_term (e:EvidenceC) (et:Evidence) : AM Term :=
+Fixpoint gen_appraisal_term (e:EvidenceTC) (et:EvidenceT) : AM Term :=
   match e with
   | mtc =>
     match et with
-    | mt => ret (asp CPY)
+    | mt_evt=> ret (asp CPY)
     | _ => failm
     end
   | uuc i bs e' =>
     match et with 
-    | uu i_t args_t p e'_t =>
+    | asp_evt i_t args_t p e'_t =>
       app_id <- am_get_app_asp p i_t ;;
       t2 <- gen_appraisal_term e' e'_t ;;
       let t1 := (asp (ASPC app_id (args_t ++ [bs]))) in
@@ -52,7 +52,7 @@ Fixpoint gen_appraisal_term (e:EvidenceC) (et:Evidence) : AM Term :=
     end
   | ssc e1 e2 =>
     match et with
-    | ss e1_t e2_t => 
+    | split_evt e1_t e2_t => 
       t1' <- (gen_appraisal_term e1 e1_t) ;;
           t2' <- (gen_appraisal_term e2 e2_t) ;;
           let res := (bseq (NONE,NONE) t1' t2') in (* BRP (NONE,NONE) t1' t2' *)
@@ -91,7 +91,7 @@ Fixpoint gen_appraisal_term (e:EvidenceC) (et:Evidence) : AM Term :=
     end
   | ssc e1 e2 =>
     match et with
-    | ss e1_t e2_t => 
+    | split_evt e1_t e2_t => 
       t1' <- (gen_appraisal_term e1 e1_t) ;;
           t2' <- (gen_appraisal_term e2 e2_t) ;;
           let res := (bpar (NONE,NONE) t1' t2') in (* BRP (NONE,NONE) t1' t2' *)
@@ -117,7 +117,7 @@ Definition at1 := (asp (ASPC 1 [])).
 Definition at2 := (asp (ASPC 2 [])).
 Definition aterm := bseq (NONE,NONE) at1 at2.
 
-Definition aet := eval aterm 0 mt.
+Definition aet := eval aterm 0 mt_evt.
 Print aet.
 Compute aet.
 
@@ -148,8 +148,8 @@ Compute appterm.
 
 Compute aet.
 (*
-     = ss (uu 1 0 mt) (uu 2 0 mt)
-     : Evidence
+     = split_evt (asp_evt 1 0 mt_evt) (asp_evt 2 0 mt_evt)
+     : EvidenceT
  *)
 Definition evc_res := (run_vm (annotated aterm) empty_vmst).
 Compute evc.
@@ -196,7 +196,7 @@ Require Import Coq.Program.Tactics Coq.Program.Equality.
 Lemma app_correct :
   forall aterm ev ast aet evc acomp appterm app_term
     app_comp app_comp_res tr_app_comp ,
-  aet = eval aterm 0 mt ->
+  aet = eval aterm 0 mt_evt->
   evc = st_ev (run_vm (annotated aterm) empty_vmst) ->
   acomp = (gen_appraisal_term evc aet) ->
   appterm = (runSt ast acomp) ->
@@ -300,7 +300,7 @@ Proof.
                               (StVM.st_ev
                                  (run_vm (annotated t)
                                     t_st))
-                              (eval t p mt)
+                              (eval t p mt_evt)
                               init_st)) 
                         (asp CPY)))
                   init_st'))) ->
@@ -315,7 +315,7 @@ Proof.
                               (StVM.st_ev
                                  (run_vm (annotated (att n t))
                                     t_st))
-                              (eval t n mt)
+                              (eval t n mt_evt)
                               init_st)) 
                         (asp CPY)))
                   init_st'))).

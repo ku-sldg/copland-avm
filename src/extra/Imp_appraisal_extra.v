@@ -1,7 +1,7 @@
-Require Import Term ConcreteEvidence GenStMonad MonadVM MonadAM.
+Require Import Term ConcreteEvidenceT GenStMonad MonadVM MonadAM.
 
 
-Fixpoint build_app_comp (t:AnnoTerm) (p:Plc) : AM (VM (EvidenceC -> EvidenceC)) :=
+Fixpoint build_app_comp (t:AnnoTerm) (p:Plc) : AM (VM (EvidenceTC -> EvidenceTC)) :=
   match t with
   | alseq (n,n') t' (aasp r' SIG) =>
     app_id <- am_get_sig_asp p ;;

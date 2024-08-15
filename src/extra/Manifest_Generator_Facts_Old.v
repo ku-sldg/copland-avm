@@ -1,4 +1,4 @@
-Require Import Maps Term_Defs_Core Manifest Eqb_Evidence
+Require Import Maps Term_Defs_Core Manifest Eqb_EvidenceT
   Manifest_Generator Executable_Defs_Prop.
 
 

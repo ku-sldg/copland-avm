@@ -1,4 +1,4 @@
-Require Import Term_Defs_Core Manifest Manifest_Generator Manifest_Generator_Facts Executable_Defs_Prop Manifest_Admits Eqb_Evidence.
+Require Import Term_Defs_Core Manifest Manifest_Generator Manifest_Generator_Facts Executable_Defs_Prop Manifest_Admits Eqb_EvidenceT.
 
 Require Import List.
 Import ListNotations.
@@ -91,7 +91,7 @@ Definition build_manifest_helper p a p1 p2 pol : Manifest :=
     pubKeyPlcs := p2 ; 
     policy := pol |}. 
 
-Lemma eqb_plc_refl : forall p0, Eqb_Evidence.eqb_plc p0 p0 = true.
+Lemma eqb_plc_refl : forall p0, Eqb_EvidenceT.eqb_plc p0 p0 = true.
 Proof.
   intros. apply eqb_eq_plc. auto.
 Qed.  

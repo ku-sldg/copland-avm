@@ -1,6 +1,6 @@
 (* Helper functions used by the Manifest Generator implementation. *)
 
-Require Import Term_Defs_Core Eqb_Evidence.
+Require Import Term_Defs_Core Eqb_EvidenceT.
 
 Require Import EqClass StructTactics Auto.
 

@@ -1,5 +1,5 @@
 (*
-Lemma map_get_get : forall (k:nat) (v:EvidenceC) l',
+Lemma map_get_get : forall (k:nat) (v:EvidenceTC) l',
     map_get ((k,v) :: l') k = Some v.
 Proof.
   intros.
@@ -8,7 +8,7 @@ Proof.
   rewrite PeanoNat.Nat.eqb_refl in Heqb. congruence.
 Defined.
 
-Lemma map_get_get_2 : forall (k:nat) (v:EvidenceC) k' v' l',
+Lemma map_get_get_2 : forall (k:nat) (v:EvidenceTC) k' v' l',
     k <> k' ->
     map_get ((k',v') :: (k,v) :: l') k = Some v.
 Proof.

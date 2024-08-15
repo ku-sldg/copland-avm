@@ -1,4 +1,4 @@
-Require Import Term_Defs_Core Manifest_Admits Manifest EqClass Eqb_Evidence.
+Require Import Term_Defs_Core Manifest_Admits Manifest EqClass Eqb_EvidenceT.
 
 Require Import Params_Admits.
 Require Import Lists.List.

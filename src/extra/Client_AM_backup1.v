@@ -12,7 +12,7 @@ Definition gen_nonce_if_none (initEv:option EvC) : AM EvC :=
       | None =>
         let nonce_bits := gen_nonce_bits in
         nid <- am_newNonce nonce_bits ;;
-        ret (evc [nonce_bits] (nn nid))
+        ret (evc [nonce_bits] (nonce_evt nid))
   end.
 
 Definition gen_authEvC_if_some (ot:option Term) (myPlc:Plc) (init_evc:EvC) : AM EvC :=
@@ -23,10 +23,10 @@ Definition gen_authEvC_if_some (ot:option Term) (myPlc:Plc) (init_evc:EvC) : AM 
                         (* run_cvm_rawEv auth_phrase pFrom [] *)
     let auth_et := eval auth_phrase myPlc init_et_auth in
       ret (evc auth_rawev auth_et)
-  | None => ret (evc [] mt)
+  | None => ret (evc [] mt_evt)
   end.
 
-Definition am_appraise (t:Term) (toPlc:Plc) (init_et:Evidence) (cvm_ev:RawEv) : AM AppResultC :=
+Definition am_appraise (t:Term) (toPlc:Plc) (init_et:EvidenceT) (cvm_ev:RawEv) : AM AppResultC :=
   (* let app_res := run_appraisal_client t pTo init_et cvm_ev in *)
   let expected_et := eval t toPlc init_et in
   app_res <- gen_appraise_AM expected_et cvm_ev ;;

@@ -39,7 +39,7 @@ Definition enc_params : Plc -> ASP_PARAMS :=
   fun enc_targplc => asp_paramsC enc_aspid enc_aspargs enc_targplc enc_targid.
 
 
-(* This is an (for now, somewhat ad-hoc) ASP evidence disclosure predicate.
+(* This is an (for now, somewhat ad-hoc) ASP EvidenceT disclosure predicate.
     TODO:  move this somewhere more logical??  *)
-Definition term_discloses_aspid_to_remote_enc_bool (t:Term) (p:Plc) (e:Evidence) (i:ASP_ID) (r:Plc) : bool.
+Definition term_discloses_aspid_to_remote_enc_bool (t:Term) (p:Plc) (e:EvidenceT) (i:ASP_ID) (r:Plc) : bool.
 Admitted.

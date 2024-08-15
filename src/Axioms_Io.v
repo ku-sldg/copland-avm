@@ -21,40 +21,40 @@ Admitted.
 Definition shuffled_events (el1:list Ev) (el2:list Ev) : list Ev.
 Admitted.
 
-Definition cvm_events_core (t:Core_Term) (p:Plc) (e:Evidence) : list Ev. 
+Definition cvm_events_core (t:Core_Term) (p:Plc) (e:EvidenceT) : list Ev. 
 Admitted.
 
-Definition cvm_evidence_core (t:Core_Term) (p:Plc) (e:EvC) : EvC.
+Definition cvm_EvidenceT_core (t:Core_Term) (p:Plc) (e:EvC) : EvC.
 Admitted.
 
-Definition cvm_events (t:Term) (p:Plc) (e:Evidence) : list Ev :=
+Definition cvm_events (t:Term) (p:Plc) (e:EvidenceT) : list Ev :=
   cvm_events_core (copland_compile t) p e.
 
-Definition cvm_evidence (t:Term) (p:Plc) (e:EvC) : EvC :=
-  cvm_evidence_core (copland_compile t) p e.
+Definition cvm_EvidenceT (t:Term) (p:Plc) (e:EvC) : EvC :=
+  cvm_EvidenceT_core (copland_compile t) p e.
 
 
 Axiom remote_LTS: forall t annt n et i i',
-    annoP_indexed annt t i i' ->
+    anno t i = (i', annt) ->
     lstar (conf annt n et) (cvm_events t n et) (stop n (aeval annt n et)).
 
 (*
-Axiom remote_Evidence_Type_Axiom: forall t n bits et,
+Axiom remote_EvidenceT_Type_Axiom: forall t n bits et,
     get_et (doRemote_session t n (evc bits et)) = eval t n et.
 *)
 
 (*
-Axiom at_evidence : forall t (p:Plc) (e:EvC),
-    doRemote_session t p e = cvm_evidence t p e.
+Axiom at_EvidenceT : forall t (p:Plc) (e:EvC),
+    doRemote_session t p e = cvm_EvidenceT t p e.
 *)
 
-Axiom par_evidence : forall t (p:Plc) (e:EvC) loc,
-    parallel_vm_thread loc (copland_compile t) p e = cvm_evidence t p e.
+Axiom par_EvidenceT : forall t (p:Plc) (e:EvC) loc,
+    parallel_vm_thread loc (copland_compile t) p e = cvm_EvidenceT t p e.
 
 
 
 Axiom bpar_shuffle : forall x annt2 i i' tr p t1 t2 et1 et2,
-    annoP_indexed annt2 t2 i i' ->
+    anno t2 i = (i', annt2) ->
     lstar (conf t1 p et1) tr (stop p (aeval t1 p et1)) ->
     lstar (bp x (conf t1 p et1) (conf annt2 p et2))
           (shuffled_events tr

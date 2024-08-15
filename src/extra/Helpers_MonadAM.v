@@ -1,4 +1,4 @@
-Require Import MonadAM StAM Impl_appraisal AutoApp Auto AllMapped ConcreteEvidence MonadVM Impl_vm Maps External_Facts VmSemantics Appraisal_Defs.
+Require Import MonadAM StAM Impl_appraisal AutoApp Auto AllMapped ConcreteEvidenceT MonadVM Impl_vm Maps External_Facts VmSemantics Appraisal_Defs.
 
 Require Import StructTactics.
 
@@ -516,7 +516,7 @@ Proof.
 Defined.
 
 Lemma mt_subT_all: forall e,
-    EvSubT mt e.
+    EvSubT mt_evte.
 Proof.
     induction e; intros;
     try
@@ -735,7 +735,7 @@ Lemma subSome: forall e1 e2 e1t e2t x a_st a_st',
 Proof.
   intros.
   Check build_app_some.
-  assert ( exists (o : EvidenceC) (a_st' : AM_St),
+  assert ( exists (o : EvidenceTC) (a_st' : AM_St),
              build_app_comp_ev e1 e1t a_st = (Some o, a_st')).
   {
     eapply build_app_some.
@@ -786,7 +786,7 @@ Ltac do_evsub_refl :=
   let tac := econstructor in
   repeat
     match goal with
-    | [e:EvidenceC
+    | [e:EvidenceTC
 
        |- _ ] =>
       assert_new_proof_by (EvSub e e) tac

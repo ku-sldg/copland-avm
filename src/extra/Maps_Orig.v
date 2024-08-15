@@ -15,7 +15,7 @@ From QuickChick Require Import QuickChick Tactics.
 (** To encode typing environments (and, later on, states), we will
     need maps from identifiers to values. However, the function-based
     representation in the _Software Foundations_ version of Imp is not
-    well suited for testing: we need to be able to access the domain
+    well suited for testing: we need to be able to accesplit_evt the domain
     of the map, fold over it, and test for equality; these are all
     awkward to define for Coq functions. Therefore, we introduce a
     simple list-based map representation that uses [id]s as the keys.

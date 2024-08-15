@@ -1,4 +1,4 @@
-Require Import Event_system Term_system ConcreteEvidence Appraisal_Evidence.
+Require Import Event_system Term_system ConcreteEvidenceT Appraisal_EvidenceT.
 Require Import Cvm_Impl Helpers_CvmSemantics CvmSemantics.
 Require Import Axioms_Io External_Facts Auto AutoApp Defs.
 

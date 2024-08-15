@@ -1,7 +1,7 @@
 (* Generalized appraisal implementation:  
-    Top-level evidence unbundling and appraisal ASP dispatch.   *)
+    Top-level EvidenceT unbundling and appraisal ASP dispatch.   *)
 
-Require Import ConcreteEvidence ErrorStMonad_Coq.
+Require Import ConcreteEvidenceT ErrorStMonad_Coq.
 
 Require Import ErrorStringConstants Appraisal_Defs AM_St.
 
@@ -31,10 +31,10 @@ Fixpoint peel_n_am (n : nat) (ls : RawEv) : AM (RawEv * RawEv) :=
   end.
 
 
-Fixpoint gen_appraise_AM (et:Evidence) (ls:RawEv) : AM AppResultC :=
+Fixpoint gen_appraise_AM (et:EvidenceT) (ls:RawEv) : AM AppResultC :=
   match et with
-  | mt => err_ret mtc_app
-  | nn nid =>
+  | mt_evt=> err_ret mtc_app
+  | nonce_evt nid =>
     v <- (peel_bs_am ls) ;;
     match v with
       (bs, _) =>
@@ -42,7 +42,7 @@ Fixpoint gen_appraise_AM (et:Evidence) (ls:RawEv) : AM AppResultC :=
       err_ret (nnc_app nid res)
     end
 
-  | uu p fwd params et' =>
+  | asp_evt p fwd params et' =>
     match fwd with
     | COMP => err_ret mtc_app (* TODO hash check *)
     | ENCR =>
@@ -67,7 +67,7 @@ Fixpoint gen_appraise_AM (et:Evidence) (ls:RawEv) : AM AppResultC :=
     | KILL => err_ret mtc_app (* Do we ever reach this case? *)
     | KEEP => gen_appraise_AM et' ls (* Do we ever reach this case? *)
     end
-  | ss et1 et2 => 
+  | split_evt et1 et2 => 
       x <- gen_appraise_AM et1 (firstn (et_size et1) ls) ;;
       y <- gen_appraise_AM et2 (skipn (et_size et1) ls) ;;
       err_ret (ssc_app x y)

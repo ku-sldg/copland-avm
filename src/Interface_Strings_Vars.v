@@ -6,7 +6,7 @@ Definition STR_TERM : string := "TERM".
 Definition STR_RAWEV : string := "RAWEV".
 Definition STR_SUCCESS : string := "SUCCESS".
 Definition STR_PAYLOAD : string := "PAYLOAD".
-Definition STR_EVIDENCE : string := "EVIDENCE".
+Definition STR_EvidenceT : string := "EvidenceT".
 
 Definition STR_ACTION : string := "ACTION".
 Definition STR_TYPE : string := "TYPE".

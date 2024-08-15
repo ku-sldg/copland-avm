@@ -1,6 +1,6 @@
 (*
 Warning: The following axioms must be realized in the extracted
-code: MonadVM.do_hash Axioms_Io.parallel_vm_thread ConcreteEvidence.BS
+code: MonadVM.do_hash Axioms_Io.parallel_vm_thread ConcreteEvidenceT.BS
       MonadVM.encodeEvBits Axioms_Io.cvm_events Axioms_Io.doRemote_session
       MonadVM.do_sig MonadVM.do_asp.
  [extraction-axiom-to-realize,extraction]
@@ -59,14 +59,14 @@ datatype term =
 | Bseq split term term
 | Bpar split term term
 
-datatype evidence =
+datatype EvidenceT =
   Mt 
-| Uu aSP_PARAMS nat evidence
-| Gg nat evidence
-| Hh nat evidence
+| Uu aSP_PARAMS nat EvidenceT
+| Gg nat EvidenceT
+| Hh nat EvidenceT
 | Nn nat
-| Ss evidence evidence
-| Pp evidence evidence
+| Ss EvidenceT EvidenceT
+| Pp EvidenceT EvidenceT
 
 type range = (nat, nat) prod
 
@@ -82,12 +82,12 @@ type loc = nat
 datatype ev =
   Copy nat nat
 | Umeas nat nat nat (nat list) nat nat
-| Sign nat nat evidence
-| Hash nat nat evidence
-| Req nat nat nat term evidence
-| Rpy nat nat nat evidence
+| Sign nat nat EvidenceT
+| Hash nat nat EvidenceT
+| Req nat nat nat term EvidenceT
+| Rpy nat nat nat EvidenceT
 | Split nat nat
-| Cvm_thread_start loc nat annoTerm evidence
+| Cvm_thread_start loc nat annoTerm EvidenceT
 | Join nat nat
 | Cvm_thread_end loc
 
@@ -142,14 +142,14 @@ type bS (* AXIOM TO BE REALIZED *)
 type rawEv = bS list
 
 datatype evC =
-  Evc rawEv evidence
+  Evc rawEv EvidenceT
 
 (** val mt_evc : evC **)
 
 val mt_evc =
   Evc Nil Mt
 
-(** val get_et : evC -> evidence **)
+(** val get_et : evC -> EvidenceT **)
 
 fun get_et e = case e of
   Evc _ et => et
@@ -186,7 +186,7 @@ val doRemote_session =
 val parallel_vm_thread =
   failwith "AXIOM TO BE REALIZED"
 
-(** val cvm_events : annoTerm -> nat -> evidence -> ev list **)
+(** val cvm_events : annoTerm -> nat -> EvidenceT -> ev list **)
 
 val cvm_events =
   failwith "AXIOM TO BE REALIZED"
@@ -243,9 +243,9 @@ fun tag_ASP params mpl x =
   let val Asp_paramsC i l tpl tid = params in
   add_tracem (Cons (Umeas x mpl i l tpl tid) Nil) end
 
-(** val cons_uu : bS -> evC -> aSP_PARAMS -> nat -> evC **)
+(** val cons_asp_evt : bS -> evC -> aSP_PARAMS -> nat -> evC **)
 
-fun cons_uu x e params mpl =
+fun cons_asp_evt x e params mpl =
   let val Evc bits et = e in Evc (Cons x bits) (Uu params mpl et) end
 
 (** val invoke_ASP : aSP_PARAMS -> event_ID -> evC cVM **)
@@ -254,7 +254,7 @@ fun invoke_ASP params x =
   bind get_ev (fn e =>
     bind get_pl (fn p =>
       bind (tag_ASP params p x) (fn _ =>
-        ret (cons_uu (do_asp params p x) e params p))))
+        ret (cons_asp_evt (do_asp params p x) e params p))))
 
 (** val encodeEvBits : evC -> bS **)
 

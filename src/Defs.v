@@ -5,7 +5,7 @@
   Author:  Adam Petz
 *)
 
-Require Import StructTactics.
+Require Export StructTactics.
 
 Require Import List.
 Import List.ListNotations.
@@ -13,32 +13,6 @@ Import List.ListNotations.
 Require Import Coq.Program.Tactics.
 
 Require Import Ltac2.Ltac2.
-
-(* rewrite (existentially) an arbitrary hypothesis and attempt eauto *)
-Ltac jkjke :=
-  match goal with
-  | [H: _ |-  _ ] => erewrite H; eauto
-  end.
-
-(* rewrite <- (existentially) an arbitrary hypothesis and attempt eauto *)
-Ltac jkjke' :=
-  match goal with
-  | [H: _ |-  _ ] => erewrite <- H in *; eauto
-  end.
-
-(* attempt to rerwite an arbitrary equality assumption whose LHS is mentioned
-   in the proof goal *)
-Ltac jkjk :=
-  match goal with
-  | [H: ?X = _ |- context[?X] ] => rewrite H
-  end.
-
-(* attempt to rerwite an arbitrary <- equality assumption whose LHS is  
-   mentioned in the proof goal *)
-Ltac jkjk' :=
-  match goal with
-  | [H: ?X = _ |- context[?X] ] => rewrite <- H
-  end.
 
 (* "Do OR":  find a disjunction in hyps and destruct it *)
 Ltac door :=
@@ -51,6 +25,7 @@ Ltac door :=
    development.  Conservative simplification, break matches, 
    invert on resulting goals *)
 Ltac ff :=
+  timeout 5 (
   repeat (
     (* try cbn in *; *)
     try simpl in *;
@@ -60,18 +35,47 @@ Ltac ff :=
     simpl in *; subst; eauto;
     try congruence;
     try solve_by_inversion
-  ).
+  )).
 
 Ltac ffa :=
   repeat (ff;
     repeat find_apply_hyp_hyp;
     ff).
 
-Tactic Notation "ffa" "using" tactic(tac) :=
+Tactic Notation "ffa" "using" tactic2(tac) :=
   repeat (ff;
     repeat find_apply_hyp_hyp;
     tac;
     ff).
+
+Ltac fwd_rw :=
+  match goal with
+    | [ H : _ = _ |- _ ] => erewrite H
+    | [ H : forall _, _ = _ |- _ ] => erewrite H
+    | [ H : forall _ _, _ = _ |- _ ] => erewrite H
+  end.
+Ltac rev_rw :=
+  match goal with
+    | [ H : _ = _ |- _ ] => erewrite <- H
+    | [ H : forall _, _ = _ |- _ ] => erewrite <- H
+    | [ H : forall _ _, _ = _ |- _ ] => erewrite <- H
+  end.
+
+Ltac rw' :=
+  repeat (
+    try fwd_rw; simpl in *;
+    try rev_rw; simpl in *
+  ).
+
+Ltac rw :=
+  timeout 5 rw'.
+
+Tactic Notation "rw" "using" tactic2(tac) :=
+  timeout 5 (repeat (
+    try fwd_rw; simpl in *;
+    try rev_rw; simpl in *;
+    tac
+  )).
 
 Ltac fail_if_in_hyps_type t := 
   lazymatch goal with 

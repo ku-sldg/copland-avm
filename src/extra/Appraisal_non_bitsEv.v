@@ -1,4 +1,4 @@
-Require Import Maps Event_system Term_system MonadVM ConcreteEvidence.
+Require Import Maps Event_system Term_system MonadVM ConcreteEvidenceT.
 Require Import Impl_vm Helpers_VmSemantics VmSemantics.
 Require Import Axioms_Io External_Facts Auto AutoApp.
 
@@ -16,14 +16,14 @@ Import ListNotations.
 Set Nested Proofs Allowed.
 
 (*
-Fixpoint reconstruct_EvCon (e:EvidenceC) (et:Evidence): option EvidenceCon :=
+Fixpoint reconstruct_EvCon (e:EvidenceTC) (et:EvidenceT): option EvidenceTCon :=
   match et with
-  | mt =>
+  | mt_evt=>
     match e with
     | BitsV 0 => ret mtc
     | _ => None
     end
-  | uu i args tpl tid et' =>
+  | asp_evt i args tpl tid et' =>
     '(bs,e') <- peelBitsVval e ;;
     e_res <- reconstruct_EvCon e' et' ;;
     ret (uuc i args tpl tid bs e_res)
@@ -34,10 +34,10 @@ Fixpoint reconstruct_EvCon (e:EvidenceC) (et:Evidence): option EvidenceCon :=
   | hh p et' =>
     bs <- peelOneBitsVval e ;;
     ret (hhc p bs et')
-  | nn nid =>
+  | nonce_evt nid =>
     bs <- peelOneBitsVval e ;;
     ret (nnc nid bs)
-  | ss et1 et2 =>
+  | split_evt et1 et2 =>
     '(e1,e2) <- peelPairBitsV e ;;
     e1r <- reconstruct_EvCon e1 et1 ;;
     e2r <- reconstruct_EvCon e2 et2 ;;
@@ -150,7 +150,7 @@ Proof.
     do_wf_pieces.
 
     assert (EvSub e'' st_ev \/
-         (exists (ett : Evidence) (p'0 bs : nat),
+         (exists (ett : EvidenceT) (p'0 bs : nat),
              EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (et_fun e'') ett)).
     {
       eauto.
@@ -159,7 +159,7 @@ Proof.
     +
 
       assert (EvSub e'' e' \/
-         (exists (ett : Evidence) (p'0 bs : nat),
+         (exists (ett : EvidenceT) (p'0 bs : nat),
              EvSub (hhc p'0 bs ett) e' /\ EvSubT (et_fun e'') ett)).
       {
         eauto.
@@ -181,7 +181,7 @@ Proof.
     +
       destruct_conjs.
       assert (EvSub (hhc H4 H5 H3) e' \/
-         (exists (ett : Evidence) (p'0 bs : nat),
+         (exists (ett : EvidenceT) (p'0 bs : nat),
              EvSub (hhc p'0 bs ett) e' /\ EvSubT (et_fun (hhc H4 H5 H3)) ett)).
     {
       eapply IHt2.
@@ -229,7 +229,7 @@ Proof.
       ff.
       assert (
            EvSub e'' st_ev0 \/
-         (exists (ett : Evidence) (p'0 bs : nat),
+         (exists (ett : EvidenceT) (p'0 bs : nat),
              EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (et_fun e'') ett)
         ) by eauto.
       destruct H1.
@@ -250,7 +250,7 @@ Proof.
       ff.
       assert (
            EvSub e'' st_ev \/
-         (exists (ett : Evidence) (p'0 bs : nat),
+         (exists (ett : EvidenceT) (p'0 bs : nat),
              EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (et_fun e'') ett)
         ) by eauto.
       destruct H1.
@@ -271,7 +271,7 @@ Proof.
       ff.
       assert (
            EvSub e'' st_ev0 \/
-         (exists (ett : Evidence) (p'0 bs : nat),
+         (exists (ett : EvidenceT) (p'0 bs : nat),
              EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (et_fun e'') ett)
         ) by eauto.
       destruct H1.
@@ -303,7 +303,7 @@ Proof.
       ff.
       assert (
            EvSub e'' st_ev0 \/
-         (exists (ett : Evidence) (p'0 bs : nat),
+         (exists (ett : EvidenceT) (p'0 bs : nat),
              EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (et_fun e'') ett)
         ) by eauto.
       destruct H1.
@@ -324,7 +324,7 @@ Proof.
       ff.
       assert (
            EvSub e'' st_ev \/
-         (exists (ett : Evidence) (p'0 bs : nat),
+         (exists (ett : EvidenceT) (p'0 bs : nat),
              EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (et_fun e'') ett)
         ) by eauto.
       destruct H1.
@@ -345,7 +345,7 @@ Proof.
       ff.
       assert (
            EvSub e'' st_ev0 \/
-         (exists (ett : Evidence) (p'0 bs : nat),
+         (exists (ett : EvidenceT) (p'0 bs : nat),
              EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (et_fun e'') ett)
         ) by eauto.
       destruct H1.
@@ -376,7 +376,7 @@ Lemma uu_preserved': forall t p et n p0 i args tpl tid
       (exists e'', EvSub (uuc i args tpl tid n e'') e') \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) e' /\
-          EvSubT (uu i args tpl tid et') ett)
+          EvSubT (asp_evt i args tpl tid et') ett)
     ).
 Proof.
   intros.
@@ -395,9 +395,9 @@ Proof.
     invEvents.
     do_wf_pieces.
     assert (
-         (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n0 e'')  (toRemote t n e)) \/
-        (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-            EvSub (hhc p'0 bs ett)  (toRemote t n e) /\ EvSubT (uu i args tpl tid et') ett)
+         (exists e'' : EvidenceTC, EvSub (uuc i args tpl tid n0 e'')  (toRemote t n e)) \/
+        (exists (ett : EvidenceT) (p'0 bs : nat) (et' : EvidenceT),
+            EvSub (hhc p'0 bs ett)  (toRemote t n e) /\ EvSubT (asp_evt i args tpl tid et') ett)
       ).
 
     {
@@ -421,9 +421,9 @@ Proof.
     + (* t1 case *)
 
       assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (uu i args tpl tid et') ett)
+            (exists e'' : EvidenceTC, EvSub (uuc i args tpl tid n e'') st_ev) \/
+         (exists (ett : EvidenceT) (p'0 bs : nat) (et' : EvidenceT),
+             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (asp_evt i args tpl tid et') ett)
         ).
       {
         eapply IHt1.
@@ -484,7 +484,7 @@ Proof.
           repeat eexists.
           eauto.
 
-          assert (EvSubT (uu i args tpl tid H5) (hh H1 H0)).
+          assert (EvSubT (asp_evt i args tpl tid H5) (hh H1 H0)).
           {
             apply hhSubT.
             eassumption.
@@ -503,9 +503,9 @@ Proof.
       subst.
 
       assert (
-           (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') e') \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) e' /\ EvSubT (uu i args tpl tid et') ett)
+           (exists e'' : EvidenceTC, EvSub (uuc i args tpl tid n e'') e') \/
+         (exists (ett : EvidenceT) (p'0 bs : nat) (et' : EvidenceT),
+             EvSub (hhc p'0 bs ett) e' /\ EvSubT (asp_evt i args tpl tid et') ett)
         ).
       {
         eapply IHt2.
@@ -540,9 +540,9 @@ Proof.
       ++
 
       assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (uu i args tpl tid et') ett)
+            (exists e'' : EvidenceTC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
+         (exists (ett : EvidenceT) (p'0 bs : nat) (et' : EvidenceT),
+             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (asp_evt i args tpl tid et') ett)
         ).
       {
         eapply IHt1.
@@ -592,9 +592,9 @@ Proof.
         
           
       assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (uu i args tpl tid et') ett)
+            (exists e'' : EvidenceTC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
+         (exists (ett : EvidenceT) (p'0 bs : nat) (et' : EvidenceT),
+             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (asp_evt i args tpl tid et') ett)
         ).
       {
         eapply IHt1.
@@ -642,9 +642,9 @@ Proof.
       ++
         
       assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (uu i args tpl tid et') ett)
+            (exists e'' : EvidenceTC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
+         (exists (ett : EvidenceT) (p'0 bs : nat) (et' : EvidenceT),
+             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (asp_evt i args tpl tid et') ett)
         ).
       {
         eapply IHt1.
@@ -699,9 +699,9 @@ Proof.
       ++
 
       assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (uu i args tpl tid et') ett)
+            (exists e'' : EvidenceTC, EvSub (uuc i args tpl tid n e'') st_ev) \/
+         (exists (ett : EvidenceT) (p'0 bs : nat) (et' : EvidenceT),
+             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (asp_evt i args tpl tid et') ett)
         ).
       {
         eapply IHt2.
@@ -750,9 +750,9 @@ Proof.
         
           
       assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (uu i args tpl tid et') ett)
+            (exists e'' : EvidenceTC, EvSub (uuc i args tpl tid n e'') st_ev) \/
+         (exists (ett : EvidenceT) (p'0 bs : nat) (et' : EvidenceT),
+             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (asp_evt i args tpl tid et') ett)
         ).
       {
         eapply IHt2.
@@ -800,9 +800,9 @@ Proof.
       ++
         
       assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (uu i args tpl tid et') ett)
+            (exists e'' : EvidenceTC, EvSub (uuc i args tpl tid n e'') st_ev) \/
+         (exists (ett : EvidenceT) (p'0 bs : nat) (et' : EvidenceT),
+             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (asp_evt i args tpl tid et') ett)
         ).
       {
         eapply IHt2.
@@ -863,9 +863,9 @@ Proof.
       ++
 
       assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (uu i args tpl tid et') ett)
+            (exists e'' : EvidenceTC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
+         (exists (ett : EvidenceT) (p'0 bs : nat) (et' : EvidenceT),
+             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (asp_evt i args tpl tid et') ett)
         ).
       {
         eapply IHt1.
@@ -914,9 +914,9 @@ Proof.
         
           
       assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (uu i args tpl tid et') ett)
+            (exists e'' : EvidenceTC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
+         (exists (ett : EvidenceT) (p'0 bs : nat) (et' : EvidenceT),
+             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (asp_evt i args tpl tid et') ett)
         ).
       {
         eapply IHt1.
@@ -964,9 +964,9 @@ Proof.
       ++
         
       assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (uu i args tpl tid et') ett)
+            (exists e'' : EvidenceTC, EvSub (uuc i args tpl tid n e'') st_ev0) \/
+         (exists (ett : EvidenceT) (p'0 bs : nat) (et' : EvidenceT),
+             EvSub (hhc p'0 bs ett) st_ev0 /\ EvSubT (asp_evt i args tpl tid et') ett)
         ).
       {
         eapply IHt1.
@@ -1021,9 +1021,9 @@ Proof.
       ++
 
       assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (uu i args tpl tid et') ett)
+            (exists e'' : EvidenceTC, EvSub (uuc i args tpl tid n e'') st_ev) \/
+         (exists (ett : EvidenceT) (p'0 bs : nat) (et' : EvidenceT),
+             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (asp_evt i args tpl tid et') ett)
         ).
       {
         eapply IHt2.
@@ -1072,9 +1072,9 @@ Proof.
         
           
       assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (uu i args tpl tid et') ett)
+            (exists e'' : EvidenceTC, EvSub (uuc i args tpl tid n e'') st_ev) \/
+         (exists (ett : EvidenceT) (p'0 bs : nat) (et' : EvidenceT),
+             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (asp_evt i args tpl tid et') ett)
         ).
       {
         eapply IHt2.
@@ -1122,9 +1122,9 @@ Proof.
       ++
         
       assert (
-            (exists e'' : EvidenceC, EvSub (uuc i args tpl tid n e'') st_ev) \/
-         (exists (ett : Evidence) (p'0 bs : nat) (et' : Evidence),
-             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (uu i args tpl tid et') ett)
+            (exists e'' : EvidenceTC, EvSub (uuc i args tpl tid n e'') st_ev) \/
+         (exists (ett : EvidenceT) (p'0 bs : nat) (et' : EvidenceT),
+             EvSub (hhc p'0 bs ett) st_ev /\ EvSubT (asp_evt i args tpl tid et') ett)
         ).
       {
         eapply IHt2.
@@ -1188,7 +1188,7 @@ Lemma uu_preserved: forall t1 t2 p et n p0 i args tpl tid
       (exists e'', EvSub (uuc i args tpl tid n e'') e') \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) e' /\
-          EvSubT (uu i args tpl tid et') ett)
+          EvSubT (asp_evt i args tpl tid et') ett)
     ).
 Proof.
   intros.
@@ -1196,7 +1196,7 @@ Proof.
       (exists e'', EvSub (uuc i args tpl tid n e'') st_ev) \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) st_ev /\
-          EvSubT (uu i args tpl tid et') ett)
+          EvSubT (asp_evt i args tpl tid et') ett)
       ).
     {
       eapply uu_preserved'.
@@ -1265,7 +1265,7 @@ Proof.
       (exists e'', EvSub (uuc i args tpl tid n1 e'') st_ev) \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) st_ev /\
-          EvSubT (uu i args tpl tid et') ett)
+          EvSubT (asp_evt i args tpl tid et') ett)
       ).
     {
       eapply uu_preserved'.
@@ -1321,7 +1321,7 @@ Proof.
       (exists e'', EvSub (uuc i args tpl tid n3 e'') st_ev) \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) st_ev /\
-          EvSubT (uu i args tpl tid et') ett)
+          EvSubT (asp_evt i args tpl tid et') ett)
       ).
     {
       eapply uu_preserved'.
@@ -1390,7 +1390,7 @@ Proof.
         destruct_conjs.
         ff.
         invc H13.
-        assert (EvSubT (uu i args tpl tid H7) H10).
+        assert (EvSubT (asp_evt i args tpl tid H7) H10).
         {
           eapply evsubT_transitive.
           apply hhSubT.
@@ -1409,7 +1409,7 @@ Proof.
       (exists e'', EvSub (uuc i args tpl tid n1 e'') st_ev) \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) st_ev /\
-          EvSubT (uu i args tpl tid et') ett)
+          EvSubT (asp_evt i args tpl tid et') ett)
       ).
     {
       eapply uu_preserved'.
@@ -1481,7 +1481,7 @@ Proof.
         destruct_conjs.
         ff.
         invc H13.
-        assert (EvSubT (uu i args tpl tid H7) H10).
+        assert (EvSubT (asp_evt i args tpl tid H7) H10).
         {
           eapply evsubT_transitive.
           apply hhSubT.
@@ -1501,7 +1501,7 @@ Proof.
       (exists e'', EvSub (uuc i args tpl tid n1 e'') st_ev) \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) st_ev /\
-          EvSubT (uu i args tpl tid et') ett)
+          EvSubT (asp_evt i args tpl tid et') ett)
       ).
     {
       eapply uu_preserved'.
@@ -1579,7 +1579,7 @@ Proof.
         destruct_conjs.
         ff.
         invc H13.
-        assert (EvSubT (uu i args tpl tid H7) e).
+        assert (EvSubT (asp_evt i args tpl tid H7) e).
         {
           eapply evsubT_transitive.
           apply hhSubT.
@@ -1599,7 +1599,7 @@ Proof.
       (exists e'', EvSub (uuc i args tpl tid n e'') st_ev) \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) st_ev /\
-          EvSubT (uu i args tpl tid et') ett)
+          EvSubT (asp_evt i args tpl tid et') ett)
       ).
     {
       eapply uu_preserved'.
@@ -1682,7 +1682,7 @@ Proof.
       ++
         destruct_conjs.
         ff.
-        assert (EvSubT (uu i args tpl tid H7) H10).
+        assert (EvSubT (asp_evt i args tpl tid H7) H10).
         {
           eapply evsubT_transitive.
           apply hhSubT.
@@ -1711,7 +1711,7 @@ Proof.
       (exists e'', EvSub (uuc i args tpl tid n e'') st_ev) \/
       (exists ett p' bs et',
           EvSub (hhc p' bs ett) st_ev /\
-          EvSubT (uu i args tpl tid et') ett)
+          EvSubT (asp_evt i args tpl tid et') ett)
       ).
     {
       eapply uu_preserved'.
@@ -1794,7 +1794,7 @@ Proof.
       ++
         destruct_conjs.
         ff.
-        assert (EvSubT (uu i args tpl tid H7) H10).
+        assert (EvSubT (asp_evt i args tpl tid H7) H10).
         {
           eapply evsubT_transitive.
           apply hhSubT.
@@ -1830,7 +1830,7 @@ Lemma appraisal_correct : forall t e e' tr tr' p p' et ev,
     measEvent t p et ev ->
     
     (*build_app_comp_evC e' = app_res /\ *)
-    appEvent_EvidenceC ev (build_app_comp_evC e').
+    appEvent_EvidenceTC ev (build_app_comp_evC e').
 Proof.
   generalizeEverythingElse t.
   induction t; intros.
@@ -1882,7 +1882,7 @@ Proof.
            (exists e'', EvSub (uuc i args tpl tid n e'') e') \/
            (exists ett p' bs et',
                EvSub (hhc p' bs ett) e' /\
-               EvSubT (uu i args tpl tid et') ett)
+               EvSubT (asp_evt i args tpl tid et') ett)
          ).
               
        {
@@ -1921,7 +1921,7 @@ Proof.
          eassumption.
          eassumption.
      + (* t2 case *)
-       assert (appEvent_EvidenceC (umeas n p0 i args tpl tid)
+       assert (appEvent_EvidenceTC (umeas n p0 i args tpl tid)
                                   (build_app_comp_evC e')).
        {
          eapply IHt2.
@@ -1929,7 +1929,7 @@ Proof.
          2: {
            eassumption.
          }         
-         eapply cvm_refines_lts_evidence.
+         eapply cvm_refines_lts_EvidenceT.
          apply H3.
          eassumption.
          eassumption.
@@ -1968,7 +1968,7 @@ Proof.
         ff.
 
       
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
+      assert (appEvent_EvidenceTC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
       {
         eapply IHt1.
         eassumption.
@@ -1993,7 +1993,7 @@ Proof.
         ff.
 
       
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
+      assert (appEvent_EvidenceTC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
       {
         eapply IHt1.
         eassumption.
@@ -2018,7 +2018,7 @@ Proof.
         ff.
 
       
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
+      assert (appEvent_EvidenceTC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
       {
         eapply IHt1.
         eassumption.
@@ -2046,7 +2046,7 @@ Proof.
         ff.
 
       
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
+      assert (appEvent_EvidenceTC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
       {
         eapply IHt2.
         eassumption.
@@ -2071,7 +2071,7 @@ Proof.
         ff.
 
       
-        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
+        assert (appEvent_EvidenceTC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
       {
         eapply IHt2.
         eassumption.
@@ -2096,7 +2096,7 @@ Proof.
         ff.
 
       
-        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
+        assert (appEvent_EvidenceTC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
       {
         eapply IHt2.
         eassumption.
@@ -2145,7 +2145,7 @@ Proof.
         ff.
 
       
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
+      assert (appEvent_EvidenceTC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
       {
         eapply IHt1.
         eassumption.
@@ -2170,7 +2170,7 @@ Proof.
         ff.
 
       
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
+      assert (appEvent_EvidenceTC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
       {
         eapply IHt1.
         eassumption.
@@ -2195,7 +2195,7 @@ Proof.
         ff.
 
       
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
+      assert (appEvent_EvidenceTC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev0)).
       {
         eapply IHt1.
         eassumption.
@@ -2223,7 +2223,7 @@ Proof.
         ff.
 
       
-      assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
+      assert (appEvent_EvidenceTC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
       {
         eapply IHt2.
         eassumption.
@@ -2248,7 +2248,7 @@ Proof.
         ff.
 
       
-        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
+        assert (appEvent_EvidenceTC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
       {
         eapply IHt2.
         eassumption.
@@ -2273,7 +2273,7 @@ Proof.
         ff.
 
       
-        assert (appEvent_EvidenceC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
+        assert (appEvent_EvidenceTC (umeas n1 p0 i args tpl tid) (build_app_comp_evC st_ev)).
       {
         eapply IHt2.
         eassumption.

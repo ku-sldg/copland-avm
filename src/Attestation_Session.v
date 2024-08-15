@@ -4,7 +4,7 @@ Require Import JSON Stringifiable.
 Import ListNotations.
 
 Record Attestation_Session := 
-  mkAtt_Sess {
+  mkAtt_Sesplit_evt {
   Session_Plc     : Plc ;
   Plc_Mapping     : MapC Plc UUID;
   PubKey_Mapping  : MapC Plc PublicKey;

@@ -96,11 +96,11 @@ Definition environment_to_manifest_list (e:EnvironmentM) : list Manifest :=
   map_vals e.
 
 Fixpoint manifest_generator_app' (comp_map : ASP_Compat_MapT) 
-    (et:Evidence) (m:Manifest) : ResultT Manifest string :=
+    (et:EvidenceT) (m:Manifest) : ResultT Manifest string :=
   match et with 
-  | mt => resultC m 
-  | nn _ => resultC m (* TODO: account for nonce handling here? *)
-  | uu p fwd ps e' => 
+  | mt_evt=> resultC m 
+  | nonce_evt _ => resultC m (* TODO: account for nonce handling here? *)
+  | asp_evt p fwd ps e' => 
     match fwd with 
     | (EXTD n) => 
       match ps with 
@@ -129,7 +129,7 @@ Fixpoint manifest_generator_app' (comp_map : ASP_Compat_MapT)
       end
     | _ => resultC m
     end
-  | ss e1 e2 => 
+  | split_evt e1 e2 => 
     match (manifest_generator_app' comp_map e1 m) with
     | resultC m' => manifest_generator_app' comp_map e2 m'
     | errC e => errC e
@@ -138,7 +138,7 @@ Fixpoint manifest_generator_app' (comp_map : ASP_Compat_MapT)
 
 Import ResultNotation.
 Definition manifest_generator_app (comp_map : ASP_Compat_MapT) 
-    (et:Evidence) (p:Plc) : ResultT EnvironmentM string := 
+    (et:EvidenceT) (p:Plc) : ResultT EnvironmentM string := 
   env <- manifest_update_env_res p e_empty (manifest_generator_app' comp_map et) ;;
   result_map 
     (fun '(p,m) => resultC (p, add_compat_map_manifest m comp_map)) 

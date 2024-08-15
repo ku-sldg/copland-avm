@@ -1,6 +1,6 @@
 (*
-  Evidence structure (EvidenceC) that encapsulates and describes concrete results of 
-    Copland phrase execution.  Also included: Evidence subterm defintions and related properties.
+  EvidenceT structure (EvidenceTC) that encapsulates and describes concrete results of 
+    Copland phrase execution.  Also included: EvidenceT subterm defintions and related properties.
 
   Author:  Adam Petz, ampetz@ku.edu
 *)
@@ -14,34 +14,34 @@ Import ListNotations.
 
 Require Export Term_Defs.
 
-(** * Concrete Evidence 
-    This datatype acts as a "Typed Concrete Evidence" structure.  It captures
-    both the type of evidence (parameters associated with its collection) 
+(** * Concrete EvidenceT 
+    This datatype acts as a "Typed Concrete EvidenceT" structure.  It captures
+    both the type of EvidenceT (parameters associated with its collection) 
     along with concrete binary (BS) values collected during attestation.
 *)
 
-Inductive EvidenceC :=
-| mtc: EvidenceC
-| nnc: N_ID -> BS -> EvidenceC
-| ggc: Plc -> ASP_PARAMS -> RawEv -> EvidenceC -> EvidenceC
-| hhc: Plc -> ASP_PARAMS -> BS -> Evidence -> EvidenceC
-| eec: Plc -> ASP_PARAMS -> BS -> Evidence -> EvidenceC
-| kkc: Plc -> ASP_PARAMS -> Evidence -> EvidenceC
-| kpc: Plc -> ASP_PARAMS -> EvidenceC -> EvidenceC
-| ssc: EvidenceC -> EvidenceC -> EvidenceC.
+Inductive EvidenceTC :=
+| mtc: EvidenceTC
+| nnc: N_ID -> BS -> EvidenceTC
+| ggc: Plc -> ASP_PARAMS -> RawEv -> EvidenceTC -> EvidenceTC
+| hhc: Plc -> ASP_PARAMS -> BS -> EvidenceT -> EvidenceTC
+| eec: Plc -> ASP_PARAMS -> BS -> EvidenceT -> EvidenceTC
+| kkc: Plc -> ASP_PARAMS -> EvidenceT -> EvidenceTC
+| kpc: Plc -> ASP_PARAMS -> EvidenceTC -> EvidenceTC
+| ssc: EvidenceTC -> EvidenceTC -> EvidenceTC.
 
-(** The Evidence Type associated with a Typed Concrete Evidence value *)
-Fixpoint et_fun (ec:EvidenceC) : Evidence :=
+(** The EvidenceT Type associated with a Typed Concrete EvidenceT value *)
+Fixpoint et_fun (ec:EvidenceTC) : EvidenceT :=
   match ec with
-  | mtc => mt
-  | ggc p params rawev ec' => uu p (EXTD (length rawev)) params (et_fun ec')
-  | hhc p params _ et => uu p COMP params et
-  | eec p params _ et => uu p ENCR params et (* (et_fun ec') *)
-  | kkc p params et' => uu p KILL params et'
-  | kpc p params ec' => uu p KEEP params (et_fun ec')
+  | mtc => mt_evt
+  | ggc p params rawev ec' => asp_evt p (EXTD (length rawev)) params (et_fun ec')
+  | hhc p params _ et => asp_evt p COMP params et
+  | eec p params _ et => asp_evt p ENCR params et (* (et_fun ec') *)
+  | kkc p params et' => asp_evt p KILL params et'
+  | kpc p params ec' => asp_evt p KEEP params (et_fun ec')
                        
-  | nnc ni _ => nn ni
-  | ssc ec1 ec2 => ss (et_fun ec1) (et_fun ec2)
+  | nnc ni _ => nonce_evt ni
+  | ssc ec1 ec2 => split_evt (et_fun ec1) (et_fun ec2)
   end.
 
 Definition splitEv_l (sp:Split) (e:EvC): EvC :=
@@ -56,38 +56,38 @@ Definition splitEv_r (sp:Split) (e:EvC): EvC :=
   | _ => mt_evc
   end.
 
-Definition splitEvl (sp:Split) (e:EvidenceC) : EvidenceC :=
+Definition splitEvl (sp:Split) (e:EvidenceTC) : EvidenceTC :=
   match sp with
   | (ALL,_) => e
   | _ => mtc
   end.
 
-Definition splitEvr (sp:Split) (e:EvidenceC) : EvidenceC :=
+Definition splitEvr (sp:Split) (e:EvidenceTC) : EvidenceTC :=
   match sp with
   | (_,ALL) => e
   | _ => mtc
   end.
 
-(** Evidence Type subterm relation *)
-Inductive EvSubT: Evidence -> Evidence -> Prop :=
-| evsub_reflT : forall e : Evidence, EvSubT e e
+(** EvidenceT Type subterm relation *)
+Inductive EvSubT: EvidenceT -> EvidenceT -> Prop :=
+| evsub_reflT : forall e : EvidenceT, EvSubT e e
 | uuSubT: forall e e' p fwd ps,
     EvSubT e e' -> 
-    EvSubT e (uu p fwd ps e')
+    EvSubT e (asp_evt p fwd ps e')
 | ssSublT: forall e e' e'',
     EvSubT e e' ->
-    EvSubT e (ss e' e'')
+    EvSubT e (split_evt e' e'')
 | ssSubrT: forall e e' e'',
     EvSubT e e'' ->
-    EvSubT e (ss e' e'').
+    EvSubT e (split_evt e' e'').
 #[export] Hint Constructors EvSubT : core.
 
 Ltac evSubTFacts :=
   match goal with
   | [H: EvSubT (?C _) _ |- _] => invc H
   | [H: EvSubT _ (?C _) |- _] => invc H
-  | [H: EvSubT _ mt |- _] => invc H
-  | [H: EvSubT mt _ |- _] => invc H
+  | [H: EvSubT _ mt_evt|- _] => invc H
+  | [H: EvSubT mt_evt_ |- _] => invc H
   end.
 
 Lemma evsubT_transitive: forall e e' e'',
@@ -102,9 +102,9 @@ Proof.
        eauto.
 Qed.
 
-(** Typed Concrete Evidence subterm relation *)
-Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
-| evsub_refl : forall e : EvidenceC, EvSub e e
+(** Typed Concrete EvidenceT subterm relation *)
+Inductive EvSub: EvidenceTC -> EvidenceTC -> Prop :=
+| evsub_refl : forall e : EvidenceTC, EvSub e e
 | ggSub: forall e e' p ps bs,
     EvSub e e' ->
     EvSub e (ggc p ps bs e')

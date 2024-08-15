@@ -5,7 +5,7 @@ Require Export Interface_Strings_Vars.
 (* Interface Types *)
 Record ProtocolRunRequest := 
   mkPRReq {
-    prreq_att_sess : Attestation_Session;
+    prreq_att_sesplit_evt : Attestation_Session;
     prreq_term: Term;
     prreq_req_plc: Plc;
     prreq_rawev: RawEv;
@@ -33,7 +33,7 @@ Record ProtocolAppraiseRequest :=
     pareq_att_sess: Attestation_Session;
     pareq_term: Term;
     pareq_plc: Plc;
-    pareq_evidence: Evidence;
+    pareq_EvidenceT: EvidenceT;
     pareq_ev: RawEv;
   }.
 

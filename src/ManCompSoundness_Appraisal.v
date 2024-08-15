@@ -1,6 +1,6 @@
-(*  Primary results for Manifest Compiler Soundness (for Appraisal).
+(*  Primary results for Manifest Compiler Soundnesplit_evt (for Appraisal).
       Namely, that the compiler outputs a collection of manifests that support 
-      appraisal execution over the input evidence.  *)
+      appraisal execution over the input EvidenceT.  *)
 
 Require Import Manifest Attestation_Session
   Maps Term_Defs 
@@ -12,12 +12,12 @@ Require Import Coq.Program.Tactics Lia.
 
 Import ListNotations.
 
-Fixpoint session_config_support_exec_app (e : Evidence) 
+Fixpoint session_config_support_exec_app (e : EvidenceT) 
     (sc : Session_Config) : Prop :=
   match e with
-  | mt => True 
-  | nn _ => True (* TODO: how to account for nonce handling? *)
-  | uu p fwd ps e' => 
+  | mt_evt=> True 
+  | nonce_evt _ => True (* TODO: how to account for nonce handling? *)
+  | asp_evt p fwd ps e' => 
       let need_appr_asp :=
         let '(asp_paramsC att_id arg targ targ_id) := ps in
         match map_get (ASP_to_APPR_ASP_Map sc) att_id with
@@ -46,7 +46,7 @@ Fixpoint session_config_support_exec_app (e : Evidence)
           need_appr_asp
       | _ => True
       end
-  | ss e1 e2 => 
+  | split_evt e1 e2 => 
       exists sc1 sc2, 
       (session_config_support_exec_app e1 sc1) /\ 
       (session_config_support_exec_app e2 sc1) /\ 
@@ -56,15 +56,15 @@ Fixpoint session_config_support_exec_app (e : Evidence)
 
 Require Import AM_St Impl_appraisal.
 
-Fixpoint nonce_ids_et' (et:Evidence) (ls:list N_ID) : list N_ID :=
+Fixpoint nonce_ids_et' (et:EvidenceT) (ls:list N_ID) : list N_ID :=
   match et with
-  | mt => ls
-  | nn nid => nid :: ls 
-  | ss et1 et2 => (nonce_ids_et' et2 (nonce_ids_et' et1 ls))
-  | uu _ _ _ et' => nonce_ids_et' et' ls
+  | mt_evt=> ls
+  | nonce_evt nid => nid :: ls 
+  | split_evt et1 et2 => (nonce_ids_et' et2 (nonce_ids_et' et1 ls))
+  | asp_evt _ _ _ et' => nonce_ids_et' et' ls
   end.
 
-Definition nonce_ids_et (et:Evidence) : list N_ID :=
+Definition nonce_ids_et (et:EvidenceT) : list N_ID :=
   nonce_ids_et' et [].
 
 Definition has_nonces (nids: list N_ID) (m:MapC N_ID BS) : Prop := 
@@ -259,9 +259,9 @@ Proof.
   intros.
   generalizeEverythingElse et.
   induction et; intros; intuition; subst; eauto.
-  - (* mt case *)
+  - (* mt_evtcase *)
     ffa using am_monad_unfold.
-  - (* nn case *)
+  - (* nonce_evt case *)
     ffa using am_monad_unfold.
     + eapply peel_bs_am_contra; try eauto; try lia.
     + unfold has_nonces, checkNonce' in *.
@@ -273,7 +273,7 @@ Proof.
         }
         break_exists.
         ffa.
-  - (* uu case *)
+  - (* asp_evt case *)
 
     simpl in *.
     repeat break_match; simpl in *; subst; cbn;
@@ -317,7 +317,7 @@ Proof.
       eauto; try congruence;
       find_eapply_lem_hyp peel_n_am_res_spec; intuition; subst;
       rewrite app_length in *; lia.
-  - (* ss case *)
+  - (* split_evt case *)
     cbn in *.
     destruct_conjs.
 
@@ -423,11 +423,11 @@ Proof.
       ff.
 Qed.
 
-Fixpoint manifest_support_term_app (m : Manifest) (e : Evidence) : Prop :=
+Fixpoint manifest_support_term_app (m : Manifest) (e : EvidenceT) : Prop :=
     match e with
-    | mt => True 
-    | nn _ => True (* TODO: should we account for nonce presence here? *)
-    | uu p fwd ps e' => 
+    | mt_evt=> True 
+    | nonce_evt _ => True (* TODO: should we account for nonce presence here? *)
+    | asp_evt p fwd ps e' => 
         let appr_asp_sup :=
           let '(asp_paramsC att_id arg targ targ_id) := ps in
           match map_get (ASP_Compat_Map m) att_id with
@@ -456,17 +456,17 @@ Fixpoint manifest_support_term_app (m : Manifest) (e : Evidence) : Prop :=
         | _ => True
         end
         (* TODO:  support other fwd types here in the future... *)
-    | ss e1 e2 => 
+    | split_evt e1 e2 => 
         manifest_support_term_app m e1 /\ 
         manifest_support_term_app m e2
     end.
 
-Fixpoint att_sess_supports_term_app (ats : Attestation_Session) (e : Evidence) 
+Fixpoint att_sess_supports_term_app (ats : Attestation_Session) (e : EvidenceT) 
     : Prop :=
   match e with
-  | mt => True 
-  | nn _ => True (* TODO: should we account for nonce presence here? *)
-  | uu p fwd ps e' => 
+  | mt_evt=> True 
+  | nonce_evt _ => True (* TODO: should we account for nonce presence here? *)
+  | asp_evt p fwd ps e' => 
       match fwd with 
       | (EXTD n) => 
           match ps with 
@@ -484,7 +484,7 @@ Fixpoint att_sess_supports_term_app (ats : Attestation_Session) (e : Evidence)
       | _ => True
       end
       (* TODO:  supports other fwd types here in the future... *)
-  | ss e1 e2 => 
+  | split_evt e1 e2 => 
       att_sess_supports_term_app ats e1 /\ 
       att_sess_supports_term_app ats e2
   end.
@@ -678,23 +678,23 @@ Qed.
 
 Require Import Manifest_Generator_Union Manifest_Generator_Helpers.
 
-Lemma mangen_plcEvidence_list_exists : forall ls et tp p m al env,
+Lemma mangen_plcEvidenceT_list_exists : forall ls et tp p m al env,
   In (et, tp) ls ->
   manifest_generator_app et tp al = resultC env ->
   map_get env p = Some m ->
   forall env',
-    mangen_plcEvidence_list_union ls al = resultC env' ->
+    mangen_plcEvidenceT_list_union ls al = resultC env' ->
     exists m', map_get env' p = Some m'.
 Proof.
   intuition.
-  unfold mangen_plcEvidence_list_union in *;
+  unfold mangen_plcEvidenceT_list_union in *;
   induction ls; simpl in *; intuition; subst; eauto;
   ff; try (eexists; intuition; congruence);
   unfold res_bind in *; ff; eauto;
   erewrite manifest_env_union_map_one; eauto. 
-  - unfold manifest_generator_plcEvidence_list in Heqr;
+  - unfold manifest_generator_plcEvidenceT_list in Heqr;
     congruence. 
-  - unfold manifest_generator_plcEvidence_list in *;
+  - unfold manifest_generator_plcEvidenceT_list in *;
     repeat find_rewrite; repeat find_injection. 
     pose proof (result_map_spec _ _ _ _ H3 Heqr2).
     break_exists; intuition; eauto;
@@ -709,22 +709,22 @@ Qed.
 Global Hint Resolve mangen_plcTerm_list_exists : core.
 *)
 
-Lemma mangen_plcEvidence_list_spec : forall ls et tp env envL cm,
+Lemma mangen_plcEvidenceT_list_spec : forall ls et tp env envL cm,
   In (et, tp) ls ->
-  manifest_generator_plcEvidence_list cm ls = resultC envL ->
+  manifest_generator_plcEvidenceT_list cm ls = resultC envL ->
   manifest_generator_app cm et tp = resultC env ->
   In env envL.
 Proof.
   induction ls; simpl in *; intuition; subst; eauto;
   simpl in *;
-  unfold manifest_generator_plcEvidence_list in *; simpl in *;
+  unfold manifest_generator_plcEvidenceT_list in *; simpl in *;
   ff;
   unfold res_bind in *; ffa using am_monad_unfold.
 Qed.
 Global Hint Resolve mangen_plcTerm_list_spec : core.
 
-Lemma mangen_plcEvidence_list_subsumes : forall ls p m envL cm,
-  mangen_plcEvidence_list_union cm ls = resultC envL ->
+Lemma mangen_plcEvidenceT_list_subsumes : forall ls p m envL cm,
+  mangen_plcEvidenceT_list_union cm ls = resultC envL ->
   map_get envL p = Some m ->
   (forall et tp,
     In (et,tp) ls ->
@@ -735,19 +735,19 @@ Lemma mangen_plcEvidence_list_subsumes : forall ls p m envL cm,
     )
   ).
 Proof.
-  intuition; unfold mangen_plcEvidence_list_union in *.
+  intuition; unfold mangen_plcEvidenceT_list_union in *.
   ff.
   eapply manifest_env_list_union_subsumes; eauto.
-  eapply mangen_plcEvidence_list_spec; eauto.
+  eapply mangen_plcEvidenceT_list_spec; eauto.
 Qed.
 Global Hint Resolve mangen_plcTerm_list_subsumes : core.
 
 
-Lemma mangen_plcEvidence_subset_end_to_end_mangen : forall ls et tp cm,
+Lemma mangen_plcEvidenceT_subset_end_to_end_mangen : forall ls et tp cm,
   In (et, tp) ls ->
   (forall m m' p,
     forall envL, 
-      mangen_plcEvidence_list_union cm ls = resultC envL ->
+      mangen_plcEvidenceT_list_union cm ls = resultC envL ->
       map_get envL p = Some m' ->
       forall ts envL', 
         end_to_end_mangen cm ls ts = resultC envL' ->
@@ -775,9 +775,9 @@ Lemma mangen_subset_end_to_end_mangen_app : forall ls et tp,
 Proof.
   intuition; unfold end_to_end_mangen in *; ff.
   find_eapply_lem_hyp manifest_env_union_always_subset; intuition.
-  unfold mangen_plcEvidence_list_union in *.
+  unfold mangen_plcEvidenceT_list_union in *.
   ff.
-  pose proof (mangen_plcEvidence_list_spec _ _ _ _ _ _ H Heqr0 H0).
+  pose proof (mangen_plcEvidenceT_list_spec _ _ _ _ _ _ H Heqr0 H0).
   destruct (map_get (env_list_union l) p) eqn:E; ff.
   - unfold env_list_union in *.
     pose proof (manifest_part_of_fold_ind_impl_fold _ _ _ _ H3 H1 e_empty); break_exists; intuition; congruence.
@@ -866,8 +866,8 @@ Qed.
 Proof.
   intuition.
   unfold end_to_end_mangen in *; ff.
-  unfold mangen_plcEvidence_list_union,
-    manifest_generator_plcEvidence_list,
+  unfold mangen_plcEvidenceT_list_union,
+    manifest_generator_plcEvidenceT_list,
     mangen_plcTerm_list_union,
     manifest_generator_plcTerm_list in *; ff.
   eapply manifest_env_union_map_one_fwd in H0;
@@ -965,11 +965,11 @@ Proof.
 Qed.
 
 Lemma nodup_output_mangen_plcevlist_union : forall cm et res,
-  mangen_plcEvidence_list_union cm et = resultC res ->
+  mangen_plcEvidenceT_list_union cm et = resultC res ->
   NoDup (map fst res).
 Proof.
-  unfold mangen_plcEvidence_list_union,
-    manifest_generator_plcEvidence_list;
+  unfold mangen_plcEvidenceT_list_union,
+    manifest_generator_plcEvidenceT_list;
   intuition; ff.
   generalize dependent l.
   induction et; simpl in *.
@@ -1059,15 +1059,15 @@ Proof.
   repeat find_rewrite; eauto.
 Qed.
 
-Lemma mangen_plcEvidence_list_union_comp_map : forall cm et res,
-  mangen_plcEvidence_list_union cm et = resultC res ->
+Lemma mangen_plcEvidenceT_list_union_comp_map : forall cm et res,
+  mangen_plcEvidenceT_list_union cm et = resultC res ->
   (forall k v,
     map_get res k = Some v ->
     cm = (ASP_Compat_Map v)
   ).
 Proof.
-  unfold mangen_plcEvidence_list_union,
-    manifest_generator_plcEvidence_list;
+  unfold mangen_plcEvidenceT_list_union,
+    manifest_generator_plcEvidenceT_list;
   intuition; ff.
   assert (forall l', In l' l -> NoDup (map fst l')). {
     intuition.
@@ -1124,7 +1124,7 @@ Proof.
   assert (forall k v', 
     map_get e k = Some v' ->
     cm = ASP_Compat_Map v'). {
-      eapply mangen_plcEvidence_list_union_comp_map; eauto.
+      eapply mangen_plcEvidenceT_list_union_comp_map; eauto.
     }
   eapply (map_get_under_invariant (fun v => cm = ASP_Compat_Map v) e (Maps.map_map (fun m : Manifest => add_compat_map_manifest m cm) (mangen_plcTerm_list_union tp))); eauto.
   - eapply nodup_output_mangen_plcevlist_union; eauto.
@@ -1154,8 +1154,8 @@ Proof.
   
   destruct (manifest_generator_app cm et tp) eqn:E.
   - unfold end_to_end_mangen in *; ff.
-    unfold mangen_plcEvidence_list_union in *; ff.
-    unfold manifest_generator_plcEvidence_list in *; ff.
+    unfold mangen_plcEvidenceT_list_union in *; ff.
+    unfold manifest_generator_plcEvidenceT_list in *; ff.
     pose proof (result_map_spec _ _ _ _ H1 Heqr0);
     break_exists; intuition; congruence.
   - pose proof (mangen_exists_end_to_end_mangen_app et tp _ _ E).
@@ -1193,14 +1193,14 @@ Qed.
 Qed.
 Global Hint Resolve end_to_end_mangen_supports_all : core. *)
 
-Theorem manifest_generator_compiler_soundness_distributed_multiterm_app : forall et ts ls bs tp absMan cm sc aspBin env att_sess uuid,
+Theorem manifest_generator_compiler_soundness_distributed_multiterm_app : forall et ts ls bs tp absMan cm sc aspBin env att_sesplit_evt uuid,
   end_to_end_mangen cm ls ts = resultC env ->
   map_get env tp = Some absMan -> 
   In (et,tp) ls ->
   well_formed_manifest absMan ->
-  att_sess_supports_term_app att_sess et ->
+  att_sess_supports_term_app att_sesplit_evt et ->
   manifest_support_session_conf absMan sc ->
-  session_config_compiler (mkAM_Man_Conf absMan aspBin uuid) att_sess = sc ->
+  session_config_compiler (mkAM_Man_Conf absMan aspBin uuid) att_sesplit_evt = sc ->
   et_size et = length bs ->
   forall st,
 

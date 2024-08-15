@@ -25,7 +25,7 @@ Inductive AnnoTerm: Set :=
 | abseq: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm
 | abpar: Range -> Split -> AnnoTerm -> AnnoTerm -> AnnoTerm.
 
-(* Evidence Type size *)
+(* EvidenceT Type size *)
 Fixpoint esize t :=
   match t with
   | aasp _ _ => 1
@@ -1024,9 +1024,9 @@ Fixpoint aeval t p e :=
   | aasp _ x => eval (asp x) p e
   | aatt _ q x => aeval x q e
   | alseq _ t1 t2 => aeval t2 p (aeval t1 p e)
-  | abseq _ s t1 t2 => ss (aeval t1 p ((splitEv_T_l s e)))
+  | abseq _ s t1 t2 => split_evt (aeval t1 p ((splitEv_T_l s e)))
                          (aeval t2 p ((splitEv_T_r s e)))
-  | abpar _ s t1 t2 => ss (aeval t1 p ((splitEv_T_l s e)))
+  | abpar _ s t1 t2 => split_evt (aeval t1 p ((splitEv_T_l s e)))
                          (aeval t2 p ((splitEv_T_r s e)))
   end.
 

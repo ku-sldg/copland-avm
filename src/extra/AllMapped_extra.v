@@ -2,13 +2,13 @@ Require Import Term StAM Maps StructTactics Auto GenStMonad MonadVM.
 
 Require Import Coq.Program.Tactics Coq.Program.Equality.
 
-Inductive evMapped : Evidence -> AM_St -> Prop :=
-| evMappedMt : forall m, evMapped mt m
+Inductive evMapped : EvidenceT -> AM_St -> Prop :=
+| evMappedMt : forall m, evMapped mt_evtm
 | evMappedU : forall p i args e' m st,
     m = st_aspmap st ->
     evMapped e' st -> 
     (exists j, bound_to m (p,i) j) -> 
-    evMapped (uu i args p e') st
+    evMapped (asp_evt i args p e') st
 | evMappedG : forall e' m p st,
     m = st_sigmap st ->
     evMapped e' st ->
@@ -21,18 +21,18 @@ Inductive evMapped : Evidence -> AM_St -> Prop :=
 | evMappedN : forall e' m nid st,
     m = st_aspmap st ->
     evMapped e' st ->
-    evMapped (nn nid e') st 
+    evMapped (nonce_evt nid e') st 
 | evMappedS : forall e1 e2 st,
     evMapped e1 st ->
     evMapped e2 st ->
-    evMapped (ss e1 e2) st
+    evMapped (split_evt e1 e2) st
 | evMappedP : forall e1 e2 st,
     evMapped e1 st ->
     evMapped e2 st ->
     evMapped (pp e1 e2) st.
 
 
-Inductive allMapped : AnnoTerm -> AM_St -> Plc -> Evidence -> Prop :=
+Inductive allMapped : AnnoTerm -> AM_St -> Plc -> EvidenceT -> Prop :=
 | allMapped_cpy : forall r p st e,
     (*m = st_aspmap st -> *)
     (*p = am_pl st -> *)
@@ -65,22 +65,22 @@ Inductive allMapped : AnnoTerm -> AM_St -> Plc -> Evidence -> Prop :=
        evMapped e m -> *)  (* TODO: need this? *)
     (*p = am_pl st -> *)
     allMapped t1 st p e ->
-    allMapped t2 st p mt (*(eval (unanno t1) p e)*) -> (* TODO: is mt ok here? *)
+    allMapped t2 st p mt_evt(*(eval (unanno t1) p e)*) -> (* TODO: is mt_evtok here? *)
     allMapped (alseq r t1 t2) st p e
-| allMapped_bseq_nn : forall t1 t2 p st e r,
+| allMapped_bseq_nonce_evt : forall t1 t2 p st e r,
     (*p = am_pl st -> *)
-    allMapped t1 st p mt ->
-    allMapped t2 st p mt ->
+    allMapped t1 st p mt_evt->
+    allMapped t2 st p mt_evt->
     allMapped (abseq r (NONE,NONE) t1 t2) st p e
 | allMapped_bseq_na : forall t1 t2 p st e r,
     (*p = am_pl st -> *)
-    allMapped t1 st p mt ->
+    allMapped t1 st p mt_evt->
     allMapped t2 st p e ->
     allMapped (abseq r (NONE,ALL) t1 t2) st p e
 | allMapped_bseq_an : forall t1 t2 p st e r,
     (*p = am_pl st -> *)
     allMapped t1 st p e ->
-    allMapped t2 st p mt ->
+    allMapped t2 st p mt_evt->
     allMapped (abseq r (ALL,NONE) t1 t2) st p e
 | allMapped_bseq_aa : forall t1 t2 p st e r,
     (*p = am_pl st -> *)
@@ -88,20 +88,20 @@ Inductive allMapped : AnnoTerm -> AM_St -> Plc -> Evidence -> Prop :=
     allMapped t2 st p e ->
     allMapped (abseq r (ALL,ALL) t1 t2) st p e
               
-| allMapped_bpar_nn : forall t1 t2 p st e r,
+| allMapped_bpar_nonce_evt : forall t1 t2 p st e r,
     (*p = am_pl st -> *)
-    allMapped t1 st p mt ->
-    allMapped t2 st p mt ->
+    allMapped t1 st p mt_evt->
+    allMapped t2 st p mt_evt->
     allMapped (abpar r (NONE,NONE) t1 t2) st p e
 | allMapped_bpar_na : forall t1 t2 p st e r,
     (*p = am_pl st -> *)
-    allMapped t1 st p mt ->
+    allMapped t1 st p mt_evt->
     allMapped t2 st p e ->
     allMapped (abpar r (NONE,ALL) t1 t2) st p e
 | allMapped_bpar_an : forall t1 t2 p st e r,
    (* p = am_pl st -> *)
     allMapped t1 st p e ->
-    allMapped t2 st p mt ->
+    allMapped t2 st p mt_evt->
     allMapped (abpar r (ALL,NONE) t1 t2) st p e
 | allMapped_bpar_aa : forall t1 t2 p st e r,
     (*p = am_pl st ->*)
@@ -110,7 +110,7 @@ Inductive allMapped : AnnoTerm -> AM_St -> Plc -> Evidence -> Prop :=
     allMapped (abpar r (ALL,ALL) t1 t2) st p e.
 
 (*
-Definition allMapped (t:AnnoTerm) (a_st:AM_St) (p:Plc) (e:Evidence) : Prop :=
+Definition allMapped (t:AnnoTerm) (a_st:AM_St) (p:Plc) (e:EvidenceT) : Prop :=
   evMapped (eval (unanno t) p e) a_st.
  *)
 
@@ -121,11 +121,11 @@ Ltac debound :=
 
 Ltac evMappedFacts :=
   match goal with
-  | [H: evMapped (uu _ _ _ _) _ |- _] => invc H
+  | [H: evMapped (asp_evt _ _ _ _) _ |- _] => invc H
   | [H: evMapped (gg _ _) _ |- _] => invc H 
   | [H: evMapped (hh _ _) _ |- _] => invc H 
-  | [H: evMapped (nn _ _) _ |- _] => invc H
-  | [H: evMapped (ss _ _) _ |- _] => invc H
+  | [H: evMapped (nonce_evt _ _) _ |- _] => invc H
+  | [H: evMapped (split_evt _ _) _ |- _] => invc H
   | [H: evMapped (pp _ _) _ |- _] => invc H  
   end;
   destruct_conjs;
@@ -166,7 +166,7 @@ Ltac df :=
 
 Lemma allMappedSub' : forall a a_st e p,
     allMapped a a_st p e ->
-    allMapped a a_st p mt.
+    allMapped a a_st p mt_evt.
 Proof.
   induction a; intros.
   -
@@ -203,7 +203,7 @@ Proof.
     eauto.
   -
     allMappedFacts.
-    assert (allMapped a1 a_st p mt) by eauto.
+    assert (allMapped a1 a_st p mt_evt) by eauto.
     econstructor.
     eassumption.
     eassumption.
@@ -216,8 +216,8 @@ Proof.
 Defined.
 
 Lemma allMappedSub : forall a a_st t p n,
-    allMapped a a_st p (Term.eval t n mt) ->
-    allMapped a a_st p mt.
+    allMapped a a_st p (Term.eval t n mt_evt) ->
+    allMapped a a_st p mt_evt.
 Proof.
   intros.
   eapply allMappedSub'; eauto.

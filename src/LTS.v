@@ -19,12 +19,12 @@ Require Import PeanoNat Lia Preamble Term.
 (** * States *)
 
 Inductive St :=
-| stop: Plc -> Evidence -> St
-| conf: AnnoTerm -> Plc -> Evidence -> St
+| stop: Plc -> EvidenceT -> St
+| conf: AnnoTerm -> Plc -> EvidenceT -> St
 | rem: nat -> Plc -> St -> St
 | ls: St -> AnnoTerm -> St
-| bsl: nat -> St -> AnnoTerm -> Plc -> Evidence -> St
-| bsr: nat -> Evidence -> St -> St
+| bsl: nat -> St -> AnnoTerm -> Plc -> EvidenceT -> St
+| bsr: nat -> EvidenceT -> St -> St
 | bp: nat -> St -> St -> St.
 
 Fixpoint pl (s:St) :=
@@ -38,7 +38,7 @@ Fixpoint pl (s:St) :=
   | bp _ _ st => pl st
   end.
 
-(** The evidence associated with a state. *)
+(** The EvidenceT associated with a state. *)
 
 Fixpoint seval st :=
   match st with
@@ -46,9 +46,9 @@ Fixpoint seval st :=
   | conf t p e => aeval t p e
   | rem _ _ st => seval st
   | ls st t => aeval t (pl st) (seval st)
-  | bsl _ st t p e => ss (seval st) (aeval t p e)
-  | bsr _ e st => ss e (seval st)
-  | bp _ st0 st1 => ss (seval st0) (seval st1)
+  | bsl _ st t p e => split_evt (seval st) (aeval t p e)
+  | bsr _ e st => split_evt e (seval st)
+  | bp _ st0 st1 => split_evt (seval st0) (seval st1)
   end.
 
 (** * Labeled Transition System
@@ -122,7 +122,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
     forall j e p e',
       step (bsr j e (stop p e'))
            (Some (join (pred j) p))
-           (stop p (ss e e'))
+           (stop p (split_evt e e'))
 
 (** Branching Parallel composition *)
 
@@ -145,7 +145,7 @@ Inductive step: St -> option Ev -> St -> Prop :=
     forall j p e p' e',
       step (bp j (stop p e) (stop p' e'))
            (Some (join (pred j) p'))
-           (stop p' (ss e e')).
+           (stop p' (split_evt e e')).
 #[export] Hint Constructors step : core.
 
 (** A step preserves place. *)
@@ -158,7 +158,7 @@ Proof.
   induction H; simpl; auto.
 Qed.
 
-(** A step preserves evidence. *)
+(** A step preserves EvidenceT. *)
 
 Lemma step_seval:
   forall st0 ev st1,
@@ -420,7 +420,7 @@ Proof.
     eapply star_tran; eauto.
 Qed.
 
-(** * Progress *)
+(** * Progresplit_evt *)
 
 Definition halt st :=
   match st with

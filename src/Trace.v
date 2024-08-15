@@ -245,7 +245,7 @@ Qed.
     The traces associated with an annotated term are defined
     inductively. *)
 
-Inductive trace: AnnoTerm -> Plc -> Evidence ->
+Inductive trace: AnnoTerm -> Plc -> EvidenceT ->
                  list Ev -> Prop :=
 | tasp: forall r x p e,
     trace (aasp r x) p e [(asp_event (fst r) x p e)]
@@ -289,7 +289,7 @@ Proof.
 Qed.
 
 (** The events in a trace correspond to the events associated with an
-    annotated term, a place, and some evidence. *)
+    annotated term, a place, and some EvidenceT. *)
 
 
 Ltac inv_in :=

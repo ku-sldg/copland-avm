@@ -112,7 +112,7 @@ Definition extd_name_constant : string := "EXTD".
 Definition kill_name_constant : string := "KILL".
 Definition keep_name_constant : string := "KEEP".
 
-Definition mt_name_constant : string := "mt".
+Definition mt_name_constant : string := "mt_evt".
 Definition nn_name_constant : string := "nn".
 Definition uu_name_constant : string := "uu".
 Definition ss_name_constant : string := "ss".
@@ -353,27 +353,27 @@ jsonifiable_hammer.
 Defined.
 
 
-Fixpoint Evidence_to_JSON `{Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP_PARAMS} (e : Evidence) : JSON := 
+Fixpoint EvidenceT_to_JSON `{Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP_PARAMS} (e : EvidenceT) : JSON := 
   match e with
-  | mt => 
-      constructor_to_JSON STR_EVIDENCE mt_name_constant []
-  | nn n => 
-      constructor_to_JSON STR_EVIDENCE nn_name_constant [(to_JSON n)]
-  | uu plc fwd ps e' => 
-      constructor_to_JSON STR_EVIDENCE uu_name_constant 
+  | mt_evt=> 
+      constructor_to_JSON STR_EvidenceT mt_name_constant []
+  | nonce_evt n => 
+      constructor_to_JSON STR_EvidenceT nn_name_constant [(to_JSON n)]
+  | asp_evt plc fwd ps e' => 
+      constructor_to_JSON STR_EvidenceT uu_name_constant 
         [(JSON_String plc); (to_JSON fwd);
-          (to_JSON ps); Evidence_to_JSON e']
-  | ss e1 e2 => 
-      constructor_to_JSON STR_EVIDENCE ss_name_constant 
-        [(Evidence_to_JSON e1); (Evidence_to_JSON e2)]
+          (to_JSON ps); EvidenceT_to_JSON e']
+  | split_evt e1 e2 => 
+      constructor_to_JSON STR_EvidenceT ss_name_constant 
+        [(EvidenceT_to_JSON e1); (EvidenceT_to_JSON e2)]
   end.
 
-Fixpoint Evidence_from_JSON `{Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP_PARAMS} (js : JSON) : ResultT Evidence string :=
-    let type_name := STR_EVIDENCE in
+Fixpoint EvidenceT_from_JSON `{Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP_PARAMS} (js : JSON) : ResultT EvidenceT string :=
+    let type_name := STR_EvidenceT in
     match (JSON_get_Object (type_name ++ "_" ++ type_string_constant) js) with
     | resultC (JSON_String cons_name) =>
       if (eqb cons_name mt_name_constant) 
-      then resultC mt
+      then resultC mt_evt
       else if (eqb cons_name nn_name_constant) 
       then match js with
           | JSON_Object [
@@ -381,7 +381,7 @@ Fixpoint Evidence_from_JSON `{Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP_
               (_, n_js)
             ] =>
               n_js <- from_JSON n_js ;;
-              resultC (nn n_js)
+              resultC (nonce_evt n_js)
           | _ => errC ("JSON Parsing " ++ nn_name_constant ++ " ARGS:  wrong number of JSON args (expected 1)")
           end
       else if (eqb cons_name uu_name_constant) 
@@ -393,8 +393,8 @@ Fixpoint Evidence_from_JSON `{Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP_
               plc <- from_string plc ;;
               fwd <- from_JSON fwd ;;
               asp_par <- from_JSON asp_par ;;
-              ev' <- Evidence_from_JSON ev' ;;
-              resultC (uu plc fwd asp_par ev')
+              ev' <- EvidenceT_from_JSON ev' ;;
+              resultC (asp_evt plc fwd asp_par ev')
           | _ => errC ("JSON Parsing " ++ uu_name_constant ++ " ARGS:  wrong number of JSON args (expected 4)")
           end 
       else if (eqb cons_name ss_name_constant) 
@@ -403,18 +403,18 @@ Fixpoint Evidence_from_JSON `{Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP_
               _;
               (_, JSON_Array [ ev1; ev2 ])
            ] =>
-              ev1 <- Evidence_from_JSON ev1 ;;
-              ev2 <- Evidence_from_JSON ev2 ;;
-              resultC (ss ev1 ev2)
+              ev1 <- EvidenceT_from_JSON ev1 ;;
+              ev2 <- EvidenceT_from_JSON ev2 ;;
+              resultC (split_evt ev1 ev2)
           | _ => errC ("JSON Parsing " ++ ss_name_constant ++ " ARGS:  wrong number of JSON args (expected 2)")
           end 
-      else errC "Invalid Evidence JSON constructor name"
+      else errC "Invalid EvidenceT JSON constructor name"
     | resultC _ => errC ("Invalid " ++ type_name ++ " JSON:  no constructor name string")
     | errC e => errC e
     end.
 
-Global Instance Jsonifiable_Evidence `{Jsonifiable ASP_ARGS, Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP_PARAMS} : Jsonifiable Evidence.
-eapply Build_Jsonifiable with (to_JSON := Evidence_to_JSON) (from_JSON := Evidence_from_JSON).
+Global Instance Jsonifiable_EvidenceT `{Jsonifiable ASP_ARGS, Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP_PARAMS} : Jsonifiable EvidenceT.
+eapply Build_Jsonifiable with (to_JSON := EvidenceT_to_JSON) (from_JSON := EvidenceT_from_JSON).
 induction a; simpl in *;
 repeat (result_monad_unfold;
 jsonifiable_hammer; repeat rewrite canonical_jsonification in *).
