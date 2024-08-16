@@ -40,33 +40,33 @@ Definition sp_ev (sp:SP) (e:EvidenceT) : EvidenceT :=
   | NONE => mt_evt
   end.
 
-Fixpoint appr_procedure (aspCM : ASP_Compat_MapT) (p : Plc) (e:EvidenceT) 
+Fixpoint appr_procedure (G : GlobalContext) (p : Plc) (e:EvidenceT) 
     : ResultT EvidenceT string :=
   match e with
   | mt_evt => resultC mt_evt
   | nonce_evt n => resultC (asp_evt p check_nonce_params (nonce_evt n))
   | asp_evt asp_top_plc ps e' => 
     let '(asp_paramsC asp_id args targ_plc targ) := ps in
-    match (map_get aspCM asp_id) with
+    match (map_get (asp_comps G) asp_id) with
     | None => errC "Compatible Appraisal ASP not found in ASP Compat Map"%string
     | Some appr_id => 
       resultC (asp_evt p (asp_paramsC appr_id args targ_plc targ) e)
     end
   | split_evt e1 e2 => 
-      e1' <- appr_procedure aspCM p e1 ;;
-      e2' <- appr_procedure aspCM p e2 ;;
+      e1' <- appr_procedure G p e1 ;;
+      e2' <- appr_procedure G p e2 ;;
       resultC (split_evt e1' e2')
   end.
 
 (** Helper function for EvidenceT type reference semantics *)
-Definition eval_asp (G : ASP_Type_Env) (aspCM : ASP_Compat_MapT) (a : ASP) 
+Definition eval_asp (G : GlobalContext) (a : ASP) 
     (p : Plc) (e : EvidenceT) : ResultT EvidenceT string :=
   match a with
   | NULL => resultC mt_evt
   | CPY => resultC e
   | ASPC sp params =>
     let '(asp_paramsC asp_id args targ_plc targ) := params in
-    match map_get G asp_id with
+    match map_get (asp_types G) asp_id with
     | None => errC "ASP Type Signature not found in Environment"%string
     | Some fwd =>
       match fwd with
@@ -75,7 +75,7 @@ Definition eval_asp (G : ASP_Type_Env) (aspCM : ASP_Compat_MapT) (a : ASP)
       | _ => resultC (asp_evt p params (sp_ev sp e))
       end
     end
-  | APPR => appr_procedure aspCM p e
+  | APPR => appr_procedure G p e
   | SIG => resultC (asp_evt p sig_params e)
   | HSH => resultC (asp_evt p hsh_params e)
   | ENC q => resultC (asp_evt p (enc_params q) e)
@@ -84,52 +84,50 @@ Definition eval_asp (G : ASP_Type_Env) (aspCM : ASP_Compat_MapT) (a : ASP)
 (** EvidenceT Type denotational reference semantics.
     The EvidenceT associated with a term, a place, and some initial EvidenceT. *)
 
-Fixpoint asp_comp_map_supports_ev (aspCM : ASP_Compat_MapT) (e : EvidenceT) :=
+Fixpoint asp_comp_map_supports_ev (G : GlobalContext) (e : EvidenceT) :=
   match e with
   | mt_evt => True
   | nonce_evt n => True
   | asp_evt asp_top_plc ps e' => 
     let '(asp_paramsC asp_id args targ_plc targ) := ps in
-    map_get aspCM asp_id <> None
+    map_get (asp_comps G) asp_id <> None
   | split_evt e1 e2 => 
-      asp_comp_map_supports_ev aspCM e1 /\ 
-      asp_comp_map_supports_ev aspCM e2
+      asp_comp_map_supports_ev G e1 /\ 
+      asp_comp_map_supports_ev G e2
   end.
 
 Theorem asp_comp_map_supports_ev_iff_appr_procedure: 
-  forall e p aspCM,
-  asp_comp_map_supports_ev aspCM e <->
-  exists e', appr_procedure aspCM p e = resultC e'.
+  forall e p G,
+  asp_comp_map_supports_ev G e <->
+  exists e', appr_procedure G p e = resultC e'.
 Proof.
-  induction e; simpl in *; intros; try (intuition; eauto; ffa; fail).
-  - ff; intuition; try congruence; break_exists; try congruence;
-    result_monad_unfold; ff.
-  - ff; intuition; try congruence; break_exists; try congruence;
-    result_monad_unfold; ff;
-    try erewrite IHe1 in *;
-    try erewrite IHe2 in *;
-    break_exists; repeat find_rewrite; try congruence;
-    try (eexists; repeat find_rewrite; eauto; fail).
-    * rewrite Heqr in H; congruence.
-    * rewrite Heqr0 in H0; congruence. 
+  induction e; simpl in *; intros; try (intuition; eauto; ffa; fail);
+  ff; intuition; try congruence; break_exists; try congruence;
+  result_monad_unfold; ff;
+  try erewrite IHe1 in *;
+  try erewrite IHe2 in *;
+  break_exists; repeat find_rewrite; try congruence;
+  try (eexists; repeat find_rewrite; eauto; fail).
+  * rewrite Heqr in H; congruence.
+  * rewrite Heqr0 in H0; congruence. 
   Unshelve. all: eauto.
 Qed.
 
-Fixpoint eval (G : ASP_Type_Env) (aspCM : ASP_Compat_MapT) 
-    (t:Term) (p:Plc) (e:EvidenceT) : ResultT EvidenceT string :=
+Fixpoint eval (G : GlobalContext) (p : Plc) (e : EvidenceT) (t : Term) 
+    : ResultT EvidenceT string :=
   match t with
-  | asp a => eval_asp G aspCM a p e
-  | att q t1 => eval G aspCM t1 q e
+  | asp a => eval_asp G a p e
+  | att q t1 => eval G q e t1
   | lseq t1 t2 => 
-      e1 <- eval G aspCM t1 p e ;;
-      eval G aspCM t2 p e1 
+      e1 <- eval G p e t1 ;;
+      eval G p e1 t2
   | bseq s t1 t2 => 
-      e1 <- eval G aspCM t1 p (splitEv_T_l s e) ;; 
-      e2 <- eval G aspCM t2 p (splitEv_T_r s e) ;;
+      e1 <- eval G p (splitEv_T_l s e) t1 ;; 
+      e2 <- eval G p (splitEv_T_r s e) t2 ;;
       resultC (split_evt e1 e2)
   | bpar s t1 t2 => 
-      e1 <- eval G aspCM t1 p (splitEv_T_l s e) ;; 
-      e2 <- eval G aspCM t2 p (splitEv_T_r s e) ;;
+      e1 <- eval G p (splitEv_T_l s e) t1 ;; 
+      e2 <- eval G p (splitEv_T_r s e) t2 ;;
       resultC (split_evt e1 e2)
   end.
 

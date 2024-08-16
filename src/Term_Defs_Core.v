@@ -116,6 +116,11 @@ Inductive ASP :=
 
 Definition ASP_Type_Env := MapC ASP_ID FWD.
 
+Record GlobalContext := {
+  asp_types: ASP_Type_Env;
+  asp_comps: ASP_Compat_MapT
+}.
+
 (** Pair of EvidenceT splitters that indicate routing EvidenceT to subterms 
     of branching phrases *)
 Definition Split: Set := (SP * SP).
@@ -135,14 +140,14 @@ Inductive Term :=
 | bpar: Split -> Term -> Term -> Term.
 
 (**  Calculate the size of an EvidenceT type *)
-Fixpoint et_size (G : ASP_Type_Env) (e:EvidenceT)
+Fixpoint et_size (G : GlobalContext) (e:EvidenceT)
   : ResultT nat string :=
   match e with
   | mt_evt=> resultC 0
   | nonce_evt _ => resultC 1
   | asp_evt p par e' =>
     let '(asp_paramsC asp_id args targ_plc targ) := par in
-    match (map_get G asp_id) with
+    match (map_get (asp_types G) asp_id) with
     | None => errC "ASP Type Signature not found in Environment"%string
     | Some asp_fwd => 
       match asp_fwd with
@@ -184,14 +189,14 @@ Definition get_bits (e:Evidence): list BS :=
 
 (** A "well-formed" Evidence value is where the length of its raw EvidenceT portion
     has the proper size (calculated over the EvidenceT Type portion). *)
-Inductive wf_Evidence : ASP_Type_Env -> Evidence -> Prop :=
+Inductive wf_Evidence : GlobalContext -> Evidence -> Prop :=
 | wf_Evidence_c: forall (ls:RawEv) et G n,
     List.length ls = n ->
     et_size G et = resultC n ->
     wf_Evidence G (evc ls et).
 
 Inductive CopPhrase :=
-| cop_phrase : Plc -> Evidence -> Term -> CopPhrase.
+| cop_phrase : Plc -> EvidenceT -> Term -> CopPhrase.
 
 (* Adapted from Imp language Notation in Software Foundations (Pierce) *)
 Declare Custom Entry copland_entry.
