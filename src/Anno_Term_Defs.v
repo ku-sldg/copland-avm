@@ -98,49 +98,43 @@ Lemma termsub_transitive: forall t t' t'',
     term_sub t t''.
 Proof.  
   generalizeEverythingElse t''.
-  induction t'';
-    intros H H0; ff.
+  induction t''; intros; ff.
 Qed.
-
-Fixpoint anno_ev (e : EvidenceT) (i : nat) : nat :=
-  match e with
-  | mt_evt => (S i)
-  | nonce_evt n => (S i)
-  | asp_evt p par e' => S (anno_ev e' i)
-  | split_evt e1 e2 => 
-      let j := anno_ev e1 i in
-      anno_ev e2 j
-  end.
 
 (** This function annotates a term.  It feeds a natural number
     throughout the computation so as to ensure each event has a unique
     natural number. *)
-Fixpoint anno (e : EvidenceT) (t: Term) (i:nat) : (nat * AnnoTerm) :=
+Fixpoint anno (G : ASP_Type_Env) (e : EvidenceT) (t: Term) (i:nat) 
+    : ResultT (nat * AnnoTerm) string :=
   match t with
   | asp x => 
     match x with
-    | APPR => (anno_ev e i, aasp (i, anno_ev e i) x)
-    | _ => (S i, aasp (i, S i) x)
+    | APPR => 
+      match et_size G e with
+      | errC s => errC s
+      | resultC n => resultC (S (i + n), aasp (i, S (i + n)) x)
+      end
+    | _ => resultC (S i, aasp (i, S i) x)
     end
   
   | att p x =>
-    let '(j,a) := anno e x (S i)  in
-    (S j, aatt (i, S j) p a)
+    '(j, a) <- anno G e x (S i) ;;
+    resultC (S j, aatt (i, S j) p a)
 
   | lseq x y =>
-    let '(j,a) := anno e x i in
-    let '(k,bt) := anno e y j in
-    (k, alseq (i, k) a bt)
+    '(j, a) <- anno G e x i ;;
+    '(k, b) <- anno G e y j ;;
+    resultC (k, alseq (i, k) a b)
 
   | bseq s x y =>
-    let '(j,a) := anno e x (S i) in
-    let '(k,b) := anno e y j in
-    (S k, abseq (i, S k) s a b)
+    '(j, a) <- anno G e x (S i) ;;
+    '(k, b) <- anno G e y j ;;
+    resultC (S k, abseq (i, S k) s a b)
 
   | bpar s x y =>
-    let '(j,a) := anno e x (S i) in
-    let '(k,b) := anno e y j in
-    (S k, abpar (i, S k) s a b)
+    '(j, a) <- anno G e x (S i) ;;
+    '(k, b) <- anno G e y j ;;
+    resultC (S k, abpar (i, S k) s a b)
   end.
 
 Fixpoint unanno a :=
@@ -152,12 +146,13 @@ Fixpoint unanno a :=
   | abpar _ spl a1 a2 => bpar spl (unanno a1) (unanno a2)
   end.
 
-Lemma anno_unanno: forall e t i,
-    unanno (snd (anno e t i)) = t.
+Lemma anno_unanno: forall e t t' i i' G,
+  anno G e t i = resultC (i', t') ->
+  unanno t' = t.
 Proof.
   intros.
   generalizeEverythingElse t.
-  induction t; intros; ff; rw using ff.
+  induction t; intros; ffa using result_monad_unfold.
 Qed.
 
 (** eval (EvidenceT semantics) for annotated terms. *)
@@ -181,12 +176,16 @@ Fixpoint aeval (G : ASP_Type_Env) (cm : ASP_Compat_MapT) (t : AnnoTerm)
   end.
 
 Lemma eval_aeval:
-  forall e' t p e i G cm t',
-    t' = snd (anno e' t i) ->
+  forall t t' p e i i' G cm,
+    anno G e t i = resultC (i', t') ->
     eval G cm t p e = aeval G cm t' p e.
 Proof.
   induction t; simpl in *; 
-  intuition; eauto; ff.
+  intuition; eauto; ff;
+  result_monad_unfold; ff;
+  result_monad_unfold; ff; 
+  rw; eauto.
+  result_monad_unfold; ff.
   - eapply IHt; rw; eauto.
   - erewrite IHt1; eauto; rw;
     result_monad_unfold; ff;
@@ -250,7 +249,7 @@ Lemma same_anno_range: forall t i a b e n n',
     anno e t i = (n',b) ->
     n = n'.
 Proof.
-  induction t; intros; ff.
+  intros; find_rewrite; find_injection; eauto.
 Qed.
 
 Lemma anno_ev_mono : forall e i,
@@ -291,6 +290,7 @@ Proof.
   try (repeat find_apply_lem_hyp anno_range;
     repeat find_rewrite; ff; fail); 
     try assert (n > S i) by eauto; lia).
+  econstructor; simpl in *.
 Qed.
 
 (* Computes the length of the "span" or range of event IDs for a given Term *)
