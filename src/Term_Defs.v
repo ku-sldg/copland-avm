@@ -22,87 +22,6 @@ Require Export Params_Admits.
 
 Require Export Term_Defs_Core.
 
-Fixpoint appr_asp_to_core (cm : ASP_Compat_MapT) (e : EvidenceT) 
-    : ResultT Core_Term string :=
-  match e with
-  | mt_evt => resultC (aspc NULLC)
-  | nonce_evt n => resultC (aspc (ASPCC check_nonce_params))
-  | asp_evt p ps e' => 
-    let '(asp_paramsC asp_id args targ_plc targ) := ps in
-    match (map_get cm asp_id) with
-    | None => errC "Compatible Appraisal ASP not found in ASP Compat Map"%string
-    | Some appr_id => resultC (aspc (ASPCC (asp_paramsC appr_id args targ_plc targ)))
-    end
-  | split_evt e1 e2 => 
-      e1' <- appr_asp_to_core cm e1 ;;
-      e2' <- appr_asp_to_core cm e2 ;;
-      resultC (bseqc e1' e2')
-  end.
-
-(**  Translating a primitive Copland phrase to its Core_Term equivalent *)
-Definition asp_term_to_core (cm : ASP_Compat_MapT) (e : EvidenceT) (a:ASP) 
-    : ResultT Core_Term string :=
-  match a with
-  | NULL => resultC (aspc NULLC)
-  | CPY => resultC (aspc CPYC)
-  | ASPC sp params =>
-    match sp with
-    | NONE => resultC (lseqc (aspc CLEAR) (aspc (ASPCC params)))
-    | ALL => resultC ((aspc (ASPCC params)))
-    end                
-  | SIG => resultC (aspc (ASPCC sig_params))
-  | APPR => appr_asp_to_core cm e
-  | HSH => resultC (aspc (ASPCC hsh_params))
-  | ENC q => resultC (aspc (ASPCC (enc_params q)))
-  end.
-
-(**  Translating a Copland phrase to its Core_Term equivalent *)
-Fixpoint copland_compile (cm : ASP_Compat_MapT) (e : EvidenceT) (t:Term) 
-    : ResultT Core_Term string :=
-  match t with
-  | asp a => (asp_term_to_core cm e a)
-  | att q t' => resultC (attc q t')
-
-  | lseq t1 t2 => 
-      t1' <- copland_compile cm e t1 ;;
-      t2' <- copland_compile cm e t2 ;;
-      resultC (lseqc t1' t2')
-
-  | bseq (ALL,ALL) t1 t2 =>
-      t1' <- copland_compile cm e t1 ;;
-      t2' <- copland_compile cm e t2 ;;
-      resultC (bseqc t1' t2')
-  | bseq (ALL,NONE) t1 t2 =>
-      t1' <- copland_compile cm e t1 ;;
-      t2' <- copland_compile cm e t2 ;;
-      resultC (bseqc t1' (lseqc (aspc CLEAR) t2'))
-  | bseq (NONE,ALL) t1 t2 =>
-      t1' <- copland_compile cm e t1 ;;
-      t2' <- copland_compile cm e t2 ;;
-      resultC (bseqc (lseqc (aspc CLEAR) t1') t2')
-  | bseq (NONE,NONE) t1 t2 =>
-      t1' <- copland_compile cm e t1 ;;
-      t2' <- copland_compile cm e t2 ;;
-      resultC (bseqc (lseqc (aspc CLEAR) t1') (lseqc (aspc CLEAR) t2'))
-          
-  | bpar (ALL,ALL) t1 t2 =>
-      t1' <- copland_compile cm e t1 ;;
-      t2' <- copland_compile cm e t2 ;;
-      resultC (bparc O t1' t2')
-  | bpar (ALL,NONE) t1 t2 =>
-      t1' <- copland_compile cm e t1 ;;
-      t2' <- copland_compile cm e t2 ;;
-      resultC (bparc O t1' (lseqc (aspc CLEAR) t2'))
-  | bpar (NONE,ALL) t1 t2 =>
-      t1' <- copland_compile cm e t1 ;;
-      t2' <- copland_compile cm e t2 ;;
-      resultC (bparc O (lseqc (aspc CLEAR) t1') t2')
-  | bpar (NONE,NONE) t1 t2 =>
-      t1' <- copland_compile cm e t1 ;;
-      t2' <- copland_compile cm e t2 ;;
-      resultC (bparc O (lseqc (aspc CLEAR) t1') (lseqc (aspc CLEAR) t2'))
-  end.
-
 Definition splitEv_T_l (sp:Split) (e:EvidenceT) : EvidenceT :=
   match sp with
   | (ALL,_) => e
@@ -173,7 +92,8 @@ Fixpoint asp_comp_map_supports_ev (aspCM : ASP_Compat_MapT) (e : EvidenceT) :=
     let '(asp_paramsC asp_id args targ_plc targ) := ps in
     map_get aspCM asp_id <> None
   | split_evt e1 e2 => 
-      asp_comp_map_supports_ev aspCM e1 /\ asp_comp_map_supports_ev aspCM e2
+      asp_comp_map_supports_ev aspCM e1 /\ 
+      asp_comp_map_supports_ev aspCM e2
   end.
 
 Theorem asp_comp_map_supports_ev_iff_appr_procedure: 
@@ -233,7 +153,7 @@ Inductive Ev :=
 | rpy: nat -> Plc -> Plc -> EvidenceT -> Ev 
 | split: nat -> Plc -> Ev
 | join:  nat -> Plc -> Ev
-| cvm_thread_start: nat -> Loc -> Plc -> Core_Term -> EvidenceT -> Ev
+| cvm_thread_start: nat -> Loc -> Plc -> Term -> EvidenceT -> Ev
 | cvm_thread_end: nat -> Loc -> Ev.
 
 (** The natural number used to distinguish events. *)

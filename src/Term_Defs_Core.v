@@ -225,51 +225,10 @@ Notation "'<<' x y z '>>'" := (asp (ASPC ALL (EXTD 1) (asp_paramsC x nil y z)))
 (* @ plc phrase *)
 Notation "@ p [ ph ]" := (att p ph) (in custom copland_entry at level 50).
 
-(** Copland Core_Term primitive datatypes *)
-Inductive ASP_Core :=
-| NULLC: ASP_Core
-| CLEAR: ASP_Core
-| CPYC: ASP_Core
-| ASPCC: ASP_PARAMS -> ASP_Core.
-
 (** Abstract Location identifiers used to aid in management and execution 
     of parallel Copland phrases. *)
 Definition Loc: Set := nat.
 Definition Locs: Set := list Loc.
-
-(** Copland Core_Term definition.  Compilation target of the Copland Compiler, 
-    execution language of the Copland VM (CVM). *)
-Inductive Core_Term :=
-| aspc: ASP_Core -> Core_Term
-| attc: Plc -> Term -> Core_Term
-| lseqc: Core_Term -> Core_Term -> Core_Term
-| bseqc: Core_Term -> Core_Term -> Core_Term
-| bparc: Loc -> Core_Term -> Core_Term -> Core_Term.
-
-Declare Custom Entry core_copland_entry.
-Declare Scope core_cop_ent_scope.
-Notation "<<core>{ e }>" := e (at level 0, e custom core_copland_entry at level 99) : core_cop_ent_scope.
-Notation "( x )" := x (in custom core_copland_entry, x at level 99) : core_cop_ent_scope.
-Notation "x" := x (in custom core_copland_entry at level 0, x constr at level 0) : core_cop_ent_scope.
-(* Branches*)
-Notation "x < y" := (bseqc x y) (in custom core_copland_entry at level 70, right associativity).
-Notation "x ~ l y" := (bparc l x y) (in custom core_copland_entry at level 70, right associativity).
-(* ARROW sequences *)
-Notation "x -> y" := (lseqc x y) (in custom core_copland_entry at level 99, right associativity).
-(* ASP_CORE's *)
-Notation "'__'" := (aspc CPYC) (in custom core_copland_entry at level 98).
-Notation "'{}'" := (aspc NULLC) (in custom core_copland_entry at level 98).
-Notation "'CLR'" := (aspc CLEAR) (in custom core_copland_entry at level 98).
-Notation "'<<' F x y z '>>'" := (aspc (ASPCC F (asp_paramsC x nil y z))) 
-                      (in custom core_copland_entry at level 98).
-(* @ plc phrase *)
-Notation "@ p [ ph ]" := (attc p ph) (in custom core_copland_entry at level 50).
-
-
-Open Scope core_cop_ent_scope.
-Definition test2 := <<core>{ __ -> {} }>.
-Example test2ex : test2 = (lseqc (aspc CPYC) (aspc NULLC)). reflexivity. Qed.
-Example test3 : <<core>{ CLR -> {}}> = (lseqc (aspc CLEAR) (aspc NULLC)). reflexivity. Qed.
 
 Close Scope string_scope.
 

@@ -102,6 +102,16 @@ Proof.
     intros H H0; ff.
 Qed.
 
+Fixpoint anno_ev (e : EvidenceT) (i : nat) : nat :=
+  match e with
+  | mt_evt => (S i)
+  | nonce_evt n => (S i)
+  | asp_evt p par e' => S (anno_ev e' i)
+  | split_evt e1 e2 => 
+      let j := anno_ev e1 i in
+      anno_ev e2 j
+  end.
+
 (** This function annotates a term.  It feeds a natural number
     throughout the computation so as to ensure each event has a unique
     natural number. *)
@@ -109,13 +119,8 @@ Fixpoint anno (e : EvidenceT) (t: Term) (i:nat) : (nat * AnnoTerm) :=
   match t with
   | asp x => 
     match x with
-    | NULL => (S i, aasp (i, S i) NULL)
-    | CPY => (S i, aasp (i, S i) CPY)
-    | ASPC sp par => (S i, (aasp (i, S i) (ASPC sp par)))
-    | SIG => (S i, aasp (i, S i) SIG)
-    | HSH => (S i, aasp (i, S i) HSH)
-    | APPR => 
-    | ENC p => (S i, aasp (i, S i) (ENC p))
+    | APPR => (anno_ev e i, aasp (i, anno_ev e i) x)
+    | _ => (S i, aasp (i, S i) x)
     end
   
   | att p x =>
@@ -138,9 +143,6 @@ Fixpoint anno (e : EvidenceT) (t: Term) (i:nat) : (nat * AnnoTerm) :=
     (S k, abpar (i, S k) s a b)
   end.
 
-Definition annotated x :=
-  snd (anno x 0).
-
 Fixpoint unanno a :=
   match a with
   | aasp _ a => asp a
@@ -150,8 +152,8 @@ Fixpoint unanno a :=
   | abpar _ spl a1 a2 => bpar spl (unanno a1) (unanno a2)
   end.
 
-Lemma anno_unanno: forall t i,
-    unanno (snd (anno t i)) = t.
+Lemma anno_unanno: forall e t i,
+    unanno (snd (anno e t i)) = t.
 Proof.
   intros.
   generalizeEverythingElse t.
@@ -179,77 +181,99 @@ Fixpoint aeval (G : ASP_Type_Env) (cm : ASP_Compat_MapT) (t : AnnoTerm)
   end.
 
 Lemma eval_aeval:
-  forall t p e i G cm t',
-    t' = snd (anno t i) ->
+  forall e' t p e i G cm t',
+    t' = snd (anno e' t i) ->
     eval G cm t p e = aeval G cm t' p e.
 Proof.
-  induction t; simpl in *; intuition; eauto;
-  ff;
-  try (erewrite IHt1; rw; eauto;
-  erewrite IHt2; rw; eauto).
+  induction t; simpl in *; 
+  intuition; eauto; ff.
   - eapply IHt; rw; eauto.
-  - erewrite IHt1; rw; eauto;
-    ffa using (result_monad_unfold; eauto);
-    erewrite IHt2; rw; eauto.
+  - erewrite IHt1; eauto; rw;
+    result_monad_unfold; ff;
+    eapply IHt2; rw; eauto.
+  - erewrite IHt1; eauto; rw;
+    erewrite IHt2; eauto; rw;
+    eauto.
+  - erewrite IHt1; eauto; rw;
+    erewrite IHt2; eauto; rw;
+    eauto.
 Qed.
-
 
 (** This predicate determines if an annotated term is well formed,
     that is if its ranges correctly capture the relations between a
     term and its associated events. *)
-Inductive well_formed_r_annt: AnnoTerm -> Prop :=
-| wf_asp_r_annt: forall r x,
-    snd r = S (fst r) ->
-    well_formed_r_annt (aasp r x)
+Inductive well_formed_r_annt
+    : ASP_Type_Env -> EvidenceT -> AnnoTerm -> Prop :=
+| wf_asp_r_annt: forall r e x G n,
+    match x with 
+    | APPR => et_size G e 
+    | _ => resultC 0 end = resultC n ->
+    snd r = S (fst r) + n ->
+    well_formed_r_annt G e (aasp r x)
 
-| wf_att_r_annt: forall r p x,
-    well_formed_r_annt x ->
+| wf_att_r_annt: forall r p x e G,
+    well_formed_r_annt G e x ->
     S (fst r) = fst (range x) ->
     snd r = S (snd (range x)) ->
     Nat.pred (snd r) > fst r ->
-    well_formed_r_annt (aatt r p x)               
+    well_formed_r_annt G e (aatt r p x)               
 
-| wf_lseq_r_annt: forall r x y,
-    well_formed_r_annt x -> well_formed_r_annt y ->
+| wf_lseq_r_annt: forall r x y e G,
+    well_formed_r_annt G e x -> 
+    well_formed_r_annt G e y ->
     fst r = fst (range x) ->
     snd (range x) = fst (range y) ->
     snd r = snd (range y) -> 
-    well_formed_r_annt (alseq r x y)               
-| wf_bseq_r_annt: forall r s x y,
-    well_formed_r_annt x -> well_formed_r_annt y ->
+    well_formed_r_annt G e (alseq r x y)               
+
+| wf_bseq_r_annt: forall r s x y e G,
+    well_formed_r_annt G e x -> 
+    well_formed_r_annt G e y ->
     S (fst r) = fst (range x) ->
     snd (range x) = fst (range y) ->
     snd r = S (snd (range y)) ->  
-    well_formed_r_annt (abseq r s x y)              
-| wf_bpar_r_annt: forall r s x y,
-    well_formed_r_annt x -> well_formed_r_annt y ->  
+    well_formed_r_annt G e (abseq r s x y)              
+
+| wf_bpar_r_annt: forall r s x y e G,
+    well_formed_r_annt G e x -> 
+    well_formed_r_annt G e y ->  
     S (fst r) = fst (range x) ->
     snd (range x) = fst (range y) ->
     (snd r) = S (snd (range y)) ->
     (*fst (range y) > fst (range x) -> *)
-    well_formed_r_annt (abpar r s x y).
+    well_formed_r_annt G e (abpar r s x y).
 #[export] Hint Constructors well_formed_r_annt : core.
 
 
-Lemma same_anno_range: forall t i a b n n',
-    anno t i = (n,a) ->
-    anno t i = (n',b) ->
+Lemma same_anno_range: forall t i a b e n n',
+    anno e t i = (n,a) ->
+    anno e t i = (n',b) ->
     n = n'.
 Proof.
   induction t; intros; ff.
 Qed.
-  
-Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm),
-  anno t i = (j,t') ->
+
+Lemma anno_ev_mono : forall e i,
+  anno_ev e i > i.
+Proof.
+  induction e; simpl in *; intros; try lia.
+  - pose proof (IHe i); lia. 
+  - pose proof (IHe1 i);
+    pose proof (IHe2 (anno_ev e1 i)); lia.
+Qed.
+
+Lemma anno_mono : forall (t:Term) (i j:nat) (t':AnnoTerm) e,
+  anno e t i = (j,t') ->
   j > i.
 Proof.
-  induction t; intuition; ffa; try lia.
+  induction t; intuition; ffa; try lia;
+  eapply anno_ev_mono.
 Qed.
 #[export] Hint Resolve anno_mono : core.
 
 Lemma anno_range:
-  forall x i j t',
-     anno x i = (j,t') ->
+  forall x i j t' e,
+    anno e x i = (j,t') ->
     range (t') = (i, j).
 Proof.
   induction x; intros; ff.
@@ -258,15 +282,15 @@ Qed.
 
 (** Lemma stating that any annotated term produced via anno is well formed *)
 Lemma anno_well_formed_r:
-  forall t i j t',
-    anno t i = (j, t') ->
-    well_formed_r_annt t'.
+  forall t i j t' G e,
+    anno e t i = (j, t') ->
+    well_formed_r_annt G e t'.
 Proof.
   induction t; intros; ff;
-  econstructor; ff;
+  try (econstructor; ff;
   try (repeat find_apply_lem_hyp anno_range;
-    repeat find_rewrite; ff; fail);
-  assert (n > S i) by eauto; lia.
+    repeat find_rewrite; ff; fail); 
+    try assert (n > S i) by eauto; lia).
 Qed.
 
 (* Computes the length of the "span" or range of event IDs for a given Term *)
