@@ -34,7 +34,7 @@ Manifest_JSON.v
 Session_Config_Compiler.v
 Cvm_St.v
 IO_Stubs.v
-Anno_Term_Defs.v
+# Anno_Term_Defs.v
 Eqb_Evidence.v
 Term.v
 Event_system.v

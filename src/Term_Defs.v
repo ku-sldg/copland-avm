@@ -15,7 +15,7 @@ This proof script is free software: you can redistribute it and/or
 modify it under the terms of the BSD License as published by the
 University of California.  See license.txt for details. *)
 
-Require Import Maps EqClass List ID_Type Defs.
+Require Import Maps EqClass List ID_Type Defs ErrorStringConstants Lia.
 Import ListNotations ResultNotation.
 
 Require Export Params_Admits.
@@ -48,7 +48,7 @@ Fixpoint appr_procedure (G : GlobalContext) (p : Plc) (e:EvidenceT)
   | asp_evt asp_top_plc ps e' => 
     let '(asp_paramsC asp_id args targ_plc targ) := ps in
     match (map_get (asp_comps G) asp_id) with
-    | None => errC "Compatible Appraisal ASP not found in ASP Compat Map"%string
+    | None => errC err_str_asp_no_compat_appr_asp
     | Some appr_id => 
       resultC (asp_evt p (asp_paramsC appr_id args targ_plc targ) e)
     end
@@ -67,7 +67,7 @@ Definition eval_asp (G : GlobalContext) (a : ASP)
   | ASPC sp params =>
     let '(asp_paramsC asp_id args targ_plc targ) := params in
     match map_get (asp_types G) asp_id with
-    | None => errC "ASP Type Signature not found in Environment"%string
+    | None => errC err_str_asp_no_type_sig
     | Some fwd =>
       match fwd with
       | KEEP => resultC (sp_ev sp e)
@@ -156,6 +156,61 @@ Inductive Ev :=
 
 (** The natural number used to distinguish events. *)
 
+Fixpoint appr_events_size (G : GlobalContext) (e : EvidenceT) : ResultT nat string :=
+  match e with
+  | mt_evt => resultC 0
+  | nonce_evt _ => resultC 1 (* [umeas check_nonce nonce] *)
+  | asp_evt p par e' => resultC 1 (* Single dual appr asp for 1 *)
+    (* let '(asp_paramsC asp_id args targ_plc targ) := par in
+    match (map_get (asp_types G) asp_id) with
+    | None => errC err_str_asp_no_type_sig
+    | Some asp_fwd => 
+      match asp_fwd with
+      | COMP => resultC 1 (* Single dual appr asp for 1 *)
+      | ENCR => resultC 1 (* Single dual appr asp for 1 *)
+      | (EXTD n) => resultC 1 (* Single dual appr asp for 1 *)
+      | KILL => resultC 0 (* this asp returns only mt_evc, which is appr as mt_evc too *)
+      | KEEP => 
+        n <- et_size G e' ;; (* this asp operates on stuff of size n, and returns of size n *)
+        resultC (1 + n) (* they returned n, we do +1 for appr on top *)
+      end
+    end *)
+  | split_evt e1 e2 =>
+    s1 <- appr_events_size G e1 ;;
+    s2 <- appr_events_size G e2 ;;
+    resultC (2 + s1 + s2) (* split (1) + s1 evs + s2 evs + join (1) *)
+  end.
+
+(* EvidenceT Type size *)
+Fixpoint events_size (G : GlobalContext) (p : Plc) (e : EvidenceT) (t : Term)
+    : ResultT nat string :=
+  match t with
+  | asp a => 
+    match a with
+    | APPR => appr_events_size G e (* appraisal does # of events based on ev type *)
+    | _ => resultC 1 (* all other ASPs do 1 event for meas *)
+    end
+  | att p' t1 => 
+    e' <- events_size G p' e t1 ;; (* remotely e' events are done *)
+    resultC (2 + e') (* +1 for req, +e' for rem evs, +1 for rpy *)
+
+  | lseq t1 t2 => 
+    e1 <- events_size G p e t1 ;; (* first e1 events are done *)
+    e' <- eval G p e t1 ;; (* we need a new evidence type for next step *)
+    e2 <- events_size G p e' t2 ;; (* next e2 events are done *)
+    resultC (e1 + e2) (* +e1 for first evs, +e2 for second evs *)
+  
+  | bseq s t1 t2 => 
+    e1 <- events_size G p (splitEv_T_l s e) t1 ;; (* left does e1 events *)
+    e2 <- events_size G p (splitEv_T_r s e) t2 ;; (* right does e2 events *)
+    resultC (2 + e1 + e2) (* +1 for split; +e1,+e2 for sides, +1 for join *)
+  | bpar s t1 t2 => 
+    e1 <- events_size G p (splitEv_T_l s e) t1 ;; (* left does e1 events *)
+    e2 <- events_size G p (splitEv_T_r s e) t2 ;; (* right does e2 events *)
+    resultC (2 + e1 + e2) (* +1 for thread_split; +e1,+e2 for sides, +1 for thread_join *)
+  end.
+
+
 Definition ev x : nat :=
   match x with
   | null i _ => i
@@ -168,52 +223,52 @@ Definition ev x : nat :=
   | cvm_thread_start i _ _ _ _ => i
   | cvm_thread_end i _ => i
   end.
-(* 
-(** The natural number indicating the place where an event occured. *)
-Definition pl x : Plc :=
-  match x with
-  | null _ p => p
-  | copy _ p => p
-  | umeas _ p _ _ => p
-  | req _ p _ _ _ => p
-  | rpy _ p _ _ => p
-  | split _ p => p
-  | join _ p => p
-  | cvm_thread_start _ p _ _ => p
-  | cvm_thread_end _ => 45
-  end. *)
 
-(** Events are used in a manner that ensures that
-[[
-    forall e0 e1, ev e0 = ev e1 -> e0 = e1.
-]]
-See Lemma [events_injective].
- *)
-
-
-Fixpoint asp_event (aspCM : ASP_Compat_MapT) (i : nat) (a : ASP) 
-    (p : Plc) (e : EvidenceT) : ResultT Ev string :=
+Fixpoint asp_events (G : GlobalContext) (p : Plc) (e : EvidenceT) (a : ASP) (i : nat) 
+    : ResultT (list Ev) string :=
   match a with
-  | NULL => resultC (null i p)
-  | CPY => resultC (copy i p)
-  | ASPC sp ps => resultC (umeas i p ps (sp_ev sp e))
+  | NULL => resultC ([null i p])
+  | CPY => resultC ([copy i p])
+  | ASPC sp ps => resultC ([umeas i p ps (sp_ev sp e)])
   | APPR => 
     match e with
-    | mt_evt => resultC (null i p)
-    | nonce_evt n => resultC (umeas i p check_nonce_params (nonce_evt n))
+    | mt_evt => resultC ([])
+    | nonce_evt n => resultC ([umeas i p check_nonce_params (nonce_evt n)])
     | asp_evt p' ps e' => 
       let '(asp_paramsC asp_id args targ_plc targ) := ps in
-      match (map_get aspCM asp_id) with
-      | None => errC "Compatible Appraisal ASP not found in ASP Compat Map"%string
+      match (map_get (asp_comps G) asp_id) with
+      | None => errC err_str_asp_no_compat_appr_asp
       | Some appr_id => 
-        resultC (umeas i p (asp_paramsC appr_id args targ_plc targ) e)
+        resultC ([umeas i p (asp_paramsC appr_id args targ_plc targ) e])
       end
     | split_evt e1 e2 => 
-        e1' <- asp_event aspCM i a p e1 ;;
-        e2' <- asp_event aspCM i a p e2 ;;
-        resultC (join i p)
+        e1' <- asp_events G p e1 a (S i) ;;
+        let next_i := (S i) + (List.length e1') in
+        e2' <- asp_events G p e2 a next_i ;;
+        let last_i := next_i + (List.length e2') in
+        resultC ([split i p] ++ e1' ++ e2' ++ [join last_i p])
     end
-  | SIG => resultC (umeas i p sig_params e)
-  | HSH => resultC (umeas i p hsh_params e)
-  | ENC q => resultC (umeas i p (enc_params q) e)
+  | SIG => resultC ([umeas i p sig_params e])
+  | HSH => resultC ([umeas i p hsh_params e])
+  | ENC q => resultC ([umeas i p (enc_params q) e])
   end.
+
+Lemma asp_appr_events_size_works : forall G p e i evs,
+  asp_events G p e APPR i = resultC evs ->
+  appr_events_size G e = resultC (List.length evs).
+Proof.
+  induction e; simpl in *; intros; try find_injection; 
+  ffa using result_monad_unfold;
+  repeat rewrite app_length; simpl in *; 
+  f_equal; lia.
+Qed.
+
+Lemma asp_events_size_works : forall G p a e i evs,
+  asp_events G p e a i = resultC evs ->
+  events_size G p e (asp a) = resultC (List.length evs).
+Proof.
+  induction a; intros; simpl in *; 
+  try eapply asp_appr_events_size_works; eauto;
+  simpl in *; intuition; destruct e; simpl in *;
+  repeat find_injection; ff; result_monad_unfold; ff.
+Qed.

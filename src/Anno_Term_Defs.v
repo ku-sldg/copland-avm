@@ -32,31 +32,51 @@ Inductive AnnoTerm :=
 Inductive AnnoCopPhrase :=
 | anno_cop_phrase : Plc -> EvidenceT -> AnnoTerm -> AnnoCopPhrase.
 
+Fixpoint aeval (G : GlobalContext) (p : Plc) (e : EvidenceT) (t : AnnoTerm) 
+    : ResultT EvidenceT string :=
+  match t with
+  | aasp _ x => eval G p e (asp x)
+  | aatt _ q x => aeval G q e x
+  | alseq _ t1 t2 => 
+      e1 <- aeval G p e t1 ;;
+      aeval G p e1 t2
+  | abseq _ s t1 t2 => 
+      e1 <- aeval G p (splitEv_T_l s e) t1 ;;
+      e2 <- aeval G p (splitEv_T_r s e) t2 ;;
+      resultC (split_evt e1 e2)
+  | abpar _ s t1 t2 => 
+      e1 <- aeval G p (splitEv_T_l s e) t1 ;;
+      e2 <- aeval G p (splitEv_T_r s e) t2 ;;
+      resultC (split_evt e1 e2)
+  end.
+
 (* EvidenceT Type size *)
-Fixpoint esize (G : GlobalContext) (e : EvidenceT) (t : AnnoTerm)
+Fixpoint events_size (G : GlobalContext) (p : Plc) (e : EvidenceT) (t : Term)
     : ResultT nat string :=
   match t with
-  | aasp _ a => 
+  | asp a => 
     match a with
-    | APPR => et_size G e
-    | _ => resultC 1
+    | APPR => appr_et_size G e (* appraisal does # of events based on ev type *)
+    | _ => resultC 1 (* all other ASPs do 1 event for meas *)
     end
-  | aatt _ _ t1 => 
-    e' <- esize G e t1 ;;
-    resultC (2 + e')
-  | alseq _ t1 t2 => 
-    e1 <- esize G e t1 ;;
-    e2 <- esize G e t2 ;;
-    resultC (e1 + e2)
+  | att p' t1 => 
+    e' <- events_size G p' e t1 ;; (* remotely e' events are done *)
+    resultC (2 + e') (* +1 for req, +e' for rem evs, +1 for rpy *)
+
+  | lseq t1 t2 => 
+    e1 <- events_size G p e t1 ;; (* first e1 events are done *)
+    e' <- eval G p e t1 ;; (* we need a new evidence type for next step *)
+    e2 <- events_size G p e' t2 ;; (* next e2 events are done *)
+    resultC (e1 + e2) (* +e1 for first evs, +e2 for second evs *)
   
-  | abseq _ _ t1 t2 => 
-    e1 <- esize G e t1 ;;
-    e2 <- esize G e t2 ;;
-    resultC (2 + e1 + e2)
-  | abpar _ _ t1 t2 => 
-    e1 <- esize G e t1 ;;
-    e2 <- esize G e t2 ;;
-    resultC (2 + e1 + e2)
+  | bseq s t1 t2 => 
+    e1 <- events_size G p (splitEv_T_l s e) t1 ;; (* left does e1 events *)
+    e2 <- events_size G p (splitEv_T_r s e) t2 ;; (* right does e2 events *)
+    resultC (2 + e1 + e2) (* +1 for split; +e1,+e2 for sides, +1 for join *)
+  | bpar s t1 t2 => 
+    e1 <- events_size G p (splitEv_T_l s e) t1 ;; (* left does e1 events *)
+    e2 <- events_size G p (splitEv_T_r s e) t2 ;; (* right does e2 events *)
+    resultC (2 + e1 + e2) (* +1 for split; +e1,+e2 for sides, +1 for join *)
   end.
 
 (* Extract Range from each annotated term *)
@@ -106,36 +126,16 @@ Qed.
 
 (** eval (EvidenceT semantics) for annotated terms. *)
 
-Fixpoint aeval (G : GlobalContext) (p : Plc) (e : EvidenceT) (t : AnnoTerm) 
-    : ResultT EvidenceT string :=
-  match t with
-  | aasp _ x => eval G p e (asp x)
-  | aatt _ q x => aeval G q e x
-  | alseq _ t1 t2 => 
-      e1 <- aeval G p e t1 ;;
-      aeval G p e1 t2
-  | abseq _ s t1 t2 => 
-      e1 <- aeval G p (splitEv_T_l s e) t1 ;;
-      e2 <- aeval G p (splitEv_T_r s e) t2 ;;
-      resultC (split_evt e1 e2)
-  | abpar _ s t1 t2 => 
-      e1 <- aeval G p (splitEv_T_l s e) t1 ;;
-      e2 <- aeval G p (splitEv_T_r s e) t2 ;;
-      resultC (split_evt e1 e2)
-  end.
-
-
 (** This function annotates a term.  It feeds a natural number
     throughout the computation so as to ensure each event has a unique
     natural number. *)
 Fixpoint anno (G : GlobalContext) (p : Plc) (e : EvidenceT) 
-    (t: Term) (i:nat) 
-    : ResultT (nat * AnnoTerm * EvidenceT) string :=
+    (t: Term) : ResultT (AnnoTerm * EvidenceT) string :=
   match t with
   | asp x => 
     match x with
     | APPR => 
-      match et_size G e with
+      match appr_et_size G e with
       | errC s => errC s
       | resultC n => 
         let nterm := aasp (i, S i + n) x in
@@ -235,13 +235,28 @@ Proof.
   ff.
 Qed.
 
+Theorem evidence_size_agree : forall G t e p n,
+  esize G p e t = resultC n ->
+  forall e',
+  aeval G p e t = resultC e' ->
+  et_size G e' = resultC n.
+Proof.
+  induction t.
+  - simpl in *; intros. 
+    break_match. subst; try find_injection.
+    *  
+    ff.
+    ff.
+
+  event_id_span_Term G 0 e t = resultC (snd (range t) - fst (range t)).
+
 (** This predicate determines if an annotated term is well formed,
     that is if its ranges correctly capture the relations between a
     term and its associated events. *)
 Inductive well_formed_r_annt : GlobalContext -> AnnoCopPhrase -> Prop :=
 | wf_asp_r_annt: forall r e x G n p,
     match x with 
-    | APPR => et_size G e 
+    | APPR => appr_et_size G e 
     | _ => resultC 0 end = resultC n ->
     snd r = S (fst r) + n ->
     well_formed_r_annt G (anno_cop_phrase p e (aasp r x))
@@ -337,7 +352,7 @@ Fixpoint event_id_span_Term (G : GlobalContext) (p : Plc) (e : EvidenceT) (t: Te
   match t with
   | asp x => 
     match x with
-    | APPR => match et_size G e with
+    | APPR => match appr_et_size G e with
               | errC s => errC s
               | resultC n => resultC (1 + n)
               end

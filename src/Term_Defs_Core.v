@@ -140,8 +140,7 @@ Inductive Term :=
 | bpar: Split -> Term -> Term -> Term.
 
 (**  Calculate the size of an EvidenceT type *)
-Fixpoint et_size (G : GlobalContext) (e:EvidenceT)
-  : ResultT nat string :=
+Fixpoint et_size (G : GlobalContext) (e:EvidenceT) : ResultT nat string :=
   match e with
   | mt_evt=> resultC 0
   | nonce_evt _ => resultC 1
@@ -166,6 +165,36 @@ Fixpoint et_size (G : GlobalContext) (e:EvidenceT)
     resultC (s1 + s2)
   end.
 
+Fixpoint appr_et_size (G : GlobalContext) (e : EvidenceT) : ResultT nat string :=
+  match e with
+  | mt_evt => resultC 0
+  | nonce_evt _ => resultC 2 (* umeas check_nonce :: nonce *)
+  | asp_evt p par e' =>
+    let '(asp_paramsC asp_id args targ_plc targ) := par in
+    match (map_get (asp_comps G) asp_id) with
+    | None => errC "Compatible ASP not found in Environment"%string
+    | Some appr_asp_id =>
+      match (map_get (asp_types G) appr_asp_id) with
+      | None => errC "ASP Type Signature not found in Environment"%string
+      | Some asp_fwd => 
+        match asp_fwd with
+        | COMP => resultC 2 (* This asp crushed down to 1, then +1 for appr *)
+        | ENCR => resultC 2 (* this asp crushed down to 1, then +1 for appr *)
+        | (EXTD n) => 
+          n' <- et_size G e' ;; (* this asp operates on stuff of size n' *)
+          resultC (1 + n + n') (* they return n + n', then +1 for appr on top *)
+        | KILL => resultC 0 (* this asp returns only mt_evc, which is appr as mt_evc too *)
+        | KEEP => 
+          n <- et_size G e' ;; (* this asp operates on stuff of size n, and returns of size n *)
+          resultC (1 + n) (* they returned n, we do +1 for appr on top *)
+        end
+      end
+    end
+  | split_evt e1 e2 =>
+    s1 <- appr_et_size G e1 ;;
+    s2 <- appr_et_size G e2 ;;
+    resultC (s1 + s2)
+  end.
 
 (** Raw EvidenceT representaiton:  a list of binary (BS) values. *)
 Definition RawEv := list BS.
