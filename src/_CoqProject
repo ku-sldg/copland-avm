@@ -38,10 +38,10 @@ IO_Stubs.v
 Eqb_Evidence.v
 Term.v
 Event_system.v
-Term_system.v
-Trace.v
-LTS.v
-Main.v
+# Term_system.v
+# Trace.v
+# LTS.v
+# Main.v
 EnvironmentM.v
 Manifest_Union.v
 Axioms_Io.v

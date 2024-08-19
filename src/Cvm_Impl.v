@@ -11,19 +11,20 @@ Require Import Term_Defs Cvm_Monad ErrorStMonad_Coq.
 Import ErrNotation.
 
 (** Monadic CVM implementation (top-level) *)
-Fixpoint build_cvm (t:Core_Term) : CVM unit :=
+Fixpoint build_cvm (t: Term) : CVM unit :=
   match t with
-  | aspc a =>
+  | asp a =>
       e <- do_prim a ;;
       put_ev e
-  | attc q t' =>
+  | att q t' =>
     e <- get_ev ;;
     e' <- doRemote t' q e ;;
     put_ev e'
-  | lseqc t1 t2 =>
+  | lseq t1 t2 =>
       build_cvm t1 ;;
       build_cvm t2
-  | bseqc t1 t2 =>
+
+  | bseq s t1 t2 =>
     split_ev ;;
     e <- get_ev ;;
     build_cvm t1 ;;
@@ -32,10 +33,12 @@ Fixpoint build_cvm (t:Core_Term) : CVM unit :=
     build_cvm t2 ;;
     e2r <- get_ev ;;
     join_seq e1r e2r
-  | bparc loc t1 t2 =>
+
+  | bpar s t1 t2 =>
     split_ev ;;
     e <- get_ev ;;
-    start_par_thread loc t2 e ;;
+    (* We will make the LOC = event_id for start of thread *)
+    loc <- start_par_thread t2 e ;;
     build_cvm t1 ;;
     e1r <- get_ev ;;
     e2r <- wait_par_thread loc t2 e ;;

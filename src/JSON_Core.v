@@ -619,6 +619,24 @@ repeat rewrite canonical_stringification in *; simpl in *;
 find_rewrite; eauto.
 Defined.
 
+Global Instance Jsonifiable_Evidence `{Jsonifiable RawEv, Jsonifiable EvidenceT}: Jsonifiable Evidence.
+eapply Build_Jsonifiable with
+  (to_JSON := 
+    (fun e => let '(evc r et) := e in
+      JSON_Array [ (to_JSON r); (to_JSON et) ])
+  )
+  (from_JSON := 
+    (fun j => 
+      match j with
+      | JSON_Array [ r_js; et_js ] =>
+          r <- from_JSON r_js ;;
+          et <- from_JSON et_js ;;
+          resultC (evc r et)
+      | _ => errC "Invalid Evidence JSON"
+      end)
+  ); 
+destruct a; solve_json.
+Defined.
 (* 
 Fixpoint AppResultC_to_JSON `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsonifiable RawEv} (a : AppResultC) : JSON := 
   match a with

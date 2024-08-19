@@ -4,10 +4,22 @@ Helper lemmas for proofs about the CVM semantics.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Anno_Term_Defs Cvm_Monad Cvm_Impl Term_Defs Auto Attestation_Session StructTactics AutoApp.
+Require Import Cvm_Monad Cvm_Impl Term_Defs Auto Attestation_Session StructTactics AutoApp.
 Require Import Coq.Program.Tactics.
 
 Import ListNotations.
+
+Lemma sc_immut_split_evidence : forall r et1 et2 st res st',
+  split_evidence r et1 et2 st = (res, st') ->
+  st_config st = st_config st'.
+Proof.
+
+Lemma sc_immut_invoke_APPR : forall et st r st',
+  invoke_APPR et st = (r, st') ->
+  st_config st = st_config st'.
+Proof.
+  induction et; simpl in *; intuition; ffa using cvm_monad_unfold.
+  unfold split_evidence in *; ffa using cvm_monad_unfold.
 
 Lemma sc_immut_better : forall t st r st',
   build_cvm t st = (r, st') ->
@@ -15,6 +27,11 @@ Lemma sc_immut_better : forall t st r st',
 Proof.
   induction t; repeat (cvm_monad_unfold; simpl in *); intuition;
   ffa using cvm_monad_unfold.
+  - fold invoke_APPR.
+    simpl in *.
+    destruct st_ev; simpl in *; destruct e; ff;
+    unfold split_evidence in *; cvm_monad_unfold; ff;
+    unfold peel_n_rawev in *; cvm_monad_unfold; ff.
 Qed.
 
 (* Hack to apply a specific induction hypothesis in some proofs *)

@@ -29,14 +29,14 @@ solve_json.
 Defined.
 
 (* Protocol Run Response *)
-Global Instance Jsonifiable_ProtocolRunResponse `{Jsonifiable Evidence}: Jsonifiable ProtocolRunResponse.
+Global Instance Jsonifiable_ProtocolRunResponse `{Jsonifiable RawEv}: Jsonifiable ProtocolRunResponse.
 eapply Build_Jsonifiable with
 (to_JSON := fun resp =>
   JSON_Object 
     [(STR_TYPE, (JSON_String STR_RESPONSE));
     (STR_ACTION, (JSON_String STR_RUN));
     (STR_SUCCESS, (JSON_Boolean (prresp_success resp)));
-    (STR_PAYLOAD, (to_JSON (prresp_Evidence resp)))])
+    (STR_PAYLOAD, (to_JSON (prresp_rawev resp)))])
 (from_JSON := (fun resp =>
   temp_success <- JSON_get_bool STR_SUCCESS resp ;;
   temp_ev <- JSON_get_Object STR_PAYLOAD resp ;;

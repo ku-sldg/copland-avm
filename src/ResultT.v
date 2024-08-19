@@ -67,3 +67,13 @@ Proof.
     destruct H; intuition.
     exists x0; simpl in *; eauto.
 Qed.
+
+Fixpoint result_fold {A B E : Type} (f : A -> B -> ResultT B E) (acc : B) (l : list A) 
+    : ResultT B E :=
+  match l with
+  | nil => resultC acc
+  | (cons h t) =>
+      acc' <- f h acc;;
+      result_fold f acc' t
+  end.
+

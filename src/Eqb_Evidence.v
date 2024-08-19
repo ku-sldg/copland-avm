@@ -107,10 +107,8 @@ Proof.
   intros.
   decide equality; subst;
   try (try eapply EqClass_impl_DecEq; eauto;
-  try eapply nat_EqClass; eauto; fail).
-  - eapply eq_asp_params_dec.
-  - destruct f, f0; eauto; try (right; intros HC; congruence).
-    destEq n n0; eauto; try (right; intros HC; congruence).
+  try eapply nat_EqClass; eauto; fail);
+  eapply eq_asp_params_dec.
 Qed.
 
 Definition eqb_EvidenceT `{H : EqClass ID_Type} (x y : EvidenceT): bool :=
@@ -137,7 +135,7 @@ Proof.
   try eapply nat_EqClass; eauto; fail).
   - destruct a, a0; eauto; try (right; intros HC; congruence).
     * destruct (eq_asp_params_dec a a0); subst; eauto;
-      destruct s, s0, f, f0; eauto; try (right; intros HC; congruence);
+      destruct s, s0; eauto; try (right; intros HC; congruence);
       destEq n n0; eauto; try (right; intros HC; congruence).
     * destruct (@EqClass_impl_DecEq Plc H p p0); subst; eauto.
       right; intros HC; congruence.
@@ -160,35 +158,6 @@ Global Instance EqClass_Term `{H : EqClass ID_Type} : EqClass Term := {
   eqb_eq := eqb_eq_term
 }.
 
-Definition eq_core_term_dec : forall `{H : EqClass ID_Type},
-  forall x y : Core_Term, {x = y} + {x <> y}.
-Proof.
-  intros.
-  decide equality; subst;
-  try (try eapply EqClass_impl_DecEq; eauto;
-  try eapply nat_EqClass; eauto; fail).
-  - destruct a, a0; eauto; try (right; intros HC; congruence).
-    * destruct (eq_asp_params_dec a a0); subst; eauto;
-      destruct f, f0; eauto; try (right; intros HC; congruence).
-      destEq n n0; eauto; try (right; intros HC; congruence).
-  - eapply eq_term_dec.
-Qed.
-
-Definition eqb_core_term `{H : EqClass ID_Type} (x y : Core_Term): bool :=
-  if @eq_core_term_dec H x y then true else false.
-
-Lemma eqb_eq_core_term `{H : EqClass ID_Type} : forall x y,
-  eqb_core_term x y = true <-> x = y.
-Proof.
-  unfold eqb_core_term; intuition;
-  destruct eq_core_term_dec; eauto; congruence.
-Qed.
-
-Global Instance EqClass_Core_Term `{H : EqClass ID_Type} : EqClass Core_Term := {
-  eqb := eqb_core_term ;
-  eqb_eq := eqb_eq_core_term
-}.
-
 Definition eq_ev_dec: forall `{H : EqClass ID_Type},
   forall x y: Ev, {x = y} + {x <> y}.
 Proof.
@@ -200,6 +169,10 @@ Proof.
   - destEq n n0; destEq p1 p; destEq p2 p0; 
     try (right; intros ?; congruence); eauto.
   - destEq n n0; destEq p1 p; destEq p2 p0; 
+    try (right; intros ?; congruence); eauto.
+  - destEq n n0; destEq l0 l;
+    try (right; intros ?; congruence); eauto.
+  - destEq n n0; destEq l0 l;
     try (right; intros ?; congruence); eauto.
 Qed.
 Local Hint Resolve eq_ev_dec : core.

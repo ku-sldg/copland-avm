@@ -6,15 +6,12 @@ Require Import Term_Defs Cvm_Impl Cvm_St ErrorStMonad_Coq String
 Require Import List.
 Import ListNotations.
 
-Definition run_core_cvm (t:Core_Term) (st : cvm_st) : ResultT cvm_st CVM_Error :=
+Definition run_cvm (t:Term) st : ResultT cvm_st CVM_Error :=
   let '(res, st') := ((build_cvm t) st) in
   match res with
   | resultC _ => resultC st'
   | errC e => errC e
   end.
-
-Definition run_cvm (t:Term) st : ResultT cvm_st CVM_Error :=
-  run_core_cvm (copland_compile t) st.
 
 Definition run_cvm_w_config (t:Term) (e:RawEv) (ac : Session_Config) 
     : ResultT cvm_st CVM_Error :=

@@ -42,7 +42,7 @@ Notation "e1 ;; e2" := (_ <- e1 ;; e2)
                          (at level 100, right associativity).
 
 Notation "' pat <- c1 ;; c2" :=
-    (@err_bind _ _ c1 (fun x => match x with pat => c2 end))
+    (@err_bind _ _ _ _ c1 (fun x => match x with pat => c2 end))
     (at level 100, pat pattern, c1 at next level, right associativity).
 
 End ErrNotation.

@@ -9,12 +9,11 @@ Import ListNotations.
 
 Definition manifest_union_asps (m1:Manifest) (m2:Manifest) : Manifest := 
     match (m1, m2) with 
-    | ((Build_Manifest asps1 asp_comp_map1 asp_fs_map1 myPol1),
-       (Build_Manifest asps2 _ _ _)) =>
+    | ((Build_Manifest asps1 asp_fs_map1 myPol1),
+       (Build_Manifest asps2 _ _)) =>
 
        Build_Manifest
         (manset_union asps1 asps2)
-        asp_comp_map1
         asp_fs_map1
         myPol1
     end.

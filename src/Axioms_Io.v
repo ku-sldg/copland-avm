@@ -4,7 +4,7 @@ Uninterpreted functions and rewrite rules that model external (remote and local 
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Term_Defs Anno_Term_Defs Interface LTS IO_Stubs.
+Require Import Term_Defs Interface IO_Stubs.
 
 Import ListNotations.
 
@@ -21,48 +21,7 @@ Admitted.
 Definition shuffled_events (el1:list Ev) (el2:list Ev) : list Ev.
 Admitted.
 
-Definition cvm_events_core (t:Core_Term) (p:Plc) (e:EvidenceT) : list Ev. 
-Admitted.
+Definition cvm_events (p:Plc) (e:EvidenceT) (t:Term) : list Ev. Admitted.
 
-Definition cvm_EvidenceT_core (t:Core_Term) (p:Plc) (e:Evidence) : Evidence.
-Admitted.
+Definition cvm_EvidenceT (p:Plc) (e:Evidence) (t:Term) : Evidence. Admitted.
 
-Definition cvm_events (t:Term) (p:Plc) (e:EvidenceT) : list Ev :=
-  cvm_events_core (copland_compile t) p e.
-
-Definition cvm_EvidenceT (t:Term) (p:Plc) (e:Evidence) : Evidence :=
-  cvm_EvidenceT_core (copland_compile t) p e.
-
-
-Axiom remote_LTS: forall t annt n et i i',
-    anno t i = (i', annt) ->
-    lstar (conf annt n et) (cvm_events t n et) (stop n (aeval annt n et)).
-
-(*
-Axiom remote_EvidenceT_Type_Axiom: forall t n bits et,
-    get_et (doRemote_session t n (evc bits et)) = eval t n et.
-*)
-
-(*
-Axiom at_EvidenceT : forall t (p:Plc) (e:Evidence),
-    doRemote_session t p e = cvm_EvidenceT t p e.
-*)
-
-Axiom par_EvidenceT : forall t (p:Plc) (e:Evidence) loc,
-    parallel_vm_thread loc (copland_compile t) p e = cvm_EvidenceT t p e.
-
-
-
-Axiom bpar_shuffle : forall x annt2 i i' tr p t1 t2 et1 et2,
-    anno t2 i = (i', annt2) ->
-    lstar (conf t1 p et1) tr (stop p (aeval t1 p et1)) ->
-    lstar (bp x (conf t1 p et1) (conf annt2 p et2))
-          (shuffled_events tr
-                           (cvm_events t2 p et2))
-          (bp x (stop p (aeval t1 p et1)) (stop p (aeval annt2 p et2))).
-
-Axiom thread_bookend_peel: forall (t:AnnoTerm) p (*et*) etr l (a:Core_Term) tr,
-    (*lstar (conf t p et) tr (stop p (aeval t p et)) -> *)
-    ([cvm_thread_start l p a etr] ++ tr ++ [cvm_thread_end l] =
-     (shuffled_events tr (cvm_events_core a p etr))
-    ).

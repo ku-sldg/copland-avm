@@ -14,7 +14,7 @@ Record ProtocolRunRequest :=
 Record ProtocolRunResponse := 
   mkPRResp {
     prresp_success: bool;
-    prresp_Evidence: Evidence;
+    prresp_rawev: RawEv;
   }.
 
 Record ProtocolNegotiateRequest := 

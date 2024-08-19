@@ -24,7 +24,7 @@ Definition PolicyT := list (Plc * ASP_ID).
 
 Record Session_Config := {
   session_plc         : Plc ;
-  ASP_to_APPR_ASP_Map : ASP_Compat_MapT ;
+  session_context     : GlobalContext ;
   aspCb               : (ASPCallback DispatcherErrors) ;
   plc_map             : MapC Plc UUID ;
   pubkey_map          : MapC Plc PublicKey ;

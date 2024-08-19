@@ -12,43 +12,60 @@ University of California.  See license.txt for details. *)
 (** A small-step semantics for annotated terms. *)
 
 Require Import List.
-Import List.ListNotations.
+Require Import PeanoNat Lia Preamble Term ResultT String.
+Import List.ListNotations ResultNotation.
 Open Scope list_scope.
-Require Import PeanoNat Lia Preamble Term.
 
 (** * States *)
 
-Inductive St :=
-| stop: Plc -> EvidenceT -> St
-| conf: AnnoTerm -> Plc -> EvidenceT -> St
-| rem: nat -> Plc -> St -> St
-| ls: St -> AnnoTerm -> St
-| bsl: nat -> St -> AnnoTerm -> Plc -> EvidenceT -> St
-| bsr: nat -> EvidenceT -> St -> St
-| bp: nat -> St -> St -> St.
+Inductive St (G : GlobalContext) :=
+| stop: Plc -> EvidenceT -> St G
+| conf: Plc -> EvidenceT -> Term -> St G
+| rem: nat -> Plc -> St G -> St G
+| ls: St G -> Term -> St G
+| bsl: nat -> St G -> Plc -> EvidenceT -> Term -> St G
+| bsr: nat -> EvidenceT -> St G -> St G
+| bp: nat -> St G -> St G -> St G.
+Arguments stop {G} p e.
+Arguments conf {G} t p e.
+Arguments rem {G} n p st.
+Arguments ls {G} st t.
+Arguments bsl {G} n st t p e.
+Arguments bsr {G} n e st.
+Arguments bp {G} n st0 st1.
 
-Fixpoint pl (s:St) :=
+Fixpoint pl {G} (s:St G) :=
   match s with
   | stop p _ => p
-  | conf _ p _ => p
+  | conf p _ _ => p
   | rem _ p _ => p
   | ls st _ => pl st
-  | bsl _ _ _ p _ => p
+  | bsl _ _ p _ _ => p
   | bsr _ _ st => pl st
   | bp _ _ st => pl st
   end.
 
 (** The EvidenceT associated with a state. *)
 
-Fixpoint seval st :=
+Fixpoint seval {G} (st : St G) : ResultT EvidenceT string :=
   match st with
-  | stop _ e => e
-  | conf t p e => aeval t p e
+  | stop _ e => resultC e
+  | conf p e t => eval G p e t 
   | rem _ _ st => seval st
-  | ls st t => aeval t (pl st) (seval st)
-  | bsl _ st t p e => split_evt (seval st) (aeval t p e)
-  | bsr _ e st => split_evt e (seval st)
-  | bp _ st0 st1 => split_evt (seval st0) (seval st1)
+  | ls st t => 
+    e' <- seval st ;;
+    eval G (pl st) e' t
+  | bsl _ st p e t => 
+    e1 <- seval st ;;
+    e2 <- eval G p e t;;
+    resultC (split_evt e1 e2)
+  | bsr _ e st => 
+    e' <- seval st ;;
+    resultC (split_evt e e')
+  | bp _ st0 st1 => 
+    e1 <- seval st0 ;;
+    e2 <- seval st1 ;;
+    resultC (split_evt e1 e2)
   end.
 
 (** * Labeled Transition System
@@ -57,14 +74,13 @@ Fixpoint seval st :=
     transition is silent.  Notice the use of annotations to provide
     the correct number for each event.  *)
 
-Inductive step: St -> option Ev -> St -> Prop :=
+Inductive step {G : GlobalContext} : St G -> option (list Ev) -> St G -> Prop :=
 (** Measurement *)
 
-| stasp:
-    forall r x p e,
-      step (conf (aasp r x) p e)
-           (Some (asp_event (fst r) x p e))
-           (stop p (aeval (aasp r x) p e))
+| stasp: forall r x p e e',
+    eval G p e (asp x) = resultC e' ->
+
+    step (conf p e (asp x)) evl (stop p e')
 (** Remote call *)
 
 | statt:

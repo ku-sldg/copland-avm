@@ -10,7 +10,7 @@ modify it under the terms of the BSD License as published by the
 University of California.  See license.txt for details. *)
 
 
-Require Import Preamble More_lists Defs Term Event_system Term_system.
+Require Import Preamble More_lists Defs Term Event_system.
 
 Require Import Lia.
 
