@@ -26,28 +26,31 @@ Inductive events: GlobalContext -> CopPhrase -> nat -> list Ev -> Prop :=
     events G (cop_phrase p e (asp a)) i evs
 
 | evts_att: forall G q t i i' p e rem_evs,
-    events G (cop_phrase q e t) i rem_evs ->
+    events G (cop_phrase q e t) (i + 1) rem_evs ->
+    i' = i + 1 + length rem_evs ->
     events G 
       (cop_phrase p e (att q t)) i
       ([req i p q t e] ++ rem_evs ++ [rpy i' p q e])
 
-| evts_lseq : forall G t1 t2 p e e' i i' evs1 evs2,
+| evts_lseq : forall G t1 t2 p e e' i evs1 evs2,
     events G (cop_phrase p e t1) i evs1 ->
     eval G p e t1 = resultC e' ->
-    events G (cop_phrase p e' t2) i' evs2 ->
+    events G (cop_phrase p e' t2) (i + length evs1) evs2 ->
     events G (cop_phrase p e (lseq t1 t2)) i (evs1 ++ evs2)
 
-| evts_bseq: forall G t1 t2 p e evs1 evs2 s i i' i'',
-    events G (cop_phrase p (splitEv_T_l s e) t1) i evs1 ->
-    events G (cop_phrase p (splitEv_T_r s e) t2) i' evs2 ->
+| evts_bseq: forall G t1 t2 p e evs1 evs2 s i i',
+    events G (cop_phrase p (splitEv_T_l s e) t1) (i + 1) evs1 ->
+    events G (cop_phrase p (splitEv_T_r s e) t2) (i + 1 + length evs1) evs2 ->
+    i' = i + 1 + length evs1 + length evs2 ->
     events G (cop_phrase p e (bseq s t1 t2)) i
-      ([split i p] ++ evs1 ++ evs2 ++ [join i'' p])
+      ([split i p] ++ evs1 ++ evs2 ++ [join i' p])
 
-| evts_bpar: forall G t1 t2 p e evs1 evs2 s i i' i'',
-    events G (cop_phrase p (splitEv_T_l s e) t1) i evs1 ->
-    events G (cop_phrase p (splitEv_T_r s e) t2) i' evs2 ->
+| evts_bpar: forall G t1 t2 p e evs1 evs2 s i i',
+    events G (cop_phrase p (splitEv_T_l s e) t1) (i + 1) evs1 ->
+    events G (cop_phrase p (splitEv_T_r s e) t2) (i + 1 + length evs1) evs2 ->
+    i' = i + 1 + length evs1 + length evs2 ->
     events G (cop_phrase p e (bpar s t1 t2)) i
-      ([split i p] ++ evs1 ++ evs2 ++ [join i'' p]).
+      ([split i p] ++ evs1 ++ evs2 ++ [join i' p]).
 #[export] Hint Constructors events : core.
 
 Lemma events_range: forall G t p e evs i,
@@ -66,19 +69,6 @@ Proof.
 Qed.
 
 (** Properties of events. *)
-(* Fixpoint true_last {A : Type} (l : list A) 
-  {h t} `{HL : l = h :: t} {struct l} : A.
-  refine (match l as l' return l = l' -> A with
-  | nil => fun HL => _
-  | h' :: t' => fun HL =>
-    match t' as t'' return t' = t'' -> A with
-    | nil => fun HL' => h'
-    | h'' :: t'' => fun HL' => @true_last _ t' h'' t'' _
-    end eq_refl
-  end eq_refl).
-- subst; congruence. 
-- subst; ff. 
-Defined. *)
 Fixpoint true_last {A : Type} (l : list A) : option A :=
   match l with
   | nil => None
@@ -89,14 +79,132 @@ Fixpoint true_last {A : Type} (l : list A) : option A :=
     end
   end.
 
+Lemma true_last_app : forall A (l1 l2 : list A),
+  l2 <> nil ->
+  true_last (l1 ++ l2) = true_last l2.
+Proof.
+  induction l1; simpl in *; intuition.
+  break_match; eauto.
+  - find_apply_lem_hyp app_eq_nil; intuition.
+  - rewrite <- Heql; eauto.
+Qed.
+
+Lemma true_last_app_spec : forall A (l1 l2 : list A) x,
+  true_last (l1 ++ l2) = Some x ->
+  (true_last l1 = Some x /\ l2 = nil) \/ true_last l2 = Some x.
+Proof.
+  induction l1; simpl in *; intuition;
+  break_match; simpl in *; eauto;
+  break_match; simpl in *; repeat find_injection; eauto.
+Qed.
+
 Theorem events_deterministic : forall G t p e i v,
   events G (cop_phrase p e t) i v ->
   forall v',
   true_last v = Some v' ->
-  ev v' = i + length v.
+  ev v' = i + length v - 1.
 Proof.
+  intros.
+  generalizeEverythingElse H.
+  induction H; intros;
+  try (repeat (
+    find_apply_lem_hyp true_last_app_spec;
+    intuition; try congruence;
+    simpl in *;
+    repeat find_injection;
+    simpl in *;
+    repeat rewrite app_length;
+    simpl in *;
+    try lia
+  );
+  repeat (find_apply_lem_hyp app_eq_nil;
+    intuition; try congruence
+  ); fail).
+  -  
+  - find_apply_lem_hyp true_last_app_spec; intuition;
+    subst; simpl in *;
+    try rewrite app_nil_r; eauto;
+    repeat rewrite app_length; 
+    find_apply_hyp_hyp; try lia.
+  - repeat (
+      find_apply_lem_hyp true_last_app_spec;
+      intuition; try congruence;
+      simpl in *;
+      repeat find_injection;
+      simpl in *;
+      repeat rewrite app_length;
+      simpl in *;
+      try lia
+    );
+    repeat (find_apply_lem_hyp app_eq_nil;
+      intuition; try congruence
+    ).
+  - repeat (
+      find_apply_lem_hyp true_last_app_spec;
+      intuition; try congruence;
+      simpl in *;
+      repeat find_injection;
+      simpl in *;
+      repeat rewrite app_length;
+      simpl in *;
+      try lia
+    );
+    repeat (find_apply_lem_hyp app_eq_nil;
+      intuition; try congruence
+    ).
+  
+
+  - repeat rewrite app_length; simpl in *.
+    break_match;
+    simpl in *; repeat find_injection;
+    simpl in *.
+    * admit. 
+    * break_match; subst;
+      repeat find_injection. 
+    ffa.
+    break_match; simpl in *;
+    repeat find_injection; simpl in *;
+    try lia.
+    destruct rem_evs; simpl in *;
+    repeat find_injection;
+    simpl in *.
+
+  generalizeEverythingElse H.
   induction t; simpl in *; intros;
   inversion H; subst.
+  - admit.
+  - repeat (
+      erewrite true_last_app in *; eauto; [
+        |
+      intros HC;
+      try find_apply_lem_hyp app_eq_nil; 
+      intuition; congruence ]
+    ); simpl in *; repeat find_injection;
+    simpl in *;
+    repeat rewrite app_length; simpl in *;
+    try lia.
+  - 
+    eapply IHt1 in H8.
+    destruct rem_evs eqn:E.
+    *  
+    eapply IHt in H8; eauto.
+  
+  destruct a, e; simpl in *;
+    repeat find_injection; simpl in *;
+    repeat find_injection; simpl in *;
+    try lia; try congruence;
+    result_monad_unfold.
+    generalizeEverythingElse e.
+    induction e; simpl in *; intuition;
+    ff; try lia;
+    result_monad_unfold.
+    break_match; try congruence.
+    break_match; try congruence;
+    find_injection; simpl in *;
+    repeat rewrite app_length; simpl in *.
+    break_match.
+    ff.
+    eapply IHe1 in Heqr; ff.
   induction t; simpl in *; intros; ff.
   - 
 
