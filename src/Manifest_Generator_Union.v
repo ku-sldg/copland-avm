@@ -39,12 +39,12 @@ Open Scope string_scope.
 Definition Evidence_Plc_list_to_JSON `{Jsonifiable Evidence} (ls: Evidence_Plc_list) : JSON := 
   JSON_Object [
     ("Evidence_Plc_list",
-      (InJSON_Array 
+      (JSON_Array 
         (List.map 
           (fun '(et,p) => 
-            InJSON_Array [
-              InJSON_Object (to_JSON et); 
-              InJSON_String (to_string p)
+            JSON_Array [
+              to_JSON et;
+              JSON_String (to_string p)
             ]
           ) ls)
       )
@@ -56,7 +56,7 @@ Definition Evidence_Plc_list_from_JSON `{Jsonifiable Evidence, Jsonifiable ASP_C
   | resultC jsArr =>
     let res := result_map (fun js => 
       match js with
-      | InJSON_Array [InJSON_Object jsEt; InJSON_String jsP] =>
+      | JSON_Array [jsEt; JSON_String jsP] =>
         match (from_JSON jsEt), (from_string jsP) with
         | resultC et,resultC p => resultC (et, p)
         | _, _ => errC "Error in parsing Evidence_Plc_list"
@@ -87,13 +87,10 @@ Definition Term_Plc_list := list (Term*Plc).
 Definition Term_Plc_list_to_JSON `{Jsonifiable Term} (ls: Term_Plc_list) : JSON :=
   JSON_Object [
     ("Term_Plc_list",
-      (InJSON_Array 
+      (JSON_Array 
         (List.map 
           (fun '(et,p) => 
-            InJSON_Array [
-              InJSON_Object (to_JSON et); 
-              InJSON_String (to_string p)
-            ]
+            JSON_Array [ to_JSON et; JSON_String (to_string p) ]
           ) ls)
       )
     )].
@@ -104,7 +101,7 @@ Definition Term_Plc_list_from_JSON `{Jsonifiable Term} (js : JSON)
   | resultC jsArr =>
     let res := result_map (fun js => 
       match js with
-      | InJSON_Array [InJSON_Object jsTerm; InJSON_String jsP] =>
+      | JSON_Array [jsTerm; JSON_String jsP] =>
         match (from_JSON jsTerm), (from_string jsP) with
         | resultC et,resultC p => resultC (et, p)
         | _, _ => errC "Error in parsing Term_Plc_list"

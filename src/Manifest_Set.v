@@ -290,21 +290,22 @@ Proof.
     + apply manadd_In_set in H; destruct H; subst; auto with *.       
 Qed.
 
-Fixpoint manifest_set_to_list_InJson {A :Type} `{Stringifiable A} 
-    `{EqClass A} (m : manifest_set A) : list InnerJSON :=
+Fixpoint manifest_set_to_list_JSON {A :Type} `{Stringifiable A} 
+    `{EqClass A} (m : manifest_set A) : list JSON :=
   match m with
   | nil => []
-  | h :: t => (InJSON_String (to_string h)) :: (manifest_set_to_list_InJson t)
+  | h :: t => 
+    (JSON_String (to_string h)) :: (manifest_set_to_list_JSON t)
   end.
 
-Fixpoint list_InJson_to_manifest_set {A :Type} `{Stringifiable A} `{EqClass A}
-    (l : list InnerJSON) : ResultT (manifest_set A) string :=
+Fixpoint list_JSON_to_manifest_set {A :Type} `{Stringifiable A} `{EqClass A}
+    (l : list JSON) : ResultT (manifest_set A) string :=
   match l with
   | nil => resultC []
   | h :: t => 
     match h with
-    | InJSON_String s =>
-      match (list_InJson_to_manifest_set t) with
+    | JSON_String s =>
+      match (list_JSON_to_manifest_set t) with
       | resultC t' => 
           match (from_string s) with
           (* TODO: This should really use a safer add, but man sets arent guarded inductively so in proofs the fact is lost for resolution *)
@@ -313,34 +314,33 @@ Fixpoint list_InJson_to_manifest_set {A :Type} `{Stringifiable A} `{EqClass A}
           end
       | errC e => errC e
       end
-    | _ => errC "list_InJson_to_manifest_set: Invalid JSON type in manifest set, only can handle strings."%string
+    | _ => errC "list_JSON_to_manifest_set: Invalid JSON type in manifest set, only can handle strings."%string
     end
   end.
 
 Lemma canonical_list_injson_to_manset {A : Type} `{Stringifiable A} `{EqClass A} (m : manifest_set A) :
-  list_InJson_to_manifest_set (manifest_set_to_list_InJson m) = resultC m.
+  list_JSON_to_manifest_set (manifest_set_to_list_JSON m) = resultC m.
 Proof.
   induction m; simpl in *; intuition; eauto;
   find_rewrite; rewrite canonical_stringification in *; simpl in *; eauto.
 Qed.
 
-Fixpoint manifest_set_pairs_to_list_InJson {A B : Type} `{Stringifiable A} 
-    `{Stringifiable B} (m : manifest_set (A * B)) : list InnerJSON :=
+Fixpoint manifest_set_pairs_to_list_JSON {A B : Type} `{Stringifiable A} 
+    `{Stringifiable B} (m : manifest_set (A * B)) : list JSON :=
   match m with
   | [] => []
-  | h :: t => 
-        (pair_to_JSON_Array h) :: (manifest_set_pairs_to_list_InJson t)
+  | h :: t => (to_JSON h) :: (manifest_set_pairs_to_list_JSON t)
   end.
 
-Fixpoint list_InJson_to_manifest_set_pairs {A B :Type} `{Stringifiable A} 
+Fixpoint list_JSON_to_manifest_set_pairs {A B :Type} `{Stringifiable A} 
     `{Stringifiable B} `{EqClass A} `{EqClass B}
-    (l : list InnerJSON) : ResultT (manifest_set (A * B)) string :=
+    (l : list JSON) : ResultT (manifest_set (A * B)) string :=
   match l with
   | nil => resultC []
   | h :: t => 
-    match (InnerJSON_to_pair h) with
+    match (from_JSON h) with
     | resultC h' =>
-      match (list_InJson_to_manifest_set_pairs t) with
+      match (list_JSON_to_manifest_set_pairs t) with
       (* TODO: Same here as above, we would like to use add but it doesnt have all we need *)
       | resultC t' => resultC (h' :: t')
       | errC e => errC e
@@ -350,7 +350,7 @@ Fixpoint list_InJson_to_manifest_set_pairs {A B :Type} `{Stringifiable A}
   end.
 
 Lemma canonical_list_injson_to_manset_pairs {A B : Type} `{Stringifiable A, Stringifiable B} `{EqClass A, EqClass B} (m : manifest_set (A * B)) :
-  list_InJson_to_manifest_set_pairs (manifest_set_pairs_to_list_InJson m) = resultC m.
+  list_JSON_to_manifest_set_pairs (manifest_set_pairs_to_list_JSON m) = resultC m.
 Proof.
   induction m; simpl in *; intuition; eauto;
   find_rewrite; repeat rewrite canonical_stringification in *; simpl in *; eauto.
