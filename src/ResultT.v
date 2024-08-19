@@ -1,5 +1,5 @@
 Require Import List.
-(* Generic result type.  Parameterized by the succesplit_evt type (A) 
+(* Generic result type.  Parameterized by the success type (A) 
     and the error type (E). *)
 Inductive ResultT (A:Type) (E:Type) : Type := 
 | errC : E -> ResultT A E

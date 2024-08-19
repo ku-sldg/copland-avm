@@ -6,15 +6,15 @@ Require Export Interface_Strings_Vars.
 Record ProtocolRunRequest := 
   mkPRReq {
     prreq_att_sesplit_evt : Attestation_Session;
-    prreq_term: Term;
     prreq_req_plc: Plc;
-    prreq_rawev: RawEv;
+    prreq_Evidence: Evidence;
+    prreq_term: Term;
   }.
 
 Record ProtocolRunResponse := 
   mkPRResp {
     prresp_success: bool;
-    prresp_ev: RawEv;
+    prresp_Evidence: Evidence;
   }.
 
 Record ProtocolNegotiateRequest := 
@@ -26,21 +26,6 @@ Record ProtocolNegotiateResponse :=
   mkPNResp {
     pnresp_success: bool;
     pnresp_term: Term;
-  }.
-
-Record ProtocolAppraiseRequest :=
-  mkPAReq {
-    pareq_att_sess: Attestation_Session;
-    pareq_term: Term;
-    pareq_plc: Plc;
-    pareq_EvidenceT: EvidenceT;
-    pareq_ev: RawEv;
-  }.
-
-Record ProtocolAppraiseResponse :=
-  mkPAResp {
-    paresp_success: bool;
-    paresp_result: AppResultC;
   }.
 
 Record ASPRunRequest := 

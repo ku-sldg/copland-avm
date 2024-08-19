@@ -1,4 +1,4 @@
-Require Import Term JSON List String  Stringifiable_Class_Admits ID_Type Maps
+Require Import Term JSON List String Stringifiable_Class_Admits ID_Type Maps
 Interface_Strings_Vars.
 
 Require Coq.Program.Tactics.
@@ -113,17 +113,20 @@ Definition kill_name_constant : string := "KILL".
 Definition keep_name_constant : string := "KEEP".
 
 Definition mt_name_constant : string := "mt_evt".
-Definition nn_name_constant : string := "nn".
-Definition uu_name_constant : string := "uu".
-Definition ss_name_constant : string := "ss".
+Definition nonce_evt_name_constant : string := "nonce_evt".
+Definition asp_evt_name_constant : string := "asp_evt".
+Definition split_evt_name_constant : string := "split_evt".
 
 Definition asp_name_constant  : string := "asp".
 Definition null_name_constant : string := "NULL".
+Definition appr_name_constant : string := "APPR".
 Definition copy_name_constant : string := "CPY".
 Definition aspc_name_constant : string := "ASPC".
 Definition sig_name_constant  : string := "SIG".
 Definition hsh_name_constant  : string := "HSH".
 Definition enc_name_constant  : string := "ENC".
+
+Definition evidencet_name_constant : string := "EvidenceT".
 
 Definition att_name_constant  : string := "att".
 Definition lseq_name_constant : string := "lseq".
@@ -131,14 +134,6 @@ Definition bseq_name_constant : string := "bseq".
 Definition bpar_name_constant : string := "bpar".
 
 Definition rawev_name_constant : string := "RawEv".
-
-Definition appresult_name_constant : string := "AppResultC".
-Definition mtc_app_name_constant   : string := "mtc_app".
-Definition nnc_app_name_constant   : string := "nnc_app".
-Definition hhc_app_name_constant   : string := "hhc_app".
-Definition ggc_app_name_constant   : string := "ggc_app".
-Definition eec_app_name_constant   : string := "eec_app".
-Definition ssc_app_name_constant   : string := "ssc_app".
 
 Definition sp_name_constant   : string := "SP".
 Definition all_name_constant  : string := "ALL".
@@ -355,26 +350,25 @@ Defined.
 
 Fixpoint EvidenceT_to_JSON `{Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP_PARAMS} (e : EvidenceT) : JSON := 
   match e with
-  | mt_evt=> 
-      constructor_to_JSON STR_EvidenceT mt_name_constant []
+  | mt_evt=> constructor_to_JSON evidencet_name_constant mt_name_constant []
   | nonce_evt n => 
-      constructor_to_JSON STR_EvidenceT nn_name_constant [(to_JSON n)]
-  | asp_evt plc fwd ps e' => 
-      constructor_to_JSON STR_EvidenceT uu_name_constant 
-        [(JSON_String plc); (to_JSON fwd);
-          (to_JSON ps); EvidenceT_to_JSON e']
+      constructor_to_JSON evidencet_name_constant nonce_evt_name_constant 
+        [(to_JSON n)]
+  | asp_evt plc ps e' => 
+      constructor_to_JSON evidencet_name_constant asp_evt_name_constant 
+        [(JSON_String plc); (to_JSON ps); EvidenceT_to_JSON e']
   | split_evt e1 e2 => 
-      constructor_to_JSON STR_EvidenceT ss_name_constant 
+      constructor_to_JSON evidencet_name_constant split_evt_name_constant 
         [(EvidenceT_to_JSON e1); (EvidenceT_to_JSON e2)]
   end.
 
 Fixpoint EvidenceT_from_JSON `{Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP_PARAMS} (js : JSON) : ResultT EvidenceT string :=
-    let type_name := STR_EvidenceT in
+    let type_name := evidencet_name_constant in
     match (JSON_get_Object (type_name ++ "_" ++ type_string_constant) js) with
     | resultC (JSON_String cons_name) =>
       if (eqb cons_name mt_name_constant) 
       then resultC mt_evt
-      else if (eqb cons_name nn_name_constant) 
+      else if (eqb cons_name nonce_evt_name_constant) 
       then match js with
           | JSON_Object [
               _;
@@ -382,22 +376,21 @@ Fixpoint EvidenceT_from_JSON `{Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP
             ] =>
               n_js <- from_JSON n_js ;;
               resultC (nonce_evt n_js)
-          | _ => errC ("JSON Parsing " ++ nn_name_constant ++ " ARGS:  wrong number of JSON args (expected 1)")
+          | _ => errC ("JSON Parsing " ++ nonce_evt_name_constant ++ " ARGS:  wrong number of JSON args (expected 1)")
           end
-      else if (eqb cons_name uu_name_constant) 
+      else if (eqb cons_name asp_evt_name_constant) 
       then match js with
           | JSON_Object [
               _;
-              (_, JSON_Array [ JSON_String plc; fwd; asp_par; ev' ])
+              (_, JSON_Array [ JSON_String plc; asp_par; ev' ])
             ] =>
               plc <- from_string plc ;;
-              fwd <- from_JSON fwd ;;
               asp_par <- from_JSON asp_par ;;
               ev' <- EvidenceT_from_JSON ev' ;;
-              resultC (asp_evt plc fwd asp_par ev')
-          | _ => errC ("JSON Parsing " ++ uu_name_constant ++ " ARGS:  wrong number of JSON args (expected 4)")
+              resultC (asp_evt plc asp_par ev')
+          | _ => errC ("JSON Parsing " ++ asp_evt_name_constant ++ " ARGS:  wrong number of JSON args (expected 3)")
           end 
-      else if (eqb cons_name ss_name_constant) 
+      else if (eqb cons_name split_evt_name_constant) 
       then match js with
           | JSON_Object [
               _;
@@ -406,7 +399,7 @@ Fixpoint EvidenceT_from_JSON `{Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP
               ev1 <- EvidenceT_from_JSON ev1 ;;
               ev2 <- EvidenceT_from_JSON ev2 ;;
               resultC (split_evt ev1 ev2)
-          | _ => errC ("JSON Parsing " ++ ss_name_constant ++ " ARGS:  wrong number of JSON args (expected 2)")
+          | _ => errC ("JSON Parsing " ++ split_evt_name_constant ++ " ARGS:  wrong number of JSON args (expected 2)")
           end 
       else errC "Invalid EvidenceT JSON constructor name"
     | resultC _ => errC ("Invalid " ++ type_name ++ " JSON:  no constructor name string")
@@ -442,9 +435,10 @@ Definition ASP_to_JSON `{Jsonifiable FWD, Stringifiable Plc, Stringifiable SP, J
   match t with
   | NULL => constructor_to_JSON STR_ASP null_name_constant []
   | CPY => constructor_to_JSON STR_ASP copy_name_constant []
-  | ASPC sp fwd ps => 
+  | APPR => constructor_to_JSON STR_ASP appr_name_constant []
+  | ASPC sp ps => 
       constructor_to_JSON STR_ASP aspc_name_constant 
-        [(JSON_String (to_string sp)); (to_JSON fwd); (to_JSON ps)]
+        [(JSON_String (to_string sp)); (to_JSON ps)]
   | SIG => constructor_to_JSON STR_ASP sig_name_constant []
   | HSH => constructor_to_JSON STR_ASP hsh_name_constant []
   | ENC q => 
@@ -456,13 +450,14 @@ Definition ASP_to_JSON `{Jsonifiable FWD, Stringifiable Plc, Stringifiable SP, J
 Definition ASP_from_JSON_map `{Jsonifiable FWD, Stringifiable Plc, Stringifiable SP, Jsonifiable ASP_PARAMS}: MapC string (JSON -> (ResultT ASP string)) := 
   [(null_name_constant, constructor_from_JSON STR_ASP (fun _ => resultC NULL));
    (copy_name_constant, constructor_from_JSON STR_ASP (fun _ => resultC CPY));
+   (appr_name_constant, constructor_from_JSON STR_ASP (fun _ => resultC APPR));
    (aspc_name_constant, constructor_from_JSON STR_ASP 
       (fun ljs =>
         match ljs with
-        | [JSON_String sp_js; fwd_js; ps_js] => 
-            match (from_string sp_js), (from_JSON fwd_js), (from_JSON ps_js) with
-            | resultC sp, resultC fwd, resultC ps => resultC (ASPC sp fwd ps)
-            | _, _, _ => errC ("Parsing " ++ aspc_name_constant ++ " not successful")
+        | [JSON_String sp_js; ps_js] => 
+            match (from_string sp_js), (from_JSON ps_js) with
+            | resultC sp, resultC ps => resultC (ASPC sp ps)
+            | _, _ => errC ("Parsing " ++ aspc_name_constant ++ " not successful")
             end
         | _ => errC ("Parsing " ++ aspc_name_constant ++ " not successful")
         end));
@@ -624,10 +619,11 @@ repeat rewrite canonical_stringification in *; simpl in *;
 find_rewrite; eauto.
 Defined.
 
+(* 
 Fixpoint AppResultC_to_JSON `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsonifiable RawEv} (a : AppResultC) : JSON := 
   match a with
   | mtc_app => constructor_to_JSON appresult_name_constant mtc_app_name_constant []
-  | nnc_app n bs => constructor_to_JSON appresult_name_constant nnc_app_name_constant
+  | nonce_evtc_app n bs => constructor_to_JSON appresult_name_constant nonce_evtc_app_name_constant
       [(JSON_String (to_string n)); (JSON_String (to_string bs))]
   | ggc_app plc ps rawev res =>
       constructor_to_JSON appresult_name_constant ggc_app_name_constant
@@ -654,7 +650,7 @@ Fixpoint AppResultC_from_JSON `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsoni
     | resultC (JSON_String cons_name) =>
       if (eqb cons_name mtc_app_name_constant) 
       then resultC (mtc_app)
-      else if (eqb cons_name nnc_app_name_constant) 
+      else if (eqb cons_name nonce_evtc_app_name_constant) 
       then match js with
         | JSON_Object [
             _;
@@ -662,8 +658,8 @@ Fixpoint AppResultC_from_JSON `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsoni
          ] =>
             n_val <- from_string n ;;
             bs_val <- from_string bs ;;
-            resultC (nnc_app n_val bs_val)
-        | _ => errC ("JSON Parsing " ++ "'" ++ nnc_app_name_constant ++ "' ARGS: Incorrect number or wrong type of JSON args (expected [n; bs])")
+            resultC (nonce_evtc_app n_val bs_val)
+        | _ => errC ("JSON Parsing " ++ "'" ++ nonce_evtc_app_name_constant ++ "' ARGS: Incorrect number or wrong type of JSON args (expected [n; bs])")
         end
       else if (eqb cons_name ggc_app_name_constant) 
       then match js with
@@ -719,12 +715,7 @@ Fixpoint AppResultC_from_JSON `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsoni
     | resultC _ => errC ("Invalid " ++ appresult_name_constant ++ " JSON type")
     | errC e => errC e
     end.
+*)
 
-Global Instance Jsonifiable_AppResultC `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsonifiable RawEv} : Jsonifiable AppResultC.
-eapply Build_Jsonifiable with (to_JSON := AppResultC_to_JSON) (from_JSON := AppResultC_from_JSON).
-induction a; simpl in *;
-repeat (result_monad_unfold;
-jsonifiable_hammer; repeat rewrite canonical_jsonification in *).
-Defined.
 
 Close Scope string_scope.

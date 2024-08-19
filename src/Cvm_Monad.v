@@ -226,8 +226,8 @@ Definition do_remote (t:Term) (pTo:Plc) (e:Evidence) (sc : Session_Config)
       | resultC js_resp =>
           match from_JSON js_resp with
           | resultC resp => 
-              let '(mkPRResp succesplit_evt ev) := resp in
-              if succesplit_evt 
+              let '(mkPRResp success ev) := resp in
+              if success 
               then resultC ev 
               else errC (Runtime errStr_remote_am_failure)
           | errC msg => errC (Runtime msg)

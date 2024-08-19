@@ -15,7 +15,7 @@ This proof script is free software: you can redistribute it and/or
 modify it under the terms of the BSD License as published by the
 University of California.  See license.txt for details. *)
 
-Require Import Maps EqClass List ID_Type Defs ErrorStringConstants Lia.
+Require Import Maps EqClass List ID_Type Defs ErrorStringConstants Lia More_lists.
 Import ListNotations ResultNotation.
 
 Require Export Params_Admits.
@@ -271,4 +271,40 @@ Proof.
   try eapply asp_appr_events_size_works; eauto;
   simpl in *; intuition; destruct e; simpl in *;
   repeat find_injection; ff; result_monad_unfold; ff.
+Qed.
+
+Theorem asp_events_deterministic_index : forall G p a e i evs,
+  asp_events G p e a i = resultC evs ->
+  forall v',
+    true_last evs = Some v' ->
+    ev v' = i + List.length evs - 1.
+Proof.
+  induction e; simpl in *; intros; ff; try lia.
+  result_monad_unfold; 
+  break_match; try congruence;
+  break_match; try congruence;
+  repeat find_injection; simpl in *;
+  break_match; try (find_injection; simpl in *; lia).
+  find_reverse_rewrite;
+  repeat (
+    find_apply_lem_hyp true_last_app_spec;
+    intuition; try congruence;
+    simpl in *;
+    repeat find_injection;
+    simpl in *;
+    repeat rewrite app_length;
+    simpl in *;
+    try lia
+  );
+  repeat (find_apply_lem_hyp app_eq_nil;
+    intuition; try congruence
+  ).
+  rewrite app_assoc in Heql1.
+  eapply list_length_app_cons in Heql1;
+  simpl in *;
+  find_reverse_rewrite;
+  rewrite <- app_assoc.
+  simpl in *.
+  repeat rewrite app_length; simpl in *.
+  try lia.
 Qed.

@@ -101,8 +101,8 @@ Definition make_AM_Protocol_Run_request_JSON (att_sesplit_evt : Attestation_Sess
   | resultC js_resp =>
       match from_JSON js_resp with
       | resultC prresp =>
-        let '(mkPRResp succesplit_evt ev) := prresp in
-        if succesplit_evt 
+        let '(mkPRResp success ev) := prresp in
+        if success 
         then resultC ev 
         else errC errStr_remote_am_failure
       | errC msg => errC msg

@@ -11,7 +11,7 @@ University of California.  See license.txt for details. *)
 
 (** More facts about lists. *)
 
-Require Import List Compare_dec Lia.
+Require Import List Compare_dec Lia StructTactics.
 Import List.ListNotations.
 Open Scope list_scope.
 
@@ -321,6 +321,43 @@ Section More_lists.
     destruct H.
     exists (S i).
     simpl; auto.
+  Qed.
+
+  Fixpoint true_last {A : Type} (l : list A) : option A :=
+    match l with
+    | nil => None
+    | h' :: t' => 
+      match t' with
+      | nil => Some h'
+      | h'' :: t'' => true_last t'
+      end
+    end.
+
+  Lemma true_last_app : forall A (l1 l2 : list A),
+    l2 <> nil ->
+    true_last (l1 ++ l2) = true_last l2.
+  Proof.
+    induction l1; simpl in *; intuition.
+    break_match; eauto.
+    - find_apply_lem_hyp app_eq_nil; intuition.
+    - rewrite <- Heql; eauto.
+  Qed.
+
+  Lemma true_last_app_spec : forall A (l1 l2 : list A) x,
+    true_last (l1 ++ l2) = Some x ->
+    (true_last l1 = Some x /\ l2 = nil) \/ true_last l2 = Some x.
+  Proof.
+    induction l1; simpl in *; intuition;
+    break_match; simpl in *; eauto;
+    break_match; simpl in *; repeat find_injection; eauto.
+  Qed.
+
+  Theorem list_length_app_cons : forall A (l1 l2 : list A) x x',
+    l1 ++ [x] = x' :: l2 ->
+    length (l1 ++ [x]) = length (x' :: l2).
+  Proof.
+    induction l1; simpl in *; intuition;
+    repeat find_injection; simpl in *; try lia.
   Qed.
 
 End More_lists.

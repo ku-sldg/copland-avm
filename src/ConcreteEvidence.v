@@ -22,7 +22,7 @@ Require Export Term_Defs.
 
 Inductive EvidenceTC :=
 | mtc: EvidenceTC
-| nnc: N_ID -> BS -> EvidenceTC
+| nonce_evtc: N_ID -> BS -> EvidenceTC
 | ggc: Plc -> ASP_PARAMS -> RawEv -> EvidenceTC -> EvidenceTC
 | hhc: Plc -> ASP_PARAMS -> BS -> EvidenceT -> EvidenceTC
 | eec: Plc -> ASP_PARAMS -> BS -> EvidenceT -> EvidenceTC
@@ -40,7 +40,7 @@ Fixpoint et_fun (ec:EvidenceTC) : EvidenceT :=
   | kkc p params et' => asp_evt p KILL params et'
   | kpc p params ec' => asp_evt p KEEP params (et_fun ec')
                        
-  | nnc ni _ => nonce_evt ni
+  | nonce_evtc ni _ => nonce_evt ni
   | ssc ec1 ec2 => split_evt (et_fun ec1) (et_fun ec2)
   end.
 

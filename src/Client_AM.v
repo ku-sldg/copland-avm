@@ -28,8 +28,8 @@ Definition am_sendReq (req_plc : Plc) (att_sesplit_evt : Attestation_Session) (t
       match from_JSON js_res with
       | errC msg => errC msg
       | resultC res =>
-        let '(mkPRResp succesplit_evt ev) := res in
-        if succesplit_evt then resultC ev else errC errStr_remote_am_failure
+        let '(mkPRResp success ev) := res in
+        if success then resultC ev else errC errStr_remote_am_failure
       end
   | errC msg => errC msg
   end.
@@ -44,8 +44,8 @@ Definition am_sendReq_app (uuid : UUID) (att_sesplit_evt : Attestation_Session) 
     match from_JSON js_res with
     | errC msg => errC msg
     | resultC res =>
-      let '(mkPAResp succesplit_evt result) := res in
-      if succesplit_evt then resultC result else errC errStr_remote_am_failure
+      let '(mkPAResp success result) := res in
+      if success then resultC result else errC errStr_remote_am_failure
     end
   | errC msg => errC msg
   end.

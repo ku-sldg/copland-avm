@@ -6,7 +6,7 @@ CVM Monad definition.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import ConcreteEvidenceT ErrorStMonad_Coq Attestation_Session.
+Require Import ErrorStMonad_Coq Attestation_Session Term_Defs.
 Require Import List.
 Import ListNotations.
 Require Import Manifest_Admits.

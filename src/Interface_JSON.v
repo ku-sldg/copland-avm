@@ -4,7 +4,7 @@ Import ListNotations ResultNotation.
 
 (* Protocol Run Request *)
 Global Instance Jsonifiable_ProtocolRunRequest `{Jsonifiable Term,
-  Jsonifiable RawEv, Jsonifiable Attestation_Session}: Jsonifiable ProtocolRunRequest.
+  Jsonifiable Evidence, Jsonifiable Attestation_Session}: Jsonifiable ProtocolRunRequest.
 eapply Build_Jsonifiable with
 (to_JSON := fun req =>
   JSON_Object 
@@ -12,37 +12,37 @@ eapply Build_Jsonifiable with
     (STR_ACTION, (JSON_String STR_RUN));
     (STR_ATTEST_SESS, (to_JSON (prreq_att_sesplit_evt req)));
     (STR_REQ_PLC, (JSON_String (to_string (prreq_req_plc req))));
-    (STR_TERM, (to_JSON (prreq_term req))); 
-    (STR_RAWEV, (to_JSON (prreq_rawev req)))])
+    (STR_EVIDENCE, (to_JSON (prreq_Evidence req)));
+    (STR_TERM, (to_JSON (prreq_term req)))])
 (from_JSON := (fun j =>
   temp_att_sesplit_evt <- JSON_get_Object STR_ATTEST_SESS j ;;
-  temp_term <- JSON_get_Object STR_TERM j ;;
   temp_req_plc <- JSON_get_string STR_REQ_PLC j ;;
-  temp_ev <- JSON_get_Object STR_RAWEV j ;;
+  temp_ev <- JSON_get_Object STR_EVIDENCE j ;;
+  temp_term <- JSON_get_Object STR_TERM j ;;
 
   att_sesplit_evt <- from_JSON temp_att_sesplit_evt ;;
-  term <- from_JSON temp_term ;;
   req_plc <- from_string temp_req_plc ;;
   ev <- from_JSON temp_ev ;;
-  resultC (mkPRReq att_sesplit_evt term req_plc ev)));
+  term <- from_JSON temp_term ;;
+  resultC (mkPRReq att_sesplit_evt req_plc ev term)));
 solve_json.
 Defined.
 
 (* Protocol Run Response *)
-Global Instance Jsonifiable_ProtocolRunResponse `{Jsonifiable RawEv}: Jsonifiable ProtocolRunResponse.
+Global Instance Jsonifiable_ProtocolRunResponse `{Jsonifiable Evidence}: Jsonifiable ProtocolRunResponse.
 eapply Build_Jsonifiable with
 (to_JSON := fun resp =>
   JSON_Object 
     [(STR_TYPE, (JSON_String STR_RESPONSE));
     (STR_ACTION, (JSON_String STR_RUN));
-    (STR_SUCCESS, (JSON_Boolean (prresp_succesplit_evt resp)));
-    (STR_PAYLOAD, (to_JSON (prresp_ev resp)))])
+    (STR_SUCCESS, (JSON_Boolean (prresp_success resp)));
+    (STR_PAYLOAD, (to_JSON (prresp_Evidence resp)))])
 (from_JSON := (fun resp =>
-  temp_succesplit_evt <- JSON_get_bool STR_SUCCESS resp ;;
+  temp_success <- JSON_get_bool STR_SUCCESS resp ;;
   temp_ev <- JSON_get_Object STR_PAYLOAD resp ;;
 
   ev <- from_JSON temp_ev ;;
-  resultC (mkPRResp temp_succesplit_evt ev))); solve_json.
+  resultC (mkPRResp temp_success ev))); solve_json.
 Defined.
 
 (* Protocol Negotiate Request *)
@@ -67,16 +67,17 @@ eapply Build_Jsonifiable with
   JSON_Object 
     [(STR_TYPE, (JSON_String STR_RESPONSE));
     (STR_ACTION, (JSON_String STR_NEGOTIATE));
-    (STR_SUCCESS, (JSON_Boolean (pnresp_succesplit_evt resp)));
+    (STR_SUCCESS, (JSON_Boolean (pnresp_success resp)));
     (STR_PAYLOAD, (to_JSON (pnresp_term resp)))])
 (from_JSON := (fun resp =>
-  temp_succesplit_evt <- JSON_get_bool STR_SUCCESS resp ;;
+  temp_success <- JSON_get_bool STR_SUCCESS resp ;;
   temp_term <- JSON_get_Object STR_PAYLOAD resp ;;
 
   term <- from_JSON temp_term ;;
-  resultC (mkPNResp temp_succesplit_evt term))); solve_json.
+  resultC (mkPNResp temp_success term))); solve_json.
 Defined.
 
+(* 
 (* Protocol Appraise Request *)
 Global Instance Jsonifiable_ProtocolAppraiseRequest `{Jsonifiable Term, Jsonifiable RawEv, Jsonifiable EvidenceT, Jsonifiable Attestation_Session}: Jsonifiable ProtocolAppraiseRequest.
 eapply Build_Jsonifiable with
@@ -111,15 +112,16 @@ eapply Build_Jsonifiable with
   JSON_Object [
     (STR_TYPE, (JSON_String STR_RESPONSE));
     (STR_ACTION, (JSON_String STR_APPRAISE));
-    (STR_SUCCESS, (JSON_Boolean (paresp_succesplit_evt resp)));
+    (STR_SUCCESS, (JSON_Boolean (paresp_success resp)));
     (STR_PAYLOAD, (to_JSON (paresp_result resp)))])
 (from_JSON := (fun resp =>
-  temp_succesplit_evt <- JSON_get_bool STR_SUCCESS resp ;;
+  temp_success <- JSON_get_bool STR_SUCCESS resp ;;
   temp_result <- JSON_get_Object STR_PAYLOAD resp ;;
 
   result <- from_JSON temp_result ;;
-  resultC (mkPAResp temp_succesplit_evt result))); solve_json.
+  resultC (mkPAResp temp_success result))); solve_json.
 Defined.
+*)
 
 (* ASP Run Request *)
 Global Instance Jsonifiable_ASPRunRequest `{Jsonifiable RawEv, Jsonifiable ASP_ARGS}: Jsonifiable ASPRunRequest.
@@ -155,14 +157,14 @@ eapply Build_Jsonifiable with
   JSON_Object 
     [(STR_TYPE, (JSON_String STR_RESPONSE));
     (STR_ACTION, (JSON_String STR_ASP_RUN));
-    (STR_SUCCESS, (JSON_Boolean (asprresp_succesplit_evt resp)));
+    (STR_SUCCESS, (JSON_Boolean (asprresp_success resp)));
     (STR_PAYLOAD, (to_JSON (asprresp_rawev resp)))])
 (from_JSON := (fun resp =>
-  temp_succesplit_evt <- JSON_get_bool STR_SUCCESS resp ;;
+  temp_success <- JSON_get_bool STR_SUCCESS resp ;;
   temp_rawev <- JSON_get_Object STR_PAYLOAD resp ;;
 
   rawev <- from_JSON temp_rawev ;;
-  resultC (mkASPRResp temp_succesplit_evt rawev))); solve_json.
+  resultC (mkASPRResp temp_success rawev))); solve_json.
 Defined.
 
 (* Error Response *)
