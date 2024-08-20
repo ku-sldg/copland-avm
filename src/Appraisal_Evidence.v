@@ -4,34 +4,16 @@
     Also included:  properties about CVM internal EvidenceT and Event handling.  
     TODO:  This file has become quite bloated.  May need to refactor/decompose.  *)
 
-Require Import ConcreteEvidenceT AutoApp Defs StructTactics OptMonad_Coq Anno_Term_Defs Cvm_Impl Cvm_St ResultT Axioms_Io Attestation_Session External_Facts Helpers_CvmSemantics Cvm_Monad More_lists Auto.
+Require Import AutoApp Defs StructTactics OptMonad_Coq Cvm_Impl Cvm_St ResultT Axioms_Io Attestation_Session Helpers_CvmSemantics Cvm_Monad More_lists Auto Term_Defs.
 
 Require Import List.
 Import ListNotations OptNotation.
 
 Require Import Lia Coq.Program.Tactics.
 
-Definition peel_bs (ls:RawEv) : Opt (BS * RawEv) :=
-  match ls with
-  | bs :: ls' => opt_ret (bs, ls')
-  | _ => opt_failm
-  end.
-
-Fixpoint peel_n (n : nat) (ls : RawEv) : Opt (RawEv * RawEv) :=
-  match n with
-  | 0 => opt_ret ([], ls)
-  | S n' =>
-      match ls with
-      | [] => opt_failm
-      | x :: ls' =>
-          '(ls1, ls2) <- peel_n n' ls' ;;
-          opt_ret (x :: ls1, ls2)
-      end
-  end.
-
 Lemma firstn_long: forall (e:list BS) x,
-    length e >= x ->
-    length (firstn x e) = x.
+  length e >= x ->
+  length (firstn x e) = x.
 Proof.
   intros.
   eapply firstn_length_le.
@@ -39,34 +21,12 @@ Proof.
 Qed.
 
 Lemma skipn_long: forall (e:list BS) x y,
-    length e = x + y ->
-    length (skipn x e) = y.
+  length e = x + y ->
+  length (skipn x e) = y.
 Proof.
   intros.
   assert (length (skipn x e) = length e - x).
   { eapply skipn_length. }
-  lia.
-Qed.
-
-Lemma peel_fact': forall e x y H,
-    length e = S x ->
-    peel_bs e = Some (y, H) ->
-    length H = x.
-Proof.
-  intros.
-  destruct e;
-    ff; eauto.
-Qed.
-
-Lemma peel_fact: forall e x y H et,
-    length e = S x ->
-    peel_bs e = Some (y, H) ->
-    et_size et = x ->
-    wf_ec (evc H et).
-Proof.
-  intros.
-  econstructor.
-  eapply peel_fact'; eauto.
   lia.
 Qed.
 

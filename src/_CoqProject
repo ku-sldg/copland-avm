@@ -56,7 +56,7 @@ Manifest_Generator_Facts.v
 Manifest_Generator_Union.v
 AutoApp.v
 Helpers_CvmSemantics.v
-External_Facts.v
+# External_Facts.v
 Appraisal_Evidence.v
 CvmSemantics.v
 Disclose.v
