@@ -99,6 +99,7 @@ Proof.
   intros.
   induction H; simpl in *; ffa using result_monad_unfold.
 Qed.
+Local Hint Resolve et_same_asps_impl_same_size : core.
 
 Lemma et_same_asps_appr_procedure : forall G e1 e1' e2 e2' p1 p2,
   et_same_asps e1 e2 ->
@@ -133,14 +134,7 @@ Proof.
       clear H2; eauto
     end; eapply et_same_asps_split; eauto.
 Qed.
-  - 
-    
-    ff; eapply et_same_asps_asp; eapply et_same_asps_asp; eauto. 
-  - ff; erewrite et_same_asps_impl_same_size; eauto.
-  - result_monad_unfold; ff;
-    eapply IHet_same_asps1 in Heqr1; eauto;
-    eapply IHet_same_asps2 in Heqr2; eauto;
-    repeat find_rewrite; eauto.
+Local Hint Resolve et_same_asps_appr_procedure : core.
 
 Lemma et_same_asps_eval_same_asps : forall G t p1 p2 e1 e1' e2 e2',
   et_same_asps e1 e2 ->
@@ -152,7 +146,8 @@ Proof.
   - destruct a; simpl in *; ff; eauto;
     try (econstructor; fail);
     try (eapply et_same_asps_asp; eauto);
-    try (destruct s; simpl in *; eauto; try econstructor; fail).
+    try (destruct s; simpl in *; eauto; try econstructor; fail);
+    eapply et_same_asps_appr_procedure; eauto.
   - result_monad_unfold; ffa.
   - result_monad_unfold; ffa;
     destruct s, s, s0; simpl in *;
@@ -178,14 +173,8 @@ Proof.
       try (eapply et_same_asps_refl; fail)
     end;
     eapply et_same_asps_split; econstructor; eauto.
-  -  
-    econstructor.
-    try (econstructor; ffa; fail).
-    * econstructor. 
-  intros.
-  generalizeEverythingElse H.
-  induction H; simpl in *.
-
+Qed.
+Local Hint Resolve et_same_asps_eval_same_asps : core.
 
 Lemma appr_procedure_et_size_plc_irrel : forall G e1 e1' e2 e2' p1 p2,
   et_same_asps e1 e2 ->
@@ -193,14 +182,7 @@ Lemma appr_procedure_et_size_plc_irrel : forall G e1 e1' e2 e2' p1 p2,
   appr_procedure G p2 e2 = resultC e2' ->
   et_size G e1' = et_size G e2'.
 Proof.
-  intros.
-  generalizeEverythingElse H.
-  induction H; simpl in *; intuition; repeat find_injection; eauto.
-  - ff; erewrite et_same_asps_impl_same_size; eauto.
-  - result_monad_unfold; ff;
-    eapply IHet_same_asps1 in Heqr1; eauto;
-    eapply IHet_same_asps2 in Heqr2; eauto;
-    repeat find_rewrite; eauto.
+  eauto.
 Qed.
 
 Lemma eval_et_size_plc_irrel : forall G t p1 p2 e1 e1' e2 e2',
@@ -209,13 +191,28 @@ Lemma eval_et_size_plc_irrel : forall G t p1 p2 e1 e1' e2 e2',
   eval G p2 e2 t = resultC e2' ->
   et_size G e1' = et_size G e2'.
 Proof.
-  induction t; simpl in *; intuition.
-  - destruct a; simpl in *; ff;
-    try destruct s; simpl in *; ff;
-    try (erewrite et_same_asps_impl_same_size; eauto; fail);
-    eapply appr_procedure_et_size_plc_irrel; eauto.
-  - ffa. 
-  - ffa using result_monad_unfold. 
+  intros.
+  eauto.
+Qed.
+
+Lemma et_same_asps_impl_appr_events_size_same : forall G e1 e2 n1 n2,
+  et_same_asps e1 e2 ->
+  appr_events_size G e1 = resultC n1 ->
+  appr_events_size G e2 = resultC n2 ->
+  n1 = n2.
+Proof.
+  intros.
+  generalizeEverythingElse H.
+  induction H; try (simpl in *; ff; fail); intros;
+  simpl in *; result_monad_unfold; ff;
+  repeat match goal with
+  | H1 : appr_events_size _ ?e1 = _,
+    H2 : appr_events_size _ ?e2 = _,
+    IH : context[appr_events_size _ ?e1 = _ -> _] |- _ =>
+    eapply IH in H1; try eapply H2;
+    clear H2; eauto; subst
+  end.
+Qed.
 
 Lemma events_size_eval_res_irrel : forall G t p1 p2 et e1 e2 n1 n2,
   eval G p1 et t = resultC e1 ->
@@ -224,60 +221,36 @@ Lemma events_size_eval_res_irrel : forall G t p1 p2 et e1 e2 n1 n2,
   events_size G p2 e2 t = resultC n2 ->
   n1 = n2.
 Proof.
+  intros.
+  assert (et_same_asps e1 e2) by (
+    assert (et_same_asps et et) by econstructor;
+    eauto
+  );
+  clear H H0 et.
+  generalizeEverythingElse t.
   induction t; simpl in *; intuition; ffa using result_monad_unfold.
-  - generalizeEverythingElse et;
-    induction et; simpl in *; intuition; ffa using result_monad_unfold.
+  - eapply et_same_asps_impl_appr_events_size_same; eauto.
+  - destruct s, s, s0; simpl in *; ffa using result_monad_unfold;
     repeat match goal with
-    | H1 : appr_procedure _ _ ?e = resultC ?e1,
-      H2 : appr_procedure _ _ ?e = resultC ?e2,
-      H3 : appr_events_size _ ?e1 = _,
-      H4 : appr_events_size _ ?e2 = _,
-      IH : context[appr_procedure _ _ ?e = _ -> _] |- _ =>
-      eapply IH in H1; try (eapply H2); try (eapply H3); try (eapply H4);
-      clear H2 H3 H4; subst; eauto
+    | H1 : events_size _ ?p1 ?e1 ?t1 = _,
+      H2 : events_size _ ?p2 ?e2 ?t1 = _,
+      IH : context[events_size _ _ _ ?t1 = _ -> _] |- _ =>
+      eapply IH in H1; try (eapply H2);
+      try (eapply et_same_asps_symm; eauto; fail);
+      try (eapply et_same_asps_refl; eauto; fail);
+      clear H2; subst; eauto
     end.
-  - admit.
-  - destruct s, s, s0; simpl in *; ffa using result_monad_unfold.
-    eapply IHt1 in Heqr5. 
-    2: {
-      eapply Heqr3.
-    }
-    2: {
-      admit.
-    }
-    2: {
-
-    }
-    match goal with
-    | H1 : eval _ ?p1 _ ?t = resultC ?e1,
-      H2 : eval _ ?p2 _ ?t = resultC ?e2,
-      H3 : events_size _ ?p1 ?e1 _ = _,
-      H4 : events_size _ ?p2 ?e2 _ = _,
-      IH : context[eval _ _ _ ?t = _ -> _] |- _ =>
-      eapply IH in H1; try (eapply H2); try (eapply H3); try (eapply H4);
-      clear H2 H3 H4; subst; eauto
+  - destruct s, s, s0; simpl in *; ffa using result_monad_unfold;
+    repeat match goal with
+    | H1 : events_size _ ?p1 ?e1 ?t1 = _,
+      H2 : events_size _ ?p2 ?e2 ?t1 = _,
+      IH : context[events_size _ _ _ ?t1 = _ -> _] |- _ =>
+      eapply IH in H1; try (eapply H2);
+      try (eapply et_same_asps_symm; eauto; fail);
+      try (eapply et_same_asps_refl; eauto; fail);
+      clear H2; subst; eauto
     end.
-    eapply IHet1 in Heqr1; try eapply Heqr.
-    2: {
-      eassumption.
-    }
-    2: {
-      eassumption.
-    }
-    subst.
-
-    induction et; simpl in *; ffa using result_monad_unfold.
-  - admit.
-  - destruct s, s, s0; simpl in *; ffa using result_monad_unfold.
-    *  
-    eapply IHt1_1 in Heqr2; [ | | | ].
-  repeat match goal with
-  | H1 : events_size _ _ _ ?t = _,
-    H2 : events_size _ _ _ ?t = _,
-    IH : context[events_size _ _ _ ?t] |- _ =>
-    eapply IH in H1; [ | | | eapply H2 ]; 
-    clear H2; eauto; subst
-  end.
+Qed.
 
 Lemma events_size_plc_irrel : forall G t et p1 p2 n1 n2,
   events_size G p1 et t = resultC n1 ->
