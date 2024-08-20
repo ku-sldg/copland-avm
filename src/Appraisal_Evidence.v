@@ -30,976 +30,325 @@ Proof.
   lia.
 Qed.
 
-Fixpoint encodeEv (e:EvidenceTC) : RawEv :=
-  match e with
-  | mtc => []
-  | nnc _ bs => [bs]
-  | ggc _ _ rawev e' => rawev ++ (encodeEv e')
-  | hhc _ _ bs _ => [bs]
-  | eec _ _ bs _ => [bs]
-  | kkc _ _ _ => []
-  | kpc _ _ e' => encodeEv e'
-  | ssc e1 e2 => (encodeEv e1) ++ (encodeEv e2)
-  end.
-
-Fixpoint reconstruct_ev' (ls:RawEv) (et:EvidenceT) : Opt EvidenceTC :=
-  match et with
-  | mt_evt=> 
-    match ls with
-    | [] => Some mtc
-    | _ => None
-    end
-  | asp_evt p fwd ps et' =>
-    match fwd with
-    | (EXTD n) => 
-      '(rawEv, ls') <- peel_n n ls ;;
-      x <- reconstruct_ev' ls' et' ;;
-      Some (ggc p ps rawEv x)
-    | COMP =>
-      '(bs, ls') <- peel_bs ls ;;
-      match ls' with
-      | [] => Some (hhc p ps bs et')
-      | _ => None
-      end
-    | ENCR =>
-      '(bs, ls') <- peel_bs ls ;;
-      match ls' with
-      | [] => Some (eec p ps bs et')
-      | _ => None
-      end
-    | KILL =>
-      match ls with
-      | [] => Some (kkc p ps et')
-      | _ => None
-      end
-    | KEEP =>
-      x <- reconstruct_ev' ls et' ;;
-      Some (kpc p ps x)
-    end
-  | nonce_evt i =>
-    '(bs, ls') <- peel_bs ls ;;
-     match ls' with
-    | [] => Some (nnc i bs)
-    | _ => None
-    end 
-  | split_evt et1 et2 =>
-    e1 <- reconstruct_ev' (firstn (et_size et1) ls) et1 ;;
-    e2 <- reconstruct_ev' (skipn (et_size et1) ls) et2 ;;
-    Some (ssc e1 e2)
-  end.
-
-Definition reconstruct_ev (e:Evidence) : Opt EvidenceTC :=
-  match e with
-  | evc ls et => reconstruct_ev' ls et
-  end.
-
-Inductive reconstruct_evP: Evidence -> EvidenceTC -> Prop :=
-| reconstruct_evC: forall e ee,
-    Some ee = reconstruct_ev e ->
-    reconstruct_evP e ee.
-
-
-Lemma inv_recon_mt_evt: forall ls et,
-    reconstruct_evP (evc ls et) mtc ->
-    (et = mt_evt).
-Proof.
-  intros.
-  invc H.
-  destruct et;
-    repeat ff;
-    try (unfold opt_bind in *);
-         repeat ff;
-         try solve_by_inversion.
-Qed.
-
-Ltac do_inv_recon_mt_evt:=
-  match goal with
-  | [H: reconstruct_evP (evc _ ?et) mtc
-
-     |- _] =>
-    assert_new_proof_by (et = mt_evt) ltac:(eapply inv_recon_mt_evt; apply H)
-  end;
-  subst.
-
-Lemma inv_recon_mt_evt': forall ls e,
-    reconstruct_evP (evc ls mt_evt) e ->
-    e = mtc.
-Proof.
-  intros.
-  invc H.
-  repeat ff; try solve_by_inversion; eauto.
-Qed.
-
-Ltac do_inv_recon_mt_evt' :=
-  match goal with
-  | [H: reconstruct_evP (evc _ mt_evt) ?e
-
-     |- _] =>
-    assert_new_proof_by (e = mtc) ltac:(eapply inv_recon_mt_evt'; apply H)
-  end;
-  subst.
-
-
-Lemma inv_recon_nn: forall ls et n n0,
-    reconstruct_evP (evc ls et) (nnc n n0) ->
-    ((et = nonce_evt n /\ ls = [n0])).
-Proof.
-  intros.
-  invc H.
-  destruct et; repeat ff; try (unfold opt_bind in *); repeat ff; destruct ls; try solve_by_inversion.                              
-Qed.
-
-Ltac do_inv_recon_nonce_evt :=
-  match goal with
-  | [H: reconstruct_evP (evc ?ls ?et) (nnc ?n ?nval)
-
-     |- _] =>
-    assert_new_proof_by (et = nonce_evt n /\ ls = [nval] ) ltac:(eapply inv_recon_nn; apply H)
-  end;
-  destruct_conjs;
-  subst.
-
-Lemma peel_n_spec : forall n ls ls1 ls2,
-  peel_n n ls = Some (ls1, ls2) ->
+Lemma peel_n_rawev_result_spec : forall n ls ls1 ls2 st st',
+  (peel_n_rawev n ls) st = (resultC (ls1, ls2), st') ->
   ls = ls1 ++ ls2 /\ length ls1 = n.
 Proof.
   induction n; intuition; repeat ff; subst;
-  unfold opt_ret, opt_bind in *; repeat ff; eauto.
-  - eapply IHn in Heqo; intuition; subst; eauto. 
-  - eapply IHn in Heqo; intuition; subst; eauto. 
+  err_monad_unfold; ffa.
 Qed.
 
-Lemma inv_recon_gg: forall p ps ls et n ec,
-    reconstruct_evP (evc ls et) (ggc p ps n ec) ->
-    (exists ls' et', et = asp_evt p (EXTD (length n)) ps et' /\
-                ls = n ++ ls') .
-Proof.
-  intuition; invc H.
-  generalizeEverythingElse et.
-  destruct et; repeat ff; intuition; 
-  try (unfold opt_bind, opt_ret in *); 
-  repeat ff; try solve_by_inversion.
-  eapply peel_n_spec in Heqo; intuition; subst; eauto.
-Qed.
-
-Ltac do_inv_recon_gg :=
-  match goal with
-  | [H: reconstruct_evP (evc ?ls ?et) (ggc ?p ?ps ?n _)
-
-     |- _] =>
-    assert_new_proof_by ((exists ls' et', et = asp_evt p (EXTD (length n)) ps et' /\
-                                    ls = n ++ ls') )
-                        ltac:(eapply inv_recon_gg; apply H)
-  | H : peel_n _ _ = Some _ |- _ => 
-      apply peel_n_spec in H; intuition; subst; eauto;
-      find_apply_lem_hyp app_inv_head_iff; subst; eauto
-  end;
-  destruct_conjs;
-  subst.
-
-Lemma inv_recon_hh: forall p ps ls et n et',
-    reconstruct_evP (evc ls et) (hhc p ps n et') ->
-    ((et = asp_evt p COMP ps et' ) /\ ls = [n]).
-Proof.
-  intros.
-  invc H.
-  destruct et; repeat ff; try (unfold opt_bind in *); repeat ff; destruct ls; try solve_by_inversion.
-Qed.
-
-Ltac do_inv_recon_hh :=
-  match goal with
-  | [H: reconstruct_evP (evc ?ls ?et) (hhc ?p ?ps ?hval ?et')
-
-     |- _] =>
-    assert_new_proof_by ((et = asp_evt p COMP ps et' /\ ls = [hval]))
-                        ltac:(eapply inv_recon_hh; apply H)
-  end;
-  destruct_conjs;
-  subst.
-
-Lemma inv_recon_ee: forall p ps ls et n ec',
-    reconstruct_evP (evc ls et) (eec p ps n ec') ->
-    (exists et', et = asp_evt p ENCR ps et' /\ ls = [n]).
-Proof.
-  intros.
-  invc H.
-  destruct et; repeat ff; try (unfold opt_bind in *); 
-  repeat ff; destruct ls; try solve_by_inversion;
-  repeat eexists; ff.
-Qed.
-
-Ltac do_inv_recon_ee :=
-  match goal with
-  | [H: reconstruct_evP (evc ?ls ?et) (eec ?p ?ps ?hval (*_*) _)
-
-     |- _] =>
-    assert_new_proof_by ( (exists et', et = asp_evt p ENCR ps et' /\ ls = [hval]) )
-                        ltac:(eapply inv_recon_ee; apply H)
-  end;
-  destruct_conjs;
-  subst.
-
-Lemma inv_recon_ss: forall ls et ec1 ec2,
-    reconstruct_evP (evc ls et) (ssc ec1 ec2) ->
-    (exists et1 et2, et = split_evt et1 et2).
-Proof.
-  intros.
-  invc H.
-  destruct et; repeat ff; try (unfold opt_bind in *); 
-  repeat ff; try solve_by_inversion;
-  eauto.
-Qed.
-
-Ltac do_inv_recon_split_evt :=
-  match goal with
-  | [H: reconstruct_evP (evc _ ?et) (ssc _ _)
-
-     |- _] =>
-    assert_new_proof_by ((exists et1 et2, et = split_evt et1 et2) )
-                        ltac:(eapply inv_recon_ss; apply H)
-  end;
-  destruct_conjs;
-  subst.
-
-
-Ltac do_inv_recon :=
-  try do_inv_recon_mt_evt;
-  try do_inv_recon_mt_evt';
-  try do_inv_recon_nn;
-  try do_inv_recon_gg;
-  try do_inv_recon_hh;
-  try do_inv_recon_ee;
-  try do_inv_recon_ss.
-
-Lemma recon_inv_gg: forall sig ls p ps et e,
-    reconstruct_evP
-      (evc (sig ++ ls) (asp_evt p (EXTD (length sig)) ps et))
-      (ggc p ps sig e) ->
-    reconstruct_evP (evc ls et) e.
-Proof.
-  intros.
-  invc H.
-  repeat ff; try (unfold opt_bind in *); repeat ff;
-  econstructor.
-  find_apply_lem_hyp peel_n_spec; intuition;
-  find_apply_lem_hyp app_inv_head_iff; subst; eauto.
-Qed.
-
-Ltac do_recon_inv_gg :=
-  match goal with
-  | [H: reconstruct_evP
-          (evc (_ :: ?ls) (asp_evt _ _ _ ?et))
-          (ggc _ _ _ ?e)
-     |- _] =>
-    assert_new_proof_by (reconstruct_evP (evc ls et) e) ltac:(eapply recon_inv_gg; apply H)
-  | H : peel_n _ _ = Some _ |- _ => 
-      apply peel_n_spec in H; intuition; subst; eauto;
-      find_apply_lem_hyp app_inv_head_iff; subst; eauto
-  end.
-
-Lemma recon_inv_ss: forall ls H1 H2 ec1 ec2,
-    reconstruct_evP (evc ls (split_evt H1 H2)) (ssc ec1 ec2) ->
-    reconstruct_evP (evc (firstn (et_size H1) ls) H1) ec1 /\
-    reconstruct_evP (evc (skipn (et_size H1) ls) H2)  ec2.
-Proof.
-  intros.
-  invc H.
-  repeat ff; try (unfold opt_bind in *); repeat ff;
-  split;
-    econstructor;
-    try 
-      symmetry; eassumption.
-Qed.
-
-Ltac do_recon_inv_split_evt :=
-  match goal with
-  | [H: reconstruct_evP
-          (evc ?ls (split_evt ?H1 ?H2))
-          (ssc ?ec1 ?ec2) _
-     |- _] =>
-    assert_new_proof_by
-      (reconstruct_evP (evc (firstn (et_size H1) ls) H1) ec1 /\
-       reconstruct_evP (evc (skipn (et_size H1) ls) H2)  ec2)
-      ltac:(eapply recon_inv_ss; apply H)
-  end; destruct_conjs.
-
-Ltac do_recon_inv :=
-  try do_recon_inv_gg;
-  try do_recon_inv_ss.
-
-
-Lemma wrap_reconP: forall ec e,
-    reconstruct_ev ec = Some e ->
-    reconstruct_evP ec e.
-Proof.
-  intros.
-  econstructor.
-  congruence.
-Qed.
-
-Lemma fold_recev: forall e0 e1,
-    reconstruct_ev' e0 e1 = reconstruct_ev (evc e0 e1).
-Proof.
-  ffa.
-Qed.
-
-Ltac do_wrap_reconP :=
-  repeat
-  match goal with
-  | [H: reconstruct_ev ?ec = Some ?e
-     |- _] =>
-    apply wrap_reconP in H
-  end.
-
-Ltac do_rewrap_reconP :=
-  match goal with
-  | [H: reconstruct_evP (evc _ (?cc _)) _
-     |- _] =>
-    invc H;
-    ffa;
-    try rewrite fold_recev in *;
-    do_wrap_reconP
-  end.
-
-Lemma etfun_reconstruct: forall e e0 e1,
-    reconstruct_evP (evc e0 e1) e ->
-    e1 = et_fun e.
-Proof.
-  intros.
-  generalizeEverythingElse e1.
-  induction e1; intros e e0 H.
-  - (* mt_evtcase *)
-    invc H.
-    ff.
-  - (* nonce_evt case *)
-    invc H.
-    repeat ff; try (unfold opt_bind in * ); repeat ff.
-  
-  - (* asp_evt case *)
-    destruct f; ffa.
-    + (* COMP case *)
-      invc H.
-      repeat ff; try (unfold opt_bind in * ); repeat ff.
-    + (* ENCR case *)
-      
-      invc H.
-      unfold reconstruct_ev in *.
-      unfold reconstruct_ev' in *.
-      unfold opt_bind in *.
-      repeat ff; try (unfold opt_bind in * ); repeat ff.
-           
-    + (* EXTD case *)
-      invc H.
-      ff.
-      repeat ff; try (unfold opt_bind in * ); repeat ff.
-      assert (e1 = et_fun e2 ).
-      {
-      eapply IHe1.
-      econstructor.
-      ff.
-      }
-      find_apply_lem_hyp peel_n_spec; intuition; subst; eauto.
-    + (* KILL case *)
-      invc H.
-      unfold reconstruct_ev in *.
-      ff.
-    + (* KEEP case *)
-      invc H.
-      unfold reconstruct_ev in *.
-      ff.
-      repeat ff; try (unfold opt_bind in * ); repeat ff.
-      assert (e1 = et_fun e2).
-      { eapply IHe1.
-        econstructor.
-        unfold reconstruct_ev.
-        symmetry.
-        eassumption.
-      }
-      subst.
-      tauto.
-  - (* split_evt case *)
-    invc H.
-    ff.
-    repeat ff; try (unfold opt_bind in * ); repeat ff.
-    assert (e1_1 = et_fun e1).
-    {
-      eapply IHe1_1.
-      econstructor.
-      symmetry.
-      eassumption.
-    }
-    assert (e1_2 = et_fun e2).
-    {
-      eapply IHe1_2.
-      econstructor.
-      symmetry.
-      eassumption.
-    }
-    congruence.
-Qed.
-
-Lemma wfec_split: forall e s,
-    wf_ec e ->
-    wf_ec (splitEv_l s e) /\ wf_ec (splitEv_r s e).
-Proof.
-  intros.
-  split;
-    destruct s; ff; try unfold mt_evc; ff;
-      econstructor; ff.
-Qed.
-
-Ltac do_wfec_split :=
-  match goal with
-  | [H: context[splitEv_l ?s ?e],
-        H2: context[splitEv_r ?s ?e],
-            H3: wf_ec ?e
-     |- _] =>
-    
-    assert_new_proof_by
-      (wf_ec (splitEv_l s e) /\ wf_ec (splitEv_r s e))
-      ltac: (eapply wfec_split; apply H3)
-  end; destruct_conjs.
-
-
-(* Lemma:  Encoding an Evidence bundle gives you the bits used 
-   to (re)construct it. *)
-Lemma recon_encodeEv: forall bits et ec,
-    reconstruct_evP (evc bits et) ec ->
-    encodeEv ec = bits.
-Proof.
-  intros.
-  generalizeEverythingElse ec.
-  induction ec; intros; ffa.
-  -
-    dd.
-    do_inv_recon.
-    invc H.
-    repeat ff.
-    (*
-    invc H.
-    repeat ff. *)
-  - (* nnc case *)
-    do_inv_recon.
-    ff.
-  - (* ggc case *)
-    do_inv_recon.
-    ff.
-    invc H.
-    repeat ff.
-    unfold opt_bind in *.
-    ff.
-    find_apply_lem_hyp peel_n_spec; intuition; subst;
-    find_apply_lem_hyp app_inv_head_iff; subst.
-    assert (reconstruct_evP (evc r1 H1) e).
-    {
-      econstructor; eauto.
-    }
-    find_apply_hyp_hyp; subst; eauto.
-  - (* hhc case *)
-    do_inv_recon.
-    ff.
-  - (* eec case *)
-    
-    do_inv_recon.
-    ff.
-
-  - (* kkc case *)
-    do_inv_recon.
-    ff.
-    invc H.
-    ff.
-    unfold reconstruct_ev' in *.
-    ff.
-    unfold opt_bind in *.
-    ff.
-    rewrite fold_recev in *.
-    unfold reconstruct_ev in *.
-    unfold reconstruct_ev' in *.
-    destruct et; try solve_by_inversion;
-    ffa using (unfold opt_bind in *).
-
-
-  - (* kpc case *)
-    ff.
-
-    assert (exists et', et = asp_evt p KEEP a et').
-    {
-      destruct et; try solve_by_inversion;
-      invc H; ffa using (unfold opt_bind in *).
-    }
-    
-    destruct_conjs.
-    subst.
-
-    invc H; ffa using (unfold opt_bind in *).
-    eapply IHec.
-    econstructor.
-    ff.
-    
-  - (* ssc case *)
-    do_inv_recon.
-    ff.
-    invc H.
-    ff.
-    unfold opt_bind in *.
-    ff.
-    rewrite fold_recev in *.
-    do_wrap_reconP.
-    
-    
-    assert (encodeEv e =  (firstn (et_size H0) bits)) by eauto.
-    assert (encodeEv e0 = (skipn (et_size H0) bits)) by eauto.
-
-    assert (bits = firstn (et_size H0) bits ++ skipn (et_size H0) bits).
-    {
-      symmetry.
-      eapply firstn_skipn.
-    }
-    rewrite H3 at 1.
-    congruence.
-Qed.
-
-Lemma wfec_recon: forall (ee:Evidence) (ec:EvidenceTC),
-    reconstruct_evP ee ec ->
-    wf_ec ee.
-Proof.
-  intros.
-  generalizeEverythingElse ec.
-  induction ec; intros; destruct ee.
-  - (* mtc case *)
-    do_inv_recon.
-    dd.
-    invc H.
-    dd.
-    ff.
-    econstructor. tauto.
-  - (* nnc case *)
-    do_inv_recon.
-    invc H.
-    dd.
-    econstructor; tauto.
-  - (* ggc case *)
-    do_inv_recon.
-    invc H.
-    dd.
-    ff.
-    unfold opt_bind in *.
-    ff.
-    do_inv_recon.
-    assert (wf_ec (evc r1 H1)).
-    {
-      apply IHec.
-      econstructor.
-      eauto.
-    }
-    econstructor.
-    dd.
-    invc H.
-    rewrite app_length.
-    lia.
-
-  - (* hhc case *)
-    do_inv_recon.
-    invc H.
-    econstructor.
-    simpl in *.
-    dd.
-    econstructor; tauto.
-  - (* eec case *)
-    do_inv_recon.
-    invc H.
-    dd.
-    econstructor; tauto.
-
-  - (* kkc case *)
-    invc H.
-    unfold reconstruct_ev in *.
-    unfold reconstruct_ev' in *.
-    destruct e0; try solve_by_inversion.
-    ff.
-    unfold opt_bind in *. ff.
-    unfold opt_bind in *. ff.
-    econstructor.
-    ff.
-    unfold opt_bind in *. ff.
-  - (* kpc case *)
-    invc H.
-    destruct e; try solve_by_inversion.
-    +
-      ff.
-    +
-      ff.
-      repeat ff; try (unfold opt_bind in * ); repeat ff.
-    +
-      repeat ff; try (unfold opt_bind in * ); repeat ff.
-      assert (wf_ec (evc r e)).
-      {
-        eapply IHec. econstructor.
-        symmetry. eassumption. }
-      econstructor.
-      ff.
-    +
-      ff.
-      repeat ff; try (unfold opt_bind in * ); repeat ff.
-   
-  -
-    do_inv_recon.
-    invc H.
-    dd.
-    ff.
-    unfold opt_bind in *.
-    
-    ff.
-
-    assert (wf_ec (evc (firstn (et_size H0) r) H0)).
-    {
-      apply IHec1.
-      econstructor.
-      eauto.
-    }
-    assert (wf_ec (evc (skipn (et_size H0) r) H1)).
-    {
-      apply IHec2.
-      econstructor.
-      eauto.
-    }
-    
-    econstructor.
-    dd.
-    invc H.
-    invc H2.
-    rewrite <- H4.
-    rewrite <- H3.
-    assert (r = firstn (et_size H0) r ++ skipn (et_size H0) r).
-    {
-      symmetry.
-      eapply firstn_skipn.
-    }
-    rewrite H at 1.
-    eapply app_length.
-Qed.
-
-Lemma reconP_determ: forall ec e e',
-    reconstruct_evP ec e ->
-    reconstruct_evP ec e' ->
-    e = e'.
-Proof.
-  intros.
-  invc H; invc H0.
-  repeat jkjke'.
-  ff.
-Qed.
-
-Ltac do_reconP_determ :=
-  repeat 
-  match goal with
-  | [H: reconstruct_evP ?ec ?e,
-        H2: reconstruct_evP ?ec ?e2
-     |- _] =>
-    assert_new_proof_by (e = e2)
-                        ltac:(eapply reconP_determ; [apply H | apply H2]);
-    clear H2
-  end; subst.
-
-
-
-Ltac inv_wfec :=
-  repeat
-    match goal with
-    | [H: wf_ec _ |-  _ ] => invc H
-    end.
-
-(** * If a raw EvidenceT sequence is non-empty, we can grab a first element. *)
-Lemma some_recons' : forall e x,
-    length e = S x ->
-    exists bs ls', peel_bs e = Some (bs, ls').
-Proof.
-  intros.
-  destruct e;
-    ff; eauto.
-Qed.
-
-Ltac do_some_recons' :=
-  match goal with
-  | [H: length ?e = S _ |- _ ] =>
-    edestruct some_recons'; [apply H | idtac]
-                              
-  end; destruct_conjs; jkjke.
-
-Ltac do_rcih :=
-  match goal with
-  | [H: context[reconstruct_ev' _ _]
-               
-
-     |- context[reconstruct_ev' ?e' ?et] ] =>
-    assert_new_proof_by
-      (exists x, Some x = reconstruct_ev' e' et)
-      ltac:(eapply H with (r:=e'); (* TODO:  make r lesplit_evt one-off *)
-            try (eapply peel_fact; eauto; tauto);
-            try (econstructor; first [eapply firstn_long | eapply skipn_long]; try eauto; try lia))      
-  end.
-
-Lemma peel_n_none_spec : forall n ls,
-  peel_n n ls = None ->
+Lemma peel_n_none_spec : forall n ls e st st',
+  (peel_n_rawev n ls) st = (errC e, st') ->
   length ls < n.
 Proof.
-  induction n; intuition; simpl in *;
-  repeat ff; try lia;
-  unfold opt_ret, opt_bind in *; repeat ff; eauto.
-  eapply IHn in Heqo.
-  lia.
+  induction n; intuition; repeat ff;
+  err_monad_unfold; ffa; try lia.
 Qed.
 
-(** * Lemma:  well-formed Evidence bundles can be successfully reconstructed to a Typed Concrete EvidenceT (EvidenceTC) value. *)
-Lemma some_recons : forall (e:Evidence),
-    wf_ec e ->
-    exists (ee:EvidenceTC), Some ee = reconstruct_ev e.
+Lemma peel_n_rawev_state_immut : forall n r st res st',
+  peel_n_rawev n r st = (res, st') ->
+  st = st'.
+Proof.
+  induction n; simpl in *; intros; cvm_monad_unfold; ff.
+Qed.
+
+Lemma split_evidence_state_immut : forall r et1 et2 res st st',
+  split_evidence r et1 et2 st = (res, st') ->
+  st = st'.
 Proof.
   intros.
-  destruct e.
-  generalizeEverythingElse e.
-  induction e; intros.
-  - inv_wfec; ff.
+  unfold split_evidence in *; cvm_monad_unfold; ff;
+  repeat find_eapply_lem_hyp peel_n_rawev_state_immut; ff.
+Qed.
 
-  - (* nonce_evt case *)
-    ffa using (unfold opt_bind in * );
-    inv_wfec; destruct r.
+Lemma invoke_APPR_spans : forall G et u c i st,
+  invoke_APPR et st = (resultC u, c) ->
+  appr_events_size G et = resultC i ->
+  st_evid c = st_evid st + i.
+Proof.
+  induction et; simpl in *; intuition; cvm_monad_unfold;
+  ff; result_monad_unfold; ff.
+  eapply IHet1 in Heqp0; simpl in *; eauto;
+  eapply IHet2 in Heqp1; simpl in *; eauto;
+  repeat find_rewrite;
+  find_eapply_lem_hyp split_evidence_state_immut; ff; lia.
+Qed.
 
-  - (* asp_evt case *)
+Require Import Maps.
 
-    destruct f.
+Inductive et_same_asps : EvidenceT -> EvidenceT -> Prop :=
+| et_same_asps_refl : forall e, et_same_asps e e
+| et_same_asps_symm : forall e1 e2, et_same_asps e1 e2 -> et_same_asps e2 e1
+| et_same_asps_mt : et_same_asps mt_evt mt_evt
+| et_same_asps_nonce : forall n1 n2, et_same_asps (nonce_evt n1) (nonce_evt n2)
+| et_same_asps_asp : forall p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 e1 e2 asp_id,
+    et_same_asps e1 e2 ->
+    et_same_asps 
+      (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) e1)
+      (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) e2)
+| et_same_asps_split : forall e1a e1b e2a e2b,
+    et_same_asps e1a e2a ->
+    et_same_asps e1b e2b ->
+    et_same_asps (split_evt e1a e1b) (split_evt e2a e2b).
+
+Lemma et_same_asps_impl_same_size : forall G e1 e2,
+  et_same_asps e1 e2 ->
+  et_size G e1 = et_size G e2.
+Proof.
+  intros.
+  induction H; simpl in *; ffa using result_monad_unfold.
+Qed.
+
+Lemma et_same_asps_appr_procedure : forall G e1 e1' e2 e2' p1 p2,
+  et_same_asps e1 e2 ->
+  appr_procedure G p1 e1 = resultC e1' ->
+  appr_procedure G p2 e2 = resultC e2' ->
+  et_same_asps e1' e2'.
+Proof.
+  intros.
+  generalizeEverythingElse H.
+  induction H; simpl in *; intuition; repeat find_injection; eauto;
+  try (econstructor; fail).
+  - generalizeEverythingElse e;
+    induction e; intros; simpl in *; ff; try (econstructor; fail);
+    try (repeat eapply et_same_asps_asp; try econstructor; eauto);
+    result_monad_unfold; ff;
+    repeat match goal with
+    | H1 : appr_procedure _ _ ?e1 = resultC ?e1',
+      H2 : appr_procedure _ _ ?e2 = resultC ?e2',
+      IH : context[appr_procedure _ _ ?e1 = _ -> _] |- _ =>
+      eapply IH in H1; try eapply H2; 
+      clear H2; eauto
+    end; eapply et_same_asps_split; eauto.
+  - eapply et_same_asps_symm; ffa.
+  - eapply et_same_asps_asp; eapply et_same_asps_nonce.
+  - ff; eapply et_same_asps_asp; eapply et_same_asps_asp; eauto. 
+  - result_monad_unfold; ff;
+    repeat match goal with
+    | H1 : appr_procedure _ _ ?e1 = resultC ?e1',
+      H2 : appr_procedure _ _ ?e2 = resultC ?e2',
+      IH : context[appr_procedure _ _ ?e1 = _ -> _] |- _ =>
+      eapply IH in H1; try eapply H2; 
+      clear H2; eauto
+    end; eapply et_same_asps_split; eauto.
+Qed.
+  - 
     
-    + (* COMP case *)
+    ff; eapply et_same_asps_asp; eapply et_same_asps_asp; eauto. 
+  - ff; erewrite et_same_asps_impl_same_size; eauto.
+  - result_monad_unfold; ff;
+    eapply IHet_same_asps1 in Heqr1; eauto;
+    eapply IHet_same_asps2 in Heqr2; eauto;
+    repeat find_rewrite; eauto.
 
-      inv_wfec.
-      ff.
-      repeat ff;
-    (unfold opt_bind in * );
-    repeat ff; eauto.
+Lemma et_same_asps_eval_same_asps : forall G t p1 p2 e1 e1' e2 e2',
+  et_same_asps e1 e2 ->
+  eval G p1 e1 t = resultC e1' ->
+  eval G p2 e2 t = resultC e2' ->
+  et_same_asps e1' e2'.
+Proof.
+  induction t; simpl in *; intuition; eauto.
+  - destruct a; simpl in *; ff; eauto;
+    try (econstructor; fail);
+    try (eapply et_same_asps_asp; eauto);
+    try (destruct s; simpl in *; eauto; try econstructor; fail).
+  - result_monad_unfold; ffa.
+  - result_monad_unfold; ffa;
+    destruct s, s, s0; simpl in *;
+    repeat match goal with
+    | H1 : eval _ ?p1 ?e1 ?t = resultC ?e1',
+      H2 : eval _ ?p2 ?e2 ?t = resultC ?e2',
+      IH : context[eval _ _ _ ?t = _ -> _] |- _ =>
+      eapply IH in H1; try eapply H2; 
+      clear H2; eauto;
+      try (eapply et_same_asps_symm; eauto; fail);
+      try (eapply et_same_asps_refl; fail)
+    end;
+    eapply et_same_asps_split; econstructor; eauto.
+  - result_monad_unfold; ffa;
+    destruct s, s, s0; simpl in *;
+    repeat match goal with
+    | H1 : eval _ ?p1 ?e1 ?t = resultC ?e1',
+      H2 : eval _ ?p2 ?e2 ?t = resultC ?e2',
+      IH : context[eval _ _ _ ?t = _ -> _] |- _ =>
+      eapply IH in H1; try eapply H2; 
+      clear H2; eauto;
+      try (eapply et_same_asps_symm; eauto; fail);
+      try (eapply et_same_asps_refl; fail)
+    end;
+    eapply et_same_asps_split; econstructor; eauto.
+  -  
+    econstructor.
+    try (econstructor; ffa; fail).
+    * econstructor. 
+  intros.
+  generalizeEverythingElse H.
+  induction H; simpl in *.
 
-      ++
-       ff.
-       assert (exists v, r = [v]).
-       {
-         destruct r; ff.
-         destruct r; ff. }
-       destruct_conjs. subst.
-       ff.
-      ++
-       assert (exists v, r = [v]).
-       {
-         destruct r; ff. }
-       destruct_conjs. subst.
-       ff.
-    + (* ENCR case *)
 
-      inv_wfec.
-      ff.
-      repeat ff;
-    (unfold opt_bind in * );
-    repeat ff; eauto.
-      ++
-         ff.
-       assert (exists v, r = [v]).
-       {
-         destruct r; ff.
-         destruct r; ff. }
-       destruct_conjs. subst.
-       ff.
-      ++
-       assert (exists v, r = [v]).
-       {
-         destruct r; ff. }
-       destruct_conjs. subst.
-       ff.
-    + (* EXTD case *)
-      inv_wfec.
-      ff.
-      unfold opt_bind in * ;
-        repeat ff; eauto;
-        subst; eauto;
-        try do_inv_recon.
-      ++
-        find_apply_lem_hyp peel_n_spec; intuition; subst; eauto.
-        rewrite app_length in *;
-        intuition.
-        assert (length r1 = et_size e). lia.
-        assert (wf_ec (evc r1 e)).
-        {
-          econstructor; eauto.
-        }
-        assert (exists ee, Some ee = reconstruct_ev' r1 e).
-        {
-          invc H.
-          eapply IHe.
-         econstructor. eassumption. }
-        
-        destruct_conjs; congruence.
-      ++ assert (r = []). {
-          eapply peel_n_none_spec in Heqo; lia. }
-       subst; simpl in *; destruct n; simpl in *; try lia;
-       unfold opt_ret in *; congruence.
-    + (* KILL case *)
-      inv_wfec; ff.
-    + (* KEEP case *)
-      inv_wfec.
-      simpl in H1.
-      ffa using (unfold opt_bind in *).
+Lemma appr_procedure_et_size_plc_irrel : forall G e1 e1' e2 e2' p1 p2,
+  et_same_asps e1 e2 ->
+  appr_procedure G p1 e1 = resultC e1' ->
+  appr_procedure G p2 e2 = resultC e2' ->
+  et_size G e1' = et_size G e2'.
+Proof.
+  intros.
+  generalizeEverythingElse H.
+  induction H; simpl in *; intuition; repeat find_injection; eauto.
+  - ff; erewrite et_same_asps_impl_same_size; eauto.
+  - result_monad_unfold; ff;
+    eapply IHet_same_asps1 in Heqr1; eauto;
+    eapply IHet_same_asps2 in Heqr2; eauto;
+    repeat find_rewrite; eauto.
+Qed.
 
-    assert (exists ee, Some ee = reconstruct_ev' r e).
-    { eapply IHe.
-      econstructor.
+Lemma eval_et_size_plc_irrel : forall G t p1 p2 e1 e1' e2 e2',
+  et_same_asps e1 e2 ->
+  eval G p1 e1 t = resultC e1' ->
+  eval G p2 e2 t = resultC e2' ->
+  et_size G e1' = et_size G e2'.
+Proof.
+  induction t; simpl in *; intuition.
+  - destruct a; simpl in *; ff;
+    try destruct s; simpl in *; ff;
+    try (erewrite et_same_asps_impl_same_size; eauto; fail);
+    eapply appr_procedure_et_size_plc_irrel; eauto.
+  - ffa. 
+  - ffa using result_monad_unfold. 
+
+Lemma events_size_eval_res_irrel : forall G t p1 p2 et e1 e2 n1 n2,
+  eval G p1 et t = resultC e1 ->
+  eval G p2 et t = resultC e2 ->
+  events_size G p1 e1 t = resultC n1 ->
+  events_size G p2 e2 t = resultC n2 ->
+  n1 = n2.
+Proof.
+  induction t; simpl in *; intuition; ffa using result_monad_unfold.
+  - generalizeEverythingElse et;
+    induction et; simpl in *; intuition; ffa using result_monad_unfold.
+    repeat match goal with
+    | H1 : appr_procedure _ _ ?e = resultC ?e1,
+      H2 : appr_procedure _ _ ?e = resultC ?e2,
+      H3 : appr_events_size _ ?e1 = _,
+      H4 : appr_events_size _ ?e2 = _,
+      IH : context[appr_procedure _ _ ?e = _ -> _] |- _ =>
+      eapply IH in H1; try (eapply H2); try (eapply H3); try (eapply H4);
+      clear H2 H3 H4; subst; eauto
+    end.
+  - admit.
+  - destruct s, s, s0; simpl in *; ffa using result_monad_unfold.
+    eapply IHt1 in Heqr5. 
+    2: {
+      eapply Heqr3.
+    }
+    2: {
+      admit.
+    }
+    2: {
+
+    }
+    match goal with
+    | H1 : eval _ ?p1 _ ?t = resultC ?e1,
+      H2 : eval _ ?p2 _ ?t = resultC ?e2,
+      H3 : events_size _ ?p1 ?e1 _ = _,
+      H4 : events_size _ ?p2 ?e2 _ = _,
+      IH : context[eval _ _ _ ?t = _ -> _] |- _ =>
+      eapply IH in H1; try (eapply H2); try (eapply H3); try (eapply H4);
+      clear H2 H3 H4; subst; eauto
+    end.
+    eapply IHet1 in Heqr1; try eapply Heqr.
+    2: {
       eassumption.
     }
-    ffa.
-  - (* split_evt case *)
-    assert (wf_ec (evc (firstn (et_size e1) r) e1)).
-    {
-      inv_wfec; econstructor;
-      simpl in *;
-      eapply firstn_length_le; lia.
+    2: {
+      eassumption.
     }
-    assert (wf_ec (evc (skipn (et_size e1) r) e2)).
-    {
-      inv_wfec; econstructor;
-      simpl in *.
-      rewrite skipn_length; lia.
-    }
-    ffa using (try break_exists; unfold opt_bind in *).
-Qed.
+    subst.
 
-Lemma some_reconsP : forall e,
-    wf_ec e ->
-    exists ee, reconstruct_evP e ee.
+    induction et; simpl in *; ffa using result_monad_unfold.
+  - admit.
+  - destruct s, s, s0; simpl in *; ffa using result_monad_unfold.
+    *  
+    eapply IHt1_1 in Heqr2; [ | | | ].
+  repeat match goal with
+  | H1 : events_size _ _ _ ?t = _,
+    H2 : events_size _ _ _ ?t = _,
+    IH : context[events_size _ _ _ ?t] |- _ =>
+    eapply IH in H1; [ | | | eapply H2 ]; 
+    clear H2; eauto; subst
+  end.
+
+Lemma events_size_plc_irrel : forall G t et p1 p2 n1 n2,
+  events_size G p1 et t = resultC n1 ->
+  events_size G p2 et t = resultC n2 ->
+  n1 = n2.
 Proof.
-  intros.
-  edestruct some_recons.
-  eassumption.
-  eexists.
-  econstructor.
-  eassumption.
-Qed.
-
-Ltac do_somerecons :=
-  repeat
-    match goal with
-    | [H: wf_ec ?e
-       |- _ ] =>
-      assert_new_proof_by
-        (exists x, reconstruct_evP e x)
-        ltac:(eapply some_reconsP; apply H)     
-    end; destruct_conjs.
-
-Definition spc_ev (sp:SP) (e:EvidenceTC) : EvidenceTC :=
-  match sp with
-  | ALL => e
-  | NONE => mtc
+  induction t; simpl in *; intuition; ffa using result_monad_unfold;
+  repeat match goal with
+  | H1 : events_size _ _ _ ?t = _,
+    H2 : events_size _ _ _ ?t = _,
+    IH : context[events_size _ _ _ ?t] |- _ =>
+    eapply IH in H1; [ | eapply H2 ]; 
+    clear H2; eauto; subst
   end.
+  - repeat match goal with
+    | H1 : events_size _ _ _ ?t = _,
+      H2 : events_size _ _ _ ?t = _,
+      IH : context[events_size _ _ _ ?t] |- _ =>
+      eapply IH in H1; [ | eapply H2 ]; 
+      clear H2; eauto; subst
+    end.
+    admit.
+  -  
+    Search eval.
 
-(*
-TODO: try this again after appraisal lemmas settled 
-*)
-Definition do_asp_nofail (ps:ASP_PARAMS) (ev:RawEv) (p:Plc) (x:Event_ID): BS.
-Admitted. (* TODO:  fill this in with some sort of callback + default value? *)
+(* Axiom the_remote_axiom : forall sc q ev t rawEv st u st',
+  do_remote sc q ev t = resultC rawEv ->
+  build_cvm t st = (resultC u, st') /\ get_bits (st_ev st') = rawEv. *)
 
-Definition do_asp_EXTD_nofail (ps:ASP_PARAMS) (n : nat) (ev:RawEv) (p:Plc) (x:Event_ID): RawEv.
-Admitted. (* TODO:  fill this in with some sort of callback + default value? *)
-
-(* This may seem a bit un-intuitive, but its a matter of 
-  the new returned RawEv will be of length 'n'
-*)
-Axiom do_asp_EXTD_nofail_length_spec : forall ps n ev p x,
-    length (do_asp_EXTD_nofail ps n ev p x) = n.
-
-Definition cvm_EvidenceT_denote_asp (a:ASP) (p:Plc) (e:EvidenceTC) (x:Event_ID): EvidenceTC :=
-  match a with
-  | NULL => mtc
-  | CPY => e
-  | ASPC sp fwd params =>
-    match fwd with
-    | COMP => hhc p params
-                 (do_asp_nofail params (encodeEv (spc_ev sp e)) p x)
-                 (sp_ev sp (et_fun e))
-    | (EXTD n) => ggc p params
-                 (do_asp_EXTD_nofail params n (encodeEv (spc_ev sp e)) p x)
-                 (spc_ev sp e)
-    | ENCR => eec p params
-                 (do_asp_nofail params (encodeEv (spc_ev sp e)) p x)
-                 (sp_ev sp (et_fun e))
-    | KEEP => (spc_ev sp e)
-    | KILL => mtc (* kkc p params (sp_ev sp (et_fun e)) *)
-    end
-  | SIG => ggc p sig_params
-              (do_asp_EXTD_nofail sig_params 1 (encodeEv e) p x)
-              e
-  | HSH => hhc p hsh_params
-              (do_asp_nofail hsh_params (encodeEv e) p x)
-              (et_fun e)
-  | ENC q => eec p (enc_params q)
-                (do_asp_nofail (enc_params q) (encodeEv e) p x)
-                (et_fun e)
-  end.
-
-
-(** * Denotation function of a Typed Concrete EvidenceT value from an annotated term, initial place, initial EvidenceT *)
-Fixpoint cvm_EvidenceT_denote (t:AnnoTerm) (p:Plc) (ec:EvidenceTC) : EvidenceTC :=
-  match t with
-  | aasp (i,_) x => cvm_EvidenceT_denote_asp x p ec i
-  | aatt _ q x => cvm_EvidenceT_denote x q ec
-  | alseq _ t1 t2 => cvm_EvidenceT_denote t2 p (cvm_EvidenceT_denote t1 p ec)
-  | abseq _ s t1 t2 => ssc (cvm_EvidenceT_denote t1 p ((splitEvl s ec)))
-                         (cvm_EvidenceT_denote t2 p ((splitEvr s ec)))
-  | abpar _ s t1 t2 => ssc (cvm_EvidenceT_denote t1 p ((splitEvl s ec)))
-                         (cvm_EvidenceT_denote t2 p ((splitEvr s ec)))
-  end.
-
-Set Warnings "-notation-overridden".
-Set Warnings "+notation-overridden".
-
-
-(** * Assert an arbitrary (remote) CVM execution.  
-      Uses uninterpreted functions for "simulated" CVM EvidenceT and events. *)
-Ltac do_assert_remote t e i ac :=
-  assert (
-      build_cvm t
-                      {| st_ev := e; st_trace := []; st_evid := i; st_config := ac |} =
-      (resultC tt,
-       {| st_ev := cvm_EvidenceT_core t (session_plc ac) e;
-          st_trace := cvm_events_core t (session_plc ac) (get_et e);
-          st_evid :=  (i + event_id_span t); 
-          st_config := ac
-       |})
-    ) by (eapply build_cvm_external).
-
-
-(**  * Event ID spans same for a term and its corresponding core term. *)
-Lemma event_id_spans_same : forall t,
-    event_id_span' t = event_id_span (copland_compile t).
-Proof.
-  intros.
-  induction t; ff.
-  -
-    destruct a; ff; try tauto.
-Qed.
-
+(* : forall plc_map p uuid sc my_plc e t resp_js ev req success st u st',
+  map_get plc_map p = Some uuid ->
+  req = (mkPRReq sc my_plc e t) ->
+  make_JSON_Network_Request uuid (to_JSON req) = resultC resp_js ->
+  from_JSON resp_js = resultC (mkPRResp success ev) ->
+  build_cvm t st = (resultC u, st') /\ get_bits (st_ev st') = ev. *)
 
 (** * Lemma:  CVM increases event IDs according to event_id_span' denotation. *)
-Lemma cvm_spans: forall t pt e tr i e' tr' i' ac ac',
-    term_to_coreP t pt ->
-    build_cvmP
-      pt
-      {| st_ev := e;
-         st_trace := tr;
-         st_evid := i;
-         st_config := ac |}
-      (resultC tt)
-      {|
-        st_ev := e';
-        st_trace := tr';
-        st_evid := i';
-        st_config := ac'
-      |} ->
-    i' = i + event_id_span' t.
+Lemma cvm_spans: forall t st u st' sc i,
+  st_config st = sc ->
+  build_cvm t st = (resultC u, st') ->
+  events_size (session_context sc) (session_plc sc) (get_et (st_ev st)) t = resultC i ->
+  st_evid st' = st_evid st + i.
+Proof.
+  induction t; simpl in *; intuition.
+  - cvm_monad_unfold; ff;
+    find_eapply_lem_hyp invoke_APPR_spans; ff. 
+  - cvm_monad_unfold; ff; result_monad_unfold; 
+    ff. 
+    find_eapply_lem_hyp the_remote_axiom; intuition.
+    eapply IHt in H; eauto.
+    unfold do_remote in *; ff; simpl in *.
+    eapply the_remote_axiom in Heqo.
+    find_eapply_lem_hyp the_remote_axiom; eauto; try lia.
+    eapply the_remote_axiom in Heqr0.
+    unfold do_remote in *; simpl in *.
+    Search invoke_APPR.
+
+
+    pt
+    {| st_ev := e;
+        st_trace := tr;
+        st_evid := i;
+        st_config := ac |}
+    (resultC tt)
+    {|
+      st_ev := e';
+      st_trace := tr';
+      st_evid := i';
+      st_config := ac'
+    |} ->
+  i' = i + event_id_span' t.
 Proof.
   intros.
   generalizeEverythingElse t.
