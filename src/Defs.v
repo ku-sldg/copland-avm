@@ -25,13 +25,16 @@ Ltac door :=
    development.  Conservative simplification, break matches, 
    invert on resulting goals *)
 Ltac ff :=
-  timeout 5 (
+  timeout 10 (
   repeat (
-    (* try cbn in *; *)
     try simpl in *;
     try break_match;
+    try congruence;
     repeat (find_rewrite; clean);
+    try congruence;
     repeat find_injection;
+    try congruence;
+    try clean;
     simpl in *; subst; eauto;
     try congruence;
     try solve_by_inversion

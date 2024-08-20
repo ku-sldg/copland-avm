@@ -9,42 +9,74 @@ Require Import Coq.Program.Tactics.
 
 Import ListNotations.
 
+Lemma sc_immut_peel_n_rawev : forall n r st res st',
+  peel_n_rawev n r st = (res, st') ->
+  st_config st = st_config st'.
+Proof.
+  induction n; simpl in *; intuition; cvm_monad_unfold;
+  ff.
+Qed.
+
+Lemma peel_n_rawev_deterministic : forall n r st1 st2 res1 res2 st1' st2',
+  st_config st1 = st_config st2 ->
+  peel_n_rawev n r st1 = (res1, st1') ->
+  peel_n_rawev n r st2 = (res2, st2') ->
+  res1 = res2 /\ st_config st1' = st_config st2'.
+Proof.
+  induction n; simpl in *; intuition;
+  cvm_monad_unfold; ffa;
+  eapply IHn in Heqp0; try eapply Heqp; intuition; eauto; 
+  try congruence.
+Qed.
+
 Lemma sc_immut_split_evidence : forall r et1 et2 st res st',
   split_evidence r et1 et2 st = (res, st') ->
   st_config st = st_config st'.
 Proof.
+  intros.
+  unfold split_evidence in *.
+  destruct st; ff; cvm_monad_unfold; ff;
+  repeat (find_eapply_lem_hyp sc_immut_peel_n_rawev;
+  simpl in *; ff).
+Qed.
+
+Lemma split_evidence_determinisitic : forall r et1 et2 st1 st2 res1 res2 st1' st2',
+  st_config st1 = st_config st2 ->
+  split_evidence r et1 et2 st1 = (res1, st1') ->
+  split_evidence r et1 et2 st2 = (res2, st2') ->
+  res1 = res2 /\ st_config st1' = st_config st2'.
+Proof.
+  intros.
+  unfold split_evidence in *; 
+  destruct st1, st2; simpl in *;
+  ff; cvm_monad_unfold; ff;
+  repeat match goal with
+  | H : peel_n_rawev ?n ?r _ = (_, _),
+    H1 : peel_n_rawev ?n ?r _ = (_, _) |- _ =>
+      eapply peel_n_rawev_deterministic in H;
+      [ | | eapply H1 ]; [ | simpl in *; ff ];
+      intuition; clear H1;
+      try congruence; repeat find_injection
+  end.
+Qed.
 
 Lemma sc_immut_invoke_APPR : forall et st r st',
   invoke_APPR et st = (r, st') ->
   st_config st = st_config st'.
 Proof.
-  induction et; simpl in *; intuition; ffa using cvm_monad_unfold.
-  unfold split_evidence in *; ffa using cvm_monad_unfold.
+  induction et; simpl in *; intuition; ffa using cvm_monad_unfold;
+  find_apply_lem_hyp sc_immut_split_evidence;
+  simpl in *; ff.
+Qed.
 
 Lemma sc_immut_better : forall t st r st',
   build_cvm t st = (r, st') ->
   st_config st = st_config st'.
 Proof.
   induction t; repeat (cvm_monad_unfold; simpl in *); intuition;
-  ffa using cvm_monad_unfold.
-  - fold invoke_APPR.
-    simpl in *.
-    destruct st_ev; simpl in *; destruct e; ff;
-    unfold split_evidence in *; cvm_monad_unfold; ff;
-    unfold peel_n_rawev in *; cvm_monad_unfold; ff.
+  ffa using cvm_monad_unfold;
+  find_apply_lem_hyp sc_immut_invoke_APPR; ff.
 Qed.
-
-(* Hack to apply a specific induction hypothesis in some proofs *)
-Ltac anhl :=
-  annogo;
-  match goal with
-  | [H2: build_cvm ?a _ = _,
-     H3: build_cvm ?a _ = _,
-     IH: context[ _ -> _] |- _] =>
-    edestruct IH;
-    [ apply H2 | apply H3 | idtac]; clear H2; clear H3;
-    destruct_conjs; subst
-  end.
 
 Ltac monad_simp := 
   repeat (cvm_monad_unfold; simpl in *; eauto).
@@ -57,35 +89,6 @@ Proof.
 Qed.
 Global Hint Resolve check_cvm_policy_preserves_state : core.
 
-(* Lemma policy_list_not_disclosed_same_outputs : forall a p evt pol1 pol2 r1 r2,
-  policy_list_not_disclosed a p evt pol1 = r1 ->
-  policy_list_not_disclosed a p evt pol2 = r2 ->
-  r1 = r2.
-Proof.
-  induction pol1; intuition; eauto; simpl in *; subst.
-  - induction pol2; simpl in *; intuition; eauto;
-    right; intros HC; invc HC. 
-  - induction pol2; simpl in *; intuition; eauto;
-    try (right; intros HC; invc HC; congruence).
-    * repeat find_rewrite; simpl in *;
-      destEq a1 a2; try (right; intros HC; invc HC; congruence).
-      destEq b b0; try (right; intros HC; invc HC; congruence).
-      destruct (term_discloses_aspid_to_remote_enc_bool a p evt a2 b0) eqn:E;
-      simpl in *; intuition; eauto.
-    * repeat find_rewrite; simpl in *;
-      destEq a1 a2; try (right; intros HC; invc HC; congruence).
-      destEq b b0; try (right; intros HC; invc HC; congruence).
-      destruct (term_discloses_aspid_to_remote_enc_bool a p evt a2 b0) eqn:E;
-      simpl in *; intuition; eauto.
-      destruct (policy_list_not_disclosed a p evt pol1) eqn:E1,
-        (policy_list_not_disclosed a p evt pol2) eqn:E2;
-      intuition; eauto.
-      ** eapply  
-      intuition; eauto.
-    *  
-  simpl in *; subst; eauto.
-  destruct pol2; simpl  *)
-
 Lemma check_cvm_policy_same_outputs : forall t p evt st1 st1' r1 st2 st2' r2,
   check_cvm_policy t p evt st1 = (r1, st1') ->
   check_cvm_policy t p evt st2 = (r2, st2') ->
@@ -96,7 +99,50 @@ Proof.
 Qed.
 Global Hint Resolve check_cvm_policy_same_outputs : core.
 
-Theorem EvidenceT_deterministic_output_on_results : forall t e tr1 tr2 i1 i2 ac st1 st2,
+Lemma invoke_APPR_deterministic_on_results : forall e st1 st2 st1' st2',
+  st_ev st1 = st_ev st2 ->
+  st_config st1 = st_config st2 ->
+  invoke_APPR e st1 = (resultC tt, st1') ->
+  invoke_APPR e st2 = (resultC tt, st2') ->
+  st_ev st1' = st_ev st2' /\ st_config st1' = st_config st2'.
+Proof.
+  induction e; simpl in *; intuition;
+  cvm_monad_unfold;
+  repeat find_injection; simpl in *; eauto;
+  ffa.
+  - find_rewrite;
+    eapply split_evidence_determinisitic in Heqp2;
+    try eapply Heqp; simpl in *; eauto;
+    intuition; repeat find_injection;
+    repeat match goal with
+    | u : unit |- _ => destruct u
+    | H1 : invoke_APPR ?e _ = _,
+      H2 : invoke_APPR ?e _ = _ |- _ =>
+      try (eapply IHe1 in H1; [ | | | eapply H2 ];
+      simpl in *; eauto; intuition;
+      clear H1 H2; ff);
+      try (eapply IHe2 in H1; [ | | | eapply H2 ];
+      simpl in *; eauto; intuition;
+      clear H1 H2; ff)
+    end.
+  - find_rewrite;
+    eapply split_evidence_determinisitic in Heqp2;
+    try eapply Heqp; simpl in *; eauto;
+    intuition; repeat find_injection;
+    repeat match goal with
+    | u : unit |- _ => destruct u
+    | H1 : invoke_APPR ?e _ = _,
+      H2 : invoke_APPR ?e _ = _ |- _ =>
+      try (eapply IHe1 in H1; [ | | | eapply H2 ];
+      simpl in *; eauto; intuition;
+      clear H1 H2; ff);
+      try (eapply IHe2 in H1; [ | | | eapply H2 ];
+      simpl in *; eauto; intuition;
+      clear H1 H2; ff)
+    end.
+Qed.
+
+(* Theorem EvidenceT_deterministic_output_on_results : forall t e tr1 tr2 i1 i2 ac st1 st2,
   build_cvm t {| st_ev := e; st_trace := tr1; st_evid := i1; st_config := ac |} = (resultC tt, st1) ->
   build_cvm t {| st_ev := e; st_trace := tr2; st_evid := i2; st_config := ac |} = (resultC tt, st2) ->
   st1.(st_ev) = st2.(st_ev).
@@ -114,10 +160,157 @@ Proof.
         eapply sc_immut_better in H2; ffa);
       eapply IH in H1; [ | eapply H2]; ffa
   end.
-Qed.
+  - destruct e; simpl in *.
+  - find_rewrite; find_injection.
+    unfold Evidence_Bundlers.ss_cons; ff.
+  
+    * destruct s; simpl in *.
+      break_match; simpl in *; try congruence;
+      repeat find_injection; repeat find_rewrite;
+      break_match; simpl in *; try congruence;
+      repeat find_injection; repeat find_rewrite;
+      break_match; simpl in *; try congruence;
+      repeat find_injection; repeat find_rewrite;
+      break_match; simpl in *; try congruence;
+      repeat find_injection; repeat find_rewrite;
+      break_match; simpl in *; try congruence;
+      repeat find_injection; repeat find_rewrite;
+      break_match; simpl in *; try congruence;
+      repeat find_injection; repeat find_rewrite;
+      break_match; simpl in *; try congruence;
+      repeat find_injection; repeat find_rewrite;
+      break_match; simpl in *; try congruence;
+      repeat find_injection; repeat find_rewrite;
+      break_match; simpl in *; try congruence;
+      repeat find_injection; repeat find_rewrite;
+      break_match; simpl in *; try congruence;
+      repeat find_injection; repeat find_rewrite.
+      ff.
+    destruct s.
+    break_match; simpl in *.
+  ff.
+Qed. *)
 
-Lemma cvm_errors_deterministic :  forall t e tr1 tr2 i ac r1 r2 st1 st2,
-  build_cvm t
+Lemma cvm_deterministic :  forall t st1 st2 r1 r2 st1' st2',
+  st_config st1 = st_config st2 ->
+  st_ev st1 = st_ev st2 ->
+  st_evid st1 = st_evid st2 ->
+  build_cvm t st1 = (r1, st1') ->
+  build_cvm t st2 = (r2, st2') ->
+  (
+    (r1 = r2) /\ 
+    (st_ev st1' = st_ev st2') /\
+    (st_evid st1' = st_evid st2') /\
+    (st_config st1' = st_config st2')
+  ).
+Proof.
+  induction t; intros;
+  try (simpl in *; cvm_monad_unfold; ff;
+  repeat match goal with
+  | u : unit |- _ => destruct u
+  | H1 : build_cvm ?t _ = _,
+    H2 : build_cvm ?t _ = _,
+    IH : context[build_cvm ?t _ = _ -> _] |- _ =>
+      eapply IH in H1; try (eapply H2);
+      clear IH H2; try (intuition; congruence)
+  end; intuition; symmetry; ff).
+  - simpl in *; cvm_monad_unfold;
+    destruct a; simpl in *;
+    try (repeat find_injection;
+      simpl in *; intuition; fail).
+    * break_match; 
+      break_match; repeat find_injection; simpl in *; try congruence;
+
+      break_match; repeat find_injection; simpl in *; try congruence;
+      break_match; repeat find_injection; simpl in *; try congruence;
+      break_match; repeat find_injection; simpl in *; try congruence;
+      break_match; repeat find_injection; simpl in *; try congruence;
+      break_match; repeat find_injection; simpl in *; try congruence;
+      break_match; repeat find_injection; simpl in *; try congruence;
+      break_match; repeat find_injection; simpl in *; try congruence;
+      break_match; repeat find_injection; simpl in *; try congruence;
+      break_match; repeat find_injection; simpl in *; try congruence.
+      solve_by_inversion.
+      try (try congruence;
+        repeat find_injection;
+        simpl in *; intuition; congruence).
+      )
+    repeat find_injection; simpl in *;
+    intuition.
+    destruct s.
+    unfold do_prim in *;
+    destruct a; simpl in *.
+  - admit.
+  - simpl in *; cvm_monad_unfold; ff;
+    repeat match goal with
+    | u : unit |- _ => destruct u
+    | H1 : build_cvm ?t _ = _,
+      H2 : build_cvm ?t _ = _,
+      IH : context[build_cvm ?t _ = _ -> _] |- _ =>
+        eapply IH in H1; try (eapply H2);
+        clear IH H2; try (intuition; congruence)
+    end; intuition; symmetry; ff.
+  - simpl in *; cvm_monad_unfold; ff;
+    repeat match goal with
+    | u : unit |- _ => destruct u
+    | H1 : build_cvm ?t _ = _,
+      H2 : build_cvm ?t _ = _,
+      IH : context[build_cvm ?t _ = _ -> _] |- _ =>
+        eapply IH in H1; try (eapply H2);
+        clear IH H2; try (intuition; congruence)
+    end; intuition; symmetry; ff.
+  - simpl in *; cvm_monad_unfold; ff;
+    repeat match goal with
+    | u : unit |- _ => destruct u
+    | H1 : build_cvm ?t _ = _,
+      H2 : build_cvm ?t _ = _,
+      IH : context[build_cvm ?t _ = _ -> _] |- _ =>
+        eapply IH in H1; try (eapply H2);
+        clear IH H2; try (intuition; congruence)
+    end; intuition; symmetry; ff.
+    rewrite H in *.
+    repeat find_rewrite.
+    rw.
+  - simpl in *; cvm_monad_unfold; ff;
+    repeat match goal with
+    | u : unit |- _ => destruct u
+    | st : cvm_st |- _ => destruct st; simpl in *
+    | H1 : build_cvm ?t _ = _,
+      H2 : build_cvm ?t _ = _ |- _ =>
+        (eapply IHt1 in H1; try (eapply H2);
+        clear IHt1 H2; try (intuition; congruence)) ||
+        (eapply IHt2 in H1; try (eapply H2);
+        clear IHt2 H2; try (intuition; congruence))
+    end; simpl in *; intuition; symmetry; simpl in *; ff.
+    * simpl in *; intuition; symmetry; simpl in *; eauto. 
+      eapply H0; ff; eauto.
+  - simpl in *; 
+    cvm_monad_unfold.
+    ff;
+    repeat match goal with
+    | u : unit |- _ => destruct u
+    | H1 : build_cvm ?t _ = _,
+      H2 : build_cvm ?t _ = _ |- _ =>
+        (eapply IHt1 in H1 ||
+        eapply IHt2 in H1);
+        try (eapply H2);
+        clear H2; try (intuition; congruence)
+    end.
+    intuition; symmetry; eauto.
+  - 
+    eapply H3.
+
+    ffa.
+    match goal with
+    | H1 : policy_list_not_disclosed
+    try find_apply_lem_hyp check_cvm_policy_same_outputs.
+    err_monad_unfold.
+    ff.
+    * break_match; simpl in *;
+      break_match; simpl in *;
+      repeat find_injection;
+      try congruence.
+
     {|
       st_ev := e;
       st_trace := tr1;

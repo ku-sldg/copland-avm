@@ -395,12 +395,19 @@ Ltac cvm_monad_unfold :=
   clearEv,
   copyEv,
   nullEv,
+  inc_remote_event_ids,
+  inc_par_event_ids,
+  wait_par_thread,
+  join_seq,
   
   get_ev,
+  put_ev,
   get_pl,
+  get_evid,
+  put_evid,
   get_config,
   add_trace,
-  add_trace in * ;
+  put_trace in * ;
   repeat err_monad_unfold;
   simpl in * .
 

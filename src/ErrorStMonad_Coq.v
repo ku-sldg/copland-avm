@@ -17,9 +17,7 @@ Definition err_bind {S A B E : Type} (m : Err S A E) (f : A -> Err S B E) : Err 
   fun s =>
     let '(a, s') := m s in
     match a with
-    | resultC v =>
-      let '(b, s'') := f v s' in
-      (b, s'')
+    | resultC v => f v s'
     | errC e => (errC e,s')
     end.
 
