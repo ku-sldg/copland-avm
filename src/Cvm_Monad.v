@@ -367,13 +367,13 @@ Definition start_par_thread (t: Term) (e:Evidence) : CVM nat :=
   p <- get_pl ;;
   i <- inc_id ;;
   (* The loc always = the event id for the thread_start event *)
-  do_start_par_thread i t (get_bits e) ;;
+  do_start_par_thread i e t ;;
   add_trace [cvm_thread_start i i p t (get_et e)] ;;
   err_ret i.
 
-Definition wait_par_thread (loc:Loc) (t: Term) (e:Evidence) : CVM Evidence :=
+Definition wait_par_thread (loc:Loc) (e:Evidence) (t: Term) : CVM Evidence :=
   p <- get_pl ;;
-  e' <- do_wait_par_thread loc t p e ;;
+  e' <- do_wait_par_thread loc p e t ;;
   inc_par_event_ids t ;;
   i <- inc_id ;;
   add_trace [cvm_thread_end i loc] ;;

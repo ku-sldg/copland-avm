@@ -34,6 +34,18 @@ Definition splitEv_T_r (sp:Split) (e:EvidenceT) : EvidenceT :=
   |  _ => mt_evt
   end.
 
+Definition splitEv_l (sp:Split) (e:Evidence): Evidence :=
+  match sp with
+  | (ALL, _) => e
+  | _ => mt_evc
+  end.
+
+Definition splitEv_r (sp:Split) (e:Evidence): Evidence :=
+  match sp with
+  | (_,ALL) => e
+  | _ => mt_evc
+  end.
+
 Definition sp_ev (sp:SP) (e:EvidenceT) : EvidenceT :=
   match sp with
   | ALL => e
@@ -207,7 +219,8 @@ Fixpoint events_size (G : GlobalContext) (p : Plc) (e : EvidenceT) (t : Term)
   | bpar s t1 t2 => 
     e1 <- events_size G p (splitEv_T_l s e) t1 ;; (* left does e1 events *)
     e2 <- events_size G p (splitEv_T_r s e) t2 ;; (* right does e2 events *)
-    resultC (2 + e1 + e2) (* +1 for thread_split; +e1,+e2 for sides, +1 for thread_join *)
+    (* + 1 for split, +1 for thread_start; +e1,+e2 for sides, +1 for thread_join, + 1 for join *)
+    resultC (4 + e1 + e2) 
   end.
 
 

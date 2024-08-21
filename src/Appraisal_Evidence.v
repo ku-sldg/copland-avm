@@ -214,9 +214,9 @@ Proof.
   end.
 Qed.
 
-Lemma events_size_eval_res_irrel : forall G t p1 p2 et e1 e2 n1 n2,
-  eval G p1 et t = resultC e1 ->
-  eval G p2 et t = resultC e2 ->
+Lemma events_size_eval_res_irrel : forall G t1 t p1 p2 et e1 e2 n1 n2,
+  eval G p1 et t1 = resultC e1 ->
+  eval G p2 et t1 = resultC e2 ->
   events_size G p1 e1 t = resultC n1 ->
   events_size G p2 e2 t = resultC n2 ->
   n1 = n2.
@@ -264,17 +264,10 @@ Proof.
     IH : context[events_size _ _ _ ?t] |- _ =>
     eapply IH in H1; [ | eapply H2 ]; 
     clear H2; eauto; subst
-  end.
-  - repeat match goal with
-    | H1 : events_size _ _ _ ?t = _,
-      H2 : events_size _ _ _ ?t = _,
-      IH : context[events_size _ _ _ ?t] |- _ =>
-      eapply IH in H1; [ | eapply H2 ]; 
-      clear H2; eauto; subst
-    end.
-    admit.
-  -  
-    Search eval.
+  end; try lia.
+  - eapply events_size_eval_res_irrel in Heqr4;
+    try eapply Heqr1; eauto.
+Qed.
 
 (* Axiom the_remote_axiom : forall sc q ev t rawEv st u st',
   do_remote sc q ev t = resultC rawEv ->
@@ -286,239 +279,147 @@ Proof.
   make_JSON_Network_Request uuid (to_JSON req) = resultC resp_js ->
   from_JSON resp_js = resultC (mkPRResp success ev) ->
   build_cvm t st = (resultC u, st') /\ get_bits (st_ev st') = ev. *)
+Axiom parallel_vm_thread_axiom : forall i t sc e e' p,
+  forall st,
+  st_ev st = e ->
+  st_config st = sc ->
+  session_plc sc = p ->
+  parallel_vm_thread i p e t = e' ->
+  exists st' u,
+  build_cvm t st = (resultC u, st') /\ st_ev st' = e'.
+
+Definition well_formed_context (G : GlobalContext) : Prop :=
+  map_get (asp_types G) sig_aspid = Some (EXTD 1) /\
+  map_get (asp_types G) hsh_aspid = Some COMP /\
+  map_get (asp_types G) enc_aspid = Some ENCR /\
+  map_get (asp_types G) enc_aspid = Some (EXTD 1).
+
+Theorem invoke_appr_evidence : forall st st' u e,
+  well_formed_context (session_context (st_config st)) ->
+  invoke_APPR (get_et (st_ev st)) st = (resultC u, st') ->
+  appr_procedure (session_context (st_config st)) 
+    (session_plc (st_config st)) (get_et (st_ev st)) = resultC e ->
+  get_et (st_ev st) = e.
+Proof.
+  intros;
+  destruct st; simpl in *; destruct st_ev; simpl in *;
+  generalizeEverythingElse e0;
+  induction e0; simpl in *; intuition; ff;
+  cvm_monad_unfold; unfold well_formed_context in *;
+  destruct_conjs; ff.
+Qed.
+
+Theorem cvm_evidence_type : forall t st u st' e,
+  well_formed_context (session_context (st_config st)) ->
+  build_cvm t st = (resultC u, st') ->
+  eval (session_context (st_config st)) (session_plc (st_config st)) 
+    (get_et (st_ev st)) t = resultC e ->
+  get_et (st_ev st') = e.
+Proof.
+  induction t; simpl in *; intuition.
+  - cvm_monad_unfold; destruct a; simpl in *;
+    repeat find_injection; simpl in *; try congruence;
+    unfold well_formed_context in *; simpl in *; destruct_conjs;
+    ff; repeat find_rewrite; simpl in *; eauto.
+  (* cvm_monad_unfold; simpl in *; ff; repeat find_rewrite;
+    simpl in *; eauto. *)
+  - cvm_monad_unfold; ff. 
+  - ffa using (try cvm_monad_unfold; try result_monad_unfold);
+    match goal with
+    | H1 : build_cvm ?t1 _ = _,
+      H2 : build_cvm ?t2 _ = _,
+      IH1 : context[build_cvm ?t1 _ = _ -> _],
+      IH2 : context[build_cvm ?t2 _ = _ -> _] |- _ =>
+      eapply IH1 in H1 as ?; ff;
+      eapply sc_immut_better in H1; 
+      eapply IH2 in H2; ff
+    end.
+  - ffa using (try cvm_monad_unfold; try result_monad_unfold);
+    destruct s, s, s0; simpl in *;
+    eapply IHt1 in Heqp as ?; ff;
+    eapply sc_immut_better in Heqp; simpl in *;
+    unfold Evidence_Bundlers.ss_cons; simpl in *; ff;
+    eapply IHt2 in Heqp0 as ?; simpl in *;
+    eapply sc_immut_better in Heqp0; simpl in *; try (rw; ff; fail);
+    ff; rw; eauto.
+  - ffa using (try cvm_monad_unfold; try result_monad_unfold);
+    destruct s, s, s0; simpl in *;
+    eapply IHt1 in Heqp as ?; ff;
+    eapply sc_immut_better in Heqp; simpl in *;
+    unfold Evidence_Bundlers.ss_cons; simpl in *; ff.
+    * find_eapply_lem_hyp parallel_vm_thread_axiom; eauto;
+    break_exists; destruct_conjs; find_eapply_lem_hyp IHt2; ff;
+    repeat find_rewrite; try unfold mt_evc; simpl in *; ff.
+    * find_eapply_lem_hyp parallel_vm_thread_axiom; try ereflexivity.
+    break_exists; destruct_conjs; find_eapply_lem_hyp IHt2; ff;
+    repeat find_rewrite; try unfold mt_evc; simpl in *; ff.
+    try (find_eapply_lem_hyp parallel_vm_thread_axiom; break_exists;
+    destruct_conjs; find_eapply_lem_hyp IHt2; ff;
+    repeat find_rewrite; try unfold mt_evc; simpl in *; ff; fail). 
+  Unshelve. all: eauto.
+  - 
+Qed.
 
 (** * Lemma:  CVM increases event IDs according to event_id_span' denotation. *)
-Lemma cvm_spans: forall t st u st' sc i,
+Lemma cvm_spans: forall t st u e st' sc i,
   st_config st = sc ->
+  well_formed_context (session_context sc) ->
+  get_et (st_ev st) = e ->
   build_cvm t st = (resultC u, st') ->
-  events_size (session_context sc) (session_plc sc) (get_et (st_ev st)) t = resultC i ->
+  events_size (session_context sc) (session_plc sc) e t = resultC i ->
   st_evid st' = st_evid st + i.
 Proof.
   induction t; simpl in *; intuition.
   - cvm_monad_unfold; ff;
     find_eapply_lem_hyp invoke_APPR_spans; ff. 
   - cvm_monad_unfold; ff; result_monad_unfold; 
-    ff. 
-    find_eapply_lem_hyp the_remote_axiom; intuition.
-    eapply IHt in H; eauto.
-    unfold do_remote in *; ff; simpl in *.
-    eapply the_remote_axiom in Heqo.
-    find_eapply_lem_hyp the_remote_axiom; eauto; try lia.
-    eapply the_remote_axiom in Heqr0.
-    unfold do_remote in *; simpl in *.
-    Search invoke_APPR.
-
-
-    pt
-    {| st_ev := e;
-        st_trace := tr;
-        st_evid := i;
-        st_config := ac |}
-    (resultC tt)
-    {|
-      st_ev := e';
-      st_trace := tr';
-      st_evid := i';
-      st_config := ac'
-    |} ->
-  i' = i + event_id_span' t.
-Proof.
-  intros.
-  generalizeEverythingElse t.
-  induction t; intros;
-    wrap_ccp_anno.
-
-  
- (*   (* This is more automated, but slower *)
-    try (
-        destruct a;
-        try destruct a;
-        ff; tauto);
-    try (
-        repeat find_apply_hyp_hyp;
-        lia).
-Qed.
-  *)
-   
-  - (* asp case *)
-    destruct a;
-      try destruct a;
-      ffa; try tauto;
-      try (wrap_ccp_anno; ff).
-  
-  - (* at case *)
-    ffa using (cvm_monad_unfold; try lia).
-
-  - (* lseq case *)
-    wrap_ccp_anno.
-
-    destruct r; ffa.
-    destruct u; ffa.
-
-
-
-    assert (st_evid0 = i + event_id_span' t1).
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    assert (i' = st_evid0 + event_id_span' t2).
-    eapply IHt2.
-    2: { eassumption. }
-    econstructor; eauto.
-    lia.
-  -
-    destruct s0; destruct s1.
-    +
-      wrap_ccp_anno.
-      try destruct r; ff; 
-      try destruct r3; ff;
-      try destruct r0; ff;
-      try destruct u; ff;
-      try destruct u0; ff.
-
-
-      assert (st_evid1 = (i + 1) +  event_id_span' t1).
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    assert (st_evid = st_evid1 + event_id_span' t2).
-    eapply IHt2.
-    2: { eassumption. }
-    econstructor; eauto.
-    subst.
-    lia.
-    +
-      wrap_ccp_anno.
-      try destruct r; ff; 
-      try destruct r3; ff;
-      try destruct r0; ff;
-      try destruct u; ff;
-      try destruct u0; ff.
-
-      assert (st_evid1 = (i + 1) +  event_id_span' t1).
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    assert (st_evid = st_evid1 + event_id_span' t2).
-    eapply IHt2.
-    2: { eassumption. }
-    econstructor; eauto.
-    subst.
-    lia.
-    +
-      wrap_ccp_anno.
-      try destruct r; ff; 
-      try destruct r3; ff;
-      try destruct r0; ff;
-      try destruct u; ff;
-      try destruct u0; ff.
-
-      assert (st_evid1 = (i + 1) +  event_id_span' t1).
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    assert (st_evid = st_evid1 + event_id_span' t2).
-    eapply IHt2.
-    2: { eassumption. }
-    econstructor; eauto.
-    subst.
-    lia.
-    +
-      wrap_ccp_anno.
-      try destruct r; ff; 
-      try destruct r3; ff;
-      try destruct r0; ff;
-      try destruct u; ff;
-      try destruct u0; ff.
-
-      assert (st_evid1 = (i + 1) +  event_id_span' t1).
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    assert (st_evid = st_evid1 + event_id_span' t2).
-    eapply IHt2.
-    2: { eassumption. }
-    econstructor; eauto.
-    subst.
-    lia.
-  - (* bpar case *)
-    destruct s0; destruct s1.
-    +
-      wrap_ccp_anno.
-      try destruct r; ff;
-      try destruct r3; ff;
-      try destruct u; ff;
-      try destruct u0; ff.
-
-      assert (st_evid = (i + 1) +  event_id_span' t1).
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    assert (event_id_span' t2 = event_id_span (copland_compile t2)).
-    {
-      eapply event_id_spans_same.
-    }
-    lia.
-    +
-      wrap_ccp_anno.
-      try destruct r; ff;
-      try destruct r3; ff;
-      try destruct u; ff;
-      try destruct u0; ff.
-
-      assert (st_evid = (i + 1) +  event_id_span' t1).
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    assert (event_id_span' t2 = event_id_span (copland_compile t2)).
-    {
-      eapply event_id_spans_same.
-    }
-    lia.
-    +
-      wrap_ccp_anno.
-      try destruct r; ff;
-      try destruct r3; ff;
-      try destruct u; ff;
-      try destruct u0; ff.
-
-      assert (st_evid = (i + 1) +  event_id_span' t1).
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    assert (event_id_span' t2 = event_id_span (copland_compile t2)).
-    {
-      eapply event_id_spans_same.
-    }
-    lia.
-    +
-      wrap_ccp_anno.
-      try destruct r; ff;
-      try destruct r3; ff;
-      try destruct u; ff;
-      try destruct u0; ff.
-
-      assert (st_evid = (i + 1) +  event_id_span' t1).
-    eapply IHt1.
-    2: { eassumption. }
-    econstructor; eauto.
-
-    assert (event_id_span' t2 = event_id_span (copland_compile t2)).
-    {
-      eapply event_id_spans_same.
-    }
-    
-    lia.
+    ff; find_eapply_lem_hyp events_size_plc_irrel;
+    try eapply Heqr; ff; lia.
+  - cvm_monad_unfold; result_monad_unfold; ff.
+    repeat match goal with
+    | H : build_cvm ?t _ = _,
+      H1 : events_size _ _ _ ?t = _,
+      IH : context[build_cvm ?t _ = _ -> _] |- _ => 
+      eapply sc_immut_better in H as ?;
+      eapply IH in H as ?; try eapply H1;
+      simpl in *; ff; [
+        try (eapply cvm_evidence_type in H as ?; eauto; [])
+      ]; clear H
+    end; lia.
+  - cvm_monad_unfold; result_monad_unfold; ff;
+    repeat match goal with
+    | st : cvm_st |- _ => destruct st; simpl in *; ff
+    | s : Split |- _ => destruct s as [s1 s2]; simpl in *; ff
+    | H : build_cvm ?t _ = _,
+      IH : context[build_cvm ?t _ _ = _ -> _] |- _ => 
+      eapply sc_immut_better in H as ?;
+      eapply IH in H; simpl in *; ff
+    end; 
+    try (repeat match goal with
+    | H1 : build_cvm ?t _ = _,
+      H2 : events_size _ _ _ ?t = _,
+      IH : context[build_cvm ?t _ = _ -> _] |- _ => 
+      eapply IH in H1 as ?;
+      try eapply H2; simpl in *;
+      eapply sc_immut_better in H1; simpl in *; eauto; ff; []
+    end; lia).
+  - result_monad_unfold.
+    cvm_monad_unfold.
+    repeat break_match; try congruence.
+    repeat find_injection.
+    unfold Evidence_Bundlers.ss_cons.
+    destruct (parallel_vm_thread (st_evid st + 1) (session_plc (st_config c)) (splitEv_r s (st_ev st)) t2) eqn:?.
+    eapply parallel_vm_thread_axiom in Heqe; eauto;
+    break_exists; destruct_conjs;
+    find_eapply_lem_hyp IHt2; try eapply Heqr4; eauto; ff;
+    eapply sc_immut_better in Heqp as ?; simpl in *; ff;
+    eapply IHt1 in Heqp as ?; try (eapply Heqr);
+    simpl in *; eauto;
+    destruct s, s, s0; simpl in *; eauto;
+    repeat find_rewrite; repeat find_injection; try lia.
 Qed.
 
+(* 
 (** * CVM event ID span same as annotated term range *)
 Lemma span_cvm: forall atp t annt i j e e' tr tr' i' ac ac',
     build_cvmP
@@ -582,60 +483,35 @@ Proof.
   invc H.
   eapply span_cvm; eauto.
 Qed.
+*)
 
 
-Lemma wfec_firstn: forall e0 e1 e2,
-    wf_ec (evc e0 e1) ->
-    firstn (et_size e1) (e0 ++ e2) = e0.
+Lemma wf_Evidence_firstn: forall G e0 e1 e2 n,
+  wf_Evidence G (evc e0 e1) ->
+  et_size G e1 = resultC n ->
+  firstn n (e0 ++ e2) = e0.
 Proof.
-  intros.
-  inv_wfec.
-  jkjke'.
-  eapply firstn_append.
+  intros; invc H; find_rewrite;
+  find_injection; eapply firstn_append.
 Qed.
 
-Ltac do_wfec_firstn :=
-  match goal with
-  | [H: context[(firstn (et_size ?e1) (?e0 ++ ?e2))],
-        H2: wf_ec (evc ?e0 ?e1)
-
-     |- _] =>
-    
-    assert_new_proof_by
-      (firstn (et_size e1) (e0 ++ e2) = e0)
-      ltac: (eapply wfec_firstn; apply H2)
-  end.
-
-Lemma wfec_skipn: forall e0 e1 e2,
-    wf_ec (evc e0 e1) ->
-    skipn (et_size e1) (e0 ++ e2) = e2.
+Lemma wf_Evidence_skipn: forall G e0 e1 e2 n,
+  wf_Evidence G (evc e0 e1) ->
+  et_size G e1 = resultC n ->
+  skipn n (e0 ++ e2) = e2.
 Proof.
-  intros.
-  inv_wfec.
-  jkjke'.
-  eapply More_lists.skipn_append.
+  intros; invc H; find_rewrite;
+  find_injection; eapply skipn_append.
 Qed.
 
-Ltac do_wfec_skipn :=
-  match goal with
-  | [H: context[(skipn (et_size ?e1) (?e0 ++ ?e2))],
-        H2: wf_ec (evc ?e0 ?e1)
-
-     |- _] =>
-    
-    assert_new_proof_by
-      (skipn (et_size e1) (e0 ++ e2) = e2)
-      ltac: (eapply wfec_skipn; apply H2)
-  end.
-
-Ltac clear_skipn_firstn :=
-  match goal with
-  | [H: firstn _ _ = _,
-        H2: skipn _ _ = _ |- _]
-    => rewrite H in *; clear H;
-      rewrite H2 in *; clear H2
-  end.
-
+Lemma wf_Evidence_preserved_par : forall G loc t r et e' p,
+  wf_Evidence G (evc r et) ->
+  parallel_vm_thread loc p (evc r et) t = e' ->
+  wf_Evidence G e'.
+Proof.
+  intros.
+  eapply parallel_vm_thread_axiom in H0.
+  intros.
 
 (** * Axiom:  assume parallel CVM threads preserve well-formednesplit_evt of Evidence bundles *)
 Axiom wf_ec_preserved_par: forall e l t2 p,

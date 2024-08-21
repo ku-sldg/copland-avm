@@ -21,26 +21,36 @@ Fixpoint build_cvm (t: Term) : CVM unit :=
     e' <- doRemote t' q e ;;
     put_ev e'
   | lseq t1 t2 =>
-      build_cvm t1 ;;
-      build_cvm t2
+    build_cvm t1 ;;
+    build_cvm t2
 
   | bseq s t1 t2 =>
     split_ev ;;
     e <- get_ev ;;
+    (* put ev for t1 to work on *)
+    put_ev (splitEv_l s e) ;;
     build_cvm t1 ;;
     e1r <- get_ev ;;
-    put_ev e ;;
+
+    (* put ev for t2 to work on *)
+    put_ev (splitEv_r s e) ;;
     build_cvm t2 ;;
     e2r <- get_ev ;;
+
     join_seq e1r e2r
 
   | bpar s t1 t2 =>
     split_ev ;;
     e <- get_ev ;;
     (* We will make the LOC = event_id for start of thread *)
-    loc <- start_par_thread t2 e ;;
+    (* start a parallel thread working on the evidence split for t2 *)
+    loc <- start_par_thread t2 (splitEv_r s e) ;;
+
+    (* put ev for t1 to work on *)
+    put_ev (splitEv_l s e) ;;
     build_cvm t1 ;;
     e1r <- get_ev ;;
-    e2r <- wait_par_thread loc t2 e ;;
+
+    e2r <- wait_par_thread loc (splitEv_r s e) t2 ;;
     join_seq e1r e2r
   end.

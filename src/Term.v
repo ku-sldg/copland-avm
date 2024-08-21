@@ -45,12 +45,17 @@ Inductive events: GlobalContext -> CopPhrase -> nat -> list Ev -> Prop :=
     events G (cop_phrase p e (bseq s t1 t2)) i
       ([split i p] ++ evs1 ++ evs2 ++ [join i' p])
 
-| evts_bpar: forall G t1 t2 p e evs1 evs2 s i i',
-    events G (cop_phrase p (splitEv_T_l s e) t1) (i + 1) evs1 ->
-    events G (cop_phrase p (splitEv_T_r s e) t2) (i + 1 + length evs1) evs2 ->
-    i' = i + 1 + length evs1 + length evs2 ->
+| evts_bpar: forall G t1 t2 p e evs1 evs2 s i i' i'' loc et_l et_r,
+    et_l = splitEv_T_l s e ->
+    et_r = splitEv_T_r s e ->
+    events G (cop_phrase p et_l t1) (i + 2) evs1 ->
+    events G (cop_phrase p et_r t2) (i + 2 + length evs1) evs2 ->
+    loc = i + 1 ->
+    i' = i + 2 + length evs1 + length evs2 ->
+    i'' = i + 2 + length evs1 + length evs2 + 1 ->
     events G (cop_phrase p e (bpar s t1 t2)) i
-      ([split i p] ++ evs1 ++ evs2 ++ [join i' p]).
+      ([split i p] ++ [cvm_thread_start loc loc p t1 et_l] ++ evs1 ++ 
+      evs2 ++ [cvm_thread_end i' loc] ++ [join i'' p]).
 #[export] Hint Constructors events : core.
 
 Lemma events_range: forall G t p e evs i,
@@ -97,6 +102,14 @@ Proof.
     try rewrite app_nil_r; eauto;
     repeat rewrite app_length; 
     find_apply_hyp_hyp; try lia.
+  - repeat (find_apply_lem_hyp true_last_app_spec;
+    door; [ simpl in *; repeat find_injection; try congruence;
+      repeat rewrite app_assoc in *;
+      find_eapply_lem_hyp app_eq_nil;
+      intuition; congruence | ]);
+    simpl in *; repeat find_injection;
+    repeat rewrite app_length;
+    simpl in *; lia.
 Qed.
 
 Theorem events_injective: forall G t p e i v1 v2,
