@@ -4,7 +4,7 @@
     Also included:  properties about CVM internal EvidenceT and Event handling.  
     TODO:  This file has become quite bloated.  May need to refactor/decompose.  *)
 
-Require Import AutoApp Defs StructTactics OptMonad_Coq Cvm_Impl Cvm_St ResultT Axioms_Io Attestation_Session Helpers_CvmSemantics Cvm_Monad More_lists Auto Term_Defs.
+Require Import AutoApp Defs StructTactics OptMonad_Coq Cvm_Impl Cvm_St ResultT Axioms_Io Attestation_Session Helpers_CvmSemantics Cvm_Monad More_lists Auto Term_Defs Evidence_Bundlers.
 
 Require Import List.
 Import ListNotations OptNotation.
@@ -279,14 +279,14 @@ Qed.
   make_JSON_Network_Request uuid (to_JSON req) = resultC resp_js ->
   from_JSON resp_js = resultC (mkPRResp success ev) ->
   build_cvm t st = (resultC u, st') /\ get_bits (st_ev st') = ev. *)
-Axiom parallel_vm_thread_axiom : forall i t sc e e' p,
-  forall st,
-  st_ev st = e ->
-  st_config st = sc ->
-  session_plc sc = p ->
+
+Axiom parallel_vm_thread_axiom : forall i t e e' p,
   parallel_vm_thread i p e t = e' ->
-  exists st' u,
-  build_cvm t st = (resultC u, st') /\ st_ev st' = e'.
+  forall st sc,
+    st = {| st_ev := e; st_trace := nil; st_evid := i; st_config := sc |} ->
+    session_plc sc = p ->
+    exists st' u,
+      build_cvm t st = (resultC u, st') /\ st_ev st' = e'.
 
 Definition well_formed_context (G : GlobalContext) : Prop :=
   map_get (asp_types G) sig_aspid = Some (EXTD 1) /\
@@ -345,19 +345,11 @@ Proof.
   - ffa using (try cvm_monad_unfold; try result_monad_unfold);
     destruct s, s, s0; simpl in *;
     eapply IHt1 in Heqp as ?; ff;
-    eapply sc_immut_better in Heqp; simpl in *;
-    unfold Evidence_Bundlers.ss_cons; simpl in *; ff.
-    * find_eapply_lem_hyp parallel_vm_thread_axiom; eauto;
+    eapply sc_immut_better in Heqp; simpl in *; ff;
+    unfold Evidence_Bundlers.ss_cons; simpl in *; ff;
+    find_eapply_lem_hyp parallel_vm_thread_axiom; eauto;
     break_exists; destruct_conjs; find_eapply_lem_hyp IHt2; ff;
     repeat find_rewrite; try unfold mt_evc; simpl in *; ff.
-    * find_eapply_lem_hyp parallel_vm_thread_axiom; try ereflexivity.
-    break_exists; destruct_conjs; find_eapply_lem_hyp IHt2; ff;
-    repeat find_rewrite; try unfold mt_evc; simpl in *; ff.
-    try (find_eapply_lem_hyp parallel_vm_thread_axiom; break_exists;
-    destruct_conjs; find_eapply_lem_hyp IHt2; ff;
-    repeat find_rewrite; try unfold mt_evc; simpl in *; ff; fail). 
-  Unshelve. all: eauto.
-  - 
 Qed.
 
 (** * Lemma:  CVM increases event IDs according to event_id_span' denotation. *)
@@ -407,15 +399,11 @@ Proof.
     cvm_monad_unfold.
     repeat break_match; try congruence.
     repeat find_injection.
-    unfold Evidence_Bundlers.ss_cons.
-    destruct (parallel_vm_thread (st_evid st + 1) (session_plc (st_config c)) (splitEv_r s (st_ev st)) t2) eqn:?.
-    eapply parallel_vm_thread_axiom in Heqe; eauto;
-    break_exists; destruct_conjs;
-    find_eapply_lem_hyp IHt2; try eapply Heqr4; eauto; ff;
-    eapply sc_immut_better in Heqp as ?; simpl in *; ff;
-    eapply IHt1 in Heqp as ?; try (eapply Heqr);
-    simpl in *; eauto;
-    destruct s, s, s0; simpl in *; eauto;
+    eapply sc_immut_better in Heqp as ?;
+    repeat find_rewrite;
+    eapply IHt1 in Heqp; try eapply Heqr;
+    simpl in *; eauto; ff;
+    destruct s, s, s0; simpl in *; ff; try lia;
     repeat find_rewrite; repeat find_injection; try lia.
 Qed.
 
@@ -504,152 +492,223 @@ Proof.
   find_injection; eapply skipn_append.
 Qed.
 
-Lemma wf_Evidence_preserved_par : forall G loc t r et e' p,
+(* Lemma wf_Evidence_preserved_par : forall G loc t r et e' p,
   wf_Evidence G (evc r et) ->
   parallel_vm_thread loc p (evc r et) t = e' ->
   wf_Evidence G e'.
 Proof.
   intros.
   eapply parallel_vm_thread_axiom in H0.
+  intros. *)
+
+Axiom remote_axiom : forall sc p e t e',
+  (* make_JSON_Network_Request uuid (to_JSON req) = resultC js_resp ->
+  from_JSON js_resp = resultC resp ->
+  prresp_rawev resp = r -> *)
+
+  do_remote sc p e t = resultC e' ->
+  forall st sc i,
+    (* NOTE: This is maybe a bit stronger than we want!
+    we really need to be looking at the NEW session config that was
+    created via the passed session *)
+    st = {| st_ev := e; st_trace := nil; st_evid := i; st_config := sc |} ->
+    exists st' u,
+      build_cvm t st = (resultC u, st') /\ get_bits (st_ev st') = e' /\
+      eval (session_context sc) p (get_et e) t = resultC (get_et (st_ev st')).
+
+Lemma wf_Evidence_ss_cons : forall G e1 e2,
+  wf_Evidence G e1 ->
+  wf_Evidence G e2 ->
+  wf_Evidence G (ss_cons e1 e2).
+Proof.
+  intros; invc H; invc H0;
+  econstructor; simpl in *;
+  result_monad_unfold;
+  ff; rewrite app_length; eauto.
+Qed.
+
+Lemma wf_Evidence_split_l : forall G e s,
+  wf_Evidence G e ->
+  wf_Evidence G (splitEv_l s e).
+Proof.
+  intros; invc H;
+  unfold splitEv_l; ff;
+  econstructor; simpl in *; auto.
+  Unshelve. eapply 0.
+Qed.
+Local Hint Resolve wf_Evidence_split_l : wf_Evidence.
+
+Lemma wf_Evidence_split_r : forall G e s,
+  wf_Evidence G e ->
+  wf_Evidence G (splitEv_r s e).
+Proof.
+  intros; invc H;
+  unfold splitEv_r; ff;
+  econstructor; simpl in *; auto.
+  Unshelve. eapply 0.
+Qed.
+Local Hint Resolve wf_Evidence_split_r : wf_Evidence.
+
+Lemma wf_Evidence_impl_et_size_res : forall G e,
+  wf_Evidence G e ->
+  exists n, et_size G (get_et e) = resultC n.
+Proof.
+  destruct e; 
+  induction e; simpl in *; intros;
+  invc H; simpl in *; eauto.
+Qed.
+
+Lemma wf_Evidence_mt_evc : forall G,
+  wf_Evidence G mt_evc.
+Proof.
+  unfold mt_evc; econstructor; simpl in *; eauto.
+  Unshelve. eapply 0.
+Qed.
+
+Lemma split_evidence_res_spec : forall r et1 et2 st st' e1 e2,
+  split_evidence r et1 et2 st = (resultC (e1, e2), st') ->
+  exists r1 r2, (e1,e2) = (evc r1 et1, evc r2 et2).
+Proof.
   intros.
+  unfold split_evidence in *.
+  cvm_monad_unfold; ff.
+Qed.
 
-(** * Axiom:  assume parallel CVM threads preserve well-formednesplit_evt of Evidence bundles *)
-Axiom wf_ec_preserved_par: forall e l t2 p,
-    wf_ec e ->
-    wf_ec (parallel_vm_thread l t2 p e).
+Lemma wf_Evidence_split_evidence : forall r et1 et2 st st' G r1 r2,
+  wf_Evidence G (evc r (split_evt et1 et2)) ->
+  session_context (st_config st) = G ->
+  split_evidence r et1 et2 st = (resultC (r1, r2), st') ->
+  wf_Evidence G r1 /\ wf_Evidence G r2.
+Proof.
+  intros; unfold split_evidence in *;
+  cvm_monad_unfold; ff;
+  intuition; invc H; simpl in *;
+  result_monad_unfold; ff;
+  econstructor; simpl in *; eauto;
+  repeat find_eapply_lem_hyp peel_n_rawev_result_spec;
+  intuition; ff.
+Qed.
 
-Axiom wf_ec_preserved_remote: forall t ev1,
-    wf_ec ev1 -> 
-    forall p rawEv ac,
-      do_remote t p ev1 ac = resultC rawEv ->
-      wf_ec (evc rawEv (eval t p (get_et ev1))).
+Lemma wf_Evidence_invoke_APPR : forall st u st',
+  wf_Evidence (session_context (st_config st)) (st_ev st) ->
+  invoke_APPR (get_et (st_ev st)) st = (resultC u, st') ->
+  wf_Evidence (session_context (st_config st)) (st_ev st').
+Proof.
+  destruct st, st_ev; simpl in *;
+  generalizeEverythingElse e;
+  induction e; simpl in *; intuition;
+  cvm_monad_unfold;
+  repeat find_injection; simpl in *;
+  try eapply wf_Evidence_mt_evc;
+  ff;
+  try match goal with
+  | H : Nat.eqb _ _ = true |- _ =>
+    rewrite PeanoNat.Nat.eqb_eq in H
+  end;
+  try (econstructor; simpl in *; ff; fail);
+  try (invc H;
+    econstructor; ff;
+    repeat find_rewrite;
+    repeat find_injection;
+    result_monad_unfold; ff;
+    repeat rewrite app_length;
+    f_equal; lia).
+  eapply split_evidence_state_immut in Heqp as ?;
+  eapply wf_Evidence_split_evidence in Heqp as ?;
+  eapply split_evidence_res_spec in Heqp;
+  break_exists; ff; destruct_conjs;
+  eapply sc_immut_invoke_APPR in Heqp0 as ?;
+  eapply IHe1 in Heqp0; eauto;
+  eapply sc_immut_invoke_APPR in Heqp1 as ?;
+  eapply IHe2 in Heqp1; ff;
+  simpl in *; repeat find_rewrite.
+  eapply wf_Evidence_ss_cons; 
+  simpl in *; eauto.
+  Unshelve. all: eapply 0.
+Qed.
 
-(** * Lemma:  CVM execution preserves well-formednesplit_evt of Evidence bundles 
+
+(** * Lemma:  CVM execution preserves well-formedness of Evidence bundles 
       (EvidenceT Type of sufficient length for raw EvidenceT). *)
-Lemma wf_ec_preserved_by_cvm : forall e e' t1 tr tr' i i' ac ac' res,
-    wf_ec e ->
-    build_cvmP t1
-                {| st_ev := e; st_trace := tr; st_evid := i;
-                    st_config := ac |}
-                (res)
-                {| st_ev := e'; st_trace := tr'; st_evid := i';
-                    st_config := ac' |} ->
-    wf_ec (e').
+Lemma wf_Evidence_preserved_by_cvm : forall t st st' e e' u,
+  wf_Evidence (session_context (st_config st)) e ->
+  st_ev st = e ->
+  build_cvm t st = (resultC u, st') ->
+  st_ev st' = e' ->
+  wf_Evidence (session_context (st_config st)) e'.
 Proof.
-  intros.
-  generalizeEverythingElse t1.
-  induction t1; intros.
-  - (* asp case *)
-    rewrite <- ccp_iff_cc in *;
-    simpl in *; cvm_monad_unfold; simpl in *.
-    ff; try (econstructor; simpl in *; eauto; fail).
-    econstructor.
-    rewrite app_length;
-    rewrite EqClass.nat_eqb_eq in *; subst;
-    ff.
-    
-  - (* at case *)
-    invc H0; repeat cvm_monad_unfold; ffa;
-    eapply wf_ec_preserved_remote; eauto.
-  - (* lseq case *)
-    wrap_ccp.
-    ff; eauto.
-  - (* bseq case *)
-    wrap_ccp; ffa.
-    inv_wfec; econstructor;
-    rewrite app_length; ffa.
-
-  - (* bpar case *)
-    wrap_ccp; ffa; cbn; ffa.
-    assert (wf_ec (evc r0 e1)).
-    {
-      rewrite <- Heqe1.
-      eapply wf_ec_preserved_par; ffa.
-    }
-    econstructor; inv_wfec; 
-    rewrite app_length; ffa.
+  induction t; simpl in *; intuition;
+  cvm_monad_unfold; try (ffa; fail).
+  - ff;
+    try match goal with
+    | |- wf_Evidence _ mt_evc => eapply wf_Evidence_mt_evc
+    | H : Nat.eqb _ _ = true |- _ =>
+      rewrite PeanoNat.Nat.eqb_eq in H
+    end;
+    try (econstructor; simpl in *; ff; fail);
+    try (invc H;
+      econstructor; ff;
+      repeat find_rewrite;
+      repeat find_injection;
+      result_monad_unfold; ff;
+      repeat rewrite app_length;
+      f_equal; lia);
+    eapply wf_Evidence_invoke_APPR; eauto.
+  - ff;
+    find_eapply_lem_hyp remote_axiom; eauto;
+    break_exists; destruct_conjs;
+    eapply IHt in H0; eauto;
+    destruct x, st_ev; simpl in *; ff.
+    Unshelve. eapply 0.
+  - ff;
+    repeat match goal with
+    | H1 : build_cvm ?t1 _ = _,
+      IH : context[build_cvm ?t1 _ = _ -> _]
+      |- _ =>
+      eapply sc_immut_better in H1 as ?;
+      eapply IH in H1; simpl in *;
+      try reflexivity; ff; []
+    end; repeat find_rewrite; ff.
+  - ffa; simpl in *.
+    eapply wf_Evidence_ss_cons.
+    * eapply IHt1 in Heqp; simpl in *; try reflexivity;
+      eauto with wf_Evidence.
+    * eapply sc_immut_better in Heqp; simpl in *.
+      eapply IHt2 in Heqp0; simpl in *; try reflexivity;
+      repeat find_rewrite; eauto with wf_Evidence.
+  - ffa; simpl in *.
+    eapply wf_Evidence_ss_cons.
+    * eapply IHt1 in Heqp; simpl in *; try reflexivity;
+      eauto with wf_Evidence.
+    * eapply sc_immut_better in Heqp; simpl in *.
+      destruct (parallel_vm_thread (st_evid st + 1) (session_plc (st_config c)) (splitEv_r s (st_ev st)) t2) eqn:?;
+      find_eapply_lem_hyp parallel_vm_thread_axiom;
+      try reflexivity;
+      break_exists; destruct_conjs.
+      eapply IHt2 in H0;
+      simpl in *; try reflexivity;
+      repeat find_rewrite;
+      ff;
+      eauto with wf_Evidence.
 Qed.
 
-Ltac do_wfec_preserved :=
-  repeat
-    match goal with
-    | [(*H: well_formed_r ?t, *)
-        H2: wf_ec ?stev,
-        H3: build_cvmP ?t
-            {| st_ev := ?stev; st_trace := _; st_evid := _; st_config := _ |}
-            (resultC tt)
-            {| st_ev := ?stev'; st_trace := _; st_evid := _; st_config := _ |}
-       |- _ ] =>
-      assert_new_proof_by (wf_ec stev')
-                          ltac:(eapply wf_ec_preserved_by_cvm; [(*apply H |*) apply H2 | apply H3])
-                                 
-    end.
-
-
-Axiom ev_cvm_mtc: forall ct p e loc,
-    parallel_vm_thread loc ct p mt_evc = parallel_vm_thread loc (lseqc (aspc CLEAR) ct) p e.
-
-
-(** * Lemma:  EvidenceT Type denotation respects EvidenceT reference semantics  *)
-Lemma cvm_ev_denote_evtype: forall annt p e,
-    (*(exists n n', anno t n = (n',annt)) -> *)
-    et_fun (cvm_EvidenceT_denote annt p e) = (aeval annt p (et_fun e)).
-Proof.
-  intros.
-  generalizeEverythingElse annt.
-  induction annt; intros.
-  -
-    dd.
-    destruct a; simpl in *; eauto; repeat ff; subst; simpl in *;
-    try rewrite do_asp_EXTD_nofail_length_spec; simpl in *; eauto;
-    unfold spc_ev, sp_ev; repeat ff.
-  -
-    dd.
-    eauto.
-  -
-    dd.
-    assert (et_fun (cvm_EvidenceT_denote annt1 p e) = aeval annt1 p (et_fun e)) by eauto.
-    repeat jkjke.
-  - dd.
-    jkjke.
-    jkjke.
-    destruct s; destruct s; destruct s0; eauto.
-  - dd.
-    jkjke.
-    jkjke.
-    destruct s; destruct s; destruct s0; eauto.
-Qed.
-
-
-(** * Lemma:  CVM execution always succeeds *)
-Lemma exists_some_cc: forall t st,
-    exists st' res,
-      build_cvm t st = (res, st').
-Proof.
-  intros.
-  destruct (build_cvm t st) eqn:ee.
-  subst.
-  eauto.
-Qed.
-
-Ltac do_exists_some_cc t st :=
-    assert_new_proof_by
-      (exists st' res, build_cvm t st = (res, st') )
-      ltac:(eapply exists_some_cc);
-    destruct_conjs.
 
 (** * Helper Lemma stating: CVM traces are "cumulative" (or monotonic).  
       Traces are only ever extended--prefixes are maintained. *)
-Lemma st_trace_cumul'' : forall t m k e v_full v_suffix res i ac,
-    build_cvmP t
-      {| st_ev := e; st_trace := m ++ k; st_evid := i; st_config := ac |}
-      (res) v_full ->
-    
-    build_cvmP t
-      {| st_ev := e; st_trace := k; st_evid := i; st_config := ac |}
-      res v_suffix ->
+Lemma st_trace_cumul'' : forall t st m res st',
+  st_trace st = m ->
+  build_cvm t st = (res, st') ->
+  exists k, st_trace st' = m ++ k.
+Proof.
 
-    st_trace v_full = m ++ st_trace v_suffix.
+    {| st_ev := e; st_trace := m ++ k; st_evid := i; st_config := ac |}
+    (res) v_full ->
+  
+  build_cvmP t
+    {| st_ev := e; st_trace := k; st_evid := i; st_config := ac |}
+    res v_suffix ->
+
+  st_trace v_full = m ++ st_trace v_suffix.
 Proof.
   induction t; intros.
   - (* asp case *)

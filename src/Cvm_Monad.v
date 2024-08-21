@@ -270,12 +270,11 @@ Definition inc_remote_event_ids (t:Term) : CVM unit :=
 
 (* Monadic helper function to simulate a span of parallel event IDs 
    corresponding to the size of a Term *)
-Definition inc_par_event_ids (t: Term) : CVM unit :=
+Definition inc_par_event_ids (e : Evidence) (t: Term) : CVM unit :=
   i <- get_evid ;;
   sc <- get_config ;;
   p <- get_pl ;;
-  ev <- get_ev ;;
-  match (events_size (session_context sc) p (get_et ev) t) with
+  match (events_size (session_context sc) p (get_et e) t) with
   | errC e => err_failm (dispatch_error (Runtime e))
   | resultC n => put_evid (Nat.add i n)
   end.
@@ -374,7 +373,7 @@ Definition start_par_thread (t: Term) (e:Evidence) : CVM nat :=
 Definition wait_par_thread (loc:Loc) (e:Evidence) (t: Term) : CVM Evidence :=
   p <- get_pl ;;
   e' <- do_wait_par_thread loc p e t ;;
-  inc_par_event_ids t ;;
+  inc_par_event_ids e t ;;
   i <- inc_id ;;
   add_trace [cvm_thread_end i loc] ;;
   err_ret e'.
