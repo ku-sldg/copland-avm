@@ -159,11 +159,11 @@ Inductive Ev :=
 | null: nat -> Plc -> Ev
 | copy:  nat -> Plc -> Ev 
 | umeas: nat -> Plc -> ASP_PARAMS -> EvidenceT -> Ev
-| req: nat -> Plc -> Plc -> Term -> EvidenceT -> Ev
+| req: nat -> Plc -> Plc -> EvidenceT -> Term -> Ev
 | rpy: nat -> Plc -> Plc -> EvidenceT -> Ev 
 | split: nat -> Plc -> Ev
 | join:  nat -> Plc -> Ev
-| cvm_thread_start: nat -> Loc -> Plc -> Term -> EvidenceT -> Ev
+| cvm_thread_start: nat -> Loc -> Plc -> EvidenceT -> Term -> Ev
 | cvm_thread_end: nat -> Loc -> Ev.
 
 (** The natural number used to distinguish events. *)
@@ -255,8 +255,8 @@ Fixpoint asp_events (G : GlobalContext) (p : Plc) (e : EvidenceT) (a : ASP) (i :
         resultC ([umeas i p (asp_paramsC appr_id args targ_plc targ) e])
       end
     | split_evt e1 e2 => 
-        e1' <- asp_events G p e1 a (S i) ;;
-        let next_i := (S i) + (List.length e1') in
+        e1' <- asp_events G p e1 a (i + 1) ;;
+        let next_i := (i + 1) + (List.length e1') in
         e2' <- asp_events G p e2 a next_i ;;
         let last_i := next_i + (List.length e2') in
         resultC ([split i p] ++ e1' ++ e2' ++ [join last_i p])

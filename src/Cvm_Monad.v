@@ -284,7 +284,7 @@ Definition inc_par_event_ids (e : Evidence) (t: Term) : CVM unit :=
 
 Definition tag_REQ (t:Term) (p:Plc) (q:Plc) (e:Evidence) : CVM unit :=
   reqi <- inc_id ;;
-  add_trace [req reqi p q t (get_et e)].
+  add_trace [req reqi p q (get_et e) t].
 
 Definition tag_RPY (p:Plc) (q:Plc) (e:Evidence) : CVM unit :=
   rpyi <- inc_id ;;
@@ -349,7 +349,13 @@ Definition doRemote_session' (pTo:Plc) (e:Evidence) (t:Term) : CVM Evidence :=
 Definition remote_session (t:Term) (p:Plc) (q:Plc) (e:Evidence) : CVM Evidence :=
   tag_REQ t p q e ;;
   e' <- doRemote_session' q e t ;;
-  add_trace (cvm_events q (get_et e) t) ;;
+  sc <- get_config ;;
+  i <- get_evid ;;
+  rem_evs <- match events_fix (session_context sc) q (get_et e) t i with
+  | errC e => err_failm (dispatch_error (Runtime e))
+  | resultC evs => err_ret evs
+  end ;;
+  add_trace rem_evs ;;
   inc_remote_event_ids t ;;
   err_ret e'.
 
@@ -367,12 +373,19 @@ Definition start_par_thread (t: Term) (e:Evidence) : CVM nat :=
   i <- inc_id ;;
   (* The loc always = the event id for the thread_start event *)
   do_start_par_thread i e t ;;
-  add_trace [cvm_thread_start i i p t (get_et e)] ;;
+  add_trace [cvm_thread_start i i p (get_et e) t] ;;
   err_ret i.
 
 Definition wait_par_thread (loc:Loc) (e:Evidence) (t: Term) : CVM Evidence :=
   p <- get_pl ;;
   e' <- do_wait_par_thread loc p e t ;;
+  i <- get_evid ;;
+  sc <- get_config ;;
+  rem_evs <- match events_fix (session_context sc) p (get_et e) t i with
+  | errC e => err_failm (dispatch_error (Runtime e))
+  | resultC evs => err_ret evs
+  end ;;
+  add_trace rem_evs ;;
   inc_par_event_ids e t ;;
   i <- inc_id ;;
   add_trace [cvm_thread_end i loc] ;;

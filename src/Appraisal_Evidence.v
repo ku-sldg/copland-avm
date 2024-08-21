@@ -681,7 +681,7 @@ Proof.
     * eapply IHt1 in Heqp; simpl in *; try reflexivity;
       eauto with wf_Evidence.
     * eapply sc_immut_better in Heqp; simpl in *.
-      destruct (parallel_vm_thread (st_evid st + 1) (session_plc (st_config c)) (splitEv_r s (st_ev st)) t2) eqn:?;
+      destruct (parallel_vm_thread (st_evid st + 1) (session_plc (st_config c1)) (splitEv_r s (st_ev st)) t2) eqn:?;
       find_eapply_lem_hyp parallel_vm_thread_axiom;
       try reflexivity;
       break_exists; destruct_conjs.
@@ -692,231 +692,144 @@ Proof.
       eauto with wf_Evidence.
 Qed.
 
+Require Import Term.
 
 (** * Helper Lemma stating: CVM traces are "cumulative" (or monotonic).  
       Traces are only ever extended--prefixes are maintained. *)
-Lemma st_trace_cumul'' : forall t st m res st',
+Theorem cvm_trace_respects_events : forall t st m st' i p e G evs u,
+  well_formed_context G ->
+  events G (cop_phrase p e t) i evs ->
   st_trace st = m ->
-  build_cvm t st = (res, st') ->
-  exists k, st_trace st' = m ++ k.
+  st_evid st = i ->
+  session_plc (st_config st) = p ->
+  get_et (st_ev st) = e ->
+  session_context (st_config st) = G ->
+  build_cvm t st = (resultC u, st') ->
+  st_trace st' = m ++ evs.
 Proof.
-
-    {| st_ev := e; st_trace := m ++ k; st_evid := i; st_config := ac |}
-    (res) v_full ->
-  
-  build_cvmP t
-    {| st_ev := e; st_trace := k; st_evid := i; st_config := ac |}
-    res v_suffix ->
-
-  st_trace v_full = m ++ st_trace v_suffix.
-Proof.
-  induction t; intros.
-  - (* asp case *)
-    (* NOTE: This got really ugly, unfortunately it is quite complex *)
-    wrap_ccp.
-    match goal with
-    | A : ASP_Core |- _ => destruct A
-    end; simpl in *; eauto.
-    * unfold nullEv in *; cvm_monad_unfold; ff; rewrite app_assoc; eauto.
-    * ff. 
-    * ff; rewrite app_assoc; eauto. 
-    * simpl in *; 
-      destruct (aspCb ac a (get_bits e)); simpl in *; eauto;
-      repeat find_injection; try rewrite app_assoc; eauto;
-      destruct e;
-      repeat (match goal with
-      | F : FWD |- _ => destruct f
-      | R : ResultT _ _ |- _ => destruct R
-      | R' : RawEv |- _ => destruct R'
-      end; simpl in *; eauto;
-        repeat find_injection;
-        try rewrite app_assoc; eauto;
-        try congruence);
-      try (destruct r1; simpl in *; repeat find_injection; eauto;
-        try congruence; rewrite app_assoc; eauto);
-      try (destruct n; simpl in *; repeat find_injection; 
-        try congruence; try rewrite app_assoc; eauto;
-        destruct (Nat.eqb (length r1) n); simpl in *;
-        repeat find_injection; eauto;
-        try congruence; try rewrite app_assoc; eauto
-        ).
-  - (* at case *)
-    invc H; invc H0;
-    repeat cvm_monad_unfold; ffa using (try rewrite app_assoc; eauto).
-
-  - (* alseq case *)
-    repeat ff.
-    wrap_ccp_dohi.
-    ff.
-    +
-    repeat ff; eauto.
-    ff. eauto.
-    cumul_ih.
-    dd.
-    repeat do_st_trace.
-    repeat find_rw_in_goal.
-    eauto.
-    +
-    wrap_ccp_dohi.
-    repeat ff; eauto.
-    ff. eauto.
-    assert (resultC tt = errC c). 
-    {
-      rewrite <- ccp_iff_cc in *.
-      eapply cvm_errors_deterministic; eauto.
-    }
-    solve_by_inversion.
-    +
-    wrap_ccp_dohi.
-    repeat ff; eauto.
-    ff. eauto.
-    assert (resultC tt = errC c). 
-    {
-      symmetry.
-      rewrite <- ccp_iff_cc in *.
-      eapply cvm_errors_deterministic.
-      apply Heqp1.
-      eassumption.
-    }
-    solve_by_inversion.
-
-    +
-    wrap_ccp_dohi.
-    ff.
-
-    cumul_ih.
-    dd.
-    repeat do_st_trace.
-    repeat find_rw_in_goal.
-    eauto.
-
-  - (* bseq case *)
-    wrap_ccp_dohi.
-    ff.
-
-    +
-    repeat rewrite <- app_assoc in *.
-    cumul_ih.
-    dd.
-    cumul_ih.
-    dd.
-    intuition.
-    +
-      assert (errC c0 = resultC u).
-      {
-        wrap_ccp_dohi; ff. 
-        rewrite <- ccp_iff_cc in *.
-        eapply cvm_errors_deterministic.
-        eapply Heqp5.
-        eassumption.
-      }
-    solve_by_inversion.
-    +
-    assert (errC c = resultC u).
-      {
-        wrap_ccp_dohi. ff.
-        rewrite <- ccp_iff_cc in *.
-        eapply cvm_errors_deterministic; eauto.
-      }
-    solve_by_inversion.
-    +
-    assert (errC c0 = resultC u).
-      {
-        wrap_ccp_dohi. ff.
-        rewrite <- ccp_iff_cc in *.
-        eapply cvm_errors_deterministic;
-        ffa.
-      }
-    solve_by_inversion.
-    +
-    repeat rewrite <- app_assoc in *.
-    cumul_ih.
-    dd.
-    cumul_ih.
-    dd.
-    intuition.
-    +
-    assert (errC c = resultC u0).
-      {
-        wrap_ccp_dohi. ff.
-        rewrite <- ccp_iff_cc in *.
-        eapply cvm_errors_deterministic; eauto.
-      }
-    solve_by_inversion.
-    +
-    assert (errC c = resultC u).
-      {
-        wrap_ccp_dohi. ff.
-        rewrite <- ccp_iff_cc in *.
-        eapply cvm_errors_deterministic.
-        eapply Heqp8. eauto.
-      }
-    solve_by_inversion.
-    +
-    assert (errC c = resultC tt).
-      {
-        wrap_ccp_dohi. ff.
-        rewrite <- ccp_iff_cc in *.
-        eapply cvm_errors_deterministic.
-        eapply Heqp8. eauto.
-      }
-    solve_by_inversion.
-    +
-    repeat rewrite <- app_assoc in *.
-    wrap_ccp_dohi.
-    cumul_ih.
-    dd.
-    cumul_ih.
-    dd.
-    intuition.
-    +
-    repeat rewrite <- app_assoc in *.
-    wrap_ccp_dohi.
-    cumul_ih.
-    dd.
-    cumul_ih.
-    dd.
-    auto with *.
-
-  - (* bpar base *)
-  wrap_ccp_dohi.
-  ff.
-
-  +
-  repeat rewrite <- app_assoc in *.
-  cumul_ih.
-  dd.
-  cumul_ih.
-  dd.
-  intuition.
-  +
-  wrap_ccp_dohi.
-  repeat rewrite <- app_assoc in *.
-  cumul_ih.
-  dd.
-  cumul_ih.
-  dd.
-  auto with *.
+  induction t; simpl in *; intros.
+  - invc H0; simpl in *; cvm_monad_unfold; ff;
+    simpl in *;
+    repeat match goal with
+    | st : cvm_st |- _ => destruct st; simpl in *; ff
+    | e : Evidence |- _ => destruct e; simpl in *; ff
+    end;
+    try (match goal with
+    | e : EvidenceT |- _ => 
+      induction e; simpl in *; 
+      repeat find_injection; eauto; ffa; fail
+    end).
+    generalizeEverythingElse e0.
+    induction e0; simpl in *; intros; cvm_monad_unfold; ffa.
+    * rewrite app_nil_r; eauto. 
+    * result_monad_unfold; simpl in *; ffa.
+      eapply split_evidence_state_immut in Heqp as ?;
+      eapply split_evidence_res_spec in Heqp as ?;
+      clear Heqp;
+      break_exists; repeat find_injection;
+      simpl in *;
+      repeat match goal with
+      | st : cvm_st |- _ => destruct st; simpl in *; ff
+      | e : Evidence |- _ => destruct e; simpl in *; ff
+      end.
+      repeat find_rewrite; repeat find_injection;
+      eapply IHe0_1 in Heqp1 as ?; ff;
+      eapply sc_immut_invoke_APPR in Heqp1 as ?; simpl in *;
+      eapply invoke_APPR_spans in Heqp1; simpl in *;
+      try eapply asp_appr_events_size_works; eauto; ff;
+      unfold ss_cons in *; ff; simpl in *;
+      eapply IHe0_2 in Heqp2 as ?; try ff;
+      eapply sc_immut_invoke_APPR in Heqp2 as ?; simpl in *;
+      eapply invoke_APPR_spans in Heqp2; simpl in *;
+      try eapply asp_appr_events_size_works; eauto; ff.
+      repeat find_rewrite.
+      repeat rewrite <- app_assoc; ff.
+  - ff; invc H0; cvm_monad_unfold; ff;
+    find_eapply_lem_hyp events_events_fix_eq;
+    simpl in *; repeat find_rewrite;
+    repeat find_injection; ff;
+    assert (length rem_evs = n) by (
+      find_eapply_lem_hyp events_fix_range;
+      eapply events_size_plc_irrel; eauto);
+    ff;
+    repeat rewrite <- app_assoc; eauto.
+  - ff; invc H0; cvm_monad_unfold; ff;
+    simpl in *; repeat find_rewrite;
+    repeat find_injection; ff.
+    eapply IHt1 in Heqp as ?; eauto;
+    eapply sc_immut_better in Heqp as ?.
+    eapply IHt2 in H6; try eapply H11;
+    simpl in *; eauto; ff.
+    * repeat rewrite app_assoc; eauto.
+    * eapply cvm_spans; ff;
+      repeat find_rewrite; eauto;
+      eapply events_range; eauto.
+    * eapply cvm_evidence_type; eauto.
+  - ffa; invc H0; ffa;
+    cvm_monad_unfold; ffa;
+    simpl in *; repeat find_rewrite;
+    repeat find_injection; ff.
+    eapply IHt1 in Heqp as ?; eauto;
+    try (destruct s, s, s0; ff; fail);
+    eapply sc_immut_better in Heqp as ?;
+    eapply cvm_spans in Heqp as ?; eauto; ff;
+    try (repeat find_rewrite; simpl in *;
+      destruct s, s, s0; simpl in *; 
+      eapply events_range; eauto; ff; fail);
+    repeat find_rewrite;
+    eapply IHt2 in Heqp0 as ?; try eapply H11;
+    eapply sc_immut_better in Heqp0 as ?;
+    simpl in *; eauto; ff;
+    try (destruct s, s, s0; ff; fail).
+    eapply cvm_spans in Heqp0; simpl in *; eauto;
+    repeat find_rewrite;
+    repeat rewrite <- app_assoc; eauto;
+    try reflexivity;
+    destruct s, s, s0; ff;
+    eapply events_range; eauto; ff.
+  - ffa; invc H0; ffa;
+    cvm_monad_unfold; ffa;
+    simpl in *; repeat find_rewrite;
+    repeat find_injection; ff.
+    eapply IHt1 in Heqp as ?; eauto;
+    try (destruct s, s, s0; ff; fail);
+    eapply sc_immut_better in Heqp as ?;
+    eapply cvm_spans in Heqp as ?; eauto; ff;
+    try (repeat find_rewrite; simpl in *;
+      destruct s, s, s0; simpl in *; 
+      eapply events_range; eauto; ff; fail);
+    repeat find_rewrite; try lia.
+    repeat rewrite <- app_assoc; simpl in *;
+    destruct s, s, s0; simpl in *;
+    repeat find_rewrite; repeat find_injection; eauto;
+    assert (st_evid st + 2 + length evs1 = st_evid st + 1 + 1 + length evs1) by lia; repeat find_rewrite;
+    erewrite events_events_fix_eq in H13;
+    repeat find_rewrite; find_injection;
+    simpl in *; ff;
+    repeat find_eapply_lem_hyp events_fix_range; eauto;
+    ff. 
 Qed.
 
-(** * Instance of st_trace_cumul'' where k=[] *)
-Lemma st_trace_cumul' : forall t m e v_full v_suffix res i ac,
-    build_cvmP t
-      {| st_ev := e; st_trace := m; st_evid := i; st_config := ac |}
-      (res) v_full ->
-    
-    build_cvmP t
-      {| st_ev := e; st_trace := []; st_evid := i; st_config := ac |}
-      res v_suffix ->
+Corollary cvm_trace_respects_events_default : forall G,
+  well_formed_context G ->
+  forall t st st' i p e evs,
+  st_trace st = nil ->
+  st_evid st = i ->
+  session_plc (st_config st) = p ->
+  get_et (st_ev st) = e ->
+  session_context (st_config st) = G ->
+  
+  events G (cop_phrase p e t) i evs ->
 
-    st_trace v_full = m ++ st_trace v_suffix.
+  build_cvm t st = (resultC tt, st') ->
+  st_trace st' = evs.
 Proof.
   intros.
-  eapply st_trace_cumul''; eauto.
-  repeat rewrite app_nil_r.
-  eauto.
+  eapply cvm_trace_respects_events in H6; eauto;
+  simpl in *; eauto.
 Qed.
 
+(* 
 
 (** * Lemma stating: CVM traces are "cumulative" (or monotonic).  
       Traces are only ever extended--prefixes are maintained. 
@@ -1454,3 +1367,5 @@ Ltac wrap_annoparloc :=
 
 
 (** END Deprecated parallel annotated term stuff *)
+
+*)

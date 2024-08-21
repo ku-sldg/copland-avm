@@ -8,10 +8,10 @@ Require Import Preamble.
 
 Require Import Compare_dec Coq.Program.Tactics.
 
-Require Import Lia.
+Require Import Lia String.
 Require Import List More_lists.
 
-Import List.ListNotations.
+Import List.ListNotations ResultNotation.
 
 Require Export Term_Defs.
 
@@ -25,12 +25,13 @@ Inductive events: GlobalContext -> CopPhrase -> nat -> list Ev -> Prop :=
     asp_events G p e a i = resultC evs ->
     events G (cop_phrase p e (asp a)) i evs
 
-| evts_att: forall G q t i i' p e rem_evs,
+| evts_att: forall G q t i i' p e e' rem_evs,
     events G (cop_phrase q e t) (i + 1) rem_evs ->
     i' = i + 1 + length rem_evs ->
+    eval G q e t = resultC e' ->
     events G 
       (cop_phrase p e (att q t)) i
-      ([req i p q t e] ++ rem_evs ++ [rpy i' p q e])
+      ([req i p q e t] ++ rem_evs ++ [rpy i' p q e'])
 
 | evts_lseq : forall G t1 t2 p e e' i evs1 evs2,
     events G (cop_phrase p e t1) i evs1 ->
@@ -54,10 +55,52 @@ Inductive events: GlobalContext -> CopPhrase -> nat -> list Ev -> Prop :=
     i' = i + 2 + length evs1 + length evs2 ->
     i'' = i + 2 + length evs1 + length evs2 + 1 ->
     events G (cop_phrase p e (bpar s t1 t2)) i
-      ([split i p] ++ [cvm_thread_start loc loc p t1 et_l] ++ evs1 ++ 
+      ([split i p] ++ [cvm_thread_start loc loc p et_r t2] ++ evs1 ++ 
       evs2 ++ [cvm_thread_end i' loc] ++ [join i'' p]).
 #[export] Hint Constructors events : core.
 
+
+Fixpoint events_fix (G : GlobalContext) (p : Plc) (e : EvidenceT) (t : Term) (i : nat) 
+  : ResultT (list Ev) string :=
+  match t with
+  | asp a => asp_events G p e a i
+  | att q t' => 
+    evs <- events_fix G q e t' (i + 1) ;;
+    e' <- eval G q e t' ;;
+    resultC ([req i p q e t'] ++ evs ++ [rpy (i + 1 + List.length evs) p q e'])
+  | lseq t1 t2 => 
+    evs1 <- events_fix G p e t1 i ;;
+    e' <- eval G p e t1 ;;
+    evs2 <- events_fix G p e' t2 (i + List.length evs1) ;;
+    resultC (evs1 ++ evs2)
+  | bseq s t1 t2 => 
+    evs1 <- events_fix G p (splitEv_T_l s e) t1 (i + 1) ;;
+    evs2 <- events_fix G p (splitEv_T_r s e) t2 (i + 1 + List.length evs1) ;;
+
+    resultC ([split i p] ++ evs1 ++ evs2 ++ [join (i + 1 + List.length evs1 + List.length evs2) p])
+  | bpar s t1 t2 =>
+    evs1 <- events_fix G p (splitEv_T_l s e) t1 (i + 2) ;;
+    evs2 <- events_fix G p (splitEv_T_r s e) t2 (i + 2 + List.length evs1) ;;
+    let loc := i + 1 in
+    resultC ([split i p] ++ [cvm_thread_start loc loc p (splitEv_T_r s e) t2] ++ evs1 ++ 
+      evs2 ++ [cvm_thread_end (i + 2 + List.length evs1 + List.length evs2) loc] ++ 
+      [join (i + 2 + List.length evs1 + List.length evs2 + 1) p])
+  end.
+
+Theorem events_events_fix_eq : forall G p e t i evs,
+  events G (cop_phrase p e t) i evs <->
+  events_fix G p e t i = resultC evs.
+Proof.
+  split.
+  - generalizeEverythingElse t; induction t;
+    simpl in *; intuition; invc H; eauto;
+    ffa using result_monad_unfold.
+  - generalizeEverythingElse t; induction t;
+    simpl in *; intuition;
+    ffa using result_monad_unfold;
+    econstructor; eauto.
+Qed.
+    
 Lemma events_range: forall G t p e evs i,
   events G (cop_phrase p e t) i evs ->
   events_size G p e t = resultC (length evs).
@@ -71,6 +114,14 @@ Proof.
     eauto;
     try (f_equal; lia)).
   - find_apply_lem_hyp asp_events_size_works; ff.
+Qed.
+
+Lemma events_fix_range : forall G p e t i evs,
+  events_fix G p e t i = resultC evs ->
+  events_size G p e t = resultC (length evs).
+Proof.
+  intros; rewrite <- events_events_fix_eq in *; 
+  eapply events_range; eauto.
 Qed.
 
 (** Properties of events. *)
