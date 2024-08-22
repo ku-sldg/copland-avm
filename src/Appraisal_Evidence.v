@@ -4,31 +4,14 @@
     Also included:  properties about CVM internal EvidenceT and Event handling.  
     TODO:  This file has become quite bloated.  May need to refactor/decompose.  *)
 
-Require Import AutoApp Defs StructTactics OptMonad_Coq Cvm_Impl Cvm_St ResultT Axioms_Io Attestation_Session Helpers_CvmSemantics Cvm_Monad More_lists Auto Term_Defs Evidence_Bundlers.
+Require Import AutoApp Defs StructTactics OptMonad_Coq Cvm_Impl Cvm_St ResultT Attestation_Session Helpers_CvmSemantics Cvm_Monad More_lists Auto Term_Defs Evidence_Bundlers.
+Require Import Maps.
+Require Import Term.
 
 Require Import List.
 Import ListNotations OptNotation.
 
 Require Import Lia Coq.Program.Tactics.
-
-Lemma firstn_long: forall (e:list BS) x,
-  length e >= x ->
-  length (firstn x e) = x.
-Proof.
-  intros.
-  eapply firstn_length_le.
-  lia.
-Qed.
-
-Lemma skipn_long: forall (e:list BS) x y,
-  length e = x + y ->
-  length (skipn x e) = y.
-Proof.
-  intros.
-  assert (length (skipn x e) = length e - x).
-  { eapply skipn_length. }
-  lia.
-Qed.
 
 Lemma peel_n_rawev_result_spec : forall n ls ls1 ls2 st st',
   (peel_n_rawev n ls) st = (resultC (ls1, ls2), st') ->
@@ -74,8 +57,6 @@ Proof.
   repeat find_rewrite;
   find_eapply_lem_hyp split_evidence_state_immut; ff; lia.
 Qed.
-
-Require Import Maps.
 
 Inductive et_same_asps : EvidenceT -> EvidenceT -> Prop :=
 | et_same_asps_refl : forall e, et_same_asps e e
@@ -269,24 +250,25 @@ Proof.
     try eapply Heqr1; eauto.
 Qed.
 
-(* Axiom the_remote_axiom : forall sc q ev t rawEv st u st',
-  do_remote sc q ev t = resultC rawEv ->
-  build_cvm t st = (resultC u, st') /\ get_bits (st_ev st') = rawEv. *)
-
-(* : forall plc_map p uuid sc my_plc e t resp_js ev req success st u st',
-  map_get plc_map p = Some uuid ->
-  req = (mkPRReq sc my_plc e t) ->
-  make_JSON_Network_Request uuid (to_JSON req) = resultC resp_js ->
-  from_JSON resp_js = resultC (mkPRResp success ev) ->
-  build_cvm t st = (resultC u, st') /\ get_bits (st_ev st') = ev. *)
-
 Axiom parallel_vm_thread_axiom : forall i t e e' p,
-  parallel_vm_thread i p e t = e' ->
+  parallel_vm_thread i p e t = resultC e' ->
   forall st sc,
     st = {| st_ev := e; st_trace := nil; st_evid := i; st_config := sc |} ->
     session_plc sc = p ->
     exists st' u,
       build_cvm t st = (resultC u, st') /\ st_ev st' = e'.
+
+Axiom remote_axiom : forall sc p e t e',
+  do_remote sc p e t = resultC e' ->
+  forall st sc' i,
+    (* NOTE: This is maybe a bit stronger than we want!
+    we really need to be looking at the NEW session config that was
+    created via the passed session *)
+    st = {| st_ev := e; st_trace := nil; st_evid := i; st_config := sc' |} ->
+    exists st' u,
+      build_cvm t st = (resultC u, st') /\ st_ev st' = e' /\
+      session_plc sc' = p /\
+      session_context sc' = session_context sc.
 
 Definition well_formed_context (G : GlobalContext) : Prop :=
   map_get (asp_types G) sig_aspid = Some (EXTD 1) /\
@@ -321,9 +303,11 @@ Proof.
     repeat find_injection; simpl in *; try congruence;
     unfold well_formed_context in *; simpl in *; destruct_conjs;
     ff; repeat find_rewrite; simpl in *; eauto.
-  (* cvm_monad_unfold; simpl in *; ff; repeat find_rewrite;
-    simpl in *; eauto. *)
-  - cvm_monad_unfold; ff. 
+  - cvm_monad_unfold; ffa;
+    eapply remote_axiom in Heqr1; eauto;
+    simpl in *; break_exists; destruct_conjs;
+    simpl in *; eapply IHt in H0; ff.
+    Unshelve. all: eauto; try eapply (st_config st).
   - ffa using (try cvm_monad_unfold; try result_monad_unfold);
     match goal with
     | H1 : build_cvm ?t1 _ = _,
@@ -407,73 +391,6 @@ Proof.
     repeat find_rewrite; repeat find_injection; try lia.
 Qed.
 
-(* 
-(** * CVM event ID span same as annotated term range *)
-Lemma span_cvm: forall atp t annt i j e e' tr tr' i' ac ac',
-    build_cvmP
-      atp
-      {| st_ev := e;
-         st_trace := tr;
-         st_evid := i;
-         st_config := ac |} 
-      (resultC tt)
-      {| st_ev := e';
-         st_trace := tr';
-         st_evid := i';
-         st_config := ac' |} ->
-    
-    term_to_coreP t atp -> 
-    anno t i = (j, annt) ->
-    j = i'.
-Proof.
-  intros.
-  assert (j = i + event_id_span' t).
-  {
-    assert (j - i = event_id_span' t).
-    {
-      symmetry.
-      eapply span_range.
-      eauto.
-    }
-    rewrite <- H2.
-    assert (j > i).
-    {
-      eapply anno_mono; eauto.
-    }
-    lia.
-  }
-  subst.
-  symmetry.
-  eapply cvm_spans; eauto.
-Qed.
-
-
-(** * Propositional version of span_cvm *)
-Lemma anno_span_cvm: forall t pt annt i i' e e' tr tr' st_evid1 ac ac',
-    anno t i = (i', annt) ->
-    term_to_coreP t pt ->
-    build_cvmP pt
-                     {|
-                       st_ev := e ;
-                       st_trace := tr ;
-                       st_evid := i;
-                       st_config := ac
-                     |} (resultC tt)
-                     {|
-                       st_ev := e';
-                       st_trace := tr';
-                       st_evid := st_evid1;
-                       st_config := ac'
-                     |} ->
-    i' = st_evid1.
-Proof.
-  intros.
-  invc H.
-  eapply span_cvm; eauto.
-Qed.
-*)
-
-
 Lemma wf_Evidence_firstn: forall G e0 e1 e2 n,
   wf_Evidence G (evc e0 e1) ->
   et_size G e1 = resultC n ->
@@ -491,30 +408,6 @@ Proof.
   intros; invc H; find_rewrite;
   find_injection; eapply skipn_append.
 Qed.
-
-(* Lemma wf_Evidence_preserved_par : forall G loc t r et e' p,
-  wf_Evidence G (evc r et) ->
-  parallel_vm_thread loc p (evc r et) t = e' ->
-  wf_Evidence G e'.
-Proof.
-  intros.
-  eapply parallel_vm_thread_axiom in H0.
-  intros. *)
-
-Axiom remote_axiom : forall sc p e t e',
-  (* make_JSON_Network_Request uuid (to_JSON req) = resultC js_resp ->
-  from_JSON js_resp = resultC resp ->
-  prresp_rawev resp = r -> *)
-
-  do_remote sc p e t = resultC e' ->
-  forall st sc i,
-    (* NOTE: This is maybe a bit stronger than we want!
-    we really need to be looking at the NEW session config that was
-    created via the passed session *)
-    st = {| st_ev := e; st_trace := nil; st_evid := i; st_config := sc |} ->
-    exists st' u,
-      build_cvm t st = (resultC u, st') /\ get_bits (st_ev st') = e' /\
-      eval (session_context sc) p (get_et e) t = resultC (get_et (st_ev st')).
 
 Lemma wf_Evidence_ss_cons : forall G e1 e2,
   wf_Evidence G e1 ->
@@ -628,9 +521,9 @@ Proof.
 Qed.
 
 
-(** * Lemma:  CVM execution preserves well-formedness of Evidence bundles 
+(** * Theorem:  CVM execution preserves well-formedness of Evidence bundles 
       (EvidenceT Type of sufficient length for raw EvidenceT). *)
-Lemma wf_Evidence_preserved_by_cvm : forall t st st' e e' u,
+Theorem cvm_preserves_wf_Evidence : forall t st st' e e' u,
   wf_Evidence (session_context (st_config st)) e ->
   st_ev st = e ->
   build_cvm t st = (resultC u, st') ->
@@ -669,33 +562,29 @@ Proof.
       eapply IH in H1; simpl in *;
       try reflexivity; ff; []
     end; repeat find_rewrite; ff.
-  - ffa; simpl in *.
-    eapply wf_Evidence_ss_cons.
-    * eapply IHt1 in Heqp; simpl in *; try reflexivity;
-      eauto with wf_Evidence.
-    * eapply sc_immut_better in Heqp; simpl in *.
+  - ffa; simpl in *;
+    eapply wf_Evidence_ss_cons; [ 
+      eapply IHt1 in Heqp; simpl in *; try reflexivity;
+      eauto with wf_Evidence |
+      eapply sc_immut_better in Heqp; simpl in *;
       eapply IHt2 in Heqp0; simpl in *; try reflexivity;
-      repeat find_rewrite; eauto with wf_Evidence.
-  - ffa; simpl in *.
-    eapply wf_Evidence_ss_cons.
-    * eapply IHt1 in Heqp; simpl in *; try reflexivity;
-      eauto with wf_Evidence.
-    * eapply sc_immut_better in Heqp; simpl in *.
-      destruct (parallel_vm_thread (st_evid st + 1) (session_plc (st_config c1)) (splitEv_r s (st_ev st)) t2) eqn:?;
-      find_eapply_lem_hyp parallel_vm_thread_axiom;
-      try reflexivity;
-      break_exists; destruct_conjs.
-      eapply IHt2 in H0;
-      simpl in *; try reflexivity;
-      repeat find_rewrite;
-      ff;
-      eauto with wf_Evidence.
+      repeat find_rewrite; eauto with wf_Evidence ].
+  - ffa; simpl in *;
+    eapply wf_Evidence_ss_cons; [
+      eapply IHt1 in Heqp; simpl in *; try reflexivity;
+      eauto with wf_Evidence | ];
+    find_eapply_lem_hyp parallel_vm_thread_axiom;
+    simpl in *; try reflexivity;
+    break_exists; destruct_conjs;
+    eapply sc_immut_better in Heqp;
+    eapply IHt2 in H0;
+    simpl in *; try reflexivity;
+    repeat find_rewrite; ff;
+    eauto with wf_Evidence.
 Qed.
 
-Require Import Term.
-
-(** * Helper Lemma stating: CVM traces are "cumulative" (or monotonic).  
-      Traces are only ever extended--prefixes are maintained. *)
+(** * Main Theorem: CVM traces are respected the reference "events"
+      semantics. *)
 Theorem cvm_trace_respects_events : forall t st m st' i p e G evs u,
   well_formed_context G ->
   events G (cop_phrase p e t) i evs ->
@@ -722,7 +611,7 @@ Proof.
     generalizeEverythingElse e0.
     induction e0; simpl in *; intros; cvm_monad_unfold; ffa.
     * rewrite app_nil_r; eauto. 
-    * result_monad_unfold; simpl in *; ffa.
+    * result_monad_unfold; simpl in *; ffa;
       eapply split_evidence_state_immut in Heqp as ?;
       eapply split_evidence_res_spec in Heqp as ?;
       clear Heqp;
@@ -731,7 +620,7 @@ Proof.
       repeat match goal with
       | st : cvm_st |- _ => destruct st; simpl in *; ff
       | e : Evidence |- _ => destruct e; simpl in *; ff
-      end.
+      end;
       repeat find_rewrite; repeat find_injection;
       eapply IHe0_1 in Heqp1 as ?; ff;
       eapply sc_immut_invoke_APPR in Heqp1 as ?; simpl in *;
@@ -741,8 +630,8 @@ Proof.
       eapply IHe0_2 in Heqp2 as ?; try ff;
       eapply sc_immut_invoke_APPR in Heqp2 as ?; simpl in *;
       eapply invoke_APPR_spans in Heqp2; simpl in *;
-      try eapply asp_appr_events_size_works; eauto; ff.
-      repeat find_rewrite.
+      try eapply asp_appr_events_size_works; eauto; ff;
+      repeat find_rewrite;
       repeat rewrite <- app_assoc; ff.
   - ff; invc H0; cvm_monad_unfold; ff;
     find_eapply_lem_hyp events_events_fix_eq;
@@ -753,11 +642,17 @@ Proof.
       eapply events_size_plc_irrel; eauto);
     ff;
     repeat rewrite <- app_assoc; eauto.
+    eapply remote_axiom in Heqr1; eauto;
+    break_exists; destruct_conjs;
+    eapply cvm_evidence_type in H0; ff;
+    repeat find_rewrite; eauto.
+    Unshelve. all: try eapply (st_config st); try eapply 0.
+
   - ff; invc H0; cvm_monad_unfold; ff;
     simpl in *; repeat find_rewrite;
-    repeat find_injection; ff.
+    repeat find_injection; ff;
     eapply IHt1 in Heqp as ?; eauto;
-    eapply sc_immut_better in Heqp as ?.
+    eapply sc_immut_better in Heqp as ?;
     eapply IHt2 in H6; try eapply H11;
     simpl in *; eauto; ff.
     * repeat rewrite app_assoc; eauto.

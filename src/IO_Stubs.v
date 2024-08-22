@@ -11,7 +11,7 @@
     for Appraisal.        
  *)
 Require Import Term_Defs ErrorStMonad_Coq 
-  Manifest_Admits Cvm_St String JSON.
+  Manifest_Admits Cvm_St String JSON Attestation_Session.
 
 Require Import List.
 Import ListNotations.
@@ -23,11 +23,8 @@ Definition aspid_to_fs_location (aspid : ASP_ID) : FS_Location. Admitted.
 Definition make_JSON_FS_Location_Request (dir : FS_Location) (aspid : FS_Location) (js : JSON) : ResultT JSON string. Admitted.
 
 (** * Stub to simulate EvidenceT collected by a parallel CVM instance *)
-Definition parallel_vm_thread (l:Loc) (p:Plc) (e:Evidence) (t: Term) : Evidence.  Admitted.
+Definition parallel_vm_thread (l:Loc) (p:Plc) (e:Evidence) (t: Term) : ResultT Evidence string.  Admitted.
 
 Definition do_start_par_thread (loc:Loc) (e: Evidence) (t: Term) : CVM unit :=
   err_ret tt.
-
-Definition do_wait_par_thread (loc:Loc) (p:Plc) (e:Evidence) (t: Term) : CVM Evidence :=
-  err_ret (parallel_vm_thread loc p e t).
 

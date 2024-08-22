@@ -14,7 +14,7 @@ Require Import Manifest_Admits ErrorStringConstants Attestation_Session.
 Require Import String List.
 Import ListNotations.
 
-Require Export Cvm_St ErrorStMonad_Coq IO_Stubs Interface JSON_Core Axioms_Io.
+Require Export Cvm_St ErrorStMonad_Coq IO_Stubs Interface JSON_Core.
 
 Import ErrNotation.
 
@@ -307,7 +307,7 @@ Definition check_cvm_policy (t:Term) (pTo:Plc) (et:EvidenceT) : CVM unit :=
 (* Remote communication primitives *)
 
 Definition do_remote (sc : Session_Config) (pTo: Plc) (e : Evidence) (t:Term) 
-    : ResultT RawEv DispatcherErrors := 
+    : ResultT Evidence DispatcherErrors := 
   (* There is assuredly a better way to do it than this *)
   let '(mkAtt_Sesplit_evt my_plc plc_map pk_map) := (session_config_decompiler sc) in
   (* We need  to update the Att Session to tell the next plc how
@@ -338,15 +338,15 @@ Definition doRemote_session' (pTo:Plc) (e:Evidence) (t:Term) : CVM Evidence :=
   check_cvm_policy t pTo (get_et e) ;;
   sc <- get_config ;;
   match (do_remote sc pTo e t) with 
-  | resultC ev => 
-    match (eval (session_context sc) pTo (get_et e) t) with
+  | resultC ev => err_ret ev
+    (* match (eval (session_context sc) pTo (get_et e) t) with
     | resultC e' => err_ret (evc ev e')
     | errC e => err_failm (dispatch_error (Runtime e))
-    end
+    end *)
   | errC e => err_failm (dispatch_error e)
   end.
 
-Definition remote_session (t:Term) (p:Plc) (q:Plc) (e:Evidence) : CVM Evidence :=
+Definition remote_session (p:Plc) (q:Plc) (e:Evidence) (t:Term) : CVM Evidence :=
   tag_REQ t p q e ;;
   e' <- doRemote_session' q e t ;;
   sc <- get_config ;;
@@ -359,9 +359,9 @@ Definition remote_session (t:Term) (p:Plc) (q:Plc) (e:Evidence) : CVM Evidence :
   inc_remote_event_ids t ;;
   err_ret e'.
 
-Definition doRemote (t:Term) (q:Plc) (e:Evidence) : CVM Evidence :=
+Definition doRemote (q:Plc) (e:Evidence) (t:Term) : CVM Evidence :=
   p <- get_pl ;;
-  e' <- remote_session t p q e ;;
+  e' <- remote_session p q e t ;;
   tag_RPY p q e' ;;
   err_ret e'.
 
@@ -375,6 +375,12 @@ Definition start_par_thread (t: Term) (e:Evidence) : CVM nat :=
   do_start_par_thread i e t ;;
   add_trace [cvm_thread_start i i p (get_et e) t] ;;
   err_ret i.
+
+Definition do_wait_par_thread (loc:Loc) (p:Plc) (e:Evidence) (t: Term) : CVM Evidence :=
+  match (parallel_vm_thread loc p e t) with
+  | resultC e' => err_ret e'
+  | errC s => err_failm (dispatch_error (Runtime s))
+  end.
 
 Definition wait_par_thread (loc:Loc) (e:Evidence) (t: Term) : CVM Evidence :=
   p <- get_pl ;;
@@ -410,6 +416,7 @@ Ltac cvm_monad_unfold :=
   inc_remote_event_ids,
   inc_par_event_ids,
   wait_par_thread,
+  do_wait_par_thread,
   join_seq,
   
   get_ev,

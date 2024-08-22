@@ -75,7 +75,7 @@ Lemma sc_immut_better : forall t st r st',
 Proof.
   induction t; repeat (cvm_monad_unfold; simpl in *); intuition;
   ffa using cvm_monad_unfold;
-  find_apply_lem_hyp sc_immut_invoke_APPR; ff.
+  try (find_apply_lem_hyp sc_immut_invoke_APPR; ff; fail).
 Qed.
 
 Ltac monad_simp := 

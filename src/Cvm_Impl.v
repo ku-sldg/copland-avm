@@ -18,7 +18,7 @@ Fixpoint build_cvm (t: Term) : CVM unit :=
       put_ev e
   | att q t' =>
     e <- get_ev ;;
-    e' <- doRemote t' q e ;;
+    e' <- doRemote q e t' ;;
     put_ev e'
   | lseq t1 t2 =>
     build_cvm t1 ;;
