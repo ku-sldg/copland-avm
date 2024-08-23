@@ -5,8 +5,8 @@
   Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Appraisal_Evidence ResultT Cvm_Monad Auto.
-Require Import Axioms_Io Helpers_CvmSemantics Attestation_Session
+Require Import Appraisal_Evidence ResultT Cvm_Monad.
+Require Import Helpers_CvmSemantics Attestation_Session
   Term_Defs Cvm_Impl.
 
 Import ListNotations.
@@ -808,7 +808,7 @@ Qed.
 
 
 
-(** * Main correctnesplit_evt theorem about CVM events:  event orderings respect the 
+(** * Main correctness theorem about CVM events:  event orderings respect the 
       event system (partial order) reference semantics. *)
 Theorem cvm_respects_event_system :
   forall atp annt t cvm_tr ev0 ev1 bits bits' et et' i i' ac ac',
@@ -875,20 +875,6 @@ build_cvmP (copland_compile t1)
 Proof.
   ff.
 Qed.
-
-Axiom cvm_thread_start_clear : forall t p e n,
-(cvm_thread_start n p (lseqc (aspc CLEAR) (copland_compile t)) e) = 
-(cvm_thread_start n p (copland_compile t)) mt_evt.
-
-Axiom cvm_thread_in_ev : forall n p ev t e blah,
-In ev ([cvm_thread_start n p (copland_compile t) e] ++ blah ++ [cvm_thread_end 0]) -> 
-(In ev (cvm_events_core (copland_compile t) p e) \/ 
-In ev blah).
-
-Axiom cvm_EvidenceT_exists_remote : forall t p e,
-  exists b et, 
-  cvm_EvidenceT_core t p e = evc b et.
-
 
 Lemma cvm_implies_events: forall t annt e e' bits bits' cvmi cvmi' cvm_tr ev ac ac',
     anno t cvmi = (cvmi', annt)->

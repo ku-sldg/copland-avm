@@ -15,11 +15,13 @@ Import List.ListNotations ResultNotation.
 
 Require Export Term_Defs.
 
-(** This predicate specifies when a term, a place, and some initial
-    EvidenceT is related to an event.  In other words, it specifies the
-    set of events associated with a term, a place, and some initial
-    EvidenceT. *)
+(** This predicate specifies when given a Global Context,
+    a Copland Phrase (Plc, EvidenceT, Term), and an initial index,
+    the events related to that Copland Phrase. 
 
+    This event specification is a Big Step Semantics describing
+    Copland execution and the ordering of events that must occur 
+*)
 Inductive events: GlobalContext -> CopPhrase -> nat -> list Ev -> Prop :=
 | evts_asp: forall G i p e a evs,
     asp_events G p e a i = resultC evs ->

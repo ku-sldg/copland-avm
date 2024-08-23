@@ -1,8 +1,8 @@
 (*  Helper Lemmas in support of Manifest Compiler Soundnesplit_evt proofs.  *)
 
-Require Import Term_Defs_Core Manifest_Generator_Helpers Eqb_EvidenceT.
+Require Import Term_Defs_Core Manifest_Generator_Helpers Eqb_Evidence.
 
-Require Import StructTactics Auto.
+Require Import StructTactics Defs.
 
 Require Import List.
 Import ListNotations.

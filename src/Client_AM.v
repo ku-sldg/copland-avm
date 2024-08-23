@@ -4,23 +4,19 @@ Require Import String.
 
 Require Import Term EqClass.
 
-Require Import Impl_appraisal Appraisal_IO_Stubs IO_Stubs AM_Monad ErrorStMonad_Coq.
+Require Import IO_Stubs AM_Monad ErrorStMonad_Coq.
 
 Require Import Maps Attestation_Session Interface.
 
-Require Import Disclose ErrorStringConstants Manifest_Admits.
+Require Import ErrorStringConstants Manifest_Admits.
 
-Require Import AM_Helpers Auto.
+Require Import AM_Helpers Defs.
 
 Import ListNotations ErrNotation.
 
-(*
-Set Nested Proofs Allowed.
-*)
-
-Definition am_sendReq (req_plc : Plc) (att_sesplit_evt : Attestation_Session) (t:Term) (uuid : UUID) (* (authTok:ReqAuthTok) *)
-   (e:RawEv) : ResultT RawEv string :=
-  let req := (mkPRReq att_sesplit_evt t req_plc e) in 
+Definition am_sendReq (att_sess : Attestation_Session) (req_plc : Plc) 
+    (e : Evidence) (t:Term) (toPlc : Plc) : ResultT RawEv string :=
+  let req := (mkPRReq att_sess req_plc e t) in 
   let js := to_JSON req in
   let resp_res := make_JSON_Network_Request uuid js in
   match resp_res with
@@ -34,9 +30,9 @@ Definition am_sendReq (req_plc : Plc) (att_sesplit_evt : Attestation_Session) (t
   | errC msg => errC msg
   end.
 
-Definition am_sendReq_app (uuid : UUID) (att_sesplit_evt : Attestation_Session) (t:Term) (p:Plc) (e:EvidenceT) (ev:RawEv) : 
+Definition am_sendReq_app (uuid : UUID) (att_sess : Attestation_Session) (t:Term) (p:Plc) (e:EvidenceT) (ev:RawEv) : 
     ResultT AppResultC string :=
-  let req := (mkPAReq att_sesplit_evt t p e ev) in
+  let req := (mkPAReq att_sess t p e ev) in
   let js := to_JSON req in
   let resp_res := make_JSON_Network_Request uuid js in
   match resp_res with
@@ -59,35 +55,22 @@ Definition gen_nonce_if_none_local (initEv:option Evidence) : AM Evidence :=
     err_ret (evc [nonce_bits] (nonce_evt nid))
   end.
 
-(* Definition gen_authEvidence_if_some (ot:option Term) (uuid : UUID) (myPlc:Plc) (init_evc:Evidence) : AM Evidence :=
-  match ot with
-  | Some auth_phrase =>
-    let '(evc init_rawev_auth init_et_auth) := init_evc in
-    match am_sendReq myPlc auth_phrase uuid (* mt_evc *) init_rawev_auth with
-    | errC msg => ret (evc [] mt_evt)
-    | resultC auth_rawev =>
-      let auth_et := eval auth_phrase myPlc init_et_auth in
-        ret (evc auth_rawev auth_et)
-    end
-  | None => ret (evc [] mt_evt)
-  end. *)
-
-Definition run_appraisal_client (att_sesplit_evt : Attestation_Session) (t:Term) (p:Plc) (et:EvidenceT) (re:RawEv) 
+Definition run_appraisal_client (att_sess : Attestation_Session) (t:Term) (p:Plc) (et:EvidenceT) (re:RawEv) 
   (addr:UUID) : ResultT AppResultC string :=
   let expected_et := eval t p et in 
-  am_sendReq_app addr att_sesplit_evt t p et re.
+  am_sendReq_app addr att_sess t p et re.
   (*
   let comp := gen_appraise_AM expected_et re in
   run_am_app_comp comp mtc_app.
   *)
 
-Definition run_demo_client_AM (t:Term) (top_plc:Plc) (att_plc:Plc) (et:EvidenceT) (att_sesplit_evt : Attestation_Session)
+Definition run_demo_client_AM (t:Term) (top_plc:Plc) (att_plc:Plc) (et:EvidenceT) (att_sess : Attestation_Session)
   (re:RawEv) (attester_addr:UUID) (appraiser_addr:UUID) : ResultT AppResultC string :=
-    let att_result := am_sendReq top_plc att_sesplit_evt t attester_addr re in 
+    let att_result := am_sendReq top_plc att_sess t attester_addr re in 
     match att_result with 
     | errC msg => errC msg 
     | resultC att_rawev => 
-        run_appraisal_client att_sesplit_evt t att_plc et att_rawev appraiser_addr
+        run_appraisal_client att_sess t att_plc et att_rawev appraiser_addr
     end.
 
 Definition check_et_length (et:EvidenceT) (ls:RawEv) : AM unit := 
@@ -95,7 +78,7 @@ if (eqb (et_size et) (length ls))
 then err_ret tt 
 else (am_failm (am_dispatch_error (Runtime errStr_et_size))).
 
-Definition am_appraise (att_sesplit_evt : Attestation_Session) (t:Term) (toPlc:Plc) (init_et:EvidenceT) (cvm_ev:RawEv) (apprUUID : UUID) (local_appraisal:bool) : AM AppResultC :=
+Definition am_appraise (att_sess : Attestation_Session) (t:Term) (toPlc:Plc) (init_et:EvidenceT) (cvm_ev:RawEv) (apprUUID : UUID) (local_appraisal:bool) : AM AppResultC :=
   let expected_et := eval t toPlc init_et in
   check_et_length expected_et cvm_ev ;;
 
@@ -105,7 +88,7 @@ Definition am_appraise (att_sesplit_evt : Attestation_Session) (t:Term) (toPlc:P
        let expected_et := eval t toPlc init_et in
         gen_appraise_AM expected_et cvm_ev 
     | false => 
-      match run_appraisal_client att_sesplit_evt t toPlc init_et cvm_ev apprUUID with
+      match run_appraisal_client att_sess t toPlc init_et cvm_ev apprUUID with
       | errC msg => am_failm (am_dispatch_error (Runtime msg))
       | resultC res => err_ret res
       end
@@ -607,337 +590,3 @@ Proof.
 
   ff.
 Qed.
-
-
-(*
-Example client_gen_executable : forall t p initEvOpt amLib st aspBin,
-
-  lib_supports_manifest_bool amLib (get_my_absman_generated t p) = true -> 
-(*
-  lib_supports_manifest_bool amLib (manifest_generator_app (eval ))
-*)
-
-  (exists res st', 
-  (am_client_gen_local t p initEvOpt (get_my_absman_generated t p) amLib aspBin) st = (resultC res, st')) \/ 
-
-  (exists st' str, 
-    (am_client_gen_local t p initEvOpt (get_my_absman_generated t p) amLib aspBin) st = (errC (am_dispatch_error (Runtime str)), st')
-  ).
-Proof.
-
-
-  intros.
-  unfold am_client_gen_local.
-  am_monad_unfold.
-  repeat break_let.
-  ff.
-  -
-  destruct initEvOpt; ff.
-  -
-    unfold config_AM_if_lib_supported in *.
-    ff.
-    (*
-    find_rewrite.
-
-    am_monad_unfold.
-
-    solve_by_inversion.
-    *)
-
-  -
-    unfold check_et_length in *.
-    ff.
-    unfold am_failm in *.
-    ff. 
-    right.
-    eauto.
-
-    (*
-
-    
-
-  -
-    ff. 
-    unfold check_et_length in *.
-    ff.
-    right.
-    eauto.
-
-    *)
-
-
-  -
-    unfold config_AM_if_lib_supported_app in *.
-
-    ff.
-    unfold am_failm in *.
-    ff.
-
-    right.
-    eauto.
-
-  -
-
-    unfold config_AM_if_lib_supported_app in *.
-    ff.
-
-    rewrite lib_support_bool_iff_prop in *.
-
-
-    assert (et_size (eval t p e0) = length (run_cvm_rawEv t p r1 (amConfig a1))).
-    {
-      unfold check_et_length in *.
-      ff.
-      Search (Nat.eqb _ _ = true -> _).
-      apply EqNat.beq_nat_true_stt in Heqb0.
-      eauto.
-    }
-
-    (*
-    Theorem manifest_generator_compiler_soundness_app : forall et ls oldMan absMan amLib amConf,
-  (* map_get (manifest_generator t tp) p = Some absMan -> *)
-  manifest_generator_app' et oldMan = absMan ->
-  lib_supports_manifest_app amLib absMan ->
-  manifest_compiler absMan amLib = amConf ->
-  et_size et = length ls ->
-  forall st,
-
-  st.(amConfig) = amConf ->
-
-  has_nonces (nonce_ids_et et) (st.(am_nonceMap)) -> 
-
-    ( 
-
-    exists ec st',
-         (gen_appraise_AM et ls) st = (resultC ec, st')) \/ 
-    (exists st',
-         (gen_appraise_AM et ls) st = (errC (dispatch_error Runtime), st')
-    ).
-Proof.
-    
-    *)
-
-    Require Import ManCompSoundness_Appraisal.
-    Check manifest_generator_compiler_soundness_app.
-
-    Print get_my_absman_generated.
-
-    pose (manifest_generator_compiler_soundness_app 
-            (eval t p e0) 
-            (run_cvm_rawEv t p r1 (amConfig a1))
-            empty_Manifest
-            (manifest_generator_app (eval t p e0))
-            amLib 
-            (manifest_compiler (manifest_generator_app (eval t p e0)) amLib)
-            eq_refl Heqb eq_refl H0).
-
-    specialize o with (st:= 
-    {|
-      am_nonceMap := am_nonceMap a5;
-      am_nonceId := am_nonceId a5;
-      amConfig := manifest_compiler (manifest_generator_app (eval t p e0)) amLib
-    |}
-    ).
-    simpl in *.
-
-    assert (
-      manifest_compiler (manifest_generator_app (eval t p e0)) amLib =
-    manifest_compiler (manifest_generator_app (eval t p e0)) amLib
-    ) by reflexivity.
-
-    apply o in H1.
-
-    +
-    door.
-    ++
-      find_rewrite.
-      ff.
-    ++
-      find_rewrite.
-      ff.
-      right.
-      eauto.
-
-    +
-      destruct initEvOpt.
-      ff.
-
-      rewrite no_nonces.
-      cbv; intros; ff.
-
-
-      unfold gen_nonce_if_none_local in *.
-      am_monad_unfold.
-      invc Heqp0.
-
-      assert (a1 = a5).
-      {
-        unfold check_et_length in *.
-        assert (
-          Nat.eqb (et_size (eval t p (nonce_evt (am_nonceId st))))
-            (length (run_cvm_rawEv t p [gen_nonce_bits] (amConfig a1))) = 
-            true
-        ).
-        {
-          Check EqNat.beq_nat_true_stt.
-          Require Import PeanoNat.
-          apply Nat.eqb_eq.
-          eassumption.
-        }
-        ff.
-      }
-      subst.
-
-      unfold config_AM_if_lib_supported in *.
-      ff.
-
-      unfold has_nonces.
-      intros.
-
-      assert (nid = (am_nonceId st)).
-      {
-        unfold nonce_ids_et in H1.
-
-        apply nid_nonce_ids_eval in H1.
-
-        door.
-        solve_by_inversion.
-        invc H1.
-        reflexivity.
-        solve_by_inversion.
-      }
-      subst.
-
-      eexists.
-
-      eapply mapC_get_works.
-
-    -
-    unfold config_AM_if_lib_supported_app in *.
-    ff.
-
-    rewrite lib_support_bool_iff_prop in *.
-
-
-    assert (et_size (eval t p e0) = length (run_cvm_rawEv t p r1 (amConfig a1))).
-    {
-      unfold check_et_length in *.
-      ff.
-      apply Nat.eqb_eq.
-      eassumption.
-    }
-
-
-    pose (manifest_generator_compiler_soundness_app 
-            (eval t p e0) 
-            (run_cvm_rawEv t p r1 (amConfig a1))
-            empty_Manifest
-            (manifest_generator_app (eval t p e0))
-            amLib 
-            (manifest_compiler (manifest_generator_app (eval t p e0)) amLib)
-            eq_refl Heqb eq_refl H0).
-
-    specialize o with (st:= 
-    {|
-      am_nonceMap := am_nonceMap a5;
-      am_nonceId := am_nonceId a5;
-      amConfig := manifest_compiler (manifest_generator_app (eval t p e0)) amLib
-    |}
-    ).
-    simpl in *.
-
-    assert (
-      manifest_compiler (manifest_generator_app (eval t p e0)) amLib =
-    manifest_compiler (manifest_generator_app (eval t p e0)) amLib
-    ) by reflexivity.
-
-    apply o in H1.
-
-    +
-    door.
-    ++
-      find_rewrite.
-      left.
-      eauto.
-    ++
-      find_rewrite.
-      ff.
-
-    +
-      destruct initEvOpt.
-      ff.
-
-      rewrite no_nonces.
-      cbv; intros; ff.
-
-
-      unfold gen_nonce_if_none_local in *.
-      am_monad_unfold.
-      invc Heqp0.
-
-      assert (a1 = a5).
-      {
-        unfold check_et_length in *.
-        assert (
-          Nat.eqb (et_size (eval t p (nonce_evt (am_nonceId st))))
-            (length (run_cvm_rawEv t p [gen_nonce_bits] (amConfig a1))) = 
-            true
-        ).
-        {
-          Check EqNat.beq_nat_true_stt.
-          Require Import PeanoNat.
-          apply Nat.eqb_eq.
-          eassumption.
-        }
-        ff.
-      }
-      subst.
-
-      unfold config_AM_if_lib_supported in *.
-      ff.
-
-      unfold has_nonces.
-      intros.
-
-      assert (nid = (am_nonceId st)).
-      {
-        unfold nonce_ids_et in H1.
-
-        apply nid_nonce_ids_eval in H1.
-
-        door.
-        solve_by_inversion.
-        invc H1.
-        reflexivity.
-        solve_by_inversion.
-      }
-      subst.
-
-      eexists.
-
-      eapply mapC_get_works.
-Qed.
-
-
-*)
-
-
-
-
-
-
-
-(*
-
-evcIn <- gen_nonce_if_none initEvOpt ;;
-auth_evc <- gen_authEvidence_if_some authPhrase myPlc mt_evc  ;;
-let '(evc init_ev init_et) := evcIn in
-let resev := am_sendReq t pTo auth_evc init_ev in 
-match app_bool with
-| true =>  
-  app_res <- am_appraise t pTo init_et resev ;; 
-  ret (am_appev app_res)
-| false => ret (am_rawev resev)
-end.
-
-*)

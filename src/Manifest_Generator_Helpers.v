@@ -2,7 +2,7 @@
 
 Require Import Term_Defs_Core Eqb_Evidence.
 
-Require Import EqClass StructTactics Auto.
+Require Import EqClass StructTactics Defs.
 
 Require Export EnvironmentM Manifest_Set.
 
@@ -50,8 +50,7 @@ Proof.
   intros.
   generalizeEverythingElse t.
   induction t; intros.
-  -
-    destruct a; unfold places_manset; unfold places_manset'; ff; 
+  - destruct a; unfold places_manset; unfold places_manset'; ff; 
     try (econstructor; eauto); econstructor.
   - (* at case *)
     cbn in *.

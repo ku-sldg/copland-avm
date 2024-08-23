@@ -1,9 +1,15 @@
 (* Local copy of structural tactics library from:  https://github.com/uwplse/StructTact *)
 
+(** [clean] removes any hypothesis of the shape [X = X]. *)
+Ltac clean :=
+  match goal with
+    | [ H : ?X = ?X |- _ ] => clear H
+  end.
 
 (** [subst_max] performs as many [subst] as possible, clearing all
     trivial equalities from the context. *)
 Ltac subst_max :=
+  repeat clean;
   repeat match goal with
            | [ H : ?X = _ |- _ ]  => subst X
            | [H : _ = ?X |- _] => subst X
@@ -160,9 +166,9 @@ Ltac break_and :=
     conjunct.  In simpler terms, it splits a goal of the shape [G1 /\
     ... /\ Gn] into [n] goals [G1], ..., [Gn]. *)
 Ltac break_and_goal :=
-    repeat match goal with
-             | [ |- _ /\ _ ] => split
-           end.
+  match goal with
+  | [ |- _ /\ _ ] => split
+  end.
 
 (** [solve_by_inverison' tac] succeeds if it can solve your goal by
     inverting a hypothesis and then running [tac]. *)
@@ -238,11 +244,12 @@ Ltac find_contradiction :=
 (** [find_rewrite] performs a [rewrite] with some hypothesis in some
     other hypothesis. *)
 Ltac find_rewrite :=
+  subst_max;
   match goal with
-    | [ H : ?X _ _ _ _ = _, H' : ?X _ _ _ _ = _ |- _ ] => rewrite H in H'
-    | [ H : ?X = _, H' : ?X = _ |- _ ] => rewrite H in H'
-    | [ H : ?X = _, H' : context [ ?X ] |- _ ] => rewrite H in H'
-    | [ H : ?X = _ |- context [ ?X ] ] => rewrite H
+  | [ H : ?X _ _ _ _ = _, H' : ?X _ _ _ _ = _ |- _ ] => rewrite H in H'
+  | [ H : ?X = _, H' : ?X = _ |- _ ] => rewrite H in H'
+  | [ H : ?X = _, H' : context [ ?X ] |- _ ] => rewrite H in H'
+  | [ H : ?X = _ |- context [ ?X ] ] => rewrite H
   end.
 
 (** [find_rewrite_lem lem] rewrites with [lem] in some hypothesis. *)
@@ -264,7 +271,8 @@ Ltac find_rewrite_lem_by lem t :=
     if it can discharge the obligations with [eauto]. *)
 Ltac find_erewrite_lem lem :=
   match goal with
-    | [ H : _ |- _] => erewrite lem in H by eauto
+  | [ H : _ |- _] => erewrite lem in H by eauto
+  | |- _ => erewrite lem by eauto
   end.
 
 (** [find_reverse_rewrite] performs a [rewrite <-] with some hypothesis in some
@@ -375,12 +383,6 @@ Ltac find_reverse_higher_order_rewrite :=
     | [ H : _ = _ |- _ ] => rewrite <- H in *
     | [ H : forall _, _ = _ |- _ ] => rewrite <- H in *
     | [ H : forall _ _, _ = _ |- _ ] => rewrite <- H in *
-  end.
-
-(** [clean] removes any hypothesis of the shape [X = X]. *)
-Ltac clean :=
-  match goal with
-    | [ H : ?X = ?X |- _ ] => clear H
   end.
 
 (** [find_apply_hyp_goal] tries solving the goal applying some
@@ -635,3 +637,84 @@ Ltac break_exists_name x :=
   match goal with
   | [ H : exists _, _ |- _ ] => destruct H as [x H]
   end.
+
+Tactic Notation "check_num_goals" natural(n) :=
+  let num := numgoals in
+  guard num = n.
+
+Tactic Notation "check_num_goals_le" natural(n) :=
+  let num := numgoals in
+  guard num <= n.
+
+Ltac break_logic_hyps :=
+  repeat (
+    try break_or_hyp;
+    try break_and;
+    try break_exists
+  ).
+
+Ltac break_iff :=
+  match goal with
+  | |- _ <-> _ => split; intros
+  end.
+
+(* Simplification hammer.  Used at beginning of many proofs in this 
+   development.  Conservative simplification, break matches, 
+   invert on resulting goals *)
+Ltac ff :=
+  repeat (
+    try unfold not in *;
+    intros;
+    (* Break up logical statements *)
+    repeat break_and;
+    repeat break_exists;
+    try break_iff;
+    (* 
+    This is proving too computationly expensive to do in general
+
+    (* We only break up goal ANDs f we <= the total number of goals *)
+    try (
+      let num := numgoals in
+      break_and_goal; ff; 
+      let num2 := numgoals in
+      guard num2 <= num);
+    *)
+    (* We only break up hyp ORs if we <= the total number of goals *)
+    try (
+      let num := numgoals in
+      break_or_hyp; ff; 
+      let num2 := numgoals in
+      guard num2 <= num);
+    repeat (
+      simpl in *;
+      repeat find_rewrite;
+      try break_match;
+      try congruence;
+      repeat find_rewrite;
+      try congruence;
+      repeat find_injection;
+      try congruence;
+      simpl in *;
+      subst_max; eauto;
+      try congruence;
+      try solve_by_inversion
+    )
+  ).
+
+Require Import Lia.
+
+Ltac ffl :=
+  repeat (ff;
+    try lia;
+  ff).
+
+Ltac ffa :=
+  repeat (ff;
+    repeat find_apply_hyp_hyp;
+    ff).
+
+Tactic Notation "ffa" "using" tactic2(tac) :=
+  repeat (ff;
+    repeat find_apply_hyp_hyp;
+    tac;
+    ff).

@@ -7,7 +7,6 @@ Stringifiable_Class_Admits.v
 More_lists.v
 EqClass.v
 ID_Type.v
-Defs.v
 BS.v
 ErrorStringConstants.v
 Interface_Strings_Vars.v
@@ -34,44 +33,36 @@ Manifest_JSON.v
 Session_Config_Compiler.v
 Cvm_St.v
 IO_Stubs.v
-# Anno_Term_Defs.v
 Eqb_Evidence.v
 Term.v
-Event_system.v
+# Event_system.v
 # Term_system.v
 # Trace.v
 # LTS.v
 # Main.v
 EnvironmentM.v
 Manifest_Union.v
-# Axioms_Io.v
 Evidence_Bundlers.v
 Cvm_Monad.v
 Cvm_Impl.v
 Cvm_Run.v
-Auto.v
+Cvm_Axioms.v
 Manifest_Generator_Helpers.v
 Manifest_Generator.v
 Manifest_Generator_Facts.v
 Manifest_Generator_Union.v
-AutoApp.v
 Helpers_CvmSemantics.v
-# External_Facts.v
 Appraisal_Evidence.v
-CvmSemantics.v
-Disclose.v
+# CvmSemantics.v
+# Disclose.v
 AM_St.v
-Appraisal_IO_Stubs.v
 AM_Monad.v
-Appraisal_Defs.v
-Impl_appraisal.v
 ManCompSoundness_Helpers.v
-ManCompSoundness.v
-ManCompSoundness_Appraisal.v
+# ManCompSoundness.v
 AM_Helpers.v
 AM_Json_Interfaces.v
 AM_Manager.v
-Client_AM.v
+# Client_AM.v
 Server_AM.v
 Flexible_Mechanisms_Vars.v
 Flexible_Mechanisms.v

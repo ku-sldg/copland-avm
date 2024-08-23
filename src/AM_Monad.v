@@ -3,7 +3,7 @@ Require Import List String.
 
 Require Import ErrorStMonad_Coq Maps Term_Defs Cvm_Run Cvm_St Cvm_Monad.
 
-Require Import ErrorStringConstants Appraisal_IO_Stubs Attestation_Session.
+Require Import ErrorStringConstants Attestation_Session.
 
 Require Export AM_St.
 
@@ -50,20 +50,12 @@ Definition am_getNonce (nid:nat) : AM BS :=
   end.
 
 
-Definition am_runCvm_nonce (t:Term) (bs:BS) (ac : Session_Config) : AM (nat * RawEv) :=
-  nid <- am_newNonce bs ;;
-  match run_cvm_w_config t [bs] ac with
-  | resultC res_st => err_ret (nid, (get_bits (st_ev res_st)))
-  | errC e => am_failm (cvm_error e)
-  end.
-
 Ltac am_monad_unfold :=
   repeat 
     (repeat unfold
       get_AM_config,
       am_newNonce,
       am_getNonce,
-      am_failm,
-      am_runCvm_nonce in *; 
+      am_failm in *; 
     repeat cvm_monad_unfold;
     simpl in *).

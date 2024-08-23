@@ -3,7 +3,7 @@
 
 Require Import Maps Manifest EqClass Manifest_Generator Manifest_Union.
 
-Require Import Auto StructTactics.
+Require Import Defs StructTactics.
 
 Require Import Coq.Program.Tactics.
 

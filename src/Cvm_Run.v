@@ -13,14 +13,11 @@ Definition run_cvm (t:Term) st : ResultT cvm_st CVM_Error :=
   | errC e => errC e
   end.
 
-Definition run_cvm_w_config (t:Term) (e:RawEv) (ac : Session_Config) 
-    : ResultT cvm_st CVM_Error :=
-  run_cvm t (mk_st (evc e mt_evt) [] 0 ac).
-
-Definition run_cvm_rawEv (t:Term) (e:RawEv) (ac : Session_Config) 
-    : ResultT RawEv string :=
-  match (run_cvm_w_config t e ac) with
-  | resultC st => resultC (get_bits (st_ev st))
+Definition run_cvm_init_ev (ac : Session_Config) (e: Evidence) (t : Term) 
+    : ResultT Evidence string :=
+  let init_st := (mk_st e [] 0 ac) in
+  match (run_cvm t init_st) with
+  | resultC st => resultC (st_ev st)
   | errC e => 
       match e with
       | at_error_dynamic _ _ _ => errC errStr_run_cvm_at_error_dynamic

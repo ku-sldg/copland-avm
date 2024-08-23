@@ -292,32 +292,11 @@ Theorem asp_events_deterministic_index : forall G p a e i evs,
     true_last evs = Some v' ->
     ev v' = i + List.length evs - 1.
 Proof.
-  induction e; simpl in *; intros; ff; try lia.
-  result_monad_unfold; 
-  break_match; try congruence;
-  break_match; try congruence;
-  repeat find_injection; simpl in *;
-  break_match; try (find_injection; simpl in *; lia).
-  find_reverse_rewrite;
-  repeat (
-    find_apply_lem_hyp true_last_app_spec;
-    intuition; try congruence;
-    simpl in *;
-    repeat find_injection;
-    simpl in *;
-    repeat rewrite app_length;
-    simpl in *;
-    try lia
-  );
-  repeat (find_apply_lem_hyp app_eq_nil;
-    intuition; try congruence
-  ).
-  rewrite app_assoc in Heql1.
-  eapply list_length_app_cons in Heql1;
-  simpl in *;
-  find_reverse_rewrite;
-  rewrite <- app_assoc.
-  simpl in *.
-  repeat rewrite app_length; simpl in *.
-  try lia.
+  induction e; ffl;
+  result_monad_unfold; ffl.
+  - repeat (find_eapply_lem_hyp true_last_app_spec;
+    break_or_hyp; repeat rewrite app_length; ffl);
+    find_eapply_lem_hyp app_eq_nil; ff.
+  - find_rewrite_lem true_last_none_iff_nil;
+    repeat (find_eapply_lem_hyp app_eq_nil; ff).
 Qed.

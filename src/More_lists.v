@@ -14,6 +14,7 @@ University of California.  See license.txt for details. *)
 Require Import List Compare_dec Lia StructTactics.
 Import List.ListNotations.
 Open Scope list_scope.
+Require Import StructTactics.
 
 Set Implicit Arguments.
 
@@ -23,124 +24,79 @@ Section More_lists.
 
   (** This is the analog of [firstn_app] from the List library. *)
 
-  Lemma skipn_app n:
-    forall l1 l2: list A,
-      skipn n (l1 ++ l2) = (skipn n l1) ++ (skipn (n - length l1) l2).
-  Proof. induction n as [|k iHk]; intros l1 l2.
-    - now simpl.
-    - destruct l1 as [|x xs].
-      * unfold skipn at 2, length.
-        repeat rewrite app_nil_l.
-        rewrite PeanoNat.Nat.sub_0_r.
-        auto.
-      * rewrite <- app_comm_cons. simpl. apply iHk.
+  Lemma skipn_app n: forall l1 l2: list A,
+    skipn n (l1 ++ l2) = (skipn n l1) ++ (skipn (n - length l1) l2).
+  Proof. 
+    induction n; ff.
   Qed.
 
-  Lemma firstn_append:
-    forall l l': list A,
-      firstn (length l) (l ++ l') = l.
+  Lemma firstn_append: forall l l': list A,
+    firstn (length l) (l ++ l') = l.
   Proof.
-    induction l; intros; simpl; auto.
-    rewrite IHl; auto.
+    induction l; ff.
   Qed.
 
-  Lemma skipn_append:
-    forall l l': list A,
-      skipn (length l) (l ++ l') = l'.
+  Lemma skipn_append: forall l l': list A,
+    skipn (length l) (l ++ l') = l'.
   Proof.
-    induction l; intros; simpl; auto.
+    induction l; ff.
   Qed.
 
-  Lemma skipn_all:
-    forall l: list A,
-      skipn (length l) l = [].
+  Lemma skipn_all: forall l: list A,
+    skipn (length l) l = [].
   Proof.
-    induction l; intros; simpl; auto.
+    induction l; ff.
   Qed.
 
-  Lemma skipn_nil:
-    forall i,
-      @skipn A i [] = [].
+  Lemma skipn_nil: forall i,
+    @skipn A i [] = [].
   Proof.
-    destruct i; simpl; auto.
+    induction i; ff.
   Qed.
 
-  Lemma firstn_all_n:
-    forall (l: list A) n,
-      length l <= n ->
-      firstn n l = l.
+  Lemma firstn_all_n: forall (l: list A) n,
+    length l <= n ->
+    firstn n l = l.
   Proof.
-    induction l; intros; simpl.
-    - rewrite firstn_nil; auto.
-    - destruct n.
-      simpl in H.
-      lia.
-      simpl in *.
-      apply le_S_n in H.
-      apply IHl in H.
-      rewrite H; auto.
+    induction l; ff;
+    destruct n; ff;
+    find_higher_order_rewrite; ffl.
   Qed.
 
-  Lemma skipn_all_n:
-    forall (l: list A) n,
-      length l <= n ->
-      skipn n l = [].
+  Lemma skipn_all_n: forall (l: list A) n,
+    length l <= n ->
+    skipn n l = [].
   Proof.
-    induction l; intros; simpl.
-    - rewrite skipn_nil; auto.
-    - destruct n; simpl in *.
-      lia.
-      apply le_S_n in H.
-      apply IHl; auto.
+    induction l; ff;
+    destruct n; ff;
+    find_higher_order_rewrite; ffl.
   Qed.
 
-  Lemma firstn_in:
-    forall x i (l: list A),
-      In x (firstn i l) ->
-      In x l.
+  Lemma firstn_in: forall x i (l: list A),
+    In x (firstn i l) ->
+    In x l.
   Proof.
-    induction i; intros.
-    - simpl in H; tauto.
-    - destruct l.
-      + simpl in H; tauto.
-      + simpl in H.
-        destruct H.
-        subst; simpl; auto.
-        apply IHi in H.
-        simpl; auto.
+    induction i; ff.
   Qed.
 
-  Lemma skipn_in:
-    forall x i (l: list A),
-      In x (skipn i l) ->
-      In x l.
+  Lemma skipn_in: forall x i (l: list A),
+    In x (skipn i l) ->
+    In x l.
   Proof.
-    induction i; intros.
-    - simpl in H; tauto.
-    - destruct l.
-      + simpl in H; tauto.
-      + simpl in H.
-        apply IHi in H.
-        simpl; auto.
+    induction i; ff.
   Qed.
 
-  Lemma skipn_zero:
-    forall l: list A,
-      skipn 0 l = l.
+  Lemma skipn_zero: forall l: list A,
+    skipn 0 l = l.
   Proof.
-    destruct l; simpl; auto.
+    induction l; ff.
   Qed.
 
-  Lemma in_skipn_cons:
-    forall i x y (l: list A),
-      In x (skipn i l) ->
-      In x (skipn i (y :: l)).
+  Lemma in_skipn_cons: forall i x y (l: list A),
+    In x (skipn i l) ->
+    In x (skipn i (y :: l)).
   Proof.
-    induction i; intros; simpl.
-    - rewrite skipn_zero in H; auto.
-    - destruct l.
-      + simpl in H; tauto.
-      + simpl in H; auto.
+    induction i; ff.
   Qed.
 
   (** Do [l] and [l'] share no elements? *)
@@ -148,24 +104,14 @@ Section More_lists.
   Definition disjoint_lists (l l': list A): Prop :=
     forall x, In x l -> In x l' -> False.
 
-  Lemma nodup_append:
-    forall l l': list A,
-      NoDup l -> NoDup l' ->
-      disjoint_lists l l' ->
-      NoDup (l ++ l').
+  Lemma nodup_append: forall l l': list A,
+    NoDup l -> NoDup l' ->
+    disjoint_lists l l' ->
+    NoDup (l ++ l').
   Proof.
-    intros.
-    induction H.
-    - rewrite app_nil_l; auto.
-    - rewrite <- app_comm_cons.
-      apply NoDup_cons.
-      + intro.
-        apply in_app_iff in H3.
-        destruct H3; intuition.
-        apply H1 in H3; try tauto; simpl; auto.
-      + apply IHNoDup. unfold disjoint_lists; intros.
-        apply H1 in H4; try tauto.
-        simpl; auto.
+    intros; induction H; ff;
+    econstructor; unfold disjoint_lists in *; ff;
+    find_eapply_lem_hyp in_app_iff; ff.
   Qed.
 
   Lemma in_cons_app_cons:
@@ -173,10 +119,7 @@ Section More_lists.
       In x (y :: l ++ [z]) <->
       x = y \/ In x l \/ x = z.
   Proof.
-    intros.
-    rewrite app_comm_cons.
-    rewrite in_app_iff; simpl.
-    intuition.
+    ff; find_erewrite_lem in_app_iff; ff.
   Qed.
 
   (** * Earlier *)
@@ -189,175 +132,109 @@ Section More_lists.
       In x (firstn n l) /\
       In y (skipn n l).
 
-  Lemma earlier_in_left:
-    forall l x y,
-      earlier l x y -> In x l.
+  Lemma earlier_in_left: forall l x y,
+    earlier l x y -> In x l.
   Proof.
-    intros.
-    destruct H as [i].
-    destruct H.
-    apply firstn_in in H; auto.
+    ff; unfold earlier in *; ff;
+    find_eapply_lem_hyp firstn_in; ff.
   Qed.
 
-  Lemma earlier_in_right:
-    forall l x y,
-      earlier l x y -> In y l.
+  Lemma earlier_in_right: forall l x y,
+    earlier l x y -> In y l.
   Proof.
-    intros.
-    destruct H as [i].
-    destruct H.
-    apply skipn_in in H0; auto.
+    ff; unfold earlier in *; ff;
+    find_eapply_lem_hyp skipn_in; ff.
   Qed.
 
   (** [x] is earlier than [y] in [p ++ q] if [x] is earlier than [y]
       in [p].  *)
 
-  Lemma earlier_left:
-    forall p q x y,
-      earlier p x y -> earlier (p ++ q) x y.
+  Lemma earlier_left: forall p q x y,
+    earlier p x y -> earlier (p ++ q) x y.
   Proof.
-    intros.
-    destruct H as [i].
-    destruct H.
-    exists i.
-    split.
-    - rewrite firstn_app.
-      apply in_or_app.
-      left; auto.
-    - rewrite skipn_app.
-      apply in_or_app.
-      left; auto.
+    unfold earlier; ff; eexists;
+    try erewrite firstn_app;
+    try erewrite skipn_app;
+    split; eapply in_or_app; ff.
   Qed.
 
   (** [x] is earlier than [y] in [p ++ q] if [x] is earlier than [y]
       in [q].  *)
 
-  Lemma earlier_right:
-    forall p q x y,
-      earlier q x y -> earlier (p ++ q) x y.
+  Lemma earlier_right: forall p q x y,
+    earlier q x y -> earlier (p ++ q) x y.
   Proof.
-    intros.
-    destruct H as [i].
-    destruct H.
-    exists (length p + i).
-    assert (G: length p + i - length p = i).
-    lia.
-    split.
-    - rewrite firstn_app.
-      apply in_or_app.
-      right.
-      rewrite G; auto.
-    - rewrite skipn_app.
-      apply in_or_app.
-      right.
-      rewrite G; auto.
+    unfold earlier; ff; exists (length p + x0);
+    try erewrite firstn_app;
+    try erewrite skipn_app;
+    split; eapply in_or_app; ff;
+    assert (length p + x0 - length p = x0) by lia;
+    ff.
   Qed.
 
-  Lemma earlier_append:
-    forall p q x y,
-      In x p -> In y q ->
-      earlier (p ++ q) x y.
+  Lemma earlier_append: forall p q x y,
+    In x p -> In y q ->
+    earlier (p ++ q) x y.
   Proof.
-    intros.
-    exists (length p).
-    rewrite firstn_append.
-    rewrite skipn_append.
-    auto.
+    unfold earlier; ff; eexists;
+    try erewrite firstn_append;
+    try erewrite skipn_append; ff.
   Qed.
 
-  Lemma earlier_append_iff:
-    forall x y (l l': list A),
-      earlier (l ++ l') x y <->
-      earlier l x y \/ In x l /\ In y l' \/ earlier l' x y.
+  Lemma earlier_cons: forall p x y,
+    In y p ->
+    earlier (x :: p) x y.
   Proof.
-    split; intros.
-    - destruct H as [i].
-      destruct H.
-      rewrite firstn_app in H.
-      rewrite skipn_app in H0.
-      pose proof (le_lt_dec i (length l)) as G.
-      destruct G as [G|G].
-      + rewrite <- PeanoNat.Nat.sub_0_le in G; auto.
-        rewrite G in *.
-        simpl in *.
-        rewrite app_nil_r in H.
-        apply in_app_iff in H0.
-        destruct H0.
-        * left; exists i; auto.
-        * right; left; split; auto.
-          apply firstn_in in H; auto.
-      + right.
-        rewrite firstn_all_n in H; try lia.
-        rewrite skipn_all_n in H0; try lia.
-        rewrite app_nil_l in H0.
-        apply in_app_iff in H.
-        destruct H.
-        * apply skipn_in in H0; auto.
-        * right.
-          exists (i - length l); auto.
-    - destruct H.
-      apply earlier_left; auto.
-      destruct H.
-      + destruct H.
-        apply earlier_append; auto.
-      + apply earlier_right; auto.
+    unfold earlier; exists 1; ff.
   Qed.
 
-  Lemma earlier_cons:
-    forall p x y,
-      In y p ->
-      earlier (x :: p) x y.
+  Lemma earlier_cons_shift: forall p x y z,
+    earlier p x y ->
+    earlier (z :: p) x y.
   Proof.
-    intros; exists 1; simpl; auto.
-  Qed.
-
-  Lemma earlier_cons_shift:
-    forall p x y z,
-      earlier p x y ->
-      earlier (z :: p) x y.
-  Proof.
-    intros.
-    destruct H as [i].
-    destruct H.
-    exists (S i).
-    simpl; auto.
+    unfold earlier; ff;
+    exists (S x0); ff.
   Qed.
 
   Fixpoint true_last {A : Type} (l : list A) : option A :=
     match l with
     | nil => None
     | h' :: t' => 
-      match t' with
-      | nil => Some h'
-      | h'' :: t'' => true_last t'
+      match true_last t' with
+      | None => Some h'
+      | Some x => Some x
       end
     end.
+
+  Lemma true_last_none_iff_nil : forall A (l : list A),
+    true_last l = None <-> l = nil.
+  Proof.
+    induction l; ff.
+  Qed.
 
   Lemma true_last_app : forall A (l1 l2 : list A),
     l2 <> nil ->
     true_last (l1 ++ l2) = true_last l2.
   Proof.
-    induction l1; simpl in *; intuition.
-    break_match; eauto.
-    - find_apply_lem_hyp app_eq_nil; intuition.
-    - rewrite <- Heql; eauto.
+    induction l1; ff;
+    find_higher_order_rewrite; ff;
+    find_eapply_lem_hyp true_last_none_iff_nil; ff.
   Qed.
 
   Lemma true_last_app_spec : forall A (l1 l2 : list A) x,
     true_last (l1 ++ l2) = Some x ->
     (true_last l1 = Some x /\ l2 = nil) \/ true_last l2 = Some x.
   Proof.
-    induction l1; simpl in *; intuition;
-    break_match; simpl in *; eauto;
-    break_match; simpl in *; repeat find_injection; eauto.
+    induction l1; ff;
+    find_eapply_lem_hyp true_last_none_iff_nil; ff;
+    find_eapply_lem_hyp app_eq_nil; ff.
   Qed.
 
   Theorem list_length_app_cons : forall A (l1 l2 : list A) x x',
     l1 ++ [x] = x' :: l2 ->
     length (l1 ++ [x]) = length (x' :: l2).
   Proof.
-    induction l1; simpl in *; intuition;
-    repeat find_injection; simpl in *; try lia.
+    induction l1; ff.
   Qed.
 
 End More_lists.

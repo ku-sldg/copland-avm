@@ -13,6 +13,7 @@ Require Import Helpers_CvmSemantics Coq.Program.Tactics StructTactics.
 Import ListNotations.
 
 Definition session_config_subset (sc1 sc2 : Session_Config) : Prop :=
+  (session_context sc1) = (session_context sc2) /\
   (forall aid l targ targid ev, 
       (forall res, 
       sc1.(aspCb) (asp_paramsC aid l targ targid) ev = resultC res ->
@@ -32,13 +33,7 @@ Definition session_config_subset (sc1 sc2 : Session_Config) : Prop :=
       map_get (sc2.(plc_map)) p = None) /\
   (forall p, 
       map_get (sc1.(pubkey_map)) p = None ->
-      map_get (sc2.(pubkey_map)) p = None) /\
-  (forall a a',
-      map_get (sc1.(ASP_to_APPR_ASP_Map)) a = Some a' ->
-      map_get (sc2.(ASP_to_APPR_ASP_Map)) a = Some a') /\
-  (forall a,
-      map_get (sc1.(ASP_to_APPR_ASP_Map)) a = None ->
-      map_get (sc2.(ASP_to_APPR_ASP_Map)) a = None).
+      map_get (sc2.(pubkey_map)) p = None).
 
 Theorem session_config_subset_refl : forall sc1,
   session_config_subset sc1 sc1.
@@ -51,57 +46,85 @@ Theorem session_config_subset_trans : forall sc1 sc2 sc3,
   session_config_subset sc2 sc3 ->
   session_config_subset sc1 sc3.
 Proof.
-  unfold session_config_subset; intuition.
+  unfold session_config_subset; intuition; ff.
 Qed.
 
-Fixpoint session_config_supports_exec (t : Term) (sc : Session_Config) : Prop :=
+Fixpoint session_config_support_exec_appr (p : Plc) (e : EvidenceT) 
+    (sc : Session_Config) : Prop :=
+  match e with
+  | mt_evt => True
+  | nonce_evt _ => 
+    forall ev,
+    ((exists res, 
+    sc.(aspCb) check_nonce_params ev = resultC res) \/ 
+    (exists errStr, sc.(aspCb) check_nonce_params ev = errC (Runtime errStr)))
+  | asp_evt p' par e' =>
+    let '(asp_paramsC aspid l targ targid) := par in
+    match (map_get (asp_comps sc.(session_context)) aspid) with
+    | None => False
+    | Some appr_aspid =>
+      forall l targ targid ev,
+      ((exists res, 
+      sc.(aspCb) (asp_paramsC appr_aspid l targ targid) ev = resultC res) \/ 
+      (exists errStr, sc.(aspCb) (asp_paramsC appr_aspid l targ targid) ev = errC (Runtime errStr)))
+    end
+  | split_evt e1 e2 =>
+    (session_config_support_exec_appr p e1 sc) /\
+    (session_config_support_exec_appr p e2 sc)
+  end.
+
+Fixpoint session_config_supports_exec (p : Plc) (e : EvidenceT) (t : Term) 
+    (sc : Session_Config) : Prop :=
   match t with
   | asp a =>
       match a with
       | NULL => True
       | CPY => True
       | SIG => 
-          forall l targ targid ev,
+          forall ev,
           ((exists res, 
-          sc.(aspCb) (asp_paramsC sig_aspid l targ targid) ev = resultC res) \/ 
-          (exists errStr, sc.(aspCb) (asp_paramsC sig_aspid l targ targid) ev = errC (Runtime errStr)))
+          sc.(aspCb) sig_params ev = resultC res) \/ 
+          (exists errStr, sc.(aspCb) sig_params ev = errC (Runtime errStr)))
       | HSH =>
-          forall l targ targid ev,
+          forall ev,
           ((exists res, 
-          sc.(aspCb) (asp_paramsC hsh_aspid l targ targid) ev = resultC res) \/ 
-          (exists errStr, sc.(aspCb) (asp_paramsC hsh_aspid l targ targid) ev = errC (Runtime errStr)))
+          sc.(aspCb) hsh_params ev = resultC res) \/ 
+          (exists errStr, sc.(aspCb) hsh_params ev = errC (Runtime errStr)))
       | ENC p =>
-          (forall l targ targid ev,
+          (forall ev,
           ((exists res, 
-          sc.(aspCb) (asp_paramsC enc_aspid l targ targid) ev = resultC res) \/ 
-          (exists errStr, sc.(aspCb) (asp_paramsC enc_aspid l targ targid) ev = errC (Runtime errStr)))) /\
+          sc.(aspCb) (enc_params p) ev = resultC res) \/ 
+          (exists errStr, sc.(aspCb) (enc_params p) ev = errC (Runtime errStr)))) /\
           ((exists res, 
             map_get (sc.(pubkey_map)) p = Some res))
-      | ASPC _ _ (asp_paramsC aspid _ _ _) =>
+      | ASPC _ (asp_paramsC aspid _ _ _) =>
           (forall l targ targid ev,
           ((exists res, 
           sc.(aspCb) (asp_paramsC aspid l targ targid) ev = resultC res) \/ 
           (exists errStr, sc.(aspCb) (asp_paramsC aspid l targ targid) ev = errC (Runtime errStr))))
+      | APPR => session_config_support_exec_appr p e sc
       end
   | att p' t' => 
       (* We only care that we can dispatch it *)
       ((exists res, map_get (sc.(plc_map)) p' = Some res))
   | lseq t1 t2 =>
-      exists sc1 sc2,
-      (session_config_supports_exec t1 sc1) /\
-      (session_config_supports_exec t2 sc2) /\
+      forall e,
+      exists sc1 sc2 e',
+      (session_config_supports_exec p e t1 sc1) /\
+      (eval (session_context sc) p e t1 = resultC e') /\
+      (session_config_supports_exec p e' t2 sc2) /\
       session_config_subset sc1 sc /\
       session_config_subset sc2 sc
-  | bseq _ t1 t2 =>
+  | bseq s t1 t2 =>
       exists sc1 sc2,
-      (session_config_supports_exec t1 sc1) /\
-      (session_config_supports_exec t2 sc2) /\
+      (session_config_supports_exec p (splitEv_T_l s e) t1 sc1) /\
+      (session_config_supports_exec p (splitEv_T_r s e) t2 sc2) /\
       session_config_subset sc1 sc /\
       session_config_subset sc2 sc
-  | bpar _ t1 t2 =>
+  | bpar s t1 t2 =>
       exists sc1 sc2,
-      (session_config_supports_exec t1 sc1) /\
-      (session_config_supports_exec t2 sc2) /\
+      (session_config_supports_exec p (splitEv_T_l s e) t1 sc1) /\
+      (session_config_supports_exec p (splitEv_T_r s e) t2 sc2) /\
       session_config_subset sc1 sc /\
       session_config_subset sc2 sc
   end.
@@ -204,27 +227,45 @@ Ltac kill_map_none :=
     destruct H'; find_rewrite; congruence
   end.
 
-Lemma never_change_sess_conf : forall t st res st',
-  build_cvm (copland_compile t) st = (res, st') ->
-  st_config st = st_config st'.
-Proof.
-  intros;
-  destruct st;
-  find_apply_lem_hyp sc_immut_better; simpl in *; ff.
-Qed.
-
-Local Hint Resolve never_change_sess_conf : core.
 Local Hint Resolve session_config_subset_refl : core.
 Local Hint Resolve session_config_subset_trans : core.
+Require Import Appraisal_Evidence.
 
-Theorem well_formed_am_config_impl_executable : forall t sc,
-  session_config_supports_exec t sc ->
+Lemma peel_n_rawev_fail_runtime : forall n ls st r st',
+  peel_n_rawev n ls st = (errC r, st') ->
+  exists errStr, r = dispatch_error (Runtime errStr).
+Proof.
+  induction n; simpl in *; intuition; ffa using cvm_monad_unfold; eauto.
+Qed.
+
+Lemma split_evidence_fail_runtime : forall rev et1 et2 st r st',
+  split_evidence rev et1 et2 st = (errC r, st') ->
+  exists errStr, r = dispatch_error (Runtime errStr).
+Proof.
+  intros; unfold split_evidence in *; cvm_monad_unfold; ff;
+  find_eapply_lem_hyp peel_n_rawev_fail_runtime; eauto.
+Qed.
+
+Lemma well_formed_context_subset : forall sc1 sc2,
+  session_config_subset sc1 sc2 ->
+  well_formed_context (session_context sc1) ->
+  well_formed_context (session_context sc2).
+Proof.
+  intuition; unfold session_config_subset in *; intuition; ff.
+Qed.
+Local Hint Resolve well_formed_context_subset : core.
+
+Theorem well_formed_am_config_impl_executable : forall t p e sc,
+  well_formed_context (session_context sc) ->
+  session_config_supports_exec p e t sc ->
   forall st,
+  session_plc (st_config st) = p ->
+  get_et (st_ev st) = e ->
   session_config_subset sc (st.(st_config)) ->
   (exists st', 
-    build_cvm (copland_compile t) st = (resultC tt, st')) \/
+    build_cvm t st = (resultC tt, st')) \/
   (exists st' errStr, 
-    build_cvm (copland_compile t) st = (errC (dispatch_error (Runtime errStr)), st')).
+    build_cvm t st = (errC (dispatch_error (Runtime errStr)), st')).
 Proof.
   induction t; simpl in *; intuition; eauto.
   - destruct a;
@@ -240,33 +281,73 @@ Proof.
       (* repeat find_rewrite; *)
       simpl in *; subst; intuition; 
       eauto; try congruence);
-    unfold session_config_subset, sig_params, enc_params, hsh_params in *; intuition;
+    try (unfold session_config_subset, sig_params, enc_params, hsh_params in *; intuition;
 
-
-    match goal with
+    try (match goal with
     | H1 : forall _, _,
-      H2 : aspCb _ (asp_paramsC ?a ?l ?targ ?tid) ?ev = _,
+      H2 : aspCb _ (asp_paramsC ?a ?l ?targ ?tid) ?ev' = _,
       H3 : context[ aspCb _ _ _ = errC (Runtime _) -> _],
       H4 : context[ aspCb _ _ _ = resultC _ -> _]
       |- _ =>
         let H := fresh "H" in
-        let H' := fresh "Hx" in
         let H'' := fresh "Hx" in
         let res := fresh "res" in
-        destruct (H1 l targ tid ev) as [H | H]
+        edestruct H1 with (ev := ev') as [[ res H''] | [res H'']]
         ; 
         [
           (* result side *)
-          destruct H as [res H''];
-          pose proof (H4 a l targ tid ev) as H';
-          erewrite H' in *; eauto; congruence
+          eapply H4 in H''; erewrite H'' in *;
+          try congruence; repeat find_injection; eauto; ff
+          (* erewrite H' in *; eauto; congruence *)
           |
           (* err side *)
-          destruct H as [errStr H''];
-          pose proof (H3 a l targ tid ev errStr) as H';
-          intuition; find_rewrite; find_injection; eauto
+          eapply H3 in H''; erewrite H'' in *;
+          try congruence; repeat find_injection; eauto; ff
+          (* pose proof (H3 a l targ tid ev errStr) as H';
+          intuition; find_rewrite; find_injection; eauto *)
         ]
-    end.
+    end); fail).
+    destruct st, st_ev; simpl in *;
+    generalizeEverythingElse e.
+    induction e; simpl in *; intuition; eauto; ffa using cvm_monad_unfold;
+    try (invc H3; intuition; repeat find_rewrite;
+    repeat find_injection; ff; unfold check_nonce_params in *;
+    try (match goal with
+    | H1 : forall _, _,
+      H2 : aspCb _ (asp_paramsC ?a ?l ?targ ?tid) ?ev' = _,
+      H3 : context[ aspCb _ _ _ = errC (Runtime _) -> _],
+      H4 : context[ aspCb _ _ _ = resultC _ -> _]
+      |- _ =>
+        let H := fresh "H" in
+        let H'' := fresh "Hx" in
+        let res := fresh "res" in
+        edestruct H1 with (ev := ev') as [[ res H''] | [res H'']]
+        ; 
+        [
+          (* result side *)
+          eapply H4 in H''; erewrite H'' in *;
+          try congruence; repeat find_injection; eauto; ff
+          (* erewrite H' in *; eauto; congruence *)
+          |
+          (* err side *)
+          eapply H3 in H''; erewrite H'' in *;
+          try congruence; repeat find_injection; eauto; ff
+          (* pose proof (H3 a l targ tid ev errStr) as H';
+          intuition; find_rewrite; find_injection; eauto *)
+        ]
+    end); fail);
+    try (find_eapply_lem_hyp split_evidence_fail_runtime; break_exists; ff; fail).
+    * eapply split_evidence_res_spec in Heqp as ?;
+      eapply split_evidence_state_immut in Heqp;
+      break_exists; ff;
+      eapply IHe1 in Heqp1; eauto; simpl in *; ff.
+    * eapply split_evidence_res_spec in Heqp as ?;
+      eapply split_evidence_state_immut in Heqp;
+      break_exists; ff.
+      eapply sc_immut_invoke_APPR in Heqp1;
+      eapply sc_immut_invoke_APPR in Heqp2 as ?;
+      ff;
+      eapply IHe2 in Heqp2; eauto; simpl in *; ff.
 
   - subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
@@ -281,14 +362,22 @@ Proof.
       simpl in *; subst; intuition; 
       eauto; try congruence);
     unfold session_config_subset in *; intuition.
-    + break_exists;  
+    * break_exists;  
       repeat find_apply_hyp_hyp; repeat find_rewrite; congruence.
-  - break_exists; intuition.
-    eapply IHt1 in H1; intuition; eauto;
-    cvm_monad_unfold; break_exists; find_rewrite; eauto.
+  - specialize H0 with (e := (get_et (st_ev st))).
+    break_exists; intuition;
+    find_eapply_lem_hyp IHt1; intuition; eauto;
+    cvm_monad_unfold; break_exists; find_rewrite; eauto;
+    repeat find_rewrite; eauto;
+    try (invc H6; intuition; ff; fail);
+    eapply cvm_evidence_type in H4 as ?.
     find_eapply_lem_hyp sc_immut_better; find_rewrite.
-    eapply IHt2 in H; intuition; eauto; break_exists;
-    repeat find_rewrite; eauto.
+    * eapply IHt2; try eapply H5; ff;
+      inversion H8; intuition; ff.
+    * inversion H3; intuition; ff. 
+    * inversion H3; intuition;
+      repeat find_rewrite; eauto.
+
   - subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
       try break_match;
@@ -300,52 +389,26 @@ Proof.
       (* repeat find_rewrite; *)
       simpl in *; subst; intuition; 
       eauto; try congruence);
-      match goal with
-      | H1 : exists _ _ : Session_Config, _
-        |- _ =>
-          let ac1 := fresh "ac" in
-          let ac2 := fresh "ac" in
-          let AS1 := fresh "AS" in
-          let AS2 := fresh "AS" in
-          let S1 := fresh "S" in
-          let S2 := fresh "S" in
-          destruct H1 as [ac1 [ac2 [AS1 [AS2 [S1 S2]]]]]
-          ;
-          match goal with
-          | H2 : build_cvm (copland_compile t1) ?st = _
-            |- _ =>
-              let A := fresh "A" in
-              assert (A : session_config_subset ac1 (st_config st)); [
-                simpl in *; eauto
-                |
-                destruct (IHt1 ac1 AS1 st A); 
-                intuition; repeat find_rewrite; 
-                try break_exists;
-                repeat find_injection;
-                try congruence; eauto
-              ];
-            eapply sc_immut_better in H2; simpl in *; 
-            repeat find_rewrite; subst; eauto
-          end
-          ;
-          match goal with
-          | H3 : build_cvm (copland_compile t2) ?st = _
-            |- _ =>
-              let A := fresh "A" in
-              assert (A : session_config_subset ac2 (st_config st)); [ 
-                repeat find_eapply_lem_hyp never_change_am_conf;
-                repeat find_rewrite;
-                simpl in *; eauto
-                |
-                destruct (IHt2 ac2 AS2 st A);
-                intuition; repeat find_rewrite;
-                repeat find_injection;
-                try congruence; eauto
-              ];
-            eapply sc_immut_better in H3; simpl in *; 
-            repeat find_rewrite; subst; eauto
-          end
-      end.
+    break_exists; destruct_conjs;
+    match goal with
+    | H : build_cvm t1 ?st' = _,
+      H1 : session_config_supports_exec _ _ t1 _ |- _ =>
+      eapply IHt1 with (st := st') in H1; simpl in *; ff;
+      intuition; break_exists; ff;
+      repeat find_rewrite; repeat find_injection
+    end;
+    try (invc H2; intuition; ff; fail);
+    destruct s, s, s0; simpl in *; eauto;
+    match goal with
+    | H : build_cvm t2 ?st' = _,
+      H1 : session_config_supports_exec _ _ t2 _ |- _ =>
+      eapply IHt2 with (st := st') in H1; simpl in *; ff;
+      intuition; break_exists; ff;
+      repeat find_rewrite; repeat find_injection
+    end;
+    repeat find_eapply_lem_hyp sc_immut_better;
+    simpl in *; repeat find_rewrite; eauto;
+    inversion H4; intuition; ff.
   - subst; simpl in *; try rewrite eqb_refl in *;
     repeat (
       try break_match;
@@ -357,52 +420,26 @@ Proof.
       (* repeat find_rewrite; *)
       simpl in *; subst; intuition; 
       eauto; try congruence);
-      match goal with
-      | H1 : exists _ _ : Session_Config, _
-        |- _ =>
-          let ac1 := fresh "ac" in
-          let ac2 := fresh "ac" in
-          let AS1 := fresh "AS" in
-          let AS2 := fresh "AS" in
-          let S1 := fresh "S" in
-          let S2 := fresh "S" in
-          destruct H1 as [ac1 [ac2 [AS1 [AS2 [S1 S2]]]]]
-          ;
-          match goal with
-          | H2 : build_cvm (copland_compile t1) ?st = _
-            |- _ =>
-              let A := fresh "A" in
-              assert (A : session_config_subset ac1 (st_config st)); [
-                simpl in *; eauto
-                |
-                destruct (IHt1 ac1 AS1 st A); 
-                intuition; repeat find_rewrite; 
-                try break_exists;
-                repeat find_injection;
-                try congruence; eauto
-              ];
-            eapply sc_immut_better in H2; simpl in *; 
-            repeat find_rewrite; subst; eauto
-          end
-          ;
-          match goal with
-          | H3 : build_cvm (copland_compile t2) ?st = _
-            |- _ =>
-              let A := fresh "A" in
-              assert (A : session_config_subset ac2 (st_config st)); [ 
-                repeat find_eapply_lem_hyp never_change_am_conf;
-                repeat find_rewrite;
-                simpl in *; eauto
-                |
-                destruct (IHt2 ac2 AS2 st A);
-                intuition; repeat find_rewrite;
-                repeat find_injection;
-                try congruence; eauto
-              ];
-            eapply sc_immut_better in H3; simpl in *; 
-            repeat find_rewrite; subst; eauto
-          end
-      end.
+    break_exists; destruct_conjs;
+    match goal with
+    | H : build_cvm t1 ?st' = _,
+      H1 : session_config_supports_exec _ _ t1 _ |- _ =>
+      eapply IHt1 with (st := st') in H1; simpl in *; ff;
+      intuition; break_exists; ff;
+      repeat find_rewrite; repeat find_injection
+    end; 
+    try (invc H2; intuition; ff; fail);
+    destruct s, s, s0; simpl in *; eauto;
+    match goal with
+    | H : build_cvm t2 ?st' = _,
+      H1 : session_config_supports_exec _ _ t2 _ |- _ =>
+      eapply IHt2 with (st := st') in H1; simpl in *; ff;
+      intuition; break_exists; ff;
+      repeat find_rewrite; repeat find_injection
+    end;
+    repeat find_eapply_lem_hyp sc_immut_better;
+    simpl in *; repeat find_rewrite;
+    eapply session_config_subset_trans; eauto.
 Qed.
 
 Definition manifest_support_session_conf (m : Manifest) (sc : Session_Config)
@@ -413,53 +450,6 @@ Definition manifest_support_session_conf (m : Manifest) (sc : Session_Config)
     (exists errStr, sc.(aspCb) (asp_paramsC a l targ targid) ev = errC (Runtime errStr))) /\
   (forall a, In_set a (m.(asps)) -> 
     exists loc, map_get (m.(ASP_Mapping)) a = Some loc).
-(* 
-Definition att_sess_support_session_conf (ats : Attestation_Session) (sc : Session_Config)
-    : Prop :=
-  (forall p, 
-    exists res, map_get (att_sess.(plc_map)) p = Some res) /\
-  (forall p, 
-    exists res, map_get (sc.(pubkey_map)) p = Some res). *)
-
-(* 
-Theorem manifest_support_session_conf_compiler 
-    : forall absMan aspBin myUUID att_sess,
-  manifest_support_session_conf 
-    absMan 
-    (session_config_compiler (mkAM_Man_Conf absMan aspBin myUUID) att_sess).
-Proof.
-  unfold manifest_support_session_conf; intuition.
-  unfold manifest_support_session_conf, session_config_compiler in *;
-  intuition; simpl in *; ff; intuition; eauto.
-  ff.
-  ff.
-  simpl in *; ff; intuition.
-  simpl in *; repeat ff; intuition;
-  repeat break_match; simpl in *; eauto with *; intuition; eauto.
-  try kill_map_none;
-  match goal with
-  | H:  context[ map_get (minify_mapC ?l ?filt) ?a],
-    H1: forall a' : Plc, _ -> (exists x : _, map_get _ _ = Some x) |- _ => 
-    assert (CO : exists x, map_get (minify_mapC l filt) a = Some x)
-    ;
-      [
-      eapply filter_resolver; eauto;
-      repeat break_match; intuition; try congruence
-      | 
-      rewrite H in CO; destruct CO; congruence
-    ]
-  | H:  context[ map_get (minify_mapD ?l ?filt) ?a],
-    H1: forall a' : Plc, _ -> (exists x : _, map_get _ _ = Some x) |- _ => 
-    assert (CO : exists x, map_get (minify_mapD l filt) a = Some x)
-    ;
-      [
-      eapply filter_resolver_mapd; eauto;
-      repeat break_match; intuition; try congruence
-      | 
-      rewrite H in CO; destruct CO; congruence
-    ]
-  end.
-Qed. *)
 
 Fixpoint att_sess_supports_term (ats : Attestation_Session) (t : Term) 
     : Prop :=
@@ -488,7 +478,21 @@ Definition well_formed_manifest (m : Manifest) : Prop :=
   (forall a, In_set a (m.(asps)) -> 
     (exists v, map_get (m.(ASP_Mapping)) a = Some v)).
 
-Fixpoint manifest_support_term (m : Manifest) (t : Term) : Prop :=
+Fixpoint manifest_support_appr (m : Manifest) (e : EvidenceT) : Prop :=
+  match e with
+  | mt_evt => True
+  | nonce_evt _ => In_set check_nonce_aspid (m.(asps))
+  | asp_evt p' par e' =>
+    let '(asp_paramsC aspid l targ targid) := par in
+    In_set aspid (m.(asps)) /\
+    manifest_support_appr m e'
+  | split_evt e1 e2 =>
+    manifest_support_appr m e1 /\
+    manifest_support_appr m e2
+  end.
+
+Fixpoint manifest_support_term (G : GlobalContext) (m : Manifest) (p : Plc)
+    (e : EvidenceT) (t : Term) : Prop :=
   match t with
   | asp a =>
       match a with
@@ -500,30 +504,33 @@ Fixpoint manifest_support_term (m : Manifest) (t : Term) : Prop :=
           In_set hsh_aspid (m.(asps))
       | ENC p =>
           In_set enc_aspid (m.(asps))
-      | ASPC _ _ (asp_paramsC aspid _ _ _) =>
+      | ASPC _ (asp_paramsC aspid _ _ _) =>
           In_set aspid (m.(asps))
+      | APPR => manifest_support_appr m e
       end
   | att p' t' => True
     (* exists m', manifest_support_term m' t' *)
   | lseq t1 t2 =>
-      manifest_support_term m t1 /\
-      manifest_support_term m t2
-  | bseq _ t1 t2 =>
-      manifest_support_term m t1 /\
-      manifest_support_term m t2
-  | bpar _ t1 t2 =>
-      manifest_support_term m t1 /\
-      manifest_support_term m t2
+      forall e',
+      manifest_support_term G m p e t1 /\
+      eval G p e t1 = resultC e' /\
+      manifest_support_term G m p e' t2
+  | bseq s t1 t2 =>
+      manifest_support_term G m p (splitEv_T_l s e) t1 /\
+      manifest_support_term G m p (splitEv_T_r s e) t2
+  | bpar s t1 t2 =>
+      manifest_support_term G m p (splitEv_T_l s e) t1 /\
+      manifest_support_term G m p (splitEv_T_r s e) t2
   end.
 
-Theorem manifest_support_am_config_impl_am_config: forall t absMan ats,
+Theorem manifest_support_am_config_impl_am_config: forall t absMan ats G p e,
   well_formed_manifest absMan ->
-  manifest_support_term absMan t ->
+  manifest_support_term G absMan p e t ->
   att_sess_supports_term ats t ->
   forall aspBin uuid,
-  session_config_supports_exec 
+  session_config_supports_exec p e
     t 
-    (session_config_compiler (mkAM_Man_Conf absMan aspBin uuid) ats).
+    (session_config_compiler G (mkAM_Man_Conf absMan aspBin uuid) ats).
 Proof.
   unfold manifest_support_term, well_formed_manifest in *;
   induction t; simpl in *; intuition; eauto;
@@ -533,10 +540,17 @@ Proof.
       eapply H in H'; intuition; eauto
   end; try (repeat eexists; eauto; fail).
   - repeat (break_match; repeat find_rewrite; repeat find_injection;
-      simpl in *; intuition; eauto; break_exists; try congruence);
+      simpl in *; intuition; eauto; break_exists; try congruence).
+    (* APPR stuff *)
+    admit.
+  - break_exists; intuition; eauto. 
+  - fold manifest_support_term in *.
+    admit.
+  (* -  
     find_apply_hyp_hyp; break_exists; congruence.
-  - break_exists; intuition; eauto.
-Qed.
+  - break_exists; intuition; eauto. *)
+(* Qed. *)
+Admitted.
 
 Lemma places_decomp: forall t1 t2 p tp,
 In p (places' t2 (places' t1 [])) -> 

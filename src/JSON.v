@@ -162,27 +162,23 @@ Global Instance jsonifiable_map_serial_serial (A B : Type) `{Stringifiable A, Eq
     canonical_jsonification := canonical_jsonification_map_serial_serial;
   }.
 
-(*
 Global Instance jsonifiable_map_serial_json (A B : Type) `{Stringifiable A, EqClass A, Jsonifiable B} : Jsonifiable (MapC A B). 
 eapply Build_Jsonifiable with (
   to_JSON := (fun m => JSON_Object (
                       map (fun '(k, v) => 
-                            (to_string k, JSON_Object (to_JSON v))
+                            (to_string k, to_JSON v)
                           ) m))) 
   (from_JSON := (fun js =>   
                     match js with
                     | JSON_Object m => 
                         result_map 
                           (fun '(k, v) => 
-                              match v with
-                              | JSON_Object v' =>
-                                match (from_string k), (from_JSON v') with
-                                | resultC k', resultC v' => resultC (k', v')
-                                | _, _ => errC "Error in jsonifiable_map_serial_json"
-                                end
-                              | _ => errC errStr_json_to_map
+                              match (from_string k), (from_JSON v) with
+                              | resultC k', resultC v' => resultC (k', v')
+                              | _, _ => errC "Error in jsonifiable_map_serial_json"
                               end) m
-                    end)).
+                    | _ => errC "Error in jsonifiable_map_serial_json"
+                    end));
 intuition; induction a; simpl in *; intuition; eauto;
 repeat (try break_match; simpl in *; subst; eauto; try congruence);
 try rewrite canonical_jsonification in *; 
@@ -190,7 +186,6 @@ try rewrite canonical_stringification in *;
 repeat find_injection; simpl in *; 
 try find_rewrite; eauto; try congruence.
 Defined.
-*)
 
 Close Scope string_scope.
 

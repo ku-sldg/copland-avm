@@ -637,103 +637,24 @@ eapply Build_Jsonifiable with
   ); 
 destruct a; solve_json.
 Defined.
-(* 
-Fixpoint AppResultC_to_JSON `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsonifiable RawEv} (a : AppResultC) : JSON := 
-  match a with
-  | mtc_app => constructor_to_JSON appresult_name_constant mtc_app_name_constant []
-  | nonce_evtc_app n bs => constructor_to_JSON appresult_name_constant nonce_evtc_app_name_constant
-      [(JSON_String (to_string n)); (JSON_String (to_string bs))]
-  | ggc_app plc ps rawev res =>
-      constructor_to_JSON appresult_name_constant ggc_app_name_constant
-      [(JSON_String (to_string plc)); (to_JSON ps);
-        (to_JSON rawev); (AppResultC_to_JSON res)]
-  | hhc_app plc ps bs res =>
-      constructor_to_JSON appresult_name_constant hhc_app_name_constant
-      [(JSON_String (to_string plc)); (to_JSON ps);
-        (JSON_String (to_string bs)); (AppResultC_to_JSON res)]
-  | eec_app plc ps bs res =>
-      constructor_to_JSON appresult_name_constant eec_app_name_constant
-      [(JSON_String (to_string plc)); (to_JSON ps);
-        (JSON_String (to_string bs)); (AppResultC_to_JSON res)]
-  | ssc_app res1 res2 =>
-      constructor_to_JSON appresult_name_constant ssc_app_name_constant
-      [(AppResultC_to_JSON res1); (AppResultC_to_JSON res2)]
-  end.
 
-Fixpoint AppResultC_from_JSON `{Jsonifiable ASP_PARAMS, Jsonifiable Split, Jsonifiable RawEv} (js : JSON) : ResultT AppResultC string :=
-    let type_name := appresult_name_constant in
-    let type_str := type_name ++ "_" ++ type_string_constant in
-    let body_str := type_name ++ "_" ++ body_string_constant in
-    match (JSON_get_Object type_str js) with
-    | resultC (JSON_String cons_name) =>
-      if (eqb cons_name mtc_app_name_constant) 
-      then resultC (mtc_app)
-      else if (eqb cons_name nonce_evtc_app_name_constant) 
-      then match js with
-        | JSON_Object [
-            _;
-            (_, JSON_Array [JSON_String n; JSON_String bs])
-         ] =>
-            n_val <- from_string n ;;
-            bs_val <- from_string bs ;;
-            resultC (nonce_evtc_app n_val bs_val)
-        | _ => errC ("JSON Parsing " ++ "'" ++ nonce_evtc_app_name_constant ++ "' ARGS: Incorrect number or wrong type of JSON args (expected [n; bs])")
-        end
-      else if (eqb cons_name ggc_app_name_constant) 
-      then match js with
-        | JSON_Object [
-            _;
-            (_, JSON_Array [ JSON_String plc; ps; rawev; res ]) 
-          ] =>
-            plc_val <- from_string plc ;;
-            ps_val <- from_JSON ps ;;
-            rawev_val <- from_JSON rawev ;;
-            res_val <- (AppResultC_from_JSON res) ;;
-            resultC (ggc_app plc_val ps_val rawev_val res_val)
-        | _ => errC ("JSON Parsing " ++ "'" ++ ggc_app_name_constant ++ "' ARGS: Incorrect number or wrong type of JSON args (expected [plc; ps; rawev; res])")
-        end
-      else if (eqb cons_name hhc_app_name_constant) 
-      then match js with
-        | JSON_Object [
-            _;
-            (_, JSON_Array [ JSON_String plc; ps; JSON_String bs; res ]) 
-          ] =>
-            plc_val <- from_string plc ;;
-            ps_val <- from_JSON ps ;;
-            bs_val <- from_string bs ;;
-            res_val <- (AppResultC_from_JSON res) ;;
-            resultC (hhc_app plc_val ps_val bs_val res_val)
-          | _ => errC ("JSON Parsing " ++ "'" ++ hhc_app_name_constant ++ "' ARGS: Incorrect number or wrong type of JSON args (expected [plc; ps; bs; res])")
-        end
-      else if (eqb cons_name eec_app_name_constant) 
-      then match js with
-        | JSON_Object [
-            _;
-            (_, JSON_Array [ JSON_String plc; ps; JSON_String bs; res ]) 
-          ] =>
-            plc_val <- from_string plc ;;
-            ps_val <- from_JSON ps ;;
-            bs_val <- from_string bs ;;
-            res_val <- (AppResultC_from_JSON res) ;;
-            resultC (eec_app plc_val ps_val bs_val res_val)
-          | _ => errC ("JSON Parsing " ++ "'" ++ eec_app_name_constant ++ "' ARGS: Incorrect number or wrong type of JSON args (expected [plc; ps; bs; res])")
-        end
-      else if (eqb cons_name ssc_app_name_constant) 
-      then match js with
-        | JSON_Object [
-            _;
-            (_, JSON_Array [ res1; res2 ])
-          ] =>
-            res1_val <- (AppResultC_from_JSON res1) ;;
-            res2_val <- (AppResultC_from_JSON res2) ;;
-            resultC (ssc_app res1_val res2_val)
-        | _ => errC ("JSON Parsing " ++ "'" ++ ssc_app_name_constant ++ "' ARGS: Incorrect number or wrong type of JSON args (expected [ res1 ; res2 ])")
-        end
-      else errC ("Invalid " ++ appresult_name_constant ++ " JSON constructor name")
-    | resultC _ => errC ("Invalid " ++ appresult_name_constant ++ " JSON type")
-    | errC e => errC e
-    end.
-*)
-
+Global Instance Jsonifiable_GlobalContext `{Stringifiable ASP_ID, Jsonifiable FWD,
+  Jsonifiable (MapC ASP_ID ASP_ID), Jsonifiable (MapC ASP_ID FWD)} : Jsonifiable GlobalContext. 
+eapply Build_Jsonifiable with 
+  (to_JSON := (fun g => 
+                JSON_Object [
+                  ("ASP_Types", to_JSON (asp_types g));
+                  ("ASP_Comps", to_JSON (asp_comps g))
+                ]))
+  (from_JSON := (fun j =>
+    match (JSON_get_Object "ASP_Types" j), (JSON_get_Object "ASP_Comps" j) with
+    | resultC ats, resultC acs => 
+      match (from_JSON ats), (from_JSON acs) with
+      | resultC ats, resultC acs => resultC {| asp_types := ats; asp_comps := acs |}
+      | _, _ => errC "Error in parsing GlobalContext"
+      end
+    | _, _ => errC "Error in parsing GlobalContext"
+    end)); solve_json.
+Defined.
 
 Close Scope string_scope.

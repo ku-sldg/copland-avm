@@ -18,7 +18,8 @@ University of California.  See license.txt for details. *)
 
 Require Export BS.
 
-Require Import List ID_Type Maps EqClass JSON Stringifiable Stringifiable_Class_Admits StructTactics.
+Require Import List ID_Type Maps EqClass JSON Stringifiable Stringifiable_Class_Admits StructTactics
+  ErrorStringConstants.
 Import ListNotations ResultNotation.
 
 (** * Terms and EvidenceT *)
@@ -147,7 +148,7 @@ Fixpoint et_size (G : GlobalContext) (e:EvidenceT) : ResultT nat string :=
   | asp_evt p par e' =>
     let '(asp_paramsC asp_id args targ_plc targ) := par in
     match (map_get (asp_types G) asp_id) with
-    | None => errC "ASP Type Signature not found in Environment"%string
+    | None => errC err_str_asp_no_type_sig
     | Some asp_fwd => 
       match asp_fwd with
       | COMP => resultC 1
@@ -172,10 +173,10 @@ Fixpoint appr_et_size (G : GlobalContext) (e : EvidenceT) : ResultT nat string :
   | asp_evt p par e' =>
     let '(asp_paramsC asp_id args targ_plc targ) := par in
     match (map_get (asp_comps G) asp_id) with
-    | None => errC "Compatible ASP not found in Environment"%string
+    | None => errC err_str_asp_no_compat_appr_asp
     | Some appr_asp_id =>
       match (map_get (asp_types G) appr_asp_id) with
-      | None => errC "ASP Type Signature not found in Environment"%string
+      | None => errC err_str_asp_no_type_sig
       | Some asp_fwd => 
         match asp_fwd with
         | COMP => resultC 2 (* This asp crushed down to 1, then +1 for appr *)

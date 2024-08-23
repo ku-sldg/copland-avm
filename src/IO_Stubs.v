@@ -23,7 +23,7 @@ Definition aspid_to_fs_location (aspid : ASP_ID) : FS_Location. Admitted.
 Definition make_JSON_FS_Location_Request (dir : FS_Location) (aspid : FS_Location) (js : JSON) : ResultT JSON string. Admitted.
 
 (** * Stub to simulate EvidenceT collected by a parallel CVM instance *)
-Definition parallel_vm_thread (l:Loc) (p:Plc) (e:Evidence) (t: Term) : ResultT Evidence string.  Admitted.
+Definition parallel_vm_thread (l:Loc) (p:Plc) (e:Evidence) (t: Term) : ResultT Evidence CVM_Error.  Admitted.
 
 Definition do_start_par_thread (loc:Loc) (e: Evidence) (t: Term) : CVM unit :=
   err_ret tt.

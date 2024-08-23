@@ -36,11 +36,11 @@ Definition generate_ASP_dispatcher `{HID : EqClass ID_Type} (am : Manifest) (al 
     : (ASPCallback DispatcherErrors) :=
   (generate_ASP_dispatcher' am al aspBin). 
 
-Definition session_config_compiler (G : GlobalContext) (conf : AM_Manager_Config) (ats : Attestation_Session) : Session_Config :=
+Definition session_config_compiler (conf : AM_Manager_Config) (ats : Attestation_Session) : Session_Config :=
 let '(mkAM_Man_Conf man aspBin myUUID) := conf in
 {|
   session_plc := (Session_Plc ats) ;
-  session_context := G ;
+  session_context := (ats_context ats) ;
   aspCb     := (generate_ASP_dispatcher man ats aspBin) ;
   plc_map     := (Plc_Mapping ats);
   pubkey_map  := (PubKey_Mapping ats);
@@ -51,4 +51,6 @@ Definition session_config_decompiler (sc : Session_Config) : Attestation_Session
 {|
   Session_Plc := (session_plc sc) ;
   Plc_Mapping := (plc_map sc) ;
-  PubKey_Mapping := (pubkey_map sc) |}.
+  PubKey_Mapping := (pubkey_map sc) ;
+  ats_context := (session_context sc)
+|}.

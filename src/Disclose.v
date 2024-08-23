@@ -6,7 +6,7 @@ Author:  Adam Petz, ampetz@ku.edu
 
 Require Import Term_Defs.
 
-Require Import Anno_Term_Defs ConcreteEvidenceT Eqb_EvidenceT CvmSemantics Auto EqClass Main Attestation_Session Helpers_CvmSemantics Cvm_St ResultT.
+Require Import Eqb_Evidence Auto EqClass Attestation_Session Helpers_CvmSemantics Cvm_St ResultT.
 
 Require Import StructTactics Coq.Program.Tactics.
 
@@ -22,7 +22,7 @@ Fixpoint evsubt_bool `{EqClass EvidenceT} (e e' : EvidenceT) : bool :=
   | true => true
   | false =>
     match e' with
-    | asp_evt _ _ _ et' => evsubt_bool e et'
+    | asp_evt _ _ et' => evsubt_bool e et'
     | split_evt e1 e2 => evsubt_bool e e1 || evsubt_bool e e2 
     | _ => false
     end
@@ -47,23 +47,21 @@ Definition get_asp_id (ps:ASP_PARAMS) : ASP_ID :=
 *)
 
 Inductive EvSubTAspEnc: EvidenceT -> ASP_ID -> Plc -> Prop :=
-| uuSubT_asp_noenc: forall e' p q ps i fwd,
+| uuSubT_asp_noenc: forall e' p q ps i,
     get_asp_id ps = i -> 
-    fwd <> ENCR (* /\ fwd <> COMP *) -> 
-    (* TODO: include COMP here for appraisal/cert asps hiding EvidenceT? *)
-    EvSubTAspEnc (asp_evt p fwd ps e') i q
-| uuSubT_asp_noenc_sub: forall e' p q fwd ps i,
+    EvSubTAspEnc (asp_evt p ps e') i q
+| uuSubT_asp_noenc_sub: forall e' p q ps i,
     EvSubTAspEnc e' i q -> 
     fwd <> ENCR -> 
-    EvSubTAspEnc (asp_evt p fwd ps e') i q
+    EvSubTAspEnc (asp_evt p ps e') i q
 | uuSubT_asp_enc: forall e' p q ps i,
     get_targ_plc ps = q -> 
     get_asp_id ps = i -> 
-    EvSubTAspEnc (asp_evt p ENCR ps e') i q
+    EvSubTAspEnc (asp_evt p ps e') i q
 | uuSubT_asp_enc_sub: forall e' p q ps i,
     EvSubTAspEnc e' i q -> 
     get_targ_plc ps = q -> 
-    EvSubTAspEnc (asp_evt p ENCR ps e') i q
+    EvSubTAspEnc (asp_evt p ps e') i q
 | ssSublT: forall e' e'' q i,
     EvSubTAspEnc e' i q ->
     EvSubTAspEnc (split_evt e' e'') i q
