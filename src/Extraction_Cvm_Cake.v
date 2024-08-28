@@ -39,6 +39,12 @@ Separate Extraction
     concrete_Jsonifiable_ASP_Compat_MapT
     concrete_Jsonifiable_Attestation_Session
     concrete_Jsonifiable_Term
+<<<<<<< HEAD
     concrete_Jsonifiable_EvidenceT
     concrete_Jsonifiable_GlobalContext
     Jsonifiable_Term_Plc_list.
+=======
+    concrete_Jsonifiable_Evidence
+    Jsonifiable_Evidence_Plc_list Jsonifiable_Term_Plc_list
+    test_cacl_compute_json.
+>>>>>>> e6f337a (adding JSON support for CACL_Policy)
