@@ -1,10 +1,20 @@
-(* Definitions, properties, and associated automation related to 
-    Appraisal and EvidenceT examination/reconstruction.
+(* This file is the main verification for the Copland Virtual Machine (CVM) 
 
-    Also included:  properties about CVM internal EvidenceT and Event handling.  
-    TODO:  This file has become quite bloated.  May need to refactor/decompose.  *)
+  In this file we prove the following properties:
+  1. Determinicity of CVM Evidence ("cvm_deterministic_Evidence")
+  (two CVMs that start with the same Configuration and Evidence will yield the same result Evidence when run on the same term)
 
-Require Import StructTactics Cvm_Impl Cvm_St ResultT Attestation_Session Helpers_CvmSemantics Cvm_Monad More_lists Term_Defs Evidence_Bundlers Cvm_Axioms.
+  2. Preservation of Evidence Well Typedness ("cvm_preserves_wf_Evidence")
+  (any CVM that receives well-typed Evidence and executes to completion without an error will return well-typed Evidence)
+
+  3. Good Evidence type ("cvm_evidence_type")
+  (any CVM that executed to completion without errors will yield Evidence that respects the eval evidence function)
+
+  4. CVM respects Events ("cvm_trace_respects_events")
+  (any CVM that executes to completion without an error will have a trace that accurately reflects the Event semantics that have been laid out)
+
+*)
+Require Import StructTactics Cvm_Impl Cvm_St ResultT Attestation_Session Helpers_CvmSemantics Cvm_Monad Term_Defs Evidence_Bundlers Cvm_Axioms.
 Require Import Maps.
 Require Import Term.
 
@@ -13,6 +23,347 @@ Import ListNotations.
 
 Require Import Lia Coq.Program.Tactics.
 
+Lemma sc_immut_peel_n_rawev : forall n r st res st',
+  peel_n_rawev n r st = (res, st') ->
+  st_config st = st_config st'.
+Proof.
+  induction n; simpl in *; intuition; cvm_monad_unfold; ff.
+Qed.
+
+Lemma peel_n_rawev_deterministic : forall n r st1 st2 res1 res2 st1' st2',
+  st_config st1 = st_config st2 ->
+  peel_n_rawev n r st1 = (res1, st1') ->
+  peel_n_rawev n r st2 = (res2, st2') ->
+  res1 = res2 /\ st1 = st1' /\ st2 = st2'.
+Proof.
+  induction n; simpl in *; intuition;
+  cvm_monad_unfold; ffa;
+  eapply IHn in Heqp0; try eapply Heqp; intuition; eauto; 
+  try congruence.
+Qed.
+
+Lemma sc_immut_split_evidence : forall r et1 et2 st res st',
+  split_evidence r et1 et2 st = (res, st') ->
+  st_config st = st_config st'.
+Proof.
+  intros.
+  unfold split_evidence in *.
+  destruct st; ff; cvm_monad_unfold; ff;
+  repeat (find_eapply_lem_hyp sc_immut_peel_n_rawev;
+  simpl in *; ff).
+Qed.
+
+Lemma split_evidence_determinisitic : forall r et1 et2 st1 st2 res1 res2 st1' st2',
+  st_config st1 = st_config st2 ->
+  split_evidence r et1 et2 st1 = (res1, st1') ->
+  split_evidence r et1 et2 st2 = (res2, st2') ->
+  res1 = res2 /\ st1 = st1' /\ st2 = st2'.
+Proof.
+  intros.
+  unfold split_evidence in *; 
+  destruct st1, st2; simpl in *;
+  ff; cvm_monad_unfold; ff;
+  repeat match goal with
+  | H : peel_n_rawev ?n ?r _ = (_, _),
+    H1 : peel_n_rawev ?n ?r _ = (_, _) |- _ =>
+      eapply peel_n_rawev_deterministic in H;
+      [ | | eapply H1 ]; [ | simpl in *; ff ];
+      intuition; clear H1;
+      try congruence; repeat find_injection
+  end.
+Qed.
+
+Lemma peel_n_rawev_result_spec : forall n ls ls1 ls2 st st',
+  (peel_n_rawev n ls) st = (resultC (ls1, ls2), st') ->
+  ls = ls1 ++ ls2 /\ length ls1 = n.
+Proof.
+  induction n; ffa using cvm_monad_unfold; ffl.
+Qed.
+
+Lemma peel_n_none_spec : forall n ls e st st',
+  (peel_n_rawev n ls) st = (errC e, st') ->
+  length ls < n.
+Proof.
+  induction n; ffa using cvm_monad_unfold; ffl.
+Qed.
+
+Lemma peel_n_rawev_state_immut : forall n r st res st',
+  peel_n_rawev n r st = (res, st') ->
+  st = st'.
+Proof.
+  induction n; ffa using cvm_monad_unfold.
+Qed.
+
+Lemma split_evidence_state_immut : forall r et1 et2 res st st',
+  split_evidence r et1 et2 st = (res, st') ->
+  st = st'.
+Proof.
+  intros.
+  unfold split_evidence in *; cvm_monad_unfold; ff;
+  repeat find_eapply_lem_hyp peel_n_rawev_state_immut; ff.
+Qed.
+
+Lemma sc_immut_invoke_APPR : forall et st r st',
+  invoke_APPR et st = (r, st') ->
+  st_config st = st_config st'.
+Proof.
+  induction et; simpl in *; intuition; ffa using cvm_monad_unfold;
+  find_apply_lem_hyp sc_immut_split_evidence;
+  simpl in *; ff.
+Qed.
+
+Lemma sc_immut_better : forall t st r st',
+  build_cvm t st = (r, st') ->
+  st_config st = st_config st'.
+Proof.
+  induction t; repeat (cvm_monad_unfold; simpl in *); intuition;
+  ffa using cvm_monad_unfold;
+  try (find_apply_lem_hyp sc_immut_invoke_APPR; ff; fail).
+Qed.
+
+Ltac monad_simp := 
+  repeat (cvm_monad_unfold; simpl in *; eauto).
+
+Lemma check_cvm_policy_preserves_state : forall t p evt st1 st1' r,
+  check_cvm_policy t p evt st1 = (r, st1') ->
+  st1 = st1'.
+Proof.
+  induction t; simpl in *; intuition; eauto; ffa using cvm_monad_unfold.
+Qed.
+Global Hint Resolve check_cvm_policy_preserves_state : core.
+
+Lemma check_cvm_policy_same_outputs : forall t p evt st1 st1' r1 st2 st2' r2,
+  check_cvm_policy t p evt st1 = (r1, st1') ->
+  check_cvm_policy t p evt st2 = (r2, st2') ->
+  (policy (st_config st1) = policy (st_config st2)) ->
+  r1 = r2 /\ st1 = st1' /\ st2 = st2'.
+Proof.
+  induction t; simpl in *; intuition; eauto; ffa using cvm_monad_unfold.
+Qed.
+Global Hint Resolve check_cvm_policy_same_outputs : core.
+
+Lemma invoke_APPR_deterministic : forall e st1 st2 st1' st2' res1 res2,
+  st_ev st1 = st_ev st2 ->
+  st_evid st1 = st_evid st2 ->
+  st_config st1 = st_config st2 ->
+  invoke_APPR e st1 = (res1, st1') ->
+  invoke_APPR e st2 = (res2, st2') ->
+  res1 = res2 /\ st_ev st1' = st_ev st2' /\ 
+  st_evid st1' = st_evid st2' /\ st_config st1' = st_config st2'.
+Proof.
+  induction e; simpl in *; intros;
+  try (cvm_monad_unfold; intuition; repeat find_injection; eauto; fail).
+  - cvm_monad_unfold; repeat find_rewrite.
+    repeat (
+      break_match;
+      simpl in *;
+      repeat find_injection; simpl in *; eauto; try congruence
+    ).
+  - cvm_monad_unfold; destruct a; repeat find_rewrite;
+    destruct (Maps.map_get (asp_comps (session_context (st_config st2))) a) eqn:?;
+    simpl in *; repeat find_rewrite; repeat find_injection; eauto;
+    ff. 
+  - cvm_monad_unfold; repeat find_rewrite; repeat find_injection; eauto;
+    repeat break_match; repeat find_injection;
+    repeat (match goal with
+      | H1 : split_evidence _ _ _ _ = _,
+        H2 : split_evidence _ _ _ _ = _ |- _ =>
+        eapply split_evidence_determinisitic in H1;
+        [ | | eapply H2]; clear H2; simpl in *; eauto;
+        destruct_conjs; repeat find_injection; eauto; try congruence
+      | H1 : invoke_APPR ?e _ = _,
+        H2 : invoke_APPR ?e _ = _,
+        IH : context[invoke_APPR ?e _ = _ -> _] |- _ =>
+        eapply IH in H1;
+        [ | | | | eapply H2]; clear H2 IH; simpl in *; eauto;
+        destruct_conjs; repeat find_injection; eauto; try congruence
+      end);
+    repeat find_rewrite; eauto.
+Qed.
+
+Theorem invoke_APPR_deterministic_Evidence : forall et st1 st2 r1 r2 st1' st2',
+  st_config st1 = st_config st2 ->
+  st_ev st1 = st_ev st2 ->
+  invoke_APPR et st1 = (r1, st1') ->
+  invoke_APPR et st2 = (r2, st2') ->
+  r1 = r2 /\ st_ev st1' = st_ev st2'.
+Proof.
+  induction et; ffa using cvm_monad_unfold;
+  match goal with
+  | H1 : split_evidence _ _ _ _ = _,
+    H2 : split_evidence _ _ _ _ = _ |- _ =>
+    let H' := fresh in
+    eapply split_evidence_determinisitic in H1 as H';
+    try eapply H2; ff; 
+    eapply split_evidence_state_immut in H1;
+    eapply split_evidence_state_immut in H2;
+    simpl in *; ff
+  end;
+  match goal with
+  | H1 : invoke_APPR ?e _ = _,
+    H2 : invoke_APPR ?e _ = _,
+    IH : context[invoke_APPR ?e _ = _ -> _] |- _ =>
+    eapply IH in H1; try eapply H2; ff
+  end;
+  try (repeat find_eapply_lem_hyp sc_immut_invoke_APPR; ff; fail).
+  eapply IHet1 in Heqp3; try eapply Heqp0; ff.
+Qed.
+
+Lemma cvm_deterministic :  forall t st1 st2 r1 r2 st1' st2',
+  st_config st1 = st_config st2 ->
+  st_ev st1 = st_ev st2 ->
+  st_evid st1 = st_evid st2 ->
+  build_cvm t st1 = (r1, st1') ->
+  build_cvm t st2 = (r2, st2') ->
+  (
+    (r1 = r2) /\ 
+    (st_ev st1' = st_ev st2') /\
+    (st_evid st1' = st_evid st2') /\
+    (st_config st1' = st_config st2')
+  ).
+Proof.
+  induction t; simpl in *; cvm_monad_unfold; ff;
+  try (repeat match goal with
+  | u : unit |- _ => destruct u
+  | H1 : build_cvm ?t _ = _,
+    H2 : build_cvm ?t _ = _,
+    IH : context[build_cvm ?t _ = _ -> _] |- _ =>
+      eapply IH in H1; try (eapply H2);
+      clear IH H2; try (intuition; congruence)
+  end; fail);
+  find_eapply_lem_hyp invoke_APPR_deterministic; ff;
+  try congruence;
+  match goal with
+  | u : unit |- _ => destruct u
+  end; eauto.
+Qed.
+
+Lemma asp_events_errs_deterministic : forall G t p e i1 i2 e1 e2,
+  asp_events G p e t i1 = resultC e1 ->
+  asp_events G p e t i2 = errC e2 ->
+  False.
+Proof.
+  destruct t; ff; try (destruct e; simpl in *; congruence);
+  generalizeEverythingElse e;
+  induction e; ffa using result_monad_unfold.
+Qed.
+
+Lemma events_fix_errs_deterministic : forall G t p e i1 i2 e1 e2,
+  events_fix G p e t i1 = resultC e1 ->
+  events_fix G p e t i2 = errC e2 ->
+  False.
+Proof.
+  induction t; ffa using result_monad_unfold.
+  destruct a; simpl in *;
+  try (destruct e; simpl in *; congruence).
+  generalizeEverythingElse e.
+  induction e; ffa using result_monad_unfold.
+Qed.
+
+Lemma events_fix_only_one_error : forall G t p e i1 i2 e1 e2,
+  events_fix G p e t i1 = errC e1 ->
+  events_fix G p e t i2 = errC e2 ->
+  e1 = e2.
+Proof.
+  induction t; ffa using result_monad_unfold;
+  try match goal with
+  | H1 : events_fix _ _ _ ?t _ = resultC _,
+    H2 : events_fix _ _ _ ?t _ = errC _ |- _ =>
+    eapply events_fix_errs_deterministic in H1; try eapply H2; ff; fail
+  end.
+  destruct a; simpl in *;
+  try (destruct e; simpl in *; congruence).
+  generalizeEverythingElse e;
+  induction e; ffa using result_monad_unfold;
+  try match goal with
+  | H1 : asp_events _ _ ?e _ _ = resultC _,
+    H2 : asp_events _ _ ?e _ _ = errC _ |- _ =>
+    eapply asp_events_errs_deterministic in H1; try eapply H2; ff; fail
+  end.
+Qed.
+
+Theorem cvm_deterministic_Evidence : forall t st1 st2 r1 r2 st1' st2',
+  st_config st1 = st_config st2 ->
+  st_ev st1 = st_ev st2 ->
+  build_cvm t st1 = (r1, st1') ->
+  build_cvm t st2 = (r2, st2') ->
+  r1 = r2 /\ st_ev st1' = st_ev st2'.
+Proof.
+  induction t; simpl in *; cvm_monad_unfold.
+  - ff;
+    match goal with
+    | H1 : invoke_APPR _ _ = _,
+      H2 : invoke_APPR _ _ = _ |- _ =>
+      eapply invoke_APPR_deterministic_Evidence in H1;
+      try eapply H2; ff
+    end.
+  - ff; (* NOTE: Why dont we need the remote axiom here!? *)
+    match goal with
+    | H1 : events_fix _ _ _ ?t _ = _,
+      H2 : events_fix _ _ _ ?t _ = _ |- _ =>
+      try (eapply events_fix_only_one_error in H1; try eapply H2; ff; fail);
+      try (eapply events_fix_errs_deterministic in H1; try eapply H2; ff; fail)
+    end.
+  - ff; repeat match goal with
+    | u : unit |- _ => destruct u
+    | H1 : build_cvm ?t _ = _,
+      H2 : build_cvm ?t _ = _,
+      IH : context[build_cvm ?t _ = _ -> _] |- _ =>
+        eapply sc_immut_better in H1 as ?;
+        eapply sc_immut_better in H2 as ?;
+        simpl in *; ff;
+        eapply IH in H1; try (eapply H2);
+        clear IH H2; try (intuition; congruence)
+    end.
+  - ff; repeat match goal with
+    | u : unit |- _ => destruct u
+    | H1 : build_cvm ?t _ = _,
+      H2 : build_cvm ?t _ = _,
+      IH : context[build_cvm ?t _ = _ -> _] |- _ =>
+        eapply sc_immut_better in H1 as ?;
+        eapply sc_immut_better in H2 as ?;
+        simpl in *; ff;
+        eapply IH in H1; try (eapply H2);
+        clear IH H2; try (intuition; congruence)
+    end.
+  - ff; simpl in *; 
+    repeat match goal with
+    | u : unit |- _ => destruct u
+    | H : parallel_vm_thread _ _ _ _ = resultC _ |- _ => 
+      eapply parallel_vm_thread_res_axiom in H;
+      try reflexivity; break_exists
+    | H : parallel_vm_thread _ _ _ _ = errC _ |- _ => 
+      eapply parallel_vm_thread_err_axiom in H;
+      try reflexivity; break_exists
+    | H1 : build_cvm ?t _ = _,
+      H2 : build_cvm ?t _ = _,
+      IH : context[build_cvm ?t _ = _ -> _] |- _ =>
+        eapply sc_immut_better in H1 as ?;
+        eapply sc_immut_better in H2 as ?;
+        simpl in *; ff;
+        eapply IH in H1; try (eapply H2);
+        clear IH H2; try (intuition; congruence)
+    end;
+    match goal with
+    | H1 : events_fix _ _ _ ?t _ = _,
+      H2 : events_fix _ _ _ ?t _ = _ |- _ =>
+      try (eapply events_fix_only_one_error in H1; try eapply H2; ff; fail);
+      try (eapply events_fix_errs_deterministic in H1; try eapply H2; ff; fail)
+    end.
+Qed.
+
+(* Lemma stating the following:  If all starting parameters to the cvm_st are the same, except 
+   for possibly the trace, then all of those final parameters should also be equal. *)
+Lemma st_trace_irrel : forall t e e' e'' x x' y y' i i' i'' ac ac' ac'' res,
+    build_cvm t {| st_ev := e; st_trace := x; st_evid := i; st_config := ac |} =
+    (res, {| st_ev := e'; st_trace := x'; st_evid := i'; st_config := ac' |}) ->
+    build_cvm t {| st_ev := e; st_trace := y; st_evid := i; st_config := ac |} =
+    (res, {| st_ev := e''; st_trace := y'; st_evid := i''; st_config := ac'' |}) ->
+    (e' = e'' /\ i' = i'' /\ ac' = ac'').
+Proof.
+  intros; find_eapply_lem_hyp cvm_deterministic; 
+  try eapply H; ff.
+Qed.
 Lemma invoke_APPR_spans : forall G et u c i st,
   invoke_APPR et st = (resultC u, c) ->
   appr_events_size G et = resultC i ->
@@ -333,24 +684,6 @@ Proof.
     repeat find_rewrite; repeat find_injection; try lia.
 Qed.
 
-Lemma wf_Evidence_firstn: forall G e0 e1 e2 n,
-  wf_Evidence G (evc e0 e1) ->
-  et_size G e1 = resultC n ->
-  firstn n (e0 ++ e2) = e0.
-Proof.
-  intros; invc H; find_rewrite;
-  find_injection; eapply firstn_append.
-Qed.
-
-Lemma wf_Evidence_skipn: forall G e0 e1 e2 n,
-  wf_Evidence G (evc e0 e1) ->
-  et_size G e1 = resultC n ->
-  skipn n (e0 ++ e2) = e2.
-Proof.
-  intros; invc H; find_rewrite;
-  find_injection; eapply skipn_append.
-Qed.
-
 Lemma wf_Evidence_ss_cons : forall G e1 e2,
   wf_Evidence G e1 ->
   wf_Evidence G e2 ->
@@ -665,507 +998,3 @@ Proof.
   eapply cvm_trace_respects_events in H6; eauto;
   simpl in *; eauto.
 Qed.
-
-(* 
-
-(** * Lemma stating: CVM traces are "cumulative" (or monotonic).  
-      Traces are only ever extended--prefixes are maintained. 
-      TODO:  rename to st_trace_cumul 
-*) 
-Lemma suffix_prop : forall t e e' tr tr' i i' ac ac' res,
-    build_cvmP t
-           {| st_ev := e;
-              st_trace := tr;
-              st_evid := i; st_config := ac |}
-           (res)
-           {|
-             st_ev := e';
-             st_trace := tr';
-             st_evid := i'; st_config := ac' |} ->
-    exists l, tr' = tr ++ l.
-Proof.
-  intros.
-
-  do_exists_some_cc t {| st_ev := e; st_trace := []; st_evid := i; st_config := ac |}.
-  wrap_ccp.
-  (*
-
-  rewrite ccp_iff_cc in *. *)
-
-  repeat do_st_trace_assumps.
-  repeat find_rw_in_goal.
-  eexists.
-
-  erewrite st_trace_cumul''.
-  3: {
-    eassumption.
-  }
-  simpl.
-  tauto.
-  rewrite app_nil_r.
-  ff.
-  destruct H1; destruct res; ff.
-  +
-    assert (c = c0).
-    {
-      edestruct cvm_errors_deterministic; ffa.
-      invc H2; ffa.
-      invc H; ffa.
-      simpl in *; ffa.
-    }
-    subst.
-    eassumption.
-  +
-  assert (errC c = resultC tt).
-  {
-    wrap_ccp_dohi. ff.
-    invc H2. invc H.
-    edestruct cvm_errors_deterministic.
-    apply H0.
-    apply H1.
-    ff.
-  }
-solve_by_inversion.
-  +
-  assert (errC c = resultC tt).
-  {
-    wrap_ccp_dohi. ff.
-    invc H2. invc H.
-    edestruct cvm_errors_deterministic.
-    apply H0.
-    apply H1.
-    ff.
-  }
-solve_by_inversion.
-  +
-    wrap_ccp_dohi.
-    eassumption.
-Qed.
-
-Ltac do_suffix name :=
-  match goal with
-  | [H': build_cvmP ?t
-         {| st_ev := _; st_trace := ?tr; st_evid := _; st_config := _ |}
-         (_)
-         {| st_ev := _; st_trace := ?tr'; st_evid := _; st_config := _ |}
-         (*H2: well_formed_r ?t*) |- _] =>
-    fail_if_in_hyps_type (exists l, tr' = tr ++ l);
-    assert (exists l, tr' = tr ++ l) as name by (eapply suffix_prop; [apply H'])
-  end.
-
-(** * Structural Lemma:   Decomposes the CVM trace for the lseq phrase into the appending of the two traces
-      computed by its subterms, where each subterm starts from the empty trace.
-
-      Useful for leveraging induction hypotheses in the lseq case of induction that require empty traces in the 
-      initial CVM state. *)
-Lemma alseq_decomp : forall t1' t2' e e'' tr i i'' ac ac'',
-    build_cvmP
-      (lseqc t1' t2')
-      {| st_ev := e;
-         st_trace := [];
-         st_evid := i; st_config := ac |}
-      (resultC tt)
-      {| st_ev := e'';
-         st_trace := tr;
-         st_evid := i''; st_config := ac'' |} ->
-
-    exists e' tr' i' ac',
-      build_cvmP
-        t1'
-        {| st_ev := e;
-           st_trace := [];
-           st_evid := i; st_config := ac |}
-        (resultC  tt)
-        {| st_ev := e';
-           st_trace := tr';
-           st_evid := i'; st_config := ac' |} /\
-      exists tr'',
-        build_cvmP
-          t2'
-          {| st_ev := e';
-             st_trace := [];
-             st_evid := i'; st_config := ac' |}
-          (resultC tt)
-          {| st_ev := e'';
-             st_trace := tr'';
-             st_evid := i''; st_config := ac'' |} /\
-        tr = tr' ++ tr''.     
-Proof.
-  intros.
-  wrap_ccp_dohi.
-  repeat ff.
-  wrap_ccp_dohi.
-  
-  eexists.
-  eexists.
-  eexists.
-  eexists.
-  eexists.
-
-  split.
-  - rewrite <- ccp_iff_cc in *.
-    eassumption.
-  -
-    do_exists_some_cc t2' {| st_ev := st_ev0; st_trace := []; st_evid := st_evid0; st_config := st_config0 |}.
-    vmsts.
-    repeat ff.
-    destruct H0; ff.
-    +
-    assert (errC c = resultC tt).
-    {
-      wrap_ccp_dohi. ff.
-      rewrite <- ccp_iff_cc in *.
-      eapply cvm_errors_deterministic; eauto.
-    }
-  solve_by_inversion.
-    +
-    ff.
-
-    eexists.
-
-    wrap_ccp_dohi.
-
-    split.
-    ++
-      eassumption.
-    ++
-      repeat do_st_trace.
-      repeat find_rw_in_goal.
-      eapply st_trace_cumul'; 
-        eassumption.
-Qed.
-
-
-(** Structural convenience lemma:  reconfigures CVM execution to use an empty initial trace *)
-Lemma restl : forall t e e' x tr i i' ac ac' res,
-    build_cvmP t
-      {| st_ev := e; st_trace := x; st_evid := i; st_config := ac|}
-      (res)
-      {| st_ev := e'; st_trace := x ++ tr; st_evid := i'; st_config := ac' |} ->
-
-    build_cvmP t
-      {| st_ev := e; st_trace := []; st_evid := i; st_config := ac |}
-      (res)
-      {| st_ev := e'; st_trace := tr; st_evid := i'; st_config := ac' |}.
-Proof.
-  intros.
-
-  do_exists_some_cc t  {| st_ev := e; st_trace := []; st_evid := i; st_config := ac |}.
-  wrap_ccp_dohi.
-
-  assert (res = H1).
-  {
-    wrap_ccp_dohi.
-    eapply cvm_errors_deterministic.
-    invc H.
-    apply H0.
-    invc H2.
-    eassumption.
-  }
-  subst.
-
-  assert (st_trace = tr).
-  {
-    do_st_trace.
-    rewrite H0; clear H0.
-    assert (tr = st_trace).
-    {
-      assert (Cvm_St.st_trace {| st_ev := st_ev; st_trace := x ++ tr; st_evid := st_evid; st_config := st_config|} =
-              x ++ Cvm_St.st_trace {| st_ev := st_ev; st_trace := st_trace; st_evid := st_evid; st_config := st_config |}).
-      {
-        eapply st_trace_cumul'; eauto.
-        wrap_ccp_dohi.
-        eassumption.
-      }
-      simpl in *.
-      eapply app_inv_head; eauto.
-    }
-    jkjke.
-  }
-
-  wrap_ccp_dohi.
-  congruence.
-Qed.
-
-Ltac do_restl :=
-  match goal with
-  | [H: build_cvmP ?t
-        {| st_ev := ?e; st_trace := ?tr; st_evid := ?i; st_config := ?ac |}
-        ?res
-        {| st_ev := ?e'; st_trace := ?tr ++ ?x; st_evid := ?i'; st_config := ?ac' |}
-        (*H2: well_formed_r ?t*) |- _] =>
-    assert_new_proof_by
-      (build_cvmP t
-        {| st_ev := e; st_trace := []; st_evid := i; st_config := ac|}
-        ?res
-        {| st_ev := e'; st_trace := x; st_evid := i'; st_config := ac' |})
-      ltac:(eapply restl; [apply H])
-  end.
-
-(** * Lemma:  EvidenceT semantics same for annotated and un-annotated terms *)
-Lemma eval_aeval': forall t1 p et,
-    eval (unanno t1) p et = aeval t1 p et.
-Proof.
-  induction t1; intros;
-    repeat ff;
-    repeat jkjke.
-Qed.
-
-(** * Lemma:  parallel CVM threads preserve the reference EvidenceT Type semantics (eval). *)
-Lemma par_EvidenceT_r: forall l p bits bits' et et' t2,
-    parallel_vm_thread l (copland_compile t2) p (evc bits et) = evc bits' et' ->
-    et' = eval t2 p et.
-Proof.
-  intros.
-  rewrite par_EvidenceT in H.
-  assert (get_et (evc bits' et') = eval t2 p (get_et (evc bits et))).
-  {
-    eapply cvm_EvidenceT_correct_type; eauto.
-  }
-  ff.
-Qed.
-         
-(** * Main Lemma:  CVM execution maintains the EvidenceT Type reference semantics (eval) for 
-      its internal EvidenceT bundle. *)
-Lemma cvm_refines_lts_EvidenceT' : forall t tr tr' bits bits' et et' i i' ac ac',
-    build_cvmP (copland_compile t)
-        (mk_st (evc bits et) tr i ac)
-        (resultC tt)
-        (mk_st (evc bits' et') tr' i' ac') ->
-    et' = (Term_Defs.eval t (session_plc ac) et).
-Proof.
-  intuition.
-  eapply build_cvmP_sc_immut in H as H'.
-  simpl in *; subst.
-  generalizeEverythingElse t.
-  induction t; intros.
-  
-  - (* aasp case *)
-    rewrite <- ccp_iff_cc in *.
-    ffa.  
-    destruct a; (try dd; eauto); ffa using cvm_monad_unfold.
-      
-
-  - (* at case *)
-    rewrite <- ccp_iff_cc in *.
-    dd.
-    repeat ffa.
-
-  - (* alseq case *)
-    do_suffix blah.
-    destruct_conjs.
-    subst.
-
-    edestruct alseq_decomp.
-    eapply restl.
-    eassumption.
-    fold copland_compile in *.
-    destruct_conjs.
-    repeat match goal with
-    | x : Evidence |- _ =>
-      destruct x
-    | H : build_cvmP (copland_compile t1) _ _ _ |- _ =>
-      let AC := fresh "AC" in
-      let Ho := fresh "Ho" in
-      eapply build_cvmP_sc_immut in H as AC;
-      simpl in *; try rewrite AC in *; clear AC;
-      eapply IHt1 in H as Ho;
-      simpl in *; subst; clear H
-    | H2 : build_cvmP (copland_compile t2) _ _ _ |- _ =>
-      let AC := fresh "AC" in
-      let Ho := fresh "Ho" in
-      eapply build_cvmP_sc_immut in H2 as AC;
-      simpl in *; try rewrite AC in *; clear AC;
-      eapply IHt2 in H2 as Ho;
-      simpl in *; subst; clear H2
-    end; eauto.
-    
-  - (* abseq case *)
-    simpl in *; repeat ff; subst;
-    wrap_ccp; cbn in *; repeat ff; cbn in *;
-    repeat match goal with
-    | x : Evidence |- _ =>
-      destruct x
-    | u : unit |- _ =>
-      destruct u
-    | H : build_cvmP (copland_compile t1) _ _ _ |- _ =>
-      let AC := fresh "AC" in
-      let Ho := fresh "Ho" in
-      eapply build_cvmP_sc_immut in H as AC;
-      simpl in *; try rewrite AC in *; clear AC;
-      eapply IHt1 in H as Ho;
-      simpl in *; subst; clear H
-    | H2 : build_cvmP (copland_compile t2) _ _ _ |- _ =>
-      let AC := fresh "AC" in
-      let Ho := fresh "Ho" in
-      eapply build_cvmP_sc_immut in H2 as AC;
-      simpl in *; try rewrite AC in *; clear AC;
-      eapply IHt2 in H2 as Ho;
-      simpl in *; subst; clear H2
-    end; eauto.
-
-   - (* abpar case *)
-
-    destruct s; repeat ffa;
-    wrap_ccp; cbn in *; repeat ff; cbn in *;
-    repeat (ffa; match goal with
-    | u : unit |- _ =>
-      destruct u
-    end).
-    +
-      assert (e0 = eval t2 (session_plc ac') et).
-      {
-        eapply par_EvidenceT_r; eauto.
-      }
-      ffa.
-      
-    +
-      find_apply_hyp_hyp.
-
-      assert (e0 = eval t2 (session_plc ac') mt_evt).
-      {
-        rewrite par_EvidenceT_clear in *.
-        eapply par_EvidenceT_r; eauto.
-      }
-      congruence.
-    +
-      wrap_ccp.
-      ffa.
-      assert (e0 = eval t2 (session_plc ac') et).
-      {
-        eapply par_EvidenceT_r; eauto.
-      }
-      congruence.
-    +
-      wrap_ccp.
-      ffa.
-      assert (e0 = eval t2 (session_plc ac') mt_evt).
-      {
-        rewrite par_EvidenceT_clear in *.
-
-        eapply par_EvidenceT_r; eauto.
-      }
-      congruence.
-Qed.
-
-(** * Propositional version of CVM EvidenceT Type preservation. *)
-Lemma cvm_refines_lts_EvidenceT :
-  forall t t' tr tr' bits bits' et et' i i' ac ac',
-    term_to_coreP t t' ->
-    build_cvmP t'
-      (mk_st (evc bits et) tr i ac)
-      (resultC tt)
-      (mk_st (evc bits' et') tr' i' ac') ->
-    et' = (Term_Defs.eval t (session_plc ac) et).
-Proof.
-  intros.
-  invc H.
-  eapply cvm_refines_lts_EvidenceT'.
-  eauto.
-Qed.
-
-
-(** BEGIN Deprecated parallel annotated term stuff *)
-
-(*
-Lemma anno_parP_redo: forall t pt loc loc',
-    anno_par_list' t loc = Some (loc', pt) ->
-    anno_parP pt t.
-Proof.
-  intros.
-  econstructor.
-  eexists.
-  jkjke.
-Qed.
-
-(*
-Lemma anno_parPloc_redo: forall t pt loc loc',
-    anno_par t loc = (loc', pt) ->
-    anno_parPloc pt t loc.
-Proof.
-  intros.
-  econstructor.
-  jkjke.
-Qed.
- *)
-Lemma anno_parPloc_redo: forall t pt loc loc',
-    anno_par_list' t loc = Some (loc', pt) ->
-    anno_parPloc pt t loc.
-Proof.
-  intros.
-  econstructor.
-  jkjke.
-Qed.
-
- *)
-
-(*
-
-Ltac do_annopar_redo :=
-  match goal with
-  | [H: anno_par ?t ?loc = (_,?pt)
-     |- _ ] =>
-    eapply anno_parP_redo in H
-  end.
-
-Ltac do_annopar_loc_redo :=
-  match goal with
-  | [H: anno_par ?t ?loc = (_,?pt)
-     |- _ ] =>
-    eapply anno_parPloc_redo in H
-  end.
- *)
-
-
-(*
-
-Ltac do_annopar_redo :=
-  match goal with
-  | [H: anno_par_list' ?t ?loc = Some (_,?pt)
-     |- _ ] =>
-    eapply anno_parP_redo in H
-  end.
-
-Ltac do_annopar_loc_redo :=
-  match goal with
-  | [H: anno_par_list' ?t ?loc = (_,?pt)
-     |- _ ] =>
-    eapply anno_parPloc_redo in H
-  end.
-
-
-
-Ltac inv_annoparP :=
-  match goal with
-  | [H: anno_parP _ _ (* ?t (?c _) *)
-     |- _ ] =>
-    inversion H; subst
-  end;
-  destruct_conjs.
-
-Ltac inv_annoparPloc :=
-  match goal with
-  | [H: anno_parPloc _ _ _(*?t (?c _) _ *)
-     |- _ ] =>
-    inversion H; subst
-  end;
-  destruct_conjs.
- *)
-
-
-(*
-Ltac wrap_annopar :=
-  inv_annoparP;
-  dd;
-  repeat do_annopar_redo.
-
-Ltac wrap_annoparloc :=
-  inv_annoparPloc;
-  dd;
-  repeat do_annopar_loc_redo.
- *)
-
-
-(** END Deprecated parallel annotated term stuff *)
-
-*)

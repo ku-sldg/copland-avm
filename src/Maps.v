@@ -73,19 +73,10 @@ Fixpoint map_vals{A B:Type} `{H : EqClass A} (m : MapC A B ) : list B :=
   | (k', v) :: m' => v :: map_vals m'
   end.
 
-Fixpoint invert_map {A B : Type} `{HA : EqClass A, HB : EqClass B} (m : MapC A B) : MapC B A :=
-  match m with
-  | [] => []
-  | (k', v') :: m' => (v', k') :: (invert_map m')
-  end.
-
 Theorem mapC_get_works{A B:Type} `{H : EqClass A} : forall m (x:A) (v:B),
   map_get (map_set m x v) x = Some v.
 Proof.
-  induction m; simpl in *; intuition; eauto.
-  - rewrite eqb_refl; eauto.
-  - destruct (eqb a0 x) eqn:E;
-    simpl in *; rewrite E; eauto.
+  induction m; ff; rewrite eqb_refl in *; ff.
 Qed.
 
 Fixpoint map_map {A B C : Type} `{HA : EqClass A} (f : B -> C) (m : MapC A B) : MapC A C :=
@@ -101,6 +92,35 @@ Proof.
   induction m; simpl in *; intuition; try congruence;
   break_match; repeat find_injection; simpl in *;
   find_rewrite; eauto.
+Qed.
+
+Fixpoint map_union {A B : Type} `{HA : EqClass A} (m1 m2 : MapC A B) 
+    (fn : B -> B -> B) : MapC A B :=
+  match m1 with
+  | [] => m2
+  | (k, v) :: m1' => 
+    match map_get m2 k with
+    | None => (k, v) :: map_union m1' m2 fn
+    | Some v' => (k, fn v v') :: map_union m1' m2 fn
+    end
+  end.
+
+Theorem map_union_get_spec : forall {A B : Type} `{HA : EqClass A} 
+    (m1 m2 : MapC A B) (fn : B -> B -> B) k v,
+  map_get (map_union m1 m2 fn) k = Some v <->
+  ((exists v1 v2,
+    map_get m1 k = Some v1 /\
+    map_get m2 k = Some v2 /\
+    fn v1 v2 = v) \/
+  (map_get m1 k = Some v /\ map_get m2 k = None) \/ 
+  (map_get m1 k = None /\ map_get m2 k = Some v)).
+Proof.
+  induction m1; ff;
+  repeat rewrite eqb_eq in *;
+  repeat rewrite eqb_neq in *; ff; 
+  try find_rewrite_lem IHm1; ff;
+  try erewrite <- IHm1 in *; ff;
+  try (left; eexists; eexists; ff; fail).
 Qed.
 
 Lemma mapC_get_distinct_keys{A B:Type} `{H : EqClass A} : 

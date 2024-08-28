@@ -1,10 +1,8 @@
 -R . CoplandM
 StructTactics.v
-Preamble.v
 ResultT.v
 Stringifiable.v
 Stringifiable_Class_Admits.v
-More_lists.v
 EqClass.v
 ID_Type.v
 BS.v
@@ -14,7 +12,6 @@ Maps.v
 JSON_Type.v
 JSON_Admits.v
 JSON.v
-OptMonad_Coq.v
 Term_Defs_Core.v
 JSON_Core.v
 Params_Admits.v
@@ -24,7 +21,6 @@ Interface_Types.v
 Interface_JSON.v
 Interface.v
 ErrorStMonad_Coq.v
-# ConcreteEvidence.v
 Manifest_Admits.v
 Manifest_Set.v
 Manifest.v
@@ -35,11 +31,6 @@ Cvm_St.v
 IO_Stubs.v
 Eqb_Evidence.v
 Term.v
-# Event_system.v
-# Term_system.v
-# Trace.v
-# LTS.v
-# Main.v
 EnvironmentM.v
 Manifest_Union.v
 Evidence_Bundlers.v
@@ -47,13 +38,11 @@ Cvm_Monad.v
 Cvm_Impl.v
 Cvm_Run.v
 Cvm_Axioms.v
+Cvm_Verification.v
 Manifest_Generator_Helpers.v
 Manifest_Generator.v
 Manifest_Generator_Facts.v
 Manifest_Generator_Union.v
-Helpers_CvmSemantics.v
-Appraisal_Evidence.v
-# CvmSemantics.v
 # Disclose.v
 AM_St.v
 AM_Monad.v

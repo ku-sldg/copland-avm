@@ -3,7 +3,7 @@
       execution of the input protocols.  *)
 
 Require Import Manifest Manifest_Generator
-  Maps Term_Defs Cvm_Impl 
+  Maps Term_Defs Cvm_Impl Cvm_Axioms
   Cvm_Monad Defs AM_Manager EqClass.
 Require Import Manifest_Generator_Facts Attestation_Session.
 
@@ -108,7 +108,6 @@ Fixpoint session_config_supports_exec (p : Plc) (e : EvidenceT) (t : Term)
       (* We only care that we can dispatch it *)
       ((exists res, map_get (sc.(plc_map)) p' = Some res))
   | lseq t1 t2 =>
-      forall e,
       exists sc1 sc2 e',
       (session_config_supports_exec p e t1 sc1) /\
       (eval (session_context sc) p e t1 = resultC e') /\
@@ -255,6 +254,15 @@ Proof.
 Qed.
 Local Hint Resolve well_formed_context_subset : core.
 
+Lemma session_config_supports_exec_subset : forall sc1 sc2,
+  session_config_subset sc1 sc2 ->
+  forall t p e,
+  session_config_supports_exec p e t sc1 ->
+  session_config_supports_exec p e t sc2.
+Proof.
+  induction t; ff.
+Admitted. 
+
 Theorem well_formed_am_config_impl_executable : forall t p e sc,
   well_formed_context (session_context sc) ->
   session_config_supports_exec p e t sc ->
@@ -364,82 +372,62 @@ Proof.
     unfold session_config_subset in *; intuition.
     * break_exists;  
       repeat find_apply_hyp_hyp; repeat find_rewrite; congruence.
-  - specialize H0 with (e := (get_et (st_ev st))).
-    break_exists; intuition;
-    find_eapply_lem_hyp IHt1; intuition; eauto;
-    cvm_monad_unfold; break_exists; find_rewrite; eauto;
-    repeat find_rewrite; eauto;
-    try (invc H6; intuition; ff; fail);
-    eapply cvm_evidence_type in H4 as ?.
-    find_eapply_lem_hyp sc_immut_better; find_rewrite.
-    * eapply IHt2; try eapply H5; ff;
-      inversion H8; intuition; ff.
-    * inversion H3; intuition; ff. 
-    * inversion H3; intuition;
-      repeat find_rewrite; eauto.
-
-  - subst; simpl in *; try rewrite eqb_refl in *;
-    repeat (
-      try break_match;
-      try cvm_monad_unfold;
-      try break_match
-      try find_injection;
-      try find_contradiction;
-      try find_injection;
-      (* repeat find_rewrite; *)
-      simpl in *; subst; intuition; 
-      eauto; try congruence);
-    break_exists; destruct_conjs;
+  - break_exists; intuition.
+    cvm_monad_unfold; ff.
+    * find_eapply_lem_hyp IHt1; ff; ff.
+      inversion H6; ff.
+    * find_eapply_lem_hyp IHt1; ff; ff;
+      try (inversion H6; ff; fail). 
+      eapply sc_immut_better in Heqp0 as ?; ff.
+      eapply cvm_evidence_type in Heqp0; ff;
+      try (inversion H3; ff; fail);
+      eapply IHt2; ff.
+      eapply session_config_supports_exec_subset; ff.
+  - break_exists; intuition;
+    cvm_monad_unfold; ff;
+    destruct s; simpl in *; ff;
     match goal with
     | H : build_cvm t1 ?st' = _,
-      H1 : session_config_supports_exec _ _ t1 _ |- _ =>
-      eapply IHt1 with (st := st') in H1; simpl in *; ff;
-      intuition; break_exists; ff;
-      repeat find_rewrite; repeat find_injection
+      H1 : session_config_supports_exec _ _ t1 ?x,
+      H2 : session_config_subset ?x _ |- _ =>
+      eapply IHt1 with (st := st') in H1; ff;
+      try (inversion H2; ff; fail); ff
     end;
-    try (invc H2; intuition; ff; fail);
-    destruct s, s, s0; simpl in *; eauto;
+    match goal with
+    | H : build_cvm t1 _ = _ |- _ =>
+      eapply sc_immut_better in H
+    end;
     match goal with
     | H : build_cvm t2 ?st' = _,
-      H1 : session_config_supports_exec _ _ t2 _ |- _ =>
-      eapply IHt2 with (st := st') in H1; simpl in *; ff;
-      intuition; break_exists; ff;
-      repeat find_rewrite; repeat find_injection
-    end;
-    repeat find_eapply_lem_hyp sc_immut_better;
-    simpl in *; repeat find_rewrite; eauto;
-    inversion H4; intuition; ff.
-  - subst; simpl in *; try rewrite eqb_refl in *;
-    repeat (
-      try break_match;
-      try cvm_monad_unfold;
-      try break_match
-      try find_injection;
-      try find_contradiction;
-      try find_injection;
-      (* repeat find_rewrite; *)
-      simpl in *; subst; intuition; 
-      eauto; try congruence);
-    break_exists; destruct_conjs;
+      H1 : session_config_supports_exec _ _ t2 ?x,
+      H2 : session_config_subset ?x _ |- _ =>
+      eapply IHt2 with (st := st') in H1; ff;
+      try (inversion H2; ff; fail); ff
+    end.
+  - break_exists; intuition;
+    cvm_monad_unfold; ff;
+    destruct s; simpl in *; ff;
     match goal with
     | H : build_cvm t1 ?st' = _,
-      H1 : session_config_supports_exec _ _ t1 _ |- _ =>
-      eapply IHt1 with (st := st') in H1; simpl in *; ff;
-      intuition; break_exists; ff;
-      repeat find_rewrite; repeat find_injection
-    end; 
-    try (invc H2; intuition; ff; fail);
-    destruct s, s, s0; simpl in *; eauto;
+      H1 : session_config_supports_exec _ _ t1 ?x,
+      H2 : session_config_subset ?x _ |- _ =>
+      eapply IHt1 with (st := st') in H1; ff;
+      try (inversion H2; ff; fail); ff
+    end;
+    repeat match goal with
+    | H : build_cvm t1 _ = _ |- _ =>
+      eapply sc_immut_better in H
+    | H : parallel_vm_thread _ _ _ _ = _ |- _ =>
+      eapply parallel_vm_thread_err_axiom in H; ff; 
+      check_num_goals_le 1
+    end;
     match goal with
     | H : build_cvm t2 ?st' = _,
-      H1 : session_config_supports_exec _ _ t2 _ |- _ =>
-      eapply IHt2 with (st := st') in H1; simpl in *; ff;
-      intuition; break_exists; ff;
-      repeat find_rewrite; repeat find_injection
-    end;
-    repeat find_eapply_lem_hyp sc_immut_better;
-    simpl in *; repeat find_rewrite;
-    eapply session_config_subset_trans; eauto.
+      H1 : session_config_supports_exec _ _ t2 ?x,
+      H2 : session_config_subset ?x _ |- _ =>
+      eapply IHt2 with (st := st') in H1; ff;
+      try (inversion H2; ff; fail); ff
+    end.
 Qed.
 
 Definition manifest_support_session_conf (m : Manifest) (sc : Session_Config)
@@ -511,7 +499,7 @@ Fixpoint manifest_support_term (G : GlobalContext) (m : Manifest) (p : Plc)
   | att p' t' => True
     (* exists m', manifest_support_term m' t' *)
   | lseq t1 t2 =>
-      forall e',
+      exists e',
       manifest_support_term G m p e t1 /\
       eval G p e t1 = resultC e' /\
       manifest_support_term G m p e' t2
@@ -526,30 +514,24 @@ Fixpoint manifest_support_term (G : GlobalContext) (m : Manifest) (p : Plc)
 Theorem manifest_support_am_config_impl_am_config: forall t absMan ats G p e,
   well_formed_manifest absMan ->
   manifest_support_term G absMan p e t ->
+  ats_context ats = G ->
   att_sess_supports_term ats t ->
   forall aspBin uuid,
   session_config_supports_exec p e
     t 
-    (session_config_compiler G (mkAM_Man_Conf absMan aspBin uuid) ats).
+    (session_config_compiler (mkAM_Man_Conf absMan aspBin uuid) ats).
 Proof.
-  unfold manifest_support_term, well_formed_manifest in *;
+  (* unfold manifest_support_term, well_formed_manifest in *; *)
   induction t; simpl in *; intuition; eauto;
   repeat match goal with
   | H : forall _ _, ?p _ _ -> _,
     H' : ?p _ _ |- _ =>
       eapply H in H'; intuition; eauto
-  end; try (repeat eexists; eauto; fail).
-  - repeat (break_match; repeat find_rewrite; repeat find_injection;
-      simpl in *; intuition; eauto; break_exists; try congruence).
-    (* APPR stuff *)
-    admit.
-  - break_exists; intuition; eauto. 
-  - fold manifest_support_term in *.
-    admit.
-  (* -  
-    find_apply_hyp_hyp; break_exists; congruence.
-  - break_exists; intuition; eauto. *)
-(* Qed. *)
+  end; try (repeat eexists; eauto; fail); ff.
+  - admit. 
+  - split; ff. 
+  - unfold manifest_support_term, well_formed_manifest in *; ffa. 
+  - repeat eexists; ff.
 Admitted.
 
 Lemma places_decomp: forall t1 t2 p tp,
@@ -589,97 +571,148 @@ right.
 eauto.
 Qed.
 
-Lemma has_manifest_env_places_env_has_manifest' : forall t p tp m e,
-  map_get (manifest_generator' tp t e) p = Some m ->
-  (exists m', map_get e p = Some m') \/ 
+Fixpoint plc_ev_term_subterms (G : GlobalContext) (p : Plc) (e : EvidenceT) (t : Term) : list (Plc * EvidenceT * Term) :=
+  [(
+    p, e, t
+  )] ++
+  match t with
+  | asp a => (* nothing is sub ASPs *)
+    nil
+  | att p' t' => [(p', e, t')]
+  | lseq t1 t2 =>
+    plc_ev_term_subterms G p e t1 ++ 
+    match (eval G p e t1) with
+    | resultC e' => plc_ev_term_subterms G p e' t2
+    | errC _ => []
+    end
+  | bseq s t1 t2 =>
+    plc_ev_term_subterms G p (splitEv_T_l s e) t1 ++
+    plc_ev_term_subterms G p (splitEv_T_r s e) t2
+  | bpar s t1 t2 =>
+    plc_ev_term_subterms G p (splitEv_T_l s e) t1 ++
+    plc_ev_term_subterms G p (splitEv_T_r s e) t2
+  end.
+
+Lemma plc_ev_term_subterms_refl : forall G p e t,
+  In (p, e, t) (plc_ev_term_subterms G p e t).
+Proof.
+  induction t; ff.
+Qed.
+
+Lemma has_manifest_env_places_env_has_manifest' : forall G t p e env env',
+  manifest_generator' G p e t env = resultC env' ->
+  forall p' m,
+    map_get env p' = Some m ->
+    exists m', map_get env' p' = Some m'.
+Proof.
+  induction t; ff.
+  - unfold manifest_update_env_res, asp_manifest_update, 
+      aspid_manifest_update in *; ff;
+    destEq p p';
+    try rewrite mapC_get_works; ff;
+    try rewrite map_distinct_key_rw; ff.
+  - destEq p' p0; ff;
+    eapply IHt with (p' := p') in H; ff.
+    rewrite String.eqb_neq in *.
+
+
+Lemma has_manifest_env_places_env_has_manifest' : forall G t p e env env',
+  manifest_generator' G p e t env = resultC env' ->
+  (forall p' e' t',
+    In (p', e', t') (plc_ev_term_subterms G p e t) ->
+    exists m', map_get env' p' = Some m'
+  ).
+Proof.
+  induction t; ff.
+  - unfold manifest_update_env_res, asp_manifest_update, 
+      aspid_manifest_update in *; ff;
+    try rewrite mapC_get_works; ff.
+  - break_or_hyp; ff.
+    * admit. 
+    * eapply IHt; ff; eapply plc_ev_term_subterms_refl.
+    find_eapply_lem_hyp IHt; ff.
+    unfold asp
+
+
+  map_get env' p = Some m ->
+  (exists m', map_get env p = Some m') \/ 
   In p (places tp t).
 Proof.
-  intros.
-  generalizeEverythingElse t.
   induction t; intros.
   - destruct a; ff;
-    unfold asp_manifest_update, manifest_update_env in *;
-    simpl in *;
+    unfold asp_manifest_update, manifest_update_env_res in *;
+    simpl in *; ffa using result_monad_unfold;
     destEq tp p; eauto;
     try rewrite map_distinct_key_rw in *; eauto.
   - simpl in *; intuition; eauto; ff; eauto.
-    * find_apply_hyp_hyp; intuition.
-    * find_apply_hyp_hyp; intuition; eauto. 
-      break_exists; simpl in *;
-      destruct (String.eqb tp p0) eqn:E; eauto;
+    * eapply IHt in H; ff; ff.
+    * eapply IHt in H; ff; ff;
       rewrite String.eqb_eq in *; eauto.
     (* find_apply_hyp_hyp; intuition. *)
   - (* lseq case *)
-    ff; find_apply_hyp_hyp; intuition;
-    break_exists; eauto;
-    try find_apply_hyp_hyp; intuition;
-    pose proof places'_cumul;
-    pose proof places_app_cumul;
-    eauto.
-  - ff; find_apply_hyp_hyp; intuition;
-    break_exists; eauto;
-    try find_apply_hyp_hyp; intuition;
-    pose proof places'_cumul;
-    pose proof places_app_cumul;
-    eauto.
-  - ff; find_apply_hyp_hyp; intuition;
-    break_exists; eauto;
-    try find_apply_hyp_hyp; intuition;
-    pose proof places'_cumul;
-    pose proof places_app_cumul;
-    eauto.
+    ff; result_monad_unfold; ff.
+    destruct (map_get e0 p) eqn:E.
+    * eapply IHt1 in Heqr; ff; 
+      pose proof places'_cumul; ff.
+    * eapply IHt2 in H; ff;
+      pose proof places_app_cumul; ff.
+  - ff; result_monad_unfold; ff.
+    destruct (map_get e0 p) eqn:E.
+    * eapply IHt1 in Heqr; ff; 
+      pose proof places'_cumul; ff.
+    * eapply IHt2 in H; ff;
+      pose proof places_app_cumul; ff.
+  - ff; result_monad_unfold; ff.
+    destruct (map_get e0 p) eqn:E.
+    * eapply IHt1 in Heqr; ff; 
+      pose proof places'_cumul; ff.
+    * eapply IHt2 in H; ff;
+      pose proof places_app_cumul; ff.
 Qed.
 
-Lemma has_manifest_env_places_env_has_manifest : forall t p tp m,
-  map_get (manifest_generator t tp) p = Some m ->
+Lemma has_manifest_env_places_env_has_manifest : forall G t p tp m env',
+  manifest_generator G tp t = resultC env' ->
+  map_get env' p = Some m ->
   In p (places tp t).
 Proof.
   intros.
   unfold manifest_generator in *.
-  apply has_manifest_env_places_env_has_manifest' in H;
-  intuition; simpl in *; ff;
-  try rewrite String.eqb_eq in *;
-  eauto; break_exists; congruence.
+  result_monad_unfold; ff.
+  eapply has_manifest_env_places_env_has_manifest' in H; ff.
 Qed.
 
 Lemma places_env_has_manifest : forall t p tp e,
   In p (places tp t) -> 
+  forall G env env',
+  manifest_generator' G tp e t env = resultC env' ->
   exists m, 
-    map_get (manifest_generator' tp t e) p = Some m.
+    map_get env' p = Some m.
 Proof.
   intros.
   generalizeEverythingElse t.
   induction t; intros.
   - simpl in *; intuition; subst.
-    unfold manifest_update_env, asp_manifest_update,
-      aspid_manifest_update;
-    simpl in *; ff; subst; intuition; eauto;
-    try rewrite mapC_get_works; eauto.
+    unfold manifest_update_env_res, asp_manifest_update,
+      aspid_manifest_update in *; ff;
+    try (rewrite mapC_get_works; ff; fail).
   - (* at case *)
-    ff; intuition; subst; eauto;
-    ff; simpl in *; eauto; 
-    eapply map_get_mangen; simpl in *; 
-    try rewrite String.eqb_refl; eauto.
-  - simpl in *; intuition;
-    find_eapply_lem_hyp places_decomp;
-    intuition; simpl in *.
-    * eapply IHt1 in H; break_exists;
-      eapply map_get_mangen; eauto.
-    * eapply IHt2 in H; eauto.
-  - simpl in *; intuition;
-    find_eapply_lem_hyp places_decomp;
-    intuition; simpl in *.
-    * eapply IHt1 in H; break_exists;
-      eapply map_get_mangen; eauto.
-    * eapply IHt2 in H; eauto.
-  - simpl in *; intuition;
-    find_eapply_lem_hyp places_decomp;
-    intuition; simpl in *.
-    * eapply IHt1 in H; break_exists;
-      eapply map_get_mangen; eauto.
-    * eapply IHt2 in H; eauto.
+    ff; eapply map_get_mangen; ff; ff;
+    try rewrite String.eqb_refl in *; ff.
+  - ff; result_monad_unfold; ff;
+    find_eapply_lem_hyp places_decomp; ffa;
+    eapply IHt1 in Heqr; ff;
+    eapply map_get_mangen; ff.
+  - ff; result_monad_unfold; ff;
+    find_eapply_lem_hyp places_decomp; ffa;
+    eapply IHt1 in Heqr; ff;
+    eapply map_get_mangen; ff.
+  - ff; result_monad_unfold; ff;
+    find_eapply_lem_hyp places_decomp; ffa;
+    eapply IHt1 in Heqr; ff;
+    eapply map_get_mangen; ff.
 Qed.
 
+(* 
 (* TODO:  this is likely not provable forall p ... 
    TODO:  perhaps generalize to something like:  
             forall p, In p ((places t1 tp) ++ places e) ?? *)
@@ -741,15 +774,25 @@ Lemma asdf_easy : forall t1 t2 tp absMan e,
 Proof.
   intros; eapply asdf; ff.
 Qed.
+*)
 
-Lemma manifest_supports_term_sub : forall m1 m2 t,
+Lemma manifest_supports_appr_sub : forall m1 m2 e,
   manifest_subset m1 m2 ->
-  manifest_support_term m1 t -> 
-  manifest_support_term m2 t.
+  manifest_support_appr m1 e -> 
+  manifest_support_appr m2 e.
+Proof.
+  induction e; ff.
+Qed.
+
+Lemma manifest_supports_term_sub : forall m1 m2 t p e G,
+  manifest_subset m1 m2 ->
+  manifest_support_term G m1 p e t -> 
+  manifest_support_term G m2 p e t.
 Proof.
   intros.
   generalizeEverythingElse t.
-  induction t; simpl in *; intuition; eauto; ff. 
+  induction t; ff; try eapply manifest_supports_appr_sub; ff.
+  find_eapply_lem_hyp IHt1; ff.
 Qed.
 
 Lemma env_subset_man_subset : forall e1 e2 p m m',
@@ -758,22 +801,33 @@ Lemma env_subset_man_subset : forall e1 e2 p m m',
   map_get e2 p = Some m' -> 
   manifest_subset m m'.
 Proof.
-  intros.
-  unfold Environment_subset in *.
-  specialize H with (m1:= m) (p:=p).
-  find_apply_hyp_hyp.
-  destruct_conjs.
-  find_rewrite.
-  ff.
+  unfold Environment_subset in *; ff;
+  specialize H with (m1:= m) (p:=p);
+  intuition; ff.
 Qed.
 
+Theorem man_gen_old_always_supports : forall G t t' tp p e env env' absMan,
+  well_formed_context G ->
+  manifest_generator' G tp e t env = resultC env' ->
+  (forall p' e' t',
+    In (p', e', t') (plc_ev_term_subterms G p e t) ->
 
-Theorem man_gen_old_always_supports : forall t t' tp p backMan absMan,
-  map_get (manifest_generator' tp t backMan) p = Some absMan ->
+  )
+  map_get env' p = Some absMan ->
+  (* NOTE: Big issue here, it only holds for the EVIDENCE that it 
+  should be receiving! *)
   In p (places tp t) ->
   In t' (place_terms t tp p) ->
-  manifest_support_term absMan t'.
+  manifest_support_term G absMan p e t'.
 Proof.
+  induction t; ff;
+  try rewrite String.eqb_eq in *;
+  try rewrite String.eqb_refl in *;
+  ff.
+  - repeat break_or_hyp; ff;
+    unfold well_formed_context in *;
+    ff.
+  - result_monad_unfold; ff.
 
   induction t; intuition.
   - simpl in *.

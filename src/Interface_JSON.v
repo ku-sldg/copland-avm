@@ -10,21 +10,21 @@ eapply Build_Jsonifiable with
   JSON_Object 
     [(STR_TYPE, (JSON_String STR_REQUEST));
     (STR_ACTION, (JSON_String STR_RUN));
-    (STR_ATTEST_SESS, (to_JSON (prreq_att_sesplit_evt req)));
+    (STR_ATTEST_SESS, (to_JSON (prreq_att_sess req)));
     (STR_REQ_PLC, (JSON_String (to_string (prreq_req_plc req))));
     (STR_EVIDENCE, (to_JSON (prreq_Evidence req)));
     (STR_TERM, (to_JSON (prreq_term req)))])
 (from_JSON := (fun j =>
-  temp_att_sesplit_evt <- JSON_get_Object STR_ATTEST_SESS j ;;
+  temp_att_sess <- JSON_get_Object STR_ATTEST_SESS j ;;
   temp_req_plc <- JSON_get_string STR_REQ_PLC j ;;
   temp_ev <- JSON_get_Object STR_EVIDENCE j ;;
   temp_term <- JSON_get_Object STR_TERM j ;;
 
-  att_sesplit_evt <- from_JSON temp_att_sesplit_evt ;;
+  att_sess <- from_JSON temp_att_sess ;;
   req_plc <- from_string temp_req_plc ;;
   ev <- from_JSON temp_ev ;;
   term <- from_JSON temp_term ;;
-  resultC (mkPRReq att_sesplit_evt req_plc ev term)));
+  resultC (mkPRReq att_sess req_plc ev term)));
 solve_json.
 Defined.
 
@@ -85,24 +85,24 @@ eapply Build_Jsonifiable with
   JSON_Object [
     (STR_TYPE, (JSON_String STR_REQUEST));
     (STR_ACTION, (JSON_String STR_APPRAISE));
-    (STR_ATTEST_SESS, (to_JSON (pareq_att_sesplit_evt req)));
+    (STR_ATTEST_SESS, (to_JSON (pareq_att_sess req)));
     (STR_TERM, (to_JSON (pareq_term req)));
     (STR_REQ_PLC, (JSON_String (to_string (pareq_plc req))));
     (STR_EvidenceT, (to_JSON (pareq_EvidenceT req)));
     (STR_RAWEV, (to_JSON (pareq_ev req)))])
 (from_JSON := (fun j =>
-  temp_att_sesplit_evt <- JSON_get_Object STR_ATTEST_SESS j ;;
+  temp_att_sess <- JSON_get_Object STR_ATTEST_SESS j ;;
   temp_term <- JSON_get_Object STR_TERM j ;;
   temp_plc <- JSON_get_string STR_REQ_PLC j ;;
   temp_EvidenceT <- JSON_get_Object STR_EvidenceT j ;;
   temp_ev <- JSON_get_Object STR_RAWEV j ;;
   
-  att_sesplit_evt <- from_JSON temp_att_sesplit_evt ;;
+  att_sess <- from_JSON temp_att_sesplit_evt ;;
   term <- from_JSON temp_term ;;
   plc <- from_string temp_plc ;;
   EvidenceT <- from_JSON temp_EvidenceT ;;
   ev <- from_JSON temp_ev ;;
-  resultC (mkPAReq att_sesplit_evt term plc EvidenceT ev))); solve_json.
+  resultC (mkPAReq att_sess term plc EvidenceT ev))); solve_json.
 Defined.
 
 (* Protocol Appraise Response *)
