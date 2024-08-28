@@ -11,6 +11,8 @@ Require Import AM_Helpers Server_AM Client_AM.
 
 Require Import Manifest_Generator_Union Manifest_JSON Flexible_Mechanisms.
 
+Require Import CACL.
+
 Require Import List.
 Import ListNotations.
 
@@ -38,4 +40,5 @@ Separate Extraction
     concrete_Jsonifiable_Attestation_Session
     concrete_Jsonifiable_Term
     concrete_Jsonifiable_Evidence
-    Jsonifiable_Evidence_Plc_list Jsonifiable_Term_Plc_list.
+    Jsonifiable_Evidence_Plc_list Jsonifiable_Term_Plc_list
+    test_cacl_compute.
