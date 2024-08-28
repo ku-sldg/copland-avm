@@ -11,6 +11,8 @@ Require Import AM_Helpers Server_AM.
 
 Require Import Manifest_Generator_Union Manifest_JSON Flexible_Mechanisms.
 
+Require Import CACL.
+
 Require Import List.
 Import ListNotations.
 
