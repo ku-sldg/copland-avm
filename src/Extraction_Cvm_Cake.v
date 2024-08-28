@@ -41,4 +41,4 @@ Separate Extraction
     concrete_Jsonifiable_Term
     concrete_Jsonifiable_Evidence
     Jsonifiable_Evidence_Plc_list Jsonifiable_Term_Plc_list
-    test_cacl_compute.
+    test_cacl_compute_json.
