@@ -2,6 +2,8 @@ Require Import Term_Defs Maps ID_Type EqClass.
 
 Require Import Manifest_Set JSON JSON_Core.
 
+Require Import Flexible_Mechanisms.
+
 Require Import List.
 Import ListNotations.
 
@@ -252,6 +254,47 @@ Definition att_targ : TARG_ID := "att_targ".
 Definition it_targ : TARG_ID := "it_targ".
 Definition hashfile_targ : TARG_ID := "hashfile_targ".
 
+
+
+(* CDS demo vars *)
+
+(* TARG IDs *)
+Definition kim_evidence_targ : TARG_ID := "kim_evidence_targ".
+
+Definition in_targ  : TARG_ID := "in_targ".
+Definition out_targ : TARG_ID := "out_targ".
+Definition cds_exe_1_targ : TARG_ID := "cds_exe_1_targ".
+Definition cds_exe_2_targ : TARG_ID := "cds_exe_2_targ".
+Definition cds_exe_3_targ : TARG_ID := "cds_exe_3_targ".
+Definition tmp_1_targ : TARG_ID := "tmp_1_targ".
+Definition tmp_2_targ : TARG_ID := "tmp_2_targ".
+Definition tmp_3_targ : TARG_ID := "tmp_3_targ".
+
+Definition cds_flags_targ : TARG_ID := "cds_flags_targ".
+
+Definition cds_controller_targ : TARG_ID := "cds_controller_targ".
+Definition cds_controller_exe_targ : TARG_ID := "cds_controller_exe_targ".
+Definition cds_config_targ : TARG_ID := "cds_config_targ".
+
+Definition cds_config_1_targ : TARG_ID := "cds_config_1_targ".
+Definition cds_config_2_targ : TARG_ID := "cds_config_2_targ".
+Definition cds_config_3_targ : TARG_ID := "cds_config_3_targ".
+Definition cds_img_golden_1_targ : TARG_ID := "cds_img_golden_1_targ".
+Definition cds_img_golden_2_targ : TARG_ID := "cds_img_golden_2_targ".
+Definition cds_img_golden_3_targ : TARG_ID := "cds_img_golden_3_targ".
+
+
+
+Definition cds_demo_arch_policy : CACL_Policy := 
+  [
+
+  ].
+
+
+
+
+
+
 (*
 (* AM TARG IDs *)
 Definition AM_P0 : TARG_ID := "AM0".
@@ -287,7 +330,7 @@ Definition CACL_policy_generator_ASP (a:ASP) (p:Plc) : CACL_Policy :=
     | ENC _ => [(p, [(enc_id, CACL_Invoke)])] 
     | ASPC _ _ (asp_paramsC aid _ targp targid) => 
         [(p, [(aid, CACL_Invoke)]);
-         (aid, [(targid, CACL_Read)])]
+         ((append p (append ", " aid)), [(targid, CACL_Read)])]
     | _ => default_CACL_Policy 
     end.
 
@@ -307,7 +350,7 @@ Fixpoint CACL_policy_generator' (t:Term) (p:Plc) (pol:CACL_Policy) : CACL_Policy
 Definition CACL_policy_generator (t:Term) (p:Plc) : CACL_Policy := 
   CACL_policy_generator' t p [].
 
-Definition test_cacl_compute := (CACL_policy_generator certificate_style P0).
+Definition test_cacl_compute := (CACL_policy_generator cds_demo_phrase P0).
   (* (CACL_policy_union example_cacl_policy example_cacl_policy). *)
 
 Definition test_cacl_compute_json : JSON := to_JSON test_cacl_compute.
