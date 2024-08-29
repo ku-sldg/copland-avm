@@ -226,102 +226,12 @@ Definition CACL_policy_union (p1:CACL_Policy) (p2:CACL_Policy) : CACL_Policy :=
     fold_right CACL_policy_union_helper p2 p1.
 
 
-Open Scope string_scope.
 
 Definition default_CACL_Policy := [("", (nil:(list CACL_Access)))].
 
-
-
-(* Plcs *)
-Definition P0 : Plc := "P0".
-Definition P1 : Plc := "P1".
-Definition P2 : Plc := "P2".
-Definition P3 : Plc := "P3".
-Definition P4 : Plc := "P4".
-
-(* ASP IDs *)
-Definition attest_id : ASP_ID := "attest_id".
-Definition appraise_id : ASP_ID := "appraise_id".
-Definition certificate_id : ASP_ID := "certificate_id".
-Definition hashfile_id : ASP_ID := "hashfile_id".
 Definition sig_id : ASP_ID := "sig_id".
 Definition hsh_id : ASP_ID := "hsh_id".
 Definition enc_id : ASP_ID := "enc_id".
-
-(* TARG IDs *)
-Definition sys_targ : TARG_ID := "sys_targ".
-Definition att_targ : TARG_ID := "att_targ".
-Definition it_targ : TARG_ID := "it_targ".
-Definition hashfile_targ : TARG_ID := "hashfile_targ".
-
-
-
-(* CDS demo vars *)
-
-(* TARG IDs *)
-Definition kim_evidence_targ : TARG_ID := "kim_evidence_targ".
-
-Definition in_targ  : TARG_ID := "in_targ".
-Definition out_targ : TARG_ID := "out_targ".
-Definition cds_exe_1_targ : TARG_ID := "cds_exe_1_targ".
-Definition cds_exe_2_targ : TARG_ID := "cds_exe_2_targ".
-Definition cds_exe_3_targ : TARG_ID := "cds_exe_3_targ".
-Definition tmp_1_targ : TARG_ID := "tmp_1_targ".
-Definition tmp_2_targ : TARG_ID := "tmp_2_targ".
-Definition tmp_3_targ : TARG_ID := "tmp_3_targ".
-
-Definition cds_flags_targ : TARG_ID := "cds_flags_targ".
-
-Definition cds_controller_targ : TARG_ID := "cds_controller_targ".
-Definition cds_controller_exe_targ : TARG_ID := "cds_controller_exe_targ".
-Definition cds_config_targ : TARG_ID := "cds_config_targ".
-
-Definition cds_config_1_targ : TARG_ID := "cds_config_1_targ".
-Definition cds_config_2_targ : TARG_ID := "cds_config_2_targ".
-Definition cds_config_3_targ : TARG_ID := "cds_config_3_targ".
-Definition cds_img_golden_1_targ : TARG_ID := "cds_img_golden_1_targ".
-Definition cds_img_golden_2_targ : TARG_ID := "cds_img_golden_2_targ".
-Definition cds_img_golden_3_targ : TARG_ID := "cds_img_golden_3_targ".
-
-
-
-Definition cds_demo_arch_policy : CACL_Policy := 
-  [
-
-  ].
-
-
-
-
-
-
-(*
-(* AM TARG IDs *)
-Definition AM_P0 : TARG_ID := "AM0".
-Definition AM_P1 : TARG_ID := "AM1". 
-Definition AM_P2 : TARG_ID := "AM2". 
-*)
-
-Close Scope string_scope.
-
-Definition certificate_style : Term :=
-  att P1 (
-    lseq 
-      (asp (ASPC ALL (EXTD 1) (asp_paramsC attest_id [] P1 sys_targ)))
-      (att P2 (
-        lseq 
-          (asp (ASPC ALL (EXTD 1) (asp_paramsC appraise_id [] P2 sys_targ)))
-          (asp (ASPC ALL (EXTD 1) (asp_paramsC certificate_id [] P2 sys_targ)))
-      ))
-  ).
-
-Definition example_cacl_policy : CACL_Policy := 
-    [(P1, [(attest_id, CACL_Invoke)]);
-     (P2, [(appraise_id, CACL_Invoke);
-           (certificate_id, CACL_Invoke)]);
-     (attest_id, [(sys_targ, CACL_Read)])
-     ].
-
 
 Definition CACL_policy_generator_ASP (a:ASP) (p:Plc) : CACL_Policy := 
     match a with 
@@ -349,9 +259,4 @@ Fixpoint CACL_policy_generator' (t:Term) (p:Plc) (pol:CACL_Policy) : CACL_Policy
 
 Definition CACL_policy_generator (t:Term) (p:Plc) : CACL_Policy := 
   CACL_policy_generator' t p [].
-
-Definition test_cacl_compute := (CACL_policy_generator cds_demo_phrase P0).
-  (* (CACL_policy_union example_cacl_policy example_cacl_policy). *)
-
-Definition test_cacl_compute_json : JSON := to_JSON test_cacl_compute.
 
