@@ -65,22 +65,6 @@ Definition filehash_auth_phrase : Term :=
       (asp SIG) 
     ).
 
-Definition cds_demo_phrase : Term := 
-  att P1
-    (
-    lseq 
-    (lseq 
-      (asp (ASPC ALL (EXTD 1) (asp_paramsC query_kim_id [] P1 sys_targ)))
-      (
-      lseq 
-        (asp (ASPC ALL (EXTD 1) (asp_paramsC meas_cds_id [] P1 cds_targ)))
-        (asp SIG)
-      )
-    )
-    (
-      att P3 (asp (ASPC ALL (EXTD 1) (asp_paramsC appr_cds_id [] P1 sys_targ)))
-    )).
-
 
 Open Scope string_scope.
 Definition flexible_mechanisms_map := 
