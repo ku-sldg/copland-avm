@@ -52,18 +52,40 @@ Definition sp_ev (sp:SP) (e:EvidenceT) : EvidenceT :=
   | NONE => mt_evt
   end.
 
-Fixpoint appr_procedure (G : GlobalContext) (p : Plc) (e:EvidenceT) 
+(* 
+Fixpoint get_appr_asp_par_chain (G : GlobalContext) (p : Plc) (e : EvidenceT) 
+    : ResultT (list ASP_PARAMS) string :=
+  match e with
+  | mt_evt => resultC []
+  | nonce_evt _ => resultC ([check_nonce_params])
+  | asp_evt p' ps e' => 
+    let '(asp_paramsC asp_id args targ_plc targ) := ps in
+    match (map_get (asp_comps G) asp_id) with
+    | None => errC err_str_asp_no_compat_appr_asp
+    | Some appr_id => 
+      appr_asps <- get_appr_asp_par_chain G p e' ;;
+      resultC ((asp_paramsC appr_id args targ_plc targ) :: appr_asps)
+    end
+  | split_evt e1 e2 => resultC []
+  end.
+
+Fixpoint apply_appr_par_chain (p : Plc) (e : EvidenceT) (l : list ASP_PARAMS) : EvidenceT :=
+  match l with
+  | [] => e
+  | ps :: l' => apply_appr_par_chain p (asp_evt p ps e) l'
+  end.
+  *)
+
+(** Helper function for EvidenceT type reference semantics *)
+
+Fixpoint appr_procedure (G : GlobalContext) (p : Plc) (e : EvidenceT) 
     : ResultT EvidenceT string :=
   match e with
   | mt_evt => resultC mt_evt
   | nonce_evt n => resultC (asp_evt p check_nonce_params (nonce_evt n))
   | asp_evt asp_top_plc ps e' => 
-    let '(asp_paramsC asp_id args targ_plc targ) := ps in
-    match (map_get (asp_comps G) asp_id) with
-    | None => errC err_str_asp_no_compat_appr_asp
-    | Some appr_id => 
-      resultC (asp_evt p (asp_paramsC appr_id args targ_plc targ) e)
-    end
+    appr_chain <- get_appr_asp_par_chain G p e ;;
+    resultC (apply_appr_par_chain p e appr_chain)
   | split_evt e1 e2 => 
       e1' <- appr_procedure G p e1 ;;
       e2' <- appr_procedure G p e2 ;;
@@ -76,13 +98,13 @@ Definition eval_asp (G : GlobalContext) (a : ASP)
   match a with
   | NULL => resultC mt_evt
   | CPY => resultC e
-  | ASPC sp params =>
+  | ASPC params =>
     let '(asp_paramsC asp_id args targ_plc targ) := params in
     match map_get (asp_types G) asp_id with
     | None => errC err_str_asp_no_type_sig
-    | Some fwd =>
+    | Some (ev_arrow fwd in_sig out_sig) =>
       match fwd with
-      | KEEP => resultC (sp_ev sp e)
+      | KEEP => resultC e
       | KILL => resultC mt_evt
       | _ => resultC (asp_evt p params (sp_ev sp e))
       end

@@ -65,12 +65,20 @@ EXTD:  [b1, b2, ..., bn] ==> f([b1, b2, ..., bn]) ++ [b1, b2, ..., bn]],
 KILL:  [b1, b2, ..., bn] ==> []
 KEEP:  [b1, b2, ..., bn] ==> [b1, b2, ..., bn]
 *)
-Inductive FWD: Set :=
-| COMP
-| ENCR
-| EXTD : nat -> FWD
-| KILL
-| KEEP.
+Inductive FWD :=
+| REPLACE
+| WRAP
+| EXTEND.
+
+Inductive EvInSize :=
+| InAll : EvInSize
+| InNone : EvInSize.
+
+Inductive EvOutSize :=
+| OutN : nat -> EvOutSize.
+
+Inductive EvSig :=
+| ev_arrow : FWD -> EvInSize -> EvOutSize -> EvSig.
 
 (** The structure of EvidenceT. 
 
@@ -108,14 +116,13 @@ Inductive SP: Set :=
 *)
 Inductive ASP :=
 | NULL: ASP
-| CPY: ASP
-| ASPC: SP -> ASP_PARAMS -> ASP
+| ASPC: ASP_PARAMS -> ASP
 | SIG: ASP
 | HSH: ASP
 | APPR : ASP
 | ENC: Plc -> ASP.
 
-Definition ASP_Type_Env := MapC ASP_ID FWD.
+Definition ASP_Type_Env := MapC ASP_ID EvSig.
 
 Record GlobalContext := {
   asp_types: ASP_Type_Env;
@@ -140,6 +147,17 @@ Inductive Term :=
 | bseq: Split -> Term -> Term -> Term
 | bpar: Split -> Term -> Term -> Term.
 
+Definition err_str_asp_bad_size (got expect : nat) := 
+  "ASP requires input of size " ++ to_string expect ++ 
+  " but received input of size " ++ to_string got ++ "\n".
+
+Definition asp_sig_et_size (size_in : nat) (sig : EvSig) :=
+  let '(ev_arrow fwd in_sig (OutN n)) := sig in
+  match fwd with
+  | EXTEND => n + size_in
+  | _ => n
+  end.
+
 (**  Calculate the size of an EvidenceT type *)
 Fixpoint et_size (G : GlobalContext) (e:EvidenceT) : ResultT nat string :=
   match e with
@@ -149,16 +167,9 @@ Fixpoint et_size (G : GlobalContext) (e:EvidenceT) : ResultT nat string :=
     let '(asp_paramsC asp_id args targ_plc targ) := par in
     match (map_get (asp_types G) asp_id) with
     | None => errC err_str_asp_no_type_sig
-    | Some asp_fwd => 
-      match asp_fwd with
-      | COMP => resultC 1
-      | ENCR => resultC 1
-      | (EXTD n) => 
-        s' <- et_size G e' ;;
-        resultC (n + s')
-      | KILL => resultC 0
-      | KEEP => et_size G e'
-      end 
+    | Some ev_sig =>
+      s' <- et_size G e' ;;
+      resultC (asp_sig_et_size s' ev_sig)
     end
   | split_evt e1 e2 => 
     s1 <- et_size G e1 ;; 
@@ -166,6 +177,7 @@ Fixpoint et_size (G : GlobalContext) (e:EvidenceT) : ResultT nat string :=
     resultC (s1 + s2)
   end.
 
+(* 
 Fixpoint appr_et_size (G : GlobalContext) (e : EvidenceT) : ResultT nat string :=
   match e with
   | mt_evt => resultC 0
@@ -177,8 +189,8 @@ Fixpoint appr_et_size (G : GlobalContext) (e : EvidenceT) : ResultT nat string :
     | Some appr_asp_id =>
       match (map_get (asp_types G) appr_asp_id) with
       | None => errC err_str_asp_no_type_sig
-      | Some asp_fwd => 
-        match asp_fwd with
+      | Some (ev_arrow fwd in_sig (OutN n)) => 
+        match asp_si with
         | COMP => resultC 2 (* This asp crushed down to 1, then +1 for appr *)
         | ENCR => resultC 2 (* this asp crushed down to 1, then +1 for appr *)
         | (EXTD n) => 
@@ -196,6 +208,7 @@ Fixpoint appr_et_size (G : GlobalContext) (e : EvidenceT) : ResultT nat string :
     s2 <- appr_et_size G e2 ;;
     resultC (s1 + s2)
   end.
+  *)
 
 (** Raw EvidenceT representaiton:  a list of binary (BS) values. *)
 Definition RawEv := list BS.
@@ -249,11 +262,9 @@ Notation "x -> y" := (lseq x y) (in custom copland_entry at level 99, right asso
 Notation "!" := (asp SIG) (in custom copland_entry at level 98).
 Notation "#" := (asp HSH) (in custom copland_entry at level 98).
 Notation "* p" := (asp (ENC p)) (in custom copland_entry at level 98).
-Notation "$" := (asp KILL) (in custom copland_entry at level 98).
-Notation "'__'" := (asp CPY) (in custom copland_entry at level 98).
 Notation "'{}'" := (asp NULL) (in custom copland_entry at level 98).
 (* TODO: Surely we need something more robust than they are ALL EXTD 1, but uhhhh *)
-Notation "'<<' x y z '>>'" := (asp (ASPC ALL (EXTD 1) (asp_paramsC x nil y z))) 
+Notation "'<<' x y z '>>'" := (asp (ASPC (asp_paramsC x nil y z))) 
                       (in custom copland_entry at level 98).
 
 

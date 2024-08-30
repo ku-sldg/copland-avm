@@ -45,26 +45,12 @@ Open Scope string_scope.
 Definition JSON_get_Object (key : string) (js : JSON) : ResultT JSON string :=
   match js with
   | JSON_Object m => 
-      match map_get m key with
+      match map_get key m with
       | Some v => resultC v 
       | None => errC ("JSON_get_Object: KEY NOT FOUND : " ++ key)
       end
   | _ => errC "JSON_get_Object: NOT AN OBJECT"
   end.
-
-(*
-Fixpoint JSON_map_get_Object_rec_safe (key : string) (js_map : MapC string InnerJSON) : ResultT JSON string :=
-  match js_map with
-  | [] => errC ("NO OBJECT """ ++ key ++ """")
-  | (key', val) :: js_map' =>
-      if (eqb key key') 
-      then (match val with
-            | InJSON_Object v => resultC v
-            | _ => errC "JSON_map_get_Object_rec_safe: NOT AN OBJECT"
-            end)
-      else JSON_map_get_Object_rec_safe key js_map'
-  end.
-*)
 
 Definition JSON_get_Array (key : string) (js : JSON) : ResultT (list JSON) string :=
   match JSON_get_Object key js with
@@ -89,14 +75,6 @@ Definition JSON_get_bool (key : string) (js : JSON) : ResultT bool string :=
   | _ => errC ("Could not find key: '" ++ key ++ "' in Json object: '" ++
     (JSON_to_string js) ++ "'")
   end.
-
-(* Lemma canonical_serialization_string : forall (js : JSON) (a : string), 
-  JSON_String a = js <-> (resultC (JSON_to_string js) = @resultC _ string a).
-Proof.
-  setoid_rewrite canonical_serialization_json_string; intuition; eauto.
-  - rewrite H; eauto. 
-  - inversion H; eauto. 
-Qed. *)
 
 (* The Pair JSONIFIABLE Class *)
 Definition str_pair_to_JSON {A B : Type} `{Stringifiable A, Stringifiable B} (v : (A * B)) : JSON :=
