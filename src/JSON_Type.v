@@ -4,7 +4,7 @@ Require Import List.
 
 
 Inductive JSON :=
-| JSON_Object   : MapC string JSON -> JSON
+| JSON_Object   : Map string JSON -> JSON
 | JSON_Array    : list JSON -> JSON
 | JSON_String   : string -> JSON
 | JSON_Boolean  : bool -> JSON.
@@ -12,7 +12,7 @@ Inductive JSON :=
 
 (*
 Inductive JSON :=
-| JSON_Object     : MapC string InnerJSON -> JSON
+| JSON_Object     : Map string InnerJSON -> JSON
 
 with InnerJSON :=
 | InJSON_Object   : JSON -> InnerJSON
@@ -25,7 +25,7 @@ with InnerJSON :=
 Definition depth_js_array (ls:list JSON) (f:JSON -> nat) : nat := 
     fold_right (fun js acc => max acc (f js)) 0 ls.
 
-Definition depth_js_map (m: MapC string JSON) (f:JSON -> nat) : nat := 
+Definition depth_js_map (m: Map string JSON) (f:JSON -> nat) : nat := 
     fold_right (fun pr acc => max acc (f (snd pr))) 0 m.
 
 Fixpoint JSON_depth (js:JSON) : nat := 

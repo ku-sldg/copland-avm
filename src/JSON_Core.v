@@ -1,4 +1,4 @@
-Require Import Term JSON List String Stringifiable_Class_Admits ID_Type Maps
+Require Import Term_Defs_Core JSON List String Stringifiable_Class_Admits ID_Type Maps
 Interface_Strings_Vars.
 
 Require Coq.Program.Tactics.
@@ -30,8 +30,8 @@ Proof.
     subst; eauto.
 Defined.
 
-Lemma map_get_impl_in : forall {A B : Type} `{EqClass A} (m : MapC A B) k v,
-  map_get m k = Some v ->
+Lemma map_get_impl_in : forall {A B : Type} `{EqClass A} (m : Map A B) k v,
+  map_get k m = Some v ->
   In (k, v) m.
 Proof.
   induction m; simpl in *; intuition; try congruence; eauto.
@@ -52,7 +52,7 @@ Proof.
 Defined.
 
 Lemma json_all_map_elements_smaller : forall js m s,
-  map_get m s = Some js ->
+  map_get s m = Some js ->
   lt (JSON_depth js) (JSON_depth (JSON_Object m)).
 Proof.
   induction m; simpl in *; intuition; try congruence;
@@ -188,12 +188,12 @@ Definition constructor_body_from_JSON_gen (type_name:string) (js:JSON)
   end.
 
 Definition from_JSON_gen {A:Type} (type_name:string) 
-  (cmap: (MapC string (JSON -> (ResultT A string)))) 
+  (cmap: (Map string (JSON -> (ResultT A string)))) 
     : JSON -> ResultT A string := 
   fun js => 
     match (JSON_get_Object (type_name ++ "_" ++ type_string_constant) js) as m' return m' = (JSON_get_Object (type_name ++ "_" ++ type_string_constant) js) -> ResultT A string with
     | resultC (JSON_String cons_name) =>
-      match (map_get cmap cons_name) with 
+      match (map_get cons_name cmap) with 
       | Some f => fun Heq => f js
       | None => fun _ => errC ("Invalid " ++ type_name ++ " JSON:  unrecognized constructor name: " ++ cons_name)
       end
@@ -203,11 +203,9 @@ Definition from_JSON_gen {A:Type} (type_name:string)
 
 Definition FWD_to_JSON (t : FWD) : JSON := 
   match t with
-  | COMP =>   constructor_to_JSON fwd_name_constant comp_name_constant []
-  | ENCR =>   constructor_to_JSON fwd_name_constant encr_name_constant []
-  | EXTD n => constructor_to_JSON fwd_name_constant extd_name_constant [(to_JSON n)]
-  | KILL =>   constructor_to_JSON fwd_name_constant kill_name_constant []
-  | KEEP =>   constructor_to_JSON fwd_name_constant keep_name_constant []
+  | REPLACE => constructor_to_JSON fwd_name_constant "REPLACE" []
+  | WRAP    => constructor_to_JSON fwd_name_constant "WRAP" []
+  | EXTEND  => constructor_to_JSON fwd_name_constant "EXTEND" []
   end.
 
 Definition constructor_from_JSON {A:Type} (type_name:string) 
@@ -242,32 +240,19 @@ Definition constructor_from_JSON_rec {A:Type} {top_js : JSON} (type_name:string)
   (f: { ls : list JSON | (forall y : JSON, In y ls -> JSON_depth y < JSON_depth top_js) } -> ResultT A string) : ResultT A string := 
 f (@constructor_body_from_JSON_gen_rec top_js type_name).
 
-Definition FWD_from_JSON_map : MapC string (JSON -> (ResultT FWD string)) := 
-  [(comp_name_constant, 
-    constructor_from_JSON fwd_name_constant (fun _ => resultC COMP));
-   (encr_name_constant, 
-    constructor_from_JSON fwd_name_constant (fun _ => resultC ENCR));
-   (keep_name_constant, 
-    constructor_from_JSON fwd_name_constant (fun _ => resultC KEEP));
-   (kill_name_constant, 
-    constructor_from_JSON fwd_name_constant (fun _ => resultC KILL));
-   (extd_name_constant, 
-    constructor_from_JSON fwd_name_constant 
-      (fun ljs => 
-        match ljs with
-        | [n_js] => 
-          match from_JSON n_js with
-          | resultC n => resultC (EXTD n)
-          | _ => errC ("Invalid JSON args for " ++ extd_name_constant)
-          end
-        | _ => errC ("Invalid JSON args for " ++ extd_name_constant)
-        end))].
+Definition FWD_from_JSON_map : Map string (JSON -> (ResultT FWD string)) := 
+  [("REPLACE", 
+    constructor_from_JSON fwd_name_constant (fun _ => resultC REPLACE));
+   ("WRAP", 
+    constructor_from_JSON fwd_name_constant (fun _ => resultC WRAP));
+   ("EXTEND", 
+    constructor_from_JSON fwd_name_constant (fun _ => resultC EXTEND))].
 
 Definition FWD_from_JSON (js : JSON) : ResultT FWD string :=
    from_JSON_gen fwd_name_constant FWD_from_JSON_map js.
 
 Theorem from_JSON_gen_constructor_to_JSON_works : forall {A : Type} tname cname ls jsmap (f : JSON -> ResultT A string) v,
-  map_get jsmap cname = Some f ->
+  map_get cname jsmap = Some f ->
   f (constructor_to_JSON tname cname ls) = v ->
   from_JSON_gen tname jsmap (constructor_to_JSON tname cname ls) = v.
 Proof.
@@ -335,16 +320,8 @@ Global Instance Jsonifiable_FWD : Jsonifiable FWD.
 eapply Build_Jsonifiable with 
   (to_JSON := FWD_to_JSON)
   (from_JSON := FWD_from_JSON).
-intuition; simpl in *.
-
-unfold FWD_to_JSON.
-unfold FWD_from_JSON.
-break_match;
-eapply from_JSON_gen_constructor_to_JSON_works;
-unfold FWD_from_JSON_map; try reflexivity.
-unfold constructor_from_JSON, constructor_to_JSON,
-  oneArgConstructor_to_JSON, constructor_body_from_JSON_gen.
-jsonifiable_hammer.
+intuition; simpl in *;
+unfold FWD_to_JSON, FWD_from_JSON; ff.
 Defined.
 
 
@@ -431,14 +408,14 @@ Global Instance Stringifiable_SP : Stringifiable SP := {
                                         end
 }.
 
-Definition ASP_to_JSON `{Jsonifiable FWD, Stringifiable Plc, Stringifiable SP, Jsonifiable ASP_PARAMS} (t : ASP) : JSON := 
+Definition ASP_to_JSON `{Stringifiable Plc, Jsonifiable ASP_ARGS} (t : ASP) : JSON := 
   match t with
   | NULL => constructor_to_JSON STR_ASP null_name_constant []
-  | CPY => constructor_to_JSON STR_ASP copy_name_constant []
+  (* | CPY => constructor_to_JSON STR_ASP copy_name_constant [] *)
   | APPR => constructor_to_JSON STR_ASP appr_name_constant []
-  | ASPC sp ps => 
+  | ASPC ps => 
       constructor_to_JSON STR_ASP aspc_name_constant 
-        [(JSON_String (to_string sp)); (to_JSON ps)]
+        [(to_JSON ps)]
   | SIG => constructor_to_JSON STR_ASP sig_name_constant []
   | HSH => constructor_to_JSON STR_ASP hsh_name_constant []
   | ENC q => 
@@ -447,18 +424,16 @@ Definition ASP_to_JSON `{Jsonifiable FWD, Stringifiable Plc, Stringifiable SP, J
   end.
 
 
-Definition ASP_from_JSON_map `{Jsonifiable FWD, Stringifiable Plc, Stringifiable SP, Jsonifiable ASP_PARAMS}: MapC string (JSON -> (ResultT ASP string)) := 
+Definition ASP_from_JSON_map `{Stringifiable Plc, Jsonifiable ASP_ARGS}: Map string (JSON -> (ResultT ASP string)) := 
   [(null_name_constant, constructor_from_JSON STR_ASP (fun _ => resultC NULL));
-   (copy_name_constant, constructor_from_JSON STR_ASP (fun _ => resultC CPY));
+   (* (copy_name_constant, constructor_from_JSON STR_ASP (fun _ => resultC CPY)); *)
    (appr_name_constant, constructor_from_JSON STR_ASP (fun _ => resultC APPR));
    (aspc_name_constant, constructor_from_JSON STR_ASP 
       (fun ljs =>
         match ljs with
-        | [JSON_String sp_js; ps_js] => 
-            match (from_string sp_js), (from_JSON ps_js) with
-            | resultC sp, resultC ps => resultC (ASPC sp ps)
-            | _, _ => errC ("Parsing " ++ aspc_name_constant ++ " not successful")
-            end
+        | [ps_js] => 
+            ps <- from_JSON ps_js ;;
+            resultC (ASPC ps)
         | _ => errC ("Parsing " ++ aspc_name_constant ++ " not successful")
         end));
    (sig_name_constant, constructor_from_JSON STR_ASP (fun _ => resultC SIG));
@@ -474,20 +449,19 @@ Definition ASP_from_JSON_map `{Jsonifiable FWD, Stringifiable Plc, Stringifiable
         | _ => errC ("Invalid JSON args for " ++ enc_name_constant)
         end))].
 
-Definition ASP_from_JSON `{Jsonifiable FWD, Jsonifiable ASP_PARAMS} (js : JSON) : ResultT ASP string :=
+Definition ASP_from_JSON `{Jsonifiable ASP_ARGS} (js : JSON) : ResultT ASP string :=
    from_JSON_gen STR_ASP ASP_from_JSON_map js.
 
-Global Instance Jsonifiable_ASP `{Jsonifiable FWD, Jsonifiable ASP_PARAMS}: Jsonifiable ASP.
+Global Instance Jsonifiable_ASP `{Jsonifiable FWD, Jsonifiable ASP_ARGS}: Jsonifiable ASP.
 eapply (Build_Jsonifiable) with 
   (to_JSON := ASP_to_JSON)
   (from_JSON := ASP_from_JSON).
-unfold ASP_to_JSON, ASP_from_JSON; intros a.
-break_match;
-eapply from_JSON_gen_constructor_to_JSON_works;
-unfold ASP_from_JSON_map; try reflexivity.
-unfold constructor_from_JSON, constructor_to_JSON,
-  oneArgConstructor_to_JSON, constructor_body_from_JSON_gen.
-repeat jsonifiable_hammer.
+induction a; try (ff; fail).
+unfold ASP_from_JSON, ASP_to_JSON, from_JSON_gen; ff.
+induction a; unfold constructor_from_JSON, constructor_body_from_JSON_gen; 
+result_monad_unfold; ff;
+unfold ASP_PARAMS_from_JSON in *; ff; result_monad_unfold;
+jsonifiable_hammer.
 Defined.
 
 Global Instance Jsonifiable_Split : Jsonifiable Split := {
@@ -638,8 +612,8 @@ eapply Build_Jsonifiable with
 destruct a; solve_json.
 Defined.
 
-Global Instance Jsonifiable_GlobalContext `{Stringifiable ASP_ID, Jsonifiable FWD,
-  Jsonifiable (MapC ASP_ID ASP_ID), Jsonifiable (MapC ASP_ID FWD)} : Jsonifiable GlobalContext. 
+Global Instance Jsonifiable_GlobalContext `{Stringifiable ASP_ID, 
+  Jsonifiable (Map ASP_ID ASP_ID), Jsonifiable ASP_Type_Env} : Jsonifiable GlobalContext. 
 eapply Build_Jsonifiable with 
   (to_JSON := (fun g => 
                 JSON_Object [

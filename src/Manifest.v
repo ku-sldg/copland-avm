@@ -60,7 +60,7 @@ Definition PolicyT := list (Plc * ASP_ID).
    *)
   Record Manifest := {
     asps              : manifest_set ASP_ID; 
-    ASP_Mapping       : MapC ASP_ID FS_Location;
+    ASP_Mapping       : Map ASP_ID FS_Location;
     man_policy        : PolicyT  ;
     (* TO DO: Add privacy and selection policies to manifest? *)
   }.

@@ -25,7 +25,7 @@ Definition JSON_to_Manifest (js : JSON) : ResultT Manifest string :=
   POLICY <- list_JSON_to_manifest_set_pairs temp_POLICY;;
   resultC (Build_Manifest ASPS ASP_FS_MAP POLICY).
 
-Global Instance Jsonifiable_Manifest `{Jsonifiable (MapC ASP_ID FS_Location), Jsonifiable (ASP_Compat_MapT)}: Jsonifiable Manifest. 
+Global Instance Jsonifiable_Manifest `{Jsonifiable (Map ASP_ID FS_Location), Jsonifiable (ASP_Compat_MapT)}: Jsonifiable Manifest. 
 eapply Build_Jsonifiable with 
 (to_JSON := (fun m =>
   JSON_Object [

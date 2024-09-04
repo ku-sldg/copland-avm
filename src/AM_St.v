@@ -9,7 +9,7 @@ Import ListNotations.
 
 (* Specific AM monad state *)
 Record AM_St : Type := mkAM_St
-                         { am_nonceMap : MapC N_ID BS;
+                         { am_nonceMap : Map N_ID BS;
                            am_nonceId : N_ID; 
                            am_config : Session_Config }.
 

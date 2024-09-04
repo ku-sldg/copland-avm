@@ -6,8 +6,8 @@ Import ListNotations.
 Record Attestation_Session := 
   mkAtt_Sess {
   Session_Plc     : Plc ;
-  Plc_Mapping     : MapC Plc UUID;
-  PubKey_Mapping  : MapC Plc PublicKey;
+  Plc_Mapping     : Map Plc UUID;
+  PubKey_Mapping  : Map Plc PublicKey;
   ats_context     : GlobalContext
 }.
 
@@ -27,13 +27,13 @@ Record Session_Config := {
   session_plc         : Plc ;
   session_context     : GlobalContext ;
   aspCb               : (ASPCallback DispatcherErrors) ;
-  plc_map             : MapC Plc UUID ;
-  pubkey_map          : MapC Plc PublicKey ;
+  plc_map             : Map Plc UUID ;
+  pubkey_map          : Map Plc PublicKey ;
   policy              : PolicyT ;
 }.
 
 Open Scope string_scope.
-Global Instance Jsonifiable_Attestation_Session `{Jsonifiable (MapC Plc UUID), Jsonifiable (MapC Plc PublicKey), Jsonifiable GlobalContext}: Jsonifiable Attestation_Session.
+Global Instance Jsonifiable_Attestation_Session `{Jsonifiable (Map Plc UUID), Jsonifiable (Map Plc PublicKey), Jsonifiable GlobalContext}: Jsonifiable Attestation_Session.
 eapply Build_Jsonifiable with 
   (to_JSON := (fun v => 
                 JSON_Object [

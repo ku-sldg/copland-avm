@@ -166,7 +166,7 @@ Global Hint Resolve man_gen_aspid_in : core.
       )
     ). *)
 
-(* Theorem filter_resolver : forall {A B} `{EqClass A} (m : MapC A B) a (filt : A -> bool),
+(* Theorem filter_resolver : forall {A B} `{EqClass A} (m : Map A B) a (filt : A -> bool),
   (exists x, map_get m a = Some x) ->
   filt a = true ->
   exists x, map_get (minify_mapC m filt) a = Some x.
@@ -180,7 +180,7 @@ Proof.
     rewrite eqb_symm; rewrite E; eauto.
 Qed.
 
-Theorem filter_resolver_mapd : forall {A B} `{EqClass A, EqClass B} (m : MapC A B) a (filt : A -> bool),
+Theorem filter_resolver_mapd : forall {A B} `{EqClass A, EqClass B} (m : Map A B) a (filt : A -> bool),
   (exists x, map_get m a = Some x) ->
   filt a = true ->
   exists x, map_get (minify_mapD m filt) a = Some x.
@@ -1209,7 +1209,7 @@ Qed.
 
 Close Scope cop_ent_scope.
 
-Lemma map_get_some_impl_in : forall (A B : Type) `{EqClass A} (m : Maps.MapC A B) p v,
+Lemma map_get_some_impl_in : forall (A B : Type) `{EqClass A} (m : Maps.Map A B) p v,
   map_get m p = Some v -> 
   In p (map fst m).
 Proof.

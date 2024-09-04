@@ -61,8 +61,8 @@ Defined.
       place p with access to e' (modulo decryption by place p).
 *)
 Definition asp_evidence_clear_to (G : GlobalContext) (p : Plc) (e : EvidenceT) 
-    (a : ASP) (m : MapC DisclosureTargets (list EvidenceT))
-    : ResultT (MapC DisclosureTargets (list EvidenceT)) string :=
+    (a : ASP) (m : Map DisclosureTargets (list EvidenceT))
+    : ResultT (Map DisclosureTargets (list EvidenceT)) string :=
   match a with
   | NULL => resultC m (* no new evidence is in the clear *)
 
@@ -99,7 +99,7 @@ Definition asp_evidence_clear_to (G : GlobalContext) (p : Plc) (e : EvidenceT)
 
 
 Fixpoint evidence_clear_to (G : GlobalContext) (p : Plc) (e : EvidenceT)
-    (t : Term) : MapC Plc (list EvidenceT) :=
+    (t : Term) : Map Plc (list EvidenceT) :=
   match t with
   | asp a => 
     let '(asp_paramsC asp_id args targ_plc targ) := a in

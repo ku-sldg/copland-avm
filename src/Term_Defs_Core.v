@@ -38,8 +38,8 @@ Definition Event_ID: Set := nat.
           (defined and interpreted per-scenario/implementaiton).
 *)
 Definition ASP_ID: Set := ID_Type.
-Definition ASP_Compat_MapT := MapC ASP_ID ASP_ID.
-Definition ASP_ARGS := MapC string string.
+Definition ASP_Compat_MapT := Map ASP_ID ASP_ID.
+Definition ASP_ARGS := Map string string.
 
 Definition TARG_ID: Set := ID_Type.
 
@@ -122,7 +122,7 @@ Inductive ASP :=
 | APPR : ASP
 | ENC: Plc -> ASP.
 
-Definition ASP_Type_Env := MapC ASP_ID EvSig.
+Definition ASP_Type_Env := Map ASP_ID EvSig.
 
 Record GlobalContext := {
   asp_types: ASP_Type_Env;
@@ -165,7 +165,7 @@ Fixpoint et_size (G : GlobalContext) (e:EvidenceT) : ResultT nat string :=
   | nonce_evt _ => resultC 1
   | asp_evt p par e' =>
     let '(asp_paramsC asp_id args targ_plc targ) := par in
-    match (map_get (asp_types G) asp_id) with
+    match (map_get asp_id (asp_types G)) with
     | None => errC err_str_asp_no_type_sig
     | Some ev_sig =>
       s' <- et_size G e' ;;

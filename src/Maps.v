@@ -30,9 +30,6 @@ Open Scope list_scope.
        - [set] : To update the binding of an element.
        - [dom] : To get the list of keys in the map. *)
 
-
-    
-
 (** The implementation of a map is a simple association list.  If a
     list contains multiple tuples with the same key, then the binding
     of the key in the map is
@@ -44,28 +41,36 @@ Ltac map_ind m :=
   try (rewrite eqb_eq in *; ff);
   try (rewrite eqb_neq in *; ff).
 
-Definition MapC (A:Type) (B:Type) `{H : EqClass A} := list (A * B).
+Definition Map (A:Type) (B:Type) `{H : EqClass A} := list (A * B).
 
 (** The [empty] map is the empty list. *)
 
-Definition map_empty{A B:Type} `{H : EqClass A} : MapC A B := [].
+Definition map_empty{A B:Type} `{H : EqClass A} : Map A B := [].
 
 (** To [get] the binding of an identifier [x], we just need to walk 
     through the list and find the first [cons] cell where the key 
     is equal to [x], if any. *)
 
-Definition map_get {A B:Type} `{H : EqClass A} (x : A) : MapC A B -> option B :=
+Definition map_get {A B:Type} `{H : EqClass A} (x : A) : Map A B -> option B :=
   fix F m := 
   match m with
   | [] => None
   | (k, v) :: m' => if eqb k x then Some v else F m'
   end.
 
+Definition map_get_apply {A B C:Type} `{H : EqClass A} (x : A) (f : B -> C)
+    : Map A B -> option C :=
+  fix F m :=
+  match m with
+  | [] => None
+  | (k, v) :: m' => if eqb k x then Some (f v) else F m'
+  end.
+
 (** To [set] the binding of an identifier, we just need to [cons] 
     it at the front of the list. *) 
 
 Definition map_set {A B:Type} `{H : EqClass A} (x : A) (v : B) 
-    : MapC A B -> MapC A B :=
+    : Map A B -> Map A B :=
   fix F m :=
   match m with
   | nil => (x,v) :: nil
@@ -75,7 +80,7 @@ Definition map_set {A B:Type} `{H : EqClass A} (x : A) (v : B)
       else (hk, hv) :: (F t)
   end.
 
-Definition map_vals {A B:Type} `{H : EqClass A} : MapC A B -> list B :=
+Definition map_vals {A B:Type} `{H : EqClass A} : Map A B -> list B :=
   fix F m :=
   match m with
   | [] => []
@@ -89,7 +94,7 @@ Proof.
 Qed.
 
 Definition map_map {A B C : Type} `{HA : EqClass A} (f : B -> C) 
-    : MapC A B -> MapC A C :=
+    : Map A B -> Map A C :=
   fix F m :=
   match m with
   | [] => []
@@ -104,7 +109,7 @@ Proof.
 Qed.
 
 Definition map_union {A B : Type} `{HA : EqClass A} (fn : B -> B -> B) 
-    : MapC A B -> MapC A B -> MapC A B :=
+    : Map A B -> Map A B -> Map A B :=
   fix F m1 m2 :=
   match m1 with
   | [] => m2
@@ -116,7 +121,7 @@ Definition map_union {A B : Type} `{HA : EqClass A} (fn : B -> B -> B)
   end.
 
 Theorem map_union_get_spec : forall {A B : Type} `{HA : EqClass A} 
-    (m1 m2 : MapC A B) (fn : B -> B -> B) k v,
+    (m1 m2 : Map A B) (fn : B -> B -> B) k v,
   map_get k (map_union fn m1 m2) = Some v <->
   ((exists v1 v2,
     map_get k m1 = Some v1 /\
@@ -149,7 +154,7 @@ Proof.
   map_ind m; erewrite <- IHm; ff.
 Qed.
 
-Lemma mapC_get_distinct_keys_from_set {A B :Type} `{H : EqClass A} : forall (m : MapC A B) k1 k2 v1 v2,
+Lemma mapC_get_distinct_keys_from_set {A B :Type} `{H : EqClass A} : forall (m : Map A B) k1 k2 v1 v2,
   k1 <> k2 ->
   map_get k2 (map_set k1 v1 m) = Some v2 ->
   map_get k2 m = Some v2.
@@ -188,7 +193,7 @@ Proof.
 Qed.
 
 Lemma map_set_sandwiched : forall {A B : Type} `{EqClass A},
-  forall (m : MapC A B) k v,
+  forall (m : Map A B) k v,
   exists preM postM, 
     map_set k v m = preM ++ (k, v) :: postM /\
     map_get k preM = None.
@@ -206,7 +211,7 @@ Proof.
 Qed.
 
 Theorem map_set_unfolder : forall {A B : Type} `{EqClass A},
-  forall (m : MapC A B) k1 k2 v1 v2,
+  forall (m : Map A B) k1 k2 v1 v2,
   k1 <> k2 ->
   map_get k1 m = None ->
   map_get k1 (map_set k2 v2 m) = Some v1 ->
@@ -216,7 +221,7 @@ Proof.
 Qed.
 
 Theorem map_get_none_iff_not_some : forall {A B : Type} `{EqClass A},
-  forall (m : MapC A B) k,
+  forall (m : Map A B) k,
   map_get k m = None <-> (forall v, map_get k m = Some v -> False).
 Proof.
   map_ind m; erewrite IHm; ff.
