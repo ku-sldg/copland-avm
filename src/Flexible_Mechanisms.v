@@ -65,6 +65,26 @@ Definition filehash_auth_phrase : Term :=
       (asp SIG) 
     ).
 
+Open Scope cop_ent_scope.
+
+Definition attest_asp : Term := (asp (ASPC ALL (EXTD 1) (asp_paramsC attest_id [] P1 sys_targ))).
+
+Definition meas1_phrase : Term := attest_asp.
+
+Definition meas2_phrase : Term := attest_asp.
+
+Definition sig_asp : Term := asp SIG.
+
+Definition workstation_phrase : Term := 
+<{
+  @ P1 [ meas1_phrase ] 
+  +<+ 
+  @ P2 [ meas2_phrase ]
+}>.
+
+Close Scope cop_ent_scope.
+
+
 Open Scope string_scope.
 Definition flexible_mechanisms_map := 
   [("cert", certificate_style); 
@@ -72,7 +92,8 @@ Definition flexible_mechanisms_map :=
    ("parmut", parallel_mutual_1); 
    ("parmut2", parallel_mutual_2); 
    ("layered_bg", layered_background_check); 
-   ("filehash", filehash_auth_phrase)].
+   ("filehash", filehash_auth_phrase);
+   ("workstations", workstation_phrase)].
 
 Definition add_evidence_flexible_mechanisms := 
   Maps.map_map (fun t => (t, eval t P0 (nn 0))) flexible_mechanisms_map.
