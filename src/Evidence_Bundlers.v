@@ -10,17 +10,36 @@ Require Import Term_Defs ResultT ErrorStringConstants EqClass.
 
 Import ListNotations.
 
-(** Extends raw EvidenceT by prepending 'n' values to the front.
-    Also updates underlying EvidenceT Type.
-    An example is digital signatures, where the signature value is prepended *)
-Definition extd_bundle (sig: RawEv) (e:Evidence) (p:Plc) (n : nat) (ps:ASP_PARAMS): ResultT Evidence string :=
+(* The semantics for a "REPLACE" asp are it CONSUMES all incoming evidence,
+then returns a new collection of evidence that will REPLACE the CVMs current 
+Evidence *)
+Definition REPLACE_bundle (bits: RawEv) (e:Evidence) (p:Plc) 
+    (ps:ASP_PARAMS): ResultT Evidence string :=
+  match e with
+  | evc _ et => resultC (evc bits (asp_evt p ps et))
+  end.
+
+(* The semantics for a "WRAP" asp are the exact same as "REPLACE" for the 
+attestation and bundling side of the CVM. Wraps main distinction lies in the
+fact that its is a GUARANTEE, that the dual appraisal ASP is actually an
+inverse, thus allowing WRAPPED evidence to be recovered via appraisal *)
+Definition WRAP_bundle (bits: RawEv) (e:Evidence) (p:Plc) 
+    (ps:ASP_PARAMS): ResultT Evidence string :=
+  match e with
+  | evc _ et => resultC (evc bits (asp_evt p ps et))
+  end.
+
+(* The semantics for an "EXTEND" asp are it APPENDS all incoming evidence to the
+current CVM evidence bundle *)
+Definition EXTEND_bundle (sig: RawEv) (e:Evidence) (p:Plc) (n : nat) 
+    (ps:ASP_PARAMS): ResultT Evidence string :=
   match e with
   | evc bits et => 
       if (eqb (List.length sig) n)
       then resultC (evc (sig ++ bits) (asp_evt p ps et))
       else errC errStr_raw_EvidenceT_too_long
   end.
-
+(* 
 (** Collapses raw EvidenceT by replacing the entire sequence with the input 
     binary hash value.  Updates underlying EvidenceT Type to reflect the hash. *)
 Definition comp_bundle (hsh: RawEv) (e:Evidence) (p:Plc) (ps:ASP_PARAMS): ResultT Evidence string :=
@@ -44,7 +63,7 @@ Definition encr_bundle (enc: RawEv) (e:Evidence) (p:Plc) (ps:ASP_PARAMS): Result
     | [h] => resultC (evc [h] (asp_evt p ps et))
     | _ => errC errStr_raw_EvidenceT_too_long
     end
-  end.
+  end. *)
 
 (** Appends raw EvidenceT and EvidenceT Types for the pair of input bundles *)
 Definition ss_cons (e1:Evidence) (e2:Evidence): Evidence :=

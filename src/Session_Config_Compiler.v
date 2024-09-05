@@ -10,7 +10,7 @@ Definition generate_ASP_dispatcher' (am : Manifest) (ats : Attestation_Session) 
     if (in_dec_set aspid asps)
     then 
       let conc_asp_loc := 
-          match (map_get asp_map aspid) with
+          match (map_get aspid asp_map) with
           | Some conc_asp_loc => conc_asp_loc
           (* If we dont find a translation, assume its the same name*)
           | None => (aspid_to_fs_location aspid)

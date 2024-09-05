@@ -78,37 +78,67 @@ Fixpoint apply_appr_par_chain (p : Plc) (e : EvidenceT) (l : list ASP_PARAMS) : 
 
 (** Helper function for EvidenceT type reference semantics *)
 
-Fixpoint appr_procedure (G : GlobalContext) (p : Plc) (e : EvidenceT) 
-    : ResultT EvidenceT string :=
+Fixpoint appr_procedure' (G : GlobalContext) (p : Plc) (e : EvidenceT) 
+    (ev_out : EvidenceT) : ResultT EvidenceT string :=
   match e with
+  (* Simple case, we do nothing on appraise of mt *)
   | mt_evt => resultC mt_evt
-  | nonce_evt n => resultC (asp_evt p check_nonce_params (nonce_evt n))
+  (* Simple as well, we utilize primitive nonce checking procedure *)
+  | nonce_evt n => resultC (asp_evt p check_nonce_params ev_out)
+  (* In this case, it is a bit more complex.
+    Basically we have 3 main "types" of ASPs:
+    - "REPLACE": In the case of a replace, we can only use the asp's dual
+      to convert the evidence to a new `appraised` type, but no recursion
+      can be done, as the underlying evidence was replaced.
+    - "WRAP": In the case of a wrap, we can uses the asp's dual to 
+      essentially `invert` the asp's action. 
+      This allows us to then recurse afterwards on the `wrapped` evidence
+    - "EXTEND": In the case of an extend, we can use the asp's dual to 
+      convert the evidence to a new `appraised` type, and then afterwards
+      recurse on the underlying evidence that was not part of the extension.
+  *)
   | asp_evt asp_top_plc ps e' => 
-    appr_chain <- get_appr_asp_par_chain G p e ;;
-    resultC (apply_appr_par_chain p e appr_chain)
+    let '(asp_paramsC asp_id args targ_plc targ) := ps in
+    match map_get asp_id (asp_types G) with
+    | None => errC err_str_asp_no_type_sig
+    | Some (ev_arrow fwd in_sig out_sig) =>
+      match map_get asp_id (asp_comps G) with
+      | None => errC err_str_asp_no_compat_appr_asp
+      | Some appr_id =>
+        let dual_par := asp_paramsC appr_id args targ_plc targ in
+        match fwd with
+        | REPLACE => (* just apply the dual once *)
+          resultC (asp_evt p dual_par ev_out)
+        | WRAP => 
+          (* apply the dual to get a new evidence to operate on, then recurse *)
+          let ev_out' := asp_evt p dual_par ev_out in
+          appr_procedure' G p e' ev_out'
+        | EXTEND => 
+          (* appraisal of an extend involves doing the appraisal of the extension
+          and then separately the appraisal of the underlying *)
+          ev_under <- appr_procedure' G p e' ev_out ;;
+          resultC (split_evt (asp_evt p dual_par ev_out) ev_under)
+        end
+      end
+    end
   | split_evt e1 e2 => 
-      e1' <- appr_procedure G p e1 ;;
-      e2' <- appr_procedure G p e2 ;;
+      e1' <- appr_procedure' G p e1 ev_out ;;
+      e2' <- appr_procedure' G p e2 ev_out ;;
       resultC (split_evt e1' e2')
   end.
+
+Definition appr_procedure (G : GlobalContext) (p : Plc) (e : EvidenceT) 
+    : ResultT EvidenceT string :=
+  appr_procedure' G p e e.
 
 (** Helper function for EvidenceT type reference semantics *)
 Definition eval_asp (G : GlobalContext) (a : ASP) 
     (p : Plc) (e : EvidenceT) : ResultT EvidenceT string :=
   match a with
   | NULL => resultC mt_evt
-  | CPY => resultC e
   | ASPC params =>
     let '(asp_paramsC asp_id args targ_plc targ) := params in
-    match map_get (asp_types G) asp_id with
-    | None => errC err_str_asp_no_type_sig
-    | Some (ev_arrow fwd in_sig out_sig) =>
-      match fwd with
-      | KEEP => resultC e
-      | KILL => resultC mt_evt
-      | _ => resultC (asp_evt p params (sp_ev sp e))
-      end
-    end
+    resultC (asp_evt p params e)
   | APPR => appr_procedure G p e
   | SIG => resultC (asp_evt p sig_params e)
   | HSH => resultC (asp_evt p hsh_params e)
@@ -124,16 +154,25 @@ Fixpoint asp_comp_map_supports_ev (G : GlobalContext) (e : EvidenceT) :=
   | nonce_evt n => True
   | asp_evt asp_top_plc ps e' => 
     let '(asp_paramsC asp_id args targ_plc targ) := ps in
-    map_get (asp_comps G) asp_id <> None
+    map_get asp_id (asp_comps G) <> None /\
+    (match (map_get asp_id (asp_types G)) with
+    | None => False
+    | Some (ev_arrow fwd in_sig out_sig) =>
+      match fwd with
+      | REPLACE => True
+      | WRAP => asp_comp_map_supports_ev G e'
+      | EXTEND => asp_comp_map_supports_ev G e'
+      end
+    end)
   | split_evt e1 e2 => 
       asp_comp_map_supports_ev G e1 /\ 
       asp_comp_map_supports_ev G e2
   end.
 
 Theorem asp_comp_map_supports_ev_iff_appr_procedure: 
-  forall e p G,
+  forall e eo p G,
   asp_comp_map_supports_ev G e <->
-  exists e', appr_procedure G p e = resultC e'.
+  exists e', appr_procedure' G p e eo = resultC e'.
 Proof.
   induction e; simpl in *; intros; try (intuition; eauto; ffa; fail);
   ff; intuition; try congruence; break_exists; try congruence;
@@ -142,8 +181,10 @@ Proof.
   try erewrite IHe2 in *;
   break_exists; repeat find_rewrite; try congruence;
   try (eexists; repeat find_rewrite; eauto; fail).
-  * rewrite Heqr in H; congruence.
-  * rewrite Heqr0 in H0; congruence. 
+  * eapply IHe; ff.
+  * erewrite IHe in H0; ff. 
+  * erewrite IHe; ff.
+  * erewrite IHe; ff. 
   Unshelve. all: eauto.
 Qed.
 
@@ -179,7 +220,7 @@ Fixpoint eval (G : GlobalContext) (p : Plc) (e : EvidenceT) (t : Term)
 
 Inductive Ev :=
 | null: nat -> Plc -> Ev
-| copy:  nat -> Plc -> Ev 
+(* | copy:  nat -> Plc -> Ev  *)
 | umeas: nat -> Plc -> ASP_PARAMS -> EvidenceT -> Ev
 | req: nat -> Plc -> Plc -> EvidenceT -> Term -> Ev
 | rpy: nat -> Plc -> Plc -> EvidenceT -> Ev 
@@ -194,21 +235,23 @@ Fixpoint appr_events_size (G : GlobalContext) (e : EvidenceT) : ResultT nat stri
   match e with
   | mt_evt => resultC 0
   | nonce_evt _ => resultC 1 (* [umeas check_nonce nonce] *)
-  | asp_evt p par e' => resultC 1 (* Single dual appr asp for 1 *)
-    (* let '(asp_paramsC asp_id args targ_plc targ) := par in
-    match (map_get (asp_types G) asp_id) with
+  | asp_evt p par e' => 
+    let '(asp_paramsC asp_id args targ_plc targ) := par in
+    match (map_get asp_id (asp_types G)) with
     | None => errC err_str_asp_no_type_sig
-    | Some asp_fwd => 
+    | Some (ev_arrow asp_fwd in_sig out_sig) =>
       match asp_fwd with
-      | COMP => resultC 1 (* Single dual appr asp for 1 *)
-      | ENCR => resultC 1 (* Single dual appr asp for 1 *)
-      | (EXTD n) => resultC 1 (* Single dual appr asp for 1 *)
-      | KILL => resultC 0 (* this asp returns only mt_evc, which is appr as mt_evc too *)
-      | KEEP => 
-        n <- et_size G e' ;; (* this asp operates on stuff of size n, and returns of size n *)
-        resultC (1 + n) (* they returned n, we do +1 for appr on top *)
+      | REPLACE => resultC 1 (* Single dual appr asp for 1 *)
+      | WRAP => 
+        (* we need the size of recursing *)
+        n <- appr_events_size G e' ;;
+        resultC (1 + n) (* 1 for the unwrap, then n for rec case *)
+      | EXTEND => 
+        (* we need the size of recursing *)
+        n <- appr_events_size G e' ;;
+        resultC (3 + n) (* split (1), extend dual (1), rec case (n), join (1) *)
       end
-    end *)
+    end
   | split_evt e1 e2 =>
     s1 <- appr_events_size G e1 ;;
     s2 <- appr_events_size G e2 ;;
@@ -249,7 +292,6 @@ Fixpoint events_size (G : GlobalContext) (p : Plc) (e : EvidenceT) (t : Term)
 Definition ev x : nat :=
   match x with
   | null i _ => i
-  | copy i _ => i
   | umeas i _ _ _ => i
   | req i _ _ _ _ => i
   | rpy i _ _ _ => i 
@@ -259,30 +301,69 @@ Definition ev x : nat :=
   | cvm_thread_end i _ => i
   end.
 
-Fixpoint asp_events (G : GlobalContext) (p : Plc) (e : EvidenceT) (a : ASP) (i : nat) 
+Fixpoint appr_events' (G : GlobalContext) (p : Plc) (e : EvidenceT) 
+    (ev_out : EvidenceT) (i : nat) : ResultT (list Ev) string :=
+  match e with
+  | mt_evt => resultC []
+  | nonce_evt n => resultC [umeas i p check_nonce_params ev_out]
+  (* (nonce_evt n)] *)
+  | asp_evt p' ps e' => 
+    let '(asp_paramsC asp_id args targ_plc targ) := ps in
+    match (map_get asp_id (asp_comps G)) with
+    | None => errC err_str_asp_no_compat_appr_asp
+    | Some appr_id => 
+      let dual_par := asp_paramsC appr_id args targ_plc targ in
+      match (map_get asp_id (asp_types G)) with
+      | None => errC err_str_asp_no_type_sig
+      | Some (ev_arrow fwd in_sig out_sig) =>
+        match fwd with
+        | REPLACE => (* single dual for replace *)
+          resultC ([umeas i p dual_par ev_out])
+
+        | WRAP => (* do the unwrap *)
+          let unwrap_ev := umeas i p dual_par ev_out in
+          let new_ev_out := asp_evt p' dual_par ev_out in
+          (* do recursive case *)
+          ev' <- appr_events' G p e' new_ev_out (i + 1) ;;
+          resultC (unwrap_ev :: ev')
+
+        | EXTEND => (* do the extend dual *)
+          (* ev_out does not change as the extend does not effect 
+          the underlying evidence! *)
+          ev' <- appr_events' G p e' ev_out (i + 2) ;;
+          resultC ([split i p] ++ 
+            [umeas (i + 1) p dual_par ev_out] ++ 
+            ev' ++ [join (i + 2 + List.length ev') p])
+        end
+      end
+    end
+  | split_evt e1 e2 => 
+      e1' <- appr_events' G p e1 ev_out (i + 1) ;;
+      let next_i := (i + 1) + (List.length e1') in
+      e2' <- appr_events' G p e2 ev_out next_i ;;
+      let last_i := next_i + (List.length e2') in
+      resultC ([split i p] ++ e1' ++ e2' ++ [join last_i p])
+  end.
+
+Lemma appr_events'_size_works : forall G p e ev_out i evs,
+  appr_events' G p e ev_out i = resultC evs ->
+  appr_events_size G e = resultC (List.length evs).
+Proof.
+  induction e; ffa using result_monad_unfold;
+  repeat rewrite app_length in *; simpl in *;
+  f_equal; lia.
+Qed.
+
+Definition appr_events (G : GlobalContext) (p : Plc) (e : EvidenceT) (i : nat) 
     : ResultT (list Ev) string :=
+  appr_events' G p e e i.
+
+Definition asp_events (G : GlobalContext) (p : Plc) (e : EvidenceT) 
+    (a : ASP) (i : nat) : ResultT (list Ev) string :=
   match a with
   | NULL => resultC ([null i p])
-  | CPY => resultC ([copy i p])
-  | ASPC sp ps => resultC ([umeas i p ps (sp_ev sp e)])
-  | APPR => 
-    match e with
-    | mt_evt => resultC ([])
-    | nonce_evt n => resultC ([umeas i p check_nonce_params (nonce_evt n)])
-    | asp_evt p' ps e' => 
-      let '(asp_paramsC asp_id args targ_plc targ) := ps in
-      match (map_get (asp_comps G) asp_id) with
-      | None => errC err_str_asp_no_compat_appr_asp
-      | Some appr_id => 
-        resultC ([umeas i p (asp_paramsC appr_id args targ_plc targ) e])
-      end
-    | split_evt e1 e2 => 
-        e1' <- asp_events G p e1 a (i + 1) ;;
-        let next_i := (i + 1) + (List.length e1') in
-        e2' <- asp_events G p e2 a next_i ;;
-        let last_i := next_i + (List.length e2') in
-        resultC ([split i p] ++ e1' ++ e2' ++ [join last_i p])
-    end
+  | ASPC ps => resultC ([umeas i p ps e])
+  | APPR => appr_events G p e i
   | SIG => resultC ([umeas i p sig_params e])
   | HSH => resultC ([umeas i p hsh_params e])
   | ENC q => resultC ([umeas i p (enc_params q) e])
@@ -292,10 +373,8 @@ Lemma asp_appr_events_size_works : forall G p e i evs,
   asp_events G p e APPR i = resultC evs ->
   appr_events_size G e = resultC (List.length evs).
 Proof.
-  induction e; simpl in *; intros; try find_injection; 
-  ffa using result_monad_unfold;
-  repeat rewrite app_length; simpl in *; 
-  f_equal; lia.
+  induction e; ff;
+  try find_eapply_lem_hyp appr_events'_size_works; ff.
 Qed.
 
 Lemma asp_events_size_works : forall G p a e i evs,
@@ -308,17 +387,30 @@ Proof.
   repeat find_injection; ff; result_monad_unfold; ff.
 Qed.
 
+Lemma appr_events'_deterministic_index : forall G p e ev_out i evs,
+  appr_events' G p e ev_out i = resultC evs ->
+  forall v',
+    true_last evs = Some v' ->
+    ev v' = i + List.length evs - 1.
+Proof.
+  induction e; ffl; result_monad_unfold; ffl;
+  try (eapply IHe in Heqr; ff; repeat find_rewrite; ffl; lia);
+  try (find_rewrite_lem true_last_none_iff_nil;
+    repeat (find_eapply_lem_hyp app_eq_nil; ff); lia).
+  - eapply true_last_none_iff_nil in Heqo1; subst; ffl.
+  - repeat (find_eapply_lem_hyp true_last_app_spec;
+    break_or_hyp; repeat rewrite app_length; ffl).
+  - repeat (find_eapply_lem_hyp true_last_app_spec;
+    break_or_hyp; repeat rewrite app_length; ffl);
+      find_eapply_lem_hyp app_eq_nil; ff.
+Qed.
+
 Theorem asp_events_deterministic_index : forall G p a e i evs,
   asp_events G p e a i = resultC evs ->
   forall v',
     true_last evs = Some v' ->
     ev v' = i + List.length evs - 1.
 Proof.
-  induction e; ffl;
-  result_monad_unfold; ffl.
-  - repeat (find_eapply_lem_hyp true_last_app_spec;
-    break_or_hyp; repeat rewrite app_length; ffl);
-    find_eapply_lem_hyp app_eq_nil; ff.
-  - find_rewrite_lem true_last_none_iff_nil;
-    repeat (find_eapply_lem_hyp app_eq_nil; ff).
+  induction a; ffl;
+  eapply appr_events'_deterministic_index; eauto.
 Qed.

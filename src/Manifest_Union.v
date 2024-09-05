@@ -19,22 +19,15 @@ Definition manifest_union_asps (m1:Manifest) (m2:Manifest) : Manifest :=
     end.
 
 Definition environment_union'' (p:Plc) (m1:Manifest) (e2:EnvironmentM) : EnvironmentM := 
-  match (map_get e2 p) with 
+  match (map_get p e2) with 
   | Some m2 => 
     let new_man := manifest_union_asps m2 m1 in  (* m2 first here to preserve plc *)
-      map_set e2 p new_man 
-  | None => map_set e2 p m1
+      map_set p new_man e2
+  | None => map_set p m1 e2
   end.
 
-                                      (*  B  *)            (*  A  *)        (*  A  *)
 Definition env_union_helper (e1_pr:(Plc*Manifest)) (e2:EnvironmentM) : EnvironmentM := 
   environment_union'' (fst e1_pr) (snd e1_pr) e2.
-
-
-(*
-Definition env_union_helper (pr:(Plc*Manifest)) (e:EnvironmentM) : EnvironmentM := 
-  environment_union''' e pr.
-*)
 
 Definition environment_union (e1:EnvironmentM) (e2:EnvironmentM) : EnvironmentM :=
   fold_right env_union_helper e2 e1.

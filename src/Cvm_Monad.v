@@ -109,27 +109,26 @@ Definition bundle_asp (p:Plc) (rwev : RawEv) (e:Evidence)
     (ps:ASP_PARAMS) : CVM Evidence :=
   sc <- get_config ;;
   let '(asp_paramsC asp_id args targ_plc targ) := ps in
-  match (map_get (asp_types (session_context sc)) asp_id) with
+  match (map_get asp_id (asp_types (session_context sc))) with
   | None => err_failm (dispatch_error (Runtime err_str_asp_no_type_sig))
-  | Some fwd =>
+  | Some (ev_arrow fwd in_sig out_sig) =>
     match fwd with
-    | COMP => 
-        match comp_bundle rwev e p ps with
-        | resultC e' => err_ret e'
-        | errC e => err_failm (dispatch_error (Runtime e))
-        end
-    | EXTD n => 
-        match extd_bundle rwev e p n ps with
-        | resultC e' => err_ret e'
-        | errC e => err_failm (dispatch_error (Runtime e))
-        end
-    | ENCR => 
-        match encr_bundle rwev e p ps with
-        | resultC e' => err_ret e'
-        | errC e => err_failm (dispatch_error (Runtime e))
-        end
-    | KILL => err_ret mt_evc
-    | KEEP => err_ret e
+    | REPLACE => 
+      match REPLACE_bundle rwev e p ps with
+      | resultC e' => err_ret e'
+      | errC e => err_failm (dispatch_error (Runtime e))
+      end
+    | WRAP =>
+      match WRAP_bundle rwev e p ps with
+      | resultC e' => err_ret e'
+      | errC e => err_failm (dispatch_error (Runtime e))
+      end
+    | EXTEND =>
+      let '(OutN n) := out_sig in
+      match EXTEND_bundle rwev e p n ps with
+      | resultC e' => err_ret e'
+      | errC e => err_failm (dispatch_error (Runtime e))
+      end
     end
   end.
 
@@ -145,46 +144,56 @@ Definition do_asp (params :ASP_PARAMS) (e:RawEv) (x:Event_ID) : CVM RawEv :=
 
 (* Simulates invoking an arbitrary ASP.  Tags the event, builds and returns 
    the new EvidenceT bundle. *)
-Definition invoke_ASP (sp : SP) (params:ASP_PARAMS) : CVM Evidence :=
-  e <-  match sp with
-        | ALL => get_ev
-        | NONE => err_ret mt_evc
-        end ;;
+Definition invoke_ASP (params:ASP_PARAMS) : CVM Evidence :=
+  e <- get_ev ;;
   p <- get_pl ;;
   x <- tag_ASP params p e ;;
   rawev <- do_asp params (get_bits e) x ;;
   outev <- bundle_asp p rawev e params ;;
   err_ret outev.
 
-Fixpoint peel_n_rawev (n : nat) (ls : RawEv) : CVM (RawEv * RawEv) :=
+Fixpoint peel_n_rawev (n : nat) (ls : RawEv) : ResultT (RawEv * RawEv) string :=
   match n with
-  | 0 => err_ret ([], ls)
+  | 0 => resultC ([], ls)
   | S n' =>
     match ls with
-    | [] => err_failm (dispatch_error (Runtime errStr_peel_n_am))
+    | [] => errC errStr_peel_n_am
     | x :: ls' =>
-      v <- peel_n_rawev n' ls' ;;
-      match v with
-      | (ls1, ls2) => err_ret (x :: ls1, ls2)
+      match peel_n_rawev n' ls' with
+      | errC e => errC e
+      | resultC (ls1, ls2) => resultC (x :: ls1, ls2)
       end
     end
   end.
 
-Definition split_evidence (r : RawEv) (et1 et2 : EvidenceT) 
-    : CVM (Evidence * Evidence) :=
-  sc <- get_config ;;
-  let G := (session_context sc) in
-  match et_size G et1 with
+Definition hoist_result {A : Type} (r : ResultT A string) : CVM A :=
+  match r with
+  | resultC a => err_ret a
   | errC e => err_failm (dispatch_error (Runtime e))
-  | resultC et1_size => 
-    match et_size G et2 with
+  end.
+
+Definition split_evidence : CVM (Evidence * Evidence) :=
+  sc <- get_config ;;
+  ev <- get_ev ;;
+  match (get_et ev) with
+  | mt_evt => err_failm (dispatch_error (Runtime "Cannot split null evidence!"))
+  | nonce_evt _ => err_failm (dispatch_error (Runtime "Cannot split nonce evidence!"))
+  | asp_evt _ _ _ => err_failm (dispatch_error (Runtime "Cannot split ASP evidence!"))
+  | split_evt et1 et2 =>
+    let r := get_bits ev in
+    let G := (session_context sc) in
+    match et_size G et1 with
     | errC e => err_failm (dispatch_error (Runtime e))
-    | resultC et2_size =>
-      '(l_ev, rest) <- peel_n_rawev et1_size r ;;
-      '(r_ev, rest') <- peel_n_rawev et2_size rest ;;
-      match rest' with
-      | [] => err_ret (evc l_ev et1, evc r_ev et2)
-      | _ => err_failm (dispatch_error (Runtime "Evidence splitting failed!"))
+    | resultC et1_size => 
+      match et_size G et2 with
+      | errC e => err_failm (dispatch_error (Runtime e))
+      | resultC et2_size =>
+        '(l_ev, rest) <- (hoist_result (peel_n_rawev et1_size r)) ;;
+        '(r_ev, rest') <- (hoist_result (peel_n_rawev et2_size rest)) ;;
+        match rest' with
+        | [] => err_ret (evc l_ev et1, evc r_ev et2)
+        | _ => err_failm (dispatch_error (Runtime "Evidence splitting failed!"))
+        end
       end
     end
   end.
@@ -196,22 +205,61 @@ Fixpoint invoke_APPR (et : EvidenceT) : CVM unit :=
   match et with
   | mt_evt => put_ev mt_evc (* appraise nothing = mt *)
   | nonce_evt n' => 
-      ev' <- invoke_ASP ALL check_nonce_params ;;
-      put_ev ev'
+      ev' <- invoke_ASP check_nonce_params ;;
+      put_ev ev' 
+      (* ;;
+      err_failm (dispatch_error (Runtime "Nonce appraisal not implemented yet")) *)
   | asp_evt p' par et' =>
     sc <- get_config ;;
     let '(asp_paramsC asp_id args targ_plc targ) := par in
-    match (map_get (asp_comps (session_context sc)) asp_id) with
+    match (map_get asp_id (asp_comps (session_context sc))) with
     | None => err_failm (dispatch_error (Runtime err_str_asp_no_compat_appr_asp))
     | Some appr_asp_id =>
-      ev' <- invoke_ASP ALL (asp_paramsC appr_asp_id args targ_plc targ) ;;
-      put_ev ev'
+      let dual_par := asp_paramsC appr_asp_id args targ_plc targ in
+      match (map_get asp_id (asp_types (session_context sc))) with
+      | None => err_failm (dispatch_error (Runtime err_str_asp_no_type_sig))
+      | Some (ev_arrow fwd in_sig out_sig) =>
+        match fwd with
+        | REPLACE => 
+          (* Only do the dual ASP *)
+          ev' <- invoke_ASP dual_par ;;
+          put_ev ev'
+        | WRAP =>
+          (* first do the dual ASP to unwrap *)
+          ev' <- invoke_ASP dual_par ;;
+          put_ev ev' ;;
+          (* Then we do the recursive call *)
+          invoke_APPR et'
+
+        | EXTEND =>
+          let '(OutN n) := out_sig in
+          (* first we split, left for the appr of extended part, right for rest *)
+          split_ev ;;
+          top_ev <- get_ev ;;
+          '(_, r_ev) <- (hoist_result (peel_n_rawev n (get_bits top_ev))) ;;
+
+          (* on left we do the dual of EXTEND *)
+          invoke_ASP dual_par ;;
+          ev1 <- get_ev ;;
+
+          (* now on right, we work only on the remaining evidence *)
+          (* our new evidence is e' *)
+          put_ev (evc r_ev et') ;;
+          (* now we do the recursive call *)
+          invoke_APPR et' ;;
+          ev2 <- get_ev ;;
+          (* now join *)
+          join_seq ev1 ev2
+        end
+      end
+      (* ev' <- invoke_ASP (asp_paramsC appr_asp_id args targ_plc targ) ;;
+      put_ev ev' *)
     end
   | split_evt et1 et2 =>
     split_ev ;; (* register event that we are splitting evidence *)
     (* first we must get out the actual Evidence for et1 *)
     top_ev <- get_ev ;;
-    '(e1, e2) <- split_evidence (get_bits top_ev) et1 et2 ;;
+    '(e1, e2) <- split_evidence ;;
     (* put ev for e1 to act on *)
     put_ev e1 ;;
     invoke_APPR et1 ;;
@@ -223,12 +271,6 @@ Fixpoint invoke_APPR (et : EvidenceT) : CVM unit :=
     join_seq ev1' ev2' 
   end.
     
-Definition copyEv : CVM Evidence :=
-  p <- get_pl ;;
-  x <- inc_id ;;
-  add_trace [copy x p] ;;
-  get_ev.
-
 Definition nullEv : CVM Evidence :=
   p <- get_pl ;;
   x <- inc_id ;;
@@ -242,15 +284,14 @@ Definition clearEv : unit -> CVM Evidence :=
 Definition do_prim (a: ASP) : CVM Evidence :=
   match a with
   | NULL => nullEv
-  | CPY => copyEv
-  | ASPC sp params => invoke_ASP sp params
-  | SIG => invoke_ASP ALL sig_params
-  | HSH => invoke_ASP ALL hsh_params
+  | ASPC params => invoke_ASP params
+  | SIG => invoke_ASP sig_params
+  | HSH => invoke_ASP hsh_params
   | APPR => 
     e <- get_ev ;;
     invoke_APPR (get_et e) ;;
     get_ev
-  | ENC q => invoke_ASP ALL (enc_params q)
+  | ENC q => invoke_ASP (enc_params q)
   end.
 
 (* event_id_span functions were HERE *)
@@ -314,7 +355,7 @@ Definition do_remote (sc : Session_Config) (pTo: Plc) (e : Evidence) (t:Term)
   they should be tagging their stuff (basically who they are
   in the protocol) *)
   let new_att_sess := (mkAtt_Sess pTo plc_map pk_map G) in
-  match (map_get plc_map pTo) with 
+  match (map_get pTo plc_map) with 
   | Some uuid => 
       let remote_req := (mkPRReq new_att_sess my_plc e t) in
       let js_req := to_JSON remote_req in
@@ -406,13 +447,13 @@ Ltac cvm_monad_unfold :=
   check_cvm_policy,
   invoke_ASP,
   bundle_asp,
-  extd_bundle,
-  comp_bundle,
-  encr_bundle,
+  REPLACE_bundle,
+  WRAP_bundle,
+  EXTEND_bundle,
   do_asp,
   clearEv,
-  copyEv,
   nullEv,
+  hoist_result,
   inc_remote_event_ids,
   inc_par_event_ids,
   wait_par_thread,

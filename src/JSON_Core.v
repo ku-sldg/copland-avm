@@ -324,6 +324,45 @@ intuition; simpl in *;
 unfold FWD_to_JSON, FWD_from_JSON; ff.
 Defined.
 
+Definition EvSig_to_JSON `{Jsonifiable FWD} (t : EvSig) : JSON := 
+  let '(ev_arrow fwd in_sig out_sig) := t in
+  JSON_Object [
+    ("FWD", to_JSON fwd);
+    ("InSig", 
+      JSON_String (match in_sig with
+      | InAll => "ALL"
+      | InNone => "NONE"
+      end));
+    ("OutSig", 
+      match out_sig with
+      | OutN n => to_JSON n
+      end)
+  ].
+
+Definition EvSig_from_JSON `{Jsonifiable FWD} (js : JSON) : ResultT EvSig string :=
+  fwd_js <- JSON_get_Object "FWD" js ;;
+  in_sig_js <- JSON_get_string "InSig" js ;;
+  out_sig_js <- JSON_get_Object "OutSig" js ;;
+
+  fwd <- from_JSON fwd_js ;;
+  in_sig <- 
+    match in_sig_js with
+    | "ALL" => resultC InAll
+    | "NONE" => resultC InNone
+    | _ => errC "Invalid InSig JSON"
+    end ;;
+  out_n <- from_JSON out_sig_js ;;
+
+  resultC (ev_arrow fwd in_sig (OutN out_n)).
+
+Global Instance Jsonifiable_EvSig `{Jsonifiable FWD} : Jsonifiable EvSig.
+eapply Build_Jsonifiable with
+(to_JSON := EvSig_to_JSON)
+(from_JSON := EvSig_from_JSON);
+unfold EvSig_from_JSON, EvSig_to_JSON;
+destruct a; jsonifiable_hammer; subst; result_monad_unfold; 
+jsonifiable_hammer.
+Defined.
 
 Fixpoint EvidenceT_to_JSON `{Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP_PARAMS} (e : EvidenceT) : JSON := 
   match e with
