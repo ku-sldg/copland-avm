@@ -14,7 +14,7 @@
   (any CVM that executes to completion without an error will have a trace that accurately reflects the Event semantics that have been laid out)
 
 *)
-Require Import StructTactics Cvm_Impl Cvm_St ResultT Attestation_Session Cvm_Monad Term_Defs Evidence_Bundlers Cvm_Axioms.
+Require Import StructTactics Cvm_Impl Cvm_St ResultT Attestation_Session Cvm_Monad Term_Defs Cvm_Axioms.
 Require Import Maps.
 Require Import Term.
 
@@ -189,7 +189,7 @@ Proof.
       eapply IH in H1; [ | | | | eapply H2]; clear H2 IH; simpl in *; eauto;
       destruct_conjs; repeat find_injection; eauto; try congruence
     end);
-    repeat find_rewrite; eauto.
+    repeat find_rewrite; eauto; ff.
 Qed.
 
 Theorem invoke_APPR_deterministic_Evidence : forall et st1 st2 r1 r2 st1' st2',
@@ -405,8 +405,8 @@ Proof.
 Qed.
 
 Inductive et_same_asps : EvidenceT -> EvidenceT -> Prop :=
-| et_same_asps_refl : forall e, et_same_asps e e
-| et_same_asps_symm : forall e1 e2, et_same_asps e1 e2 -> et_same_asps e2 e1
+(* | et_same_asps_refl : forall e, et_same_asps e e *)
+(* | et_same_asps_symm : forall e1 e2, et_same_asps e1 e2 -> et_same_asps e2 e1 *)
 | et_same_asps_mt : et_same_asps mt_evt mt_evt
 | et_same_asps_nonce : forall n1 n2, et_same_asps (nonce_evt n1) (nonce_evt n2)
 | et_same_asps_asp : forall p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 e1 e2 asp_id,
@@ -429,6 +429,26 @@ Proof.
 Qed.
 Local Hint Resolve et_same_asps_impl_same_size : et_same_asps_db.
 
+Lemma et_same_asps_symm : forall e1 e2,
+  et_same_asps e1 e2 -> et_same_asps e2 e1.
+Proof.
+  intros.
+  prep_induction H.
+  induction H; ff; eauto with et_same_asps_db.
+Qed.
+Local Hint Resolve et_same_asps_symm : et_same_asps_db.
+
+(* Lemma et_same_asps_split_helper : forall e1 e2 e3 e4,
+  et_same_asps (split_evt e1 e2) (split_evt e3 e4) ->
+  (et_same_asps e1 e3 /\ et_same_asps e2 e4) \/
+  (et_same_asps e1 e4 /\ et_same_asps e2 e3).
+Proof.
+  intros.
+  prep_induction H.
+  induction H; ff; eauto with et_same_asps_db.
+Qed.
+Local Hint Resolve et_same_asps_split_helper : et_same_asps_db. *)
+
 Lemma et_same_asps_appr_procedure : forall G e1 e1' e2 e2' p1 p2 e1o e2o,
   et_same_asps e1 e2 ->
   et_same_asps e1o e2o ->
@@ -439,26 +459,12 @@ Proof.
   intros.
   generalizeEverythingElse H.
   induction H; simpl in *; intuition; repeat find_injection; eauto;
-  try (econstructor; fail).
-  - generalizeEverythingElse e;
-    induction e; intros; simpl in *; ff; try (econstructor; fail);
-    try (repeat eapply et_same_asps_asp; try econstructor; eauto using et_same_asps);
-    result_monad_unfold; ff; try (eapply et_same_asps_symm; ff; fail);
-    repeat match goal with
-    | H1 : appr_procedure' _ _ ?e1 _ = resultC ?e1',
-      H2 : appr_procedure' _ _ ?e2 _ = resultC ?e2',
-      IH : context[appr_procedure' _ _ ?e1 _ = _ -> _] |- _ =>
-      eapply IH in H1; try eapply H2; 
-      clear H2; eauto using et_same_asps
-    end.
-  - eauto using et_same_asps.
-  - eauto using et_same_asps.
-  - ff; eauto using et_same_asps.
-    result_monad_unfold; ff; eauto using et_same_asps.
-  - result_monad_unfold; ff.
-    eapply IHet_same_asps1 in Heqr1; ff.
-    eapply IHet_same_asps2 in Heqr2; ff.
-    eauto using et_same_asps.
+  try (econstructor; ff; fail).
+  - ff; eauto with et_same_asps_db; 
+    result_monad_unfold; ff;
+    find_eapply_lem_hyp IHet_same_asps; eauto with et_same_asps_db.
+  - ff; result_monad_unfold; ff;
+    invc H1; econstructor; eauto with et_same_asps_db.
 Qed.
 Local Hint Resolve et_same_asps_appr_procedure : et_same_asps_db.
 
@@ -472,24 +478,26 @@ Proof.
   - destruct a; simpl in *; ff; eauto using et_same_asps.
     eapply et_same_asps_appr_procedure; eauto.
   - result_monad_unfold; ffa.
-  - result_monad_unfold; ffa;
-    destruct s, s, s0; simpl in *;
+  - result_monad_unfold; ff.
     repeat match goal with
     | H1 : eval _ ?p1 ?e1 ?t = resultC ?e1',
       H2 : eval _ ?p2 ?e2 ?t = resultC ?e2',
       IH : context[eval _ _ _ ?t = _ -> _] |- _ =>
-      eapply IH in H1; try eapply H2; 
-      clear H2; eauto using et_same_asps
-    end.
-  - result_monad_unfold; ffa;
-    destruct s, s, s0; simpl in *;
+      eapply IH in H2; try eapply H1; 
+      clear H1
+    end; try (econstructor; eauto; fail);
+    destruct s, s, s0; simpl in *; eauto;
+    econstructor.
+  - result_monad_unfold; ff;
     repeat match goal with
     | H1 : eval _ ?p1 ?e1 ?t = resultC ?e1',
       H2 : eval _ ?p2 ?e2 ?t = resultC ?e2',
       IH : context[eval _ _ _ ?t = _ -> _] |- _ =>
-      eapply IH in H1; try eapply H2; 
-      clear H2; eauto using et_same_asps
-    end.
+      eapply IH in H2; try eapply H1; 
+      clear H1
+    end; try (econstructor; eauto; fail);
+    destruct s, s, s0; simpl in *; eauto;
+    econstructor.
 Qed.
 Local Hint Resolve et_same_asps_eval_same_asps : et_same_asps_db.
 
@@ -530,6 +538,13 @@ Proof.
   end.
 Qed.
 
+Lemma et_same_asps_refl : forall e,
+  et_same_asps e e.
+Proof.
+  induction e; try econstructor; eauto;
+  destruct a; econstructor; eauto.
+Qed.
+
 Lemma events_size_eval_res_irrel : forall G t1 t p1 p2 et e1 e2 n1 n2,
   eval G p1 et t1 = resultC e1 ->
   eval G p2 et t1 = resultC e2 ->
@@ -539,7 +554,7 @@ Lemma events_size_eval_res_irrel : forall G t1 t p1 p2 et e1 e2 n1 n2,
 Proof.
   intros.
   assert (et_same_asps e1 e2) by (
-    assert (et_same_asps et et) by econstructor;
+    assert (et_same_asps et et) by (eapply et_same_asps_refl);
     eauto with et_same_asps_db
   );
   clear H H0 et.
@@ -601,22 +616,23 @@ Proof.
   destruct st; simpl in *; destruct st_ev; 
   simpl in *; ff.
   generalizeEverythingElse et.
-  induction et; ff.
-  - cvm_monad_unfold; result_monad_unfold; ff.  
-  - cvm_monad_unfold; result_monad_unfold; ff.  
-  - cvm_monad_unfold; result_monad_unfold; ff.  
-  - cvm_monad_unfold; result_monad_unfold; ff. 
-    * admit.
-    * admit. 
-    * admit. 
-  - cvm_monad_unfold; result_monad_unfold; ff. 
-    unfold split_evidence in *; cvm_monad_unfold; ff;
-    repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff.
-  - admit.
-  - cvm_monad_unfold; result_monad_unfold; ff.  
-    unfold split_evidence in *; cvm_monad_unfold; ff;
-    repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff.
+  induction et; ff;
+  cvm_monad_unfold; result_monad_unfold; ff.
+  - eapply IHet in Heqp2; ff.
+  - eapply IHet in Heqp2; ff.
+  - eapply IHet in Heqp2; ff.
+  - unfold split_evidence in *; cvm_monad_unfold; ff;
+    repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff;
+    repeat match goal with
+    | H : invoke_APPR ?e _ = _,
+      H1 : appr_procedure' _ _ ?e _ = _,
+      IH : context[invoke_APPR ?e _ = _ -> _] |- _ =>
+      eapply sc_immut_invoke_APPR in H as ?;
+      eapply IH in H; [ | eapply H1 ]; ff
+    end; ff. 
+Qed.
 
+(* 
 Theorem invoke_appr_evidence : forall st st' u et e,
   invoke_APPR et st = (resultC u, st') ->
   appr_procedure' (session_context (st_config st)) 
@@ -675,7 +691,6 @@ Qed.
 *)
 
 Theorem cvm_evidence_type : forall t st u st' e,
-  (* well_formed_context (session_context (st_config st)) -> *)
   build_cvm t st = (resultC u, st') ->
   eval (session_context (st_config st)) (session_plc (st_config st)) 
     (get_et (st_ev st)) t = resultC e ->
@@ -686,7 +701,7 @@ Proof.
     repeat find_injection; simpl in *; try congruence;
     unfold well_formed_context in *; simpl in *; destruct_conjs;
     ff; repeat find_rewrite; simpl in *; eauto.
-    admit.
+    eapply invoke_appr_evidence in Heqp0; ff.
   - cvm_monad_unfold; ffa;
     find_eapply_lem_hyp do_remote_res_axiom; ff;
     find_eapply_lem_hyp IHt; ff.
@@ -704,8 +719,7 @@ Proof.
   - ffa using (try cvm_monad_unfold; try result_monad_unfold);
     destruct s, s, s0; simpl in *;
     eapply IHt1 in Heqp as ?; ff;
-    eapply sc_immut_better in Heqp; simpl in *;
-    unfold Evidence_Bundlers.ss_cons; simpl in *; ff;
+    eapply sc_immut_better in Heqp; simpl in *; ff;
     eapply IHt2 in Heqp0 as ?; simpl in *;
     eapply sc_immut_better in Heqp0; simpl in *; try (find_higher_order_rewrite; ff; fail);
     ff; find_higher_order_rewrite; eauto.
@@ -713,7 +727,6 @@ Proof.
     destruct s, s, s0; simpl in *;
     eapply IHt1 in Heqp as ?; ff;
     eapply sc_immut_better in Heqp; simpl in *; ff;
-    unfold Evidence_Bundlers.ss_cons; simpl in *; ff;
     find_eapply_lem_hyp parallel_vm_thread_res_axiom; eauto;
     break_exists; destruct_conjs; find_eapply_lem_hyp IHt2; ff;
     repeat find_rewrite; try unfold mt_evc; simpl in *; ff.
@@ -771,17 +784,6 @@ Proof.
     repeat find_rewrite; repeat find_injection; try lia.
 Qed.
 
-Lemma wf_Evidence_ss_cons : forall G e1 e2,
-  wf_Evidence G e1 ->
-  wf_Evidence G e2 ->
-  wf_Evidence G (ss_cons e1 e2).
-Proof.
-  intros; invc H; invc H0;
-  econstructor; simpl in *;
-  result_monad_unfold;
-  ff; rewrite app_length; eauto.
-Qed.
-
 Lemma wf_Evidence_split_l : forall G e s,
   wf_Evidence G e ->
   wf_Evidence G (splitEv_l s e).
@@ -804,6 +806,16 @@ Proof.
 Qed.
 Local Hint Resolve wf_Evidence_split_r : wf_Evidence.
 
+Lemma wf_Evidence_split : forall G r1 r2 et1 et2,
+  wf_Evidence G (evc r1 et1) ->
+  wf_Evidence G (evc r2 et2) ->
+  wf_Evidence G (evc (r1 ++ r2) (split_evt et1 et2)).
+Proof.
+  intros; invc H; invc H0; econstructor; ff;
+  rewrite app_length; ff.
+Qed.
+Local Hint Resolve wf_Evidence_split : wf_Evidence.
+
 Lemma wf_Evidence_impl_et_size_res : forall G e,
   wf_Evidence G e ->
   exists n, et_size G (get_et e) = resultC n.
@@ -821,18 +833,20 @@ Proof.
 Qed.
 
 Lemma split_evidence_res_spec : forall r et1 et2 st st' e1 e2,
-  split_evidence r et1 et2 st = (resultC (e1, e2), st') ->
+  evc r (split_evt et1 et2) = st_ev st ->
+  split_evidence st = (resultC (e1, e2), st') ->
   exists r1 r2, (e1,e2) = (evc r1 et1, evc r2 et2).
 Proof.
   intros.
-  unfold split_evidence in *.
+  destruct st; simpl in *; ff.
+  unfold split_evidence in *;
   cvm_monad_unfold; ff.
 Qed.
 
 Lemma wf_Evidence_split_evidence : forall r et1 et2 st st' G r1 r2,
   wf_Evidence G (evc r (split_evt et1 et2)) ->
   session_context (st_config st) = G ->
-  split_evidence r et1 et2 st = (resultC (r1, r2), st') ->
+  split_evidence st = (resultC (r1, r2), st') ->
   wf_Evidence G r1 /\ wf_Evidence G r2.
 Proof.
   intros; unfold split_evidence in *;
@@ -844,15 +858,172 @@ Proof.
   intuition; ff.
 Qed.
 
-Lemma wf_Evidence_invoke_APPR : forall st u st',
-  wf_Evidence (session_context (st_config st)) (st_ev st) ->
-  invoke_APPR (get_et (st_ev st)) st = (resultC u, st') ->
+Fixpoint meta_machinery_pad_n (n : nat) (e : RawEv) : RawEv :=
+  match n with
+  | 0 => e
+  | S n' => passed_bs :: meta_machinery_pad_n n' e
+  end.
+
+Lemma meta_machinery_pad_n_size : forall n e,
+  length (meta_machinery_pad_n n e) = n + length e.
+Proof.
+  induction n; ff.
+Qed.
+
+Lemma wf_Evidence_exists : forall G e n,
+  et_size G e = resultC n ->
+  exists r, wf_Evidence G (evc r e).
+Proof.
+  induction e; ff.
+  - eexists; eapply wf_Evidence_mt_evc. 
+  - exists [passed_bs]; econstructor; eauto.
+  - result_monad_unfold; ff.
+    pose proof (IHe _ eq_refl); ff.
+    invc H.
+    destruct e0, e1, f.
+    * exists (meta_machinery_pad_n n nil); econstructor; 
+      simpl in *; ff;
+      rewrite meta_machinery_pad_n_size; ff.
+    * exists (meta_machinery_pad_n n nil); econstructor; 
+      simpl in *; ff;
+      rewrite meta_machinery_pad_n_size; ff.
+    * exists (meta_machinery_pad_n n x); econstructor; 
+      simpl in *; ff;
+      rewrite meta_machinery_pad_n_size; ff.
+  - result_monad_unfold; ff.
+    pose proof (IHe1 _ eq_refl);
+    pose proof (IHe2 _ eq_refl); ff.
+    econstructor; eapply wf_Evidence_split; ff.
+Qed.
+
+Lemma wf_Evidence_asp_unfold : forall G r p ps e,
+  wf_Evidence G (evc r (asp_evt p ps e)) ->
+  exists r', wf_Evidence G (evc r' e).
+Proof.
+  intros.
+  prep_induction H.
+  induction H; ff; result_monad_unfold; ff.
+  eapply wf_Evidence_exists; ff.
+Qed.
+
+Lemma wf_Evidence_split_unfold : forall G r e1 e2,
+  wf_Evidence G (evc r (split_evt e1 e2)) ->
+  (exists r1, wf_Evidence G (evc r1 e1)) /\ (exists r2, wf_Evidence G (evc r2 e2)).
+Proof.
+  intros.
+  prep_induction H;
+  induction H; ff; result_monad_unfold; ff;
+  break_and_goal; eapply wf_Evidence_exists; ff.
+Qed.
+
+Lemma wf_Evidence_invoke_APPR : forall e st u st',
+  wf_Evidence (session_context (st_config st)) e -> 
+  wf_Evidence (session_context (st_config st)) (st_ev st) -> 
+  (* (st_ev st) -> *)
+  invoke_APPR (get_et e) st = (resultC u, st') ->
   wf_Evidence (session_context (st_config st)) (st_ev st').
 Proof.
+  destruct e.
+  generalizeEverythingElse e.
+  induction e; simpl in *; intuition; cvm_monad_unfold.
+  - repeat find_injection; eapply wf_Evidence_mt_evc. 
+  - ff;
+    eapply wf_Evidence_impl_et_size_res in H as ?;
+    eapply wf_Evidence_impl_et_size_res in H0 as ?;
+    invc H; invc H0; ff;
+    rewrite PeanoNat.Nat.eqb_eq in *;
+    econstructor; ff;
+    result_monad_unfold; ff;
+    rewrite app_length; ff.
+  - ff; rewrite PeanoNat.Nat.eqb_eq in *; ff;
+    repeat rewrite app_length in *; ff;
+    try (econstructor; invc H; invc H0; 
+      repeat rewrite app_length in *; ff; fail);
+    try (eapply wf_Evidence_asp_unfold in H as ?;
+      ff; eapply IHe in H1; simpl in *; eauto;
+      try (econstructor; invc H; invc H0; 
+      repeat rewrite app_length in *; ff; fail); fail).
+    all: admit.
+
+  - ff.
+    find_copy_eapply_lem_hyp wf_Evidence_split_evidence; ff.
+    unfold split_evidence in *; cvm_monad_unfold; ff.
+    repeat find_eapply_lem_hyp peel_n_rawev_result_spec;
+    ff; rewrite app_nil_r in *; ff.
+    eapply wf_Evidence_split in H; ff.
+    eapply split_evidence_res_spec in Heqp; simpl in *.
+    find_copy_eapply_lem_hyp split_evidence_res_spec; eauto.
+    find_copy_eapply_lem_hyp split_evidence_state_immut; ff;
+    find_eapply_lem_hyp wf_Evidence_split_evidence; ff.
+    * 
+      eapply IHe in Heqp2; simpl in *.
+
+      eapply wf_Evidence_asp_unfold in H as ?; ff.
+      eapply IHe in Heqp2; simpl in *; eauto;
+      try (econstructor; invc H; invc H0; 
+      repeat rewrite app_length in *; ff; fail).
+    * eapply wf_Evidence_asp_unfold in H as ?;
+      ff; eapply IHe in H1; simpl in *; eauto;
+      try (econstructor; invc H; invc H0; 
+      repeat rewrite app_length in *; ff; fail).
+      ff.
+      break_exists; ff.
+      find_eapply_lem_hyp wf_Evidence_asp_unfold; ff.
+      eapply H.
+      eapply wf_Evidence_asp_unfold.
+
+
   destruct st, st_ev; simpl in *;
   generalizeEverythingElse e;
   induction e; simpl in *; intuition;
-  cvm_monad_unfold;
+  cvm_monad_unfold.
+  - find_injection; eapply wf_Evidence_mt_evc. 
+  - ff; invc H; simpl in *;
+    rewrite PeanoNat.Nat.eqb_eq in *;
+    econstructor; ff;
+    rewrite app_length; ff.
+  - ff; rewrite PeanoNat.Nat.eqb_eq in *; ff;
+    repeat rewrite app_length in *; ff;
+    try (econstructor; invc H; repeat rewrite app_length in *; ff; fail).
+    * admit.
+    *  
+    all: admit.
+  - ff. 
+    find_copy_eapply_lem_hyp split_evidence_state_immut; ff;
+    find_copy_eapply_lem_hyp split_evidence_res_spec; ff.
+    eapply wf_Evidence_split_evidence in H; try eapply Heqp;
+    ff.
+    eapply sc_immut_invoke_APPR in Heqp0 as ?;
+    eapply sc_immut_invoke_APPR in Heqp1 as ?;
+    simpl in *; ff.
+    eapply IHe1 in Heqp0; eauto.
+    eapply IHe2 in Heqp1; eauto;
+    ff;
+    invc Heqp0; invc Heqp1; econstructor;
+    repeat rewrite app_length; ff. 
+    find_copy_eapply_lem_hyp sc_immut_invoke_APPR;
+    find_eapply_lem_hyp IHe1; ff;
+    find_copy_eapply_lem_hyp sc_immut_invoke_APPR;
+    find_eapply_lem_hyp IHe2; ff.
+    find_eapply_lem_hyp IHe1; ff.
+    find_eapply_lem_hyp wf_Evidence_split_evidence; ff.
+    eapply wf_Evidence_split_evidence in H
+    * eapply IHe in H.
+    try (econstructor; ff; result_monad_unfold; ff;
+      find_copy_eapply_lem_hyp wf_Evidence_impl_et_size_res; ff;
+      rewrite PeanoNat.Nat.eqb_eq in *; ff; fail);
+    try (invc H; 
+      rewrite PeanoNat.Nat.eqb_eq in *;
+      econstructor; try rewrite app_length; ff).
+      ff.
+      rewrite 
+    ff; result_monad_unfold; ff.
+    econstructor; ff.
+    *  
+  try eapply wf_Evidence_mt_evc.
+  - econstructor; ff. 
+
+
   repeat find_injection; simpl in *;
   try eapply wf_Evidence_mt_evc;
   ff;
@@ -860,7 +1031,7 @@ Proof.
   | H : Nat.eqb _ _ = true |- _ =>
     rewrite PeanoNat.Nat.eqb_eq in H
   end;
-  try (econstructor; simpl in *; ff; fail);
+  try (econstructor; simpl in *; ff; fail).
   try (invc H;
     econstructor; ff;
     repeat find_rewrite;

@@ -4,14 +4,14 @@
 
   Author:  Adam Petz, ampetz@ku.edu
 *)
+Require Import String List.
 
-Require Import ResultT Term Evidence_Bundlers Maps Session_Config_Compiler.
+Require Import ResultT Term Maps Session_Config_Compiler.
 
 Require Import Coq.Program.Tactics.
 
-Require Import Manifest_Admits ErrorStringConstants Attestation_Session.
+Require Import Manifest_Admits ErrorStringConstants Attestation_Session EqClass.
 
-Require Import String List.
 Import ListNotations.
 
 Require Export Cvm_St ErrorStMonad_Coq IO_Stubs Interface JSON_Core.
@@ -100,36 +100,40 @@ Definition tag_ASP (params :ASP_PARAMS) (mpl:Plc) (e:Evidence) : CVM Event_ID :=
 Definition join_seq (e1:Evidence) (e2:Evidence): CVM unit :=
   p <- get_pl ;;
   n <- inc_id ;;
-  put_ev (ss_cons e1 e2) ;;
+  let '(evc bits1 et1) := e1 in
+  let '(evc bits2 et2) := e2 in
+  put_ev (evc (bits1 ++ bits2) (split_evt et1 et2)) ;;
   add_trace [join n p].
 
 (* Helper function that builds a new internal EvidenceT bundle based on 
    the EvidenceT extension parameter of an ASP term. *)
-Definition bundle_asp (p:Plc) (rwev : RawEv) (e:Evidence) 
-    (ps:ASP_PARAMS) : CVM Evidence :=
+Definition bundle_asp (p:Plc) (rwev : RawEv) (ps:ASP_PARAMS) : CVM Evidence :=
   sc <- get_config ;;
+  e <- get_ev ;;
   let '(asp_paramsC asp_id args targ_plc targ) := ps in
   match (map_get asp_id (asp_types (session_context sc))) with
   | None => err_failm (dispatch_error (Runtime err_str_asp_no_type_sig))
-  | Some (ev_arrow fwd in_sig out_sig) =>
-    match fwd with
-    | REPLACE => 
-      match REPLACE_bundle rwev e p ps with
-      | resultC e' => err_ret e'
-      | errC e => err_failm (dispatch_error (Runtime e))
+  | Some (ev_arrow fwd in_sig (OutN n)) =>
+    if (eqb (length rwev) n)
+    then 
+      match fwd with
+(* The semantics for a "REPLACE" asp are it CONSUMES all incoming evidence,
+then returns a new collection of evidence that will REPLACE the CVMs current 
+Evidence *)
+      | REPLACE => err_ret (evc rwev (asp_evt p ps (get_et e)))
+(* The semantics for a "WRAP" asp are the exact same as "REPLACE" for the 
+attestation and bundling side of the CVM. Wraps main distinction lies in the
+fact that its is a GUARANTEE, that the dual appraisal ASP is actually an
+inverse, thus allowing WRAPPED evidence to be recovered via appraisal *)
+      | WRAP => err_ret (evc rwev (asp_evt p ps (get_et e)))
+(* The semantics for an "EXTEND" asp are it APPENDS all incoming evidence to the
+current CVM evidence bundle *)
+      | EXTEND =>
+        match e with
+        | evc bits et => err_ret (evc (rwev ++ bits) (asp_evt p ps et))
+        end
       end
-    | WRAP =>
-      match WRAP_bundle rwev e p ps with
-      | resultC e' => err_ret e'
-      | errC e => err_failm (dispatch_error (Runtime e))
-      end
-    | EXTEND =>
-      let '(OutN n) := out_sig in
-      match EXTEND_bundle rwev e p n ps with
-      | resultC e' => err_ret e'
-      | errC e => err_failm (dispatch_error (Runtime e))
-      end
-    end
+    else err_failm (dispatch_error (Runtime errStr_raw_EvidenceT_too_long))
   end.
 
 (** * Stub for invoking external ASP procedures.  
@@ -149,7 +153,7 @@ Definition invoke_ASP (params:ASP_PARAMS) : CVM Evidence :=
   p <- get_pl ;;
   x <- tag_ASP params p e ;;
   rawev <- do_asp params (get_bits e) x ;;
-  outev <- bundle_asp p rawev e params ;;
+  outev <- bundle_asp p rawev params ;;
   err_ret outev.
 
 Fixpoint peel_n_rawev (n : nat) (ls : RawEv) : ResultT (RawEv * RawEv) string :=
@@ -239,8 +243,7 @@ Fixpoint invoke_APPR (et : EvidenceT) : CVM unit :=
           '(_, r_ev) <- (hoist_result (peel_n_rawev n (get_bits top_ev))) ;;
 
           (* on left we do the dual of EXTEND *)
-          invoke_ASP dual_par ;;
-          ev1 <- get_ev ;;
+          ev1 <- invoke_ASP dual_par ;;
 
           (* now on right, we work only on the remaining evidence *)
           (* our new evidence is e' *)
@@ -447,9 +450,6 @@ Ltac cvm_monad_unfold :=
   check_cvm_policy,
   invoke_ASP,
   bundle_asp,
-  REPLACE_bundle,
-  WRAP_bundle,
-  EXTEND_bundle,
   do_asp,
   clearEv,
   nullEv,

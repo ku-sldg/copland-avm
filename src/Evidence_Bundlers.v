@@ -13,25 +13,31 @@ Import ListNotations.
 (* The semantics for a "REPLACE" asp are it CONSUMES all incoming evidence,
 then returns a new collection of evidence that will REPLACE the CVMs current 
 Evidence *)
-Definition REPLACE_bundle (bits: RawEv) (e:Evidence) (p:Plc) 
+Definition REPLACE_bundle (bits: RawEv) (e:Evidence) (p:Plc) (n : nat)
     (ps:ASP_PARAMS): ResultT Evidence string :=
   match e with
-  | evc _ et => resultC (evc bits (asp_evt p ps et))
+  | evc _ et => 
+    if (eqb (List.length bits) n)
+    then resultC (evc bits (asp_evt p ps et))
+    else errC errStr_raw_EvidenceT_too_long
   end.
 
 (* The semantics for a "WRAP" asp are the exact same as "REPLACE" for the 
 attestation and bundling side of the CVM. Wraps main distinction lies in the
 fact that its is a GUARANTEE, that the dual appraisal ASP is actually an
 inverse, thus allowing WRAPPED evidence to be recovered via appraisal *)
-Definition WRAP_bundle (bits: RawEv) (e:Evidence) (p:Plc) 
+Definition WRAP_bundle (bits: RawEv) (e:Evidence) (p:Plc) (n : nat)
     (ps:ASP_PARAMS): ResultT Evidence string :=
   match e with
-  | evc _ et => resultC (evc bits (asp_evt p ps et))
+  | evc _ et => 
+    if (eqb (List.length bits) n)
+    then resultC (evc bits (asp_evt p ps et))
+    else errC errStr_raw_EvidenceT_too_long
   end.
 
 (* The semantics for an "EXTEND" asp are it APPENDS all incoming evidence to the
 current CVM evidence bundle *)
-Definition EXTEND_bundle (sig: RawEv) (e:Evidence) (p:Plc) (n : nat) 
+Definition EXTEND_bundle (bits: RawEv) (e:Evidence) (p:Plc) (n : nat) 
     (ps:ASP_PARAMS): ResultT Evidence string :=
   match e with
   | evc bits et => 
@@ -65,8 +71,3 @@ Definition encr_bundle (enc: RawEv) (e:Evidence) (p:Plc) (ps:ASP_PARAMS): Result
     end
   end. *)
 
-(** Appends raw EvidenceT and EvidenceT Types for the pair of input bundles *)
-Definition ss_cons (e1:Evidence) (e2:Evidence): Evidence :=
-  match (e1, e2) with
-  | (evc bits1 et1, evc bits2 et2) => evc (bits1 ++ bits2) (split_evt et1 et2)
-  end.

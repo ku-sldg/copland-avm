@@ -116,15 +116,19 @@ Fixpoint appr_procedure' (G : GlobalContext) (p : Plc) (e : EvidenceT)
         | EXTEND => 
           (* appraisal of an extend involves doing the appraisal of the extension
           and then separately the appraisal of the underlying *)
-          ev_under <- appr_procedure' G p e' ev_out ;;
+          ev_under <- appr_procedure' G p e' e' ;;
           resultC (split_evt (asp_evt p dual_par ev_out) ev_under)
         end
       end
     end
   | split_evt e1 e2 => 
-      e1' <- appr_procedure' G p e1 ev_out ;;
-      e2' <- appr_procedure' G p e2 ev_out ;;
+    match ev_out with
+    | split_evt e1' e2' =>
+      e1' <- appr_procedure' G p e1 e1' ;;
+      e2' <- appr_procedure' G p e2 e2' ;;
       resultC (split_evt e1' e2')
+    | _ => errC "Error in appraisal procedure computation, type of evidence passed into a split appraisal procedure is not a split evidence type"%string
+    end
   end.
 
 Definition appr_procedure (G : GlobalContext) (p : Plc) (e : EvidenceT) 
@@ -169,6 +173,7 @@ Fixpoint asp_comp_map_supports_ev (G : GlobalContext) (e : EvidenceT) :=
       asp_comp_map_supports_ev G e2
   end.
 
+(* 
 Theorem asp_comp_map_supports_ev_iff_appr_procedure: 
   forall e eo p G,
   asp_comp_map_supports_ev G e <->
@@ -180,13 +185,23 @@ Proof.
   try erewrite IHe1 in *;
   try erewrite IHe2 in *;
   break_exists; repeat find_rewrite; try congruence;
-  try (eexists; repeat find_rewrite; eauto; fail).
+  try (eexists; repeat find_rewrite; eauto; fail);
+  try (find_higher_order_rewrite; ff; fail).
   * eapply IHe; ff.
   * erewrite IHe in H0; ff. 
   * erewrite IHe; ff.
   * erewrite IHe; ff. 
+  * 
+    match goal with
+    | H: appr_procedure ?g ?p ?e ?e0 = 
+      IH : context[exists _ : _, appr_procedure _ _ ?e _ = _] |- _ => 
+      assert (exists )
+    end.
+  * admit. 
+  * admit. 
   Unshelve. all: eauto.
 Qed.
+*)
 
 Fixpoint eval (G : GlobalContext) (p : Plc) (e : EvidenceT) (t : Term) 
     : ResultT EvidenceT string :=
