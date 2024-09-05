@@ -30,6 +30,7 @@ $(PROJ):
 	$(MAKE) -f $(COQMK) $@
 
 clean:	$(COQMK)
+	rm *.vo*
 	$(MAKE) -f $(COQMK) clean
 	rm $(COQMK) $(COQMK).conf
 

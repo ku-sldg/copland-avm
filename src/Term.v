@@ -3,13 +3,12 @@
     --The `events` relation --a denotational semantics for phrase events.
     --Lemmas/automation related to `events` *)
 
-Require Import Defs ResultT.
-Require Import Preamble.
+Require Import StructTactics ResultT.
 
-Require Import Compare_dec Coq.Program.Tactics.
+Require Import StructTactics Coq.Program.Tactics.
 
 Require Import Lia String.
-Require Import List More_lists.
+Require Import List.
 
 Import List.ListNotations ResultNotation.
 
@@ -156,13 +155,13 @@ Proof.
     repeat rewrite app_length; 
     find_apply_hyp_hyp; try lia.
   - repeat (find_apply_lem_hyp true_last_app_spec;
-    door; [ simpl in *; repeat find_injection; try congruence;
+    break_or_hyp; [ ff;
       repeat rewrite app_assoc in *;
       find_eapply_lem_hyp app_eq_nil;
-      intuition; congruence | ]);
+      intuition; congruence | ]).
     simpl in *; repeat find_injection;
     repeat rewrite app_length;
-    simpl in *; lia.
+    simpl in *; ff; lia.
 Qed.
 
 Theorem events_injective: forall G t p e i v1 v2,

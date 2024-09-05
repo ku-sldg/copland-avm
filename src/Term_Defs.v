@@ -15,7 +15,7 @@ This proof script is free software: you can redistribute it and/or
 modify it under the terms of the BSD License as published by the
 University of California.  See license.txt for details. *)
 
-Require Import Maps EqClass List ID_Type Defs ErrorStringConstants Lia More_lists.
+Require Import Maps EqClass List ID_Type StructTactics ErrorStringConstants Lia.
 Import ListNotations ResultNotation.
 
 Require Export Params_Admits.
@@ -385,6 +385,40 @@ Proof.
   try eapply asp_appr_events_size_works; eauto;
   simpl in *; intuition; destruct e; simpl in *;
   repeat find_injection; ff; result_monad_unfold; ff.
+Qed.
+
+Fixpoint true_last {A : Type} (l : list A) : option A :=
+  match l with
+  | nil => None
+  | h' :: t' => 
+    match true_last t' with
+    | None => Some h'
+    | Some x => Some x
+    end
+  end.
+
+Lemma true_last_none_iff_nil : forall A (l : list A),
+  true_last l = None <-> l = nil.
+Proof.
+  induction l; ff.
+Qed.
+
+Lemma true_last_app : forall A (l1 l2 : list A),
+  l2 <> nil ->
+  true_last (l1 ++ l2) = true_last l2.
+Proof.
+  induction l1; ff;
+  find_higher_order_rewrite; ff;
+  find_eapply_lem_hyp true_last_none_iff_nil; ff.
+Qed.
+
+Lemma true_last_app_spec : forall A (l1 l2 : list A) x,
+  true_last (l1 ++ l2) = Some x ->
+  (true_last l1 = Some x /\ l2 = nil) \/ true_last l2 = Some x.
+Proof.
+  induction l1; ff;
+  find_eapply_lem_hyp true_last_none_iff_nil; ff;
+  find_eapply_lem_hyp app_eq_nil; ff.
 Qed.
 
 Lemma appr_events'_deterministic_index : forall G p e ev_out i evs,
