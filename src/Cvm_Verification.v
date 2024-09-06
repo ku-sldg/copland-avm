@@ -44,18 +44,18 @@ Proof.
 Qed.
 *)
 
-Lemma sc_immut_split_evidence : forall st res st',
-  split_evidence st = (res, st') ->
+Lemma sc_immut_split_evidence : forall st res st' et1 et2,
+  split_evidence et1 et2 st = (res, st') ->
   st_config st = st_config st'.
 Proof.
   unfold split_evidence in *; cvm_monad_unfold; ff.
 Qed.
 
-Lemma split_evidence_determinisitic : forall st1 st2 res1 res2 st1' st2',
+Lemma split_evidence_determinisitic : forall st1 st2 res1 res2 st1' st2' et1 et2,
   st_config st1 = st_config st2 ->
   st_ev st1 = st_ev st2 ->
-  split_evidence st1 = (res1, st1') ->
-  split_evidence st2 = (res2, st2') ->
+  split_evidence et1 et2 st1 = (res1, st1') ->
+  split_evidence et1 et2 st2 = (res2, st2') ->
   res1 = res2.
 Proof.
   intros.
@@ -77,8 +77,8 @@ Proof.
   induction n; ffa using cvm_monad_unfold; ffl.
 Qed.
 
-Lemma split_evidence_state_immut : forall res st st',
-  split_evidence st = (res, st') ->
+Lemma split_evidence_state_immut : forall res st st' et1 et2,
+  split_evidence et1 et2 st = (res, st') ->
   st = st'.
 Proof.
   unfold split_evidence in *; cvm_monad_unfold; ff.
@@ -169,8 +169,8 @@ Proof.
   - cvm_monad_unfold; repeat find_rewrite; repeat find_injection; eauto;
     repeat break_match; repeat find_injection;
     match goal with
-    | H1 : split_evidence _ = _,
-      H2 : split_evidence _ = _ |- _ =>
+    | H1 : split_evidence _ _ _ = _,
+      H2 : split_evidence _ _ _ = _ |- _ =>
       eapply split_evidence_state_immut in H1 as ?;
       eapply split_evidence_state_immut in H2 as ?;
       eapply split_evidence_determinisitic in H1;
@@ -178,8 +178,8 @@ Proof.
       destruct_conjs; repeat find_injection; eauto; try congruence
     end; 
     repeat (match goal with
-    | H1 : split_evidence _ _ _ _ = _,
-      H2 : split_evidence _ _ _ _ = _ |- _ =>
+    | H1 : split_evidence _ _ _ = _,
+      H2 : split_evidence _ _ _ = _ |- _ =>
       eapply split_evidence_determinisitic in H1;
       [ | | eapply H2]; clear H2; simpl in *; eauto;
       destruct_conjs; repeat find_injection; eauto; try congruence
@@ -201,8 +201,8 @@ Theorem invoke_APPR_deterministic_Evidence : forall et st1 st2 r1 r2 st1' st2',
 Proof.
   induction et; ff; cvm_monad_unfold; ff;
   repeat match goal with
-  | H1 : split_evidence _ = _,
-    H2 : split_evidence _ = _ |- _ =>
+  | H1 : split_evidence _ _ _ = _,
+    H2 : split_evidence _ _ _ = _ |- _ =>
     let H' := fresh in
     eapply split_evidence_determinisitic in H1 as H';
     try eapply H2; ff; 
@@ -243,10 +243,7 @@ Proof.
       clear IH H2; try (intuition; congruence)
   end; fail);
   find_eapply_lem_hyp invoke_APPR_deterministic; ff;
-  try congruence;
-  match goal with
-  | u : unit |- _ => destruct u
-  end; eauto.
+  try congruence; ff.
 Qed.
 
 Lemma appr_events'_errs_deterministic : forall G p e e' i1 e1,
@@ -387,7 +384,7 @@ Lemma invoke_APPR_spans : forall et u c i st,
 Proof.
   induction et; ffa using (try cvm_monad_unfold; try result_monad_unfold);
   repeat match goal with
-  | H : split_evidence _ = _ |- _ =>
+  | H : split_evidence _ _ _ = _ |- _ =>
     eapply split_evidence_state_immut in H as ?; ff;
     clear H
   | H : Nat.eqb _ _ = _ |- _ => 
@@ -607,11 +604,34 @@ Definition well_formed_context (G : GlobalContext) : Prop :=
   map_get enc_aspid (asp_types G) = Some (ev_arrow WRAP InAll (OutN 1)) /\
   map_get check_nonce_aspid (asp_types G) = Some (ev_arrow EXTEND InAll (OutN 1)).
 
-Theorem invoke_appr_evidence : forall st st' u et e,
-  invoke_APPR et st = (resultC u, st') ->
+Lemma eqb_ASP_PARAMS_eq : forall a1 a2,
+  eqb_ASP_PARAMS a1 a2 = true <-> a1 = a2.
+Proof.
+  induction a1; destruct a2; ff;
+  repeat rewrite Bool.andb_true_iff in *; ff;
+  repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
+  repeat rewrite String.eqb_eq in *; ff;
+  repeat rewrite EqClass.general_list_eqb_eq in *; ff.
+Qed.
+
+Lemma eqb_EvidenceT_eq : forall e1 e2,
+  eqb_EvidenceT e1 e2 = true <-> e1 = e2.
+Proof.
+  induction e1; destruct e2; ff;
+  repeat rewrite Bool.andb_true_iff in *; ff;
+  repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
+  repeat rewrite String.eqb_eq in *; ff;
+  try erewrite IHe1 in *; ff;
+  repeat rewrite eqb_ASP_PARAMS_eq in *; ff;
+  repeat rewrite IHe1_1 in *; ff;
+  repeat rewrite IHe1_2 in *; ff.
+Qed.
+
+Theorem invoke_appr_evidence : forall st st' e' et e,
+  invoke_APPR et st = (resultC e', st') ->
   appr_procedure' (session_context (st_config st)) 
     (session_plc (st_config st)) et (get_et (st_ev st)) = resultC e ->
-  get_et (st_ev st') = e.
+  get_et e' = e.
 Proof.
   destruct st; simpl in *; destruct st_ev; 
   simpl in *; ff.
@@ -622,7 +642,10 @@ Proof.
   - eapply IHet in Heqp2; ff.
   - eapply IHet in Heqp2; ff.
   - unfold split_evidence in *; cvm_monad_unfold; ff;
+    repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
     repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff;
+    repeat rewrite eqb_EvidenceT_eq in *; ff;
+    eapply sc_immut_invoke_APPR in Heqp0 as ?;
     repeat match goal with
     | H : invoke_APPR ?e _ = _,
       H1 : appr_procedure' _ _ ?e _ = _,
@@ -631,64 +654,6 @@ Proof.
       eapply IH in H; [ | eapply H1 ]; ff
     end; ff. 
 Qed.
-
-(* 
-Theorem invoke_appr_evidence : forall st st' u et e,
-  invoke_APPR et st = (resultC u, st') ->
-  appr_procedure' (session_context (st_config st)) 
-    (session_plc (st_config st)) et (get_et (st_ev st)) = resultC e ->
-  get_et (st_ev st') = e.
-Proof.
-  destruct st; simpl in *; destruct st_ev; simpl in *;
-  ff.
-  generalizeEverythingElse et.
-  induction et; ff; try (cvm_monad_unfold; result_monad_unfold; ff; fail).
-  - result_monad_unfold; ff. 
-    cvm_monad_unfold; ff; admit.
-  - cvm_monad_unfold; result_monad_unfold; ff.
-    unfold split_evidence in *; cvm_monad_unfold; ff;
-    repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff.
-    Search "split_evidence".
-    find_eapply_lem_hyp split_evidence_res_spec.
-    find_eapply_lem_hyp split_evidence_res_spec. 
-  - eapply peel_n_rawev_state_immut in Heqp0 as ?; ff.  
-    eapply peel_n_rawev_result_spec in Heqp0; ff.
-    unfold ss_cons; ff.
-    eapply IHet in Heqp2; ff.
-    ff.
-  - cvm_monad_unfold; ff.
-  - cvm_monad_unfold; ff.
-  - cvm_monad_unfold; ff. 
-  - cvm_monad_unfold; ff. 
-    * result_monad_unfold; ff.
-      eapply peel_n_rawev_state_immut in Heqp0 as ?; ff.
-      eapply peel_n_rawev_result_spec in Heqp0; ff.
-      unfold ss_cons; ff.
-      eapply IHet in Heqp2; ff.
-      find_eapply_lem_hyp peel_n_rawev_result_spec; ff.
-    * admit. 
-    *  
-
-Theorem invoke_appr_evidence : forall st st' u e,
-  (* well_formed_context (session_context (st_config st)) -> *)
-  invoke_APPR (get_et (st_ev st)) st = (resultC u, st') ->
-  appr_procedure (session_context (st_config st)) 
-    (session_plc (st_config st)) (get_et (st_ev st)) = resultC e ->
-  get_et (st_ev st') = e.
-Proof.
-  intros;
-  destruct st; simpl in *; destruct st_ev; simpl in *.
-  unfold appr_procedure in *.
-  generalizeEverythingElse e0;
-  induction e0; simpl in *; intuition; ff.
-  - cvm_monad_unfold; ff.
-  - cvm_monad_unfold; ff. 
-  - cvm_monad_unfold; ff.
-    * find_eapply_lem_hyp IHe0.
-    unfold well_formed_context in *; ff.
-  destruct_conjs; ff.
-Qed.
-*)
 
 Theorem cvm_evidence_type : forall t st u st' e,
   build_cvm t st = (resultC u, st') ->
@@ -701,7 +666,7 @@ Proof.
     repeat find_injection; simpl in *; try congruence;
     unfold well_formed_context in *; simpl in *; destruct_conjs;
     ff; repeat find_rewrite; simpl in *; eauto.
-    eapply invoke_appr_evidence in Heqp0; ff.
+    eapply invoke_appr_evidence in Heqp; ff.
   - cvm_monad_unfold; ffa;
     find_eapply_lem_hyp do_remote_res_axiom; ff;
     find_eapply_lem_hyp IHt; ff.
@@ -832,21 +797,27 @@ Proof.
   Unshelve. eapply 0.
 Qed.
 
-Lemma split_evidence_res_spec : forall r et1 et2 st st' e1 e2,
-  evc r (split_evt et1 et2) = st_ev st ->
-  split_evidence st = (resultC (e1, e2), st') ->
-  exists r1 r2, (e1,e2) = (evc r1 et1, evc r2 et2).
+Lemma split_evidence_res_spec : forall st st' et1 et2 e1 e2,
+  split_evidence et1 et2 st = (resultC (e1, e2), st') ->
+  (exists r,
+  evc r (split_evt et1 et2) = st_ev st) /\
+  (exists r1 r2, (e1,e2) = (evc r1 et1, evc r2 et2)).
 Proof.
   intros.
   destruct st; simpl in *; ff.
   unfold split_evidence in *;
   cvm_monad_unfold; ff.
+  repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
+  repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff;
+  destruct st_ev; simpl in *; ff;
+  repeat rewrite app_nil_r in *;
+  repeat rewrite eqb_EvidenceT_eq in *; ff.
 Qed.
 
 Lemma wf_Evidence_split_evidence : forall r et1 et2 st st' G r1 r2,
   wf_Evidence G (evc r (split_evt et1 et2)) ->
   session_context (st_config st) = G ->
-  split_evidence st = (resultC (r1, r2), st') ->
+  split_evidence et1 et2 st = (resultC (r1, r2), st') ->
   wf_Evidence G r1 /\ wf_Evidence G r2.
 Proof.
   intros; unfold split_evidence in *;
@@ -906,6 +877,18 @@ Proof.
   eapply wf_Evidence_exists; ff.
 Qed.
 
+Lemma wf_Evidence_asp_unfold_more : forall G r p e n a a1 p0 t,
+  wf_Evidence G (evc r (asp_evt p (asp_paramsC a a1 p0 t) e)) ->
+  et_size G e = resultC n ->
+  forall sig n',
+  map_get a (asp_types G) = Some (ev_arrow EXTEND sig (OutN n')) ->
+  et_size G (asp_evt p (asp_paramsC a a1 p0 t) e) = resultC (n' + n).
+Proof.
+  intros.
+  prep_induction H.
+  induction H; ff; result_monad_unfold; ff.
+Qed.
+
 Lemma wf_Evidence_split_unfold : forall G r e1 e2,
   wf_Evidence G (evc r (split_evt e1 e2)) ->
   (exists r1, wf_Evidence G (evc r1 e1)) /\ (exists r2, wf_Evidence G (evc r2 e2)).
@@ -916,13 +899,157 @@ Proof.
   break_and_goal; eapply wf_Evidence_exists; ff.
 Qed.
 
-Lemma wf_Evidence_invoke_APPR : forall e st u st',
-  wf_Evidence (session_context (st_config st)) e -> 
-  wf_Evidence (session_context (st_config st)) (st_ev st) -> 
-  (* (st_ev st) -> *)
-  invoke_APPR (get_et e) st = (resultC u, st') ->
-  wf_Evidence (session_context (st_config st)) (st_ev st').
+Lemma wf_Evidence_asp_unpack : forall G r p e a0 a1 p0 t,
+  wf_Evidence G (evc r (asp_evt p (asp_paramsC a0 a1 p0 t) e)) ->
+  forall in_sig n n',
+  map_get a0 (asp_types G) = Some (ev_arrow EXTEND in_sig (OutN n)) ->
+  et_size G e = resultC n' ->
+  length r = n + n'.
 Proof.
+  intros.
+  prep_induction H; ff; invc H; ff.
+Qed.
+
+Lemma wf_Evidence_invoke_ASP : forall ps st e' st',
+  wf_Evidence (session_context (st_config st)) (st_ev st) ->
+  invoke_ASP ps st = (resultC e', st') ->
+  wf_Evidence (session_context (st_config st)) e'.
+Proof.
+  destruct st; simpl in *; ff.
+  prep_induction H.
+  induction H; cvm_monad_unfold; ff;
+  econstructor; ff;
+  rewrite PeanoNat.Nat.eqb_eq in *; ff;
+  rewrite app_length in *; ff.
+Qed.
+
+Lemma et_size_invoke_ASP : forall ps st e' st' n,
+  et_size (session_context (st_config st)) (get_et (st_ev st)) = resultC n ->
+  (* wf_Evidence (session_context (st_config st)) (st_ev st) -> *)
+  invoke_ASP ps st = (resultC e', st') ->
+  exists n', et_size (session_context (st_config st)) (get_et e') = resultC n'.
+Proof.
+  destruct st; simpl in *; ff.
+  prep_induction H.
+  induction H; cvm_monad_unfold; ff;
+  econstructor; ff;
+  rewrite PeanoNat.Nat.eqb_eq in *; ff;
+  result_monad_unfold; ff.
+Qed.
+
+Lemma sc_immut_invoke_ASP : forall ps st e' st',
+  invoke_ASP ps st = (resultC e', st') ->
+  st_config st = st_config st'.
+Proof.
+  cvm_monad_unfold; ff.
+Qed.
+
+Lemma et_size_invoke_APPR : forall e st e' st' n,
+  et_size (session_context (st_config st)) (get_et e) = resultC n ->
+  et_size (session_context (st_config st)) (get_et (st_ev st)) = resultC n ->
+  (* wf_Evidence (session_context (st_config st)) e ->
+  wf_Evidence (session_context (st_config st)) (st_ev st) ->  *)
+  invoke_APPR (get_et e) st = (resultC e', st') ->
+  exists n', et_size (session_context (st_config st)) (get_et e') = resultC n'.
+  (* wf_Evidence (session_context (st_config st)) e'. *)
+Proof.
+  destruct e; simpl in *.
+  generalizeEverythingElse e.
+  induction e; intuition.
+  - ff; cvm_monad_unfold; ff.
+  - ff; cvm_monad_unfold; ff. 
+  (* rewrite PeanoNat.Nat.eqb_eq in *; ff;
+    econstructor; ff; result_monad_unfold; repeat rewrite app_length; ff;
+    invc H1; ff;
+    repeat find_reverse_rewrite; ff. *)
+  - simpl in *; result_monad_unfold.
+    unfold err_bind in *; ff.
+    * cvm_monad_unfold; ff.
+    * eapply sc_immut_invoke_ASP in Heqp1 as ?;
+      eapply sc_immut_invoke_APPR in H2 as ?;
+      eapply H in H2; ff;
+      rewrite PeanoNat.Nat.eqb_eq in *; ff.
+    * repeat unfold hoist_result, err_ret in *; ff.
+        (* add_trace, err_put, put_trace in *; ff. *)
+      eapply sc_immut_invoke_APPR in Heqp2 as ?;
+      eapply sc_immut_invoke_ASP in Heqp0 as ?; ff.
+      eapply H in Heqp2; simpl in *.
+      ** eapply et_size_invoke_ASP in Heqp0; ff.
+        cvm_monad_unfold; ff.
+      ** repeat find_rewrite; ff.
+      ** repeat find_rewrite; ff. 
+  - simpl in *; result_monad_unfold; ff.
+    unfold err_bind in *; ff.
+    eapply split_evidence_state_immut in Heqp as ?; ff.
+    eapply split_evidence_res_spec in Heqp; ff.
+    eapply sc_immut_invoke_APPR in Heqp0 as ?;
+    eapply sc_immut_invoke_APPR in Heqp1 as ?.
+    simpl in *; ff;
+    repeat find_reverse_rewrite; simpl in *;
+    result_monad_unfold; ff.
+    eapply H in Heqp0; simpl in *.
+    ** eapply H0 in Heqp1; simpl in *; eauto; ff.
+      cvm_monad_unfold; ff.
+    ** eauto.
+    ** eauto.
+Qed.
+
+Lemma wf_Evidence_invoke_APPR : forall st e' st',
+  wf_Evidence (session_context (st_config st)) (st_ev st) -> 
+  invoke_APPR (get_et (st_ev st)) st = (resultC e', st') ->
+  wf_Evidence (session_context (st_config st)) e'.
+Proof.
+  destruct st, st_ev; simpl in *.
+  generalizeEverythingElse e.
+  induction e; intuition.
+  - ff; cvm_monad_unfold; ff.
+  - ff; cvm_monad_unfold; ff. 
+  (* rewrite PeanoNat.Nat.eqb_eq in *; ff;
+    econstructor; ff; result_monad_unfold; repeat rewrite app_length; ff;
+    invc H1; ff;
+    repeat find_reverse_rewrite; ff. *)
+  - simpl in *; result_monad_unfold.
+    unfold err_bind in *; ff.
+    * cvm_monad_unfold; ff.
+    * eapply sc_immut_invoke_ASP in Heqp1 as ?;
+      eapply sc_immut_invoke_APPR in H2 as ?;
+      eapply H in H2; ff;
+      rewrite PeanoNat.Nat.eqb_eq in *; ff.
+    * repeat unfold hoist_result, err_ret in *; ff.
+        (* add_trace, err_put, put_trace in *; ff. *)
+      eapply sc_immut_invoke_APPR in Heqp2 as ?;
+      eapply sc_immut_invoke_ASP in Heqp0 as ?; ff.
+      eapply H in Heqp2; simpl in *.
+      ** eapply et_size_invoke_ASP in Heqp0; ff.
+        cvm_monad_unfold; ff.
+      ** repeat find_rewrite; ff.
+      ** repeat find_rewrite; ff. 
+  - simpl in *; result_monad_unfold; ff.
+    unfold err_bind in *; ff.
+    eapply split_evidence_state_immut in Heqp as ?; ff.
+    eapply split_evidence_res_spec in Heqp; ff.
+    eapply sc_immut_invoke_APPR in Heqp0 as ?;
+    eapply sc_immut_invoke_APPR in Heqp1 as ?.
+    simpl in *; ff;
+    repeat find_reverse_rewrite; simpl in *;
+    result_monad_unfold; ff.
+    eapply H in Heqp0; simpl in *.
+    ** eapply H0 in Heqp1; simpl in *; eauto; ff.
+      cvm_monad_unfold; ff.
+    ** eauto.
+    ** eauto.
+  repeat find_eapply_lem_hyp wf_Evidence_impl_et_size_res; ff.
+  eapply invoke_appr_evidence in H0 as ?.
+  - eapply et_size_invoke_APPR in H0 as ?; eauto.
+    repeat find_rewrite.
+  -  eapply et_size_invoke_APPR in H0 as ?; eauto.
+    Search appr_procedure'.
+  eapply invoke_APPR_deterministic_Evidence in H0; ff.
+  eapply invoke_APPR_deterministic in H0.
+  2: {
+    invc H; ff.
+
+  }
   destruct e.
   generalizeEverythingElse e.
   induction e; simpl in *; intuition; cvm_monad_unfold.
@@ -943,14 +1070,76 @@ Proof.
       ff; eapply IHe in H1; simpl in *; eauto;
       try (econstructor; invc H; invc H0; 
       repeat rewrite app_length in *; ff; fail); fail).
+    * 
+    (* eapply peel_n_rawev_result_spec in Heqr0.
+      (* assert (length r1 = length (r0 ++ r1) - n) by admit. *)
+      ff. *)
+      (* eapply peel_n_rawev_result_spec in Heqr0; ff. *)
+      assert (wf_Evidence (session_context (st_config st)) (evc r2 (asp_evt (session_plc (st_config st)) (asp_paramsC a a1 p0 t) (get_et (st_ev st))))). {
+        econstructor; ff; result_monad_unfold; ff.
+        eapply wf_Evidence_impl_et_size_res in H0; ff.
+      }
+      assert (wf_Evidence (session_context (st_config st)) (evc r3 e0)). {
+        eapply IHe in Heqp2; simpl in *; eauto.
+
+
+        (* eapply wf_Evidence_asp_unfold in H as ?; ff; inversion H3; subst;
+        eapply wf_Evidence_asp_unpack in H as ?; ff; *)
+        eapply IHe in Heqp2; try eapply H3; eauto; 
+        simpl in *; ff.
+        repeat match goal with
+        | H : wf_Evidence _ _ |- _ => invc H; simpl in *; 
+          result_monad_unfold; ff
+        end.
+        repeat find_reverse_rewrite;
+        simpl in *; ff.
+        econstructor; ff.
+        - eapply wf_Evidence_asp_unfold in H as ?; ff.
+        - invc H0; ff; repeat find_rewrite.
+          repeat find_reverse_rewrite; ff.
+          invc H; invc H2.
+          simpl in *; ff; result_monad_unfold; ff.
+          invc H; ff; result_monad_unfold; ff.
+          econstructor; ff.
+          invc H2; ff; result_monad_unfold; ff.
+        admit.
+      }
+      invc H2; invc H3; econstructor; ff;
+      rewrite app_length; ff.
+      eapply wf_Evidence_asp_unfold in H as ?.
+      break_exists.
+      pose proof (IHe x {| st_ev := evc r1 e; st_trace :=
+  (st_trace st ++ [Term_Defs.split (st_evid st)
+  (session_plc (st_config st))]) ++
+[umeas (st_evid st + 1) (session_plc (st_config st))
+  (asp_paramsC a a1 p0 t) (get_et (st_ev st))]; st_evid :=
+  st_evid
+  st +
+1 +
+1; st_config :=
+  st_config
+  st |} (evc r3 e0) c1 H1); simpl in *.
+   _ _ _ H1 H0 Heqp2).
+      eapply IHe in H1; try eapply Heqp2.
+      eapply IHe in Heqp2; simpl in *;
+      repeat find_rewrite.
+      ** admit. 
+      ** eapply wf_Evidence_asp_unfold in H as ?; ff. 
+      eapply wf_Evidence_asp_unfold in H as ?; ff. 
+      eapply IHe in Heqp2; ff.
     all: admit.
 
-  - ff.
-    find_copy_eapply_lem_hyp wf_Evidence_split_evidence; ff.
-    unfold split_evidence in *; cvm_monad_unfold; ff.
+  - ff; find_copy_eapply_lem_hyp wf_Evidence_split_evidence; ff;
+    unfold split_evidence in *; cvm_monad_unfold; ff;
     repeat find_eapply_lem_hyp peel_n_rawev_result_spec;
-    ff; rewrite app_nil_r in *; ff.
-    eapply wf_Evidence_split in H; ff.
+    ff; rewrite app_nil_r in *; ff;
+    eapply wf_Evidence_split_unfold in H; ff;
+    eapply sc_immut_invoke_APPR in Heqp0 as ?;
+    eapply IHe1 in Heqp0; ff;
+    eapply sc_immut_invoke_APPR in Heqp1 as ?;
+    eapply IHe2 in Heqp1; ff;
+    invc Heqp0; invc Heqp1; econstructor; ff;
+    rewrite app_length; ff.
     eapply split_evidence_res_spec in Heqp; simpl in *.
     find_copy_eapply_lem_hyp split_evidence_res_spec; eauto.
     find_copy_eapply_lem_hyp split_evidence_state_immut; ff;

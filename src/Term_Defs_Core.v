@@ -18,8 +18,9 @@ University of California.  See license.txt for details. *)
 
 Require Export BS.
 
-Require Import List ID_Type Maps EqClass JSON Stringifiable Stringifiable_Class_Admits StructTactics
+Require Import List ID_Type Maps JSON Stringifiable Stringifiable_Class_Admits StructTactics
   ErrorStringConstants.
+Require Import EqClass.
 Import ListNotations ResultNotation.
 
 (** * Terms and EvidenceT *)
@@ -43,12 +44,22 @@ Definition ASP_ARGS := Map string string.
 
 Definition TARG_ID: Set := ID_Type.
 
-Open Scope string_scope.
-
-
 (** Grouping ASP parameters into one constructor *)
 Inductive ASP_PARAMS: Type :=
 | asp_paramsC: ASP_ID -> ASP_ARGS -> Plc -> TARG_ID -> ASP_PARAMS.
+
+Definition eqb_ASP_PARAMS `{EqClass ASP_ID, EqClass ASP_ARGS, EqClass Plc, EqClass TARG_ID}
+    (a1 a2 : ASP_PARAMS) : bool :=
+  let '(asp_paramsC a1 la1 p1 t1) := a1 in
+  let '(asp_paramsC a2 la2 p2 t2) := a2 in
+  (eqb a1 a2) && (eqb la1 la2) && (eqb p1 p2) && (eqb t1 t2).
+
+Global Instance EqClass_ASP_PARAMS `{EqClass ASP_ID, EqClass ASP_ARGS, EqClass Plc, EqClass TARG_ID} : EqClass ASP_PARAMS.
+eapply Build_EqClass with (eqb := eqb_ASP_PARAMS).
+induction x; destruct y; ff;
+repeat rewrite Bool.andb_true_iff in *; ff;
+repeat rewrite eqb_eq in *; ff.
+Defined.
 
 (** EvidenceT extension types for ASPs:
       COMP:  Compact EvidenceT down to a single value (i.e. a hash).
@@ -92,6 +103,26 @@ Inductive EvidenceT :=
 | nonce_evt   : N_ID -> EvidenceT
 | asp_evt     : Plc -> ASP_PARAMS -> EvidenceT -> EvidenceT
 | split_evt   : EvidenceT -> EvidenceT -> EvidenceT.
+
+Fixpoint eqb_EvidenceT `{EqClass N_ID, EqClass ASP_PARAMS, EqClass Plc} (e1 e2 : EvidenceT) : bool :=
+  match e1, e2 with
+  | mt_evt, mt_evt => true
+  | nonce_evt i, nonce_evt i' => eqb i i'
+  | asp_evt p par e, asp_evt p' par' e' =>
+    (eqb p p') && (eqb par par') && (eqb_EvidenceT e e')
+  | split_evt e1 e2, split_evt e1' e2' =>
+    eqb_EvidenceT e1 e1' && eqb_EvidenceT e2 e2'
+  | _, _ => false
+  end.
+
+Global Instance EqClass_EvidenceT `{EqClass N_ID, EqClass Plc, EqClass ASP_PARAMS} : EqClass EvidenceT.
+eapply Build_EqClass with (eqb := eqb_EvidenceT).
+induction x, y; simpl in *; ff;
+repeat rewrite Bool.andb_true_iff in *; ff;
+repeat rewrite eqb_eq in *; ff;
+try erewrite IHx in *; ff;
+try erewrite IHx1, IHx2 in *; ff.
+Defined.
 
 (** Evidene routing types:  
       ALL:   pass through all EvidenceT
@@ -147,9 +178,13 @@ Inductive Term :=
 | bseq: Split -> Term -> Term -> Term
 | bpar: Split -> Term -> Term -> Term.
 
+Open Scope string_scope.
 Definition err_str_asp_bad_size (got expect : nat) := 
   "ASP requires input of size " ++ to_string expect ++ 
   " but received input of size " ++ to_string got ++ "\n".
+Close Scope string_scope.
+
+(** Calculate the size of an ASP's input based on its signature *)
 
 Definition asp_sig_et_size (size_in : nat) (sig : EvSig) :=
   let '(ev_arrow fwd in_sig (OutN n)) := sig in
@@ -275,6 +310,4 @@ Notation "@ p [ ph ]" := (att p ph) (in custom copland_entry at level 50).
     of parallel Copland phrases. *)
 Definition Loc: Set := nat.
 Definition Locs: Set := list Loc.
-
-Close Scope string_scope.
 

@@ -78,7 +78,7 @@ Fixpoint apply_appr_par_chain (p : Plc) (e : EvidenceT) (l : list ASP_PARAMS) : 
 
 (** Helper function for EvidenceT type reference semantics *)
 
-Fixpoint appr_procedure' (G : GlobalContext) (p : Plc) (e : EvidenceT) 
+Fixpoint appr_procedure' `{EqClass EvidenceT} (G : GlobalContext) (p : Plc) (e : EvidenceT) 
     (ev_out : EvidenceT) : ResultT EvidenceT string :=
   match e with
   (* Simple case, we do nothing on appraise of mt *)
@@ -124,9 +124,14 @@ Fixpoint appr_procedure' (G : GlobalContext) (p : Plc) (e : EvidenceT)
   | split_evt e1 e2 => 
     match ev_out with
     | split_evt e1' e2' =>
-      e1' <- appr_procedure' G p e1 e1' ;;
-      e2' <- appr_procedure' G p e2 e2' ;;
-      resultC (split_evt e1' e2')
+      if (eqb e1 e1') 
+      then if (eqb e2 e2') 
+        then 
+          e1' <- appr_procedure' G p e1 e1' ;;
+          e2' <- appr_procedure' G p e2 e2' ;;
+          resultC (split_evt e1' e2')
+        else errC "Error in appraisal procedure computation, split evidence type for e2 does not match"%string
+      else errC "Error in appraisal procedure computation, split evidence type for e1 does not match"%string
     | _ => errC "Error in appraisal procedure computation, type of evidence passed into a split appraisal procedure is not a split evidence type"%string
     end
   end.

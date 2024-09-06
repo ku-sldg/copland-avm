@@ -25,12 +25,10 @@ Require Import Manifest_Admits.
  *)
 
 
-Record cvm_st : Type := mk_st
-                          {st_ev:Evidence ;
-                           st_trace:list Ev ;
-                           st_evid:Event_ID ;
-                           st_config : Session_Config ;
-                           }.
+Record cvm_st : Type := mk_st {
+  st_trace  : list Ev ;
+  st_evid   : Event_ID ;
+}.
 
 Inductive CVM_Error : Type := 
 | at_error_static : Term -> Plc -> Evidence -> CVM_Error
@@ -39,7 +37,7 @@ Inductive CVM_Error : Type :=
 (* | callback_error : CallBackErrors -> CVM_Error. *)
 
 (** CVM monad -- instantiation of the general ResultT monad with cvm_st *)
-Definition CVM A := Err cvm_st A CVM_Error.
+Definition CVM A := Err cvm_st Session_Config A CVM_Error.
 
 (* Look for cvm_st hyps and destruct them *)
 Ltac vmsts :=
