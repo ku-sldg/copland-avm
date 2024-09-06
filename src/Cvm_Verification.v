@@ -23,44 +23,41 @@ Import ListNotations.
 
 Require Import Lia Coq.Program.Tactics.
 
-(* 
-Lemma sc_immut_peel_n_rawev : forall n r st res st',
-  peel_n_rawev n r st = (res, st') ->
-  st_config st = st_config st'.
+Lemma invoke_ASP_config_immut : forall par e st sc res st' sc',
+  invoke_ASP e par st sc = (res, st', sc') ->
+  sc = sc'.
 Proof.
-  induction n; simpl in *; intuition; cvm_monad_unfold; ff.
+  cvm_monad_unfold; ff.
 Qed.
 
-Lemma peel_n_rawev_deterministic : forall n r st1 st2 res1 res2 st1' st2',
-  st_config st1 = st_config st2 ->
-  peel_n_rawev n r st1 = (res1, st1') ->
-  peel_n_rawev n r st2 = (res2, st2') ->
-  res1 = res2 /\ st1 = st1' /\ st2 = st2'.
+Lemma invoke_APPR_config_immut : forall et r st sc res st' sc' out_et,
+  invoke_APPR' r et out_et st sc = (res, st', sc') ->
+  sc = sc'.
 Proof.
-  induction n; simpl in *; intuition;
-  cvm_monad_unfold; ffa;
-  eapply IHn in Heqp0; try eapply Heqp; intuition; eauto; 
-  try congruence.
-Qed.
-*)
-
-Lemma sc_immut_split_evidence : forall st res st' et1 et2,
-  split_evidence et1 et2 st = (res, st') ->
-  st_config st = st_config st'.
-Proof.
-  unfold split_evidence in *; cvm_monad_unfold; ff.
+  induction et; cvm_monad_unfold; ff; cvm_monad_unfold; ff;
+  unfold split_evidence in *; cvm_monad_unfold; ff;
+  try find_eapply_lem_hyp IHet1;
+  try find_eapply_lem_hyp IHet2; ff.
 Qed.
 
-Lemma split_evidence_determinisitic : forall st1 st2 res1 res2 st1' st2' et1 et2,
-  st_config st1 = st_config st2 ->
-  st_ev st1 = st_ev st2 ->
-  split_evidence et1 et2 st1 = (res1, st1') ->
-  split_evidence et1 et2 st2 = (res2, st2') ->
+Lemma build_cvm_config_immut : forall t e st sc res st' sc',
+  build_cvm e t st sc = (res, st', sc') ->
+  sc = sc'.
+Proof.
+  induction t; simpl in *; cvm_monad_unfold; ff;
+  try (find_eapply_lem_hyp IHt1;
+    find_eapply_lem_hyp IHt2; ff);
+  find_eapply_lem_hyp invoke_APPR_config_immut; ff.
+Qed.
+
+Lemma split_evidence_determinisitic : forall e st1 st2 res1 res2 st1' st2' et1 et2 sc sc1' sc2',
+  split_evidence e et1 et2 st1 sc = (res1, st1', sc1') ->
+  split_evidence e et1 et2 st2 sc = (res2, st2', sc2') ->
   res1 = res2.
 Proof.
   intros.
   unfold split_evidence in *.
-  cvm_monad_unfold; repeat find_rewrite; ff.
+  cvm_monad_unfold; ff.
 Qed.
 
 Lemma peel_n_rawev_result_spec : forall n ls ls1 ls2,
@@ -77,76 +74,52 @@ Proof.
   induction n; ffa using cvm_monad_unfold; ffl.
 Qed.
 
-Lemma split_evidence_state_immut : forall res st st' et1 et2,
-  split_evidence et1 et2 st = (res, st') ->
-  st = st'.
+Lemma split_evidence_state_immut : forall e sc sc' res st st' et1 et2,
+  split_evidence e et1 et2 st sc = (res, st', sc') ->
+  st = st' /\ sc = sc'.
 Proof.
   unfold split_evidence in *; cvm_monad_unfold; ff.
 Qed.
 
-Lemma sc_immut_invoke_APPR : forall et st r st',
-  invoke_APPR et st = (r, st') ->
-  st_config st = st_config st'.
-Proof.
-  induction et; simpl in *; intuition; ffa using cvm_monad_unfold;
-  try (find_apply_lem_hyp sc_immut_split_evidence;
-  simpl in *; ff).
-Qed.
-
-Lemma sc_immut_better : forall t st r st',
-  build_cvm t st = (r, st') ->
-  st_config st = st_config st'.
-Proof.
-  induction t; repeat (cvm_monad_unfold; simpl in *); intuition;
-  ffa using cvm_monad_unfold;
-  try (find_apply_lem_hyp sc_immut_invoke_APPR; ff; fail).
-Qed.
-
-Ltac monad_simp := 
-  repeat (cvm_monad_unfold; simpl in *; eauto).
-
-Lemma check_cvm_policy_preserves_state : forall t p evt st1 st1' r,
-  check_cvm_policy t p evt st1 = (r, st1') ->
-  st1 = st1'.
+Lemma check_cvm_policy_preserves_state : forall t p evt st1 st1' r sc sc',
+  check_cvm_policy t p evt st1 sc = (r, st1', sc') ->
+  st1 = st1' /\ sc = sc'.
 Proof.
   induction t; simpl in *; intuition; eauto; ffa using cvm_monad_unfold.
 Qed.
-Global Hint Resolve check_cvm_policy_preserves_state : core.
 
-Lemma check_cvm_policy_same_outputs : forall t p evt st1 st1' r1 st2 st2' r2,
-  check_cvm_policy t p evt st1 = (r1, st1') ->
-  check_cvm_policy t p evt st2 = (r2, st2') ->
-  (policy (st_config st1) = policy (st_config st2)) ->
+(* Lemma check_cvm_policy_same_outputs : forall t p evt st1 st1' r1 st2 st2' r2 sc1 sc2 sc1' sc2',
+  check_cvm_policy t p evt st1 sc1 = (r1, st1') ->
+  check_cvm_policy t p evt st2 sc2 = (r2, st2') ->
+  (policy sc1 = policy sc2) ->
   r1 = r2 /\ st1 = st1' /\ st2 = st2'.
 Proof.
   induction t; simpl in *; intuition; eauto; ffa using cvm_monad_unfold.
-Qed.
-Global Hint Resolve check_cvm_policy_same_outputs : core.
+Qed. *)
 
-Lemma invoke_APPR_deterministic : forall e st1 st2 st1' st2' res1 res2,
-  st_ev st1 = st_ev st2 ->
+Lemma invoke_APPR_deterministic : forall e sc sc1' sc2' st1 st2 st1' st2' res1 res2 r oe,
   st_evid st1 = st_evid st2 ->
-  st_config st1 = st_config st2 ->
-  invoke_APPR e st1 = (res1, st1') ->
-  invoke_APPR e st2 = (res2, st2') ->
-  res1 = res2 /\ st_ev st1' = st_ev st2' /\ 
-  st_evid st1' = st_evid st2' /\ st_config st1' = st_config st2'.
+  invoke_APPR' r e oe st1 sc = (res1, st1', sc1') ->
+  invoke_APPR' r e oe st2 sc = (res2, st2', sc2') ->
+  res1 = res2 /\ st_evid st1' = st_evid st2' /\ 
+  sc1' = sc2'.
 Proof.
   induction e; simpl in *; intros;
   try (cvm_monad_unfold; intuition; repeat find_injection; eauto; fail).
-  - cvm_monad_unfold; repeat find_rewrite.
-    repeat (
-      break_match;
-      simpl in *;
-      repeat find_injection; simpl in *; eauto; try congruence
-    ).
-  - cvm_monad_unfold;
+  - cvm_monad_unfold; ff.
+  - cvm_monad_unfold.
     repeat (break_match; repeat find_rewrite; repeat find_injection;
       simpl in *; eauto; try congruence; eauto;
       let n := numgoals in guard n <= 1).
     break_match.
     * ff.
-    * ff; eapply IHe in H2; try eapply H3; ff.
+    * ff; rewrite PeanoNat.Nat.eqb_eq in *; ff;
+      match goal with
+      | H1 : invoke_APPR' _ ?e _ _ _ = _,
+        H2 : invoke_APPR' _ ?e _ _ _ = _,
+        IH : context[invoke_APPR' _ ?e _ _ _ = _ -> _] |- _ =>
+        eapply IH in H1; try eapply H2; ff
+      end.
     * repeat match goal with
       | H1 : context[match ?x with _ => _ end],
         H2 : context[match ?x with _ => _ end] |- _ =>
@@ -159,50 +132,48 @@ Proof.
           repeat find_rewrite; eauto;
           simpl in *;
           eauto; try congruence
-      end; ff;
-      match goal with
-      | H1 : invoke_APPR ?e _ = _,
-        H2 : invoke_APPR ?e _ = _,
-        IH : context[invoke_APPR ?e _ = _ -> _] |- _ =>
-        eapply IH in H1; try eapply H2; ff
-      end.
-  - cvm_monad_unfold; repeat find_rewrite; repeat find_injection; eauto;
-    repeat break_match; repeat find_injection;
+    end; ff;
     match goal with
-    | H1 : split_evidence _ _ _ = _,
-      H2 : split_evidence _ _ _ = _ |- _ =>
+    | H1 : invoke_APPR' _ ?e _ _ _ = _,
+      H2 : invoke_APPR' _ ?e _ _ _ = _,
+      IH : context[invoke_APPR' _ ?e _ _ _ = _ -> _] |- _ =>
+      eapply IH in H1; try eapply H2; ff
+    end.
+  - cvm_monad_unfold; repeat find_rewrite; repeat find_injection; eauto;
+    repeat break_match; repeat find_injection; eauto;
+    match goal with
+    | H1 : split_evidence _ _ _ _ _ = _,
+      H2 : split_evidence _ _ _ _ _ = _ |- _ =>
       eapply split_evidence_state_immut in H1 as ?;
       eapply split_evidence_state_immut in H2 as ?;
       eapply split_evidence_determinisitic in H1;
-      [ | | | eapply H2]; clear H2; simpl in *; eauto;
+      try eapply H2; clear H2; simpl in *; eauto;
       destruct_conjs; repeat find_injection; eauto; try congruence
-    end; 
+    end;
     repeat (match goal with
-    | H1 : split_evidence _ _ _ = _,
-      H2 : split_evidence _ _ _ = _ |- _ =>
+    | H1 : split_evidence _ _ _ _ _ = _,
+      H2 : split_evidence _ _ _ _ _ = _ |- _ =>
       eapply split_evidence_determinisitic in H1;
-      [ | | eapply H2]; clear H2; simpl in *; eauto;
+      try eapply H2; clear H2; simpl in *; eauto;
       destruct_conjs; repeat find_injection; eauto; try congruence
-    | H1 : invoke_APPR ?e _ = _,
-      H2 : invoke_APPR ?e _ = _,
-      IH : context[invoke_APPR ?e _ = _ -> _] |- _ =>
-      eapply IH in H1; [ | | | | eapply H2]; clear H2 IH; simpl in *; eauto;
+    | H1 : invoke_APPR' _ ?e _ _ _ = _,
+      H2 : invoke_APPR' _ ?e _ _ _ = _,
+      IH : context[invoke_APPR' _ ?e _ _ _ = _ -> _] |- _ =>
+      eapply IH in H1; [ | | eapply H2]; clear H2 IH; simpl in *; eauto;
       destruct_conjs; repeat find_injection; eauto; try congruence
     end);
-    repeat find_rewrite; eauto; ff.
+    repeat find_rewrite; eauto; ff. 
 Qed.
 
-Theorem invoke_APPR_deterministic_Evidence : forall et st1 st2 r1 r2 st1' st2',
-  st_config st1 = st_config st2 ->
-  st_ev st1 = st_ev st2 ->
-  invoke_APPR et st1 = (r1, st1') ->
-  invoke_APPR et st2 = (r2, st2') ->
-  r1 = r2 /\ st_ev st1' = st_ev st2'.
+Theorem invoke_APPR_deterministic_Evidence : forall et st1 st2 r1 r2 st1' st2' r sc sc1' sc2' eo,
+  invoke_APPR' r et eo st1 sc = (r1, st1', sc1') ->
+  invoke_APPR' r et eo st2 sc = (r2, st2', sc2') ->
+  r1 = r2.
 Proof.
   induction et; ff; cvm_monad_unfold; ff;
   repeat match goal with
-  | H1 : split_evidence _ _ _ = _,
-    H2 : split_evidence _ _ _ = _ |- _ =>
+  | H1 : split_evidence _ _ _ _ _ = _,
+    H2 : split_evidence _ _ _ _ _ = _ |- _ =>
     let H' := fresh in
     eapply split_evidence_determinisitic in H1 as H';
     try eapply H2; ff; 
@@ -210,38 +181,34 @@ Proof.
     eapply split_evidence_state_immut in H2;
     simpl in *; ff
   end;
-  match goal with
-  | H1 : invoke_APPR ?e _ = _,
-    H2 : invoke_APPR ?e _ = _,
-    IH : context[invoke_APPR ?e _ = _ -> _] |- _ =>
-    eapply IH in H1; try eapply H2; ff
-  end;
-  try (repeat find_eapply_lem_hyp sc_immut_invoke_APPR; ff; fail).
-  eapply IHet1 in Heqp3; try eapply Heqp0; ff.
+  repeat match goal with
+  | H1 : invoke_APPR' _ ?e _ _ _ = _,
+    H2 : invoke_APPR' _ ?e _ _ _ = _,
+    IH : context[invoke_APPR' _ ?e _ _ _ = _ -> _] |- _ =>
+    eapply invoke_APPR_config_immut in H1 as ?;
+    eapply invoke_APPR_config_immut in H2 as ?;
+    eapply IH in H1; [ | eapply H2]; ff;
+    clear IH H2
+  end.
 Qed.
 
-Lemma cvm_deterministic :  forall t st1 st2 r1 r2 st1' st2',
-  st_config st1 = st_config st2 ->
-  st_ev st1 = st_ev st2 ->
+Lemma cvm_deterministic :  forall t e sc sc1' sc2' st1 st2 r1 r2 st1' st2',
   st_evid st1 = st_evid st2 ->
-  build_cvm t st1 = (r1, st1') ->
-  build_cvm t st2 = (r2, st2') ->
-  (
-    (r1 = r2) /\ 
-    (st_ev st1' = st_ev st2') /\
-    (st_evid st1' = st_evid st2') /\
-    (st_config st1' = st_config st2')
-  ).
+  build_cvm e t st1 sc = (r1, st1', sc1') ->
+  build_cvm e t st2 sc = (r2, st2', sc2') ->
+  (r1 = r2) /\ (st_evid st1' = st_evid st2').
 Proof.
   induction t; simpl in *; cvm_monad_unfold; ff;
   try (repeat match goal with
   | u : unit |- _ => destruct u
-  | H1 : build_cvm ?t _ = _,
-    H2 : build_cvm ?t _ = _,
-    IH : context[build_cvm ?t _ = _ -> _] |- _ =>
-      eapply IH in H1; try (eapply H2);
-      clear IH H2; try (intuition; congruence)
-  end; fail);
+  | H1 : build_cvm _ ?t _ _ = _,
+    H2 : build_cvm _ ?t _ _ = _,
+    IH : context[build_cvm _ ?t _ _ = _ -> _] |- _ =>
+      eapply build_cvm_config_immut in H1 as ?;
+      eapply build_cvm_config_immut in H2 as ?;
+      eapply IH in H1; [ | | eapply H2 ];
+      clear IH H2; ff
+  end; fail).
   find_eapply_lem_hyp invoke_APPR_deterministic; ff;
   try congruence; ff.
 Qed.
@@ -284,7 +251,8 @@ Proof.
   try match goal with
   | H1 : events_fix _ _ _ ?t _ = resultC _,
     H2 : events_fix _ _ _ ?t _ = errC _ |- _ =>
-    eapply events_fix_errs_deterministic in H1; try eapply H2; ff; fail
+    eapply events_fix_errs_deterministic in H1; try eapply H2; 
+    try exfalso; eauto
   end.
   destruct a; simpl in *;
   try (destruct e; simpl in *; congruence);
@@ -292,108 +260,95 @@ Proof.
   unfold appr_events in *; ff.
 Qed.
 
-Theorem cvm_deterministic_Evidence : forall t st1 st2 r1 r2 st1' st2',
-  st_config st1 = st_config st2 ->
-  st_ev st1 = st_ev st2 ->
-  build_cvm t st1 = (r1, st1') ->
-  build_cvm t st2 = (r2, st2') ->
-  r1 = r2 /\ st_ev st1' = st_ev st2'.
+Theorem cvm_deterministic_Evidence : forall t e sc sc1' sc2' st1 st2 r1 r2 st1' st2',
+  build_cvm e t st1 sc = (r1, st1', sc1') ->
+  build_cvm e t st2 sc = (r2, st2', sc2') ->
+  r1 = r2.
 Proof.
   induction t; simpl in *; cvm_monad_unfold.
-  - ff;
-    match goal with
-    | H1 : invoke_APPR _ _ = _,
-      H2 : invoke_APPR _ _ = _ |- _ =>
-      eapply invoke_APPR_deterministic_Evidence in H1;
-      try eapply H2; ff
-    end.
+  - ff; eapply invoke_APPR_deterministic_Evidence; eauto.
   - ff; (* NOTE: Why dont we need the remote axiom here!? *)
     match goal with
     | H1 : events_fix _ _ _ ?t _ = _,
       H2 : events_fix _ _ _ ?t _ = _ |- _ =>
-      try (eapply events_fix_only_one_error in H1; try eapply H2; ff; fail);
-      try (eapply events_fix_errs_deterministic in H1; try eapply H2; ff; fail)
+      try (eapply events_fix_only_one_error in H1; try eapply H2; ff; exfalso; eauto; fail);
+      try (eapply events_fix_errs_deterministic in H1; try eapply H2; ff; exfalso; eauto; fail)
     end.
   - ff; repeat match goal with
     | u : unit |- _ => destruct u
-    | H1 : build_cvm ?t _ = _,
-      H2 : build_cvm ?t _ = _,
-      IH : context[build_cvm ?t _ = _ -> _] |- _ =>
-        eapply sc_immut_better in H1 as ?;
-        eapply sc_immut_better in H2 as ?;
+    | H1 : build_cvm _ ?t _ _ = _,
+      H2 : build_cvm _ ?t _ _ = _,
+      IH : context[build_cvm _ ?t _ _ = _ -> _] |- _ =>
+        eapply build_cvm_config_immut in H1 as ?;
+        eapply build_cvm_config_immut in H2 as ?;
         simpl in *; ff;
-        eapply IH in H1; try (eapply H2);
-        clear IH H2; try (intuition; congruence)
+        eapply IH in H1; [ | eapply H2];
+        clear IH H2; ff
     end.
-  - ff; repeat match goal with
+  - ff. 
+  all: repeat match goal with
     | u : unit |- _ => destruct u
-    | H1 : build_cvm ?t _ = _,
-      H2 : build_cvm ?t _ = _,
-      IH : context[build_cvm ?t _ = _ -> _] |- _ =>
-        eapply sc_immut_better in H1 as ?;
-        eapply sc_immut_better in H2 as ?;
+    | H1 : build_cvm _ ?t _ _ = _,
+      H2 : build_cvm _ ?t _ _ = _,
+      IH : context[build_cvm _ ?t _ _ = _ -> _] |- _ =>
+        eapply build_cvm_config_immut in H1 as ?;
+        eapply build_cvm_config_immut in H2 as ?;
         simpl in *; ff;
-        eapply IH in H1; try (eapply H2);
-        clear IH H2; try (intuition; congruence)
+        eapply IH in H1; [ | eapply H2];
+        clear IH H2; ff
     end.
+    eapply build_cvm_config_immut in Heqp1 as ?;
+    eapply build_cvm_config_immut in Heqp as ?; ff.
   - ff; simpl in *; 
     repeat match goal with
     | u : unit |- _ => destruct u
-    | H : parallel_vm_thread _ _ _ _ = resultC _ |- _ => 
-      eapply parallel_vm_thread_res_axiom in H;
+    | H : parallel_vm_thread _ _ _ _ = ?res |- _ =>
+      eapply parallel_vm_thread_axiom in H;
       try reflexivity; break_exists
-    | H : parallel_vm_thread _ _ _ _ = errC _ |- _ => 
-      eapply parallel_vm_thread_err_axiom in H;
-      try reflexivity; break_exists
-    | H1 : build_cvm ?t _ = _,
-      H2 : build_cvm ?t _ = _,
-      IH : context[build_cvm ?t _ = _ -> _] |- _ =>
-        eapply sc_immut_better in H1 as ?;
-        eapply sc_immut_better in H2 as ?;
-        simpl in *; ff;
-        eapply IH in H1; try (eapply H2);
+    | H1 : build_cvm _ ?t _ _ = _,
+      H2 : build_cvm _ ?t _ _ = _,
+      IH : context[build_cvm _ ?t _ _ = _ -> _] |- _ =>
+        eapply build_cvm_config_immut in H1 as ?;
+        eapply build_cvm_config_immut in H2 as ?; ff;
+        eapply IH in H1; [ | eapply H2 ];
         clear IH H2; try (intuition; congruence)
-    end;
-    match goal with
+    end.
+    all: 
+    try match goal with
     | H1 : events_fix _ _ _ ?t _ = _,
       H2 : events_fix _ _ _ ?t _ = _ |- _ =>
-      try (eapply events_fix_only_one_error in H1; try eapply H2; ff; fail);
-      try (eapply events_fix_errs_deterministic in H1; try eapply H2; ff; fail)
+      try (eapply events_fix_only_one_error in H1; try eapply H2; ff; try exfalso; eauto; fail);
+      try (eapply events_fix_errs_deterministic in H1; try eapply H2; ff; try exfalso; eauto; fail)
     end.
+    * eapply build_cvm_config_immut in Heqp0 as ?; ff;
+      eapply build_cvm_config_immut in Heqp as ?; ff.
+    * eapply build_cvm_config_immut in Heqp0 as ?; ff;
+      eapply build_cvm_config_immut in Heqp as ?; ff.
+    * eapply build_cvm_config_immut in Heqp0 as ?; ff;
+      eapply build_cvm_config_immut in Heqp as ?; ff.
+    * eapply build_cvm_config_immut in Heqp0 as ?; ff;
+      eapply build_cvm_config_immut in Heqp as ?; ff.
 Qed.
 
-(* Lemma stating the following:  If all starting parameters to the cvm_st are the same, except 
-   for possibly the trace, then all of those final parameters should also be equal. *)
-Lemma st_trace_irrel : forall t e e' e'' x x' y y' i i' i'' ac ac' ac'' res,
-    build_cvm t {| st_ev := e; st_trace := x; st_evid := i; st_config := ac |} =
-    (res, {| st_ev := e'; st_trace := x'; st_evid := i'; st_config := ac' |}) ->
-    build_cvm t {| st_ev := e; st_trace := y; st_evid := i; st_config := ac |} =
-    (res, {| st_ev := e''; st_trace := y'; st_evid := i''; st_config := ac'' |}) ->
-    (e' = e'' /\ i' = i'' /\ ac' = ac'').
-Proof.
-  intros; find_eapply_lem_hyp cvm_deterministic; 
-  try eapply H; ff.
-Qed.
-
-Lemma invoke_APPR_spans : forall et u c i st,
-  invoke_APPR et st = (resultC u, c) ->
+Lemma invoke_APPR'_spans : forall et r e' sc c i st sc' eo,
+  invoke_APPR' r et eo st sc = (resultC e', c, sc') ->
   forall G,
-  G = session_context (st_config st) ->
+  G = session_context sc ->
   appr_events_size G et = resultC i ->
   st_evid c = st_evid st + i.
 Proof.
   induction et; ffa using (try cvm_monad_unfold; try result_monad_unfold);
   repeat match goal with
-  | H : split_evidence _ _ _ = _ |- _ =>
+  | H : split_evidence _ _ _ _ _ = _ |- _ =>
     eapply split_evidence_state_immut in H as ?; ff;
     clear H
   | H : Nat.eqb _ _ = _ |- _ => 
     try (erewrite PeanoNat.Nat.eqb_eq in H);
     try (erewrite PeanoNat.Nat.eqb_neq in H);
     ff; try lia
-  | H : invoke_APPR ?e _ = _,
-    IH : context[invoke_APPR ?e _ = _ -> _] |- _ =>
-    eapply sc_immut_invoke_APPR in H as ?; ff;
+  | H : invoke_APPR' _ ?e _ _ _ = _,
+    IH : context[invoke_APPR' _ ?e _ _ _ = _ -> _] |- _ =>
+    eapply invoke_APPR_config_immut in H as ?; ff;
     let numgoals := numgoals in
     eapply IH in H; ff; try lia;
     let numgoals' := numgoals in
@@ -402,8 +357,6 @@ Proof.
 Qed.
 
 Inductive et_same_asps : EvidenceT -> EvidenceT -> Prop :=
-(* | et_same_asps_refl : forall e, et_same_asps e e *)
-(* | et_same_asps_symm : forall e1 e2, et_same_asps e1 e2 -> et_same_asps e2 e1 *)
 | et_same_asps_mt : et_same_asps mt_evt mt_evt
 | et_same_asps_nonce : forall n1 n2, et_same_asps (nonce_evt n1) (nonce_evt n2)
 | et_same_asps_asp : forall p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 e1 e2 asp_id,
@@ -627,72 +580,94 @@ Proof.
   repeat rewrite IHe1_2 in *; ff.
 Qed.
 
-Theorem invoke_appr_evidence : forall st st' e' et e,
-  invoke_APPR et st = (resultC e', st') ->
-  appr_procedure' (session_context (st_config st)) 
-    (session_plc (st_config st)) et (get_et (st_ev st)) = resultC e ->
+Lemma invoke_ASP_evidence : forall e par st sc e' st' sc',
+  invoke_ASP e par st sc = (resultC e', st', sc') ->
+  get_et e' = asp_evt (session_plc sc) par (get_et e).
+Proof.
+  cvm_monad_unfold; ff.
+Qed.
+
+Lemma split_evidence_res_spec : forall e st st' et1 et2 e1 e2 sc sc',
+  split_evidence e et1 et2 st sc = (resultC (e1, e2), st', sc') ->
+  (exists r,
+  e = evc r (split_evt et1 et2)) /\
+  (exists r1 r2, (e1,e2) = (evc r1 et1, evc r2 et2)).
+Proof.
+  intros.
+  destruct st; simpl in *; ff.
+  unfold split_evidence in *;
+  cvm_monad_unfold; ff.
+  repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
+  repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff;
+  destruct e; simpl in *; ff;
+  repeat rewrite app_nil_r in *;
+  repeat rewrite eqb_EvidenceT_eq in *; ff.
+Qed.
+
+Theorem invoke_APPR'_evidence : forall et st r sc sc' st' e' e eo,
+  invoke_APPR' r et eo st sc = (resultC e', st', sc') ->
+  appr_procedure' (session_context sc) (session_plc sc) et eo = resultC e ->
   get_et e' = e.
 Proof.
-  destruct st; simpl in *; destruct st_ev; 
-  simpl in *; ff.
-  generalizeEverythingElse et.
-  induction et; ff;
-  cvm_monad_unfold; result_monad_unfold; ff.
-  - eapply IHet in Heqp2; ff.
-  - eapply IHet in Heqp2; ff.
-  - eapply IHet in Heqp2; ff.
-  - unfold split_evidence in *; cvm_monad_unfold; ff;
-    repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
-    repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff;
-    repeat rewrite eqb_EvidenceT_eq in *; ff;
-    eapply sc_immut_invoke_APPR in Heqp0 as ?;
+  induction et; intuition.
+  - simpl in *; cvm_monad_unfold; ff.
+  - cvm_monad_unfold; ff; cvm_monad_unfold; ff.
+  - cvm_monad_unfold; ff; cvm_monad_unfold; result_monad_unfold; ff;
+    cvm_monad_unfold; result_monad_unfold; ff;
+    repeat rewrite PeanoNat.Nat.eqb_eq in *; ff.
+    * eapply IHet in Heqp2; ff.
+    * eapply IHet in Heqp2; ff. 
+    * eapply IHet in Heqp2; ff.
+  - cvm_monad_unfold; ff; cvm_monad_unfold; result_monad_unfold; ff;
+    find_copy_eapply_lem_hyp split_evidence_res_spec; ff;
+    find_eapply_lem_hyp split_evidence_state_immut; ff;
+    repeat find_rewrite_lem eqb_EvidenceT_eq; ff;
     repeat match goal with
-    | H : invoke_APPR ?e _ = _,
+    | H : invoke_APPR' _ ?e _ _ _ = _,
       H1 : appr_procedure' _ _ ?e _ = _,
-      IH : context[invoke_APPR ?e _ = _ -> _] |- _ =>
-      eapply sc_immut_invoke_APPR in H as ?;
+      IH : context[invoke_APPR' _ ?e _ _ _ = _ -> _] |- _ =>
+      eapply invoke_APPR_config_immut in H as ?;
       eapply IH in H; [ | eapply H1 ]; ff
     end; ff. 
 Qed.
 
-Theorem cvm_evidence_type : forall t st u st' e,
-  build_cvm t st = (resultC u, st') ->
-  eval (session_context (st_config st)) (session_plc (st_config st)) 
-    (get_et (st_ev st)) t = resultC e ->
-  get_et (st_ev st') = e.
+Theorem cvm_evidence_type : forall t e e' st st' sc sc' et',
+  build_cvm e t st sc = (resultC e', st', sc') ->
+  eval (session_context sc) (session_plc sc) (get_et e) t = resultC et' ->
+  get_et e' = et'.
 Proof.
   induction t; simpl in *; intuition.
   - cvm_monad_unfold; destruct a; simpl in *;
     repeat find_injection; simpl in *; try congruence;
     unfold well_formed_context in *; simpl in *; destruct_conjs;
     ff; repeat find_rewrite; simpl in *; eauto.
-    eapply invoke_appr_evidence in Heqp; ff.
+    eapply invoke_APPR'_evidence in H; ff.
   - cvm_monad_unfold; ffa;
     find_eapply_lem_hyp do_remote_res_axiom; ff;
     find_eapply_lem_hyp IHt; ff.
     Unshelve. all: eauto; try eapply (st_config st).
   - ffa using (try cvm_monad_unfold; try result_monad_unfold);
     match goal with
-    | H1 : build_cvm ?t1 _ = _,
-      H2 : build_cvm ?t2 _ = _,
-      IH1 : context[build_cvm ?t1 _ = _ -> _],
-      IH2 : context[build_cvm ?t2 _ = _ -> _] |- _ =>
+    | H1 : build_cvm _ ?t1 _ _ = _,
+      H2 : build_cvm _ ?t2 _ _ = _,
+      IH1 : context[build_cvm _ ?t1 _ _ = _ -> _],
+      IH2 : context[build_cvm _ ?t2 _ _ = _ -> _] |- _ =>
       eapply IH1 in H1 as ?; ff;
-      eapply sc_immut_better in H1; 
+      eapply build_cvm_config_immut in H1; 
       eapply IH2 in H2; ff
     end.
   - ffa using (try cvm_monad_unfold; try result_monad_unfold);
     destruct s, s, s0; simpl in *;
     eapply IHt1 in Heqp as ?; ff;
-    eapply sc_immut_better in Heqp; simpl in *; ff;
+    eapply build_cvm_config_immut in Heqp; simpl in *; ff;
     eapply IHt2 in Heqp0 as ?; simpl in *;
-    eapply sc_immut_better in Heqp0; simpl in *; try (find_higher_order_rewrite; ff; fail);
+    eapply build_cvm_config_immut in Heqp0; simpl in *; try (find_higher_order_rewrite; ff; fail);
     ff; find_higher_order_rewrite; eauto.
   - ffa using (try cvm_monad_unfold; try result_monad_unfold);
     destruct s, s, s0; simpl in *;
     eapply IHt1 in Heqp as ?; ff;
-    eapply sc_immut_better in Heqp; simpl in *; ff;
-    find_eapply_lem_hyp parallel_vm_thread_res_axiom; eauto;
+    eapply build_cvm_config_immut in Heqp; simpl in *; ff;
+    find_eapply_lem_hyp parallel_vm_thread_axiom; eauto;
     break_exists; destruct_conjs; find_eapply_lem_hyp IHt2; ff;
     repeat find_rewrite; try unfold mt_evc; simpl in *; ff.
 Qed.
@@ -795,23 +770,6 @@ Lemma wf_Evidence_mt_evc : forall G,
 Proof.
   unfold mt_evc; econstructor; simpl in *; eauto.
   Unshelve. eapply 0.
-Qed.
-
-Lemma split_evidence_res_spec : forall st st' et1 et2 e1 e2,
-  split_evidence et1 et2 st = (resultC (e1, e2), st') ->
-  (exists r,
-  evc r (split_evt et1 et2) = st_ev st) /\
-  (exists r1 r2, (e1,e2) = (evc r1 et1, evc r2 et2)).
-Proof.
-  intros.
-  destruct st; simpl in *; ff.
-  unfold split_evidence in *;
-  cvm_monad_unfold; ff.
-  repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
-  repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff;
-  destruct st_ev; simpl in *; ff;
-  repeat rewrite app_nil_r in *;
-  repeat rewrite eqb_EvidenceT_eq in *; ff.
 Qed.
 
 Lemma wf_Evidence_split_evidence : forall r et1 et2 st st' G r1 r2,

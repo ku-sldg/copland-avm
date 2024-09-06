@@ -658,6 +658,11 @@ Ltac break_iff :=
   | |- _ <-> _ => split; intros
   end.
 
+Ltac max_RW :=
+  simpl in *;
+  subst_max;
+  repeat find_rewrite.
+
 (* Simplification hammer.  Used at beginning of many proofs in this 
    development.  Conservative simplification, break matches, 
    invert on resulting goals *)
@@ -696,8 +701,9 @@ Ltac ff :=
       try congruence;
       simpl in *;
       subst_max; eauto;
-      try congruence;
-      try solve_by_inversion
+      try congruence
+      (* Too expensive in general
+      ; try solve_by_inversion *)
     )
   ).
 

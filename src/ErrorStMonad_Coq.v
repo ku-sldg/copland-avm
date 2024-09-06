@@ -10,42 +10,34 @@ Export ResultT.
 
 (* Generalized Error + State + Config Monad *)
 Definition Err(S C A E: Type) : Type := 
-  (S * C) -> (ResultT A E) * (S * C)% type.
+  S -> C -> (ResultT A E) * S * C% type.
 
 Definition err_ret {S C A E : Type} (a : A) : Err S C A E := 
-  fun s => 
-  (resultC a, s).
+  fun s c => 
+  (resultC a, s, c).
 
 Definition err_bind {S C A B E : Type} (m : Err S C A E) (f : A -> Err S C B E) : Err S C B E :=
-  fun s =>
-    let '(a, s') := m s in
+  fun s c =>
+    let '(a, s', c) := m s c in
     match a with
-    | resultC v => f v s'
-    | errC e => (errC e,s')
+    | resultC v => f v s' c
+    | errC e => (errC e, s', c)
     end.
 
 Definition err_failm {S C A E : Type} (e:E) : Err S C A E := 
-  fun s => (errC e, s).
+  fun s c => (errC e, s, c).
 
 Definition err_modify {S C E} (f : S -> S) : Err S C unit E := 
-  fun s => 
-    let '(s, c) := s in
-    (resultC tt, (f s, c)).
+  fun s c => (resultC tt, f s, c).
 
 Definition err_put_state {S C E} (s' : S) : Err S C unit E := 
-  fun s => 
-    let '(s, c) := s in
-    (resultC tt, (s', c)).
+  fun s c => (resultC tt, s', c).
 
 Definition err_get_state {S C E} : Err S C S E := 
-  fun s => 
-    let '(s, c) := s in
-    (resultC s, (s, c)).
+  fun s c => (resultC s, s, c).
 
 Definition err_get_config {S C E} : Err S C C E := 
-  fun s => 
-    let '(s, c) := s in
-    (resultC c, (s, c)).
+  fun s c => (resultC c, s, c).
 
 Module ErrNotation.
 

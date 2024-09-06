@@ -11,46 +11,26 @@ Require Import Term_Defs Cvm_Monad ErrorStMonad_Coq.
 Import ErrNotation.
 
 (** Monadic CVM implementation (top-level) *)
-Fixpoint build_cvm (t: Term) : CVM unit :=
+Fixpoint build_cvm (e : Evidence) (t: Term) : CVM Evidence :=
   match t with
-  | asp a =>
-      e <- do_prim a ;;
-      put_ev e
-  | att q t' =>
-    e <- get_ev ;;
-    e' <- doRemote q e t' ;;
-    put_ev e'
+  | asp a => do_prim e a 
+  | att q t' => doRemote q e t'
   | lseq t1 t2 =>
-    build_cvm t1 ;;
-    build_cvm t2
+    e1 <- build_cvm e t1 ;;
+    build_cvm e1 t2
 
   | bseq s t1 t2 =>
     split_ev ;;
-    e <- get_ev ;;
-    (* put ev for t1 to work on *)
-    put_ev (splitEv_l s e) ;;
-    build_cvm t1 ;;
-    e1r <- get_ev ;;
-
-    (* put ev for t2 to work on *)
-    put_ev (splitEv_r s e) ;;
-    build_cvm t2 ;;
-    e2r <- get_ev ;;
-
+    e1r <- build_cvm (splitEv_l s e) t1 ;;
+    e2r <- build_cvm (splitEv_r s e) t2 ;;
     join_seq e1r e2r
 
   | bpar s t1 t2 =>
     split_ev ;;
-    e <- get_ev ;;
     (* We will make the LOC = event_id for start of thread *)
     (* start a parallel thread working on the evidence split for t2 *)
-    loc <- start_par_thread t2 (splitEv_r s e) ;;
-
-    (* put ev for t1 to work on *)
-    put_ev (splitEv_l s e) ;;
-    build_cvm t1 ;;
-    e1r <- get_ev ;;
-
+    loc <- start_par_thread (splitEv_r s e) t2 ;;
+    e1r <- build_cvm (splitEv_l s e) t1 ;;
     e2r <- wait_par_thread loc (splitEv_r s e) t2 ;;
     join_seq e1r e2r
   end.
