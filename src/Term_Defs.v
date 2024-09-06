@@ -342,15 +342,16 @@ Fixpoint appr_events' (G : GlobalContext) (p : Plc) (e : EvidenceT)
 
         | WRAP => (* do the unwrap *)
           let unwrap_ev := umeas i p dual_par ev_out in
-          let new_ev_out := asp_evt p' dual_par ev_out in
+          let new_ev_out := asp_evt p dual_par ev_out in
           (* do recursive case *)
           ev' <- appr_events' G p e' new_ev_out (i + 1) ;;
           resultC (unwrap_ev :: ev')
 
         | EXTEND => (* do the extend dual *)
-          (* ev_out does not change as the extend does not effect 
-          the underlying evidence! *)
-          ev' <- appr_events' G p e' ev_out (i + 2) ;;
+          (* ev_out does not change for the umeas event,
+          but it is replaced by e' for the recursive call
+          as the extend does not effect the underlying evidence! *)
+          ev' <- appr_events' G p e' e' (i + 2) ;;
           resultC ([split i p] ++ 
             [umeas (i + 1) p dual_par ev_out] ++ 
             ev' ++ [join (i + 2 + List.length ev') p])
@@ -358,11 +359,15 @@ Fixpoint appr_events' (G : GlobalContext) (p : Plc) (e : EvidenceT)
       end
     end
   | split_evt e1 e2 => 
-      e1' <- appr_events' G p e1 ev_out (i + 1) ;;
+    match ev_out with
+    | split_evt e1' e2' =>
+      e1' <- appr_events' G p e1 e1' (i + 1) ;;
       let next_i := (i + 1) + (List.length e1') in
-      e2' <- appr_events' G p e2 ev_out next_i ;;
+      e2' <- appr_events' G p e2 e2' next_i ;;
       let last_i := next_i + (List.length e2') in
       resultC ([split i p] ++ e1' ++ e2' ++ [join last_i p])
+    | _ => errC "Error in appraisal procedure computation, type of evidence passed into a split appraisal procedure is not a split evidence type"%string
+    end
   end.
 
 Lemma appr_events'_size_works : forall G p e ev_out i evs,
