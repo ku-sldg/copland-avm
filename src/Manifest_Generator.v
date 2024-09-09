@@ -2,7 +2,7 @@
     Includes separate (but similar) versions of the generator for both 
     attestation (manifest_generator) and appraisal (manifest_generator_app) scenarios. *)
 
-Require Import Term_Defs Params_Admits Manifest Defs.
+Require Import Term_Defs Params_Admits Manifest.
 
 Require Export ResultT String Maps StructTactics.
 
@@ -24,7 +24,7 @@ Fixpoint appr_manifest_update (G : GlobalContext) (e : EvidenceT)
   | nonce_evt _ => resultC (aspid_manifest_update (check_nonce_aspid) m)
   | asp_evt p ps e' => 
     let '(asp_paramsC asp_id _ _ _) := ps in
-    match (map_get (asp_comps G) asp_id) with
+    match (map_get asp_id (asp_comps G)) with
     | None => errC err_str_asp_no_compat_appr_asp
     | Some appr_asp_id => resultC (aspid_manifest_update appr_asp_id m)
     end
@@ -36,29 +36,25 @@ Fixpoint appr_manifest_update (G : GlobalContext) (e : EvidenceT)
 Definition asp_manifest_update (G : GlobalContext) (e : EvidenceT) 
     (a:ASP) (m:Manifest) : ResultT Manifest string :=
   match a with 
-  | ASPC _ params => 
-      match params with
-      | asp_paramsC i _ _ _ => resultC (aspid_manifest_update i m)
-      end
+  | ASPC (asp_paramsC i _ _ _) => resultC (aspid_manifest_update i m)
   | APPR => appr_manifest_update G e m
   | SIG => resultC (aspid_manifest_update (sig_aspid) m)
   | HSH => resultC (aspid_manifest_update (hsh_aspid) m)
   | ENC p => resultC (aspid_manifest_update (enc_aspid) m)
   | NULL => resultC m 
-  | CPY => resultC m
   end.
 
 Definition manifest_update_env_res (p:Plc) (e:EnvironmentM) 
             (f:Manifest -> ResultT Manifest string) 
             : ResultT EnvironmentM string := 
   let m := 
-    match (map_get e p) with
+    match (map_get p e) with
     | Some mm => mm
     | None => empty_Manifest
     end 
   in
   match (f m) with
-  | resultC m' => resultC (map_set e p m')
+  | resultC m' => resultC (map_set p m' e)
   | errC e => errC e
   end.
   
@@ -68,7 +64,7 @@ Fixpoint manifest_generator' (G : GlobalContext) (p:Plc) (et : EvidenceT)
   | asp a => manifest_update_env_res p e (asp_manifest_update G et a)
 
   | att q t' => 
-      match (map_get e p) with
+      match (map_get p e) with
       | Some m => manifest_generator' G q et t' e
       | None => manifest_generator' G q et t' ((p, empty_Manifest) :: e)
       end

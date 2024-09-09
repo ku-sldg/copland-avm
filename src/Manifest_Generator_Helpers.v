@@ -1,8 +1,8 @@
 (* Helper functions used by the Manifest Generator implementation. *)
 
-Require Import Term_Defs_Core Eqb_Evidence.
+Require Import Term_Defs_Core.
 
-Require Import EqClass StructTactics Defs.
+Require Import EqClass StructTactics.
 
 Require Export EnvironmentM Manifest_Set.
 
@@ -86,8 +86,8 @@ Qed.
 
    This function is currently only used for verification (not by the manifest generator implemtnation).  
     TODO:  consider moving this definition somewhere more logical.  *)
-Fixpoint place_terms (t:Term) (tp:Plc) (p:Plc) : list Term := 
-  if(eqb_plc tp p)
+Fixpoint place_terms `{EqClass Plc} (t:Term) (tp:Plc) (p:Plc) : list Term := 
+  if (eqb tp p)
   then [t]
   else (
     match t with 

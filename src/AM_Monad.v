@@ -1,7 +1,7 @@
 (* Monadic helpers and custom automation for the AM Monad (AM) *)
 Require Import List String.
 
-Require Import ErrorStMonad_Coq Maps Term_Defs Cvm_Run Cvm_St Cvm_Monad.
+Require Import ErrorStMonad_Coq Maps Term_Defs Cvm_St Cvm_Monad.
 
 Require Import ErrorStringConstants Attestation_Session.
 
