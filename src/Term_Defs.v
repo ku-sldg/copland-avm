@@ -76,11 +76,19 @@ Fixpoint apply_appr_par_chain (p : Plc) (e : EvidenceT) (l : list ASP_PARAMS) : 
   end.
   *)
 
+Definition equiv_EvidenceT (G : GlobalContext) (e1 e2 : EvidenceT) : bool :=
+  match et_size G e1, et_size G e2 with
+  | resultC n1, resultC n2 => eqb n1 n2
+  | _, _ => false
+  end.
+
 (** Helper function for EvidenceT type reference semantics *)
 
-Fixpoint appr_procedure' `{EqClass EvidenceT} (G : GlobalContext) (p : Plc) (e : EvidenceT) 
-    (ev_out : EvidenceT) : ResultT EvidenceT string :=
-  match e with
+Definition appr_procedure' (G : GlobalContext) (p : Plc) 
+    : EvidenceT -> EvidenceT -> ResultT EvidenceT string :=
+  fix F (e ev_out : EvidenceT) : ResultT EvidenceT string :=
+  if (equiv_EvidenceT G e ev_out)
+  then (match e with
   (* Simple case, we do nothing on appraise of mt *)
   | mt_evt => resultC mt_evt
   (* Simple as well, we utilize primitive nonce checking procedure *)
@@ -111,34 +119,113 @@ Fixpoint appr_procedure' `{EqClass EvidenceT} (G : GlobalContext) (p : Plc) (e :
           resultC (asp_evt p dual_par ev_out)
         | WRAP => 
           (* apply the dual to get a new evidence to operate on, then recurse *)
-          let ev_out' := asp_evt p dual_par ev_out in
-          appr_procedure' G p e' ev_out'
+          match map_get appr_id (asp_types G) with
+          | None => errC err_str_asp_no_type_sig
+          | Some (ev_arrow UNWRAP in_sig' out_sig') =>
+            let ev_out' := asp_evt p dual_par ev_out in
+            F e' ev_out'
+          | _ => errC "Error in appraisal procedure computation: Attempting to appraise WRAPPED evidence but the dual appraisal ASP is not an UNWRAP."%string
+          end
+          (* let ev_out' := asp_evt p dual_par ev_out in
+          F e' ev_out' *)
+        | UNWRAP => 
+          (* The appraisal of something that is unwrapped is just whatever is below its wrap *)
+          (* NOTE: In practice this should nearly never happen as the appraisal procedure itself should be doing the UNWRAP and subsequent functions *)
+          match e' with
+          | asp_evt _ (asp_paramsC asp_id' args' targ_plc' targ') e'' => 
+            match (map_get asp_id' (asp_types G)) with
+            | None => errC err_str_asp_no_type_sig
+            | Some (ev_arrow WRAP in_sig' out_sig') =>
+              (* We are a well-typed (UNWRAP (WRAP e'')), so continue *)
+              F e'' ev_out
+            | _ => errC "Error in appraisal procedure computation: Attempting to appraise UNWRAPPED evidence but the UNWRAPPED evidence was not originally a WRAP."%string
+            end
+          | _ => errC "Error in appraisal procedure computation: Attempting to appraise UNWRAPPED evidence but evidence that was UNWRAPPED was not an ASP (UNWRAP can only be applied to an ASP input)."%string
+          end
+
         | EXTEND => 
           (* appraisal of an extend involves doing the appraisal of the extension
           and then separately the appraisal of the underlying *)
-          ev_under <- appr_procedure' G p e' e' ;;
+          ev_under <- F e' e' ;;
           resultC (split_evt (asp_evt p dual_par ev_out) ev_under)
         end
       end
     end
+  | left_evt e' => r <- apply_to_left_evt G (fun e' => F e' ev_out) e' ;; r
+  | right_evt e' => r <- apply_to_right_evt G (fun e' => F e' ev_out) e' ;; r
+
   | split_evt e1 e2 => 
-    match ev_out with
-    | split_evt e1' e2' =>
-      if (eqb e1 e1') 
-      then if (eqb e2 e2') 
-        then 
-          e1' <- appr_procedure' G p e1 e1' ;;
-          e2' <- appr_procedure' G p e2 e2' ;;
-          resultC (split_evt e1' e2')
-        else errC "Error in appraisal procedure computation, split evidence type for e2 does not match"%string
-      else errC "Error in appraisal procedure computation, split evidence type for e1 does not match"%string
-    | _ => errC "Error in appraisal procedure computation, type of evidence passed into a split appraisal procedure is not a split evidence type"%string
-    end
-  end.
+    (* we now e ~ ev_out here, so we can continue on it *)
+    e1' <- F e1 (left_evt ev_out) ;;
+    e2' <- F e2 (right_evt ev_out) ;;
+    resultC (split_evt e1' e2')
+  end)
+  else errC "Error in appraisal procedure computation, type of evidence passed into an appraisal procedure does not match the expected type (evidence types are not equivalent)"%string.
 
 Definition appr_procedure (G : GlobalContext) (p : Plc) (e : EvidenceT) 
     : ResultT EvidenceT string :=
   appr_procedure' G p e e.
+
+Definition enc'_aspid : ASP_ID := "enc'_aspid"%string.
+
+Example appr_procedure_ex1 : forall G p,
+  appr_procedure G p (nonce_evt 1) = resultC (asp_evt p check_nonce_params (nonce_evt 1)).
+Proof.
+  ff.
+Qed.
+
+Example appr_procedure_ex2 : forall G p,
+  map_get enc_aspid (asp_types G) = Some (ev_arrow WRAP InAll (OutN 1)) ->
+  map_get enc_aspid (asp_comps G) = Some enc'_aspid ->
+  map_get enc'_aspid (asp_types G) = Some (ev_arrow UNWRAP InAll (OutUnwrap)) ->
+  appr_procedure G p (asp_evt p (enc_params p) (nonce_evt 1)) = 
+  resultC (
+    asp_evt p check_nonce_params (
+    asp_evt p (asp_paramsC enc'_aspid enc_aspargs p enc_targid)
+      (asp_evt p (enc_params p) (nonce_evt 1)))
+  ).
+Proof.
+  unfold appr_procedure;
+  simpl in *; ff;
+  unfold equiv_EvidenceT in *; ff.
+Qed.
+
+Example appr_procedure_ex3 : forall G p,
+  appr_procedure G p (split_evt (nonce_evt 1) (nonce_evt 2)) =
+  resultC (
+    split_evt 
+      (asp_evt p check_nonce_params (left_evt (split_evt (nonce_evt 1) (nonce_evt 2))))
+      (asp_evt p check_nonce_params (right_evt (split_evt (nonce_evt 1) (nonce_evt 2))))
+  ).
+Proof.
+  reflexivity.
+Qed.
+
+Example appr_procedure_ex4 : forall G p,
+  map_get enc_aspid (asp_types G) = Some (ev_arrow WRAP InAll (OutN 1)) ->
+  map_get enc_aspid (asp_comps G) = Some enc'_aspid ->
+  map_get enc'_aspid (asp_types G) = Some (ev_arrow UNWRAP InAll (OutUnwrap)) ->
+  appr_procedure G p (asp_evt p (enc_params p) (split_evt (nonce_evt 1) (nonce_evt 2))) = resultC (split_evt 
+    (asp_evt p check_nonce_params 
+      (left_evt 
+        (asp_evt p (asp_paramsC enc'_aspid enc_aspargs p enc_targid) 
+          (asp_evt p (enc_params p) (split_evt (nonce_evt 1) (nonce_evt 2)))
+        )
+      )
+    )
+    (asp_evt p check_nonce_params 
+      (right_evt 
+        (asp_evt p (asp_paramsC enc'_aspid enc_aspargs p enc_targid) 
+          (asp_evt p (enc_params p) (split_evt (nonce_evt 1) (nonce_evt 2)))
+        )
+      )
+    )
+  ).
+Proof.
+  intros.
+  unfold appr_procedure, equiv_EvidenceT in *;
+  ff; unfold equiv_EvidenceT in *; ff.
+Qed.
 
 (** Helper function for EvidenceT type reference semantics *)
 Definition eval_asp (G : GlobalContext) (a : ASP) 
@@ -157,7 +244,8 @@ Definition eval_asp (G : GlobalContext) (a : ASP)
 (** EvidenceT Type denotational reference semantics.
     The EvidenceT associated with a term, a place, and some initial EvidenceT. *)
 
-Fixpoint asp_comp_map_supports_ev (G : GlobalContext) (e : EvidenceT) :=
+Definition asp_comp_map_supports_ev (G : GlobalContext) : EvidenceT -> Prop  :=
+  fix F (e : EvidenceT) : Prop :=
   match e with
   | mt_evt => True
   | nonce_evt n => True
@@ -169,13 +257,23 @@ Fixpoint asp_comp_map_supports_ev (G : GlobalContext) (e : EvidenceT) :=
     | Some (ev_arrow fwd in_sig out_sig) =>
       match fwd with
       | REPLACE => True
-      | WRAP => asp_comp_map_supports_ev G e'
-      | EXTEND => asp_comp_map_supports_ev G e'
+      | WRAP => F e'
+      | UNWRAP => F e'
+      | EXTEND => F e'
       end
     end)
+  | left_evt e' => 
+    match apply_to_left_evt G F e' with
+    | resultC p => p
+    | _ => False
+    end
+  | right_evt e' => 
+    match apply_to_right_evt G F e' with
+    | resultC p => p
+    | _ => False
+    end
   | split_evt e1 e2 => 
-      asp_comp_map_supports_ev G e1 /\ 
-      asp_comp_map_supports_ev G e2
+      F e1 /\ F e2
   end.
 
 (* 
@@ -251,7 +349,8 @@ Inductive Ev :=
 
 (** The natural number used to distinguish events. *)
 
-Fixpoint appr_events_size (G : GlobalContext) (e : EvidenceT) : ResultT nat string :=
+Definition appr_events_size (G : GlobalContext) : EvidenceT -> ResultT nat string :=
+  fix F e : ResultT nat string :=
   match e with
   | mt_evt => resultC 0
   | nonce_evt _ => resultC 1 (* [umeas check_nonce nonce] *)
@@ -264,17 +363,24 @@ Fixpoint appr_events_size (G : GlobalContext) (e : EvidenceT) : ResultT nat stri
       | REPLACE => resultC 1 (* Single dual appr asp for 1 *)
       | WRAP => 
         (* we need the size of recursing *)
-        n <- appr_events_size G e' ;;
+        n <- F e' ;;
         resultC (1 + n) (* 1 for the unwrap, then n for rec case *)
+      | UNWRAP => 
+        (* we are just doing the recursion *)
+        F e' 
       | EXTEND => 
         (* we need the size of recursing *)
-        n <- appr_events_size G e' ;;
+        n <- F e' ;;
         resultC (3 + n) (* split (1), extend dual (1), rec case (n), join (1) *)
       end
     end
+  | left_evt e' => r <- apply_to_left_evt G F e' ;; r
+
+  | right_evt e' => r <- apply_to_right_evt G F e' ;; r
+
   | split_evt e1 e2 =>
-    s1 <- appr_events_size G e1 ;;
-    s2 <- appr_events_size G e2 ;;
+    s1 <- F e1 ;;
+    s2 <- F e2 ;;
     resultC (2 + s1 + s2) (* split (1) + s1 evs + s2 evs + join (1) *)
   end.
 
@@ -321,8 +427,9 @@ Definition ev x : nat :=
   | cvm_thread_end i _ => i
   end.
 
-Fixpoint appr_events' (G : GlobalContext) (p : Plc) (e : EvidenceT) 
-    (ev_out : EvidenceT) (i : nat) : ResultT (list Ev) string :=
+Definition appr_events' (G : GlobalContext) (p : Plc) 
+    : EvidenceT -> EvidenceT -> nat -> ResultT (list Ev) string :=
+  fix F (e ev_out : EvidenceT) (i : nat) : ResultT (list Ev) string :=
   match e with
   | mt_evt => resultC []
   | nonce_evt n => resultC [umeas i p check_nonce_params ev_out]
@@ -344,31 +451,63 @@ Fixpoint appr_events' (G : GlobalContext) (p : Plc) (e : EvidenceT)
           let unwrap_ev := umeas i p dual_par ev_out in
           let new_ev_out := asp_evt p dual_par ev_out in
           (* do recursive case *)
-          ev' <- appr_events' G p e' new_ev_out (i + 1) ;;
+          ev' <- F e' new_ev_out (i + 1) ;;
           resultC (unwrap_ev :: ev')
+
+        | UNWRAP => (* we are already unwrapped, just do below stuff *)
+          F e' ev_out i
 
         | EXTEND => (* do the extend dual *)
           (* ev_out does not change for the umeas event,
           but it is replaced by e' for the recursive call
           as the extend does not effect the underlying evidence! *)
-          ev' <- appr_events' G p e' e' (i + 2) ;;
+          ev' <- F e' e' (i + 2) ;;
           resultC ([split i p] ++ 
             [umeas (i + 1) p dual_par ev_out] ++ 
             ev' ++ [join (i + 2 + List.length ev') p])
         end
       end
     end
+
+  | left_evt e' => 
+    (* we only do stuff on the left, its a pass through *)
+    r <- apply_to_left_evt G (fun e' => F e' ev_out i) e' ;; r
+
+  | right_evt e' =>
+    (* we only do stuff on the right, its a pass through *)
+    r <- apply_to_right_evt G (fun e' => F e' ev_out i) e' ;; r
+
   | split_evt e1 e2 => 
     match ev_out with
     | split_evt e1' e2' =>
-      e1' <- appr_events' G p e1 e1' (i + 1) ;;
+      e1' <- F e1 e1' (i + 1) ;;
       let next_i := (i + 1) + (List.length e1') in
-      e2' <- appr_events' G p e2 e2' next_i ;;
+      e2' <- F e2 e2' next_i ;;
       let last_i := next_i + (List.length e2') in
       resultC ([split i p] ++ e1' ++ e2' ++ [join last_i p])
     | _ => errC "Error in appraisal procedure computation, type of evidence passed into a split appraisal procedure is not a split evidence type"%string
     end
   end.
+
+Lemma apply_to_left_evt_res_ind : forall {A B : Type} G (fn : EvidenceT -> A) 
+  (fn' : EvidenceT -> B) e out,
+  apply_to_left_evt G fn e = resultC out ->
+  forall f,
+  (forall e out, fn e = out -> fn' e = f out) ->
+  apply_to_left_evt G fn' e = resultC (f out).
+Proof.
+  induction e; simpl in *; intuition; try congruence; repeat find_injection.
+  - destruct a, e; try congruence.
+    destruct a1; simpl in *.
+    destruct a, e; ff.
+    * rewrite String.eqb_eq in *; ff.
+  - erewrite H0; ff.
+
+  destruct a; simpl in *.
+  destruct a.
+  destruct a, e; simpl in *; try congruence.
+  destruct a1.
+  destruct a; simpl 
 
 Lemma appr_events'_size_works : forall G p e ev_out i evs,
   appr_events' G p e ev_out i = resultC evs ->
@@ -376,7 +515,8 @@ Lemma appr_events'_size_works : forall G p e ev_out i evs,
 Proof.
   induction e; ffa using result_monad_unfold;
   repeat rewrite app_length in *; simpl in *;
-  f_equal; lia.
+  f_equal; try lia.
+  - unfold apply_to_left_evt_res.
 Qed.
 
 Definition appr_events (G : GlobalContext) (p : Plc) (e : EvidenceT) (i : nat) 

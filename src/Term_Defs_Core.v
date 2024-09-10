@@ -79,17 +79,19 @@ KEEP:  [b1, b2, ..., bn] ==> [b1, b2, ..., bn]
 Inductive FWD :=
 | REPLACE
 | WRAP
+| UNWRAP
 | EXTEND.
 
-Inductive EvInSize :=
-| InAll : EvInSize
-| InNone : EvInSize.
+Inductive EvInSig :=
+| InAll : EvInSig
+| InNone : EvInSig.
 
-Inductive EvOutSize :=
-| OutN : nat -> EvOutSize.
+Inductive EvOutSig :=
+| OutN : nat -> EvOutSig
+| OutUnwrap : EvOutSig.
 
 Inductive EvSig :=
-| ev_arrow : FWD -> EvInSize -> EvOutSize -> EvSig.
+| ev_arrow : FWD -> EvInSig -> EvOutSig -> EvSig.
 
 (** The structure of EvidenceT. 
 
@@ -102,6 +104,8 @@ Inductive EvidenceT :=
 | mt_evt      : EvidenceT
 | nonce_evt   : N_ID -> EvidenceT
 | asp_evt     : Plc -> ASP_PARAMS -> EvidenceT -> EvidenceT
+| left_evt    : EvidenceT -> EvidenceT
+| right_evt   : EvidenceT -> EvidenceT
 | split_evt   : EvidenceT -> EvidenceT -> EvidenceT.
 
 Fixpoint eqb_EvidenceT `{EqClass N_ID, EqClass ASP_PARAMS, EqClass Plc} (e1 e2 : EvidenceT) : bool :=
@@ -110,6 +114,8 @@ Fixpoint eqb_EvidenceT `{EqClass N_ID, EqClass ASP_PARAMS, EqClass Plc} (e1 e2 :
   | nonce_evt i, nonce_evt i' => eqb i i'
   | asp_evt p par e, asp_evt p' par' e' =>
     (eqb p p') && (eqb par par') && (eqb_EvidenceT e e')
+  | left_evt e, left_evt e' => eqb_EvidenceT e e'
+  | right_evt e, right_evt e' => eqb_EvidenceT e e'
   | split_evt e1 e2, split_evt e1' e2' =>
     eqb_EvidenceT e1 e1' && eqb_EvidenceT e2 e2'
   | _, _ => false
@@ -182,19 +188,102 @@ Open Scope string_scope.
 Definition err_str_asp_bad_size (got expect : nat) := 
   "ASP requires input of size " ++ to_string expect ++ 
   " but received input of size " ++ to_string got ++ "\n".
-Close Scope string_scope.
 
-(** Calculate the size of an ASP's input based on its signature *)
-
-Definition asp_sig_et_size (size_in : nat) (sig : EvSig) :=
-  let '(ev_arrow fwd in_sig (OutN n)) := sig in
-  match fwd with
-  | EXTEND => n + size_in
-  | _ => n
+Definition apply_to_left_evt {A : Type} (G : GlobalContext) 
+    (f : EvidenceT -> A) : EvidenceT -> ResultT A string :=
+  fix F e :=
+  match e with
+  | split_evt e1 e2 => resultC (f e1)
+  | asp_evt _ (asp_paramsC a' _ _ _) (
+      asp_evt _ (asp_paramsC a _ _ _) e'
+    ) => 
+    (* if a and a' are duals, and they are a WRAP *)
+    match (map_get a (asp_comps G)) with
+    | Some a'' =>
+      if (eqb a' a'') 
+      then (* they are duals, is a a WRAP *)
+        match (map_get a (asp_types G)) with
+        | Some (ev_arrow WRAP _ _) => 
+          (* a is a WRAP, so a' must UNWRAP. We can recurse *)
+          match (map_get a' (asp_types G)) with
+          | Some (ev_arrow UNWRAP _ _) =>
+            F e'
+          | Some _ => errC "Appraisal ASP is not an UNWRAP"
+          | _ => errC err_str_asp_no_type_sig
+          end
+        | Some _ => errC "ASP is not a WRAP"
+        | _ => errC err_str_asp_no_type_sig
+        end
+      else errC "ASPs are not duals"
+    | _ => errC err_str_asp_no_compat_appr_asp
+    end
+  | _ => errC "No possible left evidence"
   end.
 
+Definition apply_to_right_evt {A : Type} (G : GlobalContext) 
+    (f : EvidenceT -> A) : EvidenceT -> ResultT A string :=
+  fix F e :=
+  match e with
+  | split_evt e1 e2 => resultC (f e2)
+  | asp_evt _ (asp_paramsC a' _ _ _) (
+      asp_evt _ (asp_paramsC a _ _ _) e'
+    ) => 
+    (* if a and a' are duals, and they are a WRAP *)
+    match (map_get a (asp_comps G)) with
+    | Some a'' =>
+      if (eqb a' a'') 
+      then (* they are duals, is a a WRAP *)
+        match (map_get a (asp_types G)) with
+        | Some (ev_arrow WRAP _ _) => 
+          (* a is a WRAP, so a' must UNWRAP. We can recurse *)
+          match (map_get a' (asp_types G)) with
+          | Some (ev_arrow UNWRAP _ _) =>
+            F e'
+          | Some _ => errC "Appraisal ASP is not an UNWRAP"
+          | _ => errC err_str_asp_no_type_sig
+          end
+        | Some _ => errC "ASP is not a WRAP"
+        | _ => errC err_str_asp_no_type_sig
+        end
+      else errC "ASPs are not duals"
+    | _ => errC err_str_asp_no_compat_appr_asp
+    end
+  | _ => errC "No possible left evidence"
+  end.
+
+Definition err_str_cannot_have_outwrap fwd_val := 
+  "Invalid Output Signature of type 'OutUnwrap' on an ASP with FWD of '" ++ fwd_val ++ "'".
+
+(** Calculate the size of an ASP's input based on its signature *)
+(* Definition asp_sig_et_size (previous_sig : EvSig) (sig : EvSig) 
+    : ResultT nat string :=
+  let '(ev_arrow fwd in_sig out_sig) := sig in
+  match fwd with
+  | REPLACE => 
+    (* we are replacing, so just the output *)
+    match out_sig with
+    | OutN n => n
+    | OutDepIn => errC err_str_invalid_signature
+    end
+  | WRAP => 
+    (* we are wrapping, so just the output *)
+    match out_sig with
+    | OutN n => n
+    | OutDepIn => errC err_str_invalid_signature
+    end
+  | UNWRAP => 
+    (* we are unwrapping, so we are the size of the previous input *)
+    match out_sig with
+    | OutN n => errC err_str_invalid_signature
+    | OutDepIn => size_in
+    end
+  | EXTEND => 
+    match 
+  end. *)
+
 (**  Calculate the size of an EvidenceT type *)
-Fixpoint et_size (G : GlobalContext) (e:EvidenceT) : ResultT nat string :=
+Definition et_size (G : GlobalContext) : EvidenceT -> ResultT nat string :=
+  fix F e :=
   match e with
   | mt_evt=> resultC 0
   | nonce_evt _ => resultC 1
@@ -202,15 +291,60 @@ Fixpoint et_size (G : GlobalContext) (e:EvidenceT) : ResultT nat string :=
     let '(asp_paramsC asp_id args targ_plc targ) := par in
     match (map_get asp_id (asp_types G)) with
     | None => errC err_str_asp_no_type_sig
-    | Some ev_sig =>
-      s' <- et_size G e' ;;
-      resultC (asp_sig_et_size s' ev_sig)
+    | Some (ev_arrow fwd in_sig out_sig) =>
+      match fwd with
+      | REPLACE => 
+        (* we are replacing, so just the output *)
+        match out_sig with
+        | OutN n => resultC n
+        | OutUnwrap => errC (err_str_cannot_have_outwrap "REPLACE")
+        end
+      | WRAP => 
+        (* we are wrapping, so just the output *)
+        match out_sig with
+        | OutN n => resultC n
+        | OutUnwrap => errC (err_str_cannot_have_outwrap "WRAP")
+        end
+      | UNWRAP => 
+        (* we are unwrapping, so we are the size of the previous input *)
+        match out_sig with
+        | OutN n => errC "UNWRAP must have an output type of OutUnwrap"
+        | OutUnwrap => 
+          match e' with
+          | (asp_evt p (asp_paramsC asp_id' args' targ_plc' targ') e'') =>
+            match (map_get asp_id' (asp_types G)) with
+            | None => errC err_str_asp_no_type_sig
+            | Some (ev_arrow WRAP in_sig' out_sig') =>
+              match in_sig' with
+              | InAll => 
+                n' <- F e'' ;;
+                resultC n'
+              | InNone => resultC 0
+              end
+            | _ => errC "UNWRAP can only be applied to an ASP input of type FWD=WRAP"
+            end
+          | _ => errC "UNWRAP can only be applied to an ASP input"
+          end
+        end
+      | EXTEND =>
+        match out_sig with
+        | OutN n => 
+          n' <- F e' ;;
+          resultC (n + n')
+        | OutUnwrap => errC (err_str_cannot_have_outwrap "EXTEND")
+        end
+      end
     end
+  | left_evt e' => r <- apply_to_left_evt G F e' ;; r
+
+  | right_evt e' => r <- apply_to_right_evt G F e' ;; r
+
   | split_evt e1 e2 => 
-    s1 <- et_size G e1 ;; 
-    s2 <- et_size G e2 ;;
+    s1 <- F e1 ;; 
+    s2 <- F e2 ;;
     resultC (s1 + s2)
   end.
+Close Scope string_scope.
 
 (* 
 Fixpoint appr_et_size (G : GlobalContext) (e : EvidenceT) : ResultT nat string :=

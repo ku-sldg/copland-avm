@@ -205,6 +205,7 @@ Definition FWD_to_JSON (t : FWD) : JSON :=
   match t with
   | REPLACE => constructor_to_JSON fwd_name_constant "REPLACE" []
   | WRAP    => constructor_to_JSON fwd_name_constant "WRAP" []
+  | UNWRAP  => constructor_to_JSON fwd_name_constant "UNWRAP" []
   | EXTEND  => constructor_to_JSON fwd_name_constant "EXTEND" []
   end.
 
@@ -245,6 +246,8 @@ Definition FWD_from_JSON_map : Map string (JSON -> (ResultT FWD string)) :=
     constructor_from_JSON fwd_name_constant (fun _ => resultC REPLACE));
    ("WRAP", 
     constructor_from_JSON fwd_name_constant (fun _ => resultC WRAP));
+   ("UNWRAP", 
+    constructor_from_JSON fwd_name_constant (fun _ => resultC UNWRAP));
    ("EXTEND", 
     constructor_from_JSON fwd_name_constant (fun _ => resultC EXTEND))].
 
@@ -324,38 +327,72 @@ intuition; simpl in *;
 unfold FWD_to_JSON, FWD_from_JSON; ff.
 Defined.
 
-Definition EvSig_to_JSON `{Jsonifiable FWD} (t : EvSig) : JSON := 
+Definition EvOutSig_to_JSON `{Jsonifiable nat} (t : EvOutSig) : JSON := 
+  match t with
+  | OutN n => JSON_Object 
+    [("EvOutSig_CONSTRUCTOR", JSON_String "OutN"); 
+      ("EvOutSig_BODY", to_JSON n)]
+  | OutUnwrap => JSON_Object 
+    [("EvOutSig_CONSTRUCTOR", JSON_String "OutUnwrap")]
+  end.
+
+Definition EvOutSig_from_JSON `{Jsonifiable nat} (js : JSON) : ResultT EvOutSig string :=
+  let type_name := "EvOutSig" in
+  match (JSON_get_Object (type_name ++ "_" ++ type_string_constant) js) with
+  | resultC (JSON_String cons_name) =>
+    if (eqb cons_name "OutUnwrap") 
+    then resultC OutUnwrap
+    else if (eqb cons_name "OutN") 
+    then match js with
+        | JSON_Object [
+            _;
+            (_, n_js)
+          ] =>
+            n_js <- from_JSON n_js ;;
+            resultC (OutN n_js)
+        | _ => errC ("JSON Parsing 'OutN' ARGS: wrong number of JSON args (expected 1)")
+        end
+    else errC "Invalid EvOutSig JSON constructor name"
+  | resultC _ => errC ("Invalid " ++ type_name ++ " JSON:  no constructor name string")
+  | errC e => errC e
+  end.
+
+Global Instance Jsonifiable_EvOutSig `{Jsonifiable nat} : Jsonifiable EvOutSig.
+eapply Build_Jsonifiable with 
+  (to_JSON := EvOutSig_to_JSON)
+  (from_JSON := EvOutSig_from_JSON).
+unfold EvOutSig_from_JSON, EvOutSig_to_JSON; 
+induction a; jsonifiable_hammer.
+Defined.
+
+Definition EvSig_to_JSON `{Jsonifiable EvOutSig, Jsonifiable FWD} (t : EvSig) : JSON := 
   let '(ev_arrow fwd in_sig out_sig) := t in
   JSON_Object [
     ("FWD", to_JSON fwd);
-    ("InSig", 
+    ("EvInSig", 
       JSON_String (match in_sig with
       | InAll => "ALL"
       | InNone => "NONE"
       end));
-    ("OutSig", 
-      match out_sig with
-      | OutN n => to_JSON n
-      end)
-  ].
+    ("EvOutSig", to_JSON out_sig)].
 
-Definition EvSig_from_JSON `{Jsonifiable FWD} (js : JSON) : ResultT EvSig string :=
+Definition EvSig_from_JSON `{Jsonifiable EvOutSig, Jsonifiable FWD} (js : JSON) : ResultT EvSig string :=
   fwd_js <- JSON_get_Object "FWD" js ;;
-  in_sig_js <- JSON_get_string "InSig" js ;;
-  out_sig_js <- JSON_get_Object "OutSig" js ;;
+  in_sig_js <- JSON_get_string "EvInSig" js ;;
+  out_sig_js <- JSON_get_Object "EvOutSig" js ;;
 
   fwd <- from_JSON fwd_js ;;
   in_sig <- 
     match in_sig_js with
     | "ALL" => resultC InAll
     | "NONE" => resultC InNone
-    | _ => errC "Invalid InSig JSON"
+    | _ => errC "Invalid EvInSig JSON"
     end ;;
-  out_n <- from_JSON out_sig_js ;;
+  out_sig <- from_JSON out_sig_js ;;
 
-  resultC (ev_arrow fwd in_sig (OutN out_n)).
+  resultC (ev_arrow fwd in_sig out_sig).
 
-Global Instance Jsonifiable_EvSig `{Jsonifiable FWD} : Jsonifiable EvSig.
+Global Instance Jsonifiable_EvSig `{Jsonifiable EvOutSig, Jsonifiable FWD} : Jsonifiable EvSig.
 eapply Build_Jsonifiable with
 (to_JSON := EvSig_to_JSON)
 (from_JSON := EvSig_from_JSON);
@@ -363,6 +400,9 @@ unfold EvSig_from_JSON, EvSig_to_JSON;
 destruct a; jsonifiable_hammer; subst; result_monad_unfold; 
 jsonifiable_hammer.
 Defined.
+
+Definition left_evt_name_constant : string := "left_evt".
+Definition right_evt_name_constant : string := "right_evt".
 
 Fixpoint EvidenceT_to_JSON `{Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP_PARAMS} (e : EvidenceT) : JSON := 
   match e with
@@ -373,6 +413,12 @@ Fixpoint EvidenceT_to_JSON `{Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP_P
   | asp_evt plc ps e' => 
       constructor_to_JSON evidencet_name_constant asp_evt_name_constant 
         [(JSON_String plc); (to_JSON ps); EvidenceT_to_JSON e']
+  | left_evt e' => 
+      constructor_to_JSON evidencet_name_constant left_evt_name_constant
+        [(EvidenceT_to_JSON e')]
+  | right_evt e' => 
+      constructor_to_JSON evidencet_name_constant right_evt_name_constant
+        [(EvidenceT_to_JSON e')]
   | split_evt e1 e2 => 
       constructor_to_JSON evidencet_name_constant split_evt_name_constant 
         [(EvidenceT_to_JSON e1); (EvidenceT_to_JSON e2)]
@@ -405,6 +451,26 @@ Fixpoint EvidenceT_from_JSON `{Jsonifiable FWD, Jsonifiable nat, Jsonifiable ASP
               ev' <- EvidenceT_from_JSON ev' ;;
               resultC (asp_evt plc asp_par ev')
           | _ => errC ("JSON Parsing " ++ asp_evt_name_constant ++ " ARGS:  wrong number of JSON args (expected 3)")
+          end 
+      else if (eqb cons_name left_evt_name_constant)
+      then match js with
+          | JSON_Object [
+              _;
+              (_, ev')
+           ] =>
+              ev' <- EvidenceT_from_JSON ev' ;;
+              resultC (left_evt ev')
+          | _ => errC ("JSON Parsing 'left_evt' ARGS:  wrong number of JSON args (expected 1)")
+          end 
+      else if (eqb cons_name right_evt_name_constant)
+      then match js with
+          | JSON_Object [
+              _;
+              (_, ev')
+           ] =>
+              ev' <- EvidenceT_from_JSON ev' ;;
+              resultC (right_evt ev')
+          | _ => errC ("JSON Parsing 'right_evt' ARGS: wrong number of JSON args (expected 1)")
           end 
       else if (eqb cons_name split_evt_name_constant) 
       then match js with
