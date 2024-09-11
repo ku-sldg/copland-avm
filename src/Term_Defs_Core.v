@@ -189,40 +189,97 @@ Definition err_str_asp_bad_size (got expect : nat) :=
   "ASP requires input of size " ++ to_string expect ++ 
   " but received input of size " ++ to_string got ++ "\n".
 
-Definition EvidenceT_double_ind :=
-  fun (P : EvidenceT -> Prop) 
-    (f : P mt_evt)
-    (f0 : forall n : N_ID, P (nonce_evt n))
+Definition EvidenceT_depth : EvidenceT -> nat :=
+  fix F e :=
+  match e with
+  | mt_evt => 0
+  | nonce_evt _ => 0
+  | asp_evt _ _ e' => 1 + F e'
+  | left_evt e' => 1 + F e'
+  | right_evt e' => 1 + F e'
+  | split_evt e1 e2 => 1 + max (F e1) (F e2)
+  end.
+
+Require Import Lia.
+
+Lemma EvidenceT_double_ind (P : EvidenceT -> Prop) 
+    (f_mt : P mt_evt) 
+
+    (f_nonce : forall n : N_ID, P (nonce_evt n))
+
     (f_asp_mt : forall p a, P (asp_evt p a mt_evt))
     (f_aps_nonce : forall p a n, P (asp_evt p a (nonce_evt n)))
-    (f_asp_asp : forall p a p' a' (e : EvidenceT),
-      P e -> P (asp_evt p a (asp_evt p' a' e)))
-    (f_asp_left : forall p a e, P e -> P (asp_evt p a (left_evt e)))
-    (f_asp_right : forall p a e, P e -> P (asp_evt p a (right_evt e)))
+    (f_asp_asp : forall (e : EvidenceT), P e -> 
+      forall p p' a a', P (asp_evt p a (asp_evt p' a' e)))
+    (f_asp_left : forall p a e, P (left_evt e) -> P (asp_evt p a (left_evt e)))
+    (f_asp_right : forall p a e, P (right_evt e) -> P (asp_evt p a (right_evt e)))
     (f_asp_split : forall p a e1 e2, P e1 -> P e2 -> P (asp_evt p a (split_evt e1 e2)))
-    (f2 : forall e : EvidenceT, P e -> P (left_evt e))
-    (f3 : forall e : EvidenceT, P e -> P (right_evt e))
-    (f4 : forall e : EvidenceT, P e -> 
-      forall e0 : EvidenceT, P e0 -> P (split_evt e e0))
-    => 
-fix F (e : EvidenceT) : P e := 
-match e as e0 return (P e0) with
-| mt_evt => f
-| nonce_evt n => f0 n
-| asp_evt p a e0 => 
-  match e0 with
-  | mt_evt => f_asp_mt _ _
-  | nonce_evt n => f_aps_nonce _ _ n
-  | asp_evt p' a' e0' => f_asp_asp p a p' a' e0' (F e0')
-  | left_evt e0 => f_asp_left p a e0 (F e0)
-  | right_evt e0 => f_asp_right p a e0 (F e0)
-  | split_evt e0 e1 => f_asp_split p a e0 e1 (F e0) (F e1)
-  end
-| left_evt e0 => f2 e0 (F e0)
-| right_evt e0 => f3 e0 (F e0)
-| split_evt e0 e1 => f4 e0 (F e0) e1 (F e1)
-end.
 
+    (f_left_mt : P (left_evt mt_evt))
+    (f_left_nonce : forall n : N_ID, P (left_evt (nonce_evt n)))
+    (f_left_asp_mt : forall p a, P (left_evt (asp_evt p a mt_evt)))
+    (f_left_asp_nonce : forall p a n, P (left_evt (asp_evt p a (nonce_evt n))))
+    (f_left_asp_asp : forall e, P (left_evt e) -> 
+      forall p a p' a', P (left_evt (asp_evt p a (asp_evt p' a' e))))
+    (f_left_asp_left : forall e, P (left_evt e) -> 
+      forall p a, P (left_evt (asp_evt p a (left_evt e))))
+    (f_left_asp_right : forall e, P (right_evt e) -> 
+      forall p a, P (left_evt (asp_evt p a (right_evt e))))
+    (f_left_asp_split : forall e1 e2, P e1 -> P e2 -> 
+      forall p a, P (left_evt (asp_evt p a (split_evt e1 e2))))
+    (f_left_left : forall e : EvidenceT, P (left_evt e) -> P (left_evt (left_evt e)))
+    (f_left_right : forall e : EvidenceT, P (right_evt e) -> P (left_evt (right_evt e)))
+    (f_left_split : forall e1 e2 : EvidenceT, 
+      P e1 -> 
+      P (left_evt (split_evt e1 e2)))
+
+    (f_right_mt : P (right_evt mt_evt))
+    (f_right_nonce : forall n : N_ID, P (right_evt (nonce_evt n)))
+    (f_right_asp_mt : forall p a, P (right_evt (asp_evt p a mt_evt)))
+    (f_right_asp_nonce : forall p a n, P (right_evt (asp_evt p a (nonce_evt n))))
+    (f_right_asp_asp : forall e, P (right_evt e) -> 
+      forall p a p' a', P (right_evt (asp_evt p a (asp_evt p' a' e))))
+    (f_right_asp_left : forall e, P (left_evt e) -> 
+      forall p a, P (right_evt (asp_evt p a (left_evt e))))
+    (f_right_asp_right : forall e, P (right_evt e) -> 
+      forall p a, P (right_evt (asp_evt p a (right_evt e))))
+    (f_right_asp_split : forall e1 e2, P e1 -> P e2 -> 
+      forall p a, P (right_evt (asp_evt p a (split_evt e1 e2))))
+    (f_right_left : forall e : EvidenceT, P e -> P (right_evt (left_evt e)))
+    (f_right_right : forall e : EvidenceT, P e -> P (right_evt (right_evt e)))
+    (f_right_split : forall e1 e2 : EvidenceT, 
+      P e2 -> 
+      P (right_evt (split_evt e1 e2)))
+
+    (f_split : forall e : EvidenceT, P e -> 
+      forall e0 : EvidenceT, P e0 -> P (split_evt e e0)) 
+    : forall e, P e.
+  assert (well_founded (fun e1 e2 => EvidenceT_depth e1 < EvidenceT_depth e2)). {
+    simpl in *.
+    eapply Wf_nat.well_founded_ltof.
+  }
+  assert (forall x : EvidenceT, (forall y : EvidenceT, (fun e1 e2 => EvidenceT_depth e1 < EvidenceT_depth e2) y x -> P y) -> P x). {
+    destruct x; simpl in *; eauto; intros F.
+    - destruct x; eauto.
+      eapply f_asp_split; eapply F; simpl in *; eauto; lia.
+    - destruct x; eauto.
+      * destruct x; eauto.
+        (* ** eapply f_left_asp_asp; eapply F; simpl in *; eauto; lia. *)
+        (* ** eapply f_left_asp_left; eapply F; simpl in *; eauto; lia. *)
+        (* ** eapply f_left_asp_right; eapply F; simpl in *; eauto; lia. *)
+        ** eapply f_left_asp_split; eapply F; simpl in *; eauto; lia.
+      * eapply f_left_split; eapply F; eauto; simpl in *; lia.
+    - destruct x; eauto.
+      * destruct x; eauto.
+        (* ** eapply f_right_asp_asp; eapply F; simpl in *; eauto; lia. *)
+        (* ** eapply f_right_asp_left; eapply F; simpl in *; eauto; lia. *)
+        (* ** eapply f_right_asp_right; eapply F; simpl in *; eauto; lia. *)
+        ** eapply f_right_asp_split; eapply F; simpl in *; eauto; lia.
+      * eapply f_right_split; eapply F; eauto; simpl in *; lia.
+    - eapply f_split; eapply F; simpl in *; eauto; lia.
+  }
+  eapply well_founded_ind; eauto.
+Qed.
 
 Definition get_left_evt (G : GlobalContext) 
     : EvidenceT -> ResultT EvidenceT string :=
@@ -297,7 +354,16 @@ Qed.
 
 Lemma apply_to_left_evt_correct: forall {A : Type} G e e' (fn : EvidenceT -> A),
   apply_to_left_evt G fn e = resultC e' ->
-  exists e'', e' = fn e''.
+  exists e'', fn e'' = e'.
+Proof.
+  induction e using EvidenceT_double_ind; simpl in *;
+  intuition; try congruence;
+  repeat (break_match; try congruence); ff.
+Qed.
+
+Lemma apply_to_left_evt_deterministic: forall {A B : Type} G e e' (fn : EvidenceT -> A) (fn' : EvidenceT -> B),
+  apply_to_left_evt G fn e = resultC e' ->
+  exists e'', apply_to_left_evt G fn' e = resultC e''.
 Proof.
   induction e using EvidenceT_double_ind; simpl in *;
   intuition; try congruence;
@@ -364,6 +430,85 @@ Definition err_str_cannot_have_outwrap fwd_val :=
   | EXTEND => 
     match 
   end. *)
+
+Definition get_asp_under (G : GlobalContext) :
+    EvidenceT -> ResultT EvidenceT string :=
+  fix F e :=
+  match e with
+  | asp_evt _ (asp_paramsC top_id _ _ _) et' => 
+    (* we either want to:
+    1. If this is not an UNWRAP we can just return it *)
+    match (map_get top_id (asp_types G)) with
+    | None => errC err_str_asp_no_type_sig
+    | Some (ev_arrow UNWRAP _ _) => 
+      (* This was an UNWRAP, so we need to be able to get below it *)
+      match et' with
+      | asp_evt _ (asp_paramsC bury_id _ _ _) et'' =>
+        match (map_get bury_id (asp_comps G)) with
+        | None => errC err_str_asp_no_compat_appr_asp
+        | Some bury_id' =>
+          if (eqb top_id bury_id') 
+          then 
+            match (map_get bury_id (asp_types G)) with
+            | None => errC err_str_asp_no_type_sig
+            | Some (ev_arrow WRAP _ _) => F et''
+            | _ => errC "ASP under UNWRAP is not a WRAP"
+            end
+          else errC "A WRAP and UNWRAP ASPs are not duals"
+        end
+      | _ => errC "UNWRAP must have an ASP input"
+      end
+    | Some (ev_arrow _ _ _) => resultC e
+    end
+  | left_evt et' => r <- apply_to_left_evt G F et' ;; r
+  | right_evt et' => r <- apply_to_right_evt G F et' ;; r
+  | _ => errC "No ASP under this evidence"
+  end.
+
+Definition apply_to_asp_under_wrap {A : Type} (G : GlobalContext) 
+    (unwrap_id : ASP_ID) (f : EvidenceT -> A)
+    : EvidenceT -> ResultT A string :=
+  fix F e :=
+  match e with
+  | asp_evt _ (asp_paramsC top_id _ _ _) et' => 
+    (* we either want to:
+    1. If this is not an UNWRAP we can just return it *)
+    match (map_get top_id (asp_types G)) with
+    | None => errC err_str_asp_no_type_sig
+    | Some (ev_arrow UNWRAP _ _) => 
+      (* This was an UNWRAP, so we need to be able to get below it *)
+      match et' with
+      | asp_evt _ (asp_paramsC bury_id _ _ _) et'' =>
+        match (map_get bury_id (asp_comps G)) with
+        | None => errC err_str_asp_no_compat_appr_asp
+        | Some bury_id' =>
+          if (eqb top_id bury_id') 
+          then 
+            match (map_get bury_id (asp_types G)) with
+            | None => errC err_str_asp_no_type_sig
+            | Some (ev_arrow WRAP _ _) => F et''
+            | _ => errC "ASP under UNWRAP is not a WRAP"
+            end
+          else errC "A WRAP and UNWRAP ASPs are not duals"
+        end
+      | _ => errC "UNWRAP must have an ASP input"
+      end
+    | Some (ev_arrow WRAP _ _) => 
+      (* if this is an WRAP, and they are compat, we are done *)
+      match (map_get top_id (asp_comps G)) with
+      | None => errC err_str_asp_no_compat_appr_asp
+      | Some unwrapper_id =>
+        if (eqb unwrapper_id unwrap_id) 
+        then resultC (f e)
+        else errC "WRAP and UNWRAP ASPs are not duals"
+      end
+    | Some _ => errC "ASPs at the bottom is not a WRAP"
+    end
+  | left_evt et' => r <- apply_to_left_evt G F et' ;; r
+  | right_evt et' => r <- apply_to_right_evt G F et' ;; r
+  | _ => errC "No ASP under this evidence"
+  end.
+  
 
 (**  Calculate the size of an EvidenceT type *)
 Definition et_size (G : GlobalContext) : EvidenceT -> ResultT nat string :=

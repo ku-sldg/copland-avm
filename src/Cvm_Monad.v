@@ -86,13 +86,20 @@ Definition join_seq (e1:Evidence) (e2:Evidence): CVM Evidence :=
   add_trace [join n p] ;;
   err_ret (evc (bits1 ++ bits2) (split_evt et1 et2)).
 
+Definition hoist_result {A : Type} (r : ResultT A string) : CVM A :=
+  match r with
+  | resultC a => err_ret a
+  | errC e => err_failm (dispatch_error (Runtime e))
+  end.
+
 (* Helper function that builds a new internal EvidenceT bundle based on 
    the EvidenceT extension parameter of an ASP term. *)
 Definition bundle_asp (p:Plc) (rwev : RawEv) 
     (cur_ev : Evidence) (ps:ASP_PARAMS) : CVM Evidence :=
   sc <- get_config ;;
+  let G := session_context sc in
   let '(asp_paramsC asp_id args targ_plc targ) := ps in
-  match (map_get asp_id (asp_types (session_context sc))) with
+  match (map_get asp_id (asp_types G)) with
   | None => err_failm (dispatch_error (Runtime err_str_asp_no_type_sig))
   | Some (ev_arrow fwd in_sig (OutN n)) =>
     if (eqb (length rwev) n)
@@ -107,6 +114,7 @@ attestation and bundling side of the CVM. Wraps main distinction lies in the
 fact that its is a GUARANTEE, that the dual appraisal ASP is actually an
 inverse, thus allowing WRAPPED evidence to be recovered via appraisal *)
       | WRAP => err_ret (evc rwev (asp_evt p ps (get_et cur_ev)))
+      | UNWRAP => err_failm (dispatch_error (Runtime "UNWRAP ASPs must have OutUnwrap"))
 (* The semantics for an "EXTEND" asp are it APPENDS all incoming evidence to the
 current CVM evidence bundle *)
       | EXTEND =>
@@ -115,6 +123,33 @@ current CVM evidence bundle *)
         end
       end
     else err_failm (dispatch_error (Runtime errStr_raw_EvidenceT_too_long))
+  | Some (ev_arrow fwd in_sig OutUnwrap) => 
+    match fwd with
+    | WRAP => err_failm (dispatch_error (Runtime "WRAP ASPs cannot have OutUnwrap"))
+    | REPLACE => err_failm (dispatch_error (Runtime "REPLACE ASPs cannot have OutUnwrap"))
+    | EXTEND => err_failm (dispatch_error (Runtime "EXTEND ASPs cannot have OutUnwrap"))
+    | UNWRAP => 
+      let '(evc bits et) := cur_ev in
+      r <- hoist_result (get_asp_under G et) ;;
+      match r with
+      | asp_evt p' (asp_paramsC wrap_id _ _ _) et' =>
+        match (map_get wrap_id (asp_types G)) with
+        | None => err_failm (dispatch_error (Runtime err_str_asp_no_type_sig))
+        | Some (ev_arrow WRAP _ _) =>
+          (* we are an UNWRAP or a WRAP, so new size is the sizer of et' *)
+          match et_size G et' with
+          | errC e => err_failm (dispatch_error (Runtime e))
+          | resultC et'_size =>
+            if (eqb (length rwev) et'_size)
+            then (* we are the right inverse size! *)
+              err_ret (evc rwev (asp_evt p ps et))
+            else err_failm (dispatch_error (Runtime "UNWRAP of a WRAP ASP must have the same size of the WRAPed evidence"))
+          end
+        | Some (ev_arrow _ _ _) => err_failm (dispatch_error (Runtime "UNWRAP ASPs must be applied to a WRAP ASP"))
+        end
+      | _ => err_failm (dispatch_error (Runtime "UNWRAP ASPs must be applied to a WRAP ASP"))
+      end
+    end
   end.
 
 (** * Stub for invoking external ASP procedures.  
@@ -150,26 +185,55 @@ Fixpoint peel_n_rawev (n : nat) (ls : RawEv) : ResultT (RawEv * RawEv) string :=
     end
   end.
 
-Definition hoist_result {A : Type} (r : ResultT A string) : CVM A :=
-  match r with
-  | resultC a => err_ret a
-  | errC e => err_failm (dispatch_error (Runtime e))
+(*
+
+Open Scope string_scope.
+
+Definition split_evidence (G : GlobalContext) (et1 et2 : EvidenceT) :
+    EvidenceT -> ResultT (Evidence * Evidence) string :=
+  fix split_evidence' (e : Evidence) : ResultT (Evidence * Evidence) string :=
+  let '(evc bits et) := e in
+  match et with
+  | mt_evt => errC "Cannot split null evidence!"
+  | nonce_evt _ => errC "Cannot split nonce evidence!"
+  | asp_evt _ _ _ => errC "Cannot split ASP evidence!"
+  | left_evt e' => r <- apply_to_left_evt G split_evidence' e' ;; r
+  | right_evt e' => r <- apply_to_right_evt G split_evidence' e' ;; r
+  | split_evt et1' et2' =>
+    if (eqb et1 et1')
+    then 
+      if (eqb et2 et2')
+      then 
+        et1_size <- et_size G et1 ;;
+        et2_size <- et_size G et2 ;;
+        '(l_ev, rest) <- (peel_n_rawev et1_size bits) ;;
+        '(r_ev, rest') <- (peel_n_rawev et2_size rest) ;;
+        match rest' with
+        | [] => resultC (evc l_ev et1, evc r_ev et2)
+        | _ => errC "Evidence splitting failed: Rest of evidence not empty"
+        end
+      else errC "Evidence splitting failed: et2 does not match"
+    else errC "Evidence splitting failed: et1 does not match"
   end.
 
 Definition split_evidence (e : Evidence) (et1 et2 : EvidenceT) 
     : CVM (Evidence * Evidence) :=
   sc <- get_config ;;
+  let G := (session_context sc) in
   match (get_et e) with
   | mt_evt => err_failm (dispatch_error (Runtime "Cannot split null evidence!"))
   | nonce_evt _ => err_failm (dispatch_error (Runtime "Cannot split nonce evidence!"))
   | asp_evt _ _ _ => err_failm (dispatch_error (Runtime "Cannot split ASP evidence!"))
+  | left_evt e' => 
+    apply_to_left_evt 
+    err_failm (dispatch_error (Runtime "Cannot split left_evt evidence!"))
+  | right_evt _ => err_failm (dispatch_error (Runtime "Cannot split right_evt evidence!"))
   | split_evt et1' et2' =>
     if (eqb et1 et1')
     then 
       if (eqb et2 et2')
       then 
         let r := get_bits e in
-        let G := (session_context sc) in
         match et_size G et1 with
         | errC e => err_failm (dispatch_error (Runtime e))
         | resultC et1_size => 
@@ -187,22 +251,25 @@ Definition split_evidence (e : Evidence) (et1 et2 : EvidenceT)
       else err_failm (dispatch_error (Runtime "Evidence splitting failed: et2 does not match"))
     else err_failm (dispatch_error (Runtime "Evidence splitting failed: et1 does not match"))
   end.
+*)
 
+Definition mt_test := mt_evt.
 (* Simulates invoking an arbitrary ASP.  Tags the event, builds and returns 
    the new EvidenceT bundle. *)
 
-Fixpoint invoke_APPR' (r : RawEv) (et : EvidenceT) (out_evt : EvidenceT) : CVM Evidence :=
+Fixpoint invoke_APPR' (r : RawEv) (et : EvidenceT) (out_evt : EvidenceT) {struct et} : CVM Evidence :=
+  sc <- get_config ;;
+  let G := (session_context sc) in
   match et with
   | mt_evt => err_ret mt_evc 
   | nonce_evt n' => invoke_ASP (evc r out_evt) check_nonce_params
   | asp_evt p' par et' =>
-    sc <- get_config ;;
     let '(asp_paramsC asp_id args targ_plc targ) := par in
-    match (map_get asp_id (asp_comps (session_context sc))) with
+    match (map_get asp_id (asp_comps G)) with
     | None => err_failm (dispatch_error (Runtime err_str_asp_no_compat_appr_asp))
     | Some appr_asp_id =>
       let dual_par := asp_paramsC appr_asp_id args targ_plc targ in
-      match (map_get asp_id (asp_types (session_context sc))) with
+      match (map_get asp_id (asp_types G)) with
       | None => err_failm (dispatch_error (Runtime err_str_asp_no_type_sig))
       | Some (ev_arrow fwd in_sig out_sig) =>
         match fwd with
@@ -212,10 +279,10 @@ Fixpoint invoke_APPR' (r : RawEv) (et : EvidenceT) (out_evt : EvidenceT) : CVM E
           (* first do the dual ASP to unwrap *)
           '(evc r'' et'') <- invoke_ASP (evc r out_evt) dual_par ;;
           (* Check that the "UNWRAP" occured properly *)
-          match et_size (session_context sc) et'' with
+          match et_size G et'' with
           | errC e => err_failm (dispatch_error (Runtime e))
           | resultC n' => 
-            match et_size (session_context sc) et' with
+            match et_size G et' with
             | errC e => err_failm (dispatch_error (Runtime e))
             | resultC n'' =>
               if (eqb n' n'')
@@ -225,35 +292,100 @@ Fixpoint invoke_APPR' (r : RawEv) (et : EvidenceT) (out_evt : EvidenceT) : CVM E
               else err_failm (dispatch_error (Runtime "Appraisal for WRAP ASP failed. Size of input to wrap is not same as output of UNWRAP"))
             end
           end
+        | UNWRAP =>
+          (* to appraise an UNWRAP is to appraise whatever is below 
+          the UNWRAP and WRAP *)
+          match out_sig with
+          | OutN _ => err_failm (dispatch_error (Runtime "UNWRAP ASPs must have OutUnwrap"))
+          | OutUnwrap =>
+            e <- hoist_result (
+              apply_to_asp_under_wrap G asp_id (fun e => invoke_APPR' r e out_evt) et'
+            ) ;;
+            e
+            (* 
+            (* get the ASP under et' (NOTE: It better be a WRAP) *)
+            und <- hoist_result (get_asp_under G et') ;;
+            match und with
+            | asp_evt p' (asp_paramsC wrap_id _ _ _) et' =>
+              match (map_get wrap_id (asp_types G)) with
+              | None => err_failm (dispatch_error (Runtime err_str_asp_no_type_sig))
+              | Some (ev_arrow WRAP _ _) =>
+                (* we are an UNWRAP of a WRAP, so we can continue down the APPR *)
+                invoke_APPR' r et' out_evt
+                (* match et_size G et' with | errC e => err_failm (dispatch_error (Runtime e))
+                | resultC et'_size =>
+                  if (eqb (length rwev) et'_size)
+                  then (* we are the right inverse size! *)
+                    err_ret (evc rwev (asp_evt p ps et))
+                  else err_failm (dispatch_error (Runtime "UNWRAP of a WRAP ASP must have the same size of the WRAPed evidence"))
+                end *)
+              | Some (ev_arrow _ _ _) => err_failm (dispatch_error (Runtime "UNWRAP ASPs must be applied to a WRAP ASP"))
+              end
+            | _ => err_failm (dispatch_error (Runtime "UNWRAP ASPs must be applied to a WRAP ASP"))
+            end
+            *)
+          end
+
         | EXTEND =>
-          let '(OutN n) := out_sig in
-          (* first we split, left for the appr of extended part, right for rest *)
-          split_ev ;;
-          '(_, r_ev) <- (hoist_result (peel_n_rawev n r)) ;;
+          match out_sig with
+          | OutUnwrap => err_failm (dispatch_error (Runtime "EXTEND ASPs must have OutN"))
+          | (OutN n) =>
+            (* first we split, left for the appr of extended part, right for rest *)
+            split_ev ;;
+            '(_, r_ev) <- (hoist_result (peel_n_rawev n r)) ;;
 
-          (* on left we do the dual of EXTEND *)
-          ev1 <- invoke_ASP (evc r out_evt) dual_par ;;
+            (* on left we do the dual of EXTEND *)
+            ev1 <- invoke_ASP (evc r out_evt) dual_par ;;
 
-          (* now on right, we work only on the remaining evidence *)
-          (* our new evidence is e' *)
-          (* now we do the recursive call *)
-          ev2 <- invoke_APPR' r_ev et' et' ;;
-          (* now join *)
-          join_seq ev1 ev2 
+            (* now on right, we work only on the remaining evidence *)
+            (* our new evidence is e' *)
+            (* now we do the recursive call *)
+            ev2 <- invoke_APPR' r_ev et' et' ;;
+            (* now join *)
+            join_seq ev1 ev2 
+          end
         end
       end
       (* ev' <- invoke_ASP (asp_paramsC appr_asp_id args targ_plc targ) ;;
       put_ev ev' *)
     end
+  | left_evt et' =>
+    r <- hoist_result (apply_to_left_evt G (fun e => invoke_APPR' r e out_evt) et') ;;
+    r
+
+  | right_evt et' =>
+    r <- hoist_result (apply_to_right_evt G (fun e => invoke_APPR' r e out_evt) et') ;;
+    r
+
   | split_evt et1 et2 =>
-    match out_evt with
+    match (et_size G et1) with
+    | errC e => err_failm (dispatch_error (Runtime e))
+    | resultC n1 =>
+      match (et_size G et2) with
+      | errC e => err_failm (dispatch_error (Runtime e))
+      | resultC n2 =>
+        '(ev_l, r_ev) <- (hoist_result (peel_n_rawev n1 r)) ;;
+        '(ev_r, rest) <- (hoist_result (peel_n_rawev n2 r_ev)) ;;
+        match rest with
+        | [] => 
+          split_ev ;; (* register event that we are splitting evidence *)
+          (* first we must get out the actual Evidence for et1 *)
+          ev1 <- invoke_APPR' ev_l et1 (left_evt et1) ;;
+          ev2 <- invoke_APPR' ev_r et2 (right_evt et2) ;;
+          join_seq ev1 ev2
+        | _ => err_failm (dispatch_error (Runtime "Evidence splitting failed: rest of evidence not empty"))
+        end
+      (* ev1 <- invoke_APPR' r_ev et1 et1 ;;
+      ev2 <- invoke_APPR' r_ev et2 et2 ;;
+      join_seq ev1 ev2 *)
+      end
+    end
+    (* match out_evt with
     | split_evt et1' et2' =>
       if (eqb et1 et1')
       then 
         if (eqb et2 et2')
         then 
-          split_ev ;; (* register event that we are splitting evidence *)
-          (* first we must get out the actual Evidence for et1 *)
           '((evc r1' et1'), (evc r2' et2')) <- split_evidence (evc r et) et1 et2 ;;
           ev1' <- invoke_APPR' r1' et1 et1' ;;
           ev2' <- invoke_APPR' r2' et2 et2' ;;
@@ -261,7 +393,7 @@ Fixpoint invoke_APPR' (r : RawEv) (et : EvidenceT) (out_evt : EvidenceT) : CVM E
         else err_failm (dispatch_error (Runtime "Evidence splitting failed: et2 does not match"))
       else err_failm (dispatch_error (Runtime "Evidence splitting failed: et1 does not match"))
     | _ => err_failm (dispatch_error (Runtime "Evidence splitting failed: out_evt does not match"))
-    end
+    end *)
   end.
 
 Definition invoke_APPR (e : Evidence) : CVM Evidence :=
