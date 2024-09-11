@@ -189,6 +189,72 @@ Definition err_str_asp_bad_size (got expect : nat) :=
   "ASP requires input of size " ++ to_string expect ++ 
   " but received input of size " ++ to_string got ++ "\n".
 
+Definition EvidenceT_double_ind :=
+  fun (P : EvidenceT -> Prop) 
+    (f : P mt_evt)
+    (f0 : forall n : N_ID, P (nonce_evt n))
+    (f_asp_mt : forall p a, P (asp_evt p a mt_evt))
+    (f_aps_nonce : forall p a n, P (asp_evt p a (nonce_evt n)))
+    (f_asp_asp : forall p a p' a' (e : EvidenceT),
+      P e -> P (asp_evt p a (asp_evt p' a' e)))
+    (f_asp_left : forall p a e, P e -> P (asp_evt p a (left_evt e)))
+    (f_asp_right : forall p a e, P e -> P (asp_evt p a (right_evt e)))
+    (f_asp_split : forall p a e1 e2, P e1 -> P e2 -> P (asp_evt p a (split_evt e1 e2)))
+    (f2 : forall e : EvidenceT, P e -> P (left_evt e))
+    (f3 : forall e : EvidenceT, P e -> P (right_evt e))
+    (f4 : forall e : EvidenceT, P e -> 
+      forall e0 : EvidenceT, P e0 -> P (split_evt e e0))
+    => 
+fix F (e : EvidenceT) : P e := 
+match e as e0 return (P e0) with
+| mt_evt => f
+| nonce_evt n => f0 n
+| asp_evt p a e0 => 
+  match e0 with
+  | mt_evt => f_asp_mt _ _
+  | nonce_evt n => f_aps_nonce _ _ n
+  | asp_evt p' a' e0' => f_asp_asp p a p' a' e0' (F e0')
+  | left_evt e0 => f_asp_left p a e0 (F e0)
+  | right_evt e0 => f_asp_right p a e0 (F e0)
+  | split_evt e0 e1 => f_asp_split p a e0 e1 (F e0) (F e1)
+  end
+| left_evt e0 => f2 e0 (F e0)
+| right_evt e0 => f3 e0 (F e0)
+| split_evt e0 e1 => f4 e0 (F e0) e1 (F e1)
+end.
+
+
+Definition get_left_evt (G : GlobalContext) 
+    : EvidenceT -> ResultT EvidenceT string :=
+  fix F e :=
+  match e with
+  | split_evt e1 e2 => resultC e1
+  | asp_evt _ (asp_paramsC a' _ _ _) (
+      asp_evt _ (asp_paramsC a _ _ _) e'
+    ) => 
+    (* if a and a' are duals, and they are a WRAP *)
+    match (map_get a (asp_comps G)) with
+    | Some a'' =>
+      if (eqb a' a'') 
+      then (* they are duals, is a a WRAP *)
+        match (map_get a (asp_types G)) with
+        | Some (ev_arrow WRAP _ _) => 
+          (* a is a WRAP, so a' must UNWRAP. We can recurse *)
+          match (map_get a' (asp_types G)) with
+          | Some (ev_arrow UNWRAP _ _) =>
+            F e'
+          | Some _ => errC "Appraisal ASP is not an UNWRAP"
+          | _ => errC err_str_asp_no_type_sig
+          end
+        | Some _ => errC "ASP is not a WRAP"
+        | _ => errC err_str_asp_no_type_sig
+        end
+      else errC "ASPs are not duals"
+    | _ => errC err_str_asp_no_compat_appr_asp
+    end
+  | _ => errC "No possible left evidence"
+  end.
+
 Definition apply_to_left_evt {A : Type} (G : GlobalContext) 
     (f : EvidenceT -> A) : EvidenceT -> ResultT A string :=
   fix F e :=
@@ -219,6 +285,24 @@ Definition apply_to_left_evt {A : Type} (G : GlobalContext)
     end
   | _ => errC "No possible left evidence"
   end.
+
+Lemma get_left_evt_correct: forall {A : Type} G e e' (fn : EvidenceT -> A),
+  get_left_evt G e = resultC e' ->
+  apply_to_left_evt G fn e = resultC (fn e').
+Proof.
+  induction e using EvidenceT_double_ind; simpl in *;
+  intuition; try congruence;
+  repeat (break_match; try congruence); ff.
+Qed.
+
+Lemma apply_to_left_evt_correct: forall {A : Type} G e e' (fn : EvidenceT -> A),
+  apply_to_left_evt G fn e = resultC e' ->
+  exists e'', e' = fn e''.
+Proof.
+  induction e using EvidenceT_double_ind; simpl in *;
+  intuition; try congruence;
+  repeat (break_match; try congruence); ff.
+Qed.
 
 Definition apply_to_right_evt {A : Type} (G : GlobalContext) 
     (f : EvidenceT -> A) : EvidenceT -> ResultT A string :=
