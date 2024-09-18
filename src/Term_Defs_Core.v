@@ -166,6 +166,19 @@ Record GlobalContext := {
   asp_comps: ASP_Compat_MapT
 }.
 
+(* Definition get_type (G : GlobalContext) (a : ASP_ID) : ResultT EvSig string :=
+  match map_get a (asp_types G) with
+  | Some t => resultC t
+  | None => errC err_str_asp_no_type_sig
+  end.
+
+Definition get_compat_asp (G : GlobalContext) (a : ASP_ID) 
+    : ResultT ASP_ID string :=
+  match map_get a (asp_comps G) with
+  | Some t => resultC t
+  | None => errC err_str_asp_no_compat_appr_asp
+  end. *)
+
 (** Pair of EvidenceT splitters that indicate routing EvidenceT to subterms 
     of branching phrases *)
 Definition Split: Set := (SP * SP).
@@ -185,9 +198,6 @@ Inductive Term :=
 | bpar: Split -> Term -> Term -> Term.
 
 Open Scope string_scope.
-Definition err_str_asp_bad_size (got expect : nat) := 
-  "ASP requires input of size " ++ to_string expect ++ 
-  " but received input of size " ++ to_string got ++ "\n".
 
 Definition EvidenceT_depth : EvidenceT -> nat :=
   fix F e :=
@@ -291,25 +301,23 @@ Definition get_left_evt (G : GlobalContext)
     ) => 
     (* if a and a' are duals, and they are a WRAP *)
     match (map_get a (asp_comps G)) with
+    | None => errC err_str_asp_no_compat_appr_asp
     | Some a'' =>
       if (eqb a' a'') 
       then (* they are duals, is a a WRAP *)
         match (map_get a (asp_types G)) with
+        | None => errC err_str_asp_no_type_sig
         | Some (ev_arrow WRAP _ _) => 
-          (* a is a WRAP, so a' must UNWRAP. We can recurse *)
           match (map_get a' (asp_types G)) with
-          | Some (ev_arrow UNWRAP _ _) =>
-            F e'
-          | Some _ => errC "Appraisal ASP is not an UNWRAP"
-          | _ => errC err_str_asp_no_type_sig
+          | None => errC err_str_asp_no_type_sig
+          | Some (ev_arrow UNWRAP _ _) => F e'
+          | _ => errC err_str_appr_asp_not_unwrap
           end
-        | Some _ => errC "ASP is not a WRAP"
-        | _ => errC err_str_asp_no_type_sig
+        | _ => errC err_str_asp_is_not_wrap
         end
-      else errC "ASPs are not duals"
-    | _ => errC err_str_asp_no_compat_appr_asp
+      else errC (err_str_asps_not_duals)
     end
-  | _ => errC "No possible left evidence"
+  | _ => errC err_str_no_possible_left_evt
   end.
 
 Definition apply_to_left_evt {A : Type} (G : GlobalContext) 
@@ -322,25 +330,23 @@ Definition apply_to_left_evt {A : Type} (G : GlobalContext)
     ) => 
     (* if a and a' are duals, and they are a WRAP *)
     match (map_get a (asp_comps G)) with
+    | None => errC err_str_asp_no_compat_appr_asp
     | Some a'' =>
       if (eqb a' a'') 
       then (* they are duals, is a a WRAP *)
         match (map_get a (asp_types G)) with
+        | None => errC err_str_asp_no_type_sig
         | Some (ev_arrow WRAP _ _) => 
-          (* a is a WRAP, so a' must UNWRAP. We can recurse *)
           match (map_get a' (asp_types G)) with
-          | Some (ev_arrow UNWRAP _ _) =>
-            F e'
-          | Some _ => errC "Appraisal ASP is not an UNWRAP"
-          | _ => errC err_str_asp_no_type_sig
+          | None => errC err_str_asp_no_type_sig
+          | Some (ev_arrow UNWRAP _ _) => F e'
+          | _ => errC err_str_appr_asp_not_unwrap
           end
-        | Some _ => errC "ASP is not a WRAP"
-        | _ => errC err_str_asp_no_type_sig
+        | _ => errC err_str_asp_is_not_wrap
         end
-      else errC "ASPs are not duals"
-    | _ => errC err_str_asp_no_compat_appr_asp
+      else errC (err_str_asps_not_duals)
     end
-  | _ => errC "No possible left evidence"
+  | _ => errC err_str_no_possible_left_evt
   end.
 
 Lemma get_left_evt_correct: forall {A : Type} G e e' (fn : EvidenceT -> A),
@@ -348,8 +354,7 @@ Lemma get_left_evt_correct: forall {A : Type} G e e' (fn : EvidenceT -> A),
   apply_to_left_evt G fn e = resultC (fn e').
 Proof.
   induction e using EvidenceT_double_ind; simpl in *;
-  intuition; try congruence;
-  repeat (break_match; try congruence); ff.
+  ff; result_monad_unfold; ff.
 Qed.
 
 Lemma apply_to_left_evt_correct: forall {A : Type} G e e' (fn : EvidenceT -> A),
@@ -357,8 +362,7 @@ Lemma apply_to_left_evt_correct: forall {A : Type} G e e' (fn : EvidenceT -> A),
   exists e'', fn e'' = e'.
 Proof.
   induction e using EvidenceT_double_ind; simpl in *;
-  intuition; try congruence;
-  repeat (break_match; try congruence); ff.
+  ff; result_monad_unfold; ff.
 Qed.
 
 Lemma apply_to_left_evt_deterministic: forall {A B : Type} G e e' (fn : EvidenceT -> A) (fn' : EvidenceT -> B),
@@ -366,8 +370,7 @@ Lemma apply_to_left_evt_deterministic: forall {A B : Type} G e e' (fn : Evidence
   exists e'', apply_to_left_evt G fn' e = resultC e''.
 Proof.
   induction e using EvidenceT_double_ind; simpl in *;
-  intuition; try congruence;
-  repeat (break_match; try congruence); ff.
+  ff; result_monad_unfold; ff.
 Qed.
 
 Definition apply_to_right_evt {A : Type} (G : GlobalContext) 
@@ -380,29 +383,24 @@ Definition apply_to_right_evt {A : Type} (G : GlobalContext)
     ) => 
     (* if a and a' are duals, and they are a WRAP *)
     match (map_get a (asp_comps G)) with
+    | None => errC err_str_asp_no_compat_appr_asp
     | Some a'' =>
       if (eqb a' a'') 
       then (* they are duals, is a a WRAP *)
         match (map_get a (asp_types G)) with
+        | None => errC err_str_asp_no_type_sig
         | Some (ev_arrow WRAP _ _) => 
-          (* a is a WRAP, so a' must UNWRAP. We can recurse *)
           match (map_get a' (asp_types G)) with
-          | Some (ev_arrow UNWRAP _ _) =>
-            F e'
-          | Some _ => errC "Appraisal ASP is not an UNWRAP"
-          | _ => errC err_str_asp_no_type_sig
+          | None => errC err_str_asp_no_type_sig
+          | Some (ev_arrow UNWRAP _ _) => F e'
+          | _ => errC err_str_appr_asp_not_unwrap
           end
-        | Some _ => errC "ASP is not a WRAP"
-        | _ => errC err_str_asp_no_type_sig
+        | _ => errC err_str_asp_is_not_wrap
         end
-      else errC "ASPs are not duals"
-    | _ => errC err_str_asp_no_compat_appr_asp
+      else errC (err_str_asps_not_duals)
     end
-  | _ => errC "No possible left evidence"
+  | _ => errC err_str_no_possible_right_evt
   end.
-
-Definition err_str_cannot_have_outwrap fwd_val := 
-  "Invalid Output Signature of type 'OutUnwrap' on an ASP with FWD of '" ++ fwd_val ++ "'".
 
 (** Calculate the size of an ASP's input based on its signature *)
 (* Definition asp_sig_et_size (previous_sig : EvSig) (sig : EvSig) 
@@ -440,29 +438,35 @@ Definition get_asp_under (G : GlobalContext) :
     1. If this is not an UNWRAP we can just return it *)
     match (map_get top_id (asp_types G)) with
     | None => errC err_str_asp_no_type_sig
-    | Some (ev_arrow UNWRAP _ _) => 
-      (* This was an UNWRAP, so we need to be able to get below it *)
-      match et' with
-      | asp_evt _ (asp_paramsC bury_id _ _ _) et'' =>
-        match (map_get bury_id (asp_comps G)) with
-        | None => errC err_str_asp_no_compat_appr_asp
-        | Some bury_id' =>
-          if (eqb top_id bury_id') 
-          then 
-            match (map_get bury_id (asp_types G)) with
-            | None => errC err_str_asp_no_type_sig
-            | Some (ev_arrow WRAP _ _) => F et''
-            | _ => errC "ASP under UNWRAP is not a WRAP"
-            end
-          else errC "A WRAP and UNWRAP ASPs are not duals"
+    | Some (ev_arrow fwd in_sig out_sig) =>
+      match fwd with
+      | UNWRAP =>
+        (* This was an UNWRAP, so we need to be able to get below it *)
+        match et' with
+        | asp_evt _ (asp_paramsC bury_id _ _ _) et'' =>
+          match (map_get bury_id (asp_comps G)) with
+          | None => errC err_str_asp_no_compat_appr_asp
+          | Some bury_id' =>
+            if (eqb top_id bury_id') 
+            then 
+              match (map_get bury_id (asp_types G)) with
+              | None => errC err_str_asp_no_type_sig
+              | Some (ev_arrow fwd' _ _) =>
+                match fwd' with
+                | WRAP => F et''
+                | _ => errC err_str_asp_under_unwrap
+                end
+              end
+            else errC err_str_wrap_asp_not_duals
+          end
+        | _ => errC err_str_unwrap_only_asp
         end
-      | _ => errC "UNWRAP must have an ASP input"
+      | _ => resultC e
       end
-    | Some (ev_arrow _ _ _) => resultC e
     end
   | left_evt et' => r <- apply_to_left_evt G F et' ;; r
   | right_evt et' => r <- apply_to_right_evt G F et' ;; r
-  | _ => errC "No ASP under this evidence"
+  | _ => errC err_str_no_asp_under_evidence
   end.
 
 Definition apply_to_asp_under_wrap {A : Type} (G : GlobalContext) 
@@ -487,11 +491,11 @@ Definition apply_to_asp_under_wrap {A : Type} (G : GlobalContext)
             match (map_get bury_id (asp_types G)) with
             | None => errC err_str_asp_no_type_sig
             | Some (ev_arrow WRAP _ _) => F et''
-            | _ => errC "ASP under UNWRAP is not a WRAP"
+            | _ => errC err_str_asp_under_unwrap
             end
-          else errC "A WRAP and UNWRAP ASPs are not duals"
+          else errC err_str_wrap_asp_not_duals
         end
-      | _ => errC "UNWRAP must have an ASP input"
+      | _ => errC err_str_unwrap_only_asp
       end
     | Some (ev_arrow WRAP _ _) => 
       (* if this is an WRAP, and they are compat, we are done *)
@@ -500,13 +504,13 @@ Definition apply_to_asp_under_wrap {A : Type} (G : GlobalContext)
       | Some unwrapper_id =>
         if (eqb unwrapper_id unwrap_id) 
         then resultC (f e)
-        else errC "WRAP and UNWRAP ASPs are not duals"
+        else errC err_str_wrap_asp_not_duals
       end
-    | Some _ => errC "ASPs at the bottom is not a WRAP"
+    | Some _ => errC err_str_asp_at_bottom_not_wrap
     end
   | left_evt et' => r <- apply_to_left_evt G F et' ;; r
   | right_evt et' => r <- apply_to_right_evt G F et' ;; r
-  | _ => errC "No ASP under this evidence"
+  | _ => errC err_str_no_asp_under_evidence
   end.
   
 
@@ -526,18 +530,18 @@ Definition et_size (G : GlobalContext) : EvidenceT -> ResultT nat string :=
         (* we are replacing, so just the output *)
         match out_sig with
         | OutN n => resultC n
-        | OutUnwrap => errC (err_str_cannot_have_outwrap "REPLACE")
+        | OutUnwrap => errC err_str_cannot_have_outwrap
         end
       | WRAP => 
         (* we are wrapping, so just the output *)
         match out_sig with
         | OutN n => resultC n
-        | OutUnwrap => errC (err_str_cannot_have_outwrap "WRAP")
+        | OutUnwrap => errC err_str_cannot_have_outwrap 
         end
       | UNWRAP => 
         (* we are unwrapping, so we are the size of the previous input *)
         match out_sig with
-        | OutN n => errC "UNWRAP must have an output type of OutUnwrap"
+        | OutN n => errC err_str_unwrap_must_have_outwrap
         | OutUnwrap => 
           match e' with
           | (asp_evt p (asp_paramsC asp_id' args' targ_plc' targ') e'') =>
@@ -550,9 +554,9 @@ Definition et_size (G : GlobalContext) : EvidenceT -> ResultT nat string :=
                 resultC n'
               | InNone => resultC 0
               end
-            | _ => errC "UNWRAP can only be applied to an ASP input of type FWD=WRAP"
+            | _ => errC err_str_unwrap_only_wrap
             end
-          | _ => errC "UNWRAP can only be applied to an ASP input"
+          | _ => errC err_str_unwrap_only_asp
           end
         end
       | EXTEND =>
@@ -560,7 +564,7 @@ Definition et_size (G : GlobalContext) : EvidenceT -> ResultT nat string :=
         | OutN n => 
           n' <- F e' ;;
           resultC (n + n')
-        | OutUnwrap => errC (err_str_cannot_have_outwrap "EXTEND")
+        | OutUnwrap => errC err_str_cannot_have_outwrap 
         end
       end
     end

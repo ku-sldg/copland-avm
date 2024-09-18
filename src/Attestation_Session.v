@@ -1,7 +1,8 @@
 Require Import Maps Term_Defs_Core Manifest.
 Require Import String List.
-Require Import JSON Stringifiable.
+Require Import JSON Stringifiable ResultT Interface_Strings_Vars.
 Import ListNotations.
+Import ResultNotation.
 
 Record Attestation_Session := 
   mkAtt_Sess {
@@ -37,18 +38,18 @@ Global Instance Jsonifiable_Attestation_Session `{Jsonifiable (Map Plc UUID), Js
 eapply Build_Jsonifiable with 
   (to_JSON := (fun v => 
                 JSON_Object [
-                  ("Session_Plc", JSON_String (to_string (Session_Plc v)));
-                  ("Plc_Mapping", to_JSON (Plc_Mapping v));
-                  ("PubKey_Mapping", to_JSON (PubKey_Mapping v));
-                  ("Session_Context", to_JSON (ats_context v))])) 
+                  (STR_Session_Plc, JSON_String (to_string (Session_Plc v)));
+                  (STR_Plc_Mapping, to_JSON (Plc_Mapping v));
+                  (STR_PubKey_Mapping, to_JSON (PubKey_Mapping v));
+                  (STR_Session_Context, to_JSON (ats_context v))])) 
   (from_JSON := (fun j =>
-    match (JSON_get_string "Session_Plc" j), (JSON_get_Object "Plc_Mapping" j), (JSON_get_Object "PubKey_Mapping" j), (JSON_get_Object "Session_Context" j) with
-    | resultC plc, resultC plc_map, resultC pub_map, resultC sc =>
-        match (from_string plc), (from_JSON plc_map), (from_JSON pub_map), (from_JSON sc) with
-        | resultC plc', resultC plc_map', resultC pub_map', resultC sc =>
-            resultC {| Session_Plc := plc'; Plc_Mapping := plc_map'; PubKey_Mapping := pub_map'; ats_context := sc |}
-        | _, _, _, _ => errC "Error in parsing Attestation_Session"
-        end
-    | _, _, _, _ => errC "Error in parsing Attestation_Session"
-    end)); solve_json.
+    plc <- JSON_get_string STR_Session_Plc j ;;
+    plc_map <- JSON_get_Object STR_Plc_Mapping j ;;
+    pub_map <- JSON_get_Object STR_PubKey_Mapping j ;;
+    sc <- JSON_get_Object STR_Session_Context j ;;
+    plc' <- from_string plc ;;
+    plc_map' <- from_JSON plc_map ;;
+    pub_map' <- from_JSON pub_map ;;
+    sc <- from_JSON sc ;;
+    resultC {| Session_Plc := plc'; Plc_Mapping := plc_map'; PubKey_Mapping := pub_map'; ats_context := sc |})); solve_json.
 Defined.

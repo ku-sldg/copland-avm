@@ -124,7 +124,7 @@ Definition appr_procedure' (G : GlobalContext) (p : Plc)
           | Some (ev_arrow UNWRAP in_sig' out_sig') =>
             let ev_out' := asp_evt p dual_par ev_out in
             F e' ev_out'
-          | _ => errC "Error in appraisal procedure computation: Attempting to appraise WRAPPED evidence but the dual appraisal ASP is not an UNWRAP."%string
+          | _ => errC err_str_appr_compute_evt_neq
           end
           (* let ev_out' := asp_evt p dual_par ev_out in
           F e' ev_out' *)
@@ -138,9 +138,9 @@ Definition appr_procedure' (G : GlobalContext) (p : Plc)
             | Some (ev_arrow WRAP in_sig' out_sig') =>
               (* We are a well-typed (UNWRAP (WRAP e'')), so continue *)
               F e'' ev_out
-            | _ => errC "Error in appraisal procedure computation: Attempting to appraise UNWRAPPED evidence but the UNWRAPPED evidence was not originally a WRAP."%string
+            | _ => errC err_str_appr_not_originally_a_wrap
             end
-          | _ => errC "Error in appraisal procedure computation: Attempting to appraise UNWRAPPED evidence but evidence that was UNWRAPPED was not an ASP (UNWRAP can only be applied to an ASP input)."%string
+          | _ => errC err_str_appr_only_allow_on_asp
           end
 
         | EXTEND => 
@@ -160,7 +160,7 @@ Definition appr_procedure' (G : GlobalContext) (p : Plc)
     e2' <- F e2 (right_evt ev_out) ;;
     resultC (split_evt e1' e2')
   end)
-  else errC "Error in appraisal procedure computation, type of evidence passed into an appraisal procedure does not match the expected type (evidence types are not equivalent)"%string.
+  else errC err_str_appr_compute_evt_neq.
 
 Definition appr_procedure (G : GlobalContext) (p : Plc) (e : EvidenceT) 
     : ResultT EvidenceT string :=
@@ -222,9 +222,10 @@ Example appr_procedure_ex4 : forall G p,
     )
   ).
 Proof.
-  intros.
+  intros;
   unfold appr_procedure, equiv_EvidenceT in *;
-  ff; unfold equiv_EvidenceT in *; ff.
+  ff; unfold equiv_EvidenceT in *; ff;
+  result_monad_unfold; ff.
 Qed.
 
 (** Helper function for EvidenceT type reference semantics *)
@@ -485,7 +486,7 @@ Definition appr_events' (G : GlobalContext) (p : Plc)
       e2' <- F e2 e2' next_i ;;
       let last_i := next_i + (List.length e2') in
       resultC ([split i p] ++ e1' ++ e2' ++ [join last_i p])
-    | _ => errC "Error in appraisal procedure computation, type of evidence passed into a split appraisal procedure is not a split evidence type"%string
+    | _ => errC err_str_split_evidence_not_split
     end
   end.
 
@@ -494,15 +495,14 @@ Lemma appr_events'_size_works : forall G p e ev_out i evs,
   appr_events_size G e = resultC (List.length evs).
 Proof.
   induction e using EvidenceT_double_ind; try (ffa using result_monad_unfold;
-  repeat rewrite app_length in *; simpl in *;
-  f_equal; lia).
+  repeat rewrite length_app in *; simpl in *; f_equal; lia).
   - intros; simpl in *; result_monad_unfold; ff;
     match goal with
     | H : apply_to_left_evt _ (fun e' : EvidenceT => appr_events' _ _ _ ?e ?i) _ = resultC (resultC ?l) |- _ =>
       let H' := fresh "H" in
       pose proof (IHe e i l) as H'; rewrite H in H';
       pose proof (H' eq_refl); ff;
-      try rewrite app_length in *; simpl in *; f_equal; try lia
+      try rewrite length_app in *; simpl in *; f_equal; try lia
     end.
   - intros; simpl in *; result_monad_unfold; ff;
     match goal with
@@ -510,7 +510,7 @@ Proof.
       let H' := fresh "H" in
       pose proof (IHe e i l) as H'; rewrite H in H';
       pose proof (H' eq_refl); ff;
-      try rewrite app_length in *; simpl in *; f_equal; try lia
+      try rewrite length_app in *; simpl in *; f_equal; try lia
     end.
 Qed.
 
@@ -596,7 +596,7 @@ Proof.
     all: try (find_rewrite_lem true_last_none_iff_nil; ff; lia).
     all: try (eapply IHe in Heqr; ff; repeat find_rewrite; ffl; lia).
     all: find_eapply_lem_hyp true_last_app_spec; ff;
-    repeat rewrite app_length in *; ff; try lia.
+    repeat rewrite length_app in *; ff; try lia.
   - simpl in *; ff; try lia; result_monad_unfold; ff.
     match goal with
     | H : apply_to_left_evt _ (fun e' : EvidenceT => appr_events' _ _ _ ?e ?i) _ = resultC (resultC ?l) |- _ =>
@@ -605,12 +605,12 @@ Proof.
       pose proof (IHe e i l) as H'; rewrite H in H';
       pose proof (H' eq_refl) as H''; ff;
       pose proof (H'' _ eq_refl); ff; try lia
-      (* try rewrite app_length in *; simpl in *; ffl; lia *)
+      (* try rewrite length_app in *; simpl in *; ffl; lia *)
     end.
     all: try (find_rewrite_lem true_last_none_iff_nil; ff; lia).
     (* all: try (eapply IHe in Heqr; ff; repeat find_rewrite; ffl; lia). *)
     all: find_eapply_lem_hyp true_last_app_spec; ff;
-    repeat rewrite app_length in *; ff; try lia.
+    repeat rewrite length_app in *; ff; try lia.
   - simpl in *; ff; try lia; result_monad_unfold; ff.
     match goal with
     | H : apply_to_right_evt _ (fun e' : EvidenceT => appr_events' _ _ _ ?e ?i) _ = resultC (resultC ?l) |- _ =>
@@ -619,21 +619,21 @@ Proof.
       pose proof (IHe e i l) as H'; rewrite H in H';
       pose proof (H' eq_refl) as H''; ff;
       pose proof (H'' _ eq_refl); ff; try lia
-      (* try rewrite app_length in *; simpl in *; ffl; lia *)
+      (* try rewrite length_app in *; simpl in *; ffl; lia *)
     end.
     all: try (find_rewrite_lem true_last_none_iff_nil; ff; lia).
     (* all: try (eapply IHe in Heqr; ff; repeat find_rewrite; ffl; lia). *)
     all: find_eapply_lem_hyp true_last_app_spec; ff;
-    repeat rewrite app_length in *; ff; try lia.
+    repeat rewrite length_app in *; ff; try lia.
   - simpl in *; ff; try lia; result_monad_unfold; ff;
     try (repeat (find_eapply_lem_hyp true_last_app_spec; break_or_hyp; break_and;
       [ try find_eapply_lem_hyp app_eq_nil; ff | ff]);
-      repeat rewrite app_length in *; ff; lia).
+      repeat rewrite length_app in *; ff; lia).
     all: rewrite true_last_none_iff_nil in *; repeat find_eapply_lem_hyp app_eq_nil; ff; lia.
   - simpl in *; ff; try lia; result_monad_unfold; ff;
     try (repeat (find_eapply_lem_hyp true_last_app_spec; break_or_hyp; break_and;
       [ try find_eapply_lem_hyp app_eq_nil; ff | ff]);
-      repeat rewrite app_length in *; ff; lia).
+      repeat rewrite length_app in *; ff; lia).
     all: rewrite true_last_none_iff_nil in *; repeat find_eapply_lem_hyp app_eq_nil; ff; lia.
 Qed.
 

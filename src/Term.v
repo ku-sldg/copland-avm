@@ -111,7 +111,7 @@ Proof.
   try (repeat find_apply_hyp_hyp;
     repeat find_rewrite; simpl in *; 
     repeat find_rewrite; simpl in *;
-    repeat rewrite app_length; simpl in *;
+    repeat rewrite length_app; simpl in *;
     eauto;
     try (f_equal; lia)).
   - find_apply_lem_hyp asp_events_size_works; ff.
@@ -141,7 +141,7 @@ Proof.
     simpl in *;
     repeat find_injection;
     simpl in *;
-    repeat rewrite app_length;
+    repeat rewrite length_app;
     simpl in *;
     try lia
   );
@@ -152,7 +152,7 @@ Proof.
   - find_apply_lem_hyp true_last_app_spec; intuition;
     subst; simpl in *;
     try rewrite app_nil_r; eauto;
-    repeat rewrite app_length; 
+    repeat rewrite length_app; 
     find_apply_hyp_hyp; try lia.
   - repeat (find_apply_lem_hyp true_last_app_spec;
     break_or_hyp; [ ff;
@@ -160,7 +160,7 @@ Proof.
       find_eapply_lem_hyp app_eq_nil;
       intuition; congruence | ]).
     simpl in *; repeat find_injection;
-    repeat rewrite app_length;
+    repeat rewrite length_app;
     simpl in *; ff; lia.
 Qed.
 

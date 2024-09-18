@@ -112,6 +112,15 @@ Ltac break_match_goal :=
     goal. *)
 Ltac break_match := break_match_goal || break_match_hyp.
 
+Ltac break_match_hyp_rec H :=
+  match goal with
+  | [ H : context [ match ?X with _ => _ end ] |- _] =>
+    match type of X with
+    | sumbool _ _ => destruct X
+    | _ => destruct X eqn:?; repeat break_match_hyp_rec
+    end
+  end.
+
 (** [break_inner_match' t] tries to destruct the innermost [match] it
     find in [t]. *)
 Ltac break_inner_match' t :=
@@ -662,6 +671,9 @@ Ltac max_RW :=
   simpl in *;
   subst_max;
   repeat find_rewrite.
+
+Ltac breaker :=
+  repeat (break_match; subst; try congruence).
 
 (* Simplification hammer.  Used at beginning of many proofs in this 
    development.  Conservative simplification, break matches, 

@@ -10,8 +10,9 @@ Require Import EnvironmentM JSON Stringifiable.
 
 Require Import Manifest_Union Manifest_Generator.
 
-Require Import List.
+Require Import List ResultT.
 Import ListNotations.
+Import ResultNotation.
 
 Open Scope string_scope.
 
@@ -19,7 +20,7 @@ Definition Term_Plc_list := list (Term*Plc).
 
 Definition Term_Plc_list_to_JSON `{Jsonifiable Term} (ls: Term_Plc_list) : JSON :=
   JSON_Object [
-    ("Term_Plc_list",
+    (term_plc_list_name_constant,
       (JSON_Array 
         (List.map 
           (fun '(et,p) => 
@@ -30,16 +31,15 @@ Definition Term_Plc_list_to_JSON `{Jsonifiable Term} (ls: Term_Plc_list) : JSON 
 
 Definition Term_Plc_list_from_JSON `{Jsonifiable Term} (js : JSON) 
     : ResultT Term_Plc_list string :=
-  match (JSON_get_Array "Term_Plc_list" js) with
+  match (JSON_get_Array term_plc_list_name_constant js) with
   | resultC jsArr =>
     let res := result_map (fun js => 
       match js with
       | JSON_Array [jsTerm; JSON_String jsP] =>
-        match (from_JSON jsTerm), (from_string jsP) with
-        | resultC et,resultC p => resultC (et, p)
-        | _, _ => errC "Error in parsing Term_Plc_list"
-        end
-      | _ => errC "Not a pair"
+        et <- from_JSON jsTerm ;;
+        p <- from_string jsP ;;
+        resultC (et, p)
+      | _ => errC err_str_json_parsing_failure_wrong_number_args
       end
     ) jsArr in
     match res with
