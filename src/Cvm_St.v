@@ -6,7 +6,7 @@ CVM Monad definition.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import ErrorStMonad_Coq Attestation_Session Term_Defs.
+Require Import ErrorStMonad_Coq Attestation_Session Term_Defs Stringifiable.
 Require Import List.
 Import ListNotations.
 Require Import Manifest_Admits.
@@ -35,6 +35,17 @@ Inductive CVM_Error : Type :=
 | at_error_dynamic : Term -> UUID -> Evidence -> CVM_Error
 | dispatch_error : DispatcherErrors -> CVM_Error.
 (* | callback_error : CallBackErrors -> CVM_Error. *)
+
+Definition CVM_Error_to_string (e : CVM_Error) : string :=
+  match e with
+  | at_error_static t p e => "at_error_static"
+  | at_error_dynamic t u e => "at_error_dynamic"
+  | dispatch_error de => 
+    match de with
+    | Unavailable => "dispatch_error: Unavailable"
+    | Runtime s => "dispatch_error: " ++ s
+    end
+  end.
 
 (** CVM monad -- instantiation of the general ResultT monad with cvm_st *)
 Definition CVM A := Err cvm_st Session_Config A CVM_Error.

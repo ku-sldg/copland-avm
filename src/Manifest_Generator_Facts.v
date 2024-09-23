@@ -220,11 +220,13 @@ Proof.
   rewrite String.eqb_eq in *; congruence.
 Qed.
 
+Require Import Term_Defs_Core.
+
 Lemma appr_manifest_update_cumul : forall G et m m',
   appr_manifest_update G et m = resultC m' ->
   manifest_subset m m'.
 Proof.
-  induction et; simpl in *; intuition; ff;
+  induction et using EvidenceT_double_ind; simpl in *; intuition; ff;
   unfold aspid_manifest_update; 
   unfold manifest_subset; intuition; 
   simpl in *; ff; try eapply in_set_add; eauto;

@@ -1,7 +1,7 @@
 Require Import List.
 Import ListNotations.
-Require Import BS Term_Defs Attestation_Session Interface String IO_Stubs Manifest_Admits ErrorStMonad_Coq AM_Monad Session_Config_Compiler.
-Require Import ErrorStringConstants Cvm_Run AM_Manager.
+Require Import BS Term_Defs Attestation_Session Interface String IO_Stubs Manifest_Admits ErrorStMonad_Coq AM_Monad Session_Config_Compiler Cvm_St Cvm_Impl.
+Require Import ErrorStringConstants AM_Manager.
 Import ErrNotation.
 
 Definition handle_AM_request_JSON (conf : AM_Manager_Config) (js : JSON) (nonceVal:BS) : JSON :=
@@ -15,9 +15,10 @@ Definition handle_AM_request_JSON (conf : AM_Manager_Config) (js : JSON) (nonceV
       | resultC r =>
         let '(mkPRReq att_sess from_plc ev cop_term) := r in
         let sc := (session_config_compiler conf att_sess) in
-        let cvm_resp := (run_cvm_init_ev sc ev cop_term) in
+        let init_st := (mk_st [] 0) in
+        let '(cvm_resp, _, _) := (build_cvm ev cop_term init_st sc) in
         match cvm_resp with
-        | errC e => ErrorResponseJSON e
+        | errC e => ErrorResponseJSON (CVM_Error_to_string e)
         | resultC res_ev => to_JSON (mkPRResp true res_ev)
         end
       end

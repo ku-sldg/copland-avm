@@ -495,14 +495,14 @@ Lemma appr_events'_size_works : forall G p e ev_out i evs,
   appr_events_size G e = resultC (List.length evs).
 Proof.
   induction e using EvidenceT_double_ind; try (ffa using result_monad_unfold;
-  repeat rewrite length_app in *; simpl in *; f_equal; lia).
+  repeat rewrite app_length in *; simpl in *; f_equal; lia).
   - intros; simpl in *; result_monad_unfold; ff;
     match goal with
     | H : apply_to_left_evt _ (fun e' : EvidenceT => appr_events' _ _ _ ?e ?i) _ = resultC (resultC ?l) |- _ =>
       let H' := fresh "H" in
       pose proof (IHe e i l) as H'; rewrite H in H';
       pose proof (H' eq_refl); ff;
-      try rewrite length_app in *; simpl in *; f_equal; try lia
+      try rewrite app_length in *; simpl in *; f_equal; try lia
     end.
   - intros; simpl in *; result_monad_unfold; ff;
     match goal with
@@ -510,7 +510,7 @@ Proof.
       let H' := fresh "H" in
       pose proof (IHe e i l) as H'; rewrite H in H';
       pose proof (H' eq_refl); ff;
-      try rewrite length_app in *; simpl in *; f_equal; try lia
+      try rewrite app_length in *; simpl in *; f_equal; try lia
     end.
 Qed.
 
@@ -596,7 +596,7 @@ Proof.
     all: try (find_rewrite_lem true_last_none_iff_nil; ff; lia).
     all: try (eapply IHe in Heqr; ff; repeat find_rewrite; ffl; lia).
     all: find_eapply_lem_hyp true_last_app_spec; ff;
-    repeat rewrite length_app in *; ff; try lia.
+    repeat rewrite app_length in *; ff; try lia.
   - simpl in *; ff; try lia; result_monad_unfold; ff.
     match goal with
     | H : apply_to_left_evt _ (fun e' : EvidenceT => appr_events' _ _ _ ?e ?i) _ = resultC (resultC ?l) |- _ =>
@@ -605,12 +605,12 @@ Proof.
       pose proof (IHe e i l) as H'; rewrite H in H';
       pose proof (H' eq_refl) as H''; ff;
       pose proof (H'' _ eq_refl); ff; try lia
-      (* try rewrite length_app in *; simpl in *; ffl; lia *)
+      (* try rewrite app_length in *; simpl in *; ffl; lia *)
     end.
     all: try (find_rewrite_lem true_last_none_iff_nil; ff; lia).
     (* all: try (eapply IHe in Heqr; ff; repeat find_rewrite; ffl; lia). *)
     all: find_eapply_lem_hyp true_last_app_spec; ff;
-    repeat rewrite length_app in *; ff; try lia.
+    repeat rewrite app_length in *; ff; try lia.
   - simpl in *; ff; try lia; result_monad_unfold; ff.
     match goal with
     | H : apply_to_right_evt _ (fun e' : EvidenceT => appr_events' _ _ _ ?e ?i) _ = resultC (resultC ?l) |- _ =>
@@ -619,21 +619,21 @@ Proof.
       pose proof (IHe e i l) as H'; rewrite H in H';
       pose proof (H' eq_refl) as H''; ff;
       pose proof (H'' _ eq_refl); ff; try lia
-      (* try rewrite length_app in *; simpl in *; ffl; lia *)
+      (* try rewrite app_length in *; simpl in *; ffl; lia *)
     end.
     all: try (find_rewrite_lem true_last_none_iff_nil; ff; lia).
     (* all: try (eapply IHe in Heqr; ff; repeat find_rewrite; ffl; lia). *)
     all: find_eapply_lem_hyp true_last_app_spec; ff;
-    repeat rewrite length_app in *; ff; try lia.
+    repeat rewrite app_length in *; ff; try lia.
   - simpl in *; ff; try lia; result_monad_unfold; ff;
     try (repeat (find_eapply_lem_hyp true_last_app_spec; break_or_hyp; break_and;
       [ try find_eapply_lem_hyp app_eq_nil; ff | ff]);
-      repeat rewrite length_app in *; ff; lia).
+      repeat rewrite app_length in *; ff; lia).
     all: rewrite true_last_none_iff_nil in *; repeat find_eapply_lem_hyp app_eq_nil; ff; lia.
   - simpl in *; ff; try lia; result_monad_unfold; ff;
     try (repeat (find_eapply_lem_hyp true_last_app_spec; break_or_hyp; break_and;
       [ try find_eapply_lem_hyp app_eq_nil; ff | ff]);
-      repeat rewrite length_app in *; ff; lia).
+      repeat rewrite app_length in *; ff; lia).
     all: rewrite true_last_none_iff_nil in *; repeat find_eapply_lem_hyp app_eq_nil; ff; lia.
 Qed.
 

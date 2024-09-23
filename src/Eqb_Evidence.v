@@ -135,8 +135,7 @@ Proof.
   try eapply nat_EqClass; eauto; fail).
   - destruct a, a0; eauto; try (right; intros HC; congruence).
     * destruct (eq_asp_params_dec a a0); subst; eauto;
-      destruct s, s0; eauto; try (right; intros HC; congruence);
-      destEq n n0; eauto; try (right; intros HC; congruence).
+      right; intros HC; congruence.
     * destruct (@EqClass_impl_DecEq Plc H p p0); subst; eauto.
       right; intros HC; congruence.
   - destruct s, s0, s, s1, s0, s2; eauto; try (right; intros HC; congruence).
@@ -282,7 +281,7 @@ Proof.
       eapply list_beq_refl; eauto.
 Qed.
 
-Definition eqb_fwd (fwd1 fwd2 : FWD) : bool :=
+(* Definition eqb_fwd (fwd1 fwd2 : FWD) : bool :=
   match fwd1, fwd2 with
   | COMP, COMP => true
   | ENCR, ENCR => true
@@ -300,7 +299,7 @@ Proof.
   destruct f1, f2; eauto; try congruence.
   - rewrite Nat.eqb_eq in H; eauto. 
   - find_injection; rewrite eqb_eq; eauto.
-Qed.
+Qed. *)
 
 (* NOTE: Better impl above 
 (** Boolean equality for EvidenceT Types *)

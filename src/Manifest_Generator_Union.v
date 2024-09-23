@@ -2,7 +2,7 @@
       Uses the (as-yet-unverified) manifest environment union operation to merge manifests 
       generated for combined Attestation and Appraisal scenarios.        *)
 
-Require Import Term_Defs_Core Manifest.
+Require Import Term_Defs_Core Manifest JSON_Core_Strings.
 
 Require Import EqClass.
 

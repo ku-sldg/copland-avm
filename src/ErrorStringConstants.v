@@ -18,6 +18,8 @@ Definition errStr_dispatch_error := "errStr_dispatch_error".
 
 Definition errStr_cvm_error := "errStr_cvm_error".
 
+Definition err_str_am_nonce := "err_str_am_nonce".
+
 Definition errStr_decryption_prim := "errStr_decryption_prim".
 
 Definition errStr_et_size := "errStr_et_size".

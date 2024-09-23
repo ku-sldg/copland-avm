@@ -16,8 +16,9 @@ Definition am_error_to_string (err:AM_Error) : string :=
   | cvm_error e => errStr_cvm_error
   end.
 
-Definition run_am_app_comp_init {A:Type} (am_comp:AM A) (st:AM_St) : ResultT A string :=
-  match (fst (am_comp st)) with
+Definition run_am_app_comp_init {A:Type} (am_comp:AM A) (st:AM_St) 
+    (sc : Session_Config) : ResultT A string :=
+  match (fst (fst (am_comp st sc))) with
   | resultC x => resultC x
   | errC e => errC (am_error_to_string e)
   end.
@@ -25,28 +26,25 @@ Definition run_am_app_comp_init {A:Type} (am_comp:AM A) (st:AM_St) : ResultT A s
 Import ErrNotation.
 
 Definition get_AM_config : AM Session_Config :=
-    (* TODO:  consider moving this functionality to a Reader-like monad 
-          i.e. an 'ask' primitive *)
-    st <- err_get ;;
-    err_ret (am_config st).
+  err_get_config.
 
 Definition am_newNonce (bs:BS) : AM nat :=
-  oldSt <- err_get ;;
+  oldSt <- err_get_state ;;
   let oldMap := am_nonceMap oldSt in
   let oldId := am_nonceId oldSt in
-  let oldAMConfig := am_config oldSt in
-  let newMap := map_set oldMap oldId bs in
+  sc <- get_AM_config ;;
+  let newMap := map_set oldId bs oldMap in
   let newId := oldId + 1 in
-  err_put (mkAM_St newMap newId oldAMConfig) ;;
+  err_put_state (mkAM_St newMap newId) ;;
   err_ret oldId.
 
 Definition am_getNonce (nid:nat) : AM BS :=
-  oldSt <- err_get ;;
+  oldSt <- err_get_state ;;
   let oldMap := am_nonceMap oldSt in
-  let resopt := map_get oldMap nid in
+  let resopt := map_get nid oldMap in
   match resopt with
   | Some res => err_ret res
-  | None => am_failm (am_error errStr_amNonce)
+  | None => am_failm (am_error err_str_am_nonce)
   end.
 
 

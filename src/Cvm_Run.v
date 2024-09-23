@@ -6,17 +6,17 @@ Require Import Term_Defs Cvm_Impl Cvm_St ErrorStMonad_Coq String
 Require Import List.
 Import ListNotations.
 
-Definition run_cvm (t:Term) st : ResultT cvm_st CVM_Error :=
-  let '(res, st') := ((build_cvm t) st) in
+Definition run_cvm (e : Evidence) (t:Term) st sc : ResultT cvm_st CVM_Error :=
+  let '(res, st', sc') := ((build_cvm e t) st sc) in
   match res with
   | resultC _ => resultC st'
   | errC e => errC e
   end.
 
-Definition run_cvm_init_ev (ac : Session_Config) (e: Evidence) (t : Term) 
+Definition run_cvm (ac : Session_Config) (e: Evidence) (t : Term) 
     : ResultT Evidence string :=
-  let init_st := (mk_st e [] 0 ac) in
-  match (run_cvm t init_st) with
+  let init_st := (mk_st e [] 0) in
+  match (run_cvm e t init_st ac) with
   | resultC st => resultC (st_ev st)
   | errC e => 
       match e with

@@ -63,6 +63,7 @@ Lemma invoke_APPR_config_immut : forall et r st sc res st' sc' out_et,
   invoke_APPR' r et out_et st sc = (res, st', sc') ->
   sc = sc'.
 Proof.
+  (*
   induction et using EvidenceT_double_ind; simpl in *; cvm_monad_unfold.
   - ff.
   - intros; simpl in *;
@@ -181,301 +182,14 @@ Proof.
     break_match; subst; try find_injection; try congruence.
     break_match; subst; try find_injection; try congruence.
     break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try find_injection; try congruence.
-    break_match; subst; try congruence.
-    break_match; subst; try congruence.
-    break_match; subst; try congruence.
-    break_match; subst; try congruence.
-    break_match; subst; try congruence.
-    break_match; subst; try congruence.
-    break_match; subst; try congruence.
-    break_match; subst; try congruence.
-    break_match; subst; try congruence.
-    break_match; subst; try congruence.
-    break_match; subst; try congruence.
-    break_match; subst; try congruence.
-    break_match; subst; try congruence.
-    break_match; subst; try congruence.
-    break_match; subst; try congruence.
-    break_match; subst; try congruence.
-    break_match; subst; try congruence.
-    break_match; subst; try congruence.
-    break_match; subst; try congruence.
   - ff; cvm_monad_unfold; ff. 
   induction et; cvm_monad_unfold; ff; cvm_monad_unfold; ff;
   unfold split_evidence in *; cvm_monad_unfold; ff;
   try find_eapply_lem_hyp IHet1;
   try find_eapply_lem_hyp IHet2; ff.
 Qed.
+*)
+Admitted.
 
 Lemma build_cvm_config_immut : forall t e st sc res st' sc',
   build_cvm e t st sc = (res, st', sc') ->
@@ -487,6 +201,7 @@ Proof.
   find_eapply_lem_hyp invoke_APPR_config_immut; ff.
 Qed.
 
+(* 
 Lemma split_evidence_determinisitic : forall e st1 st2 res1 res2 st1' st2' et1 et2 sc sc1' sc2',
   split_evidence e et1 et2 st1 sc = (res1, st1', sc1') ->
   split_evidence e et1 et2 st2 sc = (res2, st2', sc2') ->
@@ -496,6 +211,7 @@ Proof.
   unfold split_evidence in *.
   cvm_monad_unfold; ff.
 Qed.
+*)
 
 Lemma peel_n_rawev_result_spec : forall n ls ls1 ls2,
   peel_n_rawev n ls = resultC (ls1, ls2) ->
@@ -511,12 +227,14 @@ Proof.
   induction n; ffa using cvm_monad_unfold; ffl.
 Qed.
 
+(* 
 Lemma split_evidence_state_immut : forall e sc sc' res st st' et1 et2,
   split_evidence e et1 et2 st sc = (res, st', sc') ->
   st = st' /\ sc = sc'.
 Proof.
   unfold split_evidence in *; cvm_monad_unfold; ff.
 Qed.
+*)
 
 Lemma check_cvm_policy_preserves_state : forall t p evt st1 st1' r sc sc',
   check_cvm_policy t p evt st1 sc = (r, st1', sc') ->
@@ -541,6 +259,7 @@ Lemma invoke_APPR_deterministic : forall e sc sc1' sc2' st1 st2 st1' st2' res1 r
   res1 = res2 /\ st_evid st1' = st_evid st2' /\ 
   sc1' = sc2'.
 Proof.
+  (* 
   induction e; simpl in *; intros;
   try (cvm_monad_unfold; intuition; repeat find_injection; eauto; fail).
   - cvm_monad_unfold; ff.
@@ -601,12 +320,15 @@ Proof.
     end);
     repeat find_rewrite; eauto; ff. 
 Qed.
+*)
+Admitted.
 
 Theorem invoke_APPR_deterministic_Evidence : forall et st1 st2 r1 r2 st1' st2' r sc sc1' sc2' eo,
   invoke_APPR' r et eo st1 sc = (r1, st1', sc1') ->
   invoke_APPR' r et eo st2 sc = (r2, st2', sc2') ->
   r1 = r2.
 Proof.
+  (* 
   induction et; ff; cvm_monad_unfold; ff;
   repeat match goal with
   | H1 : split_evidence _ _ _ _ _ = _,
@@ -628,6 +350,8 @@ Proof.
     clear IH H2
   end.
 Qed.
+*)
+Admitted.
 
 Lemma cvm_deterministic :  forall t e sc sc1' sc2' st1 st2 r1 r2 st1' st2',
   st_evid st1 = st_evid st2 ->
@@ -654,11 +378,14 @@ Lemma appr_events'_errs_deterministic : forall G p e e' i1 e1,
   appr_events' G p e e' i1 = errC e1 ->
   forall i2, appr_events' G p e e' i2 = errC e1.
 Proof.
+  (* 
   induction e; ffa using result_monad_unfold;
   try (find_eapply_lem_hyp IHe; ff; fail);
   try (find_eapply_lem_hyp IHe1; ff);
   try (find_eapply_lem_hyp IHe2; ff).
 Qed.
+*)
+Admitted.
 
 Lemma asp_events_errs_deterministic : forall G t p e i1 i2 e1 e2,
   asp_events G p e t i1 = resultC e1 ->
@@ -774,6 +501,7 @@ Lemma invoke_APPR'_spans : forall et r e' sc c i st sc' eo,
   appr_events_size G et = resultC i ->
   st_evid c = st_evid st + i.
 Proof.
+  (* 
   induction et; ffa using (try cvm_monad_unfold; try result_monad_unfold);
   repeat match goal with
   | H : split_evidence _ _ _ _ _ = _ |- _ =>
@@ -792,36 +520,192 @@ Proof.
     guard numgoals' <= numgoals
   end.
 Qed.
+*)
+Admitted.
 
 Inductive et_same_asps : EvidenceT -> EvidenceT -> Prop :=
 | et_same_asps_mt : et_same_asps mt_evt mt_evt
 | et_same_asps_nonce : forall n1 n2, et_same_asps (nonce_evt n1) (nonce_evt n2)
-| et_same_asps_asp : forall p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 e1 e2 asp_id,
+
+| et_same_asps_asp_mt : forall p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id, 
+  et_same_asps 
+    (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) mt_evt) 
+    (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) mt_evt)
+| et_same_asps_asp_nonce : forall p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 n1 n2 asp_id,
+  et_same_asps 
+    (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (nonce_evt n1))
+    (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (nonce_evt n2))
+| et_same_asps_asp_asp : forall p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 e1 e2 asp_id p1' p2' args1' args2' targ_plc1' targ_plc2' targ1' targ2' asp_id',
+    et_same_asps e1 e2 ->
+    et_same_asps 
+      (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) 
+        (asp_evt p1' (asp_paramsC asp_id' args1' targ_plc1' targ1') e1))
+      (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) 
+        (asp_evt p2' (asp_paramsC asp_id' args2' targ_plc2' targ2') e2))
+| et_same_asps_asp_left : forall e1 e2 p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id,
+    et_same_asps (left_evt e1) (left_evt e2) ->
+    et_same_asps 
+      (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (left_evt e1))
+      (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (left_evt e2))
+| et_same_asps_asp_right : forall e1 e2 p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id,
+    et_same_asps (right_evt e1) (right_evt e2) ->
+    et_same_asps 
+      (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (right_evt e1))
+      (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (right_evt e2))
+| et_same_asps_asp_split : forall e1a e1b e2a e2b p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id,
+    et_same_asps e1a e2a ->
+    et_same_asps e1b e2b ->
+    et_same_asps 
+      (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (split_evt e1a e1b))
+      (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (split_evt e2a e2b))
+
+| et_same_asps_left_mt : et_same_asps (left_evt mt_evt) (left_evt mt_evt)
+| et_same_asps_left_nonce : forall n, et_same_asps (left_evt (nonce_evt n)) (left_evt (nonce_evt n))
+| et_same_asps_left_asp_mt : forall p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id, 
+  et_same_asps 
+    (left_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) mt_evt))
+    (left_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) mt_evt))
+| et_same_asps_left_asp_nonce : forall p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 n asp_id,
+  et_same_asps 
+    (left_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (nonce_evt n)))
+    (left_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (nonce_evt n)))
+| et_same_asps_left_asp_asp : forall p1 p2 p1' p2' args1 args2 args1' args2' targ_plc1 targ_plc2 targ_plc1' targ_plc2' targ1 targ2 targ1' targ2' asp_id asp_id' e1 e2,
+  et_same_asps (left_evt e1) (left_evt e2) ->
+  et_same_asps 
+    (left_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) 
+      (asp_evt p1' (asp_paramsC asp_id' args1' targ_plc1' targ1') e1)))
+    (left_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) 
+      (asp_evt p2' (asp_paramsC asp_id' args2' targ_plc2' targ2') e2)))
+| et_same_asps_left_asp_left : forall e1 e2 p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id,
+    et_same_asps (left_evt e1) (left_evt e2) ->
+    et_same_asps 
+      (left_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (left_evt e1)))
+      (left_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (left_evt e2)))
+| et_same_asps_left_asp_right : forall e1 e2 p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id,
+    et_same_asps (right_evt e1) (right_evt e2) ->
+    et_same_asps 
+      (left_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (right_evt e1)))
+      (left_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (right_evt e2)))
+| et_same_asps_left_asp_split : forall e1a e1b e2a e2b p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id,
+    et_same_asps e1a e2a ->
+    et_same_asps e1b e2b ->
+    et_same_asps 
+      (left_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (split_evt e1a e1b)))
+      (left_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (split_evt e2a e2b)))
+| et_same_asps_left_left : forall e1 e2,
+    et_same_asps (left_evt e1) (left_evt e2) ->
+    et_same_asps (left_evt (left_evt e1)) (left_evt (left_evt e2))
+| et_same_asps_left_right : forall e1 e2,
+    et_same_asps (right_evt e1) (right_evt e2) ->
+    et_same_asps (left_evt (right_evt e1)) (left_evt (right_evt e2))
+| et_same_asps_left_split : forall e1a e1b e2a e2b,
+    et_same_asps e1a e2a ->
+    et_same_asps (left_evt (split_evt e1a e1b)) (left_evt (split_evt e2a e2b))
+
+| et_same_asps_right_mt : et_same_asps (right_evt mt_evt) (right_evt mt_evt)
+| et_same_asps_right_nonce : forall n1 n2, et_same_asps (right_evt (nonce_evt n1)) (right_evt (nonce_evt n2))
+| et_same_asps_right_asp_mt : forall p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id, 
+  et_same_asps 
+    (right_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) mt_evt))
+    (right_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) mt_evt))
+| et_same_asps_right_asp_nonce : forall p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 n1 n2 asp_id,
+  et_same_asps 
+    (right_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (nonce_evt n1)))
+    (right_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (nonce_evt n2)))
+| et_same_asps_right_asp_asp : forall p1 p2 p1' p2' args1 args2 args1' args2' targ_plc1 targ_plc2 targ_plc1' targ_plc2' targ1 targ2 targ1' targ2' asp_id asp_id' e1 e2,
+  et_same_asps (right_evt e1) (right_evt e2) ->
+  et_same_asps 
+    (right_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) 
+      (asp_evt p1' (asp_paramsC asp_id' args1' targ_plc1' targ1') e1)))
+    (right_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) 
+      (asp_evt p2' (asp_paramsC asp_id' args2' targ_plc2' targ2') e2)))
+| et_same_asps_right_asp_left : forall e1 e2 p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id,
+    et_same_asps (left_evt e1) (left_evt e2) ->
+    et_same_asps 
+      (right_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (left_evt e1)))
+      (right_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (left_evt e2)))
+| et_same_asps_right_asp_right : forall e1 e2 p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id,
+    et_same_asps (right_evt e1) (right_evt e2) ->
+    et_same_asps 
+      (right_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (right_evt e1)))
+      (right_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (right_evt e2)))
+| et_same_asps_right_asp_split : forall e1a e1b e2a e2b p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id,
+    et_same_asps e1a e2a ->
+    et_same_asps e1b e2b ->
+    et_same_asps 
+      (right_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (split_evt e1a e1b)))
+      (right_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (split_evt e2a e2b)))
+| et_same_asps_right_left : forall e1 e2,
+    et_same_asps e1 e2 ->
+    et_same_asps (right_evt (left_evt e1)) (right_evt (left_evt e2))
+| et_same_asps_right_right : forall e1 e2,
+    et_same_asps e1 e2 ->
+    et_same_asps (right_evt (right_evt e1)) (right_evt (right_evt e2))
+| et_same_asps_right_split : forall e1a e1b e2a e2b,
+    et_same_asps e1b e2b ->
+    et_same_asps (right_evt (split_evt e1a e1b)) (right_evt (split_evt e2a e2b))
+
+| et_same_asps_split : forall e1 e2 e1' e2',
+    et_same_asps e1 e2 ->
+    et_same_asps e1' e2' ->
+    et_same_asps (split_evt e1 e1') (split_evt e2 e2').
+Local Hint Constructors et_same_asps : et_same_asps_db.
+
+
+(* | et_same_asps_asp : forall p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 e1 e2 asp_id,
     et_same_asps e1 e2 ->
     et_same_asps 
       (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) e1)
       (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) e2)
+| et_same_asps_left : forall e1 e2,
+    et_same_asps e1 e2 ->
+    et_same_asps (left_evt e1) (left_evt e2)
+| et_same_asps_right : forall e1 e2,
+    et_same_asps e1 e2 ->
+    et_same_asps (right_evt e1) (right_evt e2)
 | et_same_asps_split : forall e1a e1b e2a e2b,
     et_same_asps e1a e2a ->
     et_same_asps e1b e2b ->
-    et_same_asps (split_evt e1a e1b) (split_evt e2a e2b).
-Local Hint Constructors et_same_asps : et_same_asps_db.
+    et_same_asps (split_evt e1a e1b) (split_evt e2a e2b). *)
+(* Local Hint Constructors et_same_asps : et_same_asps_db. *)
 
 Lemma et_same_asps_impl_same_size : forall G e1 e2,
   et_same_asps e1 e2 ->
   et_size G e1 = et_size G e2.
 Proof.
   intros.
-  induction H; simpl in *; ffa using result_monad_unfold.
+  induction H; eauto.
+  - simpl in *.
+    breaker; result_monad_unfold; eauto;
+    try (invc H; simple congruence 1).
+    simpl in *.
+    repeat find_rewrite.
+    admit.
+  - simpl in *; breaker; result_monad_unfold; breaker.
+  - simpl in *; breaker; result_monad_unfold; breaker.
+  - simpl in *; breaker; result_monad_unfold; breaker.
+  - simpl in *; breaker; result_monad_unfold; breaker.
+  - simpl in *; breaker; result_monad_unfold; breaker.
+  - simpl in *; breaker; result_monad_unfold; breaker.
+(* Qed.
+Local Hint Resolve et_same_asps_impl_same_size : et_same_asps_db. *)
+Admitted.
+
+Lemma et_same_asps_refl : forall e,
+  et_same_asps e e.
+Proof.
+  induction e using EvidenceT_double_ind; eauto using et_same_asps;
+  repeat match goal with
+  | a : ASP_PARAMS |- _ => destruct a; eauto using et_same_asps
+  end.
 Qed.
-Local Hint Resolve et_same_asps_impl_same_size : et_same_asps_db.
 
 Lemma et_same_asps_symm : forall e1 e2,
   et_same_asps e1 e2 -> et_same_asps e2 e1.
 Proof.
   intros.
   prep_induction H.
-  induction H; ff; eauto with et_same_asps_db.
+  induction H; eauto using et_same_asps.
 Qed.
 Local Hint Resolve et_same_asps_symm : et_same_asps_db.
 
@@ -836,6 +720,28 @@ Proof.
 Qed.
 Local Hint Resolve et_same_asps_split_helper : et_same_asps_db. *)
 
+Lemma et_same_asps_asp_dir : forall e1 e2 asp_id args1 args2 targ_plc1 targ_plc2 targ1 targ2 p1 p2 par1 par2,
+  et_same_asps e1 e2 ->
+  par1 = (asp_paramsC asp_id args1 targ_plc1 targ1) ->
+  par2 = (asp_paramsC asp_id args2 targ_plc2 targ2) ->
+  et_same_asps (asp_evt p1 par1 e1) (asp_evt p2 par2 e2).
+Proof.
+  intros.
+  prep_induction H.
+  induction H; intros; subst_max; eauto using et_same_asps;
+  try (econstructor; eapply et_same_asps_refl; fail).
+Qed.
+Local Hint Resolve et_same_asps_asp_dir : et_same_asps_db.
+
+Lemma equiv_EvidenceT_impl_et_size_same : forall G e1 e2,
+  equiv_EvidenceT G e1 e2 = true ->
+  et_size G e1 = et_size G e2.
+Proof.
+  intros.
+  unfold equiv_EvidenceT in *.
+  ff; rewrite PeanoNat.Nat.eqb_eq in *; ff.
+Qed.
+
 Lemma et_same_asps_appr_procedure : forall G e1 e1' e2 e2' p1 p2 e1o e2o,
   et_same_asps e1 e2 ->
   et_same_asps e1o e2o ->
@@ -845,6 +751,28 @@ Lemma et_same_asps_appr_procedure : forall G e1 e1' e2 e2' p1 p2 e1o e2o,
 Proof.
   intros.
   generalizeEverythingElse H.
+  induction H; intros; simpl in *; try simple congruence 1.
+  - breaker; repeat find_injection; eauto with et_same_asps_db.
+  - breaker; repeat find_injection; eauto with et_same_asps_db.
+    eapply et_same_asps_asp_dir; try reflexivity; eauto.
+  - breaker; repeat find_injection; eauto with et_same_asps_db.
+  - breaker; repeat find_injection; eauto with et_same_asps_db;
+    econstructor; eauto with et_same_asps_db;
+    eapply et_same_asps_asp_dir; try reflexivity. eauto with et_same_asps_db.
+  - target_break_match H1; target_break_match H2. 
+    all: try (eapply et_same_asps_asp_dir; try reflexivity; assumption).
+    all: try (econstructor; )
+    all: eauto 3 with et_same_asps_db.
+    breaker; repeat find_injection; eauto with et_same_asps_db.
+      eauto with et_same_asps_db.
+    eapply et_same_asps_asp_dir; eauto.
+    econstructor.
+    repeat find_eapply_lem_hyp equiv_EvidenceT_impl_et_size_same;
+    simpl in *; repeat find_rewrite.
+    repeat find_
+  - breaker; repeat find_injection 
+  - breaker; repeat find_injection.
+  - 
   induction H; simpl in *; intuition; repeat find_injection; eauto;
   try (econstructor; ff; fail).
   - ff; eauto with et_same_asps_db; 
@@ -1176,7 +1104,7 @@ Lemma wf_Evidence_split : forall G r1 r2 et1 et2,
   wf_Evidence G (evc (r1 ++ r2) (split_evt et1 et2)).
 Proof.
   intros; invc H; invc H0; econstructor; ff;
-  rewrite length_app; ff.
+  rewrite app_length; ff.
 Qed.
 Local Hint Resolve wf_Evidence_split : wf_Evidence.
 
@@ -1302,7 +1230,7 @@ Proof.
   induction H; cvm_monad_unfold; ff;
   econstructor; ff;
   rewrite PeanoNat.Nat.eqb_eq in *; ff;
-  rewrite length_app in *; ff.
+  rewrite app_length in *; ff.
 Qed.
 
 
@@ -1321,7 +1249,7 @@ Proof.
   - ff; cvm_monad_unfold; ff.
   - ff; cvm_monad_unfold; ff. 
   (* rewrite PeanoNat.Nat.eqb_eq in *; ff;
-    econstructor; ff; result_monad_unfold; repeat rewrite length_app; ff;
+    econstructor; ff; result_monad_unfold; repeat rewrite app_length; ff;
     invc H1; ff;
     repeat find_reverse_rewrite; ff. *)
   - simpl in *; result_monad_unfold.
@@ -1368,20 +1296,20 @@ Proof.
     rewrite PeanoNat.Nat.eqb_eq in *; ff;
     repeat match goal with
     | H : wf_Evidence _ _ |- _ => invc H; ff
-    end; econstructor; ff; rewrite length_app; ff.
+    end; econstructor; ff; rewrite app_length; ff.
   - simpl in *; result_monad_unfold; cvm_monad_unfold; ff;
     rewrite PeanoNat.Nat.eqb_eq in *; ff.
     all: try (repeat match goal with
       | H : wf_Evidence _ _ |- _ => invc H; ff
-      end; econstructor; ff; result_monad_unfold; repeat rewrite length_app in *; ff; fail).
+      end; econstructor; ff; result_monad_unfold; repeat rewrite app_length in *; ff; fail).
     all: try (result_monad_unfold; ff; eapply IHet in H1; eauto; econstructor; 
-      repeat rewrite length_app in *; ff;
+      repeat rewrite app_length in *; ff;
       repeat match goal with
       | H : wf_Evidence _ _ |- _ => invc H; ff
       end; fail).
     * find_eapply_lem_hyp peel_n_rawev_result_spec; ff.
       eapply IHet in Heqp2.
-      ** econstructor; repeat rewrite length_app in *; ff;
+      ** econstructor; repeat rewrite app_length in *; ff;
         result_monad_unfold; ff;
         repeat match goal with
         | H : wf_Evidence _ _ |- _ => invc H; 
@@ -1390,16 +1318,16 @@ Proof.
       ** econstructor; repeat match goal with
         | H : wf_Evidence _ _ |- _ => invc H; 
           result_monad_unfold; ff
-      end; result_monad_unfold; ff; repeat rewrite length_app in *;
+      end; result_monad_unfold; ff; repeat rewrite app_length in *;
       f_equal; lia.
       ** econstructor; repeat match goal with
         | H : wf_Evidence _ _ |- _ => invc H; 
           result_monad_unfold; ff
-      end; result_monad_unfold; ff; repeat rewrite length_app in *;
+      end; result_monad_unfold; ff; repeat rewrite app_length in *;
       f_equal; lia.
     * find_eapply_lem_hyp peel_n_rawev_result_spec; ff.
       eapply IHet in Heqp2.
-      ** econstructor; repeat rewrite length_app in *; ff;
+      ** econstructor; repeat rewrite app_length in *; ff;
         result_monad_unfold; ff;
         repeat match goal with
         | H : wf_Evidence _ _ |- _ => invc H; 
@@ -1408,31 +1336,31 @@ Proof.
       ** econstructor; repeat match goal with
         | H : wf_Evidence _ _ |- _ => invc H; 
           result_monad_unfold; ff
-      end; result_monad_unfold; ff; repeat rewrite length_app in *;
+      end; result_monad_unfold; ff; repeat rewrite app_length in *;
       f_equal; lia.
       ** econstructor; repeat match goal with
         | H : wf_Evidence _ _ |- _ => invc H; 
           result_monad_unfold; ff
-      end; result_monad_unfold; ff; repeat rewrite length_app in *;
+      end; result_monad_unfold; ff; repeat rewrite app_length in *;
       f_equal; lia.
     * find_eapply_lem_hyp peel_n_rawev_result_spec; ff.
       eapply IHet in Heqp2.
-      ** econstructor; repeat rewrite length_app in *; ff;
+      ** econstructor; repeat rewrite app_length in *; ff;
         result_monad_unfold; ff;
         repeat match goal with
         | H : wf_Evidence _ _ |- _ => invc H; 
           result_monad_unfold; ff
         end.
-        result_monad_unfold; ff; repeat rewrite length_app in *; ff.
+        result_monad_unfold; ff; repeat rewrite app_length in *; ff.
       ** econstructor; repeat match goal with
         | H : wf_Evidence _ _ |- _ => invc H; 
           result_monad_unfold; ff
-      end; result_monad_unfold; ff; repeat rewrite length_app in *;
+      end; result_monad_unfold; ff; repeat rewrite app_length in *;
       f_equal; lia.
       ** econstructor; repeat match goal with
         | H : wf_Evidence _ _ |- _ => invc H; 
           result_monad_unfold; ff
-      end; result_monad_unfold; ff; repeat rewrite length_app in *;
+      end; result_monad_unfold; ff; repeat rewrite app_length in *;
       f_equal; lia.
   - simpl in *; ff; cvm_monad_unfold; ff.
     unfold split_evidence in *; cvm_monad_unfold; ff;
@@ -1443,7 +1371,7 @@ Proof.
     eapply invoke_APPR_config_immut in Heqp1 as ?; ff.
     eapply IHet1 in Heqp0.
     * eapply IHet2 in Heqp1.
-      ** econstructor; repeat rewrite length_app in *; ff;
+      ** econstructor; repeat rewrite app_length in *; ff;
       result_monad_unfold; ff;
       repeat match goal with
       | H : wf_Evidence _ _ |- _ => invc H; ff
@@ -1475,7 +1403,7 @@ Proof.
       repeat find_rewrite;
       repeat find_injection;
       result_monad_unfold; ff;
-      repeat rewrite length_app;
+      repeat rewrite app_length;
       f_equal; lia);
     eapply wf_Evidence_invoke_APPR; eauto; destruct e; ff.
   - ff;

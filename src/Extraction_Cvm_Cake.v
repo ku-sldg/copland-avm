@@ -2,7 +2,7 @@
 
 Require Extraction.
 
-Require Import Term_Defs Term_Defs_Core Cvm_Run IO_Stubs AM_Monad Cvm_Monad.
+Require Import Term_Defs Term_Defs_Core IO_Stubs AM_Monad Cvm_Monad Cvm_Impl.
 (* Require Import CopParser. *)
 
 Require Import Manifest_Generator Session_Config_Compiler.
@@ -31,7 +31,7 @@ Extract Inlined Constant Nat.eqb => "(op=)".
 
 Separate Extraction 
     full_flexible_mechanisms
-    run_cvm session_config_compiler 
+    build_cvm session_config_compiler 
 		handle_AM_request end_to_end_mangen
     concrete_Jsonifiable_Manifest
     concrete_Jsonifiable_ASP_Compat_MapT

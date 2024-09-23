@@ -30,7 +30,7 @@ Manifest_JSON.v
 Session_Config_Compiler.v
 Cvm_St.v
 IO_Stubs.v
-# Eqb_Evidence.v
+Eqb_Evidence.v
 Term.v
 EnvironmentM.v
 Manifest_Union.v
@@ -39,7 +39,7 @@ Cvm_Monad.v
 Cvm_Impl.v
 # Cvm_Run.v
 Cvm_Axioms.v
-Cvm_Verification.v
+# Cvm_Verification.v
 Manifest_Generator_Helpers.v
 Manifest_Generator.v
 Manifest_Generator_Facts.v

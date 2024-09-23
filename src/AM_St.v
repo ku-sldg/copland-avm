@@ -21,4 +21,4 @@ Inductive AM_Error : Type :=
 Definition am_failm {A: Type} (e:AM_Error) : Err AM_St Session_Config A AM_Error := 
   fun s c => (errC e, s, c).
   
-Definition AM A := Err AM_St A AM_Error.
+Definition AM A := Err AM_St Session_Config A AM_Error.
