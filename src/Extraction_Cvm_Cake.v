@@ -38,4 +38,5 @@ Separate Extraction
     concrete_Jsonifiable_Attestation_Session
     concrete_Jsonifiable_Term
     concrete_Jsonifiable_EvidenceT
+    concrete_Jsonifiable_GlobalContext
     Jsonifiable_Term_Plc_list.

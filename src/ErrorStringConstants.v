@@ -104,6 +104,7 @@ Definition errStr_json_key_not_found (key : string) (js : JSON) := ("JSON: Key: 
 Definition errStr_json_wrong_type (key : string) (js : JSON) := ("JSON: Key: '" ++ key ++ "' had the wrong type in JSON: '" ++ (JSON_to_string js) ++ "'").
 
 Definition err_str_01 := "Invalid request type".
+Definition err_str_fwd_from_string := "Error parsing FWD from string".
 
 Definition err_str_unwrap_must_have_outwrap := "UNWRAP ASPs must have an OutWrap output signature".
 

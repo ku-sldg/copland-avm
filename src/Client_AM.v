@@ -10,7 +10,7 @@ Require Import Maps Attestation_Session Interface.
 
 Require Import ErrorStringConstants Manifest_Admits.
 
-Require Import AM_Helpers Defs.
+Require Import AM_Helpers.
 
 Import ListNotations ErrNotation.
 
