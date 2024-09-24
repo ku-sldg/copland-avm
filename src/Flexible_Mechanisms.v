@@ -68,6 +68,7 @@ Definition filehash_auth_phrase : Term :=
 Open Scope string_scope.
 Definition flexible_mechanisms_map := 
   [("cert", certificate_style); 
+   ("cert_appr", lseq certificate_style (asp APPR)); 
    ("bg", background_check); 
    ("parmut", parallel_mutual_1); 
    ("parmut2", parallel_mutual_2); 
