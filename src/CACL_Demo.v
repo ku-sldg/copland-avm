@@ -128,14 +128,20 @@ Definition cds_demo_phrase : Term :=
 <{
   @ P1 
   [
-    query_kim_asp ->
-    meas_cds_phrase ->
+    (
+    query_kim_asp +<+
+    meas_cds_phrase
+     ) ->
     sig_asp
   ] -> 
   @ P3 [ appr_cds_asp ]
 }>.
 
+
+Print cds_demo_phrase.
+
 Close Scope cop_ent_scope.
+
 
 Definition cds_demo_arch_policy : CACL_Policy := 
     [
