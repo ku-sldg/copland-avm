@@ -17,6 +17,8 @@ JSON_Core_Strings.v
 JSON_Core.v
 Params_Admits.v
 Term_Defs.v
+CACL.v
+CACL_Demo.v
 Attestation_Session.v
 Interface_Types.v
 Interface_JSON.v
