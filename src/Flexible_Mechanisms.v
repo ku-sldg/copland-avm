@@ -65,7 +65,6 @@ Definition filehash_auth_phrase : Term :=
       (asp SIG) 
     ).
 
-
 Open Scope string_scope.
 Definition flexible_mechanisms_map := 
   [("cert", certificate_style); 

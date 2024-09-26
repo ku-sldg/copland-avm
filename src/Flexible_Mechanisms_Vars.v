@@ -16,7 +16,6 @@ Definition appraise_id : ASP_ID := "appraise_id".
 Definition certificate_id : ASP_ID := "certificate_id".
 Definition hashfile_id : ASP_ID := "hashfile_id".
 
-
 (* TARG IDs *)
 Definition sys_targ : TARG_ID := "sys_targ".
 Definition att_targ : TARG_ID := "att_targ".
