@@ -60,7 +60,7 @@ Close Scope string_scope.
 
 
 Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID) : Term := 
-    (asp (ASPC ALL (EXTD 1) 
+    (asp (ASPC (* ALL (EXTD 1)  *)
                (asp_paramsC 
                     gather_file_contents_id 
                     [] 
@@ -68,7 +68,7 @@ Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID) : Term :=
                     targId ))).
 
 Definition hash_targ_asp (targPlc:Plc) (targId:TARG_ID) : Term := 
-    (asp (ASPC ALL (EXTD 1) 
+    (asp (ASPC (* ALL (EXTD 1) *)
                 (asp_paramsC 
                     hash_file_contents_id 
                     [] 
@@ -117,10 +117,10 @@ Definition meas_cds_phrase : Term :=
 }>.
 
 Definition query_kim_asp : Term := 
-    (asp (ASPC ALL (EXTD 1) (asp_paramsC query_kim_id [] P1 kim_evidence_targ))).
+    (asp (ASPC (* ALL (EXTD 1) *) (asp_paramsC query_kim_id [] P1 kim_evidence_targ))).
 
 Definition appr_cds_asp : Term := 
-    (asp (ASPC ALL (EXTD 1) (asp_paramsC appr_cds_id [] P1 sys_targ))).
+    (asp (ASPC (* ALL (EXTD 1) *) (asp_paramsC appr_cds_id [] P1 sys_targ))).
 
 Definition sig_asp : Term := asp SIG.
 
@@ -187,4 +187,6 @@ Definition test_cacl_compute :=
         (CACL_policy_generator cds_demo_phrase P0).
 
 
+(*
 Definition test_cacl_compute_json : JSON := to_JSON test_cacl_compute.
+*)

@@ -2,7 +2,9 @@ Require Import Term_Defs Maps ID_Type EqClass.
 
 Require Import Manifest_Set JSON JSON_Core.
 
+(*
 Require Import Flexible_Mechanisms.
+*)
 
 Require Import List.
 Import ListNotations.
@@ -51,7 +53,7 @@ Global Instance EqClassCACL_Permission `{H : EqClass ID_Type} : EqClass CACL_Per
 }.
 
 Definition CACL_Access : Type := (ID_Type * CACL_Permission).
-Definition CACL_Policy : Type := MapC ID_Type (list CACL_Access).
+Definition CACL_Policy : Type := Map ID_Type (list CACL_Access).
 
 Definition STR_CACL_Access : string := "CACL_Access".
 Definition cacl_read_name_constant : string := "CACL_Read".
@@ -65,7 +67,7 @@ Definition CACL_Permission_to_JSON (t : CACL_Permission) : JSON :=
   | CACL_Invoke => constructor_to_JSON STR_CACL_Access cacl_invoke_name_constant []
   end.
 
-Definition CACL_Permission_from_JSON_map : MapC string (JSON -> (ResultT CACL_Permission string)) := 
+Definition CACL_Permission_from_JSON_map : Map string (JSON -> (ResultT CACL_Permission string)) := 
   [(cacl_read_name_constant, 
     constructor_from_JSON STR_CACL_Access (fun _ => resultC CACL_Read));
     (cacl_write_name_constant, 
@@ -122,10 +124,13 @@ Global Instance Stringifiable_CACL_Permission : Stringifiable CACL_Permission :=
   }.
 
 
+(*
+
+
 Global Instance Jsonifiable_list_CACL_Access `{Jsonifiable CACL_Permission} : Jsonifiable (list CACL_Access).
 eapply Build_Jsonifiable with 
-(to_JSON := map_serial_to_JSON(* list_CACL_Access_to_JSON *))
-(from_JSON := map_serial_from_JSON (* list_CACL_Access_from_JSON *)).
+(to_JSON := map_serial_serial_to_JSON(* list_CACL_Access_to_JSON *))
+(from_JSON := map_serial_serial_from_JSON (* list_CACL_Access_from_JSON *)).
 intuition; induction a; simpl in *; intuition; eauto;
 repeat (try break_match; simpl in *; subst; eauto; try congruence);
 try rewrite canonical_jsonification in *; 
@@ -137,8 +142,8 @@ Defined.
 
 Global Instance Jsonifiable_CACL_Policy `{Stringifiable ID_Type, EqClass ID_Type, Jsonifiable CACL_Permission, Jsonifiable (list CACL_Access)}  : Jsonifiable CACL_Policy.
 eapply Build_Jsonifiable with 
-  (to_JSON := map_serial_to_JSON)
-  (from_JSON := map_serial_from_JSON).
+  (to_JSON := map_serial_serial_to_JSON)
+  (from_JSON := map_serial_serial_from_JSON).
   intuition; induction a; simpl in *; intuition; eauto;
   repeat (try break_match; simpl in *; subst; eauto; try congruence);
   try rewrite canonical_jsonification in *; 
@@ -147,6 +152,7 @@ eapply Build_Jsonifiable with
   try find_rewrite; eauto; try congruence.
 Defined.
 
+*)
 
 Definition eqb_CACL_Access `{H : EqClass ID_Type} (a1 a2 : CACL_Access)  : bool := 
     eqbPair a1 a2.
@@ -184,9 +190,9 @@ Proof.
 Qed.
 
 Definition update_CACL_Policy (i:ID_Type) (ls:list CACL_Access) (m:CACL_Policy) : CACL_Policy := 
-    match (map_get m i) with 
-    | Some ls' => map_set m i (CACL_Access_list_union ls ls')
-    | _ => map_set m i (list_to_manset ls)
+    match (map_get i m) with 
+    | Some ls' => map_set i (CACL_Access_list_union ls ls') m
+    | _ => map_set i (list_to_manset ls) m
     end.
 
 (*
@@ -208,11 +214,11 @@ Definition environment_union (e1:EnvironmentM) (e2:EnvironmentM) : EnvironmentM 
 *)
 
 Definition CACL_policy_union'' (p:ID_Type) (ls:list CACL_Access) (e2:CACL_Policy) : CACL_Policy := 
-    match (map_get e2 p) with 
+    match (map_get p e2) with 
     | Some ls' => 
       let new_man := CACL_Access_list_union ls ls' in  (* m2 first here to preserve plc *)
-        map_set e2 p new_man 
-    | None => map_set e2 p ls
+        map_set p new_man e2 
+    | None => map_set p ls e2 
     end.
 
 
@@ -238,7 +244,7 @@ Definition CACL_policy_generator_ASP (a:ASP) (p:Plc) : CACL_Policy :=
     | SIG =>   [(p, [(sig_id, CACL_Invoke)])] 
     | HSH =>   [(p, [(hsh_id, CACL_Invoke)])] 
     | ENC _ => [(p, [(enc_id, CACL_Invoke)])] 
-    | ASPC _ _ (asp_paramsC aid _ targp targid) => 
+    | ASPC (asp_paramsC aid _ targp targid) => 
         [(p, [(aid, CACL_Invoke)]);
          ((append p (append ", " aid)), [(targid, CACL_Read)])]
     | _ => default_CACL_Policy 
