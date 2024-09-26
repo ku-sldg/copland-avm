@@ -95,6 +95,8 @@ Definition errStr_json_to_ASP_Locator := "errStr_json_to_ASP_Locator".
 
 Definition errStr_json_to_am_lib := "errStr_json_to_am_lib".
 
+Definition errStr_json_to_pair : string := "errStr_json_to_pair".
+
 Definition errStr_map_from_json := "errStr_map_from_json".
 
 Definition errStr_json_from_pair := "Error converting pair from JSON".

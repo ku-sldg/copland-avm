@@ -1,4 +1,4 @@
-Require Import Term_Defs Flexible_Mechanisms_Vars.
+Require Import Term_Defs Flexible_Mechanisms_Vars CACL_Demo.
 Require Import List String. 
 Import ListNotations.
 
@@ -73,7 +73,8 @@ Definition flexible_mechanisms_map :=
    ("parmut", parallel_mutual_1); 
    ("parmut2", parallel_mutual_2); 
    ("layered_bg", layered_background_check); 
-   ("filehash", filehash_auth_phrase)].
+   ("filehash", filehash_auth_phrase);
+   ("cds", cds_demo_phrase)].
 
 Definition add_EvidenceT_flexible_mechanisms := 
   fun G =>
