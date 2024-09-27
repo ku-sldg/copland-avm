@@ -74,7 +74,8 @@ Definition flexible_mechanisms_map :=
    ("parmut2", parallel_mutual_2); 
    ("layered_bg", layered_background_check); 
    ("filehash", filehash_auth_phrase);
-   ("cds", cds_demo_phrase)].
+   ("cds", cds_demo_phrase);
+   ("cds_appr", lseq cds_demo_phrase (asp APPR))].
 
 Definition add_EvidenceT_flexible_mechanisms := 
   fun G =>
