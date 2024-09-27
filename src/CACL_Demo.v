@@ -102,17 +102,18 @@ Definition hash_controller_img : Term :=
 Definition meas_cds_phrase : Term :=
 <{
     gather_config_1
-    +<+
+    (* +<+ *)
+    ->
     gather_config_2
-    +<+
+    ->
     gather_config_3
-    +<+
+    ->
     hash_controller_img 
-    +<+
+    ->
     hash_cds_img_1
-    +<+
+    ->
     hash_cds_img_2
-    +<+
+    ->
     hash_cds_img_3
 }>.
 
@@ -129,7 +130,7 @@ Definition cds_demo_phrase : Term :=
   @ P1 
   [
     (
-    query_kim_asp +<+
+    query_kim_asp -> (* +<+ *)
     meas_cds_phrase
      ) ->
     sig_asp
