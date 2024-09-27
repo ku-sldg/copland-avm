@@ -73,6 +73,8 @@ Definition err_str_asp_is_not_wrap := "ASP is not a WRAP ASP".
 
 Definition err_str_no_possible_left_evt := ("No possible left_evt").
 Definition err_str_no_possible_right_evt := ("No possible right_evt").
+Definition err_str_no_evidence_below := ("No evidence below the trail").
+Definition err_str_trail_mismatch := ("Trail mismatch while trying to get belwo evidence").
 
 Definition err_str_asp_under_unwrap := "ASP under UNWRAP is not a WRAP".
 Definition err_str_wrap_asp_not_duals := "A WRAP and UNWRAP ASPs are not duals".

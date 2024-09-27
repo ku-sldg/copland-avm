@@ -291,7 +291,495 @@ Lemma EvidenceT_double_ind (P : EvidenceT -> Prop)
   eapply well_founded_ind; eauto.
 Qed.
 
-Definition get_left_evt (G : GlobalContext) 
+Lemma EvidenceT_double_ind_2 (P : EvidenceT -> Prop) 
+    (f_mt : P mt_evt) 
+
+    (f_nonce : forall n : N_ID, P (nonce_evt n))
+
+    (* (f_asp_mt : forall p a, P (asp_evt p a mt_evt))
+    (f_aps_nonce : forall p a n, P (asp_evt p a (nonce_evt n)))
+    (f_asp_asp : forall (e : EvidenceT), P e -> 
+      forall p p' a a', P (asp_evt p a (asp_evt p' a' e)))
+    (f_asp_left : forall p a e, P (left_evt e) -> P (asp_evt p a (left_evt e)))
+    (f_asp_right : forall p a e, P (right_evt e) -> P (asp_evt p a (right_evt e))) 
+    (f_asp_split : forall p a e1 e2, P e1 -> P e2 -> P (asp_evt p a (split_evt e1 e2))) *)
+    (f_asp : forall p a e, P e -> P (asp_evt p a e))
+
+    (f_left_mt : P (left_evt mt_evt))
+    (f_left_nonce : forall n : N_ID, P (left_evt (nonce_evt n)))
+    (f_left_asp : forall p a e, P (asp_evt p a e) -> P (left_evt (asp_evt p a e)))
+    (f_left_left : forall e : EvidenceT, P (left_evt e) -> P (left_evt (left_evt e)))
+    (f_left_right : forall e : EvidenceT, P (right_evt e) -> P (left_evt (right_evt e)))
+    (f_left_split : forall e1 e2 : EvidenceT, 
+      P e1 -> 
+      P (left_evt (split_evt e1 e2)))
+
+    (f_right_mt : P (right_evt mt_evt))
+    (f_right_nonce : forall n : N_ID, P (right_evt (nonce_evt n)))
+    (f_right_asp : forall p a e, P (asp_evt p a e) -> P (right_evt (asp_evt p a e)))
+    (f_right_left : forall e : EvidenceT, P e -> P (right_evt (left_evt e)))
+    (f_right_right : forall e : EvidenceT, P e -> P (right_evt (right_evt e)))
+    (f_right_split : forall e1 e2 : EvidenceT, 
+      P e2 -> 
+      P (right_evt (split_evt e1 e2)))
+
+    (f_split : forall e : EvidenceT, P e -> 
+      forall e0 : EvidenceT, P e0 -> P (split_evt e e0)) 
+    : forall e, P e.
+  assert (well_founded (fun e1 e2 => EvidenceT_depth e1 < EvidenceT_depth e2)). {
+    simpl in *.
+    eapply Wf_nat.well_founded_ltof.
+  }
+  assert (forall x : EvidenceT, (forall y : EvidenceT, (fun e1 e2 => EvidenceT_depth e1 < EvidenceT_depth e2) y x -> P y) -> P x). {
+    destruct x; simpl in *; eauto; intros F.
+    - destruct x; eauto.
+      eapply f_left_split; eapply F; eauto; simpl in *; lia.
+    - destruct x; eauto.
+      eapply f_right_split; eapply F; eauto; simpl in *; lia.
+    - eapply f_split; eapply F; simpl in *; eauto; lia.
+  }
+  eapply well_founded_ind; eauto.
+Qed.
+
+Lemma EvidenceT_triple_ind (P : EvidenceT -> Prop) 
+    (f_mt : P mt_evt) 
+
+    (f_nonce : forall n : N_ID, P (nonce_evt n))
+
+    (f_asp_mt : forall p a, P (asp_evt p a mt_evt))
+    (f_aps_nonce : forall p a n, P (asp_evt p a (nonce_evt n)))
+
+    (f_asp_asp_mt : forall p p' a a', P (asp_evt p a (asp_evt p' a' mt_evt)))
+    (f_asp_asp_nonce : forall n,
+      forall p p' a a', P (asp_evt p a (asp_evt p' a' (nonce_evt n))))
+    (f_asp_asp_asp : forall e, P e -> 
+      forall p a p' a' p'' a'', 
+        P (asp_evt p a (asp_evt p' a' (asp_evt p'' a'' e))))
+    (f_asp_asp_left : forall p a p' a' e, P (left_evt e) -> 
+      P (asp_evt p a (asp_evt p' a' (left_evt e))))
+    (f_asp_asp_right : forall p a p' a' e, P (right_evt e) ->
+      P (asp_evt p a (asp_evt p' a' (right_evt e))))
+    (f_asp_asp_split : forall p a p' a' e1 e2, P e1 -> P e2 -> 
+      P (asp_evt p a (asp_evt p' a' (split_evt e1 e2))))
+
+    (f_asp_left : forall p a e, P (left_evt e) -> P (asp_evt p a (left_evt e)))
+    (f_asp_right : forall p a e, P (right_evt e) -> P (asp_evt p a (right_evt e)))
+    (f_asp_split : forall p a e1 e2, P e1 -> P e2 -> P (asp_evt p a (split_evt e1 e2)))
+
+    (f_left_mt : P (left_evt mt_evt))
+    (f_left_nonce : forall n : N_ID, P (left_evt (nonce_evt n)))
+    (f_left_asp_mt : forall p a, P (left_evt (asp_evt p a mt_evt)))
+    (f_left_asp_nonce : forall p a n, P (left_evt (asp_evt p a (nonce_evt n))))
+    (f_left_asp_asp : forall e, P (left_evt e) -> 
+      forall p a p' a', P (left_evt (asp_evt p a (asp_evt p' a' e))))
+    (f_left_asp_left : forall e, P (left_evt e) -> 
+      forall p a, P (left_evt (asp_evt p a (left_evt e))))
+    (f_left_asp_right : forall e, P (right_evt e) -> 
+      forall p a, P (left_evt (asp_evt p a (right_evt e))))
+    (f_left_asp_split : forall e1 e2, P e1 -> P e2 -> 
+      forall p a, P (left_evt (asp_evt p a (split_evt e1 e2))))
+    (f_left_left : forall e : EvidenceT, P (left_evt e) -> P (left_evt (left_evt e)))
+    (f_left_right : forall e : EvidenceT, P (right_evt e) -> P (left_evt (right_evt e)))
+    (f_left_split : forall e1 e2 : EvidenceT, 
+      P e1 -> 
+      P (left_evt (split_evt e1 e2)))
+
+    (f_right_mt : P (right_evt mt_evt))
+    (f_right_nonce : forall n : N_ID, P (right_evt (nonce_evt n)))
+    (f_right_asp_mt : forall p a, P (right_evt (asp_evt p a mt_evt)))
+    (f_right_asp_nonce : forall p a n, P (right_evt (asp_evt p a (nonce_evt n))))
+    (f_right_asp_asp : forall e, P (right_evt e) -> 
+      forall p a p' a', P (right_evt (asp_evt p a (asp_evt p' a' e))))
+    (f_right_asp_left : forall e, P (left_evt e) -> 
+      forall p a, P (right_evt (asp_evt p a (left_evt e))))
+    (f_right_asp_right : forall e, P (right_evt e) -> 
+      forall p a, P (right_evt (asp_evt p a (right_evt e))))
+    (f_right_asp_split : forall e1 e2, P e1 -> P e2 -> 
+      forall p a, P (right_evt (asp_evt p a (split_evt e1 e2))))
+    (f_right_left : forall e : EvidenceT, P e -> P (right_evt (left_evt e)))
+    (f_right_right : forall e : EvidenceT, P e -> P (right_evt (right_evt e)))
+    (f_right_split : forall e1 e2 : EvidenceT, 
+      P e2 -> 
+      P (right_evt (split_evt e1 e2)))
+
+    (f_split : forall e : EvidenceT, P e -> 
+      forall e0 : EvidenceT, P e0 -> P (split_evt e e0)) 
+    : forall e, P e.
+  assert (well_founded (fun e1 e2 => EvidenceT_depth e1 < EvidenceT_depth e2)). {
+    simpl in *.
+    eapply Wf_nat.well_founded_ltof.
+  }
+  assert (forall x : EvidenceT, (forall y : EvidenceT, (fun e1 e2 => EvidenceT_depth e1 < EvidenceT_depth e2) y x -> P y) -> P x). {
+    destruct x; simpl in *; eauto; intros F; eauto.
+    - destruct x; eauto.
+      * destruct x; eauto.
+        ** eapply f_asp_asp_asp; eapply F; simpl in *; eauto; lia.
+        ** eapply f_asp_asp_split; eapply F; simpl in *; eauto; lia.
+      * eapply f_asp_split; eapply F; simpl in *; eauto; lia.
+    - destruct x; eauto.
+      * destruct x; eauto.
+        (* ** eapply f_left_asp_asp; eapply F; simpl in *; eauto; lia. *)
+        (* ** eapply f_left_asp_left; eapply F; simpl in *; eauto; lia. *)
+        (* ** eapply f_left_asp_right; eapply F; simpl in *; eauto; lia. *)
+        ** eapply f_left_asp_split; eapply F; simpl in *; eauto; lia.
+      * eapply f_left_split; eapply F; eauto; simpl in *; lia.
+    - destruct x; eauto.
+      * destruct x; eauto.
+        (* ** eapply f_right_asp_asp; eapply F; simpl in *; eauto; lia. *)
+        (* ** eapply f_right_asp_left; eapply F; simpl in *; eauto; lia. *)
+        (* ** eapply f_right_asp_right; eapply F; simpl in *; eauto; lia. *)
+        ** eapply f_right_asp_split; eapply F; simpl in *; eauto; lia.
+      * eapply f_right_split; eapply F; eauto; simpl in *; lia.
+    - eapply f_split; eapply F; simpl in *; eauto; lia.
+  }
+  eapply well_founded_ind; eauto.
+Qed.
+
+(** Calculate the size of an ASP's input based on its signature *)
+(* Definition asp_sig_et_size (previous_sig : EvSig) (sig : EvSig) 
+    : ResultT nat string :=
+  let '(ev_arrow fwd in_sig out_sig) := sig in
+  match fwd with
+  | REPLACE => 
+    (* we are replacing, so just the output *)
+    match out_sig with
+    | OutN n => n
+    | OutDepIn => errC err_str_invalid_signature
+    end
+  | WRAP => 
+    (* we are wrapping, so just the output *)
+    match out_sig with
+    | OutN n => n
+    | OutDepIn => errC err_str_invalid_signature
+    end
+  | UNWRAP => 
+    (* we are unwrapping, so we are the size of the previous input *)
+    match out_sig with
+    | OutN n => errC err_str_invalid_signature
+    | OutDepIn => size_in
+    end
+  | EXTEND => 
+    match 
+  end. *)
+
+Inductive EvTrails :=
+| Trail_UNWRAP : ASP_ID -> EvTrails
+| Trail_LEFT  : EvTrails
+| Trail_RIGHT : EvTrails.
+
+Definition apply_to_evidence_below {A} (G : GlobalContext) (f : EvidenceT -> A)
+    : list EvTrails -> EvidenceT -> ResultT A string :=
+  fix F l e :=
+  match l with
+  | nil => (* no further trail to follow! *)
+    resultC (f e)
+  | trail :: trails =>
+    match e with
+    | mt_evt => errC err_str_no_evidence_below
+    | nonce_evt _ => errC err_str_no_evidence_below
+
+    | asp_evt _ (asp_paramsC top_id _ _ _) et' => 
+      match (map_get top_id (asp_types G)) with
+      | None => errC err_str_asp_no_type_sig
+      | Some (ev_arrow UNWRAP in_sig out_sig) =>
+        (* we are UNWRAP, so add to trail and continue *)
+        F (Trail_UNWRAP top_id :: trails) et'
+
+      | Some (ev_arrow WRAP in_sig out_sig) =>
+        (* we are a WRAP, better be the case we are looking for one *)
+        match trail with
+        | Trail_UNWRAP unwrap_id => 
+          match (map_get top_id (asp_comps G)) with
+          | None => errC err_str_asp_no_compat_appr_asp
+          | Some test_unwrapping_id =>
+            if (eqb test_unwrapping_id unwrap_id) 
+            then (* they are compatible so we can continue on smaller *)
+              F trails et'
+            else (* they are not compatible, this is a massive error *)
+              errC err_str_wrap_asp_not_duals
+          end
+        | _ => errC err_str_trail_mismatch
+        end
+
+      | Some (ev_arrow _ in_sig out_sig) =>
+        (* we are neither WRAP or UNWRAP, so this is an error *)
+        errC err_str_asp_at_bottom_not_wrap
+      end
+    | left_evt et' => 
+      (* we are pushing on a new left *)
+      F (Trail_LEFT :: trails) et'
+
+    | right_evt et' => 
+      (* we are pushing on a new right *)
+      F (Trail_RIGHT :: trails) et'
+
+    | split_evt e1 e2 => 
+      (* we are a split, depending on trail we will either go 
+      left or right and continue *)
+      match trail with
+      | Trail_LEFT => F trails e1
+      | Trail_RIGHT => F trails e2
+      | _ => errC err_str_trail_mismatch
+      end
+    end
+  end.
+
+(* 
+Definition apply_to_evidence_under_unwrap_wrap {A} (G : GlobalContext) 
+    (f : EvidenceT -> A) : list ASP_ID -> EvidenceT -> ResultT A string :=
+    (* (l : list ASP_ID) (e : EvidenceT) : ResultT A string := *)
+  (fix F l e := 
+  match l with
+  | nil => (* we have unwrapped all *)
+    resultC (f e)
+  | unwrapping_id :: tl => 
+    match e with
+    | asp_evt _ (asp_paramsC top_id _ _ _) et' => 
+      (* we have the following cases for "top_id":
+      1. It is typeless => error
+      2. It is an UNWRAP itself, so we must go beneath it
+      3. It is a WRAP (and compat) so we are done 
+      4. It is neither a WRAP or UNWRAP, so cannot be compat => error *)
+      match (map_get top_id (asp_types G)) with
+      (* case 1 *)
+      | None => errC err_str_asp_no_type_sig
+      (* case 2: it is an UNWRAP, so we need to get beneath it 
+        by pushing on a new UNWRAPPING_ID *)
+      | Some (ev_arrow UNWRAP in_sig out_sig) =>
+        F (top_id :: l) et'
+
+      (* case 3: it is a WRAP, so we can maybe pop off a UNWRAP ID *)
+      | Some (ev_arrow WRAP in_sig out_sig) =>
+        match (map_get top_id (asp_comps G)) with
+        | None => errC err_str_asp_no_compat_appr_asp
+        | Some test_unwrapping_id =>
+          if (eqb test_unwrapping_id unwrapping_id) 
+          then (* they are compatible so we can continue on smaller *)
+            F tl et'
+          else (* they are not compatible, this is a massive error *)
+            errC err_str_wrap_asp_not_duals
+        end
+
+      (* case 4: it is neither a WRAP or UNWRAP, but we are beneath a 
+        UNWRAP id, so this must be an error *)
+      | Some (ev_arrow _ in_sig out_sig) =>
+        errC err_str_asp_at_bottom_not_wrap
+      end
+    | left_evt et' => r <- apply_to_left_evt G (F l) et' ;; r
+    | right_evt et' => r <- apply_to_right_evt G (F l) et' ;; r
+    | _ => (* it is an evidence type that cannot be traversed below,
+      but we are in an UNWRAP still! must be an error *)
+      errC err_str_no_asp_under_evidence
+    end
+  end)
+  with apply_to_left_evt {A : Type} (G : GlobalContext) 
+    (f : EvidenceT -> A) : EvidenceT -> ResultT A string :=
+(* Definition apply_to_left_evt {A : Type} (G : GlobalContext) 
+    (f : EvidenceT -> A) : EvidenceT -> ResultT A string := *)
+  (fix F1 e :=
+  match e with
+  | split_evt e1 e2 => resultC (f e1)
+  | asp_evt _ (asp_paramsC a' _ _ _) et' =>
+    r <- apply_to_evidence_under_unwrap_wrap G F1 [a'] et' ;;
+    r
+  | _ => errC err_str_no_possible_left_evt
+  end)
+  with apply_to_right_evt {A : Type} (G : GlobalContext) 
+    (f : EvidenceT -> A) : EvidenceT -> ResultT A string :=
+  (fix F2 e := 
+  match e with
+  | split_evt e1 e2 => resultC (f e2)
+  | asp_evt _ (asp_paramsC a' _ _ _) et' =>
+    r <- apply_to_evidence_under_unwrap_wrap G F2 [a'] et' ;;
+    r
+  | _ => errC err_str_no_possible_right_evt
+  end).
+*)
+
+Module Test_Unwrap_Wrap.
+  Definition X : ASP_ID. Admitted.
+  Definition X' : ASP_ID. Admitted.
+  Definition Y : ASP_ID. Admitted.
+  Definition Y' : ASP_ID. Admitted.
+  Axiom XX' : X <> X'.
+  Axiom XY : X <> Y.
+  Axiom XY' : X <> Y'.
+  Axiom YY' : Y <> Y'.
+  Axiom X'Y' : X' <> Y'.
+  Axiom X'Y : X' <> Y.
+  Ltac use_neqs :=
+    pose proof XX';
+    pose proof XY;
+    pose proof XY';
+    pose proof YY';
+    pose proof X'Y';
+    pose proof X'Y;
+    try (exfalso; eauto; fail).
+
+  Definition P1 : Plc. Admitted.
+  Definition P2 : Plc. Admitted.
+  Definition T_PLC : Plc. Admitted.
+  Definition TARG : TARG_ID. Admitted.
+
+  Definition G : GlobalContext := Build_GlobalContext 
+    [(X, ev_arrow WRAP InAll (OutN 1)); (Y, ev_arrow WRAP InAll (OutN 1));
+      (X', ev_arrow UNWRAP InAll OutUnwrap); (Y', ev_arrow UNWRAP InAll OutUnwrap)] 
+    [(X, X'); (Y, Y')].
+  
+  Ltac str_rew :=
+    repeat rewrite String.eqb_eq in *;
+    repeat rewrite String.eqb_refl in *;
+    subst_max;
+    repeat rewrite String.eqb_neq in *;
+    try lazymatch goal with
+    | H : true = false |- _ => inversion H
+    end.
+
+  Example test_get_evidence_under_unwrap_wrap_1 : forall v,
+    apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'] 
+      (asp_evt P1 (asp_paramsC X nil T_PLC TARG) v) = resultC v.
+  Proof.
+    ff; str_rew.
+    destruct v; simpl in *; eauto.
+  Qed.
+
+  Example test_get_evidence_under_unwrap_wrap_2 : forall v,
+    apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'; Trail_UNWRAP Y'] 
+      (asp_evt P1 (asp_paramsC X nil T_PLC TARG) (
+        asp_evt P2 (asp_paramsC Y nil T_PLC TARG) v)) = resultC v.
+  Proof.
+    ff; str_rew.
+    destruct v; simpl in *; eauto.
+    destruct v; simpl in *; eauto.
+    use_neqs.
+  Qed.
+  
+  Example test_get_evidence_under_unwrap_wrap_3 : forall v,
+    apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'] 
+      (asp_evt P1 (asp_paramsC X nil T_PLC TARG) (
+        asp_evt P2 (asp_paramsC Y nil T_PLC TARG) v)) 
+    = resultC (asp_evt P2 (asp_paramsC Y nil T_PLC TARG) v).
+  Proof.
+    ff; str_rew.
+  Qed.
+
+  Example test_get_evidence_under_unwrap_wrap_4 : forall v,
+    apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'] 
+      ( asp_evt P2 (asp_paramsC Y' nil T_PLC TARG) 
+        (asp_evt P2 (asp_paramsC Y nil T_PLC TARG) 
+        (asp_evt P1 (asp_paramsC X nil T_PLC TARG) v)))
+    = resultC v.
+  Proof.
+    intros.
+    unfold apply_to_evidence_below at 1.
+    unfold G in *.
+    unfold asp_types, asp_comps. 
+    unfold map_get at 1.
+    destruct (eqb X Y') eqn:E1;
+    destruct (eqb Y Y') eqn:E2;
+    destruct (eqb X' Y') eqn:E3;
+    destruct (eqb Y' Y') eqn:E4;
+    try rewrite String.eqb_eq in *;
+    try rewrite String.eqb_refl in *;
+    use_neqs; try simple congruence 1.
+    unfold map_get.
+    destruct (eqb X Y) eqn:?;
+    destruct (eqb Y Y) eqn:?;
+    destruct (eqb X' Y) eqn:?;
+    destruct (eqb Y' Y) eqn:?;
+    try rewrite String.eqb_eq in *;
+    try rewrite String.eqb_refl in *;
+    use_neqs; try simple congruence 1.
+    find_rewrite.
+
+    break_match; subst.
+    break_match; subst.
+    break_match; subst.
+    - admit.
+    - admit.
+    - 
+    simpl in *.
+    ff; str_rew.
+    all: use_neqs.
+    destruct v; simpl in *; eauto.
+  Qed.
+
+  Example test_get_evidence_under_unwrap_wrap_5 : forall v,
+    apply_to_evidence_under_unwrap_wrap G (fun e => e) [X'; Y'] 
+      (asp_evt P1 (asp_paramsC X nil T_PLC TARG) (
+        left_evt (split_evt (asp_evt P2 (asp_paramsC Y nil T_PLC TARG) v) mt_evt))) 
+    = resultC v.
+  Proof.
+    ff; str_rew.
+    destruct v; simpl in *; eauto.
+    destruct v; simpl in *; eauto.
+    use_neqs.
+  Qed.
+
+  Example test_get_evidence_under_unwrap_wrap_6 : forall v,
+    apply_to_evidence_under_unwrap_wrap G (fun e => e) [X'; Y'] 
+      (asp_evt P1 (asp_paramsC X nil T_PLC TARG) (
+        right_evt (split_evt mt_evt (asp_evt P2 (asp_paramsC Y nil T_PLC TARG) v)))) 
+    = resultC v.
+  Proof.
+    ff; str_rew.
+    destruct v; simpl in *; eauto.
+    destruct v; simpl in *; eauto.
+    use_neqs.
+  Qed.
+End Test_Unwrap_Wrap.
+
+(* 
+Definition apply_to_evidence_under_unwrap_wrap {A} 
+    (G : GlobalContext) (f : EvidenceT -> A)
+    : (list ASP_ID) -> EvidenceT -> ResultT A string :=
+  fix F l e :=
+  match l with
+  | nil => (* we have unwrapped all *)
+    resultC (f e)
+  | unwrapping_id :: tl => 
+    match e with
+    | asp_evt _ (asp_paramsC top_id _ _ _) et' => 
+      (* we have the following cases for "top_id":
+      1. It is typeless => error
+      2. It is an UNWRAP itself, so we must go beneath it
+      3. It is a WRAP (and compat) so we are done 
+      4. It is neither a WRAP or UNWRAP, so cannot be compat => error *)
+      match (map_get top_id (asp_types G)) with
+      (* case 1 *)
+      | None => errC err_str_asp_no_type_sig
+      (* case 2: it is an UNWRAP, so we need to get beneath it 
+        by pushing on a new UNWRAPPING_ID *)
+      | Some (ev_arrow UNWRAP in_sig out_sig) =>
+        F (top_id :: l) et'
+
+      (* case 3: it is a WRAP, so we can maybe pop off a UNWRAP ID *)
+      | Some (ev_arrow WRAP in_sig out_sig) =>
+        match (map_get top_id (asp_comps G)) with
+        | None => errC err_str_asp_no_compat_appr_asp
+        | Some test_unwrapping_id =>
+          if (eqb test_unwrapping_id unwrapping_id) 
+          then (* they are compatible so we can continue on smaller *)
+            F tl et'
+          else (* they are not compatible, this is a massive error *)
+            errC err_str_wrap_asp_not_duals
+        end
+
+      (* case 4: it is neither a WRAP or UNWRAP, but we are beneath a 
+        UNWRAP id, so this must be an error *)
+      | Some (ev_arrow _ in_sig out_sig) =>
+        errC err_str_asp_at_bottom_not_wrap
+      end
+    | left_evt et' => r <- apply_to_left_evt G (F l) et' ;; r
+    | right_evt et' => r <- apply_to_right_evt G (F l) et' ;; r
+    | _ => (* it is an evidence type that cannot be traversed below,
+      but we are in an UNWRAP still! must be an error *)
+      errC err_str_no_asp_under_evidence
+    end
+  end.
+*)
+
+(* Definition get_left_evt (G : GlobalContext) 
     : EvidenceT -> ResultT EvidenceT string :=
   fix F e :=
   match e with
@@ -318,16 +806,17 @@ Definition get_left_evt (G : GlobalContext)
       else errC (err_str_asps_not_duals)
     end
   | _ => errC err_str_no_possible_left_evt
-  end.
+  end. *)
 
+(* 
 Definition apply_to_left_evt {A : Type} (G : GlobalContext) 
     (f : EvidenceT -> A) : EvidenceT -> ResultT A string :=
   fix F e :=
   match e with
   | split_evt e1 e2 => resultC (f e1)
-  | asp_evt _ (asp_paramsC a' _ _ _) (
-      asp_evt _ (asp_paramsC a _ _ _) e'
-    ) => 
+  | asp_evt _ (asp_paramsC a' _ _ _) et' =>
+    apply_to_asp_under_wrap G (F) a' et'
+    (* 
     (* if a and a' are duals, and they are a WRAP *)
     match (map_get a (asp_comps G)) with
     | None => errC err_str_asp_no_compat_appr_asp
@@ -346,6 +835,7 @@ Definition apply_to_left_evt {A : Type} (G : GlobalContext)
         end
       else errC (err_str_asps_not_duals)
     end
+    *)
   | _ => errC err_str_no_possible_left_evt
   end.
 
@@ -401,86 +891,26 @@ Definition apply_to_right_evt {A : Type} (G : GlobalContext)
     end
   | _ => errC err_str_no_possible_right_evt
   end.
+*)
 
-(** Calculate the size of an ASP's input based on its signature *)
-(* Definition asp_sig_et_size (previous_sig : EvSig) (sig : EvSig) 
-    : ResultT nat string :=
-  let '(ev_arrow fwd in_sig out_sig) := sig in
-  match fwd with
-  | REPLACE => 
-    (* we are replacing, so just the output *)
-    match out_sig with
-    | OutN n => n
-    | OutDepIn => errC err_str_invalid_signature
-    end
-  | WRAP => 
-    (* we are wrapping, so just the output *)
-    match out_sig with
-    | OutN n => n
-    | OutDepIn => errC err_str_invalid_signature
-    end
-  | UNWRAP => 
-    (* we are unwrapping, so we are the size of the previous input *)
-    match out_sig with
-    | OutN n => errC err_str_invalid_signature
-    | OutDepIn => size_in
-    end
-  | EXTEND => 
-    match 
-  end. *)
 
-Definition get_asp_under (G : GlobalContext) :
-    EvidenceT -> ResultT EvidenceT string :=
+(* Definition apply_to_asp_under_wrap {A : Type} (G : GlobalContext) 
+    (f : EvidenceT -> A)
+    : ASP_ID -> EvidenceT -> ResultT A string :=
   fix F e :=
   match e with
   | asp_evt _ (asp_paramsC top_id _ _ _) et' => 
-    (* we either want to:
-    1. If this is not an UNWRAP we can just return it *)
+    (* we have the following cases for "top_id":
+    1. It is typeless => error
+    2. It is an UNWRAP itself, so we must go beneath it
+    3. It is a WRAP (and compat) so we are done 
+    4. It is neither a WRAP or UNWRAP, so cannot be compat => error *)
     match (map_get top_id (asp_types G)) with
     | None => errC err_str_asp_no_type_sig
-    | Some (ev_arrow fwd in_sig out_sig) =>
-      match fwd with
-      | UNWRAP =>
-        (* This was an UNWRAP, so we need to be able to get below it *)
-        match et' with
-        | asp_evt _ (asp_paramsC bury_id _ _ _) et'' =>
-          match (map_get bury_id (asp_comps G)) with
-          | None => errC err_str_asp_no_compat_appr_asp
-          | Some bury_id' =>
-            if (eqb top_id bury_id') 
-            then 
-              match (map_get bury_id (asp_types G)) with
-              | None => errC err_str_asp_no_type_sig
-              | Some (ev_arrow fwd' _ _) =>
-                match fwd' with
-                | WRAP => F et''
-                | _ => errC err_str_asp_under_unwrap
-                end
-              end
-            else errC err_str_wrap_asp_not_duals
-          end
-        | _ => errC err_str_unwrap_only_asp
-        end
-      | _ => resultC e
-      end
-    end
-  | left_evt et' => r <- apply_to_left_evt G F et' ;; r
-  | right_evt et' => r <- apply_to_right_evt G F et' ;; r
-  | _ => errC err_str_no_asp_under_evidence
-  end.
 
-Definition apply_to_asp_under_wrap {A : Type} (G : GlobalContext) 
-    (unwrap_id : ASP_ID) (f : EvidenceT -> A)
-    : EvidenceT -> ResultT A string :=
-  fix F e :=
-  match e with
-  | asp_evt _ (asp_paramsC top_id _ _ _) et' => 
-    (* we either want to:
-    1. If this is not an UNWRAP we can just return it *)
-    match (map_get top_id (asp_types G)) with
-    | None => errC err_str_asp_no_type_sig
     | Some (ev_arrow UNWRAP _ _) => 
       (* This was an UNWRAP, so we need to be able to get below it *)
+
       match et' with
       | asp_evt _ (asp_paramsC bury_id _ _ _) et'' =>
         match (map_get bury_id (asp_comps G)) with
@@ -497,6 +927,7 @@ Definition apply_to_asp_under_wrap {A : Type} (G : GlobalContext)
         end
       | _ => errC err_str_unwrap_only_asp
       end
+
     | Some (ev_arrow WRAP _ _) => 
       (* if this is an WRAP, and they are compat, we are done *)
       match (map_get top_id (asp_comps G)) with
@@ -506,13 +937,13 @@ Definition apply_to_asp_under_wrap {A : Type} (G : GlobalContext)
         then resultC (f e)
         else errC err_str_wrap_asp_not_duals
       end
+
     | Some _ => errC err_str_asp_at_bottom_not_wrap
     end
   | left_evt et' => r <- apply_to_left_evt G F et' ;; r
   | right_evt et' => r <- apply_to_right_evt G F et' ;; r
   | _ => errC err_str_no_asp_under_evidence
-  end.
-  
+  end. *)
 
 (**  Calculate the size of an EvidenceT type *)
 Definition et_size (G : GlobalContext) : EvidenceT -> ResultT nat string :=

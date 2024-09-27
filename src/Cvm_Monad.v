@@ -146,7 +146,7 @@ current CVM evidence bundle *)
       sc <- get_config ;;
       let G := (session_context sc) in
       let '(evc bits et) := cur_ev in
-      r <- hoist_result (get_asp_under G et) ;;
+      r <- hoist_result (get_evidence_under_unwrap_wrap G [asp_id] et) ;;
       match r with
       | asp_evt p' (asp_paramsC wrap_id _ _ _) et' =>
         '(ev_arrow fwd _ _) <- get_asp_type wrap_id ;;
@@ -220,6 +220,7 @@ Fixpoint invoke_APPR' (r : RawEv) (et : EvidenceT) (out_evt : EvidenceT) {struct
       invoke_ASP (evc r out_evt) dual_par
     | WRAP =>
       (* first do the dual ASP to unwrap *)
+      (* NOTE: Do we need to be checking that appr_asp_id is an UNWRAP here? *)
       '(evc r'' et'') <- invoke_ASP (evc r out_evt) dual_par ;;
       (* Check that the "UNWRAP" occured properly *)
       match et_size G et'' with
@@ -241,10 +242,12 @@ Fixpoint invoke_APPR' (r : RawEv) (et : EvidenceT) (out_evt : EvidenceT) {struct
       match out_sig with
       | OutN _ => err_failm (dispatch_error (Runtime err_str_unwrap_must_have_outwrap)) 
       | OutUnwrap =>
-        e <- hoist_result (
+        e <- hoist_result (apply_to_evidence_under_unwrap_wrap G (fun e => invoke_APPR' r e out_evt) [asp_id] et') ;;
+        e 
+        (* e <- hoist_result (
           apply_to_asp_under_wrap G asp_id (fun e => invoke_APPR' r e out_evt) et'
         ) ;;
-        e
+        e *)
       end
 
     | EXTEND =>
