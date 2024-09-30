@@ -131,7 +131,9 @@ Definition appr_procedure' (G : GlobalContext) (p : Plc)
         | UNWRAP => 
           (* The appraisal of something that is unwrapped is just whatever is below its wrap *)
           (* NOTE: In practice this should nearly never happen as the appraisal procedure itself should be doing the UNWRAP and subsequent functions *)
-          match e' with
+          r <- apply_to_evidence_below G (fun e => F e ev_out) [Trail_UNWRAP asp_id] e' ;;
+          r
+          (* match e' with
           | asp_evt _ (asp_paramsC asp_id' args' targ_plc' targ') e'' => 
             match (map_get asp_id' (asp_types G)) with
             | None => errC err_str_asp_no_type_sig
@@ -141,7 +143,7 @@ Definition appr_procedure' (G : GlobalContext) (p : Plc)
             | _ => errC err_str_appr_not_originally_a_wrap
             end
           | _ => errC err_str_appr_only_allow_on_asp
-          end
+          end *)
 
         | EXTEND => 
           (* appraisal of an extend involves doing the appraisal of the extension
@@ -151,8 +153,10 @@ Definition appr_procedure' (G : GlobalContext) (p : Plc)
         end
       end
     end
-  | left_evt e' => r <- apply_to_left_evt G (fun e' => F e' ev_out) e' ;; r
-  | right_evt e' => r <- apply_to_right_evt G (fun e' => F e' ev_out) e' ;; r
+  | left_evt e' => 
+    r <- apply_to_evidence_below G (fun e' => F e' ev_out) [Trail_LEFT] e' ;; r
+  | right_evt e' => 
+    r <- apply_to_evidence_below G (fun e' => F e' ev_out) [Trail_RIGHT] e' ;; r
 
   | split_evt e1 e2 => 
     (* we now e ~ ev_out here, so we can continue on it *)
@@ -264,12 +268,12 @@ Definition asp_comp_map_supports_ev (G : GlobalContext) : EvidenceT -> Prop  :=
       end
     end)
   | left_evt e' => 
-    match apply_to_left_evt G F e' with
+    match apply_to_evidence_below G F [Trail_LEFT] e' with
     | resultC p => p
     | _ => False
     end
   | right_evt e' => 
-    match apply_to_right_evt G F e' with
+    match apply_to_evidence_below G F [Trail_RIGHT] e' with
     | resultC p => p
     | _ => False
     end
@@ -368,16 +372,21 @@ Definition appr_events_size (G : GlobalContext) : EvidenceT -> ResultT nat strin
         resultC (1 + n) (* 1 for the unwrap, then n for rec case *)
       | UNWRAP => 
         (* we are just doing the recursion *)
-        F e' 
+        r <- apply_to_evidence_below G F [Trail_UNWRAP asp_id] e' ;; 
+        r
       | EXTEND => 
         (* we need the size of recursing *)
         n <- F e' ;;
         resultC (3 + n) (* split (1), extend dual (1), rec case (n), join (1) *)
       end
     end
-  | left_evt e' => r <- apply_to_left_evt G F e' ;; r
+  | left_evt e' => 
+    r <- apply_to_evidence_below G F [Trail_LEFT] e' ;; 
+    r
 
-  | right_evt e' => r <- apply_to_right_evt G F e' ;; r
+  | right_evt e' => 
+    r <- apply_to_evidence_below G F [Trail_RIGHT] e' ;; 
+    r
 
   | split_evt e1 e2 =>
     s1 <- F e1 ;;
@@ -456,7 +465,8 @@ Definition appr_events' (G : GlobalContext) (p : Plc)
           resultC (unwrap_ev :: ev')
 
         | UNWRAP => (* we are already unwrapped, just do below stuff *)
-          F e' ev_out i
+          r <- apply_to_evidence_below G (fun e' => F e' ev_out i) [Trail_UNWRAP asp_id] e' ;;
+          r
 
         | EXTEND => (* do the extend dual *)
           (* ev_out does not change for the umeas event,
@@ -472,11 +482,11 @@ Definition appr_events' (G : GlobalContext) (p : Plc)
 
   | left_evt e' => 
     (* we only do stuff on the left, its a pass through *)
-    r <- apply_to_left_evt G (fun e' => F e' ev_out i) e' ;; r
+    r <- apply_to_evidence_below G (fun e' => F e' ev_out i) [Trail_LEFT] e' ;; r
 
   | right_evt e' =>
     (* we only do stuff on the right, its a pass through *)
-    r <- apply_to_right_evt G (fun e' => F e' ev_out i) e' ;; r
+    r <- apply_to_evidence_below G (fun e' => F e' ev_out i) [Trail_RIGHT] e' ;; r
 
   | split_evt e1 e2 => 
     match ev_out with
@@ -490,10 +500,74 @@ Definition appr_events' (G : GlobalContext) (p : Plc)
     end
   end.
 
+
 Lemma appr_events'_size_works : forall G p e ev_out i evs,
   appr_events' G p e ev_out i = resultC evs ->
   appr_events_size G e = resultC (List.length evs).
 Proof.
+  intros G.
+  induction e using (Evidence_subterm_Ind_special G); simpl in *; intros; intuition.
+  - ff.
+  - ff.
+  - ff; result_monad_unfold; ffa.
+    * admit.
+    * admit.
+    * rewrite length_app in *; simpl in *; f_equal; lia.
+  - ff; result_monad_unfold; ffa.
+    * admit.
+    * admit.
+  - ff; result_monad_unfold; ffa.
+    * admit.
+    * 
+      eapply apply_to_evidence_below_res with (fn2 := (Evidence_Subterm G e)) in Heqr0 as ?.
+      break_exists.
+      pose proof (H e) as ?.
+      find_rewrite.
+      rewrite H0 in H.
+      find_rewrite.
+      ff.
+      admit.
+    * admit.
+  - ff; result_monad_unfold; ffa.
+    repeat rewrite length_app in *; simpl in *; f_equal; lia.
+    * ffa.
+  - eapply H.
+    clear H.
+    break_exists; intuition.
+    eapply apply_to_evidence_below_nil in H1; subst.
+    eauto.
+  - result_monad_unfold; ffa.
+    repeat rewrite length_app in *; simpl in *;
+    f_equal. lia.
+Qed.
+    eapply 
+    destruct e
+    simpl in *.
+  induction e using EvidenceT_double_ind; simpl in *;
+  intros; repeat find_injection;
+  simpl in *; eauto;
+  result_monad_unfold;
+  try (target_break_match H; subst; simpl in *; 
+    repeat find_injection;
+    repeat rewrite length_app in *; eauto; f_equal; lia).
+  - target_break_match H; simpl in *; eauto;
+    subst; try (timeout 5 ffa; fail).
+    ffa.
+
+
+  induction e; simpl in *; intuition;
+  repeat find_injection; simpl in *; eauto.
+  - target_break_match H; subst;
+    result_monad_unfold; simpl in *; eauto.
+    * target_break_match H;
+      eapply IHe in Hbm; ff.
+    * admit.
+    * admit.
+  - result_monad_unfold.
+
+    * 
+
+
   induction e using EvidenceT_double_ind; try (ffa using result_monad_unfold;
   repeat rewrite app_length in *; simpl in *; f_equal; lia).
   - intros; simpl in *; result_monad_unfold; ff;

@@ -44,35 +44,6 @@ Proof.
   induction n; ffa using cvm_monad_unfold; ffl.
 Qed.
 
-Ltac target_find_rewrite H :=
-  lazymatch type of H with
-  | ?X = ?Y =>
-    (* rewrite in goals *)
-    lazymatch goal with
-    | [ |- context[X] ] => rewrite H
-    end;
-    (* rewrite in hyps *)
-    lazymatch goal with
-    | [ H' : context[X] |- _ ] => 
-      rewrite H in H'; clear H
-    end
-  end.
-
-Ltac clean_up_hyp H :=
-  (* try injc H;
-  try target_find_rewrite H; *)
-  try simple congruence 1.
-
-Ltac target_break_match H :=
-  lazymatch type of H with
-  | context[match ?X with _ => _ end] => 
-    let Hbm := fresh "Hbm" in
-    destruct X eqn:Hbm; 
-    try find_injection;
-    try simple congruence 1; try target_break_match Hbm;
-    try target_break_match H
-  end.
-
 Require Import String ErrorStringConstants.
 
 (* Lemma apply_to_asp_under_wrap_works : forall {A} sc a (fn : _ -> A) et v,
