@@ -46,33 +46,6 @@ Qed.
 
 Require Import String ErrorStringConstants.
 
-(* Lemma apply_to_asp_under_wrap_works : forall {A} sc a (fn : _ -> A) et v,
-  apply_to_asp_under_wrap sc a fn et = resultC v ->
-  exists et', get_asp_under_wrap sc a et = resultC et'.
-Proof.
-  induction et using EvidenceT_double_ind; intros;
-  simpl in *; try simple congruence 1;
-  result_monad_unfold;
-  try (timeout 10 (target_break_match H; eauto; subst;
-    try rewrite String.eqb_eq in *; ff; fail)).
-  - eapply IHet1; eauto.
-  - eapply IHet1; eauto.
-Qed.
-
-Lemma apply_to_asp_under_wrap_works' : forall {A} sc a (fn : _ -> A) et et' v,
-  apply_to_asp_under_wrap sc a fn et = resultC v ->
-  get_asp_under_wrap sc a et = resultC et' ->
-  fn et' = v.
-Proof.
-  induction et using EvidenceT_double_ind; intros;
-  simpl in *; try simple congruence 1;
-  result_monad_unfold;
-  try (timeout 10 (target_break_match H; eauto; subst;
-    try rewrite String.eqb_eq in *; ff; fail)).
-  - eapply IHet1; ff.
-  - eapply IHet1; ff.
-Qed. *)
-
 (*
 Lemma invoke_APPR_config_immut : forall et r st sc res st' sc' out_et,
   invoke_APPR' r et out_et st sc = (res, st', sc') ->
@@ -196,400 +169,26 @@ et = apply_to_left_evt (session_context s1)
 Qed.
 Admitted.
 *)
-Lemma apply_to_evidence_under_unwrap_wrap_works : forall {A} sc (fn : _ -> A) et v,
-  apply_to_evidence_under_unwrap_wrap sc fn nil et = resultC v ->
-  fn et = v.
-Proof.
-  destruct et; ff.
-Qed.
 
-Require Import FunctionalExtensionality.
-
-Lemma apply_to_evidence_under_unwrap_wrap_works_id : forall {A} sc (fn : _ -> A),
-  apply_to_evidence_under_unwrap_wrap sc fn nil = fun et => resultC (fn et).
-Proof.
-  intros.
-  eapply functional_extensionality;
-  destruct x; ff.
-Qed.
-
-Lemma apply_to_evidence_under_unwrap_wrap_left : forall {A} sc et (fn : _ -> A) v l,
-  apply_to_left_evt sc (apply_to_evidence_under_unwrap_wrap sc fn l) et = resultC v ->
-  apply_to_evidence_under_unwrap_wrap sc (apply_to_left_evt sc fn) l et = resultC v.
-Proof.
-  induction et using EvidenceT_double_ind; intros; 
-  try (simpl in *; simple congruence 1).
-  - simpl in *; target_break_match H.
-  - simpl in *; target_break_match H.
-  - simpl in *; target_break_match H; subst.
-    eapply IHet in H.
-    rewrite String.eqb_eq in *; subst.
-    rewrite String.eqb_refl in *.
-    find_rewrite.
-    destruct l; simpl in *; ff.
-    eapply apply_to_evidence_under_unwrap_wrap_works in H.
-    ff.
-  - simpl in *; target_break_match H.
-  - simpl in *; target_break_match H.
-  - simpl in *; target_break_match H.
-  - admit.
-Admitted.
-    (* simpl in H; find_injection.
-    pose proof (IHet1 fn (errC "error"%string) nil).
-    erewrite apply_to_evidence_under_unwrap_wrap_works_id in *;
-    simpl in *.
-    erewrite apply_to_evidence_under_unwrap_wrap_works_id in *.
-    pose proof (apply_to_evidence_under_unwrap_wrap_works sc (apply_to_left_evt sc fn) et1 (errC "error"%string)).
-    simpl in H.
-    find_injection.
-  
-  simpl in *.
-    destruct l; simpl in *.
-    inversion H.
-    find_injection.
-    * f_equal.
-      symmetry.
-      eapply apply_to_asp_under_wrap_works.
-    rewrite applytoe *)
-
-Lemma invoke_APPR_config_immut : forall et r st sc res st' sc' out_et,
+Lemma invoke_APPR_config_immut : forall G et r st sc res st' sc' out_et,
+  G = session_context sc ->
   invoke_APPR' r et out_et st sc = (res, st', sc') ->
   sc = sc'.
 Proof.
-  induction et using EvidenceT_triple_ind; intros.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; cvm_monad_unfold;
-    target_break_match H.
-  (* start asp stuff *)
-  - simpl in *; cvm_monad_unfold; target_break_match H.
-  - simpl in *; cvm_monad_unfold; target_break_match H.
-  - (* asp (asp mt) *)
-    simpl in *; cvm_monad_unfold; target_break_match H.
-  - (* asp (asp nonce) *)
-    simpl in *; cvm_monad_unfold; target_break_match H.
-  - (* asp (asp (asp)) *)
-    admit.
-  - (* asp (asp (left)) *)
-    admit.
-  - (* asp (asp (right)) *)
-    admit.
-  - (* asp (asp (split)) *)
-    simpl in *; cvm_monad_unfold.
-      target_break_match H.
-    all: simpl in *.
-    all: repeat rewrite PeanoNat.Nat.eqb_eq in *; subst.
-    all: repeat find_rewrite;
-      try find_eapply_lem_hyp IHet1;
-      try find_eapply_lem_hyp IHet2; subst; 
-      repeat find_injection; eauto.
-  - (* asp (left) *)
-    simpl in *; cvm_monad_unfold.
-      target_break_match H.
-    all: simpl in *.
-    all: repeat rewrite PeanoNat.Nat.eqb_eq in *; subst.
-    all: repeat find_rewrite; subst;
-      try match goal with
-      | H : apply_to_left_evt _ _ _ = _ |- _ =>
-        eapply IHet; rewrite H
-      end;
-      repeat find_injection; eauto.
-    eapply IHet; clear IHet.
-    generalizeEverythingElse et.
-    induction et; intros; simpl in *; 
-    try simple congruence 1;
-    result_monad_unfold.
-    * target_break_match Hbm5; subst.
-    * eapply IHet.
-      rewrite Hbm8; eauto.
-  - (* asp (right) *)
-    admit.
-  - (* asp (split) *)
-    admit.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - (* left (asp (asp)) *)
-    simpl in *; cvm_monad_unfold; ffa.
-    admit.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - (* right (asp (asp)) *)
-    simpl in *; cvm_monad_unfold; ffa.
-    admit.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; cvm_monad_unfold; 
-    target_break_match H;
-    repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ffa.
-
-
-Lemma invoke_APPR_config_immut : forall et r st sc res st' sc' out_et,
-  invoke_APPR' r et out_et st sc = (res, st', sc') ->
-  sc = sc'.
-Proof.
-  induction et using EvidenceT_double_ind_2; intros.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - cvm_monad_unfold. admit.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; cvm_monad_unfold; ffa.
-  - simpl in *; 
-    cvm_monad_unfold; target_break_match H;
-    repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ffa.
-
-Lemma invoke_APPR_config_immut : forall et r st sc res st' sc' out_et,
-  invoke_APPR' r et out_et st sc = (res, st', sc') ->
-  sc = sc'.
-Proof.
-  induction et; simpl in *; intros; cvm_monad_unfold.
+  intros G.
+  induction et using (Evidence_subterm_path_Ind_special G);
+  simpl in *; intros;
+  cvm_monad_unfold.
   - ff.
-  - target_break_match H.
-  - target_break_match H.
-    all: admit.
-  - admit.
-  - admit.
-  - target_break_match H; 
-    repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ffa.
-
-Lemma invoke_APPR_config_immut : forall et r st sc res st' sc' out_et,
-  invoke_APPR' r et out_et st sc = (res, st', sc') ->
-  sc = sc'.
-Proof.
-  induction et using EvidenceT_double_ind_2; intros.
-  - (* mt_evt *) 
-    repeat cvm_monad_unfold; ff.
-  - (* nonce_evt *)
-    repeat cvm_monad_unfold; ff.
-  - (* asp (mt_evt) *)
-    repeat cvm_monad_unfold; ff.
-  - (* asp (nonce_evt) *)
-    repeat cvm_monad_unfold.
-    target_break_match H.
-  - (* asp (asp) *)
-    repeat cvm_monad_unfold.
-    admit.
-  - (* asp (left) *)
-    repeat cvm_monad_unfold.
-    target_break_match H.
-    all: eapply IHet; clear IHet.
-    all: try match goal with 
-    | H : apply_to_left_evt _ _ _ = _ |- _ =>
-      rewrite H; eauto
-    end.
-    result_monad_unfold.
-    target_break_match Hbm5.
-    admit.
-  - (* asp (right) *)
-    admit.
-  - (* asp (split) *)
-    admit.
-  - (* left (mt) *)
-    repeat cvm_monad_unfold; ff.
-  - (* left (nonce) *)
-    repeat cvm_monad_unfold; ff.
-  - (* left (asp) *)
-    simpl in H; 
-    repeat unfold err_bind,
-      get_config,
-      err_get_config,
-      hoist_result,
-      err_ret,
-      err_failm in H;
-    target_break_match H; subst;
-    repeat find_rewrite.
-    rewrite String.eqb_eq in *.
-    subst.
-    eapply IHet; clear IHet.
-    break_match; subst; try simple congruence 1.
-    break_match; subst; try simple congruence 1.
-    break_match; subst; try simple congruence 1.
-    break_match; subst; try simple congruence 1; repeat find_injection.
-    break_match; subst; try simple congruence 1; repeat find_injection.
-    break_match; subst; try simple congruence 1.
-    break_match.
-    break_match.
-  - 
-    ff.
-    find_rewrite.
-    result_monad_unfold; ff.
-    
-
-
-  induction et using EvidenceT_double_ind_2; simpl in *; cvm_monad_unfold;
-  intros; try find_injection; try simple congruence 1;
-  try (timeout 10 (eauto 2; target_break_match H; subst; eapply IHet; rewrite Hbm0; eauto; fail)).
-  - (* asp (asp et') case *)
-    target_break_match H; try rewrite PeanoNat.Nat.eqb_eq in *;
-    subst; eauto 2;
-    try (timeout 5 (result_monad_unfold; ff; fail)).
-    * simpl in Hbm6; target_break_match Hbm6;
-      repeat find_rewrite.
-      rewrite String.eqb_eq in *; subst.
-      eapply apply_to_evidence_under_unwrap_wrap_works in Hbm6.
-      eauto.
-      eapply IHet; clear IHet.
-      repeat cvm_monad_unfold; ff.
-    all: admit.
-    (* * eapply IHet; clear IHet.
-      simpl in Hbm6.
-      repeat find_rewrite.
-      target_break_match Hbm6.
-      eapply apply_to_evidence_under_unwrap_wrap_works in Hbm6.
-      cvm_monad_unfold; result_monad_unfold.
-      target_break_match Hbm2.
-      target_break_match Hbm.
-      rewrite String.eqb_eq in *; subst; repeat find_rewrite.
-      cvm_monad_unfold; ff.
-      repeat find_injection.
-
-    * admit. rewrite String.eqb_eq in *; subst; repeat find_rewrite.
-      eapply IHet. clear IHet.
-      simpl in *; repeat cvm_monad_unfold; repeat find_rewrite.
-      break_match.
-      target_break_match Heqp4; ff.
-      eapply apply_to_asp_under_wrap_works in Hbm5.
-      eapply IHet. *)
-
-    (* * rewrite String.eqb_eq in *; subst; repeat find_rewrite. *)
-      (* cvm_monad_unfold.
-      eapply IHet; clear IHet.
-      repeat find_rewrite.
-      target_break_match Heqp4; try rewrite PeanoNat.Nat.eqb_eq in *;
-      subst; eauto 2; try (timeout 5 (result_monad_unfold; ff; fail)).
-      all: repeat find_injection.
-      eapply IHet; clear IHet; ff.
-      eapply IHet; eauto. *)
-    (* * rewrite String.eqb_eq in *; subst.
-      eapply IHet; clear IHet.
-      simpl in *; cvm_monad_unfold.
-      repeat find_rewrite.
-      break_match.
-      break_match.
-      break_match.
-
-      simpl in *; cvm_monad_unfold.
-      eapply IHet; ff. *)
-  - target_break_match H; try rewrite PeanoNat.Nat.eqb_eq in *;
-    subst; eauto 2; try (timeout 10 (result_monad_unfold; ff;
-      eapply IHet; find_higher_order_rewrite; eauto; fail)).
-    result_monad_unfold; ff.
-    eapply IHet; clear IHet.
-    * result_monad_unfold; ff.
-      eapply IHet.
-      admit.
-  - target_break_match H; try rewrite PeanoNat.Nat.eqb_eq in *;
-    subst; eauto 2; result_monad_unfold; ff;
-    try (timeout 10 (eapply IHet; find_higher_order_rewrite; eauto)).
-    * result_monad_unfold; ff.
-      admit.
-  - target_break_match H; try rewrite PeanoNat.Nat.eqb_eq in *;
-    subst; eauto 2;
-    try (timeout 10 (result_monad_unfold; ff;
-      repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff;
-      find_eapply_lem_hyp IHet1; subst; eauto)).
-  - target_break_match H; subst;
-    repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff;
-    find_eapply_lem_hyp IHet1; subst; eauto.
+  - target_break_match H0.
+  - target_break_match H2; ffa.
+  - target_break_match H2.
+    ateb_unpack Hbm3; ffa.
+  - target_break_match H1.
+  - target_break_match H1; ateb_unpack Hbm0; ffa.
+  - target_break_match H1; ateb_unpack Hbm0; ffa.
+  - target_break_match H0; ffa.
 Qed.
-
-Lemma invoke_APPR_config_immut : forall et r st sc res st' sc' out_et,
-  invoke_APPR' r et out_et st sc = (res, st', sc') ->
-  sc = sc'.
-Proof.
-  induction et using EvidenceT_double_ind; simpl in *; cvm_monad_unfold;
-  intros; try find_injection; try simple congruence 1;
-  try (timeout 10 (eauto 2; target_break_match H; subst; eapply IHet; rewrite Hbm0; eauto; fail)).
-  - (* asp (asp et') case *)
-    target_break_match H; try rewrite PeanoNat.Nat.eqb_eq in *;
-    subst; eauto 2;
-    try (timeout 5 (result_monad_unfold; ff; fail)).
-    all: admit.
-    (* * eapply IHet; clear IHet.
-      simpl in Hbm6.
-      repeat find_rewrite.
-      target_break_match Hbm6.
-      eapply apply_to_evidence_under_unwrap_wrap_works in Hbm6.
-      cvm_monad_unfold; result_monad_unfold.
-      target_break_match Hbm2.
-      target_break_match Hbm.
-      rewrite String.eqb_eq in *; subst; repeat find_rewrite.
-      cvm_monad_unfold; ff.
-      repeat find_injection.
-
-    * admit. rewrite String.eqb_eq in *; subst; repeat find_rewrite.
-      eapply IHet. clear IHet.
-      simpl in *; repeat cvm_monad_unfold; repeat find_rewrite.
-      break_match.
-      target_break_match Heqp4; ff.
-      eapply apply_to_asp_under_wrap_works in Hbm5.
-      eapply IHet. *)
-
-    (* * rewrite String.eqb_eq in *; subst; repeat find_rewrite. *)
-      (* cvm_monad_unfold.
-      eapply IHet; clear IHet.
-      repeat find_rewrite.
-      target_break_match Heqp4; try rewrite PeanoNat.Nat.eqb_eq in *;
-      subst; eauto 2; try (timeout 5 (result_monad_unfold; ff; fail)).
-      all: repeat find_injection.
-      eapply IHet; clear IHet; ff.
-      eapply IHet; eauto. *)
-    (* * rewrite String.eqb_eq in *; subst.
-      eapply IHet; clear IHet.
-      simpl in *; cvm_monad_unfold.
-      repeat find_rewrite.
-      break_match.
-      break_match.
-      break_match.
-
-      simpl in *; cvm_monad_unfold.
-      eapply IHet; ff. *)
-  - target_break_match H; try rewrite PeanoNat.Nat.eqb_eq in *;
-    subst; eauto 2; try (timeout 10 (result_monad_unfold; ff;
-      eapply IHet; find_higher_order_rewrite; eauto; fail)).
-    result_monad_unfold; ff.
-    eapply IHet; clear IHet.
-    * result_monad_unfold; ff.
-      eapply IHet.
-      admit.
-  - target_break_match H; try rewrite PeanoNat.Nat.eqb_eq in *;
-    subst; eauto 2; result_monad_unfold; ff;
-    try (timeout 10 (eapply IHet; find_higher_order_rewrite; eauto)).
-    * result_monad_unfold; ff.
-      admit.
-  - target_break_match H; try rewrite PeanoNat.Nat.eqb_eq in *;
-    subst; eauto 2;
-    try (timeout 10 (result_monad_unfold; ff;
-      repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff;
-      find_eapply_lem_hyp IHet1; subst; eauto)).
-  - target_break_match H; subst;
-    repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff;
-    find_eapply_lem_hyp IHet1; subst; eauto.
-Qed.
-*)
-Admitted.
 
 Lemma build_cvm_config_immut : forall t e st sc res st' sc',
   build_cvm e t st sc = (res, st', sc') ->
@@ -638,76 +237,74 @@ Proof.
   induction t; simpl in *; intuition; eauto; ffa using cvm_monad_unfold.
 Qed. *)
 
-Lemma invoke_APPR_deterministic : forall e sc sc1' sc2' st1 st2 st1' st2' res1 res2 r oe,
+Lemma invoke_APPR_deterministic : forall G e sc sc1' sc2' st1 st2 st1' st2' res1 res2 r oe,
+  G = session_context sc ->
   st_evid st1 = st_evid st2 ->
   invoke_APPR' r e oe st1 sc = (res1, st1', sc1') ->
   invoke_APPR' r e oe st2 sc = (res2, st2', sc2') ->
   res1 = res2 /\ st_evid st1' = st_evid st2' /\ 
   sc1' = sc2'.
 Proof.
-  (* 
-  induction e; simpl in *; intros;
+  intros G.
+  induction e using (Evidence_subterm_path_Ind_special G);
+  simpl in *; intros;
   try (cvm_monad_unfold; intuition; repeat find_injection; eauto; fail).
   - cvm_monad_unfold; ff.
   - cvm_monad_unfold.
-    repeat (break_match; repeat find_rewrite; repeat find_injection;
-      simpl in *; eauto; try congruence; eauto;
-      let n := numgoals in guard n <= 1).
-    break_match.
-    * ff.
-    * ff; rewrite PeanoNat.Nat.eqb_eq in *; ff;
-      match goal with
-      | H1 : invoke_APPR' _ ?e _ _ _ = _,
-        H2 : invoke_APPR' _ ?e _ _ _ = _,
-        IH : context[invoke_APPR' _ ?e _ _ _ = _ -> _] |- _ =>
-        eapply IH in H1; try eapply H2; ff
-      end.
-    * repeat match goal with
-      | H1 : context[match ?x with _ => _ end],
-        H2 : context[match ?x with _ => _ end] |- _ =>
-          destruct x; subst;
-          simpl in *;
-          repeat find_rewrite; 
-          simpl in *;
-          repeat find_injection;
-          simpl in *;
-          repeat find_rewrite; eauto;
-          simpl in *;
-          eauto; try congruence
-    end; ff;
+    target_break_match H3;
+    repeat find_injection;
+    repeat find_rewrite;
+    subst; try simple congruence 3;
+    eauto;
+    try target_break_match H4;
     match goal with
     | H1 : invoke_APPR' _ ?e _ _ _ = _,
       H2 : invoke_APPR' _ ?e _ _ _ = _,
       IH : context[invoke_APPR' _ ?e _ _ _ = _ -> _] |- _ =>
       eapply IH in H1; try eapply H2; ff
     end.
-  - cvm_monad_unfold; repeat find_rewrite; repeat find_injection; eauto;
-    repeat break_match; repeat find_injection; eauto;
-    match goal with
-    | H1 : split_evidence _ _ _ _ _ = _,
-      H2 : split_evidence _ _ _ _ _ = _ |- _ =>
-      eapply split_evidence_state_immut in H1 as ?;
-      eapply split_evidence_state_immut in H2 as ?;
-      eapply split_evidence_determinisitic in H1;
-      try eapply H2; clear H2; simpl in *; eauto;
-      destruct_conjs; repeat find_injection; eauto; try congruence
-    end;
-    repeat (match goal with
-    | H1 : split_evidence _ _ _ _ _ = _,
-      H2 : split_evidence _ _ _ _ _ = _ |- _ =>
-      eapply split_evidence_determinisitic in H1;
-      try eapply H2; clear H2; simpl in *; eauto;
-      destruct_conjs; repeat find_injection; eauto; try congruence
-    | H1 : invoke_APPR' _ ?e _ _ _ = _,
-      H2 : invoke_APPR' _ ?e _ _ _ = _,
-      IH : context[invoke_APPR' _ ?e _ _ _ = _ -> _] |- _ =>
-      eapply IH in H1; [ | | eapply H2]; clear H2 IH; simpl in *; eauto;
-      destruct_conjs; repeat find_injection; eauto; try congruence
-    end);
-    repeat find_rewrite; eauto; ff. 
+  - cvm_monad_unfold;
+    target_break_match H3;
+    repeat find_injection;
+    repeat find_rewrite;
+    subst; try simple congruence 3;
+    eauto.
+    ateb_unpack Hbm3; ffa.
+  - cvm_monad_unfold;
+    target_break_match H2;
+    repeat find_injection;
+    repeat find_rewrite;
+    subst; try simple congruence 3;
+    eauto.
+  - cvm_monad_unfold;
+    target_break_match H2;
+    repeat find_injection;
+    repeat find_rewrite;
+    subst; try simple congruence 3;
+    eauto;
+    ateb_unpack Hbm0; ffa.
+  - cvm_monad_unfold;
+    target_break_match H2;
+    repeat find_injection;
+    repeat find_rewrite;
+    subst; try simple congruence 3;
+    eauto;
+    ateb_unpack Hbm0; ffa.
+  - cvm_monad_unfold;
+    target_break_match H1;
+    repeat find_injection;
+    repeat find_rewrite;
+    subst; try simple congruence 3;
+    eauto;
+    try target_break_match H2. 
+    all: repeat match goal with
+      | H1 : invoke_APPR' _ ?e _ _ _ = _,
+        H2 : invoke_APPR' _ ?e _ _ _ = _,
+        IH : context[invoke_APPR' _ ?e _ _ _ = _ -> _] |- _ =>
+        eapply invoke_APPR_config_immut in H1 as ?; try reflexivity;
+        eapply IH in H1; [ | | | eapply H2]; ff
+      end.
 Qed.
-*)
-Admitted.
 
 Theorem invoke_APPR_deterministic_Evidence : forall et st1 st2 r1 r2 st1' st2' r sc sc1' sc2' eo,
   invoke_APPR' r et eo st1 sc = (r1, st1', sc1') ->
@@ -1490,7 +1087,7 @@ Lemma wf_Evidence_split : forall G r1 r2 et1 et2,
   wf_Evidence G (evc (r1 ++ r2) (split_evt et1 et2)).
 Proof.
   intros; invc H; invc H0; econstructor; ff;
-  rewrite app_length; ff.
+  rewrite length_app; ff.
 Qed.
 Local Hint Resolve wf_Evidence_split : wf_Evidence.
 
@@ -1616,7 +1213,7 @@ Proof.
   induction H; cvm_monad_unfold; ff;
   econstructor; ff;
   rewrite PeanoNat.Nat.eqb_eq in *; ff;
-  rewrite app_length in *; ff.
+  rewrite length_app in *; ff.
 Qed.
 
 
@@ -1635,7 +1232,7 @@ Proof.
   - ff; cvm_monad_unfold; ff.
   - ff; cvm_monad_unfold; ff. 
   (* rewrite PeanoNat.Nat.eqb_eq in *; ff;
-    econstructor; ff; result_monad_unfold; repeat rewrite app_length; ff;
+    econstructor; ff; result_monad_unfold; repeat rewrite length_app; ff;
     invc H1; ff;
     repeat find_reverse_rewrite; ff. *)
   - simpl in *; result_monad_unfold.
@@ -1682,20 +1279,20 @@ Proof.
     rewrite PeanoNat.Nat.eqb_eq in *; ff;
     repeat match goal with
     | H : wf_Evidence _ _ |- _ => invc H; ff
-    end; econstructor; ff; rewrite app_length; ff.
+    end; econstructor; ff; rewrite length_app; ff.
   - simpl in *; result_monad_unfold; cvm_monad_unfold; ff;
     rewrite PeanoNat.Nat.eqb_eq in *; ff.
     all: try (repeat match goal with
       | H : wf_Evidence _ _ |- _ => invc H; ff
-      end; econstructor; ff; result_monad_unfold; repeat rewrite app_length in *; ff; fail).
+      end; econstructor; ff; result_monad_unfold; repeat rewrite length_app in *; ff; fail).
     all: try (result_monad_unfold; ff; eapply IHet in H1; eauto; econstructor; 
-      repeat rewrite app_length in *; ff;
+      repeat rewrite length_app in *; ff;
       repeat match goal with
       | H : wf_Evidence _ _ |- _ => invc H; ff
       end; fail).
     * find_eapply_lem_hyp peel_n_rawev_result_spec; ff.
       eapply IHet in Heqp2.
-      ** econstructor; repeat rewrite app_length in *; ff;
+      ** econstructor; repeat rewrite length_app in *; ff;
         result_monad_unfold; ff;
         repeat match goal with
         | H : wf_Evidence _ _ |- _ => invc H; 
@@ -1704,16 +1301,16 @@ Proof.
       ** econstructor; repeat match goal with
         | H : wf_Evidence _ _ |- _ => invc H; 
           result_monad_unfold; ff
-      end; result_monad_unfold; ff; repeat rewrite app_length in *;
+      end; result_monad_unfold; ff; repeat rewrite length_app in *;
       f_equal; lia.
       ** econstructor; repeat match goal with
         | H : wf_Evidence _ _ |- _ => invc H; 
           result_monad_unfold; ff
-      end; result_monad_unfold; ff; repeat rewrite app_length in *;
+      end; result_monad_unfold; ff; repeat rewrite length_app in *;
       f_equal; lia.
     * find_eapply_lem_hyp peel_n_rawev_result_spec; ff.
       eapply IHet in Heqp2.
-      ** econstructor; repeat rewrite app_length in *; ff;
+      ** econstructor; repeat rewrite length_app in *; ff;
         result_monad_unfold; ff;
         repeat match goal with
         | H : wf_Evidence _ _ |- _ => invc H; 
@@ -1722,31 +1319,31 @@ Proof.
       ** econstructor; repeat match goal with
         | H : wf_Evidence _ _ |- _ => invc H; 
           result_monad_unfold; ff
-      end; result_monad_unfold; ff; repeat rewrite app_length in *;
+      end; result_monad_unfold; ff; repeat rewrite length_app in *;
       f_equal; lia.
       ** econstructor; repeat match goal with
         | H : wf_Evidence _ _ |- _ => invc H; 
           result_monad_unfold; ff
-      end; result_monad_unfold; ff; repeat rewrite app_length in *;
+      end; result_monad_unfold; ff; repeat rewrite length_app in *;
       f_equal; lia.
     * find_eapply_lem_hyp peel_n_rawev_result_spec; ff.
       eapply IHet in Heqp2.
-      ** econstructor; repeat rewrite app_length in *; ff;
+      ** econstructor; repeat rewrite length_app in *; ff;
         result_monad_unfold; ff;
         repeat match goal with
         | H : wf_Evidence _ _ |- _ => invc H; 
           result_monad_unfold; ff
         end.
-        result_monad_unfold; ff; repeat rewrite app_length in *; ff.
+        result_monad_unfold; ff; repeat rewrite length_app in *; ff.
       ** econstructor; repeat match goal with
         | H : wf_Evidence _ _ |- _ => invc H; 
           result_monad_unfold; ff
-      end; result_monad_unfold; ff; repeat rewrite app_length in *;
+      end; result_monad_unfold; ff; repeat rewrite length_app in *;
       f_equal; lia.
       ** econstructor; repeat match goal with
         | H : wf_Evidence _ _ |- _ => invc H; 
           result_monad_unfold; ff
-      end; result_monad_unfold; ff; repeat rewrite app_length in *;
+      end; result_monad_unfold; ff; repeat rewrite length_app in *;
       f_equal; lia.
   - simpl in *; ff; cvm_monad_unfold; ff.
     unfold split_evidence in *; cvm_monad_unfold; ff;
@@ -1757,7 +1354,7 @@ Proof.
     eapply invoke_APPR_config_immut in Heqp1 as ?; ff.
     eapply IHet1 in Heqp0.
     * eapply IHet2 in Heqp1.
-      ** econstructor; repeat rewrite app_length in *; ff;
+      ** econstructor; repeat rewrite length_app in *; ff;
       result_monad_unfold; ff;
       repeat match goal with
       | H : wf_Evidence _ _ |- _ => invc H; ff
@@ -1789,7 +1386,7 @@ Proof.
       repeat find_rewrite;
       repeat find_injection;
       result_monad_unfold; ff;
-      repeat rewrite app_length;
+      repeat rewrite length_app;
       f_equal; lia);
     eapply wf_Evidence_invoke_APPR; eauto; destruct e; ff.
   - ff;

@@ -500,92 +500,69 @@ Definition appr_events' (G : GlobalContext) (p : Plc)
     end
   end.
 
+Ltac esp_same :=
+  match goal with
+  | H1 : Evidence_Subterm_path _ _ _ _,
+    H2 : Evidence_Subterm_path _ _ _ _ |- _ =>
+    eapply Evidence_Subterm_path_same in H1;
+    [ | exact H2]; subst
+  end.
+
+Ltac ateb_unpack H :=
+  match type of H with
+  | apply_to_evidence_below _ ?f _ _ = resultC _ =>
+    let Hesp1 := fresh "Hesp" in
+    let Hf1 := fresh "Hf" in
+    eapply apply_to_evidence_below_res_spec in H as [? [Hesp1 Hf1]]
+  end.
+
+Ltac ateb_diff :=
+  match goal with
+  | H1 : apply_to_evidence_below _ ?f1 _ _ = resultC _,
+    H2 : apply_to_evidence_below _ ?f2 _ _ = errC _ |- _ =>
+    let H' := fresh "H" in
+    eapply apply_to_evidence_below_res with (fn2 := f2) in H1 as H';
+    destruct H' as [? H']; rewrite H' in H2; subst;
+    clear H'; try congruence
+  end.
+
+Ltac ateb_same :=
+  match goal with
+  | H1 : apply_to_evidence_below _ ?f1 _ _ = resultC ?r1,
+    H2 : apply_to_evidence_below _ ?f2 _ _ = resultC ?r2 |- _ =>
+    let Hesp1 := fresh "Hesp" in
+    let Hf1 := fresh "Hf" in
+    eapply apply_to_evidence_below_res_spec in H1 as [? [Hesp1 Hf1]];
+    let Hesp2 := fresh "Hesp" in
+    let Hf2 := fresh "Hf" in
+    eapply apply_to_evidence_below_res_spec in H2 as [? [Hesp2 Hf2]];
+    eapply Evidence_Subterm_path_same in Hesp1;
+    [ | exact Hesp2]; subst
+  end.
 
 Lemma appr_events'_size_works : forall G p e ev_out i evs,
   appr_events' G p e ev_out i = resultC evs ->
   appr_events_size G e = resultC (List.length evs).
 Proof.
   intros G.
-  induction e using (Evidence_subterm_Ind_special G); simpl in *; intros; intuition.
+  induction e using (Evidence_subterm_path_Ind_special G); simpl in *; intros; intuition.
   - ff.
   - ff.
-  - ff; result_monad_unfold; ffa.
-    * admit.
-    * admit.
-    * rewrite length_app in *; simpl in *; f_equal; lia.
-  - ff; result_monad_unfold; ffa.
-    * admit.
-    * admit.
-  - ff; result_monad_unfold; ffa.
-    * admit.
-    * 
-      eapply apply_to_evidence_below_res with (fn2 := (Evidence_Subterm G e)) in Heqr0 as ?.
-      break_exists.
-      pose proof (H e) as ?.
-      find_rewrite.
-      rewrite H0 in H.
-      find_rewrite.
-      ff.
-      admit.
-    * admit.
-  - ff; result_monad_unfold; ffa.
-    repeat rewrite length_app in *; simpl in *; f_equal; lia.
-    * ffa.
-  - eapply H.
-    clear H.
-    break_exists; intuition.
-    eapply apply_to_evidence_below_nil in H1; subst.
-    eauto.
-  - result_monad_unfold; ffa.
-    repeat rewrite length_app in *; simpl in *;
-    f_equal. lia.
-Qed.
-    eapply 
-    destruct e
-    simpl in *.
-  induction e using EvidenceT_double_ind; simpl in *;
-  intros; repeat find_injection;
-  simpl in *; eauto;
-  result_monad_unfold;
-  try (target_break_match H; subst; simpl in *; 
-    repeat find_injection;
-    repeat rewrite length_app in *; eauto; f_equal; lia).
-  - target_break_match H; simpl in *; eauto;
-    subst; try (timeout 5 ffa; fail).
-    ffa.
-
-
-  induction e; simpl in *; intuition;
-  repeat find_injection; simpl in *; eauto.
-  - target_break_match H; subst;
-    result_monad_unfold; simpl in *; eauto.
-    * target_break_match H;
-      eapply IHe in Hbm; ff.
-    * admit.
-    * admit.
-  - result_monad_unfold.
-
-    * 
-
-
-  induction e using EvidenceT_double_ind; try (ffa using result_monad_unfold;
-  repeat rewrite app_length in *; simpl in *; f_equal; lia).
-  - intros; simpl in *; result_monad_unfold; ff;
-    match goal with
-    | H : apply_to_left_evt _ (fun e' : EvidenceT => appr_events' _ _ _ ?e ?i) _ = resultC (resultC ?l) |- _ =>
-      let H' := fresh "H" in
-      pose proof (IHe e i l) as H'; rewrite H in H';
-      pose proof (H' eq_refl); ff;
-      try rewrite app_length in *; simpl in *; f_equal; try lia
-    end.
-  - intros; simpl in *; result_monad_unfold; ff;
-    match goal with
-    | H : apply_to_right_evt _ (fun e' : EvidenceT => appr_events' _ _ _ ?e ?i) _ = resultC (resultC ?l) |- _ =>
-      let H' := fresh "H" in
-      pose proof (IHe e i l) as H'; rewrite H in H';
-      pose proof (H' eq_refl); ff;
-      try rewrite app_length in *; simpl in *; f_equal; try lia
-    end.
+  - result_monad_unfold;
+    target_break_match H1; simpl in *; eauto; ffa;
+    rewrite length_app in *; simpl in *; f_equal; lia.
+  - result_monad_unfold; target_break_match H1; simpl in *; eauto; ff.
+    * ateb_diff.
+    * ateb_same; ffa.
+  - result_monad_unfold; target_break_match H0; simpl in *; eauto; ff.
+  - result_monad_unfold; target_break_match H0; simpl in *; eauto; ff.
+    * ateb_diff.
+    * ateb_same; ffa.
+  - result_monad_unfold; target_break_match H0; simpl in *; eauto; ff.
+    * ateb_diff.
+    * ateb_same; ffa.
+  - result_monad_unfold; target_break_match H; simpl in *; eauto; ffa;
+    simpl in *; repeat rewrite length_app in *; simpl in *; f_equal; lia.
 Qed.
 
 Definition appr_events (G : GlobalContext) (p : Plc) (e : EvidenceT) (i : nat) 
@@ -655,60 +632,32 @@ Proof.
   find_eapply_lem_hyp app_eq_nil; ff.
 Qed.
 
+Ltac solve_true_last_app :=
+  repeat (find_eapply_lem_hyp true_last_app_spec; try (break_or_hyp; 
+    [ ff; find_eapply_lem_hyp app_eq_nil; ff | ff ]));
+  repeat rewrite length_app in *; ff; try lia.
+
+Ltac solve_true_last_none :=
+  find_eapply_lem_hyp true_last_none_iff_nil; 
+  repeat find_eapply_lem_hyp app_eq_nil; ff; try lia.
+
 Lemma appr_events'_deterministic_index : forall G p e ev_out i evs,
   appr_events' G p e ev_out i = resultC evs ->
   forall v',
     true_last evs = Some v' ->
     ev v' = i + List.length evs - 1.
 Proof.
-  induction e using EvidenceT_double_ind; try (ffl; result_monad_unfold; ffl;
-  try (eapply IHe in Heqr; ff; repeat find_rewrite; ffl; lia);
-  try (find_rewrite_lem true_last_none_iff_nil;
-    repeat (find_eapply_lem_hyp app_eq_nil; ff); lia); lia).
-  - simpl in *; ff; try lia; result_monad_unfold; ff;
-    try (eapply IHe in Heqr0; ff; lia).
-    all: try (find_rewrite_lem true_last_none_iff_nil; ff; lia).
-    all: try (eapply IHe in Heqr; ff; repeat find_rewrite; ffl; lia).
-    all: find_eapply_lem_hyp true_last_app_spec; ff;
-    repeat rewrite app_length in *; ff; try lia.
-  - simpl in *; ff; try lia; result_monad_unfold; ff.
-    match goal with
-    | H : apply_to_left_evt _ (fun e' : EvidenceT => appr_events' _ _ _ ?e ?i) _ = resultC (resultC ?l) |- _ =>
-      let H' := fresh "H" in
-      let H'' := fresh "H" in
-      pose proof (IHe e i l) as H'; rewrite H in H';
-      pose proof (H' eq_refl) as H''; ff;
-      pose proof (H'' _ eq_refl); ff; try lia
-      (* try rewrite app_length in *; simpl in *; ffl; lia *)
-    end.
-    all: try (find_rewrite_lem true_last_none_iff_nil; ff; lia).
-    (* all: try (eapply IHe in Heqr; ff; repeat find_rewrite; ffl; lia). *)
-    all: find_eapply_lem_hyp true_last_app_spec; ff;
-    repeat rewrite app_length in *; ff; try lia.
-  - simpl in *; ff; try lia; result_monad_unfold; ff.
-    match goal with
-    | H : apply_to_right_evt _ (fun e' : EvidenceT => appr_events' _ _ _ ?e ?i) _ = resultC (resultC ?l) |- _ =>
-      let H' := fresh "H" in
-      let H'' := fresh "H" in
-      pose proof (IHe e i l) as H'; rewrite H in H';
-      pose proof (H' eq_refl) as H''; ff;
-      pose proof (H'' _ eq_refl); ff; try lia
-      (* try rewrite app_length in *; simpl in *; ffl; lia *)
-    end.
-    all: try (find_rewrite_lem true_last_none_iff_nil; ff; lia).
-    (* all: try (eapply IHe in Heqr; ff; repeat find_rewrite; ffl; lia). *)
-    all: find_eapply_lem_hyp true_last_app_spec; ff;
-    repeat rewrite app_length in *; ff; try lia.
-  - simpl in *; ff; try lia; result_monad_unfold; ff;
-    try (repeat (find_eapply_lem_hyp true_last_app_spec; break_or_hyp; break_and;
-      [ try find_eapply_lem_hyp app_eq_nil; ff | ff]);
-      repeat rewrite app_length in *; ff; lia).
-    all: rewrite true_last_none_iff_nil in *; repeat find_eapply_lem_hyp app_eq_nil; ff; lia.
-  - simpl in *; ff; try lia; result_monad_unfold; ff;
-    try (repeat (find_eapply_lem_hyp true_last_app_spec; break_or_hyp; break_and;
-      [ try find_eapply_lem_hyp app_eq_nil; ff | ff]);
-      repeat rewrite app_length in *; ff; lia).
-    all: rewrite true_last_none_iff_nil in *; repeat find_eapply_lem_hyp app_eq_nil; ff; lia.
+  intros G.
+  induction e using (Evidence_subterm_path_Ind_special G); simpl in *; intros; intuition; ffl; result_monad_unfold; ffl; eauto.
+  - eapply IHe in Heqr; ff; try lia.
+  - find_eapply_lem_hyp true_last_none_iff_nil; subst; ff; lia.
+  - solve_true_last_app.
+  - solve_true_last_none.
+  - ateb_unpack Heqr; ffa.
+  - ateb_unpack Heqr; ffa.
+  - ateb_unpack Heqr; ffa.
+  - solve_true_last_app.
+  - solve_true_last_none.
 Qed.
 
 Theorem asp_events_deterministic_index : forall G p a e i evs,

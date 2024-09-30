@@ -146,7 +146,7 @@ current CVM evidence bundle *)
       sc <- get_config ;;
       let G := (session_context sc) in
       let '(evc bits et) := cur_ev in
-      r <- hoist_result (get_evidence_under_unwrap_wrap G [asp_id] et) ;;
+      r <- hoist_result (apply_to_evidence_below G id [Trail_UNWRAP asp_id] et) ;;
       match r with
       | asp_evt p' (asp_paramsC wrap_id _ _ _) et' =>
         '(ev_arrow fwd _ _) <- get_asp_type wrap_id ;;
@@ -242,7 +242,7 @@ Fixpoint invoke_APPR' (r : RawEv) (et : EvidenceT) (out_evt : EvidenceT) {struct
       match out_sig with
       | OutN _ => err_failm (dispatch_error (Runtime err_str_unwrap_must_have_outwrap)) 
       | OutUnwrap =>
-        e <- hoist_result (apply_to_evidence_under_unwrap_wrap G (fun e => invoke_APPR' r e out_evt) [asp_id] et') ;;
+        e <- hoist_result (apply_to_evidence_below G (fun e => invoke_APPR' r e out_evt) [Trail_UNWRAP asp_id] et') ;;
         e 
         (* e <- hoist_result (
           apply_to_asp_under_wrap G asp_id (fun e => invoke_APPR' r e out_evt) et'
@@ -272,11 +272,11 @@ Fixpoint invoke_APPR' (r : RawEv) (et : EvidenceT) (out_evt : EvidenceT) {struct
       put_ev ev' *)
     end
   | left_evt et' =>
-    r <- hoist_result (apply_to_left_evt G (fun e => invoke_APPR' r e out_evt) et') ;;
+    r <- hoist_result (apply_to_evidence_below G (fun e => invoke_APPR' r e out_evt) [Trail_LEFT] et') ;;
     r
 
   | right_evt et' =>
-    r <- hoist_result (apply_to_right_evt G (fun e => invoke_APPR' r e out_evt) et') ;;
+    r <- hoist_result (apply_to_evidence_below G (fun e => invoke_APPR' r e out_evt) [Trail_RIGHT] et') ;;
     r
 
   | split_evt et1 et2 =>
