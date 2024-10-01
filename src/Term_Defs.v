@@ -526,6 +526,16 @@ Ltac ateb_diff :=
     clear H'; try congruence
   end.
 
+Ltac ateb_errs_same := 
+  match goal with
+  | H1 : apply_to_evidence_below _ ?f1 _ _ = errC ?r1,
+    H2 : apply_to_evidence_below _ ?f2 _ _ = errC ?r2 |- _ =>
+    let Hesp1 := fresh "Hesp" in
+    let Hf1 := fresh "Hf" in
+    eapply apply_to_evidence_below_errs_det in H1;
+    [ | exact H2]; subst
+  end.
+
 Ltac ateb_same :=
   match goal with
   | H1 : apply_to_evidence_below _ ?f1 _ _ = resultC ?r1,

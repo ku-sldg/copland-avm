@@ -794,6 +794,14 @@ Proof.
   induction e; simpl in *; intros; ff.
 Qed.
 
+Lemma apply_to_evidence_below_errs_det : forall {A B} G (fn1 : _ -> A) (fn2 : _ -> B) e l r1 r2,
+  apply_to_evidence_below G fn1 l e = errC r1 ->
+  apply_to_evidence_below G fn2 l e = errC r2 ->
+  r1 = r2.
+Proof.
+  induction e; simpl in *; intros; ff.
+Qed.
+
 (* Lemma apply_to_evidence_below_depth_id : forall {A} G (fn : _ -> A) e l1 l2 h r,
   apply_to_evidence_below G fn (l1 ++ h :: l2) e = resultC r ->
   exists e', Evidence_Subterm G e' e /\

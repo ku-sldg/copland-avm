@@ -306,35 +306,78 @@ Proof.
       end.
 Qed.
 
-Theorem invoke_APPR_deterministic_Evidence : forall et st1 st2 r1 r2 st1' st2' r sc sc1' sc2' eo,
+Theorem invoke_APPR_deterministic_Evidence : forall G et st1 st2 r1 r2 st1' st2' r sc sc1' sc2' eo,
+  G = session_context sc ->
   invoke_APPR' r et eo st1 sc = (r1, st1', sc1') ->
   invoke_APPR' r et eo st2 sc = (r2, st2', sc2') ->
   r1 = r2.
 Proof.
-  (* 
-  induction et; ff; cvm_monad_unfold; ff;
-  repeat match goal with
-  | H1 : split_evidence _ _ _ _ _ = _,
-    H2 : split_evidence _ _ _ _ _ = _ |- _ =>
-    let H' := fresh in
-    eapply split_evidence_determinisitic in H1 as H';
-    try eapply H2; ff; 
-    eapply split_evidence_state_immut in H1;
-    eapply split_evidence_state_immut in H2;
-    simpl in *; ff
-  end;
-  repeat match goal with
-  | H1 : invoke_APPR' _ ?e _ _ _ = _,
-    H2 : invoke_APPR' _ ?e _ _ _ = _,
-    IH : context[invoke_APPR' _ ?e _ _ _ = _ -> _] |- _ =>
-    eapply invoke_APPR_config_immut in H1 as ?;
-    eapply invoke_APPR_config_immut in H2 as ?;
-    eapply IH in H1; [ | eapply H2]; ff;
-    clear IH H2
-  end.
+  intros G.
+  induction et using (Evidence_subterm_path_Ind_special G);
+  intros; simpl in *; subst; cvm_monad_unfold.
+  - ff.
+  - target_break_match H0.
+  - target_break_match H2;
+    repeat find_injection;
+    repeat find_rewrite;
+    subst; try simple congruence 3;
+    eauto;
+    try target_break_match H3;
+    match goal with
+    | H1 : invoke_APPR' _ ?e _ _ _ = _,
+      H2 : invoke_APPR' _ ?e _ _ _ = _,
+      IH : context[invoke_APPR' _ ?e _ _ _ = _ -> _] |- _ =>
+      eapply IH in H1; try eapply H2; ff
+    end.
+  - target_break_match H2;
+    repeat find_injection;
+    repeat find_rewrite;
+    subst; try simple congruence 3;
+    eauto;
+    try target_break_match H3.
+    ateb_unpack Hbm3; ffa.
+  - target_break_match H2;
+    repeat find_injection;
+    repeat find_rewrite;
+    subst; try simple congruence 3;
+    eauto;
+    try target_break_match H3;
+    match goal with
+    | H1 : invoke_APPR' _ ?e _ _ _ = _,
+      H2 : invoke_APPR' _ ?e _ _ _ = _,
+      IH : context[invoke_APPR' _ ?e _ _ _ = _ -> _] |- _ =>
+      eapply IH in H1; try eapply H2; ff
+    end.
+  - target_break_match H2;
+    repeat find_injection;
+    repeat find_rewrite;
+    subst; try simple congruence 3;
+    eauto;
+    try target_break_match H3;
+    ateb_unpack Hbm0; ffa.
+  - target_break_match H2;
+    repeat find_injection;
+    repeat find_rewrite;
+    subst; try simple congruence 3;
+    eauto;
+    try target_break_match H3;
+    ateb_unpack Hbm0; ffa.
+  - target_break_match H0;
+    repeat find_injection;
+    repeat find_rewrite;
+    subst; try simple congruence 3;
+    eauto;
+    try target_break_match H1.
+    all: 
+    repeat match goal with
+    | H1 : invoke_APPR' _ ?e _ _ _ = _,
+      H2 : invoke_APPR' _ ?e _ _ _ = _,
+      IH : context[invoke_APPR' _ ?e _ _ _ = _ -> _] |- _ =>
+      eapply invoke_APPR_config_immut in H1 as ?; [ | reflexivity ];
+      eapply invoke_APPR_config_immut in H2 as ?; [ | reflexivity ];
+      eapply IH in H1; [ | | eapply H2]; clear IH; ff
+    end.
 Qed.
-*)
-Admitted.
 
 Lemma cvm_deterministic :  forall t e sc sc1' sc2' st1 st2 r1 r2 st1' st2',
   st_evid st1 = st_evid st2 ->
@@ -361,14 +404,16 @@ Lemma appr_events'_errs_deterministic : forall G p e e' i1 e1,
   appr_events' G p e e' i1 = errC e1 ->
   forall i2, appr_events' G p e e' i2 = errC e1.
 Proof.
-  (* 
-  induction e; ffa using result_monad_unfold;
+  intros G.
+  induction e using (Evidence_subterm_path_Ind_special G);
+  intros; simpl in *; ffa using result_monad_unfold;
   try (find_eapply_lem_hyp IHe; ff; fail);
   try (find_eapply_lem_hyp IHe1; ff);
   try (find_eapply_lem_hyp IHe2; ff).
+  all: try (ateb_errs_same; eauto; fail).
+  all: try (ateb_diff).
+  all: try ateb_same; ffa.
 Qed.
-*)
-Admitted.
 
 Lemma asp_events_errs_deterministic : forall G t p e i1 i2 e1 e2,
   asp_events G p e t i1 = resultC e1 ->
@@ -477,19 +522,18 @@ Proof.
       eapply build_cvm_config_immut in Heqp as ?; ff.
 Qed.
 
-Lemma invoke_APPR'_spans : forall et r e' sc c i st sc' eo,
+Lemma invoke_APPR'_spans : forall G' et r e' sc c i st sc' eo,
+  G' = session_context sc ->
   invoke_APPR' r et eo st sc = (resultC e', c, sc') ->
   forall G,
   G = session_context sc ->
   appr_events_size G et = resultC i ->
   st_evid c = st_evid st + i.
 Proof.
-  (* 
-  induction et; ffa using (try cvm_monad_unfold; try result_monad_unfold);
+  intros G'.
+  induction et using (Evidence_subterm_path_Ind_special G');
+  ffa using (try cvm_monad_unfold; try result_monad_unfold);
   repeat match goal with
-  | H : split_evidence _ _ _ _ _ = _ |- _ =>
-    eapply split_evidence_state_immut in H as ?; ff;
-    clear H
   | H : Nat.eqb _ _ = _ |- _ => 
     try (erewrite PeanoNat.Nat.eqb_eq in H);
     try (erewrite PeanoNat.Nat.eqb_neq in H);
@@ -502,182 +546,33 @@ Proof.
     let numgoals' := numgoals in
     guard numgoals' <= numgoals
   end.
+  all: try ateb_same; ffa.
 Qed.
-*)
-Admitted.
 
 Inductive et_same_asps : EvidenceT -> EvidenceT -> Prop :=
 | et_same_asps_mt : et_same_asps mt_evt mt_evt
 | et_same_asps_nonce : forall n1 n2, et_same_asps (nonce_evt n1) (nonce_evt n2)
-
-| et_same_asps_asp_mt : forall p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id, 
-  et_same_asps 
-    (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) mt_evt) 
-    (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) mt_evt)
-| et_same_asps_asp_nonce : forall p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 n1 n2 asp_id,
-  et_same_asps 
-    (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (nonce_evt n1))
-    (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (nonce_evt n2))
-| et_same_asps_asp_asp : forall p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 e1 e2 asp_id p1' p2' args1' args2' targ_plc1' targ_plc2' targ1' targ2' asp_id',
+| et_same_asps_asp : forall p1 p2 e1 e2 aid args1 args2 targp1 targp2 targ1 targ2,
     et_same_asps e1 e2 ->
     et_same_asps 
-      (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) 
-        (asp_evt p1' (asp_paramsC asp_id' args1' targ_plc1' targ1') e1))
-      (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) 
-        (asp_evt p2' (asp_paramsC asp_id' args2' targ_plc2' targ2') e2))
-| et_same_asps_asp_left : forall e1 e2 p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id,
-    et_same_asps (left_evt e1) (left_evt e2) ->
-    et_same_asps 
-      (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (left_evt e1))
-      (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (left_evt e2))
-| et_same_asps_asp_right : forall e1 e2 p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id,
-    et_same_asps (right_evt e1) (right_evt e2) ->
-    et_same_asps 
-      (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (right_evt e1))
-      (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (right_evt e2))
-| et_same_asps_asp_split : forall e1a e1b e2a e2b p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id,
-    et_same_asps e1a e2a ->
-    et_same_asps e1b e2b ->
-    et_same_asps 
-      (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (split_evt e1a e1b))
-      (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (split_evt e2a e2b))
-
-| et_same_asps_left_mt : et_same_asps (left_evt mt_evt) (left_evt mt_evt)
-| et_same_asps_left_nonce : forall n, et_same_asps (left_evt (nonce_evt n)) (left_evt (nonce_evt n))
-| et_same_asps_left_asp_mt : forall p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id, 
-  et_same_asps 
-    (left_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) mt_evt))
-    (left_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) mt_evt))
-| et_same_asps_left_asp_nonce : forall p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 n asp_id,
-  et_same_asps 
-    (left_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (nonce_evt n)))
-    (left_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (nonce_evt n)))
-| et_same_asps_left_asp_asp : forall p1 p2 p1' p2' args1 args2 args1' args2' targ_plc1 targ_plc2 targ_plc1' targ_plc2' targ1 targ2 targ1' targ2' asp_id asp_id' e1 e2,
-  et_same_asps (left_evt e1) (left_evt e2) ->
-  et_same_asps 
-    (left_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) 
-      (asp_evt p1' (asp_paramsC asp_id' args1' targ_plc1' targ1') e1)))
-    (left_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) 
-      (asp_evt p2' (asp_paramsC asp_id' args2' targ_plc2' targ2') e2)))
-| et_same_asps_left_asp_left : forall e1 e2 p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id,
-    et_same_asps (left_evt e1) (left_evt e2) ->
-    et_same_asps 
-      (left_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (left_evt e1)))
-      (left_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (left_evt e2)))
-| et_same_asps_left_asp_right : forall e1 e2 p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id,
-    et_same_asps (right_evt e1) (right_evt e2) ->
-    et_same_asps 
-      (left_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (right_evt e1)))
-      (left_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (right_evt e2)))
-| et_same_asps_left_asp_split : forall e1a e1b e2a e2b p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id,
-    et_same_asps e1a e2a ->
-    et_same_asps e1b e2b ->
-    et_same_asps 
-      (left_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (split_evt e1a e1b)))
-      (left_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (split_evt e2a e2b)))
-| et_same_asps_left_left : forall e1 e2,
-    et_same_asps (left_evt e1) (left_evt e2) ->
-    et_same_asps (left_evt (left_evt e1)) (left_evt (left_evt e2))
-| et_same_asps_left_right : forall e1 e2,
-    et_same_asps (right_evt e1) (right_evt e2) ->
-    et_same_asps (left_evt (right_evt e1)) (left_evt (right_evt e2))
-| et_same_asps_left_split : forall e1a e1b e2a e2b,
-    et_same_asps e1a e2a ->
-    et_same_asps (left_evt (split_evt e1a e1b)) (left_evt (split_evt e2a e2b))
-
-| et_same_asps_right_mt : et_same_asps (right_evt mt_evt) (right_evt mt_evt)
-| et_same_asps_right_nonce : forall n1 n2, et_same_asps (right_evt (nonce_evt n1)) (right_evt (nonce_evt n2))
-| et_same_asps_right_asp_mt : forall p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id, 
-  et_same_asps 
-    (right_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) mt_evt))
-    (right_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) mt_evt))
-| et_same_asps_right_asp_nonce : forall p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 n1 n2 asp_id,
-  et_same_asps 
-    (right_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (nonce_evt n1)))
-    (right_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (nonce_evt n2)))
-| et_same_asps_right_asp_asp : forall p1 p2 p1' p2' args1 args2 args1' args2' targ_plc1 targ_plc2 targ_plc1' targ_plc2' targ1 targ2 targ1' targ2' asp_id asp_id' e1 e2,
-  et_same_asps (right_evt e1) (right_evt e2) ->
-  et_same_asps 
-    (right_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) 
-      (asp_evt p1' (asp_paramsC asp_id' args1' targ_plc1' targ1') e1)))
-    (right_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) 
-      (asp_evt p2' (asp_paramsC asp_id' args2' targ_plc2' targ2') e2)))
-| et_same_asps_right_asp_left : forall e1 e2 p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id,
-    et_same_asps (left_evt e1) (left_evt e2) ->
-    et_same_asps 
-      (right_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (left_evt e1)))
-      (right_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (left_evt e2)))
-| et_same_asps_right_asp_right : forall e1 e2 p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id,
-    et_same_asps (right_evt e1) (right_evt e2) ->
-    et_same_asps 
-      (right_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (right_evt e1)))
-      (right_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (right_evt e2)))
-| et_same_asps_right_asp_split : forall e1a e1b e2a e2b p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 asp_id,
-    et_same_asps e1a e2a ->
-    et_same_asps e1b e2b ->
-    et_same_asps 
-      (right_evt (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) (split_evt e1a e1b)))
-      (right_evt (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) (split_evt e2a e2b)))
-| et_same_asps_right_left : forall e1 e2,
-    et_same_asps e1 e2 ->
-    et_same_asps (right_evt (left_evt e1)) (right_evt (left_evt e2))
-| et_same_asps_right_right : forall e1 e2,
-    et_same_asps e1 e2 ->
-    et_same_asps (right_evt (right_evt e1)) (right_evt (right_evt e2))
-| et_same_asps_right_split : forall e1a e1b e2a e2b,
-    et_same_asps e1b e2b ->
-    et_same_asps (right_evt (split_evt e1a e1b)) (right_evt (split_evt e2a e2b))
-
-| et_same_asps_split : forall e1 e2 e1' e2',
-    et_same_asps e1 e2 ->
-    et_same_asps e1' e2' ->
-    et_same_asps (split_evt e1 e1') (split_evt e2 e2').
-Local Hint Constructors et_same_asps : et_same_asps_db.
-
-
-(* | et_same_asps_asp : forall p1 p2 args1 args2 targ_plc1 targ_plc2 targ1 targ2 e1 e2 asp_id,
-    et_same_asps e1 e2 ->
-    et_same_asps 
-      (asp_evt p1 (asp_paramsC asp_id args1 targ_plc1 targ1) e1)
-      (asp_evt p2 (asp_paramsC asp_id args2 targ_plc2 targ2) e2)
+      (asp_evt p1 (asp_paramsC aid args1 targp1 targ1) e1) 
+      (asp_evt p2 (asp_paramsC aid args2 targp2 targ2) e2)
 | et_same_asps_left : forall e1 e2,
     et_same_asps e1 e2 ->
     et_same_asps (left_evt e1) (left_evt e2)
 | et_same_asps_right : forall e1 e2,
     et_same_asps e1 e2 ->
     et_same_asps (right_evt e1) (right_evt e2)
-| et_same_asps_split : forall e1a e1b e2a e2b,
-    et_same_asps e1a e2a ->
-    et_same_asps e1b e2b ->
-    et_same_asps (split_evt e1a e1b) (split_evt e2a e2b). *)
-(* Local Hint Constructors et_same_asps : et_same_asps_db. *)
-
-Lemma et_same_asps_impl_same_size : forall G e1 e2,
-  et_same_asps e1 e2 ->
-  et_size G e1 = et_size G e2.
-Proof.
-  intros.
-  induction H; eauto.
-  - simpl in *.
-    breaker; result_monad_unfold; eauto;
-    try (invc H; simple congruence 1).
-    simpl in *.
-    repeat find_rewrite.
-    admit.
-  - simpl in *; breaker; result_monad_unfold; breaker.
-  - simpl in *; breaker; result_monad_unfold; breaker.
-  - simpl in *; breaker; result_monad_unfold; breaker.
-  - simpl in *; breaker; result_monad_unfold; breaker.
-  - simpl in *; breaker; result_monad_unfold; breaker.
-  - simpl in *; breaker; result_monad_unfold; breaker.
-(* Qed.
-Local Hint Resolve et_same_asps_impl_same_size : et_same_asps_db. *)
-Admitted.
+| et_same_asps_split : forall e1 e2 e1' e2',
+    et_same_asps e1 e2 ->
+    et_same_asps e1' e2' ->
+    et_same_asps (split_evt e1 e1') (split_evt e2 e2').
+Local Hint Constructors et_same_asps : et_same_asps_db.
 
 Lemma et_same_asps_refl : forall e,
   et_same_asps e e.
 Proof.
-  induction e using EvidenceT_double_ind; eauto using et_same_asps;
+  induction e; eauto using et_same_asps;
   repeat match goal with
   | a : ASP_PARAMS |- _ => destruct a; eauto using et_same_asps
   end.
@@ -692,16 +587,84 @@ Proof.
 Qed.
 Local Hint Resolve et_same_asps_symm : et_same_asps_db.
 
-(* Lemma et_same_asps_split_helper : forall e1 e2 e3 e4,
-  et_same_asps (split_evt e1 e2) (split_evt e3 e4) ->
-  (et_same_asps e1 e3 /\ et_same_asps e2 e4) \/
-  (et_same_asps e1 e4 /\ et_same_asps e2 e3).
+Lemma ev_subterm_path_et_same_asps : forall G e1 e2 e1' e2' l,
+  et_same_asps e1 e2 ->
+  Evidence_Subterm_path G e1' l e1 ->
+  Evidence_Subterm_path G e2' l e2 ->
+  et_same_asps e1' e2'.
 Proof.
   intros.
   prep_induction H.
-  induction H; ff; eauto with et_same_asps_db.
+  induction H; intros; simpl in *;
+  try (invc H0; invc H1; eauto using et_same_asps; fail).
+  - invc H0; invc H1; try congruence; eauto using et_same_asps.
+  - invc H0; invc H1; try congruence; eauto using et_same_asps.
+  - invc H0; invc H1; try congruence; eauto using et_same_asps.
+  - invc H1; invc H2; try congruence; eauto using et_same_asps.
 Qed.
-Local Hint Resolve et_same_asps_split_helper : et_same_asps_db. *)
+Local Hint Resolve ev_subterm_path_et_same_asps : et_same_asps_db.
+
+Lemma et_same_asps_ateb_errs_det : forall {A} G (f : _ -> A) e1 e2 l r1 r2,
+  et_same_asps e1 e2 ->
+  apply_to_evidence_below G f l e1 = errC r1 ->
+  apply_to_evidence_below G f l e2 = errC r2 ->
+  r1 = r2.
+Proof.
+  induction e1; simpl in *; ff;
+  try (invc H; simpl in *; ff; fail).
+Qed.
+
+Lemma et_same_asps_ateb_errs_only : forall {A} G (f : _ -> A) e1 e2 l r1 r2,
+  et_same_asps e1 e2 ->
+  apply_to_evidence_below G f l e1 = errC r1 ->
+  apply_to_evidence_below G f l e2 = resultC r2 ->
+  False.
+Proof.
+  induction e1; simpl in *; ff;
+  try (invc H; simpl in *; ff; fail).
+Qed.
+
+Lemma et_same_asps_impl_same_size : forall G e1 e2,
+  et_same_asps e1 e2 ->
+  et_size G e1 = et_size G e2.
+Proof.
+  intros G.
+  induction e1 using (Evidence_subterm_path_Ind_special G);
+  intros; simpl in *; ff; eauto;
+  try (invc H; ff; fail);
+  try (invc H1; ff; result_monad_unfold; ffa; fail).
+  - invc H1; ff; result_monad_unfold; ffa.
+    * eapply et_same_asps_ateb_errs_det in Heqr0; ff; ff.
+    * eapply et_same_asps_ateb_errs_only in Heqr0; ff; exfalso; eauto.
+    * eapply et_same_asps_ateb_errs_only in Heqr0; ff; 
+      try eapply et_same_asps_symm; eauto; exfalso; eauto.
+    * ateb_unpack Heqr; ffa;
+      ateb_unpack Heqr0; ffa;
+      eapply H0; ffa;
+      eapply ev_subterm_path_et_same_asps; ffa.
+  - invc H0; ff; result_monad_unfold; ffa.
+  - invc H0; ff; result_monad_unfold; ffa.
+    * eapply et_same_asps_ateb_errs_det in Heqr0; ff; ff.
+    * eapply et_same_asps_ateb_errs_only in Heqr0; ff; exfalso; eauto.
+    * eapply et_same_asps_ateb_errs_only in Heqr0; ff; 
+      try eapply et_same_asps_symm; eauto; exfalso; eauto.
+    * ateb_unpack Heqr; ffa;
+      ateb_unpack Heqr0; ffa;
+      eapply H; ffa;
+      eapply ev_subterm_path_et_same_asps; ffa.
+  - invc H0; ff; result_monad_unfold; ffa.
+    * eapply et_same_asps_ateb_errs_det in Heqr0; ff; ff.
+    * eapply et_same_asps_ateb_errs_only in Heqr0; ff; exfalso; eauto.
+    * eapply et_same_asps_ateb_errs_only in Heqr0; ff; 
+      try eapply et_same_asps_symm; eauto; exfalso; eauto.
+    * ateb_unpack Heqr; ffa;
+      ateb_unpack Heqr0; ffa;
+      eapply H; ffa;
+      eapply ev_subterm_path_et_same_asps; ffa.
+  - result_monad_unfold; ff; invc H; ffa; result_monad_unfold;
+    ffa.
+Qed.
+Local Hint Resolve et_same_asps_impl_same_size : et_same_asps_db.
 
 Lemma et_same_asps_asp_dir : forall e1 e2 asp_id args1 args2 targ_plc1 targ_plc2 targ1 targ2 p1 p2 par1 par2,
   et_same_asps e1 e2 ->
@@ -732,37 +695,42 @@ Lemma et_same_asps_appr_procedure : forall G e1 e1' e2 e2' p1 p2 e1o e2o,
   appr_procedure' G p2 e2 e2o = resultC e2' ->
   et_same_asps e1' e2'.
 Proof.
-  intros.
-  generalizeEverythingElse H.
-  induction H; intros; simpl in *; try simple congruence 1.
-  - breaker; repeat find_injection; eauto with et_same_asps_db.
-  - breaker; repeat find_injection; eauto with et_same_asps_db.
-    eapply et_same_asps_asp_dir; try reflexivity; eauto.
-  - breaker; repeat find_injection; eauto with et_same_asps_db.
-  - breaker; repeat find_injection; eauto with et_same_asps_db;
-    econstructor; eauto with et_same_asps_db;
-    eapply et_same_asps_asp_dir; try reflexivity. eauto with et_same_asps_db.
-  - target_break_match H1; target_break_match H2. 
-    all: try (eapply et_same_asps_asp_dir; try reflexivity; assumption).
-    all: try (econstructor; )
-    all: eauto 3 with et_same_asps_db.
-    breaker; repeat find_injection; eauto with et_same_asps_db.
-      eauto with et_same_asps_db.
-    eapply et_same_asps_asp_dir; eauto.
-    econstructor.
-    repeat find_eapply_lem_hyp equiv_EvidenceT_impl_et_size_same;
-    simpl in *; repeat find_rewrite.
-    repeat find_
-  - breaker; repeat find_injection 
-  - breaker; repeat find_injection.
-  - 
-  induction H; simpl in *; intuition; repeat find_injection; eauto;
-  try (econstructor; ff; fail).
-  - ff; eauto with et_same_asps_db; 
-    result_monad_unfold; ff;
-    find_eapply_lem_hyp IHet_same_asps; eauto with et_same_asps_db.
-  - ff; result_monad_unfold; ff;
-    invc H1; econstructor; eauto with et_same_asps_db.
+  intros G.
+  induction e1 using (Evidence_subterm_path_Ind_special G);
+  intros; simpl in *; cvm_monad_unfold.
+  - invc H; simpl in *; ff; econstructor; eauto.
+  - invc H; simpl in *; ff; econstructor; eauto.
+  - inv H1; simpl in *; ff.
+    * econstructor; eauto.
+    * eapply IHe1 in H4; ff; econstructor; eauto.
+    * result_monad_unfold; ff;
+      econstructor; eauto.
+      econstructor; eauto.
+  - inv H1; simpl in *; ff.
+    result_monad_unfold; ff.
+    ateb_unpack Heqr0;
+    ateb_unpack Heqr.
+    eapply H0 in Hf0; try eapply Hf; ff.
+    eapply ev_subterm_path_et_same_asps; ff.
+  - inv H1; simpl in *; ff.
+  - inv H0; simpl in *; ff;
+    result_monad_unfold; ff.
+    ateb_unpack Heqr0;
+    ateb_unpack Heqr.
+    eapply H in Hf0; try eapply Hf; ff.
+    eapply ev_subterm_path_et_same_asps; ff.
+  - inv H0; simpl in *; ff;
+    result_monad_unfold; ff.
+    ateb_unpack Heqr0;
+    ateb_unpack Heqr.
+    eapply H in Hf0; try eapply Hf; ff.
+    eapply ev_subterm_path_et_same_asps; ff.
+  - inv H; simpl in *; ff;
+    result_monad_unfold; ff.
+    eapply IHe1_1 in Heqr; try eapply Heqr1; eauto;
+    try (econstructor; eauto; fail).
+    eapply IHe1_2 in Heqr0; try eapply Heqr2; eauto;
+    try (econstructor; eauto; fail).
 Qed.
 Local Hint Resolve et_same_asps_appr_procedure : et_same_asps_db.
 
@@ -823,24 +791,22 @@ Lemma et_same_asps_impl_appr_events_size_same : forall G e1 e2 n1 n2,
   appr_events_size G e2 = resultC n2 ->
   n1 = n2.
 Proof.
-  intros.
-  generalizeEverythingElse H.
-  induction H; try (simpl in *; ff; fail); intros;
-  simpl in *; result_monad_unfold; ff;
-  repeat match goal with
-  | H1 : appr_events_size _ ?e1 = _,
-    H2 : appr_events_size _ ?e2 = _,
-    IH : context[appr_events_size _ ?e1 = _ -> _] |- _ =>
-    eapply IH in H1; try eapply H2;
-    clear H2; eauto; subst
-  end.
-Qed.
-
-Lemma et_same_asps_refl : forall e,
-  et_same_asps e e.
-Proof.
-  induction e; try econstructor; eauto;
-  destruct a; econstructor; eauto.
+  intros G.
+  induction e1 using (Evidence_subterm_path_Ind_special G);
+  intros; simpl in *; result_monad_unfold; ff;
+  try (invc H; ff; fail);
+  try (invc H1; ffa using result_monad_unfold; fail).
+  - invc H1; ff; result_monad_unfold; ff;
+    ateb_unpack Heqr; ateb_unpack Heqr0.
+    eapply H0; ff; eapply ev_subterm_path_et_same_asps; eauto.
+  - invc H0; ff; result_monad_unfold; ff;
+    ateb_unpack Heqr; ateb_unpack Heqr0.
+    eapply H; ff; eapply ev_subterm_path_et_same_asps; eauto.
+  - invc H0; ff; result_monad_unfold; ff;
+    ateb_unpack Heqr; ateb_unpack Heqr0.
+    eapply H; ff; eapply ev_subterm_path_et_same_asps; eauto.
+  - invc H; simpl in *; result_monad_unfold; ff.
+    eapply IHe1_1 in Heqr1; try reflexivity; subst; ff.
 Qed.
 
 Lemma events_size_eval_res_irrel : forall G t1 t p1 p2 et e1 e2 n1 n2,
@@ -935,7 +901,7 @@ Proof.
   cvm_monad_unfold; ff.
 Qed.
 
-Lemma split_evidence_res_spec : forall e st st' et1 et2 e1 e2 sc sc',
+(* Lemma split_evidence_res_spec : forall e st st' et1 et2 e1 e2 sc sc',
   split_evidence e et1 et2 st sc = (resultC (e1, e2), st', sc') ->
   exists r,
   e = evc r (split_evt et1 et2) /\
@@ -950,7 +916,7 @@ Proof.
   repeat rewrite app_nil_r in *;
   repeat rewrite eqb_EvidenceT_eq in *; ff;
   destruct e; ff; eexists; intuition; eauto.
-Qed.
+Qed. *)
 
 Theorem invoke_APPR'_evidence : forall et st r sc sc' st' e' e eo,
   invoke_APPR' r et eo st sc = (resultC e', st', sc') ->
