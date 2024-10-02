@@ -60,15 +60,46 @@ Fixpoint session_config_support_exec_appr (p : Plc) (e : EvidenceT)
     ((exists res, 
     sc.(aspCb) check_nonce_params ev = resultC res) \/ 
     (exists errStr, sc.(aspCb) check_nonce_params ev = errC (Runtime errStr)))
-  | asp_evt p' par e' =>
-    let '(asp_paramsC aspid l targ targid) := par in
-    match (map_get aspid (asp_comps sc.(session_context))) with
+  | asp_evt p par e' =>
+    let '(asp_paramsC asp_id l targ targid) := par in
+    match (map_get asp_id (asp_comps sc.(session_context))) with
     | None => False
     | Some appr_aspid =>
-      forall l targ targid ev,
-      ((exists res, 
-      sc.(aspCb) (asp_paramsC appr_aspid l targ targid) ev = resultC res) \/ 
-      (exists errStr, sc.(aspCb) (asp_paramsC appr_aspid l targ targid) ev = errC (Runtime errStr)))
+      match (map_get appr_aspid (asp_types sc.(session_context))) with
+      | None => False
+      | Some (ev_arrow fwd in_sig out_sig) =>
+        match fwd with
+        | REPLACE => 
+          (* we are replacing, so just the output need last one *)
+          forall ev,
+          ((exists res, 
+          sc.(aspCb) (asp_paramsC appr_aspid l targ targid) ev = resultC res) \/ 
+          (exists errStr, sc.(aspCb) (asp_paramsC appr_aspid l targ targid) ev = errC (Runtime errStr)))
+
+        | WRAP => 
+          (* we are wrapping, so just the output *)
+          forall ev,
+          ((exists res, 
+          sc.(aspCb) (asp_paramsC appr_aspid l targ targid) ev = resultC res) \/ 
+          (exists errStr, sc.(aspCb) (asp_paramsC appr_aspid l targ targid) ev = errC (Runtime errStr)))
+        | UNWRAP => 
+          (* we are unwrapping, so we are the size of the previous input *)
+          (forall ev,
+          ((exists res, 
+          sc.(aspCb) (asp_paramsC appr_aspid l targ targid) ev = resultC res) \/ 
+          (exists errStr, sc.(aspCb) (asp_paramsC appr_aspid l targ targid) ev = errC (Runtime errStr)))) /\
+          (match apply_to_evidence_below (session_context sc) (fun e' => session_config_support_exec_appr p e' sc) [Trail_UNWRAP appr_aspid] e' with
+          | resultC P => P
+          | errC _ => False
+          end)
+        | EXTEND =>
+          (forall ev,
+          ((exists res, 
+          sc.(aspCb) (asp_paramsC appr_aspid l targ targid) ev = resultC res) \/ 
+          (exists errStr, sc.(aspCb) (asp_paramsC appr_aspid l targ targid) ev = errC (Runtime errStr)))) /\
+          session_config_support_exec_appr p e' sc
+        end
+      end
     end
   | left_evt e' => 
     match apply_to_evidence_below (session_context sc) (fun e' => session_config_support_exec_appr p e' sc) [Trail_LEFT] e' with
@@ -108,8 +139,8 @@ Fixpoint session_config_supports_exec (p : Plc) (e : EvidenceT) (t : Term)
           (exists errStr, sc.(aspCb) (enc_params p) ev = errC (Runtime errStr)))) /\
           ((exists res, 
             map_get p (sc.(pubkey_map)) = Some res))
-      | ASPC (asp_paramsC aspid _ _ _) =>
-          (forall l targ targid ev,
+      | ASPC (asp_paramsC aspid l targ targid) =>
+          (forall ev,
           ((exists res, 
           sc.(aspCb) (asp_paramsC aspid l targ targid) ev = resultC res) \/ 
           (exists errStr, sc.(aspCb) (asp_paramsC aspid l targ targid) ev = errC (Runtime errStr))))
@@ -261,15 +292,19 @@ Proof.
   intros sc1.
   induction e using (Evidence_subterm_path_Ind_special (session_context sc1));
   simpl in *; intuition; ff;
-  repeat unfold session_config_subset, check_nonce_params, hsh_params, sig_params, enc_params in *; intuition; ff.
-  all: try (match goal with
-    | H : context[ aspCb _ _ _ = _] |- context[aspCb _ (asp_paramsC ?a ?l ?t ?tid) ?ev = _] =>
-      pose proof (H l t tid ev); ff
-    end; fail).
-  all: try (match goal with
+  try (repeat unfold session_config_subset, check_nonce_params, hsh_params, sig_params, enc_params in *; intuition; ff;
+    try (match goal with
     | H : context[ aspCb _ _ _ = _] |- context[aspCb _ (asp_paramsC ?a ?l ?t ?tid) ?ev = _] =>
       pose proof (H ev); ff
-    end; fail).
+    end; fail); fail); 
+    assert (session_context sc1 = session_context sc2) by (unfold session_config_subset in *; intuition; ff); ff;
+    try ateb_diff.
+  - ateb_same; ff.
+  - ateb_same; ffa.
+    eapply IHe.
+  - eapply IHe; intuition; ffa; edestruct H2; ff.
+  - ateb_diff.
+  - ateb_same; ffa; eapply H0; ff; intuition.
   - ateb_diff.
   - ateb_same; ffa; eapply H in H1; ff; intuition.
   - ateb_diff. 
@@ -284,14 +319,10 @@ Lemma session_config_supports_exec_subset : forall sc1 sc2,
 Proof.
   induction t; ffa; try (unfold session_config_subset in *; ff;
   try unfold hsh_params, sig_params, enc_params in *; intuition; ffa;
-    try (match goal with
-    | H : context[ aspCb _ _ _ = _] |- context[aspCb _ (asp_paramsC ?a ?l ?t ?tid) ?ev = _] =>
-      pose proof (H l t tid ev); ff
-    end; fail);
-    try (match goal with
-    | H : context[ aspCb _ _ _ = _] |- context[aspCb _ (asp_paramsC ?a ?l ?t ?tid) ?ev = _] =>
-      pose proof (H ev); ff
-    end; fail); fail).
+  try (match goal with
+  | H : context[ aspCb _ _ _ = _] |- context[aspCb _ (asp_paramsC ?a ?l ?t ?tid) ?ev = _] =>
+    pose proof (H ev); ff
+  end; fail); fail).
   - eapply session_config_supports_exec_appr_subset; ff.
   - exists x, x0, x1; intuition.
     * invc H; ff.
@@ -301,15 +332,48 @@ Proof.
   - exists x, x0; intuition; eapply session_config_subset_trans; ff.
 Qed.
 
+Lemma well_formed_context_appr_impl_executable : forall sc et p,
+  well_formed_context (session_context sc) ->
+  session_config_support_exec_appr p et sc ->
+  forall st r et',
+  (exists e' st' sc', 
+    invoke_APPR' r et et' st sc = (resultC e', st', sc')) \/
+  (exists st' errStr sc', 
+    invoke_APPR' r et et' st sc = (errC (dispatch_error (Runtime errStr)), st', sc')).
+Proof.
+  intros sc.
+  induction et using (Evidence_subterm_path_Ind_special (session_context sc));
+  intros; simpl in *; cvm_monad_unfold.
+  - ff.
+  - ff; edestruct H0; ff; find_higher_order_rewrite; ff.
+  - breaker; ff;
+    try rewrite PeanoNat.Nat.eqb_eq in *; ff.
+    * 
+      match goal with
+      | H : context[ aspCb _ _ _ = _],
+        H1 : aspCb _ _ ?e = _ |- _ =>
+        let H' := fresh "H" in
+        destruct (H e) as [ H' | H' ];
+        break_exists;
+        idtac
+      end.
+      ff.
+      ff.
+      erewrite H0 in Heqr0.
+      setoid_rewrite Heqr0 in H0.
+
+    * edestruct H2; ff; find_higher_order_rewrite; ff.
+      eauto.
+
 Theorem well_formed_am_config_impl_executable : forall t p e sc,
   well_formed_context (session_context sc) ->
   session_config_supports_exec p e t sc ->
-  forall st,
+  forall st r,
   session_plc sc = p ->
-  (exists st', 
-    build_cvm e t st sc = (resultC tt, st')) \/
-  (exists st' errStr, 
-    build_cvm e t st sc = (errC (dispatch_error (Runtime errStr)), st')).
+  (exists e' st' sc', 
+    build_cvm (evc r e) t st sc = (resultC e', st', sc')) \/
+  (exists st' errStr sc', 
+    build_cvm (evc r e) t st sc = (errC (dispatch_error (Runtime errStr)), st', sc')).
 Proof.
   induction t; simpl in *; intuition; eauto.
   - destruct a;
@@ -351,9 +415,15 @@ Proof.
           intuition; find_rewrite; find_injection; eauto *)
         ]
     end); fail).
-    destruct st, st_ev; simpl in *;
+    * pose proof (H0 a1 p t r); ff.
+    * pose proof (H0 r); ff.
+    * pose proof (H0 r); ff.
+    * 
     generalizeEverythingElse e.
-    induction e; simpl in *; intuition; eauto; ffa using cvm_monad_unfold;
+    intros sc.
+    induction e using (Evidence_subterm_path_Ind_special (session_context sc));
+    simpl in *; intuition; eauto; ffa using cvm_monad_unfold;
+    simpl in *.
     try (invc H3; intuition; repeat find_rewrite;
     repeat find_injection; ff; unfold check_nonce_params in *;
     try (match goal with
@@ -1217,8 +1287,8 @@ Theorem manifest_generator_compiler_soundness_distributed : forall t tp p absMan
   map_get (manifest_generator t tp) p = Some absMan ->
   well_formed_manifest absMan ->
   manifest_support_session_conf absMan sc ->
-  att_sess_supports_term att_sesplit_evt t ->
-  session_config_compiler (mkAM_Man_Conf absMan aspBin uuid) att_sesplit_evt = sc ->
+  att_sess_supports_term att_sess t ->
+  session_config_compiler (mkAM_Man_Conf absMan aspBin uuid) att_sess = sc ->
   forall st,
     session_config_subset sc (st.(st_config)) ->  
     (  forall t', 
@@ -1821,7 +1891,7 @@ Qed.
 Global Hint Resolve mapD_get_subset : core.
 *)
 (* 
-Lemma supports_am_mancomp_subset: forall m m' att_sesplit_evt aspBin uuid sc,
+Lemma supports_am_mancomp_subset: forall m m' att_sess aspBin uuid sc,
   session_config_subset 
     (session_config_compiler (mkAM_Man_Conf m aspBin uuid) att_sess) sc -> 
   manifest_subset m' m ->
@@ -1886,7 +1956,7 @@ Proof.
 Qed.
 Global Hint Resolve end_to_end_mangen_supports_all : core.
 
-Theorem manifest_generator_compiler_soundness_distributed_multiterm' : forall t ts ls tp p absMan aspBin cm sc att_sesplit_evt uuid,
+Theorem manifest_generator_compiler_soundness_distributed_multiterm' : forall t ts ls tp p absMan aspBin cm sc att_sess uuid,
 forall env,
   end_to_end_mangen cm ls ts = resultC env ->
   map_get p env = Some absMan ->
@@ -1894,8 +1964,8 @@ forall env,
   (* In p (places tp t) -> *)
   well_formed_manifest absMan ->
   manifest_support_session_conf absMan sc ->
-  att_sess_supports_term att_sesplit_evt t ->
-  session_config_compiler (mkAM_Man_Conf absMan aspBin uuid) att_sesplit_evt = sc ->
+  att_sess_supports_term att_sess t ->
+  session_config_compiler (mkAM_Man_Conf absMan aspBin uuid) att_sess = sc ->
   forall st,
 
     session_config_subset sc (st.(st_config)) ->  
@@ -2091,7 +2161,7 @@ Theorem manifest_generator_compiler_soundness_distributed_multiterm
     (* Note, this should be trivial typically as amConf = st.(st_config) and refl works *)
     supports_am amConf (st.(st_config)) ->  
     *)
-  (forall t' att_sesplit_evt aspBin uuid conf ev,
+  (forall t' att_sess aspBin uuid conf ev,
     In t' (place_terms t tp p) -> 
     conf = (mkAM_Man_Conf absMan aspBin uuid) ->
     (exists st',

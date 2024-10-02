@@ -561,7 +561,7 @@ Proof.
   - ff.
   - result_monad_unfold;
     target_break_match H1; simpl in *; eauto; ffa;
-    rewrite length_app in *; simpl in *; f_equal; lia.
+    rewrite app_length in *; simpl in *; f_equal; lia.
   - result_monad_unfold; target_break_match H1; simpl in *; eauto; ff.
     * ateb_diff.
     * ateb_same; ffa.
@@ -573,7 +573,7 @@ Proof.
     * ateb_diff.
     * ateb_same; ffa.
   - result_monad_unfold; target_break_match H; simpl in *; eauto; ffa;
-    simpl in *; repeat rewrite length_app in *; simpl in *; f_equal; lia.
+    simpl in *; repeat rewrite app_length in *; simpl in *; f_equal; lia.
 Qed.
 
 Definition appr_events (G : GlobalContext) (p : Plc) (e : EvidenceT) (i : nat) 
@@ -646,7 +646,7 @@ Qed.
 Ltac solve_true_last_app :=
   repeat (find_eapply_lem_hyp true_last_app_spec; try (break_or_hyp; 
     [ ff; find_eapply_lem_hyp app_eq_nil; ff | ff ]));
-  repeat rewrite length_app in *; ff; try lia.
+  repeat rewrite app_length in *; ff; try lia.
 
 Ltac solve_true_last_none :=
   find_eapply_lem_hyp true_last_none_iff_nil; 

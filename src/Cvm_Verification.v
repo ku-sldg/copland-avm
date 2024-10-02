@@ -1074,7 +1074,7 @@ Lemma wf_Evidence_split : forall G r1 r2 et1 et2,
   wf_Evidence G (evc (r1 ++ r2) (split_evt et1 et2)).
 Proof.
   intros; invc H; invc H0; econstructor; ff;
-  rewrite length_app; ff.
+  rewrite app_length; ff.
 Qed.
 Local Hint Resolve wf_Evidence_split : wf_Evidence.
 
@@ -1197,16 +1197,16 @@ Proof.
   - ff; repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
     econstructor; simpl in *; ff;
     invc H0; simpl in *; ff;
-    rewrite length_app; ff.
+    rewrite app_length; ff.
   - ff; repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
     econstructor; simpl in *; ff;
     invc H0; simpl in *; ff;
-    rewrite length_app; ff.
+    rewrite app_length; ff.
   - ff; repeat rewrite PeanoNat.Nat.eqb_eq in *; ff.
     * econstructor; ff.
     * econstructor; ff.
-    * econstructor; ff; repeat rewrite length_app in *; ff; invc H2; ff.
-    * econstructor; ff; repeat rewrite length_app in *; ff; invc H2; ff;
+    * econstructor; ff; repeat rewrite app_length in *; ff; invc H2; ff.
+    * econstructor; ff; repeat rewrite app_length in *; ff; invc H2; ff;
       result_monad_unfold; ff.
       ** destruct e; simpl in *; ff.
       ** repeat find_eapply_lem_hyp apply_to_evidence_below_nil; ffa;
@@ -1217,8 +1217,8 @@ Proof.
   - ff; repeat rewrite PeanoNat.Nat.eqb_eq in *; ff.
     * econstructor; ff.
     * econstructor; ff.
-    * econstructor; ff; repeat rewrite length_app in *; ff; invc H2; ff.
-    * econstructor; ff; repeat rewrite length_app in *; ff; invc H2; ff;
+    * econstructor; ff; repeat rewrite app_length in *; ff; invc H2; ff.
+    * econstructor; ff; repeat rewrite app_length in *; ff; invc H2; ff;
       result_monad_unfold; ff.
       ** destruct e; simpl in *; ff.
       ** repeat find_eapply_lem_hyp apply_to_evidence_below_nil; ffa;
@@ -1230,7 +1230,7 @@ Proof.
 
     econstructor; simpl in *; ff;
     invc H0; simpl in *; ff;
-    rewrite length_app; ff.
+    rewrite app_length; ff.
   - 
     * econstructor; simpl in *; ff.
   - invc H0; simpl in *.
@@ -1246,7 +1246,7 @@ Proof.
   induction H; cvm_monad_unfold; ff;
   econstructor; ff;
   rewrite PeanoNat.Nat.eqb_eq in *; ff;
-  try rewrite length_app in *; ff.
+  try rewrite app_length in *; ff.
 
   result_monad_unfold; ffa.
   - ateb_diff.
@@ -1276,7 +1276,7 @@ Proof.
   - ff; cvm_monad_unfold; ff.
   - ff; cvm_monad_unfold; ff. 
   (* rewrite PeanoNat.Nat.eqb_eq in *; ff;
-    econstructor; ff; result_monad_unfold; repeat rewrite length_app; ff;
+    econstructor; ff; result_monad_unfold; repeat rewrite app_length; ff;
     invc H1; ff;
     repeat find_reverse_rewrite; ff. *)
   - simpl in *; result_monad_unfold.
@@ -1325,29 +1325,29 @@ Proof.
     rewrite PeanoNat.Nat.eqb_eq in *; ff;
     repeat match goal with
     | H : wf_Evidence _ _ |- _ => invc H; ff
-    end; try (econstructor; ff; repeat rewrite length_app; ff;
+    end; try (econstructor; ff; repeat rewrite app_length; ff;
     result_monad_unfold; ff; try ateb_diff; fail).
 
   - simpl in *; result_monad_unfold; cvm_monad_unfold; ff;
     rewrite PeanoNat.Nat.eqb_eq in *; ff.
     all: try (repeat match goal with
       | H : wf_Evidence _ _ |- _ => invc H; ff
-      end; econstructor; ff; result_monad_unfold; repeat rewrite length_app in *; ff; fail).
+      end; econstructor; ff; result_monad_unfold; repeat rewrite app_length in *; ff; fail).
     all: try (result_monad_unfold; ff; eapply IHet in H1; eauto; econstructor; 
-      repeat rewrite length_app in *; ff;
+      repeat rewrite app_length in *; ff;
       repeat match goal with
       | H : wf_Evidence _ _ |- _ => invc H; ff
       end; fail).
     all: try (find_eapply_lem_hyp peel_n_rawev_result_spec; ff);
       result_monad_unfold;
       try (find_eapply_lem_hyp IHet; ff);
-      econstructor; repeat rewrite length_app in *; ff;
+      econstructor; repeat rewrite app_length in *; ff;
       result_monad_unfold; ff;
       repeat match goal with
       | H : wf_Evidence _ _ |- _ => invc H; 
         result_monad_unfold; ff
       end; result_monad_unfold; ff;
-      repeat rewrite length_app in *; ff;
+      repeat rewrite app_length in *; ff;
       f_equal; try lia.
   - repeat cvm_monad_unfold; ff.
     ateb_unpack Heqr0; ff.
@@ -1382,26 +1382,26 @@ Proof.
     eapply invoke_APPR_config_immut in Heqp2 as ?; ff.
     eapply IHet1 in Heqp1; try reflexivity.
     * eapply IHet2 in Heqp2; try reflexivity;
-      econstructor; repeat rewrite length_app in *; ff;
+      econstructor; repeat rewrite app_length in *; ff;
       result_monad_unfold; ff;
       repeat match goal with
       | H : wf_Evidence _ _ |- _ => invc H; ff
       end; result_monad_unfold; ff;
-      repeat rewrite length_app in *; ff;
+      repeat rewrite app_length in *; ff;
       repeat find_eapply_lem_hyp equiv_EvidenceT_impl_et_size_same; ff.
-    * econstructor; repeat rewrite length_app in *; ff;
+    * econstructor; repeat rewrite app_length in *; ff;
       result_monad_unfold; ff;
       repeat match goal with
       | H : wf_Evidence _ _ |- _ => invc H; ff
       end; result_monad_unfold; ff;
-      repeat rewrite length_app in *; ff;
+      repeat rewrite app_length in *; ff;
       repeat find_eapply_lem_hyp equiv_EvidenceT_impl_et_size_same; ff.
-    * econstructor; repeat rewrite length_app in *; ff;
+    * econstructor; repeat rewrite app_length in *; ff;
       result_monad_unfold; ff;
       repeat match goal with
       | H : wf_Evidence _ _ |- _ => invc H; ff
       end; result_monad_unfold; ff;
-      repeat rewrite length_app in *; ff;
+      repeat rewrite app_length in *; ff;
       repeat find_eapply_lem_hyp equiv_EvidenceT_impl_et_size_same; ff. 
 Qed.
 
@@ -1426,7 +1426,7 @@ Proof.
       repeat find_rewrite;
       repeat find_injection;
       result_monad_unfold; ff;
-      repeat rewrite length_app;
+      repeat rewrite app_length;
       f_equal; lia).
     eapply wf_Evidence_invoke_APPR; eauto; destruct e; ff.
   - ff;
