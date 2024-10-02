@@ -12,6 +12,8 @@ Definition P4 : Plc := "P4".
 
 (* ASP IDs *)
 Definition attest_id : ASP_ID := "attest_id".
+Definition attest1_id : ASP_ID := "attest1_id".
+Definition attest2_id : ASP_ID := "attest2_id".
 Definition appraise_id : ASP_ID := "appraise_id".
 Definition certificate_id : ASP_ID := "certificate_id".
 Definition hashfile_id : ASP_ID := "hashfile_id".

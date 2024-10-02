@@ -65,11 +65,20 @@ Definition filehash_auth_phrase : Term :=
       (asp SIG) 
     ).
 
+Definition split_phrase : Term :=
+  att P1 ( 
+    bseq (ALL, ALL)
+      (asp (ASPC (asp_paramsC attest1_id [] P1 sys_targ)))
+      (asp (ASPC (asp_paramsC attest2_id [] P1 sys_targ)))
+    ).
+
 Open Scope string_scope.
 Definition flexible_mechanisms_map := 
   [("cert", certificate_style); 
    ("cert_appr", lseq certificate_style (asp APPR)); 
    ("bg", background_check); 
+   ("split", split_phrase);
+   ("split_appr", lseq split_phrase (asp APPR));
    ("parmut", parallel_mutual_1); 
    ("parmut2", parallel_mutual_2); 
    ("layered_bg", layered_background_check); 
