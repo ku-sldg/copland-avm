@@ -4,11 +4,11 @@
 
 Require Import Manifest Manifest_Generator
   Maps Term_Defs Cvm_Impl Cvm_Axioms
-  Cvm_Monad Defs AM_Manager EqClass.
+  Cvm_Monad AM_Manager EqClass.
 Require Import Manifest_Generator_Facts Attestation_Session.
 
 Require Import Manifest_Generator_Helpers Session_Config_Compiler ManCompSoundness_Helpers Manifest_Generator_Union.
-Require Import Helpers_CvmSemantics Coq.Program.Tactics StructTactics.
+Require Import Coq.Program.Tactics StructTactics.
 
 Import ListNotations.
 
@@ -19,21 +19,21 @@ Definition session_config_subset (sc1 sc2 : Session_Config) : Prop :=
       sc1.(aspCb) (asp_paramsC aid l targ targid) ev = resultC res ->
       sc2.(aspCb) (asp_paramsC aid l targ targid) ev = resultC res)) /\
   (forall p, (forall res, 
-      map_get (sc1.(plc_map)) p = Some res ->
-      map_get (sc2.(plc_map)) p = Some res)) /\
+      map_get p (sc1.(plc_map)) = Some res ->
+      map_get p (sc2.(plc_map)) = Some res)) /\
   (forall p, (forall res, 
-      map_get (sc1.(pubkey_map)) p = Some res ->
-      map_get (sc2.(pubkey_map)) p = Some res)) /\
+      map_get p (sc1.(pubkey_map)) = Some res ->
+      map_get p (sc2.(pubkey_map)) = Some res)) /\
   (forall aid l targ targid ev errStr,
       sc1.(aspCb) (asp_paramsC aid l targ targid) ev = errC (Runtime errStr) ->
       sc2.(aspCb) (asp_paramsC aid l targ targid) ev = errC (Runtime errStr)) 
   /\
   (forall p,
-      map_get (sc1.(plc_map)) p = None ->
-      map_get (sc2.(plc_map)) p = None) /\
+      map_get p (sc1.(plc_map)) = None ->
+      map_get p (sc2.(plc_map)) = None) /\
   (forall p, 
-      map_get (sc1.(pubkey_map)) p = None ->
-      map_get (sc2.(pubkey_map)) p = None).
+      map_get p (sc1.(pubkey_map)) = None ->
+      map_get p (sc2.(pubkey_map)) = None).
 
 Theorem session_config_subset_refl : forall sc1,
   session_config_subset sc1 sc1.
@@ -49,6 +49,8 @@ Proof.
   unfold session_config_subset; intuition; ff.
 Qed.
 
+Import ResultNotation.
+
 Fixpoint session_config_support_exec_appr (p : Plc) (e : EvidenceT) 
     (sc : Session_Config) : Prop :=
   match e with
@@ -60,13 +62,23 @@ Fixpoint session_config_support_exec_appr (p : Plc) (e : EvidenceT)
     (exists errStr, sc.(aspCb) check_nonce_params ev = errC (Runtime errStr)))
   | asp_evt p' par e' =>
     let '(asp_paramsC aspid l targ targid) := par in
-    match (map_get (asp_comps sc.(session_context)) aspid) with
+    match (map_get aspid (asp_comps sc.(session_context))) with
     | None => False
     | Some appr_aspid =>
       forall l targ targid ev,
       ((exists res, 
       sc.(aspCb) (asp_paramsC appr_aspid l targ targid) ev = resultC res) \/ 
       (exists errStr, sc.(aspCb) (asp_paramsC appr_aspid l targ targid) ev = errC (Runtime errStr)))
+    end
+  | left_evt e' => 
+    match apply_to_evidence_below (session_context sc) (fun e' => session_config_support_exec_appr p e' sc) [Trail_LEFT] e' with
+    | resultC P => P
+    | errC _ => False
+    end
+  | right_evt e' => 
+    match apply_to_evidence_below (session_context sc) (fun e' => session_config_support_exec_appr p e' sc) [Trail_RIGHT] e' with
+    | resultC P => P
+    | errC _ => False
     end
   | split_evt e1 e2 =>
     (session_config_support_exec_appr p e1 sc) /\
@@ -79,7 +91,6 @@ Fixpoint session_config_supports_exec (p : Plc) (e : EvidenceT) (t : Term)
   | asp a =>
       match a with
       | NULL => True
-      | CPY => True
       | SIG => 
           forall ev,
           ((exists res, 
@@ -96,8 +107,8 @@ Fixpoint session_config_supports_exec (p : Plc) (e : EvidenceT) (t : Term)
           sc.(aspCb) (enc_params p) ev = resultC res) \/ 
           (exists errStr, sc.(aspCb) (enc_params p) ev = errC (Runtime errStr)))) /\
           ((exists res, 
-            map_get (sc.(pubkey_map)) p = Some res))
-      | ASPC _ (asp_paramsC aspid _ _ _) =>
+            map_get p (sc.(pubkey_map)) = Some res))
+      | ASPC (asp_paramsC aspid _ _ _) =>
           (forall l targ targid ev,
           ((exists res, 
           sc.(aspCb) (asp_paramsC aspid l targ targid) ev = resultC res) \/ 
@@ -106,7 +117,7 @@ Fixpoint session_config_supports_exec (p : Plc) (e : EvidenceT) (t : Term)
       end
   | att p' t' => 
       (* We only care that we can dispatch it *)
-      ((exists res, map_get (sc.(plc_map)) p' = Some res))
+      ((exists res, map_get p' (sc.(plc_map)) = Some res))
   | lseq t1 t2 =>
       exists sc1 sc2 e',
       (session_config_supports_exec p e t1 sc1) /\
@@ -148,7 +159,6 @@ Proof.
   induction m; simpl in *; eauto.
   eapply manadd_In_add.
 Qed.
-
 Global Hint Resolve man_gen_aspid_in : core.
 
 
@@ -216,7 +226,7 @@ Global Hint Resolve filter_resolver : core.
 Ltac kill_map_none :=
   match goal with
   | H1 : In_set ?x ?l,
-    H3 : map_get ?l' ?x = None,
+    H3 : map_get ?x ?l' = None,
     H4 : forall _ : _, In_set _ ?l -> _
       |- _ => 
     let H' := fresh "H'" in
@@ -228,22 +238,8 @@ Ltac kill_map_none :=
 
 Local Hint Resolve session_config_subset_refl : core.
 Local Hint Resolve session_config_subset_trans : core.
-Require Import Appraisal_Evidence.
 
-Lemma peel_n_rawev_fail_runtime : forall n ls st r st',
-  peel_n_rawev n ls st = (errC r, st') ->
-  exists errStr, r = dispatch_error (Runtime errStr).
-Proof.
-  induction n; simpl in *; intuition; ffa using cvm_monad_unfold; eauto.
-Qed.
-
-Lemma split_evidence_fail_runtime : forall rev et1 et2 st r st',
-  split_evidence rev et1 et2 st = (errC r, st') ->
-  exists errStr, r = dispatch_error (Runtime errStr).
-Proof.
-  intros; unfold split_evidence in *; cvm_monad_unfold; ff;
-  find_eapply_lem_hyp peel_n_rawev_fail_runtime; eauto.
-Qed.
+Require Import Cvm_Verification.
 
 Lemma well_formed_context_subset : forall sc1 sc2,
   session_config_subset sc1 sc2 ->
@@ -254,26 +250,66 @@ Proof.
 Qed.
 Local Hint Resolve well_formed_context_subset : core.
 
+Lemma session_config_supports_exec_appr_subset : forall sc1 sc2,
+  session_config_subset sc1 sc2 ->
+  forall p e,
+  session_config_support_exec_appr p e sc1 ->
+  session_config_support_exec_appr p e sc2.
+Proof.
+  intros.
+  generalizeEverythingElse e.
+  intros sc1.
+  induction e using (Evidence_subterm_path_Ind_special (session_context sc1));
+  simpl in *; intuition; ff;
+  repeat unfold session_config_subset, check_nonce_params, hsh_params, sig_params, enc_params in *; intuition; ff.
+  all: try (match goal with
+    | H : context[ aspCb _ _ _ = _] |- context[aspCb _ (asp_paramsC ?a ?l ?t ?tid) ?ev = _] =>
+      pose proof (H l t tid ev); ff
+    end; fail).
+  all: try (match goal with
+    | H : context[ aspCb _ _ _ = _] |- context[aspCb _ (asp_paramsC ?a ?l ?t ?tid) ?ev = _] =>
+      pose proof (H ev); ff
+    end; fail).
+  - ateb_diff.
+  - ateb_same; ffa; eapply H in H1; ff; intuition.
+  - ateb_diff. 
+  - ateb_same; ffa; eapply H in H1; ff; intuition.
+Qed.
+
 Lemma session_config_supports_exec_subset : forall sc1 sc2,
   session_config_subset sc1 sc2 ->
   forall t p e,
   session_config_supports_exec p e t sc1 ->
   session_config_supports_exec p e t sc2.
 Proof.
-  induction t; ff.
-Admitted. 
+  induction t; ffa; try (unfold session_config_subset in *; ff;
+  try unfold hsh_params, sig_params, enc_params in *; intuition; ffa;
+    try (match goal with
+    | H : context[ aspCb _ _ _ = _] |- context[aspCb _ (asp_paramsC ?a ?l ?t ?tid) ?ev = _] =>
+      pose proof (H l t tid ev); ff
+    end; fail);
+    try (match goal with
+    | H : context[ aspCb _ _ _ = _] |- context[aspCb _ (asp_paramsC ?a ?l ?t ?tid) ?ev = _] =>
+      pose proof (H ev); ff
+    end; fail); fail).
+  - eapply session_config_supports_exec_appr_subset; ff.
+  - exists x, x0, x1; intuition.
+    * invc H; ff.
+    * eapply session_config_subset_trans; ff.
+    * eapply session_config_subset_trans; ff.
+  - exists x, x0; intuition; eapply session_config_subset_trans; ff.
+  - exists x, x0; intuition; eapply session_config_subset_trans; ff.
+Qed.
 
 Theorem well_formed_am_config_impl_executable : forall t p e sc,
   well_formed_context (session_context sc) ->
   session_config_supports_exec p e t sc ->
   forall st,
-  session_plc (st_config st) = p ->
-  get_et (st_ev st) = e ->
-  session_config_subset sc (st.(st_config)) ->
+  session_plc sc = p ->
   (exists st', 
-    build_cvm t st = (resultC tt, st')) \/
+    build_cvm e t st sc = (resultC tt, st')) \/
   (exists st' errStr, 
-    build_cvm t st = (errC (dispatch_error (Runtime errStr)), st')).
+    build_cvm e t st sc = (errC (dispatch_error (Runtime errStr)), st')).
 Proof.
   induction t; simpl in *; intuition; eauto.
   - destruct a;
@@ -437,7 +473,7 @@ Definition manifest_support_session_conf (m : Manifest) (sc : Session_Config)
     (exists res, sc.(aspCb) (asp_paramsC a l targ targid) ev = resultC res) \/
     (exists errStr, sc.(aspCb) (asp_paramsC a l targ targid) ev = errC (Runtime errStr))) /\
   (forall a, In_set a (m.(asps)) -> 
-    exists loc, map_get (m.(ASP_Mapping)) a = Some loc).
+    exists loc, map_get a (m.(ASP_Mapping)) = Some loc).
 
 Fixpoint att_sess_supports_term (ats : Attestation_Session) (t : Term) 
     : Prop :=
@@ -445,11 +481,11 @@ Fixpoint att_sess_supports_term (ats : Attestation_Session) (t : Term)
   | asp a =>
       match a with
       | ENC p => 
-        exists v, map_get (ats.(PubKey_Mapping)) p = Some v
+        exists v, map_get p (ats.(PubKey_Mapping)) = Some v
       | _ => True
       end
   | att p' t' => 
-      exists v, map_get (ats.(Plc_Mapping)) p' = Some v /\
+      exists v, map_get p' (ats.(Plc_Mapping)) = Some v /\
       att_sess_supports_term ats t'
   | lseq t1 t2 =>
       att_sess_supports_term ats t1 /\
@@ -464,7 +500,7 @@ Fixpoint att_sess_supports_term (ats : Attestation_Session) (t : Term)
 
 Definition well_formed_manifest (m : Manifest) : Prop :=
   (forall a, In_set a (m.(asps)) -> 
-    (exists v, map_get (m.(ASP_Mapping)) a = Some v)).
+    (exists v, map_get a (m.(ASP_Mapping)) = Some v)).
 
 Fixpoint manifest_support_appr (m : Manifest) (e : EvidenceT) : Prop :=
   match e with
@@ -602,8 +638,8 @@ Qed.
 Lemma has_manifest_env_places_env_has_manifest' : forall G t p e env env',
   manifest_generator' G p e t env = resultC env' ->
   forall p' m,
-    map_get env p' = Some m ->
-    exists m', map_get env' p' = Some m'.
+    map_get p' env = Some m ->
+    exists m', map_get p' env' = Some m'.
 Proof.
   induction t; ff.
   - unfold manifest_update_env_res, asp_manifest_update, 
@@ -620,7 +656,7 @@ Lemma has_manifest_env_places_env_has_manifest' : forall G t p e env env',
   manifest_generator' G p e t env = resultC env' ->
   (forall p' e' t',
     In (p', e', t') (plc_ev_term_subterms G p e t) ->
-    exists m', map_get env' p' = Some m'
+    exists m', map_get p' env' = Some m'
   ).
 Proof.
   induction t; ff.
@@ -634,8 +670,8 @@ Proof.
     unfold asp
 
 
-  map_get env' p = Some m ->
-  (exists m', map_get env p = Some m') \/ 
+  map_get p env' = Some m ->
+  (exists m', map_get p env = Some m') \/ 
   In p (places tp t).
 Proof.
   induction t; intros.
@@ -651,19 +687,19 @@ Proof.
     (* find_apply_hyp_hyp; intuition. *)
   - (* lseq case *)
     ff; result_monad_unfold; ff.
-    destruct (map_get e0 p) eqn:E.
+    destruct (map_get p) e0 eqn:E.
     * eapply IHt1 in Heqr; ff; 
       pose proof places'_cumul; ff.
     * eapply IHt2 in H; ff;
       pose proof places_app_cumul; ff.
   - ff; result_monad_unfold; ff.
-    destruct (map_get e0 p) eqn:E.
+    destruct (map_get p) e0 eqn:E.
     * eapply IHt1 in Heqr; ff; 
       pose proof places'_cumul; ff.
     * eapply IHt2 in H; ff;
       pose proof places_app_cumul; ff.
   - ff; result_monad_unfold; ff.
-    destruct (map_get e0 p) eqn:E.
+    destruct (map_get p) e0 eqn:E.
     * eapply IHt1 in Heqr; ff; 
       pose proof places'_cumul; ff.
     * eapply IHt2 in H; ff;
@@ -672,7 +708,7 @@ Qed.
 
 Lemma has_manifest_env_places_env_has_manifest : forall G t p tp m env',
   manifest_generator G tp t = resultC env' ->
-  map_get env' p = Some m ->
+  map_get p env' = Some m ->
   In p (places tp t).
 Proof.
   intros.
@@ -686,7 +722,7 @@ Lemma places_env_has_manifest : forall t p tp e,
   forall G env env',
   manifest_generator' G tp e t env = resultC env' ->
   exists m, 
-    map_get env' p = Some m.
+    map_get p env' = Some m.
 Proof.
   intros.
   generalizeEverythingElse t.
@@ -797,8 +833,8 @@ Qed.
 
 Lemma env_subset_man_subset : forall e1 e2 p m m',
   Environment_subset e1 e2 -> 
-  map_get e1 p = Some m -> 
-  map_get e2 p = Some m' -> 
+  map_get p e1 = Some m -> 
+  map_get p e2 = Some m' -> 
   manifest_subset m m'.
 Proof.
   unfold Environment_subset in *; ff;
@@ -813,7 +849,7 @@ Theorem man_gen_old_always_supports : forall G t t' tp p e env env' absMan,
     In (p', e', t') (plc_ev_term_subterms G p e t) ->
 
   )
-  map_get env' p = Some absMan ->
+  map_get p env' = Some absMan ->
   (* NOTE: Big issue here, it only holds for the EVIDENCE that it 
   should be receiving! *)
   In p (places tp t) ->
@@ -1210,7 +1246,7 @@ Qed.
 Close Scope cop_ent_scope.
 
 Lemma map_get_some_impl_in : forall (A B : Type) `{EqClass A} (m : Maps.Map A B) p v,
-  map_get m p = Some v -> 
+  map_get p m = Some v -> 
   In p (map fst m).
 Proof.
   induction m; simpl in *; intuition; try congruence;
@@ -1244,9 +1280,9 @@ Lemma manifest_env_union_all_cases : forall env env' p m,
   NoDup (map fst env) ->
   NoDup (map fst env') ->
   map_get (Manifest_Union.environment_union env env') p = Some m ->
-  ((map_get env p = Some m) \/ (map_get env' p = Some m) \/
-  (exists m1 m2, map_get env p = Some m1 /\ 
-    map_get env' p = Some m2 /\ Manifest_Union.manifest_union_asps m2 m1 = m)).
+  ((map_get p env = Some m) \/ (map_get p env' = Some m) \/
+  (exists m1 m2, map_get p env = Some m1 /\ 
+    map_get p env' = Some m2 /\ Manifest_Union.manifest_union_asps m2 m1 = m)).
 Proof.
   induction env; simpl in *; intuition; eauto;
   try congruence.
@@ -1276,8 +1312,8 @@ Qed.
 
 Lemma manifest_env_union_works : forall env env' p m,
   map_get (Manifest_Union.environment_union env env') p = Some m ->
-  (exists m', map_get env p = Some m' /\ manifest_subset m' m) \/
-  (exists m', map_get env' p = Some m' /\ manifest_subset m' m).
+  (exists m', map_get p env = Some m' /\ manifest_subset m' m) \/
+  (exists m', map_get p env' = Some m' /\ manifest_subset m' m).
 Proof.
   induction env; simpl in *; intuition; eauto;
   try congruence.
@@ -1298,7 +1334,7 @@ Proof.
 Qed.
 
 Lemma man_env_union_not_none_fwd : forall env env' p,
-  (map_get env p <> None \/ map_get env' p <> None) ->
+  (map_get p env <> None \/ map_get p env' <> None) ->
   map_get (Manifest_Union.environment_union env env') p <> None.
 Proof.
   induction env; destruct env'; simpl in *; intuition; eauto.
@@ -1340,7 +1376,7 @@ Global Hint Resolve man_env_union_not_none_fwd : core.
 
 Lemma man_env_union_not_none_rev : forall env env' p,
   map_get (Manifest_Union.environment_union env env') p <> None ->
-  (map_get env p <> None \/ map_get env' p <> None).
+  (map_get p env <> None \/ map_get p env' <> None).
 Proof.
   induction env; destruct env'; simpl in *; intuition; eauto.
   - destruct (String.eqb a0 p) eqn:E; simpl in *; intuition; eauto;
@@ -1377,7 +1413,7 @@ Global Hint Resolve man_env_union_not_none_rev : core.
 
 Lemma man_env_union_not_none : forall env env' p,
   map_get (Manifest_Union.environment_union env env') p <> None <->
-  (map_get env p <> None \/ map_get env' p <> None).
+  (map_get p env <> None \/ map_get p env' <> None).
 Proof.
   split; eauto.
 Qed.
@@ -1385,8 +1421,8 @@ Global Hint Resolve man_env_union_not_none : core.
 
 Lemma manifest_env_union_always_subset : forall env env' p m,
   map_get (Manifest_Union.environment_union env env') p = Some m ->
-  (forall m', map_get env p = Some m' -> manifest_subset m' m) /\
-  (forall m', map_get env' p = Some m' -> manifest_subset m' m).
+  (forall m', map_get p env = Some m' -> manifest_subset m' m) /\
+  (forall m', map_get p env' = Some m' -> manifest_subset m' m).
 Proof.
   induction env; simpl in *; intuition; eauto; try congruence.
   (* - find_rewrite; find_injection; eapply manifest_subset_refl. *)
@@ -1432,8 +1468,8 @@ Global Hint Resolve manifest_env_union_always_subset : core.
 
 Lemma manifest_env_union_map_one_fwd : forall env env' p m,
   map_get (Manifest_Union.environment_union env env') p = Some m ->
-  (exists m', (map_get env p = Some m' \/
-  map_get env' p = Some m')).
+  (exists m', (map_get p env = Some m' \/
+  map_get p env' = Some m')).
 Proof.
   induction env; simpl in *; intuition; eauto;
   destruct (String.eqb a0 p) eqn:E; simpl in *; intuition; eauto.
@@ -1449,8 +1485,8 @@ Global Hint Resolve manifest_env_union_map_one_fwd : core.
 
 Lemma manifest_env_union_map_one : forall env env' p,
   (exists m, map_get (Manifest_Union.environment_union env env') p = Some m) <->
-  (exists m', (map_get env p = Some m' \/
-  map_get env' p = Some m')).
+  (exists m', (map_get p env = Some m' \/
+  map_get p env' = Some m')).
 Proof.
   intuition;
   pose proof (man_env_union_not_none env env' p);
@@ -1489,7 +1525,7 @@ Qed. *)
 Global Hint Resolve manifest_env_union_map_one : core.
 
 Lemma manifest_part_of_fold_impl_fold : forall env_start p m',
-  map_get env_start p = Some m' ->
+  map_get p env_start = Some m' ->
   (forall envs, 
     exists m,
     map_get (fold_right Manifest_Union.environment_union env_start envs) p = Some m /\
@@ -1511,7 +1547,7 @@ Global Hint Resolve manifest_part_of_fold_impl_fold : core.
 
 Lemma manifest_part_of_fold_ind_impl_fold : forall envs env p m',
   In env envs ->
-  map_get env p = Some m' ->
+  map_get p env = Some m' ->
   (forall env_start, 
     exists m,
     map_get (fold_right Manifest_Union.environment_union env_start envs) p = Some m /\
@@ -1521,7 +1557,7 @@ Proof.
   induction envs; intros; eauto with *; simpl in *; eauto; intuition;
   subst; eauto.
   - pose proof (manifest_env_union_map_one env (fold_right Manifest_Union.environment_union env_start envs) p). 
-    assert ((exists m' : Manifest, map_get env p = Some m' \/ map_get (fold_right Manifest_Union.environment_union env_start envs) p = Some m')) by (rewrite H0; eauto).
+    assert ((exists m' : Manifest, map_get p env = Some m' \/ map_get (fold_right Manifest_Union.environment_union env_start envs) p = Some m')) by (rewrite H0; eauto).
     rewrite <- H in H1.
     break_exists.
     eapply manifest_env_union_always_subset in H1 as H'';
@@ -1531,7 +1567,7 @@ Proof.
   - pose proof (IHenvs _ _ _ H1 H0 env_start).
     break_exists; intuition; eauto.
     pose proof (manifest_env_union_map_one a (fold_right Manifest_Union.environment_union env_start envs) p).
-    assert ((exists m' : Manifest, map_get a p = Some m' \/ map_get (fold_right Manifest_Union.environment_union env_start envs) p = Some m')) by (rewrite H2; eauto).
+    assert ((exists m' : Manifest, map_get p a = Some m' \/ map_get (fold_right Manifest_Union.environment_union env_start envs) p = Some m')) by (rewrite H2; eauto).
     rewrite <- H in H4.
     break_exists.
     eapply manifest_env_union_always_subset in H4 as H'.
@@ -1551,11 +1587,11 @@ Lemma manifest_part_of_fold_ind_impl_fold : forall env_start envs p m,
 Lemma manifest_fold_env_union_subsumes : forall envs env_start p m,
   map_get (fold_right Manifest_Union.environment_union env_start envs) p = Some m ->
   ((forall m',
-    map_get env_start p = Some m' ->
+    map_get p env_start = Some m' ->
     manifest_subset m' m) /\
   (forall env m', 
     In env envs ->
-    map_get env p = Some m' ->
+    map_get p env = Some m' ->
     manifest_subset m' m)).
 Proof.
   intuition.
@@ -1580,7 +1616,7 @@ Lemma manifest_env_list_union_subsumes : forall envs p m,
   map_get (env_list_union envs) p = Some m ->
   (forall env m', 
     In env envs ->
-    map_get env p = Some m' ->
+    map_get p env = Some m' ->
     manifest_subset m' m).
 Proof.
   intros envs p m HM;
@@ -1652,7 +1688,7 @@ Lemma mangen_plcTerm_subset_end_to_end_mangen : forall ts t tp,
     map_get (mangen_plcTerm_list_union ts) p = Some m' ->
     forall ls cm env, 
       end_to_end_mangen cm ls ts = resultC env ->
-      map_get env p = Some m ->
+      map_get p env = Some m ->
       manifest_subset m' m
   ).
 Proof.
@@ -1670,7 +1706,7 @@ Lemma mangen_subset_end_to_end_mangen : forall ts t tp,
     map_get (manifest_generator t tp) p = Some m' ->
     forall ls cm env, 
       end_to_end_mangen cm ls ts = resultC env ->
-      map_get env p = Some m ->
+      map_get p env = Some m ->
       manifest_subset m' m
   ).
 Proof.
@@ -1695,7 +1731,7 @@ Global Hint Resolve always_a_man_gen_exists : core.
 Lemma mangen_exists_end_to_end_mangen : forall ts ls p m,
   forall cm env,
     end_to_end_mangen cm ls ts = resultC env ->
-    map_get env p = Some m ->
+    map_get p env = Some m ->
   (forall t tp,
     In (t, tp) ts ->
     In p (places tp t) ->
@@ -1830,7 +1866,7 @@ Global Hint Resolve supports_am_mancomp_subset : core. *)
 Lemma end_to_end_mangen_supports_all : forall ts ls p m,
   forall cm env,
     end_to_end_mangen cm ls ts = resultC env ->
-    map_get env p = Some m ->
+    map_get p env = Some m ->
   (forall t tp, 
     In (t, tp) ts ->
     In p (places tp t) ->
@@ -1853,7 +1889,7 @@ Global Hint Resolve end_to_end_mangen_supports_all : core.
 Theorem manifest_generator_compiler_soundness_distributed_multiterm' : forall t ts ls tp p absMan aspBin cm sc att_sesplit_evt uuid,
 forall env,
   end_to_end_mangen cm ls ts = resultC env ->
-  map_get env p = Some absMan ->
+  map_get p env = Some absMan ->
   In (t,tp) ts ->
   (* In p (places tp t) -> *)
   well_formed_manifest absMan ->

@@ -220,17 +220,20 @@ Proof.
   rewrite String.eqb_eq in *; congruence.
 Qed.
 
-Require Import Term_Defs_Core.
+Require Import Term_Defs.
 
 Lemma appr_manifest_update_cumul : forall G et m m',
   appr_manifest_update G et m = resultC m' ->
   manifest_subset m m'.
 Proof.
-  induction et using EvidenceT_double_ind; simpl in *; intuition; ff;
-  unfold aspid_manifest_update; 
-  unfold manifest_subset; intuition; 
+  intros G.
+  induction et using (Evidence_subterm_path_Ind_special G); 
+  intros; simpl in *; intuition; ff;
+  unfold aspid_manifest_update;
+  unfold manifest_subset; intuition;
   simpl in *; ff; try eapply in_set_add; eauto;
-  ffa using result_monad_unfold.
+  ffa using result_monad_unfold;
+  ateb_unpack Heqr; find_eapply_lem_hyp H; ff.
 Qed.
 
 Lemma manifest_generator_cumul : forall G t et p e1 e2 e',

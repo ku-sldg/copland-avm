@@ -29,10 +29,10 @@ Fixpoint appr_manifest_update (G : GlobalContext) (e : EvidenceT)
     | Some appr_asp_id => resultC (aspid_manifest_update appr_asp_id m)
     end
   | left_evt e' => 
-    res <- apply_to_left_evt G (fun e => appr_manifest_update G e m) e' ;;
+    res <- apply_to_evidence_below G (fun e => appr_manifest_update G e m) [Trail_LEFT] e' ;;
     res
   | right_evt e' => 
-    res <- apply_to_right_evt G (fun e => appr_manifest_update G e m) e' ;;
+    res <- apply_to_evidence_below G (fun e => appr_manifest_update G e m) [Trail_RIGHT] e' ;;
     res
   | split_evt e1 e2 => 
     m1 <- appr_manifest_update G e1 m ;;
