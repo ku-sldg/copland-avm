@@ -918,31 +918,52 @@ Proof.
   destruct e; ff; eexists; intuition; eauto.
 Qed. *)
 
-Theorem invoke_APPR'_evidence : forall et st r sc sc' st' e' e eo,
+Theorem invoke_APPR'_evidence : forall G et st r sc sc' st' e' e eo,
+  G = session_context sc ->
   invoke_APPR' r et eo st sc = (resultC e', st', sc') ->
   appr_procedure' (session_context sc) (session_plc sc) et eo = resultC e ->
   get_et e' = e.
 Proof.
-  induction et; intuition.
+  intros G.
+  induction et using (Evidence_subterm_path_Ind_special G);
+  intuition; simpl in *.
   - simpl in *; cvm_monad_unfold; ff.
   - cvm_monad_unfold; ff; cvm_monad_unfold; ff.
   - cvm_monad_unfold; ff; cvm_monad_unfold; result_monad_unfold; ff;
     cvm_monad_unfold; result_monad_unfold; ff;
     repeat rewrite PeanoNat.Nat.eqb_eq in *; ff.
-    * eapply IHet in Heqp2; ff.
-    * eapply IHet in Heqp2; ff. 
-    * eapply IHet in Heqp2; ff.
+    * find_eapply_lem_hyp IHet; ff; simpl in *; ff.
+    * find_eapply_lem_hyp IHet; ff; simpl in *; ff.
+    * find_eapply_lem_hyp IHet; ff; simpl in *; ff.
+    * find_eapply_lem_hyp IHet; ff; simpl in *; ff.
   - cvm_monad_unfold; ff; cvm_monad_unfold; result_monad_unfold; ff;
-    find_copy_eapply_lem_hyp split_evidence_res_spec; ff;
-    find_eapply_lem_hyp split_evidence_state_immut; ff;
-    repeat find_rewrite_lem eqb_EvidenceT_eq; ff;
+    cvm_monad_unfold; result_monad_unfold; ff;
+    repeat rewrite PeanoNat.Nat.eqb_eq in *; ff.
+    ateb_same.
+    find_eapply_lem_hyp H0; ff.
+  - cvm_monad_unfold; ff; cvm_monad_unfold; result_monad_unfold; ff;
+    cvm_monad_unfold; result_monad_unfold; ff;
+    repeat rewrite PeanoNat.Nat.eqb_eq in *; ff.
+  - cvm_monad_unfold; ff; cvm_monad_unfold; result_monad_unfold; ff;
+    cvm_monad_unfold; result_monad_unfold; ff;
+    repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
+    ateb_same; find_eapply_lem_hyp H; ff.
+  - cvm_monad_unfold; ff; cvm_monad_unfold; result_monad_unfold; ff;
+    cvm_monad_unfold; result_monad_unfold; ff;
+    repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
+    ateb_same; find_eapply_lem_hyp H; ff.
+  - cvm_monad_unfold; ff; cvm_monad_unfold; result_monad_unfold; ff;
+    cvm_monad_unfold; result_monad_unfold; ff;
+    repeat rewrite PeanoNat.Nat.eqb_eq in *; ffa.
+    
     repeat match goal with
-    | H : invoke_APPR' _ ?e _ _ _ = _,
-      H1 : appr_procedure' _ _ ?e _ = _,
+    | H1 : invoke_APPR' _ ?e ?o _ _ = _,
+      H2 : appr_procedure' _ _ ?e ?o = _,
       IH : context[invoke_APPR' _ ?e _ _ _ = _ -> _] |- _ =>
-      eapply invoke_APPR_config_immut in H as ?;
-      eapply IH in H; [ | eapply H1 ]; ff
-    end; ff. 
+      eapply invoke_APPR_config_immut in H1 as ?; try reflexivity;
+      eapply IH in H1; [ | | eapply H2 ]; ff
+      (* eapply IH in H1; [ | | eapply H2 ]; ff *)
+    end.
 Qed.
 
 Theorem cvm_evidence_type : forall t e e' st st' sc sc' et',
@@ -1073,7 +1094,7 @@ Proof.
   Unshelve. eapply 0.
 Qed.
 
-Lemma wf_Evidence_split_evidence : forall e et1 et2 st st' G r1 r2 sc sc',
+(* Lemma wf_Evidence_split_evidence : forall e et1 et2 st st' G r1 r2 sc sc',
   wf_Evidence G e ->
   session_context sc = G ->
   split_evidence e et1 et2 st sc = (resultC (r1, r2), st', sc') ->
@@ -1086,7 +1107,7 @@ Proof.
   econstructor; simpl in *; eauto;
   repeat find_eapply_lem_hyp peel_n_rawev_result_spec;
   intuition; ff.
-Qed.
+Qed. *)
 
 Fixpoint meta_machinery_pad_n (n : nat) (e : RawEv) : RawEv :=
   match n with
@@ -1095,7 +1116,7 @@ Fixpoint meta_machinery_pad_n (n : nat) (e : RawEv) : RawEv :=
   end.
 
 Lemma meta_machinery_pad_n_size : forall n e,
-  length (meta_machinery_pad_n n e) = n + length e.
+  List.length (meta_machinery_pad_n n e) = n + List.length e.
 Proof.
   induction n; ff.
 Qed.
@@ -1104,37 +1125,30 @@ Lemma wf_Evidence_exists : forall G e n,
   et_size G e = resultC n ->
   exists r, wf_Evidence G (evc r e).
 Proof.
-  induction e; ff.
+  intros G; induction e using (Evidence_subterm_path_Ind_special G); ff;
+  try (exists (meta_machinery_pad_n n nil); econstructor; eauto;
+    result_monad_unfold; ff; 
+    rewrite meta_machinery_pad_n_size; ff; fail).
   - eexists; eapply wf_Evidence_mt_evc. 
   - exists [passed_bs]; econstructor; eauto.
-  - result_monad_unfold; ff.
-    pose proof (IHe _ eq_refl); ff.
-    invc H.
-    destruct e0, e1, f.
-    * exists (meta_machinery_pad_n n nil); econstructor; 
-      simpl in *; ff;
-      rewrite meta_machinery_pad_n_size; ff.
-    * exists (meta_machinery_pad_n n nil); econstructor; 
-      simpl in *; ff;
-      rewrite meta_machinery_pad_n_size; ff.
-    * exists (meta_machinery_pad_n n x); econstructor; 
-      simpl in *; ff;
-      rewrite meta_machinery_pad_n_size; ff.
-  - result_monad_unfold; ff.
-    pose proof (IHe1 _ eq_refl);
-    pose proof (IHe2 _ eq_refl); ff.
-    econstructor; eapply wf_Evidence_split; ff.
 Qed.
 
-Lemma wf_Evidence_asp_unfold : forall G r p ps e,
+(* Lemma wf_Evidence_asp_unfold : forall G r p ps e,
   wf_Evidence G (evc r (asp_evt p ps e)) ->
   exists r', wf_Evidence G (evc r' e).
 Proof.
-  intros.
+  intros G.
+  induction e using (Evidence_subterm_path_Ind_special G);
+  intros; try (invc H); simpl in *; ff;
+  try (exists nil; econstructor; simpl in *; eauto; fail);
+  try (exists [passed_bs]; econstructor; simpl in *; eauto; fail).
+  - 
+  try (eexists; econstructor; ff).
   prep_induction H.
   induction H; ff; result_monad_unfold; ff.
+  eapply wf_Evidence_exists.
   eapply wf_Evidence_exists; ff.
-Qed.
+Qed. *)
 
 Lemma wf_Evidence_asp_unfold_more : forall G r p e n a a1 p0 t,
   wf_Evidence G (evc r (asp_evt p (asp_paramsC a a1 p0 t) e)) ->
@@ -1163,27 +1177,91 @@ Lemma wf_Evidence_asp_unpack : forall G r p e a0 a1 p0 t,
   forall in_sig n n',
   map_get a0 (asp_types G) = Some (ev_arrow EXTEND in_sig (OutN n)) ->
   et_size G e = resultC n' ->
-  length r = n + n'.
+  List.length r = n + n'.
 Proof.
   intros.
   prep_induction H; ff; invc H; ff.
 Qed.
 
-Lemma wf_Evidence_invoke_ASP : forall ps st e e' st' sc sc',
+(* Lemma wf_Evidence_invoke_ASP : forall G ps st e e' st' sc sc',
+  G = session_context sc ->
   wf_Evidence (session_context sc) e ->
   invoke_ASP e ps st sc = (resultC e', st', sc') ->
   wf_Evidence (session_context sc) e'.
 Proof.
+  destruct e.
+  generalizeEverythingElse e.
+  intros G.
+  induction e using (Evidence_subterm_path_Ind_special G);
+  intros; simpl in *; destruct e'; simpl in *; cvm_monad_unfold.
+  - ff; repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
+    econstructor; simpl in *; ff;
+    invc H0; simpl in *; ff;
+    rewrite length_app; ff.
+  - ff; repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
+    econstructor; simpl in *; ff;
+    invc H0; simpl in *; ff;
+    rewrite length_app; ff.
+  - ff; repeat rewrite PeanoNat.Nat.eqb_eq in *; ff.
+    * econstructor; ff.
+    * econstructor; ff.
+    * econstructor; ff; repeat rewrite length_app in *; ff; invc H2; ff.
+    * econstructor; ff; repeat rewrite length_app in *; ff; invc H2; ff;
+      result_monad_unfold; ff.
+      ** destruct e; simpl in *; ff.
+      ** repeat find_eapply_lem_hyp apply_to_evidence_below_nil; ffa;
+        unfold id in *; ff;
+        rewrite String.eqb_eq in *; ff.
+        admit.
+        admit.
+  - ff; repeat rewrite PeanoNat.Nat.eqb_eq in *; ff.
+    * econstructor; ff.
+    * econstructor; ff.
+    * econstructor; ff; repeat rewrite length_app in *; ff; invc H2; ff.
+    * econstructor; ff; repeat rewrite length_app in *; ff; invc H2; ff;
+      result_monad_unfold; ff.
+      ** destruct e; simpl in *; ff.
+      ** repeat find_eapply_lem_hyp apply_to_evidence_below_nil; ffa;
+        unfold id in *; ff;
+        rewrite String.eqb_eq in *; ff.
+        admit.
+        admit.
+  - 
+
+    econstructor; simpl in *; ff;
+    invc H0; simpl in *; ff;
+    rewrite length_app; ff.
+  - 
+    * econstructor; simpl in *; ff.
+  - invc H0; simpl in *.
+    destruct e'.
+    econstructor; cvm_monad_unfold; ff.
+    econstructor; ff.
+    eapply wf_Evidence_c.
+    econstructor.
+
+
   destruct st; simpl in *; ff.
   prep_induction H.
   induction H; cvm_monad_unfold; ff;
   econstructor; ff;
   rewrite PeanoNat.Nat.eqb_eq in *; ff;
-  rewrite length_app in *; ff.
-Qed.
+  try rewrite length_app in *; ff.
 
+  result_monad_unfold; ffa.
+  - ateb_diff.
+  - eapply apply_to_evidence_below_res_spec in Heqr2 as ?; ff.
+    ateb_same; unfold id in *; ff.
+    * eapply Evidence_Subterm_path_same in H; try eapply Hesp0; subst;
+      simpl in *; ff.
+      admit.
+    * eapply Evidence_Subterm_path_same in H; try eapply Hesp0; subst;
+      simpl in *; ff.
+    eapply apply_to_evidence_below_res_spec in Heqr0.
+Qed. *)
 
-(* Lemma et_size_invoke_APPR : forall e st e' st' n,
+(* 
+Lemma et_size_invoke_APPR : forall e st e' st' n,
   et_size (session_context (st_config st)) (get_et e) = resultC n ->
   et_size (session_context (st_config st)) (get_et (st_ev st)) = resultC n ->
   (* wf_Evidence (session_context (st_config st)) e ->
@@ -1233,19 +1311,23 @@ Proof.
     ** eauto.
 Qed. *)
 
-Lemma wf_Evidence_invoke_APPR : forall et r eo st e' st' sc sc',
+Lemma wf_Evidence_invoke_APPR : forall G et r eo st e' st' sc sc',
+  G = session_context sc ->
   wf_Evidence (session_context sc) (evc r et) ->
   wf_Evidence (session_context sc) (evc r eo) ->
   invoke_APPR' r et eo st sc = (resultC e', st', sc') ->
   wf_Evidence (session_context sc) e'.
 Proof.
-  induction et; intuition.
+  intros G.
+  induction et using (Evidence_subterm_path_Ind_special G); intuition.
   - ff; cvm_monad_unfold; ff; eapply wf_Evidence_mt_evc.
   - ff; cvm_monad_unfold; ff;
     rewrite PeanoNat.Nat.eqb_eq in *; ff;
     repeat match goal with
     | H : wf_Evidence _ _ |- _ => invc H; ff
-    end; econstructor; ff; rewrite length_app; ff.
+    end; try (econstructor; ff; repeat rewrite length_app; ff;
+    result_monad_unfold; ff; try ateb_diff; fail).
+
   - simpl in *; result_monad_unfold; cvm_monad_unfold; ff;
     rewrite PeanoNat.Nat.eqb_eq in *; ff.
     all: try (repeat match goal with
@@ -1256,79 +1338,71 @@ Proof.
       repeat match goal with
       | H : wf_Evidence _ _ |- _ => invc H; ff
       end; fail).
-    * find_eapply_lem_hyp peel_n_rawev_result_spec; ff.
-      eapply IHet in Heqp2.
-      ** econstructor; repeat rewrite length_app in *; ff;
-        result_monad_unfold; ff;
-        repeat match goal with
-        | H : wf_Evidence _ _ |- _ => invc H; 
-          result_monad_unfold; ff
-        end.
-      ** econstructor; repeat match goal with
-        | H : wf_Evidence _ _ |- _ => invc H; 
-          result_monad_unfold; ff
-      end; result_monad_unfold; ff; repeat rewrite length_app in *;
-      f_equal; lia.
-      ** econstructor; repeat match goal with
-        | H : wf_Evidence _ _ |- _ => invc H; 
-          result_monad_unfold; ff
-      end; result_monad_unfold; ff; repeat rewrite length_app in *;
-      f_equal; lia.
-    * find_eapply_lem_hyp peel_n_rawev_result_spec; ff.
-      eapply IHet in Heqp2.
-      ** econstructor; repeat rewrite length_app in *; ff;
-        result_monad_unfold; ff;
-        repeat match goal with
-        | H : wf_Evidence _ _ |- _ => invc H; 
-          result_monad_unfold; ff
-        end.
-      ** econstructor; repeat match goal with
-        | H : wf_Evidence _ _ |- _ => invc H; 
-          result_monad_unfold; ff
-      end; result_monad_unfold; ff; repeat rewrite length_app in *;
-      f_equal; lia.
-      ** econstructor; repeat match goal with
-        | H : wf_Evidence _ _ |- _ => invc H; 
-          result_monad_unfold; ff
-      end; result_monad_unfold; ff; repeat rewrite length_app in *;
-      f_equal; lia.
-    * find_eapply_lem_hyp peel_n_rawev_result_spec; ff.
-      eapply IHet in Heqp2.
-      ** econstructor; repeat rewrite length_app in *; ff;
-        result_monad_unfold; ff;
-        repeat match goal with
-        | H : wf_Evidence _ _ |- _ => invc H; 
-          result_monad_unfold; ff
-        end.
-        result_monad_unfold; ff; repeat rewrite length_app in *; ff.
-      ** econstructor; repeat match goal with
-        | H : wf_Evidence _ _ |- _ => invc H; 
-          result_monad_unfold; ff
-      end; result_monad_unfold; ff; repeat rewrite length_app in *;
-      f_equal; lia.
-      ** econstructor; repeat match goal with
-        | H : wf_Evidence _ _ |- _ => invc H; 
-          result_monad_unfold; ff
-      end; result_monad_unfold; ff; repeat rewrite length_app in *;
-      f_equal; lia.
+    all: try (find_eapply_lem_hyp peel_n_rawev_result_spec; ff);
+      result_monad_unfold;
+      try (find_eapply_lem_hyp IHet; ff);
+      econstructor; repeat rewrite length_app in *; ff;
+      result_monad_unfold; ff;
+      repeat match goal with
+      | H : wf_Evidence _ _ |- _ => invc H; 
+        result_monad_unfold; ff
+      end; result_monad_unfold; ff;
+      repeat rewrite length_app in *; ff;
+      f_equal; try lia.
+  - repeat cvm_monad_unfold; ff.
+    ateb_unpack Heqr0; ff.
+    eapply H0 in H4; ff.
+    invc H2; ff; result_monad_unfold; ff;
+    ateb_unpack Heqr0.
+    eapply Evidence_Subterm_path_same in Hesp; try eapply Hesp0;
+    ff; econstructor; ff.
+  - repeat cvm_monad_unfold; ff.
+  - repeat cvm_monad_unfold; ff.
+    ateb_unpack Heqr0; ffa.
+    eapply H in H3; ff.
+    invc H1; simpl in *; result_monad_unfold; ff;
+    ateb_unpack Heqr0.
+    eapply Evidence_Subterm_path_same in Hesp;
+    try eapply Hesp0; subst.
+    econstructor; ff.
+  - repeat cvm_monad_unfold; ff.
+    ateb_unpack Heqr0; ffa.
+    eapply H in H3; ff.
+    invc H1; simpl in *; result_monad_unfold; ff;
+    ateb_unpack Heqr0.
+    eapply Evidence_Subterm_path_same in Hesp;
+    try eapply Hesp0; subst.
+    econstructor; ff.
   - simpl in *; ff; cvm_monad_unfold; ff.
-    unfold split_evidence in *; cvm_monad_unfold; ff;
+    (* unfold split_evidence in *; cvm_monad_unfold; ff; *)
     repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff;
     repeat rewrite eqb_EvidenceT_eq in *; ff;
     repeat rewrite app_nil_r in *; ff.
-    eapply invoke_APPR_config_immut in Heqp0 as ?; ff.
     eapply invoke_APPR_config_immut in Heqp1 as ?; ff.
-    eapply IHet1 in Heqp0.
-    * eapply IHet2 in Heqp1.
-      ** econstructor; repeat rewrite length_app in *; ff;
+    eapply invoke_APPR_config_immut in Heqp2 as ?; ff.
+    eapply IHet1 in Heqp1; try reflexivity.
+    * eapply IHet2 in Heqp2; try reflexivity;
+      econstructor; repeat rewrite length_app in *; ff;
       result_monad_unfold; ff;
       repeat match goal with
       | H : wf_Evidence _ _ |- _ => invc H; ff
-      end; result_monad_unfold; ff.
-      ** econstructor; invc H; ff; result_monad_unfold; ff.
-      ** econstructor; invc H; ff; result_monad_unfold; ff.
-    * econstructor; invc H; ff; result_monad_unfold; ff.
-    * econstructor; invc H; ff; result_monad_unfold; ff.
+      end; result_monad_unfold; ff;
+      repeat rewrite length_app in *; ff;
+      repeat find_eapply_lem_hyp equiv_EvidenceT_impl_et_size_same; ff.
+    * econstructor; repeat rewrite length_app in *; ff;
+      result_monad_unfold; ff;
+      repeat match goal with
+      | H : wf_Evidence _ _ |- _ => invc H; ff
+      end; result_monad_unfold; ff;
+      repeat rewrite length_app in *; ff;
+      repeat find_eapply_lem_hyp equiv_EvidenceT_impl_et_size_same; ff.
+    * econstructor; repeat rewrite length_app in *; ff;
+      result_monad_unfold; ff;
+      repeat match goal with
+      | H : wf_Evidence _ _ |- _ => invc H; ff
+      end; result_monad_unfold; ff;
+      repeat rewrite length_app in *; ff;
+      repeat find_eapply_lem_hyp equiv_EvidenceT_impl_et_size_same; ff. 
 Qed.
 
 (** * Theorem:  CVM execution preserves well-formedness of Evidence bundles 
@@ -1353,7 +1427,7 @@ Proof.
       repeat find_injection;
       result_monad_unfold; ff;
       repeat rewrite length_app;
-      f_equal; lia);
+      f_equal; lia).
     eapply wf_Evidence_invoke_APPR; eauto; destruct e; ff.
   - ff;
     find_eapply_lem_hyp do_remote_res_axiom; eauto;
@@ -1381,7 +1455,8 @@ Proof.
     eapply IHt1 in Heqp; ff; eauto with wf_Evidence.
 Qed.
 
-Theorem invoke_APPR_respects_events : forall et r eo st sc st' sc' e' i m evs,
+Theorem invoke_APPR_respects_events : forall G et r eo st sc st' sc' e' i m evs,
+  G = session_context sc ->
   well_formed_context (session_context sc) ->
   st_evid st = i ->
   st_trace st = m ->
@@ -1389,50 +1464,103 @@ Theorem invoke_APPR_respects_events : forall et r eo st sc st' sc' e' i m evs,
   appr_events' (session_context sc) (session_plc sc) et eo i = resultC evs ->
   st_trace st' = m ++ evs.
 Proof.
-  induction et; simpl in *; intros; cvm_monad_unfold.
+  intros G.
+  induction et using (Evidence_subterm_path_Ind_special G);
+  simpl in *; intros; cvm_monad_unfold.
   - ff; rewrite app_nil_r; ff.
   - ff. 
   - ff; result_monad_unfold; ff;
-    repeat rewrite PeanoNat.Nat.eqb_eq in *; ff.
-    * eapply IHet in H2; try eapply Heqr3; simpl in *; eauto;
-      ff; repeat rewrite <- app_assoc; ff.
-    * eapply IHet in H2; try eapply Heqr3; simpl in *; eauto;
-      ff; repeat rewrite <- app_assoc; ff.
-    * eapply IHet in H2; try eapply Heqr3; simpl in *; eauto;
-      ff; repeat rewrite <- app_assoc; ff.
-    * repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff.
-      eapply invoke_APPR'_spans in Heqp2 as ?; try reflexivity; ff;
-      try (eapply appr_events'_size_works; eauto; ff); ff.
-      eapply invoke_APPR_config_immut in Heqp2 as ?; ff.
-      eapply IHet in Heqp2 as ?; try eapply Heqr1; simpl in *; eauto;
-      assert (st_evid st + 1 + 1 = st_evid st + 2) by lia; ff.
-      repeat rewrite <- app_assoc; ff.
-    * repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff.
-      eapply invoke_APPR'_spans in Heqp2 as ?; try reflexivity; ff;
-      try (eapply appr_events'_size_works; eauto; ff); ff.
-      eapply invoke_APPR_config_immut in Heqp2 as ?; ff.
-      eapply IHet in Heqp2 as ?; try eapply Heqr1; simpl in *; eauto;
-      assert (st_evid st + 1 + 1 = st_evid st + 2) by lia; ff.
-      repeat rewrite <- app_assoc; ff.
-    * repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff.
-      eapply invoke_APPR'_spans in Heqp2 as ?; try reflexivity; ff;
-      try (eapply appr_events'_size_works; eauto; ff); ff.
-      eapply invoke_APPR_config_immut in Heqp2 as ?; ff.
-      eapply IHet in Heqp2 as ?; try eapply Heqr1; simpl in *; eauto;
-      assert (st_evid st + 1 + 1 = st_evid st + 2) by lia; ff.
-      repeat rewrite <- app_assoc; ff.
-  - ff; result_monad_unfold; ff. 
-    unfold split_evidence in *; cvm_monad_unfold; ff;
+    repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
     repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff;
-    repeat rewrite eqb_EvidenceT_eq in *; ff.
-    eapply invoke_APPR_config_immut in Heqp0 as ?; ff.
-    eapply IHet1 in Heqp0 as ?; ff.
-    eapply invoke_APPR'_spans in Heqp0; try reflexivity; ff;
-    try (eapply appr_events'_size_works; eauto; ff); ff.
-    eapply invoke_APPR_config_immut in Heqp1 as ?; ff.
-    eapply IHet2 in Heqp1 as ?; ff.
-    eapply invoke_APPR'_spans in Heqp1; try reflexivity; ff;
-    try (eapply appr_events'_size_works; eauto; ff); ff.
+    try (match goal with
+    | H : invoke_APPR' _ ?e _ _ _ = _,
+      H2 : appr_events' _ _ ?e _ _ = _,
+      IH : context[invoke_APPR' _ ?e _ _ _ = _ -> _] |- _ =>
+      eapply invoke_APPR'_spans in H as ?; try reflexivity; ff;
+      try (eapply appr_events'_size_works; eauto; ff); ff;
+      eapply invoke_APPR_config_immut in H as ?; ff;
+      eapply IH in H; [ | | | | | eapply H2 ]; 
+      simpl in *; try reflexivity; try lia; ff
+    end; 
+    assert (st_evid st + 1 + 1 = st_evid st + 2) by lia; ff;
+    repeat rewrite <- app_assoc; ff).
+  - ff; result_monad_unfold; ff;
+    repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
+    repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff;
+    try (match goal with
+    | H : invoke_APPR' _ ?e _ _ _ = _,
+      H2 : appr_events' _ _ ?e _ _ = _,
+      IH : context[invoke_APPR' _ ?e _ _ _ = _ -> _] |- _ =>
+      eapply invoke_APPR'_spans in H as ?; try reflexivity; ff;
+      try (eapply appr_events'_size_works; eauto; ff); ff;
+      eapply invoke_APPR_config_immut in H as ?; ff;
+      eapply IH in H; [ | | | | | eapply H2 ]; 
+      simpl in *; try reflexivity; try lia; ff
+    end; 
+    assert (st_evid st + 1 + 1 = st_evid st + 2) by lia; ff;
+    repeat rewrite <- app_assoc; ff).
+    ateb_same; ffa.
+  - ff; result_monad_unfold; ff;
+    repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
+    repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff;
+    try (match goal with
+    | H : invoke_APPR' _ ?e _ _ _ = _,
+      H2 : appr_events' _ _ ?e _ _ = _,
+      IH : context[invoke_APPR' _ ?e _ _ _ = _ -> _] |- _ =>
+      eapply invoke_APPR'_spans in H as ?; try reflexivity; ff;
+      try (eapply appr_events'_size_works; eauto; ff); ff;
+      eapply invoke_APPR_config_immut in H as ?; ff;
+      eapply IH in H; [ | | | | | eapply H2 ]; 
+      simpl in *; try reflexivity; try lia; ff
+    end; 
+    assert (st_evid st + 1 + 1 = st_evid st + 2) by lia; ff;
+    repeat rewrite <- app_assoc; ff).
+  - ff; result_monad_unfold; ff;
+    repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
+    repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff;
+    try (match goal with
+    | H : invoke_APPR' _ ?e _ _ _ = _,
+      H2 : appr_events' _ _ ?e _ _ = _,
+      IH : context[invoke_APPR' _ ?e _ _ _ = _ -> _] |- _ =>
+      eapply invoke_APPR'_spans in H as ?; try reflexivity; ff;
+      try (eapply appr_events'_size_works; eauto; ff); ff;
+      eapply invoke_APPR_config_immut in H as ?; ff;
+      eapply IH in H; [ | | | | | eapply H2 ]; 
+      simpl in *; try reflexivity; try lia; ff
+    end; 
+    assert (st_evid st + 1 + 1 = st_evid st + 2) by lia; ff;
+    repeat rewrite <- app_assoc; ff);
+    ateb_same; ffa.
+  - ff; result_monad_unfold; ff;
+    repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
+    repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff;
+    try (match goal with
+    | H : invoke_APPR' _ ?e _ _ _ = _,
+      H2 : appr_events' _ _ ?e _ _ = _,
+      IH : context[invoke_APPR' _ ?e _ _ _ = _ -> _] |- _ =>
+      eapply invoke_APPR'_spans in H as ?; try reflexivity; ff;
+      try (eapply appr_events'_size_works; eauto; ff); ff;
+      eapply invoke_APPR_config_immut in H as ?; ff;
+      eapply IH in H; [ | | | | | eapply H2 ]; 
+      simpl in *; try reflexivity; try lia; ff
+    end; 
+    assert (st_evid st + 1 + 1 = st_evid st + 2) by lia; ff;
+    repeat rewrite <- app_assoc; ff);
+    ateb_same; ffa.
+  - ff; result_monad_unfold; ff;
+    repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
+    repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff.
+
+    repeat match goal with
+    | H : invoke_APPR' _ ?e _ _ _ = _,
+      H2 : appr_events' _ _ ?e _ _ = _,
+      IH : context[invoke_APPR' _ ?e _ _ _ = _ -> _] |- _ =>
+      eapply invoke_APPR'_spans in H as ?; try reflexivity; 
+      try (eapply appr_events'_size_works; eauto; ff); ff;
+      eapply invoke_APPR_config_immut in H as ?; ff; [ ];
+      eapply IH in H; [ | | | | | eapply H2 ];
+      simpl in *; try reflexivity; try lia; ff
+    end;
     repeat rewrite <- app_assoc; ff.
 Qed.
 
@@ -1464,7 +1592,7 @@ Proof.
     find_eapply_lem_hyp events_events_fix_eq;
     simpl in *; repeat find_rewrite;
     repeat find_injection; ff;
-    assert (length rem_evs = n) by (
+    assert (List.length rem_evs = n) by (
       find_eapply_lem_hyp events_fix_range;
       eapply events_size_plc_irrel; eauto);
     ff;
@@ -1527,10 +1655,10 @@ Proof.
     repeat find_rewrite; try lia.
     repeat rewrite <- app_assoc; simpl in *; ff.
     repeat find_rewrite; repeat find_injection; eauto.
-    assert (st_evid st + 2 + length evs1 = st_evid st + 1 + 1 + length evs1) by lia.
+    assert (st_evid st + 2 + List.length evs1 = st_evid st + 1 + 1 + List.length evs1) by lia.
     ff.
     repeat find_rewrite_lem events_events_fix_eq; ff.
-    assert (n = length evs2) by (
+    assert (n = List.length evs2) by (
       repeat find_eapply_lem_hyp events_fix_range; eauto; ff;
       destruct s, s, s0; simpl in *; ff).
     ff.

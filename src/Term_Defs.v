@@ -489,15 +489,16 @@ Definition appr_events' (G : GlobalContext) (p : Plc)
     r <- apply_to_evidence_below G (fun e' => F e' ev_out i) [Trail_RIGHT] e' ;; r
 
   | split_evt e1 e2 => 
-    match ev_out with
-    | split_evt e1' e2' =>
-      e1' <- F e1 e1' (i + 1) ;;
+    if (equiv_EvidenceT G e1 (left_evt ev_out))
+    then if (equiv_EvidenceT G e2 (right_evt ev_out))
+    then
+      e1' <- F e1 (left_evt ev_out) (i + 1) ;;
       let next_i := (i + 1) + (List.length e1') in
-      e2' <- F e2 e2' next_i ;;
+      e2' <- F e2 (right_evt ev_out) next_i ;;
       let last_i := next_i + (List.length e2') in
       resultC ([split i p] ++ e1' ++ e2' ++ [join last_i p])
-    | _ => errC err_str_split_evidence_not_split
-    end
+    else errC err_str_appr_compute_evt_neq
+    else errC err_str_appr_compute_evt_neq
   end.
 
 Ltac esp_same :=

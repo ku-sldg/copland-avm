@@ -146,8 +146,13 @@ current CVM evidence bundle *)
       sc <- get_config ;;
       let G := (session_context sc) in
       let '(evc bits et) := cur_ev in
-      r <- hoist_result (apply_to_evidence_below G id [Trail_UNWRAP asp_id] et) ;;
-      match r with
+      size_below_wrap' <- hoist_result (apply_to_evidence_below G (et_size G) [Trail_UNWRAP asp_id] et) ;;
+      size_below_wrap <- hoist_result (size_below_wrap' ) ;;
+      (* we now need to just verify that we are the same size as what was below the wrap *)
+      if (eqb (length rwev) size_below_wrap)
+      then err_ret (evc rwev (asp_evt p ps et))
+      else err_failm (dispatch_error (Runtime err_str_unwrap_of_wrap_same_size))
+      (* match r with
       | asp_evt p' (asp_paramsC wrap_id _ _ _) et' =>
         '(ev_arrow fwd _ _) <- get_asp_type wrap_id ;;
         match fwd with
@@ -164,7 +169,7 @@ current CVM evidence bundle *)
         | _ => err_failm (dispatch_error (Runtime err_str_unwrap_only_wrap))
         end
       | _ => err_failm (dispatch_error (Runtime err_str_unwrap_only_wrap))
-      end
+      end *)
     end
   end.
 
@@ -290,11 +295,19 @@ Fixpoint invoke_APPR' (r : RawEv) (et : EvidenceT) (out_evt : EvidenceT) {struct
         '(ev_r, rest) <- (hoist_result (peel_n_rawev n2 r_ev)) ;;
         match rest with
         | [] => 
-          split_ev ;; (* register event that we are splitting evidence *)
-          (* first we must get out the actual Evidence for et1 *)
-          ev1 <- invoke_APPR' ev_l et1 (left_evt et1) ;;
-          ev2 <- invoke_APPR' ev_r et2 (right_evt et2) ;;
-          join_seq ev1 ev2
+          if (equiv_EvidenceT G et1 (left_evt out_evt))
+          then if (equiv_EvidenceT G et2 (right_evt out_evt))
+          then
+            split_ev ;; (* register event that we are splitting evidence *)
+            (* first we must get out the actual Evidence for et1 *)
+            ev1 <- invoke_APPR' ev_l et1 (left_evt out_evt) ;;
+            ev2 <- invoke_APPR' ev_r et2 (right_evt out_evt) ;;
+            join_seq ev1 ev2
+          else err_failm (dispatch_error (Runtime err_str_ev_split_failed_not_empty))
+          else err_failm (dispatch_error (Runtime err_str_ev_split_failed_not_empty))
+          (* ev1 <- invoke_APPR' ev_l et1 (left_evt out_evt) ;;
+          ev2 <- invoke_APPR' ev_r et2 (right_evt out_evt) ;;
+          join_seq ev1 ev2 *)
         | _ => err_failm (dispatch_error (Runtime err_str_ev_split_failed_not_empty))
         end
       (* ev1 <- invoke_APPR' r_ev et1 et1 ;;
