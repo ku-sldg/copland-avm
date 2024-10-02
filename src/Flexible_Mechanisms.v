@@ -71,6 +71,8 @@ Definition split_phrase : Term :=
       (asp (ASPC (asp_paramsC attest1_id [] P1 sys_targ)))
       (asp (ASPC (asp_paramsC attest2_id [] P1 sys_targ)))
     ).
+
+(*
 Definition cds_demo_phrase : Term := 
   att P1
     (
@@ -86,6 +88,7 @@ Definition cds_demo_phrase : Term :=
     (
       att P3 (asp (ASPC ALL (EXTD 1) (asp_paramsC appr_cds_id [] P1 sys_targ)))
     )).
+*)
 
 
 Open Scope string_scope.
@@ -98,9 +101,10 @@ Definition flexible_mechanisms_map :=
    ("parmut", parallel_mutual_1); 
    ("parmut2", parallel_mutual_2); 
    ("layered_bg", layered_background_check); 
-   ("filehash", filehash_auth_phrase);
+   ("filehash", filehash_auth_phrase) (* ;
    ("cds", cds_demo_phrase);
-   ("cds_appr", lseq cds_demo_phrase (asp APPR))].
+   ("cds_appr", lseq cds_demo_phrase (asp APPR)) *) ].
+   
 
 Definition add_EvidenceT_flexible_mechanisms := 
   fun G =>

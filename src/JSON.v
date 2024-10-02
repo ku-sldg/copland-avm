@@ -145,46 +145,7 @@ Global Instance jsonifiable_map_serial_serial (A B : Type) `{Stringifiable A, Eq
     canonical_jsonification := canonical_jsonification_map_serial_serial;
   }.
 
-Definition map_serial_to_JSON {A B : Type} `{Stringifiable A, EqClass A, Jsonifiable B} (m:MapC A B) : JSON := 
-  JSON_Object (
-                        map (fun '(k, v) => 
-                              (to_string k, to_JSON v)
-                            ) m).
-
-Definition map_serial_from_JSON {A B : Type} `{Stringifiable A, EqClass A, Jsonifiable B} (js:JSON) : ResultT (MapC A B) string := 
-  match js with
-  | JSON_Object m => 
-      result_map 
-        (fun '(k, v) => 
-            match (from_string k), (from_JSON v) with
-            | resultC k', resultC v' => resultC (k', v')
-            | _, _ => errC "Error in jsonifiable_map_serial_json"
-            end) m
-  | _ => errC "Error in jsonifiable_map_serial_json"
-  end.
-
-  (*
-
-Lemma canonical_jsonification_map_serial (A B:Type) `{Stringifiable A, EqClass A, Jsonifiable B}  : forall (a : (MapC A B)), 
-from_JSON (to_JSON a) = resultC a.
-*)
-  
-
-  Global Instance jsonifiable_map_serial_json (A B : Type) `{Stringifiable A, EqClass A, Jsonifiable B} : Jsonifiable (MapC A B). 
-  eapply Build_Jsonifiable with (
-    to_JSON := map_serial_to_JSON) 
-    (from_JSON := map_serial_from_JSON);
-  intuition; induction a; simpl in *; intuition; eauto;
-  repeat (try break_match; simpl in *; subst; eauto; try congruence);
-  try rewrite canonical_jsonification in *; 
-  try rewrite canonical_stringification in *; 
-  repeat find_injection; simpl in *; 
-  try find_rewrite; eauto; try congruence.
-  Defined.
-
-(*
-Global Instance jsonifiable_map_serial_json (A B : Type) `{Stringifiable A, EqClass A, Jsonifiable B} : Jsonifiable (MapC A B). 
-
+Global Instance jsonifiable_map_serial_json (A B : Type) `{Stringifiable A, EqClass A, Jsonifiable B} : Jsonifiable (Map A B).
 eapply Build_Jsonifiable with (
   to_JSON := (fun m => JSON_Object (
                       map (fun '(k, v) => 

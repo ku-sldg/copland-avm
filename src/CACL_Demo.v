@@ -258,6 +258,8 @@ Definition et_size_noFail (G:GlobalContext) (et:EvidenceT) : nat :=
     | _ => O 
     end.
 
+(*
+
 Definition add_asp_summary (i:ASP_ID) (tid:TARG_ID) (m:RawEvJudgement) (rEv:RawEv)(s:AppraisalSummary) : AppraisalSummary := 
     let s := (m i tid rEv) in 
     ((i, tid), (f rEv)) :: s.
@@ -383,3 +385,5 @@ Example fdfd : forall (x:AppraisalSummary), x = example_appraisal_summary.
 Check example_appraisal_summary.
 *)
 
+
+*)
