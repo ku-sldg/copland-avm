@@ -52,30 +52,6 @@ Definition sp_ev (sp:SP) (e:EvidenceT) : EvidenceT :=
   | NONE => mt_evt
   end.
 
-(* 
-Fixpoint get_appr_asp_par_chain (G : GlobalContext) (p : Plc) (e : EvidenceT) 
-    : ResultT (list ASP_PARAMS) string :=
-  match e with
-  | mt_evt => resultC []
-  | nonce_evt _ => resultC ([check_nonce_params])
-  | asp_evt p' ps e' => 
-    let '(asp_paramsC asp_id args targ_plc targ) := ps in
-    match (map_get (asp_comps G) asp_id) with
-    | None => errC err_str_asp_no_compat_appr_asp
-    | Some appr_id => 
-      appr_asps <- get_appr_asp_par_chain G p e' ;;
-      resultC ((asp_paramsC appr_id args targ_plc targ) :: appr_asps)
-    end
-  | split_evt e1 e2 => resultC []
-  end.
-
-Fixpoint apply_appr_par_chain (p : Plc) (e : EvidenceT) (l : list ASP_PARAMS) : EvidenceT :=
-  match l with
-  | [] => e
-  | ps :: l' => apply_appr_par_chain p (asp_evt p ps e) l'
-  end.
-  *)
-
 Definition equiv_EvidenceT (G : GlobalContext) (e1 e2 : EvidenceT) : bool :=
   match et_size G e1, et_size G e2 with
   | resultC n1, resultC n2 => eqb n1 n2
