@@ -14,7 +14,7 @@ Require Import Manifest_Admits ErrorStringConstants Attestation_Session EqClass.
 
 Import ListNotations.
 
-Require Export Cvm_St ErrorStMonad_Coq IO_Stubs Interface JSON_Core.
+Require Export Cvm_St ErrorStMonad_Coq IO_Stubs Interface JSON_Core Cvm_Utils.
 
 Import ErrNotation.
 
@@ -192,6 +192,8 @@ Definition invoke_ASP (e : Evidence) (params:ASP_PARAMS) : CVM Evidence :=
   outev <- bundle_asp p rawev e params ;;
   err_ret outev.
 
+(*
+
 Fixpoint peel_n_rawev (n : nat) (ls : RawEv) : ResultT (RawEv * RawEv) string :=
   match n with
   | 0 => resultC ([], ls)
@@ -205,6 +207,8 @@ Fixpoint peel_n_rawev (n : nat) (ls : RawEv) : ResultT (RawEv * RawEv) string :=
       end
     end
   end.
+
+*)
 
 (* Simulates invoking an arbitrary ASP.  Tags the event, builds and returns 
    the new EvidenceT bundle. *)

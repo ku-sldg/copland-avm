@@ -1,10 +1,10 @@
 Require Import Term_Defs Maps ID_Type EqClass.
 
-Require Import Manifest_Set JSON JSON_Core.
+Require Import Manifest_Set JSON JSON_Core ErrorStringConstants.
 
 Require Import Flexible_Mechanisms_Vars.
 
-Require Import CACL.
+Require Import CACL Cvm_Utils.
 
 Require Import List.
 Import ListNotations.
@@ -207,137 +207,199 @@ Definition get_RawEv_snippet
 *)
 
 
-Definition AppraisalSummary := (Map ASP_ID (Map TARG_ID string))%type.
+Definition AppraisalSummary := (Map ASP_ID (Map TARG_ID string)).
 
-Global Instance EqClass_RawEvJudgement : EqClass RawEv.
-Admitted.
+Definition RawEvJudgement := Map ASP_ID (Map TARG_ID (RawEv -> string)).
 
-Definition RawEvJudgement := ASP_ID -> TARG_ID -> RawEv -> string.
+Open Scope string_scope.
 
-Inductive Flat_EvidenceT :=
-| flat_mt_evt      : Flat_EvidenceT
-| flat_nonce_evt   : N_ID -> Flat_EvidenceT
-| flat_asp_evt     : Plc -> ASP_PARAMS -> Flat_EvidenceT -> Flat_EvidenceT
-| flat_split_evt   : Flat_EvidenceT -> Flat_EvidenceT -> Flat_EvidenceT.
-
-Fixpoint flatten_EvidenceT (et:EvidenceT) : Flat_EvidenceT :=
-    match et with
-    | mt_evt => flat_mt_evt
-    | nonce_evt nid => flat_nonce_evt nid
-    | left_evt et' => flatten_EvidenceT et'
-    | right_evt et' => flatten_EvidenceT et'
-    | asp_evt p ps et' => flat_asp_evt p ps (flatten_EvidenceT et')
-    | split_evt et1 et2 => flat_split_evt (flatten_EvidenceT et1) (flatten_EvidenceT et2)
-    end.
-
-Definition errStr_peel_n_am : string := "hi".
-
-Fixpoint peel_n_rawev (n : nat) (ls : RawEv) : ResultT (RawEv * RawEv) string :=
-    match n with
-    | 0 => resultC ([], ls)
-    | S n' =>
-        match ls with
-        | [] => errC errStr_peel_n_am
-        | x :: ls' =>
-        match peel_n_rawev n' ls' with
-        | errC e => errC e
-        | resultC (ls1, ls2) => resultC (x :: ls1, ls2)
+Definition get_RawEvJudgement (i:ASP_ID) (tid:TARG_ID) (m:RawEvJudgement) : (RawEv -> string) := 
+    let default_fun := 
+        (fun _ => "( " ++ i ++ ", " ++ tid ++ " ) " ++ "not found in RawEvJudgement map") in 
+    
+    match (map_get i m) with 
+    | Some m' => 
+        match (map_get tid m') with 
+        | Some f => f 
+        | None => default_fun
         end
-        end
+    | None => default_fun
     end.
 
-Definition peel_n_rawev_noFail (n : nat) (ls : RawEv) : (RawEv * RawEv) := 
-    match peel_n_rawev n ls with 
-    | resultC res => res 
-    | _ => ([],[])
+Definition map_get_default {A B:Type} `{H : EqClass A} (x:A) (y:B) (m:Map A B) : B := 
+    match (map_get x m) with 
+    | Some v => v 
+    | None => y 
     end.
 
-Definition et_size_noFail (G:GlobalContext) (et:EvidenceT) : nat := 
-    match (et_size G et) with 
-    | resultC n => n 
-    | _ => O 
-    end.
+Definition set_AppraisalSummary (i:ASP_ID) (tid:TARG_ID) (str:string) 
+    (s:AppraisalSummary) : AppraisalSummary := 
+    let m := map_get_default i ([] : Map TARG_ID string) s in
+    let m' := map_set tid str m in 
+    map_set i m' s. 
 
-(*
+Definition add_asp_summary (i:ASP_ID) (tid:TARG_ID) (f:(RawEv -> string)) (rEv:RawEv)
+    (s:AppraisalSummary) : AppraisalSummary := 
+    
+        let str := f rEv in  
+         set_AppraisalSummary i tid str s.
 
-Definition add_asp_summary (i:ASP_ID) (tid:TARG_ID) (m:RawEvJudgement) (rEv:RawEv)(s:AppraisalSummary) : AppraisalSummary := 
-    let s := (m i tid rEv) in 
-    ((i, tid), (f rEv)) :: s.
-
-(*
-    match (map_get (i, tid) m) with 
-    | Some f => ((i, tid), (f rEv)) :: s
-    | _ => []
-    end.
-    *)
-
+Import ResultNotation.
 
 (* TODO:  make this a ResultT type eventually to fail on map lookup? *)
-Fixpoint get_AppraisalSummary' (et:EvidenceT) (r:RawEv) (G:GlobalContext) (m:RawEvJudgement) (s:AppraisalSummary) : AppraisalSummary := 
+Fixpoint do_AppraisalSummary' (et:EvidenceT) (r:RawEv) (G:GlobalContext) 
+    (m:RawEvJudgement) (s:AppraisalSummary) : ResultT AppraisalSummary string := 
         match et with 
-        | mt_evt => [] 
-        | nonce_evt nid => s (* TODO:  do anything else with nonce check here? *)
+        | mt_evt => resultC s 
+        | nonce_evt nid => resultC s (* TODO:  do anything else with nonce check here? *)
         | split_evt et1 et2 => 
-            let (r1, rest) := peel_n_rawev_noFail (et_size_noFail G et1) r in
-            let (r2, _) := peel_n_rawev_noFail (et_size_noFail G et2) rest in
-
-            let s1 := get_AppraisalSummary' et1 r1 G m s in 
-            let s2 := get_AppraisalSummary' et2 r2 G m s1 in
-                s2
-        | left_evt et' => get_AppraisalSummary' et' r G m s
-        | right_evt et' => get_AppraisalSummary' et' r G m s
+            et1_size <- et_size G et1 ;;
+            et2_size <- et_size G et2 ;;
+            '(r1, rest) <- peel_n_rawev et1_size r ;;
+            '(r2, _) <- peel_n_rawev et2_size rest ;;
+            s1 <- do_AppraisalSummary' et1 r1 G m s ;;
+            do_AppraisalSummary' et2 r2 G m s1
+        | left_evt et' => do_AppraisalSummary' et' r G m s
+        | right_evt et' => do_AppraisalSummary' et' r G m s
+        
         | asp_evt p ps et' => 
-            let '(asp_paramsC asp_id args tp tid) := ps in 
-                match (map_get asp_id (asp_types G)) with 
-                | None => s  (* TODO: resultT type eventually... *)
+            let '(asp_paramsC i args tp tid) := ps in 
+                match (map_get i (asp_types G)) with 
+                | None => resultC s  (* TODO: resultT type eventually... *)
                 | Some (ev_arrow fwd in_sig out_sig) => 
                     match fwd with 
+                    
+                    | EXTEND => 
+                        match out_sig with 
+                        | OutN n => 
+                            let f := get_RawEvJudgement i tid m in 
+                            '(r1, rest) <- peel_n_rawev n r ;; 
+                            let s' := add_asp_summary i tid f r1 s in 
+                            do_AppraisalSummary' et' rest G m s'
+
+                        | _ => errC err_str_cannot_have_outwrap
+                        end
+                    
+                        
+                    | _ => resultC s
+                    (*
                     | REPLACE => 
                         match out_sig with 
                         | OutN n => 
                             let (r1, rest) := peel_n_rawev_noFail n r in 
                             let s' := add_asp_summary asp_id tid m r1 s in
-                                get_AppraisalSummary' et' rest G m s'
+                                do_AppraisalSummary' et' rest G m s'
                         | _ => s
                         end
-                    (*
+                    
                     | WRAP => 
                         match out_sig with 
                         | OutN n => 
                             let (r1, rest) := peel_n_rawev_noFail n r in 
                             let s' := add_asp_summary asp_id tid m r1 s in
-                                get_AppraisalSummary' et' rest G m s'
+                                do_AppraisalSummary' et' rest G m s'
                         | _ => s
                         end 
                     *)
 
-                    | EXTEND => 
-                        match out_sig with 
-                        | OutN n => 
-                            let (r1, rest) := peel_n_rawev_noFail n r in 
-                            let s' := add_asp_summary asp_id tid m r1 s in
-                                get_AppraisalSummary' et' rest G m s'
-                        | _ => s
-                        end
-                        
-                    | _ => s
                     end
-
                 end
 
         end.
 
-Definition get_AppraisalSummary (et:EvidenceT) (r:RawEv) (G:GlobalContext) (m:RawEvJudgement) : AppraisalSummary := 
-    get_AppraisalSummary' et r G m [].
+Definition do_AppraisalSummary (et:EvidenceT) (r:RawEv) (G:GlobalContext) (m:RawEvJudgement) : ResultT AppraisalSummary string := 
+    do_AppraisalSummary' et r G m []. 
 
 Open Scope string_scope.
 
-Definition hi_id : ASP_ID := "hi".
-Definition hey_id : TARG_ID := "hey".
-Definition howdy_string : string := "howdy".
+(*
+Definition gather_config_1 : Term := 
+    (gather_targ_asp cds_config_dir_plc cds_config_1_targ).
+*)
+(*
+Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID) : Term := 
+    (asp (ASPC (* ALL (EXTD 1)  *)
+               (asp_paramsC 
+                    gather_file_contents_id 
+                    [] 
+                    targPlc 
+                    targId ))).
+*)
 
-Definition example_appraisal_summary := (hi_id, hey_id, howdy_string).
-Check example_appraisal_summary.
+(*
+Definition AppraisalSummary := (Map ASP_ID (Map TARG_ID string)).
+
+Definition ASP_Compat_MapT := Map ASP_ID ASP_ID.
+
+Definition ASP_Type_Env := Map ASP_ID EvSig.
+
+Record GlobalContext := {
+  asp_types: ASP_Type_Env;
+  asp_comps: ASP_Compat_MapT
+}.
+
+Inductive FWD :=
+| REPLACE
+| WRAP
+| UNWRAP
+| EXTEND.
+
+Inductive EvInSig :=
+| InAll : EvInSig
+| InNone : EvInSig.
+
+Inductive EvOutSig :=
+| OutN : nat -> EvOutSig
+| OutUnwrap : EvOutSig.
+
+Inductive EvSig :=
+| ev_arrow : FWD -> EvInSig -> EvOutSig -> EvSig.
+
+*)
+
+Definition ex_targMap : Map TARG_ID string := 
+    [(cds_config_1_targ, "cds_config_1_targ PASSED")].
+
+Definition example_appraisal_summary : AppraisalSummary := 
+    [(gather_file_contents_id, ex_targMap);
+     (appraise_id, ex_targMap)].
+
+Definition gather_contents_evsig : EvSig := 
+    ev_arrow EXTEND InAll (OutN 1).
+
+Definition example_GlobalContext : GlobalContext := 
+    Build_GlobalContext 
+        [(gather_file_contents_id, gather_contents_evsig);
+         (appraise_id, gather_contents_evsig)]
+        [(gather_file_contents_id, appraise_id)].
+
+Definition example_appTerm : Term := (lseq gather_config_1 (asp APPR)).
+
+Definition computed_evidence : EvidenceT := 
+    match (eval example_GlobalContext P0 mt_evt example_appTerm) with 
+    | resultC et => et 
+    | _ => mt_evt 
+    end.
+
+(*
+Definition RawEvJudgement := Map ASP_ID (Map TARG_ID (RawEv -> string)).
+*)
+
+Definition ex_targJudgement : Map TARG_ID (RawEv -> string) := 
+    [(cds_config_1_targ, (fun _ => "SAMPLE JUDGEMENT STRING"))].
+
+Definition example_RawEvJudgement : RawEvJudgement := 
+    [(gather_file_contents_id, ex_targJudgement);
+     (appraise_id, ex_targJudgement)].
+
+
+(*
+(et:EvidenceT) (r:RawEv) (G:GlobalContext) (m:RawEvJudgement) : ResultT AppraisalSummary string := 
+*)
+(*
+Definition computed_appraisal_summary : AppraisalSummary := 
+    *)
+
 
 (*
 Global Instance AppraisalSummaryJsonifiable `{Stringifiable (ASP_ID * TARG_ID)%type, Stringifiable string} : Jsonifiable (list ((ASP_ID * TARG_ID) * string)).
@@ -349,6 +411,8 @@ eapply Build_Jsonifiable with
     eauto.
 Qed.
 *)
+
+(*
 
 Definition pair_to_string {A B : Type} `{Stringifiable A, Stringifiable B} (v : (A * B)) : string :=
   JSON_Array [(to_JSON (fst v)); (to_JSON (snd v))].
@@ -363,9 +427,11 @@ Definition pair_from_JSON {A B : Type} `{Jsonifiable A, Jsonifiable B} (js : JSO
   | _ => errC errStr_json_to_pair
   end.
 
-Global Instance StringifiableAppraisalSummary' : Stringifiable (ASP_ID * TARG_ID). 
+Global Instance StringifiableAppraisalSummary' : Stringifiable (ASP_ID * TARG_ID).\
 
-Global Instance AppraisalSummaryJsonifiable `{Stringifiable (ASP_ID * TARG_ID)%type} : Jsonifiable AppraisalSummary.
+*)
+
+Global Instance AppraisalSummaryJsonifiable `{Stringifiable ASP_ID, Stringifiable (Map TARG_ID string)} : Jsonifiable AppraisalSummary.
 eapply Build_Jsonifiable with 
 (to_JSON := map_serial_serial_to_JSON)
 (from_JSON := map_serial_serial_from_JSON).
@@ -376,14 +442,11 @@ Qed.
 
 
 
-Definition test_app_summary_compute_json `{Stringifiable (ASP_ID * TARG_ID)%type} (x:AppraisalSummary) : JSON := to_JSON x.
+Definition test_app_summary_compute_json (x:AppraisalSummary) : JSON := to_JSON x.
 
 (*
 
 Example fdfd : forall (x:AppraisalSummary), x = example_appraisal_summary.
 
 Check example_appraisal_summary.
-*)
-
-
 *)

@@ -101,7 +101,10 @@ Definition flexible_mechanisms_map :=
    ("parmut", parallel_mutual_1); 
    ("parmut2", parallel_mutual_2); 
    ("layered_bg", layered_background_check); 
-   ("filehash", filehash_auth_phrase) (* ;
+   ("filehash", filehash_auth_phrase);
+   ("cds_simple", example_appTerm)
+   
+   (* ;
    ("cds", cds_demo_phrase);
    ("cds_appr", lseq cds_demo_phrase (asp APPR)) *) ].
    

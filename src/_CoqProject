@@ -17,6 +17,7 @@ JSON_Core_Strings.v
 JSON_Core.v
 Params_Admits.v
 Term_Defs.v
+Cvm_Utils.v
 CACL.v
 CACL_Demo.v
 Attestation_Session.v
@@ -54,7 +55,7 @@ ManCompSoundness_Helpers.v
 AM_Helpers.v
 AM_Json_Interfaces.v
 AM_Manager.v
-# Client_AM.v
+Client_AM.v
 Server_AM.v
 Flexible_Mechanisms_Vars.v
 Flexible_Mechanisms.v
