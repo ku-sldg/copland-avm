@@ -34,10 +34,8 @@ Eqb_Evidence.v
 Term.v
 EnvironmentM.v
 Manifest_Union.v
-# Evidence_Bundlers.v
 Cvm_Monad.v
 Cvm_Impl.v
-# Cvm_Run.v
 Cvm_Axioms.v
 Manifest_Generator_Helpers.v
 Manifest_Generator.v
