@@ -43,11 +43,16 @@ Definition do_AppraisalSummary (et:EvidenceT) (r:RawEv) (G:GlobalContext) (m:Raw
 
 Definition am_app_summary_example 
 (att_sess : Attestation_Session) (req_plc : Plc) 
-(e : Evidence) (t:Term) (toPlc : Plc) (summary_et:EvidenceT) : ResultT AppraisalSummary string :=
+(e : Evidence) (t:Term) (toPlc : Plc) (* (summary_et:EvidenceT) *) : ResultT AppraisalSummary string :=
   match (am_sendReq att_sess req_plc e t toPlc) with 
   | errC msg => errC msg 
   | resultC rawev => 
-      do_AppraisalSummary summary_et rawev example_GlobalContext example_RawEvJudgement
+      let glob_ctx := (ats_context att_sess) in 
+      match e with 
+      | evc _ et => 
+        et' <- eval glob_ctx toPlc et t ;;
+        do_AppraisalSummary et' rawev glob_ctx example_RawEvJudgement
+      end
   end.
 
 (*

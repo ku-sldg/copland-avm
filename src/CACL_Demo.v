@@ -4,7 +4,7 @@ Require Import Manifest_Set JSON JSON_Core ErrorStringConstants.
 
 Require Import Flexible_Mechanisms_Vars.
 
-Require Import CACL Cvm_Utils.
+Require Import CACL Cvm_Utils RawEvJudgement_Admits.
 
 Require Import List.
 Import ListNotations.
@@ -211,6 +211,17 @@ Definition AppraisalSummary := (Map ASP_ID (Map TARG_ID string)).
 
 Definition RawEvJudgement := Map ASP_ID (Map TARG_ID (RawEv -> string)).
 
+Definition add_RawEvJudgement (i:ASP_ID) (tid:TARG_ID) (f:RawEv -> string) 
+    (m:RawEvJudgement) : RawEvJudgement := 
+    let m' := 
+        match (map_get i m) with 
+        | Some tm => tm
+        | None => [] 
+        end in 
+    let m'' := map_set tid f m' in 
+            map_set i m'' m.
+
+
 Open Scope string_scope.
 
 Definition get_RawEvJudgement (i:ASP_ID) (tid:TARG_ID) (m:RawEvJudgement) : (RawEv -> string) := 
@@ -385,12 +396,41 @@ Definition computed_evidence : EvidenceT :=
 Definition RawEvJudgement := Map ASP_ID (Map TARG_ID (RawEv -> string)).
 *)
 
-Definition ex_targJudgement : Map TARG_ID (RawEv -> string) := 
-    [(cds_config_1_targ, (fun _ => "SAMPLE JUDGEMENT STRING"))].
 
+(*
+(* FYI:  Moved these to RawEvJudgement_Admits.v...intent is to move this to extracted stubs or JSON-configurable *)
+Definition ex_targJudgement_fun : RawEv -> string := 
+    (fun _ => "SAMPLE JUDGEMENT STRING ONE").
+
+Definition ex_targJudgement_fun' : RawEv -> string := 
+    (fun _ => "SAMPLE JUDGEMENT STRING TWO").
+*)
+
+(*
+
+Definition ex_targJudgement : Map TARG_ID (RawEv -> string) := 
+    [(cds_config_1_targ, ex_targJudgement_fun)].
+*)
+
+
+(*
+Definition add_RawEvJudgement (i:ASP_ID) (tid:TARG_ID) (f:RawEv -> string) 
+    (m:RawEvJudgement) : RawEvJudgement := 
+*)
+
+(*
 Definition example_RawEvJudgement : RawEvJudgement := 
     [(gather_file_contents_id, ex_targJudgement);
      (appraise_id, ex_targJudgement)].
+*)
+
+Definition example_RawEvJudgement : RawEvJudgement := 
+    let j' := add_RawEvJudgement gather_file_contents_id cds_config_1_targ ex_targJudgement_fun [] in 
+        add_RawEvJudgement appraise_id cds_config_1_targ ex_targJudgement_fun' j'.
+
+
+
+
 
 
 (*
