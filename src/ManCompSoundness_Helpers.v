@@ -1,4 +1,4 @@
-(*  Helper Lemmas in support of Manifest Compiler Soundnesplit_evt proofs.  *)
+(*  Helper Lemmas in support of Manifest Compiler Soundness proofs.  *)
 
 Require Import Term_Defs_Core Manifest_Generator_Helpers Eqb_Evidence.
 

@@ -1,4 +1,4 @@
-(*  Primary results of Manifest Compiler Soundnesplit_evt (for Attestation).
+(*  Primary results of Manifest Compiler Soundness (for Attestation).
       Namely, that the compiler outputs a collection of manifests that support 
       execution of the input protocols.  *)
 
