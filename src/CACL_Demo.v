@@ -51,10 +51,11 @@ Definition cds_img_3_targ : TARG_ID := "cds_img_3_targ".
 (* ASP IDs *)
 Definition query_kim_id : ASP_ID := "query_kim_id".
 Definition hash_file_contents_id : ASP_ID := "hash_file_contents_id".
-Definition gather_file_contents_id : ASP_ID := "gather_file_contents_id".
+Definition gather_file_contents_id : ASP_ID := "r_readfile_id". (* "gather_file_contents_id" *)
+Definition appr_gather_file_contents_id : ASP_ID := "appraise_r_readfile_id".
 Definition appr_cds_id : ASP_ID := "appr_cds_id".
 
-Close Scope string_scope.
+
 
 
 
@@ -63,7 +64,7 @@ Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID) : Term :=
     (asp (ASPC (* ALL (EXTD 1)  *)
                (asp_paramsC 
                     gather_file_contents_id 
-                    [] 
+                    [("filepath", "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFile.txt")] 
                     targPlc 
                     targId ))).
 
@@ -74,6 +75,9 @@ Definition hash_targ_asp (targPlc:Plc) (targId:TARG_ID) : Term :=
                     [] 
                     targPlc 
                     targId ))).
+
+
+Close Scope string_scope.
 
 
 Open Scope cop_ent_scope.
@@ -368,6 +372,7 @@ Inductive EvSig :=
 
 *)
 
+(*
 Definition ex_targMap : Map TARG_ID string := 
     [(cds_config_1_targ, "cds_config_1_targ PASSED")].
 
@@ -381,16 +386,20 @@ Definition gather_contents_evsig : EvSig :=
 Definition example_GlobalContext : GlobalContext := 
     Build_GlobalContext 
         [(gather_file_contents_id, gather_contents_evsig);
-         (appraise_id, gather_contents_evsig)]
-        [(gather_file_contents_id, appraise_id)].
+         (appr_gather_file_contents_id, gather_contents_evsig)]
+        [(gather_file_contents_id, appr_gather_file_contents_id)].
+*)
 
 Definition example_appTerm : Term := (lseq gather_config_1 (asp APPR)).
+
+(*
 
 Definition computed_evidence : EvidenceT := 
     match (eval example_GlobalContext P0 mt_evt example_appTerm) with 
     | resultC et => et 
     | _ => mt_evt 
     end.
+*)
 
 (*
 Definition RawEvJudgement := Map ASP_ID (Map TARG_ID (RawEv -> string)).
@@ -426,7 +435,7 @@ Definition example_RawEvJudgement : RawEvJudgement :=
 
 Definition example_RawEvJudgement : RawEvJudgement := 
     let j' := add_RawEvJudgement gather_file_contents_id cds_config_1_targ ex_targJudgement_fun [] in 
-        add_RawEvJudgement appraise_id cds_config_1_targ ex_targJudgement_fun' j'.
+        add_RawEvJudgement appr_gather_file_contents_id cds_config_1_targ ex_targJudgement_fun' j'.
 
 
 

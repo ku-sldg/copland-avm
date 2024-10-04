@@ -37,13 +37,9 @@ Definition am_sendReq (att_sess : Attestation_Session) (req_plc : Plc)
           end
       end
     end.
-(*
-Definition do_AppraisalSummary (et:EvidenceT) (r:RawEv) (G:GlobalContext) (m:RawEvJudgement) : ResultT AppraisalSummary string
-*)
 
-Definition am_app_summary_example 
-(att_sess : Attestation_Session) (req_plc : Plc) 
-(e : Evidence) (t:Term) (toPlc : Plc) (* (summary_et:EvidenceT) *) : ResultT AppraisalSummary string :=
+Definition am_client_app_summary (att_sess : Attestation_Session) (req_plc : Plc) 
+(e : Evidence) (t:Term) (toPlc : Plc) : ResultT AppraisalSummary string :=
   match (am_sendReq att_sess req_plc e t toPlc) with 
   | errC msg => errC msg 
   | resultC rawev => 

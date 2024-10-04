@@ -42,9 +42,5 @@ Separate Extraction
     concrete_Jsonifiable_EvidenceT
     concrete_Jsonifiable_GlobalContext
     Jsonifiable_Term_Plc_list
-    example_appraisal_summary test_app_summary_compute_json
-    am_app_summary_example
-    example_appTerm computed_evidence.
-    (*
-    test_cacl_compute_json.
-    *)
+    test_app_summary_compute_json
+    am_client_app_summary.
