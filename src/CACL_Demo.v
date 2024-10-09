@@ -60,11 +60,11 @@ Definition appr_cds_id : ASP_ID := "appr_cds_id".
 
 
 
-Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID) : Term := 
+Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID) (path:string) : Term := 
     (asp (ASPC (* ALL (EXTD 1)  *)
                (asp_paramsC 
                     gather_file_contents_id 
-                    [("filepath", "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFile.txt")] 
+                    [("filepath", path)] 
                     targPlc 
                     targId ))).
 
@@ -82,14 +82,20 @@ Close Scope string_scope.
 
 Open Scope cop_ent_scope.
 
+Definition path_targ1 : string := "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFile.txt".
+
+Definition path_targ2 : string := "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFile2.txt".
+
+Definition path_targ3 : string := "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFile3.txt".
+
 Definition gather_config_1 : Term := 
-    (gather_targ_asp cds_config_dir_plc cds_config_1_targ).
+    (gather_targ_asp cds_config_dir_plc cds_config_1_targ path_targ1).
 
 Definition gather_config_2 : Term := 
-    (gather_targ_asp cds_config_dir_plc cds_config_2_targ).
+    (gather_targ_asp cds_config_dir_plc cds_config_2_targ path_targ2).
 
 Definition gather_config_3 : Term := 
-    (gather_targ_asp cds_config_dir_plc cds_config_3_targ).
+    (gather_targ_asp cds_config_dir_plc cds_config_3_targ path_targ3).
 
 Definition hash_cds_img_1 : Term := 
     (hash_targ_asp cds_config_dir_plc cds_img_1_targ).
@@ -390,7 +396,7 @@ Definition example_GlobalContext : GlobalContext :=
         [(gather_file_contents_id, appr_gather_file_contents_id)].
 *)
 
-Definition example_appTerm : Term := (lseq gather_config_1 (asp APPR)).
+Definition example_appTerm : Term := (lseq gather_config_1 (lseq gather_config_2 (asp APPR))).
 
 (*
 
@@ -435,7 +441,9 @@ Definition example_RawEvJudgement : RawEvJudgement :=
 
 Definition example_RawEvJudgement : RawEvJudgement := 
     let j' := add_RawEvJudgement gather_file_contents_id cds_config_1_targ ex_targJudgement_fun [] in 
-        add_RawEvJudgement appr_gather_file_contents_id cds_config_1_targ ex_targJudgement_fun' j'.
+    let j'' := add_RawEvJudgement appr_gather_file_contents_id cds_config_1_targ ex_targJudgement_fun' j' in 
+    let j''' := add_RawEvJudgement appr_gather_file_contents_id cds_config_2_targ ex_targJudgement_fun' j'' in
+        add_RawEvJudgement gather_file_contents_id cds_config_2_targ ex_targJudgement_fun j'''.
 
 
 
