@@ -396,7 +396,7 @@ Definition example_GlobalContext : GlobalContext :=
         [(gather_file_contents_id, appr_gather_file_contents_id)].
 *)
 
-Definition example_appTerm : Term := (lseq gather_config_1 (lseq gather_config_2 (asp APPR))).
+Definition example_appTerm : Term := (lseq gather_config_1 (lseq gather_config_2 (lseq gather_config_3 (asp APPR)))).
 
 (*
 
@@ -443,7 +443,9 @@ Definition example_RawEvJudgement : RawEvJudgement :=
     let j' := add_RawEvJudgement gather_file_contents_id cds_config_1_targ ex_targJudgement_fun [] in 
     let j'' := add_RawEvJudgement appr_gather_file_contents_id cds_config_1_targ ex_targJudgement_fun' j' in 
     let j''' := add_RawEvJudgement appr_gather_file_contents_id cds_config_2_targ ex_targJudgement_fun' j'' in
-        add_RawEvJudgement gather_file_contents_id cds_config_2_targ ex_targJudgement_fun j'''.
+    let j'''' := add_RawEvJudgement appr_gather_file_contents_id cds_config_3_targ ex_targJudgement_fun' j''' in
+    let j''''' := add_RawEvJudgement gather_file_contents_id cds_config_3_targ ex_targJudgement_fun j'''' in
+        add_RawEvJudgement gather_file_contents_id cds_config_2_targ ex_targJudgement_fun j'''''.
 
 
 
