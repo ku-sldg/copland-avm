@@ -8,19 +8,17 @@ Import ListNotations.
 
 
 (* Specific AM monad state *)
-Record AM_St : Type := mkAM_St
-                         { am_nonceMap : MapC N_ID BS;
-                           am_nonceId : N_ID; 
-                           am_config : Session_Config }.
+Record AM_St : Type := mkAM_St { 
+  am_nonceMap : Map N_ID BS;
+  am_nonceId : N_ID; 
+}.
 
 Inductive AM_Error : Type := 
 | cvm_error : CVM_Error -> AM_Error
 | am_error : string -> AM_Error
 | am_dispatch_error : DispatcherErrors -> AM_Error.
-  (*
-  | term_disclosure_error : Term -> AM_Error
-  | manifest_asp_unavailable : ASP_ID ->   *)
 
-Definition am_failm {A: Type} (e:AM_Error) : Err AM_St A AM_Error := fun s => (errC e, s).
+Definition am_failm {A: Type} (e:AM_Error) : Err AM_St Session_Config A AM_Error := 
+  fun s c => (errC e, s, c).
   
-Definition AM A := Err AM_St A AM_Error.
+Definition AM A := Err AM_St Session_Config A AM_Error.

@@ -291,7 +291,7 @@ Instance genListArg : Gen (list Arg) :=
 (* Split *)
 (******************************************************************)
 
-(** We must first address SP *)
+(** We must first addresplit_evt SP *)
 #[local]
 Instance showSP : Show (SP) :=
 {

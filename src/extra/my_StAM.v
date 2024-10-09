@@ -4,7 +4,7 @@ Record representing the AM Monad state structure.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-(*Require Import Maps EqClass ConcreteEvidence Term_Defs. *)
+(*Require Import Maps EqClass ConcreteEvidenceT Term_Defs. *)
 
 (*
 Require Import List.

@@ -139,7 +139,7 @@ Ltac break_exists :=
          end.
 
 (** [break_exists_exists] destructs an [exists] in your context, and uses
-    the witness found as witness for your current goal. *)
+    the witnesplit_evt found as witnesplit_evt for your current goal. *)
 Ltac break_exists_exists :=
   repeat match goal with
            | H:exists _, _ |- _ =>
@@ -482,7 +482,7 @@ Ltac remGen t :=
   remember t as x eqn:H;
     generalize dependent H.
 
-(** [remGenIfNotVar t] performs [remGen t] unless [t] is a simple
+(** [remGenIfNotVar t] performs [remGen t] unlesplit_evt [t] is a simple
     variable. *)
 Ltac remGenIfNotVar t := first [isVar t| remGen t].
 
@@ -617,7 +617,7 @@ Ltac aggressive_rewrite_goal :=
   match goal with H : _ |- _ => rewrite H end.
 
 (** [break_exists_name x] destructs an existential in context and
-    names the witness [x]. *)
+    names the witnesplit_evt [x]. *)
 Ltac break_exists_name x :=
   match goal with
   | [ H : exists _, _ |- _ ] => destruct H as [x H]

@@ -1,5 +1,5 @@
 Require Import Term_Defs_Core Params_Admits Manifest (* Executable_Dec *)
-               Example_Phrases_Admits Example_Phrases Eqb_Evidence
+               Example_Phrases_Admits Example_Phrases Eqb_EvidenceT
                Executable_Defs_Prop.
 
 Require Import EqClass Maps StructTactics.

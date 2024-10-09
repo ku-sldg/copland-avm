@@ -7,11 +7,11 @@
     The non-monadic stubs (i.e. doRemote_uuid) remain abstract (Admitted) in Coq 
     because they are either too low-level to reason about, or require external 
     IO capabilities not modeled first-class in our spec.  The abstract binary
-    and evidence value results support specification of correctness properties 
+    and EvidenceT value results support specification of correctness properties 
     for Appraisal.        
  *)
 Require Import Term_Defs ErrorStMonad_Coq 
-  Manifest_Admits Cvm_St String JSON.
+  Manifest_Admits Cvm_St String JSON Attestation_Session.
 
 Require Import List.
 Import ListNotations.
@@ -22,17 +22,9 @@ Definition aspid_to_fs_location (aspid : ASP_ID) : FS_Location. Admitted.
 
 Definition make_JSON_FS_Location_Request (dir : FS_Location) (aspid : FS_Location) (js : JSON) : ResultT JSON string. Admitted.
 
-(** * Stub to simulate evidence collected by a parallel CVM instance *)
-Definition parallel_vm_thread (l:Loc) (t:Core_Term) (p:Plc) (e:EvC) : EvC.  Admitted.
+(** * Stub to simulate EvidenceT collected by a parallel CVM instance *)
+Definition parallel_vm_thread (l:Loc) (p:Plc) (e:Evidence) (t: Term) : ResultT Evidence CVM_Error.  Admitted.
 
-Definition do_start_par_thread (loc:Loc) (t:Core_Term) (e:RawEv) : CVM unit :=
+Definition do_start_par_thread (loc:Loc) (e: Evidence) (t: Term) : CVM unit :=
   err_ret tt.
 
-Definition do_wait_par_thread (loc:Loc) (t:Core_Term) (p:Plc) (e:EvC) : CVM EvC :=
-  err_ret (parallel_vm_thread loc t p e).
-
-Definition requester_bound (t:Term) (fromPl:Plc) (authTok:ReqAuthTok) : bool.  Admitted.
-
-Definition appraise_auth_tok (res:AppResultC) : bool.  Admitted.
-
-Definition print_auth_tok (tok:ReqAuthTok) : unit.  Admitted.

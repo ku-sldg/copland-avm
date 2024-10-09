@@ -1,5 +1,5 @@
 Require Import Executable_Defs_Prop Executable_Defs_Bool
-               Manifest Eqb_Evidence Term_Defs_Core.
+               Manifest Eqb_EvidenceT Term_Defs_Core.
 
 Require Import Example_Phrases_Admits Example_Phrases Params_Admits.
 

@@ -231,7 +231,7 @@ Definition expect (t : token) : parser unit :=
 
 Definition isIdTail := fun x => orb (isAlphaNum x) (isUnderscore x).
 
-Local Instance str_eq_class : EqClass string :=
+Local Instance str_eq_clasplit_evt : EqClass string :=
   { eqb:= String.eqb;
     eqb_eq := String.eqb_eq }.
 

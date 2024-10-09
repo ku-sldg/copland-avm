@@ -2,7 +2,7 @@ Set Implicit Arguments.
 Set Strict Implicit.
 
 (*
-This class should be used when no requirements are needed
+This clasplit_evt should be used when no requirements are needed
 Polymorphic *)
 Class Any (T : Type) : Type.
 

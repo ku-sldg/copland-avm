@@ -21,7 +21,10 @@ Definition concrete_Jsonifiable_Term : Jsonifiable Term.
 solve [typeclasses eauto].
 Defined.
 
-Definition concrete_Jsonifiable_Evidence : Jsonifiable Evidence.
+Definition concrete_Jsonifiable_EvidenceT : Jsonifiable EvidenceT.
 solve [typeclasses eauto].
 Defined.
 
+Definition concrete_Jsonifiable_GlobalContext : Jsonifiable GlobalContext.
+solve [typeclasses eauto].
+Defined.

@@ -4,7 +4,7 @@
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import ConcreteEvidence GenStMonad.
+Require Import ConcreteEvidenceT GenStMonad.
 Require Import Maps. (*OptMonad*) (* MonadAM *)  (*StructTact.StructTactics. *)
 
 Require Import StructTactics.
@@ -16,11 +16,11 @@ Require Import Coq.Arith.EqNat.
 (*
 Inductive App_Instr: Set :=
 | asp_app: ASP_ID -> BS -> App_Instr
-| g_app: Plc -> BS -> EvidenceC -> App_Instr
-| h_app: BS -> EvidenceC -> App_Instr
+| g_app: Plc -> BS -> EvidenceTC -> App_Instr
+| h_app: BS -> EvidenceTC -> App_Instr
 | n_app: N_ID -> BS -> App_Instr.
 
-Fixpoint app_compile (e:EvidenceC) : list App_Instr :=
+Fixpoint app_compile (e:EvidenceTC) : list App_Instr :=
   match e with
   | mtc => []
   | uuc i bs e' => [asp_app i bs] ++ (app_compile e')
@@ -39,16 +39,16 @@ Definition nonce_map : Map N_ID BS. Admitted.
 
 (* params: id -> golden -> actual *)
 Definition check_measurement : ASP_ID -> BS -> BS -> bool. Admitted.
-Definition encode_ev : EvidenceC -> BS. Admitted.
+Definition encode_ev : EvidenceTC -> BS. Admitted.
 (* params: encoded payload -> private key -> signature *)
 Definition check_sig : BS -> Pri_Key -> BS -> bool. Admitted.
 
-Definition check_ev_sig (e:EvidenceC) (k:Pri_Key) (sig:BS) : bool :=
+Definition check_ev_sig (e:EvidenceTC) (k:Pri_Key) (sig:BS) : bool :=
   let payload := encode_ev e in
   check_sig payload k sig.
 
 (*
-Definition check_ev_pl (e:EvidenceC) (p:Plc) (sig:BS) : option bool :=
+Definition check_ev_pl (e:EvidenceTC) (p:Plc) (sig:BS) : option bool :=
   k <- map_get pri_keys p ;; 
     ret (check_ev_sig e k sig). *)
 
@@ -56,7 +56,7 @@ Definition check_ev_pl (e:EvidenceC) (p:Plc) (sig:BS) : option bool :=
 (* TODO: incorporate hash algorithm choice (policy) here? *)
 Definition check_hash : BS -> BS -> bool. Admitted.
 
-Definition check_ev_hash (e:EvidenceC) (bs:BS) : bool :=
+Definition check_ev_hash (e:EvidenceTC) (bs:BS) : bool :=
   let payload := encode_ev e in
   check_hash payload bs.
 
@@ -73,7 +73,7 @@ Definition check_asp (x:ASP_ID) (m:BS) : option bool :=
   g_bs <- (map_get golden_measurements x) ;;
        ret (check_measurement x g_bs m).
 
-Fixpoint appraise (e:EvidenceC) : option bool :=
+Fixpoint appraise (e:EvidenceTC) : option bool :=
   match e with
   | mtc => Some true
   | uuc i bs e =>
@@ -168,16 +168,16 @@ Definition am_get_asp_asp (p:Plc) (i:ASP_ID) : APP ASP_ID :=
    Nothing -> error $ "appraisal asp for ASP_ID " ++ (show i) ++ " at place " ++ (show p) ++ " not registered."
 *)
 
-Fixpoint gen_appraisal_term (e:EvidenceC) (et:Evidence) : APP Term :=
+Fixpoint gen_appraisal_term (e:EvidenceTC) (et:EvidenceT) : APP Term :=
   match e with
   | mtc =>
     match et with
-    | mt => ret (asp CPY)
+    | mt_evt=> ret (asp CPY)
     | _ => failm
     end
   | uuc i bs e' =>
     match et with 
-    | uu i_t p e'_t =>
+    | asp_evt i_t p e'_t =>
       let app_id := 0 in (* app_id <- am_get_asp_asp p i_t *)
       t2 <- gen_appraisal_term e' e'_t ;;
       let t1 := (asp (ASPC app_id)) in
@@ -213,7 +213,7 @@ Fixpoint gen_appraisal_term (e:EvidenceC) (et:Evidence) : APP Term :=
     end
   | ssc e1 e2 =>
     match et with
-    | ss e1_t e2_t => 
+    | split_evt e1_t e2_t => 
       t1' <- (gen_appraisal_term e1 e1_t) ;;
           t2' <- (gen_appraisal_term e2 e2_t) ;;
           let res := (bpar (NONE,NONE) t1' t2') in (* BRP (NONE,NONE) t1' t2' *)
@@ -245,7 +245,7 @@ Fixpoint gen_appraisal_term (e:EvidenceC) (et:Evidence) : APP Term :=
 
 
 (*
-Definition helper_gen_app (a:ASP) (p:Plc) (e:EvidenceC) : APP (Term * EvidenceC) :=
+Definition helper_gen_app (a:ASP) (p:Plc) (e:EvidenceTC) : APP (Term * EvidenceTC) :=
   match a with
   | CPY => ret (asp CPY,e)
   | ASPC i =>
@@ -268,7 +268,7 @@ Definition helper_gen_app (a:ASP) (p:Plc) (e:EvidenceC) : APP (Term * EvidenceC)
                
   
 
-Fixpoint gen_appraisal_term' (t:Term) (p:Plc) (e:EvidenceC) : APP (Term * EvidenceC) :=
+Fixpoint gen_appraisal_term' (t:Term) (p:Plc) (e:EvidenceTC) : APP (Term * EvidenceTC) :=
   match t with
   | asp a => helper_gen_app a p e
   | att q t' => gen_appraisal_term' t' q e
@@ -282,7 +282,7 @@ Fixpoint gen_appraisal_term' (t:Term) (p:Plc) (e:EvidenceC) : APP (Term * Eviden
         (* (t1',_) *) v1 <- (gen_appraisal_term' t1 p e1) ;;
         (* (t2',_) *) v2 <- (gen_appraisal_term' t2 p e2) ;;
         ret ((bpar (NONE,NONE) (fst v1) (fst v2)),mtc)
-      |_ => failm (* error "evidence mismath on BRS-SS" *)
+      |_ => failm (* error "EvidenceT mismath on BRS-SS" *)
       end
   | bpar _ t1 t2 =>
       match e with
@@ -290,7 +290,7 @@ Fixpoint gen_appraisal_term' (t:Term) (p:Plc) (e:EvidenceC) : APP (Term * Eviden
         (* (t1',_) *) v1 <- (gen_appraisal_term' t1 p e1) ;;
         (* (t2',_) *) v2 <- (gen_appraisal_term' t2 p e2) ;;
         ret ((bpar (NONE,NONE) (fst v1) (fst v2)),mtc)
-      |_ => failm (* error "evidence mismath on BRP-PP" *)
+      |_ => failm (* error "EvidenceT mismath on BRP-PP" *)
       end
   end.
 
@@ -342,7 +342,7 @@ Definition aev := (run_vm (annotated aterm)
 Compute (st_ev aev).
 Print signEv.
 
-Compute (gen_appraisal_term (st_ev aev) (gg 0 (uu 1 0 mt))).
+Compute (gen_appraisal_term (st_ev aev) (gg 0 (asp_evt 1 0 mt_evt))).
 
 Theorem someEv_if_well_formed : forall e' app_st e't,
   Ev_Shape e' e't -> 
@@ -489,7 +489,7 @@ Theorem someEv : forall t tr tr' e e' p p' o o' app_st et,
      st_store := o' |} ->
 
  Ev_Shape e et ->
- (* evalR (unanno t) p et e't -> (* e't = Term.eval (unanno t) p mt -> *) *)
+ (* evalR (unanno t) p et e't -> (* e't = Term.eval (unanno t) p mt_evt-> *) *)
   exists app_st' v,
     runSt app_st (gen_appraisal_term e' (Term.eval (unanno t) p et)) = (Some v,app_st').
 Proof.
@@ -536,7 +536,7 @@ Theorem someEv : forall t tr tr' e e' et s s' p p' o o' app_st e't,
      st_store := o' |} ->
 
   ET e et ->
-  evalR (unanno t) p et e't -> (* e't = Term.eval (unanno t) p mt -> *)
+  evalR (unanno t) p et e't -> (* e't = Term.eval (unanno t) p mt_evt-> *)
   exists app_st' v,
     runSt app_st (gen_appraisal_term e' e't) = (Some v,app_st').
 Proof.

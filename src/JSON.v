@@ -3,6 +3,7 @@
 Require Export JSON_Type JSON_Admits ResultT StructTactics.
 Require Import List String Maps Stringifiable EqClass ErrorStringConstants.
 Import ListNotations.
+Import ResultNotation.
 
 (* The JSONIFIABLE Class *)
 Class Jsonifiable (A : Type) :=
@@ -19,24 +20,12 @@ Ltac simpl_json :=
     try rewrite canonical_stringification in *;
     simpl in *; intuition).
 
-
 Ltac solve_json := 
   simpl_json; try congruence;
   match goal with
   | |- resultC ?x = resultC ?y => 
     destruct y; simpl in *; subst; eauto
   end.
-
-
-
-(* Global Instance Stringifiable_Jsonifiables {A : Type} `{Jsonifiable A} : Stringifiable A.
-pose proof (Build_Stringifiable A (fun a => JSON_to_string (to_JSON a)) (fun a => match string_to_JSON a with | errC e => errC e | resultC js => from_JSON js end)).
-intuition.
-eapply X.
-intuition.
-rewrite canonical_serialization_json_string; 
-rewrite canonical_jsonification; eauto.
-Defined. *)
 
 (* The JSONIFIABLE Class *)
 
@@ -45,58 +34,33 @@ Open Scope string_scope.
 Definition JSON_get_Object (key : string) (js : JSON) : ResultT JSON string :=
   match js with
   | JSON_Object m => 
-      match map_get m key with
+      match map_get key m with
       | Some v => resultC v 
-      | None => errC ("JSON_get_Object: KEY NOT FOUND : " ++ key)
+      | None => errC (errStr_json_key_not_found key js) 
       end
-  | _ => errC "JSON_get_Object: NOT AN OBJECT"
+  | _ => errC (errStr_json_wrong_type key js)
   end.
-
-(*
-Fixpoint JSON_map_get_Object_rec_safe (key : string) (js_map : MapC string InnerJSON) : ResultT JSON string :=
-  match js_map with
-  | [] => errC ("NO OBJECT """ ++ key ++ """")
-  | (key', val) :: js_map' =>
-      if (eqb key key') 
-      then (match val with
-            | InJSON_Object v => resultC v
-            | _ => errC "JSON_map_get_Object_rec_safe: NOT AN OBJECT"
-            end)
-      else JSON_map_get_Object_rec_safe key js_map'
-  end.
-*)
 
 Definition JSON_get_Array (key : string) (js : JSON) : ResultT (list JSON) string :=
   match JSON_get_Object key js with
   | resultC (JSON_Array v) => resultC v
-  | resultC js' => errC ("Key: '" ++ key ++ "' yields '" ++ (JSON_to_string js') ++ "' which is not an array")
-  | _ => errC ("Could not find key: '" ++ key ++ "' in Json object: '" ++
-    (JSON_to_string js) ++ "'")
+  | resultC _ => errC (errStr_json_wrong_type key js)
+  | _ => errC (errStr_json_key_not_found key js)
   end.
 
 Definition JSON_get_string (key : string) (js : JSON) : ResultT string string :=
   match JSON_get_Object key js with
   | resultC (JSON_String v) => resultC v
-  | resultC js' => errC ("Key: '" ++ key ++ "' yields '" ++ (JSON_to_string js') ++ "' which is not a string")
-  | _ => errC ("Could not find key: '" ++ key ++ "' in Json object: '" ++
-    (JSON_to_string js) ++ "'")
+  | resultC _ => errC (errStr_json_wrong_type key js)
+  | _ => errC (errStr_json_key_not_found key js)
   end.
 
 Definition JSON_get_bool (key : string) (js : JSON) : ResultT bool string :=
   match (JSON_get_Object key js) with
   | resultC (JSON_Boolean v) => resultC v
-  | resultC js' => errC ("Key: '" ++ key ++ "' yields '" ++ (JSON_to_string js') ++ "' which is not a bool")
-  | _ => errC ("Could not find key: '" ++ key ++ "' in Json object: '" ++
-    (JSON_to_string js) ++ "'")
+  | resultC _ => errC (errStr_json_wrong_type key js)
+  | _ => errC (errStr_json_key_not_found key js)
   end.
-
-(* Lemma canonical_serialization_string : forall (js : JSON) (a : string), 
-  JSON_String a = js <-> (resultC (JSON_to_string js) = @resultC _ string a).
-Proof.
-  setoid_rewrite canonical_serialization_json_string; intuition; eauto.
-  - rewrite H; eauto. 
-  - inversion H; eauto. 
-Qed. *)
 
 (* The Pair JSONIFIABLE Class *)
 Definition str_pair_to_JSON {A B : Type} `{Stringifiable A, Stringifiable B} (v : (A * B)) : JSON :=
@@ -105,11 +69,10 @@ Definition str_pair_to_JSON {A B : Type} `{Stringifiable A, Stringifiable B} (v 
 Definition str_pair_from_JSON {A B : Type} `{Stringifiable A, Stringifiable B} (js : JSON) : ResultT (A * B) string :=
   match js with
   | JSON_Array [JSON_String a; JSON_String b] =>
-      match (from_string a), (from_string b) with
-      | resultC a, resultC b => resultC (a, b)
-      | _, _ => errC errStr_json_to_pair
-      end
-  | _ => errC errStr_json_to_pair
+    a <- from_string a ;;
+    b <- from_string b ;;
+    resultC (a, b)
+  | _ => errC (errStr_json_from_pair)
   end.
 
 Global Instance Jsonifiable_str_pair {A B : Type} `{Stringifiable A, Stringifiable B} : Jsonifiable (A * B).
@@ -121,27 +84,26 @@ Defined.
 
 (* The List JSONIFIABLE Class *)
 
-Definition map_serial_serial_to_JSON {A B : Type} `{Stringifiable A, Stringifiable B, EqClass A} (m : MapC A B) : JSON :=
+Definition map_serial_serial_to_JSON {A B : Type} `{Stringifiable A, Stringifiable B, EqClass A} (m : Map A B) : JSON :=
   JSON_Object (
     map (fun '(k, v) => (to_string k, JSON_String (to_string v))) m).
 
-Definition map_serial_serial_from_JSON {A B : Type} `{Stringifiable A, Stringifiable B, EqClass A} (js : JSON) : ResultT (MapC A B) string :=
+Definition map_serial_serial_from_JSON {A B : Type} `{Stringifiable A, Stringifiable B, EqClass A} (js : JSON) : ResultT (Map A B) string :=
   match js with
   | JSON_Object m => 
       result_map 
         (fun '(k, v) => 
-            match v with
-            | JSON_String v' =>
-              match (from_string k), (from_string v') with
-              | resultC k', resultC v' => resultC (k', v')
-              | _, _ => errC "Error in map_serial_serial_from_JSON:  key/value pair not both Strings"
-              end
-            | _ => errC "Error in map_serial_serial_from_JSON:  value not a JSON String"
-            end) m
-  | _ => errC "Error in map_serial_serial_from_JSON:  JSON map not a JSON Object"
+          match v with
+          | JSON_String v' =>
+            k' <- from_string k ;;
+            v' <- from_string v' ;;
+            resultC (k', v')
+          | _ => errC (errStr_map_from_json)
+          end) m
+  | _ => errC (errStr_map_from_json)
   end.
 
-Lemma canonical_jsonification_map_serial_serial : forall {A B} `{Stringifiable A, Stringifiable B, EqClass A} (m : MapC A B),
+Lemma canonical_jsonification_map_serial_serial : forall {A B} `{Stringifiable A, Stringifiable B, EqClass A} (m : Map A B),
   map_serial_serial_from_JSON (map_serial_serial_to_JSON m) = resultC m.
 Proof.
   intuition.
@@ -155,34 +117,29 @@ Proof.
   repeat find_injection; eauto.
 Qed.
 
-Global Instance jsonifiable_map_serial_serial (A B : Type) `{Stringifiable A, EqClass A, Stringifiable B} : Jsonifiable (MapC A B) :=
+Global Instance jsonifiable_map_serial_serial (A B : Type) `{Stringifiable A, EqClass A, Stringifiable B} : Jsonifiable (Map A B) :=
   {
     to_JSON   := map_serial_serial_to_JSON;
     from_JSON := map_serial_serial_from_JSON;
     canonical_jsonification := canonical_jsonification_map_serial_serial;
   }.
 
-(*
-Global Instance jsonifiable_map_serial_json (A B : Type) `{Stringifiable A, EqClass A, Jsonifiable B} : Jsonifiable (MapC A B). 
+Global Instance jsonifiable_map_serial_json (A B : Type) `{Stringifiable A, EqClass A, Jsonifiable B} : Jsonifiable (Map A B). 
 eapply Build_Jsonifiable with (
   to_JSON := (fun m => JSON_Object (
                       map (fun '(k, v) => 
-                            (to_string k, JSON_Object (to_JSON v))
+                            (to_string k, to_JSON v)
                           ) m))) 
   (from_JSON := (fun js =>   
                     match js with
                     | JSON_Object m => 
                         result_map 
                           (fun '(k, v) => 
-                              match v with
-                              | JSON_Object v' =>
-                                match (from_string k), (from_JSON v') with
-                                | resultC k', resultC v' => resultC (k', v')
-                                | _, _ => errC "Error in jsonifiable_map_serial_json"
-                                end
-                              | _ => errC errStr_json_to_map
-                              end) m
-                    end)).
+                            k' <- from_string k ;;
+                            v' <- from_JSON v ;;
+                            resultC (k', v')) m
+                    | _ => errC (errStr_map_from_json)
+                    end));
 intuition; induction a; simpl in *; intuition; eauto;
 repeat (try break_match; simpl in *; subst; eauto; try congruence);
 try rewrite canonical_jsonification in *; 
@@ -190,23 +147,22 @@ try rewrite canonical_stringification in *;
 repeat find_injection; simpl in *; 
 try find_rewrite; eauto; try congruence.
 Defined.
-*)
 
 Close Scope string_scope.
 
 (* Definition JSON_to_string_map {B : Type} `{Jsonifiable B} (js : JSON) 
-    : ResultT (MapC string B) string :=
+    : ResultT (Map string B) string :=
 
 Definition JSON_to_string_string_map {B : Type} `{Stringifiable B} (js : JSON) 
-    : ResultT (MapC string B) string :=
+    : ResultT (Map string B) string :=
 
-Global Instance jsonifiable_string_map (A : Type) `{Jsonifiable A} : Jsonifiable (MapC string A) :=
+Global Instance jsonifiable_string_map (A : Type) `{Jsonifiable A} : Jsonifiable (Map string A) :=
   {
     to_JSON := string_map_to_JSON;
     from_JSON := JSON_to_string_map
   }. *)
 
-(* Global Instance jsonifiable_id_map (A : Type) `{Jsonifiable A} : Jsonifiable (MapC ID_Type A) :=
+(* Global Instance jsonifiable_id_map (A : Type) `{Jsonifiable A} : Jsonifiable (Map ID_Type A) :=
   {
     to_JSON := (fun m => string_map_to_JSON (id_map_to_string_map m));
     from_JSON := (fun js => 
@@ -216,13 +172,13 @@ Global Instance jsonifiable_string_map (A : Type) `{Jsonifiable A} : Jsonifiable
                     end)
   }.
 
-Fixpoint id_B_map_to_string_map {B : Type} `{Stringifiable ID_Type, Stringifiable B} (m : MapC ID_Type B) : MapC string string :=
+Fixpoint id_B_map_to_string_map {B : Type} `{Stringifiable ID_Type, Stringifiable B} (m : Map ID_Type B) : Map string string :=
   match m with
   | [] => []
   | (k, v) :: m' => (to_string k, to_string v) :: (id_B_map_to_string_map m')
   end.
 
-Fixpoint string_map_to_id_B_map {B : Type} `{Stringifiable ID_Type, Stringifiable B} (m : MapC string string) : ResultT (MapC ID_Type B) string :=
+Fixpoint string_map_to_id_B_map {B : Type} `{Stringifiable ID_Type, Stringifiable B} (m : Map string string) : ResultT (Map ID_Type B) string :=
   match m with
   | [] => resultC []
   | (k, v) :: m' => 
@@ -236,7 +192,7 @@ Fixpoint string_map_to_id_B_map {B : Type} `{Stringifiable ID_Type, Stringifiabl
     end
   end.
 
-Global Instance jsonifiable_id_map_Stringifiables (A : Type) `{Stringifiable A} : Jsonifiable (MapC ID_Type A) :=
+Global Instance jsonifiable_id_map_Stringifiables (A : Type) `{Stringifiable A} : Jsonifiable (Map ID_Type A) :=
   {
     to_JSON := (fun m => string_string_map_to_JSON (id_B_map_to_string_map m));
     from_JSON := (fun js => 
@@ -247,14 +203,14 @@ Global Instance jsonifiable_id_map_Stringifiables (A : Type) `{Stringifiable A} 
   }. *)
 
 Fixpoint map_flatten {A B C : Type} `{EqClass A, EqClass B} 
-    (m : MapC (A * B) C) : list (A * B * C) :=
+    (m : Map (A * B) C) : list (A * B * C) :=
   match m with
   | [] => []
   | ((k1, k2), v) :: m' => (k1,k2,v) :: map_flatten m'
   end.
 
 Fixpoint result_map_pairs {A B C : Type} `{EqClass A, EqClass B} (f : JSON -> ResultT ((A * B) * C) string) (l : list JSON)
-    : ResultT (MapC (A * B) C) string :=
+    : ResultT (Map (A * B) C) string :=
   match l with
   | [] => resultC []
   | h :: t => 
@@ -268,11 +224,11 @@ Fixpoint result_map_pairs {A B C : Type} `{EqClass A, EqClass B} (f : JSON -> Re
       end
   end.
 
-Definition map_pair_to_InnerJSON_string {A B C : Type} `{Stringifiable A, EqClass A, EqClass B, Stringifiable B, Stringifiable C} (m : MapC (A * B) C) : list JSON :=
+(* Definition map_pair_to_InnerJSON_string {A B C : Type} `{Stringifiable A, EqClass A, EqClass B, Stringifiable B, Stringifiable C} (m : Map (A * B) C) : list JSON :=
   List.map (fun '(k1, k2, v) => JSON_Array [JSON_String (to_string k1); JSON_String (to_string k2); JSON_String (to_string v)]) (map_flatten m).
 
 Definition InnerJson_string_to_map_pair {A B C : Type} `{Stringifiable A, EqClass A, EqClass B, Stringifiable B, Stringifiable C} (js : list JSON) 
-    : ResultT (MapC (A * B) C) string :=
+    : ResultT (Map (A * B) C) string :=
   result_map_pairs 
     (fun js' => 
         match js' with
@@ -282,13 +238,13 @@ Definition InnerJson_string_to_map_pair {A B C : Type} `{Stringifiable A, EqClas
           | _, _, _ => errC errStr_json_to_map
           end
         | _ => errC errStr_json_to_map
-        end) js.
+        end) js. *)
 
-(* Definition map_pair_to_InnerJSON {A B C : Type} `{Stringifiable A, EqClass A, EqClass B, Stringifiable B, Jsonifiable C} (m : MapC (A * B) C) : list InnerJSON :=
+(* Definition map_pair_to_InnerJSON {A B C : Type} `{Stringifiable A, EqClass A, EqClass B, Stringifiable B, Jsonifiable C} (m : Map (A * B) C) : list InnerJSON :=
   List.map (fun '(k1, k2, v) => InJSON_Array [InJSON_String (to_string k1); InJSON_String (to_string k2); InJSON_Object (to_JSON v)]) (map_flatten m).
 
 Definition InnerJson_to_map_pair {A B C : Type} `{Stringifiable A, EqClass A, EqClass B, Stringifiable B, Jsonifiable C} (js : list InnerJSON) 
-    : ResultT (MapC (A * B) C) string :=
+    : ResultT (Map (A * B) C) string :=
   result_map_pairs 
     (fun js' => 
         match js' with

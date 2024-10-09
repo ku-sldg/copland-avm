@@ -4,7 +4,7 @@ Definition of the AM Monad + monadic helper functions.
 Author:  Adam Petz, ampetz@ku.edu
 *)
 Require Import Maps GenStMonad Impl_vm StVM StAM.
-Require Import Term ConcreteEvidence.
+Require Import Term ConcreteEvidenceT.
 
 Require Import PeanoNat.
 
@@ -13,7 +13,7 @@ Import ListNotations.
 
 Definition AM := St AM_St.
 
-Definition am_newNonce (bs :BS) : AM EvidenceC :=
+Definition am_newNonce (bs :BS) : AM EvidenceTC :=
   am_st <- get ;;
   let mm := am_nonceMap am_st in
   let i := am_nonceId am_st in
@@ -66,7 +66,7 @@ Require Import StVM MonadVM.
 
 (** * Helper functions for Appraisal *)
 
-Definition checkSig (x:nat) (i:ASP_ID) (e':EvidenceC) (sig:BS) : CVM BS :=
+Definition checkSig (x:nat) (i:ASP_ID) (e':EvidenceTC) (sig:BS) : CVM BS :=
   invokeUSM x i ([encodeEv e'] ++ [sig] (* ++ args*) ) 0 0 ;;
   ret x.
 
@@ -74,11 +74,11 @@ Definition checkUSM (x:nat) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID) (bs:
   invokeUSM x i ([bs] ++ l) tpl tid ;;
   ret x.
 
-Definition hashEvT (e:Evidence): BS.
+Definition hashEvT (e:EvidenceT): BS.
 Admitted.
 
 Definition checkHSH (*(x:nat) (i:ASP_ID) (l:list Arg) (tpl:Plc) (tid:TARG_ID)*)
-           (e:Evidence) (bs:BS) : CVM BS :=
+           (e:EvidenceT) (bs:BS) : CVM BS :=
   invokeUSM 0 1 ([hashEvT e] ++ [bs]) 42 43 ;;
   ret 0.
 
@@ -87,12 +87,12 @@ Definition runAM {A:Type} (k:(AM A)) (st:AM_St) : (option A) * AM_St :=
 
 Definition incNonce := runAM (am_newNonce 42) empty_amst.
 
-Definition am_run_t (t:Term) (e:EvidenceC) (et:Evidence) : AM EvidenceC :=
+Definition am_run_t (t:Term) (e:EvidenceTC) (et:EvidenceT) : AM EvidenceTC :=
   let annt := annotated t in
   let start_st := (mk_st e et [] 0) in
   ret (st_ev (run_cvm annt start_st)).
 
-Definition am_run_t_anno (annt:AnnoTerm) (e:EvidenceC) (et:Evidence) : AM EvidenceC :=
+Definition am_run_t_anno (annt:AnnoTerm) (e:EvidenceTC) (et:EvidenceT) : AM EvidenceTC :=
   let start_st := (mk_st e et [] 0) in
   ret (st_ev (run_cvm annt start_st)).
 
@@ -140,7 +140,7 @@ Compute (runAM am_proto_1 empty_amst).
 *)
 
 (*
-Fixpoint nonces (e:EvidenceC) (l:list nat) : list nat :=
+Fixpoint nonces (e:EvidenceTC) (l:list nat) : list nat :=
   match e with
   | nnc i _ e' => nonces e' ([i] ++ l)
   | _ => l

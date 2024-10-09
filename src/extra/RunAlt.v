@@ -4,7 +4,7 @@ Alternative ("big-step") definition of run_vm + proof that it corresponds to the
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import Preamble GenStMonad MonadVM Instr VmSemantics MyStack ConcreteEvidence MonadLaws.
+Require Import Preamble GenStMonad MonadVM Instr VmSemantics MyStack ConcreteEvidenceT MonadLaws.
 Require Import Event_system More_lists LTS Term Term_system.
 Require Import StructTactics.
 
@@ -719,7 +719,7 @@ Proof.
     
     edestruct IHt1 with (st:={|
            st_ev := splitEv s st_ev0;
-           st_stack := push_stack EvidenceC (splitEv s0 st_ev0) st_stack0;
+           st_stack := push_stack EvidenceTC (splitEv s0 st_ev0) st_stack0;
            st_trace := st_trace0 ++ [Term.split n st_pl0];
            st_pl := st_pl0;
            st_store := st_store0 |}) (il:=instr_compiler a).
@@ -734,14 +734,14 @@ Proof.
     vmsts.
     
     assert (
-        push_stack EvidenceC (splitEv s0 st_ev0) st_stack0 =
+        push_stack EvidenceTC (splitEv s0 st_ev0) st_stack0 =
         st_stack1) as HH.
     {
       Print do_stack1.
       Print run_vm'.
       assert (run_vm' (instr_compiler a) {|
          st_ev := splitEv s st_ev0;
-         st_stack := push_stack EvidenceC (splitEv s0 st_ev0) st_stack0;
+         st_stack := push_stack EvidenceTC (splitEv s0 st_ev0) st_stack0;
          st_trace := st_trace0 ++ [Term.split n st_pl0];
          st_pl := st_pl0;
          st_store := st_store0 |} =
@@ -781,14 +781,14 @@ Proof.
               end) (instr_compiler a) (fun s : vm_st => (Some tt, s))
              {|
              st_ev := splitEv s st_ev0;
-             st_stack := push_stack EvidenceC (splitEv s0 st_ev0) st_stack0;
+             st_stack := push_stack EvidenceTC (splitEv s0 st_ev0) st_stack0;
              st_trace := st_trace0 ++ [Term.split n st_pl0];
              st_pl := st_pl0;
              st_store := st_store0 |} =
         run_vm_fold (instr_compiler a)
          {|
              st_ev := splitEv s st_ev0;
-             st_stack := push_stack EvidenceC (splitEv s0 st_ev0) st_stack0;
+             st_stack := push_stack EvidenceTC (splitEv s0 st_ev0) st_stack0;
              st_trace := st_trace0 ++ [Term.split n st_pl0];
              st_pl := st_pl0;
              st_store := st_store0 |}) as HHH.
@@ -818,7 +818,7 @@ Proof.
         
         (st:= {|
             st_ev := splitEv s0 st_ev0;
-            st_stack := push_stack EvidenceC st_ev1 st_stack0;
+            st_stack := push_stack EvidenceTC st_ev1 st_stack0;
             st_trace := st_trace1;
             st_pl := st_pl1;
             st_store := st_store1 |}).
@@ -834,7 +834,7 @@ Proof.
         run_vm_fold (instr_compiler a0)
                     {|
             st_ev := splitEv s0 st_ev0;
-            st_stack := push_stack EvidenceC st_ev1 st_stack0;
+            st_stack := push_stack EvidenceTC st_ev1 st_stack0;
             st_trace := st_trace1;
             st_pl := st_pl1;
             st_store := st_store1 |} =
@@ -846,7 +846,7 @@ Proof.
              end) (instr_compiler a0) (fun s : vm_st => (Some tt, s))
             {|
             st_ev := splitEv s0 st_ev0;
-            st_stack := push_stack EvidenceC st_ev1 st_stack0;
+            st_stack := push_stack EvidenceTC st_ev1 st_stack0;
             st_trace := st_trace1;
             st_pl := st_pl1;
             st_store := st_store1 |}) as HH.
@@ -856,13 +856,13 @@ Proof.
       
     rewrite <- HH in Heqp8. clear HH.
     rewrite H0 in Heqp8.
-    assert (push_stack EvidenceC st_ev1 st_stack0 = st_stack3).
+    assert (push_stack EvidenceTC st_ev1 st_stack0 = st_stack3).
     {
       Print do_stack1.
       Print run_vm'.
       assert (run_vm' (instr_compiler a0) {|
          st_ev := splitEv s0 st_ev0;
-         st_stack := push_stack EvidenceC st_ev1 st_stack0;
+         st_stack := push_stack EvidenceTC st_ev1 st_stack0;
          st_trace := st_trace1;
          st_pl := st_pl1;
          st_store := st_store1 |} =

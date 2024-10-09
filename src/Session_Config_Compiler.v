@@ -10,7 +10,7 @@ Definition generate_ASP_dispatcher' (am : Manifest) (ats : Attestation_Session) 
     if (in_dec_set aspid asps)
     then 
       let conc_asp_loc := 
-          match (map_get asp_map aspid) with
+          match (map_get aspid asp_map) with
           | Some conc_asp_loc => conc_asp_loc
           (* If we dont find a translation, assume its the same name*)
           | None => (aspid_to_fs_location aspid)
@@ -40,7 +40,7 @@ Definition session_config_compiler (conf : AM_Manager_Config) (ats : Attestation
 let '(mkAM_Man_Conf man aspBin myUUID) := conf in
 {|
   session_plc := (Session_Plc ats) ;
-  ASP_to_APPR_ASP_Map := (ASP_Compat_Map man);
+  session_context := (ats_context ats) ;
   aspCb     := (generate_ASP_dispatcher man ats aspBin) ;
   plc_map     := (Plc_Mapping ats);
   pubkey_map  := (PubKey_Mapping ats);
@@ -51,4 +51,6 @@ Definition session_config_decompiler (sc : Session_Config) : Attestation_Session
 {|
   Session_Plc := (session_plc sc) ;
   Plc_Mapping := (plc_map sc) ;
-  PubKey_Mapping := (pubkey_map sc) |}.
+  PubKey_Mapping := (pubkey_map sc) ;
+  ats_context := (session_context sc)
+|}.

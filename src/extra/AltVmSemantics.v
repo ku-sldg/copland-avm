@@ -4,7 +4,7 @@
 Author:  Adam Petz, ampetz@ku.edu
 *)
 
-Require Import More_lists Preamble Term ConcreteEvidence LTS GenStMonad.
+Require Import More_lists Preamble Term ConcreteEvidenceT LTS GenStMonad.
 Require Import Instr MyStack MonadVM MonadVMFacts RunAlt.
 
 Require Import Main Event_system Term_system.
@@ -23,7 +23,7 @@ Set Nested Proofs Allowed.
 Definition remote_events (t:AnnoTerm) (p:Plc) : (list Ev).
 Admitted.
 
-Definition parallel_att_vm_thread (li:list AnnoInstr) (e:EvidenceC) : EvidenceC.
+Definition parallel_att_vm_thread (li:list AnnoInstr) (e:EvidenceTC) : EvidenceTC.
 Admitted.
 
 Definition parallel_vm_events (li:list AnnoInstr) (p:Plc) : list Ev.
@@ -135,7 +135,7 @@ Ltac do_flip :=
     symmetry in H
   end.
 
-Ltac allss :=
+Ltac allsplit_evt :=
   repeat find_inversion;
   try bogus;
   repeat (do_get_store_at_facts; subst; eauto);
@@ -294,7 +294,7 @@ Proof.
 Abort.
 
 (*
-(* Starting trace has no effect on evidence *)
+(* Starting trace has no effect on EvidenceT *)
 Lemma trace_irrel_ev : forall il1 tr1 tr1' tr2 e e' s s' p1' p1 o1 o1',
     run_vm il1 {| st_ev := e; st_trace := tr1; st_stack := s; st_pl := p1; st_store := o1 |} =
     {| st_ev := e'; st_trace := tr1'; st_stack := s'; st_pl := p1'; st_store := o1' |} ->
@@ -1179,13 +1179,13 @@ Proof.
     assert (H2 = p). {
       assert ( st_pl ( run_vm (instr_compiler t1) {|
          st_ev := splitEv s e;
-         st_stack := push_stack EvidenceC (splitEv s1 e) s0;
+         st_stack := push_stack EvidenceTC (splitEv s1 e) s0;
          st_trace := tr ++ [Term.split n p];
          st_pl := p;
          st_store := o |}) =
      st_pl (  {|
        st_ev := H0;
-       st_stack := push_stack EvidenceC (splitEv s1 e) s0;
+       st_stack := push_stack EvidenceTC (splitEv s1 e) s0;
        st_trace := H;
        st_pl := H2;
        st_store := H3 |} )).
@@ -1295,7 +1295,7 @@ Proof.
 Defined.
 
 Lemma map_get_get(*{V:Type}`{forall x y : V, Dec (x = y)}*) :
-  forall (k:nat) (v:EvidenceC) l',
+  forall (k:nat) (v:EvidenceTC) l',
     Maps.map_get ((k,v) :: l') k = Some v.
 Proof.
   intros.
@@ -1305,7 +1305,7 @@ Proof.
 Defined.
 
 Lemma map_get_get_2(*{V:Type}`{forall x y : V, Dec (x = y)}*) :
-  forall (k:nat) (v:EvidenceC) k' v' l',
+  forall (k:nat) (v:EvidenceTC) k' v' l',
     k <> k' ->
     Maps.map_get ((k',v') :: (k,v) :: l') k = Some v.
 Proof.
@@ -1603,7 +1603,7 @@ Proof.
               ((instr_compiler t1 ++ abesr :: instr_compiler t2 ++
                                [ajoins (Init.Nat.pred n1)]))
               {| st_ev := splitEv s e;
-                  st_stack := push_stack EvidenceC (splitEv s1 e) s0;
+                  st_stack := push_stack EvidenceTC (splitEv s1 e) s0;
                   st_trace := []; st_pl := p; st_store := o |} =
              {| st_ev := e'; st_stack := s0; st_trace := H0; st_pl := p'; st_store := o' |})
         as H2 by (eapply restl'; eauto).
@@ -1614,7 +1614,7 @@ Proof.
            st_pl (run_vm (instr_compiler t1)
          {|
          st_ev := splitEv s e;
-         st_stack := push_stack EvidenceC (splitEv s1 e) s0;
+         st_stack := push_stack EvidenceTC (splitEv s1 e) s0;
          st_trace := [];
          st_pl := p;
          st_store := o |}) =
@@ -1664,12 +1664,12 @@ Proof.
        assert (st_pl (run_vm (instr_compiler t2)
          {|
          st_ev := splitEv s1 e;
-         st_stack := push_stack EvidenceC H1 s0;
+         st_stack := push_stack EvidenceTC H1 s0;
          st_trace := [];
          st_pl := H4; st_store := H5 |}) =
                st_pl (
                    {| st_ev := H0;
-                      st_stack := push_stack EvidenceC H1 s0;
+                      st_stack := push_stack EvidenceTC H1 s0;
                       st_trace := H13;
                       st_pl := p'; st_store := o' |})).
        congruence.
@@ -1752,7 +1752,7 @@ Theorem vm_ordered' : forall t tr ev0 ev1 e e' s s' o o' t' n,
 Proof.
   intros.
   Check ordered.
-  eapply ordered with (p:=0) (e:=mt); eauto.
+  eapply ordered with (p:=0) (e:=mt_evt); eauto.
   eapply run_lstar; eauto.
 Defined.
 
@@ -1769,7 +1769,7 @@ Theorem vm_ordered : forall t tr ev0 ev1 e e' s s' o o' t',
 Proof.
   intros.
   Check ordered.
-  eapply ordered with (p:=0) (e:=mt); eauto.
+  eapply ordered with (p:=0) (e:=mt_evt); eauto.
   -
     unfold annotated in H.
     subst.

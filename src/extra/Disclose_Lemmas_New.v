@@ -36,7 +36,7 @@ Lemma cvm_implies_events: forall t annt e e' bits bits' p p' cvmi cvmi' cvm_tr e
 
 
 
-Definition cvm_trace_discloses_to_remote (tr:list Ev) (r:Plc) (e:Evidence) : Prop :=
+Definition cvm_trace_discloses_to_remote (tr:list Ev) (r:Plc) (e:EvidenceT) : Prop :=
   exists ev,
     (In ev tr) /\
     (
@@ -52,7 +52,7 @@ Definition cvm_trace_discloses_aspid_to_remote_enc (tr:list Ev) (i:ASP_ID) (r:Pl
         cvm_trace_discloses_to_remote tr r e.
 
 
-Definition events_discloses (annt:AnnoTerm) (p:Plc) (e:Evidence) (r:Plc) (e':Evidence): Prop :=
+Definition events_discloses (annt:AnnoTerm) (p:Plc) (e:EvidenceT) (r:Plc) (e':EvidenceT): Prop :=
         exists ev,
         (
             events annt p e ev /\
@@ -65,7 +65,7 @@ Definition events_discloses (annt:AnnoTerm) (p:Plc) (e:Evidence) (r:Plc) (e':Evi
         ).
 
 
-Definition events_discloses_aspid_enc (annt:AnnoTerm) (p:Plc) (e:Evidence) (i:ASP_ID) (r:Plc): Prop :=
+Definition events_discloses_aspid_enc (annt:AnnoTerm) (p:Plc) (e:EvidenceT) (i:ASP_ID) (r:Plc): Prop :=
   exists reqe,
      evsubt_asp_enc_bool reqe i r = true /\
      events_discloses annt p e r reqe.

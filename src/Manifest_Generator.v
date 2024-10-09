@@ -2,144 +2,115 @@
     Includes separate (but similar) versions of the generator for both 
     attestation (manifest_generator) and appraisal (manifest_generator_app) scenarios. *)
 
-Require Import Term_Defs_Core Params_Admits Manifest.
+Require Import Term_Defs Params_Admits Manifest.
 
-Require Import ResultT String Maps StructTactics.
+Require Export ResultT String Maps StructTactics.
 
-Require Export EnvironmentM Manifest_Set.
+Require Export EnvironmentM Manifest_Set ErrorStringConstants.
 
 Require Import List.
-Import ListNotations.
+Import ListNotations ResultNotation.
 
 Definition aspid_manifest_update (i:ASP_ID) (m:Manifest) : Manifest := 
   let '{| asps := oldasps; 
-          ASP_Compat_Map := oldCompatMap;
           ASP_Mapping := oldFSMap;
           man_policy := oldPolicy |} := m in
-  (Build_Manifest (manset_add i oldasps) oldCompatMap oldFSMap oldPolicy).
+  (Build_Manifest (manset_add i oldasps) oldFSMap oldPolicy).
 
-Definition add_compat_map_manifest (m : Manifest) (cm : ASP_Compat_MapT) : Manifest :=
-  let '{| asps := oldasps; 
-          ASP_Compat_Map := oldCompatMap;
-          ASP_Mapping := oldFSMap;
-          man_policy := oldPolicy |} := m in
-  (Build_Manifest oldasps cm oldFSMap oldPolicy).
-  
-Definition asp_manifest_update (a:ASP) (m:Manifest) : Manifest :=
+Fixpoint appr_manifest_update (G : GlobalContext) (e : EvidenceT) 
+    (m : Manifest) : ResultT Manifest string :=
+  match e with
+  | mt_evt => resultC m
+  | nonce_evt _ => resultC (aspid_manifest_update (check_nonce_aspid) m)
+  | asp_evt p ps e' => 
+    let '(asp_paramsC asp_id _ _ _) := ps in
+    match (map_get asp_id (asp_comps G)) with
+    | None => errC err_str_asp_no_compat_appr_asp
+    | Some appr_asp_id => resultC (aspid_manifest_update appr_asp_id m)
+    end
+  | left_evt e' => 
+    res <- apply_to_evidence_below G (fun e => appr_manifest_update G e m) [Trail_LEFT] e' ;;
+    res
+  | right_evt e' => 
+    res <- apply_to_evidence_below G (fun e => appr_manifest_update G e m) [Trail_RIGHT] e' ;;
+    res
+  | split_evt e1 e2 => 
+    m1 <- appr_manifest_update G e1 m ;;
+    appr_manifest_update G e2 m1
+  end.
+
+Definition asp_manifest_update (G : GlobalContext) (e : EvidenceT) 
+    (a:ASP) (m:Manifest) : ResultT Manifest string :=
   match a with 
-  | ASPC _ _ params => 
-      match params with
-      | asp_paramsC i _ _ _ => aspid_manifest_update i m
-      end
-  | SIG => aspid_manifest_update (sig_aspid) m
-  | HSH => aspid_manifest_update (hsh_aspid) m
-  | ENC p => aspid_manifest_update (enc_aspid) m
-  | NULL => m 
-  | CPY => m
+  | ASPC (asp_paramsC i _ _ _) => resultC (aspid_manifest_update i m)
+  | APPR => appr_manifest_update G e m
+  | SIG => resultC (aspid_manifest_update (sig_aspid) m)
+  | HSH => resultC (aspid_manifest_update (hsh_aspid) m)
+  | ENC p => resultC (aspid_manifest_update (enc_aspid) m)
+  | NULL => resultC m 
   end.
 
 Definition manifest_update_env_res (p:Plc) (e:EnvironmentM) 
             (f:Manifest -> ResultT Manifest string) 
             : ResultT EnvironmentM string := 
   let m := 
-    match (map_get e p) with
+    match (map_get p e) with
     | Some mm => mm
     | None => empty_Manifest
     end 
   in
   match (f m) with
-  | resultC m' => resultC (map_set e p m')
+  | resultC m' => resultC (map_set p m' e)
   | errC e => errC e
   end.
   
-Definition manifest_update_env (p:Plc) (e:EnvironmentM) 
-            (f:Manifest -> Manifest) : EnvironmentM := 
-  let m := 
-    match (map_get e p) with
-    | Some mm => mm
-    | None => empty_Manifest
-    end in
-  let m' := (f m) in 
-    map_set e p m'.
-
-Fixpoint manifest_generator' (p:Plc) (t:Term) (e:EnvironmentM) : EnvironmentM :=
+Fixpoint manifest_generator' (G : GlobalContext) (p:Plc) (et : EvidenceT) 
+    (t:Term) (e :EnvironmentM) : ResultT EnvironmentM string :=
   match t with
-  | asp a => manifest_update_env p e (asp_manifest_update a)
+  | asp a => manifest_update_env_res p e (asp_manifest_update G et a)
+
   | att q t' => 
-      match (map_get e p) with
-      | Some m => manifest_generator' q t' e
-      | None => manifest_generator' q t' ((p, empty_Manifest) :: e)
+      match (map_get p e) with
+      | Some m => manifest_generator' G q et t' e
+      | None => manifest_generator' G q et t' ((p, empty_Manifest) :: e)
       end
-  | lseq t1 t2 => manifest_generator' p t2 (manifest_generator' p t1 e)
-  | bseq _ t1 t2 => manifest_generator' p t2 (manifest_generator' p t1 e)
-  | bpar _ t1 t2 => manifest_generator' p t2 (manifest_generator' p t1 e)
+
+  | lseq t1 t2 => 
+    e' <- manifest_generator' G p et t1 e ;; 
+    et' <- eval G p et t1 ;;
+    manifest_generator' G p et' t2 e'
+
+  | bseq _ t1 t2 => 
+    e' <- manifest_generator' G p et t1 e ;;
+    manifest_generator' G p et t2 e'
+
+  | bpar _ t1 t2 => 
+    e' <- manifest_generator' G p et t1 e ;;
+    manifest_generator' G p et t2 e'
   end.
 
-Definition manifest_generator_terms (p:Plc) (ts:list Term) : EnvironmentM :=
-  fold_right (manifest_generator' p) e_empty ts.
+Definition manifest_generator_terms (G : GlobalContext) (p:Plc) (ts:list Term) 
+    : ResultT EnvironmentM string :=
+  result_fold (fun t => fun env =>
+      et <- eval G p mt_evt t ;;
+      manifest_generator' G p et t env) e_empty ts.
 
-Definition manifest_generator (t:Term) (p:Plc) : EnvironmentM :=
-  manifest_generator' p t e_empty.
+Definition manifest_generator (G : GlobalContext) (p : Plc) (t:Term) 
+    : ResultT EnvironmentM string :=
+  et <- eval G p mt_evt t ;;
+  manifest_generator' G p et t e_empty.
 
-Lemma manifest_generator_never_empty : forall t p e,
-  manifest_generator' p t e <> nil.
+Lemma manifest_generator_never_empty : forall G t p e et,
+  manifest_generator' G p et t e <> resultC nil.
 Proof.
-  induction t; simpl in *; intuition; eauto.
-  - destruct a; unfold manifest_update_env, asp_manifest_update in *; 
+  induction t; simpl in *; intuition; eauto; 
+  ffa using result_monad_unfold.
+  - destruct a; unfold manifest_update_env_res, asp_manifest_update in *; 
     repeat break_match; destruct e; simpl in *; try congruence;
     try (destruct p0; break_if; congruence);
     try (destruct p1; break_if; congruence).
-  - break_match; intuition; eauto.
 Qed.
 
 Definition environment_to_manifest_list (e:EnvironmentM) : list Manifest :=
   map_vals e.
 
-Fixpoint manifest_generator_app' (comp_map : ASP_Compat_MapT) 
-    (et:Evidence) (m:Manifest) : ResultT Manifest string :=
-  match et with 
-  | mt => resultC m 
-  | nn _ => resultC m (* TODO: account for nonce handling here? *)
-  | uu p fwd ps e' => 
-    match fwd with 
-    | (EXTD n) => 
-      match ps with 
-      | asp_paramsC a _ targ _ =>
-        match (map_get comp_map a) with
-        | Some a' => 
-            manifest_generator_app' comp_map e' (aspid_manifest_update a' m)
-        | None => errC "Compatible Appraisal ASP not found in AM Library"%string
-        end
-      end 
-    | ENCR => 
-      match ps with 
-      | asp_paramsC a _ p' _ =>
-        match (map_get comp_map a) with
-        | Some a' => 
-            manifest_generator_app' comp_map e' (aspid_manifest_update a' m)
-        | None => errC "Compatible Appraisal ASP not found in AM Library"%string
-        end
-      end
-    | KEEP => 
-      let '(asp_paramsC a _ _ _) := ps in
-      match (map_get comp_map a) with
-      | Some a' => 
-          manifest_generator_app' comp_map e' (aspid_manifest_update a' m)
-      | None => errC "Compatible Appraisal ASP not found in AM Library"%string
-      end
-    | _ => resultC m
-    end
-  | ss e1 e2 => 
-    match (manifest_generator_app' comp_map e1 m) with
-    | resultC m' => manifest_generator_app' comp_map e2 m'
-    | errC e => errC e
-    end
-  end.
-
-Import ResultNotation.
-Definition manifest_generator_app (comp_map : ASP_Compat_MapT) 
-    (et:Evidence) (p:Plc) : ResultT EnvironmentM string := 
-  env <- manifest_update_env_res p e_empty (manifest_generator_app' comp_map et) ;;
-  result_map 
-    (fun '(p,m) => resultC (p, add_compat_map_manifest m comp_map)) 
-    env.

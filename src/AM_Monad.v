@@ -1,9 +1,9 @@
 (* Monadic helpers and custom automation for the AM Monad (AM) *)
 Require Import List String.
 
-Require Import ErrorStMonad_Coq Maps Term_Defs Cvm_Run Cvm_St Cvm_Monad.
+Require Import ErrorStMonad_Coq Maps Term_Defs Cvm_St Cvm_Monad.
 
-Require Import ErrorStringConstants Appraisal_IO_Stubs Attestation_Session.
+Require Import ErrorStringConstants Attestation_Session.
 
 Require Export AM_St.
 
@@ -16,8 +16,9 @@ Definition am_error_to_string (err:AM_Error) : string :=
   | cvm_error e => errStr_cvm_error
   end.
 
-Definition run_am_app_comp_init {A:Type} (am_comp:AM A) (st:AM_St) : ResultT A string :=
-  match (fst (am_comp st)) with
+Definition run_am_app_comp_init {A:Type} (am_comp:AM A) (st:AM_St) 
+    (sc : Session_Config) : ResultT A string :=
+  match (fst (fst (am_comp st sc))) with
   | resultC x => resultC x
   | errC e => errC (am_error_to_string e)
   end.
@@ -25,37 +26,27 @@ Definition run_am_app_comp_init {A:Type} (am_comp:AM A) (st:AM_St) : ResultT A s
 Import ErrNotation.
 
 Definition get_AM_config : AM Session_Config :=
-    (* TODO:  consider moving this functionality to a Reader-like monad 
-          i.e. an 'ask' primitive *)
-    st <- err_get ;;
-    err_ret (am_config st).
+  err_get_config.
 
 Definition am_newNonce (bs:BS) : AM nat :=
-  oldSt <- err_get ;;
+  oldSt <- err_get_state ;;
   let oldMap := am_nonceMap oldSt in
   let oldId := am_nonceId oldSt in
-  let oldAMConfig := am_config oldSt in
-  let newMap := map_set oldMap oldId bs in
+  sc <- get_AM_config ;;
+  let newMap := map_set oldId bs oldMap in
   let newId := oldId + 1 in
-  err_put (mkAM_St newMap newId oldAMConfig) ;;
+  err_put_state (mkAM_St newMap newId) ;;
   err_ret oldId.
 
 Definition am_getNonce (nid:nat) : AM BS :=
-  oldSt <- err_get ;;
+  oldSt <- err_get_state ;;
   let oldMap := am_nonceMap oldSt in
-  let resopt := map_get oldMap nid in
+  let resopt := map_get nid oldMap in
   match resopt with
   | Some res => err_ret res
-  | None => am_failm (am_error errStr_amNonce)
+  | None => am_failm (am_error err_str_am_nonce)
   end.
 
-
-Definition am_runCvm_nonce (t:Term) (bs:BS) (ac : Session_Config) : AM (nat * RawEv) :=
-  nid <- am_newNonce bs ;;
-  match run_cvm_w_config t [bs] ac with
-  | resultC res_st => err_ret (nid, (get_bits (st_ev res_st)))
-  | errC e => am_failm (cvm_error e)
-  end.
 
 Ltac am_monad_unfold :=
   repeat 
@@ -63,7 +54,6 @@ Ltac am_monad_unfold :=
       get_AM_config,
       am_newNonce,
       am_getNonce,
-      am_failm,
-      am_runCvm_nonce in *; 
+      am_failm in *; 
     repeat cvm_monad_unfold;
     simpl in *).

@@ -119,7 +119,7 @@ Ltac do_list_empty :=
 (*
 Lemma anno_lrange:
   forall x i j ls t' b,
-    length ls = nss x ->
+    length ls = nsplit_evt x ->
     anno x i ls b = Some (j,t') ->
     list_subset ls (lrange t').
 Proof.
@@ -134,7 +134,7 @@ Defined.
 Lemma anno_lrange'
   : forall (x : Term) (i j : nat) (ls : list nat) 
       (t' : AnnoTerm),
-    (*length ls = nss x -> *)
+    (*length ls = nsplit_evt x -> *)
     anno x i ls true = Some (j, t') ->
     list_subset (lrange t') ls.
 Proof.
@@ -147,7 +147,7 @@ Defined.
 Lemma both_anno_lrange
   : forall (x : Term) (i j : nat) (ls : list nat) 
       (ls' : LocRange) (t' : AnnoTerm),
-    length ls = nss x ->
+    length ls = nsplit_evt x ->
     anno x i ls true = Some (j,t') ->
     list_subset (lrange t') ls /\ list_subset ls (lrange t').
 Proof.
@@ -170,7 +170,7 @@ Defined.
 
 Lemma nss_iff_anss: forall t i ls n a b,
     anno t i ls b = Some (n,a) ->
-    nss t = anss a.
+    nsplit_evt t = ansplit_evt a.
 Proof.
   intros.
   generalizeEverythingElse t.
@@ -196,7 +196,7 @@ Ltac list_facts' :=
 
 Lemma anno_some_fact: forall t i ls n a,
     anno t i ls true = Some (n, a) ->
-    length ls >= nss t.
+    length ls >= nsplit_evt t.
 Proof.
   induction t; intros.
   -
@@ -209,13 +209,13 @@ Proof.
     ff.
     list_facts'.
     
-    assert (length ((firstn (nss t1) ls)) >= nss t1) by eauto.
-    assert (length (skipn (nss t1) ls) >= nss t2) by eauto.
+    assert (length ((firstn (nsplit_evt t1) ls)) >= nsplit_evt t1) by eauto.
+    assert (length (skipn (nsplit_evt t1) ls) >= nsplit_evt t2) by eauto.
 
     (*
 
-    assert (length ls = length (firstn (nss t1) ls) +
-                        length (skipn (nss t1) ls)).
+    assert (length ls = length (firstn (nsplit_evt t1) ls) +
+                        length (skipn (nsplit_evt t1) ls)).
     {
       eapply firstn_skipn_len.
     } *)
@@ -224,14 +224,14 @@ Proof.
   -
     ff.
     list_facts'.
-    assert (length ((firstn (nss t1) ls)) >= nss t1) by eauto.
-    assert (length (skipn (nss t1) ls) >= nss t2) by eauto.
+    assert (length ((firstn (nsplit_evt t1) ls)) >= nsplit_evt t1) by eauto.
+    assert (length (skipn (nsplit_evt t1) ls) >= nsplit_evt t2) by eauto.
     lia.
 
   (*
 
-    assert (length ls = length (firstn (nss t1) ls) +
-                        length (skipn (nss t1) ls)).
+    assert (length ls = length (firstn (nsplit_evt t1) ls) +
+                        length (skipn (nsplit_evt t1) ls)).
     {
       eapply firstn_skipn_len.
     }
@@ -241,8 +241,8 @@ Proof.
     +
       
       list_facts'.
-      assert (length ((firstn (nss t1) l0)) >= nss t1) by eauto.
-      assert (length (skipn (nss t1) l0) >= nss t2) by eauto.
+      assert (length ((firstn (nsplit_evt t1) l0)) >= nsplit_evt t1) by eauto.
+      assert (length (skipn (nsplit_evt t1) l0) >= nsplit_evt t2) by eauto.
       ff.
       lia.
 
@@ -250,14 +250,14 @@ Proof.
 
     +
       list_facts'.
-      assert (length ((firstn (nss t1) [])) >= nss t1) by eauto.
-      assert (length (skipn (nss t1) []) >= nss t2) by eauto.
+      assert (length ((firstn (nsplit_evt t1) [])) >= nsplit_evt t1) by eauto.
+      assert (length (skipn (nsplit_evt t1) []) >= nsplit_evt t2) by eauto.
       ff.
       lia.
     +
       list_facts'.
-      assert (length ((firstn (nss t1) l2)) >= nss t1) by eauto.
-      assert (length (skipn (nss t1) l2) >= nss t2) by eauto.
+      assert (length ((firstn (nsplit_evt t1) l2)) >= nsplit_evt t1) by eauto.
+      assert (length (skipn (nsplit_evt t1) l2) >= nsplit_evt t2) by eauto.
       ff.
       lia. *)
 *)
@@ -267,7 +267,7 @@ Ltac do_anno_some_fact :=
   repeat
     match goal with
     | [H: anno ?t _ ?ls _ = Some (_,_) |- _] =>
-      assert_new_proof_by (length ls >= nss t) ltac:(eapply anno_some_fact; apply H)
+      assert_new_proof_by (length ls >= nsplit_evt t) ltac:(eapply anno_some_fact; apply H)
     end.
 
 Ltac list_facts :=
@@ -283,7 +283,7 @@ Ltac list_facts :=
 
 Lemma list_too_short: forall t i ls,
       anno t i ls true = None ->
-      length ls < nss t.
+      length ls < nsplit_evt t.
 Proof.
   intros.
   generalizeEverythingElse t.
@@ -301,32 +301,32 @@ Proof.
     +
 
       
-      assert (length (skipn (nss t1) ls) < nss t2) by eauto.
+      assert (length (skipn (nsplit_evt t1) ls) < nsplit_evt t2) by eauto.
       lia.
 
       (*
 
-      assert (length (firstn (nss t1) ls) >= nss t1).
+      assert (length (firstn (nsplit_evt t1) ls) >= nsplit_evt t1).
       {
         eapply anno_some_fact; eauto.
       }
 
-      assert (length (firstn (nss t1) ls) = nss t1).
+      assert (length (firstn (nsplit_evt t1) ls) = nsplit_evt t1).
       {
         eapply firstn_factt; eauto.
       }
 
-      assert (length ls = length (firstn (nss t1) ls) + length (skipn (nss t1) ls)).
+      assert (length ls = length (firstn (nsplit_evt t1) ls) + length (skipn (nsplit_evt t1) ls)).
       {
         eapply firstn_skipn_len; eauto.
       }
       lia. *)
 
     +
-      assert (length (firstn (nss t1) ls) < nss t1) by eauto.
+      assert (length (firstn (nsplit_evt t1) ls) < nsplit_evt t1) by eauto.
       
 
-      assert (length ls < (nss t1)).
+      assert (length ls < (nsplit_evt t1)).
       {
         eapply firstn_fact'; eauto.
       }
@@ -337,30 +337,30 @@ Proof.
     ff.
     list_facts.
     +    
-      assert (length (skipn (nss t1) ls) < nss t2) by eauto.
+      assert (length (skipn (nsplit_evt t1) ls) < nsplit_evt t2) by eauto.
       lia.
       (*
 
-      assert (length (firstn (nss t1) ls) >= nss t1).
+      assert (length (firstn (nsplit_evt t1) ls) >= nsplit_evt t1).
       {
         eapply anno_some_fact; eauto.
       }
 
-      assert (length (firstn (nss t1) ls) = nss t1).
+      assert (length (firstn (nsplit_evt t1) ls) = nsplit_evt t1).
       {
         eapply firstn_factt; eauto.
       }
 
-      assert (length ls = length (firstn (nss t1) ls) + length (skipn (nss t1) ls)).
+      assert (length ls = length (firstn (nsplit_evt t1) ls) + length (skipn (nsplit_evt t1) ls)).
       {
         eapply firstn_skipn_len; eauto.
       }
       lia. *)
 
     +
-      assert (length (firstn (nss t1) ls) < nss t1) by eauto.
+      assert (length (firstn (nsplit_evt t1) ls) < nsplit_evt t1) by eauto.
 
-      assert (length ls < (nss t1)).
+      assert (length ls < (nsplit_evt t1)).
       {
         eapply firstn_fact'; eauto.
       }
@@ -375,15 +375,15 @@ Proof.
       
     +
       list_facts.
-      assert (length (skipn (nss t1) l0) < nss t2) by eauto.
+      assert (length (skipn (nsplit_evt t1) l0) < nsplit_evt t2) by eauto.
       ff.
       lia.
 
       (*
 
-      assert (length (firstn (nss t1) []) = (nss t1)).
+      assert (length (firstn (nsplit_evt t1) []) = (nsplit_evt t1)).
       {
-        assert (length (firstn (nss t1) l2) >= (nss t1)).
+        assert (length (firstn (nsplit_evt t1) l2) >= (nsplit_evt t1)).
         {
           eapply anno_some_fact; eauto.
         }
@@ -391,16 +391,16 @@ Proof.
         eapply firstn_factt; eauto.
       }
 
-      assert (length l2 = length (firstn (nss t1) l2) + length (skipn (nss t1) l2)).
+      assert (length l2 = length (firstn (nsplit_evt t1) l2) + length (skipn (nsplit_evt t1) l2)).
       {
         eapply firstn_skipn_len; eauto.
       }
       lia. *)
     +
 
-      assert (length (firstn (nss t1) l0) < nss t1) by eauto.
+      assert (length (firstn (nsplit_evt t1) l0) < nsplit_evt t1) by eauto.
       ff.
-      assert (nss t1 > length l0).
+      assert (nsplit_evt t1 > length l0).
       {
         eapply firstn_fact'; eauto.
       }
@@ -410,7 +410,7 @@ Proof.
 Defined.
 
 Lemma anno_some: forall t i l b,
-  length l = nss t ->
+  length l = nsplit_evt t ->
   exists res,
     anno t i l b = Some res.
 Proof.
@@ -456,21 +456,21 @@ Proof.
              eapply false_succeeds;
              eauto).
     ++
-      assert (length ((skipn (nss t1) l)) < nss t2).
+      assert (length ((skipn (nsplit_evt t1) l)) < nsplit_evt t2).
       {
         eapply list_too_short; eauto.
       }
 
-      assert (length (firstn (nss t1) l) = nss t1).
+      assert (length (firstn (nsplit_evt t1) l) = nsplit_evt t1).
       {
-        assert (length (firstn (nss t1) l) >= nss t1).
+        assert (length (firstn (nsplit_evt t1) l) >= nsplit_evt t1).
         {
           eapply anno_some_fact; eauto.
         }
         eapply firstn_factt; eauto.
       }
 
-      assert (length l = length (firstn (nss t1) l) + length (skipn (nss t1) l)).
+      assert (length l = length (firstn (nsplit_evt t1) l) + length (skipn (nsplit_evt t1) l)).
       {
         eapply firstn_skipn_len; eauto.
       }
@@ -482,17 +482,17 @@ Proof.
              eauto).
       ++
         
-        assert (length ((firstn (nss t1) l)) < nss t1).
+        assert (length ((firstn (nsplit_evt t1) l)) < nsplit_evt t1).
         {
           eapply list_too_short; eauto.
         }
         (*
-         assert (length l = length (firstn (nss t1) l) + length (skipn (nss t1) l)).
+         assert (length l = length (firstn (nsplit_evt t1) l) + length (skipn (nsplit_evt t1) l)).
         {
           eapply firstn_skipn_len; eauto.
         }
          *)
-        assert (length l < nss t1).
+        assert (length l < nsplit_evt t1).
         {
           eapply firstn_fact'; eauto.
         }
@@ -510,21 +510,21 @@ Proof.
              eapply false_succeeds;
              eauto).
       ++
-        assert (length ((skipn (nss t1) l)) < nss t2).
+        assert (length ((skipn (nsplit_evt t1) l)) < nsplit_evt t2).
         {
           eapply list_too_short; eauto.
         }
 
-        assert (length (firstn (nss t1) l) = nss t1).
+        assert (length (firstn (nsplit_evt t1) l) = nsplit_evt t1).
         {
-          assert (length (firstn (nss t1) l) >= nss t1).
+          assert (length (firstn (nsplit_evt t1) l) >= nsplit_evt t1).
           {
             eapply anno_some_fact; eauto.
           }
           eapply firstn_factt; eauto.
         }
 
-        assert (length l = length (firstn (nss t1) l) + length (skipn (nss t1) l)).
+        assert (length l = length (firstn (nsplit_evt t1) l) + length (skipn (nsplit_evt t1) l)).
         {
           eapply firstn_skipn_len; eauto.
         }
@@ -536,17 +536,17 @@ Proof.
              eauto).
       ++
         
-        assert (length ((firstn (nss t1) l)) < nss t1).
+        assert (length ((firstn (nsplit_evt t1) l)) < nsplit_evt t1).
         {
           eapply list_too_short; eauto.
         }
         (*
-         assert (length l = length (firstn (nss t1) l) + length (skipn (nss t1) l)).
+         assert (length l = length (firstn (nsplit_evt t1) l) + length (skipn (nsplit_evt t1) l)).
         {
           eapply firstn_skipn_len; eauto.
         }
          *)
-        assert (length l < nss t1).
+        assert (length l < nsplit_evt t1).
         {
           eapply firstn_fact'; eauto.
         }
@@ -562,15 +562,15 @@ Proof.
              eauto; tauto).
       ++
       
-      assert (length (skipn (nss t1) l1) < nss t2).
+      assert (length (skipn (nsplit_evt t1) l1) < nsplit_evt t2).
       {
         eapply list_too_short; eauto.
       }
 
-      assert (length (firstn (nss t1) l1) = nss t1).
+      assert (length (firstn (nsplit_evt t1) l1) = nsplit_evt t1).
       {
 
-        assert (length (firstn (nss t1) l1) >= nss t1).
+        assert (length (firstn (nsplit_evt t1) l1) >= nsplit_evt t1).
         {
           eapply anno_some_fact; eauto.
         }
@@ -583,7 +583,7 @@ Proof.
 
       (*
 
-      assert (length l3 = length (firstn (nss t1) l3) + length (skipn (nss t1) l3)).
+      assert (length l3 = length (firstn (nsplit_evt t1) l3) + length (skipn (nsplit_evt t1) l3)).
         {
           eapply firstn_skipn_len; eauto.
         }
@@ -594,12 +594,12 @@ Proof.
              eapply false_succeeds;
              eauto; tauto).
        ++
-         assert (length (firstn (nss t1) l1) < nss t1).
+         assert (length (firstn (nsplit_evt t1) l1) < nsplit_evt t1).
          {
            eapply list_too_short; eauto.
          }
 
-         assert (length l1 < nss t1).
+         assert (length l1 < nsplit_evt t1).
          {
            eapply firstn_fact'; eauto.
          }
@@ -639,10 +639,10 @@ Defined.
 Lemma anno_len_exact:
   forall t i j ls t',
     anno t i ls true = Some (j, ([], t')) ->
-    length ls = anss t'.
+    length ls = ansplit_evt t'.
 Proof.
   intros.
-  assert (length ls = anss t' + (length ([]:list nat))).
+  assert (length ls = ansplit_evt t' + (length ([]:list nat))).
   {
     eapply anno_len; eauto.
   }
@@ -654,9 +654,9 @@ Defined.
 
 
 Lemma lrange_nss: forall t i ls  n a,
-    length ls = nss t ->
+    length ls = nsplit_evt t ->
     anno t i ls true = Some (n, a) ->
-    length (lrange a) = nss t. (* + length ls'. *)
+    length (lrange a) = nsplit_evt t. (* + length ls'. *)
 Proof.
   intros.
   generalizeEverythingElse t.
@@ -670,13 +670,13 @@ Defined.
     
     ff; eauto.
 
-    assert (length (lrange a0) = nss t1) by eauto.
+    assert (length (lrange a0) = nsplit_evt t1) by eauto.
 
-    assert (length (lrange a1) = nss t2) by eauto.
+    assert (length (lrange a1) = nsplit_evt t2) by eauto.
 
-    assert (length (firstn (nss t1) ls) = nss t1).
+    assert (length (firstn (nsplit_evt t1) ls) = nsplit_evt t1).
     {
-      assert (length (firstn (nss t1) ls) >= nss t1).
+      assert (length (firstn (nsplit_evt t1) ls) >= nsplit_evt t1).
       {
         eapply anno_some_fact; eauto.
       }
@@ -685,9 +685,9 @@ Defined.
     }
 
     (*
-    assert (length (skipn (nss t1) ls) = nss t2).
+    assert (length (skipn (nsplit_evt t1) ls) = nsplit_evt t2).
     {
-      assert (length (skipn (nss t1) ls) >= nss t2).
+      assert (length (skipn (nsplit_evt t1) ls) >= nsplit_evt t2).
       {
         eapply anno_some_fact; eauto.
       }
@@ -699,7 +699,7 @@ Defined.
      *)
     
 
-     assert (length ls = length (firstn (nss t1) ls) + length (skipn (nss t1) ls)).
+     assert (length ls = length (firstn (nsplit_evt t1) ls) + length (skipn (nsplit_evt t1) ls)).
         {
           eapply firstn_skipn_len; eauto.
         }
@@ -711,17 +711,17 @@ Defined.
       
     
 
-    (*assert (length (lrange a0) = nss t1) by eauto. *)
+    (*assert (length (lrange a0) = nsplit_evt t1) by eauto. *)
 
-    assert (length ls = anss a0 + length l).
+    assert (length ls = ansplit_evt a0 + length l).
     {
       eapply anno_len; eauto.
     }
 
-    assert (length l = anss a1).
+    assert (length l = ansplit_evt a1).
     {
     
-      assert (anss a1 = anss a1 + (length ([]:list nat))).
+      assert (ansplit_evt a1 = ansplit_evt a1 + (length ([]:list nat))).
       {
         eauto.
       }
@@ -749,16 +749,16 @@ Defined.
     ff.
     ff; eauto.
 
-    assert (length (lrange a1) = nss t2) by eauto.
+    assert (length (lrange a1) = nsplit_evt t2) by eauto.
 
-    assert (length ls = anss a0 + length l).
+    assert (length ls = ansplit_evt a0 + length l).
     {
       eapply anno_len; eauto.
     }
 
-    assert (length l = anss a1).
+    assert (length l = ansplit_evt a1).
     {
-      assert (anss a1 = anss a1 + (length ([]:list nat))).
+      assert (ansplit_evt a1 = ansplit_evt a1 + (length ([]:list nat))).
       {
         eauto.
       }
@@ -783,16 +783,16 @@ Defined.
     ff.
     ff; eauto.
 
-    assert (length (lrange a1) = nss t2) by eauto.
+    assert (length (lrange a1) = nsplit_evt t2) by eauto.
 
-    assert (length l4 = anss a0 + length l).
+    assert (length l4 = ansplit_evt a0 + length l).
     {
       eapply anno_len; eauto.
     }
 
-    assert (length l = anss a1).
+    assert (length l = ansplit_evt a1).
     {
-      assert (anss a1 = anss a1 + (length ([]:list nat))).
+      assert (ansplit_evt a1 = ansplit_evt a1 + (length ([]:list nat))).
       {
         eauto.
       }
@@ -827,7 +827,7 @@ Defined.
 
 Lemma anno_well_formed_r:
   forall t i j t',
-    (* length ls = nss t ->
+    (* length ls = nsplit_evt t ->
     NoDup ls -> *)
     anno t i = (j, t') ->
     well_formed_r t'.

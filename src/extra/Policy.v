@@ -4,69 +4,69 @@ Check Term.
 
 Require Import List.
 Import List.ListNotations.
-Require Import MonadVM VmSemantics Impl_vm Term_Defs ConcreteEvidence. 
+Require Import MonadVM VmSemantics Impl_vm Term_Defs ConcreteEvidenceT. 
 
-Definition secret_evidence_rel := Evidence -> Plc -> Prop.
+Definition secret_EvidenceT_rel := EvidenceT -> Plc -> Prop.
 
-Definition evidence_subset_of (e:Evidence) (e':Evidence): Prop.
+Definition EvidenceT_subset_of (e:EvidenceT) (e':EvidenceT): Prop.
 Admitted.
 
-Definition policy_protects : secret_evidence_rel.
+Definition policy_protects : secret_EvidenceT_rel.
 Admitted.
 
-Inductive evidence_disclosed' : Plc -> Plc -> Evidence -> Term -> secret_evidence_rel :=
+Inductive EvidenceT_disclosed' : Plc -> Plc -> EvidenceT -> Term -> secret_EvidenceT_rel :=
 | cumul_req: forall t e e' init requester me,
-    evidence_subset_of e e' ->
+    EvidenceT_subset_of e e' ->
     e' = eval t me init ->
-    evidence_disclosed' requester me init t e requester
+    EvidenceT_disclosed' requester me init t e requester
 | cumul_me: forall t e e' init requester me,
-    evidence_subset_of e e' ->
+    EvidenceT_subset_of e e' ->
     e' = eval t me init ->
-    evidence_disclosed' requester me init t e me
+    EvidenceT_disclosed' requester me init t e me
 
 (* These two NOT redundant since t could clear init *)
 | always_me_init': forall requester me init t,
-    evidence_disclosed' requester me init t init me
+    EvidenceT_disclosed' requester me init t init me
 | always_requester_init': forall requester me init t,
-    evidence_disclosed' requester me init t init requester
+    EvidenceT_disclosed' requester me init t init requester
                         
 | ed_at'': forall requester me init q t',
-    evidence_disclosed' requester me init (att q t') init q
+    EvidenceT_disclosed' requester me init (att q t') init q
 | ed_at''': forall requester me init q q' t' e,
-    evidence_disclosed' me q init t' e q' ->
-    evidence_disclosed' requester me init (att q t') e q'.
+    EvidenceT_disclosed' me q init t' e q' ->
+    EvidenceT_disclosed' requester me init (att q t') e q'.
 
-Inductive evidence_disclosed : Plc -> Plc -> Evidence -> Term -> secret_evidence_rel :=
-| always_me_init: forall requester me init t, evidence_disclosed requester me init t init me
-| always_requester_init: forall requester me init t, evidence_disclosed requester me init t init requester
-(*| ed_asp_val: forall requester me init, evidence_disclosed requester me init (asp SIG) init requester *)
-| ed_asp: forall requester me init a, evidence_disclosed requester me init (asp a) (eval_asp a me init) requester
+Inductive EvidenceT_disclosed : Plc -> Plc -> EvidenceT -> Term -> secret_EvidenceT_rel :=
+| always_me_init: forall requester me init t, EvidenceT_disclosed requester me init t init me
+| always_requester_init: forall requester me init t, EvidenceT_disclosed requester me init t init requester
+(*| ed_asp_val: forall requester me init, EvidenceT_disclosed requester me init (asp SIG) init requester *)
+| ed_asp: forall requester me init a, EvidenceT_disclosed requester me init (asp a) (eval_asp a me init) requester
 | ed_at: forall requester me init q t',
-    evidence_disclosed requester me init (att q t') init q
+    EvidenceT_disclosed requester me init (att q t') init q
 | ed_at': forall requester me init q q' t' e,
-    evidence_disclosed me q init t' e q' ->
-    evidence_disclosed requester me init (att q t') e q'
+    EvidenceT_disclosed me q init t' e q' ->
+    EvidenceT_disclosed requester me init (att q t') e q'
 | ed_ln_l: forall requester me init t1 t2 q e,
-    evidence_disclosed requester me init t1 e q ->
-    evidence_disclosed requester me init (lseq t1 t2) e q
+    EvidenceT_disclosed requester me init t1 e q ->
+    EvidenceT_disclosed requester me init (lseq t1 t2) e q
 | ed_ln_r: forall requester me init t1 t2 q e,
-    evidence_disclosed requester me init t1 e q ->
-    evidence_disclosed requester me init (lseq t1 t2) e q
+    EvidenceT_disclosed requester me init t1 e q ->
+    EvidenceT_disclosed requester me init (lseq t1 t2) e q
 | ed_bseq_l: forall requester me init t1 t2 q e sp1 sp2,
-    evidence_disclosed requester me (splitEv_T sp1 init) t1 e q ->
-    evidence_disclosed requester me init (bseq (sp1,sp2) t1 t2) e q
+    EvidenceT_disclosed requester me (splitEv_T sp1 init) t1 e q ->
+    EvidenceT_disclosed requester me init (bseq (sp1,sp2) t1 t2) e q
 | ed_bseq_r: forall requester me init t1 t2 q e sp1 sp2,
-    evidence_disclosed requester me (splitEv_T sp2 init) t1 e q ->
-    evidence_disclosed requester me init (bseq (sp1,sp2) t1 t2) e q
+    EvidenceT_disclosed requester me (splitEv_T sp2 init) t1 e q ->
+    EvidenceT_disclosed requester me init (bseq (sp1,sp2) t1 t2) e q
 | ed_bpar_l: forall requester me init t1 t2 q e sp1 sp2,
-    evidence_disclosed requester me (splitEv_T sp1 init) t1 e q ->
-    evidence_disclosed requester me init (bpar (sp1,sp2) t1 t2) e q
+    EvidenceT_disclosed requester me (splitEv_T sp1 init) t1 e q ->
+    EvidenceT_disclosed requester me init (bpar (sp1,sp2) t1 t2) e q
 | ed_bpar_r: forall requester me init t1 t2 q e sp1 sp2,
-    evidence_disclosed requester me (splitEv_T sp2 init) t1 e q ->
-    evidence_disclosed requester me init (bpar (sp1,sp2) t1 t2) e q.
+    EvidenceT_disclosed requester me (splitEv_T sp2 init) t1 e q ->
+    EvidenceT_disclosed requester me init (bpar (sp1,sp2) t1 t2) e q.
 
 
-Inductive disclosure_event: Ev -> Plc -> (*Plc ->*) Evidence -> Plc -> Prop :=
+Inductive disclosure_event: Ev -> Plc -> (*Plc ->*) EvidenceT -> Plc -> Prop :=
 | req_dis: forall i loc requester (* me them *) p q q' ev t e b,
     events (annotated t []) q ev ->
     disclosure_event ev q' e b ->
@@ -75,21 +75,21 @@ Inductive disclosure_event: Ev -> Plc -> (*Plc ->*) Evidence -> Plc -> Prop :=
     disclosure_event (umeas i p id args) requester (eval_asp (ASPC id args) p init) requester.
 
 
-Inductive events: AnnoTerm -> Plc -> Evidence -> Ev -> Prop :=.
+Inductive events: AnnoTerm -> Plc -> EvidenceT -> Ev -> Prop :=.
 
 Require Import Trace Main Term.
 
-Require Import ConcreteEvidence.
+Require Import ConcreteEvidenceT.
 
-Fixpoint evshape (e:EvidenceC) :=
+Fixpoint evshape (e:EvidenceTC) :=
   match e with
-  | mtc => mt
-  | uuc i _ e' => uu i [] 0 (evshape e')
+  | mtc => mt_evt
+  | uuc i _ e' => asp_evt i [] 0 (evshape e')
   | ggc p e' => gg p (evshape e')
   | hhc p e' => hh p (evshape e')
-  | nnc i _ e' => nn i (evshape e')
-  | ssc e1 e2 => ss (evshape e1) (evshape e2)
-  | ppc e1 e2 => ss (evshape e1) (evshape e2)
+  | nnc i _ e' => nonce_evt i (evshape e')
+  | ssc e1 e2 => split_evt (evshape e1) (evshape e2)
+  | ppc e1 e2 => split_evt (evshape e1) (evshape e2)
   end.
 
 
@@ -98,7 +98,7 @@ Lemma evshape_eval: forall init,
 Proof.
 Admitted.
 
-Inductive trace: AnnoTerm -> Plc -> Evidence ->
+Inductive trace: AnnoTerm -> Plc -> EvidenceT ->
                  list Ev -> Prop :=.
 
 Lemma cvm_respects_disclosed': forall t ev tr p bad_p requester e  et,
@@ -113,7 +113,7 @@ Lemma cvm_respects_disclosed': forall t ev tr p bad_p requester e  et,
    In ev tr ->                            
   disclosure_event ev requester e bad_p ->
   (*Ev_Shape init_ev et -> *)
-  evidence_disclosed requester p et (unanno t) e bad_p.
+  EvidenceT_disclosed requester p et (unanno t) e bad_p.
 Proof.
   intros.
   generalizeEverythingElse t.
@@ -182,7 +182,7 @@ Lemma cvm_respects_disclosed: forall t ev tr p bad_p requester o e init_ev et e'
   In ev tr ->                                   
   disclosure_event ev requester e bad_p ->
   Ev_Shape init_ev et ->
-  evidence_disclosed requester p et (unanno t) e bad_p.
+  EvidenceT_disclosed requester p et (unanno t) e bad_p.
 Proof.
   intros.
     assert (trace t p et tr).
@@ -206,31 +206,31 @@ Definition policy_check_rel := Term -> Prop.
 Inductive policy1: policy_check_rel :=
 | allSigs: policy1 (asp SIG).
 
-Definition my_secrets (e:Evidence) (p:Plc) :=
+Definition my_secrets (e:EvidenceT) (p:Plc) :=
   match (e,p) with
-  | (mt,3)  => True
+  | (mt_evt,3)  => True
   | _ => False
   end.
 
 Definition passes_policy
            (policy:policy_check_rel)
-           (secrets:secret_evidence_rel)
+           (secrets:secret_EvidenceT_rel)
            (requester:Plc)
            (me:Plc)
-           (init:Evidence) : Prop :=
+           (init:EvidenceT) : Prop :=
   forall t e q,
     policy t ->
     secrets e q ->
-    not (evidence_disclosed requester me init t e q).
+    not (EvidenceT_disclosed requester me init t e q).
 
 Check annotated.
 
 Definition cvm_passes_policy
            (policy:policy_check_rel)
-           (secrets:secret_evidence_rel)
+           (secrets:secret_EvidenceT_rel)
            (requester:Plc)
            (me:Plc)
-           (init:EvidenceC) : Prop :=
+           (init:EvidenceTC) : Prop :=
   forall t e q ev et o o' p' tr e',
     policy (unanno t) ->
     secrets e q ->
@@ -270,9 +270,9 @@ Lemma passes_implies_cvm_passes: forall p s r m i i',
 
   
 (*
-    not (evidence_disclosed requester me init t e q). *)
+    not (EvidenceT_disclosed requester me init t e q). *)
 
-Lemma policy1_passes : passes_policy policy1 my_secrets 0 1 mt.
+Lemma policy1_passes : passes_policy policy1 my_secrets 0 1 mt_evt.
 Proof.
   cbv in *;
     intros.
@@ -283,7 +283,7 @@ Proof.
   invc H1. *)
 Defined.
 
-Definition derive_policy (secrets:secret_evidence_rel) : policy_check_rel.
+Definition derive_policy (secrets:secret_EvidenceT_rel) : policy_check_rel.
 Proof.
   cbv in *.
 Admitted.

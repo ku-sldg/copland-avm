@@ -3,8 +3,7 @@
     traditional mathematical set (e.g. cumulative, non-duplicating, ...) *)
 Require Import List.
 
-Require Import ID_Type 
-  JSON.
+Require Import ID_Type JSON ErrorStringConstants.
 
 Import ListNotations.
 
@@ -314,7 +313,7 @@ Fixpoint list_JSON_to_manifest_set {A :Type} `{Stringifiable A} `{EqClass A}
           end
       | errC e => errC e
       end
-    | _ => errC "list_JSON_to_manifest_set: Invalid JSON type in manifest set, only can handle strings."%string
+    | _ => errC err_str_list_json_to_manifest_set
     end
   end.
 

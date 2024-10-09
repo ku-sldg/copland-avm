@@ -1,11 +1,11 @@
-Require Import ConcreteEvidence. (* Term GenStMonad MonadVM MonadAM. *)
+Require Import ConcreteEvidenceT. (* Term GenStMonad MonadVM MonadAM. *)
 
 Require Import Appraisal_Defs.  (* Require Import Impl_vm StAM. *)
 
 Require Import List.
 Import ListNotations.
 
-Fixpoint build_app_comp_evC (e:EvidenceC) : EvidenceC :=
+Fixpoint build_app_comp_evC (e:EvidenceTC) : EvidenceTC :=
   match e with
   | mtc => mtc
               
@@ -41,7 +41,7 @@ Definition am_add_trace (tr':list Ev) : AM_St -> AM_St :=
 Definition am_add_tracem (tr:list Ev) : AM unit :=
   modify (am_add_trace tr).
 
-Definition am_run_cvm (annt:AnnoTerm) (e:EvidenceC) (et:Evidence) : AM EvidenceC :=
+Definition am_run_cvm (annt:AnnoTerm) (e:EvidenceTC) (et:EvidenceT) : AM EvidenceTC :=
   let start_st := (mk_st e et [] 0) in
   let end_st := (run_cvm annt start_st) in
   am_add_tracem (st_trace end_st) ;;
@@ -67,7 +67,7 @@ Definition am_get_hsh_gv (p:Plc) (i:ASP_ID) : AM BS :=
   end.
 
 
-Definition am_get_hsh_golden_val (p:Plc) (et:Evidence): AM BS :=
+Definition am_get_hsh_golden_val (p:Plc) (et:EvidenceT): AM BS :=
   (*
     m <- gets st_aspmap ;;
     let maybeId := map_get m (p,i) in

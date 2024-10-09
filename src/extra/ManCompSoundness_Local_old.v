@@ -2,7 +2,7 @@ Require Import Manifest Manifest_Compiler Manifest_Generator AbstractedTypes
   Maps Term_Defs List Cvm_St Cvm_Impl ErrorStMonad_Coq StructTactics 
   Cvm_Monad EqClass Manifest_Admits Auto.
 Require Import Manifest_Generator_Facts Executable_Defs_Prop 
-  Executable_Facts_Dist Eqb_Evidence.
+  Executable_Facts_Dist Eqb_EvidenceT.
 
 Require Import Coq.Program.Tactics.
 
@@ -1867,7 +1867,7 @@ Proof.
     eapply H3.
 Qed.
 
-Theorem manifest_generator_compiler_soundess : forall t p absMan amLib amConf,
+Theorem manifest_generator_compiler_soundesplit_evt : forall t p absMan amLib amConf,
   generate_manifest t p = absMan ->
   lib_supports_manifest amLib absMan ->
   manifest_compiler absMan amLib = amConf ->

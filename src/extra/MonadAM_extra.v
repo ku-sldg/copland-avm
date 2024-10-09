@@ -6,7 +6,7 @@ Author:  Adam Petz, ampetz@ku.edu
 Require Import Maps Impl_vm.
 Require Import Coq.Arith.EqNat.
 Require Import Term StVM StAM
-        MonadVM GenStMonad ConcreteEvidence VmSemantics.
+        MonadVM GenStMonad ConcreteEvidenceT VmSemantics.
 (*Require Import Coq.ZArith.ZArith_base Coq.Strings.String Coq.Strings.Ascii. *)
 (* Require Import ExtLib.Data.Monads.StateMonad ExtLib.Data.Monads.ReaderMonad
 ExtLib.Structures.Monads ExtLib.Data.Monads.IdentityMonad. *)
@@ -33,7 +33,7 @@ Definition init_env := (mkAM_Env 0).
 Definition AM := St AM_St.     (* readerT AM_Env (stateT AM_St ident). *)
 
 (*
-Definition am_newNonce (bs :BS) : AM EvidenceC :=
+Definition am_newNonce (bs :BS) : AM EvidenceTC :=
   (*let myPol := asks myPolicy in *)
   am_st <- get ;;
   let mm := am_nonceMap am_st in
@@ -59,7 +59,7 @@ Compute (incNonce).
 Check annotated.
 *)
 
-Definition am_run_t (t:Term) (e:EvidenceC) : AM EvidenceC :=
+Definition am_run_t (t:Term) (e:EvidenceTC) : AM EvidenceTC :=
   let annt := annotated t in
   let start_st := mk_st e [] 0 [] in
   ret (st_ev (run_vm annt start_st)).
@@ -82,7 +82,7 @@ Compute (runAM am_proto_1 empty_amst).
 *)
 
 (*
-Fixpoint nonces (e:EvidenceC) (l:list nat) : list nat :=
+Fixpoint nonces (e:EvidenceTC) (l:list nat) : list nat :=
   match e with
   | nnc i _ e' => nonces e' ([i] ++ l)
   | _ => l

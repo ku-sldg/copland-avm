@@ -1,5 +1,5 @@
 (*
-Evidence structure that models concrete results of Copland phrase execution.
+EvidenceT structure that models concrete results of Copland phrase execution.
 
 Author:  Adam Petz, ampetz@ku.edu
 *)
@@ -14,15 +14,15 @@ Notation ASP_ID := nat (only parsing).
 Notation N_ID := nat (only parsing).
 Notation Arg := nat (only parsing).
 
-(** * Concrete Evidence *)
-Inductive EvidenceC: Set :=
-| mtc: EvidenceC
-| uuc: ASP_ID -> list Arg -> Plc -> BS -> EvidenceC -> EvidenceC
-| ggc: Plc -> BS -> EvidenceC -> EvidenceC
-| nnc: N_ID -> BS -> EvidenceC -> EvidenceC.
+(** * Concrete EvidenceT *)
+Inductive EvidenceTC: Set :=
+| mtc: EvidenceTC
+| uuc: ASP_ID -> list Arg -> Plc -> BS -> EvidenceTC -> EvidenceTC
+| ggc: Plc -> BS -> EvidenceTC -> EvidenceTC
+| nnc: N_ID -> BS -> EvidenceTC -> EvidenceTC.
 
-Inductive EvSub: EvidenceC -> EvidenceC -> Prop :=
-| evsub_refl : forall e : EvidenceC, EvSub e e
+Inductive EvSub: EvidenceTC -> EvidenceTC -> Prop :=
+| evsub_refl : forall e : EvidenceTC, EvSub e e
 | uuSub: forall e e' i l p bs,
     EvSub e e' ->
     EvSub e (uuc i l p bs e')

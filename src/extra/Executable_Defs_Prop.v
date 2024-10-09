@@ -1,6 +1,6 @@
 Require Import Term_Defs_Core Manifest_Admits Manifest Params_Admits EnvironmentM.
 
-Require Import Eqb_Evidence.
+Require Import Eqb_EvidenceT.
 Require Import List.
 Import ListNotations.
 

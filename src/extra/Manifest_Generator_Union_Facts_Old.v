@@ -1,5 +1,5 @@
 Require Import Term_Defs_Core Params_Admits Manifest (* Executable_Dec *)
-               Example_Phrases_Admits Example_Phrases Eqb_Evidence
+               Example_Phrases_Admits Example_Phrases Eqb_EvidenceT
                Manifest_Generator_Helpers Term_Defs ErrorStMonad_Coq.
                (* Executable_Defs_Prop. *)
 
@@ -9,7 +9,7 @@ Require Import EnvironmentM Manifest_Set.
 
 Require Import Manifest_Union Manifest_Generator Cvm_St Cvm_Impl.
 
-Require Import Manifest ManCompSoundness Manifest_Compiler Manifest_Generator_Facts.
+Require Import Manifest ManCompSoundnesplit_evt Manifest_Compiler Manifest_Generator_Facts.
 
 Require Import Manifest_Generator_Union.
 

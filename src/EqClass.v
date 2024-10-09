@@ -5,28 +5,34 @@ Authors:  Adam Petz, ampetz@ku.edu
           Will Thomas, 30wthomas@ku.edu
  *)
 
-Require Import Setoid String.
+Require Import Setoid String StructTactics.
 
 Class EqClass (A : Type) := { 
   eqb : A -> A -> bool ;
   eqb_eq : forall x y, eqb x y = true <-> x = y 
 }.
 
-Theorem EqClass_impl_DecEq: forall (A : Type) `{H : EqClass A},
-    forall (x y : A), {x = y} + {x <> y}.
-Proof.
-  intros.
-  destruct H.
-  destruct (eqb0 x y) eqn:E; eauto.
-  - left; eapply eqb_eq0; eauto.
-  - right; erewrite <- eqb_eq0; intros HC; congruence.
-Qed.
-
 Theorem eqb_refl : forall {A : Type} `{EqClass A} a,
   eqb a a = true.
 Proof.
-  intros;
-  erewrite eqb_eq; eauto.
+  intros; erewrite eqb_eq; eauto.
+Qed.
+
+Theorem eqb_neq : forall {A : Type} `{EqClass A} a b,
+  eqb a b = false <-> a <> b.
+Proof.
+  ff; try (rewrite eqb_refl in *; congruence);
+  destruct (eqb a b) eqn:E; eauto;
+  rewrite eqb_eq in *; ff.
+Qed.
+
+Theorem EqClass_impl_DecEq: forall (A : Type) `{H : EqClass A},
+    forall (x y : A), {x = y} + {x <> y}.
+Proof.
+  intros; destruct H;
+  destruct (eqb0 x y) eqn:E.
+  - eapply eqb_eq0 in E; ff.
+  - right; erewrite <- eqb_eq0; intros HC; congruence.
 Qed.
 
 Theorem eqb_symm_true : forall {A : Type} `{EqClass A} a1 a2,
@@ -39,10 +45,9 @@ Qed.
 Theorem eqb_symm : forall {A : Type} `{EqClass A} a1 a2,
   eqb a1 a2 = eqb a2 a1.
 Proof.
-  intros.
-  destruct (eqb a1 a2) eqn:E1, (eqb a2 a1) eqn:E2; eauto;
-  erewrite eqb_eq in *; subst;
-  erewrite eqb_refl in *; congruence.
+  intros; destruct (eqb a1 a2) eqn:E1, (eqb a2 a1) eqn:E2; eauto;
+  rewrite eqb_eq in *; subst; 
+  rewrite eqb_refl in *; congruence.
 Qed.
 
 Theorem eqb_transitive : forall {A : Type} `{EqClass A} a1 a2 a3,
@@ -53,20 +58,11 @@ Proof.
   intros; repeat erewrite eqb_eq in *; subst; eauto.
 Qed.
 
-Theorem neqb_eq : forall {A : Type} `{EqClass A} a b,
-  eqb a b = false <-> a <> b.
-Proof.
-  intuition; eauto; subst.
-  - pose proof (eqb_eq b b); intuition; congruence.
-  - destruct (eqb a b) eqn:E; eauto;
-    rewrite eqb_eq in *; intuition.
-Qed.
-
 Ltac destEq t1 t2 :=
   let E := fresh "E" in
   destruct (eqb t1 t2) eqn:E;
   [apply eqb_eq in E; subst | 
-    apply neqb_eq in E
+    apply eqb_neq in E
   ].
 
 Ltac break_eqs :=

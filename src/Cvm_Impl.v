@@ -2,7 +2,7 @@
   Implementation of the Copland Virtual Machine (CVM).
     Acts as the top-level interpreter of (core) Copland terms by dispatching to monadic helpers.
     Note:  No meaningful return type (unit).  The real work happens within the monadic state that 
-    invokes services and bundles evidence.
+    invokes services and bundles EvidenceT.
 
   Author:  Adam Petz, ampetz@ku.edu
 *)
@@ -11,33 +11,26 @@ Require Import Term_Defs Cvm_Monad ErrorStMonad_Coq.
 Import ErrNotation.
 
 (** Monadic CVM implementation (top-level) *)
-Fixpoint build_cvm (t:Core_Term) : CVM unit :=
+Fixpoint build_cvm (e : Evidence) (t: Term) : CVM Evidence :=
   match t with
-  | aspc a =>
-      e <- do_prim a ;;
-      put_ev e
-  | attc q t' =>
-    e <- get_ev ;;
-    e' <- doRemote t' q e ;;
-    put_ev e'
-  | lseqc t1 t2 =>
-      build_cvm t1 ;;
-      build_cvm t2
-  | bseqc t1 t2 =>
+  | asp a => do_prim e a 
+  | att q t' => doRemote q e t'
+  | lseq t1 t2 =>
+    e1 <- build_cvm e t1 ;;
+    build_cvm e1 t2
+
+  | bseq s t1 t2 =>
     split_ev ;;
-    e <- get_ev ;;
-    build_cvm t1 ;;
-    e1r <- get_ev ;;
-    put_ev e ;;
-    build_cvm t2 ;;
-    e2r <- get_ev ;;
+    e1r <- build_cvm (splitEv_l s e) t1 ;;
+    e2r <- build_cvm (splitEv_r s e) t2 ;;
     join_seq e1r e2r
-  | bparc loc t1 t2 =>
+
+  | bpar s t1 t2 =>
     split_ev ;;
-    e <- get_ev ;;
-    start_par_thread loc t2 e ;;
-    build_cvm t1 ;;
-    e1r <- get_ev ;;
-    e2r <- wait_par_thread loc t2 e ;;
+    (* We will make the LOC = event_id for start of thread *)
+    (* start a parallel thread working on the evidence split for t2 *)
+    loc <- start_par_thread (splitEv_r s e) t2 ;;
+    e1r <- build_cvm (splitEv_l s e) t1 ;;
+    e2r <- wait_par_thread loc (splitEv_r s e) t2 ;;
     join_seq e1r e2r
   end.

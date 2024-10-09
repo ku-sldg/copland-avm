@@ -16,6 +16,12 @@ Definition res_bind {A B E : Type} (m : ResultT A E) (f : A -> ResultT B E) : Re
   | errC e => errC e
   end.
 
+Ltac result_monad_unfold :=
+  repeat (
+    unfold res_bind,
+      res_ret in *
+  ).
+
 Module ResultNotation.
 
 Notation "x <- c1 ;; c2" := (@res_bind _ _ _ c1 (fun x => c2))
@@ -27,12 +33,6 @@ Notation "e1 ;; e2" := (_ <- e1 ;; e2)
 Notation "' pat <- c1 ;; c2" :=
     (@res_bind _ _ _ c1 (fun x => match x with pat => c2 end))
     (at level 100, pat pattern, c1 at next level, right associativity).
-
-Ltac result_monad_unfold :=
-  repeat (
-    unfold res_bind,
-      res_ret in *
-  ).
 
 End ResultNotation.
 
@@ -67,3 +67,13 @@ Proof.
     destruct H; intuition.
     exists x0; simpl in *; eauto.
 Qed.
+
+Fixpoint result_fold {A B E : Type} (f : A -> B -> ResultT B E) (acc : B) (l : list A) 
+    : ResultT B E :=
+  match l with
+  | nil => resultC acc
+  | (cons h t) =>
+      acc' <- f h acc;;
+      result_fold f acc' t
+  end.
+

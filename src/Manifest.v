@@ -55,19 +55,16 @@ Global Instance jsonifiable_ASP_Locator : Jsonifiable ASP_Locator :=
 
 Definition PolicyT := list (Plc * ASP_ID).
 
-Definition ASP_Compat_MapT := MapC ASP_ID ASP_ID.
-
 (** [Manifest] defines an attestation manger, a list of ASPs, and other
    * managers it is aware of (a single AM and its interconnections).
    *)
   Record Manifest := {
     asps              : manifest_set ASP_ID; 
-    ASP_Compat_Map    : ASP_Compat_MapT;
-    ASP_Mapping       : MapC ASP_ID FS_Location;
+    ASP_Mapping       : Map ASP_ID FS_Location;
     man_policy        : PolicyT  ;
     (* TO DO: Add privacy and selection policies to manifest? *)
   }.
 
   Definition empty_Manifest : Manifest :=
-    Build_Manifest nil nil nil nil.
+    Build_Manifest nil nil nil.
 

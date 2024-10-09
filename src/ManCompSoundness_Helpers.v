@@ -2,7 +2,7 @@
 
 Require Import Term_Defs_Core Manifest_Generator_Helpers Eqb_Evidence.
 
-Require Import StructTactics Auto.
+Require Import StructTactics.
 
 Require Import List.
 Import ListNotations.
@@ -35,9 +35,9 @@ Qed.
 
 
 Lemma places_app_cumul : forall p t ls ls',
-      In p (places' t ls) -> 
-      ~ In p ls ->
-      In p (places' t ls').
+  In p (places' t ls) -> 
+  ~ In p ls ->
+  In p (places' t ls').
 Proof.
   intros.
   generalizeEverythingElse t.
@@ -76,7 +76,7 @@ Proof.
   generalizeEverythingElse t.
   induction t; intros; 
   try (destruct a);
-    try (ff; eauto; ff; congruence).
+  try (ff; try (exfalso; eauto; fail); ff; congruence).
 
   - (* lseq case *)
     ff.
@@ -87,9 +87,7 @@ Proof.
       { 
           apply In_dec_tplc.
       }
-      door.
-      +
-        eauto.
+      ff.
       +             
         assert (In p (places' t2 [])).
         {
@@ -99,10 +97,7 @@ Proof.
         }
         eauto.
     }
-
-    door.
-    +
-      eauto.
+    ff.
     +
       assert (In p (places' t1 ls)) by eauto.
       apply places'_cumul.
@@ -117,26 +112,13 @@ Proof.
       { 
           apply In_dec_tplc.
       }
-      door.
-      +
-        eauto.
-      +             
-        assert (In p (places' t2 [])).
-        {
-          eapply places_app_cumul.
-          apply H.
-          eassumption.
-        }
-        eauto.
+      ff.
+      + pose proof places_app_cumul.            
+        ff.
     }
-
-    door.
-    +
-      eauto.
-    +
-      assert (In p (places' t1 ls)) by eauto.
-      apply places'_cumul.
-      eauto.
+    ff.
+    pose proof places'_cumul.
+    ff.
 
   - (* bpar case *)
     ff.
@@ -147,26 +129,13 @@ Proof.
       { 
           apply In_dec_tplc.
       }
-      door.
-      +
-        eauto.
-      +             
-        assert (In p (places' t2 [])).
-        {
-          eapply places_app_cumul.
-          apply H.
-          eassumption.
-        }
-        eauto.
+      ff.
+      + pose proof places_app_cumul.            
+        ff.
     }
-
-    door.
-    +
-      eauto.
-    +
-      assert (In p (places' t1 ls)) by eauto.
-      apply places'_cumul.
-      eauto.
+    ff.
+    pose proof places'_cumul.
+    ff.
 Qed.
 
 
@@ -180,59 +149,59 @@ Proof.
   -
     destruct a; repeat ff;
     rewrite String.eqb_eq in *; eauto; try congruence.
-- (* at case *)
-  repeat ff; eauto;
-  rewrite String.eqb_eq in *; eauto.
-- (* lseq case *)
-repeat ff.
-+
-  left.
-  rewrite String.eqb_eq in *; eauto.
-+
-  right.
+  - (* at case *)
+    repeat ff; eauto;
+    rewrite String.eqb_eq in *; eauto.
+  - (* lseq case *)
+    repeat ff.
+    +
+      left.
+      rewrite String.eqb_eq in *; eauto.
+    +
+      right.
 
-  assert (place_terms t1 p p0 <> [] \/ 
-          place_terms t2 p p0 <> []).
+      assert (place_terms t1 p p0 <> [] \/ 
+              place_terms t2 p p0 <> []).
+              {
+                apply app_not_empty.
+                eassumption.
+              }
+      ff; break_or_hyp.
+      ++
+        apply IHt1 in H1.
+        assert (In p0 (places' t1 [])).
+        {
+          assert (p <> p0).
           {
-            apply app_not_empty.
-            eassumption.
-          }
-  door.
-  ++
-    apply IHt1 in H0.
-    assert (In p0 (places' t1 [])).
-    {
-      assert (p <> p0).
-      {
-        unfold not.
-        intros.
-        subst.
-        rewrite eqb_plc_refl in *.
-        solve_by_inversion.
-      }
-      door; ff.
-      }
+            unfold not.
+            intros.
+            subst.
+            rewrite eqb_plc_refl in *.
+            solve_by_inversion.
+        }
+        ff.
+        }
 
-      apply places'_cumul.
-      eassumption.
-  ++
-    apply IHt2 in H0.
-    assert (In p0 (places' t2 [])).
-    {
-      assert (p <> p0).
+        apply places'_cumul.
+        eassumption.
+    ++
+      apply IHt2 in H1.
+      assert (In p0 (places' t2 [])).
       {
+        assert (p <> p0).
+        {
         unfold not.
         intros.
         subst.
         rewrite eqb_plc_refl in *.
         solve_by_inversion.
       }
-      door; ff.
+      ff.
       }
       apply places'_cumul'.
       eauto.
 
-- (* bseq case *)
+  - (* bseq case *)
   repeat ff.
   +
     left.
@@ -246,9 +215,9 @@ repeat ff.
               apply app_not_empty.
               eassumption.
             }
-    door.
+    ff; break_or_hyp.
     ++
-      apply IHt1 in H0.
+      apply IHt1 in H1.
       assert (In p0 (places' t1 [])).
       {
         assert (p <> p0).
@@ -259,13 +228,13 @@ repeat ff.
           rewrite eqb_plc_refl in *.
           solve_by_inversion.
         }
-        door; ff.
+        ff.
         }
   
         apply places'_cumul.
         eassumption.
     ++
-      apply IHt2 in H0.
+      apply IHt2 in H1.
       assert (In p0 (places' t2 [])).
       {
         assert (p <> p0).
@@ -276,14 +245,14 @@ repeat ff.
           rewrite eqb_plc_refl in *.
           solve_by_inversion.
         }
-        door; ff.
+        ff.
         }
   
       
             apply places'_cumul'.
             eauto.
 
-- (* bpar case *)
+  - (* bpar case *)
   repeat ff.
   +
     left.
@@ -297,9 +266,9 @@ repeat ff.
               apply app_not_empty.
               eassumption.
             }
-    door.
+    ff; break_or_hyp.
     ++
-      apply IHt1 in H0.
+      apply IHt1 in H1.
       assert (In p0 (places' t1 [])).
       {
         assert (p <> p0).
@@ -310,13 +279,13 @@ repeat ff.
           rewrite eqb_plc_refl in *.
           solve_by_inversion.
         }
-        door; ff.
+        ff.
         }
   
         apply places'_cumul.
         eassumption.
     ++
-      apply IHt2 in H0.
+      apply IHt2 in H1.
       assert (In p0 (places' t2 [])).
       {
         assert (p <> p0).
@@ -327,7 +296,7 @@ repeat ff.
           rewrite eqb_plc_refl in *.
           solve_by_inversion.
         }
-        door; ff.
+        ff.
         }
         apply places'_cumul'.
         eauto.
