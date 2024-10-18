@@ -267,7 +267,6 @@ Definition add_asp_summary (i:ASP_ID) (tid:TARG_ID) (f:(RawEv -> string)) (rEv:R
 
 Import ResultNotation.
 
-(* TODO:  make this a ResultT type eventually to fail on map lookup? *)
 Fixpoint do_AppraisalSummary' (et:EvidenceT) (r:RawEv) (G:GlobalContext) 
     (m:RawEvJudgement) (s:AppraisalSummary) : ResultT AppraisalSummary string := 
         match et with 
@@ -333,162 +332,46 @@ Definition do_AppraisalSummary (et:EvidenceT) (r:RawEv) (G:GlobalContext) (m:Raw
 
 Open Scope string_scope.
 
-(*
-Definition gather_config_1 : Term := 
-    (gather_targ_asp cds_config_dir_plc cds_config_1_targ).
-*)
-(*
-Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID) : Term := 
-    (asp (ASPC (* ALL (EXTD 1)  *)
-               (asp_paramsC 
-                    gather_file_contents_id 
-                    [] 
-                    targPlc 
-                    targId ))).
-*)
 
-(*
-Definition AppraisalSummary := (Map ASP_ID (Map TARG_ID string)).
-
-Definition ASP_Compat_MapT := Map ASP_ID ASP_ID.
-
-Definition ASP_Type_Env := Map ASP_ID EvSig.
-
-Record GlobalContext := {
-  asp_types: ASP_Type_Env;
-  asp_comps: ASP_Compat_MapT
-}.
-
-Inductive FWD :=
-| REPLACE
-| WRAP
-| UNWRAP
-| EXTEND.
-
-Inductive EvInSig :=
-| InAll : EvInSig
-| InNone : EvInSig.
-
-Inductive EvOutSig :=
-| OutN : nat -> EvOutSig
-| OutUnwrap : EvOutSig.
-
-Inductive EvSig :=
-| ev_arrow : FWD -> EvInSig -> EvOutSig -> EvSig.
-
-*)
-
-(*
-Definition ex_targMap : Map TARG_ID string := 
-    [(cds_config_1_targ, "cds_config_1_targ PASSED")].
-
-Definition example_appraisal_summary : AppraisalSummary := 
-    [(gather_file_contents_id, ex_targMap);
-     (appraise_id, ex_targMap)].
-
-Definition gather_contents_evsig : EvSig := 
-    ev_arrow EXTEND InAll (OutN 1).
-
-Definition example_GlobalContext : GlobalContext := 
-    Build_GlobalContext 
-        [(gather_file_contents_id, gather_contents_evsig);
-         (appr_gather_file_contents_id, gather_contents_evsig)]
-        [(gather_file_contents_id, appr_gather_file_contents_id)].
-*)
-
-Definition example_appTerm : Term := (lseq gather_config_1 (lseq gather_config_2 (lseq gather_config_3 (asp APPR)))).
-
-(*
-
-Definition computed_evidence : EvidenceT := 
-    match (eval example_GlobalContext P0 mt_evt example_appTerm) with 
-    | resultC et => et 
-    | _ => mt_evt 
-    end.
-*)
-
-(*
-Definition RawEvJudgement := Map ASP_ID (Map TARG_ID (RawEv -> string)).
-*)
+Definition example_appTerm : Term := 
+    (lseq gather_config_1 
+        (lseq gather_config_2 
+            (lseq gather_config_3 (asp APPR)))).
 
 
-(*
-(* FYI:  Moved these to RawEvJudgement_Admits.v...intent is to move this to extracted stubs or JSON-configurable *)
-Definition ex_targJudgement_fun : RawEv -> string := 
-    (fun _ => "SAMPLE JUDGEMENT STRING ONE").
+Check fold_left.
 
-Definition ex_targJudgement_fun' : RawEv -> string := 
-    (fun _ => "SAMPLE JUDGEMENT STRING TWO").
-*)
-
-(*
-
-Definition ex_targJudgement : Map TARG_ID (RawEv -> string) := 
-    [(cds_config_1_targ, ex_targJudgement_fun)].
-*)
-
+Definition single_add_type := (ASP_ID * (TARG_ID * (RawEv -> string)))%type.
 
 (*
 Definition add_RawEvJudgement (i:ASP_ID) (tid:TARG_ID) (f:RawEv -> string) 
     (m:RawEvJudgement) : RawEvJudgement := 
 *)
 
-(*
+Definition addOne_rawEvJudgement (a:RawEvJudgement) (b:single_add_type) : RawEvJudgement := 
+    let aid := fst b in 
+    let tid := fst (snd b) in 
+    let f := snd (snd b) in 
+    add_RawEvJudgement aid tid f a.
+
+Definition gen_rawEvJudgement (ls:list single_add_type) : RawEvJudgement := 
+    fold_left addOne_rawEvJudgement ls [].
+
+Definition example_RawEvJudgement_ls : list single_add_type := 
+    [
+        (gather_file_contents_id, (cds_config_1_targ, ex_targJudgement_fun));
+        (gather_file_contents_id, (cds_config_2_targ, ex_targJudgement_fun));
+        (gather_file_contents_id, (cds_config_3_targ, ex_targJudgement_fun));
+        (appr_gather_file_contents_id, (cds_config_1_targ, ex_targJudgement_fun'));
+        (appr_gather_file_contents_id, (cds_config_2_targ, ex_targJudgement_fun'));
+        (appr_gather_file_contents_id, (cds_config_3_targ, ex_targJudgement_fun'))
+    ].
+
+
 Definition example_RawEvJudgement : RawEvJudgement := 
-    [(gather_file_contents_id, ex_targJudgement);
-     (appraise_id, ex_targJudgement)].
-*)
-
-Definition example_RawEvJudgement : RawEvJudgement := 
-    let j' := add_RawEvJudgement gather_file_contents_id cds_config_1_targ ex_targJudgement_fun [] in 
-    let j'' := add_RawEvJudgement appr_gather_file_contents_id cds_config_1_targ ex_targJudgement_fun' j' in 
-    let j''' := add_RawEvJudgement appr_gather_file_contents_id cds_config_2_targ ex_targJudgement_fun' j'' in
-    let j'''' := add_RawEvJudgement appr_gather_file_contents_id cds_config_3_targ ex_targJudgement_fun' j''' in
-    let j''''' := add_RawEvJudgement gather_file_contents_id cds_config_3_targ ex_targJudgement_fun j'''' in
-        add_RawEvJudgement gather_file_contents_id cds_config_2_targ ex_targJudgement_fun j'''''.
+    gen_rawEvJudgement example_RawEvJudgement_ls.
 
 
-
-
-
-
-(*
-(et:EvidenceT) (r:RawEv) (G:GlobalContext) (m:RawEvJudgement) : ResultT AppraisalSummary string := 
-*)
-(*
-Definition computed_appraisal_summary : AppraisalSummary := 
-    *)
-
-
-(*
-Global Instance AppraisalSummaryJsonifiable `{Stringifiable (ASP_ID * TARG_ID)%type, Stringifiable string} : Jsonifiable (list ((ASP_ID * TARG_ID) * string)).
-eapply Build_Jsonifiable with 
-    (to_JSON := map_serial_serial_to_JSON)
-    (from_JSON := map_serial_serial_from_JSON).
-    intros.
-    rewrite canonical_jsonification_map_serial_serial in *.
-    eauto.
-Qed.
-*)
-
-(*
-
-Definition pair_to_string {A B : Type} `{Stringifiable A, Stringifiable B} (v : (A * B)) : string :=
-  JSON_Array [(to_JSON (fst v)); (to_JSON (snd v))].
-
-Definition pair_from_JSON {A B : Type} `{Jsonifiable A, Jsonifiable B} (js : JSON) : ResultT (A * B) string :=
-  match js with
-  | JSON_Array [a; b] =>
-      match (from_JSON a), (from_JSON b) with
-      | resultC a, resultC b => resultC (a, b)
-      | _, _ => errC errStr_json_to_pair
-      end
-  | _ => errC errStr_json_to_pair
-  end.
-
-Global Instance StringifiableAppraisalSummary' : Stringifiable (ASP_ID * TARG_ID).\
-
-*)
 
 Global Instance AppraisalSummaryJsonifiable `{Stringifiable ASP_ID, Stringifiable (Map TARG_ID string)} : Jsonifiable AppraisalSummary.
 eapply Build_Jsonifiable with 
@@ -503,9 +386,3 @@ Qed.
 
 Definition test_app_summary_compute_json (x:AppraisalSummary) : JSON := to_JSON x.
 
-(*
-
-Example fdfd : forall (x:AppraisalSummary), x = example_appraisal_summary.
-
-Check example_appraisal_summary.
-*)
