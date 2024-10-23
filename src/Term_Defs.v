@@ -20,7 +20,7 @@ Import ListNotations ResultNotation.
 
 Require Export Params_Admits.
 
-Require Export Term_Defs_Core.
+Require Export Term_Defs_Core Term_Defs_Core_Typeclasses Term_Defs_Core_Ops.
 
 Definition splitEv_T_l (sp:Split) (e:EvidenceT) : EvidenceT :=
   match sp with
