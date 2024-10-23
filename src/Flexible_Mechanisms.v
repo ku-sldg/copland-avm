@@ -72,23 +72,19 @@ Definition split_phrase : Term :=
       (asp (ASPC (asp_paramsC attest2_id [] P1 sys_targ)))
     ).
 
-(*
-Definition cds_demo_phrase : Term := 
-  att P1
-    (
-    lseq 
-    (lseq 
-      (asp (ASPC ALL (EXTD 1) (asp_paramsC query_kim_id [] P1 sys_targ)))
-      (
-      lseq 
-        (asp (ASPC ALL (EXTD 1) (asp_paramsC meas_cds_id [] P1 cds_targ)))
-        (asp SIG)
-      )
-    )
-    (
-      att P3 (asp (ASPC ALL (EXTD 1) (asp_paramsC appr_cds_id [] P1 sys_targ)))
-    )).
-*)
+Open Scope cop_ent_scope.
+
+Definition appr_term : Term := (asp APPR).
+
+Definition example_appTerm : Term :=
+<{
+    gather_config_1 ->
+    gather_config_2 ->
+    gather_config_3 ->
+    appr_term
+}>.
+
+Close Scope cop_ent_scope.
 
 
 Open Scope string_scope.
