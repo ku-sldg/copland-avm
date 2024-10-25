@@ -55,11 +55,12 @@ Definition gather_file_contents_id : ASP_ID := "r_readfile_id". (* "gather_file_
 Definition appr_gather_file_contents_id : ASP_ID := "appraise_r_readfile_id".
 Definition appr_cds_id : ASP_ID := "appr_cds_id".
 
-Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID) (path:string) : Term := 
+Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID) (path:string) (appr_path:string) : Term := 
     (asp (ASPC (* ALL (EXTD 1)  *)
                (asp_paramsC 
                     gather_file_contents_id 
-                    [("filepath", path)] 
+                    [("filepath", path); 
+                     ("filepath-golden", appr_path)] 
                     targPlc 
                     targId ))).
 
@@ -77,20 +78,32 @@ Close Scope string_scope.
 
 Open Scope cop_ent_scope.
 
-Definition path_targ1 : string := "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFile.txt".
+Definition path_targ1 : string := 
+    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFile.txt".
 
-Definition path_targ2 : string := "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFile2.txt".
+Definition path_targ2 : string := 
+    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFile2.txt".
 
-Definition path_targ3 : string := "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFile3.txt".
+Definition path_targ3 : string := 
+    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFile3.txt".
+
+Definition path_targ1_golden : string := 
+    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/golden/targFile.txt".
+
+Definition path_targ2_golden : string := 
+    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/golden/targFile2.txt".
+
+Definition path_targ3_golden : string := 
+    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/golden/targFile3.txt".
 
 Definition gather_config_1 : Term := 
-    (gather_targ_asp cds_config_dir_plc cds_config_1_targ path_targ1).
+    (gather_targ_asp cds_config_dir_plc cds_config_1_targ path_targ1 path_targ1_golden).
 
 Definition gather_config_2 : Term := 
-    (gather_targ_asp cds_config_dir_plc cds_config_2_targ path_targ2).
+    (gather_targ_asp cds_config_dir_plc cds_config_2_targ path_targ2 path_targ2_golden).
 
 Definition gather_config_3 : Term := 
-    (gather_targ_asp cds_config_dir_plc cds_config_3_targ path_targ3).
+    (gather_targ_asp cds_config_dir_plc cds_config_3_targ path_targ3 path_targ3_golden).
 
 Definition hash_cds_img_1 : Term := 
     (hash_targ_asp cds_config_dir_plc cds_img_1_targ).
