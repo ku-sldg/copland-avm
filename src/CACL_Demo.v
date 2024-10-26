@@ -79,22 +79,22 @@ Close Scope string_scope.
 Open Scope cop_ent_scope.
 
 Definition path_targ1 : string := 
-    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFile.txt".
+    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFiles/targFile1.txt".
 
 Definition path_targ2 : string := 
-    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFile2.txt".
+    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFiles/targFile2.txt".
 
 Definition path_targ3 : string := 
-    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFile3.txt".
+    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFiles/targFile3.txt".
 
 Definition path_targ1_golden : string := 
-    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/golden/targFile.txt".
+    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/goldenFiles/targFile1.txt".
 
 Definition path_targ2_golden : string := 
-    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/golden/targFile2.txt".
+    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/goldenFiles/targFile2.txt".
 
 Definition path_targ3_golden : string := 
-    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/golden/targFile3.txt".
+    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/goldenFiles/targFile3.txt".
 
 Definition gather_config_1 : Term := 
     (gather_targ_asp cds_config_dir_plc cds_config_1_targ path_targ1 path_targ1_golden).
