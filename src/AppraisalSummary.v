@@ -69,8 +69,15 @@ Fixpoint do_AppraisalSummary' (et:EvidenceT) (r:RawEv) (G:GlobalContext)
             '(r2, _) <- peel_n_rawev et2_size rest ;;
             s1 <- do_AppraisalSummary' et1 r1 G m s ;;
             do_AppraisalSummary' et2 r2 G m s1
-        | left_evt et' => do_AppraisalSummary' et' r G m s
-        | right_evt et' => do_AppraisalSummary' et' r G m s
+        | left_evt et' => 
+            r <- apply_to_evidence_below G (fun et'' => do_AppraisalSummary' et'' r G m s) [Trail_LEFT] et' ;;
+            r
+        (* do_AppraisalSummary' et' r G m s *)
+        
+        | right_evt et' => 
+            r <- apply_to_evidence_below G (fun et'' => do_AppraisalSummary' et'' r G m s) [Trail_RIGHT] et' ;;
+            r
+        (* do_AppraisalSummary' et' r G m s *)
         
         | asp_evt p ps et' => 
             let '(asp_paramsC i args tp tid) := ps in 
@@ -99,7 +106,10 @@ Fixpoint do_AppraisalSummary' (et:EvidenceT) (r:RawEv) (G:GlobalContext)
                             let f := get_RawEvJudgement i tid m in 
                             '(r1, rest) <- peel_n_rawev n r ;; 
                             let s' := add_asp_summary i tid f r1 s in 
+                            resultC s'
+                            (*
                             do_AppraisalSummary' et' rest G m s'
+                            *)
 
                         | _ => errC err_str_cannot_have_outwrap
                         end
