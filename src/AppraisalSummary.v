@@ -90,10 +90,23 @@ Fixpoint do_AppraisalSummary' (et:EvidenceT) (r:RawEv) (G:GlobalContext)
                         | _ => errC err_str_cannot_have_outwrap
                         end
                     
-                        
-                    | _ => resultC s
-                    (*
+                       (* 
+                    | _ => resultC s *)
+                    
                     | REPLACE => 
+                        match out_sig with 
+                        | OutN n => 
+                            let f := get_RawEvJudgement i tid m in 
+                            '(r1, rest) <- peel_n_rawev n r ;; 
+                            let s' := add_asp_summary i tid f r1 s in 
+                            do_AppraisalSummary' et' rest G m s'
+
+                        | _ => errC err_str_cannot_have_outwrap
+                        end
+
+                    | _ => resultC s 
+
+                    (*
                         match out_sig with 
                         | OutN n => 
                             let (r1, rest) := peel_n_rawev_noFail n r in 
@@ -101,7 +114,8 @@ Fixpoint do_AppraisalSummary' (et:EvidenceT) (r:RawEv) (G:GlobalContext)
                                 do_AppraisalSummary' et' rest G m s'
                         | _ => s
                         end
-                    
+                        *)
+                    (*
                     | WRAP => 
                         match out_sig with 
                         | OutN n => 
