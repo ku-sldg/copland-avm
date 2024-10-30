@@ -50,9 +50,10 @@ Definition cds_img_3_targ : TARG_ID := "cds_img_3_targ".
 
 (* ASP IDs *)
 Definition query_kim_id : ASP_ID := "query_kim_id".
-Definition hash_file_contents_id : ASP_ID := "hash_file_contents_id".
+Definition hash_file_contents_id : ASP_ID := "r_hashfile_id".
 Definition gather_file_contents_id : ASP_ID := "r_readfile_id". (* "gather_file_contents_id" *)
 Definition appr_gather_file_contents_id : ASP_ID := "appraise_r_readfile_id".
+Definition appr_hash_file_contents_id : ASP_ID := "appraise_r_hashfile_id".
 Definition appr_cds_id : ASP_ID := "appr_cds_id".
 
 Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID) (path:string) (appr_path:string) : Term := 
@@ -64,11 +65,12 @@ Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID) (path:string) (appr_pa
                     targPlc 
                     targId ))).
 
-Definition hash_targ_asp (targPlc:Plc) (targId:TARG_ID) : Term := 
+Definition hash_targ_asp (targPlc:Plc) (targId:TARG_ID) (path:string) (appr_path:string) : Term := 
     (asp (ASPC (* ALL (EXTD 1) *)
                 (asp_paramsC 
                     hash_file_contents_id 
-                    [] 
+                    [("filepath", path); 
+                     ("filepath-golden", appr_path)] 
                     targPlc 
                     targId ))).
 
@@ -96,6 +98,12 @@ Definition path_targ2_golden : string :=
 Definition path_targ3_golden : string := 
     "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/goldenFiles/targFile3.txt".
 
+Definition path_exe_targ1 : string := 
+    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFiles/targExe1.exe".
+
+Definition path_exe_targ1_golden : string := 
+    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/goldenFiles/targExe1.exe".
+
 Definition gather_config_1 : Term := 
     (gather_targ_asp cds_config_dir_plc cds_config_1_targ path_targ1 path_targ1_golden).
 
@@ -106,16 +114,20 @@ Definition gather_config_3 : Term :=
     (gather_targ_asp cds_config_dir_plc cds_config_3_targ path_targ3 path_targ3_golden).
 
 Definition hash_cds_img_1 : Term := 
-    (hash_targ_asp cds_config_dir_plc cds_img_1_targ).
+    (hash_targ_asp cds_config_dir_plc cds_img_1_targ 
+     path_exe_targ1 path_exe_targ1_golden).
 
 Definition hash_cds_img_2 : Term := 
-    (hash_targ_asp cds_config_dir_plc cds_img_2_targ).
+    (hash_targ_asp cds_config_dir_plc cds_img_2_targ
+     path_exe_targ1 path_exe_targ1_golden).
 
 Definition hash_cds_img_3 : Term := 
-    (hash_targ_asp cds_config_dir_plc cds_img_3_targ).
+    (hash_targ_asp cds_config_dir_plc cds_img_3_targ
+     path_exe_targ1 path_exe_targ1_golden).
 
 Definition hash_controller_img : Term := 
-    (hash_targ_asp cds_controller_dir_targ cds_controller_exe_targ).
+    (hash_targ_asp cds_controller_dir_targ cds_controller_exe_targ
+    path_exe_targ1 path_exe_targ1_golden).
 
 Definition meas_cds_phrase : Term :=
 <{

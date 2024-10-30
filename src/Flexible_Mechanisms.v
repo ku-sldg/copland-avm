@@ -80,7 +80,8 @@ Definition example_appTerm : Term :=
 <{
     (gather_config_1 +<+
     gather_config_2 +<+
-    gather_config_3) ->
+    gather_config_3 +<+ 
+    hash_cds_img_1) ->
     appr_term
 }>.
 

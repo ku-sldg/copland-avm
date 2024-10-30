@@ -164,7 +164,9 @@ Definition example_RawEvJudgement_ls : list single_add_type :=
         (gather_file_contents_id, (cds_config_3_targ, ex_targJudgement_fun));
         (appr_gather_file_contents_id, (cds_config_1_targ, ex_targJudgement_fun'));
         (appr_gather_file_contents_id, (cds_config_2_targ, ex_targJudgement_fun'));
-        (appr_gather_file_contents_id, (cds_config_3_targ, ex_targJudgement_fun'))
+        (appr_gather_file_contents_id, (cds_config_3_targ, ex_targJudgement_fun'));
+        (appr_hash_file_contents_id, (cds_img_1_targ, ex_targJudgement_fun'))
+
     ].
 
 
