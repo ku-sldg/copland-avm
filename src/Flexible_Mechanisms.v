@@ -85,6 +85,14 @@ Definition example_appTerm : Term :=
     appr_term
 }>.
 
+Definition example_appTerm_provision : Term :=
+<{
+    (gather_config_1 -> provision_config_1) +<+
+    (gather_config_2 -> provision_config_2) +<+
+    (gather_config_3 -> provision_config_3) +<+
+    (hash_cds_img_1 -> provision_img_1)
+}>.
+
 Close Scope cop_ent_scope.
 
 
@@ -99,7 +107,8 @@ Definition flexible_mechanisms_map :=
    ("parmut2", parallel_mutual_2); 
    ("layered_bg", layered_background_check); 
    ("filehash", filehash_auth_phrase);
-   ("cds_simple", example_appTerm)
+   ("cds_simple", example_appTerm);
+   ("cds_provision", example_appTerm_provision)
    
    (* ;
    ("cds", cds_demo_phrase);
