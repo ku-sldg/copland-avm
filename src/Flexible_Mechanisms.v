@@ -79,9 +79,17 @@ Definition appr_term : Term := (asp APPR).
 Definition example_appTerm : Term :=
 <{
     (gather_config_1 +<+
+     query_kim_asp
+    (*
+    gather_config_2 +<+
+    gather_config_3 *) )
+     (* gather_config_2  *)
+     (* query_kim_asp) *)
+    
+    (* +<+
     gather_config_2 +<+
     gather_config_3 +<+ 
-    hash_cds_img_1) ->
+    hash_cds_img_1) *) ->
     appr_term
 }>.
 
@@ -89,8 +97,10 @@ Definition example_appTerm_provision : Term :=
 <{
     (gather_config_1 -> provision_config_1) +<+
     (gather_config_2 -> provision_config_2) +<+
-    (gather_config_3 -> provision_config_3) +<+
-    (hash_cds_img_1 -> provision_img_1)
+    (gather_config_3 -> provision_config_3) (* +<+
+
+    
+    (hash_cds_img_1 -> provision_img_1) *)
 }>.
 
 Close Scope cop_ent_scope.

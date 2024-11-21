@@ -18,6 +18,7 @@ Open Scope string_scope.
 
 (* Plc IDs *)
 Definition cds_config_dir_plc : Plc := "cds_config_dir_plc".
+Definition cds_query_kim_plc : Plc := "cds_query_kim_plc".
 
 (* TARG IDs *)
 Definition kim_evidence_targ : TARG_ID := "kim_evidence_targ".
@@ -49,7 +50,7 @@ Definition cds_img_2_targ : TARG_ID := "cds_img_2_targ".
 Definition cds_img_3_targ : TARG_ID := "cds_img_3_targ".
 
 (* ASP IDs *)
-Definition query_kim_id : ASP_ID := "query_kim_id".
+Definition query_kim_id : ASP_ID := "r_invaryGetMeasurement_id". (* "query_kim_id" *)
 Definition hash_file_contents_id : ASP_ID := "r_hashfile_id".
 Definition gather_file_contents_id : ASP_ID := "r_readfile_id". (* "gather_file_contents_id" *)
 Definition appr_gather_file_contents_id : ASP_ID := "appraise_r_readfile_id".
@@ -91,28 +92,28 @@ Close Scope string_scope.
 Open Scope cop_ent_scope.
 
 Definition path_targ1 : string := 
-    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFiles/targFile1.txt".
-
-Definition path_targ2 : string := 
-    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFiles/targFile2.txt".
-
-Definition path_targ3 : string := 
-    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFiles/targFile3.txt".
+    "/tests/DemoFiles/targFiles/targFile1.txt".
 
 Definition path_targ1_golden : string := 
-    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/goldenFiles/targFile1.txt".
+    "/tests/DemoFiles/goldenFiles/targFile1.txt".
+    
+Definition path_targ2 : string := 
+    "/tests/DemoFiles/targFiles/targFile2.txt".
+
+Definition path_targ3 : string := 
+    "/tests/DemoFiles/targFiles/targFile3.txt".
 
 Definition path_targ2_golden : string := 
-    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/goldenFiles/targFile2.txt".
+    "/tests/DemoFiles/goldenFiles/targFile2.txt".
 
 Definition path_targ3_golden : string := 
-    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/goldenFiles/targFile3.txt".
+    "/tests/DemoFiles/goldenFiles/targFile3.txt".
 
 Definition path_exe_targ1 : string := 
-    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/targFiles/targExe1.exe".
+    "/tests/DemoFiles/targFiles/targExe1.exe".
 
 Definition path_exe_targ1_golden : string := 
-    "/Users/adampetz/Documents/Spring_2023/am-cakeml/tests/DemoFiles/goldenFiles/targExe1.exe".
+    "/tests/DemoFiles/goldenFiles/targExe1.exe".
 
 Definition gather_config_1 : Term := 
     (gather_targ_asp cds_config_dir_plc cds_config_1_targ path_targ1 path_targ1_golden).
@@ -170,7 +171,7 @@ Definition meas_cds_phrase : Term :=
 }>.
 
 Definition query_kim_asp : Term := 
-    (asp (ASPC (asp_paramsC query_kim_id [] P1 kim_evidence_targ))).
+    (asp (ASPC (asp_paramsC query_kim_id [] cds_query_kim_plc kim_evidence_targ))).
 
 Definition appr_cds_asp : Term := 
     (asp (ASPC (asp_paramsC appr_cds_id [] P1 sys_targ))).
