@@ -72,6 +72,9 @@ Definition split_phrase : Term :=
       (asp (ASPC (asp_paramsC attest2_id [] P1 sys_targ)))
     ).
 
+Definition large_output_asp_test : Term :=
+  asp (ASPC (asp_paramsC large_output_id [] P1 sys_targ)).
+
 Open Scope string_scope.
 Definition flexible_mechanisms_map := 
   [("cert", certificate_style); 
@@ -82,7 +85,8 @@ Definition flexible_mechanisms_map :=
    ("parmut", parallel_mutual_1); 
    ("parmut2", parallel_mutual_2); 
    ("layered_bg", layered_background_check); 
-   ("filehash", filehash_auth_phrase)].
+   ("filehash", filehash_auth_phrase);
+   ("large_output", large_output_asp_test)].
 
 Definition add_EvidenceT_flexible_mechanisms := 
   fun G =>
