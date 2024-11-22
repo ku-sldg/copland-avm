@@ -57,6 +57,7 @@ Definition appr_gather_file_contents_id : ASP_ID := "appraise_r_readfile_id".
 Definition appr_hash_file_contents_id : ASP_ID := "appraise_r_hashfile_id".
 Definition provision_id : ASP_ID := "r_provision_id".
 Definition appr_cds_id : ASP_ID := "appr_cds_id".
+Definition appr_query_kim_id : ASP_ID := "appraise_r_invaryGetMeasurement_id".
 
 Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID) (path:string) (appr_path:string) : Term := 
     (asp (ASPC (* ALL (EXTD 1)  *)
