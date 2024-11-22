@@ -99,6 +99,8 @@ Definition cert_resolute_phrase : Term :=
 
 Close Scope cop_ent_scope.
 
+Definition large_output_asp_test : Term :=
+  asp (ASPC (asp_paramsC large_output_id [] P1 sys_targ)).
 
 Open Scope string_scope.
 Definition flexible_mechanisms_map := 
@@ -113,12 +115,13 @@ Definition flexible_mechanisms_map :=
    ("filehash", filehash_auth_phrase);
    ("cds_simple", example_appTerm);
    ("cds_provision", example_appTerm_provision);
-   ("cert_resolute_app", lseq cert_resolute_phrase (asp APPR))
+   ("cert_resolute_app", lseq cert_resolute_phrase (asp APPR));
    
    (* ;
    ("cds", cds_demo_phrase);
-   ("cds_appr", lseq cds_demo_phrase (asp APPR)) *) ].
+   ("cds_appr", lseq cds_demo_phrase (asp APPR))  ]. *)
    
+   ("large_output", large_output_asp_test)].
 
 Definition add_EvidenceT_flexible_mechanisms := 
   fun G =>
