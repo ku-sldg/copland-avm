@@ -22,6 +22,7 @@ Definition cds_query_kim_plc : Plc := "cds_query_kim_plc".
 
 (* TARG IDs *)
 Definition kim_evidence_targ : TARG_ID := "kim_evidence_targ".
+Definition ssl_sig_targ : TARG_ID := "ssl_sig_targ".
 
 Definition in_targ  : TARG_ID := "in_targ".
 Definition out_targ : TARG_ID := "out_targ".
@@ -51,6 +52,7 @@ Definition cds_img_3_targ : TARG_ID := "cds_img_3_targ".
 
 (* ASP IDs *)
 Definition query_kim_id : ASP_ID := "r_invaryGetMeasurement_id". (* "query_kim_id" *)
+Definition query_kim_stub_id : ASP_ID := "r_invaryGetMeasurement_stub_id".
 Definition hash_file_contents_id : ASP_ID := "r_hashfile_id".
 Definition gather_file_contents_id : ASP_ID := "r_readfile_id". (* "gather_file_contents_id" *)
 Definition appr_gather_file_contents_id : ASP_ID := "appraise_r_readfile_id".
@@ -58,6 +60,9 @@ Definition appr_hash_file_contents_id : ASP_ID := "appraise_r_hashfile_id".
 Definition provision_id : ASP_ID := "r_provision_id".
 Definition appr_cds_id : ASP_ID := "appr_cds_id".
 Definition appr_query_kim_id : ASP_ID := "appraise_r_invaryGetMeasurement_id".
+Definition appr_query_kim_stub_id : ASP_ID := "appraise_r_invaryGetMeasurement_stub_id".
+Definition ssl_sig_id : ASP_ID := "ssl_sig_id".
+Definition ssl_sig_appr_id : ASP_ID := "ssl_sig_appr_id".
 
 Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID) (path:string) (appr_path:string) : Term := 
     (asp (ASPC (* ALL (EXTD 1)  *)
@@ -173,6 +178,12 @@ Definition meas_cds_phrase : Term :=
 
 Definition query_kim_asp : Term := 
     (asp (ASPC (asp_paramsC query_kim_id [] cds_query_kim_plc kim_evidence_targ))).
+
+Definition ssl_sig_asp : Term := 
+    (asp (ASPC (asp_paramsC ssl_sig_id [] cds_query_kim_plc ssl_sig_targ))).
+
+Definition query_kim_asp_stub : Term := 
+        (asp (ASPC (asp_paramsC query_kim_stub_id [] cds_query_kim_plc kim_evidence_targ))).
 
 Definition appr_cds_asp : Term := 
     (asp (ASPC (asp_paramsC appr_cds_id [] P1 sys_targ))).

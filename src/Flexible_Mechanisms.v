@@ -93,6 +93,14 @@ Definition example_appTerm : Term :=
     appr_term
 }>.
 
+Definition example_appTerm_stub : Term :=
+<{
+    (gather_config_1 +<+
+     query_kim_asp_stub ) ->
+     ssl_sig_asp ->
+    appr_term
+}>.
+
 Definition example_appTerm_provision : Term :=
 <{
     (gather_config_1 -> provision_config_1) +<+
@@ -118,6 +126,7 @@ Definition flexible_mechanisms_map :=
    ("layered_bg", layered_background_check); 
    ("filehash", filehash_auth_phrase);
    ("cds_simple", example_appTerm);
+   ("cds_stub", example_appTerm_stub);
    ("cds_provision", example_appTerm_provision)
    
    (* ;
