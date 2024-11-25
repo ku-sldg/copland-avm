@@ -18,9 +18,9 @@ University of California.  See license.txt for details. *)
 
 Require Export BS.
 
-Require Import List ID_Type Maps JSON Stringifiable Stringifiable_Class_Admits StructTactics
-  ErrorStringConstants.
+Require Import List ID_Type Maps JSON Stringifiable Stringifiable_Class_Admits StructTactics ErrorStringConstants.
 Require Import EqClass.
+
 Require Import Lia.
 Import ListNotations ResultNotation.
 
@@ -94,28 +94,6 @@ Inductive EvidenceT :=
 | right_evt   : EvidenceT -> EvidenceT
 | split_evt   : EvidenceT -> EvidenceT -> EvidenceT.
 
-Fixpoint eqb_EvidenceT `{EqClass N_ID, EqClass ASP_PARAMS, EqClass Plc} (e1 e2 : EvidenceT) : bool :=
-  match e1, e2 with
-  | mt_evt, mt_evt => true
-  | nonce_evt i, nonce_evt i' => eqb i i'
-  | asp_evt p par e, asp_evt p' par' e' =>
-    (eqb p p') && (eqb par par') && (eqb_EvidenceT e e')
-  | left_evt e, left_evt e' => eqb_EvidenceT e e'
-  | right_evt e, right_evt e' => eqb_EvidenceT e e'
-  | split_evt e1 e2, split_evt e1' e2' =>
-    eqb_EvidenceT e1 e1' && eqb_EvidenceT e2 e2'
-  | _, _ => false
-  end.
-
-Global Instance EqClass_EvidenceT `{EqClass N_ID, EqClass Plc, EqClass ASP_PARAMS} : EqClass EvidenceT.
-eapply Build_EqClass with (eqb := eqb_EvidenceT).
-induction x, y; simpl in *; ff;
-repeat rewrite Bool.andb_true_iff in *; ff;
-repeat rewrite eqb_eq in *; ff;
-try erewrite IHx in *; ff;
-try erewrite IHx1, IHx2 in *; ff.
-Defined.
-
 (** Evidene routing types:  
       ALL:   pass through all EvidenceT
       NONE   pass through empty EvidenceT
@@ -127,7 +105,6 @@ Inductive SP: Set :=
 (** Primitive Copland phases 
 
     NULL:    Empty out EvidenceT (optionally with a strong "zeroize" effect)
-    CPY:     Copy EvidenceT (leave input EvidenceT unchanged)
     ASPC sp fwd ps:    
         Arbitrary ASPs:
           sp indicates passing ALL or NONE as input EvidenceT.
@@ -135,6 +112,7 @@ Inductive SP: Set :=
           ps indicates the asp parameters structure
     SIG:     Signature primitive
     HSH:     Hash primitive 
+    APPR:    Appraisal primitive
     ENC q:   Encryption primitive using public key associated with place q.
 *)
 Inductive ASP :=
@@ -706,16 +684,12 @@ Definition get_bits (e:Evidence): list BS :=
   | evc ls _ => ls
   end.
 
-(** A "well-formed" Evidence value is where the length of its raw EvidenceT portion
-    has the proper size (calculated over the EvidenceT Type portion). *)
-Inductive wf_Evidence : GlobalContext -> Evidence -> Prop :=
-| wf_Evidence_c: forall (ls:RawEv) et G n,
-    List.length ls = n ->
-    et_size G et = resultC n ->
-    wf_Evidence G (evc ls et).
+(** Abstract Location identifiers used to aid in management and execution 
+    of parallel Copland phrases. *)
+Definition Loc: Set := nat.
+Definition Locs: Set := list Loc.
 
-Inductive CopPhrase :=
-| cop_phrase : Plc -> EvidenceT -> Term -> CopPhrase.
+
 
 (* Adapted from Imp language Notation in Software Foundations (Pierce) *)
 Declare Custom Entry copland_entry.
@@ -746,9 +720,3 @@ Notation "'<<' x y z '>>'" := (asp (ASPC (asp_paramsC x nil y z)))
 
 (* @ plc phrase *)
 Notation "@ p [ ph ]" := (att p ph) (in custom copland_entry at level 50).
-
-(** Abstract Location identifiers used to aid in management and execution 
-    of parallel Copland phrases. *)
-Definition Loc: Set := nat.
-Definition Locs: Set := list Loc.
-

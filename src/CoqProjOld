@@ -24,8 +24,8 @@ CACL_Defs.v
 CACL_Typeclasses.v
 CACL_Generator.v
 RawEvJudgement_Admits.v
-CACL_Demo.v
-AppraisalSummary.v
+#CACL_Demo.v
+#AppraisalSummary.v
 Attestation_Session.v
 Interface_Types.v
 Interface_JSON.v
@@ -36,32 +36,16 @@ Manifest_Set.v
 Manifest.v
 Manifest_JSON_Vars.v
 Manifest_JSON.v
-Session_Config_Compiler.v
+#Session_Config_Compiler.v
 Cvm_St.v
 IO_Stubs.v
 Eqb_Evidence.v
 Term.v
 EnvironmentM.v
 Manifest_Union.v
-Cvm_Monad.v
-Cvm_Impl.v
-Cvm_Axioms.v
-Manifest_Generator_Helpers.v
-Manifest_Generator.v
-Manifest_Generator_Facts.v
-Manifest_Generator_Union.v
-# Disclose.v
-AM_St.v
-AM_Monad.v
-ManCompSoundness_Helpers.v
-# ManCompSoundness.v
-AM_Helpers.v
-AM_Json_Interfaces.v
-AM_Manager.v
-Client_AM.v
-Server_AM.v
-Flexible_Mechanisms_Vars.v
-Flexible_Mechanisms.v
-Concrete_Extractables.v
-Extraction_Cvm_Cake.v
-Cvm_Verification.v
+# Evidence_Bundlers.v
+#Cvm_Monad.v
+#Cvm_Impl.v
+# Cvm_Run.v
+#Cvm_Axioms.v
+#Cvm_Verification.v

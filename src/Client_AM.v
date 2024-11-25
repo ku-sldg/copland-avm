@@ -10,25 +10,48 @@ Require Import Maps Attestation_Session Interface.
 
 Require Import ErrorStringConstants Manifest_Admits.
 
-Require Import AM_Helpers.
+Require Import AM_Helpers AppraisalSummary.
 
 Import ListNotations ErrNotation.
+
+Import ResultNotation.
 
 Definition am_sendReq (att_sess : Attestation_Session) (req_plc : Plc) 
     (e : Evidence) (t:Term) (toPlc : Plc) : ResultT RawEv string :=
   let req := (mkPRReq att_sess req_plc e t) in 
-  let js := to_JSON req in
-  let resp_res := make_JSON_Network_Request uuid js in
-  match resp_res with
-  | resultC js_res =>
-      match from_JSON js_res with
+  let m :=  Plc_Mapping att_sess in 
+    match (map_get toPlc m) with 
+    | None => errC errStr_remote_am_failure (* TODO: better errStr here *)
+    | Some uuid =>  
+
+      let js := to_JSON req in
+      let resp_res := make_JSON_Network_Request uuid js in 
+      match resp_res with 
       | errC msg => errC msg
-      | resultC res =>
-        let '(mkPRResp success ev) := res in
-        if success then resultC ev else errC errStr_remote_am_failure
+      | resultC js_res => 
+          match from_JSON js_res with
+          | errC msg => errC msg
+          | resultC res =>
+            let '(mkPRResp success (evc ev _)) := res in
+            if success then resultC ev else errC errStr_remote_am_failure
+          end
       end
-  | errC msg => errC msg
+    end.
+
+Definition am_client_app_summary (att_sess : Attestation_Session) (req_plc : Plc) 
+(e : Evidence) (t:Term) (toPlc : Plc) : ResultT AppraisalSummary string :=
+  match (am_sendReq att_sess req_plc e t toPlc) with 
+  | errC msg => errC msg 
+  | resultC rawev => 
+      let glob_ctx := (ats_context att_sess) in 
+      match e with 
+      | evc _ et => 
+        et' <- eval glob_ctx toPlc et t ;;
+        do_AppraisalSummary et' rawev glob_ctx example_RawEvJudgement
+      end
   end.
+
+(*
 
 Definition am_sendReq_app (uuid : UUID) (att_sess : Attestation_Session) (t:Term) (p:Plc) (e:EvidenceT) (ev:RawEv) : 
     ResultT AppResultC string :=
@@ -97,6 +120,13 @@ Definition am_appraise (att_sess : Attestation_Session) (t:Term) (toPlc:Plc) (in
   let expected_et := eval t toPlc init_et in
   app_res <- gen_appraise_AM expected_et cvm_ev ;; *)
   err_ret (app_res).
+
+
+
+
+*)
+
+
 
 
 
@@ -227,6 +257,12 @@ Definition check_disclosure_policy (t:Term) (p:Plc) (e:EvidenceT) : AM unit :=
 
   ret (am_appev app_res).
 *)
+
+
+
+
+
+(*
 
 Fixpoint nonce_ids_et' (et:EvidenceT) (ls:list N_ID) : list N_ID :=
   match et with
@@ -590,3 +626,5 @@ Proof.
 
   ff.
 Qed.
+
+*)

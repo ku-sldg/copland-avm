@@ -1,4 +1,4 @@
-Require Import Term_Defs Flexible_Mechanisms_Vars.
+Require Import Term_Defs Flexible_Mechanisms_Vars CACL_Demo.
 Require Import List String. 
 Import ListNotations.
 
@@ -75,6 +75,48 @@ Definition split_phrase : Term :=
 Definition large_output_asp_test : Term :=
   asp (ASPC (asp_paramsC large_output_id [] P1 sys_targ)).
 
+Open Scope cop_ent_scope.
+
+Definition appr_term : Term := (asp APPR).
+
+Definition example_appTerm : Term :=
+<{
+    (gather_config_1 +<+
+     query_kim_asp
+    (*
+    gather_config_2 +<+
+    gather_config_3 *) )
+     (* gather_config_2  *)
+     (* query_kim_asp) *)
+    
+    (* +<+
+    gather_config_2 +<+
+    gather_config_3 +<+ 
+    hash_cds_img_1) *) ->
+    appr_term
+}>.
+
+Definition example_appTerm_stub : Term :=
+<{
+    (gather_config_1 +<+
+     query_kim_asp_stub ) ->
+     ssl_sig_asp ->
+    appr_term
+}>.
+
+Definition example_appTerm_provision : Term :=
+<{
+    (gather_config_1 -> provision_config_1) +<+
+    (gather_config_2 -> provision_config_2) +<+
+    (gather_config_3 -> provision_config_3) (* +<+
+
+    
+    (hash_cds_img_1 -> provision_img_1) *)
+}>.
+
+Close Scope cop_ent_scope.
+
+
 Open Scope string_scope.
 Definition flexible_mechanisms_map := 
   [("cert", certificate_style); 
@@ -86,7 +128,15 @@ Definition flexible_mechanisms_map :=
    ("parmut2", parallel_mutual_2); 
    ("layered_bg", layered_background_check); 
    ("filehash", filehash_auth_phrase);
-   ("large_output", large_output_asp_test)].
+   ("large_output", large_output_asp_test);
+   ("cds_simple", example_appTerm);
+   ("cds_stub", example_appTerm_stub);
+   ("cds_provision", example_appTerm_provision)
+   
+   (* ;
+   ("cds", cds_demo_phrase);
+   ("cds_appr", lseq cds_demo_phrase (asp APPR)) *) ].
+   
 
 Definition add_EvidenceT_flexible_mechanisms := 
   fun G =>
