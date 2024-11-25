@@ -227,13 +227,14 @@ Lemma appr_manifest_update_cumul : forall G et m m',
   manifest_subset m m'.
 Proof.
   intros G.
-  induction et using (Evidence_subterm_path_Ind_special G); 
+  induction et using (Evidence_subterm_path_Ind_special G);
   intros; simpl in *; intuition; ff;
-  unfold aspid_manifest_update;
-  unfold manifest_subset; intuition;
-  simpl in *; ff; try eapply in_set_add; eauto;
-  ffa using result_monad_unfold;
-  ateb_unpack Heqr; find_eapply_lem_hyp H; ff.
+  unfold aspid_manifest_update, manifest_subset in *;
+  intuition; simpl in *; ff; try eapply in_set_add; eauto;
+  ffa using result_monad_unfold.
+  all: try (eapply IHet in H1; eauto; simpl in *;
+  try eapply in_set_add; eauto).
+  all: ateb_unpack Heqr; ffa.
 Qed.
 
 Lemma manifest_generator_cumul : forall G t et p e1 e2 e',
