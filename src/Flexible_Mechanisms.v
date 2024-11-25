@@ -72,6 +72,9 @@ Definition split_phrase : Term :=
       (asp (ASPC (asp_paramsC attest2_id [] P1 sys_targ)))
     ).
 
+Definition large_output_asp_test : Term :=
+  asp (ASPC (asp_paramsC large_output_id [] P1 sys_targ)).
+
 Open Scope cop_ent_scope.
 
 Definition appr_term : Term := (asp APPR).
@@ -125,6 +128,7 @@ Definition flexible_mechanisms_map :=
    ("parmut2", parallel_mutual_2); 
    ("layered_bg", layered_background_check); 
    ("filehash", filehash_auth_phrase);
+   ("large_output", large_output_asp_test);
    ("cds_simple", example_appTerm);
    ("cds_stub", example_appTerm_stub);
    ("cds_provision", example_appTerm_provision)

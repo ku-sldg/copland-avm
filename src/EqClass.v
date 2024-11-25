@@ -1,5 +1,5 @@
 (*
-Generic Typeclasplit_evt for equality, plus some instances.
+Generic Typeclass for equality, plus some instances.
 
 Authors:  Adam Petz, ampetz@ku.edu
           Will Thomas, 30wthomas@ku.edu
@@ -115,7 +115,7 @@ Proof.
   - subst. simpl. rewrite IHn1; eauto.
 Qed.
 
-Global Instance str_eq_clasplit_evt : EqClass string :=
+Global Instance str_eq_class : EqClass string :=
   { eqb:= String.eqb;
     eqb_eq := String.eqb_eq }.
 

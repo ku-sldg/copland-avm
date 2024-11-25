@@ -6,8 +6,8 @@
 
     The non-monadic stubs (i.e. doRemote_uuid) remain abstract (Admitted) in Coq 
     because they are either too low-level to reason about, or require external 
-    IO capabilities not modeled first-clasplit_evt in our spec.  The abstract binary
-    and EvidenceT value results support specification of correctnesplit_evt properties 
+    IO capabilities not modeled first-class in our spec.  The abstract binary
+    and EvidenceT value results support specification of correctness properties 
     for Appraisal.        
  *)
 Require Import Term_Defs ErrorStMonad_Coq 

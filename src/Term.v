@@ -1,4 +1,4 @@
-(*  --Structural lemmas about well-formednesplit_evt of annotated Copland
+(*  --Structural lemmas about well-formedness of annotated Copland
     phrases and their event ID ranges, associated automation.
     --The `events` relation --a denotational semantics for phrase events.
     --Lemmas/automation related to `events` *)

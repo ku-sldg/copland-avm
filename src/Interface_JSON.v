@@ -77,52 +77,6 @@ eapply Build_Jsonifiable with
   resultC (mkPNResp temp_success term))); solve_json.
 Defined.
 
-(* 
-(* Protocol Appraise Request *)
-Global Instance Jsonifiable_ProtocolAppraiseRequest `{Jsonifiable Term, Jsonifiable RawEv, Jsonifiable EvidenceT, Jsonifiable Attestation_Session}: Jsonifiable ProtocolAppraiseRequest.
-eapply Build_Jsonifiable with
-(to_JSON := fun req =>
-  JSON_Object [
-    (STR_TYPE, (JSON_String STR_REQUEST));
-    (STR_ACTION, (JSON_String STR_APPRAISE));
-    (STR_ATTEST_SESS, (to_JSON (pareq_att_sess req)));
-    (STR_TERM, (to_JSON (pareq_term req)));
-    (STR_REQ_PLC, (JSON_String (to_string (pareq_plc req))));
-    (STR_EvidenceT, (to_JSON (pareq_EvidenceT req)));
-    (STR_RAWEV, (to_JSON (pareq_ev req)))])
-(from_JSON := (fun j =>
-  temp_att_sess <- JSON_get_Object STR_ATTEST_SESS j ;;
-  temp_term <- JSON_get_Object STR_TERM j ;;
-  temp_plc <- JSON_get_string STR_REQ_PLC j ;;
-  temp_EvidenceT <- JSON_get_Object STR_EvidenceT j ;;
-  temp_ev <- JSON_get_Object STR_RAWEV j ;;
-  
-  att_sess <- from_JSON temp_att_sesplit_evt ;;
-  term <- from_JSON temp_term ;;
-  plc <- from_string temp_plc ;;
-  EvidenceT <- from_JSON temp_EvidenceT ;;
-  ev <- from_JSON temp_ev ;;
-  resultC (mkPAReq att_sess term plc EvidenceT ev))); solve_json.
-Defined.
-
-(* Protocol Appraise Response *)
-Global Instance Jsonifiable_ProtocolAppraiseResponse `{Jsonifiable AppResultC}: Jsonifiable ProtocolAppraiseResponse.
-eapply Build_Jsonifiable with
-(to_JSON := fun resp =>
-  JSON_Object [
-    (STR_TYPE, (JSON_String STR_RESPONSE));
-    (STR_ACTION, (JSON_String STR_APPRAISE));
-    (STR_SUCCESS, (JSON_Boolean (paresp_success resp)));
-    (STR_PAYLOAD, (to_JSON (paresp_result resp)))])
-(from_JSON := (fun resp =>
-  temp_success <- JSON_get_bool STR_SUCCESS resp ;;
-  temp_result <- JSON_get_Object STR_PAYLOAD resp ;;
-
-  result <- from_JSON temp_result ;;
-  resultC (mkPAResp temp_success result))); solve_json.
-Defined.
-*)
-
 (* ASP Run Request *)
 Global Instance Jsonifiable_ASPRunRequest `{Jsonifiable RawEv, Jsonifiable ASP_ARGS}: Jsonifiable ASPRunRequest.
 eapply Build_Jsonifiable with
