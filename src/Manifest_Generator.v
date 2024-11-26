@@ -129,8 +129,7 @@ Definition manifest_generator_terms (G : GlobalContext) (p:Plc) (ts:list Term)
 
 Definition manifest_generator (G : GlobalContext) (p : Plc) (t:Term) 
     : ResultT EnvironmentM string :=
-  et <- eval G p mt_evt t ;;
-  manifest_generator' G p et t e_empty.
+  manifest_generator' G p mt_evt t e_empty.
 
 Lemma manifest_generator_never_empty : forall G t p e et,
   manifest_generator' G p et t e <> resultC nil.
