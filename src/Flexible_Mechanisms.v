@@ -76,10 +76,11 @@ Open Scope cop_ent_scope.
 
 Definition appr_term : Term := (asp APPR).
 
+(*
 Definition example_appTerm : Term :=
 <{
-    (gather_config_1 +<+
-     query_kim_asp
+    (gather_config_1 (* +<+
+      query_kim_asp *)
     (*
     gather_config_2 +<+
     gather_config_3 *) )
@@ -90,6 +91,18 @@ Definition example_appTerm : Term :=
     gather_config_2 +<+
     gather_config_3 +<+ 
     hash_cds_img_1) *) ->
+    appr_term
+}>.
+*)
+
+Definition example_appTerm' : Term := 
+  (asp (ASPC (asp_paramsC attest2_id [] P1 sys_targ))).
+
+Definition example_appTerm : Term :=
+<{
+    (gather_config_1 +<+ 
+    gather_config_2 +<+
+    gather_config_3) ->
     appr_term
 }>.
 
