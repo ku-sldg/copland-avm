@@ -64,6 +64,9 @@ Definition appr_query_kim_stub_id : ASP_ID := "appraise_r_invaryGetMeasurement_s
 Definition ssl_sig_id : ASP_ID := "ssl_sig_id".
 Definition ssl_sig_appr_id : ASP_ID := "ssl_sig_appr_id".
 
+Definition r_ssl_sig_id : ASP_ID := "r_sig".
+Definition r_ssl_sig_appr_id : ASP_ID := "appraise_r_sig".
+
 Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID) (path:string) (appr_path:string) : Term := 
     (asp (ASPC (* ALL (EXTD 1)  *)
                (asp_paramsC 
@@ -181,6 +184,9 @@ Definition query_kim_asp : Term :=
 
 Definition ssl_sig_asp : Term := 
     (asp (ASPC (asp_paramsC ssl_sig_id [] cds_query_kim_plc ssl_sig_targ))).
+
+Definition r_ssl_sig_asp : Term := 
+        (asp (ASPC (asp_paramsC r_ssl_sig_id [] cds_query_kim_plc ssl_sig_targ))).
 
 Definition query_kim_asp_stub : Term := 
         (asp (ASPC (asp_paramsC query_kim_stub_id [] cds_query_kim_plc kim_evidence_targ))).

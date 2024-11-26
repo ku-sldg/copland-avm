@@ -110,7 +110,7 @@ Definition example_appTerm_stub : Term :=
 <{
     (gather_config_1 +<+
      query_kim_asp_stub ) ->
-     ssl_sig_asp ->
+     r_ssl_sig_asp ->
     appr_term
 }>.
 
@@ -132,7 +132,7 @@ lseq
 (
   lseq
 (asp (ASPC (asp_paramsC attest_id [] P1 sys_targ)))
-ssl_sig_asp) 
+r_ssl_sig_asp) 
 appr_term.
 
 
