@@ -127,6 +127,17 @@ Definition example_appTerm_provision : Term :=
     (hash_cds_img_1 -> provision_img_1) *)
 }>.
 
+Definition simple_sig : Term := 
+lseq 
+(
+  lseq
+(asp (ASPC (asp_paramsC attest_id [] P1 sys_targ)))
+ssl_sig_asp) 
+appr_term.
+
+
+
+
 Close Scope cop_ent_scope.
 
 
@@ -144,7 +155,8 @@ Definition flexible_mechanisms_map :=
    ("large_output", large_output_asp_test);
    ("cds_simple", example_appTerm);
    ("cds_stub", example_appTerm_stub);
-   ("cds_provision", example_appTerm_provision)
+   ("cds_provision", example_appTerm_provision);
+   ("simple_sig", simple_sig)
    
    (* ;
    ("cds", cds_demo_phrase);
