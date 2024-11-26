@@ -127,6 +127,16 @@ Definition example_appTerm_provision : Term :=
 Definition cert_resolute_phrase : Term := 
   (* att P1  *)
       (asp (ASPC (asp_paramsC certificate_id [] P1 cert_resolute_targ))).
+Definition simple_sig : Term := 
+lseq 
+(
+  lseq
+(asp (ASPC (asp_paramsC attest_id [] P1 sys_targ)))
+ssl_sig_asp) 
+appr_term.
+
+
+
 
 Close Scope cop_ent_scope.
 
@@ -149,6 +159,10 @@ Definition flexible_mechanisms_map :=
    ("cert_resolute_app", lseq cert_resolute_phrase (asp APPR));
    ("cds_stub", example_appTerm_stub);
    ("cds_provision", example_appTerm_provision);
+<<<<<<< HEAD
+=======
+   ("simple_sig", simple_sig)
+>>>>>>> 99ea48a (phrase stuff)
    
    (* ;
    ("cds", cds_demo_phrase);
