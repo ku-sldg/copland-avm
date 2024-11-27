@@ -109,6 +109,14 @@ Definition example_appTerm : Term :=
     appr_term
 }>.
 
+Definition cds_ssl : Term :=
+<{
+    (gather_config_1 +<+ 
+     query_kim_asp) ->
+    r_ssl_sig_asp ->
+    appr_term
+}>. 
+
 Definition example_appTerm_stub : Term :=
 <{
     (gather_config_1 +<+
@@ -155,6 +163,7 @@ Definition flexible_mechanisms_map :=
    ("large_output", large_output_asp_test);
    ("cds_simple", example_appTerm);
    ("cds_stub", example_appTerm_stub);
+   ("cds_ssl", cds_ssl);
    ("cds_provision", example_appTerm_provision);
    ("simple_sig", simple_sig)
    
