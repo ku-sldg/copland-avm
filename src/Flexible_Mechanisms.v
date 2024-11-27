@@ -106,6 +106,14 @@ Definition example_appTerm : Term :=
     appr_term
 }>.
 
+Definition cds_ssl : Term :=
+<{
+    (gather_config_1 +<+ 
+     query_kim_asp) ->
+    r_ssl_sig_asp ->
+    appr_term
+}>. 
+
 Definition example_appTerm_stub : Term :=
 <{
     (gather_config_1 +<+
@@ -158,6 +166,7 @@ Definition flexible_mechanisms_map :=
    ("cds_provision", example_appTerm_provision);
    ("cert_resolute_app", lseq cert_resolute_phrase (asp APPR));
    ("cds_stub", example_appTerm_stub);
+   ("cds_ssl", cds_ssl);
    ("cds_provision", example_appTerm_provision);
 <<<<<<< HEAD
 =======
