@@ -12,6 +12,8 @@ Require Import ErrorStringConstants Manifest_Admits.
 
 Require Import AM_Helpers AppraisalSummary.
 
+Require Import Flexible_Mechanisms_Vars Flexible_Mechanisms.
+
 Import ListNotations ErrNotation.
 
 Import ResultNotation.
@@ -50,6 +52,91 @@ Definition am_client_app_summary (att_sess : Attestation_Session) (req_plc : Plc
         do_AppraisalSummary et' rawev glob_ctx example_RawEvJudgement
       end
   end.
+
+Require Import Resolute_Logic.
+
+
+Definition am_client_do_res (att_sess : Attestation_Session) (req_plc:Plc) 
+  (toPlc:Plc) (M : Model) (r:Resolute) (m:Map TargetT Evidence) : ResultT bool string :=
+
+  let '(t, pol) := res_to_copland M r m in
+    let appr_t : Term := lseq t (asp APPR) in
+      rawev <- am_sendReq att_sess req_plc mt_evc appr_t toPlc ;;
+      let glob_ctx := (ats_context att_sess) in  
+        et' <- eval glob_ctx toPlc mt_evt appr_t ;;
+        resultC (pol (evc rawev et')).
+
+Locate GlobalContext.
+(*
+Record GlobalContext := {
+  asp_types: ASP_Type_Env;
+  asp_comps: ASP_Compat_MapT
+}.
+*)
+(*
+Definition ASP_Type_Env := Map ASP_ID EvSig.
+
+Inductive EvInSig :=
+| InAll : EvInSig
+| InNone : EvInSig.
+
+Inductive EvOutSig :=
+| OutN : nat -> EvOutSig
+| OutUnwrap : EvOutSig.
+
+Inductive EvSig :=
+| ev_arrow : FWD -> EvInSig -> EvOutSig -> EvSig.
+
+Definition ASP_Compat_MapT := Map ASP_ID ASP_ID.
+
+*)
+
+Definition cert_res_asp_type_env : ASP_Type_Env := 
+  [(certificate_id, (ev_arrow EXTEND InAll (OutN 1)));
+  (appraise_id, (ev_arrow REPLACE InAll (OutN 1)))].
+
+Definition cert_res_asp_compat_mapt : ASP_Compat_MapT := 
+  [(certificate_id, appraise_id)].
+
+Definition cert_resolute_model : Model := 
+ {| conc := (fun _ => (cert_resolute_phrase)); 
+     spec := (fun _ => (fun _ => true)); 
+     context := {| asp_types := cert_res_asp_type_env;
+                    asp_comps := cert_res_asp_compat_mapt |} |}.
+
+Definition cert_resolute_statement : Resolute := 
+  R_Goal (cert_resolute_targ).
+
+
+(*
+"certificate_id": {
+  "FWD": "EXTEND",
+  "EvInSig": "ALL",
+  "EvOutSig": {
+    "EvOutSig_CONSTRUCTOR": "OutN",
+    "EvOutSig_BODY": "1"
+  }
+},
+"appraise_id": {
+  "FWD": "REPLACE",
+  "EvInSig": "ALL",
+  "EvOutSig": {
+    "EvOutSig_CONSTRUCTOR": "OutN",
+    "EvOutSig_BODY": "1"
+  }
+},
+
+
+
+"ASP_Comps": {
+  "attest1_id": "appraise_id",
+  "attest2_id": "appraise_id",
+  "attest_id": "appraise_id",
+  "certificate_id": "appraise_id",
+*)
+
+
+
 
 (*
 

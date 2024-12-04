@@ -93,6 +93,10 @@ Definition example_appTerm_provision : Term :=
     (hash_cds_img_1 -> provision_img_1)
 }>.
 
+Definition cert_resolute_phrase : Term := 
+  (* att P1  *)
+      (asp (ASPC (asp_paramsC certificate_id [] P1 cert_resolute_targ))).
+
 Close Scope cop_ent_scope.
 
 
@@ -108,7 +112,8 @@ Definition flexible_mechanisms_map :=
    ("layered_bg", layered_background_check); 
    ("filehash", filehash_auth_phrase);
    ("cds_simple", example_appTerm);
-   ("cds_provision", example_appTerm_provision)
+   ("cds_provision", example_appTerm_provision);
+   ("cert_resolute_app", lseq cert_resolute_phrase (asp APPR))
    
    (* ;
    ("cds", cds_demo_phrase);

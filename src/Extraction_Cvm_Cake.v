@@ -43,4 +43,6 @@ Separate Extraction
     concrete_Jsonifiable_GlobalContext
     Jsonifiable_Term_Plc_list
     test_app_summary_compute_json
-    am_client_app_summary.
+    am_client_app_summary
+    am_client_do_res cert_resolute_model
+    cert_resolute_statement.

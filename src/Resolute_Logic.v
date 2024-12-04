@@ -5,16 +5,17 @@ Require Export List.
 
 Require Import Term_Defs_Core Term_Defs_Core_Ops Cvm_Utils.
 
+Require Import ID_Type.
+
 Import ListNotations.
 
 
-Definition TargetT : Set.
-Admitted.
+Definition TargetT := ID_Type.
 
 Inductive Resolute : Type :=
   | R_False
   | R_True
-  | R_Goal (t:TargetT)
+  | R_Goal (t:TargetT) (* (args:list Args) *)
   | R_And (G1 : Resolute) (G2 : Resolute)
   | R_Or (G1 : Resolute) (G2 : Resolute)
   | R_Imp (G1 : Resolute) (G2 : Resolute).
@@ -119,8 +120,10 @@ Record Model := {
   context : GlobalContext
 }.
 
+(*
 Global Instance EqClass_TargetT : EqClass TargetT.
 Admitted.
+*)
 
 (*
 Inductive Evidence :=
@@ -192,7 +195,7 @@ Fixpoint res_to_copland (M : Model) (r:Resolute) (m:Map TargetT Evidence)
     (bseq (NONE,NONE) t1 t2, fun e => 
       orb (pol1 (split_t1_default M e)) (pol2 (split_t2_default M e)))
 
-  | R_Imp r1 r2 => 
+  | R_Imp r1 _ => 
     (* TODO:  should we check assumptions/prior evidence cache here? *)
     let '(t1, pol1) := res_to_copland M r1 m in
     (t1, fun e => pol1 e)
