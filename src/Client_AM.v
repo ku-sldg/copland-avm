@@ -53,8 +53,10 @@ Definition am_client_app_summary (att_sess : Attestation_Session) (req_plc : Plc
       end
   end.
 
-Require Import Resolute_Logic.
 
+(* Client_AM logic for Resolute related things *)
+
+Require Import Resolute_Logic.
 
 Definition am_client_do_res (att_sess : Attestation_Session) (req_plc:Plc) 
   (toPlc:Plc) (M : Model) (r:Resolute) (m:Map TargetT Evidence) : ResultT bool string :=
@@ -66,31 +68,6 @@ Definition am_client_do_res (att_sess : Attestation_Session) (req_plc:Plc)
         et' <- eval glob_ctx toPlc mt_evt appr_t ;;
         resultC (pol (evc rawev et')).
 
-Locate GlobalContext.
-(*
-Record GlobalContext := {
-  asp_types: ASP_Type_Env;
-  asp_comps: ASP_Compat_MapT
-}.
-*)
-(*
-Definition ASP_Type_Env := Map ASP_ID EvSig.
-
-Inductive EvInSig :=
-| InAll : EvInSig
-| InNone : EvInSig.
-
-Inductive EvOutSig :=
-| OutN : nat -> EvOutSig
-| OutUnwrap : EvOutSig.
-
-Inductive EvSig :=
-| ev_arrow : FWD -> EvInSig -> EvOutSig -> EvSig.
-
-Definition ASP_Compat_MapT := Map ASP_ID ASP_ID.
-
-*)
-
 Definition cert_res_asp_type_env : ASP_Type_Env := 
   [(certificate_id, (ev_arrow EXTEND InAll (OutN 1)));
   (appraise_id, (ev_arrow REPLACE InAll (OutN 1)))].
@@ -98,9 +75,11 @@ Definition cert_res_asp_type_env : ASP_Type_Env :=
 Definition cert_res_asp_compat_mapt : ASP_Compat_MapT := 
   [(certificate_id, appraise_id)].
 
+Definition cert_res_policy : Evidence -> bool := (fun _ => true).
+
 Definition cert_resolute_model : Model := 
  {| conc := (fun _ => (cert_resolute_phrase)); 
-     spec := (fun _ => (fun _ => true)); 
+     spec := (fun _ => cert_res_policy) ; 
      context := {| asp_types := cert_res_asp_type_env;
                     asp_comps := cert_res_asp_compat_mapt |} |}.
 
@@ -108,37 +87,37 @@ Definition cert_resolute_statement : Resolute :=
   R_Goal (cert_resolute_targ).
 
 
-(*
-"certificate_id": {
-  "FWD": "EXTEND",
-  "EvInSig": "ALL",
-  "EvOutSig": {
-    "EvOutSig_CONSTRUCTOR": "OutN",
-    "EvOutSig_BODY": "1"
-  }
-},
-"appraise_id": {
-  "FWD": "REPLACE",
-  "EvInSig": "ALL",
-  "EvOutSig": {
-    "EvOutSig_CONSTRUCTOR": "OutN",
-    "EvOutSig_BODY": "1"
-  }
-},
 
 
 
-"ASP_Comps": {
-  "attest1_id": "appraise_id",
-  "attest2_id": "appraise_id",
-  "attest_id": "appraise_id",
-  "certificate_id": "appraise_id",
-*)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 
 (*
+
+(* START:  Old Client_AM code ... *)
 
 Definition am_sendReq_app (uuid : UUID) (att_sess : Attestation_Session) (t:Term) (p:Plc) (e:EvidenceT) (ev:RawEv) : 
     ResultT AppResultC string :=
