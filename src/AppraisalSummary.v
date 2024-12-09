@@ -9,6 +9,15 @@ Import ListNotations.
 
 Definition AppraisalSummary := (Map ASP_ID (Map TARG_ID string)).
 
+Check concat_map.
+
+Definition get_all_summary_strings (s:AppraisalSummary) : list string := concat (map map_vals (map_vals s)).
+
+Check forallb.
+
+Definition check_strings_list_bool (ls:list string) (f:string -> bool) : bool :=
+    forallb f ls.
+
 Definition RawEvJudgement := Map ASP_ID (Map TARG_ID (RawEv -> string)).
 
 Definition add_RawEvJudgement (i:ASP_ID) (tid:TARG_ID) (f:RawEv -> string) 

@@ -12,7 +12,7 @@ Require Import ErrorStringConstants Manifest_Admits.
 
 Require Import AM_Helpers AppraisalSummary.
 
-Require Import Flexible_Mechanisms_Vars Flexible_Mechanisms.
+Require Import Flexible_Mechanisms_Vars Flexible_Mechanisms RawEvJudgement_Admits.
 
 Import ListNotations ErrNotation.
 
@@ -75,13 +75,43 @@ Definition cert_res_asp_type_env : ASP_Type_Env :=
 Definition cert_res_asp_compat_mapt : ASP_Compat_MapT := 
   [(certificate_id, appraise_id)].
 
-Definition cert_res_policy : Evidence -> bool := (fun _ => true).
+
+Definition cert_res_policy_resultT (e:Evidence) (G:GlobalContext) (m:RawEvJudgement) : ResultT bool string :=
+  match e with 
+  | evc rawEv et => (* resultC true  *)
+      app_summary <- do_AppraisalSummary et rawEv G m ;;
+      let ls := get_all_summary_strings app_summary in 
+      let b := check_strings_list_bool ls (fun _ => true) in 
+      resultC b 
+  end.
+
+
+Definition cert_res_policy (e:Evidence) (G:GlobalContext) (m:RawEvJudgement) : bool :=
+  match (cert_res_policy_resultT e G m) with 
+  | resultC b => b 
+  | _ => false 
+  end.
+
+Definition resolute_example_context : GlobalContext := 
+  {| asp_types := cert_res_asp_type_env;
+     asp_comps := cert_res_asp_compat_mapt |}.
+
+
+(*
+Definition cert_resolute_phrase : Term := 
+  (* att P1  *)
+      (asp (ASPC (asp_paramsC certificate_id [] P1 cert_resolute_targ))).
+*)
+
+Definition resolute_example_rawev_judgement : RawEvJudgement := 
+  [(certificate_id, [(cert_resolute_targ, ex_targJudgement_fun')])].
+
+
 
 Definition cert_resolute_model : Model := 
  {| conc := (fun _ => (cert_resolute_phrase)); 
-     spec := (fun _ => cert_res_policy) ; 
-     context := {| asp_types := cert_res_asp_type_env;
-                    asp_comps := cert_res_asp_compat_mapt |} |}.
+     spec := (fun _ e => (cert_res_policy e resolute_example_context resolute_example_rawev_judgement)) ; 
+     context := resolute_example_context |}.
 
 Definition cert_resolute_statement : Resolute := 
   R_Goal (cert_resolute_targ).
