@@ -132,9 +132,9 @@ Definition example_appTerm_stub : Term :=
 
 Definition example_appTerm_provision : Term :=
 <{
-    (gather_config_1 -> provision_config_1) +<+
+    (gather_config_1 -> provision_config_1) (* +<+
     (gather_config_2 -> provision_config_2) +<+
-    (gather_config_3 -> provision_config_3) (* +<+
+    (gather_config_3 -> provision_config_3) +<+
 
     
     (hash_cds_img_1 -> provision_img_1) *)
