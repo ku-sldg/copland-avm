@@ -6,7 +6,7 @@ Require Import Flexible_Mechanisms_Vars.
 
 Require Import CACL_Defs CACL_Typeclasses CACL_Generator.
 
-Require Import Cvm_Utils RawEvJudgement_Admits.
+Require Import Cvm_Utils RawEvJudgement_Admits CACL_Demo_Args.
 
 Require Import List.
 Import ListNotations.
@@ -103,10 +103,10 @@ Close Scope string_scope.
 Open Scope cop_ent_scope.
 
 Definition path_targ1 : string := 
-    "/tests/DemoFiles/targFiles/targFile1.txt".
+    "/LayeredAttestation/src/demo_layered_attestation/cds_config/rewrite_one_config.json".
 
 Definition path_targ1_golden : string := 
-    "/tests/DemoFiles/goldenFiles/targFile1.txt".
+    "/am-cakeml/tests/DemoFiles/goldenFiles/rewrite_one_config.json".
     
 Definition path_targ2 : string := 
     "/tests/DemoFiles/targFiles/targFile2.txt".
@@ -181,8 +181,12 @@ Definition meas_cds_phrase : Term :=
     hash_cds_img_3
 }>.
 
+Definition query_kim_args : ASP_ARGS := 
+    [(query_kim_dynammic_arg_id, query_kim_dynammic_arg_val);
+     (query_kim_appraisal_dir_arg_id, query_kim_appraisal_dir_arg_val)].
+
 Definition query_kim_asp : Term := 
-    (asp (ASPC (asp_paramsC query_kim_id [] cds_query_kim_plc kim_evidence_targ))).
+    (asp (ASPC (asp_paramsC query_kim_id query_kim_args cds_query_kim_plc kim_evidence_targ))).
 
 Definition ssl_sig_asp : Term := 
     (asp (ASPC (asp_paramsC ssl_sig_id [] cds_query_kim_plc ssl_sig_targ))).
