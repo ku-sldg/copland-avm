@@ -95,20 +95,27 @@ Definition example_appTerm : Term :=
 }>.
 *)
 
+(*
 Definition example_appTerm' : Term := 
   (asp (ASPC (asp_paramsC attest2_id [] P1 sys_targ))).
+*)
+
+Definition meas_cds : Term := 
+<{
+  (gather_config_1 +<+ 
+  gather_config_2 (* +<+
+  gather_config_3 *) )
+}>.
 
 Definition example_appTerm : Term :=
 <{
-    (gather_config_1 +<+ 
-    gather_config_2 +<+
-    gather_config_3) ->
+    ( meas_cds ) ->
     appr_term
 }>.
 
 Definition cds_ssl : Term :=
 <{
-    (gather_config_1 +<+ 
+    (meas_cds +<+ 
      query_kim_asp) ->
     r_ssl_sig_asp ->
     appr_term
@@ -116,12 +123,13 @@ Definition cds_ssl : Term :=
 
 Definition cds_tpm : Term :=
 <{
-    (gather_config_1 +<+ 
+    (meas_cds +<+ 
      query_kim_asp) ->
     r_tpm_sig_asp ->
     appr_term
 }>. 
 
+(*
 Definition example_appTerm_stub : Term :=
 <{
     (gather_config_1 +<+
@@ -129,11 +137,12 @@ Definition example_appTerm_stub : Term :=
      r_ssl_sig_asp ->
     appr_term
 }>.
+*)
 
 Definition example_appTerm_provision : Term :=
 <{
-    (gather_config_1 -> provision_config_1) (* +<+
-    (gather_config_2 -> provision_config_2) +<+
+    (gather_config_1 -> provision_config_1) +<+
+    (gather_config_2 -> provision_config_2) (* +<+
     (gather_config_3 -> provision_config_3) +<+
 
     
@@ -174,13 +183,12 @@ Definition flexible_mechanisms_map :=
    ("cds_provision", example_appTerm_provision);
    ("cert_resolute_app", lseq cert_resolute_phrase (asp APPR));
    ("cds_stub", example_appTerm_stub);
+   (*
+   ("cds_stub", example_appTerm_stub); *)
    ("cds_ssl", cds_ssl);
    ("cds_tpm", cds_tpm);
    ("cds_provision", example_appTerm_provision);
-<<<<<<< HEAD
-=======
-   ("simple_sig", simple_sig)
->>>>>>> 99ea48a (phrase stuff)
+   ("simple_sig", simple_sig);
    
    (* ;
    ("cds", cds_demo_phrase);
