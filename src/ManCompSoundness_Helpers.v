@@ -1,6 +1,7 @@
 (*  Helper Lemmas in support of Manifest Compiler Soundness proofs.  *)
 
-Require Import Term_Defs_Core Manifest_Generator_Helpers Eqb_Evidence.
+Require Import Term_Defs_Core Manifest_Generator_Helpers.
+Require Import EqClass.
 
 Require Import StructTactics.
 
@@ -24,15 +25,9 @@ Lemma In_dec_tplc : forall (p:Plc) ls,
     In p ls \/ ~ In p ls.
 Proof.
   intros.
-  assert ({In p ls} + {~ In p ls}).
-  { 
-    apply In_dec.
-    intros.
-    destruct (eq_plc_dec x y); eauto.
-  }
+  assert ({In p ls} + {~ In p ls}) by (apply (In_dec (EqClass_impl_DecEq _))).
   destruct H; eauto.
 Qed. 
-
 
 Lemma places_app_cumul : forall p t ls ls',
   In p (places' t ls) -> 
@@ -47,13 +42,10 @@ Proof.
   eapply places'_cumul; eauto.
 Qed.
 
-Lemma top_plc_refl: forall t' p1,  In t' (place_terms t' p1 p1).
+Lemma top_plc_refl: forall {H : EqClass Plc} t' p1,  In t' (place_terms t' p1 p1).
 Proof.
-  intros.
-  unfold place_terms.
-  destruct t'; ff; 
-    try auto;
-    try (rewrite eqb_plc_refl in *; solve_by_inversion).
+  induction t'; simpl; intuition;
+  try erewrite eqb_refl in *; simpl; eauto.
 Qed.
 
 Lemma app_not_empty : forall A (l1 l2:list A),
@@ -139,7 +131,7 @@ Proof.
 Qed.
 
 
-Lemma in_plc_term : forall p p0 t,
+Lemma in_plc_term : forall {HP : EqClass Plc} p p0 t,
   place_terms t p p0 <> [] ->
   In p0 (places p t).
 Proof.
@@ -147,17 +139,12 @@ Proof.
   generalizeEverythingElse t.
   induction t; intros.
   -
-    destruct a; repeat ff;
-    rewrite String.eqb_eq in *; eauto; try congruence.
+    destruct a; repeat ff; rewrite eqb_eq in *; eauto; try congruence.
   - (* at case *)
-    repeat ff; eauto;
-    rewrite String.eqb_eq in *; eauto.
+    repeat ff; eauto; rewrite eqb_eq in *; eauto.
   - (* lseq case *)
-    repeat ff.
-    +
-      left.
-      rewrite String.eqb_eq in *; eauto.
-    +
+    repeat ff; eauto; repeat rewrite eqb_eq in *; subst; eauto;
+    rewrite eqb_neq in *.
       right.
 
       assert (place_terms t1 p p0 <> [] \/ 
@@ -173,13 +160,9 @@ Proof.
         {
           assert (p <> p0).
           {
-            unfold not.
-            intros.
-            subst.
-            rewrite eqb_plc_refl in *.
-            solve_by_inversion.
-        }
-        ff.
+            eauto.
+          }
+          ff.
         }
 
         apply places'_cumul.
@@ -188,27 +171,17 @@ Proof.
       apply IHt2 in H1.
       assert (In p0 (places' t2 [])).
       {
-        assert (p <> p0).
-        {
-        unfold not.
-        intros.
-        subst.
-        rewrite eqb_plc_refl in *.
-        solve_by_inversion.
-      }
-      ff.
+        assert (p <> p0) by eauto.
+        ff.
       }
       apply places'_cumul'.
       eauto.
 
   - (* bseq case *)
-  repeat ff.
-  +
-    left.
-    rewrite String.eqb_eq in *; eauto.
-  +
-    right.
-  
+  repeat ff; eauto; simpl in *;
+  repeat rewrite eqb_eq in *; subst; eauto;
+  repeat rewrite eqb_neq in *; subst; eauto; ff.
+  right.
     assert (place_terms t1 p p0 <> [] \/ 
             place_terms t2 p p0 <> []).
             {
@@ -220,14 +193,7 @@ Proof.
       apply IHt1 in H1.
       assert (In p0 (places' t1 [])).
       {
-        assert (p <> p0).
-        {
-          unfold not.
-          intros.
-          subst.
-          rewrite eqb_plc_refl in *.
-          solve_by_inversion.
-        }
+        assert (p <> p0) by eauto.
         ff.
         }
   
@@ -237,14 +203,7 @@ Proof.
       apply IHt2 in H1.
       assert (In p0 (places' t2 [])).
       {
-        assert (p <> p0).
-        {
-          unfold not.
-          intros.
-          subst.
-          rewrite eqb_plc_refl in *.
-          solve_by_inversion.
-        }
+        assert (p <> p0) by eauto.
         ff.
         }
   
@@ -253,11 +212,9 @@ Proof.
             eauto.
 
   - (* bpar case *)
-  repeat ff.
-  +
-    left.
-    rewrite String.eqb_eq in *; eauto.
-  +
+  repeat ff; eauto; simpl in *;
+  repeat rewrite eqb_eq in *; subst; eauto;
+  repeat rewrite eqb_neq in *; subst; eauto; ff.
     right.
   
     assert (place_terms t1 p p0 <> [] \/ 
@@ -271,14 +228,7 @@ Proof.
       apply IHt1 in H1.
       assert (In p0 (places' t1 [])).
       {
-        assert (p <> p0).
-        {
-          unfold not.
-          intros.
-          subst.
-          rewrite eqb_plc_refl in *.
-          solve_by_inversion.
-        }
+        assert (p <> p0) by eauto.
         ff.
         }
   
@@ -288,14 +238,7 @@ Proof.
       apply IHt2 in H1.
       assert (In p0 (places' t2 [])).
       {
-        assert (p <> p0).
-        {
-          unfold not.
-          intros.
-          subst.
-          rewrite eqb_plc_refl in *.
-          solve_by_inversion.
-        }
+        assert (p <> p0) by eauto.
         ff.
         }
         apply places'_cumul'.

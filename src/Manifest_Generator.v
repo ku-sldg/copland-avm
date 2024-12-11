@@ -23,7 +23,7 @@ Fixpoint appr_manifest_update (G : GlobalContext) (e : EvidenceT)
   | mt_evt => resultC m
   | nonce_evt _ => resultC (aspid_manifest_update (check_nonce_aspid) m)
   | asp_evt p par e' => 
-    let '(asp_paramsC asp_id args targ_plc targ) := par in
+    let '(asp_paramsC asp_id args) := par in
     match (map_get asp_id (asp_comps G)) with
     | None => errC err_str_asp_no_compat_appr_asp
     | Some appr_asp_id =>
@@ -74,7 +74,7 @@ Fixpoint appr_manifest_update (G : GlobalContext) (e : EvidenceT)
 Definition asp_manifest_update (G : GlobalContext) (e : EvidenceT) 
     (a:ASP) (m:Manifest) : ResultT Manifest string :=
   match a with 
-  | ASPC (asp_paramsC i _ _ _) => resultC (aspid_manifest_update i m)
+  | ASPC (asp_paramsC i _) => resultC (aspid_manifest_update i m)
   | APPR => appr_manifest_update G e m
   | SIG => resultC (aspid_manifest_update (sig_aspid) m)
   | HSH => resultC (aspid_manifest_update (hsh_aspid) m)

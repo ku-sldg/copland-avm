@@ -3,7 +3,7 @@ Require Import Term_Defs_Core JSON_Core ID_Type Manifest_Set Maps Interface.
 Require Import IO_Stubs.
 
 Definition generate_ASP_dispatcher' (am : Manifest) (ats : Attestation_Session) (aspBin : FS_Location) (par : ASP_PARAMS) (rawEv : RawEv) : ResultT RawEv DispatcherErrors :=
-  let (aspid, args, targ_plc, targ) := par in
+  let (aspid, args) := par in
   let asps := am.(asps) in
   let asp_map := am.(ASP_Mapping) in
     (* check is the ASPID is available *) 
@@ -16,7 +16,7 @@ Definition generate_ASP_dispatcher' (am : Manifest) (ats : Attestation_Session) 
           | None => (aspid_to_fs_location aspid)
           end 
       in
-        let asp_req := (mkASPRReq aspid args targ_plc targ rawEv) in
+        let asp_req := (mkASPRReq aspid args rawEv) in
         let js_req := to_JSON asp_req in
         let resp_res := make_JSON_FS_Location_Request aspBin conc_asp_loc js_req in
         match resp_res with

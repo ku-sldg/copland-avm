@@ -72,26 +72,20 @@ Defined.
 
 Definition ASP_PARAMS_to_JSON `{Jsonifiable ASP_ARGS} (t : ASP_PARAMS) : JSON := 
     match t with
-    | asp_paramsC asp_id args plc targ_id => 
+    | asp_paramsC asp_id args => 
         JSON_Object [
           (STR_ASP_ID, JSON_String (to_string asp_id));
-          (STR_ASP_ARGS, (to_JSON args));
-          (STR_ASP_PLC, JSON_String (to_string plc));
-          (STR_ASP_TARG_ID, JSON_String (to_string targ_id))
+          (STR_ASP_ARGS, (to_JSON args))
         ]
     end.
 
 Definition ASP_PARAMS_from_JSON `{Jsonifiable ASP_ARGS} (js : JSON) : ResultT ASP_PARAMS string :=
   asp_id  <- JSON_get_string STR_ASP_ID js ;;
   args    <- JSON_get_Object STR_ASP_ARGS js ;;
-  plc     <- JSON_get_string STR_ASP_PLC js ;;
-  targ    <- JSON_get_string STR_ASP_TARG_ID js ;;
 
   asp_id' <- from_string asp_id ;;
   args'   <- from_JSON args ;;
-  plc'    <- from_string plc ;;
-  targ'   <- from_string targ ;;
-  resultC (asp_paramsC asp_id' args' plc' targ').
+  resultC (asp_paramsC asp_id' args').
 
 Global Instance Jsonifiable_ASP_Params `{Jsonifiable ASP_ARGS} : Jsonifiable ASP_PARAMS. 
 eapply Build_Jsonifiable with 

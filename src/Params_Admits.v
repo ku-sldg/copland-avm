@@ -4,45 +4,25 @@
         that should be instantiated on a per-AM/per-platform basis. *)
 
 Require Import Term_Defs_Core.
+Require Import String.
 
 Definition sig_aspid : ASP_ID. Admitted.
-
 Definition sig_aspargs : ASP_ARGS. Admitted.
-
-Definition sig_targid : ASP_ID. Admitted.
-
-Definition sig_targplc : Plc. Admitted.
-
-Definition sig_params : ASP_PARAMS :=
-    asp_paramsC sig_aspid sig_aspargs sig_targplc sig_targid.
+Definition sig_params : ASP_PARAMS := asp_paramsC sig_aspid sig_aspargs.
 
 Definition check_nonce_aspid : ASP_ID. Admitted.
 Definition check_nonce_aspargs : ASP_ARGS. Admitted.
-Definition check_nonce_targid : ASP_ID. Admitted.
-Definition check_nonce_targplc : Plc. Admitted.
 Definition check_nonce_params : ASP_PARAMS :=
-    asp_paramsC check_nonce_aspid check_nonce_aspargs check_nonce_targplc check_nonce_targid.
+    asp_paramsC check_nonce_aspid check_nonce_aspargs.
 
 Definition hsh_aspid : ASP_ID. Admitted.
-
 Definition hsh_aspargs : ASP_ARGS. Admitted.
-
-Definition hsh_targid : ASP_ID. Admitted.
-
-Definition hsh_targplc : Plc. Admitted.
-    
-Definition hsh_params : ASP_PARAMS :=
-    asp_paramsC hsh_aspid hsh_aspargs hsh_targplc hsh_targid.
-
+Definition hsh_params : ASP_PARAMS := asp_paramsC hsh_aspid hsh_aspargs.
 
 Definition enc_aspid : ASP_ID. Admitted.
-
 Definition enc_aspargs : ASP_ARGS. Admitted.
-
-Definition enc_targid : ASP_ID. Admitted.
-
 Definition enc_params : Plc -> ASP_PARAMS :=
-  fun enc_targplc => asp_paramsC enc_aspid enc_aspargs enc_targplc enc_targid.
+  fun enc_targplc => asp_paramsC enc_aspid (cons ("TARG_PLC"%string, enc_targplc) enc_aspargs).
 
 
 (* This is an (for now, somewhat ad-hoc) ASP EvidenceT disclosure predicate.

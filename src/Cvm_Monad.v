@@ -112,7 +112,7 @@ Definition get_asp_dual (a : ASP_ID) : CVM ASP_ID :=
    the EvidenceT extension parameter of an ASP term. *)
 Definition bundle_asp (p:Plc) (rwev : RawEv) 
     (cur_ev : Evidence) (ps:ASP_PARAMS) : CVM Evidence :=
-  let '(asp_paramsC asp_id args targ_plc targ) := ps in
+  let '(asp_paramsC asp_id args) := ps in
   '(ev_arrow fwd in_sig out_sig) <- get_asp_type asp_id ;;
   match out_sig with
   | (OutN n) =>
@@ -216,9 +216,9 @@ Fixpoint invoke_APPR' (r : RawEv) (et : EvidenceT) (out_evt : EvidenceT) {struct
   | mt_evt => err_ret mt_evc 
   | nonce_evt n' => invoke_ASP (evc r out_evt) check_nonce_params
   | asp_evt p' par et' =>
-    let '(asp_paramsC asp_id args targ_plc targ) := par in
+    let '(asp_paramsC asp_id args) := par in
     appr_asp_id <- get_asp_dual asp_id ;;
-    let dual_par := asp_paramsC appr_asp_id args targ_plc targ in
+    let dual_par := asp_paramsC appr_asp_id args in
     '(ev_arrow fwd in_sig out_sig) <- get_asp_type asp_id ;;
     match fwd with
     | REPLACE => (* Only do the dual ASP *)

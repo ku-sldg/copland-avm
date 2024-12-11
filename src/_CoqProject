@@ -30,7 +30,6 @@ Manifest_JSON.v
 Session_Config_Compiler.v
 Cvm_St.v
 IO_Stubs.v
-Eqb_Evidence.v
 Term.v
 EnvironmentM.v
 Manifest_Union.v

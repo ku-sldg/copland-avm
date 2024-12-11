@@ -552,11 +552,11 @@ Qed.
 Inductive et_same_asps : EvidenceT -> EvidenceT -> Prop :=
 | et_same_asps_mt : et_same_asps mt_evt mt_evt
 | et_same_asps_nonce : forall n1 n2, et_same_asps (nonce_evt n1) (nonce_evt n2)
-| et_same_asps_asp : forall p1 p2 e1 e2 aid args1 args2 targp1 targp2 targ1 targ2,
+| et_same_asps_asp : forall p1 p2 e1 e2 aid args1 args2,
     et_same_asps e1 e2 ->
     et_same_asps 
-      (asp_evt p1 (asp_paramsC aid args1 targp1 targ1) e1) 
-      (asp_evt p2 (asp_paramsC aid args2 targp2 targ2) e2)
+      (asp_evt p1 (asp_paramsC aid args1) e1) 
+      (asp_evt p2 (asp_paramsC aid args2) e2)
 | et_same_asps_left : forall e1 e2,
     et_same_asps e1 e2 ->
     et_same_asps (left_evt e1) (left_evt e2)
@@ -666,10 +666,10 @@ Proof.
 Qed.
 Local Hint Resolve et_same_asps_impl_same_size : et_same_asps_db.
 
-Lemma et_same_asps_asp_dir : forall e1 e2 asp_id args1 args2 targ_plc1 targ_plc2 targ1 targ2 p1 p2 par1 par2,
+Lemma et_same_asps_asp_dir : forall e1 e2 asp_id args1 args2 p1 p2 par1 par2,
   et_same_asps e1 e2 ->
-  par1 = (asp_paramsC asp_id args1 targ_plc1 targ1) ->
-  par2 = (asp_paramsC asp_id args2 targ_plc2 targ2) ->
+  par1 = (asp_paramsC asp_id args1) ->
+  par2 = (asp_paramsC asp_id args2) ->
   et_same_asps (asp_evt p1 par1 e1) (asp_evt p2 par2 e2).
 Proof.
   intros.
@@ -1150,12 +1150,12 @@ Proof.
   eapply wf_Evidence_exists; ff.
 Qed. *)
 
-Lemma wf_Evidence_asp_unfold_more : forall G r p e n a a1 p0 t,
-  wf_Evidence G (evc r (asp_evt p (asp_paramsC a a1 p0 t) e)) ->
+Lemma wf_Evidence_asp_unfold_more : forall G r p e n a a1,
+  wf_Evidence G (evc r (asp_evt p (asp_paramsC a a1) e)) ->
   et_size G e = resultC n ->
   forall sig n',
   map_get a (asp_types G) = Some (ev_arrow EXTEND sig (OutN n')) ->
-  et_size G (asp_evt p (asp_paramsC a a1 p0 t) e) = resultC (n' + n).
+  et_size G (asp_evt p (asp_paramsC a a1) e) = resultC (n' + n).
 Proof.
   intros.
   prep_induction H.
@@ -1172,8 +1172,8 @@ Proof.
   break_and_goal; eapply wf_Evidence_exists; ff.
 Qed.
 
-Lemma wf_Evidence_asp_unpack : forall G r p e a0 a1 p0 t,
-  wf_Evidence G (evc r (asp_evt p (asp_paramsC a0 a1 p0 t) e)) ->
+Lemma wf_Evidence_asp_unpack : forall G r p e a0 a1,
+  wf_Evidence G (evc r (asp_evt p (asp_paramsC a0 a1) e)) ->
   forall in_sig n n',
   map_get a0 (asp_types G) = Some (ev_arrow EXTEND in_sig (OutN n)) ->
   et_size G e = resultC n' ->

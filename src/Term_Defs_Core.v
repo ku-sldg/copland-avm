@@ -43,19 +43,17 @@ Definition ASP_ID: Set := ID_Type.
 Definition ASP_Compat_MapT := Map ASP_ID ASP_ID.
 Definition ASP_ARGS := Map string string.
 
-Definition TARG_ID: Set := ID_Type.
-
 (** Grouping ASP parameters into one constructor *)
 Inductive ASP_PARAMS: Type :=
-| asp_paramsC: ASP_ID -> ASP_ARGS -> Plc -> TARG_ID -> ASP_PARAMS.
+| asp_paramsC: ASP_ID -> ASP_ARGS -> ASP_PARAMS.
 
-Definition eqb_ASP_PARAMS `{EqClass ASP_ID, EqClass ASP_ARGS, EqClass Plc, EqClass TARG_ID}
+Definition eqb_ASP_PARAMS `{EqClass ASP_ID, EqClass ASP_ARGS}
     (a1 a2 : ASP_PARAMS) : bool :=
-  let '(asp_paramsC a1 la1 p1 t1) := a1 in
-  let '(asp_paramsC a2 la2 p2 t2) := a2 in
-  (eqb a1 a2) && (eqb la1 la2) && (eqb p1 p2) && (eqb t1 t2).
+  let '(asp_paramsC a1 la1) := a1 in
+  let '(asp_paramsC a2 la2) := a2 in
+  (eqb a1 a2) && (eqb la1 la2).
 
-Global Instance EqClass_ASP_PARAMS `{EqClass ASP_ID, EqClass ASP_ARGS, EqClass Plc, EqClass TARG_ID} : EqClass ASP_PARAMS.
+Global Instance EqClass_ASP_PARAMS `{EqClass ASP_ID, EqClass ASP_ARGS} : EqClass ASP_PARAMS.
 eapply Build_EqClass with (eqb := eqb_ASP_PARAMS).
 induction x; destruct y; ff;
 repeat rewrite Bool.andb_true_iff in *; ff;
@@ -200,7 +198,7 @@ Definition apply_to_evidence_below {A} (G : GlobalContext) (f : EvidenceT -> A)
     | mt_evt => errC err_str_no_evidence_below
     | nonce_evt _ => errC err_str_no_evidence_below
 
-    | asp_evt _ (asp_paramsC top_id _ _ _) et' => 
+    | asp_evt _ (asp_paramsC top_id _ ) et' => 
       match (map_get top_id (asp_types G)) with
       | None => errC err_str_asp_no_type_sig
       | Some (ev_arrow UNWRAP in_sig out_sig) =>
@@ -250,17 +248,17 @@ Definition apply_to_evidence_below {A} (G : GlobalContext) (f : EvidenceT -> A)
 Inductive Evidence_Subterm_path G e' : list EvTrails -> EvidenceT -> Prop :=
 | esp_empty_trail : Evidence_Subterm_path G e' nil e'
 
-| esp_unwrap : forall p in_sig out_sig e'' trails aid args targp targ,
+| esp_unwrap : forall p in_sig out_sig e'' trails aid args,
   map_get aid (asp_types G) = Some (ev_arrow UNWRAP in_sig out_sig) ->
   Evidence_Subterm_path G e' ((Trail_UNWRAP aid) :: trails) e'' ->
   trails <> nil ->
-  Evidence_Subterm_path G e' trails (asp_evt p (asp_paramsC aid args targp targ) e'')
+  Evidence_Subterm_path G e' trails (asp_evt p (asp_paramsC aid args) e'')
 
-| esp_wrap : forall p in_sig out_sig e'' trails aid args targp targ aid',
+| esp_wrap : forall p in_sig out_sig e'' trails aid args aid',
   map_get aid (asp_types G) = Some (ev_arrow WRAP in_sig out_sig) ->
   map_get aid (asp_comps G) = Some aid' ->
   Evidence_Subterm_path G e' trails e'' ->
-  Evidence_Subterm_path G e' ((Trail_UNWRAP aid') :: trails) (asp_evt p (asp_paramsC aid args targp targ) e'')
+  Evidence_Subterm_path G e' ((Trail_UNWRAP aid') :: trails) (asp_evt p (asp_paramsC aid args) e'')
 
 | esp_left : forall e'' trails,
   Evidence_Subterm_path G e' (Trail_LEFT :: trails) e'' ->
@@ -289,7 +287,7 @@ Definition Evidence_Subterm_path_fix G e' : list EvTrails -> EvidenceT -> Prop :
     | mt_evt => False
     | nonce_evt _ => False
 
-    | asp_evt _ (asp_paramsC top_id _ _ _) et' => 
+    | asp_evt _ (asp_paramsC top_id _) et' => 
       match (map_get top_id (asp_types G)) with
       | None => False
       | Some (ev_arrow UNWRAP in_sig out_sig) =>
@@ -356,7 +354,7 @@ Definition Evidence_Subterm G e' : EvidenceT -> Prop :=
   (* sort of a hack here, the terminals are always subterms!? *)
   | mt_evt => False
   | nonce_evt _ => False
-  | asp_evt _ (asp_paramsC asp_id _ _ _) e'' => 
+  | asp_evt _ (asp_paramsC asp_id _) e'' => 
     match (map_get asp_id (asp_types G)) with
     | None => False
     | Some (ev_arrow UNWRAP in_sig out_sig) => 
@@ -458,18 +456,18 @@ Qed.
 Theorem Evidence_subterm_path_Ind_special G (P : EvidenceT -> Prop)
   (f_mt : P mt_evt)
   (f_nonce : forall n, P (nonce_evt n))
-  (f_subterm_asp_nowrap : forall p aid args targp targ e t isig osig,
+  (f_subterm_asp_nowrap : forall p aid args e t isig osig,
     t <> UNWRAP ->
     map_get aid (asp_types G) = Some (ev_arrow t isig osig) ->
     P e -> 
-    P (asp_evt p (asp_paramsC aid args targp targ) e))
-  (f_subterm_asp : forall p aid args targp targ e isig osig, 
+    P (asp_evt p (asp_paramsC aid args) e))
+  (f_subterm_asp : forall p aid args e isig osig, 
     map_get aid (asp_types G) = Some (ev_arrow UNWRAP isig osig) ->
     (forall l e', Evidence_Subterm_path G e' (Trail_UNWRAP aid :: l) e -> P e') ->
-    P (asp_evt p (asp_paramsC aid args targp targ) e))
-  (f_subterm_asp_none : forall p aid args targp targ e,
+    P (asp_evt p (asp_paramsC aid args) e))
+  (f_subterm_asp_none : forall p aid args e,
     map_get aid (asp_types G) = None ->
-    P (asp_evt p (asp_paramsC aid args targp targ) e))
+    P (asp_evt p (asp_paramsC aid args) e))
   (f_subterm_left : forall e, 
     (forall e' l, Evidence_Subterm_path G e' (Trail_LEFT :: l) e -> P e') -> P (left_evt e))
   (f_subterm_right : forall e, 
@@ -547,8 +545,6 @@ Module Test_Unwrap_Wrap.
 
   Definition P1 : Plc. Admitted.
   Definition P2 : Plc. Admitted.
-  Definition T_PLC : Plc. Admitted.
-  Definition TARG : TARG_ID. Admitted.
 
   Definition G : GlobalContext := Build_GlobalContext 
     [(X, ev_arrow WRAP InAll (OutN 1)); (Y, ev_arrow WRAP InAll (OutN 1));
@@ -566,7 +562,7 @@ Module Test_Unwrap_Wrap.
 
   Example test_get_evidence_under_unwrap_wrap_1 : forall v,
     apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'] 
-      (asp_evt P1 (asp_paramsC X nil T_PLC TARG) v) = resultC v.
+      (asp_evt P1 (asp_paramsC X nil) v) = resultC v.
   Proof.
     ff; str_rew.
     destruct v; simpl in *; eauto.
@@ -574,8 +570,8 @@ Module Test_Unwrap_Wrap.
 
   Example test_get_evidence_under_unwrap_wrap_2 : forall v,
     apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'; Trail_UNWRAP Y'] 
-      (asp_evt P1 (asp_paramsC X nil T_PLC TARG) (
-        asp_evt P2 (asp_paramsC Y nil T_PLC TARG) v)) = resultC v.
+      (asp_evt P1 (asp_paramsC X nil) (
+        asp_evt P2 (asp_paramsC Y nil) v)) = resultC v.
   Proof.
     ff; str_rew.
     destruct v; simpl in *; eauto.
@@ -585,18 +581,18 @@ Module Test_Unwrap_Wrap.
   
   Example test_get_evidence_under_unwrap_wrap_3 : forall v,
     apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'] 
-      (asp_evt P1 (asp_paramsC X nil T_PLC TARG) (
-        asp_evt P2 (asp_paramsC Y nil T_PLC TARG) v)) 
-    = resultC (asp_evt P2 (asp_paramsC Y nil T_PLC TARG) v).
+      (asp_evt P1 (asp_paramsC X nil) (
+        asp_evt P2 (asp_paramsC Y nil) v)) 
+    = resultC (asp_evt P2 (asp_paramsC Y nil) v).
   Proof.
     ff; str_rew.
   Qed.
 
   Example test_get_evidence_under_unwrap_wrap_4 : forall v,
     apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'] 
-      ( asp_evt P2 (asp_paramsC Y' nil T_PLC TARG) 
-        (asp_evt P2 (asp_paramsC Y nil T_PLC TARG) 
-        (asp_evt P1 (asp_paramsC X nil T_PLC TARG) v)))
+      ( asp_evt P2 (asp_paramsC Y' nil) 
+        (asp_evt P2 (asp_paramsC Y nil) 
+        (asp_evt P1 (asp_paramsC X nil) v)))
     = resultC v.
   Proof.
     ff.
@@ -607,8 +603,8 @@ Module Test_Unwrap_Wrap.
 
   Example test_get_evidence_under_unwrap_wrap_5 : forall v,
     apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'; Trail_UNWRAP Y'] 
-      (asp_evt P1 (asp_paramsC X nil T_PLC TARG) (
-        left_evt (split_evt (asp_evt P2 (asp_paramsC Y nil T_PLC TARG) v) mt_evt))) 
+      (asp_evt P1 (asp_paramsC X nil) (
+        left_evt (split_evt (asp_evt P2 (asp_paramsC Y nil) v) mt_evt))) 
     = resultC v.
   Proof.
     ff; str_rew.
@@ -619,8 +615,8 @@ Module Test_Unwrap_Wrap.
 
   Example test_get_evidence_under_unwrap_wrap_6 : forall v,
     apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'; Trail_UNWRAP Y'] 
-      (asp_evt P1 (asp_paramsC X nil T_PLC TARG) (
-        right_evt (split_evt mt_evt (asp_evt P2 (asp_paramsC Y nil T_PLC TARG) v)))) 
+      (asp_evt P1 (asp_paramsC X nil) (
+        right_evt (split_evt mt_evt (asp_evt P2 (asp_paramsC Y nil) v)))) 
     = resultC v.
   Proof.
     ff; str_rew.
@@ -637,7 +633,7 @@ Definition et_size (G : GlobalContext) : EvidenceT -> ResultT nat string :=
   | mt_evt=> resultC 0
   | nonce_evt _ => resultC 1
   | asp_evt p par e' =>
-    let '(asp_paramsC asp_id args targ_plc targ) := par in
+    let '(asp_paramsC asp_id args) := par in
     match (map_get asp_id (asp_types G)) with
     | None => errC err_str_asp_no_type_sig
     | Some (ev_arrow fwd in_sig out_sig) =>

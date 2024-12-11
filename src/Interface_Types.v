@@ -32,8 +32,6 @@ Record ASPRunRequest :=
   mkASPRReq {
     asprreq_asp_id : ASP_ID;
     asprreq_asp_args: ASP_ARGS;
-    asprreq_targ_plc : Plc ;
-    asprreq_targ : TARG_ID ;
     asprreq_rawev : RawEv;
   }.
 
