@@ -107,15 +107,15 @@ Definition path_targ1 : string :=
 
 Definition path_targ1_golden : string := 
     "/am-cakeml/tests/DemoFiles/goldenFiles/rewrite_one_config.json".
-    
+
 Definition path_targ2 : string := 
-    "/tests/DemoFiles/targFiles/targFile2.txt".
+    "/LayeredAttestation/src/demo_layered_attestation/cds_config/filter_one_config.json".
+    
+Definition path_targ2_golden : string := 
+    "/am-cakeml/tests/DemoFiles/goldenFiles/filter_one_config.json".
 
 Definition path_targ3 : string := 
     "/tests/DemoFiles/targFiles/targFile3.txt".
-
-Definition path_targ2_golden : string := 
-    "/tests/DemoFiles/goldenFiles/targFile2.txt".
 
 Definition path_targ3_golden : string := 
     "/tests/DemoFiles/goldenFiles/targFile3.txt".
