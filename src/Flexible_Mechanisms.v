@@ -110,6 +110,26 @@ Definition meas_cds : Term :=
   gather_config_3 *) )
 }>.
 
+Definition hash_micro_config_1 : Term := 
+    (hash_targ_asp cds_config_dir_plc cds_img_1_targ 
+    path_micro_targ1 path_micro_targ1_golden).
+
+Definition hash_micro_config_2 : Term := 
+    (hash_targ_asp cds_config_dir_plc cds_img_2_targ 
+    path_micro_targ2 path_micro_targ2_golden).
+
+Definition meas_micro : Term := 
+<{
+  (hash_micro_config_1 +<+ 
+   hash_micro_config_2)
+}>.
+
+Definition micro_appTerm : Term :=
+<{
+    ( meas_micro ) ->
+    appr_term
+}>.
+
 Definition example_appTerm : Term :=
 <{
     ( meas_cds ) ->
@@ -142,14 +162,23 @@ Definition example_appTerm_stub : Term :=
 }>.
 *)
 
+Definition provision_micro_hash_1 : Term := 
+    (provision_targ_asp cds_config_dir_plc cds_config_1_targ path_micro_targ1_golden).
+
+Definition provision_micro_hash_2 : Term := 
+    (provision_targ_asp cds_config_dir_plc cds_config_1_targ path_micro_targ2_golden).
+
+
+Definition micro_appTerm_provision : Term :=
+  <{
+    (hash_micro_config_1 -> provision_micro_hash_1) +<+ 
+    (hash_micro_config_2 -> provision_micro_hash_2)
+  }>.
+
 Definition example_appTerm_provision : Term :=
 <{
     (gather_config_1 -> provision_config_1) +<+
-    (gather_config_2 -> provision_config_2) (* +<+
-    (gather_config_3 -> provision_config_3) +<+
-
-    
-    (hash_cds_img_1 -> provision_img_1) *)
+    (gather_config_2 -> provision_config_2)
 }>.
 
 Definition simple_sig : Term := 
@@ -184,7 +213,9 @@ Definition flexible_mechanisms_map :=
    ("cds_ssl", cds_ssl);
    ("cds_tpm", cds_tpm);
    ("cds_provision", example_appTerm_provision);
-   ("simple_sig", simple_sig)
+   ("simple_sig", simple_sig);
+   ("micro", micro_appTerm);
+   ("micro_provision", micro_appTerm_provision)
    
    (* ;
    ("cds", cds_demo_phrase);

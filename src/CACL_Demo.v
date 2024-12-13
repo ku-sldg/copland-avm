@@ -108,6 +108,19 @@ Definition path_targ1 : string :=
 Definition path_targ1_golden : string := 
     "/am-cakeml/tests/DemoFiles/goldenFiles/rewrite_one_config.json".
 
+
+Definition path_micro_targ1 : string := 
+    "/LayeredAttestation/src/demo_layered_attestation/cds_config/rewrite_one_config.json".
+    
+Definition path_micro_targ1_golden : string := 
+    "/am-cakeml/tests/DemoFiles/goldenFiles/rewrite_one_config_hash.json".
+
+Definition path_micro_targ2 : string := 
+        "/LayeredAttestation/src/demo_layered_attestation/cds_config/filter_one_config.json".
+        
+Definition path_micro_targ2_golden : string := 
+        "/am-cakeml/tests/DemoFiles/goldenFiles/filter_one_config_hash.json".
+
 Definition path_targ2 : string := 
     "/LayeredAttestation/src/demo_layered_attestation/cds_config/filter_one_config.json".
     
@@ -204,10 +217,6 @@ Definition sig_asp : Term := asp SIG.
 
 Definition r_tpm_sig_asp : Term := 
         (asp (ASPC (asp_paramsC tpm_sig_id [] cds_query_kim_plc ssl_sig_targ))).
-
-
-
-
 
 Definition cds_demo_phrase : Term := 
 <{
