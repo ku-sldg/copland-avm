@@ -120,7 +120,7 @@ Definition hash_micro_config_2 : Term :=
 
 
 Definition hash_micro_evidence : Term := 
-  (hash_evidence_asp cds_config_dir_plc cds_img_1_targ 
+  (hash_evidence_asp cds_config_dir_plc cds_img_3_targ 
     path_micro_composite_golden).
 
 Definition meas_micro : Term := 
