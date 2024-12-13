@@ -115,10 +115,16 @@ Definition hash_micro_config_2 : Term :=
     (hash_targ_asp cds_config_dir_plc cds_img_2_targ 
     path_micro_targ2 path_micro_targ2_golden).
 
+
+Definition hash_micro_evidence : Term := 
+  (hash_evidence_asp cds_config_dir_plc cds_img_1_targ 
+    path_micro_composite_golden).
+
 Definition meas_micro : Term := 
 <{
   (hash_micro_config_1 +<+ 
-   hash_micro_config_2)
+   hash_micro_config_2) -> 
+   hash_micro_evidence
 }>.
 
 Definition micro_appTerm : Term :=
@@ -165,11 +171,14 @@ Definition provision_micro_hash_1 : Term :=
 Definition provision_micro_hash_2 : Term := 
     (provision_targ_asp cds_config_dir_plc cds_config_1_targ path_micro_targ2_golden).
 
+Definition provision_micro_hash_composite : Term := 
+      (provision_targ_asp cds_config_dir_plc cds_config_1_targ    path_micro_composite_golden).
 
 Definition micro_appTerm_provision : Term :=
   <{
     (hash_micro_config_1 -> provision_micro_hash_1) +<+ 
-    (hash_micro_config_2 -> provision_micro_hash_2)
+    (hash_micro_config_2 -> provision_micro_hash_2) +<+ 
+    (meas_micro -> provision_micro_hash_composite)
   }>.
 
 Definition example_appTerm_provision : Term :=
