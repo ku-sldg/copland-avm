@@ -54,9 +54,11 @@ Definition cds_img_3_targ : TARG_ID := "cds_img_3_targ".
 Definition query_kim_id : ASP_ID := "r_invary_get_measurement_id". (* "query_kim_id" *)
 Definition query_kim_stub_id : ASP_ID := "r_invary_get_measurement_stub_id".
 Definition hash_file_contents_id : ASP_ID := "r_hashfile_id".
+Definition hash_evidence_id : ASP_ID := "r_hashevidence_id".
 Definition gather_file_contents_id : ASP_ID := "r_readfile_id". (* "gather_file_contents_id" *)
 Definition appr_gather_file_contents_id : ASP_ID := "appraise_r_readfile_id".
 Definition appr_hash_file_contents_id : ASP_ID := "appraise_r_hashfile_id".
+Definition appr_hash_evidence_id : ASP_ID := "appraise_r_hashevidence_id".
 Definition provision_id : ASP_ID := "r_provision_id".
 Definition appr_cds_id : ASP_ID := "appr_cds_id".
 Definition appr_query_kim_id : ASP_ID := "appraise_r_invary_get_measurement_id".
@@ -87,12 +89,19 @@ Definition hash_targ_asp (targPlc:Plc) (targId:TARG_ID) (path:string) (appr_path
                     targPlc 
                     targId ))).
 
-
 Definition provision_targ_asp (targPlc:Plc) (targId:TARG_ID) (path:string) : Term := 
     (asp (ASPC (* ALL (EXTD 1)  *)
                 (asp_paramsC 
                     provision_id 
                     [("filepath", path)] 
+                    targPlc 
+                    targId ))).
+
+Definition hash_evidence_asp (targPlc:Plc) (targId:TARG_ID) (appr_path:string) : Term := 
+    (asp (ASPC (* ALL (EXTD 1) *)
+                (asp_paramsC 
+                    hash_evidence_id 
+                    [ ("filepath-golden", appr_path)] 
                     targPlc 
                     targId ))).
 
@@ -120,6 +129,9 @@ Definition path_micro_targ2 : string :=
         
 Definition path_micro_targ2_golden : string := 
         "/am-cakeml/tests/DemoFiles/goldenFiles/filter_one_config_hash.json".
+
+Definition path_micro_composite_golden : string := 
+        "/am-cakeml/tests/DemoFiles/goldenFiles/micro_composite.txt".
 
 Definition path_targ2 : string := 
     "/LayeredAttestation/src/demo_layered_attestation/cds_config/filter_one_config.json".
