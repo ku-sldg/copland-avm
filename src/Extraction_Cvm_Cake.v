@@ -44,5 +44,6 @@ Separate Extraction
     Jsonifiable_Term_Plc_list
     test_app_summary_compute_json
     am_client_app_summary
-    am_client_do_res cert_resolute_model
-    cert_resolute_statement.
+    am_client_do_res 
+    cert_resolute_model cert_resolute_statement
+    micro_resolute_model micro_resolute_statement.

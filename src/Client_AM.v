@@ -10,7 +10,7 @@ Require Import Maps Attestation_Session Interface.
 
 Require Import ErrorStringConstants Manifest_Admits.
 
-Require Import AM_Helpers AppraisalSummary.
+Require Import AM_Helpers AppraisalSummary CACL_Demo.
 
 Require Import Flexible_Mechanisms_Vars Flexible_Mechanisms RawEvJudgement_Admits.
 
@@ -73,16 +73,35 @@ Definition cert_res_asp_type_env : ASP_Type_Env :=
   [(certificate_id, (ev_arrow EXTEND InAll (OutN 1)));
   (appraise_id, (ev_arrow REPLACE InAll (OutN 1)))].
 
+Definition micro_res_asp_type_env : ASP_Type_Env := 
+    [(hash_file_contents_id, (ev_arrow EXTEND InAll (OutN 1)));
+    (appr_hash_file_contents_id, (ev_arrow REPLACE InAll (OutN 1)));
+    (hash_evidence_id, (ev_arrow EXTEND InAll (OutN 1)))].
+
 Definition cert_res_asp_compat_mapt : ASP_Compat_MapT := 
   [(certificate_id, appraise_id)].
 
+Definition micro_res_asp_compat_mapt : ASP_Compat_MapT := 
+  [(hash_file_contents_id, appr_hash_file_contents_id);
+   (hash_evidence_id, appr_hash_file_contents_id)  
+  ].
+
+
+Open Scope string_scope.
+Definition res_policy_passed_string (s:string) : bool :=  (* true.  *)
+  eqb s "I JUDGE YOU GOLDEN !!!!!".
+  (* eqb s "SSBKVURHRSBZT1UgR09MREVOICEhISEh". *) (* "I JUDGE YOU GOLDEN !!!!!" in base64 *)
+
+
+  (* eqb s "UEFTU0VE". (* "PASSED" in base64 *) *)
+Close Scope string_scope.
 
 Definition cert_res_policy_resultT (e:Evidence) (G:GlobalContext) (m:RawEvJudgement) : ResultT bool string :=
   match e with 
   | evc rawEv et => (* resultC true  *)
       app_summary <- do_AppraisalSummary et rawEv G m ;;
       let ls := get_all_summary_strings app_summary in 
-      let b := check_strings_list_bool ls (fun _ => true) in 
+      let b := check_strings_list_bool ls res_policy_passed_string in 
       resultC b 
   end.
 
@@ -96,6 +115,10 @@ Definition cert_res_policy (e:Evidence) (G:GlobalContext) (m:RawEvJudgement) : b
 Definition resolute_example_context : GlobalContext := 
   {| asp_types := cert_res_asp_type_env;
      asp_comps := cert_res_asp_compat_mapt |}.
+
+Definition micro_resolute_example_context : GlobalContext := 
+      {| asp_types := micro_res_asp_type_env;
+         asp_comps := micro_res_asp_compat_mapt |}.
 
 
 
@@ -138,6 +161,10 @@ Definition cert_resolute_phrase : Term :=
 Definition resolute_example_rawev_judgement : RawEvJudgement := 
   [(certificate_id, [(cert_resolute_targ, ex_targJudgement_fun')])].
 
+Definition micro_resolute_example_rawev_judgement : RawEvJudgement := 
+    [(appr_hash_file_contents_id, [(cds_img_3_targ, ex_targJudgement_fun')]);
+     (appr_hash_file_contents_id, [(cds_img_2_targ, ex_targJudgement_fun')]);
+     (appr_hash_file_contents_id, [(cds_img_1_targ, ex_targJudgement_fun')])].
 
 
 Definition cert_resolute_model : Model := 
@@ -145,9 +172,18 @@ Definition cert_resolute_model : Model :=
      spec := (fun _ e => (cert_res_policy e resolute_example_context resolute_example_rawev_judgement)) ; 
      context := resolute_example_context |}.
 
+Definition micro_resolute_model : Model := 
+{| conc := (fun _ => (meas_micro)); 
+    spec := (fun _ e => (cert_res_policy e micro_resolute_example_context 
+                          example_RawEvJudgement
+    (* micro_resolute_example_rawev_judgement *))) ; 
+    context := micro_resolute_example_context |}.
+
 Definition cert_resolute_statement : Resolute := 
   R_Goal (cert_resolute_targ).
 
+Definition micro_resolute_statement : Resolute := 
+    R_Goal (cert_resolute_targ).
 
 
 
