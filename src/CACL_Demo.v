@@ -112,34 +112,34 @@ Close Scope string_scope.
 Open Scope cop_ent_scope.
 
 Definition path_targ1 : string := 
-    "/LayeredAttestation/src/demo_layered_attestation/cds_config/rewrite_one_config.json".
+    "/../LayeredAttestation/src/demo_layered_attestation/cds_config/rewrite_one_config.json".
 
 Definition path_targ1_golden : string := 
-    "/am-cakeml/tests/DemoFiles/goldenFiles/rewrite_one_config.json".
+    "/tests/DemoFiles/goldenFiles/rewrite_one_config.json".
 
 
 Definition path_micro_targ1 : string := 
-    "/INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/aadl/data_1_prod_2_cons.aadl".
+    "/../INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/aadl/data_1_prod_2_cons.aadl".
     (* "/LayeredAttestation/src/demo_layered_attestation/cds_config/rewrite_one_config.json". *)
     
 Definition path_micro_targ1_golden : string := 
-    "/am-cakeml/tests/DemoFiles/goldenFiles/data_1_prod_2_cons.aadl".
+    "/tests/DemoFiles/goldenFiles/data_1_prod_2_cons.aadl".
 
 Definition path_micro_targ2 : string := 
-    "/INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/hamr/microkit/microkit.system".
+    "/../INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/hamr/microkit/microkit.system".
        (* "/LayeredAttestation/src/demo_layered_attestation/cds_config/filter_one_config.json". *)
         
 Definition path_micro_targ2_golden : string := 
-        "/am-cakeml/tests/DemoFiles/goldenFiles/microkit.system".
+        "/tests/DemoFiles/goldenFiles/microkit.system".
 
 Definition path_micro_composite_golden : string := 
-        "/am-cakeml/tests/DemoFiles/goldenFiles/micro_composite.txt".
+        "/tests/DemoFiles/goldenFiles/micro_composite.txt".
 
 Definition path_targ2 : string := 
-    "/LayeredAttestation/src/demo_layered_attestation/cds_config/filter_one_config.json".
+    "/../LayeredAttestation/src/demo_layered_attestation/cds_config/filter_one_config.json".
     
 Definition path_targ2_golden : string := 
-    "/am-cakeml/tests/DemoFiles/goldenFiles/filter_one_config.json".
+    "/tests/DemoFiles/goldenFiles/filter_one_config.json".
 
 Definition path_targ3 : string := 
     "/tests/DemoFiles/targFiles/targFile3.txt".
