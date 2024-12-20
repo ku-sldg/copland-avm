@@ -105,9 +105,11 @@ Definition example_appTerm' : Term :=
 
 Definition meas_cds : Term := 
 <{
-  (gather_config_1 +<+ 
-  gather_config_2 (* +<+
-  gather_config_3 *) )
+  (selinux_hash_pol +<+
+   hash_cds_img_1 +<+
+   hash_cds_img_2 +<+
+   gather_config_1 +<+ 
+   gather_config_2 )
 }>.
 
 Definition hash_micro_config_1 : Term := 
@@ -144,29 +146,19 @@ Definition example_appTerm : Term :=
 
 Definition cds_ssl : Term :=
 <{
-    (meas_cds +<+ 
-     query_kim_asp) ->
+    (query_kim_asp +<+
+     meas_cds) ->
     r_ssl_sig_asp ->
     appr_term
 }>. 
 
 Definition cds_tpm : Term :=
 <{
-    (meas_cds +<+ 
-     query_kim_asp) ->
+    (query_kim_asp +<+
+     meas_cds) ->
     r_tpm_sig_asp ->
     appr_term
 }>. 
-
-(*
-Definition example_appTerm_stub : Term :=
-<{
-    (gather_config_1 +<+
-     query_kim_asp_stub ) ->
-     r_ssl_sig_asp ->
-    appr_term
-}>.
-*)
 
 Definition provision_micro_hash_1 : Term := 
     (provision_targ_asp cds_config_dir_plc cds_config_1_targ path_micro_targ1_golden).
@@ -187,7 +179,9 @@ Definition micro_appTerm_provision : Term :=
 Definition example_appTerm_provision : Term :=
 <{
     (gather_config_1 -> provision_config_1) +<+
-    (gather_config_2 -> provision_config_2)
+    (gather_config_2 -> provision_config_2) +<+
+    (hash_cds_img_1   -> provision_img_1) +<+
+    (hash_cds_img_2   -> provision_img_2)
 }>.
 
 Definition simple_sig : Term := 
@@ -217,18 +211,12 @@ Definition flexible_mechanisms_map :=
    ("filehash", filehash_auth_phrase);
    ("large_output", large_output_asp_test);
    ("cds_simple", example_appTerm);
-   (*
-   ("cds_stub", example_appTerm_stub); *)
    ("cds_ssl", cds_ssl);
    ("cds_tpm", cds_tpm);
    ("cds_provision", example_appTerm_provision);
    ("simple_sig", simple_sig);
    ("micro", micro_appTerm);
-   ("micro_provision", micro_appTerm_provision)
-   
-   (* ;
-   ("cds", cds_demo_phrase);
-   ("cds_appr", lseq cds_demo_phrase (asp APPR)) *) ].
+   ("micro_provision", micro_appTerm_provision) ].
    
 
 Definition add_EvidenceT_flexible_mechanisms := 

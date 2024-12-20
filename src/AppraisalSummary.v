@@ -171,7 +171,8 @@ Definition example_RawEvJudgement_ls : list single_add_type :=
         (appr_hash_file_contents_id, (cds_img_3_targ, ex_targJudgement_fun'));
         (appr_query_kim_stub_id, (kim_evidence_targ, ex_targJudgement_fun'));
         (r_ssl_sig_appr_id, (ssl_sig_targ, ex_targJudgement_fun'));
-        (tpm_sig_appr_id, (ssl_sig_targ, ex_targJudgement_fun'))
+        (tpm_sig_appr_id, (ssl_sig_targ, ex_targJudgement_fun'));
+        (appr_selinux_pol_dump_id, (cds_img_2_targ, ex_targJudgement_fun'))
     ].
 
 

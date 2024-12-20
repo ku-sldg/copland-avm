@@ -68,6 +68,9 @@ Definition ssl_sig_appr_id : ASP_ID := "ssl_sig_appr_id".
 Definition tpm_sig_id : ASP_ID := "r_sig_tpm".
 Definition tpm_sig_appr_id : ASP_ID := "appraise_r_sig_tpm".
 
+Definition selinux_pol_dump_id : ASP_ID := "r_selinux_pol_dump".
+Definition appr_selinux_pol_dump_id : ASP_ID := "appraise_r_selinux_pol_dump".
+
 Definition r_ssl_sig_id : ASP_ID := "r_sig".
 Definition r_ssl_sig_appr_id : ASP_ID := "appraise_r_sig".
 
@@ -102,6 +105,14 @@ Definition hash_evidence_asp (targPlc:Plc) (targId:TARG_ID) (appr_path:string) :
                 (asp_paramsC 
                     hash_evidence_id 
                     [ ("filepath-golden", appr_path)] 
+                    targPlc 
+                    targId ))).
+
+Definition selinux_hash_asp (targPlc:Plc) (targId:TARG_ID) : Term := 
+    (asp (ASPC (* ALL (EXTD 1) *)
+                (asp_paramsC 
+                    selinux_pol_dump_id
+                    []
                     targPlc 
                     targId ))).
 
@@ -148,10 +159,16 @@ Definition path_targ3_golden : string :=
     "/tests/DemoFiles/goldenFiles/targFile3.txt".
 
 Definition path_exe_targ1 : string := 
-    "/tests/DemoFiles/targFiles/targExe1.exe".
+    "/../LayeredAttestation/src/demo_layered_attestation/installed_dir/bin/rewrite_one".
 
 Definition path_exe_targ1_golden : string := 
-    "/tests/DemoFiles/goldenFiles/targExe1.exe".
+    "/tests/DemoFiles/goldenFiles/rewrite_one".
+
+Definition path_exe_targ2 : string := 
+    "/../LayeredAttestation/src/demo_layered_attestation/installed_dir/bin/filter_one".
+    
+Definition path_exe_targ2_golden : string := 
+    "/tests/DemoFiles/goldenFiles/filter_one".
 
 Definition gather_config_1 : Term := 
     (gather_targ_asp cds_config_dir_plc cds_config_1_targ path_targ1 path_targ1_golden).
@@ -168,15 +185,10 @@ Definition hash_cds_img_1 : Term :=
 
 Definition hash_cds_img_2 : Term := 
     (hash_targ_asp cds_config_dir_plc cds_img_2_targ
-     path_exe_targ1 path_exe_targ1_golden).
+     path_exe_targ2 path_exe_targ2_golden).
 
-Definition hash_cds_img_3 : Term := 
-    (hash_targ_asp cds_config_dir_plc cds_img_3_targ
-     path_exe_targ1 path_exe_targ1_golden).
-
-Definition hash_controller_img : Term := 
-    (hash_targ_asp cds_controller_dir_targ cds_controller_exe_targ
-    path_exe_targ1 path_exe_targ1_golden).
+Definition selinux_hash_pol : Term := 
+(selinux_hash_asp cds_config_dir_plc cds_img_2_targ).
 
 
 Definition provision_config_1 : Term := 
@@ -186,10 +198,13 @@ Definition provision_config_2 : Term :=
     (provision_targ_asp cds_config_dir_plc cds_config_2_targ path_targ2_golden).
 
 Definition provision_config_3 : Term := 
-(provision_targ_asp cds_config_dir_plc cds_config_3_targ path_targ3_golden).
+    (provision_targ_asp cds_config_dir_plc cds_config_3_targ path_targ3_golden).
 
 Definition provision_img_1 : Term := 
     (provision_targ_asp cds_config_dir_plc cds_img_1_targ path_exe_targ1_golden).
+
+Definition provision_img_2 : Term := 
+    (provision_targ_asp cds_config_dir_plc cds_img_2_targ path_exe_targ2_golden).
 
 Definition meas_cds_phrase : Term :=
 <{
@@ -199,13 +214,17 @@ Definition meas_cds_phrase : Term :=
     ->
     gather_config_3
     ->
+    (*
     hash_controller_img 
     ->
+    *)
     hash_cds_img_1
     ->
     hash_cds_img_2
+    (*
     ->
     hash_cds_img_3
+    *)
 }>.
 
 Definition query_kim_args : ASP_ARGS := 
