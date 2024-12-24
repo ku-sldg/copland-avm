@@ -46,6 +46,8 @@ Definition errStr_invalid_request_type := "errStr_invalid_request_type".
 
 Definition errStr_negotiation_not_implemented := "errStr_negotiation_not_implemented".
 
+Definition errStr_appsumm_not_implemented := "errStr_appraisal_summary_not_implemented".
+
 (* Run CVM Error Strings *)
 Definition errStr_run_cvm_at_error_dynamic := "errStr_run_cvm_at_error_dynamic".
 

@@ -85,7 +85,15 @@ Definition hash_targ_asp (targPlc:Plc) (targId:TARG_ID) (path:string) (appr_path
                 (asp_paramsC 
                     hash_file_contents_id 
                     [("filepath", path); 
-                     ("filepath-golden", appr_path)] 
+                     ("filepath-golden", appr_path)]
+                    targPlc 
+                    targId ))).
+
+Definition hash_dir_asp (targPlc:Plc) (targId:TARG_ID) (args:ASP_ARGS) : Term := 
+    (asp (ASPC (* ALL (EXTD 1) *)
+                (asp_paramsC 
+                    hash_file_contents_id 
+                    args
                     targPlc 
                     targId ))).
 
@@ -94,6 +102,14 @@ Definition provision_targ_asp (targPlc:Plc) (targId:TARG_ID) (path:string) : Ter
                 (asp_paramsC 
                     provision_id 
                     [("filepath", path)] 
+                    targPlc 
+                    targId ))).
+
+Definition provision_dir_asp (targPlc:Plc) (targId:TARG_ID) (args:ASP_ARGS) : Term := 
+    (asp (ASPC (* ALL (EXTD 1)  *)
+                (asp_paramsC 
+                    provision_id 
+                    args 
                     targPlc 
                     targId ))).
 

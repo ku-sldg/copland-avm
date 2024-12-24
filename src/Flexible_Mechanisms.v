@@ -107,31 +107,54 @@ Definition meas_cds : Term :=
   gather_config_3 *) )
 }>.
 
-Definition hash_micro_config_1 : Term := 
-    (hash_targ_asp cds_config_dir_plc cds_img_1_targ 
-    path_micro_targ1 path_micro_targ1_golden).
+Definition hash_micro_config_1 (args:ASP_ARGS) : Term := 
+    (hash_dir_asp cds_config_dir_plc cds_img_1_targ 
+      args).
 
-Definition hash_micro_config_2 : Term := 
-    (hash_targ_asp cds_config_dir_plc cds_img_2_targ 
-    path_micro_targ2 path_micro_targ2_golden).
+    (*
+    path_micro_targ1 path_micro_targ1_golden). *)
+
+Definition hash_micro_config_2 (args:ASP_ARGS) : Term := 
+    (hash_dir_asp cds_config_dir_plc cds_img_2_targ 
+      args).
+
+    (*
+    path_micro_targ2 path_micro_targ2_golden). *)
 
 
 Definition hash_micro_evidence : Term := 
   (hash_evidence_asp cds_config_dir_plc cds_img_3_targ 
     path_micro_composite_golden).
 
-Definition meas_micro : Term := 
+Definition meas_micro (model_args:ASP_ARGS) (system_args:ASP_ARGS) : Term := 
+  lseq 
+    (
+      bseq (ALL,ALL)
+      (hash_micro_config_1 model_args)
+      (hash_micro_config_2 system_args)
+    )
+    hash_micro_evidence.
+
+(*
 <{
-  (hash_micro_config_1 +<+ 
-   hash_micro_config_2) -> 
+  ((hash_micro_config_1 model_args) +<+ 
+   (hash_micro_config_2 system_args)) -> 
    hash_micro_evidence
 }>.
+*)
 
+Definition micro_appTerm : Term := 
+  lseq
+    (meas_micro [] [])
+    appr_term.
+
+(*
 Definition micro_appTerm : Term :=
 <{
     ( meas_micro ) ->
     appr_term
 }>.
+*)
 
 Definition example_appTerm : Term :=
 <{
@@ -165,21 +188,56 @@ Definition example_appTerm_stub : Term :=
 }>.
 *)
 
-Definition provision_micro_hash_1 : Term := 
-    (provision_targ_asp cds_config_dir_plc cds_config_1_targ path_micro_targ1_golden).
+Definition provision_micro_hash_1 (args:ASP_ARGS) : Term := 
+    (provision_dir_asp cds_config_dir_plc cds_config_1_targ 
+      args).
+    (* 
+    path_micro_targ1_golden). *)
 
-Definition provision_micro_hash_2 : Term := 
-    (provision_targ_asp cds_config_dir_plc cds_config_1_targ path_micro_targ2_golden).
+Definition provision_micro_hash_2 (args:ASP_ARGS) : Term := 
+    (provision_dir_asp cds_config_dir_plc cds_config_1_targ 
+      args).
+    (*
+    path_micro_targ2_golden). *)
 
+Open Scope string_scope.
 Definition provision_micro_hash_composite : Term := 
-      (provision_targ_asp cds_config_dir_plc cds_config_1_targ    path_micro_composite_golden).
+      (provision_dir_asp cds_config_dir_plc cds_config_1_targ  
+      [("filepath-golden",  path_micro_composite_golden)]
+      ).
+Close Scope string_scope.
 
+Definition micro_appTerm_provision (model_args:ASP_ARGS) (system_args:ASP_ARGS) : Term :=
+
+  bseq (ALL,ALL)
+    (lseq 
+      (hash_micro_config_1 model_args)
+      (provision_micro_hash_1 model_args))
+    (bseq (ALL,ALL)
+      (lseq 
+      (hash_micro_config_2 system_args)
+      (provision_micro_hash_1 system_args))
+
+      (lseq 
+      (meas_micro model_args system_args)
+      (provision_micro_hash_composite))
+    ).
+    (*
+  <{
+    (hash_micro_config_1 -> provision_micro_hash_1) +<+ 
+    (hash_micro_config_2 -> provision_micro_hash_2) +<+ 
+    (meas_micro -> provision_micro_hash_composite)
+  }>.
+  *)
+
+(*
 Definition micro_appTerm_provision : Term :=
   <{
     (hash_micro_config_1 -> provision_micro_hash_1) +<+ 
     (hash_micro_config_2 -> provision_micro_hash_2) +<+ 
     (meas_micro -> provision_micro_hash_composite)
   }>.
+*)
 
 Definition example_appTerm_provision : Term :=
 <{
@@ -217,14 +275,18 @@ Definition flexible_mechanisms_map :=
    ("filehash", filehash_auth_phrase);
    ("cds_simple", example_appTerm);
    ("cds_provision", example_appTerm_provision);
+   (*
    ("cert_resolute_app", lseq cert_resolute_phrase (asp APPR));
+   *)
    ("cds_ssl", cds_ssl);
    ("cds_tpm", cds_tpm);
    ("cds_provision", example_appTerm_provision);
    ("simple_sig", simple_sig);
-   ("micro", micro_appTerm);
-   ("micro_provision", micro_appTerm_provision);
+   ("micro", (lseq (micro_appTerm_provision [] []) (asp APPR)) );
+   ("micro_provision", (micro_appTerm_provision [] []));
+   (*
    ("cert_resolute_app", lseq cert_resolute_phrase (asp APPR));
+   *)
    
    (* ;
    ("cds", cds_demo_phrase);

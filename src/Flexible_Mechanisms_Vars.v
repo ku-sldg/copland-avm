@@ -26,5 +26,6 @@ Definition att_targ : TARG_ID := "att_targ".
 Definition it_targ : TARG_ID := "it_targ".
 Definition hashfile_targ : TARG_ID := "hashfile_targ".
 Definition cert_resolute_targ : TARG_ID := "cert_resolute_targ".
+Definition micro_resolute_targ : TARG_ID := "micro_resolute_targ".
 
 Close Scope string_scope.

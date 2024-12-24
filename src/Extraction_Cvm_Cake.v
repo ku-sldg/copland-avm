@@ -41,9 +41,9 @@ Separate Extraction
     concrete_Jsonifiable_Term
     concrete_Jsonifiable_EvidenceT
     concrete_Jsonifiable_GlobalContext
+    concrete_Jsonifiable_ASP_ARGS
     Jsonifiable_Term_Plc_list
     test_app_summary_compute_json
     am_client_app_summary
     am_client_do_res 
-    cert_resolute_model cert_resolute_statement
     micro_resolute_model micro_resolute_statement.
