@@ -14,6 +14,8 @@ Require Import AM_Helpers AppraisalSummary CACL_Demo.
 
 Require Import Flexible_Mechanisms_Vars Flexible_Mechanisms RawEvJudgement_Admits.
 
+Require Import Resolute_Types Resolute_JSON.
+
 Import ListNotations ErrNotation.
 
 Import ResultNotation.
@@ -60,14 +62,15 @@ Require Import Resolute_Logic.
 
 
 Definition am_client_do_res (att_sess : Attestation_Session) (req_plc:Plc) 
-  (toPlc:Plc) (M : Model) (r:Resolute) (m:Map TargetT Evidence) : ResultT bool string :=
+  (toPlc:Plc) (M : Model) (r:Resolute) (m:Map TargetT Evidence) : ResultT ResoluteResponse string :=
 
   let '(t, pol) := res_to_copland M r m in
     let appr_t : Term := lseq t (asp APPR) in
       rawev <- am_sendReq att_sess req_plc mt_evc appr_t toPlc ;;
       let glob_ctx := (ats_context att_sess) in  
         et' <- eval glob_ctx toPlc mt_evt appr_t ;;
-        resultC (pol (evc rawev et')).
+        let b := (pol (evc rawev et')) in 
+        resultC (mkResoluteResp b r t).
 
 Definition micro_res_asp_type_env : ASP_Type_Env := 
     [(hash_file_contents_id, (ev_arrow EXTEND InAll (OutN 1)));
