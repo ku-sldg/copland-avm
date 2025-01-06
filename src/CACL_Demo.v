@@ -54,6 +54,7 @@ Definition cds_img_3_targ : TARG_ID := "cds_img_3_targ".
 Definition query_kim_id : ASP_ID := "r_invary_get_measurement_id". (* "query_kim_id" *)
 Definition query_kim_stub_id : ASP_ID := "r_invary_get_measurement_stub_id".
 Definition hash_file_contents_id : ASP_ID := "r_hashfile_id".
+Definition hash_dir_contents_id : ASP_ID := "r_hashdir_id".
 Definition hash_evidence_id : ASP_ID := "r_hashevidence_id".
 Definition gather_file_contents_id : ASP_ID := "r_readfile_id". (* "gather_file_contents_id" *)
 Definition appr_gather_file_contents_id : ASP_ID := "appraise_r_readfile_id".
@@ -92,7 +93,7 @@ Definition hash_targ_asp (targPlc:Plc) (targId:TARG_ID) (path:string) (appr_path
 Definition hash_dir_asp (targPlc:Plc) (targId:TARG_ID) (args:ASP_ARGS) : Term := 
     (asp (ASPC (* ALL (EXTD 1) *)
                 (asp_paramsC 
-                    hash_file_contents_id 
+                    hash_dir_contents_id 
                     args
                     targPlc 
                     targId ))).
