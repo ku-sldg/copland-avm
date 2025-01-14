@@ -227,3 +227,60 @@ Proof.
   map_ind m; erewrite IHm; ff.
 Qed.
 
+Lemma map_get_some_impl_key_in_map : forall {A B : Type} `{EqClass A},
+  forall (m : Map A B) k v,
+  map_get k m = Some v ->
+  In k (map fst m).
+Proof.
+  induction m; ff; intuition; subst; eauto.
+  rewrite eqb_eq in *; eauto.
+Qed.
+
+Lemma map_snd_eq_map_vals {A B : Type} `{EqClass A} : forall (m : Map A B),
+  map_vals m = map snd m.
+Proof.
+  induction m; ff.
+Qed.
+
+Lemma in_map_snd_impl_exists_key : forall {A B : Type} `{EqClass A},
+  forall (m : Map A B) v,
+  In v (map snd m) ->
+  ((exists k, map_get k m = Some v) \/ ~ NoDup (map fst m)).
+Proof.
+  induction m; ff; intuition; subst; eauto; try congruence.
+  - left; exists a0; ff; rewrite eqb_neq in *; congruence.
+  - eapply IHm in H1.
+    destruct H1 as [[k H1] | H1].
+    * destruct (eqb a0 k) eqn:?.
+      + rewrite eqb_eq in *; subst; eauto; right.
+        eapply map_get_some_impl_key_in_map in H1; intros;
+        inversion H0; subst; eauto.
+      + left; exists k; rewrite Heqb0; eauto.
+    * right; intros; inv H0; eauto.
+Qed.
+
+Fixpoint map_eqb_eqb {A B : Type} `{H : EqClass A} (eqbB : B -> B -> bool) (m1 m2 : Map A B) : bool :=
+  match m1, m2 with
+  | nil, nil => true
+  | (hl, hr) :: t, (hl', hr') :: t' => 
+    andb (eqb hl hl') (eqbB hr hr') && map_eqb_eqb eqbB t t'
+  | _, _ => false
+  end.
+
+Theorem map_eqb_eq : forall {A B : Type} `{EqClass A} (eqbB : B -> B -> bool),
+  forall m1,
+  (forall b1 b2, In b1 (map snd m1) -> eqbB b1 b2 = true <-> b1 = b2) ->
+  forall m2, map_eqb_eqb eqbB m1 m2 = true <-> m1 = m2.
+Proof.
+  induction m1; destruct m2; split; intros; simpl in *; eauto; try congruence.
+  - destruct a; try congruence.
+  - destruct a, p; unfold andb in *; ff.
+    rewrite eqb_eq in *; subst; eauto.
+    rewrite H0 in *; eauto; subst.
+    erewrite IHm1 in H1; subst; eauto.
+  - destruct a, p; subst; eauto.
+    inversion H1; subst; simpl in *.
+    unfold andb; ff; try rewrite eqb_neq in *; try congruence.
+    * erewrite IHm1; eauto.
+    * pose proof (H0 b0 b0); intuition; congruence.
+Qed.
