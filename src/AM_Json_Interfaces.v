@@ -28,5 +28,10 @@ Definition handle_AM_request_JSON (conf : AM_Manager_Config) (js : JSON) (nonceV
       (* TODO: Fill this in when negotiation is implemented *)
       ErrorResponseJSON errStr_negotiation_not_implemented
     )
+    else if (eqb req_type STR_APPSUMM)
+    then (
+      (* TODO: Fill this in when negotiation is implemented *)
+      ErrorResponseJSON errStr_appsumm_not_implemented
+    )
     else ErrorResponseJSON err_str_01
   end.
