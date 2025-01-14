@@ -259,13 +259,14 @@ Proof.
     * right; intros; inv H0; eauto.
 Qed.
 
-Fixpoint map_eqb_eqb {A B : Type} `{H : EqClass A} (eqbB : B -> B -> bool) (m1 m2 : Map A B) : bool :=
-  match m1, m2 with
-  | nil, nil => true
-  | (hl, hr) :: t, (hl', hr') :: t' => 
-    andb (eqb hl hl') (eqbB hr hr') && map_eqb_eqb eqbB t t'
-  | _, _ => false
-  end.
+Definition map_eqb_eqb {A B : Type} `{H : EqClass A} (eqbB : B -> B -> bool) :=
+  fix F m1 m2 :=
+    match m1, m2 with
+    | nil, nil => true
+    | (hl, hr) :: t, (hl', hr') :: t' => 
+      andb (andb (eqb hl hl') (eqbB hr hr')) (F t t')
+    | _, _ => false
+    end.
 
 Theorem map_eqb_eq : forall {A B : Type} `{EqClass A} (eqbB : B -> B -> bool),
   forall m1,

@@ -81,12 +81,13 @@ Ltac break_eqs :=
       else destEq p1 p2
   end.
 
-Fixpoint list_eqb_eqb {A : Type} (eqbA : A -> A -> bool) (l1 l2 : list A) : bool :=
-  match l1, l2 with
-  | nil, nil => true
-  | cons h1 t1, cons h2 t2 => andb (eqbA h1 h2) (list_eqb_eqb eqbA t1 t2)
-  | _, _ => false
-  end.
+Definition list_eqb_eqb {A : Type} (eqbA : A -> A -> bool) :=
+  fix F l1 l2 :=
+    match l1, l2 with
+    | nil, nil => true
+    | cons h1 t1, cons h2 t2 => andb (eqbA h1 h2) (F t1 t2)
+    | _, _ => false
+    end.
 
 Theorem list_eqb_eq : forall {A : Type} (eqbA : A -> A -> bool),
   forall l1,

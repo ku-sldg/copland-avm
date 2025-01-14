@@ -12,7 +12,7 @@ Inductive JSON :=
 | JSON_Boolean  : bool -> JSON.
 
 Definition depth_js_array (ls:list JSON) (f:JSON -> nat) : nat := 
-    fold_right (fun js acc => max acc (f js)) 0 ls.
+  fold_right (fun js acc => max acc (f js)) 0 ls.
 
 Definition depth_js_map (m: Map string JSON) (f:JSON -> nat) : nat := 
   fold_right (fun pr acc => max acc (f (snd pr))) 0 m.
@@ -40,6 +40,28 @@ Fixpoint JSON_depth (js:JSON) : nat :=
   | JSON_Array ls => 1 + depth_js_array ls JSON_depth
   | JSON_Object m => 1 + depth_js_map m JSON_depth
   end.
+
+Theorem JSON_rect_better (P : JSON -> Type)
+  (fmap : forall m : Map string JSON, 
+    (forall (v:JSON), In v (map snd m) -> P v) -> P (JSON_Object m))
+  (flist : forall l : list JSON, (forall v, In v l -> P v) -> P (JSON_Array l))
+  (fstring : forall s : string, P (JSON_String s))
+  (fbool : forall b : bool, P (JSON_Boolean b)) :
+  forall j : JSON, P j.
+Proof.
+  assert (forall x : JSON, (forall y : JSON, (fun j1 j2 => JSON_depth j1 < JSON_depth j2) y x -> P y) -> P x). {
+    intros js F; destruct js eqn:?; eauto.
+    - subst; eapply fmap; intros; eapply F; simpl.
+      pose proof (depth_item_leq_map_max m JSON_depth v H); lia.
+    - subst; eapply flist; intros; eapply F; simpl.
+      pose proof (depth_item_leq_array_max l JSON_depth v H); lia.
+  }
+  assert (well_founded (fun j1 j2 => JSON_depth j1 < JSON_depth j2)). {
+    simpl in *.
+    eapply Wf_nat.well_founded_ltof.
+  }
+  eapply well_founded_induction_type; eauto.
+Qed.
 
 Theorem JSON_ind_better (P : JSON -> Prop)
   (fmap : forall m : Map string JSON, 
