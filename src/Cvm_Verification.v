@@ -871,7 +871,35 @@ Definition well_formed_context (G : GlobalContext) : Prop :=
   map_get enc_aspid (asp_types G) = Some (ev_arrow WRAP InAll (OutN 1)) /\
   map_get check_nonce_aspid (asp_types G) = Some (ev_arrow EXTEND InAll (OutN 1)).
 
-Lemma eqb_ASP_PARAMS_eq : forall a1 a2,
+Require Import EqClass.
+
+Fixpoint eqb_asp_args `{EqClass string, EqClass bool} (js1 js2:ASP_ARGS) : bool := 
+  match js1, js2 with
+  | JSON_Object m1, JSON_Object m2 => map_eqb_eqb eqb_asp_args m1 m2
+  | JSON_Array ls1, JSON_Array ls2 => list_eqb_eqb eqb_asp_args ls1 ls2
+  | JSON_String s1, JSON_String s2 => eqb s1 s2
+  | JSON_Boolean b1, JSON_Boolean b2 => eqb b1 b2
+  | _, _ => false
+  end.
+
+Theorem eqb_json_eq : forall `{EqClass string, EqClass bool} js1 js2, 
+eqb_asp_args js1 js2 = true <-> js1 = js2.
+Proof.
+  induction js1 using JSON_ind_better;
+  destruct js2; simpl in *; try (split; intros; congruence).
+  - erewrite map_eqb_eq; eauto; split; intros; subst; try congruence.
+  - erewrite list_eqb_eq; eauto; split; intros; congruence.
+  - rewrite eqb_eq; intuition; subst; eauto; inversion H1; eauto.
+  - rewrite eqb_eq; intuition; subst; eauto; inversion H1; eauto.
+Qed.
+
+Global Instance EqClass_ASP_ARGS `{EqClass string, EqClass bool} : EqClass ASP_ARGS := 
+{
+  eqb := eqb_asp_args;
+  eqb_eq := eqb_json_eq;
+}.
+
+Lemma eqb_ASP_PARAMS_eq `{EqClass ASP_ARGS} : forall a1 a2,
   eqb_ASP_PARAMS a1 a2 = true <-> a1 = a2.
 Proof.
   induction a1; destruct a2; ff;
@@ -879,9 +907,16 @@ Proof.
   repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
   repeat rewrite String.eqb_eq in *; ff;
   repeat rewrite EqClass.general_list_eqb_eq in *; ff.
+
+  destruct H.
+  apply eqb_eq in H3.
+  subst.
+  ff.
+  rewrite eqb_eq in *.
+  ff.
 Qed.
 
-Lemma eqb_EvidenceT_eq : forall e1 e2,
+Lemma eqb_EvidenceT_eq `{EqClass ASP_PARAMS} : forall e1 e2,
   eqb_EvidenceT e1 e2 = true <-> e1 = e2.
 Proof.
   induction e1; destruct e2; ff;
@@ -892,6 +927,10 @@ Proof.
   repeat rewrite eqb_ASP_PARAMS_eq in *; ff;
   repeat rewrite IHe1_1 in *; ff;
   repeat rewrite IHe1_2 in *; ff.
+  rewrite eqb_eq in *.
+  ff.
+  rewrite eqb_eq in *.
+  ff.
 Qed.
 
 Lemma invoke_ASP_evidence : forall e par st sc e' st' sc',
