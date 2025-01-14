@@ -6,6 +6,7 @@ Authors:  Adam Petz, ampetz@ku.edu
  *)
 
 Require Import Setoid String StructTactics.
+Require Import List.
 
 Class EqClass (A : Type) := { 
   eqb : A -> A -> bool ;
@@ -79,6 +80,29 @@ Ltac break_eqs :=
       then fail
       else destEq p1 p2
   end.
+
+Definition list_eqb_eqb {A : Type} (eqbA : A -> A -> bool) :=
+  fix F l1 l2 :=
+    match l1, l2 with
+    | nil, nil => true
+    | cons h1 t1, cons h2 t2 => andb (eqbA h1 h2) (F t1 t2)
+    | _, _ => false
+    end.
+
+Theorem list_eqb_eq : forall {A : Type} (eqbA : A -> A -> bool),
+  forall l1,
+  (forall a1 a2, In a1 l1 -> eqbA a1 a2 = true <-> a1 = a2) ->
+  forall (l2 : list A), list_eqb_eqb eqbA l1 l2 = true <-> l1 = l2.
+Proof.
+  induction l1; destruct l2; split; intros; simpl in *; eauto; try congruence.
+  - unfold andb in H0. destruct (eqbA a a0) eqn:E.
+    * rewrite H in E; subst; eauto; rewrite IHl1 in H0; subst; eauto.
+    * congruence.
+  - inversion H0; subst.
+    unfold andb. destruct (eqbA a0 a0) eqn:E; eauto.
+    * erewrite IHl1; eauto.
+    * pose proof (H a0 a0). intuition. congruence.
+Qed.
 
 Fixpoint general_list_eq_class_eqb {A : Type} `{H : EqClass A} (l1 l2 : list A) : bool :=
   match l1, l2 with

@@ -72,6 +72,7 @@ Definition split_phrase : Term :=
       (asp (ASPC (asp_paramsC attest2_id [] P1 sys_targ)))
     ).
 
+
 Open Scope cop_ent_scope.
 
 Definition appr_term : Term := (asp APPR).
@@ -258,6 +259,7 @@ Definition cert_resolute_phrase : Term :=
       (asp (ASPC (asp_paramsC certificate_id [] P1 cert_resolute_targ))).
 
 Close Scope cop_ent_scope.
+
 
 Definition large_output_asp_test : Term :=
   asp (ASPC (asp_paramsC large_output_id [] P1 sys_targ)).

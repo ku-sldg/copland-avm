@@ -18,6 +18,7 @@ Definition appraise_id : ASP_ID := "appraise_id".
 Definition certificate_id : ASP_ID := "certificate_id".
 Definition hashfile_id : ASP_ID := "hashfile_id".
 Definition cert_resolute_id : ASP_ID := "cert_resolute_id".
+
 Definition large_output_id : ASP_ID := "large_output_id".
 
 (* TARG IDs *)
