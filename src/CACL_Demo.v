@@ -135,7 +135,7 @@ Definition micro_args_model : ASP_ARGS :=
 Definition micro_args_system : ASP_ARGS := 
     (JSON_Object [("filepath_golden", (JSON_String "/am-cakeml/tests/DemoFiles/goldenFiles/microkit_composite.txt")); 
 
-    ("paths", JSON_Array [(JSON_String "/INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/aadl/")]);
+    ("paths", JSON_Array [(JSON_String "/INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/hamr/microkit/")]);
     ("env_var", JSON_String "DEMO_ROOT")
     ]).
 

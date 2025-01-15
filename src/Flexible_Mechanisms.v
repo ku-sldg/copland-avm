@@ -15,9 +15,26 @@ Definition micro_args_model : ASP_ARGS :=
 Definition micro_args_system : ASP_ARGS := 
     (JSON_Object [("filepath_golden", (JSON_String "/am-cakeml/tests/DemoFiles/goldenFiles/microkit_composite.txt")); 
   
-    ("paths", JSON_Array [(JSON_String "/INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/aadl/")]);
+    ("paths", JSON_Array [(JSON_String "/INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/hamr/microkit/")]);
     ("env_var", JSON_String "DEMO_ROOT")
     ]).
+
+  Definition micro_args_composite : ASP_ARGS := 
+    (JSON_Object [("filepath_golden", (JSON_String "/am-cakeml/tests/DemoFiles/goldenFiles/micro_composite.txt")); 
+
+    ("paths", JSON_Array []);
+    ("env_var", JSON_String "DEMO_ROOT")
+    ]).
+
+Definition micro_args_union : ASP_ARGS := 
+  (JSON_Object [("filepath_golden", (JSON_String "/am-cakeml/tests/DemoFiles/goldenFiles/micro_union_composite.txt")); 
+
+  ("paths", JSON_Array [
+    (JSON_String "/INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/aadl/");
+    (JSON_String "/INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/hamr/microkit/")]
+  );
+  ("env_var", JSON_String "DEMO_ROOT")
+  ]).
 
     (*
 Definition micro_args_system : ASP_ARGS := 
@@ -154,9 +171,11 @@ Definition hash_micro_evidence : Term :=
 Definition meas_micro (model_args:ASP_ARGS) (system_args:ASP_ARGS) : Term := 
   lseq 
     (
-      bseq (ALL,ALL)
+      (* bseq (ALL,ALL) *)
       (hash_micro_config_1 model_args)
+      (*
       (hash_micro_config_2 system_args)
+      *)
     )
     hash_micro_evidence.
 
@@ -235,7 +254,19 @@ Definition provision_micro_hash_composite : Term :=
       (micro_args_composite)
       ).
 
+Definition micro_appTerm_provision (model_args:ASP_ARGS) (system_args:ASP_ARGS) : Term :=
 
+bseq (ALL,ALL)
+  (lseq 
+    (hash_micro_config_1 micro_args_union)
+    (provision_micro_hash_1 micro_args_union))
+
+    (lseq 
+    (meas_micro micro_args_union system_args)
+    (provision_micro_hash_composite)).
+
+
+(*
 Definition micro_appTerm_provision (model_args:ASP_ARGS) (system_args:ASP_ARGS) : Term :=
 
   bseq (ALL,ALL)
@@ -251,6 +282,10 @@ Definition micro_appTerm_provision (model_args:ASP_ARGS) (system_args:ASP_ARGS) 
       (meas_micro model_args system_args)
       (provision_micro_hash_composite))
     ).
+  *)
+
+
+
     (*
   <{
     (hash_micro_config_1 -> provision_micro_hash_1) +<+ 
