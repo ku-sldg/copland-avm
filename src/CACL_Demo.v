@@ -123,6 +123,34 @@ Definition provision_dir_asp (targPlc:Plc) (targId:TARG_ID) (args:ASP_ARGS) : Te
                     targPlc 
                     targId ))).
 
+
+
+Definition micro_args_model : ASP_ARGS := 
+    (JSON_Object [("filepath_golden", (JSON_String "/am-cakeml/tests/DemoFiles/goldenFiles/aadl_composite.txt")); 
+    
+    ("paths", JSON_Array [(JSON_String "/INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/aadl/")]);
+    ("env_var", JSON_String "DEMO_ROOT")
+    ]).
+    
+Definition micro_args_system : ASP_ARGS := 
+    (JSON_Object [("filepath_golden", (JSON_String "/am-cakeml/tests/DemoFiles/goldenFiles/microkit_composite.txt")); 
+
+    ("paths", JSON_Array [(JSON_String "/INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/aadl/")]);
+    ("env_var", JSON_String "DEMO_ROOT")
+    ]).
+
+Definition micro_args_composite : ASP_ARGS := 
+    (JSON_Object [("filepath_golden", (JSON_String "/am-cakeml/tests/DemoFiles/goldenFiles/micro_composite.txt")); 
+
+    ("paths", JSON_Array []);
+    ("env_var", JSON_String "DEMO_ROOT")
+    ]).
+    
+        (*
+    Definition micro_args_system : ASP_ARGS := 
+    (JSON_Object [("filepath_golden", (JSON_String "/am-cakeml/tests/DemoFiles/goldenFiles/microkit_composite.txt"))]).
+    *)
+
 Definition hash_evidence_asp (targPlc:Plc) (targId:TARG_ID) (appr_path:string) : Term := 
     (asp (ASPC (* ALL (EXTD 1) *)
                 (asp_paramsC 
@@ -130,7 +158,7 @@ Definition hash_evidence_asp (targPlc:Plc) (targId:TARG_ID) (appr_path:string) :
                     (*
                     [ ("filepath-golden", appr_path)] 
                      *)
-                    (JSON_Object [])
+                    (micro_args_composite)
                     targPlc 
                     targId ))).
 

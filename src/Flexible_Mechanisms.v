@@ -3,54 +3,77 @@ Require Import List String.
 
 Import ListNotations.
 
+Open Scope string_scope.
+
+Definition micro_args_model : ASP_ARGS := 
+  (JSON_Object [("filepath_golden", (JSON_String "/am-cakeml/tests/DemoFiles/goldenFiles/aadl_composite.txt")); 
+
+  ("paths", JSON_Array [(JSON_String "/INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/aadl/")]);
+  ("env_var", JSON_String "DEMO_ROOT")
+  ]).
+
+Definition micro_args_system : ASP_ARGS := 
+    (JSON_Object [("filepath_golden", (JSON_String "/am-cakeml/tests/DemoFiles/goldenFiles/microkit_composite.txt")); 
+  
+    ("paths", JSON_Array [(JSON_String "/INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/aadl/")]);
+    ("env_var", JSON_String "DEMO_ROOT")
+    ]).
+
+    (*
+Definition micro_args_system : ASP_ARGS := 
+  (JSON_Object [("filepath_golden", (JSON_String "/am-cakeml/tests/DemoFiles/goldenFiles/microkit_composite.txt"))]).
+  *)
+
+Close Scope string_scope.
+
 (* Flexible Mechanisms *)
 Definition certificate_style : Term :=
   att P1 (
     lseq 
-      (asp (ASPC (asp_paramsC attest_id (JSON_Object []) P1 sys_targ)))
+      (asp (ASPC (asp_paramsC attest_id (micro_args_system) P1 sys_targ)))
       (att P2 (
         lseq 
-          (asp (ASPC (asp_paramsC appraise_id (JSON_Object []) P2 sys_targ)))
-          (asp (ASPC (asp_paramsC certificate_id (JSON_Object []) P2 sys_targ)))
+          (asp (ASPC (asp_paramsC appraise_id (micro_args_system) P2 sys_targ)))
+          (asp (ASPC (asp_paramsC certificate_id (micro_args_system) P2 sys_targ)))
       ))
   ).
 
 Definition background_check : Term :=
   lseq
-    (att P1 (asp (ASPC (asp_paramsC attest_id (JSON_Object []) P1 sys_targ))))
-    (att P2 (asp (ASPC (asp_paramsC appraise_id (JSON_Object []) P2 sys_targ)))).
+    (att P1 (asp (ASPC (asp_paramsC attest_id (micro_args_system) P1 sys_targ))))
+    (att P2 (asp (ASPC (asp_paramsC appraise_id (micro_args_system) P2 sys_targ)))).
 
 Definition parallel_mutual_1 : Term :=
   att P1 (
     lseq 
-      (asp (ASPC (asp_paramsC attest_id (JSON_Object []) P1 sys_targ)))
-      (att P2 (asp (ASPC (asp_paramsC appraise_id (JSON_Object []) P2 sys_targ))))
+      (asp (ASPC (asp_paramsC attest_id (micro_args_system) P1 sys_targ)))
+      (att P2 (asp (ASPC (asp_paramsC appraise_id (micro_args_system) P2 sys_targ))))
   ).
 
 Definition parallel_mutual_2 : Term :=
   att P0 (
     lseq 
-      (asp (ASPC (asp_paramsC attest_id (JSON_Object []) P0 sys_targ)))
-      (att P2 (asp (ASPC (asp_paramsC appraise_id (JSON_Object []) P2 sys_targ))))
+      (asp (ASPC (asp_paramsC attest_id (micro_args_system) P0 sys_targ)))
+      (att P2 (asp (ASPC (asp_paramsC appraise_id (micro_args_system) P2 sys_targ))))
   ).
 
 Definition layered_background_check : Term :=
   att P1
     (bpar (ALL, ALL)
       (lseq
-        (att P1 (asp (ASPC (asp_paramsC attest_id (JSON_Object []) P1 sys_targ))))
+        (att P1 (asp (ASPC (asp_paramsC attest_id (micro_args_system) P1 sys_targ))))
         (lseq 
-          (asp (ASPC (asp_paramsC attest_id (JSON_Object []) P3 att_targ)))
-          (asp (ASPC (asp_paramsC attest_id (JSON_Object []) P4 att_targ)))
+          (asp (ASPC (asp_paramsC attest_id (micro_args_system) P3 att_targ)))
+          (asp (ASPC (asp_paramsC attest_id (micro_args_system) P4 att_targ)))
         )
       )
       (bpar (ALL, ALL)
-        (att P3 (asp (ASPC (asp_paramsC attest_id (JSON_Object []) P3 sys_targ))))
+        (att P3 (asp (ASPC (asp_paramsC attest_id (micro_args_system) P3 sys_targ))))
         (lseq
-          (att P4 (asp (ASPC (asp_paramsC attest_id (JSON_Object []) P4 sys_targ))))
+          (att P4 (asp (ASPC (asp_paramsC attest_id (micro_args_system) P4 sys_targ))))
           (att P2 (
             (lseq
-              (asp (ASPC (asp_paramsC appraise_id (JSON_Object []) P2 it_targ)))
+              (asp (ASPC (asp_paramsC appraise_id (micro_args_system) P2 it_targ)))
               (asp (ASPC sig_params))
             )
           )
@@ -62,15 +85,15 @@ Definition layered_background_check : Term :=
 Definition filehash_auth_phrase : Term := 
   att P1 
     (lseq 
-      (asp (ASPC (asp_paramsC hashfile_id (JSON_Object []) P1 hashfile_targ)))
+      (asp (ASPC (asp_paramsC hashfile_id (micro_args_system) P1 hashfile_targ)))
       (asp SIG) 
     ).
 
 Definition split_phrase : Term :=
   att P1 ( 
     bseq (ALL, ALL)
-      (asp (ASPC (asp_paramsC attest1_id (JSON_Object []) P1 sys_targ)))
-      (asp (ASPC (asp_paramsC attest2_id (JSON_Object []) P1 sys_targ)))
+      (asp (ASPC (asp_paramsC attest1_id (micro_args_system) P1 sys_targ)))
+      (asp (ASPC (asp_paramsC attest2_id (micro_args_system) P1 sys_targ)))
     ).
 
 
@@ -147,7 +170,7 @@ Definition meas_micro (model_args:ASP_ARGS) (system_args:ASP_ARGS) : Term :=
 
 Definition micro_appTerm : Term := 
   lseq
-    (meas_micro (JSON_Object []) (JSON_Object []))
+    (meas_micro (micro_args_system) (micro_args_system))
     appr_term.
 
 (*
@@ -202,15 +225,16 @@ Definition provision_micro_hash_2 (args:ASP_ARGS) : Term :=
     (*
     path_micro_targ2_golden). *)
 
-Open Scope string_scope.
+
+
 Definition provision_micro_hash_composite : Term := 
       (provision_dir_asp cds_config_dir_plc cds_config_1_targ  
       (*
       [("filepath-golden",  path_micro_composite_golden)]
       *)
-      (JSON_Object [])
+      (micro_args_composite)
       ).
-Close Scope string_scope.
+
 
 Definition micro_appTerm_provision (model_args:ASP_ARGS) (system_args:ASP_ARGS) : Term :=
 
@@ -254,29 +278,23 @@ Definition simple_sig : Term :=
 lseq 
 (
   lseq
-(asp (ASPC (asp_paramsC attest_id (JSON_Object []) P1 sys_targ)))
+(asp (ASPC (asp_paramsC attest_id (micro_args_system) P1 sys_targ)))
 r_ssl_sig_asp) 
 appr_term.
 
 Definition cert_resolute_phrase : Term := 
   (* att P1  *)
-      (asp (ASPC (asp_paramsC certificate_id (JSON_Object []) P1 cert_resolute_targ))).
+      (asp (ASPC (asp_paramsC certificate_id (micro_args_system) P1 cert_resolute_targ))).
 
 Close Scope cop_ent_scope.
 
 
 Definition large_output_asp_test : Term :=
-  asp (ASPC (asp_paramsC large_output_id (JSON_Object []) P1 sys_targ)).
+  asp (ASPC (asp_paramsC large_output_id (micro_args_system) P1 sys_targ)).
+
+
 
 Open Scope string_scope.
-
-Definition micro_args_model : ASP_ARGS := 
-  (JSON_Object [("filepath_golden", (JSON_String "/am-cakeml/tests/DemoFiles/goldenFiles/aadl_composite.txt"))]).
-
-Definition micro_args_system : ASP_ARGS := 
-  (JSON_Object [("filepath_golden", (JSON_String "/am-cakeml/tests/DemoFiles/goldenFiles/microkit_composite.txt"))]).
-
-
 Definition flexible_mechanisms_map := 
   [("cert", certificate_style); 
    ("cert_appr", lseq certificate_style (asp APPR)); 
