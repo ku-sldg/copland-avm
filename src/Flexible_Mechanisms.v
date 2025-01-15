@@ -1,5 +1,6 @@
-Require Import Term_Defs Flexible_Mechanisms_Vars JSON_Type.
+Require Import Term_Defs Flexible_Mechanisms_Vars JSON_Type CACL_Demo.
 Require Import List String.
+
 Import ListNotations.
 
 (* Flexible Mechanisms *)
@@ -72,6 +73,195 @@ Definition split_phrase : Term :=
       (asp (ASPC (asp_paramsC attest2_id (JSON_Object []) P1 sys_targ)))
     ).
 
+
+Open Scope cop_ent_scope.
+
+Definition appr_term : Term := (asp APPR).
+
+(*
+Definition example_appTerm : Term :=
+<{
+    (gather_config_1 (* +<+
+      query_kim_asp *)
+    (*
+    gather_config_2 +<+
+    gather_config_3 *) )
+     (* gather_config_2  *)
+     (* query_kim_asp) *)
+    
+    (* +<+
+    gather_config_2 +<+
+    gather_config_3 +<+ 
+    hash_cds_img_1) *) ->
+    appr_term
+}>.
+*)
+
+(*
+Definition example_appTerm' : Term := 
+  (asp (ASPC (asp_paramsC attest2_id [] P1 sys_targ))).
+*)
+
+Definition meas_cds : Term := 
+<{
+  (gather_config_1 +<+ 
+  gather_config_2 (* +<+
+  gather_config_3 *) )
+}>.
+
+Definition hash_micro_config_1 (args:ASP_ARGS) : Term := 
+    (hash_dir_asp cds_config_dir_plc cds_img_1_targ 
+      args).
+
+    (*
+    path_micro_targ1 path_micro_targ1_golden). *)
+
+Definition hash_micro_config_2 (args:ASP_ARGS) : Term := 
+    (hash_dir_asp cds_config_dir_plc cds_img_2_targ 
+      args).
+
+    (*
+    path_micro_targ2 path_micro_targ2_golden). *)
+
+
+Definition hash_micro_evidence : Term := 
+  (hash_evidence_asp cds_config_dir_plc cds_img_3_targ 
+    path_micro_composite_golden).
+
+Definition meas_micro (model_args:ASP_ARGS) (system_args:ASP_ARGS) : Term := 
+  lseq 
+    (
+      bseq (ALL,ALL)
+      (hash_micro_config_1 model_args)
+      (hash_micro_config_2 system_args)
+    )
+    hash_micro_evidence.
+
+(*
+<{
+  ((hash_micro_config_1 model_args) +<+ 
+   (hash_micro_config_2 system_args)) -> 
+   hash_micro_evidence
+}>.
+*)
+
+Definition micro_appTerm : Term := 
+  lseq
+    (meas_micro [] [])
+    appr_term.
+
+(*
+Definition micro_appTerm : Term :=
+<{
+    ( meas_micro ) ->
+    appr_term
+}>.
+*)
+
+Definition example_appTerm : Term :=
+<{
+    ( meas_cds ) ->
+    appr_term
+}>.
+
+Definition cds_ssl : Term :=
+<{
+    (meas_cds +<+ 
+     query_kim_asp) ->
+    r_ssl_sig_asp ->
+    appr_term
+}>. 
+
+Definition cds_tpm : Term :=
+<{
+    (meas_cds +<+ 
+     query_kim_asp) ->
+    r_tpm_sig_asp ->
+    appr_term
+}>. 
+
+(*
+Definition example_appTerm_stub : Term :=
+<{
+    (gather_config_1 +<+
+     query_kim_asp_stub ) ->
+     r_ssl_sig_asp ->
+    appr_term
+}>.
+*)
+
+Definition provision_micro_hash_1 (args:ASP_ARGS) : Term := 
+    (provision_dir_asp cds_config_dir_plc cds_config_1_targ 
+      args).
+    (* 
+    path_micro_targ1_golden). *)
+
+Definition provision_micro_hash_2 (args:ASP_ARGS) : Term := 
+    (provision_dir_asp cds_config_dir_plc cds_config_1_targ 
+      args).
+    (*
+    path_micro_targ2_golden). *)
+
+Open Scope string_scope.
+Definition provision_micro_hash_composite : Term := 
+      (provision_dir_asp cds_config_dir_plc cds_config_1_targ  
+      [("filepath-golden",  path_micro_composite_golden)]
+      ).
+Close Scope string_scope.
+
+Definition micro_appTerm_provision (model_args:ASP_ARGS) (system_args:ASP_ARGS) : Term :=
+
+  bseq (ALL,ALL)
+    (lseq 
+      (hash_micro_config_1 model_args)
+      (provision_micro_hash_1 model_args))
+    (bseq (ALL,ALL)
+      (lseq 
+      (hash_micro_config_2 system_args)
+      (provision_micro_hash_1 system_args))
+
+      (lseq 
+      (meas_micro model_args system_args)
+      (provision_micro_hash_composite))
+    ).
+    (*
+  <{
+    (hash_micro_config_1 -> provision_micro_hash_1) +<+ 
+    (hash_micro_config_2 -> provision_micro_hash_2) +<+ 
+    (meas_micro -> provision_micro_hash_composite)
+  }>.
+  *)
+
+(*
+Definition micro_appTerm_provision : Term :=
+  <{
+    (hash_micro_config_1 -> provision_micro_hash_1) +<+ 
+    (hash_micro_config_2 -> provision_micro_hash_2) +<+ 
+    (meas_micro -> provision_micro_hash_composite)
+  }>.
+*)
+
+Definition example_appTerm_provision : Term :=
+<{
+    (gather_config_1 -> provision_config_1) +<+
+    (gather_config_2 -> provision_config_2)
+}>.
+
+Definition simple_sig : Term := 
+lseq 
+(
+  lseq
+(asp (ASPC (asp_paramsC attest_id [] P1 sys_targ)))
+r_ssl_sig_asp) 
+appr_term.
+
+Definition cert_resolute_phrase : Term := 
+  (* att P1  *)
+      (asp (ASPC (asp_paramsC certificate_id [] P1 cert_resolute_targ))).
+
+Close Scope cop_ent_scope.
+
+
 Definition large_output_asp_test : Term :=
   asp (ASPC (asp_paramsC large_output_id (JSON_Object []) P1 sys_targ)).
 
@@ -86,6 +276,25 @@ Definition flexible_mechanisms_map :=
    ("parmut2", parallel_mutual_2); 
    ("layered_bg", layered_background_check); 
    ("filehash", filehash_auth_phrase);
+   ("cds_simple", example_appTerm);
+   ("cds_provision", example_appTerm_provision);
+   (*
+   ("cert_resolute_app", lseq cert_resolute_phrase (asp APPR));
+   *)
+   ("cds_ssl", cds_ssl);
+   ("cds_tpm", cds_tpm);
+   ("cds_provision", example_appTerm_provision);
+   ("simple_sig", simple_sig);
+   ("micro", (lseq (micro_appTerm_provision [] []) (asp APPR)) );
+   ("micro_provision", (micro_appTerm_provision [] []));
+   (*
+   ("cert_resolute_app", lseq cert_resolute_phrase (asp APPR));
+   *)
+   
+   (* ;
+   ("cds", cds_demo_phrase);
+   ("cds_appr", lseq cds_demo_phrase (asp APPR))  ]. *)
+   
    ("large_output", large_output_asp_test)].
 
 Definition add_EvidenceT_flexible_mechanisms := 

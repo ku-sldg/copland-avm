@@ -46,6 +46,8 @@ Definition errStr_invalid_request_type := "errStr_invalid_request_type".
 
 Definition errStr_negotiation_not_implemented := "errStr_negotiation_not_implemented".
 
+Definition errStr_appsumm_not_implemented := "errStr_appraisal_summary_not_implemented".
+
 (* Run CVM Error Strings *)
 Definition errStr_run_cvm_at_error_dynamic := "errStr_run_cvm_at_error_dynamic".
 
@@ -96,6 +98,8 @@ Definition errStr_json_to_manifest := "errStr_json_to_manifest".
 Definition errStr_json_to_ASP_Locator := "errStr_json_to_ASP_Locator".
 
 Definition errStr_json_to_am_lib := "errStr_json_to_am_lib".
+
+Definition errStr_json_to_pair : string := "errStr_json_to_pair".
 
 Definition errStr_map_from_json := "errStr_map_from_json".
 

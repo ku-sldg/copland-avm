@@ -1,5 +1,6 @@
-Require Import JSON Term_Defs Attestation_Session.
+Require Import JSON Term_Defs Attestation_Session AppraisalSummary.
 Require Export Interface_Strings_Vars.
+
 
 
 (* Interface Types *)
@@ -42,6 +43,27 @@ Record ASPRunResponse :=
     asprresp_success: bool;
     asprresp_rawev: RawEv;
   }.
+
+Record AppraisalSummaryRequest := 
+  mkAppSummReq {
+    appsummreq_att_sess : Attestation_Session;
+    appsummreq_Evidence: Evidence;
+  }.
+
+Record AppraisalSummaryResponse := 
+  mkAppSummResp {
+    appsummresp_success: bool;
+    appsummresp_summary: AppraisalSummary;
+  }.
+
+(*
+Definition do_AppraisalSummary (et:EvidenceT) (r:RawEv) (G:GlobalContext) (m:RawEvJudgement) : ResultT AppraisalSummary string := 
+    do_AppraisalSummary' et r G m []. 
+
+
+Inductive Evidence :=
+| evc: RawEv -> EvidenceT -> Evidence.
+*)
 
 (* Record ASPInfoRequest := 
   mkASPIReq {

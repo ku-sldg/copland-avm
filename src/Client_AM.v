@@ -10,25 +10,177 @@ Require Import Maps Attestation_Session Interface.
 
 Require Import ErrorStringConstants Manifest_Admits.
 
-Require Import AM_Helpers.
+Require Import AM_Helpers AppraisalSummary CACL_Demo.
+
+Require Import Flexible_Mechanisms_Vars Flexible_Mechanisms RawEvJudgement_Admits.
+
+Require Import Resolute_Types Resolute_JSON.
 
 Import ListNotations ErrNotation.
+
+Import ResultNotation.
 
 Definition am_sendReq (att_sess : Attestation_Session) (req_plc : Plc) 
     (e : Evidence) (t:Term) (toPlc : Plc) : ResultT RawEv string :=
   let req := (mkPRReq att_sess req_plc e t) in 
-  let js := to_JSON req in
-  let resp_res := make_JSON_Network_Request uuid js in
-  match resp_res with
-  | resultC js_res =>
-      match from_JSON js_res with
+  let m :=  Plc_Mapping att_sess in 
+    match (map_get toPlc m) with 
+    | None => errC errStr_remote_am_failure (* TODO: better errStr here *)
+    | Some uuid =>  
+
+      let js := to_JSON req in
+      let resp_res := make_JSON_Network_Request uuid js in 
+      match resp_res with 
       | errC msg => errC msg
-      | resultC res =>
-        let '(mkPRResp success ev) := res in
-        if success then resultC ev else errC errStr_remote_am_failure
+      | resultC js_res => 
+          match from_JSON js_res with
+          | errC msg => errC msg
+          | resultC res =>
+            let '(mkPRResp success (evc ev _)) := res in
+            if success then resultC ev else errC errStr_remote_am_failure
+          end
       end
-  | errC msg => errC msg
+    end.
+
+Definition am_client_app_summary (att_sess : Attestation_Session) (req_plc : Plc) 
+(e : Evidence) (t:Term) (toPlc : Plc) : ResultT AppraisalSummary string :=
+  match (am_sendReq att_sess req_plc e t toPlc) with 
+  | errC msg => errC msg 
+  | resultC rawev => 
+      let glob_ctx := (ats_context att_sess) in 
+      match e with 
+      | evc _ et => 
+        et' <- eval glob_ctx toPlc et t ;;
+        do_AppraisalSummary et' rawev glob_ctx example_RawEvJudgement
+      end
   end.
+
+
+(* Client_AM logic for Resolute related things *)
+
+Require Import Resolute_Logic.
+
+
+Definition am_client_do_res (att_sess : Attestation_Session) (req_plc:Plc) 
+  (toPlc:Plc) (M : Model) (r:Resolute) (m:Map TargetT Evidence) : ResultT ResoluteResponse string :=
+
+  let '(t, pol) := res_to_copland M r m in
+    let appr_t : Term := lseq t (asp APPR) in
+      rawev <- am_sendReq att_sess req_plc mt_evc appr_t toPlc ;;
+      let glob_ctx := (ats_context att_sess) in  
+        et' <- eval glob_ctx toPlc mt_evt appr_t ;;
+        let b := (pol (evc rawev et')) in 
+        resultC (mkResoluteResp b r t).
+
+Definition micro_res_asp_type_env : ASP_Type_Env := 
+    [(hash_file_contents_id, (ev_arrow EXTEND InAll (OutN 1)));
+    (appr_hash_file_contents_id, (ev_arrow REPLACE InAll (OutN 1)));
+    (hash_evidence_id, (ev_arrow EXTEND InAll (OutN 1)))].
+
+Definition micro_res_asp_compat_mapt : ASP_Compat_MapT := 
+  [(hash_file_contents_id, appr_hash_file_contents_id);
+   (hash_evidence_id, appr_hash_file_contents_id)  
+  ].
+
+Open Scope string_scope.
+Definition res_policy_passed_string (s:string) : bool :=
+  eqb s "I JUDGE YOU GOLDEN !!!!!".
+  (* eqb s "SSBKVURHRSBZT1UgR09MREVOICEhISEh". *) (* "I JUDGE YOU GOLDEN !!!!!" in base64 *)
+  (* eqb s "UEFTU0VE". (* "PASSED" in base64 *) *)
+Close Scope string_scope.
+
+Definition res_policy_appSummary (e:Evidence) (G:GlobalContext) (m:RawEvJudgement) : ResultT bool string :=
+  match e with 
+  | evc rawEv et => (* resultC true  *)
+      app_summary <- do_AppraisalSummary et rawEv G m ;;
+      let ls := get_all_summary_strings app_summary in 
+      let b := check_strings_list_bool ls res_policy_passed_string in 
+      resultC b 
+  end.
+
+Definition micro_res_policy (e:Evidence) (G:GlobalContext) (m:RawEvJudgement) : bool :=
+  match (res_policy_appSummary e G m) with 
+  | resultC b => b 
+  | _ => false 
+  end.
+
+Definition micro_resolute_example_context : GlobalContext := 
+      {| asp_types := micro_res_asp_type_env;
+         asp_comps := micro_res_asp_compat_mapt |}.
+
+(*
+Definition resolute_example_rawev_judgement : RawEvJudgement := 
+  [(certificate_id, [(cert_resolute_targ, ex_targJudgement_fun')])].
+*)
+
+Definition micro_resolute_example_rawev_judgement : RawEvJudgement := 
+    [(appr_hash_file_contents_id, [(cds_img_3_targ, ex_targJudgement_fun')]);
+     (appr_hash_file_contents_id, [(cds_img_2_targ, ex_targJudgement_fun')]);
+     (appr_hash_file_contents_id, [(cds_img_1_targ, ex_targJudgement_fun')])].
+
+Definition micro_resolute_model (model_args:ASP_ARGS) (system_args:ASP_ARGS) : Model := 
+{| conc := (fun _ => (meas_micro model_args system_args)); 
+    spec := (fun _ e => (micro_res_policy 
+                          e 
+                          micro_resolute_example_context 
+                          example_RawEvJudgement)) ; 
+    context := micro_resolute_example_context |}.
+
+Definition micro_resolute_statement : Resolute := 
+    R_Goal (micro_resolute_targ).
+
+
+
+
+(*
+     Definition cert_res_asp_type_env : ASP_Type_Env := 
+      [(certificate_id, (ev_arrow EXTEND InAll (OutN 1)));
+      (appraise_id, (ev_arrow REPLACE InAll (OutN 1)))].
+      
+    Definition cert_res_asp_compat_mapt : ASP_Compat_MapT := 
+      [(certificate_id, appraise_id)].
+
+      Definition resolute_example_context : GlobalContext := 
+  {| asp_types := cert_res_asp_type_env;
+     asp_comps := cert_res_asp_compat_mapt |}.
+
+Definition cert_resolute_model : Model := 
+ {| conc := (fun _ => (cert_resolute_phrase)); 
+     spec := (fun _ e => (cert_res_policy e resolute_example_context resolute_example_rawev_judgement)) ; 
+     context := resolute_example_context |}.
+
+     Definition cert_resolute_statement : Resolute := 
+  R_Goal (cert_resolute_targ).
+  *)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*
+
+(* START:  Old Client_AM code ... *)
 
 Definition am_sendReq_app (uuid : UUID) (att_sess : Attestation_Session) (t:Term) (p:Plc) (e:EvidenceT) (ev:RawEv) : 
     ResultT AppResultC string :=
@@ -97,6 +249,13 @@ Definition am_appraise (att_sess : Attestation_Session) (t:Term) (toPlc:Plc) (in
   let expected_et := eval t toPlc init_et in
   app_res <- gen_appraise_AM expected_et cvm_ev ;; *)
   err_ret (app_res).
+
+
+
+
+*)
+
+
 
 
 
@@ -227,6 +386,12 @@ Definition check_disclosure_policy (t:Term) (p:Plc) (e:EvidenceT) : AM unit :=
 
   ret (am_appev app_res).
 *)
+
+
+
+
+
+(*
 
 Fixpoint nonce_ids_et' (et:EvidenceT) (ls:list N_ID) : list N_ID :=
   match et with
@@ -590,3 +755,5 @@ Proof.
 
   ff.
 Qed.
+
+*)
