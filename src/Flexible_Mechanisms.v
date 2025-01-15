@@ -147,7 +147,7 @@ Definition meas_micro (model_args:ASP_ARGS) (system_args:ASP_ARGS) : Term :=
 
 Definition micro_appTerm : Term := 
   lseq
-    (meas_micro [] [])
+    (meas_micro (JSON_Object []) (JSON_Object []))
     appr_term.
 
 (*
@@ -205,7 +205,10 @@ Definition provision_micro_hash_2 (args:ASP_ARGS) : Term :=
 Open Scope string_scope.
 Definition provision_micro_hash_composite : Term := 
       (provision_dir_asp cds_config_dir_plc cds_config_1_targ  
+      (*
       [("filepath-golden",  path_micro_composite_golden)]
+      *)
+      (JSON_Object [])
       ).
 Close Scope string_scope.
 
@@ -251,13 +254,13 @@ Definition simple_sig : Term :=
 lseq 
 (
   lseq
-(asp (ASPC (asp_paramsC attest_id [] P1 sys_targ)))
+(asp (ASPC (asp_paramsC attest_id (JSON_Object []) P1 sys_targ)))
 r_ssl_sig_asp) 
 appr_term.
 
 Definition cert_resolute_phrase : Term := 
   (* att P1  *)
-      (asp (ASPC (asp_paramsC certificate_id [] P1 cert_resolute_targ))).
+      (asp (ASPC (asp_paramsC certificate_id (JSON_Object []) P1 cert_resolute_targ))).
 
 Close Scope cop_ent_scope.
 
@@ -266,6 +269,14 @@ Definition large_output_asp_test : Term :=
   asp (ASPC (asp_paramsC large_output_id (JSON_Object []) P1 sys_targ)).
 
 Open Scope string_scope.
+
+Definition micro_args_model : ASP_ARGS := 
+  (JSON_Object [("filepath_golden", (JSON_String "/am-cakeml/tests/DemoFiles/goldenFiles/aadl_composite.txt"))]).
+
+Definition micro_args_system : ASP_ARGS := 
+  (JSON_Object [("filepath_golden", (JSON_String "/am-cakeml/tests/DemoFiles/goldenFiles/microkit_composite.txt"))]).
+
+
 Definition flexible_mechanisms_map := 
   [("cert", certificate_style); 
    ("cert_appr", lseq certificate_style (asp APPR)); 
@@ -285,8 +296,8 @@ Definition flexible_mechanisms_map :=
    ("cds_tpm", cds_tpm);
    ("cds_provision", example_appTerm_provision);
    ("simple_sig", simple_sig);
-   ("micro", (lseq (micro_appTerm_provision [] []) (asp APPR)) );
-   ("micro_provision", (micro_appTerm_provision [] []));
+   ("micro", (lseq (micro_appTerm_provision micro_args_model  micro_args_system) (asp APPR)) );
+   ("micro_provision", (micro_appTerm_provision micro_args_model micro_args_system));
    (*
    ("cert_resolute_app", lseq cert_resolute_phrase (asp APPR));
    *)

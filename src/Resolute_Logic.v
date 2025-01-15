@@ -3,7 +3,7 @@
 Require Export String Maps EqClass ResultT.
 Require Export List.
 
-Require Import Term_Defs_Core Term_Defs_Core_Ops Cvm_Utils.
+Require Import Term_Defs_Core Term_Defs_Core_Ops Cvm_Utils JSON_Type.
 
 Require Import ID_Type.
 
@@ -111,7 +111,7 @@ Definition mt_TARG_ID : Plc := "mtTarg".
 Close Scope string.
 
 Definition mtTerm : Term := 
-  asp (ASPC (asp_paramsC mt_ASP_ID [] mt_Plc mt_TARG_ID)).
+  asp (ASPC (asp_paramsC mt_ASP_ID (JSON_Object []) mt_Plc mt_TARG_ID)).
 
 
 Record Model := {

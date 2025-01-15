@@ -75,9 +75,12 @@ Definition r_ssl_sig_appr_id : ASP_ID := "appraise_r_sig".
 Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID) (path:string) (appr_path:string) : Term := 
     (asp (ASPC (* ALL (EXTD 1)  *)
                (asp_paramsC 
-                    gather_file_contents_id 
+                    gather_file_contents_id
+                    (JSON_Object [])
+                    (*
                     [("filepath", path); 
                      ("filepath-golden", appr_path)] 
+                     *)
                     targPlc 
                     targId ))).
 
@@ -85,8 +88,11 @@ Definition hash_targ_asp (targPlc:Plc) (targId:TARG_ID) (path:string) (appr_path
     (asp (ASPC (* ALL (EXTD 1) *)
                 (asp_paramsC 
                     hash_file_contents_id 
+                    (*
                     [("filepath", path); 
                      ("filepath-golden", appr_path)]
+                     *)
+                     (JSON_Object [])
                     targPlc 
                     targId ))).
 
@@ -102,7 +108,10 @@ Definition provision_targ_asp (targPlc:Plc) (targId:TARG_ID) (path:string) : Ter
     (asp (ASPC (* ALL (EXTD 1)  *)
                 (asp_paramsC 
                     provision_id 
+                    (*
                     [("filepath", path)] 
+                    *)
+                    (JSON_Object [])
                     targPlc 
                     targId ))).
 
@@ -118,7 +127,10 @@ Definition hash_evidence_asp (targPlc:Plc) (targId:TARG_ID) (appr_path:string) :
     (asp (ASPC (* ALL (EXTD 1) *)
                 (asp_paramsC 
                     hash_evidence_id 
+                    (*
                     [ ("filepath-golden", appr_path)] 
+                     *)
+                    (JSON_Object [])
                     targPlc 
                     targId ))).
 
@@ -226,28 +238,31 @@ Definition meas_cds_phrase : Term :=
 }>.
 
 Definition query_kim_args : ASP_ARGS := 
+    (*
     [(query_kim_dynammic_arg_id, query_kim_dynammic_arg_val);
      (query_kim_appraisal_dir_arg_id, query_kim_appraisal_dir_arg_val)].
+     *)
+     (JSON_Object []).
 
 Definition query_kim_asp : Term := 
     (asp (ASPC (asp_paramsC query_kim_id query_kim_args cds_query_kim_plc kim_evidence_targ))).
 
 Definition ssl_sig_asp : Term := 
-    (asp (ASPC (asp_paramsC ssl_sig_id [] cds_query_kim_plc ssl_sig_targ))).
+    (asp (ASPC (asp_paramsC ssl_sig_id (JSON_Object []) cds_query_kim_plc ssl_sig_targ))).
 
 Definition r_ssl_sig_asp : Term := 
-        (asp (ASPC (asp_paramsC r_ssl_sig_id [] cds_query_kim_plc ssl_sig_targ))).
+        (asp (ASPC (asp_paramsC r_ssl_sig_id (JSON_Object []) cds_query_kim_plc ssl_sig_targ))).
 
 Definition query_kim_asp_stub : Term := 
-        (asp (ASPC (asp_paramsC query_kim_stub_id [] cds_query_kim_plc kim_evidence_targ))).
+        (asp (ASPC (asp_paramsC query_kim_stub_id (JSON_Object []) cds_query_kim_plc kim_evidence_targ))).
 
 Definition appr_cds_asp : Term := 
-    (asp (ASPC (asp_paramsC appr_cds_id [] P1 sys_targ))).
+    (asp (ASPC (asp_paramsC appr_cds_id (JSON_Object []) P1 sys_targ))).
 
 Definition sig_asp : Term := asp SIG.
 
 Definition r_tpm_sig_asp : Term := 
-        (asp (ASPC (asp_paramsC tpm_sig_id [] cds_query_kim_plc ssl_sig_targ))).
+        (asp (ASPC (asp_paramsC tpm_sig_id (JSON_Object []) cds_query_kim_plc ssl_sig_targ))).
 
 Definition cds_demo_phrase : Term := 
 <{
