@@ -2,7 +2,7 @@
     datatypes, manily EvidenceT.  Includes decidability of equality lemmas.
 *) 
 
-Require Import ID_Type EqClass Term_Defs.
+Require Import ID_Type EqClass Term_Defs JSON_Type.
 
 Require Import StructTactics.
 
@@ -43,7 +43,7 @@ Qed.
 Global Instance Eq_Class_Resource_ID_Arg_Type : EqClass Resource_ID_Arg. Admitted.
 *)
 
-Definition eqb_asp_params `{H : EqClass ID_Type} (ap1 ap2 : ASP_PARAMS) : bool :=
+Definition eqb_asp_params `{H : EqClass ID_Type} `{EqClass ASP_ARGS} (ap1 ap2 : ASP_PARAMS) : bool :=
   match ap1, ap2 with
   | (asp_paramsC a1 la1 p1 t1), (asp_paramsC a2 la2 p2 t2) =>
       andb (eqb_aspid a1 a2) 
@@ -71,17 +71,19 @@ Proof.
 Defined.
 
 
-Definition eq_asp_params_dec `{H : EqClass ID_Type} : 
+Definition eq_asp_params_dec `{H : EqClass ID_Type} `{H1 : EqClass ASP_ARGS} : 
   forall x y: ASP_PARAMS, {x = y} + {x <> y}.
 Proof.
   intros.
   decide equality; subst;
   eapply EqClass_impl_DecEq; eauto.
+  (*
   eapply EqClass_extends_to_list; eauto.
   eapply pair_EqClass.
+  *)
 Defined.
 
-Lemma eqb_eq_asp_params `{H : EqClass ID_Type} : forall  a a0 ,
+Lemma eqb_eq_asp_params `{H : EqClass ID_Type} `{EqClass ASP_ARGS} : forall  a a0 ,
     eqb_asp_params a a0 = true <->
     a = a0.
 Proof.
@@ -96,12 +98,12 @@ Proof.
   eapply eqb_eq; eauto.
 Qed.
 
-Global Instance EqClassASP_PARAMS `{H : EqClass ID_Type} : EqClass ASP_PARAMS := {
+Global Instance EqClassASP_PARAMS `{H : EqClass ID_Type} `{EqClass ASP_ARGS} : EqClass ASP_PARAMS := {
   eqb := eqb_asp_params ;
   eqb_eq := eqb_eq_asp_params
 }.
 
-Definition eq_EvidenceT_dec : forall `{H : EqClass ID_Type},
+Definition eq_EvidenceT_dec : forall `{H : EqClass ID_Type} `{EqClass ASP_ARGS},
   forall x y : EvidenceT, {x = y} + {x <> y}.
 Proof.
   intros.
@@ -111,22 +113,22 @@ Proof.
   eapply eq_asp_params_dec.
 Qed.
 
-Definition eqb_EvidenceT `{H : EqClass ID_Type} (x y : EvidenceT): bool :=
-  if @eq_EvidenceT_dec H x y then true else false.
+Definition eqb_EvidenceT `{H : EqClass ID_Type} `{H1 : EqClass ASP_ARGS} (x y : EvidenceT): bool :=
+  if @eq_EvidenceT_dec H H1 x y then true else false.
 
-Lemma eqb_eq_EvidenceT `{H : EqClass ID_Type} : forall x y,
+Lemma eqb_eq_EvidenceT `{H : EqClass ID_Type} `{EqClass ASP_ARGS} : forall x y,
   eqb_EvidenceT x y = true <-> x = y.
 Proof.
   unfold eqb_EvidenceT; intuition; 
   destruct eq_EvidenceT_dec; eauto; congruence.
 Qed.
 
-Global Instance EqClass_EvidenceT `{H : EqClass ID_Type} : EqClass EvidenceT := {
+Global Instance EqClass_EvidenceT `{H : EqClass ID_Type} `{EqClass ASP_ARGS} : EqClass EvidenceT := {
   eqb := eqb_EvidenceT ;
   eqb_eq := eqb_eq_EvidenceT
 }.
 
-Definition eq_term_dec : forall `{H : EqClass ID_Type},
+Definition eq_term_dec : forall `{H : EqClass ID_Type} `{EqClass ASP_ARGS},
   forall x y : Term, {x = y} + {x <> y}.
 Proof.
   intros.
@@ -142,22 +144,22 @@ Proof.
   - destruct s, s0, s, s1, s0, s2; eauto; try (right; intros HC; congruence).
 Qed.
 
-Definition eqb_term `{H : EqClass ID_Type} (x y : Term): bool :=
-  if @eq_term_dec H x y then true else false.
+Definition eqb_term `{H : EqClass ID_Type} `{H1 : EqClass ASP_ARGS} (x y : Term): bool :=
+  if @eq_term_dec H H1 x y then true else false.
 
-Lemma eqb_eq_term `{H : EqClass ID_Type} : forall x y,
+Lemma eqb_eq_term `{H : EqClass ID_Type} `{EqClass ASP_ARGS}  : forall x y,
   eqb_term x y = true <-> x = y.
 Proof.
   unfold eqb_term; intuition;
   destruct eq_term_dec; eauto; congruence.
 Qed.
 
-Global Instance EqClass_Term `{H : EqClass ID_Type} : EqClass Term := {
+Global Instance EqClass_Term `{H : EqClass ID_Type} `{EqClass ASP_ARGS} : EqClass Term := {
   eqb := eqb_term ;
   eqb_eq := eqb_eq_term
 }.
 
-Definition eq_ev_dec: forall `{H : EqClass ID_Type},
+Definition eq_ev_dec: forall `{H : EqClass ID_Type} `{EqClass ASP_ARGS},
   forall x y: Ev, {x = y} + {x <> y}.
 Proof.
   intuition; subst; eauto;
