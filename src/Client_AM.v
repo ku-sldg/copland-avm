@@ -118,8 +118,8 @@ Definition micro_resolute_example_rawev_judgement : RawEvJudgement :=
      (appr_hash_file_contents_id, [(cds_img_2_targ, ex_targJudgement_fun')]);
      (appr_hash_file_contents_id, [(cds_img_1_targ, ex_targJudgement_fun')])].
 
-Definition micro_resolute_model (model_args:ASP_ARGS) (system_args:ASP_ARGS) : Model := 
-{| conc := (fun _ => (meas_micro model_args system_args)); 
+Definition micro_resolute_model (model_args:ASP_ARGS) (* (system_args:ASP_ARGS) *) : Model := 
+{| conc := (fun _ => (meas_micro model_args (*system_args*))); 
     spec := (fun _ e => (micro_res_policy 
                           e 
                           micro_resolute_example_context 

@@ -168,7 +168,7 @@ Definition hash_micro_evidence : Term :=
   (hash_evidence_asp cds_config_dir_plc cds_img_3_targ 
     path_micro_composite_golden).
 
-Definition meas_micro (model_args:ASP_ARGS) (system_args:ASP_ARGS) : Term := 
+Definition meas_micro (model_args:ASP_ARGS) (* (system_args:ASP_ARGS) *) : Term := 
   lseq 
     (
       (* bseq (ALL,ALL) *)
@@ -189,7 +189,7 @@ Definition meas_micro (model_args:ASP_ARGS) (system_args:ASP_ARGS) : Term :=
 
 Definition micro_appTerm : Term := 
   lseq
-    (meas_micro (micro_args_system) (micro_args_system))
+    (meas_micro (micro_args_system) (* (micro_args_system) *))
     appr_term.
 
 (*
@@ -254,7 +254,7 @@ Definition provision_micro_hash_composite : Term :=
       (micro_args_composite)
       ).
 
-Definition micro_appTerm_provision (model_args:ASP_ARGS) (system_args:ASP_ARGS) : Term :=
+Definition micro_appTerm_provision (model_args:ASP_ARGS) (* (system_args:ASP_ARGS) *) : Term :=
 
 bseq (ALL,ALL)
   (lseq 
@@ -262,7 +262,7 @@ bseq (ALL,ALL)
     (provision_micro_hash_1 micro_args_union))
 
     (lseq 
-    (meas_micro micro_args_union system_args)
+    (meas_micro micro_args_union (* system_args *) )
     (provision_micro_hash_composite)).
 
 
@@ -349,8 +349,8 @@ Definition flexible_mechanisms_map :=
    ("cds_tpm", cds_tpm);
    ("cds_provision", example_appTerm_provision);
    ("simple_sig", simple_sig);
-   ("micro", (lseq (micro_appTerm_provision micro_args_model  micro_args_system) (asp APPR)) );
-   ("micro_provision", (micro_appTerm_provision micro_args_model micro_args_system));
+   ("micro", (lseq (micro_appTerm_provision micro_args_model  (* micro_args_system *) ) (asp APPR)) );
+   ("micro_provision", (micro_appTerm_provision micro_args_model (* micro_args_system *) ));
    (*
    ("cert_resolute_app", lseq cert_resolute_phrase (asp APPR));
    *)
