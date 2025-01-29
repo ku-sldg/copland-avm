@@ -18,7 +18,7 @@ University of California.  See license.txt for details. *)
 
 Require Export BS.
 
-Require Import List ID_Type Maps JSON Stringifiable Stringifiable_Class_Admits StructTactics ErrorStringConstants.
+Require Import List ID_Type Maps JSON Stringifiable Stringifiable_Class_Admits StructTactics ErrorStringConstants JSON_Type.
 Require Import EqClass.
 
 Require Import Lia.
@@ -41,7 +41,7 @@ Definition Event_ID: Set := nat.
 *)
 Definition ASP_ID: Set := ID_Type.
 Definition ASP_Compat_MapT := Map ASP_ID ASP_ID.
-Definition ASP_ARGS := Map string string.
+Definition ASP_ARGS := JSON. (* Map string string. *)
 
 Definition TARG_ID: Set := ID_Type.
 
@@ -544,7 +544,7 @@ Module Test_Unwrap_Wrap.
 
   Example test_get_evidence_under_unwrap_wrap_1 : forall v,
     apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'] 
-      (asp_evt P1 (asp_paramsC X nil T_PLC TARG) v) = resultC v.
+      (asp_evt P1 (asp_paramsC X (JSON_Object []) T_PLC TARG) v) = resultC v.
   Proof.
     ff; str_rew.
     destruct v; simpl in *; eauto.
@@ -552,8 +552,8 @@ Module Test_Unwrap_Wrap.
 
   Example test_get_evidence_under_unwrap_wrap_2 : forall v,
     apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'; Trail_UNWRAP Y'] 
-      (asp_evt P1 (asp_paramsC X nil T_PLC TARG) (
-        asp_evt P2 (asp_paramsC Y nil T_PLC TARG) v)) = resultC v.
+      (asp_evt P1 (asp_paramsC X (JSON_Object []) T_PLC TARG) (
+        asp_evt P2 (asp_paramsC Y (JSON_Object []) T_PLC TARG) v)) = resultC v.
   Proof.
     ff; str_rew.
     destruct v; simpl in *; eauto.
@@ -563,18 +563,18 @@ Module Test_Unwrap_Wrap.
   
   Example test_get_evidence_under_unwrap_wrap_3 : forall v,
     apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'] 
-      (asp_evt P1 (asp_paramsC X nil T_PLC TARG) (
-        asp_evt P2 (asp_paramsC Y nil T_PLC TARG) v)) 
-    = resultC (asp_evt P2 (asp_paramsC Y nil T_PLC TARG) v).
+      (asp_evt P1 (asp_paramsC X (JSON_Object []) T_PLC TARG) (
+        asp_evt P2 (asp_paramsC Y (JSON_Object []) T_PLC TARG) v)) 
+    = resultC (asp_evt P2 (asp_paramsC Y (JSON_Object []) T_PLC TARG) v).
   Proof.
     ff; str_rew.
   Qed.
 
   Example test_get_evidence_under_unwrap_wrap_4 : forall v,
     apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'] 
-      ( asp_evt P2 (asp_paramsC Y' nil T_PLC TARG) 
-        (asp_evt P2 (asp_paramsC Y nil T_PLC TARG) 
-        (asp_evt P1 (asp_paramsC X nil T_PLC TARG) v)))
+      ( asp_evt P2 (asp_paramsC Y' (JSON_Object []) T_PLC TARG) 
+        (asp_evt P2 (asp_paramsC Y (JSON_Object []) T_PLC TARG) 
+        (asp_evt P1 (asp_paramsC X (JSON_Object []) T_PLC TARG) v)))
     = resultC v.
   Proof.
     ff.
@@ -585,8 +585,8 @@ Module Test_Unwrap_Wrap.
 
   Example test_get_evidence_under_unwrap_wrap_5 : forall v,
     apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'; Trail_UNWRAP Y'] 
-      (asp_evt P1 (asp_paramsC X nil T_PLC TARG) (
-        left_evt (split_evt (asp_evt P2 (asp_paramsC Y nil T_PLC TARG) v) mt_evt))) 
+      (asp_evt P1 (asp_paramsC X (JSON_Object []) T_PLC TARG) (
+        left_evt (split_evt (asp_evt P2 (asp_paramsC Y (JSON_Object []) T_PLC TARG) v) mt_evt))) 
     = resultC v.
   Proof.
     ff; str_rew.
@@ -597,8 +597,8 @@ Module Test_Unwrap_Wrap.
 
   Example test_get_evidence_under_unwrap_wrap_6 : forall v,
     apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'; Trail_UNWRAP Y'] 
-      (asp_evt P1 (asp_paramsC X nil T_PLC TARG) (
-        right_evt (split_evt mt_evt (asp_evt P2 (asp_paramsC Y nil T_PLC TARG) v)))) 
+      (asp_evt P1 (asp_paramsC X (JSON_Object []) T_PLC TARG) (
+        right_evt (split_evt mt_evt (asp_evt P2 (asp_paramsC Y (JSON_Object []) T_PLC TARG) v)))) 
     = resultC v.
   Proof.
     ff; str_rew.
@@ -714,7 +714,7 @@ Notation "#" := (asp HSH) (in custom copland_entry at level 98).
 Notation "* p" := (asp (ENC p)) (in custom copland_entry at level 98).
 Notation "'{}'" := (asp NULL) (in custom copland_entry at level 98).
 (* TODO: Surely we need something more robust than they are ALL EXTD 1, but uhhhh *)
-Notation "'<<' x y z '>>'" := (asp (ASPC (asp_paramsC x nil y z))) 
+Notation "'<<' x y z '>>'" := (asp (ASPC (asp_paramsC x (JSON_Object []) y z))) 
                       (in custom copland_entry at level 98).
 
 

@@ -871,52 +871,12 @@ Definition well_formed_context (G : GlobalContext) : Prop :=
   map_get enc_aspid (asp_types G) = Some (ev_arrow WRAP InAll (OutN 1)) /\
   map_get check_nonce_aspid (asp_types G) = Some (ev_arrow EXTEND InAll (OutN 1)).
 
-Lemma eqb_ASP_PARAMS_eq : forall a1 a2,
-  eqb_ASP_PARAMS a1 a2 = true <-> a1 = a2.
-Proof.
-  induction a1; destruct a2; ff;
-  repeat rewrite Bool.andb_true_iff in *; ff;
-  repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
-  repeat rewrite String.eqb_eq in *; ff;
-  repeat rewrite EqClass.general_list_eqb_eq in *; ff.
-Qed.
-
-Lemma eqb_EvidenceT_eq : forall e1 e2,
-  eqb_EvidenceT e1 e2 = true <-> e1 = e2.
-Proof.
-  induction e1; destruct e2; ff;
-  repeat rewrite Bool.andb_true_iff in *; ff;
-  repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
-  repeat rewrite String.eqb_eq in *; ff;
-  try erewrite IHe1 in *; ff;
-  repeat rewrite eqb_ASP_PARAMS_eq in *; ff;
-  repeat rewrite IHe1_1 in *; ff;
-  repeat rewrite IHe1_2 in *; ff.
-Qed.
-
 Lemma invoke_ASP_evidence : forall e par st sc e' st' sc',
   invoke_ASP e par st sc = (resultC e', st', sc') ->
   get_et e' = asp_evt (session_plc sc) par (get_et e).
 Proof.
   cvm_monad_unfold; ff.
 Qed.
-
-(* Lemma split_evidence_res_spec : forall e st st' et1 et2 e1 e2 sc sc',
-  split_evidence e et1 et2 st sc = (resultC (e1, e2), st', sc') ->
-  exists r,
-  e = evc r (split_evt et1 et2) /\
-  (exists r1 r2, (e1,e2) = (evc r1 et1, evc r2 et2) /\ r = r1 ++ r2).
-Proof.
-  intros.
-  destruct st; simpl in *; ff.
-  unfold split_evidence in *;
-  cvm_monad_unfold; ff.
-  repeat rewrite PeanoNat.Nat.eqb_eq in *; ff;
-  repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff;
-  repeat rewrite app_nil_r in *;
-  repeat rewrite eqb_EvidenceT_eq in *; ff;
-  destruct e; ff; eexists; intuition; eauto.
-Qed. *)
 
 Theorem invoke_APPR'_evidence : forall G et st r sc sc' st' e' e eo,
   G = session_context sc ->
@@ -1374,9 +1334,7 @@ Proof.
     try eapply Hesp0; subst.
     econstructor; ff.
   - simpl in *; ff; cvm_monad_unfold; ff.
-    (* unfold split_evidence in *; cvm_monad_unfold; ff; *)
     repeat find_eapply_lem_hyp peel_n_rawev_result_spec; ff;
-    repeat rewrite eqb_EvidenceT_eq in *; ff;
     repeat rewrite app_nil_r in *; ff.
     eapply invoke_APPR_config_immut in Heqp1 as ?; ff.
     eapply invoke_APPR_config_immut in Heqp2 as ?; ff.

@@ -70,6 +70,15 @@ Proof.
   jsonifiable_hammer; subst; try lia.
 Defined.
 
+Global Instance Jsonifiable_ASP_ARGS : Jsonifiable ASP_ARGS. 
+eapply Build_Jsonifiable with 
+  (to_JSON := (fun x => x)) 
+  (from_JSON := (fun x => resultC x)).
+intuition; simpl in *;
+jsonifiable_hammer.
+Defined.
+
+
 Definition ASP_PARAMS_to_JSON `{Jsonifiable ASP_ARGS} (t : ASP_PARAMS) : JSON := 
     match t with
     | asp_paramsC asp_id args plc targ_id => 
