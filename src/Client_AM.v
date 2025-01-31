@@ -60,11 +60,41 @@ Definition am_client_app_summary (att_sess : Attestation_Session) (req_plc : Plc
 
 Require Import Resolute_Logic.
 
+(*
+Inductive Resolute_Term : Type :=
+  | R_Goal_T (t:TargetT) (args: JSON) (t:Term)
+  | R_And_T (G1 : Resolute_Term) (G2 : Resolute_Term)
+  | R_Or_T (G1 : Resolute_Term) (G2 : Resolute_Term).
+
+Inductive Resolute_Evidence : Type :=
+  | R_Goal_E (t:TargetT) (args: JSON) (e:Evidence)
+  | R_And_E (G1 : Resolute_Evidence) (G2 : Resolute_Evidence)
+  | R_Or_E (G1 : Resolute_Evidence) (G2 : Resolute_Evidence).
+*)
+
+Fixpoint run_resolute_term (rt : Resolute_Term) (att_sess:Attestation_Session) (req_plc:Plc) (toPlc:Plc) : ResultT Resolute_Evidence string := 
+  match rt with 
+  | R_Goal_T tid args t => 
+    (* TODO: consider pushing appraisal (APPR) to Resolute-To-Copland translator config *)
+    let appr_t : Term := lseq t (asp APPR) in
+    rawev <- am_sendReq att_sess req_plc mt_evc appr_t toPlc ;;
+    et' <- eval (ats_context att_sess) toPlc mt_evt appr_t ;;
+    resultC (R_Goal_E tid args (evc rawev et')) 
+  | R_And_T t1 t2 => 
+    e1 <- run_resolute_term t1 att_sess req_plc toPlc ;; 
+    e2 <- run_resolute_term t2 att_sess req_plc toPlc ;;
+    resultC (R_And_E e1 e2)
+  | R_Or_T t1 t2 => 
+    e1 <- run_resolute_term t1 att_sess req_plc toPlc ;; 
+    e2 <- run_resolute_term t2 att_sess req_plc toPlc ;;
+    resultC (R_Or_E e1 e2)
+  end.
+
 
 Definition am_client_do_res (att_sess : Attestation_Session) (req_plc:Plc) 
-  (toPlc:Plc) (M : Model) (r:Resolute) (m:Map TargetT Evidence) : ResultT ResoluteResponse string :=
+  (toPlc:Plc) (M : Model) (r:Resolute_Formula) : ResultT ResoluteResponse string :=
 
-  let '(t, pol) := res_to_copland M r m in
+  let '(t, pol) := res_to_copland M r in
     let appr_t : Term := lseq t (asp APPR) in
       rawev <- am_sendReq att_sess req_plc mt_evc appr_t toPlc ;;
       let glob_ctx := (ats_context att_sess) in  

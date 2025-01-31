@@ -648,7 +648,7 @@ Global Instance Jsonifiable_RawEv : Jsonifiable RawEv.
                   (rawev_name_constant, JSON_Array (map (fun bs => JSON_String (to_string bs)) ev))
                 ]))
   (from_JSON := (fun js => 
-                  match (JSON_get_Array rawev_name_constant js) with
+                  match (JSON_get_Object rawev_name_constant js) with
                   | resultC js' => 
                       result_map (fun js' => 
                                     match js' with

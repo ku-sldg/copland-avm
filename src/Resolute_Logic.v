@@ -12,19 +12,35 @@ Import ListNotations.
 
 Definition TargetT := ID_Type.
 
-Inductive Resolute : Type :=
-  | R_False
-  | R_True
-  | R_Goal (t:TargetT) (* (args:list Args) *)
-  | R_And (G1 : Resolute) (G2 : Resolute)
-  | R_Or (G1 : Resolute) (G2 : Resolute)
+Inductive Resolute_Formula : Type :=
+  | R_Goal (t:TargetT) (args: JSON)
+  | R_And (G1 : Resolute_Formula) (G2 : Resolute_Formula)
+  | R_Or (G1 : Resolute_Formula) (G2 : Resolute_Formula).
+
+Inductive Resolute_Term : Type :=
+  | R_Goal_T (t:TargetT) (args: JSON) (t:Term)
+  | R_And_T (G1 : Resolute_Term) (G2 : Resolute_Term)
+  | R_Or_T (G1 : Resolute_Term) (G2 : Resolute_Term).
+
+Inductive Resolute_Evidence : Type :=
+  | R_Goal_E (t:TargetT) (args: JSON) (e:Evidence)
+  | R_And_E (G1 : Resolute_Evidence) (G2 : Resolute_Evidence)
+  | R_Or_E (G1 : Resolute_Evidence) (G2 : Resolute_Evidence).
+
+Inductive Resolute_Judgement : Type :=
+| R_Goal_J (t:TargetT) (args: JSON) (b:bool)
+| R_And_J (G1 : Resolute_Judgement) (G2 : Resolute_Judgement)
+| R_Or_J (G1 : Resolute_Judgement) (G2 : Resolute_Judgement).
+
+  (*
   | R_Imp (G1 : Resolute) (G2 : Resolute).
+  *)
   (*
   | R_Forall (ls:list TargetT)  (G : TargetT -> Resolute)
   | R_Exists (ls:list TargetT) (G : TargetT -> Resolute).
   *)
 
-Definition Assumption := Resolute.
+Definition Assumption := Resolute_Formula.
 Definition Assumptions := list (Assumption).
 
 (* Extending Assumptions operation (Comma operator in Sequent Calculus).  
@@ -32,12 +48,14 @@ Definition Assumptions := list (Assumption).
 Definition Comma (ls:Assumptions) (ls':Assumptions) : Assumptions.
 Admitted.
 
-Inductive Reval : Assumptions -> Resolute -> Prop :=
+Inductive Reval : Assumptions -> Resolute_Formula -> Prop :=
+(*
   | Reval_L : forall A R,
     In R_False A -> Reval A R
 
   | Reval_R : forall A,
     Reval A R_True
+    *)
 
   | Reval_ID : forall A R, 
     Reval (Comma A [R]) R
@@ -58,8 +76,9 @@ Inductive Reval : Assumptions -> Resolute -> Prop :=
   | Reval_Or_Elim : forall A R1 R2 R3, 
     Reval (Comma A [R1]) R3 -> 
     Reval (Comma A [R2]) R3 -> 
-    Reval (Comma A [R_Or R1 R2]) R3
+    Reval (Comma A [R_Or R1 R2]) R3.
 
+    (*
   | Reval_Imp_Intro : forall A R1 R2, 
     Reval (Comma A [R1]) R2 -> 
     Reval A (R_Imp R1 R2)
@@ -68,6 +87,7 @@ Inductive Reval : Assumptions -> Resolute -> Prop :=
     Reval A R1 -> 
     Reval (Comma A [R2]) R3 -> 
     Reval (Comma A [R_Imp R1 R2]) R3.
+    *)
 
     (*
   | Reval_Forall_Intro : forall (A:Assumptions) 
@@ -117,7 +137,6 @@ Definition mtTerm : Term :=
 Record Model := {
   conc : TargetT -> Term ;
   spec : TargetT -> (Evidence -> bool) ;
-  context : GlobalContext
 }.
 
 (*
@@ -133,6 +152,8 @@ Inductive Evidence :=
 Import ResultNotation.
 
 Definition err_str_split_evidence_not_split' := "Error in split_t*, type of evidence passed into a split is not a split evidence type"%string.
+
+(*
 
 Definition split_t1 (M:Model) (e:Evidence) : ResultT Evidence string :=
   match e with 
@@ -170,19 +191,50 @@ Definition split_t2_default (M:Model) (e:Evidence) : Evidence :=
   | _ => evc [] (get_et e)
   end.
 
+*)
 
-Fixpoint res_to_copland (M : Model) (r:Resolute) (m:Map TargetT Evidence) 
-  : (Term * (Evidence -> bool)) :=
+(*
+  Record Model := {
+    conc : TargetT -> Term ;
+    spec : TargetT -> (Evidence -> bool) ;
+    context : GlobalContext
+  }.
+*)
+
+Open Scope string_scope.
+Fixpoint res_to_copland (M : Model) (r:Resolute_Formula)
+  : (Resolute_Term * (Resolute_Evidence -> Resolute_Judgement)) :=
   match r with 
-  | R_False => (mtTerm, fun _ => false)
-  | R_True =>  (mtTerm, fun _ => true)
+  | (R_Goal tid args) => 
+     ((R_Goal_T tid args (conc M tid)),
+      (fun re => 
+        match re with 
+        | R_Goal_E _ _ e => R_Goal_J tid args (spec M tid e)
+        | _ => R_Goal_J tid args false  (* TODO: structural failure handling OK here? *)
+        end)
+      )
+  | R_And r1 r2 => 
+      let '(t1, pol1) := res_to_copland M r1 in
+      let '(t2, pol2) := res_to_copland M r2 in
+      ((R_And_T t1 t2),
+       fun e => R_And_J (pol1 e) (pol2 e))
 
-  | (R_Goal tid) => 
-     match (map_get tid m) with 
-     | None => (conc M tid, fun e => (spec M tid e))
-     | Some e => (mtTerm, fun _ => (spec M tid e))
-     end
+  | R_Or r1 r2 => 
+       let '(t1, pol1) := res_to_copland M r1 in
+       let '(t2, pol2) := res_to_copland M r2 in
+       ((R_And_T t1 t2),
+        fun e => R_Or_J (pol1 e) (pol2 e))
+  end.
 
+Fixpoint res_judgement_to_bool (rj:Resolute_Judgement) : bool := 
+  match rj with
+  | R_Goal_J _ _ b => b 
+  | R_And_J j1 j2 => andb (res_judgement_to_bool j1) (res_judgement_to_bool j2) 
+  | R_Or_J j1 j2 => orb (res_judgement_to_bool j1) (res_judgement_to_bool j2) 
+  end.
+
+
+  (*
   | R_And r1 r2 => 
     let '(t1, pol1) := res_to_copland M r1 m in
     let '(t2, pol2) := res_to_copland M r2 m in
@@ -200,3 +252,5 @@ Fixpoint res_to_copland (M : Model) (r:Resolute) (m:Map TargetT Evidence)
     let '(t1, pol1) := res_to_copland M r1 m in
     (t1, fun e => pol1 e)
     end.
+
+  *)
