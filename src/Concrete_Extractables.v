@@ -1,4 +1,4 @@
-Require Import Manifest JSON Manifest_JSON Attestation_Session Term_Defs JSON_Core.
+Require Import Manifest JSON Manifest_JSON Attestation_Session Term_Defs JSON_Core Resolute_Types Resolute_JSON.
 Require Import List.
 Import ListNotations.
 
@@ -30,5 +30,9 @@ solve [typeclasses eauto].
 Defined.
 
 Definition concrete_Jsonifiable_ASP_ARGS : Jsonifiable ASP_ARGS.
+solve [typeclasses eauto].
+Defined.
+
+Definition concrete_Jsonifiable_ResoluteResponse : Jsonifiable ResoluteResponse.
 solve [typeclasses eauto].
 Defined.

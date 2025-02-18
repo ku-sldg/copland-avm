@@ -90,17 +90,28 @@ Fixpoint run_resolute_term (rt : Resolute_Term) (att_sess:Attestation_Session) (
     resultC (R_Or_E e1 e2)
   end.
 
+(*
+Fixpoint res_to_copland (M : Model) (r:Resolute_Formula)
+  : (Resolute_Term * (Resolute_Evidence -> Resolute_Judgement)) :=
+*)
+
 
 Definition am_client_do_res (att_sess : Attestation_Session) (req_plc:Plc) 
   (toPlc:Plc) (M : Model) (r:Resolute_Formula) : ResultT ResoluteResponse string :=
 
-  let '(t, pol) := res_to_copland M r in
-    let appr_t : Term := lseq t (asp APPR) in
+  let '(rt, pol) := res_to_copland M r in
+    resolute_ev <- run_resolute_term rt att_sess req_plc toPlc ;;
+    let resolute_judgement := pol resolute_ev in 
+    resultC (mkResoluteResp resolute_judgement r rt).
+   (* let appr_t : Term := lseq t (asp APPR) in 
+
       rawev <- am_sendReq att_sess req_plc mt_evc appr_t toPlc ;;
+      
       let glob_ctx := (ats_context att_sess) in  
         et' <- eval glob_ctx toPlc mt_evt appr_t ;;
         let b := (pol (evc rawev et')) in 
         resultC (mkResoluteResp b r t).
+    *)
 
 Definition micro_res_asp_type_env : ASP_Type_Env := 
     [(hash_file_contents_id, (ev_arrow EXTEND InAll (OutN 1)));
@@ -153,11 +164,11 @@ Definition micro_resolute_model (model_args:ASP_ARGS) (* (system_args:ASP_ARGS) 
     spec := (fun _ e => (micro_res_policy 
                           e 
                           micro_resolute_example_context 
-                          example_RawEvJudgement)) ; 
-    context := micro_resolute_example_context |}.
+                          example_RawEvJudgement)) (* ; 
+    context := micro_resolute_example_context *) |}.
 
-Definition micro_resolute_statement : Resolute := 
-    R_Goal (micro_resolute_targ).
+Definition micro_resolute_statement : Resolute_Formula := 
+    R_Goal micro_resolute_targ (JSON_Object []).
 
 
 
