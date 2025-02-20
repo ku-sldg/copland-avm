@@ -12,6 +12,12 @@ Import ListNotations.
 
 Definition TargetT := ID_Type.
 
+(* 
+  Resolute_Formula ==> [res-to-copland] ==> (Resolute_Term, Resolute_Policy)
+  Resolute_Term    ==> [run_resolute_term] ==> Resolute_Evidence 
+  (Resolute_Evidence, Resolute_Policy) ==> [resolute_judgement] ==> Resolute_Judgement
+*)
+
 Inductive Resolute_Formula : Type :=
   | R_Goal (t:TargetT) (args: JSON)
   | R_And (G1 : Resolute_Formula) (G2 : Resolute_Formula)
