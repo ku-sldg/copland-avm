@@ -180,6 +180,20 @@ Definition example_RawEvJudgement : RawEvJudgement :=
     gen_rawEvJudgement example_RawEvJudgement_ls.
 
 
+Definition cds_RawEvJudgement_ls : list single_add_type := 
+    [
+        (appr_gather_file_contents_id, (cds_config_1_targ, ex_targJudgement_fun'));
+        (appr_gather_file_contents_id, (cds_config_2_targ, ex_targJudgement_fun'));
+        (appr_query_kim_id, (kim_evidence_targ, ex_targJudgement_fun'));
+        (appr_hash_file_contents_id, (cds_img_1_targ, ex_targJudgement_fun'));
+        (appr_hash_file_contents_id, (cds_img_2_targ, ex_targJudgement_fun'));
+        (r_ssl_sig_appr_id, (ssl_sig_targ, ex_targJudgement_fun'));
+        (tpm_sig_appr_id, (tpm_sig_targ, ex_targJudgement_fun'));
+        (appr_selinux_pol_dump_id, (selinux_policy_targ, ex_targJudgement_fun'))
+    ].
+
+Definition cds_RawEvJudgement : RawEvJudgement := 
+    gen_rawEvJudgement cds_RawEvJudgement_ls.
 
 Global Instance AppraisalSummaryJsonifiable `{Stringifiable ASP_ID, Stringifiable (Map TARG_ID string)} : Jsonifiable AppraisalSummary.
 eapply Build_Jsonifiable with 

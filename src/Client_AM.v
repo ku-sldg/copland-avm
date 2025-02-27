@@ -47,7 +47,7 @@ Definition am_client_app_summary (att_sess : Attestation_Session) (req_plc : Plc
       match e with 
       | evc _ et => 
         et' <- eval glob_ctx toPlc et t ;;
-        do_AppraisalSummary et' rawev glob_ctx example_RawEvJudgement
+        do_AppraisalSummary et' rawev glob_ctx cds_RawEvJudgement
       end
   end.
 

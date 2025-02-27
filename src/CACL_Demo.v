@@ -21,8 +21,10 @@ Definition cds_config_dir_plc : Plc := "cds_config_dir_plc".
 Definition cds_query_kim_plc : Plc := "cds_query_kim_plc".
 
 (* TARG IDs *)
-Definition kim_evidence_targ : TARG_ID := "kim_evidence_targ".
+Definition kim_evidence_targ : TARG_ID := "kernal_module_targ".
+Definition selinux_policy_targ : TARG_ID := "selinux_policy_targ".
 Definition ssl_sig_targ : TARG_ID := "ssl_sig_targ".
+Definition tpm_sig_targ : TARG_ID := "tpm_sig_targ".
 
 Definition in_targ  : TARG_ID := "in_targ".
 Definition out_targ : TARG_ID := "out_targ".
@@ -43,11 +45,11 @@ Definition cds_flags_3_targ : TARG_ID := "cds_flags_3_targ".
 Definition cds_controller_dir_targ : TARG_ID := "cds_controller_dir_targ".
 Definition cds_controller_exe_targ : TARG_ID := "cds_controller_exe_targ".
 
-Definition cds_config_1_targ : TARG_ID := "cds_config_1_targ".
-Definition cds_config_2_targ : TARG_ID := "cds_config_2_targ".
+Definition cds_config_1_targ : TARG_ID := "cds_rewrite_config_targ".
+Definition cds_config_2_targ : TARG_ID := "cds_filter_config_2_targ".
 Definition cds_config_3_targ : TARG_ID := "cds_config_3_targ".
-Definition cds_img_1_targ : TARG_ID := "cds_img_1_targ".
-Definition cds_img_2_targ : TARG_ID := "cds_img_2_targ".
+Definition cds_img_1_targ : TARG_ID := "cds_rewrite_img_targ".
+Definition cds_img_2_targ : TARG_ID := "cds_filter_img_targ".
 Definition cds_img_3_targ : TARG_ID := "cds_img_3_targ".
 
 (* ASP IDs *)
@@ -188,7 +190,7 @@ Definition hash_cds_img_2 : Term :=
      path_exe_targ2 path_exe_targ2_golden).
 
 Definition selinux_hash_pol : Term := 
-(selinux_hash_asp cds_config_dir_plc cds_img_2_targ).
+(selinux_hash_asp cds_config_dir_plc selinux_policy_targ).
 
 
 Definition provision_config_1 : Term := 
@@ -249,7 +251,7 @@ Definition appr_cds_asp : Term :=
 Definition sig_asp : Term := asp SIG.
 
 Definition r_tpm_sig_asp : Term := 
-        (asp (ASPC (asp_paramsC tpm_sig_id (JSON_Object []) cds_query_kim_plc ssl_sig_targ))).
+        (asp (ASPC (asp_paramsC tpm_sig_id (JSON_Object []) cds_query_kim_plc tpm_sig_targ))).
 
 Definition cds_demo_phrase : Term := 
 <{
