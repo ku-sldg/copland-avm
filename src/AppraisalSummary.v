@@ -142,20 +142,22 @@ Fixpoint do_AppraisalSummary' (et:EvidenceT) (r:RawEv) (G:GlobalContext)
         end.
 
 Definition do_AppraisalSummary (et:EvidenceT) (r:RawEv) (G:GlobalContext) (m:RawEvJudgement) : ResultT AppraisalSummary string := 
-    do_AppraisalSummary' et r G m []. 
+    do_AppraisalSummary' et r G m [].  
 
 Open Scope string_scope.
 
-Definition single_add_type := (ASP_ID * (TARG_ID * (RawEv -> string)))%type.
+Definition RawEvJudgement_Entry := (ASP_ID * (TARG_ID * (RawEv -> string)))%type.
 
-Definition addOne_rawEvJudgement (a:RawEvJudgement) (b:single_add_type) : RawEvJudgement := 
+Definition addOne_rawEvJudgement (a:RawEvJudgement) (b:RawEvJudgement_Entry) : RawEvJudgement := 
     let aid := fst b in 
     let tid := fst (snd b) in 
     let f := snd (snd b) in 
     add_RawEvJudgement aid tid f a.
 
-Definition gen_rawEvJudgement (ls:list single_add_type) : RawEvJudgement := 
+Definition gen_rawEvJudgement (ls:list RawEvJudgement_Entry) : RawEvJudgement := 
     fold_left addOne_rawEvJudgement ls [].
+
+(*
 
 Definition example_RawEvJudgement_ls : list single_add_type := 
     [
@@ -174,6 +176,7 @@ Definition example_RawEvJudgement_ls : list single_add_type :=
         (tpm_sig_appr_id, (ssl_sig_targ, ex_targJudgement_fun'));
         (appr_selinux_pol_dump_id, (cds_img_2_targ, ex_targJudgement_fun'))
     ].
+
 
 
 Definition example_RawEvJudgement : RawEvJudgement := 
@@ -195,6 +198,41 @@ Definition cds_RawEvJudgement_ls : list single_add_type :=
 Definition cds_RawEvJudgement : RawEvJudgement := 
     gen_rawEvJudgement cds_RawEvJudgement_ls.
 
+*)
+
+(*
+Definition RawEvJudgement_Entry := (ASP_ID * (TARG_ID * (RawEv -> string)))%type.
+*)
+Definition rawEvJudgement_from_EvidenceT''' (s:string) (x: ASP_ID * TARG_ID) : RawEvJudgement_Entry :=
+    let v := fst x in 
+    let v' := snd x in 
+    (v, (v', (ex_targJudgement_fun' s))).
+
+Definition asp_params_to_rawev_ids (ps:ASP_PARAMS) : (ASP_ID * TARG_ID) := 
+    match ps with 
+    | asp_paramsC i _ _ tid => (i, tid)
+    end.
+
+Fixpoint rawEvJudgement_from_EvidenceT''_helper (et:EvidenceT) (ls:list (ASP_ID * TARG_ID)) : list (ASP_ID * TARG_ID) := 
+    match et with 
+    | asp_evt _ ps et' => rawEvJudgement_from_EvidenceT''_helper et' ((asp_params_to_rawev_ids ps) :: ls)
+    | left_evt et' => rawEvJudgement_from_EvidenceT''_helper et' ls
+    | right_evt et' => rawEvJudgement_from_EvidenceT''_helper et' ls
+    | split_evt et1 et2 =>  rawEvJudgement_from_EvidenceT''_helper et2 (rawEvJudgement_from_EvidenceT''_helper et1 ls)
+    | _ => ls
+    end.
+
+Definition rawEvJudgement_from_EvidenceT'' (et:EvidenceT) : list (ASP_ID * TARG_ID) :=
+    rawEvJudgement_from_EvidenceT''_helper et [].
+
+Definition rawEvJudgement_from_EvidenceT' (s:string) (et:EvidenceT) : list RawEvJudgement_Entry := 
+    map (rawEvJudgement_from_EvidenceT''' s) (rawEvJudgement_from_EvidenceT'' et).
+
+Definition rawEvJudgement_from_EvidenceT (s:string) (et:EvidenceT) : RawEvJudgement := 
+    gen_rawEvJudgement (rawEvJudgement_from_EvidenceT' s et).
+
+
+
 Global Instance AppraisalSummaryJsonifiable `{Stringifiable ASP_ID, Stringifiable (Map TARG_ID string)} : Jsonifiable AppraisalSummary.
 eapply Build_Jsonifiable with 
 (to_JSON := map_serial_serial_to_JSON)
@@ -205,3 +243,5 @@ eauto.
 Qed.
 
 Definition test_app_summary_compute_json (x:AppraisalSummary) : JSON := to_JSON x.
+
+Close Scope string_scope.

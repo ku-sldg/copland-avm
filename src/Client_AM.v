@@ -39,7 +39,7 @@ Definition am_sendReq (att_sess : Attestation_Session) (req_plc : Plc)
     end.
 
 Definition am_client_app_summary (att_sess : Attestation_Session) (req_plc : Plc) 
-(e : Evidence) (t:Term) (toPlc : Plc) : ResultT AppraisalSummary string :=
+(e : Evidence) (t:Term) (toPlc : Plc) (passed_string:string) : ResultT AppraisalSummary string :=
   match (am_sendReq att_sess req_plc e t toPlc) with 
   | errC msg => errC msg 
   | resultC rawev => 
@@ -47,7 +47,8 @@ Definition am_client_app_summary (att_sess : Attestation_Session) (req_plc : Plc
       match e with 
       | evc _ et => 
         et' <- eval glob_ctx toPlc et t ;;
-        do_AppraisalSummary et' rawev glob_ctx cds_RawEvJudgement
+        let rawEvJudgement := (rawEvJudgement_from_EvidenceT passed_string et') in
+        do_AppraisalSummary et' rawev glob_ctx rawEvJudgement (* cds_RawEvJudgement *)
       end
   end.
 
