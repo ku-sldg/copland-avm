@@ -36,3 +36,11 @@ Defined.
 Definition concrete_Jsonifiable_ResoluteResponse : Jsonifiable ResoluteResponse.
 solve [typeclasses eauto].
 Defined.
+
+Definition concrete_Jsonifiable_Resolute_Client_Response : Jsonifiable Resolute_Client_Response.
+solve [typeclasses eauto].
+Defined.
+
+Definition concrete_Jsonifiable_Resolute_Client_Result : Jsonifiable Resolute_Client_Result.
+solve [typeclasses eauto].
+Defined.

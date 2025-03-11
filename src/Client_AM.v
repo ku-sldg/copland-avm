@@ -90,13 +90,20 @@ Fixpoint run_resolute_term (rt : Resolute_Term) (att_sess:Attestation_Session) (
     resultC (R_Or_E e1 e2)
   end.
 
+Definition run_resolute_id (t : Term) (att_sess : Attestation_Session) (req_plc:Plc) (toPlc:Plc) : ResultT Evidence string := 
+  let appr_t : Term := lseq t (asp APPR) in
+  rawev <- am_sendReq att_sess req_plc mt_evc appr_t toPlc ;;
+  et' <- eval (ats_context att_sess) toPlc mt_evt appr_t ;;
+  resultC (evc rawev et').
+
+
 (*
 Fixpoint res_to_copland (M : Model) (r:Resolute_Formula)
   : (Resolute_Term * (Resolute_Evidence -> Resolute_Judgement)) :=
 *)
 
-
-Definition am_client_do_res (att_sess : Attestation_Session) (req_plc:Plc) 
+(*
+Definition am_client_do_res_old (att_sess : Attestation_Session) (req_plc:Plc) 
   (toPlc:Plc) (M : Model) (r:Resolute_Formula) : ResultT ResoluteResponse string :=
 
   let '(rt, pol) := res_to_copland M r in
@@ -112,7 +119,53 @@ Definition am_client_do_res (att_sess : Attestation_Session) (req_plc:Plc)
         let b := (pol (evc rawev et')) in 
         resultC (mkResoluteResp b r t).
     *)
+*)
 
+Record Term_Model := {
+  term_conc : string -> Term ;
+}.
+
+Fixpoint add_term_args (t:Term) (args:JSON) : Term :=
+  match t with 
+  | asp a => 
+    match a with 
+    | ASPC (asp_paramsC i _ p tid) => 
+      asp (ASPC (asp_paramsC i args p tid))
+    | _ => asp a 
+    end 
+  | att q t' => att q (add_term_args t' args) 
+  | lseq t1 t2 => lseq (add_term_args t1 args) (add_term_args t2 args)
+  | bseq s t1 t2 => bseq s (add_term_args t1 args) (add_term_args t2 args)
+  | bpar s t1 t2 => bpar s (add_term_args t1 args) (add_term_args t2 args)
+  end.
+
+Definition good_bs : BS := passed_bs.
+
+Check forallb.
+
+Definition judge_evidence (e:Evidence) : bool := 
+  match e with
+  | evc rawev _ => forallb (fun bs => eqb bs good_bs) rawev 
+  end.
+
+(*
+(t : Term) (att_sess : Attestation_Session) (req_plc:Plc) (toPlc:Plc)
+*)
+Definition am_client_do_res (att_sess : Attestation_Session) (req_plc:Plc) 
+  (toPlc:Plc) (M : Term_Model) (req:Resolute_Client_Request) : ResultT Resolute_Client_Result string :=
+
+  (* let '(rt, pol) := res_to_copland M r in *)
+  let rt := ((term_conc M) (resclientreq_attest_id req)) in
+  let rt_w_args := add_term_args rt (resclientreq_args req) in
+  let maybe_ev := run_resolute_id rt_w_args att_sess req_plc toPlc in 
+  match maybe_ev with 
+  | resultC e => 
+      let judgement := judge_evidence e in
+        (resultC (mkResoluteClientResult rt_w_args e judgement ""))
+  | errC errStr => resultC (mkResoluteClientResult rt_w_args mt_evc false errStr)
+  end.
+
+Definition hi : nat := O.
 Definition micro_res_asp_type_env : ASP_Type_Env := 
     [(hash_file_contents_id, (ev_arrow EXTEND InAll (OutN 1)));
     (appr_hash_file_contents_id, (ev_arrow REPLACE InAll (OutN 1)));
@@ -171,6 +224,11 @@ Definition micro_resolute_statement : Resolute_Formula :=
     R_Goal micro_resolute_targ (JSON_Object []).
 
 
+Definition micro_resolute_term_model : Term_Model := 
+  {| term_conc := (fun _ => (meas_micro')); |}.
+
+Definition micro_resolute_client_req (att_id : string) (args:JSON) (res_path : string) : Resolute_Client_Request := 
+  mkResoluteClientReq att_id args res_path.
 
 
 (*

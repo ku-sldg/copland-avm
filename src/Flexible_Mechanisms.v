@@ -179,6 +179,13 @@ Definition meas_micro (model_args:ASP_ARGS) (* (system_args:ASP_ARGS) *) : Term 
     )
     hash_micro_evidence.
 
+Definition meas_micro' : Term := 
+  lseq 
+    (
+      (hash_micro_config_1 micro_args_union)
+    )
+    hash_micro_evidence.
+
 (*
 <{
   ((hash_micro_config_1 model_args) +<+ 
@@ -246,15 +253,18 @@ Definition provision_micro_hash_2 (args:ASP_ARGS) : Term :=
 
 
 
-Definition provision_micro_hash_composite : Term := 
-      (provision_dir_asp cds_config_dir_plc cds_config_1_targ  
-      (*
-      [("filepath-golden",  path_micro_composite_golden)]
-      *)
-      (micro_args_composite)
+Definition provision_micro_hash_composite (args:ASP_ARGS) : Term := 
+      (provision_dir_asp cds_config_dir_plc cds_config_1_targ
+        args
+
+     (* (micro_args_composite) *)
       ).
 
-Definition micro_appTerm_provision (model_args:ASP_ARGS) (* (system_args:ASP_ARGS) *) : Term :=
+Definition micro_appTerm_provision (args:ASP_ARGS) : Term :=
+  lseq meas_micro' (provision_micro_hash_composite args).
+
+
+(*
 
 bseq (ALL,ALL)
   (lseq 
@@ -264,6 +274,8 @@ bseq (ALL,ALL)
     (lseq 
     (meas_micro micro_args_union (* system_args *) )
     (provision_micro_hash_composite)).
+
+*)
 
 
 (*

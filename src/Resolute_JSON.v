@@ -30,6 +30,17 @@ Definition r_goal_j_name_constant : string := "R_Goal_J".
 Definition r_and_j_name_constant : string := "R_And_J".
 Definition r_or_j_name_constant : string := "R_Or_J".
 
+Definition STR_RESOLUTE_CLIENT_ATTEST_ID : string := "ResClientReq_attest_id".
+Definition STR_RESOLUTE_CLIENT_ATTEST_ARGS : string := "ResClientReq_attest_args".
+Definition STR_RESOLUTE_CLIENT_RESULT_PATH : string := "ResClientReq_result_path".
+
+Definition STR_RESOLUTE_CLIENT_RESPONSE_SUCCESS : string := "ResClientRespSuccess".
+
+Definition STR_RESOLUTE_CLIENT_RESULT_TERM : string := "ResClientResult_term".
+Definition STR_RESOLUTE_CLIENT_RESULT_EVIDENCE : string := "ResClientResult_evidence".
+Definition STR_RESOLUTE_CLIENT_RESULT_SUCCESS : string := "ResClientResult_success".
+Definition STR_RESOLUTE_CLIENT_RESULT_ERROR : string := "ResClientResult_error".
+
 Fixpoint Resolute_to_JSON (t : Resolute_Formula)  : JSON := 
   match t with
   | R_Goal tid args => constructor_to_JSON STR_RESOLUTE_FORMULA r_goal_name_constant [JSON_String (to_string tid); (to_JSON args)]
@@ -288,6 +299,97 @@ induction a;
 repeat (result_monad_unfold;
 jsonifiable_hammer; repeat rewrite canonical_jsonification in *; eauto).
 Defined.
+
+(*
+Definition STR_RESOLUTE_CLIENT_ATTEST_ID : string := "ResClientReq_attest_id".
+Definition STR_RESOLUTE_CLIENT_ATTEST_ARGS : string := "ResClientReq_attest_args".
+Definition STR_RESOLUTE_CLIENT_RESULT_PATH : string := "ResClientReq_result_path".
+*)
+
+Definition Resolute_Client_Request_to_JSON (req:Resolute_Client_Request) : JSON := 
+
+  JSON_Object 
+    [(STR_RESOLUTE_CLIENT_ATTEST_ID, (JSON_String (resclientreq_attest_id req)));
+    (STR_RESOLUTE_CLIENT_ATTEST_ARGS, (resclientreq_args req));
+    (STR_RESOLUTE_CLIENT_RESULT_PATH, (JSON_String (resclientreq_resultpath req)))].
+
+Definition Resolute_Client_Request_from_JSON
+(req:JSON) : ResultT Resolute_Client_Request string := 
+  temp_attid <- JSON_get_string STR_RESOLUTE_CLIENT_ATTEST_ID req ;;
+  temp_attargs <- JSON_get_Object STR_RESOLUTE_CLIENT_ATTEST_ARGS req ;;
+  temp_attrespath <- JSON_get_string STR_RESOLUTE_CLIENT_RESULT_PATH req ;;
+
+  resultC (mkResoluteClientReq temp_attid temp_attargs temp_attrespath).
+
+Global Instance Jsonifiable_Resolute_Client_Request: Jsonifiable Resolute_Client_Request.
+eapply Build_Jsonifiable with
+(to_JSON := Resolute_Client_Request_to_JSON)
+(from_JSON := Resolute_Client_Request_from_JSON); unfold Resolute_Client_Request_to_JSON; unfold Resolute_Client_Request_from_JSON; solve_json.
+Defined.
+
+Definition Resolute_Client_Response_to_JSON (resp:Resolute_Client_Response) : JSON := 
+
+  JSON_Object 
+    [(STR_RESOLUTE_CLIENT_RESPONSE_SUCCESS, (JSON_Boolean (resclientresp_success resp)))
+    ].
+
+Definition Resolute_Client_Response_from_JSON
+(resp:JSON) : ResultT Resolute_Client_Response string := 
+  temp_attid <- JSON_get_bool STR_RESOLUTE_CLIENT_RESPONSE_SUCCESS resp ;;
+  
+  resultC ( mkResoluteClientResp temp_attid).
+
+Global Instance Jsonifiable_Resolute_Client_Response : Jsonifiable Resolute_Client_Response.
+eapply Build_Jsonifiable with
+(to_JSON := Resolute_Client_Response_to_JSON)
+(from_JSON := Resolute_Client_Response_from_JSON); unfold Resolute_Client_Response_to_JSON; unfold Resolute_Client_Response_from_JSON; solve_json.
+Defined.
+
+(*
+Definition STR_RESOLUTE_CLIENT_RESULT_TERM : string := "ResClientResult_term".
+Definition STR_RESOLUTE_CLIENT_RESULT_EVIDENCE : string := "ResClientResult_evidence".
+Definition STR_RESOLUTE_CLIENT_RESULT_SUCCESS : string := "ResClientResult_success".
+Definition STR_RESOLUTE_CLIENT_RESULT_ERROR : string := "ResClientResult_error".
+*)
+
+Definition Resolute_Client_Result_to_JSON `{Jsonifiable Term, Jsonifiable Evidence, Jsonifiable bool} (res:Resolute_Client_Result) : JSON := 
+
+  JSON_Object 
+    [(STR_RESOLUTE_CLIENT_RESULT_TERM, (to_JSON (resclientres_term res)));
+    (STR_RESOLUTE_CLIENT_RESULT_EVIDENCE, (to_JSON (resclientres_evidence res)));
+    (STR_RESOLUTE_CLIENT_RESULT_SUCCESS, (JSON_Boolean (resclientres_success res)));
+    (STR_RESOLUTE_CLIENT_RESULT_ERROR, (JSON_String (resclientres_error_str res)))].
+
+Definition Resolute_Client_Result_from_JSON  `{Jsonifiable Term, Jsonifiable Evidence, Jsonifiable bool}
+(res:JSON) : ResultT Resolute_Client_Result string := 
+  temp_term <- JSON_get_Object STR_RESOLUTE_CLIENT_RESULT_TERM res ;;
+  temp_evid <- JSON_get_Object STR_RESOLUTE_CLIENT_RESULT_EVIDENCE res ;;
+  temp_succ <- JSON_get_bool STR_RESOLUTE_CLIENT_RESULT_SUCCESS res ;;
+  temp_err  <- JSON_get_string STR_RESOLUTE_CLIENT_RESULT_ERROR res ;;
+
+  term <- from_JSON temp_term ;;
+  evid <- from_JSON temp_evid ;;
+
+  resultC (mkResoluteClientResult term evid temp_succ temp_err).
+
+Global Instance Jsonifiable_Resolute_Client_Result  `{Jsonifiable Term, Jsonifiable Evidence, Jsonifiable bool} : Jsonifiable Resolute_Client_Result.
+eapply Build_Jsonifiable with
+(to_JSON := Resolute_Client_Result_to_JSON)
+(from_JSON := Resolute_Client_Result_from_JSON); unfold Resolute_Client_Result_to_JSON; unfold Resolute_Client_Result_from_JSON; solve_json.
+Defined.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Definition ResoluteResponse_to_JSON `{Jsonifiable Resolute_Term, Jsonifiable Resolute_Formula, Jsonifiable Resolute_Judgement} (resp:ResoluteResponse) : JSON := 
 

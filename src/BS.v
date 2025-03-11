@@ -2,11 +2,13 @@
    BS stands for "Binary String".  May be instantiated with 
    types like strings and byte buffers in concrete implementations.    *)
 
-Require Import ResultT Stringifiable. 
+Require Import ResultT Stringifiable EqClass.
 
 Definition BS : Set. Admitted.
 
 Global Instance Stringifiable_BS : Stringifiable BS. Admitted.
+
+Global Instance EqClass_BS : EqClass BS. Admitted.
 
 (* Some default/reserved BS values *)
 Definition default_bs : BS. Admitted.
