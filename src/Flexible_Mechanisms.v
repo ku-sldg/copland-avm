@@ -193,6 +193,20 @@ r_ssl_sig_asp)
 appr_term.
 
 
+Definition meas_cds_local : Term := 
+<{
+  (gather_config_1 +<+ 
+   gather_config_2 )
+}>.
+
+Definition cds_local : Term :=
+<{
+    (query_kim_asp +<+
+     meas_cds_local) ->
+    r_ssl_sig_asp ->
+    appr_term
+}>. 
+
 
 
 Close Scope cop_ent_scope.
@@ -212,6 +226,7 @@ Definition flexible_mechanisms_map :=
    ("large_output", large_output_asp_test);
    ("cds_simple", example_appTerm);
    ("cds_ssl", cds_ssl);
+   ("cds_local", cds_local);
    ("cds_tpm", cds_tpm);
    ("cds_provision", example_appTerm_provision);
    ("simple_sig", simple_sig);
