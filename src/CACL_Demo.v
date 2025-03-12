@@ -6,7 +6,7 @@ Require Import Flexible_Mechanisms_Vars.
 
 Require Import CACL_Defs CACL_Typeclasses CACL_Generator.
 
-Require Import Cvm_Utils RawEvJudgement_Admits CACL_Demo_Args.
+Require Import Cvm_Utils CACL_Demo_Args.
 
 Require Import List.
 Import ListNotations.

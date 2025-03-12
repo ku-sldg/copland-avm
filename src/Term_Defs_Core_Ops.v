@@ -22,32 +22,6 @@ Definition EvidenceT_depth : EvidenceT -> nat :=
   end.
 
 (** Calculate the size of an ASP's input based on its signature *)
-(* Definition asp_sig_et_size (previous_sig : EvSig) (sig : EvSig) 
-    : ResultT nat string :=
-  let '(ev_arrow fwd in_sig out_sig) := sig in
-  match fwd with
-  | REPLACE => 
-    (* we are replacing, so just the output *)
-    match out_sig with
-    | OutN n => n
-    | OutDepIn => errC err_str_invalid_signature
-    end
-  | WRAP => 
-    (* we are wrapping, so just the output *)
-    match out_sig with
-    | OutN n => n
-    | OutDepIn => errC err_str_invalid_signature
-    end
-  | UNWRAP => 
-    (* we are unwrapping, so we are the size of the previous input *)
-    match out_sig with
-    | OutN n => errC err_str_invalid_signature
-    | OutDepIn => size_in
-    end
-  | EXTEND => 
-    match 
-  end. *)
-
 Inductive EvTrails :=
 | Trail_UNWRAP : ASP_ID -> EvTrails
 | Trail_LEFT  : EvTrails
@@ -200,23 +174,6 @@ Definition Evidence_Subterm_path_fix G e' : list EvTrails -> EvidenceT -> Prop :
     end
   end.
 
-(* Lemma Evidence_Subterm_path_same_fix : forall G l e e',
-  Evidence_Subterm_path_fix G e' l e <->
-  Evidence_Subterm_path G e' l e.
-Proof.
-  split; intros.
-  - generalizeEverythingElse l.
-    induction e; simpl in *;
-    intuition; ff;
-    try (exfalso; eauto; fail);
-    try (eauto using Evidence_Subterm_path).
-    induction H.
-  - induction H;
-    simpl in *; ff;
-    try rewrite String.eqb_neq in *; try congruence;
-    destruct e'; ff.
-   *)
-  
 Lemma Evidence_Subterm_path_same : forall G l e e1 e2,
   Evidence_Subterm_path G e1 l e ->
   Evidence_Subterm_path G e2 l e ->
@@ -283,79 +240,6 @@ Proof.
     intros HC; invc HC; eauto.
 Qed.
 
-(* Lemma evidence_subterm_path_super : forall G e' e,
-  (exists h t, Evidence_Subterm_path G e' (h :: t) e) <->
-  Evidence_Subterm G e' e.
-Proof.
-  split; intros.
-  - induction e; simpl in *; break_exists; eauto.
-    * target_break_match H; subst; eauto;
-      try (exfalso; eauto; fail).
-      ** rewrite String.eqb_eq in *; subst.
-        destruct x0.
-    * admit.
-    * target_break_match H; subst; ff;
-      try (exfalso; eauto; fail).
-  induction e; simpl in *; intros; ff. *)
-
-
-(* Definition apply_to_evidence_below {A} (G : GlobalContext) (f : EvidenceT -> A)
-    : list EvTrails -> EvidenceT -> ResultT A string :=
-  fix F trails e :=
-  match trails with
-  | nil => (* no further trail to follow! *)
-    resultC (f e)
-  | trail :: trails' =>
-    match e with
-    | mt_evt => errC err_str_no_evidence_below
-    | nonce_evt _ => errC err_str_no_evidence_below
-
-    | asp_evt _ (asp_paramsC top_id _ _ _) et' => 
-      match (map_get top_id (asp_types G)) with
-      | None => errC err_str_asp_no_type_sig
-      | Some (ev_arrow UNWRAP in_sig out_sig) =>
-        (* we are UNWRAP, so add to trail and continue *)
-        F ((Trail_UNWRAP top_id) :: trails) et'
-
-      | Some (ev_arrow WRAP in_sig out_sig) =>
-        (* we are a WRAP, better be the case we are looking for one *)
-        match trail with
-        | Trail_UNWRAP unwrap_id => 
-          match (map_get top_id (asp_comps G)) with
-          | None => errC err_str_asp_no_compat_appr_asp
-          | Some test_unwrapping_id =>
-            if (eqb test_unwrapping_id unwrap_id) 
-            then (* they are compatible so we can continue on smaller *)
-              F trails' et'
-            else (* they are not compatible, this is a massive error *)
-              errC err_str_wrap_asp_not_duals
-          end
-        | _ => errC err_str_trail_mismatch
-        end
-
-      | Some (ev_arrow _ in_sig out_sig) =>
-        (* we are neither WRAP or UNWRAP, so this is an error *)
-        errC err_str_asp_at_bottom_not_wrap
-      end
-    | left_evt et' => 
-      (* we are pushing on a new left *)
-      F (Trail_LEFT :: trails) et'
-
-    | right_evt et' => 
-      (* we are pushing on a new right *)
-      F (Trail_RIGHT :: trails) et'
-
-    | split_evt e1 e2 => 
-      (* we are a split, depending on trail we will either go 
-      left or right and continue *)
-      match trail with
-      | Trail_LEFT => F trails' e1
-      | Trail_RIGHT => F trails' e2
-      | _ => errC err_str_trail_mismatch
-      end
-    end
-  end. *)
-
 Lemma apply_to_evidence_below_nil : forall A G (f : _ -> A) e v,
   apply_to_evidence_below G f nil e = resultC v ->
   f e = v.
@@ -363,14 +247,6 @@ Proof.
   destruct e; simpl in *; 
   intros; find_injection; eauto.
 Qed.
-
-(* Lemma apply_to_evidence_below_cons : forall A G (f : _ -> A) e t l v,
-  apply_to_evidence_below G f (t :: l) e = resultC v ->
-  apply_to_evidence_below G (fun e => r <- apply_to_evidence_below G f l) [t] e = resultC v.
-Proof.
-  intros.
-  induction e; simpl in *; try simple congruence 1; eauto.
-  - target_break_match H; subst; try simple congruence 1; eauto.  *)
 
 Lemma apply_to_evidence_below_res : forall {A} G (fn1 : _ -> A) e l r,
   apply_to_evidence_below G fn1 l e = resultC r ->
@@ -388,27 +264,6 @@ Proof.
   induction e; simpl in *; intros; ff.
 Qed.
 
-(* Lemma apply_to_evidence_below_depth_id : forall {A} G (fn : _ -> A) e l1 l2 h r,
-  apply_to_evidence_below G fn (l1 ++ h :: l2) e = resultC r ->
-  exists e', Evidence_Subterm G e' e /\
-    fn e' = r.
-Proof.
-  induction e; simpl in *; intros.
-  - ff; try (find_eapply_lem_hyp app_eq_nil; intuition; try simple congruence 1).
-  - ff; try (find_eapply_lem_hyp app_eq_nil; intuition; try simple congruence 1).
-  - ff;
-    try (find_eapply_lem_hyp app_eq_nil; intuition; try simple congruence 1).
-    * admit.
-    * admit.
-  - ff;
-    try (find_eapply_lem_hyp app_eq_nil; intuition; try simple congruence 1).
-    pose proof (IHe nil (e0 :: l) Trail_LEFT); simpl in *.
-    eapply H0 in H as ?. clear H0.
-    break_exists; ff.
-    exists x.
-    eapply IHe in H.
-    
-  induction e using EvidenceT_double_ind; intros.  *)
 Lemma evidence_subterm_path_nil : forall G e e',
   Evidence_Subterm_path G e' nil e ->
   e = e'.
@@ -509,265 +364,6 @@ Proof.
   eapply well_founded_ind; eauto.
 Qed.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(* 
-Definition apply_to_evidence_under_unwrap_wrap {A} 
-    (G : GlobalContext) (f : EvidenceT -> A)
-    : (list ASP_ID) -> EvidenceT -> ResultT A string :=
-  fix F l e :=
-  match l with
-  | nil => (* we have unwrapped all *)
-    resultC (f e)
-  | unwrapping_id :: tl => 
-    match e with
-    | asp_evt _ (asp_paramsC top_id _ _ _) et' => 
-      (* we have the following cases for "top_id":
-      1. It is typeless => error
-      2. It is an UNWRAP itself, so we must go beneath it
-      3. It is a WRAP (and compat) so we are done 
-      4. It is neither a WRAP or UNWRAP, so cannot be compat => error *)
-      match (map_get top_id (asp_types G)) with
-      (* case 1 *)
-      | None => errC err_str_asp_no_type_sig
-      (* case 2: it is an UNWRAP, so we need to get beneath it 
-        by pushing on a new UNWRAPPING_ID *)
-      | Some (ev_arrow UNWRAP in_sig out_sig) =>
-        F (top_id :: l) et'
-
-      (* case 3: it is a WRAP, so we can maybe pop off a UNWRAP ID *)
-      | Some (ev_arrow WRAP in_sig out_sig) =>
-        match (map_get top_id (asp_comps G)) with
-        | None => errC err_str_asp_no_compat_appr_asp
-        | Some test_unwrapping_id =>
-          if (eqb test_unwrapping_id unwrapping_id) 
-          then (* they are compatible so we can continue on smaller *)
-            F tl et'
-          else (* they are not compatible, this is a massive error *)
-            errC err_str_wrap_asp_not_duals
-        end
-
-      (* case 4: it is neither a WRAP or UNWRAP, but we are beneath a 
-        UNWRAP id, so this must be an error *)
-      | Some (ev_arrow _ in_sig out_sig) =>
-        errC err_str_asp_at_bottom_not_wrap
-      end
-    | left_evt et' => r <- apply_to_left_evt G (F l) et' ;; r
-    | right_evt et' => r <- apply_to_right_evt G (F l) et' ;; r
-    | _ => (* it is an evidence type that cannot be traversed below,
-      but we are in an UNWRAP still! must be an error *)
-      errC err_str_no_asp_under_evidence
-    end
-  end.
-*)
-
-(* Definition get_left_evt (G : GlobalContext) 
-    : EvidenceT -> ResultT EvidenceT string :=
-  fix F e :=
-  match e with
-  | split_evt e1 e2 => resultC e1
-  | asp_evt _ (asp_paramsC a' _ _ _) (
-      asp_evt _ (asp_paramsC a _ _ _) e'
-    ) => 
-    (* if a and a' are duals, and they are a WRAP *)
-    match (map_get a (asp_comps G)) with
-    | None => errC err_str_asp_no_compat_appr_asp
-    | Some a'' =>
-      if (eqb a' a'') 
-      then (* they are duals, is a a WRAP *)
-        match (map_get a (asp_types G)) with
-        | None => errC err_str_asp_no_type_sig
-        | Some (ev_arrow WRAP _ _) => 
-          match (map_get a' (asp_types G)) with
-          | None => errC err_str_asp_no_type_sig
-          | Some (ev_arrow UNWRAP _ _) => F e'
-          | _ => errC err_str_appr_asp_not_unwrap
-          end
-        | _ => errC err_str_asp_is_not_wrap
-        end
-      else errC (err_str_asps_not_duals)
-    end
-  | _ => errC err_str_no_possible_left_evt
-  end. *)
-
-(* 
-Definition apply_to_left_evt {A : Type} (G : GlobalContext) 
-    (f : EvidenceT -> A) : EvidenceT -> ResultT A string :=
-  fix F e :=
-  match e with
-  | split_evt e1 e2 => resultC (f e1)
-  | asp_evt _ (asp_paramsC a' _ _ _) et' =>
-    apply_to_asp_under_wrap G (F) a' et'
-    (* 
-    (* if a and a' are duals, and they are a WRAP *)
-    match (map_get a (asp_comps G)) with
-    | None => errC err_str_asp_no_compat_appr_asp
-    | Some a'' =>
-      if (eqb a' a'') 
-      then (* they are duals, is a a WRAP *)
-        match (map_get a (asp_types G)) with
-        | None => errC err_str_asp_no_type_sig
-        | Some (ev_arrow WRAP _ _) => 
-          match (map_get a' (asp_types G)) with
-          | None => errC err_str_asp_no_type_sig
-          | Some (ev_arrow UNWRAP _ _) => F e'
-          | _ => errC err_str_appr_asp_not_unwrap
-          end
-        | _ => errC err_str_asp_is_not_wrap
-        end
-      else errC (err_str_asps_not_duals)
-    end
-    *)
-  | _ => errC err_str_no_possible_left_evt
-  end.
-
-Lemma get_left_evt_correct: forall {A : Type} G e e' (fn : EvidenceT -> A),
-  get_left_evt G e = resultC e' ->
-  apply_to_left_evt G fn e = resultC (fn e').
-Proof.
-  induction e using EvidenceT_double_ind; simpl in *;
-  ff; result_monad_unfold; ff.
-Qed.
-
-Lemma apply_to_left_evt_correct: forall {A : Type} G e e' (fn : EvidenceT -> A),
-  apply_to_left_evt G fn e = resultC e' ->
-  exists e'', fn e'' = e'.
-Proof.
-  induction e using EvidenceT_double_ind; simpl in *;
-  ff; result_monad_unfold; ff.
-Qed.
-
-Lemma apply_to_left_evt_deterministic: forall {A B : Type} G e e' (fn : EvidenceT -> A) (fn' : EvidenceT -> B),
-  apply_to_left_evt G fn e = resultC e' ->
-  exists e'', apply_to_left_evt G fn' e = resultC e''.
-Proof.
-  induction e using EvidenceT_double_ind; simpl in *;
-  ff; result_monad_unfold; ff.
-Qed.
-
-Definition apply_to_right_evt {A : Type} (G : GlobalContext) 
-    (f : EvidenceT -> A) : EvidenceT -> ResultT A string :=
-  fix F e :=
-  match e with
-  | split_evt e1 e2 => resultC (f e2)
-  | asp_evt _ (asp_paramsC a' _ _ _) (
-      asp_evt _ (asp_paramsC a _ _ _) e'
-    ) => 
-    (* if a and a' are duals, and they are a WRAP *)
-    match (map_get a (asp_comps G)) with
-    | None => errC err_str_asp_no_compat_appr_asp
-    | Some a'' =>
-      if (eqb a' a'') 
-      then (* they are duals, is a a WRAP *)
-        match (map_get a (asp_types G)) with
-        | None => errC err_str_asp_no_type_sig
-        | Some (ev_arrow WRAP _ _) => 
-          match (map_get a' (asp_types G)) with
-          | None => errC err_str_asp_no_type_sig
-          | Some (ev_arrow UNWRAP _ _) => F e'
-          | _ => errC err_str_appr_asp_not_unwrap
-          end
-        | _ => errC err_str_asp_is_not_wrap
-        end
-      else errC (err_str_asps_not_duals)
-    end
-  | _ => errC err_str_no_possible_right_evt
-  end.
-*)
-
-
-(* Definition apply_to_asp_under_wrap {A : Type} (G : GlobalContext) 
-    (f : EvidenceT -> A)
-    : ASP_ID -> EvidenceT -> ResultT A string :=
-  fix F e :=
-  match e with
-  | asp_evt _ (asp_paramsC top_id _ _ _) et' => 
-    (* we have the following cases for "top_id":
-    1. It is typeless => error
-    2. It is an UNWRAP itself, so we must go beneath it
-    3. It is a WRAP (and compat) so we are done 
-    4. It is neither a WRAP or UNWRAP, so cannot be compat => error *)
-    match (map_get top_id (asp_types G)) with
-    | None => errC err_str_asp_no_type_sig
-
-    | Some (ev_arrow UNWRAP _ _) => 
-      (* This was an UNWRAP, so we need to be able to get below it *)
-
-      match et' with
-      | asp_evt _ (asp_paramsC bury_id _ _ _) et'' =>
-        match (map_get bury_id (asp_comps G)) with
-        | None => errC err_str_asp_no_compat_appr_asp
-        | Some bury_id' =>
-          if (eqb top_id bury_id') 
-          then 
-            match (map_get bury_id (asp_types G)) with
-            | None => errC err_str_asp_no_type_sig
-            | Some (ev_arrow WRAP _ _) => F et''
-            | _ => errC err_str_asp_under_unwrap
-            end
-          else errC err_str_wrap_asp_not_duals
-        end
-      | _ => errC err_str_unwrap_only_asp
-      end
-
-    | Some (ev_arrow WRAP _ _) => 
-      (* if this is an WRAP, and they are compat, we are done *)
-      match (map_get top_id (asp_comps G)) with
-      | None => errC err_str_asp_no_compat_appr_asp
-      | Some unwrapper_id =>
-        if (eqb unwrapper_id unwrap_id) 
-        then resultC (f e)
-        else errC err_str_wrap_asp_not_duals
-      end
-
-    | Some _ => errC err_str_asp_at_bottom_not_wrap
-    end
-  | left_evt et' => r <- apply_to_left_evt G F et' ;; r
-  | right_evt et' => r <- apply_to_right_evt G F et' ;; r
-  | _ => errC err_str_no_asp_under_evidence
-  end. *)
-
 (**  Calculate the size of an EvidenceT type *)
 Definition et_size (G : GlobalContext) : EvidenceT -> ResultT nat string :=
   fix F e :=
@@ -838,39 +434,6 @@ Definition et_size (G : GlobalContext) : EvidenceT -> ResultT nat string :=
     resultC (s1 + s2)
   end.
 Close Scope string_scope.
-
-(* 
-Fixpoint appr_et_size (G : GlobalContext) (e : EvidenceT) : ResultT nat string :=
-  match e with
-  | mt_evt => resultC 0
-  | nonce_evt _ => resultC 2 (* umeas check_nonce :: nonce *)
-  | asp_evt p par e' =>
-    let '(asp_paramsC asp_id args targ_plc targ) := par in
-    match (map_get (asp_comps G) asp_id) with
-    | None => errC err_str_asp_no_compat_appr_asp
-    | Some appr_asp_id =>
-      match (map_get (asp_types G) appr_asp_id) with
-      | None => errC err_str_asp_no_type_sig
-      | Some (ev_arrow fwd in_sig (OutN n)) => 
-        match asp_si with
-        | COMP => resultC 2 (* This asp crushed down to 1, then +1 for appr *)
-        | ENCR => resultC 2 (* this asp crushed down to 1, then +1 for appr *)
-        | (EXTD n) => 
-          n' <- et_size G e' ;; (* this asp operates on stuff of size n' *)
-          resultC (1 + n + n') (* they return n + n', then +1 for appr on top *)
-        | KILL => resultC 0 (* this asp returns only mt_evc, which is appr as mt_evc too *)
-        | KEEP => 
-          n <- et_size G e' ;; (* this asp operates on stuff of size n, and returns of size n *)
-          resultC (1 + n) (* they returned n, we do +1 for appr on top *)
-        end
-      end
-    end
-  | split_evt e1 e2 =>
-    s1 <- appr_et_size G e1 ;;
-    s2 <- appr_et_size G e2 ;;
-    resultC (s1 + s2)
-  end.
-  *)
 
 
   (** A "well-formed" Evidence value is where the length of its raw EvidenceT portion
