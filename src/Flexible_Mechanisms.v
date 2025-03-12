@@ -6,50 +6,50 @@ Import ListNotations.
 Definition certificate_style : Term :=
   att P1 (
     lseq 
-      (asp (ASPC (asp_paramsC attest_id (JSON_Object []) P1 sys_targ)))
+      (asp (ASPC (asp_paramsC attest (JSON_Object []) P1 sys_targ)))
       (att P2 (
         lseq 
-          (asp (ASPC (asp_paramsC appraise_id (JSON_Object []) P2 sys_targ)))
-          (asp (ASPC (asp_paramsC certificate_id (JSON_Object []) P2 sys_targ)))
+          (asp (ASPC (asp_paramsC appraise (JSON_Object []) P2 sys_targ)))
+          (asp (ASPC (asp_paramsC certificate (JSON_Object []) P2 sys_targ)))
       ))
   ).
 
 Definition background_check : Term :=
   lseq
-    (att P1 (asp (ASPC (asp_paramsC attest_id (JSON_Object []) P1 sys_targ))))
-    (att P2 (asp (ASPC (asp_paramsC appraise_id (JSON_Object []) P2 sys_targ)))).
+    (att P1 (asp (ASPC (asp_paramsC attest (JSON_Object []) P1 sys_targ))))
+    (att P2 (asp (ASPC (asp_paramsC appraise (JSON_Object []) P2 sys_targ)))).
 
 Definition parallel_mutual_1 : Term :=
   att P1 (
     lseq 
-      (asp (ASPC (asp_paramsC attest_id (JSON_Object []) P1 sys_targ)))
-      (att P2 (asp (ASPC (asp_paramsC appraise_id (JSON_Object []) P2 sys_targ))))
+      (asp (ASPC (asp_paramsC attest (JSON_Object []) P1 sys_targ)))
+      (att P2 (asp (ASPC (asp_paramsC appraise (JSON_Object []) P2 sys_targ))))
   ).
 
 Definition parallel_mutual_2 : Term :=
   att P0 (
     lseq 
-      (asp (ASPC (asp_paramsC attest_id (JSON_Object []) P0 sys_targ)))
-      (att P2 (asp (ASPC (asp_paramsC appraise_id (JSON_Object []) P2 sys_targ))))
+      (asp (ASPC (asp_paramsC attest (JSON_Object []) P0 sys_targ)))
+      (att P2 (asp (ASPC (asp_paramsC appraise (JSON_Object []) P2 sys_targ))))
   ).
 
 Definition layered_background_check : Term :=
   att P1
     (bpar (ALL, ALL)
       (lseq
-        (att P1 (asp (ASPC (asp_paramsC attest_id (JSON_Object []) P1 sys_targ))))
+        (att P1 (asp (ASPC (asp_paramsC attest (JSON_Object []) P1 sys_targ))))
         (lseq 
-          (asp (ASPC (asp_paramsC attest_id (JSON_Object []) P3 att_targ)))
-          (asp (ASPC (asp_paramsC attest_id (JSON_Object []) P4 att_targ)))
+          (asp (ASPC (asp_paramsC attest (JSON_Object []) P3 sys_targ)))
+          (asp (ASPC (asp_paramsC attest (JSON_Object []) P4 sys_targ)))
         )
       )
       (bpar (ALL, ALL)
-        (att P3 (asp (ASPC (asp_paramsC attest_id (JSON_Object []) P3 sys_targ))))
+        (att P3 (asp (ASPC (asp_paramsC attest (JSON_Object []) P3 sys_targ))))
         (lseq
-          (att P4 (asp (ASPC (asp_paramsC attest_id (JSON_Object []) P4 sys_targ))))
+          (att P4 (asp (ASPC (asp_paramsC attest (JSON_Object []) P4 sys_targ))))
           (att P2 (
             (lseq
-              (asp (ASPC (asp_paramsC appraise_id (JSON_Object []) P2 it_targ)))
+              (asp (ASPC (asp_paramsC appraise (JSON_Object []) P2 sys_targ)))
               (asp (ASPC sig_params))
             )
           )
@@ -61,19 +61,19 @@ Definition layered_background_check : Term :=
 Definition filehash_auth_phrase : Term := 
   att P1 
     (lseq 
-      (asp (ASPC (asp_paramsC hashfile_id (JSON_Object []) P1 hashfile_targ)))
+      (asp (ASPC (asp_paramsC hashfile (JSON_Object []) P1 sys_targ)))
       (asp SIG) 
     ).
 
 Definition split_phrase : Term :=
   att P1 ( 
     bseq (ALL, ALL)
-      (asp (ASPC (asp_paramsC attest1_id (JSON_Object []) P1 sys_targ)))
-      (asp (ASPC (asp_paramsC attest2_id (JSON_Object []) P1 sys_targ)))
+      (asp (ASPC (asp_paramsC attest (JSON_Object []) P1 sys_targ)))
+      (asp (ASPC (asp_paramsC attest (JSON_Object []) P1 sys_targ)))
     ).
 
 Definition large_output_asp_test : Term :=
-  asp (ASPC (asp_paramsC large_output_id (JSON_Object []) P1 sys_targ)).
+  asp (ASPC (asp_paramsC large_output (JSON_Object []) P1 sys_targ)).
 
 Open Scope cop_ent_scope.
 
@@ -100,7 +100,7 @@ Definition example_appTerm : Term :=
 
 (*
 Definition example_appTerm' : Term := 
-  (asp (ASPC (asp_paramsC attest2_id [] P1 sys_targ))).
+  (asp (ASPC (asp_paramsC attest2 [] P1 sys_targ))).
 *)
 
 Definition meas_cds : Term := 
@@ -188,7 +188,7 @@ Definition simple_sig : Term :=
 lseq 
 (
   lseq
-(asp (ASPC (asp_paramsC attest_id (JSON_Object []) P1 sys_targ)))
+(asp (ASPC (asp_paramsC attest (JSON_Object []) P1 sys_targ)))
 r_ssl_sig_asp) 
 appr_term.
 

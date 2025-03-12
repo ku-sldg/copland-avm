@@ -20,11 +20,11 @@ Global Instance Stringifiable_bool : Stringifiable bool :=
   {
     to_string := fun b => if b then "true" else "false";
     from_string := fun s => 
-                     match s with
-                     | "true" => resultC true
-                     | "false" => resultC false
-                     | _ => errC "Not a boolean"
-                     end;
+                    if String.eqb s "true" 
+                    then resultC true
+                    else if String.eqb s "false" 
+                    then resultC false
+                    else errC "Not a boolean";
     canonical_stringification := fun b =>
                                    match b with
                                    | true => eq_refl
