@@ -26,13 +26,6 @@ Definition parallel_mutual_1 : Term :=
       (att P2 (asp (ASPC (asp_paramsC appraise (JSON_Object []) P2 sys_targ))))
   ).
 
-Definition parallel_mutual_2 : Term :=
-  att P0 (
-    lseq 
-      (asp (ASPC (asp_paramsC attest (JSON_Object []) P0 sys_targ)))
-      (att P2 (asp (ASPC (asp_paramsC appraise (JSON_Object []) P2 sys_targ))))
-  ).
-
 Definition layered_background_check : Term :=
   att P1
     (bpar (ALL, ALL)
@@ -220,7 +213,6 @@ Definition flexible_mechanisms_map :=
    ("split", split_phrase);
    ("split_appr", lseq split_phrase (asp APPR));
    ("parmut", parallel_mutual_1); 
-   ("parmut2", parallel_mutual_2); 
    ("layered_bg", layered_background_check); 
    ("filehash", filehash_auth_phrase);
    ("large_output", large_output_asp_test);
