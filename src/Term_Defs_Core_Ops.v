@@ -1,152 +1,12 @@
-(** Basic definitions for Copland terms, Core terms, 
-   EvidenceT Types, and Copland events. *)
-
-(*
-   These definitions have been adapted from an earlier version, archived 
-   here:  https://ku-sldg.github.io/copland/resources/coplandcoq.tar.gz 
-
-   with License:
-
-LICENSE NOTICE
-
-Copyright (c) 2018 The MITRE Corporation.
-All Rights Reserved.
-
-This proof script is free software: you can redistribute it and/or
-modify it under the terms of the BSD License as published by the
-University of California.  See license.txt for details. *)
-
 Require Export BS.
 
-Require Import List ID_Type Maps JSON Stringifiable Stringifiable_Class_Admits StructTactics ErrorStringConstants JSON_Type.
-Require Import EqClass.
+Require Import List ID_Type Maps JSON Stringifiable Stringifiable_Class_Admits StructTactics
+  ErrorStringConstants EqClass.
+
+Require Import Term_Defs_Core.
 
 Require Import Lia.
 Import ListNotations ResultNotation.
-
-(** * Terms and EvidenceT *)
-
-(** [Plc] represents a place (or attestation domain). *)
-Definition Plc: Set := ID_Type.
-(** [N_ID] represents a nonce identifier.  *)
-Definition N_ID: Set := nat.
-(** [Event_ID] represents Event identifiers *)
-Definition Event_ID: Set := nat.
-
-(** [ASP_ID], [TARG_ID], and [Arg] are all identifiers and parameters to ASP terms
-    [ASP_ID] identifies the procedure invoked.
-    [TARG_ID] identifies the target (when a target makes sense).
-    [Arg] represents a custom argument for a given ASP 
-          (defined and interpreted per-scenario/implementaiton).
-*)
-Definition ASP_ID: Set := ID_Type.
-Definition ASP_Compat_MapT := Map ASP_ID ASP_ID.
-Definition ASP_ARGS := JSON. (* Map string string. *)
-
-Definition TARG_ID: Set := ID_Type.
-
-(** Grouping ASP parameters into one constructor *)
-Inductive ASP_PARAMS: Type :=
-| asp_paramsC: ASP_ID -> ASP_ARGS -> Plc -> TARG_ID -> ASP_PARAMS.
-
-Definition eqb_ASP_PARAMS `{EqClass ASP_ID, EqClass ASP_ARGS, EqClass Plc, EqClass TARG_ID}
-    (a1 a2 : ASP_PARAMS) : bool :=
-  let '(asp_paramsC a1 la1 p1 t1) := a1 in
-  let '(asp_paramsC a2 la2 p2 t2) := a2 in
-  (eqb a1 a2) && (eqb la1 la2) && (eqb p1 p2) && (eqb t1 t2).
-
-Global Instance EqClass_ASP_PARAMS `{EqClass ASP_ID, EqClass ASP_ARGS, EqClass Plc, EqClass TARG_ID} : EqClass ASP_PARAMS.
-eapply Build_EqClass with (eqb := eqb_ASP_PARAMS).
-induction x; destruct y; ff;
-repeat rewrite Bool.andb_true_iff in *; ff;
-repeat rewrite eqb_eq in *; ff.
-Defined.
-
-Inductive FWD :=
-| REPLACE
-| WRAP
-| UNWRAP
-| EXTEND.
-
-Inductive EvInSig :=
-| InAll : EvInSig
-| InNone : EvInSig.
-
-Inductive EvOutSig :=
-| OutN : nat -> EvOutSig
-| OutUnwrap : EvOutSig.
-
-Inductive EvSig :=
-| ev_arrow : FWD -> EvInSig -> EvOutSig -> EvSig.
-
-(** The structure of EvidenceT. 
-
-    mt_evt:  Empty EvidenceT 
-    nn:  Nonce EvidenceT (with an ID)
-    uu:  ASP EvidenceT bundle
-    ss:  EvidenceT pairing (composition)
-*)
-Inductive EvidenceT :=
-| mt_evt      : EvidenceT
-| nonce_evt   : N_ID -> EvidenceT
-| asp_evt     : Plc -> ASP_PARAMS -> EvidenceT -> EvidenceT
-| left_evt    : EvidenceT -> EvidenceT
-| right_evt   : EvidenceT -> EvidenceT
-| split_evt   : EvidenceT -> EvidenceT -> EvidenceT.
-
-(** Evidene routing types:  
-      ALL:   pass through all EvidenceT
-      NONE   pass through empty EvidenceT
-*)
-Inductive SP: Set :=
-| ALL
-| NONE.
-
-(** Primitive Copland phases 
-
-    NULL:    Empty out EvidenceT (optionally with a strong "zeroize" effect)
-    ASPC sp fwd ps:    
-        Arbitrary ASPs:
-          sp indicates passing ALL or NONE as input EvidenceT.
-          fwd indicates how to extend output EvidenceT.
-          ps indicates the asp parameters structure
-    SIG:     Signature primitive
-    HSH:     Hash primitive 
-    APPR:    Appraisal primitive
-    ENC q:   Encryption primitive using public key associated with place q.
-*)
-Inductive ASP :=
-| NULL: ASP
-| ASPC: ASP_PARAMS -> ASP
-| SIG: ASP
-| HSH: ASP
-| APPR : ASP
-| ENC: Plc -> ASP.
-
-Definition ASP_Type_Env := Map ASP_ID EvSig.
-
-Record GlobalContext := {
-  asp_types: ASP_Type_Env;
-  asp_comps: ASP_Compat_MapT
-}.
-
-(** Pair of EvidenceT splitters that indicate routing EvidenceT to subterms 
-    of branching phrases *)
-Definition Split: Set := (SP * SP).
-
-(** Pair of EvidenceT splitters that indicate routing EvidenceT to subterms 
-    of branching phrases *)
-
-(** Main Copland phrase datatype definition.
-        A term is either an atomic ASP (Attestation Service Provider), 
-        a remote call (att), a sequence of terms with data a dependency (lseq),
-        a sequence of terms with no data dependency, or parallel terms. *)
-Inductive Term :=
-| asp: ASP -> Term
-| att: Plc -> Term -> Term
-| lseq: Term -> Term -> Term
-| bseq: Split -> Term -> Term -> Term
-| bpar: Split -> Term -> Term -> Term.
 
 Open Scope string_scope.
 
@@ -161,7 +21,7 @@ Definition EvidenceT_depth : EvidenceT -> nat :=
   | split_evt e1 e2 => 1 + max (F e1) (F e2)
   end.
 
-
+(** Calculate the size of an ASP's input based on its signature *)
 Inductive EvTrails :=
 | Trail_UNWRAP : ASP_ID -> EvTrails
 | Trail_LEFT  : EvTrails
@@ -224,6 +84,7 @@ Definition apply_to_evidence_below {A} (G : GlobalContext) (f : EvidenceT -> A)
     end
   end.
 
+Require Import StructTactics.
 
 Inductive Evidence_Subterm_path G e' : list EvTrails -> EvidenceT -> Prop :=
 | esp_empty_trail : Evidence_Subterm_path G e' nil e'
@@ -503,111 +364,6 @@ Proof.
   eapply well_founded_ind; eauto.
 Qed.
 
-Module Test_Unwrap_Wrap.
-  Definition X : ASP_ID. Admitted.
-  Definition X' : ASP_ID. Admitted.
-  Definition Y : ASP_ID. Admitted.
-  Definition Y' : ASP_ID. Admitted.
-  Axiom XX' : X <> X'.
-  Axiom XY : X <> Y.
-  Axiom XY' : X <> Y'.
-  Axiom YY' : Y <> Y'.
-  Axiom X'Y' : X' <> Y'.
-  Axiom X'Y : X' <> Y.
-  Ltac use_neqs :=
-    pose proof XX';
-    pose proof XY;
-    pose proof XY';
-    pose proof YY';
-    pose proof X'Y';
-    pose proof X'Y;
-    try (exfalso; eauto; fail).
-
-  Definition P1 : Plc. Admitted.
-  Definition P2 : Plc. Admitted.
-  Definition T_PLC : Plc. Admitted.
-  Definition TARG : TARG_ID. Admitted.
-
-  Definition G : GlobalContext := Build_GlobalContext 
-    [(X, ev_arrow WRAP InAll (OutN 1)); (Y, ev_arrow WRAP InAll (OutN 1));
-      (X', ev_arrow UNWRAP InAll OutUnwrap); (Y', ev_arrow UNWRAP InAll OutUnwrap)] 
-    [(X, X'); (Y, Y')].
-  
-  Ltac str_rew :=
-    repeat rewrite String.eqb_eq in *;
-    repeat rewrite String.eqb_refl in *;
-    subst_max;
-    repeat rewrite String.eqb_neq in *;
-    try lazymatch goal with
-    | H : true = false |- _ => inversion H
-    end.
-
-  Example test_get_evidence_under_unwrap_wrap_1 : forall v,
-    apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'] 
-      (asp_evt P1 (asp_paramsC X (JSON_Object []) T_PLC TARG) v) = resultC v.
-  Proof.
-    ff; str_rew.
-    destruct v; simpl in *; eauto.
-  Qed.
-
-  Example test_get_evidence_under_unwrap_wrap_2 : forall v,
-    apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'; Trail_UNWRAP Y'] 
-      (asp_evt P1 (asp_paramsC X (JSON_Object []) T_PLC TARG) (
-        asp_evt P2 (asp_paramsC Y (JSON_Object []) T_PLC TARG) v)) = resultC v.
-  Proof.
-    ff; str_rew.
-    destruct v; simpl in *; eauto.
-    destruct v; simpl in *; eauto.
-    use_neqs.
-  Qed.
-  
-  Example test_get_evidence_under_unwrap_wrap_3 : forall v,
-    apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'] 
-      (asp_evt P1 (asp_paramsC X (JSON_Object []) T_PLC TARG) (
-        asp_evt P2 (asp_paramsC Y (JSON_Object []) T_PLC TARG) v)) 
-    = resultC (asp_evt P2 (asp_paramsC Y (JSON_Object []) T_PLC TARG) v).
-  Proof.
-    ff; str_rew.
-  Qed.
-
-  Example test_get_evidence_under_unwrap_wrap_4 : forall v,
-    apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'] 
-      ( asp_evt P2 (asp_paramsC Y' (JSON_Object []) T_PLC TARG) 
-        (asp_evt P2 (asp_paramsC Y (JSON_Object []) T_PLC TARG) 
-        (asp_evt P1 (asp_paramsC X (JSON_Object []) T_PLC TARG) v)))
-    = resultC v.
-  Proof.
-    ff.
-    all: str_rew.
-    all: use_neqs.
-    destruct v; simpl in *; eauto.
-  Qed.
-
-  Example test_get_evidence_under_unwrap_wrap_5 : forall v,
-    apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'; Trail_UNWRAP Y'] 
-      (asp_evt P1 (asp_paramsC X (JSON_Object []) T_PLC TARG) (
-        left_evt (split_evt (asp_evt P2 (asp_paramsC Y (JSON_Object []) T_PLC TARG) v) mt_evt))) 
-    = resultC v.
-  Proof.
-    ff; str_rew.
-    destruct v; simpl in *; eauto.
-    destruct v; simpl in *; eauto.
-    use_neqs.
-  Qed.
-
-  Example test_get_evidence_under_unwrap_wrap_6 : forall v,
-    apply_to_evidence_below G (fun e => e) [Trail_UNWRAP X'; Trail_UNWRAP Y'] 
-      (asp_evt P1 (asp_paramsC X (JSON_Object []) T_PLC TARG) (
-        right_evt (split_evt mt_evt (asp_evt P2 (asp_paramsC Y (JSON_Object []) T_PLC TARG) v)))) 
-    = resultC v.
-  Proof.
-    ff; str_rew.
-    destruct v; simpl in *; eauto.
-    destruct v; simpl in *; eauto.
-    use_neqs.
-  Qed.
-End Test_Unwrap_Wrap.
-
 (**  Calculate the size of an EvidenceT type *)
 Definition et_size (G : GlobalContext) : EvidenceT -> ResultT nat string :=
   fix F e :=
@@ -639,6 +395,21 @@ Definition et_size (G : GlobalContext) : EvidenceT -> ResultT nat string :=
         | OutUnwrap => 
           n' <- apply_to_evidence_below G F [Trail_UNWRAP asp_id] e' ;;
           n'
+          (* match e' with
+          | (asp_evt p (asp_paramsC asp_id' args' targ_plc' targ') e'') =>
+            match (map_get asp_id' (asp_types G)) with
+            | None => errC err_str_asp_no_type_sig
+            | Some (ev_arrow WRAP in_sig' out_sig') =>
+              match in_sig' with
+              | InAll => 
+                n' <- F e'' ;;
+                resultC n'
+              | InNone => resultC 0
+              end
+            | _ => errC err_str_unwrap_only_wrap
+            end
+          | _ => errC err_str_unwrap_only_asp
+          end *)
         end
       | EXTEND =>
         match out_sig with
@@ -664,59 +435,14 @@ Definition et_size (G : GlobalContext) : EvidenceT -> ResultT nat string :=
   end.
 Close Scope string_scope.
 
-(** Raw EvidenceT representaiton:  a list of binary (BS) values. *)
-Definition RawEv := list BS.
 
-(**  Type-Tagged Raw EvidenceT representation.  Used as the internal EvidenceT
-     type managed by the CVM to track EvidenceT contents and its structure. *)
-Inductive Evidence :=
-| evc: RawEv -> EvidenceT -> Evidence.
+  (** A "well-formed" Evidence value is where the length of its raw EvidenceT portion
+    has the proper size (calculated over the EvidenceT Type portion). *)
+Inductive wf_Evidence : GlobalContext -> Evidence -> Prop :=
+| wf_Evidence_c: forall (ls:RawEv) et G n,
+    List.length ls = n ->
+    et_size G et = resultC n ->
+    wf_Evidence G (evc ls et).
 
-Definition mt_evc: Evidence := (evc [] mt_evt).
-
-Definition get_et (e:Evidence) : EvidenceT :=
-  match e with
-  | evc ec et => et
-  end.
-
-Definition get_bits (e:Evidence): list BS :=
-  match e with
-  | evc ls _ => ls
-  end.
-
-(** Abstract Location identifiers used to aid in management and execution 
-    of parallel Copland phrases. *)
-Definition Loc: Set := nat.
-Definition Locs: Set := list Loc.
-
-
-
-(* Adapted from Imp language Notation in Software Foundations (Pierce) *)
-Declare Custom Entry copland_entry.
-Declare Scope cop_ent_scope.
-Notation "<{ e }>" := e (at level 0, e custom copland_entry at level 99) : cop_ent_scope.
-Notation "( x )" := x (in custom copland_entry, x at level 99) : cop_ent_scope.
-Notation "x" := x (in custom copland_entry at level 0, x constr at level 0) : cop_ent_scope.
-(* Branches*)
-Notation "x -<- y" := (bseq (NONE, NONE) x y) (in custom copland_entry at level 70, right associativity).
-Notation "x +<- y" := (bseq (ALL, NONE) x y) (in custom copland_entry at level 70, right associativity).
-Notation "x -<+ y" := (bseq (NONE, ALL) x y) (in custom copland_entry at level 70, right associativity).
-Notation "x +<+ y" := (bseq (ALL, ALL) x y) (in custom copland_entry at level 70, right associativity).
-Notation "x -~- y" := (bpar (NONE, NONE) x y) (in custom copland_entry at level 70, right associativity).
-Notation "x +~- y" := (bpar (ALL, NONE) x y) (in custom copland_entry at level 70, right associativity).
-Notation "x -~+ y" := (bpar (NONE, ALL) x y) (in custom copland_entry at level 70, right associativity).
-Notation "x +~+ y" := (bpar (ALL, ALL) x y) (in custom copland_entry at level 70, right associativity).
-(* ARROW sequences *)
-Notation "x -> y" := (lseq x y) (in custom copland_entry at level 99, right associativity).
-(* ASP's *)
-Notation "!" := (asp SIG) (in custom copland_entry at level 98).
-Notation "#" := (asp HSH) (in custom copland_entry at level 98).
-Notation "* p" := (asp (ENC p)) (in custom copland_entry at level 98).
-Notation "'{}'" := (asp NULL) (in custom copland_entry at level 98).
-(* TODO: Surely we need something more robust than they are ALL EXTD 1, but uhhhh *)
-Notation "'<<' x y z '>>'" := (asp (ASPC (asp_paramsC x (JSON_Object []) y z))) 
-                      (in custom copland_entry at level 98).
-
-
-(* @ plc phrase *)
-Notation "@ p [ ph ]" := (att p ph) (in custom copland_entry at level 50).
+Inductive CopPhrase :=
+| cop_phrase : Plc -> EvidenceT -> Term -> CopPhrase.

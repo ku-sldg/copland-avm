@@ -82,6 +82,27 @@ eapply Build_Jsonifiable with
 simpl_json.
 Defined.
 
+
+Definition pair_to_JSON {A B : Type} `{Jsonifiable A, Jsonifiable B} (v : (A * B)) : JSON :=
+  JSON_Array [(to_JSON (fst v)); (to_JSON (snd v))].
+
+Definition pair_from_JSON {A B : Type} `{Jsonifiable A, Jsonifiable B} (js : JSON) : ResultT (A * B) string :=
+  match js with
+  | JSON_Array [a; b] =>
+      match (from_JSON a), (from_JSON b) with
+      | resultC a, resultC b => resultC (a, b)
+      | _, _ => errC errStr_json_to_pair
+      end
+  | _ => errC errStr_json_to_pair
+  end.
+
+Global Instance Jsonifiable_pair {A B : Type} `{Jsonifiable A, Jsonifiable B} : Jsonifiable (A * B).
+eapply Build_Jsonifiable with 
+  (to_JSON := pair_to_JSON)
+  (from_JSON := pair_from_JSON).
+simpl_json.
+Defined.
+
 (* The List JSONIFIABLE Class *)
 
 Definition map_serial_serial_to_JSON {A B : Type} `{Stringifiable A, Stringifiable B, EqClass A} (m : Map A B) : JSON :=
@@ -124,7 +145,7 @@ Global Instance jsonifiable_map_serial_serial (A B : Type) `{Stringifiable A, Eq
     canonical_jsonification := canonical_jsonification_map_serial_serial;
   }.
 
-Global Instance jsonifiable_map_serial_json (A B : Type) `{Stringifiable A, EqClass A, Jsonifiable B} : Jsonifiable (Map A B). 
+Global Instance jsonifiable_map_serial_json (A B : Type) `{Stringifiable A, EqClass A, Jsonifiable B} : Jsonifiable (Map A B).
 eapply Build_Jsonifiable with (
   to_JSON := (fun m => JSON_Object (
                       map (fun '(k, v) => 

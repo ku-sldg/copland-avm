@@ -7,9 +7,11 @@ Require Import Term_Defs Term_Defs_Core IO_Stubs AM_Monad Cvm_Monad Cvm_Impl.
 
 Require Import Manifest_Generator Session_Config_Compiler.
 
-Require Import AM_Helpers Server_AM.
+Require Import AM_Helpers Server_AM Client_AM.
 
 Require Import Manifest_Generator_Union Manifest_JSON Flexible_Mechanisms.
+
+Require Import AppraisalSummary.
 
 Require Import List.
 Import ListNotations.
@@ -39,4 +41,6 @@ Separate Extraction
     concrete_Jsonifiable_Term
     concrete_Jsonifiable_EvidenceT
     concrete_Jsonifiable_GlobalContext
-    Jsonifiable_Term_Plc_list.
+    concrete_Jsonifiable_AppraisalSummary
+    Jsonifiable_Term_Plc_list
+    am_client_app_summary.

@@ -1,4 +1,4 @@
-Require Import Manifest JSON Manifest_JSON Attestation_Session Term_Defs JSON_Core.
+Require Import Manifest JSON Manifest_JSON Attestation_Session Term_Defs JSON_Core AppraisalSummary.
 Require Import List.
 Import ListNotations.
 
@@ -26,5 +26,9 @@ solve [typeclasses eauto].
 Defined.
 
 Definition concrete_Jsonifiable_GlobalContext : Jsonifiable GlobalContext.
+solve [typeclasses eauto].
+Defined.
+
+Definition concrete_Jsonifiable_AppraisalSummary : Jsonifiable AppraisalSummary.
 solve [typeclasses eauto].
 Defined.

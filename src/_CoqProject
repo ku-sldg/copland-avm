@@ -13,10 +13,19 @@ JSON_Type.v
 JSON_Admits.v
 JSON.v
 Term_Defs_Core.v
+Term_Defs_Core_Ops.v
+Term_Defs_Core_Typeclasses.v
 JSON_Core_Strings.v
 JSON_Core.v
 Params_Admits.v
 Term_Defs.v
+Cvm_Utils.v
+CACL_Defs.v
+CACL_Typeclasses.v
+CACL_Generator.v
+CACL_Demo_Args.v
+CACL_Demo.v
+AppraisalSummary.v
 Attestation_Session.v
 Interface_Types.v
 Interface_JSON.v
@@ -49,7 +58,7 @@ ManCompSoundness_Helpers.v
 AM_Helpers.v
 AM_Json_Interfaces.v
 AM_Manager.v
-# Client_AM.v
+Client_AM.v
 Server_AM.v
 Flexible_Mechanisms_Vars.v
 Flexible_Mechanisms.v
