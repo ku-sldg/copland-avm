@@ -60,18 +60,6 @@ Definition am_client_app_summary (att_sess : Attestation_Session) (req_plc : Plc
 
 Require Import Resolute_Logic.
 
-(*
-Inductive Resolute_Term : Type :=
-  | R_Goal_T (t:TargetT) (args: JSON) (t:Term)
-  | R_And_T (G1 : Resolute_Term) (G2 : Resolute_Term)
-  | R_Or_T (G1 : Resolute_Term) (G2 : Resolute_Term).
-
-Inductive Resolute_Evidence : Type :=
-  | R_Goal_E (t:TargetT) (args: JSON) (e:Evidence)
-  | R_And_E (G1 : Resolute_Evidence) (G2 : Resolute_Evidence)
-  | R_Or_E (G1 : Resolute_Evidence) (G2 : Resolute_Evidence).
-*)
-
 Fixpoint run_resolute_term (rt : Resolute_Term) (att_sess:Attestation_Session) (req_plc:Plc) (toPlc:Plc) : ResultT Resolute_Evidence string := 
   match rt with 
   | R_Goal_T tid args t => 
@@ -96,31 +84,6 @@ Definition run_resolute_id (t : Term) (att_sess : Attestation_Session) (req_plc:
   et' <- eval (ats_context att_sess) toPlc mt_evt appr_t ;;
   resultC (evc rawev et').
 
-
-(*
-Fixpoint res_to_copland (M : Model) (r:Resolute_Formula)
-  : (Resolute_Term * (Resolute_Evidence -> Resolute_Judgement)) :=
-*)
-
-(*
-Definition am_client_do_res_old (att_sess : Attestation_Session) (req_plc:Plc) 
-  (toPlc:Plc) (M : Model) (r:Resolute_Formula) : ResultT ResoluteResponse string :=
-
-  let '(rt, pol) := res_to_copland M r in
-    resolute_ev <- run_resolute_term rt att_sess req_plc toPlc ;;
-    let resolute_judgement := pol resolute_ev in 
-    resultC (mkResoluteResp resolute_judgement r rt).
-   (* let appr_t : Term := lseq t (asp APPR) in 
-
-      rawev <- am_sendReq att_sess req_plc mt_evc appr_t toPlc ;;
-      
-      let glob_ctx := (ats_context att_sess) in  
-        et' <- eval glob_ctx toPlc mt_evt appr_t ;;
-        let b := (pol (evc rawev et')) in 
-        resultC (mkResoluteResp b r t).
-    *)
-*)
-
 Record Term_Model := {
   term_conc : string -> Term ;
 }.
@@ -139,118 +102,29 @@ Fixpoint add_term_args (t:Term) (args:JSON) : Term :=
   | bpar s t1 t2 => bpar s (add_term_args t1 args) (add_term_args t2 args)
   end.
 
-Definition good_bs : BS := passed_bs.
-
-Check forallb.
-
 Definition judge_evidence (e:Evidence) : bool := 
   match e with
-  | evc rawev _ => forallb (fun bs => eqb bs good_bs) rawev 
+  | evc rawev _ => forallb (fun bs => eqb bs passed_bs) rawev 
   end.
 
-(*
-(t : Term) (att_sess : Attestation_Session) (req_plc:Plc) (toPlc:Plc)
-*)
 Definition am_client_do_res (att_sess : Attestation_Session) (req_plc:Plc) 
-  (toPlc:Plc) (M : Term_Model) (req:Resolute_Client_Request) : ResultT Resolute_Client_Result string :=
+  (toPlc:Plc) (M : Term_Model) (req:Resolute_Client_Request) : ResultT Resolute_Client_Response string :=
 
-  (* let '(rt, pol) := res_to_copland M r in *)
   let rt := ((term_conc M) (resclientreq_attest_id req)) in
   let rt_w_args := add_term_args rt (resclientreq_args req) in
   let maybe_ev := run_resolute_id rt_w_args att_sess req_plc toPlc in 
   match maybe_ev with 
   | resultC e => 
       let judgement := judge_evidence e in
-        (resultC (mkResoluteClientResult rt_w_args e judgement ""))
-  | errC errStr => resultC (mkResoluteClientResult rt_w_args mt_evc false errStr)
+        (resultC (mkResoluteClientResp rt_w_args e judgement ""))
+  | errC errStr => resultC (mkResoluteClientResp rt_w_args mt_evc false errStr)
   end.
-
-Definition hi : nat := O.
-Definition micro_res_asp_type_env : ASP_Type_Env := 
-    [(hash_file_contents_id, (ev_arrow EXTEND InAll (OutN 1)));
-    (appr_hash_file_contents_id, (ev_arrow REPLACE InAll (OutN 1)));
-    (hash_evidence_id, (ev_arrow EXTEND InAll (OutN 1)))].
-
-Definition micro_res_asp_compat_mapt : ASP_Compat_MapT := 
-  [(hash_file_contents_id, appr_hash_file_contents_id);
-   (hash_evidence_id, appr_hash_file_contents_id)  
-  ].
-
-Open Scope string_scope.
-Definition res_policy_passed_string (s:string) : bool :=
-  eqb s "I JUDGE YOU GOLDEN !!!!!".
-  (* eqb s "SSBKVURHRSBZT1UgR09MREVOICEhISEh". *) (* "I JUDGE YOU GOLDEN !!!!!" in base64 *)
-  (* eqb s "UEFTU0VE". (* "PASSED" in base64 *) *)
-Close Scope string_scope.
-
-Definition res_policy_appSummary (e:Evidence) (G:GlobalContext) (m:RawEvJudgement) : ResultT bool string :=
-  match e with 
-  | evc rawEv et => (* resultC true  *)
-      app_summary <- do_AppraisalSummary et rawEv G m ;;
-      let ls := get_all_summary_strings app_summary in 
-      let b := check_strings_list_bool ls res_policy_passed_string in 
-      resultC b 
-  end.
-
-Definition micro_res_policy (e:Evidence) (G:GlobalContext) (m:RawEvJudgement) : bool :=
-  match (res_policy_appSummary e G m) with 
-  | resultC b => b 
-  | _ => false 
-  end.
-
-Definition micro_resolute_example_context : GlobalContext := 
-      {| asp_types := micro_res_asp_type_env;
-         asp_comps := micro_res_asp_compat_mapt |}.
-
-(*
-Definition resolute_example_rawev_judgement : RawEvJudgement := 
-  [(certificate_id, [(cert_resolute_targ, ex_targJudgement_fun')])].
-*)
-
-Definition micro_resolute_example_rawev_judgement : RawEvJudgement := 
-    [(appr_hash_file_contents_id, [(cds_img_3_targ, ex_targJudgement_fun')]);
-     (appr_hash_file_contents_id, [(cds_img_2_targ, ex_targJudgement_fun')]);
-     (appr_hash_file_contents_id, [(cds_img_1_targ, ex_targJudgement_fun')])].
-
-Definition micro_resolute_model (model_args:ASP_ARGS) (* (system_args:ASP_ARGS) *) : Model := 
-{| conc := (fun _ => (meas_micro model_args (*system_args*))); 
-    spec := (fun _ e => (micro_res_policy 
-                          e 
-                          micro_resolute_example_context 
-                          example_RawEvJudgement)) (* ; 
-    context := micro_resolute_example_context *) |}.
-
-Definition micro_resolute_statement : Resolute_Formula := 
-    R_Goal micro_resolute_targ (JSON_Object []).
-
 
 Definition micro_resolute_term_model : Term_Model := 
   {| term_conc := (fun _ => (meas_micro')); |}.
 
 Definition micro_resolute_client_req (att_id : string) (args:JSON) (res_path : string) : Resolute_Client_Request := 
   mkResoluteClientReq att_id args res_path.
-
-
-(*
-     Definition cert_res_asp_type_env : ASP_Type_Env := 
-      [(certificate_id, (ev_arrow EXTEND InAll (OutN 1)));
-      (appraise_id, (ev_arrow REPLACE InAll (OutN 1)))].
-      
-    Definition cert_res_asp_compat_mapt : ASP_Compat_MapT := 
-      [(certificate_id, appraise_id)].
-
-      Definition resolute_example_context : GlobalContext := 
-  {| asp_types := cert_res_asp_type_env;
-     asp_comps := cert_res_asp_compat_mapt |}.
-
-Definition cert_resolute_model : Model := 
- {| conc := (fun _ => (cert_resolute_phrase)); 
-     spec := (fun _ e => (cert_res_policy e resolute_example_context resolute_example_rawev_judgement)) ; 
-     context := resolute_example_context |}.
-
-     Definition cert_resolute_statement : Resolute := 
-  R_Goal (cert_resolute_targ).
-  *)
 
 
 
