@@ -246,8 +246,6 @@ Definition cds_local : Term :=
 Close Scope cop_ent_scope.
 
 
-Definition large_output_asp_test : Term :=
-  asp (ASPC (asp_paramsC large_output_id (micro_args_system) P1 sys_targ)).
 
 
 
@@ -270,8 +268,6 @@ Definition flexible_mechanisms_map :=
    ("simple_sig", simple_sig);
    ("micro", micro_appTerm);
    ("micro_provision", micro_appTerm_provision) ].
-   
-   ("large_output", large_output_asp_test)].
 
 Definition add_EvidenceT_flexible_mechanisms := 
   fun G =>
