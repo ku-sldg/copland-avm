@@ -1,6 +1,47 @@
 Require Import Term_Defs Flexible_Mechanisms_Vars JSON_Type CACL_Demo.
 Require Import List String.
+
 Import ListNotations.
+
+Open Scope string_scope.
+
+Definition micro_args_model : ASP_ARGS := 
+  (JSON_Object [("filepath_golden", (JSON_String "/am-cakeml/tests/DemoFiles/goldenFiles/aadl_composite.txt")); 
+
+  ("paths", JSON_Array [(JSON_String "/INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/aadl/")]);
+  ("env_var", JSON_String "DEMO_ROOT")
+  ]).
+
+Definition micro_args_system : ASP_ARGS := 
+    (JSON_Object [("filepath_golden", (JSON_String "/am-cakeml/tests/DemoFiles/goldenFiles/microkit_composite.txt")); 
+  
+    ("paths", JSON_Array [(JSON_String "/INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/hamr/microkit/")]);
+    ("env_var", JSON_String "DEMO_ROOT")
+    ]).
+
+  Definition micro_args_composite : ASP_ARGS := 
+    (JSON_Object [("filepath_golden", (JSON_String "/am-cakeml/tests/DemoFiles/goldenFiles/micro_composite.txt")); 
+
+    ("paths", JSON_Array []);
+    ("env_var", JSON_String "DEMO_ROOT")
+    ]).
+
+Definition micro_args_union : ASP_ARGS := 
+  (JSON_Object [("filepath_golden", (JSON_String "/am-cakeml/tests/DemoFiles/goldenFiles/micro_union_composite.txt")); 
+
+  ("paths", JSON_Array [
+    (JSON_String "/INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/aadl/");
+    (JSON_String "/INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/hamr/microkit/")]
+  );
+  ("env_var", JSON_String "DEMO_ROOT")
+  ]).
+
+    (*
+Definition micro_args_system : ASP_ARGS := 
+  (JSON_Object [("filepath_golden", (JSON_String "/am-cakeml/tests/DemoFiles/goldenFiles/microkit_composite.txt"))]).
+  *)
+
+Close Scope string_scope.
 
 (* Flexible Mechanisms *)
 Definition certificate_style : Term :=
@@ -205,6 +246,11 @@ Definition cds_local : Term :=
 Close Scope cop_ent_scope.
 
 
+Definition large_output_asp_test : Term :=
+  asp (ASPC (asp_paramsC large_output_id (micro_args_system) P1 sys_targ)).
+
+
+
 Open Scope string_scope.
 Definition flexible_mechanisms_map := 
   [("cert", certificate_style); 
@@ -225,6 +271,7 @@ Definition flexible_mechanisms_map :=
    ("micro", micro_appTerm);
    ("micro_provision", micro_appTerm_provision) ].
    
+   ("large_output", large_output_asp_test)].
 
 Definition add_EvidenceT_flexible_mechanisms := 
   fun G =>

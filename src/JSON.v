@@ -103,6 +103,22 @@ eapply Build_Jsonifiable with
 simpl_json.
 Defined.
 
+Global Instance jsonifiable_bool : Jsonifiable bool :=
+  {
+    to_JSON   := fun b => JSON_Boolean b ;
+    from_JSON := fun js => 
+                    match js with 
+                    | JSON_Boolean b => resultC b 
+                    | _ => errC (errStr_json_wrong_type "bool" js)
+                    end;
+    canonical_jsonification := fun b => 
+                               match b with 
+                               | true => eq_refl 
+                               | _ => eq_refl 
+                               end 
+  }.
+
+
 (* The List JSONIFIABLE Class *)
 
 Definition map_serial_serial_to_JSON {A B : Type} `{Stringifiable A, Stringifiable B, EqClass A} (m : Map A B) : JSON :=

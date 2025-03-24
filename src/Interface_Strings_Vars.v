@@ -12,6 +12,7 @@ Definition STR_ACTION : string := "ACTION".
 Definition STR_TYPE : string := "TYPE".
 
 Definition STR_RUN : string := "RUN".
+Definition STR_APPSUMM : string := "APPSUMM".
 Definition STR_NEGOTIATE : string := "NEGOTIATE".
 Definition STR_APPRAISE : string := "APPRAISE".
 Definition STR_REQUEST : string := "REQUEST".

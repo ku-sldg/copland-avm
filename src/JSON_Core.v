@@ -642,14 +642,15 @@ repeat (result_monad_unfold;
 jsonifiable_hammer; repeat rewrite canonical_jsonification in *; eauto).
 Defined.
 
+Check result_map.
 Global Instance Jsonifiable_RawEv : Jsonifiable RawEv. 
   eapply Build_Jsonifiable with (to_JSON := (fun ev => 
                 JSON_Object [
                   (rawev_name_constant, JSON_Array (map (fun bs => JSON_String (to_string bs)) ev))
                 ]))
   (from_JSON := (fun js => 
-                  match (JSON_get_Array rawev_name_constant js) with
-                  | resultC js' => 
+                  match (JSON_get_Object rawev_name_constant js) with
+                  | resultC (JSON_Array js') => 
                       result_map (fun js' => 
                                     match js' with
                                     | JSON_String s => 
@@ -659,6 +660,7 @@ Global Instance Jsonifiable_RawEv : Jsonifiable RawEv.
                                         end
                                     | _ => errC err_str_json_invalid_constructor_name
                                     end) js'
+                  | resultC _ => errC err_str_json_invalid_constructor_name
                   | errC e => errC e
                   end)).
 induction a; simpl in *; intuition; eauto;

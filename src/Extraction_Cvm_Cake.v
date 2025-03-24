@@ -11,7 +11,7 @@ Require Import AM_Helpers Server_AM Client_AM.
 
 Require Import Manifest_Generator_Union Manifest_JSON Flexible_Mechanisms.
 
-Require Import AppraisalSummary.
+Require Import AppraisalSummary Resolute_JSON.
 
 Require Import List.
 Import ListNotations.
@@ -41,6 +41,7 @@ Separate Extraction
     concrete_Jsonifiable_Term
     concrete_Jsonifiable_EvidenceT
     concrete_Jsonifiable_GlobalContext
+    concrete_Jsonifiable_ASP_ARGS
     concrete_Jsonifiable_AppraisalSummary
     Jsonifiable_Term_Plc_list
     am_client_app_summary.
