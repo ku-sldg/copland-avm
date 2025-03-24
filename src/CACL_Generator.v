@@ -41,15 +41,15 @@ Open Scope string_scope.
 
 Definition default_CACL_Policy := [("", (nil:(list CACL_Access)))].
 
-Definition sig_id : ASP_ID := "sig_id".
-Definition hsh_id : ASP_ID := "hsh_id".
-Definition enc_id : ASP_ID := "enc_id".
+Definition sig : ASP_ID := "sig".
+Definition hsh : ASP_ID := "hsh".
+Definition enc : ASP_ID := "enc".
 
 Definition CACL_policy_generator_ASP (a:ASP) (p:Plc) : CACL_Policy := 
     match a with 
-    | SIG =>   [(p, [(sig_id, CACL_Invoke)])] 
-    | HSH =>   [(p, [(hsh_id, CACL_Invoke)])] 
-    | ENC _ => [(p, [(enc_id, CACL_Invoke)])] 
+    | SIG =>   [(p, [(sig, CACL_Invoke)])] 
+    | HSH =>   [(p, [(hsh, CACL_Invoke)])] 
+    | ENC _ => [(p, [(enc, CACL_Invoke)])] 
     | ASPC (asp_paramsC aid _ targp targid) => 
         [(p, [(aid, CACL_Invoke)]);
          ((append p (append ", " aid)), [(targid, CACL_Read)])]

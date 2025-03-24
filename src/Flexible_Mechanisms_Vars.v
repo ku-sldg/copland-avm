@@ -11,22 +11,13 @@ Definition P3 : Plc := "P3".
 Definition P4 : Plc := "P4".
 
 (* ASP IDs *)
-Definition attest_id : ASP_ID := "attest_id".
-Definition attest1_id : ASP_ID := "attest1_id".
-Definition attest2_id : ASP_ID := "attest2_id".
-Definition appraise_id : ASP_ID := "appraise_id".
-Definition certificate_id : ASP_ID := "certificate_id".
-Definition hashfile_id : ASP_ID := "hashfile_id".
-Definition cert_resolute_id : ASP_ID := "cert_resolute_id".
-
-Definition large_output_id : ASP_ID := "large_output_id".
+Definition attest : ASP_ID := "attest".
+Definition appraise : ASP_ID := "appraise".
+Definition certificate : ASP_ID := "certificate".
+Definition hashfile : ASP_ID := "hashfile".
+Definition large_output : ASP_ID := "large_output".
 
 (* TARG IDs *)
 Definition sys_targ : TARG_ID := "sys_targ".
-Definition att_targ : TARG_ID := "att_targ".
-Definition it_targ : TARG_ID := "it_targ".
-Definition hashfile_targ : TARG_ID := "hashfile_targ".
-Definition cert_resolute_targ : TARG_ID := "cert_resolute_targ".
-Definition micro_resolute_targ : TARG_ID := "micro_resolute_targ".
 
 Close Scope string_scope.
