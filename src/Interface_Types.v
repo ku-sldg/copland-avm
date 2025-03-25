@@ -2,7 +2,6 @@ Require Import JSON Term_Defs Attestation_Session AppraisalSummary.
 Require Export Interface_Strings_Vars.
 
 
-
 (* Interface Types *)
 Record ProtocolRunRequest := 
   mkPRReq {

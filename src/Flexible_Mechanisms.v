@@ -1,6 +1,5 @@
 Require Import Term_Defs Flexible_Mechanisms_Vars JSON_Type CACL_Demo.
 Require Import List String.
-
 Import ListNotations.
 
 (* Flexible Mechanisms *)
@@ -225,8 +224,7 @@ Definition flexible_mechanisms_map :=
    ("simple_sig", simple_sig);
    ("micro", micro_appTerm);
    ("micro_provision", micro_appTerm_provision) ].
-
-
+   
 Definition add_EvidenceT_flexible_mechanisms := 
   fun G =>
   Maps.map_map (fun t => (t, eval G P0 (nonce_evt 0) t)) flexible_mechanisms_map.
