@@ -10,11 +10,7 @@ Require Import Maps Attestation_Session Interface.
 
 Require Import ErrorStringConstants Manifest_Admits.
 
-Require Import AM_Helpers AppraisalSummary CACL_Demo.
-
-Require Import Flexible_Mechanisms_Vars Flexible_Mechanisms.
-
-Require Import Resolute_Types Resolute_JSON.
+Require Import AM_Helpers AppraisalSummary.
 
 Import ListNotations ErrNotation.
 

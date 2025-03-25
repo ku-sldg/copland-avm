@@ -1,6 +1,6 @@
 Require Import Interface_Types Stringifiable Attestation_Session Term_Defs.
+Require Export JSON List.
 Require Import AppraisalSummary.
-Require Export JSON List Maps EqClass.
 Import ListNotations ResultNotation.
 
 (* Protocol Run Request *)
@@ -64,56 +64,6 @@ eapply Build_Jsonifiable with
 solve_json.
 Defined.
 
-(*
-Global Instance jsonifiable_map_serial_serial (A B : Type) `{Stringifiable A, EqClass A, Stringifiable B} : Jsonifiable (Map A B) :=
-  {
-    to_JSON   := map_serial_serial_to_JSON;
-    from_JSON := map_serial_serial_from_JSON;
-    canonical_jsonification := canonical_jsonification_map_serial_serial;
-  }.
-
-Global Instance jsonifiable_map_serial_json (A B : Type) `{Stringifiable A, EqClass A, Jsonifiable B} : Jsonifiable (Map A B).
-*)
-
-(*
-Global Instance Jsonifiable_targidMap `{Stringifiable TARG_ID, EqClass TARG_ID, Stringifiable string} : Jsonifiable (Map TARG_ID string).
-eapply Build_Jsonifiable with 
-(to_JSON := map_serial_serial_to_JSON)
-(from_JSON := map_serial_serial_from_JSON).
-eapply canonical_jsonification_map_serial_serial.
-Defined.
-*)
-
-Require Import ErrorStringConstants.
-
-(*
-
-Global Instance Jsonifiable_AppraisalSummary `{Stringifiable ASP_ID, EqClass ASP_ID, Jsonifiable (Map TARG_ID string)} : Jsonifiable AppraisalSummary.
-
-eapply Build_Jsonifiable with (
-  to_JSON := (fun m => JSON_Object (
-                      map (fun '(k, v) => 
-                            (to_string k, to_JSON v)
-                          ) m))) 
-  (from_JSON := (fun js =>   
-                    match js with
-                    | JSON_Object m => 
-                        result_map 
-                          (fun '(k, v) => 
-                            k' <- from_string k ;;
-                            v' <- from_JSON v ;;
-                            resultC (k', v')) m
-                    | _ => errC (errStr_map_from_json)
-                    end));
-intuition; induction a; simpl in *; intuition; eauto;
-repeat (try break_match; simpl in *; subst; eauto; try congruence);
-try rewrite canonical_jsonification in *; 
-try rewrite canonical_stringification in *; 
-repeat find_injection; simpl in *; 
-try find_rewrite; eauto; try congruence.
-Defined.
-*)
-
 Global Instance Jsonifiable_AppraisalSummaryResponse `{Jsonifiable AppraisalSummary}: Jsonifiable AppraisalSummaryResponse.
 eapply Build_Jsonifiable with
 (to_JSON := fun resp =>
@@ -129,8 +79,6 @@ eapply Build_Jsonifiable with
   appsumm <- from_JSON temp_appsumm ;;
   resultC (mkAppSummResp temp_success appsumm))); solve_json.
 Defined.
-
-
 
 (* Protocol Negotiate Request *)
 Global Instance Jsonifiable_ProtocolNegotiateRequest `{Jsonifiable Term}: Jsonifiable ProtocolNegotiateRequest.

@@ -21,7 +21,6 @@ Require Export BS.
 Require Import List ID_Type Maps JSON Stringifiable Stringifiable_Class_Admits StructTactics ErrorStringConstants JSON_Type.
 Require Import EqClass.
 
-Require Import EqClass.
 Require Import Lia.
 Import ListNotations ResultNotation.
 

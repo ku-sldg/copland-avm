@@ -118,7 +118,6 @@ Global Instance jsonifiable_bool : Jsonifiable bool :=
                                end 
   }.
 
-
 (* The List JSONIFIABLE Class *)
 
 Definition map_serial_serial_to_JSON {A B : Type} `{Stringifiable A, Stringifiable B, EqClass A} (m : Map A B) : JSON :=

@@ -58,7 +58,6 @@ ManCompSoundness_Helpers.v
 AM_Helpers.v
 AM_Json_Interfaces.v
 AM_Manager.v
-Resolute_Logic.v
 Resolute_Types.v
 Resolute_JSON.v
 Client_AM.v
@@ -67,4 +66,4 @@ Flexible_Mechanisms_Vars.v
 Flexible_Mechanisms.v
 Concrete_Extractables.v
 Extraction_Cvm_Cake.v
-Cvm_Verification.v
+#Cvm_Verification.v

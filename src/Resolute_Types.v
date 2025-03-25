@@ -1,4 +1,4 @@
-Require Import Term_Defs Resolute_Logic JSON.
+Require Import Term_Defs String JSON.
 
 Record Resolute_Client_Request := 
   mkResoluteClientReq {

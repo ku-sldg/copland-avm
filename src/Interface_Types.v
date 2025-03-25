@@ -56,15 +56,6 @@ Record AppraisalSummaryResponse :=
     appsummresp_summary: AppraisalSummary;
   }.
 
-(*
-Definition do_AppraisalSummary (et:EvidenceT) (r:RawEv) (G:GlobalContext) (m:RawEvJudgement) : ResultT AppraisalSummary string := 
-    do_AppraisalSummary' et r G m []. 
-
-
-Inductive Evidence :=
-| evc: RawEv -> EvidenceT -> Evidence.
-*)
-
 (* Record ASPInfoRequest := 
   mkASPIReq {
     aspireq_asp_id : ASP_ID;
