@@ -58,6 +58,8 @@ ManCompSoundness_Helpers.v
 AM_Helpers.v
 AM_Json_Interfaces.v
 AM_Manager.v
+Resolute_Types.v
+Resolute_JSON.v
 Client_AM.v
 Server_AM.v
 Flexible_Mechanisms_Vars.v

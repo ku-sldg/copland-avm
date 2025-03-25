@@ -1,4 +1,4 @@
-Require Import JSON Term_Defs Attestation_Session.
+Require Import JSON Term_Defs Attestation_Session AppraisalSummary.
 Require Export Interface_Strings_Vars.
 
 
@@ -41,6 +41,18 @@ Record ASPRunResponse :=
   mkASPRResp {
     asprresp_success: bool;
     asprresp_rawev: RawEv;
+  }.
+
+Record AppraisalSummaryRequest := 
+  mkAppSummReq {
+    appsummreq_att_sess : Attestation_Session;
+    appsummreq_Evidence: Evidence;
+  }.
+
+Record AppraisalSummaryResponse := 
+  mkAppSummResp {
+    appsummresp_success: bool;
+    appsummresp_summary: AppraisalSummary;
   }.
 
 (* Record ASPInfoRequest := 

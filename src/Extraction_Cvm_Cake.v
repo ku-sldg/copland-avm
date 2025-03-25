@@ -41,6 +41,7 @@ Separate Extraction
     concrete_Jsonifiable_Term
     concrete_Jsonifiable_EvidenceT
     concrete_Jsonifiable_GlobalContext
+    concrete_Jsonifiable_ASP_ARGS
     concrete_Jsonifiable_AppraisalSummary
     Jsonifiable_Term_Plc_list
     am_client_app_summary.
