@@ -71,7 +71,7 @@ Definition tpm_sig : ASP_ID := "sig_tpm".
 Definition tpm_sig_appr : ASP_ID := "sig_tpm_appr".
 
 Definition selinux_pol_dump : ASP_ID := "selinux_pol_dump".
-Definition appr_selinux_pol_dump : ASP_ID := "selinux_pol_dump_appr".
+Definition selinux_pol_dump_appr : ASP_ID := "hashfile_appr".
 
 Definition r_ssl_sig : ASP_ID := "sig".
 Definition r_ssl_sig_appr : ASP_ID := "sig_appr".
@@ -110,11 +110,11 @@ Definition hash_evidence_asp (targPlc:Plc) (targId:TARG_ID) (appr_path:string) :
                     targPlc 
                     targId ))).
 
-Definition selinux_hash_asp (targPlc:Plc) (targId:TARG_ID) : Term := 
+Definition selinux_hash_asp (targPlc:Plc) (targId:TARG_ID) (appr_path : string): Term := 
     (asp (ASPC (* ALL (EXTD 1) *)
                 (asp_paramsC 
                     selinux_pol_dump
-                    (JSON_Object [])
+                    (JSON_Object [("filepath-golden", (JSON_String appr_path))])
                     targPlc 
                     targId ))).
 
@@ -125,52 +125,52 @@ Close Scope string_scope.
 Open Scope cop_ent_scope.
 
 Definition path_targ1 : string := 
-    "/../LayeredAttestation/src/demo_layered_attestation/cds_config/rewrite_one_config.json".
+    "$DEMO_ROOT/cds_config/rewrite_one_config.json".
 
 Definition path_targ1_golden : string := 
-    "/tests/DemoFiles/goldenFiles/rewrite_one_config.json".
+    "$AM_ROOT/tests/DemoFiles/goldenFiles/rewrite_one_config.json".
 
 
 Definition path_micro_targ1 : string := 
-    "/../INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/aadl/data_1_prod_2_cons.aadl".
-    (* "/LayeredAttestation/src/demo_layered_attestation/cds_config/rewrite_one_config.json". *)
+    "$AM_ROOT/../INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/aadl/data_1_prod_2_cons.aadl".
     
 Definition path_micro_targ1_golden : string := 
-    "/tests/DemoFiles/goldenFiles/data_1_prod_2_cons.aadl".
+  "$AM_ROOT/tests/DemoFiles/goldenFiles/data_1_prod_2_cons.aadl".
 
 Definition path_micro_targ2 : string := 
-    "/../INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/hamr/microkit/microkit.system".
-       (* "/LayeredAttestation/src/demo_layered_attestation/cds_config/filter_one_config.json". *)
-        
+  "$AM_ROOT/../INSPECTA-models/micro-examples/microkit/aadl_port_types/data/base_type/hamr/microkit/microkit.system".
 Definition path_micro_targ2_golden : string := 
-        "/tests/DemoFiles/goldenFiles/microkit.system".
+  "$AM_ROOT/tests/DemoFiles/goldenFiles/microkit.system".
 
 Definition path_micro_composite_golden : string := 
-        "/tests/DemoFiles/goldenFiles/micro_composite.txt".
+  "$AM_ROOT/tests/DemoFiles/goldenFiles/micro_composite.txt".
 
 Definition path_targ2 : string := 
-    "/../LayeredAttestation/src/demo_layered_attestation/cds_config/filter_one_config.json".
+    "$DEMO_ROOT/cds_config/filter_one_config.json".
     
 Definition path_targ2_golden : string := 
-    "/tests/DemoFiles/goldenFiles/filter_one_config.json".
+    "$AM_ROOT/tests/DemoFiles/goldenFiles/filter_one_config.json".
 
 Definition path_targ3 : string := 
-    "/tests/DemoFiles/targFiles/targFile3.txt".
+    "$AM_ROOT/tests/DemoFiles/targFiles/targFile3.txt".
 
 Definition path_targ3_golden : string := 
-    "/tests/DemoFiles/goldenFiles/targFile3.txt".
+    "$AM_ROOT/tests/DemoFiles/goldenFiles/targFile3.txt".
 
 Definition path_exe_targ1 : string := 
-    "/../LayeredAttestation/src/demo_layered_attestation/installed_dir/bin/rewrite_one".
+    "$DEMO_ROOT/installed_dir/bin/rewrite_one".
 
 Definition path_exe_targ1_golden : string := 
-    "/tests/DemoFiles/goldenFiles/rewrite_one".
+    "$AM_ROOT/tests/DemoFiles/goldenFiles/rewrite_one".
 
 Definition path_exe_targ2 : string := 
-    "/../LayeredAttestation/src/demo_layered_attestation/installed_dir/bin/filter_one".
+    "$DEMO_ROOT/installed_dir/bin/filter_one".
     
 Definition path_exe_targ2_golden : string := 
-    "/tests/DemoFiles/goldenFiles/filter_one".
+    "$AM_ROOT/tests/DemoFiles/goldenFiles/filter_one".
+
+Definition selinux_policy_path_golden : string := 
+    "$AM_ROOT/tests/DemoFiles/goldenFiles/demo_pipeline_golden.cil".
 
 Definition gather_config_1 : Term := 
     (gather_targ_asp cds_config_dir_plc cds_config_1_targ path_targ1 path_targ1_golden).
@@ -190,7 +190,7 @@ Definition hash_cds_img_2 : Term :=
      path_exe_targ2 path_exe_targ2_golden).
 
 Definition selinux_hash_pol : Term := 
-(selinux_hash_asp cds_config_dir_plc selinux_policy_targ).
+(selinux_hash_asp cds_config_dir_plc selinux_policy_targ selinux_policy_path_golden).
 
 
 Definition provision_config_1 : Term := 
@@ -251,7 +251,7 @@ Definition appr_cds_asp : Term :=
 Definition sig_asp : Term := asp SIG.
 
 Definition r_tpm_sig_asp : Term := 
-        (asp (ASPC (asp_paramsC tpm_sig (JSON_Object []) cds_query_kim_plc tpm_sig_targ))).
+        (asp (ASPC (asp_paramsC tpm_sig (JSON_Object [("tpm_folder"%string, JSON_String "$AM_TPM_DIR")]) cds_query_kim_plc tpm_sig_targ))).
 
 Definition cds_demo_phrase : Term := 
 <{
