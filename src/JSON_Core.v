@@ -666,7 +666,66 @@ repeat rewrite canonical_stringification in *; simpl in *;
 find_rewrite; eauto.
 Defined.
 
+(*
+Inductive Evidence :=
+| evc: RawEv -> EvidenceT -> Evidence.
+*)
+Definition Evidence_to_JSON `{Jsonifiable RawEv, Jsonifiable EvidenceT} (e : Evidence) : JSON := 
+  match e with
+  | evc rawev evt =>
+    JSON_Object 
+    [(STR_RAWEV, (to_JSON rawev));
+     (STR_EVIDENCET, (to_JSON evt))]
+  end.
+  
+  (* constructor_to_JSON STR_EVIDENCE evc_name_constant [(to_JSON rawev); (to_JSON evt)] *)
+
+Definition Evidence_from_JSON `{Jsonifiable RawEv, Jsonifiable EvidenceT} (js : JSON) : ResultT Evidence string :=
+  rawev_js <- JSON_get_Object STR_RAWEV js ;;
+  evt_js <- JSON_get_Object STR_EVIDENCET js ;; 
+  rawev <- from_JSON rawev_js ;;
+  evt <- from_JSON evt_js ;;
+  resultC (evc rawev evt).
+
+
+
+(*
+
+  let type_name := STR_EVIDENCE in
+  let type_str := type_name ++ type_sep ++ type_string_constant in
+  let body_str := type_name ++ type_sep ++ body_string_constant in
+  match (JSON_get_Object type_str js) with
+  | resultC (JSON_String cons_name) =>
+    if (eqb cons_name evc_name_constant) 
+    then 
+      evc_js <- (JSON_get_Object body_str js) ;;
+      match evc_js with 
+      | JSON_Array [rev; evt] => 
+        rawev_val <- from_JSON rev ;;
+        evt_val <- from_JSON evt ;; 
+        resultC (evc rawev_val evt_val) 
+      | _ => errC err_str_json_parsing_failure_wrong_number_args
+      end
+    else errC err_str_json_invalid_constructor_name
+  | resultC _ => errC err_str_json_invalid_constructor_name
+  | errC e => errC e 
+  end.
+  *)
+
 Global Instance Jsonifiable_Evidence `{Jsonifiable RawEv, Jsonifiable EvidenceT}: Jsonifiable Evidence.
+eapply Build_Jsonifiable with
+  (to_JSON := Evidence_to_JSON
+  )
+  (from_JSON := Evidence_from_JSON
+  ); 
+destruct a; 
+unfold Evidence_from_JSON in *;
+repeat (result_monad_unfold;
+jsonifiable_hammer; repeat rewrite canonical_jsonification in *; eauto).
+Defined.
+
+
+(*
 eapply Build_Jsonifiable with
   (to_JSON := 
     (fun e => let '(evc r et) := e in
@@ -684,6 +743,7 @@ eapply Build_Jsonifiable with
   ); 
 destruct a; solve_json.
 Defined.
+*)
 
 Global Instance Jsonifiable_GlobalContext `{Stringifiable ASP_ID, 
   Jsonifiable (Map ASP_ID ASP_ID), Jsonifiable ASP_Type_Env} : Jsonifiable GlobalContext. 

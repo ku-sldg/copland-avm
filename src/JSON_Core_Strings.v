@@ -18,6 +18,8 @@ Definition right_evt_name_constant : string := "right_evt".
 
 Definition split_evt_name_constant : string := "split_evt".
 
+Definition evc_name_constant : string := "evc".
+
 Definition asp_name_constant  : string := "asp".
 Definition null_name_constant : string := "NULL".
 Definition appr_name_constant : string := "APPR".

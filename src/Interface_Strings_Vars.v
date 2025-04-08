@@ -7,6 +7,7 @@ Definition STR_RAWEV : string := "RAWEV".
 Definition STR_SUCCESS : string := "SUCCESS".
 Definition STR_PAYLOAD : string := "PAYLOAD".
 Definition STR_EVIDENCE : string := "EVIDENCE".
+Definition STR_EVIDENCET : string := "EVIDENCET".
 
 Definition STR_ACTION : string := "ACTION".
 Definition STR_TYPE : string := "TYPE".
