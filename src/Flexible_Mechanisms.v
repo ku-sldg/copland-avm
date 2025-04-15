@@ -105,6 +105,7 @@ Definition meas_cds : Term :=
    gather_config_2 )
 }>.
 
+(*
 Definition hash_micro_config_1 : Term := 
     (hash_targ_asp cds_config_dir_plc cds_img_1_targ 
     path_micro_targ1 path_micro_targ1_golden).
@@ -112,16 +113,47 @@ Definition hash_micro_config_1 : Term :=
 Definition hash_micro_config_2 : Term := 
     (hash_targ_asp cds_config_dir_plc cds_img_2_targ 
     path_micro_targ2 path_micro_targ2_golden).
+    *)
 
+Definition hashdir_env_var : string := "INSPECTA_ROOT".
+
+Definition path_micro_dir_1 : string := 
+    "/micro-examples/microkit/aadl_port_types/data/base_type/aadl/".
+
+Definition path_micro_dir_2 : string := 
+  "/micro-examples/microkit/aadl_port_types/data/base_type/hamr/microkit/".
+
+Definition path_micro_dir_1_golden : string :=
+  "/tests/DemoFiles/goldenFiles/micro_dir_1_golden.txt".
+Definition path_micro_dir_2_golden : string :=
+  "/tests/DemoFiles/goldenFiles/micro_dir_2_golden.txt".
+
+Definition hash_micro_dir_1 : Term := 
+  (hash_dir_asp 
+    cds_config_dir_plc 
+    cds_img_1_targ 
+    hashdir_env_var
+    [path_micro_dir_1]
+    path_micro_dir_1_golden).
+
+Definition hash_micro_dir_2 : Term := 
+  (hash_dir_asp 
+    cds_config_dir_plc 
+    cds_img_2_targ 
+    hashdir_env_var
+    [path_micro_dir_2]
+    path_micro_dir_2_golden).
 
 Definition hash_micro_evidence : Term := 
-  (hash_evidence_asp cds_config_dir_plc cds_img_3_targ 
+  (hash_evidence_asp 
+    cds_config_dir_plc 
+    cds_img_3_targ 
     path_micro_composite_golden).
 
 Definition meas_micro : Term := 
 <{
-  (hash_micro_config_1 +<+ 
-   hash_micro_config_2) -> 
+  (hash_micro_dir_1 +<+ 
+   hash_micro_dir_2) -> 
    hash_micro_evidence
 }>.
 
@@ -153,20 +185,29 @@ Definition cds_tpm : Term :=
     appr_term
 }>. 
 
-Definition provision_micro_hash_1 : Term := 
-    (provision_targ_asp cds_config_dir_plc cds_config_1_targ path_micro_targ1_golden).
+Definition provision_micro_dir_1 : Term := 
+    (provision_targ_asp 
+      cds_config_dir_plc 
+      cds_config_1_targ 
+      path_micro_dir_1_golden).
 
-Definition provision_micro_hash_2 : Term := 
-    (provision_targ_asp cds_config_dir_plc cds_config_1_targ path_micro_targ2_golden).
+Definition provision_micro_dir_2 : Term := 
+    (provision_targ_asp 
+      cds_config_dir_plc 
+      cds_config_1_targ 
+      path_micro_dir_2_golden).
 
 Definition provision_micro_hash_composite : Term := 
-      (provision_targ_asp cds_config_dir_plc cds_config_1_targ    path_micro_composite_golden).
+      (provision_targ_asp 
+        cds_config_dir_plc 
+        cds_config_1_targ
+        path_micro_composite_golden).
 
 Definition micro_appTerm_provision : Term :=
   <{
-    (hash_micro_config_1 -> provision_micro_hash_1) +<+ 
-    (hash_micro_config_2 -> provision_micro_hash_2) +<+ 
-    (meas_micro -> provision_micro_hash_composite)
+    (meas_micro -> provision_micro_hash_composite) +<+
+    (hash_micro_dir_2 -> provision_micro_dir_2) +<+ 
+    (hash_micro_dir_2 -> provision_micro_dir_2)
   }>.
 
 Definition example_appTerm_provision : Term :=

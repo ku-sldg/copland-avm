@@ -56,6 +56,7 @@ Definition cds_img_3_targ : TARG_ID := "cds_img_3_targ".
 Definition query_kim : ASP_ID := "invary_get_measurement". (* "query_kim" *)
 Definition query_kim_stub : ASP_ID := "invary_get_measurement_stub".
 Definition hash_file_contents : ASP_ID := "hashfile".
+Definition hash_dir_contents : ASP_ID := "hashdir".
 Definition hash_evidence : ASP_ID := "hashevidence".
 Definition gather_file_contents : ASP_ID := "readfile". (* "gather_file_contents" *)
 Definition appr_gather_file_contents : ASP_ID := "readfile_appr".
@@ -81,7 +82,7 @@ Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID) (path:string) (appr_pa
                (asp_paramsC 
                     gather_file_contents 
                     (JSON_Object [("filepath", (JSON_String path)); 
-                     ("filepath-golden", (JSON_String appr_path))])
+                     ("filepath_golden", (JSON_String appr_path))])
                     targPlc 
                     targId ))).
 
@@ -90,7 +91,18 @@ Definition hash_targ_asp (targPlc:Plc) (targId:TARG_ID) (path:string) (appr_path
                 (asp_paramsC 
                     hash_file_contents 
                     (JSON_Object [("filepath", (JSON_String path)); 
-                     ("filepath-golden", (JSON_String appr_path))])
+                     ("filepath_golden", (JSON_String appr_path))])
+                    targPlc 
+                    targId ))).
+
+Definition string_to_json (s:string) : JSON := JSON_String s.
+
+Definition hash_dir_asp (targPlc:Plc) (targId:TARG_ID) (env_var:string) (paths:list string) (appr_path:string) : Term := 
+    (asp (ASPC (asp_paramsC 
+                    hash_dir_contents 
+                    (JSON_Object [("env_var", (JSON_String env_var)); 
+                                  ("paths", (JSON_Array (map string_to_json paths)));
+                                  ("filepath_golden", (JSON_String appr_path))])
                     targPlc 
                     targId ))).
 
@@ -106,7 +118,7 @@ Definition hash_evidence_asp (targPlc:Plc) (targId:TARG_ID) (appr_path:string) :
     (asp (ASPC (* ALL (EXTD 1) *)
                 (asp_paramsC 
                     hash_evidence 
-                    (JSON_Object [ ("filepath-golden", (JSON_String appr_path))])
+                    (JSON_Object [ ("filepath_golden", (JSON_String appr_path))])
                     targPlc 
                     targId ))).
 
@@ -114,7 +126,7 @@ Definition selinux_hash_asp (targPlc:Plc) (targId:TARG_ID) (appr_path : string):
     (asp (ASPC (* ALL (EXTD 1) *)
                 (asp_paramsC 
                     selinux_pol_dump
-                    (JSON_Object [("filepath-golden", (JSON_String appr_path))])
+                    (JSON_Object [("filepath_golden", (JSON_String appr_path))])
                     targPlc 
                     targId ))).
 
@@ -143,7 +155,7 @@ Definition path_micro_targ2_golden : string :=
   "$AM_ROOT/tests/DemoFiles/goldenFiles/microkit.system".
 
 Definition path_micro_composite_golden : string := 
-  "$AM_ROOT/tests/DemoFiles/goldenFiles/micro_composite.txt".
+  "/tests/DemoFiles/goldenFiles/micro_composite.txt".
 
 Definition path_targ2 : string := 
     "$DEMO_ROOT/cds_config/filter_one_config.json".
