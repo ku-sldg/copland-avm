@@ -540,17 +540,17 @@ Defined.
 
 Global Instance Jsonifiable_Split : Jsonifiable Split := {
   to_JSON := (fun '(s1, s2) => 
-                JSON_Object [
-                  (split1_name_constant, JSON_String (to_string s1));
-                  (split2_name_constant, JSON_String (to_string s2))
+                JSON_Array [
+                  (JSON_String (to_string s1));
+                  (JSON_String (to_string s2))
                 ]);
   from_JSON := (fun js => 
-                  match (JSON_get_string split1_name_constant js), (JSON_get_string split2_name_constant js) with
-                  | resultC s1, resultC s2 => 
-                    s1 <- from_string s1 ;;
-                    s2 <- from_string s2 ;;
+                  match js with 
+                  | JSON_Array [JSON_String sp1; JSON_String sp2] => 
+                    s1 <- from_string sp1 ;;
+                    s2 <- from_string sp2 ;;
                     resultC (s1, s2)
-                  | _, _ => errC err_str_json_parsing_failure_wrong_number_args
+                  | _ => errC err_str_json_parsing_failure_wrong_number_args
                   end);
   canonical_jsonification := fun '(s1, s2) => 
                               match s1, s2 with
