@@ -52,6 +52,10 @@ Definition cds_img_1_targ : TARG_ID := "cds_rewrite_img_targ".
 Definition cds_img_2_targ : TARG_ID := "cds_filter_img_targ".
 Definition cds_img_3_targ : TARG_ID := "cds_img_3_targ".
 
+Definition aadl_dir_targ : TARG_ID := "aadl_dir_targ".
+Definition microkit_dir_targ : TARG_ID := "microkit_dir_targ".
+Definition micro_hash_comp_targ : TARG_ID := "micro_hash_composite_targ".
+
 (* ASP IDs *)
 Definition query_kim : ASP_ID := "invary_get_measurement". (* "query_kim" *)
 Definition query_kim_stub : ASP_ID := "invary_get_measurement_stub".

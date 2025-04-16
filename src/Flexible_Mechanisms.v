@@ -131,7 +131,7 @@ Definition path_micro_dir_2_golden : string :=
 Definition hash_micro_dir_1 : Term := 
   (hash_dir_asp 
     cds_config_dir_plc 
-    cds_img_1_targ 
+    aadl_dir_targ 
     hashdir_env_var
     [path_micro_dir_1]
     path_micro_dir_1_golden).
@@ -139,7 +139,7 @@ Definition hash_micro_dir_1 : Term :=
 Definition hash_micro_dir_2 : Term := 
   (hash_dir_asp 
     cds_config_dir_plc 
-    cds_img_2_targ 
+    microkit_dir_targ 
     hashdir_env_var
     [path_micro_dir_2]
     path_micro_dir_2_golden).
@@ -147,7 +147,7 @@ Definition hash_micro_dir_2 : Term :=
 Definition hash_micro_evidence : Term := 
   (hash_evidence_asp 
     cds_config_dir_plc 
-    cds_img_3_targ 
+    micro_hash_comp_targ 
     path_micro_composite_golden).
 
 Definition meas_micro : Term := 
@@ -205,9 +205,24 @@ Definition provision_micro_hash_composite : Term :=
 
 Definition micro_appTerm_provision : Term :=
   <{
-    (meas_micro -> provision_micro_hash_composite) +<+
-    (hash_micro_dir_2 -> provision_micro_dir_2) +<+ 
+    (hash_micro_dir_1 -> provision_micro_dir_1) +<+
+    (hash_micro_dir_2 -> provision_micro_dir_2) +<+
+    (meas_micro -> provision_micro_hash_composite)
+  }>.
+
+Definition micro_appTerm_provision_dir_1 : Term :=
+  <{
+    (hash_micro_dir_1 -> provision_micro_dir_1)
+  }>.
+
+Definition micro_appTerm_provision_dir_2 : Term :=
+  <{
     (hash_micro_dir_2 -> provision_micro_dir_2)
+  }>.
+
+Definition micro_appTerm_provision_composite : Term :=
+  <{
+  (meas_micro -> provision_micro_hash_composite)
   }>.
 
 Definition example_appTerm_provision : Term :=
@@ -264,7 +279,11 @@ Definition flexible_mechanisms_map :=
    ("cds_provision", example_appTerm_provision);
    ("simple_sig", simple_sig);
    ("micro", micro_appTerm);
-   ("micro_provision", micro_appTerm_provision) ].
+   ("micro_provision", micro_appTerm_provision);
+   ("micro_provision_dir_1", micro_appTerm_provision_dir_1);
+   ("micro_provision_dir_2", micro_appTerm_provision_dir_2);
+   ("micro_provision_composite", micro_appTerm_provision_composite)
+    ].
    
 
 Definition add_EvidenceT_flexible_mechanisms := 
