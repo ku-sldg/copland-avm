@@ -72,30 +72,6 @@ Open Scope cop_ent_scope.
 
 Definition appr_term : Term := (asp APPR).
 
-(*
-Definition example_appTerm : Term :=
-<{
-    (gather_config_1 (* +<+
-      query_kim_asp *)
-    (*
-    gather_config_2 +<+
-    gather_config_3 *) )
-     (* gather_config_2  *)
-     (* query_kim_asp) *)
-    
-    (* +<+
-    gather_config_2 +<+
-    gather_config_3 +<+ 
-    hash_cds_img_1) *) ->
-    appr_term
-}>.
-*)
-
-(*
-Definition example_appTerm' : Term := 
-  (asp (ASPC (asp_paramsC attest2 [] P1 sys_targ))).
-*)
-
 Definition meas_cds : Term := 
 <{
   (selinux_hash_pol +<+
@@ -133,6 +109,7 @@ Definition hash_micro_dir_1 : Term :=
     cds_config_dir_plc 
     aadl_dir_targ 
     hashdir_env_var
+    am_root_env_var
     [path_micro_dir_1]
     path_micro_dir_1_golden).
 
@@ -141,6 +118,7 @@ Definition hash_micro_dir_2 : Term :=
     cds_config_dir_plc 
     microkit_dir_targ 
     hashdir_env_var
+    am_root_env_var
     [path_micro_dir_2]
     path_micro_dir_2_golden).
 
@@ -148,6 +126,7 @@ Definition hash_micro_evidence : Term :=
   (hash_evidence_asp 
     cds_config_dir_plc 
     micro_hash_comp_targ 
+    am_root_env_var
     path_micro_composite_golden).
 
 Definition meas_micro : Term := 
@@ -189,18 +168,21 @@ Definition provision_micro_dir_1 : Term :=
     (provision_targ_asp 
       cds_config_dir_plc 
       cds_config_1_targ 
+      am_root_env_var
       path_micro_dir_1_golden).
 
 Definition provision_micro_dir_2 : Term := 
     (provision_targ_asp 
       cds_config_dir_plc 
       cds_config_1_targ 
+      am_root_env_var
       path_micro_dir_2_golden).
 
 Definition provision_micro_hash_composite : Term := 
       (provision_targ_asp 
         cds_config_dir_plc 
         cds_config_1_targ
+        am_root_env_var
         path_micro_composite_golden).
 
 Definition micro_appTerm_provision : Term :=
