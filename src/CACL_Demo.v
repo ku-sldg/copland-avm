@@ -140,10 +140,13 @@ Definition hash_evidence_asp (targPlc:Plc) (targId:TARG_ID)
                     targPlc 
                     targId ))).
 
-Definition selinux_hash_asp (targPlc:Plc) (targId:TARG_ID) (appr_path : string): Term := 
+Definition selinux_hash_asp (targPlc:Plc) (targId:TARG_ID) 
+    (env_var_golden:string) (path_golden:string) : Term := 
     (asp (ASPC (asp_paramsC 
                     selinux_pol_dump
-                    (JSON_Object [("filepath_golden", (JSON_String appr_path))])
+                    (JSON_Object [
+                        ("env_var_golden", (JSON_String env_var_golden));
+                        ("filepath_golden", (JSON_String path_golden))])
                     targPlc 
                     targId ))).
 
@@ -240,6 +243,7 @@ Definition selinux_hash_pol : Term :=
     (selinux_hash_asp 
         cds_config_dir_plc 
         selinux_policy_targ 
+        am_root_env_var
         selinux_policy_path_golden).
 
 Definition provision_config_1 : Term := 
