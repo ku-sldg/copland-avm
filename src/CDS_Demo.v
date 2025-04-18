@@ -4,7 +4,7 @@ Require Import Manifest_Set JSON ErrorStringConstants.
 
 Require Import Flexible_Mechanisms_Vars.
 
-Require Import CACL_Defs CACL_Typeclasses CACL_Generator.
+Require Import Demo_Terms.
 
 Require Import Cvm_Utils CACL_Demo_Args.
 
@@ -52,21 +52,13 @@ Definition cds_img_1_targ : TARG_ID := "cds_rewrite_img_targ".
 Definition cds_img_2_targ : TARG_ID := "cds_filter_img_targ".
 Definition cds_img_3_targ : TARG_ID := "cds_img_3_targ".
 
-Definition aadl_dir_targ : TARG_ID := "aadl_dir_targ".
-Definition microkit_dir_targ : TARG_ID := "microkit_dir_targ".
-Definition micro_hash_comp_targ : TARG_ID := "micro_hash_composite_targ".
-
 (* ASP IDs *)
-Definition query_kim : ASP_ID := "invary_get_measurement". (* "query_kim" *)
+Definition query_kim : ASP_ID := "invary_get_measurement".
 Definition query_kim_stub : ASP_ID := "invary_get_measurement_stub".
-Definition hash_file_contents : ASP_ID := "hashfile".
-Definition hash_dir_contents : ASP_ID := "hashdir".
-Definition hash_evidence : ASP_ID := "hashevidence".
-Definition gather_file_contents : ASP_ID := "readfile". (* "gather_file_contents" *)
 Definition appr_gather_file_contents : ASP_ID := "readfile_appr".
 Definition appr_hash_file_contents : ASP_ID := "hashfile_appr".
 Definition appr_hash_evidence : ASP_ID := "hashevidence_appr".
-Definition provision : ASP_ID := "provision".
+
 Definition appr_cds : ASP_ID := "cds_appr".
 Definition appr_query_kim : ASP_ID := "invary_get_measurement_appr".
 Definition appr_query_kim_stub : ASP_ID := "invary_get_measurement_stub_appr".
@@ -80,65 +72,6 @@ Definition selinux_pol_dump_appr : ASP_ID := "hashfile_appr".
 
 Definition r_ssl_sig : ASP_ID := "sig".
 Definition r_ssl_sig_appr : ASP_ID := "sig_appr".
-
-Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID) 
-    (env_var:string) (env_var_golden:string) 
-    (path:string) (path_golden:string) : Term := 
-    (asp (ASPC (asp_paramsC 
-                    gather_file_contents 
-                    (JSON_Object [
-                     ("env_var", (JSON_String env_var));
-                     ("filepath", (JSON_String path)); 
-                     ("env_var_golden", (JSON_String env_var_golden));
-                     ("filepath_golden", (JSON_String path_golden))])
-                    targPlc 
-                    targId ))).
-
-Definition hash_targ_asp (targPlc:Plc) (targId:TARG_ID) 
-    (env_var:string) (env_var_golden:string) 
-    (path:string) (path_golden:string) : Term := 
-    (asp (ASPC (asp_paramsC 
-                    hash_file_contents 
-                    (JSON_Object [
-                     ("env_var", (JSON_String env_var));
-                     ("filepath", (JSON_String path)); 
-                     ("env_var_golden", (JSON_String env_var_golden));
-                     ("filepath_golden", (JSON_String path_golden))])
-                    targPlc 
-                    targId ))).
-
-Definition string_to_json (s:string) : JSON := JSON_String s.
-
-Definition hash_dir_asp (targPlc:Plc) (targId:TARG_ID) 
-    (env_var:string) (env_var_golden:string) (paths:list string) (appr_path:string) : Term := 
-    (asp (ASPC (asp_paramsC 
-                    hash_dir_contents 
-                    (JSON_Object [("env_var", (JSON_String env_var)); 
-                                  ("env_var_golden", (JSON_String env_var_golden));
-                                  ("paths", (JSON_Array (map string_to_json paths)));
-                                  ("filepath_golden", (JSON_String appr_path))])
-                    targPlc 
-                    targId ))).
-
-Definition provision_targ_asp (targPlc:Plc) (targId:TARG_ID) 
-    (env_var:string) (path:string) : Term := 
-    (asp (ASPC (asp_paramsC 
-                    provision 
-                    (JSON_Object [
-                        ("env_var", (JSON_String env_var));
-                        ("filepath", (JSON_String path))])
-                    targPlc 
-                    targId ))).
-
-Definition hash_evidence_asp (targPlc:Plc) (targId:TARG_ID)
-    (env_var_golden:string) (path_golden:string) : Term := 
-    (asp (ASPC (asp_paramsC 
-                    hash_evidence 
-                     (JSON_Object [
-                     ("env_var_golden", (JSON_String env_var_golden));
-                     ("filepath_golden", (JSON_String path_golden))])
-                    targPlc 
-                    targId ))).
 
 Definition selinux_hash_asp (targPlc:Plc) (targId:TARG_ID) 
     (env_var_golden:string) (path_golden:string) : Term := 
@@ -164,9 +97,6 @@ Definition path_targ1 : string :=
 
 Definition path_targ1_golden : string := 
     "/tests/DemoFiles/goldenFiles/rewrite_one_config.json".
-
-Definition path_micro_composite_golden : string := 
-  "/tests/DemoFiles/goldenFiles/micro_composite.txt".
 
 Definition path_targ2 : string := 
     "/cds_config/filter_one_config.json".
@@ -339,54 +269,68 @@ Definition r_tpm_sig_asp : Term :=
                         cds_query_kim_plc 
                         tpm_sig_targ))).
 
-Definition cds_demo_phrase : Term := 
+Definition appr_term : Term := (asp APPR).
+
+
+Definition meas_cds : Term := 
 <{
-  @ P1 
-  [
-    (
-    query_kim_asp ->
-    meas_cds_phrase
-     ) ->
-    sig_asp
-  ] -> 
-  @ P3 [ appr_cds_asp ]
+  (selinux_hash_pol +<+
+   hash_cds_img_1 +<+
+   hash_cds_img_2 +<+
+   gather_config_1 +<+ 
+   gather_config_2 )
+}>.
+
+Definition cds_ssl : Term :=
+<{
+    (query_kim_asp +<+ meas_cds) ->
+    r_ssl_sig_asp ->
+    appr_term
+}>. 
+    
+Definition cds_tpm : Term :=
+<{
+    (query_kim_asp +<+ meas_cds) ->
+    r_tpm_sig_asp ->
+    appr_term
+}>. 
+
+Definition simple_sig : Term := 
+lseq 
+(
+  lseq
+(asp (ASPC (asp_paramsC attest (JSON_Object []) P1 sys_targ)))
+r_ssl_sig_asp) 
+appr_term.
+
+Definition example_appTerm : Term :=
+<{
+    ( meas_cds ) ->
+    appr_term
+}>.
+
+Definition meas_cds_local : Term := 
+<{
+  (gather_config_1 +<+ 
+   gather_config_2 )
+}>.
+
+Definition cds_local : Term :=
+<{
+    (query_kim_asp +<+
+     meas_cds_local) ->
+    r_ssl_sig_asp ->
+    appr_term
+}>. 
+
+Definition example_appTerm_provision : Term :=
+<{
+    (gather_config_1 -> provision_config_1) +<+
+    (gather_config_2 -> provision_config_2) +<+
+    (hash_cds_img_1   -> provision_img_1) +<+
+    (hash_cds_img_2   -> provision_img_2)
 }>.
 
 Close Scope cop_ent_scope.
-
-
-Definition cds_demo_arch_policy : CACL_Policy := 
-    [
-    (cds_exe_1_targ, [(in_targ, CACL_Read)]);
-
-    (cds_exe_2_targ, [(tmp_1_targ, CACL_Read)]);
-    (cds_exe_3_targ, [(tmp_2_targ, CACL_Read)]);
-    (out_targ, [(tmp_3_targ, CACL_Read)]);
-    (cds_exe_1_targ, [(tmp_1_targ, CACL_Write)]);
-    (cds_exe_2_targ, [(tmp_2_targ, CACL_Write)]);
-    (cds_exe_3_targ, [(tmp_3_targ, CACL_Write)]);
-
-    (cds_exe_1_targ, [(cds_config_1_targ, CACL_Read)]);
-    (cds_exe_2_targ, [(cds_config_2_targ, CACL_Read)]);
-    (cds_exe_3_targ, [(cds_config_3_targ, CACL_Read)]);
-
-    (cds_controller_exe_targ, [(cds_exe_dir_targ, CACL_Write)]);
-    (cds_controller_exe_targ, [(cds_exe_dir_targ, CACL_Invoke)]);
-
-    (cds_controller_exe_targ, [(cds_flags_dir_targ, CACL_Read)]);
-    (cds_controller_exe_targ, [(cds_flags_dir_targ, CACL_Write)]);
-
-    (cds_exe_1_targ, [(cds_flags_1_targ, CACL_Write)]);
-    (cds_exe_2_targ, [(cds_flags_2_targ, CACL_Write)]);
-    (cds_exe_3_targ, [(cds_flags_3_targ, CACL_Write)])
-    ].
-
-
-Definition test_cacl_compute := 
-    CACL_policy_union 
-        cds_demo_arch_policy
-        (CACL_policy_generator cds_demo_phrase P0).
-
-
 
 

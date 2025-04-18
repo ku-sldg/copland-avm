@@ -20,11 +20,10 @@ JSON_Core.v
 Params_Admits.v
 Term_Defs.v
 Cvm_Utils.v
-CACL_Defs.v
-CACL_Typeclasses.v
-CACL_Generator.v
 CACL_Demo_Args.v
-CACL_Demo.v
+Demo_Terms.v
+CDS_Demo.v
+Resolute_Demo.v
 AppraisalSummary.v
 Attestation_Session.v
 Interface_Types.v
