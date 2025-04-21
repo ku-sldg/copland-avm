@@ -1,4 +1,4 @@
-Require Import Term_Defs Demo_Terms.
+Require Import Term_Defs Demo_Terms JSON.
 
 Require Import String.
 
@@ -40,57 +40,77 @@ Definition path_micro_dir_2_golden : string :=
 Definition path_micro_composite_golden : string := 
   "/tests/DemoFiles/goldenFiles/micro_composite.txt".
 
+Definition provision_micro_dir_1_args : ASP_ARGS :=
+  (JSON_Object [
+      ("env_var_golden", (JSON_String am_root_env_var));
+      ("filepath_golden", (JSON_String path_micro_dir_1_golden))]).
+
+Definition provision_micro_dir_2_args : ASP_ARGS :=
+  (JSON_Object [
+      ("env_var_golden", (JSON_String am_root_env_var));
+      ("filepath_golden", (JSON_String path_micro_dir_2_golden))]).
+
+Definition provision_micro_hash_composite_args : ASP_ARGS :=
+  (JSON_Object [
+      ("env_var_golden", (JSON_String am_root_env_var));
+      ("filepath_golden", (JSON_String path_micro_composite_golden))]).
+
+Definition hash_micro_dir_1_args : ASP_ARGS := 
+  (JSON_Object [("env_var", (JSON_String hashdir_env_var)); 
+                ("env_var_golden", (JSON_String am_root_env_var));
+                ("paths", (JSON_Array (map string_to_json [path_micro_dir_1])));
+                ("filepath_golden", (JSON_String path_micro_dir_1_golden))]).
+
+Definition hash_micro_dir_2_args : ASP_ARGS := 
+  (JSON_Object [("env_var", (JSON_String hashdir_env_var)); 
+                ("env_var_golden", (JSON_String am_root_env_var));
+                ("paths", (JSON_Array (map string_to_json [path_micro_dir_2])));
+                ("filepath_golden", (JSON_String path_micro_dir_2_golden))]).
+
+Definition hash_micro_evidence_args : ASP_ARGS :=
+  (JSON_Object [
+      ("env_var_golden", (JSON_String am_root_env_var));
+      ("filepath_golden", (JSON_String path_micro_composite_golden))]).
+
+
 Close Scope string_scope.
 
 Definition provision_micro_dir_1 : Term := 
     (provision_targ_asp 
       micro_demo_plc 
       micro_demo_targ 
-      am_root_env_var
-      path_micro_dir_1_golden).
-
+      provision_micro_dir_1_args).
 
 Definition provision_micro_dir_2 : Term := 
     (provision_targ_asp 
       micro_demo_plc 
       micro_demo_targ
-      am_root_env_var
-      path_micro_dir_2_golden).
+      provision_micro_dir_2_args).
 
 Definition provision_micro_hash_composite : Term := 
-      (provision_targ_asp 
+    (provision_targ_asp 
       micro_demo_plc 
       micro_demo_targ
-        am_root_env_var
-        path_micro_composite_golden).
+      provision_micro_hash_composite_args).
 
 Definition hash_micro_dir_1 : Term := 
     (hash_dir_asp 
-    micro_demo_plc  
-        aadl_dir_targ 
-        hashdir_env_var
-        am_root_env_var
-        [path_micro_dir_1]
-        path_micro_dir_1_golden).
+      micro_demo_plc  
+      aadl_dir_targ 
+      hash_micro_dir_1_args).
     
-    Definition hash_micro_dir_2 : Term := 
+Definition hash_micro_dir_2 : Term := 
     (hash_dir_asp 
-    micro_demo_plc 
-        microkit_dir_targ 
-        hashdir_env_var
-        am_root_env_var
-        [path_micro_dir_2]
-        path_micro_dir_2_golden).
+      micro_demo_plc 
+      microkit_dir_targ 
+      hash_micro_dir_2_args).
     
-    Definition hash_micro_evidence : Term := 
+Definition hash_micro_evidence : Term := 
     (hash_evidence_asp 
-    micro_demo_plc  
-        micro_hash_comp_targ 
-        am_root_env_var
-        path_micro_composite_golden).
+      micro_demo_plc  
+      micro_hash_comp_targ 
+      hash_micro_evidence_args).
           
-
-
 Open Scope cop_ent_scope.
 
 Definition meas_micro : Term := 
@@ -129,3 +149,17 @@ Definition micro_appTerm_provision_composite : Term :=
   <{
   (meas_micro -> provision_micro_hash_composite)
   }>.
+
+
+Open Scope string_scope.
+
+Definition resolute_terms_map := 
+  [
+    ("micro", micro_appTerm);
+    ("micro_provision", micro_appTerm_provision);
+    ("micro_provision_dir_1", micro_appTerm_provision_dir_1);
+    ("micro_provision_dir_2", micro_appTerm_provision_dir_2);
+    ("micro_provision_composite", micro_appTerm_provision_composite)
+  ].
+
+Close Scope string_scope.

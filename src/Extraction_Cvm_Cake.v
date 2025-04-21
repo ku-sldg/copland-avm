@@ -32,7 +32,7 @@ Extract Inlined Constant Nat.eqb => "(op=)".
 (* Extract Constant Nat.add => "(+)". *)
 
 Separate Extraction 
-    full_flexible_mechanisms
+    full_terms
     build_cvm session_config_compiler 
 		handle_AM_request end_to_end_mangen
     concrete_Jsonifiable_Manifest

@@ -74,20 +74,18 @@ Definition r_ssl_sig : ASP_ID := "sig".
 Definition r_ssl_sig_appr : ASP_ID := "sig_appr".
 
 Definition selinux_hash_asp (targPlc:Plc) (targId:TARG_ID) 
-    (env_var_golden:string) (path_golden:string) : Term := 
+    (args:ASP_ARGS) : Term :=
     (asp (ASPC (asp_paramsC 
                     selinux_pol_dump
+                    (*
                     (JSON_Object [
                         ("env_var_golden", (JSON_String env_var_golden));
                         ("filepath_golden", (JSON_String path_golden))])
+                        *)
+                    args
                     targPlc 
                     targId ))).
 
-
-Close Scope string_scope.
-
-
-Open Scope cop_ent_scope.
 
 Definition demo_root_env_var : string := "DEMO_ROOT".
 Definition am_root_env_var   : string := "AM_ROOT".
@@ -104,12 +102,6 @@ Definition path_targ2 : string :=
 Definition path_targ2_golden : string := 
     "/tests/DemoFiles/goldenFiles/filter_one_config.json".
 
-Definition path_targ3 : string := 
-    "/tests/DemoFiles/targFiles/targFile3.txt".
-
-Definition path_targ3_golden : string := 
-    "/tests/DemoFiles/goldenFiles/targFile3.txt".
-
 Definition path_exe_targ1 : string := 
     "/installed_dir/bin/rewrite_one".
 
@@ -125,92 +117,118 @@ Definition path_exe_targ2_golden : string :=
 Definition selinux_policy_path_golden : string := 
     "/tests/DemoFiles/goldenFiles/demo_pipeline_golden.cil".
 
+Definition gather_config_1_args : ASP_ARGS := 
+    (JSON_Object [
+    ("env_var", (JSON_String demo_root_env_var));
+    ("filepath", (JSON_String path_targ1)); 
+    ("env_var_golden", (JSON_String  am_root_env_var));
+    ("filepath_golden", (JSON_String path_targ1_golden))]).
+
+Definition gather_config_2_args : ASP_ARGS := 
+    (JSON_Object [
+    ("env_var", (JSON_String demo_root_env_var));
+    ("filepath", (JSON_String path_targ2)); 
+    ("env_var_golden", (JSON_String  am_root_env_var));
+    ("filepath_golden", (JSON_String path_targ2_golden))]).
+
+Definition hash_cds_img_1_args : ASP_ARGS := 
+    (JSON_Object [
+    ("env_var", (JSON_String demo_root_env_var));
+    ("filepath", (JSON_String path_exe_targ1)); 
+    ("env_var_golden", (JSON_String  am_root_env_var));
+    ("filepath_golden", (JSON_String path_exe_targ1_golden))]).
+
+Definition hash_cds_img_2_args : ASP_ARGS := 
+    (JSON_Object [
+    ("env_var", (JSON_String demo_root_env_var));
+    ("filepath", (JSON_String path_exe_targ2)); 
+    ("env_var_golden", (JSON_String  am_root_env_var));
+    ("filepath_golden", (JSON_String path_exe_targ2_golden))]).
+
+Definition selinux_hash_pol_args : ASP_ARGS :=
+    (JSON_Object [
+        ("env_var_golden", (JSON_String am_root_env_var));
+        ("filepath_golden", (JSON_String selinux_policy_path_golden))]).
+
+Definition provision_config_1_args : ASP_ARGS :=
+    (JSON_Object [
+        ("env_var_golden", (JSON_String am_root_env_var));
+        ("filepath_golden", (JSON_String path_targ1_golden))]).
+
+Definition provision_config_2_args : ASP_ARGS :=
+    (JSON_Object [
+        ("env_var_golden", (JSON_String am_root_env_var));
+        ("filepath_golden", (JSON_String path_targ2_golden))]).
+
+Definition provision_img_1_args : ASP_ARGS :=
+    (JSON_Object [
+        ("env_var_golden", (JSON_String am_root_env_var));
+        ("filepath_golden", (JSON_String path_exe_targ1_golden))]).
+
+Definition provision_img_2_args : ASP_ARGS :=
+    (JSON_Object [
+        ("env_var_golden", (JSON_String am_root_env_var));
+        ("filepath_golden", (JSON_String path_exe_targ2_golden))]).
+
+Close Scope string_scope.
+
+Open Scope cop_ent_scope.
+
 Definition gather_config_1 : Term := 
     (gather_targ_asp 
         cds_config_dir_plc 
         cds_config_1_targ 
-        demo_root_env_var (* env_var *)
-        am_root_env_var   (* env_var_golden *)
-        path_targ1 
-        path_targ1_golden).
+        gather_config_1_args).
 
 Definition gather_config_2 : Term := 
     (gather_targ_asp 
         cds_config_dir_plc 
         cds_config_2_targ 
-        demo_root_env_var (* env_var *)
-        am_root_env_var   (* env_var_golden *)
-        path_targ2 path_targ2_golden).
-
-Definition gather_config_3 : Term := 
-    (gather_targ_asp 
-        cds_config_dir_plc 
-        cds_config_3_targ 
-        demo_root_env_var (* env_var *)
-        am_root_env_var   (* env_var_golden *)
-        path_targ3 
-        path_targ3_golden).
+        gather_config_2_args).
 
 Definition hash_cds_img_1 : Term := 
     (hash_targ_asp 
         cds_config_dir_plc 
         cds_img_1_targ 
-        demo_root_env_var (* env_var *)
-        am_root_env_var   (* env_var_golden *)
-        path_exe_targ1 
-        path_exe_targ1_golden).
+        hash_cds_img_1_args).
 
 Definition hash_cds_img_2 : Term := 
     (hash_targ_asp 
         cds_config_dir_plc 
-        cds_img_2_targ
-        demo_root_env_var (* env_var *)
-        am_root_env_var   (* env_var_golden *)
-        path_exe_targ2 
-        path_exe_targ2_golden).
+        cds_img_2_targ 
+        hash_cds_img_2_args).
 
 Definition selinux_hash_pol : Term := 
     (selinux_hash_asp 
         cds_config_dir_plc 
         selinux_policy_targ 
-        am_root_env_var
-        selinux_policy_path_golden).
+        selinux_hash_pol_args).
 
 Definition provision_config_1 : Term := 
     (provision_targ_asp 
         cds_config_dir_plc
         cds_config_1_targ 
-        am_root_env_var
-        path_targ1_golden).
+        provision_config_1_args).
 
 Definition provision_config_2 : Term := 
     (provision_targ_asp 
-        cds_config_dir_plc 
+        cds_config_dir_plc
         cds_config_2_targ 
-        am_root_env_var
-        path_targ2_golden).
-
-Definition provision_config_3 : Term := 
-    (provision_targ_asp 
-        cds_config_dir_plc 
-        cds_config_3_targ 
-        am_root_env_var
-        path_targ3_golden).
+        provision_config_2_args).
 
 Definition provision_img_1 : Term := 
     (provision_targ_asp 
         cds_config_dir_plc 
         cds_img_1_targ 
-        am_root_env_var
-        path_exe_targ1_golden).
+        provision_img_1_args).
 
 Definition provision_img_2 : Term := 
     (provision_targ_asp 
         cds_config_dir_plc 
         cds_img_2_targ 
-        am_root_env_var
-        path_exe_targ2_golden).
+        provision_img_2_args).
 
+(*
 Definition meas_cds_phrase : Term :=
 <{
     gather_config_1 ->
@@ -219,6 +237,7 @@ Definition meas_cds_phrase : Term :=
     hash_cds_img_1 ->
     hash_cds_img_2
 }>.
+*)
 
 Definition query_kim_args : ASP_ARGS := 
     JSON_Object 
@@ -332,5 +351,18 @@ Definition example_appTerm_provision : Term :=
 }>.
 
 Close Scope cop_ent_scope.
+
+Open Scope string_scope.
+
+Definition cds_terms_map := 
+  [
+   ("cds_simple", example_appTerm);
+   ("cds_ssl", cds_ssl);
+   ("cds_local", cds_local);
+   ("cds_tpm", cds_tpm);
+   ("cds_provision", example_appTerm_provision);
+   ("simple_sig", simple_sig)].
+
+Close Scope string_scope.
 
 

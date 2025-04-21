@@ -4,8 +4,16 @@ Require Import String.
 Require Import List.
 Import ListNotations.
 
-
 Open Scope string_scope.
+
+Definition gen_asp (asp_id:ASP_ID) (args:ASP_ARGS)
+                   (targPlc:Plc) (targId:TARG_ID) : Term := 
+    asp (ASPC (asp_paramsC 
+                asp_id 
+                args 
+                targPlc
+                targId)).
+
 
 Definition gather_file_contents : ASP_ID := "readfile".
 Definition hash_file_contents : ASP_ID := "hashfile".
@@ -13,6 +21,32 @@ Definition hash_dir_contents : ASP_ID := "hashdir".
 Definition hash_evidence : ASP_ID := "hashevidence".
 Definition provision : ASP_ID := "provision".
 
+Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID) (args:ASP_ARGS) : Term := 
+    gen_asp 
+        gather_file_contents 
+        args targPlc targId.
+
+Definition hash_targ_asp (targPlc:Plc) (targId:TARG_ID) (args:ASP_ARGS) : Term := 
+    gen_asp 
+        hash_file_contents 
+        args targPlc targId.
+
+Definition hash_dir_asp (targPlc:Plc) (targId:TARG_ID) (args:ASP_ARGS) : Term := 
+    gen_asp 
+        hash_dir_contents 
+        args targPlc targId.
+
+Definition provision_targ_asp (targPlc:Plc) (targId:TARG_ID) (args:ASP_ARGS) : Term := 
+    gen_asp 
+        provision 
+        args targPlc targId.
+
+Definition hash_evidence_asp (targPlc:Plc) (targId:TARG_ID) (args:ASP_ARGS) : Term := 
+    gen_asp 
+        hash_evidence 
+        args targPlc targId.
+
+(*
 Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID) 
     (env_var:string) (env_var_golden:string) 
     (path:string) (path_golden:string) : Term := 
@@ -26,6 +60,7 @@ Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID)
                     targPlc 
                     targId ))).
 
+
 Definition hash_targ_asp (targPlc:Plc) (targId:TARG_ID) 
 (env_var:string) (env_var_golden:string) 
 (path:string) (path_golden:string) : Term := 
@@ -38,9 +73,13 @@ Definition hash_targ_asp (targPlc:Plc) (targId:TARG_ID)
                     ("filepath_golden", (JSON_String path_golden))])
                 targPlc 
                 targId ))).
+*)
+
+
 
 Definition string_to_json (s:string) : JSON := JSON_String s.
 
+(*
 Definition hash_dir_asp (targPlc:Plc) (targId:TARG_ID) 
     (env_var:string) (env_var_golden:string) (paths:list string) (appr_path:string) : Term := 
     (asp (ASPC (asp_paramsC 
@@ -71,5 +110,6 @@ Definition hash_evidence_asp (targPlc:Plc) (targId:TARG_ID)
                         ("filepath_golden", (JSON_String path_golden))])
                     targPlc 
                     targId ))).
+                    *)
 
 Close Scope string_scope.
