@@ -13,7 +13,6 @@ Import ListNotations.
 
 
 Open Scope string_scope.
-
 (* CDS demo vars *)
 
 (* Plc IDs *)
@@ -59,7 +58,6 @@ Definition appr_gather_file_contents : ASP_ID := "readfile_appr".
 Definition appr_hash_file_contents : ASP_ID := "hashfile_appr".
 Definition appr_hash_evidence : ASP_ID := "hashevidence_appr".
 
-Definition appr_cds : ASP_ID := "cds_appr".
 Definition appr_query_kim : ASP_ID := "invary_get_measurement_appr".
 Definition appr_query_kim_stub : ASP_ID := "invary_get_measurement_stub_appr".
 Definition ssl_sig : ASP_ID := "ssl_sig".
@@ -72,20 +70,6 @@ Definition selinux_pol_dump_appr : ASP_ID := "hashfile_appr".
 
 Definition r_ssl_sig : ASP_ID := "sig".
 Definition r_ssl_sig_appr : ASP_ID := "sig_appr".
-
-Definition selinux_hash_asp (targPlc:Plc) (targId:TARG_ID) 
-    (args:ASP_ARGS) : Term :=
-    (asp (ASPC (asp_paramsC 
-                    selinux_pol_dump
-                    (*
-                    (JSON_Object [
-                        ("env_var_golden", (JSON_String env_var_golden));
-                        ("filepath_golden", (JSON_String path_golden))])
-                        *)
-                    args
-                    targPlc 
-                    targId ))).
-
 
 Definition demo_root_env_var : string := "DEMO_ROOT".
 Definition am_root_env_var   : string := "AM_ROOT".
@@ -170,10 +154,24 @@ Definition provision_img_2_args : ASP_ARGS :=
         ("env_var_golden", (JSON_String am_root_env_var));
         ("filepath_golden", (JSON_String path_exe_targ2_golden))]).
 
+Definition query_kim_args : ASP_ARGS := 
+    (JSON_Object 
+        [(query_kim_dynamic_arg, (JSON_String query_kim_dynamic_arg_val));
+            (query_kim_env_var_arg, (JSON_String am_root_env_var));
+            (query_kim_appraisal_dir_arg, (JSON_String query_kim_appraisal_dir_arg_val))]).
+
+Definition r_ssl_sig_asp_args : ASP_ARGS := 
+    (JSON_Object []).
+
+Definition query_kim_asp_stub_args : ASP_ARGS := 
+    (JSON_Object []).
+
+Definition r_tpm_sig_args : ASP_ARGS := 
+    (JSON_Object 
+        [("tpm_folder", JSON_String "$AM_TPM_DIR")]).
 Close Scope string_scope.
 
 Open Scope cop_ent_scope.
-
 Definition gather_config_1 : Term := 
     (gather_targ_asp 
         cds_config_dir_plc 
@@ -197,6 +195,22 @@ Definition hash_cds_img_2 : Term :=
         cds_config_dir_plc 
         cds_img_2_targ 
         hash_cds_img_2_args).
+
+Definition selinux_hash_asp (targPlc:Plc) (targId:TARG_ID) 
+    (args:ASP_ARGS) : Term :=
+        (asp (ASPC (asp_paramsC 
+                    selinux_pol_dump
+                    args
+                    targPlc 
+                    targId ))).
+
+
+Definition query_kim_asp (args:ASP_ARGS) : Term := 
+    (asp (ASPC (asp_paramsC 
+                    query_kim 
+                    args 
+                    cds_query_kim_plc 
+                    kim_evidence_targ))).
 
 Definition selinux_hash_pol : Term := 
     (selinux_hash_asp 
@@ -228,57 +242,35 @@ Definition provision_img_2 : Term :=
         cds_img_2_targ 
         provision_img_2_args).
 
-Definition query_kim_args : ASP_ARGS := 
-    JSON_Object 
-        [(query_kim_dynamic_arg, (JSON_String query_kim_dynamic_arg_val));
-         (query_kim_env_var_arg, (JSON_String am_root_env_var));
-         (query_kim_appraisal_dir_arg, (JSON_String query_kim_appraisal_dir_arg_val))].
-
-Definition query_kim_asp : Term := 
-    (asp (ASPC (asp_paramsC 
-                    query_kim 
-                    query_kim_args 
-                    cds_query_kim_plc 
-                    kim_evidence_targ))).
-
-Definition ssl_sig_asp : Term := 
-    (asp (ASPC (asp_paramsC 
-                    ssl_sig 
-                    (JSON_Object []) 
-                    cds_query_kim_plc 
-                    ssl_sig_targ))).
-
-Definition r_ssl_sig_asp : Term := 
+Definition r_ssl_sig_asp' (args: ASP_ARGS) : Term := 
         (asp (ASPC (asp_paramsC 
                         r_ssl_sig 
-                        (JSON_Object []) 
+                        args 
                         cds_query_kim_plc 
                         ssl_sig_targ))).
 
-Definition query_kim_asp_stub : Term := 
+Definition r_ssl_sig_asp : Term := 
+    r_ssl_sig_asp' r_ssl_sig_asp_args.
+
+Definition query_kim_asp_stub' (args:ASP_ARGS) : Term := 
         (asp (ASPC (asp_paramsC 
                         query_kim_stub 
-                        (JSON_Object []) 
+                        args
                         cds_query_kim_plc 
                         kim_evidence_targ))).
 
-Definition appr_cds_asp : Term := 
-    (asp (ASPC (asp_paramsC 
-                    appr_cds 
-                    (JSON_Object []) 
-                    P1 sys_targ))).
+Definition query_kim_asp_stub : Term := 
+    query_kim_asp_stub' query_kim_asp_stub_args.
 
-Definition sig_asp : Term := asp SIG.
-
-Definition r_tpm_sig_asp : Term := 
+Definition r_tpm_sig_asp' (args:ASP_ARGS) : Term := 
         (asp (ASPC (asp_paramsC 
                         tpm_sig 
-                        (JSON_Object [("tpm_folder"%string, JSON_String "$AM_TPM_DIR")]) 
+                        args
                         cds_query_kim_plc 
                         tpm_sig_targ))).
 
-Definition appr_term : Term := (asp APPR).
-
+Definition r_tpm_sig_asp : Term :=
+    r_tpm_sig_asp' r_tpm_sig_args.
 
 Definition meas_cds : Term := 
 <{
@@ -289,27 +281,30 @@ Definition meas_cds : Term :=
    gather_config_2 )
 }>.
 
+Definition query_kim_asp_real : Term := 
+    (query_kim_asp query_kim_args).
+
 Definition cds_ssl : Term :=
 <{
-    (query_kim_asp +<+ meas_cds) ->
+    (query_kim_asp_real +<+ meas_cds) ->
     r_ssl_sig_asp ->
     appr_term
 }>. 
     
 Definition cds_tpm : Term :=
 <{
-    (query_kim_asp +<+ meas_cds) ->
+    (query_kim_asp_real +<+ meas_cds) ->
     r_tpm_sig_asp ->
     appr_term
 }>. 
 
 Definition simple_sig : Term := 
 lseq 
-(
-  lseq
-(asp (ASPC (asp_paramsC attest (JSON_Object []) P1 sys_targ)))
-r_ssl_sig_asp) 
-appr_term.
+    (
+    lseq
+        (asp (ASPC (asp_paramsC attest (JSON_Object []) P1 sys_targ)))
+        r_ssl_sig_asp) 
+    appr_term.
 
 Definition example_appTerm : Term :=
 <{
@@ -325,7 +320,7 @@ Definition meas_cds_local : Term :=
 
 Definition cds_local : Term :=
 <{
-    (query_kim_asp +<+
+    (query_kim_asp_stub +<+
      meas_cds_local) ->
     r_ssl_sig_asp ->
     appr_term
@@ -338,11 +333,9 @@ Definition example_appTerm_provision : Term :=
     (hash_cds_img_1   -> provision_img_1) +<+
     (hash_cds_img_2   -> provision_img_2)
 }>.
-
 Close Scope cop_ent_scope.
 
 Open Scope string_scope.
-
 Definition cds_terms_map := 
   [
    ("cds_simple", example_appTerm);
@@ -351,7 +344,4 @@ Definition cds_terms_map :=
    ("cds_tpm", cds_tpm);
    ("cds_provision", example_appTerm_provision);
    ("simple_sig", simple_sig)].
-
 Close Scope string_scope.
-
-

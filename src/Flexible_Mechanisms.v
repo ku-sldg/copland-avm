@@ -82,6 +82,7 @@ Definition flexible_mechanisms_map : list (string * Term) :=
    ("layered_bg", layered_background_check); 
    ("filehash", filehash_auth_phrase);
    ("large_output", large_output_asp_test)].
+Close Scope string_scope.
 
 Definition full_terms_map := 
   List.app 
@@ -99,5 +100,3 @@ Definition add_EvidenceT_terms_map (terms_map: list (string * Term)) :
 Definition full_terms : 
   GlobalContext -> Maps.Map string (Term * ResultT.ResultT EvidenceT string) :=
     add_EvidenceT_terms_map full_terms_map.
-
-Close Scope string_scope.

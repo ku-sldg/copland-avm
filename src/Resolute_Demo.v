@@ -58,21 +58,19 @@ Definition provision_micro_hash_composite_args : ASP_ARGS :=
 Definition hash_micro_dir_1_args : ASP_ARGS := 
   (JSON_Object [("env_var", (JSON_String hashdir_env_var)); 
                 ("env_var_golden", (JSON_String am_root_env_var));
-                ("paths", (JSON_Array (map string_to_json [path_micro_dir_1])));
+                ("paths", (JSON_Array (map JSON_String [path_micro_dir_1])));
                 ("filepath_golden", (JSON_String path_micro_dir_1_golden))]).
 
 Definition hash_micro_dir_2_args : ASP_ARGS := 
   (JSON_Object [("env_var", (JSON_String hashdir_env_var)); 
                 ("env_var_golden", (JSON_String am_root_env_var));
-                ("paths", (JSON_Array (map string_to_json [path_micro_dir_2])));
+                ("paths", (JSON_Array (map JSON_String [path_micro_dir_2])));
                 ("filepath_golden", (JSON_String path_micro_dir_2_golden))]).
 
 Definition hash_micro_evidence_args : ASP_ARGS :=
   (JSON_Object [
       ("env_var_golden", (JSON_String am_root_env_var));
       ("filepath_golden", (JSON_String path_micro_composite_golden))]).
-
-
 Close Scope string_scope.
 
 Definition provision_micro_dir_1 : Term := 
@@ -112,7 +110,6 @@ Definition hash_micro_evidence : Term :=
       hash_micro_evidence_args).
           
 Open Scope cop_ent_scope.
-
 Definition meas_micro : Term := 
     <{
       (hash_micro_dir_1 +<+ 
@@ -149,10 +146,10 @@ Definition micro_appTerm_provision_composite : Term :=
   <{
   (meas_micro -> provision_micro_hash_composite)
   }>.
+Close Scope cop_ent_scope.
 
 
 Open Scope string_scope.
-
 Definition resolute_terms_map := 
   [
     ("micro", micro_appTerm);
@@ -161,5 +158,4 @@ Definition resolute_terms_map :=
     ("micro_provision_dir_2", micro_appTerm_provision_dir_2);
     ("micro_provision_composite", micro_appTerm_provision_composite)
   ].
-
 Close Scope string_scope.
