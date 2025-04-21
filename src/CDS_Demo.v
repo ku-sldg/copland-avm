@@ -228,17 +228,6 @@ Definition provision_img_2 : Term :=
         cds_img_2_targ 
         provision_img_2_args).
 
-(*
-Definition meas_cds_phrase : Term :=
-<{
-    gather_config_1 ->
-    gather_config_2 ->
-    gather_config_3 ->
-    hash_cds_img_1 ->
-    hash_cds_img_2
-}>.
-*)
-
 Definition query_kim_args : ASP_ARGS := 
     JSON_Object 
         [(query_kim_dynamic_arg, (JSON_String query_kim_dynamic_arg_val));
