@@ -154,11 +154,17 @@ Definition provision_img_2_args : ASP_ARGS :=
         ("env_var_golden", (JSON_String am_root_env_var));
         ("filepath_golden", (JSON_String path_exe_targ2_golden))]).
 
-Definition query_kim_args : ASP_ARGS := 
+Definition query_kim_args_dynamic : ASP_ARGS := 
     (JSON_Object 
-        [(query_kim_dynamic_arg, (JSON_String query_kim_dynamic_arg_val));
+        [(query_kim_dynamic_arg, (JSON_String query_kim_dynamic_arg_val_dynamic));
             (query_kim_env_var_arg, (JSON_String am_root_env_var));
-            (query_kim_appraisal_dir_arg, (JSON_String query_kim_appraisal_dir_arg_val))]).
+            (query_kim_appraisal_dir_arg, (JSON_String query_kim_appraisal_dir_arg_val_dynamic))]).
+
+Definition query_kim_args_static : ASP_ARGS := 
+    (JSON_Object 
+        [(query_kim_dynamic_arg, (JSON_String query_kim_dynamic_arg_val_static));
+            (query_kim_env_var_arg, (JSON_String am_root_env_var));
+            (query_kim_appraisal_dir_arg, (JSON_String query_kim_appraisal_dir_arg_val_static))]).
 
 Definition r_ssl_sig_asp_args : ASP_ARGS := 
     (JSON_Object []).
@@ -281,19 +287,29 @@ Definition meas_cds : Term :=
    gather_config_2 )
 }>.
 
-Definition query_kim_asp_real : Term := 
-    (query_kim_asp query_kim_args).
+Definition query_kim_asp_dynamic : Term := 
+    (query_kim_asp query_kim_args_dynamic).
+
+Definition query_kim_asp_static : Term := 
+    (query_kim_asp query_kim_args_static).
 
 Definition cds_ssl : Term :=
 <{
-    (query_kim_asp_real +<+ meas_cds) ->
+    (query_kim_asp_static +<+ meas_cds) ->
     r_ssl_sig_asp ->
     appr_term
 }>. 
     
 Definition cds_tpm : Term :=
 <{
-    (query_kim_asp_real +<+ meas_cds) ->
+    (query_kim_asp_dynamic +<+ meas_cds) ->
+    r_tpm_sig_asp ->
+    appr_term
+}>. 
+
+Definition cds_tpm_static : Term :=
+<{
+    (query_kim_asp_static +<+ meas_cds) ->
     r_tpm_sig_asp ->
     appr_term
 }>. 
@@ -342,6 +358,7 @@ Definition cds_terms_map :=
    ("cds_ssl", cds_ssl);
    ("cds_local", cds_local);
    ("cds_tpm", cds_tpm);
+   ("cds_tpm_static", cds_tpm_static);
    ("cds_provision", example_appTerm_provision);
    ("simple_sig", simple_sig)].
 Close Scope string_scope.
