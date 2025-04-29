@@ -2,6 +2,15 @@ Require Import Manifest Attestation_Session AM_Manager.
 Require Import Term_Defs_Core JSON_Core ID_Type Manifest_Set Maps Interface.
 Require Import IO_Stubs.
 
+Require Import String.
+
+Open Scope string_scope.
+
+Definition concat_path_fs_locs (root:FS_Location) (rest:FS_Location) : FS_Location := 
+  string_to_fs_location( (fs_location_to_string root) ++ "/" ++ (fs_location_to_string rest)).
+
+Close Scope string_scope.
+
 Definition generate_ASP_dispatcher' (am : Manifest) (ats : Attestation_Session) (aspBin : FS_Location) (par : ASP_PARAMS) (rawEv : RawEv) : ResultT RawEv DispatcherErrors :=
   let (aspid, args, targ_plc, targ) := par in
   let asps := am.(asps) in
@@ -18,7 +27,7 @@ Definition generate_ASP_dispatcher' (am : Manifest) (ats : Attestation_Session) 
       in
         let asp_req := (mkASPRReq aspid args targ_plc targ rawEv) in
         let js_req := to_JSON asp_req in
-        let resp_res := make_JSON_FS_Location_Request aspBin conc_asp_loc js_req in
+        let resp_res := make_JSON_FS_Location_Request (concat_path_fs_locs aspBin conc_asp_loc) js_req in
         match resp_res with
         | resultC js_resp =>
             match from_JSON js_resp with
@@ -37,11 +46,12 @@ Definition generate_ASP_dispatcher `{HID : EqClass ID_Type} (am : Manifest) (al 
   (generate_ASP_dispatcher' am al aspBin). 
 
 Definition session_config_compiler (conf : AM_Manager_Config) (ats : Attestation_Session) : Session_Config :=
-let '(mkAM_Man_Conf man aspBin myUUID) := conf in
+let '(mkAM_Man_Conf man aspBin commsBin myUUID) := conf in
 {|
   session_plc := (Session_Plc ats) ;
   session_context := (ats_context ats) ;
   aspCb     := (generate_ASP_dispatcher man ats aspBin) ;
+  comms_FS_loc := commsBin ;
   plc_map     := (Plc_Mapping ats);
   pubkey_map  := (PubKey_Mapping ats);
   policy   := (man_policy man);

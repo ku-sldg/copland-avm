@@ -16,11 +16,13 @@ Require Import Term_Defs ErrorStMonad_Coq
 Require Import List.
 Import ListNotations.
 
-Definition make_JSON_Network_Request (uuid : UUID) (js : JSON) : ResultT JSON string. Admitted.
-
 Definition aspid_to_fs_location (aspid : ASP_ID) : FS_Location. Admitted.
 
-Definition make_JSON_FS_Location_Request (dir : FS_Location) (aspid : FS_Location) (js : JSON) : ResultT JSON string. Admitted.
+Definition string_to_fs_location (s : string) : FS_Location. Admitted.
+
+Definition fs_location_to_string (aspid : FS_Location) : string. Admitted.
+
+Definition make_JSON_FS_Location_Request (path: FS_Location) (js : JSON) : ResultT JSON string. Admitted.
 
 (** * Stub to simulate EvidenceT collected by a parallel CVM instance *)
 Definition parallel_vm_thread (l:Loc) (p:Plc) (e:Evidence) (t: Term) : ResultT Evidence CVM_Error.  Admitted.

@@ -17,15 +17,15 @@ Import ListNotations ErrNotation.
 Import ResultNotation.
 
 Definition am_sendReq (att_sess : Attestation_Session) (req_plc : Plc) 
-    (e : Evidence) (t:Term) (toPlc : Plc) : ResultT RawEv string :=
-  let req := (mkPRReq att_sess req_plc e t) in 
+    (e : Evidence) (t:Term) (toPlc : Plc) (comms_fsloc: FS_Location) : ResultT RawEv string :=
+  let req := (mkPRReq att_sess req_plc toPlc e t) in 
   let m :=  Plc_Mapping att_sess in 
     match (map_get toPlc m) with 
     | None => errC errStr_remote_am_failure (* TODO: better errStr here *)
     | Some uuid =>  
 
       let js := to_JSON req in
-      let resp_res := make_JSON_Network_Request uuid js in 
+      let resp_res := make_JSON_FS_Location_Request comms_fsloc js in 
       match resp_res with 
       | errC msg => errC msg
       | resultC js_res => 
@@ -39,8 +39,8 @@ Definition am_sendReq (att_sess : Attestation_Session) (req_plc : Plc)
     end.
 
 Definition am_client_app_summary (att_sess : Attestation_Session) (req_plc : Plc) 
-(e : Evidence) (t:Term) (toPlc : Plc) : ResultT (AppraisalSummary * bool) string :=
-  match (am_sendReq att_sess req_plc e t toPlc) with 
+(e : Evidence) (t:Term) (toPlc : Plc) (comms_fsloc: FS_Location) : ResultT (AppraisalSummary * bool) string :=
+  match (am_sendReq att_sess req_plc e t toPlc comms_fsloc) with 
   | errC msg => errC msg 
   | resultC rawev => 
       let glob_ctx := (ats_context att_sess) in 

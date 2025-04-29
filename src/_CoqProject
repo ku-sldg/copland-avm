@@ -52,7 +52,7 @@ Manifest_Generator_Union.v
 # Disclose.v
 AM_St.v
 AM_Monad.v
-ManCompSoundness_Helpers.v
+#ManCompSoundness_Helpers.v
 # ManCompSoundness.v
 AM_Helpers.v
 AM_Json_Interfaces.v

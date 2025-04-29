@@ -2,6 +2,7 @@ Require Import String.
 
 (* Interface string Values *)
 Definition STR_REQ_PLC : string := "REQ_PLC".
+Definition STR_TO_PLC : string := "TO_PLC".
 Definition STR_TERM : string := "TERM".
 Definition STR_RAWEV : string := "RAWEV".
 Definition STR_SUCCESS : string := "SUCCESS".

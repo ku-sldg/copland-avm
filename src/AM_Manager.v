@@ -4,6 +4,7 @@ Record AM_Manager_Config :=
   mkAM_Man_Conf {
   am_manager_manifest   : Manifest ;
   am_manager_asp_bin    : FS_Location ;
+  am_manager_comms_bin  : FS_Location ;
   am_manager_uuid       : UUID ;
 }.
 

@@ -163,6 +163,7 @@ Definition err_str_appr_only_allow_on_asp := "Error in appraisal procedure compu
 
 Definition err_str_split_evidence_not_split := "Error in appraisal procedure computation, type of evidence passed into a split appraisal procedure is not a split evidence type"%string.
 
+Definition empty_string := "".
 
 Close Scope string_scope.
 

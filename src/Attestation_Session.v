@@ -16,8 +16,10 @@ Inductive DispatcherErrors : Type :=
 | Unavailable   : DispatcherErrors
 | Runtime       : string -> DispatcherErrors.
 
+(*
 Inductive CallBackErrors : Type := 
 | messageLift   : string -> CallBackErrors.
+*)
 
 Definition ASPCallback (ErrType : Type) : Type := 
   ASP_PARAMS -> RawEv -> ResultT RawEv ErrType.
@@ -28,6 +30,7 @@ Record Session_Config := {
   session_plc         : Plc ;
   session_context     : GlobalContext ;
   aspCb               : (ASPCallback DispatcherErrors) ;
+  comms_FS_loc        : FS_Location ;
   plc_map             : Map Plc UUID ;
   pubkey_map          : Map Plc PublicKey ;
   policy              : PolicyT ;

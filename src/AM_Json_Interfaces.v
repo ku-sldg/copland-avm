@@ -13,7 +13,7 @@ Definition handle_AM_request_JSON (conf : AM_Manager_Config) (js : JSON) (nonceV
       match (from_JSON js) with
       | errC msg => ErrorResponseJSON msg
       | resultC r =>
-        let '(mkPRReq att_sess from_plc ev cop_term) := r in
+        let '(mkPRReq att_sess from_plc to_plc ev cop_term) := r in
         let sc := (session_config_compiler conf att_sess) in
         let init_st := (mk_st [] 0) in
         let '(cvm_resp, _, _) := (build_cvm ev cop_term init_st sc) in

@@ -7,6 +7,7 @@ Record ProtocolRunRequest :=
   mkPRReq {
     prreq_att_sess : Attestation_Session;
     prreq_req_plc: Plc;
+    prreq_to_plc: Plc;
     prreq_Evidence: Evidence;
     prreq_term: Term;
   }.

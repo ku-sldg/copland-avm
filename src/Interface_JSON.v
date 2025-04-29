@@ -13,19 +13,22 @@ eapply Build_Jsonifiable with
     (STR_ACTION, (JSON_String STR_RUN));
     (STR_ATTEST_SESS, (to_JSON (prreq_att_sess req)));
     (STR_REQ_PLC, (JSON_String (to_string (prreq_req_plc req))));
+    (STR_TO_PLC, (JSON_String (to_string (prreq_to_plc req))));
     (STR_EVIDENCE, (to_JSON (prreq_Evidence req)));
     (STR_TERM, (to_JSON (prreq_term req)))])
 (from_JSON := (fun j =>
   temp_att_sess <- JSON_get_Object STR_ATTEST_SESS j ;;
   temp_req_plc <- JSON_get_string STR_REQ_PLC j ;;
+  temp_to_plc <- JSON_get_string STR_TO_PLC j ;;
   temp_ev <- JSON_get_Object STR_EVIDENCE j ;;
   temp_term <- JSON_get_Object STR_TERM j ;;
 
   att_sess <- from_JSON temp_att_sess ;;
   req_plc <- from_string temp_req_plc ;;
+  to_plc <- from_string temp_to_plc ;;
   ev <- from_JSON temp_ev ;;
   term <- from_JSON temp_term ;;
-  resultC (mkPRReq att_sess req_plc ev term)));
+  resultC (mkPRReq att_sess req_plc to_plc ev term)));
 solve_json.
 Defined.
 
