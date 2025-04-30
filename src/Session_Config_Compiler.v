@@ -1,6 +1,6 @@
 Require Import Manifest Attestation_Session AM_Manager.
 Require Import Term_Defs_Core JSON_Core ID_Type Manifest_Set Maps Interface.
-Require Import IO_Stubs.
+Require Import IO_Stubs ErrorStringConstants.
 
 Require Import String.
 
@@ -45,13 +45,49 @@ Definition generate_ASP_dispatcher `{HID : EqClass ID_Type} (am : Manifest) (al 
     : (ASPCallback DispatcherErrors) :=
   (generate_ASP_dispatcher' am al aspBin). 
 
+
+Definition generate_remote_dispatcher' (ats : Attestation_Session) (commsBin : FS_Location) 
+  (pTo: Plc) (e : Evidence) (t:Term) 
+    : ResultT Evidence DispatcherErrors := 
+
+(* There is assuredly a better way to do it than this *)
+let '(mkAtt_Sess my_plc plc_map pk_map G) := ats in
+(* We need  to update the Att Session to tell the next plc how
+they should be tagging their stuff (basically who they are
+in the protocol) *)
+let new_att_sess := (mkAtt_Sess pTo plc_map pk_map G) in
+match (map_get pTo plc_map) with 
+| Some uuid =>
+    let remote_req := (mkPRReq new_att_sess my_plc pTo e t) in
+    let js_req := to_JSON remote_req in
+    let comms_fsloc := commsBin in
+    let resp_res := make_JSON_FS_Location_Request comms_fsloc js_req in
+    match resp_res with
+    | resultC js_resp =>
+        match from_JSON js_resp with
+        | resultC resp => 
+            let '(mkPRResp success ev) := resp in
+            if success 
+            then resultC ev 
+            else errC ((Runtime errStr_remote_am_failure))
+        | errC msg => errC ((Runtime msg)) 
+        end
+    | errC msg => errC ((Runtime msg))
+    end
+| None => errC (Unavailable)
+end.
+
+Definition generate_remote_dispatcher `{HID : EqClass ID_Type} (ats : Attestation_Session) (commsBin : FS_Location) 
+    : (RemoteCallback DispatcherErrors) :=
+  (generate_remote_dispatcher' ats commsBin). 
+
 Definition session_config_compiler (conf : AM_Manager_Config) (ats : Attestation_Session) : Session_Config :=
 let '(mkAM_Man_Conf man aspBin commsBin myUUID) := conf in
 {|
   session_plc := (Session_Plc ats) ;
   session_context := (ats_context ats) ;
   aspCb     := (generate_ASP_dispatcher man ats aspBin) ;
-  comms_FS_loc := commsBin ;
+  remoteCb := (generate_remote_dispatcher ats commsBin) ;
   plc_map     := (Plc_Mapping ats);
   pubkey_map  := (PubKey_Mapping ats);
   policy   := (man_policy man);

@@ -34,7 +34,6 @@ Inductive CVM_Error : Type :=
 | at_error_static : Term -> Plc -> Evidence -> CVM_Error
 | at_error_dynamic : Term -> UUID -> Evidence -> CVM_Error
 | dispatch_error : DispatcherErrors -> CVM_Error.
-(* | callback_error : CallBackErrors -> CVM_Error. *)
 
 Definition CVM_Error_to_string (e : CVM_Error) : string :=
   match e with
