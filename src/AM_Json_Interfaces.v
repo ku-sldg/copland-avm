@@ -2,6 +2,7 @@ Require Import List.
 Import ListNotations.
 Require Import BS Term_Defs Attestation_Session Interface String IO_Stubs Manifest_Admits ErrorStMonad_Coq AM_Monad Session_Config_Compiler Cvm_St Cvm_Impl.
 Require Import ErrorStringConstants AM_Manager.
+Require Import AppraisalSummary.
 Import ErrNotation.
 
 Definition handle_AM_request_JSON (conf : AM_Manager_Config) (js : JSON) (nonceVal:BS) : JSON :=
@@ -24,14 +25,26 @@ Definition handle_AM_request_JSON (conf : AM_Manager_Config) (js : JSON) (nonceV
       end
     )
     else if (eqb req_type STR_NEGOTIATE)
-    then (
+    then     (
       (* TODO: Fill this in when negotiation is implemented *)
       ErrorResponseJSON errStr_negotiation_not_implemented
     )
     else if (eqb req_type STR_APPSUMM)
     then (
-      (* TODO: Fill this in when negotiation is implemented *)
-      ErrorResponseJSON errStr_appsumm_not_implemented
+      match (from_JSON js) with
+      | errC msg => ErrorResponseJSON msg
+      | resultC r =>
+        let '(mkAppSummReq att_sess e) := r in
+        let '(evc rawEv et) := e in 
+        let glob_ctx := (ats_context att_sess) in 
+        let appsumm_result : ResultT AppraisalSummary string := do_AppraisalSummary et rawEv glob_ctx in 
+        match appsumm_result with 
+        | errC s => ErrorResponseJSON s
+        | resultC appsumm => 
+          let appsumm_success_bool := (fold_appsumm appsumm) in 
+            to_JSON (mkAppSummResp appsumm_success_bool appsumm)   
+        end
+      end
     )
     else ErrorResponseJSON err_str_01
   end.
