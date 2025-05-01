@@ -28,28 +28,11 @@ Definition tpm_sig_targ : TARG_ID := "tpm_sig_targ".
 Definition in_targ  : TARG_ID := "in_targ".
 Definition out_targ : TARG_ID := "out_targ".
 
-Definition cds_exe_dir_targ : TARG_ID := "cds_exe_dir_targ".
-Definition cds_exe_1_targ : TARG_ID := "cds_exe_1_targ".
-Definition cds_exe_2_targ : TARG_ID := "cds_exe_2_targ".
-Definition cds_exe_3_targ : TARG_ID := "cds_exe_3_targ".
-Definition tmp_1_targ : TARG_ID := "tmp_1_targ".
-Definition tmp_2_targ : TARG_ID := "tmp_2_targ".
-Definition tmp_3_targ : TARG_ID := "tmp_3_targ".
-
-Definition cds_flags_dir_targ : TARG_ID := "cds_flags_dir_targ".
-Definition cds_flags_1_targ : TARG_ID := "cds_flags_1_targ".
-Definition cds_flags_2_targ : TARG_ID := "cds_flags_2_targ".
-Definition cds_flags_3_targ : TARG_ID := "cds_flags_3_targ".
-
-Definition cds_controller_dir_targ : TARG_ID := "cds_controller_dir_targ".
-Definition cds_controller_exe_targ : TARG_ID := "cds_controller_exe_targ".
-
 Definition cds_config_1_targ : TARG_ID := "cds_rewrite_config_targ".
-Definition cds_config_2_targ : TARG_ID := "cds_filter_config_2_targ".
+Definition cds_config_2_targ : TARG_ID := "cds_filter_config_targ".
 Definition cds_config_3_targ : TARG_ID := "cds_config_3_targ".
 Definition cds_img_1_targ : TARG_ID := "cds_rewrite_img_targ".
 Definition cds_img_2_targ : TARG_ID := "cds_filter_img_targ".
-Definition cds_img_3_targ : TARG_ID := "cds_img_3_targ".
 
 (* ASP IDs *)
 Definition query_kim : ASP_ID := "invary_get_measurement".
