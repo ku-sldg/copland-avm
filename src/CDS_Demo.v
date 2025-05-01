@@ -150,7 +150,8 @@ Definition query_kim_args_static : ASP_ARGS :=
             (query_kim_appraisal_dir_arg, (JSON_String query_kim_appraisal_dir_arg_val_static))]).
 
 Definition r_ssl_sig_asp_args : ASP_ARGS := 
-    (JSON_Object []).
+    (JSON_Object 
+    [("tpm_folder", JSON_String "$AM_TPM_DIR")]).
 
 Definition query_kim_asp_stub_args : ASP_ARGS := 
     (JSON_Object []).
@@ -282,6 +283,14 @@ Definition cds_ssl : Term :=
     r_ssl_sig_asp ->
     appr_term
 }>. 
+
+Definition cds_ssl_badkey : Term :=
+<{
+    (query_kim_asp_static +<+ meas_cds) ->
+    r_ssl_sig_asp ->
+    r_tpm_sig_asp ->
+    appr_term
+}>. 
     
 Definition cds_tpm : Term :=
 <{
@@ -343,5 +352,6 @@ Definition cds_terms_map :=
    ("cds_tpm", cds_tpm);
    ("cds_tpm_static", cds_tpm_static);
    ("cds_provision", example_appTerm_provision);
+   ("cds_ssl_badkey", cds_ssl_badkey);
    ("simple_sig", simple_sig)].
 Close Scope string_scope.
