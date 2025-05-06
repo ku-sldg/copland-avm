@@ -16,6 +16,7 @@ Definition appr_term : Term := (asp APPR).
 
 Open Scope string_scope.
 Definition gather_file_contents : ASP_ID := "readfile".
+Definition run_command : ASP_ID := "run_command".
 Definition hash_file_contents : ASP_ID := "hashfile".
 Definition hash_dir_contents : ASP_ID := "hashdir".
 Definition hash_evidence : ASP_ID := "hashevidence".
@@ -25,6 +26,11 @@ Close Scope string_scope.
 Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID) (args:ASP_ARGS) : Term := 
     gen_asp 
         gather_file_contents 
+        args targPlc targId.
+
+Definition run_command_asp (targPlc:Plc) (targId:TARG_ID) (args:ASP_ARGS) : Term := 
+    gen_asp 
+        run_command
         args targPlc targId.
 
 Definition hash_targ_asp (targPlc:Plc) (targId:TARG_ID) (args:ASP_ARGS) : Term := 

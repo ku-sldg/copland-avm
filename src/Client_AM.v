@@ -38,6 +38,33 @@ Definition am_sendReq (att_sess : Attestation_Session) (req_plc : Plc)
       end
     end.
 
+Definition extend_evidence_args (e:Evidence) (args:ASP_ARGS) : Evidence :=
+e. (* TODO implement *)
+
+Definition am_send_appr_Req (att_sess : Attestation_Session) (req_plc : Plc) 
+  (e : Evidence) (appr_args:ASP_ARGS) (toPlc : Plc) (comms_fsloc: FS_Location) : ResultT RawEv string :=
+  let t := (asp APPR) in
+  let e_w_args := extend_evidence_args e appr_args in
+  let req := (mkPRReq att_sess req_plc toPlc e_w_args t) in 
+  let m :=  Plc_Mapping att_sess in 
+    match (map_get toPlc m) with 
+    | None => errC errStr_remote_am_failure (* TODO: better errStr here *)
+    | Some uuid =>  
+
+      let js := to_JSON req in
+      let resp_res := make_JSON_FS_Location_Request comms_fsloc js in 
+      match resp_res with 
+      | errC msg => errC msg
+      | resultC js_res => 
+          match from_JSON js_res with
+          | errC msg => errC msg
+          | resultC res =>
+            let '(mkPRResp success (evc ev _)) := res in
+            if success then resultC ev else errC errStr_remote_am_failure
+          end
+      end
+    end.
+
 Definition am_client_app_summary (att_sess : Attestation_Session) (req_plc : Plc) 
 (e : Evidence) (t:Term) (toPlc : Plc) (comms_fsloc: FS_Location) : ResultT (AppraisalSummary * bool) string :=
   match (am_sendReq att_sess req_plc e t toPlc comms_fsloc) with 
