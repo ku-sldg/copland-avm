@@ -1,6 +1,6 @@
 Require Import Term_Defs Flexible_Mechanisms_Vars JSON_Type.
 
-Require Import Demo_Terms CDS_Demo Resolute_Demo.
+Require Import Demo_Terms CDS_Demo Resolute_Demo Resolute_Demo_NoArgs.
 Require Import List String.
 Import ListNotations.
 
@@ -90,7 +90,10 @@ Definition full_terms_map :=
     (
     List.app 
       cds_terms_map
-      resolute_terms_map).
+      (
+        List.app
+          resolute_terms_map
+          resolute_terms_noargs_map)).
    
 Definition add_EvidenceT_terms_map (terms_map: list (string * Term)) : 
   GlobalContext -> Maps.Map string (Term * ResultT.ResultT EvidenceT string) := 

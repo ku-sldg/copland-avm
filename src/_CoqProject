@@ -24,6 +24,7 @@ CACL_Demo_Args.v
 Demo_Terms.v
 CDS_Demo.v
 Resolute_Demo.v
+Resolute_Demo_NoArgs.v
 AppraisalSummary.v
 Attestation_Session.v
 Interface_Types.v
