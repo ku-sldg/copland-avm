@@ -93,19 +93,27 @@ Definition hash_coq_env_dir_args : ASP_ARGS :=
   (JSON_Object [("env_var", (JSON_String theorem_env_var)); 
                 ("env_var_golden", (JSON_String am_root_env_var));
                 ("paths", (JSON_Array (map JSON_String [theorems_env_path])));
-                ("filepath_golden", (JSON_String theorems_env_dir_golden))]).
+                ("filepath_golden", (JSON_String theorems_env_dir_golden));
+                ("recursive", (JSON_Boolean true));
+                ("omit_file_suffixes",  
+                  (JSON_Array 
+                    (map JSON_String [".glob"; ".vo"; ".vok"; ".vos"; ".aux"])))]).
 
 Definition hash_micro_dir_1_args : ASP_ARGS := 
   (JSON_Object [("env_var", (JSON_String hashdir_env_var)); 
                 ("env_var_golden", (JSON_String am_root_env_var));
                 ("paths", (JSON_Array (map JSON_String [path_micro_dir_1])));
-                ("filepath_golden", (JSON_String path_micro_dir_1_golden))]).
+                ("filepath_golden", (JSON_String path_micro_dir_1_golden));
+                ("recursive", (JSON_Boolean false));
+                ("omit_file_suffixes", (JSON_Array []))]).
 
 Definition hash_micro_dir_2_args : ASP_ARGS := 
   (JSON_Object [("env_var", (JSON_String hashdir_env_var)); 
                 ("env_var_golden", (JSON_String am_root_env_var));
                 ("paths", (JSON_Array (map JSON_String [path_micro_dir_2])));
-                ("filepath_golden", (JSON_String path_micro_dir_2_golden))]).
+                ("filepath_golden", (JSON_String path_micro_dir_2_golden));
+                ("recursive", (JSON_Boolean false));
+                ("omit_file_suffixes", (JSON_Array []))]).
 
 Definition hash_micro_evidence_args : ASP_ARGS :=
   (JSON_Object [
