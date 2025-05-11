@@ -297,7 +297,7 @@ Definition resolute_terms_map :=
     ("run_coq_test", run_command_asp_coq_test);
     ("run_coq_all", meas_theorem);
     ("run_coq_all_appr", meas_theorem_appr);
-    ("coq_env_dir_provision", coq_env_provision_dir);
-    ("coq_provision_all", coq_appTerm_provision)
+    ("run_coq_all_appr_provision", coq_appTerm_provision);
+    ("coq_env_dir_provision", coq_env_provision_dir)
   ].
 Close Scope string_scope.
