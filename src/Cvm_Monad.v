@@ -14,7 +14,7 @@ Require Import Manifest_Admits ErrorStringConstants Attestation_Session EqClass.
 
 Import ListNotations.
 
-Require Export Cvm_St ErrorStMonad_Coq IO_Stubs Interface JSON_Core Cvm_Utils.
+Require Export Cvm_St ErrorStMonad_Coq String_Stubs IO_Stubs Interface JSON_Core Cvm_Utils.
 
 Import ErrNotation.
 
@@ -96,7 +96,7 @@ Definition get_asp_type (a : ASP_ID) : CVM EvSig :=
   sc <- get_config ;;
   let G := session_context sc in
   match (map_get a (asp_types G)) with
-  | None => err_failm (dispatch_error (Runtime err_str_asp_no_type_sig))
+  | None => err_failm (dispatch_error (Runtime (append_aspid_to_errstr err_str_asp_no_type_sig a)))
   | Some ev => err_ret ev
   end.
 
@@ -192,6 +192,12 @@ Definition invoke_ASP (e : Evidence) (params:ASP_PARAMS) : CVM Evidence :=
   outev <- bundle_asp p rawev e params ;;
   err_ret outev.
 
+Definition add_string_kv_to_asp_args (k:string) (v:string) (args:ASP_ARGS) : ASP_ARGS := 
+  match args with 
+  | JSON_Object m => JSON_Object (map_set k (JSON_String v) m)
+  | _ => args
+  end.
+
 (* Simulates invoking an arbitrary ASP.  Tags the event, builds and returns 
    the new EvidenceT bundle. *)
 
@@ -204,7 +210,9 @@ Fixpoint invoke_APPR' (r : RawEv) (et : EvidenceT) (out_evt : EvidenceT) {struct
   | asp_evt p' par et' =>
     let '(asp_paramsC asp_id args targ_plc targ) := par in
     appr_asp_id <- get_asp_dual asp_id ;;
-    let dual_par := asp_paramsC appr_asp_id args targ_plc targ in
+    let dual_args' := add_string_kv_to_asp_args "attestation_aspid" asp_id args in
+    let dual_args  := add_string_kv_to_asp_args "attestation_targid" targ dual_args' in
+    let dual_par := asp_paramsC appr_asp_id dual_args targ_plc targ in
     '(ev_arrow fwd in_sig out_sig) <- get_asp_type asp_id ;;
     match fwd with
     | REPLACE => (* Only do the dual ASP *)

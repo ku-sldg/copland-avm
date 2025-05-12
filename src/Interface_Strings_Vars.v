@@ -15,15 +15,18 @@ Definition STR_TYPE : string := "TYPE".
 
 Definition STR_RUN : string := "RUN".
 Definition STR_APPSUMM : string := "APPSUMM".
+Definition STR_EVSLICE : string := "EVSLICE".
 Definition STR_NEGOTIATE : string := "NEGOTIATE".
 Definition STR_APPRAISE : string := "APPRAISE".
 Definition STR_REQUEST : string := "REQUEST".
 Definition STR_RESPONSE : string := "RESPONSE".
 
 Definition STR_ATTEST_SESS : string := "ATTESTATION_SESSION".
+Definition STR_GLOB_CONTEXT : string := "GLOBAL_CONTEXT".
 
 (* ASP String Admits *)
 Definition STR_ASP : string := "ASP".
+Definition STR_ASP_PARAMS : string := "ASP_PARAMS".
 Definition STR_ASP_RUN : string := "ASP_RUN".
 Definition STR_ASP_ID : string := "ASP_ID".
 Definition STR_ASP_ARGS : string := "ASP_ARGS".

@@ -56,6 +56,19 @@ Record AppraisalSummaryResponse :=
     appsummresp_summary: AppraisalSummary;
   }.
 
+Record EvidenceSliceRequest := 
+  mkEvSliceReq {
+    evslicereq_evidence : Evidence;
+    evslicereq_ctxt : GlobalContext;
+    evslicereq_params : ASP_PARAMS;
+  }.
+
+Record EvidenceSliceResponse := 
+  mkEvSliceResp {
+    evsliceresp_success: bool;
+    evslicerespresp_rawev: RawEv;
+  }.
+
 (* Record ASPInfoRequest := 
   mkASPIReq {
     aspireq_asp_id : ASP_ID;

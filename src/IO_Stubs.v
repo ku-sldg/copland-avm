@@ -22,6 +22,10 @@ Definition string_to_fs_location (s : string) : FS_Location. Admitted.
 
 Definition fs_location_to_string (aspid : FS_Location) : string. Admitted.
 
+(*
+Definition append_aspid_to_errstr (errStr:string) (i:ASP_ID) : string. Admitted.
+*)
+
 Definition make_JSON_FS_Location_Request (path: FS_Location) (js : JSON) : ResultT JSON string. Admitted.
 
 (** * Stub to simulate EvidenceT collected by a parallel CVM instance *)

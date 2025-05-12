@@ -21,6 +21,7 @@ Definition hash_file_contents : ASP_ID := "hashfile".
 Definition hash_dir_contents : ASP_ID := "hashdir".
 Definition hash_evidence : ASP_ID := "hashevidence".
 Definition provision : ASP_ID := "provision".
+Definition provision_goldenevidence : ASP_ID := "provision_goldenevidence".
 Close Scope string_scope.
 
 Definition gather_targ_asp (targPlc:Plc) (targId:TARG_ID) (args:ASP_ARGS) : Term := 
@@ -46,6 +47,11 @@ Definition hash_dir_asp (targPlc:Plc) (targId:TARG_ID) (args:ASP_ARGS) : Term :=
 Definition provision_targ_asp (targPlc:Plc) (targId:TARG_ID) (args:ASP_ARGS) : Term := 
     gen_asp 
         provision 
+        args targPlc targId.
+
+Definition provision_goldenevidence_targ_asp (targPlc:Plc) (targId:TARG_ID) (args:ASP_ARGS) : Term := 
+    gen_asp 
+        provision_goldenevidence
         args targPlc targId.
 
 Definition hash_evidence_asp (targPlc:Plc) (targId:TARG_ID) (args:ASP_ARGS) : Term := 

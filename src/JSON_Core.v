@@ -523,19 +523,30 @@ Definition ASP_from_JSON_map `{Stringifiable Plc, Jsonifiable ASP_ARGS}: Map str
         | _ => errC err_str_json_parsing_failure_wrong_number_args
         end))].
 
-Definition ASP_from_JSON `{Jsonifiable ASP_ARGS} (js : JSON) : ResultT ASP string :=
+Definition ASP_from_JSON `{Jsonifiable ASP_PARAMS, Jsonifiable ASP_ARGS} (js : JSON) : ResultT ASP string :=
    from_JSON_gen STR_ASP ASP_from_JSON_map js.
 
-Global Instance Jsonifiable_ASP `{Jsonifiable ASP_ARGS}: Jsonifiable ASP.
+Global Instance Jsonifiable_ASP `{Jsonifiable ASP_PARAMS}: Jsonifiable ASP.
 eapply (Build_Jsonifiable) with 
   (to_JSON := ASP_to_JSON)
   (from_JSON := ASP_from_JSON).
-induction a; try (ff; fail).
+induction a; try (ff; fail);
 unfold ASP_from_JSON, ASP_to_JSON, from_JSON_gen; ff.
 induction a; unfold constructor_from_JSON, constructor_body_from_JSON_gen; 
 result_monad_unfold; ff;
 unfold ASP_PARAMS_from_JSON in *; ff; result_monad_unfold;
 jsonifiable_hammer.
+(*
+
+unfold to_JSON in *.
+destruct H.
+unfold H.
+ff.
+ff.
+jsonifiable_hammer.
+ff.
+admit.
+*)
 Defined.
 
 Global Instance Jsonifiable_Split : Jsonifiable Split := {

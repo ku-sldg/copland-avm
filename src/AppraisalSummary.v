@@ -90,7 +90,71 @@ Fixpoint do_AppraisalSummary' (et:EvidenceT) (r:RawEv) (G:GlobalContext)
         end.
 
 Definition do_AppraisalSummary (et:EvidenceT) (r:RawEv) (G:GlobalContext) : ResultT AppraisalSummary string := 
-    do_AppraisalSummary' et r G [].  
+    do_AppraisalSummary' et r G []. 
+    
+    
+Fixpoint get_Evidence_Rawev (et:EvidenceT) (r:RawEv) (G:GlobalContext) (params:ASP_PARAMS) : ResultT RawEv string := 
+        match et with 
+        | mt_evt => errC err_str_cannot_have_outwrap 
+        | nonce_evt nid => errC err_str_cannot_have_outwrap (* TODO:  do anything else with nonce check here? *)
+        | split_evt et1 et2 => 
+            et1_size <- et_size G et1 ;;
+            et2_size <- et_size G et2 ;;
+            '(r1, rest) <- peel_n_rawev et1_size r ;;
+            '(r2, _) <- peel_n_rawev et2_size rest ;;
+            match (get_Evidence_Rawev et1 r1 G params) with 
+            | resultC v => resultC v 
+            | _ => get_Evidence_Rawev et2 r2 G params
+            end
+
+        | left_evt et' => 
+            r <- apply_to_evidence_below G (fun et'' => get_Evidence_Rawev et'' r G params) [Trail_LEFT] et' ;;
+            r
+        
+        | right_evt et' => 
+            r <- apply_to_evidence_below G (fun et'' => get_Evidence_Rawev et'' r G params) [Trail_RIGHT] et' ;;
+            r
+            
+        | asp_evt p ps et' => 
+            let '(asp_paramsC i _ _ tid) := ps in 
+            let '(asp_paramsC i' _ _ tid') := params in
+            if (andb (eqb i i') (eqb tid tid'))
+            then 
+                (
+                match (map_get i (asp_types G)) with 
+                | None => errC err_str_cannot_have_outwrap (* TODO: better error string *)
+                | Some (ev_arrow fwd in_sig out_sig) => 
+                    match fwd with 
+                    
+                    | EXTEND => 
+                        match out_sig with 
+                        | OutN n => 
+                            '(r1, rest) <- peel_n_rawev n r ;; 
+                            resultC r1
+
+                        | _ => errC err_str_cannot_have_outwrap
+                        end
+                    
+                    | REPLACE => 
+                        match out_sig with 
+                        | OutN n => 
+                            '(r1, rest) <- peel_n_rawev n r ;; 
+                            resultC r1
+
+                        | _ => errC err_str_cannot_have_outwrap
+                        end
+
+                    | _ => errC err_str_cannot_have_outwrap
+
+                    end
+                end
+                )
+            else 
+                ( errC err_str_cannot_have_outwrap)
+
+        end.
+        
+
 
 Definition fold_appsumm (appsumm:AppraisalSummary) : bool := 
     let targmaps : list (Map TARG_ID bool) := map_vals appsumm in

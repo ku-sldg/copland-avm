@@ -21,6 +21,8 @@ Require Export BS.
 Require Import List ID_Type Maps JSON Stringifiable Stringifiable_Class_Admits StructTactics ErrorStringConstants JSON_Type.
 Require Import EqClass.
 
+Require Import String_Stubs.
+
 Require Import Lia.
 Import ListNotations ResultNotation.
 
@@ -180,7 +182,7 @@ Definition apply_to_evidence_below {A} (G : GlobalContext) (f : EvidenceT -> A)
 
     | asp_evt _ (asp_paramsC top_id _ _ _) et' => 
       match (map_get top_id (asp_types G)) with
-      | None => errC err_str_asp_no_type_sig
+      | None => errC (append_aspid_to_errstr err_str_asp_no_type_sig top_id)
       | Some (ev_arrow UNWRAP in_sig out_sig) =>
         (* we are UNWRAP, so add to trail and continue *)
         F ((Trail_UNWRAP top_id) :: trails) et'
@@ -617,7 +619,7 @@ Definition et_size (G : GlobalContext) : EvidenceT -> ResultT nat string :=
   | asp_evt p par e' =>
     let '(asp_paramsC asp_id args targ_plc targ) := par in
     match (map_get asp_id (asp_types G)) with
-    | None => errC err_str_asp_no_type_sig
+    | None => errC (append_aspid_to_errstr err_str_asp_no_type_sig asp_id)
     | Some (ev_arrow fwd in_sig out_sig) =>
       match fwd with
       | REPLACE => 

@@ -31,7 +31,10 @@ Definition theorem_env_var : string := "THEOREM_ENV_ROOT".
 Definition path_micro_dir_1 : string := 
     "/micro-examples/microkit/aadl_port_types/data/base_type/aadl/".
 Definition path_micro_dir_1_golden : string :=
+  "/tests/DemoFiles/goldenFiles/micro_evidence_all.txt".
+  (*
   "/tests/DemoFiles/goldenFiles/micro_dir_1_golden.txt".
+  *)
 
 Definition path_micro_dir_2 : string := 
   "/micro-examples/microkit/aadl_port_types/data/base_type/hamr/microkit/".
@@ -40,6 +43,9 @@ Definition path_micro_dir_2_golden : string :=
 
 Definition path_micro_composite_golden : string := 
   "/tests/DemoFiles/goldenFiles/micro_composite.txt".
+
+Definition path_micro_evidence_golden : string := 
+  "/tests/DemoFiles/goldenFiles/micro_evidence_all.txt".
 
 Definition theorems_path : string := 
   "/Users/adampetz/Documents/Fall_2024/my_theorems/".
@@ -88,6 +94,11 @@ Definition provision_micro_hash_composite_args : ASP_ARGS :=
   (JSON_Object [
       ("env_var_golden", (JSON_String am_root_env_var));
       ("filepath_golden", (JSON_String path_micro_composite_golden))]).
+
+Definition provision_micro_all_args : ASP_ARGS :=
+  (JSON_Object [
+      ("env_var_golden", (JSON_String am_root_env_var));
+      ("filepath_golden", (JSON_String path_micro_evidence_golden))]).
 
 Definition hash_coq_env_dir_args : ASP_ARGS := 
   (JSON_Object [("env_var", (JSON_String theorem_env_var)); 
@@ -217,6 +228,12 @@ Definition run_command_asp_coq_test : Term :=
     coq_demo_plc  
     run_coq_theorem_test_targ
     run_command_asp_coq_test_args).
+
+Definition provision_goldenevidence_term : Term := 
+    (provision_goldenevidence_targ_asp
+      micro_demo_plc 
+      micro_demo_targ
+      provision_micro_all_args).
           
 Open Scope cop_ent_scope.
 
@@ -282,6 +299,11 @@ Definition micro_appTerm_provision_composite : Term :=
   <{
   (meas_micro -> provision_micro_hash_composite)
   }>.
+
+Definition micro_appTerm_provision_evidence : Term :=
+  <{
+  (meas_micro -> provision_goldenevidence_term)
+  }>.
 Close Scope cop_ent_scope.
 
 
@@ -293,6 +315,7 @@ Definition resolute_terms_map :=
     ("micro_provision_dir_1", micro_appTerm_provision_dir_1);
     ("micro_provision_dir_2", micro_appTerm_provision_dir_2);
     ("micro_provision_composite", micro_appTerm_provision_composite);
+    ("micro_provision_evidence", micro_appTerm_provision_evidence);
     ("run_coq_thm", run_command_asp_coq);
     ("run_coq_test", run_command_asp_coq_test);
     ("run_coq_all", meas_theorem);

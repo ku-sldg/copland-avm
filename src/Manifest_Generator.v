@@ -8,6 +8,8 @@ Require Export ResultT String Maps StructTactics.
 
 Require Export EnvironmentM Manifest_Set ErrorStringConstants.
 
+Require Import String_Stubs.
+
 Require Import List.
 Import ListNotations ResultNotation.
 
@@ -29,7 +31,7 @@ Fixpoint appr_manifest_update (G : GlobalContext) (e : EvidenceT)
     | Some appr_asp_id =>
       (* let dual_par := asp_paramsC appr_asp_id args targ_plc targ in *)
       match (map_get asp_id (asp_types G)) with
-      | None => errC err_str_asp_no_type_sig
+      | None => errC (append_aspid_to_errstr err_str_asp_no_type_sig asp_id)
       | Some (ev_arrow fwd in_sig out_sig) =>
         match fwd with
         | REPLACE => (* Only need to do the dual ASP *)

@@ -22,6 +22,8 @@ Require Export Params_Admits.
 
 Require Export Term_Defs_Core Term_Defs_Core_Typeclasses Term_Defs_Core_Ops.
 
+Require Import String_Stubs.
+
 Definition splitEv_T_l (sp:Split) (e:EvidenceT) : EvidenceT :=
   match sp with
   | (ALL,_) => e
@@ -84,7 +86,7 @@ Definition appr_procedure' (G : GlobalContext) (p : Plc)
   | asp_evt asp_top_plc ps e' => 
     let '(asp_paramsC asp_id args targ_plc targ) := ps in
     match map_get asp_id (asp_types G) with
-    | None => errC err_str_asp_no_type_sig
+    | None => errC (append_aspid_to_errstr err_str_asp_no_type_sig asp_id)
     | Some (ev_arrow fwd in_sig out_sig) =>
       match map_get asp_id (asp_comps G) with
       | None => errC err_str_asp_no_compat_appr_asp
@@ -96,7 +98,7 @@ Definition appr_procedure' (G : GlobalContext) (p : Plc)
         | WRAP => 
           (* apply the dual to get a new evidence to operate on, then recurse *)
           match map_get appr_id (asp_types G) with
-          | None => errC err_str_asp_no_type_sig
+          | None => errC (append_aspid_to_errstr err_str_asp_no_type_sig appr_id)
           | Some (ev_arrow UNWRAP in_sig' out_sig') =>
             let ev_out' := asp_evt p dual_par ev_out in
             F e' ev_out'
@@ -338,7 +340,7 @@ Definition appr_events_size (G : GlobalContext) : EvidenceT -> ResultT nat strin
   | asp_evt p par e' => 
     let '(asp_paramsC asp_id args targ_plc targ) := par in
     match (map_get asp_id (asp_types G)) with
-    | None => errC err_str_asp_no_type_sig
+    | None => errC (append_aspid_to_errstr err_str_asp_no_type_sig asp_id)
     | Some (ev_arrow asp_fwd in_sig out_sig) =>
       match asp_fwd with
       | REPLACE => resultC 1 (* Single dual appr asp for 1 *)
@@ -427,7 +429,7 @@ Definition appr_events' (G : GlobalContext) (p : Plc)
     | Some appr_id => 
       let dual_par := asp_paramsC appr_id args targ_plc targ in
       match (map_get asp_id (asp_types G)) with
-      | None => errC err_str_asp_no_type_sig
+      | None => errC (append_aspid_to_errstr err_str_asp_no_type_sig asp_id)
       | Some (ev_arrow fwd in_sig out_sig) =>
         match fwd with
         | REPLACE => (* single dual for replace *)

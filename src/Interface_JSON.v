@@ -83,6 +83,45 @@ eapply Build_Jsonifiable with
   resultC (mkAppSummResp temp_success appsumm))); solve_json.
 Defined.
 
+Global Instance Jsonifiable_EvSliceRequest `{Jsonifiable Evidence, Jsonifiable GlobalContext, Jsonifiable ASP_PARAMS}: Jsonifiable EvidenceSliceRequest.
+eapply Build_Jsonifiable with
+(to_JSON := fun req =>
+  JSON_Object 
+    [(STR_TYPE, (JSON_String STR_REQUEST));
+    (STR_ACTION, (JSON_String STR_EVSLICE));
+    (STR_GLOB_CONTEXT, (to_JSON (evslicereq_ctxt req)));
+    (STR_EVIDENCE, (to_JSON (evslicereq_evidence req)));
+    (STR_ASP_PARAMS, (to_JSON (evslicereq_params req)))
+    
+    ])
+(from_JSON := (fun j =>
+  temp_ev <- JSON_get_Object STR_EVIDENCE j ;;
+  temp_glob_ctxt <- JSON_get_Object STR_GLOB_CONTEXT j ;;
+  temp_params <- JSON_get_Object STR_ASP_PARAMS j ;;
+
+  ctxt <- from_JSON temp_glob_ctxt ;;
+  ev <- from_JSON temp_ev ;;
+  params <- from_JSON temp_params ;;
+  resultC (mkEvSliceReq ev ctxt params))).
+solve_json.
+Defined.
+
+Global Instance Jsonifiable_EvSliceResponse `{Jsonifiable RawEv}: Jsonifiable EvidenceSliceResponse.
+eapply Build_Jsonifiable with
+(to_JSON := fun resp =>
+  JSON_Object 
+    [(STR_TYPE, (JSON_String STR_RESPONSE));
+    (STR_ACTION, (JSON_String STR_EVSLICE));
+    (STR_SUCCESS, (JSON_Boolean (evsliceresp_success resp)));
+    (STR_PAYLOAD, (to_JSON (evslicerespresp_rawev resp)))])
+(from_JSON := (fun resp =>
+  temp_success <- JSON_get_bool STR_SUCCESS resp ;;
+  temp_appsumm <- JSON_get_Object STR_PAYLOAD resp ;;
+
+  rawev <- from_JSON temp_appsumm ;;
+  resultC (  mkEvSliceResp temp_success rawev))); solve_json.
+Defined.
+
 (* Protocol Negotiate Request *)
 Global Instance Jsonifiable_ProtocolNegotiateRequest `{Jsonifiable Term}: Jsonifiable ProtocolNegotiateRequest.
 eapply Build_Jsonifiable with
