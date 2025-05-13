@@ -39,10 +39,15 @@ Definition path_micro_dir_1_golden : string :=
 Definition path_micro_dir_2 : string := 
   "/micro-examples/microkit/aadl_port_types/data/base_type/hamr/microkit/".
 Definition path_micro_dir_2_golden : string :=
-  "/tests/DemoFiles/goldenFiles/micro_dir_2_golden.txt".
+  "/tests/DemoFiles/goldenFiles/micro_evidence_all.txt".
+  (*
+  "/tests/DemoFiles/goldenFiles/micro_dir_2_golden.txt". *)
 
 Definition path_micro_composite_golden : string := 
+   "/tests/DemoFiles/goldenFiles/micro_evidence_all.txt".
+  (*
   "/tests/DemoFiles/goldenFiles/micro_composite.txt".
+  *)
 
 Definition path_micro_evidence_golden : string := 
   "/tests/DemoFiles/goldenFiles/micro_evidence_all.txt".
@@ -311,6 +316,7 @@ Open Scope string_scope.
 Definition resolute_terms_map := 
   [
     ("micro", micro_appTerm);
+    ("meas_micro", meas_micro);
     ("micro_provision", micro_appTerm_provision);
     ("micro_provision_dir_1", micro_appTerm_provision_dir_1);
     ("micro_provision_dir_2", micro_appTerm_provision_dir_2);

@@ -99,12 +99,13 @@ Fixpoint get_Evidence_Rawev (et:EvidenceT) (r:RawEv) (G:GlobalContext) (params:A
         | nonce_evt nid => errC err_str_cannot_have_outwrap (* TODO:  do anything else with nonce check here? *)
         | split_evt et1 et2 => 
             et1_size <- et_size G et1 ;;
-            et2_size <- et_size G et2 ;;
             '(r1, rest) <- peel_n_rawev et1_size r ;;
-            '(r2, _) <- peel_n_rawev et2_size rest ;;
             match (get_Evidence_Rawev et1 r1 G params) with 
             | resultC v => resultC v 
-            | _ => get_Evidence_Rawev et2 r2 G params
+            | _ => 
+                et2_size <- et_size G et2 ;;
+                '(r2, _) <- peel_n_rawev et2_size rest ;;
+                get_Evidence_Rawev et2 r2 G params
             end
 
         | left_evt et' => 
@@ -118,8 +119,7 @@ Fixpoint get_Evidence_Rawev (et:EvidenceT) (r:RawEv) (G:GlobalContext) (params:A
         | asp_evt p ps et' => 
             let '(asp_paramsC i _ _ tid) := ps in 
             let '(asp_paramsC i' _ _ tid') := params in
-            if (andb (eqb i i') (eqb tid tid'))
-            then 
+            '(r1, rest) <- 
                 (
                 match (map_get i (asp_types G)) with 
                 | None => errC err_str_cannot_have_outwrap (* TODO: better error string *)
@@ -130,7 +130,7 @@ Fixpoint get_Evidence_Rawev (et:EvidenceT) (r:RawEv) (G:GlobalContext) (params:A
                         match out_sig with 
                         | OutN n => 
                             '(r1, rest) <- peel_n_rawev n r ;; 
-                            resultC r1
+                            resultC (r1, rest)
 
                         | _ => errC err_str_cannot_have_outwrap
                         end
@@ -139,7 +139,7 @@ Fixpoint get_Evidence_Rawev (et:EvidenceT) (r:RawEv) (G:GlobalContext) (params:A
                         match out_sig with 
                         | OutN n => 
                             '(r1, rest) <- peel_n_rawev n r ;; 
-                            resultC r1
+                            resultC (r1, rest)
 
                         | _ => errC err_str_cannot_have_outwrap
                         end
@@ -147,11 +147,14 @@ Fixpoint get_Evidence_Rawev (et:EvidenceT) (r:RawEv) (G:GlobalContext) (params:A
                     | _ => errC err_str_cannot_have_outwrap
 
                     end
-                end
-                )
-            else 
-                ( errC err_str_cannot_have_outwrap)
+                end) ;;
 
+            (
+            if (andb (eqb i i') (eqb tid tid'))
+            then 
+                ( resultC r1) 
+            else (
+                get_Evidence_Rawev et' rest G params ))
         end.
         
 

@@ -98,7 +98,7 @@ Definition full_terms_map :=
 Definition add_EvidenceT_terms_map (terms_map: list (string * Term)) : 
   GlobalContext -> Maps.Map string (Term * ResultT.ResultT EvidenceT string) := 
     fun G =>
-    Maps.map_map (fun t => (t, eval G P0 (nonce_evt 0) t)) terms_map.
+    Maps.map_map (fun t => (t, eval G P0 mt_evt(* (nonce_evt 0) *) t)) terms_map.
 
 Definition full_terms : 
   GlobalContext -> Maps.Map string (Term * ResultT.ResultT EvidenceT string) :=
