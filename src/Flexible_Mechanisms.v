@@ -1,6 +1,6 @@
 Require Import Term_Defs Flexible_Mechanisms_Vars JSON_Type.
 
-Require Import Demo_Terms CDS_Demo Resolute_Demo Resolute_Demo_NoArgs.
+Require Import Demo_Terms CDS_Demo Rodeo_Demo Rodeo_Demo_NoArgs.
 Require Import List String.
 Import ListNotations.
 

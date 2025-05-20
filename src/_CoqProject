@@ -24,8 +24,8 @@ Cvm_Utils.v
 CACL_Demo_Args.v
 Demo_Terms.v
 CDS_Demo.v
-Resolute_Demo.v
-Resolute_Demo_NoArgs.v
+Rodeo_Demo.v
+Rodeo_Demo_NoArgs.v
 AppraisalSummary.v
 Attestation_Session.v
 Interface_Types.v
@@ -59,8 +59,8 @@ AM_Monad.v
 AM_Helpers.v
 AM_Json_Interfaces.v
 AM_Manager.v
-Resolute_Types.v
-Resolute_JSON.v
+Rodeo_Types.v
+Rodeo_JSON.v
 Client_AM.v
 Server_AM.v
 Flexible_Mechanisms_Vars.v

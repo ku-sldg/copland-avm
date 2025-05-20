@@ -1,6 +1,6 @@
 Require Import Interface_Types Stringifiable Term_Defs.
 (* Require Import AppraisalSummary. *)
-Require Import Resolute_Types ErrorStringConstants.
+Require Import Rodeo_Types ErrorStringConstants.
 Require Export JSON List Maps EqClass JSON_Core ID_Type.
 Import ListNotations ResultNotation.
 
