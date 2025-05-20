@@ -353,7 +353,7 @@ Close Scope cop_ent_scope.
 
 
 Open Scope string_scope.
-Definition resolute_terms_map := 
+Definition rodeo_terms_map := 
   [
     ("micro", micro_appTerm);
     ("meas_micro", meas_micro);

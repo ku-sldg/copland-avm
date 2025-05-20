@@ -240,7 +240,7 @@ Close Scope cop_ent_scope.
 
 
 Open Scope string_scope.
-Definition resolute_terms_noargs_map := 
+Definition rodeo_terms_noargs_map := 
   [
     ("micro_noargs", micro_appTerm);
     ("micro_provision_noargs", micro_appTerm_provision);

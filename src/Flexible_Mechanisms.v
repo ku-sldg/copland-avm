@@ -92,8 +92,8 @@ Definition full_terms_map :=
       cds_terms_map
       (
         List.app
-          resolute_terms_map
-          resolute_terms_noargs_map)).
+          rodeo_terms_map
+          rodeo_terms_noargs_map)).
    
 Definition add_EvidenceT_terms_map (terms_map: list (string * Term)) : 
   GlobalContext -> Maps.Map string (Term * ResultT.ResultT EvidenceT string) := 
