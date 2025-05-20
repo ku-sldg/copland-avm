@@ -28,20 +28,20 @@ Definition theorem_env_var : string := "THEOREM_ENV_ROOT".
 
 (* ASP_ARGS stuff *)
 
-Definition path_micro_evidence_golden : string := 
-  "/tests/DemoFiles/goldenFiles/micro_evidence_all.txt".
+Definition path_micro_rawev_golden : string := 
+  "/tests/DemoFiles/goldenFiles/micro_raw_evidence.json".
 
 Definition path_micro_et_golden : string := 
-  "/tests/DemoFiles/goldenFiles/micro-Evidence.json".
+  "/tests/DemoFiles/goldenFiles/micro_evidence_type.json".
 
 Definition path_micro_glob_golden : string := 
   "/tests/DemoFiles/Test_Global_Context.json".
 
-Definition path_theorem_evidence_golden : string := 
-  "/tests/DemoFiles/goldenFiles/theorem_evidence_all.txt".
+Definition path_theorem_rawev_golden : string := 
+  "/tests/DemoFiles/goldenFiles/theorem_raw_evidence.json".
 
 Definition path_theorem_et_golden : string := 
-  "/tests/DemoFiles/goldenFiles/theorem-Evidence.json".
+  "/tests/DemoFiles/goldenFiles/theorem_evidence_type.json".
 
 Definition path_theorem_glob_golden : string := 
   "/tests/DemoFiles/Test_Global_Context.json".
@@ -49,17 +49,14 @@ Definition path_theorem_glob_golden : string :=
 Definition path_micro_dir_1 : string := 
     "/micro-examples/microkit/aadl_port_types/data/base_type/aadl/".
 
-Definition path_micro_dir_1_golden : string := path_micro_evidence_golden.
-  (* "/tests/DemoFiles/goldenFiles/micro_dir_1_golden.txt". *)
+Definition path_micro_dir_1_golden : string := path_micro_rawev_golden.
 
 Definition path_micro_dir_2 : string := 
   "/micro-examples/microkit/aadl_port_types/data/base_type/hamr/microkit/".
 
-Definition path_micro_dir_2_golden : string := path_micro_evidence_golden.
-  (* "/tests/DemoFiles/goldenFiles/micro_dir_2_golden.txt". *)
+Definition path_micro_dir_2_golden : string := path_micro_rawev_golden.
 
-Definition path_micro_composite_golden : string := path_micro_evidence_golden.
-  (* "/tests/DemoFiles/goldenFiles/micro_composite.txt". *)
+Definition path_micro_composite_golden : string := path_micro_rawev_golden.
 
 
 Definition theorems_path : string := 
@@ -93,7 +90,7 @@ Definition provision_asp_coq_test_args : ASP_ARGS :=
 Definition provision_coq_env_dir_args : ASP_ARGS :=
   (JSON_Object [
       ("env_var_golden", (JSON_String am_root_env_var));
-      ("filepath_golden", (JSON_String path_theorem_evidence_golden))]).
+      ("filepath_golden", (JSON_String path_theorem_rawev_golden))]).
 
 Definition provision_micro_dir_1_args : ASP_ARGS :=
   (JSON_Object [
@@ -113,18 +110,18 @@ Definition provision_micro_hash_composite_args : ASP_ARGS :=
 Definition provision_micro_all_args : ASP_ARGS :=
   (JSON_Object [
       ("env_var_golden", (JSON_String am_root_env_var));
-      ("filepath_golden", (JSON_String path_micro_evidence_golden))]).
+      ("filepath_golden", (JSON_String path_micro_rawev_golden))]).
 
 Definition provision_theorem_all_args : ASP_ARGS :=
   (JSON_Object [
       ("env_var_golden", (JSON_String am_root_env_var));
-      ("filepath_golden", (JSON_String path_theorem_evidence_golden))]).
+      ("filepath_golden", (JSON_String path_theorem_rawev_golden))]).
 
 Definition hash_coq_env_dir_args : ASP_ARGS := 
   (JSON_Object [("env_var", (JSON_String theorem_env_var)); 
                 ("env_var_golden", (JSON_String am_root_env_var));
                 ("paths", (JSON_Array (map JSON_String [theorems_env_path])));
-                ("filepath_golden", (JSON_String path_theorem_evidence_golden));
+                ("filepath_rawev_golden", (JSON_String path_theorem_rawev_golden));
                 ("filepath_et_golden", (JSON_String path_theorem_et_golden));
                 ("filepath_glob_golden", (JSON_String path_theorem_glob_golden));
                 ("recursive", (JSON_Boolean true));
@@ -136,7 +133,7 @@ Definition hash_micro_dir_1_args : ASP_ARGS :=
   (JSON_Object [("env_var", (JSON_String hashdir_env_var)); 
                 ("env_var_golden", (JSON_String am_root_env_var));
                 ("paths", (JSON_Array (map JSON_String [path_micro_dir_1])));
-                ("filepath_golden", (JSON_String path_micro_dir_1_golden));
+                ("filepath_rawev_golden", (JSON_String path_micro_dir_1_golden));
                 ("filepath_et_golden", (JSON_String path_micro_et_golden));
                 ("filepath_glob_golden", (JSON_String path_micro_glob_golden));
                 ("recursive", (JSON_Boolean false));
@@ -146,7 +143,7 @@ Definition hash_micro_dir_2_args : ASP_ARGS :=
   (JSON_Object [("env_var", (JSON_String hashdir_env_var)); 
                 ("env_var_golden", (JSON_String am_root_env_var));
                 ("paths", (JSON_Array (map JSON_String [path_micro_dir_2])));
-                ("filepath_golden", (JSON_String path_micro_dir_2_golden));
+                ("filepath_rawev_golden", (JSON_String path_micro_dir_2_golden));
                  ("filepath_et_golden", (JSON_String path_micro_et_golden));
                 ("filepath_glob_golden", (JSON_String path_micro_glob_golden));
                 ("recursive", (JSON_Boolean false));
@@ -155,7 +152,7 @@ Definition hash_micro_dir_2_args : ASP_ARGS :=
 Definition hash_micro_evidence_args : ASP_ARGS :=
   (JSON_Object [
       ("env_var_golden", (JSON_String am_root_env_var));
-      ("filepath_golden", (JSON_String path_micro_composite_golden));
+      ("filepath_rawev_golden", (JSON_String path_micro_composite_golden));
       ("filepath_et_golden", (JSON_String path_micro_et_golden));
       ("filepath_glob_golden", (JSON_String path_micro_glob_golden))]).
 
@@ -169,10 +166,10 @@ Definition run_command_asp_coq_args : ASP_ARGS :=
                       coqc_Module; 
                       "/Users/adampetz/Documents/Fall_2024/my_theorems/ImportantTheorem.v"])));
       ("env_var_golden", (JSON_String  am_root_env_var));
-      ("filepath_golden", (JSON_String "/tests/DemoFiles/goldenFiles/theorem_evidence_all.txt"));
-      ("filepath_et_golden", (JSON_String "/tests/DemoFiles/goldenFiles/theorem-Evidence.json"));
-      ("filepath_glob_golden", (JSON_String "/tests/DemoFiles/Test_Global_Context.json"))
-      (* ("filepath_golden", (JSON_String path_asp_coq_golden)) *) ]).
+      ("filepath_rawev_golden", (JSON_String path_theorem_rawev_golden));
+      ("filepath_et_golden", (JSON_String path_theorem_et_golden));
+      ("filepath_glob_golden", (JSON_String path_theorem_glob_golden))
+      ]).
 
 Definition run_command_asp_coq_test_args : ASP_ARGS :=
   (JSON_Object [
@@ -184,9 +181,9 @@ Definition run_command_asp_coq_test_args : ASP_ARGS :=
                       coqc_Module; 
                       "/Users/adampetz/Documents/Fall_2024/my_theorems_env/ImportantTheoremTest.v"])));
       ("env_var_golden", (JSON_String  am_root_env_var));
-      ("filepath_golden", (JSON_String "/tests/DemoFiles/goldenFiles/theorem_evidence_all.txt"));
-      ("filepath_et_golden", (JSON_String "/tests/DemoFiles/goldenFiles/theorem-Evidence.json"));
-      ("filepath_glob_golden", (JSON_String "/tests/DemoFiles/Test_Global_Context.json"))
+      ("filepath_rawev_golden", (JSON_String path_theorem_rawev_golden));
+      ("filepath_et_golden", (JSON_String path_theorem_et_golden));
+      ("filepath_glob_golden", (JSON_String path_theorem_glob_golden))
       ]).
 
 Close Scope string_scope.
