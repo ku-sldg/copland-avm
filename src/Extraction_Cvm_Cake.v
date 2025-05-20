@@ -34,7 +34,8 @@ Extract Inlined Constant Nat.eqb => "(op=)".
 Separate Extraction 
     full_terms
     build_cvm session_config_compiler 
-		handle_AM_request end_to_end_mangen
+		handle_AM_request handle_FS_request
+    end_to_end_mangen
     concrete_Jsonifiable_Manifest
     concrete_Jsonifiable_ASP_Compat_MapT
     concrete_Jsonifiable_Attestation_Session

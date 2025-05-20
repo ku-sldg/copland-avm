@@ -64,3 +64,27 @@ Definition handle_AM_request_JSON (conf : AM_Manager_Config) (js : JSON) (nonceV
     )
     else ErrorResponseJSON err_str_01
   end.
+
+
+Definition handle_FS_request_JSON (js : JSON) : JSON :=
+  match (JSON_get_string STR_ACTION js) with
+  | errC msg => ErrorResponseJSON msg
+  | resultC req_type =>
+    if (eqb req_type STR_EVSLICE)
+    then (
+      match (from_JSON js) with
+      | errC msg => ErrorResponseJSON msg
+      | resultC r =>
+        let '(mkEvSliceReq e glob_ctxt params) := r in
+        let '(evc rawEv et) := e in 
+        let rawev_result := get_Evidence_Rawev et rawEv glob_ctxt params in 
+        match rawev_result with 
+        | errC s => ErrorResponseJSON s
+        | resultC v => 
+          let success_bool := true in 
+            to_JSON (mkEvSliceResp success_bool v)   
+        end
+      end
+    )
+    else ErrorResponseJSON err_str_01
+  end.
