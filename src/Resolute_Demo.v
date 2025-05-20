@@ -169,7 +169,10 @@ Definition run_command_asp_coq_args : ASP_ARGS :=
                       coqc_Module; 
                       "/Users/adampetz/Documents/Fall_2024/my_theorems/ImportantTheorem.v"])));
       ("env_var_golden", (JSON_String  am_root_env_var));
-      ("filepath_golden", (JSON_String path_asp_coq_golden))]).
+      ("filepath_golden", (JSON_String "/tests/DemoFiles/goldenFiles/theorem_evidence_all.txt"));
+      ("filepath_et_golden", (JSON_String "/tests/DemoFiles/goldenFiles/theorem-Evidence.json"));
+      ("filepath_glob_golden", (JSON_String "/tests/DemoFiles/Test_Global_Context.json"))
+      (* ("filepath_golden", (JSON_String path_asp_coq_golden)) *) ]).
 
 Definition run_command_asp_coq_test_args : ASP_ARGS :=
   (JSON_Object [
@@ -181,7 +184,10 @@ Definition run_command_asp_coq_test_args : ASP_ARGS :=
                       coqc_Module; 
                       "/Users/adampetz/Documents/Fall_2024/my_theorems_env/ImportantTheoremTest.v"])));
       ("env_var_golden", (JSON_String  am_root_env_var));
-      ("filepath_golden", (JSON_String path_asp_coq_test_golden))]).
+      ("filepath_golden", (JSON_String "/tests/DemoFiles/goldenFiles/theorem_evidence_all.txt"));
+      ("filepath_et_golden", (JSON_String "/tests/DemoFiles/goldenFiles/theorem-Evidence.json"));
+      ("filepath_glob_golden", (JSON_String "/tests/DemoFiles/Test_Global_Context.json"))
+      ]).
 
 Close Scope string_scope.
 
