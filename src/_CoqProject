@@ -65,6 +65,7 @@ Client_AM.v
 Server_AM.v
 Flexible_Mechanisms_Vars.v
 Flexible_Mechanisms.v
+Maestro_Summit_Demo.v
 Concrete_Extractables.v
 Extraction_Cvm_Cake.v
 #Cvm_Verification.v

@@ -1,6 +1,6 @@
 Require Import Term_Defs Flexible_Mechanisms_Vars JSON_Type.
 
-Require Import Demo_Terms CDS_Demo Rodeo_Demo Rodeo_Demo_NoArgs.
+Require Import Demo_Terms CDS_Demo Rodeo_Demo Rodeo_Demo_NoArgs Maestro_Summit_Demo.
 Require Import List String.
 Import ListNotations.
 
@@ -93,7 +93,10 @@ Definition full_terms_map :=
       (
         List.app
           rodeo_terms_map
-          rodeo_terms_noargs_map)).
+          (
+          List.app 
+            maestro_demo_terms_map
+            rodeo_terms_noargs_map))).
    
 Definition add_EvidenceT_terms_map (terms_map: list (string * Term)) : 
   GlobalContext -> Maps.Map string (Term * ResultT.ResultT EvidenceT string) := 
