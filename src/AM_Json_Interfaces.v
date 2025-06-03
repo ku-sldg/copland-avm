@@ -66,7 +66,7 @@ Definition handle_AM_request_JSON (conf : AM_Manager_Config) (js : JSON) (nonceV
   end.
 
 
-Definition handle_FS_request_JSON (js : JSON) : JSON :=
+Definition handle_FS_request_JSON (conf:AM_Manager_Config) (js : JSON) : JSON :=
   match (JSON_get_string STR_ACTION js) with
   | errC msg => ErrorResponseJSON msg
   | resultC req_type =>
@@ -86,5 +86,24 @@ Definition handle_FS_request_JSON (js : JSON) : JSON :=
         end
       end
     )
+
+    else if (eqb req_type STR_RUN)
+    then (
+      match (from_JSON js) with
+      | errC msg => ErrorResponseJSON msg
+      | resultC r =>
+        let '(mkPRReq att_sess from_plc to_plc ev cop_term) := r in
+        let sc := (session_config_compiler conf att_sess) in
+        let init_st := (mk_st [] 0) in
+        let '(cvm_resp, _, _) := (build_cvm ev cop_term init_st sc) in
+        match cvm_resp with
+        | errC e => ErrorResponseJSON (CVM_Error_to_string e)
+        | resultC res_ev => to_JSON (mkPRResp true res_ev)
+        end
+      end
+    )
+
+
+
     else ErrorResponseJSON err_str_01
   end.
