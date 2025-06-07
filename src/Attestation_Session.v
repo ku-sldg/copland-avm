@@ -22,12 +22,16 @@ Inductive CallBackErrors : Type :=
 Definition ASPCallback (ErrType : Type) : Type := 
   ASP_PARAMS -> RawEv -> ResultT RawEv ErrType.
 
+Definition RemoteCallback (ErrType : Type) : Type := 
+  Plc -> Evidence -> Term -> ResultT Evidence ErrType.
+
 Definition PolicyT := list (Plc * ASP_ID).
 
 Record Session_Config := {
   session_plc         : Plc ;
   session_context     : GlobalContext ;
   aspCb               : (ASPCallback DispatcherErrors) ;
+  remoteCb            : (RemoteCallback DispatcherErrors) ;
   plc_map             : Map Plc UUID ;
   pubkey_map          : Map Plc PublicKey ;
   policy              : PolicyT ;

@@ -377,30 +377,9 @@ Definition check_cvm_policy (t:Term) (pTo:Plc) (et:EvidenceT) : CVM unit :=
 
 Definition do_remote (sc : Session_Config) (pTo: Plc) (e : Evidence) (t:Term) 
     : ResultT Evidence CVM_Error := 
-  (* There is assuredly a better way to do it than this *)
-  let '(mkAtt_Sess my_plc plc_map pk_map G) := (session_config_decompiler sc) in
-  (* We need  to update the Att Session to tell the next plc how
-  they should be tagging their stuff (basically who they are
-  in the protocol) *)
-  let new_att_sess := (mkAtt_Sess pTo plc_map pk_map G) in
-  match (map_get pTo plc_map) with 
-  | Some uuid => 
-      let remote_req := (mkPRReq new_att_sess my_plc e t) in
-      let js_req := to_JSON remote_req in
-      let resp_res := make_JSON_Network_Request uuid js_req in
-      match resp_res with
-      | resultC js_resp =>
-          match from_JSON js_resp with
-          | resultC resp => 
-              let '(mkPRResp success ev) := resp in
-              if success 
-              then resultC ev 
-              else errC (dispatch_error (Runtime errStr_remote_am_failure))
-          | errC msg => errC (dispatch_error (Runtime msg)) 
-          end
-      | errC msg => errC (dispatch_error (Runtime msg))
-      end
-  | None => errC (dispatch_error Unavailable)
+  match (sc.(remoteCb) pTo e t) with 
+  | resultC r => resultC r 
+  | errC e => errC (dispatch_error e)
   end.
 
 Definition doRemote_session' (pTo:Plc) (e:Evidence) (t:Term) 

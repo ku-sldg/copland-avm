@@ -6,9 +6,10 @@ Import ListNotations.
 Open Scope string_scope.
 
 Definition handle_AM_request (conf : AM_Manager_Config) (s:string) (nonceVal:BS) : string :=
+  (* NOTE: Currently nonceVal is not utilized *)
   match string_to_JSON s with
   | errC msg => JSON_to_string (ErrorResponseJSON msg)
-  | resultC js => JSON_to_string (handle_AM_request_JSON conf js nonceVal)
+  | resultC js => JSON_to_string (handle_AM_request_JSON conf js)
   end.
 
 
